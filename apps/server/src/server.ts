@@ -143,6 +143,9 @@ function createServerExpressApp(
       codexChat.origin,
       assignmentActions,
       productWriteDrainMs,
+      assignmentActions
+        ? () => codexChat.service.readProductAccountReadiness()
+        : undefined,
     ),
   )
   return app

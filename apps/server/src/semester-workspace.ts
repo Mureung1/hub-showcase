@@ -36,8 +36,11 @@ const evidenceQuoteMaxBytes = 16 * 1024
 const proposalEvidenceMax = 64
 const actionArgumentMaxBytes = 16 * 1024
 const actionMetadataMaxBytes = 512
+const actionPathMaxBytes = 16 * 1024
 const actionStagingDirectoryName = 'assignment-runs'
 const actionScratchRelativeRoot = `${productDirectoryName}/runtime-scratch`
+const defaultActionCleanupDeadlineMs = 5_000
+const maximumActionCleanupDeadlineMs = 30_000
 const execFileAsync = promisify(execFile)
 
 export type Course = {
@@ -116,6 +119,7 @@ export type SemesterWorkspaceController = {
   failAssignmentActionStart(
     input: FailAssignmentActionStartInput,
   ): Promise<ModelingRun>
+  executionGuardRequiresFreshRuntime(operationId: string): boolean
   modelingRun(actionId: string): ModelingRun | null
   modelingRuns(): readonly ModelingRun[]
   managedAppDataRoot(): string
@@ -172,6 +176,7 @@ export type ModelingRun = {
   readonly courseId: string
   readonly invocationFingerprint: string
   readonly requestedSkillName: string
+  readonly requestedSkillPath: string
   readonly recipeName: string
   readonly recipeVersion: string
   readonly recipeDigest: string
@@ -197,6 +202,7 @@ export type PrepareAssignmentActionInput = {
     readonly version: string
     readonly digest: string
     readonly requestedSkillName: string
+    readonly requestedSkillPath: string
   }
   readonly arguments: {
     readonly canonical: string
@@ -219,11 +225,22 @@ export type BindAssignmentActionInput = {
   readonly turnId: string
 }
 
-export type FailAssignmentActionStartInput = {
-  readonly actionId: string
-  readonly status: 'not_accepted' | 'acceptance_unknown'
-  readonly failureCode: string
-}
+export type FailAssignmentActionStartInput =
+  | {
+      readonly actionId: string
+      readonly status: 'not_accepted'
+      readonly failureCode: string
+      readonly nativeCorrelation?: never
+    }
+  | {
+      readonly actionId: string
+      readonly status: 'acceptance_unknown'
+      readonly failureCode: string
+      readonly nativeCorrelation?: {
+        readonly threadId: string
+        readonly turnId: string
+      }
+    }
 
 export type SettleAssignmentActionInput = {
   readonly actionId: string
@@ -473,6 +490,7 @@ export function createMacOsSemesterWorkspaceChooser(options: {
 
 type PersistedStatePatch = StatePatch & {
   readonly canonicalPayload: string
+  readonly guardOperationId?: string
 }
 
 type PersistedWorkspaceState = {
@@ -504,6 +522,11 @@ type ExecutionGuard = {
     readonly threadId: string
     readonly turnId: string
   }
+}
+
+type ActionCleanupPolicy = {
+  readonly deadlineMs: number
+  readonly beforeCleanup?: () => void | Promise<void>
 }
 
 type ActiveProposalContext = {
@@ -541,12 +564,15 @@ type OpenWorkspace =
 
 export function createSemesterWorkspaceController(options: {
   readonly appDataRoot: string
+  readonly actionCleanupDeadlineMs?: number
+  readonly beforeActionArtifactCleanup?: () => void | Promise<void>
   readonly beforeActionStoreWrite?: (
     point: 'prepare' | 'bind' | 'start_failure' | 'settle',
   ) => void | Promise<void>
   readonly chooseDirectory: SemesterWorkspaceDirectoryChooser
   readonly packageRoot: string
 }): SemesterWorkspaceController {
+  const cleanupPolicy = actionCleanupPolicy(options)
   let active: OpenWorkspace | undefined
   let activeAppDataRoot: string | undefined
   let operationTail = Promise.resolve()
@@ -627,7 +653,15 @@ export function createSemesterWorkspaceController(options: {
         assertDisjointRoots([packageRoot, appDataRoot, workspaceRoot])
         const opened = await openWorkspace(workspaceRoot)
         if ('store' in opened) {
-          const mayRefresh = await reconcileExecutionGuard(opened, appDataRoot)
+          await reconcileUncommittedExecutionArtifacts(
+            opened,
+            appDataRoot,
+          )
+          const mayRefresh = await reconcileExecutionGuard(
+            opened,
+            appDataRoot,
+            cleanupPolicy,
+          )
           if (mayRefresh) await refreshReadyWorkspace(opened)
         } else if (active) {
           throw new SemesterWorkspaceError(
@@ -945,6 +979,7 @@ export function createSemesterWorkspaceController(options: {
           activePatchByTurn,
           reviewBindings,
           options.beforeActionStoreWrite,
+          cleanupPolicy,
         ),
       )
     },
@@ -961,6 +996,11 @@ export function createSemesterWorkspaceController(options: {
       return requireReadyWorkspace(active).store.modelingRuns.map(
         cloneModelingRun,
       )
+    },
+
+    executionGuardRequiresFreshRuntime(operationId) {
+      const guard = requireReadyWorkspace(active).store.executionGuard
+      return guard?.operationId === operationId
     },
 
     managedAppDataRoot() {
@@ -1067,10 +1107,7 @@ export function createSemesterWorkspaceController(options: {
         const turnKey = runtimeTurnKey(context.runtime)
         const patchId = activePatchByTurn.get(turnKey)
         activePatchByTurn.delete(turnKey)
-        if (!patchId) return
-        for (const [interactionId, binding] of reviewBindings) {
-          if (binding.patchId === patchId) reviewBindings.delete(interactionId)
-        }
+        releaseReviewBindingsForTurn(reviewBindings, turnKey, patchId)
       })
     },
 
@@ -1108,6 +1145,7 @@ export function createSemesterWorkspaceController(options: {
           activePatchByTurn,
           reviewBindings,
           options.beforeActionStoreWrite,
+          cleanupPolicy,
         ),
       )
     },
@@ -1121,6 +1159,7 @@ export function createSemesterWorkspaceController(options: {
           proposalContexts,
           activePatchByTurn,
           reviewBindings,
+          cleanupPolicy,
         ),
       )
     },
@@ -1351,6 +1390,7 @@ async function settleProductChatExecution(
   proposalContexts: Map<string, ActiveProposalContext>,
   activePatchByTurn: Map<string, string>,
   reviewBindings: Map<string, ActiveReviewBinding>,
+  cleanupPolicy: ActionCleanupPolicy,
 ): Promise<void> {
   if (
     !isExactRecord(input, ['operationId']) ||
@@ -1408,6 +1448,7 @@ async function settleProductChatExecution(
     opened.root,
     appDataRoot,
     guard,
+    cleanupPolicy,
   )
   if (!guardValid) throw executionGuardConflict()
   if (!cleaned) {
@@ -1481,11 +1522,13 @@ async function prepareAssignmentAction(
   )
   let artifactsCreated = false
   try {
-    await ensureManagedDirectory(path.dirname(stagingRoot))
-    await mkdir(stagingRoot)
-    artifactsCreated = true
+    // Create workspace scratch first so a crash leaves a workspace-scoped
+    // reconciliation key before app-data staging can exist.
     await ensureManagedDirectory(path.dirname(scratchPath))
     await mkdir(scratchPath)
+    artifactsCreated = true
+    await ensureManagedDirectory(path.dirname(stagingRoot))
+    await mkdir(stagingRoot)
     const stagedSources = [] as Array<
       ModelingRunSource & { readonly path: string }
     >
@@ -1516,6 +1559,7 @@ async function prepareAssignmentAction(
         courseId: course.id,
         confirmedRevision: opened.store.confirmedRevision,
         requestedSkillName: input.recipe.requestedSkillName,
+        requestedSkillPath: input.recipe.requestedSkillPath,
         recipeName: input.recipe.name,
         recipeVersion: input.recipe.version,
         recipeDigest: input.recipe.digest,
@@ -1529,6 +1573,7 @@ async function prepareAssignmentAction(
       courseId: course.id,
       invocationFingerprint,
       requestedSkillName: input.recipe.requestedSkillName,
+      requestedSkillPath: input.recipe.requestedSkillPath,
       recipeName: input.recipe.name,
       recipeVersion: input.recipe.version,
       recipeDigest: input.recipe.digest,
@@ -1568,13 +1613,28 @@ async function prepareAssignmentAction(
       executionGuard,
     } satisfies PersistedWorkspaceState
     await beforeActionStoreWrite?.('prepare')
-    await writeStore(opened.root, nextStore)
+    try {
+      await writeStore(opened.root, nextStore)
+    } catch (error) {
+      if (!(await persistedStoreMatches(opened.root, nextStore))) throw error
+    }
     opened.store = nextStore
     opened.snapshot = readySnapshot(nextStore)
     return { run, activeContext, stagedSources, scratchPath }
   } catch (error) {
     if (artifactsCreated) {
-      await cleanupActionArtifacts(opened.root, appDataRoot, input.actionId)
+      try {
+        await cleanupUncommittedActionArtifacts(
+          opened.root,
+          appDataRoot,
+          input.actionId,
+        )
+      } catch {
+        throw new SemesterWorkspaceError(
+          'execution_cleanup_required',
+          'The uncommitted Assignment artifacts require cleanup.',
+        )
+      }
     }
     throw error
   }
@@ -1591,12 +1651,23 @@ async function failAssignmentActionStart(
   beforeActionStoreWrite?: (
     point: 'prepare' | 'bind' | 'start_failure' | 'settle',
   ) => void | Promise<void>,
+  cleanupPolicy: ActionCleanupPolicy = {
+    deadlineMs: defaultActionCleanupDeadlineMs,
+  },
 ): Promise<ModelingRun> {
   if (
+    !isExactRecord(
+      input,
+      ['actionId', 'failureCode', 'status'],
+      ['nativeCorrelation'],
+    ) ||
     !isActionId(input.actionId) ||
     (input.status !== 'not_accepted' &&
       input.status !== 'acceptance_unknown') ||
-    !isSafeFailureCode(input.failureCode)
+    !isSafeFailureCode(input.failureCode) ||
+    (input.nativeCorrelation !== undefined &&
+      (input.status !== 'acceptance_unknown' ||
+        !isNativeCorrelation(input.nativeCorrelation)))
   ) {
     throw invalidAction()
   }
@@ -1609,6 +1680,9 @@ async function failAssignmentActionStart(
       validationOutcome:
         input.status === 'not_accepted' ? 'failed' : 'unknown',
       failureCode: input.failureCode,
+      ...(input.nativeCorrelation === undefined
+        ? {}
+        : { nativeCorrelation: { ...input.nativeCorrelation } }),
     },
     ['starting'],
     proposalContexts,
@@ -1618,6 +1692,7 @@ async function failAssignmentActionStart(
     input.status !== 'acceptance_unknown',
     beforeActionStoreWrite,
     'start_failure',
+    cleanupPolicy,
   )
 }
 
@@ -1632,6 +1707,9 @@ async function settleAssignmentAction(
   beforeActionStoreWrite?: (
     point: 'prepare' | 'bind' | 'start_failure' | 'settle',
   ) => void | Promise<void>,
+  cleanupPolicy: ActionCleanupPolicy = {
+    deadlineMs: defaultActionCleanupDeadlineMs,
+  },
 ): Promise<ModelingRun> {
   if (
     !isActionId(input.actionId) ||
@@ -1653,6 +1731,7 @@ async function settleAssignmentAction(
     true,
     beforeActionStoreWrite,
     'settle',
+    cleanupPolicy,
   )
 }
 
@@ -1664,6 +1743,10 @@ async function settleModelingRun(
     readonly status: Exclude<ModelingRunStatus, 'starting' | 'running'>
     readonly validationOutcome: Exclude<ModelingRunValidationOutcome, 'pending'>
     readonly failureCode?: string
+    readonly nativeCorrelation?: {
+      readonly threadId: string
+      readonly turnId: string
+    }
   },
   allowedStatuses: readonly ModelingRunStatus[],
   proposalContexts: Map<string, ActiveProposalContext>,
@@ -1675,6 +1758,9 @@ async function settleModelingRun(
     point: 'prepare' | 'bind' | 'start_failure' | 'settle',
   ) => void | Promise<void>) | undefined,
   writePoint: 'start_failure' | 'settle',
+  cleanupPolicy: ActionCleanupPolicy = {
+    deadlineMs: defaultActionCleanupDeadlineMs,
+  },
 ): Promise<ModelingRun> {
   const runIndex = opened.store.modelingRuns.findIndex(
     (candidate) => candidate.actionId === input.actionId,
@@ -1693,9 +1779,10 @@ async function settleModelingRun(
     )
   }
 
-  let guardValid = true
+  let authorityValid = true
+  let artifactsValid = true
   try {
-    await assertExecutionGuard(opened, appDataRoot, input.actionId)
+    await assertExecutionGuardAuthority(opened, input.actionId)
   } catch (error) {
     if (
       !(error instanceof SemesterWorkspaceError) ||
@@ -1704,8 +1791,22 @@ async function settleModelingRun(
       throw error
     }
     await assertStoreBytesMatchMemory(opened)
-    guardValid = false
+    authorityValid = false
   }
+  if (authorityValid) {
+    try {
+      await assertExecutionGuardArtifacts(opened, appDataRoot, input.actionId)
+    } catch (error) {
+      if (
+        !(error instanceof SemesterWorkspaceError) ||
+        error.code !== 'execution_guard_conflict'
+      ) {
+        throw error
+      }
+      artifactsValid = false
+    }
+  }
+  const guardValid = authorityValid && artifactsValid
   const now = new Date().toISOString()
   const settled = {
     ...run,
@@ -1713,6 +1814,9 @@ async function settleModelingRun(
     validationOutcome: guardValid ? input.validationOutcome : 'failed',
     updatedAt: now,
     settledAt: now,
+    ...(input.nativeCorrelation === undefined
+      ? {}
+      : { nativeCorrelation: { ...input.nativeCorrelation } }),
     ...((guardValid ? input.failureCode : 'execution_guard_conflict') ===
     undefined
       ? {}
@@ -1724,7 +1828,10 @@ async function settleModelingRun(
   } satisfies ModelingRun
   const nextGuard = {
     ...opened.store.executionGuard,
-    state: guardValid ? 'active' : 'recovery_required',
+    ...(input.nativeCorrelation === undefined
+      ? {}
+      : { nativeCorrelation: { ...input.nativeCorrelation } }),
+    state: authorityValid ? 'active' : 'recovery_required',
   } satisfies ExecutionGuard
   const settledStore = {
     ...opened.store,
@@ -1750,10 +1857,7 @@ async function settleModelingRun(
     const patchId = activePatchByTurn.get(turnKey)
     activePatchByTurn.delete(turnKey)
     actionByTurn.delete(turnKey)
-    if (!patchId) continue
-    for (const [interactionId, binding] of reviewBindings) {
-      if (binding.patchId === patchId) reviewBindings.delete(interactionId)
-    }
+    releaseReviewBindingsForTurn(reviewBindings, turnKey, patchId)
   }
   if (!cleanupAfterSettlement) return cloneModelingRun(settled)
 
@@ -1761,8 +1865,9 @@ async function settleModelingRun(
     opened.root,
     appDataRoot,
     input.actionId,
+    cleanupPolicy,
   )
-  const executionGuard = !guardValid
+  const executionGuard = !authorityValid
     ? nextGuard
     : cleaned
       ? null
@@ -1777,12 +1882,78 @@ async function settleModelingRun(
   return cloneModelingRun(settled)
 }
 
+async function reconcileUncommittedExecutionArtifacts(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  appDataRoot: string,
+): Promise<void> {
+  const scratchRoot = path.join(opened.root, actionScratchRelativeRoot)
+  let entries
+  try {
+    const stats = await lstat(scratchRoot)
+    if (!stats.isDirectory() || stats.isSymbolicLink()) {
+      throw new Error('invalid managed scratch root')
+    }
+    entries = await readdir(scratchRoot, { withFileTypes: true })
+  } catch (error) {
+    if (hasErrnoCode(error, 'ENOENT')) return
+    throw new SemesterWorkspaceError(
+      'execution_cleanup_required',
+      'The workspace execution scratch cannot be reconciled safely.',
+    )
+  }
+
+  const guardedOperationId = opened.store.executionGuard?.operationId
+  for (const entry of entries) {
+    if (
+      !entry.isDirectory() ||
+      entry.isSymbolicLink() ||
+      !isProductOperationId(entry.name)
+    ) {
+      throw new SemesterWorkspaceError(
+        'execution_cleanup_required',
+        'The workspace execution scratch contains an unmanaged entry.',
+      )
+    }
+    if (entry.name === guardedOperationId) continue
+    try {
+      if (isActionId(entry.name)) {
+        await cleanupUncommittedActionArtifacts(
+          opened.root,
+          appDataRoot,
+          entry.name,
+        )
+      } else {
+        await removeManagedActionDirectory(path.join(scratchRoot, entry.name))
+      }
+    } catch {
+      throw new SemesterWorkspaceError(
+        'execution_cleanup_required',
+        'The stale workspace execution scratch requires cleanup.',
+      )
+    }
+  }
+}
+
 async function reconcileExecutionGuard(
   opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
   appDataRoot: string,
+  cleanupPolicy: ActionCleanupPolicy,
 ): Promise<boolean> {
   const guard = opened.store.executionGuard
   if (!guard) return true
+  const interruptedPatches = interruptPendingPatchesForOperation(
+    opened.store.statePatches,
+    guard.operationId,
+  )
+  if (interruptedPatches !== opened.store.statePatches) {
+    const interruptedStore = {
+      ...opened.store,
+      statePatches: interruptedPatches,
+    } satisfies PersistedWorkspaceState
+    await writeStore(opened.root, interruptedStore)
+    opened.store = interruptedStore
+    opened.snapshot = readySnapshot(interruptedStore)
+  }
   const runIndex =
     guard.kind === 'assignment_action'
       ? opened.store.modelingRuns.findIndex(
@@ -1795,7 +1966,12 @@ async function reconcileExecutionGuard(
     throw invalidStore()
   }
   if (guard.state === 'recovery_required') {
-    await cleanupExecutionGuardArtifacts(opened.root, appDataRoot, guard)
+    await cleanupExecutionGuardArtifacts(
+      opened.root,
+      appDataRoot,
+      guard,
+      cleanupPolicy,
+    )
     return false
   }
   if (guard.state === 'cleanup_required') {
@@ -1803,6 +1979,7 @@ async function reconcileExecutionGuard(
       opened.root,
       appDataRoot,
       guard,
+      cleanupPolicy,
     )
     if (!cleaned) return false
     const cleanedStore = {
@@ -1814,9 +1991,10 @@ async function reconcileExecutionGuard(
     opened.snapshot = readySnapshot(cleanedStore)
     return true
   }
-  let guardValid = true
+  let authorityValid = true
+  let artifactsValid = true
   try {
-    await assertExecutionGuard(opened, appDataRoot, guard.operationId)
+    await assertExecutionGuardAuthority(opened, guard.operationId)
   } catch (error) {
     if (
       !(error instanceof SemesterWorkspaceError) ||
@@ -1824,8 +2002,27 @@ async function reconcileExecutionGuard(
     ) {
       throw error
     }
-    guardValid = false
+    await assertStoreBytesMatchMemory(opened)
+    authorityValid = false
   }
+  if (authorityValid) {
+    try {
+      await assertExecutionGuardArtifacts(
+        opened,
+        appDataRoot,
+        guard.operationId,
+      )
+    } catch (error) {
+      if (
+        !(error instanceof SemesterWorkspaceError) ||
+        error.code !== 'execution_guard_conflict'
+      ) {
+        throw error
+      }
+      artifactsValid = false
+    }
+  }
+  const guardValid = authorityValid && artifactsValid
   let nextRun = run
   if (
     run &&
@@ -1847,7 +2044,7 @@ async function reconcileExecutionGuard(
   }
   const reconcilingGuard = {
     ...guard,
-    state: guardValid ? 'active' : 'recovery_required',
+    state: authorityValid ? 'active' : 'recovery_required',
   } satisfies ExecutionGuard
   const reconciledStore = {
     ...opened.store,
@@ -1866,8 +2063,9 @@ async function reconcileExecutionGuard(
     opened.root,
     appDataRoot,
     guard,
+    cleanupPolicy,
   )
-  if (!guardValid) return false
+  if (!authorityValid) return false
   const finalStore = {
     ...opened.store,
     executionGuard: cleaned
@@ -1886,6 +2084,14 @@ async function reconcileExecutionGuard(
 async function assertExecutionGuard(
   opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
   appDataRoot: string,
+  operationId: string,
+): Promise<void> {
+  await assertExecutionGuardAuthority(opened, operationId)
+  await assertExecutionGuardArtifacts(opened, appDataRoot, operationId)
+}
+
+async function assertExecutionGuardAuthority(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
   operationId: string,
 ): Promise<void> {
   const guard = opened.store.executionGuard
@@ -1911,6 +2117,21 @@ async function assertExecutionGuard(
     ) {
       throw executionGuardConflict()
     }
+  }
+}
+
+async function assertExecutionGuardArtifacts(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  appDataRoot: string,
+  operationId: string,
+): Promise<void> {
+  const guard = opened.store.executionGuard
+  if (
+    !guard ||
+    guard.operationId !== operationId ||
+    guard.state !== 'active'
+  ) {
+    throw executionGuardConflict()
   }
   const scratchPath = productScratchPath(opened.root, operationId)
   if (!(await isRegularDirectory(scratchPath))) {
@@ -2006,10 +2227,43 @@ async function assertStoreBytesMatchMemory(
   }
 }
 
+async function persistedStoreMatches(
+  workspaceRoot: string,
+  store: PersistedWorkspaceState,
+): Promise<boolean> {
+  try {
+    return (
+      await readFile(
+        path.join(workspaceRoot, productDirectoryName, storeFileName),
+        'utf8',
+      )
+    ) === `${JSON.stringify(store, null, 2)}\n`
+  } catch {
+    return false
+  }
+}
+
+async function cleanupUncommittedActionArtifacts(
+  workspaceRoot: string,
+  appDataRoot: string,
+  actionId: string,
+): Promise<void> {
+  const { stagingRoot, scratchPath } = actionArtifactPaths(
+    workspaceRoot,
+    appDataRoot,
+    actionId,
+  )
+  // Keep the workspace-scoped key until app-data staging is gone so a later
+  // activation can retry reconciliation after a partial rollback failure.
+  await removeManagedActionDirectory(stagingRoot)
+  await removeManagedActionDirectory(scratchPath)
+}
+
 async function cleanupActionArtifacts(
   workspaceRoot: string,
   appDataRoot: string,
   actionId: string,
+  policy: ActionCleanupPolicy,
 ): Promise<boolean> {
   if (!isActionId(actionId)) return false
   const { stagingRoot, scratchPath } = actionArtifactPaths(
@@ -2017,31 +2271,48 @@ async function cleanupActionArtifacts(
     appDataRoot,
     actionId,
   )
-  const outcomes = await Promise.allSettled([
-    removeManagedActionDirectory(stagingRoot),
-    removeManagedActionDirectory(scratchPath),
-  ])
-  return outcomes.every((outcome) => outcome.status === 'fulfilled')
+  return runBoundedArtifactCleanup(policy, [stagingRoot, scratchPath])
 }
 
 async function cleanupExecutionGuardArtifacts(
   workspaceRoot: string,
   appDataRoot: string,
   guard: ExecutionGuard,
+  policy: ActionCleanupPolicy,
 ): Promise<boolean> {
   if (guard.kind === 'assignment_action') {
     return cleanupActionArtifacts(
       workspaceRoot,
       appDataRoot,
       guard.operationId,
+      policy,
     )
   }
-  const outcome = await Promise.allSettled([
-    removeManagedActionDirectory(
-      productScratchPath(workspaceRoot, guard.operationId),
-    ),
+  return runBoundedArtifactCleanup(policy, [
+    productScratchPath(workspaceRoot, guard.operationId),
   ])
-  return outcome[0]?.status === 'fulfilled'
+}
+
+async function runBoundedArtifactCleanup(
+  policy: ActionCleanupPolicy,
+  directories: readonly string[],
+): Promise<boolean> {
+  let timer: NodeJS.Timeout | undefined
+  const cleanup = (async () => {
+    await policy.beforeCleanup?.()
+    const outcomes = await Promise.allSettled(
+      directories.map(removeManagedActionDirectory),
+    )
+    return outcomes.every((outcome) => outcome.status === 'fulfilled')
+  })()
+  const deadline = new Promise<boolean>((resolve) => {
+    timer = setTimeout(() => resolve(false), policy.deadlineMs)
+  })
+  try {
+    return await Promise.race([cleanup, deadline])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
 }
 
 function actionPatchIds(
@@ -2084,13 +2355,30 @@ function interruptPendingPatches(
   )
 }
 
+function interruptPendingPatchesForOperation(
+  patches: readonly PersistedStatePatch[],
+  operationId: string,
+): readonly PersistedStatePatch[] {
+  let changed = false
+  const interrupted = patches.map((patch) => {
+    if (
+      patch.guardOperationId !== operationId ||
+      patch.status !== 'pending'
+    ) {
+      return patch
+    }
+    changed = true
+    return { ...patch, status: 'interrupted' as const }
+  })
+  return changed ? interrupted : patches
+}
+
 function releaseProposalOperation(
   operationId: string,
   proposalContexts: Map<string, ActiveProposalContext>,
   activePatchByTurn: Map<string, string>,
   reviewBindings: Map<string, ActiveReviewBinding>,
 ): void {
-  const patchIds = new Set<string>()
   for (const [requestKey, context] of proposalContexts) {
     if (context.guardOperationId !== operationId) continue
     proposalContexts.delete(requestKey)
@@ -2098,10 +2386,22 @@ function releaseProposalOperation(
     const turnKey = runtimeTurnKey(context.runtime)
     const patchId = activePatchByTurn.get(turnKey)
     activePatchByTurn.delete(turnKey)
-    if (patchId) patchIds.add(patchId)
+    releaseReviewBindingsForTurn(reviewBindings, turnKey, patchId)
   }
+}
+
+function releaseReviewBindingsForTurn(
+  reviewBindings: Map<string, ActiveReviewBinding>,
+  turnKey: string,
+  patchId?: string,
+): void {
   for (const [interactionId, binding] of reviewBindings) {
-    if (patchIds.has(binding.patchId)) reviewBindings.delete(interactionId)
+    if (
+      runtimeTurnKey(binding) === turnKey ||
+      (patchId !== undefined && binding.patchId === patchId)
+    ) {
+      reviewBindings.delete(interactionId)
+    }
   }
 }
 
@@ -2153,7 +2453,7 @@ async function removeManagedActionDirectory(directory: string): Promise<void> {
     if (hasErrnoCode(error, 'ENOENT')) return
     throw error
   }
-  await rm(directory, { recursive: true })
+  await rm(directory, { force: true, recursive: true })
 }
 
 type CanonicalStatePatchPayload = {
@@ -2278,6 +2578,8 @@ async function proposeAssignmentStatePatch(
       'This native Turn already has an active StatePatch.',
     )
   }
+  const guardOperationId =
+    activeContext.actionId ?? activeContext.guardOperationId
   const patch = {
     id: `patch_${randomUUID().replaceAll('-', '')}`,
     workspaceId: payload.workspaceId,
@@ -2292,6 +2594,7 @@ async function proposeAssignmentStatePatch(
     createdAt: new Date().toISOString(),
     applyOutcome: null,
     canonicalPayload,
+    ...(guardOperationId === undefined ? {} : { guardOperationId }),
   } satisfies PersistedStatePatch
   const nextStore = {
     ...opened.store,
@@ -2885,6 +3188,9 @@ function clonePersistedStatePatch(
   return {
     ...cloneStatePatch(patch),
     canonicalPayload,
+    ...(patch.guardOperationId === undefined
+      ? {}
+      : { guardOperationId: patch.guardOperationId }),
   }
 }
 
@@ -3111,6 +3417,7 @@ function isModelingRunArray(value: unknown): value is readonly ModelingRun[] {
           'recipeName',
           'recipeVersion',
           'requestedSkillName',
+          'requestedSkillPath',
           'sourceBaseline',
           'status',
           'updatedAt',
@@ -3123,6 +3430,7 @@ function isModelingRunArray(value: unknown): value is readonly ModelingRun[] {
       !isCourseId(run.courseId) ||
       !isSha256Digest(run.invocationFingerprint) ||
       !isSafeSkillName(run.requestedSkillName) ||
+      !isSafeAbsoluteActionPath(run.requestedSkillPath) ||
       !isBoundedMeaningfulText(run.recipeName, actionMetadataMaxBytes) ||
       !isBoundedMeaningfulText(run.recipeVersion, actionMetadataMaxBytes) ||
       !isSha256Digest(run.recipeDigest) ||
@@ -3498,7 +3806,7 @@ function isPersistedStatePatchArray(
           'summary',
           'workspaceId',
         ],
-        ['origin'],
+        ['guardOperationId', 'origin'],
       ) ||
       !isPatchId(patch.id) ||
       !isWorkspaceId(patch.workspaceId) ||
@@ -3511,6 +3819,8 @@ function isPersistedStatePatchArray(
       !isEvidenceArray(patch.evidence) ||
       (patch.origin !== undefined &&
         !isBoundedMeaningfulText(patch.origin, proposalSummaryMaxBytes)) ||
+      (patch.guardOperationId !== undefined &&
+        !isProductOperationId(patch.guardOperationId)) ||
       !isStatePatchStatus(patch.status) ||
       !isIsoInstant(patch.createdAt) ||
       !isStatePatchApplyOutcome(patch.applyOutcome) ||
@@ -3747,11 +4057,13 @@ function assertPrepareAssignmentActionInput(
       'digest',
       'name',
       'requestedSkillName',
+      'requestedSkillPath',
       'version',
     ]) ||
     !isBoundedMeaningfulText(input.recipe.name, actionMetadataMaxBytes) ||
     !isBoundedMeaningfulText(input.recipe.version, actionMetadataMaxBytes) ||
     !isSafeSkillName(input.recipe.requestedSkillName) ||
+    !isSafeAbsoluteActionPath(input.recipe.requestedSkillPath) ||
     !isSha256Digest(input.recipe.digest) ||
     !isExactRecord(input.arguments, ['canonical', 'digest']) ||
     typeof input.arguments.canonical !== 'string' ||
@@ -3798,6 +4110,27 @@ function requireActiveAppDataRoot(value: string | undefined): string {
     'workspace_inactive',
     'No SemesterWorkspace app-data root is active.',
   )
+}
+
+function actionCleanupPolicy(options: {
+  readonly actionCleanupDeadlineMs?: number
+  readonly beforeActionArtifactCleanup?: () => void | Promise<void>
+}): ActionCleanupPolicy {
+  const deadlineMs =
+    options.actionCleanupDeadlineMs ?? defaultActionCleanupDeadlineMs
+  if (
+    !Number.isSafeInteger(deadlineMs) ||
+    deadlineMs < 1 ||
+    deadlineMs > maximumActionCleanupDeadlineMs
+  ) {
+    throw new TypeError('The action cleanup deadline is invalid.')
+  }
+  return {
+    deadlineMs,
+    ...(options.beforeActionArtifactCleanup === undefined
+      ? {}
+      : { beforeCleanup: options.beforeActionArtifactCleanup }),
+  }
 }
 
 function isModelingRunSourceBaseline(
@@ -3883,6 +4216,14 @@ function isSafeSkillName(value: unknown): value is string {
   return (
     typeof value === 'string' &&
     /^[a-z0-9][a-z0-9_-]{0,127}$/.test(value)
+  )
+}
+
+function isSafeAbsoluteActionPath(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    path.isAbsolute(value) &&
+    Buffer.byteLength(value, 'utf8') <= actionPathMaxBytes
   )
 }
 

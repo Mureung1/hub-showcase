@@ -26,6 +26,91 @@ export type ProductWorkspace =
   | ReadyProductWorkspace
   | IncompatibleProductWorkspace
 
+export type ProductAccountReadiness =
+  | { readonly state: 'ready' }
+  | { readonly state: 'not_ready'; readonly displayMessage: string }
+  | { readonly state: 'unavailable'; readonly displayMessage: string }
+
+export type ProductEvidenceRef = {
+  readonly field: 'title' | 'dueAt' | 'submissionMethod'
+  readonly materialId: string
+  readonly digest: string
+  readonly quote: string
+}
+
+export type ProductAssignment = {
+  readonly id: string
+  readonly courseId: string
+  readonly title: string
+  readonly dueAt: string
+  readonly submissionMethod: string
+  readonly evidence: readonly ProductEvidenceRef[]
+}
+
+export type ProductSettledStatePatch = {
+  readonly id: string
+  readonly courseId: string
+  readonly baseRevision: number
+  readonly status: 'superseded' | 'applied' | 'rejected' | 'interrupted'
+  readonly createdAt: string
+  readonly applyOutcome:
+    | null
+    | {
+        readonly type: 'applied'
+        readonly assignmentId: string
+        readonly resultingRevision: number
+      }
+    | { readonly type: 'not_applied'; readonly revision: number }
+}
+
+export type ProductUserConfirmation = {
+  readonly id: string
+  readonly patchId: string
+  readonly decision: 'accepted' | 'rejected'
+  readonly settledAt: string
+  readonly assignmentId: string | null
+  readonly resultingRevision: number | null
+  readonly outcome: 'applied' | 'not_applied'
+}
+
+export type ProductSettledModelingRun = {
+  readonly id: string
+  readonly actionId: string
+  readonly courseId: string
+  readonly recipe: {
+    readonly name: string
+    readonly version: string
+    readonly requestedSkillName: string
+  }
+  readonly sources: readonly {
+    readonly materialId: string
+    readonly digest: string
+  }[]
+  readonly status:
+    | 'not_accepted'
+    | 'completed'
+    | 'failed'
+    | 'interrupted'
+    | 'unknown'
+  readonly validationOutcome: 'passed' | 'failed' | 'unknown'
+  readonly createdAt: string
+  readonly updatedAt: string
+  readonly settledAt: string
+}
+
+export type ProductSettledHistory = {
+  readonly assignments: readonly ProductAssignment[]
+  readonly statePatches: readonly ProductSettledStatePatch[]
+  readonly userConfirmations: readonly ProductUserConfirmation[]
+  readonly modelingRuns: readonly ProductSettledModelingRun[]
+}
+
+export type ProductBootstrap = {
+  readonly accountReadiness: ProductAccountReadiness
+  readonly workspace: ProductWorkspace | null
+  readonly history: ProductSettledHistory
+}
+
 export type ProductMaterialPreview = {
   readonly materialId: string
   readonly relativePath: string
@@ -50,15 +135,22 @@ export class ProductApiError extends Error {
 
 export async function fetchProductBootstrap(
   signal?: AbortSignal,
-): Promise<ProductWorkspace | null> {
+): Promise<ProductBootstrap> {
   const response = await fetch('/api/product/bootstrap', {
     headers: { accept: 'application/json' },
     signal,
   })
   if (!response.ok) throw await toProductApiError(response)
   const value = await parseJson(response)
-  if (!isExactObject(value, ['workspace'])) throw invalidResponse()
-  return value.workspace === null ? null : parseWorkspace(value.workspace)
+  if (!isExactObject(value, ['accountReadiness', 'history', 'workspace'])) {
+    throw invalidResponse()
+  }
+  return {
+    accountReadiness: parseAccountReadiness(value.accountReadiness),
+    workspace:
+      value.workspace === null ? null : parseWorkspace(value.workspace),
+    history: parseSettledHistory(value.history),
+  }
 }
 
 export async function activateProductWorkspace(
@@ -169,6 +261,253 @@ function parseWorkspace(value: unknown): ProductWorkspace {
   }
 }
 
+function parseAccountReadiness(value: unknown): ProductAccountReadiness {
+  if (!isRecord(value) || typeof value.state !== 'string') {
+    throw invalidResponse()
+  }
+  if (value.state === 'ready') {
+    if (!isExactObject(value, ['state'])) throw invalidResponse()
+    return { state: 'ready' }
+  }
+  if (
+    (value.state !== 'not_ready' && value.state !== 'unavailable') ||
+    !isExactObject(value, ['displayMessage', 'state']) ||
+    !isNonEmptyString(value.displayMessage)
+  ) {
+    throw invalidResponse()
+  }
+  return {
+    state: value.state,
+    displayMessage: value.displayMessage,
+  }
+}
+
+function parseSettledHistory(value: unknown): ProductSettledHistory {
+  if (
+    !isExactObject(value, [
+      'assignments',
+      'modelingRuns',
+      'statePatches',
+      'userConfirmations',
+    ]) ||
+    !Array.isArray(value.assignments) ||
+    !Array.isArray(value.statePatches) ||
+    !Array.isArray(value.userConfirmations) ||
+    !Array.isArray(value.modelingRuns)
+  ) {
+    throw invalidResponse()
+  }
+  return {
+    assignments: value.assignments.map(parseAssignment),
+    statePatches: value.statePatches.map(parseSettledStatePatch),
+    userConfirmations: value.userConfirmations.map(parseUserConfirmation),
+    modelingRuns: value.modelingRuns.map(parseSettledModelingRun),
+  }
+}
+
+function parseAssignment(value: unknown): ProductAssignment {
+  if (
+    !isExactObject(value, [
+      'courseId',
+      'dueAt',
+      'evidence',
+      'id',
+      'submissionMethod',
+      'title',
+    ]) ||
+    !isAssignmentId(value.id) ||
+    !isCourseId(value.courseId) ||
+    !isNonEmptyString(value.title) ||
+    !isNonEmptyString(value.dueAt) ||
+    !isNonEmptyString(value.submissionMethod) ||
+    !Array.isArray(value.evidence)
+  ) {
+    throw invalidResponse()
+  }
+  return {
+    id: value.id,
+    courseId: value.courseId,
+    title: value.title,
+    dueAt: value.dueAt,
+    submissionMethod: value.submissionMethod,
+    evidence: value.evidence.map(parseEvidence),
+  }
+}
+
+function parseEvidence(value: unknown): ProductEvidenceRef {
+  if (
+    !isExactObject(value, ['digest', 'field', 'materialId', 'quote']) ||
+    (value.field !== 'title' &&
+      value.field !== 'dueAt' &&
+      value.field !== 'submissionMethod') ||
+    !isMaterialId(value.materialId) ||
+    !isDigest(value.digest) ||
+    typeof value.quote !== 'string'
+  ) {
+    throw invalidResponse()
+  }
+  return value as unknown as ProductEvidenceRef
+}
+
+function parseSettledStatePatch(value: unknown): ProductSettledStatePatch {
+  if (
+    !isExactObject(value, [
+      'applyOutcome',
+      'baseRevision',
+      'courseId',
+      'createdAt',
+      'id',
+      'status',
+    ]) ||
+    !isPatchId(value.id) ||
+    !isCourseId(value.courseId) ||
+    !isRevision(value.baseRevision) ||
+    (value.status !== 'superseded' &&
+      value.status !== 'applied' &&
+      value.status !== 'rejected' &&
+      value.status !== 'interrupted') ||
+    !isTimestamp(value.createdAt)
+  ) {
+    throw invalidResponse()
+  }
+  return {
+    id: value.id,
+    courseId: value.courseId,
+    baseRevision: value.baseRevision,
+    status: value.status,
+    createdAt: value.createdAt,
+    applyOutcome: parseApplyOutcome(value.applyOutcome),
+  }
+}
+
+function parseApplyOutcome(
+  value: unknown,
+): ProductSettledStatePatch['applyOutcome'] {
+  if (value === null) return null
+  if (!isRecord(value) || typeof value.type !== 'string') {
+    throw invalidResponse()
+  }
+  if (
+    value.type === 'applied' &&
+    isExactObject(value, ['assignmentId', 'resultingRevision', 'type']) &&
+    isAssignmentId(value.assignmentId) &&
+    isRevision(value.resultingRevision)
+  ) {
+    return {
+      type: 'applied',
+      assignmentId: value.assignmentId,
+      resultingRevision: value.resultingRevision,
+    }
+  }
+  if (
+    value.type === 'not_applied' &&
+    isExactObject(value, ['revision', 'type']) &&
+    isRevision(value.revision)
+  ) {
+    return { type: 'not_applied', revision: value.revision }
+  }
+  throw invalidResponse()
+}
+
+function parseUserConfirmation(value: unknown): ProductUserConfirmation {
+  if (
+    !isExactObject(value, [
+      'assignmentId',
+      'decision',
+      'id',
+      'outcome',
+      'patchId',
+      'resultingRevision',
+      'settledAt',
+    ]) ||
+    !isConfirmationId(value.id) ||
+    !isPatchId(value.patchId) ||
+    (value.decision !== 'accepted' && value.decision !== 'rejected') ||
+    !isTimestamp(value.settledAt) ||
+    (value.assignmentId !== null && !isAssignmentId(value.assignmentId)) ||
+    (value.resultingRevision !== null &&
+      !isRevision(value.resultingRevision)) ||
+    (value.outcome !== 'applied' && value.outcome !== 'not_applied')
+  ) {
+    throw invalidResponse()
+  }
+  return value as unknown as ProductUserConfirmation
+}
+
+function parseSettledModelingRun(value: unknown): ProductSettledModelingRun {
+  if (
+    !isExactObject(value, [
+      'actionId',
+      'courseId',
+      'createdAt',
+      'id',
+      'recipe',
+      'settledAt',
+      'sources',
+      'status',
+      'updatedAt',
+      'validationOutcome',
+    ]) ||
+    !isRunId(value.id) ||
+    !isActionId(value.actionId) ||
+    !isCourseId(value.courseId) ||
+    !isRecipe(value.recipe) ||
+    !Array.isArray(value.sources) ||
+    !value.sources.every(isModelingSource) ||
+    !isSettledRunStatus(value.status) ||
+    !isValidationOutcome(value.validationOutcome) ||
+    !isTimestamp(value.createdAt) ||
+    !isTimestamp(value.updatedAt) ||
+    !isTimestamp(value.settledAt)
+  ) {
+    throw invalidResponse()
+  }
+  return value as unknown as ProductSettledModelingRun
+}
+
+function isRecipe(
+  value: unknown,
+): value is ProductSettledModelingRun['recipe'] {
+  return (
+    isExactObject(value, ['name', 'requestedSkillName', 'version']) &&
+    isNonEmptyString(value.name) &&
+    isNonEmptyString(value.version) &&
+    isNonEmptyString(value.requestedSkillName)
+  )
+}
+
+function isModelingSource(
+  value: unknown,
+): value is ProductSettledModelingRun['sources'][number] {
+  return (
+    isExactObject(value, ['digest', 'materialId']) &&
+    isMaterialId(value.materialId) &&
+    isDigest(value.digest)
+  )
+}
+
+function isSettledRunStatus(
+  value: unknown,
+): value is ProductSettledModelingRun['status'] {
+  return (
+    value === 'not_accepted' ||
+    value === 'completed' ||
+    value === 'failed' ||
+    value === 'interrupted' ||
+    value === 'unknown'
+  )
+}
+
+function isValidationOutcome(
+  value: unknown,
+): value is ProductSettledModelingRun['validationOutcome'] {
+  return (
+    value === 'passed' ||
+    value === 'failed' ||
+    value === 'unknown'
+  )
+}
+
 function parseMaterial(value: unknown): ProductRawMaterial {
   if (
     !isExactObject(value, ['digest', 'id', 'mediaType', 'relativePath', 'size']) ||
@@ -214,6 +553,54 @@ function hasValidMaterialMetadata(
     Number.isSafeInteger(value.size) &&
     Number(value.size) >= 0
   )
+}
+
+function isMaterialId(value: unknown): value is string {
+  return typeof value === 'string' && /^material_[0-9a-f]{32}$/.test(value)
+}
+
+function isCourseId(value: unknown): value is string {
+  return typeof value === 'string' && /^course_[0-9a-f]{32}$/.test(value)
+}
+
+function isAssignmentId(value: unknown): value is string {
+  return typeof value === 'string' && /^assignment_[0-9a-f]{32}$/.test(value)
+}
+
+function isPatchId(value: unknown): value is string {
+  return typeof value === 'string' && /^patch_[0-9a-f]{32}$/.test(value)
+}
+
+function isConfirmationId(value: unknown): value is string {
+  return typeof value === 'string' && /^confirmation_[0-9a-f]{32}$/.test(value)
+}
+
+function isRunId(value: unknown): value is string {
+  return typeof value === 'string' && /^run_[0-9a-f]{32}$/.test(value)
+}
+
+function isActionId(value: unknown): value is string {
+  return typeof value === 'string' && /^action_[0-9a-f]{32}$/.test(value)
+}
+
+function isDigest(value: unknown): value is string {
+  return typeof value === 'string' && /^[0-9a-f]{64}$/.test(value)
+}
+
+function isRevision(value: unknown): value is number {
+  return Number.isSafeInteger(value) && Number(value) >= 0
+}
+
+function isTimestamp(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    Number.isFinite(Date.parse(value))
+  )
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
 }
 
 function isCourseOrNull(

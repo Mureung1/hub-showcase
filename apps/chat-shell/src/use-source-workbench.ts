@@ -50,8 +50,8 @@ export function useSourceWorkbench() {
     setOperationFailure(undefined)
     setWorkspaceView({ state: 'loading' })
     try {
-      const workspace = await fetchProductBootstrap(signal)
-      setWorkspaceView({ state: 'loaded', workspace })
+      const bootstrap = await fetchProductBootstrap(signal)
+      setWorkspaceView({ state: 'loaded', workspace: bootstrap.workspace })
     } catch (error) {
       if (!signal?.aborted) {
         setWorkspaceView({

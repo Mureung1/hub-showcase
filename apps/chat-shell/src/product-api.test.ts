@@ -19,10 +19,22 @@ test('decodes a ready product snapshot without persistence metadata', async (t) 
   t.mock.method(
     globalThis,
     'fetch',
-    async () => new Response(JSON.stringify({ workspace }), { status: 200 }),
+    async () =>
+      new Response(
+        JSON.stringify({
+          accountReadiness: { state: 'ready' },
+          workspace,
+          history: emptyHistory(),
+        }),
+        { status: 200 },
+      ),
   )
 
-  assert.deepEqual(await fetchProductBootstrap(), workspace)
+  assert.deepEqual(await fetchProductBootstrap(), {
+    accountReadiness: { state: 'ready' },
+    workspace,
+    history: emptyHistory(),
+  })
 })
 
 test('decodes an actionable incompatible product outcome without store versions', async (t) => {
@@ -34,10 +46,110 @@ test('decodes an actionable incompatible product outcome without store versions'
   t.mock.method(
     globalThis,
     'fetch',
-    async () => new Response(JSON.stringify({ workspace }), { status: 200 }),
+    async () =>
+      new Response(
+        JSON.stringify({
+          accountReadiness: {
+            state: 'unavailable',
+            displayMessage: 'Codex 상태를 확인할 수 없습니다.',
+          },
+          workspace,
+          history: emptyHistory(),
+        }),
+        { status: 200 },
+      ),
   )
 
-  assert.deepEqual(await fetchProductBootstrap(), workspace)
+  assert.deepEqual((await fetchProductBootstrap()).workspace, workspace)
+})
+
+test('decodes only settled product history for reload', async (t) => {
+  const courseId = `course_${'a'.repeat(32)}`
+  const materialId = `material_${'b'.repeat(32)}`
+  const assignmentId = `assignment_${'c'.repeat(32)}`
+  const patchId = `patch_${'d'.repeat(32)}`
+  const now = '2026-07-20T00:00:00.000Z'
+  const bootstrap = {
+    accountReadiness: {
+      state: 'not_ready',
+      displayMessage: 'Codex에 로그인해 주세요.',
+    },
+    workspace: {
+      state: 'ready',
+      confirmedRevision: 1,
+      course: { id: courseId, displayName: '알고리즘' },
+      materials: [],
+    },
+    history: {
+      assignments: [
+        {
+          id: assignmentId,
+          courseId,
+          title: '1차 과제',
+          dueAt: '2026-07-25T14:59:00.000Z',
+          submissionMethod: 'LMS',
+          evidence: [
+            {
+              field: 'title',
+              materialId,
+              digest: 'e'.repeat(64),
+              quote: '1차 과제',
+            },
+          ],
+        },
+      ],
+      statePatches: [
+        {
+          id: patchId,
+          courseId,
+          baseRevision: 0,
+          status: 'applied',
+          createdAt: now,
+          applyOutcome: {
+            type: 'applied',
+            assignmentId,
+            resultingRevision: 1,
+          },
+        },
+      ],
+      userConfirmations: [
+        {
+          id: `confirmation_${'f'.repeat(32)}`,
+          patchId,
+          decision: 'accepted',
+          settledAt: now,
+          assignmentId,
+          resultingRevision: 1,
+          outcome: 'applied',
+        },
+      ],
+      modelingRuns: [
+        {
+          id: `run_${'1'.repeat(32)}`,
+          actionId: `action_${'2'.repeat(32)}`,
+          courseId,
+          recipe: {
+            name: 'first-assignment',
+            version: '1',
+            requestedSkillName: 'ay-ple-first-assignment',
+          },
+          sources: [{ materialId, digest: 'e'.repeat(64) }],
+          status: 'completed',
+          validationOutcome: 'passed',
+          createdAt: now,
+          updatedAt: now,
+          settledAt: now,
+        },
+      ],
+    },
+  } as const
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () => new Response(JSON.stringify(bootstrap), { status: 200 }),
+  )
+
+  assert.deepEqual(await fetchProductBootstrap(), bootstrap)
 })
 
 test('rejects persistence metadata in the Browser product contract', async (t) => {
@@ -47,6 +159,7 @@ test('rejects persistence metadata in the Browser product contract', async (t) =
     async () =>
       new Response(
         JSON.stringify({
+          accountReadiness: { state: 'ready' },
           workspace: {
             state: 'ready',
             storeFormatVersion: 2,
@@ -54,6 +167,7 @@ test('rejects persistence metadata in the Browser product contract', async (t) =
             course: null,
             materials: [],
           },
+          history: emptyHistory(),
         }),
         { status: 200 },
       ),
@@ -64,6 +178,88 @@ test('rejects persistence metadata in the Browser product contract', async (t) =
     (error: unknown) =>
       error instanceof ProductApiError && error.code === 'invalid_response',
   )
+})
+
+test('rejects pending or privately correlated product history', async (t) => {
+  const courseId = `course_${'a'.repeat(32)}`
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () =>
+      new Response(
+        JSON.stringify({
+          accountReadiness: { state: 'ready' },
+          workspace: {
+            state: 'ready',
+            confirmedRevision: 0,
+            course: { id: courseId, displayName: '알고리즘' },
+            materials: [],
+          },
+          history: {
+            ...emptyHistory(),
+            statePatches: [
+              {
+                id: `patch_${'b'.repeat(32)}`,
+                courseId,
+                baseRevision: 0,
+                status: 'pending',
+                createdAt: '2026-07-20T00:00:00.000Z',
+                applyOutcome: null,
+                requestKey: 'private-request-key',
+              },
+            ],
+          },
+        }),
+        { status: 200 },
+      ),
+  )
+
+  await assertInvalidResponse(fetchProductBootstrap())
+})
+
+test('rejects an unreconciled acceptance-unknown ModelingRun as settled history', async (t) => {
+  const courseId = `course_${'a'.repeat(32)}`
+  const now = '2026-07-20T00:00:00.000Z'
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () =>
+      new Response(
+        JSON.stringify({
+          accountReadiness: { state: 'ready' },
+          workspace: {
+            state: 'ready',
+            confirmedRevision: 0,
+            course: { id: courseId, displayName: '알고리즘' },
+            materials: [],
+          },
+          history: {
+            ...emptyHistory(),
+            modelingRuns: [
+              {
+                id: `run_${'b'.repeat(32)}`,
+                actionId: `action_${'c'.repeat(32)}`,
+                courseId,
+                recipe: {
+                  name: 'first-assignment',
+                  version: '1',
+                  requestedSkillName: 'ay-ple-first-assignment',
+                },
+                sources: [],
+                status: 'acceptance_unknown',
+                validationOutcome: 'unknown',
+                createdAt: now,
+                updatedAt: now,
+                settledAt: now,
+              },
+            ],
+          },
+        }),
+        { status: 200 },
+      ),
+  )
+
+  await assertInvalidResponse(fetchProductBootstrap())
 })
 
 test('rejects compatibility diagnostics in an activation response', async (t) => {
@@ -143,4 +339,13 @@ async function assertInvalidResponse(operation: Promise<unknown>): Promise<void>
     (error: unknown) =>
       error instanceof ProductApiError && error.code === 'invalid_response',
   )
+}
+
+function emptyHistory() {
+  return {
+    assignments: [],
+    statePatches: [],
+    userConfirmations: [],
+    modelingRuns: [],
+  }
 }

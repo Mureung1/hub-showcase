@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict'
-import { mkdir, writeFile } from 'node:fs/promises'
+import {
+  mkdir,
+  readdir,
+  readFile,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises'
 import path from 'node:path'
 import test from 'node:test'
 
@@ -24,6 +31,7 @@ import {
 } from './assignment-recipe.js'
 import { createSemesterWorkspaceController } from './semester-workspace.js'
 import {
+  codexChatIdentity,
   configuredBootstrap,
   parseNdjson,
   postJson,
@@ -73,6 +81,49 @@ test('a stale selected digest admits no Run and starts no native Thread or Turn'
       },
     )
   } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('a bootstrap Account read excludes a concurrent product operation', async () => {
+  const fixture = await createFaultFixture()
+  const accountReadEntered = deferred<void>()
+  const releaseAccountRead = deferred<void>()
+  const runtime = new FaultRuntime({
+    readAccountReadiness: async () => {
+      accountReadEntered.resolve()
+      await releaseAccountRead.promise
+      return { state: 'ready' }
+    },
+  })
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        const workspace = await activateCourse(application)
+        const selected = selectCanonicalMaterials(workspace.materials)
+        const bootstrap = fetch(`${baseUrl}/api/product/bootstrap`)
+        await accountReadEntered.promise
+
+        const action = await postJson(
+          `${baseUrl}/api/product/actions/first-assignment`,
+          actionRequest(workspace.course!.id, selected),
+        )
+        assert.equal(action.status, 409)
+        assert.equal((await action.json() as { code: string }).code, 'action_busy')
+        assert.deepEqual(application.semesterWorkspace?.modelingRuns(), [])
+        assert.equal(runtime.startThreadCalls, 0)
+
+        releaseAccountRead.resolve()
+        assert.equal((await bootstrap).status, 200)
+      },
+    )
+  } finally {
+    releaseAccountRead.resolve()
     await fixture.cleanup()
   }
 })
@@ -409,6 +460,10 @@ test('a bind-store failure after native acceptance records acceptance unknown wi
         assert.equal(runs.length, 1)
         assert.equal(runs[0]?.status, 'acceptance_unknown')
         assert.equal(runs[0]?.validationOutcome, 'unknown')
+        assert.deepEqual(runs[0]?.nativeCorrelation, {
+          threadId: 'thread-native-fault',
+          turnId: 'turn-native-bind-fault',
+        })
         assert.equal(frames.some(({ type }) => type === 'operation.accepted'), false)
         assert.equal(terminalFrames(frames).length, 1)
         assert.equal(terminalFrames(frames)[0]?.status, 'acceptance_unknown')
@@ -417,6 +472,13 @@ test('a bind-store failure after native acceptance records acceptance unknown wi
         assertNoNativeIdentities(frames)
       },
     )
+    const reopened = createSemesterWorkspaceController(fixture.bootstrap)
+    await reopened.activate()
+    assert.equal(reopened.modelingRuns()[0]?.status, 'unknown')
+    assert.deepEqual(reopened.modelingRuns()[0]?.nativeCorrelation, {
+      threadId: 'thread-native-fault',
+      turnId: 'turn-native-bind-fault',
+    })
   } finally {
     await fixture.cleanup()
   }
@@ -664,6 +726,16 @@ test('coordinator stays busy until durable settlement and stream close finish', 
         )
         await settleEntered.promise
 
+        const bootstrap = await fetch(`${baseUrl}/api/product/bootstrap`)
+        assert.equal(bootstrap.status, 200)
+        assert.equal(
+          (await bootstrap.json() as {
+            accountReadiness: { state: string }
+          }).accountReadiness.state,
+          'unavailable',
+        )
+        assert.equal(runtime.accountReadinessCalls, 1)
+
         const second = await postJson(
           `${baseUrl}/api/product/actions/first-assignment`,
           request,
@@ -677,6 +749,216 @@ test('coordinator stays busy until durable settlement and stream close finish', 
     )
   } finally {
     releaseSettle.resolve()
+    await fixture.cleanup()
+  }
+})
+
+test('a cleanup deadline closes the Runtime and leaves recovery blocking the next action', async () => {
+  const fixture = await createFaultFixture()
+  const closeStarted = deferred<void>()
+  const releaseClose = deferred<void>()
+  const runtime = new FaultRuntime({
+    startProductTurn: async (input) =>
+      completedTurn(input, 'turn-native-cleanup-deadline'),
+    close: async () => {
+      closeStarted.resolve()
+      await releaseClose.promise
+    },
+  })
+  const replacementRuntime = new FaultRuntime()
+  let runtimeCreations = 0
+  const cleanupBarrier = deferred<void>()
+  const cleanupFaultBootstrap = {
+    ...fixture.bootstrap,
+    actionCleanupDeadlineMs: 5,
+    beforeActionArtifactCleanup: () => cleanupBarrier.promise,
+  }
+
+  try {
+    await withTestServer(
+      {
+        codexChat: {
+          ...codexChatIdentity,
+          createRuntime: async () => {
+            runtimeCreations += 1
+            return runtimeCreations === 1 ? runtime : replacementRuntime
+          },
+        },
+        semesterWorkspace: cleanupFaultBootstrap,
+      },
+      async (baseUrl, application) => {
+        const workspace = await activateCourse(application)
+        const selected = selectCanonicalMaterials(workspace.materials)
+        const request = actionRequest(workspace.course!.id, selected)
+        const response = await postJson(
+          `${baseUrl}/api/product/actions/first-assignment`,
+          request,
+        )
+        assert.ok(response.body)
+        const trace = new NdjsonTrace(response.body.getReader())
+        const terminal = await trace.until(
+          (frame) => frame.type === 'operation.terminal',
+        )
+        await closeStarted.promise
+
+        assert.equal(terminal.status, 'completed')
+        assert.equal(runtime.closeCalls, 1)
+        const bootstrapDuringClose = await fetch(
+          `${baseUrl}/api/product/bootstrap`,
+        )
+        assert.equal(bootstrapDuringClose.status, 200)
+        assert.deepEqual(
+          (await bootstrapDuringClose.json() as {
+            accountReadiness: unknown
+          }).accountReadiness,
+          {
+            state: 'unavailable',
+            displayMessage:
+              'Codex 상태를 확인할 수 없습니다. 자료 작업공간은 계속 사용할 수 있습니다.',
+          },
+        )
+        assert.equal(runtime.accountReadinessCalls, 1)
+        const second = await postJson(
+          `${baseUrl}/api/product/actions/first-assignment`,
+          request,
+        )
+        assert.equal(second.status, 409)
+        assert.equal((await second.json() as { code: string }).code, 'action_busy')
+
+        releaseClose.resolve()
+        await trace.rest()
+        const bootstrapAfterClose = await fetch(
+          `${baseUrl}/api/product/bootstrap`,
+        )
+        assert.equal(bootstrapAfterClose.status, 200)
+        assert.deepEqual(
+          (await bootstrapAfterClose.json() as {
+            accountReadiness: unknown
+          }).accountReadiness,
+          { state: 'ready' },
+        )
+        assert.equal(runtimeCreations, 2)
+        assert.equal(replacementRuntime.accountReadinessCalls, 1)
+      },
+    )
+  } finally {
+    cleanupBarrier.resolve()
+    releaseClose.resolve()
+    await fixture.cleanup()
+  }
+})
+
+test('a pre-commit staging failure leaves no Run and strictly rolls back its artifacts', async () => {
+  const fixture = await createFaultFixture()
+  const runtime = new FaultRuntime()
+  const stagingFaultBootstrap = {
+    ...fixture.bootstrap,
+    beforeActionStoreWrite(point: string) {
+      if (point === 'prepare') {
+        throw new Error('injected pre-commit staging failure')
+      }
+    },
+  }
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: stagingFaultBootstrap,
+      },
+      async (baseUrl, application) => {
+        const workspace = await activateCourse(application)
+        const selected = selectCanonicalMaterials(workspace.materials)
+        const response = await postJson(
+          `${baseUrl}/api/product/actions/first-assignment`,
+          actionRequest(workspace.course!.id, selected),
+        )
+
+        assert.equal(response.status, 503)
+        assert.deepEqual(application.semesterWorkspace?.modelingRuns(), [])
+        assert.equal(runtime.startThreadCalls, 0)
+        assert.equal(runtime.startProductTurnCalls, 0)
+        assert.deepEqual(
+          await readdir(
+            path.join(fixture.workspaceRoot, '.ay-ple', 'runtime-scratch'),
+          ),
+          [],
+        )
+        assert.deepEqual(
+          await readdir(path.join(fixture.appDataRoot, 'assignment-runs')),
+          [],
+        )
+        assert.equal(runtime.closeCalls, 0)
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('recipe drift after admission settles not accepted before native start', async () => {
+  const fixture = await createFaultFixture()
+  const runtime = new FaultRuntime()
+  const recipePath = path.join(
+    fixture.appDataRoot,
+    'modeling-recipes',
+    'first-assignment',
+    '1',
+    'SKILL.md',
+  )
+  const externalRecipePath = path.join(
+    path.dirname(fixture.appDataRoot),
+    'external-SKILL.md',
+  )
+  let recipeReplaced = false
+  const recipeDriftBootstrap = {
+    ...fixture.bootstrap,
+    async beforeActionStoreWrite(point: string) {
+      if (point !== 'prepare' || recipeReplaced) return
+      recipeReplaced = true
+      const exactBytes = await readFile(recipePath)
+      await writeFile(externalRecipePath, exactBytes)
+      await rm(recipePath)
+      await symlink(externalRecipePath, recipePath, 'file')
+    },
+  }
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: recipeDriftBootstrap,
+      },
+      async (baseUrl, application) => {
+        const workspace = await activateCourse(application)
+        const selected = selectCanonicalMaterials(workspace.materials)
+        const response = await postJson(
+          `${baseUrl}/api/product/actions/first-assignment`,
+          actionRequest(workspace.course!.id, selected),
+        )
+        const frames = await readFrames(response)
+        const runs = application.semesterWorkspace?.modelingRuns() ?? []
+
+        assert.equal(recipeReplaced, true)
+        assert.equal(runtime.startThreadCalls, 0)
+        assert.equal(runtime.startProductTurnCalls, 0)
+        assert.equal(runs.length, 1)
+        assert.equal(runs[0]?.status, 'not_accepted')
+        assert.equal(runs[0]?.validationOutcome, 'failed')
+        assert.deepEqual(
+          frames.map(({ type }) => type),
+          ['operation.preparing', 'operation.terminal'],
+        )
+        assert.equal(frames[1]?.runId, runs[0]?.id)
+        assert.equal(frames[1]?.status, 'not_accepted')
+        assert.equal(frames[1]?.failureCode, 'recipe_invalid')
+        assert.equal(
+          frames.some(({ type }) => type === 'operation.accepted'),
+          false,
+        )
+      },
+    )
+  } finally {
     await fixture.cleanup()
   }
 })
@@ -697,6 +979,7 @@ async function createFaultFixture() {
       appDataRoot,
       chooseDirectory: async () => materialized.workspaceRoot,
     },
+    appDataRoot,
     workspaceRoot: materialized.workspaceRoot,
     cleanup: materialized.cleanup,
   }
@@ -848,18 +1131,22 @@ class FaultRuntime implements CodexProductCapableRuntime {
   private readonly startProductTurnImplementation: (
     input: StartProductTurnInput,
   ) => Promise<CodexProductTurn>
+  private readonly readAccountReadinessImplementation: () => Promise<CodexAccountReadiness>
   private readonly interruptImplementation: (
     input: InterruptTurnInput,
   ) => Promise<void>
   private readonly closeImplementation: () => Promise<void>
 
   constructor(options: {
+    readonly readAccountReadiness?: () => Promise<CodexAccountReadiness>
     readonly startProductTurn?: (
       input: StartProductTurnInput,
     ) => Promise<CodexProductTurn>
     readonly interrupt?: (input: InterruptTurnInput) => Promise<void>
     readonly close?: () => Promise<void>
   } = {}) {
+    this.readAccountReadinessImplementation =
+      options.readAccountReadiness ?? (async () => ({ state: 'ready' }))
     this.startProductTurnImplementation =
       options.startProductTurn ??
       (async () => {
@@ -871,7 +1158,7 @@ class FaultRuntime implements CodexProductCapableRuntime {
 
   async readAccountReadiness(): Promise<CodexAccountReadiness> {
     this.accountReadinessCalls += 1
-    return { state: 'ready' }
+    return this.readAccountReadinessImplementation()
   }
 
   async startThread(_input?: StartThreadInput) {
@@ -915,6 +1202,7 @@ class FaultRuntime implements CodexProductCapableRuntime {
 
 class NdjsonTrace {
   private readonly frames: Record<string, unknown>[] = []
+  private readonly decoder = new TextDecoder()
   private buffer = ''
   private done = false
 
@@ -950,12 +1238,13 @@ class NdjsonTrace {
     const chunk = await this.reader.read()
     if (chunk.done) {
       this.done = true
+      this.buffer += this.decoder.decode()
       if (this.buffer.trim().length > 0) {
         this.frames.push(JSON.parse(this.buffer) as Record<string, unknown>)
       }
       return
     }
-    this.buffer += new TextDecoder().decode(chunk.value, { stream: true })
+    this.buffer += this.decoder.decode(chunk.value, { stream: true })
     const lines = this.buffer.split('\n')
     this.buffer = lines.pop() ?? ''
     for (const line of lines) {

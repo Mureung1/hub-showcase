@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { constants as fsConstants } from 'node:fs'
+import { lstat, mkdir, open, realpath, rename, rm } from 'node:fs/promises'
 import path from 'node:path'
 
 export const FIRST_ASSIGNMENT_RECIPE_NAME = 'first-assignment'
@@ -29,6 +30,12 @@ After a successful proposal, ask exactly the AY-PLE Assignment Review question p
 the application. The application, not the model or filesystem, owns confirmed-state changes.
 `
 
+const recipeDirectorySegments = [
+  'modeling-recipes',
+  FIRST_ASSIGNMENT_RECIPE_NAME,
+  FIRST_ASSIGNMENT_RECIPE_VERSION,
+] as const
+
 export type ManagedAssignmentRecipe = {
   readonly name: typeof FIRST_ASSIGNMENT_RECIPE_NAME
   readonly version: typeof FIRST_ASSIGNMENT_RECIPE_VERSION
@@ -40,50 +47,69 @@ export type ManagedAssignmentRecipe = {
 export async function materializeManagedAssignmentRecipe(
   appDataRoot: string,
 ): Promise<ManagedAssignmentRecipe> {
-  const recipeDirectory = path.join(
-    appDataRoot,
-    'modeling-recipes',
-    FIRST_ASSIGNMENT_RECIPE_NAME,
-    FIRST_ASSIGNMENT_RECIPE_VERSION,
-  )
-  const recipePath = path.join(recipeDirectory, 'SKILL.md')
-  await mkdir(recipeDirectory, { recursive: true, mode: 0o700 })
-  let existing: Buffer | undefined
   try {
-    existing = await readFile(recipePath)
-  } catch (error) {
-    if (!isMissing(error)) throw error
-  }
-  const expected = Buffer.from(recipeBody, 'utf8')
-  if (existing === undefined) {
-    const temporaryPath = path.join(
-      recipeDirectory,
-      `.SKILL.md.${randomUUID()}.tmp`,
-    )
+    const managedPaths = await resolveManagedRecipePaths(appDataRoot, true)
+    const expected = Buffer.from(recipeBody, 'utf8')
+    let existing: Buffer | undefined
     try {
-      await writeFile(temporaryPath, expected, { flag: 'wx', mode: 0o600 })
-      await rename(temporaryPath, recipePath)
-    } finally {
-      await rm(temporaryPath, { force: true })
+      await lstat(managedPaths.recipePath)
+      existing = await readManagedRecipe(managedPaths)
+    } catch (error) {
+      if (!isMissing(error)) throw error
     }
-  } else if (!existing.equals(expected)) {
-    throw new ManagedAssignmentRecipeError('recipe_digest_mismatch')
-  }
-  return {
-    name: FIRST_ASSIGNMENT_RECIPE_NAME,
-    version: FIRST_ASSIGNMENT_RECIPE_VERSION,
-    requestedSkillName: FIRST_ASSIGNMENT_SKILL_NAME,
-    path: recipePath,
-    digest: sha256(expected),
+    if (existing === undefined) {
+      const temporaryPath = path.join(
+        managedPaths.recipeDirectory,
+        `.SKILL.md.${randomUUID()}.tmp`,
+      )
+      try {
+        const handle = await open(
+          temporaryPath,
+          fsConstants.O_CREAT |
+            fsConstants.O_EXCL |
+            fsConstants.O_WRONLY |
+            fsConstants.O_NOFOLLOW,
+          0o600,
+        )
+        try {
+          await handle.writeFile(expected)
+        } finally {
+          await handle.close()
+        }
+        await assertManagedRecipeDirectories(managedPaths)
+        await rename(temporaryPath, managedPaths.recipePath)
+      } finally {
+        await rm(temporaryPath, { force: true })
+      }
+      existing = await readManagedRecipe(managedPaths)
+    }
+    if (!existing.equals(expected)) {
+      throw new ManagedAssignmentRecipeError('recipe_digest_mismatch')
+    }
+    return {
+      name: FIRST_ASSIGNMENT_RECIPE_NAME,
+      version: FIRST_ASSIGNMENT_RECIPE_VERSION,
+      requestedSkillName: FIRST_ASSIGNMENT_SKILL_NAME,
+      path: managedPaths.recipePath,
+      digest: sha256(expected),
+    }
+  } catch (error) {
+    if (error instanceof ManagedAssignmentRecipeError) throw error
+    throw new ManagedAssignmentRecipeError('recipe_unavailable')
   }
 }
 
 export async function verifyManagedAssignmentRecipe(
   recipe: ManagedAssignmentRecipe,
+  appDataRoot: string,
 ): Promise<void> {
   let bytes: Buffer
   try {
-    bytes = await readFile(recipe.path)
+    const managedPaths = await resolveManagedRecipePaths(appDataRoot, false)
+    if (path.resolve(recipe.path) !== managedPaths.recipePath) {
+      throw new ManagedAssignmentRecipeError('recipe_unavailable')
+    }
+    bytes = await readManagedRecipe(managedPaths)
   } catch {
     throw new ManagedAssignmentRecipeError('recipe_unavailable')
   }
@@ -106,11 +132,107 @@ function sha256(bytes: Buffer): string {
   return createHash('sha256').update(bytes).digest('hex')
 }
 
+type ManagedRecipePaths = {
+  readonly canonicalAppDataRoot: string
+  readonly recipeDirectory: string
+  readonly recipePath: string
+}
+
+async function resolveManagedRecipePaths(
+  appDataRoot: string,
+  createDirectories: boolean,
+): Promise<ManagedRecipePaths> {
+  if (!path.isAbsolute(appDataRoot)) {
+    throw new ManagedAssignmentRecipeError('recipe_unavailable')
+  }
+  const rootStats = await lstat(appDataRoot)
+  if (!rootStats.isDirectory() || rootStats.isSymbolicLink()) {
+    throw new ManagedAssignmentRecipeError('recipe_unavailable')
+  }
+  const canonicalAppDataRoot = await realpath(appDataRoot)
+  let candidate = appDataRoot
+  for (let index = 0; index < recipeDirectorySegments.length; index += 1) {
+    candidate = path.join(candidate, recipeDirectorySegments[index]!)
+    if (createDirectories) {
+      try {
+        await mkdir(candidate, { mode: 0o700 })
+      } catch (error) {
+        if (!hasErrnoCode(error, 'EEXIST')) throw error
+      }
+    }
+    const stats = await lstat(candidate)
+    if (!stats.isDirectory() || stats.isSymbolicLink()) {
+      throw new ManagedAssignmentRecipeError('recipe_unavailable')
+    }
+    const expectedCanonical = path.join(
+      canonicalAppDataRoot,
+      ...recipeDirectorySegments.slice(0, index + 1),
+    )
+    if ((await realpath(candidate)) !== expectedCanonical) {
+      throw new ManagedAssignmentRecipeError('recipe_unavailable')
+    }
+  }
+  const recipeDirectory = path.join(
+    canonicalAppDataRoot,
+    ...recipeDirectorySegments,
+  )
+  return {
+    canonicalAppDataRoot,
+    recipeDirectory,
+    recipePath: path.join(recipeDirectory, 'SKILL.md'),
+  }
+}
+
+async function assertManagedRecipeDirectories(
+  managedPaths: ManagedRecipePaths,
+): Promise<void> {
+  const checked = await resolveManagedRecipePaths(
+    managedPaths.canonicalAppDataRoot,
+    false,
+  )
+  if (
+    checked.recipeDirectory !== managedPaths.recipeDirectory ||
+    checked.recipePath !== managedPaths.recipePath
+  ) {
+    throw new ManagedAssignmentRecipeError('recipe_unavailable')
+  }
+}
+
+async function readManagedRecipe(
+  managedPaths: ManagedRecipePaths,
+): Promise<Buffer> {
+  await assertManagedRecipeDirectories(managedPaths)
+  const stats = await lstat(managedPaths.recipePath)
+  if (!stats.isFile() || stats.isSymbolicLink()) {
+    throw new ManagedAssignmentRecipeError('recipe_unavailable')
+  }
+  if ((await realpath(managedPaths.recipePath)) !== managedPaths.recipePath) {
+    throw new ManagedAssignmentRecipeError('recipe_unavailable')
+  }
+  const handle = await open(
+    managedPaths.recipePath,
+    fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
+  )
+  try {
+    const openedStats = await handle.stat()
+    if (!openedStats.isFile()) {
+      throw new ManagedAssignmentRecipeError('recipe_unavailable')
+    }
+    return await handle.readFile()
+  } finally {
+    await handle.close()
+  }
+}
+
 function isMissing(error: unknown): boolean {
+  return hasErrnoCode(error, 'ENOENT')
+}
+
+function hasErrnoCode(error: unknown, code: string): boolean {
   return (
     typeof error === 'object' &&
     error !== null &&
     'code' in error &&
-    error.code === 'ENOENT'
+    error.code === code
   )
 }

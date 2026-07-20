@@ -43,6 +43,10 @@ import {
 
 const productTextMaxBytes = 128 * 1024
 const safeRuntimeFailure = 'Codex 작업을 계속할 수 없습니다.'
+const productTurnPlan = {
+  model: 'gpt-5.4',
+  reasoningEffort: 'medium',
+} as const
 
 export type AssignmentActionRequest = {
   readonly courseId: string
@@ -62,10 +66,162 @@ export type ProductChatRequest = {
   }[]
 }
 
-export type ProductOperationFrame = Readonly<Record<string, unknown>> & {
-  readonly type: string
+type ProductFrameBase = {
   readonly operationId: string
 }
+
+type ProductActivityFrameBase = ProductFrameBase & {
+  readonly activityId: string
+}
+
+type ProductQuestion = {
+  readonly id: string
+  readonly header: string
+  readonly question: string
+  readonly options: readonly {
+    readonly label: string
+    readonly description: string
+  }[] | null
+  readonly acceptsFreeform: boolean
+}
+
+type NativeProductQuestion = Extract<
+  CodexProductActivity,
+  { readonly type: 'user_input.requested' }
+>['questions'][number]
+
+type ProductStatePatch = {
+  readonly id: string
+  readonly summary: string
+  readonly changes: {
+    readonly operation: StatePatch['changes']['operation']
+    readonly assignmentId?: string
+    readonly values: {
+      readonly title: string
+      readonly dueAt: string
+      readonly submissionMethod: string
+    }
+  }
+  readonly evidence: readonly {
+    readonly field: StatePatch['evidence'][number]['field']
+    readonly rawMaterialId: string
+    readonly digest: string
+    readonly quote: string
+  }[]
+  readonly status: StatePatch['status']
+}
+
+type SettledModelingRunStatus = Exclude<
+  ModelingRun['status'],
+  'starting' | 'running'
+>
+
+type AssignmentOperationSettlement = {
+  readonly status: SettledModelingRunStatus
+  readonly validationOutcome: Exclude<
+    ModelingRun['validationOutcome'],
+    'pending'
+  >
+  readonly failureCode?: string
+}
+
+type ChatOperationSettlement = {
+  readonly status: Exclude<SettledModelingRunStatus, 'acceptance_unknown'>
+  readonly validationOutcome?: never
+  readonly failureCode?: string
+}
+
+/* Browser-facing frames form a closed projection of native activity fields. */
+export type ProductOperationFrame =
+  | (ProductFrameBase & {
+      readonly type: 'operation.preparing'
+      readonly runId: string
+    })
+  | (ProductFrameBase & {
+      readonly type: 'operation.preparing'
+      readonly runId?: never
+    })
+  | (ProductFrameBase & {
+      readonly type: 'operation.accepted'
+      readonly runId: string
+    })
+  | (ProductFrameBase & {
+      readonly type: 'operation.accepted'
+      readonly runId?: never
+    })
+  | (ProductFrameBase & {
+      readonly type: 'skill.requested'
+      readonly skill: {
+        readonly name: string
+        readonly version: string
+      }
+    })
+  | (ProductActivityFrameBase & {
+      readonly type: 'agent_message.delta' | 'plan.delta'
+      readonly delta: string
+    })
+  | (ProductActivityFrameBase & {
+      readonly type: 'agent_message.completed' | 'plan.completed'
+      readonly text: string
+    })
+  | (ProductActivityFrameBase & {
+      readonly type: 'mcp_call.started'
+      readonly tool: 'propose_state_patch'
+    })
+  | (ProductActivityFrameBase & {
+      readonly type: 'mcp_call.completed'
+      readonly tool: 'propose_state_patch'
+      readonly patch: ProductStatePatch
+    })
+  | (ProductActivityFrameBase & {
+      readonly type: 'mcp_call.failed'
+      readonly tool: 'propose_state_patch'
+      readonly displayMessage: string
+    })
+  | (ProductFrameBase & {
+      readonly type: 'interaction.requested'
+      readonly interactionId: string
+      readonly questions: readonly ProductQuestion[]
+    })
+  | (ProductFrameBase & {
+      readonly type: 'review.requested'
+      readonly interactionId: string
+      readonly patchId: string
+      readonly decisionKey: string
+      readonly patch: ProductStatePatch
+      readonly questions: readonly ProductQuestion[]
+    })
+  | (ProductFrameBase & {
+      readonly type: 'interaction.resolved'
+      readonly interactionId: string
+      readonly resolution: 'answered' | 'cancelled'
+    })
+  | (ProductFrameBase & {
+      readonly type: 'review.resolved'
+      readonly interactionId: string
+      readonly patchId: string
+      readonly decisionKey: string
+      readonly resolution: 'answered' | 'cancelled'
+    })
+  | (ProductFrameBase & {
+      readonly type: 'interrupt.acknowledged'
+    })
+  | (ProductFrameBase & {
+      readonly type: 'operation.error'
+      readonly code: string
+      readonly displayMessage: string
+      readonly willRetry: boolean
+    })
+  | (ProductFrameBase &
+      AssignmentOperationSettlement & {
+        readonly type: 'operation.terminal'
+        readonly runId: string
+      })
+  | (ProductFrameBase &
+      ChatOperationSettlement & {
+        readonly type: 'operation.terminal'
+        readonly runId?: never
+      })
 
 export interface ProductOperationSink {
   write(frame: ProductOperationFrame): Promise<boolean>
@@ -100,7 +256,7 @@ type ActiveProductOperation = {
   readonly kind: 'assignment' | 'chat'
   readonly lease: ProductOperationLease
   readonly bindings: Map<string, AssignmentReviewBinding>
-  readonly knownPaths: string[]
+  readonly redactionValues: string[]
   run?: ModelingRun
   recipe?: ManagedAssignmentRecipe
   proposal?: AssignmentProposalSession
@@ -167,15 +323,31 @@ export function createAssignmentActionCoordinator(options: {
       kind,
       lease,
       bindings: new Map(),
-      knownPaths: [options.mcpHost.token],
+      redactionValues: [options.mcpHost.token],
     } satisfies ActiveProductOperation
     active = operation
     return operation
   }
 
-  const release = (operation: ActiveProductOperation): void => {
-    options.service.releaseProductOperation(operation.lease)
-    if (active === operation) active = undefined
+  const release = async (operation: ActiveProductOperation): Promise<void> => {
+    let requiresFreshRuntime = false
+    try {
+      requiresFreshRuntime =
+        options.controller.executionGuardRequiresFreshRuntime(
+          operation.operationId,
+        )
+    } catch {
+      requiresFreshRuntime = true
+    }
+    try {
+      await options.service
+        .releaseProductOperation(operation.lease, {
+          recycleRuntime: requiresFreshRuntime,
+        })
+        .catch(() => undefined)
+    } finally {
+      if (active === operation) active = undefined
+    }
   }
 
   const requireAccount = async (
@@ -203,7 +375,7 @@ export function createAssignmentActionCoordinator(options: {
     proposal: AssignmentProposalSession,
   ): void => {
     operation.proposal = proposal
-    operation.knownPaths.push(
+    operation.redactionValues.push(
       proposal.context.requestKey,
       proposal.context.workspaceId,
     )
@@ -219,30 +391,43 @@ export function createAssignmentActionCoordinator(options: {
   ): Promise<ProductOperationFrame | undefined> => {
     const base = { operationId: operation.operationId }
     switch (activity.type) {
-      case 'skill.requested':
-        return operation.kind === 'assignment'
-          ? {
-              ...base,
-              type: 'skill.requested',
-              skill: {
-                name: operation.recipe?.requestedSkillName,
-                version: operation.recipe?.version,
-              },
-            }
-          : undefined
+      case 'skill.requested': {
+        if (operation.kind !== 'assignment' || !operation.recipe) {
+          return undefined
+        }
+        return {
+          ...base,
+          type: 'skill.requested',
+          skill: {
+            name: operation.recipe.requestedSkillName,
+            version: operation.recipe.version,
+          },
+        }
+      }
+      case 'agent_message.delta':
+      case 'plan.delta':
+        return {
+          ...base,
+          type: activity.type,
+          activityId: activityId(operation.operationId, activity.itemId),
+          delta: sanitizeProductText(
+            activity.delta,
+            operation.redactionValues,
+          ),
+        }
       case 'agent_message.completed':
         return {
           ...base,
           type: 'agent_message.completed',
           activityId: activityId(operation.operationId, activity.itemId),
-          text: sanitizeProductText(activity.text, operation.knownPaths),
+          text: sanitizeProductText(activity.text, operation.redactionValues),
         }
       case 'plan.completed':
         return {
           ...base,
           type: 'plan.completed',
           activityId: activityId(operation.operationId, activity.itemId),
-          text: sanitizeProductText(activity.text, operation.knownPaths),
+          text: sanitizeProductText(activity.text, operation.redactionValues),
         }
       case 'mcp_call.started':
         return {
@@ -267,7 +452,7 @@ export function createAssignmentActionCoordinator(options: {
           type: 'mcp_call.completed',
           activityId: activityId(operation.operationId, activity.itemId),
           tool: activity.tool,
-          patch: projectPatch(patch, operation.knownPaths),
+          patch: projectPatch(patch, operation.redactionValues),
         }
       }
       case 'mcp_call.failed':
@@ -284,23 +469,21 @@ export function createAssignmentActionCoordinator(options: {
           return {
             ...base,
             type: 'interaction.requested',
-            interactionId: activity.interactionId,
-            questions: activity.questions.map((question) => ({
-              id: question.id,
-              header: sanitizeProductText(question.header, operation.knownPaths),
-              question: sanitizeProductText(
-                question.question,
-                operation.knownPaths,
-              ),
-              options: question.options?.map((choice) => ({
-                label: sanitizeProductText(choice.label, operation.knownPaths),
-                description: sanitizeProductText(
-                  choice.description,
-                  operation.knownPaths,
+            interactionId: interactionId(
+              operation.operationId,
+              activity.interactionId,
+            ),
+            questions: activity.questions.map((question) =>
+              projectQuestion(
+                question,
+                questionId(
+                  operation.operationId,
+                  activity.interactionId,
+                  question.id,
                 ),
-              })) ?? null,
-              acceptsFreeform: question.acceptsFreeform,
-            })),
+                operation.redactionValues,
+              ),
+            ),
           }
         }
         operation.bindings.set(binding.interactionId, binding)
@@ -311,22 +494,35 @@ export function createAssignmentActionCoordinator(options: {
           interactionId: binding.interactionId,
           patchId: binding.patchId,
           decisionKey: binding.decisionKey,
-          patch: projectPatch(patch, operation.knownPaths),
-          questions: activity.questions,
+          patch: projectPatch(patch, operation.redactionValues),
+          questions: activity.questions.map((question) =>
+            projectQuestion(
+              question,
+              question.id,
+              operation.redactionValues,
+            ),
+          ),
         }
       }
       case 'user_input.resolved': {
         const binding = operation.bindings.get(activity.interactionId)
+        if (binding) {
+          return {
+            ...base,
+            type: 'review.resolved',
+            interactionId: activity.interactionId,
+            patchId: binding.patchId,
+            decisionKey: binding.decisionKey,
+            resolution: activity.resolution,
+          }
+        }
         return {
           ...base,
-          type: binding ? 'review.resolved' : 'interaction.resolved',
-          interactionId: activity.interactionId,
-          ...(binding
-            ? {
-                patchId: binding.patchId,
-                decisionKey: binding.decisionKey,
-              }
-            : {}),
+          type: 'interaction.resolved',
+          interactionId: interactionId(
+            operation.operationId,
+            activity.interactionId,
+          ),
           resolution: activity.resolution,
         }
       }
@@ -339,14 +535,12 @@ export function createAssignmentActionCoordinator(options: {
           code: safeFailureCode(activity.code),
           displayMessage: sanitizeProductText(
             activity.displayMessage,
-            operation.knownPaths,
+            operation.redactionValues,
           ),
           willRetry: activity.willRetry,
         }
       case 'runtime.failed':
       case 'turn.completed':
-      case 'agent_message.delta':
-      case 'plan.delta':
         return undefined
     }
   }
@@ -356,11 +550,16 @@ export function createAssignmentActionCoordinator(options: {
     sink: ProductOperationSink,
   ): CodexProductStreamSink => ({
     accept: () =>
-      sink.write({
-        type: 'operation.accepted',
-        operationId: operation.operationId,
-        ...(operation.run ? { runId: operation.run.id } : {}),
-      }),
+      operation.kind === 'assignment'
+        ? sink.write({
+            type: 'operation.accepted',
+            operationId: operation.operationId,
+            runId: requireAssignmentRun(operation).id,
+          })
+        : sink.write({
+            type: 'operation.accepted',
+            operationId: operation.operationId,
+          }),
     async write(activity) {
       const frame = await projectActivity(operation, activity)
       return frame ? sink.write(frame) : true
@@ -398,7 +597,10 @@ export function createAssignmentActionCoordinator(options: {
           'Assignment Recipe를 확인한 뒤 다시 시도해 주세요.',
         )
       })
-      await verifyManagedAssignmentRecipe(recipe).catch(() => {
+      await verifyManagedAssignmentRecipe(
+        recipe,
+        options.controller.managedAppDataRoot(),
+      ).catch(() => {
         throw new AssignmentActionError(
           'recipe_invalid',
           409,
@@ -407,7 +609,7 @@ export function createAssignmentActionCoordinator(options: {
       })
       const actionId = `action_${randomUUID().replaceAll('-', '')}`
       const operation = reserve(actionId, 'assignment')
-      operation.knownPaths.push(operationOptions.mcpUrl)
+      operation.redactionValues.push(operationOptions.mcpUrl)
       operation.recipe = recipe
       let streamOpened = false
       try {
@@ -421,6 +623,7 @@ export function createAssignmentActionCoordinator(options: {
             version: recipe.version,
             digest: recipe.digest,
             requestedSkillName: recipe.requestedSkillName,
+            requestedSkillPath: recipe.path,
           },
           arguments: {
             canonical: argumentsCanonical,
@@ -432,7 +635,7 @@ export function createAssignmentActionCoordinator(options: {
           })),
         })
         operation.run = prepared.run
-        operation.knownPaths.push(
+        operation.redactionValues.push(
           recipe.path,
           prepared.scratchPath,
           ...prepared.stagedSources.map((source) => source.path),
@@ -465,6 +668,16 @@ export function createAssignmentActionCoordinator(options: {
         }
         let turn: CodexProductTurn | undefined
         try {
+          await verifyManagedAssignmentRecipe(
+            recipe,
+            options.controller.managedAppDataRoot(),
+          ).catch(() => {
+            throw new AssignmentActionError(
+              'recipe_invalid',
+              409,
+              'Assignment Recipe를 확인한 뒤 다시 시도해 주세요.',
+            )
+          })
           turn = await options.service.startProductTurn(
             {
               profile: {
@@ -476,7 +689,7 @@ export function createAssignmentActionCoordinator(options: {
                 path: recipe.path,
               },
               text: renderAssignmentInput(prepared, input.arguments),
-              plan: { model: 'gpt-5.4', reasoningEffort: 'medium' },
+              plan: productTurnPlan,
             },
             operationOptions.disconnected,
             operation.lease,
@@ -494,7 +707,7 @@ export function createAssignmentActionCoordinator(options: {
             return undefined
           })
           if (settledRun) operation.run = settledRun
-          await writeTerminal(
+          await writeAssignmentTerminal(
             operationOptions.sink,
             operation,
             settledRun
@@ -517,7 +730,7 @@ export function createAssignmentActionCoordinator(options: {
             .catch(() => undefined)
           if (settledRun) operation.run = settledRun
           operation.mcpSession?.cancel()
-          await writeTerminal(
+          await writeAssignmentTerminal(
             operationOptions.sink,
             operation,
             settledRun
@@ -531,7 +744,7 @@ export function createAssignmentActionCoordinator(options: {
           return
         }
         operation.turn = turn
-        operation.knownPaths.push(turn.threadId, turn.turnId)
+        operation.redactionValues.push(turn.threadId, turn.turnId)
         try {
           operation.run = await options.controller.bindAssignmentAction({
             actionId,
@@ -544,6 +757,10 @@ export function createAssignmentActionCoordinator(options: {
               actionId,
               status: 'acceptance_unknown',
               failureCode: 'running_transition_unknown',
+              nativeCorrelation: {
+                threadId: turn.threadId,
+                turnId: turn.turnId,
+              },
             })
             .catch(() => undefined)
           if (failedRun) operation.run = failedRun
@@ -551,7 +768,7 @@ export function createAssignmentActionCoordinator(options: {
           await options.service
             .abandonAcceptedProductTurn(turn, 'running_transition_unknown')
             .catch(() => undefined)
-          await writeTerminal(
+          await writeAssignmentTerminal(
             operationOptions.sink,
             operation,
             failedRun
@@ -583,7 +800,7 @@ export function createAssignmentActionCoordinator(options: {
             })
             .catch(() => undefined)
           if (settledRun) operation.run = settledRun
-          await writeTerminal(
+          await writeAssignmentTerminal(
             operationOptions.sink,
             operation,
             settledRun
@@ -636,7 +853,7 @@ export function createAssignmentActionCoordinator(options: {
             ...requestedSettlement,
           })
         } catch {
-          await writeTerminal(operationOptions.sink, operation, {
+          await writeAssignmentTerminal(operationOptions.sink, operation, {
             status: 'unknown',
             validationOutcome: 'unknown',
             failureCode: 'execution_guard_conflict',
@@ -648,7 +865,7 @@ export function createAssignmentActionCoordinator(options: {
         if (settlement.type === 'unknown') {
           await options.service.recycleProductRuntime().catch(() => undefined)
         }
-        await writeTerminal(
+        await writeAssignmentTerminal(
           operationOptions.sink,
           operation,
           projectRunSettlement(operation.run),
@@ -658,7 +875,7 @@ export function createAssignmentActionCoordinator(options: {
         throw error
       } finally {
         operation.mcpSession?.cancel()
-        release(operation)
+        await release(operation)
         if (streamOpened) operationOptions.sink.end()
       }
     },
@@ -667,7 +884,7 @@ export function createAssignmentActionCoordinator(options: {
       assertChatRequest(input)
       const operationId = `chat_${randomUUID().replaceAll('-', '')}`
       const operation = reserve(operationId, 'chat')
-      operation.knownPaths.push(operationOptions.mcpUrl)
+      operation.redactionValues.push(operationOptions.mcpUrl)
       let streamOpened = false
       try {
         await requireAccount(operation)
@@ -683,7 +900,7 @@ export function createAssignmentActionCoordinator(options: {
           })
         operation.chatGuardPrepared = true
         operation.scratchPath = preparedExecution.scratchPath
-        operation.knownPaths.push(
+        operation.redactionValues.push(
           preparedExecution.scratchPath,
           options.controller.nativeCwd(),
         )
@@ -714,14 +931,14 @@ export function createAssignmentActionCoordinator(options: {
               mcp: options.mcpHost.nativeThreadConfig(operationOptions.mcpUrl),
             },
             text,
-            plan: { model: 'gpt-5.4', reasoningEffort: 'medium' },
+            plan: productTurnPlan,
           },
           operationOptions.disconnected,
           operation.lease,
         )
         if (!turn) {
           const guardSettled = await settleChatGuard(operation)
-          await writeTerminal(operationOptions.sink, operation, {
+          await writeChatTerminal(operationOptions.sink, operation, {
             status: guardSettled ? 'not_accepted' : 'unknown',
             failureCode: guardSettled
               ? 'client_disconnected'
@@ -730,7 +947,7 @@ export function createAssignmentActionCoordinator(options: {
           return
         }
         operation.turn = turn
-        operation.knownPaths.push(turn.threadId, turn.turnId)
+        operation.redactionValues.push(turn.threadId, turn.turnId)
         await options.controller.bindProductChatExecution({
           operationId,
           threadId: turn.threadId,
@@ -757,7 +974,7 @@ export function createAssignmentActionCoordinator(options: {
           await options.service.recycleProductRuntime().catch(() => undefined)
         }
         const guardSettled = await settleChatGuard(operation)
-        await writeTerminal(operationOptions.sink, operation, {
+        await writeChatTerminal(operationOptions.sink, operation, {
           status: guardSettled
             ? settlement.type === 'terminal'
               ? settlement.event.status
@@ -782,7 +999,7 @@ export function createAssignmentActionCoordinator(options: {
           await options.service.recycleProductRuntime().catch(() => undefined)
         }
         const guardSettled = await settleChatGuard(operation)
-        await writeTerminal(operationOptions.sink, operation, {
+        await writeChatTerminal(operationOptions.sink, operation, {
           status:
             guardSettled && !operation.turn && !isUnknownOutcome(error)
               ? 'not_accepted'
@@ -801,7 +1018,7 @@ export function createAssignmentActionCoordinator(options: {
         }
         operation.mcpSession?.cancel()
         await settleChatGuard(operation)
-        release(operation)
+        await release(operation)
         if (streamOpened) operationOptions.sink.end()
       }
     },
@@ -916,7 +1133,7 @@ async function renderChatInput(
   )
   const sources = previews
     .map((preview) => {
-      operation.knownPaths.push(preview.relativePath)
+      operation.redactionValues.push(preview.relativePath)
       return [
         `RawMaterial ${preview.materialId} (${preview.digest})`,
         '```text',
@@ -945,17 +1162,40 @@ async function renderChatInput(
   return rendered
 }
 
-async function writeTerminal(
+async function writeAssignmentTerminal(
   sink: ProductOperationSink,
   operation: ActiveProductOperation,
-  terminal: Readonly<Record<string, unknown>>,
+  terminal: AssignmentOperationSettlement,
 ): Promise<boolean> {
+  const run = requireAssignmentRun(operation)
   return safeProductWrite(sink, {
     type: 'operation.terminal',
     operationId: operation.operationId,
-    ...(operation.run ? { runId: operation.run.id } : {}),
+    runId: run.id,
     ...terminal,
   })
+}
+
+async function writeChatTerminal(
+  sink: ProductOperationSink,
+  operation: ActiveProductOperation,
+  terminal: ChatOperationSettlement,
+): Promise<boolean> {
+  if (operation.kind !== 'chat' || operation.run) {
+    throw new TypeError('The product operation is not a Run-free Chat.')
+  }
+  return safeProductWrite(sink, {
+    type: 'operation.terminal',
+    operationId: operation.operationId,
+    ...terminal,
+  })
+}
+
+function requireAssignmentRun(operation: ActiveProductOperation): ModelingRun {
+  if (operation.kind !== 'assignment' || !operation.run) {
+    throw new TypeError('The Assignment operation has no ModelingRun.')
+  }
+  return operation.run
 }
 
 async function safeProductWrite(
@@ -971,34 +1211,75 @@ async function safeProductWrite(
 
 function projectPatch(
   patch: StatePatch,
-  privateValues: readonly string[],
-): Record<string, unknown> {
+  redactionValues: readonly string[],
+): ProductStatePatch {
   return {
     id: patch.id,
-    summary: sanitizeProductText(patch.summary, privateValues),
+    summary: sanitizeProductText(patch.summary, redactionValues),
     changes: {
-      ...patch.changes,
+      operation: patch.changes.operation,
+      ...(patch.changes.assignmentId === undefined
+        ? {}
+        : { assignmentId: patch.changes.assignmentId }),
       values: {
-        title: sanitizeProductText(patch.changes.values.title, privateValues),
-        dueAt: sanitizeProductText(patch.changes.values.dueAt, privateValues),
+        title: sanitizeProductText(
+          patch.changes.values.title,
+          redactionValues,
+        ),
+        dueAt: sanitizeProductText(
+          patch.changes.values.dueAt,
+          redactionValues,
+        ),
         submissionMethod: sanitizeProductText(
           patch.changes.values.submissionMethod,
-          privateValues,
+          redactionValues,
         ),
       },
     },
     evidence: patch.evidence.map((evidence) => ({
-      ...evidence,
-      quote: sanitizeProductText(evidence.quote, privateValues),
+      field: evidence.field,
+      rawMaterialId: evidence.rawMaterialId,
+      digest: evidence.digest,
+      quote: sanitizeProductText(evidence.quote, redactionValues),
     })),
     status: patch.status,
   }
 }
 
-function projectRunSettlement(run: ModelingRun): Record<string, unknown> {
+function projectQuestion(
+  question: NativeProductQuestion,
+  id: string,
+  redactionValues: readonly string[],
+): ProductQuestion {
   return {
-    status: run.status,
-    validationOutcome: run.validationOutcome,
+    id,
+    header: sanitizeProductText(question.header, redactionValues),
+    question: sanitizeProductText(question.question, redactionValues),
+    options:
+      question.options?.map((choice) => ({
+        label: sanitizeProductText(choice.label, redactionValues),
+        description: sanitizeProductText(
+          choice.description,
+          redactionValues,
+        ),
+      })) ?? null,
+    acceptsFreeform: question.acceptsFreeform,
+  }
+}
+
+function projectRunSettlement(run: ModelingRun): AssignmentOperationSettlement {
+  const status = run.status
+  const validationOutcome = run.validationOutcome
+  if (
+    status === 'starting' ||
+    status === 'running' ||
+    validationOutcome === 'pending'
+  ) {
+    throw new TypeError('The ModelingRun is not settled.')
+  }
+  return {
+    status,
+    validationOutcome,
     ...(run.failureCode === undefined ? {} : { failureCode: run.failureCode }),
   }
 }
@@ -1063,10 +1344,17 @@ function assertChatRequest(input: ProductChatRequest): void {
   }
 }
 
-function sanitizeProductText(text: string, knownPaths: readonly string[]): string {
+function sanitizeProductText(
+  text: string,
+  redactionValues: readonly string[],
+): string {
   let sanitized = text
-  for (const knownPath of [...knownPaths].sort((left, right) => right.length - left.length)) {
-    if (knownPath.length > 0) sanitized = sanitized.replaceAll(knownPath, '[managed path]')
+  for (const redactionValue of [...redactionValues].sort(
+    (left, right) => right.length - left.length,
+  )) {
+    if (redactionValue.length > 0) {
+      sanitized = sanitized.replaceAll(redactionValue, '[managed path]')
+    }
   }
   sanitized = sanitized.replace(
     /(?:file:\/\/)?\/(?:Users|private|tmp|var|Volumes)\/[^\s)\]}>]+/gu,
@@ -1076,13 +1364,44 @@ function sanitizeProductText(text: string, knownPaths: readonly string[]): strin
     /(^|[\s(<])\/[^\s)\]}>]+/gu,
     '$1[managed path]',
   )
-  return Buffer.byteLength(sanitized, 'utf8') <= productTextMaxBytes
-    ? sanitized
-    : `${Buffer.from(sanitized).subarray(0, productTextMaxBytes).toString('utf8')}…`
+  if (Buffer.byteLength(sanitized, 'utf8') <= productTextMaxBytes) {
+    return sanitized
+  }
+  const suffix = '…'
+  const encoded = Buffer.from(sanitized)
+  let prefixEnd = productTextMaxBytes - Buffer.byteLength(suffix)
+  while (prefixEnd > 0) {
+    try {
+      const prefix = new TextDecoder('utf-8', { fatal: true }).decode(
+        encoded.subarray(0, prefixEnd),
+      )
+      return `${prefix}${suffix}`
+    } catch {
+      prefixEnd -= 1
+    }
+  }
+  return suffix
 }
 
 function activityId(operationId: string, nativeItemId: string): string {
   return `activity_${sha256(`${operationId}\u0000${nativeItemId}`).slice(0, 32)}`
+}
+
+function interactionId(
+  operationId: string,
+  nativeInteractionId: string,
+): string {
+  return `interaction_${sha256(`${operationId}\u0000${nativeInteractionId}`).slice(0, 32)}`
+}
+
+function questionId(
+  operationId: string,
+  nativeInteractionId: string,
+  nativeQuestionId: string,
+): string {
+  return `question_${sha256(
+    `${operationId}\u0000${nativeInteractionId}\u0000${nativeQuestionId}`,
+  ).slice(0, 32)}`
 }
 
 function sha256(value: string): string {
@@ -1102,6 +1421,7 @@ function isUnknownOutcome(error: unknown): boolean {
 function safeOperationFailureCode(error: unknown): string {
   if (error instanceof CodexChatRuntimeError) return safeFailureCode(error.code)
   if (error instanceof CodexChatServiceError) return error.code
+  if (error instanceof AssignmentActionError) return error.code
   return 'operation_failed'
 }
 

@@ -98,10 +98,12 @@ export class CodexChatService {
   private runtimePromise?: Promise<CodexChatRuntime>
   private observedRuntime?: CodexChatRuntime
   private runtimeClosePromise?: Promise<void>
+  private runtimeRecyclePromise?: Promise<void>
   private runtimeFailureCode?: string
   private currentThreadId?: string
   private currentThreadProfile?: string
   private threadStarting = false
+  private accountReadInProgress = false
   private activeTurn?: ActiveTurn
   private productOperationLease?: ProductOperationLease
   private shuttingDown = false
@@ -145,7 +147,14 @@ export class CodexChatService {
     disconnected: () => boolean,
   ): Promise<{ readonly threadId: string } | undefined> {
     this.requireAvailable()
-    if (this.threadStarting || this.activeTurn) throw stateError('active_turn')
+    if (
+      this.threadStarting ||
+      this.accountReadInProgress ||
+      this.activeTurn ||
+      this.productOperationLease
+    ) {
+      throw stateError('active_turn')
+    }
     this.threadStarting = true
     try {
       const runtime = await this.getRuntime()
@@ -202,7 +211,14 @@ export class CodexChatService {
   ): Promise<CodexChatTurn | undefined> {
     this.requireAvailable()
     if (this.currentThreadId !== threadId) throw stateError('unknown_thread')
-    if (this.threadStarting || this.activeTurn) throw stateError('active_turn')
+    if (
+      this.threadStarting ||
+      this.accountReadInProgress ||
+      this.activeTurn ||
+      this.productOperationLease
+    ) {
+      throw stateError('active_turn')
+    }
     const reservation: ActiveTurn = {
       threadId,
       kind: 'chat',
@@ -234,7 +250,14 @@ export class CodexChatService {
 
   reserveProductOperation(operationId: string): ProductOperationLease {
     this.requireAvailable()
-    if (this.threadStarting || this.activeTurn) throw stateError('active_turn')
+    if (
+      this.threadStarting ||
+      this.accountReadInProgress ||
+      this.activeTurn ||
+      this.productOperationLease
+    ) {
+      throw stateError('active_turn')
+    }
     const lease = { operationId }
     this.productOperationLease = lease
     this.activeTurn = {
@@ -247,13 +270,24 @@ export class CodexChatService {
     return lease
   }
 
-  releaseProductOperation(lease: ProductOperationLease): void {
+  async releaseProductOperation(
+    lease: ProductOperationLease,
+    options: { readonly recycleRuntime: boolean } = {
+      recycleRuntime: false,
+    },
+  ): Promise<void> {
     if (this.productOperationLease !== lease) return
     const active = this.activeTurn
     if (active?.kind === 'product' && active.turn === undefined) {
       this.activeTurn = undefined
     }
-    this.productOperationLease = undefined
+    try {
+      if (options.recycleRuntime) await this.recycleProductRuntime()
+    } finally {
+      if (this.productOperationLease === lease) {
+        this.productOperationLease = undefined
+      }
+    }
   }
 
   async readProductAccountReadiness(
@@ -262,15 +296,25 @@ export class CodexChatService {
     this.requireAvailable()
     if (lease) {
       this.requireProductLease(lease)
-    } else if (this.threadStarting || this.activeTurn) {
-      throw stateError('active_turn')
+    } else {
+      if (
+        this.threadStarting ||
+        this.accountReadInProgress ||
+        this.activeTurn ||
+        this.productOperationLease
+      ) {
+        throw stateError('active_turn')
+      }
+      this.accountReadInProgress = true
     }
-    const runtime = requireProductRuntime(await this.getRuntime())
     try {
+      const runtime = requireProductRuntime(await this.getRuntime())
       return await runtime.readAccountReadiness()
     } catch (error) {
       await this.handleUnknownOutcome(error)
       throw error
+    } finally {
+      if (!lease) this.accountReadInProgress = false
     }
   }
 
@@ -286,7 +330,14 @@ export class CodexChatService {
       reservation = this.activeTurn as ActiveTurn
       reservation.disconnected = disconnected()
     } else {
-      if (this.threadStarting || this.activeTurn) throw stateError('active_turn')
+      if (
+        this.threadStarting ||
+        this.accountReadInProgress ||
+        this.activeTurn ||
+        this.productOperationLease
+      ) {
+        throw stateError('active_turn')
+      }
       reservation = {
         threadId: '',
         kind: 'product',
@@ -449,20 +500,19 @@ export class CodexChatService {
   }
 
   async recycleProductRuntime(): Promise<void> {
-    if (this.activeTurn) throw stateError('active_turn')
-    try {
-      await this.closeRuntime()
-    } catch {
-      this.runtimeFailureCode = 'runtime_cleanup_failed'
-      throw stateError('codex_chat_unavailable')
+    if (this.runtimeRecyclePromise) return this.runtimeRecyclePromise
+    if (this.threadStarting || this.accountReadInProgress || this.activeTurn) {
+      throw stateError('active_turn')
     }
-    this.runtime = undefined
-    this.runtimePromise = undefined
-    this.observedRuntime = undefined
-    this.runtimeClosePromise = undefined
-    this.runtimeFailureCode = undefined
-    this.currentThreadId = undefined
-    this.currentThreadProfile = undefined
+    const recycling = this.recycleProductRuntimeOnce()
+    this.runtimeRecyclePromise = recycling
+    try {
+      await recycling
+    } finally {
+      if (this.runtimeRecyclePromise === recycling) {
+        this.runtimeRecyclePromise = undefined
+      }
+    }
   }
 
   async streamTurn(
@@ -636,9 +686,30 @@ export class CodexChatService {
   }
 
   private requireAvailable(): void {
-    if (this.shuttingDown || this.unavailableReason || this.runtimeFailureCode) {
+    if (
+      this.shuttingDown ||
+      this.unavailableReason ||
+      this.runtimeFailureCode ||
+      this.runtimeRecyclePromise
+    ) {
       throw stateError('codex_chat_unavailable')
     }
+  }
+
+  private async recycleProductRuntimeOnce(): Promise<void> {
+    try {
+      await this.closeRuntime()
+    } catch {
+      this.runtimeFailureCode = 'runtime_cleanup_failed'
+      throw stateError('codex_chat_unavailable')
+    }
+    this.runtime = undefined
+    this.runtimePromise = undefined
+    this.observedRuntime = undefined
+    this.runtimeClosePromise = undefined
+    this.runtimeFailureCode = undefined
+    this.currentThreadId = undefined
+    this.currentThreadProfile = undefined
   }
 
   private evidence(): CodexChatRuntimeEvidence {
@@ -678,7 +749,6 @@ export class CodexChatService {
     if (active.drainDeadline) clearTimeout(active.drainDeadline)
     if (this.activeTurn === active) {
       this.activeTurn = undefined
-      if (active.kind === 'product') this.productOperationLease = undefined
     }
   }
 

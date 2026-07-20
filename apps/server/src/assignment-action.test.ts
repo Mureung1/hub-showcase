@@ -122,6 +122,10 @@ test('the HTTP action commits one Run before exact Skill input and streams MCP R
         assert.match(String(review.interactionId), /^interaction-/)
         assert.match(String(review.patchId), /^patch_[0-9a-f]{32}$/)
         assert.match(String(review.decisionKey), /^decision_[0-9a-f]{32}$/)
+        assert.equal(
+          (review.questions as { readonly id: string }[])[0]?.id,
+          'assignment_review_decision',
+        )
 
         const reviewResponse = await postJson(
           `${baseUrl}/api/product/reviews/${review.interactionId}`,
@@ -148,17 +152,25 @@ test('the HTTP action commits one Run before exact Skill input and streams MCP R
             'operation.preparing',
             'operation.accepted',
             'skill.requested',
+            'interaction.requested',
+            'interaction.resolved',
+            'plan.delta',
             'plan.completed',
             'mcp_call.started',
             'mcp_call.completed',
             'review.requested',
             'review.resolved',
+            'agent_message.delta',
             'agent_message.completed',
             'operation.terminal',
           ],
         )
         assert.equal(frames.at(-1)?.status, 'completed')
         assert.equal(frames.at(-1)?.validationOutcome, 'passed')
+        const runId = frames[0]?.runId
+        assert.match(String(runId), /^run_[0-9a-f]{32}$/)
+        assert.equal(frames[1]?.runId, runId)
+        assert.equal(frames.at(-1)?.runId, runId)
         const encodedTrace = JSON.stringify(frames)
         assert.equal(encodedTrace.includes(fixture.bootstrap.appDataRoot), false)
         assert.equal(encodedTrace.includes(fixture.workspaceRoot), false)
@@ -166,6 +178,53 @@ test('the HTTP action commits one Run before exact Skill input and streams MCP R
         assert.equal(encodedTrace.includes('turn-native-A'), false)
         assert.ok(runtime.mcpToken)
         assert.equal(encodedTrace.includes(runtime.mcpToken), false)
+
+        const genericRequest = frames.find(
+          (frame) => frame.type === 'interaction.requested',
+        )
+        const genericResolved = frames.find(
+          (frame) => frame.type === 'interaction.resolved',
+        )
+        assert.ok(genericRequest)
+        assert.ok(genericResolved)
+        assert.match(
+          String(genericRequest.interactionId),
+          /^interaction_[0-9a-f]{32}$/,
+        )
+        assert.equal(
+          genericResolved.interactionId,
+          genericRequest.interactionId,
+        )
+        const genericQuestion = (
+          genericRequest.questions as {
+            readonly id: string
+            readonly header: string
+          }[]
+        )[0]
+        assert.ok(genericQuestion)
+        assert.match(genericQuestion.id, /^question_[0-9a-f]{32}$/)
+        assert.match(genericQuestion.header, /\[managed path\]/)
+
+        for (const activityType of ['plan', 'agent_message'] as const) {
+          const delta = frames.find(
+            (frame) => frame.type === `${activityType}.delta`,
+          )
+          const completed = frames.find(
+            (frame) => frame.type === `${activityType}.completed`,
+          )
+          assert.ok(delta)
+          assert.ok(completed)
+          assert.match(String(delta.activityId), /^activity_[0-9a-f]{32}$/)
+          assert.equal(delta.activityId, completed.activityId)
+          const deltaText = String(delta.delta)
+          assert.match(deltaText, /\[managed path\]/)
+          assert.equal(deltaText.includes('\ufffd'), false)
+          assert.equal(
+            Buffer.byteLength(deltaText, 'utf8') <= 128 * 1024,
+            true,
+            `delta bytes: ${Buffer.byteLength(deltaText, 'utf8')}`,
+          )
+        }
 
         assert.equal(runtime.productInputs.length, 1)
         assert.equal(runtime.snapshotBytes.length, 2)
@@ -400,6 +459,39 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
           turnId: 'turn-native-A',
           skillName: input.skill!.name,
         }
+        const nativeInteractionId =
+          `native-interaction:${runtime.threadInput?.workspace}`
+        yield {
+          type: 'user_input.requested',
+          threadId: input.threadId,
+          turnId: 'turn-native-A',
+          itemId: 'private-generic-interaction-item',
+          interactionId: nativeInteractionId,
+          questions: [
+            {
+              id: `native-question:${runtime.threadInput?.mcp.token}`,
+              header: `작업공간 ${runtime.threadInput?.workspace}`,
+              question: '계속 진행할까요?',
+              options: null,
+              acceptsFreeform: true,
+            },
+          ],
+        }
+        yield {
+          type: 'user_input.resolved',
+          threadId: input.threadId,
+          turnId: 'turn-native-A',
+          itemId: 'private-generic-interaction-item',
+          interactionId: nativeInteractionId,
+          resolution: 'cancelled',
+        }
+        yield {
+          type: 'plan.delta',
+          threadId: input.threadId,
+          turnId: 'turn-native-A',
+          itemId: 'private-plan-item',
+          delta: `계획 조각: ${paths[0]} ${runtime.threadInput?.mcp.token}`,
+        }
         yield {
           type: 'plan.completed',
           threadId: input.threadId,
@@ -462,6 +554,13 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
         }
         runtime.answerAcknowledged.resolve()
         yield {
+          type: 'agent_message.delta',
+          threadId: input.threadId,
+          turnId: 'turn-native-A',
+          itemId: 'private-agent-item',
+          delta: `답변 조각: ${runtime.threadInput?.workspace} ${runtime.threadInput?.mcp.token} ${'가'.repeat(50_000)}`,
+        }
+        yield {
           type: 'agent_message.completed',
           threadId: input.threadId,
           turnId: 'turn-native-A',
@@ -523,6 +622,7 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
 
 class NdjsonTrace {
   private readonly frames: Record<string, unknown>[] = []
+  private readonly decoder = new TextDecoder()
   private buffer = ''
   private done = false
 
@@ -554,12 +654,13 @@ class NdjsonTrace {
     const chunk = await this.reader.read()
     if (chunk.done) {
       this.done = true
+      this.buffer += this.decoder.decode()
       if (this.buffer.trim().length > 0) {
         this.frames.push(JSON.parse(this.buffer) as Record<string, unknown>)
       }
       return
     }
-    this.buffer += new TextDecoder().decode(chunk.value, { stream: true })
+    this.buffer += this.decoder.decode(chunk.value, { stream: true })
     const lines = this.buffer.split('\n')
     this.buffer = lines.pop() ?? ''
     for (const line of lines) {

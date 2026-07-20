@@ -58,6 +58,10 @@ test('Run-free Product Chat cleans its durable guard and reuses one native Threa
             ],
           )
           assert.equal(frames.at(-1)?.status, 'completed')
+          for (const frame of frames) {
+            assert.equal('runId' in frame, false)
+            assert.equal('validationOutcome' in frame, false)
+          }
           assert.equal(
             frames.some((frame) => frame.type === 'skill.requested'),
             false,
@@ -161,6 +165,10 @@ test('selected-material Product Chat offers a private MCP proposal and Review wi
           ],
         )
         assert.equal(frames.at(-1)?.status, 'completed')
+        for (const frame of frames) {
+          assert.equal('runId' in frame, false)
+          assert.equal('validationOutcome' in frame, false)
+        }
         assert.equal(
           frames.some((frame) => frame.type === 'skill.requested'),
           false,

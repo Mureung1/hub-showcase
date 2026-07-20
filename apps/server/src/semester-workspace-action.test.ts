@@ -19,6 +19,7 @@ import {
   type AssignmentProposalContext,
   type SemesterWorkspaceController,
 } from './semester-workspace.js'
+import { ASSIGNMENT_REVIEW_QUESTION } from './state-patch-review.js'
 
 const firstSource = Buffer.from(
   '\ufeff과제 제목: 문제 해결 에세이\r\n마감: 2026-08-31T18:00:00+09:00\r\n',
@@ -28,6 +29,7 @@ const secondSource = Buffer.from(
   '제출 방식: LMS에 PDF 업로드\n평가 기준: 근거와 구조\n',
   'utf8',
 )
+const managedSkillPath = '/managed/first-assignment/SKILL.md'
 
 test('Assignment action persists starting before bind and settles after guarded staging cleanup', async () => {
   const fixture = await createFixture()
@@ -36,6 +38,7 @@ test('Assignment action persists starting before bind and settles after guarded 
 
     assert.equal(prepared.run.status, 'starting')
     assert.equal(prepared.run.requestedSkillName, 'assignment-modeling')
+    assert.equal(prepared.run.requestedSkillPath, managedSkillPath)
     assert.deepEqual(await readFile(prepared.stagedSources[0]!.path), firstSource)
     assert.deepEqual(await readFile(prepared.stagedSources[1]!.path), secondSource)
     assert.equal((await lstat(prepared.scratchPath)).isDirectory(), true)
@@ -80,6 +83,101 @@ test('Assignment action persists starting before bind and settles after guarded 
   }
 })
 
+test('next open removes a crash-orphaned pre-commit scratch and source staging pair', async () => {
+  const fixture = await createFixture()
+  const actionId = `action_${'8'.repeat(32)}`
+  const scratchPath = path.join(
+    fixture.workspaceRoot,
+    '.ay-ple',
+    'runtime-scratch',
+    actionId,
+  )
+  const stagingPath = path.join(
+    fixture.appDataRoot,
+    'assignment-runs',
+    actionId,
+  )
+  try {
+    await mkdir(scratchPath, { recursive: true })
+    await mkdir(stagingPath, { recursive: true })
+    await writeFile(path.join(stagingPath, 'source-1.txt'), firstSource)
+
+    const reopened = createSemesterWorkspaceController({
+      packageRoot: fixture.packageRoot,
+      appDataRoot: fixture.appDataRoot,
+      chooseDirectory: async () => fixture.workspaceRoot,
+    })
+    await reopened.activate()
+
+    assert.deepEqual(reopened.modelingRuns(), [])
+    assert.equal(await exists(scratchPath), false)
+    assert.equal(await exists(stagingPath), false)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('cleanup deadline leaves a recovery guard and a later open can finish cleanup', async () => {
+  let releaseCleanup!: () => void
+  const cleanupBarrier = new Promise<void>((resolve) => {
+    releaseCleanup = resolve
+  })
+  const fixture = await createFixture(undefined, {
+    actionCleanupDeadlineMs: 5,
+    beforeActionArtifactCleanup: () => cleanupBarrier,
+  })
+  try {
+    const prepared = await prepareAction(fixture.controller, fixture.courseId)
+    await fixture.controller.bindAssignmentAction({
+      actionId: prepared.run.actionId,
+      threadId: 'thread-cleanup-deadline',
+      turnId: 'turn-cleanup-deadline',
+    })
+
+    const startedAt = Date.now()
+    const settled = await fixture.controller.settleAssignmentAction({
+      actionId: prepared.run.actionId,
+      status: 'completed',
+      validationOutcome: 'passed',
+    })
+
+    assert.equal(settled.status, 'completed')
+    assert.equal(Date.now() - startedAt < 250, true)
+    assert.equal(
+      fixture.controller.executionGuardRequiresFreshRuntime(
+        prepared.run.actionId,
+      ),
+      true,
+    )
+    await assert.rejects(
+      prepareAction(
+        fixture.controller,
+        fixture.courseId,
+        `action_${'9'.repeat(32)}`,
+      ),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'execution_cleanup_required',
+    )
+
+    releaseCleanup()
+    const reopened = createSemesterWorkspaceController({
+      packageRoot: fixture.packageRoot,
+      appDataRoot: fixture.appDataRoot,
+      chooseDirectory: async () => fixture.workspaceRoot,
+    })
+    await reopened.activate()
+    assert.equal(
+      reopened.executionGuardRequiresFreshRuntime(prepared.run.actionId),
+      false,
+    )
+    assert.equal(await exists(prepared.scratchPath), false)
+  } finally {
+    releaseCleanup()
+    await fixture.cleanup()
+  }
+})
+
 test('invalid action admission leaves no Run, staging, or scratch', async () => {
   const fixture = await createFixture()
   try {
@@ -97,6 +195,7 @@ test('invalid action admission leaves no Run, staging, or scratch', async () => 
           version: '1.0.0',
           digest: sha256('managed recipe bytes'),
           requestedSkillName: 'assignment-modeling',
+          requestedSkillPath: managedSkillPath,
         },
         arguments: {
           canonical: '{}',
@@ -133,7 +232,7 @@ test('invalid action admission leaves no Run, staging, or scratch', async () => 
   }
 })
 
-test('activation reconciles an unfinished durable action to unknown before material refresh', async () => {
+test('activation reconciles an unfinished action and its pending patch before material refresh', async () => {
   const fixture = await createFixture()
   try {
     const prepared = await prepareAction(fixture.controller, fixture.courseId)
@@ -142,6 +241,10 @@ test('activation reconciles an unfinished durable action to unknown before mater
       threadId: 'thread-action-2',
       turnId: 'turn-action-2',
     })
+    const patch = await prepared.mcpTool.invoke(
+      validProposalPayload(prepared.context),
+    )
+    assert.equal(patch.status, 'pending')
 
     const reopened = createSemesterWorkspaceController({
       packageRoot: fixture.packageRoot,
@@ -154,6 +257,12 @@ test('activation reconciles an unfinished durable action to unknown before mater
     assert.equal(reconciled?.id, prepared.run.id)
     assert.equal(reconciled?.status, 'unknown')
     assert.equal(reconciled?.failureCode, 'reconciled_after_restart')
+    assert.equal(
+      reopened
+        .assignmentState()
+        .statePatches.find((candidate) => candidate.id === patch.id)?.status,
+      'interrupted',
+    )
     assert.equal(await exists(prepared.stagedSources[0]!.path), false)
     assert.equal(await exists(prepared.scratchPath), false)
   } finally {
@@ -293,6 +402,68 @@ test('an unreviewed action proposal becomes interrupted at terminal settlement',
         .statePatches.find((candidate) => candidate.id === patch.id)?.status,
       'interrupted',
     )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('terminal settlement releases a settled Review binding before native interaction ID reuse', async () => {
+  const fixture = await createFixture()
+  const interactionId = 'interaction-reused-after-terminal'
+  try {
+    const first = await prepareAction(fixture.controller, fixture.courseId)
+    await fixture.controller.bindAssignmentAction({
+      actionId: first.run.actionId,
+      threadId: 'thread-review-release-1',
+      turnId: 'turn-review-release-1',
+    })
+    const firstPatch = await first.mcpTool.invoke(
+      validProposalPayload(first.context),
+    )
+    const firstBinding = await fixture.controller.bindAssignmentReview({
+      type: 'user_input.requested',
+      threadId: 'thread-review-release-1',
+      turnId: 'turn-review-release-1',
+      itemId: 'item-review-release-1',
+      interactionId,
+      questions: [ASSIGNMENT_REVIEW_QUESTION],
+    })
+    assert.ok(firstBinding)
+    await fixture.controller.commitAssignmentReviewDecision({
+      ...firstBinding,
+      decision: 'accept',
+    })
+    await fixture.controller.settleAssignmentAction({
+      actionId: first.run.actionId,
+      status: 'completed',
+      validationOutcome: 'passed',
+    })
+
+    const second = await prepareAction(
+      fixture.controller,
+      fixture.courseId,
+      `action_${'7'.repeat(32)}`,
+    )
+    await fixture.controller.bindAssignmentAction({
+      actionId: second.run.actionId,
+      threadId: 'thread-review-release-2',
+      turnId: 'turn-review-release-2',
+    })
+    const secondPatch = await second.mcpTool.invoke(
+      validProposalPayload(second.context),
+    )
+    const secondBinding = await fixture.controller.bindAssignmentReview({
+      type: 'user_input.requested',
+      threadId: 'thread-review-release-2',
+      turnId: 'turn-review-release-2',
+      itemId: 'item-review-release-2',
+      interactionId,
+      questions: [ASSIGNMENT_REVIEW_QUESTION],
+    })
+
+    assert.ok(secondBinding)
+    assert.equal(secondBinding.interactionId, interactionId)
+    assert.notEqual(secondPatch.id, firstPatch.id)
   } finally {
     await fixture.cleanup()
   }
@@ -510,11 +681,37 @@ test('Product Chat guards all registered sources and restart reconciles an unfin
   const reopenFixture = await createFixture()
   try {
     const operationId = `chat_${'1'.repeat(32)}`
+    const snapshot = reopenFixture.controller.snapshot()
+    assert.equal(snapshot?.state, 'ready')
+    if (snapshot?.state !== 'ready') assert.fail('workspace must be ready')
+    const selectedMaterials = snapshot.materials.map((material) => ({
+      rawMaterialId: material.id,
+      digest: material.digest,
+    }))
     const prepared = await reopenFixture.controller.prepareProductChatExecution({
       operationId,
       courseId: reopenFixture.courseId,
-      selectedMaterials: [],
+      selectedMaterials,
     })
+    const proposal =
+      await reopenFixture.controller.prepareAssignmentProposalSession({
+        courseId: reopenFixture.courseId,
+        selectedMaterials,
+      })
+    await reopenFixture.controller.bindProductChatExecution({
+      operationId,
+      threadId: 'thread-chat-restart',
+      turnId: 'turn-chat-restart',
+    })
+    await reopenFixture.controller.bindAssignmentProposalSession({
+      requestKey: proposal.context.requestKey,
+      threadId: 'thread-chat-restart',
+      turnId: 'turn-chat-restart',
+    })
+    const patch = await proposal.mcpTool.invoke(
+      validProposalPayload(proposal.context),
+    )
+    assert.equal(patch.status, 'pending')
     const reopened = createSemesterWorkspaceController({
       packageRoot: reopenFixture.packageRoot,
       appDataRoot: reopenFixture.appDataRoot,
@@ -523,6 +720,12 @@ test('Product Chat guards all registered sources and restart reconciles an unfin
     await reopened.activate()
     assert.equal(await exists(prepared.scratchPath), false)
     assert.deepEqual(reopened.modelingRuns(), [])
+    assert.equal(
+      reopened
+        .assignmentState()
+        .statePatches.find((candidate) => candidate.id === patch.id)?.status,
+      'interrupted',
+    )
     await reopened.prepareProductChatExecution({
       operationId: `chat_${'2'.repeat(32)}`,
       courseId: reopenFixture.courseId,
@@ -631,6 +834,10 @@ async function createFixture(
   beforeActionStoreWrite?: (
     point: 'prepare' | 'bind' | 'start_failure' | 'settle',
   ) => void | Promise<void>,
+  cleanupOptions: {
+    readonly actionCleanupDeadlineMs?: number
+    readonly beforeActionArtifactCleanup?: () => void | Promise<void>
+  } = {},
 ): Promise<{
   readonly controller: SemesterWorkspaceController
   readonly courseId: string
@@ -656,6 +863,7 @@ async function createFixture(
     packageRoot,
     appDataRoot,
     beforeActionStoreWrite,
+    ...cleanupOptions,
     chooseDirectory: async () => workspaceRoot,
   })
   await controller.activate()
@@ -691,6 +899,7 @@ async function prepareAction(
       version: '1.0.0',
       digest: sha256('managed recipe bytes'),
       requestedSkillName: 'assignment-modeling',
+      requestedSkillPath: managedSkillPath,
     },
     arguments: {
       canonical,

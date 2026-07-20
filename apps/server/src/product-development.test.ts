@@ -123,11 +123,22 @@ test('canonical product startup preserves caller-owned bytes and serves an incom
         assert.equal(internalSnapshot.foundStoreFormatVersion, 3)
       }
       assert.deepEqual(await response.json(), {
+        accountReadiness: {
+          state: 'unavailable',
+          displayMessage:
+            'Codex 상태를 확인할 수 없습니다. 자료 작업공간은 계속 사용할 수 있습니다.',
+        },
         workspace: {
           state: 'incompatible',
           readOnly: true,
           displayMessage:
             '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.',
+        },
+        history: {
+          assignments: [],
+          statePatches: [],
+          userConfirmations: [],
+          modelingRuns: [],
         },
       })
       assert.equal(await readFile(storePath, 'utf8'), newerStore)

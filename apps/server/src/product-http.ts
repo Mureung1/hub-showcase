@@ -21,8 +21,13 @@ import { writeNdjsonLine } from './codex-chat.js'
 import { isLoopbackAddress } from './codex-chat-config.js'
 import {
   SemesterWorkspaceError,
+  type Assignment,
+  type EvidenceRef,
+  type ModelingRun,
   type SemesterWorkspaceController,
   type SemesterWorkspaceSnapshot,
+  type StatePatchApplyOutcome,
+  type UserConfirmation,
 } from './semester-workspace.js'
 
 const productJsonEnvelopeLimit = 16 * 1024
@@ -30,7 +35,18 @@ const safeInvalidRequest = '요청을 확인하지 못했습니다.'
 const safeForbidden = '이 요청은 local AY-PLE에서만 사용할 수 있습니다.'
 const safeUnavailable = '학기 작업공간 기능이 준비되지 않았습니다.'
 const safeOperationFailed = '학기 작업공간 요청을 완료하지 못했습니다.'
+const safeAccountNotReady = 'Codex에 로그인한 뒤 다시 시도해 주세요.'
+const safeAccountUnavailable =
+  'Codex 상태를 확인할 수 없습니다. 자료 작업공간은 계속 사용할 수 있습니다.'
 const defaultProductWriteDrainMs = 5_000
+type ProductAccountReadinessSource = () => Promise<
+  | { readonly state: 'ready' }
+  | { readonly state: 'not_ready' }
+>
+type ProductAccountReadiness =
+  | { readonly state: 'ready' }
+  | { readonly state: 'not_ready'; readonly displayMessage: string }
+  | { readonly state: 'unavailable'; readonly displayMessage: string }
 type ProductWorkspaceSnapshot =
   | {
       readonly state: 'ready'
@@ -52,6 +68,68 @@ type ProductWorkspaceSnapshot =
       readonly readOnly: true
       readonly displayMessage: string
     }
+type ProductSettledHistory = {
+  readonly assignments: readonly ProductAssignment[]
+  readonly statePatches: readonly ProductSettledStatePatch[]
+  readonly userConfirmations: readonly ProductUserConfirmation[]
+  readonly modelingRuns: readonly ProductSettledModelingRun[]
+}
+type ProductEvidenceRef = {
+  readonly field: EvidenceRef['field']
+  readonly materialId: string
+  readonly digest: string
+  readonly quote: string
+}
+type ProductAssignment = {
+  readonly id: string
+  readonly courseId: string
+  readonly title: string
+  readonly dueAt: string
+  readonly submissionMethod: string
+  readonly evidence: readonly ProductEvidenceRef[]
+}
+type ProductSettledStatePatch = {
+  readonly id: string
+  readonly courseId: string
+  readonly baseRevision: number
+  readonly status: 'superseded' | 'applied' | 'rejected' | 'interrupted'
+  readonly createdAt: string
+  readonly applyOutcome: StatePatchApplyOutcome
+}
+type ProductUserConfirmation = {
+  readonly id: string
+  readonly patchId: string
+  readonly decision: UserConfirmation['decision']
+  readonly settledAt: string
+  readonly assignmentId: string | null
+  readonly resultingRevision: number | null
+  readonly outcome: UserConfirmation['outcome']
+}
+type ProductSettledModelingRun = {
+  readonly id: string
+  readonly actionId: string
+  readonly courseId: string
+  readonly recipe: {
+    readonly name: string
+    readonly version: string
+    readonly requestedSkillName: string
+  }
+  readonly sources: readonly {
+    readonly materialId: string
+    readonly digest: string
+  }[]
+  readonly status: Exclude<
+    ModelingRun['status'],
+    'starting' | 'running' | 'acceptance_unknown'
+  >
+  readonly validationOutcome: Exclude<
+    ModelingRun['validationOutcome'],
+    'pending'
+  >
+  readonly createdAt: string
+  readonly updatedAt: string
+  readonly settledAt: string
+}
 const workspaceErrorPresentation: Record<
   SemesterWorkspaceError['code'],
   { readonly status: number; readonly displayMessage: string }
@@ -129,6 +207,7 @@ export function createProductRouter(
   configuredOrigin?: string,
   actions?: AssignmentActionCoordinator,
   writeDrainMs = defaultProductWriteDrainMs,
+  readAccountReadiness?: ProductAccountReadinessSource,
 ): Router {
   const router = express.Router()
 
@@ -156,10 +235,18 @@ export function createProductRouter(
     next()
   })
 
-  router.get('/bootstrap', (_request, response) => {
+  router.get('/bootstrap', async (_request, response) => {
     response.setHeader('cache-control', 'no-store')
+    const workspaceSnapshot = controller?.snapshot() ?? null
+    const workspace = projectProductWorkspace(workspaceSnapshot)
+    const history = projectSettledHistory(controller, workspaceSnapshot)
+    const accountReadiness = await projectAccountReadiness(
+      readAccountReadiness,
+    )
     response.json({
-      workspace: projectProductWorkspace(controller?.snapshot() ?? null),
+      accountReadiness,
+      workspace,
+      history,
     })
   })
 
@@ -554,6 +641,155 @@ function projectProductWorkspace(
       size: material.size,
     })),
   }
+}
+
+async function projectAccountReadiness(
+  source: ProductAccountReadinessSource | undefined,
+): Promise<ProductAccountReadiness> {
+  if (!source) {
+    return { state: 'unavailable', displayMessage: safeAccountUnavailable }
+  }
+  try {
+    const readiness = await source()
+    return readiness.state === 'ready'
+      ? readiness
+      : { state: 'not_ready', displayMessage: safeAccountNotReady }
+  } catch {
+    return { state: 'unavailable', displayMessage: safeAccountUnavailable }
+  }
+}
+
+function projectSettledHistory(
+  controller: SemesterWorkspaceController | undefined,
+  workspace: SemesterWorkspaceSnapshot | null,
+): ProductSettledHistory {
+  if (!controller || workspace?.state !== 'ready' || workspace.course === null) {
+    return emptyProductHistory()
+  }
+  const assignmentState = controller.assignmentState()
+  return {
+    assignments: assignmentState.assignments.map(projectAssignment),
+    statePatches: assignmentState.statePatches.flatMap((patch) =>
+      patch.status === 'pending'
+        ? []
+        : [
+            {
+              id: patch.id,
+              courseId: patch.courseId,
+              baseRevision: patch.baseRevision,
+              status: patch.status,
+              createdAt: patch.createdAt,
+              applyOutcome: patch.applyOutcome,
+            },
+          ],
+    ),
+    userConfirmations: assignmentState.userConfirmations.map(
+      projectUserConfirmation,
+    ),
+    modelingRuns: controller
+      .modelingRuns()
+      .filter(isSettledModelingRun)
+      .map(projectSettledModelingRun),
+  }
+}
+
+function emptyProductHistory(): ProductSettledHistory {
+  return {
+    assignments: [],
+    statePatches: [],
+    userConfirmations: [],
+    modelingRuns: [],
+  }
+}
+
+function projectAssignment(assignment: Assignment): ProductAssignment {
+  return {
+    id: assignment.id,
+    courseId: assignment.courseId,
+    title: assignment.title,
+    dueAt: assignment.dueAt,
+    submissionMethod: assignment.submissionMethod,
+    evidence: assignment.evidence.map(projectEvidence),
+  }
+}
+
+function projectEvidence(evidence: EvidenceRef): ProductEvidenceRef {
+  return {
+    field: evidence.field,
+    materialId: evidence.rawMaterialId,
+    digest: evidence.digest,
+    quote: evidence.quote,
+  }
+}
+
+function projectUserConfirmation(
+  confirmation: UserConfirmation,
+): ProductUserConfirmation {
+  return {
+    id: confirmation.id,
+    patchId: confirmation.patchId,
+    decision: confirmation.decision,
+    settledAt: confirmation.settledAt,
+    assignmentId: confirmation.assignmentId ?? null,
+    resultingRevision: confirmation.resultingRevision ?? null,
+    outcome: confirmation.outcome,
+  }
+}
+
+function projectSettledModelingRun(
+  run: ModelingRun & {
+    readonly status: Exclude<
+      ModelingRun['status'],
+      'starting' | 'running' | 'acceptance_unknown'
+    >
+    readonly validationOutcome: Exclude<
+      ModelingRun['validationOutcome'],
+      'pending'
+    >
+    readonly settledAt: string
+  },
+): ProductSettledModelingRun {
+  return {
+    id: run.id,
+    actionId: run.actionId,
+    courseId: run.courseId,
+    recipe: {
+      name: run.recipeName,
+      version: run.recipeVersion,
+      requestedSkillName: run.requestedSkillName,
+    },
+    sources: run.sourceBaseline.map((source) => ({
+      materialId: source.rawMaterialId,
+      digest: source.digest,
+    })),
+    status: run.status,
+    validationOutcome: run.validationOutcome,
+    createdAt: run.createdAt,
+    updatedAt: run.updatedAt,
+    settledAt: run.settledAt,
+  }
+}
+
+function isSettledModelingRun(
+  run: ModelingRun,
+): run is ModelingRun & {
+  readonly status: Exclude<
+    ModelingRun['status'],
+    'starting' | 'running' | 'acceptance_unknown'
+  >
+  readonly validationOutcome: Exclude<
+    ModelingRun['validationOutcome'],
+    'pending'
+  >
+  readonly settledAt: string
+} {
+  return (
+    run.status !== 'starting' &&
+    run.status !== 'running' &&
+    run.status !== 'acceptance_unknown' &&
+    run.validationOutcome !== 'pending' &&
+    run.settledAt !== undefined
+  )
 }
 
 function isAllowedMutation(

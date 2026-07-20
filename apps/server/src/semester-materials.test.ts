@@ -266,7 +266,18 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
         const bootstrap = await fetch(`${baseUrl}/api/product/bootstrap`)
         assert.equal(bootstrap.status, 200)
         assert.equal(bootstrap.headers.get('cache-control'), 'no-store')
-        assert.deepEqual(await bootstrap.json(), refreshed)
+        const bootstrapBody = (await bootstrap.json()) as {
+          readonly accountReadiness: Record<string, unknown>
+          readonly workspace: unknown
+          readonly history: Record<string, unknown>
+        }
+        assert.deepEqual(bootstrapBody.workspace, refreshed.workspace)
+        assert.deepEqual(bootstrapBody.accountReadiness, {
+          state: 'unavailable',
+          displayMessage:
+            'Codex 상태를 확인할 수 없습니다. 자료 작업공간은 계속 사용할 수 있습니다.',
+        })
+        assert.deepEqual(bootstrapBody.history, emptyProductHistory())
 
         const material = refreshed.workspace.materials[0]
         assert.ok(material)
@@ -388,4 +399,13 @@ function assertReadyWorkspaceEnvelopeKeys(
     'materials',
     'state',
   ])
+}
+
+function emptyProductHistory() {
+  return {
+    assignments: [],
+    statePatches: [],
+    userConfirmations: [],
+    modelingRuns: [],
+  }
 }
