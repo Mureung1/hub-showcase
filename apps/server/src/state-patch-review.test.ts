@@ -14,10 +14,7 @@ import {
   ASSIGNMENT_REVIEW_QUESTION,
   createAssignmentReviewCoordinator,
 } from './state-patch-review.js'
-import {
-  materializeE2eSemesterWorkspace,
-  materializeScanLimitSemesterWorkspace,
-} from '../../../scripts/semester-workspace-materializer.mjs'
+import { materializeE2eSemesterWorkspace } from '../../../scripts/semester-workspace-materializer.mjs'
 
 test('a selected-source proposal creates one durable pending Assignment patch without changing confirmed state', async () => {
   const materialized = await materializeE2eSemesterWorkspace()
@@ -286,7 +283,16 @@ test('the deterministic MCP and Plan sequence commits an accepted Assignment bef
       appDataRoot,
       chooseDirectory: async () => materialized.workspaceRoot,
     })
-    await reopenedController.activate()
+    const reopenedActivation = await reopenedController.activate()
+    assert.equal(reopenedActivation.status, 'activated')
+    assert.equal(reopenedActivation.workspace.state, 'ready')
+    if (reopenedActivation.workspace.state === 'ready') {
+      assert.deepEqual(reopenedActivation.workspace.course, workspace.course)
+      assert.deepEqual(
+        reopenedActivation.workspace.materials,
+        workspace.materials,
+      )
+    }
     const reopened = reopenedController.assignmentState()
     assert.equal(reopened.workspaceId, session.context.workspaceId)
     assert.equal(reopened.confirmedRevision, 1)
@@ -307,7 +313,7 @@ test('the deterministic MCP and Plan sequence commits an accepted Assignment bef
   }
 })
 
-test('reopen normalizes a semantically exact pre-corrective version 2 canonical payload', async () => {
+test('reopen rejects a pre-corrective version 2 canonical payload without changing bytes', async () => {
   const fixture = await createReviewFixture()
 
   try {
@@ -326,65 +332,21 @@ test('reopen normalizes a semantically exact pre-corrective version 2 canonical 
       appDataRoot: fixture.appDataRoot,
       chooseDirectory: async () => fixture.workspaceRoot,
     })
-    await reopened.activate()
-    assert.deepEqual(reopened.assignmentState(), legacy.expectedState)
-
-    const migratedBytes = await readFile(legacy.storePath, 'utf8')
-    const migratedStore = JSON.parse(migratedBytes) as MutableStoredWorkspace
-    const migratedPatch = migratedStore.statePatches[0]
-    assert.ok(migratedPatch)
-    assert.equal(
-      migratedPatch.canonicalPayload,
-      legacy.currentCanonicalPayload,
-    )
-
-    const reopenedAgain = createSemesterWorkspaceController({
-      packageRoot: fixture.packageRoot,
-      appDataRoot: fixture.appDataRoot,
-      chooseDirectory: async () => fixture.workspaceRoot,
+    assert.deepEqual(await reopened.activate(), {
+      status: 'activated',
+      workspace: {
+        state: 'incompatible',
+        readOnly: true,
+        supportedStoreFormatVersion: 2,
+        foundStoreFormatVersion: 2,
+        displayMessage:
+          '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.',
+      },
     })
-    await reopenedAgain.activate()
-    assert.deepEqual(reopenedAgain.assignmentState(), legacy.expectedState)
-    assert.equal(await readFile(legacy.storePath, 'utf8'), migratedBytes)
-  } finally {
-    await fixture.cleanup()
-  }
-})
-
-test('failed activation does not persist a compatible version 2 normalization', async () => {
-  const fixture = await createReviewFixture()
-
-  try {
-    const legacy = await createSettledPreCorrectiveV2Store(
-      fixture,
-      'legacy-transaction',
+    assert.deepEqual(
+      await readFile(legacy.storePath),
+      Buffer.from(legacy.bytes, 'utf8'),
     )
-
-    const candidateRoot = path.join(
-      path.dirname(fixture.workspaceRoot),
-      'scan-limit-workspace',
-    )
-    await materializeScanLimitSemesterWorkspace(candidateRoot)
-    const candidateProductRoot = path.join(candidateRoot, '.ay-ple')
-    await mkdir(candidateProductRoot)
-    const candidateStorePath = path.join(
-      candidateProductRoot,
-      'workspace-state.json',
-    )
-    await writeFile(candidateStorePath, legacy.bytes, 'utf8')
-
-    const reopened = createSemesterWorkspaceController({
-      packageRoot: fixture.packageRoot,
-      appDataRoot: fixture.appDataRoot,
-      chooseDirectory: async () => candidateRoot,
-    })
-    await assert.rejects(
-      reopened.activate(),
-      (error: unknown) =>
-        error instanceof SemesterWorkspaceError &&
-        error.code === 'material_scan_limit',
-    )
-    assert.equal(await readFile(candidateStorePath, 'utf8'), legacy.bytes)
   } finally {
     await fixture.cleanup()
   }
@@ -992,6 +954,8 @@ test('reopen rejects relationally inconsistent version 2 state without rewriting
     const validStore = JSON.parse(
       await readFile(storePath, 'utf8'),
     ) as MutableStoredWorkspace
+    const previousSnapshot = fixture.controller.snapshot()
+    const previousAssignmentState = fixture.controller.assignmentState()
     const corruptions: readonly {
       readonly name: string
       readonly mutate: (store: MutableStoredWorkspace) => void
@@ -1153,14 +1117,38 @@ test('reopen rejects relationally inconsistent version 2 state without rewriting
         appDataRoot: fixture.appDataRoot,
         chooseDirectory: async () => fixture.workspaceRoot,
       })
-      await assert.rejects(
-        reopened.activate(),
-        (error: unknown) =>
-          error instanceof SemesterWorkspaceError &&
-          error.code === 'store_invalid',
+      assert.deepEqual(
+        await reopened.activate(),
+        {
+          status: 'activated',
+          workspace: {
+            state: 'incompatible',
+            readOnly: true,
+            supportedStoreFormatVersion: 2,
+            foundStoreFormatVersion: 2,
+            displayMessage:
+              '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.',
+          },
+        },
         candidate.name,
       )
       assert.equal(await readFile(storePath, 'utf8'), bytes, candidate.name)
+
+      if (candidate === corruptions[0]) {
+        await assert.rejects(
+          fixture.controller.activate(),
+          (error: unknown) =>
+            error instanceof SemesterWorkspaceError &&
+            error.code === 'workspace_incompatible',
+          candidate.name,
+        )
+        assert.deepEqual(fixture.controller.snapshot(), previousSnapshot)
+        assert.deepEqual(
+          fixture.controller.assignmentState(),
+          previousAssignmentState,
+        )
+        assert.equal(await readFile(storePath, 'utf8'), bytes, candidate.name)
+      }
     }
   } finally {
     await fixture.cleanup()
@@ -1247,7 +1235,6 @@ async function createSettledPreCorrectiveV2Store(
     ...created.binding,
     decision: 'accept',
   })
-  const expectedState = fixture.controller.assignmentState()
   const storePath = path.join(
     fixture.workspaceRoot,
     '.ay-ple',
@@ -1263,7 +1250,6 @@ async function createSettledPreCorrectiveV2Store(
   return {
     bytes: `${JSON.stringify(store, null, 2)}\n`,
     currentCanonicalPayload,
-    expectedState,
     legacyCanonicalPayload: patch.canonicalPayload,
     storePath,
   }

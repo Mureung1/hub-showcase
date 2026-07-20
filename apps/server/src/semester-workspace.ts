@@ -21,9 +21,10 @@ import { rootsAreDisjoint } from './root-isolation.js'
 import { isExactAssignmentReviewQuestion } from './state-patch-review.js'
 
 const storeFormatVersion = 2
-const legacyStoreFormatVersion = 1
 const productDirectoryName = '.ay-ple'
 const storeFileName = 'workspace-state.json'
+const incompatibleStoreDisplayMessage =
+  '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.'
 const materialMediaType = 'text/plain; charset=utf-8'
 const materialFileMaxBytes = 1024 * 1024
 const materialAggregateMaxBytes = 8 * 1024 * 1024
@@ -70,7 +71,7 @@ export type IncompatibleSemesterWorkspaceSnapshot = {
   readonly state: 'incompatible'
   readonly readOnly: true
   readonly supportedStoreFormatVersion: 2
-  readonly foundStoreFormatVersion: number
+  readonly foundStoreFormatVersion: number | null
   readonly displayMessage: string
 }
 
@@ -393,7 +394,14 @@ export function createSemesterWorkspaceController(options: {
         ])
         assertDisjointRoots([packageRoot, appDataRoot, workspaceRoot])
         const opened = await openWorkspace(workspaceRoot)
-        if ('store' in opened) await refreshReadyWorkspace(opened)
+        if ('store' in opened) {
+          await refreshReadyWorkspace(opened)
+        } else if (active) {
+          throw new SemesterWorkspaceError(
+            'workspace_incompatible',
+            incompatibleStoreDisplayMessage,
+          )
+        }
         active = opened
         proposalContexts.clear()
         activePatchByTurn.clear()
@@ -1087,63 +1095,38 @@ async function openWorkspace(workspaceRoot: string): Promise<OpenWorkspace> {
       'SemesterWorkspace state must be a regular file.',
     )
   }
-  let decoded: unknown
+  let storeBytes: Buffer
   try {
-    decoded = JSON.parse(await readFile(storePath, 'utf8'))
+    storeBytes = await readFile(storePath)
   } catch {
     throw new SemesterWorkspaceError(
       'store_invalid',
       'SemesterWorkspace state could not be read.',
     )
   }
-  if (
-    isRecord(decoded) &&
-    Number.isSafeInteger(decoded.formatVersion) &&
-    Number(decoded.formatVersion) > storeFormatVersion
-  ) {
-    return {
-      root: workspaceRoot,
-      snapshot: {
-        state: 'incompatible',
-        readOnly: true,
-        supportedStoreFormatVersion: storeFormatVersion,
-        foundStoreFormatVersion: Number(decoded.formatVersion),
-        displayMessage:
-          '이 SemesterWorkspace는 더 최신 버전의 AY-PLE에서 생성되었습니다. 최신 AY-PLE로 다시 여세요.',
-      },
+  let decoded: unknown
+  try {
+    decoded = JSON.parse(
+      new TextDecoder('utf-8', { fatal: true }).decode(storeBytes),
+    )
+  } catch {
+    return incompatibleWorkspace(workspaceRoot, null)
+  }
+  try {
+    const store = decodeCurrentStore(decoded)
+    return { root: workspaceRoot, store, snapshot: readySnapshot(store) }
+  } catch (error) {
+    if (
+      !(error instanceof SemesterWorkspaceError) ||
+      error.code !== 'store_invalid'
+    ) {
+      throw error
     }
+    return incompatibleWorkspace(workspaceRoot, decoded)
   }
-  const foundFormatVersion = isRecord(decoded)
-    ? Number(decoded.formatVersion)
-    : Number.NaN
-  const store = decodeCurrentStore(decoded)
-  if (foundFormatVersion === legacyStoreFormatVersion) {
-    await writeStore(workspaceRoot, store)
-  }
-  return { root: workspaceRoot, store, snapshot: readySnapshot(store) }
 }
 
 function decodeCurrentStore(value: unknown): PersistedWorkspaceState {
-  if (isRecord(value) && value.formatVersion === legacyStoreFormatVersion) {
-    if (
-      !Number.isSafeInteger(value.confirmedRevision) ||
-      Number(value.confirmedRevision) < 0 ||
-      !isCourseOrNull(value.course) ||
-      (value.materials !== undefined && !isRawMaterialArray(value.materials))
-    ) {
-      throw invalidStore()
-    }
-    return {
-      formatVersion: storeFormatVersion,
-      workspaceId: `workspace_${randomUUID().replaceAll('-', '')}`,
-      confirmedRevision: Number(value.confirmedRevision),
-      course: cloneCourse(value.course),
-      materials: cloneRawMaterials(value.materials),
-      assignments: [],
-      statePatches: [],
-      userConfirmations: [],
-    }
-  }
   if (
     !isRecord(value) ||
     !isExactRecord(value, [
@@ -1182,6 +1165,25 @@ function decodeCurrentStore(value: unknown): PersistedWorkspaceState {
   } satisfies PersistedWorkspaceState
   if (!hasValidWorkspaceStateInvariants(store)) throw invalidStore()
   return store
+}
+
+function incompatibleWorkspace(
+  workspaceRoot: string,
+  decoded: unknown,
+): OpenWorkspace {
+  return {
+    root: workspaceRoot,
+    snapshot: {
+      state: 'incompatible',
+      readOnly: true,
+      supportedStoreFormatVersion: storeFormatVersion,
+      foundStoreFormatVersion:
+        isRecord(decoded) && Number.isSafeInteger(decoded.formatVersion)
+          ? Number(decoded.formatVersion)
+          : null,
+      displayMessage: incompatibleStoreDisplayMessage,
+    },
+  }
 }
 
 async function writeStore(
@@ -1246,7 +1248,7 @@ function requireReadyWorkspace(
   if (!('store' in active)) {
     throw new SemesterWorkspaceError(
       'workspace_incompatible',
-      'This SemesterWorkspace is read-only because its format is newer.',
+      'This SemesterWorkspace has an unsupported or invalid product store.',
     )
   }
   return active
@@ -1378,47 +1380,11 @@ function clonePersistedStatePatch(
   patch: PersistedStatePatch,
 ): PersistedStatePatch {
   const canonicalPayload = canonicalStoredPatchPayload(patch)
-  if (
-    canonicalizeStoredPatchPayload(patch.canonicalPayload) !== canonicalPayload
-  ) {
-    throw invalidStore()
-  }
+  if (patch.canonicalPayload !== canonicalPayload) throw invalidStore()
   return {
     ...cloneStatePatch(patch),
     canonicalPayload,
   }
-}
-
-function canonicalizeStoredPatchPayload(value: string): string {
-  try {
-    const decoded: unknown = JSON.parse(value)
-    if (
-      JSON.stringify(decoded) !== value ||
-      !isExactStatePatchPayload(decoded)
-    ) {
-      throw invalidStore()
-    }
-    const normalized = normalizeStatePatchPayload(decoded)
-    if (
-      !hasMatchingKeyOrder(decoded, normalized) ||
-      !hasMatchingKeyOrder(decoded.changes, normalized.changes) ||
-      !isCanonicallyOrderedEvidence(decoded.evidence)
-    ) {
-      throw invalidStore()
-    }
-    return JSON.stringify(normalized)
-  } catch {
-    throw invalidStore()
-  }
-}
-
-function hasMatchingKeyOrder(value: object, canonical: object): boolean {
-  const actual = Object.keys(value)
-  const expected = Object.keys(canonical)
-  return (
-    actual.length === expected.length &&
-    actual.every((key, index) => key === expected[index])
-  )
 }
 
 type InspectedMaterial = Omit<RawMaterial, 'id'> & {
@@ -1777,12 +1743,6 @@ function canonicalStoredPatchPayload(patch: PersistedStatePatch): string {
 
 function cloneCourse(course: Course | null): Course | null {
   return course ? { ...course } : null
-}
-
-function cloneRawMaterials(value: unknown): readonly RawMaterial[] {
-  return value === undefined
-    ? []
-    : (value as readonly RawMaterial[]).map((material) => ({ ...material }))
 }
 
 function isAssignmentArray(value: unknown): value is readonly Assignment[] {

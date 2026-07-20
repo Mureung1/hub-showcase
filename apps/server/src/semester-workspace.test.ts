@@ -207,144 +207,108 @@ test('activation keeps the current workspace authoritative when the candidate in
   }
 })
 
-test('a version 1 workspace store migrates once to version 2 and keeps its new workspace identity', async () => {
+test('non-current workspace stores open through one read-only boundary without changing bytes', async () => {
   const testRoot = await mkdtemp(
-    path.join(tmpdir(), 'ay-ple-semester-store-migration-test-'),
+    path.join(tmpdir(), 'ay-ple-semester-store-compatibility-test-'),
   )
   const packageRoot = path.join(testRoot, 'package')
   const appDataRoot = path.join(testRoot, 'app-data')
-  const workspaceRoot = path.join(testRoot, 'semester')
-  const productRoot = path.join(workspaceRoot, '.ay-ple')
-  const storePath = path.join(productRoot, 'workspace-state.json')
   const courseId = `course_${'a'.repeat(32)}`
-  const materialId = `material_${'b'.repeat(32)}`
+  const workspaceId = `workspace_${'b'.repeat(32)}`
+  const sourceBytes = Buffer.from('호환되지 않는 store의 원본 학기 자료', 'utf8')
+  const fixtures = [
+    {
+      name: 'version 1',
+      foundStoreFormatVersion: 1,
+      bytes: Buffer.from(
+        `${JSON.stringify({
+          formatVersion: 1,
+          confirmedRevision: 4,
+          course: { id: courseId, displayName: '문제해결글쓰기' },
+          materials: [],
+        })}\n`,
+        'utf8',
+      ),
+    },
+    {
+      name: 'malformed current version 2',
+      foundStoreFormatVersion: 2,
+      bytes: Buffer.from(
+        `${JSON.stringify({
+          formatVersion: 2,
+          workspaceId,
+          confirmedRevision: 0,
+        })}\n`,
+        'utf8',
+      ),
+    },
+    {
+      name: 'invalid JSON',
+      foundStoreFormatVersion: null,
+      bytes: Buffer.from('{"formatVersion":2,\n', 'utf8'),
+    },
+    {
+      name: 'future version',
+      foundStoreFormatVersion: 3,
+      bytes: Buffer.from(
+        '{"formatVersion":3,"futureState":"keep exactly"}\n',
+        'utf8',
+      ),
+    },
+  ] as const
 
   try {
     await Promise.all(
-      [packageRoot, appDataRoot, productRoot].map((directory) =>
-        mkdir(directory, { recursive: true }),
-      ),
+      [packageRoot, appDataRoot].map((directory) => mkdir(directory)),
     )
-    await writeFile(
-      path.join(workspaceRoot, 'legacy-source.txt'),
-      '기존 학기 자료',
-      'utf8',
-    )
-    await writeFile(
-      storePath,
-      `${JSON.stringify({
-        formatVersion: 1,
-        confirmedRevision: 4,
-        course: { id: courseId, displayName: '문제해결글쓰기' },
-        materials: [
-          {
-            id: materialId,
-            relativePath: 'legacy-source.txt',
-            digest: '0'.repeat(64),
-            mediaType: 'text/plain; charset=utf-8',
-            size: 0,
-          },
-        ],
-      })}\n`,
-      'utf8',
-    )
-    const controller = createSemesterWorkspaceController({
-      packageRoot,
-      appDataRoot,
-      chooseDirectory: async () => workspaceRoot,
-    })
-    const activation = await controller.activate()
-    assert.equal(activation.status, 'activated')
-    assert.equal(activation.workspace.state, 'ready')
-    assert.equal(activation.workspace.storeFormatVersion, 2)
-    assert.equal(activation.workspace.confirmedRevision, 4)
-    assert.equal(activation.workspace.course?.id, courseId)
-    assert.equal(activation.workspace.materials[0]?.id, materialId)
-    const migrated = JSON.parse(await readFile(storePath, 'utf8')) as {
-      readonly formatVersion: number
-      readonly workspaceId: string
-      readonly assignments: readonly unknown[]
-      readonly statePatches: readonly unknown[]
-      readonly userConfirmations: readonly unknown[]
-    }
-    assert.equal(migrated.formatVersion, 2)
-    assert.match(migrated.workspaceId, /^workspace_[0-9a-f]{32}$/)
-    assert.deepEqual(migrated.assignments, [])
-    assert.deepEqual(migrated.statePatches, [])
-    assert.deepEqual(migrated.userConfirmations, [])
-
-    const reopened = createSemesterWorkspaceController({
-      packageRoot,
-      appDataRoot,
-      chooseDirectory: async () => workspaceRoot,
-    })
-    await reopened.activate()
-    assert.equal(reopened.assignmentState().workspaceId, migrated.workspaceId)
-    assert.equal(reopened.assignmentState().courseId, courseId)
-  } finally {
-    await rm(testRoot, { force: true, recursive: true })
-  }
-})
-
-test('a newer workspace store opens as actionable read-only state without changing its bytes', async () => {
-  const testRoot = await mkdtemp(
-    path.join(tmpdir(), 'ay-ple-semester-newer-store-test-'),
-  )
-  const packageRoot = path.join(testRoot, 'package')
-  const appDataRoot = path.join(testRoot, 'app-data')
-  const workspaceRoot = path.join(testRoot, 'semester')
-  const productRoot = path.join(workspaceRoot, '.ay-ple')
-  const storePath = path.join(productRoot, 'workspace-state.json')
-  const newerStore = '{"formatVersion":3,"futureState":"keep exactly"}\n'
-  const runtime = new ControlledRuntime()
-
-  try {
-    await Promise.all(
-      [packageRoot, appDataRoot, productRoot].map((directory) =>
-        mkdir(directory, { recursive: true }),
-      ),
-    )
-    await writeFile(storePath, newerStore, 'utf8')
-    const application = await createServerApplication({
-      codexChat: configuredBootstrap(runtime),
-      semesterWorkspace: {
+    for (const fixture of fixtures) {
+      const workspaceRoot = path.join(
+        testRoot,
+        fixture.name.replaceAll(' ', '-'),
+      )
+      const productRoot = path.join(workspaceRoot, '.ay-ple')
+      const storePath = path.join(productRoot, 'workspace-state.json')
+      const sourcePath = path.join(workspaceRoot, 'original-source.txt')
+      await mkdir(productRoot, { recursive: true })
+      await writeFile(sourcePath, sourceBytes)
+      await writeFile(storePath, fixture.bytes)
+      const controller = createSemesterWorkspaceController({
         packageRoot,
         appDataRoot,
         chooseDirectory: async () => workspaceRoot,
-      },
-    })
-    const controller = application.semesterWorkspace
-    assert.ok(controller)
-
-    try {
-      assert.deepEqual(await controller.activate(), {
-        status: 'activated',
-        workspace: {
-          state: 'incompatible',
-          readOnly: true,
-          supportedStoreFormatVersion: 2,
-          foundStoreFormatVersion: 3,
-          displayMessage:
-            '이 SemesterWorkspace는 더 최신 버전의 AY-PLE에서 생성되었습니다. 최신 AY-PLE로 다시 여세요.',
-        },
       })
+
+      assert.deepEqual(
+        await controller.activate(),
+        {
+          status: 'activated',
+          workspace: {
+            state: 'incompatible',
+            readOnly: true,
+            supportedStoreFormatVersion: 2,
+            foundStoreFormatVersion: fixture.foundStoreFormatVersion,
+            displayMessage:
+              '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.',
+          },
+        },
+        fixture.name,
+      )
       await assert.rejects(
         controller.createCourse('바꾸면 안 되는 과목'),
         (error: unknown) =>
           error instanceof SemesterWorkspaceError &&
           error.code === 'workspace_incompatible',
+        fixture.name,
       )
       assert.throws(
         () => controller.nativeCwd(),
         (error: unknown) =>
           error instanceof SemesterWorkspaceError &&
           error.code === 'workspace_incompatible',
+        fixture.name,
       )
-      assert.equal(runtime.startThreadCalls, 0)
-      assert.equal(runtime.startTurnCalls, 0)
-      assert.equal(await readFile(storePath, 'utf8'), newerStore)
-    } finally {
-      await application.close()
+      assert.deepEqual(await readFile(storePath), fixture.bytes, fixture.name)
+      assert.deepEqual(await readFile(sourcePath), sourceBytes, fixture.name)
     }
   } finally {
     await rm(testRoot, { force: true, recursive: true })

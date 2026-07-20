@@ -85,7 +85,8 @@ const workspaceErrorPresentation: Record<
   },
   workspace_incompatible: {
     status: 409,
-    displayMessage: '이 학기 작업공간은 더 최신 AY-PLE에서 열어야 합니다.',
+    displayMessage:
+      '이 학기 작업공간의 제품 상태를 현재 AY-PLE에서 안전하게 열 수 없습니다.',
   },
 }
 

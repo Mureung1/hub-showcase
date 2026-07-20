@@ -158,8 +158,10 @@ export async function startConfiguredServerApplication(
           `SemesterWorkspace active: ${application.semesterWorkspace?.nativeCwd()}`,
         )
       } else {
+        const foundStoreFormatVersion =
+          activation.workspace.foundStoreFormatVersion ?? 'unknown'
         log(
-          `SemesterWorkspace read-only: store format ${activation.workspace.foundStoreFormatVersion}`,
+          `SemesterWorkspace read-only: store format ${foundStoreFormatVersion}`,
         )
       }
     }

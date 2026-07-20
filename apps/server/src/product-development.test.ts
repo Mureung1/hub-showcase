@@ -78,7 +78,7 @@ test('product development bootstrap activates and reports its explicit selected 
   }
 })
 
-test('canonical product startup serves an actionable incompatible workspace snapshot', async () => {
+test('canonical product startup preserves caller-owned bytes and serves an incompatible snapshot', async () => {
   const testRoot = await mkdtemp(
     path.join(tmpdir(), 'ay-ple-product-incompatible-startup-test-'),
   )
@@ -87,7 +87,9 @@ test('canonical product startup serves an actionable incompatible workspace snap
   const workspaceRoot = path.join(testRoot, 'semester')
   const productRoot = path.join(workspaceRoot, '.ay-ple')
   const storePath = path.join(productRoot, 'workspace-state.json')
+  const sourcePath = path.join(workspaceRoot, 'caller-owned.txt')
   const newerStore = '{"formatVersion":3,"futureState":"keep exactly"}\n'
+  const sourceBytes = Buffer.from('caller-owned original material', 'utf8')
 
   try {
     await Promise.all(
@@ -96,6 +98,7 @@ test('canonical product startup serves an actionable incompatible workspace snap
       ),
     )
     await writeFile(storePath, newerStore, 'utf8')
+    await writeFile(sourcePath, sourceBytes)
 
     const started = await startConfiguredServerApplication({
       environment: {
@@ -124,10 +127,11 @@ test('canonical product startup serves an actionable incompatible workspace snap
           state: 'incompatible',
           readOnly: true,
           displayMessage:
-            '이 SemesterWorkspace는 더 최신 버전의 AY-PLE에서 생성되었습니다. 최신 AY-PLE로 다시 여세요.',
+            '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.',
         },
       })
       assert.equal(await readFile(storePath, 'utf8'), newerStore)
+      assert.deepEqual(await readFile(sourcePath), sourceBytes)
     } finally {
       await started.application.close()
     }

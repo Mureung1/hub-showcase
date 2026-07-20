@@ -276,6 +276,18 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
         assert.equal(preview.headers.get('cache-control'), 'no-store')
         const previewBody = await preview.text()
         assert.equal(previewBody.includes(materialized.runRoot), false)
+        assert.deepEqual(
+          Object.keys(JSON.parse(previewBody) as Record<string, unknown>).sort(),
+          [
+            'digest',
+            'materialId',
+            'mediaType',
+            'relativePath',
+            'size',
+            'text',
+            'truncated',
+          ],
+        )
 
         const stale = await fetch(
           `${baseUrl}/api/product/materials/${material.id}/preview?digest=${'0'.repeat(64)}`,
