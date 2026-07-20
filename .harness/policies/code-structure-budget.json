@@ -14,10 +14,6 @@
     }
   },
   "pythonFunctionBudgets": {
-    "product/apps/api/src/localtwin_api/main.py#create_app": {
-      "maxLines": 261,
-      "reason": "API-004에서 app factory와 router를 분리한다."
-    },
     "product/apps/api/src/localtwin_api/market_analysis.py#_build_analysis": {
       "maxLines": 173,
       "reason": "API-005에서 metric, ranking과 response 조립을 분리한다."
