@@ -1089,20 +1089,17 @@ async function openWorkspace(workspaceRoot: string): Promise<OpenWorkspace> {
   }
 
   const stats = await lstat(storePath)
-  if (!stats.isFile() || stats.isSymbolicLink()) {
-    throw new SemesterWorkspaceError(
-      'store_invalid',
-      'SemesterWorkspace state must be a regular file.',
-    )
+  if (stats.isSymbolicLink()) {
+    return incompatibleWorkspace(workspaceRoot, null)
+  }
+  if (!stats.isFile()) {
+    return incompatibleWorkspace(workspaceRoot, null)
   }
   let storeBytes: Buffer
   try {
     storeBytes = await readFile(storePath)
   } catch {
-    throw new SemesterWorkspaceError(
-      'store_invalid',
-      'SemesterWorkspace state could not be read.',
-    )
+    return incompatibleWorkspace(workspaceRoot, null)
   }
   let decoded: unknown
   try {

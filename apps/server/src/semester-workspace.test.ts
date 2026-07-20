@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict'
 import {
+  lstat,
   mkdir,
   mkdtemp,
+  open,
   readFile,
   realpath,
   rm,
+  stat,
   symlink,
+  truncate,
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -309,6 +313,105 @@ test('non-current workspace stores open through one read-only boundary without c
       )
       assert.deepEqual(await readFile(storePath), fixture.bytes, fixture.name)
       assert.deepEqual(await readFile(sourcePath), sourceBytes, fixture.name)
+    }
+  } finally {
+    await rm(testRoot, { force: true, recursive: true })
+  }
+})
+
+test('a directory at the product store path opens read-only without changing its contents', async () => {
+  const testRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-semester-store-directory-test-'),
+  )
+  const packageRoot = path.join(testRoot, 'package')
+  const appDataRoot = path.join(testRoot, 'app-data')
+  const workspaceRoot = path.join(testRoot, 'semester')
+  const storePath = path.join(workspaceRoot, '.ay-ple', 'workspace-state.json')
+  const sentinelPath = path.join(storePath, 'original-state.txt')
+  const sentinelBytes = Buffer.from('directory must remain untouched', 'utf8')
+
+  try {
+    await Promise.all([
+      mkdir(packageRoot),
+      mkdir(appDataRoot),
+      mkdir(storePath, { recursive: true }),
+    ])
+    await writeFile(sentinelPath, sentinelBytes)
+    const controller = createSemesterWorkspaceController({
+      packageRoot,
+      appDataRoot,
+      chooseDirectory: async () => workspaceRoot,
+    })
+
+    assert.deepEqual(await controller.activate(), {
+      status: 'activated',
+      workspace: {
+        state: 'incompatible',
+        readOnly: true,
+        supportedStoreFormatVersion: 2,
+        foundStoreFormatVersion: null,
+        displayMessage:
+          '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.',
+      },
+    })
+    assert.equal((await lstat(storePath)).isDirectory(), true)
+    assert.deepEqual(await readFile(sentinelPath), sentinelBytes)
+  } finally {
+    await rm(testRoot, { force: true, recursive: true })
+  }
+})
+
+test('an unreadable product store opens read-only without changing its bytes', async () => {
+  const testRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-semester-store-read-failure-test-'),
+  )
+  const packageRoot = path.join(testRoot, 'package')
+  const appDataRoot = path.join(testRoot, 'app-data')
+  const workspaceRoot = path.join(testRoot, 'semester')
+  const productRoot = path.join(workspaceRoot, '.ay-ple')
+  const storePath = path.join(productRoot, 'workspace-state.json')
+  const originalPrefix = Buffer.from('store bytes must remain untouched', 'utf8')
+  const sparseFileSize = 2 ** 31
+
+  try {
+    await Promise.all([
+      mkdir(packageRoot),
+      mkdir(appDataRoot),
+      mkdir(productRoot, { recursive: true }),
+    ])
+    await writeFile(storePath, originalPrefix)
+    await truncate(storePath, sparseFileSize)
+    const controller = createSemesterWorkspaceController({
+      packageRoot,
+      appDataRoot,
+      chooseDirectory: async () => workspaceRoot,
+    })
+
+    assert.deepEqual(await controller.activate(), {
+      status: 'activated',
+      workspace: {
+        state: 'incompatible',
+        readOnly: true,
+        supportedStoreFormatVersion: 2,
+        foundStoreFormatVersion: null,
+        displayMessage:
+          '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.',
+      },
+    })
+    assert.equal((await stat(storePath)).size, sparseFileSize)
+    const store = await open(storePath, 'r')
+    try {
+      const preservedPrefix = Buffer.alloc(originalPrefix.length)
+      const { bytesRead } = await store.read(
+        preservedPrefix,
+        0,
+        preservedPrefix.length,
+        0,
+      )
+      assert.equal(bytesRead, originalPrefix.length)
+      assert.deepEqual(preservedPrefix, originalPrefix)
+    } finally {
+      await store.close()
     }
   } finally {
     await rm(testRoot, { force: true, recursive: true })

@@ -4,6 +4,7 @@ import {
   chmod,
   mkdir,
   readFile,
+  readlink,
   rm,
   symlink,
   writeFile,
@@ -302,7 +303,7 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
   }
 })
 
-test('product HTTP keeps the active workspace and gives an actionable incompatible-candidate response', async () => {
+test('product HTTP keeps the active workspace for a symlink store candidate', async () => {
   const materialized = await materializeE2eSemesterWorkspace()
   const packageRoot = path.join(materialized.runRoot, 'package')
   const appDataRoot = path.join(materialized.runRoot, 'app-data')
@@ -311,6 +312,10 @@ test('product HTTP keeps the active workspace and gives an actionable incompatib
   const candidateStorePath = path.join(
     candidateProductRoot,
     'workspace-state.json',
+  )
+  const candidateStoreTarget = path.join(
+    candidateRoot,
+    'original-workspace-state.json',
   )
   const candidateStoreBytes = Buffer.from(
     '{"formatVersion":3,"futureState":"keep exactly"}\n',
@@ -324,7 +329,8 @@ test('product HTTP keeps the active workspace and gives an actionable incompatib
       mkdir(appDataRoot),
       mkdir(candidateProductRoot, { recursive: true }),
     ])
-    await writeFile(candidateStorePath, candidateStoreBytes)
+    await writeFile(candidateStoreTarget, candidateStoreBytes)
+    await symlink(candidateStoreTarget, candidateStorePath)
     await withTestServer(
       {
         codexChat: configuredBootstrap(new ControlledRuntime()),
@@ -364,10 +370,8 @@ test('product HTTP keeps the active workspace and gives an actionable incompatib
         const currentBootstrap = await fetch(`${baseUrl}/api/product/bootstrap`)
         assert.equal(currentBootstrap.status, 200)
         assert.deepEqual(await currentBootstrap.json(), initialSnapshot)
-        assert.deepEqual(
-          await readFile(candidateStorePath),
-          candidateStoreBytes,
-        )
+        assert.equal(await readlink(candidateStorePath), candidateStoreTarget)
+        assert.deepEqual(await readFile(candidateStoreTarget), candidateStoreBytes)
       },
     )
   } finally {
