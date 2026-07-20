@@ -3,6 +3,8 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Clock,
+  ExternalLink,
+  Info,
   Link2,
   LoaderCircle,
   MapPin,
@@ -14,9 +16,16 @@ import {
 } from 'lucide-react';
 import type { GymPlace, GymTrainer } from '../../data/userMock';
 import ConsultRequestSheet from '../../features/map/ConsultRequestSheet';
+import GymThumbnail from '../../features/map/GymThumbnail';
 import { useConsultRequests } from '../../hooks/useConsultRequests';
 import { fetchGymById } from '../../services/gymsApi';
 import { formatRelativeTime } from '../../utils/date';
+import {
+  hasGymDetailProfile,
+  hasGymRating,
+  hasNaverExternalLink,
+  isNaverSourcedGym,
+} from '../../utils/gymProfile';
 import {
   getActiveHistoryShareRequest,
   getMemberVisibleConsultFeedback,
@@ -27,6 +36,10 @@ import '../../features/map/gymDetail.css';
 import './user.css';
 
 type DetailTab = 'gym' | 'trainers';
+
+function InfoPlaceholder() {
+  return <p className="gym-info-placeholder">정보 준비 중</p>;
+}
 
 export default function GymDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -92,6 +105,10 @@ export default function GymDetailPage() {
     return <Navigate to="/user/map" replace state={{ error }} />;
   }
 
+  const showDetailProfile = hasGymDetailProfile(gym);
+  const showNaverLink = hasNaverExternalLink(gym);
+  const fromNaver = isNaverSourcedGym(gym);
+
   const openConsult = (trainer: GymTrainer | null = null) => {
     setSelectedTrainer(trainer);
     setConsultOpen(true);
@@ -105,21 +122,31 @@ export default function GymDetailPage() {
       </Link>
 
       <section className="gym-detail-hero panel">
-        <div className="gym-detail-gallery" aria-label={`${gym.name} 사진`}>
-          {gym.photos.map((photo, index) => (
-            <img
-              key={photo}
-              src={photo}
-              alt={`${gym.name} 사진 ${index + 1}`}
-              loading={index === 0 ? 'eager' : 'lazy'}
-            />
-          ))}
-        </div>
+        {gym.photos.length > 0 ? (
+          <div className="gym-detail-gallery" aria-label={`${gym.name} 사진`}>
+            {gym.photos.map((photo, index) => (
+              <img
+                key={photo}
+                src={photo}
+                alt={`${gym.name} 사진 ${index + 1}`}
+                loading={index === 0 ? 'eager' : 'lazy'}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="gym-detail-gallery gym-detail-gallery-placeholder" aria-hidden="true">
+            <GymThumbnail gym={gym} size="md" />
+            <p>사진 정보 준비 중</p>
+          </div>
+        )}
 
         <div className="gym-detail-head">
           <div className="gym-detail-badges">
             <div className="gym-detail-badge-row">
               <span className="status-badge badge-red">{gym.type}</span>
+              {fromNaver && (
+                <span className="gym-source-badge">네이버 연동</span>
+              )}
               {isLinked && (
                 <span className="gym-link-badge" title="식단·운동 기록 공유 중">
                   <Link2 size={12} />
@@ -134,24 +161,56 @@ export default function GymDetailPage() {
           </div>
           <h1>{gym.name}</h1>
           <div className="gym-card-meta">
-            <span>
-              <Star size={14} />
-              {gym.rating.toFixed(1)}
-            </span>
+            {hasGymRating(gym) && (
+              <span>
+                <Star size={14} />
+                {gym.rating.toFixed(1)}
+              </span>
+            )}
             <span>
               <MapPin size={14} />
               {gym.address}
             </span>
           </div>
-          <div className="gym-tags">
-            {gym.tags.map((tag) => (
-              <span key={tag} className="gym-tag">
-                {tag}
-              </span>
-            ))}
-          </div>
+          {gym.tags.length > 0 && (
+            <div className="gym-tags">
+              {gym.tags.map((tag) => (
+                <span key={tag} className="gym-tag">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </section>
+
+      {!showDetailProfile && (
+        <section className="gym-naver-notice panel" aria-label="상세 정보 안내">
+          <div className="gym-naver-notice-head">
+            <Info size={18} aria-hidden="true" />
+            <div>
+              <h2>상세 정보 준비 중</h2>
+              <p>
+                운영 시간, 비용, 보유 기구 등은 FitCheck에 아직 등록되지 않았습니다.
+                {fromNaver
+                  ? ' 네이버 지도에서 최신 정보를 확인해 보세요.'
+                  : ' 헬스장 등록이 완료되면 이곳에 표시됩니다.'}
+              </p>
+            </div>
+          </div>
+          {showNaverLink && (
+            <a
+              href={gym.externalLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-secondary gym-naver-link-btn"
+            >
+              <ExternalLink size={16} />
+              네이버 지도에서 더보기
+            </a>
+          )}
+        </section>
+      )}
 
       {trainerFeedback && (
         <section className="gym-feedback-card panel" aria-label="트레이너 상담 피드백">
@@ -220,7 +279,7 @@ export default function GymDetailPage() {
               </span>
               <div>
                 <strong>운영 시간</strong>
-                <p>{gym.hours}</p>
+                {gym.hours.trim() ? <p>{gym.hours}</p> : <InfoPlaceholder />}
               </div>
             </li>
             <li>
@@ -229,7 +288,7 @@ export default function GymDetailPage() {
               </span>
               <div>
                 <strong>비용</strong>
-                <p>{gym.price}</p>
+                {gym.price.trim() ? <p>{gym.price}</p> : <InfoPlaceholder />}
               </div>
             </li>
             <li>
@@ -238,13 +297,17 @@ export default function GymDetailPage() {
               </span>
               <div>
                 <strong>보유 기구</strong>
-                <div className="gym-chip-row">
-                  {gym.equipment.map((item) => (
-                    <span key={item} className="gym-tag">
-                      {item}
-                    </span>
-                  ))}
-                </div>
+                {gym.equipment.length > 0 ? (
+                  <div className="gym-chip-row">
+                    {gym.equipment.map((item) => (
+                      <span key={item} className="gym-tag">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <InfoPlaceholder />
+                )}
               </div>
             </li>
             <li>
@@ -253,13 +316,17 @@ export default function GymDetailPage() {
               </span>
               <div>
                 <strong>편의 시설</strong>
-                <div className="gym-chip-row">
-                  {gym.amenities.map((item) => (
-                    <span key={item} className="gym-tag">
-                      {item}
-                    </span>
-                  ))}
-                </div>
+                {gym.amenities.length > 0 ? (
+                  <div className="gym-chip-row">
+                    {gym.amenities.map((item) => (
+                      <span key={item} className="gym-tag">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <InfoPlaceholder />
+                )}
               </div>
             </li>
           </ul>
@@ -268,32 +335,60 @@ export default function GymDetailPage() {
 
       {tab === 'trainers' && (
         <section className="gym-trainer-grid" role="tabpanel">
-          {gym.trainers.map((trainer) => (
-            <article key={trainer.id} className="gym-trainer-card panel">
-              <img
-                className="gym-trainer-photo"
-                src={trainer.photoUrl}
-                alt={`${trainer.name} 프로필`}
-                loading="lazy"
-              />
-              <div className="gym-trainer-body">
-                <h2>{trainer.name}</h2>
-                <span className="status-badge badge-yellow">{trainer.specialty}</span>
-                <p>{trainer.bio}</p>
-                <button
-                  type="button"
-                  className="btn btn-secondary gym-trainer-cta"
-                  onClick={() => openConsult(trainer)}
+          {gym.trainers.length > 0 ? (
+            gym.trainers.map((trainer) => (
+              <article key={trainer.id} className="gym-trainer-card panel">
+                <img
+                  className="gym-trainer-photo"
+                  src={trainer.photoUrl}
+                  alt={`${trainer.name} 프로필`}
+                  loading="lazy"
+                />
+                <div className="gym-trainer-body">
+                  <h2>{trainer.name}</h2>
+                  <span className="status-badge badge-yellow">{trainer.specialty}</span>
+                  <p>{trainer.bio}</p>
+                  <button
+                    type="button"
+                    className="btn btn-secondary gym-trainer-cta"
+                    onClick={() => openConsult(trainer)}
+                  >
+                    상담 신청
+                  </button>
+                </div>
+              </article>
+            ))
+          ) : (
+            <div className="gym-trainer-empty panel">
+              <p>등록된 트레이너 정보가 아직 없습니다.</p>
+              {showNaverLink && (
+                <a
+                  href={gym.externalLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-ghost gym-trainer-empty-link"
                 >
-                  상담 신청
-                </button>
-              </div>
-            </article>
-          ))}
+                  <ExternalLink size={14} />
+                  네이버 지도에서 문의하기
+                </a>
+              )}
+            </div>
+          )}
         </section>
       )}
 
       <div className="gym-detail-actions">
+        {showNaverLink && (
+          <a
+            href={gym.externalLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-secondary"
+          >
+            <ExternalLink size={16} />
+            네이버 지도
+          </a>
+        )}
         <button
           type="button"
           className="btn btn-primary"

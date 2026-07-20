@@ -55,6 +55,10 @@ export interface GymPlace {
   equipment: string[];
   amenities: string[];
   trainers: GymTrainer[];
+  /** API 출처 — naver sync 헬스장은 상세 필드가 비어 있을 수 있음 */
+  source?: 'seed' | 'naver' | 'manual';
+  externalLink?: string;
+  category?: string;
 }
 
 /** 가상 사용자 위치 (부산 부산진구 서면 인근) */
@@ -335,81 +339,6 @@ export const MOCK_GYMS: GymPlace[] = [
         name: '이도윤',
         specialty: '입문 특화',
         bio: '헬스장 입문이 부담스러운 분을 위한 쉬운 첫 수업을 진행합니다.',
-        photoUrl:
-          'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=400&q=80',
-      },
-    ],
-  },
-  {
-    id: 'g3',
-    name: '트레이너 최민수',
-    type: '개인 트레이너',
-    distanceKm: 1.1,
-    rating: 4.7,
-    tags: ['다이어트', '온라인상담'],
-    address: '부산 부산진구 부암동',
-    lat: 35.1612,
-    lng: 129.0549,
-    photos: [
-      'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=900&q=80',
-      'https://images.unsplash.com/photo-1576678927484-cc907957088c?w=900&q=80',
-    ],
-    hours: '협의 후 방문 · 평일 오전/저녁 가능',
-    price: '방문 PT 회당 50,000원 · 온라인 상담 월 30,000원',
-    equipment: ['밴드', '덤벨 세트', '매트', '심박밴드'],
-    amenities: ['방문수업', '식단 피드백', '카카오 상담'],
-    trainers: [
-      {
-        id: 't5',
-        name: '최민수',
-        specialty: '다이어트 · 생활습관',
-        bio: '바쁜 일정에도 이어갈 수 있는 현실적인 감량 루틴을 만듭니다.',
-        photoUrl:
-          'https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=400&q=80',
-      },
-      {
-        id: 't6',
-        name: '정하린',
-        specialty: '홈트 · 체형',
-        bio: '공간·장비가 적어도 자극이 오는 홈 세션을 진행합니다.',
-        photoUrl:
-          'https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=400&q=80',
-      },
-    ],
-  },
-  {
-    id: 'g4',
-    name: '동네짐 24',
-    type: '골목 헬스장',
-    distanceKm: 1.4,
-    rating: 4.5,
-    tags: ['24시', '주차가능'],
-    address: '부산 부산진구 양정동',
-    lat: 35.1671,
-    lng: 129.0678,
-    photos: [
-      'https://images.unsplash.com/photo-1558611848-73f7eb4001a1?w=900&q=80',
-      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=900&q=80',
-      'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=900&q=80',
-    ],
-    hours: '연중무휴 24시간',
-    price: '월 회원 49,000원 · 일일권 12,000원',
-    equipment: ['러닝머신 10대', '사이클', '프리웨이트', '스미스'],
-    amenities: ['24시 출입', '주차', '샤워', '와이파이'],
-    trainers: [
-      {
-        id: 't7',
-        name: '오세진',
-        specialty: '체력 · 컨디셔닝',
-        bio: '야간·새벽 회원도 무리 없이 이어갈 컨디션 관리형 PT를 합니다.',
-        photoUrl:
-          'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=400&q=80',
-      },
-      {
-        id: 't8',
-        name: '윤채원',
-        specialty: '하체 · 코어',
-        bio: '스쿼트·힙 힌지 기본기를 안전하고 탄탄하게 잡아드립니다.',
         photoUrl:
           'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=400&q=80',
       },

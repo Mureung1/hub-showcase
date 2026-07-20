@@ -24,6 +24,7 @@ const MIGRATION_FILES = [
   '20260716064200_seed_gyms_trainers.sql',
   '20260720000000_extend_gyms_naver.sql',
   '20260720000100_fix_gyms_naver_unique.sql',
+  '20260720000200_remove_extra_seed_gyms.sql',
 ];
 
 async function markMigrationApplied(client, filename) {

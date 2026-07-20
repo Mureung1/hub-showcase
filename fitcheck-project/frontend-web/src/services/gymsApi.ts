@@ -36,6 +36,7 @@ interface ApiGym {
   distanceKm?: number;
   category?: string | null;
   source?: string;
+  externalLink?: string | null;
   trainers?: ApiTrainer[];
 }
 
@@ -146,7 +147,8 @@ export function mapApiGymToGymPlace(
   userLat?: number,
   userLng?: number,
 ): GymPlace {
-  const supplement = MOCK_GYMS.find((mock) => mock.name === api.name);
+  const isNaver = api.source === 'naver';
+  const supplement = isNaver ? undefined : MOCK_GYMS.find((mock) => mock.name === api.name);
   const lat = api.lat ?? supplement?.lat ?? 0;
   const lng = api.lng ?? supplement?.lng ?? 0;
   const amenities = api.amenities.length > 0 ? api.amenities : (supplement?.amenities ?? []);
@@ -155,6 +157,11 @@ export function mapApiGymToGymPlace(
     userLat !== undefined && userLng !== undefined && api.lat != null && api.lng != null
       ? distanceKm(userLat, userLng, api.lat, api.lng)
       : (api.distanceKm ?? supplement?.distanceKm ?? 0);
+
+  const source =
+    api.source === 'seed' || api.source === 'naver' || api.source === 'manual'
+      ? api.source
+      : undefined;
 
   return {
     id: api.id,
@@ -172,6 +179,9 @@ export function mapApiGymToGymPlace(
     equipment,
     amenities,
     trainers: (api.trainers ?? []).map(mapApiTrainer),
+    source,
+    externalLink: api.externalLink ?? undefined,
+    category: api.category ?? undefined,
   };
 }
 
