@@ -1,67 +1,81 @@
-// Mock 일정 분석 데이터
-// 주의: 이것은 Mock 데이터입니다. 실제 구현 시 OpenAI API로 교체됩니다.
-const mockResponses = {
-  complete: {
-    scheduleName: "2024 CalMe 겨울 해커톤",
-    startDate: "2024-12-15",
-    deadline: "2024-12-31",
-    location: "서울대학교 공학관 301호",
-    deliverables: [
-      "프로젝트 결과물 (GitHub 링크)",
-      "발표 자료 (PPT 또는 PDF)",
-      "팀 소개 및 프로젝트 설명서",
-    ],
-    materials: ["노트북", "신분증", "충전기"],
-    notes: [
-      "사전 등록 필수 (12월 10일까지)",
-      "팀 구성은 2-4명",
-      "본선 진출팀에 상품 지급",
-    ],
-    warnings: [],
-  },
-  incomplete: {
-    scheduleName: "겨울 방학 프로젝트",
-    startDate: null,
-    deadline: "2025-01-31",
-    location: null,
-    deliverables: ["최종 보고서"],
-    materials: [],
-    notes: ["온라인 제출"],
-    warnings: [
-      "시작일을 찾을 수 없습니다",
-      "장소 정보가 불명확합니다",
-    ],
-  },
-};
+import { mockAnalysisData, selectMockData } from "../constants/mockAnalysisData.js";
 
-// Mock 분석 함수
-// 텍스트 길이에 따라 다른 응답을 반환합니다 (실제 분석이 아님)
+/**
+ * 공지를 분석하여 일정 정보를 추출합니다.
+ * 3주차에는 Mock 데이터를 사용합니다.
+ * 4주차에는 Claude API로 교체될 예정입니다.
+ *
+ * @param {string} text - 분석할 공지 텍스트
+ * @returns {object} 분석 결과 (notice, events 포함)
+ * @throws {Error} 텍스트가 없으면 에러 발생
+ */
 export async function analyzeNotice(text) {
   if (!text || text.trim().length === 0) {
     throw new Error("분석할 텍스트가 없습니다");
   }
 
-  // Mock 로직: 텍스트 길이로 응답 선택
-  // 실제 구현 시에는 여기서 OpenAI API를 호출합니다
-  const response =
-    text.length > 200 ? mockResponses.complete : mockResponses.incomplete;
+  // Mock 데이터 선택 (텍스트 내용에 따라 적절한 시나리오 선택)
+  const mockData = selectMockData(text);
 
   // 응답 검증 및 정규화
-  return validateAnalysisResponse(response);
+  return validateAnalysisResponse(mockData);
 }
 
-// 분석 응답 검증 및 정규화
+/**
+ * 분석 응답을 검증하고 정규화합니다.
+ * docs/analysis-schema.md의 형식을 따릅니다.
+ *
+ * @param {object} response - 분석 응답 객체
+ * @returns {object} 검증된 응답
+ */
 function validateAnalysisResponse(response) {
+  // notice 필드 검증
+  if (!response.notice || typeof response.notice !== "object") {
+    throw new Error("공지 정보가 누락되었습니다");
+  }
+
+  const validNotice = {
+    title: response.notice.title || "제목 없음",
+    summary: response.notice.summary || "요약 없음",
+  };
+
+  // events 필드 검증
+  let validEvents = [];
+  if (Array.isArray(response.events) && response.events.length > 0) {
+    validEvents = response.events.map((event) => validateEvent(event));
+  }
+
   return {
-    scheduleName: response.scheduleName || null,
-    startDate: response.startDate || null,
-    deadline: response.deadline || null,
-    location: response.location || null,
-    deliverables: Array.isArray(response.deliverables)
-      ? response.deliverables
+    notice: validNotice,
+    events: validEvents,
+  };
+}
+
+/**
+ * 개별 일정을 검증합니다.
+ * 필수 필드가 없으면 기본값으로 채웁니다.
+ *
+ * @param {object} event - 일정 객체
+ * @returns {object} 검증된 일정
+ */
+function validateEvent(event) {
+  if (!event || typeof event !== "object") {
+    throw new Error("일정 데이터가 잘못되었습니다");
+  }
+
+  return {
+    name: event.name || "제목 없음",
+    startDate: event.startDate || null,
+    endDate: event.endDate || null,
+    deadline: event.deadline || null,
+    time: {
+      start: event.time?.start || null,
+      end: event.time?.end || null,
+    },
+    location: event.location || null,
+    deliverables: Array.isArray(event.deliverables)
+      ? event.deliverables
       : [],
-    materials: Array.isArray(response.materials) ? response.materials : [],
-    notes: Array.isArray(response.notes) ? response.notes : [],
-    warnings: Array.isArray(response.warnings) ? response.warnings : [],
+    notes: event.notes || null,
   };
 }
