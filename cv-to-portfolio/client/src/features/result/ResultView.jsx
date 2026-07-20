@@ -4,7 +4,14 @@ import "./result.css";
 
 // 4단계: 완성된 포트폴리오 전달.
 // 미리보기(iframe) ↔ HTML 코드 탭 + 다운로드 + 다시 만들기 + 디자인만 바꾸기.
-export default function ResultView({ html, cv, theme, onRestart, onChangeDesign }) {
+export default function ResultView({
+  html,
+  cv,
+  theme,
+  generation,
+  onRestart,
+  onChangeDesign,
+}) {
   const [tab, setTab] = useState("preview");
   const [copied, setCopied] = useState(false);
   const [current, setCurrent] = useState({ html, cv, theme });
@@ -62,6 +69,12 @@ export default function ResultView({ html, cv, theme, onRestart, onChangeDesign 
           </button>
         </div>
       </div>
+
+      {generation?.notice && (
+        <p className={`generation-notice ${generation.source}`} role="status">
+          {generation.notice}
+        </p>
+      )}
 
       {tab === "preview" ? (
         <iframe
