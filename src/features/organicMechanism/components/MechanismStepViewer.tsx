@@ -40,9 +40,45 @@ export default function MechanismStepViewer({
         try {
           const drawer = new SmilesDrawer.SvgDrawer({ width: WIDTH, height: HEIGHT })
           drawer.draw(tree, svgEl, 'dark')
-          const vb = svgEl.getAttribute('viewBox')
-          if (vb) setViewBox(vb)
-          setAtomCoords(getAtomCoords(drawer.preprocessor.graph))
+          const coords = getAtomCoords(drawer.preprocessor.graph)
+          setAtomCoords(coords)
+
+          // smiles-drawer's own viewBox pads generously, which leaves small
+          // reaction fragments (2-3 atoms) looking tiny in a mostly-empty
+          // canvas. Recompute a tight viewBox around the actual atom
+          // positions (matching the canvas aspect ratio so content fills it
+          // without stretching) so the molecule reads at a legible size.
+          const points = Array.from(coords.values())
+          if (points.length > 0) {
+            const PAD = 30
+            const MIN_SPAN = 70
+            let minX = Math.min(...points.map((p) => p.x)) - PAD
+            let maxX = Math.max(...points.map((p) => p.x)) + PAD
+            let minY = Math.min(...points.map((p) => p.y)) - PAD
+            let maxY = Math.max(...points.map((p) => p.y)) + PAD
+            let w = Math.max(maxX - minX, MIN_SPAN)
+            let h = Math.max(maxY - minY, MIN_SPAN)
+
+            const targetAspect = WIDTH / HEIGHT
+            if (w / h < targetAspect) {
+              const newW = h * targetAspect
+              const cx = (minX + maxX) / 2
+              minX = cx - newW / 2
+              w = newW
+            } else {
+              const newH = w / targetAspect
+              const cy = (minY + maxY) / 2
+              minY = cy - newH / 2
+              h = newH
+            }
+
+            const tightViewBox = `${minX} ${minY} ${w} ${h}`
+            svgEl.setAttribute('viewBox', tightViewBox)
+            setViewBox(tightViewBox)
+          } else {
+            const vb = svgEl.getAttribute('viewBox')
+            if (vb) setViewBox(vb)
+          }
         } catch {
           setError('구조를 그리는 중 오류가 발생했습니다.')
         }

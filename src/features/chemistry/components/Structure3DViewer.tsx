@@ -34,6 +34,11 @@ export default function Structure3DViewer({ sdf }: Structure3DViewerProps) {
       viewer.addModel(sdf, 'sdf')
       viewer.setStyle({ stick: {} })
       viewer.zoomTo()
+      // 기본 카메라가 z축 정면에서 바라보면, z축 위에 놓인 원자가 시선과
+      // 겹쳐서 안 보이는 축이 생긴다(예: 정팔면체가 평면사각형처럼 보임).
+      // 특정 축과 절대 안 겹치도록 살짝 기울여서 기본 시점을 잡는다.
+      viewer.rotate(25, 'x')
+      viewer.rotate(35, 'y')
       viewer.render()
     }
   }, [sdf])

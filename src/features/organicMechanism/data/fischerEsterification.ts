@@ -12,9 +12,13 @@ export const fischerEsterificationReaction: ReactionTemplate = {
       title: '1단계: 카르보닐 탄소 공격',
       description:
         '살리실산의 페놀성 산소가 비공유 전자쌍으로 무수아세트산의 카르보닐 탄소를 공격하고, 동시에 그 탄소의 파이(C=O) 결합이 끊어지며 전자쌍이 산소로 이동합니다.',
+      // 원래 SMILES 문자열 순서(1-based 표기 없이 그대로 세면) 카르보닐 탄소는
+      // 15번째지만, 문자열 앞쪽의 명시적 [H](페놀성 수소)에 smiles-drawer가
+      // 별도 인덱스를 안 줘서 그 뒤 원자들이 전부 1씩 당겨짐 — 실제 렌더링된
+      // 좌표로 확인한 진짜 인덱스는 14(카르보닐 탄소)/15(그 탄소의 =O)임.
       arrows: [
-        { id: 'phenol-attacks', source: { kind: 'lone-pair', atom: 9 }, target: 15 },
-        { id: 'carbonyl-pi-breaks', source: { kind: 'pi-bond', atoms: [15, 16] }, target: 16 },
+        { id: 'phenol-attacks', source: { kind: 'lone-pair', atom: 9 }, target: 14 },
+        { id: 'carbonyl-pi-breaks', source: { kind: 'pi-bond', atoms: [14, 15] }, target: 15 },
       ],
     },
     {
