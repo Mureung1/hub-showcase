@@ -62,3 +62,16 @@ CREATE TABLE refine_chats (
   diff_json JSONB, -- stores { old_text: "", new_text: "" }
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- 7. Create Verification Results Table (AI 2단계 검증결과. 재분석 시 upsert하므로 hypothesis_id UNIQUE)
+CREATE TABLE verification_results (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  hypothesis_id UUID NOT NULL UNIQUE REFERENCES hypotheses(id) ON DELETE CASCADE,
+  summary TEXT NOT NULL,
+  direction TEXT NOT NULL,
+  key_evidence TEXT NOT NULL,
+  citations JSONB NOT NULL DEFAULT '[]'::jsonb, -- [{ marker: number, evidence_tag_id: string }]
+  suggested_status TEXT NOT NULL, -- 유력함 / 근거 부족 / 수정 필요
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
