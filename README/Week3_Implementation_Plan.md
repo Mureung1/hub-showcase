@@ -89,14 +89,14 @@ gantt
   - *상세:* `backend/src/lib/hypothesisTagger.ts` 신규. Task 2에서 확정한 입력 스키마(`{ hypothesis_id, cause, effect }[]` + 화자 라벨 포함 전사문)를 받아 각 발언을 가설에 분류 ➡️ `{ hypothesis_id, quote, speaker, badge_label }[]` 반환. 결과를 `evidence_tags`에 INSERT. **분류만 수행하며 해석·판단은 하지 않음.**
   - *완료 조건:* 샘플 전사문 분석 시 `evidence_tags`에 가설별 근거가 적재되고, 각 `quote`가 원본 전사문에 실제로 존재하는 문장임이 확인됨.
 
-- [ ] **Task 4: [BE] 2단계 — '검증결과' 생성 구현**
+- [x] **Task 4: [BE] 2단계 — '검증결과' 생성 구현**
   - *상세:* `backend/src/lib/verificationResult.ts` 신규. 가설 1건 + 해당 `evidence_tags`를 입력받아 아래를 산출:
     - `summary`: 검증결과 문단 (본문에 `[1]`, `[2]` 형태의 **참조 번호 마커** 삽입)
     - `direction`: **수정 방향성** — 가설을 어떻게 고쳐야 하는가
     - `key_evidence`: **핵심 근거** 요약
     - `citations`: `[{ marker: 1, evidence_tag_id: "..." }]` — 참조 번호 ↔ 근거 태그 매핑
     - `suggested_status`: 유력함 / 근거 부족 / 수정 필요 **제안값** (확정 아님)
-    - *DB:* `verification_results` 테이블을 `schema.sql`에 신규 정의 (`hypothesis_id` FK, 위 필드, `citations`는 JSONB).
+    - *DB:* `verification_results` 테이블을 `schema.sql`에 신규 정의 (`hypothesis_id` FK, 위 필드, `citations`는 JSONB). 재분석 시 덮어쓰기하도록 `hypothesis_id UNIQUE` + upsert. Supabase SQL Editor 대신 `backend/migrations/002_verification_results.sql`을 `node runMigration.js migrations/002_verification_results.sql`로 `DIRECT_URL`에 직접 적용(이 과정에서 `.env`의 `DATABASE_URL`/`DIRECT_URL` 비밀번호에 대괄호가 남아있던 오타를 발견해 수정함).
   - *완료 조건:* 가설별 검증결과가 `verification_results`에 저장되고, `summary` 본문의 `[n]` 마커가 `citations` 배열과 일대일로 대응함.
 
 - [ ] **Task 5: [BE] `/analyze` 엔드포인트 확장**
