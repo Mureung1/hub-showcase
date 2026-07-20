@@ -1,9 +1,5 @@
 import * as cheerio from "cheerio"
-
-// 대형 외신 사이트는 기본 Node fetch의 UA("node")를 봇으로 간주해 403을
-// 반환하는 경우가 많다 — 일반 브라우저처럼 보이는 UA를 반드시 붙인다.
-const BROWSER_USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+import { BROWSER_USER_AGENT } from "../constants/httpHeaders.js"
 
 // 스크래핑이 막히거나(403/paywall) 페이지 구조가 달라 파싱에 실패해도 데모가
 // 끊기지 않도록 반환하는 더미 기사. prototype/02_reader.html과 동일한 본문.

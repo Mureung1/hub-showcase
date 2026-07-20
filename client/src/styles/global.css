@@ -449,6 +449,76 @@ h2 {
   margin-bottom: 0;
 }
 
+/* ---------- Skeleton (Reader loading) ---------- */
+.skeleton-block {
+  display: block;
+  background: var(--border-subtle);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-block {
+    animation: none;
+  }
+}
+
+.skeleton-source-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-source-name {
+  width: 96px;
+  height: 16px;
+}
+
+.skeleton-title-line {
+  height: 28px;
+  margin-bottom: var(--space-xs);
+}
+
+.skeleton-title-line.short {
+  width: 60%;
+}
+
+.skeleton-text-line {
+  height: 16px;
+  margin-bottom: var(--space-sm);
+}
+
+.skeleton-text-line.short {
+  width: 70%;
+}
+
+.skeleton-summary-card {
+  height: 52px;
+  margin: var(--space-xl) 0;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-decision-prompt {
+  width: 260px;
+  height: 16px;
+  margin: 0 auto var(--space-sm);
+}
+
+.skeleton-decision-btn {
+  height: 48px;
+  border-radius: var(--radius-md);
+}
+
 /* ---------- Bottom Sheet (2026-07-15, 화면4) ---------- */
 /* 판단 전까지 블라인드 처리했던 insight/marketSentiment를 판단 시점에
    공개하는 자리. 이전에는 리더뷰 본문에 상시 노출되는 .ai-insight 패널이었으나,

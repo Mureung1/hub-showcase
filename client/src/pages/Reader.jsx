@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom"
 import AiSummary from "../components/AiSummary.jsx"
 import BottomSheet from "../components/BottomSheet.jsx"
 import DecisionButtons from "../components/DecisionButtons.jsx"
+import ReaderSkeleton from "../components/ReaderSkeleton.jsx"
 import SentenceAccordion from "../components/SentenceAccordion.jsx"
 import { parseArticle, analyzeArticle } from "../api/article.js"
 import { saveDecision } from "../api/decisions.js"
@@ -65,7 +66,8 @@ export default function Reader() {
   }
 
   if (error) return <div className="app-container">{error}</div>
-  if (!article || !analysis) return <div className="app-container">불러오는 중...</div>
+  if (!article) return <ReaderSkeleton />
+  if (!analysis) return <ReaderSkeleton article={article} />
 
   return (
     <div className="app-container">
