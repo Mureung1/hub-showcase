@@ -588,8 +588,20 @@ test('canonical request replay returns one patch and a conflicting payload canno
       fixture.syllabus,
     )
     const reorderedPayload = {
-      evidence: [...payload.evidence].reverse(),
-      changes: payload.changes,
+      evidence: [...payload.evidence].reverse().map((evidence) => ({
+        quote: evidence.quote,
+        digest: evidence.digest,
+        rawMaterialId: evidence.rawMaterialId,
+        field: evidence.field,
+      })),
+      changes: {
+        values: {
+          submissionMethod: payload.changes.values.submissionMethod,
+          dueAt: payload.changes.values.dueAt,
+          title: payload.changes.values.title,
+        },
+        operation: payload.changes.operation,
+      },
       summary: payload.summary,
       baseRevision: payload.baseRevision,
       courseId: payload.courseId,

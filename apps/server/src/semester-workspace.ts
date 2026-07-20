@@ -811,7 +811,7 @@ async function proposeAssignmentStatePatch(
     baseRevision: payload.baseRevision,
     summary: payload.summary,
     changes: cloneAssignmentUpsert(payload.changes),
-    evidence: payload.evidence.map((evidence) => ({ ...evidence })),
+    evidence: payload.evidence.map(cloneEvidenceRef),
     ...(payload.origin === undefined ? {} : { origin: payload.origin }),
     status: 'pending',
     createdAt: new Date().toISOString(),
@@ -926,7 +926,7 @@ async function commitAssignmentReviewDecision(
       id: assignmentId,
       courseId: patch.courseId,
       ...patch.changes.values,
-      evidence: patch.evidence.map((evidence) => ({ ...evidence })),
+      evidence: patch.evidence.map(cloneEvidenceRef),
     } satisfies Assignment
     if (patch.changes.assignmentId === undefined) {
       assignments = [...assignments, assignment]
@@ -1032,7 +1032,7 @@ function parseStatePatchPayload(input: unknown): CanonicalStatePatchPayload {
     throw invalidProposal()
   }
 
-  const evidence = input.evidence.map((candidate) => ({ ...candidate }))
+  const evidence = input.evidence.map(cloneEvidenceRef)
   evidence.sort(compareEvidence)
 
   return {
@@ -1320,7 +1320,7 @@ function cloneReviewBinding(
 function cloneAssignment(assignment: Assignment): Assignment {
   return {
     ...assignment,
-    evidence: assignment.evidence.map((evidence) => ({ ...evidence })),
+    evidence: assignment.evidence.map(cloneEvidenceRef),
   }
 }
 
@@ -1330,7 +1330,20 @@ function cloneAssignmentUpsert(changes: AssignmentUpsert): AssignmentUpsert {
     ...(changes.assignmentId === undefined
       ? {}
       : { assignmentId: changes.assignmentId }),
-    values: { ...changes.values },
+    values: {
+      title: changes.values.title,
+      dueAt: changes.values.dueAt,
+      submissionMethod: changes.values.submissionMethod,
+    },
+  }
+}
+
+function cloneEvidenceRef(evidence: EvidenceRef): EvidenceRef {
+  return {
+    field: evidence.field,
+    rawMaterialId: evidence.rawMaterialId,
+    digest: evidence.digest,
+    quote: evidence.quote,
   }
 }
 
@@ -1343,7 +1356,7 @@ function cloneStatePatch(patch: StatePatch): StatePatch {
     baseRevision: patch.baseRevision,
     summary: patch.summary,
     changes: cloneAssignmentUpsert(patch.changes),
-    evidence: patch.evidence.map((evidence) => ({ ...evidence })),
+    evidence: patch.evidence.map(cloneEvidenceRef),
     ...(patch.origin === undefined ? {} : { origin: patch.origin }),
     status: patch.status,
     createdAt: patch.createdAt,
@@ -1719,7 +1732,7 @@ function canonicalStoredPatchPayload(patch: PersistedStatePatch): string {
     baseRevision: patch.baseRevision,
     summary: patch.summary,
     changes: cloneAssignmentUpsert(patch.changes),
-    evidence: patch.evidence.map((evidence) => ({ ...evidence })),
+    evidence: patch.evidence.map(cloneEvidenceRef),
     ...(patch.origin === undefined ? {} : { origin: patch.origin }),
   } satisfies CanonicalStatePatchPayload
   return JSON.stringify(payload)
