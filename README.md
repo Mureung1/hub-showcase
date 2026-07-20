@@ -60,7 +60,8 @@
 ## 프로젝트 문서
 
 - [GitHub Project - 개발 대시보드](https://github.com/users/DLSTODAKD/projects/1)
-- [2주차 주간 계획](./docs/weekly-plan.md)
+- [3주차 주간 계획](./docs/weekly-plan-week3.md)
+- [2주차 주간 계획 기록](./docs/weekly-plan-week2.md)
 - [기획서](./docs/plan.md)
 - [시스템 기능 명세](./docs/feature-spec.md)
 - [ERD](./docs/erd.md)
