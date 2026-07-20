@@ -7,6 +7,8 @@ import AdminDashboard from '../components/AdminDashboard.tsx'
 import ParticipantDashboard from '../components/ParticipantDashboard.tsx'
 import Modal from '../components/Modal.tsx'
 import JoinAppointmentForm from '../components/JoinAppointmentForm.tsx'
+import CopyLinkBox from '../components/CopyLinkBox.tsx'
+import './AppointmentPage.css'
 
 type LocationState = { justCreated?: boolean }
 
@@ -40,9 +42,14 @@ function AppointmentPage() {
       )}
 
       <Modal open={showCreatedModal} onClose={() => setShowCreatedModal(false)}>
-        <strong>약속이 생성되었어요! 🎉</strong>
-        <p>아래 링크를 참여자에게 공유해주세요.</p>
-        <div className="page-stack">{buildAppointmentLink(appointmentId)}</div>
+        <div className="celebrate">
+          <span className="celebrate__icon" aria-hidden="true">
+            🎉
+          </span>
+          <strong className="celebrate__title">약속이 생성되었어요!</strong>
+          <p className="celebrate__desc">아래 링크를 참여자에게 공유해주세요.</p>
+        </div>
+        <CopyLinkBox link={buildAppointmentLink(appointmentId)} />
         <button type="button" onClick={() => setShowCreatedModal(false)}>
           완료
         </button>

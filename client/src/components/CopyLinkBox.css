@@ -18,5 +18,6 @@
 .copy-link-box__button {
   flex-shrink: 0;
   height: var(--button-height-sm);
+  min-width: 100px;
   padding: 0 var(--space-4);
 }
