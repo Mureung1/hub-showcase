@@ -33,7 +33,12 @@ app.use(express.json());
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceRoleKey || url.includes("YOUR_") || serviceRoleKey.includes("YOUR_")) {
+  if (
+    !url ||
+    !serviceRoleKey ||
+    url.includes("YOUR_") ||
+    serviceRoleKey.includes("YOUR_")
+  ) {
     throw new Error("Supabase 서버 환경변수가 설정되지 않았습니다.");
   }
   return createClient(url, serviceRoleKey, {
@@ -62,7 +67,13 @@ function isUrl(value: string) {
 
 function getSourcePlatform(value: string) {
   const hostname = new URL(value).hostname.toLowerCase();
-  if (hostname === "youtu.be" || hostname.endsWith(".youtube.com")) return "youtube";
+  if (
+    hostname === "youtu.be" ||
+    hostname === "youtube.com" ||
+    hostname.endsWith(".youtube.com")
+  ) {
+    return "youtube";
+  }
   if (hostname === "instagram.com" || hostname.endsWith(".instagram.com")) return "instagram";
   if (
     hostname === "x.com" ||
@@ -77,7 +88,11 @@ function getSourcePlatform(value: string) {
 }
 
 app.get("/", (_request, response) => {
-  response.json({ message: "later API server", health: "/health", items: "/api/items" });
+  response.json({
+    message: "later API server",
+    health: "/health",
+    items: "/api/items",
+  });
 });
 
 app.get("/health", (_request, response) => {
