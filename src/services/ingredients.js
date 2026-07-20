@@ -81,3 +81,13 @@ export async function updateIngredient(id, ingredient) {
 
   return parseResponse(response, "재료 수정에 실패했습니다. 다시 시도해 주세요.");
 }
+
+export async function deleteIngredient(id) {
+  const response = await fetch(`${INGREDIENTS_API_URL}/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    await parseResponse(response, "재료 삭제에 실패했습니다. 다시 시도해 주세요.");
+  }
+}

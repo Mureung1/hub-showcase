@@ -4,7 +4,7 @@ import IngredientForm from "./components/IngredientForm";
 import NaggingMessage from "./components/NaggingMessage";
 import CoachReactionModal from "./components/CoachReactionModal";
 import { cookingMethodLabels, mockRecipes, recipeDifficultyLabels } from "./data/mockRecipes";
-import { getIngredients, registerIngredient, updateIngredient } from "./services/ingredients";
+import { deleteIngredient, getIngredients, registerIngredient, updateIngredient } from "./services/ingredients";
 import {
   getDaysRemaining,
   getExpirationSentence,
@@ -263,13 +263,23 @@ function App() {
     setConfirmAction({ type, ingredient });
   };
 
-  const completeIngredientAction = () => {
+  const completeIngredientAction = async () => {
     if (!confirmAction) return;
     const { ingredient, type } = confirmAction;
-    setIngredients((current) => current.filter((item) => item.id !== ingredient.id));
-    setConfirmAction(null);
-    if (editingIngredientId === ingredient.id) resetForm();
-    flash(type === "used" ? `${withObjectParticle(ingredient.name)} 모두 사용했어요.` : `${withObjectParticle(ingredient.name)} 삭제했어요.`);
+    setIsSubmitting(true);
+
+    try {
+      await deleteIngredient(ingredient.id);
+      await refreshIngredients();
+      setConfirmAction(null);
+      if (editingIngredientId === ingredient.id) resetForm();
+      flash(type === "used" ? `${withObjectParticle(ingredient.name)} 모두 사용했어요.` : `${withObjectParticle(ingredient.name)} 삭제했어요.`);
+    } catch (error) {
+      setConfirmAction(null);
+      flash(error.message ?? "재료 삭제에 실패했습니다. 다시 시도해 주세요.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const selectMenu = (menu) => {
@@ -378,7 +388,7 @@ function App() {
       {isFormOpen && <IngredientFormModal title={editingIngredientId ? "재료 수정" : "재료 추가"} onClose={closeIngredientForm}>
         <IngredientForm formValues={formValues} errors={errors} isEditing={Boolean(editingIngredientId)} isSubmitting={isSubmitting} initialFocusField={initialFocusField} onChange={handleFormChange} onBlur={handleFormBlur} onSubmit={handleSubmitIngredient} onCancel={closeIngredientForm} />
       </IngredientFormModal>}
-      {confirmAction && <ConfirmDialog action={confirmAction} onCancel={() => setConfirmAction(null)} onConfirm={completeIngredientAction} />}
+      {confirmAction && <ConfirmDialog action={confirmAction} isSubmitting={isSubmitting} onCancel={() => setConfirmAction(null)} onConfirm={completeIngredientAction} />}
       {naggingMessage && selectedIngredient && <NaggingMessage message={naggingMessage} onAcceptSuggestion={acceptNaggingSuggestion} onContinueOriginal={() => continueWithRamen("ramen-basic")} onClose={closeNaggingMessage} />}
       {coachReaction && pendingRecipe && <CoachReactionModal reaction={coachReaction} recipeName={pendingRecipe.name} onContinue={continueFromCoach} onClose={() => { setCoachReaction(null); setPendingRecipe(null); }} />}
     </div>
@@ -471,7 +481,7 @@ function IngredientFormModal({ title, onClose, children }) {
   return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="ingredient-modal-title"><div className="modal-heading"><div><p className="eyebrow">MY INGREDIENTS</p><h2 id="ingredient-modal-title">{title}</h2><p>냉장고에 보관할 재료 정보를 입력해 주세요.</p></div><button className="modal-close" type="button" aria-label="재료 입력창 닫기" onClick={onClose}>×</button></div>{children}</section></div>;
 }
 
-function ConfirmDialog({ action, onCancel, onConfirm }) {
+function ConfirmDialog({ action, isSubmitting, onCancel, onConfirm }) {
   const isDelete = action.type === "delete";
   useEffect(() => {
     const closeOnEscape = (event) => { if (event.key === "Escape") onCancel(); };
@@ -479,7 +489,7 @@ function ConfirmDialog({ action, onCancel, onConfirm }) {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [onCancel]);
 
-  return <div className="modal-backdrop confirm-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onCancel(); }}><section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-description"><span className={isDelete ? "danger-icon" : "confirm-icon"} aria-hidden="true">{isDelete ? "!" : "✓"}</span><h2 id="confirm-title">{isDelete ? `${withObjectParticle(action.ingredient.name)} 냉장고에서 삭제할까요?` : `${withObjectParticle(action.ingredient.name)} 모두 사용한 것으로 처리할까요?`}</h2><p id="confirm-description">{isDelete ? "삭제한 재료는 복구할 수 없습니다." : "목록에서 재료가 사라져요."}</p><div className="confirm-actions"><button type="button" onClick={onCancel}>취소</button><button className={isDelete ? "danger" : "primary"} type="button" autoFocus onClick={onConfirm}>{isDelete ? "삭제하기" : "모두 사용함"}</button></div></section></div>;
+  return <div className="modal-backdrop confirm-backdrop" onMouseDown={(event) => { if (!isSubmitting && event.target === event.currentTarget) onCancel(); }}><section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-description"><span className={isDelete ? "danger-icon" : "confirm-icon"} aria-hidden="true">{isDelete ? "!" : "✓"}</span><h2 id="confirm-title">{isDelete ? `${withObjectParticle(action.ingredient.name)} 냉장고에서 삭제할까요?` : `${withObjectParticle(action.ingredient.name)} 모두 사용한 것으로 처리할까요?`}</h2><p id="confirm-description">{isDelete ? "삭제한 재료는 복구할 수 없습니다." : "목록에서 재료가 사라져요."}</p><div className="confirm-actions"><button type="button" onClick={onCancel} disabled={isSubmitting}>취소</button><button className={isDelete ? "danger" : "primary"} type="button" autoFocus onClick={onConfirm} disabled={isSubmitting}>{isSubmitting ? "처리 중..." : isDelete ? "삭제하기" : "모두 사용함"}</button></div></section></div>;
 }
 
 function WorkspaceShell({ eyebrow, title, description, children }) {
