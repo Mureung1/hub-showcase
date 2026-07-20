@@ -28,6 +28,7 @@ export type AnalysisResultViewModel = {
   treeTruncated: boolean;
   qualitySignals: RepositoryAnalysisResult["analysis"]["qualitySignals"];
   collaborationSummary: RepositoryAnalysisResult["analysis"]["collaborationSummary"];
+  technicalChallenges: RepositoryAnalysisResult["analysis"]["technicalChallenges"];
   pullRequestCount: number;
   issueCount: number;
   warnings: string[];
@@ -59,6 +60,7 @@ export function getAnalysisResultViewModel(
     treeTruncated: analysis.projectStructure.treeTruncated,
     qualitySignals: analysis.qualitySignals,
     collaborationSummary: analysis.collaborationSummary,
+    technicalChallenges: analysis.technicalChallenges,
     pullRequestCount: analysis.collaborationSummary.pullRequestCount,
     issueCount: analysis.collaborationSummary.issueCount,
     warnings: analysis.warnings,

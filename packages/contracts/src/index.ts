@@ -10,4 +10,7 @@ export type {
   RepositoryCommit,
   RepositoryContributor,
   RepositoryMetadata,
+  TechnicalChallengeCandidate,
+  TechnicalChallengeConfidence,
+  TechnicalChallengeEvidenceReference,
 } from "./repository-analysis";

@@ -1,3 +1,5 @@
+import type { TechnicalChallengeCandidate } from "@ptop/contracts";
+
 export type GitHubRepositoryAnalysisSource = {
   repository: {
     githubRepositoryId: number;
@@ -99,6 +101,7 @@ export type RepositoryAnalysisPersistenceInput = {
     projectStructure: Record<string, unknown>;
     qualitySignals: Record<string, unknown>;
     collaborationSummary: Record<string, unknown>;
+    technicalChallenges: TechnicalChallengeCandidate[];
     warnings: string[];
     evidence: Array<{
       evidenceType: "commit" | "pull_request" | "issue" | "file" | "config" | "release";

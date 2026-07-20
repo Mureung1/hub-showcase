@@ -233,6 +233,7 @@ function createLegacyAnalysis(input: RepositoryAnalysisPersistenceInput): Analys
     projectStructure: {},
     qualitySignals: {},
     collaborationSummary: {},
+    technicalChallenges: [],
     warnings: ["기존 분석 결과에는 확장 분석 정보가 포함되지 않았습니다."],
     evidence: input.source.commits.map((commit) => ({
       evidenceType: "commit",
