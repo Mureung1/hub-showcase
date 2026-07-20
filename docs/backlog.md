@@ -11,6 +11,7 @@ Priority: `P0` foundational/blocking (prerequisite for other work) · `P1` MVP c
 - [x] **공공데이터포털 (Korea Public Data Portal) integration** — API key obtained for `기후에너지환경부_분리배출 정보조회 서비스` (15156866) and `행정안전부_생활쓰레기배출정보 조회서비스` (15155080); client for the former built in `backend/src/services/govDisposalApiClient.ts` (+ mock fallback). See `docs/TASK.md` Day 3 for details.
 
 - [x] **Object Normalizer** — mapping table in `backend/src/services/objectNormalizer.ts` (Vision AI label → `Item.name`)
+- [ ] **Object Normalizer coverage gap** — dictionary only covers bottle/battery/carton variants (~12 entries); confirmed via manual test that a banana peel photo fails recognition (falls through to Search, correct fallback behavior, but coverage is thin). Consider matching Vision AI's free-text guess against the full 731-item synced catalog (`nameEn`/substring match) instead of only this small hardcoded dictionary — same idea already noted for English search.
 
 - [x] **Gov catalog bulk sync** — `backend/scripts/syncGovCatalog.ts` upserts the full ~730-item `getItem` catalog (confirmed live: omitting `itemNm` returns the entire catalog, paginated) into `Item`/`DisposalRule` in one pass, replacing per-item lazy caching. Run manually via `npm run sync:catalog -w backend` — kept separate from `prisma db seed` since the team shares one Supabase instance; re-run periodically (e.g. monthly) to catch catalog updates.
 

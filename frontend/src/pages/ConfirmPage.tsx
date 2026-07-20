@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import axios from 'axios'
 import { useLocation, useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
@@ -12,14 +11,7 @@ export default function ConfirmPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const file = (location.state as ConfirmLocationState | null)?.file
-  const hasSubmitted = useRef(false)
-  const { mutate, data, isPending, isError, error } = useRecognizeItem()
-
-  useEffect(() => {
-    if (!file || hasSubmitted.current) return
-    hasSubmitted.current = true
-    mutate(file)
-  }, [file, mutate])
+  const { data, isLoading, isError, error } = useRecognizeItem(file)
 
   if (!file) {
     return (
@@ -38,7 +30,7 @@ export default function ConfirmPage() {
     <div>
       <PageHeader title="물건 확인" backTo="/" />
       <div className="px-5 pt-[18px] pb-[90px]">
-        {isPending ? (
+        {isLoading ? (
           <p className="mt-3 text-sm text-sub">AI가 사진을 분석하고 있어요...</p>
         ) : isNotFound ? (
           <>

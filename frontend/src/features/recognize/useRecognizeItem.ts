@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '../../lib/apiClient'
 import type { DisposalRuleResponse } from '../disposal/useDisposalRule'
 
@@ -9,6 +9,11 @@ async function recognizeItem(file: File): Promise<DisposalRuleResponse> {
   return data
 }
 
-export function useRecognizeItem() {
-  return useMutation({ mutationFn: recognizeItem })
+export function useRecognizeItem(file: File | undefined) {
+  return useQuery({
+    queryKey: ['recognize', file?.name, file?.size, file?.lastModified],
+    queryFn: () => recognizeItem(file!),
+    enabled: !!file,
+    retry: false,
+  })
 }
