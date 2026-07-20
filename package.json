@@ -10,7 +10,8 @@
         "dev": "concurrently \"npm run dev:web\" \"npm run dev:api\"",
         "dev:web": "npm run dev --workspace=@decision-log/web",
         "dev:api": "npm run dev --workspace=@decision-log/api",
-        "build": "npm run build --workspaces --if-present",
+        "build": "npm run build --workspace=@decision-log/shared && npm run build --workspace=@decision-log/api && npm run build --workspace=@decision-log/web",
+        "build:shared": "npm run build --workspace=@decision-log/shared",
         "typecheck": "npm run typecheck --workspaces --if-present",
         "lint": "npm run lint --workspaces --if-present"
     },

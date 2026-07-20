@@ -218,7 +218,16 @@
   - **알려진 제한(후속)**: `packages/shared`는 빌드 산출물 없는 소스 전용(exports=`src/index.ts`)이라, 컴파일된 `node dist/server.js`는 shared의 `.js` 지정자를 `.ts`로 해석 못 해 실행 불가. 개발 런타임(`npm run dev:api`=tsx)·web(Vite)은 정상. 프로덕션 `node dist` 실행이 필요해지면 shared 빌드 단계 또는 api 번들링을 도입해야 함(이번 Spec 범위 밖, 배포 Spec에서)
   - 실측용 로그인은 인증 완료 계정(lymsla0117@gmail.com), 비밀번호는 채팅으로만 받아 이 로그인에만 사용(문서·커밋·로그·메모리 미기록)
 
-- **SPEC-AUTH-003 완료 (2026-07-20)** — T-014 구현 + AC1~AC7 실측 PASS로 완료 처리. Cowork가 Spec 상태 헤더·개정 기록·index.md 갱신. 인증 경계(JWT 검증·`/api/auth/me`·에러 봉투·ApiClient)까지 서버에 섬. 알려진 제한: `packages/shared`가 소스 전용이라 `node dist` 프로덕션 실행 불가(개발 런타임·web은 정상) — 배포 Spec에서 shared 빌드/번들 도입 필요
+- **SPEC-AUTH-003 완료 (2026-07-20)** — T-014 구현 + AC1~AC7 실측 PASS로 완료 처리. Cowork가 Spec 상태 헤더·개정 기록·index.md 갱신. 인증 경계(JWT 검증·`/api/auth/me`·에러 봉투·ApiClient)까지 서버에 섬. 알려진 제한: `packages/shared`가 소스 전용이라 `node dist` 프로덕션 실행 불가(개발 런타임·web은 정상) — 배포 Spec에서 shared 빌드/번들 도입 필요 → **T-014.1에서 해소**
+
+- **T-014.1: packages/shared 빌드 산출물 도입 (2026-07-20)** — 인프라 태스크(새 기능 없음). SPEC-AUTH-003 "알려진 제한" 해소 + SPEC-SCHEMA-001 AC1 "소스 전용 export" 결정의 실질 개정(Spec 문서 개정은 Cowork 담당 — 여기선 변경 사실만 기록)
+  - `packages/shared/tsconfig.json`: 방출 활성화 — `noEmit` 제거, `outDir:dist`·`rootDir:src`·`declaration:true`·`sourceMap:true`. `module/moduleResolution`을 `bundler`→**`NodeNext`**(Node 소비용 자기일관 emit, 소스의 `.js` 지정자와 정합). `lib:["ES2022"]`(DOM 미포함)·`verbatimModuleSyntax`·`strict` 유지, `exclude`에 `dist`
+  - `packages/shared/package.json`: `exports."."`를 조건부로 — **`types→./src/index.ts`**(타입검사는 소스 그대로 = 현재와 동일, 빌드 없이 typecheck 통과), **`import/default→./dist/index.js`**(런타임=빌드 JS). `main→./dist/index.js`. 스크립트 `build:"tsc -p tsconfig.json"` + **`prepare:"npm run build"`**(`npm install` 시 dist 자동 생성 → dev·typecheck 무회귀). deps는 zod 그대로(프레임워크 의존 0 유지)
+  - 루트 `package.json`: `build`를 **순서 보장**으로 — `shared → api → web` 명시 실행(shared dist가 api·web 빌드 전 존재). `build:shared` 헬퍼 추가(shared 소스 수정 후 재빌드용)
+  - 소스 파일·`.js` 지정자·계약 내용 **불변**(export 방식·빌드 설정만 변경). `development` 등 개발 전용 export 조건은 미추가(과설계 금지 — dist 지정 + prepare로 충분)
+  - **검증 전부 PASS**: 루트 `typecheck`(shared·api·web) 통과, 루트 `build`(shared→api→web) 통과. **`node apps/api/dist/server.js`**(env 채운 상태) → `Decision Log API running at :4000` 정상 기동 + `/api/health` 200(배포 가능성 실증). `npm run dev`(web :5173 + api :4000 tsx) 정상. web happy-path 1회 회귀(질문→SourceAnswer→Agenda 충돌 2 채택→FinalAnswer→DecisionNote→컴포저 재활성) 정상, 콘솔 오류 없음. `lint`는 web만(apps/api lint script 없음 — 미검사)
+  - `prepare`가 `npm install` 시 dist를 만들어 첫 `dist/index.js`·`index.d.ts` 자동 생성 확인. `packages/shared/dist`는 기존 `.gitignore`의 bare `dist` 규칙으로 이미 무시됨(`git check-ignore` 확인) — 중복 엔트리 미추가
+  - 남는 dev 특성(회귀 아님): shared 소스를 편집하면 web dev(Vite)·api dev(tsx) 모두 dist를 참조하므로 `npm run build:shared`(또는 install)로 재빌드 필요. shared는 안정 계약이라 빈도 낮음
 
 - **순서 변경 결정 (2026-07-20)** — 사용자가 AI-001 대신 **DB-001 먼저** 선택. 이유: 영속성이 토대, BYOK 사용자 키 저장이 DB 필요, AUTH-003 다음 자연스러운 서버 경계. 새 순서: AUTH-003(완료) → **DB-001** → AI-001~003 → EXPORT-001
 
