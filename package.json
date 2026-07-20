@@ -13,6 +13,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:smoke": "tsx scripts/db-smoke.ts",
+    "retrieval:eval": "tsx scripts/retrieval-eval.ts",
+    "retrieval:ingest": "tsx scripts/retrieval-ingest.ts",
     "typecheck:api": "tsc -p tsconfig.api.json",
     "lint": "oxlint",
     "test": "vitest run",

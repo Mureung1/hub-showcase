@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest'
 import type { ScenarioId } from '../../../src/entities/message'
 import type { AiGenerationRequest } from '../generation/provider'
 import { buildPromptWithReviewedExamples } from './buildPrompt'
-import { reviewedPromptExamplePairs, reviewedPromptExamplesFor } from './seedExamples'
+import {
+  reviewedPromptExampleCatalog,
+  reviewedPromptExamplePairs,
+  reviewedPromptExamplesFor,
+  reviewedSeedCatalogVersion,
+} from './seedExamples'
 
 const reviewedScenarioIds = [
   'groupwork',
@@ -18,6 +23,21 @@ describe('reviewedPromptExamplePairs', () => {
     const pairs = reviewedScenarioIds.map((scenarioId) => reviewedPromptExamplesFor(scenarioId))
     expect(pairs.flat()).toHaveLength(8)
     expect(pairs.flatMap((pair) => pair.flatMap((set) => set.candidates))).toHaveLength(24)
+  })
+
+  it('retrieval 정본에 안정 ID·버전·입력 모드를 제공한다', () => {
+    expect(reviewedPromptExampleCatalog).toHaveLength(8)
+    expect(new Set(reviewedPromptExampleCatalog.map((example) => example.exampleId)).size).toBe(8)
+    expect(
+      reviewedPromptExampleCatalog.every(
+        (example) => example.catalogVersion === reviewedSeedCatalogVersion,
+      ),
+    ).toBe(true)
+    expect(
+      reviewedPromptExampleCatalog.every(
+        (example) => example.mode === (example.receivedMessage ? 'reply' : 'initiate'),
+      ),
+    ).toBe(true)
   })
 
   it.each(reviewedScenarioIds)(
@@ -55,8 +75,10 @@ describe('buildPromptWithReviewedExamples', () => {
     '%s 요청에 같은 관계의 검수 예시 2세트를 자동 주입한다',
     (scenarioId) => {
       const request: AiGenerationRequest = {
+        mode: 'initiate',
         scenarioId,
         purpose: 'ask',
+        route: 'manual_ai',
         speechStyleId: 'haeyo',
         situation: '현재 요청의 테스트 상황',
       }

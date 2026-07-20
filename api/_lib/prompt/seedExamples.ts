@@ -2,12 +2,17 @@ import type { ScenarioId } from '../../../src/entities/message'
 import {
   requirePromptExamplePair,
   type PromptExamplePair,
-  type PromptExampleSet,
+  type ReviewedPromptExampleSet,
 } from './examples'
 
-const reviewedSeedSources: Readonly<Record<ScenarioId, readonly PromptExampleSet[]>> = {
+export const reviewedSeedCatalogVersion = 'reviewed-seeds-v1'
+
+const reviewedSeedSources: Readonly<Record<ScenarioId, readonly ReviewedPromptExampleSet[]>> = {
   groupwork: [
     {
+      catalogVersion: reviewedSeedCatalogVersion,
+      exampleId: 'reviewed-groupwork-reply-ask-01',
+      mode: 'reply',
       scenarioId: 'groupwork',
       purpose: 'ask',
       situation:
@@ -29,6 +34,9 @@ const reviewedSeedSources: Readonly<Record<ScenarioId, readonly PromptExampleSet
       ],
     },
     {
+      catalogVersion: reviewedSeedCatalogVersion,
+      exampleId: 'reviewed-groupwork-initiate-suggest-01',
+      mode: 'initiate',
       scenarioId: 'groupwork',
       purpose: 'suggest',
       situation:
@@ -51,6 +59,9 @@ const reviewedSeedSources: Readonly<Record<ScenarioId, readonly PromptExampleSet
   ],
   professor: [
     {
+      catalogVersion: reviewedSeedCatalogVersion,
+      exampleId: 'reviewed-professor-reply-suggest-01',
+      mode: 'reply',
       scenarioId: 'professor',
       purpose: 'suggest',
       situation:
@@ -72,6 +83,9 @@ const reviewedSeedSources: Readonly<Record<ScenarioId, readonly PromptExampleSet
       ],
     },
     {
+      catalogVersion: reviewedSeedCatalogVersion,
+      exampleId: 'reviewed-professor-initiate-other-01',
+      mode: 'initiate',
       scenarioId: 'professor',
       purpose: 'other',
       situation:
@@ -94,6 +108,9 @@ const reviewedSeedSources: Readonly<Record<ScenarioId, readonly PromptExampleSet
   ],
   senior: [
     {
+      catalogVersion: reviewedSeedCatalogVersion,
+      exampleId: 'reviewed-senior-reply-other-01',
+      mode: 'reply',
       scenarioId: 'senior',
       purpose: 'other',
       situation:
@@ -115,6 +132,9 @@ const reviewedSeedSources: Readonly<Record<ScenarioId, readonly PromptExampleSet
       ],
     },
     {
+      catalogVersion: reviewedSeedCatalogVersion,
+      exampleId: 'reviewed-senior-initiate-question-01',
+      mode: 'initiate',
       scenarioId: 'senior',
       purpose: 'question',
       situation:
@@ -137,6 +157,9 @@ const reviewedSeedSources: Readonly<Record<ScenarioId, readonly PromptExampleSet
   ],
   friend: [
     {
+      catalogVersion: reviewedSeedCatalogVersion,
+      exampleId: 'reviewed-friend-reply-apologize-01',
+      mode: 'reply',
       scenarioId: 'friend',
       purpose: 'apologize',
       situation:
@@ -158,6 +181,9 @@ const reviewedSeedSources: Readonly<Record<ScenarioId, readonly PromptExampleSet
       ],
     },
     {
+      catalogVersion: reviewedSeedCatalogVersion,
+      exampleId: 'reviewed-friend-initiate-suggest-01',
+      mode: 'initiate',
       scenarioId: 'friend',
       purpose: 'suggest',
       situation:
@@ -179,6 +205,13 @@ const reviewedSeedSources: Readonly<Record<ScenarioId, readonly PromptExampleSet
     },
   ],
 }
+
+export const reviewedPromptExampleCatalog: readonly ReviewedPromptExampleSet[] = [
+  ...reviewedSeedSources.groupwork,
+  ...reviewedSeedSources.professor,
+  ...reviewedSeedSources.senior,
+  ...reviewedSeedSources.friend,
+]
 
 export const reviewedPromptExamplePairs: Readonly<Record<ScenarioId, PromptExamplePair>> = {
   groupwork: requirePromptExamplePair('groupwork', reviewedSeedSources.groupwork),
