@@ -24,6 +24,7 @@ export function fetchMeetings(filters = {}) {
   add('keyword', filters.keyword)
   add('status', filters.status)
   add('page', filters.page)
+  add('sort', filters.sort)
 
   const qs = params.toString()
   return request(`/api/meetings${qs ? `?${qs}` : ''}`)

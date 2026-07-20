@@ -48,7 +48,15 @@ async function insertMeeting(hostId, overrides = {}) {
       m.regionEupmyeondong, m.startAt, m.endAt, m.capacity, m.adultOnly, m.openChatUrl, m.status,
     ]
   );
-  return Number(rows[0].id);
+  const id = Number(rows[0].id);
+
+  // created_at은 DB 기본값(now())이라 INSERT 컬럼 목록에 없다. sort=recent(등록순) 테스트처럼
+  // "등록 시각"을 직접 통제해야 하는 경우에만, INSERT 후 별도 UPDATE로 덮어쓴다.
+  if (overrides.createdAt) {
+    await pool.query('UPDATE meetings SET created_at = $1 WHERE id = $2', [overrides.createdAt, id]);
+  }
+
+  return id;
 }
 
 describe('GET /api/meetings', () => {
@@ -229,5 +237,42 @@ describe('GET /api/meetings', () => {
     const zero = await request(app).get('/api/meetings?page=0');
     expect(zero.status).toBe(200);
     expect(zero.body.data.page).toBe(1);
+  });
+
+  it('sort=recent는 created_at 내림차순으로 정렬한다 (start_at 순서와는 반대)', async () => {
+    const host = await createHost();
+    // start_at ASC로는 A, B, C 순서이지만, created_at은 그 반대(C, B, A)가 되도록
+    // 일부러 어긋나게 만든다. 이렇게 해야 "여전히 start_at 순으로 정렬하는" 잘못된
+    // 구현에서 이 테스트가 실제로 실패한다.
+    const a = await insertMeeting(host, {
+      title: '모임A',
+      startAt: '2030-01-01T10:00:00+09:00',
+      createdAt: new Date('2020-01-01T00:00:00Z'),
+    });
+    const b = await insertMeeting(host, {
+      title: '모임B',
+      startAt: '2030-01-02T10:00:00+09:00',
+      createdAt: new Date('2020-01-02T00:00:00Z'),
+    });
+    const c = await insertMeeting(host, {
+      title: '모임C',
+      startAt: '2030-01-03T10:00:00+09:00',
+      createdAt: new Date('2020-01-03T00:00:00Z'),
+    });
+    void a;
+    void b;
+    void c;
+
+    const defaultOrder = await request(app).get('/api/meetings');
+    expect(defaultOrder.body.data.items.map((m) => m.title)).toEqual(['모임A', '모임B', '모임C']);
+
+    const recentOrder = await request(app).get('/api/meetings?sort=recent');
+    expect(recentOrder.body.data.items.map((m) => m.title)).toEqual(['모임C', '모임B', '모임A']);
+  });
+
+  it('허용되지 않은 sort 값은 VALIDATION_ERROR를 반환한다', async () => {
+    const res = await request(app).get('/api/meetings?sort=popular');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
 });

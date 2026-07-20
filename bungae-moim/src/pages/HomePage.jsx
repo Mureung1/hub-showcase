@@ -18,10 +18,13 @@ export default function HomePage() {
   // 서버가 이미 지난/취소된 모임을 빼고 주므로 화면에서 다시 거르지 않는다.
   // 홈은 요약 화면이라 실패해도 빈 목록으로 조용히 두고 에러 UI는 두지 않는다
   // (모임을 실제로 찾는 경로인 목록 페이지에는 에러 UI가 있다).
+  // "최근 등록된 모임"이므로 sort=recent(등록순)로 받는다 — 기본 정렬(start_at ASC)로
+  // 받으면 "임박한 20건" 안에서만 보게 되어, 방금 등록했지만 일정이 먼 미래인 모임은
+  // 여기 안 뜬다.
   useEffect(() => {
     let cancelled = false
 
-    Promise.all([fetchMeetings(), fetchMeetings({ type: 'flash', status: 'recruiting' })])
+    Promise.all([fetchMeetings({ sort: 'recent' }), fetchMeetings({ type: 'flash', status: 'recruiting' })])
       .then(([recentResult, flashResult]) => {
         if (cancelled) return
         setMeetings(recentResult.items)
@@ -38,11 +41,9 @@ export default function HomePage() {
     }
   }, [])
 
-  // "최근 등록된 모임"은 문구 그대로 등록순이어야 한다. 서버 목록은 start_at(임박순)으로
-  // 정렬해서 오므로, 여기서 화면 문구에 맞는 정렬 기준(createdAt 내림차순)으로 다시 정렬한다.
-  // startAt으로 정렬하면 "임박한 20건 중 가장 나중에 시작하는 4건"이 되어 방금 등록한
-  // 모임이 안 보일 수 있다.
-  const recent = [...meetings].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 4)
+  // 서버가 이미 sort=recent(created_at 내림차순)로 정렬해서 주므로, 화면에서는
+  // 앞의 4건만 자르면 된다.
+  const recent = meetings.slice(0, 4)
 
   return (
     <>

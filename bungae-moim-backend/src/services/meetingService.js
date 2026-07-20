@@ -4,6 +4,15 @@ const ApiError = require('../utils/apiError');
 // status 필터로 허용하는 값. 임의 문자열이 그대로 SQL 조건에 들어가지 않도록 화이트리스트로 검증한다.
 const ALLOWED_STATUS_FILTERS = ['recruiting', 'closed'];
 
+// sort 필터로 허용하는 값 → 고정 ORDER BY 절. 사용자 입력을 문자열 보간으로 SQL에
+// 직접 꽂으면 인젝션 통로가 되므로, 허용된 값에 대응하는 정적 SQL 조각만 미리
+// 정의해두고 그중 하나를 그대로(가공 없이) 고르는 방식으로 제한한다.
+const SORT_CLAUSES = {
+  recent: 'created_at DESC, id DESC',
+};
+// 기본 정렬: 가장 임박한 일정 순 (홈의 "오늘의 번개" 등 기존 화면이 기대하는 순서).
+const DEFAULT_SORT_CLAUSE = 'start_at ASC, id ASC';
+
 // 목록 조회 한 페이지에 담는 모임 수.
 const PAGE_SIZE = 20;
 
@@ -102,6 +111,14 @@ async function listMeetings(filters = {}) {
 
   const where = `WHERE ${conditions.join(' AND ')}`;
 
+  let orderClause = DEFAULT_SORT_CLAUSE;
+  if (filters.sort !== undefined && filters.sort !== null && String(filters.sort).trim() !== '') {
+    if (!Object.prototype.hasOwnProperty.call(SORT_CLAUSES, filters.sort)) {
+      throw new ApiError('VALIDATION_ERROR', '허용되지 않는 sort 값입니다');
+    }
+    orderClause = SORT_CLAUSES[filters.sort];
+  }
+
   const countResult = await pool.query(
     `SELECT COUNT(*)::int AS total FROM meetings ${where}`,
     params
@@ -114,7 +131,7 @@ async function listMeetings(filters = {}) {
 
   const { rows } = await pool.query(
     `SELECT * FROM meetings ${where}
-     ORDER BY start_at ASC, id ASC
+     ORDER BY ${orderClause}
      LIMIT ${PAGE_SIZE} OFFSET $${params.length + 1}`,
     [...params, offset]
   );

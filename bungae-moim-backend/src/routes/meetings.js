@@ -35,6 +35,7 @@ router.get('/', async (req, res, next) => {
       regionSido: req.query.regionSido,
       regionSigungu: req.query.regionSigungu,
       status: req.query.status,
+      sort: req.query.sort,
       page,
     });
     res.json({ data: result });
