@@ -1,29 +1,10 @@
 import { useState } from 'react'
 import Header from '../components/Header.jsx'
-import { analyzeReviews, resetHistory as resetHistoryApi } from '../lib/api.js'
-import SentimentTag from '../components/SentimentTag.jsx'
 import BrandMark from '../components/BrandMark.jsx'
-
-const REPLY_LABEL = { polite: '정중함', friendly: '친근함', concise: '간결함' }
-
-const EXAMPLE_PRESETS = [
-  {
-    label: '대기시간 불만 예시',
-    reviews: ['너무 오래 기다렸어요. 대기시간이 길었습니다.', '웨이팅이 30분 넘게 걸려서 불편했어요.'],
-  },
-  {
-    label: '친절도 칭찬 예시',
-    reviews: ['직원분이 정말 친절하고 좋았어요.', '사장님이 너무 친절하셔서 재방문 의사 있어요.'],
-  },
-  {
-    label: '여러 리뷰 섞어보기',
-    reviews: [
-      '음식은 맛있었는데 너무 오래 기다렸어요.',
-      '직원분이 너무 불친절했어요.',
-      '가격 대비 만족스러웠어요.',
-    ],
-  },
-]
+import { analyzeReviews, resetHistory as resetHistoryApi } from '../lib/api.js'
+import ReviewInputForm from '../components/tool/ReviewInputForm.jsx'
+import RecurringIssuePanel from '../components/tool/RecurringIssuePanel.jsx'
+import ReviewResultCard from '../components/tool/ReviewResultCard.jsx'
 
 function ToolPage() {
   const [reviewInput, setReviewInput] = useState('')
@@ -31,7 +12,6 @@ function ToolPage() {
   const [error, setError] = useState('')
   const [results, setResults] = useState(null)
   const [recurringIssues, setRecurringIssues] = useState(null)
-  const [copiedId, setCopiedId] = useState(null)
 
   async function handleAnalyze() {
     setError('')
@@ -75,18 +55,8 @@ function ToolPage() {
     }
   }
 
-  function copyReply(text, replyId) {
-    navigator.clipboard
-      .writeText(text)
-      .then(() => {
-        setCopiedId(replyId)
-        setTimeout(() => {
-          setCopiedId((prev) => (prev === replyId ? null : prev))
-        }, 1500)
-      })
-      .catch(() => {
-        setError('복사에 실패했어요. 직접 선택해서 복사해주세요.')
-      })
+  function handleCopyError() {
+    setError('복사에 실패했어요. 직접 선택해서 복사해주세요.')
   }
 
   const lineCount = reviewInput
@@ -99,46 +69,14 @@ function ToolPage() {
       <Header />
 
       <div className="container" id="tool">
-        <div className="input-card">
-          <label className="input-label" htmlFor="review-input">리뷰 붙여넣기</label>
-          <div className="example-chip-row">
-            <span className="example-chip-label">예시로 빠르게 체험해보기:</span>
-            {EXAMPLE_PRESETS.map((preset) => (
-              <button
-                type="button"
-                key={preset.label}
-                className="example-chip"
-                onClick={() => setReviewInput(preset.reviews.join('\n'))}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-          <textarea
-            id="review-input"
-            value={reviewInput}
-            onChange={(e) => setReviewInput(e.target.value)}
-            placeholder={'예) 음식은 맛있었는데 너무 오래 기다렸어요.\n직원분이 너무 불친절했어요.\n(리뷰 하나당 한 줄, 최대 15개)'}
-          />
-          <div className="hint">
-            <span>줄바꿈으로 리뷰를 구분해주세요 · 최대 15개</span>
-            <span>{lineCount}개 입력됨</span>
-          </div>
-          <button className="analyze-btn" onClick={handleAnalyze} disabled={loading}>
-            {loading ? '분석 중...' : '분석 시작'}
-          </button>
-        </div>
-
-        {results === null && (
-          <div className="tips-box">
-            <div className="tips-title">💡 이렇게 입력하면 더 정확해요</div>
-            <ul className="tips-list">
-              <li>리뷰 하나당 한 줄로 입력해주세요</li>
-              <li>&quot;친절&quot;, &quot;대기시간&quot;, &quot;가격&quot;처럼 구체적인 표현이 있으면 키워드를 더 잘 잡아내요</li>
-              <li>최대 15개까지 한 번에 분석할 수 있어요</li>
-            </ul>
-          </div>
-        )}
+        <ReviewInputForm
+          value={reviewInput}
+          onChange={setReviewInput}
+          onAnalyze={handleAnalyze}
+          loading={loading}
+          lineCount={lineCount}
+          showTips={results === null}
+        />
 
         {loading && (
           <div className="status">
@@ -149,67 +87,13 @@ function ToolPage() {
         {error && <div className="error-box">⚠️ {error}</div>}
 
         {recurringIssues !== null && recurringIssues.length > 0 && (
-          <div className="recurring-panel">
-            <div className="recurring-panel-header">
-              <h3 className="recurring-panel-title">
-                <span>⚠️</span>
-                <span>반복되는 문제 감지</span>
-              </h3>
-              <button className="reset-history-btn" onClick={handleResetHistory}>
-                누적 기록 초기화
-              </button>
-            </div>
-            <div className="recurring-issues">
-              {recurringIssues.map((issue) => (
-                <div className="recurring-issue-item" key={issue.keyword}>
-                  <div className="issue-title">
-                    &quot;{issue.keyword}&quot; 관련 부정 리뷰 {issue.occurrenceCount}건 누적
-                  </div>
-                  <div className="issue-solution">💡 {issue.suggestion}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <RecurringIssuePanel issues={recurringIssues} onReset={handleResetHistory} />
         )}
 
         {results !== null && results.length > 0 && (
           <div className="results-list">
             {results.map((item) => (
-              <div className="review-card" key={item.reviewId}>
-                <div className="review-text">&quot;{item.originalText}&quot;</div>
-                <div className="meta-row">
-                  <SentimentTag sentiment={item.sentiment} />
-                  <span className="score-tag">관심도 {item.score}</span>
-                  {(item.keywords || []).map((keyword, kIdx) => (
-                    <span className="keyword-tag" key={kIdx}>
-                      #{keyword}
-                    </span>
-                  ))}
-                </div>
-                {item.improvementSuggestion && (
-                  <div className="solution-box">💡 개선 제안: {item.improvementSuggestion}</div>
-                )}
-                <div className="reply-list">
-                  {Object.entries(item.replyDrafts || {}).map(([toneKey, text], rIdx) => {
-                    const replyId = `reply-${item.reviewId}-${rIdx}`
-                    const copied = copiedId === replyId
-                    return (
-                      <div className="reply-option" key={replyId}>
-                        <div className="reply-header">
-                          <span className="reply-label">{REPLY_LABEL[toneKey] || toneKey}</span>
-                          <button
-                            className={`copy-btn ${copied ? 'copied' : ''}`}
-                            onClick={() => copyReply(text, replyId)}
-                          >
-                            {copied ? '복사됨 ✓' : '복사하기'}
-                          </button>
-                        </div>
-                        <div className="reply-text">{text}</div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
+              <ReviewResultCard item={item} onCopyError={handleCopyError} key={item.reviewId} />
             ))}
           </div>
         )}

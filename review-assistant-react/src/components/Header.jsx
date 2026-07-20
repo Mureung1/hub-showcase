@@ -45,6 +45,9 @@ function Header() {
         {checked &&
           (user ? (
             <div className="nav-user">
+              <Link to="/my-reviews" className="nav-my-reviews">
+                내 리뷰
+              </Link>
               <span className="nav-user-email">{user.email}</span>
               <button type="button" className="nav-logout-btn" onClick={handleLogout}>
                 로그아웃

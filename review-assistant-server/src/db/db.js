@@ -45,3 +45,13 @@ db.exec(`
 db.exec(`
   CREATE INDEX IF NOT EXISTS idx_auth_tokens_user_id ON auth_tokens (user_id)
 `)
+
+// 로그인 계정 ↔ 리뷰 연결 (2026-07-20 추가). 기존 DB 파일과 호환되도록 컬럼이 없을 때만 추가한다.
+const reviewsColumns = db.prepare(`PRAGMA table_info(reviews)`).all().map((col) => col.name)
+if (!reviewsColumns.includes('user_id')) {
+  db.exec(`ALTER TABLE reviews ADD COLUMN user_id INTEGER REFERENCES users(id)`)
+}
+
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews (user_id)
+`)

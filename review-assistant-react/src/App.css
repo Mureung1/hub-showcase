@@ -176,6 +176,17 @@ button:focus {
   font-size: 13px;
 }
 
+.nav-my-reviews {
+  color: var(--color-text-link);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.nav-my-reviews:hover {
+  color: var(--color-primary-hover);
+}
+
 .nav-logout-btn {
   background: none;
   border: 1px solid var(--color-border);

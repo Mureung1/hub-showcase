@@ -6,6 +6,7 @@ import { authRouter } from './routes/auth.route.js'
 import { sessionId } from './middleware/sessionId.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { requestLogger } from './middleware/requestLogger.js'
+import { optionalAuth } from './middleware/optionalAuth.js'
 
 export function createApp() {
   const app = express()
@@ -18,6 +19,7 @@ export function createApp() {
   )
   app.use(express.json())
   app.use(sessionId)
+  app.use(optionalAuth)
   app.use(requestLogger)
 
   app.get('/health', (req, res) => {

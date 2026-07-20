@@ -6,6 +6,7 @@ import GuidePage from './pages/GuidePage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import SignupPage from './pages/SignupPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
+import MyReviewsPage from './pages/MyReviewsPage.jsx'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/my-reviews" element={<MyReviewsPage />} />
       </Routes>
     </BrowserRouter>
   )
