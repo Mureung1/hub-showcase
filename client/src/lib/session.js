@@ -5,9 +5,9 @@
  */
 
 // seed.js의 삽입 순서 기준 id (RESTART IDENTITY라 항상 동일).
-// owner1@hub.test = 1, consumer1@hub.test = 4
+// owner4@hub.test = 6 (가게 미등록 신규 사장 — W1 등록 흐름을 태우기 위함), consumer1@hub.test = 4
 const DEMO_USER_BY_ROLE = {
-  owner: { userId: 1, nickname: '베이커리사장' },
+  owner: { userId: 6, nickname: '신규사장' },
   consumer: { userId: 4, nickname: '규현' },
 }
 

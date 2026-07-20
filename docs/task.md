@@ -26,10 +26,10 @@
 - [x] **T-03 역할 선택 진입 화면 (C0)** `client` — [#3](https://github.com/HappyGogildong/hub/issues/3)
   - 사장님/소비자 두 버튼. 로그인(C1)은 자리만 두고 미구현(범위 외)
   - DoD: 역할 선택 시 각 축의 첫 화면으로 라우팅
-- [ ] **T-04 가게 등록 API + 화면 (W1)** `server` `client` — [#4](https://github.com/HappyGogildong/hub/issues/4)
+- [x] **T-04 가게 등록 API + 화면 (W1)** `server` `client` — [#4](https://github.com/HappyGogildong/hub/issues/4)
   - 상호·주소(좌표)·카테고리. 최초 1회, 등록돼 있으면 대시보드로
   - DoD: 등록한 좌표가 이후 거리 계산의 기준으로 조회됨
-- [ ] **T-05 딜 등록 API + 화면 (W2)** `server` `client` — [#5](https://github.com/HappyGogildong/hub/issues/5)
+- [x] **T-05 딜 등록 API + 화면 (W2)** `server` `client` — [#5](https://github.com/HappyGogildong/hub/issues/5)
   - 상품명·카테고리·수량·원가/할인가·픽업 마감시간. 등록 30초 내 완료 가능한 UI
   - DoD: 등록 즉시 딜 목록 API에 노출, 알림 트리거 포인트(T-11) 주석으로 표시
 

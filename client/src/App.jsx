@@ -3,6 +3,8 @@ import { getSession } from './lib/session.js'
 import RequireRole from './components/RequireRole.jsx'
 import RoleSelectPage from './pages/RoleSelectPage.jsx'
 import OwnerHomePage from './pages/owner/OwnerHomePage.jsx'
+import StoreRegisterPage from './pages/owner/StoreRegisterPage.jsx'
+import DealRegisterPage from './pages/owner/DealRegisterPage.jsx'
 import ConsumerHomePage from './pages/consumer/ConsumerHomePage.jsx'
 
 // C0 진입: 이미 역할을 고른 세션이면 해당 홈으로 자동 라우팅, 아니면 역할 선택.
@@ -22,6 +24,22 @@ function App() {
         element={
           <RequireRole role="owner">
             <OwnerHomePage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/owner/store/new"
+        element={
+          <RequireRole role="owner">
+            <StoreRegisterPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/owner/deals/new"
+        element={
+          <RequireRole role="owner">
+            <DealRegisterPage />
           </RequireRole>
         }
       />
