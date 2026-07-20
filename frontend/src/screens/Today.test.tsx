@@ -80,12 +80,18 @@ describe('Today', () => {
     expect(cards[1]).toHaveTextContent(ARTICLE_A.title)
   })
 
-  it('uses originalUrl as an external link', () => {
-    render(<Today state={{ status: 'success', items: [ARTICLE_A], emptyStateMessage: null }} />)
-    expect(screen.getByRole('link', { name: /읽고 미션 받기/ })).toHaveAttribute(
-      'href',
-      ARTICLE_A.originalUrl,
+  it('calls onOpenArticle with the first feature article id when its CTA is clicked', async () => {
+    const onOpenArticle = vi.fn()
+    render(
+      <Today
+        state={{ status: 'success', items: [ARTICLE_A, ARTICLE_B], emptyStateMessage: null }}
+        onOpenArticle={onOpenArticle}
+      />,
     )
+
+    await userEvent.click(screen.getByRole('button', { name: /글 살펴보기/ }))
+
+    expect(onOpenArticle).toHaveBeenCalledExactlyOnceWith(ARTICLE_A.id)
   })
 
   it('promotes a selected compact card to the feature card', async () => {
@@ -97,10 +103,22 @@ describe('Today', () => {
 
     await userEvent.click(screen.getByRole('button', { name: new RegExp(ARTICLE_B.title) }))
 
-    expect(screen.getByRole('link', { name: /읽고 미션 받기/ })).toHaveAttribute(
-      'href',
-      ARTICLE_B.originalUrl,
+    expect(screen.getAllByRole('article')[0]).toHaveTextContent(ARTICLE_B.title)
+  })
+
+  it('calls onOpenArticle with the newly promoted feature article id after selecting a compact card', async () => {
+    const onOpenArticle = vi.fn()
+    render(
+      <Today
+        state={{ status: 'success', items: [ARTICLE_A, ARTICLE_B, ARTICLE_C], emptyStateMessage: null }}
+        onOpenArticle={onOpenArticle}
+      />,
     )
+
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(ARTICLE_B.title) }))
+    await userEvent.click(screen.getByRole('button', { name: /글 살펴보기/ }))
+
+    expect(onOpenArticle).toHaveBeenCalledExactlyOnceWith(ARTICLE_B.id)
   })
 
   it('demotes the previous feature article to the compact list in API order after selecting B', async () => {
@@ -134,10 +152,6 @@ describe('Today', () => {
     expect(featureCard).toHaveTextContent(ARTICLE_B.sourceName)
     expect(featureCard).toHaveTextContent(ARTICLE_B.officialExcerpt as string)
     expect(featureCard).toHaveTextContent(`${ARTICLE_B.readingTimeMinutes}분`)
-    expect(screen.getByRole('link', { name: /읽고 미션 받기/ })).toHaveAttribute(
-      'href',
-      ARTICLE_B.originalUrl,
-    )
   })
 
   it('re-selecting C after B makes C the feature and leaves A and B in compact', async () => {
@@ -180,20 +194,26 @@ describe('Today', () => {
     expect(titles.filter((text) => text?.includes(ARTICLE_C.title))).toHaveLength(1)
   })
 
-  it('selecting a compact card does not trigger external link navigation', async () => {
-    const anchorClick = vi.fn()
+  it('selecting a compact card does not open the article intro on its own', async () => {
+    const onOpenArticle = vi.fn()
     render(
       <Today
         state={{ status: 'success', items: [ARTICLE_A, ARTICLE_B, ARTICLE_C], emptyStateMessage: null }}
+        onOpenArticle={onOpenArticle}
       />,
     )
 
-    const anchor = screen.getByRole('link', { name: /읽고 미션 받기/ })
-    anchor.addEventListener('click', anchorClick)
-
     await userEvent.click(screen.getByRole('button', { name: new RegExp(ARTICLE_B.title) }))
 
-    expect(anchorClick).not.toHaveBeenCalled()
+    expect(onOpenArticle).not.toHaveBeenCalled()
+  })
+
+  it('the feature card CTA is not an external link to originalUrl', () => {
+    render(
+      <Today state={{ status: 'success', items: [ARTICLE_A, ARTICLE_B], emptyStateMessage: null }} />,
+    )
+
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 
   it('selects a compact card with the Enter key', async () => {
@@ -207,10 +227,7 @@ describe('Today', () => {
     compactButton.focus()
     await userEvent.keyboard('{Enter}')
 
-    expect(screen.getByRole('link', { name: /읽고 미션 받기/ })).toHaveAttribute(
-      'href',
-      ARTICLE_B.originalUrl,
-    )
+    expect(screen.getAllByRole('article')[0]).toHaveTextContent(ARTICLE_B.title)
   })
 
   it('selects a compact card with the Space key', async () => {
@@ -224,10 +241,7 @@ describe('Today', () => {
     compactButton.focus()
     await userEvent.keyboard(' ')
 
-    expect(screen.getByRole('link', { name: /읽고 미션 받기/ })).toHaveAttribute(
-      'href',
-      ARTICLE_B.originalUrl,
-    )
+    expect(screen.getAllByRole('article')[0]).toHaveTextContent(ARTICLE_B.title)
   })
 
   it('shows only the feature card when there is 1 article', () => {

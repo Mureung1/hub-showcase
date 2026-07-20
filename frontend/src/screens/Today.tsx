@@ -10,6 +10,7 @@ export type TodayState =
 
 type TodayProps = {
   state: TodayState
+  onOpenArticle?: (articleId: string) => void
 }
 
 function formatToday(date: Date): string {
@@ -19,7 +20,7 @@ function formatToday(date: Date): string {
   return `${year}.${month}.${day}`
 }
 
-export default function Today({ state }: TodayProps) {
+export default function Today({ state, onOpenArticle = () => {} }: TodayProps) {
   const today = formatToday(new Date())
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null)
 
@@ -59,7 +60,11 @@ export default function Today({ state }: TodayProps) {
 
         {state.status === 'success' && featureArticle && (
           <>
-            <ArticleCard article={featureArticle} variant="feature" />
+            <ArticleCard
+              article={featureArticle}
+              variant="feature"
+              onOpenIntro={() => onOpenArticle(featureArticle.id)}
+            />
 
             {compactArticles.length > 0 && (
               <>
