@@ -12,6 +12,7 @@ export default function ProfileForm({
   errorMessage,
   isEditing,
   isSaved,
+  isSaving = false,
   onBeginEdit,
   onCancelEdit,
   onChange,

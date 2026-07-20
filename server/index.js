@@ -8,7 +8,9 @@ import express from "express";
 
 import { getRuntimeConfig } from "./config/runtimeConfig.js";
 import { analyzeOpportunity, getAIConfig } from "./services/analyzeOpportunity.js";
-import { createOpportunityRepository } from "./services/opportunityRepository.js";
+import { createOpportunityStorage } from "./services/opportunityStorage.js";
+import { getActiveSiteRegistry } from "./data/siteRegistry.js";
+import { siteRecommendationService } from "./services/siteRecommendationService.js";
 import { noticeDiscoveryService } from "./services/noticeDiscoveryService.js";
 import { NoticeDiscoveryError } from "./sources/sourceFetch.js";
 import { getAvailableNoticeSources } from "./sources/sourceRegistry.js";
@@ -24,12 +26,17 @@ import {
   saveOpportunityRequestSchema,
 } from "./schemas/analyzeSchemas.js";
 import { noticeDiscoveryQuerySchema } from "./schemas/discoverySchemas.js";
+import { recommendSitesRequestSchema } from "./schemas/siteRecommendationSchemas.js";
 import {
   createCorsOptions,
   handleCorsError,
   securityHeaders,
 } from "./middleware/httpSecurity.js";
 import { createFixedWindowRateLimit } from "./middleware/rateLimit.js";
+import { createRequireAuth } from "./middleware/requireAuth.js";
+import { createSupabaseAuthService } from "./services/supabaseAuth.js";
+import { createProfileRepository } from "./services/profileRepository.js";
+import { profileRequestSchema } from "./schemas/profileSchemas.js";
 
 dotenv.config();
 
@@ -49,7 +56,12 @@ const discoverRateLimit = createFixedWindowRateLimit({
   windowMs: 60_000,
   message: "공지 탐색 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
 });
-const opportunityRepository = createOpportunityRepository();
+const opportunityStorage = createOpportunityStorage();
+const authService = createSupabaseAuthService();
+const requireAuth = createRequireAuth(authService);
+const profileRepository = createProfileRepository({
+  createUserClient: (accessToken) => authService.createUserClient(accessToken),
+});
 
 app.disable("x-powered-by");
 if (runtimeConfig.trustProxy) app.set("trust proxy", 1);
@@ -120,12 +132,102 @@ app.get("/api/health", (request, response) => {
     liveGeminiEnabled: config.liveGeminiEnabled,
     liveOpenAIEnabled: config.liveOpenAIEnabled,
     serveClient: runtimeConfig.serveClient,
-    supabaseConfigured: opportunityRepository.configured,
+    storageConfigured: opportunityStorage.configured,
+    storageLabel: opportunityStorage.label,
+    storageProvider: opportunityStorage.provider,
+    supabaseConfigured: opportunityStorage.provider === "supabase" && opportunityStorage.configured,
+    authConfigured: authService.configured,
   });
 });
 
+app.get("/api/profile", requireAuth, async (request, response) => {
+  try {
+    const profile = await profileRepository.getProfile({
+      accessToken: request.accessToken,
+      userId: request.user.id,
+    });
+    sendJson(response, 200, { profile: profile ? { ...profile, userId: request.user.id } : null });
+  } catch (error) {
+    sendJson(response, error?.code === "profile_storage_unavailable" ? 503 : 500, {
+      error: "profile_read_failed",
+      message: error?.code === "profile_storage_unavailable"
+        ? "프로필 저장소 설정을 확인해 주세요."
+        : "프로필을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+  }
+});
+
+app.put("/api/profile", requireAuth, async (request, response) => {
+  const validation = profileRequestSchema.safeParse(request.body);
+  if (!validation.success) {
+    sendJson(response, 400, {
+      error: "invalid_profile",
+      message: formatZodError(validation.error),
+    });
+    return;
+  }
+
+  try {
+    const profile = await profileRepository.upsertProfile({
+      accessToken: request.accessToken,
+      profile: validation.data,
+      userId: request.user.id,
+    });
+    sendJson(response, 200, { profile: { ...profile, userId: request.user.id } });
+  } catch (error) {
+    sendJson(response, error?.code === "profile_storage_unavailable" ? 503 : 500, {
+      error: "profile_write_failed",
+      message: error?.code === "profile_storage_unavailable"
+        ? "프로필 저장소 설정을 확인해 주세요."
+        : "프로필 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+  }
+});
+
+app.delete("/api/profile", requireAuth, async (request, response) => {
+  try {
+    await profileRepository.deleteProfile({
+      accessToken: request.accessToken,
+      userId: request.user.id,
+    });
+    sendJson(response, 204, {});
+  } catch (error) {
+    sendJson(response, error?.code === "profile_storage_unavailable" ? 503 : 500, {
+      error: "profile_delete_failed",
+      message: error?.code === "profile_storage_unavailable"
+        ? "프로필 저장소 설정을 확인해 주세요."
+        : "프로필 초기화에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+  }
+});
 app.get("/api/sources", (request, response) => {
   sendJson(response, 200, { sources: getAvailableNoticeSources() });
+});
+
+app.get("/api/sites", (request, response) => {
+  sendJson(response, 200, { sites: getActiveSiteRegistry() });
+});
+
+app.post("/api/recommend-sites", async (request, response) => {
+  const validation = recommendSitesRequestSchema.safeParse(request.body);
+
+  if (!validation.success) {
+    sendJson(response, 400, {
+      error: "invalid_request",
+      message: formatZodError(validation.error),
+    });
+    return;
+  }
+
+  try {
+    const result = await siteRecommendationService.recommend(validation.data);
+    sendJson(response, 200, result);
+  } catch {
+    sendJson(response, 500, {
+      error: "site_recommendation_failed",
+      message: "사이트 추천을 만들지 못했습니다. 잠시 후 다시 시도해주세요.",
+    });
+  }
 });
 
 app.get("/api/discover", discoverRateLimit, async (request, response) => {
@@ -221,7 +323,7 @@ app.get("/api/opportunities", async (request, response) => {
   }
 
   try {
-    const items = await opportunityRepository.listAnalyses(validation.data.limit);
+    const items = await opportunityStorage.listAnalyses(validation.data.limit);
     sendJson(response, 200, { items });
   } catch (error) {
     sendOpportunityStorageError(response, error);
@@ -240,7 +342,7 @@ app.post("/api/opportunities", async (request, response) => {
   }
 
   try {
-    const item = await opportunityRepository.saveAnalysis(validation.data.analysis);
+    const item = await opportunityStorage.saveAnalysis(validation.data.analysis);
     sendJson(response, 201, { item });
   } catch (error) {
     sendOpportunityStorageError(response, error);
