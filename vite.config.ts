@@ -2,6 +2,7 @@ import { configDefaults, defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { loadEnv, type Plugin } from 'vite';
 
+import { validateOptionalApiOrigin } from './src/shared/capacitor';
 import { parseSupabaseEnv } from './src/shared/config/supabase_env';
 
 type WebBuildEnvironment = Readonly<Record<string, string | undefined>>;
@@ -10,10 +11,14 @@ export function resolveWebBuildEnv(
   fileEnvironment: WebBuildEnvironment,
   processEnvironment: WebBuildEnvironment = process.env
 ) {
-  return parseSupabaseEnv({
+  const environment = {
     ...fileEnvironment,
     ...processEnvironment,
-  });
+  };
+
+  validateOptionalApiOrigin(environment);
+
+  return parseSupabaseEnv(environment);
 }
 
 function validateSupabaseBuildEnv(): Plugin {
