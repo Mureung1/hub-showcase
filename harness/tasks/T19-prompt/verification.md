@@ -2,7 +2,7 @@
 
 > 상태: 보류
 >
-> 검증일: 2026-07-15
+> 검증일: 2026-07-15, 2026-07-20
 >
 > 관련 계획: `plan.md`
 >
@@ -27,16 +27,16 @@
 | AC-5 | 예시 검증 테스트 | 통과 | 정확히 2세트, 동일 관계, 상황/받은 메시지 길이, 후보 3개·톤 1/2/3·중복·유해 표현을 공용 validator로 검증. 불일치 케이스 거절 |
 | AC-6 | XML·조립 테스트 + 참조 검색 | 통과 | 예시/current input 분리, `& < > " '` 이스케이프, 받은 메시지 생략/포함, `source`·transcript·운영 시드 import 없음 검증 |
 | AC-7 | 후처리 테스트 | 통과 | `end_turn`+정상 JSON만 통과. `max_tokens`·`stop_sequence`·`tool_use`·`pause_turn`·`refusal`·context 초과, 잘못된 JSON, 톤 중복, 협박 결과 거절 |
-| AC-8 | 운영 시드 + provider/preview | 보류 | `docs/SEEDS.md` 실제 제3자 검수와 T18 provider·키 게이트 뒤 수행 |
-| AC-9 | 전체 자동 검증 | 통과 | 관련 4파일 24개·전체 15파일 113개 테스트, API 타입검사, lint, build, tracked/untracked diff, 명시적 `any` 검사 통과 |
+| AC-8 | 운영 시드 카탈로그 + 조립 테스트 | 보류 | `docs/SEEDS.md` 제3자 블라인드 정렬·24개 전송 가능성 검수 뒤 관계별 2세트 카탈로그로 이관. provider·Preview는 T20 범위 |
+| AC-9 | 전체 자동 검증 | 통과 | 2026-07-20 현재 관련 4파일 28개·전체 23파일 215개 테스트, API 타입검사, lint, build, tracked/untracked diff, 명시적 `any` 검사 통과 |
 
 ## 3. 자동 검증
 
 | 항목 | 명령 또는 방법 | 결과 | 근거·관찰 요약 |
 | --- | --- | --- | --- |
-| 관련 테스트 | `npm test -- api/_lib/prompt` | 통과 | 4파일 24개 통과 |
+| 관련 테스트 | `npm test -- api/_lib/prompt --reporter=dot` | 통과 | 4파일 28개 통과 |
 | API 타입검사 | `npm run typecheck:api` | 통과 | `tsc -p tsconfig.api.json` 오류 0건 |
-| 전체 테스트 | `npm test -- --reporter=dot` | 통과 | 15파일 113개 통과. 기존 jsdom `scrollTo` 미구현 경고만 발생 |
+| 전체 테스트 | `npm test -- --reporter=dot` | 통과 | 23파일 215개 통과. 기존 jsdom `scrollTo` 미구현 로그만 발생 |
 | 린트 | `npm run lint` | 통과 | oxlint 오류 0건 |
 | 빌드 | `npm run build` | 통과 | 첫 실행에서 기존 T29 에셋 테스트의 Node 타입 누락 발견 → 파일 한정 타입 참조 후 통과. main 225.41kB/70.91kB gzip, lazy CatCanvas 882.64kB/234.54kB gzip의 기존 크기 경고만 발생 |
 | 변경 형식 | `git diff --check` + 신규 경로 `git diff --no-index --check` | 통과 | tracked와 untracked 신규 파일 공백 오류 0건 |
@@ -46,7 +46,7 @@
 
 | 시나리오 | 환경 | 기대 결과 | 실제 결과 | 상태·근거 |
 | --- | --- | --- | --- | --- |
-| 실 provider structured output | Vercel preview | 검수된 예시와 실제 provider가 정상 완료 JSON을 반환하고 후처리됨 | 선행 게이트 뒤 수행 | 보류 — AC-8 |
+| 검수 시드 조립 | 서버 단위 테스트 | 관계별 검수 예시 2세트·후보 1/2/3이 현재 입력과 분리되어 조립됨 | T16 검수 뒤 수행 | 보류 — AC-8 |
 
 ## 5. 정본·규칙 확인
 
@@ -63,6 +63,6 @@
 - 미해결 차단사항 없음: 코드 우선 골격에는 없음. T19 전체 완료에는 선행 게이트가 있다.
 - `docs/CHECKLIST.md` 갱신 여부와 근거: 완료 체크는 유지하지 않는다.
 - `docs/LOG.md` 기록 및 계획·검증 보고서 링크: 2026-07-15 T19 코드 우선 골격 기록과 링크 추가.
-- 후속 작업 또는 사용자 판단이 필요한 사항: T16 실제 검수와 T18 provider 연결 뒤 운영 예시 주입·preview 검증.
+- 후속 작업 또는 사용자 판단이 필요한 사항: T16 실제 검수 뒤 운영 예시 카탈로그를 이관한다. provider adapter·Preview 검증은 T20에서 수행한다.
 
 위 조건을 충족하지 못하면 상태를 `통과`로 기록하지 않는다.

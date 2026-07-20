@@ -4,7 +4,7 @@
 >
 > 작성일: 2026-07-12
 >
-> 최종 갱신일: 2026-07-16
+> 최종 갱신일: 2026-07-20
 >
 > 현재 단계: ④ 공개 Production S0 수동 확인·Preview 배포 검증
 >
@@ -14,7 +14,7 @@
 
 ## 1. 목표와 완료조건
 
-- 해결할 사용자/제품 문제: 목(mock) 상태의 앱을 실제 URL로 배포해 머지 전 실물 확인(프리뷰)과 이후 T18(프록시)·T22(외부 과업)·T23(최종 배포)의 기반을 만든다. push마다 깨끗한 환경에서 검증이 강제되도록 CI를 원격 규칙까지 연결한다.
+- 해결할 사용자/제품 문제: 목(mock) 상태의 앱을 실제 URL로 배포해 머지 전 실물 확인(프리뷰)과 이후 T20(실 provider 전환)·T22(외부 과업)·T23(최종 배포)의 기반을 만든다. push마다 깨끗한 환경에서 검증이 강제되도록 CI를 원격 규칙까지 연결한다.
 - 목표 결과: CI required status check(또는 플랜 제약 기록) + Vercel Git 연동으로 프로덕션(N166_진현지)·프리뷰 배포가 동작하는 상태.
 
 | ID | 검증 가능한 완료조건 | 검증 방법 | 필수 여부 |
@@ -33,7 +33,7 @@
 - T항목과 의존성 상태: T17 의존 = T14(완료 체크 확인, 2026-07-12).
 - CHECKLIST 본문이 직접 가리키는 문서·구간: docs/CICD.md 전체(특히 "T17 실행 체크리스트" 1~7).
 - 추가로 확인한 정본: docs/MVP.md DoD(배포 관련), .github/workflows/ci.yml·auto-merge.yml 현행 내용.
-- 이번 작업에서 바꾸지 않는 계약·범위: `ANTHROPIC_API_KEY` 등록(T18 시점), `api/` 함수 구현(T18), 계측 구현(T24 — 여기선 지원 여부 기록만), auto-merge.yml 수정 금지(과제 제공 워크플로), 앱 코드 변경 없음.
+- 이번 작업에서 바꾸지 않는 계약·범위: `ANTHROPIC_API_KEY` 등록(T20 시점), `api/` 함수 구현(T18 완료), 계측 구현(T24 — 여기선 지원 여부 기록만), auto-merge.yml 수정 금지(과제 제공 워크플로), 앱 코드 변경 없음.
 
 ## 3. 작업트리 기준선
 
@@ -84,3 +84,4 @@
 | 2026-07-16 | Vercel bot의 최신 Production deployment `5454481013`이 원격 `N166_진현지` HEAD `e5d52ef`를 배포하고 `success` 상태임을 GitHub Deployments API로 재확인 | Production Branch 불일치는 해소, 공개 접근·Preview만 남음 |
 | 2026-07-16 | 실제 Production URL 접속이 HTTP 200인 Vercel 로그인 페이지로 종료되고 답냥이·S0 문구가 없음을 확인 | Deployment Protection 유지, AC-5 보류 |
 | 2026-07-16 | Vercel 공식 문서에서 Standard Protection이 고유 deployment URL은 보호하지만 최신 Production Domain은 공개함을 확인하고 `https://dabnyang.vercel.app/` 접속 | HTTP 200, `<title>답냥이 — 대학생 메시지 작성 도우미</title>` 확인. Deployment Protection 변경 불필요 |
+| 2026-07-20 | GitHub deployments 재조회 결과 Production 2건만 유지되고 Preview는 0건. 원격 `N166_진현지`는 `e5d52ef`, 로컬 HEAD는 `1b56224`이며 T30 미커밋 작업이 존재 | 사용자 요청 없는 commit/push 금지로 AC-6 계속 대기 |
