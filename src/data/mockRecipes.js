@@ -1,6 +1,7 @@
 // TODO: KAMIS/네이버·쿠팡 연동 전까지 사용하는 임시 목업 데이터. checklist.md 항목 완료 후 실데이터로 교체.
 // categoryId: src/data/categories.js 참고.
-// subGroupId: 카테고리에 subgroups가 있을 때만 사용 (예: 라면 카테고리의 'cup'/'bag').
+// subGroupId: 카테고리에 subgroups가 있을 때만 사용 (categories.js 참고, 현재는 쓰는 카테고리 없음).
+// cookTimeMinutes: 예상 조리 시간(분, 대략적인 추정치). 시간 필터 구간은 src/data/timeFilters.js 참고.
 // image: 대표 사진. youtubeId가 있으면 해당 영상의 유튜브 썸네일을 사용 (없으면 emoji로 대체 표시됨).
 // youtubeId: 만드는 법을 보여주는 유튜브 영상 ID (레시피 상세 화면의 "만드는 법 보기" 링크에 사용).
 // ingredients: 재료 상세 화면에서 쓰는 대략적인 재료 목록 (실제 시세 연동 전까지는 참고용).
@@ -16,6 +17,7 @@ export const mockRecipes = [
     youtubeId: 'RUgH6TBDtsM',
     image: youtubeThumbnail('RUgH6TBDtsM'),
     categoryId: 'bokkeumbap',
+    cookTimeMinutes: 10,
     servings: 1,
     totalCost: 2200,
     ingredients: [
@@ -31,6 +33,7 @@ export const mockRecipes = [
     youtubeId: 'tS7nKEMOJpw',
     image: youtubeThumbnail('tS7nKEMOJpw'),
     categoryId: 'bokkeumbap',
+    cookTimeMinutes: 15,
     servings: 1,
     totalCost: 2800,
     ingredients: [
@@ -47,6 +50,7 @@ export const mockRecipes = [
     youtubeId: 'gx7GjyacUJg',
     image: youtubeThumbnail('gx7GjyacUJg'),
     categoryId: 'bokkeumbap',
+    cookTimeMinutes: 15,
     servings: 1,
     totalCost: 3400,
     ingredients: [
@@ -63,6 +67,7 @@ export const mockRecipes = [
     youtubeId: '1Cq894mgoG4',
     image: youtubeThumbnail('1Cq894mgoG4'),
     categoryId: 'jjigae',
+    cookTimeMinutes: 20,
     servings: 1,
     totalCost: 2600,
     ingredients: [
@@ -79,6 +84,7 @@ export const mockRecipes = [
     youtubeId: '4quUR3RLVyI',
     image: youtubeThumbnail('4quUR3RLVyI'),
     categoryId: 'jjigae',
+    cookTimeMinutes: 25,
     servings: 1,
     totalCost: 3200,
     ingredients: [
@@ -95,6 +101,7 @@ export const mockRecipes = [
     youtubeId: 'C5O1NzJXw0E',
     image: youtubeThumbnail('C5O1NzJXw0E'),
     categoryId: 'jjigae',
+    cookTimeMinutes: 20,
     servings: 1,
     totalCost: 3600,
     ingredients: [
@@ -111,6 +118,7 @@ export const mockRecipes = [
     youtubeId: 'iEIy1zIx_qA',
     image: youtubeThumbnail('iEIy1zIx_qA'),
     categoryId: 'deopbap',
+    cookTimeMinutes: 10,
     servings: 1,
     totalCost: 3000,
     ingredients: [
@@ -127,6 +135,7 @@ export const mockRecipes = [
     youtubeId: 'qVLdoOU9CrI',
     image: youtubeThumbnail('qVLdoOU9CrI'),
     categoryId: 'deopbap',
+    cookTimeMinutes: 10,
     servings: 1,
     totalCost: 2900,
     ingredients: [
@@ -143,6 +152,7 @@ export const mockRecipes = [
     youtubeId: 'cRc0Bu_dkZw',
     image: youtubeThumbnail('cRc0Bu_dkZw'),
     categoryId: 'pasta',
+    cookTimeMinutes: 15,
     servings: 1,
     totalCost: 3800,
     ingredients: [
@@ -159,6 +169,7 @@ export const mockRecipes = [
     youtubeId: 'wVfkGQuZ2SA',
     image: youtubeThumbnail('wVfkGQuZ2SA'),
     categoryId: 'pasta',
+    cookTimeMinutes: 20,
     servings: 1,
     totalCost: 3600,
     ingredients: [
@@ -175,6 +186,7 @@ export const mockRecipes = [
     youtubeId: 'ugfKSERSSew',
     image: youtubeThumbnail('ugfKSERSSew'),
     categoryId: 'pasta',
+    cookTimeMinutes: 20,
     servings: 1,
     totalCost: 4200,
     ingredients: [
@@ -191,6 +203,7 @@ export const mockRecipes = [
     youtubeId: 'eqT0PymPEPg',
     image: youtubeThumbnail('eqT0PymPEPg'),
     categoryId: 'bokkeum-main',
+    cookTimeMinutes: 20,
     servings: 1,
     totalCost: 4200,
     ingredients: [
@@ -207,6 +220,7 @@ export const mockRecipes = [
     youtubeId: 'AXeleDYJP0k',
     image: youtubeThumbnail('AXeleDYJP0k'),
     categoryId: 'bokkeum-main',
+    cookTimeMinutes: 20,
     servings: 1,
     totalCost: 4500,
     ingredients: [
@@ -218,41 +232,13 @@ export const mockRecipes = [
   },
 
   {
-    id: 'yukgaejang-sabalmyeon',
-    name: '육개장사발면',
-    emoji: '🍜',
-    youtubeId: 'EOXE3tJWVRM',
-    image: 'https://shopping-phinf.pstatic.net/main_8621342/86213422851.jpg',
-    categoryId: 'ramyeon',
-    subGroupId: 'cup',
-    servings: 1,
-    totalCost: 1500,
-    ingredients: [{ name: '육개장사발면', amount: '1개' }],
-  },
-  {
-    id: 'shin-ramyeon',
-    name: '신라면',
-    emoji: '🍜',
-    youtubeId: 'Wk4gfmVRE_I',
-    image: 'https://shopping-phinf.pstatic.net/main_8247566/82475664753.jpg',
-    categoryId: 'ramyeon',
-    subGroupId: 'bag',
-    servings: 1,
-    totalCost: 1200,
-    ingredients: [
-      { name: '신라면', amount: '1개' },
-      { name: '계란', amount: '1개' },
-      { name: '대파', amount: '약간' },
-    ],
-  },
-  {
     id: 'jjapaguri',
     name: '짜파구리',
     emoji: '🍜',
     youtubeId: 't26Qio0_neY',
     image: youtubeThumbnail('t26Qio0_neY'),
     categoryId: 'ramyeon',
-    subGroupId: 'bag',
+    cookTimeMinutes: 10,
     servings: 1,
     totalCost: 2400,
     ingredients: [
@@ -262,35 +248,13 @@ export const mockRecipes = [
   },
 
   {
-    id: 'instant-rice',
-    name: '즉석밥',
-    emoji: '🍙',
-    youtubeId: 'KhndbhHNbRA',
-    image: 'https://shopping-phinf.pstatic.net/main_9108925/91089256851.jpg',
-    categoryId: 'rice',
-    servings: 1,
-    totalCost: 1300,
-    ingredients: [{ name: '즉석밥', amount: '1개' }],
-  },
-  {
-    id: 'plain-rice',
-    name: '흰쌀밥',
-    emoji: '🍚',
-    youtubeId: 'JaS79VKGpU0',
-    image: youtubeThumbnail('JaS79VKGpU0'),
-    categoryId: 'rice',
-    servings: 1,
-    totalCost: 500,
-    ingredients: [{ name: '쌀', amount: '1공기 분량' }],
-  },
-
-  {
     id: 'ham-cheese-toast',
     name: '햄치즈토스트',
     emoji: '🍞',
     youtubeId: 'GXYTq92WPJ0',
     image: youtubeThumbnail('GXYTq92WPJ0'),
     categoryId: 'toast',
+    cookTimeMinutes: 10,
     servings: 1,
     totalCost: 2500,
     ingredients: [
@@ -307,6 +271,7 @@ export const mockRecipes = [
     youtubeId: 'y_rgEYvCKxo',
     image: youtubeThumbnail('y_rgEYvCKxo'),
     categoryId: 'toast',
+    cookTimeMinutes: 10,
     servings: 1,
     totalCost: 2000,
     ingredients: [
@@ -323,6 +288,7 @@ export const mockRecipes = [
     youtubeId: 'a-Rg89jSi9k',
     image: youtubeThumbnail('a-Rg89jSi9k'),
     categoryId: 'sandwich',
+    cookTimeMinutes: 10,
     servings: 1,
     totalCost: 3000,
     ingredients: [
@@ -339,6 +305,7 @@ export const mockRecipes = [
     youtubeId: 'ZPXEboQG5jA',
     image: youtubeThumbnail('ZPXEboQG5jA'),
     categoryId: 'sandwich',
+    cookTimeMinutes: 15,
     servings: 1,
     totalCost: 2500,
     ingredients: [
@@ -356,6 +323,7 @@ export const mockRecipes = [
     youtubeId: 'uTkO1M-LcX0',
     image: youtubeThumbnail('uTkO1M-LcX0'),
     categoryId: 'muchim',
+    cookTimeMinutes: 15,
     servings: 1,
     totalCost: 1500,
     ingredients: [
@@ -372,6 +340,7 @@ export const mockRecipes = [
     youtubeId: 'TaEtAHA5SSA',
     image: youtubeThumbnail('TaEtAHA5SSA'),
     categoryId: 'muchim',
+    cookTimeMinutes: 15,
     servings: 1,
     totalCost: 1600,
     ingredients: [
@@ -388,6 +357,7 @@ export const mockRecipes = [
     youtubeId: 'nfVogQIrQuM',
     image: youtubeThumbnail('nfVogQIrQuM'),
     categoryId: 'muchim',
+    cookTimeMinutes: 15,
     servings: 1,
     totalCost: 1900,
     ingredients: [
@@ -404,6 +374,7 @@ export const mockRecipes = [
     youtubeId: 'riCSYjY6G4Y',
     image: youtubeThumbnail('riCSYjY6G4Y'),
     categoryId: 'muchim',
+    cookTimeMinutes: 10,
     servings: 1,
     totalCost: 1400,
     ingredients: [
@@ -420,6 +391,7 @@ export const mockRecipes = [
     youtubeId: 'NA1zbuv5veU',
     image: youtubeThumbnail('NA1zbuv5veU'),
     categoryId: 'muchim',
+    cookTimeMinutes: 20,
     servings: 1,
     totalCost: 2200,
     ingredients: [
@@ -436,6 +408,7 @@ export const mockRecipes = [
     youtubeId: 'f6Ggkdp5JsA',
     image: youtubeThumbnail('f6Ggkdp5JsA'),
     categoryId: 'bokkeum-side',
+    cookTimeMinutes: 15,
     servings: 1,
     totalCost: 1700,
     ingredients: [
@@ -452,6 +425,7 @@ export const mockRecipes = [
     youtubeId: 'RjKWHRbBwFM',
     image: youtubeThumbnail('RjKWHRbBwFM'),
     categoryId: 'bokkeum-side',
+    cookTimeMinutes: 15,
     servings: 1,
     totalCost: 1800,
     ingredients: [
@@ -468,6 +442,7 @@ export const mockRecipes = [
     youtubeId: 'r45Zlx5zsd8',
     image: youtubeThumbnail('r45Zlx5zsd8'),
     categoryId: 'bokkeum-side',
+    cookTimeMinutes: 15,
     servings: 1,
     totalCost: 2300,
     ingredients: [
@@ -484,6 +459,7 @@ export const mockRecipes = [
     youtubeId: 'Qd6wSwACxfE',
     image: youtubeThumbnail('Qd6wSwACxfE'),
     categoryId: 'jorim',
+    cookTimeMinutes: 25,
     servings: 1,
     totalCost: 2000,
     ingredients: [
@@ -500,6 +476,7 @@ export const mockRecipes = [
     youtubeId: '6gqSdqiN53s',
     image: youtubeThumbnail('6gqSdqiN53s'),
     categoryId: 'jorim',
+    cookTimeMinutes: 15,
     servings: 1,
     totalCost: 2100,
     ingredients: [
@@ -516,6 +493,7 @@ export const mockRecipes = [
     youtubeId: 'JTNzDDQCL0k',
     image: youtubeThumbnail('JTNzDDQCL0k'),
     categoryId: 'jorim',
+    cookTimeMinutes: 20,
     servings: 1,
     totalCost: 1800,
     ingredients: [
@@ -532,6 +510,7 @@ export const mockRecipes = [
     youtubeId: 'Zp2XLhWt1UU',
     image: youtubeThumbnail('Zp2XLhWt1UU'),
     categoryId: 'jorim',
+    cookTimeMinutes: 15,
     servings: 1,
     totalCost: 1900,
     ingredients: [
@@ -548,6 +527,7 @@ export const mockRecipes = [
     youtubeId: 'z8jCpnBBjAI',
     image: youtubeThumbnail('z8jCpnBBjAI'),
     categoryId: 'bokkeum-main',
+    cookTimeMinutes: 20,
     servings: 1,
     totalCost: 3800,
     ingredients: [
@@ -564,6 +544,7 @@ export const mockRecipes = [
     youtubeId: 'v7d_phl1s-g',
     image: youtubeThumbnail('v7d_phl1s-g'),
     categoryId: 'bokkeum-main',
+    cookTimeMinutes: 25,
     servings: 1,
     totalCost: 4600,
     ingredients: [
@@ -581,6 +562,7 @@ export const mockRecipes = [
     youtubeId: 'i_DCUKt488A',
     image: youtubeThumbnail('i_DCUKt488A'),
     categoryId: 'noodle',
+    cookTimeMinutes: 10,
     servings: 1,
     totalCost: 2200,
     ingredients: [
@@ -596,6 +578,7 @@ export const mockRecipes = [
     youtubeId: 'kRPDjmGoWCI',
     image: youtubeThumbnail('kRPDjmGoWCI'),
     categoryId: 'bokkeum-side',
+    cookTimeMinutes: 30,
     servings: 1,
     totalCost: 2400,
     ingredients: [
@@ -612,6 +595,7 @@ export const mockRecipes = [
     youtubeId: 'QLfe8Z2VBvo',
     image: youtubeThumbnail('QLfe8Z2VBvo'),
     categoryId: 'salad',
+    cookTimeMinutes: 15,
     servings: 1,
     totalCost: 3500,
     ingredients: [
@@ -628,6 +612,7 @@ export const mockRecipes = [
     youtubeId: '1N7MpsfyQdY',
     image: youtubeThumbnail('1N7MpsfyQdY'),
     categoryId: 'steak',
+    cookTimeMinutes: 20,
     servings: 1,
     totalCost: 4000,
     ingredients: [
@@ -645,6 +630,7 @@ export const mockRecipes = [
     youtubeId: 'qTTaufX7mss',
     image: youtubeThumbnail('qTTaufX7mss'),
     categoryId: 'bokkeumbap',
+    cookTimeMinutes: 15,
     servings: 1,
     totalCost: 3400,
     ingredients: [
@@ -662,6 +648,7 @@ export const mockRecipes = [
     youtubeId: 'LwTINDqIf_0',
     image: youtubeThumbnail('LwTINDqIf_0'),
     categoryId: 'jorim',
+    cookTimeMinutes: 30,
     servings: 1,
     totalCost: 4200,
     ingredients: [
@@ -679,6 +666,7 @@ export const mockRecipes = [
     youtubeId: 'WV60DsIoAwM',
     image: youtubeThumbnail('WV60DsIoAwM'),
     categoryId: 'steak',
+    cookTimeMinutes: 15,
     servings: 1,
     totalCost: 5500,
     ingredients: [
@@ -695,6 +683,7 @@ export const mockRecipes = [
     youtubeId: 'rVREDA7Uwxc',
     image: youtubeThumbnail('rVREDA7Uwxc'),
     categoryId: 'pasta',
+    cookTimeMinutes: 25,
     servings: 1,
     totalCost: 4800,
     ingredients: [

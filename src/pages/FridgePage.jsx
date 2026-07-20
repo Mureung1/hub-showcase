@@ -60,6 +60,15 @@ function FridgePage() {
   }
 
   function handleComplete() {
+    const hasRealIngredient = selectedIds.some(
+      (id) => fridgeIngredientsById.get(id)?.category !== 'seasoning',
+    )
+    if (!hasRealIngredient) {
+      const proceed = window.confirm(
+        '어라, 조미료 말고 진짜 재료는 하나도 안 골랐더랑! 이대로 가면 기니가 요리를 잘 못 찾을 수도 있어요. 그래도 홈으로 갈까요?',
+      )
+      if (!proceed) return
+    }
     saveFridgeSelection(selectedIds)
     navigate('/home')
   }
