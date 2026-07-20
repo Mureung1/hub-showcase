@@ -5,8 +5,11 @@ describe('production generate entry', () => {
   it('fails explicitly while the live provider is unconfigured', async () => {
     const request = new Request('https://example.test/api/generate', {
       body: JSON.stringify({
+        mode: 'initiate',
         purpose: 'ask',
+        route: 'manual_ai',
         scenarioId: 'professor',
+        speechStyleId: 'seumnida',
         situation: '면담 시간을 여쭤보고 싶어요',
       }),
       headers: {

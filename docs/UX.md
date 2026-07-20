@@ -7,7 +7,7 @@
 답냥이의 성공 루프는 경로별로 다르다. 외부 파일럿의 잠정 목표는 **카드 경로 S0→결과 20초**, **직접입력 경로 S0→복사 60초**다:
 
 ```
-카톡에서 보낼 말이 막힘 → 진입 → 방식·관계 선택 → [상황 카드 → 즉시 결과] 또는 [다른 상황 → 목적·입력 → 생성 대기] → 3개 비교 → 복사 → 카톡 복귀
+카톡에서 보낼 말이 막힘 → 진입 → 방식·관계 선택 → [상황 카드 → 질문 1개 → 생성 대기] 또는 [질문 없이 기본 초안] 또는 [직접 설명 → 목적·입력 → 생성 대기] → 3개 비교 → 복사 → 카톡 복귀
 ```
 
 UX가 승부를 보는 지점은 4곳이고, 이 문서는 각 지점의 근거 수준과 검증할 설계 가설을 기록한다:
@@ -68,16 +68,34 @@ UX가 승부를 보는 지점은 4곳이고, 이 문서는 각 지점의 근거 
 - 활성 질문과 첫 빠른 답변이 375×667 첫 화면 안에 보여야 한다. 챗 UI 때문에 기존 카드 경로 20초 목표가 느려지면 표현을 줄인다.
 - 결과 3개는 채팅 한 줄씩 순차 노출하지 않고 동시에 비교 가능한 한 묶음으로 보여준다. 구조화 응답 전체 검증과 사용자 선택권 원칙을 유지한다.
 
-## 7. 현재 설계 가설 요약
+## 7. 유사 AI 글쓰기 서비스의 결과 수정 흐름 대조 (2026-07-20)
+
+**근거 수준**: 아래는 공식 제품·도움말에서 확인한 현재 기능 패턴이며 사용자 효과 실험이 아니다. 답냥이 개선 효과는 T22~T23에서 별도로 검증한다.
+
+- [Apple Writing Tools](https://support.apple.com/guide/iphone/find-the-right-words-with-writing-tools-iph6f08da1d2/26/ios/26)는 rewrite 뒤 Original·Undo·Revert를 제공하고, [Outlook Copilot](https://support.microsoft.com/en-US/Outlook/copilot-pages/draft-an-email-message-with-copilot-in-outlook)은 Keep·Discard·Regenerate와 tone/length 조정을 결과 맥락 안에서 제공한다.
+- [Grammarly Paraphraser](https://support.grammarly.com/hc/en-us/articles/38552469933837-Paraphraser-agent-user-guide)는 제안을 Accept·Dismiss·Undo하게 하고, [Wordtune Rewrite](https://www.wordtune.com/rewrite)는 붙여넣은 문장에 여러 rewrite와 tone/length 선택을 제공한다.
+- [Gmail Help me write](https://support.google.com/mail/answer/13955415)는 Recreate 뒤 이전 version으로 돌아갈 수 없음을 명시한다. 답냥이는 사용자가 가진 유일한 초안을 재생성 실패나 성공 교체로 잃지 않게 하는 쪽을 택한다.
+- [Goblin Formalizer](https://goblin.tools/Formalizer)는 한 가지 문장 변환 과업을 단순하게 유지하지만 많은 style·강도를 제공한다. 답냥이는 범용 style 수를 늘리지 않고 관계별 세 tone 축을 유지한다.
+- screenshot으로 전체 대화를 읽는 dating reply 도구는 입력이 빠르지만 제3자 대화·개인정보 처리 경계를 크게 바꾼다. 답냥이는 screenshot/OCR 자동 수집을 도입하지 않고 카드 ID 또는 사용자가 명시적으로 붙여넣은 원문만 쓴다.
+
+**T36 적용 결정**:
+
+- 일반 guided의 `모드 → 관계 → 카드 → option` 결과 도달 4탭은 유지한다. 복사까지 5탭이며 자동 복사로 줄이지 않는다.
+- template→guided와 AI reroll은 S3의 현재 후보를 로딩·실패 중 유지하고, 성공한 교체에서만 직전 한 세트를 비교·복원할 수 있게 한다.
+- template의 카드 질문과 guided의 answer 변경은 S3 안에서 펼친다. 자유 follow-up chat이나 새 AI 수정 intent는 추가하지 않는다.
+- 후보 직접 수정은 현재 탭 로컬 상태로만 제공하고 수정문을 AI·event API·DB에 보내지 않는다.
+- S3 행동은 `복사`를 카드별 primary로 두고 `같은 선택으로 다른 표현 / 선택한 답 바꾸기 / 사실 더 알려주기 / 상황 다시 고르기`의 원인별 언어로 구분한다.
+
+## 8. 현재 설계 가설 요약
 
 | 지점 | 현재 설계 가설 | 상태 |
 |---|---|---|
 | 대기 | 결과 카드 모양 스켈레톤 3장 + 실제 진행을 가장하지 않는 경과 문구. 부분 스트리밍 미노출은 제품 trade-off | 지침 → T8·T20·T22 |
-| 선택 | 세로 스택 3카드 + 톤 배지, 후보 간 동등한 시각 무게, 전문 노출. 세 개의 최적성·ownership은 T22 탐색 | 기존 결정 + 지침 → T9·T22 |
+| 선택 | 세로 스택 3카드 + 톤 배지, 후보 간 동등한 시각 무게, 전문 노출. 직전 1세트 복원·로컬 수정으로 agency를 보완하고 효과는 T22에서 탐색 | T9·T36·T22 |
 | 복사 | 버튼 “복사됨” 상태 전환 + 자동 선택 폴백. 추가 토스트는 실기기 결과로 결정 | 기존 결정 재검토 → T10·T23 |
 | 전반 | 375×667·320×568, CTA·safe area, 44px, 초점·대비·키보드·reduced motion | 보강 지침 → T14·T22 |
 | 대화형 표현 | 냥이 발화 + 빠른 답변 + 이전 선택 요약. 자유 대화·선택 턴 AI 호출 없음 | 사용자 승인 → T28·T22 |
 
-## 8. MVP 밖 (이후 단계 후보)
+## 9. MVP 밖 (이후 단계 후보)
 
-토큰 스트리밍 표시, 생성 중단 버튼, 후보 부분 수정(문장 단위 편집), 햅틱 피드백, 다크 모드.
+토큰 스트리밍 표시, 자유 follow-up chat, 새 AI refinement instruction, 여러 세대 version history, 햅틱 피드백, 다크 모드.

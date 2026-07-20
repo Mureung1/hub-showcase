@@ -1,4 +1,4 @@
-import type { PurposeId, ScenarioId } from '../../../src/entities/message'
+import type { Mode, PurposeId, ScenarioId } from '../../../src/entities/message'
 import {
   parseGeneratedReply,
   receivedMessageMaxLength,
@@ -12,6 +12,12 @@ export type PromptExampleSet = {
   readonly situation: string
   readonly receivedMessage?: string
   readonly candidates: readonly GeneratedCandidate[]
+}
+
+export type ReviewedPromptExampleSet = PromptExampleSet & {
+  readonly catalogVersion: string
+  readonly exampleId: string
+  readonly mode: Mode
 }
 
 export type PromptExamplePair = readonly [PromptExampleSet, PromptExampleSet]

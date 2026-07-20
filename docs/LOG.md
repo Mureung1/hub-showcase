@@ -847,3 +847,184 @@
 - 첫 전체 빌드에서 기존 T29 에셋 존재 테스트의 `node:fs`·`node:path` 타입 참조 누락을 발견했다. 앱 전역 타입 설정을 넓히지 않고 해당 테스트 파일에만 Node 타입 참조를 추가한 뒤 빌드 통과. 제품 런타임 동작 변화 없음
 - XML·structured output은 주입 완화책이지 완전한 보안 경계가 아니다. 실제 검수 완료 시드 이관, provider adapter 연결, 상충 지시 holdout·실 응답 평가는 T16·T18 이후 남아 있음
 - 상세 기록: [T19 계획서](../harness/tasks/T19-prompt/plan.md)·[검증 보고서](../harness/tasks/T19-prompt/verification.md)
+
+## 2026-07-16 (T32 개인 말투 프리셋 코드·자동 검증 완료)
+### 승인·구현
+- 사용자 검수에서 의미는 정확해도 평소 말투와 달라 재수정이 필요하다는 피드백을 반영하고, 사용자 선택을 `습니다체 / 요체 / 이다체 / 용용체`로 확정했다. 첫 적용 범위는 `직접 설명할게요` AI 경로이며 카드 72문구의 T25 자연스러움 보완과 분리했다.
+- `습니다체·요체`는 모든 관계, `이다체·용용체`는 친구·연인만 허용한다. S2-b 목적 아래 필수 native radio로 라벨·예시를 표시하고, 선택은 기존 30분 sessionStorage에 복원하되 오염값·관계 위반·전체 초기화에서 안전하게 지운다.
+- 공용 `GenerationRequest`의 AI 경로에 `speechStyleId`를 필수화하고 카드 요청에는 금지했다. 서버 handler가 누락·관계 위반을 400으로 거절하며, mock은 관계×말투별 기존 세 톤을, prompt는 `<speech_style_id>`와 결정적 말끝·few-shot보다 현재 선택 우선 규칙을 사용한다.
+- S3 질문은 개인 말끝과 세 톤 축을 구분하도록 `어느 톤으로 보낼까냥?`으로 바꾸고 AI 결과 설명에서 선택한 말투를 확인한다. 응답 schema·운영 메트릭·provider/DB·영구 프로필은 변경하지 않았다.
+### 역할·검증
+- `$orchestrate-dabnyangi-task`로 PM이 공유 계약·정본·통합을 맡고, 프론트엔드와 백엔드/AI를 파일 소유권별 병렬 구현한 뒤 디자이너가 실제 UI diff를 읽기 전용 교차 검토했다. 교차 검토에서 mock의 관계별 후보 회귀를 발견해 관계×말투 구조로 보완했다.
+- 전체 15파일 130개 테스트, API 타입검사, lint, TypeScript/Vite build, `git diff --check`, AGENTS.md=CLAUDE.md, 변경 코드 명시적 `any` 0건 통과. 기존 jsdom `scrollTo` 로그와 지연 CatCanvas 500kB 경고만 유지했다.
+- 평가자 정보가 있을 수 있는 미추적 T25 설문 CSV는 읽기 전용으로 보존하고 변경·추적하지 않았다. 커밋·푸시는 수행하지 않았다.
+### 남은 게이트
+- Browser runtime 선택이 `No browser is available`, 목록이 `[]`를 반환해 320×568·375×667 무가로넘침과 실제 Tab·방향키 라디오 선택은 확인하지 못했다. CSS 한 열·44px와 RTL·디자이너 소스 검토는 통과했지만 필수 수동 증거 전까지 T32 CHECKLIST 완료 체크는 보류한다.
+- 실 provider의 네 말투 준수 품질과 output validator의 의미적 판별은 T20~T21에서 검증한다. 상세 기록: [T32 계획서](../harness/tasks/T32-speech-style-presets/plan.md)·[검증 보고서](../harness/tasks/T32-speech-style-presets/verification.md)
+
+## 2026-07-16 (T32 카드 포함 네 말투 확장 구현)
+### 승인·범위
+- 사용자는 사람 검토가 계속 필요하더라도 구현을 늦추지 않고 전체 초안을 먼저 만든 뒤 반복 수정하도록 승인했다. 이에 앞선 AI 전용·관계 제한 기록은 1차 이력으로 보존하고, 최종 구현 범위를 카드와 `직접 설명할게요` 양쪽·네 관계·네 말투로 확대했다.
+- 카드 조회 키를 `scenarioId × situationId × speechStyleId`로 확장하고 B/S/C 전달 강도는 별도 축으로 유지했다. 영구 프로필·자유 말투 입력·provider/DB·운영 메트릭 구조는 추가하지 않았다.
+### 구현·검토 자료
+- S2-a 카드 위에 네이티브 라디오 말투 선택을 두고, 미선택 시 카드만 비활성화하며 `직접 설명할게요` 진입은 유지했다. S2-a와 S2-b는 기존 30분 세션의 단일 `speechStyleId`를 공유하고 관계 변경 시 유지·전체 재시작 시 초기화한다.
+- 4관계×6상황×4말투×3톤 = 288개 정적 초안을 작성하고 96행 검토표 `harness/tasks/T25-situation-card-templates/speech-style-review-draft.md`와 동기화했다. 288문구는 검수 완료가 아니며 T25 완료 체크도 보류했다.
+- 공용 카드·AI 계약, 관계별 mock, 서버 prompt 규칙을 네 관계×네 말투에 맞췄다. 관계 존칭·안전 규칙은 개인 말끝보다 우선하며, 유효한 카드 요청은 서버 AI 경로로 보내지 않는다.
+### 역할 교차 검토·자동 검증
+- `$orchestrate-dabnyangi-task`로 PM이 공유 계약·정본·통합, 디자이너가 288문구·검토표, 프론트엔드가 S2-a/S2-b 흐름, 백엔드/AI가 mock·prompt·handler를 소유했다. 디자이너 최종 읽기 전용 검토에서 필수 UI 수정은 없었고, 서비스 명칭과 달랐던 테스트 제목 데이터 1건만 `친구·연인`으로 맞췄다.
+- 콘텐츠 전용 9개 불변조건이 96세트·288문구·전체 고유성·조회 누락 0건, 자리 표시자·사과 수, 입력 없는 사실·약속과 조건부 사과 금지, 말투 최소 표지, C≤S를 확인했다. App 44개, 콘텐츠 관련 14개, 전체 16파일 164개 테스트와 API 타입검사, lint, build, `git diff --check`, AGENTS.md=CLAUDE.md, 변경 코드 명시적 `any` 0건을 통과했다.
+- 기존 jsdom `scrollTo` 로그와 지연 CatCanvas 500kB 경고는 유지됐다. 평가자 정보가 있을 수 있는 미추적 T25 CSV는 읽거나 변경·추적하지 않았고 커밋·푸시도 수행하지 않았다.
+### 남은 게이트
+- 교수·조교와 선배·동기의 이다체·용용체, 친구·연인의 습니다체를 우선 사람 검토한다. 자동 말끝 표지는 관계 자연스러움·실제 전송 가능성의 합격 근거가 아니다.
+- Browser backend가 없어 320×568·375×667에서 네 옵션 높이·스크롤 부담·줄바꿈과 실제 Tab·방향키 조작은 확인하지 못했다. 구현은 인계 가능하지만 이 증거와 T25 사람 검토 전까지 T32·T25 CHECKLIST 완료 체크는 유지 보류한다.
+
+## 2026-07-16 (냥이 정적 이미지 경로 복구)
+### 원인·복구
+- 화면의 `/cats/*.webp`·`/paw.png`·`/favicon.svg`가 모두 깨진 상태에서 런타임 정적 루트인 `public` 디렉터리가 없고 같은 파일이 `node_modules/public`에 남아 있음을 확인
+- 사용자 제공 PNG 원본을 수정하지 않고 `public` 위치를 복구. 런타임 WebP 10개와 발자국·파비콘 파일 형식을 확인하고, 코드가 참조하는 냥이 WebP가 실제 `public` 경로에 존재하는지 검사하는 회귀 테스트를 추가
+### 검증·한계
+- Vite 생산 빌드의 `dist` 안에 WebP 10개·`paw.png`·`favicon.svg` 전부가 포함되고 `public` 원본과 각각 SHA-256이 일치함을 확인
+- 전체 17파일 195개 테스트, lint, TypeScript/Vite build, API 타입 검사, `git diff --check` 통과. 기존 jsdom `scrollTo` 로그와 지연 CatCanvas 500kB 경고만 유지
+- Browser runtime 선택은 `No browser is available`, 목록은 `[]`를 반환해 실브라우저 화면 증거는 추가하지 못했다. 대신 에셋 형식·파일 존재·빌드 복사·해시 일치와 자동 회귀로 복구를 검증
+
+## 2026-07-16 (T17 Vercel Production Branch 보정 확인)
+### 재개 결과
+- CHECKLIST의 의존 충족 최선행 미완료 항목으로 T17을 재개. GitHub Deployments API에서 Vercel의 최신 Production deployment `5454481013`이 원격 `N166_진현지` HEAD `e5d52ef`를 배포했고 상태가 `success`임을 확인
+- `main` 보호 규칙의 required check `verify`(GitHub Actions app_id 15368)도 유지. 기존 Production Branch 불일치 차단은 해소된 것으로 판정
+### 남은 차단
+- Production deployment의 고유 URL을 실제 요청했으나 Vercel 로그인 페이지로 리디렉션된 후 HTTP 200 HTML이 반환됐고 답냥이·S0 문구는 없었다. 해당 고유 URL은 Standard Protection 대상으로 후속 Production Domain 교차 확인을 수행
+- GitHub deployments에 Production 2건만 있고 Preview는 없어 AC-6도 대기. 공개 Production Domain S0를 사용자가 확인하고 비프로덕션 브랜치 push를 요청하면 Preview URL 검증·T17 종료를 재개
+### Production Domain 교차 확인
+- Vercel 공식 문서에서 Standard Protection은 생성된 deployment URL을 보호하지만 최신 Production Domain은 공개함을 확인. 프로젝트 Production Domain 후보 `https://dabnyang.vercel.app/`은 HTTP 200, 한국어 HTML, `답냥이 — 대학생 메시지 작성 도우미` title을 반환했다. Deployment Protection 변경은 불필요하며 앞선 고유 URL 로그인은 정상 보호 동작으로 재판정
+- Browser runtime이 없어 JavaScript 후 S0 실물은 사용자 확인 대기. Preview 0건은 그대로이며 비프로덕션 브랜치 push는 커밋·푸시 명시 요청 후 수행
+
+## 2026-07-16 (T33 교수·조교 이메일 형식 구현·자동 검증 완료)
+### 승인·범위
+- 사용자는 교수·조교에게는 메신저보다 격식을 갖춘 이메일이 필요한 경우가 많다는 피드백과 함께 구현을 승인했다. 교수·조교 관계에서만 `메신저 / 이메일` 연락 형식을 고르고, 다른 관계는 기존 메신저 흐름을 유지하도록 범위를 고정했다.
+- 이메일은 개인 말투를 적용하지 않고 습니다체로 고정하며 `면담 요청 / 수업·과제 질문 / 결석 문의 / 기한 조정 요청 / 추천·자문 요청 / 감사·후속 연락` 여섯 상황만 제공한다. 이메일 자유 설명 AI, 실제 발송·주소록·첨부, provider/DB 변경은 제외했다.
+### 구현·개인정보 경계
+- 받는 분 성함+호칭·학과·학번·이름·용건을 안내 입력으로 받고 면담 요청에만 가능 시간대를 필수, 대면/온라인 방식을 선택으로 받는다. 받은 사실만 로컬 정적 템플릿에 치환해 `정석 / 더 정중하게 / 더 간결하게`의 제목+본문 18후보를 만든다.
+- 이메일 정보와 연락 형식은 기존 현재 탭 30분 sessionStorage에만 보존하고 서버·AI·운영 로그로 보내지 않는다. 복원 시 저장 후보를 신뢰하지 않고 현재 입력과 템플릿으로 재생성하며, 모드 변경·처음으로에서 개인정보를 초기화한다.
+- 결과에서 제목·본문·전체 메일을 따로 복사한다. Clipboard API를 쓸 수 없으면 실제 원문을 펼쳐 선택할 수 있고, 완전 실패도 상태 메시지로 안내한다.
+### 역할 교차 검토·자동 검증
+- `$orchestrate-dabnyangi-task`로 PM이 공유 계약·정본·통합, 디자이너가 18후보·검토표와 최종 UX 교차 검토, 프론트엔드가 연락 형식·이메일 상황/입력/결과·세션·복사 UI를 담당했다. 서버 계약 변경이 없어 백엔드/AI 역할은 비활성으로 유지했다.
+- 교차 검토에서 교수·조교를 구분하지 못한 고정 `교수님` 호칭, 완성 제목의 대괄호 자리 표시자 오탐, 숨겨져 길게 누를 수 없던 전체메일 복사 폴백을 발견했다. 사용자 입력 호칭을 그대로 사용하고, 제목 형식을 바꾸고, 선택 가능한 전체 원문을 펼치는 방식으로 모두 수정했다. 최종 디자이너 검토에서 남은 필수 수정은 없었다.
+- App 62개와 이메일·공유 도메인 17개를 포함한 전체 17파일 195개 테스트, API 타입검사, lint, TypeScript/Vite build, `git diff --check`, AGENTS.md=CLAUDE.md, `api src` 명시적 `any` 0건을 통과했다. 기존 jsdom `scrollTo` 로그와 지연 CatCanvas 500kB 경고만 유지됐다.
+### 남은 게이트·인계
+- Browser runtime이 `No browser is available`을 반환해 320×568·375×667, 모바일 키보드, 카카오톡 인앱 복사 폴백은 실검증하지 못했다. 한 열 레이아웃·44px 조작부·줄바꿈·safe-area 방어와 RTL은 통과했지만 실제 시각 검증 완료로 표현하지 않는다.
+- 18후보는 자동 불변조건을 통과한 초안일 뿐 자연스러움 합격이 아니다. [T33 검토표](../harness/tasks/T33-professor-email-format/email-template-review-draft.md)에서 사용자 반복 검토 후 수정하고 실브라우저 증거까지 확보하기 전에는 CHECKLIST T33을 미완료로 유지한다.
+- 평가자 정보가 있을 수 있는 미추적 T25 설문 CSV와 별도 CatStage 변경은 읽거나 수정·추적하지 않았고, 커밋·푸시도 수행하지 않았다.
+
+## 2026-07-20 (T30 Neon·Drizzle 데이터 계층 코드 우선 구현)
+### 방향·의존성 예외
+- 사용자가 사용자 리뷰·UI 확장보다 백엔드·DB·서버 기술 발전에 집중하고, 로그인 없이 원문 없는 운영 메타데이터만 저장하는 방향으로 계속 착수를 요청했다.
+- T30의 정규 의존 T17·T18은 Preview·실 provider gate가 남아 미완료다. 실제 DB 연결·완료 체크를 제외하고 schema·migration·repository·비저장/장애 테스트 AC-1~7만 먼저 구현하는 코드 우선 예외를 기록했다.
+### 데이터 계층·서버 수명주기
+- 공식 서버리스 통합 경로에 맞춰 Drizzle ORM/Kit v1 RC, Neon HTTP driver, Vercel Functions를 도입했다. `prompt_versions`·`template_versions`·`generation_runs`·`evaluation_runs` 네 테이블과 최초 migration을 생성했다.
+- UUID PK, 버전 unique·단일 active partial unique, prompt/template FK, 실행·평가 조회 index, checksum·검수 상태·음수 수치·route/version 경계 check를 DB 제약으로 고정했다. 자유 JSON과 사용자/세션 테이블은 두지 않았다.
+- 네 typed repository는 명시적 allowlist mapper를 사용한다. 받은 메시지·상황·생성 후보·IP/client key·사용자/세션 ID·메시지 hash는 schema와 row에 없고, 프롬프트/템플릿 본문은 계속 Git 정본으로 유지한다.
+- `/api/generate`는 서버의 `DATABASE_URL`이 있을 때만 Neon repository를 만들고 누락·초기화 실패에서는 no-op으로 강등한다. DB write는 Vercel `waitUntil()` background task에 등록하며 동기 예외·비동기 reject·scheduler 실패가 생성 응답을 바꾸지 않도록 격리했다.
+- Drizzle CLI는 Git에서 제외되는 `.env.local`만 읽고, `.env*` 비밀 파일 ignore와 값 없는 `.env.example`을 추가했다. 브라우저 `src`에는 DB driver·연결 문자열 import가 없다.
+### 검증·남은 게이트
+- DB·smoke guard 관련 6파일 19개, handler/entry 포함 관련 8파일 42개, 전체 23파일 215개 테스트와 API 타입검사, lint, Vite build, `drizzle-kit check`, diff·명시적 `any`·금지 필드·클라이언트 DB import 검색을 통과했다. 기존 jsdom `scrollTo` 로그와 lazy CatCanvas 500kB 경고만 유지됐다.
+- 실제 Neon 개발/Preview `DATABASE_URL`, 로컬 PostgreSQL·Docker가 없어 migration 적용과 네 repository 기록 왕복 AC-8은 실행하지 못했다. T30 CHECKLIST는 미완료로 유지한다.
+- 실제 provider가 아직 model·prompt version·token 사용량을 반환하지 않아 해당 nullable 실행 열은 T18~T20 통합 전까지 비어 있다. 상세 근거: [T30 계획서](../harness/tasks/T30-neon-drizzle-data-layer/plan.md)·[검증 보고서](../harness/tasks/T30-neon-drizzle-data-layer/verification.md).
+### 실제 Neon 개발 DB 검증 재개
+- 이후 `.env.local`에 비공개 `DATABASE_URL`이 준비된 것을 값 출력 없이 확인하고, Neon 개발 DB에 최초 migration을 적용했다. 같은 migration 재실행도 정상 종료해 Drizzle journal 기반 재현성을 확인했다.
+- `scripts/db-smoke.ts`는 production 환경을 거부하고 명시적 `DB_SMOKE_CONFIRM=t30-development-write`가 있어야만 실행된다. public base table이 정확히 네 개인지 확인한 뒤 각 repository로 prompt/template version, generation/evaluation run 임시 row를 기록·조회한다. 이어 실제 generate handler의 성공 응답이 background sink를 거쳐 `generation_runs`에 기록되는지 확인하고 FK 역순으로 자신이 만든 행을 모두 삭제한다.
+- 실제 smoke가 `handler and four repositories wrote, read, and cleaned metadata rows`로 통과했다. 연결 문자열·사용자 원문·생성 문구는 출력하거나 저장소에 기록하지 않았다.
+- AC-1~8 자체는 통과했지만 T17·T18 선행 항목과 Vercel Preview background write 검증이 남아 CHECKLIST T30 완료 체크와 하네스 종료는 보류한다.
+
+## 2026-07-20 (백엔드 구현 gate 분리 및 T18·T30 완료)
+### 승인·책임 분리
+- 사용자가 구조 변경을 “승인”했다. 제품·출시 품질 gate와 provider 비종속 백엔드 구현 gate를 분리하고, 사용자 흐름·로그인·원문 저장은 바꾸지 않았다.
+- T18은 T3에 의존하는 provider 비종속 `/api/generate` 기반으로 종료했다. 표준 fetch 진입점, 주입형 handler/provider/limiter/metrics 경계, 요청 검증, 18초 취소, 출력 상한, 제한 재시도, 오류 정규화, 10회/60초 제한, 원문 없는 메타데이터를 완료 근거로 삼았다.
+- 실제 provider client·키·프롬프트 structured output·클라이언트 HTTP 전환·Vercel Preview 왕복은 T20으로 이관했다. 현재 진입점은 계속 unconfigured provider로 명시적 500을 반환하므로 실제 AI 운영 완료를 주장하지 않는다.
+- T30 의존은 완료된 T18 기반으로 한정했다. schema·migration·typed repository·best-effort background sink와 실제 Neon 개발 DB migration 최초/재실행, public 테이블 4개, 네 repository 및 generate handler 임시 row 기록·조회·정리를 근거로 종료했다.
+- Vercel Preview의 환경별 `DATABASE_URL`과 실제 `waitUntil()` background write는 T31 통합 게이트로 이관했다. T17·T19·T20·T21·T22·T23·T31과 T25 콘텐츠/경쟁가치 검증은 계속 미완료다.
+### 재검증·인계
+- T18 관련 3파일 24개와 전체 23파일 215개 테스트, API 타입검사, lint, Vite build, `drizzle-kit check`를 재통과했다. 기존 jsdom `scrollTo` 로그와 lazy CatCanvas 500kB 경고만 유지됐다.
+- 무참여자 `Provisional Go`는 T20 실 provider 품질·출시 진행 gate로 유지했다. T18·T30 완료를 사용자 효과나 범용 AI 대비 우월성 증거로 사용하지 않는다.
+- 커밋·푸시·Preview 배포는 수행하지 않았다.
+
+## 2026-07-20 (남은 Task 재개 감사 — T17·T19 외부 조건 확인)
+### T17 재확인
+- CHECKLIST의 가장 앞선 미완료 T17을 먼저 재개했다. Browser runtime 선택은 다시 `No browser is available`, 사용 가능 목록은 `[]`를 반환해 공개 Production Domain의 JavaScript 후 S0 화면 증거를 추가하지 못했다.
+- Preview는 비프로덕션 브랜치 commit·push가 있어야 생성된다. 사용자의 “남은 Task 진행”은 작업 진행 요청이지만 AGENTS.md의 명시적 커밋·푸시 요청은 아니므로 원격 변경을 수행하지 않았다.
+### T19 의존성 정정
+- T19 정본을 감사한 결과 CHECKLIST의 T16만 완료로 표시됐고, `docs/SEEDS.md`에는 제3자 블라인드 정렬과 24개 전송 가능성 판정이 모두 대기였다. 완료 근거가 없어 T16을 다시 열고 T19 운영 시드 이관을 중단했다.
+- 승인된 책임 분리에 맞춰 T19 AC-8을 “검수된 24개 시드의 관계별 2세트 서버 카탈로그 이관”으로 한정했다. 실제 provider·키·Preview 왕복은 T20에 유지해 T19↔T20 순환 의존을 제거했다.
+- 앱·서버 런타임 코드는 변경하지 않았다. T19 프롬프트 4파일 28개 테스트, API 타입검사, `git diff --check`를 재통과했다. 다음 재개 조건은 T17 commit·push 명시 요청과 T16 제3자 검수 근거다.
+
+## 2026-07-20 (T16 승인 반영·T19 프롬프트 구성 완료)
+### 검수 근거·구현
+- 사용자가 “3자 검수 완료 승인”을 명시해 T16의 제3자 블라인드 정렬 8/8·전송 가능성 24/24 통과로 기록했다. 검수자 식별정보와 원시 응답지는 저장소에 보관하지 않는다.
+- `api/_lib/prompt/seedExamples.ts`에 검수 시드 24개를 4관계×2세트×3톤 typed 카탈로그로 이관했다. 각 관계는 답장·먼저 보내기 세트를 하나씩 가지며 `requirePromptExamplePair`가 관계·길이·후보 3개·톤 1/2/3·중복·안전 계약을 모듈 로드 시 검증한다.
+- `buildPromptWithReviewedExamples`가 요청의 `scenarioId`로 검수 예시 두 세트를 선택해 기존 XML 데이터 블록·관계/목적/개인 말투 규칙·JSON Schema와 조립한다. 시드의 `source`나 UI transcript는 provider 입력에 포함하지 않는다.
+### 검증·경계
+- 첫 테스트에서 존재하지 않는 `scenarioIds` export 참조를 발견했고, 명시적 `ScenarioId` 튜플로 교체해 `any` 없이 수정했다.
+- 프롬프트 관련 5파일 38개, 전체 24파일 225개 테스트, API 타입검사, lint, Vite build, Drizzle migration check, diff·명시적 `any`·클라이언트 prompt import 검사를 통과했다. 기존 jsdom `scrollTo` 로그와 lazy CatCanvas 500kB 경고만 유지됐다.
+- T19 AC-1~9를 통과해 CHECKLIST를 완료 처리했다. 실 provider·키·Preview 왕복, provider 보존 고지는 T20에 남아 있으며 시드 검수를 실제 생성 효과 근거로 표현하지 않는다.
+
+## 2026-07-20 (T19 커밋·T17 Preview 배포 생성)
+### 커밋·push
+- 사용자 “커밋푸시 승인”에 따라 T16·T19 변경만 명시적으로 스테이징하고 `5a2f408 feat: 검수 시드 프롬프트 카탈로그 추가` 커밋을 생성했다. 사용자 소유 `.agents/skills/continue-dabnyangi-task/`, T25 설문 CSV, `tmp/`는 포함하지 않았다.
+- `N166_진현지`는 Vercel Production Branch이므로 해당 원격을 갱신하지 않고, commit `5a2f408`을 비프로덕션 `t17-preview-t19` 브랜치로 push했다.
+### 배포·잔여 검증
+- GitHub deployment `5516452997`이 environment=`Preview`, SHA=`5a2f408`, status=`success`와 고유 URL을 반환했다. 공개 HTTP 요청은 Vercel Standard Protection 로그인으로 이동했다.
+- Browser runtime은 계속 `[]`라 Preview와 공개 Production Domain의 JavaScript 후 S0 화면을 직접 확인하지 못했다. T17은 Preview 생성 성공만 반영하고 완료 체크하지 않았다.
+- repository Actions는 enabled지만 SHA `5a2f408`의 CI workflow run은 생성되지 않았다. 기존 성공 run과 main required `verify` 근거는 유지하되 현재 SHA의 원격 CI 통과로 표현하지 않는다.
+
+## 2026-07-20 (CI 누락 원인 확인·전수 UI 테스트 안정화)
+### 원격 CI 감사
+- Preview push 이벤트와 Vercel 성공 check는 생성됐지만 GitHub Actions run이 없는 원인을 추적했다. `0bb4e6e`에서 `.github/workflows/ci.yml`이 추적 제거되고 `.github/workflows/`가 ignore되어 현재 Preview·기본 브랜치 커밋 트리에는 `auto-merge.yml`만 존재한다.
+- GitHub API의 workflow `active` 표시는 과거 실행 이력이며 현재 push CI 설치 근거가 아니다. CICD.md의 “모든 push” 설명과 저장소가 불일치하므로 CI 재추적·API 타입검사 단계 추가·문서 보정안을 제안했고, 원격 자동화를 바꾸는 구조 변경 승인 전에는 적용하지 않았다.
+### 테스트 안정화
+- 승인 뒤 실행할 CI 명령을 로컬에서 재검증하는 과정에서 전체 225개 중 전수 상황 카드 UI 테스트 1건이 기능 assertion이 아니라 기본 5초 제한으로 두 번 실패했다. 단독 실행은 통과해 24회 앱 재마운트가 전체 병렬 스위트에서 병목임을 확인했다.
+- 관계별로 앱을 한 번만 렌더하고 `상황 다시 고르기` 동선으로 여섯 카드를 순회하도록 바꿨다. 24개 카드·72개 요체 후보·세 후보 고유성·자리 표시자 12개·사과 사실 검증은 그대로 유지하면서 렌더 횟수를 24회에서 4회로 줄였다.
+- 대상 테스트는 1.74초, 전체 24파일 225개는 18.68초에 통과했다. 기존 jsdom `scrollTo` 로그는 유지됐고 테스트 timeout 상향이나 assertion 삭제는 하지 않았다.
+- 테스트 안정화 commit `86d5b9f`을 비프로덕션 `t17-preview-t19`에 push했다. Vercel deployment `5516596997`은 Preview/success였고 같은 SHA의 Actions run은 0건으로 CI 부재가 다시 확인됐다.
+
+## 2026-07-20 (T34 구조화 카드 맥락·결과 후속 AI 구현)
+### 승인·제품 흐름
+- 사용자는 템플릿이 문구 모음처럼 보이는 문제를 줄이면서 빠른 선택 흐름을 유지하도록, 카드를 상황 구조화의 시작점으로 바꾸고 카드별 질문 한 개 뒤 AI 세 후보를 만드는 방향을 승인했다. 자유 대화형 챗봇·자율 agent loop·사용자 원문 저장은 추가하지 않았다.
+- 4관계×6카드에 질문 정확히 1개와 option 3개, 총 질문 24개·option 72개의 stable ID 카탈로그를 만들었다. option으로 표현하지 못하는 사정은 기존 `내 상황을 직접 설명하기`로 보낸다.
+- 질문 답변 탭은 `guided_ai`, 질문 없이 보는 준비된 초안은 API를 호출하지 않는 `template_fallback`, 직접 설명은 `manual_ai`로 분리했다. 카드 선택 당시 말투와 관계별 기본값을 유지하고 결과 후보는 세 toneLevel을 계속 사용한다.
+### 기본 초안 불만족·실패 후속 동선
+- 사용자가 질문 없이 본 기본 초안이 마음에 들지 않을 때 `이 상황으로 AI가 다시 써주기`로 같은 카드의 질문에 이어가도록 추가했다. 관계·카드·말투를 다시 고르지 않는다.
+- guided AI 실패로 기본 초안이 표시된 경우에는 `같은 선택으로 AI 다시 만들기`가 기존 question/option ID를 유지해 즉시 재시도한다. 재시도 중에는 현재 fallback 후보를 보존하고 복사·중복 실행을 막으며 live 상태를 알린다.
+- 두 경우 모두 더 구체적인 사실이 필요하면 `내 상황을 직접 설명하기`를 유지한다. 결과 요약은 AI나 fallback이 의미를 모두 반영했다고 과장하지 않고 `선택한 내용`으로 표시한다.
+### 서버 신뢰·비저장 경계
+- 공용 요청을 `template_fallback | guided_ai | manual_ai` discriminated union으로 바꾸고 route별 필수·금지 필드와 unknown key를 검사한다. API는 `template_fallback`을 받지 않고 guided stable ID를 서버 정본 카탈로그로 해석해 목적·사실을 prompt에 구성한다.
+- 클라이언트 label·대화 transcript·임의 fact를 신뢰하지 않는다. 받은 메시지·상황 원문·생성문구·UI transcript·영구 사용자 ID는 새 DB schema나 metric에 추가하지 않고 route·mode·situation·catalog version 같은 allowlist metadata만 사용한다.
+- provider timeout·실패에서는 같은 카드의 결정적 기본 초안을 반환한다. 현재 운영 provider는 아직 연결되지 않았으므로 guided 결과 품질이나 실제 서비스 작동 완료로 표현하지 않는다.
+### 자동 검증·남은 gate
+- 전체 35파일 289개 테스트, API 타입검사, lint, Vite build, Drizzle migration check를 통과했다. 기존 jsdom `Window.scrollTo not implemented` 로그와 lazy CatCanvas 500kB 초과 경고만 비차단으로 유지됐다.
+- 실 provider 한국어 품질·실패 왕복은 T20~T21, 320×568·375×667 실제 화면과 키보드·스크린리더는 T31에서 검증한다. 이 증거가 없어 CHECKLIST T34는 미완료로 유지한다.
+
+## 2026-07-20 (T35 검수 예시 retrieval 비운영 기반 구현)
+### 기술 범위·운영 차단
+- 검수 예시를 단순 고정 두 세트보다 맥락에 가깝게 고르는 RAG 가능성을 평가하되, 최신 기술 사용 자체를 성과로 주장하지 않도록 offline 실험으로 한정했다. 운영 `/api/generate`와 prompt builder는 계속 static selector를 사용한다.
+- Git 예시에 stable ID·catalog version·mode·checksum을 부여하고 Neon에는 1024차원 document vector와 provenance metadata만 저장하는 `retrieval_examples` additive migration을 추가했다. 예시 본문·사용자 원문·생성문구·query vector는 DB·로그·metric에 저장하지 않는다.
+- Voyage document/query adapter, 관계·목적·모드 hard filter 후 pgvector exact cosine top-2, checksum 기반 idempotent ingestion, 모든 실패에서 static fallback, 48 cell×2 activation guard와 합성 ranking evaluator를 구현했다. ANN·reranker·LangChain/LlamaIndex·자율 retrieval loop는 추가하지 않았다.
+### 검증·한계
+- 합성 evaluator에서 static/retrieval Recall@2는 모두 10000 basis points, MRR은 static 5000·retrieval 10000이었으나 계산 검증용 고정 fixture일 뿐 실제 생성 품질 근거가 아니다. generation quality는 `null`, activation-ready coverage는 0/48, `productionEligible=false`다.
+- 실제 Voyage key 호출, 개발 DB migration·ingestion·exact query smoke, coverage가 충분한 corpus와 동일 holdout 생성 A/B를 실행하지 않았다. 따라서 RAG 운영·품질 우위·비용 우위를 주장하지 않고 CHECKLIST T35를 미완료로 유지한다.
+- 통합 전체 35파일 289개 테스트, API 타입검사, lint, Vite build, Drizzle migration check와 `npm run retrieval:eval`을 통과했다. 커밋·푸시는 수행하지 않았다.
+
+## 2026-07-20 (T36 결과 중심 다듬기·비식별 흐름 계측 완료)
+### 경쟁 흐름 조사·승인 범위
+- Apple Writing Tools의 Original/Undo/Revert, Outlook Copilot의 Keep/Discard/Regenerate, Grammarly의 Accept/Dismiss/Undo, Wordtune의 복수 rewrite처럼 결과를 잃지 않고 같은 문맥에서 수정하는 공식 흐름을 비교했다. 기능 존재를 답냥이 효과 근거로 표현하지 않고, S0~S2의 일반 4탭 도달은 유지한 채 결과 이후 반복만 줄이는 구조를 사용자에게 제안해 승인받았다.
+- template 결과는 S3 안에서 같은 카드 질문을 열고, guided 결과는 같은 선택 재생성과 답 변경을 구분한다. manual 결과는 입력 수정과 상황 카드 복귀를 각각 1탭으로 제공한다. 자유 follow-up chat, 새 `더 짧게` AI intent, 계정·영구 history, screenshot/OCR, 자동 전송은 추가하지 않았다.
+### 결과 상태·접근성
+- 후보 교체는 성공 응답에서만 실행하고 직전 한 세트만 현재 탭 메모리에 보관한다. 현재/이전 보기와 복원 swap, 후보별 600자 로컬 수정·원문 복원, 실제 textarea 선택 fallback을 구현했다. 수정문은 생성 요청·event·DB에 전송하지 않는다.
+- manual 입력·목적·말투 변경이 진행 중 request ID를 무효화해 오래된 응답이 최신 입력 화면을 덮지 않도록 했다. S2 빠른/직접 설명 경로, 카드·선택 요약과 교수 답장/먼저 연락 문구를 정본에 맞췄다.
+- 디자이너 1차 검수에서 관계별 재생성 CTA 대비 3.79~3.96:1과 생성 성공 초점 유실을 발견했다. 텍스트 대비를 8.61~9.82:1로 올리고, 완료 live 안내·결과 제목 초점·패널 닫기 trigger 복귀·현재/이전 후보 region 초점·직접 수정 textarea 초점을 추가해 재검수 승인을 받았다.
+### 비식별 event API·DB
+- 공용 strict 계약은 `result_shown/refinement_opened/regeneration_requested/copy_succeeded/situation_change`만 허용한다. 공통 route·mode·scenario, 카드 경로의 situation, 복사의 tone만 받으며 unknown key와 원문·후보·수정문·식별자 형태 필드를 거절한다.
+- `POST /api/interaction`은 JSON/계약 오류 400, 인스턴스별 임시 rate limit 429, 정상 event는 DB·scheduler 실패에도 202를 반환한다. `waitUntil()` best-effort sink와 7열 `interaction_events` additive migration을 추가하고 route↔situation, scenario↔situation, copy↔tone, email↔professor를 DB CHECK로 이중 고정했다. IP는 임시 limiter key에만 쓰고 sink·DB에 전달하지 않는다.
+- 식별자가 없으므로 이 event는 route/scenario 단위 중복 가능 집계이며 개인별 funnel·재방문율·실제 전송·만족·효과를 뜻하지 않는다. 실제 Preview write·보존 기간·집계 query는 T24 운영 검증으로 남겼다.
+### 검증·잔여 gate
+- App RTL 77/77, backend/DB 집중 7파일 36개, 전체 40파일 330개 테스트와 API 타입검사, lint, production build, Drizzle check, retrieval eval, diff, AGENTS/CLAUDE 동기화, production TypeScript `any` 0건을 통과했다. 기존 jsdom `scrollTo` 로그와 lazy CatCanvas 500kB 경고만 비차단으로 유지됐다.
+- headless Chrome으로 실제 S0→S3를 클릭해 375×667·320×568에서 document/viewport width 일치와 가로 overflow 0을 확인했다. 생성 성공 뒤 결과 H2 초점·live 완료 문구·이전 초안 생성, 현재/이전 전환·복원 뒤 해당 후보 region 초점, 320px 직접 수정 textarea 초점·132px 높이·54px 복사 버튼을 확인했다. 실제 VoiceOver/NVDA, 모바일 가상 키보드, 카카오톡 인앱 복사 폴백은 수동 호환성 gate로 남긴다.
+- T36은 구현·로컬 검증 완료로 CHECKLIST에 반영했다. 실제 Neon migration/write, 커밋·push는 수행하지 않았고 `.github` 경로와 사용자 소유 미추적 파일은 건드리지 않았다. 상세 근거: [T36 계획서](../harness/tasks/T36-result-refinement-flow/plan.md)·[검증 보고서](../harness/tasks/T36-result-refinement-flow/verification.md).

@@ -1,8 +1,10 @@
 import {
   createGenerationResponse,
-  isValidGenerationRequest,
+  parseGenerationRequest,
   type GenerationErrorCode,
+  type ServerGenerationRequest,
 } from '../../../src/shared/generation/contracts'
+import { resolveGuidedContext } from '../../../src/entities/message/guidedContext'
 import {
   recordGenerationMetric,
   type GenerationMetricsSink,
@@ -50,8 +52,34 @@ const errorResponse = (error: PublicGenerationError) => {
 const isJsonRequest = (request: Request) =>
   request.headers.get('content-type')?.split(';', 1)[0]?.trim().toLowerCase() === 'application/json'
 
-const isAiGenerationRequest = (value: unknown): value is AiGenerationRequest =>
-  isValidGenerationRequest(value) && value.situationId === undefined && value.purpose !== undefined
+const toAiGenerationRequest = (
+  request: ServerGenerationRequest,
+): AiGenerationRequest | null => {
+  if (request.route === 'manual_ai') return request
+
+  const guidedContext = resolveGuidedContext(
+    request.scenarioId,
+    request.situationId,
+    request.contextAnswers,
+  )
+  if (!guidedContext) return null
+
+  return {
+    guidedContext,
+    mode: request.mode,
+    purpose: guidedContext.purposeId,
+    route: 'guided_ai',
+    scenarioId: request.scenarioId,
+    situationId: request.situationId,
+    speechStyleId: request.speechStyleId,
+  }
+}
+
+const parseAiGenerationRequest = (value: unknown): AiGenerationRequest | null => {
+  const request = parseGenerationRequest(value)
+  if (!request || request.route === 'template_fallback') return null
+  return toAiGenerationRequest(request)
+}
 
 export const getEphemeralClientKey = (request: Request) => {
   const forwardedFor =
@@ -116,12 +144,20 @@ export const createGenerateHandler = ({
       attemptCount: number,
     ) => {
       recordGenerationMetric(metricsSink, {
+        ...(generationRequest ? { aiInputKind: generationRequest.route } : {}),
         attemptCount,
         latencyMs: Math.max(0, now() - startedAt),
         route: 'ai',
         status,
         ...(generationRequest
           ? {
+              ...(generationRequest.route === 'guided_ai'
+                ? {
+                    contextCatalogVersion: generationRequest.guidedContext.catalogVersion,
+                    situationId: generationRequest.situationId,
+                  }
+                : {}),
+              mode: generationRequest.mode,
               purposeId: generationRequest.purpose,
               scenarioId: generationRequest.scenarioId,
             }
@@ -141,10 +177,11 @@ export const createGenerateHandler = ({
       return finish(errorResponse('invalid_request'), 'invalid_request', 0)
     }
 
-    if (!isAiGenerationRequest(requestBody)) {
+    const parsedRequest = parseAiGenerationRequest(requestBody)
+    if (!parsedRequest) {
       return finish(errorResponse('invalid_request'), 'invalid_request', 0)
     }
-    generationRequest = requestBody
+    generationRequest = parsedRequest
 
     if (!rateLimiter.consume(getEphemeralClientKey(request))) {
       return finish(errorResponse('rate_limited'), 'rate_limited', 0)

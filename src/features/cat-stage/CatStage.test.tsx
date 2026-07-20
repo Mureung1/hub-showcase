@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CatStage } from './CatStage'
 
@@ -146,6 +146,28 @@ describe('CatStage', () => {
     const { container } = render(<CatStage assetSrc="/cats/dabnyangi-main.webp" state="generating" />)
 
     await waitFor(() => expect(container.querySelector('.cat-stage')).toHaveAttribute('data-renderer', 'fallback'))
+    expect(container.querySelector('.cat-stage-fallback')).toHaveAttribute('data-visible', 'true')
+    expect(container.querySelector('canvas')).toBeNull()
+  })
+
+  it('R3F가 커밋 이후 마이크로태스크로 던지는 WebGLRenderer 생성 실패(unhandledrejection)도 정적 이미지로 복귀한다', async () => {
+    enableWebGL()
+    const { container } = render(<CatStage assetSrc="/cats/dabnyangi-main.webp" state="idle" />)
+
+    await waitFor(() => expect(container.querySelector('.cat-stage')).toHaveAttribute('data-renderer', 'webgl'))
+
+    act(() => {
+      const rejectedPromise = Promise.reject(new Error('THREE.WebGLRenderer: Error creating WebGL context.'))
+      rejectedPromise.catch(() => undefined)
+      const event = new Event('unhandledrejection') as PromiseRejectionEvent & { reason?: unknown }
+      Object.defineProperty(event, 'promise', { value: rejectedPromise })
+      Object.defineProperty(event, 'reason', {
+        value: new Error('THREE.WebGLRenderer: Error creating WebGL context.'),
+      })
+      window.dispatchEvent(event)
+    })
+
+    expect(container.querySelector('.cat-stage')).toHaveAttribute('data-renderer', 'fallback')
     expect(container.querySelector('.cat-stage-fallback')).toHaveAttribute('data-visible', 'true')
     expect(container.querySelector('canvas')).toBeNull()
   })

@@ -1,12 +1,18 @@
 import {
+  isSituationForScenario,
   isPurposeId,
   isScenarioId,
+  isSpeechStyleAllowed,
+  isSpeechStyleId,
   isSituationId,
   isToneLevel,
   toneLabels,
   type Candidate,
+  type ContextAnswer,
+  type Mode,
   type PurposeId,
   type ScenarioId,
+  type SpeechStyleId,
   type SituationId,
   type Source,
   type ToneLevel,
@@ -17,13 +23,56 @@ export const situationMaxLength = 300
 export const candidateMaxLength = 600
 export const metadataMaxLength = 180
 
-export type GenerationRequest = {
+export type GenerationRoute = 'template_fallback' | 'guided_ai' | 'manual_ai'
+
+type GenerationRequestBase = {
+  mode: Mode
+  route: GenerationRoute
   scenarioId: ScenarioId
-  situationId?: SituationId
-  purpose?: PurposeId
-  receivedMessage?: string
-  situation?: string
+  speechStyleId: SpeechStyleId
 }
+
+export type TemplateFallbackRequest = GenerationRequestBase & {
+  route: 'template_fallback'
+  situationId: SituationId
+  contextAnswers?: never
+  purpose?: never
+  receivedMessage?: never
+  situation?: never
+}
+
+export type GuidedAiRequest = GenerationRequestBase & {
+  route: 'guided_ai'
+  situationId: SituationId
+  contextAnswers: readonly [ContextAnswer]
+  purpose?: never
+  receivedMessage?: never
+  situation?: never
+}
+
+export type ManualReplyAiRequest = GenerationRequestBase & {
+  route: 'manual_ai'
+  mode: 'reply'
+  purpose: PurposeId
+  receivedMessage: string
+  situation?: string
+  situationId?: never
+  contextAnswers?: never
+}
+
+export type ManualInitiateAiRequest = GenerationRequestBase & {
+  route: 'manual_ai'
+  mode: 'initiate'
+  purpose: PurposeId
+  situation: string
+  receivedMessage?: never
+  situationId?: never
+  contextAnswers?: never
+}
+
+export type ManualAiRequest = ManualReplyAiRequest | ManualInitiateAiRequest
+export type ServerGenerationRequest = GuidedAiRequest | ManualAiRequest
+export type GenerationRequest = TemplateFallbackRequest | ServerGenerationRequest
 
 export type GeneratedCandidate = {
   toneLevel: ToneLevel
@@ -61,6 +110,20 @@ const unsafeExpression = /죽어|죽인다|해치겠다|협박|가만두지 않�
 
 const isRecord = (value: unknown): value is RecordValue => typeof value === 'object' && value !== null
 
+const hasOnlyKeys = (value: RecordValue, keys: readonly string[]) =>
+  Object.keys(value).every((key) => keys.includes(key))
+
+const isMode = (value: unknown): value is Mode => value === 'reply' || value === 'initiate'
+
+const parseContextAnswer = (value: unknown): ContextAnswer | null => {
+  if (!isRecord(value) || !hasOnlyKeys(value, ['questionId', 'optionId'])) return null
+  if (typeof value.questionId !== 'string' || typeof value.optionId !== 'string') return null
+  const questionId = value.questionId.trim()
+  const optionId = value.optionId.trim()
+  if (!questionId || !optionId || questionId.length > 96 || optionId.length > 96) return null
+  return { questionId, optionId }
+}
+
 const isOptionalMetadata = (value: unknown): value is string | undefined =>
   value === undefined || (typeof value === 'string' && value.trim().length > 0 && value.trim().length <= metadataMaxLength)
 
@@ -84,25 +147,103 @@ const hasRequiredToneLevels = (candidates: GeneratedCandidate[]) => {
 const hasDistinctMessages = (candidates: GeneratedCandidate[]) =>
   new Set(candidates.map((candidate) => candidate.text.trim())).size === candidates.length
 
-export const isValidGenerationRequest = (value: unknown): value is GenerationRequest => {
-  if (!isRecord(value) || !isScenarioId(value.scenarioId)) return false
-
-  const hasSituationCard = value.situationId !== undefined
-  const receivedMessage = typeof value.receivedMessage === 'string' ? value.receivedMessage.trim() : ''
-  const situation = typeof value.situation === 'string' ? value.situation.trim() : ''
-  if ((value.receivedMessage !== undefined && typeof value.receivedMessage !== 'string') || (value.situation !== undefined && typeof value.situation !== 'string')) {
-    return false
-  }
-  const hasValidReceivedMessage = receivedMessage.length <= receivedMessageMaxLength
-  const hasValidSituation = situation.length <= situationMaxLength
-
-  if (!hasValidReceivedMessage || !hasValidSituation) return false
-
-  if (hasSituationCard) {
-    return isSituationId(value.situationId) && value.purpose === undefined && !receivedMessage && !situation
+export const parseGenerationRequest = (value: unknown): GenerationRequest | null => {
+  if (
+    !isRecord(value) ||
+    !isScenarioId(value.scenarioId) ||
+    !isMode(value.mode) ||
+    !isSpeechStyleId(value.speechStyleId) ||
+    !isSpeechStyleAllowed(value.scenarioId, value.speechStyleId)
+  ) {
+    return null
   }
 
-  return isPurposeId(value.purpose) && (receivedMessage.length > 0 || situation.length > 0)
+  const base = {
+    mode: value.mode,
+    scenarioId: value.scenarioId,
+    speechStyleId: value.speechStyleId,
+  }
+
+  if (value.route === 'template_fallback') {
+    if (
+      !hasOnlyKeys(value, ['route', 'mode', 'scenarioId', 'speechStyleId', 'situationId']) ||
+      !isSituationId(value.situationId) ||
+      !isSituationForScenario(value.scenarioId, value.situationId)
+    ) {
+      return null
+    }
+    return { ...base, route: 'template_fallback', situationId: value.situationId }
+  }
+
+  if (value.route === 'guided_ai') {
+    if (
+      !hasOnlyKeys(value, ['route', 'mode', 'scenarioId', 'speechStyleId', 'situationId', 'contextAnswers']) ||
+      !isSituationId(value.situationId) ||
+      !isSituationForScenario(value.scenarioId, value.situationId) ||
+      !Array.isArray(value.contextAnswers) ||
+      value.contextAnswers.length !== 1
+    ) {
+      return null
+    }
+    const answer = parseContextAnswer(value.contextAnswers[0])
+    if (!answer) return null
+    return { ...base, route: 'guided_ai', situationId: value.situationId, contextAnswers: [answer] }
+  }
+
+  if (value.route !== 'manual_ai' || !isPurposeId(value.purpose)) return null
+
+  if (value.mode === 'reply') {
+    if (
+      !hasOnlyKeys(value, [
+        'route',
+        'mode',
+        'scenarioId',
+        'speechStyleId',
+        'purpose',
+        'receivedMessage',
+        'situation',
+      ]) ||
+      typeof value.receivedMessage !== 'string' ||
+      (value.situation !== undefined && typeof value.situation !== 'string')
+    ) {
+      return null
+    }
+    const receivedMessage = value.receivedMessage.trim()
+    const situation = typeof value.situation === 'string' ? value.situation.trim() : ''
+    if (
+      !receivedMessage ||
+      receivedMessage.length > receivedMessageMaxLength ||
+      situation.length > situationMaxLength
+    ) {
+      return null
+    }
+    return {
+      ...base,
+      route: 'manual_ai',
+      mode: 'reply',
+      purpose: value.purpose,
+      receivedMessage,
+      ...(situation ? { situation } : {}),
+    }
+  }
+
+  if (
+    !hasOnlyKeys(value, ['route', 'mode', 'scenarioId', 'speechStyleId', 'purpose', 'situation']) ||
+    typeof value.situation !== 'string'
+  ) {
+    return null
+  }
+  const situation = value.situation.trim()
+  if (!situation || situation.length > situationMaxLength) return null
+  return { ...base, route: 'manual_ai', mode: 'initiate', purpose: value.purpose, situation }
+}
+
+export const isValidGenerationRequest = (value: unknown): value is GenerationRequest =>
+  parseGenerationRequest(value) !== null
+
+export const isServerGenerationRequest = (value: unknown): value is ServerGenerationRequest => {
+  const request = parseGenerationRequest(value)
+  return request !== null && request.route !== 'template_fallback'
 }
 
 export const parseGeneratedReply = (value: unknown): GeneratedReply | null => {

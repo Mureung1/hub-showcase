@@ -9,6 +9,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "db:check": "drizzle-kit check",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:smoke": "tsx scripts/db-smoke.ts",
+    "retrieval:eval": "tsx scripts/retrieval-eval.ts",
+    "retrieval:ingest": "tsx scripts/retrieval-ingest.ts",
     "typecheck:api": "tsc -p tsconfig.api.json",
     "lint": "oxlint",
     "test": "vitest run",
@@ -16,7 +22,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@react-three/fiber": "^9.6.1",
+    "@vercel/functions": "^3.7.5",
+    "drizzle-orm": "^1.0.0-rc.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "three": "^0.185.1"
@@ -29,8 +38,11 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.185.1",
     "@vitejs/plugin-react": "^6.0.3",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^1.0.0-rc.4",
     "jsdom": "^29.1.1",
     "oxlint": "^1.71.0",
+    "tsx": "^4.23.1",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
     "vitest": "^4.1.10"

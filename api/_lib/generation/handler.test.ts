@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createDatabaseGenerationMetricsSink } from '../db/generationMetricsSink'
 import { createGenerateHandler, getEphemeralClientKey } from './handler'
 import type { GenerationMetric, GenerationMetricsSink } from './metrics'
 import {
@@ -10,9 +11,26 @@ import {
 import { createInMemoryRateLimiter } from './rateLimiter'
 
 const validRequestBody = {
+  mode: 'initiate',
   purpose: 'ask',
+  route: 'manual_ai',
   scenarioId: 'professor',
+  speechStyleId: 'seumnida',
   situation: '면담 시간을 여쭤보고 싶어요',
+} as const
+
+const validGuidedRequestBody = {
+  contextAnswers: [
+    {
+      optionId: 'co.friend.schedule.ask_availability',
+      questionId: 'cq.friend.schedule.focus',
+    },
+  ],
+  mode: 'initiate',
+  route: 'guided_ai',
+  scenarioId: 'friend',
+  situationId: 'schedule',
+  speechStyleId: 'haeyo',
 } as const
 
 const validProviderOutput = {
@@ -114,18 +132,132 @@ describe('createGenerateHandler', () => {
     expect(provider.options[0]?.signal).toBeInstanceOf(AbortSignal)
   })
 
+  it.each(['ida', 'yongyong'] as const)(
+    'accepts professor requests using the %s speech style',
+    async (speechStyleId) => {
+      const provider = new FakeProvider([{ type: 'resolve', value: validProviderOutput }])
+      const response = await createHandler(provider)(
+        createRequest({ ...validRequestBody, speechStyleId }),
+      )
+
+      expect(response.status).toBe(200)
+      expect(provider.callCount).toBe(1)
+    },
+  )
+
   it.each([
     ['non-POST request', createRequest(undefined, { method: 'GET' })],
     ['missing JSON content type', createRequest(validRequestBody, { contentType: '' })],
     ['malformed JSON', createMalformedJsonRequest()],
     [
       'template card request',
-      createRequest({ scenarioId: 'friend', situationId: 'schedule' }),
+      createRequest({
+        mode: 'initiate',
+        route: 'template_fallback',
+        scenarioId: 'friend',
+        situationId: 'schedule',
+        speechStyleId: 'haeyo',
+      }),
     ],
     ['invalid shared contract', createRequest({ scenarioId: 'friend', situation: '내용' })],
+    [
+      'missing speech style',
+      createRequest({
+        mode: 'initiate',
+        purpose: 'ask',
+        route: 'manual_ai',
+        scenarioId: 'professor',
+        situation: '내용',
+      }),
+    ],
+    [
+      'unknown speech style',
+      createRequest({
+        mode: 'initiate',
+        purpose: 'ask',
+        route: 'manual_ai',
+        scenarioId: 'professor',
+        speechStyleId: 'unknown',
+        situation: '내용',
+      }),
+    ],
   ])('returns 400 for a %s', async (_label, request) => {
     const provider = new FakeProvider([{ type: 'resolve', value: validProviderOutput }])
     const response = await createHandler(provider)(request)
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: 'invalid_request' })
+    expect(provider.callCount).toBe(0)
+  })
+
+  it('resolves guided IDs through the server catalog before calling the provider', async () => {
+    let providerRequest: AiGenerationRequest | undefined
+    const provider = new FakeProvider([
+      {
+        run: (request) => {
+          providerRequest = request
+          return Promise.resolve(validProviderOutput)
+        },
+        type: 'run',
+      },
+    ])
+
+    const response = await createHandler(provider)(createRequest(validGuidedRequestBody))
+
+    expect(response.status).toBe(200)
+    expect(providerRequest).toEqual({
+      guidedContext: {
+        catalogVersion: 'guided-context-v1',
+        optionIds: ['co.friend.schedule.ask_availability'],
+        promptFacts: ['상대가 언제 괜찮은지 묻는다. 특정 시간은 만들지 않는다.'],
+        purposeId: 'suggest',
+        questionIds: ['cq.friend.schedule.focus'],
+      },
+      mode: 'initiate',
+      purpose: 'suggest',
+      route: 'guided_ai',
+      scenarioId: 'friend',
+      situationId: 'schedule',
+      speechStyleId: 'haeyo',
+    })
+    expect(JSON.stringify(providerRequest)).not.toContain('언제 괜찮은지 묻기')
+    expect(JSON.stringify(providerRequest)).not.toContain('transcript')
+    expect(JSON.stringify(providerRequest)).not.toContain('receivedMessage')
+  })
+
+  it.each([
+    [
+      'question from a different relationship',
+      {
+        ...validGuidedRequestBody,
+        contextAnswers: [
+          {
+            optionId: 'co.professor.schedule.ask_availability',
+            questionId: 'cq.professor.schedule.focus',
+          },
+        ],
+      },
+    ],
+    [
+      'unknown option',
+      {
+        ...validGuidedRequestBody,
+        contextAnswers: [
+          {
+            optionId: 'co.friend.schedule.unknown',
+            questionId: 'cq.friend.schedule.focus',
+          },
+        ],
+      },
+    ],
+    [
+      'additional UI field',
+      { ...validGuidedRequestBody, selectedLabel: '언제 괜찮은지 묻기' },
+    ],
+  ])('rejects guided input with %s', async (_label, body) => {
+    const provider = new FakeProvider([{ type: 'resolve', value: validProviderOutput }])
+
+    const response = await createHandler(provider)(createRequest(body))
 
     expect(response.status).toBe(400)
     expect(await response.json()).toEqual({ error: 'invalid_request' })
@@ -178,24 +310,30 @@ describe('createGenerateHandler', () => {
     expect(provider.callCount).toBe(1)
   })
 
-  it('retries one transient provider failure inside the shared deadline', async () => {
+  it.each([
+    ['manual', validRequestBody],
+    ['guided', validGuidedRequestBody],
+  ])('retries one transient %s provider failure inside the shared deadline', async (_label, body) => {
     const provider = new FakeProvider([
       { error: new GenerationProviderError('transient'), type: 'reject' },
       { type: 'resolve', value: validProviderOutput },
     ])
-    const response = await createHandler(provider)(createRequest())
+    const response = await createHandler(provider)(createRequest(body))
 
     expect(response.status).toBe(200)
     expect(provider.callCount).toBe(2)
     expect(provider.options[0]?.signal).toBe(provider.options[1]?.signal)
   })
 
-  it('retries one structurally invalid provider result', async () => {
+  it.each([
+    ['manual', validRequestBody],
+    ['guided', validGuidedRequestBody],
+  ])('retries one structurally invalid %s provider result', async (_label, body) => {
     const provider = new FakeProvider([
       { type: 'resolve', value: { candidates: [] } },
       { type: 'resolve', value: validProviderOutput },
     ])
-    const response = await createHandler(provider)(createRequest())
+    const response = await createHandler(provider)(createRequest(body))
 
     expect(response.status).toBe(200)
     expect(provider.callCount).toBe(2)
@@ -253,7 +391,14 @@ describe('createGenerateHandler', () => {
     const { metrics, sink } = createMetricsCollector()
     const response = await createHandler(provider, sink)(
       createRequest(
-        { purpose: 'ask', receivedMessage, scenarioId: 'friend' },
+        {
+          mode: 'reply',
+          purpose: 'ask',
+          receivedMessage,
+          route: 'manual_ai',
+          scenarioId: 'friend',
+          speechStyleId: 'haeyo',
+        },
         { clientKey },
       ),
     )
@@ -262,6 +407,8 @@ describe('createGenerateHandler', () => {
     expect(metrics).toHaveLength(1)
     expect(metrics[0]).toMatchObject({
       attemptCount: 1,
+      aiInputKind: 'manual_ai',
+      mode: 'reply',
       purposeId: 'ask',
       route: 'ai',
       scenarioId: 'friend',
@@ -273,6 +420,32 @@ describe('createGenerateHandler', () => {
     expect(serializedMetrics).not.toContain(clientKey)
   })
 
+  it('records only guided catalog metadata and never the selected fact text', async () => {
+    const provider = new FakeProvider([{ type: 'resolve', value: validProviderOutput }])
+    const { metrics, sink } = createMetricsCollector()
+
+    const response = await createHandler(provider, sink)(createRequest(validGuidedRequestBody))
+
+    expect(response.status).toBe(200)
+    expect(metrics).toHaveLength(1)
+    expect(metrics[0]).toMatchObject({
+      aiInputKind: 'guided_ai',
+      attemptCount: 1,
+      contextCatalogVersion: 'guided-context-v1',
+      mode: 'initiate',
+      purposeId: 'suggest',
+      route: 'ai',
+      scenarioId: 'friend',
+      situationId: 'schedule',
+      status: 'success',
+    })
+    expect(metrics[0]?.latencyMs).toBeGreaterThanOrEqual(0)
+    const serializedMetrics = JSON.stringify(metrics)
+    expect(serializedMetrics).not.toContain('상대가 언제 괜찮은지 묻는다')
+    expect(serializedMetrics).not.toContain('cq.friend.schedule.focus')
+    expect(serializedMetrics).not.toContain('co.friend.schedule.ask_availability')
+  })
+
   it('does not let a metrics failure change a successful response', async () => {
     const provider = new FakeProvider([{ type: 'resolve', value: validProviderOutput }])
     const response = await createHandler(provider, {
@@ -282,6 +455,30 @@ describe('createGenerateHandler', () => {
     })(createRequest())
 
     expect(response.status).toBe(200)
+  })
+
+  it('returns the same successful response when a scheduled database write rejects', async () => {
+    const scheduledTasks: Array<Promise<void>> = []
+    const metricsSink = createDatabaseGenerationMetricsSink({
+      repository: {
+        record: () => Promise.reject(new Error('database unavailable')),
+      },
+      schedule: (task) => scheduledTasks.push(task),
+    })
+    const provider = new FakeProvider([{ type: 'resolve', value: validProviderOutput }])
+
+    const response = await createHandler(provider, metricsSink)(createRequest())
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      candidates: [
+        { text: validProviderOutput.candidates[0].text, toneLabel: '기본', toneLevel: 1 },
+        { text: validProviderOutput.candidates[1].text, toneLabel: '더 부드럽게', toneLevel: 2 },
+        { text: validProviderOutput.candidates[2].text, toneLabel: '더 분명하게', toneLevel: 3 },
+      ],
+      source: 'ai',
+    })
+    await expect(scheduledTasks[0]).resolves.toBeUndefined()
   })
 })
 

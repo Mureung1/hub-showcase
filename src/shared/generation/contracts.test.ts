@@ -4,6 +4,7 @@ import {
   createGenerationResponse,
   isValidGenerationResponse,
   isValidGenerationRequest,
+  parseGenerationRequest,
   parseGeneratedReply,
 } from './contracts'
 
@@ -77,28 +78,106 @@ describe('생성 계약', () => {
     expect(createGenerationResponse('ai', unsafePayload)).toEqual({ ok: false, error: 'unsafe_response' })
   })
 
-  it('카드 요청과 맥락 기반 AI 요청만 허용한다', () => {
+  it('명시적 template·guided·manual 경로만 허용한다', () => {
     expect(
       isValidGenerationRequest({
+        route: 'template_fallback',
+        mode: 'initiate',
         scenarioId: 'professor',
         situationId: 'absence_inquiry',
+        speechStyleId: 'ida',
       }),
     ).toBe(true)
     expect(
       isValidGenerationRequest({
+        route: 'manual_ai',
+        mode: 'initiate',
         scenarioId: 'friend',
         purpose: 'apologize',
+        speechStyleId: 'ida',
         situation: '최근 연락이 뜸해져서 미안하다고 말하고 싶어요.',
       }),
     ).toBe(true)
-    expect(isValidGenerationRequest({ scenarioId: 'friend', purpose: 'apologize' })).toBe(false)
     expect(
       isValidGenerationRequest({
+        route: 'manual_ai',
+        mode: 'initiate',
+        scenarioId: 'professor',
+        purpose: 'question',
+        speechStyleId: 'haeyo',
+        situation: '과제 제출 방법을 묻고 싶어요.',
+      }),
+    ).toBe(true)
+    expect(
+      isValidGenerationRequest({
+        route: 'manual_ai',
+        mode: 'initiate',
+        scenarioId: 'professor',
+        purpose: 'question',
+        speechStyleId: 'yongyong',
+        situation: '과제 제출 방법을 묻고 싶어요.',
+      }),
+    ).toBe(true)
+    expect(isValidGenerationRequest({ route: 'manual_ai', scenarioId: 'friend', purpose: 'apologize' })).toBe(false)
+    expect(
+      isValidGenerationRequest({
+        route: 'guided_ai',
+        mode: 'reply',
+        scenarioId: 'friend',
+        situationId: 'schedule',
+        speechStyleId: 'haeyo',
+        contextAnswers: [
+          { questionId: 'cq.friend.schedule.focus', optionId: 'co.friend.schedule.ask_availability' },
+        ],
+      }),
+    ).toBe(true)
+    expect(
+      isValidGenerationRequest({
+        route: 'guided_ai',
+        mode: 'reply',
+        scenarioId: 'friend',
+        situationId: 'schedule',
+      }),
+    ).toBe(false)
+    expect(
+      isValidGenerationRequest({
+        route: 'guided_ai',
+        mode: 'reply',
         scenarioId: 'groupwork',
         situationId: 'schedule',
         receivedMessage: '이미 입력이 있는 카드 요청',
+        speechStyleId: 'haeyo',
+        contextAnswers: [
+          { questionId: 'cq.groupwork.schedule.focus', optionId: 'co.groupwork.schedule.ask_availability' },
+        ],
       }),
     ).toBe(false)
+  })
+
+  it('알 수 없는 필드와 다른 관계의 카드·option 조합을 정규화 경계에서 거절한다', () => {
+    expect(
+      parseGenerationRequest({
+        route: 'guided_ai',
+        mode: 'reply',
+        scenarioId: 'friend',
+        situationId: 'absence_inquiry',
+        speechStyleId: 'haeyo',
+        contextAnswers: [
+          { questionId: 'cq.professor.absence_inquiry.focus', optionId: 'co.professor.absence_inquiry.ask_assignment' },
+        ],
+      }),
+    ).toBeNull()
+    expect(
+      parseGenerationRequest({
+        route: 'manual_ai',
+        mode: 'initiate',
+        scenarioId: 'friend',
+        purpose: 'ask',
+        speechStyleId: 'haeyo',
+        situation: '도움을 부탁하고 싶어요.',
+        transcript: '신뢰하지 않는 UI 문구',
+      }),
+    ).toBeNull()
   })
 
   it('저장하거나 화면에 넘길 응답의 톤 라벨도 검증한다', () => {

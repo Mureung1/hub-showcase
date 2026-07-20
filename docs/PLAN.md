@@ -32,30 +32,34 @@
 - [ ] 입력 검증 UI(S2-b): 목적·텍스트 미충족 시 버튼 비활성 + 안내 문구 / 결과에서 "상황을 더 적으면 더 맞는 보낼 말" 문구 (EDGE_CASES 1-1)
 - [ ] 모바일·접근성 전수 점검: 375×667·320×568, 키보드·safe area, 단계 초점, 44px, AA 대비, reduced motion, source별 기대 문구 (T14)
 - [ ] 가이드형 챗 UI: 기존 S0~S3·라우팅은 유지하고 냥이 헤더, 발자국 진행, 이전 선택 말풍선, 빠른 답변, 결과 말 꾸러미로 표현 전환 (T28)
-- [ ] 시드 24개 자체 스크리닝 재수행 후 제3자 블라인드 정렬·전송 가능성 전수 통과 (T15~T16 — 2026-07-11 감사 발견 사항 반영)
-- [ ] 상황 카드 템플릿: RESEARCH_REVIEW의 관계·공손성 기준으로 COMPETITIVE_VALIDATION C1~C4 대표 12문구 source preflight와 hard gate를 먼저 통과한 뒤, 72개 톤·전송 가능성·두 모드 + 복합 관계 호칭·완결성·사실 충실성 전수 기록 (T25)
-- [ ] 하이브리드 라우터 + 템플릿 엔진: 카드 선택=템플릿 / 직접 설명=AI로 단순 분기, 템플릿의 "내 상황에 더 맞추기"는 S2-b 입력으로 이동하며 자동 AI 호출 없음 (T26 — SPEC 2장 라우팅)
+- [x] 시드 24개 자체 스크리닝 재수행 후 제3자 블라인드 정렬 8/8·전송 가능성 24/24 통과 (T15~T16 — 2026-07-20 사용자 완료 승인)
+- [ ] 상황 카드 템플릿: 4관계×6상황×4말투×3톤=288문구 초안을 먼저 만들고, 관계·공손성 기준으로 톤·전송 가능성·두 모드 + 복합 관계 호칭·완결성·사실 충실성을 사용자 반복 검토와 외부 전수 검수로 기록 (T25)
+- [ ] 결정적 템플릿 엔진: 질문 없이 바로 초안과 guided 실패 fallback을 API 없이 같은 카드로 제공하고 T25 검수·manifest·checksum을 연결 (T26). 카드 기본 경로는 T34에서 guided AI로 확장
 - [ ] 2주차 구현분 테스트 작성·통과
 
 ## 3주차 (7/21 ~ 7/27) — AI 연동 + 마감
 
 목표: 실제 AI로 전환하고 배포. DoD 전 항목 충족.
 
-- [x] AI 연동 구조 확정: **Vercel 서버리스 함수 `/api/generate` → Claude API의 단일 structured-output 워크플로**. 자율 agent loop·RAG·런타임 멀티에이전트는 사용하지 않고 최종 모델은 T21 holdout 품질·지연·비용 비교로 결정
-- [x] 데이터 계층 확정: **Neon PostgreSQL + Drizzle ORM**. 프롬프트/템플릿 배포 버전과 원문 없는 생성 실행·합성 평가 메타데이터만 저장하고 사용자 원문·생성 문구·IP·영구 사용자 ID는 저장하지 않음
+- [x] AI 연동 구조 확정: **Vercel `/api/generate`의 단일 structured-output 워크플로**. 자율 agent loop·런타임 멀티에이전트는 사용하지 않고 최종 모델은 T21 holdout 비교로 결정
+- [x] 데이터 계층 확정: **Neon PostgreSQL + Drizzle ORM**. T30 핵심 네 테이블과 독립 retrieval metadata table에 원문 없는 버전·실행·평가·document embedding만 저장하고 사용자 원문·생성 문구·query vector·IP·영구 사용자 ID는 저장하지 않음
 - [x] 캐릭터 렌더링 확정: **Three.js + React Three Fiber 단일 Canvas의 제공 에셋 기반 2.5D 표현**. 관계 카드에는 정적 썸네일, reduced-motion·WebGL 실패에는 정적 폴백 적용
 - [x] 배포 환경 결정: **Vercel** (정적 빌드 + `/api` 함수 한 배포, 키는 환경변수)
 - [x] RESEARCH_REVIEW에서 AI 글쓰기·관계 영향·어려운 대화·구조화 UI·한국어 공손성의 근거와 과해석 금지 확정
-- [ ] T25 대표 12문구 통과 뒤 COMPETITIVE_VALIDATION C1~C4 무참여자 모델 벤치마크와 `Pending | Provisional Go | Iterate | No-go` 기록. 사용자 인터뷰 없이 진행하며 Provisional Go 전에는 T18 백엔드 착수 보류
-- [ ] 프록시 함수 구현: 서버 deadline·실제 요청 취소·출력 상한·제한 재시도·오류 매핑·API 전용 타입검사/테스트 포함 (T18)
-- [ ] few-shot 프롬프트 구성: 사실 충실성·자리 표시자·데이터 블록·`output_config.format`·`stop_reason`·런타임 검증 (T19)
+- [ ] T25 대표 12문구 통과 뒤 COMPETITIVE_VALIDATION C1~C4 무참여자 모델 벤치마크와 `Pending | Provisional Go | Iterate | No-go` 기록. 사용자 인터뷰 없이 진행하며, 판정 전에도 provider 비종속 프록시·DB 기반은 개발할 수 있지만 T20 실 provider 품질 진행과 출시는 완료하지 않음
+- [x] provider 비종속 프록시 기반 구현: 서버 deadline·실제 요청 취소·출력 상한·제한 재시도·오류 매핑·API 전용 타입검사/테스트 포함 (T18)
+- [x] few-shot 프롬프트 구성: 사실 충실성·자리 표시자·데이터 블록·`output_config.format`·`stop_reason`·런타임 검증 + 검수 시드 4관계×2세트 typed 카탈로그 (T19)
+- [ ] 카드·직접 설명 공통 개인 말투 프리셋: `습니다체 / 요체 / 이다체 / 용용체`, 288개 카드 초안, 30분 탭 상태, 공용 요청·목·프롬프트 반영과 사람 반복 검토 (T32·T25)
+- [ ] 교수·조교 연락 형식: 메신저/이메일 선택, 이메일 전용 6상황·안내 입력·제목/본문 18후보·개별 복사와 30분 로컬 상태, 사람 반복 검토 (T33)
+- [ ] 카드별 guided context: 24조합 질문 1개·option 3개 카탈로그, explicit route union, 카드→질문→AI 세 톤, 바로 기본 초안과 실패 fallback의 미반영 안내, 직접 설명·이메일 회귀 검증 (T34)
+- [ ] 검수 예시 retrieval 실험: Git stable catalog + metadata-only pgvector exact top-2 + Voyage adapter + idempotent ingestion + static fallback + 합성 offline A/B. 운영 생성 경로는 coverage·privacy·품질 근거 전 static 유지 (T35)
 - [ ] 제공 에셋 수령 후 Three.js/R3F 냥이 스테이지, 네 상태 반응, 정적 폴백·모바일 성능·접근성 검증 (T29)
-- [ ] Neon/Drizzle schema·migration·repository 구현, 허용 메타데이터 저장과 원문 비저장을 handler 테스트로 검증 (T30)
+- [x] Neon/Drizzle schema·migration·repository 구현, 허용 메타데이터 저장과 원문 비저장을 handler 테스트 및 실제 Neon 개발 DB smoke로 검증 (T30). Vercel Preview background write는 T31에서 확인
 - [ ] 서비스 원문 비저장 + 외부 provider 전송·당시 보존 조건 사용자 고지 (T18~T20)
 - [ ] 목 → 실 API 전환, timeout·429·refusal·토큰 절단·서버 취소 실동작 확인
 - [ ] holdout 모델·품질 검수: Haiku부터 비교, 한국어 평가자 2명 독립 채점, 톤 18/20·전송 48/60·환각 0·자리 표시자 UI 100% + 지연·실비용 기록. LLM 평가는 보조 분석만 사용 (T21)
 - [ ] 전체 테스트·접근성·대학생 5명 이상 짧은 외부 과업 + MVP.md DoD 검증. 긴 인터뷰 없이 카드는 각 참여자의 평소 ChatGPT/Gemini와 비교하고, 실 AI는 답냥이 단독 사용성 과업으로 분리한다. E2E 시간·입력·수정·“내 말 같다”·블라인드 품질·경계 이해와 `Go | Iterate | No-go` 기록 (T22)
-- [ ] 조건부 최소 계측: 현재 플랜이 custom events를 지원할 때만 결과 세트당 `generate`·첫 `copy` 기록, 미지원 시 파일럿 근거 사용 (T24)
+- [ ] 비식별 흐름 계측: T36의 5개 allowlist event API·DB 구현 뒤 Preview `waitUntil()`·보존·집계 query 운영 검증 (T24·T36)
 - [ ] 배포 및 실기기(모바일) 최종 확인
 - [ ] T22·T23·T29·T30 결과를 합친 확장 MVP DoD 재검증·최종 통합 배포 (T31)
 
@@ -65,7 +69,8 @@
 - DB는 포트폴리오용 CRUD를 만들기 위한 것이 아니라 AI 버전·품질 재현을 위한 계층이다. 원문 필드가 migration·repository·handler 어디에도 생기지 않게 테스트한다.
 - Three.js는 사용자 제공 에셋 수령이 선행조건이다. 에셋 지연이나 WebGL 실패가 핵심 메시지 작성 흐름을 막지 않도록 정적 폴백을 먼저 유지한다.
 - 시드 예시 24개의 톤 구분 품질이 서비스 품질의 상한 — 2주차 검수에서 미달이면 3주차 품질 검수 시간을 늘린다.
-- 하이브리드 도입으로 정형 상황은 템플릿 경로가 담당 — 프롬프트 품질 루프(3주차)와 독립적으로 완성되므로 3주차 리스크를 줄이는 방향.
-- **콘텐츠량이 2주차의 가장 큰 리스크.** 상황 카드 템플릿이 72개(시드 24개와 독립 작성)로 신규 작성 총량이 크다. 2주차 안에 72개 전량 작성+검수가 빠듯하면, 시나리오별 특화 카드(4개) 검수를 3주차 초로 미루고 공통 5카드(20개)를 먼저 완성하는 것으로 축소 우선순위를 둔다.
+- 하이브리드는 카드 질문 guided AI를 기본으로 하되 정적 템플릿을 즉시 보기·장애 fallback·품질 기준선으로 독립 유지한다. guided 품질이 미달해도 사용자가 세부 답 미반영을 아는 기본 초안을 받을 수 있어야 한다.
+- retrieval은 최신 기술 표식이 아니라 static few-shot보다 좋아지는지 검증하는 실험이다. 현재 24개 coverage로는 운영 활성화를 판정하지 않는다.
+- **콘텐츠량이 가장 큰 리스크.** 상황 카드 템플릿 288개(시드 24개와 독립 작성)를 먼저 초안으로 구현하되, 검수를 이유로 코드 제공을 늦추지 않는다. 사용자 반복 검토와 외부 평가자 전수 검수는 회차별 원점수·수정 이유를 보존하며 진행하고 합격 전에는 검수 완료로 표시하지 않는다.
 - 대표 12문구 또는 무참여자 모델 벤치마크가 Iterate/No-go면 백엔드 기능으로 보완하지 않는다. taxonomy·템플릿·카드 기대 문구를 수정해 같은 프로토콜로 다시 검증한다. T22의 실제 사용자 No-go도 같은 원칙을 적용한다.
 - 피드백 수집(효과 있었어요)은 MVP Out — 3주 내 구현하지 않는다 (S3에 레이아웃 자리만 고려).
