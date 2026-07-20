@@ -81,4 +81,8 @@ EOF
   exit 1
 fi
 
+if [ -n "$source_files" ]; then
+  python scripts/check_code_structure.py --root . || exit 1
+fi
+
 exit 0

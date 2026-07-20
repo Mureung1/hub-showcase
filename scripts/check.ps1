@@ -37,6 +37,12 @@ if (Get-Command node -ErrorAction SilentlyContinue) {
   }
 }
 
+Write-Host "== Code structure check =="
+Invoke-Checked "Code structure check" { python scripts/check_code_structure.py --root . }
+
+Write-Host "== Code structure checker self-test =="
+Invoke-Checked "Code structure checker self-test" { python scripts/test_code_structure_check.py }
+
 Write-Host "== Application checks =="
 Invoke-Checked "Application checks" { pnpm --dir product check }
 

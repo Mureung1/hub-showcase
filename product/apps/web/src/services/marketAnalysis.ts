@@ -1,6 +1,24 @@
 import type { Category, MarketKey } from "../features/market/types";
+import { apiUrl } from "./api";
+import type { SupportedMarket } from "./productCatalog";
 
-export type AnalysisSource = "api" | "snapshot";
+export type AnalysisSource = "api" | "demo";
+export type MarketAnalysisOptions = {
+  allowDemoSnapshot?: boolean;
+  period: string;
+};
+export type AnalysisPeriods = {
+  periods: string[];
+  default_period: string;
+  policy: "latest_complete_quarter";
+};
+export type ScoreDecisionBlocker =
+  | "fixture_present"
+  | "coverage_below_60"
+  | "confidence_below_60"
+  | "required_metric_missing"
+  | "peer_sample_too_small"
+  | "cluster_evidence_too_weak";
 
 export type MarketAnalysis = {
   market_id: string;
@@ -17,7 +35,38 @@ export type MarketAnalysis = {
     confidence: number;
     confidence_label: string;
     decision_status: "supported" | "insufficient_evidence";
-    cluster: { classification: string; explanation: string };
+    data_coverage: number;
+    decision_blockers: ScoreDecisionBlocker[];
+    components: Array<{
+      key: string;
+      label: string;
+      score: number;
+      weight_percent: number;
+      observed_score: number | null;
+      coverage: number;
+      configured_weight_percent: number;
+      evidence_keys: string[];
+    }>;
+    cluster: {
+      classification: string;
+      local_quotient: number;
+      adjustment: number;
+      raw_adjustment: number;
+      evidence_confidence: number;
+      evidence_keys: string[];
+      explanation: string;
+    };
+    metric_evidence: Array<{
+      metric_key: string;
+      reliability: number;
+      freshness_policy: "fast" | "cohort" | "structural";
+      freshness_grace_days: number;
+      freshness_expire_days: number;
+      freshness: number;
+      sample_basis: "known" | "unknown" | "administrative_population";
+      sample_strength: number;
+      evidence_strength: number;
+    }>;
     reasons: Array<{
       tone: "positive" | "caution" | "info";
       label: string;
@@ -38,6 +87,10 @@ export type MarketAnalysis = {
     monthly_sales_count: number | null;
     total_flow: number | null;
     flow_by_time: number[];
+    flow_time_buckets: Array<{
+      label: string;
+      value: number | null;
+    }>;
     area_sqm: number | null;
   };
   evidence: Array<{
@@ -47,51 +100,86 @@ export type MarketAnalysis = {
     period: string;
     source_type: "official" | "derived";
   }>;
-};
-
-const marketIds: Record<MarketKey, string> = {
-  연남: "3110562",
-  홍대: "3120103",
-  합정: "3120101",
+  rankings?: Array<{
+    id: "same_type" | "supported";
+    label: string;
+    metrics: Array<{
+      key: string;
+      label: string;
+      value: number | null;
+      unit: string;
+      rank: number | null;
+      peer_count: number;
+      percentile: number | null;
+      period: string;
+      peer_group: string;
+      direction: "descending";
+      available: boolean;
+      reason: string | null;
+    }>;
+  }>;
 };
 
 type Snapshot = {
   analyses: Record<string, MarketAnalysis>;
 };
 
+async function loadSnapshot(signal: AbortSignal) {
+  const response = await fetch("/data/market-analysis.json", { signal });
+  if (!response.ok) throw new Error(`Snapshot ${response.status}`);
+  return (await response.json()) as Snapshot;
+}
+
 export async function loadMarketAnalysis(
-  marketKey: MarketKey,
+  market: SupportedMarket,
   category: Category,
   signal: AbortSignal,
+  options: MarketAnalysisOptions,
 ): Promise<{ analysis: MarketAnalysis; source: AnalysisSource }> {
-  const query = new URLSearchParams({ category, period: "20251" });
-  try {
-    const response = await fetch(`/api/v1/markets/${marketIds[marketKey]}?${query}`, { signal });
-    if (!response.ok) throw new Error(`API ${response.status}`);
-    return { analysis: (await response.json()) as MarketAnalysis, source: "api" };
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
-    const response = await fetch("/data/market-analysis.json", { signal });
-    if (!response.ok) throw new Error(`Snapshot ${response.status}`);
-    const snapshot = (await response.json()) as Snapshot;
-    const analysis = snapshot.analyses[`${marketKey}:${category}`];
+  if (options.allowDemoSnapshot) {
+    const snapshot = await loadSnapshot(signal);
+    const analysis = snapshot.analyses[`${market.key}:${category}`];
     if (!analysis) throw new Error("Snapshot analysis is missing.");
-    return { analysis, source: "snapshot" };
+    return { analysis, source: "demo" };
   }
+
+  const query = new URLSearchParams({ category, period: options.period });
+  const response = await fetch(apiUrl(`/api/v1/markets/${market.market_id}?${query}`), {
+    signal,
+  });
+  if (!response.ok) throw new Error(`API ${response.status}`);
+  return { analysis: (await response.json()) as MarketAnalysis, source: "api" };
 }
 
 export async function loadMarketComparison(
+  markets: SupportedMarket[],
   category: Category,
   signal: AbortSignal,
+  options: MarketAnalysisOptions,
 ): Promise<Record<MarketKey, MarketAnalysis>> {
-  const response = await fetch("/data/market-analysis.json", { signal });
-  if (!response.ok) throw new Error(`Snapshot ${response.status}`);
-  const snapshot = (await response.json()) as Snapshot;
-  return Object.fromEntries(
-    (Object.keys(marketIds) as MarketKey[]).map((marketKey) => {
-      const analysis = snapshot.analyses[`${marketKey}:${category}`];
-      if (!analysis) throw new Error(`Snapshot analysis is missing: ${marketKey}:${category}`);
-      return [marketKey, analysis];
+  if (options.allowDemoSnapshot) {
+    const snapshot = await loadSnapshot(signal);
+    return Object.fromEntries(
+      markets.map((market) => {
+        const analysis = snapshot.analyses[`${market.key}:${category}`];
+        if (!analysis) throw new Error(`Snapshot analysis is missing: ${market.key}:${category}`);
+        return [market.key, analysis];
+      }),
+    ) as Record<MarketKey, MarketAnalysis>;
+  }
+
+  const analyses = await Promise.all(
+    markets.map(async (market) => {
+      const { analysis } = await loadMarketAnalysis(market, category, signal, options);
+      return [market.key, analysis] as const;
     }),
-  ) as Record<MarketKey, MarketAnalysis>;
+  );
+  return Object.fromEntries(analyses) as Record<MarketKey, MarketAnalysis>;
+}
+
+export async function loadAnalysisPeriods(category: Category, signal: AbortSignal) {
+  const query = new URLSearchParams({ category });
+  const response = await fetch(apiUrl(`/api/v1/analysis/periods?${query}`), { signal });
+  if (!response.ok) throw new Error(`API ${response.status}`);
+  return (await response.json()) as AnalysisPeriods;
 }

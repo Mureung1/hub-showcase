@@ -280,25 +280,26 @@ LLM 출력에도 사용한 데이터의 기간, 출처와 추정 여부를 함�
 
 ### 현재 API와 화면 연결
 
-2026-07-11 기준 다음 흐름이 실제 구현됐다.
+2026-07-16 기준 다음 흐름이 실제 구현됐다.
 
 ```mermaid
 flowchart LR
-    DB[("canonical SQLite\n2025.1Q")]
+    Source[("canonical SQLite\nimport·회귀 기준")]
+    DB[("Supabase PostgreSQL\nproduct runtime")]
     API["GET /api/v1/markets/{id}"]
-    Score["score 1.0.0\npeer percentile"]
+    Score["score 1.1.0\npeer percentile"]
     Snapshot["12개 검증 snapshot"]
     Web["React 분석 Workspace"]
 
-    DB --> API --> Score --> Web
-    DB --> Snapshot --> Web
+    Source --> DB --> API --> Score --> Web
+    Source --> Snapshot --> Web
 ```
 
 ```text
 지원 상권: 연트럴파크(연남동주민센터), 홍대입구역(홍대), 합정역
 지원 업종: 카페, 음식점, 베이커리, 편의점
 실제 지표: 점포 수, 개폐업, 추정매출, 길단위인구 6개 시간대
-화면: API 우선, API가 없는 정적 배포에서는 같은 DB 생성 snapshot 사용
+화면: API 우선, API 데이터 조회 실패는 명시하고 같은 canonical 기준의 snapshot 예시를 구분 표시
 ```
 
 현재 score는 사용 가능한 5개 지표만 사용하므로 coverage와 confidence가 낮을 수 있다. 이 경우 화면에 `신뢰도 낮음`을 그대로 표시한다.
@@ -316,16 +317,40 @@ flowchart LR
 
 ### Phase 2 저장소와 검색 경계
 
-현재 API와 배포 snapshot은 canonical SQLite에서 생성된다. Phase 2 제품 runtime은 Supabase PostgreSQL로 전환하되 canonical SQLite는 같은 데이터를 반복 이관하고 결과를 비교하는 기준으로 유지한다.
+분석·검색·반경 API는 동일한 SQLAlchemy session을 통해 product runtime PostgreSQL을
+조회한다. canonical SQLite는 API runtime에서 직접 열지 않고, PostgreSQL에 이관할 공식
+데이터의 기준과 row count·응답 회귀 검증 원본으로 유지한다.
 
-첫 검색 vertical slice는 서울 전체 검색이 아니다. 시연 대상으로 고정한 상권·점포 dataset에서 이름·주소·업종 query를 받아 결과를 선택하고 기존 핵심 분석 화면을 여는 범위다. 구현 순서는 `FE 구조 분리 → DB migration/seed → 검색 API contract → React 연결 → 반경 query·filter 동기화`다.
+첫 검색 vertical slice는 서울 전체 검색이 아니다. 연남·홍대·합정 polygon 안에 연결된 실제
+점포에서 이름·주소·업종 query를 받아 결과를 선택하고 기존 핵심 분석 화면을 연다. 현재
+`FE 구조 분리 → DB migration/seed → 검색 API contract → React 연결`까지 완료했고,
+`반경 query → filter·URL 동기화`를 현재 스프린트 마감 뒤 `ANALYSIS-002` Task로 진행한다.
+
+후속 반경 정책:
+
+```text
+최소/최대: 100m / 500m
+기본값: 300m
+첫 선택지: 100m / 300m / 500m
+지원 중심: 연남·홍대·합정 polygon 내부
+조회 시점: 지도 이동 중이 아니라 `이 위치에서 검색` 확정 시 1회
+```
+
+기본 지도 탐색은 확정된 분석 중심을 바꾸지 않는다. `분석 위치 이동` mode에서는 반경 원과
+중심을 계속 표시하면서 후보 위치를 정하고, 확정하거나 취소할 수 있어야 한다. 중심점은 지원
+polygon 안으로 제한하지만 원은 상권 경계를 넘을 수 있으며, 점포 경쟁은 실제 거리로 계산한다.
+
+반경 안에서 다시 계산하는 값은 개별 점포 수, 동일 업종 수, 점포 거리와 업종 구성이다.
+서울시 상권 단위의 매출·유동인구·개폐업은 원형 반경 값으로 환산하지 않고 계속
+`서울시 상권 경계 기준`으로 표시한다. 상세 계약과 검증 조건은
+`.harness/tasks/ANALYSIS-002-radius-search.md`를 따른다.
 
 완료 조건:
 
-- 빈 query와 결과 없음 상태가 구분된다.
-- 검색 결과에 안정적인 identifier, 이름, 주소, 업종과 좌표가 포함된다.
-- 선택 결과가 기존 상권·업종 state와 충돌하지 않고 분석 화면을 갱신한다.
-- API 실패 시 검증 snapshot fallback 여부와 stale 상태를 명시한다.
+- [x] 빈 query와 결과 없음 상태가 구분된다.
+- [x] 검색 결과에 안정적인 identifier, 이름, 주소, 업종과 좌표가 포함된다.
+- [x] 선택 결과가 기존 상권 state와 지도·분석 화면을 갱신한다.
+- [x] 검색 API 실패 시 snapshot으로 대체하지 않는다는 오류 상태를 명시한다.
 
 ## 11. 구현 우선순위
 

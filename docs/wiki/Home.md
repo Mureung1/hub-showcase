@@ -42,6 +42,7 @@ docs/
     git-workflow.md
     harness.md
     validation.md
+    refactoring-standards.md
     week1-thursday-progress-report.md
   features/
     market-analysis.md
@@ -59,6 +60,7 @@ docs/
     meta-evaluation.md
   module-notes/
     localtwin-v0.1-scope.md
+    vision-on-device-portfolio-direction.md
   operations/
     gpu-scene-validation.md  # GPU 학습, PLY 회수와 local viewer 검증
 ```
@@ -142,6 +144,7 @@ LocalTwin/
 - [Git 작업 규칙](../development/git-workflow.md)
 - [LocalTwin Dev Harness](../development/harness.md)
 - [검증 가이드](../development/validation.md)
+- [리팩터링 및 코드 구조 기준](../development/refactoring-standards.md)
 - [1주차 목요일 진행 보고서](../development/week1-thursday-progress-report.md)
 
 ## Active Issues
@@ -168,6 +171,7 @@ LocalTwin/
 ## Decision Notes
 
 - [LocalTwin v0.1 구현 범위 고정 명세](../module-notes/localtwin-v0.1-scope.md)
+- [Vision·On-device ML Systems 포트폴리오 방향](../module-notes/vision-on-device-portfolio-direction.md)
 
 ## Evaluation
 

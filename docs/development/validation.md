@@ -26,6 +26,8 @@ task packet 형식 검사
 README/docs 주요 링크 존재 확인
 문서 링크 검사
 docs HTML 문법과 그래프 문서 대상 존재 확인
+Web·Python 함수 budget, runtime literal과 FastAPI boundary 구조 검사
+구조 checker의 실패 self-test
 web Prettier / typecheck / lint / unit test / production build
 api Ruff lint / format check / pytest
 ```
@@ -43,6 +45,7 @@ api Ruff lint / format check / pytest
 | security containment | 기본 설정의 Scene route 비노출, market·score API 회귀 test |
 | bug | 재현 케이스 확인, 수정 후 동일 케이스 재검증 |
 | harness | check script 자체 통과, 실패 케이스 수동 확인 |
+| refactor | characterization test, 구조 budget 감소, 관련 smoke와 전체 check |
 
 GitHub Actions CI는 사용하지 않는다. 검증은 개발자가 로컬에서 필요한 범위만 실행하고, PR 설명에 실제 실행 결과를 기록한다.
 

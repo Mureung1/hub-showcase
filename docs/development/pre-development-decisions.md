@@ -239,3 +239,4 @@ Gate를 통과하지 못하면 fixture 기반의 작은 실험까지만 허용�
 - [데이터 소스 매핑](../data/data-source-mapping.md)
 - [상권 지도, 2.5D 건물과 핵심 3D Store Marker](../features/market-map-experience.md)
 - [Gaussian Splatting 현장 상세보기](../features/3d-congestion-explorer.md)
+- [Vision·On-device ML Systems 포트폴리오 방향](../module-notes/vision-on-device-portfolio-direction.md)

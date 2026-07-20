@@ -1,0 +1,122 @@
+.storefront-prototype-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1.28fr);
+  gap: 24px;
+  padding: clamp(20px, 4vw, 56px);
+  color: #24342c;
+  background:
+    radial-gradient(circle at 76% 22%, rgba(255, 222, 191, 0.72), transparent 32%),
+    linear-gradient(135deg, #e7efe2 0%, #f7f0e4 52%, #e9d8ce 100%);
+}
+
+.storefront-prototype-copy,
+.storefront-prototype-stage {
+  border: 1px solid rgba(50, 75, 61, 0.16);
+  border-radius: 28px;
+  box-shadow: 0 22px 54px rgba(63, 70, 58, 0.14);
+}
+
+.storefront-prototype-copy {
+  align-self: center;
+  padding: clamp(28px, 4vw, 52px);
+  background: rgba(255, 253, 247, 0.78);
+  backdrop-filter: blur(16px);
+}
+
+.storefront-prototype-eyebrow {
+  margin: 0 0 14px;
+  color: #6b8d72;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.storefront-prototype-copy h1 {
+  margin: 0;
+  font-size: clamp(34px, 5vw, 66px);
+  line-height: 0.96;
+  letter-spacing: -0.055em;
+}
+
+.storefront-prototype-copy > p:not(.storefront-prototype-eyebrow) {
+  max-width: 46ch;
+  margin: 22px 0 0;
+  color: #52655a;
+  line-height: 1.7;
+}
+
+.storefront-prototype-copy dl {
+  display: grid;
+  gap: 10px;
+  margin: 32px 0 0;
+}
+
+.storefront-prototype-copy dl div {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(50, 75, 61, 0.14);
+}
+
+.storefront-prototype-copy dt {
+  color: #7b8c82;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.storefront-prototype-copy dd {
+  margin: 0;
+  font-weight: 750;
+}
+
+.storefront-prototype-help {
+  font-size: 13px;
+}
+
+.storefront-prototype-stage {
+  position: relative;
+  min-height: min(78vh, 760px);
+  overflow: hidden;
+  background: #f5f0e6;
+}
+
+.storefront-prototype-canvas,
+.storefront-prototype-canvas canvas {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  display: block;
+}
+
+.storefront-prototype-badge {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  padding: 8px 11px;
+  border: 1px solid rgba(39, 61, 49, 0.2);
+  border-radius: 999px;
+  color: #4f6d59;
+  background: rgba(255, 253, 247, 0.78);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  backdrop-filter: blur(12px);
+}
+
+@media (max-width: 820px) {
+  .storefront-prototype-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .storefront-prototype-stage {
+    min-height: 58vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .storefront-prototype-shell * {
+    scroll-behavior: auto !important;
+  }
+}

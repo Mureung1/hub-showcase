@@ -376,3 +376,4 @@ LocalTwin
 - [상권 지도, 2.5D 건물과 핵심 3D Store Marker 스펙](../features/market-map-experience.md)
 - [Gaussian Splatting 현장 상세보기 스펙](../features/3d-congestion-explorer.md)
 - [사람 영역 익명화 전처리 스펙](../features/person-anonymization-preprocessing.md)
+- [Vision·On-device ML Systems 포트폴리오 방향](./vision-on-device-portfolio-direction.md)

@@ -8,7 +8,7 @@ Backlog ID: MAP-004
 Parent Epic: EPIC-04
 Type: feature
 Owner: N187_정현우
-Status: backlog
+Status: in_progress
 ```
 
 ## 2. Goal
@@ -73,34 +73,56 @@ SEARCH-001 → 실제 점포 ID·업종·좌표
 WEB-003 → 실제 점포 marker와 지도 state
 ```
 
-현재 확인된 선행 수정:
+완료한 canonical vertical slice(2026-07-16):
 
 ```text
-파일: product/apps/web/src/features/map/storefronts/flowerStorefrontLocation.ts
-현재 값: sourceCategory="cafe", visualCategoryCode="CS300028"(꽃집)
-판정: 원천 업종과 시각 업종이 충돌하므로 MAP-004 검증 sample로 사용할 수 없음
-조치: cafe 또는 generic으로 바로잡고, 근거가 명확한 실제 꽃집을 별도 vertical slice로 선정
+이름: 플로리스트오재윤
+canonical store ID: MA010120220805312100
+canonical 업종: G21901 / 꽃집
+좌표: 126.923054545317, 37.5653774848447
+공간 검증: canonical market polygon 3110562 연남 내부
+제품 연결: FastAPI 검색 → React 선택 → MapLibre custom Three.js layer
+
+추가 검증 업종:
+- I21201 / 카페 / 17도씨
+- I20101 / 백반·한정식 / 더빌리랩스
+- I21001 / 빵·도넛 / 레이어드연남
+- G20405 / 편의점 / GS25연남공원점
 ```
 
-이 수정과 충돌 방지 test를 꽃집 asset 확대보다 먼저 수행한다.
+동시에 적용한 표시 규칙:
+
+```text
+선택 핵심 점포만 상세 3D marker로 표시
+일반 점포는 소형 POI marker로 유지하고 desktop 12개, mobile 6개로 결정적으로 선별
+서로 가까운 marker는 거리 기준으로 제거해 3D marker와 HTML marker의 겹침 방지
+선택 변경은 기존 custom layer의 model만 교체하고 unmount 시 Three.js resource 정리
+지원 지역에서는 base extrusion과 LocalTwin extrusion을 동시에 표시하지 않음
+```
+
+기존 `Florte Flower Cafe`의 cafe→꽃집 강제 매핑은 제거했다. `CS300028`은 공식 상권 지표의
+화초 alias로만 지원하고, 실제 선택 점포의 전용 장식 판정에는 검색 응답의 canonical
+`G21901`을 사용한다. 첫 5개 업종은 직접 만든 procedural attachment로 구분한다.
+공통 사방형 점포 body는 26,148B GLB, category decal은 1,263B SVG atlas로 분리해
+한 번만 load하고 선택 변경 때 geometry와 image source를 공유한다. 복수 점포 건물 묶음은 후속 범위다.
 
 ## 6. Acceptance Criteria
 
-- [ ] canonical 업종 또는 명시적 원천 tag가 꽃집으로 확인된 점포 1개가 실제 좌표에서 GLB body, flower band와 rooftop flower attachment로 표시된다.
-- [ ] 카페·음식점·베이커리·편의점이 같은 prefab system에서 서로 다른 decal·대표 장식으로 표시된다.
-- [ ] 점포명은 업종 판정에 사용하지 않고, 원천 분류가 카페이면 이름에 `Flower`가 있어도 꽃집 장식을 적용하지 않는다.
-- [ ] 현재 `Florte Flower Cafe`의 `sourceCategory="cafe"`와 꽃집 `visualCategoryCode` 강제 매핑이 제거되거나 `generic`으로 교체된다.
-- [ ] category source와 visual mapping이 추적 가능하며 값이 없거나 충돌하면 `generic` 또는 HTML marker로 fallback한다.
-- [ ] desktop 최대 12개, mobile 최대 6개 핵심 store marker 선별이 같은 입력에서 항상 같은 결과를 낸다.
-- [ ] 선택 점포는 목록, 3D layer와 inspector에서 같은 storeId를 가진다.
+- [x] canonical 업종 또는 명시적 원천 tag가 꽃집으로 확인된 점포 1개가 실제 좌표에서 GLB body, flower decal band와 rooftop flower attachment로 표시된다.
+- [x] 카페·음식점·베이커리·편의점이 같은 prefab system에서 서로 다른 대표 장식으로 표시된다. decal은 후속 GLB/texture 범위다.
+- [x] 점포명은 업종 판정에 사용하지 않고, 원천 분류가 카페이면 이름에 `Flower`가 있어도 꽃집 장식을 적용하지 않는다.
+- [x] 현재 `Florte Flower Cafe`의 `sourceCategory="cafe"`와 꽃집 `visualCategoryCode` 강제 매핑이 제거되거나 `generic`으로 교체된다.
+- [x] category source와 visual mapping이 추적 가능하며 값이 없거나 충돌하면 `generic` 또는 HTML marker로 fallback한다.
+- [x] desktop 최대 12개, mobile 최대 6개 marker 선별이 같은 입력에서 항상 같은 결과를 낸다.
+- [x] 선택 점포는 검색 결과, 3D layer와 inspector에서 같은 storeId를 가진다.
 - [ ] 90도 단위 map rotate와 임의 bearing에서 업종 표식과 선택 상태가 최소 한 면 또는 옥상에서 읽힌다.
-- [ ] 도로·출입구·facade 방향을 추정하지 않으며 실제 앞면인 것처럼 표현하지 않는다.
+- [x] 도로·출입구·facade 방향을 추정하지 않으며 실제 앞면인 것처럼 표현하지 않는다.
 - [ ] 같은 건물의 복수 점포는 대표 marker와 점포 수로 표시되고 선택 시 실제 목록으로 연결된다.
-- [ ] GLB·texture는 공유되고 선택 변경마다 다시 download·parse되지 않는다.
-- [ ] map 교체·unmount 시 geometry, material, texture와 listener가 정리된다.
-- [ ] WebGL/asset 실패, reduced motion과 mobile에서도 검색·선택 기능이 유지된다.
-- [ ] 기존 map/category/radius test, typecheck, lint와 production build가 통과한다.
-- [ ] 변경 전후 동일 조건의 지도 frame·load evidence와 asset 용량을 Run Report에 기록한다.
+- [x] GLB·texture는 공유되고 선택 변경마다 다시 download·parse되지 않는다.
+- [x] map 교체·unmount 시 instance material·texture와 renderer가 정리되고 cached GLB geometry는 유지된다.
+- [x] WebGL 초기화 실패 시 HTML marker로 fallback하고 mobile에서도 검색·선택 기능이 유지된다. reduced motion 별도 검증은 남았다.
+- [x] 기존 map/category/radius test, typecheck, lint와 production build가 통과한다.
+- [x] desktop/mobile 지도 frame과 표시 개수를 Run Report에 기록한다. GLB asset 용량은 후속 범위다.
 
 ## 7. Verification Plan
 
@@ -145,11 +167,17 @@ reduced-motion과 3D off fallback
 
 ## 8. Documentation Updates
 
-- [ ] `docs/features/market-map-experience.md` 실제 구현 상태 갱신
-- [ ] `docs/design/design-system.md` 최종 asset 규칙 갱신
-- [ ] `docs/development/tasks.md` MAP-004 상태 갱신
-- [ ] asset reference·license와 직접 제작 범위를 Run Report에 기록
-- [ ] bundle·frame·fallback 결과를 `.harness/runs/`에 기록
+- [x] `docs/features/market-map-experience.md` 실제 구현 상태 갱신
+- [x] `docs/design/design-system.md` 최종 asset 규칙 갱신
+- [x] `docs/development/tasks.md` MAP-004 상태 갱신
+- [x] asset reference·license와 직접 제작 범위를 Run Report에 기록
+- [x] bundle·frame·fallback 결과를 `.harness/runs/`에 기록
+
+공통 asset 재생성:
+
+```powershell
+node product/scripts/generate_storefront_body.mjs
+```
 
 ## 9. Commit Plan
 

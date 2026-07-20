@@ -1,6 +1,14 @@
+import type { MarketAnalysis } from "../../services/marketAnalysis";
 import type { Category } from "./types";
 
-export const HOURS = ["00", "03", "06", "09", "12", "15", "18", "21"];
+export const FLOW_TIME_BUCKET_LABELS = [
+  "00:00-06:00",
+  "06:00-11:00",
+  "11:00-14:00",
+  "14:00-17:00",
+  "17:00-21:00",
+  "21:00-24:00",
+];
 
 export const CLUSTER_LABELS: Record<string, string> = {
   ordinary: "일반 상권",
@@ -9,7 +17,7 @@ export const CLUSTER_LABELS: Record<string, string> = {
   saturated_cluster: "과포화 후보",
 };
 
-export function categoryClass(category: Category) {
+export function categoryClass(category: string) {
   return category === "카페"
     ? "green"
     : category === "음식점"
@@ -26,11 +34,12 @@ export function formatMarketScore(score: number, category: Category, radius: num
   return Math.max(0, Math.min(100, score + categoryShift + radiusShift));
 }
 
-export function demandFromFlow(flow: number[]) {
-  if (flow.length !== 6 || Math.max(...flow) <= 0) return Array(14).fill(0) as number[];
-  const maximum = Math.max(...flow);
-  const bucketByChartIndex = [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 0];
-  return bucketByChartIndex.map((bucket) => Math.round((flow[bucket] / maximum) * 100));
+export function demandFromFlow(flow: MarketAnalysis["raw"]["flow_time_buckets"]) {
+  const availableValues = flow.flatMap((bucket) => (bucket.value === null ? [] : [bucket.value]));
+  const maximum = Math.max(...availableValues, 0);
+  return flow.map((bucket) =>
+    bucket.value === null || maximum <= 0 ? null : Math.round((bucket.value / maximum) * 100),
+  );
 }
 
 export function circleFeature([longitude, latitude]: [number, number], radiusMeters: number) {

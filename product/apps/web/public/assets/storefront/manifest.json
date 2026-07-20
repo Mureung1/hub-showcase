@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "license": "LocalTwin original asset; project use permitted",
+  "source": "Generated in-repository without external models, textures, trademarks, or facade imagery",
+  "body": {
+    "path": "storefront-body-v1.glb",
+    "bytes": 26148,
+    "generator": "product/scripts/generate_storefront_body.mjs"
+  },
+  "categoryAtlas": {
+    "path": "storefront-category-atlas.svg",
+    "bytes": 1263,
+    "cells": ["flower", "coffee", "meal", "bakery", "convenience"]
+  }
+}

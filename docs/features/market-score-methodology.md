@@ -3,11 +3,11 @@
 ## 1. 문서 상태
 
 ```text
-공식 버전: 1.0.0
-상태: API 구현
+공식 버전: 1.1.0
+상태: SCORE-002 안전성 보완 구현·검증 완료
 목적: 후보 상권 비교와 근거 설명
 비목적: 창업 성공 확률 예측
-보완 계획: SCORE-002 안전성 수정 후 SCORE-003 업종별 calibration
+후속 계획: SCORE-003 업종별 calibration
 ```
 
 ## 2. 판단 원칙
@@ -447,6 +447,29 @@ _cluster_result(request, evidence_by_key)
 | response compatibility | 기존 request JSON | 200, 새 필드는 additive |
 
 기존 productive score가 정확히 같은 숫자를 유지해야 하는 것은 아니다. 방향성, 범위, blocker와 공식 version을 검증한다.
+
+#### SCORE-002 구현 결과
+
+2026-07-16에 공식 `1.1.0`을 구현했다. API 단위 회귀 14개와 canonical 상권·업종 12개
+평가가 통과했다.
+
+```text
+canonical coverage: 55.0%
+canonical confidence: 52.0%
+decision: 12개 모두 insufficient_evidence
+공통 blocker: coverage_below_60, confidence_below_60
+score 범위: 37.6~53.1
+cluster: ordinary 7, specialized_watch 4, saturated_cluster 1
+```
+
+`1.0.0`의 12개 점수 범위는 28.3~51.5였고 `1.1.0`은 37.6~53.1이다. 누락 지표를
+제외한 뒤 남은 값만 재정규화하던 방식에서 50점 중립 수축으로 바뀌어, 낮은 일부 지표만 있던
+case가 최대 10.9점 상승하고 한 case는 0.2점 하락했다. 이는 성능 향상 주장이 아니라 누락
+근거의 과도한 대표를 줄인 공식 변경 결과다.
+
+현재 canonical 응답은 필수 매출·유동 지표와 충분한 peer 표본을 갖지만 전체 configured
+metric coverage가 55%다. 따라서 점수는 표시하되 비교 판단을 지원한다고 표시하지 않는다.
+누락 지표가 실제 데이터로 보강되기 전까지 이 blocker를 임의로 낮추지 않는다.
 
 ### 12.5 SCORE-003 목표: 업종별 profile과 과거 결과 calibration
 

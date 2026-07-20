@@ -12,23 +12,26 @@
       "category": "카페",
       "period": "20251",
       "score": {
-        "formula_version": "1.0.0",
+        "formula_version": "1.1.0",
         "market_id": "3110562",
         "market_name": "연트럴파크(연남동주민센터)",
         "category": "카페",
         "peer_group": "서울 골목상권 2025.1Q",
-        "score": 39.5,
+        "score": 45.7,
         "band": "주의 필요",
         "decision_status": "insufficient_evidence",
-        "confidence": 49.6,
+        "confidence": 52.0,
         "confidence_label": "낮음",
         "data_coverage": 55.0,
         "components": [
           {
             "key": "demand",
             "label": "수요",
-            "score": 67.8,
-            "weight_percent": 33.3,
+            "score": 64.3,
+            "weight_percent": 30.0,
+            "observed_score": 67.8,
+            "coverage": 80.0,
+            "configured_weight_percent": 30.0,
             "evidence_keys": [
               "sales_per_store",
               "foot_traffic"
@@ -37,8 +40,11 @@
           {
             "key": "stability",
             "label": "영업 안정성",
-            "score": 28.3,
-            "weight_percent": 27.8,
+            "score": 40.2,
+            "weight_percent": 25.0,
+            "observed_score": 28.3,
+            "coverage": 45.0,
+            "configured_weight_percent": 25.0,
             "evidence_keys": [
               "closure_rate"
             ]
@@ -46,8 +52,11 @@
           {
             "key": "competition_fit",
             "label": "경쟁 적합성",
-            "score": 0.8,
-            "weight_percent": 22.2,
+            "score": 18.0,
+            "weight_percent": 20.0,
+            "observed_score": 0.8,
+            "coverage": 65.0,
+            "configured_weight_percent": 20.0,
             "evidence_keys": [
               "same_category_density"
             ]
@@ -55,19 +64,100 @@
           {
             "key": "growth",
             "label": "성장성",
-            "score": 53.2,
-            "weight_percent": 16.7,
+            "score": 51.5,
+            "weight_percent": 15.0,
+            "observed_score": 53.2,
+            "coverage": 45.0,
+            "configured_weight_percent": 15.0,
             "evidence_keys": [
               "net_opening_rate"
             ]
+          },
+          {
+            "key": "access",
+            "label": "접근성",
+            "score": 50.0,
+            "weight_percent": 10.0,
+            "observed_score": null,
+            "coverage": 0.0,
+            "configured_weight_percent": 10.0,
+            "evidence_keys": []
           }
         ],
         "cluster": {
           "classification": "specialized_watch",
           "local_quotient": 4.16,
           "adjustment": 0.0,
+          "raw_adjustment": 0.0,
+          "evidence_confidence": 0.955,
+          "evidence_keys": [
+            "closure_rate",
+            "foot_traffic",
+            "sales_per_store"
+          ],
           "explanation": "동일 업종이 집중된 특화상권이지만 집적효과와 과포화를 구분할 근거가 충분하지 않아 가점·감점을 보류합니다."
         },
+        "metric_evidence": [
+          {
+            "metric_key": "sales_per_store",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "foot_traffic",
+            "reliability": 1.0,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 1.0
+          },
+          {
+            "metric_key": "closure_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "same_category_density",
+            "reliability": 0.85,
+            "freshness_policy": "structural",
+            "freshness_grace_days": 365,
+            "freshness_expire_days": 1825,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "net_opening_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          }
+        ],
+        "decision_blockers": [
+          "coverage_below_60",
+          "confidence_below_60"
+        ],
         "reasons": [
           {
             "tone": "positive",
@@ -99,7 +189,7 @@
             "value": 665.9452260051611,
             "unit": "개/km²",
             "percentile": 99.2,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -110,7 +200,7 @@
             "value": 3.125,
             "unit": "%",
             "percentile": 71.7,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -126,7 +216,7 @@
           }
         ],
         "limitations": [
-          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "누락 지표는 50점 중립 방향으로 반영했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
           "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
         ]
       },
@@ -151,8 +241,8 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "서울시 상권분석서비스 점포",
-          "source_url": "https://data.seoul.go.kr",
+          "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
+          "source_url": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do",
           "period": "20251",
           "source_type": "official"
         },
@@ -181,23 +271,26 @@
       "category": "음식점",
       "period": "20251",
       "score": {
-        "formula_version": "1.0.0",
+        "formula_version": "1.1.0",
         "market_id": "3110562",
         "market_name": "연트럴파크(연남동주민센터)",
         "category": "음식점",
         "peer_group": "서울 골목상권 2025.1Q",
-        "score": 41.1,
+        "score": 46.0,
         "band": "주의 필요",
         "decision_status": "insufficient_evidence",
-        "confidence": 49.6,
+        "confidence": 52.0,
         "confidence_label": "낮음",
         "data_coverage": 55.0,
         "components": [
           {
             "key": "demand",
             "label": "수요",
-            "score": 51.5,
-            "weight_percent": 33.3,
+            "score": 51.2,
+            "weight_percent": 30.0,
+            "observed_score": 51.5,
+            "coverage": 80.0,
+            "configured_weight_percent": 30.0,
             "evidence_keys": [
               "sales_per_store",
               "foot_traffic"
@@ -206,8 +299,11 @@
           {
             "key": "stability",
             "label": "영업 안정성",
-            "score": 44.2,
-            "weight_percent": 27.8,
+            "score": 47.4,
+            "weight_percent": 25.0,
+            "observed_score": 44.2,
+            "coverage": 45.0,
+            "configured_weight_percent": 25.0,
             "evidence_keys": [
               "closure_rate"
             ]
@@ -215,8 +311,11 @@
           {
             "key": "competition_fit",
             "label": "경쟁 적합성",
-            "score": 35.8,
-            "weight_percent": 22.2,
+            "score": 40.8,
+            "weight_percent": 20.0,
+            "observed_score": 35.8,
+            "coverage": 65.0,
+            "configured_weight_percent": 20.0,
             "evidence_keys": [
               "same_category_density"
             ]
@@ -224,19 +323,96 @@
           {
             "key": "growth",
             "label": "성장성",
-            "score": 22.0,
-            "weight_percent": 16.7,
+            "score": 37.4,
+            "weight_percent": 15.0,
+            "observed_score": 22.0,
+            "coverage": 45.0,
+            "configured_weight_percent": 15.0,
             "evidence_keys": [
               "net_opening_rate"
             ]
+          },
+          {
+            "key": "access",
+            "label": "접근성",
+            "score": 50.0,
+            "weight_percent": 10.0,
+            "observed_score": null,
+            "coverage": 0.0,
+            "configured_weight_percent": 10.0,
+            "evidence_keys": []
           }
         ],
         "cluster": {
           "classification": "ordinary",
           "local_quotient": 0.95,
           "adjustment": 0.0,
+          "raw_adjustment": 0.0,
+          "evidence_confidence": 0.0,
+          "evidence_keys": [],
           "explanation": "동일 업종 집적이 peer group보다 뚜렷하게 높지 않습니다."
         },
+        "metric_evidence": [
+          {
+            "metric_key": "sales_per_store",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "foot_traffic",
+            "reliability": 1.0,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 1.0
+          },
+          {
+            "metric_key": "closure_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "same_category_density",
+            "reliability": 0.85,
+            "freshness_policy": "structural",
+            "freshness_grace_days": 365,
+            "freshness_expire_days": 1825,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "net_opening_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          }
+        ],
+        "decision_blockers": [
+          "coverage_below_60",
+          "confidence_below_60"
+        ],
         "reasons": [
           {
             "tone": "positive",
@@ -257,7 +433,7 @@
             "value": -3.225806451612903,
             "unit": "%",
             "percentile": 22.0,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -268,12 +444,12 @@
             "value": 645.1344376924998,
             "unit": "개/km²",
             "percentile": 64.2,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           }
         ],
         "limitations": [
-          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "누락 지표는 50점 중립 방향으로 반영했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
           "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
         ]
       },
@@ -298,8 +474,8 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "서울시 상권분석서비스 점포",
-          "source_url": "https://data.seoul.go.kr",
+          "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
+          "source_url": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do",
           "period": "20251",
           "source_type": "official"
         },
@@ -328,23 +504,26 @@
       "category": "베이커리",
       "period": "20251",
       "score": {
-        "formula_version": "1.0.0",
+        "formula_version": "1.1.0",
         "market_id": "3110562",
         "market_name": "연트럴파크(연남동주민센터)",
         "category": "베이커리",
         "peer_group": "서울 골목상권 2025.1Q",
-        "score": 28.3,
-        "band": "높은 위험",
+        "score": 37.6,
+        "band": "주의 필요",
         "decision_status": "insufficient_evidence",
-        "confidence": 49.6,
+        "confidence": 52.0,
         "confidence_label": "낮음",
         "data_coverage": 55.0,
         "components": [
           {
             "key": "demand",
             "label": "수요",
-            "score": 67.3,
-            "weight_percent": 33.3,
+            "score": 63.8,
+            "weight_percent": 30.0,
+            "observed_score": 67.3,
+            "coverage": 80.0,
+            "configured_weight_percent": 30.0,
             "evidence_keys": [
               "sales_per_store",
               "foot_traffic"
@@ -353,8 +532,11 @@
           {
             "key": "stability",
             "label": "영업 안정성",
-            "score": 12.0,
-            "weight_percent": 27.8,
+            "score": 32.9,
+            "weight_percent": 25.0,
+            "observed_score": 12.0,
+            "coverage": 45.0,
+            "configured_weight_percent": 25.0,
             "evidence_keys": [
               "closure_rate"
             ]
@@ -362,8 +544,11 @@
           {
             "key": "competition_fit",
             "label": "경쟁 적합성",
-            "score": 2.0,
-            "weight_percent": 22.2,
+            "score": 18.8,
+            "weight_percent": 20.0,
+            "observed_score": 2.0,
+            "coverage": 65.0,
+            "configured_weight_percent": 20.0,
             "evidence_keys": [
               "same_category_density"
             ]
@@ -371,19 +556,100 @@
           {
             "key": "growth",
             "label": "성장성",
-            "score": 50.9,
-            "weight_percent": 16.7,
+            "score": 50.4,
+            "weight_percent": 15.0,
+            "observed_score": 50.9,
+            "coverage": 45.0,
+            "configured_weight_percent": 15.0,
             "evidence_keys": [
               "net_opening_rate"
             ]
+          },
+          {
+            "key": "access",
+            "label": "접근성",
+            "score": 50.0,
+            "weight_percent": 10.0,
+            "observed_score": null,
+            "coverage": 0.0,
+            "configured_weight_percent": 10.0,
+            "evidence_keys": []
           }
         ],
         "cluster": {
           "classification": "saturated_cluster",
           "local_quotient": 3.61,
-          "adjustment": -6.4,
+          "adjustment": -6.1,
+          "raw_adjustment": -6.4,
+          "evidence_confidence": 0.955,
+          "evidence_keys": [
+            "closure_rate",
+            "foot_traffic",
+            "sales_per_store"
+          ],
           "explanation": "동일 업종 집적과 함께 점포당 매출 희석 또는 높은 폐업 신호가 나타나는 과포화 후보입니다."
         },
+        "metric_evidence": [
+          {
+            "metric_key": "sales_per_store",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "foot_traffic",
+            "reliability": 1.0,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 1.0
+          },
+          {
+            "metric_key": "closure_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "same_category_density",
+            "reliability": 0.85,
+            "freshness_policy": "structural",
+            "freshness_grace_days": 365,
+            "freshness_expire_days": 1825,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "net_opening_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          }
+        ],
+        "decision_blockers": [
+          "coverage_below_60",
+          "confidence_below_60"
+        ],
         "reasons": [
           {
             "tone": "positive",
@@ -404,7 +670,7 @@
             "value": 187.29709481395156,
             "unit": "개/km²",
             "percentile": 98.0,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -415,7 +681,7 @@
             "value": 5.555555555555555,
             "unit": "%",
             "percentile": 88.0,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -431,7 +697,7 @@
           }
         ],
         "limitations": [
-          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "누락 지표는 50점 중립 방향으로 반영했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
           "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
         ]
       },
@@ -456,8 +722,8 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "서울시 상권분석서비스 점포",
-          "source_url": "https://data.seoul.go.kr",
+          "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
+          "source_url": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do",
           "period": "20251",
           "source_type": "official"
         },
@@ -486,23 +752,26 @@
       "category": "편의점",
       "period": "20251",
       "score": {
-        "formula_version": "1.0.0",
+        "formula_version": "1.1.0",
         "market_id": "3110562",
         "market_name": "연트럴파크(연남동주민센터)",
         "category": "편의점",
         "peer_group": "서울 골목상권 2025.1Q",
-        "score": 51.4,
+        "score": 51.2,
         "band": "혼합 신호",
         "decision_status": "insufficient_evidence",
-        "confidence": 49.6,
+        "confidence": 52.0,
         "confidence_label": "낮음",
         "data_coverage": 55.0,
         "components": [
           {
             "key": "demand",
             "label": "수요",
-            "score": 65.6,
-            "weight_percent": 33.3,
+            "score": 62.5,
+            "weight_percent": 30.0,
+            "observed_score": 65.6,
+            "coverage": 80.0,
+            "configured_weight_percent": 30.0,
             "evidence_keys": [
               "sales_per_store",
               "foot_traffic"
@@ -511,8 +780,11 @@
           {
             "key": "stability",
             "label": "영업 안정성",
-            "score": 55.4,
-            "weight_percent": 27.8,
+            "score": 52.4,
+            "weight_percent": 25.0,
+            "observed_score": 55.4,
+            "coverage": 45.0,
+            "configured_weight_percent": 25.0,
             "evidence_keys": [
               "closure_rate"
             ]
@@ -520,8 +792,11 @@
           {
             "key": "competition_fit",
             "label": "경쟁 적합성",
-            "score": 24.7,
-            "weight_percent": 22.2,
+            "score": 33.5,
+            "weight_percent": 20.0,
+            "observed_score": 24.7,
+            "coverage": 65.0,
+            "configured_weight_percent": 20.0,
             "evidence_keys": [
               "same_category_density"
             ]
@@ -529,19 +804,96 @@
           {
             "key": "growth",
             "label": "성장성",
-            "score": 51.8,
-            "weight_percent": 16.7,
+            "score": 50.8,
+            "weight_percent": 15.0,
+            "observed_score": 51.8,
+            "coverage": 45.0,
+            "configured_weight_percent": 15.0,
             "evidence_keys": [
               "net_opening_rate"
             ]
+          },
+          {
+            "key": "access",
+            "label": "접근성",
+            "score": 50.0,
+            "weight_percent": 10.0,
+            "observed_score": null,
+            "coverage": 0.0,
+            "configured_weight_percent": 10.0,
+            "evidence_keys": []
           }
         ],
         "cluster": {
           "classification": "ordinary",
           "local_quotient": 0.97,
           "adjustment": 0.0,
+          "raw_adjustment": 0.0,
+          "evidence_confidence": 0.0,
+          "evidence_keys": [],
           "explanation": "동일 업종 집적이 peer group보다 뚜렷하게 높지 않습니다."
         },
+        "metric_evidence": [
+          {
+            "metric_key": "sales_per_store",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "foot_traffic",
+            "reliability": 1.0,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 1.0
+          },
+          {
+            "metric_key": "closure_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "same_category_density",
+            "reliability": 0.85,
+            "freshness_policy": "structural",
+            "freshness_grace_days": 365,
+            "freshness_expire_days": 1825,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "net_opening_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          }
+        ],
+        "decision_blockers": [
+          "coverage_below_60",
+          "confidence_below_60"
+        ],
         "reasons": [
           {
             "tone": "positive",
@@ -573,12 +925,12 @@
             "value": 62.432364937983856,
             "unit": "개/km²",
             "percentile": 75.3,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           }
         ],
         "limitations": [
-          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "누락 지표는 50점 중립 방향으로 반영했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
           "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
         ]
       },
@@ -603,8 +955,8 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "서울시 상권분석서비스 점포",
-          "source_url": "https://data.seoul.go.kr",
+          "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
+          "source_url": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do",
           "period": "20251",
           "source_type": "official"
         },
@@ -633,23 +985,26 @@
       "category": "카페",
       "period": "20251",
       "score": {
-        "formula_version": "1.0.0",
+        "formula_version": "1.1.0",
         "market_id": "3120103",
         "market_name": "홍대입구역(홍대)",
         "category": "카페",
         "peer_group": "서울 발달상권 2025.1Q",
-        "score": 41.7,
+        "score": 49.3,
         "band": "주의 필요",
         "decision_status": "insufficient_evidence",
-        "confidence": 49.6,
+        "confidence": 52.0,
         "confidence_label": "낮음",
         "data_coverage": 55.0,
         "components": [
           {
             "key": "demand",
             "label": "수요",
-            "score": 94.1,
-            "weight_percent": 33.3,
+            "score": 85.3,
+            "weight_percent": 30.0,
+            "observed_score": 94.1,
+            "coverage": 80.0,
+            "configured_weight_percent": 30.0,
             "evidence_keys": [
               "sales_per_store",
               "foot_traffic"
@@ -658,8 +1013,11 @@
           {
             "key": "stability",
             "label": "영업 안정성",
-            "score": 23.9,
-            "weight_percent": 27.8,
+            "score": 38.3,
+            "weight_percent": 25.0,
+            "observed_score": 23.9,
+            "coverage": 45.0,
+            "configured_weight_percent": 25.0,
             "evidence_keys": [
               "closure_rate"
             ]
@@ -667,8 +1025,11 @@
           {
             "key": "competition_fit",
             "label": "경쟁 적합성",
-            "score": 1.1,
-            "weight_percent": 22.2,
+            "score": 18.2,
+            "weight_percent": 20.0,
+            "observed_score": 1.1,
+            "coverage": 65.0,
+            "configured_weight_percent": 20.0,
             "evidence_keys": [
               "same_category_density"
             ]
@@ -676,19 +1037,100 @@
           {
             "key": "growth",
             "label": "성장성",
-            "score": 20.9,
-            "weight_percent": 16.7,
+            "score": 36.9,
+            "weight_percent": 15.0,
+            "observed_score": 20.9,
+            "coverage": 45.0,
+            "configured_weight_percent": 15.0,
             "evidence_keys": [
               "net_opening_rate"
             ]
+          },
+          {
+            "key": "access",
+            "label": "접근성",
+            "score": 50.0,
+            "weight_percent": 10.0,
+            "observed_score": null,
+            "coverage": 0.0,
+            "configured_weight_percent": 10.0,
+            "evidence_keys": []
           }
         ],
         "cluster": {
           "classification": "specialized_watch",
           "local_quotient": 1.67,
           "adjustment": 0.0,
+          "raw_adjustment": 0.0,
+          "evidence_confidence": 0.955,
+          "evidence_keys": [
+            "closure_rate",
+            "foot_traffic",
+            "sales_per_store"
+          ],
           "explanation": "동일 업종이 집중된 특화상권이지만 집적효과와 과포화를 구분할 근거가 충분하지 않아 가점·감점을 보류합니다."
         },
+        "metric_evidence": [
+          {
+            "metric_key": "sales_per_store",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "foot_traffic",
+            "reliability": 1.0,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 1.0
+          },
+          {
+            "metric_key": "closure_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "same_category_density",
+            "reliability": 0.85,
+            "freshness_policy": "structural",
+            "freshness_grace_days": 365,
+            "freshness_expire_days": 1825,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "net_opening_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          }
+        ],
+        "decision_blockers": [
+          "coverage_below_60",
+          "confidence_below_60"
+        ],
         "reasons": [
           {
             "tone": "positive",
@@ -720,7 +1162,7 @@
             "value": 593.1724551494514,
             "unit": "개/km²",
             "percentile": 98.9,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -731,7 +1173,7 @@
             "value": -0.36496350364963503,
             "unit": "%",
             "percentile": 20.9,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -747,7 +1189,7 @@
           }
         ],
         "limitations": [
-          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "누락 지표는 50점 중립 방향으로 반영했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
           "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
         ]
       },
@@ -772,8 +1214,8 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "서울시 상권분석서비스 점포",
-          "source_url": "https://data.seoul.go.kr",
+          "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
+          "source_url": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do",
           "period": "20251",
           "source_type": "official"
         },
@@ -802,23 +1244,26 @@
       "category": "음식점",
       "period": "20251",
       "score": {
-        "formula_version": "1.0.0",
+        "formula_version": "1.1.0",
         "market_id": "3120103",
         "market_name": "홍대입구역(홍대)",
         "category": "음식점",
         "peer_group": "서울 발달상권 2025.1Q",
-        "score": 44.5,
-        "band": "주의 필요",
+        "score": 50.4,
+        "band": "혼합 신호",
         "decision_status": "insufficient_evidence",
-        "confidence": 49.6,
+        "confidence": 52.0,
         "confidence_label": "낮음",
         "data_coverage": 55.0,
         "components": [
           {
             "key": "demand",
             "label": "수요",
-            "score": 93.2,
-            "weight_percent": 33.3,
+            "score": 84.5,
+            "weight_percent": 30.0,
+            "observed_score": 93.2,
+            "coverage": 80.0,
+            "configured_weight_percent": 30.0,
             "evidence_keys": [
               "sales_per_store",
               "foot_traffic"
@@ -827,8 +1272,11 @@
           {
             "key": "stability",
             "label": "영업 안정성",
-            "score": 26.3,
-            "weight_percent": 27.8,
+            "score": 39.3,
+            "weight_percent": 25.0,
+            "observed_score": 26.3,
+            "coverage": 45.0,
+            "configured_weight_percent": 25.0,
             "evidence_keys": [
               "closure_rate"
             ]
@@ -836,8 +1284,11 @@
           {
             "key": "competition_fit",
             "label": "경쟁 적합성",
-            "score": 3.2,
-            "weight_percent": 22.2,
+            "score": 19.6,
+            "weight_percent": 20.0,
+            "observed_score": 3.2,
+            "coverage": 65.0,
+            "configured_weight_percent": 20.0,
             "evidence_keys": [
               "same_category_density"
             ]
@@ -845,19 +1296,100 @@
           {
             "key": "growth",
             "label": "성장성",
-            "score": 32.6,
-            "weight_percent": 16.7,
+            "score": 42.2,
+            "weight_percent": 15.0,
+            "observed_score": 32.6,
+            "coverage": 45.0,
+            "configured_weight_percent": 15.0,
             "evidence_keys": [
               "net_opening_rate"
             ]
+          },
+          {
+            "key": "access",
+            "label": "접근성",
+            "score": 50.0,
+            "weight_percent": 10.0,
+            "observed_score": null,
+            "coverage": 0.0,
+            "configured_weight_percent": 10.0,
+            "evidence_keys": []
           }
         ],
         "cluster": {
           "classification": "specialized_watch",
           "local_quotient": 1.52,
           "adjustment": 0.0,
+          "raw_adjustment": 0.0,
+          "evidence_confidence": 0.955,
+          "evidence_keys": [
+            "closure_rate",
+            "foot_traffic",
+            "sales_per_store"
+          ],
           "explanation": "동일 업종이 집중된 특화상권이지만 집적효과와 과포화를 구분할 근거가 충분하지 않아 가점·감점을 보류합니다."
         },
+        "metric_evidence": [
+          {
+            "metric_key": "sales_per_store",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "foot_traffic",
+            "reliability": 1.0,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 1.0
+          },
+          {
+            "metric_key": "closure_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "same_category_density",
+            "reliability": 0.85,
+            "freshness_policy": "structural",
+            "freshness_grace_days": 365,
+            "freshness_expire_days": 1825,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "net_opening_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          }
+        ],
+        "decision_blockers": [
+          "coverage_below_60",
+          "confidence_below_60"
+        ],
         "reasons": [
           {
             "tone": "positive",
@@ -889,7 +1421,7 @@
             "value": 2275.2709867228955,
             "unit": "개/km²",
             "percentile": 96.8,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -900,7 +1432,7 @@
             "value": 5.32825880114177,
             "unit": "%",
             "percentile": 73.7,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -916,7 +1448,7 @@
           }
         ],
         "limitations": [
-          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "누락 지표는 50점 중립 방향으로 반영했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
           "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
         ]
       },
@@ -941,8 +1473,8 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "서울시 상권분석서비스 점포",
-          "source_url": "https://data.seoul.go.kr",
+          "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
+          "source_url": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do",
           "period": "20251",
           "source_type": "official"
         },
@@ -971,23 +1503,26 @@
       "category": "베이커리",
       "period": "20251",
       "score": {
-        "formula_version": "1.0.0",
+        "formula_version": "1.1.0",
         "market_id": "3120103",
         "market_name": "홍대입구역(홍대)",
         "category": "베이커리",
         "peer_group": "서울 발달상권 2025.1Q",
-        "score": 38.0,
+        "score": 47.8,
         "band": "주의 필요",
         "decision_status": "insufficient_evidence",
-        "confidence": 49.6,
+        "confidence": 52.0,
         "confidence_label": "낮음",
         "data_coverage": 55.0,
         "components": [
           {
             "key": "demand",
             "label": "수요",
-            "score": 88.1,
-            "weight_percent": 33.3,
+            "score": 80.5,
+            "weight_percent": 30.0,
+            "observed_score": 88.1,
+            "coverage": 80.0,
+            "configured_weight_percent": 30.0,
             "evidence_keys": [
               "sales_per_store",
               "foot_traffic"
@@ -996,8 +1531,11 @@
           {
             "key": "stability",
             "label": "영업 안정성",
-            "score": 12.2,
-            "weight_percent": 27.8,
+            "score": 33.0,
+            "weight_percent": 25.0,
+            "observed_score": 12.2,
+            "coverage": 45.0,
+            "configured_weight_percent": 25.0,
             "evidence_keys": [
               "closure_rate"
             ]
@@ -1005,8 +1543,11 @@
           {
             "key": "competition_fit",
             "label": "경쟁 적합성",
-            "score": 16.3,
-            "weight_percent": 22.2,
+            "score": 28.1,
+            "weight_percent": 20.0,
+            "observed_score": 16.3,
+            "coverage": 65.0,
+            "configured_weight_percent": 20.0,
             "evidence_keys": [
               "same_category_density"
             ]
@@ -1014,19 +1555,96 @@
           {
             "key": "growth",
             "label": "성장성",
-            "score": 9.9,
-            "weight_percent": 16.7,
+            "score": 32.0,
+            "weight_percent": 15.0,
+            "observed_score": 9.9,
+            "coverage": 45.0,
+            "configured_weight_percent": 15.0,
             "evidence_keys": [
               "net_opening_rate"
             ]
+          },
+          {
+            "key": "access",
+            "label": "접근성",
+            "score": 50.0,
+            "weight_percent": 10.0,
+            "observed_score": null,
+            "coverage": 0.0,
+            "configured_weight_percent": 10.0,
+            "evidence_keys": []
           }
         ],
         "cluster": {
           "classification": "ordinary",
           "local_quotient": 0.71,
           "adjustment": 0.0,
+          "raw_adjustment": 0.0,
+          "evidence_confidence": 0.0,
+          "evidence_keys": [],
           "explanation": "동일 업종 집적이 peer group보다 뚜렷하게 높지 않습니다."
         },
+        "metric_evidence": [
+          {
+            "metric_key": "sales_per_store",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "foot_traffic",
+            "reliability": 1.0,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 1.0
+          },
+          {
+            "metric_key": "closure_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "same_category_density",
+            "reliability": 0.85,
+            "freshness_policy": "structural",
+            "freshness_grace_days": 365,
+            "freshness_expire_days": 1825,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "net_opening_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          }
+        ],
+        "decision_blockers": [
+          "coverage_below_60",
+          "confidence_below_60"
+        ],
         "reasons": [
           {
             "tone": "positive",
@@ -1058,7 +1676,7 @@
             "value": -5.263157894736842,
             "unit": "%",
             "percentile": 9.9,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -1069,12 +1687,12 @@
             "value": 5.263157894736842,
             "unit": "%",
             "percentile": 87.8,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           }
         ],
         "limitations": [
-          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "누락 지표는 50점 중립 방향으로 반영했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
           "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
         ]
       },
@@ -1099,8 +1717,8 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "서울시 상권분석서비스 점포",
-          "source_url": "https://data.seoul.go.kr",
+          "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
+          "source_url": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do",
           "period": "20251",
           "source_type": "official"
         },
@@ -1129,23 +1747,26 @@
       "category": "편의점",
       "period": "20251",
       "score": {
-        "formula_version": "1.0.0",
+        "formula_version": "1.1.0",
         "market_id": "3120103",
         "market_name": "홍대입구역(홍대)",
         "category": "편의점",
         "peer_group": "서울 발달상권 2025.1Q",
-        "score": 37.1,
+        "score": 47.6,
         "band": "주의 필요",
         "decision_status": "insufficient_evidence",
-        "confidence": 49.6,
+        "confidence": 52.0,
         "confidence_label": "낮음",
         "data_coverage": 55.0,
         "components": [
           {
             "key": "demand",
             "label": "수요",
-            "score": 93.6,
-            "weight_percent": 33.3,
+            "score": 84.9,
+            "weight_percent": 30.0,
+            "observed_score": 93.6,
+            "coverage": 80.0,
+            "configured_weight_percent": 30.0,
             "evidence_keys": [
               "sales_per_store",
               "foot_traffic"
@@ -1154,8 +1775,11 @@
           {
             "key": "stability",
             "label": "영업 안정성",
-            "score": 10.6,
-            "weight_percent": 27.8,
+            "score": 32.3,
+            "weight_percent": 25.0,
+            "observed_score": 10.6,
+            "coverage": 45.0,
+            "configured_weight_percent": 25.0,
             "evidence_keys": [
               "closure_rate"
             ]
@@ -1163,8 +1787,11 @@
           {
             "key": "competition_fit",
             "label": "경쟁 적합성",
-            "score": 7.1,
-            "weight_percent": 22.2,
+            "score": 22.1,
+            "weight_percent": 20.0,
+            "observed_score": 7.1,
+            "coverage": 65.0,
+            "configured_weight_percent": 20.0,
             "evidence_keys": [
               "same_category_density"
             ]
@@ -1172,19 +1799,96 @@
           {
             "key": "growth",
             "label": "성장성",
-            "score": 8.3,
-            "weight_percent": 16.7,
+            "score": 31.3,
+            "weight_percent": 15.0,
+            "observed_score": 8.3,
+            "coverage": 45.0,
+            "configured_weight_percent": 15.0,
             "evidence_keys": [
               "net_opening_rate"
             ]
+          },
+          {
+            "key": "access",
+            "label": "접근성",
+            "score": 50.0,
+            "weight_percent": 10.0,
+            "observed_score": null,
+            "coverage": 0.0,
+            "configured_weight_percent": 10.0,
+            "evidence_keys": []
           }
         ],
         "cluster": {
           "classification": "ordinary",
           "local_quotient": 0.71,
           "adjustment": 0.0,
+          "raw_adjustment": 0.0,
+          "evidence_confidence": 0.0,
+          "evidence_keys": [],
           "explanation": "동일 업종 집적이 peer group보다 뚜렷하게 높지 않습니다."
         },
+        "metric_evidence": [
+          {
+            "metric_key": "sales_per_store",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "foot_traffic",
+            "reliability": 1.0,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 1.0
+          },
+          {
+            "metric_key": "closure_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "same_category_density",
+            "reliability": 0.85,
+            "freshness_policy": "structural",
+            "freshness_grace_days": 365,
+            "freshness_expire_days": 1825,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "net_opening_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          }
+        ],
+        "decision_blockers": [
+          "coverage_below_60",
+          "confidence_below_60"
+        ],
         "reasons": [
           {
             "tone": "positive",
@@ -1216,7 +1920,7 @@
             "value": 101.74855982490588,
             "unit": "개/km²",
             "percentile": 92.9,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -1227,12 +1931,12 @@
             "value": -2.127659574468085,
             "unit": "%",
             "percentile": 8.3,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           }
         ],
         "limitations": [
-          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "누락 지표는 50점 중립 방향으로 반영했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
           "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
         ]
       },
@@ -1257,8 +1961,8 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "서울시 상권분석서비스 점포",
-          "source_url": "https://data.seoul.go.kr",
+          "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
+          "source_url": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do",
           "period": "20251",
           "source_type": "official"
         },
@@ -1287,23 +1991,26 @@
       "category": "카페",
       "period": "20251",
       "score": {
-        "formula_version": "1.0.0",
+        "formula_version": "1.1.0",
         "market_id": "3120101",
         "market_name": "합정역",
         "category": "카페",
         "peer_group": "서울 발달상권 2025.1Q",
-        "score": 46.8,
-        "band": "주의 필요",
+        "score": 50.6,
+        "band": "혼합 신호",
         "decision_status": "insufficient_evidence",
-        "confidence": 49.6,
+        "confidence": 52.0,
         "confidence_label": "낮음",
         "data_coverage": 55.0,
         "components": [
           {
             "key": "demand",
             "label": "수요",
-            "score": 84.1,
-            "weight_percent": 33.3,
+            "score": 77.3,
+            "weight_percent": 30.0,
+            "observed_score": 84.1,
+            "coverage": 80.0,
+            "configured_weight_percent": 30.0,
             "evidence_keys": [
               "sales_per_store",
               "foot_traffic"
@@ -1312,8 +2019,11 @@
           {
             "key": "stability",
             "label": "영업 안정성",
-            "score": 30.3,
-            "weight_percent": 27.8,
+            "score": 41.1,
+            "weight_percent": 25.0,
+            "observed_score": 30.3,
+            "coverage": 45.0,
+            "configured_weight_percent": 25.0,
             "evidence_keys": [
               "closure_rate"
             ]
@@ -1321,8 +2031,11 @@
           {
             "key": "competition_fit",
             "label": "경쟁 적합성",
-            "score": 6.8,
-            "weight_percent": 22.2,
+            "score": 21.9,
+            "weight_percent": 20.0,
+            "observed_score": 6.8,
+            "coverage": 65.0,
+            "configured_weight_percent": 20.0,
             "evidence_keys": [
               "same_category_density"
             ]
@@ -1330,19 +2043,100 @@
           {
             "key": "growth",
             "label": "성장성",
-            "score": 53.2,
-            "weight_percent": 16.7,
+            "score": 51.5,
+            "weight_percent": 15.0,
+            "observed_score": 53.2,
+            "coverage": 45.0,
+            "configured_weight_percent": 15.0,
             "evidence_keys": [
               "net_opening_rate"
             ]
+          },
+          {
+            "key": "access",
+            "label": "접근성",
+            "score": 50.0,
+            "weight_percent": 10.0,
+            "observed_score": null,
+            "coverage": 0.0,
+            "configured_weight_percent": 10.0,
+            "evidence_keys": []
           }
         ],
         "cluster": {
           "classification": "specialized_watch",
           "local_quotient": 1.34,
           "adjustment": 0.0,
+          "raw_adjustment": 0.0,
+          "evidence_confidence": 0.955,
+          "evidence_keys": [
+            "closure_rate",
+            "foot_traffic",
+            "sales_per_store"
+          ],
           "explanation": "동일 업종이 집중된 특화상권이지만 집적효과와 과포화를 구분할 근거가 충분하지 않아 가점·감점을 보류합니다."
         },
+        "metric_evidence": [
+          {
+            "metric_key": "sales_per_store",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "foot_traffic",
+            "reliability": 1.0,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 1.0
+          },
+          {
+            "metric_key": "closure_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "same_category_density",
+            "reliability": 0.85,
+            "freshness_policy": "structural",
+            "freshness_grace_days": 365,
+            "freshness_expire_days": 1825,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "net_opening_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          }
+        ],
+        "decision_blockers": [
+          "coverage_below_60",
+          "confidence_below_60"
+        ],
         "reasons": [
           {
             "tone": "positive",
@@ -1374,7 +2168,7 @@
             "value": 322.0535085940575,
             "unit": "개/km²",
             "percentile": 93.2,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -1385,7 +2179,7 @@
             "value": 2.4691358024691357,
             "unit": "%",
             "percentile": 69.7,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -1401,7 +2195,7 @@
           }
         ],
         "limitations": [
-          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "누락 지표는 50점 중립 방향으로 반영했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
           "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
         ]
       },
@@ -1426,8 +2220,8 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "서울시 상권분석서비스 점포",
-          "source_url": "https://data.seoul.go.kr",
+          "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
+          "source_url": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do",
           "period": "20251",
           "source_type": "official"
         },
@@ -1456,23 +2250,26 @@
       "category": "음식점",
       "period": "20251",
       "score": {
-        "formula_version": "1.0.0",
+        "formula_version": "1.1.0",
         "market_id": "3120101",
         "market_name": "합정역",
         "category": "음식점",
         "peer_group": "서울 발달상권 2025.1Q",
-        "score": 51.5,
+        "score": 53.1,
         "band": "혼합 신호",
         "decision_status": "insufficient_evidence",
-        "confidence": 49.6,
+        "confidence": 52.0,
         "confidence_label": "낮음",
         "data_coverage": 55.0,
         "components": [
           {
             "key": "demand",
             "label": "수요",
-            "score": 85.1,
-            "weight_percent": 33.3,
+            "score": 78.1,
+            "weight_percent": 30.0,
+            "observed_score": 85.1,
+            "coverage": 80.0,
+            "configured_weight_percent": 30.0,
             "evidence_keys": [
               "sales_per_store",
               "foot_traffic"
@@ -1481,8 +2278,11 @@
           {
             "key": "stability",
             "label": "영업 안정성",
-            "score": 46.4,
-            "weight_percent": 27.8,
+            "score": 48.4,
+            "weight_percent": 25.0,
+            "observed_score": 46.4,
+            "coverage": 45.0,
+            "configured_weight_percent": 25.0,
             "evidence_keys": [
               "closure_rate"
             ]
@@ -1490,8 +2290,11 @@
           {
             "key": "competition_fit",
             "label": "경쟁 적합성",
-            "score": 19.4,
-            "weight_percent": 22.2,
+            "score": 30.1,
+            "weight_percent": 20.0,
+            "observed_score": 19.4,
+            "coverage": 65.0,
+            "configured_weight_percent": 20.0,
             "evidence_keys": [
               "same_category_density"
             ]
@@ -1499,19 +2302,96 @@
           {
             "key": "growth",
             "label": "성장성",
-            "score": 35.5,
-            "weight_percent": 16.7,
+            "score": 43.5,
+            "weight_percent": 15.0,
+            "observed_score": 35.5,
+            "coverage": 45.0,
+            "configured_weight_percent": 15.0,
             "evidence_keys": [
               "net_opening_rate"
             ]
+          },
+          {
+            "key": "access",
+            "label": "접근성",
+            "score": 50.0,
+            "weight_percent": 10.0,
+            "observed_score": null,
+            "coverage": 0.0,
+            "configured_weight_percent": 10.0,
+            "evidence_keys": []
           }
         ],
         "cluster": {
           "classification": "ordinary",
           "local_quotient": 1.03,
           "adjustment": 0.0,
+          "raw_adjustment": 0.0,
+          "evidence_confidence": 0.0,
+          "evidence_keys": [],
           "explanation": "동일 업종 집적이 peer group보다 뚜렷하게 높지 않습니다."
         },
+        "metric_evidence": [
+          {
+            "metric_key": "sales_per_store",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "foot_traffic",
+            "reliability": 1.0,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 1.0
+          },
+          {
+            "metric_key": "closure_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "same_category_density",
+            "reliability": 0.85,
+            "freshness_policy": "structural",
+            "freshness_grace_days": 365,
+            "freshness_expire_days": 1825,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "net_opening_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          }
+        ],
+        "decision_blockers": [
+          "coverage_below_60",
+          "confidence_below_60"
+        ],
         "reasons": [
           {
             "tone": "positive",
@@ -1543,7 +2423,7 @@
             "value": 1049.6558798621134,
             "unit": "개/km²",
             "percentile": 80.6,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -1554,12 +2434,12 @@
             "value": -1.1363636363636365,
             "unit": "%",
             "percentile": 35.5,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           }
         ],
         "limitations": [
-          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "누락 지표는 50점 중립 방향으로 반영했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
           "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
         ]
       },
@@ -1584,8 +2464,8 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "서울시 상권분석서비스 점포",
-          "source_url": "https://data.seoul.go.kr",
+          "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
+          "source_url": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do",
           "period": "20251",
           "source_type": "official"
         },
@@ -1614,23 +2494,26 @@
       "category": "베이커리",
       "period": "20251",
       "score": {
-        "formula_version": "1.0.0",
+        "formula_version": "1.1.0",
         "market_id": "3120101",
         "market_name": "합정역",
         "category": "베이커리",
         "peer_group": "서울 발달상권 2025.1Q",
-        "score": 35.3,
+        "score": 46.2,
         "band": "주의 필요",
         "decision_status": "insufficient_evidence",
-        "confidence": 49.6,
+        "confidence": 52.0,
         "confidence_label": "낮음",
         "data_coverage": 55.0,
         "components": [
           {
             "key": "demand",
             "label": "수요",
-            "score": 84.0,
-            "weight_percent": 33.3,
+            "score": 77.2,
+            "weight_percent": 30.0,
+            "observed_score": 84.0,
+            "coverage": 80.0,
+            "configured_weight_percent": 30.0,
             "evidence_keys": [
               "sales_per_store",
               "foot_traffic"
@@ -1639,8 +2522,11 @@
           {
             "key": "stability",
             "label": "영업 안정성",
-            "score": 10.4,
-            "weight_percent": 27.8,
+            "score": 32.2,
+            "weight_percent": 25.0,
+            "observed_score": 10.4,
+            "coverage": 45.0,
+            "configured_weight_percent": 25.0,
             "evidence_keys": [
               "closure_rate"
             ]
@@ -1648,8 +2534,11 @@
           {
             "key": "competition_fit",
             "label": "경쟁 적합성",
-            "score": 13.4,
-            "weight_percent": 22.2,
+            "score": 26.2,
+            "weight_percent": 20.0,
+            "observed_score": 13.4,
+            "coverage": 65.0,
+            "configured_weight_percent": 20.0,
             "evidence_keys": [
               "same_category_density"
             ]
@@ -1657,19 +2546,96 @@
           {
             "key": "growth",
             "label": "성장성",
-            "score": 8.6,
-            "weight_percent": 16.7,
+            "score": 31.4,
+            "weight_percent": 15.0,
+            "observed_score": 8.6,
+            "coverage": 45.0,
+            "configured_weight_percent": 15.0,
             "evidence_keys": [
               "net_opening_rate"
             ]
+          },
+          {
+            "key": "access",
+            "label": "접근성",
+            "score": 50.0,
+            "weight_percent": 10.0,
+            "observed_score": null,
+            "coverage": 0.0,
+            "configured_weight_percent": 10.0,
+            "evidence_keys": []
           }
         ],
         "cluster": {
           "classification": "ordinary",
           "local_quotient": 1.17,
           "adjustment": 0.0,
+          "raw_adjustment": 0.0,
+          "evidence_confidence": 0.0,
+          "evidence_keys": [],
           "explanation": "동일 업종 집적이 peer group보다 뚜렷하게 높지 않습니다."
         },
+        "metric_evidence": [
+          {
+            "metric_key": "sales_per_store",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "foot_traffic",
+            "reliability": 1.0,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 1.0
+          },
+          {
+            "metric_key": "closure_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "same_category_density",
+            "reliability": 0.85,
+            "freshness_policy": "structural",
+            "freshness_grace_days": 365,
+            "freshness_expire_days": 1825,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "net_opening_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          }
+        ],
+        "decision_blockers": [
+          "coverage_below_60",
+          "confidence_below_60"
+        ],
         "reasons": [
           {
             "tone": "positive",
@@ -1701,7 +2667,7 @@
             "value": -8.695652173913043,
             "unit": "%",
             "percentile": 8.6,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -1712,12 +2678,12 @@
             "value": 8.695652173913043,
             "unit": "%",
             "percentile": 89.6,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           }
         ],
         "limitations": [
-          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "누락 지표는 50점 중립 방향으로 반영했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
           "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
         ]
       },
@@ -1742,8 +2708,8 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "서울시 상권분석서비스 점포",
-          "source_url": "https://data.seoul.go.kr",
+          "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
+          "source_url": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do",
           "period": "20251",
           "source_type": "official"
         },
@@ -1772,23 +2738,26 @@
       "category": "편의점",
       "period": "20251",
       "score": {
-        "formula_version": "1.0.0",
+        "formula_version": "1.1.0",
         "market_id": "3120101",
         "market_name": "합정역",
         "category": "편의점",
         "peer_group": "서울 발달상권 2025.1Q",
-        "score": 46.9,
-        "band": "주의 필요",
+        "score": 50.1,
+        "band": "혼합 신호",
         "decision_status": "insufficient_evidence",
-        "confidence": 49.6,
+        "confidence": 52.0,
         "confidence_label": "낮음",
         "data_coverage": 55.0,
         "components": [
           {
             "key": "demand",
             "label": "수요",
-            "score": 78.6,
-            "weight_percent": 33.3,
+            "score": 72.9,
+            "weight_percent": 30.0,
+            "observed_score": 78.6,
+            "coverage": 80.0,
+            "configured_weight_percent": 30.0,
             "evidence_keys": [
               "sales_per_store",
               "foot_traffic"
@@ -1797,8 +2766,11 @@
           {
             "key": "stability",
             "label": "영업 안정성",
-            "score": 9.8,
-            "weight_percent": 27.8,
+            "score": 31.9,
+            "weight_percent": 25.0,
+            "observed_score": 9.8,
+            "coverage": 45.0,
+            "configured_weight_percent": 25.0,
             "evidence_keys": [
               "closure_rate"
             ]
@@ -1806,8 +2778,11 @@
           {
             "key": "competition_fit",
             "label": "경쟁 적합성",
-            "score": 8.8,
-            "weight_percent": 22.2,
+            "score": 23.2,
+            "weight_percent": 20.0,
+            "observed_score": 8.8,
+            "coverage": 65.0,
+            "configured_weight_percent": 20.0,
             "evidence_keys": [
               "same_category_density"
             ]
@@ -1815,19 +2790,96 @@
           {
             "key": "growth",
             "label": "성장성",
-            "score": 95.8,
-            "weight_percent": 16.7,
+            "score": 70.6,
+            "weight_percent": 15.0,
+            "observed_score": 95.8,
+            "coverage": 45.0,
+            "configured_weight_percent": 15.0,
             "evidence_keys": [
               "net_opening_rate"
             ]
+          },
+          {
+            "key": "access",
+            "label": "접근성",
+            "score": 50.0,
+            "weight_percent": 10.0,
+            "observed_score": null,
+            "coverage": 0.0,
+            "configured_weight_percent": 10.0,
+            "evidence_keys": []
           }
         ],
         "cluster": {
           "classification": "ordinary",
           "local_quotient": 1.03,
           "adjustment": 0.0,
+          "raw_adjustment": 0.0,
+          "evidence_confidence": 0.0,
+          "evidence_keys": [],
           "explanation": "동일 업종 집적이 peer group보다 뚜렷하게 높지 않습니다."
         },
+        "metric_evidence": [
+          {
+            "metric_key": "sales_per_store",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "foot_traffic",
+            "reliability": 1.0,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 1.0
+          },
+          {
+            "metric_key": "closure_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "same_category_density",
+            "reliability": 0.85,
+            "freshness_policy": "structural",
+            "freshness_grace_days": 365,
+            "freshness_expire_days": 1825,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          },
+          {
+            "metric_key": "net_opening_rate",
+            "reliability": 0.85,
+            "freshness_policy": "fast",
+            "freshness_grace_days": 180,
+            "freshness_expire_days": 730,
+            "freshness": 1.0,
+            "sample_basis": "known",
+            "sample_strength": 1.0,
+            "evidence_strength": 0.9325
+          }
+        ],
+        "decision_blockers": [
+          "coverage_below_60",
+          "confidence_below_60"
+        ],
         "reasons": [
           {
             "tone": "positive",
@@ -1837,7 +2889,7 @@
             "value": 4.0,
             "unit": "%",
             "percentile": 95.8,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -1859,7 +2911,7 @@
             "value": 99.39923104754862,
             "unit": "개/km²",
             "percentile": 91.2,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           },
           {
@@ -1870,12 +2922,12 @@
             "value": 4.0,
             "unit": "%",
             "percentile": 90.2,
-            "source_name": "서울시 상권분석서비스 점포",
+            "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
             "period": "20251"
           }
         ],
         "limitations": [
-          "누락 지표는 가중치에서 제외했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
+          "누락 지표는 50점 중립 방향으로 반영했습니다: 수요 증가율, 업종 다양성, 매출 증가율, 동일 cohort 생존율, 대중교통 접근성, 보행 접근성",
           "근거 신뢰도가 낮아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."
         ]
       },
@@ -1900,8 +2952,8 @@
       "evidence": [
         {
           "metric": "점포·개폐업",
-          "source_name": "서울시 상권분석서비스 점포",
-          "source_url": "https://data.seoul.go.kr",
+          "source_name": "서울시 상권분석서비스(점포-상권)_2025년",
+          "source_url": "https://data.seoul.go.kr/dataList/OA-15577/S/1/datasetView.do",
           "period": "20251",
           "source_type": "official"
         },

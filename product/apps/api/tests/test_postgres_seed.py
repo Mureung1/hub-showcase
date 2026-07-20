@@ -8,7 +8,12 @@ from test_database import alembic_config
 from alembic import command
 from localtwin_api.canonical_db import SCHEMA
 from localtwin_api.database import create_database_engine
-from localtwin_api.postgres_seed import normalize_raw_path, seed_canonical, validate_source_url
+from localtwin_api.postgres_seed import (
+    effective_chunk_size,
+    normalize_raw_path,
+    seed_canonical,
+    validate_source_url,
+)
 
 
 def make_source_database(path: Path, raw_path: str) -> None:
@@ -111,6 +116,22 @@ def make_source_database(path: Path, raw_path: str) -> None:
                 "source-1",
             ),
         )
+        connection.execute(
+            "INSERT INTO market_geometries VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                "M1",
+                '{"type":"Polygon","coordinates":[]}',
+                126.9,
+                37.5,
+                "EPSG:5181",
+                "EPSG:4326",
+                "source-1",
+            ),
+        )
+        connection.execute(
+            "INSERT INTO store_market_links VALUES (?, ?, ?, ?, ?)",
+            ("S1", "M1", "point_in_polygon", 0, "source-1"),
+        )
         connection.commit()
 
 
@@ -135,10 +156,12 @@ def test_seed_is_idempotent_and_normalizes_provenance(tmp_path: Path) -> None:
         == {
             "data_sources": 1,
             "markets": 1,
+            "market_geometries": 1,
             "store_metrics": 1,
             "sales_metrics": 1,
             "flow_metrics": 1,
             "store_points": 1,
+            "store_market_links": 1,
             "permit_businesses": 1,
         }
     )
@@ -169,3 +192,30 @@ def test_provenance_validation_rejects_secret_urls_and_parent_paths() -> None:
         validate_source_url("https://example.test/data?serviceKey=secret")
     with pytest.raises(ValueError, match="repository-relative"):
         normalize_raw_path("../private/data.json")
+
+
+def test_large_requested_chunk_is_capped_by_statement_parameter_budget() -> None:
+    assert effective_chunk_size("sales_metrics", 5_000, "postgresql") == 4_000
+    assert effective_chunk_size("store_points", 5_000, "postgresql") == 4_285
+    assert effective_chunk_size("markets", 100, "postgresql") == 100
+
+
+def test_incremental_seed_restores_selected_tables_and_checks_all_counts(tmp_path: Path) -> None:
+    source_path = tmp_path / "source.db"
+    make_source_database(source_path, "data/raw/areas.json")
+    engine = migrated_engine(tmp_path / "target.db")
+    seed_canonical(source_path, engine)
+    with engine.begin() as connection:
+        connection.execute(text("DELETE FROM store_market_links"))
+        connection.execute(text("DELETE FROM market_geometries"))
+
+    report = seed_canonical(
+        source_path,
+        engine,
+        tables=("market_geometries", "store_market_links"),
+    )
+
+    assert report.target_counts == report.source_counts
+    assert report.target_counts["market_geometries"] == 1
+    assert report.target_counts["store_market_links"] == 1
+    engine.dispose()

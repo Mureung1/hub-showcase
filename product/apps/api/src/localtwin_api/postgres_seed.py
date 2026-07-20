@@ -21,6 +21,8 @@ from localtwin_api.seoul_open_data import repository_root
 
 TABLE_ORDER = tuple(model.__tablename__ for model in CANONICAL_MODELS)
 MODEL_BY_TABLE = {model.__tablename__: model for model in CANONICAL_MODELS}
+POSTGRESQL_PARAMETER_BUDGET = 60_000
+SQLITE_PARAMETER_BUDGET = 30_000
 
 
 @dataclass(frozen=True)
@@ -102,6 +104,14 @@ def iter_source_rows(
         yield [dict(row) for row in rows]
 
 
+def effective_chunk_size(table: str, requested: int, dialect_name: str) -> int:
+    parameter_budget = (
+        POSTGRESQL_PARAMETER_BUDGET if dialect_name == "postgresql" else SQLITE_PARAMETER_BUDGET
+    )
+    column_count = len(MODEL_BY_TABLE[table].__table__.columns)
+    return min(requested, max(1, parameter_budget // column_count))
+
+
 def prepare_rows(table: str, rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     prepared = [dict(row) for row in rows]
     if table == "data_sources":
@@ -131,9 +141,22 @@ def upsert_rows(connection: Connection, table: str, rows: Sequence[Mapping[str, 
     connection.execute(statement)
 
 
-def seed_canonical(source_path: Path, engine: Engine, *, chunk_size: int = 1_000) -> SeedReport:
+def seed_canonical(
+    source_path: Path,
+    engine: Engine,
+    *,
+    chunk_size: int = 1_000,
+    tables: Sequence[str] | None = None,
+) -> SeedReport:
     if chunk_size <= 0:
         raise ValueError("chunk_size must be greater than zero.")
+    selected_tables = tuple(tables) if tables is not None else TABLE_ORDER
+    unknown_tables = sorted(set(selected_tables) - set(TABLE_ORDER))
+    if unknown_tables:
+        raise ValueError(f"Unknown canonical table: {unknown_tables[0]}")
+    selected_tables = tuple(table for table in TABLE_ORDER if table in selected_tables)
+    if not selected_tables:
+        raise ValueError("At least one canonical table must be selected.")
     resolved_source = source_path.resolve()
     if not resolved_source.is_file():
         raise FileNotFoundError(resolved_source)
@@ -147,8 +170,9 @@ def seed_canonical(source_path: Path, engine: Engine, *, chunk_size: int = 1_000
         source_categories = source_category_counts(source)
 
         with engine.begin() as target:
-            for table in TABLE_ORDER:
-                for rows in iter_source_rows(source, table, chunk_size=chunk_size):
+            for table in selected_tables:
+                table_chunk_size = effective_chunk_size(table, chunk_size, target.dialect.name)
+                for rows in iter_source_rows(source, table, chunk_size=table_chunk_size):
                     upsert_rows(target, table, prepare_rows(table, rows))
             target_counts = target_table_counts(target)
             target_categories = target_category_counts(target)
@@ -169,6 +193,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, default=default_source_path())
     parser.add_argument("--chunk-size", type=int, default=1_000)
+    parser.add_argument("--tables", nargs="+", choices=TABLE_ORDER)
     return parser
 
 
@@ -177,7 +202,12 @@ def main() -> None:
     database_url = get_settings().require_database_url()
     engine = create_database_engine(database_url)
     try:
-        report = seed_canonical(arguments.source, engine, chunk_size=arguments.chunk_size)
+        report = seed_canonical(
+            arguments.source,
+            engine,
+            chunk_size=arguments.chunk_size,
+            tables=arguments.tables,
+        )
     finally:
         engine.dispose()
     for table, count in report.target_counts.items():
