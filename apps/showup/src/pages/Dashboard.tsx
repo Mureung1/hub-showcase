@@ -1,10 +1,57 @@
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuthState } from '@/hooks/useAuth'
+import { listTodayReservations, listReservations } from '@/services/reservations'
+import { getTopRiskyCustomers } from '@/services/customers'
+import { calculateDashboardStats } from '@/utils/dashboard'
+import type { CustomerSearchResult } from '@/types/schema'
+
 const Dashboard = () => {
-  // TODO: BE 세션이 대시보드 집계 쿼리 연동
-  const stats = {
-    todayReservations: 0,
-    todayVisited: 0,
-    todayNoShow: 0,
-    thisMonthNoShowRate: 0,
+  const { user } = useAuthState()
+  const [isLoading, setIsLoading] = useState(true)
+  const [todayCount, setTodayCount] = useState(0)
+  const [todayVisited, setTodayVisited] = useState(0)
+  const [todayNoShow, setTodayNoShow] = useState(0)
+  const [noShowRate, setNoShowRate] = useState(0)
+  const [attentionCustomers, setAttentionCustomers] = useState<CustomerSearchResult[]>([])
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      if (!user) {
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        const [todayReservations, allReservations, riskyCustomers] = await Promise.all([
+          listTodayReservations(user.uid),
+          listReservations(user.uid),
+          getTopRiskyCustomers(user.uid, 5),
+        ])
+
+        const stats = calculateDashboardStats(allReservations)
+
+        setTodayCount(todayReservations.length)
+        setTodayVisited(todayReservations.filter((r) => r.status === 'visited').length)
+        setTodayNoShow(todayReservations.filter((r) => r.status === 'noShow').length)
+        setNoShowRate(stats.month.noShowRate)
+        setAttentionCustomers(riskyCustomers)
+      } catch (error) {
+        console.error('Failed to load dashboard:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadDashboard()
+  }, [user])
+
+  if (isLoading) {
+    return (
+      <div className="p-4 text-center text-gray-500">
+        <p>로딩 중...</p>
+      </div>
+    )
   }
 
   return (
@@ -18,33 +65,76 @@ const Dashboard = () => {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <p className="text-sm text-gray-500">오늘 예약</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{stats.todayReservations}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{todayCount}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <p className="text-sm text-gray-500">방문</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">{stats.todayVisited}</p>
+          <p className="text-2xl font-bold text-green-600 mt-1">{todayVisited}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <p className="text-sm text-gray-500">노쇼</p>
-          <p className="text-2xl font-bold text-red-600 mt-1">{stats.todayNoShow}</p>
+          <p className="text-2xl font-bold text-red-600 mt-1">{todayNoShow}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <p className="text-sm text-gray-500">월 노쇼율</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{stats.thisMonthNoShowRate}%</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{noShowRate}%</p>
         </div>
       </div>
 
       {/* Attention customers */}
       <section className="bg-white rounded-xl p-4 shadow-sm mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">주의 고객</h2>
-        <div className="text-center py-8 text-gray-500">
-          <p>등록된 주의 고객이 없습니다</p>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-gray-900">주의 고객</h2>
+          <Link
+            to="/customers"
+            className="text-sm text-blue-600 hover:underline font-medium"
+          >
+            전체 보기 →
+          </Link>
         </div>
+        {attentionCustomers.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <p>등록된 주의 고객이 없습니다</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {attentionCustomers.map((customer) => (
+              <Link
+                key={customer.id}
+                to={`/customers/${customer.id}`}
+                className="block p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-900">{customer.name}</p>
+                    <p className="text-sm text-gray-500 mt-1">{customer.phoneMasked}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-red-600">
+                      위험 {customer.riskStats.score}점
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      노쇼 {customer.riskStats.noShowCount}회
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Today's reservations */}
       <section className="bg-white rounded-xl p-4 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">오늘의 예약</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-gray-900">오늘의 예약</h2>
+          <Link
+            to="/reservations"
+            className="text-sm text-blue-600 hover:underline font-medium"
+          >
+            전체 보기 →
+          </Link>
+        </div>
         <div className="text-center py-8 text-gray-500">
           <p>오늘 예약이 없습니다</p>
         </div>

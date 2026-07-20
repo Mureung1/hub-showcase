@@ -145,15 +145,19 @@ export async function refreshCustomerRiskStats(
     updatedAt: serverTimestamp(),
   });
 }
-
 /**
  * riskStats 기반 상위 주의 고객 조회.
+ * score 내림차순 상위 limit 명을 반환한다.
  */
 export async function getTopRiskyCustomers(
   storeId: string,
   limit = 5,
 ): Promise<CustomerSearchResult[]> {
-  const q = query(customersRef(storeId), orderBy('riskStats.score', 'desc'));
+  const q = query(
+    customersRef(storeId),
+    orderBy('riskStats.score', 'desc'),
+    orderBy('createdAt', 'desc'),
+  );
   const snap = await getDocs(q);
   return snap.docs
     .slice(0, limit)
