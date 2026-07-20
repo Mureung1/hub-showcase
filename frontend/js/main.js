@@ -61,8 +61,12 @@ function switchTab(tabName) {
         tabElement.classList.add('active');
     }
 
-    // Add active class to clicked tab button
-    event.target.classList.add('active');
+    // Activate the matching tab button. 클릭이 아니라 로그인 등에서 프로그램적으로
+    // 호출될 때도 있으므로 전역 event 대신 tabName으로 버튼을 찾는다.
+    const tabButton = document.querySelector(`.nav-tabs .tab[onclick*="'${tabName}'"]`);
+    if (tabButton) {
+        tabButton.classList.add('active');
+    }
 
     // Load tab-specific data
     if (tabName === 'dashboard') {
@@ -82,6 +86,15 @@ function showStudentPage() {
     loadStudentQuestions();
 }
 
+// 로그인 화면의 역할 탭(선생님/학생) 전환
+function switchLoginTab(role) {
+    document.querySelectorAll('.login-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.role === role);
+    });
+    document.getElementById('teacher-login').classList.toggle('active', role === 'teacher');
+    document.getElementById('student-login').classList.toggle('active', role === 'student');
+}
+
 // Login handlers
 async function loginAsTeacher() {
     const name = document.getElementById('teacher-name').value.trim();
@@ -91,44 +104,32 @@ async function loginAsTeacher() {
     }
 
     try {
-        const response = await fetch(`${API_BASE}/teacher/create`, {
+        // 같은 이름이면 기존 교실을 재사용한다. (재로그인해도 학생이 유지되도록)
+        const response = await fetch(`${API_BASE}/teacher/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name })
         });
 
-        if (!response.ok) throw new Error(`teacher/create ${response.status}`);
         const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.error || '로그인에 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+            return;
+        }
 
         currentUser = {
             type: 'teacher',
             id: data.id,
             name: data.name || name,
-            classroomId: null
+            classroomId: data.classroom_id
         };
 
-        // Create a test classroom (실패 시 예외를 던져 아래 catch로)
-        await createTestClassroom();
         showTeacherDashboard();
     } catch (error) {
         console.error('선생님 로그인 중 오류:', error);
-        alert('로그인에 실패했습니다. 서버가 실행 중인지 확인해주세요.');
+        alert('서버에 연결하지 못했습니다. 서버가 실행 중인지 확인해주세요.');
     }
-}
-
-async function createTestClassroom() {
-    const response = await fetch(`${API_BASE}/classroom/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            name: '수학 1반',
-            teacher_id: currentUser.id
-        })
-    });
-
-    if (!response.ok) throw new Error(`classroom/create ${response.status}`);
-    const data = await response.json();
-    currentUser.classroomId = data.id;
 }
 
 async function loginAsStudent() {
@@ -141,7 +142,8 @@ async function loginAsStudent() {
     }
 
     try {
-        const response = await fetch(`${API_BASE}/student/create`, {
+        // 선생님이 미리 등록해 둔 학생만 로그인할 수 있다. (신규 생성이 아니라 조회)
+        const response = await fetch(`${API_BASE}/student/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -150,8 +152,12 @@ async function loginAsStudent() {
             })
         });
 
-        if (!response.ok) throw new Error(`student/create ${response.status}`);
         const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.error || '로그인에 실패했습니다. 교실 ID가 올바른지 확인해주세요.');
+            return;
+        }
 
         currentUser = {
             type: 'student',
@@ -163,7 +169,7 @@ async function loginAsStudent() {
         showStudentPage();
     } catch (error) {
         console.error('학생 로그인 중 오류:', error);
-        alert('로그인에 실패했습니다. 교실 ID가 올바른지, 서버가 실행 중인지 확인해주세요.');
+        alert('서버에 연결하지 못했습니다. 서버가 실행 중인지 확인해주세요.');
     }
 }
 
@@ -242,7 +248,7 @@ async function addTestStudent() {
             body: JSON.stringify({ student_id: student.id })
         });
 
-        loadTeacherDashboard();
+        await loadTeacherDashboard();
     } catch (error) {
         console.error('학생 추가 실패:', error);
     }
@@ -254,15 +260,12 @@ async function addTestQuestion() {
     const questionText = prompt('질문을 입력하세요:');
     if (!questionText) return;
 
-    const modelAnswer = prompt('모범답안을 입력하세요 (비워두면 AI가 스스로 판단합니다):') || '';
-
     try {
         const response = await fetch(`${API_BASE}/question/create`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 text: questionText,
-                model_answer: modelAnswer,
                 classroom_id: currentUser.classroomId
             })
         });
@@ -298,15 +301,100 @@ async function loadQuestionsList() {
         questions.forEach((question, index) => {
             const card = document.createElement('div');
             card.className = 'card';
-            card.innerHTML = `
-                <div class="card-title">질문 ${index + 1}</div>
-                <div class="card-text">${question.text}</div>
-            `;
+
+            const title = document.createElement('div');
+            title.className = 'card-title';
+            title.textContent = `질문 ${index + 1}`;
+
+            const text = document.createElement('div');
+            text.className = 'card-text';
+            text.textContent = question.text; // 교사 입력이므로 innerHTML 금지
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn btn-danger';
+            delBtn.style.marginTop = '12px';
+            delBtn.textContent = '삭제';
+            delBtn.addEventListener('click', () => deleteQuestion(question.id, index + 1));
+
+            card.append(title, text, delBtn);
             container.appendChild(card);
         });
 
     } catch (error) {
         console.error('질문 목록 로드 실패:', error);
+    }
+}
+
+// ===== 커스텀 확인 모달 & 토스트 (네이티브 confirm/alert 대체) =====
+// 네이티브 팝업은 화면을 막고 디자인과 겉돌아서, 인페이지 UI로 대체한다.
+function showConfirm(message) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+            <div class="modal" role="dialog" aria-modal="true">
+                <p class="modal-message"></p>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" data-action="cancel">취소</button>
+                    <button class="btn btn-danger-solid" data-action="ok">삭제</button>
+                </div>
+            </div>`;
+        overlay.querySelector('.modal-message').textContent = message; // 사용자 입력 포함 → textContent
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('open'));
+
+        const close = (result) => {
+            overlay.classList.remove('open');
+            setTimeout(() => overlay.remove(), 180);
+            document.removeEventListener('keydown', onKey);
+            resolve(result);
+        };
+        const onKey = (e) => {
+            if (e.key === 'Escape') close(false);
+        };
+        document.addEventListener('keydown', onKey);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) return close(false); // 바깥 클릭 = 취소
+            const action = e.target.dataset.action;
+            if (action === 'ok') close(true);
+            else if (action === 'cancel') close(false);
+        });
+    });
+}
+
+function showToast(message, type = 'info') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 250);
+    }, 2600);
+}
+
+async function deleteQuestion(questionId, label) {
+    const ok = await showConfirm(`질문 ${label}을(를) 삭제할까요?\n학생들의 관련 답변·대화 기록도 함께 삭제됩니다.`);
+    if (!ok) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/question/${questionId}`, { method: 'DELETE' });
+        if (!response.ok) {
+            showToast('질문 삭제에 실패했습니다.', 'error');
+            return;
+        }
+        await loadQuestionsList();
+        showToast('질문이 삭제되었습니다.', 'success');
+    } catch (error) {
+        console.error('질문 삭제 실패:', error);
+        showToast('서버에 연결하지 못했습니다.', 'error');
     }
 }
 
@@ -331,13 +419,43 @@ async function loadStudentsList() {
                 <td>${student.name}</td>
                 <td>${student.progress}%</td>
                 <td>${student.correct}/${student.total}</td>
-                <td><button class="btn btn-secondary" onclick="alert('${student.name} 학생의 상세정보')">보기</button></td>
             `;
+
+            const actionCell = document.createElement('td');
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn btn-danger';
+            delBtn.textContent = '삭제';
+            delBtn.addEventListener('click', () => deleteStudent(student.id, student.name));
+            actionCell.appendChild(delBtn);
+            row.appendChild(actionCell);
+
             tbody.appendChild(row);
         });
 
     } catch (error) {
         console.error('학생 목록 로드 실패:', error);
+    }
+}
+
+async function deleteStudent(studentId, studentName) {
+    const ok = await showConfirm(`${studentName} 학생을 삭제할까요?\n답변·대화 기록도 함께 삭제됩니다.`);
+    if (!ok) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/student/${studentId}`, { method: 'DELETE' });
+        if (!response.ok) {
+            showToast('학생 삭제에 실패했습니다.', 'error');
+            return;
+        }
+        await loadStudentsList();
+        // 대시보드 통계도 최신화 (전체 학생 수 등)
+        if (document.getElementById('dashboard-tab').classList.contains('active')) {
+            await loadTeacherDashboard();
+        }
+        showToast('학생이 삭제되었습니다.', 'success');
+    } catch (error) {
+        console.error('학생 삭제 실패:', error);
+        showToast('서버에 연결하지 못했습니다.', 'error');
     }
 }
 
@@ -361,7 +479,8 @@ async function loadStudentQuestions() {
             const card = document.createElement('div');
             card.className = 'question-card';
             card.innerHTML = `
-                <div class="question-text">질문 ${index + 1}: ${question.text}</div>
+                <div class="q-eyebrow">질문 ${index + 1}</div>
+                <h3 class="q-headline"></h3>
                 <div class="form-group">
                     <textarea
                         id="answer-${question.id}"
@@ -389,6 +508,7 @@ async function loadStudentQuestions() {
                     </div>
                 </div>
             `;
+            card.querySelector('.q-headline').textContent = question.text; // 교사 입력 → textContent
             container.appendChild(card);
         });
 
