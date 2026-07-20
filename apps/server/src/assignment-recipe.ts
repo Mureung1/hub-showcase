@@ -8,11 +8,6 @@ import {
   FIRST_ASSIGNMENT_RECIPE_VERSION,
 } from '@ay-ple/product-contract'
 
-export {
-  FIRST_ASSIGNMENT_ARGUMENTS,
-  FIRST_ASSIGNMENT_RECIPE_VERSION,
-} from '@ay-ple/product-contract'
-
 export const FIRST_ASSIGNMENT_RECIPE_NAME = 'first-assignment'
 export const FIRST_ASSIGNMENT_SKILL_NAME = 'ay-ple-first-assignment'
 

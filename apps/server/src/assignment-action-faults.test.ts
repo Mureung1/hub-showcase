@@ -24,11 +24,11 @@ import {
   type StartThreadInput,
   type StartTurnInput,
 } from '@ay-ple/codex-chat-runtime'
-
 import {
   FIRST_ASSIGNMENT_ARGUMENTS,
   FIRST_ASSIGNMENT_RECIPE_VERSION,
-} from './assignment-recipe.js'
+} from '@ay-ple/product-contract'
+
 import { createSemesterWorkspaceController } from './semester-workspace.js'
 import {
   codexChatIdentity,

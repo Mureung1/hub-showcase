@@ -18,12 +18,12 @@ import {
   type StartTurnInput,
 } from '@ay-ple/codex-chat-runtime'
 import { DeterministicCodexProductRuntime } from '@ay-ple/codex-chat-runtime/testing'
-import { decodeProductOperationFrame } from '@ay-ple/product-contract'
-
 import {
   FIRST_ASSIGNMENT_ARGUMENTS,
   FIRST_ASSIGNMENT_RECIPE_VERSION,
-} from './assignment-recipe.js'
+  decodeProductOperationFrame,
+} from '@ay-ple/product-contract'
+
 import { configuredBootstrap, postJson } from './testing/codex-chat-test-support.js'
 import { withTestServer } from './testing/test-server.js'
 import { materializeE2eSemesterWorkspace } from '../../../scripts/semester-workspace-materializer.mjs'

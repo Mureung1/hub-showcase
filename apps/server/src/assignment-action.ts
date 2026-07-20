@@ -5,20 +5,20 @@ import {
   type CodexProductActivity,
   type CodexProductTurn,
 } from '@ay-ple/codex-chat-runtime'
-import type {
-  AssignmentOperationSettlement,
-  ChatOperationSettlement,
-  FirstAssignmentRequest,
-  ProductChatRequest as SharedProductChatRequest,
-  ProductInteractionAnswerRequest,
-  ProductOperationFrame,
-  ProductQuestion,
-  ProductStatePatch,
-} from '@ay-ple/product-contract'
-
 import {
   FIRST_ASSIGNMENT_ARGUMENTS,
   FIRST_ASSIGNMENT_RECIPE_VERSION,
+  type AssignmentOperationSettlement,
+  type ChatOperationSettlement,
+  type FirstAssignmentRequest,
+  type ProductChatRequest as SharedProductChatRequest,
+  type ProductInteractionAnswerRequest,
+  type ProductOperationFrame,
+  type ProductQuestion,
+  type ProductStatePatch,
+} from '@ay-ple/product-contract'
+
+import {
   materializeManagedAssignmentRecipe,
   type ManagedAssignmentRecipe,
   verifyManagedAssignmentRecipe,
