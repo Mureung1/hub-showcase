@@ -6,6 +6,7 @@
     "dev": "next dev",
     "dev:server": "tsx watch server/index.ts",
     "start:server": "tsx server/index.ts",
+    "test": "vitest run",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -30,6 +31,7 @@
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.6",
     "tsx": "^4.23.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }

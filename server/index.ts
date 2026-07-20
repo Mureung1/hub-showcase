@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import { classifyContent } from "./classification";
 
 dotenv.config({ path: "server/.env", quiet: true });
 
@@ -66,12 +67,23 @@ function isUrl(value: string) {
 
 function getSourcePlatform(value: string) {
   const hostname = new URL(value).hostname.toLowerCase();
-  if (hostname === "youtu.be" || hostname.endsWith("youtube.com")) return "youtube";
-  if (hostname.endsWith("instagram.com")) return "instagram";
-  if (hostname === "x.com" || hostname.endsWith(".x.com") || hostname.endsWith("twitter.com")) {
+  if (
+    hostname === "youtu.be" ||
+    hostname === "youtube.com" ||
+    hostname.endsWith(".youtube.com")
+  ) {
+    return "youtube";
+  }
+  if (hostname === "instagram.com" || hostname.endsWith(".instagram.com")) return "instagram";
+  if (
+    hostname === "x.com" ||
+    hostname.endsWith(".x.com") ||
+    hostname === "twitter.com" ||
+    hostname.endsWith(".twitter.com")
+  ) {
     return "twitter";
   }
-  if (hostname.endsWith("naver.com")) return "naver";
+  if (hostname === "naver.com" || hostname.endsWith(".naver.com")) return "naver";
   return "web";
 }
 
@@ -91,7 +103,9 @@ app.get("/api/items", async (_request, response) => {
   try {
     const { data, error } = await getSupabase()
       .from("items")
-      .select("id, title, original_url, source_platform, category_main, created_at")
+      .select(
+        "id, title, original_url, source_platform, category_main, category_sub, created_at"
+      )
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -113,6 +127,8 @@ app.post("/api/items", async (request, response) => {
 
   const trimmed = content.trim();
   const urlDetected = isUrl(trimmed);
+  const sourcePlatform = urlDetected ? getSourcePlatform(trimmed) : "manual";
+  const { categoryMain, categorySub } = classifyContent(trimmed);
 
   try {
     const { data, error } = await getSupabase()
@@ -121,11 +137,14 @@ app.post("/api/items", async (request, response) => {
         type: urlDetected ? "link" : "text",
         original_url: urlDetected ? trimmed : null,
         title: urlDetected ? trimmed : trimmed.slice(0, 50),
-        source_platform: urlDetected ? getSourcePlatform(trimmed) : "manual",
-        category_main: "미분류",
+        source_platform: sourcePlatform,
+        category_main: categoryMain,
+        category_sub: categorySub,
         status: "unread",
       })
-      .select("id, title, original_url, source_platform, category_main, created_at")
+      .select(
+        "id, title, original_url, source_platform, category_main, category_sub, created_at"
+      )
       .single();
 
     if (error) throw error;

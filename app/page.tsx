@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { getCategoryStyle } from "./categoryStyles";
 
 type Item = {
   id: number;
@@ -8,6 +10,7 @@ type Item = {
   original_url: string | null;
   source_platform: string | null;
   category_main: string | null;
+  category_sub: string | null;
   created_at: string;
 };
 
@@ -160,8 +163,12 @@ export default function Home() {
                   {new Date(item.created_at).toLocaleDateString("ko-KR")}
                 </p>
               </div>
-              <span className="text-xs text-accentDark bg-accent/10 rounded-full px-2 py-1 shrink-0 ml-2">
-                {item.category_main ?? "미분류"}
+              <span
+                className={`text-xs rounded-full px-2 py-1 shrink-0 ml-2 font-medium transition-colors ${getCategoryStyle(
+                  item.category_main
+                )}`}
+              >
+                {item.category_main ?? "미분류"} · {item.category_sub ?? "기타"}
               </span>
             </li>
           ))}
@@ -171,8 +178,10 @@ export default function Home() {
       {/* 하단 네비게이션 */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-creamDeep">
         <div className="max-w-md mx-auto flex justify-around py-3 text-xs text-muted">
-          <span className="text-accentDark font-medium">홈</span>
-          <span>카테고리</span>
+          <Link href="/" className="text-accentDark font-medium">
+            홈
+          </Link>
+          <Link href="/categories">카테고리</Link>
           <span>아카이브</span>
           <span>설정</span>
         </div>
