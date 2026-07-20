@@ -26,6 +26,11 @@ description: 차세워(ChaSeWar) 백엔드(Spring Boot) 코드를 작성하거�
 - 컨트롤러: `backend/docs/conventions/controller.md`
 - DTO: `backend/docs/conventions/dto.md`
 
+## 테스트
+- 비즈니스 규칙·동작을 담은 코드(도메인 로직·서비스·컨트롤러 등)는 **작성 직후 테스트로 검증**한다. 수동 확인으로 대체하지 않는다.
+- 프레임워크가 보장하는 것·단순 위임·의미 없는 데이터 홀더(getter·단순 DTO·JPA 기본 메서드 등)는 테스트하지 않는다.
+- 상세 규칙(종류·계층별 전략·케이스 도출·네이밍)은 `backend/docs/conventions/test.md` 참고.
+
 ## 외부 연동 · 실시간
 - 지오코딩: 네이버 지역검색 (목적지→좌표), 첫 결과 사용
 - 도보 시간: Tmap 보행자 경로 (상세 화면)
