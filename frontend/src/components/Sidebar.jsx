@@ -41,16 +41,11 @@ export default function Sidebar() {
             Storage
           </button>
         </li>
-        <li>
-          <button type="button" className={styles.menuItem}>
-            <span className="msym">account_circle</span>
-            Profile
-          </button>
-        </li>
       </ul>
 
-      <button type="button" className={styles.settings} aria-label="설정">
-        <span className="msym">settings</span>
+      <button type="button" className={`${styles.menuItem} ${styles.logoutBtn}`} onClick={actions.signOut}>
+        <span className="msym">logout</span>
+        로그아웃
       </button>
     </nav>
   )

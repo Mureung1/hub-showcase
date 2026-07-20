@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useReducer, useRef } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createLetter } from '../lib/api'
+import { supabase } from '../lib/supabaseClient'
 import { AppStateContext, TOAST_DURATION_MS, initialState, reducer } from './appStateStore'
 
 export function AppStateProvider({ children }) {
@@ -8,6 +9,27 @@ export function AppStateProvider({ children }) {
   const navigate = useNavigate()
   const toastTimer = useRef(null)
   const sending = useRef(false) // 전송 중 중복 클릭 방지
+
+  // 로그인 상태 — Supabase 세션 기준. authLoading이 끝나기 전엔 아직 로그인 여부를
+  // 모르는 상태이므로(새로고침 직후 등) 라우트 보호에서 섣불리 리다이렉트하지 않는다.
+  const [user, setUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setUser(data.session?.user ?? null)
+      })
+      .catch(() => setUser(null))
+      .finally(() => setAuthLoading(false))
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.subscription.unsubscribe()
+  }, [])
 
   const showToast = useCallback((message) => {
     dispatch({ type: 'SET_TOAST', value: message })
@@ -25,7 +47,24 @@ export function AppStateProvider({ children }) {
   }, [state.phase])
 
   const actions = {
-    login: () => navigate('/main'),
+    // 회원가입: 이메일 인증이 켜져 있으면 세션이 바로 안 생길 수 있어 그 경우를 구분해 알려준다.
+    signUp: async (email, password) => {
+      const { data, error } = await supabase.auth.signUp({ email, password })
+      if (error) return { error: error.message }
+      if (!data.session) return { needsEmailConfirm: true }
+      navigate('/main')
+      return {}
+    },
+    signIn: async (email, password) => {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) return { error: error.message }
+      navigate('/main')
+      return {}
+    },
+    signOut: async () => {
+      await supabase.auth.signOut()
+      navigate('/')
+    },
 
     setTitle: (value) => dispatch({ type: 'SET_TITLE', value }),
     setLetter: (value) => dispatch({ type: 'SET_LETTER', value }),
@@ -102,5 +141,9 @@ export function AppStateProvider({ children }) {
     setTab: (value) => dispatch({ type: 'SET_TAB', value }),
   }
 
-  return <AppStateContext.Provider value={{ state, actions }}>{children}</AppStateContext.Provider>
+  return (
+    <AppStateContext.Provider value={{ state, actions, auth: { user, authLoading } }}>
+      {children}
+    </AppStateContext.Provider>
+  )
 }
