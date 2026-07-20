@@ -66,23 +66,36 @@ describe("calculateLevel", () => {
 
 ### 5-1. DB 가드 — 테스트용 프로젝트가 아니면 즉시 실행 거부
 
-`DATABASE_URL`이 테스트 전용 Supabase 프로젝트를 가리키는지 파일 상단(`beforeAll`)에서 확인하고, 아니면 에러를 던져 테스트 자체를 실패시킨다. 테스트용 프로젝트인지 판단하는 기준은 URL 안에 `test`라는 식별자가 있는지다(예: 테스트 전용 Supabase 프로젝트 이름에 `-test`를 붙여 `server/.env.test`의 `DATABASE_URL`에 반영). 새 프로젝트를 팔 때마다 실제 URL을 이 스킬에 하드코딩하지 말고, "환경변수 이름에 test 식별자가 있는지"만 코드로 확인한다.
+`DATABASE_URL`이 테스트 전용 Supabase 프로젝트를 가리키는지 파일 상단에서 확인한다. 테스트용 프로젝트인지 판단하는 기준은 URL 안에 `test`라는 식별자가 있는지다(예: 테스트 전용 Supabase 프로젝트 이름에 `-test`를 붙여 `server/.env.test`의 `DATABASE_URL`에 반영, `server/.env.test.example` 참고). 새 프로젝트를 팔 때마다 실제 URL을 이 스킬에 하드코딩하지 말고, "환경변수 이름에 test 식별자가 있는지"만 코드로 확인한다.
+
+가드는 두 상황을 구분해서 다르게 반응해야 한다 — 둘 다 그냥 throw하면 "아직 `server/.env.test`를 안 만든 정상적인 상태"와 "실수로 운영 DB를 가리키는 위험한 상태"를 구분할 수 없어서, 전자 때문에 `npm run test:server`가 항상 빨갛게 뜨고 결국 그 실패를 무시하는 습관이 생긴다:
+
+- **`DATABASE_URL`이 아예 비어있음** (= `server/.env.test`를 아직 안 만듦): 위험한 상황이 아니므로 `describe.skipIf`로 조용히 건너뛰고 `console.warn`으로 이유만 남긴다.
+- **`DATABASE_URL`은 있는데 `test` 식별자가 없음**: 개발/운영 DB일 가능성이 높은 위험한 상황이므로 모듈 최상단에서 즉시 `throw`해 테스트 파일 로드 자체를 막는다.
 
 ```ts
 // server/src/routes/tasks.test.ts (상단)
-import { beforeAll } from "vitest";
+const databaseUrl = process.env.DATABASE_URL ?? "";
+const isTestDb = /test/i.test(databaseUrl);
 
-beforeAll(() => {
-  const url = process.env.DATABASE_URL ?? "";
-  if (!/test/i.test(url)) {
-    throw new Error(
-      "DATABASE_URL이 테스트용 Supabase 프로젝트를 가리키지 않습니다. " +
+if (databaseUrl && !isTestDb) {
+  throw new Error(
+    "DATABASE_URL이 테스트용 Supabase 프로젝트를 가리키지 않습니다. " +
       "개발/운영 DB에 테스트 데이터가 쓰이는 걸 막기 위해 실행을 중단합니다. " +
-      "server/.env.test의 DATABASE_URL을 확인하세요."
-    );
-  }
+      "server/.env.test.example을 참고해 server/.env.test의 DATABASE_URL을 설정하세요.",
+  );
+}
+
+if (!isTestDb) {
+  console.warn("[tasks.test.ts] 테스트용 DATABASE_URL이 없어 통합 테스트를 건너뜁니다.");
+}
+
+describe.skipIf(!isTestDb)("POST /api/tasks/:id/avoidance-reasons", () => {
+  // ...
 });
 ```
+
+`server/vitest.config.ts`는 `loadEnv("test", process.cwd(), "")`(from `"vite"`, `vitest/config`가 아님)로 `server/.env.test`를 읽어 `process.env`에 주입하도록 이미 설정돼 있다. `.env.test`가 없으면 평소 `.env`(개발 DB)만 로드되므로, 위 가드가 `isTestDb=false`로 판정해 안전하게 건너뛴다.
 
 ### 5-2. 테스트 데이터에는 고유 prefix를 붙인다
 
@@ -120,7 +133,7 @@ afterEach(async () => {
 
 ```ts
 // server/src/routes/tasks.test.ts
-import { describe, it, expect, beforeAll, afterEach } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import request from "supertest";
 import app from "../app.js";
 import { prisma } from "../db/client.js";
@@ -128,25 +141,28 @@ import { prisma } from "../db/client.js";
 const TEST_PREFIX = "test_";
 const uniqueTitle = () => `${TEST_PREFIX}${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-beforeAll(() => {
-  const url = process.env.DATABASE_URL ?? "";
-  if (!/test/i.test(url)) {
-    throw new Error("DATABASE_URL이 테스트용 Supabase 프로젝트가 아닙니다 — 실행을 중단합니다.");
-  }
-});
+const databaseUrl = process.env.DATABASE_URL ?? "";
+const isTestDb = /test/i.test(databaseUrl);
 
-afterEach(async () => {
-  const testTasks = await prisma.task.findMany({ where: { title: { startsWith: TEST_PREFIX } } });
-  const ids = testTasks.map((t) => t.id);
-  if (ids.length === 0) return;
-  await prisma.$transaction([
-    prisma.avoidanceReason.deleteMany({ where: { taskId: { in: ids } } }),
-    prisma.taskEvent.deleteMany({ where: { taskId: { in: ids } } }),
-    prisma.task.deleteMany({ where: { id: { in: ids } } }),
-  ]);
-});
+if (databaseUrl && !isTestDb) {
+  throw new Error("DATABASE_URL이 테스트용 Supabase 프로젝트가 아닙니다 — 실행을 중단합니다.");
+}
+if (!isTestDb) {
+  console.warn("[tasks.test.ts] 테스트용 DATABASE_URL이 없어 통합 테스트를 건너뜁니다.");
+}
 
-describe("POST /api/tasks", () => {
+describe.skipIf(!isTestDb)("POST /api/tasks", () => {
+  afterEach(async () => {
+    const testTasks = await prisma.task.findMany({ where: { title: { startsWith: TEST_PREFIX } } });
+    const ids = testTasks.map((t) => t.id);
+    if (ids.length === 0) return;
+    await prisma.$transaction([
+      prisma.avoidanceReason.deleteMany({ where: { taskId: { in: ids } } }),
+      prisma.taskEvent.deleteMany({ where: { taskId: { in: ids } } }),
+      prisma.task.deleteMany({ where: { id: { in: ids } } }),
+    ]);
+  });
+
   it("정상 입력이면 task와 회피이유가 함께 저장된다 (happy path)", async () => {
     const res = await request(app).post("/api/tasks").send({
       title: uniqueTitle(),
@@ -161,7 +177,7 @@ describe("POST /api/tasks", () => {
   });
 });
 
-describe("POST /api/tasks/:id/events — #17 삭제-폴링 레이스 컨디션 회귀", () => {
+describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — #17 삭제-폴링 레이스 컨디션 회귀", () => {
   it("존재하지 않는 taskId로 이벤트를 보내면 500이 아니라 404를 반환한다", async () => {
     const res = await request(app)
       .post("/api/tasks/does-not-exist/events")
