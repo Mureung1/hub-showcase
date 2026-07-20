@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement (current v2 compatibility corrective)
+- Next actor: none
 
 ## Parent Spec
 
@@ -60,6 +60,9 @@ Native Codex가 narrow custom MCP `propose_state_patch`로 selected TXT 근거�
 - Corrective에서는 `changes.values`와 각 `EvidenceRef`의 nested property order까지 뒤섞은 same-key replay regression을 먼저 red로 확인한 뒤 focused StatePatch/workspace 17개 test를 green으로 복구했다. Product HTTP ready/incompatible projection, Chat Shell strict decoder와 persistence metadata rejection을 unit·integration으로 검증했고 `npm run test:e2e -w @ay-ple/chat-shell` 19개 test도 통과했다.
 - Corrective 최종 HEAD에서 `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check 4c5db467...HEAD`가 모두 exit 0으로 통과했다. Manual/live smoke는 corrective 범위에 필요하지 않아 수행하지 않았다.
 - Corrective fixed point `4c5db4671f997deed7c165b11ad5a38e65ee18c3` 이후 diff를 Standards와 Spec 두 축으로 병렬 review했다. 첫 Standards review의 naming judgement call 2건은 `isExactAssignmentUpsert`와 `assertReadyWorkspaceEnvelopeKeys`로 명확히 바꿨고, follow-up Standards와 Spec review가 각각 finding 0건으로 통과했다.
+- v2 compatibility corrective에서는 `NODE_OPTIONS=--experimental-vm-modules npx tsx --test --test-name-pattern "pre-corrective version 2 canonical payload" apps/server/src/state-patch-review.test.ts`로 corrective 이전 nested key order를 가진 semantic-equivalent store가 `store_invalid`가 되는 RED를 먼저 확인했다. 수정 뒤 `NODE_OPTIONS=--experimental-vm-modules npx tsx --test apps/server/src/state-patch-review.test.ts apps/server/src/semester-workspace.test.ts`가 19개 test를 통과했다. 성공한 normalization과 second reopen, malformed·unknown·semantic mismatch·non-producer serialization의 fail-closed 및 failed activation bytes 불변을 포함한다.
+- v2 compatibility corrective 최종 구현 HEAD에서 `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `npm run test:e2e -w @ay-ple/chat-shell` 19개 test와 `git diff --check 01ee83b965077a9f2e475698e30264379f4790b9...HEAD`가 모두 exit 0으로 통과했다. 별도 provider live smoke는 persistence-only 범위에 필요하지 않아 수행하지 않았다.
+- Fixed point `01ee83b965077a9f2e475698e30264379f4790b9` 이후 v2 compatibility diff를 Standards와 Spec 두 축으로 병렬 review했다. 첫 Standards review의 duplicated codec layout과 test fixture judgement call 2건을 shared normalization과 settled legacy-v2 fixture로 해소했고, follow-up Standards와 Spec review가 각각 finding 0건으로 통과했다.
 
 ## Blocked By
 
@@ -85,6 +88,8 @@ App-issued proposal session은 selected material ID·digest, Course, workspace�
 
 Corrective에서 Assignment values와 `EvidenceRef`를 fixed field order로 재구성해 canonical replay를 nested JSON property order와 분리했다. Workspace store format version과 newer-store 진단은 controller와 Server log에 유지하되, 네 product HTTP workspace 응답은 ready confirmed data 또는 actionable incompatible outcome만 명시적으로 투영하고 Chat Shell은 이 browser-safe 계약을 exact decode한다. Ticket 006에는 기존 Review coordinator와 integration test를 Starting Points로 연결했으며 006 동작이나 다른 ticket DAG는 바꾸지 않았다.
 
+후속 v2 compatibility corrective는 corrective 이전 producer가 만들 수 있었던 compact root·`changes` serialization과 canonical evidence 배열을 exact validation하고, `values`와 각 `EvidenceRef`의 property order만 semantic comparison에서 정규화한다. Persisted patch와 fixed canonical form이 정확히 같을 때만 activation의 기존 atomic refresh write가 current `canonicalPayload`를 기록한다. Malformed payload, unknown field, non-producer encoding, semantic mismatch와 scan failure는 original bytes를 바꾸지 않고 fail closed하며 store format은 v2로 유지한다.
+
 Exact same-Turn Plan question만 product Review가 되며 accept/reject transaction은 native answer보다 먼저 commit된다. Accept는 Assignment create/update, revision, accepted confirmation과 applied outcome을 함께 기록하고 reject는 model을 바꾸지 않은 채 rejected confirmation과 no-apply outcome을 기록한다. Nominal retry는 original interaction·patch·decision triple이 같을 때만 기존 outcome을 반환한다. Deterministic product Runtime과 real in-process MCP handler가 Browser 없이 proposal → question → commit → answer → same-Turn terminal과 reopen을 증명한다. Product action admission/HTTP, Browser Review, revision replacement와 loss/recovery는 tickets 006·008에 남는다.
 
 Implementation commits:
@@ -102,3 +107,6 @@ Implementation commits:
 - `df92923d` — `fix: isolate Browser product snapshots`
 - `bf565ab8` — `docs: separate product and store contracts`
 - `2ff219ef` — `refactor: clarify StatePatch validation names`
+- `3654a65f` — `docs: reopen StatePatch v2 compatibility`
+- `28846a02` — `fix: migrate legacy v2 canonical payloads`
+- `ea162344` — `refactor: share StatePatch canonicalization`
