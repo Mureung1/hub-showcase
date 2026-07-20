@@ -84,57 +84,11 @@ enum RoommateType {
   business
 }
 
-enum HousingType {
-  dorm
-  lease
-}
-
-enum SmokingStatus {
-  non_smoker
-  smoker_no_indoor
-  smoker
-}
-
-enum FrequencyLevel {
-  low
-  medium
-  high
-}
-
-enum SleepHabitLevel {
-  none
-  mild
-  moderate
-  severe
-}
-
-enum GuestPolicy {
-  not_allowed
-  short_visit_with_notice
-  allowed_except_late
-  freely_allowed
-}
-
-enum TempPreference {
-  warm
-  cool
-  moderate
-  flexible
-}
-
 model RoommateProfile {
-  profileId              BigInt          @id @default(autoincrement()) @map("profile_id")
-  userId                  BigInt          @unique @map("user_id")
-  roommateType            RoommateType    @map("roommate_type")
-  region                  String          @db.VarChar(100)
-  budget                  Int
-  housingType             HousingType     @map("housing_type")
-  smokingStatus           SmokingStatus   @map("smoking_status")
-  lateNightFrequency      FrequencyLevel  @map("late_night_frequency")
-  sleepHabit              SleepHabitLevel @map("sleep_habit")
-  guestPolicy             GuestPolicy     @map("guest_policy")
-  temperaturePreference   TempPreference  @map("temperature_preference")
-  createdAt               DateTime        @default(now()) @map("created_at")
+  profileId    BigInt       @id @default(autoincrement()) @map("profile_id")
+  userId       BigInt       @unique @map("user_id")
+  roommateType RoommateType @map("roommate_type")
+  createdAt    DateTime     @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [userId])
 

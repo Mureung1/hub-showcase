@@ -1,0 +1,119 @@
+.roommate-type-select-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-cream);
+  padding: 40px;
+}
+
+.roommate-type-select-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-brown-dark);
+  margin: 20px 0 40px;
+}
+
+.roommate-type-select-card-row {
+  display: flex;
+  flex-direction: row;
+  gap: 32px;
+  width: 100%;
+  max-width: 900px;
+  flex: 1;
+  align-items: stretch;
+}
+
+.roommate-type-select-card {
+  flex: 1;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-radius: 24px;
+  border: 2px solid transparent;
+  padding: 40px 28px;
+  cursor: pointer;
+  font-family: inherit;
+  background: var(--roommate-mint-bg);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.roommate-type-select-card:nth-child(2) {
+  background: var(--neutral-beige);
+}
+
+.roommate-type-select-card-image {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  margin-bottom: 18px;
+}
+
+.roommate-type-select-card-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-brown-dark);
+  margin-bottom: 6px;
+}
+
+.roommate-type-select-card-sub {
+  font-size: 14px;
+  color: var(--text-warm-gray);
+  line-height: 1.4;
+}
+
+.roommate-type-select-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(74, 46, 34, 0.1);
+}
+
+.roommate-type-select-card-selected {
+  border-color: var(--roommate-mint);
+  box-shadow: 0 8px 20px rgba(74, 46, 34, 0.12);
+}
+
+.roommate-type-select-error {
+  margin-top: 24px;
+  font-size: 14px;
+  color: var(--like-red);
+}
+
+.roommate-type-select-next-button {
+  width: 100%;
+  max-width: 400px;
+  margin-top: 40px;
+  padding: 18px;
+  border: none;
+  border-radius: 999px;
+  background: var(--coral-primary);
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.roommate-type-select-next-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@media (max-width: 720px) {
+  .roommate-type-select-page {
+    padding: 24px 16px;
+  }
+
+  .roommate-type-select-card-row {
+    flex-direction: column;
+  }
+
+  .roommate-type-select-card {
+    min-height: 260px;
+    padding: 28px 20px;
+  }
+}
