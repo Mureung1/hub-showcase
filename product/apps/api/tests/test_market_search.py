@@ -16,6 +16,7 @@ from localtwin_api.db_models import (
     StorePoint,
 )
 from localtwin_api.main import create_app
+from localtwin_api.market_search import MarketSearchResult, rank_results
 
 
 @pytest.fixture
@@ -169,3 +170,36 @@ def test_search_failure_returns_generic_error_without_database_details(tmp_path:
     assert response.json() == {"detail": "Search service is unavailable."}
     assert "sqlite" not in response.text.lower()
     engine.dispose()
+
+
+def test_rank_results_is_database_independent_and_prefers_exact_market_matches() -> None:
+    results = [
+        MarketSearchResult(
+            result_type="store",
+            id="store-1",
+            name="연남 카페",
+            address=None,
+            category_code=None,
+            category_name=None,
+            longitude=126.9,
+            latitude=37.5,
+            market_id="3110562",
+            market_name="연남",
+        ),
+        MarketSearchResult(
+            result_type="market",
+            id="market-1",
+            name="연남",
+            address=None,
+            category_code=None,
+            category_name=None,
+            longitude=126.9,
+            latitude=37.5,
+            market_id="market-1",
+            market_name="연남",
+        ),
+    ]
+
+    ranked_ids = [result.id for result in rank_results(results, "연남", limit=10)]
+
+    assert ranked_ids == ["market-1", "store-1"]

@@ -34,10 +34,6 @@
       "maxLines": 115,
       "reason": "점수 결과 baseline을 먼저 고정하고 API-005에서 단계별 helper를 검토한다."
     },
-    "product/apps/api/src/localtwin_api/market_search.py#MarketSearchRepository.search": {
-      "maxLines": 111,
-      "reason": "API-005에서 query, result mapping과 ranking을 분리한다."
-    },
     "product/apps/api/src/localtwin_api/canonical_db.py#import_seoul": {
       "maxLines": 104,
       "reason": "DATA-013에서 parse, validate와 persist 단계를 분리한다."
