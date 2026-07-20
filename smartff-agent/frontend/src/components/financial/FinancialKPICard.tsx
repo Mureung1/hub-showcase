@@ -1,46 +1,62 @@
+interface KPIDelta {
+  pct: number;
+  goodWhenUp: boolean;
+}
+
 interface FinancialKPICardProps {
   label: string;
   value: number;
-  format: 'currency' | 'percent';
-  color: 'primary' | 'danger' | 'warning' | 'success';
+  note: string;
+  color?: 'default' | 'danger' | 'highlight';
+  delta?: KPIDelta | null;
 }
 
-export default function FinancialKPICard({ label, value, format, color }: FinancialKPICardProps) {
-  const formatValue = (val: number, fmt: string) => {
-    if (fmt === 'currency') {
-      return `${(val / 1000000).toFixed(1)}M`;
-    }
-    if (fmt === 'percent') {
-      return `${val.toFixed(1)}%`;
-    }
-    return val.toString();
-  };
+function formatWon(val: number): string {
+  return `${Math.round(val).toLocaleString('ko-KR')}`;
+}
 
-  const colorMap = {
-    primary: { bg: '#EFF6FF', text: '#1D4ED8' },
-    danger: { bg: '#FEF2F2', text: '#DC2626' },
-    warning: { bg: '#FFF7ED', text: '#EA580C' },
-    success: { bg: '#F0FDF4', text: '#15803D' },
-  };
+export default function FinancialKPICard({ label, value, note, color = 'default', delta }: FinancialKPICardProps) {
+  const isHighlight = color === 'highlight';
+  const isDanger = color === 'danger';
+  const valueColor = isDanger ? '#DC2626' : isHighlight ? '#1D4ED8' : '#0F172A';
+  const bg = isHighlight ? '#EFF6FF' : isDanger ? '#FEF2F2' : '#FFFFFF';
+  const borderColor = isHighlight ? '#DBEAFE' : isDanger ? '#FECACA' : '#E2E8F0';
+  const labelColor = isHighlight ? '#1D4ED8' : isDanger ? '#B91C1C' : '#475569';
+  const noteColor = isHighlight ? '#2563EB' : isDanger ? '#DC2626' : '#94A3B8';
 
-  const c = colorMap[color];
+  let deltaColor = '#94A3B8';
+  let deltaText: string | null = null;
+  if (delta) {
+    const isGood = delta.goodWhenUp ? delta.pct >= 0 : delta.pct <= 0;
+    deltaColor = isGood ? '#15803D' : '#DC2626';
+    const arrow = delta.pct >= 0 ? '↑' : '↓';
+    deltaText = `${arrow} 전월 대비 ${delta.pct >= 0 ? '+' : ''}${delta.pct.toFixed(1)}%`;
+  }
 
   return (
-    <div style={{
-      background: '#FFFFFF',
-      border: `1px solid #E2E8F0`,
-      borderRadius: '12px',
-      padding: '20px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px',
-    }}>
-      <p style={{ fontSize: '12px', fontWeight: '600', color: '#475569', margin: '0' }}>{label}</p>
-      <div style={{ background: c.bg, borderRadius: '8px', padding: '12px', display: 'flex', alignItems: 'center' }}>
-        <p style={{ fontSize: '28px', fontWeight: '700', color: c.text, margin: '0' }}>
-          {formatValue(value, format)}
-        </p>
+    <div
+      style={{
+        background: bg,
+        border: `1px solid ${borderColor}`,
+        borderRadius: '14px',
+        padding: '20px 22px',
+      }}
+    >
+      <div style={{ fontSize: '12px', fontWeight: '700', color: labelColor, marginBottom: '8px' }}>
+        {label}
       </div>
+      <div style={{ fontSize: '26px', fontWeight: '800', color: valueColor, lineHeight: '1' }}>
+        {formatWon(value)}
+        <span style={{ fontSize: '14px' }}>원</span>
+      </div>
+      <div style={{ fontSize: '11.5px', color: noteColor, marginTop: '8px', fontWeight: isHighlight || isDanger ? '700' : '600' }}>
+        {note}
+      </div>
+      {deltaText && (
+        <div style={{ fontSize: '11.5px', color: deltaColor, marginTop: '4px', fontWeight: '700' }}>
+          {deltaText}
+        </div>
+      )}
     </div>
   );
 }

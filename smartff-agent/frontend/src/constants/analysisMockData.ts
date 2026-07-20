@@ -78,10 +78,10 @@ export const ANALYSIS_MOCK_DATA: Record<Category, CategoryAnalysis> = {
     salesTrend: '-12%',
     salesGood: false,
     salesWeekly: [150, 145, 140, 135, 132, 128, 120, 112, 105, 98, 90, 82],
-    wasteTrend: '2주 연속 증가',
+    wasteTrend: '지속 증가',
     wasteGood: false,
     wasteWeekly: [4.2, 4.3, 4.5, 4.4, 4.6, 4.8, 5.0, 5.2, 5.5, 5.8, 6.1, 6.4],
     type: 'risk',
-    reasons: ['판매 4주 연속 하락', '폐기 2주 연속 증가', '재고 과잉'],
+    reasons: ['판매 지속 하락 추세', '폐기 지속 증가 추세', '재고 과잉'],
   },
 };

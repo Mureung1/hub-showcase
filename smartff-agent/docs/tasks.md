@@ -26,7 +26,7 @@
 - [x] Upload (Vertical Slice 완성: FE-BE-DB 연결)
 - [x] Analysis (Mock 데이터 기반 완성)
 - [x] Dashboard (Mock 데이터 기반 스켈레톤)
-- [ ] Financial (3주차 예정)
+- [x] Financial (3주차 완료 — 실데이터 연동 + 월/카테고리 필터 + 손익 구조까지, 2026-07-20)
 
 ---
 
@@ -34,19 +34,19 @@
 
 ### Data Pipeline
 
-- [ ] sales Parser
-- [ ] waste dtype 정리
-- [ ] inventory / orders Parser
-- [ ] Product Master 생성
-- [ ] Master Dataset 생성
+- [x] sales Parser — ⚠️ 저장소에서 스크립트 파일 유실, git 히스토리에서 복구 필요 (week3_checklist.md 참고)
+- [x] waste dtype 정리
+- [ ] inventory / orders Parser — 설계 변경으로 불필요 (카테고리+월 집계 방식, inventory/orders 미사용)
+- [ ] Product Master 생성 — 상품 단위 매칭률 낮아 P1로 이월, 카테고리+월 집계로 대체
+- [x] Master Dataset 생성
 
 ### Core Features (실데이터 연동)
 
-- [ ] Financial Backend (마진/폐기손실 계산)
-- [ ] Financial Frontend (실데이터 연동)
-- [ ] Dashboard KPI 실데이터 연동
-- [ ] Rule Engine V1 (최소 3개 규칙)
-- [ ] Analysis 최소 1개 카테고리 실데이터 연동 (P1)
+- [x] Financial Backend (마진/폐기손실 계산)
+- [x] Financial Frontend (실데이터 연동) — 월/카테고리 필터, 전월 대비 비교, 손익 구조까지 확장 (2026-07-20)
+- [ ] Dashboard KPI 실데이터 연동 — 미착수, 여전히 mock
+- [ ] Rule Engine V1 (최소 3개 규칙) — 미착수
+- [ ] Analysis 최소 1개 카테고리 실데이터 연동 (P1) — 미착수
 
 ---
 

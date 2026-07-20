@@ -6,21 +6,21 @@ export const DASHBOARD_MOCK_DATA: DashboardData = {
   brief: {
     titleHighlight: '도시락',
     titleRest: ' 발주 확대 검토',
-    reasons: ['최근 4주 판매 증가', '폐기율 안정적 유지', '도시락 카테고리 우선 확인 권장'],
+    reasons: ['최근 1개월 판매 증가', '폐기율 안정적 유지', '도시락 카테고리 우선 확인 권장'],
     ctaLabel: '확인 완료로 표시',
   },
   risk: {
     title: '삼각김밥\n발주 축소 검토',
-    reasons: ['폐기 2주 연속 증가', '재고 과잉', '판매 정체'],
+    reasons: ['폐기 지속 증가 추세', '재고 과잉', '판매 정체'],
     ctaLabel: '삼각김밥 상세 보기 →',
   },
   kpis: {
     salesTrend: '+18',
-    salesNote: '최근 4주 기준 · 상승세',
+    salesNote: '최근 1개월 기준 · 상승세',
     wasteRate: '3.2',
-    wasteNote: '최근 4주 기준 · 안정적',
+    wasteNote: '최근 1개월 기준 · 안정적',
     marginRate: '38',
-    marginNote: '최근 4주 기준 · 고수익',
+    marginNote: '최근 1개월 기준 · 고수익',
   },
   weeklyTrend: {
     totalLabel: '2,900천원',

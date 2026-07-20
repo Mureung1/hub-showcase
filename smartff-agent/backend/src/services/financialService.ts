@@ -109,10 +109,15 @@ class FinancialService {
         ? filtered.reduce((sum, r) => sum + r.net_rate, 0) / filtered.length
         : 0;
 
+    const months = filtered.map((r) => r.month);
+    const minMonth = months.length > 0 ? Math.min(...months) : 1;
+    const maxMonth = months.length > 0 ? Math.max(...months) : 6;
+    const pad = (m: number) => String(m).padStart(2, '0');
+
     return {
       period: {
-        start: '2026-01-01',
-        end: '2026-06-30',
+        start: `2026-${pad(minMonth)}-01`,
+        end: `2026-${pad(maxMonth)}-30`,
       },
       data: filtered,
       summary: {

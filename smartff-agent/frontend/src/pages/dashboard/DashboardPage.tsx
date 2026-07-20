@@ -22,24 +22,6 @@ export default function DashboardPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap' }}>
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '12px',
-              fontWeight: '700',
-              color: '#1D4ED8',
-              padding: '7px 14px',
-              background: '#EFF6FF',
-              borderRadius: '20px',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#2563EB', flexShrink: 0 }} />
-            AI 분석 높음 · 98% 반영
-          </div>
-          <div
-            style={{
               fontSize: '12.5px',
               color: '#475569',
               padding: '7px 14px',

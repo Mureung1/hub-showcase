@@ -10,43 +10,35 @@
 
 ### Parser 및 dtype 정리
 
-- [ ] sales Parser 작성 (3단 헤더 → 단일 헤더 변환)
-  - [ ] `data/scripts/parse_sales.py` 작성
-  - [ ] 원본 sales Excel 파일 1개 로드 테스트 완료
-  - [ ] DataFrame 컬럼명이 단일 레벨로 정규화 확인
+- [x] sales Parser 작성 (3단 헤더 → 단일 헤더 변환)
+  - [x] `data/scripts/sales_parser.py` 작성 (2026-07-20, 커밋 e173ce3)
+  - [x] 원본 sales Excel 파일 로드 테스트 완료 (합계 행 제외 버그 발견·수정, 커밋 b7bd805)
+  - [x] DataFrame 컬럼명이 단일 레벨로 정규화 확인
+  - ⚠️ **재확인 필요**: 브랜치 통합(merge 0b031d5) 과정에서 `data/scripts/`의 `.py` 파일들이 저장소에서 누락된 것을 2026-07-20 세션 중 발견. 산출물(`sales.csv`/`waste.csv`/`merged_dataset.csv`)은 남아있으나 스크립트 원본은 git 히스토리(`eb65391`)에서 복구 필요
 
-- [ ] waste 상품코드 dtype 정리 (float → 정수/문자열)
-  - [ ] `data/scripts/fix_waste_dtype.py` 작성
-  - [ ] 변환 전후 코드값 100% 일치 검증
-  - [ ] inventory 코드와 자료형 일치 확인
-
-- [ ] inventory Parser 작성
-  - [ ] `data/scripts/parse_inventory.py` 작성
-  - [ ] 원본 파일 로드 테스트 완료
-
-- [ ] orders Parser 작성
-  - [ ] `data/scripts/parse_orders.py` 작성
-  - [ ] 원본 파일 로드 테스트 완료
+- [x] waste 상품코드 dtype 정리 (float → 정수/문자열) — `waste_parser.py`에 포함되어 처리됨
+- [ ] inventory Parser 작성 — 미착수 (Financial 계산에서 inventory는 사용 안 하기로 결정, `financial_calculation_spec.md` 참고)
+- [ ] orders Parser 작성 — 미착수 (Financial 계산에 불필요, Dashboard 발주 추천 P1에서 필요 시 착수)
 
 ### Financial 계산식 확정 및 문서화
 
-- [ ] Financial 계산식 최종 확정 (docs/specs/financial_calculation_spec.md 기준)
-  - [ ] 평균 원가율 계산식 확인
-  - [ ] 마진액/마진율 계산식 확인
-  - [ ] 폐기손실/폐기율 계산식 확인
-  - [ ] 순이익/순이익기여도 계산식 확인
+- [x] Financial 계산식 최종 확정 (`docs/specs/financial_calculation_spec.md` 기준) — 2026-07-20 작성 완료
+  - [x] 평균 원가율 계산식 확인
+  - [x] 마진액/마진율 계산식 확인
+  - [x] 폐기손실/폐기율 계산식 확인
+  - [x] 순이익/순이익기여도 계산식 확인
 
-- [ ] `docs/specs/MASTER_DATASET_SPEC.md` 작성
-  - [ ] `| 컬럼 | 출처 | 설명 | 계산식 |` 형식 테이블 작성
-  - [ ] 필요한 모든 컬럼 정의 완료
-  - [ ] Backend/Frontend/Rule Engine 공통 기준 문서로 확정
+- [x] `docs/specs/MASTER_DATASET_SPEC.md` 작성 — 2026-07-20 작성 완료
+  - [x] `| 컬럼 | 출처 | 설명 | 계산식 |` 형식 테이블 작성
+  - [x] 필요한 모든 컬럼 정의 완료
+  - [x] Backend/Frontend 공통 기준 문서로 확정
 
 ### Day 1 DoD 확인
 
-- [ ] sales Excel → DataFrame 성공
-- [ ] dtype 문제 해결
-- [ ] Financial 계산식 문서화
-- [ ] Master Dataset 컬럼 정의 완료
+- [x] sales Excel → DataFrame 성공
+- [x] dtype 문제 해결
+- [x] Financial 계산식 문서화
+- [x] Master Dataset 컬럼 정의 완료
 
 ---
 
@@ -54,34 +46,25 @@
 
 ### Product Master 생성
 
-- [ ] waste + inventory 병합 시작
-  - [ ] 상품코드 기준 일치 확인
-  - [ ] 원가(waste) + 매가(inventory) 매칭
-  - [ ] Financial에 필요한 컬럼만 추출
-
-- [ ] Product Master 파일 생성
-  - [ ] `data/master/product_master.csv` 생성
-  - [ ] 카테고리별 상품 수 확인
-  - [ ] 필수 컬럼 존재 확인
+- [ ] Product Master (`data/master/product_master.csv`) — **미착수**. sales-waste 상품명 매칭률이 50.1%로 낮아 상품 단위 대신 카테고리+월 단위 집계로 설계 방향을 변경(`MASTER_DATASET_SPEC.md` 기술 결정사항 참고), 상품 단위 Product Master는 P1(상품별 분석)로 이월
 
 ### Master Dataset 생성
 
-- [ ] sales + waste + inventory + orders 통합
-  - [ ] 상품코드/상품명 기준 매칭
-  - [ ] 카테고리별 데이터 통합
+- [x] sales + waste 통합 (inventory/orders는 설계상 제외 — 위 결정 참고)
+  - [x] 카테고리+월 기준 집계 (상품코드 매칭 대신)
 
-- [ ] Master Dataset 파일 생성
-  - [ ] `data/master/merged_dataset.csv` 생성
-  - [ ] MASTER_DATASET_SPEC.md와 컬럼 일치 확인
-  - [ ] 카테고리별 row 수 확인
-  - [ ] 결측치 확인
+- [x] Master Dataset 파일 생성
+  - [x] `data/master/merged_dataset.csv` 생성 (24행 = 4카테고리 × 6개월)
+  - [x] MASTER_DATASET_SPEC.md와 컬럼 일치 확인
+  - [x] 카테고리별 row 수 확인 (각 6행)
+  - [x] 결측치 확인 (0개, `validate_master_dataset.py` 자동 검증 추가)
 
 ### Day 2 DoD 확인
 
-- [ ] `data/master/product_master.csv` 생성 완료
-- [ ] `data/master/merged_dataset.csv` 생성 완료
-- [ ] MASTER_DATASET_SPEC.md와 컬럼 일치 확인
-- [ ] 카테고리별 row 수 및 결측치 확인 완료
+- [ ] `data/master/product_master.csv` 생성 완료 — 설계 변경으로 P1 이월 (아래 참고)
+- [x] `data/master/merged_dataset.csv` 생성 완료
+- [x] MASTER_DATASET_SPEC.md와 컬럼 일치 확인
+- [x] 카테고리별 row 수 및 결측치 확인 완료
 
 ---
 
@@ -89,29 +72,29 @@
 
 ### Financial 계산 API
 
-- [ ] 카테고리 평균 원가율 계산
-  - [ ] 폐기 이력 있는 상품 기준 원가율 산출
-  - [ ] 카테고리별 평균 원가율 계산
-  - [ ] **값이 40~80% 범위인지 확인** (이상 시 매칭률 편차 점검)
+- [x] 카테고리 평균 원가율 계산
+  - [x] 폐기 이력 있는 상품 기준 원가율 산출
+  - [x] 카테고리별 평균 원가율 계산 (ETL 단계에서 `merged_dataset.csv`에 사전 계산되어 저장)
+  - [x] **값이 40~80% 범위인지 확인** — 실측 62.1~75.7%, 정상 범위
 
-- [ ] 마진액/마진율 계산
-  - [ ] 카테고리별 마진액 계산
-  - [ ] 카테고리별 마진율 계산
-  - [ ] Express API 엔드포인트 구현
+- [x] 마진액/마진율 계산
+  - [x] 카테고리별 마진액 계산
+  - [x] 카테고리별 마진율 계산
+  - [x] Express API 엔드포인트 구현 (`GET /api/financial/summary`)
 
-- [ ] 폐기손실/폐기율 계산
-  - [ ] 폐기손실(금액) 계산
-  - [ ] 폐기율 계산
-  - [ ] Express API 엔드포인트 구현
+- [x] 폐기손실/폐기율 계산
+  - [x] 폐기손실(금액) 계산
+  - [x] 폐기율 계산 — 2026-07-20 세션 중 프론트엔드 집계 버그(연매출 대신 최종월 매출로 나누던 오류, 최대 96% 왜곡) 발견·수정
+  - [x] Express API 엔드포인트 구현
 
-- [ ] 순이익/순이익기여도 계산
-  - [ ] 순이익(마진액 - 폐기손실) 계산
-  - [ ] 순이익기여도 계산
-  - [ ] Express API 엔드포인트 구현
+- [x] 순이익/순이익기여도 계산
+  - [x] 순이익(마진액 - 폐기손실) 계산
+  - [x] 순이익기여도 계산 (`ProfitContribution` 컴포넌트, 2026-07-20)
+  - [x] Express API 엔드포인트 구현
 
-- [ ] Financial API 테스트
-  - [ ] `GET /api/financial` 응답 확인
-  - [ ] 모든 지표 반환 확인
+- [x] Financial API 테스트
+  - [x] `GET /api/financial/summary` 응답 확인 (`months`/`categories` 쿼리 필터 포함)
+  - [x] 모든 지표 반환 확인
 
 ### Rule Engine V1
 
@@ -138,9 +121,9 @@
 
 ### Day 3 DoD 확인
 
-- [ ] `GET /api/financial` API 정상 동작
-- [ ] `GET /api/recommendations` API 정상 동작
-- [ ] 원가율이 상식적 범위(40~80%) 내에 있음
+- [x] `GET /api/financial/summary` API 정상 동작
+- [ ] `GET /api/recommendations` API 정상 동작 — Rule Engine V1 미착수 (아래 참고)
+- [x] 원가율이 상식적 범위(40~80%) 내에 있음
 
 ---
 
@@ -148,22 +131,30 @@
 
 ### Financial Frontend
 
-- [ ] 기존 mock 제거
-  - [ ] Financial 페이지의 mock 데이터 제거
-  - [ ] API 연결 준비
+- [x] 기존 mock 제거
+  - [x] Financial 페이지의 mock 데이터 제거
+  - [x] API 연결 준비
 
-- [ ] Backend API 연결
-  - [ ] `GET /api/financial` 호출
-  - [ ] 평균 마진 카드 업데이트
-  - [ ] 평균 마진율 카드 업데이트
-  - [ ] 폐기 손실 카드 업데이트
-  - [ ] 카테고리별 수익성 표 업데이트
+- [x] Backend API 연결
+  - [x] `GET /api/financial/summary` 호출
+  - [x] 마진액 카드 업데이트
+  - [x] 마진율 카드 업데이트 (KPI + "손익 구조" 워터폴 카드에서 원가율까지 함께 노출, 2026-07-20)
+  - [x] 폐기 손실 카드 업데이트
+  - [x] 카테고리별 수익성 표 업데이트 (테이블 대신 "순이익 기여도" 랭킹 + "폐기율" 막대 컴포넌트로 구현, 2026-07-20)
 
-- [ ] Financial 페이지 테스트
-  - [ ] 실데이터로 렌더링 확인
-  - [ ] "추정치" 라벨 표기 확인
-  - [ ] `npx tsc --noEmit` 통과
-  - [ ] `npm run build` 통과
+- [x] Financial 페이지 테스트
+  - [x] 실데이터로 렌더링 확인
+  - [x] "추정" 라벨 표기 확인 (마진액/순이익 카드)
+  - [x] `npx tsc --noEmit` 통과
+  - [x] `npm run build` 통과
+
+**2026-07-20 세션 추가 개선 (체크리스트 원래 항목 밖)**:
+- [x] 월 선택 UI (`MonthSelector`) + 카테고리 선택 UI (`CategorySelector`) 추가, `months`/`categories` 쿼리 필터 실사용
+- [x] KPI 카드에 전월 대비 증감(%) 델타 표시
+- [x] "손익 구조" 워터폴 카드 추가 (매출 → 원가 → 매진총이익 → 폐기손실 → 영업이익, 원가율 노출)
+- [x] 사이드바에 재무(₩) 메뉴 아이콘 누락 발견·추가 (기존엔 클릭 진입 경로 자체가 없었음)
+- [x] Dashboard/Analysis/Financial 공통이던 가짜 "AI 분석 높음 · 98% 반영" 배지 3개 페이지 모두 제거
+- [x] "최근 4주" 표기를 실제 데이터 단위(월)에 맞게 "최근 1개월"/"최근 3개월"로 전체 정정
 
 ### Dashboard 연결
 
@@ -188,9 +179,9 @@
 
 ### Day 4 DoD 확인
 
-- [ ] Dashboard의 총매출/평균 마진율/폐기손실/추정 순이익이 모두 실데이터
-- [ ] Financial이 API 기반으로 렌더링
-- [ ] `npx tsc --noEmit`, `npm run build` 성공
+- [ ] Dashboard의 총매출/평균 마진율/폐기손실/추정 순이익이 모두 실데이터 — Dashboard는 여전히 mock (`dashboardMockData.ts`), 미착수
+- [x] Financial이 API 기반으로 렌더링
+- [x] `npx tsc --noEmit`, `npm run build` 성공
 
 ---
 
@@ -265,16 +256,23 @@
 
 3주차 완료 시 다음을 모두 확인하세요:
 
-- [ ] **`Upload → ETL → Master Dataset → Express API → Dashboard → Financial → Recommendation` 전체 데이터 흐름이 정상 동작한다**
-- [ ] `MASTER_DATASET_SPEC.md` 작성 완료
-- [ ] Product Master / Master Dataset 생성
-- [ ] Financial API가 핵심 지표(마진액/마진율/폐기손실/폐기율/순이익/순이익기여도) 반환
-- [ ] Financial 페이지, Dashboard KPI가 실데이터 기반 동작
-- [ ] Rule Engine V1이 최소 3개 규칙으로 추천 문구 생성
-- [ ] Upload → Dashboard → Financial End-to-End 동작 확인
-- [ ] `npx tsc --noEmit`, `npm run build` 성공
-- [ ] 브라우저에서 콘솔 에러·흰 화면 없이 전체 시연 가능
+- [ ] **`Upload → ETL → Master Dataset → Express API → Dashboard → Financial → Recommendation` 전체 데이터 흐름이 정상 동작한다** — Financial까지는 동작, Dashboard 실데이터·Recommendation 미연결로 전체 흐름은 미완성
+- [x] `MASTER_DATASET_SPEC.md` 작성 완료
+- [ ] Product Master / Master Dataset 생성 — Master Dataset은 완료, Product Master는 설계 변경으로 P1 이월 (카테고리+월 집계 방식 채택)
+- [x] Financial API가 핵심 지표(마진액/마진율/폐기손실/폐기율/순이익/순이익기여도) 반환
+- [ ] Financial 페이지, Dashboard KPI가 실데이터 기반 동작 — Financial은 완료, Dashboard는 여전히 mock
+- [ ] Rule Engine V1이 최소 3개 규칙으로 추천 문구 생성 — 미착수
+- [ ] Upload → Dashboard → Financial End-to-End 동작 확인 — Upload가 파일 메타데이터만 기록하고 실제 ETL 트리거는 안 함 (수동 실행 필요), Dashboard 미연동으로 전체 흐름 미완성
+- [x] `npx tsc --noEmit`, `npm run build` 성공 (Financial 범위 기준)
+- [x] 브라우저에서 콘솔 에러·흰 화면 없이 Financial 페이지 시연 가능 (dev 서버로 확인 완료)
 
 ---
 
-*Last Updated: 2026-07-20*
+## ⚠️ 2026-07-20 세션 중 발견한 이슈
+
+- **ETL 스크립트 유실**: WSL/Windows 브랜치 통합(merge 커밋 `0b031d5`) 과정에서 `data/scripts/sales_parser.py`, `waste_parser.py`, `master_dataset_builder.py`, `validate_master_dataset.py`가 저장소에서 사라짐. 산출물(`sales.csv`/`waste.csv`/`merged_dataset.csv`)은 남아있어 Financial은 정상 동작하지만, **원본 Excel이 바뀌면 재생성이 불가능한 상태**. git 히스토리(커밋 `eb65391`)에서 복구 필요 — 다음 세션 우선 처리 권장
+- **Upload → ETL 자동 연결 없음**: Upload 페이지는 파일명/카테고리 메타데이터만 Supabase에 기록하고, 실제 파일 저장이나 파서 실행을 트리거하지 않음. "전체 흐름 자동화"를 목표로 하려면 별도 설계 필요
+
+---
+
+*Last Updated: 2026-07-20 (Financial 페이지 개선 세션 반영)*

@@ -4,26 +4,28 @@ interface WasteLossRankingProps {
 }
 
 export default function WasteLossRanking({ data, totalWaste }: WasteLossRankingProps) {
-  const categoryMap = new Map<string, { waste: number; rate: number }>();
+  const categoryMap = new Map<string, { waste: number; sales: number }>();
 
   data.forEach((record) => {
     const key = record.category;
     if (!categoryMap.has(key)) {
-      categoryMap.set(key, { waste: 0, rate: 0 });
+      categoryMap.set(key, { waste: 0, sales: 0 });
     }
     const current = categoryMap.get(key)!;
     current.waste += record.waste_amount;
-    current.rate = (current.waste / record.sales_amount) * 100;
+    current.sales += record.sales_amount;
   });
 
   const ranking = Array.from(categoryMap.entries())
-    .map(([category, { waste, rate }]) => ({
+    .map(([category, { waste, sales }]) => ({
       category,
       waste,
       percentage: ((waste / totalWaste) * 100).toFixed(1),
-      rate: rate.toFixed(1),
+      rate: (sales > 0 ? (waste / sales) * 100 : 0).toFixed(1),
     }))
     .sort((a, b) => b.waste - a.waste);
+
+  const maxRate = Math.max(...ranking.map((r) => parseFloat(r.rate)), 1);
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
@@ -54,7 +56,7 @@ export default function WasteLossRanking({ data, totalWaste }: WasteLossRankingP
                 </div>
               </div>
               <div style={{ fontSize: '14px', fontWeight: '700', color: '#DC2626' }}>
-                {(item.waste / 1000000).toFixed(1)}M
+                {Math.round(item.waste).toLocaleString('ko-KR')}원
               </div>
             </div>
           ))}
@@ -87,7 +89,7 @@ export default function WasteLossRanking({ data, totalWaste }: WasteLossRankingP
                   style={{
                     height: '100%',
                     background: parseFloat(item.rate) > 15 ? '#DC2626' : '#2563EB',
-                    width: `${parseFloat(item.rate) * 3}px`,
+                    width: `${(parseFloat(item.rate) / maxRate) * 100}%`,
                   }}
                 />
               </div>

@@ -20,8 +20,8 @@ export default function MarginWasteChart({ data }: MarginWasteChartProps) {
 
   const chartData = Array.from(categoryMap.entries()).map(([category, { margin, waste }]) => ({
     category,
-    마진액: Math.round(margin / 1000000),
-    폐기손실: Math.round(waste / 1000000),
+    마진액: Math.round(margin / 1000),
+    폐기손실: Math.round(waste / 1000),
   }));
 
   return (
@@ -35,9 +35,9 @@ export default function MarginWasteChart({ data }: MarginWasteChartProps) {
         <BarChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
           <XAxis dataKey="category" tick={{ fontSize: 12, fill: '#475569' }} />
-          <YAxis tick={{ fontSize: 12, fill: '#475569' }} label={{ value: '금액(백만원)', angle: -90, position: 'insideLeft' }} />
+          <YAxis tick={{ fontSize: 12, fill: '#475569' }} label={{ value: '금액(천원)', angle: -90, position: 'insideLeft' }} />
           <Tooltip
-            formatter={(value: number) => `${value}M원`}
+            formatter={(value) => `${Number(value ?? 0).toLocaleString('ko-KR')}천원`}
             contentStyle={{
               background: '#FFFFFF',
               border: '1px solid #E2E8F0',

@@ -1,13 +1,37 @@
 import { useEffect, useState } from 'react';
+import type { FinancialSummary } from '../../types/financial';
 import FinancialKPICard from '../../components/financial/FinancialKPICard';
+import InfoBox from '../../components/financial/InfoBox';
+import ProfitContribution from '../../components/financial/ProfitContribution';
 import MarginWasteChart from '../../components/financial/MarginWasteChart';
 import WasteLossRanking from '../../components/financial/WasteLossRanking';
-import CategoryGuide from '../../components/financial/CategoryGuide';
-import InfoBox from '../../components/financial/InfoBox';
+import MonthSelector from '../../components/financial/MonthSelector';
+import CategorySelector from '../../components/financial/CategorySelector';
+import ProfitStructure from '../../components/financial/ProfitStructure';
+
+function calcDelta(current: number, prev: number | undefined, goodWhenUp: boolean) {
+  if (prev === undefined || prev === 0) return null;
+  const pct = ((current - prev) / prev) * 100;
+  return { pct, goodWhenUp };
+}
+
+async function fetchSummary(months: number, category: string): Promise<FinancialSummary> {
+  const params = new URLSearchParams({ months: String(months) });
+  if (category !== '전체') {
+    params.set('categories', category);
+  }
+  const res = await fetch(`/api/financial/summary?${params}`);
+  if (!res.ok) {
+    throw new Error(`API Error: ${res.status}`);
+  }
+  return res.json();
+}
 
 export default function FinancialPage() {
-  const [summary, setSummary] = useState<any>(null);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState(6);
+  const [selectedCategory, setSelectedCategory] = useState('전체');
+  const [summary, setSummary] = useState<FinancialSummary | null>(null);
+  const [prevSummary, setPrevSummary] = useState<FinancialSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,17 +39,12 @@ export default function FinancialPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const summaryRes = await fetch('/api/financial/summary');
-        if (!summaryRes.ok) {
-          throw new Error(`API Error: ${summaryRes.status}`);
-        }
-        const summaryData = await summaryRes.json();
+        const [summaryData, prevData] = await Promise.all([
+          fetchSummary(selectedMonth, selectedCategory),
+          selectedMonth > 1 ? fetchSummary(selectedMonth - 1, selectedCategory) : Promise.resolve(null),
+        ]);
         setSummary(summaryData);
-
-        const categoryRes = await fetch('/api/financial/category');
-        if (!categoryRes.ok) throw new Error(`Failed to fetch categories`);
-        const categoryData = await categoryRes.json();
-        setCategories(categoryData.data);
+        setPrevSummary(prevData);
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Unknown error';
         setError(errorMsg);
@@ -35,7 +54,7 @@ export default function FinancialPage() {
     };
 
     fetchData();
-  }, []);
+  }, [selectedMonth, selectedCategory]);
 
   if (loading) {
     return (
@@ -53,71 +72,105 @@ export default function FinancialPage() {
     );
   }
 
-  const totalMargin = summary.data.reduce((sum: number, r: any) => sum + r.margin_amount, 0);
-  const avgMarginRate = summary.summary.avg_margin_rate;
+  const totalMargin = summary.data.reduce((sum, r) => sum + r.margin_amount, 0);
+  const prevTotalMargin = prevSummary?.data.reduce((sum, r) => sum + r.margin_amount, 0);
+  const showRankings = selectedCategory === '전체';
+
+  const costAmount = summary.summary.total_sales - totalMargin;
+  const costRate = summary.summary.total_sales > 0 ? (costAmount / summary.summary.total_sales) * 100 : 0;
+
+  const salesDelta = calcDelta(summary.summary.total_sales, prevSummary?.summary.total_sales, true);
+  const marginDelta = calcDelta(totalMargin, prevTotalMargin, true);
+  const wasteDelta = calcDelta(summary.summary.total_waste, prevSummary?.summary.total_waste, false);
+  const netIncomeDelta = calcDelta(summary.summary.total_net_income, prevSummary?.summary.total_net_income, true);
 
   return (
-    <div style={{ padding: '48px', minHeight: '100vh', background: '#F8FAFC' }}>
+    <div style={{ padding: '36px 48px 56px', minHeight: '100vh', background: '#F8FAFC', fontFamily: "'Manrope', system-ui, sans-serif" }}>
       {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#0F172A', margin: '0 0 4px 0' }}>재무</h1>
-        <p style={{ fontSize: '12px', color: '#64748B', margin: '0' }}>
-          {summary.period.start} ~ {summary.period.end} · 실제 데이터
-        </p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '22px' }}>
+        <div>
+          <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#0F172A', margin: '0 0 4px 0' }}>재무</h1>
+          <p style={{ fontSize: '13px', color: '#475569', margin: '0' }}>
+            <span style={{ color: '#15803D', fontWeight: '600', marginRight: '4px' }}>●</span>
+            GS25 강남역점 · 관리회계 기준 수익성 분석
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap' }}>
+          <div
+            style={{
+              fontSize: '12.5px',
+              color: '#475569',
+              padding: '7px 14px',
+              background: '#F1F5F9',
+              borderRadius: '20px',
+              fontWeight: '600',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
+          </div>
+        </div>
       </div>
 
-      {/* Info Box */}
-      <InfoBox
-        marginRate={avgMarginRate}
-        marginAmount={totalMargin}
-        totalSales={summary.summary.total_sales}
-      />
+      {/* Filters */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '22px' }}>
+        <CategorySelector selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />
+        <MonthSelector selectedMonth={selectedMonth} onSelectMonth={setSelectedMonth} />
+      </div>
+
+      {/* AI Financial Insight */}
+      <InfoBox data={summary.data} />
 
       {/* KPI 4-Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
-        <FinancialKPICard
-          label="총매출"
-          value={summary.summary.total_sales}
-          format="currency"
-          color="primary"
-        />
-        <FinancialKPICard
-          label="마진액"
-          value={totalMargin}
-          format="currency"
-          color="primary"
-        />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '20px' }}>
+        <FinancialKPICard label="총매출" value={summary.summary.total_sales} note={`${selectedMonth}월 기준`} delta={salesDelta} />
+        <FinancialKPICard label="마진액" value={totalMargin} note="매출 − 매출원가" delta={marginDelta} />
         <FinancialKPICard
           label="폐기손실"
           value={summary.summary.total_waste}
-          format="currency"
+          note={`${selectedMonth}월 폐기금액`}
           color="danger"
+          delta={wasteDelta}
         />
         <FinancialKPICard
-          label="순이익"
+          label="추정 순이익"
           value={summary.summary.total_net_income}
-          format="currency"
-          color="success"
+          note={`순이익률 ${summary.summary.avg_net_rate.toFixed(0)}% · 마진액 − 폐기손실`}
+          color="highlight"
+          delta={netIncomeDelta}
         />
       </div>
 
-      {/* Category Guide */}
-      <CategoryGuide data={summary.data} />
+      {/* Profit Structure (P&L breakdown) */}
+      <ProfitStructure
+        totalSales={summary.summary.total_sales}
+        costAmount={costAmount}
+        costRate={costRate}
+        totalMargin={totalMargin}
+        marginRate={summary.summary.avg_margin_rate}
+        totalWaste={summary.summary.total_waste}
+        wasteRate={summary.summary.avg_waste_rate}
+        netIncome={summary.summary.total_net_income}
+        netRate={summary.summary.avg_net_rate}
+      />
+
+      {/* Profit Contribution (only meaningful across multiple categories) */}
+      {showRankings && <ProfitContribution data={summary.data} />}
 
       {/* Margin vs Waste Chart */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', color: '#94A3B8', textTransform: 'uppercase', marginBottom: '12px' }}>
-          카테고리별 비교
-        </div>
-        <MarginWasteChart data={summary.data} categories={categories} />
+      <div style={{ marginBottom: '20px' }}>
+        <MarginWasteChart data={summary.data} />
       </div>
 
-      {/* Waste Loss Ranking */}
-      <div>
-        <div style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', color: '#94A3B8', textTransform: 'uppercase', marginBottom: '12px' }}>
-          손실 분석
+      {/* Waste Loss Ranking + Waste Rate (only meaningful across multiple categories) */}
+      {showRankings && <WasteLossRanking data={summary.data} totalWaste={summary.summary.total_waste} />}
+
+      {/* Footer strip */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: '20px' }}>
+        <div style={{ fontSize: '11.5px', color: '#94A3B8', fontWeight: '600' }}>
+          데이터 기준일 · 판매·폐기 {summary.period.start} ~ {summary.period.end}
         </div>
-        <WasteLossRanking data={summary.data} totalWaste={summary.summary.total_waste} />
       </div>
     </div>
   );
