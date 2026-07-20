@@ -34,7 +34,7 @@ Check these sources when they exist:
    - Treat "Do not suggest again" notes as explicit wording to avoid in today's new-work list.
 
 3. Planning documents
-   - `week1_todo.md`
+   - `week2_todo.md`
    - `checklist.md`
    - `docs/development-tasks.md`
    - `docs/beginner-development-roadmap.md`
