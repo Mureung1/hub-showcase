@@ -9,7 +9,12 @@ from localtwin_api.canonical_db import SCHEMA
 from localtwin_api.config import Settings
 from localtwin_api.database import create_database_engine, create_session_factory
 from localtwin_api.main import create_app
-from localtwin_api.market_analysis import _percentile, analyze_market
+from localtwin_api.market_analysis import (
+    _enriched_peers,
+    _percentile,
+    _target_values,
+    analyze_market,
+)
 from localtwin_api.postgres_seed import seed_canonical
 
 
@@ -112,6 +117,34 @@ def build_market_database(path: Path) -> None:
 
 def test_percentile_uses_midrank_for_ties() -> None:
     assert _percentile([10, 20, 20, 40], 20) == 0.5
+
+
+def test_peer_enrichment_and_target_values_do_not_need_a_database() -> None:
+    row = {
+        "market_code": "m1",
+        "category_store_count": 10,
+        "monthly_sales_amount": 1000,
+        "total_flow": 500,
+        "closure_count": 2,
+        "opening_count": 4,
+        "area_sqm": 1000,
+    }
+
+    enriched = _enriched_peers([row], {"m1": 20})
+    values = _target_values(row, 10)
+
+    assert enriched == [
+        {
+            "sales_per_store": 100,
+            "foot_traffic": 500,
+            "closure_rate": 20,
+            "same_category_density": 1_000,
+            "net_opening_rate": 20,
+            "category_share": 0.5,
+        }
+    ]
+    assert values["sales_per_store"] == 100
+    assert values["net_opening_rate"] == 20
 
 
 def test_market_analysis_returns_raw_values_score_and_sources(tmp_path: Path) -> None:
