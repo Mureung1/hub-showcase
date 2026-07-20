@@ -288,7 +288,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
 
   constructor(
     private readonly readiness: CodexAccountReadiness,
-    private readonly lateRequestAfterInterrupt = false,
+    private readonly acknowledgedInterruptResponseLoss = false,
   ) {}
 
   get calls(): readonly ProductRuntimeCall[] {
@@ -355,7 +355,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
         pending.settlement.resolve('cancelled')
       }
     }
-    if (this.lateRequestAfterInterrupt) {
+    if (this.acknowledgedInterruptResponseLoss) {
       await this.interruptResponseReleased.promise
     }
   }
@@ -404,7 +404,8 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     const createPending = this.createPending.bind(this)
     const acknowledge = this.acknowledge.bind(this)
     const wasInterrupted = this.wasInterrupted.bind(this)
-    const lateRequestAfterInterrupt = this.lateRequestAfterInterrupt
+    const acknowledgedInterruptResponseLoss =
+      this.acknowledgedInterruptResponseLoss
     const interruptObserved = this.interruptObserved.promise
     const lateInteractionReleased = this.lateInteractionReleased.promise
     const interactionId = `interaction-review-${this.turnOrdinal}`
@@ -447,7 +448,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           itemId: `mcp-private-${turnId}`,
           tool: 'propose_state_patch',
         }
-        if (lateRequestAfterInterrupt) {
+        if (acknowledgedInterruptResponseLoss) {
           await interruptObserved
           yield {
             type: 'turn.interrupt_acknowledged',
@@ -464,7 +465,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           interactionId,
           questions: [assignmentReviewQuestion],
         }
-        if (lateRequestAfterInterrupt) {
+        if (acknowledgedInterruptResponseLoss) {
           await lateInteractionReleased
           pending.settlement.resolve('cancelled')
         }
@@ -511,7 +512,8 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     const createPending = this.createPending.bind(this)
     const acknowledge = this.acknowledge.bind(this)
     const wasInterrupted = this.wasInterrupted.bind(this)
-    const lateRequestAfterInterrupt = this.lateRequestAfterInterrupt
+    const acknowledgedInterruptResponseLoss =
+      this.acknowledgedInterruptResponseLoss
     const interruptObserved = this.interruptObserved.promise
     const lateInteractionReleased = this.lateInteractionReleased.promise
     const interactionId = `interaction-general-${this.turnOrdinal}`
@@ -526,7 +528,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           itemId: `plan-private-${turnId}`,
           text: '자료를 살펴볼 순서를 함께 정합니다.',
         }
-        if (lateRequestAfterInterrupt) {
+        if (acknowledgedInterruptResponseLoss) {
           await interruptObserved
           yield {
             type: 'turn.interrupt_acknowledged',
@@ -543,7 +545,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           interactionId,
           questions: [generalQuestion],
         }
-        if (lateRequestAfterInterrupt) {
+        if (acknowledgedInterruptResponseLoss) {
           await lateInteractionReleased
           pending.settlement.resolve('cancelled')
         }

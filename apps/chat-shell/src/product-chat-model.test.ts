@@ -447,6 +447,7 @@ test('keeps stopping when a clarification request arrives after interrupt', () =
   assert.equal(recoveredAfterResolution.phase, 'stopping')
   assert.equal(recoveredAfterResolution.activeOperation?.stage, 'stopping')
 
+  state = recoveredAfterResolution
   state = applyFrames(state, [chatTerminal('interrupted')])
   assert.equal(state.phase, 'interrupted')
   assert.equal(state.activeOperation, undefined)
@@ -627,7 +628,7 @@ test('keeps stopping when a Review request arrives after interrupt acknowledgeme
     false,
   )
 
-  state = applyFrames(state, [reviewResolved()])
+  state = applyFrames(recoveredWithReview, [reviewResolved()])
 
   assert.equal(state.phase, 'stopping')
   assert.equal(state.activeOperation?.stage, 'stopping')
