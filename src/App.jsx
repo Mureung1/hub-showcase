@@ -4,28 +4,30 @@ import Episodes from './Episodes';
 import ChatView from './ChatView';
 import './screens.css';
 
-// App이 "지금 어떤 화면인지"와 "어떤 episode를 보고 있는지"를 state로 들고 있고,
-// 각 화면 컴포넌트에는 그 state를 props(데이터)와 콜백(이벤트)으로만 내려준다.
+// 웹 서비스 레이아웃: 사이드바(Episodes) + 메인(ChatView)이 항상 같이 보이고,
+// Tide Check는 그 위에 뜨는 모달이다 — 폰 프레임으로 화면을 통째로 바꾸지 않는다.
+// selectedId는 "지금 스크롤이 어느 episode를 향해야 하는지"만 의미하는 state.
 function App() {
-  const [screen, setScreen] = useState('tidecheck');
-  const [activeEpisode, setActiveEpisode] = useState(null);
-
-  if (screen === 'tidecheck') {
-    return <TideCheck onDone={() => setScreen('episodes')} />;
-  }
-
-  if (screen === 'chat' && activeEpisode) {
-    return <ChatView episode={activeEpisode} onBack={() => setScreen('episodes')} />;
-  }
+  const [showTideCheck, setShowTideCheck] = useState(true); // 하루 최소 1회 필수 체크인
+  const [selectedId, setSelectedId] = useState(null);
 
   return (
-    <Episodes
-      onOpenEpisode={(episode) => {
-        setActiveEpisode(episode);
-        setScreen('chat');
-      }}
-      onUpdateTide={() => setScreen('tidecheck')}
-    />
+    <div className="app-shell">
+      <Episodes
+        selectedId={selectedId}
+        onSelectEpisode={(episode) => setSelectedId(episode.id)}
+        onUpdateTide={() => setShowTideCheck(true)}
+      />
+      <ChatView selectedId={selectedId} />
+
+      {showTideCheck && (
+        <div className="modal-overlay">
+          <div className="tc-modal-wrap">
+            <TideCheck onDone={() => setShowTideCheck(false)} />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
