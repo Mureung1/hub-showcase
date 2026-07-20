@@ -138,71 +138,114 @@ export async function callClaude(prompt, options = {}) {
   })
 }
 
-function buildSelectionPrompt(candidates) {
-  const list = candidates.map((c, i) => `${i + 1}. [${c.source}] ${c.title}`).join("\n")
+// 3단계 통과 기준. 투자가치는 "시장에 영향을 주는 정보인가"를, 독해적합성은
+// "학습용으로 문장이 읽을 만한가"를 본다 — 하나만 높아서는 카드로 채택하지
+// 않는다.
+const MIN_INVESTMENT_SCORE = 4
+const MIN_READABILITY_SCORE = 3
 
-  return `당신은 초보 투자자를 위한 모의 투자 학습 서비스의 에디터입니다. 아래는 최근 금융/경제 외신 헤드라인 후보 목록입니다.
+function buildEvaluationPrompt(candidates) {
+  const list = candidates
+    .map((c, i) => `${i + 1}. [${c.source}] ${c.title}\n${c.bodyText}`)
+    .join("\n\n---\n\n")
+
+  return `당신은 초보 투자자를 위한 모의 투자 학습 서비스의 에디터입니다. 아래는 1~2단계 필터(URL/분량 검증)를 통과한 CNBC 기사 후보와 본문입니다.
 
 ${list}
 
-이 중 오늘 가장 중요한 3건을 선정하세요. 가능하면 주제나 업종이 겹치지 않게 다양화하세요. 각 헤드라인을 자연스러운 한국어 한 줄로 의역하세요(직역 금지). 언급된 기업의 티커 심볼이 헤드라인에 명확히 드러나지 않으면 tickers는 반드시 빈 배열로 두세요(추정 금지).
+각 기사를 다음 두 기준으로 1~5점 평가하세요:
+- investmentScore: 단순 이슈성 기사인가, 아니면 시장 변동성/기업 가치/산업 흐름에 직접적인 영향을 주는 정보인가?
+- readabilityScore: 문장 구조가 명확하고 비즈니스/금융 필수 어휘가 잘 갖춰져 학습자가 읽기에 적합한가?
 
-다른 설명 없이 아래 JSON 배열 형식으로만 답하세요:
+각 기사의 주제/섹터를 sector 필드에 짧은 영단어 태그로 표기하세요(예: "macro", "tech", "earnings", "semiconductor"). 각 헤드라인을 자연스러운 한국어 한 줄로 의역하세요(직역 금지). 언급된 기업의 티커 심볼이 헤드라인에 명확히 드러나지 않으면 tickers는 반드시 빈 배열로 두세요(추정 금지).
+
+다른 설명 없이, 후보 전체에 대해 아래 JSON 배열 형식으로만 답하세요:
 [
-  { "index": 후보 번호(숫자), "translation": "한국어 한 줄 번역", "tickers": ["$TICKER"] }
+  { "index": 후보 번호(숫자), "investmentScore": 1~5, "readabilityScore": 1~5, "sector": "짧은 주제 태그", "translation": "한국어 한 줄 번역", "tickers": ["$TICKER"] }
 ]`
 }
 
-function parseSelectionResponse(response, candidates) {
-  const text = response.content?.[0]?.text ?? ""
-  const cleaned = text.replace(/```json|```/g, "").trim()
-  const selections = JSON.parse(cleaned)
+function toCard(candidate, { translation, tickers }) {
+  return {
+    id: randomUUID(),
+    source: candidate.source,
+    sourceInitial: candidate.sourceInitial,
+    headline: candidate.title,
+    translation,
+    tickers: Array.isArray(tickers) ? tickers : [],
+    url: candidate.link,
+  }
+}
 
-  if (!Array.isArray(selections) || selections.length !== 3) {
-    throw new Error("selectTopArticles: unexpected LLM response shape")
+// 점수 통과 후보 중 investmentScore 내림차순으로 최대 3건을 뽑되, 섹터가
+// 겹치면 건너뛰어 다양성을 우선한다. 서로 다른 섹터가 3개가 안 되면(예:
+// 오늘따라 전부 실적 시즌 기사) 남은 자리는 점수 순으로 채운다.
+function pickDiversifiedTop3(evaluated) {
+  const sorted = [...evaluated].sort((a, b) => b.investmentScore - a.investmentScore)
+  const picked = []
+  const usedSectors = new Set()
+
+  for (const item of sorted) {
+    if (picked.length >= 3) break
+    if (usedSectors.has(item.sector)) continue
+    picked.push(item)
+    usedSectors.add(item.sector)
   }
 
-  return selections.map(({ index, translation, tickers }) => {
-    const candidate = candidates[index - 1]
-    if (!candidate) throw new Error(`selectTopArticles: index ${index} out of range`)
-
-    return {
-      id: randomUUID(),
-      source: candidate.source,
-      sourceInitial: candidate.sourceInitial,
-      headline: candidate.title,
-      translation,
-      tickers: Array.isArray(tickers) ? tickers : [],
-      url: candidate.link,
+  if (picked.length < 3) {
+    for (const item of sorted) {
+      if (picked.length >= 3) break
+      if (picked.includes(item)) continue
+      picked.push(item)
     }
+  }
+
+  return picked
+}
+
+function parseEvaluationResponse(response, candidates) {
+  const text = response.content?.[0]?.text ?? ""
+  const cleaned = text.replace(/```json|```/g, "").trim()
+  const evaluations = JSON.parse(cleaned)
+
+  if (!Array.isArray(evaluations) || evaluations.length === 0) {
+    throw new Error("evaluateAndSelectArticles: unexpected LLM response shape")
+  }
+
+  const evaluated = evaluations.map(({ index, investmentScore, readabilityScore, sector, translation, tickers }) => {
+    const candidate = candidates[index - 1]
+    if (!candidate) throw new Error(`evaluateAndSelectArticles: index ${index} out of range`)
+    return { candidate, investmentScore, readabilityScore, sector, translation, tickers }
   })
+
+  const passed = evaluated.filter(
+    (e) => e.investmentScore >= MIN_INVESTMENT_SCORE && e.readabilityScore >= MIN_READABILITY_SCORE,
+  )
+  if (passed.length === 0) {
+    throw new Error("evaluateAndSelectArticles: no candidates passed score thresholds")
+  }
+
+  return pickDiversifiedTop3(passed).map((e) => toCard(e.candidate, e))
 }
 
-function mockSelectTop3(candidates) {
-  return candidates.slice(0, 3).map((c) => ({
-    id: randomUUID(),
-    source: c.source,
-    sourceInitial: c.sourceInitial,
-    headline: c.title,
-    translation: `[MOCK] ${c.title}`,
-    tickers: [],
-    url: c.link,
-  }))
+function mockEvaluateAndSelectTop3(candidates) {
+  return candidates.slice(0, 3).map((c) => toCard(c, { translation: `[MOCK] ${c.title}`, tickers: [] }))
 }
 
-// RSS로 모은 후보 헤드라인 중 "오늘의 핵심 3개"를 선별하고 한글 한 줄
+// 2단계까지 통과한 후보(본문 포함)를 investmentScore/readabilityScore로
+// 평가하고, 통과한 후보 중 점수순+섹터 다양화로 최종 3건을 뽑아 한글 한 줄
 // 번역+티커 추정을 붙인다. LLM에는 후보 번호만 돌려받아(index 기반) 서버가
 // 원본 candidate에서 headline/url을 그대로 채운다 — LLM이 URL/제목을
 // 새로 지어내는 환각을 원천 차단하기 위함.
-export async function selectTopArticles(candidates) {
+export async function evaluateAndSelectArticles(candidates) {
   if (MOCK_LLM) {
     if (candidates.some((c) => c.title.includes("FAIL_TEST"))) {
       throw new Error("[MOCK_LLM] Claude API 호출 실패를 흉내낸 테스트용 에러입니다.")
     }
-    return mockSelectTop3(candidates)
+    return mockEvaluateAndSelectTop3(candidates)
   }
 
-  const prompt = buildSelectionPrompt(candidates)
-  const response = await callClaude(prompt, { maxTokens: 1024 })
-  return parseSelectionResponse(response, candidates)
+  const prompt = buildEvaluationPrompt(candidates)
+  const response = await callClaude(prompt, { maxTokens: 2048 })
+  return parseEvaluationResponse(response, candidates)
 }

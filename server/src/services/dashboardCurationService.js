@@ -1,5 +1,6 @@
 import { fetchCandidateHeadlines } from "./rssFeedService.js"
-import { selectTopArticles } from "./llmService.js"
+import { filterByBodyQuality } from "./articleQualityFilter.js"
+import { evaluateAndSelectArticles } from "./llmService.js"
 
 // RSS+LLM 파이프라인이 실패하면(피드 전멸, LLM 에러 등) 데모가 끊기지
 // 않도록 반환하는 고정 3건. articleParser.js의 FALLBACK_ARTICLE과 동일한
@@ -39,19 +40,36 @@ const FALLBACK_ARTICLES = [
 // 날짜 비교는 KST 고정(서버 배포 타임존과 무관하게 "오늘"을 일관되게 판단).
 let cache = null // { date: "2026-07-19", articles: [...] }
 
-function todayKST() {
-  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Seoul" })
+// 캐시 경계를 자정이 아니라 KST 06:30로 둔다(2026-07-20). 미국 정규장
+// 마감(KST 새벽 5~6시)과 애프터마켓 실적 발표가 끝난 직후가 오늘자 기사가
+// 가장 신선하게 갖춰지는 시점이다 — 자정 기준이면 새벽 1~2시에 들어온
+// 요청이 아직 마감도 안 된 어제 상태로 파이프라인을 돌려 캐시를 선점해
+// 버린다. 06:30 이전 요청은 "큐레이션 일자"를 전날로 취급해 이전 캐시를
+// 그대로 재사용하고, 06:30을 넘긴 첫 요청이 그날의 파이프라인을 새로 돈다.
+const CURATION_BOUNDARY_HOUR_KST = 6
+const CURATION_BOUNDARY_MINUTE_KST = 30
+const CURATION_BOUNDARY_MS = (CURATION_BOUNDARY_HOUR_KST * 60 + CURATION_BOUNDARY_MINUTE_KST) * 60 * 1000
+
+function curationDateKST() {
+  const shifted = new Date(Date.now() - CURATION_BOUNDARY_MS)
+  return shifted.toLocaleDateString("en-CA", { timeZone: "Asia/Seoul" })
 }
 
 export async function getTodaysArticles() {
-  const today = todayKST()
+  const today = curationDateKST()
   if (cache?.date === today) return cache.articles
 
   try {
+    // 1단계: RSS 메타데이터 필터(비용 $0) → 2단계: 본문 스크래핑/분량 필터
+    // (비용 $0) → 3단계: LLM 스마트 평가+카드 생성. 앞 단계에서 걸러질수록
+    // 뒤 단계의 스크래핑/토큰 비용이 줄어드는 직렬 구조.
     const candidates = await fetchCandidateHeadlines()
-    if (candidates.length === 0) throw new Error("no RSS candidates available")
+    if (candidates.length === 0) throw new Error("no RSS candidates passed stage 1 metadata filter")
 
-    const articles = await selectTopArticles(candidates)
+    const qualityCandidates = await filterByBodyQuality(candidates)
+    if (qualityCandidates.length === 0) throw new Error("no candidates passed stage 2 body quality filter")
+
+    const articles = await evaluateAndSelectArticles(qualityCandidates)
     cache = { date: today, articles }
     return articles
   } catch (err) {
