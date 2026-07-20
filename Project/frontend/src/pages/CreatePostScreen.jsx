@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { createGroupPurchase } from '../api/groupPurchase';
 import './CreatePostScreen.css';
 
-export default function CreatePostScreen({ onNavigate, onAddPost }) {
+export default function CreatePostScreen({ onNavigate }) {
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [category, setCategory] = useState('');
@@ -39,7 +42,7 @@ export default function CreatePostScreen({ onNavigate, onAddPost }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!title.trim()) {
@@ -63,42 +66,47 @@ export default function CreatePostScreen({ onNavigate, onAddPost }) {
       return;
     }
 
-    // Map selected category value to readable label
-    const categoryLabels = {
-      groceries: '식자재',
-      household: '생활용품',
-      electronics: '디지털기기',
-      others: '기타'
-    };
-    const categoryIcons = {
-      groceries: 'eco',
-      household: 'shopping_bag',
-      electronics: 'devices',
-      others: 'grid_view'
-    };
-
-    const newPost = {
-      id: Date.now(),
-      category: categoryLabels[category] || '기타',
-      categoryIcon: categoryIcons[category] || 'grid_view',
-      title: title.trim(),
-      price: perPersonPrice,
-      currentParticipants: 1, // Author is automatically participant #1
-      targetParticipants: targetCount,
-      distanceText: '도보 5분', // Mock value
-      badgeText: '방금전',
-      badgeType: 'info',
-      imageUrl: category === 'groceries' 
-        ? 'https://lh3.googleusercontent.com/aida-public/AB6AXuDwQY-Lso4qEhyEFancWjmu3Ol2MC7HLh2ZVUTYIpLqu8g3TKffzWWPaFuRG9e330wpbn9Ybviijw7agnijtNN6-OMGM_1-VCgyUtrYxeUcnL9t6OAqomHvxrDYaWttM_GdJtsKvjhcEmX7EqHP7pt744YSV94txYaQ8n3BX0G6eIjbRdSngdf2mgFO0EJikRCj4iFeYv_5x3su-m8CtE7ea1214BMKAc_ulvLD6NxuRuyubO8LQv8'
-        : 'https://lh3.googleusercontent.com/aida-public/AB6AXuDoSLBuND-cSFGw7ZEoTx_gc_kgDUBVzOCUv-VDbAFvqavlDcyh7HY8uTZFUAoAl8vYLbPZxRHx-GXAJdI6mU-RA-JkPuaRmECQJytdQJ8lBNr4G7GjQX-nLX5PCwACr4ilPXOvi6kBgPNRuUXK2ide3A4WUmuGPUFOHfkQI89mZ3awj5hP4sgmitWAXu3Vv2W8_YxpiKoa63Q87Pw_RL8V0cPZZC0xLkqSTECI6s-nvU0hKLykJyE',
-    };
-
-    if (onAddPost) {
-      onAddPost(newPost);
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      alert('인증 토큰이 없습니다. 우측 상단 프로필을 클릭하여 개발자 로그인을 먼저 진행해주세요.');
+      return;
     }
 
-    alert('공동구매 게시글이 성공적으로 등록되었습니다!');
-    onNavigate('postfeed');
+    // Map category to backend ENUM
+    let categoryEnum = 'ETC';
+    if (category === 'groceries') {
+      categoryEnum = 'FOOD';
+    } else if (category === 'household') {
+      categoryEnum = 'NECESSITY';
+    }
+
+    const postData = {
+      title: title.trim(),
+      description: description.trim(),
+      productUrl: url.trim() || 'http://example.com/product',
+      totalPrice: Number(totalPrice),
+      targetParticipants: Number(targetCount),
+      pickupLatitude: 37.5665,
+      pickupLongitude: 126.978,
+      pickupTimeSlot: `${pickupPlace} (${pickupTime})`,
+      category: categoryEnum,
+      deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3), // default 3 days
+    };
+
+    try {
+      const result = await createGroupPurchase(postData);
+      if (result.success) {
+        alert('공동구매 게시글이 성공적으로 등록되었습니다!');
+        queryClient.invalidateQueries({ queryKey: ['groupPurchases'] });
+        if (onNavigate) {
+          onNavigate('detail', result.data.id);
+        }
+      } else {
+        alert(result.error?.message || '공동구매 등록에 실패했습니다.');
+      }
+    } catch (err) {
+      alert(err.message || '등록 중 오류가 발생했습니다.');
+    }
   };
 
   const selectPlace = () => {

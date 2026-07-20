@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getGroupPurchases, joinGroupPurchase } from '../api/groupPurchase';
 import './PostfeedScreen.css';
 
 const categories = [
@@ -11,33 +13,100 @@ const categories = [
   { name: '반려동물', icon: 'pets' },
 ];
 
-const won = (value) => `${new Intl.NumberFormat('ko-KR').format(value)}원`;
+const won = (value) => `${new Intl.NumberFormat('ko-KR').format(value || 0)}원`;
 
-export default function PostfeedScreen({ onNavigate, posts, setPosts }) {
+export default function PostfeedScreen({ onNavigate }) {
+  const queryClient = useQueryClient();
   const [joinedPosts, setJoinedPosts] = useState({});
   const [activeCategory, setActiveCategory] = useState('전체');
   const [activeFilter, setActiveFilter] = useState('Distance');
   const [availableOnly, setAvailableOnly] = useState(false);
   const [locationName, setLocationName] = useState('경북 칠곡군 석적읍');
+  const [joiningId, setJoiningId] = useState(null);
 
-  const handleJoin = (id, e) => {
-    e.stopPropagation(); // prevent triggering card navigation click
+  // Fetch group purchases from database
+  const { data: apiResponse } = useQuery({
+    queryKey: ['groupPurchases', activeCategory],
+    queryFn: () => {
+      let categoryEnum = null;
+      if (activeCategory === '식자재') {
+        categoryEnum = 'FOOD';
+      } else if (activeCategory === '생활용품') {
+        categoryEnum = 'NECESSITY';
+      } else if (activeCategory !== '전체') {
+        categoryEnum = 'ETC';
+      }
+      return getGroupPurchases(categoryEnum ? { category: categoryEnum } : {});
+    }
+  });
+
+  const rawPosts = apiResponse?.data || [];
+
+  const mappedPosts = rawPosts.map(item => {
+    let categoryLabel = '기타';
+    let categoryIcon = 'grid_view';
+    let categoryType = 'secondary';
+    let imageUrl = 'https://lh3.googleusercontent.com/aida-public/AB6AXuDoSLBuND-cSFGw7ZEoTx_gc_kgDUBVzOCUv-VDbAFvqavlDcyh7HY8uTZFUAoAl8vYLbPZxRHx-GXAJdI6mU-RA-JkPuaRmECQJytdQJ8lBNr4G7GjQX-nLX5PCwACr4ilPXOvi6kBgPNRuUXK2ide3A4WUmuGPUFOHfkQI89mZ3awj5hP4sgmitWAXu3Vv2W8_YxpiKoa63Q87Pw_RL8V0cPZZC0xLkqSTECI6s-nvU0hKLykJyE';
+
+    if (item.category === 'FOOD') {
+      categoryLabel = '식자재';
+      categoryIcon = 'eco';
+      categoryType = 'primary';
+      imageUrl = 'https://lh3.googleusercontent.com/aida-public/AB6AXuAmzACAEWQoMTE7-vlQdE_JHrSn7P1pBbBEPbO10G4Dbe5MCoPLL0Xxg51k-faWq_CfF7V0xFFqnZUH9ciSUp7_Yc_BoLaVl2ZTvpEWPXU08YxbrX5Vgkwu7ugcElfMo52SrhfsOP8z2ZrUUkZy_tQb-MMBPemue9nglz_BjtRCbAFZZ2ve_DGO89qhcmmAvunPgyFwhiiw4v93-ZGQrG28Nrmr0uofGFxSpRpFXNFbbjKmkNSvqCs';
+    } else if (item.category === 'NECESSITY') {
+      categoryLabel = '생필품';
+      categoryIcon = 'local_mall';
+      categoryType = 'secondary';
+      imageUrl = 'https://lh3.googleusercontent.com/aida-public/AB6AXuD3Jgk1WL3bHM7C6vwAUT_s8auzkGNvqaZ1GMfzW7Lv0PhcOL2riiWQ_xvPzlchfF3MvcU1RBi9Eqqd3N0hj4G-yfIeSEMXh4dZkPRGT7AtdE4UU8yIehvP3ISAfTqxnAtnc3VIsVW6QzzA73JQ8mxZLq0U2171YNUHYdEz_FKoTo8Xm8anAcfRngm5zdfGzB5GEwL9z6lSIYs2Pp6OAP4nxvQBNMgJl-BAVGeE6WHuIA_wMNtJmYY';
+    }
+
+    return {
+      id: item.id,
+      category: categoryLabel,
+      categoryIcon,
+      categoryType,
+      title: item.title,
+      price: item.perPersonPrice,
+      currentParticipants: item.currentParticipants,
+      targetParticipants: item.targetParticipants,
+      distanceText: item.pickupTimeSlot || '도보 10분',
+      imageUrl,
+      status: item.status,
+      badgeText: item.status === 'COMPLETED' ? '마감 완료' : '진행 중',
+      badgeType: item.status === 'COMPLETED' ? 'danger' : 'info',
+    };
+  });
+
+  const handleJoin = async (id, e) => {
+    e.stopPropagation();
     if (joinedPosts[id]) return;
 
-    setPosts(prevPosts =>
-      prevPosts.map(post => {
-        if (post.id === id && post.currentParticipants < post.targetParticipants) {
-          return { ...post, currentParticipants: post.currentParticipants + 1 };
-        }
-        return post;
-      })
-    );
-    setJoinedPosts(prev => ({ ...prev, [id]: true }));
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      alert('인증 토큰이 없습니다. 우측 상단 프로필을 클릭하여 개발자 로그인을 먼저 진행해주세요.');
+      return;
+    }
+
+    setJoiningId(id);
+    try {
+      const result = await joinGroupPurchase(id);
+      if (result.success) {
+        setJoinedPosts(prev => ({ ...prev, [id]: true }));
+        alert('참여 신청이 완료되었습니다!');
+        queryClient.invalidateQueries({ queryKey: ['groupPurchases'] });
+      } else {
+        alert(result.error?.message || '참여 신청에 실패했습니다.');
+      }
+    } catch (err) {
+      alert(err.message || '참여 신청 중 오류가 발생했습니다.');
+    } finally {
+      setJoiningId(null);
+    }
   };
 
   const handleCardClick = (id) => {
     if (onNavigate) {
-      onNavigate('detail');
+      onNavigate('detail', id);
     }
   };
 
@@ -48,13 +117,9 @@ export default function PostfeedScreen({ onNavigate, posts, setPosts }) {
     }
   };
 
-  // Filter posts
-  const filteredPosts = posts.filter(post => {
-    // Category filter
-    const matchesCategory = activeCategory === '전체' || post.category === activeCategory;
-    // Available only (current < target)
+  const filteredPosts = mappedPosts.filter(post => {
     const matchesAvailability = !availableOnly || post.currentParticipants < post.targetParticipants;
-    return matchesCategory && matchesAvailability;
+    return matchesAvailability;
   });
 
   return (
@@ -185,9 +250,9 @@ export default function PostfeedScreen({ onNavigate, posts, setPosts }) {
                     <button 
                       className={`td-postfeed-page__card-btn ${isJoined ? 'td-postfeed-page__card-btn--joined' : ''}`}
                       onClick={(e) => handleJoin(post.id, e)}
-                      disabled={isJoined || isFull}
+                      disabled={isJoined || isFull || joiningId === post.id}
                     >
-                      {isJoined ? '신청 완료' : isFull ? '마감 완료' : '참여하기'}
+                      {joiningId === post.id ? '처리중...' : isJoined ? '신청 완료' : isFull ? '마감 완료' : '참여하기'}
                     </button>
                   </div>
                 </article>

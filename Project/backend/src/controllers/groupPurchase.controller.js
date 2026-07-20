@@ -44,7 +44,18 @@ async function create(req, res, next) {
       deadlineAt,
     } = req.body;
 
-    if (!title || !productUrl || !totalPrice || !targetParticipants || !category) {
+    const parsedTotalPrice = Number(totalPrice);
+    const parsedTargetParticipants = Number(targetParticipants);
+
+    if (
+      !title ||
+      !productUrl ||
+      !category ||
+      !Number.isInteger(parsedTotalPrice) ||
+      parsedTotalPrice <= 0 ||
+      !Number.isInteger(parsedTargetParticipants) ||
+      parsedTargetParticipants < 2
+    ) {
       throw new AppError(400, '필수 항목이 누락되었습니다.', 'VALIDATION_ERROR');
     }
 
@@ -53,8 +64,8 @@ async function create(req, res, next) {
       title,
       description,
       productUrl,
-      totalPrice: Number(totalPrice),
-      targetParticipants: Number(targetParticipants),
+      totalPrice: parsedTotalPrice,
+      targetParticipants: parsedTargetParticipants,
       pickupLatitude,
       pickupLongitude,
       pickupTimeSlot,

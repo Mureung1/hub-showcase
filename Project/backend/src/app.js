@@ -10,7 +10,16 @@ const errorHandler = require('./middlewares/errorHandler');
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({
+  origin(origin, callback) {
+    // Server-to-server requests have no Origin header; browsers must be allowlisted.
+    if (!origin || env.corsOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Origin is not allowed by CORS.'));
+  },
+  credentials: true,
+}));
 app.use(cookieParser());
 app.use(express.json());
 

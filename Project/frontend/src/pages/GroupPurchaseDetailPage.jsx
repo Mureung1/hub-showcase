@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getGroupPurchaseById, joinGroupPurchase } from '../api/groupPurchase';
 import './GroupPurchaseDetailPage.css';
 
 const mockPurchase = {
@@ -21,19 +22,21 @@ const images = [
 
 const won = (value) => `${new Intl.NumberFormat('ko-KR').format(value)}원`;
 
-export default function GroupPurchaseDetailPage({ onNavigate }) {
+const statusSteps = ['RECRUITING', 'COMPLETED', 'ORDERED', 'WAITING_PICKUP', 'FINISHED'];
+
+export default function GroupPurchaseDetailPage({ onNavigate, id }) {
   const [purchase, setPurchase] = useState(mockPurchase);
   const [joinState, setJoinState] = useState('idle');
   const [message, setMessage] = useState('');
   const [isLiked, setIsLiked] = useState(false);
+  const activeStepIndex = Math.max(statusSteps.indexOf(purchase.status), 0);
   const progress = (purchase.currentParticipants / purchase.targetParticipants) * 100;
 
   useEffect(() => {
     async function fetchDetail() {
       try {
-        const response = await fetch('/group-purchases/1');
-        const result = await response.json();
-        if (response.ok && result.success) {
+        const result = await getGroupPurchaseById(id);
+        if (result.success) {
           const data = result.data;
           // Map DB keys to frontend component keys
           setPurchase({
@@ -50,13 +53,17 @@ export default function GroupPurchaseDetailPage({ onNavigate }) {
             productUrl: data.productUrl,
             status: data.status,
           });
+          setJoinState('idle');
+          setMessage('');
         }
       } catch (err) {
-        console.warn('Backend connection failed, using mock data:', err.message);
+        console.warn('Failed to fetch details:', err.message || err);
       }
     }
-    fetchDetail();
-  }, []);
+    if (id) {
+      fetchDetail();
+    }
+  }, [id]);
 
   async function handleJoin() {
     setJoinState('loading');
@@ -67,16 +74,9 @@ export default function GroupPurchaseDetailPage({ onNavigate }) {
         throw new Error('인증 토큰이 없습니다. 우측 상단 프로필을 클릭하여 개발자 로그인을 먼저 진행해주세요.');
       }
 
-      const response = await fetch(`/group-purchases/${purchase.id}/join`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': `Bearer ${token}` 
-        },
-      });
-      const result = await response.json();
+      const result = await joinGroupPurchase(purchase.id);
       
-      if (!response.ok || !result.success) {
+      if (!result.success) {
         throw new Error(result.error?.message || '참여 신청에 실패했습니다.');
       }
       
@@ -173,31 +173,31 @@ export default function GroupPurchaseDetailPage({ onNavigate }) {
               <div className="td-detail-page__tracker-section">
                 <span className="td-label-md td-detail-page__tracker-title">공동구매 상태</span>
                 <div className="td-detail-page__tracker-steps">
-                  <div className="td-detail-page__tracker-step td-detail-page__tracker-step--active">
+                  <div className={`td-detail-page__tracker-step ${activeStepIndex >= 0 ? 'td-detail-page__tracker-step--active' : ''}`}>
                     <div className="td-detail-page__tracker-icon-circle">
                       <span className="material-symbols-outlined text-sm">group</span>
                     </div>
                     <span className="td-label-sm">모집중</span>
                   </div>
-                  <div className="td-detail-page__tracker-step">
+                  <div className={`td-detail-page__tracker-step ${activeStepIndex >= 1 ? 'td-detail-page__tracker-step--active' : ''}`}>
                     <div className="td-detail-page__tracker-icon-circle">
                       <span className="material-symbols-outlined text-sm">shopping_bag</span>
                     </div>
                     <span className="td-label-sm">모집완료</span>
                   </div>
-                  <div className="td-detail-page__tracker-step">
+                  <div className={`td-detail-page__tracker-step ${activeStepIndex >= 2 ? 'td-detail-page__tracker-step--active' : ''}`}>
                     <div className="td-detail-page__tracker-icon-circle">
                       <span className="material-symbols-outlined text-sm">local_shipping</span>
                     </div>
                     <span className="td-label-sm">배송중</span>
                   </div>
-                  <div className="td-detail-page__tracker-step">
+                  <div className={`td-detail-page__tracker-step ${activeStepIndex >= 3 ? 'td-detail-page__tracker-step--active' : ''}`}>
                     <div className="td-detail-page__tracker-icon-circle">
                       <span className="material-symbols-outlined text-sm">inventory_2</span>
                     </div>
                     <span className="td-label-sm">픽업대기</span>
                   </div>
-                  <div className="td-detail-page__tracker-step">
+                  <div className={`td-detail-page__tracker-step ${activeStepIndex >= 4 ? 'td-detail-page__tracker-step--active' : ''}`}>
                     <div className="td-detail-page__tracker-icon-circle">
                       <span className="material-symbols-outlined text-sm">check_circle</span>
                     </div>
