@@ -75,9 +75,14 @@ const logout = async (req, res) => {
   }
 };
 
+const me = (req, res) => {
+  return res.status(200).json({ data: req.user });
+};
+
 module.exports = {
   login,
   logout,
+  me,
   signupMentee,
   signupMentor,
 };
