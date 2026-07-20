@@ -11,10 +11,9 @@
 
 ## 스택
 
-- 프론트: React (Vite)
-- 백: Express (Node)
+- 프론트: React (Vite). Supabase를 직접 조회(supabase-js), Express 조회 서버는 안 만든다.
 - 데이터: Supabase (Postgres, 자격요건은 JSONB로)
-- 수집: API 우선(온통청년 청년정책, 1365 봉사), 없으면 정적 HTML 스크래핑. 배치로 몰아서.
+- 수집: API 우선(온통청년 청년정책 등), 없으면 정적 HTML 스크래핑/내부 API(링커리어). Node 스크립트로 온디맨드 수집.
 - 파싱: Claude (Anthropic, 자격요건 자유 문장을 조건으로 구조화)
 
 ## 디렉토리 구조
@@ -22,12 +21,10 @@
 ```
 activity-curation/
   src/             React 앱 (Vite). 지금은 root가 곧 client다.
-  server/          Express (스캐폴드 생성됨, 다음주에 stub 채우기)
-    routes/        조회 API (GET /postings 등, docs/schema.md 참조)
-    sources/       소스별 수집기 (API·크롤링, 하나씩 끼움)
+  server/          Node 스크립트 (Express 서버 아님, 조회는 프론트가 Supabase 직접)
+    sources/       소스별 수집기 (콘테스트코리아, 위비티, 링커리어, 부산청년플랫폼, 온통청년)
     parser/        LLM 자격요건 파서
-    batch/         새벽 배치 (스케줄)
-    db/            Supabase 클라이언트, 쿼리
+    batch/         자동 수집기 (collect.js, 온디맨드/GitHub Actions)
   docs/            기획서, 데이터 수집, 스키마
   design/          디자인 시안
   .claude/skills/  디자인 스킬
@@ -38,8 +35,8 @@ activity-curation/
 ## 라이브러리 (왜 쓰는지)
 
 - 프론트: react, react-dom, react-router-dom(화면 이동). 스타일은 디자인 토큰 CSS로 가볍게, UI 라이브러리는 안 쓴다.
-- 백: express(서버), cors, dotenv(키 관리), @supabase/supabase-js(DB), cheerio(정적 HTML 파싱), node-cron(배치), @anthropic-ai/sdk(Claude 파싱).
-- 개발: vite, nodemon(서버 자동 재시작), oxlint(이미 씀).
+- 서버 스크립트: dotenv(키 관리), @supabase/supabase-js(DB), cheerio(정적 HTML 파싱), @anthropic-ai/sdk(Claude 파싱).
+- 개발: vite, oxlint(이미 씀).
 - 원칙: 꼭 필요한 것만 넣는다. 안 쓸 라이브러리를 미리 안 깐다.
 
 ## 컨벤션

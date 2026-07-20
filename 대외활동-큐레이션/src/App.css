@@ -1,17 +1,25 @@
 :root {
-  --violet: #6d28d9;
-  --violet-50: #f5f3ff;
-  --ink: #1f2430;
-  --muted: #6b7280;
-  --line: #e7e5ee;
-  --green: #0f9d58;
-  --amber: #d97706;
+  --violet: #7b5cff;
+  --violet-hover: #6a47ff;
+  --violet-50: #ede7ff;
+  --violet-chip: #e7deff;
+  --dark: #241b3d;
+  --ink: #251c40;
+  --muted: #6e6690;
+  --line: #ece6fb;
+  --green: #17b877;
+  --green-bg: #e3f7ef;
+  --amber: #f5a524;
+  --amber-bg: #fff1d9;
+  --r-card: 20px;
+  --shadow-sm: 0 4px 14px rgba(80, 50, 180, 0.08);
+  --shadow: 0 10px 28px rgba(80, 50, 180, 0.12);
 }
 
 .app {
   max-width: 760px;
   margin: 0 auto;
-  padding: 36px 20px 80px;
+  padding: 20px 20px 80px;
 }
 
 .header h1 {
@@ -29,10 +37,9 @@
 .panel {
   margin: 24px 0;
   padding: 20px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: 0 1px 2px rgba(30, 20, 60, 0.04);
+  background: var(--violet-50);
+  border: none;
+  border-radius: var(--r-card);
 }
 .fields {
   display: grid;
@@ -156,7 +163,7 @@
   cursor: pointer;
 }
 .search-btn:hover {
-  background: #5b21b6;
+  background: var(--violet-hover);
 }
 
 .filters {
@@ -212,8 +219,8 @@
   padding: 6px 12px;
   border-radius: 999px;
 }
-.s-eligible { background: #e7f6ee; color: #0f7a43; }
-.s-review { background: #fef3e2; color: #b45c09; }
+.s-eligible { background: var(--green-bg); color: #0f7a43; }
+.s-review { background: var(--amber-bg); color: #b45c09; }
 .s-near { background: var(--violet-50); color: var(--violet); }
 
 .section {
@@ -224,14 +231,21 @@
   align-items: center;
   gap: 8px;
   font-size: 1.02rem;
+  font-weight: 800;
   margin: 0 0 12px;
-  padding-left: 10px;
-  border-left: 3px solid var(--line);
+  padding-left: 4px;
   color: var(--ink);
 }
-.section.eligible .section-title { border-color: var(--green); }
-.section.review .section-title { border-color: var(--amber); }
-.section.near .section-title { border-color: var(--violet); }
+.section-title::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.section.eligible .section-title::before { background: var(--green); }
+.section.review .section-title::before { background: var(--amber); }
+.section.near .section-title::before { background: var(--violet); }
 .count {
   font-size: 0.74rem;
   color: #fff;
@@ -249,18 +263,20 @@
   gap: 10px;
 }
 .card {
-  padding: 16px;
+  padding: 18px 20px;
   background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  border: none;
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: box-shadow 0.15s ease;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 .card:hover {
-  box-shadow: 0 4px 16px rgba(80, 60, 160, 0.1);
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
 }
 .section.near .card {
-  border-left: 3px solid var(--violet);
+  border: 2px solid rgba(123, 92, 255, 0.35);
 }
 .card-top {
   display: flex;
@@ -293,13 +309,14 @@
 }
 .tag {
   font-size: 0.72rem;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 6px;
+  font-weight: 800;
+  padding: 4px 11px;
+  border-radius: 999px;
 }
 .tag-대외활동 { background: #eef2ff; color: #4338ca; }
 .tag-공모전 { background: var(--violet-50); color: var(--violet); }
-.tag-장학 { background: #e7f6ee; color: #0f7a43; }
+.tag-장학 { background: var(--green-bg); color: #0f7a43; }
+.tag-지자체 { background: #e6f4ff; color: #1d64c9; }
 .tag-봉사 { background: #fdeef4; color: #be185d; }
 .dday {
   font-size: 0.78rem;
@@ -319,8 +336,11 @@
 }
 .card-reason {
   margin: 0 0 12px;
-  font-size: 0.88rem;
-  color: #4b5563;
+  padding: 8px 12px;
+  background: #faf8ff;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  color: var(--muted);
   line-height: 1.5;
 }
 .apply {
@@ -343,6 +363,7 @@
   cursor: pointer;
 }
 .fold:hover { background: #faf9fc; }
+.section .fold { margin-top: 10px; }
 .section.ineligible .cards {
   margin-top: 10px;
   opacity: 0.9;
@@ -419,16 +440,23 @@
 }
 .modal-fails li {
   display: flex;
-  gap: 10px;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
   font-size: 0.85rem;
   background: #faf9fc;
   padding: 8px 12px;
   border-radius: 8px;
 }
+.f-info { display: flex; gap: 10px; align-items: center; }
 .f-label { font-weight: 600; color: var(--ink); min-width: 56px; }
 .f-req { color: #dc2626; }
 .f-mine { color: var(--muted); margin-left: auto; }
+.modal-fails .field { flex-direction: row; align-items: center; gap: 8px; }
+.modal-fails .field-label { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+.modal-fails .field select,
+.modal-fails .field input[type="number"] { width: 120px; flex: none; }
+.modal-fails .field input[type="range"] { width: 140px; flex: none; }
+.fixed-msg { margin: 0 0 12px; color: var(--green); font-weight: 700; font-size: 0.9rem; }
 .modal-section { margin-bottom: 18px; }
 .modal-section h4 { margin: 0 0 6px; font-size: 0.82rem; color: var(--muted); }
 .modal-section p { margin: 0; font-size: 0.92rem; color: #374151; line-height: 1.55; }
@@ -457,15 +485,28 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 16px;
+  padding: 12px 20px;
   margin-bottom: 20px;
-  border-bottom: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
 }
 .nav-brand {
-  font-weight: 700;
-  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 1.02rem;
   color: var(--ink);
   text-decoration: none;
+}
+.nav-brand::before {
+  content: "";
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--violet), #a58bff);
+  flex: none;
 }
 .nav-links {
   display: flex;
@@ -473,13 +514,13 @@
 }
 .nav-link {
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--muted);
   text-decoration: none;
 }
 .nav-link.on {
   color: var(--violet);
-  font-weight: 700;
+  font-weight: 800;
 }
 
 /* 상세 페이지 */
@@ -501,8 +542,9 @@
 .detail-card {
   padding: 24px;
   background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 16px;
+  border: none;
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-sm);
 }
 .page-title {
   font-size: 1.3rem;

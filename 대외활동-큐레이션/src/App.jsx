@@ -40,6 +40,11 @@ export default function App() {
 
   const setField = (key, value) => setProfile((p) => ({ ...p, [key]: value }));
   const runSearch = () => setApplied({ profile, showScholarship, query });
+  // 상세화면에서 조건을 바로 고칠 때: draft와 applied를 함께 바꿔 즉시(전역) 재매칭되게 한다.
+  const applyField = (key, value) => {
+    setProfile((p) => ({ ...p, [key]: value }));
+    setApplied((a) => ({ ...a, profile: { ...a.profile, [key]: value } }));
+  };
   const toggleFav = (id) => setFavorites((prev) => {
     const next = new Set(prev);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -61,7 +66,7 @@ export default function App() {
 
   // 페이지에 내려줄 통로(props). 각 페이지는 useOutletContext()로 꺼내 쓴다.
   const ctx = {
-    profile, setField, showScholarship, setShowScholarship, query, setQuery, runSearch, applied,
+    profile, setField, applyField, showScholarship, setShowScholarship, query, setQuery, runSearch, applied,
     matchProfile, cats, toggleCat, favOnly, setFavOnly, sortBy, setSortBy, favorites, toggleFav,
     postings, loading, loadError,
   };
