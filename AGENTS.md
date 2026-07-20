@@ -28,6 +28,7 @@ Codex와 Claude Code를 함께 사용한다. 단계별 역할을 나눈다.
 | 설계 | Codex | 요구사항, API, DB, 화면 흐름, 완료 기준 정리 |
 | 설계 검증 | Claude Code | 빠진 조건, 과한 복잡도, 엣지 케이스 검토 |
 | 코드 구현 | Claude Code | 확정된 설계에 따라 실제 코드 작성 |
+| 구현 1차 리뷰 | Claude Code 서브에이전트 | 기획·설계 문서 대비 구현 누락, 과구현, 테스트 결과 확인 |
 | 구현 검증 | Codex | 설계 일치 여부와 하네스 통과 여부 확인 |
 
 - 한 AI에게 설계와 최종 검증을 동시에 맡기지 않는다.
@@ -37,7 +38,7 @@ Codex와 Claude Code를 함께 사용한다. 단계별 역할을 나눈다.
 
 계획 수립은 Codex의 `task_planner` 서브에이전트(`.codex/agents/task-planner.toml`)를 사용한다. 판단 기준 상세는 `docs/plan/process/agent-strategy.md`에 있다.
 
-각 단계는 슬래시 커맨드로 등록되어 있다. Claude Code는 `/design-review`, `/implementation-request`, Codex는 `/design-request`, `/implementation-verification`. 설정과 사이클은 `.agents/templates/README.md`에 있다.
+각 단계는 슬래시 커맨드로 등록되어 있다. Claude Code는 `/design-review`, `/implementation-request`, `/implementation-review`, Codex는 `/design-request`, `/implementation-verification`. 설정과 사이클은 `.agents/templates/README.md`에 있다.
 
 ## 작업 범위
 
