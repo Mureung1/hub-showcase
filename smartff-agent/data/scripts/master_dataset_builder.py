@@ -120,26 +120,29 @@ def validate_dataset(df: pd.DataFrame):
     total_rows = len(df)
     expected_rows = 24  # 4 categories × 6 months
     print(f"Total rows: {total_rows} (expected: {expected_rows})")
+    assert total_rows == expected_rows, f"Row count mismatch: {total_rows} != {expected_rows}"
 
     # 카테고리별 분포
     print(f"\nCategory distribution:")
     for category in sorted(df['category'].unique()):
         count = len(df[df['category'] == category])
         print(f"  {category}: {count} rows")
+        assert count == 6, f"Category {category} has {count} rows, expected 6"
 
     # 월별 분포
     print(f"\nMonth distribution:")
-    for month in sorted(df['month'].unique()):
+    months = sorted([int(m) for m in df['month'].unique()])
+    assert months == [1, 2, 3, 4, 5, 6], f"Missing months: {months}"
+    for month in months:
         count = len(df[df['month'] == month])
-        print(f"  {month}: {count} rows")
+        print(f"  {month}월: {count} rows")
+        assert count == 4, f"Month {month} has {count} rows, expected 4"
 
     # 결측치
     print(f"\nMissing values:")
     missing = df.isnull().sum()
-    if missing.sum() == 0:
-        print(f"  None (all {len(df.columns)} columns complete)")
-    else:
-        print(missing[missing > 0])
+    assert missing.sum() == 0, f"Missing values found: {missing[missing > 0].to_dict()}"
+    print(f"  None (all {len(df.columns)} columns complete)")
 
     # 원가율 범위
     print(f"\nCost rate range:")
@@ -154,6 +157,15 @@ def validate_dataset(df: pd.DataFrame):
         print(f"\n[WARNING] Abnormal cost rates:")
         for _, row in abnormal.iterrows():
             print(f"  {row['month']} {row['category']}: {row['avg_cost_rate']:.1%}")
+
+    # 모든 수치 검증
+    print(f"\nNumeric validation:")
+    assert (df['sales_qty'] > 0).all(), "Found non-positive sales_qty"
+    assert (df['sales_amount'] > 0).all(), "Found non-positive sales_amount"
+    assert (df['avg_selling_price'] > 0).all(), "Found non-positive avg_selling_price"
+    assert (df['waste_qty'] >= 0).all(), "Found negative waste_qty"
+    assert (df['avg_cost_rate'] > 0).all(), "Found non-positive avg_cost_rate"
+    print("  All numeric values valid")
 
 
 def save_master_dataset(df: pd.DataFrame, output_path: str = "data/master/merged_dataset.csv"):

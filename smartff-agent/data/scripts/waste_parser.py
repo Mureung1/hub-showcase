@@ -11,6 +11,15 @@ CATEGORIES = ["김밥", "도시락", "주먹밥", "햄버거샌드위치"]
 MONTHS = [f"{i:02d}" for i in range(1, 7)]
 
 
+def is_summary_row(product_name: str) -> bool:
+    """합계/소계/합 행인지 판단"""
+    if not product_name:
+        return False
+    name_lower = str(product_name).lower().strip()
+    summary_keywords = ['합계', '소계', '합', 'total', 'subtotal']
+    return any(kw in name_lower for kw in summary_keywords)
+
+
 def parse_waste_file(file_path: str, category: str, month: str) -> pd.DataFrame:
     """
     단일 waste 파일 파싱
@@ -37,8 +46,9 @@ def parse_waste_file(file_path: str, category: str, month: str) -> pd.DataFrame:
             waste_qty = row.iloc[4]       # 폐기수량
             waste_amount = row.iloc[5]    # 폐기금액
 
-            # 상품코드가 있는 행만 처리
-            if pd.notna(product_code) and pd.notna(product_name):
+            # 상품코드가 있고 합계가 아닌 행만 처리
+            product_name_str = str(product_name).strip() if pd.notna(product_name) else ""
+            if pd.notna(product_code) and product_name_str and not is_summary_row(product_name_str):
                 try:
                     # 상품코드: 정수→문자열 (앞의 0 보존)
                     code_str = str(int(float(product_code)))

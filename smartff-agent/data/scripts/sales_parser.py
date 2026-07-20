@@ -12,6 +12,15 @@ CATEGORIES = ["김밥", "도시락", "주먹밥", "햄버거샌드위치"]
 MONTHS = [f"{i:02d}" for i in range(1, 7)]
 
 
+def is_summary_row(product_name: str) -> bool:
+    """합계/소계/합 행인지 판단"""
+    if not product_name:
+        return False
+    name_lower = str(product_name).lower().strip()
+    summary_keywords = ['합계', '소계', '합', 'total', 'subtotal']
+    return any(kw in name_lower for kw in summary_keywords)
+
+
 def parse_sales_file(file_path: str, category: str, month: str) -> pd.DataFrame:
     """
     단일 sales 파일 파싱
@@ -34,9 +43,9 @@ def parse_sales_file(file_path: str, category: str, month: str) -> pd.DataFrame:
             sales_qty = row.iloc[4]     # 5번째 컬럼 (조회기간 수량)
             sales_amount = row.iloc[5]  # 6번째 컬럼 (조회기간 판매액)
 
-            # 상품명이 있는 행만 처리 (합계 제외)
+            # 상품명이 있는 행만 처리 (합계/소계 제외)
             product_name_str = str(product_name).strip() if pd.notna(product_name) else ""
-            if product_name_str and product_name_str != "합계":
+            if product_name_str and not is_summary_row(product_name_str):
                 try:
                     qty = int(float(sales_qty) if pd.notna(sales_qty) else 0)
                     # 금액은 쉼표를 제거해야 함 (예: "80,460" → 80460)
