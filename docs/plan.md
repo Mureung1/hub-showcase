@@ -265,7 +265,7 @@ MVP에서는 다음 항목을 제외하고 2차 기능으로 분리합니다.
 
 선택된 제품 화면 방향은 `Today Learning Hub + Learning Workspace IDE` 조합입니다. 앱 첫 화면은 AI 채팅만 여는 구조가 아니라 오늘 학습, 학습 목록, 복습 항목, 이어하기 액션을 관리하는 허브로 시작합니다. 학습을 시작하면 커리큘럼, AI 튜터, 코드 에디터, 실행 결과가 결합된 IDE형 워크스페이스로 이동합니다.
 
-다음 단계는 React mock 화면의 밀도, 반응형, mock 데이터 흐름을 다듬고 오답노트와 Curriculum Planner Agent를 연결한 뒤 Monaco Editor, 코드 실행, Electron Main Process, RAG, Notion API를 순차적으로 연결하는 것입니다. 기능별 구현 기준은 [오늘 학습 허브](./features/today-learning.md), [학습 워크스페이스](./features/learning-workspace.md), [오답노트](./features/mistake-notes.md), [Curriculum Planner Agent](./features/curriculum-planner-agent.md), [Curriculum Agent API](./features/curriculum-agent-api.md)를 참고합니다.
+다음 단계는 React mock 화면의 밀도, 반응형, mock 데이터 흐름을 다듬고 오답노트와 Curriculum Planner Agent를 연결한 뒤 Monaco Editor, 코드 실행, Electron Main Process, RAG, Notion API를 순차적으로 연결하는 것입니다. 기능별 구현 기준은 [오늘 학습 허브](./features/today-learning.md), [학습 워크스페이스](./features/learning-workspace.md), [오답노트](./features/mistake-notes.md), [Curriculum Planner Agent](./features/curriculum-planner-agent.md), [Curriculum Agent API](./features/curriculum-agent-api.md), [학습 지식 데이터](./features/learning-knowledge-data.md)를 참고합니다.
 
 ### React Mock 진행 상태 저장
 

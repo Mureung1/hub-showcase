@@ -50,6 +50,7 @@ Current module boundaries:
 - `backend/modules/learning-progress`: stores mission run state, attempt count, active step, completion time, and activity log.
 - `backend/modules/mistake-notes`: stores reusable mistake records from Git Lab, Workspace, algorithm, and API practice flows.
 - `backend/modules/git-lab`: records Git command attempts and can create a linked mistake note for failed attempts.
+- `backend/modules/knowledge`: loads official-doc JSONL chunks from `data` for agent/RAG grounding.
 
 ## Local Environment
 

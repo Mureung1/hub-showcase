@@ -24,6 +24,8 @@ v1 실제 호출 위치는 Node.js backend입니다.
    - `backend/modules/curriculum`를 CLI가 아닌 API route에서도 호출할 수 있게 유지합니다.
    - route handler는 request validation, auth/session 확인, core 호출, response mapping만 담당합니다.
    - LLM 응답 검증과 fallback 정규화는 core 또는 agent service 계층에 둡니다.
+   - `shared/curriculum/*.json`은 학습 순서와 module 후보를 제공하고, `data/*chunks.jsonl`은 공식 문서 근거 검색에만 사용합니다.
+   - Docker JSONL은 `backend/modules/knowledge` adapter로 읽고, React PDF는 텍스트 추출/chunking 이후 같은 JSONL 형식으로 편입합니다.
 
 3. 환경 변수와 보안
    - `GEMINI_API_KEY`, `GEMINI_MODEL`, provider 설정은 Node backend 환경 변수에서만 읽습니다.
