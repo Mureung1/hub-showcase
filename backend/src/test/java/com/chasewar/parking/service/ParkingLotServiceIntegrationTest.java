@@ -7,6 +7,9 @@ import static org.mockito.BDDMockito.given;
 import com.chasewar.global.infra.placesearch.PlaceSearchClient;
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.domain.vo.Coordinates;
+import com.chasewar.parking.domain.vo.Fee;
+import com.chasewar.parking.domain.vo.OperatingHours;
+import com.chasewar.parking.dto.ParkingLotDetailResponse;
 import com.chasewar.parking.dto.ParkingLotSearchResponse;
 import com.chasewar.parking.repository.ParkingLotRepository;
 import com.chasewar.support.IntegrationTest;
@@ -108,6 +111,31 @@ class ParkingLotServiceIntegrationTest extends IntegrationTest {
 
             // then
             assertThat(results).hasSize(10);
+        }
+    }
+
+    @DisplayName("주차장을 상세 조회할 때")
+    @Nested
+    class GetDetail {
+
+        @DisplayName("id로 주차장의 상세 정보를 반환한다")
+        @Test
+        void success_getDetail() {
+            // given
+            ParkingLot saved = parkingLotRepository.save(ParkingLotFixtureBuilder.builder()
+                    .pkltCd("10000")
+                    .name("역삼동 공영주차장")
+                    .fee(new Fee(5000, 30, 1000, 10, 30000))
+                    .operatingHours(new OperatingHours("0900", "2200", "0900", "2400", "0900", "2400"))
+                    .build());
+
+            // when
+            ParkingLotDetailResponse response = parkingLotService.getDetail(saved.getId());
+
+            // then
+            assertThat(response.name()).isEqualTo("역삼동 공영주차장");
+            assertThat(response.fee().basicFee()).isEqualTo(5000);
+            assertThat(response.operatingHours().weekdayStart()).isEqualTo("0900");
         }
     }
 

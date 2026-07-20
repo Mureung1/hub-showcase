@@ -7,7 +7,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.chasewar.global.infra.placesearch.PlaceSearchClient;
+import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.domain.vo.Coordinates;
+import com.chasewar.parking.domain.vo.Fee;
 import com.chasewar.parking.repository.ParkingLotRepository;
 import com.chasewar.support.ControllerTest;
 import com.chasewar.support.fixture.ParkingLotFixtureBuilder;
@@ -71,6 +73,38 @@ class ParkingLotControllerTest extends ControllerTest {
             mockMvc.perform(get("/api/parking-lots"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("MISSING_REQUEST_PARAMETER"));
+        }
+    }
+
+    @DisplayName("주차장을 상세 조회할 때")
+    @Nested
+    class GetDetail {
+
+        @DisplayName("존재하는 id면 상세 정보를 200으로 반환한다")
+        @Test
+        void success_getDetail() throws Exception {
+            // given
+            ParkingLot saved = parkingLotRepository.save(ParkingLotFixtureBuilder.builder()
+                    .pkltCd("10000")
+                    .name("역삼동 공영주차장")
+                    .fee(new Fee(5000, 30, 1000, 10, 30000))
+                    .build());
+
+            // when & then
+            mockMvc.perform(get("/api/parking-lots/{id}", saved.getId()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.name").value("역삼동 공영주차장"))
+                    .andExpect(jsonPath("$.payType").value("PAID"))
+                    .andExpect(jsonPath("$.fee.basicFee").value(5000));
+        }
+
+        @DisplayName("존재하지 않는 id면 404와 에러 코드를 반환한다")
+        @Test
+        void fail_notFound() throws Exception {
+            // when & then
+            mockMvc.perform(get("/api/parking-lots/{id}", 999_999L))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("NOT_FOUND_PARKING_LOT"));
         }
     }
 }
