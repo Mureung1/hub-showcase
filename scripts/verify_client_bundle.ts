@@ -6,7 +6,7 @@ const SECRET_KEY_PATTERN = /\bsb_secret_[A-Za-z0-9_-]{8,}\b/gu;
 const JWT_PATTERN =
   /\b[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]+\b/gu;
 const SECRET_ENV_NAME_PATTERN =
-  /(?:SECRET|SERVICE_ROLE|ACCESS_TOKEN|CLIENT_SECRET)/u;
+  /(?:SECRET|SERVICE_ROLE|ACCESS_TOKEN|CLIENT_SECRET)/iu;
 
 type Environment = Readonly<Record<string, string | undefined>>;
 
@@ -59,7 +59,6 @@ export function findClientBundleSecrets(
       name.startsWith('VITE_') &&
       SECRET_ENV_NAME_PATTERN.test(name) &&
       value &&
-      value.length >= 8 &&
       source.includes(value)
     ) {
       findings.add(`환경 변수 ${name}`);
