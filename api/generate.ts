@@ -1,10 +1,14 @@
+import { waitUntil } from '@vercel/functions'
+import { createEnvironmentGenerationMetricsSink } from './_lib/db/generationMetricsSink'
 import { createGenerateHandler } from './_lib/generation/handler'
-import { noopGenerationMetricsSink } from './_lib/generation/metrics'
 import { createUnconfiguredGenerationProvider } from './_lib/generation/provider'
 import { createInMemoryRateLimiter } from './_lib/generation/rateLimiter'
 
 const handleGenerate = createGenerateHandler({
-  metricsSink: noopGenerationMetricsSink,
+  metricsSink: createEnvironmentGenerationMetricsSink({
+    environment: process.env,
+    schedule: waitUntil,
+  }),
   provider: createUnconfiguredGenerationProvider(),
   rateLimiter: createInMemoryRateLimiter(),
 })

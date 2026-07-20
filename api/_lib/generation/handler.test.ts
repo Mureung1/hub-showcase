@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createDatabaseGenerationMetricsSink } from '../db/generationMetricsSink'
 import { createGenerateHandler, getEphemeralClientKey } from './handler'
 import type { GenerationMetric, GenerationMetricsSink } from './metrics'
 import {
@@ -309,6 +310,30 @@ describe('createGenerateHandler', () => {
     })(createRequest())
 
     expect(response.status).toBe(200)
+  })
+
+  it('returns the same successful response when a scheduled database write rejects', async () => {
+    const scheduledTasks: Array<Promise<void>> = []
+    const metricsSink = createDatabaseGenerationMetricsSink({
+      repository: {
+        record: () => Promise.reject(new Error('database unavailable')),
+      },
+      schedule: (task) => scheduledTasks.push(task),
+    })
+    const provider = new FakeProvider([{ type: 'resolve', value: validProviderOutput }])
+
+    const response = await createHandler(provider, metricsSink)(createRequest())
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      candidates: [
+        { text: validProviderOutput.candidates[0].text, toneLabel: '기본', toneLevel: 1 },
+        { text: validProviderOutput.candidates[1].text, toneLabel: '더 부드럽게', toneLevel: 2 },
+        { text: validProviderOutput.candidates[2].text, toneLabel: '더 분명하게', toneLevel: 3 },
+      ],
+      source: 'ai',
+    })
+    await expect(scheduledTasks[0]).resolves.toBeUndefined()
   })
 })
 
