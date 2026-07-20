@@ -9,6 +9,7 @@ class FakeQueryBuilder implements PromiseLike<QueryResult> {
     private readonly table: string,
     private readonly operations: string[],
     private readonly results: Map<string, QueryResult[]>,
+    private readonly payloads: Map<string, unknown>,
   ) {}
 
   select(): this {
@@ -28,8 +29,11 @@ class FakeQueryBuilder implements PromiseLike<QueryResult> {
     return this;
   }
 
-  insert(): this {
+  insert(values?: unknown): this {
     this.operations.push(`${this.table}:insert`);
+    if (values !== undefined) {
+      this.payloads.set(this.table, values);
+    }
     return this;
   }
 
@@ -106,18 +110,19 @@ describe("RepositoryAnalysisPersistence", () => {
 
   function createPersistence(results: Map<string, QueryResult[]>) {
     const operations: string[] = [];
+    const payloads = new Map<string, unknown>();
     const client = {
-      from: (table: string) => new FakeQueryBuilder(table, operations, results),
+      from: (table: string) => new FakeQueryBuilder(table, operations, results, payloads),
     };
     const persistence = new RepositoryAnalysisPersistence({
       client,
     } as unknown as SupabaseClientService);
 
-    return { persistence, operations };
+    return { persistence, operations, payloads };
   }
 
   it("stores a completed analysis across all four tables", async () => {
-    const { persistence, operations } = createPersistence(
+    const { persistence, operations, payloads } = createPersistence(
       new Map([
         ["repositories", [{ data: { id: "repository-id" }, error: null }]],
         [
@@ -146,6 +151,20 @@ describe("RepositoryAnalysisPersistence", () => {
       "contributor_metrics:insert",
       "analysis_evidence:insert",
       "analysis_results:update",
+    ]);
+    expect(payloads.get("analysis_results")).toEqual(
+      expect.objectContaining({
+        tech_stack: { languages: { TypeScript: 100 } },
+        project_structure: {},
+        warnings: ["기존 분석 결과에는 확장 분석 정보가 포함되지 않았습니다."],
+      }),
+    );
+    expect(payloads.get("analysis_evidence")).toEqual([
+      expect.objectContaining({
+        evidence_type: "commit",
+        reference_id: "abc123",
+        contributor_metric_id: "contributor-id",
+      }),
     ]);
   });
 
