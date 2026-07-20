@@ -1,0 +1,220 @@
+<!DOCTYPE html><html lang="ko" style=""><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Jua&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "campfire-orange": "#FF5C00",
+                    "surface": "#fbf9f1",
+                    "on-primary-container": "#521800",
+                    "inverse-surface": "#30312c",
+                    "primary-fixed": "#ffdbce",
+                    "surface-container-low": "#f5f4ec",
+                    "surface-dim": "#dcdad2",
+                    "primary-fixed-dim": "#ffb59a",
+                    "on-background": "#1b1c17",
+                    "secondary-fixed": "#e5e2e1",
+                    "primary": "#a73a00",
+                    "on-primary-fixed": "#370e00",
+                    "on-error": "#ffffff",
+                    "secondary": "#5f5e5e",
+                    "outline-variant": "#e4beb1",
+                    "on-primary": "#ffffff",
+                    "error": "#ba1a1a",
+                    "on-tertiary-container": "#2a2b2c",
+                    "on-error-container": "#93000a",
+                    "surface-tint": "#a73a00",
+                    "muted-gray": "#808080",
+                    "outline": "#8f7065",
+                    "on-secondary-fixed-variant": "#474746",
+                    "tertiary-fixed-dim": "#c7c6c6",
+                    "inverse-primary": "#ffb59a",
+                    "tertiary-fixed": "#e3e2e2",
+                    "surface-container-high": "#eae8e0",
+                    "primary-container": "#ff5c00",
+                    "ink-black": "#1A1A1A",
+                    "surface-bright": "#fbf9f1",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "surface-container": "#f0eee6",
+                    "on-tertiary-fixed-variant": "#464747",
+                    "surface-container-highest": "#e4e3db",
+                    "on-secondary-fixed": "#1c1b1b",
+                    "secondary-container": "#e2dfde",
+                    "on-surface-variant": "#5b4137",
+                    "on-primary-fixed-variant": "#802a00",
+                    "on-surface": "#1b1c17",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary-fixed": "#1b1c1c",
+                    "surface-variant": "#e4e3db",
+                    "background": "#fbf9f1",
+                    "on-secondary-container": "#636262",
+                    "error-container": "#ffdad6",
+                    "inverse-on-surface": "#f3f1e9",
+                    "paper-cream": "#FFFDF5",
+                    "tertiary-container": "#929292",
+                    "secondary-fixed-dim": "#c8c6c5",
+                    "tertiary": "#5e5e5e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "4px",
+                    "lg": "8px",
+                    "xl": "16px",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-container": "24px",
+                    "gap-form": "14px",
+                    "border-extra-thick": "2.5px",
+                    "gutter-grid": "16px",
+                    "gap-chip": "8px",
+                    "gap-button-group": "12px",
+                    "base-unit": "4px",
+                    "border-thick": "2px"
+            },
+            "fontFamily": {
+                    "body-sm": ["Jua"],
+                    "button-label": ["Jua"],
+                    "caption": ["Jua"],
+                    "headline-lg": ["Jua"],
+                    "mono-timer": ["ui-monospace, monospace"],
+                    "subheader": ["Jua"],
+                    "headline-lg-mobile": ["Jua"],
+                    "body-md": ["Jua"]
+            },
+            "fontSize": {
+                    "body-sm": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "button-label": ["15px", {"lineHeight": "1", "fontWeight": "700"}],
+                    "caption": ["12px", {"lineHeight": "1.2", "fontWeight": "400"}],
+                    "headline-lg": ["20px", {"lineHeight": "1.3", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "mono-timer": ["14px", {"lineHeight": "1", "fontWeight": "400"}],
+                    "subheader": ["13px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["19px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    }catch(_e){}</script></head><body class="flex items-center justify-center min-h-screen">
+
+    <!-- Background Layer (Sim-->
+    <div class="fixed inset-0 w-full h-full z-0 overflow-hidden">
+        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBuqu-OVvoN_CdCt3ErETO1vRz3XPMs9QKIlXWjif9cytj_tvQqawXiv4caVox6m-Nu7qk5pfGc0Tyc1tigkJBZE7mOOCUArxWK5u37kdrqnGKatG76ybH3OjP0mbOEKluQR4-7u_uAGSQcywh6zGjDiCFu5_zfCRm_heNqqwkixeMjrf5RSrq8nsfT1iFvaxO-g2byDOG6so2jl8t1FiJ9rC5iUYKNoes17V3qDmMEyHD3hEy3L616YNYSLcRNVo1zVN2pGfaUk2_t" class="w-full h-full object-cover opacity-80" alt="Pixel art campfire landscape">
+    </div>
+
+    <!-- Modal Overlay -->
+    <div class="fixed inset-0 modal-overlay z-10 flex items-center justify-center p-4">
+        
+        <!-- Modal Window -->
+        <div class="relative w-full max-w-[500px] bg-paper-cream ink-border rounded-xl hard-shadow-lg flex flex-col max-h-[90vh] overflow-hidden">
+            
+            <!-- Modal Header -->
+            <header class="flex items-center justify-between p-margin-container dashed-divider">
+                <h1 class="font-headline-lg text-headline-lg text-ink-black">모임 만들기</h1>
+                <button class="w-[28px] h-[28px] ink-border rounded flex items-center justify-center bg-paper-cream hover:bg-surface-container-high transition-colors active-press">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                </button>
+            </header>
+
+            <!-- Modal Content -->
+            <div class="p-margin-container overflow-y-auto space-y-gap-form">
+                
+                <!-- Meeting Title -->
+                <div class="space-y-1">
+                    <label class="font-subheader text-subheader text-ink-black px-1">모임 제목</label>
+                    <input type="text" placeholder="어떤 모임인가요?" class="w-full h-[48px] bg-paper-cream ink-border rounded-lg px-4 font-body-md text-body-md focus:ring-0 focus:outline-none placeholder:text-muted-gray">
+                </div>
+
+                <!-- Category Chips -->
+                <div class="space-y-1">
+                    <label class="font-subheader text-subheader text-ink-black px-1">카테고리</label>
+                    <div class="flex flex-wrap gap-gap-chip">
+                        <button onclick="toggleChip(this)" class="px-4 py-1.5 ink-border rounded-full font-button-label text-button-label chip-active transition-all">독서</button>
+                        <button onclick="toggleChip(this)" class="px-4 py-1.5 ink-border rounded-full font-button-label text-button-label bg-paper-cream transition-all">취미</button>
+                        <button onclick="toggleChip(this)" class="px-4 py-1.5 ink-border rounded-full font-button-label text-button-label bg-paper-cream transition-all">공부</button>
+                        <button onclick="toggleChip(this)" class="px-4 py-1.5 ink-border rounded-full font-button-label text-button-label bg-paper-cream transition-all">기타</button>
+                        
+                    </div>
+                </div>
+
+                <!-- Date & Time -->
+                <div class="grid grid-cols-3 gap-gap-form">
+                    <div class="space-y-1">
+                        <label class="font-subheader text-subheader text-ink-black px-1">모임 시간 (시)</label>
+                        <div class="relative group">
+                            <select class="w-full h-[48px] bg-paper-cream ink-border rounded-lg px-4 font-body-md text-body-md appearance-none focus:ring-0 focus:outline-none pr-10">
+                                <option>18:00</option>
+                                <option>19:00</option>
+                                <option selected="">20:00</option>
+                                <option>21:00</option>
+                                <option>22:00</option>
+                            </select>
+                            
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[18px]">expand_more</span></div>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="font-subheader text-subheader text-ink-black px-1">활동 시간</label>
+                        <div class="flex gap-1">
+                            <div class="relative group flex-1"><select class="w-full h-[48px] bg-paper-cream ink-border rounded-lg px-2 font-body-md text-body-md appearance-none focus:ring-0 focus:outline-none pr-6"><option>0시간</option><option selected="">1시간</option><option>2시간</option><option>3시간</option></select><span class="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none text-[18px]">expand_more</span></div>
+                            <div class="relative group flex-1"><select class="w-full h-[48px] bg-paper-cream ink-border rounded-lg px-2 font-body-md text-body-md appearance-none focus:ring-0 focus:outline-none pr-6"><option selected="">0분</option><option>30분</option></select><span class="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none text-[18px]">expand_more</span></div>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="font-subheader text-subheader text-ink-black px-1">인원 수</label>
+                        <div class="relative group">
+                            <select class="w-full h-[48px] bg-paper-cream ink-border rounded-lg px-4 font-body-md text-body-md appearance-none focus:ring-0 focus:outline-none pr-10">
+                                <option>2명</option>
+                                <option>4명</option>
+                                <option selected="">6명</option>
+                                <option>8명</option>
+                                <option>무제한</option>
+                            </select>
+                            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[18px]">expand_more</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="space-y-1">
+                    <label class="font-subheader text-subheader text-ink-black px-1">모임 설명</label>
+                    <textarea rows="4" placeholder="모임에 대한 자세한 설명을 적어주세요." class="w-full bg-paper-cream ink-border rounded-lg p-4 font-body-md text-body-md focus:ring-0 focus:outline-none placeholder:text-muted-gray resize-none"></textarea>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <footer class="p-margin-container pt-0">
+                <button class="w-full h-[56px] bg-campfire-orange text-paper-cream font-headline-lg text-headline-lg ink-border rounded-xl hard-shadow-md active-press transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">add_circle</span>
+                    개설하기
+                </button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar (Shared Component Reference) -->
+    
+
+    <!-- Bottom Navigation Bar (Shared Component Reference) -->
+    
+
+    <script class="">
+        function toggleChip(el) {
+            // Deactivate all others
+            const chips = el.parentElement.querySelectorAll('button');
+            chips.forEach(c => {
+                c.classList.remove('chip-active');
+                c.classList.add('bg-paper-cream');
+            });
+            // Activate selected
+            el.classList.add('chip-active');
+            el.classList.remove('bg-paper-cream');
+        }
+
+        // Add some click listeners for haptic simulation
+        document.querySelectorAll('.active-press').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.classList.add('translate-x-[2px]', 'translate-y-[2px]', 'shadow-none');
+                setTimeout(() => {
+                    this.classList.remove('translate-x-[2px]', 'translate-y-[2px]', 'shadow-none');</script>
+
+</body></html>
