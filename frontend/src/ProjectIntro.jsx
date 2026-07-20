@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { SCORE_LABELS, STUDY_QUESTIONS, STRESS_QUESTIONS } from "./data/questions";
+import { buildDayPlan } from "./lib/schedule";
 import AnalysisReport from "./components/AnalysisReport";
 import { ConsentNotice } from "./components/ConsentNotice";
 import { OptionCard, Progress, ScoreBar } from "./components/ui";
@@ -89,6 +91,16 @@ export default function ProjectIntro() {
   const topScores = Object.entries(result.scores)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5);
+
+  // 하루 스케줄 생성기(최소 슬라이스): result 메모와 분리된 로컬 입력으로 계산한다.
+  const [sleepHours, setSleepHours] = useState(7);
+  const [classHours, setClassHours] = useState(6);
+  const [otherHours, setOtherHours] = useState(3);
+  const dayPlan = buildDayPlan({
+    essentialHours: { sleep: sleepHours, class: classHours, other: otherHours },
+    recommendations: result.recommendations,
+    routine: result.routine,
+  });
 
   function handleServerSave() {
     saveToServer({
@@ -290,8 +302,15 @@ export default function ProjectIntro() {
                   {result.recommendations.map((item) => (
                     <article className="method" key={item.title}>
                       <strong>{item.title}</strong>
-                      <p>{item.reason}</p>
-                      <p>{item.action}</p>
+                      {item.plain && <p className="method-plain">{item.plain}</p>}
+                      {item.dailyExample && (
+                        <p className="method-example">
+                          <span className="method-example-tag">일상 예시</span>
+                          {item.dailyExample}
+                        </p>
+                      )}
+                      <p className="method-action">오늘 할 일 · {item.action}</p>
+                      <p className="method-reason">{item.reason}</p>
                     </article>
                   ))}
                 </div>
@@ -429,6 +448,40 @@ export default function ProjectIntro() {
                       <strong>{point.day}</strong>
                       <span>{point.label}</span>
                     </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="result-card" style={{ marginTop: 16 }}>
+              <h3>오늘 하루 스케줄 만들기</h3>
+              <p className="hint">
+                하루 24시간에서 꼭 쓰는 시간을 빼고, 남는 시간에 오늘 추천 학습법을 얹어 제안합니다. 알림·캘린더 연동은 하지 않고 제안만 보여줍니다.
+              </p>
+              <div className="range-group" style={{ marginTop: 12 }}>
+                <label className="range-row">
+                  수면
+                  <input max="12" min="0" onChange={(event) => setSleepHours(Number(event.target.value))} type="range" value={sleepHours} />
+                  <span>{sleepHours}h</span>
+                </label>
+                <label className="range-row">
+                  수업·일정
+                  <input max="16" min="0" onChange={(event) => setClassHours(Number(event.target.value))} type="range" value={classHours} />
+                  <span>{classHours}h</span>
+                </label>
+                <label className="range-row">
+                  식사·이동·기타
+                  <input max="12" min="0" onChange={(event) => setOtherHours(Number(event.target.value))} type="range" value={otherHours} />
+                  <span>{otherHours}h</span>
+                </label>
+              </div>
+              <p className="hint" style={{ marginTop: 10 }}>{dayPlan.note}</p>
+              {dayPlan.blocks.length > 0 && (
+                <div className="answers" style={{ marginTop: 10 }}>
+                  {dayPlan.blocks.map((block) => (
+                    <span className={block.kind === "recovery" ? "answer-chip chip-recovery" : "answer-chip"} key={block.order}>
+                      {block.order}. {block.title} · {block.minutes}분
+                    </span>
                   ))}
                 </div>
               )}

@@ -89,6 +89,11 @@ button{font:inherit;}
 .method{border:1px solid var(--border);border-radius:var(--r-md);padding:16px;background:var(--surface-muted);}
 .method strong{display:block;color:var(--text-strong);font-size:16px;margin-bottom:8px;}
 .method p{margin:6px 0 0;font-size:14px;}
+.method-plain{color:var(--text-strong);font-weight:600;}
+.method-example{background:var(--tint-green);color:var(--on-tint-green);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;line-height:1.5;}
+.method-example-tag{display:inline-block;font-weight:700;font-size:11px;letter-spacing:.02em;margin-right:6px;opacity:.85;}
+.method-action{color:var(--text);}
+.method-reason{color:var(--text-muted);font-size:13px;}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;}
 ul{margin:10px 0 0;padding-left:18px;color:var(--text);line-height:1.7;}
 /* 실천 카드 */
@@ -110,6 +115,7 @@ textarea:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
 /* 칩 */
 .answers{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
 .answer-chip{background:var(--tint-blue);color:var(--on-tint-blue);border-radius:var(--r-pill);padding:6px 11px;font-size:12px;font-weight:600;}
+.answer-chip.chip-recovery{background:var(--tint-green);color:var(--on-tint-green);}
 /* 와이드에서 긴 산문 줄 길이 제한(가독성) */
 .panel>p,.panel>.lead{max-width:74ch;}
 /* 넓은 폭에서 신호 그리드 3열 허용 */
