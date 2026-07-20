@@ -5,6 +5,7 @@ import java.net.URI;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,5 +35,13 @@ public class BookController {
     @GetMapping("/{bookId}")
     public BookDetailResponse getBook(@PathVariable Long bookId, @RequestParam Long userId) {
         return bookService.getBook(bookId, userId);
+    }
+
+    @PatchMapping("/{bookId}/status")
+    public BookResponse updateStatus(
+            @PathVariable Long bookId,
+            @Valid @RequestBody UpdateBookStatusRequest request
+    ) {
+        return bookService.updateStatus(bookId, request);
     }
 }

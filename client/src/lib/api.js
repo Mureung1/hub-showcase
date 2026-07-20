@@ -60,3 +60,16 @@ export function createReadingRecord({ bookId, userId, endPage, startPageOverride
     body: JSON.stringify({ userId, endPage, startPageOverride: startPageOverride || null, impression: impression || null }),
   });
 }
+
+export function updateReadingRecord({ bookId, recordId, userId, endPage, impression }) {
+  return request(`/api/books/${bookId}/records/${recordId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ userId, endPage, impression: impression || null }),
+  });
+}
+
+export function deleteReadingRecord({ bookId, recordId, userId }) {
+  return request(`/api/books/${bookId}/records/${recordId}?userId=${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+  });
+}

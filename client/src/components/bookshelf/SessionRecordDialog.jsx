@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getNextStartPage } from '@/lib/reading';
 
-export function SessionRecordDialog({ book, open, onOpenChange, onSave }) {
+export function SessionRecordDialog({ book, record = null, canEditPage = true, open, onOpenChange, onSave }) {
   const endPageId = useId();
   const impressionId = useId();
   const overrideId = useId();
@@ -21,7 +21,9 @@ export function SessionRecordDialog({ book, open, onOpenChange, onSave }) {
   const [isOverrideOpen, setIsOverrideOpen] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const defaultStartPage = getNextStartPage(book);
+  const isEditing = Boolean(record);
+  const defaultStartPage = record?.startPage ?? getNextStartPage(book);
+  const isPageEditable = !isEditing || canEditPage;
   const startPage = isOverrideOpen && draft.startPageOverride !== ''
     ? Number(draft.startPageOverride)
     : defaultStartPage;
@@ -41,6 +43,25 @@ export function SessionRecordDialog({ book, open, onOpenChange, onSave }) {
     onOpenChange(nextOpen);
     if (!nextOpen) resetDraft();
   }
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (record) {
+      setDraft({
+        endPage: String(record.endPage),
+        impression: record.impression ?? '',
+        startPageOverride: '',
+      });
+      setErrors({});
+      setIsOverrideOpen(false);
+      setSubmitError('');
+      setIsSaving(false);
+      return;
+    }
+
+    resetDraft();
+  }, [open, record]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -64,7 +85,7 @@ export function SessionRecordDialog({ book, open, onOpenChange, onSave }) {
     try {
       await onSave({
         endPage,
-        startPageOverride: isOverrideOpen ? startPage : null,
+        startPageOverride: !isEditing && isOverrideOpen ? startPage : null,
         impression: draft.impression.trim(),
       });
       handleOpenChange(false);
@@ -78,9 +99,13 @@ export function SessionRecordDialog({ book, open, onOpenChange, onSave }) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="record-dialog" showCloseButton={false}>
         <DialogHeader className="record-dialog__header">
-          <p className="section-kicker">ADD A RECORD</p>
-          <DialogTitle>오늘 읽은 자리를 남겨볼까요?</DialogTitle>
-          <DialogDescription>{startPage}쪽부터 읽은 기록으로 남겨요.</DialogDescription>
+          <p className="section-kicker">{isEditing ? 'EDIT A RECORD' : 'ADD A RECORD'}</p>
+          <DialogTitle>
+            {isEditing ? (isPageEditable ? '기록을 고쳐볼까요?' : '감상을 고쳐볼까요?') : '오늘 읽은 자리를 남겨볼까요?'}
+          </DialogTitle>
+          <DialogDescription>
+            {isEditing ? `${startPage}쪽부터 읽은 기록을 수정해요.` : `${startPage}쪽부터 읽은 기록으로 남겨요.`}
+          </DialogDescription>
         </DialogHeader>
 
         <form className="record-dialog__form" onSubmit={handleSubmit} noValidate>
@@ -93,6 +118,7 @@ export function SessionRecordDialog({ book, open, onOpenChange, onSave }) {
               min={startPage || 1}
               inputMode="numeric"
               value={draft.endPage}
+              readOnly={!isPageEditable}
               onChange={(event) => {
                 setDraft((current) => ({ ...current, endPage: event.target.value }));
                 if (errors.endPage) setErrors((current) => ({ ...current, endPage: undefined }));
@@ -102,6 +128,7 @@ export function SessionRecordDialog({ book, open, onOpenChange, onSave }) {
               aria-invalid={Boolean(errors.endPage)}
             />
             {errors.endPage && <p className="field-error" role="alert">{errors.endPage}</p>}
+            {isEditing && !isPageEditable && <p className="field-help">과거 기록은 감상만 바꿀 수 있어요.</p>}
           </div>
 
           <div className="record-range-preview" role="status" aria-live="polite">
@@ -122,11 +149,11 @@ export function SessionRecordDialog({ book, open, onOpenChange, onSave }) {
             />
           </div>
 
-          {!isOverrideOpen ? (
+          {!isEditing && !isOverrideOpen ? (
             <Button className="record-dialog__override" type="button" variant="link" onClick={() => setIsOverrideOpen(true)}>
               시작 위치 직접 바꾸기
             </Button>
-          ) : (
+          ) : !isEditing ? (
             <div className="field-group record-dialog__override-input">
               <Label htmlFor={overrideId}>시작 페이지</Label>
               <Input
@@ -145,12 +172,14 @@ export function SessionRecordDialog({ book, open, onOpenChange, onSave }) {
               />
               {errors.startPageOverride && <p className="field-error" role="alert">{errors.startPageOverride}</p>}
             </div>
-          )}
+          ) : null}
           {submitError && <p className="field-error" role="alert">{submitError}</p>}
 
           <div className="record-dialog__actions">
             <Button type="button" variant="outline" disabled={isSaving} onClick={() => handleOpenChange(false)}>취소</Button>
-            <Button type="submit" disabled={isSaving}>{isSaving ? '기록을 남기는 중이에요…' : '기록 페이지 추가'}</Button>
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? (isEditing ? '기록을 고치는 중이에요…' : '기록을 남기는 중이에요…') : isEditing ? '기록 수정' : '기록 페이지 추가'}
+            </Button>
           </div>
         </form>
       </DialogContent>

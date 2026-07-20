@@ -1,6 +1,7 @@
 import { formatRecordDate } from '@/lib/reading';
+import { Button } from '@/components/ui/button';
 
-export function ReadingRecordList({ records }) {
+export function ReadingRecordList({ records, latestRecord, onEditRecord, onDeleteRecord }) {
   return (
     <section className="record-list" aria-labelledby="record-list-title">
       <p className="section-kicker">RECORDS</p>
@@ -12,6 +13,16 @@ export function ReadingRecordList({ records }) {
               <time dateTime={record.createdAt}>{formatRecordDate(record.createdAt)}</time>
               <strong>{record.startPage}–{record.endPage}쪽 · {record.endPage - record.startPage + 1}쪽 읽음</strong>
               {record.impression && <p>{record.impression}</p>}
+              <div className="record-page__actions" aria-label="기록 작업">
+                <Button type="button" variant="ghost" size="sm" onClick={() => onEditRecord(record)}>
+                  수정
+                </Button>
+                {record.id === latestRecord?.id && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => onDeleteRecord(record)}>
+                    삭제
+                  </Button>
+                )}
+              </div>
             </li>
           ))}
         </ol>

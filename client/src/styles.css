@@ -836,6 +836,23 @@ input:focus-visible {
   white-space: pre-wrap;
 }
 
+.record-page__actions {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.15rem;
+}
+
+.record-page__actions button {
+  min-height: 1.9rem;
+  padding: 0 0.45rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.record-page__actions button:hover {
+  color: var(--ink);
+}
+
 .record-dialog {
   width: min(calc(100% - 2rem), 33rem);
   max-width: none;

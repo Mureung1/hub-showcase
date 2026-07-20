@@ -30,6 +30,6 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(InvalidRequestException.class)
     public ResponseEntity<ApiError> handleInvalidRequest(InvalidRequestException exception) {
-        return ResponseEntity.badRequest().body(new ApiError("INVALID_PAGE_RANGE", exception.getMessage()));
+        return ResponseEntity.badRequest().body(new ApiError(exception.getCode(), exception.getMessage()));
     }
 }

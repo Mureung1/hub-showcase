@@ -42,4 +42,9 @@ public class ReadingRecord {
     public int getEndPage() { return endPage; }
     public String getImpression() { return impression; }
     public Instant getCreatedAt() { return createdAt; }
+
+    public void update(int endPage, String impression) {
+        this.endPage = endPage;
+        this.impression = impression;
+    }
 }

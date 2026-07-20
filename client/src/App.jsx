@@ -20,7 +20,15 @@ import {
   getNextStartPage,
   getRecords,
 } from '@/lib/reading';
-import { createBook, createReadingRecord, createUser, getBook, getBooks } from '@/lib/api';
+import {
+  createBook,
+  createReadingRecord,
+  createUser,
+  deleteReadingRecord,
+  getBook,
+  getBooks,
+  updateReadingRecord,
+} from '@/lib/api';
 
 const USER_STORAGE_KEY = 'itjang:user';
 
@@ -337,9 +345,66 @@ function EmptyBookshelf({ user, onAddBook }) {
   );
 }
 
-function BookDetailScreen({ book, startInReadingContext, onBackToBookshelf, onSaveRecord }) {
+function DeleteRecordDialog({ record, open, onOpenChange, onConfirm }) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      setIsDeleting(false);
+      setError('');
+    }
+  }, [open]);
+
+  async function handleConfirm() {
+    setIsDeleting(true);
+    setError('');
+    try {
+      await onConfirm();
+    } catch (requestError) {
+      setError(requestError.message);
+      setIsDeleting(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="record-dialog record-delete-dialog" showCloseButton={false}>
+        <DialogHeader className="record-dialog__header">
+          <p className="section-kicker">DELETE A RECORD</p>
+          <DialogTitle>이 기록을 지울까요?</DialogTitle>
+          <DialogDescription>
+            {record ? `${record.startPage}–${record.endPage}쪽 기록을 지우면 다음 책갈피가 다시 계산돼요.` : ''}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="record-dialog__form">
+          {error && <p className="field-error" role="alert">{error}</p>}
+          <div className="record-dialog__actions">
+            <Button type="button" variant="outline" disabled={isDeleting} onClick={() => onOpenChange(false)}>
+              취소
+            </Button>
+            <Button type="button" variant="destructive" disabled={isDeleting} onClick={handleConfirm}>
+              {isDeleting ? '기록을 지우는 중이에요…' : '기록 삭제'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function BookDetailScreen({
+  book,
+  startInReadingContext,
+  onBackToBookshelf,
+  onSaveRecord,
+  onUpdateRecord,
+  onDeleteRecord,
+}) {
   const [isReadingContextActive, setIsReadingContextActive] = useState(startInReadingContext);
   const [isRecordDialogOpen, setIsRecordDialogOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [deletingRecord, setDeletingRecord] = useState(null);
   const records = getRecords(book);
   const latestRecord = getLatestRecord(book);
   const nextStartPage = getNextStartPage(book);
@@ -397,15 +462,45 @@ function BookDetailScreen({ book, startInReadingContext, onBackToBookshelf, onSa
           )}
         </section>
 
-        <ReadingRecordList records={records} />
+        <ReadingRecordList
+          records={records}
+          latestRecord={latestRecord}
+          onEditRecord={(record) => setEditingRecord({
+            record,
+            canEditPage: record.id === latestRecord?.id,
+          })}
+          onDeleteRecord={setDeletingRecord}
+        />
       </article>
       <SessionRecordDialog
         book={book}
-        open={isRecordDialogOpen}
-        onOpenChange={setIsRecordDialogOpen}
+        record={editingRecord?.record}
+        canEditPage={editingRecord?.canEditPage ?? true}
+        open={isRecordDialogOpen || Boolean(editingRecord)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setIsRecordDialogOpen(false);
+            setEditingRecord(null);
+          }
+        }}
         onSave={async (record) => {
-          await onSaveRecord(book.id, record);
-          setIsReadingContextActive(false);
+          if (editingRecord) {
+            await onUpdateRecord(book.id, editingRecord.record.id, record);
+          } else {
+            await onSaveRecord(book.id, record);
+            setIsReadingContextActive(false);
+          }
+        }}
+      />
+      <DeleteRecordDialog
+        record={deletingRecord}
+        open={Boolean(deletingRecord)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setDeletingRecord(null);
+        }}
+        onConfirm={async () => {
+          await onDeleteRecord(book.id, deletingRecord.id);
+          setDeletingRecord(null);
         }}
       />
     </main>
@@ -548,12 +643,26 @@ export default function App() {
 
   async function handleSaveRecord(bookId, recordInput) {
     await createReadingRecord({ bookId, userId: user.id, ...recordInput });
+    await refreshBookData(bookId);
+  }
+
+  async function refreshBookData(bookId) {
     const [{ books: refreshedBooks }, refreshedDetail] = await Promise.all([
       getBooks(user.id),
       getBook(bookId, user.id),
     ]);
     setBooks(refreshedBooks);
     setBookDetail(refreshedDetail);
+  }
+
+  async function handleUpdateRecord(bookId, recordId, recordInput) {
+    await updateReadingRecord({ bookId, recordId, userId: user.id, ...recordInput });
+    await refreshBookData(bookId);
+  }
+
+  async function handleDeleteRecord(bookId, recordId) {
+    await deleteReadingRecord({ bookId, recordId, userId: user.id });
+    await refreshBookData(bookId);
   }
 
   function handleSelectBook(bookId) {
@@ -596,6 +705,8 @@ export default function App() {
             setOpeningPageCount(0);
           }}
           onSaveRecord={handleSaveRecord}
+          onUpdateRecord={handleUpdateRecord}
+          onDeleteRecord={handleDeleteRecord}
         />
       ) : books.length ? (
         <ReadingBookshelf

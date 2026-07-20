@@ -38,6 +38,12 @@ public class Book {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "completed_at")
+    private Instant completedAt;
+
+    @Column(name = "final_review", columnDefinition = "TEXT")
+    private String finalReview;
+
     protected Book() {
     }
 
@@ -76,5 +82,27 @@ public class Book {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
+    }
+
+    public String getFinalReview() {
+        return finalReview;
+    }
+
+    public void complete(String finalReview, Instant completedAt) {
+        this.status = BookStatus.COMPLETED;
+        this.finalReview = finalReview;
+        this.completedAt = completedAt;
+    }
+
+    public void archive() {
+        this.status = BookStatus.ARCHIVED;
+    }
+
+    public void resume() {
+        this.status = BookStatus.READING;
     }
 }

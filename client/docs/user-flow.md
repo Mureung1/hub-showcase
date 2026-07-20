@@ -224,7 +224,7 @@ CTA를 누르면 해당 책의 책 상세로 이동하면서 읽기 준비 상�
 
 ### 상태 변화
 
-- `PATCH /api/books/{bookId}/completion`이 책 상태와 선택적 긴 서평을 저장한다.
+- `PATCH /api/books/{bookId}/status`가 `COMPLETED` 상태와 선택적 긴 서평을 저장한다.
 - 긴 서평을 작성하지 않아도 상태 변경은 성공한다.
 
 ## 7. 보관과 마지막 기록 정정 — P1
