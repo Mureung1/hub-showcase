@@ -965,3 +965,12 @@
 - 첫 테스트에서 존재하지 않는 `scenarioIds` export 참조를 발견했고, 명시적 `ScenarioId` 튜플로 교체해 `any` 없이 수정했다.
 - 프롬프트 관련 5파일 38개, 전체 24파일 225개 테스트, API 타입검사, lint, Vite build, Drizzle migration check, diff·명시적 `any`·클라이언트 prompt import 검사를 통과했다. 기존 jsdom `scrollTo` 로그와 lazy CatCanvas 500kB 경고만 유지됐다.
 - T19 AC-1~9를 통과해 CHECKLIST를 완료 처리했다. 실 provider·키·Preview 왕복, provider 보존 고지는 T20에 남아 있으며 시드 검수를 실제 생성 효과 근거로 표현하지 않는다.
+
+## 2026-07-20 (T19 커밋·T17 Preview 배포 생성)
+### 커밋·push
+- 사용자 “커밋푸시 승인”에 따라 T16·T19 변경만 명시적으로 스테이징하고 `5a2f408 feat: 검수 시드 프롬프트 카탈로그 추가` 커밋을 생성했다. 사용자 소유 `.agents/skills/continue-dabnyangi-task/`, T25 설문 CSV, `tmp/`는 포함하지 않았다.
+- `N166_진현지`는 Vercel Production Branch이므로 해당 원격을 갱신하지 않고, commit `5a2f408`을 비프로덕션 `t17-preview-t19` 브랜치로 push했다.
+### 배포·잔여 검증
+- GitHub deployment `5516452997`이 environment=`Preview`, SHA=`5a2f408`, status=`success`와 고유 URL을 반환했다. 공개 HTTP 요청은 Vercel Standard Protection 로그인으로 이동했다.
+- Browser runtime은 계속 `[]`라 Preview와 공개 Production Domain의 JavaScript 후 S0 화면을 직접 확인하지 못했다. T17은 Preview 생성 성공만 반영하고 완료 체크하지 않았다.
+- repository Actions는 enabled지만 SHA `5a2f408`의 CI workflow run은 생성되지 않았다. 기존 성공 run과 main required `verify` 근거는 유지하되 현재 SHA의 원격 CI 통과로 표현하지 않는다.

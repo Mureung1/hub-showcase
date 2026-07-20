@@ -1,6 +1,6 @@
 # CI/CD 파이프라인
 
-> **상태: CI·required check·Vercel Production Branch 연결·공개 Production Domain 확인 (2026-07-16).** `verify` required check가 `main`에 적용되고, Vercel Production은 `N166_진현지` 원격 HEAD를 성공적으로 배포한다. `https://dabnyang.vercel.app/`은 HTTP 200·답냥이 HTML을 반환하며, T17의 남은 항목은 S0 수동 화면 확인과 Preview 배포 실물 검증이다.
+> **상태: CI·required check·Vercel Production Branch·Preview 배포 확인 (2026-07-20).** `verify` required check가 `main`에 적용되고, Vercel Production은 `N166_진현지`를 배포한다. 비프로덕션 `t17-preview-t19`도 deployment `5516452997`의 `Preview / success`를 확인했다. Preview 고유 URL은 Standard Protection으로 로그인 화면에 연결되며 Browser runtime이 없어 Production·Preview의 JavaScript 후 S0 실물 확인은 남아 있다.
 
 ## 전체 흐름
 
@@ -11,7 +11,7 @@
          → 머지 → Vercel 자동 배포 (Production 활성, Preview 실물 검증 대기)
 ```
 
-목표 검증 구조는 세 겹이다: **로컬 훅**(커밋 순간) → **CI**(push/PR마다, 깨끗한 환경에서 재현) → **배포 전 프리뷰**(머지 전 실물 확인). 현재 로컬 훅과 CI·Production 자동 배포는 활성화됐고, 공개 접근 가능한 Production·Preview 실물 검증이 남았다.
+목표 검증 구조는 세 겹이다: **로컬 훅**(커밋 순간) → **CI**(push/PR마다, 깨끗한 환경에서 재현) → **배포 전 프리뷰**(머지 전 실물 확인). 현재 로컬 훅과 기존 CI 성공·Production/Preview 자동 배포는 확인했다. 다만 2026-07-20 Preview branch push SHA에는 GitHub Actions run이 생성되지 않았고, Preview는 Standard Protection 대상이라 로그인된 브라우저의 실물 검증이 남았다.
 
 ## CI 설계 — GitHub Actions (`.github/workflows/ci.yml`, 설치·원격 실행 확인)
 

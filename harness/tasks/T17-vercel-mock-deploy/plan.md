@@ -6,9 +6,9 @@
 >
 > 최종 갱신일: 2026-07-20
 >
-> 현재 단계: ④ 공개 Production S0 수동 확인·Preview 배포 검증
+> 현재 단계: ④ 공개 Production·보호된 Preview의 S0 수동 확인
 >
-> 다음 행동: 사용자가 `https://dabnyang.vercel.app/`의 S0 렌더를 확인하고 Preview 배포용 비프로덕션 브랜치 push를 명시적으로 요청하면 공개 Production·Preview 실물 검증
+> 다음 행동: 로그인 가능한 브라우저에서 Production Domain과 생성된 Preview URL의 S0 렌더를 확인
 >
 > CHECKLIST 항목: T17
 
@@ -67,10 +67,10 @@
 
 ## 7. 진행·인계
 
-- 마지막으로 끝낸 단계: ① required status check 설정, ② auto-merge 상호작용, Production Branch=`N166_진현지`·최신 원격 SHA 배포, 공개 Production Domain HTTP 200·답냥이 HTML 확인, ⑤ custom events 플랜 근거 조사
-- 현재 작업 중인 단계: ④ Production S0 화면 수동 확인·Preview 배포 실물 검증 대기
-- 다음 행동: 사용자가 공개 Production Domain의 S0를 확인하고 Preview 배포용 브랜치 push를 요청하면 ④ 검증 종료
-- 보류 사유와 재개 조건: `dabnyang.vercel.app`은 공개 HTTP 200·답냥이 HTML을 반환하지만 Browser runtime이 없어 클라이언트 렌더 S0는 사용자 확인이 필요하다. Preview는 0건이며 비프로덕션 브랜치 push는 명시적 요청 후에만 수행한다. 현재 로컬 미커밋 변경 배포에는 별도 커밋·푸시 요청이 필요하다.
+- 마지막으로 끝낸 단계: ① required status check 설정, ② auto-merge 상호작용, Production Branch 배포, 공개 Production Domain HTTP 200·답냥이 HTML, 비프로덕션 Preview deployment success, ⑤ custom events 플랜 근거 조사
+- 현재 작업 중인 단계: ④ Production·Preview S0 화면 수동 확인 대기
+- 다음 행동: 로그인 가능한 브라우저에서 공개 Production Domain과 Standard Protection Preview의 S0 렌더를 확인한다.
+- 보류 사유와 재개 조건: 비프로덕션 `t17-preview-t19` push와 Vercel Preview 생성은 성공했다. Preview 고유 URL은 Vercel 로그인으로 이동하고 Browser runtime은 `[]`라 클라이언트 렌더 증거를 확보하지 못했다. Production·Preview S0를 브라우저에서 확인하면 종료한다.
 
 | 날짜 | 진행·결정 | 근거·영향 |
 | --- | --- | --- |
@@ -85,3 +85,6 @@
 | 2026-07-16 | 실제 Production URL 접속이 HTTP 200인 Vercel 로그인 페이지로 종료되고 답냥이·S0 문구가 없음을 확인 | Deployment Protection 유지, AC-5 보류 |
 | 2026-07-16 | Vercel 공식 문서에서 Standard Protection이 고유 deployment URL은 보호하지만 최신 Production Domain은 공개함을 확인하고 `https://dabnyang.vercel.app/` 접속 | HTTP 200, `<title>답냥이 — 대학생 메시지 작성 도우미</title>` 확인. Deployment Protection 변경 불필요 |
 | 2026-07-20 | GitHub deployments 재조회 결과 Production 2건만 유지되고 Preview는 0건. 원격 `N166_진현지`는 `e5d52ef`, 로컬 HEAD는 `1b56224`이며 T30 미커밋 작업이 존재 | 사용자 요청 없는 commit/push 금지로 AC-6 계속 대기 |
+| 2026-07-20 | 사용자 커밋·푸시 승인 후 T19 commit `5a2f408`을 원격 비프로덕션 `t17-preview-t19`로 push | Production Branch를 건드리지 않고 Preview 트리거 생성 |
+| 2026-07-20 | Vercel deployment `5516452997`이 environment=`Preview`, SHA=`5a2f408`, status=`success`와 고유 URL을 반환 | AC-6 배포 생성은 통과. URL은 Standard Protection 로그인으로 이동해 S0 실물은 대기 |
+| 2026-07-20 | repository Actions는 enabled지만 SHA `5a2f408`의 workflow run 0건 | 과거 CI 성공·required check는 유지하되 현재 Preview SHA의 원격 CI 근거로 사용하지 않음 |
