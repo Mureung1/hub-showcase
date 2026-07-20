@@ -28,7 +28,9 @@ function isPositiveInt(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value > 0
 }
 
-function toResponse(video: VideoPost) {
+type VideoPostWithCategory = VideoPost & { schedule: { category: { name: string; tone: string } } }
+
+function toResponse(video: VideoPostWithCategory) {
   return {
     id: video.id,
     scheduleId: video.scheduleId,
@@ -37,6 +39,8 @@ function toResponse(video: VideoPost) {
     sizeBytes: video.sizeBytes,
     durationSeconds: video.durationSeconds,
     caption: video.caption,
+    categoryName: video.schedule.category.name,
+    tone: video.schedule.category.tone,
     createdAt: video.createdAt.toISOString(),
   }
 }
@@ -44,6 +48,7 @@ function toResponse(video: VideoPost) {
 videosRouter.get('/mine', asyncHandler(async (req, res) => {
   const videos = await prisma.videoPost.findMany({
     where: { userId: req.userId, deletedAt: null },
+    include: { schedule: { include: { category: true } } },
     orderBy: { createdAt: 'desc' },
   })
 
@@ -135,6 +140,7 @@ videosRouter.post('/', asyncHandler(async (req, res) => {
       durationSeconds,
       caption: isNonEmptyString(caption) ? caption : null,
     },
+    include: { schedule: { include: { category: true } } },
   })
 
   res.status(201).json(toResponse(video))
@@ -156,5 +162,71 @@ videosRouter.delete('/:id', asyncHandler(async (req, res) => {
     console.error('스토리지 영상 삭제 실패:', error)
   }
 
+  res.status(204).end()
+}))
+
+function toCommentResponse(comment: { id: string; authorId: string; author: { name: string }; text: string; createdAt: Date }) {
+  return {
+    id: comment.id,
+    authorId: comment.authorId,
+    authorName: comment.author.name,
+    text: comment.text,
+    createdAt: comment.createdAt.toISOString(),
+  }
+}
+
+videosRouter.get('/:id/comments', asyncHandler(async (req, res) => {
+  const video = await prisma.videoPost.findUnique({ where: { id: req.params.id } })
+  if (!video || video.deletedAt) {
+    res.status(404).json({ error: '존재하지 않는 영상입니다.' })
+    return
+  }
+
+  const [comments, friendships] = await Promise.all([
+    prisma.comment.findMany({
+      where: { videoPostId: video.id },
+      include: { author: { select: { name: true } } },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.friendship.findMany({ where: { userId: req.userId }, select: { friendId: true } }),
+  ])
+  const friendIds = new Set(friendships.map((friendship) => friendship.friendId))
+
+  // 방문자 입장에서 제3자(나도 아니고 영상 주인도 아닌 사람)의 댓글은 그 사람과 친구일 때만 보인다.
+  const visible = comments.filter((comment) =>
+    comment.authorId === req.userId || comment.authorId === video.userId || friendIds.has(comment.authorId))
+
+  res.json(visible.map(toCommentResponse))
+}))
+
+videosRouter.post('/:id/comments', asyncHandler(async (req, res) => {
+  const video = await prisma.videoPost.findUnique({ where: { id: req.params.id } })
+  if (!video || video.deletedAt) {
+    res.status(404).json({ error: '존재하지 않는 영상입니다.' })
+    return
+  }
+
+  const { text } = req.body as Record<string, unknown>
+  if (!isNonEmptyString(text) || text.length > 300) {
+    res.status(400).json({ error: 'text는 1~300자여야 합니다.' })
+    return
+  }
+
+  const comment = await prisma.comment.create({
+    data: { videoPostId: video.id, authorId: req.userId!, text: text.trim() },
+    include: { author: { select: { name: true } } },
+  })
+
+  res.status(201).json(toCommentResponse(comment))
+}))
+
+videosRouter.delete('/:id/comments/:commentId', asyncHandler(async (req, res) => {
+  const comment = await prisma.comment.findUnique({ where: { id: req.params.commentId } })
+  if (!comment || comment.videoPostId !== req.params.id || comment.authorId !== req.userId) {
+    res.status(404).json({ error: '존재하지 않는 댓글입니다.' })
+    return
+  }
+
+  await prisma.comment.delete({ where: { id: comment.id } })
   res.status(204).end()
 }))

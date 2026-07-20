@@ -67,6 +67,7 @@ export type ProfileStats = {
   completedCount: number
   friendCount: number
   currentStreak: number
+  points: number
 }
 
 export type Profile = {
@@ -92,7 +93,7 @@ export type HomeVisitEntry = {
 }
 
 export type FriendPost = {
-  id: number
+  id: string
   friendId: string
   categoryName: string
   tone: GroupTone

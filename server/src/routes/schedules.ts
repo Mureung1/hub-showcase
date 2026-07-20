@@ -3,6 +3,7 @@ import type { Schedule } from '@prisma/client'
 import { prisma } from '../db.js'
 import { requireAuth } from '../auth/requireAuth.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
+import { awardPointsOnce, SCHEDULE_COMPLETE_POINTS } from '../lib/points.js'
 
 export const schedulesRouter = Router()
 schedulesRouter.use(requireAuth)
@@ -117,6 +118,12 @@ schedulesRouter.patch('/:id', asyncHandler(async (req, res) => {
     data,
     include: { category: true },
   })
+
+  // 같은 일정은 완료-해제-재완료를 반복해도 최초 1회만 포인트가 지급된다(awardPointsOnce가 refId=scheduleId로 중복을 막음).
+  if (data.completed === true) {
+    await awardPointsOnce(req.userId!, 'SCHEDULE_COMPLETE', schedule.id, SCHEDULE_COMPLETE_POINTS, '할 일 완료')
+  }
+
   res.json(toResponse(schedule))
 }))
 

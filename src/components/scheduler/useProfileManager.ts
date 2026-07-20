@@ -38,7 +38,12 @@ export function useProfileManager() {
     }
   }
 
-  return { profile, loading, notice, updateProfile }
+  // 포인트가 지급된 뒤(일정 완료, 친구 반응) 마이홈/마이페이지에 최신 값을 보여주기 위해 다시 불러온다.
+  const refreshProfile = () => {
+    profileApi.fetchProfile().then(setProfile).catch(() => {})
+  }
+
+  return { profile, loading, notice, updateProfile, refreshProfile }
 }
 
 export type ProfileManager = ReturnType<typeof useProfileManager>

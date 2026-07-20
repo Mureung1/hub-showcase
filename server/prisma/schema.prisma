@@ -414,6 +414,8 @@ model PointsLedgerEntry {
   createdAt DateTime @default(now())
 
   @@index([userId])
+  // 같은 근거(refType+refId)로 중복 지급되지 않도록. refType/refId가 둘 다 있는 지급 건에만 적용된다.
+  @@unique([userId, refType, refId])
 }
 
 model RoomItem {

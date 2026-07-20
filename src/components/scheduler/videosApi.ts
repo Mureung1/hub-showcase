@@ -1,4 +1,5 @@
 import { request } from './apiClient'
+import type { GroupTone } from './types'
 
 export type VideoPostDto = {
   id: string
@@ -8,6 +9,8 @@ export type VideoPostDto = {
   sizeBytes: number
   durationSeconds: number
   caption: string | null
+  categoryName: string
+  tone: GroupTone
   createdAt: string
 }
 

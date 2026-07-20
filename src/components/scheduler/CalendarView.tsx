@@ -19,9 +19,10 @@ type CalendarViewProps = {
   selectedOwner: string
   onSelectOwner: (ownerId: string) => void
   onCertify: (post: FriendPost) => void
+  onPointsEarned: () => void
 }
 
-export function CalendarView({ manager, friends, groups, selectedOwner, onSelectOwner, onCertify }: CalendarViewProps) {
+export function CalendarView({ manager, friends, groups, selectedOwner, onSelectOwner, onCertify, onPointsEarned }: CalendarViewProps) {
   const [certifyingSchedule, setCertifyingSchedule] = useState<Schedule | null>(null)
   const {
     categories,
@@ -76,23 +77,47 @@ export function CalendarView({ manager, friends, groups, selectedOwner, onSelect
     setNewCategoryName('')
   }
 
+  const [pendingVideo, setPendingVideo] = useState<{ file: Blob; meta: VideoReadyMeta } | null>(null)
+  const [captionDraft, setCaptionDraft] = useState('')
+  const [uploadingCertify, setUploadingCertify] = useState(false)
+
   const handleToggleCompletion = (schedule: Schedule) => {
     const wasCompleted = schedule.completed
-    toggleScheduleCompletion(schedule.id)
-    if (!wasCompleted) setCertifyingSchedule(schedule)
+    const toggled = toggleScheduleCompletion(schedule.id)
+    if (!wasCompleted) {
+      setCertifyingSchedule(schedule)
+      toggled.then(onPointsEarned)
+    }
   }
 
-  const handleCertifyVideoReady = async (file: Blob, meta: VideoReadyMeta) => {
+  const closeCertifyModal = () => {
+    setCertifyingSchedule(null)
+    setPendingVideo(null)
+    setCaptionDraft('')
+  }
+
+  const handleVideoReady = (file: Blob, meta: VideoReadyMeta) => {
     if (!certifyingSchedule) return
+    setPendingVideo({ file, meta })
+    setCaptionDraft(`${certifyingSchedule.title} 완료!`)
+  }
+
+  const handleRetake = () => {
+    setPendingVideo(null)
+    setCaptionDraft('')
+  }
+
+  const handleSubmitCertify = async () => {
+    if (!certifyingSchedule || !pendingVideo) return
     const schedule = certifyingSchedule
+    const { file, meta } = pendingVideo
+    const caption = captionDraft.trim()
 
-    const category = categories.find((item) => item.id === schedule.category)
-    const caption = `${schedule.title} 완료!`
-
+    setUploadingCertify(true)
     try {
       const { uploadUrl, storageKey } = await videosApi.presignVideoUpload(schedule.id, meta.contentType)
       await videosApi.uploadVideoToR2(uploadUrl, file, meta.contentType)
-      await videosApi.createVideoPost({
+      const created = await videosApi.createVideoPost({
         scheduleId: schedule.id,
         storageKey,
         contentType: meta.contentType,
@@ -100,21 +125,23 @@ export function CalendarView({ manager, friends, groups, selectedOwner, onSelect
         durationSeconds: meta.durationSeconds,
         caption,
       })
+
+      onCertify({
+        id: created.id,
+        friendId: 'me',
+        categoryName: created.categoryName,
+        tone: created.tone,
+        caption,
+        timeAgo: '지금',
+        videoUrl: created.url,
+        reactions: { sparkle: 0, heart: 0, fire: 0, tear: 0, wow: 0, sleepy: 0 },
+      })
+      closeCertifyModal()
     } catch {
       window.alert('영상을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setUploadingCertify(false)
     }
-
-    onCertify({
-      id: Date.now(),
-      friendId: 'me',
-      categoryName: category?.name ?? '인증',
-      tone: schedule.tone,
-      caption,
-      timeAgo: '지금',
-      videoUrl: meta.url,
-      reactions: { sparkle: 0, heart: 0, fire: 0, tear: 0, wow: 0, sleepy: 0 },
-    })
-    setCertifyingSchedule(null)
   }
 
   const [friendSchedules, setFriendSchedules] = useState<FriendScheduleEntry[]>([])
@@ -428,13 +455,39 @@ export function CalendarView({ manager, friends, groups, selectedOwner, onSelect
           <div className="certify-modal">
             <span className="calendar-kicker">CERTIFY</span>
             <h3 id="certify-title">{certifyingSchedule.title} 완료!</h3>
-            <p>짧은 인증 영상을 올리면 친구 피드에 공유돼요.</p>
-            <VideoCapturePicker onVideoReady={handleCertifyVideoReady} />
-            <div className="certify-modal-actions">
-              <button type="button" className="certify-skip-button" onClick={() => setCertifyingSchedule(null)}>
-                건너뛰기
-              </button>
-            </div>
+            {pendingVideo ? (
+              <>
+                <p>영상을 확인하고 코멘트를 남겨보세요.</p>
+                <video className="record-preview" src={pendingVideo.meta.url} controls playsInline />
+                <textarea
+                  className="certify-caption-input"
+                  value={captionDraft}
+                  onChange={(event) => setCaptionDraft(event.target.value)}
+                  maxLength={80}
+                  placeholder="코멘트를 입력해주세요"
+                  aria-label="영상 코멘트"
+                  autoFocus
+                />
+                <div className="certify-modal-actions two-up">
+                  <button type="button" className="certify-skip-button" onClick={handleRetake} disabled={uploadingCertify}>
+                    다시 찍기
+                  </button>
+                  <button type="button" className="certify-submit-button" onClick={handleSubmitCertify} disabled={uploadingCertify}>
+                    {uploadingCertify ? '올리는 중...' : '올리기'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p>짧은 인증 영상을 올리면 친구 피드에 공유돼요.</p>
+                <VideoCapturePicker onVideoReady={handleVideoReady} />
+                <div className="certify-modal-actions">
+                  <button type="button" className="certify-skip-button" onClick={closeCertifyModal}>
+                    건너뛰기
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

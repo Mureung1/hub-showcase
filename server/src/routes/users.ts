@@ -3,6 +3,7 @@ import { prisma } from '../db.js'
 import { requireAuth } from '../auth/requireAuth.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { AVATAR_PALETTE, HANDLE_PATTERN } from '../constants.js'
+import { getPointsBalance } from '../lib/points.js'
 
 export const usersRouter = Router()
 usersRouter.use(requireAuth)
@@ -16,13 +17,14 @@ function toDateKey(date: Date) {
 }
 
 async function computeStats(userId: string) {
-  const [completedCount, friendCount, completedSchedules] = await Promise.all([
+  const [completedCount, friendCount, completedSchedules, points] = await Promise.all([
     prisma.schedule.count({ where: { userId, completed: true } }),
     prisma.friendship.count({ where: { userId } }),
     prisma.schedule.findMany({
       where: { userId, completed: true, completedAt: { not: null } },
       select: { completedAt: true },
     }),
+    getPointsBalance(userId),
   ])
 
   const completedDates = new Set(completedSchedules.map((entry) => toDateKey(entry.completedAt!)))
@@ -42,7 +44,7 @@ async function computeStats(userId: string) {
     cursor.setUTCDate(cursor.getUTCDate() - 1)
   }
 
-  return { completedCount, friendCount, currentStreak }
+  return { completedCount, friendCount, currentStreak, points }
 }
 
 type UserRow = {
@@ -55,7 +57,7 @@ type UserRow = {
   avatarEyes: number | null
 }
 
-function toResponse(user: UserRow, stats: { completedCount: number; friendCount: number; currentStreak: number }) {
+function toResponse(user: UserRow, stats: { completedCount: number; friendCount: number; currentStreak: number; points: number }) {
   return {
     id: user.id,
     email: user.email,

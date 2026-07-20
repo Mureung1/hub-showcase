@@ -1,15 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { logout as logoutRequest, type AuthUser } from '../auth/authClient'
 import { BottomNavigation } from './scheduler/BottomNavigation'
 import { CalendarView } from './scheduler/CalendarView'
 import { FriendHomeView } from './scheduler/FriendHomeView'
 import { GroupManagerView } from './scheduler/GroupManagerView'
 import { FriendsView, MyHomeView, ProfileView } from './scheduler/StaticViews'
+import { formatTimeAgo } from './scheduler/timeAgo'
 import type { AppTab, FriendPost } from './scheduler/types'
 import { useFriendsManager } from './scheduler/useFriendsManager'
 import { useHomeManager } from './scheduler/useHomeManager'
 import { useProfileManager } from './scheduler/useProfileManager'
 import { useScheduleManager } from './scheduler/useScheduleManager'
+import * as videosApi from './scheduler/videosApi'
 import './scheduler.css'
 
 type SchedulerProps = {
@@ -31,11 +33,31 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
   const profileManager = useProfileManager()
   const homeManager = useHomeManager()
 
+  useEffect(() => {
+    let cancelled = false
+    videosApi.fetchMyVideoPosts()
+      .then((videos) => {
+        if (cancelled) return
+        setMyPosts(videos.map((video) => ({
+          id: video.id,
+          friendId: 'me',
+          categoryName: video.categoryName,
+          tone: video.tone,
+          caption: video.caption ?? '',
+          timeAgo: formatTimeAgo(video.createdAt),
+          videoUrl: video.url,
+          reactions: { sparkle: 0, heart: 0, fire: 0, tear: 0, wow: 0, sleepy: 0 },
+        })))
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
   const addMyPost = (post: FriendPost) => {
     setMyPosts((current) => [post, ...current])
   }
 
-  const deleteMyPost = (postId: number) => {
+  const deleteMyPost = (postId: string) => {
     setMyPosts((current) => current.filter((post) => post.id !== postId))
   }
 
@@ -117,6 +139,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
             selectedOwner={selectedOwner}
             onSelectOwner={setSelectedOwner}
             onCertify={addMyPost}
+            onPointsEarned={profileManager.refreshProfile}
           />
         )}
         {activeTab === 'home' && (
@@ -127,16 +150,23 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
               onBack={exitFriendHome}
             />
           ) : (
-            <MyHomeView message={dodoMessage} onInteract={setDodoMessage} homeManager={homeManager} />
+            <MyHomeView
+              message={dodoMessage}
+              onInteract={setDodoMessage}
+              homeManager={homeManager}
+              points={profileManager.profile?.stats.points ?? 0}
+            />
           )
         )}
         {activeTab === 'friends' && (
           <FriendsView
             manager={friendsManager}
             myPosts={myPosts}
+            currentUserId={user.id}
             onDeletePost={deleteMyPost}
             onViewFriendCalendar={goToFriendCalendar}
             onVisitFriendHome={goToFriendHome}
+            onPointsEarned={profileManager.refreshProfile}
           />
         )}
         {activeTab === 'profile' && (
