@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
+import AdCard from '../components/AdCard.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
 import DeficiencyBar from '../components/DeficiencyBar.jsx'
@@ -9,6 +10,7 @@ import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
+import { SUPPLEMENT_ADS } from '../lib/adData.js'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
 import { ALLERGY_OPTIONS, CONDITION_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
 import { calcAchievementPercent, NUTRIENT_LABELS } from '../lib/nutrition.js'
@@ -238,6 +240,13 @@ export default function Result() {
       {visibleRows.map(({ key, ...row }) => (
         <DeficiencyBar key={key} {...row} highlighted={top3DeficientKeys.includes(key)} />
       ))}
+
+      {(() => {
+        const topKey = top3Rows[0]?.key
+        const ad = topKey ? SUPPLEMENT_ADS[topKey] : null
+        if (!ad) return null
+        return <AdCard adId={`supplement:${topKey}`} title={ad.name} note={ad.note} link={ad.link} />
+      })()}
 
       <SectionTitle>오늘의 보충 추천 메뉴</SectionTitle>
       {recLoading && (

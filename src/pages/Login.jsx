@@ -102,7 +102,7 @@ export default function Login() {
 
   return (
     <div style={{ ...styles.page, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-      <ScreenHeader title="CJMT" subtitle="오늘의 영양 균형을 확인해보세요" />
+      <ScreenHeader title="Mealyze" subtitle="오늘의 영양 균형을 확인해보세요" />
 
       <Card>
         <button

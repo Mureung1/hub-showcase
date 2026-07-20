@@ -1,3 +1,4 @@
+import AdCard from './AdCard.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { formatNutrient, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
@@ -73,17 +74,35 @@ function ExpectedNutrients({ expected, overageKeys }) {
   )
 }
 
+// MapPage.jsx의 placeIdentity와 같은 규칙(같은 식당을 같은 키로 취급) — 배열 인덱스 대신 이 값을 key로
+// 써서, 향후 검색 결과를 이어붙이거나 순서가 바뀌는 경우에도 React가 각 카드를 잘못된 DOM 노드에 재사용하지 않게 한다.
+function placeIdentity(place) {
+  return place.place_url || `${place.place_name}|${place.road_address_name}`
+}
+
 export default function PlaceList({ places, todayTotal, recommended, deficientRows }) {
   if (!places || places.length === 0) return null
 
   return (
     <div>
-      {places.map((place, i) => {
+      {places.map((place) => {
+        if (place.isAd) {
+          return (
+            <AdCard
+              key={placeIdentity(place)}
+              adId={`restaurant:${place.place_name}`}
+              title={place.place_name}
+              note={lastCategory(place.category_name)}
+              link={place.place_url}
+            />
+          )
+        }
+
         const overageKeys = buildOverageKeys(place.expected, todayTotal, recommended)
         const reason = buildReason(place.expected, deficientRows)
 
         return (
-          <div key={i} style={styles.card}>
+          <div key={placeIdentity(place)} style={styles.card}>
             <h3>{place.place_name}</h3>
             <p style={{ margin: 0, color: colors.muted, fontSize: font.size.sm }}>{place.road_address_name}</p>
             <p style={{ margin: `${spacing.xs}px 0 0`, color: colors.body, fontSize: font.size.sm }}>

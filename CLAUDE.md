@@ -4,7 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-CJMT — a Korean-language nutrition-tracking web app. A user photographs a meal; Gemini (via
+Mealyze (formerly CJMT — the old name still appears throughout the codebase: the `cjmt` npm
+package folder path, the `cjmt:` localStorage key prefix in `src/lib/storage.js` (kept as-is for
+backward compatibility with existing guest data, not renamed), git history, and various comments)
+— a Korean-language nutrition-tracking web app. A user photographs a meal; Gemini (via
 OpenRouter) identifies the food and estimates portion size; the app looks up real nutrition figures
 in Korea's 식약처 (food safety authority) nutrition DB; the app computes today's nutrient
 deficiencies and recommends nearby restaurants: candidates are found via Naver Local search (API Hub)
@@ -87,6 +90,20 @@ rollback path — `src/pages/MapPage.jsx` now sources restaurant candidates from
 `PlaceList`/`NaverPlaceMap` components already expect (`place_name`/`road_address_name`/
 `category_name`/`place_url`/`x`=lng/`y`=lat), so neither of those needs to know which search backend
 is active.
+
+### Leaderboard and ads (mockup)
+
+MY 탭이 아니라 식단(`/meals`) 탭에 `LeaderboardCard`(`src/components/LeaderboardCard.jsx`)가 있다.
+로그인 계정끼리만 "오늘의 순위"를 비교한다(게스트는 기기에 묶인 임시 식별자뿐이라 비교할 고정 신원이
+없음) — `supabase/schema.sql`의 `get_daily_leaderboard()`(SECURITY DEFINER, rank/score/is_me만
+반환, 다른 사용자의 실제 데이터는 노출 안 함)를 `src/lib/leaderboard.js`가 호출한다. **이 SQL 함수는
+schema.sql을 다시 실행해야 실제 Supabase 프로젝트에 반영된다** — 아직 실행 전이면 로그인 사용자에게
+에러가 뜬다. 채점 공식(`src/lib/nutritionScore.js`의 `calcNutritionScore`와 SQL 버전)은 반드시
+동일하게 유지해야 한다. 게스트는 로그인 유도 문구와 함께 자기 자신의 "오늘의 점수"만 본다.
+
+`src/lib/adData.js`(스폰서 식당 1곳 + 부족 영양소별 보충제 매핑)와 `src/components/AdCard.jsx`(AD
+배지 + 제휴 고지 문구)는 실제 광고 네트워크/제휴 링크가 정해지지 않아 전부 목업(`link: '#'`)이다 —
+실제 링크가 정해지면 `adData.js`의 값만 바꾸면 되고 화면 컴포넌트는 손댈 필요가 없다.
 
 ### Core domain flow: photo -> nutrition (`src/pages/Analyze.jsx`)
 

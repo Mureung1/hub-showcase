@@ -1,5 +1,5 @@
 -- =====================================================================
--- CJMT Supabase 스키마: profiles(사용자 신체정보 + 하루 권장 영양정보), meals(끼니 기록)
+-- Mealyze Supabase 스키마: profiles(사용자 신체정보 + 하루 권장 영양정보), meals(끼니 기록)
 -- Supabase 대시보드 > SQL Editor에 전체를 붙여넣고 Run 하세요.
 -- =====================================================================
 
@@ -32,7 +32,7 @@ create table if not exists public.profiles (
   updated_at    timestamptz not null default now()
 );
 
-comment on table public.profiles is 'CJMT 사용자 신체정보 + 하루 권장 영양정보. auth.users 1명당 1행.';
+comment on table public.profiles is 'Mealyze 사용자 신체정보 + 하루 권장 영양정보. auth.users 1명당 1행.';
 
 -- ---------------------------------------------------------------------
 -- 2) meals: 끼니 기록. "사진 한 번 분석 = 한 끼 = 한 행"(앱 mealStore.js 저장 단위와 동일).
@@ -59,7 +59,7 @@ create table if not exists public.meals (
     check (jsonb_typeof(items) = 'array' and jsonb_array_length(items) > 0)
 );
 
-comment on table public.meals is 'CJMT 끼니 기록. 사진 한 번 분석(=한 끼)이 한 행. items는 음식 배열, total은 그 합계.';
+comment on table public.meals is 'Mealyze 끼니 기록. 사진 한 번 분석(=한 끼)이 한 행. items는 음식 배열, total은 그 합계.';
 
 -- ---------------------------------------------------------------------
 -- 3) 인덱스: RLS 정책이 매 행마다 검사하는 user_id/id 컬럼에 인덱스가 있어야 조회 성능이 나온다.
@@ -142,6 +142,69 @@ create trigger trg_profiles_updated_at
   before update on public.profiles
   for each row
   execute function public.set_updated_at();
+
+-- ---------------------------------------------------------------------
+-- 7) 오늘의 순위(리더보드): profiles.recommended(개인별 하루 권장량) 대비 오늘 meals 합계로
+--    "달성률" 점수(0~100)를 서버(Postgres)에서 계산해, 등수/점수/본인 여부만 반환한다 — 다른
+--    사용자의 이름·이메일·신체정보·식사 내역은 절대 클라이언트로 나가지 않는다(RLS를 우회하는
+--    SECURITY DEFINER 함수이지만, RETURNS TABLE의 컬럼 자체가 rank/score/is_me뿐이라 그 이상은
+--    애초에 반환할 수 없는 구조). src/lib/nutritionScore.js의 calcNutritionScore와 완전히 동일한
+--    채점 공식을 SQL로 옮긴 것 — 두 곳 중 하나만 고치면 랭킹과 개인 점수 표시가 어긋나니, 채점
+--    공식을 바꿀 때는 항상 같이 고칠 것. 게스트는 Supabase 계정 자체가 없어 랭킹에 낄 수 없다
+--    (그래서 authenticated 사용자만 대상으로 하고, 실행 권한도 authenticated에만 준다).
+-- ---------------------------------------------------------------------
+create or replace function public.get_daily_leaderboard()
+returns table (rank bigint, score numeric, is_me boolean)
+language sql
+security definer
+set search_path = public
+as $$
+  with today_totals as (
+    select
+      m.user_id,
+      sum((m.total->>'calories')::numeric) as calories,
+      sum((m.total->>'protein')::numeric)  as protein,
+      sum((m.total->>'carbs')::numeric)    as carbs,
+      sum((m.total->>'fat')::numeric)      as fat,
+      sum((m.total->>'fiber')::numeric)    as fiber,
+      sum((m.total->>'sodium')::numeric)   as sodium
+    from public.meals m
+    where m.date = current_date
+    group by m.user_id
+  ),
+  scored as (
+    select
+      t.user_id,
+      (
+        least(coalesce(t.calories, 0) / nullif((p.recommended->>'calories')::numeric, 0) * 100, 100)
+        + least(coalesce(t.protein, 0) / nullif((p.recommended->>'protein')::numeric, 0) * 100, 100)
+        + least(coalesce(t.carbs, 0) / nullif((p.recommended->>'carbs')::numeric, 0) * 100, 100)
+        + least(coalesce(t.fat, 0) / nullif((p.recommended->>'fat')::numeric, 0) * 100, 100)
+        + least(coalesce(t.fiber, 0) / nullif((p.recommended->>'fiber')::numeric, 0) * 100, 100)
+        -- 나트륨은 상한 지표라 방향이 반대(한도 이하면 100점, 넘으면 초과 비율만큼 감점, 0점 미만은 자름).
+        + greatest(
+            case
+              when coalesce(t.sodium, 0) <= (p.recommended->>'sodium')::numeric then 100
+              else 100 * (1 - (t.sodium - (p.recommended->>'sodium')::numeric) / (p.recommended->>'sodium')::numeric)
+            end,
+            0
+          )
+      ) / 6 as score
+    from today_totals t
+    join public.profiles p on p.id = t.user_id
+    where p.recommended is not null and p.recommended != '{}'::jsonb
+  )
+  select
+    row_number() over (order by score desc) as rank,
+    round(score, 0) as score,
+    user_id = auth.uid() as is_me
+  from scored
+  order by score desc
+  limit 100;
+$$;
+
+revoke all on function public.get_daily_leaderboard() from public;
+grant execute on function public.get_daily_leaderboard() to authenticated;
 
 -- =====================================================================
 -- 점검용: 아래 두 SELECT를 SQL Editor에서 따로 실행해 실제 배포된 상태를 눈으로 확인할 수 있다.

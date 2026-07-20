@@ -76,7 +76,7 @@ export function exportGuestBackupCSV() {
 
   const BOM = '﻿' // Excel에서 한글이 깨지지 않도록 UTF-8 BOM을 앞에 붙인다
   const text = [
-    '# CJMT 게스트 데이터 백업(기기 이동용)',
+    '# Mealyze 게스트 데이터 백업(기기 이동용)',
     '# MY 탭의 "데이터 가져오기(CSV)"로 새 기기에서 다시 불러올 수 있어요. 로그인 계정에는 영향을 주지 않아요.',
     '',
     '[profile]',
@@ -90,7 +90,7 @@ export function exportGuestBackupCSV() {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = `cjmt_guest_backup_${new Date().toISOString().slice(0, 10)}.csv`
+  link.download = `mealyze_guest_backup_${new Date().toISOString().slice(0, 10)}.csv`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNaverMapLoader } from '../lib/useNaverMapLoader.js'
-import { colors, radius, styles } from '../styles/theme.js'
+import { colors, radius, spacing, styles } from '../styles/theme.js'
 
 // 기존 PlaceMap(카카오)의 네이버 버전. 카카오 쪽은 롤백용으로 그대로 둔다.
 //
@@ -88,7 +88,8 @@ export default function NaverPlaceMap({ myPosition, places = [] }) {
   if (loadError) {
     return (
       <div style={{ ...styles.card, textAlign: 'center' }}>
-        <p style={styles.errorText}>지도를 불러오지 못했습니다: {loadError}</p>
+        <p style={styles.errorText}>지도를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.</p>
+        <p style={{ ...styles.helperText, marginTop: spacing.xs }}>{loadError}</p>
       </div>
     )
   }

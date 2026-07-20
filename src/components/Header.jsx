@@ -26,7 +26,7 @@ export default function Header() {
         background: colors.surface,
       }}
     >
-      <span style={{ fontWeight: 800, color: colors.primary, letterSpacing: '-0.02em' }}>CJMT</span>
+      <img src="/logo-header.png" alt="Mealyze" style={{ height: 24, display: 'block' }} />
       {authLoading ? null : authMode === 'user' ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
           <span style={{ fontSize: font.size.sm, color: colors.muted }}>{authUser.email}님</span>

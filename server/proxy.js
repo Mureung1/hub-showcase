@@ -3,6 +3,7 @@ import 'dotenv/config'
 import express from 'express'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { rateLimit } from 'express-rate-limit'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -10,7 +11,7 @@ const __dirname = path.dirname(__filename)
 const PORT = process.env.PORT || process.env.PROXY_PORT || 8787
 const MODEL = 'google/gemini-3-flash-preview'
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
-const APP_TITLE = 'CJMT'
+const APP_TITLE = 'Mealyze'
 const APP_REFERER = process.env.APP_URL || 'http://localhost:5173'
 const KAKAO_KEYWORD_SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/keyword.json'
 const KAKAO_ADDRESS_SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/address.json'
@@ -76,12 +77,52 @@ function respondToProxyError(res, err, label) {
 }
 
 const app = express()
-app.use(express.json({ limit: '15mb' }))
+// Render/Vercel 둘 다 리버스 프록시 한 홉을 거쳐 요청이 들어온다. 이걸 켜지 않으면
+// req.ip가 프록시 자신의 IP로 고정돼 아래 rate limiter가 모든 사용자를 한 버킷으로 묶어버린다.
+app.set('trust proxy', 1)
+// 사진(base64)을 받는 /api/gemini만 큰 본문이 필요하다 — 나머지 라우트까지 15mb를 전부 허용하면
+// 이미지가 필요 없는 라우트(/api/fooddb 등)로도 대용량 POST를 보내 메모리를 낭비시키기 쉬워진다.
+app.use('/api/gemini', express.json({ limit: '15mb' }))
+app.use(express.json({ limit: '1mb' }))
 
-// TODO(공개 확대 시): 레이트리밋 미들웨어 자리 (예: express-rate-limit로 IP별 요청 수 제한).
-// 소수 사용자 데모 단계라 지금은 생략.
+// express.json이 위 limit 초과("entity.too.large") 또는 잘못된 JSON("entity.parse.failed")을
+// next(err)로 넘기면, 이 미들웨어가 없을 때는 Express 기본 에러 핸들러가 서버 파일 경로가 담긴 HTML
+// 스택트레이스를 그대로 응답한다 — 다른 모든 라우트가 JSON 에러만 응답하는 것과 어긋나고, 불필요하게
+// 내부 정보를 노출한다.
+app.use((err, req, res, next) => {
+  if (err?.type === 'entity.too.large') {
+    return res.status(413).json({ error: '요청 본문이 너무 큽니다.' })
+  }
+  if (err?.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: '요청 본문을 해석할 수 없습니다.' })
+  }
+  next(err)
+})
+
 // TODO(공개 확대 시): CORS 정책 자리 (예: cors 미들웨어로 허용 오리진 제한).
 // 현재는 프론트/프록시가 동일 오리진으로 서빙되어 생략.
+
+// 모든 /api 요청은 서버가 들고 있는 유료/쿼터 제한 키(OpenRouter, Kakao, Naver, 식약처)를 대신
+// 소모한다. 인증이 없는 공개 데모 단계라, IP당 요청 수를 제한해 스크립트로 반복 호출해 쿼터를
+// 소진시키거나 과금을 유발하는 남용을 막는다.
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' },
+})
+
+// /api/gemini는 토큰당 과금되는 OpenRouter 호출이라 다른 라우트보다 더 촘촘하게 제한한다.
+const geminiLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' },
+})
+
+app.use('/api', apiLimiter)
 
 // Vercel 배포에서는 vercel.json의 rewrite가 /api/* 전체를 이 함수 하나(api/index.js)로 보낸다.
 // destination이 실제로 원래 하위 경로(/api/gemini 등)를 그대로 유지해주는지는 Vercel 내부
@@ -99,7 +140,7 @@ if (process.env.VERCEL) {
   })
 }
 
-app.post('/api/gemini', async (req, res) => {
+app.post('/api/gemini', geminiLimiter, async (req, res) => {
   const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) {
     return res.status(500).json({ error: 'OPENROUTER_API_KEY is not configured on the server' })
@@ -140,6 +181,14 @@ app.post('/api/gemini', async (req, res) => {
     if (!openRouterRes.ok) {
       console.error('OpenRouter API error:', data)
       return res.status(openRouterRes.status).json({ error: data?.error?.message || 'OpenRouter API error' })
+    }
+
+    // 토큰 사용량 로그 — docs/cost-analysis.md의 추정치를 실측값으로 교체할 때 이 로그를 근거로 쓴다.
+    if (data?.usage) {
+      console.log(
+        `Gemini usage: prompt=${data.usage.prompt_tokens ?? '?'} completion=${data.usage.completion_tokens ?? '?'} ` +
+          `total=${data.usage.total_tokens ?? '?'} image=${imageBase64 ? 'Y' : 'N'}`,
+      )
     }
 
     const text = data?.choices?.[0]?.message?.content ?? ''

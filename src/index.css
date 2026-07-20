@@ -103,7 +103,7 @@ a {
   animation: tds-step-in 0.28s ease-out;
 }
 
-@keyframes cjmt-spin {
+@keyframes mealyze-spin {
   to {
     transform: rotate(360deg);
   }

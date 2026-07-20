@@ -1,6 +1,6 @@
-# CJMT
+# Mealyze
 
-사진으로 식사를 기록하면 AI(Gemini, OpenRouter 경유)가 음식을 식별하고, 식약처 식품영양성분DB로
+(구 CJMT) 사진으로 식사를 기록하면 AI(Gemini, OpenRouter 경유)가 음식을 식별하고, 식약처 식품영양성분DB로
 실제 영양수치를 채워주는 영양 관리 웹앱. 오늘 부족한 영양소를 계산해 주변 식당을 추천해준다
 (식당 검색은 카카오 로컬 API, 지도 표시는 네이버 지도).
 
@@ -59,9 +59,27 @@ Vercel 서버리스 경로(`api/index.js`)까지 로컬에서 그대로 재현�
 | `VITE_SUPABASE_URL` | 필수 (빌드 시점) | Supabase 프로젝트 대시보드 → **Project Settings → API → Project URL**. 로그인(Google OAuth, 이메일/비밀번호)에 쓰는 Supabase 클라이언트(`src/lib/supabase.js`) 초기화 값으로, `VITE_KAKAO_JS_KEY`와 마찬가지로 프론트 번들에 그대로 박힌다. |
 | `VITE_SUPABASE_ANON_KEY` | 필수 (빌드 시점) | 같은 화면의 **anon public** 키. 브라우저에 노출돼도 되는 공개 키다(실제 접근 제어는 Supabase의 Row Level Security가 담당 — `supabase/schema.sql` 참고). Google OAuth를 쓰려면 Supabase 대시보드 **Authentication → Providers → Google**도 별도로 활성화해야 한다. |
 | `NODE_ENV` | Render만 필수 | `production`으로 고정. 이 값일 때(그리고 `VERCEL`이 없을 때)만 `server/proxy.js`가 `dist/`를 정적 서빙하고 SPA 라우팅 폴백을 활성화한다. Vercel은 정적 서빙을 직접 처리하므로 굳이 설정할 필요 없음(설정돼 있어도 무방 — `VERCEL`이 함께 감지되면 무시된다). |
-| `APP_URL` | 선택 | 배포된 서비스의 URL(예: `https://cjmt.onrender.com`, `https://cjmt.vercel.app`). OpenRouter 요청의 `HTTP-Referer` 헤더 값으로 쓰인다. 비워두면 로컬 개발용 값(`http://localhost:5173`)으로 폴백하므로 배포 시 채워두는 걸 권장. |
+| `APP_URL` | 선택 | 배포된 서비스의 URL(예: `https://mealyze.onrender.com`, `https://mealyze.vercel.app`). OpenRouter 요청의 `HTTP-Referer` 헤더 값으로 쓰인다. 비워두면 로컬 개발용 값(`http://localhost:5173`)으로 폴백하므로 배포 시 채워두는 걸 권장. |
 | `PORT` | 자동 (Render) | Render가 서비스 실행 시 자동 주입한다. **직접 설정하지 않는다.** 로컬에서는 기본값 8787(`PROXY_PORT`로 override 가능). Vercel은 서버리스 함수라 포트 개념이 없어 무관하다. |
 | `VERCEL` | 자동 (Vercel) | Vercel이 모든 배포에 자동으로 심어주는 값. **직접 설정하지 않는다.** `server/proxy.js`가 이 값으로 "지금 Vercel 서버리스 환경인지"를 판단해 `app.listen()`/정적 서빙을 건너뛴다. |
+
+### ⚠️ 배포 시 네이버/카카오 콘솔에 도메인 등록 필요
+
+지도 SDK(`VITE_NAVER_MAP_CLIENT_ID`, 롤백용 `VITE_KAKAO_JS_KEY`)는 브라우저에서 직접 로드하는
+JS 키라, 키 자체가 유효해도 **요청 도메인이 콘솔에 등록되어 있지 않으면 로드가 실패**한다(로컬
+`localhost`는 보통 기본 허용). 배포할 때마다 다음을 확인할 것 — 등록 전에는 지도 자리에 "지도를
+불러올 수 없습니다" 폴백 메시지가 뜬다(자세한 원인은 그 아래 작은 글씨로 함께 표시됨):
+
+- [ ] **네이버 지도**(현재 화면이 실제로 씀, 필수): [네이버 클라우드 플랫폼](https://www.ncloud.com)
+      콘솔 → 해당 Maps 애플리케이션 → **Web 서비스 URL**에 배포 도메인 등록. 자세한 절차는 아래
+      "네이버 지도 배포 도메인 등록" 참고.
+- [ ] **카카오맵**(현재 화면은 안 씀, 롤백 시에만 필요): `src/components/PlaceMap.jsx`로 되돌릴
+      경우에만 필요. Kakao Developers → 내 애플리케이션 → **플랫폼 → Web**에 배포 도메인 등록.
+- [ ] 위 두 키 모두 **빌드 시점**에 프론트 번들에 그대로 박히므로, 값을 추가/변경했다면 저장만으로는
+      반영되지 않고 재배포(Manual Deploy/Redeploy)를 한 번 더 실행해야 한다.
+- [ ] `NAVER_SEARCH_CLIENT_ID`/`NAVER_SEARCH_CLIENT_SECRET`(주변 식당 검색)와
+      `KAKAO_REST_API_KEY`(롤백 검색·좌표→지역명 변환)는 서버 전용 REST 키라 도메인 등록과 무관하다
+      — 값만 정확히 설정하면 된다.
 
 ## Render 배포
 
@@ -99,7 +117,7 @@ Vercel 서버리스 경로(`api/index.js`)까지 로컬에서 그대로 재현�
 ### 네이버 지도 배포 도메인 등록
 
 [네이버 클라우드 플랫폼](https://www.ncloud.com) 콘솔 → 해당 Maps 애플리케이션 → **Web 서비스
-URL**에 Render가 준 배포 도메인(예: `https://cjmt.onrender.com`)을 등록해야 지도 SDK가 정상
+URL**에 Render가 준 배포 도메인(예: `https://mealyze.onrender.com`)을 등록해야 지도 SDK가 정상
 로드된다. 등록 전에는 지도 화면에 "지도 인증 실패" 에러가 뜬다.
 
 ## Vercel 배포
@@ -190,7 +208,7 @@ Render와 마찬가지로 `VITE_NAVER_MAP_CLIENT_ID`는 **빌드 시점**에 프
 ### 네이버 지도 배포 도메인 등록 (Vercel도 동일)
 
 [네이버 클라우드 플랫폼](https://www.ncloud.com) 콘솔 → 해당 Maps 애플리케이션 → **Web 서비스
-URL**에 Vercel이 준 배포 도메인(예: `https://cjmt.vercel.app`, 커스텀 도메인을 쓴다면 그 도메인도
+URL**에 Vercel이 준 배포 도메인(예: `https://mealyze.vercel.app`, 커스텀 도메인을 쓴다면 그 도메인도
 함께)을 등록해야 지도 SDK가 정상 로드된다.
 
 ### 첫 배포 후 꼭 확인할 것
