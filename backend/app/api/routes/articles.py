@@ -1,12 +1,27 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Query
 from supabase import Client
 
 from app.api.deps import CurrentUserId, UserClient
-from app.schemas.article import InterestTag, TodayArticle, TodayArticlesResponse
+from app.core.errors import ApiError
+from app.missions import MISSION_PROMPTS, RECOMMENDED_MISSION_TYPE
+from app.schemas.article import (
+    ArticleDetail,
+    InterestTag,
+    Mission,
+    TodayArticle,
+    TodayArticlesResponse,
+)
 
 router = APIRouter(prefix="/articles", tags=["articles"])
+
+ARTICLE_DETAIL_SELECT = (
+    "id,title,translated_title,canonical_url,published_at,author,official_excerpt,"
+    "translated_excerpt,reading_time_minutes,language,access_type,url_status,"
+    "content_type,source_type,sources(name)"
+)
 
 ONBOARDING_EMPTY_MESSAGE = "관심사를 먼저 선택하면 오늘의 깸을 볼 수 있어요."
 CANDIDATE_EMPTY_MESSAGE = "관심사에 맞는 글을 아직 준비하지 못했어요."
@@ -136,3 +151,52 @@ def get_today_articles(
         if article_id in by_id
     ]
     return TodayArticlesResponse(items=items, empty_state_message=None)
+
+
+def mission_options() -> list[Mission]:
+    return [Mission(type=mission_type, prompt=prompt) for mission_type, prompt in MISSION_PROMPTS.items()]
+
+
+def recommended_mission() -> Mission:
+    return Mission(type=RECOMMENDED_MISSION_TYPE, prompt=MISSION_PROMPTS[RECOMMENDED_MISSION_TYPE])
+
+
+def fetch_article_detail_row(client: Client, article_id: UUID) -> dict:
+    result = (
+        client.table("articles")
+        .select(ARTICLE_DETAIL_SELECT)
+        .eq("id", str(article_id))
+        .execute()
+    )
+    rows = result.data or []
+    if not rows:
+        raise ApiError(404)
+    return rows[0]
+
+
+@router.get("/{article_id}", response_model=ArticleDetail)
+def get_article_detail(
+    article_id: UUID,
+    _user_id: CurrentUserId,
+    client: UserClient,
+) -> ArticleDetail:
+    row = fetch_article_detail_row(client, article_id)
+    return ArticleDetail(
+        id=row["id"],
+        title=row["title"],
+        translated_title=row["translated_title"],
+        source_name=row["sources"]["name"],
+        source_type=row["source_type"],
+        content_type=row["content_type"],
+        published_at=row["published_at"],
+        author=row["author"],
+        official_excerpt=row["official_excerpt"],
+        translated_excerpt=row["translated_excerpt"],
+        reading_time_minutes=row["reading_time_minutes"],
+        language=row["language"],
+        access_type=row["access_type"],
+        url_status=row["url_status"],
+        original_url=row["canonical_url"],
+        recommended_mission=recommended_mission(),
+        mission_options=mission_options(),
+    )
