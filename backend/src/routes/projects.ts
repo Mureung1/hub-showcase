@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { supabase } from '../lib/supabaseClient';
 import { buildAnalysisMarkdown } from '../lib/analysisMarkdown';
+import { runAnalysisPipeline } from '../lib/analysisPipeline';
 
 const router = Router();
 const ANALYSIS_REQUESTS_DIR = path.join(__dirname, '..', '..', '..', 'analysis_requests');
@@ -139,6 +140,7 @@ router.post('/:id/analyze', async (req: Request<{ id: string }>, res: Response) 
     return res.status(500).json({ error: '인터뷰 조회에 실패했습니다.' });
   }
 
+  // MD 파일 생성은 디버깅/로그용으로 유지. AI 분석 파이프라인의 입력과는 무관하다.
   const markdown = buildAnalysisMarkdown(project, hypotheses ?? [], interviews ?? []);
   const filePath = path.join(ANALYSIS_REQUESTS_DIR, `project_${id}.md`);
 
@@ -150,10 +152,23 @@ router.post('/:id/analyze', async (req: Request<{ id: string }>, res: Response) 
     return res.status(500).json({ error: '분석 요청 파일 생성에 실패했습니다.' });
   }
 
-  return res.status(200).json({
-    project_id: id,
-    file_path: `analysis_requests/project_${id}.md`,
-  });
+  try {
+    const { evidenceTags, verificationResults } = await runAnalysisPipeline({
+      hypotheses: hypotheses ?? [],
+      interviews: interviews ?? [],
+    });
+
+    return res.status(200).json({
+      project_id: id,
+      file_path: `analysis_requests/project_${id}.md`,
+      evidence_tag_count: evidenceTags.length,
+      verification_results: verificationResults,
+    });
+  } catch (err) {
+    console.error('Failed to run analysis pipeline:', err);
+    const message = err instanceof Error ? err.message : 'AI 분석 파이프라인 실행에 실패했습니다.';
+    return res.status(500).json({ error: message });
+  }
 });
 
 export default router;

@@ -100,8 +100,8 @@ gantt
     - *DB:* `verification_results` 테이블을 `schema.sql`에 신규 정의 (`hypothesis_id` FK, 위 필드, `citations`는 JSONB). 재분석 시 덮어쓰기하도록 `hypothesis_id UNIQUE` + upsert. Supabase SQL Editor 대신 `backend/migrations/002_verification_results.sql`을 `node runMigration.js migrations/002_verification_results.sql`로 `DIRECT_URL`에 직접 적용(이 과정에서 `.env`의 `DATABASE_URL`/`DIRECT_URL` 비밀번호에 대괄호가 남아있던 오타를 발견해 수정함).
   - *완료 조건:* 가설별 검증결과가 `verification_results`에 저장되고, `summary` 본문의 `[n]` 마커가 `citations` 배열과 일대일로 대응함.
 
-- [ ] **Task 5: [BE] `/analyze` 엔드포인트 확장**
-  - *상세:* `backend/src/routes/projects.ts`의 기존 `POST /:id/analyze` 핸들러에 1단계 ➡️ 2단계 파이프라인 연결. 기존 `buildAnalysisMarkdown` 기반 MD 파일 생성은 디버깅/로그용으로 **유지**. 분석 완료 후 `hypotheses.verification_status`를 AI 제안값으로 갱신.
+- [x] **Task 5: [BE] `/analyze` 엔드포인트 확장**
+  - *상세:* `backend/src/routes/projects.ts`의 기존 `POST /:id/analyze` 핸들러에 1단계 ➡️ 2단계 파이프라인 연결. 기존 `buildAnalysisMarkdown` 기반 MD 파일 생성은 디버깅/로그용으로 **유지**. 분석 완료 후 `hypotheses.verification_status`를 AI 제안값으로 갱신. 오케스트레이션은 라우터에 인라인으로 넣지 않고 `lib/analysisPipeline.ts`로 분리(1단계는 인터뷰별로 순회, 2단계는 가설별로 순회 후 `verification_status` UPDATE).
   - *완료 조건:* "분석 시작" 호출 한 번으로 MD 파일 생성 + `evidence_tags` + `verification_results` 적재 + `verification_status` 갱신이 모두 완료됨.
 
 ### 🔴 High — ② 화면 및 참조 시스템
