@@ -60,7 +60,7 @@ interface SpriteAnimationAsset {
   frameCount: number;
   fps: number;
   loop: boolean;
-  states: Array<"idle" | "focused" | "happy" | "recovering" | "resting" | "hover">;
+  states: Array<"idle" | "focused" | "happy" | "recovering" | "resting" | "hover" | "hanging" | "hiding">;
   reducedMotionFrame: number;
 }
 ```
@@ -73,8 +73,18 @@ Needed assets:
 - `lumi-recovering-sheet.png`
 - `lumi-resting-sheet.png`
 - `lumi-hover-sheet.png`
+- `lumi-hanging-sheet.png`: window-edge hanging interaction
+- `lumi-hiding-sheet.png`: hiding behind or peeking from a window interaction
 - level or growth variants: `lumi-growth-01.png`, `lumi-growth-02.png`, `lumi-growth-03.png`
 - accessory overlays: small hat, badge, glow, memory shard, theme charm
+
+Window interaction notes:
+
+- `hanging` and `hiding` are interaction states, not manager mood states.
+- Do not bake full XP window chrome into the sprite sheet.
+- React/CSS should provide the window edge, z-index layer, and clipping mask.
+- `hanging` keeps a stable grip or top-anchor point across frames.
+- `hiding` keeps a stable peek edge and visible bbox across frames.
 
 ### Desktop Icon
 

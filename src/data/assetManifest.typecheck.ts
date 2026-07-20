@@ -20,10 +20,12 @@ const requiredIconIds = [
   "trash",
   "rewards",
   "theme-settings",
+  "pixel-tv",
 ] as const satisfies readonly DesktopIconId[];
 
 type _QuestIconExists = Assert<"quest" extends keyof typeof desktopIconAssets ? true : false>;
 type _ThemeSettingsIconExists = Assert<"theme-settings" extends keyof typeof desktopIconAssets ? true : false>;
+type _PixelTvIconExists = Assert<"pixel-tv" extends keyof typeof desktopIconAssets ? true : false>;
 
 for (const iconId of requiredIconIds) {
   const icon = getDesktopIconAsset(iconId);
@@ -37,7 +39,7 @@ if (waitingState !== "idle") {
   throw new Error("waiting mood must map to idle Lumi animation");
 }
 
-for (const state of ["idle", "focused", "happy", "recovering", "resting", "hover"] as const) {
+for (const state of ["idle", "focused", "happy", "recovering", "resting", "hover", "hanging", "hiding"] as const) {
   const animation = getLumiAnimationAsset(state);
   if (animation.frameWidth !== 64 || animation.frameHeight !== 64 || animation.frameCount < 1) {
     throw new Error(`Invalid Lumi animation metadata for ${state}`);

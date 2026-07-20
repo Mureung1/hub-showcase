@@ -1,6 +1,6 @@
 ﻿# 현재 진행 상황
 
-마지막 갱신: 2026-07-16
+마지막 갱신: 2026-07-20
 
 ## 완료
 
@@ -36,6 +36,20 @@
 - 2주차 계획과 오늘 계획 작성
 - GitHub Project 운영 가이드 작성
 - 개발 Task 백로그를 GitHub Issues/Projects 등록 단위로 재정렬
+- 2026-07-17 매니저 캐릭터 새 방향 후보 기록: `pink-animal-samesize-evolution` 기준으로 Stage 1~4 크기/시점은 유지하고, 전자 장식 대신 동물형 귀여움과 픽셀 품질만 점진적으로 강화하는 방향을 `docs/asset-prompts/`와 관련 skill 문서에 반영
+- 2026-07-17 실제 신기한 생물 모티브 후보 기준 기록: `real-creature-cyber-pet-evolution` 문서에 Stage 1은 작게, Stage 2~4는 동일 크기/시점으로 유지하는 사이버 펫 진화 규칙을 추가
+- 2026-07-17 실제 생물 모티브 후보 v2 피드백 반영: Stage 3/4는 크기 증가 없이 생물별 디테일이 분명히 올라가야 하며, 사탄 나뭇잎 꼬리 도마뱀붙이는 애니메이션을 위해 더 단순한 실루엣을 우선하도록 문서와 검수 skill에 추가
+- 2026-07-17 동적 MVP 캐릭터 애니메이션 계획에 `hanging`, `hiding` 창 상호작용 상태를 추가하고, 창 UI는 sprite에 굽지 않고 React/CSS 레이어에서 edge/mask로 처리하는 기준을 문서와 manifest 슬롯에 반영
+- 2026-07-17 매니저 기준 에셋을 `call_z97P9uZ2ElI20evcQGicQRu9`로 고정하고, `public/assets/lumi/`의 `lumi-idle/focused/happy/recovering/resting/hover/hanging/hiding-sheet.png`와 `lumi-growth-01~03.png` canonical 슬롯을 해당 기준의 임시 정적 sheet로 정렬
+- 2026-07-17 실제 생물 모티브 9종 v2 contact sheet와 개별 후보 PNG를 생성: `public/assets/_review/real-creature-candidates-stage-1-4-v2-contact.png`, `public/assets/lumi/candidate-*-stage-1-4-v2.png`, `candidate-*-stage-1-4-v2-chromakey.png`
+- 2026-07-18 캐릭터 후보는 Stage 1/2만 실제 애니메이션 base로 쓰고 Stage 3/4 확장은 보류하는 방향으로 전환
+- 2026-07-18 기존 desktop icon 9종의 `idle`/`hover` pixel v2 PNG를 생성하고 manifest를 `*-idle-pixel-v2.png`, `*-hover-pixel-v2.png`로 연결
+- 2026-07-18 캐릭터 애니메이션 base 기준을 확정: 실제 생물 9종은 `call_5sUTBQlinROYVyU6ME7HGChS`, 핑크 매니저는 `call_z97P9uZ2ElI20evcQGicQRu9`, 플라나리아는 `call_FC5eMPVVWE0EfZgjCbcenep4`의 Stage 1/2를 사용
+- 2026-07-18 webcam 연결 확장용 `pixel-tv` desktop icon future slot을 추가하고, `PIXELTV.jfif` 무드 참조 기반의 `pixel-tv-idle-pixel-v2.png`, `pixel-tv-hover-pixel-v2.png`를 manifest에 연결
+- 2026-07-18 desktop hover icon 7종을 재디자인: quest pencil, manager extra sparkles, profile manager-card, journal open book, trash mouth, rewards untied ribbon, pixel-tv screen noise
+- 2026-07-18 플라나리아 Stage 1 기준 이미지를 `call_FC5eMPVVWE0EfZgjCbcenep4`에서 추출하고, `idle/focused/happy/recovering/hover/hanging/hiding` 샘플 sprite sheet 7종을 생성
+- 2026-07-18 플라나리아 Stage 1 animation sample의 기준 프레임, CSS background-position, 상태별 fps, 배치 anchor, reduced-motion fallback 기준을 문서화
+- 2026-07-20 동적 에셋 animation pipeline 내용을 `asset-prompts` 문서와 Wiki synthesis로 재배치하고, `docs/wiki/synthesis/dynamic-asset-animation-pipeline.md`를 추가
 
 ## 검증
 
@@ -56,6 +70,14 @@
 - 2026-07-16 발표 자료 overflow 검증 통과: `slides_test.py`
 - 2026-07-16 수직 슬라이스 검증 보강 통과: `npm.cmd run typecheck`, `npm.cmd run typecheck:server`, `npm.cmd run build`, `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
 - 2026-07-16 `/api/health`가 Hono API storage mode를 반환하도록 보강: Supabase env가 없으면 `memory`, 실제 env가 있으면 `supabase`로 확인 가능
+- 2026-07-17 동적 asset manifest 정렬 후 TypeScript 검증 통과: `npm.cmd run typecheck`
+- 2026-07-17 실제 생물 v2 후보 PNG 생성 후 chroma-key 제거본 네 모서리 alpha 검증 통과
+- 2026-07-18 desktop icon pixel v2 18개가 모두 48x48 PNG로 생성됨을 확인하고 TypeScript 검증 통과: `npm.cmd run typecheck`
+- 2026-07-18 `pixel-tv` icon pixel v2 2개가 48x48 RGBA/투명 모서리 PNG로 생성됨을 확인하고 TypeScript 검증 통과: `npm.cmd run typecheck`
+- 2026-07-18 hover redesign 7개 PNG가 모두 48x48 RGBA/투명 모서리로 유지됨을 확인
+- 2026-07-18 플라나리아 Stage 1 animation sample 7개가 모두 `256x64` RGBA sprite sheet로 생성되고, 일반 상태 중심 오차는 대략 0~1px 수준으로 보정됨
+- 2026-07-18 플라나리아 Stage 1 animation 기준 frame-0 7개와 reference contact sheet를 생성하고 문서 경로 확인
+- 2026-07-20 Wiki index/source/log 갱신 후 하네스 구조 검증 통과: `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
 - 로컬 skill 설치 확인: Superpowers, 하네스 workflow skills, `project-learning-agent`
 - React 화면은 정적 HTML 기준으로 큰 flow/state 차이는 줄였고, 남은 시각 차이는 사용자가 직접 화면을 보며 추가 점검 예정
 

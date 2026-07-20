@@ -33,6 +33,10 @@ docs/design-references/concept.png
 | `01-manager-sprite/electronic-manager-sprite-sheet.md` | 전자 생물 매니저 스프라이트 |
 | `03-ui-kit/xp-desktop-icon-kit.md` | 바탕화면 아이콘 |
 | `07-audio-visual-fx/visual-fx-sheets.md` | 완료/복구/반응 효과 |
+| `01-manager-sprite/pink-animal-samesize-evolution.md` | 새 매니저 캐릭터 후보: 동일 크기 유지형 핑크 동물형 진화 |
+| `01-manager-sprite/real-creature-cyber-pet-evolution.md` | 실제 신기한 생물 모티브 후보: Stage 1 작게, Stage 2~4 동일 크기형 사이버 펫 진화 |
+| `01-manager-sprite/real-creature-cyber-pet-v2-prompts.md` | 실제 생물 모티브 후보 v2 재생성 프롬프트: 8종 Stage 3/4 강화, 도마뱀붙이 단순화 |
+| `01-manager-sprite/planaria-stage-1-animation-sample.md` | 11종 캐릭터 애니메이션 확장을 위한 기준 샘플: 64x64 frame, anchor, playback, reduced-motion 기준 |
 
 ## 기간 내 승격 확장 에셋
 
@@ -62,6 +66,20 @@ docs/design-references/concept.png
 
 동적 구현이 필요한 에셋은 `docs/dynamic-asset-requirements.md`의 manifest, naming, frame 규격을 먼저 맞춘다.
 
+애니메이션 sprite sheet를 새로 생성할 때는 `01-manager-sprite/planaria-stage-1-animation-sample.md`의 runtime playback contract를 함께 확인한다. 이 문서는 `256x64` sheet, `64x64 x 4 frames`, frame `0` reduced-motion fallback, `background-position`, 상태별 fps, 그리고 `center x`, `lower float anchor`, `top grip anchor`, `peek edge` 기준을 정의한다.
+
+## 캐릭터 방향 후보
+
+현재 매니저 캐릭터는 두 갈래를 구분한다.
+
+- 기존 Lumi: `01-manager-sprite/electronic-manager-sprite-sheet.md` 기준의 전자 생물형.
+- 새 후보: `01-manager-sprite/pink-animal-samesize-evolution.md` 기준의 핑크/갈색 동물형.
+- 실제 생물 모티브 후보: `01-manager-sprite/real-creature-cyber-pet-evolution.md` 기준의 생물별 사이버 펫형.
+
+새 후보는 진화 단계가 커지는 방식이 아니다. Stage 1~4는 같은 크기와 같은 시점을 유지하고, 귀/앞발/볼털/발바닥/꼬리/작은 리본 같은 동물적 귀여움과 픽셀 품질만 점진적으로 좋아져야 한다. 전자 장식, 사이버 장식, 로봇 갑옷, 성숙한 체형 변화는 피한다.
+
+실제 생물 모티브 후보는 Stage 1만 작게 시작하고, Stage 1에서 Stage 2로 넘어갈 때만 살짝 커진다. Stage 2, Stage 3, Stage 4는 거의 같은 크기와 같은 시점을 유지해야 하며, 각 생물의 고유 특징과 픽셀 품질, 몸에 통합된 약한 사이버 생명체 느낌만 점진적으로 강화한다.
+
 ## 동적 MVP 우선 검수 세트
 
 처음부터 전체 에셋을 대량 생성하지 않는다. 먼저 아래 소량 PNG를 생성해 `asset-quality-verifier` skill로 검수한 뒤 같은 규칙을 나머지 상태에 확장한다.
@@ -72,6 +90,8 @@ docs/design-references/concept.png
 | 2 | `public/assets/lumi/lumi-focused-sheet.png` | focused 상태 의미, 프레임 간 bbox drift 없음 |
 | 3 | `public/assets/icons/quest-idle.png`, `quest-hover.png`, `quest-active.png`, `quest-disabled.png` | 48x48 상태 차이, 같은 실루엣과 위치 |
 | 4 | `public/assets/fx/quest-complete-sheet.png` | 투명 FX, 텍스트 없음, Lumi와 별도 레이어 |
+| 5 | `public/assets/lumi/lumi-hanging-sheet.png`, `lumi-hiding-sheet.png` | 창 상호작용 모션, 동일 anchor/peek edge, 창 UI를 이미지에 굽지 않음 |
+| 6 | `public/assets/lumi/planaria-stage-1/planaria-stage-1-*-sheet.png` | 11종 확장 전 샘플: 256x64 sheet, frame 0 fallback, 배치 anchor, 상태별 fps |
 
 검수 skill 위치:
 
