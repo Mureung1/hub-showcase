@@ -157,6 +157,7 @@ button,
 .button--secondary {
   background: var(--color-bg-page);
   color: var(--color-text-primary);
+  border: 1px solid var(--color-border-muted);
   box-shadow: var(--card-shadow);
 }
 
@@ -166,9 +167,66 @@ button,
   margin: 0;
 }
 
+.picker-trigger {
+  width: 100%;
+  height: var(--button-height-sm);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
+  padding: 0 var(--space-4);
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.picker-trigger--empty {
+  color: var(--color-text-disabled);
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: auto;
+}
+
+.field-with-hint {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.field-with-hint label {
+  margin-bottom: 0;
+}
+
 .page-stack {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: var(--space-4);
   max-width: 420px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ===== 화면/모달 전환 트랜지션 유틸 ===== */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.transition-fade-in {
+  animation: fade-in var(--duration-base) var(--ease-out);
+}
+
+.transition-slide-up {
+  animation: slide-up var(--duration-base) var(--ease-out);
 }

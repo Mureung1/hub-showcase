@@ -31,7 +31,7 @@ function Layout() {
           </>
         ) : (
           <img src={logo} alt="hub 로고" className="layout__logo" />
-        )}                      
+        )}
       </header>
       <main className="layout__content">
         <Outlet />  

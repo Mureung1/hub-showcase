@@ -4,6 +4,8 @@ import morgan from 'morgan' // study: 방문 기록장
 import { env } from './lib/env.js'
 import { appointmentsRouter } from './routes/appointments.js'
 import { participantsRouter } from './routes/participants.js'
+import { responsesRouter } from './routes/responses.js'
+import { resultsRouter } from './routes/results.js'
 
 export const app = express() // study: 서버 열기
 
@@ -20,3 +22,5 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/appointments', appointmentsRouter) // study: 약속 라우터
 app.use('/api/appointments', participantsRouter) // study: 참여 라우터
+app.use('/api/appointments', responsesRouter) // claude: 일정 응답 제출/조회 라우터(Day4)
+app.use('/api/appointments', resultsRouter) // claude: 일정 결과 집계/응답 현황/마감 라우터(2주차 Day1)

@@ -2,9 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
 
 const fromMock = vi.fn()
+const supabaseMock = { from: fromMock }
 // study: supabase.js를 mock으로 바꿔치기.
 vi.mock('../lib/supabase.js', () => ({
-  supabase: { from: fromMock },
+  supabase: supabaseMock,
+  requireSupabase: () => supabaseMock, // claude: requireSupabase 추출 후 라우트가 이걸 부르므로 mock에도 추가
 }))
 // study: 위에서 먼저 바꿔치기 했으므로, 이제 app에서 supabase 를 import 할 때 mock 를 불러옴(순서 중요)
 const { app } = await import('../app.js')
@@ -50,6 +52,16 @@ describe('POST /api/appointments', () => {
     expect(fromMock).not.toHaveBeenCalled()
   })
 
+  it('날짜 범위가 31일을 초과하면 400을 반환한다', async () => {
+    const res = await request(app)
+      .post('/api/appointments')
+      .send({ ...validBody, dateStart: '2026-07-01', dateEnd: '2026-08-02' })
+
+    expect(res.status).toBe(400)
+    expect(res.body.fields.dateEnd).toBeTruthy()
+    expect(fromMock).not.toHaveBeenCalled()
+  })
+
   it('유효한 요청이면 약속과 관리자 참가자를 생성하고 201을 반환한다', async () => {
     fromMock.mockImplementation((table: string) => {
       if (table === 'appointments') {
@@ -75,13 +87,35 @@ describe('GET /api/appointments/:id', () => {
     fromMock.mockReset()
   })
 
-  it('존재하는 약속이면 200을 반환한다', async () => {
-    fromMock.mockImplementation(() => createQueryBuilder({ data: { id: 'appt-uuid' }, error: null }))
+  it('존재하는 약속이면 200과 상세 정보를 반환한다', async () => {
+    fromMock.mockImplementation(() =>
+      createQueryBuilder({
+        data: {
+          title: '팀 회의',
+          date_start: '2026-07-20',
+          date_end: '2026-07-21',
+          time_start: '09:00:00',
+          time_end: '18:00:00',
+          headcount: 5,
+          closed_at: null,
+        },
+        error: null,
+      }),
+    )
 
     const res = await request(app).get('/api/appointments/appt-uuid')
 
     expect(res.status).toBe(200)
-    expect(res.body).toEqual({ appointmentId: 'appt-uuid' })
+    expect(res.body).toEqual({
+      appointmentId: 'appt-uuid',
+      title: '팀 회의',
+      dateStart: '2026-07-20',
+      dateEnd: '2026-07-21',
+      timeStart: '09:00',
+      timeEnd: '18:00',
+      headcount: 5,
+      closedAt: null,
+    })
   })
 
   it('존재하지 않는 약속이면 404를 반환한다', async () => {

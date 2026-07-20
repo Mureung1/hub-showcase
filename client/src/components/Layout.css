@@ -1,14 +1,19 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 .layout__header {
-  height: var(--nav-height);
   display: grid;
-  grid-template-columns: 40px 1fr 40px;
+  grid-template-columns: 80px 1fr 80px;
   align-items: center;
-  padding: 0 var(--space-4);
+  padding: var(--space-2) var(--space-4);
 }
 
 .layout__logo {
   grid-column: 1;
-  height: 40px;
+  height: 80px;
 }
 
 .layout__back {
@@ -45,7 +50,10 @@
 }
 
 .layout__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   max-width: var(--container-max);
   margin: 0 auto;
-  padding: var(--space-8) var(--container-padding-mobile);
+  padding: var(--space-4) var(--container-padding-mobile) var(--space-8);
 }
