@@ -8,7 +8,7 @@
 
 ---
 
-## Milestone 2 🚧
+## Milestone 2 ✅ (2주차)
 
 ### 개발 환경
 
@@ -21,54 +21,78 @@
 - [x] Planning Agent
 - [x] Validation Agent
 
-### Core Features
+### Core Features (UI 스켈레톤 완성)
 
-- [ ] Upload
-- [ ] Analysis
-- [ ] Financial
-- [ ] Dashboard
+- [x] Upload (Vertical Slice 완성: FE-BE-DB 연결)
+- [x] Analysis (Mock 데이터 기반 완성)
+- [x] Dashboard (Mock 데이터 기반 스켈레톤)
+- [ ] Financial (3주차 예정)
 
 ---
 
-# 현재 Sprint 목표 (2주차)
+## Milestone 3 🚧 (3주차)
 
-하나의 **Vertical Slice** 완성
+### Data Pipeline
+
+- [ ] sales Parser
+- [ ] waste dtype 정리
+- [ ] inventory / orders Parser
+- [ ] Product Master 생성
+- [ ] Master Dataset 생성
+
+### Core Features (실데이터 연동)
+
+- [ ] Financial Backend (마진/폐기손실 계산)
+- [ ] Financial Frontend (실데이터 연동)
+- [ ] Dashboard KPI 실데이터 연동
+- [ ] Rule Engine V1 (최소 3개 규칙)
+- [ ] Analysis 최소 1개 카테고리 실데이터 연동 (P1)
+
+---
+
+# 현재 Sprint 목표 (3주차)
+
+**MVP 완성: 전체 데이터 흐름 정상 동작**
 
 ```
-Frontend
+Upload
 
 ↓
 
-Backend
+Python ETL (Parser, Product Master, Master Dataset)
 
 ↓
 
-Database
+Express API (Financial 계산, Rule Engine)
 
 ↓
 
-Frontend
+Dashboard / Financial (실데이터 기반 렌더링)
+
+↓
+
+Recommendation
 ```
 
-기능: Upload
+목표: `Upload → ETL → API → Dashboard → Financial → Recommendation` End-to-End 흐름 완성
 
-목표: 하나의 완전한 요청-응답 사이클 완성
-
----
-
-# Backlog (2주차~4주차)
-
-우선순위
-
-P0 (필수/차단)
-
-P1 (중요)
-
-P2 (여유 시)
+상세 계획: `docs/week3_plan.md`, 진행도 추적: `docs/week3_checklist.md`
 
 ---
 
-# 2주차 — Sprint Goal (P0)
+# Backlog 우선순위
+
+## 3주차 우선순위
+
+**P0 (필수, MVP 완성 필수)**: Parser 전체, Product Master, Master Dataset, Financial Backend, Financial Frontend, Dashboard KPI 실데이터, Rule Engine V1
+
+**P1 (중요, 시간 남으면)**: Dashboard Recommendation Card, Analysis 1개 카테고리 실데이터
+
+**P2 (저순위, 4주차 이후)**: Analysis 전체 카테고리 실데이터, Rule 추가, UI 개선
+
+---
+
+# 2주차 — Sprint Goal ✅ (완료)
 
 ## Upload Vertical Slice
 
@@ -133,14 +157,12 @@ Frontend
 - [x] 새로고침 후에도 업로드 이력이 유지된다
 - [x] Validation Agent 검증을 통과한다
 
-### 이번 스프린트에서 하지 않는 것 (Out of Scope)
+### 2주차에서 하지 않은 것 (3주차로 이월)
 
-- CSV/XLSX 실제 파싱
-- Product Master 생성
-- ETL 구현
-- Analysis 데이터 처리
-- Financial 계산
-- Dashboard 실데이터 연동
+- ✅ Data Pipeline (Parser, Product Master, Master Dataset) — 3주차 Day 1~3에서 처리
+- ✅ Financial Backend 계산 — 3주차 Day 3에서 처리
+- ✅ Dashboard/Analysis 실데이터 연동 — 3주차 Day 4~5에서 처리
+- ✅ Rule Engine V1 — 3주차 Day 3에서 처리
 
 ---
 
@@ -202,8 +224,8 @@ Frontend
 
 **주간 마무리**
 
-- [ ] `docs/tasks.md` 및 `docs/scrum.md` 2주차 마무리 여부 정리
-- [ ] 필요 시 기능 단위 커밋 정리
+- [x] `docs/tasks.md` 및 `docs/scrum.md` 2주차 마무리 정리
+- [x] 기능 단위 커밋 정리
 
 **완료 기준**: Analysis 페이지 완결, Dashboard가 mock 데이터로 최소 2개 카드를 보여줌
 
@@ -225,59 +247,63 @@ Frontend
 
 ---
 
-# 3주차 — P1 (Analysis)
+# 3주차 — P0 Sprint Goal
 
-`ANALYSIS_PAGE_SPEC.md` 기준
+**목표: MVP 완성 — `Upload → ETL → Master Dataset → Express API → Dashboard → Financial → Recommendation` 전체 데이터 흐름이 정상 동작**
 
-- [ ] 요일별 판매 패턴
-- [ ] 시간대별 판매 패턴
-- [ ] 판매 추세
-- [ ] 폐기 추세
-- [ ] Merged Dataset 연동
+세부 일정은 `docs/week3_plan.md` 참고. 진행도는 `docs/week3_checklist.md`에서 추적.
+
+## Day 1 (월) — Data Pipeline 기초 구축
+
+- [ ] sales Parser 작성 (3단 헤더 → 단일 헤더)
+- [ ] waste 상품코드 dtype 정리 (float → 정수/문자열)
+- [ ] inventory / orders Parser
+- [ ] Financial 계산식 최종 확정
+- [ ] `docs/specs/MASTER_DATASET_SPEC.md` 작성
+
+## Day 2 (화) — Product Master + Master Dataset
+
+- [ ] `data/master/product_master.csv` 생성
+- [ ] `data/master/merged_dataset.csv` 생성
+- [ ] 카테고리별 row 수 및 결측치 확인
+
+## Day 3 (수) — Financial Backend + Rule Engine V1
+
+### Financial Backend
+- [ ] 카테고리 평균 원가율 계산
+- [ ] 마진액 / 마진율 계산
+- [ ] 폐기손실 / 폐기율 계산
+- [ ] 순이익 / 순이익기여도 계산
+- [ ] `GET /api/financial` API 구현
+
+### Rule Engine V1
+- [ ] Rule 1: 판매증가 + 폐기율 < 5% → 발주 확대 검토
+- [ ] Rule 2: 판매감소 + 폐기율 증가 → 발주 축소 검토
+- [ ] Rule 3: 마진율 낮음 → 수익성 검토 필요
+- [ ] RecommendationService 구현
+- [ ] `GET /api/recommendations` API 구현
+
+## Day 4 (목) — Financial Frontend + Dashboard 연결
+
+- [ ] Financial: mock 제거, API 연결
+- [ ] Dashboard KPI: 총매출/평균 마진율/폐기손실/추정 순이익 실데이터 연결
+- [ ] Dashboard Category Margin 실데이터 연결
+- [ ] Dashboard Recommendation Card (선택사항)
+
+## Day 5 (금) — 통합 및 안정화
+
+- [ ] Upload → Dashboard 전체 흐름 확인
+- [ ] Analysis 최소 1개 카테고리 실데이터 연동 (P1, 여유 시)
+- [ ] 예외 처리 및 버그 수정
+- [ ] `npx tsc --noEmit` 통과
+- [ ] `npm run build` 통과
+- [ ] 브라우저 실행 확인 (콘솔 에러·흰 화면 없음)
 
 ---
 
-# 3주차 — P1 (Financial)
+## ⚠️ Risk: 월별/카테고리별 waste↔inventory 매칭률 편차
 
-`FINANCIAL_CALCULATION_SPEC.md` 기준
-
-### Backend
-
-- [ ] 마진액 계산
-- [ ] 마진율 계산
-- [ ] 폐기손실 계산
-- [ ] 순이익 계산
-- [ ] 순이익 기여도 계산
-- [ ] 폐기율 계산
-
-### Frontend
-
-- [ ] Financial 페이지 구현
-- [ ] 평균 마진 표시
-- [ ] 평균 마진율 표시
-- [ ] 폐기 손실 표시
-- [ ] 카테고리별 수익성 표시
-
----
-
-# 3주차~4주차 — P1 (Data Pipeline)
-
-## Backend: Product Master / ETL
-
-`data/raw` 실제 파일 확인 결과: 상품코드가 있는 파일은 `waste`/`inventory` 뿐이고, `sales`/`orders`는 상품명만 존재. 원가는 `waste`, 매가는 `inventory`에 나뉘어 있음. `sales`는 3단 그룹 헤더(조회기간/비교기간/차이)로 되어 있어 일반 파서로 바로 읽히지 않음.
-
-- [ ] sales 파일 헤더 정규화: 3단 그룹 헤더 → 단일 헤더로 변환하는 파서 작성
-- [ ] waste 상품코드 dtype 문제 해결: float(`2.700039e+12`) → 정수/문자열 변환, 정밀도 검증
-- [ ] waste + inventory 병합: 상품코드 기준 원가+매가 통합 → Product Master 1차 버전
-- [ ] inventory/waste 상품명 표기 규칙 확인: 두 파일 간 상품명 실제 일치 여부 샘플 대조
-- [ ] sales 상품명 ↔ Product Master 매칭 로직: 정확 일치 실패 시 유사 매칭 or 수동 매핑 테이블
-- [ ] orders 상품명 ↔ Product Master 매칭 (sales와 동일 로직 재사용)
-- [ ] 매칭 실패 상품 리스트 산출 + 매칭률 검증
-- [ ] Merged Dataset 조립: sales+waste+inventory+orders, 카테고리별 파일 통합 포함
-
-### ⚠️ Risk: 월별/카테고리별 waste↔inventory 매칭률 편차
-
-waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률)을 월×카테고리로 전수 확인한 결과:
+waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) 현황:
 
 | 카테고리 | 01월 | 02월 | 03월 | 04월 | 05월 | 06월 |
 |---|---|---|---|---|---|---|
@@ -286,23 +312,47 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률)�
 | 도시락 | 70% | 67% | 75% | 94% | 100% | 100% |
 | 햄버거샌드위치 | 100% | 96% | 100% | 97% | 100% | 100% |
 
-- 김밥/주먹밥은 01~03월 매칭률이 매우 낮음(13~42%). 도시락은 상대적으로 양호. 햄버거샌드위치는 처음부터 문제 없음.
-- 04월 이후로는 전 카테고리 90%+ 로 안정화.
-- **원인 불명** — 카테고리별 재고관리 도입 시점 차이인지, 원본 데이터 자체의 결측/오류인지 확인 필요.
-- **대응 옵션**: (1) 01~03월 김밥/주먹밥 데이터는 분석 대상에서 제외, (2) 원본 데이터 재확보 요청, (3) 매칭 안 된 구간은 mock/추정치로 대체.
-- **판단 기준**: Product Master 매칭 작업 중 실제 결측 원인을 먼저 파악한 뒤 세 옵션 중 결정.
+**대응 전략 (3주차 체크리스트 참고)**:
+- Day2: 별도 조사 작업 없이 진행
+- Day3: 카테고리 원가율 산출 시 이상치 확인 → 있으면 원인 파악, 없으면 스킵
+- 최종 결정: `docs/tasks.md`의 이 Risk 항목에 "3주차 기준 정상" 또는 "구간 제외 처리" 메모 남김
 
 ---
 
-# 4주차 — P1
+# 4주차 — 통합·안정화·발표 준비
 
-- [ ] Dashboard 데이터 연동: Analysis/Financial 실데이터 연동
-- [ ] AI Recommendation (Rule-Based Decision Engine 연결)
-- [ ] 통합 테스트, 버그 수정
+**전제**: 3주차에서 MVP 핵심 기능을 모두 완성하므로, 4주차는 새로운 기능 개발이 아닌 **통합 테스트, 버그 수정, Analysis 마무리, 발표 준비**에 집중.
+
+## 개발 (월/수/목만, 화/금 개발 제약)
+
+- [ ] Analysis 전체 카테고리 실데이터 연동 (3주차 미완료 시)
+- [ ] Dashboard AI Insight 고도화 (필요 시)
+- [ ] 전체 통합 테스트 및 버그 수정
 - [ ] 반응형 UI 점검
+
+## 발표 준비
+
+- [ ] 시연 스크립트 작성
+- [ ] 데이터 마련 (시연용 데이터셋 확인)
+- [ ] PPT/발표 자료 작성
+- [ ] 시연 리허설
 
 ---
 
 # Backlog — P2 (시간 남을 때 구현)
 
+## MVP 완성 이후 고도화 (4주차 이후)
+
+- [ ] Fuzzy Matching: sales/orders 상품명 유사 매칭
+- [ ] Product Master 자동 보정: 수동 매핑 테이블 구축
+- [ ] Rule Engine V2: 더 복잡한 규칙 추가
+- [ ] Dashboard AI Insight: 자연어 분석 고도화
 - [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동)
+
+## MVP 범위 밖 (항상 제외, CLAUDE.md 준수)
+
+- ❌ 머신러닝 기반 수요예측
+- ❌ 자동 발주 기능
+- ❌ POS 연동
+- ❌ 실시간 재고 조회
+- ❌ 발주 자동 실행
