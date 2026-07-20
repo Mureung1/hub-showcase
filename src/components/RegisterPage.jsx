@@ -2,30 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { addDays, setHours, setMinutes, setSeconds, setMilliseconds } from "date-fns";
 import { apiFetch } from "../lib/api";
+import { TYPE_OPTIONS, REASON_OPTIONS } from "../lib/taskOptions";
 import "./RegisterPage.css";
-
-// 유형 9종 — select의 옵션으로 매핑할 것이므로 컴포넌트 밖 상수로 둔다.
-// (컴포넌트 안에 두면 매 렌더링마다 새 배열이 만들어져서 불필요한 재생성이 생긴다.)
-const TYPE_OPTIONS = [
-  "리포트/글쓰기",
-  "문제풀이/암기",
-  "발표/PT 준비",
-  "코딩 실습",
-  "시험공부",
-  "프로젝트",
-  "조별과제",
-  "개인공부",
-  "기타",
-];
-
-// 회피 이유 4종 — value는 DB/로직에서 쓸 영문 키, label은 화면에 보여줄 한글 문구.
-// { value, label } 형태로 두면 <option value={value}>{label}</option>로 바로 매핑 가능.
-const REASON_OPTIONS = [
-  { value: "overwhelm", label: "막막해서 못 시작" },
-  { value: "dislike", label: "이 할일 자체가 하기 싫음" },
-  { value: "temptation", label: "눈앞의 유혹(놀고 싶음)" },
-  { value: "custom", label: "기타(직접입력)" },
-];
 
 function RegisterPage() {
   const navigate = useNavigate(); // 제출 성공 후 코드로 페이지 이동시키기 위해 받아둠

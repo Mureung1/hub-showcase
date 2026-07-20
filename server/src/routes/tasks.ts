@@ -1,13 +1,39 @@
 import { Router } from "express";
+import type { Task } from "@prisma/client";
 import { prisma } from "../db/client.js";
 import { calculateLevel } from "../lib/scoring.js";
+import { getCurrentReason } from "../db/avoidanceReasons.js";
 
 const router = Router();
 
+// task 응답에 최신 회피 이유를 얹는다. 목록 조회는 avoidanceReasons를 한 번에
+// include해서 N+1을 피하고, 단건 응답(POST 계열)은 getCurrentReason 하나만 부른다 —
+// 두 경로가 항상 같은 모양(reason/customReasonText)을 반환해야 nudgeMessages.js의
+// Lv2 빌더가 어느 응답으로 갱신된 task를 받아도 동일하게 동작한다.
+function withReason(
+  task: Task,
+  reason: { reason: string; customText: string | null } | null,
+) {
+  return {
+    ...task,
+    reason: reason?.reason ?? null,
+    customReasonText: reason?.customText ?? null,
+  };
+}
+
 router.get("/", async (_req, res) => {
   try {
-    const tasks = await prisma.task.findMany();
-    res.json({ data: tasks });
+    const tasks = await prisma.task.findMany({
+      include: {
+        // Lv1/Lv3 재확인이나 최초 등록으로 쌓인 회피 이유 중 가장 최근 것만 필요하다
+        // (nudgeMessages.js의 Lv2 빌더가 이 값으로 getMicrotask를 호출한다).
+        avoidanceReasons: { orderBy: { createdAt: "desc" }, take: 1 },
+      },
+    });
+    const data = tasks.map(({ avoidanceReasons, ...task }) =>
+      withReason(task, avoidanceReasons[0] ?? null),
+    );
+    res.json({ data });
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -138,11 +164,64 @@ router.post("/:id/events", async (req, res) => {
       return currentTask;
     });
 
-    res.json({ data: task });
+    const reason = await getCurrentReason(id);
+    res.json({ data: withReason(task, reason) });
   } catch (err) {
     console.error(err);
     res.status(500).json({
       error: { code: "internal_error", message: "이벤트를 저장하지 못했습니다." },
+    });
+  }
+});
+
+// 회피 이유 재확인(#21 ReasonCheckpoint)에서 사용자가 새로 고른 이유를 저장한다.
+// 최초 등록(level=null)과 달리 재확인은 레벨 1 또는 3 시점에만 일어나므로 level을
+// 함께 기록한다 — 이후 Lv3 기억 기반 개입이 getCurrentReason으로 최신 이유를 참조한다.
+const RECONFIRM_LEVELS = [1, 3];
+const VALID_REASONS = ["overwhelm", "dislike", "temptation", "custom"];
+
+router.post("/:id/avoidance-reasons", async (req, res) => {
+  const { id } = req.params;
+  const { level, reason, customText } = req.body;
+
+  if (!RECONFIRM_LEVELS.includes(level)) {
+    res.status(400).json({
+      error: { code: "invalid_level", message: "재확인 레벨은 1 또는 3이어야 합니다." },
+    });
+    return;
+  }
+
+  if (!VALID_REASONS.includes(reason)) {
+    res.status(400).json({
+      error: { code: "invalid_reason", message: "유효하지 않은 회피 이유입니다." },
+    });
+    return;
+  }
+
+  try {
+    // 삭제와 경합할 수 있으므로(events 라우트와 동일) 존재 확인을 먼저 해 404로 끝낸다.
+    const exists = await prisma.task.findUnique({ where: { id } });
+    if (!exists) {
+      res.status(404).json({
+        error: { code: "not_found", message: "할일을 찾을 수 없습니다." },
+      });
+      return;
+    }
+
+    const created = await prisma.avoidanceReason.create({
+      data: {
+        taskId: id,
+        reason,
+        customText: customText ?? null,
+        level,
+      },
+    });
+
+    res.json({ data: created });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: { code: "internal_error", message: "회피 이유를 저장하지 못했습니다." },
     });
   }
 });

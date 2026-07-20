@@ -16,6 +16,7 @@ dist-ssr
 .env
 .env.*
 !.env.example
+!.env.test.example
 
 # 로컬에서 잠깐 붙여보는 sqlite 파일
 *.db

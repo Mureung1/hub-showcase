@@ -82,3 +82,16 @@
   cursor: pointer;
   font-weight: 600;
 }
+
+/* 이미 결정된(켜짐/차단됨/미지원) 상태는 비활성 — 차단/미지원은 흐리게 */
+.nav-perm-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* 권한 허용됨: 강조 색으로 "켜짐"을 또렷이 표시 (disabled여도 흐려지지 않게 override) */
+.nav-perm-btn-on:disabled {
+  background: var(--accent);
+  color: #fff;
+  opacity: 1;
+}
