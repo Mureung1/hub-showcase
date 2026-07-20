@@ -242,3 +242,22 @@ ingredientsRouter.patch("/:id", async (req, res, next) => {
     return next(error);
   }
 });
+
+ingredientsRouter.delete("/:id", async (req, res, next) => {
+  try {
+    const { data, error } = await supabase
+      .from("ingredients")
+      .delete()
+      .eq("id", req.params.id)
+      .select("id")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return sendIngredientNotFound(res);
+
+    req.log.info({ ingredientId: data.id }, "Ingredient deleted");
+    return res.status(204).send();
+  } catch (error) {
+    return next(error);
+  }
+});
