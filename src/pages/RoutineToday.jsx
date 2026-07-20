@@ -22,7 +22,11 @@ function RoutineToday() {
   }
 
   if (error) {
-    return <p className="p-8 text-text-secondary">서버에 연결할 수 없습니다. 백엔드(server)가 실행 중인지 확인해주세요.</p>
+    return (
+      <p className="p-8 text-text-secondary">
+        서버에 연결할 수 없습니다. 백엔드(server)가 실행 중인지 확인해주세요.
+      </p>
+    )
   }
 
   if (!data.hasRoutine) {
@@ -46,6 +50,7 @@ function RoutineToday() {
             <p className="text-text-secondary">오늘은 휴식일입니다.</p>
           ) : (
             <SessionCard
+              routineDayId={data.routineDayId}
               targetArea={data.targetArea}
               exercises={data.exercises}
               status={data.status}

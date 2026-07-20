@@ -1,9 +1,13 @@
+import { Link } from 'react-router-dom'
+
 function ExerciseRow({ order, exercise }) {
   return (
     <div className="flex items-center gap-4 rounded-md px-4 py-[15px] hover:bg-panel">
       <span className="font-display w-5 text-[15px] text-muted">{order}</span>
       <div className="min-w-0 flex-1">
-        <span className="text-[15px] font-semibold text-text">{exercise.name}</span>
+        <span className="text-[15px] font-semibold text-text">
+          {exercise.name}
+        </span>
       </div>
       <span className="text-[13px] tabular-nums text-text-secondary">
         {exercise.targetSets} × {exercise.targetReps}
@@ -12,25 +16,41 @@ function ExerciseRow({ order, exercise }) {
   )
 }
 
-function SessionCard({ targetArea, exercises, status, onComplete }) {
+function SessionCard({
+  routineDayId,
+  targetArea,
+  exercises,
+  status,
+  onComplete,
+}) {
   const isCompleted = status === 'COMPLETED'
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-surface">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-7 py-6">
         <div>
-          <div className="font-display mb-1.5 text-[11px] tracking-[.16em] text-accent">TODAY · {targetArea}</div>
-          <div className="text-[22px] font-extrabold tracking-[-.01em] text-text">{targetArea} 세션</div>
+          <div className="font-display mb-1.5 text-[11px] tracking-[.16em] text-accent">
+            TODAY · {targetArea}
+          </div>
+          <div className="text-[22px] font-extrabold tracking-[-.01em] text-text">
+            {targetArea} 세션
+          </div>
         </div>
         <div className="text-right">
-          <div className="font-display text-2xl font-bold text-text">{exercises.length}</div>
+          <div className="font-display text-2xl font-bold text-text">
+            {exercises.length}
+          </div>
           <div className="text-[11px] text-text-secondary">개 운동</div>
         </div>
       </div>
 
       <div className="px-3 py-2.5">
         {exercises.map((exercise, i) => (
-          <ExerciseRow key={exercise.exerciseId} order={i + 1} exercise={exercise} />
+          <ExerciseRow
+            key={exercise.exerciseId}
+            order={i + 1}
+            exercise={exercise}
+          />
         ))}
       </div>
 
@@ -46,12 +66,12 @@ function SessionCard({ targetArea, exercises, status, onComplete }) {
         >
           {isCompleted ? '완료됨' : '오늘 운동 완료'}
         </button>
-        <button
-          disabled
-          className="cursor-not-allowed rounded-pill border border-border px-[26px] py-[15px] text-[15px] font-semibold text-muted"
+        <Link
+          to={`/pain-report/${routineDayId}`}
+          className="flex items-center justify-center rounded-pill border border-border px-[26px] py-[15px] text-[15px] font-semibold text-text hover:border-outline-hover"
         >
           통증 보고하기
-        </button>
+        </Link>
         <button
           disabled
           className="cursor-not-allowed rounded-pill border border-border px-[26px] py-[15px] text-[15px] font-semibold text-muted"
