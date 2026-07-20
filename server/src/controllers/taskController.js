@@ -16,12 +16,16 @@ function getTodayDateString() {
   return `${y}-${m}-${d}`;
 }
 
-function listTasks(req, res) {
-  const tasks = taskModel.getActiveTasks(CURRENT_TEAM_ID);
-  res.json(tasks);
+async function listTasks(req, res) {
+  try {
+    const tasks = await taskModel.getActiveTasks(CURRENT_TEAM_ID);
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 }
 
-function addTask(req, res) {
+async function addTask(req, res) {
   const { title, assigneeId, dueDate } = req.body;
 
   if (!title || !title.trim()) {
@@ -33,7 +37,7 @@ function addTask(req, res) {
   }
 
   try {
-    const task = taskModel.createTask({
+    const task = await taskModel.createTask({
       teamId: CURRENT_TEAM_ID,
       title: title.trim(),
       assigneeId: assigneeId || null,
@@ -41,14 +45,14 @@ function addTask(req, res) {
     });
     res.status(201).json(task);
   } catch (err) {
-    if (err.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
+    if (err.code === '23503') {
       return res.status(400).json({ error: '존재하지 않는 담당자입니다.' });
     }
-    throw err;
+    res.status(500).json({ error: err.message });
   }
 }
 
-function updateStatus(req, res) {
+async function updateStatus(req, res) {
   const taskId = Number(req.params.id);
   const { status } = req.body;
   const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
@@ -57,48 +61,56 @@ function updateStatus(req, res) {
     return res.status(400).json({ error: '올바르지 않은 상태입니다.' });
   }
 
-  const task = taskModel.getTaskById(taskId);
-  if (!task) {
-    return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
+  try {
+    const task = await taskModel.getTaskById(taskId);
+    if (!task) {
+      return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
+    }
+
+    if (!canMemberChange(task, memberId)) {
+      return res.status(403).json({ error: '담당자만 상태를 변경할 수 있습니다.' });
+    }
+
+    const previousStatus = task.status;
+    const updated = await taskModel.updateStatus(taskId, status);
+
+    if (previousStatus !== status) {
+      await activityLogModel.createLog({
+        taskId,
+        memberId,
+        previousStatus,
+        newStatus: status,
+      });
+    }
+
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-
-  if (!canMemberChange(task, memberId)) {
-    return res.status(403).json({ error: '담당자만 상태를 변경할 수 있습니다.' });
-  }
-
-  const previousStatus = task.status;
-  const updated = taskModel.updateStatus(taskId, status);
-
-  if (previousStatus !== status) {
-    activityLogModel.createLog({
-      taskId,
-      memberId,
-      previousStatus,
-      newStatus: status,
-    });
-  }
-
-  res.json(updated);
 }
 
-function archiveTask(req, res) {
+async function archiveTask(req, res) {
   const taskId = Number(req.params.id);
   const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
 
-  const task = taskModel.getTaskById(taskId);
-  if (!task) {
-    return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
-  }
+  try {
+    const task = await taskModel.getTaskById(taskId);
+    if (!task) {
+      return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
+    }
 
-  if (!canMemberChange(task, memberId)) {
-    return res.status(403).json({ error: '담당자만 삭제할 수 있습니다.' });
-  }
+    if (!canMemberChange(task, memberId)) {
+      return res.status(403).json({ error: '담당자만 삭제할 수 있습니다.' });
+    }
 
-  const archived = taskModel.archiveTask(taskId);
-  res.json(archived);
+    const archived = await taskModel.archiveTask(taskId);
+    res.json(archived);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 }
 
-function updateDueDate(req, res) {
+async function updateDueDate(req, res) {
   const taskId = Number(req.params.id);
   const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
   const dueDate = req.body.dueDate || null;
@@ -107,17 +119,21 @@ function updateDueDate(req, res) {
     return res.status(400).json({ error: '마감일은 오늘 이후여야 합니다.' });
   }
 
-  const task = taskModel.getTaskById(taskId);
-  if (!task) {
-    return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
-  }
+  try {
+    const task = await taskModel.getTaskById(taskId);
+    if (!task) {
+      return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
+    }
 
-  if (!canMemberChange(task, memberId)) {
-    return res.status(403).json({ error: '담당자만 마감일을 수정할 수 있습니다.' });
-  }
+    if (!canMemberChange(task, memberId)) {
+      return res.status(403).json({ error: '담당자만 마감일을 수정할 수 있습니다.' });
+    }
 
-  const updated = taskModel.updateDueDate(taskId, dueDate);
-  res.json(updated);
+    const updated = await taskModel.updateDueDate(taskId, dueDate);
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 }
 
 module.exports = { listTasks, addTask, updateStatus, archiveTask, updateDueDate };

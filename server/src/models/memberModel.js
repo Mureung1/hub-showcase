@@ -1,7 +1,11 @@
-const db = require('../db');
+const pool = require('../db');
 
-function getMembersByTeam(teamId) {
-  return db.prepare('SELECT id, name FROM members WHERE team_id = ? ORDER BY id').all(teamId);
+async function getMembersByTeam(teamId) {
+  const result = await pool.query(
+    'SELECT id, name FROM members WHERE team_id = $1 ORDER BY id',
+    [teamId]
+  );
+  return result.rows;
 }
 
 module.exports = { getMembersByTeam };
