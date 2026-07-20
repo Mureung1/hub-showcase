@@ -26,24 +26,6 @@ export default function AnalysisPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap' }}>
             <div
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontSize: '12px',
-                fontWeight: '700',
-                color: '#1D4ED8',
-                padding: '7px 14px',
-                background: '#EFF6FF',
-                borderRadius: '20px',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-              }}
-            >
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#2563EB', flexShrink: 0 }} />
-              AI 분석 높음 · 98% 반영
-            </div>
-            <div
-              style={{
                 fontSize: '12.5px',
                 color: '#475569',
                 padding: '7px 14px',
@@ -70,7 +52,7 @@ export default function AnalysisPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
         <PatternBarChart
           title="요일별 판매 패턴"
-          subtitle={`${category} · 최근 4주 평균`}
+          subtitle={`${category} · 최근 1개월 평균`}
           values={d.weekday}
           labels={d.weekdayLabels}
           gap={12}
@@ -80,7 +62,7 @@ export default function AnalysisPage() {
         />
         <PatternBarChart
           title="시간대별 판매 패턴"
-          subtitle={`${category} · 최근 4주 평균`}
+          subtitle={`${category} · 최근 1개월 평균`}
           values={d.time}
           labels={d.timeLabels}
           gap={8}
@@ -93,11 +75,11 @@ export default function AnalysisPage() {
       {/* Sales / waste trends */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
         <TrendLineChart
-          title="판매 추세 (최근 12주)"
+          title="판매 추세 (최근 3개월)"
           trendLabel={d.salesTrend}
           good={d.salesGood}
           values={d.salesWeekly}
-          xLabels={['12주 전', '8주 전', '4주 전', '이번 주']}
+          xLabels={['3개월 전', '2개월 전', '1개월 전', '이번 달']}
           summary={trendSummary(d.salesWeekly, false)}
           goodColor="#2563EB"
           gradientId="salesFill"
@@ -105,11 +87,11 @@ export default function AnalysisPage() {
           strokeWidth={3}
         />
         <TrendLineChart
-          title="폐기 추세"
+          title="폐기 추세 (최근 3개월)"
           trendLabel={d.wasteTrend}
           good={d.wasteGood}
           values={d.wasteWeekly}
-          xLabels={['12주 전', '8주 전', '4주 전', '이번 주']}
+          xLabels={['3개월 전', '2개월 전', '1개월 전', '이번 달']}
           summary={trendSummary(d.wasteWeekly, true)}
           goodColor="#15803D"
           gradientId="wasteFill"

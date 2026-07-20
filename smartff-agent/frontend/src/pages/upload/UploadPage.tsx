@@ -309,25 +309,24 @@ export default function UploadPage() {
   }
 
   return (
-    <div style={{ padding: '36px 48px 56px', background: colors.bgPrimary, minHeight: '100vh', fontFamily: "'Manrope', system-ui, sans-serif" }}>
+    <div style={{ padding: '32px', background: colors.bgPrimary, minHeight: '100vh', fontFamily: 'system-ui, sans-serif' }}>
       {/* Header */}
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
           <div>
-            <h1 style={{ fontSize: '32px', fontWeight: '800', color: colors.textPrimary, margin: '0 0 4px 0' }}>업로드</h1>
+            <h1 style={{ fontSize: '28px', fontWeight: '700', color: colors.textPrimary, margin: '0 0 4px 0' }}>업로드</h1>
             <p style={{ fontSize: '13px', color: colors.textSecondary, margin: '0' }}>
               <span style={{ color: colors.success, fontWeight: '600', marginRight: '4px' }}>●</span>
               GS25 강남역점 · 데이터 관리
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: '700', color: progressPercentage === 100 ? colors.success : '#1D4ED8', padding: '7px 14px', background: progressPercentage === 100 ? colors.successTint : colors.primaryTint, borderRadius: '20px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: progressPercentage === 100 ? colors.success : colors.primary, flexShrink: 0 }} />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <span style={{ padding: '5px 10px', background: progressPercentage === 100 ? colors.successTint : colors.primaryTint, color: progressPercentage === 100 ? colors.success : colors.primary, fontSize: '11px', fontWeight: '600', borderRadius: '9999px' }}>
               {progressPercentage === 100 ? 'AI분석완료' : `AI분석준비중 · ${progressPercentage}%완성`}
-            </div>
-            <div style={{ fontSize: '12.5px', color: colors.textSecondary, padding: '7px 14px', background: '#F1F5F9', borderRadius: '20px', fontWeight: '600', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            </span>
+            <span style={{ padding: '5px 10px', background: colors.bgCard, color: colors.textSecondary, fontSize: '11px', fontWeight: '600', borderRadius: '9999px', border: `1px solid ${colors.borderColor}` }}>
               {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
-            </div>
+            </span>
           </div>
         </div>
       </div>

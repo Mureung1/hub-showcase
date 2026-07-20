@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import uploadRoutes from './routes/uploadRoutes';
+import financialRoutes from './routes/financialRoutes';
 
 const app = express();
 
@@ -12,5 +13,6 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/financial', financialRoutes);
 
 export default app;

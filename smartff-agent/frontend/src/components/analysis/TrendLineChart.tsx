@@ -44,7 +44,7 @@ export default function TrendLineChart({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
         <span style={{ fontSize: '15px', fontWeight: '700', color: '#0F172A' }}>{title}</span>
         <span style={{ fontSize: '12px', color: trendTextColor, fontWeight: '700', whiteSpace: 'nowrap', flexShrink: 0 }}>
-          최근 4주 {trendLabel}
+          최근 3개월 {trendLabel}
         </span>
       </div>
 

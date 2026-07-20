@@ -162,53 +162,6 @@ Only report inconsistencies.
 
 ---
 
-# Code Quality Validation
-
-For every implementation, validate code quality against CLAUDE.md principles.
-
-## Maintainability
-
-Verify:
-
-- ☐ Variable/function names are clear and consistent
-- ☐ Single Responsibility Principle (one function = one job)
-- ☐ Complex logic has comments; simple code does not
-- ☐ No magic numbers or hardcoded values (colors, sizes in constants)
-- ☐ Type safety is maintained (TypeScript used correctly)
-
-## Conciseness
-
-Verify:
-
-- ☐ No repeated code patterns (consider abstraction if repeated)
-- ☐ No unnecessary lines or dead code
-- ☐ No prop drilling through intermediate components
-- ☐ Conditional rendering is readable (not nested deeply)
-- ☐ Function length is appropriate (generally < 100 lines)
-
-## Extensibility
-
-Verify:
-
-- ☐ New features can be added without modifying existing code (Open/Closed Principle)
-- ☐ Array-based configuration instead of hardcoding (e.g., nav items list)
-- ☐ Styles/colors are in constants for easy theme changes
-- ☐ Reusable components exist for common patterns
-- ☐ Future features (login, auth, new pages) won't require major refactor
-
-## Performance
-
-Verify:
-
-- ☐ No unnecessary re-renders (check useEffect dependencies)
-- ☐ useEffect cleanup is proper (event listeners removed, intervals cleared)
-- ☐ No memory leaks from event handlers
-- ☐ No excessive DOM nodes or deeply nested elements
-
-Report findings under Code Quality section with severity (Critical/Major/Minor/Info).
-
----
-
 # Bash Usage
 
 Bash is provided for validation only.
@@ -363,37 +316,6 @@ Verify that implementation stayed within scope.
 ☐ Unrelated file modified
 ☑ No unnecessary dependencies
 ```
-
----
-
-## Code Quality Review
-
-Evaluate code across four dimensions:
-
-**Maintainability**
-
-☑ Clear naming
-☑ Single responsibility
-☑ Proper comments
-[Any issues found]
-
-**Conciseness**
-
-☑ No code duplication
-☑ No unnecessary lines
-[Any issues found]
-
-**Extensibility**
-
-☑ Easy to add new features
-☑ Configuration-driven (not hardcoded)
-[Any issues found]
-
-**Performance**
-
-☑ No unnecessary renders
-☑ Proper cleanup
-[Any issues found]
 
 ---
 

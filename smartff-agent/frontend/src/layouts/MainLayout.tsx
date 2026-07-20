@@ -45,6 +45,19 @@ const navItems: NavItem[] = [
     ),
   },
   {
+    id: 'financial',
+    path: '/financial',
+    label: '재무',
+    icon: (color) => (
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="8" stroke={color} strokeWidth="2.2" />
+        <text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="700" fill={color}>
+          ₩
+        </text>
+      </svg>
+    ),
+  },
+  {
     id: 'upload',
     path: '/upload',
     label: '업로드',

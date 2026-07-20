@@ -34,7 +34,7 @@ export default function MarginBarList({ items }: MarginBarListProps) {
     >
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '7px', marginBottom: '16px', flexWrap: 'nowrap' }}>
         <span style={{ fontSize: '13.5px', fontWeight: '700', color: colors.textPrimary, whiteSpace: 'nowrap' }}>카테고리별 마진율</span>
-        <span style={{ fontSize: '11px', color: colors.textTertiary, fontWeight: '600', whiteSpace: 'nowrap' }}>(최근 4주 기준)</span>
+        <span style={{ fontSize: '11px', color: colors.textTertiary, fontWeight: '600', whiteSpace: 'nowrap' }}>(최근 1개월 기준)</span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '18px', flex: 1 }}>

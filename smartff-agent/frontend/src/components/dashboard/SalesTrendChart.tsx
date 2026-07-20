@@ -43,7 +43,7 @@ export default function SalesTrendChart({ totalLabel, points, bestWeek }: SalesT
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-        <span style={{ fontSize: '15px', fontWeight: '700', color: colors.textPrimary }}>최근 4주 판매 추세</span>
+        <span style={{ fontSize: '15px', fontWeight: '700', color: colors.textPrimary }}>최근 1개월 판매 추세</span>
         <span style={{ fontSize: '13px', color: colors.textPrimary, fontWeight: '700' }}>
           누적 매출 <span style={{ color: colors.primary }}>{totalLabel}</span>
         </span>
