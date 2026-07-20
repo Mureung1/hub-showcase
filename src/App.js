@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { Badge, Button, SearchField } from "./components/ui";
 
@@ -6,6 +6,11 @@ const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 const KAKAO_MAP_KEY = process.env.REACT_APP_KAKAO_MAP_JAVASCRIPT_KEY;
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:4000";
 const PLACE_STORAGE_KEY = "jigeum-review:selected-place";
+const MAP_SCREEN_STORAGE_KEY = "jigeum-review:map-screen";
+
+function loadMapScreenState() {
+  try { return JSON.parse(sessionStorage.getItem(MAP_SCREEN_STORAGE_KEY)) || {}; } catch { return {}; }
+}
 
 async function apiRequest(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -111,26 +116,29 @@ function AccountControl({ user, authStatus, onLogin, onLogout }) {
 }
 
 function MapSearchPage({ onOpenPlace, ...accountProps }) {
+  const restoredStateRef = useRef(loadMapScreenState());
   const mapElementRef = useRef(null);
   const mapRef = useRef(null);
   const overlaysRef = useRef([]);
+  const resultsRef = useRef(null);
   const [mapStatus, setMapStatus] = useState(KAKAO_MAP_KEY ? "loading" : "missing-key");
   const [mapError, setMapError] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [places, setPlaces] = useState([]);
-  const [placeStatus, setPlaceStatus] = useState("idle");
-  const [placeError, setPlaceError] = useState("");
-  const [selectedPlaceId, setSelectedPlaceId] = useState("");
-  const [searchRadius, setSearchRadius] = useState(5000);
+  const [searchInput, setSearchInput] = useState(() => restoredStateRef.current.searchInput || "");
+  const [places, setPlaces] = useState(() => restoredStateRef.current.places || []);
+  const [placeStatus, setPlaceStatus] = useState(() => restoredStateRef.current.placeStatus || "idle");
+  const [placeError, setPlaceError] = useState(() => restoredStateRef.current.placeError || "");
+  const [selectedPlaceId, setSelectedPlaceId] = useState(() => restoredStateRef.current.selectedPlaceId || "");
+  const [searchRadius, setSearchRadius] = useState(() => restoredStateRef.current.searchRadius || 5000);
   const [locationStatus, setLocationStatus] = useState("idle");
-  const selectedPlace = useMemo(() => places.find((place) => place.id === selectedPlaceId) || null, [places, selectedPlaceId]);
 
   useEffect(() => {
     if (!KAKAO_MAP_KEY || !mapElementRef.current) return;
     let mounted = true;
     loadKakaoMaps(KAKAO_MAP_KEY).then((maps) => {
       if (!mounted || !mapElementRef.current) return;
-      const map = new maps.Map(mapElementRef.current, { center: new maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng), level: 5 });
+      const savedViewport = restoredStateRef.current.viewport;
+      const center = savedViewport?.center || DEFAULT_CENTER;
+      const map = new maps.Map(mapElementRef.current, { center: new maps.LatLng(center.lat, center.lng), level: savedViewport?.level || 5 });
       map.addControl(new maps.ZoomControl(), maps.ControlPosition.RIGHT);
       mapRef.current = map;
       setMapStatus("ready");
@@ -139,12 +147,33 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
   }, []);
 
   useEffect(() => {
+    if (resultsRef.current) resultsRef.current.scrollTop = restoredStateRef.current.resultsScrollTop || 0;
+  }, []);
+
+  function openPlaceAndPreserveMap(place) {
+    const mapCenter = mapRef.current?.getCenter();
+    sessionStorage.setItem(MAP_SCREEN_STORAGE_KEY, JSON.stringify({
+      searchInput,
+      places,
+      placeStatus,
+      placeError,
+      selectedPlaceId: place.id,
+      searchRadius,
+      resultsScrollTop: resultsRef.current?.scrollTop || 0,
+      viewport: mapCenter ? {
+        center: { lat: mapCenter.getLat(), lng: mapCenter.getLng() },
+        level: mapRef.current.getLevel(),
+      } : restoredStateRef.current.viewport,
+    }));
+    onOpenPlace(place);
+  }
+
+  useEffect(() => {
     if (mapStatus !== "ready" || !mapRef.current || !window.kakao?.maps) return;
     const maps = window.kakao.maps;
     overlaysRef.current.forEach((overlay) => overlay.setMap(null));
     overlaysRef.current = [];
     if (!places.length) return;
-    const bounds = new maps.LatLngBounds();
     places.forEach((place) => {
       const position = new maps.LatLng(place.y, place.x);
       const marker = document.createElement("button");
@@ -153,9 +182,7 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
       marker.textContent = place.title;
       marker.addEventListener("click", () => setSelectedPlaceId(place.id));
       overlaysRef.current.push(new maps.CustomOverlay({ map: mapRef.current, position, content: marker, yAnchor: 1.25 }));
-      bounds.extend(position);
     });
-    mapRef.current.setBounds(bounds);
   }, [places, selectedPlaceId, mapStatus]);
 
   async function handleSearchSubmit(event) {
@@ -206,14 +233,13 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
       <header className="top-nav"><strong className="top-nav__brand">지금리뷰</strong><span>영수증 인증 리뷰 지도</span><AccountControl {...accountProps} /></header>
       <aside className="place-sidebar">
         <div className="sidebar-search"><h1>어디를 찾으세요?</h1><p>현재 보고 있는 지도 주변의 식당과 카페를 검색합니다.</p><SearchField value={searchInput} onChange={(event) => setSearchInput(event.target.value)} onClear={() => setSearchInput("")} onSubmit={handleSearchSubmit} /><div className="search-scope"><span>지도 중심에서 약 {(searchRadius / 1000).toFixed(searchRadius < 1000 ? 1 : 0)}km 이내</span><button onClick={moveToCurrentLocation} type="button">{locationStatus === "loading" ? "위치 확인 중..." : "◎ 내 위치"}</button></div></div>
-        <div className="place-results" aria-live="polite">
+        <div className="place-results" aria-live="polite" ref={resultsRef}>
           {placeStatus === "idle" && <div className="empty-search"><strong>검색 결과가 여기에 표시됩니다</strong><span>식당이나 카페 이름을 입력해 주세요.</span></div>}
           {placeStatus === "loading" && <p className="sidebar-state">카카오맵에서 검색 중...</p>}
           {placeStatus === "error" && <p className="sidebar-state sidebar-state--error">{placeError}</p>}
           {placeStatus === "ready" && !places.length && <p className="sidebar-state">검색 결과가 없습니다.</p>}
-          {places.map((place) => <button className={`place-list-item ${selectedPlaceId === place.id ? "is-selected" : ""}`} key={place.id} onClick={() => setSelectedPlaceId(place.id)} type="button"><span className="place-list-item__pin">⌖</span><span className="place-list-item__content"><strong>{place.title}</strong><span>{place.category}</span><small>{place.address || "주소 정보 없음"}</small></span><span aria-hidden="true">›</span></button>)}
+          {places.map((place) => <button aria-label={`${place.title} 상세 보기`} className={`place-list-item ${selectedPlaceId === place.id ? "is-selected" : ""}`} key={place.id} onClick={() => openPlaceAndPreserveMap(place)} type="button"><span className="place-list-item__pin">⌖</span><span className="place-list-item__content"><strong>{place.title}</strong><span>{place.category}</span><small>{place.address || "주소 정보 없음"}</small></span><span aria-hidden="true">›</span></button>)}
         </div>
-        {selectedPlace && <Button className="detail-button" onClick={() => onOpenPlace(selectedPlace)}>업체 상세 보기</Button>}
       </aside>
       <section className="map-canvas" aria-label="카카오맵 영역"><div className="kakao-map" ref={mapElementRef} aria-label="카카오맵" />{mapStatus !== "ready" && <section className="map-state-panel"><h2>{mapStatus === "missing-key" ? "지도 키가 필요합니다" : "지도를 불러오는 중입니다"}</h2><p>{mapError || "카카오맵 연결을 확인하고 있습니다."}</p></section>}</section>
     </main>
