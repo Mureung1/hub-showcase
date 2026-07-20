@@ -74,6 +74,8 @@
 > 2026-07-15 갱신 (2): 오늘 완료했던 "Reader.jsx sentences/marketSentiment 연동"(✅) 중 marketSentiment 뱃지 상시 표시 부분을, "판단 전 블라인드 → 바텀시트에서 공개" 방식으로 재설계하기로 함(목요일 Task로 반영). "기본 네비게이션" 계획은 Primary 버튼+Menu/History 그룹을 갖춘 정식 사이드바 스펙으로 확대. "마이페이지"는 "인사이트 노트"로 전면 명칭 변경.
 >
 > **2026-07-19 갱신 (금~주말 점검)**: 2주차 표의 마지막 미완료 항목("문서/이슈 정리")을 완료 처리하며 2주차 전체를 ✅로 종료. 동시에 계획에 없던 Supabase 마이그레이션/단어장 DB 전환/Auth 연동이 금요일(07-17)에 선행 완료됨을 반영. `data-model.md`가 "스코프 밖"으로 명시하고 별도 Task로 미루기만 했던 `decisionStore.js`의 Supabase 전환은 아직 Task로 등록된 적이 없었음을 확인 — 아래 3주차 표에 신규 등록하고 다음 주(월요일~) 최우선 순위로 넘긴다. `server/data/decisions.json`에는 로컬 수동 테스트로 쌓인 커밋 전 데이터가 남아있어(git status상 미커밋 변경) 전환 작업 시 정리 필요.
+>
+> **2026-07-20 갱신 (월, 3주차 착수)**: `feature-slice` 에이전트로 3주차 남은 작업을 재검토한 결과, `analyzeArticle`이 `sentences`/`terms`/`summaryBullets`/`insight`/`marketSentiment` 5개 필드를 한 번의 Claude 호출로 반환하는 통합 함수라는 게 코드로 확인돼, 기존에 분리돼 있던 "문단 3줄 요약 생성"과 "종목 영향 해설+marketSentiment 생성" 두 Task를 하나로 병합했다(호출을 쪼개면 지연·비용만 늘어남 — parse/analyze 분리 이유와 같은 논리). 이 과정에서 기능①(최우선)의 핵심인 "문장번역/용어선별 실제 연결"이 계획에서 누락돼 있던 것도 발견해 병합된 Task 범위에 포함시켰다. GitHub 3주차 마일스톤에 이슈 5개(#12 decisionStore 전환, #13 프롬프트 설계, #14 analyzeArticle 연결, #15 저장 토스트, #16 판단 없는 이탈 처리)를 등록하고 아래 표를 그 상태와 동기화했다.
 
 ### 3주차 — 기능 로직 구현
 
@@ -81,14 +83,13 @@
 
 | Task | 설명 | 우선순위 | 상태 |
 |---|---|---|---|
-| decisionStore.js → Supabase 전환 (2번째 수직슬라이스) | `docs/data-model.md`가 "스코프 밖"으로 명시만 하고 Task로 등록되지 않았던 항목. 단어장과 동일한 패턴(`vocabularyStore.js` 전환 참고)으로 `decisions` 테이블 연동, `decisions.js` 라우트에 `requireAuth` 배선, `server/data/decisions.json`의 fs 동기 처리 제거. 전환 전 로컬 테스트로 쌓인 미커밋 `decisions.json` 데이터 정리 필요 | 최우선 | ⬜ |
+| decisionStore.js → Supabase 전환 (2번째 수직슬라이스) (GitHub #12) | `docs/data-model.md`가 "스코프 밖"으로 명시만 하고 Task로 등록되지 않았던 항목. 단어장과 동일한 패턴(`vocabularyStore.js` 전환 참고)으로 `decisions` 테이블 연동, `decisions.js` 라우트에 `requireAuth` 배선, `server/data/decisions.json`의 fs 동기 처리 제거. 전환 전 로컬 테스트로 쌓인 미커밋 `decisions.json` 데이터 정리 필요. 이슈 #12에 스토어 레이어/라우트 인증/데이터 정리 3단계 체크리스트로 등록 | 최우선 | ⬜ |
 | 대시보드 RSS 자동 수집·선별 파이프라인 (신규) | `rssFeedService.js`(CNBC Business/Markets·MarketWatch·Yahoo Finance 4개 무료 RSS 폴링, 48h 필터+중복제거, 개별 피드 실패 시 스킵) + `llmService.js`의 `selectTopArticles`(핵심 3건 선별+한글 번역+티커 추정, MOCK_LLM/FAIL_TEST 재사용) + `dashboardCurationService.js`(KST 날짜 기준 메모리 캐시, 실패 시 기존 하드코딩 3건 폴백)로 `GET /api/dashboard`의 고정 픽스처를 실제 수집 로직으로 교체. MOCK_LLM=true로 실동작(캐시 히트, RSS 전멸 폴백, FAIL_TEST 훅) 검증 완료(2026-07-19) | 최우선 | ✅ |
-| 리더뷰 로딩 스켈레톤 UI (GitHub #7) | 원문 파싱/분석 대기 중 `Reader.jsx`가 `"불러오는 중..."` 텍스트만 노출 — 실제 스켈레톤 UI 미구현 상태를 코드로 재확인(2026-07-19). 파싱 API 응답 대기 중 스켈레톤 표시, 응답 도착 시 실 콘텐츠로 전환. 로딩 중 사이드바/뒤로가기 버튼이 모두 없는 공백 구간(위 참고 항목)도 이 작업에서 함께 해소 | P1 | ⬜ |
-| AI 프롬프트 최적화 및 튜닝 | 문장 번역·문단요약·인사이트·marketSentiment 해설이 원하는 형식으로 나오도록 프롬프트를 별도로 설계·반복 테스트 (로직 구현과 분리해 일정 리스크로 관리). 현재 analyzeArticle은 MOCK_LLM과 무관하게 항상 더미 응답이므로, 실제 로직 연결 시 MOCK_LLM 분기(FAIL_TEST 포함)도 함께 배선할 것 | 최우선 | ⬜ |
-| 문단 3줄 요약 생성 | 튜닝된 프롬프트로 AI 문단 요약 로직 연결 | P0 | ⬜ |
-| 종목 영향 한 줄 해설 + marketSentiment 생성 | 튜닝된 프롬프트로 AI 인사이트 로직 연결, 기사 톤(호재/악재/중립) 판별 결과 함께 반환 | P0 | ⬜ |
-| 인사이트 노트 저장 완료 토스트 연동 | 바텀시트에서 "닫기/완료" 액션을 취했을 때, 데이터가 안전하게 보관되었음을 알리는 "✅ 인사이트 노트에 저장되었습니다." 토스트 노출. 중복 피드백 방지를 위해 반드시 바텀시트가 닫힌 직후에 노출 (舊 "완료 토스트 연동") | P1 | ⬜ |
-| 판단 없는 이탈 처리 | 매수/관망/매도 없이 뒤로가기/이탈 시 "읽기 완료"로만 처리되고 판단은 저장되지 않는지 확인. 완독(Primary)·판단수행률(Secondary) 지표를 분리 집계하는 로깅 포인트 확보. **스키마는 준비됨** — `supabase/migrations/20260717000000_init_schema.sql`의 `article_reads` 테이블(완독 시 insert, 판단으로 이어지면 `decision_id` 연결) 사용 | P1 | ⬜ |
+| 리더뷰 로딩 스켈레톤 UI (GitHub #7) | 원문 파싱/분석 대기 중 `Reader.jsx`가 `"불러오는 중..."` 텍스트만 노출 — 실제 스켈레톤 UI 미구현 상태를 코드로 재확인(2026-07-19). 파싱 API 응답 대기 중 스켈레톤 표시, 응답 도착 시 실 콘텐츠로 전환. 로딩 중 사이드바/뒤로가기 버튼이 모두 없는 공백 구간(위 참고 항목)도 이 작업에서 함께 해소. 3주차 마일스톤 소속 | P1 | ⬜ |
+| AI 프롬프트 설계 및 반복 테스트 (GitHub #13) | 문장 번역·문단요약·인사이트·marketSentiment 해설이 원하는 형식으로 나오도록, `sentences`/`terms`/`summaryBullets`/`insight`/`marketSentiment` 5개 필드를 한 번의 JSON 응답으로 받는 통합 프롬프트를 별도로 설계·반복 테스트(로직 구현과 분리해 일정 리스크로 관리). 아래 "analyzeArticle 실제 Claude 연결"(#14)의 선행 조건 | 최우선 | ⬜ |
+| analyzeArticle 실제 Claude 연결 (GitHub #14, 舊 "문단 3줄 요약 생성"+"종목 영향 해설+marketSentiment 생성" 병합) | `analyzeArticle`이 5개 필드를 한 번의 Claude 호출로 반환하는 통합 함수임을 확인해 기존 2개 Task를 하나로 병합. 확정된 프롬프트(#13)로 `callClaude` 실호출+JSON 파싱 연결, `MOCK_LLM`/`FAIL_TEST` 분기 유지, 단어장 자동 적재 부수효과(`saveTermsToVocabulary`)는 기존 로직 재사용. 문장번역/용어선별 실제 연결(기존 계획에서 누락돼 있던 항목)도 이 범위에 포함 | 최우선 | ⬜ |
+| 인사이트 노트 저장 완료 토스트 연동 (GitHub #15) | 바텀시트에서 "닫기/완료" 액션을 취했을 때, 데이터가 안전하게 보관되었음을 알리는 "✅ 인사이트 노트에 저장되었습니다." 토스트 노출. 중복 피드백 방지를 위해 반드시 바텀시트가 닫힌 직후에 노출 (舊 "완료 토스트 연동") | P1 | ⬜ |
+| 판단 없는 이탈 처리 (GitHub #16) | 매수/관망/매도 없이 뒤로가기/이탈 시 "읽기 완료"로만 처리되고 판단은 저장되지 않는지 확인. 완독(Primary)·판단수행률(Secondary) 지표를 분리 집계하는 로깅 포인트 확보. **스키마는 준비됨** — `supabase/migrations/20260717000000_init_schema.sql`의 `article_reads` 테이블(완독 시 insert, 판단으로 이어지면 `decision_id` 연결) 사용. decisionStore 전환(#12) 완료 후 착수 — uuid 기반 `decision_id`가 있어야 FK 연결이 의미 있음. 이번 주 내 미완료 시 4주차로 이월 가능 | P1 | ⬜ |
 
 ### 4주차 — 마무리
 
