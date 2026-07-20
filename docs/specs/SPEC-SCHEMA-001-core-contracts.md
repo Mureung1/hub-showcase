@@ -279,3 +279,4 @@ Section
 |---|---|
 | 2026-07-17 | 최초 작성. Step 1~3 사용자 결정 반영 (1장 표) |
 | 2026-07-18 | 9장 보강 — web 중첩 집합체 뷰는 shared 타입 조합으로 유지(A안), Mock 검증은 엔티티 개별 parse로 명확화 (T-011 계획 검토 시 확정) |
+| 2026-07-20 | shared 패키지 export 방식 개정 (T-014.1). 기존 "소스 전용 export(`exports: ./src/index.ts`)"에서 **조건부 exports**로 전환 — 타입검사는 소스(`types → ./src/index.ts`, 무빌드 유지), 런타임은 빌드 산출물(`import/default → ./dist/index.js`). `tsc` emit(dist) + `prepare` 스크립트 도입, 루트 build를 shared→api→web 순서로. 목적: api가 shared를 런타임에 소비하면서 `node dist` 프로덕션 실행 가능화(SPEC-AUTH-003 알려진 제한 해소). 계약 내용·소스 구조·zod 단일 의존은 불변 |
