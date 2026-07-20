@@ -1,6 +1,7 @@
 ## 1) 개요
 
 ### (1) 주제명 : Decision Log
+![Uploading image.png…]()
 
 ### (2) 문제 정의 :
 
