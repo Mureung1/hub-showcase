@@ -218,8 +218,19 @@
   - **알려진 제한(후속)**: `packages/shared`는 빌드 산출물 없는 소스 전용(exports=`src/index.ts`)이라, 컴파일된 `node dist/server.js`는 shared의 `.js` 지정자를 `.ts`로 해석 못 해 실행 불가. 개발 런타임(`npm run dev:api`=tsx)·web(Vite)은 정상. 프로덕션 `node dist` 실행이 필요해지면 shared 빌드 단계 또는 api 번들링을 도입해야 함(이번 Spec 범위 밖, 배포 Spec에서)
   - 실측용 로그인은 인증 완료 계정(lymsla0117@gmail.com), 비밀번호는 채팅으로만 받아 이 로그인에만 사용(문서·커밋·로그·메모리 미기록)
 
+- **SPEC-AUTH-003 완료 (2026-07-20)** — T-014 구현 + AC1~AC7 실측 PASS로 완료 처리. Cowork가 Spec 상태 헤더·개정 기록·index.md 갱신. 인증 경계(JWT 검증·`/api/auth/me`·에러 봉투·ApiClient)까지 서버에 섬. 알려진 제한: `packages/shared`가 소스 전용이라 `node dist` 프로덕션 실행 불가(개발 런타임·web은 정상) — 배포 Spec에서 shared 빌드/번들 도입 필요
+
+- **순서 변경 결정 (2026-07-20)** — 사용자가 AI-001 대신 **DB-001 먼저** 선택. 이유: 영속성이 토대, BYOK 사용자 키 저장이 DB 필요, AUTH-003 다음 자연스러운 서버 경계. 새 순서: AUTH-003(완료) → **DB-001** → AI-001~003 → EXPORT-001
+
+- **SPEC-DB-001 작성 완료 (2026-07-20, Ready)** — Step 1~4 확정 + 스키마 7테이블 상세 검토(사용자 필드 단위 컨펌). 범위=토대 전체(스키마·RLS·2-클라이언트)+Chat·Question 실저장, AI 생성물 저장은 각 AI Spec. BYOK 키 테이블 포함, 앱 레벨 AES-256-GCM, 계정 삭제=RESTRICT 유지
+  - **스키마 검토 중 확정된 추가/변경** (data-model.md 갱신 반영):
+    - **값 부재 표현 규칙 (1.6, 별도 커밋)**: `null`=값 없음/미상 vs `NO_VALUE`(예약어)=의도적 없음. 외부 응답은 Zod 경계에서 정규화, 원문은 raw_content 보존. CLAUDE.md 5장 포인터 + `packages/shared` 상수(코드는 구현 때)
+    - **agendas 신규 필드 2종**: `selected_source_ref`(채택 출처 참조 / NO_VALUE / null 3상태) · `prompt_version`(Manager 비교 프롬프트 버전). `source_refs`는 비교한 모든 근거 보존(선택된 것만 저장 금지) 명시
+    - **user_provider_keys 신규 테이블**(3.8): encrypted_key·key_iv·key_auth_tag(AES-256-GCM), UNIQUE(user_id,provider), 마스터 키 env. 표시용 힌트(마지막 4자)는 설정 Spec으로 연기
+  - 다음: T-015 구현
+
 ## 다음 작업
 
-- **SPEC-AUTH-003 완료 처리 대기** — T-014 구현·AC1~AC7 실측 PASS 완료. Spec 상태 헤더·개정 기록·index.md 갱신은 Cowork 담당
-- 이후 순서 후보: SPEC-AI-001~003 → SPEC-DB-001 → SPEC-EXPORT-001 (마지막 주 백엔드 고도화). AI-first 재검토 여지 있음
-- 상시 미결정 4건(전 Provider 실패 처리·좌초 상태 복구·단일 SourceAnswer Agenda·계정 삭제)은 AI/DB Spec 착수 시 함께 확정
+- **T-015: SPEC-DB-001 구현** — Supabase 마이그레이션(테이블 7 + Enum + 제약·Index·트리거) + RLS + 2-클라이언트 + `apiStorageAdapter`로 Chat·Question 실저장 + user_provider_keys 암호화 저장 경로 + `NO_VALUE` shared 상수. 리모트 Claude Code가 구현·실측·커밋
+- 이후: SPEC-AI-001~003(Provider·Manager·FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
+- 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

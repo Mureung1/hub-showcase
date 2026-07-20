@@ -280,8 +280,10 @@ INDEX source_answers_question_id
 | `title` | `varchar(200)` | No | 없음 | Agenda 제목 |
 | `summary` | `text` | No | 없음 | Agenda 요약 |
 | `selected_content` | `text` | Yes | `null` | 합의 내용(auto_consensus), 기존 AI 내용 채택 또는 사용자가 직접 입력한 최종 채택 내용 |
+| `selected_source_ref` | `jsonb` | Yes | `null` | 채택한 근거의 출처 참조(어느 SourceAnswer·Section). 값 부재 규칙(1.6): 채택형이면 참조, 직접입력·제외면 `NO_VALUE`, 미판단이면 `null` |
 | `user_note` | `text` | Yes | `null` | 사용자 메모 |
-| `source_refs` | `jsonb` | No | `[]` | 근거 SourceAnswer·Section 참조 |
+| `source_refs` | `jsonb` | No | `[]` | 근거 SourceAnswer·Section 참조. **비교한 모든 근거를 보존한다(선택된 것만 저장하지 않는다)** — 3열 비교 재구성의 근거 |
+| `prompt_version` | `varchar(100)` | Yes | `null` | Manager 비교 프롬프트 버전(비교 단계 재현). 정확한 모양은 SPEC-AI-002 |
 | `recheck_request` | `text` | Yes | `null` | 사용자 재검토 요청 내용 |
 | `recheck_result` | `jsonb` | Yes | `null` | Manager AI 재검토 결과 |
 | `recheck_requested_at` | `timestamptz` | Yes | `null` | 재검토 요청 시간 |
@@ -308,6 +310,17 @@ status IN ('passed', 'rejected')
 
 status = 'passed'
 → selected_content IS NOT NULL
+
+resolution_reason IN ('user_accepted', 'user_accepted_after_recheck')
+→ selected_source_ref = 실제 출처 참조 (NOT NULL, NO_VALUE 아님)
+
+resolution_reason IN ('user_composed', 'user_composed_after_recheck',
+                      'user_rejected', 'user_rejected_after_recheck',
+                      'auto_consensus')
+→ selected_source_ref = 'NO_VALUE' (의도적 없음, 1.6 규칙)
+
+status IN ('draft', 'conflicted', 'recheck_requested', 'reanswered')
+→ selected_source_ref IS NULL (미판단)
 ```
 
 권장 Index:
@@ -360,6 +373,33 @@ UNIQUE (question_id)
 DecisionNote에는 `chat_id`를 저장하지 않는다.
 
 MVP에서는 저장 후 수정 API를 제공하지 않는다. `updated_at`은 공통 필드 일관성을 위해 유지한다.
+
+### 3.8 `user_provider_keys` (BYOK 사용자 키)
+
+사용자별 AI Provider API 키를 앱 레벨 AES-256-GCM으로 암호화 저장한다 (SPEC-DB-001, ADR 근거는 BYOK 하이브리드 결정 — `docs/status.md`). 평문 키는 저장·프론트·로그·에러 어디에도 두지 않는다.
+
+| 필드 | 형식 | Null | 기본값 | 설명 |
+|---|---|---:|---|---|
+| `id` | `uuid` | No | `gen_random_uuid()` | PK |
+| `user_id` | `uuid` | No | 없음 | `auth.users.id` 참조 |
+| `provider` | `ai_provider` | No | 없음 | claude·openai·gemini |
+| `encrypted_key` | `text` | No | 없음 | AES-256-GCM 암호문(평문 저장 금지) |
+| `key_iv` | `text` | No | 없음 | 암호화 IV/nonce(암호화마다 난수) |
+| `key_auth_tag` | `text` | No | 없음 | GCM 인증 태그(위변조 감지) |
+| `created_at` | `timestamptz` | No | `now()` | 생성 시간 |
+| `updated_at` | `timestamptz` | No | `now()` | 수정 시간 |
+
+제약:
+
+```text
+user_id → auth.users.id
+ON DELETE CASCADE
+
+UNIQUE (user_id, provider)
+```
+
+- 마스터 키는 백엔드 env(예 `AI_KEY_ENCRYPTION_KEY`)에 두고 서버 시작 시 검증한다. 복호는 서버에서만, 사용 시점(AI Spec)에.
+- 표시용 힌트(마지막 4자 등)는 이 테이블에 두지 않고, 입력 UI를 만드는 설정 Spec에서 추가를 검토한다.
 
 
 ---
@@ -442,11 +482,15 @@ auth.users.id
 → agendas.question_id
 → final_answers.question_id
 → decision_notes.question_id
+
+auth.users.id
+→ user_provider_keys.user_id   (직접 소유, join 불필요)
 ```
 
 정책 방향:
 
 - 사용자는 자신의 Chat만 조회·생성·수정할 수 있다.
+- `user_provider_keys`는 `user_id = auth.uid()`인 본인 행만 접근할 수 있다.
 - MVP에서는 Chat 삭제 정책을 제공하지 않는다.
 - Question 이하 데이터는 소속 Chat의 `user_id = auth.uid()`인 경우에만 접근할 수 있다.
 - 클라이언트가 전달한 `user_id`를 신뢰하지 않는다.

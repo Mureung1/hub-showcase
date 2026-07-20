@@ -1,6 +1,6 @@
 # SPEC-AUTH-003. Express Auth Middleware (JWT 검증·인증 경계)
 
-- 상태: **Ready (Step 1~3 확정, 구현 대기)**
+- 상태: **완료 (2026-07-20, T-014 — AC1~AC7 실측 PASS)**
 - 기준 문서: `CLAUDE.md` 2·5·6·8장, `docs/architecture.md` 2·4·6장, `docs/decisions/ADR-001-supabase-auth.md`, `docs/decisions/ADR-002-data-access-clients.md`, `docs/dev-setup.md`
 - 작성 방식:
   - 0장 "고정 사항"은 확정된 정책에서 온 것이며, 이 Spec에서 임의로 바꾸지 않는다.
@@ -109,13 +109,13 @@ Express가 `Authorization: Bearer <access-token>`의 Supabase JWT를 검증해 `
 
 ## 7. Acceptance Criteria
 
-- [ ] AC1. 서버 시작 시 `SUPABASE_URL`·`SUPABASE_PUBLISHABLE_KEY`를 Zod로 검증한다. 값이 없으면 명확한 에러로 기동에 실패하고(키 값 노출 없음), 있으면 정상 기동한다.
-- [ ] AC2. Auth Middleware가 유효한 Bearer 토큰을 `supabase.auth.getUser`로 검증해 `req.auth.userId`(+email)를 설정한다. `GET /api/auth/me`가 인증 사용자의 `{ userId, email }`을 200으로 반환한다.
-- [ ] AC3. 토큰이 없거나 형식이 어긋나면 401 `UNAUTHENTICATED`, 무효·만료 토큰이면 401 `TOKEN_INVALID`(message에 Supabase 원문)를 에러 봉투로 반환한다. 응답에 비밀값·토큰이 없다.
-- [ ] AC4. 클라이언트가 body·query·header로 보낸 임의 userId는 소유권·신원 판단에 쓰이지 않는다. `/api/auth/me`가 반환하는 userId는 검증된 JWT에서만 나온다(위조 userId로 타인 신원을 얻을 수 없음).
-- [ ] AC5. 에러 봉투 Zod 스키마가 `packages/shared`에 있고 api(생성)·web(파싱)이 같은 계약을 쓴다. 성공 봉투는 `/api/auth/me`의 최소 형태만 쓰며 표준 확장 여지를 문서에 남긴다.
-- [ ] AC6. 프론트 ApiClient가 세션 access token을 `Authorization: Bearer`로 첨부한다. 로그인 상태에서 `/api/auth/me` 호출이 200 + 세션과 일치하는 userId를 반환하고(네트워크 확인), 토큰이 없으면 401 경로가 확인된다.
-- [ ] AC7. `npm run typecheck` / `build` 통과. **`npm run lint`는 web만 검사(apps/api에 lint script 없음) — api는 미검사임을 명시.** 기존 `/api/health`와 web happy-path(로그인→질문→충돌 해소→FinalAnswer→노트)가 회귀 없이 동작하고, `.env.example`·`docs/dev-setup.md`가 갱신된다.
+- [x] AC1. 서버 시작 시 `SUPABASE_URL`·`SUPABASE_PUBLISHABLE_KEY`를 Zod로 검증한다. 값이 없으면 명확한 에러로 기동에 실패하고(키 값 노출 없음), 있으면 정상 기동한다.
+- [x] AC2. Auth Middleware가 유효한 Bearer 토큰을 `supabase.auth.getUser`로 검증해 `req.auth.userId`(+email)를 설정한다. `GET /api/auth/me`가 인증 사용자의 `{ userId, email }`을 200으로 반환한다.
+- [x] AC3. 토큰이 없거나 형식이 어긋나면 401 `UNAUTHENTICATED`, 무효·만료 토큰이면 401 `TOKEN_INVALID`(message에 Supabase 원문)를 에러 봉투로 반환한다. 응답에 비밀값·토큰이 없다.
+- [x] AC4. 클라이언트가 body·query·header로 보낸 임의 userId는 소유권·신원 판단에 쓰이지 않는다. `/api/auth/me`가 반환하는 userId는 검증된 JWT에서만 나온다(위조 userId로 타인 신원을 얻을 수 없음).
+- [x] AC5. 에러 봉투 Zod 스키마가 `packages/shared`에 있고 api(생성)·web(파싱)이 같은 계약을 쓴다. 성공 봉투는 `/api/auth/me`의 최소 형태만 쓰며 표준 확장 여지를 문서에 남긴다.
+- [x] AC6. 프론트 ApiClient가 세션 access token을 `Authorization: Bearer`로 첨부한다. 로그인 상태에서 `/api/auth/me` 호출이 200 + 세션과 일치하는 userId를 반환하고(네트워크 확인), 토큰이 없으면 401 경로가 확인된다.
+- [x] AC7. `npm run typecheck` / `build` 통과. **`npm run lint`는 web만 검사(apps/api에 lint script 없음) — api는 미검사임을 명시.** 기존 `/api/health`와 web happy-path(로그인→질문→충돌 해소→FinalAnswer→노트)가 회귀 없이 동작하고, `.env.example`·`docs/dev-setup.md`가 갱신된다.
 
 ---
 
@@ -136,3 +136,4 @@ Express가 `Authorization: Bearer <access-token>`의 Supabase JWT를 검증해 `
 | 일자 | 내용 |
 |---|---|
 | 2026-07-20 | 최초 작성. Step 1~3 사용자 결정 반영 (1장 표). JWT 검증=getUser, 테스트 엔드포인트 `/api/auth/me`, 얕은 ApiClient, 코드+원문 에러 봉투를 `packages/shared` 표준으로 착수, 서버는 공개 키만 |
+| 2026-07-20 | 완료 처리 (Cowork). T-014 구현·AC1~AC7 실측 PASS(상세는 docs/status.md). 알려진 제한: shared 소스 전용이라 `node dist` 프로덕션 실행은 배포 Spec에서 해소 |
