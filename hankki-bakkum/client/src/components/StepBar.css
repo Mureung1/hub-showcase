@@ -1,0 +1,85 @@
+/* StepBar — hankki-design v3 토큰만 사용 (임의 색 금지) */
+
+.stepbar {
+    display: flex;
+    align-items: flex-start;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    gap: 6px;
+}
+
+.step__dot {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--r-pill);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 800;
+    background: var(--bg-section);
+    color: var(--muted);
+    z-index: 1;
+}
+
+.step__label {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+/* 단계 사이 연결선 — 구분선 최소화 원칙에 맞춰 얇고 옅게 */
+.step__bar {
+    position: absolute;
+    top: 17px;
+    left: calc(50% + 20px);
+    width: calc(100% - 40px);
+    height: 3px;
+    border-radius: var(--r-pill);
+    background: var(--bg-section);
+}
+
+/* 완료한 단계 — primary는 좁게(원과 글자에만) */
+.step--done .step__dot {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.step--done .step__label {
+    color: var(--primary);
+}
+
+.step--done .step__bar {
+    background: var(--primary-soft);
+}
+
+/* 현재 단계 — hot 테두리 */
+.step--current .step__dot {
+    background: var(--bg-card);
+    color: var(--hot);
+    box-shadow: inset 0 0 0 2px var(--hot);
+}
+
+.step--current .step__label {
+    color: var(--hot);
+}
+
+/* 최종 지급 — ok */
+.step--paid .step__dot {
+    background: var(--ok-soft);
+    color: var(--ok);
+}
+
+.step--paid .step__label {
+    color: var(--ok);
+}

@@ -12,6 +12,7 @@
 ## 디렉토리 구조
 - client/src/components/ — Ticket, StepBar, TagChip 등 공용 컴포넌트
 - client/src/pages/ — 화면 단위 (~Page.jsx)
+- client/src/hooks/ — useAuth(로그인 상태 Context) 등
 - client/src/lib/ — supabase.js, api.js (server 호출)
 - client/src/styles/tokens.css — 디자인 토큰 (hankki-design 스킬과 동일 값)
 - server/src/routes/ · services/ — AI 호출은 반드시 server 경유 (API 키 클라이언트 노출 금지)
@@ -19,17 +20,19 @@
 ## 핵심 도메인 규칙
 - 거래 상태값: `모집중 → 진행중 → 완료대기 → 완료` 순서 고정, 건너뛰기 금지
 - `완료` 전환은 사장님·헬퍼 양측 확인이 모두 있어야 성립 — 이 검증은 server가 담당
+  - 구현: confirmations 테이블에 확인 1건당 1행, unique(request_id, user_id)로 중복 차단
+- 식사권 차감은 되돌리기 불가 — ticket_redemptions에 사용 기록을 추가하는 방식 (insert only, update/delete 금지). 잔여 = 발급 수량 − 기록 수
 - 요청 게시글 필수 필드: 태그, 요청 내용, 기대 결과물 예시, 보상(식사권 수량), 지역
+- 요청 등록은 사장님(role=owner)만 가능
 - 수정 요청은 1회 포함이 기본값
 - 무응답 매칭은 자동취소 처리
 - Tab2 완료 결과물 이미지는 Tab1 게시글 썸네일로 재사용 가능해야 함
-- 식사권 사용(차감)은 헬퍼 혼자 처리 불가: 헬퍼가 "사용하기" 클릭 → 대기 상태 → 사장님이 확인해야 차감 완료 (완료 확인과 동일한 "상대방 확인 필수" 원칙 재사용)
 
 ## 컨벤션
 - 컴포넌트: PascalCase / 페이지: ~Page.jsx / 함수·변수: camelCase
 - 커밋: feat / fix / refactor / docs / chore + 한글 요약 (예: `feat: 재능 요청 등록 폼 구현`)
 - 브랜치: main + feature/기능명 — main 직접 푸시 금지, PR 필수
-- 환경변수는 .env (커밋 금지), .env.example만 커밋
+- 환경변수는 .env (커밋 금지), .env.example만 커밋 — 견본에 실제 키 값 넣지 않기
 
 ## 하지 말 것
 - 결제 기능 구현 금지 (현금 없는 물물교환 구조)
@@ -43,12 +46,17 @@
 ## 미확정 (개발 전 팀 결정 필요)
 - AI 모델·API 선택과 비용 한도
 - 배포처 (후보: client=Vercel, server=Render)
-- DB 테이블 상세 스키마 (requests, confirmations, tickets, ratings 초안 기준)
+- RLS 정책 — 개발 단계에서는 disable 상태. 실사용자 데이터가 들어가기 전 정책 설계 필요 (백로그)
+
+## 확정된 것
+- DB 스키마 v1 — docs/schema_v1.sql (2026-07-16 확정, 테이블 6종 + enum 4종)
+  - users(role) / requests / confirmations / tickets / ticket_redemptions / ratings
+- 지역 프리셋 — 활성: 부산대 앞 / 오픈 예정: 경북대 앞·경상국립대 앞
 
 ## 참고
 - 기획서 최종본 (노션): https://app.notion.com/p/v0-2-397dee17209c802d9495f20edf723b95
 - 기획서 레포 사본: @docs/plan.md — `한끼바꿈_기획서.md`를 이 경로에 넣은 뒤 사용
+- DB 스키마: @docs/schema_v1.sql
 - 프로토타입: @docs/prototype.html — `한끼바꿈_프로토타입_웜.html`을 이 경로에 넣은 뒤 사용
-- 추가 화면(로그인·회원가입·식사권 사용확인): @docs/prototype-auth-redeem.html
 - 디자인 기준 화면: @docs/wallet-warm.html / 디자인 규칙: .claude/skills/hankki-design/SKILL.md
 - 노션이 최신본, 레포 사본은 노션 수정 시 함께 갱신할 것
