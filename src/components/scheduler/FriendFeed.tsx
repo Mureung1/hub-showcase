@@ -31,7 +31,10 @@ export function FriendFeed({ myPosts, onDeletePost }: FriendFeedProps) {
         return (
           <article className="feed-post" key={post.id}>
             {post.videoUrl ? (
-              <video className="feed-video-real" src={post.videoUrl} controls playsInline />
+              <div className="feed-video-frame">
+                <video className="feed-video-real" src={post.videoUrl} controls playsInline />
+                {post.caption && <p className="feed-video-caption">{post.caption}</p>}
+              </div>
             ) : (
               <div className={`feed-video tone-${post.tone}`}>
                 <span className="feed-play" aria-hidden="true" />
@@ -58,7 +61,7 @@ export function FriendFeed({ myPosts, onDeletePost }: FriendFeedProps) {
                 )}
               </header>
 
-              <p className="feed-caption">{post.caption}</p>
+              {!post.videoUrl && <p className="feed-caption">{post.caption}</p>}
 
               <div className="feed-reactions" role="group" aria-label="눈빛 반응">
                 {reactionMeta.map((reaction) => (

@@ -323,6 +323,13 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 .record-close-button:hover { background: var(--scheduler-mint); }
 .record-preview { width: 100%; aspect-ratio: 9 / 16; margin-bottom: 12px; border-radius: 18px; background: #000; object-fit: cover; }
 .record-stop-button { width: 100%; padding: 12px; border: 0; border-radius: 14px; background: #c76358; color: #fff; cursor: pointer; font-size: 12px; font-weight: 800; }
+.certify-caption-input { width: 100%; height: 64px; margin-bottom: 12px; padding: 10px 12px; border: 1px solid var(--scheduler-line); border-radius: 14px; background: #fff; color: var(--scheduler-ink); font: inherit; font-size: 13px; line-height: 1.4; resize: none; outline: none; }
+.certify-caption-input:focus { border-color: var(--scheduler-green); box-shadow: 0 0 0 3px rgba(143,189,171,.18); }
+.certify-modal-actions.two-up { grid-template-columns: 1fr 1fr; }
+.certify-submit-button { padding: 10px; border: 0; border-radius: 12px; background: var(--scheduler-ink); color: #fff; cursor: pointer; font-size: 11px; font-weight: 800; }
+.certify-modal-actions button:disabled { opacity: .5; cursor: default; }
+.feed-video-frame { position: relative; }
+.feed-video-caption { position: absolute; right: 10px; bottom: 10px; left: 10px; margin: 0; padding: 5px 11px; border-radius: 10px; background: rgba(52,75,70,.75); color: #fff; font-size: 12px; font-weight: 700; text-align: right; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .feed-video-real { width: 100%; height: 195px; display: block; border: 3px solid var(--scheduler-ink); border-radius: 21px; background: #000; object-fit: cover; }
 .feed-video { width: 100%; height: 195px; position: relative; display: grid; place-items: center; border: 3px solid var(--scheduler-ink); border-radius: 21px; background: var(--scheduler-mint); overflow: hidden; }
 .feed-video.tone-blue { background: #dce9f8; }
