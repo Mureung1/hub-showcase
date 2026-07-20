@@ -1,7 +1,6 @@
+const env = require('./config/env');
 const app = require('./app');
 
-const port = process.env.PORT || 4000;
-
-app.listen(port, () => {
-  console.log(`Mock server is running on http://localhost:${port}`);
+app.listen(env.port, () => {
+  console.log(`Server is running on http://localhost:${env.port}`);
 });
