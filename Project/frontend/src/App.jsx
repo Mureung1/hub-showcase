@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
 import HomeScreen from './pages/HomeScreen';
@@ -6,6 +7,8 @@ import PostfeedScreen from './pages/PostfeedScreen';
 import CreatePostScreen from './pages/CreatePostScreen';
 import MyPage from './pages/MyPage';
 import GroupPurchaseDetailPage from './pages/GroupPurchaseDetailPage';
+
+const queryClient = new QueryClient();
 
 const initialPosts = [
   {
@@ -81,34 +84,40 @@ const initialPosts = [
 ];
 
 function App() {
-  const [page, setPage] = useState('home'); // 'home' | 'postfeed' | 'createpost' | 'detail'
+  const [page, setPage] = useState('home'); // 'home' | 'postfeed' | 'createpost' | 'detail' | 'mypage'
+  const [selectedId, setSelectedId] = useState(1);
   const [posts, setPosts] = useState(initialPosts);
 
   const handleAddPost = (newPost) => {
     setPosts(prev => [newPost, ...prev]);
   };
 
-  const handlePageChange = (newPage) => {
+  const handlePageChange = (newPage, id = null) => {
     setPage(newPage);
+    if (id !== null) {
+      setSelectedId(Number(id));
+    }
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   return (
-    <div className="td-app-layout">
-      <Header currentPage={page} onNavigate={handlePageChange} />
-      {page === 'detail' ? (
-        <GroupPurchaseDetailPage onNavigate={handlePageChange} />
-      ) : page === 'postfeed' ? (
-        <PostfeedScreen onNavigate={handlePageChange} posts={posts} setPosts={setPosts} />
-      ) : page === 'createpost' ? (
-        <CreatePostScreen onNavigate={handlePageChange} onAddPost={handleAddPost} />
-      ) : page === 'mypage' ? (
-        <MyPage onNavigate={handlePageChange} />
-      ) : (
-        <HomeScreen onNavigate={handlePageChange} />
-      )}
-      <BottomNav currentPage={page} onNavigate={handlePageChange} />
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <div className="td-app-layout">
+        <Header currentPage={page} onNavigate={handlePageChange} />
+        {page === 'detail' ? (
+          <GroupPurchaseDetailPage onNavigate={handlePageChange} id={selectedId} />
+        ) : page === 'postfeed' ? (
+          <PostfeedScreen onNavigate={handlePageChange} posts={posts} setPosts={setPosts} />
+        ) : page === 'createpost' ? (
+          <CreatePostScreen onNavigate={handlePageChange} onAddPost={handleAddPost} />
+        ) : page === 'mypage' ? (
+          <MyPage onNavigate={handlePageChange} />
+        ) : (
+          <HomeScreen onNavigate={handlePageChange} />
+        )}
+        <BottomNav currentPage={page} onNavigate={handlePageChange} />
+      </div>
+    </QueryClientProvider>
   );
 }
 

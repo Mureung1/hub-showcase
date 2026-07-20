@@ -1,44 +1,7 @@
 import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getGroupPurchases, joinGroupPurchase } from '../api/groupPurchase';
 import './HomeScreen.css';
-
-const initialPurchases = [
-  {
-    id: 1,
-    category: '식자재',
-    categoryIcon: 'eco',
-    categoryType: 'primary',
-    title: '양파 5kg 한 망 나눠요',
-    price: 3500,
-    currentParticipants: 3,
-    targetParticipants: 5,
-    distanceText: '도보 8분',
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAmzACAEWQoMTE7-vlQdE_JHrSn7P1pBbBEPbO10G4Dbe5MCoPLL0Xxg51k-faWq_CfF7V0xFFqnZUH9ciSUp7_Yc_BoLaVl2ZTvpEWPXU08YxbrX5Vgkwu7ugcElfMo52SrhfsOP8z2ZrUUkZy_tQb-MMBPemue9nglz_BjtRCbAFZZ2ve_DGO89qhcmmAvunPgyFwhiiw4v93-ZGQrG28Nrmr0uofGFxSpRpFXNFbbjKmkNSvqCs',
-  },
-  {
-    id: 2,
-    category: '식자재',
-    categoryIcon: 'eco',
-    categoryType: 'primary',
-    title: '딸기 1박스 (2kg) 반반 나눌 분',
-    price: 9000,
-    currentParticipants: 1,
-    targetParticipants: 2,
-    distanceText: '도보 3분',
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA4h5hVaHcWJrtzDEBqTmFZXpmDp0BbhGAnoDBDj5p1AoFRHU9hEegoaKebpsymNIjkAPwd-bnA6iCZ66KOISi_uEQRJb5JWwJkbVB5dnZe6GllsDJLkbvmBHNolaVrgLESnUAbxT8E96hDsI1F8-NiLLLVTbTK7OINhpK0loqeYX02jPiIjelUwgRNRrStxq4nYWMaqRRjy4Z5-PdoyeMvpsGtsEC_WDLQuU4gH-KmoVshxsrTnX0',
-  },
-  {
-    id: 3,
-    category: '생필품',
-    categoryIcon: 'local_mall',
-    categoryType: 'secondary',
-    title: '크리넥스 3겹 화장지 30롤 공구',
-    price: 7500,
-    currentParticipants: 2,
-    targetParticipants: 3,
-    distanceText: '도보 12분',
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD3Jgk1WL3bHM7C6vwAUT_s8auzkGNvqaZ1GMfzW7Lv0PhcOL2riiWQ_xvPzlchfF3MvcU1RBi9Eqqd3N0hj4G-yfIeSEMXh4dZkPRGT7AtdE4UU8yIehvP3ISAfTqxnAtnc3VIsVW6QzzA73JQ8mxZLq0U2171YNUHYdEz_FKoTo8Xm8anAcfRngm5zdfGzB5GEwL9z6lSIYs2Pp6OAP4nxvQBNMgJl-BAVGeE6WHuIA_wMNtJmYY',
-  }
-];
 
 const categories = [
   { name: '전체', icon: 'grid_view' },
@@ -51,27 +14,98 @@ const categories = [
   { name: '생필품', icon: 'local_mall' },
 ];
 
-const won = (value) => `인당 ${new Intl.NumberFormat('ko-KR').format(value)}원`;
+const won = (value) => `인당 ${new Intl.NumberFormat('ko-KR').format(value || 0)}원`;
 
 export default function HomeScreen({ onNavigate }) {
-  const [purchases, setPurchases] = useState(initialPurchases);
-  const [joinedItems, setJoinedItems] = useState({});
+  const queryClient = useQueryClient();
   const [activeCategory, setActiveCategory] = useState('전체');
   const [activeFilter, setActiveFilter] = useState('Distance');
   const [searchQuery, setSearchQuery] = useState('');
+  const [joinedItems, setJoinedItems] = useState({});
+  const [joiningId, setJoiningId] = useState(null);
 
-  const handleJoin = (id) => {
-    if (joinedItems[id]) return; // already joined
+  // Fetch group purchases from database
+  const { data: apiResponse, isLoading, error } = useQuery({
+    queryKey: ['groupPurchases', activeCategory],
+    queryFn: () => {
+      let categoryEnum = null;
+      if (activeCategory === '식자재' || activeCategory === '과일' || activeCategory === '수산/정육' || activeCategory === '밀키트' || activeCategory === '유제품') {
+        categoryEnum = 'FOOD';
+      } else if (activeCategory === '생필품') {
+        categoryEnum = 'NECESSITY';
+      }
+      return getGroupPurchases(categoryEnum ? { category: categoryEnum } : {});
+    }
+  });
 
-    setPurchases(prevPurchases =>
-      prevPurchases.map(item => {
-        if (item.id === id && item.currentParticipants < item.targetParticipants) {
-          return { ...item, currentParticipants: item.currentParticipants + 1 };
-        }
-        return item;
-      })
-    );
-    setJoinedItems(prev => ({ ...prev, [id]: true }));
+  const purchases = (apiResponse?.data || []).map(item => {
+    let categoryLabel = '기타';
+    let categoryIcon = 'grid_view';
+    let categoryType = 'secondary';
+    let imageUrl = 'https://lh3.googleusercontent.com/aida-public/AB6AXuDoSLBuND-cSFGw7ZEoTx_gc_kgDUBVzOCUv-VDbAFvqavlDcyh7HY8uTZFUAoAl8vYLbPZxRHx-GXAJdI6mU-RA-JkPuaRmECQJytdQJ8lBNr4G7GjQX-nLX5PCwACr4ilPXOvi6kBgPNRuUXK2ide3A4WUmuGPUFOHfkQI89mZ3awj5hP4sgmitWAXu3Vv2W8_YxpiKoa63Q87Pw_RL8V0cPZZC0xLkqSTECI6s-nvU0hKLykJyE';
+
+    if (item.category === 'FOOD') {
+      categoryLabel = '식자재';
+      categoryIcon = 'eco';
+      categoryType = 'primary';
+      imageUrl = 'https://lh3.googleusercontent.com/aida-public/AB6AXuAmzACAEWQoMTE7-vlQdE_JHrSn7P1pBbBEPbO10G4Dbe5MCoPLL0Xxg51k-faWq_CfF7V0xFFqnZUH9ciSUp7_Yc_BoLaVl2ZTvpEWPXU08YxbrX5Vgkwu7ugcElfMo52SrhfsOP8z2ZrUUkZy_tQb-MMBPemue9nglz_BjtRCbAFZZ2ve_DGO89qhcmmAvunPgyFwhiiw4v93-ZGQrG28Nrmr0uofGFxSpRpFXNFbbjKmkNSvqCs';
+    } else if (item.category === 'NECESSITY') {
+      categoryLabel = '생필품';
+      categoryIcon = 'local_mall';
+      categoryType = 'secondary';
+      imageUrl = 'https://lh3.googleusercontent.com/aida-public/AB6AXuD3Jgk1WL3bHM7C6vwAUT_s8auzkGNvqaZ1GMfzW7Lv0PhcOL2riiWQ_xvPzlchfF3MvcU1RBi9Eqqd3N0hj4G-yfIeSEMXh4dZkPRGT7AtdE4UU8yIehvP3ISAfTqxnAtnc3VIsVW6QzzA73JQ8mxZLq0U2171YNUHYdEz_FKoTo8Xm8anAcfRngm5zdfGzB5GEwL9z6lSIYs2Pp6OAP4nxvQBNMgJl-BAVGeE6WHuIA_wMNtJmYY';
+    }
+
+    return {
+      id: item.id,
+      category: categoryLabel,
+      categoryIcon,
+      categoryType,
+      title: item.title,
+      price: item.perPersonPrice,
+      currentParticipants: item.currentParticipants,
+      targetParticipants: item.targetParticipants,
+      distanceText: item.pickupTimeSlot || '도보 10분',
+      imageUrl,
+      status: item.status,
+      deadlineAt: item.deadlineAt,
+      createdAt: item.createdAt,
+    };
+  });
+
+  const visiblePurchases = purchases
+    .filter((item) => item.title.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+    .sort((a, b) => {
+      if (activeFilter === 'Deadline') return new Date(a.deadlineAt) - new Date(b.deadlineAt);
+      if (activeFilter === 'Recent') return new Date(b.createdAt) - new Date(a.createdAt);
+      return 0;
+    });
+
+  const handleJoin = async (id, e) => {
+    e.stopPropagation();
+    if (joinedItems[id]) return;
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      alert('인증 토큰이 없습니다. 우측 상단 프로필을 클릭하여 개발자 로그인을 먼저 진행해주세요.');
+      return;
+    }
+
+    setJoiningId(id);
+    try {
+      const result = await joinGroupPurchase(id);
+      if (result.success) {
+        setJoinedItems(prev => ({ ...prev, [id]: true }));
+        alert('참여 신청이 완료되었습니다!');
+        queryClient.invalidateQueries({ queryKey: ['groupPurchases'] });
+      } else {
+        alert(result.error?.message || '참여 신청에 실패했습니다.');
+      }
+    } catch (err) {
+      alert(err.message || '참여 신청 중 오류가 발생했습니다.');
+    } finally {
+      setJoiningId(null);
+    }
   };
 
   return (
@@ -132,7 +166,7 @@ export default function HomeScreen({ onNavigate }) {
           <div className="td-home-page__featured-header">
             <h2 className="td-headline-md text-on-surface">내 주변 인기 공구</h2>
             <div className="td-home-page__filters">
-              {['Distance', 'Deadline', 'Recent'].map((filter) => (
+              {['Recent', 'Deadline'].map((filter) => (
                 <button 
                   key={filter} 
                   className={`td-home-page__filter-btn ${activeFilter === filter ? 'td-home-page__filter-btn--active' : ''}`}
@@ -144,20 +178,25 @@ export default function HomeScreen({ onNavigate }) {
             </div>
           </div>
 
+          {isLoading && <p className="td-body-md">Loading group purchases...</p>}
+          {error && <p className="td-body-md">Unable to load group purchases. Please try again.</p>}
+          {!isLoading && !error && visiblePurchases.length === 0 && (
+            <p className="td-body-md">No group purchases match your search.</p>
+          )}
           <div className="td-home-page__grid">
-            {purchases
-              .filter(item => activeCategory === '전체' || item.category === activeCategory)
+            {visiblePurchases
               .map((item) => {
                 const progress = (item.currentParticipants / item.targetParticipants) * 100;
                 const isJoined = joinedItems[item.id];
                 const isFull = item.currentParticipants >= item.targetParticipants;
+                const isJoining = joiningId === item.id;
                 return (
                   <div 
                     className="td-home-page__card" 
                     key={item.id}
                     onClick={(e) => {
                       if (e.target.tagName !== 'BUTTON') {
-                        if (onNavigate) onNavigate('detail');
+                        if (onNavigate) onNavigate('detail', item.id);
                       }
                     }}
                     style={{ cursor: 'pointer' }}
@@ -187,10 +226,10 @@ export default function HomeScreen({ onNavigate }) {
                       </div>
                       <button 
                         className={`td-home-page__card-action-btn ${isJoined ? 'td-home-page__card-action-btn--joined' : ''}`}
-                        onClick={() => handleJoin(item.id)}
-                        disabled={isJoined || isFull}
+                        onClick={(e) => handleJoin(item.id, e)}
+                        disabled={isJoined || isFull || isJoining}
                       >
-                        {isJoined ? '신청 완료' : isFull ? '마감 완료' : '참여하기'}
+                        {isJoining ? '처리중...' : isJoined ? '신청 완료' : isFull ? '마감 완료' : '참여하기'}
                       </button>
                     </div>
                   </div>
