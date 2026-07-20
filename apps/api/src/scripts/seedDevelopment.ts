@@ -98,10 +98,17 @@ async function seedDevelopment(): Promise<void> {
           (id, name, primary_department, phone_number, region_sido,
            region_sigungu, address, operating_hours_text, approval_status, approved_at)
         VALUES
-          ($1, '바로진료 개발 병원', '이비인후과', '+82212345678', '서울특별시',
-           '마포구', '서울특별시 마포구 개발로 1', '평일 09:00-18:00', 'approved', now())
+          ($1, '서울이비인후과', '이비인후과', '+82212345678', '서울특별시',
+           '마포구', '서울특별시 마포구 월드컵로 12, 2층', '평일 09:00-18:00',
+           'approved', now())
         ON CONFLICT (id) DO UPDATE
         SET name = EXCLUDED.name,
+            primary_department = EXCLUDED.primary_department,
+            phone_number = EXCLUDED.phone_number,
+            region_sido = EXCLUDED.region_sido,
+            region_sigungu = EXCLUDED.region_sigungu,
+            address = EXCLUDED.address,
+            operating_hours_text = EXCLUDED.operating_hours_text,
             approval_status = 'approved',
             approved_at = COALESCE(public.hospitals.approved_at, now())
       `,

@@ -159,8 +159,8 @@ values (
   '이비인후과',
   '+82212345678',
   '서울특별시',
-  '강남구',
-  '서울특별시 강남구 테헤란로 123',
+  '마포구',
+  '서울특별시 마포구 월드컵로 12, 2층',
   37.5012345,
   127.0398765,
   '평일 09:00-18:00 / 점심 13:00-14:00',
@@ -171,6 +171,10 @@ on conflict (id) do update
 set name = excluded.name,
     primary_department = excluded.primary_department,
     phone_number = excluded.phone_number,
+    region_sido = excluded.region_sido,
+    region_sigungu = excluded.region_sigungu,
+    address = excluded.address,
+    operating_hours_text = excluded.operating_hours_text,
     approval_status = excluded.approval_status,
     approved_at = excluded.approved_at;
 

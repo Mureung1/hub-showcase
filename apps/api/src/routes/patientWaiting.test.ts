@@ -30,9 +30,19 @@ const waiting: QueuePosition = {
 function createService(): PatientWaitingOperations {
   return {
     getHospitalConfig: vi.fn(async () => ({
+      hospital: {
+        id: hospitalId,
+        name: "서울이비인후과",
+        department: "이비인후과",
+        district: "서울특별시 마포구",
+        address: "서울특별시 마포구 월드컵로 12, 2층",
+        operatingHoursText: "평일 09:00-18:00",
+      },
       inputMode: "total_only" as const,
       categories: [],
       queueStatus: "open" as const,
+      waitingPatients: 0,
+      estimatedMinutes: 0,
     })),
     register: vi.fn(async () => waiting),
     getActive: vi.fn(async () => waiting),
@@ -54,6 +64,20 @@ function createTestApp(service: PatientWaitingOperations) {
 }
 
 describe("patient waiting routes", () => {
+  it("병원 상세와 오늘 대기 현황을 로그인 없이 조회한다", async () => {
+    const service = createService();
+    const response = await request(createTestApp(service))
+      .get(`/api/hospitals/${hospitalId}`)
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      hospital: { id: hospitalId, name: "서울이비인후과" },
+      queueStatus: "open",
+      waitingPatients: 0,
+      estimatedMinutes: 0,
+    });
+  });
+
   it("환자 라우트가 아닌 요청에는 환자 인증을 적용하지 않는다", async () => {
     const service = createService();
     const auth = vi.fn<RequestHandler>((_request, _response, next) => next());

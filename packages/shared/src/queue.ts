@@ -84,9 +84,19 @@ export interface QueuePosition {
 }
 
 export interface MockPatientConfig {
+  hospital: {
+    id: string;
+    name: string;
+    department: string;
+    district: string;
+    address: string;
+    operatingHoursText: string;
+  };
   inputMode: PatientInputMode;
   categories: PatientCategoryDefinition[];
   queueStatus: QueueStatus;
+  waitingPatients: number;
+  estimatedMinutes: number;
 }
 
 export interface StaffQueueState {

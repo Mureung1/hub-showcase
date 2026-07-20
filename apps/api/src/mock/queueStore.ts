@@ -23,6 +23,7 @@ import { createHash, randomBytes } from "node:crypto";
 
 const PATIENT_WAITING_ID = "waiting-patient";
 const MOCK_HOSPITAL = {
+  id: "10000000-0000-4000-8000-000000000001",
   name: "서울이비인후과",
   specialty: "이비인후과",
   address: "서울 마포구 월드컵로 12, 2층",
@@ -174,7 +175,26 @@ export function resetMockQueueStore(): void {
 }
 
 export function getPatientConfig() {
-  return { inputMode: todayInputMode, categories: cloneCategories(todayCategories), queueStatus };
+  const waitingPatients = entries
+    .filter(({ status }) =>
+      ["remote_waiting", "entry_requested", "onsite_waiting"].includes(status),
+    )
+    .reduce((total, entry) => total + entry.patientCount, 0);
+  return {
+    hospital: {
+      id: MOCK_HOSPITAL.id,
+      name: MOCK_HOSPITAL.name,
+      department: MOCK_HOSPITAL.specialty,
+      district: "서울특별시 마포구",
+      address: MOCK_HOSPITAL.address,
+      operatingHoursText: "평일 09:00-18:00",
+    },
+    inputMode: todayInputMode,
+    categories: cloneCategories(todayCategories),
+    queueStatus,
+    waitingPatients,
+    estimatedMinutes: waitingPatients * 10,
+  };
 }
 
 export function getPatientWaiting(): QueuePosition | null {
