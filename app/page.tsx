@@ -2,26 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getCategoryStyle } from "./categoryStyles";
-
-type Item = {
-  id: number;
-  title: string | null;
-  original_url: string | null;
-  source_platform: string | null;
-  category_main: string | null;
-  category_sub: string | null;
-  created_at: string;
-};
-
-const apiBaseUrl = (
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
-).replace(/\/$/, "");
-
-async function readApiError(response: Response) {
-  const body = await response.json().catch(() => null);
-  return body?.error || "API 요청에 실패했습니다.";
-}
+import ItemCard from "./ItemCard";
+import {
+  apiBaseUrl,
+  getRequestErrorMessage,
+  readApiError,
+  type DeleteItemResponse,
+  type Item,
+} from "../lib/items";
 
 export default function Home() {
   const [input, setInput] = useState("");
@@ -38,11 +26,7 @@ export default function Home() {
       if (!response.ok) throw new Error(await readApiError(response));
       setItems(await response.json());
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "저장 목록을 불러오지 못했습니다."
-      );
+      setError(getRequestErrorMessage(requestError, "저장 목록을 불러오지 못했습니다."));
     } finally {
       setLoading(false);
     }
@@ -68,15 +52,39 @@ export default function Home() {
       setItems((currentItems) => [savedItem, ...currentItems]);
       setInput("");
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message === "Failed to fetch"
-            ? "API 서버에 연결할 수 없습니다. Express 서버와 CORS 설정을 확인해주세요."
-            : requestError.message
-          : "항목을 저장하지 못했습니다."
-      );
+      setError(getRequestErrorMessage(requestError, "항목을 저장하지 못했습니다."));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function updateItem(id: number, title: string) {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/items/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      if (!response.ok) throw new Error(await readApiError(response));
+      const updatedItem: Item = await response.json();
+      setItems((currentItems) =>
+        currentItems.map((item) => (item.id === updatedItem.id ? updatedItem : item))
+      );
+    } catch (requestError) {
+      throw new Error(getRequestErrorMessage(requestError, "항목을 수정하지 못했습니다."));
+    }
+  }
+
+  async function deleteItem(id: number) {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/items/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error(await readApiError(response));
+      const result: DeleteItemResponse = await response.json();
+      setItems((currentItems) => currentItems.filter((item) => item.id !== result.id));
+    } catch (requestError) {
+      throw new Error(getRequestErrorMessage(requestError, "항목을 삭제하지 못했습니다."));
     }
   }
 
@@ -150,27 +158,12 @@ export default function Home() {
 
         <ul className="space-y-3">
           {items.map((item) => (
-            <li
+            <ItemCard
               key={item.id}
-              className="flex items-center justify-between bg-white/60 rounded-xl px-3 py-3"
-            >
-              <div className="min-w-0">
-                <p className="text-sm text-ink font-medium truncate">
-                  {item.title || "(제목 없음)"}
-                </p>
-                <p className="text-xs text-muted">
-                  {item.source_platform ?? "manual"} ·{" "}
-                  {new Date(item.created_at).toLocaleDateString("ko-KR")}
-                </p>
-              </div>
-              <span
-                className={`text-xs rounded-full px-2 py-1 shrink-0 ml-2 font-medium transition-colors ${getCategoryStyle(
-                  item.category_main
-                )}`}
-              >
-                {item.category_main ?? "미분류"} · {item.category_sub ?? "기타"}
-              </span>
-            </li>
+              item={item}
+              onUpdate={updateItem}
+              onDelete={deleteItem}
+            />
           ))}
         </ul>
       </section>

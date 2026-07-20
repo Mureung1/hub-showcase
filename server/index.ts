@@ -8,6 +8,8 @@ dotenv.config({ path: "server/.env", quiet: true });
 
 const app = express();
 const port = Number(process.env.PORT) || 4000;
+const itemColumns =
+  "id, title, original_url, source_platform, category_main, category_sub, created_at";
 const configuredOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:3000")
   .split(",")
   .map((origin) => origin.trim());
@@ -54,6 +56,12 @@ function getErrorMessage(error: unknown, fallback: string) {
     return error.message;
   }
   return fallback;
+}
+
+function parseItemId(value: string) {
+  if (!/^\d+$/.test(value)) return null;
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
 function isUrl(value: string) {
@@ -103,9 +111,7 @@ app.get("/api/items", async (_request, response) => {
   try {
     const { data, error } = await getSupabase()
       .from("items")
-      .select(
-        "id, title, original_url, source_platform, category_main, category_sub, created_at"
-      )
+      .select(itemColumns)
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -142,9 +148,7 @@ app.post("/api/items", async (request, response) => {
         category_sub: categorySub,
         status: "unread",
       })
-      .select(
-        "id, title, original_url, source_platform, category_main, category_sub, created_at"
-      )
+      .select(itemColumns)
       .single();
 
     if (error) throw error;
@@ -153,6 +157,80 @@ app.post("/api/items", async (request, response) => {
     console.error("item 저장 실패:", error);
     response.status(500).json({
       error: getErrorMessage(error, "항목을 저장하지 못했습니다."),
+    });
+  }
+});
+
+function respondToMissingItemId(
+  _request: express.Request,
+  response: express.Response
+) {
+  response.status(400).json({ error: "id가 필요합니다." });
+}
+
+app.patch("/api/items", respondToMissingItemId);
+app.delete("/api/items", respondToMissingItemId);
+
+app.patch("/api/items/:id", async (request, response) => {
+  const id = parseItemId(request.params.id);
+  if (id === null) {
+    response.status(400).json({ error: "id는 양의 정수여야 합니다." });
+    return;
+  }
+
+  const title = request.body?.title;
+  if (typeof title !== "string" || !title.trim()) {
+    response.status(400).json({ error: "title은 비어 있지 않은 문자열이어야 합니다." });
+    return;
+  }
+
+  try {
+    const { data, error } = await getSupabase()
+      .from("items")
+      .update({ title: title.trim() })
+      .eq("id", id)
+      .select(itemColumns)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      response.status(404).json({ error: "항목을 찾을 수 없습니다." });
+      return;
+    }
+    response.json(data);
+  } catch (error) {
+    console.error("item 수정 실패:", error);
+    response.status(500).json({
+      error: getErrorMessage(error, "항목을 수정하지 못했습니다."),
+    });
+  }
+});
+
+app.delete("/api/items/:id", async (request, response) => {
+  const id = parseItemId(request.params.id);
+  if (id === null) {
+    response.status(400).json({ error: "id는 양의 정수여야 합니다." });
+    return;
+  }
+
+  try {
+    const { data, error } = await getSupabase()
+      .from("items")
+      .delete()
+      .eq("id", id)
+      .select("id")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      response.status(404).json({ error: "항목을 찾을 수 없습니다." });
+      return;
+    }
+    response.json({ success: true, id: data.id });
+  } catch (error) {
+    console.error("item 삭제 실패:", error);
+    response.status(500).json({
+      error: getErrorMessage(error, "항목을 삭제하지 못했습니다."),
     });
   }
 });
