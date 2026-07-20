@@ -31,7 +31,7 @@
 
 - [x] 아키텍처 시각화. `[P0]` `README.md`에 화면→Express 라우트→서비스 로직(matching.js/claude.js)→데이터(Supabase profiles/postings.json) 흐름을 mermaid flowchart+시퀀스 다이어그램으로 추가 (이슈 #9) — 월요일
 - [x] 테스트 인프라 도입. `[P1]` 백엔드에 `vitest` devDependency 추가, `npm test` 스크립트 등록, smoke test로 동작 확인 후 삭제 (이슈 #10) — 월요일. 화요일 T9 TDD의 전제 조건
-- [ ] T9. `[P0]` 자소서 문항 분석 로직 (공고별 문항 파싱, T3 데이터 활용) — `postings.json`의 `essayQuestions`엔 현재 `question`/`maxLength`만 있음, 분석 텍스트(`analysis`)는 T9에서 생성 필요 (목요일 E2E 검증 중 발견: 실제 데이터로 자소서 화면 진입 시 분석/초안 텍스트가 비어있음 — 예상된 범위 밖 상태) (이슈 #11) — 화요일 예정. 월요일에 `analyzeEssayQuestion(question, profile)` 함수 시그니처+입출력 예시 4종 설계 확정, 이슈 #11 코멘트에 기록(화요일 TDD RED 단계 그대로 사용)
+- [x] T9. `[P0]` 자소서 문항 분석 로직 (공고별 문항 파싱, T3 데이터 활용) — `postings.json`의 `essayQuestions`엔 현재 `question`/`maxLength`만 있음, 분석 텍스트(`analysis`)는 T9에서 생성 필요 (목요일 E2E 검증 중 발견: 실제 데이터로 자소서 화면 진입 시 분석/초안 텍스트가 비어있음 — 예상된 범위 밖 상태) (이슈 #11) — 화요일 예정이었으나 월요일에 당겨서 완료. TDD(RED→GREEN→REFACTOR)로 `backend/src/services/essayAnalysis.js`+`essayAnalysis.test.js` 작성, `npm test` 7개 케이스 통과. postings.json 실제 문항 12개 전수 분류 확인, oxlint 통과. 카테고리 정의는 matching.js와 합치지 않고 파일별로 유지하기로 결정(용도가 달라 억지로 공용화하면 더 복잡해짐)
 - [ ] T10. `[P0]` LLM 연동 자소서 초안 생성 API: 사용자 경험 + 문항 반영 프롬프트 설계 (T1, T9 선행) (이슈 #12) — 수요일 예정. profile은 프론트가 매 요청 재전송하는 방식으로 결정(Supabase 재조회 방식 대신 단순함 우선)
 - [ ] T11. `[P0]` 자기소개서 초안 화면 UI: 문항별 분석 결과, 생성 초안, 편집 영역 (T8, T10 선행) — mock 버전(`src/screens/DraftEditor.jsx`)은 수요일에 완성. 실제 T10 LLM 응답으로 교체만 남음 (이슈 #13) — 목요일 예정
 - [ ] T12. `[P1]` 초안 수정/저장 기능 — 저장 범위는 세션 내 로컬 확정 표시로 한정(Supabase 영속화는 스코프 밖, 4주차 이후로 미룸) (이슈 #14) — 금요일 예정
