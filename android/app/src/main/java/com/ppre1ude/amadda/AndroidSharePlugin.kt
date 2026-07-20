@@ -23,14 +23,33 @@ data class AndroidShare(
     }
 }
 
-class AndroidShareIntentQueue(
+class AndroidShareIntentRouter(
     private val idGenerator: () -> String = { UUID.randomUUID().toString() },
 ) {
-    private val pendingShares = ArrayDeque<AndroidShare>()
-    private val issuedIds = mutableSetOf<String>()
+    private val initialShares = ArrayDeque<AndroidShare>()
 
     @Synchronized
-    fun enqueue(intent: Intent): AndroidShare? {
+    fun routeInitialIntent(intent: Intent): AndroidShare? {
+        val share = parseIntent(intent) ?: return null
+        initialShares.addLast(share)
+        return share
+    }
+
+    fun routeNewIntent(
+        intent: Intent,
+        onShareReceived: (AndroidShare) -> Unit,
+    ): AndroidShare? {
+        val share = parseIntent(intent) ?: return null
+        onShareReceived(share)
+        return share
+    }
+
+    @Synchronized
+    fun consumeInitialShare(): AndroidShare? {
+        return initialShares.pollFirst()
+    }
+
+    private fun parseIntent(intent: Intent): AndroidShare? {
         if (intent.action != Intent.ACTION_SEND || intent.type != TEXT_PLAIN_MIME_TYPE) {
             return null
         }
@@ -42,18 +61,7 @@ class AndroidShareIntentQueue(
             text = text,
             title = title,
         )
-
-        if (!issuedIds.add(share.id)) {
-            return null
-        }
-
-        pendingShares.addLast(share)
         return share
-    }
-
-    @Synchronized
-    fun consumePending(): AndroidShare? {
-        return pendingShares.pollFirst()
     }
 
     private companion object {
@@ -63,17 +71,10 @@ class AndroidShareIntentQueue(
 
 @CapacitorPlugin(name = "AndroidShare")
 class AndroidSharePlugin : Plugin() {
-    private val shareQueue = AndroidShareIntentQueue()
-
-    override fun handleOnNewIntent(intent: Intent) {
-        shareQueue.enqueue(intent)?.let { share ->
-            notifyListeners(SHARE_INTENT_RECEIVED_EVENT, share.toJsObject())
-        }
-    }
-
     @PluginMethod
     fun getPendingShare(call: PluginCall) {
-        call.resolve(shareQueue.consumePending()?.toJsObject() ?: JSObject())
+        val router = (activity as? MainActivity)?.shareIntentRouter
+        call.resolve(router?.consumeInitialShare()?.toJsObject() ?: JSObject())
     }
 
     @PluginMethod
@@ -82,7 +83,13 @@ class AndroidSharePlugin : Plugin() {
         call.resolve()
     }
 
-    private companion object {
-        const val SHARE_INTENT_RECEIVED_EVENT = "shareIntentReceived"
+    fun notifyShareIntentReceived(share: AndroidShare) {
+        notifyListeners(SHARE_INTENT_RECEIVED_EVENT, share.toJsObject())
+    }
+
+    companion object {
+        const val PLUGIN_NAME = "AndroidShare"
+
+        private const val SHARE_INTENT_RECEIVED_EVENT = "shareIntentReceived"
     }
 }
