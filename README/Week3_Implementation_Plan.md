@@ -74,8 +74,8 @@ gantt
   - *상세:* `backend/.env`에 `GEMINI_API_KEY` 추가하고, `backend/.env.example`에는 **키 이름만** 기재. `backend`에 `@google/genai` 의존성 설치. `.env`가 `.gitignore`에 포함되어 있는지 재확인.
   - *완료 조건:* `npm run dev`로 BE 기동 시 환경 변수 로딩 에러가 없고, `.env`가 git 추적 대상에서 제외되어 있음.
 
-- [ ] **Task 1: [BE] Gemini 클라이언트 래퍼 구현**
-  - *상세:* `backend/src/lib/geminiClient.ts` 신규 작성. 기존 `lib/supabaseClient.ts`의 환경 변수 로딩 및 싱글턴 패턴을 그대로 따름. 모델은 `gemini-2.5-flash` 기준, `responseSchema`로 JSON 출력 강제하여 파싱 안정성 확보. 온도는 낮게 설정.
+- [x] **Task 1: [BE] Gemini 클라이언트 래퍼 구현**
+  - *상세:* `backend/src/lib/geminiClient.ts` 신규 작성. 기존 `lib/supabaseClient.ts`의 환경 변수 로딩 및 싱글턴 패턴을 그대로 따름. 모델은 `gemini-flash-latest` 기준(`gemini-2.5-flash`는 신규 API 키에 더 이상 제공되지 않아 별칭 모델로 변경), `responseSchema`로 JSON 출력 강제하여 파싱 안정성 확보. 온도는 낮게 설정(기본 0.1).
   - *완료 조건:* 간단한 테스트 프롬프트 호출 시 스키마에 맞는 JSON이 반환되고, 키 누락 시 명확한 에러 메시지가 출력됨.
 
 - [ ] **Task 2: [AI] 가설 검증용 AI 모델 설계 (입력/출력 구조화 포함)**
