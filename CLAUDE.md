@@ -51,6 +51,8 @@
 - 작은 단위로 주기적으로 커밋을 해야한다.
 - 기능별로 브랜치를 나누고 dev브랜치에 머지한뒤 하루에 한번 dev -> main으로 푸쉬한다.
 - 커밋단위당 항상 코드 리뷰를 진행한다.
+- 새 API 라우트를 구현·수정한 뒤에는 `api-smoke-test` 스킬(`.claude/skills/api-smoke-test/`)로 실제 기동·요청 검증을 거칠 것
+- 업스트림(connect-AIAgentChallenge-26-1/hub)에 PR을 올릴 때는 `pr-draft` 스킬(`.claude/skills/pr-draft/`)로 `.github/pull_request_template.md` 양식의 초안을 먼저 작성할 것
 
 ## 작업 시 참고사항
 - 백엔드가 추가되면 이 파일에 백엔드 스택/명령어/디렉토리 구조를 함께 갱신할 것
