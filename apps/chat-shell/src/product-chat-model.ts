@@ -72,6 +72,7 @@ export type ProductTranscriptEntry =
       readonly kind: 'operation'
       readonly operationKind: ProductOperationKind
       readonly status: 'submitting' | 'preparing' | 'accepted'
+      readonly milestones: readonly ('submitting' | 'preparing' | 'accepted')[]
     }
   | { readonly kind: 'user'; readonly text: string }
   | {
@@ -167,6 +168,7 @@ export function reduceProductChatState(
       kind: 'operation',
       operationKind: action.kind,
       status: 'submitting',
+      milestones: ['submitting'],
     })
     return {
       phase: 'submitting',
@@ -209,7 +211,9 @@ export function reduceProductChatState(
     }
   }
   if (action.type === 'operation.control-failed') {
-    if (!state.activeOperation) return state
+    if (!state.activeOperation) {
+      return { ...state, controlFailure: { ...action.failure } }
+    }
     return {
       ...state,
       phase: phaseForActiveOperation(state.activeOperation),
@@ -656,7 +660,13 @@ function updateLastOperation(
   if (index < 0) return transcript
   return transcript.map((entry, candidate) =>
     candidate === index && entry.kind === 'operation'
-      ? { ...entry, status }
+      ? {
+          ...entry,
+          status,
+          milestones: entry.milestones.includes(status)
+            ? entry.milestones
+            : [...entry.milestones, status],
+        }
       : entry,
   )
 }
