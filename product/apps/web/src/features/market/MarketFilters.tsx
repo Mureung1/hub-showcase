@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Building2, Coffee, Layers3, MapPinned, Store, Users, X } from "lucide-react";
+import { Building2, Coffee, MapPinned, Store, X } from "lucide-react";
 
-import { categoryClass } from "./model";
+import { MapLayerControls } from "./MapLayerControls";
+import { NearbyStoreList } from "./NearbyStoreList";
 import type { NearbyStoreState } from "../analysis/useNearbyStores";
 import type { AnalysisRadius } from "../analysis/types";
 import type {
@@ -134,14 +134,6 @@ export function MarketFilters({
   onStoresVisibleChange,
   onStoreChange,
 }: MarketFiltersProps) {
-  const [expandedStoreKey, setExpandedStoreKey] = useState<string | null>(null);
-  const visibleStoreKey = visibleStores.map((store) => store.id ?? store.name).join("|");
-  const showAllStores = expandedStoreKey === visibleStoreKey;
-  const visibleStoreCount = showAllStores
-    ? visibleStores.length
-    : Math.min(5, visibleStores.length);
-  const displayedStores = visibleStores.slice(0, visibleStoreCount);
-
   return (
     <aside className="filter-panel">
       <div className="panel-heading">
@@ -273,111 +265,22 @@ export function MarketFilters({
           ))}
         </div>
       </div>
-      <div className="filter-group layer-filter filter-section">
-        <div className="filter-section-heading">
-          <span>3</span>
-          <div>
-            <p className="filter-label">지도 표시</p>
-            <small>지도 위에 보일 정보 선택</small>
-          </div>
-        </div>
-        <button
-          type="button"
-          className={boundaryVisible ? "layer-option active" : "layer-option"}
-          aria-pressed={boundaryVisible}
-          onClick={() => onBoundaryVisibleChange(!boundaryVisible)}
-        >
-          <MapPinned size={15} /> 상권 경계
-        </button>
-        <button
-          type="button"
-          className={storesVisible ? "layer-option active" : "layer-option"}
-          aria-pressed={storesVisible}
-          onClick={() => onStoresVisibleChange(!storesVisible)}
-        >
-          <Store size={15} /> 점포 위치
-        </button>
-        <button
-          type="button"
-          className={layer === "density" ? "layer-option active" : "layer-option"}
-          aria-pressed={layer === "density"}
-          onClick={() => onLayerChange("density")}
-        >
-          <Layers3 size={15} /> 업종 밀도
-        </button>
-        <button
-          type="button"
-          className={layer === "demand" ? "layer-option active" : "layer-option"}
-          aria-pressed={layer === "demand"}
-          onClick={() => onLayerChange("demand")}
-        >
-          <Users size={15} /> 시간대 수요
-        </button>
-        <button type="button" className="layer-option" disabled title="DATA-011 연결 예정">
-          <Users size={15} /> 인구 밀도 <small>준비 중</small>
-        </button>
-      </div>
-      <div className="store-list-heading">
-        <span>주변 점포</span>
-        <strong>{visibleStores.length}개</strong>
-      </div>
-      {nearbyState === "loading" && (
-        <p className="nearby-state" role="status">
-          주변 점포를 조회하고 있습니다.
-        </p>
-      )}
-      {nearbyState === "empty" && (
-        <p className="nearby-state" role="status">
-          선택 반경 안에 조회 가능한 점포가 없습니다.
-        </p>
-      )}
-      {nearbyState === "unsupported" && (
-        <p className="nearby-state is-warning" role="status">
-          연남·홍대·합정 지원 지역 안에서 분석 위치를 선택해 주세요.
-        </p>
-      )}
-      {nearbyState === "error" && (
-        <div className="nearby-state is-error" role="alert">
-          <span>주변 점포를 불러오지 못했습니다.</span>
-          <button type="button" onClick={onNearbyRetry}>
-            다시 시도
-          </button>
-        </div>
-      )}
-      {nearbyState === "ready" && visibleStores.length > 0 && (
-        <p className="store-list-status" role="status">
-          {visibleStores.length}개 중 {visibleStoreCount}개 표시
-        </p>
-      )}
-      <div className="store-list" aria-label="주변 점포 목록">
-        {displayedStores.map((store) => (
-          <button
-            key={store.id ?? store.name}
-            type="button"
-            className={`store-row ${selectedStoreName === store.name ? "is-selected" : ""}`}
-            onClick={() => onStoreChange(store.name)}
-          >
-            <span className={`store-dot ${categoryClass(store.category)}`} />
-            <span className="store-row-main">
-              <b>{store.name}</b>
-              <small>
-                {store.category} · {store.distance}
-              </small>
-            </span>
-            <strong>{usesAnalysis ? "POI" : store.score}</strong>
-          </button>
-        ))}
-      </div>
-      {nearbyState === "ready" && visibleStores.length > 5 && (
-        <button
-          type="button"
-          className="store-list-toggle"
-          aria-expanded={showAllStores}
-          onClick={() => setExpandedStoreKey(showAllStores ? null : visibleStoreKey)}
-        >
-          {showAllStores ? "목록 접기" : `${visibleStores.length}개 전체보기`}
-        </button>
-      )}
+      <MapLayerControls
+        layer={layer}
+        boundaryVisible={boundaryVisible}
+        storesVisible={storesVisible}
+        onLayerChange={onLayerChange}
+        onBoundaryVisibleChange={onBoundaryVisibleChange}
+        onStoresVisibleChange={onStoresVisibleChange}
+      />
+      <NearbyStoreList
+        stores={visibleStores}
+        selectedStoreName={selectedStoreName}
+        state={nearbyState}
+        usesAnalysis={usesAnalysis}
+        onRetry={onNearbyRetry}
+        onSelect={onStoreChange}
+      />
     </aside>
   );
 }

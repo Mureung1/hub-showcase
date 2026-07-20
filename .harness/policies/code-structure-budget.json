@@ -5,16 +5,12 @@
   },
   "webFunctionBudgets": {
     "product/apps/web/src/App.tsx#ProductWorkspace": {
-      "maxLines": 810,
+      "maxLines": 809,
       "reason": "WEB-018에서 URL, 지도, 선택과 화면 조립 책임을 분리한다."
     },
     "product/apps/web/src/features/market/MarketInspector.tsx#MarketInspector": {
       "maxLines": 437,
       "reason": "WEB-019에서 분석 section별 component로 분리한다."
-    },
-    "product/apps/web/src/features/market/MarketFilters.tsx#MarketFilters": {
-      "maxLines": 278,
-      "reason": "WEB-019에서 filter group과 점포 목록을 분리한다."
     },
     "product/apps/web/src/components/SceneWorkspace.tsx#SceneWorkspace": {
       "maxLines": 280,

@@ -675,39 +675,40 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
         <MarketMapPanel
           toolbarStart={<MarketSearch onSelect={chooseSearchResult} />}
           mapBody={
-          <MarketMapCanvas
-            market={market}
-            marketId={marketIdByKey[marketKey]}
-            mapRef={mapRef}
-            onVisibleCenterChange={updateVisibleCenter}
-            mapMode={mapMode}
-            baseBuildingsVisible={baseBuildingsVisible}
-            baseBuildingsRendered={baseBuildingsRendered}
-            analysisScope={analysisScope}
-            circle={circle}
-            layer={layer}
-            boundaryVisible={boundaryVisible}
-            storesVisible={storesVisible}
-            selectedStorefront3d={selectedStorefront3d}
-            onStorefrontUnavailable={() => setStorefront3dUnavailable(true)}
-            analysisCenter={analysisCenter}
-            radius={radius}
-            flowPeople={flowPeople}
-            activeHour={activeHour}
-            activeDemandLabel={activeDemandLabel}
-            mapStores={mapStores}
-            selected={selected}
-            score={score}
-            prefabMode={prefabMode}
-            onSelectStore={chooseListedStore}
-            visibleSupportedRegion={visibleSupportedRegion !== undefined}
-            analysisMoveMode={analysisMoveMode}
-            canConfirmAnalysisMove={draftSupportedRegion !== undefined}
-            onStartAnalysisMove={startAnalysisMove}
-            onConfirmAnalysisMove={confirmAnalysisMove}
-            onCancelAnalysisMove={cancelAnalysisMove}
-            onEvidenceOpen={() => setEvidenceOpen(true)}
-          />}
+            <MarketMapCanvas
+              market={market}
+              marketId={marketIdByKey[marketKey]}
+              mapRef={mapRef}
+              onVisibleCenterChange={updateVisibleCenter}
+              mapMode={mapMode}
+              baseBuildingsVisible={baseBuildingsVisible}
+              baseBuildingsRendered={baseBuildingsRendered}
+              analysisScope={analysisScope}
+              circle={circle}
+              layer={layer}
+              boundaryVisible={boundaryVisible}
+              storesVisible={storesVisible}
+              selectedStorefront3d={selectedStorefront3d}
+              onStorefrontUnavailable={() => setStorefront3dUnavailable(true)}
+              analysisCenter={analysisCenter}
+              radius={radius}
+              flowPeople={flowPeople}
+              activeHour={activeHour}
+              activeDemandLabel={activeDemandLabel}
+              mapStores={mapStores}
+              selected={selected}
+              score={score}
+              prefabMode={prefabMode}
+              onSelectStore={chooseListedStore}
+              visibleSupportedRegion={visibleSupportedRegion !== undefined}
+              analysisMoveMode={analysisMoveMode}
+              canConfirmAnalysisMove={draftSupportedRegion !== undefined}
+              onStartAnalysisMove={startAnalysisMove}
+              onConfirmAnalysisMove={confirmAnalysisMove}
+              onCancelAnalysisMove={cancelAnalysisMove}
+              onEvidenceOpen={() => setEvidenceOpen(true)}
+            />
+          }
           market={market}
           mapMode={mapMode}
           onMapModeChange={chooseMapMode}
@@ -749,9 +750,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
             topic={analysisTopic}
             onAnalysisRetry={retryAnalysis}
             onClosePanel={() => setInspectorOpen(false)}
-            onClearSelection={() => {
-              clearSelection();
-            }}
+            onClearSelection={clearSelection}
             onEvidenceOpen={() => setEvidenceOpen(true)}
             onActiveHourChange={setActiveHour}
           />
