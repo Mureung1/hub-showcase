@@ -46,12 +46,26 @@ npm run verify:requirements
 npm run verify:requirements:fast
 ```
 
-## Supabase 저장 공고
+## 로컬 데모 저장 공고
 
-분석 결과를 Supabase 한 테이블에 저장하고 다시 조회하려면 [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)의 SQL과 환경변수 설정을 적용합니다. 저장·조회는 Express 서버에서만 service role key로 실행되며, 프론트엔드에는 키가 전달되지 않습니다.
+기본값은 외부 키가 필요 없는 로컬 SQLite DB입니다. 분석 결과에서 **서버 저장**을 누르면 화면 → Express의 `POST /api/opportunities` → `data/uniradar-demo.sqlite`로 저장되고, 우측 **서버 저장 공고** 카드가 `GET /api/opportunities`로 다시 조회합니다. DB 파일은 Git에서 제외됩니다.
 
-현재는 로그인 기능이 없으므로 Supabase 저장 API는 로컬 개발 또는 접근이 제한된 환경에서만 활성화하세요.
+로컬 데모에서는 별도 설정 없이 `npm run dev`만 실행하면 됩니다. 저장소 상태는 `GET /api/health`의 `storageProvider: "sqlite"`와 `storageConfigured: true`로 확인할 수 있습니다.
 
+Supabase를 사용하려면 [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)의 SQL과 환경변수 설정을 적용한 뒤 아래 값을 명시합니다.
+
+```env
+OPPORTUNITY_STORAGE_PROVIDER=supabase
+ALLOW_SUPABASE_PERSISTENCE=true
+```
+
+저장·조회는 어떤 경우에도 Express 서버에서만 수행하며, service role key는 프론트엔드로 전달하지 않습니다. 로그인 기능이 없으므로 Supabase 저장 API는 로컬 개발 또는 접근이 제한된 환경에서만 활성화하세요.
+
+## 정보 사이트 추천
+
+사용자 프로필과 저장된 출처를 비교해 추가 정보 사이트를 추천합니다. 후보는 등록된 사이트 레지스트리만 사용하며, Gemini가 활성화된 경우에도 추천 설명만 보조하고 URL이나 사이트 후보를 생성하지 않습니다.
+
+추천에서 추가한 사이트는 실제 스캔 출처로 저장됩니다. 구조, 점수 기준, Gemini fallback, 레지스트리 추가 방법은 [SITE_RECOMMENDATION.md](./SITE_RECOMMENDATION.md)를 참고하세요.
 ## 환경변수
 
 실제 `.env` 파일은 직접 만들되, 절대 커밋하지 않습니다. 예시는 `.env.example`에 있습니다.
@@ -144,10 +158,20 @@ mock과 Gemini 분석 결과는 모두 [`DATA_SCHEMA.md`](./DATA_SCHEMA.md)에 �
 
 ### 사용자 프로필과 재판정
 
-현재 사용자 프로필은 브라우저의 localStorage에 저장되며 실제 회원가입·로그인은 구현하지 않았습니다. 브라우저나 기기를 바꾸면 프로필이 자동으로 공유되지 않습니다. 프로필을 수정하면 Gemini를 다시 호출하지 않고 기존 공고의 매칭 결과만 현재 프로필 기준으로 재계산합니다. 구조와 판정 기준은 [`PROFILE_SCHEMA.md`](./PROFILE_SCHEMA.md)를 참고하세요.
+Supabase 환경변수를 설정하면 이메일·비밀번호 로그인 후 사용자별 프로필을 `profiles` 테이블에 저장합니다. 새로고침 후에도 세션과 프로필을 복원하며, 프로필을 수정하면 Gemini를 다시 호출하지 않고 기존 공고의 매칭 결과만 현재 프로필 기준으로 재계산합니다. 기존 브라우저 프로필은 사용자가 동의할 때만 계정으로 가져옵니다. 구조와 판정 기준은 [`PROFILE_SCHEMA.md`](./PROFILE_SCHEMA.md), 인증 설정은 [`AUTH_AND_USER_DATA.md`](./AUTH_AND_USER_DATA.md)를 참고하세요.
 
-프로필을 저장하지 않아도 공고 핵심 정보 구조화는 실행됩니다. 이 경우 지원 가능성은 판정하지 않으며, 맞춤 판정이 필요할 때 프로필을 저장하면 됩니다.
+## Supabase 인증과 계정 프로필
 
+Supabase 프로젝트를 만든 뒤 SQL Editor에서 [supabase/20260720_auth_profiles.sql](./supabase/20260720_auth_profiles.sql)을 실행합니다. 이후 로컬 `.env`에 공개 anon 키만 아래처럼 설정합니다.
+
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_publishable_anon_key
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your_publishable_anon_key
+```
+
+브라우저에는 `VITE_SUPABASE_*` 공개 설정만 제공하며, service role key는 절대 넣지 않습니다. Express는 Bearer access token을 검증하고 토큰의 사용자 ID로만 `/api/profile`을 처리합니다. RLS 정책과 기존 localStorage 프로필 가져오기 흐름은 [AUTH_AND_USER_DATA.md](./AUTH_AND_USER_DATA.md), 두 계정 수동 테스트는 [AUTH_TEST.md](./AUTH_TEST.md)를 참고하세요.
 ## 테스트용 rawText
 
 ```text

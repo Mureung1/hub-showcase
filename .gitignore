@@ -10,3 +10,5 @@ yarn-error.log*
 work
 outputs
 !.env.example
+data/*.sqlite
+data/*.sqlite-*

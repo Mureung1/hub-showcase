@@ -36,3 +36,7 @@ npm run dev
 ## 보안 제한
 
 현재 앱에는 로그인 기능이 없다. 따라서 service role key를 사용하는 저장 API는 로컬 개발 또는 접근이 엄격히 제한된 환경에서만 사용한다. 공개 배포 전에 Supabase Auth와 사용자별 RLS 정책을 추가해야 한다.
+
+## 계정 프로필 인증
+
+로그인과 사용자별 프로필은 별도 migration인 [supabase/20260720_auth_profiles.sql](./supabase/20260720_auth_profiles.sql)로 설정합니다. 이 경로는 service role key를 사용하지 않으며, 브라우저 공개 anon key와 RLS 정책으로 자신의 `profiles` 행만 읽고 쓸 수 있게 합니다. 자세한 환경변수와 테스트는 [AUTH_AND_USER_DATA.md](./AUTH_AND_USER_DATA.md)를 참고하세요.

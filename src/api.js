@@ -75,3 +75,50 @@ export async function saveOpportunity(analysis) {
 
   return readJsonResponse(response);
 }
+
+export async function getRecommendationSites() {
+  const response = await fetch("/api/sites", { headers: { Accept: "application/json" } });
+  return readJsonResponse(response);
+}
+
+export async function recommendSites(payload) {
+  const response = await fetch("/api/recommend-sites", {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return readJsonResponse(response);
+}
+
+function createAuthorizationHeaders(accessToken, includeJson = false) {
+  if (!accessToken) throw new Error("로그인 상태를 확인하지 못했습니다. 다시 로그인해 주세요.");
+  return {
+    Accept: "application/json",
+    Authorization: `Bearer ${accessToken}`,
+    ...(includeJson ? { "Content-Type": "application/json" } : {}),
+  };
+}
+
+export async function getProfile(accessToken) {
+  const response = await fetch("/api/profile", {
+    headers: createAuthorizationHeaders(accessToken),
+  });
+  return readJsonResponse(response);
+}
+
+export async function saveProfile(profile, accessToken) {
+  const response = await fetch("/api/profile", {
+    method: "PUT",
+    headers: createAuthorizationHeaders(accessToken, true),
+    body: JSON.stringify(profile),
+  });
+  return readJsonResponse(response);
+}
+
+export async function deleteProfile(accessToken) {
+  const response = await fetch("/api/profile", {
+    method: "DELETE",
+    headers: createAuthorizationHeaders(accessToken),
+  });
+  if (!response.ok) await readJsonResponse(response);
+}

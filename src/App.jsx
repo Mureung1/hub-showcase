@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ProfileForm from "./components/ProfileForm.jsx";
+import AuthPanel from "./components/AuthPanel.jsx";
+import ProfileAccessPanel from "./components/ProfileAccessPanel.jsx";
 import NoticeDiscovery from "./components/NoticeDiscovery.jsx";
-import { getHealth, getSavedOpportunities, saveOpportunity } from "./api.js";
+import SiteRecommendations from "./components/SiteRecommendations.jsx";
+import {
+  deleteProfile,
+  getHealth,
+  getProfile,
+  getSavedOpportunities,
+  saveOpportunity,
+  saveProfile,
+} from "./api.js";
 import {
   ANALYSIS_MODE_LABELS,
   ANALYSIS_RAW_TEXT_MAX_LENGTH,
@@ -10,6 +20,7 @@ import {
   MATCH_STATUS_LABELS,
 } from "./constants/opportunity.js";
 import { analyzeOpportunity } from "./services/analyzeOpportunity.js";
+import { useAuth } from "./auth/useAuth.js";
 import { analyzeNoticeLinks } from "./services/analyzeNoticeLinks.js";
 import { rematchAnalysisResult } from "./services/rematchAnalysisResult.js";
 import {
@@ -39,12 +50,16 @@ import {
 import {
   mergeNoticeHistory,
   readCustomSources,
+  readLastScanResult,
   readNoticeHistory,
   readScanSnapshot,
+  removeCustomSource,
   upsertCustomSource,
+  writeLastScanResult,
   writeNoticeHistory,
   writeScanSnapshot,
 } from "./storage/noticeHistoryStore.js";
+
 
 const resultModes = [
   { id: "latest", label: "최신" },
@@ -410,7 +425,7 @@ function AnalysisDemoPanel({
       ) : null}
       {analysisState === "success" ? (
         <AnalysisResultCard
-          canSave={Boolean(health?.supabaseConfigured)}
+          canSave={Boolean(health?.storageConfigured)}
           isSaving={isSavingAnalysis}
           onSave={onSaveAnalysis}
           result={analysisResult}
@@ -429,6 +444,7 @@ function ConfigPanel({
   isRunning,
   noticeMessage,
   onChangeConfig,
+  onDeleteSource,
   onLoadSource,
   onResetHistory,
   onRunBatchScan,
@@ -439,6 +455,9 @@ function ConfigPanel({
   scan,
   sourceOptions,
 }) {
+  const selectedSource = sourceOptions.find((source) => source.id === config.selectedSourceId);
+  const canDeleteSelectedSource = Boolean(selectedSource?.id?.startsWith("custom:"));
+
   return (
     <form className="config-panel" onSubmit={onRunScan}>
       <div className="form-grid">
@@ -464,35 +483,47 @@ function ConfigPanel({
       </div>
 
       <div className="form-grid source-grid">
-        <label className="field">
+        <div className="field">
           <span>저장된 출처</span>
-          <select
-            value={config.selectedSourceId}
-            onChange={(event) => onLoadSource(event.target.value)}
-          >
-            <option value="custom">직접 입력</option>
-            {defaultNoticeSources.length ? (
-              <optgroup label="기본 출처">
-                {defaultNoticeSources.map((source) => (
-                  <option key={source.id} value={source.id}>
-                    {source.name}
-                  </option>
-                ))}
-              </optgroup>
-            ) : null}
-            {sourceOptions.length > defaultNoticeSources.length ? (
-              <optgroup label="내 출처">
-                {sourceOptions
-                  .filter((source) => source.id.startsWith("custom:"))
-                  .map((source) => (
+          <div className="source-select-row">
+            <select
+              value={config.selectedSourceId}
+              onChange={(event) => onLoadSource(event.target.value)}
+            >
+              <option value="custom">직접 입력</option>
+              {defaultNoticeSources.length ? (
+                <optgroup label="기본 출처">
+                  {defaultNoticeSources.map((source) => (
                     <option key={source.id} value={source.id}>
                       {source.name}
                     </option>
                   ))}
-              </optgroup>
-            ) : null}
-          </select>
-        </label>
+                </optgroup>
+              ) : null}
+              {sourceOptions.length > defaultNoticeSources.length ? (
+                <optgroup label="내 출처">
+                  {sourceOptions
+                    .filter((source) => source.id.startsWith("custom:"))
+                    .map((source) => (
+                      <option key={source.id} value={source.id}>
+                        {source.name}
+                      </option>
+                    ))}
+                </optgroup>
+              ) : null}
+            </select>
+            <button
+              aria-label="선택한 저장 출처 삭제"
+              className="source-delete-button"
+              disabled={isRunning || !canDeleteSelectedSource}
+              onClick={() => onDeleteSource(selectedSource.id)}
+              title="선택한 저장 출처 삭제"
+              type="button"
+            >
+              ×
+            </button>
+          </div>
+        </div>
 
         <label className="field">
           <span>링크 선택자</span>
@@ -806,7 +837,7 @@ function NoticeBriefPanel({ analysisProgress, briefs }) {
   );
 }
 
-function Topbar({ health }) {
+function Topbar({ health, user }) {
   const provider = providerLabels[health?.aiProvider] ?? health?.aiProvider ?? "server";
   const modeLabel = health
     ? health.liveAIEnabled
@@ -833,8 +864,8 @@ function Topbar({ health }) {
         <div className="user-chip" aria-label="사용자">
           <span>김</span>
           <div>
-            <strong>김유나</strong>
-            <small>학생</small>
+            <strong>{user?.email || "???"}</strong>
+            <small>{user ? "????" : "??? ??"}</small>
           </div>
         </div>
       </div>
@@ -904,12 +935,12 @@ function HeroSummary({ health, knownLinks, scan }) {
   );
 }
 
-function SavedAnalysisPanel({ errorMessage, isConfigured, isLoading, items, onRefresh, onSelect }) {
+function SavedAnalysisPanel({ errorMessage, isConfigured, isLoading, items, onRefresh, onSelect, storageLabel }) {
   return (
     <section className="saved-analysis-panel" aria-labelledby="saved-analysis-title">
       <div className="saved-analysis-heading">
         <div>
-          <p className="eyebrow">Supabase</p>
+          <p className="eyebrow">{storageLabel || "서버 저장소"}</p>
           <h2 id="saved-analysis-title">서버 저장 공고</h2>
         </div>
         <button
@@ -923,7 +954,7 @@ function SavedAnalysisPanel({ errorMessage, isConfigured, isLoading, items, onRe
       </div>
 
       {!isConfigured ? (
-        <p className="saved-analysis-empty">Supabase 연결을 설정하면 서버에 저장한 공고를 불러올 수 있습니다.</p>
+        <p className="saved-analysis-empty">저장소 연결을 확인하면 서버에 저장한 공고를 불러올 수 있습니다.</p>
       ) : errorMessage ? (
         <p className="notice-message is-error" role="alert">{errorMessage}</p>
       ) : !items.length ? (
@@ -941,6 +972,22 @@ function SavedAnalysisPanel({ errorMessage, isConfigured, isLoading, items, onRe
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+
+function LegacyProfileMigrationPanel({ isImporting, onImport }) {
+  return (
+    <section className="legacy-profile-panel" aria-labelledby="legacy-profile-title">
+      <div>
+        <p className="eyebrow">Profile migration</p>
+        <h2 id="legacy-profile-title">?? ???? ???? ?????</h2>
+        <p>?? ???? ???? ???? ?? ????? ?? ???? ??? ? ????.</p>
+      </div>
+      <button className="primary-button" disabled={isImporting} type="button" onClick={onImport}>
+        {isImporting ? "???? ?" : "???? ????"}
+      </button>
     </section>
   );
 }
@@ -1008,23 +1055,29 @@ function CategoryStrip() {
 }
 
 export default function OpportunityAgentWorkbench() {
+  const { isAuthLoading, isConfigured: isAuthConfigured, session, user } = useAuth();
   const [customSources, setCustomSources] = useState(() => readCustomSources());
   const [config, setConfig] = useState(createInitialConfig);
   const [knownLinks, setKnownLinks] = useState([]);
-  const [scan, setScan] = useState(null);
-  const [status, setStatus] = useState("idle");
+  const [initialScan] = useState(() => readLastScanResult());
+  const [scan, setScan] = useState(initialScan);
+  const [status, setStatus] = useState(initialScan ? "complete" : "idle");
   const [errorMessage, setErrorMessage] = useState("");
-  const [noticeMessage, setNoticeMessage] = useState("서버 프록시와 로컬 기록으로 공지 링크를 수집합니다.");
+  const [noticeMessage, setNoticeMessage] = useState(() =>
+    initialScan
+      ? "마지막 스캔 결과(" + formatScanTime(initialScan.fetchedAt) + ")를 복원했습니다."
+      : "서버 프록시와 로컬 기록으로 공지 링크를 수집합니다.",
+  );
   const [displayMode, setDisplayMode] = useState("latest");
   const [health, setHealth] = useState(null);
   const [healthError, setHealthError] = useState("");
-  const [initialProfileState] = useState(() => {
-    const profile = readUserProfile();
-    return { profile, draft: profileToDraft(profile) };
-  });
-  const [userProfile, setUserProfile] = useState(initialProfileState.profile);
-  const [profileDraft, setProfileDraft] = useState(initialProfileState.draft);
-  const [isProfileEditing, setIsProfileEditing] = useState(!initialProfileState.profile);
+  const [legacyProfile, setLegacyProfile] = useState(() => readUserProfile());
+  const [userProfile, setUserProfile] = useState(null);
+  const [profileDraft, setProfileDraft] = useState(() => createEmptyProfileDraft());
+  const [isProfileEditing, setIsProfileEditing] = useState(true);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [isProfileSaving, setIsProfileSaving] = useState(false);
+  const [isImportingLegacyProfile, setIsImportingLegacyProfile] = useState(false);
   const [profileError, setProfileError] = useState("");
   const [profileSuccessMessage, setProfileSuccessMessage] = useState("");
   const [analysisUrl, setAnalysisUrl] = useState("");
@@ -1053,6 +1106,11 @@ export default function OpportunityAgentWorkbench() {
     return selectedSource?.name || config.sourceName || "직접 입력";
   }, [config.selectedSourceId, config.sourceName, sourceOptions]);
 
+  function setLatestScan(nextScan) {
+    setScan(nextScan);
+    writeLastScanResult(nextScan);
+  }
+
   const displayLinks = useMemo(
     () => (displayMode === "all" ? (scan?.allLinks ?? []) : (scan?.latestLinks ?? [])),
     [displayMode, scan],
@@ -1062,7 +1120,7 @@ export default function OpportunityAgentWorkbench() {
     [displayLinks, noticeAnalysisByUrl],
   );
   const loadSavedAnalyses = useCallback(async () => {
-    if (!health?.supabaseConfigured) {
+    if (!health?.storageConfigured) {
       setSavedAnalyses([]);
       setSavedAnalysesError("");
       return;
@@ -1079,8 +1137,54 @@ export default function OpportunityAgentWorkbench() {
     } finally {
       setIsLoadingSavedAnalyses(false);
     }
-  }, [health?.supabaseConfigured]);
+  }, [health?.storageConfigured]);
 
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!isAuthConfigured) {
+      setUserProfile(legacyProfile);
+      setProfileDraft(profileToDraft(legacyProfile));
+      setIsProfileEditing(!legacyProfile);
+      setIsProfileLoading(false);
+      return undefined;
+    }
+
+    if (!user || !session?.access_token) {
+      setUserProfile(null);
+      setProfileDraft(createEmptyProfileDraft());
+      setIsProfileEditing(true);
+      setIsProfileLoading(false);
+      return undefined;
+    }
+
+    setIsProfileLoading(true);
+    setProfileError("");
+    getProfile(session.access_token)
+      .then((response) => {
+        if (cancelled) return;
+        const profile = response.profile || null;
+        setUserProfile(profile);
+        setProfileDraft(profileToDraft(profile));
+        setIsProfileEditing(!profile);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setProfileError(getErrorMessage(error));
+          setUserProfile(null);
+          setProfileDraft(createEmptyProfileDraft());
+          setIsProfileEditing(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsProfileLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthConfigured, legacyProfile, session?.access_token, user?.id]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -1151,7 +1255,14 @@ export default function OpportunityAgentWorkbench() {
     setProfileSuccessMessage("");
   }
 
-  function handleSaveProfile(event) {
+  async function persistProfile(candidate) {
+    if (!isAuthConfigured) return saveUserProfile(candidate);
+    if (!session?.access_token) throw new Error("??? ??? ???? ?????. ?? ???? ???.");
+    const response = await saveProfile(candidate, session.access_token);
+    return response.profile;
+  }
+
+  async function handleSaveProfile(event) {
     event.preventDefault();
     const candidate = createUserProfileFromDraft(profileDraft, userProfile);
     const validation = validateUserProfile(candidate);
@@ -1161,34 +1272,68 @@ export default function OpportunityAgentWorkbench() {
       return;
     }
 
+    setIsProfileSaving(true);
     try {
-      const savedProfile = saveUserProfile(candidate);
+      const savedProfile = await persistProfile(candidate);
       setUserProfile(savedProfile);
       setProfileDraft(profileToDraft(savedProfile));
       setIsProfileEditing(false);
       setProfileError("");
-      setProfileSuccessMessage("프로필을 저장하고 기존 공고의 지원 가능성을 다시 판정했습니다.");
+      setProfileSuccessMessage("???? ???? ?? ??? ?? ???? ?? ??????.");
       setAnalysisResult((currentResult) => rematchAnalysisResult(currentResult, savedProfile));
       rematchStoredNoticeResults(savedProfile);
+    } catch (error) {
+      setProfileError(getErrorMessage(error));
+    } finally {
+      setIsProfileSaving(false);
+    }
+  }
+
+  async function handleImportLegacyProfile() {
+    if (!legacyProfile) return;
+    setIsImportingLegacyProfile(true);
+    setProfileError("");
+    try {
+      const savedProfile = await persistProfile(legacyProfile);
+      clearUserProfile();
+      setLegacyProfile(null);
+      setUserProfile(savedProfile);
+      setProfileDraft(profileToDraft(savedProfile));
+      setIsProfileEditing(false);
+      setProfileSuccessMessage("?? ???? ???? ?? ???? ??????.");
+      setAnalysisResult((currentResult) => rematchAnalysisResult(currentResult, savedProfile));
+      rematchStoredNoticeResults(savedProfile);
+    } catch (error) {
+      setProfileError(getErrorMessage(error));
+    } finally {
+      setIsImportingLegacyProfile(false);
+    }
+  }
+
+  async function handleResetProfile() {
+    try {
+      if (isAuthConfigured) {
+        if (!session?.access_token) throw new Error("??? ??? ???? ?????. ?? ???? ???.");
+        await deleteProfile(session.access_token);
+      } else {
+        clearUserProfile();
+        setLegacyProfile(null);
+      }
+      setUserProfile(null);
+      setProfileDraft(createEmptyProfileDraft());
+      setIsProfileEditing(true);
+      setProfileError("");
+      setProfileSuccessMessage("???? ???????.");
+      setAnalysisResult((currentResult) => rematchAnalysisResult(currentResult, null));
+      rematchStoredNoticeResults(null);
     } catch (error) {
       setProfileError(getErrorMessage(error));
     }
   }
 
-  function handleResetProfile() {
-    clearUserProfile();
-    setUserProfile(null);
-    setProfileDraft(createEmptyProfileDraft());
-    setIsProfileEditing(true);
-    setProfileError("");
-    setProfileSuccessMessage("프로필을 초기화했습니다.");
-    setAnalysisResult((currentResult) => rematchAnalysisResult(currentResult, null));
-    rematchStoredNoticeResults(null);
-  }
-
   async function handleSaveAnalysis(result) {
-    if (!health?.supabaseConfigured) {
-      setSaveAnalysisError("Supabase 저장소가 설정되지 않았습니다. 서버 환경변수를 확인해주세요.");
+    if (!health?.storageConfigured) {
+      setSaveAnalysisError("서버 저장소가 준비되지 않았습니다. 서버 상태를 확인해주세요.");
       return;
     }
 
@@ -1203,7 +1348,7 @@ export default function OpportunityAgentWorkbench() {
         savedItem,
         ...currentItems.filter((item) => item.id !== savedItem.id),
       ].slice(0, 12));
-      setSaveAnalysisMessage("분석 결과를 서버 저장 공고에 반영했습니다.");
+      setSaveAnalysisMessage("분석 결과를 서버 저장 공고에 저장했습니다.");
     } catch (error) {
       setSaveAnalysisError(getErrorMessage(error));
     } finally {
@@ -1456,6 +1601,30 @@ export default function OpportunityAgentWorkbench() {
     return savedSource;
   }
 
+  function addRecommendedSource(site) {
+    const targetUrl = resolveTargetUrl(site?.url);
+
+    if (!targetUrl) {
+      throw new Error("추천 사이트 URL을 확인할 수 없습니다.");
+    }
+
+    const savedDefaultSource = findSourceByUrl(defaultNoticeSources, targetUrl);
+    if (savedDefaultSource) {
+      return savedDefaultSource;
+    }
+
+    const { source, sources } = upsertCustomSource({
+      category: "추천 추가",
+      html: "",
+      linkSelector: "a[href]",
+      name: site.name,
+      sourceMode: "live",
+      targetUrl,
+    });
+
+    setCustomSources(sources);
+    return source;
+  }
   function maybeAutoSaveCurrentSource() {
     const source = createSourceFromConfig();
     const savedDefaultSource = findSourceByUrl(defaultNoticeSources, source.targetUrl);
@@ -1483,6 +1652,46 @@ export default function OpportunityAgentWorkbench() {
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     }
+  }
+
+  function handleDeleteSource(sourceId) {
+    const source = customSources.find((item) => item.id === sourceId);
+
+    if (!source) {
+      setErrorMessage("삭제할 저장 출처를 찾을 수 없습니다.");
+      return;
+    }
+
+    if (!window.confirm(`저장된 출처 '${source.name}'을(를) 삭제할까요?`)) {
+      return;
+    }
+
+    const { source: deletedSource, sources } = removeCustomSource(sourceId);
+    if (!deletedSource) {
+      setErrorMessage("저장된 출처를 삭제하지 못했습니다.");
+      return;
+    }
+
+    setCustomSources(sources);
+
+    if (config.selectedSourceId === deletedSource.id) {
+      setConfig((currentConfig) => ({
+        ...currentConfig,
+        htmlSource: "",
+        linkSelector: "a[href]",
+        selectedSourceId: "custom",
+        sourceMode: "live",
+        sourceName: "",
+        targetUrl: "",
+      }));
+      setKnownLinks([]);
+      setScan(null);
+      setNoticeAnalysisProgress(null);
+      setStatus("idle");
+    }
+
+    setErrorMessage("");
+    setNoticeMessage(`${deletedSource.name} 출처를 삭제했습니다.`);
   }
 
   async function scanSource(source) {
@@ -1530,7 +1739,7 @@ export default function OpportunityAgentWorkbench() {
     };
 
     setKnownLinks(readNoticeHistory(source.targetUrl, source.knownUrls));
-    setScan(nextScan);
+    setLatestScan(nextScan);
     setDisplayMode("latest");
 
     return { autoSaved, result, source };
@@ -1654,7 +1863,7 @@ export default function OpportunityAgentWorkbench() {
     const fallbackUrls = findSourceByUrl(sourceOptions, config.targetUrl)?.knownUrls ?? [];
 
     setKnownLinks(readNoticeHistory(config.targetUrl, fallbackUrls));
-    setScan(scanSummary);
+    setLatestScan(scanSummary);
     setDisplayMode("latest");
     setNoticeMessage(
       `저장된 출처 ${sourceResults.length}개에서 최신 링크 ${scanSummary.latestLinks.length}개를 찾았습니다.` +
@@ -1681,7 +1890,7 @@ export default function OpportunityAgentWorkbench() {
       const fallbackUrls = findSourceByUrl(sourceOptions, config.targetUrl)?.knownUrls ?? [];
 
       setKnownLinks(readNoticeHistory(config.targetUrl, fallbackUrls));
-      setScan({
+      setLatestScan({
         ...scan,
         knownCount: nextKnownCount,
       });
@@ -1696,7 +1905,7 @@ export default function OpportunityAgentWorkbench() {
     );
 
     setKnownLinks(nextKnownLinks);
-    setScan({
+    setLatestScan({
       ...scan,
       knownCount: nextKnownLinks.length,
       newLinks: findNewPostLinks(scan.allLinks, nextKnownLinks, scan.targetUrl),
@@ -1715,7 +1924,7 @@ export default function OpportunityAgentWorkbench() {
     setKnownLinks([]);
 
     if (scan && scan.targetUrl === resolvedTargetUrl) {
-      setScan({
+      setLatestScan({
         ...scan,
         knownCount: 0,
         latestLinks: scan.allLinks,
@@ -1729,7 +1938,7 @@ export default function OpportunityAgentWorkbench() {
 
   return (
     <main className="app-shell">
-      <Topbar health={health} />
+      <Topbar health={health} user={user} />
       <div className="app-layout">
         <Sidebar status={status} />
         <section className="workspace" aria-labelledby="agent-title">
@@ -1747,6 +1956,11 @@ export default function OpportunityAgentWorkbench() {
 
         <HeroSummary health={health} knownLinks={knownLinks} scan={scan} />
 
+        <AuthPanel />
+        {isAuthConfigured && user && !userProfile && legacyProfile ? (
+          <LegacyProfileMigrationPanel isImporting={isImportingLegacyProfile} onImport={handleImportLegacyProfile} />
+        ) : null}
+
         <section className="tool-grid" aria-label="스캔 설정과 흐름">
           <ConfigPanel
             activeOperation={activeOperation}
@@ -1755,6 +1969,7 @@ export default function OpportunityAgentWorkbench() {
             isRunning={isRunning}
             noticeMessage={noticeMessage}
             onChangeConfig={updateConfig}
+            onDeleteSource={handleDeleteSource}
             onLoadSource={loadSource}
             onResetHistory={handleResetHistory}
             onRunBatchScan={handleRunBatchScan}
@@ -1769,8 +1984,9 @@ export default function OpportunityAgentWorkbench() {
             <ProfileSummaryPanel onEdit={handleBeginProfileEdit} profile={userProfile} />
             <SavedAnalysisPanel
               errorMessage={savedAnalysesError}
-              isConfigured={Boolean(health?.supabaseConfigured)}
+              isConfigured={Boolean(health?.storageConfigured)}
               isLoading={isLoadingSavedAnalyses}
+              storageLabel={health?.storageLabel}
               items={savedAnalyses}
               onRefresh={loadSavedAnalyses}
               onSelect={handleSelectSavedAnalysis}
@@ -1780,18 +1996,27 @@ export default function OpportunityAgentWorkbench() {
           </div>
         </section>
 
-        <ProfileForm
-          draft={profileDraft}
-          errorMessage={profileError}
-          isEditing={isProfileEditing}
-          isSaved={Boolean(userProfile)}
-          onBeginEdit={handleBeginProfileEdit}
-          onCancelEdit={handleCancelProfileEdit}
-          onChange={updateProfileDraft}
-          onReset={handleResetProfile}
-          onSave={handleSaveProfile}
-          successMessage={profileSuccessMessage}
-        />
+        {isAuthConfigured && !user ? (
+          <ProfileAccessPanel />
+        ) : isProfileLoading || isAuthLoading ? (
+          <section className="profile-access-panel" id="profile-form" aria-live="polite">프로필을 불러오는 중입니다.</section>
+        ) : (
+          <ProfileForm
+            draft={profileDraft}
+            errorMessage={profileError}
+            isEditing={isProfileEditing}
+            isSaved={Boolean(userProfile)}
+            isSaving={isProfileSaving}
+            onBeginEdit={handleBeginProfileEdit}
+            onCancelEdit={handleCancelProfileEdit}
+            onChange={updateProfileDraft}
+            onReset={handleResetProfile}
+            onSave={handleSaveProfile}
+            successMessage={profileSuccessMessage}
+          />
+        )}
+
+        <SiteRecommendations onAddSource={addRecommendedSource} profile={userProfile} savedSources={sourceOptions} />
 
         <NoticeDiscovery onSelectCandidate={handleSelectDiscoveredNotice} />
 
