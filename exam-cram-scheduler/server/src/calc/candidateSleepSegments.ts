@@ -63,3 +63,61 @@ export function segmentAt(segments: SleepPressureSegment[], t: number): SleepPre
   }
   return current;
 }
+
+/**
+ * 3주차 "다중 시험 최적화 — 목적함수 구현"(#11)용 — buildCandidateSegments()가 후보 밤
+ * 하나만 다뤘다면, 이 함수는 그걸 여러 밤(night)으로 일반화한 것.
+ *
+ * nights[i]의 bedTime·wakeTime은 반드시 다음 규칙을 따르는 연속 타임라인 좌표여야 한다
+ * (multiDayCandidates.ts의 nightCandidates()가 만드는 형태 그대로):
+ *   night[i].bedTime  = habitualBedTime  + 24×i
+ *   night[i].wakeTime = habitualWakeTime + 24×(i+1)
+ * (여기에 그리드 오프셋이 더해진 값). 시험 시각도 같은 좌표계를 써야 한다 — 예를 들어
+ * night[0] 다음 날 시험이면 examTime = (시험 시각) + 24.
+ *
+ * N=1(밤 하나)일 때 buildCandidateSegments()와 같은 방식으로 계산되는지는
+ * verifyMultiDayObjective.ts에서 회귀 검증한다.
+ */
+export function buildMultiNightSegments(
+  habitualBedTime: number,
+  habitualWakeTime: number,
+  nights: { bedTime: number; wakeTime: number }[],
+  warmupDays: number = WARMUP_DAYS,
+): SleepPressureSegment[] {
+  const segments: SleepPressureSegment[] = [];
+
+  const habitualAwakeDuration = habitualBedTime - habitualWakeTime;
+  const habitualSleepDuration = 24 - habitualAwakeDuration;
+
+  let startTime = habitualWakeTime - 24 * warmupDays;
+  let startPressure = H_MIN;
+
+  for (let day = 0; day < warmupDays; day++) {
+    const awake: SleepPressureSegment = { startTime, startPressure, isAsleep: false };
+    segments.push(awake);
+    startTime += habitualAwakeDuration;
+    startPressure = sleepPressure(startTime, awake);
+
+    const asleep: SleepPressureSegment = { startTime, startPressure, isAsleep: true };
+    segments.push(asleep);
+    startTime += habitualSleepDuration;
+    startPressure = sleepPressure(startTime, asleep);
+  }
+
+  // 이 시점 startTime === habitualWakeTime — nights[0]이 이어받는 원점
+  for (const night of nights) {
+    const awake: SleepPressureSegment = { startTime, startPressure, isAsleep: false };
+    segments.push(awake);
+    startTime = night.bedTime;
+    startPressure = sleepPressure(startTime, awake);
+
+    const asleep: SleepPressureSegment = { startTime, startPressure, isAsleep: true };
+    segments.push(asleep);
+    startTime = night.wakeTime;
+    startPressure = sleepPressure(startTime, asleep);
+  }
+
+  segments.push({ startTime, startPressure, isAsleep: false });
+
+  return segments;
+}
