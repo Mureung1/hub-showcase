@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const MENU_ITEMS = [
   { id: 'intro', label: '서비스 소개' },
@@ -40,6 +40,8 @@ const INITIAL_FORM_VALUES = {
   dailyStudyMinutes: '',
 }
 
+const STUDY_PLAN_ID_STORAGE_KEY = 'studyPlanId'
+
 function ProjectIntro() {
   const [activeScreen, setActiveScreen] = useState('intro')
   const [selectedExam, setSelectedExam] = useState('TOEIC')
@@ -49,6 +51,44 @@ function ProjectIntro() {
   const [errorMessage, setErrorMessage] = useState('')
 
   const screenTitle = MENU_ITEMS.find((item) => item.id === activeScreen)?.label
+
+  useEffect(() => {
+    let isMounted = true
+    const savedStudyPlanId = localStorage.getItem(STUDY_PLAN_ID_STORAGE_KEY)
+
+    if (!savedStudyPlanId) {
+      return undefined
+    }
+
+    async function restoreSavedStudyPlan() {
+      try {
+        const studyPlan = await fetchStudyPlanById(savedStudyPlanId)
+
+        if (!isMounted) {
+          return
+        }
+
+        setSavedStudyPlan(studyPlan)
+        setSelectedExam(studyPlan.examType)
+        setActiveScreen('plan')
+      } catch (error) {
+        localStorage.removeItem(STUDY_PLAN_ID_STORAGE_KEY)
+
+        if (!isMounted) {
+          return
+        }
+
+        setErrorMessage(error.message || '저장된 학습 계획을 다시 불러오지 못했습니다. 정보를 다시 입력해 주세요.')
+        setActiveScreen('info')
+      }
+    }
+
+    restoreSavedStudyPlan()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   function updateFormValue(fieldName, value) {
     setFormValues((currentValues) => ({
@@ -98,14 +138,19 @@ function ProjectIntro() {
         throw new Error('저장된 학습 계획 id를 확인하지 못했습니다.')
       }
 
-      const lookupResponse = await fetch(`/api/study-plans/${studyPlanId}`)
-      const lookupResult = await lookupResponse.json()
+      localStorage.setItem(STUDY_PLAN_ID_STORAGE_KEY, studyPlanId)
 
-      if (!lookupResponse.ok) {
-        throw new Error(lookupResult?.error?.message || '저장된 학습 계획을 다시 불러오지 못했습니다.')
+      let studyPlan
+
+      try {
+        studyPlan = await fetchStudyPlanById(studyPlanId)
+      } catch (error) {
+        localStorage.removeItem(STUDY_PLAN_ID_STORAGE_KEY)
+        throw error
       }
 
-      setSavedStudyPlan(lookupResult.data)
+      setSavedStudyPlan(studyPlan)
+      setSelectedExam(studyPlan.examType)
       setActiveScreen('plan')
     } catch (error) {
       setErrorMessage(error.message || '저장 중 문제가 발생했습니다. 입력값을 확인한 뒤 다시 시도해 주세요.')
@@ -168,6 +213,17 @@ function ProjectIntro() {
       </div>
     </section>
   )
+}
+
+async function fetchStudyPlanById(studyPlanId) {
+  const lookupResponse = await fetch(`/api/study-plans/${studyPlanId}`)
+  const lookupResult = await lookupResponse.json()
+
+  if (!lookupResponse.ok) {
+    throw new Error(lookupResult?.error?.message || '저장된 학습 계획을 다시 불러오지 못했습니다. 정보를 다시 입력해 주세요.')
+  }
+
+  return lookupResult.data
 }
 
 function IntroScreen() {
