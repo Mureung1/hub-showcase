@@ -155,12 +155,13 @@ class AndroidSharePluginTest {
     }
 
     @Test
-    fun `리스너 등록 전 재진입 공유 이벤트는 늦은 리스너에 한 번 전달한다`() {
+    fun `리스너가 있는 재진입 공유 이벤트는 한 번 전달한다`() {
         val plugin = AndroidSharePlugin()
         val listener = RecordingPluginCall(
             JSObject().apply { put("eventName", "shareIntentReceived") },
         )
 
+        plugin.addListener(listener)
         plugin.notifyShareIntentReceived(
             AndroidShare(
                 id = "share-1",
@@ -168,7 +169,6 @@ class AndroidSharePluginTest {
                 title = "새 공유",
             ),
         )
-        plugin.addListener(listener)
 
         assertEquals(1, listener.resolvedPayloads.size)
         assertEquals("share-1", listener.resolvedPayloads.single()?.getString("id"))

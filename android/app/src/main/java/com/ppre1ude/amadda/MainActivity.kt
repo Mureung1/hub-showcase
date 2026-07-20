@@ -40,6 +40,10 @@ open class MainActivity : BridgeActivity() {
         return shareIntentRouter.consumeInitialShare()
     }
 
+    internal fun replacePendingShare(share: AndroidShare) {
+        shareIntentRouter.replacePendingShare(share)
+    }
+
     private fun androidSharePlugin(): AndroidSharePlugin? {
         return getBridge().getPlugin(AndroidSharePlugin.PLUGIN_NAME)
             ?.instance as? AndroidSharePlugin

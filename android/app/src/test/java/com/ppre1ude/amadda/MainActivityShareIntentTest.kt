@@ -56,7 +56,7 @@ class MainActivityShareIntentTest {
     }
 
     @Test
-    fun `재진입 공유는 늦은 리스너에 보존 이벤트로 전달되고 대기열에 남지 않는다`() {
+    fun `listener 있는 재진입 공유는 이벤트로 전달되고 대기열에 남지 않는다`() {
         val controller = launchRetainedEventActivity(Intent(Intent.ACTION_MAIN))
         val activity = controller.get()
         val plugin = AndroidSharePlugin()
@@ -65,11 +65,11 @@ class MainActivityShareIntentTest {
             JSObject().apply { put("eventName", "shareIntentReceived") },
         )
 
-        controller.newIntent(sendIntent(text = "https://example.com/retained"))
         plugin.addListener(listener)
+        controller.newIntent(sendIntent(text = "https://example.com/event"))
 
         assertEquals(1, listener.resolvedPayloads.size)
-        assertEquals("https://example.com/retained", listener.resolvedPayloads.single()?.getString("text"))
+        assertEquals("https://example.com/event", listener.resolvedPayloads.single()?.getString("text"))
         assertNull(activity.consumePendingShare())
     }
 

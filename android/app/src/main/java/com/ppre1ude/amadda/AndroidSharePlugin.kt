@@ -6,7 +6,6 @@ import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
-import java.util.ArrayDeque
 import java.util.UUID
 
 data class AndroidShare(
@@ -26,12 +25,12 @@ data class AndroidShare(
 class AndroidShareIntentRouter(
     private val idGenerator: () -> String = { UUID.randomUUID().toString() },
 ) {
-    private val initialShares = ArrayDeque<AndroidShare>()
+    private var pendingShare: AndroidShare? = null
 
     @Synchronized
     fun routeInitialIntent(intent: Intent): AndroidShare? {
         val share = parseIntent(intent) ?: return null
-        initialShares.addLast(share)
+        pendingShare = share
         return share
     }
 
@@ -46,7 +45,14 @@ class AndroidShareIntentRouter(
 
     @Synchronized
     fun consumeInitialShare(): AndroidShare? {
-        return initialShares.pollFirst()
+        val share = pendingShare
+        pendingShare = null
+        return share
+    }
+
+    @Synchronized
+    fun replacePendingShare(share: AndroidShare) {
+        pendingShare = share
     }
 
     private fun parseIntent(intent: Intent): AndroidShare? {
@@ -88,7 +94,12 @@ open class AndroidSharePlugin : Plugin() {
     }
 
     fun notifyShareIntentReceived(share: AndroidShare) {
-        notifyListeners(SHARE_INTENT_RECEIVED_EVENT, share.toJsObject(), true)
+        if (hasListeners(SHARE_INTENT_RECEIVED_EVENT)) {
+            notifyListeners(SHARE_INTENT_RECEIVED_EVENT, share.toJsObject())
+            return
+        }
+
+        (activity as? MainActivity)?.replacePendingShare(share)
     }
 
     internal fun consumePendingShare(): AndroidShare? {
