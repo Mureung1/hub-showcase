@@ -10,6 +10,7 @@ import {
   type AssignmentActionCoordinator,
   type AssignmentActionRequest,
   type ProductChatRequest,
+  type ProductInteractionResponseInput,
   type ProductOperationFrame,
   type ProductOperationSink,
 } from './assignment-action.js'
@@ -416,6 +417,57 @@ export function createProductRouter(
   })
 
   router.post(
+    '/operations/:operationId/interactions/:interactionId/answer',
+    async (request, response) => {
+      if (!actions) {
+        sendError(response, 503, 'product_unavailable', safeUnavailable)
+        return
+      }
+      const answers = parseInteractionAnswers(request.body)
+      if (
+        !isProductOperationId(request.params.operationId) ||
+        !isOpaqueProductId(request.params.interactionId) ||
+        !answers
+      ) {
+        sendError(response, 400, 'invalid_request', safeInvalidRequest)
+        return
+      }
+      await respondToInteraction(
+        actions,
+        response,
+        request.params.operationId,
+        request.params.interactionId,
+        { type: 'answer', answers },
+      )
+    },
+  )
+
+  router.post(
+    '/operations/:operationId/interactions/:interactionId/cancel',
+    async (request, response) => {
+      if (!actions) {
+        sendError(response, 503, 'product_unavailable', safeUnavailable)
+        return
+      }
+      if (
+        !isProductOperationId(request.params.operationId) ||
+        !isOpaqueProductId(request.params.interactionId) ||
+        !isExactObject(request.body, [])
+      ) {
+        sendError(response, 400, 'invalid_request', safeInvalidRequest)
+        return
+      }
+      await respondToInteraction(
+        actions,
+        response,
+        request.params.operationId,
+        request.params.interactionId,
+        { type: 'cancel' },
+      )
+    },
+  )
+
+  router.post(
     '/operations/:operationId/interrupt',
     async (request, response) => {
       if (!actions) {
@@ -424,7 +476,7 @@ export function createProductRouter(
       }
       if (
         !isExactObject(request.body, []) ||
-        !/^(?:action|chat)_[0-9a-f]{32}$/.test(request.params.operationId)
+        !isProductOperationId(request.params.operationId)
       ) {
         sendError(response, 400, 'invalid_request', safeInvalidRequest)
         return
@@ -556,6 +608,40 @@ function parseProductChatRequest(body: unknown): ProductChatRequest | undefined 
   return { text: body.text, materials: body.materials }
 }
 
+function parseInteractionAnswers(
+  body: unknown,
+): Readonly<Record<string, readonly string[]>> | undefined {
+  if (
+    !isExactObject(body, ['answers']) ||
+    typeof body.answers !== 'object' ||
+    body.answers === null ||
+    Array.isArray(body.answers)
+  ) {
+    return undefined
+  }
+  const entries = Object.entries(body.answers)
+  if (entries.length === 0 || entries.length > 3) return undefined
+  let encodedBytes = 0
+  const answers: Record<string, readonly string[]> = Object.create(null)
+  for (const [questionId, values] of entries) {
+    if (
+      !isProductQuestionId(questionId) ||
+      !Array.isArray(values) ||
+      values.length > 16 ||
+      !values.every(
+        (value) =>
+          typeof value === 'string' &&
+          Buffer.byteLength(value, 'utf8') <= 64 * 1024,
+      )
+    ) {
+      return undefined
+    }
+    answers[questionId] = values
+    encodedBytes += Buffer.byteLength(JSON.stringify(values), 'utf8')
+  }
+  return encodedBytes <= 512 * 1024 ? answers : undefined
+}
+
 function isMaterialSelection(
   value: unknown,
   minimum: number,
@@ -590,6 +676,33 @@ function localMcpUrl(request: Request): string {
 
 function isOpaqueProductId(value: string): boolean {
   return value.length > 0 && Buffer.byteLength(value, 'utf8') <= 256
+}
+
+function isProductOperationId(value: string): boolean {
+  return /^(?:action|chat)_[0-9a-f]{32}$/.test(value)
+}
+
+function isProductQuestionId(value: string): boolean {
+  return /^question_[0-9a-f]{32}$/.test(value)
+}
+
+async function respondToInteraction(
+  actions: AssignmentActionCoordinator,
+  response: Response,
+  operationId: string,
+  interactionId: string,
+  interactionResponse: ProductInteractionResponseInput['response'],
+): Promise<void> {
+  try {
+    await actions.respondToInteraction({
+      operationId,
+      interactionId,
+      response: interactionResponse,
+    })
+    response.status(202).end()
+  } catch (error) {
+    sendActionError(response, error)
+  }
 }
 
 function isPatchId(value: unknown): value is string {

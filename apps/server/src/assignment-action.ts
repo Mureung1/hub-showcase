@@ -43,10 +43,6 @@ import {
 
 const productTextMaxBytes = 128 * 1024
 const safeRuntimeFailure = 'Codex 작업을 계속할 수 없습니다.'
-const productTurnPlan = {
-  model: 'gpt-5.4',
-  reasoningEffort: 'medium',
-} as const
 
 export type AssignmentActionRequest = {
   readonly courseId: string
@@ -64,6 +60,17 @@ export type ProductChatRequest = {
     readonly id: string
     readonly digest: string
   }[]
+}
+
+export type ProductInteractionResponseInput = {
+  readonly operationId: string
+  readonly interactionId: string
+  readonly response:
+    | {
+        readonly type: 'answer'
+        readonly answers: Readonly<Record<string, readonly string[]>>
+      }
+    | { readonly type: 'cancel' }
 }
 
 type ProductFrameBase = {
@@ -240,6 +247,7 @@ export type AssignmentActionCoordinator = {
   submitReview(
     input: AssignmentReviewDecisionInput,
   ): Promise<AssignmentReviewCommit>
+  respondToInteraction(input: ProductInteractionResponseInput): Promise<void>
   disconnect(operationId: string): void
   interrupt(operationId: string): Promise<void>
   beginShutdown(): void
@@ -257,6 +265,7 @@ type ActiveProductOperation = {
   readonly lease: ProductOperationLease
   readonly bindings: Map<string, AssignmentReviewBinding>
   readonly redactionValues: string[]
+  generalInteraction?: ActiveGeneralInteraction
   run?: ModelingRun
   recipe?: ManagedAssignmentRecipe
   proposal?: AssignmentProposalSession
@@ -267,6 +276,15 @@ type ActiveProductOperation = {
   turn?: CodexProductTurn
 }
 
+type ActiveGeneralInteraction = {
+  readonly publicInteractionId: string
+  readonly nativeInteractionId: string
+  readonly threadId: string
+  readonly turnId: string
+  readonly questions: ReadonlyMap<string, string>
+  state: 'pending' | 'settling'
+}
+
 export class AssignmentActionError extends Error {
   readonly code:
     | 'account_not_ready'
@@ -275,6 +293,7 @@ export class AssignmentActionError extends Error {
     | 'action_unknown'
     | 'product_unavailable'
     | 'recipe_invalid'
+    | 'interaction_invalid'
     | 'review_invalid'
   readonly status: number
   readonly displayMessage: string
@@ -466,21 +485,44 @@ export function createAssignmentActionCoordinator(options: {
       case 'user_input.requested': {
         const binding = await options.controller.bindAssignmentReview(activity)
         if (!binding) {
+          const publicInteractionId = interactionId(
+            operation.operationId,
+            activity.interactionId,
+          )
+          const questions = activity.questions.map((question) => ({
+            nativeId: question.id,
+            publicId: questionId(
+              operation.operationId,
+              activity.interactionId,
+              question.id,
+            ),
+            question,
+          }))
+          operation.generalInteraction = {
+            publicInteractionId,
+            nativeInteractionId: activity.interactionId,
+            threadId: activity.threadId,
+            turnId: activity.turnId,
+            questions: new Map(
+              questions.map((question) => [
+                question.publicId,
+                question.nativeId,
+              ]),
+            ),
+            state: 'pending',
+          }
+          operation.redactionValues.push(
+            activity.interactionId,
+            ...activity.questions.map((question) => question.id),
+          )
           return {
             ...base,
             type: 'interaction.requested',
-            interactionId: interactionId(
-              operation.operationId,
-              activity.interactionId,
-            ),
-            questions: activity.questions.map((question) =>
+            interactionId: publicInteractionId,
+            questions: questions.map(({ publicId, question }) =>
               projectQuestion(
                 question,
-                questionId(
-                  operation.operationId,
-                  activity.interactionId,
-                  question.id,
-                ),
+                publicId,
                 operation.redactionValues,
               ),
             ),
@@ -505,6 +547,20 @@ export function createAssignmentActionCoordinator(options: {
         }
       }
       case 'user_input.resolved': {
+        const generalInteraction = operation.generalInteraction
+        if (
+          generalInteraction?.nativeInteractionId === activity.interactionId &&
+          generalInteraction.threadId === activity.threadId &&
+          generalInteraction.turnId === activity.turnId
+        ) {
+          operation.generalInteraction = undefined
+          return {
+            ...base,
+            type: 'interaction.resolved',
+            interactionId: generalInteraction.publicInteractionId,
+            resolution: activity.resolution,
+          }
+        }
         const binding = operation.bindings.get(activity.interactionId)
         if (binding) {
           return {
@@ -541,6 +597,7 @@ export function createAssignmentActionCoordinator(options: {
         }
       case 'runtime.failed':
       case 'turn.completed':
+        operation.generalInteraction = undefined
         return undefined
     }
   }
@@ -689,7 +746,6 @@ export function createAssignmentActionCoordinator(options: {
                 path: recipe.path,
               },
               text: renderAssignmentInput(prepared, input.arguments),
-              plan: productTurnPlan,
             },
             operationOptions.disconnected,
             operation.lease,
@@ -818,6 +874,7 @@ export function createAssignmentActionCoordinator(options: {
           turn,
           streamSink(operation, operationOptions.sink),
         )
+        operation.generalInteraction = undefined
         operation.bindings.clear()
         const patchObserved = operation.mcpSession?.latestPatch() != null
         operation.mcpSession?.cancel()
@@ -931,7 +988,6 @@ export function createAssignmentActionCoordinator(options: {
               mcp: options.mcpHost.nativeThreadConfig(operationOptions.mcpUrl),
             },
             text,
-            plan: productTurnPlan,
           },
           operationOptions.disconnected,
           operation.lease,
@@ -968,6 +1024,7 @@ export function createAssignmentActionCoordinator(options: {
           turn,
           streamSink(operation, operationOptions.sink),
         )
+        operation.generalInteraction = undefined
         operation.bindings.clear()
         operation.mcpSession?.cancel()
         if (settlement.type === 'unknown') {
@@ -1035,6 +1092,53 @@ export function createAssignmentActionCoordinator(options: {
         answerUserInput: (answer) =>
           options.service.answerProductUserInput(answer),
       }).submit(input)
+    },
+
+    async respondToInteraction(input) {
+      const operation = active
+      const interaction = operation?.generalInteraction
+      if (
+        !operation?.turn ||
+        operation.operationId !== input.operationId ||
+        !interaction ||
+        interaction.publicInteractionId !== input.interactionId ||
+        interaction.threadId !== operation.turn.threadId ||
+        interaction.turnId !== operation.turn.turnId ||
+        interaction.state !== 'pending'
+      ) {
+        throw invalidInteraction()
+      }
+      const nativeResponse =
+        input.response.type === 'answer'
+          ? {
+              type: 'answer' as const,
+              answers: mapInteractionAnswers(
+                interaction,
+                input.response.answers,
+              ),
+            }
+          : input.response
+      interaction.state = 'settling'
+      try {
+        if (nativeResponse.type === 'answer') {
+          await options.service.answerProductUserInput({
+            interactionId: interaction.nativeInteractionId,
+            answers: nativeResponse.answers,
+          })
+        } else {
+          await options.service.cancelProductUserInput({
+            interactionId: interaction.nativeInteractionId,
+          })
+        }
+      } catch (error) {
+        if (
+          !isUnknownOutcome(error) &&
+          operation.generalInteraction === interaction
+        ) {
+          interaction.state = 'pending'
+        }
+        throw error
+      }
     },
 
     disconnect(operationId) {
@@ -1402,6 +1506,27 @@ function questionId(
   return `question_${sha256(
     `${operationId}\u0000${nativeInteractionId}\u0000${nativeQuestionId}`,
   ).slice(0, 32)}`
+}
+
+function mapInteractionAnswers(
+  interaction: ActiveGeneralInteraction,
+  answers: Readonly<Record<string, readonly string[]>>,
+): Readonly<Record<string, readonly string[]>> {
+  const nativeAnswers: Record<string, readonly string[]> = Object.create(null)
+  for (const [publicQuestionId, values] of Object.entries(answers)) {
+    const nativeQuestionId = interaction.questions.get(publicQuestionId)
+    if (!nativeQuestionId) throw invalidInteraction()
+    nativeAnswers[nativeQuestionId] = [...values]
+  }
+  return nativeAnswers
+}
+
+function invalidInteraction(): AssignmentActionError {
+  return new AssignmentActionError(
+    'interaction_invalid',
+    409,
+    '질문 요청이 더 이상 활성 상태가 아닙니다.',
+  )
 }
 
 function sha256(value: string): string {

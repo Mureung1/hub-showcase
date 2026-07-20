@@ -77,6 +77,7 @@ test('Run-free Product Chat cleans its durable guard and reuses one native Threa
         assert.equal(runtime.productInputs[1]?.threadId, 'thread-private-chat')
         assert.equal(runtime.productInputs.every((input) => input.skill === undefined), true)
         for (const input of runtime.productInputs) {
+          assert.equal('plan' in input, false)
           assert.ok(Buffer.byteLength(input.text, 'utf8') <= 128 * 1024)
           const scratchPath = requireMatch(
             input.text,
@@ -96,6 +97,187 @@ test('Run-free Product Chat cleans its durable guard and reuses one native Threa
           'private-agent-item-1',
           'private-agent-item-2',
         ])
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('general Plan clarification answers once through public IDs and resumes the same Run-free Chat Turn', async () => {
+  const fixture = await createChatFixture()
+  const runtime = new ProductChatRuntime()
+  runtime.generalInteraction = true
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        await activateCourse(application)
+        const before = structuredClone(
+          application.semesterWorkspace?.assignmentState(),
+        )
+        const response = await postJson(`${baseUrl}/api/product/chat/messages`, {
+          text: '이번 주에 무엇부터 준비하면 좋을까?',
+          materials: [],
+        })
+        assert.equal(response.status, 200)
+        const stream = response.body?.getReader()
+        assert.ok(stream)
+        const trace = new NdjsonTrace(stream)
+        const requested = await trace.until(
+          (frame) => frame.type === 'interaction.requested',
+        )
+        assert.match(String(requested.operationId), /^chat_[0-9a-f]{32}$/)
+        assert.match(
+          String(requested.interactionId),
+          /^interaction_[0-9a-f]{32}$/,
+        )
+        const questions = requested.questions as Record<string, unknown>[]
+        assert.equal(questions.length, 1)
+        assert.match(String(questions[0]?.id), /^question_[0-9a-f]{32}$/)
+        assertSafeTrace([requested], [
+          'interaction-chat-general',
+          'private-general-question',
+          'thread-private-chat',
+          'turn-private-chat-1',
+        ])
+
+        const operationId = String(requested.operationId)
+        const interactionId = String(requested.interactionId)
+        const questionId = String(questions[0]?.id)
+        const wrongOperation = await postJson(
+          `${baseUrl}/api/product/operations/chat_${'0'.repeat(32)}/interactions/${interactionId}/answer`,
+          { answers: { [questionId]: ['강의 자료부터'] } },
+        )
+        const wrongInteraction = await postJson(
+          `${baseUrl}/api/product/operations/${operationId}/interactions/interaction_${'0'.repeat(32)}/answer`,
+          { answers: { [questionId]: ['강의 자료부터'] } },
+        )
+        const wrongQuestion = await postJson(
+          `${baseUrl}/api/product/operations/${operationId}/interactions/${interactionId}/answer`,
+          {
+            answers: {
+              [`question_${'0'.repeat(32)}`]: ['강의 자료부터'],
+            },
+          },
+        )
+        assert.equal(wrongOperation.status, 409)
+        assert.equal(wrongInteraction.status, 409)
+        assert.equal(wrongQuestion.status, 409)
+        assert.equal(
+          ((await wrongOperation.json()) as { readonly code?: string }).code,
+          'interaction_invalid',
+        )
+        assert.equal(runtime.answerInputs.length, 0)
+
+        const answerUrl = `${baseUrl}/api/product/operations/${operationId}/interactions/${interactionId}/answer`
+        const answerBody = {
+          answers: { [questionId]: ['강의 자료부터'] },
+        }
+        const [first, duplicate] = await Promise.all([
+          postJson(answerUrl, answerBody),
+          postJson(answerUrl, answerBody),
+        ])
+        assert.deepEqual(
+          [first.status, duplicate.status].sort((left, right) => left - right),
+          [202, 409],
+        )
+        assert.deepEqual(runtime.answerInputs, [
+          {
+            interactionId: 'interaction-chat-general',
+            answers: { 'private-general-question': ['강의 자료부터'] },
+          },
+        ])
+
+        const frames = await trace.rest()
+        assert.deepEqual(
+          frames.map((frame) => frame.type),
+          [
+            'operation.preparing',
+            'operation.accepted',
+            'plan.completed',
+            'interaction.requested',
+            'interaction.resolved',
+            'agent_message.completed',
+            'operation.terminal',
+          ],
+        )
+        assert.equal(
+          frames.find((frame) => frame.type === 'interaction.resolved')
+            ?.resolution,
+          'answered',
+        )
+        assert.equal(frames.at(-1)?.status, 'completed')
+
+        const late = await postJson(answerUrl, answerBody)
+        assert.equal(late.status, 409)
+        assert.equal(runtime.answerInputs.length, 1)
+        assert.deepEqual(
+          application.semesterWorkspace?.assignmentState(),
+          before,
+        )
+        assert.deepEqual(application.semesterWorkspace?.modelingRuns(), [])
+        await assertPersistedGuardCleared(fixture.workspaceRoot)
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('general Plan clarification cancellation resumes without academic mutation', async () => {
+  const fixture = await createChatFixture()
+  const runtime = new ProductChatRuntime()
+  runtime.generalInteraction = true
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        await activateCourse(application)
+        const before = structuredClone(
+          application.semesterWorkspace?.assignmentState(),
+        )
+        const response = await postJson(`${baseUrl}/api/product/chat/messages`, {
+          text: '준비 순서를 함께 정해 줘.',
+          materials: [],
+        })
+        assert.equal(response.status, 200)
+        const stream = response.body?.getReader()
+        assert.ok(stream)
+        const trace = new NdjsonTrace(stream)
+        const requested = await trace.until(
+          (frame) => frame.type === 'interaction.requested',
+        )
+        const cancelResponse = await postJson(
+          `${baseUrl}/api/product/operations/${requested.operationId}/interactions/${requested.interactionId}/cancel`,
+          {},
+        )
+        assert.equal(cancelResponse.status, 202)
+        assert.deepEqual(runtime.cancelInputs, [
+          { interactionId: 'interaction-chat-general' },
+        ])
+
+        const frames = await trace.rest()
+        assert.equal(
+          frames.find((frame) => frame.type === 'interaction.resolved')
+            ?.resolution,
+          'cancelled',
+        )
+        assert.equal(frames.at(-1)?.status, 'completed')
+        assert.deepEqual(
+          application.semesterWorkspace?.assignmentState(),
+          before,
+        )
+        assert.deepEqual(application.semesterWorkspace?.modelingRuns(), [])
+        await assertPersistedGuardCleared(fixture.workspaceRoot)
       },
     )
   } finally {
@@ -130,6 +312,12 @@ test('selected-material Product Chat offers a private MCP proposal and Review wi
         const review = await trace.until(
           (frame) => frame.type === 'review.requested',
         )
+
+        const generalResponse = await postJson(
+          `${baseUrl}/api/product/operations/${review.operationId}/interactions/${review.interactionId}/cancel`,
+          {},
+        )
+        assert.equal(generalResponse.status, 409)
 
         const reviewResponse = await postJson(
           `${baseUrl}/api/product/reviews/${review.interactionId}`,
@@ -184,6 +372,7 @@ test('selected-material Product Chat offers a private MCP proposal and Review wi
         assert.equal(runtime.productInputs.length, 1)
         const input = runtime.productInputs[0]!
         assert.equal(input.skill, undefined)
+        assert.equal('plan' in input, false)
         assert.ok(Buffer.byteLength(input.text, 'utf8') <= 128 * 1024)
         assert.match(input.text, /개요 작성하기 과제 마감/)
         assert.match(input.text, /제출 방식: LMS 과제함 업로드/)
@@ -399,9 +588,14 @@ class ProductChatRuntime implements CodexProductCapableRuntime {
   readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
   readonly productInputs: StartProductTurnInput[] = []
   readonly threadInputs: StartThreadInput[] = []
+  readonly answerInputs: AnswerUserInput[] = []
+  readonly cancelInputs: CancelUserInput[] = []
+  generalInteraction = false
   proposal?: (input: StartProductTurnInput) => Record<string, unknown>
   private readonly answer = deferred<void>()
   private readonly answerAcknowledged = deferred<void>()
+  private readonly generalSettlement = deferred<'answered' | 'cancelled'>()
+  private readonly generalSettlementAcknowledged = deferred<void>()
 
   async readAccountReadiness(): Promise<CodexAccountReadiness> {
     return { state: 'ready' }
@@ -436,6 +630,26 @@ class ProductChatRuntime implements CodexProductCapableRuntime {
           turnId,
           itemId: `private-plan-item-${ordinal}`,
           text: `계획을 준비했습니다: ${runtime.threadInputs[0]?.workspace} ${input.threadId} ${turnId}`,
+        }
+        if (runtime.generalInteraction) {
+          yield {
+            type: 'user_input.requested',
+            threadId: input.threadId,
+            turnId,
+            itemId: `private-general-item-${ordinal}`,
+            interactionId: 'interaction-chat-general',
+            questions: [generalQuestion],
+          }
+          const resolution = await runtime.generalSettlement.promise
+          yield {
+            type: 'user_input.resolved',
+            threadId: input.threadId,
+            turnId,
+            itemId: `private-general-item-${ordinal}`,
+            interactionId: 'interaction-chat-general',
+            resolution,
+          }
+          runtime.generalSettlementAcknowledged.resolve()
         }
         if (selected) {
           yield {
@@ -490,13 +704,22 @@ class ProductChatRuntime implements CodexProductCapableRuntime {
   }
 
   async answerUserInput(input: AnswerUserInput): Promise<void> {
+    if (input.interactionId === 'interaction-chat-general') {
+      this.answerInputs.push(structuredClone(input))
+      this.generalSettlement.resolve('answered')
+      await this.generalSettlementAcknowledged.promise
+      return
+    }
     assert.equal(input.interactionId, 'interaction-chat-review')
     this.answer.resolve()
     await this.answerAcknowledged.promise
   }
 
-  async cancelUserInput(_input: CancelUserInput): Promise<void> {
-    throw new Error('cancelUserInput is not expected')
+  async cancelUserInput(input: CancelUserInput): Promise<void> {
+    assert.equal(input.interactionId, 'interaction-chat-general')
+    this.cancelInputs.push(structuredClone(input))
+    this.generalSettlement.resolve('cancelled')
+    await this.generalSettlementAcknowledged.promise
   }
 
   async interrupt(_input: InterruptTurnInput): Promise<void> {}
@@ -549,6 +772,19 @@ const assignmentReviewQuestion = {
     {
       label: '거절',
       description: '제안을 반영하지 않고 결정 기록만 남깁니다.',
+    },
+  ],
+  acceptsFreeform: true,
+} as const
+
+const generalQuestion = {
+  id: 'private-general-question',
+  header: '준비 순서',
+  question: '어떤 자료부터 살펴볼까요?',
+  options: [
+    {
+      label: '강의 자료부터',
+      description: '강의 자료의 요구사항을 먼저 확인합니다.',
     },
   ],
   acceptsFreeform: true,

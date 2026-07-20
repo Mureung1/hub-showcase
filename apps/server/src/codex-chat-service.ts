@@ -363,7 +363,6 @@ export class CodexChatService {
         threadId,
         ...(input.skill === undefined ? {} : { skill: input.skill }),
         text: input.text,
-        plan: input.plan,
       })
       reservation.phase = 'streaming'
       reservation.turn = turn

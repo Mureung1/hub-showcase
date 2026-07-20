@@ -166,7 +166,6 @@ test('the deterministic MCP and Plan sequence commits an accepted Assignment bef
         path: '/managed/first-assignment/SKILL.md',
       },
       text: `proposal request key: ${session.context.requestKey}`,
-      plan: { model: 'gpt-5', reasoningEffort: 'medium' },
     } as const
     const requested = {
       type: 'user_input.requested',

@@ -77,8 +77,7 @@ test('the HTTP action commits one Run before exact Skill input and streams MCP R
       assert.equal(runs[0]?.status, 'starting')
       assert.equal(input.skill?.name, 'ay-ple-first-assignment')
       assert.match(input.skill?.path ?? '', /\/SKILL\.md$/)
-      assert.equal(input.plan.model, 'gpt-5.4')
-      assert.equal(input.plan.reasoningEffort, 'medium')
+      assert.equal('plan' in input, false)
       assert.equal(input.text.includes('unselected-control.txt'), false)
       assert.equal(input.text.includes('최종 보고서'), false)
     },
