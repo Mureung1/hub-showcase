@@ -3,12 +3,15 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 async function request(method, path, body) {
+  // FormData(사진 업로드)는 JSON으로 직렬화하면 안 되고, Content-Type도 브라우저가 boundary를
+  // 붙여 직접 설정해야 하므로 여기서 지정하지 않는다 — 지정하면 boundary가 빠져 서버가 못 읽는다.
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
   let res;
   try {
     res = await fetch(`${BASE_URL}${path}`, {
       method,
-      headers: body ? { 'Content-Type': 'application/json' } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
+      headers: body && !isFormData ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
     });
   } catch (networkErr) {
     console.error("Network error during fetch:", networkErr);
@@ -35,11 +38,15 @@ export const updateFridgeItem = (id, patch) => request('PATCH', `/api/fridge/${i
 export const deleteFridgeItem = (id) => request('DELETE', `/api/fridge/${id}`);
 export const getExpiryAlerts = () => request('GET', '/api/fridge/alerts');
 
-export const uploadReceipt = () => request('POST', '/api/receipts');
+export const uploadReceipt = (file) => {
+  const formData = new FormData();
+  formData.append('photo', file);
+  return request('POST', '/api/receipts', formData);
+};
 export const confirmReceipt = (receiptId, body) => request('POST', `/api/receipts/${receiptId}/confirm`, body);
 
-export const getRecipes = ({ filter = 'all', level = 'all', category = 'all', page = 1, pageSize = 30, sort = 'default' } = {}) =>
-  request('GET', `/api/recipes?filter=${encodeURIComponent(filter)}&level=${encodeURIComponent(level)}&category=${encodeURIComponent(category)}&page=${page}&pageSize=${pageSize}&sort=${encodeURIComponent(sort)}`);
+export const getRecipes = ({ filter = 'all', level = 'all', category = 'all', search = '', page = 1, pageSize = 30, sort = 'default' } = {}) =>
+  request('GET', `/api/recipes?filter=${encodeURIComponent(filter)}&level=${encodeURIComponent(level)}&category=${encodeURIComponent(category)}&search=${encodeURIComponent(search)}&page=${page}&pageSize=${pageSize}&sort=${encodeURIComponent(sort)}`);
 export const getRecipeDetail = (id, multiplier = 1.0) => request('GET', `/api/recipes/${id}?multiplier=${multiplier}`);
 export const cookDone = (recipeId, body) => request('POST', `/api/recipes/${recipeId}/cook-done`, body);
 

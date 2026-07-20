@@ -89,9 +89,9 @@ export function AppProvider({ children }) {
   // ── 영수증 촬영 → 인식 → 확정 ──
   const [receipt, setReceipt] = useState(null);
   const [expiryOverrides, setExpiryOverrides] = useState({});
-  const shootReceipt = useCallback(async () => {
+  const shootReceipt = useCallback(async (file) => {
     try {
-      const r = await api.uploadReceipt();
+      const r = await api.uploadReceipt(file);
       setReceipt(r);
       setExpiryOverrides({});
       go('receipt-result');
@@ -229,7 +229,9 @@ export function AppProvider({ children }) {
     go('shopping-list');
   }, [go]);
 
-  const value = {
+  // 화면 대부분이 이 컨텍스트를 구독하므로, value를 매 렌더마다 새 객체로 만들면
+  // 앱 어디서든 상태 하나만 바뀌어도 현재 화면 전체가 리렌더된다 — useMemo로 고정.
+  const value = useMemo(() => ({
     screen, go, back, tab, activeTab,
     fridge, refreshFridge, addFridgeItem, updateFridgeItem, deleteFridgeItem,
     sheetItemId, openSheet, closeSheet,
@@ -246,7 +248,24 @@ export function AppProvider({ children }) {
     shareMealCount, setShareMealCount,
     selectedSetId, openShoppingList,
     servingMultiplier, setServingMultiplier,
-  };
+  }), [
+    screen, go, back, tab, activeTab,
+    fridge, refreshFridge, addFridgeItem, updateFridgeItem, deleteFridgeItem,
+    sheetItemId, openSheet, closeSheet,
+    tip, tipKey, openTip, closeTip,
+    receipt, shootReceipt, expiryOverrides, setExpiryOverride, confirmReceipt,
+    currentRecipeId, recipeDetail, openRecipeDetail,
+    checkedAddonIds, toggleAddon, cookSteps,
+    cookIdx, startCooking, cookStep,
+    deductionState, editingDeduction, setEditingDeduction, adjustDeduction, openCookDone, finishCooking,
+    pickedDishes, setPickedDishes, weekPlan, setWeekPlan,
+    weekPlanDifficulty, setWeekPlanDifficulty,
+    weekPlanType, setWeekPlanType,
+    mealShoppingList, togglePick, buildMealPlan, openMealShoppingList, clearMealPlan,
+    shareMealCount, setShareMealCount,
+    selectedSetId, openShoppingList,
+    servingMultiplier, setServingMultiplier,
+  ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

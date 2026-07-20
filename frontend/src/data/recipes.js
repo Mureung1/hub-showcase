@@ -8,6 +8,7 @@ export const recipeOrder = [
 export const recipes = {
   'tofu-braise': {
     name: '두부조림', emoji: '🍳', level: 'beginner', levelLabel: '🟢 초보자', time: 15,
+    category: '밑반찬',
     note: '임박 재료 두부를 소진할 수 있어요',
     ingredients: [
       { id: 'tofu', amt: '반모' },
@@ -32,6 +33,7 @@ export const recipes = {
   },
   'tofu-pan': {
     name: '두부부침', emoji: '🍢', level: 'beginner', levelLabel: '🟢 초보자', time: 8,
+    category: '밑반찬',
     note: '재료 3개면 끝나는 초간단 요리예요',
     ingredients: [
       { id: 'tofu', amt: '반모' },
@@ -47,6 +49,7 @@ export const recipes = {
   },
   'kimchi-jjigae': {
     name: '김치찌개', emoji: '🍲', level: 'beginner', levelLabel: '🟢 초보자', time: 20,
+    category: '찌개',
     note: '임박 재료 두부·돼지고기를 함께 소진해요',
     ingredients: [
       { id: 'kimchi', amt: '1/2컵' },
@@ -64,6 +67,7 @@ export const recipes = {
   },
   'jeyuk-bokkeum': {
     name: '제육볶음', emoji: '🥘', level: 'mid', levelLabel: '🟡 중급자', time: 25,
+    category: '메인반찬',
     note: '임박 재료 돼지고기를 소진할 수 있어요',
     ingredients: [
       { id: 'pork', amt: '150g' },
@@ -82,6 +86,7 @@ export const recipes = {
   },
   'egg-steam': {
     name: '계란찜', emoji: '🥣', level: 'beginner', levelLabel: '🟢 초보자', time: 12,
+    category: '밑반찬',
     note: '재료 3개면 끝나는 초간단 요리예요',
     ingredients: [
       { id: 'egg', amt: '2알' },
@@ -97,6 +102,7 @@ export const recipes = {
   },
   'egg-roll': {
     name: '계란말이', emoji: '🍥', level: 'beginner', levelLabel: '🟢 초보자', time: 10,
+    category: '밑반찬',
     note: '재료 3개면 끝나는 초간단 요리예요',
     ingredients: [
       { id: 'egg', amt: '3알' },
@@ -112,6 +118,7 @@ export const recipes = {
   },
   'kimchi-fried-rice': {
     name: '김치볶음밥', emoji: '🍚', level: 'beginner', levelLabel: '🟢 초보자', time: 10,
+    category: '밥/죽/떡',
     note: '냉장고 재료로 빠르게 한 끼 해결',
     ingredients: [
       { id: 'kimchi', amt: '1/2컵' },
@@ -131,6 +138,7 @@ export const recipes = {
   },
   pajeon: {
     name: '파전', emoji: '🥞', level: 'mid', levelLabel: '🟡 중급자', time: 20,
+    category: '메인반찬',
     note: '비 오는 날 어울리는 메뉴예요',
     ingredients: [
       { id: 'pa', amt: '1/2단' },
@@ -147,6 +155,7 @@ export const recipes = {
   },
   omelette: {
     name: '오믈렛', emoji: '🧀', level: 'mid', levelLabel: '🟡 중급자', time: 15,
+    category: '메인반찬',
     note: '아침 식사로 좋아요',
     ingredients: [
       { id: 'egg', amt: '2알' },
@@ -162,7 +171,8 @@ export const recipes = {
     ],
   },
   'kimchi-pork-jjim': {
-    name: '돼지고기 김치찜', emoji: '🍖', level: 'high', levelLabel: '🔴 상급자', time: 40,
+    name: '돼지고기 김치찜', emoji: '🍖', level: 'expert', levelLabel: '🔴 상급자', time: 40,
+    category: '찌개',
     note: '초벌 볶음 후 오래 끓여 완성하는 난이도 있는 요리예요',
     ingredients: [
       { id: 'pork', amt: '200g' },

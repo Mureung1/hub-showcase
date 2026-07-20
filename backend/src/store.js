@@ -4,14 +4,20 @@ import { recipeOrder, recipes } from './data/recipes.js';
 import { dayLabels, resolvePrice, resolvePackSize } from './data/mealPrices.js';
 import {
   ingHave, ingName, recipeHasImminentBadge, imminentIds, parseAmt, formatAmtText, extractUnit,
-  getMissingInfo, generateImminentRescueSet, generateIngredientShareSet,
+  getMissingInfo, generateImminentRescueSet, generateIngredientShareSet, estimateBuyCost, mergeMissingMaps,
+  selectImminentGreedy, shortlistCandidates, searchMinPurchaseCombo3,
   isPantryOrVague, normalizeIngredientKey, calculateRecipeDifficulty, isMeal, isSideDish
 } from './logic/fridgeLogic.js';
 import { supabase } from './supabaseClient.js';
+import { recognizeReceiptText } from './ocr/clovaOcr.js';
+import { matchReceiptLines } from './ocr/matchReceiptLines.js';
 
 const clone = (obj) => JSON.parse(JSON.stringify(obj));
 
-const TODAY = process.env.DEMO_TODAY ? new Date(process.env.DEMO_TODAY) : new Date();
+// DEMO_TODAY가 아니면 호출 시점마다 새로 읽어야 서버를 재시작 없이 오래 켜둬도 D-day가 드리프트하지 않는다.
+function today() {
+  return process.env.DEMO_TODAY ? new Date(process.env.DEMO_TODAY) : new Date();
+}
 
 function formatMD(dateStr) {
   const d = new Date(dateStr);
@@ -19,7 +25,7 @@ function formatMD(dateStr) {
 }
 
 function formatDday(dateStr) {
-  const diff = Math.round((new Date(dateStr) - TODAY) / 86_400_000);
+  const diff = Math.round((new Date(dateStr) - today()) / 86_400_000);
   return diff >= 0 ? `D-${diff}` : `D+${-diff}`;
 }
 
@@ -230,9 +236,9 @@ export async function deleteFridgeItem(id) {
   return true;
 }
 
-export async function createReceipt() {
-  const id = `r_${nextReceiptId++}`;
-  
+// Clova OCR 크레덴셜이 없거나(로컬 개발) 실제 인식이 실패했을 때 쓰는 기존 데모 로직.
+// 재료 마스터에서 무작위 3가지를 뽑아 "스캔 완료"로 채운다.
+function buildMockReceiptItems() {
   const allIds = Object.keys(ingredientMap);
   const pickedIds = [];
   while (pickedIds.length < 3) {
@@ -254,6 +260,26 @@ export async function createReceipt() {
   });
 
   items.push({ rawText: '(흐릿함)', matchedIngredientId: null, quantityLabel: null, category: null, matched: false });
+  return items;
+}
+
+// file은 multer가 채운 req.file(버퍼+mimetype). recognizeReceiptText는 크레덴셜이 아예
+// 없을 때만(로컬 개발 등) null을 반환하는데, 그때만 조용히 Mock으로 폴백한다 — 크레덴셜이
+// 있는데 호출이 실패/타임아웃된 경우까지 Mock으로 감춰버리면 사용자가 가짜 인식 결과를
+// 진짜로 착각해 냉장고에 엉뚱한 재료가 등록될 수 있으므로, 그 경우는 에러를 그대로 위로
+// 던져 컨트롤러 → 프론트의 "다시 촬영해 주세요" 알림으로 이어지게 둔다.
+export async function createReceipt(file) {
+  const id = `r_${nextReceiptId++}`;
+
+  let items;
+  if (file) {
+    const lines = await recognizeReceiptText(file.buffer, file.mimetype);
+    if (lines) {
+      const view = await buildFridgeView();
+      items = matchReceiptLines(lines, ingredientMap, view);
+    }
+  }
+  if (!items) items = buildMockReceiptItems();
 
   const record = {
     id,
@@ -418,7 +444,10 @@ export async function getRecipesFromDB() {
 // 매 요청마다 그대로 응답에 실어 보내던 게 22MB 페이로드의 원인이었다.
 // sort='ratio': have/total(보유율) 내림차순 정렬 후 자른다 — Home 화면의 "추천 레시피"처럼
 // DB 순서가 아니라 매칭률 상위 몇 개가 필요한 경우에 쓴다.
-export async function listRecipes({ filter = 'all', level = 'all', category = 'all', page = 1, pageSize = 30, sort = 'default' } = {}) {
+// sort='time'/'level': 레시피 리스트 화면의 정렬 드롭다운(조리시간 짧은순/난이도 낮은순)에서 사용.
+const LEVEL_RANK = { beginner: 0, mid: 1, expert: 2 };
+
+export async function listRecipes({ filter = 'all', level = 'all', category = 'all', search = '', page = 1, pageSize = 30, sort = 'default' } = {}) {
   const view = await buildFridgeView();
   const { recipeOrder, recipes } = await getRecipesFromDB();
 
@@ -449,16 +478,22 @@ export async function listRecipes({ filter = 'all', level = 'all', category = 'a
     };
   });
 
+  const keyword = search.trim().toLowerCase();
   const filtered = rows.filter((r) => {
     if (filter === 'full' && !r.full) return false;
     if (filter === 'few'  && !r.few)  return false;
     if (level !== 'all'  && r.level !== level) return false;
     if (category !== 'all' && r.category !== category) return false;
+    if (keyword && !r.name.toLowerCase().includes(keyword)) return false;
     return true;
   });
 
   if (sort === 'ratio') {
     filtered.sort((a, b) => (b.total ? b.have / b.total : 0) - (a.total ? a.have / a.total : 0));
+  } else if (sort === 'time') {
+    filtered.sort((a, b) => (a.time ?? Infinity) - (b.time ?? Infinity));
+  } else if (sort === 'level') {
+    filtered.sort((a, b) => (LEVEL_RANK[a.level] ?? 99) - (LEVEL_RANK[b.level] ?? 99));
   }
 
   const total = filtered.length;
@@ -666,6 +701,22 @@ let _dynamicSetsCacheAt = 0;
 let _dynamicSetsCacheKey = '';
 const DYNAMIC_SETS_TTL_MS = 5 * 60 * 1000;
 
+// mealPool/sidePool은 pickedIds나 fridge 상태와 무관하게 recipesData(카테고리)만으로 정해지므로,
+// generateDynamicSets의 pickedIds 기반 캐시와 별개로 recipesData 참조 단위로 따로 메모이즈한다.
+// getShoppingList가 매 요청마다(캐시 없이) 같은 필터를 최대 6.7만 개 레시피에 다시 돌리던 걸 막기 위함.
+let _typedPoolsFor = null;
+let _mealPoolCache = null;
+let _sidePoolCache = null;
+function getTypedPools(recipesData) {
+  if (_typedPoolsFor !== recipesData) {
+    const { recipeOrder, recipes } = recipesData;
+    _mealPoolCache = recipeOrder.filter(id => isMeal(recipes[id].category));
+    _sidePoolCache = recipeOrder.filter(id => isSideDish(recipes[id].category));
+    _typedPoolsFor = recipesData;
+  }
+  return { mealPool: _mealPoolCache, sidePool: _sidePoolCache };
+}
+
 async function generateDynamicSets(pickedIds = [], view, recipesData) {
   const cacheKey = JSON.stringify({ p: Array.isArray(pickedIds) ? pickedIds : [] });
   if (_dynamicSetsCache && _dynamicSetsCacheKey === cacheKey
@@ -687,54 +738,18 @@ async function generateDynamicSets(pickedIds = [], view, recipesData) {
         : '')
     : '';
 
+  // 위에서 이미 계산해둔 missingMap(레시피별 부족 재료)을 재사용 — calculateCumulativeNeeds와
+  // 같은 가격 규칙(estimateBuyCost)을 쓰므로 이 화면 비용과 실제 장보기 합계가 어긋나지 않는다.
   const recipeCosts = {};
-  const haveMapInit = {}; 
-  Object.keys(view).forEach(id => {
-    if (view[id].items) {
-      haveMapInit[id] = view[id].items.reduce((sum, it) => sum + (Number(it.qtyAmount) || 0), 0);
-    } else {
-      haveMapInit[id] = 1;
-    }
-  });
-
   recipeOrder.forEach(id => {
-    let cost = 0;
-    const haveMap = { ...haveMapInit };
-    recipes[id].ingredients.forEach(ing => {
-      if (isPantryOrVague(ing)) return;
-      const key = normalizeIngredientKey(ing);
-
-      const parsed = parseAmt(ing.amt);
-      const isGram = parsed.isGram;
-      const requiredQty = parsed.val;
-
-      if (ing.id && view[ing.id]) {
-        if (haveMap[ing.id] >= requiredQty) {
-          haveMap[ing.id] -= requiredQty;
-        } else {
-          const shortfall = requiredQty - (haveMap[ing.id] || 0);
-          haveMap[ing.id] = 0;
-          const buyMultiplier = isGram
-            ? Math.ceil(shortfall / 600)
-            : Math.ceil(shortfall / resolvePackSize(key, extractUnit(ing.amt)));
-          cost += resolvePrice(key) * buyMultiplier;
-        }
-      } else {
-        const buyMultiplier = isGram
-          ? Math.ceil(requiredQty / 600)
-          : Math.ceil(requiredQty / resolvePackSize(key, extractUnit(ing.amt)));
-        cost += resolvePrice(key) * buyMultiplier;
-      }
-    });
-    recipeCosts[id] = cost;
+    recipeCosts[id] = estimateBuyCost([missingMap.get(id)]);
   });
 
   const costRecipes = recipeOrder.filter(id => isMeal(recipes[id].category)).slice().sort((a, b) => {
     return recipeCosts[a] - recipeCosts[b];
   }).slice(0, 3);
 
-  const mealPool = recipeOrder.filter(id => isMeal(recipes[id].category));
-  const sidePool = recipeOrder.filter(id => isSideDish(recipes[id].category));
+  const { mealPool, sidePool } = getTypedPools(recipesData);
 
   const share2 = generateIngredientShareSet(view, recipes, mealPool, 2);
   const share7 = generateIngredientShareSet(view, recipes, mealPool, 7);
@@ -810,9 +825,12 @@ export async function getShoppingList(setId, pickedIds = [], multiplier = 1.0, s
   const dynamicSets = await generateDynamicSets(pickedIds, view, recipesData);
   let def = dynamicSets.find((s) => s.id === setId) ?? dynamicSets[0];
 
-  if (setId === 'ingredientShare') {
-    const share = generateIngredientShareSet(view, recipesData.recipes, recipesData.recipeOrder, shareMealCount);
-    def = { ...def, recipeIds: share.recipeIds, name: `${shareMealCount}끼 식자재 쉐어링 세트` };
+  if (setId === 'ingredientShare' || setId === 'sideShare') {
+    const { mealPool, sidePool } = getTypedPools(recipesData);
+    const pool = setId === 'sideShare' ? sidePool : mealPool;
+    const share = generateIngredientShareSet(view, recipesData.recipes, pool, shareMealCount);
+    const name = setId === 'sideShare' ? `반찬 ${shareMealCount}가지 쉐어링 세트` : `${shareMealCount}끼 식자재 쉐어링 세트`;
+    def = { ...def, recipeIds: share.recipeIds, name };
   }
 
   const { needs, have, totalCost } = await calculateCumulativeNeeds(def.recipeIds, multiplier, view, recipesData);
@@ -844,6 +862,47 @@ export function getPrices() {
 export async function getMealPlanCandidates() {
   const { recipeOrder, recipes } = await getRecipesFromDB();
   return { items: recipeOrder.map((id) => ({ id, ...clone(recipes[id]) })) };
+}
+
+// 매 슬롯마다 "이미 정해진 부족 품목(alreadySelected의 합집합)과의 합집합이 가장 작아지는"
+// 레시피를 하나씩 추가하는 탐욕 배치. type==='side'(픽 1개, searchMinPurchaseCombo3가 요구하는
+// 정확히 3-조합 형태가 안 나옴)이거나, type==='meal'인데 임박 재료가 적어 selectImminentGreedy가
+// 월·수 2슬롯을 다 못 채웠을 때 나머지를 메우는 범용 폴백으로 쓴다.
+function greedyFillSlots(recipes, poolIds, missingMap, alreadySelected, count) {
+  const selected = [];
+  let P = new Set();
+  alreadySelected.forEach((id) => (missingMap.get(id) || new Map()).forEach((_, key) => P.add(key)));
+
+  for (let i = 0; i < count; i++) {
+    let bestId = null, minUnionSize = Infinity, maxBaseUsage = -1, bestP = null;
+
+    for (const id of poolIds) {
+      if (selected.includes(id)) continue;
+
+      const rMissing = missingMap.get(id);
+      const newP = new Set(P);
+      (rMissing || new Map()).forEach((_, key) => newP.add(key));
+
+      const unionSize = newP.size;
+
+      // 베이스 활용도: 해당 레시피의 전체 재료 수에서 "새로 사야 하는 재료 수(newP.size - P.size)"를 뺀 값.
+      // 즉, 냉장고에 이미 있거나 앞서 뽑힌 레시피들 때문에 어차피 사야 하는 재료들을 얼마나 알차게 활용하는지를 의미합니다.
+      const totalIngs = recipes[id].ingredients.filter(ing => !isPantryOrVague(ing)).length;
+      const baseUsage = totalIngs - (unionSize - P.size);
+
+      if (unionSize < minUnionSize || (unionSize === minUnionSize && baseUsage > maxBaseUsage)) {
+        minUnionSize = unionSize;
+        maxBaseUsage = baseUsage;
+        bestId = id;
+        bestP = newP;
+      }
+    }
+
+    if (!bestId) break;
+    selected.push(bestId);
+    P = bestP;
+  }
+  return selected;
 }
 
 export async function buildWeeklyPlan(pickedIds = [], view, recipesData, difficulty = 'any', type = 'meal') {
@@ -880,51 +939,32 @@ export async function buildWeeklyPlan(pickedIds = [], view, recipesData, difficu
   // 레시피별 부족 재료 사전 계산
   const missingMap = new Map(recipeOrder.map((id) => [id, getMissingInfo(view, recipes[id])]));
 
-  // Step 1: 식자재 쉐어링 탐욕 알고리즘 적용
-  const S = [...actualPicks];
-  let P = new Set();
-  S.forEach(id => {
-    (missingMap.get(id) || new Map()).forEach((_, key) => P.add(key));
-  });
+  const slotCount = 7 - actualPicks.length;
+  let remaining;
 
-  for (let i = 0; i < 7 - actualPicks.length; i++) {
-    let bestId = null;
-    let minUnionSize = Infinity;
-    let maxBaseUsage = -1;
-    let bestP = null;
+  if (type === 'meal') {
+    // algorithms.md §6 Step 1 — 임박 재료 한계 이득 탐욕 선정으로 월·수 2슬롯을 먼저 채운다.
+    const immSelected = selectImminentGreedy(view, recipes, pool, immIds, 2, missingMap);
+    const afterImm = pool.filter((id) => !immSelected.includes(id));
+    const comboSlotCount = slotCount - immSelected.length;
 
-    for (const id of pool) {
-      if (S.includes(id)) continue;
-      
-      const rMissing = missingMap.get(id);
-      const newP = new Set(P);
-      (rMissing || new Map()).forEach((_, key) => newP.add(key));
-      
-      const unionSize = newP.size;
-      
-      // 베이스 활용도: 해당 레시피의 전체 재료 수에서 "새로 사야 하는 재료 수(newP.size - P.size)"를 뺀 값.
-      // 즉, 냉장고에 이미 있거나 앞서 뽑힌 레시피들 때문에 어차피 사야 하는 재료들을 얼마나 알차게 활용하는지를 의미합니다.
-      const totalIngs = recipes[id].ingredients.filter(ing => !isPantryOrVague(ing)).length;
-      const baseUsage = totalIngs - (unionSize - P.size);
-
-      if (unionSize < minUnionSize || (unionSize === minUnionSize && baseUsage > maxBaseUsage)) {
-        minUnionSize = unionSize;
-        maxBaseUsage = baseUsage;
-        bestId = id;
-        bestP = newP;
-      }
-    }
-    
-    if (bestId) {
-      S.push(bestId);
-      P = bestP;
+    if (comboSlotCount === 3) {
+      // §6 Step 2~3 — 후보 K=25로 축소한 뒤 (부족 품목 종류 수, 예상 비용) 사전식 최소가 되는
+      // 3-조합을 브루트포스로 찾는다(목·토·일). 임박 재료가 2개 다 채워졌을 때만 나오는,
+      // 설계 문서가 상정한 정확히 7 = 픽2 + 임박2 + 조합3 형태.
+      const fixedNeeds = mergeMissingMaps([...actualPicks, ...immSelected].map((id) => missingMap.get(id)));
+      const candidates = shortlistCandidates(view, recipes, afterImm, new Set(fixedNeeds.keys()), missingMap, 25);
+      remaining = [...immSelected, ...searchMinPurchaseCombo3(fixedNeeds, candidates)];
     } else {
-      break;
+      // 임박 재료가 적어(0~1개) selectImminentGreedy가 2슬롯을 다 못 채운 경우 — 남은 슬롯 수가
+      // 3이 아니라 searchMinPurchaseCombo3(정확히 3개 조합 전용)를 쓸 수 없으므로, 기존
+      // 식자재 쉐어링 탐욕(단계별 합집합 최소화)으로 나머지를 채운다.
+      remaining = [...immSelected, ...greedyFillSlots(recipes, afterImm, missingMap, [...actualPicks, ...immSelected], comboSlotCount)];
     }
+  } else {
+    remaining = greedyFillSlots(recipes, pool, missingMap, actualPicks, slotCount);
   }
 
-  // 남은 레시피들을 요일에 배치 (임박 재료 포함 시 전반부에 우선 배치)
-  const remaining = S.filter(id => !actualPicks.includes(id));
   const usesImminent = (id) =>
     id && recipes[id].ingredients.some((ing) => ing.id && immIds.includes(ing.id));
   
@@ -934,14 +974,16 @@ export async function buildWeeklyPlan(pickedIds = [], view, recipesData, difficu
     return bImm - aImm; // 임박 재료 사용하는 요리를 앞으로
   });
 
-  // 최종 배치: 화/금 픽 고정
+  // 픽이 1개(반찬형)인데 화/금 슬롯을 둘 다 예약해두면 actualPicks[1]이 항상 undefined라 금요일이
+  // 비는 버그가 있었다 — 예약 슬롯 개수는 actualPicks.length가 아니라 targetPickCount로 결정한다
+  // (이 시점엔 이미 위쪽 guard로 둘이 항상 같은 값이지만, targetPickCount가 의도를 드러내는 쪽).
   const week = new Array(7);
-  week[1] = actualPicks[0];
-  week[4] = actualPicks[1];
-  
+  const pickSlots = targetPickCount > 1 ? [1, 4] : [1];
+  pickSlots.forEach((slot, i) => { week[slot] = actualPicks[i]; });
+
   let rIdx = 0;
   for (let i = 0; i < 7; i++) {
-    if (i !== 1 && i !== 4 && rIdx < remaining.length) {
+    if (!pickSlots.includes(i) && rIdx < remaining.length) {
       week[i] = remaining[rIdx++];
     }
   }

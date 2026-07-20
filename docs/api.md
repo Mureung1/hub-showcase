@@ -2,7 +2,7 @@
 
 > 이 파일은 `api-design.md`, `Supabase-마이그레이션.md`, `레시피API-연동계획.md`를 하나로 합친 기술 명세 단일 소스입니다.
 > 제품 명세는 [product.md](./product.md), 알고리즘 설계는 [algorithms.md](./algorithms.md) 참고.
-> 마지막 업데이트: 2026-07-15
+> 마지막 업데이트: 2026-07-20 (13일차 — 실제 코드와 대조해 전면 갱신, [backlog.md 13일차](./backlog.md#13일차-추가--기획서productmd·api-계약apimd-대비-코드-정합성-감사) 참고)
 
 ---
 
@@ -12,14 +12,14 @@
 |---|---|---|
 | FE | 냉장고 목록/상세, 영수증 촬영·확인 화면, 레시피 리스트·필터·상세·조리모드, 요리완료 차감 화면 | React (모바일 웹 기준) |
 | BE | 재고 CRUD, 영수증 OCR 결과 파싱·매칭, 레시피-재고 매칭 알고리즘, 조리완료 시 재고 일괄 차감 로직 | Node.js + Express |
-| DB | 재고(fridge_items), 재료 마스터(ingredients), 레시피(recipes 등), 영수증 인식 이력(receipts) | PostgreSQL (Supabase) |
-| 외부 API | 영수증 OCR(품목명·수량 추출), (확장)식자재 시세 | Naver Clova OCR / Google Vision 등 — BE가 프록시 |
+| DB | 재고(`fridge_items`)·레시피(`recipes`) 2개 테이블만 실제로 Supabase에 있음. 재료 마스터·영수증 이력은 DB가 아님(§5 참고) | PostgreSQL (Supabase) |
+| 외부 API | 영수증 OCR(품목명·수량 추출) | Naver Clova OCR(General) — BE가 프록시(`backend/src/ocr/clovaOcr.js`). 크레덴셜 미설정 시 Mock 폴백 |
 
 **설계 전제**
 - MVP 4개 기능(나만의 냉장고 / 영수증 촬영 인식 / 레시피 리스트&필터 / 요리완료 재고차감)은 요청→응답 흐름표까지 상세 설계.
-- 2차 확장 기능(추천 재료 세트, 레시피 상세 조리모드, 유통기한 알림, 식단 루틴, 가격 정보)은 API 개요만 정리(§7).
-- **인증/로그인은 범위 밖으로 가정** — 단일 사용자 기준으로 설계. DB에는 확장 대비로 `user_id`만 예비 컬럼으로 남김.
-- **외부 연동 2곳** 전제: ① 영수증 OCR(외부 OCR API 호출), ② 식자재 시세(2차 확장). 둘 다 BE가 중계자 역할.
+- 2차 확장 기능(추천 재료 세트, 유통기한 알림, 식단 루틴, 가격 정보)은 전부 실제로 구현·연동됨(§7) — "API 개요(안)"이 아니라 현재 동작하는 실제 계약.
+- **인증/로그인은 범위 밖** — 단일 사용자 기준. `user_id` 같은 확장 대비 컬럼은 실제로 쓰이지 않음.
+- **외부 연동 1곳**: 영수증 OCR(Naver Clova). 식자재 시세(`GET /api/prices`)는 외부 API 연동 없이 정적 하드코딩(백로그 P2, 미착수).
 
 ---
 
@@ -54,14 +54,16 @@
 | 메서드 | 경로 | 설명 |
 |---|---|---|
 | `GET` | `/api/fridge` | 냉장고 재고 전체 조회 (홈 요약도 이 응답을 축약해서 사용) |
-| `POST` | `/api/fridge` | 재고 아이템 수동 추가 |
-| `PATCH` | `/api/fridge/:id` | 재고 아이템 수정 (수량/유통기한) |
-| `DELETE` | `/api/fridge/:id` | 재고 아이템 삭제 |
-| `POST` | `/api/receipts` | 영수증 이미지 업로드 → OCR 인식 결과 반환 |
-| `POST` | `/api/receipts/:id/confirm` | 인식 결과(보정 포함) 확정 → 냉장고에 일괄 반영 |
-| `GET` | `/api/recipes?filter=all\|full\|few&level=all\|beginner\|mid` | 냉장고 재고 매칭 기반 레시피 목록 |
-| `GET` | `/api/recipes/:id` | 레시피 상세(재료·애드온·조리 스텝) |
-| `POST` | `/api/recipes/:id/cook-done` | 조리 완료 → 재고 일괄 차감(사용량 보정 값 포함 가능) |
+| `GET` | `/api/fridge/alerts` | 유통기한 임박 + 수량 부족 알림 조회(`expiry-alerts` 화면) — `/:id`보다 라우트 등록 순서가 먼저여야 함 |
+| `POST` | `/api/fridge` | 재고 아이템 수동 추가 (`ingredientId` 또는 `name` 중 하나 필수) |
+| `PATCH` | `/api/fridge/:id` | 재고 한 항목의 "구매 배치" 1건을 수정(`itemIndex`+`qtyAmount`/`qtyUnit`/`qtyLabel`/`expiryDate`) 또는 삭제(`deleteItemIndex`) — §5 참고 |
+| `DELETE` | `/api/fridge/:id` | 재료 하나(모든 구매 배치 포함)를 통째로 삭제 |
+| `GET` | `/api/ingredients` | 재료 마스터 목록 조회 — 재고 직접 추가·유통기한 확인 화면이 단위/카테고리 칩을 그리는 데 사용 |
+| `POST` | `/api/receipts` | 영수증 이미지 업로드(`multipart/form-data`, 필드명 `photo`) → OCR 인식 결과 반환. 사진이 없거나 OCR 크레덴셜 미설정 시 Mock 결과로 폴백 |
+| `POST` | `/api/receipts/:id/confirm` | 인식 결과(유통기한 보정 포함) 확정 → 냉장고에 일괄 반영 |
+| `GET` | `/api/recipes` | 냉장고 재고 매칭 기반 레시피 목록. 쿼리: `filter=all\|full\|few`, `level=all\|beginner\|mid\|expert`, `category=all\|반찬\|...`, `search`(요리명 부분 일치, 대소문자 무시), `page`, `pageSize`(최대 100), `sort=default\|ratio\|time\|level` |
+| `GET` | `/api/recipes/:id` | 레시피 상세(재료·애드온·조리 스텝). 쿼리: `multiplier`(인분 배수) |
+| `POST` | `/api/recipes/:id/cook-done` | 조리 완료 → 재고 일괄 차감. body: `{ deductions: [{ id, use }, ...] }` |
 
 ---
 
@@ -71,156 +73,160 @@
 
 | 화면 동작 | 요청(메서드+경로) | 서버 처리 | DB | 응답 | 화면 변화 |
 |---|---|---|---|---|---|
-| 홈 진입 | `GET /api/fridge?summary=true` | 임박(`imminent`) 아이템·부족 여부 계산 | `fridge_items` JOIN `ingredients` SELECT | 임박 리스트 + 요약 카운트 | "오늘의 냉장고" 카드 렌더 |
-| 냉장고 화면 진입 | `GET /api/fridge` | 전체 재고 조회, 신선/가공 그룹핑 | `fridge_items` 전체 SELECT | 재고 배열 | 재고 목록 렌더 |
-| 재료 직접 추가 저장 | `POST /api/fridge` | 입력값 검증(수량 단위·유통기한) 후 저장 | `fridge_items` INSERT | 생성된 아이템(201) | 목록에 한 줄 추가 |
-| 재고 수정(수량/유통기한) | `PATCH /api/fridge/:id` | id 존재 확인 후 필드 업데이트 | `fridge_items` UPDATE | 수정된 아이템(200) | 해당 줄 갱신 |
-| 재고 삭제 | `DELETE /api/fridge/:id` | id 존재 확인 후 삭제 | `fridge_items` DELETE | 없음(204) | 해당 줄 사라짐 |
+| 앱 최초 로드(홈이 아니라 `AppProvider` 마운트 시 1회) | `GET /api/fridge` | 전체 재고를 재료별로 그룹핑(같은 재료의 여러 "구매 배치"를 `items[]`로 합산) | `fridge_items` 전체 SELECT | 재고 객체(`{ [ingredientId]: {...} }`) | 전역 `fridge` 상태로 저장, 홈·냉장고 화면이 공유해서 씀(홈이 별도로 재조회하지 않음) |
+| 유통기한 임박·수량 부족 알림 화면 진입 | `GET /api/fridge/alerts` | `imminent` 항목 + 수량(`qtyAmount`) 1 이하(또는 150g 이하) 항목 계산 | 위 응답을 서버에서 가공(별도 SELECT 없음, `getFridge`와 동일 데이터 재사용) | 임박 리스트 + 수량 부족 리스트 | "유통기한 임박" 화면 렌더 |
+| 냉장고 화면 진입 | (없음, 전역 `fridge` 상태 재사용) | — | — | — | 신선/가공 그룹핑은 프론트(`Fridge.jsx`)가 담당 |
+| 재료 직접 추가 저장 | `POST /api/fridge` | `ingredientId`+`quantityLabel`+`purchasedAt` 필수. 신선식품은 유통기한 자동 계산(`calcExpiryDate`), 가공식품은 `qtyLabel`만 저장 | `fridge_items` INSERT | 생성된 아이템(201) | 냉장고 재조회 후 목록에 한 줄 추가 |
+| 재고 수정(수량) | `PATCH /api/fridge/:id` body `{ itemIndex, qtyAmount?, qtyUnit?, qtyLabel?, expiryDate? }` | 해당 재료의 `items[itemIndex]`(구매 배치 1건)만 수정 | `fridge_items` UPDATE(`id`=해당 배치의 PK) | 갱신된 재료 뷰(200) | 해당 줄 갱신 |
+| 구매 배치 1건 삭제 | `PATCH /api/fridge/:id` body `{ deleteItemIndex }` | 재료는 남기고 구매 배치 하나만 제거 | `fridge_items` DELETE(배치 1건) | 갱신된 재료 뷰(200) | 배치 하나만 목록에서 사라짐 |
+| 재료 전체 삭제 | `DELETE /api/fridge/:id` | 해당 `ingredient_id`의 모든 구매 배치 삭제 | `fridge_items` DELETE(`ingredient_id` 일치 전부) | 없음(204) | 재료 자체가 목록에서 사라짐 |
 
 ### 4.2 영수증 촬영 인식
 
 | 화면 동작 | 요청(메서드+경로) | 서버 처리 | DB | 응답 | 화면 변화 |
 |---|---|---|---|---|---|
-| 영수증 촬영 완료 | `POST /api/receipts` (multipart, 이미지) | 이미지 저장 → 외부 OCR API 호출 → 품목명 매칭(`ingredients` 마스터와 유사도 매칭) | `receipts` INSERT, `receipt_items` INSERT(매칭 결과) | 인식된 품목 리스트(일부 실패 항목엔 `matched:false`) | 인식 결과 확인 화면으로 이동 |
-| 인식 실패/일부만 인식 → 재촬영 | `POST /api/receipts` (재요청) | 위와 동일 | 새 `receipts` 레코드 | 새 인식 결과 | 인식 결과 화면 갱신 |
-| 유통기한 확인·보정 후 확정 | `POST /api/receipts/:id/confirm` | 신선식품은 재료·구매월 기준 평균 유통기한 자동 계산(사용자 보정값 우선), 가공식품은 사용자 입력값 사용 → 냉장고에 반영(기존 재료면 수량 가산, 신규면 생성) | `fridge_items` UPSERT, `receipt_items.confirmed=true` UPDATE | 반영된 재고 요약(201) | "나만의 냉장고"로 이동, 최신 재고 표시 |
+| 영수증 촬영 완료(기기 기본 카메라 앱으로 찍은 사진 선택) | `POST /api/receipts` (`multipart/form-data`, 필드명 `photo`) | Naver Clova OCR(General) 호출 → 텍스트 줄 재구성(`lineBreak` 기준) → 재료 마스터와 이름 대조 매칭(`backend/src/ocr/matchReceiptLines.js`). 크레덴셜 미설정 시 랜덤 3종 Mock으로 폴백 | (인메모리 `receipts` — 별도 `receipts`/`receipt_items` 테이블은 아직 없음) | 인식된 품목 리스트(일부 실패 항목엔 `matched:false`, 최대 5개까지만 표시) | 인식 결과 확인 화면으로 이동 |
+| 인식 실패/일부만 인식 → 재촬영 | `POST /api/receipts` (재요청) | 위와 동일 | — | 새 인식 결과 | 인식 결과 화면 갱신 |
+| OCR 크레덴셜은 있는데 호출 자체가 실패/타임아웃(15초) | `POST /api/receipts` | 에러를 그대로 던짐(Mock으로 감추지 않음 — 가짜 인식 결과를 진짜로 착각하는 걸 방지) | — | 에러 응답(4xx/5xx, 한국어 메시지) | `alert()`로 에러 표시, 화면은 그대로(재촬영 유도) |
+| 유통기한 확인·보정 후 확정 | `POST /api/receipts/:id/confirm` body `{ expiryOverrides: { [ingredientId]: "YYYY-MM-DD", ... } }` | `matched:true`인 품목만 반영. 신선식품은 재료·구매월 기준 평균 유통기한 자동 계산(`expiryOverrides`에 있으면 그 값 우선), 가공식품은 유통기한 없이 저장 | `fridge_items` INSERT(품목마다, 기존 재료여도 새 구매 배치로 추가 — 수량을 합치지 않음) | 최신 냉장고 전체 뷰(200) | "나만의 냉장고"로 이동, 최신 재고 표시 |
 
 ### 4.3 레시피 리스트 & 필터
 
 | 화면 동작 | 요청(메서드+경로) | 서버 처리 | DB | 응답 | 화면 변화 |
 |---|---|---|---|---|---|
-| 레시피 화면 진입(기본 필터) | `GET /api/recipes?filter=all` | 현재 재고와 `recipe_ingredients` 대조해 보유율(`recipeRatio`) 계산, 정렬 | `recipes` JOIN `recipe_ingredients` + 현재 `fridge_items` 대조 | 레시피 배열(보유율·임박재료 소진 뱃지 포함) | 레시피 카드 리스트 렌더 |
-| 필터 전환(바로 가능/적은 재료) | `GET /api/recipes?filter=full\|few&level=beginner\|mid` | 조건에 맞는 레시피만 필터링 | 동일 | 필터링된 배열 | 리스트 갱신 |
-| 레시피 카드 클릭 | `GET /api/recipes/:id` | 재료·애드온·조리 스텝 조회 | `recipes`, `recipe_ingredients`, `recipe_addons`, `recipe_steps` SELECT | 레시피 상세 객체 | 레시피 상세 화면 렌더 |
+| "내 냉장고로 요리" 탭 진입(기본) | `GET /api/recipes?filter=full&level=all` | 현재 재고와 레시피 `ingredients_json`을 대조해 보유율(`recipeRatio`) 계산, 매칭 안 되는 건 제외 | `recipes` 전체 SELECT(캐시됨) + 현재 재고 뷰 대조 | 레시피 배열(보유율·임박재료 소진 뱃지 포함) + `total`(페이지네이션 전 전체 개수) | 레시피 카드 리스트 렌더 |
+| 필터 전환(바로 가능/재료 몇 개만 더) | `GET /api/recipes?filter=full\|few&level=beginner\|mid` | 조건에 맞는 레시피만 필터링 | 동일 | 필터링된 배열 | 리스트 갱신, 페이지 1로 리셋 |
+| "전체 둘러보기" 탭 + 카테고리 칩 | `GET /api/recipes?filter=all&category=반찬\|국&찌개\|...` | 냉장고 매칭 없이 카테고리·난이도만 필터링 | 동일 | 필터링된 배열 | 카테고리별 레시피 렌더 |
+| "더보기" 버튼 | `GET /api/recipes?...&page=N` | 다음 페이지(기본 30개) 조회 | 동일 | 다음 페이지 배열 | 기존 목록 뒤에 이어붙임 |
+| 레시피 카드 클릭 | `GET /api/recipes/:id?multiplier=` | 재료·애드온·조리 스텝 조회, 인분 배수 적용 | `recipes` 단일 SELECT(id=`api_rcp_seq`, 재료·스텝은 같은 행의 `ingredients_json`/`steps_json` 컬럼 — 별도 정규화 테이블 아님) | 레시피 상세 객체 | 레시피 상세 화면 렌더 |
 
 ### 4.4 요리완료 재고차감
 
 | 화면 동작 | 요청(메서드+경로) | 서버 처리 | DB | 응답 | 화면 변화 |
 |---|---|---|---|---|---|
-| "요리 완료" 클릭 | `POST /api/recipes/:id/cook-done` | 레시피 기준 재료별 소비량만큼 `fridge_items` 차감(`untracked` 재료 제외) | `fridge_items` UPDATE(다건) | 차감 결과 목록(차감 전/후 수량) | "맛있게 드세요" 화면 + 차감 결과 표시 |
-| "사용량 수정" 후 재확정 | `POST /api/recipes/:id/cook-done` (body에 보정된 `adjustments` 포함) | 서버는 기본값 대신 보정값으로 차감 재계산 | `fridge_items` UPDATE(보정값) | 갱신된 차감 결과 | 차감 결과 뷰 갱신 |
+| "요리 완료" 클릭 | `POST /api/recipes/:id/cook-done` body `{ deductions: [{ id, use }, ...] }` | id별로 `use`만큼 차감. 여러 구매 배치가 있으면 유통기한이 빠른 것부터 소진(FIFO), `untracked` 재료는 애초에 `deductions`에 없음 | `fridge_items` UPDATE/DELETE(다건, 배치 단위) | 차감 전/후 요약 목록 | "맛있게 드세요" 화면 + 차감 결과 표시 |
+| "사용량 수정" 후 재확정 | `POST /api/recipes/:id/cook-done` (body의 `deductions[].use` 값을 사용자가 조정) | 서버는 넘어온 `use` 값 그대로 차감(기본값과 보정값을 구분하지 않음 — 프론트가 조정된 값을 그대로 담아 보냄) | 위와 동일 | 갱신된 차감 결과 | 차감 결과 뷰 갱신 |
 
 ---
 
-## 5. DB 테이블 설계
+## 5. DB 테이블 설계 (실제 Supabase 스키마 — `backend/src/store.js`가 읽고 쓰는 컬럼 기준)
+
+> 애초 설계는 `ingredients`/`recipe_ingredients`/`recipe_addons`/`recipe_steps`/`receipts`/`receipt_items` 6개 테이블로 정규화할 계획이었지만, 실제로는 **`fridge_items`·`recipes` 2개 테이블만** Supabase에 있고 나머지는 각각 다른 방식으로 처리된다:
+> - **재료 마스터**는 DB가 아니라 정적 파일(`backend/src/data/ingredients.js`)의 `ingredientMap` — 100종 하드코딩.
+> - **레시피의 재료/애드온/스텝**은 별도 테이블이 아니라 `recipes` 테이블 한 행 안의 JSON 컬럼(`ingredients_json`, `steps_json`).
+> - **영수증 인식 이력**은 DB에 남기지 않고 서버 메모리(`receipts` 객체, 재시작 시 초기화)에만 있음.
 
 ```
-ingredients (재료 마스터)
-  id (PK), name, emoji, category('fresh'|'processed'),
-  default_unit_labels (json, 예: ['한단','반단','1/4단','소진']),
-  avg_shelf_life_days (json, 계절별 평균 유통기한),
-  role_desc, storage_tip
+fridge_items (사용자 냉장고 재고 — 재료 하나가 "구매 배치" 여러 행으로 쌓임)
+  id (PK, uuid — 프론트/응답에선 dbId로 부름),
+  ingredient_id (재료 마스터 id, 예: 'pork'. 커스텀 재료는 'custom_<timestamp>'),
+  qty_amount (numeric, nullable — 신선식품 수량),
+  qty_unit (text, nullable — 신선식품 단위: g, 개, 모 등),
+  qty_label (text, nullable — 가공식품 자유 단위: '1병', '1개'),
+  purchased (text, 'M/D' 형식 표시용 문자열 — 원본 날짜 아님, 표시 전용),
+  expiry ('D-N'/'D+N' 형식 표시용 문자열),
+  imminent (bool, D-2 이하일 때 true — 저장 시점에 계산해서 같이 넣음)
+  ※ 같은 ingredient_id로 여러 행이 있으면 조회 시(enrichFridgeItem) qty_amount 합산·
+    가장 이른 expiry를 대표값으로 묶어서 내려준다.
 
-fridge_items (사용자 냉장고 재고)
-  id (PK), user_id (nullable, 확장 대비),
-  ingredient_id (FK -> ingredients),
-  qty_amount (numeric, 수량 — 신선식품용),
-  qty_unit (text, 단위 — g, 모, 개 등),
-  qty_label (text, 자유 단위 — 가공식품용, 예: '1병', '반쯤 남음'),
-  quantity_label (예: '반모', '300g'),
-  quantity_level_index (levels 배열 내 현재 위치, 신선식품용),
-  purchased_at, expiry_date,
-  category ('fresh'|'processed', ingredients와 동일하지만 조회 편의상 비정규화)
-
-recipes (레시피)
-  id (PK), name, emoji, level ('beginner'|'intermediate'|'advanced'),
-  time_minutes, note
-
-recipe_ingredients (레시피 필요 재료)
-  id (PK), recipe_id (FK), ingredient_id (FK, nullable if untracked),
-  amount_label, is_untracked (양념류 등 재고 추적 제외)
-
-recipe_addons (레시피 응용 옵션)
-  id (PK), recipe_id (FK), ingredient_id (FK),
-  label, description, order_after (몇 번째 스텝 뒤에 추가할지), step_json
-
-recipe_steps (레시피 조리 스텝)
-  id (PK), recipe_id (FK), step_order,
-  emoji, text, tip
-
-receipts (영수증 인식 이력)
-  id (PK), user_id (nullable), image_url,
-  ocr_status ('success'|'partial'|'failed'), created_at
-
-receipt_items (영수증 인식 품목)
-  id (PK), receipt_id (FK), raw_text,
-  matched_ingredient_id (FK, nullable),
-  quantity_label, category_guess, expiry_date_guess,
-  confirmed (bool, 사용자 확정 여부)
+recipes (레시피 — MAFRA 공공 API 537종 + CSV 큐레이션 약 6.6만 종, 단일 테이블)
+  api_rcp_seq (PK, 응답에선 id로 사용),
+  title (레시피명), category (예: '반찬','밑반찬','국/탕','찌개'...),
+  level ('beginner'|'mid'|'high' — 없으면 재료 수·스텝 수로 동적 계산),
+  time (조리 시간, 분), image_url (nullable — 프론트에서 아직 안 씀),
+  ingredients_json (배열 — [{ id?, name?, amt, untracked? }, ...]),
+  steps_json (배열 — [{ desc }, ...], 없는 레시피도 있음)
 ```
+
+**DB에 없는 것들**
+- 재료 마스터(`ingredients`): `backend/src/data/ingredients.js`의 `ingredientMap`(정적 파일)
+- 영수증 인식 이력(`receipts`/`receipt_items`): 서버 메모리(`backend/src/store.js`의 `receipts` 객체) — 재시작하면 사라짐, 확정된 것도 DB엔 흔적이 남지 않고 `fridge_items`에 반영된 결과만 남음
+- 커스텀(직접 입력) 재료의 이름/이모지: `customIngredientMeta`(서버 메모리)
 
 ---
 
 ## 6. JSON 스키마 예시
 
-**`GET /api/fridge` 응답**
+**`GET /api/fridge` 응답** — 배열이 아니라 **재료 id를 키로 하는 객체**. `items[]`는 재료 하나의 구매 배치들.
 ```json
 {
-  "items": [
-    {
-      "id": "pork",
-      "name": "돼지고기 앞다리",
-      "emoji": "🥩",
-      "category": "fresh",
-      "quantityLabel": "300g",
-      "expiry": "D-2",
-      "imminent": true
-    }
-  ]
+  "pork": {
+    "id": "pork",
+    "name": "돼지고기 앞다리",
+    "emoji": "🥩",
+    "category": "fresh",
+    "isFresh": true,
+    "items": [
+      { "dbId": "39f3...", "qtyAmount": 300, "qtyUnit": "g", "qtyLabel": null, "purchased": "7/14", "expiry": "D-2", "imminent": true }
+    ],
+    "qtyLabel": "300g",
+    "purchased": "7/14",
+    "expiry": "D-2",
+    "imminent": true,
+    "role": "...",
+    "tip": "..."
+  }
 }
 ```
 
 **`POST /api/receipts` 응답**
 ```json
 {
-  "receiptId": "r_20260709_01",
+  "id": "r_1",
+  "store": "이마트 신촌점",
+  "date": "2026.07.20",
   "status": "partial",
   "items": [
-    { "rawText": "돼지고기 앞다리 300g", "matchedIngredientId": "pork", "quantityLabel": "300g", "matched": true },
-    { "rawText": "OO마트 봉투대", "matchedIngredientId": null, "matched": false }
+    { "rawText": "돼지고기 앞다리 300g", "matchedIngredientId": "pork", "quantityLabel": "300g", "category": "fresh", "matched": true, "isNew": false },
+    { "rawText": "OO마트 봉투대", "matchedIngredientId": null, "quantityLabel": null, "category": null, "matched": false }
   ]
 }
 ```
 
-**`POST /api/receipts/:id/confirm` 요청**
+**`POST /api/receipts/:id/confirm` 요청** — 품목 배열이 아니라 **재료 id → 보정 유통기한 맵**. 값을 안 넘긴 품목은 자동 계산값을 그대로 씀.
 ```json
 {
-  "items": [
-    { "matchedIngredientId": "pork", "quantityLabel": "300g", "expiryDate": "2026-07-11" },
-    { "matchedIngredientId": null, "skip": true }
-  ]
+  "expiryOverrides": {
+    "pork": "2026-07-11"
+  }
 }
 ```
 
-**`POST /api/recipes/:id/cook-done` 요청(사용량 보정 포함)**
+**`POST /api/recipes/:id/cook-done` 요청** — `adjustments`가 아니라 `deductions`, 필드명도 `ingredientId`/`consumedLevels`가 아니라 `id`/`use`.
 ```json
 {
-  "adjustments": [
-    { "ingredientId": "tofu", "consumedLevels": 1 },
-    { "ingredientId": "pa", "consumedLevels": 2 }
+  "deductions": [
+    { "id": "tofu", "use": 0.5 },
+    { "id": "pa", "use": 2 }
   ]
 }
 ```
 
 ---
 
-## 7. 2차 확장 기능 — API 개요
+## 7. 2차 확장 기능 — 실제 구현된 API
 
-| 기능 | 엔드포인트(안) | 핵심 로직 |
+원래는 "안(案)"으로만 정리했던 항목들인데, 전부 실제로 구현·배포돼 있다. 경로·파라미터가 초안과 크게 달라졌다.
+
+| 기능 | 엔드포인트 | 핵심 로직 |
 |---|---|---|
-| 7.1 추천 재료 세트 | `GET /api/shopping-sets?filter=maxVariety\|full&level=` | 현재 재고 + 목표 레시피 수를 최대화하는 최소 구매 조합 계산(장바구니 최적화). 알고리즘 상세는 [algorithms.md](./algorithms.md) 참고 |
-| 7.2 유통기한 임박 알림 | `GET /api/fridge/alerts` (+ 서버 푸시: 예 FCM) | `expiry_date` 임박 항목 조회 후 크론으로 푸시 발송 |
-| 7.3 일주일 식단 루틴 추천 | `GET /api/meal-plan/weekly` | 레시피 매칭 결과가 없을 때 대체 루틴(일반 식단 템플릿) 반환 |
-| 7.4 식자재 가격 정보 | `GET /api/prices?ingredientId=` | 외부 시세 API를 주기적으로 수집해 `price_snapshots`에 캐싱 후 서빙(실시간 직접 호출은 비용/속도상 비권장) |
+| 7.1 추천 재료 세트 목록 | `GET /api/shopping/sets?match=all\|imminentRescue\|minCost\|ingredientShare\|sideShare\|fullWeek&level=all\|beginner\|mid&pickedIds=&multiplier=&shareMealCount=` | 5종의 세트(임박 재료 구출/최소 지출/식자재 쉐어링/밑반찬 쉐어링/일주일 전체 식단)를 동시에 계산해 반환. 알고리즘 상세는 [algorithms.md](./algorithms.md) 참고 |
+| 7.1b 추천 세트 → 장보기 리스트 | `GET /api/shopping/list?setId=&pickedIds=&multiplier=&shareMealCount=` | 세트 하나를 골랐을 때 실제 구매 목록·예상 금액 계산 |
+| 7.2 유통기한 임박 + 수량 부족 알림 | `GET /api/fridge/alerts` (서버 푸시는 미구현 — 브라우저 `Notification` API로 클라이언트에서만 처리) | `imminent` 항목 + 수량 부족 항목 계산. 크론/FCM 같은 서버 푸시는 없음 |
+| 7.3 일주일 식단 루틴 추천 | `POST /api/meal-plan/weekly` body `{ pickedIds, difficulty: 'any'\|'beginner'\|'mid'\|'high', type: 'meal'\|'side' }` (문서 초안은 `GET`이었지만 실제는 `POST`) | §6(algorithms.md) 설계대로 임박 재료 한계이득 탐욕(월·수) + 최소구매 3-조합 탐색(목·토·일)으로 7일 식단 구성. `type='side'`는 반찬 쉐어링용(픽 1개) |
+| 7.3b 식단 후보 목록 | `GET /api/meal-plan/candidates` | `meal-plan-picker` 화면의 레시피 검색 후보 전체 조회 |
+| 7.3c 식단 → 장보기 리스트 | `POST /api/meal-plan/shopping-list` body `{ weekPlanIds, multiplier }` | 확정된 7일 식단 기준 누적 장보기 리스트 계산 |
+| 7.4 식자재 가격 정보 | `GET /api/prices` | 외부 시세 API 연동 없이 정적 하드코딩 값 반환(`backend/src/store.js`의 `getPrices`) — 백로그 P2, 미착수 |
 
 ---
 
 ## 8. 주의사항
 
-- **CORS**: FE(예 `:5173`)와 BE(예 `:3000`) 포트가 다르면 브라우저가 기본 차단 → BE에서 CORS 허용 필요.
-- **상태코드**: 조회 200 / 생성 201 / 삭제 204, 실패는 400(입력값 오류)·404(id 없음)로 구분.
-- **외부 OCR 의존성**: `/api/receipts`는 외부 API 응답 지연·실패에 대비해 타임아웃과 "재촬영 요청" 폴백을 반드시 처리.
-- **재고 차감의 원자성**: `cook-done`은 여러 `fridge_items`를 한 번에 갱신하므로 트랜잭션으로 묶어 일부만 반영되는 상황을 방지.
+- **CORS**: FE 개발 서버(`:5174`)와 BE(`:3001`) 포트가 달라 브라우저가 기본 차단 → `backend/src/app.js`가 `cors()`로 전체 허용. 프로덕션 빌드(`express.static`으로 같은 서버가 FE도 서빙)에서는 포트가 같아 애초에 문제되지 않음.
+- **상태코드**: 조회 200 / 생성 201 / 삭제 204, 실패는 400(입력값 오류)·404(id 없음)·413(파일 용량 초과)·500(그 외)으로 구분.
+- **외부 OCR 의존성**: `POST /api/receipts`는 15초 타임아웃(`AbortSignal.timeout`)을 두고, 크레덴셜이 아예 없을 때만 Mock으로 폴백한다. 크레덴셜이 있는데 호출이 실패/타임아웃되면 **에러를 그대로 반환**해 프론트가 "다시 촬영해 주세요" 알림을 띄우게 한다(가짜 인식 결과를 진짜로 보여주지 않기 위한 설계 결정).
+- **재고 차감의 원자성**: `cook-done`은 여러 `fridge_items` 배치를 순차적으로 UPDATE/DELETE한다 — Supabase 트랜잭션으로 묶여 있지 않아 중간에 실패하면 일부만 반영될 수 있음(알려진 한계, 트래픽이 적어 지금까지 문제 보고 없음).
+- **재고 데이터 모델**: `fridge_items`는 재료당 1행이 아니라 "구매 배치"마다 1행이다. 같은 재료를 두 번 사면 두 행이 쌓이고, 화면에는 합산해서 보여준다(§5 참고) — API를 새로 만들 때 이 전제를 깨지 않아야 한다.
 
 ---
 

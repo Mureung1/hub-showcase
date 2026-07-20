@@ -6,9 +6,15 @@ import RecipeCard from '../components/RecipeCard';
 export default function MealPlanPicker() {
   const { back, pickedDishes, togglePick, buildMealPlan, weekPlanDifficulty, weekPlanType } = useApp();
   const [candidates, setCandidates] = useState([]);
+  const [candidatesLoaded, setCandidatesLoaded] = useState(false);
   const [query, setQuery] = useState('');
 
-  useEffect(() => { api.getMealPlanCandidates().then((r) => setCandidates(r.items)); }, []);
+  useEffect(() => {
+    api.getMealPlanCandidates().then((r) => {
+      setCandidates(r.items);
+      setCandidatesLoaded(true);
+    });
+  }, []);
 
   // 식사/반찬 카테고리 필터
   const isSideDish = (category) => ['반찬', '밑반찬', '김치/젓갈/장류'].includes(category);
@@ -29,9 +35,14 @@ export default function MealPlanPicker() {
   const isSide = weekPlanType === 'side';
   const targetPickCount = isSide ? 1 : 2;
 
-  const confirmLabel = pickedDishes.length === targetPickCount
-    ? `🍽️ ${pickedDishes.map((id) => candidates.find((c) => c.id === id)?.name).join(' · ')} 중심으로 조합하기`
-    : `${targetPickCount - pickedDishes.length}개 더 고르면 세트를 만들 수 있어요`;
+  // candidates가 아직 로딩 중일 때 pickedDishes(이전 화면에서 이어져온 전역 상태)가 이미
+  // targetPickCount만큼 차 있으면 candidates.find가 전부 undefined를 반환해
+  // "undefined · undefined 중심으로..."가 그대로 노출됐던 문제 — 로딩 완료 여부를 먼저 본다.
+  const confirmLabel = !candidatesLoaded
+    ? '레시피를 불러오는 중...'
+    : pickedDishes.length === targetPickCount
+      ? `🍽️ ${pickedDishes.map((id) => candidates.find((c) => c.id === id)?.name).join(' · ')} 중심으로 조합하기`
+      : `${targetPickCount - pickedDishes.length}개 더 고르면 세트를 만들 수 있어요`;
 
   return (
     <section className="screen active">
@@ -60,7 +71,7 @@ export default function MealPlanPicker() {
         </div>
       </div>
       <div className="bottom-fixed">
-        <button className="btn primary" disabled={pickedDishes.length !== targetPickCount} onClick={buildMealPlan}>{confirmLabel}</button>
+        <button className="btn primary" disabled={!candidatesLoaded || pickedDishes.length !== targetPickCount} onClick={buildMealPlan}>{confirmLabel}</button>
       </div>
     </section>
   );
