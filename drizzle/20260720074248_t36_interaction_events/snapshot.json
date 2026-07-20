@@ -1,0 +1,1676 @@
+{
+  "version": "8",
+  "dialect": "postgres",
+  "id": "ed29c5bd-7e27-4631-a3e3-bc91828a8271",
+  "prevIds": [
+    "8ae70c9d-63db-4cc9-b999-bd11dc7590c3"
+  ],
+  "ddl": [
+    {
+      "values": [
+        "ai",
+        "template"
+      ],
+      "name": "generation_route",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "deadline_exceeded",
+        "invalid_request",
+        "invalid_response",
+        "provider_client_error",
+        "provider_error",
+        "provider_rate_limited",
+        "provider_transient_error",
+        "provider_unconfigured",
+        "rate_limited",
+        "success",
+        "unsafe_response"
+      ],
+      "name": "generation_status",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "result_shown",
+        "refinement_opened",
+        "regeneration_requested",
+        "copy_succeeded",
+        "situation_change"
+      ],
+      "name": "interaction_event_name",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "template_fallback",
+        "guided_ai",
+        "manual_ai",
+        "email_template"
+      ],
+      "name": "interaction_result_route",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "reply",
+        "initiate"
+      ],
+      "name": "message_mode",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "ask",
+        "apologize",
+        "decline",
+        "question",
+        "suggest",
+        "other"
+      ],
+      "name": "purpose_id",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "draft",
+        "approved",
+        "retired"
+      ],
+      "name": "review_status",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "groupwork",
+        "professor",
+        "senior",
+        "friend"
+      ],
+      "name": "scenario_id",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "schedule",
+        "thanks_check",
+        "ask",
+        "apologize",
+        "decline",
+        "contribution_check",
+        "absence_inquiry",
+        "casual_request",
+        "express_feelings"
+      ],
+      "name": "situation_id",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "evaluation_runs",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "generation_runs",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "interaction_events",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "prompt_versions",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "retrieval_examples",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "template_versions",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "type": "varchar(96)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "case_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "type": "varchar(128)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "model",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "prompt_version_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "type": "smallint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "repetition",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "sample_count",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "quality_score_basis_points",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "latency_ms",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "input_tokens",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "output_tokens",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "estimated_cost_micro_usd",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "type": "generation_route",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "route",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "type": "scenario_id",
+      "typeSchema": "public",
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "scenario_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "type": "message_mode",
+      "typeSchema": "public",
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "mode",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "type": "purpose_id",
+      "typeSchema": "public",
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "purpose_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "type": "generation_status",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "type": "varchar(128)",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "model",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "prompt_version_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "template_version_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "latency_ms",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "type": "smallint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "attempt_count",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "input_tokens",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "output_tokens",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "type": "interaction_event_name",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "event_name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interaction_events"
+    },
+    {
+      "type": "interaction_result_route",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "route",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interaction_events"
+    },
+    {
+      "type": "scenario_id",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "scenario_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interaction_events"
+    },
+    {
+      "type": "message_mode",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "mode",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interaction_events"
+    },
+    {
+      "type": "situation_id",
+      "typeSchema": "public",
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "situation_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interaction_events"
+    },
+    {
+      "type": "smallint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "tone_level",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interaction_events"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interaction_events"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "type": "varchar(64)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "version",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "type": "varchar(64)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "checksum",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "type": "varchar(128)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "model",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "max_output_tokens",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "type": "smallint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "temperature_milli",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "type": "review_status",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'draft'",
+      "generated": null,
+      "identity": null,
+      "name": "review_status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "reviewed_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "is_active",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "type": "varchar(96)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "example_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "type": "varchar(64)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "catalog_version",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "type": "varchar(128)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "embedding_model",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "type": "scenario_id",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "scenario_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "type": "purpose_id",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "purpose_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "type": "message_mode",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "mode",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "type": "vector(1024)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "embedding",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "type": "varchar(64)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "checksum",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "type": "review_status",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "review_status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "reviewed_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "template_versions"
+    },
+    {
+      "type": "varchar(64)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "version",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "template_versions"
+    },
+    {
+      "type": "varchar(64)",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "checksum",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "template_versions"
+    },
+    {
+      "type": "review_status",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'draft'",
+      "generated": null,
+      "identity": null,
+      "name": "review_status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "template_versions"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "reviewed_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "template_versions"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "is_active",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "template_versions"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "template_versions"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "case_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "model",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "prompt_version_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "repetition",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "evaluation_runs_case_model_prompt_repeat_unique",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "prompt_version_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "evaluation_runs_prompt_version_created_at_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "generation_runs_created_at_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "status",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "generation_runs_status_created_at_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "prompt_version_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "generation_runs_prompt_version_created_at_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "scenario_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "generation_runs_scenario_created_at_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "interaction_events_created_at_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "interaction_events"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "route",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "interaction_events_route_created_at_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "interaction_events"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "scenario_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "interaction_events_scenario_created_at_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "interaction_events"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "version",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "prompt_versions_version_unique",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "is_active",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "\"is_active\" = true",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "prompt_versions_single_active",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "catalog_version",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "embedding_model",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "review_status",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "scenario_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "purpose_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "mode",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "retrieval_examples_filter_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "version",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "template_versions_version_unique",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "template_versions"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "is_active",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "\"is_active\" = true",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "template_versions_single_active",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "template_versions"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "prompt_version_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "prompt_versions",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "evaluation_runs_prompt_version_id_prompt_versions_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "prompt_version_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "prompt_versions",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "generation_runs_prompt_version_id_prompt_versions_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "template_version_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "template_versions",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "generation_runs_template_version_id_template_versions_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "columns": [
+        "example_id",
+        "catalog_version",
+        "embedding_model"
+      ],
+      "nameExplicit": true,
+      "name": "retrieval_examples_identity_pk",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "evaluation_runs_pkey",
+      "schema": "public",
+      "table": "evaluation_runs",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "generation_runs_pkey",
+      "schema": "public",
+      "table": "generation_runs",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "prompt_versions_pkey",
+      "schema": "public",
+      "table": "prompt_versions",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "template_versions_pkey",
+      "schema": "public",
+      "table": "template_versions",
+      "entityType": "pks"
+    },
+    {
+      "value": "length(trim(\"case_id\")) > 0",
+      "name": "evaluation_runs_case_id_nonempty",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "value": "length(trim(\"model\")) > 0",
+      "name": "evaluation_runs_model_nonempty",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "value": "\"repetition\" >= 0",
+      "name": "evaluation_runs_repetition_nonnegative",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "value": "\"sample_count\" > 0",
+      "name": "evaluation_runs_sample_count_positive",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "value": "\"quality_score_basis_points\" between 0 and 10000",
+      "name": "evaluation_runs_quality_score_basis_points_range",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "value": "\"latency_ms\" >= 0",
+      "name": "evaluation_runs_latency_nonnegative",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "value": "\"input_tokens\" is null or \"input_tokens\" >= 0",
+      "name": "evaluation_runs_input_tokens_nonnegative",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "value": "\"output_tokens\" is null or \"output_tokens\" >= 0",
+      "name": "evaluation_runs_output_tokens_nonnegative",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "value": "\"estimated_cost_micro_usd\" is null or \"estimated_cost_micro_usd\" >= 0",
+      "name": "evaluation_runs_estimated_cost_nonnegative",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "evaluation_runs"
+    },
+    {
+      "value": "\"latency_ms\" >= 0",
+      "name": "generation_runs_latency_nonnegative",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "value": "\"attempt_count\" >= 0",
+      "name": "generation_runs_attempt_count_nonnegative",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "value": "\"input_tokens\" is null or \"input_tokens\" >= 0",
+      "name": "generation_runs_input_tokens_nonnegative",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "value": "\"output_tokens\" is null or \"output_tokens\" >= 0",
+      "name": "generation_runs_output_tokens_nonnegative",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "value": "\"model\" is null or length(trim(\"model\")) > 0",
+      "name": "generation_runs_model_nonempty",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "value": "(\"route\" = 'ai' and \"template_version_id\" is null) or (\"route\" = 'template' and \"prompt_version_id\" is null and \"model\" is null and \"purpose_id\" is null)",
+      "name": "generation_runs_route_version_boundary",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "generation_runs"
+    },
+    {
+      "value": "(\"route\" in ('guided_ai', 'template_fallback') and \"situation_id\" is not null) or (\"route\" in ('manual_ai', 'email_template') and \"situation_id\" is null)",
+      "name": "interaction_events_route_situation_boundary",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "interaction_events"
+    },
+    {
+      "value": "\"situation_id\" is null or \"situation_id\" in ('schedule', 'thanks_check', 'ask', 'apologize', 'decline') or (\"scenario_id\" = 'groupwork' and \"situation_id\" = 'contribution_check') or (\"scenario_id\" = 'professor' and \"situation_id\" = 'absence_inquiry') or (\"scenario_id\" = 'senior' and \"situation_id\" = 'casual_request') or (\"scenario_id\" = 'friend' and \"situation_id\" = 'express_feelings')",
+      "name": "interaction_events_scenario_situation_boundary",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "interaction_events"
+    },
+    {
+      "value": "(\"event_name\" = 'copy_succeeded' and \"tone_level\" is not null and \"tone_level\" between 1 and 3) or (\"event_name\" <> 'copy_succeeded' and \"tone_level\" is null)",
+      "name": "interaction_events_copy_tone_boundary",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "interaction_events"
+    },
+    {
+      "value": "\"route\" <> 'email_template' or \"scenario_id\" = 'professor'",
+      "name": "interaction_events_email_professor_boundary",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "interaction_events"
+    },
+    {
+      "value": "length(trim(\"version\")) > 0",
+      "name": "prompt_versions_version_nonempty",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "value": "\"checksum\" ~ '^[0-9a-f]{64}$'",
+      "name": "prompt_versions_checksum_sha256",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "value": "length(trim(\"model\")) > 0",
+      "name": "prompt_versions_model_nonempty",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "value": "\"max_output_tokens\" > 0",
+      "name": "prompt_versions_max_output_tokens_positive",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "value": "\"temperature_milli\" is null or \"temperature_milli\" between 0 and 2000",
+      "name": "prompt_versions_temperature_milli_range",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "value": "\"review_status\" <> 'approved' or \"reviewed_at\" is not null",
+      "name": "prompt_versions_approved_has_review_time",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "value": "\"is_active\" = false or \"review_status\" = 'approved'",
+      "name": "prompt_versions_active_is_approved",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "prompt_versions"
+    },
+    {
+      "value": "length(trim(\"example_id\")) > 0",
+      "name": "retrieval_examples_example_id_nonempty",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "value": "length(trim(\"catalog_version\")) > 0",
+      "name": "retrieval_examples_catalog_version_nonempty",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "value": "length(trim(\"embedding_model\")) > 0",
+      "name": "retrieval_examples_embedding_model_nonempty",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "value": "\"checksum\" ~ '^[0-9a-f]{64}$'",
+      "name": "retrieval_examples_checksum_sha256",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "value": "vector_norm(\"embedding\") > 0",
+      "name": "retrieval_examples_embedding_nonzero",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "retrieval_examples"
+    },
+    {
+      "value": "length(trim(\"version\")) > 0",
+      "name": "template_versions_version_nonempty",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "template_versions"
+    },
+    {
+      "value": "\"checksum\" ~ '^[0-9a-f]{64}$'",
+      "name": "template_versions_checksum_sha256",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "template_versions"
+    },
+    {
+      "value": "\"review_status\" <> 'approved' or \"reviewed_at\" is not null",
+      "name": "template_versions_approved_has_review_time",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "template_versions"
+    },
+    {
+      "value": "\"is_active\" = false or \"review_status\" = 'approved'",
+      "name": "template_versions_active_is_approved",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "template_versions"
+    }
+  ],
+  "renames": []
+}

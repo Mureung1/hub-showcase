@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type {
   NewEvaluationRunRow,
   NewGenerationRunRow,
+  NewInteractionEventRow,
   NewPromptVersionRow,
   NewTemplateVersionRow,
 } from './schema'
@@ -10,6 +11,7 @@ import { createDataRepositories, type DataWriters } from './repositories'
 const createCapturingWriters = () => {
   const evaluationRows: NewEvaluationRunRow[] = []
   const generationRows: NewGenerationRunRow[] = []
+  const interactionRows: NewInteractionEventRow[] = []
   const promptRows: NewPromptVersionRow[] = []
   const templateRows: NewTemplateVersionRow[] = []
   const writers: DataWriters = {
@@ -21,6 +23,10 @@ const createCapturingWriters = () => {
       generationRows.push(row)
       return Promise.resolve('generation-id')
     },
+    insertInteractionEvent(row) {
+      interactionRows.push(row)
+      return Promise.resolve()
+    },
     insertPromptVersion(row) {
       promptRows.push(row)
       return Promise.resolve('prompt-id')
@@ -31,7 +37,7 @@ const createCapturingWriters = () => {
     },
   }
 
-  return { evaluationRows, generationRows, promptRows, templateRows, writers }
+  return { evaluationRows, generationRows, interactionRows, promptRows, templateRows, writers }
 }
 
 describe('T30 data repositories', () => {
@@ -118,5 +124,48 @@ describe('T30 data repositories', () => {
       repetition: 1,
       sampleCount: 8,
     })
+  })
+
+  it('maps an interaction through the metadata allowlist without content or identifiers', async () => {
+    const captured = createCapturingWriters()
+    const repository = createDataRepositories(captured.writers).interactionEvents
+    const unsafeCallerValue = {
+      candidate: '저장하면 안 되는 후보',
+      deviceId: 'persistent-device',
+      editedText: '저장하면 안 되는 수정문',
+      eventName: 'copy_succeeded' as const,
+      ip: '198.51.100.5',
+      mode: 'reply' as const,
+      receivedMessage: '저장하면 안 되는 받은 메시지',
+      route: 'guided_ai' as const,
+      scenarioId: 'groupwork' as const,
+      sessionId: 'persistent-session',
+      situation: '저장하면 안 되는 상황 설명',
+      situationId: 'schedule' as const,
+      toneLevel: 2 as const,
+      userId: 'persistent-user',
+    }
+
+    await expect(repository.record(unsafeCallerValue)).resolves.toBeUndefined()
+
+    expect(captured.interactionRows).toEqual([
+      {
+        eventName: 'copy_succeeded',
+        mode: 'reply',
+        route: 'guided_ai',
+        scenarioId: 'groupwork',
+        situationId: 'schedule',
+        toneLevel: 2,
+      },
+    ])
+    const serializedRow = JSON.stringify(captured.interactionRows)
+    expect(serializedRow).not.toContain(unsafeCallerValue.receivedMessage)
+    expect(serializedRow).not.toContain(unsafeCallerValue.situation)
+    expect(serializedRow).not.toContain(unsafeCallerValue.candidate)
+    expect(serializedRow).not.toContain(unsafeCallerValue.editedText)
+    expect(serializedRow).not.toContain(unsafeCallerValue.ip)
+    expect(serializedRow).not.toContain(unsafeCallerValue.userId)
+    expect(serializedRow).not.toContain(unsafeCallerValue.sessionId)
+    expect(serializedRow).not.toContain(unsafeCallerValue.deviceId)
   })
 })

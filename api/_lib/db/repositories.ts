@@ -1,13 +1,16 @@
+import type { InteractionEvent } from '../../../src/shared/interaction/contracts'
 import type { GenerationMetric } from '../generation/metrics'
 import type { DabnyangiDatabase } from './database'
 import {
   evaluationRuns,
   generationRuns,
+  interactionEvents,
   promptVersions,
   reviewStatusValues,
   templateVersions,
   type NewEvaluationRunRow,
   type NewGenerationRunRow,
+  type NewInteractionEventRow,
   type NewPromptVersionRow,
   type NewTemplateVersionRow,
 } from './schema'
@@ -58,6 +61,7 @@ export type EvaluationRunInput = {
 export type DataWriters = {
   insertEvaluationRun: (row: NewEvaluationRunRow) => Promise<string>
   insertGenerationRun: (row: NewGenerationRunRow) => Promise<string>
+  insertInteractionEvent: (row: NewInteractionEventRow) => Promise<void>
   insertPromptVersion: (row: NewPromptVersionRow) => Promise<string>
   insertTemplateVersion: (row: NewTemplateVersionRow) => Promise<string>
 }
@@ -76,6 +80,9 @@ export const createDrizzleDataWriters = (database: DabnyangiDatabase): DataWrite
   async insertGenerationRun(row) {
     const rows = await database.insert(generationRuns).values(row).returning({ id: generationRuns.id })
     return insertedId(rows)
+  },
+  async insertInteractionEvent(row) {
+    await database.insert(interactionEvents).values(row)
   },
   async insertPromptVersion(row) {
     const rows = await database.insert(promptVersions).values(row).returning({ id: promptVersions.id })
@@ -138,12 +145,25 @@ export const toEvaluationRunRow = (input: EvaluationRunInput): NewEvaluationRunR
   ...(input.outputTokens === undefined ? {} : { outputTokens: input.outputTokens }),
 })
 
+export const toInteractionEventRow = (input: InteractionEvent): NewInteractionEventRow => ({
+  eventName: input.eventName,
+  mode: input.mode,
+  route: input.route,
+  scenarioId: input.scenarioId,
+  ...(input.situationId ? { situationId: input.situationId } : {}),
+  ...(input.eventName === 'copy_succeeded' ? { toneLevel: input.toneLevel } : {}),
+})
+
 export const createDataRepositories = (writers: DataWriters) => ({
   evaluationRuns: {
     record: (input: EvaluationRunInput) => writers.insertEvaluationRun(toEvaluationRunRow(input)),
   },
   generationRuns: {
     record: (input: GenerationRunInput) => writers.insertGenerationRun(toGenerationRunRow(input)),
+  },
+  interactionEvents: {
+    record: (input: InteractionEvent) =>
+      writers.insertInteractionEvent(toInteractionEventRow(input)),
   },
   promptVersions: {
     record: (input: PromptVersionInput) => writers.insertPromptVersion(toPromptVersionRow(input)),
@@ -156,3 +176,4 @@ export const createDataRepositories = (writers: DataWriters) => ({
 
 export type DataRepositories = ReturnType<typeof createDataRepositories>
 export type GenerationRunRepository = DataRepositories['generationRuns']
+export type InteractionEventRepository = DataRepositories['interactionEvents']

@@ -6,11 +6,13 @@ import {
   integer,
   pgEnum,
   pgTable,
+  primaryKey,
   smallint,
   timestamp,
   uniqueIndex,
   uuid,
   varchar,
+  vector,
 } from 'drizzle-orm/pg-core'
 
 export const reviewStatusValues = ['draft', 'approved', 'retired'] as const
@@ -31,6 +33,30 @@ export const generationStatusValues = [
 export const scenarioValues = ['groupwork', 'professor', 'senior', 'friend'] as const
 export const modeValues = ['reply', 'initiate'] as const
 export const purposeValues = ['ask', 'apologize', 'decline', 'question', 'suggest', 'other'] as const
+export const interactionEventValues = [
+  'result_shown',
+  'refinement_opened',
+  'regeneration_requested',
+  'copy_succeeded',
+  'situation_change',
+] as const
+export const interactionResultRouteValues = [
+  'template_fallback',
+  'guided_ai',
+  'manual_ai',
+  'email_template',
+] as const
+export const situationValues = [
+  'schedule',
+  'thanks_check',
+  'ask',
+  'apologize',
+  'decline',
+  'contribution_check',
+  'absence_inquiry',
+  'casual_request',
+  'express_feelings',
+] as const
 
 export const reviewStatusEnum = pgEnum('review_status', reviewStatusValues)
 export const generationRouteEnum = pgEnum('generation_route', generationRouteValues)
@@ -38,6 +64,12 @@ export const generationStatusEnum = pgEnum('generation_status', generationStatus
 export const scenarioEnum = pgEnum('scenario_id', scenarioValues)
 export const modeEnum = pgEnum('message_mode', modeValues)
 export const purposeEnum = pgEnum('purpose_id', purposeValues)
+export const interactionEventEnum = pgEnum('interaction_event_name', interactionEventValues)
+export const interactionResultRouteEnum = pgEnum(
+  'interaction_result_route',
+  interactionResultRouteValues,
+)
+export const situationEnum = pgEnum('situation_id', situationValues)
 
 const createdAtColumn = () =>
   timestamp('created_at', { mode: 'date', withTimezone: true }).defaultNow().notNull()
@@ -191,6 +223,81 @@ export const evaluationRuns = pgTable(
   ],
 )
 
+export const retrievalExamples = pgTable(
+  'retrieval_examples',
+  {
+    exampleId: varchar('example_id', { length: 96 }).notNull(),
+    catalogVersion: varchar('catalog_version', { length: 64 }).notNull(),
+    embeddingModel: varchar('embedding_model', { length: 128 }).notNull(),
+    scenarioId: scenarioEnum('scenario_id').notNull(),
+    purposeId: purposeEnum('purpose_id').notNull(),
+    mode: modeEnum('mode').notNull(),
+    embedding: vector('embedding', { dimensions: 1024 }).notNull(),
+    checksum: varchar('checksum', { length: 64 }).notNull(),
+    reviewStatus: reviewStatusEnum('review_status').notNull(),
+    reviewedAt: timestamp('reviewed_at', { mode: 'date', withTimezone: true }).notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.exampleId, table.catalogVersion, table.embeddingModel],
+      name: 'retrieval_examples_identity_pk',
+    }),
+    index('retrieval_examples_filter_idx').on(
+      table.catalogVersion,
+      table.embeddingModel,
+      table.reviewStatus,
+      table.scenarioId,
+      table.purposeId,
+      table.mode,
+    ),
+    check('retrieval_examples_example_id_nonempty', sql`length(trim(${table.exampleId})) > 0`),
+    check(
+      'retrieval_examples_catalog_version_nonempty',
+      sql`length(trim(${table.catalogVersion})) > 0`,
+    ),
+    check(
+      'retrieval_examples_embedding_model_nonempty',
+      sql`length(trim(${table.embeddingModel})) > 0`,
+    ),
+    check('retrieval_examples_checksum_sha256', sql`${table.checksum} ~ '^[0-9a-f]{64}$'`),
+    check('retrieval_examples_embedding_nonzero', sql`vector_norm(${table.embedding}) > 0`),
+  ],
+)
+
+export const interactionEvents = pgTable(
+  'interaction_events',
+  {
+    eventName: interactionEventEnum('event_name').notNull(),
+    route: interactionResultRouteEnum('route').notNull(),
+    scenarioId: scenarioEnum('scenario_id').notNull(),
+    mode: modeEnum('mode').notNull(),
+    situationId: situationEnum('situation_id'),
+    toneLevel: smallint('tone_level'),
+    createdAt: createdAtColumn(),
+  },
+  (table) => [
+    index('interaction_events_created_at_idx').on(table.createdAt),
+    index('interaction_events_route_created_at_idx').on(table.route, table.createdAt),
+    index('interaction_events_scenario_created_at_idx').on(table.scenarioId, table.createdAt),
+    check(
+      'interaction_events_route_situation_boundary',
+      sql`(${table.route} in ('guided_ai', 'template_fallback') and ${table.situationId} is not null) or (${table.route} in ('manual_ai', 'email_template') and ${table.situationId} is null)`,
+    ),
+    check(
+      'interaction_events_scenario_situation_boundary',
+      sql`${table.situationId} is null or ${table.situationId} in ('schedule', 'thanks_check', 'ask', 'apologize', 'decline') or (${table.scenarioId} = 'groupwork' and ${table.situationId} = 'contribution_check') or (${table.scenarioId} = 'professor' and ${table.situationId} = 'absence_inquiry') or (${table.scenarioId} = 'senior' and ${table.situationId} = 'casual_request') or (${table.scenarioId} = 'friend' and ${table.situationId} = 'express_feelings')`,
+    ),
+    check(
+      'interaction_events_copy_tone_boundary',
+      sql`(${table.eventName} = 'copy_succeeded' and ${table.toneLevel} is not null and ${table.toneLevel} between 1 and 3) or (${table.eventName} <> 'copy_succeeded' and ${table.toneLevel} is null)`,
+    ),
+    check(
+      'interaction_events_email_professor_boundary',
+      sql`${table.route} <> 'email_template' or ${table.scenarioId} = 'professor'`,
+    ),
+  ],
+)
+
 export type PromptVersionRow = typeof promptVersions.$inferSelect
 export type NewPromptVersionRow = typeof promptVersions.$inferInsert
 export type TemplateVersionRow = typeof templateVersions.$inferSelect
@@ -199,3 +306,7 @@ export type GenerationRunRow = typeof generationRuns.$inferSelect
 export type NewGenerationRunRow = typeof generationRuns.$inferInsert
 export type EvaluationRunRow = typeof evaluationRuns.$inferSelect
 export type NewEvaluationRunRow = typeof evaluationRuns.$inferInsert
+export type RetrievalExampleRow = typeof retrievalExamples.$inferSelect
+export type NewRetrievalExampleRow = typeof retrievalExamples.$inferInsert
+export type InteractionEventRow = typeof interactionEvents.$inferSelect
+export type NewInteractionEventRow = typeof interactionEvents.$inferInsert
