@@ -9,7 +9,7 @@
 1. API 요청과 응답에서 사용하는 데이터 계약
 2. PostgreSQL 물리 모델로 연결되는 개념 모델 및 무결성 규칙
 
-운영 데이터베이스는 PostgreSQL을 사용한다. 구체적인 인덱스, 마이그레이션과 ORM 모델은 데이터 접근 기술을 선택한 뒤 별도로 확정한다.
+운영 데이터베이스는 PostgreSQL을 사용한다. 현재 규모에서는 `pg` Pool과 매개변수화한 SQL을 사용하며, 마이그레이션은 `backend/migrations`의 순차 SQL 파일을 `npm run migrate`로 적용한다.
 
 ---
 
@@ -537,7 +537,7 @@ Recipe 1 ─── 0..1 ReceivedRecipeInfo
 
 ### 운영 및 데이터 접근
 
-- ORM 또는 데이터 접근 방식
-- 외래 키 cascade 정책
+- 데이터 접근은 `pg` Pool과 매개변수화한 SQL로 구현한다.
+- `users`에서 `recipes`로의 참조는 `RESTRICT`로 보호하고, Recipe의 재료·조리 단계·출처는 Recipe 삭제 시 `CASCADE`로 정리한다.
 - 30일 경과 레시피 정리 작업
 - 감사 기록 보존 기간

@@ -99,7 +99,7 @@ font-family: "Noto Serif KR", "Nanum Myeongjo", "Malgun Gothic", serif;
 ```
 
 - 책 프레임은 뷰포트보다 커지지 않는다.
-- 권장 최대 크기: `1580px × 990px`
+- 책 프레임은 사방 10px 안전 여백을 제외한 뷰포트를 사용한다: `calc(100vw - 20px) × calc(100dvh - 20px)`
 - 페이지는 항상 좌우 2면으로 유지한다.
 - 사이드바 폭: 186px
 - 종이 페이지는 동등한 비율로 나눈다.
@@ -134,7 +134,8 @@ font-family: "Noto Serif KR", "Nanum Myeongjo", "Malgun Gothic", serif;
 
 필수 규칙:
 
-- `height: min(990px, calc(100dvh - 20px))`
+- `width: calc(100vw - 20px)`
+- `height: calc(100dvh - 20px)`
 - `overflow: hidden`
 - 가죽 프레임과 텍스처는 pseudo-element로 구현한다.
 - 내부 Grid 아이템에는 `min-height: 0`을 준다.
