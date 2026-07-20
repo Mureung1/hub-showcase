@@ -108,113 +108,98 @@ function getOfflineRecommendation(
   situation: string,
   closet: any[]
 ) {
-  // Categorize closet items
-  const tops = closet.filter(item => item.category === 'top');
-  const bottoms = closet.filter(item => item.category === 'bottom');
-  const shoes = closet.filter(item => item.category === 'shoes');
-  const accessories = closet.filter(item => item.category === 'accessories');
+  const tops = closet.filter((item) => item.category === "top");
+  const bottoms = closet.filter((item) => item.category === "bottom");
+  const shoes = closet.filter((item) => item.category === "shoes");
+  const accessories = closet.filter((item) => item.category === "accessories");
 
-  // Fallback to choosing first items if not empty
-  const selectedTop = tops[Math.floor(Math.random() * tops.length)] || null;
-  const selectedBottom = bottoms[Math.floor(Math.random() * bottoms.length)] || null;
-  const selectedShoes = shoes[Math.floor(Math.random() * shoes.length)] || null;
-  const selectedAccessory = accessories[Math.floor(Math.random() * accessories.length)] || null;
+  const pickRandom = (items: any[]) =>
+    items.length > 0 ? items[Math.floor(Math.random() * items.length)] : null;
 
-  // Design beautiful retro style note based on parameters
-  let systemStatus = "";
-  let environmentLog = "";
-  let aestheticRef = "";
-  let recommendationResult = "";
+  const selectedTop = pickRandom(tops);
+  const selectedBottom = pickRandom(bottoms);
+  const selectedShoes = pickRandom(shoes);
+  const selectedAccessory = pickRandom(accessories);
 
-  if (weather === 'sun') {
-    systemStatus = "Analyzing solar radiation levels... [Clear, 24°C]";
-    environmentLog = "UV index moderate. Perfect outdoor luminance detected.";
-  } else if (weather === 'cloud') {
-    systemStatus = "Analyzing cloud coverage... [Cloudy, 18°C]";
-    environmentLog = "Low glare situation. High humidity vapor vibes.";
-  } else if (weather === 'rain') {
-    systemStatus = "Precipitation warning active... [Rainy, 14°C]";
-    environmentLog = "Water droplets detected on outer shields.";
-  } else {
-    systemStatus = "Sub-zero conditions detected... [Snowing, -2°C]";
-    environmentLog = "Frost particles crystalizing in atmosphere.";
-  }
+  const weatherLabel: Record<string, string> = {
+    sun: "맑은 날",
+    cloud: "흐린 날",
+    rain: "비 오는 날",
+    snow: "눈 오는 날",
+  };
 
-  if (destination === 'cafe' || destination === 'home') {
-    aestheticRef = "Sourcing low-energy cozy aesthetic presets...";
-    recommendationResult = `Today is a perfect day for a relaxed and casual fit. Selected ${selectedTop ? selectedTop.name : "Top"} with ${selectedBottom ? selectedBottom.name : "Bottom"} to maximize comfort while maintaining elite visual coordinates.`;
-  } else if (destination === 'school' || destination === 'office') {
-    aestheticRef = "Sourcing active workstation & productivity aesthetic...";
-    recommendationResult = `Optimal ergonomics achieved. Pairing ${selectedTop ? selectedTop.name : "Top"} with ${selectedBottom ? selectedBottom.name : "Bottom"} delivers a sharp, clean silhouette suitable for technical focus environments.`;
-  } else { // party
-    aestheticRef = "Sourcing high-luminance neon social aesthetic...";
-    recommendationResult = `High-energy social mode activated! The vibrant contrast of ${selectedTop ? selectedTop.name : "Top"} and ${selectedBottom ? selectedBottom.name : "Bottom"} will turn heads in the neon grid.`;
-  }
+  const destinationLabel: Record<string, string> = {
+    cafe: "카페",
+    home: "집",
+    school: "학교",
+    office: "회사",
+    party: "모임",
+  };
 
-  // Inject some specific situation advice
-  if (situation === 'date') {
-    recommendationResult += " Highly recommend styling with dynamic hair pins or accessories to elevate cute index.";
-  } else if (situation === 'workout') {
-    recommendationResult += " Ensuring peak physical mobility with high-flexibility joint alignments.";
-  } else if (situation === 'formal') {
-    recommendationResult += " Maintaining rigid structure protocols for dignified physical representations.";
-  } else {
-    recommendationResult += " Maximum freedom mode active. Chill-wave protocol engaged.";
-  }
+  const situationLabel: Record<string, string> = {
+    date: "데이트",
+    workout: "운동",
+    formal: "격식 있는 일정",
+    daily: "일상",
+  };
 
-  const stylistNote = `> SYSTEM: ${systemStatus}
-> SYSTEM: ${environmentLog}
-> SYSTEM: ${aestheticRef}
-> RESULT: ${recommendationResult}
-> Status: Offline recommendation engine active (Awaiting API connection)`;
+  const selectedItems = [selectedTop, selectedBottom, selectedShoes, selectedAccessory]
+    .filter(Boolean)
+    .map((item) => item.name)
+    .join(", ");
+
+  const stylistNote = `선택한 조건인 ${weatherLabel[weather] ?? weather}, ${destinationLabel[destination] ?? destination}, ${situationLabel[situation] ?? situation}을 고려했습니다.
+옷장에 등록된 아이템 중 실제로 입기 편하고 색상 조합이 자연스러운 구성을 우선했습니다.
+추천 아이템: ${selectedItems || "선택 가능한 옷이 부족합니다."}
+현재 Gemini 연결이 원활하지 않아 기본 추천 방식으로 결과를 제공했습니다.`;
 
   return {
-    topId: selectedTop ? selectedTop.id : "",
-    bottomId: selectedBottom ? selectedBottom.id : "",
-    shoesId: selectedShoes ? selectedShoes.id : "",
-    accessoriesId: selectedAccessory ? selectedAccessory.id : "",
-    stylistNote
+    topId: selectedTop?.id ?? "",
+    bottomId: selectedBottom?.id ?? "",
+    shoesId: selectedShoes?.id ?? "",
+    accessoriesId: selectedAccessory?.id ?? "",
+    stylistNote,
   };
 }
 
-// Offline list of exciting new clothes
+// Offline list of realistic new clothes
 function getOfflineNewOutfitRecommendation(
   weather: string,
   destination: string,
   situation: string
 ) {
   const newTops = [
-    { name: "네온 사이버 펑크 윈드브레이커", colors: ["Neon Pink", "Black"], imageUrl: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=400", description: "화려한 네온 핑크 컬러와 반사 재질로 야간에도 빛나는 미래형 윈드브레이커 상의" },
-    { name: "홀로그램 테크웨어 아노락", colors: ["Holo Blue", "Silver"], imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=400", description: "각도에 따라 색상이 변하는 홀로그램 하이테크 디자인 아노락" },
-    { name: "글리치 매트릭스 크롭 티셔츠", colors: ["Black", "Acid Green"], imageUrl: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=400", description: "레트로 매트릭스 컴퓨터 글리치 효과가 멋진 아시드 그린 크롭 탑" }
+    { name: "베이직 코튼 셔츠", colors: ["White", "Light Blue"], imageUrl: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=400", description: "단정하면서도 편안해 학교, 카페, 데이트 등 다양한 일정에 활용하기 좋은 셔츠" },
+    { name: "오버핏 맨투맨", colors: ["Gray", "Navy"], imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=400", description: "일상에서 부담 없이 입기 좋고 활동성이 뛰어난 데일리 상의" },
+    { name: "라운드넥 니트", colors: ["Ivory", "Beige"], imageUrl: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=400", description: "차분한 색감으로 깔끔하고 포근한 분위기를 연출하는 기본 니트" },
   ];
 
   const newBottoms = [
-    { name: "다기능 테크웨어 버클 조거팬츠", colors: ["Matt Black"], imageUrl: "https://images.unsplash.com/photo-1517423568366-8b83523034fd?auto=format&fit=crop&q=80&w=400", description: "수많은 주머니와 테크니컬 스트랩, 버클로 디테일을 극대화한 블랙 조거팬츠" },
-    { name: "네온 파이핑 글리치 스커트", colors: ["Cyber Purple", "Neon Pink"], imageUrl: "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?auto=format&fit=crop&q=80&w=400", description: "네온 컬러 라인이 밤마다 빛나는 사이버펑크 감성의 비대칭 스커트" },
-    { name: "디지털 스카이 데님 쇼츠", colors: ["Cyan Acid Wash"], imageUrl: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&q=80&w=400", description: "구름 낀 하늘을 닮은 독창적인 워싱 디테일의 청량한 데님 쇼츠" }
+    { name: "스트레이트 데님 팬츠", colors: ["Denim Blue"], imageUrl: "https://images.unsplash.com/photo-1517423568366-8b83523034fd?auto=format&fit=crop&q=80&w=400", description: "대부분의 상의와 잘 어울리고 오래 걸어도 편안한 기본 데님" },
+    { name: "와이드 슬랙스", colors: ["Black", "Charcoal"], imageUrl: "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?auto=format&fit=crop&q=80&w=400", description: "단정한 인상과 편안한 착용감을 함께 갖춘 실용적인 하의" },
+    { name: "코튼 롱스커트", colors: ["Beige", "Black"], imageUrl: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&q=80&w=400", description: "카페나 데이트처럼 편안하면서도 분위기가 필요한 일정에 잘 어울리는 스커트" },
   ];
 
   const newShoes = [
-    { name: "사이버네틱 나이트 에어 슈즈", colors: ["Neon Violet", "White"], imageUrl: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=80&w=400", description: "충격 흡수 에어 쿠션과 LED 라이팅이 내장되어 피로감을 줄여주는 미래지향적 슈즈" },
-    { name: "하이테크 레이저 러너 3.0", colors: ["Electric Green", "Black"], imageUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=400", description: "가벼운 피팅감과 날렵한 사이버 라인으로 속도감을 극대화한 에어로 슈즈" }
+    { name: "화이트 데일리 스니커즈", colors: ["White"], imageUrl: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=80&w=400", description: "장시간 걸어도 편하고 다양한 코디에 자연스럽게 어울리는 기본 스니커즈" },
+    { name: "블랙 로퍼", colors: ["Black"], imageUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=400", description: "학교, 회사, 데이트 등 단정한 분위기가 필요한 장소에 활용하기 좋은 신발" },
   ];
 
   const newAccessories = [
-    { name: "스마트 네온 바이저 고글", colors: ["Electric Yellow", "Black"], imageUrl: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&q=80&w=400", description: "증강 현실 안경을 닮은 미래지향적 선글라스 바이저 고글" },
-    { name: "8비트 픽셀 하트 목걸이", colors: ["Magenta Pink"], imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=400", description: "레트로 8비트 게임의 하트 아이콘을 그대로 재현한 귀여운 목걸이 소품" }
+    { name: "미니 크로스백", colors: ["Black", "Brown"], imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=400", description: "필요한 소지품을 간단히 넣을 수 있고 데일리 코디에 부담 없이 어울리는 가방" },
+    { name: "심플 실버 목걸이", colors: ["Silver"], imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=400", description: "과하지 않게 포인트를 더해주는 데일리 액세서리" },
   ];
 
-  const top = newTops[Math.floor(Math.random() * newTops.length)];
-  const bottom = newBottoms[Math.floor(Math.random() * newBottoms.length)];
-  const shoes = newShoes[Math.floor(Math.random() * newShoes.length)];
-  const accessory = newAccessories[Math.floor(Math.random() * newAccessories.length)];
+  const pickRandom = (items: any[]) => items[Math.floor(Math.random() * items.length)];
+  const top = pickRandom(newTops);
+  const bottom = pickRandom(newBottoms);
+  const shoes = pickRandom(newShoes);
+  const accessory = pickRandom(newAccessories);
 
-  const stylistNote = `> SYSTEM: 가상 의류 그리드에 접속하여 새로운 제품을 스캔 중...
-> SYSTEM: 트렌드 분석: weather=${weather}, location=${destination} 분위기 최적 매칭 완료
-> RESULT: 회원님의 옷장에는 아직 없지만, 오늘의 컨셉에 120% 일치하는 환상적인 아이템들을 준비했어요!
-> 추천 아이템: ${top.name}, ${bottom.name} 조합으로 유니크한 스트릿 무드를 연출해보세요!
-> Status: Offline recommendation engine active`;
+  const stylistNote = `선택한 날씨(${weather}), 장소(${destination}), 상황(${situation})을 기준으로 실제로 구매하고 활용하기 쉬운 아이템을 골랐습니다.
+${top.name}과 ${bottom.name}을 중심으로 편안하고 자연스러운 데일리룩을 구성했습니다.
+신발과 액세서리는 장소의 활동성과 전체 색상 조화를 고려했습니다.
+현재 Gemini 연결이 원활하지 않아 기본 추천 방식으로 결과를 제공했습니다.`;
 
   const formatWithShopping = (item: any, category: string, index: number) => {
     const id = `recommended-new-${category}-${Date.now()}-${index}`;
@@ -227,7 +212,7 @@ function getOfflineNewOutfitRecommendation(
       isCustom: true,
       description: item.description,
       shopName: "Naver Shopping",
-      shoppingUrl: `https://search.shopping.naver.com/search/all?query=${encodeURIComponent(item.name)}`
+      shoppingUrl: `https://search.shopping.naver.com/search/all?query=${encodeURIComponent(item.name)}`,
     };
   };
 
@@ -237,7 +222,7 @@ function getOfflineNewOutfitRecommendation(
     bottom: formatWithShopping(bottom, "bottom", 2),
     shoes: formatWithShopping(shoes, "shoes", 3),
     accessories: formatWithShopping(accessory, "accessories", 4),
-    stylistNote
+    stylistNote,
   };
 }
 
@@ -288,26 +273,33 @@ app.post("/api/recommend", async (req, res) => {
         return res.json({ ...fallback, source: "local-fallback" });
       }
 
-      const promptString = `You are a professional cyberpunk and cute pixel-art virtual stylist. Your task is to recommend a highly coordinated outfit of BRAND NEW clothes (not in the user's catalog) that fits the selected criteria:
-- Weather: ${weather}
-- Destination: ${destination}
-- Situation: ${situation}
+      const promptString = `당신은 대한민국의 전문 패션 스타일리스트입니다.
 
-Since these are new clothes, you must design them! Generate exactly one new TOP, one new BOTTOM, one new SHOES, and optionally one new ACCESSORY.
-Return your response strictly in JSON format as defined by the responseSchema.
+사용자가 선택한 조건을 모두 반영해 실제 쇼핑몰에서 검색하고 구매할 수 있을 법한 현실적인 새 옷 코디를 추천하세요.
 
-For each item, specify:
-- name: A cool, stylish name in Korean (e.g., '홀로그램 스페이스 아노락', '네온 스트랩 카고 조거팬츠')
-- colors: An array of 1 or 2 matching color names in English (e.g., ['Neon Blue', 'Silver'])
-- description: A short description in Korean of why this item is perfect (e.g., '빛을 반사하는 홀로그램 재질로 미래지향적 감각을 연출합니다.')
-- shoppingKeyword: A short shopping keyword in Korean for searching this item on shopping malls (e.g., '홀로그램 바람막이')
-- imageIndex: An integer representing which aesthetic image fits best (from 0 to 4 for top/bottom, 0 to 3 for shoes/accessories).
+사용자 조건
+- 날씨: ${weather}
+- 장소: ${destination}
+- 상황: ${situation}
 
-For 'stylistNote': Provide a cute retro 8-bit style note in Korean explaining your aesthetic choices, style guidelines, and why this is a good fit. Format the note like a retro cyber terminal output with console tags like:
-> SYSTEM: Sourcing new fashion grid...
-> SYSTEM: Target coordinates matched!
-> RESULT: [Korean description...]
-> Awaiting user purchase
+추천 규칙
+1. 날씨를 가장 우선적으로 고려하고, 장소와 상황을 함께 반영하세요.
+2. 대학생이나 직장인이 일상에서 실제로 입을 수 있는 자연스러운 코디를 추천하세요.
+3. 사용자가 직접 요청하지 않은 사이버펑크, 코스프레, SF, 네온, 홀로그램, 무대 의상은 추천하지 마세요.
+4. 상의 1개, 하의 1개, 신발 1개, 액세서리 1개를 추천하세요.
+5. 색상 조합과 활동성, 계절감을 고려하세요.
+6. 상품명은 쇼핑몰에서 검색하기 쉬운 일반적인 한국어 이름으로 작성하세요.
+7. 각 아이템 설명에는 선택한 날씨, 장소, 상황 중 어떤 조건을 반영했는지 포함하세요.
+8. stylistNote에는 세 조건을 각각 어떻게 반영했는지 4~5줄의 자연스러운 한국어로 설명하세요.
+
+응답은 responseSchema에 맞는 JSON 형식으로만 작성하세요.
+
+각 아이템 필드
+- name: 현실적인 한국어 상품명
+- colors: 서로 어울리는 영문 색상명 1~2개
+- description: 조건을 반영한 이유를 포함한 짧은 한국어 설명
+- shoppingKeyword: 네이버 쇼핑에서 검색하기 좋은 짧은 한국어 키워드
+- imageIndex: 해당 카테고리 이미지 목록에서 가장 어울리는 인덱스
 `;
 
       try {
@@ -367,7 +359,7 @@ For 'stylistNote': Provide a cute retro 8-bit style note in Korean explaining yo
               },
               required: ["top", "bottom", "shoes", "stylistNote"]
             },
-            temperature: 0.85
+            temperature: 0.35
           }
         }));
 
@@ -427,24 +419,29 @@ For 'stylistNote': Provide a cute retro 8-bit style note in Korean explaining yo
       return `ID: ${item.id} | Name: ${item.name} | Category: ${item.category} | Colors: ${item.colors.join(", ")}`;
     }).join("\n");
 
-    const promptString = `You are a professional cyberpunk and cute pixel-art virtual stylist. Your task is to recommend a highly coordinated outfit consisting of a TOP, a BOTTOM, a SHOES, and optionally an ACCESSORY from the user's clothing catalog based on the selected criteria:
-- Weather: ${weather}
-- Destination: ${destination}
-- Situation: ${situation}
+    const promptString = `당신은 대한민국의 전문 패션 스타일리스트입니다.
 
-Here is the user's clothing catalog:
+사용자의 옷장에 등록된 아이템 안에서만 날씨, 장소, 상황에 어울리는 현실적인 코디를 선택하세요.
+
+사용자 조건
+- 날씨: ${weather}
+- 장소: ${destination}
+- 상황: ${situation}
+
+사용자 옷장 목록
 ${closetDescription}
 
-Please pick exactly one top, one bottom, one shoes, and optionally one accessory from the list. If the list is missing items in a specific category, pick the closest matching item or leave empty if nothing is found.
-Return your response strictly in JSON format as defined by the schema.
+추천 규칙
+1. 날씨를 가장 우선적으로 고려하세요.
+2. 장소의 분위기와 이동량, 상황에 필요한 단정함이나 활동성을 함께 고려하세요.
+3. 일반인이 실제로 입을 수 있는 자연스러운 데일리룩을 선택하세요.
+4. 사용자가 요청하지 않은 사이버펑크, 코스프레, SF, 네온, 홀로그램, 무대 의상 스타일은 선택 기준으로 사용하지 마세요.
+5. 제공된 옷장 목록에 존재하는 ID만 반환하세요. 절대로 새로운 ID나 옷을 만들어내지 마세요.
+6. 상의 1개, 하의 1개, 신발 1개를 선택하고, 어울리는 액세서리가 있을 때만 1개 선택하세요.
+7. 특정 카테고리의 아이템이 없다면 해당 ID는 빈 문자열로 반환하세요.
+8. stylistNote는 한국어 4~5줄로 작성하고, 날씨·장소·상황을 각각 어떻게 반영했는지 구체적으로 설명하세요.
 
-For 'stylistNote': Provide a cute pixel-stylist note in Korean explaining your aesthetic choices, style guidelines, and why this is a good fit. Format the note like a retro cyber terminal output with console tags like:
-> SYSTEM: Analyzing weather...
-> SYSTEM: Cross-referencing vaporwave mood...
-> RESULT: [Korean description...]
-> Awaiting user input
-
-Keep the stylistNote around 4-5 lines.`;
+응답은 responseSchema에 맞는 JSON 형식으로만 작성하세요.`;
 
     try {
       const response = await ai.models.generateContent({
@@ -459,11 +456,11 @@ Keep the stylistNote around 4-5 lines.`;
               bottomId: { type: Type.STRING, description: "ID of the recommended bottom clothing item from the provided catalog" },
               shoesId: { type: Type.STRING, description: "ID of the recommended shoes clothing item from the provided catalog" },
               accessoriesId: { type: Type.STRING, description: "ID of the recommended accessory clothing item from the provided catalog (optional)" },
-              stylistNote: { type: Type.STRING, description: "Cute retro 8-bit style note in Korean with console tags" }
+              stylistNote: { type: Type.STRING, description: "Korean explanation of how weather, destination, and situation were reflected" }
             },
             required: ["topId", "bottomId", "shoesId", "stylistNote"]
           },
-          temperature: 0.8
+          temperature: 0.25
         }
       });
 
