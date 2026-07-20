@@ -7,13 +7,9 @@ import static org.mockito.BDDMockito.given;
 import com.chasewar.global.infra.geocoding.GeocodingClient;
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.domain.vo.Coordinates;
-import com.chasewar.parking.domain.vo.Fee;
-import com.chasewar.parking.domain.vo.OperType;
-import com.chasewar.parking.domain.vo.OperatingHours;
-import com.chasewar.parking.domain.vo.ParkingKind;
-import com.chasewar.parking.domain.vo.PayType;
 import com.chasewar.parking.repository.ParkingLotRepository;
 import com.chasewar.support.IntegrationTest;
+import com.chasewar.support.fixture.ParkingLotFixtureBuilder;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-class ParkingLotGeocodingServiceTest extends IntegrationTest {
+class ParkingLotGeocodingServiceIntegrationTest extends IntegrationTest {
 
     @Autowired
     private ParkingLotGeocodingService parkingLotGeocodingService;
@@ -34,11 +30,11 @@ class ParkingLotGeocodingServiceTest extends IntegrationTest {
 
     @DisplayName("주차장 좌표를 지오코딩")
     @Nested
-    class GeoCode {
+    class Geocode {
 
         @DisplayName("좌표가 없는 주차장의 좌표를 지오코딩으로 채운다")
         @Test
-        void success_fillCoordinates() {
+        void success_geocode() {
             // given
             ParkingLot saved = parkingLotRepository.save(parkingLotWithoutCoordinates());
             given(geocodingClient.geocode(anyString()))
@@ -54,7 +50,7 @@ class ParkingLotGeocodingServiceTest extends IntegrationTest {
 
         @DisplayName("지오코딩을 실패하면 좌표를 채우지 않고 스킵한다")
         @Test
-        void skipWhenGeoCodeFail() {
+        void success_skipGeocodeFail() {
             // given
             ParkingLot saved = parkingLotRepository.save(parkingLotWithoutCoordinates());
             given(geocodingClient.geocode(anyString()))
@@ -70,18 +66,6 @@ class ParkingLotGeocodingServiceTest extends IntegrationTest {
     }
 
     private ParkingLot parkingLotWithoutCoordinates() {
-        return new ParkingLot(
-                "1000001",
-                "테스트 주차장",
-                "서울특별시 강남구 대치동 111-2",
-                "강남구",
-                null,
-                ParkingKind.OUTDOOR,
-                OperType.TIME_BASED,
-                null,
-                new Fee(null, null, null, null, null),
-                PayType.PAID,
-                new OperatingHours(null, null, null, null, null, null)
-        );
+        return ParkingLotFixtureBuilder.builder().build();
     }
 }

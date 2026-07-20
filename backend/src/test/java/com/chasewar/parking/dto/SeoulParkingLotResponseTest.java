@@ -33,7 +33,7 @@ class SeoulParkingLotResponseTest {
         @DisplayName("주소가 없으면 구, 주소는 null로 저장된다")
         @ParameterizedTest
         @NullAndEmptySource
-        void nullWhenNoAddress(String address) {
+        void success_noAddress(String address) {
             // given
             Row row = rowWithAddress(address);
 

@@ -30,7 +30,7 @@ class PayTypeTest {
         @ParameterizedTest
         @NullAndEmptySource
         @ValueSource(strings = {"X"})
-        void fallbackToUnknown(String code) {
+        void success_unknown(String code) {
             // then
             assertThat(PayType.fromCode(code)).isEqualTo(PayType.UNKNOWN);
         }

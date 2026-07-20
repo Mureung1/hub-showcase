@@ -30,7 +30,7 @@ class ParkingKindTest {
         @ParameterizedTest
         @NullAndEmptySource
         @ValueSource(strings = {"X"})
-        void fallbackToUnknown(String code) {
+        void success_unknown(String code) {
             // then
             assertThat(ParkingKind.fromCode(code)).isEqualTo(ParkingKind.UNKNOWN);
         }

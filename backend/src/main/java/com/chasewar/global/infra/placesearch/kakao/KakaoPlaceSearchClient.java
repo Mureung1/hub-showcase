@@ -1,8 +1,8 @@
-package com.chasewar.global.infra.geocoding.kakao;
+package com.chasewar.global.infra.placesearch.kakao;
 
-import com.chasewar.global.infra.geocoding.GeocodingClient;
-import com.chasewar.global.infra.geocoding.kakao.dto.KakaoAddressResponse;
-import com.chasewar.global.infra.geocoding.kakao.dto.KakaoAddressResponse.Document;
+import com.chasewar.global.infra.placesearch.PlaceSearchClient;
+import com.chasewar.global.infra.placesearch.kakao.dto.KakaoKeywordResponse;
+import com.chasewar.global.infra.placesearch.kakao.dto.KakaoKeywordResponse.Document;
 import com.chasewar.parking.domain.vo.Coordinates;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,14 +11,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 @Component
-public class KakaoGeocodingClient implements GeocodingClient {
+public class KakaoPlaceSearchClient implements PlaceSearchClient {
 
     private static final String BASE_URL = "https://dapi.kakao.com";
     private static final String AUTH_PREFIX = "KakaoAK ";
 
     private final RestClient restClient;
 
-    public KakaoGeocodingClient(@Value("${kakao.api.key}") String apiKey) {
+    public KakaoPlaceSearchClient(@Value("${kakao.api.key}") String apiKey) {
         this.restClient = RestClient.builder()
                 .baseUrl(BASE_URL)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, AUTH_PREFIX + apiKey)
@@ -26,19 +26,19 @@ public class KakaoGeocodingClient implements GeocodingClient {
     }
 
     @Override
-    public Optional<Coordinates> geocode(String address) {
-        KakaoAddressResponse response = restClient.get()
+    public Optional<Coordinates> searchByKeyword(String keyword) {
+        KakaoKeywordResponse response = restClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/v2/local/search/address.json")
-                        .queryParam("query", address)
+                        .path("/v2/local/search/keyword.json")
+                        .queryParam("query", keyword)
                         .build())
                 .retrieve()
-                .body(KakaoAddressResponse.class);
+                .body(KakaoKeywordResponse.class);
 
         return toCoordinates(response);
     }
 
-    private Optional<Coordinates> toCoordinates(KakaoAddressResponse response) {
+    private Optional<Coordinates> toCoordinates(KakaoKeywordResponse response) {
         if (response == null || response.documents().isEmpty()) {
             return Optional.empty();
         }
