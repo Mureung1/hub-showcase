@@ -1,4 +1,4 @@
-export const defaultKnowledgeChunkFileNames = ['docker-docs-chunks.jsonl']
+export const defaultKnowledgeChunkFileNames = ['docker-docs-chunks.jsonl', 'react_docs.jsonl']
 
 export function loadKnowledgeChunks({ fs, path, repoRoot, fileNames = defaultKnowledgeChunkFileNames }) {
   const dataDir = path.join(repoRoot, 'data')
@@ -35,17 +35,15 @@ function parseKnowledgeChunk({ line, lineIndex, topic, fileName }) {
 
   try {
     const value = JSON.parse(trimmed)
-    if (!isNonEmptyString(value.docTitle) || !isNonEmptyString(value.chunkText) || !isNonEmptyString(value.url)) {
+    const normalized = normalizeKnowledgeChunkInput(value)
+
+    if (!normalized) {
       return null
     }
 
     return {
       id: `${fileName}:${lineIndex + 1}`,
-      docTitle: value.docTitle.trim(),
-      sectionHeading: isNonEmptyString(value.sectionHeading) ? value.sectionHeading.trim() : value.docTitle.trim(),
-      chunkText: value.chunkText.trim(),
-      url: value.url.trim(),
-      sourcePath: isNonEmptyString(value.sourcePath) ? value.sourcePath.trim() : fileName,
+      ...normalized,
       sourceType: 'official-doc',
       topic,
     }
@@ -54,16 +52,52 @@ function parseKnowledgeChunk({ line, lineIndex, topic, fileName }) {
   }
 }
 
+function normalizeKnowledgeChunkInput(value) {
+  const docTitle = pickString(value.docTitle, value.title)
+  const chunkText = pickString(value.chunkText, value.content)
+  const url = pickString(value.url)
+
+  if (!docTitle || !chunkText || !url) {
+    return null
+  }
+
+  return {
+    docTitle,
+    sectionHeading: pickString(value.sectionHeading) ?? docTitle,
+    chunkText,
+    url,
+    sourcePath: pickString(value.sourcePath) ?? url,
+  }
+}
+
+function pickString(...values) {
+  const value = values.find(isNonEmptyString)
+
+  return typeof value === 'string' ? value.trim() : null
+}
+
 function scoreChunk(chunk, terms) {
   const haystack = `${chunk.topic} ${chunk.docTitle} ${chunk.sectionHeading} ${chunk.chunkText}`.toLowerCase()
-
-  return terms.reduce((score, term) => {
+  const baseScore = terms.reduce((score, term) => {
     if (chunk.topic.toLowerCase() === term) return score + 6
     if (chunk.docTitle.toLowerCase().includes(term)) return score + 4
     if (chunk.sectionHeading.toLowerCase().includes(term)) return score + 3
     if (haystack.includes(term)) return score + 1
     return score
   }, 0)
+
+  return baseScore + scoreSourceQuality(chunk)
+}
+
+function scoreSourceQuality(chunk) {
+  let score = 0
+  const url = String(chunk.url ?? '').toLowerCase()
+  const haystack = `${chunk.docTitle} ${chunk.sectionHeading} ${chunk.chunkText}`.toLowerCase()
+
+  if (url.includes('/learn/')) score += 5
+  if (haystack.includes('deprecated') || haystack.includes('legacy') || haystack.includes('레거시')) score -= 4
+
+  return score
 }
 
 function tokenize(query) {
