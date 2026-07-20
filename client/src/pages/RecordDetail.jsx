@@ -11,10 +11,15 @@ function RecordDetail({ checkin, onBack }) {
     <section className="result-panel">
       <div className="result-meta">
         <p className="eyebrow">기록 상세</p>
-        <time dateTime={checkin.createdAt}>{formatDate(checkin.createdAt)}</time>
+        <time dateTime={checkin.createdAt}>
+          {checkin.mood ? `${checkin.mood} ` : ''}{formatDate(checkin.createdAt)}
+        </time>
       </div>
       <h2>그날 남긴 기록이에요.</h2>
       <p className="record-raw">“{checkin.rawText}”</p>
+      {checkin.imageUrl && (
+        <img className="record-photo" src={checkin.imageUrl} alt="기록에 첨부한 사진" />
+      )}
       <div className="summary-grid">
         {DETAIL_FIELDS.map(({ key, icon, title }) => (
           <div className="summary-card" key={key}>

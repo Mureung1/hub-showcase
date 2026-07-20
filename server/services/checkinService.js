@@ -9,6 +9,8 @@ function toCheckin(row) {
     emotion: row.emotion,
     cause: row.cause,
     action: row.action,
+    mood: row.mood,
+    imageUrl: row.image_url,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -46,6 +48,9 @@ export async function createCheckin(entry) {
     .insert({
       user_id: entry.userId || entry.user_id || null,
       raw_text: rawText,
+      // 값이 있을 때만 컬럼을 포함한다 — DB 마이그레이션 전에도 기본 저장이 동작하도록
+      ...(entry.mood ? { mood: entry.mood } : {}),
+      ...(entry.imageUrl ? { image_url: entry.imageUrl } : {}),
       ...summary,
     })
     .select()

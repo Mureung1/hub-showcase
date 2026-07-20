@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import CheckinForm from './components/CheckinForm'
-import SummaryCard from './components/SummaryCard'
+import FlipCard from './components/FlipCard'
 import RecordCard from './components/RecordCard'
 import RecordDetail from './pages/RecordDetail'
+import CalendarView from './pages/CalendarView'
+import hero from './assets/hero.png'
 import './App.css'
 
 const EMPTY_SUMMARY = { emotion: '', cause: '', action: '' }
+const EMPTY_REASONS = { emotion: '', cause: '', action: '' }
 
 const SUMMARY_FIELDS = [
   { key: 'emotion', icon: '🙂', title: '오늘의 감정' },
@@ -26,10 +29,14 @@ async function requestJson(url, options) {
 
 function App() {
   const [rawText, setRawText] = useState('')
+  const [mood, setMood] = useState('')
+  const [photoFile, setPhotoFile] = useState(null)
   const [summary, setSummary] = useState(EMPTY_SUMMARY)
+  const [reasons, setReasons] = useState(EMPTY_REASONS)
   const [summarySource, setSummarySource] = useState('')
   const [checkins, setCheckins] = useState([])
   const [screen, setScreen] = useState('input')
+  const [detailReturn, setDetailReturn] = useState('input')
   const [selectedCheckin, setSelectedCheckin] = useState(null)
   const [isOrganizing, setIsOrganizing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -70,6 +77,11 @@ function App() {
         cause: result.cause,
         action: result.action,
       })
+      setReasons({
+        emotion: result.emotionReason || '',
+        cause: result.causeReason || '',
+        action: result.actionReason || '',
+      })
       setSummarySource(result.source)
       setScreen('result')
     } catch (requestError) {
@@ -85,15 +97,30 @@ function App() {
     setIsSaving(true)
 
     try {
+      let imageUrl
+      if (photoFile) {
+        const formData = new FormData()
+        formData.append('photo', photoFile)
+        // Content-Type 헤더는 지정하지 않는다 — 브라우저가 multipart boundary를 붙여야 함
+        const uploaded = await requestJson('/api/checkins/photo', {
+          method: 'POST',
+          body: formData,
+        })
+        imageUrl = uploaded.imageUrl
+      }
+
       const saved = await requestJson('/api/checkins', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rawText, ...summary }),
+        body: JSON.stringify({ rawText, mood: mood || undefined, imageUrl, ...summary }),
       })
       setCheckins((current) => [saved, ...current])
       setNotice('오늘의 체크아웃을 저장했어요.')
       setRawText('')
+      setMood('')
+      setPhotoFile(null)
       setSummary(EMPTY_SUMMARY)
+      setReasons(EMPTY_REASONS)
       setSummarySource('')
       setScreen('input')
     } catch (requestError) {
@@ -101,6 +128,15 @@ function App() {
     } finally {
       setIsSaving(false)
     }
+  }
+
+  function handlePhotoChange(file) {
+    if (file && file.size > 5 * 1024 * 1024) {
+      setError('사진은 5MB 이하만 첨부할 수 있어요.')
+      return
+    }
+    setError('')
+    setPhotoFile(file)
   }
 
   function updateSummary(key, value) {
@@ -111,17 +147,26 @@ function App() {
     setError('')
     setNotice('')
     setSelectedCheckin(checkin)
+    setDetailReturn(screen === 'calendar' ? 'calendar' : 'input')
     setScreen('detail')
   }
 
   function backToList() {
     setSelectedCheckin(null)
-    setScreen('input')
+    setScreen(detailReturn)
+  }
+
+  function switchTab(nextScreen) {
+    setError('')
+    setNotice('')
+    setSelectedCheckin(null)
+    setScreen(nextScreen)
   }
 
   function retry() {
     setError('')
     setNotice('')
+    setReasons(EMPTY_REASONS)
     setSummarySource('')
     setScreen('input')
   }
@@ -131,18 +176,35 @@ function App() {
   return (
     <main className="app-shell">
       <header className="app-header">
-        <div className="brand-mark" aria-hidden="true">✓</div>
+        <img className="hero-img" src={hero} alt="" />
         <div>
-          <p className="eyebrow">HARU CHECKOUT</p>
+          <div className="badge">오늘 하루 정리</div>
           <h1>하루 체크아웃</h1>
         </div>
       </header>
+
+      <nav className="tab-nav" aria-label="화면 전환">
+        <button
+          className={`tab-btn${screen === 'input' || screen === 'result' ? ' active' : ''}`}
+          type="button"
+          onClick={() => switchTab('input')}
+        >오늘</button>
+        <button
+          className={`tab-btn${screen === 'calendar' || screen === 'detail' ? ' active' : ''}`}
+          type="button"
+          onClick={() => switchTab('calendar')}
+        >기록</button>
+      </nav>
 
       <section className="workspace" aria-live="polite">
         {screen === 'input' && (
           <CheckinForm
             rawText={rawText}
             onTextChange={setRawText}
+            mood={mood}
+            onMoodChange={setMood}
+            photoFile={photoFile}
+            onPhotoChange={handlePhotoChange}
             onSubmit={handleOrganize}
             isOrganizing={isOrganizing}
           />
@@ -153,28 +215,56 @@ function App() {
             <div className="result-meta">
               <p className="eyebrow">정리 결과</p>
               <span className={`source-badge source-${summarySource}`}>
-                {summarySource === 'ai' ? 'Vertex AI로 정리됨' : 'mock 결과로 정리됨'}
+                {summarySource === 'ai' ? 'AI로 정리됨' : '기본 문구로 정리됨'}
               </span>
             </div>
-            <h2>오늘의 마음을 세 가지로 정리했어요.</h2>
-            <p className="lead">내용을 직접 고친 뒤 저장할 수 있어요.</p>
-            <div className="summary-grid">
+            <div className="origin-box">
+              <span className="label">오늘 남긴 말</span>
+              <span>{rawText}</span>
+            </div>
+            <div className="result-cards">
               {SUMMARY_FIELDS.map(({ key, icon, title }) => (
-                <SummaryCard
+                <FlipCard
                   key={key}
                   icon={icon}
                   title={title}
                   value={summary[key]}
                   onChange={(value) => updateSummary(key, value)}
+                  reason={reasons[key]}
                 />
               ))}
             </div>
+            <p className="hint">내용을 직접 고친 뒤 저장할 수 있어요.</p>
             <div className="result-actions">
               <button className="button button-secondary" type="button" onClick={retry}>다시 정리하기</button>
               <button className="button button-primary" type="button" onClick={handleSave} disabled={!canSave || isSaving}>
-                {isSaving ? '저장하는 중…' : 'Supabase에 저장'}
+                {isSaving ? '저장하는 중…' : '저장'}
               </button>
             </div>
+          </section>
+        )}
+
+        {screen === 'calendar' && (
+          <section className="calendar-screen">
+            <CalendarView checkins={checkins} onSelectCheckin={openDetail} />
+            <div className="records-head">
+              <span className="section-label">최근 기록</span>
+              <button className="refresh-button" type="button" onClick={loadCheckins} disabled={isLoadingRecords}>새로고침</button>
+            </div>
+            {isLoadingRecords ? (
+              <p className="empty-state">기록을 불러오는 중이에요…</p>
+            ) : checkins.length === 0 ? (
+              <div className="empty-state">
+                <img src={hero} alt="" />
+                <p>아직 저장된 기록이 없어요. 첫 체크아웃을 남겨보세요.</p>
+              </div>
+            ) : (
+              <div className="record-list">
+                {checkins.map((checkin) => (
+                  <RecordCard key={checkin.id} checkin={checkin} onSelect={openDetail} />
+                ))}
+              </div>
+            )}
           </section>
         )}
 
@@ -184,28 +274,6 @@ function App() {
 
         {error && <p className="feedback feedback-error" role="alert">{error}</p>}
         {notice && <p className="feedback feedback-success">{notice}</p>}
-      </section>
-
-      <section className="records-section">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">MY RECORDS</p>
-            <h2>최근 체크아웃</h2>
-          </div>
-          <button className="refresh-button" type="button" onClick={loadCheckins} disabled={isLoadingRecords}>새로고침</button>
-        </div>
-
-        {isLoadingRecords ? (
-          <p className="empty-state">기록을 불러오는 중이에요…</p>
-        ) : checkins.length === 0 ? (
-          <p className="empty-state">아직 저장된 기록이 없어요. 첫 체크아웃을 남겨보세요.</p>
-        ) : (
-          <div className="record-list">
-            {checkins.map((checkin) => (
-              <RecordCard key={checkin.id} checkin={checkin} onSelect={openDetail} />
-            ))}
-          </div>
-        )}
       </section>
     </main>
   )

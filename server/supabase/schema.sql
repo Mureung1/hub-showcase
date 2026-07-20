@@ -10,3 +10,10 @@ create table if not exists public.checkins (
 );
 
 alter table public.checkins enable row level security;
+
+-- 감정 이모지 (선택 입력, 이모지 문자 자체를 저장)
+alter table public.checkins add column if not exists mood text;
+
+-- 첨부 사진 public URL (선택 입력)
+-- 사전 준비: Supabase 대시보드 Storage에서 Public 버킷 `checkin-photos`를 만들어야 한다.
+alter table public.checkins add column if not exists image_url text;

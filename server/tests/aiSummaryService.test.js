@@ -21,6 +21,32 @@ test('returns validated AI summary from an OpenAI-compatible response', async ()
   assert.equal(result.emotion, '답답함')
   assert.equal(result.cause, '새로운 도구가 익숙하지 않은 상황')
   assert.equal(result.action, '연결 순서를 한 줄로 적어둔다.')
+  // reason 필드가 없는 응답이어도 AI 결과로 인정하고 빈 문자열로 채운다
+  assert.equal(result.emotionReason, '')
+})
+
+test('passes reason fields through when the AI response includes them', async () => {
+  const fetchImpl = async () => new Response(JSON.stringify({
+    choices: [{
+      message: {
+        content: JSON.stringify({
+          emotion: '답답함',
+          cause: '새로운 도구가 익숙하지 않은 상황',
+          action: '연결 순서를 한 줄로 적어둔다.',
+          emotionReason: '"막혔다"는 표현에서 답답함을 정리했어요.',
+          causeReason: '도구 이야기가 원인으로 언급됐어요.',
+          actionReason: '바로 해볼 수 있는 작은 행동으로 좁혔어요.',
+        }),
+      },
+    }],
+  }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+
+  const result = await createSummary('오늘 새로운 도구 때문에 막혔다.', { fetchImpl })
+
+  assert.equal(result.source, 'ai')
+  assert.equal(result.emotionReason, '"막혔다"는 표현에서 답답함을 정리했어요.')
+  assert.equal(result.causeReason, '도구 이야기가 원인으로 언급됐어요.')
+  assert.equal(result.actionReason, '바로 해볼 수 있는 작은 행동으로 좁혔어요.')
 })
 
 test('falls back to mock when the gateway request fails', async () => {
