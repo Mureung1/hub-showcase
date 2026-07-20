@@ -5,9 +5,9 @@
 
 📌 [개발 Task 바로가기](https://github.com/hyunjinch/hub/wiki/SUBZIP-%EA%B0%9C%EB%B0%9C-Task)
 
--> [2주차 계획](https://github.com/users/hyunjinch/projects/1)
+-> [주차별 계획](https://github.com/users/hyunjinch/projects/1)
 
 ## 구조
 - `frontend/` — React (Vite)
-- `backend/` — Express
+- `backend/` — Express, PostgreSQL+Prisma
 - `docs/` — 기획/디자인 문서
