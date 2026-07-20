@@ -36,12 +36,18 @@ describe('클라이언트 번들 비밀값 검사', () => {
     const packageJson = JSON.parse(readFileSync('package.json', 'utf8')) as {
       scripts?: Record<string, string>;
     };
+    const webBuild = packageJson.scripts?.['build:web'] ?? '';
+    const extensionBuild = packageJson.scripts?.['build:extension'] ?? '';
 
-    expect(packageJson.scripts?.['build:web']).toContain(
-      'verify_client_bundle.ts dist'
-    );
-    expect(packageJson.scripts?.['build:extension']).toContain(
+    expect(webBuild).toContain('verify_client_bundle.ts dist');
+    expect(extensionBuild).toContain(
       'verify_client_bundle.ts dist/chrome-extension'
+    );
+    expect(webBuild.indexOf('vite build')).toBeLessThan(
+      webBuild.indexOf('verify_client_bundle.ts dist')
+    );
+    expect(extensionBuild.indexOf('vite build')).toBeLessThan(
+      extensionBuild.indexOf('verify_client_bundle.ts dist/chrome-extension')
     );
   });
 });
