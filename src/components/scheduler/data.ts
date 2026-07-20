@@ -18,7 +18,7 @@ export const reactionMeta: ReactionMeta[] = [
 ]
 
 export const friendPosts: FriendPost[] = [
-  { id: 1, friendId: 'min', categoryName: '운동', tone: 'coral', caption: '오늘도 러닝 완료!', timeAgo: '12분 전', duration: '0:05', reactions: { sparkle: 2, heart: 4, fire: 1, tear: 0, wow: 0, sleepy: 0 } },
-  { id: 2, friendId: 'yu', categoryName: '약속', tone: 'violet', caption: '성수 팝업 다녀왔어요', timeAgo: '48분 전', duration: '0:04', reactions: { sparkle: 1, heart: 2, fire: 0, tear: 0, wow: 3, sleepy: 0 } },
-  { id: 3, friendId: 'study', categoryName: '공부', tone: 'blue', caption: '스터디 3시간 끝!', timeAgo: '2시간 전', duration: '0:03', reactions: { sparkle: 0, heart: 1, fire: 2, tear: 1, wow: 0, sleepy: 1 } },
+  { id: 'mock-1', friendId: 'min', categoryName: '운동', tone: 'coral', caption: '오늘도 러닝 완료!', timeAgo: '12분 전', duration: '0:05', reactions: { sparkle: 2, heart: 4, fire: 1, tear: 0, wow: 0, sleepy: 0 } },
+  { id: 'mock-2', friendId: 'yu', categoryName: '약속', tone: 'violet', caption: '성수 팝업 다녀왔어요', timeAgo: '48분 전', duration: '0:04', reactions: { sparkle: 1, heart: 2, fire: 0, tear: 0, wow: 3, sleepy: 0 } },
+  { id: 'mock-3', friendId: 'study', categoryName: '공부', tone: 'blue', caption: '스터디 3시간 끝!', timeAgo: '2시간 전', duration: '0:03', reactions: { sparkle: 0, heart: 1, fire: 2, tear: 1, wow: 0, sleepy: 1 } },
 ]

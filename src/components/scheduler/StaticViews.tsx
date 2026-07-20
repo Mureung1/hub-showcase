@@ -98,7 +98,7 @@ export function MyHomeView({ message, onInteract, homeManager }: MyHomeViewProps
 type FriendsViewProps = {
   manager: FriendsManager
   myPosts: FriendPost[]
-  onDeletePost: (postId: number) => void
+  onDeletePost: (postId: string) => void
   onViewFriendCalendar: (friendId: string) => void
   onVisitFriendHome: (friendId: string) => void
 }

@@ -92,7 +92,7 @@ export type HomeVisitEntry = {
 }
 
 export type FriendPost = {
-  id: number
+  id: string
   friendId: string
   categoryName: string
   tone: GroupTone

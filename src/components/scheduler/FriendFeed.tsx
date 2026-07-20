@@ -5,15 +5,15 @@ import type { FriendPost, ReactionKind } from './types'
 
 type FriendFeedProps = {
   myPosts: FriendPost[]
-  onDeletePost: (postId: number) => void
+  onDeletePost: (postId: string) => void
 }
 
 export function FriendFeed({ myPosts, onDeletePost }: FriendFeedProps) {
-  const [myReactions, setMyReactions] = useState<Record<number, ReactionKind | null>>({})
+  const [myReactions, setMyReactions] = useState<Record<string, ReactionKind | null>>({})
 
   const posts = [...myPosts, ...friendPosts]
 
-  const selectReaction = (postId: number, kind: ReactionKind) => {
+  const selectReaction = (postId: string, kind: ReactionKind) => {
     setMyReactions((prev) => ({ ...prev, [postId]: prev[postId] === kind ? null : kind }))
   }
 

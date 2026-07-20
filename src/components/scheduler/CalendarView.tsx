@@ -109,13 +109,11 @@ export function CalendarView({ manager, friends, groups, selectedOwner, onSelect
     const { file, meta } = pendingVideo
     const caption = captionDraft.trim()
 
-    const category = categories.find((item) => item.id === schedule.category)
-
     setUploadingCertify(true)
     try {
       const { uploadUrl, storageKey } = await videosApi.presignVideoUpload(schedule.id, meta.contentType)
       await videosApi.uploadVideoToR2(uploadUrl, file, meta.contentType)
-      await videosApi.createVideoPost({
+      const created = await videosApi.createVideoPost({
         scheduleId: schedule.id,
         storageKey,
         contentType: meta.contentType,
@@ -123,22 +121,23 @@ export function CalendarView({ manager, friends, groups, selectedOwner, onSelect
         durationSeconds: meta.durationSeconds,
         caption,
       })
+
+      onCertify({
+        id: created.id,
+        friendId: 'me',
+        categoryName: created.categoryName,
+        tone: created.tone,
+        caption,
+        timeAgo: '지금',
+        videoUrl: created.url,
+        reactions: { sparkle: 0, heart: 0, fire: 0, tear: 0, wow: 0, sleepy: 0 },
+      })
+      closeCertifyModal()
     } catch {
       window.alert('영상을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setUploadingCertify(false)
     }
-    setUploadingCertify(false)
-
-    onCertify({
-      id: Date.now(),
-      friendId: 'me',
-      categoryName: category?.name ?? '인증',
-      tone: schedule.tone,
-      caption,
-      timeAgo: '지금',
-      videoUrl: meta.url,
-      reactions: { sparkle: 0, heart: 0, fire: 0, tear: 0, wow: 0, sleepy: 0 },
-    })
-    closeCertifyModal()
   }
 
   const [friendSchedules, setFriendSchedules] = useState<FriendScheduleEntry[]>([])

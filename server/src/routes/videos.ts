@@ -28,7 +28,9 @@ function isPositiveInt(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value > 0
 }
 
-function toResponse(video: VideoPost) {
+type VideoPostWithCategory = VideoPost & { schedule: { category: { name: string; tone: string } } }
+
+function toResponse(video: VideoPostWithCategory) {
   return {
     id: video.id,
     scheduleId: video.scheduleId,
@@ -37,6 +39,8 @@ function toResponse(video: VideoPost) {
     sizeBytes: video.sizeBytes,
     durationSeconds: video.durationSeconds,
     caption: video.caption,
+    categoryName: video.schedule.category.name,
+    tone: video.schedule.category.tone,
     createdAt: video.createdAt.toISOString(),
   }
 }
@@ -44,6 +48,7 @@ function toResponse(video: VideoPost) {
 videosRouter.get('/mine', asyncHandler(async (req, res) => {
   const videos = await prisma.videoPost.findMany({
     where: { userId: req.userId, deletedAt: null },
+    include: { schedule: { include: { category: true } } },
     orderBy: { createdAt: 'desc' },
   })
 
@@ -135,6 +140,7 @@ videosRouter.post('/', asyncHandler(async (req, res) => {
       durationSeconds,
       caption: isNonEmptyString(caption) ? caption : null,
     },
+    include: { schedule: { include: { category: true } } },
   })
 
   res.status(201).json(toResponse(video))
