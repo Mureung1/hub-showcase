@@ -18,10 +18,10 @@
 
 ## Week 1 — 프론트 뼈대 + 백 스캐폴딩 + 명세 확정
 ### Frontend
-- [ ] **프로젝트 라우팅 셋업** — `react-router-dom` 도입, 7개 화면 경로 + 스텝퍼 공통 레이아웃
+- [x] **프로젝트 라우팅 셋업** — `react-router-dom` 도입, 7개 화면 경로 + 스텝퍼 공통 레이아웃
       - DoD: URL로 각 화면 이동 가능, 스텝퍼가 현재 단계 표시
       - 참고: prototype `stepper`, [decisions](decisions.md) 라이브러리 스택
-- [ ] **랜딩 화면** — 기존 `App.jsx`/`ProjectIntro`/`HeroIllustration` 정리해 라우트에 배치
+- [x] **랜딩 화면** — 기존 `App.jsx`/`ProjectIntro`/`HeroIllustration` 정리해 라우트에 배치
       - DoD: "지금 시작하기" → ID 입력 화면 이동
       - 참고: plan 화면 1, prototype `screen--landing`
 - [x] **GitHub ID 입력 화면** — `useState` 폼 + 유효성(빈값/공백)
