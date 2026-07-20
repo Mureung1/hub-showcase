@@ -244,10 +244,10 @@ void main() {
     expect(find.byType(RewardChip), findsWidgets);
 
     // AI 성공이므로 폴백 배너는 뜨지 않는다.
-    expect(find.text('AI가 잠시 쉬어가요 — 추천 퀘스트로 시작해 볼까요?'), findsNothing);
+    expect(find.text('AI 연결이 잠시 원활하지 않아 대표 템플릿으로 준비했어요. 아래에서 다시 AI로 나눠볼 수 있어요.'), findsNothing);
   });
 
-  testWidgets('폴백(timeout) → 크래시 없이 폴백 배너 + 템플릿 draft가 보인다', (tester) async {
+  testWidgets('폴백(timeout) → #5 명확화: 추천 제목 + 새 배너 문구 + "다시 AI로 나누기"', (tester) async {
     await pumpSplit(tester, FakeDecomposeScenario.timeout);
 
     await tester.enterText(find.byType(TextField), '공모전 지원하기');
@@ -255,10 +255,18 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
     await tester.pumpAndSettle();
 
-    // source=template 경로 → 폴백 배너가 뜬다.
-    expect(find.text('AI가 잠시 쉬어가요 — 추천 퀘스트로 시작해 볼까요?'), findsOneWidget);
+    // source=template 경로 → 폴백 배너가 뜬다(새 문구).
+    expect(
+      find.text('AI 연결이 잠시 원활하지 않아 대표 템플릿으로 준비했어요. 아래에서 다시 AI로 나눠볼 수 있어요.'),
+      findsOneWidget,
+    );
+    // #5 제목이 "추천 퀘스트로 준비했어요"로 바뀌어 대체 결과임이 드러난다.
+    expect(find.textContaining('추천 퀘스트로 준비했어요'), findsOneWidget);
+    // AI 결과용 제목은 뜨지 않는다.
+    expect(find.textContaining('이렇게 나눠봤어요'), findsNothing);
+    // #5 재생성 버튼 라벨이 "다시 AI로 나누기"로 바뀐다.
+    expect(find.widgetWithText(OutlinedButton, '다시 AI로 나누기'), findsOneWidget);
     // 그래도 퀘스트는 나온다.
-    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
     expect(find.byType(DifficultyPill), findsWidgets);
   });
 
@@ -417,16 +425,18 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
     await tester.pumpAndSettle();
 
-    // 재생성 전 카드 개수/내용을 확인.
-    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
+    // 재생성 전 카드 개수/내용을 확인. (템플릿 폴백이라 제목은 "추천 퀘스트로 준비했어요".)
+    expect(find.textContaining('추천 퀘스트로 준비했어요'), findsOneWidget);
     final beforeCards = tester.widgetList(find.byType(DifficultyPill)).length;
 
-    await tester.tap(find.widgetWithText(OutlinedButton, '다시 나누기'));
+    // #5 템플릿 맥락이라 버튼 라벨이 "다시 AI로 나누기"다.
+    await tester.tap(find.widgetWithText(OutlinedButton, '다시 AI로 나누기'));
     await tester.pumpAndSettle();
 
     // 실패 안내 스낵바 + 기존 결과 보존(카드 그대로).
     expect(find.text('다시 나누지 못했어요. 기존 결과를 유지할게요.'), findsOneWidget);
-    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
+    // 재생성 실패로 여전히 템플릿 → 제목/버튼 라벨 유지.
+    expect(find.textContaining('추천 퀘스트로 준비했어요'), findsOneWidget);
     expect(tester.widgetList(find.byType(DifficultyPill)).length, beforeCards);
   });
 
@@ -468,9 +478,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(EmptyView), findsNothing);
-    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
-    // empty도 폴백 경로 → 배너가 뜬다.
-    expect(find.text('AI가 잠시 쉬어가요 — 추천 퀘스트로 시작해 볼까요?'), findsOneWidget);
+    // empty도 폴백 경로 → 템플릿 제목 + 배너.
+    expect(find.textContaining('추천 퀘스트로 준비했어요'), findsOneWidget);
+    expect(find.text('AI 연결이 잠시 원활하지 않아 대표 템플릿으로 준비했어요. 아래에서 다시 AI로 나눠볼 수 있어요.'), findsOneWidget);
   });
 
   // ===== 커밋8 · 분해 결과 일괄 등록 =====
@@ -597,6 +607,34 @@ void main() {
     expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsNothing);
     expect(find.text('가장 작은 첫 단계 5분만 해보기'), findsWidgets);
     expect(find.textContaining('이렇게 나눠봤어요 · 7개'), findsOneWidget);
+  });
+
+  testWidgets('#6 🔄 성공 → "방금 나눔" 칩 + "…개로 나눴어요" 스낵바, 이후 편집 시 칩 사라짐', (
+    tester,
+  ) async {
+    await decomposeSuccess(tester);
+
+    // 재분해 전에는 "방금 나눔" 칩이 없다.
+    expect(find.text('방금 나눔'), findsNothing);
+
+    // 첫 카드를 쪼갠다(하단 등록 바에 가리지 않게 먼저 뷰포트로).
+    await tester.ensureVisible(find.byTooltip('더 작게 나누기').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('더 작게 나누기').first);
+    await tester.pumpAndSettle();
+
+    // subTemplateFor는 3개를 내므로 새로 생긴 3개 카드에 "방금 나눔" 칩이 붙는다.
+    expect(find.text('방금 나눔'), findsNWidgets(3));
+    // 성공 스낵바가 몇 개로 나눠졌는지 알린다.
+    expect(find.text('1개를 3개로 나눴어요'), findsOneWidget);
+
+    // 이후 다른 편집(삭제)을 하면 justSplitIds가 비워져 칩이 사라진다.
+    await tester.ensureVisible(find.byTooltip('삭제').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('삭제').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('방금 나눔'), findsNothing);
   });
 
   testWidgets('🔄 탭 실패(timeout) → 스낵바 노출 + 원본 카드 유지', (tester) async {

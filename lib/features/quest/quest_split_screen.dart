@@ -371,7 +371,18 @@ class _ResultSection extends ConsumerWidget {
     final ok = await ref
         .read(decomposeNotifierProvider.notifier)
         .redecomposeOne(localId);
-    if (!ok && context.mounted) {
+    if (!context.mounted) return;
+    if (ok) {
+      // #6 성공: 몇 개로 나눠졌는지 스낵바로 알린다. count는 방금 세팅된 하이라이트
+      // 집합 크기(= 새로 생긴 하위 초안 수)에서 읽는다. 칩과 같은 근거라 항상 일치한다.
+      final count =
+          ref.read(decomposeNotifierProvider).valueOrNull?.justSplitIds.length ??
+          0;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('1개를 $count개로 나눴어요')),
+      );
+    } else {
+      // 실패: 원본 항목이 그대로 남으며 스낵바만 안내한다(현행 유지).
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('이 항목을 더 나누지 못했어요. 그대로 둘게요.')),
       );
@@ -383,13 +394,17 @@ class _ResultSection extends ConsumerWidget {
     final theme = Theme.of(context);
     final notifier = ref.read(decomposeNotifierProvider.notifier);
 
+    // #5 폴백(템플릿)일 때는 "이게 추천 대체 결과"임이 드러나게 제목을 바꾼다.
+    // AI 결과는 현행("이렇게 나눠봤어요") 유지.
+    final isTemplate = state.source == DecomposeSource.template;
+    final sectionTitle = isTemplate
+        ? '추천 퀘스트로 준비했어요 · ${state.drafts.length}개'
+        : '이렇게 나눠봤어요 · ${state.drafts.length}개';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '이렇게 나눠봤어요 · ${state.drafts.length}개',
-          style: theme.textTheme.titleLarge,
-        ),
+        Text(sectionTitle, style: theme.textTheme.titleLarge),
         AppSpacing.gapSm,
         // "다시 나누기"는 제목 아래 우측 정렬. Align이 버튼에 유한(bounded) 제약을 주므로
         // Row의 무한-너비 측정 문제 없이 안전하게 shrink-wrap된다.
@@ -397,6 +412,9 @@ class _ResultSection extends ConsumerWidget {
           alignment: Alignment.centerRight,
           child: _RegenerateButton(
             isRegenerating: state.isRegenerating,
+            // #5 템플릿 폴백이면 "다시 AI로 나누기"로 의도를 명확히 한다(현재는 템플릿,
+            // 이 버튼을 누르면 AI 재시도). AI 결과면 현행 "다시 나누기".
+            isTemplate: isTemplate,
             onPressed: () => _regenerate(context, ref),
           ),
         ),
@@ -419,6 +437,8 @@ class _ResultSection extends ConsumerWidget {
                 ? null
                 : () => _redecompose(context, ref, draft.localId),
             isReDecomposing: state.regeneratingItemId == draft.localId,
+            // #6 방금 재분해로 갓 생겨난 하위 초안이면 "방금 나눔" 칩을 띄운다.
+            isJustSplit: state.justSplitIds.contains(draft.localId),
           ),
           AppSpacing.gapSm,
         ],
@@ -490,10 +510,15 @@ class _RegisterBar extends StatelessWidget {
 class _RegenerateButton extends StatelessWidget {
   const _RegenerateButton({
     required this.isRegenerating,
+    required this.isTemplate,
     required this.onPressed,
   });
 
   final bool isRegenerating;
+
+  /// 현재 결과가 템플릿 폴백인지. true면 라벨을 "다시 AI로 나누기"로 바꿔
+  /// "지금은 템플릿, 이 버튼으로 AI 재시도"라는 의도를 명확히 한다(#5).
+  final bool isTemplate;
   final VoidCallback onPressed;
 
   @override
@@ -522,7 +547,7 @@ class _RegenerateButton extends StatelessWidget {
                 )
               : const Icon(Symbols.refresh, size: 18),
           AppSpacing.gapWXs,
-          const Text('다시 나누기'),
+          Text(isTemplate ? '다시 AI로 나누기' : '다시 나누기'),
         ],
       ),
     );
@@ -610,7 +635,7 @@ class _FallbackBanner extends StatelessWidget {
           AppSpacing.gapWSm,
           Expanded(
             child: Text(
-              'AI가 잠시 쉬어가요 — 추천 퀘스트로 시작해 볼까요?',
+              'AI 연결이 잠시 원활하지 않아 대표 템플릿으로 준비했어요. 아래에서 다시 AI로 나눠볼 수 있어요.',
               style: theme.textTheme.bodySmall?.copyWith(color: scheme.secondary),
             ),
           ),

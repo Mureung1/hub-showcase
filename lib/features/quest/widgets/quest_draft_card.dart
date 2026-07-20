@@ -33,6 +33,7 @@ class QuestDraftCard extends StatelessWidget {
     this.onDelete,
     this.onReDecompose,
     this.isReDecomposing = false,
+    this.isJustSplit = false,
   });
 
   final QuestDraft draft;
@@ -52,6 +53,11 @@ class QuestDraftCard extends StatelessWidget {
 
   /// 이 항목이 재분해 중인지. true면 🔄 자리에 블루 스피너 + 비활성(중복 탭 방지 시각화).
   final bool isReDecomposing;
+
+  /// 이 항목이 **방금 개별 재분해로 갓 생겨난 하위 초안**인지. true면 제목 위에 작은
+  /// 블루 "방금 나눔" 칩을 띄워 "뭐가 새로 생겼는지"를 알린다(#6). AI 결과라 블루
+  /// (secondary)다 — 노랑(보상)은 쓰지 않는다.
+  final bool isJustSplit;
 
   @override
   Widget build(BuildContext context) {
@@ -83,6 +89,12 @@ class QuestDraftCard extends StatelessWidget {
             children: [
               // 난이도: 콜백이 있으면 팝업으로 선택 가능, 없으면 읽기 전용 pill.
               Expanded(child: _DifficultyControl(this)),
+              // #6 방금 재분해로 갓 생겨난 항목이면 🔄 바로 왼쪽에 블루 "방금 나눔" 칩.
+              // 난이도가 Expanded라 공간을 양보하므로 헤더 행 오버플로 없이 shrink-wrap된다.
+              if (isJustSplit) ...[
+                const _JustSplitChip(),
+                AppSpacing.gapWXs,
+              ],
               // 재분해: 콜백이 있으면 블루 🔄 버튼(AI 재요청). 진행 중이면 블루 스피너 + 비활성.
               if (onReDecompose != null)
                 if (isReDecomposing)
@@ -179,6 +191,43 @@ class _DifficultyControl extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// "방금 나눔" 칩 — 개별 재분해로 갓 생겨난 항목임을 알리는 작은 블루 pill.
+///
+/// 색 규칙(one-step-design): AI 결과라 **블루**(secondary)다. 노랑(코인·보상)은
+/// 쓰지 않는다 — pill 배경은 옅은 `secondaryContainer` 톤, 텍스트/아이콘은 `secondary`.
+/// 값은 토큰(AppRadius.full / AppSpacing)을 참조하고 HEX를 직접 쓰지 않는다.
+class _JustSplitChip extends StatelessWidget {
+  const _JustSplitChip();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.secondaryContainer.withValues(alpha: 0.5),
+        borderRadius: AppRadius.fullAll,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Symbols.auto_awesome, fill: 1, size: 12, color: scheme.secondary),
+          AppSpacing.gapWXs,
+          Text(
+            '방금 나눔',
+            style: theme.textTheme.labelSmall?.copyWith(color: scheme.secondary),
+          ),
+        ],
       ),
     );
   }
