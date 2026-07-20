@@ -302,6 +302,79 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
   }
 })
 
+test('product HTTP keeps the active workspace and gives an actionable incompatible-candidate response', async () => {
+  const materialized = await materializeE2eSemesterWorkspace()
+  const packageRoot = path.join(materialized.runRoot, 'package')
+  const appDataRoot = path.join(materialized.runRoot, 'app-data')
+  const candidateRoot = path.join(materialized.runRoot, 'incompatible-semester')
+  const candidateProductRoot = path.join(candidateRoot, '.ay-ple')
+  const candidateStorePath = path.join(
+    candidateProductRoot,
+    'workspace-state.json',
+  )
+  const candidateStoreBytes = Buffer.from(
+    '{"formatVersion":3,"futureState":"keep exactly"}\n',
+    'utf8',
+  )
+  let selectedWorkspaceRoot = materialized.workspaceRoot
+
+  try {
+    await Promise.all([
+      mkdir(packageRoot),
+      mkdir(appDataRoot),
+      mkdir(candidateProductRoot, { recursive: true }),
+    ])
+    await writeFile(candidateStorePath, candidateStoreBytes)
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(new ControlledRuntime()),
+        semesterWorkspace: {
+          packageRoot,
+          appDataRoot,
+          chooseDirectory: async () => selectedWorkspaceRoot,
+        },
+      },
+      async (baseUrl) => {
+        const activationRequest = {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: '{}',
+        }
+        const initialActivation = await fetch(
+          `${baseUrl}/api/product/workspaces/activate`,
+          activationRequest,
+        )
+        assert.equal(initialActivation.status, 200)
+        const initialBootstrap = await fetch(`${baseUrl}/api/product/bootstrap`)
+        assert.equal(initialBootstrap.status, 200)
+        const initialSnapshot: unknown = await initialBootstrap.json()
+
+        selectedWorkspaceRoot = candidateRoot
+        const rejectedActivation = await fetch(
+          `${baseUrl}/api/product/workspaces/activate`,
+          activationRequest,
+        )
+        assert.equal(rejectedActivation.status, 409)
+        assert.deepEqual(await rejectedActivation.json(), {
+          code: 'workspace_incompatible',
+          displayMessage:
+            '이 학기 작업공간의 제품 상태를 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.',
+        })
+
+        const currentBootstrap = await fetch(`${baseUrl}/api/product/bootstrap`)
+        assert.equal(currentBootstrap.status, 200)
+        assert.deepEqual(await currentBootstrap.json(), initialSnapshot)
+        assert.deepEqual(
+          await readFile(candidateStorePath),
+          candidateStoreBytes,
+        )
+      },
+    )
+  } finally {
+    await materialized.cleanup()
+  }
+})
+
 function assertReadyWorkspaceEnvelopeKeys(
   workspace: Record<string, unknown>,
 ): void {

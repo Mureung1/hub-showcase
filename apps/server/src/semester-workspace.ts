@@ -1663,6 +1663,7 @@ function hasValidWorkspaceStateInvariants(
     }
     confirmationsByPatch.set(confirmation.patchId, confirmation)
   }
+  if (acceptedRevisions.size !== store.confirmedRevision) return false
 
   for (const patch of store.statePatches) {
     const hasConfirmation = confirmationsByPatch.has(patch.id)

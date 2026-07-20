@@ -86,7 +86,7 @@ const workspaceErrorPresentation: Record<
   workspace_incompatible: {
     status: 409,
     displayMessage:
-      '이 학기 작업공간의 제품 상태를 현재 AY-PLE에서 안전하게 열 수 없습니다.',
+      '이 학기 작업공간의 제품 상태를 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.',
   },
 }
 
