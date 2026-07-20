@@ -26,13 +26,51 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [profile, setProfile] = useState<any>(null)
   const [calendarEvents, setCalendarEvents] = useState<any[]>([])
-  const [eventsMap, setEventsMap] = useState<Map<number, any[]>>(new Map())
+  const [eventsMap, setEventsMap] = useState<Map<string, any[]>>(new Map())
   const [selectedDayEvents, setSelectedDayEvents] = useState<any[] | null>(null)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [useSmartMatching, setUseSmartMatching] = useState(false)
   const [sortBy, setSortBy] = useState<'deadline' | 'matchScore'>('deadline')
+  const [showAllUpcomingEvents, setShowAllUpcomingEvents] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const limit = 12
+
+  // D-Day 계산
+  const calculateDDay = (targetDate: Date): number => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    targetDate.setHours(0, 0, 0, 0)
+    const diffTime = targetDate.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }
+
+  // 날짜를 YYYY.MM.DD 형식으로 포매팅
+  const formatDateForDisplay = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}.${month}.${day}`
+  }
+
+  // 다음 마감 일정 가져오기 (POSTING 타입만, 미래 일정만, 마감일 순정렬)
+  const getUpcomingPostingEvents = (): any[] => {
+    const now = new Date()
+    return calendarEvents
+      .filter(evt => evt.type === 'POSTING' && new Date(evt.dtstart) > now)
+      .sort((a, b) => new Date(a.dtstart).getTime() - new Date(b.dtstart).getTime())
+  }
+
+  // 검색 결과 필터링 (제목으로 검색)
+  const getFilteredPostings = (): Posting[] => {
+    if (!searchQuery.trim()) {
+      return postings
+    }
+    return postings.filter(posting =>
+      posting.title.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  }
 
   const loadProfile = async () => {
     try {
@@ -87,7 +125,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
         setCalendarEvents(response.data)
 
         // 날짜별 일정 매핑 (여러 날 일정도 모두 표시)
-        const eventsByDay = new Map<number, any[]>()
+        const eventsByDay = new Map<string, any[]>()
         response.data.forEach((evt: any) => {
           const startDate = new Date(evt.dtstart)
           const endDate = new Date(evt.dtend)
@@ -95,12 +133,16 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
           // 시작일부터 종료일까지 모든 날에 이벤트 추가
           const currentDate = new Date(startDate)
           while (currentDate <= endDate) {
-            const day = currentDate.getDate()
+            // YYYY-MM-DD 형식의 키 생성 (월별 중복 방지)
+            const year = currentDate.getFullYear()
+            const month = String(currentDate.getMonth() + 1).padStart(2, '0')
+            const day = String(currentDate.getDate()).padStart(2, '0')
+            const dateKey = `${year}-${month}-${day}`
 
-            if (!eventsByDay.has(day)) {
-              eventsByDay.set(day, [])
+            if (!eventsByDay.has(dateKey)) {
+              eventsByDay.set(dateKey, [])
             }
-            eventsByDay.get(day)!.push(evt)
+            eventsByDay.get(dateKey)!.push(evt)
 
             currentDate.setDate(currentDate.getDate() + 1)
           }
@@ -112,24 +154,80 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
     }
   }
 
+  const isPostingAddedToCalendar = (posting: Posting): boolean => {
+    return calendarEvents.some(event =>
+      event.type === 'POSTING' && event.relatedPostingId === posting.id
+    )
+  }
+
   const handleAddToCalendar = async (posting: Posting) => {
     try {
       const endDate = new Date(posting.receptionEndDate)
-      await calendarEventsApi.create({
-        title: `[마감] ${posting.title}`,
-        type: 'OTHER',
-        dtstart: endDate.toISOString(),
-        dtend: endDate.toISOString(),
+
+      // 마감일 검증: 오늘 이후인지 확인
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      endDate.setHours(0, 0, 0, 0)
+
+      const isPast = endDate < today
+      console.log('📅 마감일 검증:', {
+        posting: posting.title,
+        deadline: endDate.toISOString().split('T')[0],
+        today: today.toISOString().split('T')[0],
+        isPast
       })
 
-      // 캘린더 다시 로드
+      // 1. 로컬 DB에 저장 (링크 포함)
+      await calendarEventsApi.create({
+        title: `[마감] ${posting.title}`,
+        type: 'POSTING',
+        dtstart: endDate.toISOString(),
+        dtend: endDate.toISOString(),
+        relatedPostingId: posting.id,
+        isAllDay: true,
+        memo: posting.sourceUrl ? `링크: ${posting.sourceUrl}` : '',
+      })
+
+      // 2. Google Calendar에 동기화 (오늘 이후인 경우만)
+      if (!isPast) {
+        try {
+          await calendarApi.sync(posting.id)
+          console.log('✅ Google Calendar 동기화 완료')
+        } catch (syncError) {
+          console.warn('⚠️ Google Calendar 동기화 실패 (로컬 저장은 완료):', syncError)
+        }
+      } else {
+        console.log('⏰ 마감일이 과거이므로 Google Calendar 동기화 스킵')
+      }
+
+      // 3. 캘린더 다시 로드
       await loadCalendarEvents()
 
-      // 캘린더 페이지로 이동
+      // 4. 캘린더 페이지로 이동
       setCurrentPage?.('calendar')
     } catch (error) {
       console.error('캘린더에 일정 추가 실패:', error)
       alert('캘린더에 일정을 추가할 수 없습니다')
+    }
+  }
+
+  const handleDeleteFromCalendar = async (posting: Posting) => {
+    try {
+      const event = calendarEvents.find(e =>
+        e.type === 'POSTING' && e.relatedPostingId === posting.id
+      )
+      if (!event) {
+        alert('캘린더에서 해당 일정을 찾을 수 없습니다')
+        return
+      }
+
+      await calendarEventsApi.delete(event.id)
+
+      // 캘린더 다시 로드
+      await loadCalendarEvents()
+    } catch (error) {
+      console.error('캘린더 일정 삭제 실패:', error)
+      alert('캘린더 일정을 삭제할 수 없습니다')
     }
   }
 
@@ -264,6 +362,8 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
             <input
               type="text"
               placeholder="공고 검색 (예: 경남 지역, 이공계...)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               style={{
                 width: '100%',
                 height: '38px',
@@ -274,6 +374,15 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
                 color: '#111',
                 backgroundColor: '#f8f9fa',
                 outline: 'none',
+                transition: 'all 120ms',
+              }}
+              onFocus={(e) => {
+                (e.currentTarget as HTMLInputElement).style.borderColor = '#6366f1'
+                (e.currentTarget as HTMLInputElement).style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)'
+              }}
+              onBlur={(e) => {
+                (e.currentTarget as HTMLInputElement).style.borderColor = '#e5e7eb'
+                (e.currentTarget as HTMLInputElement).style.boxShadow = 'none'
               }}
             />
             <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px', color: '#9ca3af' }}>🔍</span>
@@ -395,53 +504,67 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
               </div>
             ) : postings.length > 0 ? (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '14px', marginBottom: '32px' }}>
-                  {postings.map(posting => (
-                    <PostingCard
-                      key={posting.id}
-                      posting={posting}
-                      onScrapChange={() => {
-                        setPostings(prev =>
-                          prev.map(p =>
-                            p.id === posting.id ? { ...p, isScraped: !p.isScraped } : p
-                          )
-                        )
-                      }}
-                      onAddToCalendar={handleAddToCalendar}
-                    />
-                  ))}
-                </div>
+                {(() => {
+                  const filteredPostings = getFilteredPostings()
+                  return filteredPostings.length > 0 ? (
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '14px', marginBottom: '32px' }}>
+                        {filteredPostings.map(posting => (
+                          <PostingCard
+                            key={posting.id}
+                            posting={posting}
+                            onScrapChange={() => {
+                              setPostings(prev =>
+                                prev.map(p =>
+                                  p.id === posting.id ? { ...p, isScraped: !p.isScraped } : p
+                                )
+                              )
+                            }}
+                            onAddToCalendar={handleAddToCalendar}
+                            isAddedToCalendar={isPostingAddedToCalendar(posting)}
+                            onDeleteFromCalendar={handleDeleteFromCalendar}
+                          />
+                        ))}
+                      </div>
 
-                {/* 페이지네이션 */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                  <button
-                    onClick={() => setOffset(Math.max(0, offset - limit))}
-                    disabled={offset === 0}
-                    style={{ padding: '7px 16px', borderRadius: '8px', border: '1px solid #e5e7eb', backgroundColor: '#fff', cursor: offset === 0 ? 'not-allowed' : 'pointer', opacity: offset === 0 ? 0.5 : 1, fontSize: '13px', fontWeight: 500 }}
-                  >
-                    이전
-                  </button>
-                  {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                    const pageNum = currentPage + i
-                    if (pageNum >= totalPages) return null
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => setOffset(pageNum * limit)}
-                        style={{ padding: '5px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: 500, border: currentPage === pageNum ? 'none' : '1px solid #e5e7eb', backgroundColor: currentPage === pageNum ? '#6366f1' : '#fff', color: currentPage === pageNum ? '#fff' : '#111', cursor: 'pointer' }}
-                      >
-                        {pageNum + 1}
-                      </button>
-                    )
-                  })}
-                  <button
-                    onClick={() => setOffset(offset + limit)}
-                    disabled={offset + limit >= total}
-                    style={{ padding: '7px 16px', borderRadius: '8px', border: '1px solid #e5e7eb', backgroundColor: '#fff', cursor: offset + limit >= total ? 'not-allowed' : 'pointer', opacity: offset + limit >= total ? 0.5 : 1, fontSize: '13px', fontWeight: 500 }}
-                  >
-                    다음
-                  </button>
-                </div>
+                      {/* 페이지네이션 */}
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                        <button
+                          onClick={() => setOffset(Math.max(0, offset - limit))}
+                          disabled={offset === 0}
+                          style={{ padding: '7px 16px', borderRadius: '8px', border: '1px solid #e5e7eb', backgroundColor: '#fff', cursor: offset === 0 ? 'not-allowed' : 'pointer', opacity: offset === 0 ? 0.5 : 1, fontSize: '13px', fontWeight: 500 }}
+                        >
+                          이전
+                        </button>
+                        {Array.from({ length: 5 }).map((_, i) => {
+                          const groupStart = Math.floor(currentPage / 5) * 5
+                          const pageNum = groupStart + i
+                          if (pageNum >= totalPages) return null
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setOffset(pageNum * limit)}
+                              style={{ padding: '5px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: 500, border: currentPage === pageNum ? 'none' : '1px solid #e5e7eb', backgroundColor: currentPage === pageNum ? '#6366f1' : '#fff', color: currentPage === pageNum ? '#fff' : '#111', cursor: 'pointer' }}
+                            >
+                              {pageNum + 1}
+                            </button>
+                          )
+                        })}
+                        <button
+                          onClick={() => setOffset(offset + limit)}
+                          disabled={offset + limit >= total}
+                          style={{ padding: '7px 16px', borderRadius: '8px', border: '1px solid #e5e7eb', backgroundColor: '#fff', cursor: offset + limit >= total ? 'not-allowed' : 'pointer', opacity: offset + limit >= total ? 0.5 : 1, fontSize: '13px', fontWeight: 500 }}
+                        >
+                          다음
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ textAlign: 'center', paddingTop: '48px' }}>
+                      <p style={{ color: '#6b7280', marginBottom: '16px', fontSize: '13px' }}>검색 결과가 없습니다</p>
+                    </div>
+                  )
+                })()}
               </>
             ) : (
               <div style={{ textAlign: 'center', paddingTop: '48px' }}>
@@ -475,12 +598,16 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px' }}>
                 {calendarDays.map((day, i) => {
                   const isToday = day === today.getDate() && currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() === today.getMonth()
-                  const hasEvents = day && eventsMap.has(day)
-                  const dayEvents = hasEvents ? eventsMap.get(day) : []
+
+                  // YYYY-MM-DD 키 생성
+                  const dateKey = day ? `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : ''
+                  const hasEvents = day && eventsMap.has(dateKey)
+                  const dayEvents = hasEvents ? eventsMap.get(dateKey) : []
 
                   const EVENT_COLORS: { [key: string]: string } = {
                     EXAM: '#d97706',      // 더 진한 노랑 (주황)
                     PART_TIME: '#2563eb', // 더 진한 파랑
+                    POSTING: '#ec4899',   // 분홍색
                     OTHER: '#6b7280',     // 더 진한 회색
                   }
 
@@ -553,6 +680,83 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
               </div>
             </div>
 
+            {/* ICS 내보내기/가져오기 */}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={async () => {
+                  try {
+                    await calendarEventsApi.exportIcs()
+                    alert('✅ ICS 파일이 다운로드되었습니다')
+                  } catch (error) {
+                    console.error('ICS 내보내기 실패:', error)
+                    alert('❌ ICS 내보내기 실패')
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  backgroundColor: '#f3f4f6',
+                  color: '#1f2937',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e5e7eb'
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f3f4f6'
+                }}
+              >
+                내보내기
+              </button>
+              <button
+                onClick={() => {
+                  const input = document.createElement('input')
+                  input.type = 'file'
+                  input.accept = '.ics'
+                  input.onchange = async (e: any) => {
+                    const file = e.target.files[0]
+                    if (!file) return
+
+                    try {
+                      const content = await file.text()
+                      const result = await calendarEventsApi.importIcs(content)
+                      alert(`✅ ${result.count || 0}개 일정을 가져왔습니다`)
+                      await loadCalendarEvents()
+                    } catch (error) {
+                      console.error('ICS 가져오기 실패:', error)
+                      alert('❌ ICS 가져오기 실패')
+                    }
+                  }
+                  input.click()
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  backgroundColor: '#f3f4f6',
+                  color: '#1f2937',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e5e7eb'
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f3f4f6'
+                }}
+              >
+                가져오기
+              </button>
+            </div>
+
             {/* Google Calendar 연동 */}
             {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
               <GoogleCalendarButton
@@ -569,33 +773,51 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
             <div style={{ height: '1px', backgroundColor: '#f3f4f6' }}></div>
 
             {/* 다음 마감 일정 */}
-            <div>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#111', marginBottom: '10px', letterSpacing: '-0.1px' }}>다음 마감 일정</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ef4444', flexShrink: 0 }}></div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '12px', fontWeight: 500, color: '#111', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>2025 SW 해커톤</div>
-                    <div style={{ fontSize: '11px', color: '#9ca3af' }}>2025.07.14</div>
-                  </div>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#ef4444', flexShrink: 0 }}>D-5</span>
+            {(() => {
+              const upcomingEvents = getUpcomingPostingEvents()
+              const displayedEvents = upcomingEvents.slice(0, 3)
+              const hasMore = upcomingEvents.length > 3
+
+              return (
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#111', marginBottom: '10px', letterSpacing: '-0.1px' }}>다음 마감 일정</div>
+                  {displayedEvents.length > 0 ? (
+                    <>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
+                        {displayedEvents.map((evt, idx) => {
+                          const dday = calculateDDay(new Date(evt.dtstart))
+                          const dateStr = formatDateForDisplay(new Date(evt.dtstart))
+                          const ddayColor = dday <= 0 ? '#ef4444' : dday <= 3 ? '#f97316' : '#6b7280'
+
+                          return (
+                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ec4899', flexShrink: 0 }}></div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '12px', fontWeight: 500, color: '#111', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{evt.title}</div>
+                                <div style={{ fontSize: '11px', color: '#9ca3af' }}>{dateStr}</div>
+                              </div>
+                              <span style={{ fontSize: '11px', fontWeight: 700, color: ddayColor, flexShrink: 0 }}>
+                                {dday > 0 ? `D-${dday}` : dday === 0 ? '오늘' : '마감됨'}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      {hasMore && (
+                        <div
+                          onClick={() => setShowAllUpcomingEvents(true)}
+                          style={{ marginTop: '10px', fontSize: '11px', fontWeight: 600, color: '#6366f1', cursor: 'pointer' }}
+                        >
+                          전체 보기 →
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div style={{ fontSize: '12px', color: '#9ca3af' }}>다가올 마감 일정이 없습니다</div>
+                  )}
                 </div>
-              </div>
-              <div style={{ marginTop: '10px', fontSize: '11px', fontWeight: 600, color: '#6366f1', cursor: 'pointer' }}>전체 보기 →</div>
-            </div>
-
-            {/* 구분선 */}
-            <div style={{ height: '1px', backgroundColor: '#f3f4f6' }}></div>
-
-            {/* 여유 시간 */}
-            <div style={{ backgroundColor: '#f8f9fa', borderRadius: '12px', padding: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <span style={{ fontSize: '18px' }}>⏱</span>
-                <div style={{ fontSize: '11px', fontWeight: 600, color: '#6b7280' }}>이번 주 예상 여유 시간</div>
-              </div>
-              <div style={{ fontSize: '28px', fontWeight: 700, letterSpacing: '-1px', color: '#111', lineHeight: 1 }}>18<span style={{ fontSize: '14px', fontWeight: 500, color: '#6b7280', marginLeft: '2px' }}>h</span></div>
-              <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px', lineHeight: 1.5 }}>시험 기간 및 고정 일정 제외</div>
-            </div>
+              )
+            })()}
 
             {/* 프로필 매칭 */}
             <div style={{ backgroundColor: '#f8f9fa', borderRadius: '12px', padding: '14px' }}>
@@ -613,6 +835,106 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
           </aside>
         </div>
       </main>
+
+      {/* 다음 마감 일정 전체 보기 모달 */}
+      {showAllUpcomingEvents && (
+        <>
+          {/* 배경 */}
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 999,
+            }}
+            onClick={() => setShowAllUpcomingEvents(false)}
+          />
+
+          {/* 모달 */}
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              backgroundColor: '#fff',
+              borderRadius: '12px',
+              padding: '24px',
+              width: '90%',
+              maxWidth: '450px',
+              maxHeight: '80vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 25px rgba(0, 0, 0, 0.15)',
+              zIndex: 1000,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#111' }}>다음 마감 일정</h2>
+              <button
+                onClick={() => setShowAllUpcomingEvents(false)}
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '6px',
+                  border: '1px solid #e5e7eb',
+                  backgroundColor: '#f8f9fa',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: '#6b7280',
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* 일정 목록 */}
+            {(() => {
+              const upcomingEvents = getUpcomingPostingEvents()
+              return upcomingEvents.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {upcomingEvents.map((evt, idx) => {
+                    const dday = calculateDDay(new Date(evt.dtstart))
+                    const dateStr = formatDateForDisplay(new Date(evt.dtstart))
+                    const ddayColor = dday <= 0 ? '#ef4444' : dday <= 3 ? '#f97316' : '#6b7280'
+
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          backgroundColor: '#f8f9fa',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          padding: '12px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ec4899', flexShrink: 0, marginTop: '3px' }}></div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '13px', fontWeight: 500, color: '#111', marginBottom: '4px' }}>{evt.title}</div>
+                            <div style={{ fontSize: '12px', color: '#6b7280' }}>{dateStr}</div>
+                          </div>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: ddayColor, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                            {dday > 0 ? `D-${dday}` : dday === 0 ? '오늘' : '마감됨'}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '24px', color: '#9ca3af', fontSize: '13px' }}>
+                  다가올 마감 일정이 없습니다
+                </div>
+              )
+            })()}
+          </div>
+        </>
+      )}
 
       {/* 일정 상세 모달 */}
       {selectedDayEvents && selectedDayEvents.length > 0 && (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { scrapsApi } from '../utils/apiClient'
+import { scrapsApi, calendarEventsApi, calendarApi, Posting } from '../utils/apiClient'
 import PostingCard from '../components/PostingCard'
 
 interface ScrapListPageProps {
@@ -13,6 +13,7 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
   const [sortBy, setSortBy] = useState<'dday' | 'date'>('dday')
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([])
 
   const limit = 12
 
@@ -38,8 +39,92 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
     }
   }
 
+  const loadCalendarEvents = async () => {
+    try {
+      const response = await calendarEventsApi.list()
+      if (response?.data) {
+        setCalendarEvents(response.data)
+      }
+    } catch (error) {
+      console.error('캘린더 일정 로드 실패:', error)
+    }
+  }
+
+  const isPostingAddedToCalendar = (posting: Posting | any): boolean => {
+    return calendarEvents.some(event =>
+      event.type === 'POSTING' && event.relatedPostingId === posting.id
+    )
+  }
+
+  const handleAddToCalendar = async (posting: Posting | any) => {
+    try {
+      const endDate = new Date(posting.receptionEndDate)
+
+      // 마감일 검증: 오늘 이후인지 확인
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      endDate.setHours(0, 0, 0, 0)
+
+      const isPast = endDate < today
+      console.log('📅 마감일 검증:', {
+        posting: posting.title,
+        deadline: endDate.toISOString().split('T')[0],
+        today: today.toISOString().split('T')[0],
+        isPast
+      })
+
+      // 1. 로컬 DB에 저장 (링크 포함)
+      await calendarEventsApi.create({
+        title: `[마감] ${posting.title}`,
+        type: 'POSTING',
+        dtstart: endDate.toISOString(),
+        dtend: endDate.toISOString(),
+        relatedPostingId: posting.id,
+        isAllDay: true,
+        memo: posting.sourceUrl ? `링크: ${posting.sourceUrl}` : '',
+      })
+
+      // 2. Google Calendar에 동기화 (오늘 이후인 경우만)
+      if (!isPast) {
+        try {
+          await calendarApi.sync(posting.id)
+          console.log('✅ Google Calendar 동기화 완료')
+        } catch (syncError) {
+          console.warn('⚠️ Google Calendar 동기화 실패 (로컬 저장은 완료):', syncError)
+        }
+      } else {
+        console.log('⏰ 마감일이 과거이므로 Google Calendar 동기화 스킵')
+      }
+
+      await loadCalendarEvents()
+      setCurrentPage?.('calendar')
+    } catch (error) {
+      console.error('캘린더에 일정 추가 실패:', error)
+      alert('캘린더에 일정을 추가할 수 없습니다')
+    }
+  }
+
+  const handleDeleteFromCalendar = async (posting: Posting | any) => {
+    try {
+      const event = calendarEvents.find(e =>
+        e.type === 'POSTING' && e.relatedPostingId === posting.id
+      )
+      if (!event) {
+        alert('캘린더에서 해당 일정을 찾을 수 없습니다')
+        return
+      }
+
+      await calendarEventsApi.delete(event.id)
+      await loadCalendarEvents()
+    } catch (error) {
+      console.error('캘린더 일정 삭제 실패:', error)
+      alert('캘린더 일정을 삭제할 수 없습니다')
+    }
+  }
+
   useEffect(() => {
     fetchScraps(offset / limit, sortBy)
+    loadCalendarEvents()
   }, [offset, sortBy])
 
   const currentPage = Math.floor(offset / limit)
@@ -210,6 +295,9 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
                     onScrapChange={() => {
                       fetchScraps(currentPage, sortBy)
                     }}
+                    onAddToCalendar={handleAddToCalendar}
+                    isAddedToCalendar={isPostingAddedToCalendar(scrap)}
+                    onDeleteFromCalendar={handleDeleteFromCalendar}
                   />
                   {/* D-Day 배지 */}
                   <div
@@ -286,8 +374,9 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
                 이전
               </button>
 
-              {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                const pageNum = currentPage + i
+              {Array.from({ length: 5 }).map((_, i) => {
+                const groupStart = Math.floor(currentPage / 5) * 5
+                const pageNum = groupStart + i
                 if (pageNum >= totalPages) return null
 
                 return (

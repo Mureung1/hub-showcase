@@ -5,9 +5,11 @@ interface PostingCardProps {
   posting: Posting
   onScrapChange?: (id: string, isScrapped: boolean) => void
   onAddToCalendar?: (posting: Posting) => void
+  isAddedToCalendar?: boolean
+  onDeleteFromCalendar?: (posting: Posting) => void
 }
 
-export default function PostingCard({ posting, onScrapChange, onAddToCalendar }: PostingCardProps) {
+export default function PostingCard({ posting, onScrapChange, onAddToCalendar, isAddedToCalendar, onDeleteFromCalendar }: PostingCardProps) {
   const [isScrapped, setIsScrapped] = useState(posting.isScraped)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -204,16 +206,16 @@ export default function PostingCard({ posting, onScrapChange, onAddToCalendar }:
 
       {/* 버튼들 */}
       <div style={{ display: 'flex', gap: '8px', minHeight: '38px', flexShrink: 0, marginTop: 'auto', paddingTop: '8px' }}>
-        {/* 일정에 추가 버튼 */}
+        {/* 일정에 추가/삭제 버튼 */}
         <button
-          onClick={() => onAddToCalendar?.(posting)}
+          onClick={() => isAddedToCalendar ? onDeleteFromCalendar?.(posting) : onAddToCalendar?.(posting)}
           style={{
             flex: 1,
             padding: '0 12px',
             borderRadius: '8px',
-            backgroundColor: '#f0fdf4',
-            color: '#16a34a',
-            border: '1px solid #86efac',
+            backgroundColor: isAddedToCalendar ? '#fee2e2' : '#f0fdf4',
+            color: isAddedToCalendar ? '#dc2626' : '#16a34a',
+            border: isAddedToCalendar ? '1px solid #fecaca' : '1px solid #86efac',
             cursor: 'pointer',
             fontSize: '12px',
             fontWeight: 600,
@@ -225,13 +227,13 @@ export default function PostingCard({ posting, onScrapChange, onAddToCalendar }:
             lineHeight: 1,
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#dcfce7'
+            e.currentTarget.style.backgroundColor = isAddedToCalendar ? '#fecaca' : '#dcfce7'
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#f0fdf4'
+            e.currentTarget.style.backgroundColor = isAddedToCalendar ? '#fee2e2' : '#f0fdf4'
           }}
         >
-          일정에 추가
+          {isAddedToCalendar ? '삭제' : '일정에 추가'}
         </button>
 
         {/* 자세히 보기 링크 */}

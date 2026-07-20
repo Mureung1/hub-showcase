@@ -11,7 +11,7 @@ interface CalendarEvent {
   title: string
   start: string
   end: string
-  type: 'EXAM' | 'PART_TIME' | 'OTHER'
+  type: 'EXAM' | 'PART_TIME' | 'POSTING' | 'OTHER'
   source: 'manual' | 'scrap-sync'
   backgroundColor?: string
   borderColor?: string
@@ -34,6 +34,7 @@ interface ModalState {
 const EVENT_COLORS = {
   EXAM: { bg: '#fef3c7', text: '#d97706', border: '#f59e0b' },
   PART_TIME: { bg: '#dbeafe', text: '#2563eb', border: '#3b82f6' },
+  POSTING: { bg: '#fbcfe8', text: '#ec4899', border: '#f472b6' },
   OTHER: { bg: '#e5e7eb', text: '#374151', border: '#9ca3af' },
 }
 
@@ -44,6 +45,7 @@ interface CalendarPageProps {
 export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [postings, setPostings] = useState<Posting[]>([])
+  const [postingEvents, setPostingEvents] = useState<CalendarEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [modal, setModal] = useState<ModalState>({ isOpen: false, mode: 'add' })
   const [selectedRange, setSelectedRange] = useState<{ start?: Date; end?: Date }>({})
@@ -57,7 +59,10 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
     try {
       const response = await calendarEventsApi.list()
       if (response?.data) {
+
         const formattedEvents = response.data.map((evt: any) => {
+          // POSTING 타입은 항상 allDay로 강제 설정 (오전 9시 표시 방지)
+          const isAllDay = evt.type === 'POSTING' ? true : evt.isAllDay
           // DB는 UTC 기준 저장 (예: 2026-07-15T00:00:00.000Z)
           // → 로컬 시간으로 파싱해서 FullCalendar용으로 변환
           const startDate = new Date(evt.dtstart)
@@ -75,8 +80,16 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
             return `${year}-${month}-${day}T${hour}:${minute}:${second}`
           }
 
-          const startDateStr = startDate.toISOString().split('T')[0]
-          const endDateStr = endDate.toISOString().split('T')[0]
+          // 로컬 시간 기준으로 날짜 문자열 생성 (UTC 기준 아님)
+          const formatDateStr = (date: Date): string => {
+            const year = date.getFullYear()
+            const month = String(date.getMonth() + 1).padStart(2, '0')
+            const day = String(date.getDate()).padStart(2, '0')
+            return `${year}-${month}-${day}`
+          }
+
+          const startDateStr = formatDateStr(startDate)
+          const endDateStr = formatDateStr(endDate)
 
           console.log(`📦 [${evt.title}] 이벤트 변환:`, {
             dbDtstart: evt.dtstart,
@@ -85,7 +98,7 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
             parsedEnd: endDate.toString(),
             startDateStr,
             endDateStr,
-            isAllDay: evt.isAllDay,
+            isAllDay,
             'start 로컬시간': startDate.toLocaleString('ko-KR'),
             'end 로컬시간': endDate.toLocaleString('ko-KR'),
           })
@@ -94,7 +107,7 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
           let finalStart: string
           let finalEnd: string
 
-          if (!evt.isAllDay && startDateStr !== endDateStr) {
+          if (!isAllDay && startDateStr !== endDateStr) {
             console.warn('⚠️ 시간 기반 일정이 여러 날에 걸쳐있음:', {
               title: evt.title,
               startDateStr,
@@ -121,23 +134,29 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
             return `${hour}:${minute}`
           }
 
-          const timeLabel = evt.isAllDay
+          const timeLabel = isAllDay
             ? ''
             : `${formatTime(startDate)} ~ ${formatTime(endDate)}`
 
           // 시간을 앞에 배치: "09:00 ~ 18:00 rrr"
-          const displayTitle = evt.isAllDay ? evt.title : `${timeLabel} ${evt.title}`
+          const displayTitle = isAllDay ? evt.title : `${timeLabel} ${evt.title}`
 
           console.log(`✅ [${evt.title}] 최종 타이틀:`, displayTitle)
           console.log(`  FullCalendar용 범위: ${finalStart} ~ ${finalEnd}`)
 
+          // allDay 이벤트는 시간 정보 없이 YYYY-MM-DD 형식으로 설정
+          const calendarStart = isAllDay ? startDateStr : finalStart
+          const calendarEnd = isAllDay ? endDateStr : finalEnd
+
           return {
             ...evt,
-            start: finalStart,
-            end: finalEnd,
+            start: calendarStart,
+            end: calendarEnd,
             originalTitle: evt.title,
             title: displayTitle,
-            allDay: evt.isAllDay,
+            allDay: isAllDay,
+            // POSTING 타입은 시간 정보 제거 (all-day 표시)
+            ...(evt.type === 'POSTING' && { startTime: undefined, endTime: undefined }),
             backgroundColor: EVENT_COLORS[evt.type as keyof typeof EVENT_COLORS].bg,
             borderColor: EVENT_COLORS[evt.type as keyof typeof EVENT_COLORS].border,
             textColor: EVENT_COLORS[evt.type as keyof typeof EVENT_COLORS].text,
@@ -145,6 +164,10 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
         })
         console.log('✅ 변환 완료:', formattedEvents.length, '개 이벤트')
         setEvents(formattedEvents)
+
+        // POSTING 타입 이벤트만 필터링
+        const postingEventList = formattedEvents.filter(e => e.type === 'POSTING')
+        setPostingEvents(postingEventList)
       }
     } catch (error) {
       console.error('일정 로드 실패:', error)
@@ -355,6 +378,42 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
     }
   }
 
+  const handleResetDate = async () => {
+    if (!selectedRange.start) {
+      alert('날짜를 선택해주세요')
+      return
+    }
+
+    const date = selectedRange.start as Date
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    if (!confirm(`${dateStr}의 모든 일정을 삭제하시겠습니까?`)) return
+
+    try {
+      // 해당 날짜의 모든 일정 찾기
+      const eventsToDelete = events.filter(evt => {
+        const eventDate = evt.start.split('T')[0]
+        return eventDate === dateStr
+      })
+
+      if (eventsToDelete.length === 0) {
+        alert('삭제할 일정이 없습니다')
+        return
+      }
+
+      // 일정 삭제
+      for (const evt of eventsToDelete) {
+        await calendarEventsApi.delete(evt.id)
+      }
+
+      alert(`${eventsToDelete.length}개 일정이 삭제되었습니다`)
+      setSelectedRange({})
+      loadEvents()
+    } catch (error) {
+      console.error('일정 삭제 실패:', error)
+      alert('일정 삭제에 실패했습니다')
+    }
+  }
+
   return (
     <div style={{ display: 'flex', height: '100vh', backgroundColor: '#f8f9fa' }}>
       {/* 좌측 사이드바 */}
@@ -412,12 +471,12 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
               <span style={{ fontWeight: 500 }}>알바/파트타임</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '14px', height: '14px', backgroundColor: '#9ca3af', borderRadius: '3px' }}></div>
-              <span style={{ fontWeight: 500 }}>기타 일정</span>
+              <div style={{ width: '14px', height: '14px', backgroundColor: '#ec4899', borderRadius: '3px' }}></div>
+              <span style={{ fontWeight: 500 }}>공고 마감일</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '14px', height: '14px', backgroundColor: '#f87171', borderRadius: '3px' }}></div>
-              <span style={{ fontWeight: 500 }}>공고 마감일</span>
+              <div style={{ width: '14px', height: '14px', backgroundColor: '#9ca3af', borderRadius: '3px' }}></div>
+              <span style={{ fontWeight: 500 }}>기타 일정</span>
             </div>
           </div>
         </div>
@@ -468,19 +527,19 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
 
             {selectedRange.start && (
               <button
-                onClick={() => setSelectedRange({})}
+                onClick={handleResetDate}
                 style={{
                   padding: '8px 16px',
-                  backgroundColor: '#f3f4f6',
-                  color: '#111',
-                  border: '1px solid #e5e7eb',
+                  backgroundColor: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
                   borderRadius: '6px',
                   fontSize: '13px',
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'background-color 150ms',
                 }}>
-                ❌ 초기화
+                🗑️ 초기화
               </button>
             )}
 
@@ -567,6 +626,7 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
         endDate={modal.endDate}
         event={modal.event}
         overlappingEvents={modal.overlappingEvents}
+        postingEvents={postingEvents}
         onClose={() => setModal({ isOpen: false, mode: 'add' })}
         onSelectEvent={(selectedEvent) => {
           // 겹치는 일정 중 하나를 선택하면 수정 모달로 전환

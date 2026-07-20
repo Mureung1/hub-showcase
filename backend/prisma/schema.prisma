@@ -34,6 +34,7 @@ enum RawPostingStatus {
 enum CalendarEventType {
   EXAM           // 시험
   PART_TIME      // 아르바이트
+  POSTING        // 공고 마감일
   OTHER          // 기타
 }
 

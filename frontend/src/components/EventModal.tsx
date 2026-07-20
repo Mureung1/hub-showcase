@@ -7,11 +7,12 @@ interface EventModalProps {
   endDate?: Date
   event?: any
   overlappingEvents?: any[]
+  postingEvents?: any[]
   onClose: () => void
   onSelectEvent?: (event: any) => void
   onSave: (event: {
     title: string
-    type: 'EXAM' | 'PART_TIME' | 'OTHER'
+    type: 'EXAM' | 'PART_TIME' | 'POSTING' | 'OTHER'
     dtstart: string
     dtend: string
     isAllDay?: boolean
@@ -23,9 +24,9 @@ interface EventModalProps {
   onDelete?: () => void
 }
 
-export default function EventModal({ isOpen, mode, date, endDate, event, onClose, onSave, onDelete }: EventModalProps) {
+export default function EventModal({ isOpen, mode, date, endDate, event, postingEvents = [], onClose, onSave, onDelete }: EventModalProps) {
   const [title, setTitle] = useState('')
-  const [type, setType] = useState<'EXAM' | 'PART_TIME' | 'OTHER'>('EXAM')
+  const [type, setType] = useState<'EXAM' | 'PART_TIME' | 'POSTING' | 'OTHER'>('EXAM')
   const [startDate, setStartDate] = useState('')
   const [endDateStr, setEndDateStr] = useState('')
   const [isAllDay, setIsAllDay] = useState(true)
@@ -34,6 +35,7 @@ export default function EventModal({ isOpen, mode, date, endDate, event, onClose
   const [memo, setMemo] = useState('')
   const [hideFromRecommendation, setHideFromRecommendation] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [selectedPostingEvent, setSelectedPostingEvent] = useState<any>(null)
 
   // Date 객체를 로컬 시간 기준 YYYY-MM-DD로 변환
   const formatLocalDate = (d: Date): string => {
@@ -79,6 +81,12 @@ export default function EventModal({ isOpen, mode, date, endDate, event, onClose
   }, [mode, date, endDate, event, isOpen])
 
   const handleSave = async () => {
+    // 공고 마감일 타입일 때 선택 검증
+    if (type === 'POSTING' && !selectedPostingEvent) {
+      alert('공고 마감일을 선택해주세요')
+      return
+    }
+
     if (!title || !startDate || !endDateStr) {
       alert('모든 필드를 입력해주세요')
       return
@@ -86,8 +94,11 @@ export default function EventModal({ isOpen, mode, date, endDate, event, onClose
 
     setIsSaving(true)
     try {
+      // 공고 마감일은 항상 allDay로 설정
+      const finalIsAllDay = type === 'POSTING' ? true : isAllDay
+
       // 시간 기반 일정 검증: 여러 날짜 선택 불가
-      if (!isAllDay && startDate !== endDateStr) {
+      if (!finalIsAllDay && startDate !== endDateStr) {
         alert('시간으로 일정을 지정할 때는 같은 날에만 만들 수 있습니다\n여러 날짜 선택 시 "하루 종일"로 변경해주세요')
         setIsSaving(false)
         return
@@ -95,14 +106,14 @@ export default function EventModal({ isOpen, mode, date, endDate, event, onClose
 
       // endTime이 startTime보다 빠르면 자동 수정
       let finalEndTime = endTime
-      if (!isAllDay && startTime >= endTime) {
+      if (!finalIsAllDay && startTime >= endTime) {
         finalEndTime = '23:59'
       }
 
       let dtstart = ''
       let dtend = ''
 
-      if (isAllDay) {
+      if (finalIsAllDay) {
         // all-day 이벤트: 같은 날 23:59:59로 설정
         dtstart = `${startDate}T00:00:00`
         dtend = `${endDateStr}T23:59:59`
@@ -119,9 +130,9 @@ export default function EventModal({ isOpen, mode, date, endDate, event, onClose
         endDateStr,
         dtstart,
         dtend,
-        isAllDay,
-        startTime: isAllDay ? undefined : startTime,
-        endTime: isAllDay ? undefined : finalEndTime,
+        isAllDay: finalIsAllDay,
+        startTime: finalIsAllDay ? undefined : startTime,
+        endTime: finalIsAllDay ? undefined : finalEndTime,
       })
 
       onSave({
@@ -129,9 +140,9 @@ export default function EventModal({ isOpen, mode, date, endDate, event, onClose
         type,
         dtstart,
         dtend,
-        isAllDay,
-        startTime: !isAllDay ? startTime : undefined,
-        endTime: !isAllDay ? finalEndTime : undefined,
+        isAllDay: finalIsAllDay,
+        startTime: !finalIsAllDay ? startTime : undefined,
+        endTime: !finalIsAllDay ? finalEndTime : undefined,
         memo: memo || undefined,
         hideFromRecommendation,
       })
@@ -313,13 +324,15 @@ export default function EventModal({ isOpen, mode, date, endDate, event, onClose
           <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '8px' }}>
             일정 유형 *
           </label>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
             {(['EXAM', 'PART_TIME', 'OTHER'] as const).map(t => (
               <button
                 key={t}
-                onClick={() => setType(t)}
+                onClick={() => {
+                  setType(t)
+                  setSelectedPostingEvent(null)
+                }}
                 style={{
-                  flex: 1,
                   padding: '10px 12px',
                   border: type === t ? 'none' : '1px solid #e5e7eb',
                   borderRadius: '8px',
@@ -336,7 +349,68 @@ export default function EventModal({ isOpen, mode, date, endDate, event, onClose
                 {t === 'OTHER' && '📌 기타'}
               </button>
             ))}
+
+            {/* 공고 마감일 버튼 */}
+            <button
+              onClick={() => {
+                setType('POSTING')
+                if (postingEvents.length === 1) {
+                  setSelectedPostingEvent(postingEvents[0])
+                }
+              }}
+              disabled={postingEvents.length === 0}
+              style={{
+                padding: '10px 12px',
+                border: type === 'POSTING' ? 'none' : '1px solid #e5e7eb',
+                borderRadius: '8px',
+                backgroundColor: postingEvents.length === 0 ? '#f3f4f6' : type === 'POSTING' ? '#6366f1' : '#f8f9fa',
+                color: postingEvents.length === 0 ? '#9ca3af' : type === 'POSTING' ? '#fff' : '#111',
+                fontWeight: 500,
+                fontSize: '12px',
+                cursor: postingEvents.length === 0 ? 'not-allowed' : 'pointer',
+                opacity: postingEvents.length === 0 ? 0.6 : 1,
+                transition: 'all 150ms',
+              }}
+              title={postingEvents.length === 0 ? '추가된 공고가 없습니다' : ''}
+            >
+              📌 공고마감일
+            </button>
           </div>
+
+          {/* 공고가 여러 개일 때 선택 드롭다운 */}
+          {type === 'POSTING' && postingEvents.length > 1 && (
+            <select
+              value={selectedPostingEvent?.id || ''}
+              onChange={(e) => {
+                const selected = postingEvents.find(pe => pe.id === e.target.value)
+                setSelectedPostingEvent(selected)
+                if (selected) {
+                  setTitle(selected.title)
+                  const startStr = selected.start?.split('T')[0] || selected.dtstart?.split('T')[0]
+                  setStartDate(startStr)
+                  setEndDateStr(startStr)
+                  setIsAllDay(true)
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                marginTop: '8px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                fontSize: '12px',
+                backgroundColor: '#f8f9fa',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="">공고 선택...</option>
+              {postingEvents.map(pe => (
+                <option key={pe.id} value={pe.id}>
+                  {pe.title}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* 시작/종료 날짜 */}
