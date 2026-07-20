@@ -2,7 +2,7 @@
 
 - 작성일: 2026-07-16
 - 상태: 구현 전 확정 설계
-- 기준 문서: `docs/plan/api-spec.md`, `docs/plan/content_strategy.md`, `docs/plan/04-scenario-ia.md`, `docs/DEVELOPMENT.md`
+- 기준 문서: `docs/plan/engineering/api-spec.md`, `docs/plan/engineering/content-strategy.md`, `docs/plan/product/scenario-ia.md`, `docs/DEVELOPMENT.md`
 
 ## 1. 목표
 
@@ -159,7 +159,7 @@ total_score desc
 
 ## 7. API 계약
 
-상세 요청·응답과 상태 코드는 `docs/plan/api-spec.md`를 단일 계약으로 사용한다. 이 설계는 구현 순서와 경계를 보완한다.
+상세 요청·응답과 상태 코드는 `docs/plan/engineering/api-spec.md`를 단일 계약으로 사용한다. 이 설계는 구현 순서와 경계를 보완한다.
 
 ### `GET /api/user-interests`
 

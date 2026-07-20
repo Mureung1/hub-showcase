@@ -1,4 +1,4 @@
-2026-07-15: 읽기·미션 흐름을 하이라이트 없이 글 전체 대상으로 변경. 근거는 content_strategy.md 8장, docs/notes/2026-07-15-reading-mission-flow.md
+2026-07-15: 읽기·미션 흐름을 하이라이트 없이 글 전체 대상으로 변경. 근거는 content-strategy.md 8장, docs/notes/2026-07-15-reading-mission-flow.md
 
 # 서비스 정의, 핵심 기능 개요, 우선순위 및 MVP
 
@@ -32,7 +32,7 @@ AI 시대에 약해지기 쉬운 읽기, 질문, 반박, 정리, 표현 습관�
 
 ## 핵심 기능 개요
 
-세부 처리 방식은 [`03-feature-details.md`](03-feature-details.md)에 정리했다.
+세부 처리 방식은 [`feature-details.md`](feature-details.md)에 정리했다.
 
 ### P0: 관심사 설정
 

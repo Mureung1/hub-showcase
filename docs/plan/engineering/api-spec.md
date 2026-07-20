@@ -19,7 +19,7 @@ MVP(P0/P1) API 계약을 정의한다. 도메인 enum은 2026-07-15 기준 실�
 | 초기 추천 | **실제 `get_recommended_articles` 규칙 기반 추천 함수 사용** | 클릭 수 데이터와 노출 이력 테이블이 없는 현재 스키마에서 인기글은 계산할 수 없다. 관심사 일치·최신성·소스 품질·반복 패널티를 사용한다. |
 | 에러 본문 | **공통 `{ code, message, details? }`** | 프론트가 상태 코드별 문구와 재시도 동작을 안정적으로 분기할 수 있다. FastAPI 검증 오류도 예외 처리기로 같은 외피에 맞춘다. |
 
-`03-feature-details.md`와 `04-scenario-ia.md`의 앱 내 문장 하이라이트 흐름은 저작권(본문 전문 저장 금지)과 남의 페이지에 UI를 얹을 수 없다는 제약 때문에 사용하지 않는다. 화면 흐름은 **오늘의 글 → 원문 읽기(외부) → 미션(글 전체 대상) → 한 줄 기록**이다. `officialExcerpt`는 카드의 소개문일 뿐 하이라이트 대상이 아니다.
+`feature-details.md`와 `scenario-ia.md`의 앱 내 문장 하이라이트 흐름은 저작권(본문 전문 저장 금지)과 남의 페이지에 UI를 얹을 수 없다는 제약 때문에 사용하지 않는다. 화면 흐름은 **오늘의 글 → 원문 읽기(외부) → 미션(글 전체 대상) → 한 줄 기록**이다. `officialExcerpt`는 카드의 소개문일 뿐 하이라이트 대상이 아니다.
 
 ## 공통 규약
 
@@ -224,7 +224,7 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 1. 실제 DB 함수 `get_recommended_articles(user_id, limit)`를 호출한다.
 2. 후보는 사용자 관심사 태그가 하나 이상 일치하고, 완료한 `mission_records`가 없는 글이다.
 3. `urlStatus = active`, `qualityScore >= 0.65`, 소스 `trustLevel in (high, medium)`, `defaultExposure = primary`만 허용한다.
-4. `accessType = free`를 자동 추천한다. `partial_free`는 `content_strategy.md` 최종 운영 원칙에 따라 운영자가 무료 범위를 확인해 수동 큐레이션한 글만 허용해야 한다. 현재 DB 함수가 `free`, `partial_free`를 모두 자동 허용하므로 구현 전에 함수 조건을 맞춰야 한다.
+4. `accessType = free`를 자동 추천한다. `partial_free`는 `content-strategy.md` 최종 운영 원칙에 따라 운영자가 무료 범위를 확인해 수동 큐레이션한 글만 허용해야 한다. 현재 DB 함수가 `free`, `partial_free`를 모두 자동 허용하므로 구현 전에 함수 조건을 맞춰야 한다.
 5. 정렬 점수는 관심사 일치 + 최신성 + 소스 품질 - 최근 14일 같은 소스 반복 - 태깅된 논쟁 주제의 같은 stance 반복이다.
 6. 동점이면 결과가 흔들리지 않도록 `published_at desc nulls last, article_id`를 보조 정렬로 추가한다.
 

@@ -42,7 +42,7 @@ B = ________________________________
 
 **기대 결과**
 
-- **처음에는 `displayOrder` 1~10, 10개만 표시된다** (`db_schema.md`의 `display_order` 설계 의도)
+- **처음에는 `displayOrder` 1~10, 10개만 표시된다** (`db-schema.md`의 `display_order` 설계 의도)
 - 순서가 `displayOrder` 오름차순이다 (AI → IT·개발 → 커리어·취업 → …)
 - `hidden`, `preparing` 관심사는 **응답에 아예 오지 않는다.** 백엔드가 거른다
 - 아무것도 선택되지 않은 상태로 시작한다

@@ -10,24 +10,41 @@ type ArticleCardProps = {
   article: TodayArticle
   // 오늘의 대표 글과 "이런 글도 있어요" 목록은 같은 카드의 다른 모양이다.
   variant?: 'feature' | 'compact'
+  onSelect?: () => void
+  onOpenIntro?: () => void
 }
 
-export default function ArticleCard({ article, variant = 'feature' }: ArticleCardProps) {
+export default function ArticleCard({
+  article,
+  variant = 'feature',
+  onSelect,
+  onOpenIntro,
+}: ArticleCardProps) {
   const isCompact = variant === 'compact'
   const interestName = article.interestTags[0]?.name
 
+  const metaContent = (
+    <>
+      {article.sourceName}
+      <span className="dot" />
+      {SOURCE_TYPE_LABEL[article.sourceType]}
+      {interestName && <span className="topic-tag">{interestName}</span>}
+    </>
+  )
+
   return (
     <article className={`card${isCompact ? '' : ' today-feature-card'}`}>
-      <p className="card-meta">
-        {article.sourceName}
-        <span className="dot" />
-        {SOURCE_TYPE_LABEL[article.sourceType]}
-        {interestName && <span className="topic-tag">{interestName}</span>}
-      </p>
-
-      <h2 className={`card-title${isCompact ? ' card-title--compact' : ''}`}>
-        {article.title}
-      </h2>
+      {isCompact ? (
+        <button type="button" className="card-compact-select" onClick={onSelect}>
+          <span className="card-meta">{metaContent}</span>
+          <span className="card-title card-title--compact">{article.title}</span>
+        </button>
+      ) : (
+        <>
+          <p className="card-meta">{metaContent}</p>
+          <h2 className="card-title">{article.title}</h2>
+        </>
+      )}
 
       {!isCompact && (
         <>
@@ -41,15 +58,10 @@ export default function ArticleCard({ article, variant = 'feature' }: ArticleCar
                 ? `약 ${article.readingTimeMinutes}분 · 원문 그대로`
                 : '원문 그대로'}
             </span>
-            <a
-              className="card-link"
-              href={article.originalUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              읽고 미션 받기
+            <button type="button" className="card-link" onClick={onOpenIntro}>
+              글 살펴보기
               <ArrowIcon />
-            </a>
+            </button>
           </div>
         </>
       )}

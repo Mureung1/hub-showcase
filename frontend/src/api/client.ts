@@ -1,8 +1,11 @@
 import { getAccessToken } from '../lib/supabase'
 import type {
+  ArticleDetail,
+  CreateMissionRecordRequest,
   ErrorDetail,
   ErrorResponse,
   Interest,
+  MissionRecord,
   ReplaceUserInterestsResponse,
   TodayArticlesResponse,
   UserInterestsResponse,
@@ -49,6 +52,13 @@ export function createApiClient(
         body: JSON.stringify({ interestIds }),
       }),
     getTodayArticles: () => request<TodayArticlesResponse>('/articles/today'),
+    getArticleDetail: (articleId: string) =>
+      request<ArticleDetail>(`/articles/${encodeURIComponent(articleId)}`),
+    createMissionRecord: ({ articleId, missionType, userAnswer }: CreateMissionRecordRequest) =>
+      request<MissionRecord>('/mission-records', {
+        method: 'POST',
+        body: JSON.stringify({ articleId, missionType, userAnswer }),
+      }),
   }
 }
 

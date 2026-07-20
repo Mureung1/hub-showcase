@@ -1,8 +1,8 @@
-2026-07-15: 읽기·미션 흐름을 하이라이트 없이 글 전체 대상으로 변경. 근거는 content_strategy.md 8장, docs/notes/2026-07-15-reading-mission-flow.md
+2026-07-15: 읽기·미션 흐름을 하이라이트 없이 글 전체 대상으로 변경. 근거는 content-strategy.md 8장, docs/notes/2026-07-15-reading-mission-flow.md
 
 # 핵심 기능 세부 정리
 
-기능 개요는 [`02-service-mvp.md`](02-service-mvp.md)를 참고.
+기능 개요는 [`service-mvp.md`](service-mvp.md)를 참고.
 
 ## 오늘의 깸: 세부 처리 방식
 

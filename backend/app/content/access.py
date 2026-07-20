@@ -1,4 +1,4 @@
-"""접근성 판정. content_pipeline.md 8장.
+"""접근성 판정. docs/plan/engineering/content-pipeline.md 8장.
 
 원문 요청 없이 title, URL, excerpt와 source.paywall_risk만 사용한다.
 """

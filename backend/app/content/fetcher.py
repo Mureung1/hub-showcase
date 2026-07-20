@@ -1,4 +1,4 @@
-"""feed HTTP GET 페치 계약. content_pipeline.md 5장.
+"""feed HTTP GET 페치 계약. docs/plan/engineering/content-pipeline.md 5장.
 
 httpx로 timeout, redirect host 검사, 응답 크기 제한, 재시도를 직접 통제한다.
 받은 bytes만 parser에 넘겨 feedparser가 자체 fetch로 이 통제를 우회하지 않게 한다.

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import articles, health, interests, user_interests
+from app.api.routes import articles, health, interests, mission_records, user_interests
 from app.core.config import settings
 from app.core.errors import register_error_handlers
 
@@ -21,3 +21,4 @@ app.include_router(health.router, prefix="/api")
 app.include_router(interests.router, prefix="/api")
 app.include_router(user_interests.router, prefix="/api")
 app.include_router(articles.router, prefix="/api")
+app.include_router(mission_records.router, prefix="/api")

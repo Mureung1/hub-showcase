@@ -1,7 +1,7 @@
 """RSS 수집 파이프라인의 런타임 데이터 모델과 상태·오류 코드.
 
 이 모듈은 Supabase client를 모른다. DB 접근은 repository에만 둔다.
-content_pipeline.md 4·14·15장 참조.
+docs/plan/engineering/content-pipeline.md 4·14·15장 참조.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from enum import Enum
 
 
 class ItemStatus(str, Enum):
-    """item 하나의 처리 결과. content_pipeline.md 15장."""
+    """item 하나의 처리 결과. docs/plan/engineering/content-pipeline.md 15장."""
 
     PLANNED_NEW = "planned_new"
     INSERTED = "inserted"
@@ -24,7 +24,7 @@ class ItemStatus(str, Enum):
 
 
 class RejectReason(str, Enum):
-    """item 제외 사유. content_pipeline.md 15장."""
+    """item 제외 사유. docs/plan/engineering/content-pipeline.md 15장."""
 
     MISSING_TITLE = "MISSING_TITLE"
     MISSING_URL = "MISSING_URL"
@@ -39,7 +39,7 @@ class RejectReason(str, Enum):
 
 
 class FeedError(str, Enum):
-    """feed/source 단위 오류. 하나라도 나면 저장 0건. content_pipeline.md 15장."""
+    """feed/source 단위 오류. 하나라도 나면 저장 0건. docs/plan/engineering/content-pipeline.md 15장."""
 
     SOURCE_NOT_FOUND = "SOURCE_NOT_FOUND"
     SOURCE_NOT_ELIGIBLE = "SOURCE_NOT_ELIGIBLE"
@@ -66,7 +66,7 @@ class PipelineError(Exception):
 class SourceConfig:
     """실행 시작 시 sources 행과 관심사를 읽어 만드는 불변 런타임 설정.
 
-    content_pipeline.md 4장. eligible 여부는 이 객체를 만들기 전에 검증한다.
+    docs/plan/engineering/content-pipeline.md 4장. eligible 여부는 이 객체를 만들기 전에 검증한다.
     """
 
     id: str
@@ -93,7 +93,7 @@ class FetchResult:
 
 @dataclass
 class ArticleCandidate:
-    """parse·sanitize 후, 검증 전의 item. content_pipeline.md 6장."""
+    """parse·sanitize 후, 검증 전의 item. docs/plan/engineering/content-pipeline.md 6장."""
 
     title: str
     original_url: str
@@ -150,7 +150,7 @@ class PlannedItem:
 
 @dataclass
 class CollectionPlan:
-    """dry-run·save 공통 실행 계획과 집계. content_pipeline.md 14장."""
+    """dry-run·save 공통 실행 계획과 집계. docs/plan/engineering/content-pipeline.md 14장."""
 
     source_id: str
     feed_url: str

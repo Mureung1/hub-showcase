@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import ArticleCard from '../components/ArticleCard'
 import type { TodayArticle } from '../api/types'
 import './Today.css'
@@ -9,6 +10,7 @@ export type TodayState =
 
 type TodayProps = {
   state: TodayState
+  onOpenArticle?: (articleId: string) => void
 }
 
 function formatToday(date: Date): string {
@@ -18,8 +20,13 @@ function formatToday(date: Date): string {
   return `${year}.${month}.${day}`
 }
 
-export default function Today({ state }: TodayProps) {
+export default function Today({ state, onOpenArticle = () => {} }: TodayProps) {
   const today = formatToday(new Date())
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null)
+
+  const items = state.status === 'success' ? state.items : []
+  const featureArticle = items.find((article) => article.id === selectedArticleId) ?? items[0]
+  const compactArticles = items.filter((article) => article.id !== featureArticle?.id)
 
   return (
     <div className="app-shell">
@@ -51,16 +58,25 @@ export default function Today({ state }: TodayProps) {
           <p>{state.emptyStateMessage}</p>
         )}
 
-        {state.status === 'success' && state.items.length > 0 && (
+        {state.status === 'success' && featureArticle && (
           <>
-            <ArticleCard article={state.items[0]} variant="feature" />
+            <ArticleCard
+              article={featureArticle}
+              variant="feature"
+              onOpenIntro={() => onOpenArticle(featureArticle.id)}
+            />
 
-            {state.items.length > 1 && (
+            {compactArticles.length > 0 && (
               <>
                 <p className="today-section-label">이런 글도 있어요</p>
                 <div className="today-more-list">
-                  {state.items.slice(1).map((article) => (
-                    <ArticleCard key={article.id} article={article} variant="compact" />
+                  {compactArticles.map((article) => (
+                    <ArticleCard
+                      key={article.id}
+                      article={article}
+                      variant="compact"
+                      onSelect={() => setSelectedArticleId(article.id)}
+                    />
                   ))}
                 </div>
               </>
