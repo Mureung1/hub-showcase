@@ -5,6 +5,16 @@ import Header from "../components/layout/Header";
 import { verifyEmail } from "../features/auth/authService";
 import { navigate, routes } from "../router";
 
+const verificationRequests = new Map();
+
+const verifyEmailOnce = (token) => {
+  if (!verificationRequests.has(token)) {
+    verificationRequests.set(token, verifyEmail(token));
+  }
+
+  return verificationRequests.get(token);
+};
+
 function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") || "";
@@ -12,24 +22,36 @@ function VerifyEmail() {
   const [message, setMessage] = useState("이메일 인증을 확인하고 있습니다.");
 
   useEffect(() => {
+    let isMounted = true;
+
     const verify = async () => {
       if (!token) {
-        setStatus("error");
-        setMessage("인증 토큰이 없습니다. 메일의 인증 링크를 다시 열어 주세요.");
+        if (isMounted) {
+          setStatus("error");
+          setMessage("인증 토큰이 없습니다. 메일의 인증 링크를 다시 열어 주세요.");
+        }
         return;
       }
 
       try {
-        const user = await verifyEmail(token);
-        setStatus("success");
-        setMessage(`${user.email} 인증이 완료되어 회원가입이 최종 완료되었습니다.`);
+        const user = await verifyEmailOnce(token);
+        if (isMounted) {
+          setStatus("success");
+          setMessage(`${user.email} 인증이 완료되었습니다. 이제 로그인할 수 있습니다.`);
+        }
       } catch (error) {
-        setStatus("error");
-        setMessage(error.message);
+        if (isMounted) {
+          setStatus("error");
+          setMessage(error.message);
+        }
       }
     };
 
     verify();
+
+    return () => {
+      isMounted = false;
+    };
   }, [token]);
 
   const isSuccess = status === "success";

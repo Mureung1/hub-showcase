@@ -7,6 +7,7 @@ import { authRouter } from "./routes/authRoutes.js";
 import { careerRouter } from "./routes/careerRoutes.js";
 import { healthRouter } from "./routes/healthRoutes.js";
 import { specRouter } from "./routes/specRoutes.js";
+import { submissionRouter } from "./routes/submissionRoutes.js";
 
 export const createApp = () => {
   const app = express();
@@ -16,12 +17,13 @@ export const createApp = () => {
       origin: env.frontendOrigin,
     })
   );
-  app.use(express.json());
+  app.use(express.json({ limit: "3mb" }));
 
   app.use("/api/health", healthRouter);
   app.use("/api/auth", authRouter);
   app.use("/api/specs", specRouter);
   app.use("/api/analysis", analysisRouter);
+  app.use("/api/submissions", submissionRouter);
   app.use("/api", careerRouter);
 
   app.use((error, request, response, next) => {
