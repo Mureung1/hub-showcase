@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: completed
+- State: claimed
 - Surface: local-ticket
-- Next actor: none
+- Next actor: /implement
 
 ## Parent Spec
 
@@ -35,13 +35,13 @@
 
 - [x] Current canonical v2 store를 reopen하면 Course, RawMaterial, Assignment, StatePatch, UserConfirmation과 confirmed revision이 손실 없이 복원된다.
 - [x] v1, pre-corrective/noncanonical v2, malformed current-v2와 future-version fixtures는 historical shape별 production branch 없이 같은 generic rejection boundary로 열리고, activation 전후 store bytes가 exact하게 같다.
-- [x] Invalid aggregate relation도 fail closed하며 original bytes와 이전 active workspace/snapshot을 보존한다.
+- [ ] Invalid aggregate relation도 fail closed하며 original bytes와 이전 active workspace/snapshot을 보존한다.
 - [x] Managed development workspace는 기존 explicit rematerialization으로만 복구되고 tracked seed digest를 보존한다. E2E는 서로 겹치지 않는 fresh workspace를 사용한다.
-- [x] Caller-owned workspace의 unsupported/invalid store는 incompatible 상태와 original store·TXT bytes를 유지하며 startup·ordinary activation에서 자동 reset되지 않는다.
+- [ ] Caller-owned workspace의 unsupported/invalid store는 incompatible 상태와 original store·TXT bytes를 유지하며 startup·ordinary activation에서 자동 reset되지 않는다.
 - [x] 새 product-store reset command/helper 또는 Browser reset operation을 추가하지 않는다.
 - [x] Browser bootstrap·activation·refresh·preview contract에 store version, physical path와 internal compatibility payload가 노출되지 않는다.
 - [x] Removed migration tests는 current-only baseline과 bytes-preserving rejection tests로 대체되고 Ticket 005의 canonical replay·Review transaction regressions은 계속 통과한다.
-- [x] Store current behavior owner인 `apps/server/README.md`에서 v1·pre-corrective v2 migration 설명을 제거하고 pre-009 current-only behavior를 기록한다.
+- [ ] Store current behavior owner인 `apps/server/README.md`에서 v1·pre-corrective v2 migration 설명을 제거하고 pre-009 current-only behavior를 기록한다.
 
 ## Verification
 
