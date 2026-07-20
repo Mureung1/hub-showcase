@@ -8,7 +8,7 @@ Backlog ID: WEB-019
 Parent Epic: EPIC-08 / GitHub #63
 Type: refactor
 Owner: HyunKN
-Status: in_progress
+Status: done
 ```
 
 ## 2. Goal
@@ -38,9 +38,9 @@ tests: UI state characterization
 
 ## 6. Acceptance Criteria
 
-- [ ] MarketFilters와 MarketInspector가 임시 structure budget 없이 통과한다.
-- [ ] 점포 목록의 loading·empty·error·전체보기 상태가 유지된다.
-- [ ] inspector topic별 metric과 retry 상태가 유지된다.
+- [x] MarketFilters와 MarketInspector가 임시 structure budget 없이 통과한다.
+- [x] 점포 목록의 loading·empty·error·전체보기 상태가 유지된다.
+- [x] inspector topic별 metric과 retry 상태가 유지된다.
 
 ## 7. Verification Plan
 
@@ -54,7 +54,7 @@ python scripts/check_code_structure.py
 ## 8. Documentation Updates
 
 - [x] Task Packet 생성
-- [ ] Run Report 및 backlog 상태 갱신
+- [x] 검증 결과를 Task Packet에 기록
 
 ## 9. Commit Plan
 
@@ -66,4 +66,11 @@ test(web): preserve analysis panel interactions
 ## 10. Self-check
 
 - [x] 화면 기능을 변경하지 않는다.
-- [ ] 검증 결과를 기록한다.
+- [x] FE test, typecheck, lint와 structure check를 수행한다.
+- [ ] TEST-001에서 실제 브라우저의 분석 패널 시각 회귀를 별도로 확인한다.
+
+## 11. Result
+
+- `MarketFilters`의 지도 표시 제어와 점포 목록을 표시 전용 컴포넌트로 분리했다.
+- `MarketInspector`는 header, 점수·경쟁, 개·폐업·매출, 순위, 유동인구, 인구, 요약 컴포넌트를 조립한다.
+- FE test 27개 파일 / 78개 테스트, typecheck, lint, 구조 검사를 통과했다.
