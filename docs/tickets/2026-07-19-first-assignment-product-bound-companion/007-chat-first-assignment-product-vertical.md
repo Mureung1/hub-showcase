@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -57,12 +57,15 @@
 
 검증 결과:
 
-- Chat Shell unit 37개와 Server 115개 test가 통과했고, full Playwright desktop suite 11개가 실제 Vite→Express→deterministic Runtime/product store seam에서 통과했다. Nominal action ordering, Agent·terminal, exact Review binding, evidence navigation, accept 뒤 authoritative bootstrap, reload, 일반 Plan clarification, interrupt, mounted hide/show와 legacy product transcript 미사용을 포함한다.
+- Chat Shell unit 39개와 Server 115개 test가 통과했고, full Playwright desktop suite 13개가 실제 Vite→Express→deterministic Runtime/product store seam에서 통과했다. Nominal action ordering, Agent·terminal, exact Review binding, evidence navigation, accept 뒤 authoritative bootstrap, reload, 일반 Plan clarification, interrupt, request-after-interrupt ordering, mounted hide/show와 legacy product transcript 미사용을 포함한다.
 - 최종 tree에서 `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`가 모두 exit 0으로 통과했다.
 - 1440×900과 1920×1080 viewport에서 pending Review, exact evidence 이동, accept와 authoritative settled state를 capture해 직접 확인했다. 임시 visual QA spec과 screenshot은 검증 뒤 제거했다. Clarification answer/cancel, keyboard focus order와 sidebar hide/show는 full Browser trace로 추가 확인했다.
 - Fixed point `5acc408f43a7d65bc4d8cba3b35cea8fdb75839e` 이후 diff를 Standards와 Spec 두 축으로 병렬 review했다. CSS state naming, clarification response 중복, unused history surface, E2E helper 중복, cross-family activity ID collision과 Browser keyboard·Agent·interrupt trace findings를 regression과 함께 닫았다. Corrective range `a49a6805...93a84c34`의 두 축 follow-up은 finding 0건으로 통과했다.
-- Lifecycle corrective는 reducer public seam에서 먼저 red를 확인했다. Pre-accept `completed`, post-accept `not_accepted | acceptance_unknown`, interrupt 중 clarification·Review resolution이 각각 기존 false success와 `running` 회귀를 재현했고, exact matrix와 stopping-preserving implementation 뒤 37개 Chat Shell unit이 green으로 전환됐다. Live Server producer를 함께 대조해 Assignment pre-accept의 honest `not_accepted | acceptance_unknown | failed | unknown`과 Chat의 `not_accepted | unknown`을 보존했다.
+- 첫 lifecycle corrective는 reducer public seam에서 먼저 red를 확인했다. Pre-accept `completed`, post-accept `not_accepted | acceptance_unknown`, interrupt 중 clarification·Review resolution이 각각 기존 false success와 `running` 회귀를 재현했고, exact matrix와 stopping-preserving implementation 뒤 당시 37개 Chat Shell unit이 green으로 전환됐다. Live Server producer를 함께 대조해 Assignment pre-accept의 honest `not_accepted | acceptance_unknown | failed | unknown`과 Chat의 `not_accepted | unknown`을 보존했다.
 - Corrective fixed point `20e76500fbf9c1f028de5515693e43d0eab3b0da` 이후 diff를 Standards와 Spec 두 축의 독립 agent가 병렬 review했다. Matrix의 operation-kind·public acceptance stage semantics, interaction·Review stopping race, unchanged `operation.control-failed` recovery와 downstream non-change를 확인했고 두 축 모두 finding 0건으로 통과했다.
+- 두 번째 lifecycle corrective는 `accepted → interrupt → interaction.requested`와 `accepted → interrupt → acknowledgement → review.requested`를 reducer public seam에서 먼저 red로 재현했다. Late binding과 matching resolution을 보존하면서 phase/stage를 terminal 전까지 `stopping`으로 유지하고, interrupt HTTP 실패만 binding 유무에 따라 `awaiting-* | running`으로 복귀하는 기존 예외를 회귀로 고정했다. Exact response selector는 stopping 중 Review accept와 clarification answer/cancel을 controller에서도 거절한다.
+- Deterministic Chromium trace는 interrupt 뒤 Review와 clarification request를 늦게 방출해 읽기 가능한 binding과 disabled controls를 확인했다. Disabled control을 강제로 활성화해 stale callback을 호출해도 Review·answer·cancel HTTP와 Runtime response가 발생하지 않았고, 두 흐름 모두 authoritative `interrupted`와 no-apply로 끝났다. Full desktop suite는 13/13으로 통과했다.
+- Corrective fixed point `b1e299d19c52352a28cc504c48c7dddb6dc8a4a7` 이후 diff를 Standards와 Spec 두 축의 독립 agent가 병렬 review했다. Request/acknowledgement ordering, sticky stop, terminal matrix 불변, UI/controller authority guard, `operation.control-failed` 복귀와 parent·product contract·Server·007a–009a non-change를 확인했고 두 축 모두 finding 0건으로 통과했다.
 
 ## Result
 
@@ -73,6 +76,8 @@ Pending Review는 Assignment의 title, dueAt, submissionMethod와 field-level se
 Free-form composer와 일반 Plan clarification의 answer/cancel은 product operation seam을 사용하며 Review response route와 분리된다. Sidebar hide/show는 controller를 unmount하거나 active Turn을 interrupt하지 않는다. Deterministic E2E harness는 Browser request를 실제 Vite proxy와 Express product route, workspace store와 private hosted MCP까지 통과시켜 nominal journey와 interrupt·clarification·focus behavior를 검증한다.
 
 Lifecycle corrective에서는 Browser가 관찰한 public acceptance stage와 operation kind에 따라 terminal status를 fail closed한다. Assignment pre-accept의 current authority-loss 결과인 `not_accepted | acceptance_unknown | failed | unknown`과 Chat의 `not_accepted | unknown`은 정직하게 정산하고, accepted 이후 공통 `not_accepted`와 Assignment `acceptance_unknown`은 성공·불명으로 오인하지 않는다. Interrupt 중 interaction 또는 Review resolution은 binding과 transcript resolution만 정리하고 matching terminal이나 honest `unknown`까지 `stopping`을 유지한다.
+
+두 번째 lifecycle corrective에서는 `stopping`을 request·acknowledgement·resolution 순서와 무관한 accepted operation invariant로 만들었다. Interrupt 뒤 도착한 clarification·Review binding은 exact resolution reconciliation을 위해 보존하지만 response authority는 다시 열지 않으며, Browser control과 stale controller callback 모두 terminal 전에는 answer·cancel·accept mutation을 만들 수 없다. 첫 corrective의 terminal matrix와 Assignment pre-accept `failed`, interrupt HTTP 실패의 명시적 복귀 semantics는 그대로 유지한다.
 
 Implementation commits:
 
@@ -85,6 +90,7 @@ Implementation commits:
 - `a49a6805` — `docs: describe product companion vertical`
 - `93a84c34` — `fix: close product companion review findings`
 - `18a395d3` — `fix: enforce product chat lifecycle settlement`
+- `a53034e6` — `fix: keep product chat stopping sticky`
 
 ## Blocked By
 
