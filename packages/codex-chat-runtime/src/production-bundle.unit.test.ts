@@ -8,7 +8,7 @@ import { verifyProductionBundle } from './production-bundle.js'
 
 const SOURCE_COMMIT = '8c68d4c87dc54d38861f5114e920c3de2efa5876'
 const PATCH_STACK_SHA256 =
-  '23e084381f8961c1815479a0e0698bf781f42104a949a6209fcb5e866f740e72'
+  'd0669c64b524f53879e355db46ea0b4fbe67526e1ec4c7bccb9f11d9e253a9a0'
 const PATCH_IDS = [
   '0001-response-last-router',
   '0002-bounded-notification-routing',

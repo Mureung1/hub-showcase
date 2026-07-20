@@ -592,27 +592,24 @@ index 16e38e1..0cb3704 100644
 +        if not isinstance(result, dict):
 +            raise CodexError("turn/interrupt response must be a JSON object")
 +        return TurnInterruptResponse.model_validate(result)
-@@ -814,0 +1144,6 @@ class CodexClient:
+@@ -814,0 +1144,3 @@ class CodexClient:
 +                    method = msg.get("method")
-+                    if (
-+                        isinstance(method, str)
-+                        and method in _SERVER_REQUEST_RESOLUTION_METHODS
-+                    ):
++                    if isinstance(method, str) and method in _SERVER_REQUEST_RESOLUTION_METHODS:
 +                        self._track_server_request_resolution(msg.get("id"))
-@@ -816 +1151,2 @@ class CodexClient:
+@@ -816 +1148,2 @@ class CodexClient:
 -                    self._write_message({"id": msg["id"], "result": response})
 +                    if response is not None:
 +                        self._write_message({"id": msg["id"], "result": response})
-@@ -820,0 +1157,2 @@ class CodexClient:
+@@ -820,0 +1154,2 @@ class CodexClient:
 +                        if self._handle_internal_lifecycle_notification(method, msg.get("params")):
 +                            continue
-@@ -826,0 +1165,2 @@ class CodexClient:
+@@ -826,0 +1162,2 @@ class CodexClient:
 +            self._user_inputs.close("interaction_transport_lost")
 +            self._clear_server_request_resolutions()
-@@ -832 +1172 @@ class CodexClient:
+@@ -832 +1169 @@ class CodexClient:
 -    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject:
 +    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject | None:
-@@ -836,0 +1177,11 @@ class CodexClient:
+@@ -836,0 +1174,11 @@ class CodexClient:
 +        if method == "item/tool/requestUserInput":
 +            pending = self._decode_user_input_request(msg)
 +            outcome = self._user_inputs.route(pending)
@@ -624,7 +621,7 @@ index 16e38e1..0cb3704 100644
 +            if outcome is _UserInputRouteResult.rejected_fatal:
 +                raise CodexError("user-input failure control capacity exceeded")
 +            return None
-@@ -841,0 +1193,186 @@ class CodexClient:
+@@ -841,0 +1190,186 @@ class CodexClient:
 +    def _track_server_request_resolution(self, request_id: JsonValue) -> None:
 +        if isinstance(request_id, bool) or not isinstance(request_id, str | int):
 +            raise CodexError("invalid server request id")

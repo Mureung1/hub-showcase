@@ -56,7 +56,7 @@ Canonical manifest는 다음을 서로 연결한다.
 
 - exact source commit, immutable unpatched manifest와 complete ordered patch stack
 - reviewed macOS arm64 `uv_build==0.11.19` build-backend wheel과 offline wheel build
-- patched SDK wheel `e31e220102d61ac94de13c43d8dde0a68bc5985b8daf3aa53e96e903e7d37423`
+- patched SDK wheel `0acc9d545a8df8ec445e9ec3bd267d526af99b96da4a3e5c6ad6981b1dd58ff4`
 - standalone CPython `3.10.18` build `20250818`와 exact archive digest
 - `openai-codex-cli-bin==0.144.4` 및 Pydantic dependency closure의 complete wheel roster
 - installed `_message_router.py`와 final patched-source digest
