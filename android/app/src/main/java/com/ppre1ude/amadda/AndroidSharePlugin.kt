@@ -56,6 +56,9 @@ class AndroidShareIntentRouter(
 
         val text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString() ?: return null
         val title = intent.getCharSequenceExtra(Intent.EXTRA_TITLE)?.toString()
+        if (text.length > MAX_TEXT_LENGTH || title?.length ?: 0 > MAX_TITLE_LENGTH) {
+            return null
+        }
         val share = AndroidShare(
             id = idGenerator(),
             text = text,
@@ -66,11 +69,13 @@ class AndroidShareIntentRouter(
 
     private companion object {
         const val TEXT_PLAIN_MIME_TYPE = "text/plain"
+        const val MAX_TEXT_LENGTH = 4096
+        const val MAX_TITLE_LENGTH = 500
     }
 }
 
 @CapacitorPlugin(name = "AndroidShare")
-class AndroidSharePlugin : Plugin() {
+open class AndroidSharePlugin : Plugin() {
     @PluginMethod
     fun getPendingShare(call: PluginCall) {
         call.resolve(consumePendingShare()?.toJsObject() ?: JSObject())
@@ -83,7 +88,7 @@ class AndroidSharePlugin : Plugin() {
     }
 
     fun notifyShareIntentReceived(share: AndroidShare) {
-        notifyListeners(SHARE_INTENT_RECEIVED_EVENT, share.toJsObject())
+        notifyListeners(SHARE_INTENT_RECEIVED_EVENT, share.toJsObject(), true)
     }
 
     internal fun consumePendingShare(): AndroidShare? {

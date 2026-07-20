@@ -1,6 +1,8 @@
 package com.ppre1ude.amadda
 
 import android.content.Intent
+import com.getcapacitor.JSObject
+import com.getcapacitor.PluginCall
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -53,8 +55,33 @@ class MainActivityShareIntentTest {
         assertTrue(activity.receivedShares.isEmpty())
     }
 
+    @Test
+    fun `재진입 공유는 늦은 리스너에 보존 이벤트로 전달되고 대기열에 남지 않는다`() {
+        val controller = launchRetainedEventActivity(Intent(Intent.ACTION_MAIN))
+        val activity = controller.get()
+        val plugin = AndroidSharePlugin()
+        activity.sharePlugin = plugin
+        val listener = RetainedEventPluginCall(
+            JSObject().apply { put("eventName", "shareIntentReceived") },
+        )
+
+        controller.newIntent(sendIntent(text = "https://example.com/retained"))
+        plugin.addListener(listener)
+
+        assertEquals(1, listener.resolvedPayloads.size)
+        assertEquals("https://example.com/retained", listener.resolvedPayloads.single()?.getString("text"))
+        assertNull(activity.consumePendingShare())
+    }
+
     private fun launchActivity(intent: Intent): ActivityController<RecordingMainActivity> {
         return Robolectric.buildActivity(RecordingMainActivity::class.java, intent)
+            .create()
+    }
+
+    private fun launchRetainedEventActivity(
+        intent: Intent,
+    ): ActivityController<RetainedEventMainActivity> {
+        return Robolectric.buildActivity(RetainedEventMainActivity::class.java, intent)
             .create()
     }
 
@@ -78,5 +105,31 @@ class RecordingMainActivity : MainActivity() {
 
     override fun publishShareIntent(share: AndroidShare) {
         receivedShares += share
+    }
+}
+
+class RetainedEventMainActivity : MainActivity() {
+    lateinit var sharePlugin: AndroidSharePlugin
+
+    override fun load() {
+        onNewIntent(intent)
+    }
+
+    override fun publishShareIntent(share: AndroidShare) {
+        sharePlugin.notifyShareIntentReceived(share)
+    }
+}
+
+private class RetainedEventPluginCall(
+    data: JSObject = JSObject(),
+) : PluginCall(null, "AndroidShare", "callback", "test", data) {
+    val resolvedPayloads = mutableListOf<JSObject?>()
+
+    override fun resolve(data: JSObject) {
+        resolvedPayloads += data
+    }
+
+    override fun resolve() {
+        resolvedPayloads += null
     }
 }

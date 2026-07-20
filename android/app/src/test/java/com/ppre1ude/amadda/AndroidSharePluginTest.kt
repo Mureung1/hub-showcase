@@ -1,9 +1,12 @@
 package com.ppre1ude.amadda
 
 import android.content.Intent
+import com.getcapacitor.JSObject
+import com.getcapacitor.PluginCall
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.runner.RunWith
 import org.junit.Test
 import org.robolectric.RobolectricTestRunner
@@ -121,6 +124,58 @@ class AndroidSharePluginTest {
         assertNull(router.consumeInitialShare())
     }
 
+    @Test
+    fun `4096자를 넘는 공유 텍스트는 초기 대기열에 넣지 않는다`() {
+        val router = AndroidShareIntentRouter { "share-1" }
+
+        val enqueued = router.routeInitialIntent(
+            sendIntent(text = "a".repeat(4097)),
+        )
+
+        assertNull(enqueued)
+        assertNull(router.consumeInitialShare())
+    }
+
+    @Test
+    fun `500자를 넘는 공유 제목은 재진입 이벤트로 전달하지 않는다`() {
+        val router = AndroidShareIntentRouter { "share-1" }
+        val receivedShares = mutableListOf<AndroidShare>()
+
+        val received = router.routeNewIntent(
+            sendIntent(
+                text = "https://example.com",
+                title = "a".repeat(501),
+            ),
+        ) { share ->
+            receivedShares += share
+        }
+
+        assertNull(received)
+        assertTrue(receivedShares.isEmpty())
+    }
+
+    @Test
+    fun `리스너 등록 전 재진입 공유 이벤트는 늦은 리스너에 한 번 전달한다`() {
+        val plugin = AndroidSharePlugin()
+        val listener = RecordingPluginCall(
+            JSObject().apply { put("eventName", "shareIntentReceived") },
+        )
+
+        plugin.notifyShareIntentReceived(
+            AndroidShare(
+                id = "share-1",
+                text = "https://example.com/new",
+                title = "새 공유",
+            ),
+        )
+        plugin.addListener(listener)
+
+        assertEquals(1, listener.resolvedPayloads.size)
+        assertEquals("share-1", listener.resolvedPayloads.single()?.getString("id"))
+        assertEquals("https://example.com/new", listener.resolvedPayloads.single()?.getString("text"))
+        assertEquals("새 공유", listener.resolvedPayloads.single()?.getString("title"))
+    }
+
     private fun sendIntent(
         action: String = Intent.ACTION_SEND,
         type: String = "text/plain",
@@ -135,5 +190,19 @@ class AndroidSharePluginTest {
                     putExtra(Intent.EXTRA_TITLE, title)
                 }
             }
+    }
+}
+
+private class RecordingPluginCall(
+    data: JSObject = JSObject(),
+) : PluginCall(null, "AndroidShare", "callback", "test", data) {
+    val resolvedPayloads = mutableListOf<JSObject?>()
+
+    override fun resolve(data: JSObject) {
+        resolvedPayloads += data
+    }
+
+    override fun resolve() {
+        resolvedPayloads += null
     }
 }
