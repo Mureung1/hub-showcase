@@ -1,18 +1,8 @@
 import {
-  BarChart3,
-  Building2,
   ChevronDown,
-  ChevronRight,
   CircleHelp,
   FileText,
-  Layers3,
-  LocateFixed,
   MapPinned,
-  Minus,
-  PanelLeftOpen,
-  PanelRightOpen,
-  Plus,
-  ScanLine,
   X,
 } from "lucide-react";
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
@@ -65,6 +55,7 @@ import { hasStorefrontVariant } from "./features/map/storefronts/storefrontRegis
 import { selectMapStores } from "./features/map/storefronts/storefrontSelection";
 import { useCompactMap } from "./features/map/useCompactMap";
 import { useMapViewport } from "./features/map/useMapViewport";
+import { MarketMapPanel } from "./features/map/MarketMapPanel";
 import { useWorkspacePanels } from "./features/workspace/useWorkspacePanels";
 import { useStoreSelection } from "./features/market/useStoreSelection";
 import type { ScoreDecisionBlocker } from "./services/marketAnalysis";
@@ -540,6 +531,18 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
     clearSelection();
   }
 
+  function togglePrefabMode() {
+    setPrefabMode((current) => {
+      const next = !current;
+      mapRef.current?.easeTo({
+        pitch: next ? 56 : 38,
+        bearing: next ? -24 : -18,
+        duration: 650,
+        essential: true,
+      });
+      return next;
+    });
+  }
   function chooseRadius(nextRadius: AnalysisRadius) {
     enableUrlSync();
     clearSelection();
@@ -691,65 +694,9 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
           />
         )}
 
-        <section className="map-panel" aria-label="지도와 상권 분포">
-          <div className="map-toolbar">
-            <MarketSearch onSelect={chooseSearchResult} />
-            <div className="map-toolbar-actions">
-              {!filtersOpen && (
-                <button
-                  ref={filterOpenButtonRef}
-                  type="button"
-                  className="glass-button panel-open-button"
-                  onClick={() => setFiltersOpen(true)}
-                >
-                  <PanelLeftOpen size={16} /> 분석 조건 열기
-                </button>
-              )}
-              {!inspectorOpen && (
-                <button
-                  ref={inspectorOpenButtonRef}
-                  type="button"
-                  className="glass-button panel-open-button"
-                  onClick={() => setInspectorOpen(true)}
-                >
-                  <PanelRightOpen size={16} /> 분석 결과 열기
-                </button>
-              )}
-              <div className="map-mode-switch" role="group" aria-label="지도 표현 방식">
-                <button
-                  type="button"
-                  className={mapMode === "localtwin" ? "is-selected" : ""}
-                  aria-pressed={mapMode === "localtwin"}
-                  title="LocalTwin 2.5D 지도"
-                  onClick={() => chooseMapMode("localtwin")}
-                >
-                  <Layers3 size={15} /> <span>LocalTwin</span>
-                </button>
-                <button
-                  type="button"
-                  className={mapMode === "original" ? "is-selected" : ""}
-                  aria-pressed={mapMode === "original"}
-                  title="실제 지도 원본"
-                  onClick={() => chooseMapMode("original")}
-                >
-                  <MapPinned size={15} /> <span>실제 지도</span>
-                </button>
-              </div>
-              <button
-                type="button"
-                className="glass-button"
-                onClick={() => setLayer(layer === "density" ? "demand" : "density")}
-              >
-                <Layers3 size={16} /> {densityLabel}
-              </button>
-            </div>
-          </div>
-          <button type="button" className="scene-entry-button" onClick={() => setSceneOpen(true)}>
-            <ScanLine size={16} />
-            <span>관평동 3D 장소</span>
-            <small>촬영 전</small>
-            <ChevronRight className="scene-entry-chevron" size={15} />
-          </button>
+        <MarketMapPanel
+          toolbarStart={<MarketSearch onSelect={chooseSearchResult} />}
+          mapBody={<>
           {isTestEnvironment() ? (
             <div className="map-fallback">실제 지도는 브라우저 환경에서 표시됩니다.</div>
           ) : (
@@ -959,98 +906,30 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
               )}
             </div>
           )}
-          <div className="map-legend">
-            <p>{layer === "density" ? "동일 업종 밀도" : "대표 시간대 수요"}</p>
-            <span>
-              <i className="low" /> 낮음
-            </span>
-            <span>
-              <i className="mid" /> 보통
-            </span>
-            <span>
-              <i className="high" /> 높음
-            </span>
-          </div>
-          <div className="map-attribution">
-            {mapMode === "localtwin" ? "OpenFreeMap · LocalTwin map data overlay" : "OpenFreeMap"} ·
-            © OpenStreetMap contributors
-          </div>
-          {layer === "demand" && (
-            <div className="flow-card">
-              <span>시간대 유동 수요</span>
-              <b>
-                {activeDemandLabel} · {activeDemand}/100
-              </b>
-              <small>아이콘 수는 상대 수요 비율을 표시합니다.</small>
-            </div>
-          )}
-          <div className="map-controls">
-            <button
-              type="button"
-              title="현재 상권으로 이동"
-              onClick={() =>
-                mapRef.current?.flyTo({
-                  center: market.center,
-                  zoom: 15.4,
-                  pitch: 38,
-                  bearing: -18,
-                  essential: true,
-                })
-              }
-            >
-              <LocateFixed size={18} />
-            </button>
-            <button
-              type="button"
-              className={baseBuildingsVisible ? "is-active" : ""}
-              title="건물 레이어 표시"
-              aria-label="건물 레이어 표시"
-              aria-pressed={baseBuildingsVisible}
-              onClick={() => setBaseBuildingsVisible((current) => !current)}
-            >
-              <Building2 size={17} />
-            </button>
-            <button type="button" title="확대" onClick={() => mapRef.current?.zoomIn()}>
-              <Plus size={18} />
-            </button>
-            <button type="button" title="축소" onClick={() => mapRef.current?.zoomOut()}>
-              <Minus size={18} />
-            </button>
-            <button
-              type="button"
-              className={`three-d ${prefabMode ? "is-active" : ""}`}
-              aria-pressed={prefabMode}
-              onClick={() =>
-                setPrefabMode((current) => {
-                  const next = !current;
-                  mapRef.current?.easeTo({
-                    pitch: next ? 56 : 38,
-                    bearing: next ? -24 : -18,
-                    duration: 650,
-                    essential: true,
-                  });
-                  return next;
-                })
-              }
-            >
-              3D
-            </button>
-          </div>
-          <button
-            type="button"
-            className="compare-cta"
-            disabled={categorySelection.coverage !== "full"}
-            title={
-              categorySelection.coverage === "full"
-                ? undefined
-                : "전체 지원 업종에서만 상권 비교를 제공합니다."
-            }
-            onClick={() => setCompareOpen(true)}
-          >
-            <BarChart3 size={17} /> 상권 비교 열기
-          </button>
-        </section>
-
+          </>}
+          market={market}
+          mapMode={mapMode}
+          onMapModeChange={chooseMapMode}
+          layer={layer}
+          onLayerChange={chooseLayer}
+          densityLabel={densityLabel}
+          activeDemandLabel={activeDemandLabel}
+          activeDemand={activeDemand}
+          baseBuildingsVisible={baseBuildingsVisible}
+          onBaseBuildingsVisibleChange={setBaseBuildingsVisible}
+          mapRef={mapRef}
+          prefabMode={prefabMode}
+          onPrefabToggle={togglePrefabMode}
+          onCompareOpen={() => setCompareOpen(true)}
+          comparisonEnabled={categorySelection.coverage === "full"}
+          filtersOpen={filtersOpen}
+          inspectorOpen={inspectorOpen}
+          filterOpenButtonRef={filterOpenButtonRef}
+          inspectorOpenButtonRef={inspectorOpenButtonRef}
+          onFiltersOpen={() => setFiltersOpen(true)}
+          onInspectorOpen={() => setInspectorOpen(true)}
+          onSceneOpen={() => setSceneOpen(true)}
+        />
         {inspectorOpen && (
           <MarketInspector
             market={market}

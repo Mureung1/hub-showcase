@@ -122,3 +122,5 @@ docs(web): record WEB-018 completion
 - [ ] 검증 결과를 기록했는가?
 - [ ] 문서와 체크리스트가 실제 변경과 일치하는가?
 - [x] known limitation이 있으면 적었는가?
+
+지도 toolbar·legend·control을 MarketMapPanel로 분리하고 기존 map canvas는 props로 유지
