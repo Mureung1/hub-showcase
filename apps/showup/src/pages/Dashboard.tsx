@@ -1,56 +1,57 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuthState } from '@/hooks/useAuth'
-import { getDashboardData } from '@/services/dashboard'
-import type { DashboardData } from '@/services/dashboard'
-import type { ReservationStatus } from '@/types/schema'
-import RiskBadge from '@/components/RiskBadge'
+import { listTodayReservations, listReservations } from '@/services/reservations'
+import { getTopRiskyCustomers } from '@/services/customers'
+import { calculateDashboardStats } from '@/utils/dashboard'
+import type { CustomerSearchResult } from '@/types/schema'
 
 const Dashboard = () => {
   const { user } = useAuthState()
-  const [data, setData] = useState<DashboardData | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
+  const [todayCount, setTodayCount] = useState(0)
+  const [todayVisited, setTodayVisited] = useState(0)
+  const [todayNoShow, setTodayNoShow] = useState(0)
+  const [noShowRate, setNoShowRate] = useState(0)
+  const [attentionCustomers, setAttentionCustomers] = useState<CustomerSearchResult[]>([])
 
   useEffect(() => {
-    const load = async () => {
-      if (!user) return
-      const result = await getDashboardData(user.uid)
-      setData(result)
-      setLoading(false)
+    const loadDashboard = async () => {
+      if (!user) {
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        const [todayReservations, allReservations, riskyCustomers] = await Promise.all([
+          listTodayReservations(user.uid),
+          listReservations(user.uid),
+          getTopRiskyCustomers(user.uid, 5),
+        ])
+
+        const stats = calculateDashboardStats(allReservations)
+
+        setTodayCount(todayReservations.length)
+        setTodayVisited(todayReservations.filter((r) => r.status === 'visited').length)
+        setTodayNoShow(todayReservations.filter((r) => r.status === 'noShow').length)
+        setNoShowRate(stats.month.noShowRate)
+        setAttentionCustomers(riskyCustomers)
+      } catch (error) {
+        console.error('Failed to load dashboard:', error)
+      } finally {
+        setIsLoading(false)
+      }
     }
-    load()
+
+    loadDashboard()
   }, [user])
 
-  const statusLabel: Record<ReservationStatus, string> = {
-    pending: '대기',
-    confirmed: '확정',
-    visited: '방문',
-    noShow: '노쇼',
-    cancelled: '취소',
-  }
-
-  const statusColor: Record<ReservationStatus, string> = {
-    pending: 'text-yellow-600',
-    confirmed: 'text-blue-600',
-    visited: 'text-green-600',
-    noShow: 'text-red-600',
-    cancelled: 'text-gray-500',
-  }
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-4 text-center text-gray-500">
-        <p>불러오는 중...</p>
+        <p>로딩 중...</p>
       </div>
     )
-  }
-
-  const stats = data ?? {
-    todayReservations: 0,
-    todayVisited: 0,
-    todayNoShow: 0,
-    thisMonthNoShowRate: 0,
-    attentionCustomers: [],
-    todayReservationList: [],
   }
 
   return (
@@ -64,42 +65,60 @@ const Dashboard = () => {
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <p className="text-sm text-gray-500">오늘 예약</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{stats.todayReservations}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{todayCount}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <p className="text-sm text-gray-500">방문</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">{stats.todayVisited}</p>
+          <p className="text-2xl font-bold text-green-600 mt-1">{todayVisited}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <p className="text-sm text-gray-500">노쇼</p>
-          <p className="text-2xl font-bold text-red-600 mt-1">{stats.todayNoShow}</p>
+          <p className="text-2xl font-bold text-red-600 mt-1">{todayNoShow}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <p className="text-sm text-gray-500">월 노쇼율</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{stats.thisMonthNoShowRate}%</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{noShowRate}%</p>
         </div>
       </div>
 
       {/* Attention customers */}
       <section className="bg-white rounded-xl p-4 shadow-sm mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">주의 고객</h2>
-        {stats.attentionCustomers.length === 0 ? (
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-gray-900">주의 고객</h2>
+          <Link
+            to="/customers"
+            className="text-sm text-blue-600 hover:underline font-medium"
+          >
+            전체 보기 →
+          </Link>
+        </div>
+        {attentionCustomers.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <p>등록된 주의 고객이 없습니다</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {stats.attentionCustomers.map((customer) => (
-              <div
+            {attentionCustomers.map((customer) => (
+              <Link
                 key={customer.id}
-                className="flex items-center justify-between p-3 border border-gray-100 rounded-lg"
+                to={`/customers/${customer.id}`}
+                className="block p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <div>
-                  <p className="font-medium text-gray-900">{customer.name}</p>
-                  <p className="text-sm text-gray-500">{customer.phoneMasked}</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-900">{customer.name}</p>
+                    <p className="text-sm text-gray-500 mt-1">{customer.phoneMasked}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-red-600">
+                      위험 {customer.riskStats.score}점
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      노쇼 {customer.riskStats.noShowCount}회
+                    </p>
+                  </div>
                 </div>
-                <RiskBadge score={customer.riskStats.score} />
-              </div>
+              </Link>
             ))}
           </div>
         )}
@@ -107,29 +126,18 @@ const Dashboard = () => {
 
       {/* Today's reservations */}
       <section className="bg-white rounded-xl p-4 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">오늘의 예약</h2>
-        {stats.todayReservationList.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <p>오늘 예약이 없습니다</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {stats.todayReservationList.map((res) => (
-              <div
-                key={res.id}
-                className="flex items-center justify-between p-3 border border-gray-100 rounded-lg"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">{res.time}</p>
-                  <p className="text-sm text-gray-500">{res.customerId}</p>
-                </div>
-                <span className={`text-sm font-medium ${statusColor[res.status]}`}>
-                  {statusLabel[res.status]}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-gray-900">오늘의 예약</h2>
+          <Link
+            to="/reservations"
+            className="text-sm text-blue-600 hover:underline font-medium"
+          >
+            전체 보기 →
+          </Link>
+        </div>
+        <div className="text-center py-8 text-gray-500">
+          <p>오늘 예약이 없습니다</p>
+        </div>
       </section>
     </div>
   )
