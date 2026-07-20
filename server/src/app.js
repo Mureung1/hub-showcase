@@ -2,6 +2,7 @@ const cors = require('cors');
 const express = require('express');
 
 const applicationsRouter = require('./routes/applications.routes');
+const authRouter = require('./routes/auth.routes');
 
 const app = express();
 
@@ -12,6 +13,7 @@ app.get('/api/health', (req, res) => {
   res.json({ data: { status: 'ok' } });
 });
 
+app.use('/api/auth', authRouter);
 app.use('/api/applications', applicationsRouter);
 
 app.use((req, res) => {

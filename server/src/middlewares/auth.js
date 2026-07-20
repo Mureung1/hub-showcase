@@ -1,4 +1,4 @@
-const supabase = require('../db/supabase');
+const { supabase } = require('../db/supabase');
 
 const unauthorized = (res, message) =>
   res.status(401).json({
@@ -39,6 +39,7 @@ const authenticate = async (req, res, next) => {
     name: profile.name,
     nickname: profile.nickname,
   };
+  req.token = token;
 
   return next();
 };
