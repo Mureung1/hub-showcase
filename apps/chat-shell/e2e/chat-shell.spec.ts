@@ -12,14 +12,15 @@ test('streams one native AgentMessage through the real Server and reconciles its
 }) => {
   await expect(runtimeStatus(page)).toHaveAttribute(
     'data-runtime-status',
-    'configured',
-  )
-
-  await page.getByRole('button', { name: '새 대화' }).click()
-  await expect(runtimeStatus(page)).toHaveAttribute(
-    'data-runtime-status',
     'starting',
   )
+  await expect(runtimeStatus(page)).toHaveAttribute(
+    'data-runtime-status',
+    'ready',
+  )
+  await expect(page.getByRole('button', { name: '새 대화' })).toBeEnabled()
+
+  await page.getByRole('button', { name: '새 대화' }).click()
   await expect(page.getByText('thread-native-nominal', { exact: true })).toBeVisible()
   await expect(runtimeStatus(page)).toHaveAttribute(
     'data-runtime-status',
@@ -477,14 +478,9 @@ test.describe('unavailable runtime', () => {
 test.describe('failed runtime startup', () => {
   test.use({ scenario: 'failed-start' })
 
-  test('shows configured, starting, and failed as distinct runtime states', async ({
+  test('converges cold startup to failed and keeps mutations closed', async ({
     chatPage: page,
   }) => {
-    await expect(runtimeStatus(page)).toHaveAttribute(
-      'data-runtime-status',
-      'configured',
-    )
-    await page.getByRole('button', { name: '새 대화' }).click()
     await expect(runtimeStatus(page)).toHaveAttribute(
       'data-runtime-status',
       'starting',
@@ -573,13 +569,16 @@ function conversationPhase(page: import('playwright/test').Page) {
 async function startConversation(page: import('playwright/test').Page) {
   await expect(runtimeStatus(page)).toHaveAttribute(
     'data-runtime-status',
-    'configured',
+    'ready',
   )
   await page.getByRole('button', { name: '새 대화' }).click()
   await expect(runtimeStatus(page)).toHaveAttribute(
     'data-runtime-status',
     'ready',
   )
+  await expect(
+    page.getByRole('textbox', { name: '메시지', exact: true }),
+  ).toBeEnabled()
 }
 
 async function sendPrompt(
