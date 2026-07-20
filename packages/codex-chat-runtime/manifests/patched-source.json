@@ -306,9 +306,9 @@
       "sha256": "4f0026860842f9db26d473068034d3a1d4f900100b8aab8ff866c7ace4106776"
     },
     "sdk/python/src/openai_codex/client.py": {
-      "bytes": 52539,
+      "bytes": 53828,
       "git_mode": "100644",
-      "sha256": "5df60051c1afa390cfcec84ea0050f7d897043920fa135827d873f1845c5b2aa"
+      "sha256": "8e0669f5d6ed7e53e1769dee70be70ade1c507de915255d70cf527fe0a2ad63b"
     },
     "sdk/python/src/openai_codex/errors.py": {
       "bytes": 4046,
@@ -447,7 +447,7 @@
     }
   },
   "kind": "patched_source",
-  "patch_stack_sha256": "6de113978063d8e20b9c20bb9f54d5d6e5c39b52383873ce36c81e4aab922c33",
+  "patch_stack_sha256": "23e084381f8961c1815479a0e0698bf781f42104a949a6209fcb5e866f740e72",
   "patches": [
     {
       "bytes": 6020,
@@ -620,7 +620,7 @@
       "sha256": "d41658ccf3d8b0843af8a478bb300f0737da4d93e49e8bfd2e6c57e3a649fff4"
     },
     {
-      "bytes": 40857,
+      "bytes": 41147,
       "changed_files": {
         "sdk/python/scripts/update_sdk_artifacts.py": {
           "after": {
@@ -672,9 +672,9 @@
         },
         "sdk/python/src/openai_codex/client.py": {
           "after": {
-            "bytes": 52539,
+            "bytes": 53828,
             "git_mode": "100644",
-            "sha256": "5df60051c1afa390cfcec84ea0050f7d897043920fa135827d873f1845c5b2aa"
+            "sha256": "8e0669f5d6ed7e53e1769dee70be70ade1c507de915255d70cf527fe0a2ad63b"
           },
           "before": {
             "bytes": 31169,
@@ -735,10 +735,10 @@
       "id": "0006-plan-user-input-seam",
       "order": 6,
       "path": "upstream/patches/0006-plan-user-input-seam.patch",
-      "sha256": "e8f3fc4e1e1fc52afa4acc2272158cf3f25e1bd6db03b919e7a2b3d40018ac8c"
+      "sha256": "a349c987a2ce4881093f22c1149c946622632634b373bf44acdb92fa6e6d37c9"
     }
   ],
   "schema_version": 1,
   "source_file_count": 88,
-  "source_tree_sha256": "6090111593c11b0d524a25ba19bea6a2e6694d2cc828f96db3c65bee0ca1f5f3"
+  "source_tree_sha256": "4e80038739a036cee6f0571859fe571a18c135ea50e806d299d139266db45330"
 }

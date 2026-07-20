@@ -381,6 +381,28 @@ class FakeAppServer:
         if result not in (expected_answer, {"answers": {}}):
             raise RuntimeError(f"unexpected user-input settlement: {result!r}")
         self._pending_user_inputs.pop(str(request_id), None)
+        cleanup_resolution = self._journal_path.parent / "cleanup-user-input-resolution"
+        if cleanup_resolution.is_file():
+            cleanup_resolution.unlink()
+            self._notify(
+                {
+                    "method": "serverRequest/resolved",
+                    "params": {
+                        "requestId": str(request_id),
+                        "threadId": pending["threadId"],
+                    },
+                }
+            )
+            self._notify(
+                {
+                    "method": "turn/completed",
+                    "params": {
+                        "threadId": pending["threadId"],
+                        "turn": _turn(pending["turnId"], "interrupted"),
+                    },
+                }
+            )
+            return True
         delay_resolution = self._journal_path.parent / "delay-user-input-resolution"
         if delay_resolution.is_file():
             delay_resolution.unlink()

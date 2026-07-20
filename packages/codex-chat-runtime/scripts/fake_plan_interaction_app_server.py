@@ -95,6 +95,30 @@ def _server_request_resolved(request_id: str) -> None:
     )
 
 
+def _server_request(request_id: str, method: str) -> None:
+    _write_message(
+        {
+            "id": request_id,
+            "method": method,
+            "params": {"threadId": THREAD_ID, "turnId": TURN_ID},
+        }
+    )
+
+
+def _turn_continued(turn_id: str, item_id: str) -> None:
+    _write_message(
+        {
+            "method": "item/agentMessage/delta",
+            "params": {
+                "delta": "continued",
+                "itemId": item_id,
+                "threadId": THREAD_ID,
+                "turnId": turn_id,
+            },
+        }
+    )
+
+
 def _thread_start_response(request_id: object) -> dict[str, Any]:
     return {
         "id": request_id,
@@ -314,6 +338,52 @@ def _run_approval_resolved(journal_path: Path) -> None:
     sys.stdin.read()
 
 
+def _run_non_resolving_request_tracker(journal_path: Path) -> None:
+    request_count = 128
+    for index in range(request_count):
+        request_id = f"dynamic-tool-{index}"
+        _server_request(request_id, "item/tool/call")
+        response = _read_message()
+        if response != {"id": request_id, "result": {}}:
+            raise RuntimeError(f"unexpected dynamic-tool response: {response!r}")
+    _write_journal(
+        journal_path,
+        {
+            "child_pid": os.getpid(),
+            "non_resolving_requests": request_count,
+        },
+    )
+    account = _require_request("account/read")
+    _write_message(
+        {
+            "id": account["id"],
+            "result": {"account": None, "requiresOpenaiAuth": False},
+        }
+    )
+    sys.stdin.read()
+
+
+def _run_resolution_tracker_negative_control(journal_path: Path, mode: str) -> None:
+    request_count = 1 if mode == "resolution-tracker-duplicate" else 1024
+    for index in range(request_count):
+        request_id = "approval-duplicate" if request_count == 1 else f"approval-{index}"
+        _server_request(request_id, "item/commandExecution/requestApproval")
+        response = _read_message()
+        expected = {"id": request_id, "result": {"decision": "accept"}}
+        if response != expected:
+            raise RuntimeError(f"unexpected approval response: {response!r}")
+    _write_journal(
+        journal_path,
+        {
+            "child_pid": os.getpid(),
+            "tracked_requests": request_count,
+        },
+    )
+    request_id = "approval-duplicate" if request_count == 1 else "approval-overflow"
+    _server_request(request_id, "item/commandExecution/requestApproval")
+    sys.stdin.read()
+
+
 def _run_settlement_cleanup(journal_path: Path, mode: str) -> None:
     turn_start = _start_plan_turn()
     request_id = f"settlement-{mode}"
@@ -330,7 +400,10 @@ def _run_settlement_cleanup(journal_path: Path, mode: str) -> None:
         },
     )
 
-    if mode == "terminal-during-settlement":
+    if mode == "resolved-cleanup-during-settlement":
+        _server_request_resolved(request_id)
+        _complete_turn()
+    elif mode == "terminal-during-settlement":
         _complete_turn()
     elif mode == "transport-during-settlement":
         return
@@ -393,7 +466,10 @@ def _run_capacity(journal_path: Path) -> None:
             "capacity-"
         ):
             responses.append(message)
-            _server_request_resolved(str(message["id"]))
+            request_id = str(message["id"])
+            _server_request_resolved(request_id)
+            index = request_id.removeprefix("capacity-")
+            _turn_continued(f"turn-capacity-{index}", f"continued-{index}")
         else:
             raise RuntimeError(f"unexpected capacity control message: {message!r}")
     _write_journal(
@@ -443,6 +519,7 @@ def _run_cancelled_waiter(journal_path: Path) -> None:
     if response != expected:
         raise RuntimeError(f"unexpected cancelled-waiter response: {response!r}")
     _server_request_resolved("cancelled-waiter-request")
+    _turn_continued(TURN_ID, "continued-cancelled-waiter")
     _write_journal(
         journal_path,
         {
@@ -629,9 +706,17 @@ def main() -> None:
         _run_delayed_resolved(journal_path)
     elif mode == "approval-resolved":
         _run_approval_resolved(journal_path)
+    elif mode == "non-resolving-request-tracker":
+        _run_non_resolving_request_tracker(journal_path)
+    elif mode in {
+        "resolution-tracker-duplicate",
+        "resolution-tracker-capacity",
+    }:
+        _run_resolution_tracker_negative_control(journal_path, mode)
     elif mode in {
         "close-during-settlement",
         "interrupt-during-settlement",
+        "resolved-cleanup-during-settlement",
         "terminal-during-settlement",
         "transport-during-settlement",
     }:

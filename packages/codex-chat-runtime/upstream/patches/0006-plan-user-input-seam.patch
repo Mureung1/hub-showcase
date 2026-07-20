@@ -1,5 +1,5 @@
 diff --git a/sdk/python/scripts/update_sdk_artifacts.py b/sdk/python/scripts/update_sdk_artifacts.py
-index 1c6ec594..19ceac2c 100755
+index 1c6ec59..19ceac2 100755
 --- a/sdk/python/scripts/update_sdk_artifacts.py
 +++ b/sdk/python/scripts/update_sdk_artifacts.py
 @@ -905,0 +906,5 @@ def _approval_mode_override_signature_lines() -> list[str]:
@@ -23,7 +23,7 @@ index 1c6ec594..19ceac2c 100755
 -        "            params=params,",
 +        "            params=_turn_start_params(params, collaboration_mode),",
 diff --git a/sdk/python/src/openai_codex/__init__.py b/sdk/python/src/openai_codex/__init__.py
-index 2829958d..b337e19f 100644
+index 2829958..b337e19 100644
 --- a/sdk/python/src/openai_codex/__init__.py
 +++ b/sdk/python/src/openai_codex/__init__.py
 @@ -22,0 +23 @@ from .api import (
@@ -41,7 +41,7 @@ index 2829958d..b337e19f 100644
 @@ -82,0 +90 @@ __all__ = [
 +    "UserInputRequestError",
 diff --git a/sdk/python/src/openai_codex/api.py b/sdk/python/src/openai_codex/api.py
-index 94b1eeb9..0f2eb9d0 100644
+index 94b1eeb..0f2eb9d 100644
 --- a/sdk/python/src/openai_codex/api.py
 +++ b/sdk/python/src/openai_codex/api.py
 @@ -4 +4,2 @@ import asyncio
@@ -177,7 +177,7 @@ index 94b1eeb9..0f2eb9d0 100644
 -            params=params,
 +            params=_turn_start_params(params, collaboration_mode),
 diff --git a/sdk/python/src/openai_codex/async_client.py b/sdk/python/src/openai_codex/async_client.py
-index 07e7d0d4..f8bb1cb9 100644
+index 07e7d0d..752339d 100644
 --- a/sdk/python/src/openai_codex/async_client.py
 +++ b/sdk/python/src/openai_codex/async_client.py
 @@ -45 +45,6 @@ from .generated.v2_all import (
@@ -225,7 +225,7 @@ index 07e7d0d4..f8bb1cb9 100644
 +        await self._call_sync(self._sync.respond_user_input, token, response)
 +
 diff --git a/sdk/python/src/openai_codex/client.py b/sdk/python/src/openai_codex/client.py
-index 16e38e19..9cbee872 100644
+index 16e38e1..0cb3704 100644
 --- a/sdk/python/src/openai_codex/client.py
 +++ b/sdk/python/src/openai_codex/client.py
 @@ -2,0 +3 @@ import os
@@ -244,10 +244,19 @@ index 16e38e19..9cbee872 100644
 +    UserInputOption,
 +    UserInputQuestion,
 +    _PendingUserInputRequest,
-@@ -68,0 +79,2 @@ _GOAL_START_TIMEOUT_S = 30.0
+@@ -68,0 +79,11 @@ _GOAL_START_TIMEOUT_S = 30.0
 +_SERVER_REQUEST_RESOLUTION_CAPACITY = 1024
++_SERVER_REQUEST_RESOLUTION_METHODS = frozenset(
++    {
++        "item/commandExecution/requestApproval",
++        "item/fileChange/requestApproval",
++        "item/permissions/requestApproval",
++        "item/tool/requestUserInput",
++        "mcpServer/elicitation/request",
++    }
++)
 +_USER_INPUT_CAPACITY = 32
-@@ -76,0 +89,222 @@ class _ThreadStartLock:
+@@ -76,0 +98,236 @@ class _ThreadStartLock:
 +class _UserInputRouteResult(Enum):
 +    admitted = "admitted"
 +    closed = "closed"
@@ -258,6 +267,7 @@ index 16e38e19..9cbee872 100644
 +@dataclass(slots=True)
 +class _UserInputSettlement:
 +    pending: _PendingUserInputRequest
++    native_resolution_observed: bool = False
 +    completed: bool = False
 +    error: UserInputRequestError | None = None
 +
@@ -378,10 +388,12 @@ index 16e38e19..9cbee872 100644
 +            pending = self._pending_by_request_id.get(request_id)
 +            if pending is not None:
 +                was_queued = pending.token in self._queued_tokens
-+                self._remove_pending(pending)
-+                if pending.token in self._settlements_by_token:
-+                    self._complete_settlement(pending, None)
-+                elif was_queued:
++                settlement = self._settlements_by_token.get(pending.token)
++                if settlement is not None:
++                    settlement.native_resolution_observed = True
++                else:
++                    self._remove_pending(pending)
++                if settlement is None and was_queued:
 +                    self._queue_failure(
 +                        UserInputRequestError(
 +                            "interaction_not_pending",
@@ -390,6 +402,17 @@ index 16e38e19..9cbee872 100644
 +                        )
 +                    )
 +                    self._condition.notify_all()
++
++    def observe_turn_continuation(self, turn_id: str) -> None:
++        with self._condition:
++            pending = self._pending_by_turn.get(turn_id)
++            if pending is None:
++                return
++            settlement = self._settlements_by_token.get(pending.token)
++            if settlement is None or not settlement.native_resolution_observed:
++                return
++            self._remove_pending(pending)
++            self._complete_settlement(pending, None)
 +
 +    def fail_turn(self, turn_id: str, code: str) -> None:
 +        with self._condition:
@@ -470,7 +493,7 @@ index 16e38e19..9cbee872 100644
 +            )
 +
 +
-@@ -227,0 +462,9 @@ class CodexClient:
+@@ -227,0 +485,9 @@ class CodexClient:
 +        self._user_inputs = _UserInputRouter()
 +        self._user_input_interrupts: queue.Queue[tuple[str, str]] = queue.Queue(
 +            maxsize=_USER_INPUT_CAPACITY
@@ -480,24 +503,23 @@ index 16e38e19..9cbee872 100644
 +        self._user_input_settlement_lock = threading.Lock()
 +        self._server_request_resolution_lock = threading.Lock()
 +        self._server_requests_awaiting_resolution: set[str | int] = set()
-@@ -241,0 +485,4 @@ class CodexClient:
+@@ -241,0 +508,4 @@ class CodexClient:
 +        if self._user_inputs.closed:
 +            self._user_inputs = _UserInputRouter()
 +        self._user_input_interrupts = queue.Queue(maxsize=_USER_INPUT_CAPACITY)
 +        self._user_input_interrupt_stop = threading.Event()
-@@ -272,0 +520 @@ class CodexClient:
+@@ -272,0 +543 @@ class CodexClient:
 +        self._start_user_input_interrupt_thread()
-@@ -275,0 +524,2 @@ class CodexClient:
+@@ -275,0 +547,2 @@ class CodexClient:
 +        self._user_inputs.close("interaction_closed")
 +        self._user_input_interrupt_stop.set()
-@@ -281,2 +531,5 @@ class CodexClient:
-         if proc.stdin:
+@@ -282 +555,4 @@ class CodexClient:
 -            proc.stdin.close()
 +            try:
 +                proc.stdin.close()
 +            except OSError:
 +                pass
-@@ -292,0 +546,7 @@ class CodexClient:
+@@ -292,0 +569,7 @@ class CodexClient:
 +        if self._user_input_interrupt_thread and self._user_input_interrupt_thread.is_alive():
 +            self._user_input_interrupt_thread.join(timeout=0.5)
 +        if proc.stdout:
@@ -505,25 +527,9 @@ index 16e38e19..9cbee872 100644
 +        if proc.stderr:
 +            proc.stderr.close()
 +        self._clear_server_request_resolutions()
-@@ -329,18 +589,36 @@ class CodexClient:
+@@ -329,2 +612,8 @@ class CodexClient:
 -    def _request_raw(self, method: str, params: JsonObject | None = None) -> JsonValue:
 -        """Send a JSON-RPC request and wait for the reader thread to route its response."""
--        request_id = str(uuid.uuid4())
--        waiter = self._router.create_response_waiter(request_id)
--
--        try:
--            message: JsonObject = {"id": request_id, "method": method}
--            if params is not None:
--                message["params"] = params
--            self._write_message(message)
--        except BaseException:
--            self._router.discard_response_waiter(request_id)
--            raise
--
--        item = waiter.get()
--        if isinstance(item, BaseException):
--            raise item
--        return item
 +    def _request_raw(
 +        self,
 +        method: str,
@@ -532,13 +538,9 @@ index 16e38e19..9cbee872 100644
 +        user_input_interrupt_turn_id: str | None = None,
 +    ) -> JsonValue:
 +        """Send a JSON-RPC request and wait for its routed response."""
-+        request_id = str(uuid.uuid4())
-+        waiter = self._router.create_response_waiter(request_id)
-+
-+        try:
-+            message: JsonObject = {"id": request_id, "method": method}
-+            if params is not None:
-+                message["params"] = params
+@@ -338,2 +627,10 @@ class CodexClient:
+-            self._write_message(message)
+-        except BaseException:
 +            if user_input_interrupt_turn_id is None:
 +                self._write_message(message)
 +            else:
@@ -549,18 +551,12 @@ index 16e38e19..9cbee872 100644
 +                    )
 +                    self._write_message(message)
 +        except BaseException as exc:
-+            self._router.discard_response_waiter(request_id)
+@@ -340,0 +638,4 @@ class CodexClient:
 +            if user_input_interrupt_turn_id is not None and isinstance(exc, Exception):
 +                failure = self._fail_user_input_transport(exc)
 +                if failure is not exc:
 +                    raise failure from exc
-+            raise
-+
-+        item = waiter.get()
-+        if isinstance(item, BaseException):
-+            raise item
-+        return item
-@@ -358,0 +637,25 @@ class CodexClient:
+@@ -358,0 +660,25 @@ class CodexClient:
 +    def next_user_input(self) -> _PendingUserInputRequest:
 +        """Wait for the next typed request_user_input interaction."""
 +        return self._user_inputs.next()
@@ -586,34 +582,37 @@ index 16e38e19..9cbee872 100644
 +                raise failure from exc
 +        self._user_inputs.wait_for_resolution(settlement)
 +
-@@ -647,6 +950,9 @@ class CodexClient:
-     def turn_interrupt(self, thread_id: str, turn_id: str) -> TurnInterruptResponse:
+@@ -648 +974 @@ class CodexClient:
 -        return self.request(
 +        result = self._request_raw(
-             "turn/interrupt",
-             {"threadId": thread_id, "turnId": turn_id},
+@@ -651 +977 @@ class CodexClient:
 -            response_model=TurnInterruptResponse,
 +            user_input_interrupt_turn_id=turn_id,
-         )
+@@ -652,0 +979,3 @@ class CodexClient:
 +        if not isinstance(result, dict):
 +            raise CodexError("turn/interrupt response must be a JSON object")
 +        return TurnInterruptResponse.model_validate(result)
-@@ -815,0 +1121 @@ class CodexClient:
-+                    self._track_server_request_resolution(msg.get("id"))
-@@ -816 +1123,2 @@ class CodexClient:
+@@ -814,0 +1144,6 @@ class CodexClient:
++                    method = msg.get("method")
++                    if (
++                        isinstance(method, str)
++                        and method in _SERVER_REQUEST_RESOLUTION_METHODS
++                    ):
++                        self._track_server_request_resolution(msg.get("id"))
+@@ -816 +1151,2 @@ class CodexClient:
 -                    self._write_message({"id": msg["id"], "result": response})
 +                    if response is not None:
 +                        self._write_message({"id": msg["id"], "result": response})
-@@ -820,0 +1129,2 @@ class CodexClient:
+@@ -820,0 +1157,2 @@ class CodexClient:
 +                        if self._handle_internal_lifecycle_notification(method, msg.get("params")):
 +                            continue
-@@ -826,0 +1137,2 @@ class CodexClient:
+@@ -826,0 +1165,2 @@ class CodexClient:
 +            self._user_inputs.close("interaction_transport_lost")
 +            self._clear_server_request_resolutions()
-@@ -832 +1144 @@ class CodexClient:
+@@ -832 +1172 @@ class CodexClient:
 -    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject:
 +    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject | None:
-@@ -836,0 +1149,11 @@ class CodexClient:
+@@ -836,0 +1177,11 @@ class CodexClient:
 +        if method == "item/tool/requestUserInput":
 +            pending = self._decode_user_input_request(msg)
 +            outcome = self._user_inputs.route(pending)
@@ -625,7 +624,7 @@ index 16e38e19..9cbee872 100644
 +            if outcome is _UserInputRouteResult.rejected_fatal:
 +                raise CodexError("user-input failure control capacity exceeded")
 +            return None
-@@ -841,0 +1165,182 @@ class CodexClient:
+@@ -841,0 +1193,186 @@ class CodexClient:
 +    def _track_server_request_resolution(self, request_id: JsonValue) -> None:
 +        if isinstance(request_id, bool) or not isinstance(request_id, str | int):
 +            raise CodexError("invalid server request id")
@@ -806,10 +805,14 @@ index 16e38e19..9cbee872 100644
 +            if isinstance(request_id, str | int) and not isinstance(request_id, bool):
 +                self._user_inputs.resolve_request_id(request_id)
 +                return self._consume_server_request_resolution(request_id)
++        else:
++            turn_id = params.get("turnId")
++            if isinstance(turn_id, str):
++                self._user_inputs.observe_turn_continuation(turn_id)
 +        return False
 +
 diff --git a/sdk/python/src/openai_codex/errors.py b/sdk/python/src/openai_codex/errors.py
-index db3e7238..a28ac9c8 100644
+index db3e723..a28ac9c 100644
 --- a/sdk/python/src/openai_codex/errors.py
 +++ b/sdk/python/src/openai_codex/errors.py
 @@ -9,0 +10,16 @@ class CodexError(Exception):
@@ -830,7 +833,7 @@ index db3e7238..a28ac9c8 100644
 +
 +
 diff --git a/sdk/python/src/openai_codex/models.py b/sdk/python/src/openai_codex/models.py
-index d9d15dc6..8057d0e1 100644
+index d9d15dc..8057d0e 100644
 --- a/sdk/python/src/openai_codex/models.py
 +++ b/sdk/python/src/openai_codex/models.py
 @@ -93,0 +94,31 @@ class Notification:
@@ -866,7 +869,7 @@ index d9d15dc6..8057d0e1 100644
 +
 +
 diff --git a/sdk/python/src/openai_codex/types.py b/sdk/python/src/openai_codex/types.py
-index ae4b769d..84e6d5c3 100644
+index ae4b769..84e6d5c 100644
 --- a/sdk/python/src/openai_codex/types.py
 +++ b/sdk/python/src/openai_codex/types.py
 @@ -11,0 +12 @@ from .generated.v2_all import (
@@ -881,7 +884,7 @@ index ae4b769d..84e6d5c3 100644
 @@ -53,0 +59 @@ __all__ = [
 +    "ModeKind",
 diff --git a/sdk/python/tests/test_public_api_signatures.py b/sdk/python/tests/test_public_api_signatures.py
-index b4456fab..d60a7865 100644
+index b4456fa..d60a786 100644
 --- a/sdk/python/tests/test_public_api_signatures.py
 +++ b/sdk/python/tests/test_public_api_signatures.py
 @@ -19,0 +20 @@ from openai_codex import (

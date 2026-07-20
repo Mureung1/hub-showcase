@@ -171,25 +171,20 @@ test('deterministic product turn preserves structured input and same-turn user-i
   assert.equal((await events.next()).value.type, 'skill.requested')
   assert.equal((await events.next()).value.type, 'user_input.requested')
 
-  let continuationSettled = false
-  const continuation = events.next().then((next) => {
-    continuationSettled = true
-    return next
-  })
-  await new Promise<void>((resolve) => setImmediate(resolve))
-  assert.equal(continuationSettled, false)
-
-  await runtime.answerUserInput({
+  const acknowledgement = runtime.answerUserInput({
     interactionId: 'interaction-1',
     answers: { decision: ['Accept'] },
   })
+  assert.equal(await settlesBeforeImmediate(acknowledgement), false)
   await assert.rejects(
     () =>
       runtime.cancelUserInput({ interactionId: 'interaction-1' }),
     isInteractionNotPending,
   )
 
+  const continuation = events.next()
   assert.equal((await continuation).value.type, 'user_input.resolved')
+  await acknowledgement
   assert.equal((await events.next()).value.type, 'turn.completed')
   assert.deepEqual(runtime.calls, [
     { operation: 'startThread' },
@@ -255,10 +250,72 @@ test('deterministic product continuation rejects a scripted resolution that disa
   const events = turn.events[Symbol.asyncIterator]()
   assert.equal((await events.next()).value.type, 'user_input.requested')
 
+  const acknowledgement = runtime.cancelUserInput({
+    interactionId: 'interaction-1',
+  })
+  assert.equal(await settlesBeforeImmediate(acknowledgement), false)
+  const acknowledgementRejected = assert.rejects(
+    acknowledgement,
+    /resolution does not match/,
+  )
   const continuation = events.next()
-  await runtime.cancelUserInput({ interactionId: 'interaction-1' })
   await assert.rejects(continuation, /resolution does not match/)
+  await acknowledgementRejected
   await runtime.close()
+})
+
+test('deterministic cleanup rejects an in-flight acknowledgement without resolved activity', async () => {
+  const input = {
+    threadId: 'thread-product',
+    skill: { name: 'model', path: '/managed/model/SKILL.md' },
+    text: 'Review staged Markdown.',
+    plan: { model: 'fake-model', reasoningEffort: 'medium' },
+  } as const
+  const runtime = new DeterministicCodexChatRuntime({
+    threadIds: [input.threadId],
+    productTurns: [
+      {
+        input,
+        turnId: 'turn-product',
+        events: [
+          {
+            type: 'user_input.requested',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            itemId: 'item-review',
+            interactionId: 'interaction-1',
+            questions: [
+              {
+                id: 'decision',
+                header: 'Review',
+                question: 'Continue?',
+                options: null,
+                acceptsFreeform: true,
+              },
+            ],
+          },
+          {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            status: 'interrupted',
+          },
+        ],
+      },
+    ],
+  })
+  await runtime.startThread()
+  const turn = await runtime.startProductTurn(input)
+  const events = turn.events[Symbol.asyncIterator]()
+  assert.equal((await events.next()).value.type, 'user_input.requested')
+
+  const acknowledgement = runtime.answerUserInput({
+    interactionId: 'interaction-1',
+    answers: { decision: ['Accept'] },
+  })
+  assert.equal(await settlesBeforeImmediate(acknowledgement), false)
+  assert.equal((await events.next()).value.type, 'turn.completed')
+  await assert.rejects(acknowledgement, isInteractionNotPending)
 })
 
 test('deterministic product interrupt settles its pending interaction once', async () => {

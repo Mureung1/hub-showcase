@@ -243,6 +243,46 @@ test('orders product settlement after native resolution and before continuation'
   }
 })
 
+test('does not project answer success when cleanup resolves before terminal', async () => {
+  const harness = await startHarness('product-native-cleanup-resolution')
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startProductTurn(productTurnInput(threadId))
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const { requested, events } = await readUntilUserInput(iterator)
+    await writeFile(
+      join(dirname(harness.journalPath), 'cleanup-user-input-resolution'),
+      '',
+    )
+
+    const settlement = harness.runtime.answerUserInput({
+      interactionId: requested.interactionId,
+      answers: { decision: ['Accept'] },
+    })
+    await assert.rejects(
+      settlement,
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'interaction_not_pending' &&
+        !error.unknownOutcome,
+    )
+    events.push(...(await collectIterator(iterator)))
+
+    assert.equal(
+      events.filter(({ type }) => type === 'user_input.resolved').length,
+      0,
+    )
+    assert.deepEqual(events.at(-1), {
+      type: 'turn.completed',
+      threadId,
+      turnId: turn.turnId,
+      status: 'interrupted',
+    })
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
 test('cancels and interrupts pending product interactions once', async (t) => {
   await t.test('cancel', async () => {
     const harness = await startHarness('product-cancel')

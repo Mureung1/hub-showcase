@@ -420,10 +420,60 @@ class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
 
             await _wait_for_pid_exit(int(evidence["child_pid"]))
 
+    async def test_non_resolving_requests_do_not_consume_resolution_capacity(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-plan-non-resolving-tracker-"
+        ) as temp:
+            journal = Path(temp) / "journal.json"
+            codex = AsyncCodex(_config("non-resolving-request-tracker", journal))
+            await codex.__aenter__()
+            evidence = await _wait_for_journal_key(journal, "non_resolving_requests")
+            try:
+                account = await codex.account()
+                self.assertFalse(account.requires_openai_auth)
+                tracked = codex._client._sync._server_requests_awaiting_resolution
+                self.assertEqual(
+                    len(tracked),
+                    0,
+                    "non-resolving server requests consumed resolution capacity",
+                )
+            finally:
+                await codex.close()
+
+            self.assertEqual(evidence["non_resolving_requests"], 128)
+            await _wait_for_pid_exit(int(evidence["child_pid"]))
+
+    async def test_resolution_tracker_duplicate_and_capacity_fail_closed(
+        self,
+    ) -> None:
+        for mode, expected_count in (
+            ("resolution-tracker-duplicate", 1),
+            ("resolution-tracker-capacity", 1024),
+        ):
+            with (
+                self.subTest(mode=mode),
+                tempfile.TemporaryDirectory(prefix=f"ay-ple-plan-{mode}-") as temp,
+            ):
+                journal = Path(temp) / "journal.json"
+                codex = AsyncCodex(_config(mode, journal))
+                await codex.__aenter__()
+                evidence = await _wait_for_journal_key(journal, "tracked_requests")
+                try:
+                    with self.assertRaises(Exception):
+                        await codex.account()
+                finally:
+                    await codex.close()
+
+                self.assertEqual(evidence["tracked_requests"], expected_count)
+                await _wait_for_pid_exit(int(evidence["child_pid"]))
+
     async def test_in_flight_settlement_cleanup_is_once_only(self) -> None:
         cases = {
             "close-during-settlement": "interaction_closed",
             "interrupt-during-settlement": "interaction_not_pending",
+            "resolved-cleanup-during-settlement": "interaction_not_pending",
             "terminal-during-settlement": "interaction_not_pending",
             "transport-during-settlement": "interaction_transport_lost",
         }
