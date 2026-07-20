@@ -15,11 +15,12 @@ model NoticeSite {
   titleSelector    String     @db.VarChar(255)
   linkSelector     String     @db.VarChar(255)
   dateSelector     String     @db.VarChar(255)
-  categorySelector String     @db.VarChar(255)
-  createdAt        DateTime   @default(now()) @map("created_at")
-  updatedAt        DateTime   @updatedAt @map("updated_at")
-  categories       Category[]
-  notices          Notice[]
+  categorySelector     String     @db.VarChar(255)
+  categoryListSelector String     @db.VarChar(255)
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
+  categories           Category[]
+  notices              Notice[]
 
   @@map("notice_sites")
 }

@@ -492,6 +492,7 @@ Selector 설정
 - 링크 Selector (link)
 - 날짜 Selector (date)
 - 카테고리 Selector (category)
+- 전체 카테고리 Selector (category list)
 
 Selector 입력란은 실제 값이 채워진 상태가 아니라 placeholder 예시로 표시한다.
 
@@ -500,6 +501,7 @@ Selector 입력란은 실제 값이 채워진 상태가 아니라 placeholder �
 - 예: a.link
 - 예: .date
 - 예: .category
+- 예: .category-tabs a
 
 Action
 
@@ -538,7 +540,7 @@ Guide는 단순 문장 목록이 아니라 숫자 배지가 있는 Step Item 형
 1. 공지 사이트 입력
    - 공지 목록이 있는 페이지의 이름과 URL을 입력한다.
 2. Selector 설정
-   - 목록, 제목, 링크, 날짜, 카테고리를 찾을 CSS Selector를 입력한다.
+   - 목록, 제목, 링크, 날짜, 공지 항목 카테고리, 전체 카테고리 목록을 찾을 CSS Selector를 입력한다.
 3. 테스트 크롤링 확인
    - 저장 전에 최근 공지와 감지된 카테고리가 제대로 보이는지 확인한다.
 

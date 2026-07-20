@@ -56,7 +56,7 @@ Scheduler
 
 - 공지 사이트 URL과 selector 입력
 - 테스트 크롤링 실행
-- 최근 공지 미리보기와 감지 카테고리 표시
+- 최근 공지 미리보기와 전체 카테고리 목록 표시
 - 카테고리별 Discord 채널, Role 이름, 활성화 여부 설정
 - 전체 설정 생성, 조회, 교체, 카테고리 부분 수정, 삭제 요청
 
@@ -80,7 +80,7 @@ Scheduler
 ## Crawler And Scheduler
 
 - 30분마다 등록된 공지 사이트 순회
-- selector 기반 공지 목록 추출
+- selector 기반 공지 목록과 전체 카테고리 목록 추출
 - `title`, `link`, `date`, `category` 필수 검증
 - 링크 정규화와 `hashKey` 생성
 - 신규 공지 중복 검사
@@ -137,8 +137,8 @@ Admin enters notice site and selectors
   -> POST /api/admin/{guildId}/notice-config/test
   -> Backend validates required request fields
   -> Crawler fetches notice page
-  -> Extract notices using selectors
-  -> Validate title, link, date, category
+  -> Extract notices and category list using selectors
+  -> Validate title, link, date, category, category list
   -> Parse date as DateTime
   -> Return preview notices and detected categories
 ```

@@ -6,6 +6,7 @@ export interface NoticeConfigForm {
   linkSelector: string
   dateSelector: string
   categorySelector: string
+  categoryListSelector: string
 }
 
 export interface NoticePreview {

@@ -82,7 +82,8 @@ POST /api/admin/{guildId}/notice-config/test
   "titleSelector": ".title",
   "linkSelector": "a.link",
   "dateSelector": ".date",
-  "categorySelector": ".category"
+  "categorySelector": ".category",
+  "categoryListSelector": ".category-tabs a"
 }
 ```
 
@@ -111,9 +112,9 @@ POST /api/admin/{guildId}/notice-config/test
 **Success Rules**
 
 - 'listSelector'를 통해 최신 공지 1개 이상 감지
-- 감지된 모든 공지 항목에서 제목, 링크, 날짜, 카테고리를 추출할 수 있어야 함
+- 감지된 미리보기 공지 항목에서 제목, 링크, 날짜, 카테고리를 추출할 수 있어야 함
 - 날짜를 추출하고 DateTime으로 변환할 수 있어야 함
-- 감지된 카테고리 1개 이상
+- `categoryListSelector`로 전체 카테고리 1개 이상 감지
 
 **Failure Rules**
 
@@ -121,7 +122,7 @@ POST /api/admin/{guildId}/notice-config/test
 - Request Body 필수 값 누락
 - 제목, 링크, 날짜, 카테고리 중 하나라도 추출 실패
 - 날짜를 DateTime으로 변환하지 못함
-- 카테고리를 1개도 감지하지 못함
+- 전체 카테고리를 1개도 감지하지 못함
 
 ---
 
@@ -176,7 +177,8 @@ POST /api/admin/{guildId}/notice-config
     "titleSelector": "...",
     "linkSelector": "...",
     "dateSelector": "...",
-    "categorySelector": "..."
+    "categorySelector": "...",
+    "categoryListSelector": "..."
   },
   "categories": [
     {
@@ -241,7 +243,8 @@ GET /api/admin/{guildId}/notice-config
             "titleSelector": ".title a",
             "linkSelector": ".title a",
             "dateSelector": ".date",
-            "categorySelector": ".category"
+            "categorySelector": ".category",
+            "categoryListSelector": ".category-tabs a"
         },
         "categories": [
             {
@@ -297,7 +300,8 @@ PUT /api/admin/{guildId}/notice-config
     "titleSelector": ".title a",
     "linkSelector": ".title a",
     "dateSelector": ".date",
-    "categorySelector": ".category"
+    "categorySelector": ".category",
+    "categoryListSelector": ".category-tabs a"
   },
   "categories": [
     {

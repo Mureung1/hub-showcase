@@ -59,20 +59,22 @@
 - [x] DB.md
 - [x] ARCHITECTURE.md
 - [x] DEVELOPMENT.md
+- [x] Frontend/Backend TypeScript 프로젝트 세팅
+- [x] MySQL Docker 개발 환경 구성
+- [x] Prisma schema 및 migration 작성
+- [x] Landing 구현
+- [x] Admin mock flow 구현
+- [x] Backend 공통 구조 작성
+- [x] notice-config 도메인 모듈 생성
+- [x] 테스트 크롤링 API 구현
 
 ## 진행 중
 
-- [ ] React 프로젝트 초기 세팅
-- [ ] Express 프로젝트 초기 세팅
+- [ ] notice-config 저장/조회 API 구현 준비
 
 ## 미완료
 
-- [ ] Prisma schema 작성
-- [ ] MySQL Docker 개발 환경 구성
-- [ ] Backend 공통 설정
-- [ ] Admin Web 구현
 - [ ] Discord Bot 구현
-- [ ] 공지 크롤러 구현
 - [ ] Scheduler 구현
 - [ ] Discord 알림 구현
 - [ ] 키워드 알림 구현
@@ -95,26 +97,26 @@
 
 ## Phase 1. Project Foundation
 
-- [ ] Frontend TypeScript + React + Vite 세팅
-- [ ] Backend TypeScript + Express 세팅
-- [ ] ESLint/Prettier 기준 정리
-- [ ] 환경 변수 구조 정리
-- [ ] Frontend Vercel 배포 방식 결정
-- [ ] Backend Docker/EC2 배포 방식 결정
-- [ ] Backend health check API 작성
+- [x] Frontend TypeScript + React + Vite 세팅
+- [x] Backend TypeScript + Express 세팅
+- [x] ESLint/Prettier 기준 정리
+- [x] 환경 변수 구조 정리
+- [x] Frontend Vercel 배포 방식 결정
+- [x] Backend Docker/EC2 배포 방식 결정
+- [x] Backend health check API 작성
 - [ ] Backend Dockerfile 초안 작성
 - [ ] 빈 Backend 앱 EC2 실행 확인
-- [ ] MySQL Docker 개발 환경 구성
-- [ ] Production DB 연결 방식 정리
-- [ ] Prisma migration 배포 방식 정리
-- [ ] Prisma 설치 및 schema 작성
-- [ ] 공통 error/response/logger 구조 작성
+- [x] MySQL Docker 개발 환경 구성
+- [x] Production DB 연결 방식 정리
+- [x] Prisma migration 배포 방식 정리
+- [x] Prisma 설치 및 schema 작성
+- [x] 공통 error/response/logger 구조 작성
 
 ## Phase 2. Backend Notice Config
 
-- [ ] `notice_sites`, `categories`, `notices`, `subscriptions`, `keywords` Prisma model 작성
-- [ ] notice-config 도메인 모듈 생성
-- [ ] 테스트 크롤링 API 구현
+- [x] `notice_sites`, `categories`, `notices`, `subscriptions`, `keywords` Prisma model 작성
+- [x] notice-config 도메인 모듈 생성
+- [x] 테스트 크롤링 API 구현
 - [ ] 전체 설정 저장 API 구현
 - [ ] 전체 설정 조회 API 구현
 - [ ] 전체 설정 교체 API 구현
@@ -134,13 +136,13 @@
 
 ## Phase 4. Admin Web
 
-- [ ] Landing 구현
-- [ ] 시작 가이드 구현
-- [ ] 사이트 등록 화면 구현
-- [ ] 테스트 크롤링 결과 미리보기 구현
-- [ ] 카테고리 설정 화면 구현
+- [x] Landing 구현
+- [x] 시작 가이드 구현
+- [x] 사이트 등록 화면 구현
+- [x] 테스트 크롤링 결과 미리보기 구현
+- [x] 카테고리 설정 화면 구현
 - [ ] 기존 설정 조회 및 수정 흐름 구현
-- [ ] 설정 완료 화면 구현
+- [x] 설정 완료 화면 구현
 - [ ] 설정 삭제 UI 구현
 - [ ] Vercel preview 배포 확인
 - [ ] Frontend API base URL 환경 변수 연결 확인
@@ -161,8 +163,8 @@
 
 - [ ] 30분 Scheduler 구현
 - [ ] 등록된 notice site 순회 구현
-- [ ] selector 기반 공지 추출 구현
-- [ ] DateTime 파싱 구현
+- [x] selector 기반 공지 추출 구현
+- [x] DateTime 파싱 구현
 - [ ] normalizedLink 생성 구현
 - [ ] `hashKey` 중복 검사 구현
 - [ ] 활성 카테고리 공지 저장 구현
@@ -184,7 +186,7 @@
 - [ ] Production Frontend smoke test
 - [ ] Discord Bot production login 확인
 - [ ] Prisma migration 상태 확인
-- [ ] 발표용 시나리오 점검
+- [ ] 최종 점검 시나리오 확인
 
 ---
 

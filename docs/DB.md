@@ -33,14 +33,15 @@
 | titleSelector | varchar | not null | 제목 selector |
 | linkSelector | varchar | not null | 링크 selector |
 | dateSelector | varchar | not null | 날짜 selector |
-| categorySelector | varchar | not null | 카테고리 selector |
+| categorySelector | varchar | not null | 공지 항목 내부 카테고리 selector |
+| categoryListSelector | varchar | not null | 전체 카테고리 목록 selector |
 | created_at | datetime | not null | 생성일 |
 | updated_at | datetime | not null | 수정일 |
 
 **Rules**
 
 - `guild_id` unique 제약으로 MVP의 서버당 공지 사이트 1개 정책을 보장한다.
-- selector 테스트 크롤링은 `title`, `link`, `date`, `category`를 모두 가져와야 성공한다.
+- selector 테스트 크롤링은 `title`, `link`, `date`, 공지별 `category`, 전체 카테고리 목록을 모두 가져와야 성공한다.
 
 ---
 
@@ -178,6 +179,7 @@ Table notice_sites {
   linkSelector varchar [not null]
   dateSelector varchar [not null]
   categorySelector varchar [not null]
+  categoryListSelector varchar [not null]
   created_at datetime [not null]
   updated_at datetime [not null]
 }

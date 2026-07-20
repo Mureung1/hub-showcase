@@ -86,6 +86,7 @@ IRIS는 대학 공지를 반복해서 확인해야 하는 불편함을 줄이기
 - Link Selector
 - Date Selector
 - Category Selector
+- Category List Selector
 
 **기능**
 
@@ -99,7 +100,7 @@ IRIS는 대학 공지를 반복해서 확인해야 하는 불편함을 줄이기
 
 - 테스트 크롤링은 최신 공지를 1개 이상 가져오면 성공
 - 각 공지는 title, link, date, category를 모두 포함해야 함
-- category가 없거나 감지된 카테고리가 0개면 실패
+- 공지별 category가 없거나 전체 카테고리 목록에서 감지된 카테고리가 0개면 실패
 - 테스트 크롤링 성공 전에는 다음 단계로 이동할 수 없음
 
 ---

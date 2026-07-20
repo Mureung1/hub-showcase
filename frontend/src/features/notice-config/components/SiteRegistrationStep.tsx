@@ -117,6 +117,13 @@ export function SiteRegistrationStep({
           placeholder="예: .category"
           onChange={(value) => onFormChange('categorySelector', value)}
         />
+        <SelectorInput
+          id="categoryListSelector"
+          label="전체 카테고리 Selector (category list)"
+          value={form.categoryListSelector}
+          placeholder="예: .category-tabs a"
+          onChange={(value) => onFormChange('categoryListSelector', value)}
+        />
       </section>
 
       <button className="wide-primary" type="button" disabled={isCrawling} onClick={onTestCrawl}>

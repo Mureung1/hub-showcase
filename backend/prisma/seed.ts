@@ -15,6 +15,7 @@ async function main() {
       linkSelector: 'a',
       dateSelector: '.date',
       categorySelector: '.category',
+      categoryListSelector: '.category-filter a',
       categories: {
         create: [
           {

@@ -32,6 +32,7 @@ const initialForm: NoticeConfigForm = {
   linkSelector: '',
   dateSelector: '',
   categorySelector: '',
+  categoryListSelector: '',
 }
 
 function AdminPage() {

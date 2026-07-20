@@ -39,6 +39,10 @@
 
 - 없음
 
+## 검증
+
+- 로컬 실행 명령어 정리 완료
+
 ## 이월
 
 - 없음
@@ -69,6 +73,11 @@
 - 로컬 Windows `mysqld`가 3306 포트를 사용 중이라 Docker MySQL host 포트를 3307로 변경함.
 - npm audit 기준 moderate 취약점 3건이 남아 있음. 현재 Day 2 범위에는 영향 없음.
 
+## 검증
+
+- Prisma client 생성 및 타입 연결 확인
+- seed 또는 테스트 데이터 초안 작성 완료
+
 ## 이월
 
 - 없음
@@ -79,7 +88,7 @@
 
 ## 목표
 
-- Day 4 짧은 중간 발표에 사용할 랜딩 화면을 먼저 구현한다.
+- 서비스 첫 진입 화면으로 사용할 랜딩 화면을 먼저 구현한다.
 - `landing2.png` 기준의 첫 화면과 시작 가이드 토글을 완성한다.
 
 ## 할 일
@@ -93,11 +102,16 @@
 - [x] Discord Bot 초대 링크 미설정 상태 처리
 - [x] 데스크톱/모바일 반응형 1차 확인
 - [x] Frontend build/lint 확인
-- [x] Day 4 발표용 화면 흐름 정리
+- [x] 랜딩 화면 흐름 정리
 
 ## 이슈
 
 - 없음
+
+## 검증
+
+- Frontend build/lint 확인
+- 데스크톱/모바일 반응형 1차 확인
 
 ## 이월
 
@@ -135,6 +149,11 @@
 
 - 없음
 
+## 검증
+
+- 관리자 mock flow 반응형 1차 확인
+- 사이트 등록 → 카테고리 설정 → 설정 완료 mock flow 연결 확인
+
 ## 이월
 
 - 현재 Admin mock flow는 신규 설정 서버 기준으로 구현한다.
@@ -153,20 +172,28 @@
 
 ## 할 일
 
-- [ ] Express app 구조 작성
-- [ ] Health check API 작성
-- [ ] 공통 success/error response 작성
-- [ ] 공통 error class 작성
-- [ ] logger 초안 작성
-- [ ] request validation 방식 결정 및 적용
-- [ ] notice-config module 생성
-- [ ] notice-config routes/controller/service/repository 골격 작성
-- [ ] Prisma client 공통 연결을 repository에서 사용할 수 있게 정리
-- [ ] Backend health/db check 수동 확인
+- [x] Express app 구조 작성
+- [x] Health check API 작성
+- [x] 공통 success/error response 작성
+- [x] 공통 error class 작성
+- [x] logger 초안 작성
+- [x] request validation 방식 결정 및 적용
+- [x] notice-config module 생성
+- [x] notice-config routes/controller/service/repository 골격 작성
+- [x] Prisma client 공통 연결을 repository에서 사용할 수 있게 정리
+- [x] Backend health/db check 수동 확인
 
 ## 이슈
 
 - 없음
+
+## 검증
+
+- `npm run type-check` 통과
+- `npm run lint` 통과
+- `npm run build` 통과
+- `/api/health` 수동 확인 성공
+- Docker MySQL 실행 후 DB check 성공 (`notice_sites=1`)
 
 ## 이월
 
@@ -183,18 +210,30 @@
 
 ## 할 일
 
-- [ ] Axios/Cheerio crawler 기본 구현
-- [ ] selector 기반 notice 추출 구현
-- [ ] title/link/date/category 필수 검증 구현
-- [ ] DateTime 파싱 구현
-- [ ] relative link absolute URL 변환 구현
-- [ ] `POST /api/admin/{guildId}/notice-config/test` 구현
-- [ ] 테스트 크롤링 실패 케이스 응답 정리
-- [ ] 실제 공지 사이트 1개 기준 수동 테스트
+- [x] Axios/Cheerio crawler 기본 구현
+- [x] selector 기반 notice 추출 구현
+- [x] title/link/date/category 필수 검증 구현
+- [x] category list selector 기반 전체 카테고리 추출 구현
+- [x] DateTime 파싱 구현
+- [x] relative link absolute URL 변환 구현
+- [x] `POST /api/admin/{guildId}/notice-config/test` 구현
+- [x] 테스트 크롤링 실패 케이스 응답 정리
+- [x] 실제 공지 사이트 1개 기준 수동 테스트
 
 ## 이슈
 
 - 없음
+
+## 검증
+
+- `backend npm run type-check` 통과
+- `backend npm run lint` 통과
+- `backend npm run build` 통과
+- `frontend npm run lint` 통과
+- `frontend npm run build` 통과
+- 로컬 HTML fixture 기준 테스트 크롤링 API 성공
+- 미리보기 공지는 최신 5개만 반환하고, 카테고리는 `categoryListSelector` 기준 전체 목록에서 반환하는 것 확인
+- 경북대학교 컴퓨터학부 공지 사이트 기준 테스트 크롤링 API 성공
 
 ## 이월
 
@@ -304,7 +343,7 @@
 ## 목표
 
 - 관리자 화면의 UX, 반응형, 배포 preview를 점검한다.
-- Day 9 API 연동 후 화면 상태와 발표용 흐름을 안정화한다.
+- Day 9 API 연동 후 화면 상태와 관리자 흐름을 안정화한다.
 
 ## 할 일
 
@@ -399,7 +438,7 @@
 ## 목표
 
 - MVP 안정화와 최종 배포 smoke test를 수행한다.
-- Day 13에는 새 기능 구현보다 실패 케이스 점검과 데모 안정화를 우선한다.
+- Day 13에는 새 기능 구현보다 실패 케이스 점검과 전체 흐름 안정화를 우선한다.
 
 ## 할 일
 
@@ -415,11 +454,11 @@
 - [ ] Production Frontend smoke test
 - [ ] Discord Bot production login 확인
 - [ ] Prisma migration 상태 확인
-- [ ] 발표 데모 시나리오 초안 작성
+- [ ] 최종 점검 시나리오 초안 작성
 
 ## 이월 후보
 
-- 시간이 부족하면 키워드 DM 알림은 제목 매칭 저장까지 확인하고 실제 DM 전송 고도화는 발표 이후로 미룬다.
+- 시간이 부족하면 키워드 DM 알림은 제목 매칭 저장까지 확인하고 실제 DM 전송 고도화는 이후 개선으로 미룬다.
 
 ## 이슈
 
