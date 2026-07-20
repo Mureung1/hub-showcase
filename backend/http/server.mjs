@@ -12,6 +12,7 @@ import { loadCurriculumTracks } from '../modules/curriculum/adapters/jsonCurricu
 import { createInMemoryGitLabAttemptRepository } from '../modules/git-lab/adapters/inMemoryGitLabAttemptRepository.mjs'
 import { createInMemoryLearningProgressRepository } from '../modules/learning-progress/adapters/inMemoryLearningProgressRepository.mjs'
 import { createInMemoryMistakeNoteRepository } from '../modules/mistake-notes/adapters/inMemoryMistakeNoteRepository.mjs'
+import { loadKnowledgeChunks } from '../modules/knowledge/adapters/jsonlKnowledgeRepository.mjs'
 import { createAgentConfig, loadEnvFiles } from '../shared/env.mjs'
 import { createCorsHeaders, createRouteNotFoundResponse } from '../shared/http.mjs'
 
@@ -31,6 +32,7 @@ export function createCurriculumAgentApp({
   progressRepository = createInMemoryLearningProgressRepository(),
   mistakeNoteRepository = createInMemoryMistakeNoteRepository(),
   gitLabAttemptRepository = createInMemoryGitLabAttemptRepository(),
+  knowledgeChunks = [],
   logger = console,
 } = {}) {
   const app = express()
@@ -55,6 +57,7 @@ export function createCurriculumAgentApp({
         progressRepository,
         mistakeNoteRepository,
         gitLabAttemptRepository,
+        knowledgeChunks,
         logger,
       }
       const result =
@@ -96,6 +99,7 @@ export function createRuntimeContext() {
     progressRepository: createInMemoryLearningProgressRepository(),
     mistakeNoteRepository: createInMemoryMistakeNoteRepository(),
     gitLabAttemptRepository: createInMemoryGitLabAttemptRepository(),
+    knowledgeChunks: loadKnowledgeChunks({ fs, path, repoRoot }),
   }
 }
 
@@ -108,6 +112,7 @@ export function startCurriculumAgentServer({
   progressRepository,
   mistakeNoteRepository,
   gitLabAttemptRepository,
+  knowledgeChunks,
   logger = console,
 } = {}) {
   const runtimeContext = tracks && config ? {
@@ -116,6 +121,7 @@ export function startCurriculumAgentServer({
     progressRepository,
     mistakeNoteRepository,
     gitLabAttemptRepository,
+    knowledgeChunks,
   } : createRuntimeContext()
   const server = createCurriculumAgentServer({ ...runtimeContext, recommendationProvider, logger })
 

@@ -27,7 +27,7 @@ export const curriculumAgentResponseSchema = {
   required: ['trackId', 'levelId', 'moduleIds', 'title', 'summary', 'todayMission', 'rationale'],
 }
 
-export async function runCurriculumPlannerAgent({ goal, tracks, config, fetchImpl = globalThis.fetch }) {
+export async function runCurriculumPlannerAgent({ goal, tracks, config, knowledgeContext = [], fetchImpl = globalThis.fetch }) {
   if (config.provider !== 'developer') {
     throw new Error(`Unsupported curriculum agent provider: ${config.provider}. Supported provider: developer`)
   }
@@ -40,15 +40,15 @@ export async function runCurriculumPlannerAgent({ goal, tracks, config, fetchImp
     throw new Error('A fetch implementation is required to call the Gemini API.')
   }
 
-  return callDeveloperGemini({ apiKey: config.apiKey, model: config.model, goal, tracks, fetchImpl })
+  return callDeveloperGemini({ apiKey: config.apiKey, model: config.model, goal, tracks, knowledgeContext, fetchImpl })
 }
 
-export function createDryRunPayload({ goal, tracks, config }) {
+export function createDryRunPayload({ goal, tracks, config, knowledgeContext = [] }) {
   return {
     provider: config.provider,
     model: config.model,
     system_instruction: createSystemInstruction(),
-    input: JSON.parse(createPrompt({ goal, tracks })),
+    input: JSON.parse(createPrompt({ goal, tracks, knowledgeContext })),
   }
 }
 
@@ -74,10 +74,21 @@ export function createCatalog(tracks) {
   }))
 }
 
+export function createKnowledgeContext(chunks) {
+  return chunks.slice(0, 5).map((chunk) => ({
+    topic: chunk.topic,
+    docTitle: chunk.docTitle,
+    sectionHeading: chunk.sectionHeading,
+    url: chunk.url,
+    chunkText: String(chunk.chunkText ?? '').slice(0, 500),
+  }))
+}
 export function createSystemInstruction() {
   return [
     'You are ICU Curriculum Planner Agent.',
-    'Use only the provided curriculum catalog.',
+    'Use only the provided curriculum catalog to choose track, level, and modules.',
+    'Use knowledgeContext only as official-doc grounding for rationale and learning explanation.',
+    'Do not copy long knowledgeContext passages into the response.',
     'Return only valid JSON. Do not wrap the answer in markdown.',
     'Pick one track, one starting level, and exactly three modules from that level.',
     'Use Korean for title, summary, todayMission, and rationale.',
@@ -85,10 +96,11 @@ export function createSystemInstruction() {
   ].join('\n')
 }
 
-export function createPrompt({ goal, tracks }) {
+export function createPrompt({ goal, tracks, knowledgeContext = [] }) {
   return JSON.stringify({
     userGoal: goal,
     catalog: createCatalog(tracks),
+    knowledgeContext: createKnowledgeContext(knowledgeContext),
     constraints: {
       useOnlyCatalogData: true,
       moduleCount: 3,
@@ -126,14 +138,14 @@ export function extractJson(text) {
   return candidate.slice(start, end + 1)
 }
 
-async function callDeveloperGemini({ apiKey, model, goal, tracks, fetchImpl }) {
+async function callDeveloperGemini({ apiKey, model, goal, tracks, knowledgeContext, fetchImpl }) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`
   const response = await fetchImpl(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: createSystemInstruction() }] },
-      contents: [{ role: 'user', parts: [{ text: createPrompt({ goal, tracks }) }] }],
+      contents: [{ role: 'user', parts: [{ text: createPrompt({ goal, tracks, knowledgeContext }) }] }],
       generationConfig: {
         temperature: 0.2,
         responseMimeType: 'application/json',

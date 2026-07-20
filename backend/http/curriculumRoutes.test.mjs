@@ -4,19 +4,19 @@ import { curriculumRecommendationPath, handleCurriculumApiRequest } from './curr
 const tracks = [
   {
     trackId: 'backend',
-    trackName: '백엔드 개발자',
+    trackName: 'Backend Development',
     levels: [
       {
         levelId: 'be-01',
-        title: '서버의 기본 동작 이해',
-        goal: 'HTTP 요청-응답 흐름을 이해합니다.',
+        title: 'Server Basics',
+        goal: 'Understand HTTP request and response flow.',
         estimatedWeeks: 3,
         modules: [
           {
             moduleId: 'be-01-01',
-            title: 'HTTP 기본',
-            topics: ['HTTP 메서드'],
-            practiceIdeas: ['GET 요청을 처리합니다.'],
+            title: 'HTTP Basics',
+            topics: ['HTTP methods'],
+            practiceIdeas: ['Handle a GET request.'],
             resources: [],
           },
         ],
@@ -29,15 +29,27 @@ const recommendation = {
   trackId: 'backend',
   levelId: 'be-01',
   moduleIds: ['be-01-01'],
-  title: '백엔드 시작하기',
-  summary: '서버 기초부터 시작합니다.',
+  title: 'Start Backend',
+  summary: 'Start from server fundamentals.',
   todayMission: {
-    title: 'HTTP 실습',
-    detail: 'GET 요청을 처리합니다.',
+    title: 'HTTP Practice',
+    detail: 'Handle a GET request.',
     durationMinutes: 30,
     fileName: 'main.py',
   },
 }
+
+const dockerKnowledgeChunks = [
+  {
+    id: 'docker-1',
+    sourceType: 'official-doc',
+    topic: 'docker',
+    docTitle: 'Docker Docs',
+    sectionHeading: 'Images',
+    url: 'https://docs.docker.com/',
+    chunkText: 'Docker backend HTTP container',
+  },
+]
 
 describe('curriculum routes', () => {
   it('returns the React plan contract for valid recommendation requests', async () => {
@@ -47,10 +59,11 @@ describe('curriculum routes', () => {
       handleCurriculumApiRequest({
         method: 'POST',
         url: curriculumRecommendationPath,
-        bodyText: JSON.stringify({ goal: ' 백엔드 개발자가 되고 싶어 ' }),
+        bodyText: JSON.stringify({ goal: ' I want to learn backend development ' }),
         tracks,
         config: { provider: 'developer', model: 'gemini-flash-latest', apiKey: 'test-key' },
         recommendationProvider,
+        knowledgeChunks: dockerKnowledgeChunks,
         logger: { error: vi.fn() },
       }),
     ).resolves.toMatchObject({
@@ -58,12 +71,18 @@ describe('curriculum routes', () => {
       body: {
         plan: {
           id: 'backend-curriculum-plan',
-          goal: '백엔드 개발자가 되고 싶어',
+          goal: 'I want to learn backend development',
           todayMission: { fileName: 'main.py' },
           steps: [{ id: 'be-01-01' }],
         },
       },
     })
+
+    expect(recommendationProvider).toHaveBeenCalledWith(
+      expect.objectContaining({
+        knowledgeContext: [expect.objectContaining({ id: 'docker-1', topic: 'docker' })],
+      }),
+    )
   })
 
   it('rejects empty goals before calling the provider', async () => {
@@ -76,6 +95,7 @@ describe('curriculum routes', () => {
       tracks,
       config: {},
       recommendationProvider,
+      knowledgeChunks: dockerKnowledgeChunks,
       logger: { error: vi.fn() },
     })
 
@@ -87,7 +107,7 @@ describe('curriculum routes', () => {
     const result = await handleCurriculumApiRequest({
       method: 'POST',
       url: curriculumRecommendationPath,
-      bodyText: JSON.stringify({ goal: 'React를 배우고 싶어' }),
+      bodyText: JSON.stringify({ goal: 'I want to learn React' }),
       tracks,
       config: {},
       recommendationProvider: vi.fn(async () => {

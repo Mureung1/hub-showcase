@@ -1,25 +1,29 @@
 import { describe, expect, it } from 'vitest'
-import { createDryRunPayload, extractJson } from './geminiCurriculumRecommendationProvider.mjs'
+import {
+  createDryRunPayload,
+  createKnowledgeContext,
+  extractJson,
+} from './geminiCurriculumRecommendationProvider.mjs'
 import { createAgentConfig } from '../../../shared/env.mjs'
 
 const tracks = [
   {
     trackId: 'backend',
-    trackName: '백엔드 개발자',
-    description: '서버를 설계합니다.',
+    trackName: 'Backend Development',
+    description: 'Learn how to design servers.',
     levels: [
       {
         levelId: 'be-01',
         levelNumber: 1,
-        title: '서버의 기본 동작 이해',
-        goal: 'HTTP를 이해합니다.',
+        title: 'Server Basics',
+        goal: 'Understand HTTP.',
         estimatedWeeks: 3,
         modules: [
           {
             moduleId: 'be-01-01',
-            title: 'HTTP 기본',
-            topics: ['HTTP 메서드'],
-            practiceIdeas: ['GET 요청을 처리합니다.'],
+            title: 'HTTP Basics',
+            topics: ['HTTP methods'],
+            practiceIdeas: ['Handle a GET request.'],
             resources: [],
           },
         ],
@@ -44,7 +48,7 @@ describe('gemini curriculum recommendation provider', () => {
   it('creates a dry run payload with catalog constraints', () => {
     expect(
       createDryRunPayload({
-        goal: '백엔드 개발자가 되고 싶어',
+        goal: 'I want to learn backend development',
         tracks,
         config: createAgentConfig({ GEMINI_API_KEY: 'test-key' }),
       }),
@@ -52,9 +56,34 @@ describe('gemini curriculum recommendation provider', () => {
       provider: 'developer',
       model: 'gemini-flash-latest',
       input: {
-        userGoal: '백엔드 개발자가 되고 싶어',
+        userGoal: 'I want to learn backend development',
+        knowledgeContext: [],
         constraints: { moduleCount: 3 },
       },
     })
+  })
+
+  it('creates a compact knowledge context for model grounding', () => {
+    const longText = 'Docker '.repeat(120)
+
+    expect(
+      createKnowledgeContext([
+        {
+          topic: 'docker',
+          docTitle: 'Docker Docs',
+          sectionHeading: 'Images',
+          url: 'https://docs.docker.com/',
+          chunkText: longText,
+        },
+      ]),
+    ).toEqual([
+      {
+        topic: 'docker',
+        docTitle: 'Docker Docs',
+        sectionHeading: 'Images',
+        url: 'https://docs.docker.com/',
+        chunkText: longText.slice(0, 500),
+      },
+    ])
   })
 })

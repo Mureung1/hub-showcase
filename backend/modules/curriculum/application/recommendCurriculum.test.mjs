@@ -4,19 +4,19 @@ import { recommendCurriculum } from './recommendCurriculum.mjs'
 const tracks = [
   {
     trackId: 'backend',
-    trackName: '백엔드 개발자',
+    trackName: 'Backend Development',
     levels: [
       {
         levelId: 'be-01',
-        title: '서버의 기본 동작 이해',
-        goal: 'HTTP 요청-응답 흐름을 이해합니다.',
+        title: 'Server Basics',
+        goal: 'Understand HTTP request and response flow.',
         estimatedWeeks: 3,
         modules: [
           {
             moduleId: 'be-01-01',
-            title: 'HTTP 기본',
-            topics: ['HTTP 메서드'],
-            practiceIdeas: ['GET 요청을 처리합니다.'],
+            title: 'HTTP Basics',
+            topics: ['HTTP methods'],
+            practiceIdeas: ['Handle a GET request.'],
             resources: [],
           },
         ],
@@ -29,11 +29,11 @@ const recommendation = {
   trackId: 'backend',
   levelId: 'be-01',
   moduleIds: ['be-01-01'],
-  title: '백엔드 시작하기',
-  summary: '서버 기초부터 시작합니다.',
+  title: 'Start Backend',
+  summary: 'Start from server fundamentals.',
   todayMission: {
-    title: 'HTTP 실습',
-    detail: 'GET 요청을 처리합니다.',
+    title: 'HTTP Practice',
+    detail: 'Handle a GET request.',
     durationMinutes: 30,
     fileName: 'main.py',
   },
@@ -45,22 +45,57 @@ describe('recommendCurriculum use case', () => {
 
     await expect(
       recommendCurriculum({
-        goal: ' 백엔드 개발자가 되고 싶어 ',
+        goal: ' I want to learn backend development ',
         tracks,
         config: { apiKey: 'test-key' },
         recommendationProvider,
       }),
     ).resolves.toMatchObject({
       id: 'backend-curriculum-plan',
-      goal: '백엔드 개발자가 되고 싶어',
+      goal: 'I want to learn backend development',
       todayMission: { fileName: 'main.py' },
     })
 
     expect(recommendationProvider).toHaveBeenCalledWith({
-      goal: '백엔드 개발자가 되고 싶어',
+      goal: 'I want to learn backend development',
       tracks,
       config: { apiKey: 'test-key' },
+      knowledgeContext: [],
     })
+  })
+
+  it('passes matching knowledge chunks to the recommendation provider', async () => {
+    const recommendationProvider = vi.fn(async () => recommendation)
+
+    await recommendCurriculum({
+      goal: 'Docker image basics',
+      tracks,
+      config: { apiKey: 'test-key' },
+      recommendationProvider,
+      knowledgeChunks: [
+        {
+          id: 'docker-1',
+          sourceType: 'official-doc',
+          topic: 'docker',
+          docTitle: 'Docker Docs',
+          sectionHeading: 'Images',
+          url: 'https://docs.docker.com/',
+          chunkText: 'Docker image container build registry',
+        },
+      ],
+    })
+
+    expect(recommendationProvider).toHaveBeenCalledWith(
+      expect.objectContaining({
+        knowledgeContext: [
+          expect.objectContaining({
+            id: 'docker-1',
+            topic: 'docker',
+            docTitle: 'Docker Docs',
+          }),
+        ],
+      }),
+    )
   })
 
   it('rejects empty goals', async () => {

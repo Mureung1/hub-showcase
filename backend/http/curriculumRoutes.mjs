@@ -11,6 +11,7 @@ export async function handleCurriculumApiRequest({
   tracks,
   config,
   recommendationProvider,
+  knowledgeChunks = [],
   logger = console,
 }) {
   const pathname = new URL(url ?? '/', 'http://localhost').pathname
@@ -50,7 +51,7 @@ export async function handleCurriculumApiRequest({
   }
 
   try {
-    const plan = await recommendCurriculum({ goal, tracks, config, recommendationProvider })
+    const plan = await recommendCurriculum({ goal, tracks, config, recommendationProvider, knowledgeChunks })
 
     return { status: 200, body: { plan }, headers: createCorsHeaders() }
   } catch (error) {
