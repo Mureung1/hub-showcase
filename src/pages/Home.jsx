@@ -1,21 +1,39 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { mockRecipes } from '../data/mockRecipes'
-import { sortByCost, groupRecipesByMissingIngredients } from '../data/selectors'
+import { categories, TYPE_LABELS } from '../data/categories'
+import { TIME_FILTERS } from '../data/timeFilters'
+import {
+  sortByCost,
+  groupRecipesByMissingIngredients,
+  getClosestRecipes,
+  getQuickRecipes,
+  filterRecipesByType,
+  filterRecipesByTimeFilter,
+} from '../data/selectors'
 import { fridgeIngredients, SEASONING_MATCH_NAMES } from '../data/fridgeIngredients'
 import { loadFridgeSelection } from '../data/fridgeStorage'
 import MenuCard from '../components/MenuCard'
 import PromoBanner from '../components/PromoBanner'
+import FilterChipGroup from '../components/FilterChipGroup'
 import mascotWave from '../assets/mascot-wave.png'
+// 임시 목업 일러스트 — 최종본 아님, 나중에 교체 예정 (checklist.md 참고)
+import kkinniCharacter from '../assets/끼니캐릭터.png'
 
 // 프로토타입(prototype/home.html) 구조를 그대로 포팅: 네비바 → 프로모 배너 → 냉장고 재료 추천 → 전체 둘러보기(평면 리스트).
 // 카테고리별(메인음식/반찬/간식) 미리보기 섹션은 이 구조로 대체됨 — TypePage/CategoryPage 자체는 남아있지만 홈에서 링크하지 않음.
 const allRecipesByPrice = sortByCost(mockRecipes)
 const cheapestId = allRecipesByPrice[0]?.id
 
+const typeOptions = Object.entries(TYPE_LABELS).map(([id, label]) => ({ id, label }))
+const timeOptions = TIME_FILTERS.map(({ id, label }) => ({ id, label }))
+
 function Home() {
   const [readyRecipes, setReadyRecipes] = useState([])
   const [shoppingRecipes, setShoppingRecipes] = useState([])
+  const [otherRecipes, setOtherRecipes] = useState([])
+  const [selectedType, setSelectedType] = useState(null)
+  const [selectedTimeFilterId, setSelectedTimeFilterId] = useState(null)
 
   useEffect(() => {
     const selectedIds = loadFridgeSelection()
@@ -28,25 +46,42 @@ function Home() {
     if (ownedMatchNames.length === 0) {
       setReadyRecipes([])
       setShoppingRecipes([])
+      setOtherRecipes([])
       return
     }
 
     fetch(`/api/recipes?matchNames=${ownedMatchNames.join(',')}`)
       .then((res) => res.json())
       .then((data) => {
-        const { ready, shopping } = groupRecipesByMissingIngredients(
+        const { ready, shopping, others } = groupRecipesByMissingIngredients(
           data.recipes ?? [],
           ownedMatchNames,
           SEASONING_MATCH_NAMES,
         )
         setReadyRecipes(ready)
         setShoppingRecipes(shopping)
+        setOtherRecipes(others)
       })
       .catch(() => {
         setReadyRecipes([])
         setShoppingRecipes([])
+        setOtherRecipes([])
       })
   }, [])
+
+  function applyFilters(recipes) {
+    return filterRecipesByTimeFilter(filterRecipesByType(recipes, categories, selectedType), selectedTimeFilterId)
+  }
+
+  const filteredReady = applyFilters(readyRecipes)
+  const filteredShopping = applyFilters(shoppingRecipes)
+  const filteredAll = applyFilters(allRecipesByPrice)
+  const hasAnyMatch = readyRecipes.length > 0 || shoppingRecipes.length > 0
+  const hasFilteredMatch = filteredReady.length > 0 || filteredShopping.length > 0
+  // 가진 재료로는 아무것도 못 찾았을 때만 컷오프(부족 3개 이상)를 풀어서 그나마 가까운 후보를 보여줌
+  const closestRecipes = hasAnyMatch ? [] : getClosestRecipes(applyFilters(otherRecipes), 3)
+  // 기준 재료 자체가 없어(보유 재료 0개, 또는 조미료만 보유) closestRecipes조차 못 만들 때 보여줄 최후의 대체 후보
+  const quickRecipes = !hasAnyMatch && closestRecipes.length === 0 ? getQuickRecipes(filteredAll, 3) : []
 
   return (
     <div className="min-h-screen bg-bg-cream">
@@ -57,22 +92,87 @@ function Home() {
       <main className="mx-auto max-w-[960px] pb-8">
         <PromoBanner />
 
-        <div className="mt-6 flex items-baseline justify-between px-8">
+        <div className="mt-6 flex flex-col gap-2 px-8">
+          <FilterChipGroup options={typeOptions} selectedId={selectedType} onSelect={setSelectedType} />
+          <FilterChipGroup options={timeOptions} selectedId={selectedTimeFilterId} onSelect={setSelectedTimeFilterId} />
+        </div>
+
+        <div className="mt-4 flex items-baseline justify-between px-8">
           <h2 className="text-sm font-bold text-text-primary">냉장고 재료로 만들 수 있는 요리</h2>
           <Link to="/" className="text-xs text-text-secondary underline hover:text-text-primary">
             재료 다시 고르기 →
           </Link>
         </div>
 
-        {readyRecipes.length === 0 && shoppingRecipes.length === 0 && (
+        {!hasAnyMatch && closestRecipes.length === 0 && (
+          <section className="mt-4 px-8">
+            <div className="flex flex-col items-center gap-3 rounded-card border border-border bg-bg-surface px-6 py-8 text-center shadow-sm">
+              <img src={kkinniCharacter} alt="" className="w-28 select-none" />
+              <div>
+                <p className="text-sm font-bold text-text-primary">어라, 딱 맞는 요리를 못 찾았더랑!</p>
+                <p className="mt-1 text-xs text-text-secondary">
+                  조미료 말고 진짜 재료(채소·고기·가공식품 등)를 골라주면 기니가 딱 맞는 요리를 찾아드릴게요.
+                </p>
+              </div>
+              <Link
+                to="/"
+                className="mt-1 rounded-full bg-primary px-5 py-2 text-sm font-bold text-text-primary transition hover:brightness-95"
+              >
+                재료 고르러 가기
+              </Link>
+            </div>
+
+            {quickRecipes.length > 0 && (
+              <div className="mt-5">
+                <h3 className="text-xs font-bold text-text-primary">그래도 빨리 만들 수 있는 요리는 있어요</h3>
+                <ol className="mt-2 grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
+                  {quickRecipes.map((recipe) => (
+                    <MenuCard
+                      key={recipe.id}
+                      to={`/recipe/${recipe.id}`}
+                      image={recipe.image}
+                      emoji={recipe.emoji}
+                      name={recipe.name}
+                      price={recipe.totalCost}
+                      priceSuffix="원"
+                      timeLabel={`${recipe.cookTimeMinutes}분`}
+                    />
+                  ))}
+                </ol>
+              </div>
+            )}
+          </section>
+        )}
+
+        {closestRecipes.length > 0 && (
+          <section className="mt-4 px-8">
+            <h3 className="text-xs font-bold text-text-primary">이 재료도 있으면 만들 수 있어요</h3>
+            <ol className="mt-2 grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
+              {closestRecipes.map((recipe) => (
+                <MenuCard
+                  key={recipe.id}
+                  to={`/recipe/${recipe.id}`}
+                  image={recipe.image}
+                  emoji={recipe.emoji}
+                  name={recipe.name}
+                  price={recipe.totalCost}
+                  priceSuffix="원"
+                  missingCount={recipe.missingCount}
+                />
+              ))}
+            </ol>
+          </section>
+        )}
+
+        {hasAnyMatch && !hasFilteredMatch && (
           <p className="mt-2 px-8 text-xs text-text-secondary">
-            아직 고른 재료로 만들 수 있는 요리를 못 찾았어요. 조미료 말고 실제 재료(채소·고기·가공식품 등)를 골라보세요.
+            필터 조건에 맞는 요리가 없어요. 음식종류나 시간 필터를 다르게 골라보세요.
           </p>
         )}
 
-        {readyRecipes.length > 0 && (
+        {filteredReady.length > 0 && (
           <section className="mt-2 px-8">
-            <h3 className="text-xs font-bold text-text-secondary">지금 바로 만들 수 있어요</h3>
+            <h3 className="text-xs font-bold text-text-primary">지금 바로 만들 수 있어요</h3>
             <div className="relative mt-2">
               <div className="pointer-events-none absolute -left-[108px] top-9 z-10 hidden sm:block">
                 <span className="absolute left-2 -top-6 whitespace-nowrap rounded-full border border-border bg-bg-surface px-3 py-1 text-xs font-bold text-primary-text shadow-sm">
@@ -81,7 +181,7 @@ function Home() {
                 <img src={mascotWave} alt="" className="w-32 select-none" />
               </div>
               <ol className="grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
-                {readyRecipes.map((recipe) => (
+                {filteredReady.map((recipe) => (
                   <MenuCard
                     key={recipe.id}
                     to={`/recipe/${recipe.id}`}
@@ -98,11 +198,11 @@ function Home() {
           </section>
         )}
 
-        {shoppingRecipes.length > 0 && (
+        {filteredShopping.length > 0 && (
           <section className="mt-6 px-8">
-            <h3 className="text-xs font-bold text-text-secondary">재료 조금만 사면 돼요</h3>
+            <h3 className="text-xs font-bold text-text-primary">재료 조금만 사면 돼요</h3>
             <ol className="mt-2 grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
-              {shoppingRecipes.map((recipe) => (
+              {filteredShopping.map((recipe) => (
                 <MenuCard
                   key={recipe.id}
                   to={`/recipe/${recipe.id}`}
@@ -120,8 +220,11 @@ function Home() {
         )}
 
         <h2 className="mt-8 px-8 text-sm font-bold text-text-primary">전체 둘러보기</h2>
+        {filteredAll.length === 0 && (
+          <p className="mt-2 px-8 text-xs text-text-secondary">필터 조건에 맞는 요리가 없어요.</p>
+        )}
         <ol className="mt-2 grid grid-cols-3 gap-3 px-8 max-[640px]:grid-cols-1">
-          {allRecipesByPrice.map((recipe) => (
+          {filteredAll.map((recipe) => (
             <MenuCard
               key={recipe.id}
               to={`/recipe/${recipe.id}`}
