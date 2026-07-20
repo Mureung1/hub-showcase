@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement (current corrective session)
+- Next actor: none
 
 ## Parent Spec
 
@@ -57,6 +57,9 @@ Native Codex가 narrow custom MCP `propose_state_patch`로 selected TXT 근거�
 - `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`가 모두 exit 0으로 통과했다.
 - Manual/live smoke는 수행하지 않았다. Ticket이 명시한 대로 native provider conformance, public action HTTP와 Browser Review는 후속 ticket의 검증 표면이다.
 - Fixed point `679b983c76c9d75ecdcab75f656282578d430566` 이후 diff를 Standards와 Spec 두 축으로 병렬 review했다. Spec review의 wrong-interaction nominal retry 1건은 exact interaction·patch·decision triple 검증과 regression test로 수정했고 follow-up review가 통과했다. Standards의 duplicated validation 판단은 shared pure validator로 해소했다. `superseded | interrupted` lifecycle은 parent spec의 명시적 durable contract라 유지했으며, workspace aggregate와 transaction locality를 한 controller에 두는 module 크기 판단은 documented-standard 위반이 아니어서 새 persistence authority를 만들지 않았다.
+- Corrective에서는 `changes.values`와 각 `EvidenceRef`의 nested property order까지 뒤섞은 same-key replay regression을 먼저 red로 확인한 뒤 focused StatePatch/workspace 17개 test를 green으로 복구했다. Product HTTP ready/incompatible projection, Chat Shell strict decoder와 persistence metadata rejection을 unit·integration으로 검증했고 `npm run test:e2e -w @ay-ple/chat-shell` 19개 test도 통과했다.
+- Corrective 최종 HEAD에서 `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check 4c5db467...HEAD`가 모두 exit 0으로 통과했다. Manual/live smoke는 corrective 범위에 필요하지 않아 수행하지 않았다.
+- Corrective fixed point `4c5db4671f997deed7c165b11ad5a38e65ee18c3` 이후 diff를 Standards와 Spec 두 축으로 병렬 review했다. 첫 Standards review의 naming judgement call 2건은 `isExactAssignmentUpsert`와 `assertReadyWorkspaceEnvelopeKeys`로 명확히 바꿨고, follow-up Standards와 Spec review가 각각 finding 0건으로 통과했다.
 
 ## Blocked By
 
@@ -80,6 +83,8 @@ Existing workspace-local store를 v2 aggregate로 확장해 stable workspace ID,
 
 App-issued proposal session은 selected material ID·digest, Course, workspace와 base revision에 exact `propose_state_patch` 하나를 결합한다. Tool은 one `assignment.upsert`, bounded values, explicit known UTC offset과 field-level exact quote를 검증해 pending patch만 만든다. Canonical replay는 settled current status까지 같은 patch를 반환하고 conflicting payload, stale context와 재활성화 전 session은 mutation 없이 거절한다.
 
+Corrective에서 Assignment values와 `EvidenceRef`를 fixed field order로 재구성해 canonical replay를 nested JSON property order와 분리했다. Workspace store format version과 newer-store 진단은 controller와 Server log에 유지하되, 네 product HTTP workspace 응답은 ready confirmed data 또는 actionable incompatible outcome만 명시적으로 투영하고 Chat Shell은 이 browser-safe 계약을 exact decode한다. Ticket 006에는 기존 Review coordinator와 integration test를 Starting Points로 연결했으며 006 동작이나 다른 ticket DAG는 바꾸지 않았다.
+
 Exact same-Turn Plan question만 product Review가 되며 accept/reject transaction은 native answer보다 먼저 commit된다. Accept는 Assignment create/update, revision, accepted confirmation과 applied outcome을 함께 기록하고 reject는 model을 바꾸지 않은 채 rejected confirmation과 no-apply outcome을 기록한다. Nominal retry는 original interaction·patch·decision triple이 같을 때만 기존 outcome을 반환한다. Deterministic product Runtime과 real in-process MCP handler가 Browser 없이 proposal → question → commit → answer → same-Turn terminal과 reopen을 증명한다. Product action admission/HTTP, Browser Review, revision replacement와 loss/recovery는 tickets 006·008에 남는다.
 
 Implementation commits:
@@ -92,3 +97,8 @@ Implementation commits:
 - `1053b065` — `docs: record StatePatch review authority`
 - `4d46886e` — `fix: preserve exact Review retry binding`
 - `aa53d0ed` — `fix: validate persisted Assignment targets`
+- `ef175431` — `docs: reopen StatePatch review corrective`
+- `5bf4fa55` — `fix: canonicalize nested StatePatch fields`
+- `df92923d` — `fix: isolate Browser product snapshots`
+- `bf565ab8` — `docs: separate product and store contracts`
+- `2ff219ef` — `refactor: clarify StatePatch validation names`
