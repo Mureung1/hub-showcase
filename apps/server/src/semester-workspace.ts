@@ -1614,6 +1614,8 @@ function hasValidWorkspaceStateInvariants(
         patch.status !== 'applied' ||
         patch.applyOutcome?.type !== 'applied' ||
         patch.applyOutcome.assignmentId !== confirmation.assignmentId ||
+        (patch.changes.assignmentId !== undefined &&
+          patch.changes.assignmentId !== confirmation.assignmentId) ||
         patch.applyOutcome.resultingRevision !==
           confirmation.resultingRevision ||
         confirmation.resultingRevision !== patch.baseRevision + 1 ||

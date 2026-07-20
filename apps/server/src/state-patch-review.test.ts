@@ -920,6 +920,24 @@ test('reopen rejects relationally inconsistent version 2 state without rewriting
         },
       },
       {
+        name: 'applied update target disagrees with its outcome',
+        mutate: (store) => {
+          const patch = store.statePatches[0]
+          assert.ok(patch)
+          const assignmentId = `assignment_${'f'.repeat(32)}`
+          patch.changes.assignmentId = assignmentId
+          const canonical = JSON.parse(
+            patch.canonicalPayload,
+          ) as MutableCanonicalPayload
+          canonical.changes = {
+            operation: 'assignment.upsert',
+            assignmentId,
+            values: canonical.changes.values,
+          }
+          patch.canonicalPayload = JSON.stringify(canonical)
+        },
+      },
+      {
         name: 'unknown current-version top-level state',
         mutate: (store) => {
           store.unknownAuthority = { shouldNotDisappear: true }
@@ -990,9 +1008,21 @@ type MutableStoredWorkspace = Record<string, unknown> & {
   course: (Record<string, unknown> & { id: string }) | null
   statePatches: (Record<string, unknown> & {
     applyOutcome: unknown
+    canonicalPayload: string
+    changes: Record<string, unknown> & {
+      assignmentId?: string
+    }
     workspaceId: string
   })[]
   userConfirmations: (Record<string, unknown> & { patchId: string })[]
+}
+
+type MutableCanonicalPayload = {
+  changes: {
+    operation: string
+    assignmentId?: string
+    values: unknown
+  }
 }
 
 function cloneStoredWorkspace(
