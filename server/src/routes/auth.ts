@@ -128,7 +128,14 @@ authRouter.post('/refresh', asyncHandler(async (req, res) => {
   // 토큰 회전: 쓰던 refresh token은 즉시 폐기하고 새 걸 발급 (탈취된 토큰 재사용 창을 줄임)
   await prisma.refreshToken.update({ where: { id: stored.id }, data: { revokedAt: new Date() } })
   const accessToken = await issueSession(res, userId)
-  res.json({ accessToken })
+
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user) {
+    res.status(401).json({ error: '유저를 찾을 수 없습니다.' })
+    return
+  }
+
+  res.json({ accessToken, user: { id: user.id, email: user.email, name: user.name } })
 }))
 
 authRouter.post('/logout', asyncHandler(async (req, res) => {
