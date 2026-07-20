@@ -16,6 +16,8 @@
 | `CTX-014` | 활성 | Firebase는 Google 로그인과 ID 토큰 검증만 담당한다. 서비스 사용자는 `users.firebase_uid`로 연결하며, 레시피 소유권과 API 응답에는 내부 `users.id`를 사용한다. | `BE-AUTH-002` |
 | `CTX-015` | 활성 | 프론트엔드 인증 상태는 Firebase `onAuthStateChanged` 기반 `AuthProvider`로 관리한다. 보호 라우트는 로그인 화면으로 보낼 때 앱 내부 상대 경로만 `returnTo`으로 보존하고 로그인 성공 후 해당 경로로 복귀한다. | `FE-AUTH-003` |
 
+| `CTX-016` | 활성 | `GET /api/recipes`는 `DB-SHARE-001`이 관계 테이블을 만들기 전까지 `OWNED`, `EXTERNAL` 활성 레시피만 반환한다. 공유 기능 구현 시 `RECEIVED`와 `receivedInfo` 조회를 추가해 `BE-RECIPE-002`의 남은 조건을 완료한다. | `BE-RECIPE-002`, `DB-SHARE-001` |
+
 ## 알려진 문제
 
 | ID | 상태 | 내용 | 해결 티켓 |

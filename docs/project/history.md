@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-20 · BE-RECIPE-002 · 부분 완료
+
+- 결과: `GET /api/recipes`가 Firebase UID로 현재 서비스 사용자를 식별해 PostgreSQL의 활성 `OWNED`, `EXTERNAL` 레시피를 생성일 내림차순으로 조회하고, 출처와 `RecipeSummary` 필드를 반환한다.
+- 결정: 공유 관계 테이블이 `DB-SHARE-001` 범위이므로, 사용자 결정에 따라 해당 기능 전까지 `RECEIVED` 레시피를 목록에서 제외한다. 공유 구현 시 `receivedInfo` 조회를 추가해 티켓의 남은 완료 조건을 처리한다.
+- 시행착오: 없음
+- 검증: `backend npm run type-check`, `backend npm run build`, `git diff --check`를 통과했다. 자동 테스트 스크립트는 없다.
+- 후속: `DB-SHARE-001`, `BE-RECIPE-002`
+- 반복 패턴: 없음
+
 ## 2026-07-20 · FE-AUTH-003 · 완료
 
 - 결과: Firebase 인증 확인 중 상태를 제공하고, 비로그인 사용자의 보호 경로 접근을 로그인 화면으로 보내며, 로그인 성공 후 원래 레시피 목록 또는 전달 링크 경로로 복귀한다.
