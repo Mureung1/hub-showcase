@@ -40,13 +40,15 @@
 
 - **프론트엔드**: React (Vite)
 - **백엔드**: Node.js + Express
-- **DB**: SQLite
+- **DB**: SQLite → **Supabase로 전환 예정 (3주차)**. 접속 URL/키는 `.env`로 분리(커밋 금지)
 - **실시간**: Socket.IO (여유 시)
 - **차트**: Chart.js (기여도 시각화 시)
 
-> **현재 상태(2주차)**: 아직 `client/`(React)로 전환하지 않고 `prototype/` 폴더의 순수 HTML/CSS/바닐라 JS로 진행 중. `tasks.html`은 백엔드 API와 실제로 연동되어 동작한다. React 전환은 발표 이후로 미룬다.
-> - `calendar-match.html`(회의시간 매칭)은 프로토타입 상태. 실제 날짜 기반 UI(드래그 선택, 겹침 히트맵, 추천)는 동작하지만 가짜 데이터이며 백엔드/DB 연동은 아직 안 됨. 별도 주차 작업 예정.
+> **현재 상태(2주차 기준)**: 아직 `client/`(React)로 전환하지 않고 `prototype/` 폴더의 순수 HTML/CSS/바닐라 JS로 진행 중이었음. `tasks.html`은 백엔드 API와 실제로 연동되어 동작한다.
+> - `calendar-match.html`(회의시간 매칭)은 프로토타입 상태. 실제 날짜 기반 UI(드래그 선택, 겹침 히트맵, 추천)는 동작하지만 가짜 데이터이며 백엔드/DB 연동은 아직 안 됨.
 > - `index.html`은 `calendar-match.html`의 구버전으로 정리 대상.
+>
+> **3주차부터**: React 전환을 "발표 이후로 미룬다"고 했던 것에서 변경 — **이번 주에 진행 예정**. 순서는 아래 "3주차 계획" 참고.
 
 ### 개발 원칙
 - **1개 만들고 → 바로 확인 → Git 저장** 반복
@@ -328,6 +330,8 @@ server
 
 > bcrypt, jsonwebtoken은 로그인 방식이 "이름 선택"으로 확정되면서 더 이상 필요 없어 계획에서 제외
 
+> **Supabase 전환 예정(3주차)**: `@supabase/supabase-js` 추가 예정. 접속 URL/키는 `.env`에 넣고 `.gitignore`로 커밋 방지(이미 `server/.gitignore`에 `.env` 포함돼 있음). 전환 완료 전까지는 `better-sqlite3`/`db.js`가 그대로 기준.
+
 client
 라이브러리용도react, react-domVite가 기본 설치react-router-dom화면 이동axios서버 요청chart.js기여도 차트 (확장 기능, 나중에)
 
@@ -410,6 +414,19 @@ docs: 기획서 추가
 - 2주차 계획서 작업은 모두 마무리됨
 - **계획서엔 없었지만 추가로 구현**: 마감일 인라인 수정(`PATCH /api/tasks/:id/due-date`), file:// 알림 권한 미저장 문제 해결을 위한 정적 파일 서빙(`http://localhost:3000/tasks.html`)
 - 2주차 발표자료: 저장소 루트 `발표자료_2.html` → GitHub Pages 배포: https://jsjsbs7233.github.io/hub/발표자료_2.html (Settings → Pages, branch: `N048_김우현` / root)
+
+## 3주차 계획 (이번 주)
+
+**순서**: Supabase 전환 → React 전환 → 회의시간 매칭 연동 → 배포
+
+1. **DB: SQLite → Supabase 전환** (예정) — 접속 URL/키는 `.env`로 분리, 절대 커밋하지 않는다.
+2. **React 전환** (예정) — `prototype/`의 바닐라 JS를 `client/`(Vite)로 옮긴다. 예전엔 "발표 이후로 미룬다"였으나 이번 주로 당겨짐.
+3. **회의시간 매칭 백엔드/DB 연동** (예정) — 현재 `calendar-match.html`은 가짜 데이터로만 동작하는 프로토타입, 실제 API·DB와 연결.
+4. **배포** (예정)
+
+### 부트캠프 요구사항 반영 (이번 주)
+- 아키텍처 다이어그램을 mermaid로 그려서 README에 포함
+- 핵심 기능 1개는 TDD(테스트를 먼저 작성하고 구현)로 개발
 
 ## 향후 기능 후보 (4주차 이후)
 
