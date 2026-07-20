@@ -19,7 +19,10 @@ function unwrap({ data, error }) {
 // GET /api/documents?status=draft|published — 목록
 router.get('/', async (req, res) => {
   const { status } = req.query
-  let query = supabase.from('documents').select('*').order('published_at', { ascending: false })
+  // 초안은 published_at이 null이라 발행일 정렬이 무의미하다(순서가 사실상 무작위).
+  // 초안 목록은 "최근 수정한 것부터"가 자연스러우므로 updated_at을 쓴다.
+  const orderColumn = status === 'draft' ? 'updated_at' : 'published_at'
+  let query = supabase.from('documents').select('*').order(orderColumn, { ascending: false })
   if (status) query = query.eq('status', status)
   const rows = unwrap(await query)
   res.json(rows.map(toApiDoc))

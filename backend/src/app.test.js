@@ -34,6 +34,22 @@ describe('GET /api/health', () => {
   })
 })
 
+describe('GET /api/documents 목록 정렬', () => {
+  it('초안은 발행일이 null이므로 최근 수정순으로 정렬한다', async () => {
+    await request(app).get('/api/documents?status=draft')
+
+    const order = supabase.query.calls.find(([method]) => method === 'order')
+    expect(order).toEqual(['order', 'updated_at', { ascending: false }])
+  })
+
+  it('발행 문서는 발행일 최신순으로 정렬한다', async () => {
+    await request(app).get('/api/documents?status=published')
+
+    const order = supabase.query.calls.find(([method]) => method === 'order')
+    expect(order).toEqual(['order', 'published_at', { ascending: false }])
+  })
+})
+
 describe('GET /api/documents/:id', () => {
   it('uuid 형식이 아니면 DB를 조회하지 않고 404를 준다', async () => {
     const res = await request(app).get('/api/documents/doc-genshin-gacha')
