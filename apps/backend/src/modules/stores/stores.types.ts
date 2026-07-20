@@ -6,6 +6,21 @@ export type CreateStoreInput = {
   address?: string;
 };
 
+export type StoreRecord = {
+  id: string;
+  owner_id: string;
+  name: string;
+  address: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type UpdateStoreInput = {
+  storeId: string;
+  name?: string;
+  address?: string | null;
+};
+
 export type CreateStoreWithOwnerRecord = {
   store_id: string;
   store_name: string;
