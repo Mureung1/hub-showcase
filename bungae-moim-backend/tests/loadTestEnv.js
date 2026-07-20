@@ -13,6 +13,12 @@ const envPath = path.resolve(__dirname, '..', '.env.test');
 
 dotenv.config({ path: envPath, override: true });
 process.env.NODE_ENV = 'test';
+// (과거) 여기서 process.env.TZ = 'Asia/Seoul'로 타임존을 고정하려 했었다. 하지만
+// Node는 프로세스가 처음 Date/Intl을 사용하는 시점에 로컬 타임존을 캐시하는데,
+// setupFiles는 프로세스가 이미 부팅된 뒤에 실행되므로 이 시점의 재할당은 너무 늦어
+// 실제로는 반영되지 않는다(머신 TZ에 따라 tests/age.test.js가 여전히 깨졌었다).
+// 그래서 타임존 고정을 여기서 시도하지 않는다 — 대신 날짜를 다루는 테스트가 스스로
+// 타임존 독립적이 되도록 작성한다(예: tests/age.test.js의 NOW를 로컬 구성요소로 생성).
 
 // 안전장치: 어떤 이유로든 DATABASE_URL이 bungae_test를 가리키지 않으면
 // 즉시 실패시켜, 실수로 개발 DB(bungae)에 대해 테스트(및 TRUNCATE)가

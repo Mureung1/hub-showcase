@@ -48,7 +48,15 @@ async function insertMeeting(hostId, overrides = {}) {
       m.regionEupmyeondong, m.startAt, m.endAt, m.capacity, m.adultOnly, m.openChatUrl, m.status,
     ]
   );
-  return Number(rows[0].id);
+  const id = Number(rows[0].id);
+
+  // created_at은 DB 기본값(now())이라 INSERT 컬럼 목록에 없다. sort=recent(등록순) 테스트처럼
+  // "등록 시각"을 직접 통제해야 하는 경우에만, INSERT 후 별도 UPDATE로 덮어쓴다.
+  if (overrides.createdAt) {
+    await pool.query('UPDATE meetings SET created_at = $1 WHERE id = $2', [overrides.createdAt, id]);
+  }
+
+  return id;
 }
 
 describe('GET /api/meetings', () => {
@@ -161,6 +169,23 @@ describe('GET /api/meetings', () => {
     expect(titles).not.toContain('보드게임 모임');
   });
 
+  it('status=recruiting 필터는 closed 모임을 제외한다', async () => {
+    const host = await createHost();
+    await insertMeeting(host, { title: '모집중 모임', status: 'recruiting' });
+    await insertMeeting(host, { title: '마감된 모임', status: 'closed' });
+
+    const res = await request(app).get('/api/meetings?status=recruiting');
+    const titles = res.body.data.items.map((m) => m.title);
+    expect(titles).toEqual(['모집중 모임']);
+    expect(res.body.data.total).toBe(1);
+  });
+
+  it('허용되지 않은 status 값은 VALIDATION_ERROR를 반환한다', async () => {
+    const res = await request(app).get('/api/meetings?status=finished');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
   it('페이지네이션: 한 페이지 크기를 넘으면 totalPages가 늘고 page로 나눠 받는다', async () => {
     const host = await createHost();
     const total = PAGE_SIZE + 3;
@@ -176,9 +201,78 @@ describe('GET /api/meetings', () => {
     expect(page1.body.data.items).toHaveLength(PAGE_SIZE);
     expect(page1.body.data.totalPages).toBe(2);
     expect(page1.body.data.page).toBe(1);
+    // total은 items.length(20, LIMIT에 잘린 값)와 달라야 한다 — total: items.length라는
+    // 잘못된 구현으로는 이 단언이 실패한다. total이 존재해야 하는 유일한 이유가 바로
+    // "잘려도 정확한 총 개수를 준다"이므로, 둘이 갈라지는 지점을 직접 확인한다.
+    expect(page1.body.data.total).toBe(PAGE_SIZE + 3);
+    expect(page1.body.data.total).not.toBe(page1.body.data.items.length);
 
     const page2 = await request(app).get('/api/meetings?page=2');
     expect(page2.body.data.items).toHaveLength(3);
     expect(page2.body.data.page).toBe(2);
+    expect(page2.body.data.total).toBe(PAGE_SIZE + 3);
+  });
+
+  it('page가 비정상 값이어도 500 없이 조용히 1페이지로 처리한다', async () => {
+    const host = await createHost();
+    await insertMeeting(host, { title: '모임' });
+
+    // 안전 정수 범위를 훌쩍 넘는 값. 수정 전에는 Number.parseInt를 그대로 통과시켜
+    // Postgres bigint 범위 초과 500 에러(원문 노출)로 이어졌다.
+    const huge = await request(app).get('/api/meetings?page=99999999999999999999');
+    expect(huge.status).toBe(200);
+    expect(huge.body.data.page).toBe(1);
+
+    // "1abc"는 Number.parseInt가 뒷부분을 조용히 버리고 1을 반환해버리던 값이다.
+    // 결과 자체는 우연히 1페이지와 같지만, 500이 나지 않고 명시적으로 기본값으로
+    // 떨어지는지(에러가 아닌지)를 확인한다.
+    const nonNumeric = await request(app).get('/api/meetings?page=1abc');
+    expect(nonNumeric.status).toBe(200);
+    expect(nonNumeric.body.data.page).toBe(1);
+
+    const negative = await request(app).get('/api/meetings?page=-1');
+    expect(negative.status).toBe(200);
+    expect(negative.body.data.page).toBe(1);
+
+    const zero = await request(app).get('/api/meetings?page=0');
+    expect(zero.status).toBe(200);
+    expect(zero.body.data.page).toBe(1);
+  });
+
+  it('sort=recent는 created_at 내림차순으로 정렬한다 (start_at 순서와는 반대)', async () => {
+    const host = await createHost();
+    // start_at ASC로는 A, B, C 순서이지만, created_at은 그 반대(C, B, A)가 되도록
+    // 일부러 어긋나게 만든다. 이렇게 해야 "여전히 start_at 순으로 정렬하는" 잘못된
+    // 구현에서 이 테스트가 실제로 실패한다.
+    const a = await insertMeeting(host, {
+      title: '모임A',
+      startAt: '2030-01-01T10:00:00+09:00',
+      createdAt: new Date('2020-01-01T00:00:00Z'),
+    });
+    const b = await insertMeeting(host, {
+      title: '모임B',
+      startAt: '2030-01-02T10:00:00+09:00',
+      createdAt: new Date('2020-01-02T00:00:00Z'),
+    });
+    const c = await insertMeeting(host, {
+      title: '모임C',
+      startAt: '2030-01-03T10:00:00+09:00',
+      createdAt: new Date('2020-01-03T00:00:00Z'),
+    });
+    void a;
+    void b;
+    void c;
+
+    const defaultOrder = await request(app).get('/api/meetings');
+    expect(defaultOrder.body.data.items.map((m) => m.title)).toEqual(['모임A', '모임B', '모임C']);
+
+    const recentOrder = await request(app).get('/api/meetings?sort=recent');
+    expect(recentOrder.body.data.items.map((m) => m.title)).toEqual(['모임C', '모임B', '모임A']);
+  });
+
+  it('허용되지 않은 sort 값은 VALIDATION_ERROR를 반환한다', async () => {
+    const res = await request(app).get('/api/meetings?sort=popular');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
 });

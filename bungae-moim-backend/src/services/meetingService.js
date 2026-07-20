@@ -1,4 +1,17 @@
 const pool = require('../config/db');
+const ApiError = require('../utils/apiError');
+
+// status 필터로 허용하는 값. 임의 문자열이 그대로 SQL 조건에 들어가지 않도록 화이트리스트로 검증한다.
+const ALLOWED_STATUS_FILTERS = ['recruiting', 'closed'];
+
+// sort 필터로 허용하는 값 → 고정 ORDER BY 절. 사용자 입력을 문자열 보간으로 SQL에
+// 직접 꽂으면 인젝션 통로가 되므로, 허용된 값에 대응하는 정적 SQL 조각만 미리
+// 정의해두고 그중 하나를 그대로(가공 없이) 고르는 방식으로 제한한다.
+const SORT_CLAUSES = {
+  recent: 'created_at DESC, id DESC',
+};
+// 기본 정렬: 가장 임박한 일정 순 (홈의 "오늘의 번개" 등 기존 화면이 기대하는 순서).
+const DEFAULT_SORT_CLAUSE = 'start_at ASC, id ASC';
 
 // 목록 조회 한 페이지에 담는 모임 수.
 const PAGE_SIZE = 20;
@@ -65,11 +78,18 @@ async function createMeeting(hostId, fields) {
 // 조회 시점에 finished로 간주해 제외한다 (DB 설계서 3번 — 별도 배치 없이 애플리케이션에서 필터링).
 // 시간 판별: 종료 일시가 있으면(end_at, small) 그것을, 없으면(flash) start_at을 기준으로 한다.
 async function listMeetings(filters = {}) {
-  const conditions = [
-    "status IN ('recruiting', 'closed')",
-    'COALESCE(end_at, start_at) >= now()',
-  ];
+  const conditions = ['COALESCE(end_at, start_at) >= now()'];
   const params = [];
+
+  if (filters.status !== undefined && filters.status !== null && String(filters.status).trim() !== '') {
+    if (!ALLOWED_STATUS_FILTERS.includes(filters.status)) {
+      throw new ApiError('VALIDATION_ERROR', '허용되지 않는 status 값입니다');
+    }
+    params.push(filters.status);
+    conditions.push(`status = $${params.length}`);
+  } else {
+    conditions.push("status IN ('recruiting', 'closed')");
+  }
 
   const addFilter = (column, value) => {
     if (value !== undefined && value !== null && String(value).trim() !== '') {
@@ -91,6 +111,14 @@ async function listMeetings(filters = {}) {
 
   const where = `WHERE ${conditions.join(' AND ')}`;
 
+  let orderClause = DEFAULT_SORT_CLAUSE;
+  if (filters.sort !== undefined && filters.sort !== null && String(filters.sort).trim() !== '') {
+    if (!Object.prototype.hasOwnProperty.call(SORT_CLAUSES, filters.sort)) {
+      throw new ApiError('VALIDATION_ERROR', '허용되지 않는 sort 값입니다');
+    }
+    orderClause = SORT_CLAUSES[filters.sort];
+  }
+
   const countResult = await pool.query(
     `SELECT COUNT(*)::int AS total FROM meetings ${where}`,
     params
@@ -103,7 +131,7 @@ async function listMeetings(filters = {}) {
 
   const { rows } = await pool.query(
     `SELECT * FROM meetings ${where}
-     ORDER BY start_at ASC, id ASC
+     ORDER BY ${orderClause}
      LIMIT ${PAGE_SIZE} OFFSET $${params.length + 1}`,
     [...params, offset]
   );
@@ -112,7 +140,68 @@ async function listMeetings(filters = {}) {
     items: rows.map(normalizeMeetingListItem),
     page,
     totalPages,
+    total,
   };
 }
 
-module.exports = { createMeeting, listMeetings, normalizeMeeting, PAGE_SIZE };
+// GET /api/meetings/:id — 상세 조회. 조회하는 사람(viewerId)에 따라 응답이 달라진다.
+// 목록과 달리 지난/취소된 모임도 그대로 반환한다 — 기획서 11번대로 상세 페이지에서는
+// "종료된 모임"으로 보여줘야 하기 때문이다.
+async function getMeetingDetail(meetingId, viewerId = null) {
+  const { rows } = await pool.query(
+    `SELECT m.*, u.nickname AS host_nickname, u.trust_score AS host_trust_score
+       FROM meetings m
+       JOIN users u ON u.id = m.host_id
+      WHERE m.id = $1`,
+    [meetingId]
+  );
+
+  if (rows.length === 0) return null;
+  const row = rows[0];
+
+  const countResult = await pool.query(
+    `SELECT COUNT(*)::int AS confirmed_count
+       FROM meeting_participants
+      WHERE meeting_id = $1 AND status IN ('confirmed', 'approved')`,
+    [meetingId]
+  );
+
+  let myParticipation = null;
+  if (viewerId) {
+    const mine = await pool.query(
+      'SELECT status FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, viewerId]
+    );
+    if (mine.rows.length > 0) {
+      myParticipation = { status: mine.rows[0].status };
+    }
+  }
+
+  const meeting = normalizeMeeting(row);
+
+  const detail = {
+    ...meeting,
+    host: {
+      id: meeting.hostId,
+      nickname: row.host_nickname,
+      trustScore: Number(row.host_trust_score),
+    },
+    confirmedCount: countResult.rows[0].confirmed_count,
+    myParticipation,
+  };
+
+  // openChatUrl은 참여가 확정된 뒤에만 노출한다 (번개모임은 신청 전, 소모임은 승인 전
+  // 비노출 — API 명세서 2번). 모임장 본인은 링크를 직접 등록한 사람이므로 항상 볼 수 있다.
+  const isHost = viewerId !== null && Number(viewerId) === meeting.hostId;
+  const isConfirmed =
+    myParticipation !== null &&
+    (myParticipation.status === 'confirmed' || myParticipation.status === 'approved');
+
+  if (!isHost && !isConfirmed) {
+    delete detail.openChatUrl;
+  }
+
+  return detail;
+}
+
+module.exports = { createMeeting, listMeetings, getMeetingDetail, normalizeMeeting, PAGE_SIZE };

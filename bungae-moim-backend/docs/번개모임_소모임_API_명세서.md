@@ -52,6 +52,15 @@
 { "birthDate": "2001-05-20" }
 ```
 
+> ⚠️ **아직 구현되지 않았습니다** (2026-07-20 기준). D5로 예정돼 있으며, 이것이 없으면 모든 사용자의
+> `birthDate`가 `null`이라 "성인만 참여 가능" 모임에 아무도 참여할 수 없습니다. 참여 신청(F1)보다
+> 먼저 구현해야 합니다.
+
+**`birthDate`의 형식**: 요청·응답 모두 `'YYYY-MM-DD'` 문자열입니다. 값이 없으면 `null`입니다.
+`GET /api/users/me`와 로그인 응답도 같은 형식으로 내려갑니다 — PostgreSQL의 `date` 값을 그대로
+직렬화하면 UTC로 변환되면서 KST 기준 하루가 밀리므로(`2001-05-20` → `2001-05-19T15:00:00.000Z`),
+서버가 날짜 문자열로 변환해 내보냅니다.
+
 ---
 
 ## 2. 모임
@@ -75,7 +84,9 @@
 | keyword | string | 제목/설명 검색 |
 | regionSido | string | 시/도 |
 | regionSigungu | string | 시/군/구 |
-| page | int | 기본 1 |
+| status | `recruiting` \| `closed` | 모집 상태. 생략하면 둘 다 포함. 그 외 값은 `VALIDATION_ERROR` |
+| sort | `recent` | 정렬. 생략하면 임박순(`start_at` 오름차순), `recent`면 등록순(`created_at` 내림차순). 그 외 값은 `VALIDATION_ERROR` |
+| page | int | 기본 1. 숫자가 아니거나 범위를 벗어나면 조용히 1페이지로 처리 (에러 아님) |
 
 지난 모임(`finished`)과 취소된 모임(`cancelled`)은 기본적으로 결과에서 제외됩니다 (DB 설계서 3번).
 
@@ -88,13 +99,17 @@
         "id": 10, "type": "flash", "title": "오늘 저녁 풋살 4명",
         "category": "운동", "regionSigungu": "강남구",
         "startAt": "2026-07-09T19:00:00+09:00",
-        "capacity": 4, "confirmedCount": 2, "status": "recruiting"
+        "capacity": 4, "status": "recruiting"
       }
     ],
-    "page": 1, "totalPages": 3
+    "page": 1, "totalPages": 3, "total": 47
   }
 }
 ```
+
+- `total`은 페이지네이션으로 잘리기 전의 **전체 건수**입니다. `items`는 한 페이지(20건)로 잘리므로, 총 개수를 표시해야 하는 화면은 `items.length`가 아니라 이 값을 써야 합니다.
+- **`openChatUrl`은 목록 항목에 포함되지 않습니다.** 참여 확정자에게만 의미가 있어 상세 조회에서만 조건부로 내려갑니다.
+- ⚠️ **`confirmedCount`는 아직 목록 응답에 구현되지 않았습니다** (2026-07-20 기준). 참여 신청(F1)이 들어오는 시점에 추가할 예정이며, 그 전까지 화면은 참여 인원을 0으로 표시합니다.
 
 ### POST /api/meetings
 
@@ -130,8 +145,11 @@
   }
 }
 ```
-- `openChatUrl`은 아직 참여 확정 전인 사용자에게는 내려주지 않습니다 (소모임은 승인 전, 번개모임은 신청 전) — 기획서 8번 화면 구성 원칙.
+- `openChatUrl`은 아직 참여 확정 전인 사용자에게는 내려주지 않습니다 (소모임은 승인 전, 번개모임은 신청 전) — 기획서 8번 화면 구성 원칙. **값을 `null`로 주는 것이 아니라 키 자체를 응답에서 제외**하므로, 프론트는 이 키의 존재 여부만으로 노출을 판단하면 됩니다.
 - `myParticipation`은 비로그인이거나 신청 이력이 없으면 `null`.
+- `confirmedCount`는 `confirmed`와 `approved` 상태만 셉니다(`pending`·`cancelled` 제외).
+- 목록과 달리 **지난 모임과 취소된 모임도 그대로 반환**합니다. 상세 페이지에서 "종료된 모임"으로 표시해야 하기 때문입니다 (기획서 11번).
+- `:id`가 숫자로만 이루어지지 않았거나(`1abc`, `1.9`) 안전한 정수 범위를 벗어나면 `NOT_FOUND`(404)입니다.
 
 ### DELETE /api/meetings/:id
 
