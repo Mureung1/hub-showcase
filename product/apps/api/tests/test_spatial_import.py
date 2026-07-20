@@ -5,7 +5,7 @@ import shapefile
 from pyproj import CRS
 
 from localtwin_api.canonical_db import SCHEMA
-from localtwin_api.spatial_import import import_market_spatial_links
+from localtwin_api.spatial_import import import_market_spatial_links, read_market_snapshot
 
 
 def write_market_shapefile(path: Path) -> None:
@@ -79,6 +79,21 @@ def seed_canonical(path: Path) -> None:
                 for store_id, name, longitude, latitude in stores
             ],
         )
+
+
+def test_read_market_snapshot_validates_selected_geometry_without_a_database(
+    tmp_path: Path,
+) -> None:
+    shapefile_path = tmp_path / "data/raw/areas/markets.shp"
+    write_market_shapefile(shapefile_path)
+
+    snapshot = read_market_snapshot(shapefile_path, ("M1",))
+
+    assert snapshot.source_crs == "EPSG:4326"
+    assert snapshot.target_crs == "EPSG:4326"
+    assert snapshot.source_row_count == 1
+    assert tuple(snapshot.geometries) == ("M1",)
+    assert snapshot.geometries["M1"].geom_type == "Polygon"
 
 
 def test_spatial_import_links_inside_and_boundary_points_idempotently(

@@ -14,10 +14,6 @@
     }
   },
   "pythonFunctionBudgets": {
-    "product/apps/api/src/localtwin_api/spatial_import.py#import_market_spatial_links": {
-      "maxLines": 163,
-      "reason": "DATA-013에서 read, validate, persist와 report 단계를 분리한다."
-    },
     "product/apps/api/src/localtwin_api/market_score.py#_cluster_result": {
       "maxLines": 127,
       "reason": "점수 알고리즘 응집성을 보존하며 API-005에서 pure helper 분리 가능성을 검증한다."
