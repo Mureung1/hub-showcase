@@ -35,10 +35,10 @@
 | Supabase 전환 | SQLite → Supabase 마이그레이션 완료, Post API curl로 재검증 완료 |
 | BrandProfile API | `GET /brand-profile`, `POST /brand-profile/interview`, `POST /brand-profile`, `PATCH /brand-profile` — summary/keywords 규칙 기반, Supabase에 저장 |
 | 예약 발행 + 브리핑 API | `GET /posts/:id/suggested-time`, `POST/DELETE /posts/:id/schedule`, `GET /briefing/today` — 계절/업종 규칙 기반, 블로그 건강도는 mock |
+| 인사이트 API + 블로그 연동 스텁 | `GET /insights/health-score`, `GET /insights/opportunities` — 실제 게시글 데이터 기반 규칙; `POST /blog/connect`, `GET /blog/analysis`는 고정 mock 스텁 |
 
 ### 미완료
 
-- 인사이트 API, 블로그 연동 스텁
 - 프론트 훅(`useBrandProfile`, `useBriefing`, `usePosts`, `usePostResult`, `useSchedulePublish`, `useInsights`) 전부 목업(`useMockResource`) 기반
 - 자동화 테스트 0개, 테스트 러너 미설치
 - 테스트코드 생성 Skill, 코드 검증 Agent, 워크플로우 문서 — 전부 없음
@@ -59,7 +59,7 @@
 | --- | --- | --- | --- |
 | Sprint 1 — 프론트 마무리 | 07-13 ~ 07-14 | Day 1~2 | 공지사항 화면 추가, 전체 페이지 라우팅 연결 ✅ |
 | Sprint 2 — 백엔드 구축(SQLite) | 07-15 ~ 07-20 | Day 3~5 | Express 셋업 + Post API ✅ (Day 4 BrandProfile은 스킵됨 → Day 7로 재배치) |
-| Sprint 3 — Supabase 전환 & 백엔드 마무리 | 07-21 ~ 07-27 | Day 6~9 | Supabase 마이그레이션, BrandProfile, 예약발행/브리핑, 인사이트/블로그 스텁 |
+| Sprint 3 — Supabase 전환 & 백엔드 마무리 | 07-21 ~ 07-27 | Day 6~9 | Supabase 마이그레이션, BrandProfile, 예약발행/브리핑, 인사이트/블로그 스텁 ✅ |
 | Sprint 4 — 테스트 & Agent 산출물 | 07-28 ~ 08-03 | Day 10~13 | 테스트/TDD, 테스트코드 생성 Skill, 코드 검증 Agent, 아키텍처 다이어그램 |
 | Sprint 5 — 프론트-백엔드 연동 | 08-04 ~ 08-05 | Day 14~15 | 목업 훅을 실제 API 호출로 전면 교체 |
 | Sprint 6 — 기능 강화 | 08-06 ~ 08-10 | Day 16~17 | 핵심 기능 보완 기능 1~2개, AI 설계 → 이슈 분할 → 개발 |
@@ -169,12 +169,12 @@
 
 ---
 
-## Day 9 — 2026-07-27 (월)
+## Day 9 — 2026-07-27 (월) ✅
 
 **목표:** 인사이트 API + 블로그 연동 스텁
 
-- [ ] `GET /insights/health-score`, `GET /insights/opportunities`
-- [ ] `POST /blog/connect`, `GET /blog/analysis`는 고정 mock 응답으로 스텁만 구현 (실 연동은 8. 이후 과제)
+- [x] `GET /insights/health-score`, `GET /insights/opportunities`
+- [x] `POST /blog/connect`, `GET /blog/analysis`는 고정 mock 응답으로 스텁만 구현 (실 연동은 8. 이후 과제)
 
 **완료 기준:** 대시보드 블로그 건강도 카드가 실제 API 응답으로 렌더링 가능한 데이터 반환
 
