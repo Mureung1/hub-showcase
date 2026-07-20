@@ -25,7 +25,9 @@ describe('Supabase migration Pull Request 검사', () => {
   it('checkout 자격 증명을 후속 단계에 남기지 않는다', () => {
     const workflow = readWorkflow();
 
-    expect(workflow).toContain('persist-credentials: false');
+    expect(workflow).toMatch(
+      /uses: actions\/checkout@[^\n]+\n\s{8}with:\n\s{10}fetch-depth: 0\n\s{10}persist-credentials: false/u
+    );
   });
 
   it('Supabase 관련 변경에만 로컬 DB 재구성과 RLS 테스트를 실행한다', () => {
