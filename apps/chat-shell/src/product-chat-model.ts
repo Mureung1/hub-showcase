@@ -239,6 +239,34 @@ export function isProductOperationActive(state: ProductChatState): boolean {
   return state.activeOperation !== undefined
 }
 
+export function canRespondToProductClarification(
+  state: ProductChatState,
+  expected: ProductClarificationBinding,
+): boolean {
+  const current = state.activeOperation?.interaction
+  return (
+    state.phase === 'awaiting-clarification' &&
+    state.activeOperation?.stage === 'awaiting-clarification' &&
+    current?.operationId === expected.operationId &&
+    current.interactionId === expected.interactionId
+  )
+}
+
+export function canRespondToProductReview(
+  state: ProductChatState,
+  expected: ProductReviewBinding,
+): boolean {
+  const current = state.activeOperation?.review
+  return (
+    state.phase === 'awaiting-review' &&
+    state.activeOperation?.stage === 'awaiting-review' &&
+    current?.operationId === expected.operationId &&
+    current.interactionId === expected.interactionId &&
+    current.patchId === expected.patchId &&
+    current.decisionKey === expected.decisionKey
+  )
+}
+
 export function productInteractionAnswers(
   questionId: string,
   answer: string,
@@ -408,6 +436,10 @@ function reduceProductFrame(
 
   if (frame.type === 'interaction.requested') {
     if (active.interaction || active.review) return invalidStream(state)
+    const nextStage = stagePreservingStop(
+      active,
+      'awaiting-clarification',
+    )
     const interaction: ProductClarificationBinding = {
       operationId: frame.operationId,
       interactionId: frame.interactionId,
@@ -415,14 +447,14 @@ function reduceProductFrame(
     }
     return {
       ...state,
-      phase: 'awaiting-clarification',
+      phase: nextStage,
       transcript: [
         ...state.transcript,
         { kind: 'clarification', ...interaction },
       ],
       activeOperation: {
         ...active,
-        stage: 'awaiting-clarification',
+        stage: nextStage,
         interaction,
       },
     }
@@ -445,11 +477,12 @@ function reduceProductFrame(
       patch: clonePatch(frame.patch),
       questions: frame.questions.map(cloneQuestion),
     }
+    const nextStage = stagePreservingStop(active, 'awaiting-review')
     return {
       ...state,
-      phase: 'awaiting-review',
+      phase: nextStage,
       transcript: [...state.transcript, { kind: 'review', ...review }],
-      activeOperation: { ...active, stage: 'awaiting-review', review },
+      activeOperation: { ...active, stage: nextStage, review },
     }
   }
 
@@ -461,7 +494,7 @@ function reduceProductFrame(
     ) {
       return invalidStream(state)
     }
-    const nextStage = stageAfterInteractionResolution(active)
+    const nextStage = stagePreservingStop(active, 'running')
     return {
       ...state,
       phase: nextStage,
@@ -490,7 +523,7 @@ function reduceProductFrame(
     ) {
       return invalidStream(state)
     }
-    const nextStage = stageAfterInteractionResolution(active)
+    const nextStage = stagePreservingStop(active, 'running')
     return {
       ...state,
       phase: nextStage,
@@ -806,10 +839,13 @@ function phaseForActiveOperation(
   return 'running'
 }
 
-function stageAfterInteractionResolution(
+function stagePreservingStop<
+  NextStage extends 'running' | 'awaiting-clarification' | 'awaiting-review',
+>(
   operation: ProductActiveOperation,
-): 'running' | 'stopping' {
-  return operation.stage === 'stopping' ? 'stopping' : 'running'
+  nextStage: NextStage,
+): NextStage | 'stopping' {
+  return operation.stage === 'stopping' ? 'stopping' : nextStage
 }
 
 function terminalPhase(

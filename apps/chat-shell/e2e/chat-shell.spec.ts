@@ -209,6 +209,117 @@ test('interrupts the active product Review through its public operation and term
   ).toBe(false)
 })
 
+test.describe('request-after-interrupt ordering', () => {
+  test.use({ scenario: 'late-request-after-interrupt' })
+
+  test('keeps a late Review read-only and rejects a forced stale accept callback', async ({
+    chatHarness,
+    chatPage: page,
+  }) => {
+    await selectCanonicalMaterials(page)
+    await page
+      .getByRole('button', { name: /선택한 자료 정리하기/u })
+      .click()
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'running',
+    )
+
+    await page.getByRole('button', { name: '작업 중단' }).click()
+
+    const review = page.getByRole('region', { name: '검토 대기' })
+    await expect(review).toBeVisible()
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'stopping',
+    )
+    await expect(review.getByRole('button', { name: '과제명 근거 보기' })).toBeEnabled()
+    const accept = review.getByRole('button', { name: '수락' })
+    await expect(accept).toBeDisabled()
+
+    await accept.evaluate((element) => {
+      const button = element as typeof element & {
+        disabled: boolean
+        click(): void
+      }
+      button.disabled = false
+      button.click()
+    })
+    chatHarness.releaseLateInteraction()
+
+    await expect(page.getByText('AY 작업을 중단했습니다.')).toBeVisible()
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'interrupted',
+    )
+    expect(
+      chatHarness.requests().some((pathname) =>
+        pathname.startsWith('/api/product/reviews/'),
+      ),
+    ).toBe(false)
+    expect(
+      chatHarness
+        .calls()
+        .some((call) => call.operation === 'answerUserInput'),
+    ).toBe(false)
+    await expect(page.getByRole('region', { name: '반영된 과제' })).toHaveCount(0)
+  })
+
+  test('disables late clarification answers and rejects a forced cancel callback', async ({
+    chatHarness,
+    chatPage: page,
+  }) => {
+    await sendMessage(page, scenarioPrompts.cancel)
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'running',
+    )
+
+    await page.getByRole('button', { name: '작업 중단' }).click()
+
+    const question = page.getByRole('region', { name: 'AY 질문' })
+    await expect(question).toBeVisible()
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'stopping',
+    )
+    await expect(question.getByLabel('직접 답하기')).toBeDisabled()
+    await expect(
+      question.getByRole('button', { name: '질문 답변 보내기' }),
+    ).toBeDisabled()
+    const cancel = question.getByRole('button', { name: '질문 취소' })
+    await expect(cancel).toBeDisabled()
+
+    await cancel.evaluate((element) => {
+      const button = element as typeof element & {
+        disabled: boolean
+        click(): void
+      }
+      button.disabled = false
+      button.click()
+    })
+    chatHarness.releaseLateInteraction()
+
+    await expect(page.getByText('AY 작업을 중단했습니다.')).toBeVisible()
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'interrupted',
+    )
+    expect(
+      chatHarness.requests().some(
+        (pathname) => pathname.endsWith('/answer') || pathname.endsWith('/cancel'),
+      ),
+    ).toBe(false)
+    expect(
+      chatHarness.calls().some(
+        (call) =>
+          call.operation === 'answerUserInput' ||
+          call.operation === 'cancelUserInput',
+      ),
+    ).toBe(false)
+  })
+})
+
 test('answers and cancels product Chat clarification in one cumulative transcript', async ({
   chatHarness,
   chatPage: page,

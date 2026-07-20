@@ -22,6 +22,8 @@ import {
   type ReadyProductWorkspace,
 } from './product-api.js'
 import {
+  canRespondToProductClarification,
+  canRespondToProductReview,
   createInitialProductChatState,
   isProductOperationActive,
   reduceProductChatState,
@@ -109,7 +111,7 @@ export function useProductChat(options: {
   async function acceptReview(review: ProductReviewBinding) {
     if (
       responsePendingRef.current ||
-      !sameReview(stateRef.current.activeOperation?.review, review)
+      !canRespondToProductReview(stateRef.current, review)
     ) {
       return
     }
@@ -182,10 +184,7 @@ export function useProductChat(options: {
   ) {
     if (
       responsePendingRef.current ||
-      !sameInteraction(
-        stateRef.current.activeOperation?.interaction,
-        interaction,
-      )
+      !canRespondToProductClarification(stateRef.current, interaction)
     ) {
       return
     }
@@ -297,28 +296,6 @@ function materialSelection(
     id: material.id,
     digest: material.digest,
   }))
-}
-
-function sameReview(
-  current: ProductReviewBinding | undefined,
-  expected: ProductReviewBinding,
-): boolean {
-  return (
-    current?.operationId === expected.operationId &&
-    current.interactionId === expected.interactionId &&
-    current.patchId === expected.patchId &&
-    current.decisionKey === expected.decisionKey
-  )
-}
-
-function sameInteraction(
-  current: ProductClarificationBinding | undefined,
-  expected: ProductClarificationBinding,
-): boolean {
-  return (
-    current?.operationId === expected.operationId &&
-    current.interactionId === expected.interactionId
-  )
 }
 
 function safeFailure(

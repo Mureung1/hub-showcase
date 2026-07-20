@@ -6,6 +6,8 @@ import type {
   ProductStatePatch,
 } from './product-api.js'
 import {
+  canRespondToProductClarification,
+  canRespondToProductReview,
   createInitialProductChatState,
   reduceProductChatState,
 } from './product-chat-model.js'
@@ -375,6 +377,77 @@ test('keeps a clarification resolution in stopping until terminal settlement', (
   assert.equal(state.activeOperation, undefined)
 })
 
+test('keeps stopping when a clarification request arrives after interrupt', () => {
+  const pending = pendingClarificationState()
+  assert.equal(
+    canRespondToProductClarification(
+      pending,
+      pending.activeOperation!.interaction!,
+    ),
+    true,
+  )
+
+  let state = reduceProductChatState(acceptedChatState(), {
+    type: 'operation.interrupt-requested',
+  })
+  state = applyFrames(state, [clarificationRequested()])
+
+  assert.equal(state.phase, 'stopping')
+  assert.equal(state.activeOperation?.stage, 'stopping')
+  assert.equal(state.activeOperation?.interaction?.interactionId, interactionId)
+  assert.equal(
+    canRespondToProductClarification(
+      state,
+      state.activeOperation!.interaction!,
+    ),
+    false,
+  )
+  const recoveredWithClarification = reduceProductChatState(state, {
+    type: 'operation.control-failed',
+    failure: {
+      code: 'interrupt_failed',
+      displayMessage: '작업 중단 요청을 전달하지 못했습니다.',
+    },
+  })
+  assert.equal(recoveredWithClarification.phase, 'awaiting-clarification')
+  assert.equal(
+    recoveredWithClarification.activeOperation?.stage,
+    'awaiting-clarification',
+  )
+  assert.equal(
+    canRespondToProductClarification(
+      recoveredWithClarification,
+      recoveredWithClarification.activeOperation!.interaction!,
+    ),
+    true,
+  )
+
+  state = applyFrames(state, [
+    {
+      type: 'interrupt.acknowledged',
+      operationId: chatId,
+    },
+    clarificationResolved(),
+  ])
+
+  assert.equal(state.phase, 'stopping')
+  assert.equal(state.activeOperation?.stage, 'stopping')
+  assert.equal(state.activeOperation?.interaction, undefined)
+  const recoveredAfterResolution = reduceProductChatState(state, {
+    type: 'operation.control-failed',
+    failure: {
+      code: 'interrupt_failed',
+      displayMessage: '작업 중단 요청을 전달하지 못했습니다.',
+    },
+  })
+  assert.equal(recoveredAfterResolution.phase, 'running')
+  assert.equal(recoveredAfterResolution.activeOperation?.stage, 'running')
+
+  state = applyFrames(state, [chatTerminal('interrupted')])
+  assert.equal(state.phase, 'interrupted')
+  assert.equal(state.activeOperation, undefined)
+})
+
 test('keeps a Review resolution in stopping until terminal settlement', () => {
   const normallyResolved = applyFrames(pendingReviewState(), [reviewResolved()])
   assert.equal(normallyResolved.phase, 'running')
@@ -396,6 +469,60 @@ test('keeps a Review resolution in stopping until terminal settlement', () => {
 
   state = applyFrames(state, [assignmentTerminal('interrupted', 'unknown')])
   assert.equal(state.phase, 'interrupted')
+  assert.equal(state.activeOperation, undefined)
+})
+
+test('keeps stopping when a Review request arrives after interrupt acknowledgement', () => {
+  const pending = pendingReviewState()
+  assert.equal(
+    canRespondToProductReview(pending, pending.activeOperation!.review!),
+    true,
+  )
+
+  let state = reviewReadyState()
+  state = reduceProductChatState(state, {
+    type: 'operation.interrupt-requested',
+  })
+  state = applyFrames(state, [
+    {
+      type: 'interrupt.acknowledged',
+      operationId: actionId,
+    },
+    reviewRequested(),
+  ])
+
+  assert.equal(state.phase, 'stopping')
+  assert.equal(state.activeOperation?.stage, 'stopping')
+  assert.equal(state.activeOperation?.review?.interactionId, interactionId)
+  assert.equal(
+    canRespondToProductReview(state, state.activeOperation!.review!),
+    false,
+  )
+  const recoveredWithReview = reduceProductChatState(state, {
+    type: 'operation.control-failed',
+    failure: {
+      code: 'interrupt_failed',
+      displayMessage: '작업 중단 요청을 전달하지 못했습니다.',
+    },
+  })
+  assert.equal(recoveredWithReview.phase, 'awaiting-review')
+  assert.equal(recoveredWithReview.activeOperation?.stage, 'awaiting-review')
+  assert.equal(
+    canRespondToProductReview(
+      recoveredWithReview,
+      recoveredWithReview.activeOperation!.review!,
+    ),
+    true,
+  )
+
+  state = applyFrames(state, [reviewResolved()])
+
+  assert.equal(state.phase, 'stopping')
+  assert.equal(state.activeOperation?.stage, 'stopping')
+  assert.equal(state.activeOperation?.review, undefined)
+
+  state = applyFrames(state, [assignmentTerminal('unknown', 'unknown')])
+  assert.equal(state.phase, 'unknown')
   assert.equal(state.activeOperation, undefined)
 })
 
@@ -479,27 +606,28 @@ function preparingChatState() {
 }
 
 function pendingClarificationState() {
-  return applyFrames(acceptedChatState(), [
-    {
-      type: 'interaction.requested',
-      operationId: chatId,
-      interactionId,
-      questions: [
-        {
-          id: questionId,
-          header: '범위',
-          question: '어느 항목을 먼저 볼까요?',
-          options: null,
-          acceptsFreeform: true,
-        },
-      ],
-    },
-  ])
+  return applyFrames(acceptedChatState(), [clarificationRequested()])
 }
 
-function pendingReviewState() {
-  let state = acceptedAssignmentState()
-  return applyFrames(state, [
+function clarificationRequested(): ProductOperationFrame {
+  return {
+    type: 'interaction.requested',
+    operationId: chatId,
+    interactionId,
+    questions: [
+      {
+        id: questionId,
+        header: '범위',
+        question: '어느 항목을 먼저 볼까요?',
+        options: null,
+        acceptsFreeform: true,
+      },
+    ],
+  }
+}
+
+function reviewReadyState() {
+  return applyFrames(acceptedAssignmentState(), [
     {
       type: 'mcp_call.started',
       operationId: actionId,
@@ -513,16 +641,23 @@ function pendingReviewState() {
       tool: 'propose_state_patch',
       patch: assignmentPatch(),
     },
-    {
-      type: 'review.requested',
-      operationId: actionId,
-      interactionId,
-      patchId,
-      decisionKey,
-      patch: assignmentPatch(),
-      questions: [],
-    },
   ])
+}
+
+function pendingReviewState() {
+  return applyFrames(reviewReadyState(), [reviewRequested()])
+}
+
+function reviewRequested(): ProductOperationFrame {
+  return {
+    type: 'review.requested',
+    operationId: actionId,
+    interactionId,
+    patchId,
+    decisionKey,
+    patch: assignmentPatch(),
+    questions: [],
+  }
 }
 
 function applyFrames(

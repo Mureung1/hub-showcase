@@ -19,10 +19,13 @@ import type {
   ProductRawMaterial,
   ProductSettledHistory,
 } from './product-api.js'
-import type {
-  ProductClarificationBinding,
-  ProductReviewBinding,
-  ProductTranscriptEntry,
+import {
+  canRespondToProductClarification,
+  canRespondToProductReview,
+  type ProductChatState,
+  type ProductClarificationBinding,
+  type ProductReviewBinding,
+  type ProductTranscriptEntry,
 } from './product-chat-model.js'
 import type { ProductEvidenceFocus } from './use-source-workbench.js'
 import type { useProductChat } from './use-product-chat.js'
@@ -123,6 +126,12 @@ export function ProductChatDock({
                 activeInteraction={
                   controller.state.activeOperation?.interaction
                 }
+                clarificationResponseEnabled={
+                  canRespondToCurrentClarification(controller.state)
+                }
+                reviewResponseEnabled={
+                  canRespondToCurrentReview(controller.state)
+                }
                 responsePendingId={controller.responsePendingId}
                 materials={materials}
                 onAccept={controller.acceptReview}
@@ -181,6 +190,19 @@ export function ProductChatDock({
       </form>
     </div>
   )
+}
+
+function canRespondToCurrentClarification(state: ProductChatState): boolean {
+  const interaction = state.activeOperation?.interaction
+  return (
+    interaction !== undefined &&
+    canRespondToProductClarification(state, interaction)
+  )
+}
+
+function canRespondToCurrentReview(state: ProductChatState): boolean {
+  const review = state.activeOperation?.review
+  return review !== undefined && canRespondToProductReview(state, review)
 }
 
 function ProductPhasePill({
@@ -324,6 +346,8 @@ function ProductTranscriptRow({
   entry,
   activeReview,
   activeInteraction,
+  clarificationResponseEnabled,
+  reviewResponseEnabled,
   responsePendingId,
   materials,
   onAccept,
@@ -334,6 +358,8 @@ function ProductTranscriptRow({
   readonly entry: ProductTranscriptEntry
   readonly activeReview: ProductReviewBinding | undefined
   readonly activeInteraction: ProductClarificationBinding | undefined
+  readonly clarificationResponseEnabled: boolean
+  readonly reviewResponseEnabled: boolean
   readonly responsePendingId: string | undefined
   readonly materials: readonly ProductRawMaterial[]
   readonly onAccept: (review: ProductReviewBinding) => Promise<void>
@@ -413,6 +439,7 @@ function ProductTranscriptRow({
         <ClarificationCard
           interaction={entry}
           active={active}
+          responseEnabled={clarificationResponseEnabled}
           pending={responsePendingId === entry.interactionId}
           onAnswer={onAnswer}
           onCancel={onCancel}
@@ -431,6 +458,7 @@ function ProductTranscriptRow({
         <ReviewCard
           review={entry}
           active={active}
+          responseEnabled={reviewResponseEnabled}
           pending={responsePendingId === entry.interactionId}
           materials={materials}
           onAccept={onAccept}
@@ -461,6 +489,7 @@ function ProductTranscriptRow({
 function ReviewCard({
   review,
   active,
+  responseEnabled,
   pending,
   materials,
   onAccept,
@@ -468,6 +497,7 @@ function ReviewCard({
 }: {
   readonly review: Extract<ProductTranscriptEntry, { readonly kind: 'review' }>
   readonly active: boolean
+  readonly responseEnabled: boolean
   readonly pending: boolean
   readonly materials: readonly ProductRawMaterial[]
   readonly onAccept: (review: ProductReviewBinding) => Promise<void>
@@ -525,7 +555,7 @@ function ReviewCard({
         <button
           className="accept-review-button"
           type="button"
-          disabled={pending}
+          disabled={pending || !responseEnabled}
           onClick={() => void onAccept(review)}
         >
           {pending ? <Clock3 className="spinning-icon" size={15} /> : <Check size={15} />}
@@ -539,6 +569,7 @@ function ReviewCard({
 function ClarificationCard({
   interaction,
   active,
+  responseEnabled,
   pending,
   onAnswer,
   onCancel,
@@ -548,6 +579,7 @@ function ClarificationCard({
     { readonly kind: 'clarification' }
   >
   readonly active: boolean
+  readonly responseEnabled: boolean
   readonly pending: boolean
   readonly onAnswer: ProductChatController['answerClarification']
   readonly onCancel: ProductChatController['cancelClarification']
@@ -573,7 +605,10 @@ function ClarificationCard({
     <section className="clarification-card" aria-label="AY 질문">
       <span className="state-badge is-question">답변 필요</span>
       {interaction.questions.map((question) => (
-        <fieldset key={question.id} disabled={!active || pending}>
+        <fieldset
+          key={question.id}
+          disabled={!active || pending || !responseEnabled}
+        >
           <legend>{question.header}</legend>
           <p>{question.question}</p>
           {question.options ? (
@@ -620,7 +655,7 @@ function ClarificationCard({
         <div className="clarification-actions">
           <button
             type="button"
-            disabled={!complete || pending}
+            disabled={!complete || pending || !responseEnabled}
             onClick={() =>
               void onAnswer(
                 interaction,
@@ -637,7 +672,7 @@ function ClarificationCard({
           </button>
           <button
             type="button"
-            disabled={pending}
+            disabled={pending || !responseEnabled}
             onClick={() => void onCancel(interaction)}
           >
             질문 취소
