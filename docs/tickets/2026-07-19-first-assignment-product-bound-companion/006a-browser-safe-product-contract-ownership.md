@@ -1,0 +1,63 @@
+# 006a — Browser-safe product contract의 단일 owner를 만든다
+
+## Agent triage
+
+- State: ready-for-agent
+- Surface: local-ticket
+- Next actor: /implement
+
+## Parent Spec
+
+[First Assignment Product-bound Codex Companion](../../specs/2026-07-19-first-assignment-product-bound-companion.md)
+
+## What It Delivers
+
+Server가 만드는 product response·activity와 Browser가 strict decode하는 같은 wire contract를 dependency-free TypeScript Module 하나가 소유한다. 007은 이 contract만 소비해 Assignment action, product Chat, Review와 일반 Plan interaction을 표시하며 Server·Browser에 세 번째 수동 schema를 만들지 않는다.
+
+## Spec Traceability
+
+- User stories: 4, 5, 6, 10, 11, 12
+- Implementation contract: Module Responsibilities and Seams — Browser-safe local application; Browser-safe product operations and activity; Testing Decisions — Server integration and Browser Playwright
+
+## Slice-Specific Constraints
+
+- Product wire contract는 `@ay-ple/codex-chat-runtime`이나 한 app 내부가 아니라 `packages/product-contract/`의 dependency-free `@ay-ple/product-contract` package에 둔다. Server와 Chat Shell 어느 쪽도 상대 app source를 import하지 않는다.
+- Bootstrap·Account Readiness·workspace·settled history·material preview, current product mutation response, public error envelope와 closed `ProductOperationFrame`을 exact types와 pure decoder로 소유한다.
+- 007이 사용할 Assignment action, product Chat, Review, general interaction answer/cancel과 interrupt request literal도 같은 owner가 소유한다. Public Recipe version·arguments는 포함할 수 있지만 managed Skill path·digest·private MCP binding은 Server에 남긴다.
+- Server producer는 domain object를 public projection으로 변환하고 shared contract를 만족시킨다. Browser fetch/NDJSON adapter는 shared decoder를 사용하되 HTTP fetch, byte framing, React state와 cross-frame lifecycle reducer는 contract package에 넣지 않는다.
+- Absolute path, credential, store format/version, pending native correlation, raw JSON-RPC request ID, MCP token·complete payload와 traceback은 contract에 추가하지 않는다.
+- Existing `/api/product/*` URL, status, JSON·NDJSON bytes, ordering, 16 KiB JSON envelope의 effective bound와 operation semantics를 바꾸지 않는다. 특히 current HTTP envelope보다 넓은 Chat text bound를 public request contract로 잘못 광고하지 않는다.
+- OpenAPI, schema generator, generic event bus, product database abstraction과 007 UI를 만들지 않는다. Legacy `/api/codex-chat/*` surface도 이번 ticket에서 변경하지 않는다.
+
+## Acceptance Criteria
+
+- [ ] Bootstrap·workspace·history·material preview와 current mutation response의 중복된 Server·Browser type roster가 shared owner로 이동한다.
+- [ ] 모든 006 product activity family와 Assignment/Chat terminal variant를 closed `ProductOperationFrame`과 exact decoder가 표현한다.
+- [ ] Current `/api/product/*` request·response literal을 one owner가 Server admission과 Browser caller에 연결하며 missing·extra·unknown field를 fail closed한다.
+- [ ] Shared decoder가 store metadata, absolute path, private native/MCP/request identity와 unsettled history variant를 거절한다.
+- [ ] 대표 Server output을 shared decoder에 통과시키는 producer conformance test와 pure contract valid/invalid table이 있다.
+- [ ] Browser production bundle이 Node·Express·Server domain module을 포함하지 않고 Server도 Browser code를 import하지 않는다.
+- [ ] Current source workbench, product Server behavior와 legacy Chat UI의 observable output이 extraction 전과 동일하다.
+- [ ] Package README와 Codex Chat implementation map이 contract owner, consumer와 Browser-safe boundary를 current fact로 기록한다.
+
+## Verification
+
+- Targeted test or command: shared product-contract package test/typecheck/build, focused Server product contract tests, `npm run test -w @ay-ple/chat-shell`
+- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
+- Manual or live smoke: 필요 없음. 이 slice는 behavior-preserving contract ownership이며 existing deterministic Server/Browser test가 authority다.
+
+## Blocked By
+
+- [006-first-assignment-action-stream.md](006-first-assignment-action-stream.md) — First Assignment action stream의 complete public projection을 고정한다
+
+## Starting Points
+
+- `apps/server/src/product-http.ts`
+- `apps/server/src/assignment-action.ts`
+- `apps/server/src/product-bootstrap.test.ts`
+- `apps/server/src/assignment-action.test.ts`
+- `apps/server/src/product-chat-action.test.ts`
+- `apps/chat-shell/src/product-api.ts`
+- `apps/chat-shell/src/product-api.test.ts`
+- `packages/codex-chat-runtime/src/contract.ts` — Browser-safe packaging pattern only; product contract owner로 확장하지 않는다
+- `package.json` workspace build·test·typecheck order

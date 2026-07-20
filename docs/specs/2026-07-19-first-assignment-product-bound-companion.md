@@ -9,9 +9,9 @@
 
 ## Problem Statement
 
-AY-PLE에는 Codex와 대화할 수 있는 integration tracer, explicit `SemesterWorkspace`·`Course`·TXT `RawMaterial` registry와 자료 중심 3-pane workbench가 있다. Exact official Python SDK와 production wheel에는 Plan collaboration mode와 deferred typed `request_user_input` seam도 구현됐다. 그러나 current private bridge·Node Runtime·Server·Browser는 아직 account readiness, structured Skill input, product permission, Plan·MCP activity와 pending interaction을 projection하지 않으며, 학생이 자료를 선택해 근거가 연결된 과제 정보를 검토하고 확인된 학기 상태로 남기는 제품 흐름은 없다.
+AY-PLE에는 Codex와 대화할 수 있는 integration tracer, explicit `SemesterWorkspace`·`Course`·TXT `RawMaterial` registry와 자료 중심 3-pane workbench가 있다. Exact official Python SDK, private bridge·Node Runtime와 Server product path는 Account Readiness, structured Skill input, product permission, Plan·MCP activity, pending interaction, durable `ModelingRun`·`StatePatch`·`UserConfirmation`과 execution guard까지 구현했다. 그러나 Browser는 아직 이 product operation stream과 settled history를 소비하지 않으므로, 학생이 자료를 선택해 근거가 연결된 과제 정보를 검토하고 확인된 학기 상태로 남기는 end-to-end 제품 흐름은 닫히지 않았다.
 
-이 상태에서 범용 Chat 기능이나 새 workflow runtime을 먼저 만들면 이미 Codex가 제공하는 `SkillInput`, Plan mode, `request_user_input`, MCP와 native lifecycle을 다시 구현하게 된다. 반대로 current tracer를 제품 runtime으로 그대로 승격하면 process-global 단일 lease, text-only bridge, fixed `deny_all + read_only`와 tab-memory transcript가 첫 학업 vertical의 제품 계약이 되고, 현재 3-pane workbench는 실제 product action이 없는 outer shell에 머문다.
+이 상태에서 범용 Chat 기능이나 새 workflow runtime을 먼저 만들면 이미 Codex와 current product Server가 제공하는 `SkillInput`, Plan mode, `request_user_input`, MCP와 native lifecycle을 다시 구현하게 된다. 반대로 legacy Chat tracer를 Browser 제품 surface로 계속 사용하면 fixed `deny_all + read_only`, four-route projection과 tab-memory transcript가 첫 학업 vertical의 public contract로 남고, current product action과 3-pane workbench가 서로 분리된다.
 
 첫 구현은 기존 Codex runtime 기반을 보존하면서, 두 TXT `RawMaterial`에서 하나의 근거 있는 `Assignment` 변경을 제안하고 학생의 명시적 결정 뒤에만 `SemesterModel`에 반영하는 end-to-end product slice를 닫아야 한다. Codex 실행 권한과 AY-PLE 제품 확인 권한, native execution state와 durable academic state, Chat transcript와 confirmed product state를 서로 대신하지 않게 유지해야 한다.
 
@@ -23,7 +23,7 @@ Action은 app-managed versioned `ModelingRecipe`의 exact `SKILL.md`를 official
 
 `request_user_input`은 대화를 이어가는 carrier일 뿐 학업 상태 변경 권한이 아니다. App이 exact active patch, evidence와 base revision을 다시 검증하고 `UserConfirmation`과 apply outcome을 atomic하게 정산한 경우에만 confirmed `SemesterModel`을 바꾼다. 수정 요청은 settled decision이 아니라 같은 Turn으로 전달되는 feedback이며 replacement `StatePatch`를 다시 검토하게 한다.
 
-Runtime은 official Python SDK, exact native identity, acceptance-first ordering, authoritative terminal, bounded process lifecycle을 계속 사용한다. Ordered patch `0006`은 Python SDK에 Plan collaboration mode와 non-blocking deferred `request_user_input` response seam만 추가했으며, 후속 Runtime adaptation은 이 public seam을 private bridge·Node·Server·Browser에 얇게 projection한다. General Chat completeness, 별도 job dashboard, generic workflow engine과 raw App Server gateway는 만들지 않는다.
+Runtime은 official Python SDK, exact native identity, acceptance-first ordering, authoritative terminal, bounded process lifecycle을 계속 사용한다. Ordered patch `0006`의 Plan collaboration mode와 non-blocking deferred `request_user_input` response seam은 private bridge·Node·Server까지 얇게 projection됐으며, Browser는 package-owned product wire contract를 통해서만 이를 소비한다. General Chat completeness, 별도 job dashboard, generic workflow engine과 raw App Server gateway는 만들지 않는다.
 
 ## User Stories
 
@@ -46,11 +46,11 @@ Runtime은 official Python SDK, exact native identity, acceptance-first ordering
 
 | Layer | Current fact | First-vertical consequence |
 | --- | --- | --- |
-| Runtime | `@ay-ple/codex-chat-runtime`이 exact bundle을 검증하고 persistent Python bridge, `AsyncCodex`와 native App Server child를 supervise한다. Package-owned exact SDK와 production wheel은 Plan collaboration mode와 deferred typed `request_user_input` answer/cancel을 제공하지만 Node public seam은 text-only `terminal`, `startThread`, `startTurn`, `interrupt`, `releaseThread`, `close`다. | Supervision과 SDK Plan lifecycle은 보존하되 structured input과 interaction response를 bridge·Node contract로 projection해야 한다. |
-| Python bridge | 다섯 command와 AgentMessage 중심 네 notification family만 projection한다. Thread와 Turn 모두 `deny_all + read_only`를 강제한다. | Official SDK/native surface가 제공하고 first vertical이 채택한 Skill·Plan·MCP·`request_user_input` capability와 target permission을 얇게 adaptation해야 한다. |
-| Server | Canonical process가 current thread `0/1`, active turn `0/1`을 공유하고 네 `/api/codex-chat/*` operation을 제공한다. | 이는 tracer composition 결과이며 target product API나 영구 cardinality가 아니다. |
-| Browser | SourceSelection·자료 preview·workspace activation을 소유하는 3-pane workbench와 오른쪽 toggleable Chat이 구현됐다. 한 tab의 React memory가 status, thread, active turn, transcript와 stream controller를 소유한다. | Existing layout과 decoder·native identity logic은 재사용하되 product activity, Review와 settled state hydration을 연결해야 한다. |
-| Product state | Workspace-local versioned store가 `SemesterWorkspace`, one `Course`와 `RawMaterial` registry를 소유한다. `ModelingRun`, `StatePatch`, `UserConfirmation`과 confirmed `SemesterModel`은 아직 없다. | 같은 store와 transaction boundary를 evolve해 execution receipt와 atomic Review/apply authority를 추가해야 한다. |
+| Runtime | `@ay-ple/codex-chat-runtime`은 exact bundle·official SDK·native App Server child를 supervise하고 structured `SkillInput`·`TextInput`, `auto_review + workspace_write`, MCP server, Plan activity와 deferred typed `request_user_input` answer/cancel을 product-capable public seam으로 제공한다. Browser-safe Chat contract와 Node-only workspace·MCP input은 분리돼 있다. | Exact lifecycle과 identity seam은 보존한다. Browser는 private Runtime input을 재선언하지 않고 product-local contract만 소비해야 한다. |
+| Python bridge | Product thread/turn start, account readiness, advertised default model resolution, interaction answer/cancel과 curated Skill·Plan·MCP·Agent activity를 projection한다. Ordered patch `0006`은 sole-reader를 막지 않는 pending request collector와 bounded settlement를 소유한다. | First-party와 다른 unique-default model assumption은 final conformance에서 disposition하되 product UI가 SDK lifecycle을 다시 구현하지 않는다. |
+| Server | Existing four-route `/api/codex-chat/*` tracer와 별도로 `/api/product/*` bootstrap, workspace·Course·material, Assignment action, free-form Chat, Review, general Plan interaction과 interrupt operation을 제공한다. Product operation은 process-global active lease 하나를 공유한다. | Browser product vertical은 `/api/product/*`와 그 curated stream으로 이동하고 legacy Chat route와 같은 transcript를 혼합하지 않는다. Tracer 제거는 final cutover가 소유한다. |
+| Browser | SourceSelection·자료 preview·workspace activation을 소유하는 3-pane workbench와 오른쪽 toggleable legacy Chat이 구현됐다. Product bootstrap의 workspace만 hydrate하며 product action stream, settled history, Account Readiness, Review와 general Plan interaction은 아직 표시하지 않는다. | Current layout과 visibility owner를 유지하면서 product bootstrap·operation stream을 한 Chat transcript에 연결해야 한다. |
+| Product state | Current canonical v2 workspace store가 `SemesterWorkspace`, one `Course`, `RawMaterial`, confirmed `SemesterModel`, settled `ModelingRun`·`StatePatch`·`UserConfirmation`, apply outcome와 execution guard를 한 serialized transaction authority로 소유한다. Pre-release legacy decoder와 migration은 없다. | Browser는 settled projection만 hydrate한다. Revision replacement, negative recovery UX와 first durable cutover baseline은 후속 slice가 소유한다. |
 
 ### Adopted constraints
 
@@ -79,6 +79,7 @@ General Chat completeness, conversation catalog·rename·archive, generic transc
 | Codex integration boundary | Official SDK lifecycle, typed native input, exact permission, native identity, acceptance·terminal·interrupt, bounded pending interaction route와 process cleanup | Product patch validation, academic state apply, Browser copy |
 | Proposal MCP boundary | `propose_state_patch` 한 tool의 canonical payload validation, request-scoped idempotency와 stable patch identity | `UserConfirmation`, direct `SemesterModel` mutation, generic state CRUD, MCP elicitation |
 | Review coordinator | Active pending patch와 exact Plan `request_user_input` 결합, answer validation, revision feedback, one-settlement와 interruption reconciliation | Codex technical approval, durable generic inbox, multiple concurrent patch arbitration |
+| Browser-safe product contract | Product bootstrap·workspace·settled history·material preview, public request/response와 curated operation frame의 dependency-free TypeScript type·exact decoder | HTTP fetch·NDJSON byte framing, React state, Server domain object, persistence schema·native protocol |
 | Browser-safe local application | Account/workspace readiness, product commands, curated activity stream, Review response·interrupt와 snapshot read | Absolute path·credential·raw JSON-RPC·private patch correlation 노출 |
 | Desktop workbench | 왼쪽 자료 selection, 중앙 TXT/evidence preview, 오른쪽 toggleable AY Chat와 settled product-state reload | 가짜 IDE capability, 별도 progress dashboard, direct canonical field editor |
 
@@ -134,8 +135,8 @@ General Chat completeness, conversation catalog·rename·archive, generic transc
 - Workspace-local scratch는 registered `RawMaterial`과 product store 경로와 겹치지 않는 reserved subtree이며 Turn ID 또는 pre-accept action ID별로 새로 만든다. Terminal·interrupt·unknown settlement 뒤 bounded cleanup하고, next workspace open은 stale scratch를 guard journal과 reconcile한 뒤에만 허용한다.
 - App은 native start 전 모든 registered source의 canonical digest와 current confirmed-state revision을 durable guard journal에 기록하고 Turn 동안 registered source에 exclusive product lease를 표시한다. Product action의 selected source 두 개는 byte snapshot도 보존한다. `propose_state_patch`, Review settlement, native terminal과 next workspace open 전에 다시 검증한다.
 - RawMaterial digest drift가 발견되면 active Turn을 interrupt하고 available baseline과 drifted bytes를 conflict recovery evidence로 보존한다. App은 어느 쪽이 student edit인지 Codex write인지 추정하거나 original path를 자동 overwrite하지 않는다. Workspace는 `source_conflict` recovery-required 상태가 되고 proposal·apply·새 native action을 금지하며, 학생이 외부에서 원본을 정리하고 material refresh로 새 baseline을 명시적으로 채택해야 한다.
-- Confirmed product-state bytes가 App transaction 밖에서 drift하면 last committed revision에서 복구한 뒤 action을 failure로 끝내고 apply하지 않는다. 미완료 guard journal은 workspace를 다시 열기 전에 reconcile한다.
-- Unresolved source conflict 또는 confirmed-state restore failure가 있으면 workspace를 recovery-blocked read-only 상태로 열고 새 native action을 시작하지 않는다.
+- Active in-memory authority 또는 execution guard가 있는 동안 persisted product-state bytes가 그 authority와 다르면 mutation을 중단하고 현재 bytes를 덮어쓰지 않는다. Workspace open에서 current canonical format으로 exact decode되지 않는 store는 원본 bytes를 보존한 `incompatible` read-only workspace로 열고 새 native action을 금지한다. Cold restart 뒤 exact current format으로 decode되는 bytes는 durable provenance·signature·snapshot이 없는 current store authority이며, App은 그 bytes가 외부에서 바뀌었는지 추측하지 않는다. Current store는 previous revision backup이나 restore journal을 소유하지 않는다.
+- 미완료 execution guard는 workspace를 다시 열기 전에 settled product records와 app-managed scratch를 reconcile한다. Source conflict는 학생이 외부 원본을 정리한 뒤 explicit material refresh로 새 baseline을 채택하기 전까지 recovery-required로 유지한다.
 - 수락된 patch만 App-owned atomic transaction으로 confirmed state를 바꾼다. Codex가 만든 filesystem diff나 MCP result를 academic state로 채택하지 않는다.
 - 이 guard는 product-authority와 observable before/after invariant다. Current public `Sandbox.workspace_write`가 `cwd` 전체를 writable root로 삼으므로, 실행 중 transient physical write가 절대 불가능하다는 adversarial security guarantee로 표현하지 않는다. Strict path-level immutability가 실제 requirement가 되면 staged `cwd`, fine-grained native permission profile 또는 별도 OS isolation을 새 residual로 조사한다.
 
@@ -200,7 +201,7 @@ First vertical에서 tool input은 아래 semantic envelope 하나를 정본으�
 
 #### Browser-safe product operations and activity
 
-Local Server는 exact URL이나 transport library보다 아래 operation behavior를 public contract로 제공한다.
+Local Server는 exact URL이나 transport library보다 아래 operation behavior를 public contract로 제공한다. Server producer와 Browser consumer는 dependency-free shared product contract의 closed types와 exact decoder를 사용하며 서로의 app source를 import하거나 별도 field roster를 유지하지 않는다.
 
 | Operation | Required behavior |
 | --- | --- |
@@ -258,7 +259,8 @@ Browser transcript는 한 app lifecycle 안에서 누적된다. 오른쪽 sideba
 | Interrupt acknowledgement | `stopping`만 표시하고 matching terminal 또는 honest unknown까지 기다림 |
 | Malformed MCP payload, unselected source, quote mismatch | Product validation failure. Valid patch·confirmation·apply 없음 |
 | RawMaterial guard drift | Turn interrupt, proposal/apply 차단, baseline·drift evidence 보존. Original path는 자동 overwrite하지 않고 학생이 명시적으로 정리·refresh할 때까지 recovery-required |
-| Confirmed-state guard drift | Last committed product revision에서 restore하고 action failure. Restore 실패 시 recovery-blocked read-only workspace |
+| Active authority와 persisted store가 불일치 | Mutation 중단, persisted bytes 보존, automatic overwrite·retry 없음 |
+| Invalid·unsupported store bytes | 원본 bytes를 보존한 `incompatible` read-only workspace. Automatic restore·reset·migration과 새 native action 없음 |
 | Stale base revision or wrong active patch | Conflict, no confirmation, no apply, native answer를 product decision으로 취급하지 않음 |
 | Duplicate or late Review answer | Same decision retry는 기존 outcome, 다른/late decision은 `interaction_not_pending` 또는 conflict, no second apply |
 | Revision feedback before replacement then continuity loss | Old patch `interrupted`, no `UserConfirmation`, no apply, explicit retry가 new Turn/Run을 시작 |
@@ -269,11 +271,12 @@ Browser transcript는 한 app lifecycle 안에서 누적된다. 오른쪽 sideba
 
 ### Compatibility and Migration
 
-- Existing product state가 없으므로 legacy academic database migration은 만들지 않는다. 첫 open에서 versioned workspace-local store를 additive하게 생성하고 사용자 원본 파일은 이동·rename·rewrite하지 않는다.
-- Existing `CODEX_HOME`, native session, Runtime Harness history와 deleted legacy runtime graph를 import하거나 복구하지 않는다. App-owned root pair와 current Chat-only graph를 유지한다.
-- Runtime contract는 기존 text-only tracer behavior를 한 번에 삭제하지 않고 structured input, interaction response와 curated activity를 additive하게 확장한다. Existing deterministic/actual gates가 green인 상태에서 product Server·Browser를 새 seam으로 cut over한 뒤 tracer-only route와 fixed permission copy를 제거한다.
-- Ordered SDK patches `0001`–`0005`는 original oracle을 유지한다. New Plan interaction patch도 exact source preimage, patch ledger와 conformance tests를 가진다. Pin upgrade 때 각 patch를 개별 재검증하고 upstream이 같은 behavior를 제공할 때만 제거한다.
+- Product cutover 전에는 current canonical v2 store만 지원하고 pre-release v1·legacy-v2 decoder나 migration을 유지하지 않는다. Current decoder를 통과하지 못한 store는 original bytes를 보존한 `incompatible/readOnly`로 열며 사용자 원본 파일을 이동·rename·rewrite하지 않는다.
+- Existing `CODEX_HOME`, native session, Runtime Harness history와 deleted legacy runtime graph를 import하거나 복구하지 않는다. Final product cutover 전까지 app-owned root pair와 official SDK 기반 Codex Chat Runtime graph를 유지한다. Cutover는 이 Runtime을 대체하지 않고 caller를 product seam으로 이동한 뒤 tracer-only `dev:chat-only`·HTTP·Browser surface를 함께 제거한다.
+- Runtime contract는 기존 text-only tracer behavior를 유지한 채 structured input, interaction response와 curated activity를 additive product seam으로 확장했다. Existing deterministic/actual gates가 green인 상태에서 product Browser를 새 seam으로 cut over한 뒤 tracer-only route와 fixed permission copy를 제거한다.
+- Ordered SDK patches `0001`–`0006`은 exact source preimage, original oracle, patch ledger와 conformance tests를 유지한다. Pin upgrade 때 각 patch를 개별 재검증하고 upstream이 같은 behavior를 제공할 때만 제거한다.
 - Product rollout rollback은 new product surface를 비활성화해도 workspace-local confirmed state와 history를 삭제하지 않아야 한다. 지원하지 않는 newer store version은 write하지 않고 actionable read-only/incompatible 상태로 멈춘다.
+- Final product cutover가 current v2를 첫 durable compatibility baseline으로 확정한다. 이후 physical schema change는 explicit version bump와 migration 또는 fail-closed rejection을 요구하며 silent reset을 허용하지 않는다.
 
 ## Implementation Decisions
 
@@ -292,6 +295,7 @@ Browser transcript는 한 app lifecycle 안에서 누적된다. 오른쪽 sideba
 | Tracked seed와 materialized workspace 분리 | Repository fixture를 native `cwd`로 사용하지 않는다. Manual dev는 repository 밖의 predictable sibling root와 explicit override를, E2E는 같은 seed의 fresh temp copy를 사용해 inspectability와 isolation을 함께 보장한다. |
 | 3-pane workbench + right Chat sidebar | Camp demo의 공간 구조를 유지하면서 Skill·MCP·Review를 familiar Chat interaction에 누적한다. 중앙 pane은 real TXT preview만 구현하고 IDE를 가장하지 않는다. |
 | One active Chat limitation | First vertical의 product flow를 닫는 데 충분하며 catalog·multi-client·generic replay를 미리 설계하지 않는다. |
+| Pre-cutover automatic store restore 제외 | Previous revision snapshot/journal authority가 없는 상태에서 성공을 합성하지 않는다. Active authority 불일치는 overwrite하지 않고 invalid·unsupported store는 bytes-preserving read-only로 닫는다. Cold-open valid store의 외부 변경을 감지하는 backup·provenance framework는 실제 compatibility need 뒤에 결정한다. |
 
 Prototype branch `prototype/first-vertical-runtime-trace`의 `fbc9efd` evidence는 exact `cwd`, SkillInput, selected TXT paths, strict structured result, unselected-source negative control, settlement와 3회 fresh-root live run을 증명했다. 그 throwaway schema와 harness는 production module이나 final `Assignment` schema로 복사하지 않는다.
 
@@ -308,7 +312,7 @@ Prototype branch `prototype/first-vertical-runtime-trace`의 `fbc9efd` evidence�
 | Layer | Required proof |
 | --- | --- |
 | Product/domain unit | StatePatch schema·evidence validation, request-key idempotency, lifecycle transition, base-revision CAS, accept/reject transaction, revision replacement와 no-reapply |
-| Workspace/guard integration | Tracked seed materialization, default dev root·override ownership, explicit root validation, exact native cwd, source staging, digest conflict, confirmed-state recovery, atomic store reopen과 scratch cleanup |
+| Workspace/guard integration | Tracked seed materialization, default dev root·override ownership, explicit root validation, exact native cwd, source staging, digest conflict, valid canonical store reopen, invalid bytes의 read-only 보존과 scratch cleanup |
 | SDK patch unit/conformance | Plan collaboration mode mapping, sole-reader liveness, max 1 pending/Turn·32 global bound, overflow, request-before-acceptance race, duplicate/late response, interrupt/close cleanup |
 | Runtime deterministic | Account/invalid admission native-start-0, typed Skill/source input, acceptance-first, nonterminal interrupt ack, terminal/unknown, no automatic retry |
 | Actual child/local provider | Exact bundle and cwd, question → Browser-equivalent answer → second sampling → same-Turn terminal, MCP/Plan item projection, `auto_review + workspace_write`, representative Python/command use와 bounded process cleanup |
@@ -324,7 +328,7 @@ Browser Playwright는 최소한 다음 trace를 검증한다.
 5. Atomic apply 직후 Codex answer/response loss → confirmed revision 유지, no duplicate apply.
 6. Sidebar hide/show during running and Review → same Turn/controller remains active.
 7. Unselected source, quote mismatch, stale base와 duplicate/late answer → fail closed without product mutation.
-8. RawMaterial and confirmed state before/after digest, staged scratch cleanup와 no raw protocol/absolute path leakage.
+8. RawMaterial before/after digest, explicit source rebaseline, invalid product-store bytes-preserving read-only outcome, staged scratch cleanup와 no raw protocol/absolute path leakage.
 9. Tracked seed digest는 실행 전후 동일하고, 두 fresh E2E run의 workspace·product state·scratch·native session은 서로 겹치지 않으며 ambient development workspace를 읽지 않는다.
 
 ### Existing and final commands
@@ -364,7 +368,7 @@ None.
 
 - Product/domain authority: [AY-PLE Product Brief](../product/ay-ple-product-brief.md), [Review Workspace Scenario](../product/ay-ple-review-workspace-scenario.md), [CONTEXT.md](../../CONTEXT.md)
 - Root and runtime authority: [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)
-- Native composition and UI authority: [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), [AY-PLE Design System](../design/ay-ple-design-system.md)
+- Native composition and UI authority: [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), [AY-PLE Design System](../product/ay-ple-design-system.md)
 - Current implementation map: [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)
 - Representative runtime evidence: [Current adapter representative trace](../wayfinding/codex-chat-application-foundation/assets/current-adapter-representative-trace.md)
 - Permission decision evidence: [Codex 실행 권한과 AY-PLE 제품 확인 경계](../wayfinding/codex-chat-application-foundation/assets/codex-execution-permission-boundary.md)

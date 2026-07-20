@@ -64,12 +64,12 @@
   - [x] Completed rehearsal을 confidence evidence로 유지하고, claim commit 뒤 clean tracked state, exact root shape·tracked-zero, effective Chat path 비중첩과 관련 process 부재를 다시 확인한 뒤 승인된 exact roots만 literal serial command로 삭제한다.
   - [x] 삭제 뒤 bundle protection, repository PR-ready checks, canonical `npm run dev`와 root absence를 검증하고 no-migration·no-data-rollback·필요 시 fresh isolated Chat roots 재로그인 경계를 handoff에 기록한다.
 
-- [ ] 첫 Assignment vertical에 필요한 Codex runtime sufficiency를 증명한다.
+- [x] 첫 Assignment vertical에 필요한 Codex runtime sufficiency를 증명한다.
   - [x] [Runtime sufficiency envelope](../wayfinding/codex-chat-application-foundation/tickets/004-first-assignment-runtime-envelope.md)에 따라 explicit `SemesterWorkspace`와 두 TXT `SourceSelection`으로 Skill 기반 `ModelingInvocation`을 실행해 `ModelingRun` receipt를 남기는 경로와, 같은 native Turn에서 `ModelingRun`과 독립적인 EvidenceRef 연결 Assignment `StatePatch`를 `propose_state_patch`로 제안해 exact Plan mode Review·`UserConfirmation`을 거쳐 다시 열 수 있는 `SemesterModel`로 반영하는 흐름의 observable runtime contract를 역산한다.
   - [x] Exact App Server·official SDK·first-party surface와 current `CodexChatRuntime`·Server·Browser tracer가 required outcome을 어디까지 소유하는지 확인하고, 일반 Chat capability를 requirement로 자동 승격하지 않는다.
   - [x] Additive `CodexProductCapableRuntime`이 native work 없는 Account Readiness, exact `SkillInput` 하나와 bounded `TextInput` 하나, Plan mode의 `auto_review + workspace_write`, curated Skill·Plan·`propose_state_patch` MCP·user-input activity와 opaque answer/cancel을 제공한다. Existing text tracer의 `deny_all + read_only`는 final cutover 전까지 유지한다.
   - [x] UI 없는 representative trace가 검증한 explicit `cwd`, exact `SkillInput`·selected source Markdown path를 담은 `TextInput`, native acceptance·terminal과 bounded failure settlement를 보존한다. Product action seam은 `propose_state_patch` MCP의 canonical input·stable patch result, exact Plan mode의 built-in `request_user_input` same-Turn request·answer와 opaque execution correlation을 함께 검증한다.
-  - [ ] Versioned fixture와 fresh isolated roots로 deterministic contract·exact actual-child gate를 자동 반복하고, 기존 3회 live extraction evidence와 구분되는 final live-provider product trace가 complete action을 수동 복구 없이 통과한다. Credential 부재는 pass·skip이 아니라 blocked로 보고한다.
+  - [x] Versioned fixture와 fresh isolated roots로 deterministic contract·exact actual-child gate를 반복해 current adapter가 product Browser vertical을 시작하기에 충분함을 증명했다. Complete Browser semantics를 요구하는 final exact/local/live product trace는 아래 제품 vertical의 후반 conformance gate가 소유하며, credential 부재는 pass·skip이 아니라 blocked로 보고한다.
   - [x] Account readiness, interrupt, process crash·restart, retry와 unknown outcome은 deterministic representative failure가 요구하는 범위에서 검증하고, 실제 child/provider conformance는 final conformance gate에 남긴다.
   - [x] Official Python SDK·ordered patches·Node supervision·Python bridge·네 Chat route와 fixed `deny_all + read_only` tracer를 `keep | adapt | replace | frozen limitation`으로 판정하고, official SDK와 supervised thin local-web integration을 product path로 유지한다.
   - [x] 제품 caller는 raw JSON-RPC, generated protocol type, secret과 bridge 내부 process 계약을 직접 사용하지 않으며, native execution state·Codex permission과 `ModelingRun`·Review·`UserConfirmation`의 학업 상태 소유권을 분리한다.
@@ -82,7 +82,7 @@
   - [ ] 사용자가 exact Plan mode의 built-in `request_user_input`을 통해 같은 native Turn에서 제안을 수락·수정 요청·거절할 수 있다. App은 exact active patch binding을 검증해 수락·거절만 settled `UserConfirmation`으로 기록하고 수락한 값만 확인된 `SemesterModel`에 반영하며, 수정 요청은 unsettled feedback으로 replacement patch Review를 이어간다.
   - [x] 이 proposal-only 제품 효과를 Codex `Sandbox.read_only`, network 차단이나 command/file approval과 동일시하지 않고, 실제 action에 필요한 native permission은 별도 설정·request 흐름으로 다룬다.
   - [ ] Recipe rendering, Codex 실행, `StatePatch` proposal·evidence validation과 제품 상태 반영 실패를 구분해 원본과 확인된 상태를 손상하지 않는 재시도 행동을 제공한다.
-  - [ ] 대표 TXT 자료의 선택부터 `propose_state_patch` Assignment 제안, exact Plan mode의 built-in `request_user_input` same-Turn Review, settled confirmation과 새로고침 뒤 확인된 상태 조회까지 browser E2E와 실제 Codex smoke를 통과한다. 답변 전 Browser·Server/runtime continuity loss는 `interrupted`·no-apply·명시적 retry로 정산하는 negative trace를 포함한다.
+  - [ ] 대표 TXT 자료의 선택부터 `propose_state_patch` Assignment 제안, exact Plan mode의 built-in `request_user_input` same-Turn Review, settled confirmation과 새로고침 뒤 확인된 상태 조회까지 deterministic Browser E2E를 먼저 닫는다. Revision·recovery semantics가 고정된 뒤 exact actual-child·local-provider와 격리된 live-provider product trace가 complete action을 수동 복구 없이 통과해야 하며, 답변 전 Browser·Server/runtime continuity loss는 `interrupted`·no-apply·명시적 retry로 정산한다.
 
 - [ ] 첫 vertical이 요구한 product-bound companion interaction만 완성한다.
   - [x] 선택한 surface에서 필요한 Account Readiness와 explicit workspace activation만 제공하고 자체 account center나 generic conversation workspace를 만들지 않는다.
