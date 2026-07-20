@@ -955,3 +955,13 @@
 - T19 정본을 감사한 결과 CHECKLIST의 T16만 완료로 표시됐고, `docs/SEEDS.md`에는 제3자 블라인드 정렬과 24개 전송 가능성 판정이 모두 대기였다. 완료 근거가 없어 T16을 다시 열고 T19 운영 시드 이관을 중단했다.
 - 승인된 책임 분리에 맞춰 T19 AC-8을 “검수된 24개 시드의 관계별 2세트 서버 카탈로그 이관”으로 한정했다. 실제 provider·키·Preview 왕복은 T20에 유지해 T19↔T20 순환 의존을 제거했다.
 - 앱·서버 런타임 코드는 변경하지 않았다. T19 프롬프트 4파일 28개 테스트, API 타입검사, `git diff --check`를 재통과했다. 다음 재개 조건은 T17 commit·push 명시 요청과 T16 제3자 검수 근거다.
+
+## 2026-07-20 (T16 승인 반영·T19 프롬프트 구성 완료)
+### 검수 근거·구현
+- 사용자가 “3자 검수 완료 승인”을 명시해 T16의 제3자 블라인드 정렬 8/8·전송 가능성 24/24 통과로 기록했다. 검수자 식별정보와 원시 응답지는 저장소에 보관하지 않는다.
+- `api/_lib/prompt/seedExamples.ts`에 검수 시드 24개를 4관계×2세트×3톤 typed 카탈로그로 이관했다. 각 관계는 답장·먼저 보내기 세트를 하나씩 가지며 `requirePromptExamplePair`가 관계·길이·후보 3개·톤 1/2/3·중복·안전 계약을 모듈 로드 시 검증한다.
+- `buildPromptWithReviewedExamples`가 요청의 `scenarioId`로 검수 예시 두 세트를 선택해 기존 XML 데이터 블록·관계/목적/개인 말투 규칙·JSON Schema와 조립한다. 시드의 `source`나 UI transcript는 provider 입력에 포함하지 않는다.
+### 검증·경계
+- 첫 테스트에서 존재하지 않는 `scenarioIds` export 참조를 발견했고, 명시적 `ScenarioId` 튜플로 교체해 `any` 없이 수정했다.
+- 프롬프트 관련 5파일 38개, 전체 24파일 225개 테스트, API 타입검사, lint, Vite build, Drizzle migration check, diff·명시적 `any`·클라이언트 prompt import 검사를 통과했다. 기존 jsdom `scrollTo` 로그와 lazy CatCanvas 500kB 경고만 유지됐다.
+- T19 AC-1~9를 통과해 CHECKLIST를 완료 처리했다. 실 provider·키·Preview 왕복, provider 보존 고지는 T20에 남아 있으며 시드 검수를 실제 생성 효과 근거로 표현하지 않는다.

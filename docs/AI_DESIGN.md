@@ -145,12 +145,14 @@ api/_lib/prompt/
 ├── systemPrompt.ts         # 서비스 역할, 안전·사실 충실성 원칙
 ├── relationshipRules.ts    # 팀플/교수님/선배/친구별 존댓말·톤 해석
 ├── situationRules.ts       # 목적·상황 카드의 의도 규칙
+├── speechStyleRules.ts     # 네 개인 말투 종결 규칙
 ├── outputSchema.ts         # GeneratedReply JSON Schema
 ├── examples.ts             # 검수 완료 few-shot 시드 주입 인터페이스
+├── seedExamples.ts         # T16 통과 4관계×2세트×3톤 typed 카탈로그
 └── buildPrompt.ts          # 위 조각과 사용자 데이터를 조합
 ```
 
-2026-07-15 코드 우선 예외로 위 서버 전용 골격을 구현했다. 관계 4종·목적 6종 규칙, 정확히 2개의 동일 관계 예시 세트를 받는 검증 경계, XML 텍스트 이스케이프, `output_config.format` JSON Schema, `end_turn` 정상 완료와 공용 `GeneratedReply` 런타임 재검증까지 provider 비종속 모듈로 분리했다. 테스트 예시는 운영 시드가 아닌 합성 fixture만 사용한다. `docs/SEEDS.md`의 24개는 실제 제3자 검수가 끝나기 전까지 코드로 이관하지 않고, 실 provider·키·generation handler 연결은 T20으로 보류한다.
+2026-07-20 T19에서 관계 4종·목적 6종 규칙, 정확히 2개의 동일 관계 예시 세트를 받는 검증 경계, XML 텍스트 이스케이프, `output_config.format` JSON Schema, `end_turn` 정상 완료와 공용 `GeneratedReply` 런타임 재검증을 provider 비종속 모듈로 완성했다. T16 제3자 검수 완료 승인 뒤 `docs/SEEDS.md`의 24개를 4관계×2세트×3톤 typed 카탈로그로 이관했고, `buildPromptWithReviewedExamples`가 요청 관계의 두 세트를 자동 조립한다. 실 provider·키·generation handler 연결은 T20 범위다.
 
 `buildPrompt`의 조합 순서는 다음으로 고정한다.
 
@@ -247,12 +249,12 @@ api/_lib/prompt/
 
 - S0~S3 흐름, 카드 문구 초안 조회, 직접입력 목 응답, 실패·타임아웃, 입력 복원·삭제, 복사 폴백을 구현했다.
 - AI 출력을 3개 톤 후보 계약으로 제한하고 후보 수·톤 중복·빈 값·길이와 제한적 안전 휴리스틱을 런타임 검증했다.
-- 관계별 평가 케이스의 코드 골격과 반복 가능한 테스트 기반을 만들었다.
+- 제3자 검수 승인 시드 24개를 관계별 typed 카탈로그로 이관하고 관계·목적·개인 말투·안전 규칙과 structured output을 조합하는 서버 프롬프트 빌더를 구현했다.
 
 ### 설계 완료·구현 대기
 
 - 정형 상황은 로컬 템플릿, 받은 메시지·감정 맥락이 필요한 경우만 AI를 호출하는 하이브리드 라우터를 설계했다.
-- 관계·목적·안전·few-shot·출력 스키마를 조합하는 서버 전용 프롬프트 빌더, provider 오류·보존 경계를 설계했다.
+- 실제 provider client·키·Preview 오류·보존 경계를 설계했고 T20 구현을 대기한다.
 - 자율 agent/RAG/런타임 멀티에이전트 대신 단일 구조화 생성 워크플로를 확정하고, Neon PostgreSQL + Drizzle의 원문 없는 버전·실행·평가 스키마 경계를 설계했다.
 - 사용자 제공 냥이 에셋은 Three.js + React Three Fiber 단일 Canvas의 2.5D 상태 반응과 정적 폴백으로 구현하도록 범위를 확정했다.
 

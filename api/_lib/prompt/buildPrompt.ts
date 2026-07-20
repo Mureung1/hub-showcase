@@ -3,6 +3,7 @@ import type { AiGenerationRequest } from '../generation/provider'
 import { requirePromptExamplePair, type PromptExampleSet } from './examples'
 import { generatedReplyOutputConfig } from './outputSchema'
 import { relationshipRules } from './relationshipRules'
+import { reviewedPromptExamplesFor } from './seedExamples'
 import { speechStyleRules } from './speechStyleRules'
 import { situationRules } from './situationRules'
 import { systemPrompt } from './systemPrompt'
@@ -98,3 +99,6 @@ export const buildPrompt = (
     output_config: generatedReplyOutputConfig,
   }
 }
+
+export const buildPromptWithReviewedExamples = (request: AiGenerationRequest): BuiltPrompt =>
+  buildPrompt(request, reviewedPromptExamplesFor(request.scenarioId))
