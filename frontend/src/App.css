@@ -187,3 +187,81 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+.hypothesis-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dashboard-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: var(--space-md);
+  align-items: center;
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.dashboard-row:last-child {
+  border-bottom: none;
+}
+
+.dashboard-row:hover {
+  background: var(--color-bg);
+}
+
+.dashboard-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.badge {
+  display: inline-block;
+  white-space: nowrap;
+  border-radius: var(--radius-pill);
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+}
+
+.badge-pending {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.badge-strong {
+  background: var(--color-primary);
+  color: var(--btn-text-color);
+}
+
+.badge-weak {
+  background: var(--color-accent-light);
+  color: var(--color-primary-dark);
+}
+
+.badge-danger {
+  background: var(--color-danger);
+  color: var(--btn-text-color);
+}
+
+.dashboard-hypothesis-name {
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.dashboard-recommendation {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted);
+  text-align: right;
+  max-width: 280px;
+}
+
+.dashboard-direction {
+  color: var(--color-text-muted);
+}

@@ -114,8 +114,8 @@ gantt
   - *상세:* `react-router-dom` 도입. 기존 `App.tsx`(입력 폼)를 `pages/InputPage.tsx`로 이전(git mv로 이력 보존)하고, `App.tsx`는 `BrowserRouter`+`Routes`만 담당. `/`(입력), `/projects/:id`(대시보드), `/projects/:id/hypotheses/:hid`(상세), `/share/:token`(공유)로 분리. 대시보드/상세/공유는 라우팅 검증용 최소 플레이스홀더(실제 UI는 Task 8/10/13). 입력 화면은 분석 완료 시 `useNavigate`로 실제 project_id 대시보드로 이동(기존 성공 배너 제거).
   - *완료 조건:* 각 경로가 정상 렌더되고, 기존 가설 입력 기능이 회귀 없이 동작하며, 분석 완료 시 대시보드로 이동함.
 
-- [ ] **Task 8: [FE] 대시보드 — 가설 리스트 화면 구현**
-  - *상세:* 각 행을 **체크박스 + 검증 상태 배지(검토 전 / 유력함 / 근거 부족 / 수정 필요) + 가설명(원인 ➡️ 결과 요약) + 판단 필요성(유지/수정/폐기 권고)** 4요소로 구성. 판단 필요성은 Task 4의 `direction` / `suggested_status`에서 가져옴. 체크박스는 공유·Export 대상 선택에 사용. 상태 배지 색상은 `design.md` 규칙 확인 후 적용. 행 클릭 시 상세 화면 진입.
+- [x] **Task 8: [FE] 대시보드 — 가설 리스트 화면 구현**
+  - *상세:* 각 행을 **체크박스 + 검증 상태 배지(검토 전 / 유력함 / 근거 부족 / 수정 필요) + 가설명(원인 ➡️ 결과 요약) + 판단 필요성(유지/수정/폐기 권고)** 4요소로 구성. 판단 필요성은 Task 4의 `direction` / `suggested_status`에서 가져옴(사용자가 아직 확정하지 않은 AI 권고이며 `hypotheses.status`의 실제 확정값과는 다름 — 확정은 Task 9). 체크박스는 공유·Export 대상 선택에 사용. `design.md`에 배지 전용 색상 토큰이 없어 기존 팔레트(`--color-primary`/`--color-danger`/`--color-accent-light`/`--color-border`)만 조합해 4개 배지 변형 구성(새 토큰 추가 없음). 행 클릭 시 상세 화면 진입, 체크박스 클릭은 `stopPropagation`으로 행 이동과 분리.
   - *완료 조건:* 가설 리스트가 4요소를 모두 표시하고, 체크박스 선택 상태가 유지되며, 행 클릭 시 해당 가설 상세로 이동함.
 
 - [ ] **Task 9: [BE/FE] 가설 유지 / 수정 / 폐기 기능 구현**
