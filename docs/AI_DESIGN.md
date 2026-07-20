@@ -43,7 +43,7 @@ src/shared/generation/mockGenerator.ts
   └─ 개발용 normal / delay / error500 / error429 강제 케이스
 ```
 
-실 API 단계(T18~T20)에서는 같은 계약을 유지하며 아래 경계만 추가한다.
+실 API 단계(T18~T20)에서는 같은 계약을 유지한다. T18은 provider 비종속 서버 경계를, T19는 프롬프트·structured output을, T20은 실제 provider client·키·Preview 왕복과 클라이언트 전환을 소유한다.
 
 ```text
 클라이언트 생성 서비스
@@ -59,7 +59,7 @@ src/shared/generation/mockGenerator.ts
 
 API 키는 서버 환경변수에만 둔다. 브라우저에서 AI provider를 직접 호출하지 않는다.
 
-2026-07-15 코드 우선 예외로 T18의 provider 비종속 서버 기반을 먼저 추가했다. 아직 실 provider나 클라이언트와 연결하지 않았으므로 직접입력 UI는 계속 목을 사용하고, 배포 진입점은 미연결 상태를 명시적으로 500으로 반환한다.
+2026-07-20 승인된 책임 분리에 따라 T18의 provider 비종속 서버 기반을 완료했다. 아직 T20의 실 provider나 클라이언트와 연결하지 않았으므로 직접입력 UI는 계속 목을 사용하고, 배포 진입점은 미연결 상태를 명시적으로 500으로 반환한다.
 
 ```text
 api/generate.ts
@@ -150,7 +150,7 @@ api/_lib/prompt/
 └── buildPrompt.ts          # 위 조각과 사용자 데이터를 조합
 ```
 
-2026-07-15 코드 우선 예외로 위 서버 전용 골격을 구현했다. 관계 4종·목적 6종 규칙, 정확히 2개의 동일 관계 예시 세트를 받는 검증 경계, XML 텍스트 이스케이프, `output_config.format` JSON Schema, `end_turn` 정상 완료와 공용 `GeneratedReply` 런타임 재검증까지 provider 비종속 모듈로 분리했다. 테스트 예시는 운영 시드가 아닌 합성 fixture만 사용한다. `docs/SEEDS.md`의 24개는 실제 제3자 검수가 끝나기 전까지 코드로 이관하지 않고, 실 provider·키·generation handler 연결도 T18 게이트 뒤로 보류한다.
+2026-07-15 코드 우선 예외로 위 서버 전용 골격을 구현했다. 관계 4종·목적 6종 규칙, 정확히 2개의 동일 관계 예시 세트를 받는 검증 경계, XML 텍스트 이스케이프, `output_config.format` JSON Schema, `end_turn` 정상 완료와 공용 `GeneratedReply` 런타임 재검증까지 provider 비종속 모듈로 분리했다. 테스트 예시는 운영 시드가 아닌 합성 fixture만 사용한다. `docs/SEEDS.md`의 24개는 실제 제3자 검수가 끝나기 전까지 코드로 이관하지 않고, 실 provider·키·generation handler 연결은 T20으로 보류한다.
 
 `buildPrompt`의 조합 순서는 다음으로 고정한다.
 
@@ -177,7 +177,7 @@ api/_lib/prompt/
 
 카드 템플릿은 복합 맥락의 안전한 대체재가 아닐 수 있으므로, AI 실패 시 무관한 템플릿을 강제로 제시하지 않는다. 사용자는 보존된 입력을 고쳐 재시도할 수 있다.
 
-클라이언트 타임아웃만으로 provider 호출이 취소되지는 않는다. T18은 클라이언트보다 짧은 서버 deadline, `AbortController`, 출력 토큰 상한, 제한된 재시도와 provider 오류 매핑을 함께 구현한다.
+클라이언트 타임아웃만으로 provider 호출이 취소되지는 않는다. T18은 클라이언트보다 짧은 서버 deadline, `AbortController`, 출력 토큰 상한, 제한된 재시도와 provider 오류 매핑이 가능한 경계를 구현했다. T20에서 실제 provider가 같은 `AbortSignal`과 실패 분류 계약을 지키는지 Preview로 확인한다.
 
 ## 6. 비용·성능 정책
 
@@ -198,6 +198,8 @@ api/_lib/prompt/
 - 카톡 전환 후 복귀를 위해 현재 탭의 `sessionStorage`에만 임시 보관한다. 마지막 선택 후 30분이 지나면 저장본을 삭제하고, 사용자는 “이 탭의 작성 내용 지우기”로 즉시 삭제할 수 있다.
 - 실 AI 경로에서는 원문이 외부 provider로 전송된다. 서비스의 비저장과 provider의 처리·보존을 구분해 안내하며, 당시 정책과 ZDR 실제 적용 여부를 T20 전에 확인한다. 표준 Anthropic API 보존은 별도 합의가 없으면 입력·출력을 최대 30일 내 삭제하는 조건이므로 “이 탭에만 존재”한다고 표현하지 않는다. [Anthropic API 보존 정책](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)
 - 로그인·히스토리·원문 기반 재방문 기능은 MVP Out이다.
+
+2026-07-20 T30에서 위 경계를 네 테이블의 Drizzle schema·migration과 서버 전용 repository로 구현했다. 생성 메트릭은 요청 객체를 전달하지 않고 허용 필드만 새 row로 매핑하며, `DATABASE_URL`이 있는 Vercel 환경에서만 Neon HTTP 연결을 만든다. DB write는 `waitUntil()` background task로 등록하고 동기·비동기 실패를 모두 삼켜 생성 응답과 분리한다. 실제 Neon 개발 DB에서 migration 최초·재실행과 public 테이블 네 개의 repository·generate handler background sink 기록/조회/정리까지 통과해 T30을 완료했다. Vercel Preview의 실제 `waitUntil()` 수명주기 확인은 T31 통합 게이트다.
 
 재방문은 원문 보관보다 **선택값만** 기억하는 방식이 안전하다. 이후 단계에서 사용자가 명시적으로 허용한 경우에만 최근 관계·상황·선호 톤을 `localStorage`에 저장하고, 초기 화면의 “지난 선택으로 시작”과 전체 삭제를 제공한다. 이 기능은 별도 기획 승인이 필요하다.
 
@@ -256,5 +258,5 @@ api/_lib/prompt/
 
 ### 검증 대기
 
-- 시드 제3자 검수(T16), 템플릿 전수 검수(T25), holdout 기반 실 AI 품질·모델 비교(T21), Three.js 캐릭터(T29), PostgreSQL 데이터 계층(T30), 배포·실기기·외부 파일럿(T22~T23)은 완료 전이다.
+- 템플릿 전수 검수(T25), holdout 기반 실 AI 품질·모델 비교(T21), Vercel Preview DB 수명주기 통합(T31), 배포·실기기·외부 파일럿(T22~T23)은 완료 전이다.
 - 위 항목이 끝나기 전에는 “검수된 템플릿”, “실제 AI 운영”, “효과·재방문 검증”을 완료 사실로 쓰지 않는다.

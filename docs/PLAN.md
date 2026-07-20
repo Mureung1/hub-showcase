@@ -46,13 +46,13 @@
 - [x] 캐릭터 렌더링 확정: **Three.js + React Three Fiber 단일 Canvas의 제공 에셋 기반 2.5D 표현**. 관계 카드에는 정적 썸네일, reduced-motion·WebGL 실패에는 정적 폴백 적용
 - [x] 배포 환경 결정: **Vercel** (정적 빌드 + `/api` 함수 한 배포, 키는 환경변수)
 - [x] RESEARCH_REVIEW에서 AI 글쓰기·관계 영향·어려운 대화·구조화 UI·한국어 공손성의 근거와 과해석 금지 확정
-- [ ] T25 대표 12문구 통과 뒤 COMPETITIVE_VALIDATION C1~C4 무참여자 모델 벤치마크와 `Pending | Provisional Go | Iterate | No-go` 기록. 사용자 인터뷰 없이 진행하며 Provisional Go 전에는 T18 백엔드 착수 보류
-- [ ] 프록시 함수 구현: 서버 deadline·실제 요청 취소·출력 상한·제한 재시도·오류 매핑·API 전용 타입검사/테스트 포함 (T18)
+- [ ] T25 대표 12문구 통과 뒤 COMPETITIVE_VALIDATION C1~C4 무참여자 모델 벤치마크와 `Pending | Provisional Go | Iterate | No-go` 기록. 사용자 인터뷰 없이 진행하며, 판정 전에도 provider 비종속 프록시·DB 기반은 개발할 수 있지만 T20 실 provider 품질 진행과 출시는 완료하지 않음
+- [x] provider 비종속 프록시 기반 구현: 서버 deadline·실제 요청 취소·출력 상한·제한 재시도·오류 매핑·API 전용 타입검사/테스트 포함 (T18)
 - [ ] few-shot 프롬프트 구성: 사실 충실성·자리 표시자·데이터 블록·`output_config.format`·`stop_reason`·런타임 검증 (T19)
 - [ ] 카드·직접 설명 공통 개인 말투 프리셋: `습니다체 / 요체 / 이다체 / 용용체`, 288개 카드 초안, 30분 탭 상태, 공용 요청·목·프롬프트 반영과 사람 반복 검토 (T32·T25)
 - [ ] 교수·조교 연락 형식: 메신저/이메일 선택, 이메일 전용 6상황·안내 입력·제목/본문 18후보·개별 복사와 30분 로컬 상태, 사람 반복 검토 (T33)
 - [ ] 제공 에셋 수령 후 Three.js/R3F 냥이 스테이지, 네 상태 반응, 정적 폴백·모바일 성능·접근성 검증 (T29)
-- [ ] Neon/Drizzle schema·migration·repository 구현, 허용 메타데이터 저장과 원문 비저장을 handler 테스트로 검증 (T30)
+- [x] Neon/Drizzle schema·migration·repository 구현, 허용 메타데이터 저장과 원문 비저장을 handler 테스트 및 실제 Neon 개발 DB smoke로 검증 (T30). Vercel Preview background write는 T31에서 확인
 - [ ] 서비스 원문 비저장 + 외부 provider 전송·당시 보존 조건 사용자 고지 (T18~T20)
 - [ ] 목 → 실 API 전환, timeout·429·refusal·토큰 절단·서버 취소 실동작 확인
 - [ ] holdout 모델·품질 검수: Haiku부터 비교, 한국어 평가자 2명 독립 채점, 톤 18/20·전송 48/60·환각 0·자리 표시자 UI 100% + 지연·실비용 기록. LLM 평가는 보조 분석만 사용 (T21)

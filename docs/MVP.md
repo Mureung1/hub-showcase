@@ -60,7 +60,7 @@
 - `/api/generate`가 브라우저에 provider 키를 노출하지 않고 단일 AI 호출→구조화 검증을 수행하며, RAG·자율 agent loop 없이 교수님 직접입력 경로의 톤 후보 3개를 반환함
 - DB migration과 서버 데이터 계층 테스트가 통과하고, `prompt_versions`·`template_versions`·`generation_runs`·`evaluation_runs`에 허용 필드만 존재하며 사용자 원문·생성 문구·영구 사용자 ID가 저장되지 않음
 - 실 AI 입력 화면에서 외부 provider 전송과 당시 보존 조건이 안내됨
-- `RESEARCH_REVIEW.md`의 문헌 근거·과해석 경계를 반영하고, T25 대표 12문구 뒤 `COMPETITIVE_VALIDATION.md`의 무참여자 모델 벤치마크가 **`Provisional Go`를 통과함**. Iterate/No-go면 T18을 착수하지 않음
+- `RESEARCH_REVIEW.md`의 문헌 근거·과해석 경계를 반영하고, T25 대표 12문구 뒤 `COMPETITIVE_VALIDATION.md`의 무참여자 모델 벤치마크가 **`Provisional Go`를 통과함**. 이 판정은 provider 비종속 서버·DB 기반 구현을 막지 않으며, Iterate/No-go면 T20 실 provider 품질 진행과 T22~T23 출시 판정을 보류함
 - T22의 긴 인터뷰 없는 외부 과업에서 평소 ChatGPT/Gemini와 유효 짝비교를 완료한 대학생 5명을 확보하고 카드 4개 중 3개 이상과 실 AI 1개 무도움 완료·시간·개인정보 이해·“내 말 같다”를 기록함 (PRODUCT_REVIEW)
 - 카드 경로는 T22에서 평소 쓰는 ChatGPT/Gemini와 비교하고, 실 AI 경로는 답냥이 단독 사용성을 검증해 **최종 `Go`를 통과함**. Iterate/No-go면 T23·출시를 보류하고, 그 전에는 범용 AI 대비 우월성을 주장하지 않음
 - 현재 플랜이 Vercel custom events를 지원하면 `generate`/`copy`를 기록하고, 미지원이면 유료 플랜 없이 제약과 파일럿 대체 근거를 기록함 (SPEC 7장)

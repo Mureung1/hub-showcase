@@ -90,11 +90,12 @@ flowchart LR
         Provider["_lib/generation/provider.ts<br/>GenerationProvider 인터페이스"]
         RateLimiter["_lib/generation/rateLimiter.ts<br/>in-memory, IP당 분당 10회"]
         Metrics["_lib/generation/metrics.ts"]
+        DataLayer["_lib/db<br/>schema · repository · metrics sink"]
     end
 
-    subgraph External["외부 (미연결 상태)"]
+    subgraph External["외부 서비스"]
         AIProvider[["AI Provider<br/>(claude-haiku-4-5 등, 현재 미구성)"]]
-        DB[["Neon PostgreSQL + Drizzle<br/>(T30, 실행 메타데이터만)"]]
+        DB[["Neon PostgreSQL<br/>(개발 migration·smoke 통과)"]]
     end
 
     UI --> Features
@@ -110,7 +111,8 @@ flowchart LR
     Provider -.->|미구성 시 provider_unconfigured 오류| Handler
     Provider ==>|연결 시| AIProvider
     Handler --> Metrics
-    Metrics -.->|계측 도구 확정 전| DB
+    Metrics --> DataLayer
+    DataLayer -.->|waitUntil, 원문 없는 metadata| DB
     Prompt --> Provider
 ```
 
@@ -195,7 +197,7 @@ flowchart TD
 
     Input --> Session
     Input -->|AI 경로만| AICall
-    AICall -.->|원문 미포함, ID·모델·지연시간만| DB
+    AICall -.->|허용 목록 mapper, 원문 미포함| DB
     Session -->|30분 경과 또는 탭 종료| Purge[자동 삭제]
 
     style DB stroke-dasharray: 5 5
@@ -203,6 +205,7 @@ flowchart TD
 
 - 카드/이메일 경로는 애초에 서버로 아무것도 보내지 않는다.
 - AI 경로만 원문이 외부 provider로 나간다 — 화면에 사전 고지 필요 (SPEC 2장).
+- `DATABASE_URL`이 있는 서버 환경에서만 Neon HTTP repository를 만들고, 없거나 설정에 실패하면 no-op sink로 강등한다. DB write는 Vercel `waitUntil()`에 등록하며 실패해도 생성 응답을 바꾸지 않는다.
 - 로그인·영구 사용자 프로필·서버 측 대화 이력이 없다 — 전부 탭 스코프.
 
 ---
@@ -211,6 +214,7 @@ flowchart TD
 
 - **"AI 서비스"처럼 보이지만 기본 경로는 AI를 안 씀.** 288개 카드 템플릿이 커버하는 상황이면 API 호출 자체가 없다 — 응답속도·비용·환각 리스크가 구조적으로 0이라는 게 AI 챗봇과의 핵심 차별점. 발표에서 "왜 자유 챗봇이 아닌가"의 답이 됨.
 - **현재 코드는 AI를 아직 실제로 안 부른다.** `MessageFlow.tsx`가 `fetch('/api/generate')`가 아니라 `generateWithMock()`을 직접 호출 중이고, `api/generate.ts`의 provider도 `createUnconfiguredGenerationProvider()`(항상 실패)다. 서버 계약·프롬프트 조립·핸들러(재시도/데드라인/rate limit)는 완성됐지만 실제 모델 연결은 아직이다. 발표에서 "지금 데모는 어디까지 실물이냐"는 질문이 나올 걸 대비해 이 경계선을 먼저 밝히는 게 좋다.
+- **DB 데이터 계층은 실제 Neon 개발 DB까지 검증해 T30을 완료했다.** 네 테이블 schema·migration·repository와 원문 비저장·실패 격리 테스트를 구현하고, 실제 generate handler의 background sink 및 public 테이블 네 개의 임시 메타데이터 기록·조회·정리를 통과했다. Vercel Preview의 `waitUntil()` 수명주기와 환경별 `DATABASE_URL` 분리는 T31 최종 통합에서 확인한다.
 - **라우팅에 판단이 없다.** 카드 유무만으로 템플릿/AI가 갈린다. "AI가 상황을 보고 알아서 템플릿을 쓸지 생성할지 정한다"는 오해를 사전에 차단하면 신뢰도 있는 설명이 됨.
 - **톤(toneLevel)과 말투(speechStyleId)는 서로 다른 축.** 톤=전달 강도(기본/부드럽게/분명하게), 말투=문장 말끝(습니다체/요체/이다체/용용체). 4 말투 × 3톤 × 6상황 × 4관계 = 288개라는 조합 폭발을 "왜 결정적 템플릿을 골랐는가"의 근거로 쓸 수 있음.
 - **하드 실패 기준이 수치로 못박혀 있다.** T25 검수는 288개 전수 0건 하드페일, 96/96 톤 정렬 일치를 요구 — "느낌상 괜찮다"가 아니라 통과선이 있는 QA 프로세스라는 점은 포트폴리오/발표에서 신뢰도를 높이는 디테일.

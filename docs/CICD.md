@@ -20,7 +20,7 @@
 | 트리거 | 모든 브랜치 push + 모든 PR. 같은 브랜치에 연속 push 시 이전 실행 취소(concurrency) |
 | 런타임 | Vite 8 호환 Node(`^20.19.0 || >=22.12.0`)를 저장소와 CI에서 같은 버전으로 고정 |
 | 단계 | `npm ci` → `npm run lint` → 클라이언트+API 타입검사 → `npm run build` → `npm test` |
-| API 경계 | 현재 tsconfig는 `src`와 Vite 설정만 포함한다. T18에서 `api/` 전용 tsconfig·핸들러 테스트를 추가해 서버 함수도 CI 대상에 포함 |
+| API 경계 | T18에서 `tsconfig.api.json`과 API 핸들러 테스트를 추가했고 CI의 클라이언트+API 타입검사·전체 테스트 대상에 포함됨 |
 | 통과 기준 | 전 단계 성공 + 대상 브랜치의 required status check 지정. 워크플로 파일 존재만으로 원격 강제라고 부르지 않음 |
 
 기존 `auto-merge.yml`(과제 제공 워크플로 — 매일 13:00 UTC에 비-main 타겟 PR 자동 머지)은 건드리지 않는다. CI를 도입할 때 required status check가 자동 머지에도 적용되는지 확인한다. 워크플로 추가는 원격 동작을 바꾸는 구조 변경이므로 별도 제안·승인 후 수행하고, 실제 GitHub Actions 성공과 브랜치 규칙을 확인한 뒤에만 설치 완료로 기록한다.
@@ -50,8 +50,8 @@
 3. Vercel에 GitHub 저장소 연결, 프레임워크 Vite 자동 감지 확인
 4. Production Branch 지정 + 프리뷰 배포 동작 확인 (목 상태 1차 배포 — CHECKLIST T17)
 5. 현재 Vercel 플랜의 custom events 지원 여부를 기록(T24 판단 근거). 새 유료 플랜은 자동 도입하지 않음
-6. `ANTHROPIC_API_KEY` 환경변수 등록은 T18(프록시 함수) 시점에
-7. 배포된 프리뷰 URL을 PR에 첨부해 리뷰어가 실물을 확인하고, COMPETITIVE_VALIDATION의 T22 짧은 사람 대상 비교는 같은 버전의 고정 URL에서만 수행. T18 전 무참여자 모델 벤치마크는 T25 통과 콘텐츠 버전을 별도로 고정
+6. `ANTHROPIC_API_KEY` 환경변수 등록은 T20(실 provider 전환) 시점에 Preview부터 수행. T18 provider 비종속 프록시 기반에는 키를 요구하지 않음
+7. 배포된 프리뷰 URL을 PR에 첨부해 리뷰어가 실물을 확인하고, COMPETITIVE_VALIDATION의 T22 짧은 사람 대상 비교는 같은 버전의 고정 URL에서만 수행. T20 실 provider 품질 진행 전 무참여자 모델 벤치마크는 T25 통과 콘텐츠 버전을 별도로 고정
 
 ## 이후 단계 (MVP Out)
 
