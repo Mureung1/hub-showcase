@@ -25,7 +25,7 @@ import {
   type ProductRawMaterial,
   type ProductReviewRequest,
   type ProductReviewResponse,
-  type ProductWorkspace,
+  type ProductWorkspaceActivationResponse,
   type ReadyProductWorkspace,
 } from '@ay-ple/product-contract'
 
@@ -52,6 +52,7 @@ export type {
   ProductStatePatch,
   ProductUserConfirmation,
   ProductWorkspace,
+  ProductWorkspaceActivationResponse,
   ReadyProductWorkspace,
 } from '@ay-ple/product-contract'
 
@@ -90,7 +91,7 @@ export async function fetchProductBootstrap(
 
 export async function activateProductWorkspace(
   signal?: AbortSignal,
-): Promise<ProductWorkspace | null> {
+): Promise<ProductWorkspaceActivationResponse> {
   const request = decodeEmptyProductRequest({})
   const response = await postJson(
     '/api/product/workspaces/activate',
@@ -100,7 +101,7 @@ export async function activateProductWorkspace(
   return decodeShared(
     decodeProductWorkspaceActivationResponse,
     await parseJson(response),
-  ).workspace
+  )
 }
 
 export async function createProductCourse(

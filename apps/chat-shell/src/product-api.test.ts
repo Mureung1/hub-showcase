@@ -286,6 +286,21 @@ test('rejects compatibility diagnostics in an activation response', async (t) =>
   await assertInvalidResponse(activateProductWorkspace())
 })
 
+test('preserves a cancelled activation so application state can remain intact', async (t) => {
+  const response = { status: 'cancelled', workspace: null } as const
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () =>
+      new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+  )
+
+  assert.deepEqual(await activateProductWorkspace(), response)
+})
+
 test('rejects a physical store path in a refresh response', async (t) => {
   t.mock.method(
     globalThis,

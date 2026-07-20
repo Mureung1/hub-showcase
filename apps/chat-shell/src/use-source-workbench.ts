@@ -214,14 +214,15 @@ export function useSourceWorkbench() {
 
   async function activateWorkspace() {
     await runWorkspaceMutation(async () => {
-      const workspace = await activateProductWorkspace()
+      const activation = await activateProductWorkspace()
+      if (activation.status === 'cancelled') return
       setBootstrapView((current) =>
         current.state === 'loaded'
           ? {
               state: 'loaded',
               bootstrap: {
                 ...current.bootstrap,
-                workspace,
+                workspace: activation.workspace,
                 history: emptyHistory(),
               },
             }
