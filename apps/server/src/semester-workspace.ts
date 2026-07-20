@@ -2176,21 +2176,12 @@ async function assertExecutionGuardArtifacts(
 async function inspectGuardedMaterials(
   opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
 ): Promise<Map<string, InspectedMaterial>> {
-  let scanned: readonly InspectedMaterial[]
-  try {
-    scanned = await scanRawMaterials(opened.root)
-  } catch {
-    throw executionGuardConflict()
-  }
-  if (scanned.length !== opened.store.materials.length) {
-    throw executionGuardConflict()
-  }
-  const scannedByPath = new Map(
-    scanned.map((material) => [material.relativePath, material]),
-  )
   const inspected = new Map<string, InspectedMaterial>()
   for (const material of opened.store.materials) {
-    const current = scannedByPath.get(material.relativePath)
+    const current = await inspectMaterialFile(
+      opened.root,
+      material.relativePath,
+    )
     if (
       !current ||
       current.digest !== material.digest ||

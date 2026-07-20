@@ -640,7 +640,7 @@ test('a start-failure store fault preserves recovery state and emits one honest 
   }
 })
 
-test('an out-of-scratch TXT write publishes the authoritative failed Run settlement', async () => {
+test('an unregistered out-of-scratch TXT write does not invalidate the authoritative Run settlement', async () => {
   const fixture = await createFaultFixture()
   const runtime = new FaultRuntime({
     startProductTurn: async (input) => ({
@@ -680,9 +680,9 @@ test('an out-of-scratch TXT write publishes the authoritative failed Run settlem
         const run = application.semesterWorkspace?.modelingRuns()[0]
         const terminal = terminalFrames(frames)[0]
 
-        assert.equal(run?.status, 'failed')
+        assert.equal(run?.status, 'completed')
         assert.equal(run?.validationOutcome, 'failed')
-        assert.equal(run?.failureCode, 'execution_guard_conflict')
+        assert.equal(run?.failureCode, 'proposal_not_observed')
         assert.equal(terminal?.status, run?.status)
         assert.equal(terminal?.validationOutcome, run?.validationOutcome)
         assert.equal(terminal?.failureCode, run?.failureCode)

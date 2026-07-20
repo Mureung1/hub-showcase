@@ -585,6 +585,42 @@ test('Run-free Product Chat holds the durable source/revision guard through bind
   }
 })
 
+test('Product Chat guard ignores an unregistered transient TXT while preserving registered sources', async () => {
+  const fixture = await createFixture()
+  try {
+    const operationId = `chat_${'9'.repeat(32)}`
+    const prepared = await fixture.controller.prepareProductChatExecution({
+      operationId,
+      courseId: fixture.courseId,
+      selectedMaterials: [],
+    })
+    await writeFile(
+      path.join(fixture.workspaceRoot, 'native-output.txt'),
+      '등록되지 않은 실행 중간 산출물',
+      'utf8',
+    )
+
+    await fixture.controller.bindProductChatExecution({
+      operationId,
+      threadId: 'thread-chat-transient-output',
+      turnId: 'turn-chat-transient-output',
+    })
+    await fixture.controller.settleProductChatExecution({ operationId })
+
+    assert.equal(await exists(prepared.scratchPath), false)
+    assert.deepEqual(fixture.controller.modelingRuns(), [])
+    assert.equal(
+      await readFile(
+        path.join(fixture.workspaceRoot, 'native-output.txt'),
+        'utf8',
+      ),
+      '등록되지 않은 실행 중간 산출물',
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('an unreviewed Run-free Chat proposal becomes interrupted at settlement', async () => {
   const fixture = await createFixture()
   try {
