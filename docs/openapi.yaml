@@ -177,6 +177,8 @@ paths:
         분석 결과와 선호 조건을 조합해 추천 목록을 생성·저장하고 반환한다.
         재조회/필터링은 조건을 바꿔 다시 POST한다 (매번 새 추천 리소스 생성).
         조건에 맞는 결과가 없으면 에러가 아니라 `items: []`로 응답한다.
+        부수효과: 저장된 분석이 7일 경과 상태면 추천 생성 전에 재분석해 갱신한다
+        (GET /api/analysis/{githubId}와 동일한 신선도 정책 — 추천이 낡은 프로필에 기반하지 않도록).
       operationId: createRecommendation
       requestBody:
         required: true

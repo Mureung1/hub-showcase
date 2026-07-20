@@ -1,11 +1,5 @@
 import { createAnalysis, getAnalysis } from '../services/analysisService.js';
-
-// openapi.yaml의 githubId 패턴 (GitHub 사용자명 규칙: 영숫자·하이픈, 1~39자)
-const GITHUB_ID_PATTERN = /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/;
-
-function isValidGithubId(githubId) {
-    return typeof githubId === 'string' && GITHUB_ID_PATTERN.test(githubId);
-}
+import { isValidGithubId } from '../utils/validators.js';
 
 // POST /api/analysis — GitHub ID를 받아 프로필 분석 결과를 반환 (24시간 캐시)
 export async function requestAnalysis(req, res, next) {
