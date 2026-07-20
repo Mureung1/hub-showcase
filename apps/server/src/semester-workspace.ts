@@ -1368,10 +1368,62 @@ function cloneStatePatch(patch: StatePatch): StatePatch {
 function clonePersistedStatePatch(
   patch: PersistedStatePatch,
 ): PersistedStatePatch {
+  const canonicalPayload = canonicalStoredPatchPayload(patch)
+  if (
+    canonicalizeStoredPatchPayload(patch.canonicalPayload) !== canonicalPayload
+  ) {
+    throw invalidStore()
+  }
   return {
     ...cloneStatePatch(patch),
-    canonicalPayload: patch.canonicalPayload,
+    canonicalPayload,
   }
+}
+
+function canonicalizeStoredPatchPayload(value: string): string {
+  try {
+    const decoded: unknown = JSON.parse(value)
+    if (
+      !isRecord(decoded) ||
+      JSON.stringify(decoded) !== value ||
+      !hasExactKeyOrder(decoded, [
+        'requestKey',
+        'workspaceId',
+        'courseId',
+        'baseRevision',
+        'summary',
+        'changes',
+        'evidence',
+        ...(Object.hasOwn(decoded, 'origin') ? ['origin'] : []),
+      ]) ||
+      !isRecord(decoded.changes) ||
+      !hasExactKeyOrder(decoded.changes, [
+        'operation',
+        ...(Object.hasOwn(decoded.changes, 'assignmentId')
+          ? ['assignmentId']
+          : []),
+        'values',
+      ]) ||
+      !isEvidenceArray(decoded.evidence) ||
+      !isCanonicallyOrderedEvidence(decoded.evidence)
+    ) {
+      throw invalidStore()
+    }
+    return JSON.stringify(parseStatePatchPayload(decoded))
+  } catch {
+    throw invalidStore()
+  }
+}
+
+function hasExactKeyOrder(
+  value: Record<string, unknown>,
+  expected: readonly string[],
+): boolean {
+  const actual = Object.keys(value)
+  return (
+    actual.length === expected.length &&
+    actual.every((key, index) => key === expected[index])
+  )
 }
 
 type InspectedMaterial = Omit<RawMaterial, 'id'> & {

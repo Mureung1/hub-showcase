@@ -14,7 +14,10 @@ import {
   ASSIGNMENT_REVIEW_QUESTION,
   createAssignmentReviewCoordinator,
 } from './state-patch-review.js'
-import { materializeE2eSemesterWorkspace } from '../../../scripts/semester-workspace-materializer.mjs'
+import {
+  materializeE2eSemesterWorkspace,
+  materializeScanLimitSemesterWorkspace,
+} from '../../../scripts/semester-workspace-materializer.mjs'
 
 test('a selected-source proposal creates one durable pending Assignment patch without changing confirmed state', async () => {
   const materialized = await materializeE2eSemesterWorkspace()
@@ -301,6 +304,124 @@ test('the deterministic MCP and Plan sequence commits an accepted Assignment bef
     ])
   } finally {
     await materialized.cleanup()
+  }
+})
+
+test('reopen normalizes a semantically exact pre-corrective version 2 canonical payload', async () => {
+  const fixture = await createReviewFixture()
+
+  try {
+    const created = await createAndBindPatch(
+      fixture,
+      'thread-legacy-canonical',
+      'turn-legacy-canonical',
+      'interaction-legacy-canonical',
+    )
+    await fixture.controller.commitAssignmentReviewDecision({
+      ...created.binding,
+      decision: 'accept',
+    })
+    const expectedState = fixture.controller.assignmentState()
+    const storePath = path.join(
+      fixture.workspaceRoot,
+      '.ay-ple',
+      'workspace-state.json',
+    )
+    const legacyStore = JSON.parse(
+      await readFile(storePath, 'utf8'),
+    ) as MutableStoredWorkspace
+    const legacyPatch = legacyStore.statePatches[0]
+    assert.ok(legacyPatch)
+    const currentCanonicalPayload =
+      rewriteAsPreCorrectiveCanonical(legacyPatch)
+    assert.notEqual(legacyPatch.canonicalPayload, currentCanonicalPayload)
+    await writeFile(
+      storePath,
+      `${JSON.stringify(legacyStore, null, 2)}\n`,
+      'utf8',
+    )
+
+    const reopened = createSemesterWorkspaceController({
+      packageRoot: fixture.packageRoot,
+      appDataRoot: fixture.appDataRoot,
+      chooseDirectory: async () => fixture.workspaceRoot,
+    })
+    await reopened.activate()
+    assert.deepEqual(reopened.assignmentState(), expectedState)
+
+    const migratedBytes = await readFile(storePath, 'utf8')
+    const migratedStore = JSON.parse(migratedBytes) as MutableStoredWorkspace
+    const migratedPatch = migratedStore.statePatches[0]
+    assert.ok(migratedPatch)
+    assert.equal(migratedPatch.canonicalPayload, currentCanonicalPayload)
+
+    const reopenedAgain = createSemesterWorkspaceController({
+      packageRoot: fixture.packageRoot,
+      appDataRoot: fixture.appDataRoot,
+      chooseDirectory: async () => fixture.workspaceRoot,
+    })
+    await reopenedAgain.activate()
+    assert.deepEqual(reopenedAgain.assignmentState(), expectedState)
+    assert.equal(await readFile(storePath, 'utf8'), migratedBytes)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('failed activation does not persist a compatible version 2 normalization', async () => {
+  const fixture = await createReviewFixture()
+
+  try {
+    const created = await createAndBindPatch(
+      fixture,
+      'thread-legacy-transaction',
+      'turn-legacy-transaction',
+      'interaction-legacy-transaction',
+    )
+    await fixture.controller.commitAssignmentReviewDecision({
+      ...created.binding,
+      decision: 'accept',
+    })
+    const sourceStorePath = path.join(
+      fixture.workspaceRoot,
+      '.ay-ple',
+      'workspace-state.json',
+    )
+    const legacyStore = JSON.parse(
+      await readFile(sourceStorePath, 'utf8'),
+    ) as MutableStoredWorkspace
+    const legacyPatch = legacyStore.statePatches[0]
+    assert.ok(legacyPatch)
+    rewriteAsPreCorrectiveCanonical(legacyPatch)
+
+    const candidateRoot = path.join(
+      path.dirname(fixture.workspaceRoot),
+      'scan-limit-workspace',
+    )
+    await materializeScanLimitSemesterWorkspace(candidateRoot)
+    const candidateProductRoot = path.join(candidateRoot, '.ay-ple')
+    await mkdir(candidateProductRoot)
+    const candidateStorePath = path.join(
+      candidateProductRoot,
+      'workspace-state.json',
+    )
+    const legacyBytes = `${JSON.stringify(legacyStore, null, 2)}\n`
+    await writeFile(candidateStorePath, legacyBytes, 'utf8')
+
+    const reopened = createSemesterWorkspaceController({
+      packageRoot: fixture.packageRoot,
+      appDataRoot: fixture.appDataRoot,
+      chooseDirectory: async () => candidateRoot,
+    })
+    await assert.rejects(
+      reopened.activate(),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'material_scan_limit',
+    )
+    assert.equal(await readFile(candidateStorePath, 'utf8'), legacyBytes)
+  } finally {
+    await fixture.cleanup()
   }
 })
 
@@ -950,6 +1071,99 @@ test('reopen rejects relationally inconsistent version 2 state without rewriting
         },
       },
       {
+        name: 'malformed canonical payload',
+        mutate: (store) => {
+          assert.ok(store.statePatches[0])
+          store.statePatches[0].canonicalPayload = '{"requestKey":'
+        },
+      },
+      {
+        name: 'unknown canonical payload field',
+        mutate: (store) => {
+          const patch = store.statePatches[0]
+          assert.ok(patch)
+          const canonical = JSON.parse(
+            patch.canonicalPayload,
+          ) as MutableCanonicalPayload
+          canonical.unknownAuthority = true
+          patch.canonicalPayload = JSON.stringify(canonical)
+        },
+      },
+      {
+        name: 'canonical payload disagrees with patch fields',
+        mutate: (store) => {
+          const patch = store.statePatches[0]
+          assert.ok(patch)
+          const canonical = JSON.parse(
+            patch.canonicalPayload,
+          ) as MutableCanonicalPayload
+          canonical.summary = 'persisted patch와 다른 의미입니다.'
+          patch.canonicalPayload = JSON.stringify(canonical)
+        },
+      },
+      {
+        name: 'pretty-printed canonical payload was never producer output',
+        mutate: (store) => {
+          const patch = store.statePatches[0]
+          assert.ok(patch)
+          patch.canonicalPayload = JSON.stringify(
+            JSON.parse(patch.canonicalPayload),
+            null,
+            2,
+          )
+        },
+      },
+      {
+        name: 'reordered canonical payload root was never producer output',
+        mutate: (store) => {
+          const patch = store.statePatches[0]
+          assert.ok(patch)
+          const canonical = JSON.parse(
+            patch.canonicalPayload,
+          ) as MutableCanonicalPayload
+          const reordered = {
+            summary: canonical.summary,
+            requestKey: canonical.requestKey,
+            workspaceId: canonical.workspaceId,
+            courseId: canonical.courseId,
+            baseRevision: canonical.baseRevision,
+            changes: canonical.changes,
+            evidence: canonical.evidence,
+            ...(canonical.origin === undefined
+              ? {}
+              : { origin: canonical.origin }),
+          }
+          patch.canonicalPayload = JSON.stringify(reordered)
+        },
+      },
+      {
+        name: 'reordered canonical changes were never producer output',
+        mutate: (store) => {
+          const patch = store.statePatches[0]
+          assert.ok(patch)
+          const canonical = JSON.parse(
+            patch.canonicalPayload,
+          ) as MutableCanonicalPayload
+          canonical.changes = {
+            values: canonical.changes.values,
+            operation: canonical.changes.operation,
+          }
+          patch.canonicalPayload = JSON.stringify(canonical)
+        },
+      },
+      {
+        name: 'reordered canonical evidence array was never producer output',
+        mutate: (store) => {
+          const patch = store.statePatches[0]
+          assert.ok(patch)
+          const canonical = JSON.parse(
+            patch.canonicalPayload,
+          ) as MutableCanonicalPayload
+          canonical.evidence.reverse()
+          patch.canonicalPayload = JSON.stringify(canonical)
+        },
+      },
+      {
         name: 'unknown current-version top-level state',
         mutate: (store) => {
           store.unknownAuthority = { shouldNotDisappear: true }
@@ -1016,24 +1230,81 @@ async function createReviewFixture() {
   }
 }
 
+type MutableAssignmentValues = {
+  title: string
+  dueAt: string
+  submissionMethod: string
+}
+
+type MutableAssignmentUpsert = {
+  operation: string
+  assignmentId?: string
+  values: MutableAssignmentValues
+}
+
+type MutableEvidenceRef = {
+  field: string
+  rawMaterialId: string
+  digest: string
+  quote: string
+}
+
 type MutableStoredWorkspace = Record<string, unknown> & {
   course: (Record<string, unknown> & { id: string }) | null
   statePatches: (Record<string, unknown> & {
     applyOutcome: unknown
     canonicalPayload: string
-    changes: Record<string, unknown> & {
-      assignmentId?: string
-    }
+    changes: MutableAssignmentUpsert
+    evidence: MutableEvidenceRef[]
     workspaceId: string
   })[]
   userConfirmations: (Record<string, unknown> & { patchId: string })[]
 }
 
-type MutableCanonicalPayload = {
-  changes: {
-    operation: string
-    assignmentId?: string
-    values: unknown
+type MutableCanonicalPayload = Record<string, unknown> & {
+  changes: MutableAssignmentUpsert
+  evidence: MutableEvidenceRef[]
+}
+
+function rewriteAsPreCorrectiveCanonical(
+  patch: MutableStoredWorkspace['statePatches'][number],
+): string {
+  const currentCanonicalPayload = patch.canonicalPayload
+  patch.changes = cloneWithPreCorrectiveAssignmentOrder(patch.changes)
+  patch.evidence = patch.evidence.map(cloneWithPreCorrectiveEvidenceOrder)
+  const legacyCanonicalPayload = JSON.parse(
+    currentCanonicalPayload,
+  ) as MutableCanonicalPayload
+  legacyCanonicalPayload.changes = patch.changes
+  legacyCanonicalPayload.evidence = patch.evidence
+  patch.canonicalPayload = JSON.stringify(legacyCanonicalPayload)
+  return currentCanonicalPayload
+}
+
+function cloneWithPreCorrectiveAssignmentOrder(
+  changes: MutableAssignmentUpsert,
+): MutableAssignmentUpsert {
+  return {
+    operation: changes.operation,
+    ...(changes.assignmentId === undefined
+      ? {}
+      : { assignmentId: changes.assignmentId }),
+    values: {
+      submissionMethod: changes.values.submissionMethod,
+      dueAt: changes.values.dueAt,
+      title: changes.values.title,
+    },
+  }
+}
+
+function cloneWithPreCorrectiveEvidenceOrder(
+  evidence: MutableEvidenceRef,
+): MutableEvidenceRef {
+  return {
+    quote: evidence.quote,
+    digest: evidence.digest,
+    rawMaterialId: evidence.rawMaterialId,
+    field: evidence.field,
   }
 }
 
