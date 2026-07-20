@@ -66,7 +66,7 @@ class AndroidSharePluginApiTest {
     }
 
     @Test
-    fun `listener 있는 재진입 공유는 이벤트로 한 번 전달하고 pending에 남기지 않는다`() {
+    fun `listener 있는 재진입 공유는 wake up 이벤트를 한 번 전달하고 pending으로 한 번 소비한다`() {
         val controller = launchActivityController()
         val activity = controller.get()
         val plugin = ActivityBoundAndroidSharePlugin(activity)
@@ -75,18 +75,21 @@ class AndroidSharePluginApiTest {
             JSObject().apply { put("eventName", "shareIntentReceived") },
         )
         val pendingCall = ApiRecordingPluginCall()
+        val secondPendingCall = ApiRecordingPluginCall()
 
         plugin.addListener(listener)
         controller.newIntent(sendIntent(text = "https://example.com/event"))
         plugin.getPendingShare(pendingCall)
+        plugin.getPendingShare(secondPendingCall)
 
         assertEquals(1, listener.resolvedPayloads.size)
-        assertEquals("https://example.com/event", listener.resolvedPayloads.single()?.getString("text"))
-        assertTrue(pendingCall.resolvedPayloads.single()?.length() == 0)
+        assertTrue(listener.resolvedPayloads.single()?.length() == 0)
+        assertEquals("https://example.com/event", pendingCall.resolvedPayloads.single()?.getString("text"))
+        assertTrue(secondPendingCall.resolvedPayloads.single()?.length() == 0)
     }
 
     @Test
-    fun `초기 공유와 listener 있는 재진입 공유는 서로 다른 경로로 한 번씩 전달한다`() {
+    fun `listener 있는 재진입 공유는 초기 공유를 최신 pending으로 교체한다`() {
         val controller = launchActivityController(sendIntent(text = "https://example.com/initial"))
         val activity = controller.get()
         val plugin = ActivityBoundAndroidSharePlugin(activity)
@@ -102,8 +105,8 @@ class AndroidSharePluginApiTest {
         plugin.getPendingShare(initialCall)
         plugin.getPendingShare(secondPendingCall)
 
-        assertEquals("https://example.com/reentry", listener.resolvedPayloads.single()?.getString("text"))
-        assertEquals("https://example.com/initial", initialCall.resolvedPayloads.single()?.getString("text"))
+        assertTrue(listener.resolvedPayloads.single()?.length() == 0)
+        assertEquals("https://example.com/reentry", initialCall.resolvedPayloads.single()?.getString("text"))
         assertTrue(secondPendingCall.resolvedPayloads.single()?.length() == 0)
     }
 

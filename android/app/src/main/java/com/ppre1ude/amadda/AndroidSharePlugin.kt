@@ -94,12 +94,8 @@ open class AndroidSharePlugin : Plugin() {
     }
 
     fun notifyShareIntentReceived(share: AndroidShare) {
-        if (hasListeners(SHARE_INTENT_RECEIVED_EVENT)) {
-            notifyListeners(SHARE_INTENT_RECEIVED_EVENT, share.toJsObject())
-            return
-        }
-
         (activity as? MainActivity)?.replacePendingShare(share)
+        notifyListeners(SHARE_INTENT_RECEIVED_EVENT, JSObject())
     }
 
     internal fun consumePendingShare(): AndroidShare? {

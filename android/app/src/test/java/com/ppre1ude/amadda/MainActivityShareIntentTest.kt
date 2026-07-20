@@ -1,6 +1,7 @@
 package com.ppre1ude.amadda
 
 import android.content.Intent
+import androidx.appcompat.app.AppCompatActivity
 import com.getcapacitor.JSObject
 import com.getcapacitor.PluginCall
 import org.junit.Assert.assertEquals
@@ -56,10 +57,10 @@ class MainActivityShareIntentTest {
     }
 
     @Test
-    fun `listener 있는 재진입 공유는 이벤트로 전달되고 대기열에 남지 않는다`() {
+    fun `listener 있는 재진입 공유는 wake up 이벤트 뒤 pending으로 한 번 소비한다`() {
         val controller = launchRetainedEventActivity(Intent(Intent.ACTION_MAIN))
         val activity = controller.get()
-        val plugin = AndroidSharePlugin()
+        val plugin = ActivityBoundRetainedEventPlugin(activity)
         activity.sharePlugin = plugin
         val listener = RetainedEventPluginCall(
             JSObject().apply { put("eventName", "shareIntentReceived") },
@@ -69,7 +70,8 @@ class MainActivityShareIntentTest {
         controller.newIntent(sendIntent(text = "https://example.com/event"))
 
         assertEquals(1, listener.resolvedPayloads.size)
-        assertEquals("https://example.com/event", listener.resolvedPayloads.single()?.getString("text"))
+        assertTrue(listener.resolvedPayloads.single()?.length() == 0)
+        assertEquals("https://example.com/event", activity.consumePendingShare()?.text)
         assertNull(activity.consumePendingShare())
     }
 
@@ -117,6 +119,14 @@ class RetainedEventMainActivity : MainActivity() {
 
     override fun publishShareIntent(share: AndroidShare) {
         sharePlugin.notifyShareIntentReceived(share)
+    }
+}
+
+private class ActivityBoundRetainedEventPlugin(
+    private val testActivity: AppCompatActivity,
+) : AndroidSharePlugin() {
+    override fun getActivity(): AppCompatActivity {
+        return testActivity
     }
 }
 

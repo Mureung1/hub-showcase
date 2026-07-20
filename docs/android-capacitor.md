@@ -89,19 +89,19 @@ MainActivity는 초기 Intent와 onNewIntent를 같은 파서로 처리한다.
 - ACTION_SEND와 MIME type text/plain만 허용한다.
 - EXTRA_TEXT는 필수이고 EXTRA_TITLE은 선택이다.
 - 최초 실행 공유는 getPendingShare()가 한 번만 소비하는 단일 pending 메모리 슬롯에 넣는다.
-- 실행 중 재진입 공유는 shareIntentReceived 이벤트로만 전달한다. 따라서 같은 id가 대기열과 이벤트에 중복 전달되지 않는다.
-- 재진입 시 JavaScript listener가 있으면 shareIntentReceived 이벤트를 한 번만 전달하고 pending 슬롯에는 넣지 않는다.
-- JavaScript listener가 없으면 Capacitor 보존 이벤트를 사용하지 않는다. 동일한 단일 pending 슬롯의 기존 값을 최신 공유로 교체한다.
-- 늦게 등록되는 JavaScript 어댑터는 listener 등록 직후 getPendingShare()를 호출해 최신 pending 공유 한 건을 소비해야 한다. 이 호출 순서는 후속 TypeScript 어댑터의 계약이다.
+- 실행 중 재진입 공유는 먼저 단일 pending 슬롯의 기존 값을 최신 공유로 교체한다. 따라서 같은 id가 이벤트 payload와 pending에 중복 전달되지 않는다.
+- 슬롯 교체 뒤 shareIntentReceived를 보존하지 않는 wake-up 알림으로 한 번 발행한다. 이 이벤트 payload는 빈 객체이며 id, text, title을 전달하지 않는다.
+- listener 존재 여부를 검사하지 않고 Capacitor retained event도 사용하지 않는다. listener 등록과 이벤트 발행 사이에서 알림이 폐기되어도 최신 pending 공유는 남는다.
+- TypeScript 어댑터는 listener 등록 직후와 shareIntentReceived wake-up 알림 수신 시마다 getPendingShare()를 호출해 최신 pending 공유 한 건을 소비해야 한다. 이벤트 payload를 저장 입력으로 사용하지 않는 이 호출 순서는 후속 TypeScript 어댑터의 계약이다.
 - finishShare()는 공유 결과 완료 시 현재 Android Activity에 종료를 요청한다.
 
-AndroidSharePluginTest는 길이 제한, 실제 Capacitor listener 전달과 초기/재진입 전달 분리를 검증한다. MainActivityShareIntentTest는 실제 onNewIntent 재진입이 listener에 이벤트를 발행하고 pending 슬롯을 비우는지 검증한다. AndroidSharePluginApiTest는 listener 없는 재진입의 최신 한 건 교체, listener 있는 재진입의 이벤트 단일 전달, 실제 getPendingShare()·finishShare()를 검증한다.
+AndroidSharePluginTest는 길이 제한과 초기/재진입 파싱을 검증한다. MainActivityShareIntentTest는 실제 onNewIntent 재진입이 빈 wake-up 이벤트를 발행한 뒤 pending 슬롯에서 한 번만 소비되는지 검증한다. AndroidSharePluginApiTest는 listener 유무와 관계없는 최신 한 건 교체, 빈 wake-up 이벤트, 실제 getPendingShare()·finishShare()를 검증한다.
 
 ## Robolectric와 에뮬레이터 검증
 
 Robolectric는 Capacitor BridgeActivity.load()가 생성하는 Android WebView/ServiceWorker provider를 제공하지 않는다. 이 때문에 MainActivityShareIntentTest의 테스트 전용 Activity는 load()만 대체하고 그 안에서 onNewIntent(intent)를 호출한다. 실제 MainActivity의 초기화 플래그, 초기 대기열, 재진입 라우팅은 실행하지만 WebView·JavaScript bridge의 종단 간 전달은 Robolectric에서 검증하지 않는다.
 
-현재 가능한 가장 가까운 네이티브 검증은 Kotlin 단위 테스트다. PluginCall의 실제 resolve, Capacitor의 실제 listener 존재 확인과 단일 pending 슬롯 교체, Activity.finish() 요청을 모두 호출한다. WebView에 등록된 JavaScript listener가 수신하는 종단 간 검증은 Android 에뮬레이터에서 후속 TypeScript 공유 어댑터가 연결된 뒤 수행한다.
+현재 가능한 가장 가까운 네이티브 검증은 Kotlin 단위 테스트다. PluginCall의 실제 resolve, listener 존재 여부와 무관한 단일 pending 슬롯 교체, 빈 wake-up 이벤트, Activity.finish() 요청을 모두 호출한다. WebView에 등록된 JavaScript listener가 수신하는 종단 간 검증은 Android 에뮬레이터에서 후속 TypeScript 공유 어댑터가 연결된 뒤 수행한다.
 
 에뮬레이터에는 API 24 이상 시스템 이미지를 사용하고, Android System WebView 상태를 확인한다. APK 설치와 초기 공유 Intent 수신은 다음처럼 확인한다.
 
@@ -114,7 +114,7 @@ adb shell am start -a android.intent.action.SEND -t text/plain --es android.inte
 
 1. 앱이 종료된 상태에서 공유한 입력이 getPendingShare()로 한 번만 처리되는지 확인한다.
 2. listener가 없는 실행 중 앱에 여러 공유를 보낸 뒤 listener를 등록하고 즉시 getPendingShare()를 호출해 최신 한 건만 받는지 확인한다.
-3. listener가 있는 실행 중 앱에 공유한 입력은 shareIntentReceived로 한 번 수신되고 pending 슬롯에는 없는지 확인한다.
+3. listener가 있는 실행 중 앱에 공유한 입력은 빈 shareIntentReceived wake-up 알림을 한 번 수신하고, 알림 처리에서 getPendingShare()를 호출해 한 번만 저장 입력을 받는지 확인한다.
 4. 4097자 text, 501자 title, text/html, ACTION_VIEW 입력이 전달되지 않는지 확인한다.
 5. finishShare() 뒤 공유 원본 앱으로 돌아가는지 확인한다.
 

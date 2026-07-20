@@ -1,8 +1,6 @@
 package com.ppre1ude.amadda
 
 import android.content.Intent
-import com.getcapacitor.JSObject
-import com.getcapacitor.PluginCall
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -154,28 +152,6 @@ class AndroidSharePluginTest {
         assertTrue(receivedShares.isEmpty())
     }
 
-    @Test
-    fun `리스너가 있는 재진입 공유 이벤트는 한 번 전달한다`() {
-        val plugin = AndroidSharePlugin()
-        val listener = RecordingPluginCall(
-            JSObject().apply { put("eventName", "shareIntentReceived") },
-        )
-
-        plugin.addListener(listener)
-        plugin.notifyShareIntentReceived(
-            AndroidShare(
-                id = "share-1",
-                text = "https://example.com/new",
-                title = "새 공유",
-            ),
-        )
-
-        assertEquals(1, listener.resolvedPayloads.size)
-        assertEquals("share-1", listener.resolvedPayloads.single()?.getString("id"))
-        assertEquals("https://example.com/new", listener.resolvedPayloads.single()?.getString("text"))
-        assertEquals("새 공유", listener.resolvedPayloads.single()?.getString("title"))
-    }
-
     private fun sendIntent(
         action: String = Intent.ACTION_SEND,
         type: String = "text/plain",
@@ -190,19 +166,5 @@ class AndroidSharePluginTest {
                     putExtra(Intent.EXTRA_TITLE, title)
                 }
             }
-    }
-}
-
-private class RecordingPluginCall(
-    data: JSObject = JSObject(),
-) : PluginCall(null, "AndroidShare", "callback", "test", data) {
-    val resolvedPayloads = mutableListOf<JSObject?>()
-
-    override fun resolve(data: JSObject) {
-        resolvedPayloads += data
-    }
-
-    override fun resolve() {
-        resolvedPayloads += null
     }
 }
