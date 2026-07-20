@@ -303,7 +303,7 @@ function App() {
             </div>
             <textarea
               className="textarea"
-              placeholder={`인터뷰 ${index + 1} 전사문을 붙여넣거나 .md/.txt 파일을 업로드하세요.`}
+              placeholder={`인터뷰 ${index + 1} 전사문을 붙여넣거나 .md/.txt 파일을 업로드하세요.\n예) 지연: 처음 들어왔을 때 뭐 하는 서비스인지 잘 모르겠더라고요.\n    민수: 저는 버튼이 눈에 안 띄어서 헤맸어요.\n\n"화자명: 발언" 형태로 줄바꿈 구분해 입력하면 분석 시 발언자를 더 정확하게 인식합니다. (필수는 아닙니다)`}
               value={interview.transcript}
               onChange={(e) => handleInterviewChange(interview.id, 'transcript', e.target.value)}
             />
