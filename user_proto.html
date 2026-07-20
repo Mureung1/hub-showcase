@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>카페 스탬프 화면</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="./prototype.css" />
+  </head>
+  <body>
+    <main class="phone" aria-label="손님 화면 프로토타입">
+      <section class="screen detail-screen" id="brownbean" aria-label="브라운빈 커피 상세">
+        <header class="topbar">
+          <a class="icon-button" href="#home" aria-label="홈으로 돌아가기">
+            <span aria-hidden="true">‹</span>
+          </a>
+          <h1>브라운빈 커피</h1>
+          <button class="icon-button muted" type="button" aria-label="더보기">
+            <span aria-hidden="true">•••</span>
+          </button>
+        </header>
+
+        <div class="scroll-area">
+          <article class="card detail-hero">
+            <div class="brand-badge brown">
+              <span class="brand-icon mono-icon icon-coffee" aria-hidden="true"></span>
+              <span>Brown<br />Bean</span>
+            </div>
+            <div class="detail-copy">
+              <h2>브라운빈 커피</h2>
+              <p class="stamp-count"><strong>6</strong><span>/ 10</span></p>
+              <p class="reward-line">보상: 아메리카노 1잔</p>
+            </div>
+            <div class="stamp-strip wide" aria-label="10개 중 6개 적립">
+              <span class="stamp filled"></span>
+              <span class="stamp filled"></span>
+              <span class="stamp filled"></span>
+              <span class="stamp filled"></span>
+              <span class="stamp filled"></span>
+              <span class="stamp filled"></span>
+              <span class="stamp"></span>
+              <span class="stamp"></span>
+              <span class="stamp"></span>
+              <span class="stamp"></span>
+            </div>
+          </article>
+
+          <section class="content-section">
+            <h2>미사용 쿠폰</h2>
+            <div class="card coupon-list">
+              <article class="coupon-row">
+                <div class="reward-badge mono-icon icon-coffee" aria-hidden="true"></div>
+                <div>
+                  <h3>아메리카노 무료 교환권</h3>
+                  <p>2026.08.31까지</p>
+                </div>
+                <button type="button">사용하기</button>
+              </article>
+              <article class="coupon-row">
+                <div class="reward-badge mono-icon icon-cake" aria-hidden="true"></div>
+                <div>
+                  <h3>디저트 20% 할인</h3>
+                  <p>2026.07.30까지</p>
+                </div>
+                <button type="button">사용하기</button>
+              </article>
+            </div>
+          </section>
+
+          <section class="content-section">
+            <h2>스탬프 적립 내역</h2>
+            <div class="card history-list">
+              <article class="history-row">
+                <span>+1</span>
+                <strong>+1 스탬프</strong>
+                <time datetime="2026-07-08T14:20">2026.07.08 14:20</time>
+              </article>
+              <article class="history-row">
+                <span>+1</span>
+                <strong>+1 스탬프</strong>
+                <time datetime="2026-07-05T09:12">2026.07.05 09:12</time>
+              </article>
+              <article class="history-row">
+                <span>+2</span>
+                <strong>+2 스탬프</strong>
+                <time datetime="2026-06-29T18:04">2026.06.29 18:04</time>
+              </article>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <div class="tab-strip" aria-label="손님 탭 화면">
+        <section class="screen home-screen tab-panel" id="home" aria-label="손님 홈">
+          <div class="scroll-area">
+            <header class="home-header">
+            <h1>안녕하세요, 민지님</h1>
+            <button class="profile-button" type="button" aria-label="마이페이지">
+              <span aria-hidden="true"></span>
+            </button>
+          </header>
+
+          <article class="card qr-card">
+            <input class="qr-toggle" type="checkbox" id="qr-toggle" />
+            <div class="qr-card-head">
+              <span class="tiny-qr-icon" aria-hidden="true"></span>
+              <h2>내 QR 코드</h2>
+              <label class="qr-close" for="qr-toggle" aria-label="QR 작게 보기">×</label>
+            </div>
+            <div class="qr-layout">
+              <label class="qr-box" for="qr-toggle" aria-label="QR 확대하기">
+                <span class="finder one"></span>
+                <span class="finder two"></span>
+                <span class="finder three"></span>
+              </label>
+              <div class="qr-meta">
+                <strong>CAFE-1024</strong>
+                <label class="expand-button" for="qr-toggle" aria-label="QR 확대하기">
+                  <span aria-hidden="true">↗</span>
+                </label>
+              </div>
+            </div>
+          </article>
+
+          <section class="content-section cafe-section">
+            <h2>내 카페</h2>
+            <div class="cafe-list">
+              <a class="card cafe-card" href="#brownbean" aria-label="브라운빈 커피 상세 보기">
+                <div class="brand-badge brown">
+                  <span class="brand-icon mono-icon icon-coffee" aria-hidden="true"></span>
+                  <span>Brown<br />Bean</span>
+                </div>
+                <div class="cafe-main">
+                  <h3>브라운빈 커피</h3>
+                  <div class="stamp-strip" aria-label="10개 중 6개 적립">
+                    <span class="stamp filled"></span>
+                    <span class="stamp filled"></span>
+                    <span class="stamp filled"></span>
+                    <span class="stamp filled"></span>
+                    <span class="stamp filled"></span>
+                    <span class="stamp filled"></span>
+                    <span class="stamp"></span>
+                    <span class="stamp"></span>
+                    <span class="stamp"></span>
+                    <span class="stamp"></span>
+                  </div>
+                  <p><strong>6</strong> / 10 · 미사용 쿠폰 2장</p>
+                </div>
+                <div class="reward-side">
+                  <span class="mono-icon icon-coffee" aria-hidden="true"></span>
+                  <p>아메리카노 1잔</p>
+                </div>
+                <span class="chevron" aria-hidden="true">›</span>
+              </a>
+
+              <a class="card cafe-card" href="#roundtable" aria-label="라운드 테이블 상세 보기">
+                <div class="brand-badge beige">
+                  <span class="brand-icon mono-icon icon-cake" aria-hidden="true"></span>
+                  <span>Round<br />Table</span>
+                </div>
+                <div class="cafe-main">
+                  <h3>라운드 테이블</h3>
+                  <div class="stamp-strip" aria-label="8개 중 2개 적립">
+                    <span class="stamp filled"></span>
+                    <span class="stamp filled"></span>
+                    <span class="stamp"></span>
+                    <span class="stamp"></span>
+                    <span class="stamp"></span>
+                    <span class="stamp"></span>
+                    <span class="stamp"></span>
+                    <span class="stamp"></span>
+                  </div>
+                  <p><strong>2</strong> / 8 · 미사용 쿠폰 1장</p>
+                </div>
+                <div class="reward-side">
+                  <span class="mono-icon icon-cake" aria-hidden="true"></span>
+                  <p>디저트 20% 할인</p>
+                </div>
+                <span class="chevron" aria-hidden="true">›</span>
+              </a>
+
+              <a class="card cafe-card" href="#morninghouse" aria-label="모닝하우스 상세 보기">
+                <div class="brand-badge green">
+                  <span class="brand-icon mono-icon icon-cup" aria-hidden="true"></span>
+                  <span>Morning<br />House</span>
+                </div>
+                <div class="cafe-main">
+                  <h3>모닝하우스</h3>
+                  <div class="stamp-strip" aria-label="12개 중 9개 적립">
+                    <span class="stamp filled"></span>
+                    <span class="stamp filled"></span>
+                    <span class="stamp filled"></span>
+                    <span class="stamp filled"></span>
+                    <span class="stamp filled"></span>
+                    <span class="stamp filled"></span>
+                    <span class="stamp filled"></span>
+                    <span class="stamp filled"></span>
+                    <span class="stamp filled"></span>
+                    <span class="stamp"></span>
+                    <span class="stamp"></span>
+                    <span class="stamp"></span>
+                  </div>
+                  <p><strong>9</strong> / 12 · 미사용 쿠폰 1장</p>
+                </div>
+                <div class="reward-side">
+                  <span class="mono-icon icon-cup" aria-hidden="true"></span>
+                  <p>라떼 무료 사이즈업</p>
+                </div>
+                <span class="chevron" aria-hidden="true">›</span>
+              </a>
+            </div>
+          </section>
+          </div>
+        </section>
+
+        <section class="screen coupon-screen tab-panel" id="coupons" aria-label="내 쿠폰">
+          <div class="scroll-area">
+            <header class="page-header">
+              <div>
+                <h1>내 쿠폰</h1>
+                <p><span class="ticket-mini" aria-hidden="true"></span> 사용 가능한 쿠폰 <strong>3장</strong></p>
+              </div>
+              <button class="profile-button" type="button" aria-label="마이페이지">
+                <span aria-hidden="true"></span>
+              </button>
+            </header>
+
+            <div class="sort-tabs" aria-label="쿠폰 정렬">
+              <a class="selected" href="#coupons">최신순</a>
+              <a href="#coupons">만료 임박순</a>
+            </div>
+
+            <section class="coupon-cards" aria-label="미사용 쿠폰 목록">
+              <article class="ticket-card card">
+                <div class="ticket-art">
+                  <span class="mono-icon icon-coffee" aria-hidden="true"></span>
+                </div>
+                <div class="ticket-info">
+                  <p>브라운빈 커피</p>
+                  <h2>아메리카노 1잔</h2>
+                  <dl>
+                    <div>
+                      <dt>발급일</dt>
+                      <dd>2026.07.08</dd>
+                    </div>
+                    <div>
+                      <dt>만료일</dt>
+                      <dd>2026.08.31</dd>
+                    </div>
+                  </dl>
+                </div>
+                <button type="button">사용하기</button>
+              </article>
+
+              <article class="ticket-card card">
+                <div class="ticket-art">
+                  <span class="mono-icon icon-cake" aria-hidden="true"></span>
+                </div>
+                <div class="ticket-info">
+                  <p>라운드 테이블</p>
+                  <h2>디저트 20% 할인</h2>
+                  <dl>
+                    <div>
+                      <dt>발급일</dt>
+                      <dd>2026.07.03</dd>
+                    </div>
+                    <div>
+                      <dt>만료일</dt>
+                      <dd>2026.07.30</dd>
+                    </div>
+                  </dl>
+                </div>
+                <button type="button">사용하기</button>
+              </article>
+
+              <article class="ticket-card card">
+                <div class="ticket-art">
+                  <span class="mono-icon icon-cup" aria-hidden="true"></span>
+                </div>
+                <div class="ticket-info">
+                  <p>모닝하우스</p>
+                  <h2>라떼 무료 사이즈업</h2>
+                  <dl>
+                    <div>
+                      <dt>발급일</dt>
+                      <dd>2026.06.28</dd>
+                    </div>
+                    <div>
+                      <dt>만료일</dt>
+                      <dd>2026.08.15</dd>
+                    </div>
+                  </dl>
+                </div>
+                <button type="button">사용하기</button>
+              </article>
+            </section>
+          </div>
+        </section>
+
+        <section class="screen notifications-screen tab-panel" id="notifications" aria-label="알림">
+          <div class="scroll-area">
+            <header class="page-header">
+              <div>
+                <h1>알림</h1>
+                <p><span class="bell-mini" aria-hidden="true"></span> 읽지 않은 알림 <strong>3개</strong></p>
+              </div>
+              <button class="profile-button" type="button" aria-label="마이페이지">
+                <span aria-hidden="true"></span>
+              </button>
+            </header>
+
+            <section class="notice-list" aria-label="알림 목록">
+              <article class="notice-card card unread">
+                <div class="notice-art stamp-mark" aria-hidden="true"></div>
+                <div class="notice-copy">
+                  <h2>스탬프 적립 완료</h2>
+                  <p>브라운빈 커피에서 스탬프 1개가 적립됐어요.</p>
+                  <time datetime="2026-07-08T14:20">오늘 14:20</time>
+                </div>
+                <span class="unread-dot" aria-label="읽지 않음"></span>
+              </article>
+
+              <article class="notice-card card unread">
+                <div class="notice-art coupon-mark" aria-hidden="true"></div>
+                <div class="notice-copy">
+                  <h2>쿠폰 발급 완료</h2>
+                  <p>브라운빈 커피 아메리카노 1잔 쿠폰이 발급됐어요.</p>
+                  <time datetime="2026-07-08T14:20">오늘 14:20</time>
+                </div>
+                <span class="unread-dot" aria-label="읽지 않음"></span>
+              </article>
+
+              <article class="notice-card card unread">
+                <div class="notice-art clock-mark" aria-hidden="true"></div>
+                <div class="notice-copy">
+                  <h2>쿠폰 만료 임박</h2>
+                  <p>라운드 테이블 쿠폰이 3일 뒤 만료돼요.</p>
+                  <time datetime="2026-07-07T09:10">어제 09:10</time>
+                </div>
+                <span class="unread-dot" aria-label="읽지 않음"></span>
+              </article>
+
+              <article class="notice-card card read">
+                <div class="notice-art stamp-mark" aria-hidden="true"></div>
+                <div class="notice-copy">
+                  <h2>스탬프 적립 완료</h2>
+                  <p>모닝하우스에서 스탬프 1개가 적립됐어요.</p>
+                  <time datetime="2026-07-05">2026.07.05</time>
+                </div>
+              </article>
+
+              <article class="notice-card card read">
+                <div class="notice-art coupon-mark" aria-hidden="true"></div>
+                <div class="notice-copy">
+                  <h2>쿠폰 발급 완료</h2>
+                  <p>모닝하우스 라떼 무료 사이즈업 쿠폰이 발급됐어요.</p>
+                  <time datetime="2026-06-28">2026.06.28</time>
+                </div>
+              </article>
+            </section>
+          </div>
+        </section>
+
+        <section class="screen mypage-screen tab-panel" id="mypage" aria-label="마이페이지">
+          <div class="scroll-area">
+            <header class="page-header simple">
+              <h1>마이페이지</h1>
+            </header>
+
+            <article class="card profile-card">
+              <div class="profile-avatar" aria-hidden="true">
+                <span></span>
+              </div>
+              <div class="profile-copy">
+                <span class="login-chip">테스트 로그인</span>
+                <p>테스트 사용자</p>
+                <h2>민지</h2>
+                <small>손님 계정</small>
+              </div>
+            </article>
+
+            <section class="content-section member-section">
+              <h2>회원 정보</h2>
+              <div class="card member-card">
+                <strong>닉네임</strong>
+                <span>민지</span>
+                <button type="button">수정</button>
+              </div>
+            </section>
+
+            <p class="info-note">
+              <span aria-hidden="true">i</span>
+              테스트 로그인으로 이용 중이에요
+            </p>
+
+            <button class="logout-button card" type="button">
+              <span aria-hidden="true">↪</span>
+              로그아웃
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <nav class="bottom-nav" aria-label="손님 하단 메뉴">
+        <a class="active" href="#home">
+          <span class="nav-icon home-icon" aria-hidden="true"></span>
+          홈
+        </a>
+        <a href="#coupons">
+          <span class="nav-icon ticket-icon" aria-hidden="true"></span>
+          쿠폰
+        </a>
+        <a href="#notifications">
+          <span class="nav-icon bell-icon" aria-hidden="true"></span>
+          알림
+        </a>
+        <a href="#mypage">
+          <span class="nav-icon user-icon" aria-hidden="true"></span>
+          마이페이지
+        </a>
+      </nav>
+    </main>
+  </body>
+</html>
