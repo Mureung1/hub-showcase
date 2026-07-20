@@ -1,6 +1,6 @@
 import { GraphqlResponseError } from '@octokit/graphql';
 
-import githubGraphql from '../config/github.js';
+import githubGraphql, { githubRest } from '../config/github.js';
 import { recordGithubCall } from './apiUsageService.js';
 import { createLogger } from '../utils/logger.js';
 
@@ -94,6 +94,142 @@ function toHttpError(error, githubId) {
     // status 없는 에러로 감싸서 전역 에러 핸들러가 500 INTERNAL_ERROR로 처리하게 한다
     const internal = new Error(`GitHub API 호출 실패: ${error.message}`);
     return internal;
+}
+
+// 난이도 → 검색 라벨 매핑. easy/medium은 입문자용 라벨로 좁히고,
+// hard는 라벨 필터 없이 검색한다 (라벨 없는 이슈 포함 — 항목별 난이도 추정은 recommendationService 담당)
+const DIFFICULTY_SEARCH_LABEL = {
+    easy: 'good first issue',
+    medium: 'help wanted',
+    hard: null,
+};
+
+// REST 에러를 openapi.yaml 공통 에러 형식으로 변환
+// 검색 API는 rate limit 초과를 403(secondary limit) 또는 429로 반환하므로 둘 다 429로 매핑한다
+function toRestHttpError(error, context) {
+    if (error.status === 403 || error.status === 429) {
+        const rateLimited = new Error('GitHub API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
+        rateLimited.status = 429;
+        rateLimited.code = 'RATE_LIMITED';
+        return rateLimited;
+    }
+    logger.error('GitHub 이슈 검색 실패:', { error: error.message, status: error.status, ...context });
+    return new Error(`GitHub API 호출 실패: ${error.message}`);
+}
+
+// 선호 언어 1개 기준 오픈 이슈 검색 (첫 기여 후보 수집)
+// 반환: [{ repoFullName, issueNumber, title, labels, url, state }]
+// 담당자가 이미 있는 이슈(no:assignee 위반)와 아카이브 레포는 후보에서 제외한다
+export async function searchIssues({ language, difficulty, perPage = 20 }) {
+    const qualifiers = [
+        'is:issue',
+        'is:open',
+        'archived:false',
+        'no:assignee',
+        `language:"${language}"`,
+    ];
+    const searchLabel = DIFFICULTY_SEARCH_LABEL[difficulty];
+    if (searchLabel) {
+        qualifiers.push(`label:"${searchLabel}"`);
+    }
+
+    try {
+        const { data } = await githubRest.rest.search.issuesAndPullRequests({
+            q: qualifiers.join(' '),
+            sort: 'updated', // 최근에 움직인 이슈 우선 — 방치된 레포를 1차로 거른다
+            order: 'desc',
+            per_page: perPage,
+        });
+        return data.items.map((item) => ({
+            repoFullName: item.repository_url.replace('https://api.github.com/repos/', ''),
+            issueNumber: item.number,
+            title: item.title,
+            labels: item.labels.map((label) => label.name),
+            url: item.html_url,
+            state: item.state,
+        }));
+    } catch (error) {
+        throw toRestHttpError(error, { language, difficulty });
+    } finally {
+        recordGithubCall();
+    }
+}
+
+// 레포 메타데이터 일괄 조회 — 레포 수만큼 REST를 부르면 N+1이므로 GraphQL 쿼리 1개에 alias로 묶는다
+// 반환: RepoCache 필드 형태 [{ fullName, description, url, stars, primaryLanguage, languages, topics, goodFirstIssueCount, pushedAt }]
+// 일부 레포가 삭제·비공개 상태여도(부분 에러) 조회 가능한 나머지는 그대로 반환한다
+export async function fetchReposMeta(fullNames) {
+    if (fullNames.length === 0) {
+        return [];
+    }
+
+    const aliases = fullNames.map((fullName, index) => {
+        const [owner, name] = fullName.split('/');
+        return `r${index}: repository(owner: ${JSON.stringify(owner)}, name: ${JSON.stringify(name)}) { ...repoMeta }`;
+    });
+    const query = `
+        query reposMeta {
+            ${aliases.join('\n            ')}
+        }
+        fragment repoMeta on Repository {
+            nameWithOwner
+            description
+            url
+            stargazerCount
+            pushedAt
+            primaryLanguage {
+                name
+            }
+            languages(first: 5, orderBy: { field: SIZE, direction: DESC }) {
+                nodes {
+                    name
+                }
+            }
+            repositoryTopics(first: 10) {
+                nodes {
+                    topic {
+                        name
+                    }
+                }
+            }
+            goodFirstIssues: issues(states: OPEN, labels: ["good first issue"]) {
+                totalCount
+            }
+        }
+    `;
+
+    let repos;
+    try {
+        repos = await githubGraphql(query);
+    } catch (error) {
+        if (error instanceof GraphqlResponseError && error.data) {
+            repos = error.data; // 못 찾은 레포만 null — 나머지는 살린다
+        } else if (error instanceof GraphqlResponseError && (error.errors || []).some((e) => e.type === 'RATE_LIMITED')) {
+            const rateLimited = new Error('GitHub API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
+            rateLimited.status = 429;
+            rateLimited.code = 'RATE_LIMITED';
+            throw rateLimited;
+        } else {
+            logger.error('GitHub 레포 일괄 조회 실패:', { error: error.message, status: error.status, fullNames });
+            throw new Error(`GitHub API 호출 실패: ${error.message}`);
+        }
+    } finally {
+        recordGithubCall();
+    }
+
+    return Object.values(repos)
+        .filter(Boolean)
+        .map((repo) => ({
+            fullName: repo.nameWithOwner,
+            description: repo.description,
+            url: repo.url,
+            stars: repo.stargazerCount,
+            primaryLanguage: repo.primaryLanguage?.name ?? null,
+            languages: repo.languages.nodes.map((node) => node.name),
+            topics: repo.repositoryTopics.nodes.map((node) => node.topic.name),
+            goodFirstIssueCount: repo.goodFirstIssues.totalCount,
+            pushedAt: repo.pushedAt,
+        }));
 }
 
 // GitHub 사용자 프로필 원시 데이터 조회
