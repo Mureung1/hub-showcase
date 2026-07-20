@@ -1,6 +1,11 @@
 import React from 'react';
 
-function GlobalHeader({ lang, setLang }) {
+interface GlobalHeaderProps {
+  lang: 'KO' | 'EN';
+  setLang: React.Dispatch<React.SetStateAction<'KO' | 'EN'>>;
+}
+
+function GlobalHeader({ lang, setLang }: GlobalHeaderProps) {
   return (
     <header className="global-header">
       <div className="header-left">

@@ -1,7 +1,13 @@
 import React from 'react';
+import { CurationData, Paper } from '../types';
 
-function CurationWorkspace({ lang, curationData }) {
-  const handleSavePaper = async (paper) => {
+interface CurationWorkspaceProps {
+  lang: 'KO' | 'EN';
+  curationData: CurationData | null;
+}
+
+function CurationWorkspace({ lang, curationData }: CurationWorkspaceProps) {
+  const handleSavePaper = async (paper: Paper): Promise<void> => {
     try {
       const response = await fetch('http://localhost:5000/api/library', {
         method: 'POST',
