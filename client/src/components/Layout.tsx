@@ -1,5 +1,6 @@
 import { Outlet, useMatches, useNavigate } from 'react-router'
 import logo from '../assets/logo.png'
+import ToastProvider from './ToastProvider.tsx'
 import './Layout.css'
 
 type RouteHandle = { title?: string }  
@@ -14,29 +15,31 @@ function Layout() {
 
     // study: title 3항 연산으로 결정 및 Outlet = 현재 url 화면 컴포넌트 위치
   return (
-    <div className="layout">
-      <header className="layout__header">
-        {title ? (
-          <>
-            <button
-              type="button"
-              className="layout__back"
-              onClick={() => navigate(-1)}
-              aria-label="뒤로가기"
-            >
-              ‹
-            </button>
-            <span className="layout__title">{title}</span>
-            <span className="layout__spacer" aria-hidden="true" />
-          </>
-        ) : (
-          <img src={logo} alt="hub 로고" className="layout__logo" />
-        )}
-      </header>
-      <main className="layout__content">
-        <Outlet />  
-      </main>
-    </div>
+    <ToastProvider>
+      <div className="layout">
+        <header className="layout__header">
+          {title ? (
+            <>
+              <button
+                type="button"
+                className="layout__back"
+                onClick={() => navigate(-1)}
+                aria-label="뒤로가기"
+              >
+                ‹
+              </button>
+              <span className="layout__title">{title}</span>
+              <span className="layout__spacer" aria-hidden="true" />
+            </>
+          ) : (
+            <img src={logo} alt="hub 로고" className="layout__logo" />
+          )}
+        </header>
+        <main className="layout__content">
+          <Outlet />
+        </main>
+      </div>
+    </ToastProvider>
   )
 }
 

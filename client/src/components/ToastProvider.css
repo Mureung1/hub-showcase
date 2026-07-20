@@ -1,0 +1,16 @@
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-8);
+  transform: translateX(-50%);
+  background: var(--color-text-strong);
+  color: var(--color-text-inverse);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-caption);
+  box-shadow: var(--card-shadow-floating);
+  z-index: 30;
+  pointer-events: none;
+  max-width: calc(100vw - var(--space-8));
+  text-align: center;
+}
