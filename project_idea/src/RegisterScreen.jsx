@@ -49,12 +49,12 @@ function RegisterScreen({ onBack, onSubmit }) {
 
   async function handleSubmit() {
     const data = { direction, departureHub, destHub, time, arrival, genderOnly };
-    setSaving(true);
+    setSaving(true); // 버튼을 누르면 상태가 바뀌고 리렌더링
     setError(null);
 
     try {
       const res = await fetch("http://localhost:4000/api/requests", {
-        method: "POST",
+        method: "POST", // 어떤 요청인가
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
@@ -63,7 +63,7 @@ function RegisterScreen({ onBack, onSubmit }) {
       console.log("저장된 요청:", savedRow);
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      onSubmit(data);
+      onSubmit({ ...data, id: savedRow.id });
     } catch (e) {
       setError("저장에 실패했어요. 서버가 켜져 있는지 확인해주세요.");
     } finally {
