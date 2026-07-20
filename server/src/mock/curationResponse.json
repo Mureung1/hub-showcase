@@ -8,7 +8,12 @@
         "authors": "Nelson F. Liu, Kevin Lin, John Hewitt, Percy Liang, Christopher D. Manning",
         "channel": "arXiv",
         "year": 2023,
-        "matchScore": 98
+        "matchScore": 98,
+        "insights": {
+          "background": "긴 입력 컨텍스트에서 언어 모델이 중간에 위치한 중요 정보를 효과적으로 검색하거나 추출하지 못하고 망각하는 현상(Lost in the Middle)을 최초 규명함.",
+          "coreMethod": "멀티키 검색 및 키-값 탐색 테스트셋을 활용해 입력 데이터 내 타깃 정보 위치 변화에 따른 정확도 성능의 U자형 곡선 모델링을 제안함.",
+          "quantitativeResult": "정보가 중간에 있을 때 모델 정확도가 최대 40% 이상 하락했으며, 모델의 절대적 크기가 커지더라도 중간 정보 유실 문제는 해결되지 않음을 검증함."
+        }
       },
       {
         "id": "paper-002",
@@ -16,13 +21,13 @@
         "authors": "Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin, Naman Goyal, Heinrich Küttler, Mike Lewis, Wen-tau Yih, Tim Rocktäschel, Sebastian Riedel, Douwe Kiela",
         "channel": "NeurIPS",
         "year": 2020,
-        "matchScore": 85
+        "matchScore": 85,
+        "insights": {
+          "background": "질의응답 및 지식 집중적 NLP 태스크에서 parametric 메모리(LLM 가중치) 단독 사용 시 발생하는 정보 왜곡(할루시네이션) 현상을 한계로 지적함.",
+          "coreMethod": "사전 학습된 seq-to-seq 모델에 실시간 외부 위키피디아 문서 검색 밀도 함수를 융합한 RAG 아키텍처 프레임워크를 제안함.",
+          "quantitativeResult": "기존 클로즈드북 QA 모델 대비 오답률을 대폭 낮췄으며, 지식 활용 정확도 면에서 당시 SOTA(State-of-the-Art) 성능을 달성함."
+        }
       }
-    ],
-    "insights": {
-      "background": "긴 입력 컨텍스트에서 언어 모델이 중간에 위치한 중요 정보를 효과적으로 검색하거나 추출하지 못하고 망각하는 현상(Lost in the Middle)을 최초 규명함.",
-      "coreMethod": "멀티키 검색 및 키-값 탐색 테스트셋을 활용해 입력 데이터 내 타깃 정보 위치 변화에 따른 정확도 성능의 U자형 곡선 모델링을 제안함.",
-      "quantitativeResult": "정보가 중간에 있을 때 모델 정확도가 최대 40% 이상 하락했으며, 모델의 절대적 크기가 커지더라도 중간 정보 유실 문제는 해결되지 않음을 검증함."
-    }
+    ]
   }
 }

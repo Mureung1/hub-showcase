@@ -1,18 +1,24 @@
 import React, { useState } from 'react';
+import { CurationData, CurationResponse } from '../types';
 
-function ProfileBoard({ lang, setCurationData }) {
+interface ProfileBoardProps {
+  lang: 'KO' | 'EN';
+  setCurationData: React.Dispatch<React.SetStateAction<CurationData | null>>;
+}
+
+function ProfileBoard({ lang, setCurationData }: ProfileBoardProps) {
   // A. States
-  const [keywords, setKeywords] = useState([
+  const [keywords, setKeywords] = useState<string[]>([
     'Natural Language Processing',
     'Retrieval-Augmented Generation',
     'AI Agents'
   ]);
-  const [newKeyword, setNewKeyword] = useState('');
-  const [query, setQuery] = useState('');
-  const [isCurating, setIsCurating] = useState(false);
+  const [newKeyword, setNewKeyword] = useState<string>('');
+  const [query, setQuery] = useState<string>('');
+  const [isCurating, setIsCurating] = useState<boolean>(false);
 
   // B. Handlers
-  const handleAddKeyword = () => {
+  const handleAddKeyword = (): void => {
     const trimmed = newKeyword.trim();
     if (!trimmed) return;
     
@@ -23,17 +29,17 @@ function ProfileBoard({ lang, setCurationData }) {
     setNewKeyword('');
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter') {
       handleAddKeyword();
     }
   };
 
-  const handleRemoveKeyword = (indexToRemove) => {
+  const handleRemoveKeyword = (indexToRemove: number): void => {
     setKeywords(keywords.filter((_, idx) => idx !== indexToRemove));
   };
 
-  const handleStartCuration = () => {
+  const handleStartCuration = (): void => {
     if (query.trim() === '') return;
     setIsCurating(true);
     console.log("🚀 큐레이션 요청 쿼리:", query);
@@ -49,7 +55,7 @@ function ProfileBoard({ lang, setCurationData }) {
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
-        return response.json();
+        return response.json() as Promise<CurationResponse>;
       })
       .then(responseJson => {
         console.log("✅ 큐레이션 성공:", responseJson);

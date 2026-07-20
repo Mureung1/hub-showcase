@@ -3,10 +3,11 @@ import './App.css'
 import GlobalHeader from './components/GlobalHeader'
 import ProfileBoard from './components/ProfileBoard'
 import CurationWorkspace from './components/CurationWorkspace'
+import { CurationData } from './types'
 
 function App() {
-  const [lang, setLang] = useState('KO')
-  const [curationData, setCurationData] = useState(null)
+  const [lang, setLang] = useState<'KO' | 'EN'>('KO')
+  const [curationData, setCurationData] = useState<CurationData | null>(null)
 
   return (
     <div className="app-container">

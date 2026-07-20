@@ -1,14 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { CurationData, Paper } from '../types';
 
-function CurationWorkspace({ lang, curationData }) {
-  const handleSavePaper = async (paper) => {
+interface CurationWorkspaceProps {
+  lang: 'KO' | 'EN';
+  curationData: CurationData | null;
+}
+
+function CurationWorkspace({ lang, curationData }: CurationWorkspaceProps) {
+  const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
+
+  useEffect(() => {
+    if (curationData?.papers && curationData.papers.length > 0) {
+      setSelectedPaper(curationData.papers[0]);
+    } else {
+      setSelectedPaper(null);
+    }
+  }, [curationData]);
+
+  const handleSavePaper = async (paper: Paper): Promise<void> => {
     try {
+      // DB 인서트 에러 방지를 위해 insights 필드를 제외하고 스키마에 필요한 필드만 Payload 구성
+      const { id, title, authors, channel, year, matchScore } = paper;
+      const paperPayload = { id, title, authors, channel, year, matchScore };
+
       const response = await fetch('http://localhost:5000/api/library', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ paper })
+        body: JSON.stringify({ paper: paperPayload })
       });
 
       if (response.ok) {
@@ -52,7 +72,9 @@ function CurationWorkspace({ lang, curationData }) {
             curationData.papers.map((paper) => (
               <div 
                 key={paper.id} 
-                className={`paper-card ${paper.matchScore >= 90 ? 'high-match' : 'medium-match'}`}
+                className={`paper-card ${paper.matchScore >= 90 ? 'high-match' : 'medium-match'} ${selectedPaper?.id === paper.id ? 'active' : ''}`}
+                onClick={() => setSelectedPaper(paper)}
+                style={{ cursor: 'pointer' }}
               >
                 <div className={`ribbon-badge ${paper.matchScore >= 90 ? '' : 'yellow'}`}>
                   {paper.matchScore}% Match
@@ -66,7 +88,10 @@ function CurationWorkspace({ lang, curationData }) {
                 {/* 보관 버튼 추가 */}
                 <button 
                   className="archive-btn save-paper-btn" 
-                  onClick={() => handleSavePaper(paper)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // 카드 클릭 이벤트 전파 차단
+                    handleSavePaper(paper);
+                  }}
                   style={{ marginTop: '10px', padding: '6px 12px', fontSize: '11px' }}
                 >
                   내 서재 보관
@@ -85,32 +110,44 @@ function CurationWorkspace({ lang, curationData }) {
         <div className="sub-card-content scroll-y">
           
           {/* 3줄 요약 인사이트 패널 */}
-          <div className="insight-panel">
-            <h4 className="panel-subtitle">💡 에이전트 3줄 핵심 요약</h4>
-            
-            <div className="insight-item">
-              <div className="number-circle">1</div>
-              <div className="insight-text">
-                <strong>연구 배경 및 한계 원인 (Research Background & Limitations):</strong> {curationData.insights.background}
+          {selectedPaper ? (
+            <div className="insight-panel">
+              <h4 className="panel-subtitle">💡 에이전트 3줄 핵심 요약: "{selectedPaper.title}"</h4>
+              
+              <div className="insight-item">
+                <div className="number-circle">1</div>
+                <div className="insight-text">
+                  <strong>연구 배경 및 한계 원인 (Research Background & Limitations):</strong> {selectedPaper.insights.background}
+                </div>
               </div>
-            </div>
 
-            <div className="insight-item">
-              <div className="number-circle">2</div>
-              <div className="insight-text">
-                <strong>제안하는 핵심 방법론 (Proposed Core Method):</strong> {curationData.insights.coreMethod}
+              <div className="insight-item">
+                <div className="number-circle">2</div>
+                <div className="insight-text">
+                  <strong>제안하는 핵심 방법론 (Proposed Core Method):</strong> {selectedPaper.insights.coreMethod}
+                </div>
               </div>
-            </div>
 
-            <div className="insight-item">
-              <div className="number-circle">3</div>
-              <div className="insight-text">
-                <strong>구체적 개선 결과 및 수치 (Specific Results & Metrics):</strong> {curationData.insights.quantitativeResult}
+              <div className="insight-item">
+                <div className="number-circle">3</div>
+                <div className="insight-text">
+                  <strong>구체적 개선 결과 및 수치 (Specific Results & Metrics):</strong> {selectedPaper.insights.quantitativeResult}
+                </div>
               </div>
+              
+              <button 
+                id="add-to-library-btn" 
+                className="archive-btn"
+                onClick={() => handleSavePaper(selectedPaper)}
+              >
+                내 서재 보관
+              </button>
             </div>
-            
-            <button id="add-to-library-btn" className="archive-btn">내 서재 보관</button>
-          </div>
+          ) : (
+            <div className="insight-panel" style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <p>원하는 논문을 선택하시면 에이전트 분석 요약이 제공됩니다.</p>
+            </div>
+          )}
 
           {/* 내 서재 보관함 라이브러리 */}
           <div className="library-panel">
