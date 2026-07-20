@@ -18,10 +18,6 @@
       "maxLines": 173,
       "reason": "API-005에서 metric, ranking과 response 조립을 분리한다."
     },
-    "product/apps/api/src/localtwin_api/admin_area_analysis.py#AdminAreaAnalysisRepository.get": {
-      "maxLines": 176,
-      "reason": "API-005에서 query와 domain 계산을 분리한다."
-    },
     "product/apps/api/src/localtwin_api/spatial_import.py#import_market_spatial_links": {
       "maxLines": 163,
       "reason": "DATA-013에서 read, validate, persist와 report 단계를 분리한다."
