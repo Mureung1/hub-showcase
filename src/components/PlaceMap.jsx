@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useKakaoLoader } from '../lib/useKakaoLoader.js'
-import { colors, radius, styles } from '../styles/theme.js'
+import { colors, radius, spacing, styles } from '../styles/theme.js'
 
 // 카카오 좌표 규약: x=경도(lng), y=위도(lat). 카카오맵 LatLng 생성자는 (위도, 경도) 순서라
 // 여기서 반드시 x↔lng, y↔lat 로 정확히 매핑해야 한다.
@@ -70,7 +70,8 @@ export default function PlaceMap({ myPosition, places = [] }) {
   if (loadError) {
     return (
       <div style={{ ...styles.card, textAlign: 'center' }}>
-        <p style={styles.errorText}>지도를 불러오지 못했습니다: {loadError}</p>
+        <p style={styles.errorText}>지도를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.</p>
+        <p style={{ ...styles.helperText, marginTop: spacing.xs }}>{loadError}</p>
       </div>
     )
   }

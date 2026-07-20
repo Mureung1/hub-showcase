@@ -10,6 +10,7 @@ import Spinner from '../components/Spinner.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
 import { getCurrentPosition } from '../lib/geolocation.js'
 import { ALLERGY_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
+import { SPONSORED_RESTAURANTS } from '../lib/adData.js'
 import { geocodeLocation, reverseGeocode } from '../lib/kakao.js'
 import { searchNaverPlaces } from '../lib/naverPlaces.js'
 import { NUTRIENT_LABELS } from '../lib/nutrition.js'
@@ -239,7 +240,8 @@ export default function MapPage() {
   const [places, setPlaces] = useState(null)
   // NaverPlaceMap의 useEffect는 places를 참조 비교로 의존한다 — `places || []`를 JSX에서 그대로
   // 쓰면 places가 null인 동안(검색 전) 리렌더마다 새 배열이 생겨 지도가 매번 통째로 재생성된다.
-  const mapPlaces = useMemo(() => places ?? [], [places])
+  // 스폰서 식당(광고, isAd)은 실제 좌표가 없는 목업 항목이라 지도 마커 대상에서는 제외한다(목록에는 남긴다).
+  const mapPlaces = useMemo(() => (places ?? []).filter((place) => !place.isAd), [places])
   const [myPosition, setMyPosition] = useState(null)
   const [locationNotice, setLocationNotice] = useState('')
   const [nearbyLoading, setNearbyLoading] = useState(false)
@@ -288,7 +290,12 @@ export default function MapPage() {
     if (results.length === 0) return []
 
     // 4) 각 식당의 대표 메뉴 예상 섭취량(추천 근거) 계산해 부착 — 알레르기가 있으면 대표 메뉴 선정에 반영
-    return attachExpectedIntake(results, top3Rows, allergyLabels)
+    const withExpectedIntake = await attachExpectedIntake(results, top3Rows, allergyLabels)
+
+    // 5) 스폰서 식당(광고)을 상위 4번째 자리 부근에 끼워 넣는다 — 예상 섭취량 계산(AI 프롬프트) 이후에
+    // 넣어야, 실제 검색 결과가 아닌 광고 항목이 그 프롬프트에 "메뉴 목록"으로 잘못 섞여 들어가지 않는다.
+    const adIndex = Math.min(3, withExpectedIntake.length)
+    return [...withExpectedIntake.slice(0, adIndex), ...SPONSORED_RESTAURANTS, ...withExpectedIntake.slice(adIndex)]
   }
 
   async function handleFindNearby() {

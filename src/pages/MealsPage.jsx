@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
+import LeaderboardCard from '../components/LeaderboardCard.jsx'
 import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import { NutrientBars } from '../components/NutritionCard.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
@@ -294,6 +295,8 @@ export default function MealsPage() {
           </Link>
         </Card>
       )}
+
+      <LeaderboardCard />
 
       <SectionTitle>오늘 먹은 음식</SectionTitle>
       {deleteError && (

@@ -1,3 +1,4 @@
+import AdCard from './AdCard.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { formatNutrient, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
@@ -85,6 +86,18 @@ export default function PlaceList({ places, todayTotal, recommended, deficientRo
   return (
     <div>
       {places.map((place) => {
+        if (place.isAd) {
+          return (
+            <AdCard
+              key={placeIdentity(place)}
+              adId={`restaurant:${place.place_name}`}
+              title={place.place_name}
+              note={lastCategory(place.category_name)}
+              link={place.place_url}
+            />
+          )
+        }
+
         const overageKeys = buildOverageKeys(place.expected, todayTotal, recommended)
         const reason = buildReason(place.expected, deficientRows)
 

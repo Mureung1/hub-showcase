@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename)
 const PORT = process.env.PORT || process.env.PROXY_PORT || 8787
 const MODEL = 'google/gemini-3-flash-preview'
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
-const APP_TITLE = 'CJMT'
+const APP_TITLE = 'Mealyze'
 const APP_REFERER = process.env.APP_URL || 'http://localhost:5173'
 const KAKAO_KEYWORD_SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/keyword.json'
 const KAKAO_ADDRESS_SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/address.json'
@@ -181,6 +181,14 @@ app.post('/api/gemini', geminiLimiter, async (req, res) => {
     if (!openRouterRes.ok) {
       console.error('OpenRouter API error:', data)
       return res.status(openRouterRes.status).json({ error: data?.error?.message || 'OpenRouter API error' })
+    }
+
+    // 토큰 사용량 로그 — docs/cost-analysis.md의 추정치를 실측값으로 교체할 때 이 로그를 근거로 쓴다.
+    if (data?.usage) {
+      console.log(
+        `Gemini usage: prompt=${data.usage.prompt_tokens ?? '?'} completion=${data.usage.completion_tokens ?? '?'} ` +
+          `total=${data.usage.total_tokens ?? '?'} image=${imageBase64 ? 'Y' : 'N'}`,
+      )
     }
 
     const text = data?.choices?.[0]?.message?.content ?? ''

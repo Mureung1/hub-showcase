@@ -12,7 +12,7 @@ export default function Spinner({ size = 16 }) {
         border: `${Math.max(2, Math.round(size / 6))}px solid ${colors.track}`,
         borderTopColor: colors.primary,
         borderRadius: '50%',
-        animation: 'cjmt-spin 0.7s linear infinite',
+        animation: 'mealyze-spin 0.7s linear infinite',
       }}
     />
   )

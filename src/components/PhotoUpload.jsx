@@ -3,8 +3,17 @@ import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 // 이미지를 긴 변 기준 maxSize(px)로 리사이즈해 base64로 변환.
 // Gemini inline_data용으로 "data:image/...;base64," 접두어는 제거한 순수 데이터를 반환.
+// 이 크기를 넘는 파일은 리사이즈 전에 걸러낸다 — 그대로 FileReader.readAsDataURL에 넘기면 실제
+// 사진(수십MB 스캔본)이 아니라 잘못 선택된 대용량 파일(동영상 등)일 때 브라우저 탭이 한동안 멎어 보일 수 있다.
+const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024
+
 export function resizeImageToBase64(file, { maxSize = 1024, quality = 0.85 } = {}) {
   return new Promise((resolve, reject) => {
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      reject(new Error('파일 용량이 너무 큽니다(최대 20MB). 다른 사진을 선택해주세요.'))
+      return
+    }
+
     const reader = new FileReader()
     reader.onerror = () => reject(new Error('파일을 읽지 못했습니다.'))
     reader.onload = () => {

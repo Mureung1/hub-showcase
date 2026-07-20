@@ -94,8 +94,8 @@ export function exportCSV(userId, range = {}) {
   const url = URL.createObjectURL(blob)
   const filename =
     startDate && endDate
-      ? `cjmt_records_${startDate}_to_${endDate}.csv`
-      : `cjmt_records_${new Date().toISOString().slice(0, 10)}.csv`
+      ? `mealyze_records_${startDate}_to_${endDate}.csv`
+      : `mealyze_records_${new Date().toISOString().slice(0, 10)}.csv`
 
   const link = document.createElement('a')
   link.href = url
