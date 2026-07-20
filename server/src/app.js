@@ -27,17 +27,49 @@ app.get('/api/health', (req, res) => {
 
 // GET /api/posts - Fetch all feed posts (Supports sorting and fallbacks)
 app.get('/api/posts', async (req, res) => {
+  const { status, reward, category } = req.query;
+
   if (isMock) {
+    let filtered = [...mockDb.posts];
+    
+    if (status === 'recruiting') {
+      filtered = filtered.filter(p => p.status === 'recruiting' || p.status === '모집중');
+    } else if (status === 'completed') {
+      filtered = filtered.filter(p => p.status === 'completed' || p.status === '모집완료');
+    }
+    
+    if (reward) {
+      filtered = filtered.filter(p => p.reward === reward);
+    }
+    
+    if (category && category !== '전체') {
+      filtered = filtered.filter(p => (p.tags && p.tags.includes(category)) || p.major_tag === category);
+    }
+
     // Sort by created_at desc by default
-    const sorted = [...mockDb.posts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const sorted = filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     return res.json(sorted);
   }
 
   try {
-    const { data, error } = await supabase
-      .from('posts')
-      .select('*')
-      .order('created_at', { ascending: false });
+    let query = supabase.from('posts').select('*');
+
+    if (status === 'recruiting') {
+      query = query.eq('status', '모집중'); // adjust depending on DB values
+    } else if (status === 'completed') {
+      query = query.eq('status', '모집완료');
+    }
+    
+    if (reward) {
+      query = query.eq('reward', reward);
+    }
+    
+    if (category && category !== '전체') {
+      // Assuming 'tags' is a jsonb or array column in Supabase
+      query = query.contains('tags', [category]); 
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) throw error;
     res.json(data);
