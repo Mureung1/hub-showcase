@@ -37,3 +37,23 @@ test("검색 버튼 없이 Enter로 검색하고 X 버튼으로 검색어를 지
   expect(searchInput).toHaveFocus();
   expect(screen.queryByRole("button", { name: "검색어 지우기" })).not.toBeInTheDocument();
 });
+
+test("업체 상세에서 지도로 돌아오면 이전 검색 결과를 복원한다", () => {
+  sessionStorage.setItem("jigeum-review:map-screen", JSON.stringify({
+    searchInput: "성수 카페",
+    places: [{ id: "place-1", title: "테스트 카페", category: "카페", address: "서울 성동구", x: 127.05, y: 37.54 }],
+    placeStatus: "ready",
+    selectedPlaceId: "place-1",
+    searchRadius: 3000,
+  }));
+  window.history.pushState({}, "", "/");
+  render(<App />);
+
+  fireEvent.click(screen.getByRole("button", { name: "테스트 카페 상세 보기" }));
+  fireEvent.click(screen.getByRole("button", { name: "← 지도" }));
+
+  expect(screen.getByLabelText("식당 또는 카페 검색")).toHaveValue("성수 카페");
+  expect(screen.getByRole("button", { name: "테스트 카페 상세 보기" })).toBeInTheDocument();
+  sessionStorage.removeItem("jigeum-review:map-screen");
+  sessionStorage.removeItem("jigeum-review:selected-place");
+});
