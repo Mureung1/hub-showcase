@@ -1,130 +1,352 @@
+import { useEffect, useState } from 'react'
 import TopBar from '../components/TopBar'
-import { SUPPORTED_JOB, STATS } from '../data/mock'
+import useScrollSpy from '../hooks/useScrollSpy'
+import { SUPPORTED_JOB } from '../data/mock'
 
-// 02 통계 분석. mock 통계 데이터를 map으로 렌더한다.
+const NAV_IDS = ['summary', 'kpi', 'scope', 'inflation', 'difficulty', 'tech', 'combo', 'trend', 'conditions', 'companies', 'items']
+
+// 02 통계 분석 — 1차 슬라이스.
+// 블록 1(KPI)·7(기술 빈도)·10(요구 항목 전체표)은 GET /api/stats 실데이터,
+// 블록 5·6·8·9는 mock 유지, 블록 2·3·4는 다음 슬라이스 자리 표시.
+
+const LOGO = { java: 'java', 'spring-boot': 'spring', mysql: 'mysql', jpa: 'jpa', redis: 'redis', docker: 'docker', git: 'git' }
+const BAR_CLS = { java: 'java', 'spring-boot': 'spring', mysql: 'mysql', jpa: 'jpa', git: 'git' }
+const KPI_CAPTION = {
+  avg_required_skills: '공고당 평균 요구 역량 수',
+  out_of_role_pct: '직무(서버 개발) 외 작업까지 요구',
+  entry_label_gap_pct: '"신입 가능" 라벨인데 경력급 경험 요구',
+  promoted_to_required_cnt: '1년 새 우대→필수로 이동한 항목',
+  advanced_mention_pct: '대용량·동시성 등 심화 키워드 언급',
+}
+const TREND_LABEL = { increase: '증가 ↗', decrease: '감소 ↘', stable: '유지 →', unknown: '신규' }
+const CONFIDENCE = { high: '높음', medium: '중간', low: '낮음' }
+const SCOPE_BAR = ['', 'blue', 'green', 'amber', 'rose']
+
+// 블록 5의 기울기 차트 한 열. 이전→최근 % 를 선으로 잇는다.
+function TrendColumn({ tone, title, note, items }) {
+  const y = (pct) => Math.max(14, 150 - pct * 1.45)
+  const colors = { up: ['#16A34A', '#22C55E', '#86EFAC'], flat: ['#64748B', '#94A3B8', '#CBD5E1'], down: ['#E11D48', '#FB7185', '#FECDD3'] }[tone]
+  return (
+    <div className={`trend-chart-col trend-chart-col--${tone}`}>
+      <header>{title} <span>{note}</span></header>
+      {items.length === 0 ? (
+        <p className="trend-empty">해당 항목 없음</p>
+      ) : (
+        <>
+          <svg viewBox="0 0 250 180" role="img" aria-label={`${title} 기술 추이`}>
+            <line x1="62" y1="14" x2="62" y2="150" stroke="#E2E8F0" />
+            <line x1="188" y1="14" x2="188" y2="150" stroke="#E2E8F0" />
+            <text x="62" y="168" fontSize="11" fill="#94A3B8" textAnchor="middle">이전</text>
+            <text x="188" y="168" fontSize="11" fill="#94A3B8" textAnchor="middle">최근</text>
+            {items.map((t, i) => (
+              <g key={t.item_id}>
+                <line x1="62" y1={y(t.prev_pct)} x2="188" y2={y(t.recent_pct)} stroke={colors[i]} strokeWidth="2.5" />
+                <circle cx="62" cy={y(t.prev_pct)} r="4" fill={colors[i]} />
+                <circle cx="188" cy={y(t.recent_pct)} r="4" fill={colors[i]} />
+                <text x="196" y={y(t.recent_pct) + 3} fontSize="10.5" fontWeight="700" fill={colors[i]}>{t.recent_pct}%</text>
+              </g>
+            ))}
+          </svg>
+          <ul className="trend-key">
+            {items.map((t, i) => (
+              <li key={t.item_id}><i className="trend-dot" style={{ background: colors[i] }}></i>{t.name} <span>{t.prev_pct}→{t.recent_pct}%</span></li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  )
+}
+
 function StatsScreen({ go }) {
+  const [data, setData] = useState(null)
+  const [status, setStatus] = useState('loading') // loading | ready | error
+  const activeSection = useScrollSpy(NAV_IDS)
+
+  useEffect(() => {
+    fetch('/api/stats?job=backend')
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+      .then((json) => { setData(json); setStatus('ready') })
+      .catch(() => setStatus('error'))
+  }, [])
+
+  if (status === 'loading') {
+    return (
+      <>
+        <TopBar step={2} label="통계 분석" job={SUPPORTED_JOB} backTo="select" backLabel="다른 직무" go={go} />
+        <main className="app-shell reader-layout"><p className="status-panel">공고 통계를 집계하는 중입니다…</p></main>
+      </>
+    )
+  }
+  if (status === 'error') {
+    return (
+      <>
+        <TopBar step={2} label="통계 분석" job={SUPPORTED_JOB} backTo="select" backLabel="다른 직무" go={go} />
+        <main className="app-shell reader-layout">
+          <p className="status-panel status-panel--error">
+            통계 서버에 연결하지 못했습니다. server 폴더에서 <code>npm start</code>로 서버가 켜져 있는지 확인해 주세요.
+          </p>
+        </main>
+      </>
+    )
+  }
+
+  const { meta, kpi, scope_expansion: scopeExpansion, inflation, trend3, labels, advanced, combos, reality, cluster_axes: clusterAxes, tech_freq: techFreq, items } = data
+  const recentN = meta.snapshots.recent.n
+
   return (
     <>
       <TopBar step={2} label="통계 분석" job={SUPPORTED_JOB} backTo="select" backLabel="다른 직무" go={go} />
       <main className="app-shell reader-layout">
         <article className="page page--wide">
           <header className="report-header" id="summary">
-            <span className="eyebrow">백엔드 공고 {STATS.postCount}건 기반 mock 리서치</span>
-            <h1>주니어 백엔드 공고는 기술 이름보다 데이터를 다루고 실패까지 처리하는 구현 범위를 봅니다.</h1>
-            <p>여러 공고에서 반복되는 기술·조합·조건을 통계로 집계했습니다. 이 통계는 다음 단계(인재상 역산)에서 baseline과 편차를 읽는 기준이 됩니다.</p>
+            <span className="eyebrow">백엔드 공고 {recentN}건 기반 리서치 · 이전 스냅샷 {meta.snapshots.prev.n}건 비교</span>
+            <h1>공고의 절반 이상이 "신입"이라 쓰고 경력급 준비를 요구합니다. 기술 이름이 아니라 요구의 구조를 읽습니다.</h1>
+            <p>여러 공고에서 반복되는 요구를 리얼리티 중심으로 집계했습니다. 이 통계는 다음 단계(인재상 역산)에서 baseline과 편차를 읽는 기준이 됩니다.</p>
             <div className="data-note">
-              <span>수집 범위: 최근 1년</span>
-              <span>대상: 신입·주니어 포함 공고</span>
-              <span>비교: 이전 1년 스냅샷</span>
+              <span>{meta.snapshots.recent.label}: {recentN}건</span>
+              <span>{meta.snapshots.prev.label}: {meta.snapshots.prev.n}건</span>
+              <span>{meta.disclaimer}</span>
             </div>
           </header>
 
-          <section className="metric-grid" aria-label="요약 통계">
-            {STATS.metrics.map((m) => (
-              <div className="metric-card" key={m.caption}>
-                <span className="num">{m.num}<small>{m.unit}</small></span>
-                <span className="caption">{m.caption}</span>
+          {/* 블록 1 · 리얼리티 KPI — 실데이터 */}
+          <section className="metric-grid" id="kpi" aria-label="리얼리티 KPI">
+            {Object.entries(kpi).map(([key, m]) => (
+              <div className={`metric-card${m.highlight ? ' metric-card--alert' : ''}`} key={key}>
+                <span className="num">{m.value}<small>{m.unit}</small></span>
+                <span className="caption">{KPI_CAPTION[key]}</span>
               </div>
             ))}
           </section>
 
-          <section className="section-block" id="tech">
+          {/* 블록 2 · 요구 범위 확장 — 실데이터 */}
+          <section className="section-block" id="scope">
             <div className="section-title">
-              <h2>기술 이름보다 중요한, 함께 요구되는 기술 조합</h2>
-              <span className="hint">전체 {STATS.postCount}건 중 동시 출현 기준</span>
+              <h2>백엔드 공고인데 백엔드만 하지 않습니다</h2>
+              <span className="hint">직무 외 작업을 요구한 공고 비율 · 최근 {recentN}건</span>
             </div>
             <div className="panel">
-              <div className="combination-grid">
-                {STATS.combos.map((c) => (
-                  <article className={`combination-card${c.primary ? ' combination-card--primary' : ''}`} key={c.title}>
-                    <span className="combination-count">{c.count}</span>
-                    <h3>{c.title}</h3>
-                    <p>{c.desc}</p>
-                    {c.chips.length > 0 && (
-                      <div className="tag-list">
-                        {c.chips.map((chip) => (
-                          <span className="tag" key={chip.label}>
-                            {chip.logo && <img src={`/logos/${chip.logo}.svg`} alt="" />}{chip.label}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <span className="combination-level">{c.level}</span>
-                  </article>
-                ))}
-              </div>
-              <div className="skill-bars">
-                {STATS.skills.map((s) => (
-                  <div className="skill-bar-row" key={s.name}>
-                    <div className="skill-name">
-                      <img className="tech-logo" src={`/logos/${s.logo}.svg`} alt={`${s.name} 로고`} />
-                      <span><span className="rank">{s.rank}</span> {s.name}</span>
-                    </div>
-                    <div className="bar-track"><span className={`bar-fill bar-fill--${s.cls}`} style={{ width: `${s.pct}%` }}></span></div>
-                    <div className="skill-count"><b>{s.count}</b> / {STATS.postCount}건</div>
+              {scopeExpansion.map((s, i) => (
+                <div className="scope-row" key={s.tag}>
+                  <div className="scope-name">{s.label} <small>{s.desc}</small></div>
+                  <div className="bar-track">
+                    <span className={`scope-fill${SCOPE_BAR[i] ? ` scope-fill--${SCOPE_BAR[i]}` : ''}`} style={{ width: `${s.pct}%` }}></span>
                   </div>
-                ))}
-              </div>
+                  <div className="scope-count"><b>{s.pct}%</b> · {s.count}건</div>
+                </div>
+              ))}
               <p className="panel-note">
-                기술별 빈도는 출발점입니다. 가장 많이 함께 등장한 Java·Spring·JPA·MySQL 조합을 기준으로, 한 도메인을 DB와 연결해 배포까지 완성하는 경험을 먼저 갖추는 편이 좋습니다.
+                "백엔드 개발자" 공고여도 절반 이상이 배포·테스트를 함께 요구합니다. 학습 범위를 서버 코드 안쪽으로만 잡으면 공고 요구와 어긋납니다.
               </p>
             </div>
           </section>
 
-          <section className="section-block" id="trend">
+          {/* 블록 3 · 필수 인플레이션 — 실데이터 */}
+          <section className="section-block" id="inflation">
             <div className="section-title">
-              <h2>이전 1년과 비교하면 배포·비동기 처리 비중이 오르고 있습니다</h2>
-              <span className="hint">이전 1년 → 최근 1년</span>
+              <h2>작년의 우대가 올해의 필수가 됐습니다</h2>
+              <span className="hint">항목별 필수율 · 이전 → 최근 · 변화 큰 항목 자동 선별</span>
             </div>
             <div className="panel">
-              <div className="requirement-list">
-                {STATS.trend.map((t) => (
-                  <div className="requirement-item" key={t.label}>
-                    <strong>{t.label} <span className="ratio-pill">{t.delta}</span></strong>
-                    <p>{t.desc}</p>
+              {inflation.stable ? (
+                <p className="panel-note">이 직군은 필수 요건 변화가 크지 않습니다. 요구가 안정적이라는 것 자체가 하나의 신호입니다.</p>
+              ) : (
+                inflation.items.map((it) => (
+                  <div className="inflation-row" key={it.item_id}>
+                    <div className="scope-name">{it.name}</div>
+                    <div className="pair-bars">
+                      <div className="pair-bar"><span>이전</span><div className="pair-track"><i className="pair-fill pair-fill--old" style={{ width: `${it.prev_ratio}%` }}></i></div></div>
+                      <div className="pair-bar"><span>최근</span><div className="pair-track"><i className="pair-fill pair-fill--new" style={{ width: `${it.recent_ratio}%` }}></i></div></div>
+                    </div>
+                    <div className="inflation-delta">{it.prev_ratio}% → <b>{it.recent_ratio}%</b></div>
+                  </div>
+                ))
+              )}
+              {!inflation.stable && (
+                <p className="panel-note">이 항목들은 "우대사항이니 나중에"라고 미루면 1년 뒤 필수가 되어 있을 확률이 높습니다. 로드맵 우선순위에 반영됩니다.</p>
+              )}
+            </div>
+          </section>
+
+          {/* 블록 4 · 숨은 난이도 — 실데이터(추출 완료 필드 집계) */}
+          <section className="section-block" id="difficulty">
+            <div className="section-title">
+              <h2>신입 공고에 숨어 있는 시니어급 문장들</h2>
+              <span className="hint">공고 원문에서 추출한 심화 요구 문장 · 등장 비율</span>
+            </div>
+            <div className="difficulty-grid">
+              {advanced.map((a) => (
+                <div className="difficulty-card" key={a.type}>
+                  <span className="difficulty-pct">{a.pct}%<small>{a.count} / {recentN}건</small></span>
+                  <h3>{a.label}</h3>
+                  <blockquote>"{a.quote}"</blockquote>
+                  {a.more_count > 0 && <span className="quote-more">비슷한 문장 {a.more_count}개 더 있음</span>}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* 블록 7 · 기술 빈도 — 실데이터 */}
+          <section className="section-block" id="tech">
+            <div className="section-title">
+              <h2>단일 기술 빈도는 시작점입니다</h2>
+              <span className="hint">최근 1년 {recentN}건 기준 · 필수율 = 등장 공고 중 필수 표기 비율</span>
+            </div>
+            <div className="panel">
+              <div className="skill-bars">
+                {techFreq.slice(0, 8).map((s, i) => (
+                  <div className="skill-bar-row" key={s.slug}>
+                    <div className="skill-name">
+                      {LOGO[s.slug] && <img className="tech-logo" src={`/logos/${LOGO[s.slug]}.svg`} alt="" />}
+                      <span><span className="rank">{i + 1}</span> {s.name}</span>
+                    </div>
+                    <div className="bar-track">
+                      <span className={`bar-fill bar-fill--${BAR_CLS[s.slug] || 'api'}`} style={{ width: `${s.pct}%` }}></span>
+                    </div>
+                    <div className="skill-count"><b>{s.count}</b> / {recentN}건</div>
+                    <span className={`req-chip ${s.required_ratio >= 50 ? 'req-chip--must' : 'req-chip--nice'}`}>
+                      필수율 {s.required_ratio}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="panel-note">
+                아래 조합·추이와 함께 읽어야 준비 범위가 보입니다. 빈도 상위 기술이라도 필수율이 낮으면 우대 성격입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 블록 6 · 조합 — 동시출현 실데이터 + 샘플 해석(3b에서 LLM 대체) */}
+          <section className="section-block" id="combo">
+            <div className="section-title">
+              <h2>기술은 조합으로, 조합은 구현 수준으로 읽습니다</h2>
+              <span className="hint">동시 출현 건수는 실데이터 · 기대 수준 문구는 샘플 해석(3b에서 LLM)</span>
+            </div>
+            <div className="panel">
+              <div className="combination-grid">
+                {combos.map((c, i) => (
+                  <article className={`combination-card${i === 0 ? ' combination-card--primary' : ''}`} key={c.id}>
+                    <span className="combination-count">{c.count} / {recentN}건</span>
+                    <h3>{c.name}</h3>
+                    <p>{c.desc}</p>
+                    <span className="combination-level">기대 수준: {c.level}</span>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* 블록 5 · 추이 — 실데이터, 차트 3개 분리 */}
+          <section className="section-block" id="trend">
+            <div className="section-title">
+              <h2>늘어나는 기술과 줄어드는 기술</h2>
+              <span className="hint">등장 비율 · 이전 1년 → 최근 1년 · 변화폭 유의미한 항목만</span>
+            </div>
+            <div className="trend3-grid">
+              <TrendColumn tone="up" title="증가 ↗" note="비중 상승" items={trend3.increase} />
+              <TrendColumn tone="flat" title="유지 →" note="기본기" items={trend3.stable} />
+              <TrendColumn tone="down" title="감소 ↘" note="비중 하락" items={trend3.decrease} />
+            </div>
+          </section>
+
+          {/* 블록 8 · 라벨 vs 현실 — 라벨 두 열 실데이터, 현실 열은 3차 */}
+          <section className="section-block" id="conditions">
+            <div className="section-title">
+              <h2>공고의 라벨과 실제 요구는 다릅니다</h2>
+              <span className="hint">라벨 분포는 실데이터 · 현실 열은 3차(LLM) 연결</span>
+            </div>
+            <div className="label-grid">
+              <div className="label-col">
+                <h3>학력 (라벨)</h3>
+                {labels.edu.map((l) => (
+                  <div className="label-item" key={l.label}><span>{l.label}</span><b>{l.pct}%</b></div>
+                ))}
+              </div>
+              <div className="label-col">
+                <h3>경력 (라벨)</h3>
+                {labels.career.map((l) => (
+                  <div className="label-item" key={l.label}><span>{l.label}</span><b>{l.pct}%</b></div>
+                ))}
+              </div>
+              <div className="label-col label-col--reality">
+                <h3>본문이 실제로 요구하는 것</h3>
+                {reality.map((r) => (
+                  <div className={`label-item${r.pct >= 40 ? ' label-item--hot' : ''}`} key={r.tag}>
+                    <span>{r.label}</span><b>{r.pct}%</b>
                   </div>
                 ))}
               </div>
             </div>
           </section>
 
-          <section className="section-block" id="conditions">
+          {/* 블록 9 · 기업군 성향 — 실데이터 히트맵 (색+텍스트+숫자) */}
+          <section className="section-block" id="companies">
             <div className="section-title">
-              <h2>학력·경력 조건은 유연하지만, 인프라·배포 언급이 함께 늘고 있습니다</h2>
-              <span className="hint">대학생·신입 관점</span>
+              <h2>기업군마다 힘주는 곳이 다릅니다</h2>
+              <span className="hint">기업군 × 강조축 언급률 · 다음 단계에서 기업군을 고르면 이 행이 역산 입력이 됩니다</span>
             </div>
-            <div className="condition-grid">
-              {STATS.conditions.map((c) => (
-                <div className="condition-card" key={c.title}>
-                  <h3>{c.title}</h3>
-                  {c.stats.map(([b, span]) => (
-                    <div className="condition-stat" key={span}><b>{b}</b><span>{span}</span></div>
+            <div className="panel">
+              <table className="heatmap">
+                <thead>
+                  <tr>
+                    <th>기업군</th>
+                    {clusterAxes.axes.map((a) => <th key={a}>{a}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {clusterAxes.rows.map((row) => (
+                    <tr key={row.cluster}>
+                      <td>{row.cluster} <small>n={row.n}</small></td>
+                      {row.cells.map((c) => (
+                        <td key={c.axis} className={`hm hm--${c.level === '강' ? 3 : c.level === '중' ? 2 : c.level === '약' ? 1 : 0}`}>
+                          <span className="hm-lv">{c.level}</span>
+                          <span className="hm-pc">{c.pct}%</span>
+                        </td>
+                      ))}
+                    </tr>
                   ))}
-                </div>
-              ))}
+                </tbody>
+              </table>
+              <p className="panel-note">표본이 적은 기업군(n 표시)은 참고용입니다. 축 구성은 3b에서 에이전트가 직군별로 재구성합니다.</p>
             </div>
           </section>
 
-          <section className="section-block" id="companies">
+          {/* 블록 10 · 요구 항목 전체표 — 실데이터, 기본 접힘 */}
+          <section className="section-block" id="items">
             <div className="section-title">
-              <h2>같은 백엔드라도 기업군마다 통계 성향이 다릅니다</h2>
-              <span className="hint">기업군 뷰 · 언급 빈도 기준</span>
+              <h2>요구 항목 전체표</h2>
+              <span className="hint">역산 단계가 그대로 입력으로 받는 데이터 · {items.length}개 항목</span>
             </div>
-            <div className="company-grid">
-              {STATS.clusters.map((c) => (
-                <div className="company-card" key={c.tag}>
-                  <span className="company-size">{c.tag}</span>
-                  <h3>{c.title}</h3>
-                  <p>{c.desc}</p>
-                  <div className="tag-list">
-                    {c.chips.map((chip) => (
-                      <span className="tag" key={chip.label}>
-                        {chip.logo && <img src={`/logos/${chip.logo}.svg`} alt="" />}{chip.label}
-                      </span>
-                    ))}
-                  </div>
+            <div className="panel">
+              <div className="fulltable-head">
+                <p>표 안을 스크롤해 전체 {items.length}개 항목을 볼 수 있습니다. 근거 원문 열은 문장 추출(3차) 연결 후 채워집니다.</p>
+              </div>
+              <div className="table-scroll">
+                  <table className="req-table">
+                    <thead>
+                      <tr><th>항목</th><th>필수율</th><th>전체</th><th>최고 기업군</th><th>추이</th><th>신뢰도</th></tr>
+                    </thead>
+                    <tbody>
+                      {items.map((it) => {
+                        const top = Object.entries(it.freq_by_cluster).sort((a, b) => b[1] - a[1])[0]
+                        return (
+                          <tr key={it.item_id}>
+                            <td>{it.name}</td>
+                            <td className={it.required_ratio >= 50 ? 'cell-must' : 'cell-nice'}>{it.required_ratio}%</td>
+                            <td>{it.freq_overall}%</td>
+                            <td>{top ? `${top[0]} ${top[1]}%` : '—'}</td>
+                            <td>
+                              {TREND_LABEL[it.trend.direction]}
+                              {it.trend.requirement_shift === 'preferred_to_required' && <span className="shift-tag">우대→필수</span>}
+                            </td>
+                            <td>{CONFIDENCE[it.confidence]} (n={it.support.n_overall})</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-              ))}
             </div>
           </section>
 
@@ -136,11 +358,9 @@ function StatsScreen({ go }) {
 
         <aside className="floating-nav" aria-label="리포트 목차">
           <p className="floating-nav__label">통계</p>
-          <a className="is-current" href="#summary"><span className="dot"></span>요약</a>
-          <a href="#tech"><span className="dot"></span>기술 조합·빈도</a>
-          <a href="#trend"><span className="dot"></span>시계열 추세</a>
-          <a href="#conditions"><span className="dot"></span>학력·경력</a>
-          <a href="#companies"><span className="dot"></span>기업군 뷰</a>
+          {[['summary', '요약'], ['kpi', '리얼리티 KPI'], ['scope', '요구 범위 확장'], ['inflation', '필수 인플레이션'], ['difficulty', '숨은 난이도'], ['tech', '기술 빈도'], ['combo', '조합·구현 수준'], ['trend', '증감 추이'], ['conditions', '라벨 vs 현실'], ['companies', '기업군 성향'], ['items', '요구 항목 전체표']].map(([id, label]) => (
+            <a key={id} className={activeSection === id ? 'is-current' : ''} href={`#${id}`}><span className="dot"></span>{label}</a>
+          ))}
         </aside>
       </main>
     </>

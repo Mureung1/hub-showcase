@@ -1,0 +1,3196 @@
+[
+  {
+    "posting_id": "R001",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "온누리테크",
+    "cluster_tag": "빅테크·플랫폼",
+    "snapshot": "recent",
+    "posted_at": "2026-05-06",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "4년제이상",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "preferred"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      },
+      {
+        "name": "AWS",
+        "slug": "aws",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Kubernetes",
+        "slug": "k8s",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [],
+    "advanced_spans": [
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      },
+      {
+        "type": "incident",
+        "text": "서비스 장애 상황을 분석하고 개선해 본 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance",
+      "api_domain",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "R002",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "달리다",
+    "cluster_tag": "스타트업",
+    "snapshot": "recent",
+    "posted_at": "2026-12-04",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "4년제이상",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "docs"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "tx_security",
+      "ownership"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "R003",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "세일즈허브",
+    "cluster_tag": "B2B SaaS",
+    "snapshot": "recent",
+    "posted_at": "2026-07-24",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "경력우대",
+    "edu_label": "4년제이상",
+    "career_label": "경력우대",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      },
+      {
+        "name": "AWS",
+        "slug": "aws",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "tx_security",
+      "api_domain",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "R004",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "페이문",
+    "cluster_tag": "핀테크·금융",
+    "snapshot": "recent",
+    "posted_at": "2026-07-19",
+    "source": {
+      "type": "saramin",
+      "url": ""
+    },
+    "entry_label": "경력우대",
+    "edu_label": "학력무관",
+    "career_label": "경력우대",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "preferred"
+      },
+      {
+        "name": "테스트 코드",
+        "slug": "test-code",
+        "requirement": "preferred"
+      },
+      {
+        "name": "AWS",
+        "slug": "aws",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "tx_security",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience"
+    ]
+  },
+  {
+    "posting_id": "R005",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "한빛SDS",
+    "cluster_tag": "SI·대기업",
+    "snapshot": "recent",
+    "posted_at": "2026-04-07",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "4년제이상",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "required"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "preferred"
+      },
+      {
+        "name": "JSP",
+        "slug": "jsp",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "data"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "R006",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "별바람게임즈",
+    "cluster_tag": "게임사",
+    "snapshot": "recent",
+    "posted_at": "2026-12-16",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "석사우대",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "required"
+      },
+      {
+        "name": "CI/CD",
+        "slug": "cicd",
+        "requirement": "required"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "required"
+      },
+      {
+        "name": "Kubernetes",
+        "slug": "k8s",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "test"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops",
+      "intern_award"
+    ]
+  },
+  {
+    "posting_id": "R007",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "하늘플랫폼",
+    "cluster_tag": "빅테크·플랫폼",
+    "snapshot": "recent",
+    "posted_at": "2026-08-13",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "학력무관",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "preferred"
+      },
+      {
+        "name": "CI/CD",
+        "slug": "cicd",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "data"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      },
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      },
+      {
+        "type": "incident",
+        "text": "서비스 장애 상황을 분석하고 개선해 본 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance",
+      "api_domain"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "R008",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "피클랩",
+    "cluster_tag": "스타트업",
+    "snapshot": "recent",
+    "posted_at": "2026-07-21",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입~3년",
+    "edu_label": "4년제이상",
+    "career_label": "신입~3년",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "required"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "preferred"
+      },
+      {
+        "name": "AWS",
+        "slug": "aws",
+        "requirement": "required"
+      },
+      {
+        "name": "CI/CD",
+        "slug": "cicd",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy"
+    ],
+    "advanced_spans": [
+      {
+        "type": "incident",
+        "text": "서비스 장애 상황을 분석하고 개선해 본 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "api_domain",
+      "ownership"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "R009",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "세일즈허브",
+    "cluster_tag": "B2B SaaS",
+    "snapshot": "recent",
+    "posted_at": "2026-10-03",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "학력무관",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "preferred"
+      },
+      {
+        "name": "AWS",
+        "slug": "aws",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "data",
+      "docs"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "tx_security",
+      "api_domain"
+    ],
+    "reality_tags": [
+      "project_experience"
+    ]
+  },
+  {
+    "posting_id": "R010",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "핀트리",
+    "cluster_tag": "핀테크·금융",
+    "snapshot": "recent",
+    "posted_at": "2026-02-07",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "4년제이상",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "required"
+      },
+      {
+        "name": "테스트 코드",
+        "slug": "test-code",
+        "requirement": "preferred"
+      },
+      {
+        "name": "AWS",
+        "slug": "aws",
+        "requirement": "required"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "required"
+      },
+      {
+        "name": "Kubernetes",
+        "slug": "k8s",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "data",
+      "front"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "tx_security",
+      "api_domain",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience"
+    ]
+  },
+  {
+    "posting_id": "R011",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "누리CNS",
+    "cluster_tag": "SI·대기업",
+    "snapshot": "recent",
+    "posted_at": "2026-06-27",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "경력우대",
+    "edu_label": "4년제이상",
+    "career_label": "경력우대",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "required"
+      },
+      {
+        "name": "CI/CD",
+        "slug": "cicd",
+        "requirement": "required"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "test"
+    ],
+    "advanced_spans": [
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "process_docs"
+    ],
+    "reality_tags": []
+  },
+  {
+    "posting_id": "R012",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "별바람게임즈",
+    "cluster_tag": "게임사",
+    "snapshot": "recent",
+    "posted_at": "2026-02-06",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "경력우대",
+    "edu_label": "석사우대",
+    "career_label": "경력우대",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "required"
+      },
+      {
+        "name": "테스트 코드",
+        "slug": "test-code",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance"
+    ],
+    "reality_tags": [
+      "intern_award"
+    ]
+  },
+  {
+    "posting_id": "R013",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "온누리테크",
+    "cluster_tag": "빅테크·플랫폼",
+    "snapshot": "recent",
+    "posted_at": "2026-03-15",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "경력우대",
+    "edu_label": "학력무관",
+    "career_label": "경력우대",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "required"
+      },
+      {
+        "name": "AWS",
+        "slug": "aws",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "test"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      },
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance",
+      "api_domain",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "intern_award"
+    ]
+  },
+  {
+    "posting_id": "R014",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "달리다",
+    "cluster_tag": "스타트업",
+    "snapshot": "recent",
+    "posted_at": "2026-06-16",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "경력우대",
+    "edu_label": "학력무관",
+    "career_label": "경력우대",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "required"
+      },
+      {
+        "name": "테스트 코드",
+        "slug": "test-code",
+        "requirement": "required"
+      },
+      {
+        "name": "AWS",
+        "slug": "aws",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "test"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "ownership"
+    ],
+    "reality_tags": [
+      "project_experience"
+    ]
+  },
+  {
+    "posting_id": "R015",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "세일즈허브",
+    "cluster_tag": "B2B SaaS",
+    "snapshot": "recent",
+    "posted_at": "2026-04-21",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "신입~3년",
+    "edu_label": "학력무관",
+    "career_label": "신입~3년",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "테스트 코드",
+        "slug": "test-code",
+        "requirement": "required"
+      },
+      {
+        "name": "CI/CD",
+        "slug": "cicd",
+        "requirement": "required"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "test"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance",
+      "api_domain"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "R016",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "페이문",
+    "cluster_tag": "핀테크·금융",
+    "snapshot": "recent",
+    "posted_at": "2026-04-06",
+    "source": {
+      "type": "saramin",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "학력무관",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "테스트 코드",
+        "slug": "test-code",
+        "requirement": "preferred"
+      },
+      {
+        "name": "AWS",
+        "slug": "aws",
+        "requirement": "required"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Kubernetes",
+        "slug": "k8s",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "data"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "tx_security",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "intern_award"
+    ]
+  },
+  {
+    "posting_id": "R017",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "누리CNS",
+    "cluster_tag": "SI·대기업",
+    "snapshot": "recent",
+    "posted_at": "2026-07-13",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "경력우대",
+    "edu_label": "학력무관",
+    "career_label": "경력우대",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "preferred"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "required"
+      },
+      {
+        "name": "Kubernetes",
+        "slug": "k8s",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "docs"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      },
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      },
+      {
+        "type": "incident",
+        "text": "서비스 장애 상황을 분석하고 개선해 본 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "process_docs"
+    ],
+    "reality_tags": []
+  },
+  {
+    "posting_id": "R018",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "판게아소프트",
+    "cluster_tag": "게임사",
+    "snapshot": "recent",
+    "posted_at": "2026-08-01",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입~3년",
+    "edu_label": "4년제이상",
+    "career_label": "신입~3년",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "preferred"
+      },
+      {
+        "name": "테스트 코드",
+        "slug": "test-code",
+        "requirement": "required"
+      },
+      {
+        "name": "CI/CD",
+        "slug": "cicd",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Kubernetes",
+        "slug": "k8s",
+        "requirement": "required"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "test",
+      "docs"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      },
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      },
+      {
+        "type": "incident",
+        "text": "서비스 장애 상황을 분석하고 개선해 본 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [],
+    "reality_tags": [
+      "project_experience"
+    ]
+  },
+  {
+    "posting_id": "R019",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "온누리테크",
+    "cluster_tag": "빅테크·플랫폼",
+    "snapshot": "recent",
+    "posted_at": "2026-03-15",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "경력우대",
+    "edu_label": "4년제이상",
+    "career_label": "경력우대",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "preferred"
+      },
+      {
+        "name": "테스트 코드",
+        "slug": "test-code",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "test"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance",
+      "tx_security",
+      "api_domain",
+      "ownership",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "intern_award"
+    ]
+  },
+  {
+    "posting_id": "R020",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "달리다",
+    "cluster_tag": "스타트업",
+    "snapshot": "recent",
+    "posted_at": "2026-03-09",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "경력우대",
+    "edu_label": "학력무관",
+    "career_label": "경력우대",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "preferred"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "preferred"
+      },
+      {
+        "name": "JSP",
+        "slug": "jsp",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "docs"
+    ],
+    "advanced_spans": [
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "tx_security",
+      "ownership"
+    ],
+    "reality_tags": []
+  },
+  {
+    "posting_id": "R021",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "세일즈허브",
+    "cluster_tag": "B2B SaaS",
+    "snapshot": "recent",
+    "posted_at": "2026-06-07",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입~3년",
+    "edu_label": "학력무관",
+    "career_label": "신입~3년",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "preferred"
+      },
+      {
+        "name": "테스트 코드",
+        "slug": "test-code",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "docs"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "api_domain"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "intern_award"
+    ]
+  },
+  {
+    "posting_id": "R022",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "핀트리",
+    "cluster_tag": "핀테크·금융",
+    "snapshot": "recent",
+    "posted_at": "2026-07-20",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "석사우대",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy"
+    ],
+    "advanced_spans": [
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "tx_security"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "R023",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "한빛SDS",
+    "cluster_tag": "SI·대기업",
+    "snapshot": "recent",
+    "posted_at": "2026-05-06",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "경력우대",
+    "edu_label": "학력무관",
+    "career_label": "경력우대",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "required"
+      },
+      {
+        "name": "AWS",
+        "slug": "aws",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "test",
+      "data"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "intern_award"
+    ]
+  },
+  {
+    "posting_id": "R024",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "별바람게임즈",
+    "cluster_tag": "게임사",
+    "snapshot": "recent",
+    "posted_at": "2026-03-18",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "학력무관",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "preferred"
+      },
+      {
+        "name": "테스트 코드",
+        "slug": "test-code",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Kubernetes",
+        "slug": "k8s",
+        "requirement": "required"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "R025",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "온누리테크",
+    "cluster_tag": "빅테크·플랫폼",
+    "snapshot": "recent",
+    "posted_at": "2026-02-16",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "4년제이상",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "AWS",
+        "slug": "aws",
+        "requirement": "required"
+      },
+      {
+        "name": "CI/CD",
+        "slug": "cicd",
+        "requirement": "required"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "data",
+      "docs"
+    ],
+    "advanced_spans": [
+      {
+        "type": "incident",
+        "text": "서비스 장애 상황을 분석하고 개선해 본 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "api_domain"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "intern_award"
+    ]
+  },
+  {
+    "posting_id": "R026",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "피클랩",
+    "cluster_tag": "스타트업",
+    "snapshot": "recent",
+    "posted_at": "2026-04-07",
+    "source": {
+      "type": "saramin",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "4년제이상",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "preferred"
+      },
+      {
+        "name": "테스트 코드",
+        "slug": "test-code",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "test",
+      "data"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance",
+      "ownership"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "R027",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "독스플로우",
+    "cluster_tag": "B2B SaaS",
+    "snapshot": "recent",
+    "posted_at": "2026-01-07",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "경력우대",
+    "edu_label": "4년제이상",
+    "career_label": "경력우대",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "test"
+    ],
+    "advanced_spans": [
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      },
+      {
+        "type": "incident",
+        "text": "서비스 장애 상황을 분석하고 개선해 본 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "ownership"
+    ],
+    "reality_tags": [
+      "project_experience"
+    ]
+  },
+  {
+    "posting_id": "R028",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "핀트리",
+    "cluster_tag": "핀테크·금융",
+    "snapshot": "recent",
+    "posted_at": "2026-01-16",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "신입~3년",
+    "edu_label": "석사우대",
+    "career_label": "신입~3년",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "required"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "docs"
+    ],
+    "advanced_spans": [
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "tx_security",
+      "api_domain"
+    ],
+    "reality_tags": [
+      "project_experience"
+    ]
+  },
+  {
+    "posting_id": "R029",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "한빛SDS",
+    "cluster_tag": "SI·대기업",
+    "snapshot": "recent",
+    "posted_at": "2026-09-19",
+    "source": {
+      "type": "saramin",
+      "url": ""
+    },
+    "entry_label": "신입~3년",
+    "edu_label": "4년제이상",
+    "career_label": "신입~3년",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "preferred"
+      },
+      {
+        "name": "AWS",
+        "slug": "aws",
+        "requirement": "required"
+      },
+      {
+        "name": "CI/CD",
+        "slug": "cicd",
+        "requirement": "required"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "required"
+      },
+      {
+        "name": "Kubernetes",
+        "slug": "k8s",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "test"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "api_domain",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "intern_award"
+    ]
+  },
+  {
+    "posting_id": "R030",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "판게아소프트",
+    "cluster_tag": "게임사",
+    "snapshot": "recent",
+    "posted_at": "2026-07-02",
+    "source": {
+      "type": "saramin",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "4년제이상",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "test",
+      "data"
+    ],
+    "advanced_spans": [
+      {
+        "type": "incident",
+        "text": "서비스 장애 상황을 분석하고 개선해 본 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance",
+      "process_docs"
+    ],
+    "reality_tags": []
+  },
+  {
+    "posting_id": "P001",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "온누리테크",
+    "cluster_tag": "빅테크·플랫폼",
+    "snapshot": "prev",
+    "posted_at": "2025-05-06",
+    "source": {
+      "type": "saramin",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "학력무관",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "preferred"
+      },
+      {
+        "name": "JSP",
+        "slug": "jsp",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance",
+      "api_domain",
+      "process_docs"
+    ],
+    "reality_tags": []
+  },
+  {
+    "posting_id": "P002",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "피클랩",
+    "cluster_tag": "스타트업",
+    "snapshot": "prev",
+    "posted_at": "2025-12-24",
+    "source": {
+      "type": "saramin",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "학력무관",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "docs"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      },
+      {
+        "type": "incident",
+        "text": "서비스 장애 상황을 분석하고 개선해 본 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance",
+      "api_domain",
+      "ownership"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "intern_award"
+    ]
+  },
+  {
+    "posting_id": "P003",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "세일즈허브",
+    "cluster_tag": "B2B SaaS",
+    "snapshot": "prev",
+    "posted_at": "2025-06-04",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입~3년",
+    "edu_label": "석사우대",
+    "career_label": "신입~3년",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "data",
+      "docs"
+    ],
+    "advanced_spans": [
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "api_domain",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "P004",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "핀트리",
+    "cluster_tag": "핀테크·금융",
+    "snapshot": "prev",
+    "posted_at": "2025-02-04",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "학력무관",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "preferred"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "required"
+      },
+      {
+        "name": "CI/CD",
+        "slug": "cicd",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "data"
+    ],
+    "advanced_spans": [
+      {
+        "type": "incident",
+        "text": "서비스 장애 상황을 분석하고 개선해 본 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance",
+      "tx_security",
+      "api_domain",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "P005",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "한빛SDS",
+    "cluster_tag": "SI·대기업",
+    "snapshot": "prev",
+    "posted_at": "2025-06-16",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입~3년",
+    "edu_label": "4년제이상",
+    "career_label": "신입~3년",
+    "skills": [
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "preferred"
+      },
+      {
+        "name": "테스트 코드",
+        "slug": "test-code",
+        "requirement": "required"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "data"
+    ],
+    "advanced_spans": [
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "tx_security",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience"
+    ]
+  },
+  {
+    "posting_id": "P006",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "판게아소프트",
+    "cluster_tag": "게임사",
+    "snapshot": "prev",
+    "posted_at": "2025-02-28",
+    "source": {
+      "type": "saramin",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "학력무관",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "test"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance",
+      "ownership"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "intern_award"
+    ]
+  },
+  {
+    "posting_id": "P007",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "온누리테크",
+    "cluster_tag": "빅테크·플랫폼",
+    "snapshot": "prev",
+    "posted_at": "2025-12-12",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "경력우대",
+    "edu_label": "4년제이상",
+    "career_label": "경력우대",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "test"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      },
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "api_domain",
+      "ownership"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "intern_award"
+    ]
+  },
+  {
+    "posting_id": "P008",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "달리다",
+    "cluster_tag": "스타트업",
+    "snapshot": "prev",
+    "posted_at": "2025-08-02",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "4년제이상",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      },
+      {
+        "name": "JSP",
+        "slug": "jsp",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance",
+      "ownership"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "P009",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "독스플로우",
+    "cluster_tag": "B2B SaaS",
+    "snapshot": "prev",
+    "posted_at": "2025-12-06",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "신입~3년",
+    "edu_label": "4년제이상",
+    "career_label": "신입~3년",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "test"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      },
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "P010",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "페이문",
+    "cluster_tag": "핀테크·금융",
+    "snapshot": "prev",
+    "posted_at": "2025-12-13",
+    "source": {
+      "type": "saramin",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "학력무관",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "front"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "tx_security",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops",
+      "intern_award"
+    ]
+  },
+  {
+    "posting_id": "P011",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "한빛SDS",
+    "cluster_tag": "SI·대기업",
+    "snapshot": "prev",
+    "posted_at": "2025-05-18",
+    "source": {
+      "type": "saramin",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "4년제이상",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "test",
+      "data",
+      "front"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "P012",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "판게아소프트",
+    "cluster_tag": "게임사",
+    "snapshot": "prev",
+    "posted_at": "2025-06-02",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "학력무관",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "preferred"
+      },
+      {
+        "name": "AWS",
+        "slug": "aws",
+        "requirement": "required"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "test"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      },
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance",
+      "api_domain",
+      "ownership",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "P013",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "온누리테크",
+    "cluster_tag": "빅테크·플랫폼",
+    "snapshot": "prev",
+    "posted_at": "2025-12-21",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "경력우대",
+    "edu_label": "석사우대",
+    "career_label": "경력우대",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "테스트 코드",
+        "slug": "test-code",
+        "requirement": "preferred"
+      },
+      {
+        "name": "AWS",
+        "slug": "aws",
+        "requirement": "preferred"
+      },
+      {
+        "name": "CI/CD",
+        "slug": "cicd",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "docs"
+    ],
+    "advanced_spans": [
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      },
+      {
+        "type": "incident",
+        "text": "서비스 장애 상황을 분석하고 개선해 본 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "api_domain"
+    ],
+    "reality_tags": [
+      "project_experience"
+    ]
+  },
+  {
+    "posting_id": "P014",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "달리다",
+    "cluster_tag": "스타트업",
+    "snapshot": "prev",
+    "posted_at": "2025-08-12",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "석사우대",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "ownership"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops",
+      "intern_award"
+    ]
+  },
+  {
+    "posting_id": "P015",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "세일즈허브",
+    "cluster_tag": "B2B SaaS",
+    "snapshot": "prev",
+    "posted_at": "2025-01-11",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "학력무관",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "tx_security",
+      "api_domain",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience"
+    ]
+  },
+  {
+    "posting_id": "P016",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "페이문",
+    "cluster_tag": "핀테크·금융",
+    "snapshot": "prev",
+    "posted_at": "2025-01-15",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "학력무관",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Redis",
+        "slug": "redis",
+        "requirement": "preferred"
+      },
+      {
+        "name": "CI/CD",
+        "slug": "cicd",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "test",
+      "front"
+    ],
+    "advanced_spans": [
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      },
+      {
+        "type": "incident",
+        "text": "서비스 장애 상황을 분석하고 개선해 본 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "tx_security",
+      "api_domain"
+    ],
+    "reality_tags": [
+      "project_experience"
+    ]
+  },
+  {
+    "posting_id": "P017",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "누리CNS",
+    "cluster_tag": "SI·대기업",
+    "snapshot": "prev",
+    "posted_at": "2025-12-13",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "4년제이상",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "docs"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "ownership",
+      "process_docs"
+    ],
+    "reality_tags": []
+  },
+  {
+    "posting_id": "P018",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "별바람게임즈",
+    "cluster_tag": "게임사",
+    "snapshot": "prev",
+    "posted_at": "2025-04-19",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입~3년",
+    "edu_label": "4년제이상",
+    "career_label": "신입~3년",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "JSP",
+        "slug": "jsp",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      },
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "api_domain"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "P019",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "온누리테크",
+    "cluster_tag": "빅테크·플랫폼",
+    "snapshot": "prev",
+    "posted_at": "2025-04-26",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "신입~3년",
+    "edu_label": "4년제이상",
+    "career_label": "신입~3년",
+    "skills": [
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "preferred"
+      },
+      {
+        "name": "MySQL·RDB",
+        "slug": "mysql",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Git",
+        "slug": "git",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "infra_deploy",
+      "docs"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance",
+      "api_domain"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "P020",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "달리다",
+    "cluster_tag": "스타트업",
+    "snapshot": "prev",
+    "posted_at": "2025-01-19",
+    "source": {
+      "type": "worknet",
+      "url": ""
+    },
+    "entry_label": "신입~3년",
+    "edu_label": "학력무관",
+    "career_label": "신입~3년",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "test"
+    ],
+    "advanced_spans": [],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "api_domain",
+      "ownership"
+    ],
+    "reality_tags": [
+      "project_experience"
+    ]
+  },
+  {
+    "posting_id": "P021",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "세일즈허브",
+    "cluster_tag": "B2B SaaS",
+    "snapshot": "prev",
+    "posted_at": "2025-11-15",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "경력우대",
+    "edu_label": "석사우대",
+    "career_label": "경력우대",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "preferred"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "preferred"
+      },
+      {
+        "name": "Kafka·MQ",
+        "slug": "kafka",
+        "requirement": "preferred"
+      },
+      {
+        "name": "JSP",
+        "slug": "jsp",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "test",
+      "front"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      },
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "tx_security",
+      "api_domain",
+      "ownership",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "P022",
+    "title": "백엔드 개발자 신입 채용",
+    "company": "핀트리",
+    "cluster_tag": "핀테크·금융",
+    "snapshot": "prev",
+    "posted_at": "2025-10-12",
+    "source": {
+      "type": "saramin",
+      "url": ""
+    },
+    "entry_label": "신입가능",
+    "edu_label": "석사우대",
+    "career_label": "신입가능",
+    "skills": [
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [],
+    "advanced_spans": [
+      {
+        "type": "incident",
+        "text": "서비스 장애 상황을 분석하고 개선해 본 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "tx_security",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience"
+    ]
+  },
+  {
+    "posting_id": "P023",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "누리CNS",
+    "cluster_tag": "SI·대기업",
+    "snapshot": "prev",
+    "posted_at": "2025-08-01",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입~3년",
+    "edu_label": "학력무관",
+    "career_label": "신입~3년",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      }
+    ],
+    "out_of_role_tags": [
+      "docs"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      },
+      {
+        "type": "concurrency",
+        "text": "동시성 이슈와 트랜잭션 정합성을 고려한 설계 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "api_domain",
+      "process_docs"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "deploy_ops"
+    ]
+  },
+  {
+    "posting_id": "P024",
+    "title": "백엔드 개발자 신입/주니어 채용",
+    "company": "별바람게임즈",
+    "cluster_tag": "게임사",
+    "snapshot": "prev",
+    "posted_at": "2025-07-24",
+    "source": {
+      "type": "curation",
+      "url": ""
+    },
+    "entry_label": "신입~3년",
+    "edu_label": "학력무관",
+    "career_label": "신입~3년",
+    "skills": [
+      {
+        "name": "Java",
+        "slug": "java",
+        "requirement": "required"
+      },
+      {
+        "name": "Spring Boot",
+        "slug": "spring-boot",
+        "requirement": "required"
+      },
+      {
+        "name": "JPA·ORM",
+        "slug": "jpa",
+        "requirement": "required"
+      },
+      {
+        "name": "Docker",
+        "slug": "docker",
+        "requirement": "preferred"
+      }
+    ],
+    "out_of_role_tags": [
+      "docs",
+      "front"
+    ],
+    "advanced_spans": [
+      {
+        "type": "traffic",
+        "text": "대용량 트래픽 환경에서의 서비스 개발 경험"
+      }
+    ],
+    "impl_level_signals": [],
+    "axis_mentions": [
+      "performance"
+    ],
+    "reality_tags": [
+      "project_experience",
+      "intern_award"
+    ]
+  }
+]
