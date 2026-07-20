@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PlayCircle, UtensilsCrossed, MapPinned, Flame } from 'lucide-react';
-import { MOCK_COURSES, MOCK_MEALS, MOCK_GYMS } from '../../data/userMock';
+import type { Course } from '../../data/userMock';
+import { MOCK_MEALS, MOCK_GYMS } from '../../data/userMock';
+import { fetchCourses } from '../../services/coursesApi';
 import './user.css';
 
 const QUICK_LINKS = [
@@ -27,7 +30,28 @@ const QUICK_LINKS = [
 export default function HomePage() {
   const todayMealCount = MOCK_MEALS.length;
   const nearbyGyms = MOCK_GYMS.length;
-  const recommended = MOCK_COURSES[0];
+  const [recommended, setRecommended] = useState<Course | null>(null);
+  const [loadingRecommended, setLoadingRecommended] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const { courses } = await fetchCourses({ limit: 1 });
+        if (!cancelled) setRecommended(courses[0] ?? null);
+      } catch {
+        if (!cancelled) setRecommended(null);
+      } finally {
+        if (!cancelled) setLoadingRecommended(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="user-page">
@@ -47,7 +71,7 @@ export default function HomePage() {
         <article className="stat-card">
           <span className="stat-dot stat-dot-green" />
           <div>
-            <strong>1</strong>
+            <strong>{recommended ? 1 : 0}</strong>
             <span>추천 강좌</span>
           </div>
         </article>
@@ -100,7 +124,10 @@ export default function HomePage() {
               <p>입문 루틴으로 가볍게 시작해 보세요.</p>
             </div>
           </div>
-          {recommended && (
+          {loadingRecommended && (
+            <p className="home-recommend-meta">추천 강좌를 불러오는 중...</p>
+          )}
+          {!loadingRecommended && recommended && (
             <>
               <h3 className="home-recommend-title">{recommended.title}</h3>
               <p className="home-recommend-meta">
@@ -120,6 +147,11 @@ export default function HomePage() {
               </div>
             </>
           )}
+          {!loadingRecommended && !recommended && (
+            <p className="home-recommend-meta">
+              추천 강좌를 불러오지 못했습니다. 백엔드 서버를 확인해 주세요.
+            </p>
+          )}
         </article>
 
         <article className="panel">
@@ -129,11 +161,7 @@ export default function HomePage() {
               <p>방금 기록한 식단의 AI 코멘트입니다.</p>
             </div>
           </div>
-          <p className="home-meal-title">{MOCK_MEALS[0]?.title}</p>
-          <p className="home-meal-feedback">{MOCK_MEALS[0]?.feedback}</p>
-          <Link to="/user/meals" className="btn btn-ghost">
-            타임라인 보기
-          </Link>
+          <p className="home-meal-snippet">{MOCK_MEALS[0]?.feedback}</p>
         </article>
       </section>
     </div>
