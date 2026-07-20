@@ -4,6 +4,7 @@ import type { RepositoryAnalysisPersistenceInput } from "./repository-analysis.m
 
 type IdentifierRow = { id: string };
 type ContributorIdentifierRow = IdentifierRow & { github_login: string };
+type AnalysisDetails = NonNullable<RepositoryAnalysisPersistenceInput["analysis"]>;
 
 @Injectable()
 export class RepositoryAnalysisPersistence {
@@ -92,6 +93,7 @@ export class RepositoryAnalysisPersistence {
     repositoryId: string,
     input: RepositoryAnalysisPersistenceInput,
   ): Promise<string> {
+    const analysis = input.analysis ?? createLegacyAnalysis(input);
     const { data, error } = await this.supabase.client
       .from("analysis_results")
       .insert({
@@ -99,11 +101,16 @@ export class RepositoryAnalysisPersistence {
         target_github_login: input.targetGithubLogin,
         status: "pending",
         analyzer_version: input.analyzerVersion,
-        repository_snapshot: input.source.repository,
+        repository_snapshot: analysis.repositorySnapshot,
+        tech_stack: analysis.techStack,
+        project_structure: analysis.projectStructure,
+        quality_signals: analysis.qualitySignals,
+        collaboration_summary: analysis.collaborationSummary,
         activity_summary: {
           contributorCount: input.contributors.length,
           commitCount: input.source.commits.length,
         },
+        warnings: analysis.warnings,
         started_at: input.analyzedAt,
       })
       .select("id")
@@ -129,6 +136,14 @@ export class RepositoryAnalysisPersistence {
           is_target: contributor.login === input.targetGithubLogin,
           commit_count: contributor.commitCount,
           commit_activity_percent: contributor.commitActivityPercent,
+          authored_pr_count: contributor.authoredPrCount ?? 0,
+          merged_pr_count: contributor.mergedPrCount ?? 0,
+          review_count: contributor.reviewCount ?? 0,
+          issue_count: contributor.issueCount ?? 0,
+          touched_paths: contributor.touchedPaths ?? [],
+          touched_extensions: contributor.touchedExtensions ?? {},
+          first_activity_at: contributor.firstActivityAt ?? null,
+          last_activity_at: contributor.lastActivityAt ?? null,
         })),
       )
       .select("id, github_login");
@@ -150,22 +165,24 @@ export class RepositoryAnalysisPersistence {
     contributorIds: Map<string, string>,
     input: RepositoryAnalysisPersistenceInput,
   ): Promise<void> {
-    if (input.source.commits.length === 0) {
+    const analysis = input.analysis ?? createLegacyAnalysis(input);
+    if (analysis.evidence.length === 0) {
       return;
     }
 
     const { error } = await this.supabase.client.from("analysis_evidence").insert(
-      input.source.commits.map((commit) => ({
+      analysis.evidence.map((evidence) => ({
         analysis_result_id: analysisResultId,
-        contributor_metric_id: commit.authorLogin
-          ? contributorIds.get(commit.authorLogin) ?? null
+        contributor_metric_id: evidence.contributorLogin
+          ? contributorIds.get(evidence.contributorLogin) ?? null
           : null,
-        evidence_type: "commit",
-        reference_id: commit.sha,
-        title: commit.message.split("\n", 1)[0],
-        url: commit.url,
-        occurred_at: commit.committedAt,
-        metadata: { authorLogin: commit.authorLogin },
+        evidence_type: evidence.evidenceType,
+        reference_id: evidence.referenceId,
+        title: evidence.title,
+        url: evidence.url,
+        file_path: evidence.filePath,
+        occurred_at: evidence.occurredAt,
+        metadata: evidence.metadata,
       })),
     );
 
@@ -207,4 +224,30 @@ export class RepositoryAnalysisPersistence {
 
     return String((data as IdentifierRow).id);
   }
+}
+
+function createLegacyAnalysis(input: RepositoryAnalysisPersistenceInput): AnalysisDetails {
+  return {
+    repositorySnapshot: input.source.repository,
+    techStack: { languages: input.source.repository.languages },
+    projectStructure: {},
+    qualitySignals: {},
+    collaborationSummary: {},
+    warnings: ["기존 분석 결과에는 확장 분석 정보가 포함되지 않았습니다."],
+    evidence: input.source.commits.map((commit) => ({
+      evidenceType: "commit",
+      referenceId: commit.sha,
+      title: commit.message.split("\n", 1)[0],
+      url: commit.url,
+      filePath: null,
+      occurredAt: commit.committedAt,
+      contributorLogin: commit.authorLogin,
+      metadata: {
+        authorLogin: commit.authorLogin,
+        changedFileCount: commit.changedFiles?.length ?? 0,
+        additions: commit.additions ?? 0,
+        deletions: commit.deletions ?? 0,
+      },
+    })),
+  };
 }
