@@ -11,6 +11,7 @@ import type {
   Hospital,
   HospitalMember,
   HospitalRepository,
+  UpdateHospitalInformationInput,
 } from "../hospitalRepository.js";
 
 const hospitalRowSchema = z.object({
@@ -143,6 +144,38 @@ export class PgHospitalRepository implements HospitalRepository {
         RETURNING ${hospitalColumns}
       `,
       [hospitalId, status],
+    );
+    return result.rows[0] ? toHospital(result.rows[0]) : null;
+  }
+
+  async updateInformation(
+    executor: DatabaseExecutor,
+    hospitalId: string,
+    input: UpdateHospitalInformationInput,
+  ): Promise<Hospital | null> {
+    const result = await executor.query<HospitalRow>(
+      `
+        UPDATE public.hospitals
+        SET name = $2,
+            primary_department = $3,
+            phone_number = $4,
+            region_sido = $5,
+            region_sigungu = $6,
+            address = $7,
+            operating_hours_text = $8
+        WHERE id = $1 AND approval_status = 'approved'
+        RETURNING ${hospitalColumns}
+      `,
+      [
+        hospitalId,
+        input.name,
+        input.primaryDepartment,
+        input.phoneNumber,
+        input.regionSido,
+        input.regionSigungu,
+        input.address,
+        input.operatingHoursText,
+      ],
     );
     return result.rows[0] ? toHospital(result.rows[0]) : null;
   }

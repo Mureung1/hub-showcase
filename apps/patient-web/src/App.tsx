@@ -4,7 +4,15 @@ import type {
   QueuePosition,
 } from "@baro-jinryo/shared";
 import { useCallback, useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { PatientAuthProvider, usePatientAuth } from "./auth/PatientAuthContext";
 import { HospitalSearchPage } from "./pages/HospitalSearchPage";
 import { PatientRegistrationPage } from "./pages/PatientRegistrationPage";
@@ -45,22 +53,28 @@ function PatientRegistrationRoute({
     if (!hospitalId) return;
     void getPatientConfig(hospitalId)
       .then((config) => setResult({ hospitalId, config }))
-      .catch(() => setResult({
-        hospitalId,
-        error: "이 병원의 원격 접수 정보를 불러올 수 없습니다.",
-      }));
+      .catch(() =>
+        setResult({
+          hospitalId,
+          error: "이 병원의 원격 접수 정보를 불러올 수 없습니다.",
+        }),
+      );
   }, [hospitalId]);
 
   const error = result.hospitalId === hospitalId ? result.error : undefined;
   const config = result.hospitalId === hospitalId ? result.config : undefined;
   if (!hospitalId || error) {
-    return <Navigate to={`/?error=${encodeURIComponent(error || "병원 정보가 올바르지 않습니다.")}`} replace />;
+    return (
+      <Navigate
+        to={`/?error=${encodeURIComponent(error || "병원 정보가 올바르지 않습니다.")}`}
+        replace
+      />
+    );
   }
   if (!config) return <p className="content-width">원격 접수 정보를 불러오는 중입니다.</p>;
   return (
     <PatientRegistrationPage
-      inputMode={config.inputMode}
-      categories={config.categories}
+      config={config}
       onRegister={(input) => onRegistered(hospitalId, input)}
     />
   );

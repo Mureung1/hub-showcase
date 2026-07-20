@@ -92,4 +92,17 @@ describe("requireStaffContext", () => {
       developmentBypass: true,
     });
   });
+
+  it("개발 환경에서는 인증됐지만 소속이 없는 관리자도 고정 병원으로 연결한다", async () => {
+    const verifier = { verify: vi.fn(async () => ({ id: accountId })) };
+    const response = await request(createTestApp(verifier, noAccess, true))
+      .get("/staff")
+      .set("Authorization", "Bearer valid")
+      .expect(200);
+    expect(response.body).toMatchObject({
+      accountId,
+      hospitalId,
+      developmentBypass: true,
+    });
+  });
 });

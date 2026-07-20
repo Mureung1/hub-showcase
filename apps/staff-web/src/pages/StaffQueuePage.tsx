@@ -12,6 +12,7 @@ import {
   calculatePatientCount,
   calculateQueuePositions,
   createEmptyPatientCounts,
+  formatKoreanMobileNumber,
   formatPatientCounts,
   formatPositionRange,
 } from "@baro-jinryo/shared";
@@ -23,6 +24,7 @@ import {
   Clock3,
   Megaphone,
   PauseCircle,
+  PlayCircle,
   Plus,
   RefreshCw,
   RotateCcw,
@@ -50,7 +52,7 @@ interface StaffQueuePageProps {
     phoneNumber: string,
     registration: PatientRegistrationInput,
   ) => Promise<NotificationReceipt>;
-  onChangeQueueStatus: (status: QueueStatus) => void;
+  onChangeQueueStatus: (status: QueueStatus) => Promise<void>;
   onChangeStatus: (id: string, status: WaitingStatus) => void;
   onHold: (id: string) => void;
   onRestore: (id: string, position?: number) => void;
@@ -60,7 +62,7 @@ interface StaffQueuePageProps {
     categories: PatientCategoryDefinition[],
   ) => void;
   onRefresh: () => void;
-  onOpenOnboarding: () => void;
+  onOpenHospitalManagement: () => void;
   onSignOut: () => Promise<void>;
 }
 
@@ -89,7 +91,7 @@ export function StaffQueuePage({
   onReorder,
   onSavePatientConfiguration,
   onRefresh,
-  onOpenOnboarding,
+  onOpenHospitalManagement,
   onSignOut,
 }: StaffQueuePageProps) {
   const [showOnsiteForm, setShowOnsiteForm] = useState(false);
@@ -102,6 +104,8 @@ export function StaffQueuePage({
   const [notificationReceipt, setNotificationReceipt] = useState<NotificationReceipt>();
   const [isSubmittingOnsite, setIsSubmittingOnsite] = useState(false);
   const [onsiteSubmitError, setOnsiteSubmitError] = useState("");
+  const [queueStatusError, setQueueStatusError] = useState("");
+  const [isChangingQueueStatus, setIsChangingQueueStatus] = useState(false);
   const [selectedId, setSelectedId] = useState<string>();
   const [restorePosition, setRestorePosition] = useState(1);
   const rows = useMemo(() => calculateQueuePositions(entries), [entries]);
@@ -134,8 +138,12 @@ export function StaffQueuePage({
       setTotalOnlyCount(1);
       setPhoneNumber("");
       setShowOnsiteForm(false);
-    } catch {
-      setOnsiteSubmitError("현장 접수를 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } catch (error) {
+      setOnsiteSubmitError(
+        error instanceof Error
+          ? error.message
+          : "현장 접수를 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      );
     } finally {
       setIsSubmittingOnsite(false);
     }
@@ -144,6 +152,22 @@ export function StaffQueuePage({
   const phoneNumberValid = /^01[016789]-?\d{3,4}-?\d{4}$/.test(phoneNumber.trim());
   const onsitePatientCount =
     patientInputMode === "categorized" ? calculatePatientCount(counts) : totalOnlyCount;
+
+  async function toggleRemoteRegistration() {
+    setIsChangingQueueStatus(true);
+    setQueueStatusError("");
+    try {
+      await onChangeQueueStatus(queueStatus === "paused" ? "open" : "paused");
+    } catch (error) {
+      setQueueStatusError(
+        error instanceof Error
+          ? error.message
+          : "원격 접수 상태를 변경하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      );
+    } finally {
+      setIsChangingQueueStatus(false);
+    }
+  }
 
   return (
     <div className="staff-shell">
@@ -173,20 +197,13 @@ export function StaffQueuePage({
             <Plus size={20} />
             현장 환자 등록
           </button>
-          <button
-            type="button"
-            onClick={() => onChangeQueueStatus(queueStatus === "paused" ? "open" : "paused")}
-          >
-            <PauseCircle size={20} />
-            {queueStatus === "paused" ? "원격 접수 재개" : "원격 접수 중지"}
-          </button>
           <button type="button" onClick={() => setShowCategorySettings(true)}>
             <Settings2 size={20} />
             환자 분류 설정
           </button>
-          <button type="button" onClick={onOpenOnboarding}>
+          <button type="button" onClick={onOpenHospitalManagement}>
             <Building2 size={20} />
-            입점 진행
+            병원 관리
           </button>
         </nav>
         <a href="http://127.0.0.1:5173">환자 화면 보기</a>
@@ -216,8 +233,30 @@ export function StaffQueuePage({
               <RefreshCw size={18} />
               새로고침
             </button>
+            <button
+              className={`queue-status-button queue-status-button--${queueStatus === "paused" ? "start" : "stop"}`}
+              type="button"
+              disabled={isChangingQueueStatus}
+              onClick={() => void toggleRemoteRegistration()}
+            >
+              {queueStatus === "paused" ? <PlayCircle size={18} /> : <PauseCircle size={18} />}
+              {isChangingQueueStatus
+                ? "변경 중"
+                : queueStatus === "paused"
+                  ? "원격 접수 시작"
+                  : "원격 접수 중지"}
+            </button>
           </div>
         </div>
+        {queueStatusError && (
+          <div className="notice notice--error" role="alert">
+            <CircleX size={20} />
+            <div>
+              <strong>원격 접수 상태를 변경하지 못했습니다</strong>
+              <p>{queueStatusError}</p>
+            </div>
+          </div>
+        )}
         <section className="queue-metrics" aria-label="대기열 요약">
           <div>
             <UsersRound />
@@ -227,12 +266,16 @@ export function StaffQueuePage({
           <div>
             <Wifi />
             <span>원격</span>
-            <strong>{activeQueueRows.filter(({ entry }) => entry.source === "remote").length}건</strong>
+            <strong>
+              {activeQueueRows.filter(({ entry }) => entry.source === "remote").length}건
+            </strong>
           </div>
           <div>
             <UserCheck />
             <span>현장</span>
-            <strong>{activeQueueRows.filter(({ entry }) => entry.source === "onsite").length}건</strong>
+            <strong>
+              {activeQueueRows.filter(({ entry }) => entry.source === "onsite").length}건
+            </strong>
           </div>
           <div>
             <Clock3 />
@@ -457,8 +500,10 @@ export function StaffQueuePage({
               휴대전화 번호
               <input
                 type="tel"
+                inputMode="numeric"
+                maxLength={13}
                 value={phoneNumber}
-                onChange={(event) => setPhoneNumber(event.target.value)}
+                onChange={(event) => setPhoneNumber(formatKoreanMobileNumber(event.target.value))}
                 placeholder="010-1234-5678"
                 autoComplete="tel"
               />
@@ -500,6 +545,9 @@ export function StaffQueuePage({
                   }}
                 />
               </label>
+            )}
+            {onsitePatientCount < 1 && (
+              <p className="field-error">접수할 환자 인원을 1명 이상 선택해 주세요.</p>
             )}
             <div className="notice notice--info onsite-notification-notice">
               등록하면 접수 완료 알림톡 mock과 상태 확인 링크가 생성됩니다.

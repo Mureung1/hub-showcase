@@ -1,7 +1,6 @@
 import type {
-  PatientCategoryDefinition,
+  MockPatientConfig,
   PatientCounts,
-  PatientInputMode,
   PatientRegistrationInput,
 } from "@baro-jinryo/shared";
 import {
@@ -16,16 +15,12 @@ import { AppHeader } from "../components/AppHeader";
 import { PatientCountStepper } from "../components/PatientCountStepper";
 
 interface PatientRegistrationPageProps {
-  inputMode: PatientInputMode;
-  categories: PatientCategoryDefinition[];
+  config: MockPatientConfig;
   onRegister: (input: PatientRegistrationInput) => void;
 }
 
-export function PatientRegistrationPage({
-  inputMode,
-  categories,
-  onRegister,
-}: PatientRegistrationPageProps) {
+export function PatientRegistrationPage({ config, onRegister }: PatientRegistrationPageProps) {
+  const { hospital, inputMode, categories } = config;
   const [counts, setCounts] = useState<PatientCounts>(() => createEmptyPatientCounts(categories));
   const [totalOnlyCount, setTotalOnlyCount] = useState(1);
   const total = inputMode === "categorized" ? calculatePatientCount(counts) : totalOnlyCount;
@@ -51,27 +46,37 @@ export function PatientRegistrationPage({
             <div className="clinic-overview__content">
               <div className="clinic-title-row">
                 <div>
-                  <h1 id="clinic-name">서울이비인후과</h1>
-                  <p>이비인후과</p>
+                  <h1 id="clinic-name">{hospital.name}</h1>
+                  <p>{hospital.department}</p>
                 </div>
-                <span className="status-badge">원격 접수 중</span>
+                <span
+                  className={
+                    config.queueStatus === "open"
+                      ? "status-badge"
+                      : "status-badge status-badge--closed"
+                  }
+                >
+                  {config.queueStatus === "open" ? "원격 접수 중" : "접수 마감"}
+                </span>
               </div>
               <ul className="clinic-meta">
                 <li>
-                  <Clock3 size={18} /> 오늘 09:00–18:00
+                  <Clock3 size={18} /> {hospital.operatingHoursText}
                 </li>
                 <li>
-                  <MapPin size={18} /> 서울 마포구 월드컵로 12, 2층
+                  <MapPin size={18} /> {hospital.address}
                 </li>
               </ul>
               <div className="clinic-waiting-band">
                 <div>
                   <span>앞 대기 환자</span>
-                  <strong>5명</strong>
+                  <strong>{config.waitingPatients}명</strong>
                 </div>
                 <div>
                   <span>예상 대기</span>
-                  <strong>약 50분</strong>
+                  <strong>
+                    {config.estimatedMinutes > 0 ? `약 ${config.estimatedMinutes}분` : "대기 없음"}
+                  </strong>
                 </div>
               </div>
               <p className="advisory-copy">
@@ -149,9 +154,9 @@ export function PatientRegistrationPage({
                     : { inputMode, totalCount: totalOnlyCount },
                 )
               }
-              disabled={!isValid}
+              disabled={!isValid || config.queueStatus !== "open"}
             >
-              웨이팅 등록
+              {config.queueStatus === "open" ? "웨이팅 등록" : "현재 원격 접수 중지"}
             </button>
             <p className="privacy-copy">환자 이름, 생년월일과 증상은 수집하지 않습니다.</p>
           </section>

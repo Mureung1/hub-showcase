@@ -17,6 +17,7 @@ import { StaffQueuePage } from "./pages/StaffQueuePage";
 import { StaffLoginPage } from "./pages/StaffLoginPage";
 import { StaffAuthProvider, useStaffAuth } from "./auth/StaffAuthContext";
 import { HospitalOnboardingPage } from "./pages/HospitalOnboardingPage";
+import { HospitalManagementPage } from "./pages/HospitalManagementPage";
 import {
   addOnsiteWaiting,
   changeQueueStatus,
@@ -29,6 +30,7 @@ import {
   saveNextDayCategories,
   submitHospitalApplication,
   submitHospitalInquiry,
+  isApiClientErrorCode,
 } from "./services/apiClient";
 
 const pollInterval = Number(import.meta.env.VITE_WAITING_POLL_INTERVAL_MS ?? 10_000);
@@ -47,7 +49,7 @@ const initialState: StaffQueueState = {
 function StaffApp() {
   const { session, profile, loading, signOut } = useStaffAuth();
   const [queue, setQueue] = useState(initialState);
-  const [view, setView] = useState<"queue" | "onboarding">("queue");
+  const [view, setView] = useState<"queue" | "onboarding" | "hospital-management">("queue");
   const [onboarding, setOnboarding] = useState<MockHospitalOnboardingState>({
     inquiry: null,
     application: null,
@@ -55,13 +57,21 @@ function StaffApp() {
   });
 
   const refresh = useCallback(async () => {
-    const [nextQueue, nextOnboarding] = await Promise.all([
-      getStaffQueue(),
-      getHospitalOnboarding(),
-    ]);
-    setQueue(nextQueue);
-    setOnboarding(nextOnboarding);
-  }, []);
+    if (view === "onboarding") {
+      setOnboarding(await getHospitalOnboarding());
+      return;
+    }
+
+    try {
+      const nextQueue = await getStaffQueue();
+      setQueue(nextQueue);
+      setOnboarding(await getHospitalOnboarding());
+    } catch (error) {
+      if (!isApiClientErrorCode(error, "HOSPITAL_ACCESS_DENIED")) throw error;
+      setOnboarding(await getHospitalOnboarding());
+      setView("onboarding");
+    }
+  }, [view]);
 
   useEffect(() => {
     if (!session) return;
@@ -94,7 +104,7 @@ function StaffApp() {
   ): Promise<NotificationReceipt> {
     const input: OnsiteWaitingRegistrationInput = { phoneNumber, registration };
     const result = await addOnsiteWaiting(input);
-    setQueue(await getStaffQueue());
+    setQueue(result.queue);
     return result.notification;
   }
 
@@ -117,6 +127,10 @@ function StaffApp() {
     );
   }
 
+  if (view === "hospital-management") {
+    return <HospitalManagementPage onBack={() => setView("queue")} onSignOut={signOut} />;
+  }
+
   return (
     <StaffQueuePage
       entries={queue.entries}
@@ -134,12 +148,16 @@ function StaffApp() {
       onReorder={async (orderedWaitingIds) => setQueue(await reorderWaitings(orderedWaitingIds))}
       onSavePatientConfiguration={updatePatientConfiguration}
       onRefresh={refresh}
-      onOpenOnboarding={() => setView("onboarding")}
+      onOpenHospitalManagement={() => setView("hospital-management")}
       onSignOut={signOut}
     />
   );
 }
 
 export default function App() {
-  return <StaffAuthProvider><StaffApp /></StaffAuthProvider>;
+  return (
+    <StaffAuthProvider>
+      <StaffApp />
+    </StaffAuthProvider>
+  );
 }

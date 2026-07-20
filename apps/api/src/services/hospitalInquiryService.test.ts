@@ -85,6 +85,10 @@ class FakeHospitalRepository implements HospitalRepository {
   async setApprovalStatus(): Promise<Hospital | null> {
     return hospital;
   }
+
+  async updateInformation(): Promise<Hospital | null> {
+    return hospital;
+  }
 }
 
 class FakeInquiryRepository implements HospitalInquiryRepository {

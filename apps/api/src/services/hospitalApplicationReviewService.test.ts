@@ -79,6 +79,7 @@ describe("HospitalApplicationReviewService", () => {
       create: vi.fn(async () => approvedHospital),
       createOwnerMembership: vi.fn(async () => ({}) as HospitalMember),
       setApprovalStatus: vi.fn(async () => approvedHospital),
+      updateInformation: vi.fn(async () => approvedHospital),
     } satisfies HospitalRepository;
     const service = new HospitalApplicationReviewService(
       transactionManager,

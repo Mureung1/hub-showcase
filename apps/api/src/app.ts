@@ -3,6 +3,10 @@ import express, { type Express } from "express";
 import { env } from "./config/env.js";
 import { createStaffQueueService } from "./composition/staffQueue.js";
 import { createStaffAuthMiddleware } from "./composition/staffAuth.js";
+import {
+  createHospitalManagementService,
+  createPlatformAuthMiddleware,
+} from "./composition/hospitalManagement.js";
 import { createOnsiteStatusService } from "./composition/onsiteStatus.js";
 import { createPatientAuthMiddleware } from "./composition/patientAuth.js";
 import { createPatientWaitingService } from "./composition/patientWaiting.js";
@@ -13,6 +17,8 @@ import { requestLogger } from "./middleware/requestLogger.js";
 import { healthRouter } from "./routes/health.js";
 import { mockRouter } from "./routes/mock.js";
 import { createStaffRouter } from "./routes/staff.js";
+import { createHospitalManagementRouter } from "./routes/hospitalManagement.js";
+import { createPlatformRouter } from "./routes/platform.js";
 import { createOnsiteStatusRouter } from "./routes/onsiteStatus.js";
 import { createPatientWaitingRouter } from "./routes/patientWaiting.js";
 import { createPatientProfileRouter } from "./routes/patientProfile.js";
@@ -40,6 +46,15 @@ export function createApp(): Express {
   app.use(
     "/api/staff",
     createStaffRouter(createStaffQueueService(), createStaffAuthMiddleware()),
+  );
+  const hospitalManagementService = createHospitalManagementService();
+  app.use(
+    "/api/staff",
+    createHospitalManagementRouter(hospitalManagementService, createStaffAuthMiddleware()),
+  );
+  app.use(
+    "/api/platform",
+    createPlatformRouter(hospitalManagementService, createPlatformAuthMiddleware()),
   );
 
   app.use(notFound);

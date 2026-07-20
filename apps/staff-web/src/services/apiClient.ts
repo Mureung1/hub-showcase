@@ -9,6 +9,9 @@ import type {
   PatientInputMode,
   QueueStatus,
   WaitingStatus,
+  HospitalInformation,
+  HospitalManagementState,
+  HospitalChangeRequestView,
 } from "@baro-jinryo/shared";
 import { getSupabaseClient } from "./supabaseClient";
 
@@ -21,6 +24,28 @@ export interface StaffProfile {
   status: "active" | "suspended" | "withdrawn";
 }
 
+interface ApiErrorBody {
+  error?: {
+    code?: string;
+    message?: string;
+  };
+}
+
+export class ApiClientError extends Error {
+  constructor(
+    readonly status: number,
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ApiClientError";
+  }
+}
+
+export function isApiClientErrorCode(error: unknown, code: string): boolean {
+  return error instanceof ApiClientError && error.code === code;
+}
+
 async function requestJson<T = StaffQueueState>(path: string, init?: RequestInit): Promise<T> {
   const accessToken = await getAccessToken();
   const response = await fetch(`${apiBaseUrl}${path}`, {
@@ -31,15 +56,19 @@ async function requestJson<T = StaffQueueState>(path: string, init?: RequestInit
       ...init?.headers,
     },
   });
-  if (!response.ok) throw new Error(`API 요청 실패: ${response.status}`);
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as ApiErrorBody | null;
+    throw new ApiClientError(
+      response.status,
+      body?.error?.code ?? "API_REQUEST_FAILED",
+      body?.error?.message ?? `API 요청 실패: ${response.status}`,
+    );
+  }
   return (await response.json()) as T;
 }
 
 async function getAccessToken(): Promise<string | undefined> {
-  if (
-    !import.meta.env.VITE_SUPABASE_URL ||
-    !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-  ) {
+  if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) {
     return undefined;
   }
   const { data } = await getSupabaseClient().auth.getSession();
@@ -48,6 +77,19 @@ async function getAccessToken(): Promise<string | undefined> {
 
 export function getStaffQueue(): Promise<StaffQueueState> {
   return requestJson("/staff/queue");
+}
+
+export function getHospitalManagement(): Promise<HospitalManagementState> {
+  return requestJson<HospitalManagementState>("/staff/hospital");
+}
+
+export function submitHospitalChangeRequest(
+  input: HospitalInformation,
+): Promise<HospitalChangeRequestView> {
+  return requestJson<HospitalChangeRequestView>("/staff/hospital-change-requests", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export async function getCurrentStaffProfile(accessToken: string): Promise<StaffProfile | null> {
@@ -74,10 +116,7 @@ export function addOnsiteWaiting(
   });
 }
 
-export function changeWaitingStatus(
-  id: string,
-  status: WaitingStatus,
-): Promise<StaffQueueState> {
+export function changeWaitingStatus(id: string, status: WaitingStatus): Promise<StaffQueueState> {
   return requestJson(`/staff/waitings/${id}/status`, {
     method: "PATCH",
     body: JSON.stringify({

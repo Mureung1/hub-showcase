@@ -46,6 +46,15 @@ export function createRequireStaffContext(
         accessRepository.findActiveByAccountId(executor, user.id),
       );
       if (!access) {
+        if (options.allowDevelopmentBypass) {
+          response.locals.staffContext = {
+            accountId: user.id,
+            hospitalId: options.developmentHospitalId,
+            developmentBypass: true,
+          } satisfies StaffContext;
+          next();
+          return;
+        }
         throw new ApiError(403, "HOSPITAL_ACCESS_DENIED", "승인된 병원 소속을 확인할 수 없습니다.");
       }
       response.locals.staffContext = {

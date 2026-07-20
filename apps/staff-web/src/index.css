@@ -687,6 +687,12 @@ button:disabled {
   border-color: color-mix(in srgb, var(--bj-color-info) 22%, transparent);
 }
 
+.notice--error {
+  color: var(--bj-color-danger);
+  background: var(--bj-color-danger-soft);
+  border-color: color-mix(in srgb, var(--bj-color-danger) 25%, transparent);
+}
+
 .field-error {
   color: var(--bj-color-danger);
   font-size: var(--bj-font-size-sm);
@@ -969,6 +975,38 @@ button:disabled {
 .staff-title-row > div:last-child {
   display: flex;
   gap: var(--bj-space-2);
+}
+
+.queue-status-button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--bj-space-2);
+  padding-inline: var(--bj-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--bj-radius-md);
+  color: #fff;
+  font-weight: var(--bj-font-weight-semibold);
+}
+
+.queue-status-button--stop {
+  background: var(--bj-color-danger);
+  border-color: var(--bj-color-danger);
+}
+
+.queue-status-button--start {
+  background: var(--bj-color-brand-700);
+  border-color: var(--bj-color-brand-700);
+}
+
+.queue-status-button:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+.queue-status-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .queue-operation,
@@ -1734,6 +1772,42 @@ button:disabled {
 .onboarding-state-panel h2,
 .onboarding-state-panel p {
   margin: 0;
+}
+
+.hospital-management-main {
+  max-width: 820px;
+}
+
+.hospital-change-pending {
+  place-items: start;
+  text-align: left;
+}
+
+.hospital-change-pending > svg {
+  color: var(--bj-color-warning);
+}
+
+.hospital-change-summary {
+  width: 100%;
+  margin: var(--bj-space-4) 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--bj-color-border);
+}
+
+.hospital-change-summary > div {
+  padding: var(--bj-space-3) 0;
+  border-bottom: 1px solid var(--bj-color-border);
+}
+
+.hospital-change-summary dt {
+  color: var(--bj-color-text-secondary);
+  font-size: var(--bj-font-size-xs);
+}
+
+.hospital-change-summary dd {
+  margin: var(--bj-space-1) 0 0;
+  font-weight: var(--bj-font-weight-semibold);
 }
 
 .onboarding-state-panel--success > svg {

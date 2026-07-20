@@ -1,3 +1,4 @@
+import { formatKoreanMobileNumber } from "@baro-jinryo/shared";
 import { LockKeyhole, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
@@ -5,7 +6,16 @@ import { usePatientAuth } from "../auth/PatientAuthContext";
 import { AppHeader } from "../components/AppHeader";
 
 export function PatientLoginPage() {
-  const { session, profile, loading, signIn, signUp, resendConfirmation, signOut, completeProfile } = usePatientAuth();
+  const {
+    session,
+    profile,
+    loading,
+    signIn,
+    signUp,
+    resendConfirmation,
+    signOut,
+    completeProfile,
+  } = usePatientAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState("patient@example.com");
@@ -23,7 +33,10 @@ export function PatientLoginPage() {
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
-    const timer = window.setInterval(() => setResendCooldown((seconds) => Math.max(0, seconds - 1)), 1000);
+    const timer = window.setInterval(
+      () => setResendCooldown((seconds) => Math.max(0, seconds - 1)),
+      1000,
+    );
     return () => window.clearInterval(timer);
   }, [resendCooldown]);
 
@@ -61,9 +74,11 @@ export function PatientLoginPage() {
         setConfirmationEmail(email.trim());
         setResendCooldown(60);
       }
-      setMessage(confirmationRequired
-        ? "가입 확인 메일을 보냈습니다. 이메일 확인 후 로그인해 주세요."
-        : "회원가입이 완료되었습니다.");
+      setMessage(
+        confirmationRequired
+          ? "가입 확인 메일을 보냈습니다. 이메일 확인 후 로그인해 주세요."
+          : "회원가입이 완료되었습니다.",
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "인증 요청을 처리하지 못했습니다.");
     } finally {
@@ -98,19 +113,30 @@ export function PatientLoginPage() {
               <span className="auth-input">
                 <input
                   type="tel"
+                  inputMode="numeric"
+                  maxLength={13}
                   value={phoneNumber}
-                  onChange={(event) => setPhoneNumber(event.target.value)}
+                  onChange={(event) => setPhoneNumber(formatKoreanMobileNumber(event.target.value))}
                   placeholder="010-1234-5678"
                   autoComplete="tel"
                 />
               </span>
             </label>
-            {!phoneValid && <p className="field-error">올바른 국내 휴대전화 번호를 입력해 주세요.</p>}
+            {!phoneValid && (
+              <p className="field-error">올바른 국내 휴대전화 번호를 입력해 주세요.</p>
+            )}
             {message && <p role="status">{message}</p>}
-            <button className="primary-button" type="button" disabled={!phoneValid || submitting} onClick={() => void submitProfile()}>
+            <button
+              className="primary-button"
+              type="button"
+              disabled={!phoneValid || submitting}
+              onClick={() => void submitProfile()}
+            >
               {submitting ? "등록 중" : "프로필 등록"}
             </button>
-            <button className="secondary-button" type="button" onClick={() => void signOut()}>다른 계정으로 로그인</button>
+            <button className="secondary-button" type="button" onClick={() => void signOut()}>
+              다른 계정으로 로그인
+            </button>
           </section>
         </main>
       </div>
@@ -158,8 +184,10 @@ export function PatientLoginPage() {
               <span className="auth-input">
                 <input
                   type="tel"
+                  inputMode="numeric"
+                  maxLength={13}
                   value={phoneNumber}
-                  onChange={(event) => setPhoneNumber(event.target.value)}
+                  onChange={(event) => setPhoneNumber(formatKoreanMobileNumber(event.target.value))}
                   placeholder="010-1234-5678"
                   autoComplete="tel"
                 />
@@ -185,7 +213,12 @@ export function PatientLoginPage() {
           )}
           {message && <p role="status">{message}</p>}
           {confirmationEmail && (
-            <button className="secondary-button" type="button" disabled={submitting || resendCooldown > 0} onClick={() => void resend()}>
+            <button
+              className="secondary-button"
+              type="button"
+              disabled={submitting || resendCooldown > 0}
+              onClick={() => void resend()}
+            >
               {resendCooldown > 0 ? `${resendCooldown}초 후 인증 메일 재발송` : "인증 메일 재발송"}
             </button>
           )}
@@ -193,7 +226,9 @@ export function PatientLoginPage() {
             className="primary-button"
             type="button"
             onClick={submit}
-            disabled={!emailValid || !passwordValid || (mode === "signup" && !phoneValid) || submitting}
+            disabled={
+              !emailValid || !passwordValid || (mode === "signup" && !phoneValid) || submitting
+            }
           >
             {submitting ? "처리 중" : mode === "login" ? "로그인" : "가입 확인 메일 받기"}
           </button>

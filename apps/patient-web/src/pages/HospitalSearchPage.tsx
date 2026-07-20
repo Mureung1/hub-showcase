@@ -2,9 +2,10 @@ import { Clock3, MapPin, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppHeader } from "../components/AppHeader";
-import { getApiHealth } from "../services/apiClient";
+import { getApiHealth, getPatientConfig } from "../services/apiClient";
 
 type ApiState = "checking" | "connected" | "disconnected";
+const developmentHospitalId = "10000000-0000-4000-8000-000000000001";
 
 interface MockHospital {
   id: string;
@@ -18,7 +19,7 @@ interface MockHospital {
 
 const mockHospitals: MockHospital[] = [
   {
-    id: "10000000-0000-4000-8000-000000000001",
+    id: developmentHospitalId,
     name: "서울이비인후과",
     department: "이비인후과",
     district: "서울 마포구",
@@ -51,6 +52,7 @@ export function HospitalSearchPage() {
   const [searchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [apiState, setApiState] = useState<ApiState>("checking");
+  const [hospitals, setHospitals] = useState(mockHospitals);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -65,16 +67,49 @@ export function HospitalSearchPage() {
     return () => controller.abort();
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    const refreshDevelopmentHospital = async () => {
+      try {
+        const config = await getPatientConfig(developmentHospitalId);
+        if (!active) return;
+        setHospitals((current) =>
+          current.map((hospital) =>
+            hospital.id === config.hospital.id
+              ? {
+                  id: config.hospital.id,
+                  name: config.hospital.name,
+                  department: config.hospital.department,
+                  district: config.hospital.district,
+                  waitingPatients: config.waitingPatients,
+                  estimatedMinutes: config.estimatedMinutes,
+                  remoteOpen: config.queueStatus === "open",
+                }
+              : hospital,
+          ),
+        );
+      } catch {
+        // The static cards remain visible while the development API is unavailable.
+      }
+    };
+    void refreshDevelopmentHospital();
+    const timer = window.setInterval(() => void refreshDevelopmentHospital(), 10_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, []);
+
   const filteredHospitals = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("ko-KR");
-    if (!normalizedQuery) return mockHospitals;
+    if (!normalizedQuery) return hospitals;
 
-    return mockHospitals.filter((hospital) =>
+    return hospitals.filter((hospital) =>
       [hospital.name, hospital.department, hospital.district].some((value) =>
         value.toLocaleLowerCase("ko-KR").includes(normalizedQuery),
       ),
     );
-  }, [query]);
+  }, [hospitals, query]);
 
   const apiLabel = {
     checking: "API 확인 중",
@@ -103,7 +138,9 @@ export function HospitalSearchPage() {
 
         <section className="hospital-section content-width" aria-labelledby="nearby-title">
           {searchParams.get("error") && (
-            <p className="notice notice--warning" role="alert">{searchParams.get("error")}</p>
+            <p className="notice notice--warning" role="alert">
+              {searchParams.get("error")}
+            </p>
           )}
           <div className="section-heading">
             <div>
