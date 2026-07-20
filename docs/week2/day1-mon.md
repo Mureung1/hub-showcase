@@ -160,6 +160,26 @@ src/
 - 프론트 ↔ Express API 연결 → 수 [#6](https://github.com/syd348/hub/issues/6)
 - Supabase 스키마·조회 → 화 [#3](https://github.com/syd348/hub/issues/3)/[#4](https://github.com/syd348/hub/issues/4)
 
-## 다음 작업
+## 다음 작업 (2026-07-20 갱신)
 
-**이슈 #11 데모 완료** — PR 생성 및 수동 E2E 확인. 상세화면은 수 [#5](https://github.com/syd348/hub/issues/5) 범위.
+### 완료 (2026-07-20)
+
+- [x] **TanStack Query + API client 골격** — 이슈 #12 미완 항목 완료. `src/api/client.ts`, `src/hooks/`, `StatusBox` 연결. 검증: [`day2-verification-checklist.md`](day2-verification-checklist.md)
+
+### 우선 (수 잔여)
+
+1. **Supabase 스키마 + env** — 이슈 #3
+2. **Express 매칭 API → Supabase** — 이슈 #4
+3. **FE ↔ API 실제 연결(진짜 서버 데이터)** — 이슈 #6, 지금은 mock fallback으로만 동작
+
+### 인프라·운영
+
+- [x] PR CI + commitlint (main 머지됨)
+- [x] GitHub Pages 배포 (main 머지됨)
+- [ ] 캠퍼스 PR #1169 → `N106_신서연` **수동 머지**
+- [ ] `docs/week2/day1-presentation.md` 커밋
+
+### 이슈 정리
+
+- #5 (수 mock 화면): #11·#12와 중복 → **close 검토**
+- #10 (금 회고): `day1-presentation.md` 기반으로 PR 본문 작성

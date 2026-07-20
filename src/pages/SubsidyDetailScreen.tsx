@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useOnboarding } from '../context/OnboardingContext'
-import { getDisplaySubsidies } from '../data/mockSubsidies'
+import StatusBox from '../components/StatusBox'
+import { useSubsidy } from '../hooks/useSubsidy'
 import { getDdayClass } from '../utils/dday'
 import './SubsidyDetailScreen.css'
 
@@ -15,13 +15,9 @@ function getApplyUrl(whereUrl?: string): string {
 export default function SubsidyDetailScreen() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { profile } = useOnboarding()
   const bodyRef = useRef<HTMLDivElement>(null)
 
-  const subsidy = useMemo(() => {
-    const items = getDisplaySubsidies(profile)
-    return items.find((item) => item.id === id)
-  }, [id, profile])
+  const { data: subsidy, isLoading, isError, refetch } = useSubsidy(id)
 
   const applyUrl = subsidy ? getApplyUrl(subsidy.whereUrl) : FALLBACK_APPLY_URL
 
@@ -33,15 +29,36 @@ export default function SubsidyDetailScreen() {
     window.open(applyUrl, '_blank', 'noopener,noreferrer')
   }
 
+  if (isLoading) {
+    return (
+      <div className="detail screen">
+        <StatusBox variant="loading" message="지원금 정보를 불러오고 있어요..." />
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="detail screen">
+        <StatusBox
+          variant="error"
+          message="지원금 정보를 불러오지 못했어요."
+          actionLabel="다시 시도"
+          onAction={() => refetch()}
+        />
+      </div>
+    )
+  }
+
   if (!subsidy) {
     return (
       <div className="detail screen">
-        <div className="detail-not-found">
-          <p>지원금 정보를 찾을 수 없어요.</p>
-          <button type="button" onClick={() => navigate('/home')}>
-            목록으로 돌아가기
-          </button>
-        </div>
+        <StatusBox
+          variant="empty"
+          message="지원금 정보를 찾을 수 없어요."
+          actionLabel="목록으로 돌아가기"
+          onAction={() => navigate('/home')}
+        />
       </div>
     )
   }
