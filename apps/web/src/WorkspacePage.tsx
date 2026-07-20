@@ -38,8 +38,8 @@ function WorkspacePage() {
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  function handleSubmitQuestion(value: string) {
-    const submitted = submitQuestion(value);
+  async function handleSubmitQuestion(value: string) {
+    const submitted = await submitQuestion(value);
     if (submitted) {
       setComposerValue("");
     }

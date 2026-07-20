@@ -483,7 +483,40 @@ Auth Middleware 뒤에 있으며 유효한 `Authorization: Bearer` 토큰이 필
       (회원가입 `emailRedirectTo` / 인증 링크 도착지)
 - [ ] 배포 시 배포 도메인의 Site URL·Redirect URL(`/login`)을 추가 등록
 - [x] JWT 설정 확인 (Express JWT 검증 = SPEC-AUTH-003에서 `supabase.auth.getUser`로 사용)
-- [ ] 사용자 데이터 테이블 RLS 활성화 (서비스 데이터 연결은 SPEC-DB-001)
+- [x] 사용자 데이터 테이블 RLS 활성화 (SPEC-DB-001 마이그레이션에서 전 서비스 테이블 RLS + 정책)
+
+### DB 마이그레이션·2-클라이언트·암호화 (SPEC-DB-001)
+
+**추가 API 서버 env (apps/api/.env — 커밋 금지, `.env.example`만 커밋):**
+
+```env
+SUPABASE_SECRET_KEY=<secret/service_role-key>     # 시스템 쓰기 클라이언트(RLS 우회). 서버 시작 시 필수 검증
+AI_KEY_ENCRYPTION_KEY=<base64 32바이트>            # BYOK 키 AES-256-GCM 마스터 키. `openssl rand -base64 32`
+SUPABASE_DB_URL=postgresql://...                  # 마이그레이션 적용용. `supabase db push --db-url` 에만 사용(런타임 미사용)
+```
+
+- 서버 시작 시 `env.ts`가 `SUPABASE_SECRET_KEY`·`AI_KEY_ENCRYPTION_KEY`(base64 32바이트)를 검증한다. 없거나 형식이 어긋나면 명확한 메시지로 기동에 실패한다(키 값은 노출하지 않는다).
+- **2-클라이언트**: 조회·사용자 쓰기는 사용자 JWT 클라이언트(`createUserClient`, RLS 적용) / 시스템 쓰기는 Secret Key 클라이언트(`getAdminClient`, RLS 우회 — DB-001은 구성까지만, 실사용은 AI Spec).
+- **BYOK 키**: `user_provider_keys`에 AES-256-GCM 암호문(`encrypted_key`·`key_iv`·`key_auth_tag`)만 저장한다. 평문 키는 저장·프론트·로그·에러 어디에도 두지 않는다. 복호는 서버에서만.
+
+**마이그레이션 적용 (Supabase CLI):**
+
+```bash
+brew install supabase/tap/supabase        # CLI 미설치 시 (macOS)
+supabase db push --db-url "$SUPABASE_DB_URL" --yes   # apps/api/.env 의 값 사용
+```
+
+- SQL은 `supabase/migrations/*.sql`(커밋), `supabase/config.toml`(커밋). 실제 `.env`·비밀은 커밋 금지.
+- 마이그레이션은 서비스 테이블 6종 + `user_provider_keys` + Enum 6종 + 제약(FK RESTRICT/CASCADE·UNIQUE·CHECK·미완료 Question Partial Unique)·Index·`moddatetime` 트리거·전 테이블 RLS 정책(EXISTS join 소유권)·원자적 생성 RPC를 만든다.
+- 역할 GRANT: RLS만으로는 부족하며 `authenticated`·`service_role`에 테이블 DML GRANT가 필요하다(별도 grants 마이그레이션 포함).
+
+**RLS·소유권 체크리스트:**
+
+- [x] 전 서비스 테이블 RLS 활성화 + SELECT/INSERT(WITH CHECK)/UPDATE 정책
+- [x] 소유권은 `auth.uid() → chats.user_id → 하위(EXISTS join)`. 하위 테이블에 user_id 중복 저장 안 함
+- [x] `user_provider_keys`는 `user_id = auth.uid()` 직접 소유
+- [x] Express는 검증 JWT의 userId만 사용, 클라이언트 전달 userId 무시
+- [x] 2명 교차 차단 실측(본인 것만 조회, 타인 0건 — chats·questions·user_provider_keys 양방향)
 
 ---
 

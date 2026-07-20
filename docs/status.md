@@ -238,8 +238,20 @@
     - **user_provider_keys 신규 테이블**(3.8): encrypted_key·key_iv·key_auth_tag(AES-256-GCM), UNIQUE(user_id,provider), 마스터 키 env. 표시용 힌트(마지막 4자)는 설정 Spec으로 연기
   - 다음: T-015 구현
 
-## 다음 작업
-
-- **T-015: SPEC-DB-001 구현** — Supabase 마이그레이션(테이블 7 + Enum + 제약·Index·트리거) + RLS + 2-클라이언트 + `apiStorageAdapter`로 Chat·Question 실저장 + user_provider_keys 암호화 저장 경로 + `NO_VALUE` shared 상수. 리모트 Claude Code가 구현·실측·커밋
+- **T-015: SPEC-DB-001 구현 완료 (2026-07-20)** — DB 마이그레이션·RLS·2-클라이언트·Chat/Question 실저장·BYOK 암호화 경로. AC1~AC6 실측 PASS. (상태 헤더·index.md는 유지 — 완료 처리는 Cowork)
+  - 2장 마이그레이션: `supabase/migrations/` 3파일(init_schema·grants·next_question_rpc). Enum 6·테이블 6+`user_provider_keys`·제약(FK RESTRICT/CASCADE·UNIQUE·`message` CHECK·agenda 상태↔reason↔content↔`selected_source_ref` CHECK)·미완료 Question Partial Unique·Index·`moddatetime`(extensions) 트리거 6·전 테이블 RLS. Enum 값은 shared와 일치. Supabase CLI(Homebrew)로 `db push --db-url`(apps/api/.env)
+    - **GRANT 마이그레이션 추가(발견)**: RLS만으론 부족 — 마이그레이션 생성 테이블에 `authenticated`·`service_role` 테이블 DML GRANT가 없어 `permission denied`. `grants.sql`로 GRANT + default privileges 부여(RPC insert·admin 접근 정상화)
+  - 3장 암호화: `keyCipher`(AES-256-GCM, 마스터 키=env `AI_KEY_ENCRYPTION_KEY` base64 32바이트, IV·auth tag) + `providerKeys.repository`(암호화 저장·복호, 평문 미노출). `user_provider_keys` UNIQUE(user_id,provider)·CASCADE·RLS
+  - 4장 RLS·2-클라이언트: `userClient`(요청 JWT 전달, RLS) / `adminClient`(Secret Key, 구성만 — 실사용 AI Spec). `env.ts` 확장(`SUPABASE_SECRET_KEY`·`AI_KEY_ENCRYPTION_KEY` 필수 검증, 값 미노출). Repository DB 응답 shared Zod 검증·snake↔camel. RLS 소유권=EXISTS join(하위→chats.user_id)
+  - 5장 web 재배선: `apiStorageAdapter`(Promise) + apiClient chat 메서드. 엔드포인트 `POST /api/chats`(원자 RPC·title 100)·`POST /:chatId/questions`(원자 RPC seq)·`PATCH /:chatId/questions/:id`(완료 전이 — happy-path 다중 질문·복원 일관성 위해 추가한 생명주기 엔드포인트)·`GET /api/chats`·`GET /:chatId/questions`. Controller Zod, 에러=AUTH-003 봉투(`QUESTION_ALREADY_OPEN` 409 등). `useChatWorkspace`는 기본(happy-path) 시나리오에서만 서버 저장(dev `?scenario=`는 기존 Mock 유지), 마운트 시 서버 하이드레이트. **AI 파이프라인(SourceAnswer·Agenda·FinalAnswer·DecisionNote)은 브라우저 Mock 유지(0.4)** — 옛 Question은 메시지·상태만 복원
+  - `NO_VALUE` 상수: `packages/shared`에 추가(1.6), `selected_source_ref` CHECK에 `'"NO_VALUE"'::jsonb`로 적용
+  - **AC1**: db push 후 테이블 7·Enum 6·제약·Partial Unique·트리거 6·RLS 7·정책 20·RPC 2·`chats.user_id` FK RESTRICT psql 확인
+  - **AC2**(RLS): admin API로 확인 계정 B 생성(메일 0) → **양방향 교차 차단** chats·questions·`user_provider_keys` 모두 A→B 0·B→A 0, 본인 것 조회됨. B 계정·테스트 데이터 정리(삭제)
+  - **AC3**: 2-클라이언트 구성, `POST /api/chats`에 body `userId` 위조 주입해도 생성 chat 소유=검증 JWT 사용자(admin 확인), 무토큰 401
+  - **AC4**(web 저장): 브라우저 로그인→질문→`POST /api/chats` 201(title 100·seq1)→충돌 해소→`PATCH` 200(완료 영속화)→리로드 시 Chat 목록·Question 복원(completed·컴포저 재활성). 미완료 1개 제약=`POST 다음 질문` 409(curl)
+  - **AC5**(암호화): admin 기반 round-trip — 암호문 저장(평문 0)·복호 원문 복원·GCM 위변조 감지·anon 0행·임시 행 정리. 평문 미출력
+  - **AC6**: 루트 `typecheck`·`build` 통과, `node apps/api/dist/server.js` 정상(health 200·보호 401), `lint` web만(api script 없음). 인증·happy-path 회귀 없음(브라우저), 콘솔 오류 없음
+  - StrictMode 이중 마운트 하이드레이트 버그 수정(ref 가드 제거, per-run cancelled). 실측 로그인은 기존 계정(비밀번호 채팅 전용·미기록), 비밀·DB URL·키를 로그·커밋에 미노출
+- **SPEC-DB-001 완료 처리 대기** — T-015 AC1~AC6 실측 PASS. Spec 상태 헤더·개정 기록·index.md는 Cowork
 - 이후: SPEC-AI-001~003(Provider·Manager·FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

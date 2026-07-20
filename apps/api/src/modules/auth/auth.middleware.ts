@@ -80,6 +80,7 @@ export async function requireAuth(
   request.auth = {
     userId: parsed.data.id,
     email: parsed.data.email ?? "",
+    token,
   };
   next();
 }

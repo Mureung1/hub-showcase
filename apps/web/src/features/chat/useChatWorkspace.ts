@@ -12,6 +12,14 @@ import type {
 import { hasIncompleteQuestion, isSourceAnswerSettled } from "./types";
 import { validateWorkspaceEntities } from "./mockValidation";
 import { getActiveScenario } from "./scenarios";
+import {
+  loadChatsWithQuestions,
+  createChatWithFirstQuestion as apiCreateChat,
+  createNextQuestion as apiCreateNextQuestion,
+  markQuestionCompleted,
+  ApiStorageError,
+  type StoredChat,
+} from "../../lib/apiStorageAdapter";
 import type { SourceAnswerEvent } from "./scenarios";
 import type { MockAgendaTemplate } from "./mockData";
 import {
@@ -299,15 +307,84 @@ function buildContextNextQuestionState(): ChatWorkspaceState {
 }
 
 /**
+ * 새 Question에 붙일 Provider별 SourceAnswer(pending) 초기 배열 (Mock AI 흐름의 시작점).
+ * 서버 저장 경로·메모리 경로가 함께 사용한다.
+ */
+function buildPendingSourceAnswers(questionId: string): SourceAnswer[] {
+  const created = nowIso();
+  return providerMeta.map(({ id }) => ({
+    id: crypto.randomUUID(),
+    questionId,
+    provider: id,
+    model: mockModelByProvider[id],
+    status: "pending",
+    structuredContent: null,
+    errorCode: null,
+    errorMessage: null,
+    retryCount: 0,
+    excludedFromComparison: false,
+    excludedAt: null,
+    startedAt: null,
+    completedAt: null,
+    createdAt: created,
+    updatedAt: created,
+  }));
+}
+
+/**
+ * 서버에서 복원한 Chat·Question(평면)을 UI 뷰 Chat으로 변환한다.
+ * AI 생성물은 이 Spec에서 서버에 없으므로 빈 배열로 둔다(0.4 한계 — 옛 Question은
+ * 메시지·상태만 복원되고 답변·Agenda·FinalAnswer·노트는 복원되지 않는다).
+ */
+function toViewChat(stored: StoredChat): Chat {
+  return {
+    ...stored.chat,
+    questions: stored.questions.map((question) => ({
+      ...question,
+      sourceAnswers: [],
+      agendas: [],
+      finalAnswer: null,
+    })),
+  };
+}
+
+/**
  * Workspace의 Chat·Question 상태를 소유하는 Hook (Step 1~9).
- * 저장은 이번 Spec 제외 범위라 상태는 메모리에만 유지되고 새로고침 시 초기화된다.
+ * 기본(happy-path) 사용에서는 Chat·Question을 apiStorageAdapter→Express→Supabase로
+ * 실제 저장·복원한다(SPEC-DB-001 5장). AI 생성물은 여전히 브라우저 Mock이다(0.4 한계).
+ * `?scenario=`로 지정하는 개발 시나리오는 서버 없이 기존 메모리 흐름을 유지한다.
  */
 export function useChatWorkspace() {
+  // 기본 시나리오에서만 서버 저장을 켠다 — dev 시나리오(provider-retry·all-rejected·
+  // context-next-question 등)는 AI 흐름 테스트용이라 기존 메모리 동작을 유지한다.
+  const serverBacked = getActiveScenario().id === "happy-path";
   const [state, setState] = useState<ChatWorkspaceState>(() =>
     getActiveScenario().id === "context-next-question"
       ? buildContextNextQuestionState()
       : { chats: [], activeChatId: null, decisionNotes: [] },
   );
+
+  // 서버 저장 모드: 마운트 시 Chat·Question을 복원한다(재로그인 복원, AC4).
+  // per-run `cancelled`만 쓴다(ref 가드를 두면 StrictMode 이중 마운트에서 첫 fetch가
+  // cleanup으로 취소되고 두 번째가 건너뛰어져 복원이 사라진다). 재fetch는 idempotent.
+  useEffect(() => {
+    if (!serverBacked) return;
+    let cancelled = false;
+    void loadChatsWithQuestions()
+      .then((stored) => {
+        if (cancelled) return;
+        setState((prev) => ({ ...prev, chats: stored.map(toViewChat) }));
+      })
+      .catch((error) => {
+        console.error(
+          "[apiStorage] Chat 복원 실패:",
+          error instanceof Error ? error.message : error,
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [serverBacked]);
 
   const activeChat =
     state.chats.find((chat) => chat.id === state.activeChatId) ?? null;
@@ -451,6 +528,33 @@ export function useChatWorkspace() {
     const isRejected =
       resolutionReason === "user_rejected" ||
       resolutionReason === "user_rejected_after_recheck";
+
+    // 이 해소로 Question이 완료되는지 현재 스냅샷으로 예측한다(updater 밖에서 판단해야
+    // setState 이후 안전하게 서버에 완료를 영속화할 수 있다). 남은 Agenda가 이것뿐이면 완료.
+    if (serverBacked) {
+      const question = state.chats
+        .find((chat) => chat.id === chatId)
+        ?.questions.find((q) => q.id === questionId);
+      const willComplete =
+        !!question &&
+        question.finalAnswer === null &&
+        question.agendas.length > 0 &&
+        question.agendas.every((agenda) =>
+          agenda.id === agendaId
+            ? true
+            : agenda.status === "passed" || agenda.status === "rejected",
+        );
+      if (willComplete) {
+        // Question 완료를 서버에 영속화(미완료 1개 해제·재로그인 복원 일관성). 실패는 로깅만.
+        void markQuestionCompleted(chatId, questionId).catch((error) =>
+          console.error(
+            "[apiStorage] Question 완료 영속화 실패:",
+            error instanceof Error ? error.message : error,
+          ),
+        );
+      }
+    }
+
     setState((prev) => {
       let createdNote: DecisionNote | null = null;
 
@@ -540,49 +644,85 @@ export function useChatWorkspace() {
     }
   }
 
+  /** 뷰 Chat에 새 Question(processing)을 붙여 로컬 상태에 반영하고 Mock 흐름을 예약한다. */
+  function seedNewQuestion(question: Question, isNewChat: boolean, newChat?: Chat) {
+    if (isNewChat && newChat) {
+      setState((prev) => ({
+        ...prev,
+        chats: [...prev.chats, newChat],
+        activeChatId: newChat.id,
+      }));
+    } else {
+      setState((prev) => ({
+        ...prev,
+        chats: prev.chats.map((chat) =>
+          chat.id === question.chatId
+            ? { ...chat, questions: [...chat.questions, question] }
+            : chat,
+        ),
+      }));
+    }
+    scheduleSourceAnswerFlow(question.chatId, question.id);
+  }
+
   /**
-   * 질문 전송. 전송 순간 Question을 `draft`로 생성하고 즉시 `processing`으로
-   * 전이한다 (Step 2-2: draft는 UI상 상태가 아니다).
+   * 질문 전송. Question을 `processing`으로 생성한다(Step 2-2: draft는 UI상 상태가 아니다).
    * 빈 질문(공백만)과 1000자 초과는 실행하지 않는다.
+   * 서버 저장 모드에서는 Chat·Question을 Express→Supabase에 먼저 저장하고(서버가 id·title·
+   * sequence 부여), 반환된 id로 Mock AI 흐름을 잇는다. 미완료 1개 제약은 서버가 최종 강제한다.
    */
-  function submitQuestion(content: string): boolean {
+  async function submitQuestion(content: string): Promise<boolean> {
     const trimmed = content.trim();
     if (trimmed.length === 0 || trimmed.length > QUESTION_MAX_LENGTH) {
       return false;
     }
-    // 기존 Chat이면 미완료 Question 1개 제한을 먼저 확인한다 (고정 정책)
+    // 기존 Chat이면 미완료 Question 1개 제한을 먼저 확인한다 (고정 정책, 서버가 최종 강제)
     if (activeChat !== null && hasIncompleteQuestion(activeChat)) {
       return false;
     }
 
+    if (serverBacked) {
+      try {
+        if (activeChat === null) {
+          const { chat, question } = await apiCreateChat(trimmed);
+          const viewQuestion: Question = {
+            ...question,
+            sourceAnswers: buildPendingSourceAnswers(question.id),
+            agendas: [],
+            finalAnswer: null,
+          };
+          const viewChat: Chat = { ...chat, questions: [viewQuestion] };
+          seedNewQuestion(viewQuestion, true, viewChat);
+        } else {
+          const question = await apiCreateNextQuestion(activeChat.id, trimmed);
+          const viewQuestion: Question = {
+            ...question,
+            sourceAnswers: buildPendingSourceAnswers(question.id),
+            agendas: [],
+            finalAnswer: null,
+          };
+          seedNewQuestion(viewQuestion, false);
+        }
+        return true;
+      } catch (error) {
+        // 저장 실패(예: 미완료 1개 QUESTION_ALREADY_OPEN)는 반영하지 않고 false 반환.
+        console.error(
+          "[apiStorage] 질문 저장 실패:",
+          error instanceof ApiStorageError
+            ? `${error.code}: ${error.message}`
+            : error,
+        );
+        return false;
+      }
+    }
+
+    // --- 비-서버(dev 시나리오): 기존 메모리 흐름 유지 ---
     const chatId = activeChat?.id ?? crypto.randomUUID();
     const questionId = crypto.randomUUID();
     const created = nowIso();
-
-    const sourceAnswers: SourceAnswer[] = providerMeta.map(({ id }) => ({
-      id: crypto.randomUUID(),
-      questionId,
-      provider: id,
-      model: mockModelByProvider[id],
-      status: "pending",
-      structuredContent: null,
-      errorCode: null,
-      errorMessage: null,
-      retryCount: 0,
-      excludedFromComparison: false,
-      excludedAt: null,
-      startedAt: null,
-      completedAt: null,
-      createdAt: created,
-      updatedAt: created,
-    }));
-
-    // 정책 전이 순서(draft → processing)는 유지하되, draft는 사용자에게 노출하지 않으므로
-    // 초기 상태를 곧바로 processing으로 둔다.
     const question: Question = {
       id: questionId,
       chatId,
-      // 연속 질문 시 Chat 안에서 순번 증가 (Step 9)
       sequenceNumber: (activeChat?.questions.length ?? 0) + 1,
       message: trimmed,
       status: "processing",
@@ -591,36 +731,21 @@ export function useChatWorkspace() {
       createdAt: created,
       updatedAt: created,
       completedAt: null,
-      sourceAnswers,
+      sourceAnswers: buildPendingSourceAnswers(questionId),
       agendas: [],
       finalAnswer: null,
     };
-
-    if (activeChat === null) {
-      const chat: Chat = {
-        id: chatId,
-        title: trimmed.slice(0, CHAT_TITLE_MAX_LENGTH),
-        questions: [question],
-        createdAt: created,
-        updatedAt: created,
-      };
-      setState((prev) => ({
-        ...prev,
-        chats: [...prev.chats, chat],
-        activeChatId: chatId,
-      }));
-    } else {
-      setState((prev) => ({
-        ...prev,
-        chats: prev.chats.map((chat) =>
-          chat.id === chatId
-            ? { ...chat, questions: [...chat.questions, question] }
-            : chat,
-        ),
-      }));
-    }
-
-    scheduleSourceAnswerFlow(chatId, question.id);
+    const newChat: Chat | undefined =
+      activeChat === null
+        ? {
+            id: chatId,
+            title: trimmed.slice(0, CHAT_TITLE_MAX_LENGTH),
+            questions: [question],
+            createdAt: created,
+            updatedAt: created,
+          }
+        : undefined;
+    seedNewQuestion(question, activeChat === null, newChat);
     return true;
   }
 

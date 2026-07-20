@@ -8,6 +8,11 @@ import type { Request } from "express";
 export interface AuthInfo {
   userId: string;
   email: string;
+  /**
+   * 검증된 access token. 사용자 JWT Supabase Client(RLS) 생성에 사용한다(SPEC-DB-001).
+   * 이미 헤더로 받은 값이며, 데이터 소유권은 여전히 userId(검증 결과)로만 판단한다.
+   */
+  token: string;
 }
 
 /**
