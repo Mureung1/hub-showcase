@@ -28,6 +28,7 @@ First Assignment product vertical이 deterministic Browser seam과 exact Python/
 - Tracer-only four-route projection, process-fixed single workspace ownership, full-screen Chat shell과 fixed `deny_all + read_only` public copy는 migrated product caller가 모두 새 seam을 사용한 뒤에만 contract한다.
 - 삭제 시 compatibility alias, raw event gateway, second engine abstraction과 automatic state migration을 만들지 않는다.
 - Workspace-local confirmed state와 history는 product surface rollback이나 cutover에도 삭제하지 않는다.
+- Product cutover 시점의 current store format을 첫 durable compatibility baseline으로 확정한다. 이후 physical schema 변경은 explicit version bump와 migration 또는 fail-closed rejection을 요구하고 silent reset을 허용하지 않으며, 이 ticket에서 generic migration framework를 선행 구현하지 않는다.
 - Package README와 implementation map은 current implemented behavior, remaining deferred Chat capability와 exact commands를 owning-document-first로 갱신한다. Work order/status는 development backlog에서만 갱신한다.
 - Provider credential이 없으면 live trace를 pass나 skip으로 가장하지 않고 exact prerequisite와 `blocked`를 기록한다. Parent spec이 요구하는 live success가 충족되지 않으면 ticket을 완료 처리하지 않는다.
 - Final review는 fixed point 대비 repository Standards와 parent Spec 두 축을 모두 수행한다.
@@ -40,6 +41,7 @@ First Assignment product vertical이 deterministic Browser seam과 exact Python/
 - [ ] Opt-in live-provider가 representative fixture와 fresh isolated roots에서 complete product action을 성공시키며 수동 중간 복구가 없다.
 - [ ] Full Browser E2E가 parent spec의 nine representative traces와 1440×900 desktop accessibility를 통과한다.
 - [ ] Current text Chat survivor behavior는 product Chat에 흡수되고 tracer-only route/status·fixed permission copy가 compatibility alias 없이 제거된다.
+- [ ] Cutover의 current store format과 support policy가 owning document에 첫 durable compatibility baseline으로 기록되고, future physical schema change는 explicit version bump와 migration 또는 fail-closed rejection을 요구하며 silent reset을 허용하지 않는다.
 - [ ] Generic transcript persistence, conversation catalog, unanswered Review hydration, approval center와 mobile scope가 구현에 섞이지 않는다.
 - [ ] Root `npm test`, typecheck, build, Chat lint/E2E, docs links, exact runtime and local-provider gates가 모두 green이다.
 - [ ] Runtime/package README, Server·Chat Shell README, implementation map과 development backlog가 current implementation과 deferred work를 정확히 구분한다.
