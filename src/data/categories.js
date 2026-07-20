@@ -12,17 +12,7 @@ export const categories = [
   { id: 'deopbap', name: '덮밥', type: 'main', emoji: '🍱' },
   { id: 'pasta', name: '파스타', type: 'main', emoji: '🍝' },
   { id: 'bokkeum-main', name: '볶음요리', type: 'main', emoji: '🥘' },
-  {
-    id: 'ramyeon',
-    name: '라면',
-    type: 'main',
-    emoji: '🍜',
-    subgroups: [
-      { id: 'cup', name: '컵라면' },
-      { id: 'bag', name: '봉지라면' },
-    ],
-  },
-  { id: 'rice', name: '밥·즉석식품', type: 'main', emoji: '🍙' },
+  { id: 'ramyeon', name: '라면', type: 'main', emoji: '🍜' },
   { id: 'noodle', name: '면요리', type: 'main', emoji: '🍜' },
   { id: 'salad', name: '샐러드', type: 'main', emoji: '🥗' },
   { id: 'steak', name: '구이·스테이크', type: 'main', emoji: '🍖' },
