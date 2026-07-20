@@ -243,6 +243,13 @@ test('distinguishes product loading, inactive workspace, no Course, empty materi
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
+        accountReadiness: { state: 'ready' },
+        history: {
+          assignments: [],
+          statePatches: [],
+          userConfirmations: [],
+          modelingRuns: [],
+        },
         workspace:
           mode === 'inactive'
             ? null
