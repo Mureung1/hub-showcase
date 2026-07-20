@@ -33,7 +33,7 @@ function App() {
       )}
       {step === 2 && (
         <CandidateListScreen
-          genderOnly={registration?.genderOnly}
+          myRequest={registration}
           onBack={() => setStep(1)}
           onJoin={(candidate) => {
             setJoinedCandidate(candidate);
