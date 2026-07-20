@@ -288,20 +288,121 @@ app.post('/api/credits/analyze-transcript', upload.single('transcript'), async (
       };
     }
 
+    // Save to in-memory persistence store
+    inMemorySavedGrades = {
+      studentName: studentName,
+      overallGpa: overallGpa,
+      extractedGrades: finalGrades,
+      advisory: advisory
+    };
+
     res.json({
       success: true,
       message: isFallback ? '성적표 스캔 완료 (모의 데이터 대체)' : '성적표 상세 분석 및 AI 진단 완료',
-      data: {
-        studentName: studentName,
-        overallGpa: overallGpa,
-        extractedGrades: finalGrades,
-        advisory: advisory
-      }
+      data: inMemorySavedGrades
     });
 
   } catch (error) {
     console.error('OCR Transcript Error:', error);
     res.status(500).json({ error: 'Internal server error during transcript analysis' });
+  }
+});
+
+// ==========================================
+// PERSISTENCE APIs (Supabase DB + In-Memory Fallback)
+// ==========================================
+
+const supabase = require('./supabase');
+
+// In-memory persistence stores
+let inMemoryChatMessages = [
+  { role: 'assistant', content: '안녕하세요! 경상국립대학교 AI 학업 어드바이저입니다. 수강신청, 시간표 작성, 학점 관리 또는 재수강에 대해 궁금한 점을 언제든 물어보세요!' }
+];
+let inMemorySavedGrades = null;
+
+// POST /api/chat - Save user question & AI response to Supabase chat_messages
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { userMessage, aiResponse, userId } = req.body;
+    if (!userMessage || !userMessage.trim()) {
+      return res.status(400).json({ error: 'User message is required' });
+    }
+
+    if (supabase) {
+      const { error } = await supabase.from('chat_messages').insert([
+        { role: 'user', content: userMessage.trim(), user_id: userId || null },
+        { role: 'assistant', content: aiResponse || '답변을 생성할 수 없습니다.', user_id: userId || null }
+      ]);
+      if (error) console.error('[Supabase Chat Insert Error]:', error.message);
+    }
+
+    inMemoryChatMessages.push({ role: 'user', content: userMessage.trim() });
+    if (aiResponse) {
+      inMemoryChatMessages.push({ role: 'assistant', content: aiResponse });
+    }
+
+    res.json({ success: true, message: '대화 내역이 성공적으로 저장되었습니다.' });
+  } catch (error) {
+    console.error('Chat Save Error:', error);
+    res.status(500).json({ error: 'Failed to save chat message' });
+  }
+});
+
+// GET /api/chat - Fetch chat history for user
+app.get('/api/chat', async (req, res) => {
+  try {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (!error && data && data.length > 0) {
+        return res.json({ success: true, messages: data });
+      }
+    }
+    res.json({ success: true, messages: inMemoryChatMessages });
+  } catch (error) {
+    res.json({ success: true, messages: inMemoryChatMessages });
+  }
+});
+
+// POST /api/credits/save-grades - Store parsed OCR grades
+app.post('/api/credits/save-grades', async (req, res) => {
+  try {
+    const { overallGpa, extractedGrades, advisory, studentName } = req.body;
+    if (!extractedGrades || !Array.isArray(extractedGrades)) {
+      return res.status(400).json({ error: 'Invalid grades payload' });
+    }
+
+    inMemorySavedGrades = { overallGpa, extractedGrades, advisory, studentName };
+
+    if (supabase) {
+      const rows = extractedGrades.map(g => ({
+        subject_name: g.course,
+        credit: g.credit,
+        grade_point: g.grade,
+        semester: '2026-1'
+      }));
+      const { error } = await supabase.from('user_grades').insert(rows);
+      if (error) console.error('[Supabase Grades Insert Error]:', error.message);
+    }
+
+    res.json({ success: true, message: '성적 및 AI 진단 정보가 DB에 영구 저장되었습니다.' });
+  } catch (error) {
+    console.error('Save Grades Error:', error);
+    res.status(500).json({ error: 'Failed to save grades' });
+  }
+});
+
+// GET /api/credits/saved-grades - Retrieve saved grades for persistence across refresh
+app.get('/api/credits/saved-grades', async (req, res) => {
+  try {
+    if (inMemorySavedGrades) {
+      return res.json({ success: true, data: inMemorySavedGrades });
+    }
+    res.json({ success: false, data: null });
+  } catch (error) {
+    res.json({ success: false, data: null });
   }
 });
 

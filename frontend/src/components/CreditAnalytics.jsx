@@ -102,7 +102,38 @@ function CreditAnalytics({ initialStudentType }) {
   const [analysisResult, setAnalysisResult] = useState(null);
   const fileInputRef = useRef(null);
 
-    const runClientSideSimulation = () => {
+  // Restore saved grades on mount for persistence across refresh
+  useEffect(() => {
+    // 1. Try fetching from server API
+    axios.get('http://localhost:5000/api/credits/saved-grades')
+      .then(res => {
+        if (res.data && res.data.success && res.data.data) {
+          setAnalysisResult(res.data.data);
+        } else {
+          // 2. Fallback to localStorage
+          const cached = localStorage.getItem('gnu_saved_analysis_result');
+          if (cached) setAnalysisResult(JSON.parse(cached));
+        }
+      })
+      .catch(() => {
+        const cached = localStorage.getItem('gnu_saved_analysis_result');
+        if (cached) {
+          try { setAnalysisResult(JSON.parse(cached)); } catch (e) {}
+        }
+      });
+  }, []);
+
+  // Save result whenever analysisResult changes
+  useEffect(() => {
+    if (analysisResult) {
+      try {
+        localStorage.setItem('gnu_saved_analysis_result', JSON.stringify(analysisResult));
+        axios.post('http://localhost:5000/api/credits/save-grades', analysisResult).catch(() => {});
+      } catch (e) {}
+    }
+  }, [analysisResult]);
+
+  const runClientSideSimulation = () => {
       let mockData = {};
       if (studentType === 'transfer') {
         mockData = {
