@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -9,12 +9,6 @@ const workflowPath = resolve(
 );
 
 function readWorkflow() {
-  expect(existsSync(workflowPath)).toBe(true);
-
-  if (!existsSync(workflowPath)) {
-    return '';
-  }
-
   return readFileSync(workflowPath, 'utf8');
 }
 
@@ -23,8 +17,15 @@ describe('Supabase migration Pull Request 검사', () => {
     const workflow = readWorkflow();
 
     expect(workflow).toContain('pull_request:');
+    expect(workflow).toMatch(/pull_request:\s*\n\s+branches:\s*\n\s+- main/mu);
     expect(workflow).not.toMatch(/^\s+paths:/mu);
     expect(workflow).toContain('Supabase migration validation');
+  });
+
+  it('checkout 자격 증명을 후속 단계에 남기지 않는다', () => {
+    const workflow = readWorkflow();
+
+    expect(workflow).toContain('persist-credentials: false');
   });
 
   it('Supabase 관련 변경에만 로컬 DB 재구성과 RLS 테스트를 실행한다', () => {
