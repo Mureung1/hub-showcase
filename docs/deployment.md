@@ -38,6 +38,32 @@ Supabase 프로젝트의 Project Settings > Integrations에서 다음 값을 유
 
 `main`에 병합하면 `supabase/migrations/`의 새 마이그레이션이 운영 데이터베이스에 적용된다. Auth 설정은 GitHub 연동의 마이그레이션 대상이 아니므로 Supabase Dashboard에서 별도로 관리한다.
 
+## Supabase Pull Request 검사
+
+`.github/workflows/supabase-migration-check.yml`의 `Supabase migration validation` 검사는 `main` 대상 Pull Request마다 실행된다. 이 검사는 브랜치 보호의 필수 상태 검사이므로 workflow 수준의 `paths` 필터를 사용하지 않는다. 대신 변경 파일을 먼저 확인하고 다음 경로가 바뀐 경우에만 Docker 기반 데이터베이스 검증을 실행한다.
+
+- `supabase/**`
+- `.github/workflows/supabase-migration-check.yml`
+
+관련 변경이 없으면 저장소 checkout과 변경 파일 확인만 수행하고 성공한다. 관련 변경이 있으면 고정된 Supabase CLI `2.109.1`로 빈 로컬 데이터베이스를 시작해 versioned migration을 순서대로 적용한 뒤 `supabase test db`로 RLS 데이터베이스 테스트 전체를 실행한다.
+
+GitHub-hosted runner는 매 실행이 깨끗해야 하므로 데이터베이스 상태나 Docker layer를 별도로 캐시하지 않는다. 비용과 대기 시간은 관련 없는 Pull Request의 무거운 단계를 생략하고, 같은 Pull Request의 이전 실행을 취소하는 방식으로 제한한다. Job timeout은 15분이며, 2026-07-20 Windows의 Docker image 최초 다운로드를 포함한 로컬 실측은 migration 적용 108.5초, 33개 테스트 4.3초, 합계 112.8초였다.
+
+전용 clone이나 폐기 가능한 로컬 Supabase 환경에서 CI와 같은 검사를 재현한다. `stop --no-backup`은 해당 로컬 프로젝트의 데이터를 삭제하므로 보존할 데이터가 있는 작업 환경에서는 실행하지 않는다.
+
+```powershell
+npx --yes supabase@2.109.1 stop --no-backup
+npx --yes supabase@2.109.1 db start
+npx --yes supabase@2.109.1 test db
+npx --yes supabase@2.109.1 stop --no-backup
+```
+
+실패한 migration 파일과 SQL 오류, pgTAP 테스트명은 Actions 로그에 그대로 출력된다. 실패한 단계만 확인할 때는 run ID를 사용한다.
+
+```powershell
+gh run view <run-id> --log-failed
+```
+
 ## 인증 URL
 
 - Site URL: `https://hub-ppre1ude-ppre1udes-projects.vercel.app`
@@ -77,5 +103,7 @@ npm run package:extension
 - [Vercel Express 배포](https://vercel.com/docs/frameworks/backend/express)
 - [Vercel 비공개 패키지](https://vercel.com/docs/builds/build-features)
 - [Supabase GitHub 연동](https://supabase.com/docs/guides/deployment/branching/github-integration)
+- [Supabase GitHub Actions 자동 테스트](https://supabase.com/docs/guides/deployment/ci/testing)
+- [Supabase 데이터베이스 테스트](https://supabase.com/docs/guides/database/testing)
 - [Supabase Redirect URL](https://supabase.com/docs/guides/auth/redirect-urls)
 - [Supabase Google 로그인](https://supabase.com/docs/guides/auth/social-login/auth-google)

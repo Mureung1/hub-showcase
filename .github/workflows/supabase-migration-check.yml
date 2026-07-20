@@ -1,0 +1,74 @@
+name: Supabase migration PR 검사
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-migration-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Supabase migration validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 저장소 확인
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Supabase 관련 변경 확인
+        id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          changed_files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          should_run=false
+
+          while IFS= read -r changed_file; do
+            case "$changed_file" in
+              supabase/*|.github/workflows/supabase-migration-check.yml)
+                should_run=true
+                break
+                ;;
+            esac
+          done <<< "$changed_files"
+
+          echo "should_run=$should_run" >> "$GITHUB_OUTPUT"
+
+          if [[ "$should_run" == "true" ]]; then
+            echo "Supabase 관련 변경을 확인해 데이터베이스 검증을 실행합니다."
+          else
+            echo "Supabase 관련 변경이 없어 데이터베이스 검증을 생략합니다."
+          fi
+
+      - name: Supabase CLI 설치
+        id: setup
+        if: steps.changes.outputs.should_run == 'true'
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3
+        with:
+          version: 2.109.1
+
+      - name: 빈 로컬 데이터베이스에 migration 적용
+        if: steps.changes.outputs.should_run == 'true'
+        run: supabase db start
+
+      - name: RLS 데이터베이스 테스트
+        if: steps.changes.outputs.should_run == 'true'
+        run: supabase test db
+
+      - name: 로컬 Supabase 정리
+        if: >-
+          always() &&
+          steps.changes.outputs.should_run == 'true' &&
+          steps.setup.outcome == 'success'
+        run: supabase stop --no-backup
