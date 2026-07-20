@@ -383,6 +383,15 @@ test('reject records a durable no-apply decision and nominal retry does not answ
     assert.equal(replayed.confirmation.id, settled.confirmation.id)
     assert.equal(nativeAnswers.length, 1)
     await assert.rejects(
+      coordinator.submit({
+        ...decision,
+        interactionId: 'interaction-other',
+      }),
+      (error: unknown) =>
+        error instanceof StatePatchReviewError &&
+        error.code === 'review_conflict',
+    )
+    await assert.rejects(
       coordinator.submit({ ...decision, decision: 'accept' }),
       (error: unknown) =>
         error instanceof Error &&

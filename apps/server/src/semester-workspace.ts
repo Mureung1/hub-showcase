@@ -852,7 +852,11 @@ async function commitAssignmentReviewDecision(
     (confirmation) => confirmation.decisionKey === input.decisionKey,
   )
   if (existingConfirmation) {
+    const settledBinding = reviewBindings.get(input.interactionId)
     if (
+      !settledBinding ||
+      settledBinding.patchId !== input.patchId ||
+      settledBinding.decisionKey !== input.decisionKey ||
       existingConfirmation.patchId !== input.patchId ||
       existingConfirmation.decision !== expectedDecision
     ) {
@@ -866,11 +870,7 @@ async function commitAssignmentReviewDecision(
     )
     if (!existingPatch) throw invalidStore()
     return {
-      binding: {
-        interactionId: input.interactionId,
-        patchId: input.patchId,
-        decisionKey: input.decisionKey,
-      },
+      binding: cloneReviewBinding(settledBinding),
       confirmation: { ...existingConfirmation },
       patch: cloneStatePatch(existingPatch),
       confirmedRevision: opened.store.confirmedRevision,
@@ -998,7 +998,6 @@ async function commitAssignmentReviewDecision(
   opened.store = nextStore
   opened.snapshot = readySnapshot(nextStore)
   activePatchByTurn.delete(runtimeTurnKey(activeBinding))
-  reviewBindings.delete(input.interactionId)
   return {
     binding: cloneReviewBinding(activeBinding),
     confirmation: { ...confirmation },
@@ -1027,63 +1026,13 @@ function parseStatePatchPayload(input: unknown): CanonicalStatePatchPayload {
     !isBoundedMeaningfulText(input.summary, proposalSummaryMaxBytes) ||
     (input.origin !== undefined &&
       !isBoundedMeaningfulText(input.origin, proposalSummaryMaxBytes)) ||
-    !isExactRecord(
-      input.changes,
-      ['operation', 'values'],
-      ['assignmentId'],
-    ) ||
-    input.changes.operation !== 'assignment.upsert' ||
-    (input.changes.assignmentId !== undefined &&
-      !isAssignmentId(input.changes.assignmentId)) ||
-    !isExactRecord(input.changes.values, [
-      'dueAt',
-      'submissionMethod',
-      'title',
-    ]) ||
-    !isBoundedMeaningfulText(
-      input.changes.values.title,
-      assignmentTextMaxBytes,
-    ) ||
-    !isExplicitOffsetRfc3339(input.changes.values.dueAt) ||
-    !isBoundedMeaningfulText(
-      input.changes.values.submissionMethod,
-      assignmentTextMaxBytes,
-    ) ||
-    !Array.isArray(input.evidence) ||
-    input.evidence.length === 0 ||
-    input.evidence.length > proposalEvidenceMax
+    !isStoredAssignmentUpsert(input.changes) ||
+    !isEvidenceArray(input.evidence)
   ) {
     throw invalidProposal()
   }
 
-  const evidence = input.evidence.map((candidate) => {
-    if (
-      !isExactRecord(candidate, [
-        'digest',
-        'field',
-        'quote',
-        'rawMaterialId',
-      ]) ||
-      !isAssignmentField(candidate.field) ||
-      !isMaterialId(candidate.rawMaterialId) ||
-      typeof candidate.digest !== 'string' ||
-      !/^[0-9a-f]{64}$/.test(candidate.digest) ||
-      !isBoundedMeaningfulText(candidate.quote, evidenceQuoteMaxBytes)
-    ) {
-      throw invalidProposal()
-    }
-    return {
-      field: candidate.field,
-      rawMaterialId: candidate.rawMaterialId,
-      digest: candidate.digest,
-      quote: candidate.quote,
-    } satisfies EvidenceRef
-  })
-  for (const field of assignmentFields) {
-    if (!evidence.some((candidate) => candidate.field === field)) {
-      throw invalidProposal()
-    }
-  }
+  const evidence = input.evidence.map((candidate) => ({ ...candidate }))
   evidence.sort(compareEvidence)
 
   return {
@@ -1092,17 +1041,7 @@ function parseStatePatchPayload(input: unknown): CanonicalStatePatchPayload {
     courseId: input.courseId,
     baseRevision: Number(input.baseRevision),
     summary: input.summary,
-    changes: {
-      operation: 'assignment.upsert',
-      ...(input.changes.assignmentId === undefined
-        ? {}
-        : { assignmentId: input.changes.assignmentId }),
-      values: {
-        title: input.changes.values.title,
-        dueAt: input.changes.values.dueAt,
-        submissionMethod: input.changes.values.submissionMethod,
-      },
-    },
+    changes: cloneAssignmentUpsert(input.changes),
     evidence,
     ...(input.origin === undefined ? {} : { origin: input.origin }),
   }
