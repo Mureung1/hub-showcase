@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -31,20 +31,28 @@ Server가 만드는 product response·activity와 Browser가 strict decode하는
 
 ## Acceptance Criteria
 
-- [ ] Bootstrap·workspace·history·material preview와 current mutation response의 중복된 Server·Browser type roster가 shared owner로 이동한다.
-- [ ] 모든 006 product activity family와 Assignment/Chat terminal variant를 closed `ProductOperationFrame`과 exact decoder가 표현한다.
-- [ ] Current `/api/product/*` request·response literal을 one owner가 Server admission과 Browser caller에 연결하며 missing·extra·unknown field를 fail closed한다.
-- [ ] Shared decoder가 store metadata, absolute path, private native/MCP/request identity와 unsettled history variant를 거절한다.
-- [ ] 대표 Server output을 shared decoder에 통과시키는 producer conformance test와 pure contract valid/invalid table이 있다.
-- [ ] Browser production bundle이 Node·Express·Server domain module을 포함하지 않고 Server도 Browser code를 import하지 않는다.
-- [ ] Current source workbench, product Server behavior와 legacy Chat UI의 observable output이 extraction 전과 동일하다.
-- [ ] Package README와 Codex Chat implementation map이 contract owner, consumer와 Browser-safe boundary를 current fact로 기록한다.
+- [x] Bootstrap·workspace·history·material preview와 current mutation response의 중복된 Server·Browser type roster가 shared owner로 이동한다.
+- [x] 모든 006 product activity family와 Assignment/Chat terminal variant를 closed `ProductOperationFrame`과 exact decoder가 표현한다.
+- [x] Current `/api/product/*` request·response literal을 one owner가 Server admission과 Browser caller에 연결하며 missing·extra·unknown field를 fail closed한다.
+- [x] Shared decoder가 store metadata, absolute path, private native/MCP/request identity와 unsettled history variant를 거절한다.
+- [x] 대표 Server output을 shared decoder에 통과시키는 producer conformance test와 pure contract valid/invalid table이 있다.
+- [x] Browser production bundle이 Node·Express·Server domain module을 포함하지 않고 Server도 Browser code를 import하지 않는다.
+- [x] Current source workbench, product Server behavior와 legacy Chat UI의 observable output이 extraction 전과 동일하다.
+- [x] Package README와 Codex Chat implementation map이 contract owner, consumer와 Browser-safe boundary를 current fact로 기록한다.
 
 ## Verification
 
-- Targeted test or command: shared product-contract package test/typecheck/build, focused Server product contract tests, `npm run test -w @ay-ple/chat-shell`
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
-- Manual or live smoke: 필요 없음. 이 slice는 behavior-preserving contract ownership이며 existing deterministic Server/Browser test가 authority다.
+- Targeted checks: `npm run test -w @ay-ple/product-contract`, `npm run typecheck -w @ay-ple/product-contract`, `npm run build -w @ay-ple/product-contract`, focused Server product contract tests, `npm run test -w @ay-ple/chat-shell` 모두 통과.
+- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check` 모두 통과.
+- Bundle boundary: Chat Shell production bundle에 Server domain identifier와 Node·Express import가 없고 `@ay-ple/product-contract`는 runtime import와 dependency가 없음을 확인.
+- Code review: `26ac1ebd16abc78cd4c2ef9059d5757cee3adad1...480f2284`를 Standards·Spec 두 축으로 검토했으며 hard standard violation과 concrete spec finding이 없음을 확인.
+- Manual or live smoke: 실행하지 않음. 이 slice는 behavior-preserving contract ownership이며 existing deterministic Server/Browser test가 authority다.
+
+## Result
+
+`@ay-ple/product-contract`가 Browser-safe product bootstrap·workspace·settled history·preview, current mutation request·response·error와 closed operation frame의 단일 owner가 되었다. Server admission·producer와 Chat Shell caller·NDJSON adapter는 같은 exact decoder를 사용하며, HTTP fetch·byte framing·domain projection·React state와 private runtime identity는 해당 package 밖에 남았다.
+
+- Implementation commit: `480f2284` (`feat: centralize browser-safe product contract`)
 
 ## Blocked By
 
