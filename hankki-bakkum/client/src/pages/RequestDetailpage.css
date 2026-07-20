@@ -1,0 +1,252 @@
+/* RequestDetailPage — hankki-design v3 (Warm Paper) 토큰만 사용 */
+
+.detail-page {
+    background: var(--bg-page);
+    min-height: 100vh;
+    padding: 20px 16px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    /* 카드 간 간격 20px */
+}
+
+.detail-page--empty {
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+/* 카드 — 테두리 없이 그림자로 */
+.card {
+    background: var(--bg-card);
+    border-radius: var(--r-card);
+    padding: 24px;
+    box-shadow: var(--shadow-card);
+}
+
+.card-title {
+    margin: 0 0 14px;
+    font-size: 1.02rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+}
+
+/* 태그 칩 — 전부 알약형, soft 배경 + 진한 글자 */
+.detail-tags {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.chip {
+    border-radius: var(--r-pill);
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.chip--primary {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.chip--muted {
+    background: var(--bg-section);
+    color: var(--muted);
+}
+
+.chip--ok {
+    background: var(--ok-soft);
+    color: var(--ok);
+    margin-left: auto;
+}
+
+.detail-title {
+    margin: 0 0 8px;
+    font-size: 1.45rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.35;
+    color: var(--ink);
+}
+
+.detail-meta {
+    margin: 0 0 16px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.detail-content {
+    margin: 0;
+    font-size: 0.93rem;
+    font-weight: 500;
+    line-height: 1.7;
+    color: var(--body);
+    white-space: pre-wrap;
+}
+
+/* 기대 결과물 예시 — 고정 노출 */
+.detail-example-img {
+    width: 100%;
+    border-radius: var(--r-inner);
+    display: block;
+}
+
+.detail-example-placeholder {
+    background: var(--bg-section);
+    border-radius: var(--r-inner);
+    padding: 36px 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.detail-example-note {
+    margin: 12px 0 0;
+    font-size: 0.88rem;
+    color: var(--body);
+    line-height: 1.7;
+}
+
+/* 수정 1회 룰박스 — 배경칠 대신 섹션 톤 + 글자색 강조 */
+.rulebox {
+    margin-top: 16px;
+    background: var(--bg-section);
+    border-radius: var(--r-inner);
+    padding: 14px 16px;
+}
+
+.rulebox strong {
+    display: block;
+    font-size: 0.88rem;
+    color: var(--ink);
+    margin-bottom: 4px;
+}
+
+.rulebox p {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: var(--body);
+}
+
+.rulebox em {
+    font-style: normal;
+    color: var(--primary);
+    font-weight: 700;
+}
+
+/* 식권 티켓 — 시그니처 컴포넌트 (스킬 4절 규격 그대로) */
+.ticket {
+    display: flex;
+    align-items: center;
+    background: var(--ticket-bg);
+    border-radius: var(--r-inner);
+    position: relative;
+}
+
+.ticket .stub {
+    flex: 0 0 86px;
+    text-align: center;
+    padding: 14px 6px;
+    border-right: 2px dashed rgba(138, 106, 27, 0.3);
+    font-weight: 800;
+    font-size: 1.35rem;
+    color: var(--ticket-ink);
+}
+
+.ticket .body {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--ticket-ink);
+    line-height: 1.6;
+}
+
+.ticket::before,
+.ticket::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    /* 구멍 색 = 티켓이 놓인 카드 배경과 일치 */
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.ticket::before {
+    left: 79px;
+}
+
+.ticket::after {
+    right: -7px;
+}
+
+/* 매칭된 헬퍼 */
+.helper-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--bg-section);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.helper-name {
+    margin: 0;
+    font-size: 0.93rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.helper-sub {
+    margin: 2px 0 0;
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.detail-error {
+    margin: 0;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--hot);
+}
+
+/* 주요 버튼 — soft 배경 + primary 글자, 48px 이상 */
+.btn-primary {
+    min-height: 52px;
+    border: none;
+    border-radius: var(--r-inner);
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.btn-primary:active {
+    background: #dee2f8;
+}
+
+.btn-primary:disabled {
+    background: var(--bg-section);
+    color: var(--muted);
+}

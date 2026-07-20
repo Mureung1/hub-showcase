@@ -26,7 +26,9 @@ export default function App() {
           <Routes>
             <Route path="/" element={<HotDealPage />} />
             <Route path="/talent" element={<TalentFeedPage />} />
-            <Route path="/talent/:id" element={<RequestDetailPage />} />
+            <Route path="/talent/:id" element={
+              <RequireAuth><RequestDetailPage /></RequireAuth>
+            } />
             <Route path="/talent/new" element={
               <RequireAuth><RequestFormPage /></RequireAuth>
             } />
