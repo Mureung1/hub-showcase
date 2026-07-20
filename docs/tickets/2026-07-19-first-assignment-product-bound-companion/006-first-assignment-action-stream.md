@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -37,22 +37,30 @@ Local Server가 active `SemesterWorkspace`·`Course`와 exactly two selected TXT
 
 ## Acceptance Criteria
 
-- [ ] Account not-ready와 invalid workspace·Course·Recipe·selection·digest는 native start 0, no `ModelingRun`과 actionable failure로 끝난다.
-- [ ] Valid request가 exactly one durable Run을 먼저 만들고 exact Skill+Text input으로 one native Turn을 시작한다.
-- [ ] Acceptance가 same Run의 opaque correlation과 `running` transition에 결합되고 accepted-first stream ordering을 보존한다.
-- [ ] Selected source snapshot과 baseline이 recorded digest와 일치하고 unselected control이 input·evidence에 섞이지 않는다.
-- [ ] MCP proposal과 bound Plan Review가 curated stream에 나타나며 raw protocol과 absolute path가 전달되지 않는다.
-- [ ] Authoritative terminal이 Run을 exactly once 정산하고 interrupt acknowledgement는 terminal을 합성하지 않는다.
-- [ ] Pre-accept failure, accepted process loss와 store transition loss가 `not_accepted | acceptance_unknown | unknown` 계약에 맞게 정산된다.
-- [ ] Explicit retry가 새 invocation·Run·Turn을 만들고 이전 receipt를 덮어쓰거나 자동 재시도하지 않는다.
-- [ ] Terminal·interrupt·unknown 뒤 scratch와 leases가 bounded cleanup되고 cleanup failure는 다음 action을 fresh runtime/recovery path로 제한한다.
-- [ ] Free-form Chat with/without material selection의 proposal context와 no-`ModelingRun` 경계가 deterministic Server integration으로 검증된다.
+- [x] Account not-ready와 invalid workspace·Course·Recipe·selection·digest는 native start 0, no `ModelingRun`과 actionable failure로 끝난다.
+- [x] Valid request가 exactly one durable Run을 먼저 만들고 exact Skill+Text input으로 one native Turn을 시작한다.
+- [x] Acceptance가 same Run의 opaque correlation과 `running` transition에 결합되고 accepted-first stream ordering을 보존한다.
+- [x] Selected source snapshot과 baseline이 recorded digest와 일치하고 unselected control이 input·evidence에 섞이지 않는다.
+- [x] MCP proposal과 bound Plan Review가 curated stream에 나타나며 raw protocol과 absolute path가 전달되지 않는다.
+- [x] Authoritative terminal이 Run을 exactly once 정산하고 interrupt acknowledgement는 terminal을 합성하지 않는다.
+- [x] Pre-accept failure, accepted process loss와 store transition loss가 `not_accepted | acceptance_unknown | unknown` 계약에 맞게 정산된다.
+- [x] Explicit retry가 새 invocation·Run·Turn을 만들고 이전 receipt를 덮어쓰거나 자동 재시도하지 않는다.
+- [x] Terminal·interrupt·unknown 뒤 scratch와 leases가 bounded cleanup되고 cleanup failure는 다음 action을 fresh runtime/recovery path로 제한한다.
+- [x] Free-form Chat with/without material selection의 proposal context와 no-`ModelingRun` 경계가 deterministic Server integration으로 검증된다.
 
 ## Verification
 
 - Targeted test or command: `npm run test -w @ay-ple/server`, focused deterministic action-stream and fault-injection tests
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
 - Manual or live smoke: deterministic Runtime을 사용한 complete HTTP activity trace. Real provider는 final conformance ticket이 소유한다.
+
+검증 결과:
+
+- `NODE_OPTIONS=--conditions=development npx tsx --test apps/server/src/assignment-recipe.test.ts apps/server/src/assignment-action.test.ts apps/server/src/assignment-action-faults.test.ts`가 23개 test를 통과했다. Account admission, exact Skill input, curated NDJSON ordering, pre-accept·acceptance-unknown·cleanup fault, pre-commit rollback, managed Recipe parent·leaf symlink와 verify-to-native drift를 포함한다.
+- Deterministic Server integration이 Assignment proposal → bound Review → authoritative settlement와 free-form Chat의 selected/unselected proposal context, no-`ModelingRun` 경계를 HTTP activity trace로 검증했다. Real provider smoke는 ticket 009의 final conformance 범위라 수행하지 않았다.
+- 최종 구현 tree에서 `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `npm run check:bridge -w @ay-ple/codex-chat-runtime`, `npm run test:bridge -w @ay-ple/codex-chat-runtime`, `git diff --check`가 모두 exit 0으로 통과했다.
+- Product store는 별도 authority 없이 exact current `formatVersion: 2`를 유지한다. `modelingRuns`와 `executionGuard`는 required field이고, 두 field가 없는 pre-006 v2와 future v3 fixture는 migration·normalization·rewrite 없이 original bytes를 보존한 `incompatible/readOnly`로 검증했다.
+- Fixed point `eafdd61e095e7edd937e2a6da711c983ad2a97fe` 이후 diff를 Standards와 Spec 두 축으로 병렬 review했다. Bootstrap/history projection, lifecycle frame, restart reconciliation, accepted correlation, Review binding과 staging ordering의 findings를 regression test와 함께 수정했다. Follow-up Spec review는 finding 0건으로 통과했다. Standards의 managed Recipe symlink escape와 verify-to-native drift는 canonical containment, component validation, `O_NOFOLLOW`, native start 직전 재검증으로 닫았고 최종 Standards·security follow-up이 각각 clean으로 통과했다.
 
 ## Blocked By
 
@@ -75,3 +83,19 @@ Local Server가 active `SemesterWorkspace`·`Course`와 exactly two selected TXT
 - `apps/server/src/codex-chat-disconnect.test.ts`
 - `apps/server/src/testing/test-server.ts`
 - `packages/codex-chat-runtime/src/testing.ts`
+
+## Result
+
+Local Server에 first Assignment product operation coordinator를 추가했다. Account와 workspace admission을 통과한 요청은 selected TXT 두 개를 byte-preserving app-owned snapshot으로 staging하고 same workspace-local transaction에 durable `ModelingRun(starting)`과 execution guard를 기록한 뒤, managed Recipe `SkillInput`과 bounded `TextInput`으로 exactly one native Turn을 시작한다. Native acceptance correlation, `running` 전환, MCP proposal, exact Review, terminal settlement와 explicit retry는 같은 Run receipt와 curated browser stream으로 결합된다.
+
+Workspace product store는 `formatVersion: 2` 단일 authority를 그대로 사용하며 `modelingRuns`와 `executionGuard`를 exact required field로 확장했다. Pre-006 v2를 자동 migration하거나 rewrite하지 않고 current-only `incompatible/readOnly` 정책으로 보존한다. 별도 run store, optional normalization과 v3 writer는 만들지 않았다.
+
+Free-form Chat은 active Thread와 동일한 product operation exclusion·stream seam을 사용하지만 `ModelingRun`을 만들지 않는다. Valid material selection에서만 proposal context를 열고, bootstrap은 Account readiness와 settled Run history만 browser-safe shape로 투영한다. Public frame은 native ID, absolute path, complete MCP arguments와 private failure detail을 제거하고 stable derived activity·interaction IDs와 UTF-8 byte bound를 적용한다.
+
+Scratch, source lease와 execution guard는 terminal·unknown·restart에서 bounded cleanup·reconciliation되며 cleanup deadline은 Runtime recycle과 recovery barrier를 요구한다. Managed Recipe는 appData canonical authority 아래의 regular path components만 허용하고 leaf no-follow 검증과 native start 직전 재검증으로 path drift를 fail closed한다.
+
+Implementation commits:
+
+- `a8f72128` — `docs: claim first Assignment action stream`
+- `94eeb57c` — `feat: add first Assignment action stream`
+- `45c635a9` — `fix: close action stream review gaps`
