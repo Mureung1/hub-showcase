@@ -8,13 +8,13 @@
     "dev:client": "vite",
     "dev:server": "tsx --env-file-if-exists=.env.local watch server/index.ts",
     "build": "npm run build:web && npm run build:extension",
-    "build:web": "tsc -b tsconfig.app.json tsconfig.node.json && vite build",
+    "build:web": "tsc -b tsconfig.app.json tsconfig.node.json && vite build && tsx scripts/verify_client_bundle.ts dist",
     "build:extension": "tsc -p tsconfig.extension.json && vite build --config extension/vite.config.ts",
     "preview": "vite preview",
     "test": "vitest run --maxWorkers=2",
     "lint": "eslint .",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"server/**/*.ts\" \"extension/**/*.{ts,css,html,md}\" \"scripts/**/*.ts\" \"*.{js,ts,json,html}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"server/**/*.ts\" \"extension/**/*.{ts,css,html,md}\" \"scripts/**/*.ts\" \"*.{js,ts,json,html}\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"server/**/*.ts\" \"api/**/*.ts\" \"extension/**/*.{ts,css,html,md}\" \"scripts/**/*.ts\" \"*.{js,ts,json,html}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"server/**/*.ts\" \"api/**/*.ts\" \"extension/**/*.{ts,css,html,md}\" \"scripts/**/*.ts\" \"*.{js,ts,json,html}\"",
     "package:extension": "npm run build:extension && tsx scripts/package_chrome_extension.ts"
   },
   "dependencies": {

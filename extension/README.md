@@ -14,6 +14,13 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_공개키
 
 환경 파일이 없으면 빌드 검증을 위해 API `http://localhost:3001`, Supabase `http://127.0.0.1:54321`과 비밀이 아닌 placeholder 공개 키를 사용한다. 이 기본 ZIP은 빌드 구조 확인용이다. 로컬 Supabase에서 실제 로그인과 저장을 확인하려면 `.env.local`에 로컬 프로젝트의 실제 공개 키를 넣어 다시 빌드한다.
 
+셸이나 CI에 같은 이름의 환경 변수가 있으면 `.env.local`보다 우선한다. 운영 확장은 다음처럼 안정 API 주소를 주입해 만든다.
+
+```powershell
+$env:VITE_EXTENSION_API_ORIGIN='https://hub-ppre1ude-ppre1udes-projects.vercel.app'
+npm run package:extension
+```
+
 ## 개발용 폴더 설치
 
 ```bash

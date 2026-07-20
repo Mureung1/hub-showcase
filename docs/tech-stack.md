@@ -1,6 +1,6 @@
 # 기술 스택 및 라이브러리
 
-이 문서는 아맞다 프로젝트에서 사용할 기술 스택과 후보 라이브러리를 정리한다. 버전은 2026-07-17 기준 `package.json`을 기준으로 한다.
+이 문서는 아맞다 프로젝트에서 사용할 기술 스택과 후보 라이브러리를 정리한다. 버전은 2026-07-20 기준 `package.json`을 기준으로 한다.
 
 ## 결정 기준
 
@@ -62,7 +62,8 @@
 - 웹·PWA·Chrome 확장의 저장은 Express 캡처 API를 거쳐 같은 Supabase 테이블과 RLS 경계를 사용한다. Chrome 확장 메모도 별도 인증 API로 같은 인사이트를 갱신한다.
 - `insights` 테이블은 사용자별 정규화 URL 중복 제한과 RLS 조회·생성·수정·삭제 정책을 가진다.
 - 브라우저와 확장에는 publishable key만 둘 수 있다. secret key와 service role key는 공개 설정에서 거부한다.
-- Supabase 운영 프로젝트와 Google OAuth 연결은 준비되었고, 프론트엔드·Express의 프로덕션 호스팅 확정과 배포 검증은 [#10](https://github.com/ppre1ude/hub/issues/10)에서 진행한다.
+- Vite 웹과 Express API는 Vercel 단일 프로젝트에서 같은 HTTPS 출처로 배포한다. Pull Request는 미리보기, `main`은 운영 배포를 만들며 상세 계약은 [운영 배포 문서](./deployment.md)와 [#54](https://github.com/ppre1ude/hub/issues/54)에서 관리한다.
+- Supabase GitHub 연동은 `ppre1ude/hub`의 `main`과 `supabase/migrations/`를 운영 프로젝트에 자동 반영한다. Google OAuth와 허용 Redirect URL은 Supabase Dashboard에서 별도로 관리한다.
 
 현재 전환 순서는 [#21](https://github.com/ppre1ude/hub/issues/21), 다중 기기 캡처 진행 상황은 [#36](https://github.com/ppre1ude/hub/issues/36)을 기준으로 관리한다.
 

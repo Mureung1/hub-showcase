@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-import type { CapturedInsight } from '../src/entities/insight/model/insight_capture';
+import type { CapturedInsight } from '../src/entities/insight/model/insight_capture.js';
 import {
   createInsightCaptureService,
   type InsightCaptureAuthenticator,
@@ -8,7 +8,7 @@ import {
   type InsightCaptureStoreInput,
   type InsightCaptureStoreLookupResult,
   type InsightCaptureStoreResult,
-} from './insight_capture_service';
+} from './insight_capture_service.js';
 
 const INSIGHT_COLUMNS = [
   'id',
