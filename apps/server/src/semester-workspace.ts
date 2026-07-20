@@ -15,7 +15,10 @@ import {
 import path from 'node:path'
 import { promisify } from 'node:util'
 
+import type { UserInputRequestedEvent } from '@ay-ple/codex-chat-runtime/contract'
+
 import { rootsAreDisjoint } from './root-isolation.js'
+import { isExactAssignmentReviewQuestion } from './state-patch-review.js'
 
 const storeFormatVersion = 2
 const legacyStoreFormatVersion = 1
@@ -90,6 +93,12 @@ export type SemesterWorkspaceDirectoryChooser = () => Promise<string | null>
 export type SemesterWorkspaceController = {
   activate(): Promise<SemesterWorkspaceActivation>
   assignmentState(): AssignmentStateSnapshot
+  bindAssignmentReview(
+    request: UserInputRequestedEvent,
+  ): Promise<AssignmentReviewBinding | null>
+  commitAssignmentReviewDecision(
+    input: AssignmentReviewDecisionInput,
+  ): Promise<AssignmentReviewCommit>
   createCourse(displayName: string): Promise<ReadySemesterWorkspaceSnapshot>
   createAssignmentProposalSession(
     input: CreateAssignmentProposalSessionInput,
@@ -218,11 +227,34 @@ export type AssignmentProposalSession = {
   readonly mcpTool: ProposeStatePatchMcpTool
 }
 
+export type AssignmentReviewBinding = {
+  readonly interactionId: string
+  readonly patchId: string
+  readonly decisionKey: string
+}
+
+export type AssignmentReviewDecisionInput = {
+  readonly interactionId: string
+  readonly patchId: string
+  readonly decisionKey: string
+  readonly decision: 'accept' | 'reject'
+}
+
+export type AssignmentReviewCommit = {
+  readonly binding: AssignmentReviewBinding
+  readonly confirmation: UserConfirmation
+  readonly patch: StatePatch
+  readonly confirmedRevision: number
+  readonly replayed: boolean
+}
+
 export type StatePatchReviewErrorCode =
   | 'proposal_context_invalid'
   | 'proposal_conflict'
   | 'proposal_invalid'
   | 'proposal_stale'
+  | 'review_conflict'
+  | 'review_not_pending'
 
 export class StatePatchReviewError extends Error {
   readonly code: StatePatchReviewErrorCode
@@ -307,6 +339,11 @@ type ActiveProposalContext = {
   }
 }
 
+type ActiveReviewBinding = AssignmentReviewBinding & {
+  readonly threadId: string
+  readonly turnId: string
+}
+
 type OpenWorkspace =
   | {
       readonly root: string
@@ -327,6 +364,7 @@ export function createSemesterWorkspaceController(options: {
   let operationTail = Promise.resolve()
   const proposalContexts = new Map<string, ActiveProposalContext>()
   const activePatchByTurn = new Map<string, string>()
+  const reviewBindings = new Map<string, ActiveReviewBinding>()
 
   const enqueue = <T>(operation: () => Promise<T>): Promise<T> => {
     const result = operationTail.then(operation)
@@ -359,6 +397,7 @@ export function createSemesterWorkspaceController(options: {
         active = opened
         proposalContexts.clear()
         activePatchByTurn.clear()
+        reviewBindings.clear()
         return {
           status: 'activated',
           workspace: cloneSnapshot(opened.snapshot),
@@ -375,6 +414,65 @@ export function createSemesterWorkspaceController(options: {
         )
       }
       return assignmentStateSnapshot(opened.store)
+    },
+
+    bindAssignmentReview(request) {
+      return enqueue(async () => {
+        if (!isExactAssignmentReviewQuestion(request.questions)) return null
+        const opened = requireReadyWorkspace(active)
+        const turnKey = runtimeTurnKey(request)
+        const patchId = activePatchByTurn.get(turnKey)
+        if (!patchId) return null
+        const patch = opened.store.statePatches.find(
+          (candidate) => candidate.id === patchId,
+        )
+        if (!patch || patch.status !== 'pending') return null
+
+        const existing = reviewBindings.get(request.interactionId)
+        if (existing) {
+          if (
+            existing.patchId !== patchId ||
+            existing.threadId !== request.threadId ||
+            existing.turnId !== request.turnId
+          ) {
+            throw new StatePatchReviewError(
+              'review_conflict',
+              'The native interaction is already bound to another Review.',
+            )
+          }
+          return cloneReviewBinding(existing)
+        }
+        if (
+          [...reviewBindings.values()].some(
+            (binding) => binding.patchId === patchId,
+          )
+        ) {
+          throw new StatePatchReviewError(
+            'review_conflict',
+            'The StatePatch is already bound to another Review.',
+          )
+        }
+        const binding = {
+          interactionId: request.interactionId,
+          patchId,
+          decisionKey: `decision_${randomUUID().replaceAll('-', '')}`,
+          threadId: request.threadId,
+          turnId: request.turnId,
+        } satisfies ActiveReviewBinding
+        reviewBindings.set(binding.interactionId, binding)
+        return cloneReviewBinding(binding)
+      })
+    },
+
+    commitAssignmentReviewDecision(input) {
+      return enqueue(() =>
+        commitAssignmentReviewDecision(
+          requireReadyWorkspace(active),
+          input,
+          reviewBindings,
+          activePatchByTurn,
+        ),
+      )
     },
 
     createCourse(displayName) {
@@ -725,6 +823,184 @@ async function proposeAssignmentStatePatch(
   return cloneStatePatch(patch)
 }
 
+async function commitAssignmentReviewDecision(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  input: AssignmentReviewDecisionInput,
+  reviewBindings: Map<string, ActiveReviewBinding>,
+  activePatchByTurn: Map<string, string>,
+): Promise<AssignmentReviewCommit> {
+  if (
+    !isOpaqueRuntimeIdentity(input.interactionId) ||
+    !isPatchId(input.patchId) ||
+    !isDecisionKey(input.decisionKey) ||
+    (input.decision !== 'accept' && input.decision !== 'reject')
+  ) {
+    throw new StatePatchReviewError(
+      'review_conflict',
+      'The Review decision binding is invalid.',
+    )
+  }
+  const expectedDecision =
+    input.decision === 'accept' ? 'accepted' : 'rejected'
+  const existingConfirmation = opened.store.userConfirmations.find(
+    (confirmation) => confirmation.decisionKey === input.decisionKey,
+  )
+  if (existingConfirmation) {
+    if (
+      existingConfirmation.patchId !== input.patchId ||
+      existingConfirmation.decision !== expectedDecision
+    ) {
+      throw new StatePatchReviewError(
+        'review_conflict',
+        'The Review decision key was already settled differently.',
+      )
+    }
+    const existingPatch = opened.store.statePatches.find(
+      (patch) => patch.id === input.patchId,
+    )
+    if (!existingPatch) throw invalidStore()
+    return {
+      binding: {
+        interactionId: input.interactionId,
+        patchId: input.patchId,
+        decisionKey: input.decisionKey,
+      },
+      confirmation: { ...existingConfirmation },
+      patch: cloneStatePatch(existingPatch),
+      confirmedRevision: opened.store.confirmedRevision,
+      replayed: true,
+    }
+  }
+
+  const activeBinding = reviewBindings.get(input.interactionId)
+  if (
+    !activeBinding ||
+    activeBinding.patchId !== input.patchId ||
+    activeBinding.decisionKey !== input.decisionKey
+  ) {
+    throw new StatePatchReviewError(
+      'review_not_pending',
+      'The Review decision is not pending.',
+    )
+  }
+  const patchIndex = opened.store.statePatches.findIndex(
+    (patch) => patch.id === input.patchId,
+  )
+  const patch = opened.store.statePatches[patchIndex]
+  if (
+    patchIndex < 0 ||
+    !patch ||
+    patch.status !== 'pending' ||
+    patch.workspaceId !== opened.store.workspaceId ||
+    patch.courseId !== opened.store.course?.id ||
+    activePatchByTurn.get(runtimeTurnKey(activeBinding)) !== patch.id
+  ) {
+    throw new StatePatchReviewError(
+      'review_not_pending',
+      'The StatePatch is not the active pending Review.',
+    )
+  }
+  if (patch.baseRevision !== opened.store.confirmedRevision) {
+    throw new StatePatchReviewError(
+      'review_conflict',
+      'The confirmed SemesterModel revision changed.',
+    )
+  }
+
+  const settledAt = new Date().toISOString()
+  let assignments = opened.store.assignments
+  let confirmedRevision = opened.store.confirmedRevision
+  let settledPatch: PersistedStatePatch
+  let confirmation: UserConfirmation
+  if (input.decision === 'accept') {
+    const assignmentId =
+      patch.changes.assignmentId ??
+      `assignment_${randomUUID().replaceAll('-', '')}`
+    const assignment = {
+      id: assignmentId,
+      courseId: patch.courseId,
+      ...patch.changes.values,
+      evidence: patch.evidence.map((evidence) => ({ ...evidence })),
+    } satisfies Assignment
+    if (patch.changes.assignmentId === undefined) {
+      assignments = [...assignments, assignment]
+    } else {
+      const assignmentIndex = assignments.findIndex(
+        (candidate) =>
+          candidate.id === patch.changes.assignmentId &&
+          candidate.courseId === patch.courseId,
+      )
+      if (assignmentIndex < 0) {
+        throw new StatePatchReviewError(
+          'review_conflict',
+          'The Assignment target changed before Review settlement.',
+        )
+      }
+      assignments = assignments.map((candidate, index) =>
+        index === assignmentIndex ? assignment : candidate,
+      )
+    }
+    confirmedRevision += 1
+    settledPatch = {
+      ...patch,
+      status: 'applied',
+      applyOutcome: {
+        type: 'applied',
+        assignmentId,
+        resultingRevision: confirmedRevision,
+      },
+    }
+    confirmation = {
+      id: `confirmation_${randomUUID().replaceAll('-', '')}`,
+      patchId: patch.id,
+      decisionKey: input.decisionKey,
+      decision: 'accepted',
+      settledAt,
+      assignmentId,
+      resultingRevision: confirmedRevision,
+      outcome: 'applied',
+    }
+  } else {
+    settledPatch = {
+      ...patch,
+      status: 'rejected',
+      applyOutcome: {
+        type: 'not_applied',
+        revision: confirmedRevision,
+      },
+    }
+    confirmation = {
+      id: `confirmation_${randomUUID().replaceAll('-', '')}`,
+      patchId: patch.id,
+      decisionKey: input.decisionKey,
+      decision: 'rejected',
+      settledAt,
+      outcome: 'not_applied',
+    }
+  }
+  const statePatches = opened.store.statePatches.map((candidate, index) =>
+    index === patchIndex ? settledPatch : candidate,
+  )
+  const nextStore = {
+    ...opened.store,
+    confirmedRevision,
+    assignments,
+    statePatches,
+    userConfirmations: [...opened.store.userConfirmations, confirmation],
+  } satisfies PersistedWorkspaceState
+  await writeStore(opened.root, nextStore)
+  opened.store = nextStore
+  opened.snapshot = readySnapshot(nextStore)
+  activePatchByTurn.delete(runtimeTurnKey(activeBinding))
+  return {
+    binding: cloneReviewBinding(activeBinding),
+    confirmation: { ...confirmation },
+    patch: cloneStatePatch(settledPatch),
+    confirmedRevision,
+    replayed: false,
+  }
+}
+
 function parseStatePatchPayload(input: unknown): CanonicalStatePatchPayload {
   if (
     !isExactRecord(input, [
@@ -1070,6 +1346,16 @@ function cloneAssignmentProposalContext(
     selectedMaterials: context.selectedMaterials.map((material) => ({
       ...material,
     })),
+  }
+}
+
+function cloneReviewBinding(
+  binding: AssignmentReviewBinding,
+): AssignmentReviewBinding {
+  return {
+    interactionId: binding.interactionId,
+    patchId: binding.patchId,
+    decisionKey: binding.decisionKey,
   }
 }
 
