@@ -1,0 +1,123 @@
+{
+  "defaults": {
+    "webFunctionLines": 200,
+    "pythonFunctionLines": 80
+  },
+  "webFunctionBudgets": {
+    "product/apps/web/src/App.tsx#ProductWorkspace": {
+      "maxLines": 809,
+      "reason": "WEB-018에서 URL, 지도, 선택과 화면 조립 책임을 분리한다."
+    },
+    "product/apps/web/src/components/SceneWorkspace.tsx#SceneWorkspace": {
+      "maxLines": 280,
+      "reason": "SCENE-008에서 dialog, API polling과 form을 분리한다."
+    }
+  },
+  "pythonFunctionBudgets": {
+    "product/apps/api/src/localtwin_api/market_analysis.py#_build_analysis": {
+      "maxLines": 173,
+      "reason": "API-005에서 metric, ranking과 response 조립을 분리한다."
+    },
+    "product/apps/api/src/localtwin_api/spatial_import.py#import_market_spatial_links": {
+      "maxLines": 163,
+      "reason": "DATA-013에서 read, validate, persist와 report 단계를 분리한다."
+    },
+    "product/apps/api/src/localtwin_api/market_score.py#_cluster_result": {
+      "maxLines": 127,
+      "reason": "점수 알고리즘 응집성을 보존하며 API-005에서 pure helper 분리 가능성을 검증한다."
+    },
+    "product/apps/api/src/localtwin_api/market_score.py#evaluate_market_score": {
+      "maxLines": 115,
+      "reason": "점수 결과 baseline을 먼저 고정하고 API-005에서 단계별 helper를 검토한다."
+    },
+    "product/apps/api/src/localtwin_api/canonical_db.py#import_seoul": {
+      "maxLines": 104,
+      "reason": "DATA-013에서 parse, validate와 persist 단계를 분리한다."
+    },
+    "product/apps/api/src/localtwin_api/bulk_import.py#import_sbiz_stores": {
+      "maxLines": 104,
+      "reason": "DATA-013에서 importer 단계를 분리한다."
+    },
+    "product/apps/api/src/localtwin_api/nearby_search.py#NearbyStoreRepository.nearby": {
+      "maxLines": 94,
+      "reason": "API-005에서 공간 query와 response mapping 경계를 검토한다."
+    },
+    "product/apps/api/src/localtwin_api/bulk_import.py#import_seoul_store_metrics": {
+      "maxLines": 92,
+      "reason": "DATA-013에서 importer 단계를 분리한다."
+    },
+    "product/apps/api/src/localtwin_api/seoul_open_data.py#main": {
+      "maxLines": 90,
+      "reason": "DATA-013에서 CLI orchestration을 command helper로 분리한다."
+    },
+    "product/apps/api/src/localtwin_api/kosis_business_census.py#parse_business_census_workbook": {
+      "maxLines": 89,
+      "reason": "DATA-013에서 workbook parsing과 validation을 분리한다."
+    },
+    "product/scripts/evaluate_market_analysis.py#evaluate": {
+      "maxLines": 93,
+      "reason": "API-005와 TEST-001에서 평가 계산과 보고서 조립을 분리한다."
+    },
+    "product/scripts/run_gpu_scene_validation.py#main": {
+      "maxLines": 89,
+      "reason": "SCENE-008에서 CLI orchestration과 worker 검증 단계를 분리한다."
+    }
+  },
+  "literalBudgets": {
+    "20251": {
+      "product/apps/web/src/App.tsx": 0,
+      "product/apps/web/src/services/marketAnalysis.ts": 0,
+      "product/apps/api/src/localtwin_api/admin_area_analysis.py": 1,
+      "product/apps/api/src/localtwin_api/kosis_population.py": 1,
+      "product/apps/api/src/localtwin_api/main.py": 0,
+      "product/apps/api/src/localtwin_api/market_analysis.py": 1,
+      "product/apps/api/src/localtwin_api/market_population_import.py": 1,
+      "product/apps/api/src/localtwin_api/production_promotion.py": 1,
+      "product/apps/api/src/localtwin_api/seoul_open_data.py": 1,
+      "product/scripts/build_market_analysis_snapshot.py": 1,
+      "product/scripts/promote_production_database.py": 1
+    },
+    "3110562": {
+      "product/apps/api/src/localtwin_api/product_catalog.py": 1,
+      "product/apps/web/src/App.tsx": 0,
+      "product/apps/web/src/services/adminAreaBackground.ts": 0,
+      "product/apps/web/src/services/marketAnalysis.ts": 0,
+      "product/apps/api/src/localtwin_api/kosis_population.py": 0,
+      "product/apps/api/src/localtwin_api/market_population_import.py": 0,
+      "product/apps/api/src/localtwin_api/spatial_import.py": 0,
+      "product/scripts/build_market_analysis_snapshot.py": 0,
+      "product/scripts/build_market_boundaries.py": 0,
+      "product/scripts/evaluate_market_analysis.py": 0
+    },
+    "3120103": {
+      "product/apps/api/src/localtwin_api/product_catalog.py": 1,
+      "product/apps/web/src/App.tsx": 0,
+      "product/apps/web/src/services/adminAreaBackground.ts": 0,
+      "product/apps/web/src/services/marketAnalysis.ts": 0,
+      "product/apps/api/src/localtwin_api/kosis_population.py": 0,
+      "product/apps/api/src/localtwin_api/market_population_import.py": 0,
+      "product/apps/api/src/localtwin_api/spatial_import.py": 0,
+      "product/scripts/build_market_analysis_snapshot.py": 0,
+      "product/scripts/build_market_boundaries.py": 0,
+      "product/scripts/evaluate_market_analysis.py": 0
+    },
+    "3120101": {
+      "product/apps/api/src/localtwin_api/product_catalog.py": 1,
+      "product/apps/web/src/App.tsx": 0,
+      "product/apps/web/src/services/adminAreaBackground.ts": 0,
+      "product/apps/web/src/services/marketAnalysis.ts": 0,
+      "product/apps/api/src/localtwin_api/kosis_population.py": 0,
+      "product/apps/api/src/localtwin_api/market_population_import.py": 0,
+      "product/apps/api/src/localtwin_api/spatial_import.py": 0,
+      "product/scripts/build_market_analysis_snapshot.py": 0,
+      "product/scripts/build_market_boundaries.py": 0,
+      "product/scripts/evaluate_market_analysis.py": 0
+    }
+  },
+  "fastapiImportBudgets": [
+    "product/apps/api/src/localtwin_api/main.py",
+    "product/apps/api/src/localtwin_api/routers/catalog.py",
+    "product/apps/api/src/localtwin_api/routers/scores.py",
+    "product/apps/api/src/localtwin_api/scene_pipeline.py"
+  ]
+}

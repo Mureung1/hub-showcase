@@ -34,6 +34,7 @@ LocalTwin은 공공데이터와 공간 데이터를 근거로 후보 상권을 �
 - [Git 작업 규칙](docs/development/git-workflow.md)
 - [LocalTwin Dev Harness](docs/development/harness.md)
 - [검증 가이드](docs/development/validation.md)
+- [리팩터링 및 코드 구조 기준](docs/development/refactoring-standards.md)
 - [보안 점검 및 조치 체크리스트](docs/issues/security-hardening-review.md)
 - [1주차 목요일 진행 보고서](docs/development/week1-thursday-progress-report.md)
 
@@ -56,6 +57,7 @@ LocalTwin은 공공데이터와 공간 데이터를 근거로 후보 상권을 �
 ### 결정 메모
 
 - [LocalTwin v0.1 구현 범위 고정 명세](docs/module-notes/localtwin-v0.1-scope.md)
+- [Vision·On-device ML Systems 포트폴리오 방향](docs/module-notes/vision-on-device-portfolio-direction.md)
 
 ### 평가 문서
 

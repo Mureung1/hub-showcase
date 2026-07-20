@@ -737,9 +737,13 @@ permit_businesses: 40
 ### 12.5 Phase 2 전체 이관과 운영 갱신 분리
 
 `DB-001`은 현재 UI가 지원하는 카페·음식점·베이커리·편의점만 선별하지 않는다.
-검증된 canonical SQLite의 7개 table 전체를 Supabase PostgreSQL에 이관하고,
+DB-001에서 검증한 canonical SQLite의 초기 7개 table 전체를 Supabase PostgreSQL에 이관하고,
 `store_metrics` 100개와 `sales_metrics` 62개 원본 업종 코드를 그대로 보존한다.
 4개 Category는 현재 분석 UI/API의 지원 분류이지 제품 DB의 전체 업종 목록이 아니다.
+
+이후 DATA-009 A단계에서 `market_geometries`, `store_market_links`를 additive migration으로
+추가해 현재 canonical/runtime schema는 9개 table이다. DB-001의 7개 table 검증 기록은 당시
+초기 migration 결과이므로 역사 기록으로 유지한다.
 
 공공데이터포털에 다시 요청해 점포 상세 범위를 확대하는 작업과 운영 수집 시점은
 이 이관에 포함하지 않는다. 지원 지역, full/incremental 방식, provider quota, 요청 주기,
@@ -755,13 +759,15 @@ raw snapshot 보존 기간과 rollback 기준은 `DATA-007`에서 나중에 승�
 | 2026-07-11 | DATA-002 | 공공데이터포털 3개 API 실제 sample 60행과 secret 미포함 확인 | 수집 완료 |
 | 2026-07-11 | DATA-002 | 서울 전체 snapshot과 공공데이터 sample을 provenance SQLite에 2회 동일 적재 | canonical DB 완료 |
 | 2026-07-14 | DB-001 / DATA-007 | 전체 canonical 업종·행은 Supabase에 이관하고 운영 요청 시점·갱신·보존 정책은 후속 결정 | Phase 2 계획 |
+| 2026-07-15 | DATA-009 / SEARCH-001 | 3개 상권 polygon·4,548개 점포 연결을 SQLite와 development Supabase에 적재하고 제한 검색에 사용 | A단계 완료 |
 
 ## 13. 개별 점포 위치·상권 밀집 데이터 확장 계획
 
 이 절은 2026-07-15에 확정한 점포 위치·상권 밀집 확장의 현재 기준이다. `store_points`는
 20행 API sample에서 서울 전체 bulk snapshot 537,489행으로 교체됐고,
 `permit_businesses` 40행은 여전히 API 연결과 schema 검증용 sample이다. 다음 구현은
-이 절과 `DATA-008`, `DATA-009`를 기준으로 polygon 공간 결합과 전체 인허가 확장을 진행한다.
+이 절과 `DATA-008`, `DATA-009`를 기준으로 완료한 polygon 공간 결합을 검증하고 전체 인허가
+확장과 공식 집계 비교를 계속한다.
 
 ### 13.1 확정한 원칙
 
@@ -777,7 +783,7 @@ raw snapshot 보존 기간과 rollback 기준은 `DATA-007`에서 나중에 승�
 
 공간 소속 판정 원천:
 서울시 상권분석서비스 영역-상권 ZIP
-(Shapefile polygon과 EPSG:5181 확인 완료)
+(Shapefile polygon과 EPSG:5181 확인, 3개 상권 변환·결합 완료)
 
 건물·도로·배경 지도 원천:
 현재 승인된 OpenStreetMap snapshot
@@ -869,10 +875,10 @@ second import counts: unchanged
 `store_points`에는 대분류 10개, 중분류 75개, 소분류 247개가 있으며, 상권별 집계는
 `20251` 76,383행, `20252` 76,238행, `20253` 76,169행, `20254` 75,985행이다.
 
-아직 DB에 넣지 않은 원본도 구분한다. `영역-상권` Shapefile은 raw 보관과 CRS 검증까지만
-완료됐고 polygon table과 point-in-polygon 결합은 `DATA-009` 범위다. 인허가 API 전체
-pagination과 KOSIS snapshot은 아직 완료되지 않았다. 현재 canonical 7개 table은 실제
-Supabase PostgreSQL에 migration·2회 seed됐으며, geometry·KOSIS용 후속 table은 별도다.
+`영역-상권` Shapefile은 `market_geometries` 3행으로 저장했고, `EPSG:5181 → EPSG:4326`
+변환 후 4,548개 점포를 `store_market_links`에 point-in-polygon으로 연결했다. 인허가 API
+전체 pagination과 KOSIS snapshot, 서울시 공식 업종별 집계와의 차이 보고는 아직 완료되지
+않았다. 현재 canonical 9개 table과 동일한 row count를 development Supabase에서 확인했다.
 
 ### 13.4 형식 선택
 
@@ -938,17 +944,19 @@ snapshot으로 승인한다. 영역-상권 ZIP이 중심 좌표만 제공하고 
 
 ### 13.8 다음 세션 시작점
 
-원본 inventory와 두 CSV의 canonical 적재는 완료됐다. 다음 세션은 아래 결과를 기준으로
-상권 polygon 공간 결합의 가장 작은 vertical slice부터 시작한다.
+원본 inventory, 두 CSV의 canonical 적재, 3개 상권 공간 결합과 제한 검색 연결까지 완료됐다.
+다음 세션은 아래 결과를 기준으로 DATA-009 B단계와 반경 분석을 진행한다.
 
 ```text
 1. 서울 상가정보 CSV: 537,489 data row, 위치·업종 field 확인
 2. 서울시 점포-상권 2025 CSV: 304,775 data row, 20251~20254 확인
-3. 영역-상권: Shapefile polygon, UTF-8, EPSG:5181 확인
+3. 영역-상권: Shapefile polygon 3개, UTF-8, EPSG:5181 → EPSG:4326 변환
+4. 점포-상권 연결: 4,548행, FK orphan 0
 ```
 
-`DATA-009`의 가장 작은 vertical slice로 연남·홍대·합정 polygon과 해당 범위의 점포만
-임시 공간 결합하고, CRS 변환·미매칭·경계점 test가 통과한 뒤 전체 서울로 확대한다.
+`DATA-009` B단계에서는 연남·홍대·합정의 업종별 개별 점포 수와 서울시 공식 집계를 비교해
+기간·업종 분류·미매칭에 따른 차이를 기록한다. 이 프로젝트 기간에는 서울 전체 검색으로
+확대하지 않으며, 다음 기능 입력은 이 3개 상권으로 제한한다.
 
 ## 14. KOSIS 행정동 배경 통계 결정
 
@@ -961,7 +969,7 @@ KOSIS는 개별 점포 좌표나 상권 polygon의 대체 원천이 아니다. �
 | 목적 | KOSIS 통계 | 기준기간·범위 | 수집 방식 |
 | --- | --- | --- | --- |
 | 연령별 상주 수요 | 행정안전부 주민등록인구현황 `DT_1B04005N`, 행정구역(읍면동)별/5세별 주민등록인구 | `2025.12`, 서울 마포구 연남동·서교동·합정동, 성별·5세 구간 | KOSIS OpenAPI JSON snapshot |
-| 업무·종사 수요 보강 | 전국사업체조사, 읍면동별 산업대분류별 현황 | `2024년` 우선, 화면 미공표 시 최신 공표연도를 manifest에 기록 | 온라인간행물 CSV |
+| 업무·종사 수요 보강 | 전국사업체조사, 읍면동별 산업대분류별 현황 | `2024년`, 연남동·서교동·합정동, 전산업·A~U | 온라인간행물 XLSX |
 
 인구 API는 기관 ID `101`, 통계표 ID `DT_1B04005N`을 기준으로 URL 생성기의 실제 분류·항목
 코드를 확정한다. `KOSIS_API_KEY`는 `product/.env`의 server-only `SecretStr`로 읽고 URL,
@@ -990,3 +998,53 @@ log, raw JSON, manifest와 FE bundle에 기록하지 않는다. 최초 구현은
    사용한다.
 
 자동 갱신 주기와 보존 기간은 DATA-007에서 bulk importer 품질 결과를 확인한 뒤 결정한다.
+
+### 14.4 DATA-010 A단계 실제 적재 결과
+
+2026-07-16에 공식 parameter API에서 아래 고정 계약으로 snapshot을 수집했다.
+
+```text
+기관/통계표: 101 / DT_1B04005N
+기간: 202512, M
+지역: 서교동 1144066000, 합정동 1144068000, 연남동 1144071000
+연령: 계 + 5세 구간 21개
+항목: 총인구 T2, 남자 T3, 여자 T4
+raw: 198행
+canonical: admin_area_population 66행
+crosswalk: market_admin_area_crosswalk 3행
+SHA-256: 769b0b99f096e1a48601ef1375b7ba5aff261e8ce743e9ec830833b66c8220dc
+```
+
+raw snapshot은 ignored `product/data/raw/kosis-population/20260716T040045Z/`에 보존한다.
+manifest에는 query 없는 공식 endpoint, 요청 코드 집합, 기준기간, row count, 저장소 상대경로와
+SHA-256만 기록했다. API key, `DATABASE_URL`, 개인 절대경로는 기록하지 않았다.
+
+같은 snapshot을 development Supabase에 두 번 import한 결과 인구 66행과 crosswalk 3행이
+동일하게 유지됐다. `male_population + female_population = total_population` 불일치와 source·market
+FK orphan은 각각 0건이다.
+
+### 14.5 DATA-010 B단계 전국사업체조사 적재 결과
+
+온라인간행물의 `읍면동별 산업대분류별 현황 > 2024년기준자료.xlsx`를 공식 source로 사용했다.
+계획 당시 CSV로 예상했지만 실제 배포 형식은 XLSX이므로 원본 형식을 유지했다.
+
+```text
+workbook: 1 sheet / 84,484행 / 59열 / data 84,480행
+선택 범위: 서교동·합정동·연남동 × TOTAL·A~U = 66행
+suppressed row: 6행, X -> NULL + is_suppressed=true
+SHA-256: c4e9d5ec7084477f7e2597c1242da41a34b518d09841484c5889eda0b7dba3b5
+```
+
+간행물은 `11140660`처럼 현재 주민등록인구 API와 다른 8자리 지역코드를 사용한다. 다음 mapping만
+명시적으로 승인했고 이름까지 일치하지 않으면 import를 중단한다.
+
+```text
+11140660 서교동 -> 1144066000
+11140680 합정동 -> 1144068000
+11140710 연남동 -> 1144071000
+```
+
+전산업 기준 사업체·종사자 수는 서교동 `13,072 / 62,010`, 합정동 `3,816 / 13,968`, 연남동
+`3,065 / 8,850`이다. 이 값은 행정동 배경 통계이며 상권 polygon이나 개별 점포 수로 해석하지
+않는다. development Supabase에 같은 snapshot을 두 번 적재한 뒤에도 66행이 유지됐고,
+22개 산업코드, source FK orphan 0건, 성별 합계 불일치 0건을 확인했다.

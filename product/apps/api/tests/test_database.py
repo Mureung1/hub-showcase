@@ -56,10 +56,12 @@ def test_alembic_upgrade_downgrade_and_reupgrade(tmp_path: Path) -> None:
         "alembic_version",
         "data_sources",
         "markets",
+        "market_geometries",
         "store_metrics",
         "sales_metrics",
         "flow_metrics",
         "store_points",
+        "store_market_links",
         "permit_businesses",
     }
     assert inspector.get_pk_constraint("store_metrics")["constrained_columns"] == [

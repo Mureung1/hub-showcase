@@ -2,7 +2,7 @@
 
 문서 상태: canonical
 개발 기간: 4주 (Phase 1 종료, Phase 2 진행 중)
-최종 갱신: 2026-07-15
+최종 갱신: 2026-07-20
 
 이 문서는 LocalTwin에서 앞으로 수행할 제품 작업의 유일한 백로그다. 큰 Task인 Epic 아래에 세부 Task를 두고, 실제 작업을 시작할 때 `.harness/tasks/<task-id>.md` Task Packet으로 범위와 검증을 고정한다.
 
@@ -118,9 +118,10 @@ Outcome: 화면용 임의 수치가 아니라 출처와 기준 기간이 있는 
 | DATA-006 | 시연 상권과 비교 상권 sample 확정                   | P0       | Backlog     | 1    | DATA-005   | 최소 2개 상권과 카페·음식점·베이커리·편의점 분석이 가능하다 |
 | DB-001   | Supabase PostgreSQL schema·migration·전체 canonical seed | P0 | Done | Phase 2 | ARCH-002, DATA-004 | development Supabase migration·2회 전체 seed·47 API test와 GitHub #11 종료를 완료했고 Jira 수동 동기화만 남는다 |
 | DATA-007 | 운영 수집 범위·요청 시점·갱신·보존 정책 결정       | P1       | In Progress | Later | DATA-009 | 공공데이터만 사용하며 최초 bulk import 후 실행 주기, quota, raw 보존·rollback 기준과 자동화 범위를 확정한다 |
-| DATA-008 | 분기 상가정보·인허가·상권영역 bulk importer와 품질 검사 | P0 | In Progress | Phase 2 | DATA-004 | 서울 상가정보 537,489행과 점포-상권 304,775행의 provenance·품질·2회 동일 적재를 완료했고 polygon·전체 인허가 확장을 남겼다 |
-| DATA-009 | 개별 점포-상권 공간 결합과 공식 밀집 집계 비교 | P0 | Backlog | Phase 2 | DATA-008 | 연남·홍대·합정의 매핑률·미매칭·업종별 차이를 보고하고 검색·반경 분석 입력을 승인한다 |
-| DATA-010 | KOSIS 행정동 인구·사업체 종사자 보강 | P1 | Backlog | Phase 2 | DATA-008 | `DT_1B04005N` 2025.12 JSON과 최신 전국사업체조사 CSV를 provenance와 함께 적재하고 행정동-상권 경계 차이 및 secret 미노출을 검증한다 |
+| DATA-008 | 분기 상가정보·인허가·상권영역 bulk importer와 품질 검사 | P0 | In Progress | Phase 2 | DATA-004 | 서울 상가정보 537,489행·점포-상권 304,775행과 3개 상권 polygon 적재를 완료했고 전체 인허가 확장을 남겼다 |
+| DATA-009 | 개별 점포-상권 공간 결합과 공식 밀집 집계 비교 | P0 | In Progress | Phase 2 | DATA-008 | 3개 상권에 4,548개 점포를 공간 결합했고 공식 업종 집계와 차이 보고를 남겼다 |
+| DATA-010 | KOSIS 행정동 인구·사업체 종사자 보강 | P1 | Done | Phase 2 | DATA-008 | `DT_1B04005N` 2025.12 JSON 66행과 전국사업체조사 2024 XLSX 66행을 provenance와 함께 적재하고 경계 차이·비공개 값·secret 미노출을 검증했다 |
+| DATA-011 | 상권·행정동 주거·직장인구 API·화면 연결 | P0 | Done | Phase 2 | DATA-010 | 서울시 상권 인구와 KOSIS 행정동 배후통계를 공간 단위·출처·기간을 분리하고 오류를 0으로 숨기지 않는다 |
 
 ### EPIC-03. 상권 분석 엔진과 FastAPI
 
@@ -129,16 +130,17 @@ Outcome: 같은 입력에는 같은 분석 결과와 근거를 반환하는 API�
 | ID           | 세부 Task                                     | Priority | Status  | Week | Depends on                | Acceptance                                            |
 | ------------ | --------------------------------------------- | -------- | ------- | ---- | ------------------------- | ----------------------------------------------------- |
 | ANALYSIS-001 | 핵심 metric의 계산식·단위·기간 확정           | P0       | Done    | 2    | DATA-003                  | 경쟁·변화·시간대·점수 정의에 source metadata가 붙는다 |
-| ANALYSIS-002 | 반경별 점포와 동일 업종 경쟁 계산             | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 100m/300m/500m fixture 결과가 test와 일치한다         |
+| ANALYSIS-002 | 이동 가능한 중심의 반경별 점포·동일 업종 경쟁 계산 | P0    | Done | Phase 2 | DATA-009, SEARCH-001 | 지원 영역에서 100m/300m/500m 공간 query와 이동·취소 fixture가 일치한다 |
 | ANALYSIS-003 | 개업·폐업·영업기간 변화 계산                  | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 기간별 집계와 표본 부족 상태를 구분한다               |
 | ANALYSIS-004 | 생활인구·매출 시간대 특성 계산                | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 시간대 값과 실제/추정/관찰 source type을 반환한다     |
 | ANALYSIS-005 | 설명 가능한 입지 점수와 템플릿 리포트         | P0       | Done    | 2    | ANALYSIS-002~004          | SCORE-001에서 총점, 신뢰도, 근거와 제한 API를 구현했다 |
-| SCORE-002    | 점수 공식 1.1 누락·fixture·근거 안전성 보완 | P0       | Backlog | Phase 2 | DB-001, API-002           | 중립 수축, fixture hard gate, freshness·sample·cluster confidence와 blocker 회귀 test가 통과한다 |
+| SCORE-002    | 점수 공식 1.1 누락·fixture·근거 안전성 보완 | P0       | Done | Phase 2 | DB-001, API-002           | 1.1.0 중립 수축·fixture gate·freshness·sample·cluster blocker와 12개 canonical 평가가 통과했다 |
 | SCORE-003    | 업종별 profile과 과거 결과 calibration     | P1       | Backlog | Later | SCORE-002, ANALYSIS-002~004 | 최소 5개 분기의 out-of-time 평가로 승인된 profile만 versioning한다 |
 | API-001      | SQLite repository와 seed/import 연결          | P0       | Done    | 2    | DATA-004                  | canonical data를 저장하고 반복 조회한다               |
-| API-002      | `/api/v1/markets` 분석 endpoint 구현          | P0       | In Progress | 2 | API-001, ANALYSIS-002~005 | 상권·업종은 연결, 반경별 query가 남았다               |
-| API-003      | validation·empty·provider error contract 구현 | P0       | Backlog | 2    | API-002                   | 오류 상태와 근거 부족 상태가 HTTP/test로 구분된다     |
-| SEARCH-001   | 소상공인 점포·상권 검색 API와 React 연결      | P0       | Backlog | Phase 2 | DB-001, WEB-008 | 제한된 시연 데이터에서 query 결과를 선택해 핵심 분석 화면을 연다 |
+| API-002      | `/api/v1/markets` 분석 endpoint 구현          | P0       | Done | 2 | API-001, ANALYSIS-002~005 | 상권·업종·반경 query가 실제 runtime DB에 연결된다      |
+| API-003      | validation·empty·provider error contract 구현 | P0       | Done | 2    | API-002                   | 오류 상태와 근거 부족 상태가 HTTP/test로 구분된다     |
+| SEARCH-001   | 소상공인 점포·상권 검색 API와 React 연결      | P0       | Done | Phase 2 | DB-001, WEB-008, DATA-009 A단계 | 실제 Supabase의 이름·주소·업종 검색 결과를 지도·분석 화면에 연결하고 상태·보안 smoke를 통과했다 |
+| ANALYSIS-006 | 동일 비교집단 기준 상권·동네별 순위          | P1       | Done | Phase 2 | DATA-011 | 점포·매출·개폐업·유동·주거·직장 지표에 값·순위·분모·상위 비율·기간·비교집단을 함께 반환하고 근거 부족 시 순위를 만들지 않는다 |
 
 ### EPIC-04. 지도 중심 분석 Workspace
 
@@ -148,17 +150,23 @@ Outcome: 발표자가 실제 지도에서 주요 분석 기능을 직접 조작�
 | ------- | ----------------------------------------- | -------- | ------- | ---- | --------------------- | ---------------------------------------------------------- |
 | APP-001 | 제품 웹과 문서 public route 분리          | P0       | Done    | 3    | -                     | URL route 역할이 분리된다. 물리·배포 분리는 ARCH-002에서 수행한다 |
 | WEB-001 | 현재 지도 프로토타입을 API adapter에 연결 | P0       | Done    | 3    | API-002               | API 우선·canonical snapshot fallback으로 실제 집계를 표시한다 |
-| WEB-002 | 상권·업종·반경 Filter 동기화              | P0       | Backlog | 3    | WEB-001               | 선택 변경이 URL/요청/지도/패널에 일관되게 반영된다         |
-| WEB-003 | 실제 점포 marker와 경쟁·수요 Layer 구현   | P0       | Backlog | 3    | WEB-001               | source와 기간이 있는 점포/지표가 지도에 표시된다           |
+| WEB-002 | 상권·업종·반경 Filter 동기화              | P0       | Done | 3    | WEB-001               | 선택 변경이 URL/요청/지도/패널에 일관되게 반영된다         |
+| WEB-003 | 실제 점포 marker와 경쟁·수요 Layer 구현   | P0       | Done | 3    | WEB-001               | source와 기간이 있는 점포/지표가 지도에 표시된다           |
 | WEB-004 | 상권 비교와 입지 리포트 구현              | P0       | Backlog | 3    | WEB-002, ANALYSIS-005 | 최소 2개 상권을 같은 기준으로 비교한다                     |
-| WEB-005 | loading·empty·error·stale state 구현      | P0       | Backlog | 3    | WEB-001               | 실패 시 빈 흰 화면 없이 다음 행동을 안내한다               |
+| WEB-005 | loading·empty·error·stale state 구현      | P0       | Done | 3    | WEB-001               | 실패 시 빈 흰 화면 없이 다음 행동을 안내한다               |
 | WEB-006 | keyboard·mobile·contrast 접근성 검증      | P1       | Backlog | 3    | WEB-002~005           | 핵심 조작이 keyboard와 mobile viewport에서 가능하다        |
 | WEB-007 | 근거 보기와 데이터 기준 시각화            | P0       | Done    | 3    | WEB-003               | source, period, unit, method를 화면에서 확인한다           |
 | WEB-008 | FE 파일 구조 분리와 기능별 state 경계 정리 | P0       | Done | Phase 2 | - | 거대 App을 feature/component/hook/service로 나누고 기존 동작 test를 유지한다 |
+| WEB-009 | 선택 업종 coverage와 silent fallback 제거 | P0 | Done | Phase 2 | SEARCH-001 | 세부 업종 원문을 유지하고 full·partial·unavailable 근거 범위 밖의 점수는 표시하지 않는다 |
+| WEB-010 | 첫 진입 neutral state와 stale 점포 선택 해제 | P0 | Done | Phase 2 | SEARCH-001, ANALYSIS-002 | 사용자가 고르기 전 점포를 자동 선택하지 않고 반경·기준·중심 변경 시 이전 점포를 제거하며 API 오류를 정적 fallback으로 숨기지 않는다 |
+| WEB-011 | 고정 개폐업 그래프 제거와 실제 분기 집계 표시 | P0 | Done | Phase 2 | API-002 | 고정 12개 막대를 제거하고 실제 분기·개업·폐업·순증 값과 시계열 미지원 범위를 명시한다 |
+| WEB-012 | 데이터별 기준 시점과 출처를 함께 표시 | P0 | Done | Phase 2 | DATA-011, WEB-007 | 상권·행정동·개별 점포의 source·period·geography를 구분하고 서로 다른 갱신 주기와 기간 선택 미지원 범위를 명시한다 |
 | MAP-001 | 연남·홍대·합정 상권 비교군 고정           | P0       | Done    | 3    | -                     | selector와 비교표에 가까운 3개 상권만 표시된다             |
 | MAP-002 | LocalTwin 2.5D 지도와 원본 fallback       | P0       | Done    | 3    | MAP-001               | 실제 footprint 기반 전용 지도와 원본 지도를 전환한다       |
 | MAP-003 | 상권별 LocalTwin 지도 data와 style 자체 구성 | P0       | Done    | 3    | MAP-002               | 외부 basemap 없이 로컬 도로·건물·POI GeoJSON을 렌더링한다  |
-| MAP-004 | 핵심 점포 방향 독립형 3D store marker와 업종 asset system | P1 | In Progress | Phase 2 | ARCH-002, SEARCH-001, WEB-003 | 꽃집 procedural prototype과 map custom layer test를 만들었고, 검증된 실제 업종·검색 결과 연결과 generic fallback을 남겼다 |
+| MAP-004 | 핵심 점포 방향 독립형 3D store marker와 업종 asset system | P1 | In Progress | Phase 2 | ARCH-002, SEARCH-001, WEB-003 | 첫 5개 canonical 업종을 공유 GLB body·SVG atlas·procedural attachment에 연결하고 asset 1회 load, style loading race, marker LOD·cleanup을 검증했다. 복수 점포 건물 묶음과 회전·reduced-motion 성능 검증은 남았다 |
+| MAP-005 | 전체 basemap과 지원 지역 LocalTwin 3D Overlay 분리 | P0 | Done | Phase 2 | MAP-003 | 기본 지도는 모든 위치에서 유지되고 연남·홍대·합정의 검증 Overlay만 독립적으로 표시되며 관평동은 planned 상태로 구분된다 |
+| MAP-006 | 분석 기준·주제·지도 Layer 정보구조 분리 | P0 | Done | Phase 2 | MAP-005 | 공간 기준·분석 주제·지도 표현을 독립 state로 선택하고 미지원 조합을 명시한다 |
 | DESIGN-001 | 업종별 low-poly 점포 prefab 고도화        | P1       | Done    | 3    | MAP-003               | 지붕·창문·간판·차양·화분으로 후보 점포를 구분한다          |
 
 ### EPIC-05. 보조 3D 장면 탐색
@@ -201,15 +209,35 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 | ID         | 세부 Task                                  | Priority | Status  | Week | Depends on | Acceptance                                         |
 | ---------- | ------------------------------------------ | -------- | ------- | ---- | ---------- | -------------------------------------------------- |
 | EVAL-001   | 핵심 분석 평가 fixture와 score script 작성 | P0       | Done    | 4    | EPIC-03    | 12개 canonical case와 정상·경계·실패 test를 재현한다 |
-| EVAL-002   | Front-API 통합 smoke test                  | P0       | Backlog | 4    | EPIC-04    | 주요 시연 경로가 새 환경에서 통과한다              |
+| EVAL-002   | Front-API 통합 smoke test                  | P0       | Done | 4    | EPIC-04    | 주요 시연 경로가 새 환경에서 통과한다              |
 | DEMO-001   | 5분 발표 시나리오와 복구 경로 작성         | P0       | Backlog | 4    | EVAL-002   | 발표 순서, 예상 결과와 fallback이 문서화된다       |
 | DEPLOY-001 | docs/prototype 배포와 공개 경로 검증       | P0       | Backlog | 4    | EVAL-002, SEC-008 | Home, Tasks, Architecture와 prototype URL이 열린다 |
-| DEPLOY-002 | production Supabase 생성·migration·배포 연결 | P0 | Backlog | 공개 배포 | DB-001, EVAL-002, SEC-008 | 개발용 DB에서 검증된 revision·seed를 별도 운영 project에 적용하고 배포 API만 운영 credential을 사용한다 |
+| DEPLOY-002 | production Supabase 생성·migration·배포 연결 | P0 | Done | 공개 배포 | DB-001, EVAL-002, SEC-008 | 별도 production DB, Render secret, Vercel Web과 공개 FE-BE smoke를 완료했다 |
 | DOCS-004   | 실제 구현 결과로 스펙·아키텍처·백로그 마감 | P0       | Done | 4    | EPIC-03~07 | current/canonical 문서 감사, 독립 artifact 검사와 공개 docs 배포 검증을 완료했다 |
+
+### EPIC-08. 전체 코드 책임 경계 리팩터링과 자동 품질 규칙
+
+Outcome: 기존 사용자 동작을 유지하면서 Web·API·Data·Scene의 변경 이유가 분리되고 같은 구조 문제가
+새 코드에 다시 들어오면 local check에서 실패한다.
+
+| ID | 세부 Task | Priority | Status | Week | Depends on | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| REFACTOR-001 | 전체 코드 리팩터링 Epic 관리 | P0 | In Progress | Phase 2 | WEB-015, DEPLOY-002 | GitHub #63 하위 Task와 최종 release 검증이 모두 완료된다 |
+| ARCH-003 | runtime hardcoding·config·fixture 경계 분리 | P0 | Done | Phase 2 | ARCH-004 | 실제 데이터·제품 정책·환경값·fixture의 authoritative source가 분리된다 |
+| ARCH-004 | 리팩터링 기준선·구조 규칙 자동 검사 | P0 | Done | Phase 2 | - | AST budget ratchet, runtime literal·FastAPI boundary 검사와 pre-commit/harness 강제를 완료했다 |
+| WEB-018 | App orchestration·state·URL·map 책임 분리 | P0 | Ready | Phase 2 | ARCH-003 | App은 page 조립만 담당하고 각 state 흐름을 독립 테스트한다 |
+| WEB-019 | MarketFilters·MarketInspector UI 책임 분리 | P1 | Ready | Phase 2 | WEB-018 | 분석 UI section을 독립 렌더링·테스트한다 |
+| API-004 | FastAPI router·dependency·Scene gate 분리 | P0 | Ready | Phase 2 | ARCH-004 | app factory는 middleware·exception·router 조립만 수행한다 |
+| API-005 | 분석 query·계산·response 조립 분리 | P0 | Ready | Phase 2 | API-004 | repository와 순수 domain 계산을 독립 테스트한다 |
+| DATA-013 | importer·spatial pipeline 단계 분리·manifest화 | P1 | Ready | Phase 2 | ARCH-003, API-005 | read·validate·normalize·persist·verify 단계와 실행 입력을 재현한다 |
+| SCENE-008 | Scene job UI·polling·pipeline 책임 분리 | P1 | Ready | Phase 2 | API-004 | UI API client와 server job 단계를 분리하고 기존 gate를 유지한다 |
+| TEST-001 | 전체 회귀·architecture boundary·release 검증 | P0 | Ready | Phase 2 | ARCH-003~SCENE-008 | full check와 공개 핵심 흐름 smoke가 통과한다 |
 
 ## 7. Phase 2 Ready Queue
 
 기능 의존성과 이번 주 구현 가능성을 기준으로 위에서 아래 순서로 진행한다.
+
+현재 전체 리팩터링 실행 순서는 `ARCH-004 -> ARCH-003 -> WEB-018 -> WEB-019 -> API-004 -> API-005 -> DATA-013 -> SCENE-008 -> TEST-001`로 고정한다. 상세 기준은 [리팩터링 및 코드 구조 기준](refactoring-standards.md)을 따른다.
 
 1. `PLAN-002` Phase 1 기준선과 인계 문서·Issue 정합성 확인
 2. `SEC-001 A단계` 공개 위험을 먼저 줄이기 위한 Scene API 제품 환경 기본 차단 (Done)
@@ -217,22 +245,21 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 4. `WEB-008` FE 파일 구조를 기능별로 분리하고 state 경계를 정리 (Done early)
 5. `DB-001` Supabase PostgreSQL schema, SQLAlchemy/Alembic과 검증된 전체 canonical data·업종 이관
 6. `DATA-008` 내려받은 분기 상가정보·인허가·상권영역의 bulk importer와 품질 검사
-7. `DATA-009` 개별 점포를 상권에 공간 결합하고 서울시 공식 밀집 집계와 비교
-8. `SEARCH-001` 제한된 시연 상권·점포 검색 API와 React의 최소 vertical slice 연결
-9. `ANALYSIS-002` 100m/300m/500m 반경별 공간 query
-10. `DATA-010` KOSIS 2025.12 행정동 인구 snapshot과 최신 사업체 종사자 보강
-11. `SCORE-002` 점수 공식 1.1 누락·fixture·freshness·집적 보정 안전성 수정
-12. `WEB-002` filter·URL·요청·지도·패널 동기화
-13. `WEB-003` 실제 점포 marker와 경쟁·수요 Layer 연결
-14. `EVAL-002` Front-API 통합 smoke test
-15. `MAP-004` 실제 검색 결과 중 검증된 업종의 핵심 점포만 방향 독립형 3D store marker로 표현
-16. `SEC-001 B단계`와 `SEC-002`~`SEC-008` 인증·privacy·resource·정보노출·배포 hardening
-17. `SCENE-002`, `SCENE-007` 승인된 사용자 촬영 입력의 익명화·end-to-end 검증
-18. `DEPLOY-001`, `DOCS-004` 문서·prototype 배포 검증과 최종 문서 정합성 마감
-19. `DEPLOY-002` 공개 제품 승인 시 별도 production Supabase와 API 배포 연결
-20. `DATA-007` 운영 수집 범위·요청 시점·갱신 주기·raw 보존 정책 결정 후 자동화 Task 확정
-21. `ANALYSIS-003`, `ANALYSIS-004` multi-period 성장·안정성 metric 준비
-22. `SCORE-003` multi-period 데이터로 업종별 profile·peer group·band calibration
+7. `DATA-009 A단계` 3개 상권 polygon과 개별 점포의 공간 결합 (Done, 공식 집계 비교는 계속)
+8. `SEARCH-001` 제한된 시연 상권·점포 검색 API와 React의 최소 vertical slice 연결 (Done)
+9. `MAP-005` 전체 basemap을 유지하고 연남·홍대·합정의 LocalTwin Overlay만 독립 표시 (Done)
+10. `ANALYSIS-002`, `WEB-002`, `WEB-003` 이동 가능한 중심과 100m/300m/500m query·state 동기화
+11. `EVAL-002`, `API-003`, `WEB-005` Front-API 실제 smoke와 오류·retry·stale 상태 검증
+12. `DATA-010` KOSIS 2025.12 행정동 인구 snapshot과 최신 사업체 종사자 보강
+13. `SCORE-002` 점수 공식 1.1 누락·fixture·freshness·집적 보정 안전성 수정
+14. `MAP-004` 실제 검색 결과 중 검증된 업종의 핵심 점포만 방향 독립형 3D store marker로 표현
+15. `SEC-001 B단계`와 `SEC-002`~`SEC-008` 인증·privacy·resource·정보노출·배포 hardening
+16. `SCENE-002`, `SCENE-007` 승인된 사용자 촬영 입력의 익명화·end-to-end 검증
+17. `DEPLOY-001`, `DOCS-004` 문서·prototype 배포 검증과 최종 문서 정합성 마감
+18. `DEPLOY-002` 공개 제품 승인 시 별도 production Supabase와 API 배포 연결
+19. `DATA-007` 운영 수집 범위·요청 시점·갱신 주기·raw 보존 정책 결정 후 자동화 Task 확정
+20. `ANALYSIS-003`, `ANALYSIS-004` multi-period 성장·안정성 metric 준비
+21. `SCORE-003` multi-period 데이터로 업종별 profile·peer group·band calibration
 
 Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전체를 이번 주 핵심 서비스 연결보다 먼저 구현하지 않는다. 사용자 촬영 E2E는 privacy와 입력 검증이 완료된 뒤에만 수행한다. 동시에 진행하는 Task는 원칙적으로 1개다.
 
@@ -244,9 +271,15 @@ Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전
 | D2 | ARCH-002 | 제품과 문서가 물리 폴더·배포 artifact 수준에서 분리된다 (Done) |
 | D3 | WEB-008 | 기존 화면 동작을 유지한 채 FE 기능·component·state 파일이 분리된다 |
 | D4 | DB-001 | Supabase schema와 migration이 적용되고 canonical data의 핵심 row count가 일치한다 |
-| D5 | SEARCH-001 | 제한된 시연 데이터에서 검색 → 선택 → 핵심 분석 화면 진입이 실제 API로 동작한다 |
+| D5 | SEARCH-001 | 제한된 시연 데이터에서 검색 → 선택 → 핵심 분석 화면 진입이 실제 API로 동작한다 (Done) |
 
 이번 주 범위에는 서울 전체 검색이 없다. D5는 한정된 시연 상권·점포 dataset의 최소 end-to-end 흐름이며, 반경 분석과 전체 보안 조치는 다음 순서의 별도 Task다.
+
+반경 분석은 현재 스프린트 마감 뒤 `.harness/tasks/ANALYSIS-002-radius-search.md`를 기준으로
+진행한다. 최소 100m, 최대 500m, 기본 300m의 고정 선택지를 사용하고, 지도 이동 중에는
+원을 계속 표시하되 `이 위치에서 검색`으로 확정할 때만 API를 호출한다.
+
+W3-D1은 `MAP-005 → ANALYSIS-002/WEB-002/WEB-003 → EVAL-002` 순서로 진행한다. 상세 구현 파일·state·Layer contract는 각각 `.harness/tasks/MAP-005-base-map-supported-overlays.md`, `.harness/tasks/ANALYSIS-002-radius-search.md`, `.harness/tasks/EVAL-002-front-api-smoke.md`를 원본으로 사용한다.
 
 ## 8. Definition of Ready
 
@@ -298,6 +331,7 @@ Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전
 | 2026-07-13 | Phase 1 종료와 Phase 2 인계 상태 반영 | 공식 sample 검증과 사용자 촬영·privacy·통합·보안 미완료를 구분하기 위해 |
 | 2026-07-13 | EPIC-07과 SEC-001~008 추가 | 보안 점검을 실행 가능한 Task와 Task Packet 단위로 관리하기 위해 |
 | 2026-07-13 | ARCH-002·WEB-008·DB-001·SEARCH-001과 의존 순서 추가 | 서비스 경계부터 최소 검색 연결까지 이번 주에 가능한 vertical slice로 복원하기 위해 |
+| 2026-07-15 | DATA-009 A단계와 SEARCH-001 완료 상태 반영 | 3개 상권 공간 결합과 실제 Supabase 검색·React 선택 흐름의 검증 결과를 기록하기 위해 |
 | 2026-07-13 | SEC-001 A단계와 WEB-008 조기 완료 | 공개 Scene route를 기본 차단하고 FE server/UI state 경계를 후속 DB·검색 연결 전에 고정하기 위해 |
 | 2026-07-14 | DB-001 전체 canonical seed와 DATA-007 추가 | DB에는 전체 검증 데이터를 보존하고 4개 업종은 현재 UI 지원 범위로만 두며 운영 요청 시점은 후속 결정하기 위해 |
 | 2026-07-14 | ARCH-002 완료 | 실행 source를 `product/`로 이동하고 제품·문서 artifact를 독립 build·검사하도록 분리하기 위해 |
@@ -311,3 +345,11 @@ Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전
 | 2026-07-15 | DATA-008·009 bulk 위치·밀집 계획 추가 | 20개 위치 sample을 공식 분기 파일 전체와 상권 polygon 공간 결합으로 확장하고 카카오·네이버 API를 제외하기 위해 |
 | 2026-07-15 | DOCS-004 전체 current 문서 감사 시작 | 구현 전 문구, 과거 row count와 완료·미완료 경계를 실제 코드와 검증 결과에 맞추기 위해 |
 | 2026-07-15 | DOCS-004 문서 정합성과 공개 배포 완료 | 링크·HTML·Viewer·Task·artifact 검사를 통과하고 production alias에서 최신 Markdown을 확인했기 때문에 |
+| 2026-07-16 | W3-D1 지도·반경·통합 smoke 코드수준 계획 확정 | basemap/Overlay 경계를 먼저 고정하고 nearby API와 state 동기화 뒤 실제 오류 회귀를 수행하기 위해 |
+| 2026-07-16 | DATA-010 코드수준 계획과 KOSIS contract 확정 | 수집·snapshot·변환·migration·idempotent import를 분리하고 기존 SQLite seed 회귀 없이 구현하기 위해 |
+| 2026-07-16 | DATA-010 인구·사업체 배경 통계 적재 완료 | 실제 KOSIS JSON과 공식 온라인간행물 XLSX를 development Supabase에 2회 적재하고 provenance·비공개 값·FK를 검증했기 때문에 |
+| 2026-07-16 | SCORE-002 점수 공식 1.1 안전성 보완 완료 | 누락 지표 중립 수축, fixture 차단, freshness·sample·peer·cluster blocker를 구현하고 12개 canonical 평가를 통과했기 때문에 |
+| 2026-07-16 | MAP-004 꽃집 vertical slice와 선택 상권 경계 구현 | canonical 꽃집 검색 결과만 상세 3D marker로 표시하고 일반 점포·건물 중복을 줄이며 선택 polygon을 노란 경계로 확인하기 위해 |
+| 2026-07-16 | MAP-004 첫 5개 업종 marker와 LOD 확대 | canonical 업종 코드로 방향 독립 장식을 선택하고 겹치는 marker를 제거하며 desktop 12개·mobile 6개 상한을 보장하기 위해 |
+| 2026-07-16 | API-002 상권 분석 runtime PostgreSQL 전환 | 배포 artifact에 없는 canonical SQLite 파일 대신 검색·반경 API와 같은 SQLAlchemy session을 사용하고 SQLite는 import·회귀 기준으로만 유지하기 위해 |
+| 2026-07-16 | MAP-004 공유 GLB body와 category atlas cache | 선택 전환마다 asset을 다시 받지 않고 3D 실패 시 procedural marker를 유지하며 선택 중심 UI가 점포를 가리지 않게 하기 위해 |

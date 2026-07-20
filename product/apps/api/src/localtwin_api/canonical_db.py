@@ -41,6 +41,15 @@ CREATE TABLE IF NOT EXISTS markets (
   area_sqm REAL,
   source_snapshot_id TEXT NOT NULL REFERENCES data_sources(snapshot_id)
 );
+CREATE TABLE IF NOT EXISTS market_geometries (
+  market_code TEXT PRIMARY KEY REFERENCES markets(market_code),
+  geometry_geojson TEXT NOT NULL,
+  center_longitude REAL NOT NULL,
+  center_latitude REAL NOT NULL,
+  source_crs TEXT NOT NULL,
+  target_crs TEXT NOT NULL,
+  source_snapshot_id TEXT NOT NULL REFERENCES data_sources(snapshot_id)
+);
 CREATE TABLE IF NOT EXISTS store_metrics (
   market_code TEXT NOT NULL REFERENCES markets(market_code),
   period TEXT NOT NULL,
@@ -103,6 +112,15 @@ CREATE TABLE IF NOT EXISTS store_points (
   coordinate_system TEXT NOT NULL,
   source_snapshot_id TEXT NOT NULL REFERENCES data_sources(snapshot_id)
 );
+CREATE TABLE IF NOT EXISTS store_market_links (
+  store_id TEXT PRIMARY KEY REFERENCES store_points(store_id),
+  market_code TEXT NOT NULL REFERENCES markets(market_code),
+  link_method TEXT NOT NULL,
+  is_boundary INTEGER NOT NULL CHECK (is_boundary IN (0, 1)),
+  source_snapshot_id TEXT NOT NULL REFERENCES data_sources(snapshot_id)
+);
+CREATE INDEX IF NOT EXISTS ix_store_market_links_market_code
+  ON store_market_links(market_code);
 CREATE TABLE IF NOT EXISTS permit_businesses (
   dataset TEXT NOT NULL,
   management_no TEXT NOT NULL,
@@ -354,10 +372,12 @@ def table_counts(connection: sqlite3.Connection) -> dict[str, int]:
     tables: Iterable[str] = (
         "data_sources",
         "markets",
+        "market_geometries",
         "store_metrics",
         "sales_metrics",
         "flow_metrics",
         "store_points",
+        "store_market_links",
         "permit_businesses",
     )
     return {

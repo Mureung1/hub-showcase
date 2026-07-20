@@ -63,7 +63,7 @@ tests: encoding, 필수 field, 좌표, unknown market, idempotency
 - [x] source SHA-256과 상대 raw path를 provenance로 보존한다.
 - [x] 같은 두 source를 다시 적재해도 table count가 변하지 않는다.
 - [x] 누락·중복·좌표 오류·미등록 상권 code를 보고한다.
-- [ ] 영역-상권 geometry의 좌표계와 polygon을 canonical schema에 보존한다.
+- [x] 연남·홍대·합정 영역 geometry의 원본·변환 좌표계와 polygon을 canonical schema에 보존한다.
 - [ ] 일반·휴게음식점 인허가 전체 pagination과 영업 상태를 보강한다.
 
 ## 7. Verification Plan
@@ -89,7 +89,7 @@ source snapshot의 URL·period·row count·SHA-256·raw path 확인
 - [x] data mapping inventory와 canonical 적재 결과 갱신
 - [x] backlog를 In Progress로 갱신
 - [x] Run Report 작성
-- [ ] geometry·인허가 확장 완료 후 최종 결과 갱신
+- [ ] 전체 인허가 확장 완료 후 최종 결과 갱신
 
 ## 9. Commit Plan
 
@@ -111,4 +111,4 @@ verify:
 - [x] raw 원본을 수정하지 않았는가?
 - [x] 실패한 encoding 경계 case를 regression test로 남겼는가?
 - [x] SQLite 적재와 실제 Supabase 반영을 구분했는가?
-- [ ] geometry와 인허가 후속 범위를 완료했는가?
+- [ ] 전체 인허가 후속 범위를 완료했는가?

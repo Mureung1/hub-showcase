@@ -62,9 +62,9 @@ flowchart LR
 
 | 영역  | 구현 상태                                                             | 제한                                            |
 | ----- | --------------------------------------------------------------------- | ----------------------------------------------- |
-| Front | 자체 지도, API adapter와 canonical fallback으로 상권·업종·Layer를 조작하는 React 웹 | 반경은 아직 지도 탐색 범위이며 공간 재집계 전 |
-| Back  | FastAPI market/score API, 기본 비활성 Scene API, canonical SQLite repository와 SQLAlchemy repository 전환 경로 | 반경별 공간 query와 실제 서비스 배포 미구현 |
-| Data  | 서울·공공데이터 수집기, 537,489개 점포를 포함한 canonical SQLite, 실제 개발용 Supabase migration·2회 seed 검증과 OSM 지도 생성기 | 운영용 Supabase, polygon 공간 결합과 주기적 자동 갱신 미구현 |
+| Front | 자체 지도, 실제 검색 input·상태·선택 흐름과 API/canonical 분석 adapter를 가진 React 웹 | 반경은 아직 지도 탐색 범위이며 공간 재집계 전 |
+| Back  | FastAPI market/score/search API, 기본 비활성 Scene API와 Supabase SQLAlchemy repository | 반경별 공간 query와 실제 서비스 배포 미구현 |
+| Data  | 537,489개 점포를 포함한 canonical SQLite, 3개 polygon·4,548개 점포 연결, 동일한 개발용 Supabase 9개 table | 운영용 Supabase, 공식 밀집 집계 비교와 주기적 자동 갱신 미구현 |
 | 3D    | 촬영물 job, host/Docker worker, Nerfstudio pipeline과 Spark viewer | 공식 sample 학습·export·viewer만 검증됨. 사용자 촬영물과 privacy gate 미검증 |
 
 ## 3. Phase 2 목표 구조
@@ -137,8 +137,11 @@ flowchart LR
 ### 4.2 사용자 분석 요청
 
 ```text
-상권/업종/반경 선택
--> React가 FastAPI 분석 endpoint 호출
+상권명·점포명·주소·업종 검색
+-> React가 GET /api/v1/search 호출
+-> Supabase에서 3개 지원 상권과 공간 결합 점포 조회
+-> 결과 ID·좌표·소속 상권을 지도와 분석 state에 반영
+-> React가 상권 분석 endpoint 호출
 -> DB에서 대상 점포와 지표 조회
 -> 경쟁·변화·시간대·입지 점수 계산
 -> source metadata를 포함한 JSON 응답
@@ -162,9 +165,9 @@ flowchart LR
 
 | 계층     | 현재 사용                                       | Phase 2 목표                               | 후속 후보                                   |
 | -------- | ----------------------------------------------- | ------------------------------------------- | ----------------------------------------------- |
-| Front    | React, Vite, TypeScript, MapLibre, API/snapshot adapter | 기능별 파일 분리, 검색·반경 query와 source-aware 상태 | 대규모 Layer가 필요할 때 deck.gl 검토           |
-| Back     | FastAPI market/score/scene endpoint, Uvicorn, canonical/SQLAlchemy repository | 검색·반경 API와 service 배포 | 부하가 확인된 뒤 worker/cache 검토 |
-| Data     | raw manifest, canonical SQLite, deploy snapshot, SQLAlchemy model·Alembic migration·개발용 Supabase seed | 검색 runtime 전환과 공개 배포 전 운영용 Supabase 승격 | 다지역 공간 질의가 필요할 때 PostGIS 검토 |
+| Front    | React, Vite, TypeScript, MapLibre, 실제 검색과 API/snapshot 분석 adapter | 반경 query·filter URL 동기화와 source-aware 상태 확장 | 대규모 Layer가 필요할 때 deck.gl 검토           |
+| Back     | FastAPI market/score/search/scene endpoint, Uvicorn, SQLAlchemy repository | 반경 API와 service 배포 | 부하가 확인된 뒤 worker/cache 검토 |
+| Data     | raw manifest, 9개 table canonical SQLite, SQLAlchemy/Alembic, 3개 상권 공간 관계를 가진 개발용 Supabase | 공식 밀집 비교와 공개 배포 전 운영용 Supabase 승격 | 다지역 공간 질의가 필요할 때 PostGIS 검토 |
 | Analysis | score 1.0.0과 실제 DB peer percentile          | 추가 지표로 confidence coverage 개선       | 충분한 데이터 이후 예측 모델 검토               |
 | 3D       | upload/job API, Nerfstudio pipeline, Spark/Three.js viewer | CUDA worker에서 실제 scene 1개 학습·익명화 검증 | 혼잡도 mesh overlay와 pipeline 고도화           |
 | Quality  | pytest, Vitest, TypeScript, lint, 문서 검사     | 평가 script와 시연 smoke test               | 필요 시 E2E 자동화                              |
@@ -250,3 +253,4 @@ canonical 기준이고, 실제 서비스 동작은 PostgreSQL과 같은 특성�
 | 2026-07-15 | 문서 Vercel source upload allowlist 추가 | 로컬 raw data와 Scene asset이 문서 build 전 upload 대상에 포함되지 않게 하기 위해 |
 | 2026-07-15 | bulk canonical data와 PostgreSQL local 전환 경로 반영 | 실제 Supabase 적용 전 로컬 구현과 운영 완료를 구분하기 위해 |
 | 2026-07-15 | 개발용·운영용 Supabase project 분리 결정 | schema·seed 검증이 공개 사용자 데이터와 credential에 영향을 주지 않게 하기 위해 |
+| 2026-07-15 | 3개 상권 공간 결합과 Supabase 검색 API·React 연결 | 실제 점포 검색에서 지도·분석 화면까지 최소 vertical slice를 완성하기 위해 |

@@ -2,7 +2,18 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Float, ForeignKey, Integer, PrimaryKeyConstraint, String, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    PrimaryKeyConstraint,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from localtwin_api.database import Base
@@ -39,6 +50,20 @@ class Market(Base):
     source_y: Mapped[float | None] = mapped_column(Float)
     coordinate_system: Mapped[str] = mapped_column(String, nullable=False)
     area_sqm: Mapped[float | None] = mapped_column(Float)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
+class MarketGeometry(Base):
+    __tablename__ = "market_geometries"
+
+    market_code: Mapped[str] = mapped_column(ForeignKey("markets.market_code"), primary_key=True)
+    geometry_geojson: Mapped[str] = mapped_column(Text, nullable=False)
+    center_longitude: Mapped[float] = mapped_column(Float, nullable=False)
+    center_latitude: Mapped[float] = mapped_column(Float, nullable=False)
+    source_crs: Mapped[str] = mapped_column(String, nullable=False)
+    target_crs: Mapped[str] = mapped_column(String, nullable=False)
     source_snapshot_id: Mapped[str] = mapped_column(
         ForeignKey("data_sources.snapshot_id"), nullable=False
     )
@@ -107,6 +132,10 @@ class FlowMetric(Base):
 
 class StorePoint(Base):
     __tablename__ = "store_points"
+    __table_args__ = (
+        Index("ix_store_points_longitude_latitude", "longitude", "latitude"),
+        Index("ix_store_points_latitude_longitude", "latitude", "longitude"),
+    )
 
     store_id: Mapped[str] = mapped_column(String, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
@@ -121,6 +150,19 @@ class StorePoint(Base):
     longitude: Mapped[float | None] = mapped_column(Float)
     latitude: Mapped[float | None] = mapped_column(Float)
     coordinate_system: Mapped[str] = mapped_column(String, nullable=False)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
+class StoreMarketLink(Base):
+    __tablename__ = "store_market_links"
+    __table_args__ = (Index("ix_store_market_links_market_code", "market_code"),)
+
+    store_id: Mapped[str] = mapped_column(ForeignKey("store_points.store_id"), primary_key=True)
+    market_code: Mapped[str] = mapped_column(ForeignKey("markets.market_code"), nullable=False)
+    link_method: Mapped[str] = mapped_column(String, nullable=False)
+    is_boundary: Mapped[bool] = mapped_column(Boolean, nullable=False)
     source_snapshot_id: Mapped[str] = mapped_column(
         ForeignKey("data_sources.snapshot_id"), nullable=False
     )
@@ -146,12 +188,92 @@ class PermitBusiness(Base):
     )
 
 
+class AdminAreaPopulation(Base):
+    __tablename__ = "admin_area_population"
+    __table_args__ = (
+        PrimaryKeyConstraint("admin_area_code", "period", "age_group_code"),
+        CheckConstraint("total_population >= 0", name="total_population_nonnegative"),
+        CheckConstraint("male_population >= 0", name="male_population_nonnegative"),
+        CheckConstraint("female_population >= 0", name="female_population_nonnegative"),
+    )
+
+    admin_area_code: Mapped[str] = mapped_column(String)
+    period: Mapped[str] = mapped_column(String)
+    age_group_code: Mapped[str] = mapped_column(String)
+    admin_area_name: Mapped[str] = mapped_column(String, nullable=False)
+    age_group_name: Mapped[str] = mapped_column(String, nullable=False)
+    total_population: Mapped[int] = mapped_column(Integer, nullable=False)
+    male_population: Mapped[int] = mapped_column(Integer, nullable=False)
+    female_population: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
+class MarketAdminAreaCrosswalk(Base):
+    __tablename__ = "market_admin_area_crosswalk"
+    __table_args__ = (PrimaryKeyConstraint("market_code", "admin_area_code"),)
+
+    market_code: Mapped[str] = mapped_column(ForeignKey("markets.market_code"))
+    admin_area_code: Mapped[str] = mapped_column(String)
+    admin_area_name: Mapped[str] = mapped_column(String, nullable=False)
+    mapping_method: Mapped[str] = mapped_column(String, nullable=False)
+    mapping_version: Mapped[str] = mapped_column(String, nullable=False)
+    boundary_note: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class AdminAreaBusinessMetric(Base):
+    __tablename__ = "admin_area_business_metrics"
+    __table_args__ = (PrimaryKeyConstraint("admin_area_code", "period", "industry_code"),)
+
+    admin_area_code: Mapped[str] = mapped_column(String)
+    period: Mapped[str] = mapped_column(String)
+    industry_code: Mapped[str] = mapped_column(String)
+    admin_area_name: Mapped[str] = mapped_column(String, nullable=False)
+    source_admin_area_code: Mapped[str] = mapped_column(String, nullable=False)
+    industry_name: Mapped[str] = mapped_column(String, nullable=False)
+    business_count: Mapped[int | None] = mapped_column(Integer)
+    worker_count: Mapped[int | None] = mapped_column(Integer)
+    male_worker_count: Mapped[int | None] = mapped_column(Integer)
+    female_worker_count: Mapped[int | None] = mapped_column(Integer)
+    is_suppressed: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
+class MarketPopulationMetric(Base):
+    __tablename__ = "market_population_metrics"
+    __table_args__ = (PrimaryKeyConstraint("market_code", "period"),)
+
+    market_code: Mapped[str] = mapped_column(ForeignKey("markets.market_code"))
+    period: Mapped[str] = mapped_column(String)
+    market_name: Mapped[str] = mapped_column(String, nullable=False)
+    resident_population: Mapped[int] = mapped_column(Integer, nullable=False)
+    worker_population: Mapped[int] = mapped_column(Integer, nullable=False)
+    household_count: Mapped[int | None] = mapped_column(Integer)
+    resident_source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+    worker_source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
 CANONICAL_MODELS = (
     DataSource,
     Market,
+    MarketGeometry,
     StoreMetric,
     SalesMetric,
     FlowMetric,
     StorePoint,
+    StoreMarketLink,
     PermitBusiness,
+)
+
+KOSIS_BACKGROUND_MODELS = (
+    AdminAreaPopulation,
+    MarketAdminAreaCrosswalk,
+    AdminAreaBusinessMetric,
 )
