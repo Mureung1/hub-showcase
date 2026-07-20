@@ -70,48 +70,52 @@ gantt
 
 ### 🔴 High — ① AI 분석 엔진
 
-- [ ] **Task 0: [Setup] Gemini API 환경 변수 및 의존성 설정**
+- [x] **Task 0: [Setup] Gemini API 환경 변수 및 의존성 설정**
   - *상세:* `backend/.env`에 `GEMINI_API_KEY` 추가하고, `backend/.env.example`에는 **키 이름만** 기재. `backend`에 `@google/genai` 의존성 설치. `.env`가 `.gitignore`에 포함되어 있는지 재확인.
   - *완료 조건:* `npm run dev`로 BE 기동 시 환경 변수 로딩 에러가 없고, `.env`가 git 추적 대상에서 제외되어 있음.
 
-- [ ] **Task 1: [BE] Gemini 클라이언트 래퍼 구현**
-  - *상세:* `backend/src/lib/geminiClient.ts` 신규 작성. 기존 `lib/supabaseClient.ts`의 환경 변수 로딩 및 싱글턴 패턴을 그대로 따름. 모델은 `gemini-2.5-flash` 기준, `responseSchema`로 JSON 출력 강제하여 파싱 안정성 확보. 온도는 낮게 설정.
+- [x] **Task 1: [BE] Gemini 클라이언트 래퍼 구현**
+  - *상세:* `backend/src/lib/geminiClient.ts` 신규 작성. 기존 `lib/supabaseClient.ts`의 환경 변수 로딩 및 싱글턴 패턴을 그대로 따름. 모델은 `gemini-flash-latest` 기준(`gemini-2.5-flash`는 신규 API 키에 더 이상 제공되지 않아 별칭 모델로 변경), `responseSchema`로 JSON 출력 강제하여 파싱 안정성 확보. 온도는 낮게 설정(기본 0.1).
   - *완료 조건:* 간단한 테스트 프롬프트 호출 시 스키마에 맞는 JSON이 반환되고, 키 누락 시 명확한 에러 메시지가 출력됨.
+  - *추가(무료 티어 쿼터 대응):* 1차 모델이 429(쿼터 초과)/503(과부하)로 실패하면 `GEMINI_FALLBACK_MODELS`(콤마 구분, 기본 `gemini-3.1-flash-lite`)로 자동 폴백. 고정 배열을 for 루프로 한 번씩만 순회하고 실패한 모델을 다시 앞으로 되돌리지 않으므로 무한 재시도가 구조적으로 불가능함. 400 등 요청 자체 오류는 모델을 바꿔도 동일하게 실패하므로 즉시 던짐(폴백 대상 아님). `testGeminiFallback.ts`로 실제 쿼터 소진 상태에서 폴백 동작 검증 완료.
 
-- [ ] **Task 2: [AI] 가설 검증용 AI 모델 설계**
-  - *상세:* 코드 작성 **전에** 파이프라인 · 프롬프트 · 입출력 스키마를 문서로 확정. 1단계(분류)와 2단계(검증결과 생성) 각각의 시스템 프롬프트, 입력/출력 JSON 스키마, 온도, 응답 실패 시 폴백 전략을 정의. 프롬프트는 라우터에 인라인으로 넣지 않고 `lib/` 모듈에 분리 배치할 것을 전제로 설계.
-  - *완료 조건:* 두 단계의 프롬프트와 출력 스키마가 문서로 확정되고, 샘플 전사문 1건으로 수동 검토 시 의도한 형태의 출력이 나오는 것 확인.
+- [x] **Task 2: [AI] 가설 검증용 AI 모델 설계 (입력/출력 구조화 포함)** — 상세 설계는 [`README/AI_Pipeline_Design.md`](AI_Pipeline_Design.md) 참조.
+  - *상세:* 코드 작성 **전에** 파이프라인 · 프롬프트 · 입출력 스키마를 문서로 확정. 1단계(분류)와 2단계(검증결과 생성) 각각의 시스템 프롬프트, 온도, 응답 실패 시 폴백 전략을 정의. 프롬프트는 라우터에 인라인으로 넣지 않고 `lib/` 모듈에 분리 배치할 것을 전제로 설계.
+    - **입력 구조화:** 자유 텍스트로 뭉쳐 보내지 않는다. 가설은 `{ hypothesis_id, cause, effect }[]` 배열로 프롬프트에 명시적으로 포함해 AI가 어떤 가설에 대한 근거인지 id로 되짚을 수 있게 한다.
+    - **화자 라벨 — 별도 파서 없이 포맷 계약으로만 처리:** `lib/transcriptExtractor.ts`는 지금처럼 plain text를 그대로 반환한다(파서 추가하지 않음). 대신 이 Task에서 **"입력 전사문은 `화자명: 발언` 형태의 줄바꿈 구분 텍스트여야 `speaker` 필드가 정확히 추출된다"는 입력 포맷 계약을 프롬프트 지시문에 명시**하고, 이 형태를 벗어난 입력에서는 `speaker`가 비거나 부정확할 수 있음을 알려진 제약(known limitation)으로 문서에 남긴다. 화자 분리는 Gemini가 텍스트를 읽으며 직접 수행(Task 3의 역할)하므로 정규식 기반 파서를 신규 구현하지 않는다.
+    - **출력 구조화:** 1단계/2단계 각각의 출력 JSON 스키마(`responseSchema`)를 확정. 1단계는 Task 3의 `{ hypothesis_id, quote, speaker, badge_label }[]`, 2단계는 Task 4의 `{ summary, direction, key_evidence, citations, suggested_status }`와 일치해야 함.
+  - *완료 조건:* 두 단계의 프롬프트와 입력/출력 스키마가 문서로 확정되고, 샘플 전사문 1건(화자 라벨 포함)으로 수동 검토 시 의도한 형태의 출력이 나오며 `hypothesis_id`가 원본 가설과 정확히 매칭되는 것 확인.
 
-- [ ] **Task 3: [BE] 1단계 — 가설별 발언 분류(태깅) 구현**
-  - *상세:* `backend/src/lib/hypothesisTagger.ts` 신규. 전사문 + 가설 배열을 입력받아 각 발언을 가설에 분류 ➡️ `{ hypothesis_index, quote, speaker, badge_label }[]` 반환. 결과를 `evidence_tags`에 INSERT. **분류만 수행하며 해석·판단은 하지 않음.**
+- [x] **Task 3: [BE] 1단계 — 가설별 발언 분류(태깅) 구현**
+  - *상세:* `backend/src/lib/hypothesisTagger.ts` 신규. Task 2에서 확정한 입력 스키마(`{ hypothesis_id, cause, effect }[]` + 화자 라벨 포함 전사문)를 받아 각 발언을 가설에 분류 ➡️ `{ hypothesis_id, quote, speaker, badge_label }[]` 반환. 결과를 `evidence_tags`에 INSERT. **분류만 수행하며 해석·판단은 하지 않음.**
   - *완료 조건:* 샘플 전사문 분석 시 `evidence_tags`에 가설별 근거가 적재되고, 각 `quote`가 원본 전사문에 실제로 존재하는 문장임이 확인됨.
 
-- [ ] **Task 4: [BE] 2단계 — '검증결과' 생성 구현**
+- [x] **Task 4: [BE] 2단계 — '검증결과' 생성 구현**
   - *상세:* `backend/src/lib/verificationResult.ts` 신규. 가설 1건 + 해당 `evidence_tags`를 입력받아 아래를 산출:
     - `summary`: 검증결과 문단 (본문에 `[1]`, `[2]` 형태의 **참조 번호 마커** 삽입)
     - `direction`: **수정 방향성** — 가설을 어떻게 고쳐야 하는가
     - `key_evidence`: **핵심 근거** 요약
     - `citations`: `[{ marker: 1, evidence_tag_id: "..." }]` — 참조 번호 ↔ 근거 태그 매핑
     - `suggested_status`: 유력함 / 근거 부족 / 수정 필요 **제안값** (확정 아님)
-    - *DB:* `verification_results` 테이블을 `schema.sql`에 신규 정의 (`hypothesis_id` FK, 위 필드, `citations`는 JSONB).
+    - *DB:* `verification_results` 테이블을 `schema.sql`에 신규 정의 (`hypothesis_id` FK, 위 필드, `citations`는 JSONB). 재분석 시 덮어쓰기하도록 `hypothesis_id UNIQUE` + upsert. Supabase SQL Editor 대신 `backend/migrations/002_verification_results.sql`을 `node runMigration.js migrations/002_verification_results.sql`로 `DIRECT_URL`에 직접 적용(이 과정에서 `.env`의 `DATABASE_URL`/`DIRECT_URL` 비밀번호에 대괄호가 남아있던 오타를 발견해 수정함).
   - *완료 조건:* 가설별 검증결과가 `verification_results`에 저장되고, `summary` 본문의 `[n]` 마커가 `citations` 배열과 일대일로 대응함.
 
-- [ ] **Task 5: [BE] `/analyze` 엔드포인트 확장**
-  - *상세:* `backend/src/routes/projects.ts`의 기존 `POST /:id/analyze` 핸들러에 1단계 ➡️ 2단계 파이프라인 연결. 기존 `buildAnalysisMarkdown` 기반 MD 파일 생성은 디버깅/로그용으로 **유지**. 분석 완료 후 `hypotheses.verification_status`를 AI 제안값으로 갱신.
+- [x] **Task 5: [BE] `/analyze` 엔드포인트 확장**
+  - *상세:* `backend/src/routes/projects.ts`의 기존 `POST /:id/analyze` 핸들러에 1단계 ➡️ 2단계 파이프라인 연결. 기존 `buildAnalysisMarkdown` 기반 MD 파일 생성은 디버깅/로그용으로 **유지**. 분석 완료 후 `hypotheses.verification_status`를 AI 제안값으로 갱신. 오케스트레이션은 라우터에 인라인으로 넣지 않고 `lib/analysisPipeline.ts`로 분리(1단계는 인터뷰별로 순회, 2단계는 가설별로 순회 후 `verification_status` UPDATE).
   - *완료 조건:* "분석 시작" 호출 한 번으로 MD 파일 생성 + `evidence_tags` + `verification_results` 적재 + `verification_status` 갱신이 모두 완료됨.
 
 ### 🔴 High — ② 화면 및 참조 시스템
 
-- [ ] **Task 6: [BE] 대시보드/상세 화면용 조회 API 구현**
-  - *상세:* `GET /api/projects/:id` (project + hypotheses + verification_results 조인), `GET /api/projects/:id/hypotheses/:hid` (검증결과 + citations + evidence_tags + 원본 전사문 발췌).
+- [x] **Task 6: [BE] 대시보드/상세 화면용 조회 API 구현**
+  - *상세:* `GET /api/projects/:id` (project + 각 가설에 verification_result 연결), `GET /api/projects/:id/hypotheses/:hid` (가설 + 검증결과 + citations + evidence_tags에 출처 인터뷰명 조인). 근거 태그의 `quote` 자체가 전사문 발췌 역할을 하며, 드로어 렌더용으로 `interviews(interviewee_name)`를 조인해 반환.
   - *완료 조건:* Postman/Curl로 두 API 호출 시 화면 렌더에 필요한 데이터가 한 번의 요청으로 모두 반환됨.
 
-- [ ] **Task 7: [FE] 라우팅 도입 및 화면 분리**
-  - *상세:* `react-router-dom` 도입. 현재 `App.tsx` 단일 화면 구조를 분리: `/`(입력 — 기존 코드 이전), `/projects/:id`(대시보드), `/projects/:id/hypotheses/:hid`(상세), `/share/:token`(공유). 분석 완료 후 대시보드로 자동 이동.
+- [x] **Task 7: [FE] 라우팅 도입 및 화면 분리**
+  - *상세:* `react-router-dom` 도입. 기존 `App.tsx`(입력 폼)를 `pages/InputPage.tsx`로 이전(git mv로 이력 보존)하고, `App.tsx`는 `BrowserRouter`+`Routes`만 담당. `/`(입력), `/projects/:id`(대시보드), `/projects/:id/hypotheses/:hid`(상세), `/share/:token`(공유)로 분리. 대시보드/상세/공유는 라우팅 검증용 최소 플레이스홀더(실제 UI는 Task 8/10/13). 입력 화면은 분석 완료 시 `useNavigate`로 실제 project_id 대시보드로 이동(기존 성공 배너 제거).
   - *완료 조건:* 각 경로가 정상 렌더되고, 기존 가설 입력 기능이 회귀 없이 동작하며, 분석 완료 시 대시보드로 이동함.
 
-- [ ] **Task 8: [FE] 대시보드 — 가설 리스트 화면 구현**
-  - *상세:* 각 행을 **체크박스 + 검증 상태 배지(검토 전 / 유력함 / 근거 부족 / 수정 필요) + 가설명(원인 ➡️ 결과 요약) + 판단 필요성(유지/수정/폐기 권고)** 4요소로 구성. 판단 필요성은 Task 4의 `direction` / `suggested_status`에서 가져옴. 체크박스는 공유·Export 대상 선택에 사용. 상태 배지 색상은 `design.md` 규칙 확인 후 적용. 행 클릭 시 상세 화면 진입.
+- [x] **Task 8: [FE] 대시보드 — 가설 리스트 화면 구현**
+  - *상세:* 각 행을 **체크박스 + 검증 상태 배지(검토 전 / 유력함 / 근거 부족 / 수정 필요) + 가설명(원인 ➡️ 결과 요약) + 판단 필요성(유지/수정/폐기 권고)** 4요소로 구성. 판단 필요성은 Task 4의 `direction` / `suggested_status`에서 가져옴(사용자가 아직 확정하지 않은 AI 권고이며 `hypotheses.status`의 실제 확정값과는 다름 — 확정은 Task 9). 체크박스는 공유·Export 대상 선택에 사용. `design.md`에 배지 전용 색상 토큰이 없어 기존 팔레트(`--color-primary`/`--color-danger`/`--color-accent-light`/`--color-border`)만 조합해 4개 배지 변형 구성(새 토큰 추가 없음). 행 클릭 시 상세 화면 진입, 체크박스 클릭은 `stopPropagation`으로 행 이동과 분리.
   - *완료 조건:* 가설 리스트가 4요소를 모두 표시하고, 체크박스 선택 상태가 유지되며, 행 클릭 시 해당 가설 상세로 이동함.
 
 - [ ] **Task 9: [BE/FE] 가설 유지 / 수정 / 폐기 기능 구현**
@@ -150,7 +154,7 @@ gantt
   - *완료 조건:* 긴 전사문 분석 시에도 화면이 멈춘 것처럼 보이지 않고, 타임아웃 시 명확한 에러 메시지가 표시됨.
 
 - [ ] **Task 16: [BE] Gemini 응답 검증 (환각 방어)**
-  - *상세:* 잘못된 `hypothesis_index`, 전사문에 존재하지 않는 `quote`, `citations`에 없는 참조 번호를 본문에 다는 케이스를 방어. 원문 대조 후 불일치 항목은 저장 전에 폐기. 대응되지 않는 `[n]` 마커는 렌더 시 링크가 아닌 일반 텍스트로 처리.
+  - *상세:* 잘못된 `hypothesis_id`(존재하지 않는 가설을 가리키는 경우), 전사문에 존재하지 않는 `quote`, `citations`에 없는 참조 번호를 본문에 다는 케이스를 방어. 원문 대조 후 불일치 항목은 저장 전에 폐기. 대응되지 않는 `[n]` 마커는 렌더 시 링크가 아닌 일반 텍스트로 처리.
   - *완료 조건:* 의도적으로 잘못된 응답을 주입했을 때 불일치 항목이 걸러지고 서버가 죽지 않음.
 
 - [ ] **Task 17: [BE] 공유 URL 접근 범위 제한**
@@ -167,6 +171,10 @@ gantt
   - *상세:* 전사문 미입력 / 매칭된 근거 0건인 경우의 안내 화면 처리.
   - *완료 조건:* 빈 상태에서 화면이 깨지지 않고 다음 행동을 안내함.
 
+- [ ] **Task 20: [BE] 비-UTF-8 전사문 파일 업로드 인코딩 대응**
+  - *상세:* `transcriptExtractor.ts`는 현재 `buffer.toString('utf-8')`로 고정되어 있어, UTF-8이 아닌 인코딩(Windows 메모장 ANSI/EUC-KR 등)으로 저장된 `.txt`/`.md` 파일을 업로드하면 한글이 깨진다(실제 EUC-KR 파일로 재현 확인됨). `jschardet`로 인코딩을 감지하고 `iconv-lite`로 UTF-8 변환 후 반환하도록 보강. 브라우저 입력/붙여넣기 경로는 이미 전 구간 UTF-8이라 영향 없음.
+  - *완료 조건:* EUC-KR로 저장된 한글 `.txt` 파일을 업로드해도 전사문이 깨지지 않고 정상 추출됨.
+
 ---
 
 ## 🚀 추천 실행 순서 및 리스크 조언
@@ -182,5 +190,6 @@ gantt
   - **공유 URL의 개인정보:** `share_token` 링크는 가진 사람 누구나 열 수 있고 인터뷰 전사문 원문이 그대로 노출됩니다. 개인정보가 포함된 전사문을 다룰 때 주의하고, 토큰은 추측 불가능한 랜덤값(UUID 이상)으로 생성합니다.
   - **DB 마이그레이션:** `verification_results` 테이블 신규 + `projects.save_status` / `projects.share_token` 컬럼 추가가 필요합니다. 이미 데이터가 들어있는 Supabase 테이블이므로 `ALTER TABLE ... ADD COLUMN`으로 처리하고 기존 행에 기본값을 채웁니다.
   - **4주차 파인튜닝 대비:** Gemini 호출 지점이 3곳(분류 · 검증결과 · 반박 리파인)으로 늘어납니다. 프롬프트 로직을 라우터에 인라인으로 넣지 말고 `lib/` 모듈로 분리해야 4주차에 프롬프트만 교체할 수 있습니다.
+  - **한글 인코딩 (알려진 제약):** 실사용 경로(브라우저 입력/붙여넣기 → `fetch` → Express → Supabase/Gemini/MD 파일)는 전 구간 UTF-8로 통일되어 있어 안전함을 검증 완료. 단, **`.txt`/`.md` 파일 업로드 시 파일이 UTF-8이 아닌 인코딩(예: Windows 메모장 ANSI/EUC-KR)으로 저장된 경우** `transcriptExtractor.ts`의 `buffer.toString('utf-8')`에서 한글이 깨진다(실제 EUC-KR 파일 업로드로 재현 확인). 3주차 범위 밖이며, 견고화가 필요하면 `jschardet`+`iconv-lite`로 인코딩 감지/변환을 추가할 수 있음. (참고: `curl`로 한글 JSON을 보낼 때 깨지는 것은 Windows Git Bash 로케일 문제일 뿐 서버/앱과 무관.)
 
 - **범위 경계:** 기획서에서 **정량 데이터 결과 그래프는 v2 후보로 MVP 범위 밖**입니다. 3주차에 포함하지 않습니다.
