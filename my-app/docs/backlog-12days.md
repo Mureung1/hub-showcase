@@ -34,10 +34,11 @@
 | Post API (홍보글/공지사항) | `POST /posts/promotion`, `POST /posts/notice`, `GET /posts`, `GET /posts/:id`, `PATCH /posts/:id` — 콘텐츠는 규칙 기반, Supabase에 저장 |
 | Supabase 전환 | SQLite → Supabase 마이그레이션 완료, Post API curl로 재검증 완료 |
 | BrandProfile API | `GET /brand-profile`, `POST /brand-profile/interview`, `POST /brand-profile`, `PATCH /brand-profile` — summary/keywords 규칙 기반, Supabase에 저장 |
+| 예약 발행 + 브리핑 API | `GET /posts/:id/suggested-time`, `POST/DELETE /posts/:id/schedule`, `GET /briefing/today` — 계절/업종 규칙 기반, 블로그 건강도는 mock |
 
 ### 미완료
 
-- 예약 발행/브리핑/인사이트 API, 블로그 연동 스텁
+- 인사이트 API, 블로그 연동 스텁
 - 프론트 훅(`useBrandProfile`, `useBriefing`, `usePosts`, `usePostResult`, `useSchedulePublish`, `useInsights`) 전부 목업(`useMockResource`) 기반
 - 자동화 테스트 0개, 테스트 러너 미설치
 - 테스트코드 생성 Skill, 코드 검증 Agent, 워크플로우 문서 — 전부 없음
@@ -157,12 +158,12 @@
 
 ---
 
-## Day 8 — 2026-07-23 (목)
+## Day 8 — 2026-07-23 (목) ✅
 
 **목표:** 예약 발행 + 브리핑 API
 
-- [ ] `GET /posts/:id/suggested-time`, `POST /posts/:id/schedule`, `DELETE /posts/:id/schedule`
-- [ ] `GET /briefing/today` (블로그 현황 mock 값 + 계절/업종 기반 규칙으로 추천 문구 생성)
+- [x] `GET /posts/:id/suggested-time`, `POST /posts/:id/schedule`, `DELETE /posts/:id/schedule`
+- [x] `GET /briefing/today` (블로그 현황 mock 값 + 계절/업종 기반 규칙으로 추천 문구 생성)
 
 **완료 기준:** 예약 발행 화면에서 추천 시간을 실제 API로 받아오고, 예약 확정이 Supabase에 저장됨
 
