@@ -18,9 +18,3 @@
   background: var(--color-primary);
   transition: width var(--duration-base) var(--ease-out);
 }
-
-.progress-bar__label {
-  flex-shrink: 0;
-  font-size: var(--font-size-caption);
-  color: var(--color-text-secondary);
-}

@@ -161,6 +161,11 @@ button,
   box-shadow: var(--card-shadow);
 }
 
+.button--danger {
+  background: var(--color-danger);
+  color: var(--color-text-inverse);
+}
+
 .field-error {
   color: var(--color-danger);
   font-size: var(--font-size-caption);

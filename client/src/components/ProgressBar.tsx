@@ -1,3 +1,4 @@
+import { calculateProgressPercent } from '../lib/progressPercent.ts'
 import './ProgressBar.css'
 
 type ProgressBarProps = {
@@ -6,14 +7,13 @@ type ProgressBarProps = {
 }
 
 function ProgressBar({ completed, total }: ProgressBarProps) {
-  const percent = total > 0 ? Math.round((completed / total) * 100) : 0
+  const percent = calculateProgressPercent(completed, total)
 
   return (
     <div className="progress-bar">
       <div className="progress-bar__track">
         <div className="progress-bar__fill" style={{ width: `${percent}%` }} />
       </div>
-      <span className="progress-bar__label">{percent}%</span>
     </div>
   )
 }

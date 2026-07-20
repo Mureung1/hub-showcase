@@ -1,5 +1,5 @@
-import { parseISO } from 'date-fns'
 import { slotKey, type ScheduleSlot } from 'shared'
+import { formatDateLabel } from '../lib/formatDateLabel.ts'
 import './ScheduleGrid.css'
 
 type ScheduleGridProps = {
@@ -9,14 +9,6 @@ type ScheduleGridProps = {
   onToggle: (slot: ScheduleSlot) => void
   // claude: 지정하지 않으면 slots 전부 클릭 가능(1단계). 지정하면 이 키에 없는 슬롯은 회색으로 비활성화(2단계 — 1단계에서 고르지 않은 칸은 선호로 못 고르게).
   eligibleKeys?: Set<string>
-}
-
-const weekdayLabels = ['일', '월', '화', '수', '목', '금', '토']
-
-// study: 템플릿 문자열로 "7/20(월)" 같은 글자 완성해서 return. 
-function formatDateLabel(dateStr: string): string {
-  const date = parseISO(dateStr)
-  return `${date.getMonth() + 1}/${date.getDate()}(${weekdayLabels[date.getDay()]})`
 }
 
 function ScheduleGrid({ slots, selectedKeys, variant, onToggle, eligibleKeys }: ScheduleGridProps) {
