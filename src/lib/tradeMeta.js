@@ -19,3 +19,16 @@ export const EMOTIONS = [
 ]
 
 export const EMOTION_LABEL = Object.fromEntries(EMOTIONS.map((e) => [e.value, e.label]))
+
+/**
+ * 예정 보유 기간 후보 (단일선택, DB enum check 제약과 1:1 동기화 — 0007_plan_fields_and_mirror_review.sql)
+ * "계획" 필드 중 하나: AI 복기의 거울 프레임(계획 대비 실행)이 참조한다.
+ */
+export const HORIZONS = [
+  { value: 'scalp', label: '단타' },
+  { value: 'swing', label: '스윙' },
+  { value: 'mid', label: '중기' },
+  { value: 'long', label: '장기' },
+]
+
+export const HORIZON_LABEL = Object.fromEntries(HORIZONS.map((h) => [h.value, h.label]))

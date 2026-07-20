@@ -102,6 +102,26 @@
   margin: 8px 0;
 }
 
+/* 투자 계획 (선택) 하위 섹션 */
+.trade-form__plan {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+  margin-top: 2px;
+  border-top: 1px solid var(--border);
+}
+.trade-form__plan-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.trade-form__plan-prices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
 /* 모달 변형 (차트 클릭 기록, WP-C) */
 .trade-form-overlay {
   position: fixed;

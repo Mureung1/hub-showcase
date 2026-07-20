@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
-import { SETUP_TAGS, EMOTIONS } from '../lib/tradeMeta.js'
+import { SETUP_TAGS, EMOTIONS, HORIZONS } from '../lib/tradeMeta.js'
 import './TradeForm.css'
 
 const SIDE_LABEL = { buy: '매수', sell: '매도', hold: '관망' }
@@ -81,6 +81,11 @@ export default function TradeForm({
   const [memo, setMemo] = useState('')
   const [tags, setTags] = useState([])
   const [emotion, setEmotion] = useState(null)
+  const [thesis, setThesis] = useState('')
+  const [targetPrice, setTargetPrice] = useState('')
+  const [stopPrice, setStopPrice] = useState('')
+  const [horizon, setHorizon] = useState(null)
+  const [confidence, setConfidence] = useState(null)
   const [tradedDate, setTradedDate] = useState(dateContext?.date ?? null)
   const [recording, setRecording] = useState(false)
   const [recordError, setRecordError] = useState('')
@@ -143,6 +148,11 @@ export default function TradeForm({
         memo: memo || null,
         tags: tags.length ? tags : [],
         emotion: emotion || null,
+        thesis: thesis || null,
+        target_price: targetPrice ? Number(targetPrice) : null,
+        stop_price: stopPrice ? Number(stopPrice) : null,
+        horizon: horizon || null,
+        confidence: confidence || null,
         traded_at: tradedAt,
         source: 'manual',
       })
@@ -159,6 +169,11 @@ export default function TradeForm({
     setMemo('')
     setTags([])
     setEmotion(null)
+    setThesis('')
+    setTargetPrice('')
+    setStopPrice('')
+    setHorizon(null)
+    setConfidence(null)
     onSaved?.(data)
   }
 
@@ -257,6 +272,66 @@ export default function TradeForm({
           ))}
         </div>
       </div>
+
+      {/* 투자 계획 (선택) — 복기의 '계획 대비 실행' 축이 참조한다. 마찰 최소화를 위해 전부 선택 입력. */}
+      <div className="trade-form__plan">
+        <span className="trade-form__plan-title">투자 계획 (선택)</span>
+        <label className="trade-form__field">
+          <span>진입 가설 (왜 이 매매를?)</span>
+          <textarea rows={2} value={thesis} onChange={(e) => setThesis(e.target.value)} />
+        </label>
+        <div className="trade-form__plan-prices">
+          <label className="trade-form__field">
+            <span>목표가</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={targetPrice}
+              onChange={(e) => setTargetPrice(e.target.value)}
+            />
+          </label>
+          <label className="trade-form__field">
+            <span>손절가</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={stopPrice}
+              onChange={(e) => setStopPrice(e.target.value)}
+            />
+          </label>
+        </div>
+        <div className="trade-form__field">
+          <span>예정 보유 기간</span>
+          <div className="trade-form__emotions">
+            {HORIZONS.map((h) => (
+              <button
+                key={h.value}
+                type="button"
+                className={horizon === h.value ? 'trade-emotion-btn is-active' : 'trade-emotion-btn'}
+                onClick={() => setHorizon((prev) => (prev === h.value ? null : h.value))}
+              >
+                {h.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="trade-form__field">
+          <span>확신도</span>
+          <div className="trade-form__emotions">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                className={confidence === n ? 'trade-emotion-btn is-active' : 'trade-emotion-btn'}
+                onClick={() => setConfidence((prev) => (prev === n ? null : n))}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {recordError && <p className="trade-form__error">{recordError}</p>}
       <button type="submit" className="btn accent block" disabled={recording}>
         {recording ? '기록 중...' : '기록하기'}

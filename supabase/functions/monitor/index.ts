@@ -85,15 +85,15 @@ async function fetchMemoryLine(
   try {
     const { data, error } = await client
       .from("reviews")
-      .select("headline, repeated_mistake, created_at, trades!inner(ticker)")
+      .select("headline, behavior_pattern, created_at, trades!inner(ticker)")
       .eq("user_id", userId)
       .eq("trades.ticker", ticker)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     if (error || !data) return null;
-    // 있으면 repeated_mistake 우선, 없으면 headline
-    const line = (data.repeated_mistake as string | null) || (data.headline as string | null);
+    // 있으면 behavior_pattern(행동 패턴) 우선, 없으면 headline
+    const line = (data.behavior_pattern as string | null) || (data.headline as string | null);
     return line ?? null;
   } catch {
     return null;

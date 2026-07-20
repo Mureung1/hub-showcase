@@ -139,6 +139,18 @@
   border-color: var(--accent-border);
   background: var(--accent-bg);
 }
+.td-form__plan {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.td-form__plan-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
 .td-form__error {
   color: var(--red);
   margin: 0;
@@ -267,7 +279,7 @@
 
 .td-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin: 16px 0;
 }
@@ -335,4 +347,12 @@
   border-radius: var(--r-cell);
   padding: 14px;
   margin: 0;
+}
+.td-disclaimer {
+  margin: 16px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 150%;
+  color: var(--muted);
 }

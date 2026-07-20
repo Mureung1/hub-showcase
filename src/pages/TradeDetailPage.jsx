@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
-import { SETUP_TAGS, EMOTIONS } from '../lib/tradeMeta.js'
+import { SETUP_TAGS, EMOTIONS, HORIZONS } from '../lib/tradeMeta.js'
 import './TradeDetailPage.css'
 
 const SIDE_LABEL = { buy: '매수', sell: '매도', hold: '관망' }
@@ -67,6 +67,11 @@ function TradeDetailPage() {
   const [tradedAt, setTradedAt] = useState('')
   const [tags, setTags] = useState([])
   const [emotion, setEmotion] = useState(null)
+  const [thesis, setThesis] = useState('')
+  const [targetPrice, setTargetPrice] = useState('')
+  const [stopPrice, setStopPrice] = useState('')
+  const [horizon, setHorizon] = useState(null)
+  const [confidence, setConfidence] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [savedAt, setSavedAt] = useState(0)
@@ -131,6 +136,11 @@ function TradeDetailPage() {
     setTradedAt(toDatetimeLocal(tradeRow.traded_at))
     setTags(tradeRow.tags ?? [])
     setEmotion(tradeRow.emotion ?? null)
+    setThesis(tradeRow.thesis ?? '')
+    setTargetPrice(tradeRow.target_price != null ? String(tradeRow.target_price) : '')
+    setStopPrice(tradeRow.stop_price != null ? String(tradeRow.stop_price) : '')
+    setHorizon(tradeRow.horizon ?? null)
+    setConfidence(tradeRow.confidence ?? null)
 
     const { data: reviewRow, error: reviewError } = await supabase
       .from('reviews')
@@ -180,6 +190,11 @@ function TradeDetailPage() {
         traded_at: tradedIso,
         tags: tags.length ? tags : [],
         emotion: emotion || null,
+        thesis: thesis || null,
+        target_price: targetPrice ? Number(targetPrice) : null,
+        stop_price: stopPrice ? Number(stopPrice) : null,
+        horizon: horizon || null,
+        confidence: confidence || null,
       })
       .eq('id', id)
       .select()
@@ -324,6 +339,65 @@ function TradeDetailPage() {
               </div>
             </div>
 
+            {/* 투자 계획 (선택) — 복기의 '계획 대비 실행' 축이 참조한다. */}
+            <div className="td-form__plan">
+              <span className="td-form__plan-title">투자 계획 (선택)</span>
+              <label className="td-form__field">
+                <span>진입 가설 (왜 이 매매를?)</span>
+                <textarea rows={2} value={thesis} onChange={(e) => setThesis(e.target.value)} />
+              </label>
+              <div className="td-form__row">
+                <label className="td-form__field">
+                  <span>목표가</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={targetPrice}
+                    onChange={(e) => setTargetPrice(e.target.value)}
+                  />
+                </label>
+                <label className="td-form__field">
+                  <span>손절가</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={stopPrice}
+                    onChange={(e) => setStopPrice(e.target.value)}
+                  />
+                </label>
+              </div>
+              <div className="td-form__field">
+                <span>예정 보유 기간</span>
+                <div className="td-form__tags">
+                  {HORIZONS.map((h) => (
+                    <button
+                      key={h.value}
+                      type="button"
+                      className={horizon === h.value ? 'td-tag-btn is-active' : 'td-tag-btn'}
+                      onClick={() => setHorizon((prev) => (prev === h.value ? null : h.value))}
+                    >
+                      {h.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="td-form__field">
+                <span>확신도</span>
+                <div className="td-form__tags">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      className={confidence === n ? 'td-tag-btn is-active' : 'td-tag-btn'}
+                      onClick={() => setConfidence((prev) => (prev === n ? null : n))}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {saveError && <p className="td-form__error">{saveError}</p>}
             {savedAt > 0 && !saveError && <p className="td-form__saved">저장됐습니다.</p>}
 
@@ -372,11 +446,15 @@ function TradeDetailPage() {
             ) : (
               <>
                 <div className="verdict td-verdict">
-                  <div className="tag td-verdict__tag">⚡ 코칭 에이전트 판단</div>
+                  <div className="tag td-verdict__tag">⚡ 복기 노트</div>
                   <div className="headline td-verdict__headline">{review.headline}</div>
                 </div>
 
                 <div className="td-grid">
+                  <div className="cell td-cell">
+                    <div className="td-cell__label">계획 대비</div>
+                    <div className="td-cell__desc">{review.plan_adherence || '—'}</div>
+                  </div>
                   <div className="cell td-cell">
                     <div className="td-cell__label">타이밍</div>
                     <div className="td-cell__desc">{review.timing || '—'}</div>
@@ -386,14 +464,14 @@ function TradeDetailPage() {
                     <div className="td-cell__desc">{review.emotion || '—'}</div>
                   </div>
                   <div className="cell td-cell">
-                    <div className="td-cell__label">반복 실수</div>
-                    <div className="td-cell__desc">{review.repeated_mistake || '—'}</div>
+                    <div className="td-cell__label">행동 패턴</div>
+                    <div className="td-cell__desc">{review.behavior_pattern || '—'}</div>
                   </div>
                 </div>
 
                 <div className="td-section-label">
-                  이 판단의 근거
-                  <span className="pill">과거 기록 {citedCount}건 인용</span>
+                  이 복기가 참고한 기록
+                  <span className="pill">과거 기록 {citedCount}건 참고</span>
                 </div>
                 {citedTrades.length > 0 ? (
                   <div className="td-cited">
@@ -402,8 +480,13 @@ function TradeDetailPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="td-cited__empty">인용된 과거 기록 없음</p>
+                  <p className="td-cited__empty">참고한 과거 기록 없음</p>
                 )}
+
+                <p className="td-disclaimer">
+                  Beacon의 복기는 회원님의 과거 기록을 돌아보기 위한 참고 정보이며, 투자자문·매매 권유가
+                  아닙니다. 모든 투자 판단과 책임은 회원님 본인에게 있습니다.
+                </p>
               </>
             )}
           </div>

@@ -1,6 +1,7 @@
 // 복기 코칭 에이전트 (docs/prd.md §6 — 이 프로젝트의 핵심 "에이전트성").
 // Gemini function-calling 루프로 도구 3종을 스스로 다단계 호출해 근거를 모아
-// 대상 매매를 타이밍/감정/반복 실수 관점에서 복기한다 (1-shot LLM 호출 아님).
+// 대상 매매를 계획 대비 실행/타이밍/감정/행동 패턴 관점에서 복기한다 (1-shot LLM 호출 아님).
+// "거울 프레임"(0007): 미래 매매 지시·종목 가치평가·결과론 판정 금지, 과거 행동의 사실 서술만.
 //
 // verify_jwt는 기본값(true) 유지 — 로그인 세션(anon 클라이언트) 전제로 호출된다.
 // 도구 실행/DB 접근은 service role 클라이언트로 수행.
@@ -33,6 +34,11 @@ interface TradeRow {
   memo: string | null;
   tags: string[] | null;
   emotion: string | null;
+  thesis: string | null;
+  target_price: number | null;
+  stop_price: number | null;
+  horizon: string | null;
+  confidence: number | null;
 }
 
 // emotion enum(0006) → 한국어 병기 라벨
@@ -44,17 +50,32 @@ const EMOTION_LABELS: Record<string, string> = {
   calm: "담담",
 };
 
+// horizon enum(0007) → 한국어 병기 라벨
+const HORIZON_LABELS: Record<string, string> = {
+  scalp: "단타",
+  swing: "스윙",
+  mid: "중기",
+  long: "장기",
+};
+
 function emotionLabel(emotion: string | null | undefined): string {
   if (!emotion) return "(없음)";
   const ko = EMOTION_LABELS[emotion];
   return ko ? `${emotion}(${ko})` : emotion;
 }
 
+function horizonLabel(horizon: string | null | undefined): string {
+  if (!horizon) return "(미기록)";
+  const ko = HORIZON_LABELS[horizon];
+  return ko ? `${horizon}(${ko})` : horizon;
+}
+
 interface ReviewOutput {
   headline?: string;
+  plan_adherence?: string;
   timing?: string;
   emotion?: string;
-  repeated_mistake?: string;
+  behavior_pattern?: string;
   cited_trade_ids?: unknown;
 }
 
@@ -79,9 +100,9 @@ const TOOL_DECLARATIONS: AgentToolDeclaration[] = [
     name: "search_past_trades",
     description:
       "사용자의 과거 매매 기록을 조회한다(대상 매매는 제외, 최신순). " +
-      "타이밍/반복 실수를 판단할 때 과거 진입·청산 이력을 근거로 삼는 데 쓴다. " +
+      "과거 진입·청산 이력을 사실 근거로 삼는 데 쓴다. " +
       "각 결과에는 셋업 태그(tags)와 감정 상태(emotion, 한국어 병기)가 포함되므로 " +
-      "같은 태그·감정이 반복되는 패턴이 있는지 반드시 확인하라.",
+      "같은 태그·감정이 반복되는 행동 패턴이 있는지 반드시 확인하라.",
     parameters: {
       type: "object",
       properties: {
@@ -99,7 +120,8 @@ const TOOL_DECLARATIONS: AgentToolDeclaration[] = [
     name: "get_price_context",
     description:
       "특정 종목의 특정일 전후 일봉 흐름과 직전/이후 수익률(%)을 조회한다. " +
-      "진입 타이밍이 급등/급락 구간이었는지 등을 판단하는 근거로 쓴다.",
+      "진입 시점이 급등/급락 구간이었는지 등 '사실'을 서술하는 근거로만 쓴다. " +
+      "이후 수익률(post_return)은 사실 서술용이며, 이를 근거로 매매의 잘잘못을 평가하지 마라.",
     parameters: {
       type: "object",
       properties: {
@@ -116,7 +138,7 @@ const TOOL_DECLARATIONS: AgentToolDeclaration[] = [
   {
     name: "get_past_reviews",
     description:
-      "과거에 저장된 AI 복기 결과를 조회한다. 같은 반복 실수가 이전에도 지적됐는지 확인하는 데 쓴다.",
+      "과거에 저장된 복기 노트를 조회한다. 같은 행동 패턴이 이전에도 관찰됐는지 확인하는 데 쓴다.",
     parameters: {
       type: "object",
       properties: {
@@ -133,14 +155,30 @@ const TOOL_DECLARATIONS: AgentToolDeclaration[] = [
 const FINAL_SCHEMA = {
   type: "object",
   properties: {
-    headline: { type: "string", description: "한 줄 핵심 판단(한국어)" },
-    timing: { type: "string", description: "타이밍 관점 복기(한국어)" },
-    emotion: { type: "string", description: "감정 관점 복기(한국어)" },
-    repeated_mistake: { type: "string", description: "반복 실수 관점 복기(한국어)" },
+    headline: {
+      type: "string",
+      description: "한 줄 핵심 관찰(한국어). 매매의 잘잘못 평가가 아니라 사용자의 행동을 요약한다.",
+    },
+    plan_adherence: {
+      type: "string",
+      description:
+        "계획 대비 실행 관점 복기(한국어). 목표가·손절가·진입 가설이 기록돼 있으면 " +
+        "실제 실행이 그 계획과 어떻게 달랐는지를 사실로 서술한다. 계획이 기록돼 있지 않으면 " +
+        "'계획(목표가/손절가/가설)이 기록되지 않았다'는 사실 자체를 짚는다.",
+    },
+    timing: {
+      type: "string",
+      description: "타이밍 관점 복기(한국어). 진입 시점의 주가 맥락을 사실로만 서술한다.",
+    },
+    emotion: { type: "string", description: "감정 관점 복기(한국어). 기록된 감정과 행동의 관계를 관찰한다." },
+    behavior_pattern: {
+      type: "string",
+      description: "행동 패턴 관점 복기(한국어). 같은 태그·감정에서 반복되는 행동 패턴을 사실로 서술한다.",
+    },
     cited_trade_ids: {
       type: "array",
       items: { type: "string" },
-      description: "판단 근거로 인용한 과거 매매의 trade_id 목록",
+      description: "복기의 근거로 참고한 과거 매매의 trade_id 목록",
     },
   },
   required: ["headline"],
@@ -190,7 +228,9 @@ Deno.serve(async (req: Request) => {
     // 2) 대상 trade 조회
     const { data: tradeData, error: tradeError } = await client
       .from("trades")
-      .select("id, user_id, ticker, market, side, price, traded_at, memo, tags, emotion")
+      .select(
+        "id, user_id, ticker, market, side, price, traded_at, memo, tags, emotion, thesis, target_price, stop_price, horizon, confidence",
+      )
       .eq("id", tradeId)
       .maybeSingle();
     if (tradeError) {
@@ -306,7 +346,7 @@ Deno.serve(async (req: Request) => {
         let q = client
           .from("reviews")
           .select(
-            "headline, timing, emotion, repeated_mistake, cited_trade_ids, created_at, trades!inner(ticker)",
+            "headline, plan_adherence, timing, emotion, behavior_pattern, cited_trade_ids, created_at, trades!inner(ticker)",
           )
           .eq("user_id", trade.user_id)
           .neq("trade_id", trade.id)
@@ -320,9 +360,10 @@ Deno.serve(async (req: Request) => {
         // 임베드된 trades 필드는 제거하고 반환
         return (data ?? []).map((r: Record<string, unknown>) => ({
           headline: r.headline,
+          plan_adherence: r.plan_adherence,
           timing: r.timing,
           emotion: r.emotion,
-          repeated_mistake: r.repeated_mistake,
+          behavior_pattern: r.behavior_pattern,
           cited_trade_ids: r.cited_trade_ids,
           created_at: r.created_at,
         }));
@@ -335,17 +376,30 @@ Deno.serve(async (req: Request) => {
     // 시스템 프롬프트 + 대상 컨텍스트 (PRD §6)
     // =====================================================
     const system = [
-      "너는 사용자의 투자 코치다. 아래 대상 매매를 타이밍/감정/반복 실수 관점에서 복기하라.",
+      "너는 사용자가 자신의 '이미 실행한' 매매를 돌아보도록 돕는 복기 도우미다. 미래를 예측하거나",
+      "시장·종목을 평가하는 것이 아니라, 사용자의 과거 '행동'을 거울처럼 비춰 스스로 돌아보게 한다.",
+      "",
+      "★ 절대 금지 (법적·서비스 원칙 — 위반 시 출력 자체가 무효):",
+      "- 미래 매매 지시·권유 금지: '사라/팔아라/보유하라/기다려라/지금 ~해야 한다/다음엔 ~하라' 등 일절 금지.",
+      "- 종목·시장 가치평가 금지: '이 종목은 고평가/저평가다', '오를/내릴 것이다' 등 전망·가치판단 금지.",
+      "- 결과론 평가 금지: 이후 수익률(post_return)로 '좋은 매매/나쁜 매매', '샀어야/팔았어야' 판정 금지.",
+      "- 명령형('~하세요/~하라') 조언 금지.",
+      "",
+      "○ 해야 할 것:",
+      "- 과거 '사실'만 서술한다(무엇을, 언제, 어떤 태그·감정으로 실행했는지).",
+      "- 계획(목표가·손절가·가설) 대비 실제 실행의 '차이'를 사실로 비춘다. 계획이 없으면 '계획이 기록되지 않았다'는 사실을 짚는다.",
+      "- 같은 태그·감정에서 반복되는 '행동 패턴'을 관찰해 서술한다.",
+      "- 필요하면 사용자가 스스로 돌아보게 하는 '질문형'으로 마무리해도 좋다(단, 매매 지시가 아닌 성찰 질문).",
+      "",
       "규칙:",
-      "1) 모든 주장은 반드시 도구 호출 결과에 근거해야 한다. 도구로 확인하지 않은 사실을 지어내지 마라.",
-      "2) 인용한 과거 매매의 trade_id를 cited_trade_ids에 반드시 남겨라(판단 검증용).",
+      "1) 모든 서술은 반드시 도구 호출 결과 또는 대상 매매 정보에 근거한다. 확인하지 않은 사실을 지어내지 마라.",
+      "2) 참고한 과거 매매의 trade_id를 cited_trade_ids에 반드시 남겨라(근거 검증용).",
       "3) 도구 호출이 실패(error)로 돌아오면 그 근거는 사용하지 마라 — 추측 금지.",
       "4) 근거가 부족한 항목은 단정하지 말고 신중히 서술하라.",
       "5) 모든 출력 텍스트는 한국어로 작성한다.",
-      "6) 감정(emotion) 관점 복기에는 대상 매매와 search_past_trades로 조회한 과거 매매에 " +
-      "기록된 감정 상태를 근거로 활용하라. 반복 실수(repeated_mistake) 관점 복기에는 " +
-      "셋업 태그(tags)가 겹치는 과거 매매가 있는지, 같은 태그·감정 조합에서 반복되는 " +
-      "패턴이 있는지를 근거로 활용하라.",
+      "6) plan_adherence: 대상 매매의 목표가·손절가·진입 가설(thesis)·확신도가 기록됐는지 보고, 기록됐으면 " +
+      "실제 실행과의 차이를 사실로 서술하고, 없으면 계획 미기록 사실을 짚는다.",
+      "7) behavior_pattern: 셋업 태그가 겹치는 과거 매매, 같은 태그·감정 조합의 반복 여부를 근거로 서술한다.",
     ].join("\n");
 
     const initialUserText = [
@@ -359,13 +413,20 @@ Deno.serve(async (req: Request) => {
       `- 메모(memo): ${trade.memo ?? "(없음)"}`,
       `- 셋업 태그(tags): ${trade.tags && trade.tags.length > 0 ? trade.tags.join(", ") : "(없음)"}`,
       `- 감정 상태(emotion): ${emotionLabel(trade.emotion)}`,
+      "[계획 필드]",
+      `- 진입 가설(thesis): ${trade.thesis ?? "(미기록)"}`,
+      `- 목표가(target_price): ${trade.target_price ?? "(미기록)"}`,
+      `- 손절가(stop_price): ${trade.stop_price ?? "(미기록)"}`,
+      `- 예정 보유 기간(horizon): ${horizonLabel(trade.horizon)}`,
+      `- 확신도(confidence, 1~5): ${trade.confidence ?? "(미기록)"}`,
       "",
       "사용 가능한 도구:",
       "- search_past_trades: 과거 매매 기록 조회(같은 종목/방향 필터 가능)",
-      "- get_price_context: 특정일 전후 주가 흐름과 직전/이후 수익률(%) 조회",
-      "- get_past_reviews: 과거 복기 결과 조회(반복 실수 확인)",
+      "- get_price_context: 특정일 전후 주가 흐름과 직전/이후 수익률(%) 조회 (사실 서술용)",
+      "- get_past_reviews: 과거 복기 노트 조회(반복되는 행동 패턴 확인)",
       "",
-      "필요한 근거를 스스로 판단해 도구를 여러 번 호출한 뒤, 타이밍·감정·반복 실수를 종합해 결론을 내려라.",
+      "필요한 근거를 스스로 정해 도구를 여러 번 호출한 뒤, 계획 대비 실행·타이밍·감정·행동 패턴 관점에서",
+      "'사실'을 종합해 복기 노트를 작성하라. 미래 매매 지시나 종목 평가는 절대 하지 마라.",
       "date 인자에는 대상 매매의 체결일(위 traded_at의 날짜 부분)을 우선 사용하라.",
     ].join("\n");
 
@@ -413,10 +474,11 @@ Deno.serve(async (req: Request) => {
         trade_id: trade.id,
         user_id: trade.user_id,
         headline,
+        plan_adherence: typeof result.plan_adherence === "string" ? result.plan_adherence : null,
         timing: typeof result.timing === "string" ? result.timing : null,
         emotion: typeof result.emotion === "string" ? result.emotion : null,
-        repeated_mistake: typeof result.repeated_mistake === "string"
-          ? result.repeated_mistake
+        behavior_pattern: typeof result.behavior_pattern === "string"
+          ? result.behavior_pattern
           : null,
         cited_trade_ids: validIds,
         raw: { output, toolCallCount, transcript },

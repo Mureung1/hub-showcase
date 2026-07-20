@@ -129,6 +129,20 @@
   box-sizing: border-box;
 }
 
+.app-footer {
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+.app-footer__inner {
+  max-width: 1152px;
+  margin: 0 auto;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  font-size: 12px;
+  line-height: 150%;
+  color: var(--muted);
+}
+
 .route-loading {
   display: flex;
   align-items: center;
