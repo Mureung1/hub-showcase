@@ -26,6 +26,7 @@ class Quest {
     this.parentQuestId,
     this.createdAt,
     this.completedAt,
+    this.rewardedAt,
   });
 
   /// 저장된 문서를 읽는다. 필수 필드가 없으면 [FormatException].
@@ -45,6 +46,7 @@ class Quest {
       parentQuestId: asNullableString(data['parentQuestId']),
       createdAt: asDateTime(data['createdAt']),
       completedAt: asDateTime(data['completedAt']),
+      rewardedAt: asDateTime(data['rewardedAt']),
     );
   }
 
@@ -93,7 +95,27 @@ class Quest {
   final String? parentQuestId;
 
   final DateTime? createdAt;
+
+  /// **언제 완료했나.** 완료를 해제하면 지워진다([withStatus] 참고).
+  ///
+  /// 이 값으로 "보상을 줬는지"를 판단하면 안 된다 — 완료 해제로 지워지므로
+  /// 체크를 껐다 켜는 것만으로 보상이 재지급된다. 지급 여부는 [rewardedAt]이 안다.
   final DateTime? completedAt;
+
+  /// **보상(코인·XP)을 지급한 시각.** 한번 세팅되면 **절대 지워지지 않는다.**
+  ///
+  /// [completedAt]과 분리한 이유: 한 필드가 "언제 완료했나"와 "보상 줬나"를 겸하면
+  /// 둘의 수명이 충돌한다. 완료 해제는 완료 시각을 지워야 자연스럽지만, 지급 이력까지
+  /// 지워지면 완료 → 해제 → 재완료로 코인을 무한 파밍할 수 있다.
+  /// 그래서 의미를 쪼개, 재지급 가드는 **오직 이 필드**만 근거로 삼는다.
+  ///
+  /// ⚠️ 하위호환: 이 필드가 도입되기 전에 저장된 문서에는 값이 없다(null).
+  /// 그런 퀘스트를 완료하면 "아직 미지급"으로 보고 보상이 한 번 지급된다.
+  /// 데모 단계에선 수용 가능한 손실이라 마이그레이션 없이 그대로 둔다.
+  final DateTime? rewardedAt;
+
+  /// 보상을 이미 받은 퀘스트인가. 재지급 차단의 유일한 판단 기준.
+  bool get isRewarded => rewardedAt != null;
 
   /// 완료 여부. 3상태로 바꾸기 전 호출부들이 계속 동작하도록 남긴 편의 게터.
   bool get done => status == QuestStatus.done;
@@ -117,6 +139,7 @@ class Quest {
     if (parentQuestId != null) 'parentQuestId': parentQuestId,
     if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
     if (completedAt != null) 'completedAt': completedAt!.toIso8601String(),
+    if (rewardedAt != null) 'rewardedAt': rewardedAt!.toIso8601String(),
   };
 
   Quest copyWith({
@@ -129,6 +152,7 @@ class Quest {
     String? parentQuestId,
     DateTime? createdAt,
     DateTime? completedAt,
+    DateTime? rewardedAt,
   }) {
     return Quest(
       id: id,
@@ -141,6 +165,7 @@ class Quest {
       parentQuestId: parentQuestId ?? this.parentQuestId,
       createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
+      rewardedAt: rewardedAt ?? this.rewardedAt,
     );
   }
 
@@ -148,6 +173,9 @@ class Quest {
   ///
   /// `copyWith(completedAt: null)`은 null 병합 때문에 기존 값을 지우지 못하므로
   /// 이 메서드로만 상태를 전이시킨다.
+  ///
+  /// ⚠️ **[rewardedAt]은 어떤 전이에서도 보존한다.** 완료를 해제해도 "이미 보상을
+  /// 줬다"는 사실은 사라지지 않는다. 이게 완료 → 해제 → 재완료 파밍을 막는 지점이다.
   Quest withStatus(QuestStatus next, {DateTime? completedAt}) {
     return Quest(
       id: id,
@@ -162,6 +190,7 @@ class Quest {
       completedAt: next == QuestStatus.done
           ? (completedAt ?? this.completedAt ?? DateTime.now())
           : null,
+      rewardedAt: rewardedAt,
     );
   }
 
@@ -177,7 +206,8 @@ class Quest {
       other.goalId == goalId &&
       other.parentQuestId == parentQuestId &&
       other.createdAt == createdAt &&
-      other.completedAt == completedAt;
+      other.completedAt == completedAt &&
+      other.rewardedAt == rewardedAt;
 
   @override
   int get hashCode => Object.hash(
@@ -191,9 +221,11 @@ class Quest {
     parentQuestId,
     createdAt,
     completedAt,
+    rewardedAt,
   );
 
   @override
   String toString() =>
-      'Quest($id, "$title", ${difficulty.name}, ${status.name})';
+      'Quest($id, "$title", ${difficulty.name}, ${status.name}'
+      '${isRewarded ? ', rewarded' : ''})';
 }

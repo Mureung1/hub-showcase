@@ -61,9 +61,21 @@ items/{itemId}                              # 공개 아이템 카탈로그 (4�
 | `goalId` | string? | null | 어느 목표에서 분해됐는지 (`goals/{goalId}`). 직접 등록이면 null |
 | `parentQuestId` | string? | null | 재분해로 생긴 자식이면 원본 퀘스트 ID |
 | `createdAt` | timestamp | 서버 시각 | 생성 시각 |
-| `completedAt` | timestamp? | null | 완료 시각 (완료 해제 시 null로 지움) |
+| `completedAt` | timestamp? | null | **언제 완료했나.** 완료 해제 시 null로 지움 |
+| `rewardedAt` | timestamp? | null | **보상을 지급한 시각.** 한번 찍히면 절대 지우지 않는다 |
 
 정렬: `order` → `createdAt`.
+
+#### `completedAt`과 `rewardedAt`을 왜 나눴나
+
+한 필드가 "언제 완료했나"와 "보상 줬나"를 겸하면 두 의미의 **수명이 충돌한다.** 완료 해제는 완료 시각을 지워야 자연스럽지만, 지급 이력까지 지워지면 **완료 → 해제 → 재완료로 코인을 무한 파밍**할 수 있다.
+
+그래서 의미를 쪼갰다:
+
+- `completedAt` — 완료할 때마다 갱신되고, 완료 해제 시 지워진다.
+- `rewardedAt` — **최초 지급 때 한 번만** 찍히고 어떤 상태 전이에서도 보존된다. `completeQuest()` 트랜잭션의 재지급 가드는 **오직 이 필드**만 본다(`Quest.isRewarded`).
+
+⚠️ **하위호환**: 이 필드 도입 전에 저장된 문서에는 값이 없다(null) → "미지급"으로 취급돼 보상이 한 번 더 지급될 수 있다. 데모 단계에서 수용하기로 한 알려진 손실이며, 마이그레이션은 하지 않는다.
 
 #### 진행 상태가 왜 3상태인가
 

@@ -20,6 +20,7 @@ void main() {
         parentQuestId: 'q0',
         createdAt: DateTime.utc(2026, 7, 14, 9),
         completedAt: DateTime.utc(2026, 7, 14, 18),
+        rewardedAt: DateTime.utc(2026, 7, 14, 18),
       );
 
       final restored = Quest.fromJson('q1', original.toJson());
@@ -36,6 +37,84 @@ void main() {
       expect(restored, original);
       expect(restored.deadline, isNull);
       expect(restored.done, isFalse);
+    });
+  });
+
+  group('rewardedAt — 보상 지급 이력 (파밍 차단의 근거)', () {
+    test('rewardedAt이 왕복 직렬화된다', () {
+      final original = Quest(
+        id: 'q1',
+        title: '보상 받은 퀘스트',
+        status: QuestStatus.done,
+        completedAt: DateTime.utc(2026, 7, 14, 18),
+        rewardedAt: DateTime.utc(2026, 7, 14, 18),
+      );
+
+      final restored = Quest.fromJson('q1', original.toJson());
+
+      expect(restored.rewardedAt, DateTime.utc(2026, 7, 14, 18));
+      expect(restored.isRewarded, isTrue);
+      expect(restored, original);
+    });
+
+    test('rewardedAt이 없으면 키를 남기지 않고 미지급으로 읽힌다', () {
+      const original = Quest(id: 'q1', title: '아직 미지급');
+
+      expect(original.toJson().containsKey('rewardedAt'), isFalse);
+      expect(Quest.fromJson('q1', original.toJson()).isRewarded, isFalse);
+    });
+
+    test('rewardedAt이 없는 구버전 문서도 그대로 읽힌다 (하위호환)', () {
+      // 이 필드 도입 전에 저장된 문서. 미지급으로 취급된다 —
+      // 데모 단계에서 수용하기로 한 알려진 손실이다.
+      final quest = Quest.fromJson('q1', {
+        'title': '구버전 완료 퀘스트',
+        'status': 'done',
+        'completedAt': DateTime.utc(2026, 1, 1),
+      });
+
+      expect(quest.done, isTrue);
+      expect(quest.isRewarded, isFalse);
+    });
+
+    test('★ 완료를 해제해도 rewardedAt은 지워지지 않는다', () {
+      // 여기가 파밍 차단의 핵심이다. completedAt은 지워지지만 지급 이력은 남는다.
+      final rewarded = Quest(
+        id: 'q1',
+        title: 'x',
+        rewardedAt: DateTime.utc(2026, 7, 14, 18),
+      ).withStatus(QuestStatus.done);
+
+      final undone = rewarded.withStatus(QuestStatus.todo);
+
+      expect(undone.completedAt, isNull, reason: '완료 시각은 지워진다');
+      expect(undone.rewardedAt, DateTime.utc(2026, 7, 14, 18));
+      expect(undone.isRewarded, isTrue);
+    });
+
+    test('★ 멈춤으로 전이해도 rewardedAt은 지워지지 않는다', () {
+      final quest = Quest(
+        id: 'q1',
+        title: 'x',
+        rewardedAt: DateTime.utc(2026, 7, 14, 18),
+      ).withStatus(QuestStatus.stuck);
+
+      expect(quest.completedAt, isNull);
+      expect(quest.rewardedAt, DateTime.utc(2026, 7, 14, 18));
+    });
+
+    test('withStatus를 여러 번 오가도 rewardedAt은 최초 값을 유지한다', () {
+      final at = DateTime.utc(2026, 7, 14, 18);
+      var quest = Quest(id: 'q1', title: 'x', rewardedAt: at);
+
+      for (var i = 0; i < 3; i++) {
+        quest = quest
+            .withStatus(QuestStatus.done)
+            .withStatus(QuestStatus.todo)
+            .withStatus(QuestStatus.stuck);
+      }
+
+      expect(quest.rewardedAt, at);
     });
   });
 

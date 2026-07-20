@@ -15,11 +15,17 @@ class QuestCard extends StatelessWidget {
     required this.quest,
     this.onTap,
     this.onToggleDone,
+    this.isCompleting = false,
   });
 
   final Quest quest;
   final VoidCallback? onTap;
   final ValueChanged<bool>? onToggleDone;
+
+  /// 완료 처리(트랜잭션 지급)가 진행 중인지. true면 토글을 비활성화하고 스피너를
+  /// 띄운다 — 지급 트랜잭션이 커밋되기 전에 다시 눌러 중복 요청이 나가는 걸 막고,
+  /// "지금 처리 중"임을 눈으로 알린다.
+  final bool isCompleting;
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +82,7 @@ class QuestCard extends StatelessWidget {
               if (onToggleDone != null)
                 _DoneButton(
                   done: quest.done,
+                  isCompleting: isCompleting,
                   onPressed: () => onToggleDone!(!quest.done),
                 ),
             ],
@@ -87,13 +94,31 @@ class QuestCard extends StatelessWidget {
 }
 
 class _DoneButton extends StatelessWidget {
-  const _DoneButton({required this.done, required this.onPressed});
+  const _DoneButton({
+    required this.done,
+    required this.onPressed,
+    this.isCompleting = false,
+  });
 
   final bool done;
+  final bool isCompleting;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
+    if (isCompleting) {
+      // IconButton(size 28 + 기본 패딩 8)과 같은 자리를 차지하도록 크기를 맞춘다.
+      // 자리가 흔들리면 처리 중에 카드 레이아웃이 튄다.
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.sm),
+        child: SizedBox(
+          width: 28,
+          height: 28,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
     return IconButton(
       onPressed: onPressed,
       tooltip: done ? '완료 취소' : '완료',

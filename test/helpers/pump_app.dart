@@ -27,10 +27,17 @@ Future<InMemoryQuestRepository> pumpScreen(
 }) async {
   const uid = 'test-uid';
 
-  final questRepo = InMemoryQuestRepository(seed: quests, failWith: failWith);
   final userRepo = InMemoryUserRepository(
     seed: user ?? AppUser.initial(uid),
     failWith: failWith,
+  );
+  // 퀘스트 완료(completeQuest)는 사용자 문서의 coin·xp까지 올린다. 사용자 저장소를
+  // 주입해야 화면 테스트에서 "완료 → 잔액 증가"를 끝까지 확인할 수 있다.
+  // 주입된 인스턴스는 `questRepo.users`로 다시 꺼내 검증할 수 있다.
+  final questRepo = InMemoryQuestRepository(
+    seed: quests,
+    failWith: failWith,
+    users: userRepo,
   );
 
   addTearDown(questRepo.dispose);

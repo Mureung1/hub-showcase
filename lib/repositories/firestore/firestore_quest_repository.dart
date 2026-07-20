@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/constants/firestore_paths.dart';
+import '../../core/constants/reward_rules.dart';
+import '../../core/error/app_failure.dart';
 import '../../models/difficulty.dart';
 import '../../models/quest.dart';
 import '../../models/quest_draft.dart';
@@ -157,5 +159,63 @@ class FirestoreQuestRepository implements QuestRepository {
             : null,
       }),
     );
+  }
+
+  /// 완료 + 보상 지급을 한 트랜잭션으로 (3주차 핵심 보상 루프).
+  ///
+  /// 트랜잭션인 이유: 퀘스트 문서와 사용자 문서를 함께 바꾸기 때문이다.
+  /// 둘이 따로 커밋되면 "완료됐는데 코인이 안 들어온" 상태가 남는다.
+  ///
+  /// 재지급 차단의 근거는 **읽어 온 `rewardedAt`**이다(`completedAt`이 아니다 —
+  /// 그건 완료 해제 시 지워져서 파밍 구멍이 된다). 트랜잭션 안에서 읽고 판단하므로,
+  /// 같은 퀘스트를 두 기기에서 동시에 완료해도 한쪽만 커밋된다
+  /// (다른 쪽은 문서가 바뀐 걸 감지하고 재시도 → 이때는 rewardedAt이 이미 있어
+  /// 보상을 주지 않는다).
+  @override
+  Future<Reward?> completeQuest(String uid, String questId) {
+    return guard(() async {
+      final questRef = _db.doc(FirestorePaths.quest(uid, questId));
+      final userRef = _db.doc(FirestorePaths.user(uid));
+
+      return _db.runTransaction<Reward?>((transaction) async {
+        // ⚠️ Firestore 트랜잭션 규칙: 모든 read가 모든 write보다 앞서야 한다.
+        final snap = await transaction.get(questRef);
+        if (!snap.exists) throw const NotFoundFailure();
+
+        final quest = Quest.fromJson(snap.id, decodeDoc(snap.data()));
+        // 이미 지급 시각이 찍혀 있으면 = 예전에 보상을 받은 퀘스트다.
+        // ⚠️ 하위호환: rewardedAt 도입 전에 저장된 문서는 이 값이 없어(null)
+        // "미지급"으로 취급된다 → 보상이 한 번 더 지급될 수 있다.
+        // 데모 단계에선 수용 가능한 손실이라 마이그레이션 없이 둔다.
+        final alreadyPaid = quest.isRewarded;
+
+        // ── 여기부터 write ──
+        transaction.update(questRef, {
+          'status': QuestStatus.done.name,
+          // 구버전 호환 + 콘솔 가독성 (setStatus와 동일한 계약).
+          'done': true,
+          // 완료 시각은 "언제 완료했나"라서 완료할 때마다 갱신한다.
+          'completedAt': FieldValue.serverTimestamp(),
+          // 지급 시각은 **최초 1회만** 찍고 이후 절대 건드리지 않는다.
+          // 이 값이 재지급 차단선이다.
+          if (!alreadyPaid) 'rewardedAt': FieldValue.serverTimestamp(),
+        });
+
+        if (alreadyPaid) return null;
+
+        // 저장된 난이도로 보상을 계산한다. 트랜잭션 안이라 "읽은 난이도"와
+        // "지급액"이 어긋날 수 없다.
+        final reward = rewardFor(quest.difficulty);
+
+        // increment는 현재 잔액을 읽지 않고도 원자적으로 누적된다.
+        // merge:true라 사용자 문서가 아직 없어도(=최초 완료) 안전하게 생성된다.
+        transaction.set(userRef, {
+          'coin': FieldValue.increment(reward.coin),
+          'xp': FieldValue.increment(reward.xp),
+        }, SetOptions(merge: true));
+
+        return reward;
+      });
+    });
   }
 }

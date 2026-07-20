@@ -3,13 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/quest_card.dart';
 import '../../core/widgets/state_views.dart';
+import '../../models/quest.dart';
 import '../../models/quest_status.dart';
 import '../../providers/providers.dart';
 import '../shell/tab_scroll_registry.dart';
+import 'widgets/quest_complete_dialog.dart';
 
 /// 퀘스트 목록 화면.
 ///
@@ -29,24 +32,54 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
   @override
   int get tabIndex => 1;
 
-  Future<void> _toggleDone(String questId, bool done) async {
+  /// 완료 처리가 진행 중인 퀘스트 ID.
+  ///
+  /// 지급 트랜잭션은 왕복이 있어 즉시 끝나지 않는다. 그 사이 사용자가 다시 누르면
+  /// 같은 퀘스트에 요청이 두 번 나간다. (저장소가 `rewardedAt`으로 재지급을 막긴
+  /// 하지만, 화면에서도 막아야 축하 연출이 두 번 뜨지 않는다.)
+  final Set<String> _completing = {};
+
+  Future<void> _toggleDone(Quest quest, bool done) async {
+    // 중복 실행 방지 — 처리 중인 퀘스트의 추가 탭은 무시한다.
+    if (_completing.contains(quest.id)) return;
+    setState(() => _completing.add(quest.id));
+
+    Reward? reward;
     try {
       // sessionProvider는 로그인 완료된 uid를 보장한다.
       // currentUidProvider를 read하면 AsyncLoading이라 uid가 null로 나온다.
       final uid = await ref.read(sessionProvider.future);
-      await ref
-          .read(questRepositoryProvider)
-          .setStatus(
-            uid,
-            questId,
-            done ? QuestStatus.done : QuestStatus.todo,
-          );
+      final repo = ref.read(questRepositoryProvider);
+
+      if (done) {
+        // 완료: 상태 변경 + 코인·XP 지급이 한 트랜잭션으로 처리된다.
+        // 이미 보상을 받은 퀘스트면 null이 돌아온다(재지급 없음).
+        reward = await repo.completeQuest(uid, quest.id);
+      } else {
+        // 완료 해제: 상태만 되돌린다. 지급 이력(rewardedAt)은 해제해도 남으므로,
+        // 다시 완료해도 보상은 재지급되지 않는다.
+        await repo.setStatus(uid, quest.id, QuestStatus.todo);
+      }
     } on AppFailure catch (failure) {
+      // 트랜잭션이 커밋되지 않았으므로 서버 상태는 그대로다(자동 롤백).
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(failure.message)));
+      return;
+    } finally {
+      // 성공·실패 모두 진행 표시를 반드시 해제한다.
+      if (mounted) setState(() => _completing.remove(quest.id));
     }
+
+    // 실제로 지급됐을 때만 축하한다. 이미 받은 퀘스트를 다시 완료했을 때
+    // 연출이 뜨면 코인을 또 받은 것으로 오해한다.
+    if (reward == null || !mounted) return;
+    await showQuestCompleteDialog(
+      context,
+      questTitle: quest.title,
+      reward: reward,
+    );
   }
 
   @override
@@ -128,7 +161,8 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
                       final quest = quests[index];
                       return QuestCard(
                         quest: quest,
-                        onToggleDone: (done) => _toggleDone(quest.id, done),
+                        isCompleting: _completing.contains(quest.id),
+                        onToggleDone: (done) => _toggleDone(quest, done),
                       );
                     },
                   );
