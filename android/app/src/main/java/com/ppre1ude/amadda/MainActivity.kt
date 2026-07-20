@@ -4,7 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import com.getcapacitor.BridgeActivity
 
-class MainActivity : BridgeActivity() {
+open class MainActivity : BridgeActivity() {
     internal val shareIntentRouter = AndroidShareIntentRouter()
     private var isBridgeInitializing = false
 
@@ -28,8 +28,16 @@ class MainActivity : BridgeActivity() {
         }
 
         shareIntentRouter.routeNewIntent(intent) { share ->
-            androidSharePlugin()?.notifyShareIntentReceived(share)
+            publishShareIntent(share)
         }
+    }
+
+    internal open fun publishShareIntent(share: AndroidShare) {
+        androidSharePlugin()?.notifyShareIntentReceived(share)
+    }
+
+    internal fun consumePendingShare(): AndroidShare? {
+        return shareIntentRouter.consumeInitialShare()
     }
 
     private fun androidSharePlugin(): AndroidSharePlugin? {

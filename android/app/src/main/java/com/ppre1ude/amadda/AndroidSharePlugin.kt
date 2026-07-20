@@ -73,8 +73,7 @@ class AndroidShareIntentRouter(
 class AndroidSharePlugin : Plugin() {
     @PluginMethod
     fun getPendingShare(call: PluginCall) {
-        val router = (activity as? MainActivity)?.shareIntentRouter
-        call.resolve(router?.consumeInitialShare()?.toJsObject() ?: JSObject())
+        call.resolve(consumePendingShare()?.toJsObject() ?: JSObject())
     }
 
     @PluginMethod
@@ -85,6 +84,10 @@ class AndroidSharePlugin : Plugin() {
 
     fun notifyShareIntentReceived(share: AndroidShare) {
         notifyListeners(SHARE_INTENT_RECEIVED_EVENT, share.toJsObject())
+    }
+
+    internal fun consumePendingShare(): AndroidShare? {
+        return (activity as? MainActivity)?.consumePendingShare()
     }
 
     companion object {
