@@ -1,54 +1,29 @@
-import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   EDUCATION_OPTIONS,
   MAJOR_OPTIONS,
   CERT_OPTIONS,
   FOREIGN_LANG_TEST_OPTIONS,
 } from '../constants/specOptions'
-
-const INITIAL_SPEC = {
-  education: EDUCATION_OPTIONS[0],
-  isExperienced: false,
-  career_months: 0,
-  major: MAJOR_OPTIONS[0],
-  certificates: [],
-  foreign_lang_test: '',
-  foreign_lang_score: 0,
-  has_computer_skill: false,
-}
-
-// ResultPage의 "스펙 수정" 버튼이 navigate('/spec', { state: { spec } })로 넘겨준 값이 있으면
-// 그걸로 폼을 채운다 — AppStateContext가 없는 이번 주 스코프에서 입력값이 날아가지 않게 하는 임시 방편.
-function buildInitialSpec(incoming) {
-  if (!incoming) return INITIAL_SPEC
-  return { ...incoming, isExperienced: incoming.career_months > 0 }
-}
+import { useAppState } from '../context/AppStateContext'
 
 function SpecPage() {
   const navigate = useNavigate()
-  const location = useLocation()
-  const [spec, setSpec] = useState(() => buildInitialSpec(location.state?.spec))
-  // FilterPage가 넘겨준 필터를 그대로 들고 있다가 /result로 전달한다 — 이 페이지에서 편집하지는 않는다.
-  const filters = location.state?.filters
-
-  function patchSpec(patch) {
-    setSpec((prev) => ({ ...prev, ...patch }))
-  }
+  const { spec, setSpec: patchSpec } = useAppState()
 
   function toggleCertificate(cert) {
-    setSpec((prev) => ({
-      ...prev,
-      certificates: prev.certificates.includes(cert)
-        ? prev.certificates.filter((c) => c !== cert)
-        : [...prev.certificates, cert],
-    }))
+    patchSpec({
+      certificates: spec.certificates.includes(cert)
+        ? spec.certificates.filter((c) => c !== cert)
+        : [...spec.certificates, cert],
+    })
   }
 
   function handleSubmit(event) {
     event.preventDefault()
-    const { isExperienced: _isExperienced, ...rest } = spec
-    navigate('/result', { state: { spec: rest, filters } })
+    // 실제 데이터(spec/filters)는 이미 Context에 있으니 라우터 state로는 "방금 제출했다"는
+    // 신호만 넘긴다 — ResultPage가 이 플래그로 "새로 분석 요청" vs "새로고침 시 결과 복원"을 구분한다.
+    navigate('/result', { state: { fresh: true } })
   }
 
   return (
@@ -181,7 +156,7 @@ function SpecPage() {
           <button
             type="button"
             className="btn-secondary"
-            onClick={() => navigate('/filter', { state: { filters } })}
+            onClick={() => navigate('/filter')}
           >
             이전
           </button>

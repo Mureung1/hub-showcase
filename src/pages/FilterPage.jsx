@@ -1,28 +1,14 @@
-import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { JOB_CATEGORY_OPTIONS } from '../constants/filterOptions'
-
-// ResultPage/SpecPage가 navigate(..., { state: { filters } })로 넘겨준 값이 있으면 그걸로 폼을 채운다 —
-// AppStateContext가 없는 이번 주 스코프에서 뒤로 갔다 와도 선택값이 날아가지 않게 하는 임시 방편.
-function buildInitialFilters(incoming) {
-  return {
-    job_category: incoming?.job_category ?? '',
-    is_intern: incoming?.is_intern === true ? 'true' : incoming?.is_intern === false ? 'false' : '',
-  }
-}
+import { useAppState } from '../context/AppStateContext'
 
 function FilterPage() {
   const navigate = useNavigate()
-  const location = useLocation()
-  const [filters, setFilters] = useState(() => buildInitialFilters(location.state?.filters))
+  const { filters, setFilters } = useAppState()
 
   function handleSubmit(event) {
     event.preventDefault()
-    const payload = {
-      ...(filters.job_category && { job_category: filters.job_category }),
-      ...(filters.is_intern !== '' && { is_intern: filters.is_intern === 'true' }),
-    }
-    navigate('/spec', { state: { filters: payload } })
+    navigate('/spec')
   }
 
   return (
@@ -38,7 +24,7 @@ function FilterPage() {
           <span className="field-label">직종</span>
           <select
             value={filters.job_category}
-            onChange={(e) => setFilters((prev) => ({ ...prev, job_category: e.target.value }))}
+            onChange={(e) => setFilters({ job_category: e.target.value })}
           >
             <option value="">전체</option>
             {JOB_CATEGORY_OPTIONS.map((opt) => (
@@ -53,7 +39,7 @@ function FilterPage() {
           <span className="field-label">인턴 여부</span>
           <select
             value={filters.is_intern}
-            onChange={(e) => setFilters((prev) => ({ ...prev, is_intern: e.target.value }))}
+            onChange={(e) => setFilters({ is_intern: e.target.value })}
           >
             <option value="">전체</option>
             <option value="true">인턴 공고만</option>
