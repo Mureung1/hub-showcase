@@ -3,6 +3,7 @@ const express = require('express');
 
 const applicationsRouter = require('./routes/applications.routes');
 const authRouter = require('./routes/auth.routes');
+const menteesRouter = require('./routes/mentees.routes');
 const mentorsRouter = require('./routes/mentors.routes');
 const { sendError } = require('./utils/apiError');
 
@@ -17,6 +18,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/applications', applicationsRouter);
+app.use('/api/mentees', menteesRouter);
 app.use('/api/mentors', mentorsRouter);
 
 app.use((req, res) => {

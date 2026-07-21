@@ -1,8 +1,7 @@
 const { supabase, supabaseAnon } = require('../db/supabase');
+const { ENROLLMENT_STATUSES, GRADES } = require('../constants/mentee');
 const { ValidationError, requireString, requireStringArray } = require('../utils/validators');
 
-const GRADES = ['1', '2', '3', '4', '5+'];
-const ENROLLMENT_STATUSES = ['enrolled', 'leave', 'graduated', 'other'];
 const MIN_PASSWORD_LENGTH = 8;
 
 class ConflictError extends Error {}
