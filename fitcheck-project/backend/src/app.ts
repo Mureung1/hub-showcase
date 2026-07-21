@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import consultRequestsRoutes from './routes/consultRequests.routes.js';
 import coursesRoutes from './routes/courses.routes.js';
 import gymsRoutes from './routes/gyms.routes.js';
 
@@ -25,6 +26,7 @@ app.get('/api/test', (_req: Request, res: Response) => {
 
 app.use('/api/v1/courses', coursesRoutes);
 app.use('/api/v1/gyms', gymsRoutes);
+app.use('/api/v1/consult-requests', consultRequestsRoutes);
 
 app.listen(PORT, () => {
   console.log(`✅ 서버가 실행되었습니다: http://localhost:${PORT}`);

@@ -1,39 +1,65 @@
 # FitCheck Mobile App
 
-`frontend-web`을 WebView로 띄우는 Expo 껍데기입니다. (Expo SDK 54 / Expo Go 최신 버전 호환)
+`frontend-web`을 **WebView**로 띄우는 Expo 껍데기입니다.  
+별도 네이티브 화면 없이 웹 UI를 그대로 사용합니다. (Expo SDK 54)
+
+> 웹 기능 진행도: [../frontend-web/README.md](../frontend-web/README.md)
+
+## 현재 진행도 (2026-07)
+
+| 항목 | 상태 | 비고 |
+|------|------|------|
+| Expo + WebView 기본 셸 | ✅ | `App.js` 단일 WebView |
+| frontend-web URL 로드 | ✅ | `EXPO_PUBLIC_WEB_APP_URL` |
+| 뒤로가기 제스처 | ✅ | `allowsBackForwardNavigationGestures` |
+| Geolocation (WebView) | ✅ | `/user/map` GPS 테스트 가능 |
+| 네이티브 전용 UI / Push | ❌ | 미구현 |
+| 앱스토어 빌드 (EAS) | ❌ | 미진행 |
+
+**요약:** 모바일 앱은 **웹 배포본을 감싸는 래퍼** 단계입니다.  
+신규 기능(상담 신청 API, 지도 등)은 **frontend-web**에서 개발하면 WebView에 자동 반영됩니다.
+
+---
 
 ## 실행
 
 ```bash
 cp .env.example .env
-# EXPO_PUBLIC_WEB_APP_URL 을 환경에 맞게 수정
+# EXPO_PUBLIC_WEB_APP_URL 환경에 맞게 수정
 npm install
 npm start
 ```
+
+Expo Go 또는 시뮬레이터에서 QR 스캔 후 실행합니다.
 
 ## WebView URL
 
 | 환경 | `EXPO_PUBLIC_WEB_APP_URL` 예시 |
 |------|-------------------------------|
-| iOS 시뮬 / Android 에뮬 | `http://localhost:5173` |
+| iOS/Android 시뮬레이터 | `http://localhost:5173` |
 | 실기기 (같은 Wi-Fi) | `http://192.168.x.x:5173` |
 | 배포 | `https://hub-tan-pi.vercel.app` |
 
-실기기 로컬 테스트 시 frontend-web은 LAN에서 접근 가능해야 합니다.
+실기기 로컬 테스트:
 
 ```bash
-# frontend-web
+# frontend-web — LAN 접근 허용
+cd ../frontend-web
 npm run dev -- --host
 ```
 
-NCP Maps Web Service URL에도 사용 중인 origin(`http://192.168.x.x:5173` 또는 배포 URL)을 등록하세요.
+NCP Maps **Web Service URL**에 사용 origin을 등록하세요 (`localhost:5173` 또는 LAN IP).
 
 ## GPS / 위치 권한 테스트
 
-1. frontend-web 개발 서버(또는 배포 URL) 실행
-2. mobile-app에서 Expo Go로 실행
-3. `/user/map` 진입 → **내 위치** 버튼 탭
-4. OS 위치 권한 팝업 허용
-5. 파란 **내 위치** 마커가 실제 GPS로 이동하는지 확인  
-   (헬스장 핀은 부산 목업 데이터로 그대로 둡니다)
-6. 권한 거부 시 부산진구 서면 목업 위치로 폴백됩니다
+1. frontend-web + backend 실행
+2. mobile-app → Expo Go 실행
+3. `/user/map` → **내 위치** 탭 → OS 권한 허용
+4. 파란 마커가 GPS 위치로 이동하는지 확인  
+   (권한 거부 시 서면 목업 좌표로 폴백)
+
+## 다음 단계 (예상)
+
+1. 실기기·배포 URL 안정화 (`--host`, HTTPS 배포)  
+2. 스플래시 · 앱 아이콘  
+3. (선택) EAS Build, 딥링크, 푸시 알림  
