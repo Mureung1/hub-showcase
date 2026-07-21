@@ -220,7 +220,11 @@
   "subAmount": 13900,
   "billingDay": 20,
   "memberCount": 4,
-  "myAmount": 3475
+  "myAmount": 3475,
+  "ownerId": "user_1",
+  "joinUrl": "https://subzip.app/join/sub_1",
+  "bankAccount": { "bankName": "국민은행", "accountNumber": "123456-78-909999", "accountHolderName": "홍길동" },
+  "createdAt": "2026-07-13T00:00:00.000Z"
 }
 ```
 
@@ -320,7 +324,7 @@
 
 - 정산/만족도 설문 및 AI 리포트 API는 아직 미작성.
 - 요청 바디 유효성 검증 로직(Zod 등)은 아직 미구현(`backend/src/middleware/errorHandler.js`에는 에러 포맷터만 존재) — 검증 미들웨어 구현 시 `400` 에러의 상세 필드 목록을 이 문서에 추가할 것.
-- 엔드포인트/필드명은 이후 `DB 설계`(Prisma 모델링) 단계에서 실제 스키마에 맞춰 조정될 수 있음.
+- `1. 인증`, `2. 구독 서비스`, `3. 파티원` 섹션은 `backend/prisma/schema.prisma`의 `User`/`Subscription`/`PartyMember` 모델로 DB 설계 완료. 나머지(정산/만족도) 섹션은 아직 스키마 설계 전.
 - 구글 OAuth 클라이언트 ID/시크릿을 `.env`에 반영 필요(`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` 등).
 - 초대용 `state` 파라미터의 위변조 방지(서명/만료 검증) 방식 결정 필요.
 - 계좌번호 등 민감정보 저장 시 암호화 여부/방식 결정 필요.
