@@ -47,6 +47,10 @@ export function getMonthlyStats() {
   return request('/api/v1/stats/monthly')
 }
 
+export function getInsight() {
+  return request('/api/v1/stats/insight')
+}
+
 export function getMyReviews() {
   return request('/api/v1/reviews/mine')
 }

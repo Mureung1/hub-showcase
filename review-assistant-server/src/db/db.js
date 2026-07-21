@@ -55,3 +55,13 @@ if (!reviewsColumns.includes('user_id')) {
 db.exec(`
   CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews (user_id)
 `)
+
+// 대시보드 AI 한줄 요약 캐시 (2026-07-21 추가). session_id당 하루 1건만 생성해서
+// 재방문 시 API를 다시 부르지 않고 캐시를 그대로 돌려준다.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS dashboard_insights (
+    session_id TEXT PRIMARY KEY,
+    insight_text TEXT NOT NULL,
+    generated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  )
+`)

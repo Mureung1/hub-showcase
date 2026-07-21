@@ -1,22 +1,6 @@
-const KEYWORD_MAP = {
-  맛: ['맛있', '맛없', '음식', '메뉴', '양이', '맛도', '맛이', '맛은'],
-  친절도: ['친절', '불친절', '사장님', '직원', '무뚝뚝', '응대', '태도'],
-  대기시간: ['대기', '기다', '오래', '빠르', '느리', '웨이팅', '줄'],
-  가격: ['가격', '비싸', '저렴', '가성비', '값'],
-  청결도: ['청결', '깨끗', '더럽', '위생'],
-  분위기: ['분위기', '인테리어', '자리', '시끄럽', '조용'],
-}
+import { callClaudeTool } from './claude.client.js'
 
-const POSITIVE_WORDS = [
-  '좋아요', '좋았', '맛있', '친절', '최고', '만족', '감사', '추천', '훌륭', '깨끗', '빠르', '재방문', '또 올',
-]
-
-const NEGATIVE_WORDS = [
-  '별로', '불친절', '오래', '대기', '실망', '최악', '비싸', '더럽', '불만', '느리', '불편', '맛없', '무뚝뚝',
-  '쓰레기', '노맛', '맛도 없', '맛이 없', '맛은 없', '엉망', '성의 없', '정성 없',
-]
-
-const NEGATION_PREFIXES = ['불', '안', '못']
+const KEYWORD_CATEGORIES = ['맛', '친절도', '대기시간', '가격', '청결도', '분위기', '일반']
 
 const SOLUTION_MAP = {
   맛: '메뉴 맛의 일관성을 점검하고, 레시피 표준화나 조리 담당자 교육을 고려해보세요.',
@@ -28,36 +12,32 @@ const SOLUTION_MAP = {
   일반: '구체적인 원인 파악을 위해 추가 피드백을 요청하거나 직접 문의해보세요.',
 }
 
-// '불친절' 처럼 부정어에 긍정 단어가 포함된 경우, 앞에 부정 접두사가 붙은 자리는 긍정으로 세지 않는다.
-function countPositiveMatches(text, words) {
-  return words.reduce((acc, word) => {
-    let idx = text.indexOf(word)
-    let matched = false
-    while (idx !== -1) {
-      const prevChar = idx > 0 ? text[idx - 1] : ''
-      if (!NEGATION_PREFIXES.includes(prevChar)) {
-        matched = true
-        break
-      }
-      idx = text.indexOf(word, idx + 1)
-    }
-    return acc + (matched ? 1 : 0)
-  }, 0)
-}
-
-function classifySentiment(text) {
-  const posScore = countPositiveMatches(text, POSITIVE_WORDS)
-  const negScore = NEGATIVE_WORDS.reduce((acc, w) => acc + (text.includes(w) ? 1 : 0), 0)
-  if (posScore > negScore) return 'positive'
-  if (negScore > posScore) return 'negative'
-  return 'neutral'
-}
-
-function extractKeywords(text) {
-  const keywords = Object.entries(KEYWORD_MAP)
-    .filter(([, triggers]) => triggers.some((t) => text.includes(t)))
-    .map(([label]) => label)
-  return keywords.length > 0 ? keywords.slice(0, 3) : ['일반']
+// 리뷰 하나를 분석시킬 때 Claude에게 강제하는 응답 스키마 (기획서.md 8-2).
+const REVIEW_ANALYSIS_TOOL = {
+  name: 'submit_review_analysis',
+  description: '리뷰 하나를 분석한 결과를 제출한다',
+  input_schema: {
+    type: 'object',
+    properties: {
+      sentiment: { type: 'string', enum: ['positive', 'negative', 'neutral'] },
+      keywords: {
+        type: 'array',
+        items: { type: 'string', enum: KEYWORD_CATEGORIES },
+        minItems: 1,
+        maxItems: 3,
+      },
+      replyDrafts: {
+        type: 'object',
+        properties: {
+          polite: { type: 'string' },
+          friendly: { type: 'string' },
+          concise: { type: 'string' },
+        },
+        required: ['polite', 'friendly', 'concise'],
+      },
+    },
+    required: ['sentiment', 'keywords', 'replyDrafts'],
+  },
 }
 
 function suggestImprovement(sentiment, keyword) {
@@ -71,38 +51,20 @@ export function suggestionForKeyword(keyword) {
 
 const SCORE_BASE = { positive: 10, neutral: 40, negative: 70 }
 
-// 리뷰마다 매기는 "관심 필요도" 점수(0~100). 부정적일수록, 겹치는 문제 키워드가 많을수록 높다.
+// 리뷰마다 매기는 "관심 필요도" 점수(0~100). API로 요청하지 않고 로컬에서 계산한다 —
+// 같은 입력에도 AI가 매번 다른 점수를 낼 수 있어(비결정적) 총 분석·정렬이 불안정해지기 때문(기획서.md 8-3).
 function computeScore(sentiment, keywords) {
   const base = SCORE_BASE[sentiment]
   const bonus = sentiment === 'negative' ? Math.min((keywords.length - 1) * 10, 20) : 0
   return Math.min(base + bonus, 100)
 }
 
-function buildReplyDrafts(sentiment, keyword) {
-  if (sentiment === 'positive') {
-    return {
-      polite: `소중한 후기 남겨주셔서 진심으로 감사드립니다. 말씀해주신 ${keyword} 부분, 앞으로도 변함없이 유지하겠습니다.`,
-      friendly: '우와 이렇게 좋은 말씀 남겨주셔서 너무 감사해요! 다음에 또 뵙고 싶어요 :)',
-      concise: '감사합니다! 또 뵙겠습니다.',
-    }
-  }
-  if (sentiment === 'negative') {
-    return {
-      polite: `불편을 드려 진심으로 죄송합니다. 말씀해주신 ${keyword} 부분은 꼭 개선하도록 노력하겠습니다.`,
-      friendly: `아이고 ${keyword} 때문에 많이 아쉬우셨겠어요 ㅠㅠ 다음엔 더 신경 쓸게요!`,
-      concise: '죄송합니다. 개선하겠습니다.',
-    }
-  }
-  return {
-    polite: `소중한 의견 남겨주셔서 감사합니다. ${keyword} 관련 말씀 참고하여 더 나은 모습 보이겠습니다.`,
-    friendly: '방문해주셔서 감사해요! 다음에도 편하게 놀러 오세요~',
-    concise: '감사합니다!',
-  }
-}
+async function analyzeOne(text, index) {
+  const { sentiment, keywords, replyDrafts } = await callClaudeTool({
+    tool: REVIEW_ANALYSIS_TOOL,
+    userMessage: `다음 손님 리뷰를 분석해서 submit_review_analysis 도구로 결과를 제출해줘.\n\n리뷰: "${text}"`,
+  })
 
-function analyzeOne(text, index) {
-  const sentiment = classifySentiment(text)
-  const keywords = extractKeywords(text)
   return {
     reviewId: `r_${String(index + 1).padStart(2, '0')}`,
     originalText: text,
@@ -110,10 +72,10 @@ function analyzeOne(text, index) {
     keywords,
     score: computeScore(sentiment, keywords),
     improvementSuggestion: suggestImprovement(sentiment, keywords[0]),
-    replyDrafts: buildReplyDrafts(sentiment, keywords[0]),
+    replyDrafts,
   }
 }
 
-export function analyzeReviews(reviews) {
-  return reviews.map((text, index) => analyzeOne(text, index))
+export async function analyzeReviews(reviews) {
+  return Promise.all(reviews.map((text, index) => analyzeOne(text, index)))
 }

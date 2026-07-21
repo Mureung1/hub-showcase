@@ -4,6 +4,7 @@ import Header from '../components/Header.jsx'
 import { getSummary, getMonthlyStats, resetHistory } from '../lib/api.js'
 import SentimentTag from '../components/SentimentTag.jsx'
 import BrandMark from '../components/BrandMark.jsx'
+import InsightBanner from '../components/dashboard/InsightBanner.jsx'
 
 function DashboardPage() {
   const [summary, setSummary] = useState(null)
@@ -77,6 +78,8 @@ function DashboardPage() {
 
         {summary && summary.totalReviews > 0 && (
           <>
+            <InsightBanner />
+
             <div className="stats-row">
               <div className="stat-item">
                 <div className="stat-number">{summary.totalReviews}개</div>

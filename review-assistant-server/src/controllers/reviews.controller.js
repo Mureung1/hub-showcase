@@ -23,10 +23,9 @@ function validateReviews(reviews) {
   return valid
 }
 
-// TODO(3주차): 규칙 기반 분석 엔진을 Claude API 호출로 교체.
-export function analyzeReviews(req, res) {
+export async function analyzeReviews(req, res) {
   const reviews = validateReviews(req.body?.reviews)
-  const results = analyzeReviewsText(reviews)
+  const results = await analyzeReviewsText(reviews)
   saveAnalyzedReviews(req.sessionId, results, req.user?.id ?? null)
   const recurringIssues = getRecurringIssues(req.sessionId)
   res.json({ results, recurringIssues })
