@@ -4,7 +4,7 @@ import { advanceStage, finalizePickup, getGroupBuy, joinGroupBuy, votePickup } f
 const stages = ["모집 중", "결제 대기", "주문 완료", "배송 중", "수령 가능", "정산 완료"];
 const origins = ["생활관 1동", "생활관 3동", "공학관", "인문관", "경영관", "중앙도서관", "학생회관", "정문"];
 
-function GroupBuyDetailPage({ groupBuyId, onNavigate }) {
+function GroupBuyDetailPage({ groupBuyId, onNavigate, user }) {
   const [item, setItem] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [startLocation, setStartLocation] = useState(origins[0]);
@@ -16,6 +16,7 @@ function GroupBuyDetailPage({ groupBuyId, onNavigate }) {
   const canVote = item.userJoined && item.status === "closed";
 
   async function participate() {
+    if (!user) { onNavigate("/login"); return; }
     try {
       const next = await joinGroupBuy(item.id, { quantity, startLocation });
       setItem(next);

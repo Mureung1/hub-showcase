@@ -1,4 +1,13 @@
 export function groupBuyRowToDto(row) {
+  const participants = (row.group_buy_participants ?? []).map((participant, index) => ({
+    createdAt: participant.created_at,
+    id: participant.id,
+    nickname: participant.nickname || `참여자 ${index + 2}`,
+    quantity: participant.quantity,
+    startLocation: participant.start_location,
+    userId: participant.user_id,
+  }));
+
   return {
     id: row.id,
     name: row.name,
@@ -14,6 +23,7 @@ export function groupBuyRowToDto(row) {
     shippingFee: row.shipping_fee,
     stage: row.stage,
     createdAt: row.created_at,
+    participants,
   };
 }
 
@@ -54,10 +64,10 @@ function groupBuyPatchToRow(input) {
 
 export function createGroupBuyRepository(supabase) {
   return {
-    async create(input, ownerId) {
+    async create(input, ownerId, hostName = "나") {
       const { data, error } = await supabase
         .from("group_buys")
-        .insert(newGroupBuyToRow(input, ownerId))
+        .insert({ ...newGroupBuyToRow(input, ownerId), host_name: hostName })
         .select("*")
         .single();
 
@@ -68,7 +78,7 @@ export function createGroupBuyRepository(supabase) {
     async findById(id) {
       const { data, error } = await supabase
         .from("group_buys")
-        .select("*")
+        .select("*, group_buy_participants(*)")
         .eq("id", id)
         .maybeSingle();
 
@@ -79,11 +89,24 @@ export function createGroupBuyRepository(supabase) {
     async list() {
       const { data, error } = await supabase
         .from("group_buys")
-        .select("*")
+        .select("*, group_buy_participants(*)")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data.map(groupBuyRowToDto);
+    },
+
+    async join(id, userId, nickname, input) {
+      const { error } = await supabase.rpc("join_group_buy", {
+        participant_nickname: nickname,
+        participant_quantity: input.quantity,
+        participant_start_location: input.startLocation,
+        participant_user_id: userId,
+        target_group_buy_id: id,
+      });
+
+      if (error) throw error;
+      return this.findById(id);
     },
 
     async remove(id) {

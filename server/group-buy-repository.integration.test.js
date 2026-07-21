@@ -30,3 +30,34 @@ test("Given a stored group buy, when it is updated and removed, then Supabase ke
     await supabase.from("group_buys").delete().eq("id", created.id);
   }
 });
+
+test("Given an open group buy, when a user joins, then membership persists and duplicate join is rejected", async () => {
+  const created = await repository.create({
+    category: "기타",
+    deadline: "통합 테스트 후 삭제",
+    name: `참여 저장 테스트 ${Date.now()}`,
+    pickupLocation: "학생회관",
+    shippingFee: 300,
+    targetPeople: 3,
+    unitPrice: 1200,
+  }, "join-owner");
+
+  try {
+    const joined = await repository.join(created.id, "join-user", "테스트 참여자", {
+      quantity: 2,
+      startLocation: "학생회관",
+    });
+
+    assert.equal(joined.currentPeople, 2);
+    assert.equal(joined.participants[0].userId, "join-user");
+    await assert.rejects(
+      () => repository.join(created.id, "join-user", "테스트 참여자", {
+        quantity: 2,
+        startLocation: "학생회관",
+      }),
+      (error) => error.message === "DUPLICATE_PARTICIPANT",
+    );
+  } finally {
+    await supabase.from("group_buys").delete().eq("id", created.id);
+  }
+});
