@@ -91,10 +91,6 @@ export function isValidationOutcome(
   return value === 'passed' || value === 'failed' || value === 'unknown'
 }
 
-export function isProductText(value: unknown): value is string {
-  return typeof value === 'string' && utf8Bytes(value) <= 128 * 1024
-}
-
 export function hasValidJsonEnvelope(value: unknown): boolean {
   try {
     return utf8Bytes(JSON.stringify(value)) <= PRODUCT_JSON_ENVELOPE_MAX_BYTES

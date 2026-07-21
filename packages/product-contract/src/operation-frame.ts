@@ -11,10 +11,10 @@ import {
   isProductInteractionId,
   isProductOperationId,
   isProductQuestionId,
-  isProductText,
   isRecord,
   isRunId,
   isValidationOutcome,
+  utf8Bytes,
 } from './contract-values.js'
 import type { ProductEvidenceRef } from './workspace.js'
 
@@ -552,6 +552,10 @@ function isProductReviewOutcome(
 
 function isActivityId(value: unknown): value is string {
   return typeof value === 'string' && /^activity_[0-9a-f]{32}$/.test(value)
+}
+
+function isProductText(value: unknown): value is string {
+  return typeof value === 'string' && utf8Bytes(value) <= 128 * 1024
 }
 
 function isPublicQuestionId(value: unknown): value is string {
