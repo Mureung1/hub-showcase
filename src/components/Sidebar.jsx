@@ -1,4 +1,5 @@
 import "./Sidebar.css";
+import { useAuth } from "../features/auth/AuthContext.jsx";
 
 const NAV_ITEMS = [
   {
@@ -22,6 +23,8 @@ const NAV_ITEMS = [
 ];
 
 export default function Sidebar({ active, onNavigate }) {
+  const { user, logout } = useAuth();
+
   return (
     <aside className="sidebar">
       <div className="sidebar__logo">SG</div>
@@ -50,6 +53,13 @@ export default function Sidebar({ active, onNavigate }) {
           </button>
         ))}
       </nav>
+
+      <div className="sidebar__footer">
+        <span className="sidebar__user">{user?.name}</span>
+        <button type="button" className="sidebar__logout" onClick={logout}>
+          로그아웃
+        </button>
+      </div>
     </aside>
   );
 }
