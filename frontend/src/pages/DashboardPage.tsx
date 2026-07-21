@@ -41,13 +41,6 @@ const STATUS_BADGE_CLASS: Record<string, string> = {
   '수정 필요': 'badge-danger',
 }
 
-// 판단 필요성 — verification_status를 사용자가 취할 행동으로 번역한 권고 문구(확정이 아닌 제안).
-const RECOMMENDATION_BY_STATUS: Record<string, string> = {
-  '유력함': '유지 권장',
-  '근거 부족': '판단 보류',
-  '수정 필요': '수정 권장',
-}
-
 // 사용자가 확정하는 판단값. AI 제안(verification_status)과는 별개.
 const JUDGMENT_OPTIONS = ['유지', '수정', '폐기']
 
@@ -143,10 +136,17 @@ function DashboardPage() {
       <section className="card">
         <label className="field-label">가설 검증 결과</label>
         {judgmentError && <p className="error-text">{judgmentError}</p>}
+
+        <div className="dashboard-header-row" aria-hidden="true">
+          <span className="dashboard-header-checkbox" />
+          <span className="dashboard-header-cell">상태</span>
+          <span className="dashboard-header-cell">가설명</span>
+          <span className="dashboard-header-cell dashboard-header-recommendation">AI 권고</span>
+        </div>
+
         <ul className="hypothesis-list">
           {data.hypotheses.map((h) => {
             const badgeClass = STATUS_BADGE_CLASS[h.verification_status] ?? 'badge-pending'
-            const recommendation = RECOMMENDATION_BY_STATUS[h.verification_status] ?? '분석 대기'
             const isDecided = h.status !== '검토 전'
 
             return (
@@ -165,13 +165,11 @@ function DashboardPage() {
                   />
                   <span className={`badge ${badgeClass}`}>{h.verification_status}</span>
                   <span className="dashboard-hypothesis-name">
-                    {h.cause} → {h.effect}
+                    <span className="dashboard-cause">원인: {h.cause}</span>
+                    <span className="dashboard-effect">→ 결과: {h.effect}</span>
                   </span>
                   <span className="dashboard-recommendation">
-                    AI 권고: {recommendation}
-                    {h.verification_result?.direction && (
-                      <span className="dashboard-direction"> · {h.verification_result.direction}</span>
-                    )}
+                    {h.verification_result?.direction || '아직 분석 근거가 없습니다.'}
                   </span>
                 </div>
 
