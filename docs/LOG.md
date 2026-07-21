@@ -1075,3 +1075,14 @@
 ### 검증
 - 실제 Vercel 런타임과 동일하게 `tsc`로 `.js`를 emit한 뒤 Node 네이티브 ESM 로더로 `api/generate.js`·`api/interaction.js`를 직접 import·fetch 호출해 정상 로드(모듈 해석 성공)와 정상 오류 처리(환경변수 없을 때 `generate`는 깨끗한 JSON 500 `generation_failed`, `interaction`은 202)를 확인했다 — 이전에는 이 지점에서 `ERR_MODULE_NOT_FOUND`로 크래시했다.
 - 전체 41파일 349개 테스트, `typecheck:api`(nodenext로 강화), lint, production build, `git diff --check` 통과.
+
+## 2026-07-21 (T24 흐름 계측 운영 검증 완료)
+### 배경
+- ESM 확장자 크래시 수정·재배포 과정에서 이미 same-origin 왕복(`/api/interaction` 202)은 확인했다. 남은 부분(waitUntil 실반영·집계 query·보존 기간)을 마저 검증했다.
+### 발견·조치
+- 개발 DB(`.env.local`의 `DATABASE_URL`)에 `interaction_events`·`retrieval_examples` 테이블이 없었다 — 이전 세션에서 이 두 additive migration이 현재 dev DB에는 적용되지 않은 상태였다. `npm run db:migrate`로 재적용해 6개 테이블 전부(`evaluation_runs`, `generation_runs`, `interaction_events`, `prompt_versions`, `retrieval_examples`, `template_versions`)를 확보했다.
+- 신규 `scripts/interaction-smoke.ts`(`npm run db:smoke:interaction`)로 합성 event 4건을 실 repository로 삽입 → route/scenario/eventName 집계 query로 재확인 → 정확히 그 4건만 삭제하는 왕복을 2회 연속 실행해 재현 가능함을 확인했다.
+- 저장소 전체에서 `interaction_events` 삭제·TTL·cron 코드를 찾지 못했다 — **현재 보존 기간은 사실상 무기한**이다. SPEC 7장은 저장 필드 제한만 요구하고 삭제 job을 요구하지 않으므로 신규 구현 없이 현재 상태를 그대로 기록했다.
+### 검증
+- 전체 41파일 349개 테스트(일시적 flake 1건은 재실행으로 비재현 확인), lint, `typecheck:api`, production build, `git diff --check` 통과.
+- T24는 검증 완료로 CHECKLIST에 반영했다. 상세 근거: [T24 계획서](../harness/tasks/T24-interaction-ops-verification/plan.md)·[검증 보고서](../harness/tasks/T24-interaction-ops-verification/verification.md).
