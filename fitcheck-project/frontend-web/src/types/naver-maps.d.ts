@@ -64,5 +64,22 @@ declare global {
       ): object;
       function removeListener(listener: object): void;
     }
+
+    namespace Service {
+      enum Status {
+        OK = 'OK',
+        ERROR = 'ERROR',
+      }
+
+      enum OrderType {
+        ADDR = 'addr',
+        ROAD_ADDR = 'roadaddr',
+      }
+
+      function reverseGeocode(
+        options: { coords: LatLng; orders?: string },
+        callback: (status: Status, response: { v2?: { results?: unknown[] } }) => void,
+      ): void;
+    }
   }
 }

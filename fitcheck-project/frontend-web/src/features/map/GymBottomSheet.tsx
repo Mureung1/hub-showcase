@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Star } from 'lucide-react';
+import { MapPin, Star, ExternalLink } from 'lucide-react';
 import type { GymPlace } from '../../data/userMock';
 import GymThumbnail from './GymThumbnail';
+import { hasGymRating, hasNaverExternalLink, isNaverSourcedGym } from '../../utils/gymProfile';
 import './map.css';
 
 interface GymBottomSheetProps {
@@ -10,6 +11,7 @@ interface GymBottomSheetProps {
   selectedGym: GymPlace | null;
   onSelectGym: (gymId: string) => void;
   onConsult: () => void;
+  refreshing?: boolean;
 }
 
 const DRAG_THRESHOLD = 48;
@@ -19,6 +21,7 @@ export default function GymBottomSheet({
   selectedGym,
   onSelectGym,
   onConsult,
+  refreshing = false,
 }: GymBottomSheetProps) {
   const [expanded, setExpanded] = useState(false);
   const dragStartY = useRef<number | null>(null);
@@ -65,7 +68,11 @@ export default function GymBottomSheet({
       >
         <span className="gym-sheet-grabber" />
         <span className="gym-sheet-handle-label">
-          {expanded ? '목록 접기' : `주변 추천 ${gyms.length}곳`}
+          {refreshing
+            ? '주변 헬스장 업데이트 중…'
+            : expanded
+              ? '목록 접기'
+              : `주변 추천 ${gyms.length}곳`}
         </span>
       </button>
 
@@ -76,16 +83,21 @@ export default function GymBottomSheet({
             <div className="gym-summary-body">
               <div className="gym-summary-top">
                 <span className="status-badge badge-red">{selectedGym.type}</span>
+                {isNaverSourcedGym(selectedGym) && (
+                  <span className="gym-source-badge gym-source-badge-sm">네이버</span>
+                )}
                 <span className="gym-distance">
                   {selectedGym.distanceKm.toFixed(1)}km
                 </span>
               </div>
               <h2>{selectedGym.name}</h2>
               <div className="gym-card-meta">
-                <span>
-                  <Star size={14} />
-                  {selectedGym.rating.toFixed(1)}
-                </span>
+                {hasGymRating(selectedGym) && (
+                  <span>
+                    <Star size={14} />
+                    {selectedGym.rating.toFixed(1)}
+                  </span>
+                )}
                 <span>
                   <MapPin size={14} />
                   {selectedGym.address}
@@ -105,13 +117,25 @@ export default function GymBottomSheet({
                 >
                   상세보기
                 </Link>
-                <button
-                  type="button"
-                  className="btn btn-secondary gym-summary-cta"
-                  onClick={onConsult}
-                >
-                  상담 신청
-                </button>
+                {hasNaverExternalLink(selectedGym) ? (
+                  <a
+                    href={selectedGym.externalLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary gym-summary-cta"
+                  >
+                    <ExternalLink size={14} />
+                    네이버
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-secondary gym-summary-cta"
+                    onClick={onConsult}
+                  >
+                    상담 신청
+                  </button>
+                )}
               </div>
             </div>
           </article>

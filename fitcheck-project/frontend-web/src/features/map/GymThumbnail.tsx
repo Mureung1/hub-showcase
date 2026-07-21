@@ -10,6 +10,7 @@ const TONE_BY_TYPE: Record<GymPlace['type'], string> = {
   '골목 헬스장': 'tone-red',
   '1인 PT숍': 'tone-amber',
   '개인 트레이너': 'tone-teal',
+  '기타': 'tone-red',
 };
 
 function TypeIcon({ type }: { type: GymPlace['type'] }) {

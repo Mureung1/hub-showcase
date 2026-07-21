@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PlayCircle, UtensilsCrossed, MapPinned, Flame } from 'lucide-react';
 import type { Course } from '../../data/userMock';
-import { MOCK_MEALS, MOCK_GYMS } from '../../data/userMock';
+import { MOCK_MEALS, MOCK_USER_LOCATION } from '../../data/userMock';
 import { fetchCourses } from '../../services/coursesApi';
+import { fetchGyms } from '../../services/gymsApi';
 import './user.css';
 
 const QUICK_LINKS = [
@@ -29,7 +30,7 @@ const QUICK_LINKS = [
 
 export default function HomePage() {
   const todayMealCount = MOCK_MEALS.length;
-  const nearbyGyms = MOCK_GYMS.length;
+  const [nearbyGyms, setNearbyGyms] = useState(0);
   const [recommended, setRecommended] = useState<Course | null>(null);
   const [loadingRecommended, setLoadingRecommended] = useState(true);
 
@@ -38,10 +39,24 @@ export default function HomePage() {
 
     async function load() {
       try {
-        const { courses } = await fetchCourses({ limit: 1 });
-        if (!cancelled) setRecommended(courses[0] ?? null);
+        const [{ courses }, { meta }] = await Promise.all([
+          fetchCourses({ limit: 1 }),
+          fetchGyms({
+            lat: MOCK_USER_LOCATION.lat,
+            lng: MOCK_USER_LOCATION.lng,
+            radiusKm: 3,
+            limit: 50,
+          }),
+        ]);
+        if (!cancelled) {
+          setRecommended(courses[0] ?? null);
+          setNearbyGyms(meta.total);
+        }
       } catch {
-        if (!cancelled) setRecommended(null);
+        if (!cancelled) {
+          setRecommended(null);
+          setNearbyGyms(0);
+        }
       } finally {
         if (!cancelled) setLoadingRecommended(false);
       }
