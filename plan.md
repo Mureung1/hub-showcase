@@ -64,6 +64,23 @@ Task 0 (프로젝트 셋업)
 
 ---
 
+### Week 3 상세 계획 (07/20 월 ~ 07/24 금)
+
+> 이번 주 수직슬라이스 대상 = **오늘의 챌린지 조회 → 사진+메모 기록 → 하루 1회 제한** (`plan.md` Task 3).
+> 이미지 저장은 1차로 S3 대신 **로컬 디스크(multer)**로 축소 — API 응답 형태(`imageUrl` 문자열)는 동일하게 유지해 나중에 S3 전환 시 프론트 변경이 없도록 한다. (`feature-slice` Agent 제안)
+
+| 날짜 | 작업 | 관련 이슈 |
+|---|---|---|
+| 07/20 (월) | Prisma Challenge·Record 모델 + 마이그레이션, 챌린지 시드 + KST 날짜 유틸, `GET /challenges/today` | [#23](https://github.com/parkjihyoun/hub/issues/23), [#24](https://github.com/parkjihyoun/hub/issues/24), [#25](https://github.com/parkjihyoun/hub/issues/25) |
+| 07/21 (화) | multer 로컬 업로드 설정, `POST /records`(중복 409), `GET /records/today` | [#26](https://github.com/parkjihyoun/hub/issues/26), [#27](https://github.com/parkjihyoun/hub/issues/27), [#28](https://github.com/parkjihyoun/hub/issues/28) |
+| 07/22 (수) | FE `challenges.ts`·`records.ts` API 클라이언트, 홈 화면 챌린지 카드 + 기록 상태 연동 | [#29](https://github.com/parkjihyoun/hub/issues/29), [#30](https://github.com/parkjihyoun/hub/issues/30) |
+| 07/23 (목) | `/record` 화면(파일 미리보기+메모), 기록 제출 로직(성공/실패/완료 분기) | [#31](https://github.com/parkjihyoun/hub/issues/31), [#32](https://github.com/parkjihyoun/hub/issues/32) |
+| 07/24 (금) | 수직슬라이스 통합 검증, `feature-verify` Agent 점검, checklist.md 갱신 | [#33](https://github.com/parkjihyoun/hub/issues/33) |
+
+**금요일 완료 기준**: 당일 1회 기록 성공, 같은 날 두 번째 기록 시 서버 에러 (`plan.md` Task 3 완료 기준과 동일)
+
+---
+
 ## Task 0 — 프로젝트 셋업 (P0)
 
 **목표**: Vite + React 개발 환경과 문서 기반을 갖춘다.
