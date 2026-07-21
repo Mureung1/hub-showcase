@@ -1247,7 +1247,10 @@ select:focus-visible {
 
 .ingredient-tile {
   position: relative;
-  min-height: 318px;
+  display: flex;
+  min-height: 330px;
+  height: 100%;
+  flex-direction: column;
   padding: 20px;
   border-left: 4px solid transparent;
   background: #fff;
@@ -1272,13 +1275,8 @@ select:focus-visible {
   gap: 14px;
 }
 
-.tile-status {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-
 .ingredient-emoji {
+  flex: 0 0 auto;
   display: grid;
   width: 52px;
   height: 52px;
@@ -1346,9 +1344,8 @@ select:focus-visible {
 }
 
 .tile-title-row {
-  margin-top: 16px;
   justify-content: flex-start;
-  gap: 10px;
+  gap: 8px;
 }
 
 .tile-title-row h3 {
@@ -1359,50 +1356,70 @@ select:focus-visible {
   margin: 0;
 }
 
-.storage-label {
-  display: inline-flex;
-  min-height: 28px;
-  align-items: center;
-  margin-left: auto;
-  padding: 0 10px;
-  border-radius: 9px;
-  color: #5f5b55;
-  background: #f4f1ee;
-  font-size: 11px;
-  font-weight: 800;
+.tile-primary {
+  min-width: 0;
+  flex: 1;
+}
+
+.quantity-text {
+  color: #7b746e;
+  font-size: 13px;
+  font-weight: 900;
   white-space: nowrap;
 }
 
-.quantity-fact {
-  display: inline-flex;
+.expiration-line {
+  display: flex;
   min-height: 28px;
   align-items: center;
-  gap: 5px;
+  gap: 7px;
+  margin-top: 7px;
+  color: #69635e;
+  font-size: 12px;
+}
+
+.expiration-line .dday-badge {
+  min-height: auto;
+  padding: 0;
+  color: #69635e;
+  background: transparent;
+  font-size: 12px;
+}
+
+.expiration-line.soon .dday-badge,
+.expiration-line.urgent .dday-badge,
+.expiration-line.expired .dday-badge {
+  min-height: 26px;
   padding: 0 9px;
-  border: 1px solid #ffd8c2;
-  border-radius: 9px;
-  color: #8c4b27;
-  background: #fff5ef;
+  color: #fff;
+  font-size: 12px;
 }
 
-.quantity-fact small {
-  font-size: 10px;
-  font-weight: 800;
-}
+.expiration-line.soon .dday-badge { background: #e87920; }
+.expiration-line.urgent .dday-badge,
+.expiration-line.expired .dday-badge { background: var(--warning); }
 
-.quantity-fact strong {
-  color: var(--secondary);
-  font-size: 14px;
-  font-weight: 900;
+.expiration-line.soon strong { color: #b45309; }
+.expiration-line.urgent strong,
+.expiration-line.expired strong { color: var(--warning); }
+
+.storage-info {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .ingredient-labels {
   display: flex;
-  min-height: 26px;
+  min-height: 58px;
   flex-wrap: wrap;
   align-content: flex-start;
   gap: 6px;
-  margin-top: 13px;
+  margin-top: 18px;
+  padding-top: 15px;
+  border-top: 1px solid var(--line);
 }
 
 .ingredient-labels > span {
@@ -1422,15 +1439,9 @@ select:focus-visible {
   background: #fff;
 }
 
-.ingredient-labels .attribute-label,
-.ingredient-labels .more-label {
+.ingredient-labels .attribute-label {
   color: #3e6852;
   background: #eef8f2;
-}
-
-.ingredient-labels .more-label {
-  color: var(--muted);
-  background: #f3f1ef;
 }
 
 .ingredient-labels .instant-label {
@@ -1443,56 +1454,10 @@ select:focus-visible {
   background: var(--warning);
 }
 
-.dday-badge.soon {
-  background: #e87920;
-}
-
-.dday-badge.expired,
-.dday-badge.urgent {
-  background: var(--warning);
-}
-
-.dday-badge.neutral {
-  background: var(--muted);
-}
-
-.tile-status .dday-badge {
-  min-height: 32px;
-  padding: 0 12px;
-  font-size: 13px;
-  box-shadow: 0 5px 12px rgba(54, 44, 37, 0.12);
-}
-
-.expiration-copy {
-  display: grid;
-  gap: 4px;
-  margin: 17px 0 16px !important;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-}
-
-.expiration-copy strong {
-  color: var(--primary);
-  font-size: 13px;
-}
-
-.expiration-copy span {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.expiration-copy.urgent strong,
-.expiration-copy.expired strong {
-  color: var(--warning);
-}
-
-.expiration-copy.soon strong {
-  color: #b45309;
-}
-
 .find-recipe-button {
   width: 100%;
   min-height: 40px;
+  margin-top: auto;
   border: 1px solid rgba(0, 109, 54, 0.15);
   border-radius: 12px;
   color: var(--primary);
