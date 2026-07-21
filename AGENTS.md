@@ -14,6 +14,8 @@
 - Vitest, Testing Library
 - ESLint, Prettier
 
+선택 배경은 [docs/decisions.md](./docs/decisions.md)를 참고한다.
+
 ## 3. 프로젝트 구조와 아키텍처
 
 - 루트는 pnpm workspace 기반 모노레포다.
@@ -52,6 +54,8 @@
 - 정밀한 금융 값은 API 경계에서 `string`으로 유지한다.
 - 아이콘은 가능한 경우 Lucide React를 사용한다.
 - ESLint와 Prettier 결과를 수동 스타일보다 우선한다.
+
+상세 예시는 [docs/development-guide.md](./docs/development-guide.md)를 참고한다.
 
 ## 5. 커밋 컨벤션
 
@@ -92,3 +96,22 @@ PowerShell 실행 정책으로 `pnpm`이 차단되면 `pnpm.cmd`를 사용한다
 5. 위험도에 맞는 테스트를 추가하고 필수 검증 명령을 실행한다.
 6. 컨벤션 예외가 필요하면 적용 전에 기술적 이유와 영향을 설명한다.
 7. 구조나 공통 규칙이 바뀌면 README와 AGENTS.md를 함께 갱신한다.
+
+## 8. 참고 문서
+
+작업 종류에 따라 아래 문서를 선택적으로 읽는다. 이 문서(AGENTS.md)에 없는 상세 내용과 배경은
+전부 여기에 있다.
+
+- [docs/project-overview.md](./docs/project-overview.md) — 서비스 기획: 문제 정의, 타깃 사용자,
+  핵심 기능, 사용자 시나리오, 화면 구조, MVP 범위
+- [docs/development-guide.md](./docs/development-guide.md) — 기술 스택, FSD 구조, 코드 컨벤션,
+  커밋 컨벤션, 실행 명령어, 작업 방식의 상세 예시
+- [docs/architecture.md](./docs/architecture.md) — 시스템 구성, 프론트/백엔드 책임, 외부 연동,
+  배포 구조
+- [docs/design-system.md](./docs/design-system.md) — 디자인 토큰 카탈로그(색상, 타이포그래피,
+  간격, radius, shadow, 컴포넌트 상태, 반응형, 접근성)
+- [docs/design-skill.md](./docs/design-skill.md) — UI를 생성·수정할 때 따르는 절차
+- [docs/ai-system.md](./docs/ai-system.md) — AI 증시 분석 기능의 설계(대부분 TODO)
+- [docs/decisions.md](./docs/decisions.md) — 기술 선택 배경과 트레이드오프
+- [docs/task-backlog.md](./docs/task-backlog.md) — 기능별 작업 현황(TODO)
+- [docs/testing-guide.md](./docs/testing-guide.md) — 테스트 전략과 대상(대부분 TODO)
