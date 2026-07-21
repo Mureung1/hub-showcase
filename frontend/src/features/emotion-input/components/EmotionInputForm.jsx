@@ -1,43 +1,70 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FaceSignalSelector } from "../../face-signal";
 import { SituationInput } from "../../situation-input";
 import { VoiceSignalSelector } from "../../voice-signal";
 
 export default function EmotionInputForm({
-  situationText,
-  onSituationChange,
-  faceSignal,
-  onFaceSignalChange,
-  voiceSignal,
-  onVoiceSignalChange,
-  validationError,
+  scenarioPreset,
   disabled = false,
-  onSubmit
+  onAnalyze
 }) {
+  const [situationText, setSituationText] = useState("");
+  const [faceSignal, setFaceSignal] = useState(scenarioPreset?.faceSignal || "neutral");
+  const [voiceSignal, setVoiceSignal] = useState(scenarioPreset?.voiceSignal || "normal");
+  const [validationError, setValidationError] = useState("");
+
+  useEffect(() => {
+    if (!scenarioPreset) return;
+    setFaceSignal(scenarioPreset.faceSignal);
+    setVoiceSignal(scenarioPreset.voiceSignal);
+    setValidationError("");
+  }, [scenarioPreset]);
+
+  const submitInput = async () => {
+    const trimmedText = situationText.trim();
+    if (!trimmedText) {
+      setValidationError("분석할 상황을 입력해 주세요.");
+      return;
+    }
+
+    setValidationError("");
+    const accepted = await onAnalyze({
+      situationText: trimmedText,
+      faceSignal,
+      voiceSignal
+    });
+    if (accepted !== false) setSituationText("");
+  };
+
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (!disabled) onSubmit();
+    if (!disabled) void submitInput();
   };
 
   const handleKeyDown = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      if (!disabled) onSubmit();
+      if (!disabled) void submitInput();
     }
+  };
+
+  const handleSituationChange = (nextValue) => {
+    setSituationText(nextValue);
+    if (validationError) setValidationError("");
   };
 
   return (
     <form className="input-area" onSubmit={handleSubmit} noValidate>
       <SituationInput
         value={situationText}
-        onChange={onSituationChange}
+        onChange={handleSituationChange}
         onKeyDown={handleKeyDown}
         disabled={disabled}
       />
 
       <div className="signal-grid">
-        <FaceSignalSelector value={faceSignal} onChange={onFaceSignalChange} disabled={disabled} />
-        <VoiceSignalSelector value={voiceSignal} onChange={onVoiceSignalChange} disabled={disabled} />
+        <FaceSignalSelector value={faceSignal} onChange={setFaceSignal} disabled={disabled} />
+        <VoiceSignalSelector value={voiceSignal} onChange={setVoiceSignal} disabled={disabled} />
       </div>
 
       <div className="input-actions">
