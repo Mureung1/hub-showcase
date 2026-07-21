@@ -28,3 +28,18 @@ export async function searchParkingLots(destination) {
   });
   return data; // 주차장 배열을 그대로 반환
 }
+
+/**
+ * id로 주차장 하나의 상세 정보를 조회한다.
+ * GET /api/parking-lots/{id}
+ *
+ * @param {number|string} id 주차장 id (URL의 :id)
+ * @returns {Promise<{id:number, name:string, address:string, tel:string,
+ *   parkingKind:string, operType:string, totalSlots:number, payType:string,
+ *   fee:object, operatingHours:object}>} 주차장 상세 1건
+ */
+export async function getParkingLot(id) {
+  // 템플릿 리터럴로 경로에 id를 끼워 넣는다 → GET /api/parking-lots/416
+  const { data } = await apiClient.get(`/parking-lots/${id}`);
+  return data;
+}
