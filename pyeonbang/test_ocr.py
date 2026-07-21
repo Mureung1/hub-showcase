@@ -23,14 +23,17 @@ else:
         
         image_path = os.path.join(image_folder, filename)
         
-        # OCR 실행
-        results = reader.readtext(image_path)
-        
-        # 결과가 없을 경우 예외 처리
-        if not results:
-            print("[텍스트를 인식하지 못했습니다.]")
-        
-        # 인식된 텍스트와 신뢰도(Confidence) 출력
-        for bbox, text, confidence in results:
-            print(f"[{confidence:.2f}] {text}")
+        try:
+            # OCR 실행
+            results = reader.readtext(image_path)
+            
+            # 결과가 없을 경우 예외 처리
+            if not results:
+                print("[텍스트를 인식하지 못했습니다.]")
+            
+            # 인식된 텍스트와 신뢰도(Confidence) 출력
+            for bbox, text, confidence in results:
+                print(f"[{confidence:.2f}] {text}")
+        except Exception as e:
+            print(f"[에러 발생] 이미지를 읽을 수 없습니다: {e}")
         print("\n")
