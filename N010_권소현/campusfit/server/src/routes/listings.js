@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db } from "../db/client.js";
+import { supabase } from "../db/supabaseClient.js";
 
 const router = Router();
 
@@ -16,7 +16,7 @@ function toListing(row) {
     id: row.id,
     categoryId: row.category_id,
     title: row.title,
-    desc: row.desc,
+        desc: row.description,
     dDay,
     eligibleRegions: row.eligible_regions ? JSON.parse(row.eligible_regions) : undefined,
     eligibleGrades: row.eligible_grades ? JSON.parse(row.eligible_grades) : undefined,
@@ -25,23 +25,25 @@ function toListing(row) {
   };
 }
 
-router.get("/categories", (req, res) => {
-  const categories = db.prepare("SELECT id, label, desc FROM categories").all();
-  res.json(categories);
+router.get("/categories", async (req, res) => {
+  const { data, error } = await supabase.from("categories").select("id, label, description");
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data.map((c) => ({ id: c.id, label: c.label, desc: c.description })));
 });
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   const { categoryId } = req.query;
-  const rows = categoryId
-    ? db.prepare("SELECT * FROM listings WHERE category_id = ?").all(categoryId)
-    : db.prepare("SELECT * FROM listings").all();
-  res.json(rows.map(toListing));
+  let query = supabase.from("listings").select("*");
+  if (categoryId) query = query.eq("category_id", categoryId);
+  const { data, error } = await query;
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data.map(toListing));
 });
 
-router.get("/:id", (req, res) => {
-  const row = db.prepare("SELECT * FROM listings WHERE id = ?").get(req.params.id);
-  if (!row) return res.status(404).json({ error: "not found" });
-  res.json(toListing(row));
+router.get("/:id", async (req, res) => {
+  const { data, error } = await supabase.from("listings").select("*").eq("id", req.params.id).single();
+  if (error || !data) return res.status(404).json({ error: "not found" });
+  res.json(toListing(data));
 });
 
 export default router;
