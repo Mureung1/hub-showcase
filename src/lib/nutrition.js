@@ -202,6 +202,15 @@ export function clampToPlausibleNutrients(nutrients, foodName, grams) {
   return result
 }
 
+// 사진 없이 메뉴명만으로 추정한 "표준 1인분" 수치 전용 보정. 실제 섭취 grams를 모르므로 그 음식의
+// 표준 1인분(referenceGrams)을 기준(scale=1)으로 현실 범위 보정만 적용한다 — 사진 경로(DB 환산)와 달리
+// 텍스트 경로는 AI 추정치를 그대로 쓰던 것을, 짜장면 단백질 20g처럼 튀는 값을 표준 범위로 눌러 정확도를 맞춘다.
+export function clampToStandardPlausibleNutrients(nutrients, foodName) {
+  const entry = foodName && NUTRIENT_PLAUSIBILITY.find(({ keywords }) => keywords.some((k) => foodName.includes(k)))
+  if (!entry) return nutrients
+  return clampToPlausibleNutrients(nutrients, foodName, entry.referenceGrams)
+}
+
 // 식약처 DB의 기준량(baseValue, 보통 100g) 대비 실제 섭취량(grams)으로 영양소를 환산한다.
 // dbNutrients에 없는 항목(null)은 결과에서도 null로 남긴다(호출부에서 AI 추정치로 보완).
 export function scaleNutrients(dbNutrients, baseValue, grams) {

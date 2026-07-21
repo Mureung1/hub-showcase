@@ -19,6 +19,7 @@ import { sumNutrients } from '../lib/mealStore.js'
 import {
   clampEstimatedGrams,
   clampToPlausibleNutrients,
+  clampToStandardPlausibleNutrients,
   fillMissingNutrients,
   isMealAnalysis,
   isNutrientSet,
@@ -251,7 +252,8 @@ async function resolveTextAnalysis(menuName, brand) {
     return {
       name: item.name,
       brand: resolvedBrand,
-      nutrients: item.nutrients,
+      // 사진 경로와 동일한 현실 범위 보정을 텍스트 추정치에도 적용(짜장면 단백질 20g 등 튀는 값 방지).
+      nutrients: clampToStandardPlausibleNutrients(item.nutrients, item.name),
       source: resolvedBrand ? NUTRITION_SOURCE.OFFICIAL : NUTRITION_SOURCE.ESTIMATED,
     }
   })
