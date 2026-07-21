@@ -3,15 +3,14 @@ import { ChipIcon, getChipColor } from '../chipIcons';
 import type { ChipIconName } from '../chipIcons';
 
 const SYMPTOM_OPTIONS: { label: string; icon: ChipIconName }[] = [
-  { label: '피로감', icon: 'battery' },
-  { label: '안구건조', icon: 'eye' },
-  { label: '수면 부족', icon: 'moon' },
+  { label: '피로', icon: 'battery' },
   { label: '소화불량', icon: 'stomach' },
-  { label: '탈모', icon: 'hair' },
-  { label: '관절통', icon: 'joint' },
-  { label: '면역력 저하', icon: 'shield' },
-  { label: '피부트러블', icon: 'droplet' },
+  { label: '수면장애', icon: 'moon' },
+  { label: '눈 피로', icon: 'eye' },
+  { label: '관절 통증', icon: 'joint' },
   { label: '스트레스', icon: 'zigzag' },
+  { label: '면역력 저하', icon: 'shield' },
+  { label: '피부 트러블', icon: 'droplet' },
 ];
 
 const LIFE_PATTERN_OPTIONS: { label: string; icon: ChipIconName }[] = [
@@ -29,11 +28,8 @@ interface HomeProps {
 }
 
 export function Home({ onStart }: HomeProps) {
-  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>(['피로감', '안구건조']);
-  const [selectedLifePatterns, setSelectedLifePatterns] = useState<string[]>([
-    '사무직',
-    '교대/야간 근무',
-  ]);
+  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+  const [selectedLifePatterns, setSelectedLifePatterns] = useState<string[]>([]);
 
   function toggleSymptom(symptom: string) {
     setSelectedSymptoms((prev) =>

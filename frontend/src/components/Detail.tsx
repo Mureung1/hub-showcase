@@ -17,9 +17,7 @@ export function Detail({ product, onBuy, onRestart }: DetailProps) {
         <h1 className="heading" style={{ fontSize: 20 }}>
           {product.name}
         </h1>
-        <p className="sub">
-          {product.companyName} · {product.ingredients}
-        </p>
+        <p className="sub">{product.companyName}</p>
       </div>
 
       <div className="chip-list">
@@ -43,20 +41,14 @@ export function Detail({ product, onBuy, onRestart }: DetailProps) {
         </span>
       </div>
 
-      <p className="sub" style={{ margin: 0 }}>{product.description}</p>
-
       <div className="card stat-row">
         <div>
           <p className="stat-label">가격</p>
-          <p className="stat-value">{product.price.toLocaleString()}원</p>
+          <p className="stat-value">{(product.price ?? 0).toLocaleString()}원</p>
         </div>
         <div>
-          <p className="stat-label">리뷰</p>
-          <p className="stat-value">{product.reviews}개</p>
-        </div>
-        <div>
-          <p className="stat-label">재구매율</p>
-          <p className="stat-value" style={{ color: 'var(--color-accent-green)' }}>92%</p>
+          <p className="stat-label">일치 성분</p>
+          <p className="stat-value">{product.matchCount}개</p>
         </div>
       </div>
 

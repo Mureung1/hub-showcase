@@ -1,12 +1,34 @@
+import { useEffect, useState } from 'react';
 import { ChipIcon } from '../chipIcons';
+import { checkOverlap } from '../api/overlap';
+import type { OverlapResult } from '../api/overlap';
 
 interface OverlapProps {
+  supplements: string[];
   onNext: () => void;
 }
 
-const OK_INGREDIENTS = ['루테인은 중복 없음', '안토시아닌은 중복 없음'];
+export function Overlap({ supplements, onNext }: OverlapProps) {
+  const [results, setResults] = useState<OverlapResult[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export function Overlap({ onNext }: OverlapProps) {
+  useEffect(() => {
+    if (supplements.length === 0) {
+      setResults([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    checkOverlap(supplements)
+      .then(setResults)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [supplements]);
+
+  const exceededResults = results.filter((r) => r.isExceeded);
+  const okResults = results.filter((r) => !r.isExceeded);
+
   return (
     <>
       <h1 className="heading" style={{ fontSize: 22 }}>
@@ -15,49 +37,54 @@ export function Overlap({ onNext }: OverlapProps) {
         확인했어요
       </h1>
       <p className="sub" style={{ marginTop: -8 }}>
-        추천 성분과 지금 드시는 영양제를 비교했어요.
+        입력하신 영양제의 성분과 함량을 확인했어요.
       </p>
 
-      <div className="card stat-row">
-        <div>
-          <p className="stat-label">확인한 성분</p>
-          <p className="stat-value">3개</p>
-        </div>
-        <div>
-          <p className="stat-label">중복 발견</p>
-          <p className="stat-value" style={{ color: 'var(--color-accent-pink)' }}>1개</p>
-        </div>
-        <div>
-          <p className="stat-label">상한 초과</p>
-          <p className="stat-value" style={{ color: 'var(--color-accent-green)' }}>없음</p>
-        </div>
-      </div>
+      {loading && <p className="sub">확인 중이에요...</p>}
+      {error && <p className="sub" style={{ color: 'var(--color-accent-pink)' }}>{error}</p>}
+      {!loading && !error && supplements.length === 0 && (
+        <p className="sub">입력하신 영양제가 없어서 중복 체크를 건너뛸게요.</p>
+      )}
 
-      <div className="chip-list">
-        <span className="chip-badge">
+      {!loading && !error && results.length > 0 && (
+        <div className="card stat-row">
+          <div>
+            <p className="stat-label">확인한 성분</p>
+            <p className="stat-value">{results.length}개</p>
+          </div>
+          <div>
+            <p className="stat-label">상한 초과</p>
+            <p
+              className="stat-value"
+              style={{ color: exceededResults.length > 0 ? 'var(--color-accent-pink)' : 'var(--color-accent-green)' }}
+            >
+              {exceededResults.length > 0 ? `${exceededResults.length}개` : '없음'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {[...exceededResults, ...okResults].map((result) => (
+        <div
+          className="card"
+          key={result.ingredientId}
+          style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}
+        >
           <span
             className="chip-icon"
-            style={{ background: 'var(--tint-pink)', color: 'var(--color-accent-pink)' }}
+            style={{
+              background: result.isExceeded ? 'var(--tint-pink)' : 'var(--tint-green)',
+              color: result.isExceeded ? 'var(--color-accent-pink)' : 'var(--color-accent-green)',
+              flexShrink: 0,
+            }}
           >
-            <ChipIcon name="warning" />
+            <ChipIcon name={result.isExceeded ? 'warning' : 'check'} />
           </span>
-          <span className="chip-label">비타민A가 겹쳐요</span>
-        </span>
-      </div>
-
-      <div className="chip-list">
-        {OK_INGREDIENTS.map((label) => (
-          <span className="chip-badge" key={label}>
-            <span
-              className="chip-icon"
-              style={{ background: 'var(--tint-green)', color: 'var(--color-accent-green)' }}
-            >
-              <ChipIcon name="check" />
-            </span>
-            <span className="chip-label">{label}</span>
-          </span>
-        ))}
-      </div>
+          <p className="sub" style={{ margin: 0 }}>
+            {result.message}
+          </p>
+        </div>
+      ))}
 
       <button className="btn" type="button" onClick={onNext}>
         다음

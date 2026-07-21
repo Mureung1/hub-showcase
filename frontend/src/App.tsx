@@ -30,6 +30,8 @@ function App() {
   const [auth, setAuth] = useState<StoredAuth | null>(loadStoredAuth);
   const [screen, setScreen] = useState<Screen>('home');
   const [symptoms, setSymptoms] = useState<string[]>([]);
+  const [recommendedIngredientIds, setRecommendedIngredientIds] = useState<number[]>([]);
+  const [supplements, setSupplements] = useState<string[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   function handleLoggedIn(result: LoginResponse) {
@@ -42,12 +44,20 @@ function App() {
     setAuth(null);
     setScreen('home');
     setSymptoms([]);
+    setRecommendedIngredientIds([]);
+    setSupplements([]);
     setSelectedProduct(null);
   }
 
   function handleStart(startedSymptoms: string[]) {
     setSymptoms(startedSymptoms);
     setScreen('analysis');
+  }
+
+  function handleAnalysisNext(ingredientIds: number[], enteredSupplements: string[]) {
+    setRecommendedIngredientIds(ingredientIds);
+    setSupplements(enteredSupplements);
+    setScreen('overlap');
   }
 
   function handleSelectProduct(product: Product) {
@@ -62,6 +72,8 @@ function App() {
   function handleRestart() {
     setScreen('home');
     setSymptoms([]);
+    setRecommendedIngredientIds([]);
+    setSupplements([]);
     setSelectedProduct(null);
   }
 
@@ -72,10 +84,14 @@ function App() {
           <Header screen={screen} userEmail={auth.user.email} onLogout={handleLogout} />
           {screen === 'home' && <Home onStart={handleStart} />}
           {screen === 'analysis' && (
-            <Analysis symptoms={symptoms} onNext={() => setScreen('overlap')} />
+            <Analysis symptoms={symptoms} onNext={handleAnalysisNext} />
           )}
-          {screen === 'overlap' && <Overlap onNext={() => setScreen('recommend')} />}
-          {screen === 'recommend' && <Recommend onSelect={handleSelectProduct} />}
+          {screen === 'overlap' && (
+            <Overlap supplements={supplements} onNext={() => setScreen('recommend')} />
+          )}
+          {screen === 'recommend' && (
+            <Recommend ingredientIds={recommendedIngredientIds} onSelect={handleSelectProduct} />
+          )}
           {screen === 'detail' && (
             <Detail product={selectedProduct} onBuy={handleBuy} onRestart={handleRestart} />
           )}
