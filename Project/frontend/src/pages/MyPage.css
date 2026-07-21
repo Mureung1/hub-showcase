@@ -178,6 +178,56 @@
   border-radius: var(--td-radius-full);
 }
 
+.td-mypage__activity-filter-card {
+  padding: 20px 24px;
+}
+
+.td-mypage__activity-filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  color: var(--td-on-surface);
+}
+
+.td-mypage__activity-filter-header .td-label-sm {
+  color: var(--td-on-surface-variant);
+}
+
+.td-mypage__activity-filter-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 4px;
+  border-radius: 12px;
+  background-color: var(--td-surface-muted);
+}
+
+.td-mypage__activity-filter-btn {
+  border: 0;
+  border-radius: 9px;
+  padding: 9px 4px;
+  background: transparent;
+  color: var(--td-on-surface-variant);
+  font-family: var(--td-font-family);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.td-mypage__activity-filter-btn--active {
+  background-color: var(--td-primary-container);
+  color: var(--td-on-primary);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+.td-mypage__activity-filter-help {
+  margin: 12px 0 0;
+  color: var(--td-on-surface-variant);
+  font-family: var(--td-font-family);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 /* Notifications Card */
 .td-mypage__notify-card {
   padding: 24px;

@@ -27,3 +27,17 @@ export const createGroupPurchase = (data) => {
 export const joinGroupPurchase = (id) => {
   return apiClient.post(`/group-purchases/${id}/join`);
 };
+
+/**
+ * Cancel the current user's participation while recruitment is open.
+ */
+export const cancelGroupPurchaseJoin = (id) => {
+  return apiClient.delete(`/group-purchases/${id}/join`);
+};
+
+/**
+ * Fetch the authenticated user's profile and group-purchase activity.
+ */
+export const getMyGroupPurchaseActivities = () => {
+  return apiClient.get('/group-purchases/mine');
+};
