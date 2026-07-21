@@ -21,16 +21,77 @@ async function getAllDrops(req, res) {
         createdAt: 'desc',
       },
       include: {
+        votes: true,
         _count: {
           select: { votes: true }
         }
       }
     });
 
+    // Process each drop to append statistical predictions and time-weighted consensus models
+    const formattedDrops = drops.map(drop => {
+      const votes = drop.votes || [];
+      const upVotes = votes.filter(v => v.direction === 'UP').length;
+      const downVotes = votes.filter(v => v.direction === 'DOWN').length;
+      const totalVotes = votes.length;
+      
+      const upRatio = totalVotes > 0 ? Math.round((upVotes / totalVotes) * 100) : 0;
+      const downRatio = totalVotes > 0 ? Math.round((downVotes / totalVotes) * 100) : 0;
+
+      const basePrice = drop.marketPrice || drop.retailPrice;
+      const votesWithPrices = votes.filter(v => v.predictedPrice !== null);
+      
+      const offsets = [3, 7];
+      const predictions = {};
+
+      offsets.forEach(offset => {
+        const offsetVotes = votesWithPrices.filter(v => v.predictionDays === offset);
+        const count = offsetVotes.length;
+
+        if (count === 0) {
+          predictions[offset] = {
+            averagePrice: basePrice,
+            consensusPrice: basePrice,
+            voteCount: 0
+          };
+        } else {
+          const sum = offsetVotes.reduce((acc, curr) => acc + (curr.predictedPrice || 0), 0);
+          const avg = Math.round(sum / count);
+          // Time-weighted consensus pricing model: 30% Market/Retail + 70% average user prediction
+          const consensus = Math.round(basePrice * 0.3 + avg * 0.7);
+
+          predictions[offset] = {
+            averagePrice: avg,
+            consensusPrice: consensus,
+            voteCount: count
+          };
+        }
+      });
+
+      // Dynamically update the consensusPrice dynamically from 7-day consensus if voted
+      const dynamicConsensus = predictions[7].voteCount > 0 ? predictions[7].consensusPrice : (drop.consensusPrice || basePrice);
+
+      // Avoid returning raw votes array to keep response payloads small
+      const { votes: _, ...dropData } = drop;
+
+      return {
+        ...dropData,
+        upVotes,
+        downVotes,
+        totalVotes,
+        ratio: {
+          UP: `${upRatio}%`,
+          DOWN: `${downRatio}%`
+        },
+        predictions,
+        consensusPrice: dynamicConsensus
+      };
+    });
+
     return res.status(200).json({
       success: true,
-      count: drops.length,
-      data: drops
+      count: formattedDrops.length,
+      data: formattedDrops
     });
   } catch (error) {
     console.error('[drops] Error fetching drops:', error);
@@ -67,9 +128,59 @@ async function getDropById(req, res) {
       });
     }
 
+    const votes = drop.votes || [];
+    const upVotes = votes.filter(v => v.direction === 'UP').length;
+    const downVotes = votes.filter(v => v.direction === 'DOWN').length;
+    const totalVotes = votes.length;
+    
+    const upRatio = totalVotes > 0 ? Math.round((upVotes / totalVotes) * 100) : 0;
+    const downRatio = totalVotes > 0 ? Math.round((downVotes / totalVotes) * 100) : 0;
+
+    const basePrice = drop.marketPrice || drop.retailPrice;
+    const votesWithPrices = votes.filter(v => v.predictedPrice !== null);
+    
+    const offsets = [3, 7];
+    const predictions = {};
+
+    offsets.forEach(offset => {
+      const offsetVotes = votesWithPrices.filter(v => v.predictionDays === offset);
+      const count = offsetVotes.length;
+
+      if (count === 0) {
+        predictions[offset] = {
+          averagePrice: basePrice,
+          consensusPrice: basePrice,
+          voteCount: 0
+        };
+      } else {
+        const sum = offsetVotes.reduce((acc, curr) => acc + (curr.predictedPrice || 0), 0);
+        const avg = Math.round(sum / count);
+        const consensus = Math.round(basePrice * 0.3 + avg * 0.7);
+
+        predictions[offset] = {
+          averagePrice: avg,
+          consensusPrice: consensus,
+          voteCount: count
+        };
+      }
+    });
+
+    const dynamicConsensus = predictions[7].voteCount > 0 ? predictions[7].consensusPrice : (drop.consensusPrice || basePrice);
+
     return res.status(200).json({
       success: true,
-      data: drop
+      data: {
+        ...drop,
+        upVotes,
+        downVotes,
+        totalVotes,
+        ratio: {
+          UP: `${upRatio}%`,
+          DOWN: `${downRatio}%`
+        },
+        predictions,
+        consensusPrice: dynamicConsensus
+      }
     });
   } catch (error) {
     console.error(`[drops] Error fetching drop by id ${req.params.id}:`, error);

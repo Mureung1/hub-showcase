@@ -26,6 +26,7 @@ model Drop {
   retailPrice     Int
   consensusPrice  Int        @default(0)
   marketPrice     Int?
+  imageUrl        String?    @db.Text // Added: Product image URL
   kreamProductId  String?    @unique // Added: KREAM product ID
   releaseDate     DateTime?  // Added: Official release date
   releaseDateText String?    // Added: Display date text (e.g. "07/20")
@@ -36,13 +37,15 @@ model Drop {
 }
 
 model Vote {
-  id        String        @id @default(uuid())
-  user      User          @relation(fields: [userId], references: [id])
-  userId    String
-  drop      Drop          @relation(fields: [dropId], references: [id])
-  dropId    String
-  direction VoteDirection
-  createdAt DateTime      @default(now())
+  id             String        @id @default(uuid())
+  user           User          @relation(fields: [userId], references: [id])
+  userId         String
+  drop           Drop          @relation(fields: [dropId], references: [id])
+  dropId         String
+  direction      VoteDirection
+  predictedPrice Int?          // Added: User's actual predicted target price
+  predictionDays Int           @default(7) // Added: Prediction target offset days (e.g. 3, 7)
+  createdAt      DateTime      @default(now())
 
   @@unique([userId, dropId]) // Restrict one vote per user per drop
 }

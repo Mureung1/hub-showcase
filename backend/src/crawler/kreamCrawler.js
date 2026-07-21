@@ -7,21 +7,25 @@ puppeteer.use(StealthPlugin());
 
 const prisma = new PrismaClient();
 
-// Target URL as requested by user
-const KREAM_RANKING_URL = 'https://kream.co.kr/?tab=home_ranking_v2&gender=all_gender&popular_filter=new_product';
+const KREAM_RANKING_URL = 'https://kream.co.kr/?tab=home_ranking_v2&gender=all_gender&popular_filter=all';
 
 // Helper to delay execution
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Random delay helper to mimic human behavior and avoid IP blocking
-const randomDelay = () => {
-  const ms = Math.floor(1500 + Math.random() * 2000); // 1.5s ~ 3.5s
-  return delay(ms);
-};
-
 // Helper to parse price string to integer
 const parsePrice = (priceStr) => {
   if (!priceStr) return 0;
+  
+  // Check if string contains "만" (Korean ten-thousand multiplier)
+  if (priceStr.includes('만')) {
+    // Extract decimal/number before "만" (e.g. "9.5", "50", "9")
+    const match = priceStr.match(/([0-9.]+)/);
+    if (match) {
+      const num = parseFloat(match[1]);
+      return Math.round(num * 10000);
+    }
+  }
+  
   const cleaned = priceStr.replace(/[^0-9]/g, '');
   return cleaned ? parseInt(cleaned, 10) : 0;
 };
@@ -43,7 +47,8 @@ const inferCategory = (title) => {
     lowerTitle.includes('t-shirt') ||
     lowerTitle.includes('tee') ||
     lowerTitle.includes('pants') ||
-    lowerTitle.includes('bag')
+    lowerTitle.includes('bag') ||
+    lowerTitle.includes('sweater')
   ) {
     return 'streetwear';
   }
@@ -78,12 +83,13 @@ const inferBrand = (title) => {
 };
 
 /**
- * Scrapes top 30 products from KREAM's popular ranking page and syncs to database
+ * Scrapes top 30 products from KREAM's popular ranking page and syncs directly to database.
+ * Performance Optimized: Avoids visiting 30 individual product pages, running in just a few seconds.
  */
 async function scrapeKreamSneakers() {
-  console.log('[crawler] Starting KREAM Scraper (Target: Top 30)...');
+  console.log('[crawler] Starting KREAM Scraper (Optimized List Sync)...');
   const browser = await puppeteer.launch({
-    headless: 'new',
+    headless: false,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -95,46 +101,35 @@ async function scrapeKreamSneakers() {
   try {
     const page = await browser.newPage();
     
-    // Optimizing speed and preventing detection by blocking media/css resources
-    await page.setRequestInterception(true);
-    page.on('request', (req) => {
-      const resourceType = req.resourceType();
-      if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
-        req.abort();
-      } else {
-        req.continue();
-      }
-    });
+    // We load styles/images for list view to guarantee React rendering and lazy loading trigger
 
-    // Set viewport and random user agent
-    await page.setViewport({ width: 1280, height: 1000 });
+    // Set viewport and user agent
+    await page.setViewport({ width: 1280, height: 1200 });
     await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36');
 
-    console.log(`[crawler] Navigating to ranking page: ${KREAM_RANKING_URL}`);
+    console.log(`[crawler] Navigating to KREAM Ranking: ${KREAM_RANKING_URL}`);
     await page.goto(KREAM_RANKING_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
     // Wait for the product list items to load on page
-    await page.waitForSelector('.home-ranking-product-item', { timeout: 15000 });
+    await page.waitForSelector('.home-ranking-product-item', { timeout: 35000 });
 
-    // Auto-scroll slightly to trigger lazy-load if needed to fetch 30 items
+    // Auto-scroll to load at least 30 items
     await page.evaluate(async () => {
       await new Promise((resolve) => {
         let totalHeight = 0;
-        const distance = 150;
+        const distance = 250;
         const timer = setInterval(() => {
-          const scrollHeight = document.body.scrollHeight;
           window.scrollBy(0, distance);
           totalHeight += distance;
-
-          if (totalHeight >= scrollHeight || totalHeight > 3000) {
+          if (totalHeight > 2500) {
             clearInterval(timer);
             resolve();
           }
-        }, 100);
+        }, 80);
       });
     });
 
-    // Extract item list basic details
+    // Extract items directly from the list page (including list images)
     const rankingItems = await page.evaluate(() => {
       const items = [];
       const elements = document.querySelectorAll('.home-ranking-product-item');
@@ -143,21 +138,21 @@ async function scrapeKreamSneakers() {
         const href = el.getAttribute('href');
         if (!href) return;
         
-        // Extract product ID from href (e.g., /products/978283)
         const idMatch = href.match(/\/products\/(\d+)/);
         const productId = idMatch ? idMatch[1] : null;
 
-        // Rank info
         const rankEl = el.querySelector('div > section:nth-child(1) p');
         const rank = rankEl ? rankEl.innerText.trim() : '';
 
-        // Product Name
         const nameEl = el.querySelector('div > section:nth-child(2) p');
         const title = nameEl ? nameEl.innerText.trim() : '';
 
-        // Price (Current transaction price on list page)
         const priceEl = el.querySelector('div > section:nth-child(3) p');
         const priceText = priceEl ? priceEl.innerText.trim() : '';
+
+        // Extract list image URL
+        const imgEl = el.querySelector('.product-img img, picture img, img.image, img');
+        const imageUrl = imgEl ? (imgEl.getAttribute('data-src') || imgEl.getAttribute('src') || imgEl.src) : '';
 
         if (productId) {
           items.push({
@@ -165,6 +160,7 @@ async function scrapeKreamSneakers() {
             rank,
             title,
             priceText,
+            imageUrl
           });
         }
       });
@@ -173,118 +169,79 @@ async function scrapeKreamSneakers() {
 
     console.log(`[crawler] Found ${rankingItems.length} items on ranking page.`);
 
-    const scrapedList = [];
+    const targetList = rankingItems.slice(0, 30);
+    console.log(`[crawler] Syncing top ${targetList.length} products directly to DB...`);
 
-    // Iterate through items to filter and get detailed info
-    for (const item of rankingItems) {
-      // Target Top 30 items
-      if (scrapedList.length >= 30) {
-        console.log('[crawler] Successfully collected top 30 products.');
-        break;
-      }
+    for (const item of targetList) {
+      const marketPrice = parsePrice(item.priceText);
+      // Fallback: estimate retail price as 85% of market price
+      let retailPrice = Math.round((marketPrice * 0.85) / 1000) * 1000;
+      if (retailPrice === 0) retailPrice = 129000;
 
-      console.log(`[crawler] Processing [Rank ${item.rank || 'N/A'}] Item ${item.productId}: ${item.title}`);
-      
-      try {
-        const detailUrl = `https://kream.co.kr/products/${item.productId}`;
-        await page.goto(detailUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
-        
-        // Wait until document title updates
-        let retries = 0;
-        let pageTitle = '';
-        while (retries < 10) {
-          pageTitle = await page.title();
-          if (pageTitle && pageTitle !== 'kream.co.kr' && pageTitle !== 'KREAM' && pageTitle.includes('|')) {
-            break;
-          }
-          await delay(200);
-          retries++;
-        }
+      const brand = inferBrand(item.title);
+      const category = inferCategory(item.title);
+      const consensusPrice = marketPrice ? marketPrice : Math.round(retailPrice * 1.15);
 
-        // Extract Brand and Release Price
-        const productDetails = await page.evaluate(() => {
-          let brand = '';
-          const titleParts = document.title.split('|');
-          if (titleParts.length >= 2) {
-            brand = titleParts[1].trim();
-          }
+      console.log(`[crawler] [SYNC] Rank: ${item.rank} | Brand: ${brand} | Title: ${item.title} | Market: ₩${marketPrice} | Image: ${item.imageUrl ? 'Yes' : 'No'}`);
 
-          let retailPriceText = '';
-          const details = Array.from(document.querySelectorAll('.detail_box .detail_item, .product-right-section p'));
-          for (const el of details) {
-            const txt = el.innerText;
-            if (txt.includes('발매가') || txt.includes('Release Price')) {
-              retailPriceText = txt;
-              break;
-            }
-          }
-          return { brand, retailPriceText };
-        });
-
-        let brand = productDetails.brand && productDetails.brand !== 'Unknown' ? productDetails.brand : inferBrand(item.title);
-        const marketPrice = parsePrice(item.priceText);
-        let retailPrice = parsePrice(productDetails.retailPriceText);
-        
-        // Fallback for retail price if it fails to scrape (85% of market price)
-        if (retailPrice === 0 && marketPrice > 0) {
-          retailPrice = Math.round((marketPrice * 0.85) / 1000) * 1000;
-        }
-        if (retailPrice === 0) {
-          retailPrice = 129000;
-        }
-        
-        const category = inferCategory(item.title);
-
-        console.log(`[crawler] [MATCHED] Rank: ${item.rank} | Category: ${category} | Brand: ${brand} | Title: ${item.title} | Retail: ₩${retailPrice} | Market: ₩${marketPrice}`);
-
-        scrapedList.push({
-          kreamProductId: item.productId,
+      await prisma.drop.upsert({
+        where: { kreamProductId: item.productId },
+        update: {
+          title: item.title,
+          brand: brand,
+          category: category,
+          marketPrice: marketPrice,
+          retailPrice: retailPrice,
+          consensusPrice: consensusPrice,
+          imageUrl: item.imageUrl || null,
+          status: 'RELEASED',
+        },
+        create: {
           title: item.title,
           brand: brand,
           category: category,
           retailPrice: retailPrice,
+          consensusPrice: consensusPrice,
           marketPrice: marketPrice,
+          imageUrl: item.imageUrl || null,
           status: 'RELEASED',
-        });
-
-        // Anti-bot random delay
-        await randomDelay();
-      } catch (err) {
-        console.error(`[crawler] Failed to fetch details for product ${item.productId}:`, err.message);
-      }
-    }
-
-    // Save to Database
-    console.log(`[crawler] Syncing ${scrapedList.length} products to database...`);
-    for (const item of scrapedList) {
-      const consensusPrice = item.marketPrice ? item.marketPrice : Math.round(item.retailPrice * 1.15);
-      
-      await prisma.drop.upsert({
-        where: { kreamProductId: item.kreamProductId },
-        update: {
-          title: item.title,
-          brand: item.brand,
-          category: item.category,
-          marketPrice: item.marketPrice,
-          retailPrice: item.retailPrice,
-          consensusPrice: consensusPrice,
-          status: item.status,
-        },
-        create: {
-          title: item.title,
-          brand: item.brand,
-          category: item.category,
-          retailPrice: item.retailPrice,
-          consensusPrice: consensusPrice,
-          marketPrice: item.marketPrice,
-          status: item.status,
-          kreamProductId: item.kreamProductId,
+          kreamProductId: item.productId,
         },
       });
     }
 
-    console.log('[crawler] Database sync complete!');
-    return scrapedList;
+    // Clean up out-of-ranking products (released drops that are not in the new top 30)
+    const activeProductIds = targetList.map(item => item.productId);
+    const dropsToDelete = await prisma.drop.findMany({
+      where: {
+        status: 'RELEASED',
+        kreamProductId: {
+          notIn: activeProductIds
+        }
+      },
+      select: { id: true }
+    });
+
+    const deleteIds = dropsToDelete.map(d => d.id);
+    if (deleteIds.length > 0) {
+      console.log(`[crawler] Cleaning up ${deleteIds.length} out-of-ranking released products...`);
+      // Delete votes related to those drops first to avoid foreign key issues
+      await prisma.vote.deleteMany({
+        where: {
+          dropId: { in: deleteIds }
+        }
+      });
+      // Delete drops
+      await prisma.drop.deleteMany({
+        where: {
+          id: { in: deleteIds }
+        }
+      });
+      console.log(`[crawler] Cleaned up ${deleteIds.length} drops.`);
+    }
+
+    console.log('[crawler] Popular products sync completed.');
+    return targetList;
 
   } catch (error) {
     console.error('[crawler] Scrape process crashed:', error);
@@ -295,17 +252,125 @@ async function scrapeKreamSneakers() {
   }
 }
 
-// Allows standalone execution
-if (require.main === module) {
-  scrapeKreamSneakers()
-    .then((data) => {
-      console.log(`[crawler] Standalone run finished. Scraped ${data.length} items.`);
-      process.exit(0);
-    })
-    .catch((err) => {
-      console.error('[crawler] Standalone run failed:', err);
-      process.exit(1);
+/**
+ * Scrapes upcoming products from KREAM's calendar page and syncs directly to DB
+ */
+async function scrapeKreamUpcoming() {
+  console.log('[crawler] Starting KREAM Upcoming Scraper...');
+  const browser = await puppeteer.launch({
+    headless: false,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-blink-features=AutomationControlled',
+    ],
+  });
+
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1280, height: 1000 });
+    await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36');
+
+    const calendarUrl = 'https://kream.co.kr/calendar';
+    console.log(`[crawler] Navigating to calendar page: ${calendarUrl}`);
+    await page.goto(calendarUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+    try {
+      await page.waitForSelector('.product_card, .calendar-product-item', { timeout: 10000 });
+    } catch (e) {
+      console.log('[crawler] Calendar elements not found (probably empty or slow). Skipping dynamic upcoming scrape.');
+      return [];
+    }
+
+    const upcomingItems = await page.evaluate(() => {
+      const items = [];
+      const cards = document.querySelectorAll('.product_card, .calendar-product-item');
+      cards.forEach((el) => {
+        const titleEl = el.querySelector('.name, .product_name, p');
+        const title = titleEl ? titleEl.innerText.trim() : '';
+        const href = el.querySelector('a')?.getAttribute('href') || '';
+        const idMatch = href.match(/\/products\/(\d+)/);
+        const productId = idMatch ? idMatch[1] : null;
+
+        // Image
+        const imgEl = el.querySelector('img');
+        const imageUrl = imgEl ? (imgEl.getAttribute('data-src') || imgEl.src) : '';
+
+        // Release Price
+        const priceEl = el.querySelector('.price, .retail_price');
+        const priceText = priceEl ? priceEl.innerText.trim() : '';
+
+        if (title && productId) {
+          items.push({
+            productId,
+            title,
+            imageUrl,
+            priceText,
+          });
+        }
+      });
+      return items.slice(0, 10);
     });
+
+    console.log(`[crawler] Found ${upcomingItems.length} upcoming items.`);
+    
+    const syncedUpcoming = [];
+    for (const item of upcomingItems) {
+      const retailPrice = parsePrice(item.priceText) || 159000;
+      const category = inferCategory(item.title);
+      const brand = inferBrand(item.title);
+
+      await prisma.drop.upsert({
+        where: { kreamProductId: item.productId },
+        update: {
+          title: item.title,
+          brand: brand,
+          category: category,
+          retailPrice: retailPrice,
+          imageUrl: item.imageUrl || null,
+          status: 'UPCOMING',
+        },
+        create: {
+          title: item.title,
+          brand: brand,
+          category: category,
+          retailPrice: retailPrice,
+          imageUrl: item.imageUrl || null,
+          status: 'UPCOMING',
+          kreamProductId: item.productId,
+        },
+      });
+      syncedUpcoming.push(item);
+    }
+    return syncedUpcoming;
+  } catch (error) {
+    console.error('[crawler] Upcoming scrape failed:', error.message);
+    return [];
+  } finally {
+    await browser.close();
+    await prisma.$disconnect();
+  }
 }
 
-module.exports = { scrapeKreamSneakers };
+// Allows standalone execution
+if (require.main === module) {
+  (async () => {
+    try {
+      const sneakers = await scrapeKreamSneakers();
+      console.log(`[crawler] Scraped ${sneakers.length} released sneakers.`);
+      try {
+        const upcoming = await scrapeKreamUpcoming();
+        console.log(`[crawler] Scraped ${upcoming.length} upcoming items.`);
+      } catch (err) {
+        console.error('[crawler] Upcoming scrape skipped or failed:', err.message);
+      }
+      process.exit(0);
+    } catch (err) {
+      console.error('[crawler] Scraper pipeline failed:', err);
+      process.exit(1);
+    }
+  })();
+}
+
+module.exports = { scrapeKreamSneakers, scrapeKreamUpcoming };
