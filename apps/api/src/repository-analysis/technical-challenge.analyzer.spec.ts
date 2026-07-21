@@ -78,6 +78,8 @@ describe("createTechnicalChallengePrompt", () => {
 
     expect(prompt.systemPrompt).toContain("근거");
     expect(prompt.systemPrompt).toContain("역할");
+    expect(prompt.systemPrompt).toContain("필드 이름을 바꾸거나 축약하지 마세요");
+    expect(prompt.systemPrompt).toContain("evidenceType, referenceId, title, url, filePath");
     expect(prompt.systemPrompt).toContain("JSON");
     expect(prompt.userPrompt).toContain("apps/api/src/main.ts");
     expect(prompt.userPrompt).toContain("기술적 도전 후보");

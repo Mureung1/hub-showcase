@@ -9,6 +9,10 @@ const SYSTEM_PROMPT = [
   "commit 수나 변경 줄 수만으로 사용자의 실제 기여도, 난이도, 역할을 판단하지 마세요.",
   "사용자의 역할, 의도, 문제 해결 여부는 확정하지 말고 근거가 부족하면 사용자 확인이 필요하다고 표시하세요.",
   "각 후보에는 반드시 하나 이상의 evidence를 연결하세요.",
+  "필드 이름을 바꾸거나 축약하지 마세요. 아래 계약에 없는 필드는 추가하지 마세요.",
+  "근거가 부족한 필드는 추측으로 채우지 말고 null을 사용하세요.",
+  "confidence는 high, medium, low 중 하나만 사용하고, requiresUserConfirmation은 boolean만 사용하세요.",
+  "evidence의 필드 이름은 evidenceType, referenceId, title, url, filePath를 정확히 사용하세요.",
   "응답은 설명 문장 없이 아래 JSON 구조만 반환하세요.",
   '{"candidates":[{"title":"string","summary":"string","background":"string|null","problem":"string|null","solution":"string|null","technicalChallenge":"string","whyItMatters":"string","confidence":"high|medium|low","requiresUserConfirmation":true,"evidence":[{"evidenceType":"file|config|commit|pull_request|issue|release","referenceId":"string|null","title":"string","url":"string|null","filePath":"string|null"}]}]}',
 ].join("\n");
