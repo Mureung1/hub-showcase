@@ -7,6 +7,7 @@ const KAKAO_MAP_KEY = process.env.REACT_APP_KAKAO_MAP_JAVASCRIPT_KEY;
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:4000";
 const PLACE_STORAGE_KEY = "jigeum-review:selected-place";
 const MAP_SCREEN_STORAGE_KEY = "jigeum-review:map-screen";
+const AUTH_RETURN_STORAGE_KEY = "jigeum-review:auth-return";
 
 function loadMapScreenState() {
   try { return JSON.parse(sessionStorage.getItem(MAP_SCREEN_STORAGE_KEY)) || {}; } catch { return {}; }
@@ -61,6 +62,8 @@ function distanceInMeters(first, second) {
 
 function getRoute() {
   if (window.location.pathname === "/login") return { name: "login" };
+  const reviewMatch = window.location.pathname.match(/^\/places\/([^/]+)\/reviews\/new$/);
+  if (reviewMatch) return { name: "review", placeId: decodeURIComponent(reviewMatch[1]) };
   const match = window.location.pathname.match(/^\/places\/([^/]+)$/);
   return match ? { name: "detail", placeId: decodeURIComponent(match[1]) } : { name: "map" };
 }
@@ -91,6 +94,23 @@ function App() {
     navigate(`/places/${encodeURIComponent(place.id)}`);
   }
 
+  function openReview(place) {
+    setSelectedPlace(place);
+    sessionStorage.setItem(PLACE_STORAGE_KEY, JSON.stringify(place));
+    const reviewPath = `/places/${encodeURIComponent(place.id)}/reviews/new`;
+    if (user) return navigate(reviewPath);
+    sessionStorage.setItem(AUTH_RETURN_STORAGE_KEY, reviewPath);
+    navigate("/login");
+  }
+
+  function handleAuthenticated(nextUser) {
+    setUser(nextUser);
+    const fallbackPath = route.name === "review" ? window.location.pathname : "/";
+    const returnPath = sessionStorage.getItem(AUTH_RETURN_STORAGE_KEY) || fallbackPath;
+    sessionStorage.removeItem(AUTH_RETURN_STORAGE_KEY);
+    navigate(returnPath);
+  }
+
   async function logout() {
     await apiRequest("/api/auth/logout", { method: "POST", body: "{}" });
     setUser(null);
@@ -98,8 +118,14 @@ function App() {
   }
 
   const shared = { user, authStatus, onLogin: () => navigate("/login"), onLogout: logout };
-  if (route.name === "login") return <AuthPage user={user} onAuthenticated={(nextUser) => { setUser(nextUser); navigate("/"); }} onBack={() => navigate("/")} />;
-  if (route.name === "detail") return <PlaceDetailPage {...shared} place={selectedPlace?.id === route.placeId ? selectedPlace : null} onBack={() => navigate("/")} />;
+  if (route.name === "login") return <AuthPage user={user} onAuthenticated={handleAuthenticated} onBack={() => navigate("/")} />;
+  if (route.name === "review") {
+    const reviewPlace = selectedPlace?.id === route.placeId ? selectedPlace : null;
+    if (authStatus === "loading") return <main className="route-empty"><strong>로그인 상태를 확인하고 있습니다.</strong></main>;
+    if (!user) return <AuthPage user={user} onAuthenticated={handleAuthenticated} onBack={() => navigate(`/places/${encodeURIComponent(route.placeId)}`)} />;
+    return <ReviewWritePage place={reviewPlace} onBack={() => navigate(`/places/${encodeURIComponent(route.placeId)}`)} />;
+  }
+  if (route.name === "detail") return <PlaceDetailPage {...shared} place={selectedPlace?.id === route.placeId ? selectedPlace : null} onBack={() => navigate("/")} onWriteReview={openReview} />;
   return <MapSearchPage {...shared} onOpenPlace={openPlace} />;
 }
 
@@ -202,7 +228,7 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
       const params = new URLSearchParams({ query, size: "15", x: String(center.getLng()), y: String(center.getLat()), radius: String(radius), sort: "distance" });
       const payload = await apiRequest(`/api/kakao/local?${params.toString()}`, { headers: {} });
       const nextPlaces = (payload.items || []).map(normalizePlace);
-      setPlaces(nextPlaces); setSelectedPlaceId(nextPlaces[0]?.id || ""); setPlaceStatus("ready");
+      setPlaces(nextPlaces); setSelectedPlaceId(""); setPlaceStatus("ready");
     } catch (error) { setPlaces([]); setPlaceStatus("error"); setPlaceError(error.message); }
   }
 
@@ -280,18 +306,67 @@ function AuthPage({ user, onAuthenticated, onBack }) {
   );
 }
 
-function PlaceDetailPage({ place, user, authStatus, onLogin, onLogout, onBack }) {
+function PlaceDetailPage({ place, user, authStatus, onLogin, onLogout, onBack, onWriteReview }) {
   if (!place) return <main className="route-empty"><strong>업체 정보를 찾을 수 없습니다.</strong><p>지도에서 업체를 다시 검색해 주세요.</p><Button onClick={onBack}>지도로 돌아가기</Button></main>;
-  const reviewAction = user ? () => window.alert("리뷰 작성 기능은 다음 단계에서 연결됩니다.") : onLogin;
+  const reviewAction = () => onWriteReview(place);
   return (
     <main className="detail-page">
       <aside className="detail-nav"><div><strong>지금리뷰</strong><span>Verified places</span></div><nav><button onClick={onBack} type="button">⌖ 지도 검색</button><button className="is-active" type="button">▤ 업체 리뷰</button></nav><Button onClick={reviewAction}>{user ? "영수증 리뷰 등록하기" : "로그인하고 리뷰 쓰기"}</Button></aside>
       <div className="detail-content"><header className="detail-header"><button onClick={onBack} type="button">← 지도</button><AccountControl user={user} authStatus={authStatus} onLogin={onLogin} onLogout={onLogout} /></header>
         <section className="place-summary"><div><Badge>{place.category || "음식점"}</Badge><h1>{place.title}</h1><p>{place.address || place.oldAddress || "주소 정보 없음"}</p></div>{place.link && <a href={place.link} rel="noreferrer" target="_blank">카카오맵에서 보기 ↗</a>}</section>
         <section className="place-facts"><div><span>전화</span><strong>{place.telephone || "등록된 전화번호 없음"}</strong></div><div><span>분류</span><strong>{place.fullCategory || place.category}</strong></div><div><span>방문 인증 리뷰</span><strong>0개</strong></div></section>
-        <section className="review-insight"><div><span>리뷰 분석</span><h2>아직 분석할 인증 리뷰가 없습니다</h2></div><p>영수증 OCR 인증을 통과한 리뷰가 등록되면 긍정·아쉬운 리뷰 비율과 가중 별점이 표시됩니다.</p><div className="empty-bars" aria-hidden="true">{[1,2,3,4,5].map((item) => <span key={item} />)}</div></section>
+        <section className="review-insight"><div><span>리뷰 분석</span><h2>아직 분석할 인증 리뷰가 없습니다</h2></div><p>영수증 OCR 인증을 통과한 리뷰가 등록되면 긍정·아쉬운 경험의 비율과 주요 의견이 표시됩니다.</p><div className="empty-bars" aria-hidden="true">{[1,2,3,4,5].map((item) => <span key={item} />)}</div></section>
         <section className="review-section"><div className="review-section__header"><div><span>인증 리뷰</span><h2>방문자의 솔직한 경험</h2></div><Button onClick={reviewAction}>{user ? "리뷰 작성" : "로그인"}</Button></div><div className="review-empty"><strong>첫 번째 인증 리뷰를 기다리고 있어요</strong><p>영수증 이미지로 방문을 인증한 리뷰만 집계됩니다.</p></div></section>
       </div>
+    </main>
+  );
+}
+
+function ReviewWritePage({ place, onBack }) {
+  const draftKey = place ? `jigeum-review:review-draft:${place.id}` : "";
+  const [content, setContent] = useState(() => {
+    if (!draftKey) return "";
+    try { return JSON.parse(sessionStorage.getItem(draftKey))?.content || ""; } catch { return ""; }
+  });
+  const [receiptFile, setReceiptFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+
+  if (!place) return <main className="route-empty"><strong>업체 정보를 찾을 수 없습니다.</strong><p>지도에서 업체를 다시 선택해 주세요.</p><Button onClick={onBack}>업체 상세로 돌아가기</Button></main>;
+
+  function selectReceipt(event) {
+    const file = event.target.files?.[0];
+    setError(""); setSaved(false);
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setError("영수증은 이미지 파일로 선택해 주세요."); event.target.value = ""; return; }
+    if (file.size > 10 * 1024 * 1024) { setError("영수증 이미지는 10MB 이하만 사용할 수 있습니다."); event.target.value = ""; return; }
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setReceiptFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  }
+
+  function saveDraft(event) {
+    event.preventDefault(); setError(""); setSaved(false);
+    if (!receiptFile) return setError("방문 인증을 위한 영수증 이미지를 선택해 주세요.");
+    if (content.trim().length < 10) return setError("리뷰 내용을 10자 이상 작성해 주세요.");
+    sessionStorage.setItem(draftKey, JSON.stringify({ content: content.trim(), receiptName: receiptFile.name }));
+    setSaved(true);
+  }
+
+  return (
+    <main className="review-write-page">
+      <header className="review-write-header"><button onClick={onBack} type="button">← 업체 상세</button><strong>영수증 리뷰 작성</strong><span aria-hidden="true" /></header>
+      <form className="review-write-card" onSubmit={saveDraft}>
+        <div className="review-write-intro"><Badge>방문 인증</Badge><h1>{place.title}</h1><p>영수증으로 실제 방문을 확인한 뒤 리뷰가 등록됩니다.</p></div>
+        <section className="receipt-step"><div><span className="step-number">1</span><div><h2>영수증 이미지</h2><p>상호명과 결제일이 잘 보이도록 촬영해 주세요.</p></div></div><label className={`receipt-upload ${previewUrl ? "has-preview" : ""}`}><input accept="image/*" onChange={selectReceipt} type="file" /><span>{previewUrl ? "다른 이미지 선택" : "영수증 이미지 선택"}</span>{previewUrl && <img alt="선택한 영수증 미리보기" src={previewUrl} />}</label></section>
+        <section className="review-text-step"><div><span className="step-number">2</span><div><h2>방문 경험</h2><p>메뉴, 서비스, 분위기처럼 직접 경험한 내용을 알려주세요.</p></div></div><label><span className="sr-only">리뷰 내용</span><textarea maxLength="1000" onChange={(event) => { setContent(event.target.value); setSaved(false); }} placeholder="이 장소에서 어떤 경험을 하셨나요?" value={content} /></label><small>{content.length}/1000자 · 최소 10자</small></section>
+        {error && <p className="review-form-message is-error" role="alert">{error}</p>}
+        {saved && <p className="review-form-message is-saved" role="status">작성 내용이 임시 저장되었습니다. OCR 인증 연결 후 최종 등록할 수 있습니다.</p>}
+        <div className="review-write-actions"><button onClick={onBack} type="button">취소</button><Button type="submit">작성 내용 임시 저장</Button></div>
+      </form>
     </main>
   );
 }
