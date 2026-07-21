@@ -21,3 +21,15 @@ export type CreateStoreResponse = {
   store: Store;
   membership: StoreMembership;
 };
+
+export type StoreListItem = Store & {
+  role: "OWNER" | "WORKER";
+  hourlyWage: number | null;
+  defaultWorkStartTime: string | null;
+  defaultWorkEndTime: string | null;
+  joinedAt: string;
+};
+
+export type StoreListResponse = {
+  stores: StoreListItem[];
+};

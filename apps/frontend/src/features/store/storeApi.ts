@@ -1,5 +1,5 @@
 import { apiRequest } from "../../shared/api";
-import { CreateStoreResponse } from "./storeTypes";
+import { CreateStoreResponse, StoreListResponse } from "./storeTypes";
 
 export type CreateStoreInput = {
   name: string;
@@ -11,5 +11,11 @@ export async function createStore(accessToken: string, input: CreateStoreInput) 
     method: "POST",
     accessToken,
     body: input
+  });
+}
+
+export async function getStores(accessToken: string) {
+  return apiRequest<StoreListResponse>("/stores", {
+    accessToken
   });
 }
