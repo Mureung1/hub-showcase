@@ -371,6 +371,7 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
   - ⚠️ 위 "Upload → ETL 자동화" 작업에 포함되므로 별도 착수 불필요
 - [ ] Dashboard AI Insight: 자연어 분석 고도화
 - [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동)
+- [ ] 프론트엔드 번들 코드 스플리팅 — `npm run build` 시 메인 청크 667KB 경고(2026-07-22 validation-agent 지적). 지금 당장 문제는 아니지만 페이지별 `React.lazy()` 분리 고려
 
 ## MVP 범위 밖 (항상 제외, CLAUDE.md 준수)
 
