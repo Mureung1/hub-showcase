@@ -1,5 +1,7 @@
 const pool = require('../config/db');
 const ApiError = require('../utils/apiError');
+const withTransaction = require('../utils/withTransaction');
+const { evaluateApplicability } = require('../utils/participation');
 
 // status 필터로 허용하는 값. 임의 문자열이 그대로 SQL 조건에 들어가지 않도록 화이트리스트로 검증한다.
 const ALLOWED_STATUS_FILTERS = ['recruiting', 'closed'];
@@ -204,4 +206,97 @@ async function getMeetingDetail(meetingId, viewerId = null) {
   return detail;
 }
 
-module.exports = { createMeeting, listMeetings, getMeetingDetail, normalizeMeeting, PAGE_SIZE };
+// blockReason(순수 함수 판정)을 HTTP 에러로 옮긴다. 신규 코드는 만들지 않고 기존 5개 코드 +
+// 메시지로 사유를 구분한다(FE는 상세 응답의 canApply/blockReason으로 이미 버튼을 막으므로,
+// 이 에러는 로드~클릭 사이 경합 대비 fallback이다).
+function blockReasonToError(blockReason) {
+  switch (blockReason) {
+    case 'HOST':
+      return new ApiError('VALIDATION_ERROR', '자신이 만든 모임에는 신청할 수 없습니다');
+    case 'ALREADY_APPLIED':
+      return new ApiError('VALIDATION_ERROR', '이미 신청한 모임입니다');
+    case 'REJECTED':
+      return new ApiError('VALIDATION_ERROR', '신청이 거절된 모임입니다');
+    case 'CANCELLED_MEETING':
+      return new ApiError('VALIDATION_ERROR', '취소된 모임입니다');
+    case 'ENDED':
+      return new ApiError('VALIDATION_ERROR', '이미 종료된 모임입니다');
+    case 'FULL':
+      return new ApiError('VALIDATION_ERROR', '정원이 가득 찼습니다');
+    case 'BIRTHDATE_REQUIRED':
+      return new ApiError('FORBIDDEN', '생년월일을 등록해야 참여할 수 있습니다');
+    case 'ADULT_ONLY':
+      return new ApiError('FORBIDDEN', '성인만 참여할 수 있는 모임입니다');
+    default:
+      return new ApiError('VALIDATION_ERROR', '지금은 신청할 수 없습니다');
+  }
+}
+
+// POST /api/meetings/:id/apply — 참여 신청(F1).
+// 모임 행을 FOR UPDATE로 잠가 같은 모임 동시 신청을 직렬화한다. flash는 즉시 confirmed,
+// 마지막 자리를 채우면 모임을 closed로. small은 pending. 내가 취소했던(cancelled) row는
+// 되살리는 UPDATE로 재신청(낡은 타임스탬프는 리셋).
+async function applyToMeeting(meetingId, userId) {
+  return withTransaction(async (client) => {
+    const meetingRes = await client.query(
+      `SELECT *, COALESCE(end_at, start_at) < now() AS is_past
+         FROM meetings WHERE id = $1 FOR UPDATE`,
+      [meetingId]
+    );
+    if (meetingRes.rows.length === 0) {
+      throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
+    }
+    const row = meetingRes.rows[0];
+    const meeting = normalizeMeeting(row);
+
+    const userRes = await client.query('SELECT birth_date FROM users WHERE id = $1', [userId]);
+    const birthDate = userRes.rows.length > 0 ? userRes.rows[0].birth_date : null;
+
+    const existingRes = await client.query(
+      'SELECT status FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, userId]
+    );
+    const existingStatus = existingRes.rows.length > 0 ? existingRes.rows[0].status : null;
+
+    const countRes = await client.query(
+      `SELECT COUNT(*)::int AS confirmed_count FROM meeting_participants
+        WHERE meeting_id = $1 AND status IN ('confirmed', 'approved')`,
+      [meetingId]
+    );
+    const confirmedCount = countRes.rows[0].confirmed_count;
+
+    const { canApply, blockReason } = evaluateApplicability({
+      meeting,
+      viewer: { id: userId, birthDate },
+      confirmedCount,
+      existingStatus,
+      isPast: row.is_past,
+    });
+    if (!canApply) throw blockReasonToError(blockReason);
+
+    const newStatus = meeting.type === 'flash' ? 'confirmed' : 'pending';
+
+    if (existingStatus === 'cancelled') {
+      await client.query(
+        `UPDATE meeting_participants
+            SET status = $3, applied_at = now(), responded_at = NULL
+          WHERE meeting_id = $1 AND user_id = $2`,
+        [meetingId, userId, newStatus]
+      );
+    } else {
+      await client.query(
+        'INSERT INTO meeting_participants (meeting_id, user_id, status) VALUES ($1, $2, $3)',
+        [meetingId, userId, newStatus]
+      );
+    }
+
+    // flash 정원이 이 신청으로 차면 모임을 마감한다.
+    if (meeting.type === 'flash' && confirmedCount + 1 >= meeting.capacity) {
+      await client.query("UPDATE meetings SET status = 'closed' WHERE id = $1", [meetingId]);
+    }
+
+    return { status: newStatus };
+  });
+}
+
+module.exports = { createMeeting, listMeetings, getMeetingDetail, applyToMeeting, normalizeMeeting, PAGE_SIZE };

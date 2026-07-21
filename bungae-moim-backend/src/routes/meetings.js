@@ -2,7 +2,7 @@ const express = require('express');
 const requireAuth = require('../middleware/auth');
 const { validateCreateMeeting } = require('../utils/validators');
 const ApiError = require('../utils/apiError');
-const { createMeeting, listMeetings, getMeetingDetail } = require('../services/meetingService');
+const { createMeeting, listMeetings, getMeetingDetail, applyToMeeting } = require('../services/meetingService');
 
 const router = express.Router();
 
@@ -74,6 +74,25 @@ router.get('/:id', async (req, res, next) => {
     }
 
     res.json({ data: meeting });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// :id 파라미터를 안전한 양의 정수로 파싱한다. 아니면 없는 모임 취급(404). GET /:id와 같은 원칙.
+function parseMeetingId(rawId) {
+  if (!/^\d+$/.test(rawId) || Number(rawId) > Number.MAX_SAFE_INTEGER || Number(rawId) <= 0) {
+    throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
+  }
+  return Number(rawId);
+}
+
+// POST /api/meetings/:id/apply — 참여 신청(F1, 로그인 필요)
+router.post('/:id/apply', requireAuth, async (req, res, next) => {
+  try {
+    const id = parseMeetingId(req.params.id);
+    const result = await applyToMeeting(id, req.session.userId);
+    res.status(201).json({ data: result });
   } catch (err) {
     next(err);
   }
