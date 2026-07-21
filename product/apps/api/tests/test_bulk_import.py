@@ -2,7 +2,7 @@ import csv
 import sqlite3
 from pathlib import Path
 
-from localtwin_api.bulk_import import detect_csv_encoding, import_bulk_files
+from localtwin_api.bulk_import import detect_csv_encoding, import_bulk_files, load_bulk_source
 from localtwin_api.canonical_db import SCHEMA
 
 
@@ -161,3 +161,18 @@ def test_encoding_detection_accepts_utf8_sample_ending_mid_character(tmp_path: P
     path.write_bytes((b"a" * 65535) + "가".encode() + b"\n")
 
     assert detect_csv_encoding(path) == "utf-8-sig"
+
+
+def test_bulk_source_metadata_is_validated_without_a_database(
+    tmp_path: Path, monkeypatch: object
+) -> None:
+    monkeypatch.setattr("localtwin_api.bulk_import.repository_root", lambda: tmp_path)
+    path = tmp_path / "data/raw/stores.csv"
+    path.parent.mkdir(parents=True)
+    path.write_text("id,name\nS1,테스트\n", encoding="utf-8")
+
+    source = load_bulk_source(path)
+
+    assert source.path == path
+    assert source.raw_path == "data/raw/stores.csv"
+    assert len(source.snapshot_id) == 64

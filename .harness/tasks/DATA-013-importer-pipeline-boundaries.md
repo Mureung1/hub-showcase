@@ -8,7 +8,7 @@ Backlog ID: DATA-013 / GitHub #69
 Parent Epic: EPIC-08 / GitHub #63
 Type: refactor
 Owner: HyunKN
-Status: in_progress
+Status: done
 ```
 
 ## 2. Goal
@@ -38,10 +38,10 @@ tests: DB-independent parser/validator tests and idempotency regression
 
 ## 6. Acceptance Criteria
 
-- [ ] 같은 snapshot을 두 번 실행해 row count가 유지된다.
-- [ ] parse·validate 단계가 DB 없이 테스트된다.
-- [ ] 기간·dataset version·provenance가 manifest 또는 명시적 입력으로 남는다.
-- [ ] importer의 DB 저장과 결과 보고가 입력 parsing과 분리된다.
+- [x] 같은 snapshot을 두 번 실행해 row count가 유지된다.
+- [x] parse·validate 단계가 DB 없이 테스트된다.
+- [x] 기간·dataset version·provenance가 manifest 또는 명시적 입력으로 남는다.
+- [x] importer의 DB 저장과 결과 보고가 입력 parsing과 분리된다.
 
 ## 7. Verification Plan
 
@@ -55,7 +55,7 @@ python scripts/check_task_packet.py
 ## 8. Documentation Updates
 
 - [x] Task Packet 생성
-- [ ] 각 importer 단계와 Issue 진행 상태를 기록한다.
+- [x] 각 importer 단계와 Issue 진행 상태를 기록한다.
 
 ## 9. Commit Plan
 
@@ -68,5 +68,5 @@ refactor(data): isolate KOSIS snapshot validation
 ## 10. Self-check
 
 - [x] 기존 DB schema와 public API contract를 바꾸지 않는다.
-- [ ] 각 importer의 DB-independent test와 전체 regression을 실행한다.
+- [x] 각 importer의 DB-independent test와 전체 regression을 실행한다.
 - [ ] TEST-001에서 배포 환경의 seed·smoke를 반복 검증한다.

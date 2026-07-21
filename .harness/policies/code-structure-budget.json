@@ -22,21 +22,9 @@
       "maxLines": 115,
       "reason": "점수 결과 baseline을 먼저 고정하고 API-005에서 단계별 helper를 검토한다."
     },
-    "product/apps/api/src/localtwin_api/canonical_db.py#import_seoul": {
-      "maxLines": 104,
-      "reason": "DATA-013에서 parse, validate와 persist 단계를 분리한다."
-    },
-    "product/apps/api/src/localtwin_api/bulk_import.py#import_sbiz_stores": {
-      "maxLines": 104,
-      "reason": "DATA-013에서 importer 단계를 분리한다."
-    },
     "product/apps/api/src/localtwin_api/nearby_search.py#NearbyStoreRepository.nearby": {
       "maxLines": 94,
       "reason": "API-005에서 공간 query와 response mapping 경계를 검토한다."
-    },
-    "product/apps/api/src/localtwin_api/bulk_import.py#import_seoul_store_metrics": {
-      "maxLines": 92,
-      "reason": "DATA-013에서 importer 단계를 분리한다."
     },
     "product/apps/api/src/localtwin_api/seoul_open_data.py#main": {
       "maxLines": 90,
