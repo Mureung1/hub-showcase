@@ -46,6 +46,12 @@ export interface MultiDayObjectiveInput {
   warmupDays?: number;
   /** 이 값보다 짧게 자는 밤이 있으면 패널티를 부과한다. 안 넘기면 패널티 없음(기존 동작 그대로). */
   minSleepHours?: number;
+  /**
+   * #15 — 검색 대상이 아니지만 항상 혈중농도 계산에 포함되어야 하는 카페인(예: 오늘
+   * 이미 마신 커피). schedule.doses(검색 중인 후보)와 합쳐서 alertness()에 넘기되,
+   * 반환하는 examScores/score에만 반영되고 schedule 자체(추천 목록)에는 안 섞인다.
+   */
+  fixedDoses?: CaffeineDose[];
 }
 
 export interface MultiDayObjectiveResult {
@@ -59,13 +65,24 @@ export interface MultiDayObjectiveResult {
 const SLEEP_SHORTFALL_PENALTY_PER_HOUR = 0.1; // 근거 없는 근사치(2026-07-21) — verifyMinSleepPenalty.ts로 조정
 
 export function scoreMultiDaySchedule(input: MultiDayObjectiveInput): MultiDayObjectiveResult {
-  const { habitualBedTime, habitualWakeTime, schedule, examTimes, bodyWeightKg, halfLifeHours, warmupDays, minSleepHours } = input;
+  const {
+    habitualBedTime,
+    habitualWakeTime,
+    schedule,
+    examTimes,
+    bodyWeightKg,
+    halfLifeHours,
+    warmupDays,
+    minSleepHours,
+    fixedDoses,
+  } = input;
 
   const segments = buildMultiNightSegments(habitualBedTime, habitualWakeTime, schedule.nights, warmupDays);
+  const allDoses = fixedDoses ? [...fixedDoses, ...schedule.doses] : schedule.doses;
 
   const examScores = examTimes.map((examTime) => {
     const segment = segmentAt(segments, examTime);
-    const score = alertness(examTime, segment, schedule.doses, bodyWeightKg, halfLifeHours);
+    const score = alertness(examTime, segment, allDoses, bodyWeightKg, halfLifeHours);
     return { examTime, score };
   });
 
