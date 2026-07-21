@@ -39,7 +39,7 @@ export default function App() {
         <EmotionResult
           result={emotionResult}
           onAnalyzeAgain={handleAnalyzeAgain}
-          disabled={analysisStatus === "analyzing"}
+          disabled={isInputDisabled}
         />
       </aside>
 

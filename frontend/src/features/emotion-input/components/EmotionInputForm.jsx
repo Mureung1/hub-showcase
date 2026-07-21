@@ -20,7 +20,7 @@ export default function EmotionInputForm({
     setValidationError("");
   }, [scenarioPreset]);
 
-  const submitInput = () => {
+  const submitInput = async () => {
     const trimmedText = situationText.trim();
     if (!trimmedText) {
       setValidationError("분석할 상황을 입력해 주세요.");
@@ -28,7 +28,7 @@ export default function EmotionInputForm({
     }
 
     setValidationError("");
-    const accepted = onAnalyze({
+    const accepted = await onAnalyze({
       situationText: trimmedText,
       faceSignal,
       voiceSignal
@@ -38,13 +38,13 @@ export default function EmotionInputForm({
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (!disabled) submitInput();
+    if (!disabled) void submitInput();
   };
 
   const handleKeyDown = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      if (!disabled) submitInput();
+      if (!disabled) void submitInput();
     }
   };
 
