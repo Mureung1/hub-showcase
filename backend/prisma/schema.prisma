@@ -56,8 +56,17 @@ model IssueCache {
   url          String
   state        String // open | closed
   fetchedAt    DateTime @map("fetched_at") // 캐시 신선도 판단 기준
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // LLM 이슈 분석 (#6, 지연 생성) — 위 필드들과 달리 TTL 없이 "성공한 결과만" 영구 캐시한다.
+  // 실패는 절대 여기 안 남긴다 — null이면 다음 상세 조회가 자동으로 재시도한다.
+  // (decisions.md 2026-07-21 "이슈 분석 LLM 실패 시 폴백" 참조)
+  issueSummary   String?   @map("issue_summary")
+  requiredSkills Json?     @map("required_skills") // string[] — 미생성이면 null
+  guide          Json? // string[] — 미생성이면 null
+  analyzedAt     DateTime? @map("analyzed_at") // LLM 분석 성공 시각, 미생성이면 null
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@unique([repoFullName, issueNumber])
   @@map("issue_cache")
