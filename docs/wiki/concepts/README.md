@@ -2,7 +2,7 @@
 title: Wiki Concepts
 type: concept-index
 status: active
-updated: 2026-07-14
+updated: 2026-07-21
 source_paths:
   - docs/learning/README.md
 confidence: high
@@ -20,6 +20,8 @@ Concept pages explain reusable project ideas and should stay linked to source fi
 - XP desktop UI shell
 - Rule-based quest agent
 - Quest log vertical slice
+- Supabase Quest Event vertical slice
+- Server-side secret boundary
 - Project harness orchestration
 - Wiki source vs synthesis boundary
 

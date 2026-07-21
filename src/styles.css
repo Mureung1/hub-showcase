@@ -1321,19 +1321,57 @@ label {
 }
 
 .desktop-pet-sprite {
-  display: block;
+  display: grid;
+  place-items: center;
   width: 112px;
   height: 112px;
-  background-repeat: no-repeat;
-  background-position: 0 0;
-  background-size: calc(var(--sprite-frame-count, 4) * 100%) 100%;
-  image-rendering: pixelated;
-  animation: lumi-sprite var(--sprite-duration, 1s) steps(var(--sprite-frame-count, 4), end) infinite;
 }
 
 .desktop-pet-sprite.large {
   width: 184px;
   height: 184px;
+}
+
+.canvas-sprite-animator {
+  display: block;
+  width: var(--sprite-frame-width, 64px);
+  height: var(--sprite-frame-height, 64px);
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.desktop-pet-sprite .canvas-sprite-animator {
+  width: 112px;
+  height: 112px;
+}
+
+.desktop-pet-sprite.large .canvas-sprite-animator {
+  width: 184px;
+  height: 184px;
+}
+
+.window-pet-interaction {
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.window-pet-interaction .canvas-sprite-animator {
+  width: 96px;
+  height: 96px;
+}
+
+.window-pet-interaction.below-quest {
+  left: calc(var(--window-x) + 132px);
+  top: calc(var(--window-y) + 352px);
+}
+
+.window-pet-interaction.beside-recovery {
+  left: calc(var(--window-x) - 78px);
+  top: calc(var(--window-y) + 48px);
 }
 
 .quest-window {
@@ -1478,8 +1516,18 @@ label {
 }
 
 .manager-visual .desktop-pet-sprite {
-  width: 184px;
-  height: 184px;
+  width: 142px;
+  height: 142px;
+  transform: translateY(-8px);
+}
+
+.manager-visual .desktop-pet-sprite .canvas-sprite-animator {
+  width: 142px;
+  height: 142px;
+}
+
+.manager-visual.pet-away {
+  place-items: center;
 }
 
 .manager-progress {
@@ -1701,6 +1749,22 @@ label {
   padding-top: 10px;
   border-top: 1px solid #aca899;
   box-shadow: 0 -1px 0 #ffffff;
+}
+
+.quest-footer {
+  display: flex;
+  justify-content: space-between;
+}
+
+.quest-footer .reward {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quest-footer .xp-button {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 /* P0 form parity: match the static HTML two-column control rhythm. */
@@ -1940,15 +2004,8 @@ label {
   box-shadow: none;
 }
 
-@keyframes lumi-sprite {
-  to {
-    background-position: 100% 0;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .desktop-pet-sprite {
-    animation: none;
-    background-position: 0 0;
+  .canvas-sprite-animator {
+    image-rendering: pixelated;
   }
 }

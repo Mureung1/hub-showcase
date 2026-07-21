@@ -2,7 +2,7 @@
 title: Project Wiki Index
 type: index
 status: active
-updated: 2026-07-20
+updated: 2026-07-21
 source_paths:
   - docs/README.md
   - docs/project-knowledge-map.md
@@ -26,6 +26,7 @@ This Wiki separates source material from generated project knowledge. Source pag
 | [synthesis/README.md](synthesis/README.md) | synthesis-index | active | 2026-07-14 | Generated summaries and decisions derived from sources |
 | [synthesis/codex-harness-operations-evals.md](synthesis/codex-harness-operations-evals.md) | synthesis | active | 2026-07-14 | Codex harness operating workflow and representative evals |
 | [synthesis/dynamic-asset-animation-pipeline.md](synthesis/dynamic-asset-animation-pipeline.md) | synthesis | active | 2026-07-20 | Source-backed dynamic asset sprite generation, playback, and Wiki/source boundary |
+| [synthesis/supabase-quest-event-vertical-slice.md](synthesis/supabase-quest-event-vertical-slice.md) | synthesis | active | 2026-07-21 | Verified Hono and Supabase Quest Event save/read vertical slice |
 | [log.md](log.md) | log | active | 2026-07-14 | Append-only Wiki operation log |
 
 ## Rules

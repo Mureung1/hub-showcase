@@ -40,6 +40,13 @@ Indexes to add with the real migration:
 - `(result, created_at desc)`
 - `(event_type, created_at desc)`
 
+Data API grants used for local Supabase verification:
+
+```sql
+grant usage on schema public to service_role;
+grant select, insert, update, delete on table public.quest_logs to service_role;
+```
+
 Expansion notes:
 
 - Weekly reports can aggregate by `created_at`, `result`, `exp_delta`, and `failure_reason`.

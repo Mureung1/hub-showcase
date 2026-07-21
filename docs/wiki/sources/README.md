@@ -2,7 +2,7 @@
 title: Wiki Sources
 type: source-index
 status: active
-updated: 2026-07-20
+updated: 2026-07-21
 source_paths:
   - docs/README.md
   - docs/project-knowledge-map.md
@@ -34,6 +34,10 @@ Source material is the project evidence that Wiki pages can cite or summarize.
 - `docs/status.md`
 - `docs/dynamic-asset-requirements.md`
 - `docs/asset-prompts/`
+- `docs/api-contracts.md`
+- `docs/db-schema.md`
+- `docs/supabase-setup.md`
+- `supabase/migrations/`
 - `docs/plans/completed/harness-recommended-implementation-2026-07-14.md`
 - `scripts/verify-harness.ps1`
 - `src/`

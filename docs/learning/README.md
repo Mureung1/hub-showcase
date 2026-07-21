@@ -17,8 +17,8 @@
 | `02-xp-ui-css.md` | XP 데스크톱 UI, CSS 레이아웃, 창 시스템 |
 | `03-quest-agent-logic.md` | 퀘스트 생성, 완료/실패/복구 규칙 |
 | `04-asset-generation-workflow.md` | 이미지 생성, 에셋 저장, 적용 흐름 |
-| `05-git-pr-workflow.md` | commit, push, PR, Wiki 분리 |
-| `06-api-db-vertical-slice.md` | API 계약, Supabase 저장, FE-BE-DB 연결 |
+| `05-git-pr-workflow.md` | commit, push, PR, Wiki, GitHub Issues/Project 분리 |
+| `06-api-db-vertical-slice.md` | API 계약, Supabase 저장, FE-BE-DB 연결, Data API 권한 |
 | `07-react-migration-timeline.md` | React 전환 이후 전체 작업 흐름 |
 
 ## ChatGPT 프로젝트에 넣을 추천 파일

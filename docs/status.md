@@ -50,6 +50,8 @@
 - 2026-07-18 플라나리아 Stage 1 기준 이미지를 `call_FC5eMPVVWE0EfZgjCbcenep4`에서 추출하고, `idle/focused/happy/recovering/hover/hanging/hiding` 샘플 sprite sheet 7종을 생성
 - 2026-07-18 플라나리아 Stage 1 animation sample의 기준 프레임, CSS background-position, 상태별 fps, 배치 anchor, reduced-motion fallback 기준을 문서화
 - 2026-07-20 동적 에셋 animation pipeline 내용을 `asset-prompts` 문서와 Wiki synthesis로 재배치하고, `docs/wiki/synthesis/dynamic-asset-animation-pipeline.md`를 추가
+- 2026-07-21 Supabase 실제 DB 수직 슬라이스 검증 완료: `/api/health`가 `storageMode: "supabase"`와 `supabaseConfigured: true`를 반환했고, `POST /api/quest-events`, `GET /api/quest-events`, `GET /api/manager-context`가 실제 Supabase 경로에서 통과
+- 2026-07-21 GitHub Issues/Project 정리 완료: 기존 P0 이슈 상태를 최신화하고 3주차 P1, 4주차 P2 확장 이슈를 Project #1에 `Priority`, `Week`, `Type`, `Status` 필드와 함께 등록
 
 ## 검증
 
@@ -78,30 +80,25 @@
 - 2026-07-18 플라나리아 Stage 1 animation sample 7개가 모두 `256x64` RGBA sprite sheet로 생성되고, 일반 상태 중심 오차는 대략 0~1px 수준으로 보정됨
 - 2026-07-18 플라나리아 Stage 1 animation 기준 frame-0 7개와 reference contact sheet를 생성하고 문서 경로 확인
 - 2026-07-20 Wiki index/source/log 갱신 후 하네스 구조 검증 통과: `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
+- 2026-07-21 Supabase 실제 DB 검증 통과: `GET /api/health` -> `supabase`, `POST /api/quest-events` -> `201 Created`, `GET /api/quest-events?limit=5` -> `200 OK`, `GET /api/manager-context` -> `200 OK`
 - 로컬 skill 설치 확인: Superpowers, 하네스 workflow skills, `project-learning-agent`
 - React 화면은 정적 HTML 기준으로 큰 flow/state 차이는 줄였고, 남은 시각 차이는 사용자가 직접 화면을 보며 추가 점검 예정
 
 ## 다음 작업
 
-- Supabase 프로젝트에서 `quest_logs` 테이블을 Quest Event 스키마로 생성
-- 로컬 `.env`에 실제 Supabase 값을 넣고 `/api/quest-events`, `/api/manager-context` 실 DB 저장/조회 검증
 - React 화면을 `WindowFrame`, `ProfileWizard`, `DesktopShell`, `QuestWindow`, `ManagerWindow`, `JournalWindow` 파일 단위로 추가 분리
 - React 핵심 상태 전이 로직을 학습용 컴포넌트 분리 단위로 재정리
 - 기록 노트 API 로딩/빈 상태/실패 상태 polish
 - 정적 HTML 기준으로 남은 UI 시각 차이 수동 점검 및 우선순위화
 - 승격된 확장 기능의 asset/data manifest 설계: 개인화 AI 매니저, 하루 흐름 web theme, 현실 픽셀화 TV, 공개 퀘스트 탐색, 웹캠 손 제스처, 캐릭터 애니메이션, 외적 성장, 배경/창 테마, 기억 조각, 사운드
 - 다음 에셋 제작 세션에서 `docs/dynamic-asset-requirements.md` 기준으로 sprite, icon, theme, reward, sound asset을 생성
-- GitHub Project에 Issue 등록
-- GitHub Issue 등록
+- GitHub Project #1 기준으로 #4 수직 슬라이스 Review를 사용자 UI 검증 후 Done으로 이동
 - `docs/notion-dashboard-guide.md`는 오래된 문서이므로 공식 흐름에서 제외 상태 유지
 - 오래된 계획 문서에 남아 있는 Notion 기준 표현은 역사 문맥인지 현재 기준인지 정리 필요
 
 ## 차단 요소
 
-- GitHub Issue 실제 생성은 사용자가 직접 하거나 별도 승인 필요
 - Supabase Key와 API Key는 저장소에 넣지 않아야 하며, `.env`에는 로컬 실제 값만 둬야 함
-- 현재 Supabase env가 없으면 서버는 memory store를 사용하므로 서버 재시작 시 기록이 사라짐
-- 실제 DB 영속성 완료 판단은 Supabase 프로젝트 생성과 migration 실행 후 가능
+- Supabase env가 없는 새 환경에서는 서버가 memory store로 fallback하므로 `/api/health`로 storage mode를 먼저 확인해야 함
 - 현재 PowerShell 환경에 `Path`/`PATH` 중복이 있어 `Start-Process` 기반 자동 dev-server smoke test는 실패할 수 있음. 수동 브라우저 검증 또는 깨끗한 shell에서 `npm.cmd run dev`로 확인 필요
 - GitHub Wiki는 코드 PR에 포함되지 않아 별도 동기화 필요
-- 현재 하네스 파일 다수가 아직 untracked/modified 상태이므로, 승인 후 의도한 파일만 stage/commit 필요

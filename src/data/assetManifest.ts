@@ -7,11 +7,24 @@ export type LumiSpriteState =
   | "hover"
   | "hanging"
   | "hiding";
+export type PetAnimationState = Exclude<LumiSpriteState, "resting">;
 export type LumiMood = "waiting" | "focused" | "happy" | "recovering";
+export type PetId = "planaria";
+export type PetStageId = "stage-1";
+
+export interface SpriteAnchor {
+  type: "float" | "top-grip" | "peek-edge";
+  x: number;
+  y: number;
+}
 
 export interface SpriteAnimationAsset {
   id: string;
+  petId?: PetId;
+  stage?: PetStageId;
   src: string;
+  sheetWidth: number;
+  sheetHeight: number;
   frameWidth: number;
   frameHeight: number;
   frameCount: number;
@@ -19,6 +32,7 @@ export interface SpriteAnimationAsset {
   loop: boolean;
   states: LumiSpriteState[];
   reducedMotionFrame: number;
+  anchor: SpriteAnchor;
 }
 
 export type DesktopIconId =
@@ -75,12 +89,68 @@ export interface FutureAssetSlot {
   iconId?: DesktopIconId;
 }
 
-const lumiSpritePath = "/assets/lumi";
+const planariaStage1Path = "/assets/lumi/planaria-stage-1";
+const planariaFloatAnchor: SpriteAnchor = { type: "float", x: 32, y: 60 };
+
+const planariaStage1Animation = (
+  state: PetAnimationState,
+  fps: number,
+  anchor: SpriteAnchor = planariaFloatAnchor,
+): SpriteAnimationAsset => ({
+  id: `planaria-stage-1-${state}`,
+  petId: "planaria",
+  stage: "stage-1",
+  src: `${planariaStage1Path}/planaria-stage-1-${state}-sheet.png`,
+  sheetWidth: 256,
+  sheetHeight: 64,
+  frameWidth: 64,
+  frameHeight: 64,
+  frameCount: 4,
+  fps,
+  loop: true,
+  states: [state],
+  reducedMotionFrame: 0,
+  anchor,
+});
+
+export const petAnimationCatalog = {
+  planaria: {
+    "stage-1": {
+      idle: planariaStage1Animation("idle", 4),
+      focused: planariaStage1Animation("focused", 6),
+      happy: planariaStage1Animation("happy", 6),
+      recovering: planariaStage1Animation("recovering", 4),
+      hover: planariaStage1Animation("hover", 7),
+      hanging: planariaStage1Animation("hanging", 6, { type: "top-grip", x: 32, y: 5 }),
+      hiding: planariaStage1Animation("hiding", 5, { type: "peek-edge", x: 53, y: 32 }),
+    },
+  },
+} as const satisfies Record<PetId, Record<PetStageId, Record<PetAnimationState, SpriteAnimationAsset>>>;
 
 export const lumiAnimations: Record<LumiSpriteState, SpriteAnimationAsset> = {
+  idle: petAnimationCatalog.planaria["stage-1"].idle,
+  focused: petAnimationCatalog.planaria["stage-1"].focused,
+  happy: petAnimationCatalog.planaria["stage-1"].happy,
+  recovering: petAnimationCatalog.planaria["stage-1"].recovering,
+  resting: {
+    ...petAnimationCatalog.planaria["stage-1"].idle,
+    id: "planaria-stage-1-resting-fallback",
+    fps: 3,
+    states: ["resting"],
+  },
+  hover: petAnimationCatalog.planaria["stage-1"].hover,
+  hanging: petAnimationCatalog.planaria["stage-1"].hanging,
+  hiding: petAnimationCatalog.planaria["stage-1"].hiding,
+};
+
+const lumiSpritePath = "/assets/lumi";
+
+export const legacyLumiAnimations: Record<LumiSpriteState, SpriteAnimationAsset> = {
   idle: {
     id: "lumi-idle",
     src: `${lumiSpritePath}/lumi-idle-sheet.png`,
+    sheetWidth: 256,
+    sheetHeight: 64,
     frameWidth: 64,
     frameHeight: 64,
     frameCount: 4,
@@ -88,10 +158,13 @@ export const lumiAnimations: Record<LumiSpriteState, SpriteAnimationAsset> = {
     loop: true,
     states: ["idle"],
     reducedMotionFrame: 0,
+    anchor: planariaFloatAnchor,
   },
   focused: {
     id: "lumi-focused",
     src: `${lumiSpritePath}/lumi-focused-sheet.png`,
+    sheetWidth: 256,
+    sheetHeight: 64,
     frameWidth: 64,
     frameHeight: 64,
     frameCount: 4,
@@ -99,10 +172,13 @@ export const lumiAnimations: Record<LumiSpriteState, SpriteAnimationAsset> = {
     loop: true,
     states: ["focused"],
     reducedMotionFrame: 0,
+    anchor: planariaFloatAnchor,
   },
   happy: {
     id: "lumi-happy",
     src: `${lumiSpritePath}/lumi-happy-sheet.png`,
+    sheetWidth: 256,
+    sheetHeight: 64,
     frameWidth: 64,
     frameHeight: 64,
     frameCount: 4,
@@ -110,10 +186,13 @@ export const lumiAnimations: Record<LumiSpriteState, SpriteAnimationAsset> = {
     loop: true,
     states: ["happy"],
     reducedMotionFrame: 1,
+    anchor: planariaFloatAnchor,
   },
   recovering: {
     id: "lumi-recovering",
     src: `${lumiSpritePath}/lumi-recovering-sheet.png`,
+    sheetWidth: 256,
+    sheetHeight: 64,
     frameWidth: 64,
     frameHeight: 64,
     frameCount: 4,
@@ -121,10 +200,13 @@ export const lumiAnimations: Record<LumiSpriteState, SpriteAnimationAsset> = {
     loop: true,
     states: ["recovering"],
     reducedMotionFrame: 0,
+    anchor: planariaFloatAnchor,
   },
   resting: {
     id: "lumi-resting",
     src: `${lumiSpritePath}/lumi-resting-sheet.png`,
+    sheetWidth: 256,
+    sheetHeight: 64,
     frameWidth: 64,
     frameHeight: 64,
     frameCount: 4,
@@ -132,10 +214,13 @@ export const lumiAnimations: Record<LumiSpriteState, SpriteAnimationAsset> = {
     loop: true,
     states: ["resting"],
     reducedMotionFrame: 0,
+    anchor: planariaFloatAnchor,
   },
   hover: {
     id: "lumi-hover",
     src: `${lumiSpritePath}/lumi-hover-sheet.png`,
+    sheetWidth: 256,
+    sheetHeight: 64,
     frameWidth: 64,
     frameHeight: 64,
     frameCount: 4,
@@ -143,10 +228,13 @@ export const lumiAnimations: Record<LumiSpriteState, SpriteAnimationAsset> = {
     loop: true,
     states: ["hover"],
     reducedMotionFrame: 0,
+    anchor: planariaFloatAnchor,
   },
   hanging: {
     id: "lumi-hanging",
     src: `${lumiSpritePath}/lumi-hanging-sheet.png`,
+    sheetWidth: 256,
+    sheetHeight: 64,
     frameWidth: 64,
     frameHeight: 64,
     frameCount: 4,
@@ -154,10 +242,13 @@ export const lumiAnimations: Record<LumiSpriteState, SpriteAnimationAsset> = {
     loop: true,
     states: ["hanging"],
     reducedMotionFrame: 1,
+    anchor: { type: "top-grip", x: 32, y: 5 },
   },
   hiding: {
     id: "lumi-hiding",
     src: `${lumiSpritePath}/lumi-hiding-sheet.png`,
+    sheetWidth: 256,
+    sheetHeight: 64,
     frameWidth: 64,
     frameHeight: 64,
     frameCount: 4,
@@ -165,6 +256,7 @@ export const lumiAnimations: Record<LumiSpriteState, SpriteAnimationAsset> = {
     loop: true,
     states: ["hiding"],
     reducedMotionFrame: 1,
+    anchor: { type: "peek-edge", x: 53, y: 32 },
   },
 };
 
@@ -266,6 +358,10 @@ export const futureAssetSlots: FutureAssetSlot[] = [
 
 export function getLumiAnimationAsset(state: LumiSpriteState) {
   return lumiAnimations[state];
+}
+
+export function getPetAnimationAsset(petId: PetId, stage: PetStageId, state: PetAnimationState) {
+  return petAnimationCatalog[petId][stage][state];
 }
 
 export function getDesktopIconAsset(id: DesktopIconId) {
