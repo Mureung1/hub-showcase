@@ -46,13 +46,23 @@ router.get("/github/login", (req, res) => {
   res.redirect(`https://github.com/login/oauth/authorize?${params.toString()}`);
 });
 
+function redirectWithError(res: import("express").Response, message: string) {
+  res.redirect(`${CLIENT_URL}/repo?error=${encodeURIComponent(message)}`);
+}
+
 router.get("/github/callback", async (req, res) => {
-  const { code, state } = req.query;
+  const { code, state, error: oauthError } = req.query;
   const expectedState = req.signedCookies?.[OAUTH_STATE_COOKIE];
   res.clearCookie(OAUTH_STATE_COOKIE);
 
+  // GitHub redirects here with ?error=access_denied (no code) when the user
+  // cancels on the authorize screen instead of approving.
+  if (oauthError) {
+    return redirectWithError(res, "GitHub 로그인이 취소되었습니다.");
+  }
+
   if (!code || typeof code !== "string" || !state || !expectedState || state !== expectedState) {
-    return res.status(400).send("Invalid or missing OAuth state. Please try logging in again.");
+    return redirectWithError(res, "로그인 세션이 유효하지 않습니다. 다시 시도해주세요.");
   }
 
   const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
@@ -68,9 +78,7 @@ router.get("/github/callback", async (req, res) => {
   const tokenData = (await tokenRes.json()) as GithubTokenResponse;
 
   if (!tokenData.access_token) {
-    return res
-      .status(400)
-      .send(`GitHub token exchange failed: ${tokenData.error_description ?? "unknown error"}`);
+    return redirectWithError(res, "GitHub 인증에 실패했습니다. 다시 시도해주세요.");
   }
 
   const userRes = await fetch("https://api.github.com/user", {

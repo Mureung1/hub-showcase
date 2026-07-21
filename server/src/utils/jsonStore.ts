@@ -1,6 +1,8 @@
 import { promises as fs } from "fs";
 import path from "path";
 
+// Per-path queue so concurrent reads/writes to the same JSON file serialize
+// instead of racing (there's no DB here — these files are the whole datastore).
 const locks = new Map<string, Promise<unknown>>();
 
 function withLock<T>(filePath: string, task: () => Promise<T>): Promise<T> {
