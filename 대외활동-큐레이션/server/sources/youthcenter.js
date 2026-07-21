@@ -27,6 +27,15 @@ function deriveRegions(zipCd) {
   return [...names];
 }
 
+// ptcpPrpTrgtCn(참여제외대상)에 "재학생"이 있으면(이 필드 자체가 제외 목록이라 언급=제외란 뜻) 재학생은
+// 못 들어간다. "졸업예정" 예외 문구가 흔히 같이 오길래(실측: K-뉴딜아카데미·청년미래플러스) 그 경우만
+// 졸업예정으로 좁힌다. 재학생 언급 자체가 없으면 무관([]).
+export function deriveEnrollment(ptcpPrpTrgtCn) {
+  const text = ptcpPrpTrgtCn || "";
+  if (!text.includes("재학생")) return [];
+  return ["졸업예정"];
+}
+
 // "20260101 ~ 20261231" -> 끝 날짜를 YYYY-MM-DD로. 비어있으면(상시) null.
 function parseDeadline(aplyYmd) {
   const m = (aplyYmd || "").match(/(\d{8})\s*$/);
@@ -59,6 +68,8 @@ export async function fetchList(pageNum = 1, pageSize = 100) {
       ageMax: maxAge > 0 ? maxAge : null,
       regions: deriveRegions(p.zipCd),
       text: (p.plcySprtCn || p.plcyExplnCn || "").replace(/\s+/g, " ").trim(),
+      mclsfNm: p.mclsfNm || "", // 중분류(실측: "교육비지원" 등). 장학 성격 판별에 씀 - collect.js
+      enrollment: deriveEnrollment(p.ptcpPrpTrgtCn),
       sourceUrl: `${DETAIL_BASE}/${p.plcyNo}`,
     };
   });
