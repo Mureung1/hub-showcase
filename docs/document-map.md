@@ -25,6 +25,7 @@ Agent가 항상 읽어야 하는 내용은 AGENTS.md에 최소한으로 남기�
 | 디자인 Skill | `docs/design/ptop-design-skill.md` | 화면 제작 시 반복 적용할 디자인 판단 기준 |
 | 학습용 | `docs/research/repo-analysis-study.md` | Git Repository 분석 방법 학습 기록 |
 | AI 분석 전략 | `docs/research/issue14-ai-analysis-strategy.md` | 기술적 도전 후보의 입력 컨텍스트, prompt, RAG 도입 기준 |
+| AI 모델 평가 | `docs/research/openai-model-evaluation-plan.md` | OpenAI 모델별 품질, 비용, 일관성 비교 테스트 계획 |
 | 사용자 조사 | `docs/research/ptop-survey-google-form.gs` | PtoP 사용자 설문 Google Form 생성 스크립트 |
 | 테스트용 | `docs/testing/test-cases.md` | 입력, 분석, 결과, 오류 케이스 |
 | 템플릿 | `docs/templates/pr-template.md` | AI Agent Challenge PR 작성 템플릿 |
