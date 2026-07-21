@@ -22,9 +22,16 @@ function ScheduleGrid({ slots, selectedKeys, variant, onToggle, eligibleKeys }: 
         <thead>
           <tr>
             <th className="schedule-grid__corner" />
-            {dates.map((date) => (
-              <th key={date}>{formatDateLabel(date)}</th>
-            ))}
+            {dates.map((date) => {
+              const label = formatDateLabel(date) // claude: "7/21(화)" 형태 - 좁은 칸에서 겹치지 않도록 괄호 앞에서 두 줄로 나눠 렌더링.
+              const weekdayIndex = label.indexOf('(')
+              return (
+                <th key={date}>
+                  <span className="schedule-grid__date">{label.slice(0, weekdayIndex)}</span>
+                  <span className="schedule-grid__weekday">{label.slice(weekdayIndex)}</span>
+                </th>
+              )
+            })}
           </tr>
         </thead>
         <tbody>
@@ -38,13 +45,16 @@ function ScheduleGrid({ slots, selectedKeys, variant, onToggle, eligibleKeys }: 
 
                 const eligible = !eligibleKeys || eligibleKeys.has(key)
                 const selected = eligible && selectedKeys.has(key)
+                // claude: 2단계(preferred)에서 "가능하지만 아직 선호로 선택 안 한" 칸은 회색이 아니라
+                // 1단계에서 칠했던 연한 파랑(available 스타일)을 그대로 유지 - 선택하면 진한 파랑(preferred)으로 전환.
+                const modifier = selected ? variant : variant === 'preferred' && eligible ? 'available' : ''
                 return (
                   <td key={date}>
                     <button
                       type="button"
                       aria-pressed={selected}
                       disabled={!eligible}
-                      className={`schedule-cell${selected ? ` schedule-cell--${variant}` : ''}`}
+                      className={`schedule-cell${modifier ? ` schedule-cell--${modifier}` : ''}`}
                       onClick={() => onToggle(slot)}
                     />
                   </td>
