@@ -86,7 +86,8 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 | GET | `/api/articles/today` | 필요 | 오늘의 추천 1~3개 |
 | GET | `/api/articles/{articleId}` | 필요 | 미션 화면에 표시할 글 메타데이터 조회 |
 | POST | `/api/mission-records` | 필요 | 완료된 사고 기록 저장 |
-| GET | `/api/mission-records` | 필요 | 나의 깸 목록 |
+| GET | `/api/mission-records` | 필요 | 나의 깸 날짜별 기록 목록 |
+| GET | `/api/mission-records/calendar` | 필요 | 나의 깸 월별 기록 날짜 |
 
 ---
 
@@ -344,46 +345,67 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 
 ## GET /api/mission-records
 
-본인의 완료된 사고 기록을 최신순 **평면 목록**으로 반환한다. 같은 글의 기록이 여러 개면 각각 별도 항목으로 나온다. 글별로 묶어 생각 변화를 보여주는 히스토리 섹션은 Sprint 2에서 별도 설계한다.
+본인이 선택한 날짜에 완료한 사고 기록을 최신순 **평면 목록**으로 반환한다. 같은 글의 기록이 여러 개면 각각 별도 항목으로 나온다. 글별로 묶어 생각 변화를 보여주는 히스토리 섹션은 Sprint 2에서 별도 설계한다.
 
 **쿼리**
 
-- `interestId`: 선택. 해당 관심사 태그의 글만 조회
-- `cursor`: 선택. 이전 응답의 `nextCursor`
-- `limit`: 선택, `1..50`, 기본 `20`
+- `date`: 필수. `YYYY-MM-DD` 형식이며 `Asia/Seoul` 날짜를 기준으로 조회
+
+**응답 `200`**
+
+```json
+[
+  {
+    "id": "...",
+    "articleId": "...",
+    "articleTitle": "...",
+    "sourceName": "요즘IT",
+    "interestTags": [{ "id": "...", "name": "IT·개발" }],
+    "missionType": "connection",
+    "missionPrompt": "내 상황이나 프로젝트와 연결해보면?",
+    "userAnswer": "...",
+    "originalUrl": "https://example.com/article",
+    "urlStatus": "removed",
+    "createdAt": "2026-07-14T03:00:00Z"
+  }
+]
+```
+
+- 기본 정렬은 `created_at desc, id desc`다.
+- 선택한 날짜에 기록이 없으면 빈 배열을 반환한다.
+- 삭제되거나 깨진 원문도 기록과 `originalUrl`은 유지하고, `urlStatus`로 원문 버튼 상태를 구분한다.
+- 페이지네이션과 무한 스크롤은 MVP에서 사용하지 않는다.
+- AI 재사고 질문 생성은 MVP에서 제외한다. 별도 엔드포인트도 만들지 않는다.
+
+**에러**: `401`, 잘못된 `date` 형식 `422`.
+
+---
+
+## GET /api/mission-records/calendar
+
+나의 깸 캘린더에 표시할 월별 기록 날짜와 날짜별 기록 개수를 반환한다.
+
+**쿼리**
+
+- `month`: 필수. `YYYY-MM` 형식이며 `Asia/Seoul` 월을 기준으로 조회
 
 **응답 `200`**
 
 ```json
 {
-  "items": [
-    {
-      "id": "...",
-      "articleId": "...",
-      "articleTitle": "...",
-      "sourceName": "요즘IT",
-      "interestTags": [{ "id": "...", "name": "IT·개발" }],
-      "missionType": "connection",
-      "missionPrompt": "내 상황이나 프로젝트와 연결해보면?",
-      "userAnswer": "...",
-      "selectedQuote": null,
-      "anchorType": "whole_content",
-      "originalUrl": null,
-      "urlStatus": "removed",
-      "createdAt": "2026-07-14T03:00:00Z"
-    }
-  ],
-  "nextCursor": null
+  "month": "2026-07",
+  "days": [
+    { "date": "2026-07-03", "recordCount": 1 },
+    { "date": "2026-07-21", "recordCount": 3 }
+  ]
 }
 ```
 
-- 기본 정렬은 `created_at desc, id desc`다.
-- cursor는 두 정렬 키를 함께 담아 동일 시각 누락/중복을 막는다.
-- `interestId`가 사용자의 선택 관심사일 필요는 없고, 기록의 콘텐츠 태그 필터다.
-- 삭제된 원문도 기록은 반환하되 `originalUrl = null`, `urlStatus = removed`로 반환한다.
-- AI 재사고 질문 생성은 MVP에서 제외한다. 별도 엔드포인트도 만들지 않는다.
+- 기록이 있는 날짜만 `date asc`로 반환한다.
+- 해당 월에 기록이 없으면 `days`는 빈 배열이다.
+- 날짜와 월 경계는 `Asia/Seoul`을 기준으로 계산한다.
 
-**에러**: `401`, 잘못된 쿼리·cursor `422`.
+**에러**: `401`, 잘못된 `month` 형식 `422`.
 
 ---
 
@@ -438,8 +460,10 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 - [ ] 요청에 `missionPrompt`/`anchorType`/`selectedQuote`/`userId`를 넣으면 `422`다.
 - [ ] 읽기 참여 세 필드는 저장되지 않고 DB 기본값으로 남는다.
 - [ ] 같은 글에 대한 재제출이 `409`가 아니라 새 기록으로 저장된다(unique 제약 없음).
-- [ ] 나의 깸은 `createdAt desc, id desc`이고 cursor 페이지 사이에 누락·중복이 없다.
-- [ ] 삭제된 원문 기록은 유지되고 원문 URL은 노출하지 않는다.
+- [ ] 나의 깸 월별 조회는 기록이 있는 날짜와 날짜별 기록 개수를 `date asc`로 반환한다.
+- [ ] 나의 깸 날짜별 기록은 `createdAt desc, id desc`이고 같은 글의 여러 기록도 각각 반환한다.
+- [ ] 날짜와 월 경계는 `Asia/Seoul`을 기준으로 계산한다.
+- [ ] 삭제되거나 깨진 원문 기록은 원문 URL과 함께 유지되고 `urlStatus`로 버튼 상태를 구분한다.
 
 ## 확정된 제품 방향 (2026-07-15)
 
@@ -457,7 +481,7 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 
 - `mission_records`에 `(user_id, article_id)` unique 제약을 **걸지 않는다.**
 - 추천에는 다시 띄우지 않는다. 추천 함수의 "완료 글 제외"(한 번이라도 기록이 있으면 제외)는 그대로 둔다. 재읽기는 나의 깸에서 원문 링크로 한다.
-- MVP의 `GET /api/mission-records`는 시간순 평면 목록으로만 보여준다. **한 콘텐츠에 대한 생각 변화 히스토리 섹션은 Sprint 2에서 추가한다.**
+- MVP의 나의 깸은 월별 캘린더에서 기록 날짜를 선택해 해당 날짜의 평면 목록을 보여준다. 페이지네이션과 무한 스크롤은 사용하지 않는다. **한 콘텐츠에 대한 생각 변화 히스토리 섹션은 Sprint 2에서 추가한다.**
 - 실수 중복(같은 글에 연달아 두 번 제출)은 서버로 막지 않고 프론트가 제출 후 버튼 비활성·화면 전환으로 막는다.
 
 ## 여전히 사람이 결정해야 하는 항목
