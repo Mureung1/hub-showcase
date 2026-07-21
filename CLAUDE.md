@@ -110,11 +110,16 @@ schema.sql을 다시 실행해야 실제 Supabase 프로젝트에 반영된다**
 1. Photo + optional menu/brand hints go to Gemini (`src/lib/gemini.js` -> `/api/gemini`), which
    returns *only* food identification + estimated portion grams — not final nutrition numbers.
 2. For each identified item, `findFoodMatch` in `Analyze.jsx` queries the 식약처 DB
-   (`src/lib/fooddb.js` -> `/api/fooddb`) through a prioritized cascade: `dbSearchName` in the food
-   DB → `dbSearchName` in the processed-food DB → `dbSearchName` with a leading 2-char modifier
-   stripped → `fallbackSearchName` in food DB → `fallbackSearchName` in processed-food DB. If the
-   server reports `FOODDB_CONNECTION_FAILED` (upstream unreachable, e.g. certain deploy regions),
-   the cascade aborts immediately rather than retrying every remaining attempt against a dead host.
+   (`src/lib/fooddb.js` -> `/api/fooddb`) through a prioritized, de-duplicated cascade: `dbSearchName`
+   in the food DB → **normalized canonical name** (`src/lib/foodNameMap.js`'s `normalizeFoodSearchName`,
+   a client-side variant→표준명 map like 돌솥비빔밥→비빔밥·신라면→라면, as a safety net when the AI's
+   `fallbackSearchName` isn't general enough) in food DB → `dbSearchName` in the processed-food DB →
+   `dbSearchName` with a leading 2-char modifier stripped → `fallbackSearchName` in food DB →
+   normalized name in processed-food DB → `fallbackSearchName` in processed-food DB. Same (term,
+   dbSource) pairs are searched only once. If the server reports `FOODDB_CONNECTION_FAILED` (upstream
+   unreachable, e.g. certain deploy regions), the cascade aborts immediately rather than retrying
+   every remaining attempt against a dead host. In dev builds (`import.meta.env.DEV`), each resolved
+   item logs a `[분석 진단]` line (matched term / grams / final nutrients) to help spot accuracy gaps.
 3. A DB match's per-100g nutrients are scaled to the resolved consumed grams
    (`resolveConsumedGrams`/`scaleNutrients` in `src/lib/nutrition.js`), then passed through
    `clampToPlausibleNutrients`, which corrects DB records whose *per-serving* values are

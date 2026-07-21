@@ -76,12 +76,41 @@ const ESTIMATED_GRAMS_MAX = 1500
 // 벗어나면(예: 음식은 맞게 인식했는데 양만 과대/과소 추정한 경우) 영양소가 뻥튀기/과소평가되지 않도록
 // 이 범위로 보정한다. 곱빼기/소식 등 정상 변주는 허용하도록 폭을 넉넉히 잡았다. foodName에 키워드가
 // 포함되는지로 느슨하게 매칭하고, 매칭되는 게 없으면 기존 범용 범위([20, 1500])를 그대로 쓴다.
+// 주의(순서): findPortionReference는 "먼저 걸리는 항목"을 쓴다. 한 키워드가 다른 키워드의 부분
+// 문자열이면(예: '국수'⊂'칼국수', '비빔밥'⊂'돌솥비빔밥'), 더 구체적인(긴) 쪽을 위에 두거나 하나로
+// 합쳐 오탐을 막는다. '찌개'/'볶음밥'/'국밥' 같은 넓은 키워드는 의도적으로 대표 범위를 공유한다.
 const PORTION_REFERENCE_G = [
+  // 면류
   { keywords: ['짜장면', '자장면'], min: 450, max: 900 },
-  { keywords: ['비빔밥'], min: 350, max: 700 },
-  { keywords: ['찌개'], min: 250, max: 600 },
+  { keywords: ['짬뽕'], min: 500, max: 950 },
   { keywords: ['라면'], min: 350, max: 700 },
+  { keywords: ['냉면'], min: 400, max: 850 },
+  { keywords: ['우동'], min: 400, max: 850 },
+  { keywords: ['국수'], min: 380, max: 850 }, // 칼국수/잔치국수/쌀국수 포함(부분일치)
+  { keywords: ['파스타', '스파게티'], min: 300, max: 600 },
+  // 밥류
+  { keywords: ['볶음밥'], min: 280, max: 560 },
+  { keywords: ['비빔밥'], min: 350, max: 700 }, // 돌솥비빔밥 포함(부분일치)
+  { keywords: ['국밥'], min: 400, max: 850 },
+  { keywords: ['덮밥'], min: 350, max: 700 },
+  { keywords: ['카레'], min: 350, max: 700 },
   { keywords: ['공기밥', '쌀밥', '흰밥'], min: 150, max: 300 },
+  // 국/탕/찌개 (넓은 '탕'/'국' 키워드보다 구체적인 탕수육/감자탕을 반드시 위에 둔다)
+  { keywords: ['찌개'], min: 250, max: 600 }, // 김치/된장/순두부/부대찌개 포함(부분일치)
+  { keywords: ['탕수육'], min: 150, max: 500 },
+  { keywords: ['감자탕'], min: 400, max: 950 },
+  { keywords: ['탕', '국'], min: 300, max: 800 }, // 미역국/설렁탕 등 국물 요리 일반
+  // 고기/반찬/분식
+  { keywords: ['삼겹살'], min: 100, max: 450 },
+  { keywords: ['치킨'], min: 100, max: 900 },
+  { keywords: ['돈까스', '돈가스'], min: 150, max: 450 },
+  { keywords: ['제육', '불고기'], min: 150, max: 500 },
+  { keywords: ['찜닭'], min: 300, max: 800 },
+  { keywords: ['떡볶이'], min: 180, max: 500 },
+  { keywords: ['김밥'], min: 150, max: 500 },
+  { keywords: ['순대'], min: 120, max: 450 },
+  { keywords: ['만두'], min: 100, max: 400 },
+  { keywords: ['부침개', '파전', '김치전', '해물전', '빈대떡'], min: 120, max: 500 },
 ]
 
 function findPortionReference(foodName) {
@@ -116,22 +145,37 @@ export function resolveConsumedGrams(match, estimatedGrams, foodName) {
 // 미만이거나 상한의 150% 초과인 영양소만 경계값으로 눌러 DB와 현실 감각을 함께 반영한다.
 // referenceGrams는 실제 사용된 grams에 비례해 범위를 스케일하는 기준량이다(예: 포장식품처럼 표준보다
 // 작은 1회분을 쓰면 범위도 비례해 줄어들어, 정상적으로 작은 서빙을 오탐하지 않는다).
+// 순서 규칙은 PORTION_REFERENCE_G와 동일(먼저 걸리는 항목 사용). '찌개'는 김치/된장/순두부/부대찌개를,
+// '국수'는 칼국수/잔치국수를 부분일치로 함께 커버한다. referenceGrams는 그 범위가 기준으로 삼는 표준
+// 1인분 무게 — 실제 섭취량(grams)에 비례해 범위를 스케일한 뒤 하한 50% 미만/상한 150% 초과만 보정한다.
 const NUTRIENT_PLAUSIBILITY = [
-  {
-    keywords: ['짜장면', '자장면'],
-    referenceGrams: 650,
-    ranges: { protein: [12, 16], carbs: [110, 130], fat: [12, 18], calories: [650, 800], sodium: [1200, 1800] },
-  },
-  {
-    keywords: ['비빔밥'],
-    referenceGrams: 500,
-    ranges: { protein: [12, 16], fat: [8, 14], carbs: [90, 110], calories: [550, 700] },
-  },
-  {
-    keywords: ['찌개'],
-    referenceGrams: 400,
-    ranges: { protein: [12, 18], sodium: [1500, 2000] },
-  },
+  // 면류 (짜장면·라면은 목표 출력 범위를 좁게 유지 — DB 레코드가 표준 1인분으로 환산 시 과대해지는
+  // 값을 1.5배 허용치로 잡아 눌러야 하므로, 폭을 넓히면 그 보정이 풀린다. 검증된 값이라 손대지 않는다.)
+  { keywords: ['짜장면', '자장면'], referenceGrams: 650, ranges: { protein: [12, 16], carbs: [110, 130], fat: [12, 18], calories: [650, 800], sodium: [1200, 1800] } },
+  { keywords: ['짬뽕'], referenceGrams: 700, ranges: { protein: [18, 30], carbs: [80, 115], calories: [500, 780], sodium: [1800, 3200] } },
+  { keywords: ['라면'], referenceGrams: 500, ranges: { protein: [10, 14], carbs: [65, 90], fat: [12, 20], calories: [450, 600], sodium: [1500, 1900] } },
+  { keywords: ['냉면'], referenceGrams: 600, ranges: { protein: [12, 24], carbs: [85, 125], calories: [480, 700], sodium: [1300, 2600] } },
+  { keywords: ['우동'], referenceGrams: 600, ranges: { protein: [10, 18], carbs: [70, 100], calories: [380, 620], sodium: [1500, 2800] } },
+  { keywords: ['국수'], referenceGrams: 550, ranges: { protein: [10, 24], carbs: [60, 100], calories: [380, 660], sodium: [1000, 2400] } }, // 칼국수/잔치국수 포함
+  // 밥류
+  { keywords: ['볶음밥'], referenceGrams: 400, ranges: { protein: [10, 22], carbs: [68, 105], fat: [10, 28], calories: [500, 800], sodium: [800, 1800] } },
+  { keywords: ['비빔밥'], referenceGrams: 500, ranges: { protein: [12, 16], fat: [8, 14], carbs: [90, 110], calories: [550, 700] } },
+  { keywords: ['국밥'], referenceGrams: 500, ranges: { protein: [16, 34], carbs: [55, 90], calories: [360, 620], sodium: [1500, 2900] } },
+  { keywords: ['카레'], referenceGrams: 450, ranges: { protein: [10, 22], carbs: [78, 120], calories: [500, 800] } },
+  // 국/탕/찌개 ('찌개'는 부대찌개처럼 열량 편차가 큰 변형을 함께 잡으므로 열량은 넣지 않고 검증된 단백질·나트륨만 둔다)
+  { keywords: ['찌개'], referenceGrams: 400, ranges: { protein: [12, 18], sodium: [1500, 2000] } },
+  { keywords: ['감자탕'], referenceGrams: 600, ranges: { protein: [24, 46], calories: [420, 760], sodium: [1500, 2900] } },
+  // 고기/반찬/분식
+  { keywords: ['삼겹살'], referenceGrams: 150, ranges: { protein: [20, 34], fat: [28, 56], calories: [360, 620] } },
+  { keywords: ['치킨'], referenceGrams: 300, ranges: { protein: [40, 78], fat: [24, 58], calories: [540, 980] } },
+  { keywords: ['돈까스', '돈가스'], referenceGrams: 200, ranges: { protein: [18, 36], fat: [18, 42], carbs: [35, 70], calories: [430, 780] } },
+  { keywords: ['제육'], referenceGrams: 250, ranges: { protein: [20, 40], fat: [14, 34], calories: [340, 620], sodium: [900, 2000] } },
+  { keywords: ['불고기'], referenceGrams: 200, ranges: { protein: [20, 40], fat: [8, 26], calories: [260, 520], sodium: [800, 1900] } },
+  { keywords: ['탕수육'], referenceGrams: 250, ranges: { protein: [14, 30], fat: [18, 42], carbs: [42, 82], calories: [420, 780] } },
+  { keywords: ['떡볶이'], referenceGrams: 250, ranges: { protein: [5, 13], carbs: [58, 102], calories: [290, 540], sodium: [700, 1700] } },
+  { keywords: ['김밥'], referenceGrams: 230, ranges: { protein: [7, 15], carbs: [52, 82], calories: [320, 520], sodium: [550, 1400] } },
+  { keywords: ['순대'], referenceGrams: 200, ranges: { protein: [8, 18], carbs: [28, 56], calories: [240, 460], sodium: [550, 1400] } },
+  { keywords: ['만두'], referenceGrams: 200, ranges: { protein: [9, 21], carbs: [28, 56], fat: [7, 22], calories: [240, 500], sodium: [450, 1300] } },
 ]
 
 const PLAUSIBILITY_OUTLIER_LOW = 0.5
