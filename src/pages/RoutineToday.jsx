@@ -3,12 +3,23 @@ import { useRoutineToday } from '@/hooks/useRoutineToday'
 import Sidebar from '@/components/Sidebar'
 import WeekStrip from '@/components/WeekStrip'
 import SessionCard from '@/components/SessionCard'
+import SkipResultPanel from '@/components/SkipResultPanel'
 
 function RoutineToday() {
   const { data, loading, error, refetch } = useRoutineToday()
 
   const handleComplete = () => {
     fetch(`/api/sessions/${data.routineDayId}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    }).then(() => {
+      refetch()
+    })
+  }
+
+  const handleSkip = () => {
+    fetch(`/api/sessions/${data.routineDayId}/skip`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
@@ -48,6 +59,12 @@ function RoutineToday() {
         <div className="mt-6">
           {data.targetArea === null ? (
             <p className="text-text-secondary">오늘은 휴식일입니다.</p>
+          ) : data.status === 'SKIPPED' ? (
+            <SkipResultPanel
+              reassigned={!!data.skippedTo}
+              fromDayOfWeek={data.dayOfWeek}
+              toDayOfWeek={data.skippedTo?.dayOfWeek}
+            />
           ) : (
             <SessionCard
               routineDayId={data.routineDayId}
@@ -55,6 +72,7 @@ function RoutineToday() {
               exercises={data.exercises}
               status={data.status}
               onComplete={handleComplete}
+              onSkip={handleSkip}
             />
           )}
         </div>

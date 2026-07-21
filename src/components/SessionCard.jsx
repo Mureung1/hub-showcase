@@ -22,6 +22,7 @@ function SessionCard({
   exercises,
   status,
   onComplete,
+  onSkip,
 }) {
   const isCompleted = status === 'COMPLETED'
 
@@ -73,8 +74,8 @@ function SessionCard({
           통증 보고하기
         </Link>
         <button
-          disabled
-          className="cursor-not-allowed rounded-pill border border-border px-[26px] py-[15px] text-[15px] font-semibold text-muted"
+          onClick={onSkip}
+          className="rounded-pill border border-border px-[26px] py-[15px] text-[15px] font-semibold text-text hover:border-outline-hover"
         >
           오늘 세션 스킵
         </button>
