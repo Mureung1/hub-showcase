@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { logout as logoutRequest, type AuthUser } from '../auth/authClient'
 import { BottomNavigation } from './scheduler/BottomNavigation'
 import { CalendarView } from './scheduler/CalendarView'
+import { DiaryView } from './scheduler/DiaryView'
 import { FriendHomeView } from './scheduler/FriendHomeView'
 import { GroupManagerView } from './scheduler/GroupManagerView'
 import { FriendsView, MyHomeView, ProfileView } from './scheduler/StaticViews'
 import { formatTimeAgo } from './scheduler/timeAgo'
 import type { AppTab, FriendPost } from './scheduler/types'
+import { useDodoManager } from './scheduler/useDodoManager'
 import { useFriendsManager } from './scheduler/useFriendsManager'
 import { useHomeManager } from './scheduler/useHomeManager'
 import { useProfileManager } from './scheduler/useProfileManager'
@@ -26,12 +28,14 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
   const [selectedOwner, setSelectedOwner] = useState('me')
   const [myPosts, setMyPosts] = useState<FriendPost[]>([])
   const [showGroupManager, setShowGroupManager] = useState(false)
+  const [showDiary, setShowDiary] = useState(false)
   const [visitingFriendId, setVisitingFriendId] = useState<string | null>(null)
   const [returnTab, setReturnTab] = useState<AppTab>('friends')
   const scheduleManager = useScheduleManager()
   const friendsManager = useFriendsManager()
   const profileManager = useProfileManager()
   const homeManager = useHomeManager()
+  const dodoManager = useDodoManager()
 
   useEffect(() => {
     let cancelled = false
@@ -65,6 +69,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
     setActiveTab(tab)
     setMenuOpen(false)
     setShowGroupManager(false)
+    setShowDiary(false)
     setVisitingFriendId(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -138,8 +143,8 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
             groups={friendsManager.groups}
             selectedOwner={selectedOwner}
             onSelectOwner={setSelectedOwner}
-            onCertify={addMyPost}
-            onPointsEarned={profileManager.refreshProfile}
+            onCertify={(post) => { addMyPost(post); dodoManager.refreshDodoState() }}
+            onPointsEarned={() => { profileManager.refreshProfile(); dodoManager.refreshDodoState() }}
           />
         )}
         {activeTab === 'home' && (
@@ -154,6 +159,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
               message={dodoMessage}
               onInteract={setDodoMessage}
               homeManager={homeManager}
+              dodoManager={dodoManager}
               points={profileManager.profile?.stats.points ?? 0}
             />
           )
@@ -166,14 +172,16 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
             onDeletePost={deleteMyPost}
             onViewFriendCalendar={goToFriendCalendar}
             onVisitFriendHome={goToFriendHome}
-            onPointsEarned={profileManager.refreshProfile}
+            onPointsEarned={() => { profileManager.refreshProfile(); dodoManager.refreshDodoState() }}
           />
         )}
         {activeTab === 'profile' && (
-          showGroupManager ? (
+          showDiary ? (
+            <DiaryView onBack={() => setShowDiary(false)} />
+          ) : showGroupManager ? (
             <GroupManagerView manager={friendsManager} onBack={() => setShowGroupManager(false)} />
           ) : (
-            <ProfileView manager={profileManager} onOpenGroupManager={() => setShowGroupManager(true)} />
+            <ProfileView manager={profileManager} onOpenGroupManager={() => setShowGroupManager(true)} onOpenDiary={() => setShowDiary(true)} />
           )
         )}
       </div>

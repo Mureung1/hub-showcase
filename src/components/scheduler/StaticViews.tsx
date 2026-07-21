@@ -3,6 +3,7 @@ import type { CSSProperties, FormEvent } from 'react'
 import { FriendFeed } from './FriendFeed'
 import { AVATAR_PALETTE, PixelAvatar, getAvatarProps } from './shared'
 import type { FriendsManager } from './useFriendsManager'
+import type { DodoManager } from './useDodoManager'
 import type { HomeManager } from './useHomeManager'
 import type { ProfileManager } from './useProfileManager'
 import type { FriendPost, HomeVisitActionKind } from './types'
@@ -15,15 +16,24 @@ const VISIT_ACTION_LABEL: Record<HomeVisitActionKind, string> = {
   FURNITURE_USE: '가구를 써봤어요',
 }
 
+const MOOD_LABEL: Record<1 | 2 | 3 | 4, string> = {
+  1: '기분이 풀죽었어요',
+  2: '기분이 심심해요',
+  3: '기분이 말랑해요',
+  4: '기분이 신나요',
+}
+
 type MyHomeViewProps = {
   message: string
   onInteract: (message: string) => void
   homeManager: HomeManager
+  dodoManager: DodoManager
   points: number
 }
 
-export function MyHomeView({ message, onInteract, homeManager, points }: MyHomeViewProps) {
+export function MyHomeView({ message, onInteract, homeManager, dodoManager, points }: MyHomeViewProps) {
   const { visits, visitsLoading, markVisitsRead } = homeManager
+  const mood = dodoManager.state?.mood ?? 3
 
   useEffect(() => {
     markVisitsRead()
@@ -60,8 +70,10 @@ export function MyHomeView({ message, onInteract, homeManager, points }: MyHomeV
       </div>
 
       <div className="dodo-status-card">
-        <div><span>오늘의 두두</span><strong>기분이 말랑해요</strong></div>
-        <div className="mood-pixels" aria-label="기분 4단계 중 3단계"><i /><i /><i /><i /></div>
+        <div><span>오늘의 두두</span><strong>{MOOD_LABEL[mood]}</strong></div>
+        <div className="mood-pixels" aria-label={`기분 4단계 중 ${mood}단계`}>
+          {([1, 2, 3, 4] as const).map((step) => <i key={step} className={step <= mood ? 'filled' : ''} />)}
+        </div>
       </div>
 
       <div className="myhome-actions" aria-label="두두와 상호작용">
@@ -224,9 +236,10 @@ export function FriendsView({ manager, myPosts, currentUserId, onDeletePost, onV
 type ProfileViewProps = {
   manager: ProfileManager
   onOpenGroupManager: () => void
+  onOpenDiary: () => void
 }
 
-export function ProfileView({ manager, onOpenGroupManager }: ProfileViewProps) {
+export function ProfileView({ manager, onOpenGroupManager, onOpenDiary }: ProfileViewProps) {
   const { profile, loading, notice, updateProfile } = manager
   const [editing, setEditing] = useState(false)
   const [draftName, setDraftName] = useState('')
@@ -346,7 +359,7 @@ export function ProfileView({ manager, onOpenGroupManager }: ProfileViewProps) {
       )}
 
       <div className="profile-menu">
-        <button type="button"><i className="profile-record" /><span><strong>나의 기록</strong><small>완료한 일정과 두두의 일기</small></span><b>›</b></button>
+        <button type="button" onClick={onOpenDiary}><i className="profile-record" /><span><strong>나의 기록</strong><small>완료한 일정과 두두의 일기</small></span><b>›</b></button>
         <button type="button"><i className="profile-lock" /><span><strong>공개 범위</strong><small>친구별 일정 공개 설정</small></span><b>›</b></button>
         <button type="button"><i className="profile-bell" /><span><strong>알림 설정</strong><small>일정과 친구 반응 알림</small></span><b>›</b></button>
         <button type="button" onClick={onOpenGroupManager}><i className="profile-group" /><span><strong>친구 및 그룹 관리</strong><small>절친·스터디·가족 등 그룹 만들기</small></span><b>›</b></button>

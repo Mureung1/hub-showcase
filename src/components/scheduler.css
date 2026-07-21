@@ -257,7 +257,7 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 
 .dodo-status-card { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 10px; padding: 14px 19px; border-radius: 18px; background: var(--scheduler-cream); }
 .dodo-status-card > div:first-child { display: grid; }.dodo-status-card span { color: var(--scheduler-muted); font-size: 9px; }.dodo-status-card strong { margin-top: 3px; font-size: 14px; }
-.mood-pixels { display: flex; gap: 4px; }.mood-pixels i { width: 10px; height: 10px; background: var(--scheduler-coral); }.mood-pixels i:last-child { background: #e6e4dd; }
+.mood-pixels { display: flex; gap: 4px; }.mood-pixels i { width: 10px; height: 10px; background: #e6e4dd; }.mood-pixels i.filled { background: var(--scheduler-coral); }
 .myhome-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
 .myhome-actions button { min-height: 82px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; border: 1px solid var(--scheduler-line); border-radius: 18px; background: #fff; cursor: pointer; font-size: 10px; font-weight: 800; }
 .myhome-actions button:hover { background: var(--scheduler-mint); transform: translateY(-2px); }
