@@ -1,22 +1,27 @@
 import RequirementModal from './components/RequirementModal';
 import DashboardSection from './components/DashboardSection';
 import CourseBasketSection from './components/CourseBasketSection';
+import MajorSelectModal from './components/MajorSelectModal';
 import { useState } from 'react';
 
 function App() {
   // 졸업요건 입력 모달
-  const [showModal, setShowModal] = useState(false);
-  const [totalDraft, setTotalDraft] = useState('');
-  const [majorDraft, setMajorDraft] = useState('');
-  const [generalDraft, setGeneralDraft] = useState('');
   const [submitted, setSubmitted] = useState(null);
+  const [gradInfo, setGradInfo] = useState(() => {
+  const saved = localStorage.getItem('gradInfo');
+  return saved ? JSON.parse(saved) : null;
+});
 
   // 현재까지 이수학점 입력 모달
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [progTotalDraft, setProgTotalDraft] = useState('');
   const [progMajorDraft, setProgMajorDraft] = useState('');
   const [progGeneralDraft, setProgGeneralDraft] = useState('');
-  const [progressSubmitted, setProgressSubmitted] = useState(null);
+  // 초기값을 localStorage에서 불러오기
+  const [progressSubmitted, setProgressSubmitted] = useState(() => {
+  const saved = localStorage.getItem('progressSubmitted');
+  return saved ? JSON.parse(saved) : null;
+});
 
   const basketCourses = [
   { id: 1, name: '운영체제', category: '전공필수', credits: 3 },
@@ -33,6 +38,21 @@ function App() {
   const [selectedIds, setSelectedIds] = useState([]);
 
   const API_URL = 'http://localhost:4000/api/basket';
+
+  function handleMajorConfirm(info) {
+  setGradInfo(info);
+  localStorage.setItem('gradInfo', JSON.stringify(info)); // 추가
+  setSubmitted({
+    total: String(info.totalCredits),
+    major: String(info.majorCredits),
+    general: String(info.generalCredits),
+  });
+}
+  function resetMajor() {
+  setGradInfo(null);
+  localStorage.removeItem('gradInfo');
+  setSubmitted(null);
+}
 
   async function toggleCourse(id) {
     const alreadySelected = selectedIds.includes(id);
@@ -120,16 +140,14 @@ if (gapList.length === 0) gapList.push('모든 요건을 충족했어요 🎉');
 
   return (
     <div className="app">
+      {!gradInfo && <MajorSelectModal onConfirm={handleMajorConfirm} />}
       <div className="hero-header">
       <p className="eyebrow">Course Basket</p>
       <h1>이번 학기 후보 과목, 담아볼까요?</h1>
       <p className="sub">
         아래 과목들을 선택하여 이번 학기의 수업을 계획해보세요.
       </p>
-
-      <button type="button" className="cta" onClick={() => setShowModal(true)}>
-        졸업요건 입력하기
-      </button>{' '}
+      
       <button
         type="button"
         className="cta"
@@ -142,14 +160,13 @@ if (gapList.length === 0) gapList.push('모든 요건을 충족했어요 🎉');
       {(submitted || progressSubmitted) && (
         <div className="req-summary-bar">
           {submitted && (
-            <button
-              type="button"
-              className="req-summary-group"
-              onClick={() => setShowModal(true)}
-            >
+            <div className="req-summary-group">
               [졸업요건] 총 {submitted.total}학점 · 전공 {submitted.major}학점 · 교양 {submitted.general}학점
-            </button>
-          )}
+              <button type="button" className="req-summary-edit" onClick={resetMajor}>
+                학과 다시 선택
+              </button>
+            </div>
+      )}
 
           {submitted && progressSubmitted && (
             <span className="req-summary-sep">/</span>
@@ -182,56 +199,38 @@ if (gapList.length === 0) gapList.push('모든 요건을 충족했어요 🎉');
           <div className="frac">{combinedMajor}/{goalMajor}</div>
         </div>
       </div>
-      {showModal && (
-  <RequirementModal
-    idPrefix="req"
-    title="졸업요건을 입력해주세요"
-    subtitle="입력한 요건은 아래 요약 바에서 확인하고 언제든 다시 수정할 수 있어요."
-    totalLabel="총 졸업학점"
-    majorLabel="전공 학점"
-    generalLabel="교양 학점"
-    totalValue={totalDraft}
-    majorValue={majorDraft}
-    generalValue={generalDraft}
-    onTotalChange={setTotalDraft}
-    onMajorChange={setMajorDraft}
-    onGeneralChange={setGeneralDraft}
-    onClose={() => setShowModal(false)}
-    onSubmit={() => {
-      setSubmitted({ total: totalDraft, major: majorDraft, general: generalDraft });
-      setShowModal(false);
-    }}
-  />
-)}
 
-{showProgressModal && (
-  <RequirementModal
-    idPrefix="prog"
-    title="지금까지 들은 학점을 기입해주세요"
-    subtitle="입력한 이수 학점은 아래 요약 바에서 확인하고 언제든 다시 수정할 수 있어요."
-    totalLabel="총 이수 학점"
-    majorLabel="전공 이수 학점"
-    generalLabel="교양 이수 학점"
-    totalValue={progTotalDraft}
-    majorValue={progMajorDraft}
-    generalValue={progGeneralDraft}
-    onTotalChange={setProgTotalDraft}
-    onMajorChange={setProgMajorDraft}
-    onGeneralChange={setProgGeneralDraft}
-    onClose={() => setShowProgressModal(false)}
-    onSubmit={() => {
-      setProgressSubmitted({ total: progTotalDraft, major: progMajorDraft, general: progGeneralDraft });
-      setShowProgressModal(false);
-    }}
-  />
-)}
-<DashboardSection
-  requirementRows={requirementRows}
-  badges={badges}
-  gapList={gapList}
-/>
-</div>
-  );
+      {showProgressModal && (
+        <RequirementModal
+          idPrefix="prog"
+          title="지금까지 들은 학점을 기입해주세요"
+          subtitle="입력한 이수 학점은 아래 요약 바에서 확인하고 언제든 다시 수정할 수 있어요."
+          totalLabel="총 이수 학점"
+          majorLabel="전공 이수 학점"
+          generalLabel="교양 이수 학점"
+          totalValue={progTotalDraft}
+          majorValue={progMajorDraft}
+          generalValue={progGeneralDraft}
+          onTotalChange={setProgTotalDraft}
+          onMajorChange={setProgMajorDraft}
+          onGeneralChange={setProgGeneralDraft}
+          onClose={() => setShowProgressModal(false)}
+          onSubmit={() => {
+            const progress = { total: progTotalDraft, major: progMajorDraft, general: progGeneralDraft };
+            setProgressSubmitted(progress);
+            localStorage.setItem('progressSubmitted', JSON.stringify(progress)); // 추가
+            setShowProgressModal(false);
+          }}
+        />
+      )}
+
+      <DashboardSection
+        requirementRows={requirementRows}
+        badges={badges}
+        gapList={gapList}
+        />
+      </div>
+   );
 }
 
 export default App;

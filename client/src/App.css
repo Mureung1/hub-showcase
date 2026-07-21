@@ -42,6 +42,7 @@
   box-sizing: border-box;
 }
 
+
 body {
   margin: 0;
   background: var(--bg);
@@ -51,6 +52,35 @@ body {
 }
 
 /* ---------- 페이지 레이아웃 (오늘 화면용) ---------- */
+.req-summary-edit {
+  margin-left: 8px;
+  background: none;
+  border: none;
+  color: #3182F6;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.track-info-card {
+  border: 1px solid #F2F4F6;
+  border-radius: 16px;
+  padding: 16px;
+  margin: 16px 0;
+  background: #F9FAFB;
+}
+.track-info-title {
+  color: #191F28;
+  font-weight: 700;
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+.track-info-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #4E5968;
+  font-size: 13px;
+}
+
 .app {
   max-width: 1180px;
   margin: 0 auto;
