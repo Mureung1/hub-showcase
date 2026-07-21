@@ -1,0 +1,81 @@
+.user-select {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.user-select-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 4px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.user-select-trigger:hover {
+  background: var(--border-subtle);
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.user-select-name {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.user-select-chevron {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.user-select-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+}
+
+.user-select-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 140px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  z-index: 20;
+}
+
+.user-select-option {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.user-select-option:hover {
+  background: var(--border-subtle);
+}
