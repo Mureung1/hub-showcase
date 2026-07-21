@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   activateProductWorkspace,
@@ -47,6 +47,7 @@ type ProductBootstrapView =
   | { readonly state: 'error'; readonly displayMessage: string }
 
 export function useSourceWorkbench() {
+  const bootstrapReadGeneration = useRef(0)
   const [bootstrapView, setBootstrapView] = useState<ProductBootstrapView>({
     state: 'loading',
   })
@@ -63,13 +64,20 @@ export function useSourceWorkbench() {
   const [operationFailure, setOperationFailure] = useState<string>()
 
   const loadWorkspace = useCallback(async (signal?: AbortSignal) => {
+    const readGeneration = ++bootstrapReadGeneration.current
     setOperationFailure(undefined)
+    setBootstrapRefreshing(false)
     setBootstrapView({ state: 'loading' })
     try {
       const bootstrap = await fetchSettledProductBootstrap(signal)
-      setBootstrapView({ state: 'loaded', bootstrap })
+      if (bootstrapReadGeneration.current === readGeneration) {
+        setBootstrapView({ state: 'loaded', bootstrap })
+      }
     } catch (error) {
-      if (!signal?.aborted) {
+      if (
+        !signal?.aborted &&
+        bootstrapReadGeneration.current === readGeneration
+      ) {
         setBootstrapView({
           state: 'error',
           displayMessage: safeMessage(error),
@@ -83,17 +91,30 @@ export function useSourceWorkbench() {
       readBootstrap: ProductBootstrapReader,
       signal?: AbortSignal,
     ) => {
+      const readGeneration = ++bootstrapReadGeneration.current
       setOperationFailure(undefined)
       setBootstrapRefreshing(true)
       try {
         const bootstrap = await readBootstrap(signal)
-        setBootstrapView({ state: 'loaded', bootstrap })
+        if (bootstrapReadGeneration.current === readGeneration) {
+          setBootstrapView({ state: 'loaded', bootstrap })
+        }
         return bootstrap
       } catch (error) {
-        if (!signal?.aborted) setOperationFailure(safeMessage(error))
+        if (
+          !signal?.aborted &&
+          bootstrapReadGeneration.current === readGeneration
+        ) {
+          setOperationFailure(safeMessage(error))
+        }
         throw error
       } finally {
-        if (!signal?.aborted) setBootstrapRefreshing(false)
+        if (
+          !signal?.aborted &&
+          bootstrapReadGeneration.current === readGeneration
+        ) {
+          setBootstrapRefreshing(false)
+        }
       }
     },
     [],

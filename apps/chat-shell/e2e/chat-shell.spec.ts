@@ -481,7 +481,7 @@ test.describe('post-Review same-Turn ordinary clarification', () => {
     ).toHaveLength(1)
   })
 
-  test('keeps interrupt acknowledgement nonterminal while the clarification is pending', async ({
+  test('keeps interrupt acknowledgement nonterminal and ignores delayed one-shot hydration', async ({
     chatHarness,
     chatPage: page,
   }) => {
@@ -491,11 +491,15 @@ test.describe('post-Review same-Turn ordinary clarification', () => {
       .click()
 
     const review = page.getByRole('region', { name: '검토 대기' })
+    const bootstrapHydration = await holdNextProductBootstrapResponse(page)
     const reviewResponse = page.waitForResponse((response) =>
       new URL(response.url()).pathname.startsWith('/api/product/reviews/'),
     )
     await review.getByRole('button', { name: '수락' }).click()
     expect((await reviewResponse).status()).toBe(200)
+    const activeHydration = await bootstrapHydration.requested
+    expect(activeHydration.operationStatus).toBe('active')
+    expect(activeHydration.history.modelingRuns).toEqual([])
 
     const clarification = page.getByRole('region', { name: 'AY 질문' })
     await expect(clarification).toBeVisible()
@@ -527,10 +531,19 @@ test.describe('post-Review same-Turn ordinary clarification', () => {
     await expect(
       page.getByRole('button', { name: '이 자료로 다시 시도' }),
     ).toHaveCount(0)
+    const continuationLoss = page.getByRole('region', {
+      name: '작업 복구 기록',
+    })
+    await expect(continuationLoss).toContainText('이어짐이 끊겼습니다')
     const settledBootstrap = await readProductBootstrap(page)
     expect(settledBootstrap.operationStatus).toBe('idle')
     expect(settledBootstrap.history.userConfirmations).toHaveLength(1)
     expect(settledBootstrap.history.assignments).toHaveLength(1)
+
+    bootstrapHydration.release()
+    await bootstrapHydration.released
+    await flushProductController(page)
+    await expect(continuationLoss).toContainText('이어짐이 끊겼습니다')
     expect(
       chatHarness
         .calls()
@@ -1387,6 +1400,40 @@ async function holdNextProductBootstrapFailure(page: Page): Promise<{
     { times: 1 },
   )
   return { requested, failed, fail: releaseFailure }
+}
+
+async function holdNextProductBootstrapResponse(page: Page): Promise<{
+  readonly requested: Promise<ProductBootstrap>
+  readonly released: Promise<void>
+  release(): void
+}> {
+  let markRequested!: (bootstrap: ProductBootstrap) => void
+  let releaseResponse!: () => void
+  let markReleased!: () => void
+  const requested = new Promise<ProductBootstrap>((resolve) => {
+    markRequested = resolve
+  })
+  const responseReleased = new Promise<void>((resolve) => {
+    releaseResponse = resolve
+  })
+  const released = new Promise<void>((resolve) => {
+    markReleased = resolve
+  })
+  await page.route(
+    '**/api/product/bootstrap',
+    async (route) => {
+      const response = await route.fetch()
+      markRequested((await response.json()) as ProductBootstrap)
+      await responseReleased
+      try {
+        await route.fulfill({ response })
+      } finally {
+        markReleased()
+      }
+    },
+    { times: 1 },
+  )
+  return { requested, released, release: releaseResponse }
 }
 
 function observeBootstrapOperationStatuses(
