@@ -13,7 +13,7 @@
 | :--- | :--- | :---: | :---: | :--- | :--- | :--- |
 | `id` | `UUID` | PK | Not Null | `gen_random_uuid()` | - | 시스템 고유 식별자 (자동 생성 UUID) |
 | `user_id` | `UUID` | - | Yes | - | - | 회원 고유 식별자 (로컬 데모용 Nullable) |
-| `paper_id` | `VARCHAR(50)` | - | Not Null | - | `UNIQUE` | 원본 논문 식별 아이디 (예: 'paper-001') |
+| `paper_id` | `VARCHAR(50)` | - | Not Null | - | - | 원본 논문 식별 아이디 (예: 'paper-001') |
 | `title` | `TEXT` | - | Not Null | - | - | 논문 제목 (Title) |
 | `authors` | `TEXT` | - | Not Null | - | - | 논문 저자 목록 (Comma-separated authors) |
 | `channel` | `VARCHAR(50)` | - | Not Null | - | - | 학술 채널명 (예: 'arXiv', 'NeurIPS', 'IEEE' 등) |
@@ -30,13 +30,14 @@
 CREATE TABLE IF NOT EXISTS saved_papers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID,
-    paper_id VARCHAR(50) UNIQUE NOT NULL,
+    paper_id VARCHAR(50) NOT NULL,
     title TEXT NOT NULL,
     authors TEXT NOT NULL,
     channel VARCHAR(50) NOT NULL,
     year INTEGER NOT NULL,
     match_score INTEGER NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    CONSTRAINT unique_user_paper UNIQUE (user_id, paper_id)
 );
 
 -- 인덱스 추가 (조회 성능 최적화)

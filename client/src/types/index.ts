@@ -29,3 +29,15 @@ export interface CurationResponse {
   status: string;
   data: CurationData;
 }
+
+export interface LibraryItem {
+  id: string;
+  userId: string;
+  paperId: string;
+  title: string;
+  authors: string;
+  channel: string;
+  year: number;
+  matchScore: number;
+  createdAt: string;
+}

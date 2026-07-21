@@ -2,10 +2,11 @@
   "name": "server",
   "version": "1.0.0",
   "type": "module",
-  "main": "src/app.js",
+  "main": "dist/app.js",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "dev": "tsx watch src/app.ts",
     "test": "vitest"
   },
   "dependencies": {
@@ -14,14 +15,14 @@
     "express": "^4.21.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.1.1",
     "@types/supertest": "^7.2.1",
     "dotenv": "^17.4.2",
-    "nodemon": "^3.1.14",
     "supabase-js": "^0.0.1-security",
     "supertest": "^7.2.2",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.23.1",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   }
