@@ -268,6 +268,111 @@ test('active store drift blocks every replacement and explicit reactivation adop
   }
 })
 
+test('same-root invalid store recovery becomes read-only without changing the store entry or source bytes', async () => {
+  for (const kind of ['invalid-json', 'directory'] as const) {
+    const testRoot = await mkdtemp(
+      path.join(tmpdir(), `ay-ple-semester-same-root-${kind}-test-`),
+    )
+    const packageRoot = path.join(testRoot, 'package')
+    const appDataRoot = path.join(testRoot, 'app-data')
+    const workspaceRoot = path.join(testRoot, 'semester')
+    const sourcePath = path.join(workspaceRoot, 'notice.txt')
+    const storePath = path.join(
+      workspaceRoot,
+      '.ay-ple',
+      'workspace-state.json',
+    )
+    const sourceBytes = Buffer.from('사용자 소유 원본 자료', 'utf8')
+    const invalidBytes = Buffer.from('{"formatVersion":2,\n', 'utf8')
+    const sentinelBytes = Buffer.from('directory entry must remain', 'utf8')
+    const sentinelPath = path.join(storePath, 'sentinel.txt')
+
+    try {
+      await Promise.all(
+        [packageRoot, appDataRoot, workspaceRoot].map((directory) =>
+          mkdir(directory),
+        ),
+      )
+      await writeFile(sourcePath, sourceBytes)
+      const controller = createSemesterWorkspaceController({
+        packageRoot,
+        appDataRoot,
+        chooseDirectory: async () => workspaceRoot,
+      })
+      await controller.activate()
+      const ready = await controller.createCourse('문제해결글쓰기')
+      assert.ok(ready.course)
+      const operationId =
+        kind === 'invalid-json'
+          ? `chat_${'8'.repeat(32)}`
+          : `chat_${'9'.repeat(32)}`
+      await controller.prepareProductChatExecution({
+        operationId,
+        courseId: ready.course.id,
+        selectedMaterials: [],
+      })
+
+      if (kind === 'invalid-json') {
+        await writeFile(storePath, invalidBytes)
+      } else {
+        await rm(storePath)
+        await mkdir(storePath)
+        await writeFile(sentinelPath, sentinelBytes)
+      }
+
+      await assert.rejects(
+        controller.settleProductChatExecution({ operationId }),
+        (error: unknown) =>
+          error instanceof SemesterWorkspaceError &&
+          error.code === 'execution_guard_conflict',
+        kind,
+      )
+      const conflicted = controller.snapshot()
+      assert.equal(conflicted?.state, 'ready', kind)
+      if (conflicted?.state !== 'ready') assert.fail('workspace must be ready')
+      assert.equal(conflicted.recovery?.state, 'store_conflict', kind)
+      await assert.rejects(
+        controller.activate(),
+        (error: unknown) =>
+          error instanceof SemesterWorkspaceError &&
+          error.code === 'execution_guard_conflict',
+        kind,
+      )
+      controller.noteProductOperationReleased(operationId)
+
+      assert.deepEqual(
+        await controller.activate(),
+        expectedIncompatibleActivation(null),
+        kind,
+      )
+      assert.equal(controller.snapshot()?.state, 'incompatible', kind)
+      assert.throws(
+        () => controller.nativeCwd(),
+        (error: unknown) =>
+          error instanceof SemesterWorkspaceError &&
+          error.code === 'workspace_incompatible',
+        kind,
+      )
+      await assert.rejects(
+        controller.createCourse('덮어쓰면 안 되는 과목'),
+        (error: unknown) =>
+          error instanceof SemesterWorkspaceError &&
+          error.code === 'workspace_incompatible',
+        kind,
+      )
+      assert.deepEqual(await readFile(sourcePath), sourceBytes, kind)
+      if (kind === 'invalid-json') {
+        assert.deepEqual(await readFile(storePath), invalidBytes, kind)
+      } else {
+        assert.equal((await lstat(storePath)).isDirectory(), true, kind)
+        assert.deepEqual(await readFile(sentinelPath), sentinelBytes, kind)
+      }
+    } finally {
+      await rm(testRoot, { force: true, recursive: true })
+    }
+  }
+})
+
 test('activation keeps the current workspace authoritative when the candidate initial scan fails', async () => {
   const testRoot = await mkdtemp(
     path.join(tmpdir(), 'ay-ple-semester-activation-transaction-test-'),

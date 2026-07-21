@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { access } from 'node:fs/promises'
+import path from 'node:path'
 
 import { expect } from 'playwright/test'
 
@@ -9,6 +10,7 @@ import {
   selectCanonicalMaterials,
   sourceConflictMaterialBytes,
   startChatShellHarness,
+  storeConflictCourseName,
   test,
 } from './chat-shell-harness.js'
 
@@ -128,6 +130,106 @@ test.describe('workspace recovery', () => {
       ).toHaveLength(0)
     })
   })
+
+  test.describe('active store conflict', () => {
+    test.use({ scenario: 'store-conflict' })
+
+    test('reactivates the current Server workspace only after operation release and reconciles the guard', async ({
+      chatHarness,
+      chatPage: page,
+    }) => {
+      const materials = page.getByRole('complementary', { name: '학기 자료' })
+      const action = materials.getByRole('button', {
+        name: /선택한 자료 정리하기/u,
+      })
+
+      await selectCanonicalMaterials(page)
+      await action.click()
+
+      const recovery = materials.getByRole('alert').filter({
+        hasText: '작업공간 복구가 필요합니다',
+      })
+      await expect(recovery).toBeVisible()
+      await expect(action).toBeDisabled()
+      await expect
+        .poll(
+          () =>
+            chatHarness
+              .calls()
+              .filter((call) => call.operation === 'interrupt').length,
+        )
+        .toBe(1)
+
+      const conflicted = await readProductBootstrap(page)
+      expect(conflicted.operationStatus).toBe('idle')
+      expect(conflicted.workspace?.state).toBe('ready')
+      if (conflicted.workspace?.state !== 'ready') {
+        throw new Error('Expected a ready store-conflict workspace.')
+      }
+      expect(conflicted.workspace.recovery?.state).toBe('store_conflict')
+      const conflictedStore = parseWorkspaceStore(
+        await chatHarness.readWorkspaceBytes(workspaceStorePath),
+      )
+      expect(courseDisplayName(conflictedStore)).toBe(storeConflictCourseName)
+      expect(executionGuard(conflictedStore)).toMatchObject({ state: 'active' })
+      const guardedOperationId = guardOperationId(conflictedStore)
+      const scratchPath = path.join(
+        chatHarness.workspace.workspaceRoot,
+        '.ay-ple',
+        'runtime-scratch',
+        guardedOperationId,
+      )
+      const stagingPath = path.join(
+        chatHarness.workspace.runRoot,
+        'app-data',
+        'assignment-runs',
+        guardedOperationId,
+      )
+      await Promise.all([access(scratchPath), access(stagingPath)])
+
+      await recovery
+        .getByRole('button', { name: '작업공간 다시 선택' })
+        .click()
+
+      await expect(recovery).toHaveCount(0)
+      await expect(
+        materials.getByText(storeConflictCourseName, { exact: true }),
+      ).toBeVisible()
+      const recovered = await readProductBootstrap(page)
+      expect(recovered.workspace?.state).toBe('ready')
+      if (recovered.workspace?.state !== 'ready') {
+        throw new Error('Expected a recovered ready workspace.')
+      }
+      expect(recovered.workspace.course?.displayName).toBe(
+        storeConflictCourseName,
+      )
+      expect(recovered.workspace.recovery).toBeNull()
+      expect(
+        executionGuard(
+          parseWorkspaceStore(
+            await chatHarness.readWorkspaceBytes(workspaceStorePath),
+          ),
+        ),
+      ).toBeNull()
+      await Promise.all([
+        expectPathMissing(scratchPath),
+        expectPathMissing(stagingPath),
+      ])
+
+      await expect(action).toBeEnabled()
+      await action.click()
+      await expect(
+        page.getByRole('region', { name: '검토 대기' }),
+      ).toBeVisible()
+      expect(
+        chatHarness
+          .calls()
+          .filter((call) => call.operation === 'startProductTurn'),
+      ).toHaveLength(2)
+      await page.getByRole('button', { name: '작업 중단' }).click()
+      await expect(page.getByText('AY 작업을 중단했습니다.')).toBeVisible()
+    })
+  })
 })
 
 test('isolates two fresh Browser-to-Server harness runs and native session identities', async ({
@@ -204,6 +306,36 @@ function readyMaterial(bootstrap: ProductBootstrap, relativePath: string) {
 
 function sha256(bytes: Uint8Array): string {
   return createHash('sha256').update(bytes).digest('hex')
+}
+
+function parseWorkspaceStore(bytes: Uint8Array): Record<string, unknown> {
+  return JSON.parse(Buffer.from(bytes).toString('utf8')) as Record<
+    string,
+    unknown
+  >
+}
+
+function courseDisplayName(store: Record<string, unknown>): unknown {
+  const course = store.course
+  return typeof course === 'object' && course !== null
+    ? (course as Record<string, unknown>).displayName
+    : undefined
+}
+
+function executionGuard(store: Record<string, unknown>): unknown {
+  return store.executionGuard
+}
+
+function guardOperationId(store: Record<string, unknown>): string {
+  const guard = executionGuard(store)
+  if (typeof guard !== 'object' || guard === null) {
+    throw new Error('Expected an execution guard.')
+  }
+  const operationId = (guard as Record<string, unknown>).operationId
+  if (typeof operationId !== 'string') {
+    throw new Error('Expected a guarded operation ID.')
+  }
+  return operationId
 }
 
 function startedThreadId(

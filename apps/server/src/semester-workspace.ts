@@ -18,7 +18,6 @@ import type { UserInputRequestedEvent } from '@ay-ple/codex-chat-runtime/contrac
 import {
   PRODUCT_REVIEW_FEEDBACK_MAX_BYTES,
   type ProductMaterialRefreshResponse,
-  type ProductWorkspaceRecovery,
 } from '@ay-ple/product-contract'
 
 import {
@@ -88,12 +87,6 @@ const storeFormatVersion = currentWorkspaceStoreFormatVersion
 const productDirectoryName = workspaceProductDirectoryName
 const incompatibleStoreDisplayMessage =
   '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.'
-const sourceConflictDisplayMessage =
-  '원본 자료가 실행 중 변경되었습니다. 자료 새로고침으로 현재 내용을 새 기준으로 채택하세요.'
-const cleanupRequiredDisplayMessage =
-  '이전 작업의 임시 파일 정리가 필요합니다. 작업공간을 다시 선택해 복구를 시도하세요.'
-const storeConflictDisplayMessage =
-  '학기 상태 파일이 외부에서 변경되었습니다. 현재 bytes를 보존했으며 작업공간을 다시 선택해 확인하세요.'
 const materialAggregateMaxBytes = 8 * 1024 * 1024
 const materialScanEntryMax = 4096
 const materialPreviewMaxBytes = 256 * 1024
@@ -132,7 +125,11 @@ export type ReadySemesterWorkspaceSnapshot = {
   readonly confirmedRevision: number
   readonly course: Course | null
   readonly materials: readonly RawMaterial[]
-  readonly recovery: ProductWorkspaceRecovery | null
+  readonly recovery: SemesterWorkspaceRecovery | null
+}
+
+export type SemesterWorkspaceRecovery = {
+  readonly state: 'source_conflict' | 'cleanup_required' | 'store_conflict'
 }
 
 export type MaterialRefreshResult = {
@@ -186,6 +183,7 @@ export type SemesterWorkspaceController = {
     input: FailAssignmentActionStartInput,
   ): Promise<ModelingRun>
   executionGuardRequiresFreshRuntime(operationId: string): boolean
+  noteProductOperationReleased(operationId: string): void
   modelingRun(actionId: string): ModelingRun | null
   modelingRuns(): readonly ModelingRun[]
   managedAppDataRoot(): string
@@ -610,12 +608,18 @@ type OpenWorkspace =
       readonly created: boolean
       authority: WorkspaceStoreAuthority
       store: PersistedWorkspaceState
+      releasedProductOperationId: string | null
+      storeConflict: StoreConflictRecovery | null
       snapshot: ReadySemesterWorkspaceSnapshot
     }
   | {
       readonly root: string
       readonly snapshot: IncompatibleSemesterWorkspaceSnapshot
     }
+
+type StoreConflictRecovery = {
+  readonly guardedOperationId: string | null
+}
 
 export function createSemesterWorkspaceController(options: {
   readonly appDataRoot: string
@@ -709,10 +713,17 @@ export function createSemesterWorkspaceController(options: {
   return {
     activate() {
       return enqueue(async () => {
+        const recoveringStoreConflict = Boolean(
+          active &&
+            'store' in active &&
+            active.store.executionGuard?.state === 'active' &&
+            canReactivateStoreConflict(active),
+        )
         if (
           active &&
           'store' in active &&
-          active.store.executionGuard?.state === 'active'
+          active.store.executionGuard?.state === 'active' &&
+          !recoveringStoreConflict
         ) {
           assertNoExecutionGuard(active)
         }
@@ -730,8 +741,19 @@ export function createSemesterWorkspaceController(options: {
           canonicalDirectory(selected),
         ])
         assertDisjointRoots([packageRoot, appDataRoot, workspaceRoot])
+        if (
+          recoveringStoreConflict &&
+          active &&
+          active.root !== workspaceRoot
+        ) {
+          throw executionGuardConflict()
+        }
         const opened = await openWorkspace(workspaceRoot)
         if ('store' in opened) {
+          if (recoveringStoreConflict && active && 'store' in active) {
+            opened.releasedProductOperationId =
+              active.releasedProductOperationId
+          }
           await reconcileUncommittedExecutionArtifacts(
             opened,
             appDataRoot,
@@ -742,7 +764,8 @@ export function createSemesterWorkspaceController(options: {
             cleanupPolicy,
           )
           if (opened.created) await refreshReadyWorkspace(opened)
-        } else if (active) {
+          opened.releasedProductOperationId = null
+        } else if (active && active.root !== workspaceRoot) {
           throw new SemesterWorkspaceError(
             'workspace_incompatible',
             incompatibleStoreDisplayMessage,
@@ -1134,6 +1157,17 @@ export function createSemesterWorkspaceController(options: {
     executionGuardRequiresFreshRuntime(operationId) {
       const guard = requireReadyWorkspace(active).store.executionGuard
       return guard?.operationId === operationId
+    },
+
+    noteProductOperationReleased(operationId) {
+      if (!isProductOperationId(operationId)) return
+      if (
+        active &&
+        'store' in active &&
+        active.store.executionGuard?.operationId === operationId
+      ) {
+        active.releasedProductOperationId = operationId
+      }
     },
 
     managedAppDataRoot() {
@@ -2412,7 +2446,7 @@ async function assertStoreBytesMatchMemory(
   ) {
     return
   }
-  opened.snapshot = readySnapshot(opened.store, 'store_conflict')
+  markStoreConflict(opened)
   throw executionGuardConflict()
 }
 
@@ -2431,12 +2465,26 @@ async function replaceWorkspaceStore(
       error instanceof SemesterWorkspaceError &&
       error.code === 'execution_guard_conflict'
     ) {
-      opened.snapshot = readySnapshot(opened.store, 'store_conflict')
+      markStoreConflict(opened)
     }
     throw error
   }
   opened.store = nextStore
+  opened.storeConflict = null
   opened.snapshot = readySnapshot(nextStore)
+}
+
+function markStoreConflict(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+): void {
+  const guardedOperationId =
+    opened.store.executionGuard?.state === 'active'
+      ? opened.store.executionGuard.operationId
+      : null
+  opened.storeConflict = {
+    guardedOperationId,
+  }
+  opened.snapshot = readySnapshot(opened.store, 'store_conflict')
 }
 
 async function cleanupUncommittedActionArtifacts(
@@ -3238,6 +3286,8 @@ async function openWorkspace(workspaceRoot: string): Promise<OpenWorkspace> {
       created: opened.created,
       authority: opened.authority,
       store: opened.store,
+      releasedProductOperationId: null,
+      storeConflict: null,
       snapshot: readySnapshot(opened.store),
     }
   }
@@ -3301,7 +3351,7 @@ function requireReadyWorkspace(
 
 function readySnapshot(
   store: PersistedWorkspaceState,
-  recoveryOverride?: ProductWorkspaceRecovery['state'],
+  recoveryOverride?: SemesterWorkspaceRecovery['state'],
 ): ReadySemesterWorkspaceSnapshot {
   return {
     state: 'ready',
@@ -3314,34 +3364,26 @@ function readySnapshot(
     recovery:
       recoveryOverride === undefined
         ? workspaceRecovery(store.executionGuard)
-        : recoveryProjection(recoveryOverride),
+        : recoveryState(recoveryOverride),
   }
 }
 
 function workspaceRecovery(
   guard: ExecutionGuard | null,
-): ProductWorkspaceRecovery | null {
+): SemesterWorkspaceRecovery | null {
   if (guard?.state === 'recovery_required') {
-    return recoveryProjection('source_conflict')
+    return recoveryState('source_conflict')
   }
   if (guard?.state === 'cleanup_required') {
-    return recoveryProjection('cleanup_required')
+    return recoveryState('cleanup_required')
   }
   return null
 }
 
-function recoveryProjection(
-  state: ProductWorkspaceRecovery['state'],
-): ProductWorkspaceRecovery {
-  return {
-    state,
-    displayMessage:
-      state === 'source_conflict'
-        ? sourceConflictDisplayMessage
-        : state === 'cleanup_required'
-          ? cleanupRequiredDisplayMessage
-          : storeConflictDisplayMessage,
-  }
+function recoveryState(
+  state: SemesterWorkspaceRecovery['state'],
+): SemesterWorkspaceRecovery {
+  return { state }
 }
 
 function cloneSnapshot(
@@ -3598,7 +3640,7 @@ function assertBindAssignmentActionInput(
 function assertNoExecutionGuard(
   opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
 ): void {
-  if (opened.snapshot.recovery?.state === 'store_conflict') {
+  if (opened.storeConflict) {
     throw executionGuardConflict()
   }
   if (!opened.store.executionGuard) return
@@ -3609,6 +3651,17 @@ function assertNoExecutionGuard(
     opened.store.executionGuard.state === 'active'
       ? 'A product operation already owns the workspace execution guard.'
       : 'The prior product operation requires cleanup or recovery.',
+  )
+}
+
+function canReactivateStoreConflict(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+): boolean {
+  const guardedOperationId = opened.storeConflict?.guardedOperationId
+  return (
+    guardedOperationId === null ||
+    (guardedOperationId !== undefined &&
+      guardedOperationId === opened.releasedProductOperationId)
   )
 }
 

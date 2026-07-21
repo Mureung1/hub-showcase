@@ -34,6 +34,7 @@ import {
   type ProductUserConfirmation,
   type ProductWorkspace,
   type ProductWorkspaceActivationResponse,
+  type ProductWorkspaceRecovery,
   type ProductWorkspaceResponse,
   type ReadyProductWorkspace,
 } from '@ay-ple/product-contract'
@@ -63,6 +64,12 @@ const safeOperationFailed = '학기 작업공간 요청을 완료하지 못했�
 const safeAccountNotReady = 'Codex에 로그인한 뒤 다시 시도해 주세요.'
 const safeAccountUnavailable =
   'Codex 상태를 확인할 수 없습니다. 자료 작업공간은 계속 사용할 수 있습니다.'
+const sourceConflictDisplayMessage =
+  '원본 자료가 실행 중 변경되었습니다. 자료 새로고침으로 현재 내용을 새 기준으로 채택하세요.'
+const cleanupRequiredDisplayMessage =
+  '이전 작업의 임시 파일 정리가 필요합니다. 작업공간을 다시 선택해 복구를 시도하세요.'
+const storeConflictDisplayMessage =
+  '학기 상태 파일이 외부에서 변경되었습니다. 현재 bytes를 보존했으며 작업공간을 다시 선택해 확인하세요.'
 const defaultProductWriteDrainMs = 5_000
 type ProductAccountReadinessSource = () => Promise<
   | { readonly state: 'ready' }
@@ -645,7 +652,22 @@ function projectProductWorkspace(
       mediaType: material.mediaType,
       size: material.size,
     })),
-    recovery: snapshot.recovery ? { ...snapshot.recovery } : null,
+    recovery: projectWorkspaceRecovery(snapshot.recovery?.state ?? null),
+  }
+}
+
+function projectWorkspaceRecovery(
+  state: ProductWorkspaceRecovery['state'] | null,
+): ProductWorkspaceRecovery | null {
+  if (state === null) return null
+  return {
+    state,
+    displayMessage:
+      state === 'source_conflict'
+        ? sourceConflictDisplayMessage
+        : state === 'cleanup_required'
+          ? cleanupRequiredDisplayMessage
+          : storeConflictDisplayMessage,
   }
 }
 

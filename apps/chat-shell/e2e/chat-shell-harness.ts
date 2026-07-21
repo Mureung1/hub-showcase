@@ -47,6 +47,7 @@ export type ChatScenario =
   | 'not-ready'
   | 'unavailable'
   | 'source-conflict'
+  | 'store-conflict'
   | 'invalid-store'
   | 'acknowledged-interrupt-response-loss'
   | 'disconnect-drain-timeout'
@@ -111,6 +112,8 @@ export const sourceConflictMaterialBytes = Buffer.from(
   ].join('\n'),
   'utf8',
 )
+
+export const storeConflictCourseName = '외부에서 채택할 문제해결글쓰기'
 
 export const invalidWorkspaceStoreBytes = Buffer.from([
   0x7b,
@@ -428,7 +431,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
   private readonly lateInteractionReleased = deferred<void>()
   private readonly reviewContinuationReleased = deferred<void>()
   private reviewContinuationPaused = false
-  private sourceConflictInjected = false
+  private recoveryConflictInjected = false
   private turnOrdinal = 0
 
   constructor(
@@ -911,12 +914,32 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
   ): Promise<boolean> {
     const threadInput = this.threadInputs[0]
     assert.ok(threadInput)
-    if (this.scenario === 'source-conflict' && !this.sourceConflictInjected) {
-      this.sourceConflictInjected = true
-      await writeFile(
-        path.join(this.workspaceRoot, 'lms-outline-notice.txt'),
-        sourceConflictMaterialBytes,
-      )
+    if (
+      (this.scenario === 'source-conflict' ||
+        this.scenario === 'store-conflict') &&
+      !this.recoveryConflictInjected
+    ) {
+      this.recoveryConflictInjected = true
+      if (this.scenario === 'source-conflict') {
+        await writeFile(
+          path.join(this.workspaceRoot, 'lms-outline-notice.txt'),
+          sourceConflictMaterialBytes,
+        )
+      } else {
+        const storePath = path.join(
+          this.workspaceRoot,
+          '.ay-ple',
+          'workspace-state.json',
+        )
+        const store = JSON.parse(
+          await readFile(storePath, 'utf8'),
+        ) as Record<string, unknown>
+        store.course = {
+          ...(store.course as Record<string, unknown>),
+          displayName: storeConflictCourseName,
+        }
+        await writeFile(storePath, `${JSON.stringify(store, null, 2)}\n`)
+      }
     }
     const response = await fetch(threadInput.mcp.url, {
       method: 'POST',
@@ -939,7 +962,10 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
       readonly result?: { readonly isError?: boolean }
     }
     if (body.result?.isError === true) {
-      assert.equal(this.scenario, 'source-conflict')
+      assert.ok(
+        this.scenario === 'source-conflict' ||
+          this.scenario === 'store-conflict',
+      )
       return true
     }
     assert.equal(body.result?.isError, false)

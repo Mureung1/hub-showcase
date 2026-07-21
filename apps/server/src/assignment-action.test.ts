@@ -122,10 +122,133 @@ test('registered source drift interrupts the native Turn and opens workspace rec
           await fetch(`${baseUrl}/api/product/bootstrap`)
         ).json()) as {
           readonly workspace: {
-            readonly recovery: { readonly state: string } | null
+            readonly recovery: {
+              readonly state: string
+              readonly displayMessage: string
+            } | null
           }
         }
         assert.equal(bootstrap.workspace.recovery?.state, 'source_conflict')
+        assert.equal(
+          bootstrap.workspace.recovery?.displayMessage,
+          '원본 자료가 실행 중 변경되었습니다. 자료 새로고침으로 현재 내용을 새 기준으로 채택하세요.',
+        )
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('released Assignment store conflict can reactivate the current valid store in the same Server session', async () => {
+  const fixture = await createActionFixture()
+  const storePath = path.join(
+    fixture.workspaceRoot,
+    '.ay-ple',
+    'workspace-state.json',
+  )
+  let externalBytes = Buffer.alloc(0)
+  const runtime = new HttpMcpProductRuntime({
+    beforeProposal: async () => {
+      const externalStore = JSON.parse(
+        await readFile(storePath, 'utf8'),
+      ) as Record<string, unknown>
+      externalStore.course = {
+        ...(externalStore.course as Record<string, unknown>),
+        displayName: '외부에서 복구한 문제해결글쓰기',
+      }
+      externalBytes = Buffer.from(
+        `${JSON.stringify(externalStore, null, 2)}\n`,
+        'utf8',
+      )
+      await writeFile(storePath, externalBytes)
+    },
+    proposalFails: true,
+    onStartProductTurn: async () => undefined,
+  })
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        const workspace = await activateCourse(application)
+        const selected = selectCanonicalMaterials(workspace.materials)
+        runtime.proposal = (input) =>
+          validProposalFromProductInput(
+            input,
+            workspace.course!.id,
+            selected,
+          )
+
+        const frames = await readProductFrames(
+          await postJson(
+            `${baseUrl}/api/product/actions/first-assignment`,
+            actionRequest(workspace.course!.id, selected),
+          ),
+        )
+
+        assert.equal(frames.at(-1)?.failureCode, 'execution_guard_conflict')
+        assert.deepEqual(await readFile(storePath), externalBytes)
+        const conflicted = application.semesterWorkspace?.snapshot()
+        assert.equal(conflicted?.state, 'ready')
+        if (conflicted?.state !== 'ready') assert.fail('workspace must be ready')
+        assert.equal(conflicted.recovery?.state, 'store_conflict')
+        const publicConflict = (await (
+          await fetch(`${baseUrl}/api/product/bootstrap`)
+        ).json()) as {
+          readonly workspace: {
+            readonly recovery: {
+              readonly state: string
+              readonly displayMessage: string
+            } | null
+          }
+        }
+        assert.deepEqual(publicConflict.workspace.recovery, {
+          state: 'store_conflict',
+          displayMessage:
+            '학기 상태 파일이 외부에서 변경되었습니다. 현재 bytes를 보존했으며 작업공간을 다시 선택해 확인하세요.',
+        })
+
+        const activationResponse = await postJson(
+          `${baseUrl}/api/product/workspaces/activate`,
+          {},
+        )
+        assert.equal(activationResponse.status, 200)
+        const activation = (await activationResponse.json()) as {
+          readonly status: string
+          readonly workspace: {
+            readonly state: string
+            readonly course: { readonly displayName: string } | null
+            readonly recovery: { readonly state: string } | null
+          }
+        }
+        assert.equal(activation.status, 'activated')
+        assert.equal(activation.workspace.state, 'ready')
+        assert.equal(
+          activation.workspace.course?.displayName,
+          '외부에서 복구한 문제해결글쓰기',
+        )
+        assert.equal(activation.workspace.recovery, null)
+        const reconciledRuns =
+          application.semesterWorkspace?.modelingRuns() ?? []
+        assert.equal(reconciledRuns.length, 1)
+        assert.equal(reconciledRuns[0]?.status, 'unknown')
+        assert.equal(reconciledRuns[0]?.validationOutcome, 'unknown')
+        assert.equal(
+          reconciledRuns[0]?.failureCode,
+          'reconciled_after_restart',
+        )
+        const persisted = JSON.parse(
+          await readFile(storePath, 'utf8'),
+        ) as { readonly executionGuard: unknown }
+        assert.equal(persisted.executionGuard, null)
+        assert.equal(
+          (await application.semesterWorkspace?.refreshMaterials())?.outcome,
+          'refreshed',
+        )
       },
     )
   } finally {

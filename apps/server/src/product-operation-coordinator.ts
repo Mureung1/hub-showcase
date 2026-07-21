@@ -267,6 +267,7 @@ export function createProductOperationCoordinator(options: {
         .catch(() => undefined)
     } finally {
       if (active === operation) active = undefined
+      options.controller.noteProductOperationReleased(operation.operationId)
     }
   }
 
