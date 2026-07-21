@@ -35,6 +35,20 @@ export class HttpTechnicalChallengeAiClient implements TechnicalChallengeAiClien
       throw new TechnicalChallengeAiUnavailableError();
     }
 
+    const model = request.model || configuredModel;
+    const requestBody: Record<string, unknown> = {
+      model,
+      messages: [
+        { role: "system", content: request.systemPrompt },
+        { role: "user", content: request.userPrompt },
+      ],
+      response_format: { type: "json_object" },
+    };
+
+    if (!shouldOmitTemperature(model)) {
+      requestBody.temperature = request.temperature;
+    }
+
     const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
       method: "POST",
       headers: {
@@ -42,15 +56,7 @@ export class HttpTechnicalChallengeAiClient implements TechnicalChallengeAiClien
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: request.model || configuredModel,
-        messages: [
-          { role: "system", content: request.systemPrompt },
-          { role: "user", content: request.userPrompt },
-        ],
-        temperature: request.temperature,
-        response_format: { type: "json_object" },
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -60,6 +66,15 @@ export class HttpTechnicalChallengeAiClient implements TechnicalChallengeAiClien
     const body = await response.text();
     return extractResponseText(body);
   }
+}
+
+export function shouldOmitTemperature(model: string): boolean {
+  return (
+    model === "gpt-5-mini" ||
+    model.startsWith("gpt-5-mini-") ||
+    model === "gpt-5.6-luna" ||
+    model.startsWith("gpt-5.6-luna-")
+  );
 }
 
 function extractResponseText(body: string): string {

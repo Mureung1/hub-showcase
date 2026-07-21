@@ -57,6 +57,26 @@ describe("HttpTechnicalChallengeAiClient", () => {
     );
   });
 
+  it("omits temperature for models that only support the default value", async () => {
+    let requestBody: Record<string, unknown> | null = null;
+    global.fetch = jest.fn(async (_input, init) => {
+      requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }) as typeof fetch;
+    const client = new HttpTechnicalChallengeAiClient(
+      new ConfigService({
+        AI_API_KEY: "secret-key",
+        AI_MODEL: "gpt-5-mini",
+      }),
+    );
+
+    await expect(client.generate({ ...request, model: "gpt-5-mini" })).resolves.toBe("{}");
+    expect(requestBody).not.toHaveProperty("temperature");
+  });
+
   it("converts provider failures without exposing response content", async () => {
     global.fetch = jest.fn(async () =>
       new Response('{"apiKey":"should-not-leak"}', { status: 500 }),
