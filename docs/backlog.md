@@ -26,7 +26,7 @@
 - [P0] C1 편지 작성 API(하루 1통 제한) → 모음소 등록 → **T2**([#4](https://github.com/bovoZhang/hub/issues/4))로 병합
 - [P0] C2 초안 자동저장 API(임시저장/이어쓰기) — **2주차→3주차 이월**(T4 예정)
 - [P0] C3 저장소 조회 API(내가 쓴/받은/이어진) → **T3**([#5](https://github.com/bovoZhang/hub/issues/5))로 병합(2주차엔 우선 '내가 쓴 편지'만, 받은/이어진은 4주차 F4 나머지)
-- [P0] C4 답장 작성 API(8시간 후 전달 예약) — 답장 스레드 설계 확정(2026-07-21, 로그인 붙은 후 논의): `Letter`에 `threadId`(매칭 성사 시 생기는 Match.id 재사용, 새 테이블 불필요)·`replyToId`(자기참조, 어느 편지에 대한 답장인지)·`recipientId`(받는 사람) 3개 필드 추가. 답장 제한 로직: 답장 대상 편지의 `recipientId`가 본인이고 + 아직 그 편지에 대한 답장이 없어야 가능 → 자동으로 번갈아 쓰기가 강제됨. 여러 상대와 동시에 주고받을 때는 `threadId`로 대화별 구분(저장소 "이어진 편지" 탭은 `threadId` 그룹핑). 구현은 T7(Match 스키마) 이후 착수.
+- [P0] C4 답장 작성 API(즉시 저장까지 — 8시간 후 전달 표시는 E2 영역) — 답장 스레드 설계 확정(2026-07-21, 로그인 붙은 후 논의): `Letter`에 `threadId`·`replyToId`·`recipientId` 3개 필드 추가, 답장 제한 로직(recipientId 본인 확인 + 중복 답장 차단) → **T9**([#10](https://github.com/bovoZhang/hub/issues/10))로 슬라이스. T7([#8](https://github.com/bovoZhang/hub/issues/8)) 의존.
 
 ### D. AI 매칭(핵심 가치)
 - [P0] D1 Claude SDK 연동: 편지 카테고리 분류 — **카테고리 목록 확정 필요**: 현재 후보(미확정) 새로운 시작/이별/성장/고민/그리움/일상/감사/관계 8종. 실제 구현 착수 전 사용자와 다시 확정할 것.
