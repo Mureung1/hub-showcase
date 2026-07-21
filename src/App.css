@@ -87,6 +87,14 @@ h1 {
   background: var(--gray-50);
   color: var(--gray-900);
 }
+.nav-link.pill {
+  background: var(--gray-50);
+  color: var(--gray-900);
+  font-weight: 600;
+}
+.nav-link.pill:hover {
+  background: var(--gray-200);
+}
 .theme-toggle-btn {
   width: 32px;
   height: 32px;
@@ -101,6 +109,91 @@ h1 {
 .theme-toggle-btn:hover {
   background: var(--gray-200);
   color: var(--gray-900);
+}
+
+/* ---------- 스테퍼: 헤더와 같은 줄에 배치 ---------- */
+.stepper-inline {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.4;
+  transition: opacity 0.15s;
+}
+.step-item.clickable {
+  cursor: pointer;
+}
+.step-item.clickable:hover {
+  opacity: 0.75;
+}
+.step-item.active,
+.step-item.done {
+  opacity: 1;
+}
+.step-circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--gray-200);
+  color: var(--gray-700);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.step-item.active .step-circle {
+  background: var(--accent-dark);
+  color: #fff;
+}
+.step-item.done .step-circle {
+  background: var(--accent-bg);
+  color: var(--accent-text);
+}
+.step-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-500);
+  white-space: nowrap;
+}
+.step-item.active .step-label,
+.step-item.done .step-label {
+  color: var(--gray-900);
+}
+.step-line {
+  flex: 1;
+  height: 1px;
+  background: var(--gray-200);
+  margin: 0 10px;
+  min-width: 14px;
+  transition: background 0.2s;
+}
+.step-line.done {
+  background: var(--donut-ok);
+}
+
+@media (max-width: 680px) {
+  .step-label {
+    display: none;
+  }
+  .stepper-inline {
+    gap: 2px;
+  }
+  .step-line {
+    min-width: 8px;
+    margin: 0 4px;
+  }
+  .site-header-inner {
+    gap: 10px;
+    padding: 10px 14px;
+  }
 }
 
 /* ---------- footer ---------- */
@@ -522,8 +615,22 @@ h1 {
   padding: 130px 24px;
   text-align: center;
 }
+.spinner {
+  width: 52px;
+  height: 52px;
+  border: 5px solid var(--gray-200);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  margin: 0 auto 22px;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .loading-text {
-  font-size: 13px;
+  font-size: 16px;
   color: var(--gray-500);
 }
 

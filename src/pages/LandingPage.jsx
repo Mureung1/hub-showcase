@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom'
-import { ANALYSIS_ID_STORAGE_KEY } from '../constants/storageKeys'
+import { getResumeStep, useAppState } from '../context/AppStateContext'
 import DonutChart from '../components/charts/DonutChart'
+
+const RESUME_PATH = { filter: '/filter', spec: '/spec', result: '/result' }
 
 // prototype/demo_13.html의 renderLandingScreen()을 그대로 포팅 — 2단 히어로(카피+도넛 미리보기 카드)와
 // 아이콘 배지 3단계 카드 구성 (#22). 도넛 미리보기 값(68%, 14/20건)은 실제 분석 결과가 아니라
@@ -41,11 +43,10 @@ const HOW_IT_WORKS = [
 
 function LandingPage() {
   const navigate = useNavigate()
-  // #14 최소 버전: 프로토타입의 getResumeStep(필터/스펙/결과 전 단계 감지)은 만들지 않는다 —
-  // 저장된 분석 id 존재 여부만 보고 /result로 보낸다. 복원 실패(오래된 id 등) 처리는
-  // ResultPage가 #9에서 이미 하고 있다(상태 'no-spec' → /spec 리다이렉트).
-  // (참고: getResumeStep의 3단계 감지 자체는 #21 스코프 — 이 버튼이 그 결과를 쓰게 될 예정이다.)
-  const hasSavedAnalysis = Boolean(localStorage.getItem(ANALYSIS_ID_STORAGE_KEY))
+  const { filters, spec, result } = useAppState()
+  // #21: 필터만 선택했는지/스펙까지 입력했는지/결과까지 있는지 3단계로 판정해서, 버튼 노출 여부와
+  // 이동 대상을 함께 정한다. 복원 실패(오래된 id 등) 처리는 ResultPage가 #9에서 이미 하고 있다.
+  const resumeStep = getResumeStep({ filters, spec, result })
 
   return (
     <>
@@ -65,8 +66,8 @@ function LandingPage() {
               <button className="btn-hero" onClick={() => navigate('/filter')}>
                 갭 분석 시작하기
               </button>
-              {hasSavedAnalysis && (
-                <button className="btn-hero-secondary" onClick={() => navigate('/result')}>
+              {resumeStep && (
+                <button className="btn-hero-secondary" onClick={() => navigate(RESUME_PATH[resumeStep])}>
                   지난 분석 이어하기
                 </button>
               )}

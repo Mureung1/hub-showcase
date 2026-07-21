@@ -45,6 +45,19 @@ export function formSpecFromApi(apiSpec) {
   return { ...DEFAULT_SPEC, ...apiSpec, isExperienced: (apiSpec?.career_months ?? 0) > 0 }
 }
 
+// 저장된 진행 상태를 보고 "필터만 선택함"/"스펙까지 입력함"/"결과까지 있음" 3단계를 판정한다 (#21).
+// prototype/demo_13.html의 getResumeStep()과 동일한 규칙 — result가 있으면 무조건 result 우선,
+// 그 다음 spec이 기본값에서 바뀌었는지, 마지막으로 filters가 기본값에서 바뀌었는지 순서로 본다.
+// result는 존재하더라도 stats/jobList가 없으면(손상된/불완전한 저장값) 신뢰하지 않고 그 아래 단계로 폴백한다.
+export function getResumeStep({ filters, spec, result }) {
+  if (result && result.stats && result.jobList) return 'result'
+  const filtersTouched = Boolean(filters.job_category || filters.is_intern)
+  const specTouched = JSON.stringify(spec) !== JSON.stringify(DEFAULT_SPEC)
+  if (specTouched) return 'spec'
+  if (filtersTouched) return 'filter'
+  return null
+}
+
 function loadPersisted() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)

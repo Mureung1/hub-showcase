@@ -104,6 +104,7 @@ function ResultPage() {
 
     list = [...list]
     if (sort === 'matchFirst') list.sort((a, b) => Number(b.overallMatch) - Number(a.overallMatch))
+    else if (sort === 'missingFirst') list.sort((a, b) => Number(a.overallMatch) - Number(b.overallMatch))
     else if (sort === 'company') list.sort((a, b) => a.company.localeCompare(b.company, 'ko'))
     return list
   }, [displayJobs, statusFilter, sort])
@@ -111,7 +112,8 @@ function ResultPage() {
   if (status === 'loading') {
     return (
       <div className="loading-screen">
-        <p className="loading-text">스펙과 공고 요건을 항목별로 대조하는 중이에요…</p>
+        <div className="spinner" />
+        <p className="loading-text">스펙과 공고 요건을 항목별로 대조하는 중이에요… 💦</p>
       </div>
     )
   }
@@ -230,6 +232,7 @@ function ResultPage() {
             <select className="result-sort" value={sort} onChange={(e) => setSort(e.target.value)}>
               <option value="default">기본순</option>
               <option value="matchFirst">지원 가능 우선</option>
+              <option value="missingFirst">지원 불가능 우선</option>
               <option value="company">회사명순</option>
             </select>
           </div>
