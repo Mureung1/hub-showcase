@@ -1,7 +1,8 @@
 const API_URL = "http://localhost:3001";
 
 async function request(path, options) {
-  const response = await fetch(`${API_URL}${path}`, { ...options, headers: { "X-User-Id": "demo-user", ...options?.headers } });
+  const token = localStorage.getItem("campus-cart-token");
+  const response = await fetch(`${API_URL}${path}`, { ...options, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options?.headers } });
   if (response.status === 204) return null;
   const body = await response.json();
   if (!response.ok) throw new Error(body.error ?? "요청을 처리하지 못했습니다.");
@@ -9,6 +10,9 @@ async function request(path, options) {
 }
 
 export const getHealth = () => request("/api/health");
+export const getMe = async () => (await request("/api/auth/me")).user;
+export const login = (input) => request("/api/auth/login", jsonOptions("POST", input));
+export const register = (input) => request("/api/auth/register", jsonOptions("POST", input));
 export const getGroupBuys = async () => (await request("/api/group-buys")).groupBuys;
 export const getGroupBuy = async (id) => (await request(`/api/group-buys/${id}`)).groupBuy;
 export const createGroupBuy = async (input) => (await request("/api/group-buys", jsonOptions("POST", input))).groupBuy;

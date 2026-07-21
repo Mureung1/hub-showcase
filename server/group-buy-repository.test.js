@@ -43,3 +43,39 @@ test("Given validated form data, when a row is prepared, then database column na
   assert.equal(row.pickup_location, "학생회관");
   assert.equal(row.current_people, 1);
 });
+
+test("Given participant rows, when a group buy is mapped, then participation survives refresh", () => {
+  const dto = groupBuyRowToDto({
+    category: "식품",
+    created_at: "2026-07-21T00:00:00.000Z",
+    current_people: 2,
+    deadline: "금요일 오후 6시",
+    group_buy_participants: [{
+      created_at: "2026-07-21T01:00:00.000Z",
+      group_buy_id: "11111111-1111-4111-8111-111111111111",
+      id: "22222222-2222-4222-8222-222222222222",
+      quantity: 2,
+      start_location: "학생회관",
+      user_id: "demo-user",
+    }],
+    host_name: "나",
+    id: "11111111-1111-4111-8111-111111111111",
+    name: "참여 테스트",
+    owner_id: "owner-user",
+    pickup_location: "장소 투표 예정",
+    shipping_fee: 3000,
+    stage: "모집 중",
+    status: "open",
+    target_people: 6,
+    unit_price: 1450,
+  });
+
+  assert.deepEqual(dto.participants, [{
+    createdAt: "2026-07-21T01:00:00.000Z",
+    id: "22222222-2222-4222-8222-222222222222",
+    nickname: "참여자 2",
+    quantity: 2,
+    startLocation: "학생회관",
+    userId: "demo-user",
+  }]);
+});

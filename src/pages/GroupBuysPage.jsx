@@ -8,7 +8,7 @@ function storedIds(key) {
   try { return JSON.parse(localStorage.getItem(key) ?? "[]"); } catch { return []; }
 }
 
-function GroupBuysPage({ onNavigate }) {
+function GroupBuysPage({ onNavigate, user }) {
   const [items, setItems] = useState([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
@@ -44,6 +44,7 @@ function GroupBuysPage({ onNavigate }) {
   [filter, items, joinedIds, query, savedIds, sort]);
 
   async function save(input) {
+    if (!user) { onNavigate("/login"); return; }
     setIsSaving(true);
     try {
       if (editingItem) await updateGroupBuy(editingItem.id, input); else await createGroupBuy(input);
