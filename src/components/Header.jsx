@@ -1,6 +1,21 @@
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import { colors, spacing, font, styles } from '../styles/theme.js'
+
+// 로고는 영어 워드마크 없이 심볼 이미지만 쓴다(요청: 영어 글씨 제거, 더 크게). 이미지가 없거나 로드에
+// 실패하면 앱 이름 텍스트로 폴백해, 상단이 텅 비어 보이지 않게 한다.
+function HeaderLogo() {
+  const [failed, setFailed] = useState(false)
+
+  if (failed) {
+    return (
+      <span style={{ fontWeight: 800, fontSize: font.size.lg, color: colors.primary, letterSpacing: '-0.02em' }}>Mealyze</span>
+    )
+  }
+
+  return <img src="/logo-symbol.png" alt="Mealyze" onError={() => setFailed(true)} style={{ height: 36, display: 'block' }} />
+}
 
 // 게스트도 항상 헤더를 본다 — 로그인 계정이면 이메일+로그아웃, 게스트면 로그인/회원가입 진입 버튼을
 // 보여준다(로그인 화면 자체에서는 중복이라 버튼을 숨긴다). authLoading 중(세션 복원 전)에는 오른쪽을
@@ -26,7 +41,7 @@ export default function Header() {
         background: colors.surface,
       }}
     >
-      <img src="/logo-header.png" alt="Mealyze" style={{ height: 24, display: 'block' }} />
+      <HeaderLogo />
       {authLoading ? null : authMode === 'user' ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
           <span style={{ fontSize: font.size.sm, color: colors.muted }}>{authUser.email}님</span>
