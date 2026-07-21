@@ -13,6 +13,7 @@
 - 디자인 시스템: [docs/design.md](docs/design.md)
 - 코드 컨벤션: [docs/conventions.md](docs/conventions.md)
 - 보안 규칙: [docs/security.md](docs/security.md)
+- 백엔드 테스트 규칙: [docs/testing.md](docs/testing.md)
 
 ## 기술 스택
 
@@ -30,6 +31,7 @@
 - `npm run preview` — 빌드 결과 미리보기
 - `npm run lint` — 린트 검사 (frontend/backend 전체)
 - `npm run dev:backend` — 백엔드 개발 서버 실행 (`/health`, `/api-docs`)
+- `npm run test:backend` — 백엔드 유닛·통합테스트 실행 (Vitest)
 
 ## 디렉토리 구조
 - `frontend/` — 프론트엔드 (React 19 + Vite, 독립 패키지)
@@ -49,6 +51,8 @@
 - 백엔드(Node.js + Express + Prisma)는 `routes → controllers → services` 레이어드 구조로 시작하고, DB 스키마는 `prisma/schema.prisma`에 정의할 것
 - 새 라우트/컨트롤러를 작성·수정하거나 배포 관련 설정(환경변수·CORS·헤더)을 다룰 때는 [docs/security.md](docs/security.md)의 규칙(예외 처리·입력 검증·배포 보안 설정)을 따를 것
 - `security-convention` 스킬(`.claude/skills/security-convention/`)이 이 규칙을 적용하도록 구성되어 있음
+- 새 서비스 함수·라우트를 추가하거나 회귀 테스트가 필요할 때는 [docs/testing.md](docs/testing.md)의 규칙(유닛/통합테스트 구분, GitHub mock·DB 실연결 원칙)을 따를 것
+- `backend-testing` 스킬(`.claude/skills/backend-testing/`)이 이 규칙을 적용하도록 구성되어 있음
 
 ## 작업 규칙
 - 작은 단위로 주기적으로 커밋을 해야한다.
