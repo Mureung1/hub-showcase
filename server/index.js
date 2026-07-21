@@ -5,6 +5,7 @@ const supabase = require('./services/supabase');
 const keywordsRouter = require('./routes/keywords');
 const profileRouter = require('./routes/profile');
 const articlesRouter = require('./routes/articles');
+const bookmarksRouter = require('./routes/bookmarks');
 
 const app = express();
 app.use(cors()); // 모든 도메인 허용
@@ -13,6 +14,7 @@ app.use(express.json()); // 요청 body가 JSON일 때 자동으로 파싱해서
 app.use('/api/keywords', keywordsRouter);
 app.use('/api/profile', profileRouter);
 app.use('/api/articles', articlesRouter);
+app.use('/api/bookmarks', bookmarksRouter);
 
 app.get('/api/health', async (req, res) => {
   const { count, error } = await supabase
