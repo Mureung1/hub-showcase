@@ -10,3 +10,14 @@ export async function generateAdCopy(situation) {
   if (!res.ok) throw new Error('AI 문구 생성 실패');
   return res.json();
 }
+
+export async function confirmRequest(requestId, userId) {
+  const res = await fetch(`${API}/api/requests/${requestId}/confirm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || '완료 확인에 실패했어요.');
+  return data;
+}
