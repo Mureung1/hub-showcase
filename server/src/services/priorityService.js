@@ -1,14 +1,24 @@
 // 우선순위 성향 프리셋. 클라이언트의 priorityCalculator.js와 값을 맞춘다.
+// 각 가중치의 합은 1.0 이다.
 export const WEIGHT_PRESETS = {
-  balanced: { understanding: 0.4, difficulty: 0.3, urgency: 0.3 },
-  difficulty: { understanding: 0.3, difficulty: 0.5, urgency: 0.2 },
-  urgency: { understanding: 0.3, difficulty: 0.2, urgency: 0.5 },
+  balanced: { understanding: 0.25, difficulty: 0.15, urgency: 0.2, importance: 0.2, grading: 0.1, studyAmount: 0.1 },
+  difficulty: { understanding: 0.2, difficulty: 0.3, urgency: 0.1, importance: 0.15, grading: 0.1, studyAmount: 0.15 },
+  urgency: { understanding: 0.15, difficulty: 0.1, urgency: 0.4, importance: 0.15, grading: 0.1, studyAmount: 0.1 },
+  grade: { understanding: 0.15, difficulty: 0.1, urgency: 0.15, importance: 0.3, grading: 0.2, studyAmount: 0.1 },
 };
 
 export const DEFAULT_WEIGHT_KEY = "balanced";
 
+// 1~5 척도 필드에 값이 없을 때 쓰는 중립값.
+const NEUTRAL = 3;
+
 // 시험이 이 일수 이상 남으면 급함 점수는 0으로 본다.
 const URGENCY_HORIZON = 30;
+
+// 1~5 값을 "클수록 높은 점수(0~100)"로 바꾼다.
+function ascendingScore(value) {
+  return ((value - 1) / 4) * 100;
+}
 
 export function getDaysUntil(examDate, today = new Date()) {
   if (!examDate) {
@@ -34,15 +44,31 @@ function calculateUrgencyScore(daysUntil) {
   return ((URGENCY_HORIZON - daysUntil) / URGENCY_HORIZON) * 100;
 }
 
-export function calculatePriorityScore({ understanding, difficulty, daysUntil }, weights) {
+export function calculatePriorityScore(
+  {
+    understanding = NEUTRAL,
+    difficulty = NEUTRAL,
+    daysUntil,
+    importance = NEUTRAL,
+    grading = NEUTRAL,
+    studyAmount = NEUTRAL,
+  },
+  weights
+) {
   const understandingScore = ((5 - understanding) / 4) * 100;
-  const difficultyScore = ((difficulty - 1) / 4) * 100;
+  const difficultyScore = ascendingScore(difficulty);
   const urgencyScore = calculateUrgencyScore(daysUntil);
+  const importanceScore = ascendingScore(importance);
+  const gradingScore = ascendingScore(grading);
+  const studyAmountScore = ascendingScore(studyAmount);
 
   const score =
     understandingScore * weights.understanding +
     difficultyScore * weights.difficulty +
-    urgencyScore * weights.urgency;
+    urgencyScore * weights.urgency +
+    importanceScore * weights.importance +
+    gradingScore * weights.grading +
+    studyAmountScore * weights.studyAmount;
 
   return Math.round(score);
 }
@@ -58,6 +84,9 @@ export function scoreSubjects(subjects, weightKey) {
         understanding: subject.understanding,
         difficulty: subject.difficulty,
         daysUntil: getDaysUntil(subject.examDate),
+        importance: subject.importance,
+        grading: subject.grading,
+        studyAmount: subject.studyAmount,
       },
       weights
     ),

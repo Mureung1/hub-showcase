@@ -7,6 +7,9 @@ const INITIAL_FORM = {
   examDate: "",
   understanding: 3,
   difficulty: 3,
+  importance: 3,
+  grading: 3,
+  studyAmount: 3,
 };
 
 function SubjectInputPage({
@@ -69,6 +72,9 @@ function SubjectInputPage({
       examDate: form.examDate,
       understanding: form.understanding,
       difficulty: form.difficulty,
+      importance: form.importance,
+      grading: form.grading,
+      studyAmount: form.studyAmount,
     };
 
     if (isEditing) {
@@ -86,6 +92,9 @@ function SubjectInputPage({
       examDate: subject.examDate,
       understanding: subject.understanding,
       difficulty: subject.difficulty,
+      importance: subject.importance ?? 3,
+      grading: subject.grading ?? 3,
+      studyAmount: subject.studyAmount ?? 3,
     });
     setEditingId(subject.id);
     setErrorMessage("");
@@ -165,6 +174,30 @@ function SubjectInputPage({
             maxLabel="어려움"
           />
 
+          <ScoreSelector
+            label="중요도"
+            value={form.importance}
+            onChange={(value) => updateField("importance", value)}
+            minLabel="낮음"
+            maxLabel="높음"
+          />
+
+          <ScoreSelector
+            label="교수님 학점 성향"
+            value={form.grading}
+            onChange={(value) => updateField("grading", value)}
+            minLabel="후하게 주심"
+            maxLabel="짜게 주심"
+          />
+
+          <ScoreSelector
+            label="공부 분량 (시험 범위)"
+            value={form.studyAmount}
+            onChange={(value) => updateField("studyAmount", value)}
+            minLabel="적음"
+            maxLabel="많음"
+          />
+
           <p className="form-error">{errorMessage}</p>
 
           <div className="form-actions">
@@ -204,7 +237,8 @@ function SubjectInputPage({
                   <span className="entry-name">{subject.name}</span>
                   <span className="entry-meta">
                     {formatDday(getDaysUntil(subject.examDate))} · 이해도{" "}
-                    {subject.understanding} · 난이도 {subject.difficulty}
+                    {subject.understanding} · 난이도 {subject.difficulty} · 중요도{" "}
+                    {subject.importance ?? 3}
                   </span>
                 </div>
                 <div className="entry-actions">

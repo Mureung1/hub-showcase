@@ -5,6 +5,9 @@ const FACTORS = [
   { key: "understanding", label: "이해도", modifier: "understanding" },
   { key: "difficulty", label: "난이도", modifier: "difficulty" },
   { key: "urgency", label: "급함", modifier: "urgency" },
+  { key: "importance", label: "중요도", modifier: "importance" },
+  { key: "grading", label: "교수", modifier: "grading" },
+  { key: "studyAmount", label: "분량", modifier: "studyAmount" },
 ];
 
 function ScoreBreakdown({ subject }) {
@@ -12,6 +15,9 @@ function ScoreBreakdown({ subject }) {
     understanding: subject.understanding,
     difficulty: subject.difficulty,
     daysUntil: getDaysUntil(subject.examDate),
+    importance: subject.importance,
+    grading: subject.grading,
+    studyAmount: subject.studyAmount,
   });
 
   return (

@@ -404,7 +404,7 @@
 
 .breakdown-label {
   flex-shrink: 0;
-  width: 44px;
+  width: 52px;
   font-size: var(--font-caption);
   color: var(--color-text-secondary);
 }
@@ -434,6 +434,18 @@
 
 .breakdown-fill-urgency {
   background-color: var(--color-danger);
+}
+
+.breakdown-fill-importance {
+  background-color: var(--color-success);
+}
+
+.breakdown-fill-grading {
+  background-color: #8b5cf6;
+}
+
+.breakdown-fill-studyAmount {
+  background-color: #0ea5e9;
 }
 
 /* 우선순위 성향 선택기 */

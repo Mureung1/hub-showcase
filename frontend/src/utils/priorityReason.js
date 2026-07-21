@@ -8,6 +8,9 @@ export function buildPriorityReason(subject) {
     understanding: subject.understanding,
     difficulty: subject.difficulty,
     daysUntil,
+    importance: subject.importance,
+    grading: subject.grading,
+    studyAmount: subject.studyAmount,
   });
 
   const parts = [];
@@ -22,6 +25,18 @@ export function buildPriorityReason(subject) {
     parts.push("난이도가 높으며");
   } else if (breakdown.difficulty >= 50) {
     parts.push("난이도가 있는 편이고");
+  }
+
+  if (breakdown.importance >= 75) {
+    parts.push("학점에서 비중이 크고");
+  }
+
+  if (breakdown.grading >= 75) {
+    parts.push("교수님이 학점을 짜게 주시며");
+  }
+
+  if (breakdown.studyAmount >= 75) {
+    parts.push("공부할 분량이 많고");
   }
 
   if (daysUntil !== null) {
