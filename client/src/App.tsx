@@ -3,6 +3,7 @@ import './App.css'
 import GlobalHeader from './components/GlobalHeader'
 import ProfileBoard from './components/ProfileBoard'
 import CurationWorkspace from './components/CurationWorkspace'
+import MyLibrary from './components/MyLibrary'
 import { CurationData, LibraryItem } from './types'
 
 function App() {
@@ -80,11 +81,7 @@ function App() {
           />
         </main>
       ) : (
-        <div style={{ padding: '24px', flexGrow: 1, overflowY: 'auto' }}>
-          {/* MyLibrary 컴포넌트 마운트 예정 */}
-          <h2 style={{ color: 'var(--primary-teal-dark)' }}>내 서재 보관함</h2>
-          <p style={{ color: 'var(--text-muted)' }}>여기에 논문 카드 목록이 렌더링될 예정입니다.</p>
-        </div>
+        <MyLibrary savedPapers={savedPapers} handleRemovePaper={handleRemovePaper} />
       )}
     </div>
   )

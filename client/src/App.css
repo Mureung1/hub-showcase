@@ -760,3 +760,72 @@ body {
   text-align: center;
   padding: 20px 0;
 }
+
+/* --- My Library Page Styling --- */
+.library-page-container {
+  padding: 24px;
+  flex-grow: 1;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.library-page-header {
+  margin-bottom: 24px;
+}
+
+.library-page-header h2 {
+  color: var(--primary-teal-dark);
+  font-family: var(--font-title);
+  margin: 0 0 8px 0;
+  font-size: 22px;
+}
+
+.library-page-header p {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0;
+}
+
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.library-empty-card {
+  padding: 40px;
+  text-align: center;
+  background-color: var(--surface-card);
+  min-height: 240px;
+}
+
+.library-card-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 160px;
+}
+
+.library-card-top {
+  position: relative;
+}
+
+.library-card-title {
+  margin-top: 8px;
+  font-size: 15px;
+  word-break: break-all;
+}
+
+.library-card-bottom {
+  margin-top: 12px;
+}
+
+.library-card-meta {
+  margin-bottom: 10px;
+}
+
+.library-remove-btn {
+  width: 100%;
+  padding: 8px;
+  font-size: 12px;
+}
