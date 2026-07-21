@@ -193,7 +193,7 @@ api/_lib/prompt/
 - 입력은 받은 메시지 500자, 상황 설명 300자로 제한한다.
 - 클라이언트는 생성 중 중복 클릭을 막고, 서버는 IP당 분당 10회 제한을 둔다.
 - 개발 환경은 실제 provider 대신 목 생성기의 강제 오류 케이스로 상태 UI를 검증한다.
-- 운영 비용은 `AI 호출 수 × (입력 토큰 단가 + 출력 토큰 단가)`로 산정한다. Haiku 4.5부터 동일 holdout을 평가하고, SPEC 5장 합격선을 통과하는 가장 빠르고 저렴한 모델을 선택한다. 실제 연결 직전에 provider의 모델·가격을 재검증한다.
+- 운영 비용은 `AI 호출 수 × (입력 토큰 단가 + 출력 토큰 단가)`로 산정한다. `gemini-3.1-flash-lite`부터 동일 holdout을 평가하고, SPEC 5장 합격선을 통과하는 가장 빠르고 저렴한 모델을 선택한다. 실제 연결 직전에 provider의 모델·가격을 재검증한다.
 
 동일 요청의 해시 캐시·분산 레이트리밋은 트래픽 관측 후 도입한다. 민감한 원문을 키로 한 영구 캐시는 만들지 않는다.
 
@@ -203,7 +203,7 @@ api/_lib/prompt/
 - Neon PostgreSQL에는 T30 핵심 네 테이블과 독립 `retrieval_examples`를 둔다. 관계·모드·목적 ID, 모델·버전, status, 지연, 토큰, 집계 평가, Git example provenance와 document vector처럼 원문을 복원하지 않는 메타데이터만 허용한다. IP·영구 사용자 ID·예시 본문·사용자 query/vector는 저장하지 않는다.
 - 생성 실행 metric에는 관계·모드·목적·route·status 같은 정해진 ID만 허용한다. T36 상호작용 event에는 event name·route·관계·모드·optional 상황/톤 ID만 허용하며, 두 경로 모두 임의 metadata를 받지 않는다.
 - 카톡 전환 후 복귀를 위해 현재 탭의 `sessionStorage`에만 임시 보관한다. 마지막 선택 후 30분이 지나면 저장본을 삭제하고, 사용자는 “이 탭의 작성 내용 지우기”로 즉시 삭제할 수 있다.
-- 실 AI 경로에서는 원문이 외부 provider로 전송된다. 서비스의 비저장과 provider의 처리·보존을 구분해 안내하며, 당시 정책과 ZDR 실제 적용 여부를 T20 전에 확인한다. 표준 Anthropic API 보존은 별도 합의가 없으면 입력·출력을 최대 30일 내 삭제하는 조건이므로 “이 탭에만 존재”한다고 표현하지 않는다. [Anthropic API 보존 정책](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)
+- 실 AI 경로에서는 원문이 외부 provider(Google Gemini API)로 전송된다. 서비스의 비저장과 provider의 처리·보존을 구분해 안내하며, 당시 정책과 ZDR 실제 적용 여부를 확인 전에는 “이 탭에만 존재”한다고 표현하지 않는다. 확인되지 않은 구체 보존 기간은 단정하지 않는다.
 - 로그인·히스토리·원문 기반 재방문 기능은 MVP Out이다.
 
 2026-07-20 T30에서 핵심 네 테이블의 Drizzle schema·migration과 서버 전용 repository를 구현·실 DB 검증했다. T35의 `retrieval_examples`는 기존 migration을 수정하지 않는 additive 확장이며, 코드 rollback 때 테이블이 남아도 기존 생성 경로에 영향이 없도록 독립 모듈로 둔다. 실제 embedding 적재·검색은 별도 guarded smoke 근거가 생기기 전 완료로 표시하지 않는다.

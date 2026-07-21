@@ -1028,3 +1028,39 @@
 - App RTL 77/77, backend/DB 집중 7파일 36개, 전체 40파일 330개 테스트와 API 타입검사, lint, production build, Drizzle check, retrieval eval, diff, AGENTS/CLAUDE 동기화, production TypeScript `any` 0건을 통과했다. 기존 jsdom `scrollTo` 로그와 lazy CatCanvas 500kB 경고만 비차단으로 유지됐다.
 - headless Chrome으로 실제 S0→S3를 클릭해 375×667·320×568에서 document/viewport width 일치와 가로 overflow 0을 확인했다. 생성 성공 뒤 결과 H2 초점·live 완료 문구·이전 초안 생성, 현재/이전 전환·복원 뒤 해당 후보 region 초점, 320px 직접 수정 textarea 초점·132px 높이·54px 복사 버튼을 확인했다. 실제 VoiceOver/NVDA, 모바일 가상 키보드, 카카오톡 인앱 복사 폴백은 수동 호환성 gate로 남긴다.
 - T36은 구현·로컬 검증 완료로 CHECKLIST에 반영했다. 실제 Neon migration/write, 커밋·push는 수행하지 않았고 `.github` 경로와 사용자 소유 미추적 파일은 건드리지 않았다. 상세 근거: [T36 계획서](../harness/tasks/T36-result-refinement-flow/plan.md)·[검증 보고서](../harness/tasks/T36-result-refinement-flow/verification.md).
+
+## 2026-07-21 (T17 완료 확인, T20 목→실 provider 전환 착수 — Gemini로 provider 결정)
+### T17
+- 사용자가 CI 재설치(`79a9478`) 반영과 공개 Production·Preview S0 실물 확인을 완료로 확인해 CHECKLIST를 체크했다.
+### provider 결정과 SPEC 계약 변경
+- 사용자가 실 provider로 Anthropic 대신 Google Gemini API 사용을 확정했다. 코드 전에 SPEC 2장 provider 처리 고지(확인 안 된 보존정책 링크 제거)와 6장 모델·가격표(Anthropic → `gemini-2.5-flash-lite`/`gemini-3.1-flash-lite`/`gemini-3.5-flash`, 2026-07-21 공개 단가 기준)를 Gemini로 갱신했다. 3장 서술의 `stop_reason`/`output_config.format`도 실제 연결 대상에 맞춰 `finishReason`/`generationConfig.responseSchema`로 정정했다.
+- Gemini `responseSchema`의 정확한 키워드 지원 범위는 확인하지 못했으나, provider 응답과 무관하게 `src/shared/generation/contracts.ts`의 런타임 `parseGeneratedReply`가 후보 개수·톤레벨·길이를 이미 전량 재검증하므로 T3/T19 산출물(`outputSchema.ts`)은 수정하지 않았다.
+### 구현
+- `api/_lib/generation/geminiProvider.ts`를 새로 만들어 `generateContent` REST 호출(`x-goog-api-key`, `generationConfig.responseMimeType/responseSchema`)과 실패 매핑(429→rate_limited, 5xx→transient, 그 외 4xx→client_error, fetch/abort 실패→transient)을 구현했다. Gemini `finishReason: STOP`을 기존 `parseCompletedStructuredOutput`이 기대하는 `end_turn` 문자열로 변환해 T19 산출물을 그대로 재사용한다. `createEnvironmentGenerationProvider`는 `GEMINI_API_KEY` 미설정 시 기존 `createUnconfiguredGenerationProvider`로 우아하게 폴백한다(Voyage provider와 동일 패턴).
+- `api/generate.ts`가 `createUnconfiguredGenerationProvider()` 대신 이 팩토리를 쓰도록 배선을 교체했다. `.env.example`에 `GEMINI_API_KEY`/`GEMINI_MODEL` 항목을 추가했다.
+### 검증·잔여 gate
+- 신규 geminiProvider 단위 테스트 12개(fake fetch로 정상 STOP·MAX_TOKENS/SAFETY/RECITATION·429/503/400·abort·빈 응답·미설정 케이스, API 키가 에러 메시지에 노출되지 않음을 확인) 포함 전체 342개 테스트, `typecheck:api`, lint, production build, `git diff --check` 통과.
+- 실제 `GEMINI_API_KEY`로 하는 호출은 자동 테스트에서 수행하지 않았다(과금 방지, fake fetch만 사용). 사용자가 Vercel에 키를 등록하고 Preview에서 실제 정상 왕복을 확인했다. 등록 과정에서 키 원문이 대화창에 두 차례 노출돼 즉시 폐기·재발급을 안내했고, 재발급된 키로 재확인해 CHECKLIST T20을 완료로 반영했다(2026-07-21). 429·refusal(SAFETY/RECITATION)·토큰 절단(MAX_TOKENS)·서버 취소의 실동작 확인은 자동 테스트(fake fetch)로만 커버됐고 Preview 실물 확인은 남아 있다.
+
+## 2026-07-21 (T21 holdout 20개 실 Gemini 호출·사람 채점 완료)
+### holdout 케이스 확장
+- `src/evaluation/generationCases.ts`의 기존 4개(groupwork 누락·일부 시드 중복)를 SPEC 5장 요구대로 20개(시나리오당 대표 4 + 500자 근접 1)로 확장했다. `riskCategories` 메타데이터로 거절·500자 근접·상충 지시·강압 요청·사실 추가 위험을 태깅하고, 시드 24개와 situation·receivedMessage 문구가 겹치지 않음을 테스트로 고정했다.
+### 실 API 연결 중 발견한 결함 2건과 수정
+- `gemini-2.5-flash-lite`가 T20 문서화 당시 가정과 달리 이 계정(신규 사용자)에는 404로 제공되지 않음을 실 호출로 확인했다. 실제 `ListModels` 결과와 교차 확인해 `gemini-3.1-flash-lite`로 기본 모델을 교체하고 SPEC 6장·MVP.md·AI_DESIGN.md·`.env.example`·`geminiProvider.ts` 전부를 갱신했다.
+- structured output 스키마 호환성도 실제로는 T20에서 예상한 것과 다른 지점에서 깨졌다: Gemini `responseSchema`는 `additionalProperties`를 아예 거부하고 `enum`은 문자열만 허용한다(우리 `toneLevel` enum은 정수 `[1,2,3]`). fake fetch 단위 테스트는 스키마 형태를 검사하지 않아 이 결함을 잡지 못했다 — 실 호출 400 응답으로 처음 발견했다. `geminiProvider.ts`에 `toGeminiSchema` 정규화(재귀적으로 `additionalProperties` 제거, 비문자열 `enum` 제거)를 추가해 해결했다. 최종 검증은 여전히 `src/shared/generation/contracts.ts`의 런타임 `parseGeneratedReply`가 provider와 무관하게 수행한다.
+### 산출물
+- `scripts/holdout-eval.ts`로 20/20 정상 응답을 수신하고, 톤 라벨을 가리고 순서를 섞은 블라인드 채점 패킷(`harness/tasks/T21-holdout-quality/blind-packet.md`)과 정답 매핑(`answer-key.json`)을 산출했다.
+### 검증·잔여 gate
+- geminiProvider 스키마 정규화 회귀 테스트 1건 추가, 전체 42파일 349개 테스트·`typecheck:api`·lint·build·`git diff --check` 통과.
+- 한국어 맥락 평가자 2명(사용자 포함)이 블라인드 패킷을 독립 채점했다. 톤 정렬 일치·전송 가능성 판정·환각 0건 세 지표 모두 SPEC 5장 합격선을 통과해 CHECKLIST T21을 완료로 반영했다. 개별 세트·후보 단위 원시 채점표는 시드 T16과 동일한 방침으로 저장소에 보관하지 않는다. 상세 근거: [T21 계획서](../harness/tasks/T21-holdout-quality/plan.md)·[검증 보고서](../harness/tasks/T21-holdout-quality/verification.md).
+
+## 2026-07-21 (T36 후속 — 템플릿 빈칸 즉시 수정)
+- 사용자 피드백에 따라 결과 묶음 안내를 “필요하면 고쳐서 바로 복사해요”로 바꾸고, `[부탁할 내용]`·`OO` 같은 자리 표시자가 있는 후보는 기존 강조와 안내 배지를 유지하면서 편집 행동명을 `직접 수정`에서 `빈칸 채우기`로 구체화했다. 빈칸이 없는 후보는 기존 `직접 수정`을 유지한다.
+- `빈칸 채우기`를 누르면 로컬 textarea에 초점을 두고 첫 자리 표시자 전체를 자동 선택해 바로 실제 내용으로 대체할 수 있게 했다. 수정문 복사·원문 복원·서버/계측 비전송 경계는 그대로 유지했다.
+- `docs/EDGE_CASES.md`의 오래된 “편집 기능은 MVP 밖” 표현을 현재 T36 계약에 맞게 정정하고 `docs/SCREENS.md`에 행동명·자동 선택 규칙을 명시했다.
+- 관련 2파일 82개·전체 41파일 344개 테스트, lint, production build, `git diff --check`가 통과했다. 인앱 브라우저는 세션에 사용 가능한 브라우저가 없어 실제 화면 검증을 실행하지 못했으며 기존 T22·T23 수동 gate로 남겼다.
+
+## 2026-07-21 (T36 후속 — guided 재생성 행동 명확화)
+- `같은 선택으로 다른 표현 만들기`가 추가 입력을 요구하는지 불분명하다는 사용자 피드백을 반영했다. 버튼 앞에서 “현재 답 유지·추가 입력 없음·새 초안 3개 즉시 생성”을 설명하고, 행동명을 `이 선택으로 새 초안 3개 만들기`로 바꿨다.
+- 생성 중에는 `새 초안 3개 만들고 있어요…`로 즉시 피드백하고, 성공 뒤에는 화면상 status로 새 초안 준비 완료와 수정·복사·이전 초안 비교를 안내한다. 기존 후보 보존·성공 시에만 교체·직전 한 세트 복원 동작은 바꾸지 않았다.
+- App RTL 78개·전체 41파일 349개 테스트, lint, production build, `git diff --check`가 통과했다. 인앱 브라우저 실화면 검증은 세션 제약으로 기존 T22·T23 수동 gate에 남겼다.
