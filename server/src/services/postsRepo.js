@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { db } from "../db/index.js";
+import { supabase } from "../db/index.js";
+import { ApiError } from "../utils/ApiError.js";
 
-// SQLite는 배열/객체 타입이 없어 seo_keywords/hashtags/images/suggested_publish_time은
-// JSON 문자열로 저장한다. camelCase(API) <-> snake_case(DB) 매핑도 이 파일에서만 다룬다.
+// Postgres에도 배열/객체 타입인 jsonb를 안 쓰고 SQLite 때와 동일하게 JSON 문자열로
+// 저장한다 — 스키마를 그대로 재사용하기 위함. camelCase(API) <-> snake_case(DB)
+// 매핑도 이 파일에서만 다룬다.
 const COLUMNS = [
   "id",
   "type",
@@ -95,7 +97,7 @@ function fromRow(row) {
   };
 }
 
-export function createPost(fields) {
+export async function createPost(fields) {
   const now = new Date().toISOString();
   const post = {
     id: randomUUID(),
@@ -112,32 +114,32 @@ export function createPost(fields) {
     ...fields,
   };
 
-  const row = toRow(post);
-  const placeholders = COLUMNS.map((c) => `@${c}`).join(", ");
-  db.prepare(`INSERT INTO posts (${COLUMNS.join(", ")}) VALUES (${placeholders})`).run(row);
+  const { error } = await supabase.from("posts").insert(toRow(post));
+  if (error) throw new ApiError(500, "DB_ERROR", error.message);
   return post;
 }
 
-export function listPosts({ status } = {}) {
-  const rows = status
-    ? db.prepare("SELECT * FROM posts WHERE status = ? ORDER BY created_at DESC").all(status)
-    : db.prepare("SELECT * FROM posts ORDER BY created_at DESC").all();
-  return rows.map(fromRow);
+export async function listPosts({ status } = {}) {
+  let query = supabase.from("posts").select(COLUMNS.join(",")).order("created_at", { ascending: false });
+  if (status) query = query.eq("status", status);
+
+  const { data, error } = await query;
+  if (error) throw new ApiError(500, "DB_ERROR", error.message);
+  return data.map(fromRow);
 }
 
-export function getPostById(id) {
-  return fromRow(db.prepare("SELECT * FROM posts WHERE id = ?").get(id));
+export async function getPostById(id) {
+  const { data, error } = await supabase.from("posts").select(COLUMNS.join(",")).eq("id", id).maybeSingle();
+  if (error) throw new ApiError(500, "DB_ERROR", error.message);
+  return fromRow(data);
 }
 
-export function updatePost(id, patch) {
-  const existing = getPostById(id);
+export async function updatePost(id, patch) {
+  const existing = await getPostById(id);
   if (!existing) return null;
 
   const merged = { ...existing, ...patch, id: existing.id, updatedAt: new Date().toISOString() };
-  const row = toRow(merged);
-  const assignments = COLUMNS.filter((c) => c !== "id")
-    .map((c) => `${c} = @${c}`)
-    .join(", ");
-  db.prepare(`UPDATE posts SET ${assignments} WHERE id = @id`).run(row);
+  const { error } = await supabase.from("posts").update(toRow(merged)).eq("id", id);
+  if (error) throw new ApiError(500, "DB_ERROR", error.message);
   return merged;
 }
