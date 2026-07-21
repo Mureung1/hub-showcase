@@ -31,19 +31,21 @@ except ImportError as e:
 def get_embeddings(texts):
     """텍스트 임베딩 생성"""
     try:
+        print(f"[DEBUG] KoBERT 모델 로드 중...", file=sys.stderr)
         tokenizer = AutoTokenizer.from_pretrained('skt/kobert-base-v1')
         model = AutoModel.from_pretrained('skt/kobert-base-v1', output_hidden_states=True)
 
         model.eval()
         embeddings = []
 
-        for text in texts:
+        for i, text in enumerate(texts):
             input_ids = torch.tensor(tokenizer.encode(text)).unsqueeze(0)
             with torch.no_grad():
                 outputs = model(input_ids)
                 # CLS 토큰의 임베딩 사용
                 embedding = outputs.hidden_states[-1][:, 0, :].numpy()
                 embeddings.append(embedding[0])
+                print(f"[DEBUG] 텍스트 {i}: '{text}' → 임베딩 차원: {embedding[0].shape}", file=sys.stderr)
 
         return np.array(embeddings)
     except Exception as e:
@@ -98,6 +100,7 @@ def calculate_similarity(trend_hashtag, caption):
         embeddings = get_embeddings(texts)
 
         similarity = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]
+        print(f"[DEBUG] '{trend_hashtag}' vs '{caption}' → 유사도: {similarity:.4f}", file=sys.stderr)
         return float(similarity)
     except Exception as e:
         print(f"Error calculating similarity: {e}", file=sys.stderr)

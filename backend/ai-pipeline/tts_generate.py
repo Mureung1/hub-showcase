@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-한국어 TTS 음성 생성 (Mock)
+한국어 TTS 음성 생성 (gTTS)
 입력: 자막 텍스트, 언어 코드
 출력: 음성 파일 경로 (MP3)
 """
@@ -9,24 +9,23 @@ import sys
 import json
 import os
 from pathlib import Path
-import struct
 
-
-def generate_mock_mp3(output_path):
-    """더미 MP3 파일 생성 (FFmpeg이 읽을 수 있는 최소 MP3)"""
-    # 간단한 MP3 헤더 + 더미 데이터
-    mp3_data = b'\xff\xfb\x10\x00' + b'\x00' * 1000
-
-    with open(output_path, 'wb') as f:
-        f.write(mp3_data)
+try:
+    from gtts import gTTS
+except ImportError:
+    print(json.dumps({
+        "status": "error",
+        "message": "gtts 라이브러리가 설치되지 않았습니다. pip install gtts를 실행하세요."
+    }))
+    sys.exit(1)
 
 
 def generate_voice(caption, lang='ko', output_dir=None):
     """
-    TTS 음성 생성 (현재: Mock)
+    TTS 음성 생성 (gTTS 사용)
     """
     try:
-        # 출력 디렉토리 설정 (기본값: 스크립트 디렉토리의 output 폴더)
+        # 출력 디렉토리 설정
         if output_dir is None:
             output_dir = str(Path(__file__).parent / "output")
 
@@ -38,8 +37,13 @@ def generate_voice(caption, lang='ko', output_dir=None):
         timestamp = int(time.time() * 1000)
         output_path = f"{output_dir}/audio_{timestamp}.mp3"
 
-        # Mock MP3 파일 생성
-        generate_mock_mp3(output_path)
+        print(f"[DEBUG] gTTS 음성 생성 중: '{caption}'", file=sys.stderr)
+
+        # gTTS로 음성 생성
+        tts = gTTS(text=caption, lang=lang, slow=False)
+        tts.save(output_path)
+
+        print(f"[DEBUG] 음성 파일 생성됨: {output_path}", file=sys.stderr)
 
         # 파일 존재 확인
         if not os.path.exists(output_path):
@@ -49,6 +53,8 @@ def generate_voice(caption, lang='ko', output_dir=None):
         file_size = os.path.getsize(output_path)
         if file_size == 0:
             raise Exception(f"Audio file is empty: {output_path}")
+
+        print(f"[DEBUG] 음성 파일 크기: {file_size} bytes", file=sys.stderr)
 
         result = {
             "status": "success",
