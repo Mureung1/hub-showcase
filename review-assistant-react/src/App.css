@@ -1317,6 +1317,37 @@ textarea:focus {
   margin-bottom: 14px;
 }
 
+.insight-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--color-suggestion-bg);
+  border: 1px solid var(--color-recurring-border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  margin: 8px 0 20px;
+}
+
+.insight-banner-loading {
+  align-items: center;
+  color: var(--color-text-subtle);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.insight-banner-icon {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.insight-banner-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: var(--line-height-body);
+  color: var(--color-suggestion-text);
+  font-weight: 600;
+}
+
 .reply-list {
   display: flex;
   flex-direction: column;

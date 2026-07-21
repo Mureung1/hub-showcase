@@ -137,6 +137,14 @@ CLAUDE.md의 "로그인 없는 익명 세션" 결정을 뒤집고, 실제 회원
 
 > **알려진 이슈**: `#26` 교체 이후 `npm test`가 10개 전부 실패한다(`analyzeReviews`가 이제 async라 기존 테스트가 Promise를 배열처럼 다루려다 터짐). 의도된 상태 — mock 기반으로 테스트를 다시 쓰는 건 `#32`(목 7/23) 몫으로 이미 계획돼 있어서 지금 손대지 않음.
 
+### 보너스 — 대시보드 AI 한줄 인사이트 (화 7/21)
+
+계획에는 없었지만, Claude API 실연동 직후 "리뷰 생성기가 아니라 매니저처럼 느껴지게 하려면?"을 고민하다가 바로 구현까지 진행했다.
+
+- [x] 백엔드: `services/insight.service.js` 신설 — 총 분석 통계 + 반복 문제를 프롬프트로 묶어 Claude에게 한 줄 인사이트를 요청. `dashboard_insights` 테이블에 `session_id`당 하루 1건만 캐싱해서 재방문 시 API를 다시 부르지 않음. `GET /api/v1/stats/insight` 신규
+- [x] 프론트: `components/dashboard/InsightBanner.jsx` 신규 — 대시보드 통계(즉시 응답)와 분리해서 자체 로딩 상태로 인사이트를 불러옴
+- [x] curl로 첫 호출(~2초, 실제 API 호출)과 재호출(~0.2~0.3초, 캐시 히트, 내용 동일) 응답 시간 차이로 캐싱 동작 확인, Playwright로 대시보드에 배너가 실제로 뜨는 것 확인
+
 - [ ] **P1** — [#29](https://github.com/rldbs5353/hub/issues/29) 답변 초안 3종(정중함/친근함/간결함) 프롬프트 튜닝 (수 7/22)
 - [ ] **P1** — [#30](https://github.com/rldbs5353/hub/issues/30) API 파싱 실패·타임아웃 에러 코드 매핑 (수 7/22)
 - [ ] **P1** — [#31](https://github.com/rldbs5353/hub/issues/31) 반복 문제 감지 로직 재검증 (수 7/22)
