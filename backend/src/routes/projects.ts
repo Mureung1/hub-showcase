@@ -288,26 +288,58 @@ router.get(
 // 사용자가 확정하는 판단값. AI 제안값인 verification_status(유력함/근거 부족/수정 필요)와는 별개 컬럼이다.
 const ALLOWED_HYPOTHESIS_STATUSES = ['검토 전', '유지', '수정', '폐기'];
 
-// PATCH /api/projects/:id/hypotheses/:hid — 가설 판단(유지/수정/폐기) 확정.
-// '수정'은 여기서 상태 플래그만 세팅하며, 실제 원인/결과 편집과 버전 저장은 Task 10/12에서 연결한다.
+interface PatchHypothesisBody {
+  status?: string;
+  cause?: string;
+  effect?: string;
+}
+
+// PATCH /api/projects/:id/hypotheses/:hid — 가설 판단(유지/수정/폐기) 확정 및/또는 원인·결과 인라인 수정.
+// status·cause·effect 중 있는 필드만 갱신한다(부분 갱신).
+// 원인/결과 수정은 현재 덮어쓰기다 — 이전 값을 hypothesis_versions에 append하는 버전 히스토리는
+// 아직 붙이지 않았다(Task 12에서 연결 예정). Task 10 완료 조건("인라인 수정 진입점")은 편집·저장
+// 동작 자체를 요구하며, 버전 보존은 별도 완료 조건이다.
 router.patch(
   '/:id/hypotheses/:hid',
   async (
-    req: Request<{ id: string; hid: string }, {}, { status?: string }>,
+    req: Request<{ id: string; hid: string }, {}, PatchHypothesisBody>,
     res: Response,
   ) => {
     const { id, hid } = req.params;
-    const { status } = req.body;
+    const { status, cause, effect } = req.body;
 
-    if (!status || !ALLOWED_HYPOTHESIS_STATUSES.includes(status)) {
-      return res.status(400).json({
-        error: `status는 ${ALLOWED_HYPOTHESIS_STATUSES.join(' / ')} 중 하나여야 합니다.`,
-      });
+    if (status === undefined && cause === undefined && effect === undefined) {
+      return res.status(400).json({ error: 'status, cause, effect 중 최소 하나는 있어야 합니다.' });
+    }
+
+    const updatePayload: Record<string, string> = {};
+
+    if (status !== undefined) {
+      if (!ALLOWED_HYPOTHESIS_STATUSES.includes(status)) {
+        return res.status(400).json({
+          error: `status는 ${ALLOWED_HYPOTHESIS_STATUSES.join(' / ')} 중 하나여야 합니다.`,
+        });
+      }
+      updatePayload.status = status;
+    }
+
+    if (cause !== undefined) {
+      if (!cause.trim()) {
+        return res.status(400).json({ error: 'cause는 빈 문자열일 수 없습니다.' });
+      }
+      updatePayload.cause = cause.trim();
+    }
+
+    if (effect !== undefined) {
+      if (!effect.trim()) {
+        return res.status(400).json({ error: 'effect는 빈 문자열일 수 없습니다.' });
+      }
+      updatePayload.effect = effect.trim();
     }
 
     const { data: hypothesis, error } = await supabase
       .from('hypotheses')
-      .update({ status })
+      .update(updatePayload)
       .eq('id', hid)
       .eq('project_id', id)
       .select()
