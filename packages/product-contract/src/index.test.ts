@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import * as productContract from '@ay-ple/product-contract'
 import {
   FIRST_ASSIGNMENT_ARGUMENTS,
   FIRST_ASSIGNMENT_RECIPE_VERSION,
@@ -14,7 +15,40 @@ import {
   decodeProductOperationFrame,
   decodeProductReviewRequest,
   decodeProductReviewResponse,
-} from './index.js'
+} from '@ay-ple/product-contract'
+
+test('package root exposes the exact runtime contract surface', () => {
+  assert.deepEqual(Object.keys(productContract).sort(), [
+    'FIRST_ASSIGNMENT_ARGUMENTS',
+    'FIRST_ASSIGNMENT_RECIPE_VERSION',
+    'PRODUCT_JSON_ENVELOPE_MAX_BYTES',
+    'PRODUCT_REVIEW_FEEDBACK_MAX_BYTES',
+    'ProductContractError',
+    'decodeCreateProductCourseRequest',
+    'decodeEmptyProductRequest',
+    'decodeFirstAssignmentRequest',
+    'decodeProductBootstrap',
+    'decodeProductChatRequest',
+    'decodeProductError',
+    'decodeProductInteractionAnswerRequest',
+    'decodeProductMaterialPreview',
+    'decodeProductOperationFrame',
+    'decodeProductQuestion',
+    'decodeProductReviewRequest',
+    'decodeProductReviewResponse',
+    'decodeProductStatePatch',
+    'decodeProductWorkspace',
+    'decodeProductWorkspaceActivationResponse',
+    'decodeProductWorkspaceResponse',
+    'isProductDecisionKey',
+    'isProductDigest',
+    'isProductInteractionId',
+    'isProductMaterialId',
+    'isProductOperationId',
+    'isProductPatchId',
+    'isProductQuestionId',
+  ])
+})
 
 test('bootstrap decoder accepts the exact Browser-safe projection only', () => {
   const bootstrap = {
