@@ -40,20 +40,26 @@
 ## 프로젝트 폴더 구조
 
 ```
-AGENTS.md
-README.md
-.gitignore
-.env.example
-agents/
-  relationship-ai-feature-planner.md
-docs/
-  project-brief.md
-  mvp-scope.md
-  github-issues.md
-frontend/
-  .gitkeep
-backend/
-  .gitkeep
+App
+├─ analysisStatus
+├─ emotionResult
+│
+├─ ServiceHeader
+├─ EmotionInputForm
+│  ├─ situationText
+│  ├─ faceSignal
+│  ├─ voiceSignal
+│  ├─ validationError
+│  │
+│  ├─ SituationInput
+│  ├─ memo(FaceSignalSelector)
+│  └─ memo(VoiceSignalSelector)
+│
+├─ AnalysisStatus
+└─ EmotionResult
+   ├─ EmotionScoreBar
+   ├─ EvidenceList
+   └─ AnalysisDisclaimer
 ```
 
 ## 문서 링크
