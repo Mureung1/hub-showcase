@@ -20,6 +20,9 @@ export default function ChatDemo() {
     try {
       const result = await sendChatMessage(prompt);
       setMessages((prev) => [...prev, { id: Date.now(), prompt, result }]);
+    } catch (err) {
+      const message = err?.response?.data?.error?.message ?? "요청 처리 중 오류가 발생했습니다.";
+      setMessages((prev) => [...prev, { id: Date.now(), prompt, error: message }]);
     } finally {
       setLoading(false);
     }
@@ -29,14 +32,15 @@ export default function ChatDemo() {
     <div className="chat-demo">
       <div className="chat-demo__thread">
         {messages.length === 0 && (
-          <p className="chat-demo__empty">
-            프롬프트를 입력해보세요. 전화번호·이메일이 섞이면 마스킹되고,
-            "영업비밀" 같은 단어가 있으면 차단됩니다.
-          </p>
+          <p className="chat-demo__empty">프롬프트를 입력해보세요.</p>
         )}
-        {messages.map((m) => (
-          <ChatExchange key={m.id} prompt={m.prompt} result={m.result} />
-        ))}
+        {messages.map((m) =>
+          m.error ? (
+            <ChatError key={m.id} prompt={m.prompt} message={m.error} />
+          ) : (
+            <ChatExchange key={m.id} prompt={m.prompt} result={m.result} />
+          )
+        )}
         {loading && <p className="chat-demo__loading">검사 중...</p>}
       </div>
 
@@ -89,6 +93,17 @@ function ChatExchange({ prompt, result }) {
             ))}
           </div>
         )}
+      </Card>
+    </div>
+  );
+}
+
+function ChatError({ prompt, message }) {
+  return (
+    <div className="chat-exchange">
+      <div className="chat-exchange__prompt">{prompt}</div>
+      <Card className="chat-exchange__result">
+        <p className="chat-exchange__block-reason">{message}</p>
       </Card>
     </div>
   );
