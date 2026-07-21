@@ -32,13 +32,13 @@ Week 1 초반(Day 1~2)은 학습 가이드라인의 취지를 반영해, 가장 
   - `기후에너지환경부_분리배출 정보조회 서비스` (15156866, `getItem`/`getSpot`) — `getItem`은 품목명→대표 배출방법 조회로 `DisposalRule`에 사용, 데이터 공간범위는 서울시 기준이지만 분리배출 "방법"은 지역과 무관하게 전국 공통 기준(환경부 고시)이라 판단해 전국 기본값으로 채택(`sourceRegion` 필드로 출처만 명시). `getSpot`(분리배출 장소 좌표 조회)은 Day 10 주변 수거 장소 기능에 재사용 예정.
   - `행정안전부_생활쓰레기배출정보 조회서비스` (15155080) — 지역별 배출요일/배출기준 데이터라 Day 6 `RegionRule`에서 사용 예정, Day 3 범위 아님.
 - [x] **BE** 공공데이터 API 클라이언트 `services/` 작성 — `services/govDisposalApiClient.ts`(실 API, `WasteRecyclingService/getItem` 호출·검증 완료), `services/mockGovDisposalApiClient.ts`(mock), `services/disposalApiClient.ts`(`PUBLIC_DATA_SERVICE_KEY` 존재 여부로 real/mock 선택하는 팩토리), 타입은 `types/govDisposalApi.ts`
-- [x] **BE** Object Normalizer 매핑 테이블 설계 — `services/objectNormalizer.ts`, Vision AI 라벨 → `Item.name`(정부 API `itemNm` 검색어와 동일 값) 매핑
+- [x] **BE** Object Normalizer 매핑 테이블 설계 — `services/objectNormalizer.ts`, Vision AI 라벨 → `Item.name`(정부 API `itemNm` 검색어와 동일 값) 매핑. ~~정적 ~12개 영어 사전~~ → **동기화된 731개 카탈로그 기반 매칭으로 교체(7/20)**, 리스크&메모 참고
 - [x] **BE** `schema.prisma`에 `DisposalRule` 모델 추가 + migration (`20260715090127_add_disposal_rule`) — 실제 API 응답이 `itemNm`/`dschgMthd` 단일 텍스트만 제공하므로 README의 단계별/부품별/실수/이유 세부 필드는 만들지 않음(원본 정부 데이터를 가공 없이 캐시); 단계별 가공은 Day 5 LLM 설명 생성 단계에서 수행
 
 ### Day 4 (7/16 목) — P1: 사진 인식 플로우 (BE)
 - [x] **BE** 사진 업로드 라우트 — `routes/index.ts`, multer(`memoryStorage`, 5MB 제한) + `fileFilter`로 jpeg/png/webp만 허용 (계획한 zod 검증 대신 multer `fileFilter`로 구현)
 - [x] **BE** Vision AI 연동 서비스 — 이미지 → Top Prediction, Confidence Score 미사용. ~~OpenAI Vision API~~ → **Gemini로 변경** (7/19, 무료 티어 사용 목적, 리스크&메모 참고) — `services/geminiVisionApiClient.ts` (+ mock fallback)
-- [x] **BE** 인식 플로우 연결: 업로드 → Vision AI → Object Normalizer → 공공데이터 API 조회 → (Day 5) LLM 설명까지 연결 완료. Confidence 임계값 분기 없음, 매칭 실패(404) 시 FE에서 Search로 폴백
+- [x] **BE** 인식 플로우 연결: 업로드 → Vision AI → Object Normalizer(현재는 카탈로그 매칭) → 공공데이터 API 조회 → (Day 5) LLM 설명까지 연결 완료. Confidence 임계값 분기 없음, 매칭 실패(404) 시 FE에서 Search로 폴백
 - [x] **FE** HomePage 촬영/업로드 UI (`prototype/home.html` 매칭) — 카메라/갤러리 버튼 시트, `capture="environment"` input
 
 ### Day 5 (7/17 금) — P1: LLM 설명 + 결과 화면
@@ -122,3 +122,5 @@ Day 10에서 만든 수거 장소 리스트 데이터에 지도를 얹는 후속
 - **Day 1~2는 품목 검색 하나만으로 vertical slice(화면→서버→DB→응답→화면)를 완성**하는 데 집중한다 — 학습 가이드라인의 "mock 데이터로 화면 흐름 먼저 확인 → 실 연동" 순서를 반영. 나머지 스키마(`DisposalRule`은 Day 3, `RegionRule`은 Day 6)는 해당 기능이 필요해질 때 추가한다.
 - **Vision AI/LLM 제공자를 OpenAI → Gemini로 변경(7/19)**. 사유: OpenAI API는 상시 무료 티어가 없고(계정에 결제 등록 필요, `insufficient_quota` 확인함) Gemini는 무료 티어 한도가 있어 데모 목적에 더 적합. `services/geminiClient.ts`에서 `gemini-2.5-flash` 사용 후 일일 한도(429) 도달 시 `gemini-2.5-flash-lite`로 자동 폴백하도록 구현. README `기술 스택` 절 갱신 필요.
 - **Day 4~5 실제 완료 상태 재확인(7/19~20)**: TASK.md 체크박스가 실제 코드 상태와 안 맞아 있었음(Day 4/5 항목이 모두 미체크였지만 코드는 부분적으로 이미 존재) — Vision AI는 API 키 미설정으로 mock만 동작 중이었고, `ConfirmPage`는 3줄 스텁이라 사진 업로드 후 결과까지 이어지는 경로 자체가 끊겨 있었으며, Day 5의 핵심인 LLM 설명 생성 서비스는 아예 없었음. 오늘 세 가지 모두 실제로 구현하고 실 API로 검증 완료. **앞으로는 코드 작업 완료 시 TASK.md 체크박스를 그때그때 갱신할 것** — 밀린 상태로 두면 실제 진행 상황을 파악하기 어려워짐.
+- **사진 인식 로딩 무한 대기 버그(7/20)**: 실제 사진 업로드 테스트 중 응답은 정상 도착(200)하는데도 `ConfirmPage`가 "분석 중" 상태에 멈추는 버그 발견. 원인은 `useMutation`을 `useEffect`에서 호출하는 패턴이 React StrictMode의 effect 이중 호출과 충돌해 완료 알림을 놓치는 것 — `useQuery(enabled)`로 전환해 수정. [[feedback_strictmode_mutation_in_effect]] 메모 참고, 향후 "데이터 준비되면 한 번 실행" 패턴은 이 방식을 따를 것.
+- **Object Normalizer를 정적 사전 → 카탈로그 매칭으로 교체(7/20)**: 실제 사진(바나나 껍질) 테스트 중 인식 실패 발견 — 원인은 `objectNormalizer.ts`의 하드코딩 사전이 병/건전지/종이팩류 ~12개만 커버했기 때문(정작 "바나나 껍질"은 동기화된 카탈로그에 이미 있어서 검색으로는 찾아짐). Vision AI 프롬프트를 영어 라벨 대신 한국어 품목명 추측으로 바꾸고, 731개 전체 카탈로그에 대해 `contains` 매칭(`itemService.findBestMatchingItem`)하도록 변경 — 새 품목 추가할 때마다 사전에 손으로 추가할 필요 없어짐.
