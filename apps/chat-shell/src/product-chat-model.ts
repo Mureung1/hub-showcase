@@ -142,10 +142,6 @@ export type ProductChatState = {
   readonly failure?: ProductChatFailure
   readonly controlFailure?: ProductChatFailure
   readonly recovery?: ProductRecoveryBinding
-  readonly lastAssignment?: {
-    readonly operationId: string
-    readonly runId: string
-  }
 }
 
 export type ProductChatAction =
@@ -370,14 +366,6 @@ function reduceProductFrame(
         operationId: frame.operationId,
         ...(runId === undefined ? {} : { runId }),
       },
-      ...(active.kind === 'assignment' && runId !== undefined
-        ? {
-            lastAssignment: {
-              operationId: frame.operationId,
-              runId,
-            },
-          }
-        : {}),
     }
   }
 
@@ -775,11 +763,7 @@ function reduceProductRecovery(
     active?.kind === 'assignment' &&
     active.operationId === frame.operationId &&
     active.runId === frame.runId
-  const matchesLast =
-    !active &&
-    state.lastAssignment?.operationId === frame.operationId &&
-    state.lastAssignment.runId === frame.runId
-  if (!matchesActive && !matchesLast) return invalidStream(state)
+  if (!matchesActive) return invalidStream(state)
   if (state.recovery) {
     return sameRecovery(state.recovery, frame) ? state : invalidStream(state)
   }

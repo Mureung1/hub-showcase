@@ -55,11 +55,7 @@ export function continuationLossForSettledDecision(
       { readonly outcome: 'continuation_lost' }
     >
   | undefined {
-  const settledPatches = patches.filter(
-    (patch) =>
-      patch.guardOperationId === run.actionId &&
-      (patch.status === 'applied' || patch.status === 'rejected'),
-  )
+  const settledPatches = settledDecisionPatchesForRun(run, patches)
   if (settledPatches.length !== 1) return undefined
   const patch = settledPatches[0]!
   const confirmation = confirmations.find(
@@ -88,4 +84,15 @@ export function continuationLossForSettledDecision(
     }
   }
   return undefined
+}
+
+export function settledDecisionPatchesForRun(
+  run: Pick<ModelingRun, 'actionId'>,
+  patches: readonly PersistedStatePatch[],
+): readonly PersistedStatePatch[] {
+  return patches.filter(
+    (patch) =>
+      patch.guardOperationId === run.actionId &&
+      (patch.status === 'applied' || patch.status === 'rejected'),
+  )
 }

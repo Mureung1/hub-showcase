@@ -385,6 +385,23 @@ test('accepts recovery only for the exact Assignment and closes the pending Revi
   }
 })
 
+test('fails closed when recovery arrives after the authoritative terminal', () => {
+  const terminal = applyFrames(acceptedAssignmentState(), [
+    assignmentTerminal('completed', 'passed'),
+  ])
+  const state = applyFrames(terminal, [
+    {
+      type: 'operation.recovery',
+      operationId: actionId,
+      runId,
+      outcome: 'interrupted',
+      retryable: true,
+    },
+  ])
+
+  assertInvalidProductStream(state)
+})
+
 test('reconciles settled recovery when the native acceptance frame was lost', () => {
   for (const [recovery, terminal, phase] of [
     [

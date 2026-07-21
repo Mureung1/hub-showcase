@@ -13,6 +13,7 @@ import {
   continuationLossForSettledDecision,
   hasSameInvocationSnapshot,
   isRetryableModelingRun,
+  settledDecisionPatchesForRun,
 } from './modeling-run-semantics.js'
 import { SemesterWorkspaceError } from './semester-workspace-error.js'
 import {
@@ -579,10 +580,9 @@ function hasValidWorkspaceStateInvariants(
     const retrySource = run.retryOfRunId
       ? runsById.get(run.retryOfRunId)
       : undefined
-    const settledDecisionPatches = store.statePatches.filter(
-      (patch) =>
-        patch.guardOperationId === run.actionId &&
-        (patch.status === 'applied' || patch.status === 'rejected'),
+    const settledDecisionPatches = settledDecisionPatchesForRun(
+      run,
+      store.statePatches,
     )
     const continuationLoss = continuationLossForSettledDecision(
       run,
