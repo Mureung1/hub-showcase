@@ -109,6 +109,7 @@ router.post('/interviews/:interviewId/messages', (req, res) => {
     judgement,
     content_type: contentType,
     next_question: nextQuestion,
+    next_cited_code: next ? state.pendingQuestion.cited_code : null,
     portfolio_markdown: state.portfolioMarkdown,
   });
 });

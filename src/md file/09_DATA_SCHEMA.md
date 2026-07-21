@@ -100,9 +100,12 @@ Question Generator의 출력이다.
   "answer": "동시성 문제 때문에 재시도 로직을 넣었어요.",
   "judgement": "AMBIGUOUS",
   "content_type": "PROBLEM_SOLVING",
-  "follow_up_question": "구체적으로 어떤 동시성 문제였는지, 재시도 조건은 어떻게 설계했는지 알려주실 수 있나요?"
+  "follow_up_question": "구체적으로 어떤 동시성 문제였는지, 재시도 조건은 어떻게 설계했는지 알려주실 수 있나요?",
+  "next_cited_code": ""
 }
 ```
+
+`next_cited_code`는 `follow_up_question`(또는 다음 chunk/파일의 신규 질문)이 가리키는 코드 근거다. 다음 질문이 없으면(인터뷰 종료) `null`이다.
 
 judgement 값 (서술 수위/방어 코멘트 결정)
 

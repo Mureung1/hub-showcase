@@ -6,7 +6,12 @@ import { randomUUID } from 'crypto';
  * Day 11에서 이 Map들을 DB 조회/저장으로 교체할 예정 (진행 상태 키 이름은 DB 스키마와 동일하게 맞춰둠).
  */
 
-export const repositories = new Map(); // repository_id -> { repositoryUrl, candidates, context }
+export const repositories = new Map();
+// repository_id -> {
+//   repositoryUrl, defaultBranch, totalFileCount,
+//   candidateFilePaths, contextFilePaths, lastScannedAt,   // 실제 Git Trees API 분류 결과
+//   candidates, context,                                   // Day 1 스코어링/청킹 스텁 (인터뷰용, 계속 유지)
+// }
 export const interviews = new Map(); // interview_id -> InterviewSessionState
 
 export function createId(prefix) {

@@ -1,23 +1,9 @@
 /**
  * Day 1 Walking Skeleton: 고정(fake) 데이터.
- * Day 3~10에서 이 값들을 실제 Code Scanner & Scorer / Question Generator 출력으로 교체한다.
- * 스키마 모양(file_path/score/reason/chunks, project_overview/tech_stack)은
+ * candidate 파일 선정은 candidateSelector.js로 대체됐고, context(README/tech_stack 파싱)와
+ * question(정규식 청킹) 로직만 아직 이 스텁을 쓴다. 스키마 모양은
  * 05_CODE_SCANNER_SCORER.md 8장과 동일하게 맞춰서, 나중에 이 파일만 지워도 되게 해둔다.
  */
-
-export function buildFixedCandidateFile() {
-  return {
-    file_path: 'src/service/PaymentService.js',
-    score: 1.3,
-    reason: '스텁 데이터 (Day 1 walking skeleton, 실제 스코어링 아님)',
-    chunks: [
-      {
-        code_snippet: 'async function approvePayment(order) {\n  try {\n    await paymentGateway.charge(order);\n  } catch (e) {\n    await retryQueue.push(order);\n  }\n}',
-        pattern: 'try-catch',
-      },
-    ],
-  };
-}
 
 export function buildFixedContext() {
   return {

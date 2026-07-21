@@ -68,7 +68,7 @@ function UrlStep({ onSubmit, loading, error }) {
           }}
         />
         <button className="btn-primary" type="submit" disabled={loading}>
-          {loading ? '분석 중...' : '시작'}
+          {loading ? '후보 파일 코드를 가져오는 중...' : '시작'}
         </button>
       </form>
       {error && <p style={{ color: '#D64545' }}>{error}</p>}
@@ -94,6 +94,8 @@ function ChatStep({ question, citedCode, onSubmit, loading, error }) {
             padding: 'var(--space-4)',
             borderRadius: 'var(--radius-control)',
             overflowX: 'auto',
+            overflowY: 'auto',
+            maxHeight: 320,
             fontSize: 'var(--font-size-caption)',
           }}
         >
@@ -196,7 +198,7 @@ export default function App() {
       setMarkdown(result.portfolio_markdown);
       if (result.next_question) {
         setQuestion(result.next_question);
-        setCitedCode(null);
+        setCitedCode(result.next_cited_code);
       } else {
         setStep('done');
       }
