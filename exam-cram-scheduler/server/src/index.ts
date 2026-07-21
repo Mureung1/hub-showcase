@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import { handleCalculateSchedule } from "./routes/scheduleCalculate.js";
 
 const app = express();
 const port = process.env.PORT ?? 4000;
@@ -22,6 +23,9 @@ app.get("/health/db", async (_req, res) => {
     res.status(500).json({ status: "error", message: (err as Error).message });
   }
 });
+
+// #15 "POST /api/schedule/calculate 엔드포인트" — 서비스_기술_지도.md 7.2
+app.post("/api/schedule/calculate", handleCalculateSchedule);
 
 app.listen(port, () => {
   console.log(`server listening on http://localhost:${port}`);
