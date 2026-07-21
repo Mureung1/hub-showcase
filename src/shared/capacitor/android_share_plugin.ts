@@ -23,7 +23,9 @@ export type AndroidShareNativePlugin = {
 
 export type AndroidSharePluginAdapter = {
   finishShare(): Promise<void>;
-  subscribe(onShare: (share: AndroidShareInput) => void): Promise<() => Promise<void>>;
+  subscribe(
+    onShare: (share: AndroidShareInput) => void
+  ): Promise<() => Promise<void>>;
 };
 
 type AndroidSharePluginDependencies = {
@@ -37,7 +39,9 @@ const defaultDependencies: AndroidSharePluginDependencies = {
 };
 const RECENT_SHARE_ID_LIMIT = 32;
 
-function parsePendingShare(value: Record<string, unknown>): AndroidShareInput | undefined {
+function parsePendingShare(
+  value: Record<string, unknown>
+): AndroidShareInput | undefined {
   if (typeof value.id !== 'string' || typeof value.text !== 'string') {
     return undefined;
   }
@@ -97,11 +101,7 @@ export function createAndroidSharePluginAdapter(
             pendingPolls -= 1;
             const pending = parsePendingShare(await plugin.getPendingShare());
 
-            if (
-              !isDisposed &&
-              pending &&
-              !deliveredShareIds.has(pending.id)
-            ) {
+            if (!isDisposed && pending && !deliveredShareIds.has(pending.id)) {
               deliveredShareIds.add(pending.id);
               if (deliveredShareIds.size > RECENT_SHARE_ID_LIMIT) {
                 const oldestShareId = deliveredShareIds.values().next().value;

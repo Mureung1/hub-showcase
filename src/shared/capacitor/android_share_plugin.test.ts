@@ -149,7 +149,9 @@ describe('Android 공유 플러그인 어댑터', () => {
 
     pendingShares.push({ id: 'share-33', text: 'https://example.com/33' });
     wakeUp?.();
-    await vi.waitFor(() => expect(nativePlugin.getPendingShare).toHaveBeenCalledTimes(34));
+    await vi.waitFor(() =>
+      expect(nativePlugin.getPendingShare).toHaveBeenCalledTimes(34)
+    );
     expect(onShare).toHaveBeenCalledTimes(33);
 
     pendingShares.push({ id: 'share-1', text: 'https://example.com/1' });

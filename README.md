@@ -26,6 +26,7 @@
 - [디자인 시스템](DESIGN.md) - 화면 톤, 색상, 타이포그래피와 컴포넌트 규칙
 - [WDS 적용 메모](docs/wds-adoption.md) - WDS 컴포넌트 적용 기준과 도입 순서
 - [개발 아키텍처](docs/development-architecture.md) - FSD 레이어, import 규칙과 저장 경계
+- [Android Capacitor 개발·검증](docs/android-capacitor.md) - Android 공유 저장, OAuth, APK와 에뮬레이터 절차
 - [기술 스택 및 라이브러리](docs/tech-stack.md) - 라이브러리 선정 이유와 연결 상태
 - [코딩/커밋 컨벤션](docs/coding-commit-conventions.md) - 코드 스타일, 브랜치와 커밋 규칙
 - [에이전트 작업 지침](AGENTS.md) - 저장소 작업 규칙

@@ -17,6 +17,15 @@ src/
       authenticated_workspace.css
       global.css
   features/
+    android-share/
+      index.ts
+      model/
+        android_share_session.ts
+        extract_shared_url.ts
+        use_android_share.ts
+      ui/
+        android_share_screen.tsx
+        android_share_screen.css
     auth/
       api/
         auth_service.ts
@@ -68,6 +77,7 @@ src/
     insight/
       api/
         browser_insight_capture_service.ts
+        browser_insight_memo_service.ts
         supabase_insight_repository.ts
       index.ts
       model/
@@ -80,6 +90,10 @@ src/
   shared/
     api/
       supabase_client.ts
+    capacitor/
+      android_share_plugin.ts
+      mobile_oauth.ts
+      runtime.ts
     config/
       supabase_env.ts
       design-system/
@@ -118,7 +132,7 @@ src/
 | `entities` | 도메인 타입, 도메인 연산, 도메인 표시 UI                           |
 | `shared`   | 비즈니스 규칙이 없는 config, UI adapter, 범용 도구                 |
 
-현재 도메인 모델·Supabase 저장 어댑터·목록 UI는 `entities/insight`, Google 로그인 정책은 `features/auth`, PWA 설치 안내 정책은 `features/pwa-install`, 고정 앱 내비게이션은 `widgets/app-navigation`, Supabase 공통 클라이언트는 `shared/api`, 공개 환경 검증은 `shared/config`, PWA 브라우저 수명 주기 어댑터는 `shared/pwa`, 런타임 토큰은 `shared/config/design-system`, 공통 UI 경계는 `shared/ui`가 소유한다.
+현재 도메인 모델·Supabase 저장 어댑터·목록 UI는 `entities/insight`, Android 공유의 URL 추출·상태·결과 화면은 `features/android-share`, Google 로그인 정책은 `features/auth`, PWA 설치 안내 정책은 `features/pwa-install`, 고정 앱 내비게이션은 `widgets/app-navigation`, Supabase 공통 클라이언트는 `shared/api`, Capacitor 런타임·공유 플러그인·모바일 OAuth 어댑터는 `shared/capacitor`, 공개 환경 검증은 `shared/config`, PWA 브라우저 수명 주기 어댑터는 `shared/pwa`, 런타임 토큰은 `shared/config/design-system`, 공통 UI 경계는 `shared/ui`가 소유한다.
 
 ## import 경계
 
