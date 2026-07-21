@@ -246,6 +246,8 @@
 
 .badge {
   display: inline-block;
+  justify-self: center;
+  text-align: center;
   white-space: nowrap;
   border-radius: var(--radius-pill);
   padding: var(--space-xs) var(--space-sm);
@@ -281,14 +283,9 @@
   color: var(--color-text);
 }
 
-.dashboard-cause {
-  font-weight: var(--font-weight-medium);
-}
-
+.dashboard-cause,
 .dashboard-effect {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-caption);
-  padding-left: var(--space-md);
+  font-weight: var(--font-weight-medium);
 }
 
 .dashboard-recommendation {
