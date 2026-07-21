@@ -31,8 +31,10 @@ doc_gen = DocumentGenerator()
 ai_agent = LegalAIAgent()
 ai_agent.retriever = Retriever() 
 
+# 🚀 [핵심 수정 1] 프론트엔드에서 넘어오는 case_type을 받을 수 있도록 스키마 수정
 class ChatRequest(BaseModel):
     query: str
+    case_type: str = "" # 기본값을 빈 문자열로 두어 에러 방지
 
 class DocumentRequest(BaseModel):
     doc_type: str
@@ -53,11 +55,9 @@ class FeedbackRequest(BaseModel):
     rating: int
     user_comment: str
 
-# [NEW] 실시간 토큰 0 추출 API
 @app.post("/api/analyze")
 async def analyze_live(request: ChatRequest):
     try:
-        # LLM 없이 정규식으로만 가볍게 빼옵니다.
         facts = ai_agent.extract_live_facts(request.query)
         return {"status": "success", "facts": facts}
     except Exception as e:
@@ -67,18 +67,26 @@ async def analyze_live(request: ChatRequest):
 async def ask_agent(request: ChatRequest):
     try:
         query = request.query
+        case_type = request.case_type
         searched_context = []
+        
+        # 🚀 [핵심 수정 2] 프론트에서 받은 사건유형을 쿼리 앞에 붙여서 '강화된 쿼리'를 만듭니다.
+        # 예: "대여금 반환 청구 김철수에게 50만원을 작년에 빌려줬는데 안갚아요"
+        enhanced_search_query = f"{case_type} {query}" if case_type else query
         
         print(f"\n{'-'*50}")
         print(f"🚀 [{datetime.now().strftime('%H:%M:%S')}] 새로운 요청 도착: '{query}'")
+        print(f"💡 [강화된 검색 쿼리]: '{enhanced_search_query}'")
         print(f"{'-'*50}")
         
         print("🔍 1. 로컬 벡터 DB(법령/판례) 검색 시작...")
         if ai_agent.retriever:
-            searched_context = ai_agent.retriever.search(query)
+            # 벡터 DB 검색에는 반드시 '강화된 쿼리'를 던져줍니다.
+            searched_context = ai_agent.retriever.search(enhanced_search_query)
             print(f"✅ 검색 완료: 총 {len(searched_context)}건의 관련 레퍼런스를 찾았습니다.")
             
         print("🧠 2. AI 에이전트 추론 및 데이터 추출 시작...")
+        # LLM(에이전트)에게 대답을 시킬 때는 사용자의 원래 자연스러운 'query'만 넘겨줍니다.
         agent_result = ai_agent.ask(query, searched_context)
         print("✅ AI 추론 완료! 프론트엔드로 응답을 반환합니다.\n")
 
@@ -91,6 +99,8 @@ async def ask_agent(request: ChatRequest):
     except Exception as e:
         print(f"❌ API Ask Error 발생: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# ... 하단 문서 생성(generate-document) 및 피드백 로직은 기존과 완전히 동일하게 유지 ...
 
 @app.post("/api/generate-document")
 async def generate_document(request: DocumentRequest):

@@ -63,6 +63,8 @@ function App() {
             return {
               ...prev,
               title: facts.case_type || prev.title,
+              // [추가된 부분] 백엔드에서 분석한 상대방(person) 이름이 있으면 피고 이름 칸에 자동 입력!
+              receiver_name: facts.person || prev.receiver_name,
               facts: aiFacts.trim() !== "" ? aiFacts.trim() : prev.facts
             };
           });
@@ -86,7 +88,14 @@ function App() {
     setRelatedLaws([]);
 
     try {
-      const response = await axios.post("http://127.0.0.1:8000/api/ask", { query: query });
+      // 🚀 [핵심 수정] query와 함께 사용자가 확인/수정한 사건유형(manualForm.title)을 같이 보냅니다!
+      const payload = {
+        query: query,
+        case_type: manualForm.title || "" 
+      };
+
+      const response = await axios.post("http://127.0.0.1:8000/api/ask", payload);
+      
       setChatLog([...newChat, { sender: 'ai', text: response.data.response }]);
       if (response.data.extracted_data) setExtractedData(response.data.extracted_data);
       if (response.data.related_laws) setRelatedLaws(response.data.related_laws);

@@ -59,30 +59,65 @@ class LegalAIAgent:
         self.prompt = ChatPromptTemplate.from_template(prompt_template)
         self.chain = self.prompt | self.llm | self.parser
 
-    # [NEW] LLM 없이 토큰 소모 0으로 실시간 분석하는 파이썬 로직
+    # [NEW] LLM 없이 토큰 소모 0으로 실시간 분석하는 파이썬 로직 (강화버전)
     def extract_live_facts(self, text: str):
-        # 1. 날짜 추출 (예: 2026년 3월 5일, 4월 10일)
-        when_match = re.search(r'(?:20\d{2}년\s*)?\d{1,2}월\s*\d{1,2}일', text)
-        when = when_match.group(0) if when_match else ""
+        # 1. 날짜 추출 (다양한 포맷 지원)
+        # 예: 2026년 3월 5일, 3월 5일, 3/5, 26.03.05, 작년, 지난달
+        when = ""
+        date_patterns = [
+            r'(?:20\d{2}[년\.\-\/]\s*)?\d{1,2}[월\.\-\/]\s*\d{1,2}일?', 
+            r'어제|오늘|내일|작년|올해|내년|지난\s*달|이번\s*달'
+        ]
+        for pattern in date_patterns:
+            match = re.search(pattern, text)
+            if match:
+                when = match.group(0)
+                break
 
-        # 2. 금액 추출 (예: 500만원, 1,000만원, 50000원)
-        amount_match = re.search(r'(\d+(?:,\d{3})*(?:만\s*원|원))', text)
-        amount = amount_match.group(0) if amount_match else ""
+        # 2. 금액 추출 (한국식 표기 완벽 지원)
+        # 예: 500만원, 5백만 원, 1,000만, 50000원, 5천
+        amount = ""
+        amount_patterns = [
+            r'(\d+(?:,\d{3})*(?:만\s*원|원|만))',
+            r'([일이삼사오육칠팔구십백천]+만\s*원)',
+            r'(\d+[백천]만\s*원?)'
+        ]
+        for pattern in amount_patterns:
+            match = re.search(pattern, text)
+            if match:
+                amount = match.group(0)
+                break
 
-        # 3. 사건 유형 유추
+        # 3. 사람 이름 (원고/피고) 유추
+        # 예: "김철수에게", "홍길동이", "이영희한테"
+        person = ""
+        person_match = re.search(r'([가-힣]{2,4})(?:에게|한테|이|가|께서|은|는)', text)
+        if person_match and not any(w in person_match.group(1) for w in ["본인", "제가", "내가", "사장", "주인"]):
+            person = person_match.group(1)
+
+        # 4. 사건 유형 유추 (키워드 대폭 확장)
         case_type = ""
-        if any(w in text for w in ["안 갚", "빌려", "대여", "돈"]): 
-            case_type = "대여금 반환 (돈을 빌려준 사건)"
-        elif any(w in text for w in ["보증금", "전세", "방을", "임대차"]): 
+        if any(w in text for w in ["빌려", "대여", "돈 안", "떼였", "못 받"]): 
+            case_type = "대여금 반환 청구"
+        elif any(w in text for w in ["보증금", "전세", "방 빼", "계약 만료"]): 
             case_type = "임대차 보증금 반환"
-        elif any(w in text for w in ["월세", "차임", "밀려", "연체"]): 
-            case_type = "차임(월세) 연체 및 명도"
-        elif any(w in text for w in ["다쳤", "사고", "때렸", "폭행", "손해"]): 
-            case_type = "손해배상 청구"
+        elif any(w in text for w in ["월세", "차임", "연체", "명도", "나가라"]): 
+            case_type = "차임(월세) 연체 및 명도 소송"
+        elif any(w in text for w in ["다쳤", "사고", "치료비", "입원"]): 
+            case_type = "손해배상 청구 (신체적 상해)"
+        elif any(w in text for w in ["욕", "악플", "모욕", "명예훼손"]): 
+            case_type = "명예훼손 및 모욕 손해배상"
+        elif any(w in text for w in ["사기", "보이스피싱", "속았"]): 
+            case_type = "사기 피해에 따른 부당이득 반환"
+        elif any(w in text for w in ["이혼", "바람", "외도", "상간"]): 
+            case_type = "이혼 및 위자료 청구"
+        elif any(w in text for w in ["소음", "층간", "시끄러"]): 
+            case_type = "층간소음 생활방해 손해배상"
 
         return {
             "when": when,
             "amount": amount,
+            "person": person, # 새로 추가됨
             "case_type": case_type
         }
 
