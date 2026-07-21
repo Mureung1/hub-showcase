@@ -17,15 +17,16 @@ const plannedDoses = nights.map((night) => ({
   earliestTime: night.habitualWakeTime,
 }));
 
-const { nightOptions, doseOptions } = buildMultiDayCandidates({ nights, plannedDoses });
+const { nightBedOptions, nightWakeOptions, doseOptions } = buildMultiDayCandidates({ nights, plannedDoses });
 
-console.log("=== 밤별 취침/기상 후보 개수 (기대값: 9 x 9 = 81개씩) ===");
-nightOptions.forEach((options, i) => {
-  console.log(`night[${i}] 후보 개수:`, options.length);
+console.log("=== 밤별 취침·기상 후보 개수 (기대값: 각 9개씩, #23에서 축 분리) ===");
+nightBedOptions.forEach((bedOptions, i) => {
+  console.log(`night[${i}] 취침 후보:`, bedOptions.length, "/ 기상 후보:", nightWakeOptions[i].length);
 });
 
-console.log("\n=== night[0] 후보 샘플 3개 ===");
-console.log(nightOptions[0].slice(0, 3));
+console.log("\n=== night[0] 취침·기상 후보 샘플 3개 ===");
+console.log("취침:", nightBedOptions[0].slice(0, 3));
+console.log("기상:", nightWakeOptions[0].slice(0, 3));
 
 console.log("\n=== 카페인별 섭취 시각 후보 개수 (기대값: 9개, earliestTime 필터 없으면) ===");
 doseOptions.forEach((options, i) => {
