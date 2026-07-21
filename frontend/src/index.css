@@ -72,3 +72,27 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+/* 공통 버튼 — docs/design.md §6 */
+.btn-primary,
+.btn-outline {
+  display: block;
+  width: 100%;
+  background: var(--color-primary);
+  padding: 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-primary {
+  color: var(--color-on-primary);
+  border: none;
+}
+
+.btn-outline {
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
+}

@@ -15,5 +15,38 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  ownedSubscriptions Subscription[]
+  partyMemberships   PartyMember[]
+
   @@map("users")
+}
+
+model Subscription {
+  id                String        @id @default(cuid())
+  serviceName       String
+  subAmount         Int
+  billingDay        Int
+  memberCount       Int
+  bankName          String
+  accountNumber     String
+  accountHolderName String
+  ownerId           String
+  owner             User          @relation(fields: [ownerId], references: [id])
+  members           PartyMember[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@map("subscriptions")
+}
+
+model PartyMember {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  joinedAt       DateTime     @default(now())
+
+  @@unique([subscriptionId, userId])
+  @@map("party_members")
 }
