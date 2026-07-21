@@ -210,13 +210,22 @@ eligibility(JSONB)의 필드는 프론트 mock(src/data/activities.js)의 eligib
 
 강제 JSON은 Claude tool use(도구 입력 스키마)로 맞춘다. 아래 구조를 도구 입력 스키마로 주고 그 형식으로만 답하게 한다.
 
-### 1단계 Classifier - 공고 종류 분류
+**정정(비용 때문에 설계 변경)**: 원래 여기 1단계 Classifier(분류)와 2단계 Extractor(추출)로 콜을 나누는
+설계였는데, 실제 구현(`server/parser/extract.js`)은 **한 콜로 합쳤다**. 어차피 공고 하나마다 분류·추출이
+둘 다 항상 필요해서 나눌 이유가 없었고, 합치면 호출 수가 절반, 반복되는 프롬프트 지시문(고정 오버헤드)도
+절반으로 줄어 비용이 그만큼 준다(실측 건당 $0.0022). 아래는 그 실제 합친 스키마다.
+
+### 분류 + 추출 (1콜, tool use)
 
 프롬프트
 ```
-다음 공고를 분류해라. track은 자격 요건의 성격으로 정한다.
+다음 공고를 분류하고, 지원에 '필수'인 자격조건만 뽑아라.
 - track: activity(대외활동·공모전·봉사) 또는 scholarship(장학·지원금)
 - category: 대외활동 / 공모전 / 봉사 / 장학 중 하나
+- track이 scholarship이면 grades/majors/regions/age 등은 빈 배열·null로 둬라(장학 필드는 이후 별도 처리).
+- 우대·우선 조건은 무시한다. 원문에 없는 조건은 추측하지 말고 빈 배열이나 null로 둔다.
+- 각 필드마다 근거가 된 원문 문장을 found_in_text에 그대로 담는다.
+- 확신이 낮으면 confidence를 0.5 이하로 준다.
 공고: """{raw_title}\n{raw_text}"""
 ```
 
@@ -226,30 +235,7 @@ eligibility(JSONB)의 필드는 프론트 mock(src/data/activities.js)의 eligib
   "type": "object",
   "properties": {
     "track": { "type": "string", "enum": ["activity", "scholarship"] },
-    "category": { "type": "string", "enum": ["대외활동", "공모전", "봉사", "장학"] }
-  },
-  "required": ["track", "category"],
-  "additionalProperties": false
-}
-```
-
-### 2단계 Extractor - 조건 추출
-
-프롬프트
-```
-너는 공고 자격요건 추출기다. 아래 공고에서 지원에 '필수'인 조건만 뽑아라.
-- 우대·우선 조건은 무시한다.
-- 원문에 없는 조건은 추측하지 말고 빈 배열이나 null로 둔다.
-- 각 필드마다 근거가 된 원문 문장을 found_in_text에 그대로 담는다.
-- 확신이 낮으면 confidence를 0.5 이하로 준다.
-공고: """{raw_text}"""
-```
-
-강제 JSON 구조 - track A(activity)
-```json
-{
-  "type": "object",
-  "properties": {
+    "category": { "type": "string", "enum": ["대외활동", "공모전", "봉사", "장학"] },
     "grades": { "type": "array", "items": { "type": "integer", "enum": [1,2,3,4] } },
     "enrollment_status": { "type": "array", "items": { "type": "string", "enum": ["재학","휴학","졸업예정"] } },
     "majors": { "type": "array", "items": { "type": "string" } },
@@ -259,28 +245,13 @@ eligibility(JSONB)의 필드는 프론트 mock(src/data/activities.js)의 eligib
     "found_in_text": { "type": "object" },
     "confidence": { "type": "number" }
   },
-  "required": ["grades","enrollment_status","majors","regions","age_min","age_max","found_in_text","confidence"],
+  "required": ["track","category","grades","enrollment_status","majors","regions","age_min","age_max","found_in_text","confidence"],
   "additionalProperties": false
 }
 ```
 
-강제 JSON 구조 - track B(scholarship)
-```json
-{
-  "type": "object",
-  "properties": {
-    "grades": { "type": "array", "items": { "type": "integer", "enum": [1,2,3,4] } },
-    "enrollment_status": { "type": "array", "items": { "type": "string" } },
-    "income_max": { "type": ["integer", "null"] },
-    "gpa_min": { "type": ["number", "null"] },
-    "special": { "type": "array", "items": { "type": "string" } },
-    "found_in_text": { "type": "object" },
-    "confidence": { "type": "number" }
-  },
-  "required": ["grades","enrollment_status","income_max","gpa_min","special","found_in_text","confidence"],
-  "additionalProperties": false
-}
-```
+track이 scholarship이면 eligibility는 아직 안 만든다(3주차 범위 밖) - needs_review로 두고, 소득분위·학점
+(income_max/gpa_min) 등 장학 전용 필드 추출은 나중 과제다.
 
 빈 배열과 null은 "무관"으로 해석한다. confidence가 낮거나 형식이 깨지면 parse_status를 needs_review로 둔다.
 

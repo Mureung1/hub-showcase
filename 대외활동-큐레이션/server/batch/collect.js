@@ -9,6 +9,7 @@ import * as wevity from "../sources/wevity.js";
 import * as busan from "../sources/busan_youth.js";
 import * as linkareer from "../sources/linkareer.js";
 import * as youthcenter from "../sources/youthcenter.js";
+import { deriveRegionFromDistrict } from "../regionLookup.js";
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const today = new Date().toISOString().slice(0, 10);
@@ -22,6 +23,9 @@ const CONSECUTIVE_EXPIRED_STOP = 30;
 // 그래서 절대 상한(HARD_MAX_PAGES)이 사실상의 진짜 제동장치다. 15페이지(약 1,500건/소스)는 이미 실측 검증된
 // 범위(863/1,026건 살아있음 확인)라 실행 시간도 감당 가능한 선에서 잡았다.
 const HARD_MAX_PAGES = 15;
+// 온통청년은 상세페이지 요청 없이 한 콜에 100건씩 오는 가벼운 API라 위 상한(느린 소스 기준)을 그대로
+// 적용하면 안 된다. 실측(2649건, 20260721)보다 넉넉하게 40페이지(4000건)까지 열어둔다.
+const YOUTHCENTER_MAX_PAGES = 40;
 const base = { grades: [], majors: [], regions: [], enrollment: [], ageMin: null, ageMax: null, incomeMax: null, gpaMin: null };
 
 // 마감일 문자열(YYYY-MM-DD)이 오늘보다 이전이면 지난 것. null(상시)은 안 지난 것으로 본다.
@@ -29,9 +33,11 @@ function isExpired(deadline) {
   return !!deadline && deadline < today;
 }
 
-// 소스 간 중복 판별용 제목 정규화: 대괄호·괄호·기호·공백 제거하고 소문자로. 같은 공고면 같은 서명이 나온다.
+// 소스 간 중복 판별용 제목 정규화: 괄호 기호만 벗기고 안 내용은 남긴다(기호·공백 제거, 소문자화).
+// 대괄호 안 내용을 통째로 지우면 "[부산] OO 공모전"과 "[서울] OO 공모전"처럼 지역만 다른 서로 다른
+// 공고가 같은 서명으로 뭉쳐 하나가 놓칠 수 있다(총망라 원칙과 충돌). 괄호만 벗겨 내용은 지킨다.
 function sig(title) {
-  return (title || "").replace(/\[[^\]]*\]|\([^)]*\)/g, "").replace(/[^0-9a-z가-힣]/gi, "").toLowerCase();
+  return (title || "").replace(/[[\]()]/g, "").replace(/[^0-9a-z가-힣]/gi, "").toLowerCase();
 }
 
 // 주최기관명에 지자체 신호가 있으면 true. 완벽한 판별은 불가능하다(예: 기초자치단체명 전부는 못 커버).
@@ -50,18 +56,26 @@ function contestEligibility(target, body) {
   const t = (target || "").replace(/\s+/g, "");
   const forUniv = /누구나|일반인|대학생|대학원생|청년/.test(t);
   const nums = ((target || "") + " " + (body || "")).match(/(\d{1,2})\s*세/g)?.map((s) => parseInt(s)) || [];
-  return { ...base, ageMin: nums.length >= 2 ? Math.min(...nums) : null, ageMax: nums.length >= 2 ? Math.max(...nums) : null, forUniv, text: (target || "").replace(/\s+/g, " ").trim() };
+  // "영등포구민만" 처럼 한 도시에만 있는 구·군 이름이 원문에 있으면 그 시·도로 지역을 채운다(겹치는
+  // 구 이름은 regionLookup.js가 알아서 빈 배열로 둔다 - 못 맞추면 무관이 아니라 확인 필요로 가야 하니
+  // isLocalGovOrg 등 다른 안전장치가 여전히 커버한다).
+  const regions = deriveRegionFromDistrict((target || "") + " " + (body || ""));
+  return { ...base, regions, ageMin: nums.length >= 2 ? Math.min(...nums) : null, ageMax: nums.length >= 2 ? Math.max(...nums) : null, forUniv, text: (target || "").replace(/\s+/g, " ").trim() };
 }
 
 async function collectContestkorea() {
   const rows = [];
   let consecutiveExpired = 0;
   for (let p = 1; p <= HARD_MAX_PAGES; p++) {
-    const list = await contestkorea.fetchList(p);
+    let list;
+    try { list = await contestkorea.fetchList(p); }
+    catch (e) { console.log(`콘코: 목록(페이지 ${p}) 요청 실패(${e.message}), 여기까지만 수집`); break; }
     if (!list.length) break;
     let stop = false;
     for (const it of list) {
-      const d = await contestkorea.fetchDetail(it.sourceUrl);
+      let d;
+      try { d = await contestkorea.fetchDetail(it.sourceUrl); }
+      catch (e) { console.log(`콘코: 상세 요청 실패(${e.message}), 이 건 건너뜀 - ${it.sourceUrl}`); continue; } // 한 건 실패로 전체가 죽지 않게
       consecutiveExpired = isExpired(d.deadline) ? consecutiveExpired + 1 : 0;
       if (consecutiveExpired >= CONSECUTIVE_EXPIRED_STOP) { stop = true; break; }
       if ((d.field || "").includes("배우") && (d.field || "").includes("오디션")) continue; // 이력에 안 맞는 분야(오디션·단역 등) 제외
@@ -82,7 +96,9 @@ async function collectWevity() {
   const rows = [];
   let consecutiveExpired = 0;
   for (let p = 1; p <= HARD_MAX_PAGES; p++) {
-    const list = await wevity.fetchList(p);
+    let list;
+    try { list = await wevity.fetchList(p); }
+    catch (e) { console.log(`위비티: 목록(페이지 ${p}) 요청 실패(${e.message}), 여기까지만 수집`); break; }
     if (!list.length) break;
     let stop = false;
     for (const it of list) {
@@ -101,7 +117,9 @@ async function collectBusan() {
   // 부산청년플랫폼은 게시글에 마감일이 없어(상시 성격) 연속마감감지가 안 통한다. 게시판 자체가 작아서(수십 건)
   // 빈 페이지를 만나면 자연히 멈춘다 - 그래도 절대 상한은 같이 둔다.
   for (let p = 1; p <= 10; p++) {
-    const list = await busan.fetchList(p);
+    let list;
+    try { list = await busan.fetchList(p); }
+    catch (e) { console.log(`부산: 목록(페이지 ${p}) 요청 실패(${e.message}), 여기까지만 수집`); break; }
     if (!list.length) break;
     for (const it of list) {
       rows.push({ title: it.title, org: it.dept, category: "지자체", track: "activity", source: "부산청년플랫폼", url: it.sourceUrl, deadline: null, posted_at: it.postedAt || today, parse_status: "needs_review", eligibility: { ...base, regions: ["부산"], forUniv: true, text: `담당: ${it.dept}` } });
@@ -116,7 +134,9 @@ async function collectLinkareer() {
   for (const t of linkareer.TYPES) {
     let consecutiveExpired = 0;
     for (let p = 1; p <= HARD_MAX_PAGES; p++) {
-      const { items, totalCount } = await linkareer.fetchList(t.id, p, 20);
+      let items, totalCount;
+      try { ({ items, totalCount } = await linkareer.fetchList(t.id, p, 20)); }
+      catch (e) { console.log(`링커리어(유형${t.id}): 목록(페이지 ${p}) 요청 실패(${e.message}), 여기까지만 수집`); break; }
       let stop = false;
       for (const it of items) {
         consecutiveExpired = isExpired(it.deadline) ? consecutiveExpired + 1 : 0;
@@ -135,17 +155,26 @@ async function collectLinkareer() {
 }
 
 // 온통청년: 나이·지역이 이미 구조 필드로 와서(실측 확인) 규칙만으로 충분 - needs_review로 낮추지 않는다.
+// 중분류(mclsfNm)가 "교육비지원"이면 장학 성격이라 카테고리를 장학으로, 나머지는 지자체로 둔다.
+function youthcenterCategory(mclsfNm) {
+  return mclsfNm === "교육비지원" ? "장학" : "지자체";
+}
+
 async function collectYouthcenter() {
   const rows = [];
   let consecutiveExpired = 0;
-  for (let p = 1; p <= HARD_MAX_PAGES; p++) {
-    const { items, totalCount } = await youthcenter.fetchList(p, 100);
+  for (let p = 1; p <= YOUTHCENTER_MAX_PAGES; p++) {
+    let items, totalCount;
+    try { ({ items, totalCount } = await youthcenter.fetchList(p, 100)); }
+    catch (e) { console.log(`온통청년: 목록(페이지 ${p}) 요청 실패(${e.message}), 여기까지만 수집`); break; }
     if (!items.length) break;
     let stop = false;
     for (const it of items) {
       consecutiveExpired = isExpired(it.deadline) ? consecutiveExpired + 1 : 0;
       if (consecutiveExpired >= CONSECUTIVE_EXPIRED_STOP) { stop = true; break; }
-      rows.push({ title: it.title, org: it.org, category: "지자체", track: "activity", source: "온통청년", url: it.sourceUrl, deadline: it.deadline, posted_at: today, parse_status: "curated", eligibility: { ...base, regions: it.regions, ageMin: it.ageMin, ageMax: it.ageMax, forUniv: true, text: it.text.slice(0, 300) } });
+      // enrollment: 참여제외대상에 "재학생"이 있으면 졸업예정만(실측 확인). forUniv는 그대로 true로
+      // 두고(온통청년 자체가 청년정책 포털이라 대학생도 기본 대상), enrollment로 더 좁힌다.
+      rows.push({ title: it.title, org: it.org, category: youthcenterCategory(it.mclsfNm), track: "activity", source: "온통청년", url: it.sourceUrl, deadline: it.deadline, posted_at: today, parse_status: "curated", eligibility: { ...base, regions: it.regions, enrollment: it.enrollment, ageMin: it.ageMin, ageMax: it.ageMax, forUniv: true, text: it.text.slice(0, 300) } });
     }
     if (stop) { console.log(`온통청년: 연속 마감 ${CONSECUTIVE_EXPIRED_STOP}건, 페이지 ${p}에서 중단`); break; }
     if (p * 100 >= totalCount) break;
@@ -154,13 +183,35 @@ async function collectYouthcenter() {
   return rows;
 }
 
+// DB의 모든 제목을 페이지 없이 다 가져온다. Supabase select는 기본 1000행 제한이 있어(실측으로 드러난 버그),
+// range로 넘기지 않으면 DB가 커질수록 중복체크가 앞쪽 1000건만 보고 나머지는 못 걸러낸다.
+async function fetchAllTitles() {
+  const titles = [];
+  let from = 0;
+  const step = 1000;
+  while (true) {
+    const { data, error } = await supabase.from("postings").select("title").range(from, from + step - 1);
+    if (error) throw error;
+    titles.push(...data);
+    if (data.length < step) break;
+    from += step;
+  }
+  return titles;
+}
+
 async function run() {
-  const groups = await Promise.all([collectContestkorea(), collectWevity(), collectBusan(), collectLinkareer(), collectYouthcenter()]);
+  // 소스 하나가 실패해도(일시적 5xx 등) 나머지 소스가 이미 모은 건 버리지 않는다(allSettled).
+  const settled = await Promise.allSettled([collectContestkorea(), collectWevity(), collectBusan(), collectLinkareer(), collectYouthcenter()]);
+  const names = ["콘코", "위비티", "부산", "링커리어", "온통청년"];
+  const groups = settled.map((s, i) => {
+    if (s.status === "rejected") { console.log(`${names[i]}: 전체 실패(${s.reason?.message}), 0건으로 처리`); return []; }
+    return s.value;
+  });
   const all = groups.flat();
 
   // 소스 간 중복 제거: 이미 DB 에 있는 제목 서명 + 이번 배치 안 중복을 함께 막는다.
-  const { data: existing } = await supabase.from("postings").select("title");
-  const seen = new Set((existing || []).map((r) => sig(r.title)));
+  const existing = await fetchAllTitles();
+  const seen = new Set(existing.map((r) => sig(r.title)));
   const rows = [];
   let dup = 0;
   for (const r of all) {
