@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: completed
+- State: claimed
 - Surface: local-ticket
-- Next actor: none
+- Next actor: /implement
 
 ## Parent Spec
 
@@ -34,9 +34,9 @@ Registered source drift, invalid product store와 stale scratch가 있어도 사
 - [x] Registered RawMaterial drift가 action을 interrupt하고 recovery-required로 열리며 original bytes를 자동으로 수정하지 않는다.
 - [x] Settled cleanup 뒤 사용자가 선택한 explicit material refresh만 current bytes를 새 baseline으로 채택하고 fresh action을 허용한다.
 - [x] Invalid·unsupported product store가 original bytes unchanged인 `incompatible/readOnly`로 열리고 automatic restore/reset을 수행하지 않는다.
-- [x] Active authority/guard와 persisted store bytes가 다르면 mutation을 중단하고 bytes를 overwrite하지 않으며, cold-open valid store의 외부 provenance를 감지했다고 주장하지 않는다.
-- [x] Explicit workspace reactivation 뒤 valid canonical store의 confirmed model·history를 다시 열며 pending native interaction은 복원하지 않는다.
-- [x] Stale guard와 app-managed scratch가 next open에서 bounded하게 reconcile되고 cleanup failure는 새 action을 차단한다.
+- [ ] Active authority/guard와 persisted store bytes가 다르면 mutation을 중단하고 bytes를 overwrite하지 않으며, cold-open valid store의 외부 provenance를 감지했다고 주장하지 않는다.
+- [ ] Explicit workspace reactivation 뒤 valid canonical store의 confirmed model·history를 다시 열며 pending native interaction은 복원하지 않는다.
+- [ ] Stale guard와 app-managed scratch가 next open에서 bounded하게 reconcile되고 cleanup failure는 새 action을 차단한다.
 - [x] 두 fresh E2E run 사이 workspace, product state, scratch와 native session이 겹치지 않고 tracked seed digest가 그대로다.
 - [x] Source conflict→explicit refresh와 invalid store→read-only Browser traces가 shared contract를 통과한다.
 
