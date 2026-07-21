@@ -1,14 +1,35 @@
 {
-  "experimentalServices": {
+  "services": {
     "frontend": {
-      "entrypoint": "client",
+      "root": "client/",
       "framework": "vite",
-      "routePrefix": "/"
+      "buildCommand": "npm --prefix .. run build -w shared && npm run build",
+      "outputDirectory": "dist",
+      "rewrites": [
+        {
+          "source": "/(.*)",
+          "destination": "/index.html"
+        }
+      ]
     },
     "backend": {
-      "entrypoint": "server/src/index.ts",
+      "root": "server/",
       "framework": "express",
-      "routePrefix": "/api"
+      "buildCommand": "npm --prefix .. run build -w shared && npm run build"
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "frontend"
+      }
+    }
+  ]
 }
