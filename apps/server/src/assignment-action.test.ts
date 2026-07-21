@@ -853,6 +853,56 @@ function deferred<T>(): Deferred<T> {
   return { promise, resolve }
 }
 
+const assignmentReviewQuestion = {
+  id: 'assignment_review_decision',
+  header: '변경 제안 검토',
+  question: '이 Assignment 변경 제안을 어떻게 처리할까요?',
+  options: [
+    {
+      label: '수락',
+      description: '근거와 값을 확인하고 학기 상태에 반영합니다.',
+    },
+    {
+      label: 'AY에게 수정 요청',
+      description: '피드백을 전달하고 새 변경 제안을 기다립니다.',
+    },
+    {
+      label: '거절',
+      description: '제안을 반영하지 않고 결정 기록만 남깁니다.',
+    },
+  ],
+  acceptsFreeform: true,
+} as const
+
+async function callAssignmentProposalTool(input: {
+  readonly id: number
+  readonly proposal: Record<string, unknown>
+  readonly threadInput: StartThreadInput | undefined
+}): Promise<void> {
+  assert.ok(input.threadInput)
+  const response = await fetch(input.threadInput.mcp.url, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-ay-ple-mcp-token': input.threadInput.mcp.token,
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: input.id,
+      method: 'tools/call',
+      params: {
+        name: 'propose_state_patch',
+        arguments: input.proposal,
+      },
+    }),
+  })
+  assert.equal(response.status, 200)
+  const result = (await response.json()) as {
+    readonly result?: { readonly isError?: boolean }
+  }
+  assert.equal(result.result?.isError, false)
+}
+
 class HttpMcpProductRuntime implements CodexProductCapableRuntime {
   readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
   readonly productInputs: StartProductTurnInput[] = []
@@ -961,7 +1011,12 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
           itemId: 'private-mcp-item',
           tool: 'propose_state_patch',
         }
-        await runtime.callProposalTool(input)
+        assert.ok(runtime.proposal)
+        await callAssignmentProposalTool({
+          id: 1,
+          proposal: runtime.proposal(input),
+          threadInput: runtime.threadInput,
+        })
         yield {
           type: 'mcp_call.completed',
           threadId: input.threadId,
@@ -975,28 +1030,7 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
           turnId: 'turn-native-A',
           itemId: 'private-review-item',
           interactionId: 'interaction-public-A',
-          questions: [
-            {
-              id: 'assignment_review_decision',
-              header: '변경 제안 검토',
-              question: '이 Assignment 변경 제안을 어떻게 처리할까요?',
-              options: [
-                {
-                  label: '수락',
-                  description: '근거와 값을 확인하고 학기 상태에 반영합니다.',
-                },
-                {
-                  label: 'AY에게 수정 요청',
-                  description: '피드백을 전달하고 새 변경 제안을 기다립니다.',
-                },
-                {
-                  label: '거절',
-                  description: '제안을 반영하지 않고 결정 기록만 남깁니다.',
-                },
-              ],
-              acceptsFreeform: true,
-            },
-          ],
+          questions: [assignmentReviewQuestion],
         }
         await runtime.answer.promise
         yield {
@@ -1048,32 +1082,6 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
   async releaseThread(_input: ReleaseThreadInput): Promise<void> {}
 
   async close(): Promise<void> {}
-
-  private async callProposalTool(input: StartProductTurnInput): Promise<void> {
-    assert.ok(this.threadInput)
-    assert.ok(this.proposal)
-    const response = await fetch(this.threadInput.mcp.url, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-ay-ple-mcp-token': this.threadInput.mcp.token,
-      },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'tools/call',
-        params: {
-          name: 'propose_state_patch',
-          arguments: this.proposal(input),
-        },
-      }),
-    })
-    assert.equal(response.status, 200)
-    const result = (await response.json()) as {
-      readonly result?: { readonly isError?: boolean }
-    }
-    assert.equal(result.result?.isError, false)
-  }
 }
 
 class RevisionHttpMcpProductRuntime implements CodexProductCapableRuntime {
@@ -1140,7 +1148,11 @@ class RevisionHttpMcpProductRuntime implements CodexProductCapableRuntime {
           itemId: 'private-original-mcp-item',
           tool: 'propose_state_patch',
         }
-        await runtime.callProposalTool(runtime.proposal!(input), 1)
+        await callAssignmentProposalTool({
+          id: 1,
+          proposal: runtime.proposal!(input),
+          threadInput: runtime.threadInput,
+        })
         yield {
           type: 'mcp_call.completed',
           threadId: input.threadId,
@@ -1255,7 +1267,11 @@ class RevisionHttpMcpProductRuntime implements CodexProductCapableRuntime {
         replacement.requestKey = this.replacementRequestKey
         replacement.summary =
           '수정 요청을 반영한 replacement Assignment 제안입니다.'
-        await this.callProposalTool(replacement, 2)
+        await callAssignmentProposalTool({
+          id: 2,
+          proposal: replacement,
+          threadInput: this.threadInput,
+        })
       }
       this.originalAnswer.resolve()
       await this.originalAnswerAcknowledged.promise
@@ -1279,56 +1295,7 @@ class RevisionHttpMcpProductRuntime implements CodexProductCapableRuntime {
   rejectRevisionAnswer(): void {
     this.revisionAnswerRejection.resolve()
   }
-
-  private async callProposalTool(
-    proposal: Record<string, unknown>,
-    id: number,
-  ): Promise<void> {
-    assert.ok(this.threadInput)
-    const response = await fetch(this.threadInput.mcp.url, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-ay-ple-mcp-token': this.threadInput.mcp.token,
-      },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id,
-        method: 'tools/call',
-        params: {
-          name: 'propose_state_patch',
-          arguments: proposal,
-        },
-      }),
-    })
-    assert.equal(response.status, 200)
-    const result = (await response.json()) as {
-      readonly result?: { readonly isError?: boolean }
-    }
-    assert.equal(result.result?.isError, false)
-  }
 }
-
-const assignmentReviewQuestion = {
-  id: 'assignment_review_decision',
-  header: '변경 제안 검토',
-  question: '이 Assignment 변경 제안을 어떻게 처리할까요?',
-  options: [
-    {
-      label: '수락',
-      description: '근거와 값을 확인하고 학기 상태에 반영합니다.',
-    },
-    {
-      label: 'AY에게 수정 요청',
-      description: '피드백을 전달하고 새 변경 제안을 기다립니다.',
-    },
-    {
-      label: '거절',
-      description: '제안을 반영하지 않고 결정 기록만 남깁니다.',
-    },
-  ],
-  acceptsFreeform: true,
-} as const
 
 class NdjsonTrace {
   private readonly frames: Record<string, unknown>[] = []

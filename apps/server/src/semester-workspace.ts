@@ -2706,6 +2706,40 @@ type AssignmentReviewRevisionInternal = Omit<
   readonly activeContext: ActiveProposalContext
 }
 
+function requireActivePendingReviewPatch(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  binding: ActiveReviewBinding,
+  activePatchByTurn: Map<string, string>,
+): {
+  readonly patch: PersistedStatePatch
+  readonly patchIndex: number
+} {
+  const patchIndex = opened.store.statePatches.findIndex(
+    (patch) => patch.id === binding.patchId,
+  )
+  const patch = opened.store.statePatches[patchIndex]
+  if (
+    patchIndex < 0 ||
+    !patch ||
+    patch.status !== 'pending' ||
+    patch.workspaceId !== opened.store.workspaceId ||
+    patch.courseId !== opened.store.course?.id ||
+    activePatchByTurn.get(runtimeTurnKey(binding)) !== patch.id
+  ) {
+    throw new StatePatchReviewError(
+      'review_not_pending',
+      'The StatePatch is not the active pending Review.',
+    )
+  }
+  if (patch.baseRevision !== opened.store.confirmedRevision) {
+    throw new StatePatchReviewError(
+      'review_conflict',
+      'The confirmed SemesterModel revision changed.',
+    )
+  }
+  return { patch, patchIndex }
+}
+
 function requestAssignmentReviewRevision(
   opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
   input: AssignmentReviewRevisionInput,
@@ -2777,24 +2811,11 @@ function requestAssignmentReviewRevision(
   }
 
   const turnKey = runtimeTurnKey(binding)
-  const patch = opened.store.statePatches.find(
-    (candidate) => candidate.id === binding.patchId,
+  const { patch } = requireActivePendingReviewPatch(
+    opened,
+    binding,
+    activePatchByTurn,
   )
-  if (
-    !patch ||
-    patch.status !== 'pending' ||
-    patch.workspaceId !== opened.store.workspaceId ||
-    patch.courseId !== opened.store.course?.id ||
-    patch.baseRevision !== opened.store.confirmedRevision ||
-    activePatchByTurn.get(turnKey) !== patch.id
-  ) {
-    throw new StatePatchReviewError(
-      patch?.baseRevision !== opened.store.confirmedRevision
-        ? 'review_conflict'
-        : 'review_not_pending',
-      'The StatePatch is not the active pending Review.',
-    )
-  }
   const sourceContext = [...proposalContexts.values()].find(
     (candidate) =>
       candidate.runtime !== undefined &&
@@ -2947,29 +2968,11 @@ async function commitAssignmentReviewDecision(
       'The Review decision is not pending.',
     )
   }
-  const patchIndex = opened.store.statePatches.findIndex(
-    (patch) => patch.id === input.patchId,
+  const { patch, patchIndex } = requireActivePendingReviewPatch(
+    opened,
+    activeBinding,
+    activePatchByTurn,
   )
-  const patch = opened.store.statePatches[patchIndex]
-  if (
-    patchIndex < 0 ||
-    !patch ||
-    patch.status !== 'pending' ||
-    patch.workspaceId !== opened.store.workspaceId ||
-    patch.courseId !== opened.store.course?.id ||
-    activePatchByTurn.get(runtimeTurnKey(activeBinding)) !== patch.id
-  ) {
-    throw new StatePatchReviewError(
-      'review_not_pending',
-      'The StatePatch is not the active pending Review.',
-    )
-  }
-  if (patch.baseRevision !== opened.store.confirmedRevision) {
-    throw new StatePatchReviewError(
-      'review_conflict',
-      'The confirmed SemesterModel revision changed.',
-    )
-  }
 
   const settledAt = new Date().toISOString()
   let assignments = opened.store.assignments

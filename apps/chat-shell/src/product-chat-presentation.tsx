@@ -519,6 +519,66 @@ function ProductTranscriptRow({
   )
 }
 
+type ReviewOutcome = NonNullable<
+  Extract<ProductTranscriptEntry, { readonly kind: 'review' }>['outcome']
+>
+
+type ReviewPresentationState = ReviewOutcome | 'pending'
+
+const reviewPresentationByState = {
+  pending: {
+    status: '검토 대기',
+    badgeClass: 'is-pending',
+    resolution: null,
+  },
+  accepted: {
+    status: '검토 완료',
+    badgeClass: 'is-applied',
+    resolution: {
+      icon: 'check',
+      copy: '검토 응답을 전달했습니다.',
+    },
+  },
+  revised: {
+    status: '수정 요청됨',
+    badgeClass: 'is-revised',
+    resolution: {
+      icon: 'check',
+      copy: '수정 요청을 전달했습니다. 새 변경 제안을 기다립니다.',
+    },
+  },
+  rejected: {
+    status: '거절됨',
+    badgeClass: 'is-rejected',
+    resolution: {
+      icon: 'x',
+      copy: '변경 제안을 반영하지 않았습니다.',
+    },
+  },
+  cancelled: {
+    status: '검토 종료',
+    badgeClass: 'is-rejected',
+    resolution: {
+      icon: 'check',
+      copy: '검토가 종료되었습니다.',
+    },
+  },
+} as const satisfies Record<
+  ReviewPresentationState,
+  {
+    readonly status: string
+    readonly badgeClass:
+      | 'is-pending'
+      | 'is-applied'
+      | 'is-revised'
+      | 'is-rejected'
+    readonly resolution: {
+      readonly icon: 'check' | 'x'
+      readonly copy: string
+    } | null
+  }
+>
+
 function ReviewCard({
   review,
   active,
@@ -550,29 +610,13 @@ function ReviewCard({
   const feedbackValid =
     feedback.trim().length > 0 &&
     feedbackBytes <= PRODUCT_REVIEW_FEEDBACK_MAX_BYTES
-  const reviewStatus =
-    review.outcome === 'accepted'
-      ? '검토 완료'
-      : review.outcome === 'revised'
-        ? '수정 요청됨'
-        : review.outcome === 'rejected'
-          ? '거절됨'
-          : review.outcome === 'cancelled'
-            ? '검토 종료'
-            : '검토 대기'
-  const badgeClass =
-    review.outcome === undefined
-      ? 'is-pending'
-      : review.outcome === 'rejected' || review.outcome === 'cancelled'
-        ? 'is-rejected'
-        : review.outcome === 'revised'
-          ? 'is-revised'
-          : 'is-applied'
+  const presentation =
+    reviewPresentationByState[review.outcome ?? 'pending']
   return (
-    <section className="review-card" aria-label={reviewStatus}>
+    <section className="review-card" aria-label={presentation.status}>
       <header>
-        <span className={`state-badge ${badgeClass}`}>
-          {reviewStatus}
+        <span className={`state-badge ${presentation.badgeClass}`}>
+          {presentation.status}
         </span>
         <strong>변경 제안</strong>
       </header>
@@ -601,10 +645,14 @@ function ReviewCard({
         materials={materials}
         onNavigateEvidence={onNavigateEvidence}
       />
-      {review.outcome ? (
+      {presentation.resolution ? (
         <div className="review-resolution">
-          {review.outcome === 'rejected' ? <X size={15} /> : <Check size={15} />}
-          {reviewOutcomeCopy(review.outcome)}
+          {presentation.resolution.icon === 'x' ? (
+            <X size={15} />
+          ) : (
+            <Check size={15} />
+          )}
+          {presentation.resolution.copy}
         </div>
       ) : active ? (
         <div className="review-controls">
@@ -679,19 +727,6 @@ function ReviewCard({
       ) : null}
     </section>
   )
-}
-
-function reviewOutcomeCopy(
-  outcome: NonNullable<
-    Extract<ProductTranscriptEntry, { readonly kind: 'review' }>['outcome']
-  >,
-): string {
-  if (outcome === 'accepted') return '검토 응답을 전달했습니다.'
-  if (outcome === 'revised') {
-    return '수정 요청을 전달했습니다. 새 변경 제안을 기다립니다.'
-  }
-  if (outcome === 'rejected') return '변경 제안을 반영하지 않았습니다.'
-  return '검토가 종료되었습니다.'
 }
 
 function utf8Bytes(value: string): number {
