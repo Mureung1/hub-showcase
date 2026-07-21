@@ -122,6 +122,7 @@ type ActiveProductOperationBase = {
   proposal?: AssignmentProposalSession
   mcpSession?: AssignmentMcpProposalSession
   turn?: CodexProductTurn
+  guardInterruptRequested?: boolean
 }
 
 type ActiveReviewSubmission = {
@@ -300,8 +301,39 @@ export function createProductOperationCoordinator(options: {
     )
     operation.mcpSession = options.mcpHost.register({
       requestKey: proposal.context.requestKey,
-      invoke: (payload) => proposal.mcpTool.invoke(payload),
+      invoke: (payload) => invokeProposal(operation, proposal, payload),
     })
+  }
+
+  const interruptForGuardConflict = async (
+    operation: ActiveProductOperation,
+    error: unknown,
+  ): Promise<void> => {
+    if (
+      !(error instanceof SemesterWorkspaceError) ||
+      error.code !== 'execution_guard_conflict' ||
+      !operation.turn ||
+      operation.guardInterruptRequested
+    ) {
+      return
+    }
+    operation.guardInterruptRequested = true
+    await options.service
+      .interruptProductTurn(operation.turn)
+      .catch(() => undefined)
+  }
+
+  const invokeProposal = async (
+    operation: ActiveProductOperation,
+    proposal: AssignmentProposalSession,
+    payload: unknown,
+  ): Promise<StatePatch> => {
+    try {
+      return await proposal.mcpTool.invoke(payload)
+    } catch (error) {
+      await interruptForGuardConflict(operation, error)
+      throw error
+    }
   }
 
   const replaceProposal = (
@@ -318,7 +350,7 @@ export function createProductOperationCoordinator(options: {
     }
     const nextSession = options.mcpHost.register({
       requestKey: proposal.context.requestKey,
-      invoke: (payload) => proposal.mcpTool.invoke(payload),
+      invoke: (payload) => invokeProposal(operation, proposal, payload),
     })
     try {
       nextSession.bindNative({
@@ -421,9 +453,15 @@ export function createProductOperationCoordinator(options: {
           activityId: activityId(operation.operationId, activity.itemId),
           tool: activity.tool,
           displayMessage: '변경 제안을 검증하지 못했습니다.',
-        }
+      }
       case 'user_input.requested': {
-        const binding = await options.controller.bindAssignmentReview(activity)
+        let binding: AssignmentReviewBinding | null
+        try {
+          binding = await options.controller.bindAssignmentReview(activity)
+        } catch (error) {
+          await interruptForGuardConflict(operation, error)
+          throw error
+        }
         if (!binding) {
           const publicInteractionId = interactionId(
             operation.operationId,
@@ -1174,6 +1212,7 @@ export function createProductOperationCoordinator(options: {
         }
         return outcome
       } catch (error) {
+        await interruptForGuardConflict(operation, error)
         if (
           operation.reviewSubmissions.get(input.decisionKey)?.promise ===
           promise

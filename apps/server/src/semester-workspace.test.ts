@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import {
   lstat,
   mkdir,
@@ -91,6 +92,15 @@ test('a chosen SemesterWorkspace reopens the same Course and confirmed revision 
     assert.match(created.course?.id ?? '', /^course_[0-9a-f]{32}$/)
     assert.equal(controller.nativeCwd(), await realpath(workspaceRoot))
     assert.equal(JSON.stringify(created).includes(await realpath(testRoot)), false)
+    const changedMaterialPath = path.join(
+      workspaceRoot,
+      'lms-outline-notice.txt',
+    )
+    const changedMaterialBytes = Buffer.from(
+      '학생이 앱을 닫은 동안 수정한 공지',
+      'utf8',
+    )
+    await writeFile(changedMaterialPath, changedMaterialBytes)
 
     await rm(appDataRoot, { recursive: true })
     await mkdir(appDataRoot)
@@ -106,6 +116,15 @@ test('a chosen SemesterWorkspace reopens the same Course and confirmed revision 
     assert.deepEqual(
       await reopenedController.selectCourse(created.course?.id ?? ''),
       created,
+    )
+    const refreshed = await reopenedController.refreshMaterials()
+    assert.equal(refreshed.outcome, 'refreshed')
+    assert.equal(refreshed.workspace.recovery, null)
+    assert.equal(
+      refreshed.workspace.materials.find(
+        (material) => material.relativePath === 'lms-outline-notice.txt',
+      )?.digest,
+      createHash('sha256').update(changedMaterialBytes).digest('hex'),
     )
   } finally {
     await rm(testRoot, { force: true, recursive: true })
@@ -168,6 +187,82 @@ test('cancelled and invalid chooser results preserve the existing activation', a
       assert.deepEqual(controller.snapshot(), active)
       assert.equal(controller.nativeCwd(), activeCwd)
     }
+  } finally {
+    await rm(testRoot, { force: true, recursive: true })
+  }
+})
+
+test('active store drift blocks every replacement and explicit reactivation adopts valid current bytes', async () => {
+  const testRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-semester-store-authority-test-'),
+  )
+  const packageRoot = path.join(testRoot, 'package')
+  const appDataRoot = path.join(testRoot, 'app-data')
+  const workspaceRoot = path.join(testRoot, 'semester')
+  const storePath = path.join(workspaceRoot, '.ay-ple', 'workspace-state.json')
+
+  try {
+    await Promise.all(
+      [packageRoot, appDataRoot, workspaceRoot].map((directory) =>
+        mkdir(directory),
+      ),
+    )
+    await writeFile(path.join(workspaceRoot, 'notice.txt'), '원본 공지', 'utf8')
+    const controller = createSemesterWorkspaceController({
+      packageRoot,
+      appDataRoot,
+      chooseDirectory: async () => workspaceRoot,
+    })
+    await controller.activate()
+    await controller.createCourse('기존 과목')
+
+    const externallyEdited = JSON.parse(
+      await readFile(storePath, 'utf8'),
+    ) as Record<string, unknown>
+    externallyEdited.course = {
+      ...(externallyEdited.course as Record<string, unknown>),
+      displayName: '외부에서 바꾼 과목',
+    }
+    const externalBytes = Buffer.from(
+      `${JSON.stringify(externallyEdited, null, 2)}\n`,
+      'utf8',
+    )
+    await writeFile(storePath, externalBytes)
+
+    await assert.rejects(
+      controller.refreshMaterials(),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'execution_guard_conflict',
+    )
+    assert.deepEqual(await readFile(storePath), externalBytes)
+    const conflicted = controller.snapshot()
+    assert.equal(conflicted?.state, 'ready')
+    if (conflicted?.state !== 'ready') assert.fail('workspace must be ready')
+    assert.equal(conflicted.recovery?.state, 'store_conflict')
+
+    const reactivated = await controller.activate()
+    assert.equal(reactivated.status, 'activated')
+    assert.equal(reactivated.workspace.state, 'ready')
+    assert.equal(reactivated.workspace.course?.displayName, '외부에서 바꾼 과목')
+    assert.equal(reactivated.workspace.recovery, null)
+    assert.deepEqual(await readFile(storePath), externalBytes)
+
+    const nonCanonicalBytes = Buffer.from(JSON.stringify(externallyEdited), 'utf8')
+    await writeFile(storePath, nonCanonicalBytes)
+    const coldController = createSemesterWorkspaceController({
+      packageRoot,
+      appDataRoot,
+      chooseDirectory: async () => workspaceRoot,
+    })
+    const coldActivation = await coldController.activate()
+    assert.equal(coldActivation.status, 'activated')
+    assert.equal(
+      coldActivation.workspace.course?.displayName,
+      '외부에서 바꾼 과목',
+    )
+    assert.deepEqual(await readFile(storePath), nonCanonicalBytes)
+    assert.equal((await coldController.refreshMaterials()).outcome, 'refreshed')
   } finally {
     await rm(testRoot, { force: true, recursive: true })
   }

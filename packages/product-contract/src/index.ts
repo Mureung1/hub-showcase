@@ -12,6 +12,7 @@ export {
 
 export {
   decodeProductBootstrap,
+  decodeProductMaterialRefreshResponse,
   decodeProductMaterialPreview,
   decodeProductWorkspace,
   decodeProductWorkspaceActivationResponse,
@@ -24,6 +25,7 @@ export type {
   ProductBootstrap,
   ProductEvidenceRef,
   ProductMaterialPreview,
+  ProductMaterialRefreshResponse,
   ProductRawMaterial,
   ProductSettledHistory,
   ProductSettledModelingRun,
@@ -32,6 +34,7 @@ export type {
   ProductWorkspace,
   ProductWorkspaceActivationResponse,
   ProductWorkspaceResponse,
+  ProductWorkspaceRecovery,
   ReadyProductWorkspace,
 } from './workspace.js'
 

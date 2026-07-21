@@ -15,7 +15,10 @@ import path from 'node:path'
 import { promisify } from 'node:util'
 
 import type { UserInputRequestedEvent } from '@ay-ple/codex-chat-runtime/contract'
-import { PRODUCT_REVIEW_FEEDBACK_MAX_BYTES } from '@ay-ple/product-contract'
+import {
+  PRODUCT_REVIEW_FEEDBACK_MAX_BYTES,
+  type ProductWorkspaceRecovery,
+} from '@ay-ple/product-contract'
 
 import {
   continuationLossForSettledDecision,
@@ -34,6 +37,7 @@ import type {
   ExecutionGuard,
   PersistedStatePatch,
   PersistedWorkspaceState,
+  WorkspaceStoreAuthority,
 } from './semester-workspace-store.js'
 import {
   actionMetadataMaxBytes,
@@ -83,6 +87,12 @@ const storeFormatVersion = currentWorkspaceStoreFormatVersion
 const productDirectoryName = workspaceProductDirectoryName
 const incompatibleStoreDisplayMessage =
   '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.'
+const sourceConflictDisplayMessage =
+  '원본 자료가 실행 중 변경되었습니다. 자료 새로고침으로 현재 내용을 새 기준으로 채택하세요.'
+const cleanupRequiredDisplayMessage =
+  '이전 작업의 임시 파일 정리가 필요합니다. 작업공간을 다시 선택해 복구를 시도하세요.'
+const storeConflictDisplayMessage =
+  '학기 상태 파일이 외부에서 변경되었습니다. 현재 bytes를 보존했으며 작업공간을 다시 선택해 확인하세요.'
 const materialAggregateMaxBytes = 8 * 1024 * 1024
 const materialScanEntryMax = 4096
 const materialPreviewMaxBytes = 256 * 1024
@@ -121,6 +131,12 @@ export type ReadySemesterWorkspaceSnapshot = {
   readonly confirmedRevision: number
   readonly course: Course | null
   readonly materials: readonly RawMaterial[]
+  readonly recovery: ProductWorkspaceRecovery | null
+}
+
+export type MaterialRefreshResult = {
+  readonly outcome: 'refreshed' | 'source_rebaselined'
+  readonly workspace: ReadySemesterWorkspaceSnapshot
 }
 
 export type IncompatibleSemesterWorkspaceSnapshot = {
@@ -196,7 +212,7 @@ export type SemesterWorkspaceController = {
     readonly requestKey: string
   }): Promise<void>
   releaseAssignmentProposalSession(requestKey: string): Promise<void>
-  refreshMaterials(): Promise<ReadySemesterWorkspaceSnapshot>
+  refreshMaterials(): Promise<MaterialRefreshResult>
   selectCourse(courseId: string): Promise<ReadySemesterWorkspaceSnapshot>
   settleAssignmentAction(
     input: SettleAssignmentActionInput,
@@ -590,6 +606,8 @@ type ActiveReviewBinding = AssignmentReviewBinding & {
 type OpenWorkspace =
   | {
       readonly root: string
+      readonly created: boolean
+      authority: WorkspaceStoreAuthority
       store: PersistedWorkspaceState
       snapshot: ReadySemesterWorkspaceSnapshot
     }
@@ -690,7 +708,13 @@ export function createSemesterWorkspaceController(options: {
   return {
     activate() {
       return enqueue(async () => {
-        if (active && 'store' in active) assertNoExecutionGuard(active)
+        if (
+          active &&
+          'store' in active &&
+          active.store.executionGuard?.state === 'active'
+        ) {
+          assertNoExecutionGuard(active)
+        }
         const selected = await options.chooseDirectory()
         if (selected === null) {
           return {
@@ -711,12 +735,12 @@ export function createSemesterWorkspaceController(options: {
             opened,
             appDataRoot,
           )
-          const mayRefresh = await reconcileExecutionGuard(
+          await reconcileExecutionGuard(
             opened,
             appDataRoot,
             cleanupPolicy,
           )
-          if (mayRefresh) await refreshReadyWorkspace(opened)
+          if (opened.created) await refreshReadyWorkspace(opened)
         } else if (active) {
           throw new SemesterWorkspaceError(
             'workspace_incompatible',
@@ -811,9 +835,7 @@ export function createSemesterWorkspaceController(options: {
           },
         } satisfies PersistedWorkspaceState
         await options.beforeActionStoreWrite?.('bind')
-        await semesterWorkspaceStore.write(opened.root, nextStore)
-        opened.store = nextStore
-        opened.snapshot = readySnapshot(nextStore)
+        await replaceWorkspaceStore(opened, nextStore)
         activeContext.runtime = {
           threadId: input.threadId,
           turnId: input.turnId,
@@ -1054,9 +1076,7 @@ export function createSemesterWorkspaceController(options: {
             displayName: normalizedName,
           },
         } satisfies PersistedWorkspaceState
-        await semesterWorkspaceStore.write(opened.root, nextStore)
-        opened.store = nextStore
-        opened.snapshot = readySnapshot(nextStore)
+        await replaceWorkspaceStore(opened, nextStore)
         return cloneReadySnapshot(opened.snapshot)
       })
     },
@@ -1226,9 +1246,35 @@ export function createSemesterWorkspaceController(options: {
     refreshMaterials() {
       return enqueue(async () => {
         const opened = requireReadyWorkspace(active)
-        assertNoExecutionGuard(opened)
-        await refreshReadyWorkspace(opened)
-        return cloneReadySnapshot(opened.snapshot)
+        const guard = opened.store.executionGuard
+        if (!guard) {
+          await refreshReadyWorkspace(opened)
+          return {
+            outcome: 'refreshed',
+            workspace: cloneReadySnapshot(opened.snapshot),
+          }
+        }
+        if (guard.state !== 'recovery_required') {
+          assertNoExecutionGuard(opened)
+        }
+        await assertStoreBytesMatchMemory(opened)
+        const cleaned = await cleanupExecutionGuardArtifacts(
+          opened.root,
+          requireActiveAppDataRoot(activeAppDataRoot),
+          guard,
+          cleanupPolicy,
+        )
+        if (!cleaned) {
+          throw new SemesterWorkspaceError(
+            'execution_cleanup_required',
+            'The prior product operation artifacts require cleanup.',
+          )
+        }
+        await refreshReadyWorkspace(opened, true)
+        return {
+          outcome: 'source_rebaselined',
+          workspace: cloneReadySnapshot(opened.snapshot),
+        }
       })
     },
 
@@ -1284,6 +1330,7 @@ export function createSemesterWorkspaceController(options: {
 
 async function refreshReadyWorkspace(
   opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  clearRecovery = false,
 ): Promise<void> {
   const scanned = await scanRawMaterials(opened.root)
   const existingByPath = new Map(
@@ -1298,10 +1345,9 @@ async function refreshReadyWorkspace(
   const nextStore = {
     ...opened.store,
     materials,
+    ...(clearRecovery ? { executionGuard: null } : {}),
   } satisfies PersistedWorkspaceState
-  await semesterWorkspaceStore.write(opened.root, nextStore)
-  opened.store = nextStore
-  opened.snapshot = readySnapshot(nextStore)
+  await replaceWorkspaceStore(opened, nextStore)
 }
 
 function prepareProposalContext(
@@ -1440,9 +1486,7 @@ async function prepareProductChatExecution(
       ...opened.store,
       executionGuard: guard,
     } satisfies PersistedWorkspaceState
-    await semesterWorkspaceStore.write(opened.root, nextStore)
-    opened.store = nextStore
-    opened.snapshot = readySnapshot(nextStore)
+    await replaceWorkspaceStore(opened, nextStore)
     return { scratchPath }
   } catch (error) {
     if (scratchCreated) {
@@ -1490,9 +1534,7 @@ async function bindProductChatExecution(
       },
     },
   } satisfies PersistedWorkspaceState
-  await semesterWorkspaceStore.write(opened.root, nextStore)
-  opened.store = nextStore
-  opened.snapshot = readySnapshot(nextStore)
+  await replaceWorkspaceStore(opened, nextStore)
 }
 
 async function settleProductChatExecution(
@@ -1547,9 +1589,7 @@ async function settleProductChatExecution(
       state: guardValid ? 'cleanup_required' : 'recovery_required',
     },
   } satisfies PersistedWorkspaceState
-  await semesterWorkspaceStore.write(opened.root, guardedSettlement)
-  opened.store = guardedSettlement
-  opened.snapshot = readySnapshot(guardedSettlement)
+  await replaceWorkspaceStore(opened, guardedSettlement)
   releaseProposalOperation(
     input.operationId,
     proposalContexts,
@@ -1573,9 +1613,7 @@ async function settleProductChatExecution(
     ...opened.store,
     executionGuard: null,
   } satisfies PersistedWorkspaceState
-  await semesterWorkspaceStore.write(opened.root, cleanedStore)
-  opened.store = cleanedStore
-  opened.snapshot = readySnapshot(cleanedStore)
+  await replaceWorkspaceStore(opened, cleanedStore)
 }
 
 async function prepareAssignmentAction(
@@ -1764,20 +1802,7 @@ async function prepareAssignmentAction(
       executionGuard,
     } satisfies PersistedWorkspaceState
     await beforeActionStoreWrite?.('prepare')
-    try {
-      await semesterWorkspaceStore.write(opened.root, nextStore)
-    } catch (error) {
-      if (
-        !(await semesterWorkspaceStore.matchesCanonicalBytes(
-          opened.root,
-          nextStore,
-        ))
-      ) {
-        throw error
-      }
-    }
-    opened.store = nextStore
-    opened.snapshot = readySnapshot(nextStore)
+    await replaceWorkspaceStore(opened, nextStore)
     return { run, activeContext, stagedSources, scratchPath }
   } catch (error) {
     if (artifactsCreated) {
@@ -2014,9 +2039,7 @@ async function settleModelingRun(
     executionGuard: nextGuard,
   } satisfies PersistedWorkspaceState
   await beforeActionStoreWrite?.(writePoint)
-  await semesterWorkspaceStore.write(opened.root, settledStore)
-  opened.store = settledStore
-  opened.snapshot = readySnapshot(settledStore)
+  await replaceWorkspaceStore(opened, settledStore)
 
   for (const [requestKey, context] of proposalContexts) {
     if (context.actionId === input.actionId) proposalContexts.delete(requestKey)
@@ -2045,9 +2068,7 @@ async function settleModelingRun(
     ...opened.store,
     executionGuard,
   } satisfies PersistedWorkspaceState
-  await semesterWorkspaceStore.write(opened.root, cleanedStore)
-  opened.store = cleanedStore
-  opened.snapshot = readySnapshot(cleanedStore)
+  await replaceWorkspaceStore(opened, cleanedStore)
   return cloneModelingRun(settled)
 }
 
@@ -2107,9 +2128,9 @@ async function reconcileExecutionGuard(
   opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
   appDataRoot: string,
   cleanupPolicy: ActionCleanupPolicy,
-): Promise<boolean> {
+): Promise<void> {
   const guard = opened.store.executionGuard
-  if (!guard) return true
+  if (!guard) return
   const interruptedPatches = interruptPendingPatchesForOperation(
     opened.store.statePatches,
     guard.operationId,
@@ -2119,9 +2140,7 @@ async function reconcileExecutionGuard(
       ...opened.store,
       statePatches: interruptedPatches,
     } satisfies PersistedWorkspaceState
-    await semesterWorkspaceStore.write(opened.root, interruptedStore)
-    opened.store = interruptedStore
-    opened.snapshot = readySnapshot(interruptedStore)
+    await replaceWorkspaceStore(opened, interruptedStore)
   }
   const runIndex =
     guard.kind === 'assignment_action'
@@ -2141,7 +2160,7 @@ async function reconcileExecutionGuard(
       guard,
       cleanupPolicy,
     )
-    return false
+    return
   }
   if (guard.state === 'cleanup_required') {
     const cleaned = await cleanupExecutionGuardArtifacts(
@@ -2150,15 +2169,13 @@ async function reconcileExecutionGuard(
       guard,
       cleanupPolicy,
     )
-    if (!cleaned) return false
+    if (!cleaned) return
     const cleanedStore = {
       ...opened.store,
       executionGuard: null,
     } satisfies PersistedWorkspaceState
-    await semesterWorkspaceStore.write(opened.root, cleanedStore)
-    opened.store = cleanedStore
-    opened.snapshot = readySnapshot(cleanedStore)
-    return true
+    await replaceWorkspaceStore(opened, cleanedStore)
+    return
   }
   let authorityValid = true
   let artifactsValid = true
@@ -2231,16 +2248,14 @@ async function reconcileExecutionGuard(
           ),
     executionGuard: reconcilingGuard,
   } satisfies PersistedWorkspaceState
-  await semesterWorkspaceStore.write(opened.root, reconciledStore)
-  opened.store = reconciledStore
-  opened.snapshot = readySnapshot(reconciledStore)
+  await replaceWorkspaceStore(opened, reconciledStore)
   const cleaned = await cleanupExecutionGuardArtifacts(
     opened.root,
     appDataRoot,
     guard,
     cleanupPolicy,
   )
-  if (!authorityValid) return false
+  if (!authorityValid) return
   const finalStore = {
     ...opened.store,
     executionGuard: cleaned
@@ -2250,10 +2265,7 @@ async function reconcileExecutionGuard(
           state: 'cleanup_required',
         } satisfies ExecutionGuard),
   } satisfies PersistedWorkspaceState
-  await semesterWorkspaceStore.write(opened.root, finalStore)
-  opened.store = finalStore
-  opened.snapshot = readySnapshot(finalStore)
-  return cleaned
+  await replaceWorkspaceStore(opened, finalStore)
 }
 
 async function assertExecutionGuard(
@@ -2373,14 +2385,38 @@ async function assertStoreBytesMatchMemory(
   opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
 ): Promise<void> {
   if (
-    await semesterWorkspaceStore.matchesCanonicalBytes(
+    await semesterWorkspaceStore.matchesAuthority(
       opened.root,
-      opened.store,
+      opened.authority,
     )
   ) {
     return
   }
+  opened.snapshot = readySnapshot(opened.store, 'store_conflict')
   throw executionGuardConflict()
+}
+
+async function replaceWorkspaceStore(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  nextStore: PersistedWorkspaceState,
+): Promise<void> {
+  try {
+    opened.authority = await semesterWorkspaceStore.replace(
+      opened.root,
+      opened.authority,
+      nextStore,
+    )
+  } catch (error) {
+    if (
+      error instanceof SemesterWorkspaceError &&
+      error.code === 'execution_guard_conflict'
+    ) {
+      opened.snapshot = readySnapshot(opened.store, 'store_conflict')
+    }
+    throw error
+  }
+  opened.store = nextStore
+  opened.snapshot = readySnapshot(nextStore)
 }
 
 async function cleanupUncommittedActionArtifacts(
@@ -2765,9 +2801,7 @@ async function proposeAssignmentStatePatch(
     ...opened.store,
     statePatches,
   } satisfies PersistedWorkspaceState
-  await semesterWorkspaceStore.write(opened.root, nextStore)
-  opened.store = nextStore
-  opened.snapshot = readySnapshot(nextStore)
+  await replaceWorkspaceStore(opened, nextStore)
   activePatchByTurn.set(turnKey, patch.id)
   if (boundReview?.revision) boundReview.revision.state = 'replaced'
   return cloneStatePatch(patch)
@@ -2969,9 +3003,7 @@ async function interruptAssignmentReviewRevision(
           : candidate,
       ),
     } satisfies PersistedWorkspaceState
-    await semesterWorkspaceStore.write(opened.root, nextStore)
-    opened.store = nextStore
-    opened.snapshot = readySnapshot(nextStore)
+    await replaceWorkspaceStore(opened, nextStore)
   }
   const turnKey = runtimeTurnKey(binding)
   if (activePatchByTurn.get(turnKey) === binding.patchId) {
@@ -3136,9 +3168,7 @@ async function commitAssignmentReviewDecision(
           }
         : opened.store.executionGuard,
   } satisfies PersistedWorkspaceState
-  await semesterWorkspaceStore.write(opened.root, nextStore)
-  opened.store = nextStore
-  opened.snapshot = readySnapshot(nextStore)
+  await replaceWorkspaceStore(opened, nextStore)
   activePatchByTurn.delete(runtimeTurnKey(activeBinding))
   return {
     binding: cloneReviewBinding(activeBinding),
@@ -3185,6 +3215,8 @@ async function openWorkspace(workspaceRoot: string): Promise<OpenWorkspace> {
   if (opened.status === 'ready') {
     return {
       root: workspaceRoot,
+      created: opened.created,
+      authority: opened.authority,
       store: opened.store,
       snapshot: readySnapshot(opened.store),
     }
@@ -3249,6 +3281,7 @@ function requireReadyWorkspace(
 
 function readySnapshot(
   store: PersistedWorkspaceState,
+  recoveryOverride?: ProductWorkspaceRecovery['state'],
 ): ReadySemesterWorkspaceSnapshot {
   return {
     state: 'ready',
@@ -3258,6 +3291,36 @@ function readySnapshot(
       ? { id: store.course.id, displayName: store.course.displayName }
       : null,
     materials: store.materials.map((material) => ({ ...material })),
+    recovery:
+      recoveryOverride === undefined
+        ? workspaceRecovery(store.executionGuard)
+        : recoveryProjection(recoveryOverride),
+  }
+}
+
+function workspaceRecovery(
+  guard: ExecutionGuard | null,
+): ProductWorkspaceRecovery | null {
+  if (guard?.state === 'recovery_required') {
+    return recoveryProjection('source_conflict')
+  }
+  if (guard?.state === 'cleanup_required') {
+    return recoveryProjection('cleanup_required')
+  }
+  return null
+}
+
+function recoveryProjection(
+  state: ProductWorkspaceRecovery['state'],
+): ProductWorkspaceRecovery {
+  return {
+    state,
+    displayMessage:
+      state === 'source_conflict'
+        ? sourceConflictDisplayMessage
+        : state === 'cleanup_required'
+          ? cleanupRequiredDisplayMessage
+          : storeConflictDisplayMessage,
   }
 }
 
@@ -3514,6 +3577,9 @@ function assertBindAssignmentActionInput(
 function assertNoExecutionGuard(
   opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
 ): void {
+  if (opened.snapshot.recovery?.state === 'store_conflict') {
+    throw executionGuardConflict()
+  }
   if (!opened.store.executionGuard) return
   throw new SemesterWorkspaceError(
     opened.store.executionGuard.state === 'active'

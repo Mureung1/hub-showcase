@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir, readFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import test from 'node:test'
 
@@ -64,6 +64,68 @@ test('account-not-ready rejects the Assignment action before a Run or native sta
         assert.deepEqual(runtime.calls, [
           { operation: 'readAccountReadiness' },
         ])
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('registered source drift interrupts the native Turn and opens workspace recovery', async () => {
+  const fixture = await createActionFixture()
+  const driftedBytes = Buffer.from('학생이 실행 중 수정한 LMS 공지', 'utf8')
+  const driftedPath = path.join(
+    fixture.workspaceRoot,
+    'lms-outline-notice.txt',
+  )
+  const runtime = new HttpMcpProductRuntime({
+    beforeProposal: () => writeFile(driftedPath, driftedBytes),
+    proposalFails: true,
+    onStartProductTurn: async () => undefined,
+  })
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        const workspace = await activateCourse(application)
+        const selected = selectCanonicalMaterials(workspace.materials)
+        runtime.proposal = (input) =>
+          validProposalFromProductInput(
+            input,
+            workspace.course!.id,
+            selected,
+          )
+
+        const frames = await readProductFrames(
+          await postJson(
+            `${baseUrl}/api/product/actions/first-assignment`,
+            actionRequest(workspace.course!.id, selected),
+          ),
+        )
+
+        assert.equal(runtime.interruptCalls, 1)
+        assert.equal(
+          frames.some((frame) => frame.type === 'mcp_call.failed'),
+          true,
+        )
+        const terminal = frames.at(-1)
+        assert.equal(terminal?.type, 'operation.terminal')
+        assert.equal(terminal?.status, 'failed')
+        assert.equal(terminal?.failureCode, 'execution_guard_conflict')
+        assert.deepEqual(await readFile(driftedPath), driftedBytes)
+
+        const bootstrap = (await (
+          await fetch(`${baseUrl}/api/product/bootstrap`)
+        ).json()) as {
+          readonly workspace: {
+            readonly recovery: { readonly state: string } | null
+          }
+        }
+        assert.equal(bootstrap.workspace.recovery?.state, 'source_conflict')
       },
     )
   } finally {
@@ -871,6 +933,15 @@ function selectCanonicalMaterials(
   ].map((material) => ({ id: material.id, digest: material.digest }))
 }
 
+async function readProductFrames(
+  response: Response,
+): Promise<Record<string, unknown>[]> {
+  assert.equal(response.status, 200)
+  const reader = response.body?.getReader()
+  assert.ok(reader)
+  return new NdjsonTrace(reader).rest()
+}
+
 function requireMaterial(
   materials: readonly {
     readonly id: string
@@ -978,6 +1049,7 @@ async function callAssignmentProposalTool(input: {
   readonly id: number
   readonly proposal: Record<string, unknown>
   readonly threadInput: StartThreadInput | undefined
+  readonly expectError?: boolean
 }): Promise<void> {
   assert.ok(input.threadInput)
   const response = await fetch(input.threadInput.mcp.url, {
@@ -1000,7 +1072,7 @@ async function callAssignmentProposalTool(input: {
   const result = (await response.json()) as {
     readonly result?: { readonly isError?: boolean }
   }
-  assert.equal(result.result?.isError, false)
+  assert.equal(result.result?.isError, input.expectError ?? false)
 }
 
 class HttpMcpProductRuntime implements CodexProductCapableRuntime {
@@ -1008,6 +1080,7 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
   readonly productInputs: StartProductTurnInput[] = []
   readonly snapshotBytes: Buffer[] = []
   readonly answerInputs: AnswerUserInput[] = []
+  interruptCalls = 0
   mcpToken?: string
   proposal?: (input: StartProductTurnInput) => Record<string, unknown>
   private readonly onStartProductTurn: (
@@ -1016,6 +1089,8 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
   private readonly answer = deferred<void>()
   private readonly answerAcknowledged = deferred<void>()
   private readonly failReviewAnswer: boolean
+  private readonly beforeProposal?: () => Promise<void>
+  private readonly proposalFails: boolean
   private readonly reviewResolution: 'answered' | 'cancelled'
   private threadInput?: StartThreadInput
 
@@ -1023,11 +1098,15 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
     readonly onStartProductTurn: (
       input: StartProductTurnInput,
     ) => Promise<void>
+    readonly beforeProposal?: () => Promise<void>
     readonly failReviewAnswer?: boolean
+    readonly proposalFails?: boolean
     readonly reviewResolution?: 'answered' | 'cancelled'
   }) {
     this.onStartProductTurn = options.onStartProductTurn
+    this.beforeProposal = options.beforeProposal
     this.failReviewAnswer = options.failReviewAnswer ?? false
+    this.proposalFails = options.proposalFails ?? false
     this.reviewResolution = options.reviewResolution ?? 'answered'
   }
 
@@ -1115,11 +1194,30 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
           tool: 'propose_state_patch',
         }
         assert.ok(runtime.proposal)
+        await runtime.beforeProposal?.()
         await callAssignmentProposalTool({
           id: 1,
           proposal: runtime.proposal(input),
           threadInput: runtime.threadInput,
+          expectError: runtime.proposalFails,
         })
+        if (runtime.proposalFails) {
+          yield {
+            type: 'mcp_call.failed',
+            threadId: input.threadId,
+            turnId: 'turn-native-A',
+            itemId: 'private-mcp-item',
+            tool: 'propose_state_patch',
+            displayMessage: 'StatePatch proposal failed.',
+          }
+          yield {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId: 'turn-native-A',
+            status: 'interrupted',
+          }
+          return
+        }
         yield {
           type: 'mcp_call.completed',
           threadId: input.threadId,
@@ -1184,7 +1282,9 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
     throw new Error('cancelUserInput is not expected')
   }
 
-  async interrupt(_input: InterruptTurnInput): Promise<void> {}
+  async interrupt(_input: InterruptTurnInput): Promise<void> {
+    this.interruptCalls += 1
+  }
 
   async releaseThread(_input: ReleaseThreadInput): Promise<void> {}
 

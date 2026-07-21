@@ -100,10 +100,16 @@ export type PersistedWorkspaceState = {
   readonly executionGuard: ExecutionGuard | null
 }
 
+export type WorkspaceStoreAuthority = {
+  readonly bytes: Buffer
+}
+
 export type WorkspaceStoreOpenResult =
   | {
       readonly status: 'ready'
       readonly store: PersistedWorkspaceState
+      readonly created: boolean
+      readonly authority: WorkspaceStoreAuthority
     }
   | {
       readonly status: 'incompatible'
@@ -125,8 +131,8 @@ export const semesterWorkspaceStore = {
 
     if (!(await pathExists(storePath))) {
       const store = createEmptyWorkspaceStore()
-      await writeWorkspaceStore(workspaceRoot, store)
-      return { status: 'ready', store }
+      const authority = await createWorkspaceStore(workspaceRoot, store)
+      return { status: 'ready', store, created: true, authority }
     }
 
     const stats = await lstat(storePath)
@@ -149,7 +155,12 @@ export const semesterWorkspaceStore = {
     }
 
     try {
-      return { status: 'ready', store: decodeCurrentStore(decoded) }
+      return {
+        status: 'ready',
+        store: decodeCurrentStore(decoded),
+        created: false,
+        authority: storeAuthority(storeBytes),
+      }
     } catch (error) {
       if (
         !(error instanceof SemesterWorkspaceError) ||
@@ -161,16 +172,22 @@ export const semesterWorkspaceStore = {
     }
   },
 
-  write: writeWorkspaceStore,
-
-  async matchesCanonicalBytes(
+  async replace(
     workspaceRoot: string,
+    expectedAuthority: WorkspaceStoreAuthority,
     store: PersistedWorkspaceState,
+  ): Promise<WorkspaceStoreAuthority> {
+    return replaceWorkspaceStore(workspaceRoot, expectedAuthority, store)
+  },
+
+  async matchesAuthority(
+    workspaceRoot: string,
+    expectedAuthority: WorkspaceStoreAuthority,
   ): Promise<boolean> {
     try {
       return (
-        await readFile(workspaceStorePath(workspaceRoot), 'utf8')
-      ) === encodeCurrentStore(store)
+        await readCurrentRegularStoreBytes(workspaceRoot)
+      ).equals(expectedAuthority.bytes)
     } catch {
       return false
     }
@@ -252,9 +269,35 @@ function incompatibleStore(decoded: unknown): WorkspaceStoreOpenResult {
   }
 }
 
-async function writeWorkspaceStore(
+async function createWorkspaceStore(
   workspaceRoot: string,
   store: PersistedWorkspaceState,
+): Promise<WorkspaceStoreAuthority> {
+  const bytes = Buffer.from(encodeCurrentStore(store), 'utf8')
+  await writeWorkspaceStoreBytes(workspaceRoot, bytes, false)
+  return storeAuthority(bytes)
+}
+
+async function replaceWorkspaceStore(
+  workspaceRoot: string,
+  expectedAuthority: WorkspaceStoreAuthority,
+  store: PersistedWorkspaceState,
+): Promise<WorkspaceStoreAuthority> {
+  const bytes = Buffer.from(encodeCurrentStore(store), 'utf8')
+  await writeWorkspaceStoreBytes(
+    workspaceRoot,
+    bytes,
+    true,
+    expectedAuthority,
+  )
+  return storeAuthority(bytes)
+}
+
+async function writeWorkspaceStoreBytes(
+  workspaceRoot: string,
+  bytes: Buffer,
+  replacing: boolean,
+  expectedAuthority?: WorkspaceStoreAuthority,
 ): Promise<void> {
   const productRoot = path.join(
     workspaceRoot,
@@ -266,15 +309,40 @@ async function writeWorkspaceStore(
     `.${storeFileName}.${randomUUID()}.tmp`,
   )
   try {
-    await writeFile(temporaryPath, encodeCurrentStore(store), {
-      encoding: 'utf8',
+    await writeFile(temporaryPath, bytes, {
       flag: 'wx',
       mode: 0o600,
     })
+    if (replacing) {
+      const currentBytes = await readCurrentRegularStoreBytes(workspaceRoot)
+      if (!expectedAuthority || !currentBytes.equals(expectedAuthority.bytes)) {
+        throw storeAuthorityConflict()
+      }
+    }
     await rename(temporaryPath, storePath)
   } finally {
     await rm(temporaryPath, { force: true })
   }
+}
+
+async function readCurrentRegularStoreBytes(
+  workspaceRoot: string,
+): Promise<Buffer> {
+  const storePath = workspaceStorePath(workspaceRoot)
+  const stats = await lstat(storePath)
+  if (!stats.isFile() || stats.isSymbolicLink()) throw storeAuthorityConflict()
+  return readFile(storePath)
+}
+
+function storeAuthority(bytes: Buffer): WorkspaceStoreAuthority {
+  return { bytes: Buffer.from(bytes) }
+}
+
+function storeAuthorityConflict(): SemesterWorkspaceError {
+  return new SemesterWorkspaceError(
+    'execution_guard_conflict',
+    'The persisted workspace store no longer matches the active authority.',
+  )
 }
 
 function encodeCurrentStore(store: PersistedWorkspaceState): string {

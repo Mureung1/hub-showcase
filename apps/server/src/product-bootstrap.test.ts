@@ -127,6 +127,7 @@ function productSnapshotController(): SemesterWorkspaceController {
           size: 12,
         },
       ],
+      recovery: null,
       storePath: '/private/workspace/.ay-ple/workspace-state.json',
     }),
     assignmentState: () => ({
@@ -272,6 +273,7 @@ function expectedSafeBootstrap() {
           size: 12,
         },
       ],
+      recovery: null,
     },
     history: {
       assignments: [

@@ -26,6 +26,11 @@ export type ProductRawMaterial = {
   readonly size: number
 }
 
+export type ProductWorkspaceRecovery = {
+  readonly state: 'cleanup_required' | 'source_conflict' | 'store_conflict'
+  readonly displayMessage: string
+}
+
 export type ReadyProductWorkspace = {
   readonly state: 'ready'
   readonly confirmedRevision: number
@@ -34,6 +39,7 @@ export type ReadyProductWorkspace = {
     readonly displayName: string
   } | null
   readonly materials: readonly ProductRawMaterial[]
+  readonly recovery: ProductWorkspaceRecovery | null
 }
 
 export type IncompatibleProductWorkspace = {
@@ -143,6 +149,11 @@ export type ProductWorkspaceResponse = {
   readonly workspace: ReadyProductWorkspace
 }
 
+export type ProductMaterialRefreshResponse = {
+  readonly outcome: 'refreshed' | 'source_rebaselined'
+  readonly workspace: ReadyProductWorkspace
+}
+
 export type ProductMaterialPreview = {
   readonly materialId: string
   readonly relativePath: string
@@ -199,6 +210,20 @@ export function decodeProductWorkspaceResponse(
   return { workspace }
 }
 
+export function decodeProductMaterialRefreshResponse(
+  value: unknown,
+): ProductMaterialRefreshResponse {
+  if (
+    !isExactObject(value, ['outcome', 'workspace']) ||
+    (value.outcome !== 'refreshed' && value.outcome !== 'source_rebaselined')
+  ) {
+    throw invalidContract()
+  }
+  const workspace = decodeProductWorkspace(value.workspace)
+  if (workspace.state !== 'ready') throw invalidContract()
+  return { outcome: value.outcome, workspace }
+}
+
 export function decodeProductMaterialPreview(
   value: unknown,
 ): ProductMaterialPreview {
@@ -253,11 +278,13 @@ export function decodeProductWorkspace(value: unknown): ProductWorkspace {
       'confirmedRevision',
       'course',
       'materials',
+      'recovery',
       'state',
     ]) ||
     !isRevision(value.confirmedRevision) ||
     !isCourseOrNull(value.course) ||
-    !Array.isArray(value.materials)
+    !Array.isArray(value.materials) ||
+    !isProductWorkspaceRecoveryOrNull(value.recovery)
   ) {
     throw invalidContract()
   }
@@ -266,7 +293,21 @@ export function decodeProductWorkspace(value: unknown): ProductWorkspace {
     confirmedRevision: value.confirmedRevision,
     course: value.course,
     materials: value.materials.map(decodeProductRawMaterial),
+    recovery: value.recovery,
   }
+}
+
+function isProductWorkspaceRecoveryOrNull(
+  value: unknown,
+): value is ProductWorkspaceRecovery | null {
+  return (
+    value === null ||
+    (isExactObject(value, ['displayMessage', 'state']) &&
+      (value.state === 'cleanup_required' ||
+        value.state === 'source_conflict' ||
+        value.state === 'store_conflict') &&
+      isNonEmptyString(value.displayMessage))
+  )
 }
 
 function decodeProductAccountReadiness(

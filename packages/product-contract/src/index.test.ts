@@ -12,6 +12,7 @@ import {
   decodeProductBootstrap,
   decodeProductChatRequest,
   decodeProductError,
+  decodeProductMaterialRefreshResponse,
   decodeProductMaterialPreview,
   decodeProductOperationFrame,
   decodeProductReviewRequest,
@@ -34,6 +35,7 @@ test('package root exposes the exact runtime contract surface', () => {
     'decodeProductError',
     'decodeProductInteractionAnswerRequest',
     'decodeProductMaterialPreview',
+    'decodeProductMaterialRefreshResponse',
     'decodeProductOperationFrame',
     'decodeProductQuestion',
     'decodeProductReviewRequest',
@@ -61,6 +63,7 @@ test('bootstrap decoder accepts the exact Browser-safe projection only', () => {
       confirmedRevision: 0,
       course: null,
       materials: [],
+      recovery: null,
     },
     history: {
       assignments: [],
@@ -86,6 +89,52 @@ test('bootstrap decoder accepts the exact Browser-safe projection only', () => {
         workspace: {
           ...bootstrap.workspace,
           storeFormatVersion: 2,
+        },
+      }),
+    ProductContractError,
+  )
+})
+
+test('workspace recovery and explicit material rebaseline use one exact shared contract', () => {
+  const workspace = {
+    state: 'ready',
+    confirmedRevision: 0,
+    course: null,
+    materials: [],
+    recovery: {
+      state: 'source_conflict',
+      displayMessage:
+        '원본 자료가 실행 중 변경되었습니다. 자료 새로고침으로 현재 내용을 채택하세요.',
+    },
+  } as const
+  const response = {
+    outcome: 'source_rebaselined',
+    workspace: { ...workspace, recovery: null },
+  } as const
+
+  assert.deepEqual(decodeProductMaterialRefreshResponse(response), response)
+  assert.throws(
+    () =>
+      decodeProductMaterialRefreshResponse({
+        ...response,
+        outcome: 'automatically_recovered',
+      }),
+    ProductContractError,
+  )
+  assert.throws(
+    () =>
+      decodeProductBootstrap({
+        accountReadiness: { state: 'ready' },
+        operationStatus: 'idle',
+        workspace: {
+          ...workspace,
+          recovery: { ...workspace.recovery, baselineDigest: 'a'.repeat(64) },
+        },
+        history: {
+          assignments: [],
+          statePatches: [],
+          userConfirmations: [],
+          modelingRuns: [],
         },
       }),
     ProductContractError,
@@ -599,6 +648,7 @@ test('private and unsettled value families are rejected by the shared owner', ()
       confirmedRevision: 0,
       course: { id: courseId, displayName: '알고리즘' },
       materials: [],
+      recovery: null,
     },
     history: {
       assignments: [],
@@ -649,6 +699,7 @@ test('settled Run history owns retry ancestry and exact recovery state', () => {
       confirmedRevision: 0,
       course: { id: courseId, displayName: '알고리즘' },
       materials: [],
+      recovery: null,
     },
     history: {
       assignments: [],

@@ -375,20 +375,24 @@ test('acceptance-unknown keeps one guard and reconciles without creating a secon
   }
 })
 
-test('source drift blocks proposal and leaves an explicit recovery guard after settlement', async () => {
+test('source drift preserves user bytes until explicit refresh adopts a new baseline', async () => {
   const fixture = await createFixture()
   try {
+    const before = fixture.controller.snapshot()
+    assert.equal(before?.state, 'ready')
+    if (before?.state !== 'ready') assert.fail('workspace must be ready')
+    const firstMaterial = before.materials.find(
+      (material) => material.relativePath === 'first.txt',
+    )!
     const prepared = await prepareAction(fixture.controller, fixture.courseId)
     await fixture.controller.bindAssignmentAction({
       actionId: prepared.run.actionId,
       threadId: 'thread-action-3',
       turnId: 'turn-action-3',
     })
-    await writeFile(
-      path.join(fixture.workspaceRoot, 'first.txt'),
-      '학생이 실행 중 원본을 수정함',
-      'utf8',
-    )
+    const driftedBytes = Buffer.from('학생이 실행 중 원본을 수정함', 'utf8')
+    const firstPath = path.join(fixture.workspaceRoot, 'first.txt')
+    await writeFile(firstPath, driftedBytes)
 
     await assert.rejects(
       prepared.mcpTool.invoke({}),
@@ -404,6 +408,17 @@ test('source drift blocks proposal and leaves an explicit recovery guard after s
     assert.equal(settled.status, 'failed')
     assert.equal(settled.validationOutcome, 'failed')
     assert.equal(settled.failureCode, 'execution_guard_conflict')
+    assert.deepEqual(await readFile(firstPath), driftedBytes)
+    const recoverySnapshot = fixture.controller.snapshot()
+    assert.equal(recoverySnapshot?.state, 'ready')
+    if (recoverySnapshot?.state !== 'ready') {
+      assert.fail('workspace must be ready')
+    }
+    assert.deepEqual(recoverySnapshot.recovery, {
+      state: 'source_conflict',
+      displayMessage:
+        '원본 자료가 실행 중 변경되었습니다. 자료 새로고침으로 현재 내용을 새 기준으로 채택하세요.',
+    })
     await assert.rejects(
       prepareAction(
         fixture.controller,
@@ -414,7 +429,86 @@ test('source drift blocks proposal and leaves an explicit recovery guard after s
         error instanceof SemesterWorkspaceError &&
         error.code === 'execution_cleanup_required',
     )
+
+    const refreshed = await fixture.controller.refreshMaterials()
+    assert.equal(refreshed.outcome, 'source_rebaselined')
+    assert.equal(refreshed.workspace.recovery, null)
+    const refreshedFirst = refreshed.workspace.materials.find(
+      (material) => material.relativePath === 'first.txt',
+    )!
+    assert.equal(refreshedFirst.id, firstMaterial.id)
+    assert.equal(
+      refreshedFirst.digest,
+      createHash('sha256').update(driftedBytes).digest('hex'),
+    )
+    assert.deepEqual(await readFile(firstPath), driftedBytes)
+    assert.equal(await exists(prepared.stagedSources[0]!.path), false)
+    assert.equal(await exists(prepared.scratchPath), false)
+
+    const fresh = await prepareAction(
+      fixture.controller,
+      fixture.courseId,
+      `action_${'b'.repeat(32)}`,
+    )
+    await fixture.controller.failAssignmentActionStart({
+      actionId: fresh.run.actionId,
+      status: 'not_accepted',
+      failureCode: 'test_cleanup',
+    })
   } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('source rebaseline remains blocked until bounded artifact cleanup succeeds', async () => {
+  let releaseCleanup!: () => void
+  const cleanupBarrier = new Promise<void>((resolve) => {
+    releaseCleanup = resolve
+  })
+  const fixture = await createFixture(undefined, {
+    actionCleanupDeadlineMs: 5,
+    beforeActionArtifactCleanup: () => cleanupBarrier,
+  })
+  try {
+    const baseline = fixture.controller.snapshot()
+    assert.equal(baseline?.state, 'ready')
+    if (baseline?.state !== 'ready') assert.fail('workspace must be ready')
+    const baselineDigest = baseline.materials[0]!.digest
+    const prepared = await prepareAction(fixture.controller, fixture.courseId)
+    await fixture.controller.bindAssignmentAction({
+      actionId: prepared.run.actionId,
+      threadId: 'thread-source-cleanup',
+      turnId: 'turn-source-cleanup',
+    })
+    await writeFile(
+      path.join(fixture.workspaceRoot, baseline.materials[0]!.relativePath),
+      'cleanup 뒤에만 채택할 원본',
+      'utf8',
+    )
+    await fixture.controller.settleAssignmentAction({
+      actionId: prepared.run.actionId,
+      status: 'interrupted',
+      validationOutcome: 'failed',
+    })
+
+    await assert.rejects(
+      fixture.controller.refreshMaterials(),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'execution_cleanup_required',
+    )
+    const blocked = fixture.controller.snapshot()
+    assert.equal(blocked?.state, 'ready')
+    if (blocked?.state !== 'ready') assert.fail('workspace must be ready')
+    assert.equal(blocked.recovery?.state, 'source_conflict')
+    assert.equal(blocked.materials[0]!.digest, baselineDigest)
+
+    releaseCleanup()
+    const refreshed = await fixture.controller.refreshMaterials()
+    assert.equal(refreshed.outcome, 'source_rebaselined')
+    assert.equal(refreshed.workspace.recovery, null)
+  } finally {
+    releaseCleanup()
     await fixture.cleanup()
   }
 })
@@ -447,6 +541,45 @@ test('external product-store drift is never overwritten while an action settles'
         error.code === 'execution_guard_conflict',
     )
     assert.deepEqual(await readFile(storePath), externalBytes)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('store drift after guard validation still blocks the atomic settlement replace', async () => {
+  let storePath = ''
+  const externalBytes = Buffer.from('{"external":"late preserve"}\n', 'utf8')
+  const fixture = await createFixture(async (point) => {
+    if (point === 'settle') await writeFile(storePath, externalBytes)
+  })
+  storePath = path.join(
+    fixture.workspaceRoot,
+    '.ay-ple',
+    'workspace-state.json',
+  )
+  try {
+    const prepared = await prepareAction(fixture.controller, fixture.courseId)
+    await fixture.controller.bindAssignmentAction({
+      actionId: prepared.run.actionId,
+      threadId: 'thread-store-late-drift',
+      turnId: 'turn-store-late-drift',
+    })
+
+    await assert.rejects(
+      fixture.controller.settleAssignmentAction({
+        actionId: prepared.run.actionId,
+        status: 'completed',
+        validationOutcome: 'passed',
+      }),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'execution_guard_conflict',
+    )
+    assert.deepEqual(await readFile(storePath), externalBytes)
+    const conflicted = fixture.controller.snapshot()
+    assert.equal(conflicted?.state, 'ready')
+    if (conflicted?.state !== 'ready') assert.fail('workspace must be ready')
+    assert.equal(conflicted.recovery?.state, 'store_conflict')
   } finally {
     await fixture.cleanup()
   }

@@ -25,6 +25,7 @@ import {
   type ProductError,
   type ProductEvidenceRef,
   type ProductMaterialPreview,
+  type ProductMaterialRefreshResponse,
   type ProductOperationFrame,
   type ProductReviewResponse,
   type ProductSettledHistory,
@@ -275,10 +276,10 @@ export function createProductRouter(
       return
     }
     try {
-      const body: ProductWorkspaceResponse = {
-        workspace: projectReadyProductWorkspace(
-          await controller.refreshMaterials(),
-        ),
+      const refreshed = await controller.refreshMaterials()
+      const body: ProductMaterialRefreshResponse = {
+        outcome: refreshed.outcome,
+        workspace: projectReadyProductWorkspace(refreshed.workspace),
       }
       response.json(body)
     } catch (error) {
@@ -644,6 +645,7 @@ function projectProductWorkspace(
       mediaType: material.mediaType,
       size: material.size,
     })),
+    recovery: snapshot.recovery ? { ...snapshot.recovery } : null,
   }
 }
 
