@@ -104,25 +104,36 @@ Recall Module에서 `|D_gen − D_recall| > T`일 때 원문이 잠긴다. 잠�
 - "View original"을 눌러야만 블러가 풀린다 — hover나 자동 해제는 없다(능동적 선택이라는
   제품 원칙, 포스터 3절 참고).
 
-### 5.2 Tide Check 슬라이더 핸들
-정확한 숫자 대신 감각을 입력받는다는 제품 철학을 그대로 시각화한다. 핸들은 딱딱한 원이 아니라
-**블러된 블롭(glow)**으로 그린다.
+### 5.2 Tide Check 슬라이더 (Figma 실측 스펙, 2026-07-20 갱신)
+> ⚠️ 이전 버전은 "블러된 블롭(glow)" 핸들로 적혀 있었는데, 실제 Figma 스펙을
+> 받아보니 블러가 아니라 **웨이브 모양 SVG 장식 + 알약형 핸들** 조합이었다.
+> 아래가 최신 정확한 스펙이고, 위 문단의 "숫자 대신 감각" 철학 자체는 여전히
+> 유효하다 — 시각적 구현 방식만 블러에서 웨이브로 정정한다.
+
+3개 레이어로 구성된다: ①얇은 회색 트랙(바탕선) ②파란 그라데이션 웨이브 장식
+(항상 트랙 전체 폭을 채움, 값과 무관) ③값 위치를 따라 좌우로 움직이는 회색
+알약형 핸들. 실제 구현은 `src/TideSlider.jsx` 참고 — 투명한
+`<input type="range">`를 맨 위에 얹어 드래그/키보드 조작을 담당시키고, 트랙·
+웨이브·핸들은 그 값을 그대로 반영하는 장식 레이어로만 그린다.
 
 ```css
-.tn-slider-track {
-  height: 8px;
-  border-radius: var(--tn-radius-pill);
-  background: var(--tn-blue-soft);
+.tide-slider-track {
+  height: 1.5px;
+  border-radius: 999px;
+  background: #d9d9d9;         /* 트랙은 파란 계열이 아니라 뉴트럴 그레이 */
 }
-.tn-slider-handle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--tn-blue);
-  filter: blur(6px);
-  box-shadow: 0 0 16px 4px var(--tn-blue-glow);
+.tide-slider-handle {
+  width: 17px;
+  height: 12px;
+  border-radius: 999px;         /* 완전한 원이 아니라 살짝 납작한 알약형 */
+  background: #d9d9d9;
+  transform: translateX(-50%);  /* left: {value%} 로 위치, 중앙 정렬 */
 }
 ```
+웨이브 SVG의 채움은 `linear-gradient(90deg, #9EC5FF 0%, #1A75FF 40%, #9EC5FF 100%)` —
+가운데가 가장 진한 파랑이고 양 끝으로 갈수록 옅어지는 대칭 그라데이션이다.
+`--tn-blue`(#4c6ef5)보다 밝고 채도 낮은 별도 팔레트(`#9EC5FF`/`#1A75FF`)를
+슬라이더 전용으로 쓴다 — 다른 곳의 액션 블루와 굳이 맞추지 않는다.
 - 라벨은 숫자 대신 감각 단어로만 표시한다: `Cloudy ↔ Clear`, `Calm ↔ Rippling` (포스터 원문 그대로).
 - 슬라이더에는 눈금/숫자를 절대 표시하지 않는다.
 
