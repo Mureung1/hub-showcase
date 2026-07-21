@@ -1,4 +1,5 @@
 import re
+from datetime import date as Date
 from datetime import datetime
 from uuid import UUID
 
@@ -58,3 +59,17 @@ class MissionRecordListItem(BaseModel):
     created_at: datetime
     original_url: str
     url_status: str
+
+
+class MissionRecordCalendarDay(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    date: Date
+    record_count: int
+
+
+class MissionRecordCalendarResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    month: str
+    days: list[MissionRecordCalendarDay]

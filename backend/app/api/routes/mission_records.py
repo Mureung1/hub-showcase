@@ -1,3 +1,4 @@
+import re
 from datetime import date as Date
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -10,6 +11,8 @@ from app.core.errors import ApiError
 from app.missions import MISSION_PROMPTS
 from app.schemas.article import InterestTag
 from app.schemas.mission_record import (
+    MissionRecordCalendarDay,
+    MissionRecordCalendarResponse,
     MissionRecordListItem,
     MissionRecordRequest,
     MissionRecordResponse,
@@ -110,3 +113,59 @@ def list_mission_records(
         .execute()
     )
     return [build_mission_record_list_item(row) for row in result.data or []]
+
+
+MONTH_PATTERN = re.compile(r"^\d{4}-\d{2}$")
+
+
+def parse_month(value: str) -> tuple[int, int]:
+    if not MONTH_PATTERN.match(value):
+        raise ApiError(422)
+    try:
+        parsed = datetime.strptime(value, "%Y-%m")
+    except ValueError as exc:
+        raise ApiError(422) from exc
+    return parsed.year, parsed.month
+
+
+def kst_month_bounds_utc(year: int, month: int) -> tuple[datetime, datetime]:
+    """KST 기준 해당 월을 UTC [시작, 끝) 반개구간으로 변환한다."""
+    start_kst = datetime(year, month, 1, tzinfo=KST)
+    if month == 12:
+        end_kst = datetime(year + 1, 1, 1, tzinfo=KST)
+    else:
+        end_kst = datetime(year, month + 1, 1, tzinfo=KST)
+    return start_kst.astimezone(ZoneInfo("UTC")), end_kst.astimezone(ZoneInfo("UTC"))
+
+
+def aggregate_calendar_days(rows: list[dict]) -> list[MissionRecordCalendarDay]:
+    """월 범위로 이미 필터링된 행을 KST 날짜별로 집계한다."""
+    counts: dict[Date, int] = {}
+    for row in rows:
+        created_at = datetime.fromisoformat(row["created_at"])
+        kst_date = created_at.astimezone(KST).date()
+        counts[kst_date] = counts.get(kst_date, 0) + 1
+    return [
+        MissionRecordCalendarDay(date=day, record_count=count)
+        for day, count in sorted(counts.items())
+    ]
+
+
+@router.get("/calendar", response_model=MissionRecordCalendarResponse)
+def get_mission_records_calendar(
+    user_id: CurrentUserId,
+    client: UserClient,
+    month: str,
+) -> MissionRecordCalendarResponse:
+    year, month_num = parse_month(month)
+    start_utc, end_utc = kst_month_bounds_utc(year, month_num)
+    result = (
+        client.table("mission_records")
+        .select("created_at")
+        .eq("user_id", user_id)
+        .gte("created_at", start_utc.isoformat())
+        .lt("created_at", end_utc.isoformat())
+        .execute()
+    )
+    days = aggregate_calendar_days(result.data or [])
+    return MissionRecordCalendarResponse(month=month, days=days)
