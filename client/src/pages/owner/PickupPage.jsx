@@ -48,7 +48,11 @@ function PickupPage() {
             inputMode="numeric"
             required
           />
-          <button className="pickup__submit" type="submit" disabled={submitting || code.length !== 4}>
+          <button
+            className="pickup__submit"
+            type="submit"
+            disabled={submitting || code.length !== 4}
+          >
             {submitting ? '확인 중...' : '확인'}
           </button>
         </form>

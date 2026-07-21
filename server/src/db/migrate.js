@@ -19,7 +19,9 @@ async function migrate() {
 
     const { rows } = await client.query('SELECT filename FROM schema_migrations')
     const applied = new Set(rows.map((r) => r.filename))
-    const files = readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort()
+    const files = readdirSync(migrationsDir)
+      .filter((f) => f.endsWith('.sql'))
+      .sort()
 
     for (const file of files) {
       if (applied.has(file)) {

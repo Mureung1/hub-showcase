@@ -47,7 +47,12 @@ function DealDetailPage() {
     }
   }
 
-  if (loading) return <main className="deal-detail"><p className="deal-detail__msg">불러오는 중...</p></main>
+  if (loading)
+    return (
+      <main className="deal-detail">
+        <p className="deal-detail__msg">불러오는 중...</p>
+      </main>
+    )
   if (error) {
     return (
       <main className="deal-detail">
@@ -116,8 +121,7 @@ function DealDetailPage() {
         <div>
           <dt>가격</dt>
           <dd>
-            <s>{deal.originalPrice.toLocaleString()}</s>{' '}
-            <b>{deal.salePrice.toLocaleString()}원</b>
+            <s>{deal.originalPrice.toLocaleString()}</s> <b>{deal.salePrice.toLocaleString()}원</b>
           </dd>
         </div>
         <div>
@@ -134,9 +138,13 @@ function DealDetailPage() {
         <div className="deal-detail__qty">
           <span>수량</span>
           <div className="deal-detail__stepper">
-            <button type="button" onClick={() => stepQty(-1)} aria-label="수량 감소">−</button>
+            <button type="button" onClick={() => stepQty(-1)} aria-label="수량 감소">
+              −
+            </button>
             <span>{qty}</span>
-            <button type="button" onClick={() => stepQty(1)} aria-label="수량 증가">+</button>
+            <button type="button" onClick={() => stepQty(1)} aria-label="수량 증가">
+              +
+            </button>
           </div>
         </div>
         {reserveError && <p className="deal-detail__error">{reserveError}</p>}

@@ -49,7 +49,9 @@ function StoreRegisterPage() {
     <main className="store-reg">
       <form className="store-reg__card" onSubmit={submit}>
         <h1 className="store-reg__title">가게 등록</h1>
-        <p className="store-reg__sub">최초 1회만 등록해요. 위치는 알림 반경 계산의 기준이 됩니다.</p>
+        <p className="store-reg__sub">
+          최초 1회만 등록해요. 위치는 알림 반경 계산의 기준이 됩니다.
+        </p>
 
         <label className="store-reg__label">
           상호명
@@ -70,7 +72,9 @@ function StoreRegisterPage() {
             onChange={(e) => update('category', e.target.value)}
           >
             {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c} value={c}>
+                {c}
+              </option>
             ))}
           </select>
         </label>
@@ -90,7 +94,9 @@ function StoreRegisterPage() {
           위치 프리셋
           <select className="store-reg__input" onChange={(e) => applyPreset(e.target.value)}>
             {LOCATION_PRESETS.map((p, i) => (
-              <option key={p.label} value={i}>{p.label}</option>
+              <option key={p.label} value={i}>
+                {p.label}
+              </option>
             ))}
           </select>
         </label>
