@@ -428,6 +428,17 @@ test('source drift preserves user bytes until explicit refresh adopts a new base
         error.code === 'execution_cleanup_required',
     )
 
+    await assert.rejects(
+      fixture.controller.activate(),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'execution_guard_conflict',
+    )
+    fixture.controller.noteProductOperationReleased(prepared.run.actionId)
+    const reactivated = await fixture.controller.activate()
+    assert.equal(reactivated.status, 'activated')
+    assert.equal(reactivated.workspace.recovery?.state, 'source_conflict')
+
     const refreshed = await fixture.controller.refreshMaterials()
     assert.equal(refreshed.outcome, 'source_rebaselined')
     assert.equal(refreshed.workspace.recovery, null)
@@ -509,6 +520,9 @@ test('cold-restored source recovery can adopt store drift without a prior-proces
     const cold = await coldController.activate()
     assert.equal(cold.status, 'activated')
     assert.equal(cold.workspace.recovery?.state, 'source_conflict')
+    const baselineFirst = cold.workspace.materials.find(
+      (material) => material.relativePath === 'first.txt',
+    )!
     assert.equal(await exists(prepared.stagedSources[0]!.path), true)
     assert.equal(await exists(prepared.scratchPath), true)
 
@@ -519,6 +533,18 @@ test('cold-restored source recovery can adopt store drift without a prior-proces
       ...(externalStore.course as Record<string, unknown>),
       displayName: '외부에서 채택할 cold recovery 과목',
     }
+    externalStore.executionGuard = null
+    externalStore.materials = (
+      externalStore.materials as Array<Record<string, unknown>>
+    ).map((material) =>
+      material.relativePath === 'first.txt'
+        ? {
+            ...material,
+            digest: createHash('sha256').update(driftedBytes).digest('hex'),
+            size: driftedBytes.byteLength,
+          }
+        : material,
+    )
     const externalBytes = Buffer.from(
       `${JSON.stringify(externalStore, null, 2)}\n`,
       'utf8',
@@ -543,10 +569,25 @@ test('cold-restored source recovery can adopt store drift without a prior-proces
       '외부에서 채택할 cold recovery 과목',
     )
     assert.equal(recovered.workspace.recovery?.state, 'source_conflict')
+    const recoveredFirst = recovered.workspace.materials.find(
+      (material) => material.relativePath === 'first.txt',
+    )!
+    assert.equal(recoveredFirst.id, baselineFirst.id)
+    assert.equal(recoveredFirst.digest, baselineFirst.digest)
     assert.deepEqual(await readFile(storePath), externalBytes)
     assert.deepEqual(await readFile(firstPath), driftedBytes)
     assert.equal(await exists(prepared.stagedSources[0]!.path), false)
     assert.equal(await exists(prepared.scratchPath), false)
+    await assert.rejects(
+      prepareAction(
+        coldController,
+        fixture.courseId,
+        `action_${'d'.repeat(32)}`,
+      ),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'execution_cleanup_required',
+    )
 
     const refreshed = await coldController.refreshMaterials()
     assert.equal(refreshed.outcome, 'source_rebaselined')
@@ -559,6 +600,7 @@ test('cold-restored source recovery can adopt store drift without a prior-proces
       refreshedFirst.digest,
       createHash('sha256').update(driftedBytes).digest('hex'),
     )
+    assert.equal(refreshedFirst.id, baselineFirst.id)
     const persistedRecovered = JSON.parse(
       await readFile(storePath, 'utf8'),
     ) as {
@@ -1149,6 +1191,13 @@ test('unsafe Product Chat scratch cleanup exposes cleanup recovery only', async 
     )
 
     await rm(prepared.scratchPath)
+    await assert.rejects(
+      fixture.controller.activate(),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'execution_guard_conflict',
+    )
+    fixture.controller.noteProductOperationReleased(operationId)
     const recovered = await fixture.controller.activate()
     assert.equal(recovered.status, 'activated')
     assert.equal(recovered.workspace.recovery, null)
