@@ -1,6 +1,5 @@
-import { useMockResource } from "./useMockResource";
-import { mockBriefing } from "../api/mocks/dashboard";
+import { useApiResource } from "./useApiResource";
 
 export function useBriefing() {
-  return useMockResource(mockBriefing);
+  return useApiResource("/briefing/today");
 }

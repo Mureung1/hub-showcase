@@ -12,10 +12,19 @@ import { usePosts } from "../hooks/usePosts";
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { data: brandProfile } = useBrandProfile();
-  const { data: briefing } = useBriefing();
-  const { data: insight } = useInsights();
-  const { data: posts } = usePosts();
+  const { data: brandProfile, error: brandProfileError } = useBrandProfile();
+  const { data: briefing, error: briefingError } = useBriefing();
+  const { data: insight, error: insightError } = useInsights();
+  const { data: posts, error: postsError } = usePosts();
+
+  const error = brandProfileError ?? briefingError ?? insightError ?? postsError;
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface font-body-md text-body-md text-error">
+        {error.message}
+      </div>
+    );
+  }
 
   if (!brandProfile || !briefing || !insight || !posts) {
     return (

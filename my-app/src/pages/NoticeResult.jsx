@@ -1,11 +1,20 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import PageTopBar from "../components/PageTopBar";
 import NoticeEditor from "../components/notice-result/NoticeEditor";
 import { useNoticeResult } from "../hooks/useNoticeResult";
 
 function NoticeResult() {
   const navigate = useNavigate();
-  const { data: result } = useNoticeResult();
+  const { id } = useParams();
+  const { data: result, error } = useNoticeResult(id);
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface font-body-md text-body-md text-error">
+        {error.message}
+      </div>
+    );
+  }
 
   if (!result) {
     return (
@@ -47,9 +56,7 @@ function NoticeResult() {
         <NoticeEditor
           title={result.title}
           content={result.content}
-          confidence={result.confidence}
-          keywords={result.keywords}
-          tone={result.tone}
+          keywords={result.seoKeywords}
           onPublish={() => navigate("/")}
         />
       </main>

@@ -24,10 +24,10 @@ function App() {
         }
       />
       <Route path="/posts/promotion/new" element={<PromotionInterview />} />
-      <Route path="/posts/promotion/result" element={<PostResult />} />
-      <Route path="/posts/promotion/schedule" element={<SchedulePublish />} />
+      <Route path="/posts/promotion/result/:id" element={<PostResult />} />
+      <Route path="/posts/promotion/schedule/:id" element={<SchedulePublish />} />
       <Route path="/posts/notice/new" element={<NoticeWrite />} />
-      <Route path="/posts/notice/result" element={<NoticeResult />} />
+      <Route path="/posts/notice/result/:id" element={<NoticeResult />} />
       <Route path="/onboarding" element={<BrandOnboarding />} />
     </Routes>
   );

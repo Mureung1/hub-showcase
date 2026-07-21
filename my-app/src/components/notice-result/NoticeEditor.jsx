@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import Card from "../Card";
 
 function NoticeEditor({ title, content, confidence, keywords, tone, onPublish }) {
+  // confidence/tone은 규칙 기반 생성 단계에서는 서버가 안 주는 값이라(LLM 연동
+  // 이후에 추가될 예정) 있을 때만 관련 UI를 보여준다.
   const [titleValue, setTitleValue] = useState(title);
   const [contentValue, setContentValue] = useState(content);
   const contentRef = useRef(null);
@@ -23,9 +25,11 @@ function NoticeEditor({ title, content, confidence, keywords, tone, onPublish })
             </span>
             <span className="font-headline-sm text-headline-sm">🤖 AI가 작성한 공지</span>
           </div>
-          <span className="bg-secondary-container text-on-secondary-container px-sm py-1 rounded-full font-label-sm text-label-sm">
-            {confidence}
-          </span>
+          {confidence && (
+            <span className="bg-secondary-container text-on-secondary-container px-sm py-1 rounded-full font-label-sm text-label-sm">
+              {confidence}
+            </span>
+          )}
         </div>
 
         <div className="p-lg flex flex-col gap-lg">
@@ -97,12 +101,14 @@ function NoticeEditor({ title, content, confidence, keywords, tone, onPublish })
         </button>
       </div>
 
-      <div className="px-md py-sm bg-secondary-container/10 border border-secondary/20 rounded-lg flex items-start gap-md">
-        <span className="material-symbols-outlined text-secondary mt-1">lightbulb</span>
-        <p className="font-body-sm text-body-sm text-on-secondary-fixed-variant">
-          <strong>AI Tip:</strong> 현재 톤은 '{tone}'입니다. 더 간결한 안내를 원하시면 '다시 생성' 버튼을 눌러보세요.
-        </p>
-      </div>
+      {tone && (
+        <div className="px-md py-sm bg-secondary-container/10 border border-secondary/20 rounded-lg flex items-start gap-md">
+          <span className="material-symbols-outlined text-secondary mt-1">lightbulb</span>
+          <p className="font-body-sm text-body-sm text-on-secondary-fixed-variant">
+            <strong>AI Tip:</strong> 현재 톤은 '{tone}'입니다. 더 간결한 안내를 원하시면 '다시 생성' 버튼을 눌러보세요.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

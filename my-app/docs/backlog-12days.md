@@ -27,12 +27,13 @@
 
 | 항목 | 비고 |
 | --- | --- |
-| 메인 대시보드 `/` | 프론트, 목데이터 |
-| AI 홍보글 작성 인터뷰 `/posts/promotion/new` | 프론트, 목데이터 |
-| 홍보글 생성 결과 `/posts/promotion/result` | 프론트, 목데이터 |
-| 예약 발행 `/posts/promotion/schedule` | 프론트, 목데이터 |
-| 브랜드 온보딩 `/onboarding` | 프론트, 목데이터 + 최초 진입 흐름 연결 완료 |
-| 공지사항 작성 `/posts/notice/new` | 프론트, 목데이터 |
+| 메인 대시보드 `/` | 실제 Supabase 데이터(브랜드 프로필/브리핑/인사이트/최근 게시물) |
+| AI 홍보글 작성 인터뷰 `/posts/promotion/new` | 실제 `POST /posts/promotion` 연동 |
+| 홍보글 생성 결과 `/posts/promotion/result/:id` | 실제 Post 데이터 표시 |
+| 예약 발행 `/posts/promotion/schedule/:id` | 실제 suggested-time/schedule API 연동 |
+| 브랜드 온보딩 `/onboarding` | 실제 `POST /brand-profile` 연동 + 최초 진입 흐름 연결 완료 |
+| 공지사항 작성 `/posts/notice/new` | 실제 `POST /posts/notice` 연동 |
+| 공지사항 생성 결과 `/posts/notice/result/:id` | 실제 Post 데이터 표시 |
 | 대시보드 버튼 라우팅 전수 연결 | 홍보글/공지사항/예약발행 복귀까지 확인 |
 | Express 백엔드 프로젝트 셋업 | `server/` — SQLite + 마이그레이션 러너 |
 | Post API (홍보글/공지사항) | `POST /posts/promotion`, `POST /posts/notice`, `GET /posts`, `GET /posts/:id`, `PATCH /posts/:id` — 콘텐츠는 규칙 기반, Supabase에 저장 |
@@ -40,10 +41,11 @@
 | BrandProfile API | `GET /brand-profile`, `POST /brand-profile/interview`, `POST /brand-profile`, `PATCH /brand-profile` — summary/keywords 규칙 기반, Supabase에 저장 |
 | 예약 발행 + 브리핑 API | `GET /posts/:id/suggested-time`, `POST/DELETE /posts/:id/schedule`, `GET /briefing/today` — 계절/업종 규칙 기반, 블로그 건강도는 mock |
 | 인사이트 API + 블로그 연동 스텁 | `GET /insights/health-score`, `GET /insights/opportunities` — 실제 게시글 데이터 기반 규칙; `POST /blog/connect`, `GET /blog/analysis`는 고정 mock 스텁 |
+| 프론트-백엔드 연동 1차 | `useBrandProfile`, `useBriefing`을 `useApiResource`(실제 fetch) 기반으로 교체, 브랜드 온보딩이 실제 `POST /brand-profile` 호출, 대시보드에 에러 상태 표시 추가 |
+| 프론트-백엔드 연동 2차 | `usePosts`/`usePostResult`/`useNoticeResult`/`useSchedulePublish`/`useInsights` 실제 연동, 홍보글/공지사항 인터뷰가 실제 Post를 생성, 예약 발행이 실제 저장됨. `useMockResource`와 `api/mocks/` 전부 삭제 |
 
 ### 미완료
 
-- 프론트 훅(`useBrandProfile`, `useBriefing`, `usePosts`, `usePostResult`, `useSchedulePublish`, `useInsights`) 전부 목업(`useMockResource`) 기반
 - 자동화 테스트 0개, 테스트 러너 미설치
 - 테스트코드 생성 Skill, 코드 검증 Agent, 워크플로우 문서 — 전부 없음
 - 아키텍처 다이어그램 — 없음
@@ -64,7 +66,7 @@
 | Sprint 1 — 프론트 마무리 | 07-13 ~ 07-14 | Day 1~2 | 공지사항 화면 추가, 전체 페이지 라우팅 연결 ✅ |
 | Sprint 2 — 백엔드 구축(SQLite) | 07-15 ~ 07-16 | Day 3~5 | Express 셋업 + Post API ✅ (Day 4 BrandProfile은 스킵됨 → Day 7로 재배치) |
 | Sprint 3 — Supabase 전환 & 백엔드 마무리 | 07-20 | Day 6~9 | Supabase 마이그레이션, BrandProfile, 예약발행/브리핑, 인사이트/블로그 스텁 ✅ |
-| Sprint 4 — 프론트-백엔드 연동 | 07-21 | Day 10~11 | 목업 훅을 실제 API 호출로 전면 교체 |
+| Sprint 4 — 프론트-백엔드 연동 | 07-21 | Day 10~11 | 목업 훅을 실제 API 호출로 전면 교체 ✅ |
 | Sprint 5 — 테스트 & Agent 산출물 | 07-22 ~ 07-23 | Day 12~15 | 테스트/TDD, 테스트코드 생성 Skill, 코드 검증 Agent, 아키텍처 다이어그램 |
 | Sprint 6 — LLM 연동 | 07-27 ~ 07-28 | Day 16~17 | LLM 폴백 구조 설계 + 생성 기능 전반 연결 |
 | Sprint 7 — 통합 점검 | 07-29 | Day 18 | e2e 테스트, 예외 처리, 워크플로우 문서, README 정리 |
@@ -184,23 +186,31 @@
 
 ---
 
-## Day 10 — 2026-07-21 (화)
+## Day 10 — 2026-07-21 (화) ✅
 
 **목표:** 프론트-백엔드 연동 1차
 
-- [ ] `useBrandProfile`, `useBriefing`을 목업에서 실제 `api/client.js` 호출로 교체
-- [ ] 온보딩 → 브리핑 표시까지 실제 서버로 e2e 확인, 에러/로딩 상태 점검
+- [x] `useBrandProfile`, `useBriefing`을 목업에서 실제 `api/client.js` 호출로 교체
+- [x] 온보딩 → 브리핑 표시까지 실제 서버로 e2e 확인, 에러/로딩 상태 점검
 
 **완료 기준:** 온보딩 완료 후 대시보드 브리핑이 실제 Supabase 데이터로 표시됨
 
 ---
 
-## Day 11 — 2026-07-21 (화)
+## Day 11 — 2026-07-21 (화) ✅
 
 **목표:** 프론트-백엔드 연동 2차
 
-- [ ] `usePosts`, `usePostResult`, `useSchedulePublish`, `useInsights` 실제 API 연동
-- [ ] 남은 목업 훅 정리, `useMockResource` 의존성 제거
+- [x] `usePosts`, `usePostResult`, `useSchedulePublish`, `useInsights` 실제 API 연동
+- [x] 남은 목업 훅 정리, `useMockResource` 의존성 제거
+- [x] 대시보드 최근 게시물(usePosts) 실제 연동
+- [x] 대시보드 인사이트(useInsights) 실제 연동
+- [x] 홍보글 인터뷰 → 실제 POST /posts/promotion 연동
+- [x] 홍보글 결과 화면(PostResult)을 실제 Post 데이터로 교체
+- [x] 공지사항 인터뷰 → 실제 POST /posts/notice 연동
+- [x] 공지사항 결과 화면(NoticeResult)을 실제 Post 데이터로 교체
+- [x] 예약 발행 화면을 실제 suggested-time/schedule API로 재구성
+- [x] 남은 useMockResource 의존성 정리 + 백로그 Day 11 체크
 
 **완료 기준:** 홍보글/공지사항 작성부터 예약 발행까지 전체 흐름이 mock 없이 실제 백엔드로 동작
 

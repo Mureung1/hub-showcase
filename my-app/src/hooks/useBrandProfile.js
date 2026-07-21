@@ -1,6 +1,5 @@
-import { useMockResource } from "./useMockResource";
-import { mockBrandProfile } from "../api/mocks/dashboard";
+import { useApiResource } from "./useApiResource";
 
 export function useBrandProfile() {
-  return useMockResource(mockBrandProfile);
+  return useApiResource("/brand-profile");
 }
