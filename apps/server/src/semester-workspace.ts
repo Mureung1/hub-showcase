@@ -17,6 +17,7 @@ import { promisify } from 'node:util'
 import type { UserInputRequestedEvent } from '@ay-ple/codex-chat-runtime/contract'
 import {
   PRODUCT_REVIEW_FEEDBACK_MAX_BYTES,
+  type ProductMaterialRefreshResponse,
   type ProductWorkspaceRecovery,
 } from '@ay-ple/product-contract'
 
@@ -135,7 +136,7 @@ export type ReadySemesterWorkspaceSnapshot = {
 }
 
 export type MaterialRefreshResult = {
-  readonly outcome: 'refreshed' | 'source_rebaselined'
+  readonly outcome: ProductMaterialRefreshResponse['outcome']
   readonly workspace: ReadySemesterWorkspaceSnapshot
 }
 

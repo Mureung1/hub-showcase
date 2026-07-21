@@ -3,6 +3,7 @@ import { access } from 'node:fs/promises'
 
 import { expect } from 'playwright/test'
 
+import type { ProductBootstrap } from '../src/product-api.js'
 import {
   invalidWorkspaceStoreBytes,
   selectCanonicalMaterials,
@@ -180,34 +181,17 @@ test('isolates two fresh Browser-to-Server harness runs and native session ident
   await expectPathMissing(second.workspace.runRoot)
 })
 
-type BootstrapView = {
-  readonly history: {
-    readonly modelingRuns: readonly unknown[]
-    readonly statePatches: readonly unknown[]
-    readonly userConfirmations: readonly unknown[]
-  }
-  readonly workspace:
-    | null
-    | {
-        readonly state: 'ready'
-        readonly recovery: null | { readonly state: string }
-        readonly materials: readonly {
-          readonly digest: string
-          readonly relativePath: string
-        }[]
-      }
-    | { readonly state: 'incompatible'; readonly readOnly: true }
-}
-
-async function readProductBootstrap(page: import('playwright/test').Page) {
-  return page.evaluate(async () => {
+async function readProductBootstrap(
+  page: import('playwright/test').Page,
+): Promise<ProductBootstrap> {
+  return (await page.evaluate(async () => {
     const response = await fetch('/api/product/bootstrap')
     if (!response.ok) throw new Error('Product bootstrap failed.')
-    return response.json() as Promise<BootstrapView>
-  })
+    return response.json()
+  })) as ProductBootstrap
 }
 
-function readyMaterial(bootstrap: BootstrapView, relativePath: string) {
+function readyMaterial(bootstrap: ProductBootstrap, relativePath: string) {
   if (bootstrap.workspace?.state !== 'ready') {
     throw new Error('Expected a ready workspace.')
   }
