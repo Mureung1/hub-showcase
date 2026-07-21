@@ -79,7 +79,7 @@
   - [x] `RawMaterial`의 원본 또는 참조를 보존해 목록과 preview에 표시하고, 사용자가 다음 작업에 사용할 `SourceSelection`을 명시적으로 고를 수 있다.
   - [x] Versioned `ModelingRecipe`와 검증된 arguments, `SourceSelection`, 활성 workspace 맥락으로 일회성 `ModelingInvocation`을 만들고 native Codex input으로 번역하며, 각 실행 시도를 얇은 `ModelingRun` receipt로 남긴다. raw: `turn/start`.
   - [x] 첫 Assignment 작업이 호출한 좁은 `propose_state_patch` MCP의 canonical structured input을 검증해 필드별 `EvidenceRef`가 있는 독립 `StatePatch`로 제안하고, Review 전에는 `SemesterModel`의 확인된 값을 바꾸지 않는다.
-  - [ ] 사용자가 exact Plan mode의 built-in `request_user_input`을 통해 같은 native Turn에서 제안을 수락·수정 요청·거절할 수 있다. App은 exact active patch binding을 검증해 수락·거절만 settled `UserConfirmation`으로 기록하고 수락한 값만 확인된 `SemesterModel`에 반영하며, 수정 요청은 unsettled feedback으로 replacement patch Review를 이어간다.
+  - [x] 사용자가 exact Plan mode의 built-in `request_user_input`을 통해 같은 native Turn에서 제안을 수락·수정 요청·거절할 수 있다. App은 exact active patch binding을 검증해 수락·거절만 settled `UserConfirmation`으로 기록하고 수락한 값만 확인된 `SemesterModel`에 반영하며, 수정 요청은 unsettled feedback으로 replacement patch Review를 이어간다.
   - [x] 이 proposal-only 제품 효과를 Codex `Sandbox.read_only`, network 차단이나 command/file approval과 동일시하지 않고, 실제 action에 필요한 native permission은 별도 설정·request 흐름으로 다룬다.
   - [ ] Recipe rendering, Codex 실행, `StatePatch` proposal·evidence validation과 제품 상태 반영 실패를 구분해 원본과 확인된 상태를 손상하지 않는 재시도 행동을 제공한다.
   - [ ] 대표 TXT 자료의 선택부터 `propose_state_patch` Assignment 제안, exact Plan mode의 built-in `request_user_input` same-Turn Review, settled confirmation과 새로고침 뒤 확인된 상태 조회까지 deterministic Browser E2E를 먼저 닫는다. Revision·recovery semantics가 고정된 뒤 exact actual-child·local-provider와 격리된 live-provider product trace가 complete action을 수동 복구 없이 통과해야 하며, 답변 전 Browser·Server/runtime continuity loss는 `interrupted`·no-apply·명시적 retry로 정산한다.
