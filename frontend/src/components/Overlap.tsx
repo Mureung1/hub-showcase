@@ -64,33 +64,27 @@ export function Overlap({ supplements, onNext }: OverlapProps) {
         </div>
       )}
 
-      <div className="chip-list">
-        {exceededResults.map((result) => (
-          <span className="chip-badge" key={result.ingredientId}>
-            <span
-              className="chip-icon"
-              style={{ background: 'var(--tint-pink)', color: 'var(--color-accent-pink)' }}
-            >
-              <ChipIcon name="warning" />
-            </span>
-            <span className="chip-label">{result.message}</span>
+      {[...exceededResults, ...okResults].map((result) => (
+        <div
+          className="card"
+          key={result.ingredientId}
+          style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}
+        >
+          <span
+            className="chip-icon"
+            style={{
+              background: result.isExceeded ? 'var(--tint-pink)' : 'var(--tint-green)',
+              color: result.isExceeded ? 'var(--color-accent-pink)' : 'var(--color-accent-green)',
+              flexShrink: 0,
+            }}
+          >
+            <ChipIcon name={result.isExceeded ? 'warning' : 'check'} />
           </span>
-        ))}
-      </div>
-
-      <div className="chip-list">
-        {okResults.map((result) => (
-          <span className="chip-badge" key={result.ingredientId}>
-            <span
-              className="chip-icon"
-              style={{ background: 'var(--tint-green)', color: 'var(--color-accent-green)' }}
-            >
-              <ChipIcon name="check" />
-            </span>
-            <span className="chip-label">{result.message}</span>
-          </span>
-        ))}
-      </div>
+          <p className="sub" style={{ margin: 0 }}>
+            {result.message}
+          </p>
+        </div>
+      ))}
 
       <button className="btn" type="button" onClick={onNext}>
         다음
