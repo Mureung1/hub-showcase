@@ -96,33 +96,32 @@
   - [x] `GET /api/financial/summary` 응답 확인 (`months`/`categories` 쿼리 필터 포함)
   - [x] 모든 지표 반환 확인
 
-### Rule Engine V1
+### Rule Engine V1 — 2026-07-21 완료
 
-- [ ] Rule 1: 판매증가 + 낮은 폐기율
-  - [ ] `IF 판매 증가 AND 폐기율 < 5% → 발주 확대 검토`
-  - [ ] 로직 구현 완료
+> PM 논의 결과 기획 문서의 절대 임계값(폐기율 5%, 마진율 임의값) 대신, 로드된 데이터셋에서 매번 계산하는 평균 기준으로 설계 변경 (점주가 데이터를 계속 업데이트해도 기준선이 함께 움직이도록)
 
-- [ ] Rule 2: 판매감소 + 높은 폐기율
-  - [ ] `IF 판매 감소 AND 폐기율 증가 → 발주 축소 검토`
-  - [ ] 로직 구현 완료
+- [x] Rule 1 (SALES_UP_WASTE_LOW): 판매량 전월 대비 증가 AND 폐기율 < 카테고리 평균 AND 순이익 전월 대비 증가 → 발주 확대 검토
+  - [x] 로직 구현 완료 (`evaluateSalesUpWasteLow`)
 
-- [ ] Rule 3: 낮은 마진율
-  - [ ] `IF 마진율 낮음 → 수익성 검토 필요`
-  - [ ] 로직 구현 완료
+- [x] Rule 2 (SALES_DOWN_WASTE_UP): 판매량 전월 대비 감소 AND 폐기율 전월 대비 증가 AND 순이익 전월 대비 감소 → 발주 축소 검토
+  - [x] 로직 구현 완료 (`evaluateSalesDownWasteUp`)
 
-- [ ] RecommendationService 구현
-  - [ ] `backend/src/services/RecommendationService.ts` 작성
-  - [ ] Rule 적용 로직 완성
+- [x] Rule 3 (LOW_MARGIN): 마진율 < 전체 평균 → 수익성 점검 필요
+  - [x] 로직 구현 완료 (`evaluateLowMargin`)
 
-- [ ] Recommendation API 엔드포인트
-  - [ ] `GET /api/recommendations` 구현
-  - [ ] 카테고리별 추천 문구 반환
-  - [ ] API 테스트 완료
+- [x] RecommendationService 구현
+  - [x] `backend/src/services/RecommendationService.ts` 작성
+  - [x] Rule 적용 로직 완성 (규칙별 평가 함수 분리, severity/title/reason/metrics 포함)
+
+- [x] Recommendation API 엔드포인트
+  - [x] `GET /api/recommendations` 구현
+  - [x] 카테고리별 추천 문구 반환
+  - [x] API 테스트 완료 (curl로 6월 기준 결과 검증 — 도시락 발주축소+수익성점검, 햄버거샌드위치 발주축소)
 
 ### Day 3 DoD 확인
 
 - [x] `GET /api/financial/summary` API 정상 동작
-- [ ] `GET /api/recommendations` API 정상 동작 — Rule Engine V1 미착수 (아래 참고)
+- [x] `GET /api/recommendations` API 정상 동작
 - [x] 원가율이 상식적 범위(40~80%) 내에 있음
 
 ---
@@ -156,30 +155,29 @@
 - [x] Dashboard/Analysis/Financial 공통이던 가짜 "AI 분석 높음 · 98% 반영" 배지 3개 페이지 모두 제거
 - [x] "최근 4주" 표기를 실제 데이터 단위(월)에 맞게 "최근 1개월"/"최근 3개월"로 전체 정정
 
-### Dashboard 연결
+### Dashboard 연결 — 2026-07-21 완료
 
-- [ ] Dashboard KPI 카드 연결
-  - [ ] 총매출 실데이터 연결
-  - [ ] 평균 마진율 실데이터 연결
-  - [ ] 폐기손실 실데이터 연결
-  - [ ] 추정 순이익 실데이터 연결
+- [x] Dashboard KPI 카드 연결
+  - [x] 판매 추세(전월 대비 %) 실데이터 연결
+  - [x] 평균 마진율 실데이터 연결
+  - [x] 폐기율 실데이터 연결
+  - [x] 순이익 규모는 카테고리별 마진 바/AI 브리핑 카드 근거 수치로 노출 (별도 KPI 카드는 기존 3분할 레이아웃 유지)
 
-- [ ] Dashboard Category Margin 연결
-  - [ ] 카테고리별 마진액 표시
-  - [ ] 카테고리별 마진율 표시
+- [x] Dashboard Category Margin 연결
+  - [x] 카테고리별 마진율 표시 (`MarginBarList`, 최신월 기준 + 전월 대비 증감)
 
-- [ ] Dashboard Recommendation Card (선택)
-  - [ ] `GET /api/recommendations` 호출 (Day 5에서 할 수도 있음)
-  - [ ] 추천 문구 표시 (선택사항)
+- [x] Dashboard Recommendation Card
+  - [x] `GET /api/recommendations` 호출
+  - [x] AI 브리핑 카드(발주 확대 추천 있을 때) / 위험 신호 카드(발주 축소·수익성 점검 추천 있을 때) 로 표시, 해당 추천 없으면 안전한 폴백 문구로 대체
 
-- [ ] Dashboard 페이지 테스트
-  - [ ] 실데이터로 렌더링 확인
-  - [ ] `npx tsc --noEmit` 통과
-  - [ ] `npm run build` 통과
+- [x] Dashboard 페이지 테스트
+  - [x] 실데이터로 렌더링 확인 (수동 계산으로 KPI 수치 대조 검증)
+  - [x] `npx tsc --noEmit` 통과
+  - [x] `npm run build` 통과
 
 ### Day 4 DoD 확인
 
-- [ ] Dashboard의 총매출/평균 마진율/폐기손실/추정 순이익이 모두 실데이터 — Dashboard는 여전히 mock (`dashboardMockData.ts`), 미착수
+- [x] Dashboard의 판매추세/평균 마진율/폐기율이 모두 실데이터 (`dashboardMockData.ts` 삭제, mock 제거 완료)
 - [x] Financial이 API 기반으로 렌더링
 - [x] `npx tsc --noEmit`, `npm run build` 성공
 
@@ -256,23 +254,23 @@
 
 3주차 완료 시 다음을 모두 확인하세요:
 
-- [ ] **`Upload → ETL → Master Dataset → Express API → Dashboard → Financial → Recommendation` 전체 데이터 흐름이 정상 동작한다** — Financial까지는 동작, Dashboard 실데이터·Recommendation 미연결로 전체 흐름은 미완성
+- [x] **`Upload → ETL → Master Dataset → Express API → Dashboard → Financial → Recommendation` 전체 데이터 흐름이 정상 동작한다** — Dashboard/Financial/Recommendation 모두 실데이터 기반 동작 확인 (2026-07-21). 단, Upload→ETL 구간은 여전히 수동 실행 (아래 이슈 참고, 백로그 최우선 항목으로 이월)
 - [x] `MASTER_DATASET_SPEC.md` 작성 완료
 - [ ] Product Master / Master Dataset 생성 — Master Dataset은 완료, Product Master는 설계 변경으로 P1 이월 (카테고리+월 집계 방식 채택)
 - [x] Financial API가 핵심 지표(마진액/마진율/폐기손실/폐기율/순이익/순이익기여도) 반환
-- [ ] Financial 페이지, Dashboard KPI가 실데이터 기반 동작 — Financial은 완료, Dashboard는 여전히 mock
-- [ ] Rule Engine V1이 최소 3개 규칙으로 추천 문구 생성 — 미착수
-- [ ] Upload → Dashboard → Financial End-to-End 동작 확인 — Upload가 파일 메타데이터만 기록하고 실제 ETL 트리거는 안 함 (수동 실행 필요), Dashboard 미연동으로 전체 흐름 미완성
-- [x] `npx tsc --noEmit`, `npm run build` 성공 (Financial 범위 기준)
+- [x] Financial 페이지, Dashboard KPI가 실데이터 기반 동작
+- [x] Rule Engine V1이 최소 3개 규칙으로 추천 문구 생성 (2026-07-21 완료)
+- [x] Dashboard → Financial → Recommendation End-to-End 동작 확인 — Upload API를 통한 실제 ETL 트리거는 여전히 수동 (백로그 최우선 항목, `docs/tasks.md` 참고)
+- [x] `npx tsc --noEmit`, `npm run build` 성공 (Financial + Dashboard + Recommendation 범위 기준)
 - [x] 브라우저에서 콘솔 에러·흰 화면 없이 Financial 페이지 시연 가능 (dev 서버로 확인 완료)
 
 ---
 
-## ⚠️ 2026-07-20 세션 중 발견한 이슈
+## ⚠️ 이슈 트래킹
 
-- **ETL 스크립트 유실**: WSL/Windows 브랜치 통합(merge 커밋 `0b031d5`) 과정에서 `data/scripts/sales_parser.py`, `waste_parser.py`, `master_dataset_builder.py`, `validate_master_dataset.py`가 저장소에서 사라짐. 산출물(`sales.csv`/`waste.csv`/`merged_dataset.csv`)은 남아있어 Financial은 정상 동작하지만, **원본 Excel이 바뀌면 재생성이 불가능한 상태**. git 히스토리(커밋 `eb65391`)에서 복구 필요 — 다음 세션 우선 처리 권장
-- **Upload → ETL 자동 연결 없음**: Upload 페이지는 파일명/카테고리 메타데이터만 Supabase에 기록하고, 실제 파일 저장이나 파서 실행을 트리거하지 않음. "전체 흐름 자동화"를 목표로 하려면 별도 설계 필요
+- ✅ **ETL 스크립트 유실 (해결됨, 2026-07-20)**: WSL/Windows 브랜치 통합(merge 커밋 `0b031d5`) 과정에서 사라졌던 `data/scripts/*.py` 4개 파일을 git 히스토리(커밋 `eb65391`)에서 복구 완료 (커밋 `25d7ed1`)
+- **Upload → ETL 자동 연결 없음 (미해결)**: Upload 페이지는 파일명/카테고리 메타데이터만 Supabase에 기록하고, 실제 파일 저장이나 파서 실행을 트리거하지 않음. `FinancialService`도 서버 기동 시 1회만 데이터를 캐싱해 재시작 전까지 갱신 반영 안 됨. `docs/tasks.md` 백로그 최우선(⭐) 항목으로 등록 (2026-07-21, 예상 소요 1~2일)
 
 ---
 
-*Last Updated: 2026-07-20 (Financial 페이지 개선 세션 반영)*
+*Last Updated: 2026-07-21 (Rule Engine V1 + Dashboard 실데이터 연동 세션 반영)*

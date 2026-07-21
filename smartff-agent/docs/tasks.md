@@ -34,7 +34,7 @@
 
 ### Data Pipeline
 
-- [x] sales Parser — ⚠️ 저장소에서 스크립트 파일 유실, git 히스토리에서 복구 필요 (week3_checklist.md 참고)
+- [x] sales Parser — 2026-07-20 세션에서 스크립트 파일 복구 완료 (커밋 25d7ed1)
 - [x] waste dtype 정리
 - [ ] inventory / orders Parser — 설계 변경으로 불필요 (카테고리+월 집계 방식, inventory/orders 미사용)
 - [ ] Product Master 생성 — 상품 단위 매칭률 낮아 P1로 이월, 카테고리+월 집계로 대체
@@ -44,8 +44,8 @@
 
 - [x] Financial Backend (마진/폐기손실 계산)
 - [x] Financial Frontend (실데이터 연동) — 월/카테고리 필터, 전월 대비 비교, 손익 구조까지 확장 (2026-07-20)
-- [ ] Dashboard KPI 실데이터 연동 — 미착수, 여전히 mock
-- [ ] Rule Engine V1 (최소 3개 규칙) — 미착수
+- [x] Dashboard KPI 실데이터 연동 — 2026-07-21 완료 (`/api/financial/summary`, `/api/recommendations` 연동, mock 제거)
+- [x] Rule Engine V1 (최소 3개 규칙) — 2026-07-21 완료 (`RecommendationService`, 카테고리 평균 폐기율/전체 평균 마진율 기반)
 - [ ] Analysis 최소 1개 카테고리 실데이터 연동 (P1) — 미착수
 
 ---
