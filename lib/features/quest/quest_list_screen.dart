@@ -52,13 +52,18 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
     if (_pending.contains(quest.id)) return;
     _pending.add(quest.id);
 
-    // 완료할 때만 인증 메모를 묻는다(해제에는 물을 게 없다).
+    // 아직 보상받지 않은 **첫 완료**에만 인증 메모를 묻는다.
     //
     // 시트를 먼저 띄우는 이유: 메모 유무가 지급액을 바꾸므로, 메모를 손에 쥔 채
     // completeQuest를 한 번 호출해야 완료·기본보상·보너스가 한 트랜잭션에 담긴다.
     // 완료 후에 물으면 보너스가 두 번째 트랜잭션이 되고 가드가 하나 더 필요해진다.
+    //
+    // 이미 보상받은 퀘스트(완료→해제 후 재완료)는 시트를 건너뛴다 — 보너스를 더 받을
+    // 수 없으니 "오늘 어땠나요?"를 물어봐야 헛수고다. 대신 완료 처리 자체는 그대로
+    // 흘려보낸다: completeQuest가 상태를 done으로 바꿔 체크·밑줄이 켜지고(시각 반영),
+    // rewardedAt 가드가 코인만 재지급하지 않는다. 왜 축하가 없는지는 아래 사후 안내가 맡는다.
     QuestMemoResult? memoResult;
-    if (done) {
+    if (done && !quest.isRewarded) {
       memoResult = await showQuestMemoSheet(context, questTitle: quest.title);
 
       // null = 취소(바깥 탭·뒤로가기). 실수로 체크한 경우이므로 **완료하지 않는다.**
@@ -108,9 +113,9 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
     // 여기 도달했으면 성공 경로다(실패는 catch에서 이미 return). reward가 null인
     // 경우는 두 갈래이고, 둘을 반드시 구분한다:
     //   (a) done == true  + reward == null  → 완료를 눌렀는데 지급이 없었다
-    //       = 이미 보상 받은 퀘스트(재완료). rewardedAt은 지워지지 않으니 다시
-    //         완료해도 코인이 안 들어온다. 무반응이면 "눌렀는데 아무 일도 안 남"으로
-    //         느끼므로, 왜 축하가 없는지 스낵바로 알린다.
+    //       = 이미 보상 받은 퀘스트(재완료). 상태는 done으로 바뀌어(체크·밑줄 켜짐)
+    //         completeQuest가 정상 처리했지만, rewardedAt 가드가 코인을 재지급하지 않았다.
+    //         무반응이 아니라 왜 축하가 없는지를 스낵바로 알린다.
     //   (b) done == false + reward == null  → 완료 해제. 원래 지급이 없는 동작이니
     //       조용히 통과한다(안내를 띄우면 오히려 오탐이다).
     // 축하 다이얼로그와 이 안내는 상호배타 — reward가 있으면 축하, 없으면 여기서 끝.

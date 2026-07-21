@@ -242,7 +242,7 @@ void main() {
       expect(user.xp, 10);
     });
 
-    testWidgets('★ 이미 보상을 받은 퀘스트를 다시 완료하면 연출이 뜨지 않는다', (tester) async {
+    testWidgets('★ 이미 보상받은 퀘스트를 다시 완료하면 메모 시트 없이 바로 안내된다', (tester) async {
       // rewardedAt이 이미 있는 = 예전에 지급된 퀘스트.
       // (완료 해제 상태라 completedAt은 비어 있지만, 지급 이력은 남아 있다.)
       final repo = await pumpScreen(
@@ -260,16 +260,24 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await completeSkippingMemo(tester);
+      // 시트를 통하지 않고 완료 탭만 한다(건너뛰기 헬퍼를 쓰지 않는다).
+      await tester.tap(find.byTooltip('완료'));
+      await tester.pumpAndSettle();
 
-      // 상태는 done이 되지만 축하는 없다(받지 않은 보상을 축하하면 안 된다).
-      expect(find.byType(QuestCompleteDialog), findsNothing);
+      // 이미 보상받은 퀘스트라 "오늘 어땠나요?" 메모 시트가 아예 안 뜬다.
+      expect(find.text('오늘 어땠나요?'), findsNothing);
+
+      // ★ 회귀 방지: 그래도 완료 처리는 되어야 한다 — 상태가 done으로 바뀌어
+      //   체크·밑줄이 켜진다(툴팁이 '완료'→'완료 취소'로 바뀜 = 체크된 상태).
       expect(find.byTooltip('완료 취소'), findsOneWidget);
+      expect(find.byTooltip('완료'), findsNothing);
 
-      // 무반응이 아니라 "이미 완료한 퀘스트예요"로 이유를 알린다(#0-1).
-      // 축하와 안내는 상호배타 — 축하가 없으니 안내가 떠야 한다.
+      // 무반응이 아니라 "이미 완료한 퀘스트예요"로 이유를 알린다.
       expect(find.text('이미 완료한 퀘스트예요'), findsOneWidget);
+      // 축하는 없다(이미 받은 보상을 다시 축하하면 안 된다).
+      expect(find.byType(QuestCompleteDialog), findsNothing);
 
+      // completeQuest는 호출되지만 rewardedAt 가드가 재지급을 막으므로 잔액은 그대로다.
       final user = await repo.users!.fetchUser('test-uid');
       expect(user.coin, 0);
       expect(user.xp, 0);
