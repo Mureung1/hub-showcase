@@ -1,9 +1,14 @@
-import { ApiError, GoogleGenAI } from '@google/genai'
+import { ApiError, GoogleGenAI, type Schema } from '@google/genai'
 
 // 무료 티어 사용 — gemini-2.5-flash가 일일 한도(RPD)에 걸리면 gemini-2.5-flash-lite로 자동 폴백
 const MODEL_FALLBACK_CHAIN = ['gemini-2.5-flash', 'gemini-2.5-flash-lite']
 
 export type GeminiContentPart = string | { inlineData: { data: string; mimeType: string } }
+
+export interface GeminiGenerateConfig {
+  responseMimeType?: string
+  responseSchema?: Schema
+}
 
 let client: GoogleGenAI | null = null
 
@@ -20,7 +25,7 @@ function isRateLimitError(error: unknown): boolean {
   return error instanceof ApiError && error.status === 429
 }
 
-export async function generateGeminiText(contents: GeminiContentPart[], responseMimeType?: string): Promise<string> {
+export async function generateGeminiText(contents: GeminiContentPart[], config?: GeminiGenerateConfig): Promise<string> {
   let lastError: unknown
 
   for (const model of MODEL_FALLBACK_CHAIN) {
@@ -28,7 +33,7 @@ export async function generateGeminiText(contents: GeminiContentPart[], response
       const response = await getClient().models.generateContent({
         model,
         contents,
-        config: responseMimeType ? { responseMimeType } : undefined,
+        config,
       })
       if (!response.text) {
         throw new Error('Gemini 응답이 비어 있습니다')

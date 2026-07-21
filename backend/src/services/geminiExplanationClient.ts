@@ -19,10 +19,9 @@ const PROMPT_PREFIX =
   '"reason": string (왜 이렇게 배출해야 하는지 한 문단 설명)}.'
 
 async function generateExplanation(govItemName: string, method: string): Promise<DisposalExplanation> {
-  const text = await generateGeminiText(
-    [`${PROMPT_PREFIX}\n품목명: ${govItemName}\n공식 배출방법: ${method}`],
-    'application/json',
-  )
+  const text = await generateGeminiText([`${PROMPT_PREFIX}\n품목명: ${govItemName}\n공식 배출방법: ${method}`], {
+    responseMimeType: 'application/json',
+  })
 
   return explanationSchema.parse(JSON.parse(text))
 }
