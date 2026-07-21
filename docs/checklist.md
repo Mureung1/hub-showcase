@@ -351,29 +351,36 @@
 ## 4주차 — 캐릭터 성장 및 통합 검증
 
 ### 현재 레벨 및 XP 표시
-- [ ] 현재 레벨과 XP가 저장값과 일치하게 표시된다.
-- [ ] 데이터 로딩 중/오류 상태가 처리된다.
+- [x] 현재 레벨과 XP가 저장값과 일치하게 표시된다.
+- [x] 데이터 로딩 중/오류 상태가 처리된다.
+      → `CharacterCard`가 `Level ${user.level} · ${stage.name}`, `XP ${user.xp} / ${user.xpForNextLevel}`(MAX 도달 시 'MAX')를 렌더한다(`lib/features/home/widgets/character_card.dart`). 홈은 `userAsync.when`으로 로딩=`_HomeSkeleton`, 오류=`ErrorView`를 처리하고 신규 유저는 `AppUser` 기본값(Lv1)으로 커버된다(`lib/features/home/home_screen.dart`). **주의: `user.xp` 의미가 "누적 XP"에서 "현재 레벨 내 잔여 XP"로 바뀌었다.** 테스트 `test/features/home_screen_test.dart`.
 
 ### 경험치 프로그레스 바
-- [ ] 진행률이 `현재XP / 다음레벨필요XP`에 맞게 렌더된다.
-- [ ] 경계값(0%, 100%)에서 시각적으로 깨지지 않는다.
+- [x] 진행률이 `현재XP / 다음레벨필요XP`에 맞게 렌더된다.
+- [x] 경계값(0%, 100%)에서 시각적으로 깨지지 않는다.
+      → `_XpBar(progress: user.levelProgress)`, `levelProgress = (xp / xpForNextLevel).clamp(0.0, 1.0)`(MAX면 1 반환)(`lib/models/app_user.dart`, `lib/features/home/widgets/character_card.dart`). 경계 0%/100% 테스트 `test/models/app_user_test.dart`.
 
 ### 캐릭터 기본 렌더링
-- [ ] 캐릭터가 정상 렌더된다 — **도트아트 자산 완성 전에는 이모지 목업 렌더도 PASS 조건**이며, 자산 로드 실패 시 대체 표시(이모지)가 나온다.
+- [x] 캐릭터가 정상 렌더된다 — **도트아트 자산 완성 전에는 이모지 목업 렌더도 PASS 조건**이며, 자산 로드 실패 시 대체 표시(이모지)가 나온다.
+      → `_CharacterStage(emoji: stage.emoji)`가 진화 단계별 이모지를 목업으로 렌더한다(도트아트 자산 전까지 PASS 조건, `lib/features/home/widgets/character_card.dart`). 테스트 `test/features/home_screen_test.dart`.
 - [ ] 장착(equipped) 아이템이 캐릭터에 반영된다.
+      → 미확인: 상점·인벤토리·장착 기능이 아직 미구현이라 이 항목의 근거 없음.
 
 ### 레벨업 처리
-- [ ] XP가 임계값 도달 시 레벨이 오르고 남은 XP가 이월된다.
-- [ ] 한 번에 여러 레벨 상승하는 경우도 정확히 계산된다.
-- [ ] 레벨업 결과가 영속 저장되고 재실행 후 유지된다.
+- [x] XP가 임계값 도달 시 레벨이 오르고 남은 XP가 이월된다.
+- [x] 한 번에 여러 레벨 상승하는 경우도 정확히 계산된다.
+- [x] 레벨업 결과가 영속 저장되고 재실행 후 유지된다.
+      → `applyXpGain`(`lib/core/constants/growth_rules.dart`)이 `while (lv < kMaxLevel && x >= stageOf(lv).xpPerLevel)` 루프로 다단계 상승·잔여 XP 이월·MAX 상한을 한곳에서 처리하고, `completeQuest` 트랜잭션에서 적용되어 level·xp가 영속 저장된다(재실행 후 유지). 테스트 `test/core/growth_rules_test.dart`(13종) + `test/repositories/in_memory_quest_repository_test.dart`(완료→레벨 반영).
 
 ### 진화 단계 변경 처리
-- [ ] 정의된 레벨 도달 시 진화 단계가 바뀌고 캐릭터 외형이 갱신된다.
-- [ ] 진화 조건 미달 시 단계가 바뀌지 않는다.
+- [x] 정의된 레벨 도달 시 진화 단계가 바뀌고 캐릭터 외형이 갱신된다.
+- [x] 진화 조건 미달 시 단계가 바뀌지 않는다.
+      → `stageOf(level)`(`lib/core/constants/growth_rules.dart`)이 레벨 구간→진화 단계를 매핑한다. 레벨이 오르면 `stage`가 자동 변경되어 `CharacterCard`가 `stage.emoji`/`stage.name`을 다시 렌더하고, 조건 미달이면 단계가 유지된다. 테스트 `test/core/growth_rules_test.dart`(알 Lv9→참새 경계 전환). 레벨업·진화 **연출(애니메이션)**은 이번 범위 아님(홈 자동 반영만).
 
 ### 코인 잔액 표시
-- [ ] 코인 잔액이 저장값과 일치하고 지급/사용 후 즉시 갱신된다.
-- [ ] 노랑 색 규칙을 따른다.
+- [x] 코인 잔액이 저장값과 일치하고 지급/사용 후 즉시 갱신된다.
+- [x] 노랑 색 규칙을 따른다.
+      → `_CoinBanner(coin: user.coin)`(`lib/features/home/widgets/character_card.dart`). coin은 `completeQuest`에서 `FieldValue.increment`로 누적되고, 홈은 `watchUser` 스트림 구독이라 지급 커밋 즉시 갱신된다. 코인 배너는 노랑 허용 위젯이며 `test/theme/color_role_test.dart`가 허용 목록 밖 노랑을 FAIL 처리한다.
 
 ### 상점 화면 기본 레이아웃(최소 치장 아이템 1종)
 - [ ] 최소 1종의 치장 아이템과 가격이 표시된다.

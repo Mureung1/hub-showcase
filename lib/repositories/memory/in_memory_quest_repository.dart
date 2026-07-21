@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../core/constants/growth_rules.dart';
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../models/achievement.dart';
@@ -252,10 +253,18 @@ class InMemoryQuestRepository implements QuestRepository {
     final userRepo = users;
     if (userRepo != null) {
       final current = await userRepo.fetchUser(uid);
+      // Firestore 구현과 같은 의미: coin은 단순 누적, xp·level은 applyXpGain으로
+      // 다단계 상승·진화 경계·MAX 상한을 반영한 계산값으로 갱신한다.
+      final next = applyXpGain(
+        level: current.level,
+        xp: current.xp,
+        gained: reward.xp,
+      );
       userRepo.put(
         current.copyWith(
           coin: current.coin + reward.coin,
-          xp: current.xp + reward.xp,
+          xp: next.xp,
+          level: next.level,
         ),
       );
     }

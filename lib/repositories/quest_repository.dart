@@ -100,7 +100,9 @@ abstract interface class QuestRepository {
   /// 퀘스트 문서가 없으면 `NotFoundFailure`, 그 밖의 실패는 다른 메서드와
   /// 동일하게 `AppFailure`로 정규화해 던진다.
   ///
-  /// ⚠️ 레벨업 계산은 여기서 하지 않는다(4주차 경계). 잔액만 누적한다.
+  /// 지급 시 사용자의 현재 레벨/XP를 읽어 `applyXpGain`으로 레벨업까지 반영한다
+  /// (4주차 캐릭터 성장). coin은 단순 누적, xp·level은 계산값으로 저장한다 —
+  /// 그래서 `AppUser.xp`는 "누적 XP"가 아니라 "현재 레벨 내 잔여 XP"다.
   Future<Reward?> completeQuest(
     String uid,
     String questId, {

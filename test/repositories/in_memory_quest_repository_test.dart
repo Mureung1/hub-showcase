@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:one_step/core/constants/growth_rules.dart';
 import 'package:one_step/core/constants/proof_rules.dart';
 import 'package:one_step/core/constants/reward_rules.dart';
 import 'package:one_step/core/error/app_failure.dart';
@@ -161,10 +162,13 @@ void main() {
 
       final reward = await repo.completeQuest('u', quest.id);
 
+      // reward는 "이번에 준 XP"(5)로 불변. user.xp는 레벨업 후 레벨 내 잔여 XP다.
+      // 쉬움 5XP는 알 단계 임계(5)와 같아 정확히 Lv2로 올라가고 잔여 XP는 0.
       expect(reward, const Reward(coin: 3, xp: 5));
       final user = await users.fetchUser('u');
       expect(user.coin, 3);
-      expect(user.xp, 5);
+      expect(user.level, 2);
+      expect(user.xp, 0);
     });
 
     test('보통을 완료하면 코인 5 · XP 10이 지급된다', () async {
@@ -177,10 +181,12 @@ void main() {
 
       final reward = await repo.completeQuest('u', quest.id);
 
+      // 보통 10XP → 알 단계 5/레벨이라 Lv1에서 두 칸 올라 Lv3, 잔여 XP 0.
       expect(reward, const Reward(coin: 5, xp: 10));
       final user = await users.fetchUser('u');
       expect(user.coin, 5);
-      expect(user.xp, 10);
+      expect(user.level, 3);
+      expect(user.xp, 0);
     });
 
     test('어려움을 완료하면 코인 10 · XP 20이 지급된다', () async {
@@ -193,10 +199,12 @@ void main() {
 
       final reward = await repo.completeQuest('u', quest.id);
 
+      // 어려움 20XP → 알 단계 5/레벨이라 Lv1에서 네 칸 올라 Lv5, 잔여 XP 0.
       expect(reward, const Reward(coin: 10, xp: 20));
       final user = await users.fetchUser('u');
       expect(user.coin, 10);
-      expect(user.xp, 20);
+      expect(user.level, 5);
+      expect(user.xp, 0);
     });
 
     test('완료하면 status=done + completedAt이 기록된다', () async {
@@ -231,9 +239,13 @@ void main() {
       );
       await repo.completeQuest('u', quest.id);
 
+      // coin은 단순 누적: 100 + 5 = 105.
+      // xp는 레벨업으로 소비된다: 시작 xp40 + 10 = 50을 알 단계 5/레벨로 소비하면
+      // Lv1→Lv10(45 소비)까지 오르고 참새 임계 10 미만인 잔여 5가 남는다.
       final user = await users.fetchUser('u');
       expect(user.coin, 105);
-      expect(user.xp, 50);
+      expect(user.level, 10);
+      expect(user.xp, 5);
     });
 
     test('여러 퀘스트를 완료하면 보상이 합산된다', () async {
@@ -254,7 +266,9 @@ void main() {
 
       final user = await users.fetchUser('u');
       expect(user.coin, 13); // 3 + 10
-      expect(user.xp, 25); // 5 + 20
+      // XP 25(5+20)가 순차로 들어와 알 단계 5/레벨을 다섯 칸 소비 → Lv6, 잔여 0.
+      expect(user.level, 6);
+      expect(user.xp, 0);
     });
 
     test('★ 같은 퀘스트를 두 번 완료해도 보상은 한 번만 지급된다', () async {
@@ -275,7 +289,9 @@ void main() {
 
       final user = await users.fetchUser('u');
       expect(user.coin, 10, reason: '재증가하면 안 된다');
-      expect(user.xp, 20, reason: '재증가하면 안 된다');
+      // 어려움 20XP는 알 단계에서 Lv5로 올라 잔여 XP 0. 재완료로도 불변.
+      expect(user.level, 5, reason: '재증가하면 안 된다');
+      expect(user.xp, 0, reason: '재증가하면 안 된다');
     });
 
     test('★ 완료 → 해제 → 재완료해도 재지급되지 않는다 (파밍 차단)', () async {
@@ -307,7 +323,9 @@ void main() {
       expect(again, isNull, reason: '이번엔 지급된 보상이 없다');
       final user = await users.fetchUser('u');
       expect(user.coin, 3, reason: '재증가하면 안 된다');
-      expect(user.xp, 5, reason: '재증가하면 안 된다');
+      // 쉬움 5XP는 알 단계 임계와 같아 Lv2 잔여 XP 0. 재완료로도 불변.
+      expect(user.level, 2, reason: '재증가하면 안 된다');
+      expect(user.xp, 0, reason: '재증가하면 안 된다');
 
       final refinished = (await repo.fetchQuests('u')).single;
       expect(refinished.done, isTrue);
@@ -400,6 +418,110 @@ void main() {
     });
   });
 
+  group('completeQuest — 받은 XP가 레벨업으로 반영된다 (4주차 캐릭터 성장)', () {
+    (InMemoryQuestRepository, InMemoryUserRepository) makeRepos({AppUser? seed}) {
+      final users = InMemoryUserRepository(seed: seed ?? AppUser.initial('u'));
+      final quests = InMemoryQuestRepository(users: users);
+      addTearDown(users.dispose);
+      addTearDown(quests.dispose);
+      return (quests, users);
+    }
+
+    test('★ 어려움(20XP) 완료 시 알 단계(5/레벨)에서 여러 레벨이 오른다', () async {
+      // Lv1 xp0 + 20 = 5씩 4번 → Lv5, 레벨 내 XP 0.
+      final (repo, users) = makeRepos();
+      final quest = await repo.createQuest(
+        'u',
+        title: 'x',
+        difficulty: Difficulty.hard,
+      );
+
+      await repo.completeQuest('u', quest.id);
+
+      final user = await users.fetchUser('u');
+      expect(user.level, 5);
+      expect(user.xp, 0);
+      expect(user.coin, 10);
+      expect(user.stage.name, '알');
+    });
+
+    test('임계 미만 XP는 레벨을 올리지 않고 XP만 쌓는다', () async {
+      // 쉬움 5XP지만 알 단계 임계도 5라 정확히 Lv2가 되는 대신,
+      // 여기선 보통(10XP)을 써서 Lv3 xp0 확인. Lv1 xp0 + 10 = 5*2 → Lv3.
+      final (repo, users) = makeRepos();
+      final quest = await repo.createQuest(
+        'u',
+        title: 'x',
+        difficulty: Difficulty.normal,
+      );
+
+      await repo.completeQuest('u', quest.id);
+
+      final user = await users.fetchUser('u');
+      expect(user.level, 3);
+      expect(user.xp, 0);
+    });
+
+    test('진화 경계: 참새 진입 후 남은 XP가 새 임계(10) 기준으로 이월된다', () async {
+      // Lv9 xp3에서 시작. 어려움 20XP → 3+20=23.
+      // 알 임계 5: (5-3)=2 소비해 Lv10(참새), 남은 18.
+      // 참새 임계 10: 10 소비해 Lv11, 남은 8 (8<10이라 정지).
+      final (repo, users) = makeRepos(
+        seed: const AppUser(uid: 'u', level: 9, xp: 3),
+      );
+      final quest = await repo.createQuest(
+        'u',
+        title: 'x',
+        difficulty: Difficulty.hard,
+      );
+
+      await repo.completeQuest('u', quest.id);
+
+      final user = await users.fetchUser('u');
+      expect(user.level, 11);
+      expect(user.xp, 8);
+      expect(user.stage.name, '참새');
+    });
+
+    test('★ 재완료해도 레벨·XP가 다시 오르지 않는다 (rewardedAt 가드)', () async {
+      final (repo, users) = makeRepos();
+      final quest = await repo.createQuest(
+        'u',
+        title: 'x',
+        difficulty: Difficulty.hard,
+      );
+
+      await repo.completeQuest('u', quest.id);
+      await repo.setStatus('u', quest.id, QuestStatus.todo);
+      final again = await repo.completeQuest('u', quest.id);
+
+      expect(again, isNull);
+      final user = await users.fetchUser('u');
+      expect(user.level, 5, reason: '재완료로 레벨이 더 오르면 안 된다');
+      expect(user.xp, 0);
+      expect(user.coin, 10);
+    });
+
+    test('MAX(Lv50) 사용자는 완료해도 레벨·XP가 오르지 않고 코인만 쌓인다', () async {
+      final (repo, users) = makeRepos(
+        seed: const AppUser(uid: 'u', level: kMaxLevel, xp: 0, coin: 200),
+      );
+      final quest = await repo.createQuest(
+        'u',
+        title: 'x',
+        difficulty: Difficulty.hard,
+      );
+
+      await repo.completeQuest('u', quest.id);
+
+      final user = await users.fetchUser('u');
+      expect(user.level, kMaxLevel);
+      expect(user.xp, 0);
+      expect(user.coin, 210, reason: '코인은 계속 쌓인다');
+      expect(user.canRebirth, isTrue);
+    });
+  });
+
   group('메모 인증 보너스 + 성취 기록 (3주차-B)', () {
     (InMemoryQuestRepository, InMemoryUserRepository) makeRepos() {
       final users = InMemoryUserRepository(seed: AppUser.initial('u'));
@@ -422,7 +544,9 @@ void main() {
       expect(reward, const Reward(coin: 8, xp: 13));
       final user = await users.fetchUser('u');
       expect(user.coin, 8);
-      expect(user.xp, 13);
+      // XP 13을 알 단계 5/레벨로 소비 → Lv3(10 소비), 잔여 XP 3.
+      expect(user.level, 3);
+      expect(user.xp, 3);
     });
 
     test('메모가 없으면 기본 보상만 지급된다', () async {
@@ -517,7 +641,9 @@ void main() {
       expect(second, isNull, reason: '이미 지급된 퀘스트는 아무것도 주지 않는다');
       final user = await users.fetchUser('u');
       expect(user.coin, 5, reason: '보너스 3이 추가로 붙으면 안 된다');
-      expect(user.xp, 10);
+      // 보통 10XP → 알 단계에서 Lv3 잔여 0. 재완료로도 불변.
+      expect(user.level, 3);
+      expect(user.xp, 0);
 
       // 기록 = 지급 횟수. 재완료로 기록이 늘면 보관함·지표가 부풀려진다.
       expect(repo.achievementsOf('u'), hasLength(1));
@@ -579,7 +705,9 @@ void main() {
       expect(reward, const Reward(coin: 8, xp: 13));
       final user = await users.fetchUser('u');
       expect(user.coin, 8);
-      expect(user.xp, 13);
+      // XP 13 → 알 단계에서 Lv3, 잔여 XP 3.
+      expect(user.level, 3);
+      expect(user.xp, 3);
 
       // 사진은 별도 proof에 저장되고, 성취 기록엔 유무 플래그만 남는다.
       expect(repo.proofOf('u', quest.id), smallPhoto);
@@ -677,7 +805,9 @@ void main() {
       expect(second, isNull, reason: '이미 지급된 퀘스트는 아무것도 주지 않는다');
       final user = await users.fetchUser('u');
       expect(user.coin, 8, reason: '보너스가 다시 붙으면 안 된다');
-      expect(user.xp, 13);
+      // XP 13 → Lv3 잔여 3. 재완료로도 불변.
+      expect(user.level, 3);
+      expect(user.xp, 3);
       expect(repo.achievementsOf('u'), hasLength(1));
       // 재완료 경로는 proof를 다시 쓰지 않는다 — 최초 사진이 그대로 남는다.
       expect(repo.proofOf('u', quest.id), smallPhoto);

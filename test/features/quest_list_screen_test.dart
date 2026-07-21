@@ -183,9 +183,12 @@ void main() {
       expect(find.text('XP +20'), findsWidgets);
 
       // 잔액에도 실제로 반영된다(홈의 watchUser가 이 값을 흘린다).
+      // XP 20은 알 단계 5/레벨이라 Lv1→Lv5로 오르고 레벨 내 잔여 XP는 0이다
+      // (user.xp는 총 XP가 아니라 레벨 내 잔여 XP다 — 4주차 레벨업 반영).
       final user = await repo.users!.fetchUser('test-uid');
       expect(user.coin, 10);
-      expect(user.xp, 20);
+      expect(user.level, 5);
+      expect(user.xp, 0);
     });
 
     testWidgets('연출을 닫으면 퀘스트가 완료 상태로 남는다', (tester) async {
@@ -240,7 +243,9 @@ void main() {
 
       final user = await repo.users!.fetchUser('test-uid');
       expect(user.coin, 5);
-      expect(user.xp, 10);
+      // XP 10 → 알 단계 5/레벨이라 Lv3, 레벨 내 잔여 XP 0.
+      expect(user.level, 3);
+      expect(user.xp, 0);
     });
 
     testWidgets('★ 이미 보상받은 퀘스트를 다시 완료하면 메모 시트 없이 바로 안내된다', (tester) async {
@@ -414,9 +419,12 @@ void main() {
       expect(find.byType(QuestCompleteDialog), findsOneWidget);
       expect(find.textContaining('인증 보너스'), findsNothing);
 
+      // 보통 = 코인5 / XP10. XP는 레벨업으로 소비된다(user.xp는 총 XP가 아니라
+      // 레벨 내 잔여 XP): applyXpGain(Lv1,0,+10) → Lv3, 잔여 0 (알 단계 5/lv).
       final user = await repo.users!.fetchUser('test-uid');
       expect(user.coin, 5);
-      expect(user.xp, 10);
+      expect(user.level, 3);
+      expect(user.xp, 0);
 
       final quest = (await repo.fetchQuests('test-uid')).single;
       expect(quest.memo, isNull);
@@ -445,9 +453,12 @@ void main() {
       // 총액만 보여 주면 왜 8인지 알 수 없다. 보너스 사실을 밝힌다.
       expect(find.textContaining('인증 보너스'), findsOneWidget);
 
+      // 코인은 8 누적. XP 13은 레벨업으로 소비된다(잔여 XP만 user.xp에 남음):
+      // applyXpGain(Lv1,0,+13) → Lv3, 잔여 3 (알 단계 5/lv).
       final user = await repo.users!.fetchUser('test-uid');
       expect(user.coin, 8);
-      expect(user.xp, 13);
+      expect(user.level, 3);
+      expect(user.xp, 3);
 
       // 메모는 퀘스트에도 남는다(앱을 다시 켜도 유지된다).
       final quest = (await repo.fetchQuests('test-uid')).single;
