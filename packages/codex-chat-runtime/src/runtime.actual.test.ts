@@ -250,12 +250,16 @@ test('forwards isolated cwd and private MCP config and supports a text-only prod
       journal.messages
         .map(({ method }) => method)
         .filter((method) => method === 'model/list' || method === 'turn/start'),
-      ['turn/start', 'model/list', 'turn/start'],
+      ['turn/start', 'turn/start'],
     )
-    const modelList = journal.messages.find(
-      ({ method }) => method === 'model/list',
-    )
-    assert.deepEqual(modelList?.params, { includeHidden: true })
+    assert.deepEqual(turnStarts[1]?.params?.collaborationMode, {
+      mode: 'plan',
+      settings: {
+        developer_instructions: null,
+        model: 'fake-model',
+        reasoning_effort: 'medium',
+      },
+    })
   } finally {
     await harness.runtime.close()
   }
@@ -351,7 +355,7 @@ test('runs a structured product turn through one pending native interaction', as
   }
 })
 
-test('fails closed before product Turn acceptance when the current default model cannot be resolved', async () => {
+test('uses native thread settings when the advertised model catalog is ambiguous or unavailable', async () => {
   for (const marker of [
     'no-default-model',
     'multiple-default-models',
@@ -362,18 +366,23 @@ test('fails closed before product Turn acceptance when the current default model
       const { threadId } = await harness.runtime.startThread()
       await writeFile(join(dirname(harness.journalPath), marker), '')
 
-      await assert.rejects(
-        harness.runtime.startProductTurn(productTurnInput(threadId)),
-        (error: unknown) =>
-          error instanceof CodexChatRuntimeError &&
-          error.code === 'sdk_request_failed' &&
-          error.unknownOutcome === false,
+      const turn = await harness.runtime.startProductTurn(
+        productTurnInput(threadId),
       )
+      const iterator = turn.events[Symbol.asyncIterator]()
+      const { requested } = await readUntilUserInput(iterator)
+      await harness.runtime.cancelUserInput({
+        interactionId: requested.interactionId,
+      })
+      await collectIterator(iterator)
 
       const journal = JSON.parse(
         await readFile(harness.journalPath, 'utf8'),
       ) as {
-        messages: readonly { readonly method?: string }[]
+        messages: readonly {
+          readonly method?: string
+          readonly params?: Record<string, unknown>
+        }[]
       }
       assert.deepEqual(
         journal.messages
@@ -381,8 +390,19 @@ test('fails closed before product Turn acceptance when the current default model
           .filter(
             (method) => method === 'model/list' || method === 'turn/start',
           ),
-        ['model/list'],
+        ['turn/start'],
       )
+      const turnStart = journal.messages.find(
+        ({ method }) => method === 'turn/start',
+      )
+      assert.deepEqual(turnStart?.params?.collaborationMode, {
+        mode: 'plan',
+        settings: {
+          developer_instructions: null,
+          model: 'fake-model',
+          reasoning_effort: 'medium',
+        },
+      })
     } finally {
       await harness.runtime.close()
     }

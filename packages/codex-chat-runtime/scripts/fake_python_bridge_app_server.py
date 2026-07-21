@@ -264,8 +264,8 @@ class FakeAppServer:
             "mode": "plan",
             "settings": {
                 "developer_instructions": None,
-                "model": "current-default-model",
-                "reasoning_effort": "high",
+                "model": "fake-model",
+                "reasoning_effort": "medium",
             },
         }
         expected_sandbox = {
@@ -542,6 +542,7 @@ class FakeAppServer:
                         "instructionSources": [],
                         "model": "fake-model",
                         "modelProvider": "fake-provider",
+                        "reasoningEffort": "medium",
                         "sandbox": {"type": "readOnly"},
                         "thread": _thread(thread_id, cwd),
                     },

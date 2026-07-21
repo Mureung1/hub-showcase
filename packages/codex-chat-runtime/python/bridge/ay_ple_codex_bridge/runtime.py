@@ -88,7 +88,7 @@ class TurnKind(str, Enum):
     PRODUCT = "product"
 
 
-class DefaultModelResolutionError(RuntimeError):
+class EffectiveModelResolutionError(RuntimeError):
     pass
 
 
@@ -474,7 +474,7 @@ class BridgeWorker:
     def _sdk_failure(self, request_id: str, exc: BaseException) -> None:
         if getattr(exc, "code", None) == "buffer_overflow":
             self.trigger_fatal("buffer_overflow")
-        elif isinstance(exc, DefaultModelResolutionError):
+        elif isinstance(exc, EffectiveModelResolutionError):
             self._operation_error(request_id, "sdk_request_failed")
         elif isinstance(exc, TransportClosedError):
             self.trigger_fatal("sdk_transport_failed")
@@ -648,11 +648,9 @@ class BridgeWorker:
             )
 
         async def start_product_turn(record: ThreadRecord) -> AsyncTurnHandle:
-            models = await self._codex.models(include_hidden=True)
-            defaults = [model for model in models.data if model.is_default]
-            if len(defaults) != 1:
-                raise DefaultModelResolutionError
-            default = defaults[0]
+            initial_model = record.handle.initial_model
+            if not initial_model:
+                raise EffectiveModelResolutionError
             return await record.handle.turn(
                 turn_input,
                 cwd=record.cwd,
@@ -662,8 +660,8 @@ class BridgeWorker:
                     mode=ModeKind.plan,
                     settings=CollaborationModeSettings(
                         developer_instructions=None,
-                        model=default.model,
-                        reasoning_effort=default.default_reasoning_effort,
+                        model=initial_model,
+                        reasoning_effort=record.handle.initial_reasoning_effort,
                     ),
                 ),
             )

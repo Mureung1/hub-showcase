@@ -332,6 +332,7 @@ class ManifestTests(unittest.TestCase):
                     "0004-notification-opt-out-config",
                     "0005-strict-response-classification",
                     "0006-plan-user-input-seam",
+                    "0007-thread-start-settings",
                 ],
             )
             self.assertEqual(

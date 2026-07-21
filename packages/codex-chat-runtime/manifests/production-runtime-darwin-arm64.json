@@ -4,8 +4,8 @@
     "installed": {
       "file_count": 5,
       "path": "bundle/bridge",
-      "regular_file_bytes": 62410,
-      "roster_sha256": "0cb3fcb486edfdb9c3b508241f7a3943bae1c2dc5a3e6cde872481d37e7ae4bc",
+      "regular_file_bytes": 62300,
+      "roster_sha256": "b6c14ac4548c49d9f41028ca6fafb3a0657b1c369f64bca1fcf552dd8d98de5d",
       "symlink_count": 0
     },
     "python_args": [
@@ -28,9 +28,9 @@
         "sha256": "bd0d4fddef2e556daddf1b6538df71c9a35de49eb778f23a9d1b55a9158e852b"
       },
       "ay_ple_codex_bridge/runtime.py": {
-        "bytes": 39270,
+        "bytes": 39160,
         "git_mode": "100644",
-        "sha256": "a3c773d5e18ebf477331d49a8718e39eae253b36ad8681ae82442c1b875af015"
+        "sha256": "222c70832d44318ae5e7ddeb61f1e4cc23776a144b4554f7da767d4c19d8058b"
       },
       "worker.py": {
         "bytes": 546,
@@ -56,8 +56,8 @@
   "bundle": {
     "file_count": 2539,
     "path": "bundle",
-    "regular_file_bytes": 366689661,
-    "roster_sha256": "78a401152a70f3fb5bd0eb37380daa5170692242c629cdb06ff903c6c72af816",
+    "regular_file_bytes": 366689945,
+    "roster_sha256": "2b67e7662ec0b33d897d1b02fec0e70aa7bb6caed43d028807e53e8202fc4583",
     "symlink_count": 9
   },
   "installed": {
@@ -80,8 +80,8 @@
     "site_packages": {
       "file_count": 196,
       "path": "bundle/site-packages",
-      "regular_file_bytes": 318702559,
-      "roster_sha256": "e823d43b6156c6f7b09530124044cd4ee9997a7dddf39eff4bdb9193ea5424fe",
+      "regular_file_bytes": 318702953,
+      "roster_sha256": "d1d65a3d43e1dc25526161ad7ffee1e82b9a5fbf98b69468d374b3c5eb79c06e",
       "symlink_count": 0
     }
   },
@@ -136,12 +136,12 @@
         "sha256": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915"
       }
     },
-    "patch_stack_sha256": "d0669c64b524f53879e355db46ea0b4fbe67526e1ec4c7bccb9f11d9e253a9a0",
+    "patch_stack_sha256": "a27f5c2c182c379c52919f455db5f5b95267e235628bc46fc2bee6ddf5ea5b8d",
     "patched_source_manifest": {
-      "bytes": 27422,
+      "bytes": 29038,
       "git_mode": "100644",
       "path": "manifests/patched-source.json",
-      "sha256": "7f543df27f6bfa096dd3c667405c0ae1669d9e65009e4f3b4f8922eb97a518bf"
+      "sha256": "b53bf89c23fa75e8f7a6b4bbf78b7e0e849da65770a951ef8e019d2ee4694be5"
     },
     "patches": [
       {
@@ -191,6 +191,14 @@
         "order": 6,
         "path": "upstream/patches/0006-plan-user-input-seam.patch",
         "sha256": "3f60afde4ebbbb8db5cfbcef31a28e7210719a94dbb7e041ac13995d9902151c"
+      },
+      {
+        "bytes": 4652,
+        "git_mode": "100644",
+        "id": "0007-thread-start-settings",
+        "order": 7,
+        "path": "upstream/patches/0007-thread-start-settings.patch",
+        "sha256": "95d8f31f5a6ea65ee6763fdc5bd3fd711b81b439d77bc76817d5a65525e1029a"
       }
     ],
     "repository": "https://github.com/openai/codex",
@@ -219,11 +227,11 @@
       "version": "0.7.0"
     },
     {
-      "bytes": 83767,
+      "bytes": 83809,
       "distribution": "openai-codex",
       "git_mode": "100644",
       "path": "wheels/openai_codex-0.0.0.dev0-py3-none-any.whl",
-      "sha256": "0acc9d545a8df8ec445e9ec3bd267d526af99b96da4a3e5c6ad6981b1dd58ff4",
+      "sha256": "0cca6e81ed5086b9b11b79c66d9eaf6ddfec5c7cf768643b9b6c07f07fb34cb9",
       "source": "ordered_patches",
       "version": "0.0.0.dev0"
     },

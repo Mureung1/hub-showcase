@@ -241,9 +241,9 @@
       "sha256": "542ae80d715680938a5a2049c14268406935bdc7e94eee6dbdb154b616cc0c35"
     },
     "sdk/python/scripts/update_sdk_artifacts.py": {
-      "bytes": 50788,
+      "bytes": 51098,
       "git_mode": "100755",
-      "sha256": "7a530d4097d81cdffc276b68a643251ac7d482cae3e141066890094a3d0294c8"
+      "sha256": "e4484af2eb95860b4b83deaf6498dbb6ea51dc434413aec7bdd5c220d28d96c6"
     },
     "sdk/python/src/openai_codex/__init__.py": {
       "bytes": 2213,
@@ -296,9 +296,9 @@
       "sha256": "678f4945d9906b0150a3d84cfc217e06824b9a963e7d248bd4b0d0fb51210658"
     },
     "sdk/python/src/openai_codex/api.py": {
-      "bytes": 33221,
+      "bytes": 33615,
       "git_mode": "100644",
-      "sha256": "c89d6256a55026ab26b85cfa7fca220f8943dc745aeed854c1db041e1ece5c8b"
+      "sha256": "1c6e799c1577e4168747aebdbfd13627ca7fe3260af3d7d225364d4d22bf1eb9"
     },
     "sdk/python/src/openai_codex/async_client.py": {
       "bytes": 16358,
@@ -426,9 +426,9 @@
       "sha256": "fdb0b24935368f41397c12260d774e65976fbb5222c2d6994e073ea6473092ac"
     },
     "sdk/python/tests/test_public_api_runtime_behavior.py": {
-      "bytes": 6543,
+      "bytes": 7624,
       "git_mode": "100644",
-      "sha256": "9001ccefcec9b8921e271e298102415036a1ca9ee5fd3e338ca634e9fb872eab"
+      "sha256": "0dbfe270a882625b235c4b575c7b32ca9e3f7b1fa12a441474e740aec6b3b9b8"
     },
     "sdk/python/tests/test_public_api_signatures.py": {
       "bytes": 19500,
@@ -447,7 +447,7 @@
     }
   },
   "kind": "patched_source",
-  "patch_stack_sha256": "d0669c64b524f53879e355db46ea0b4fbe67526e1ec4c7bccb9f11d9e253a9a0",
+  "patch_stack_sha256": "a27f5c2c182c379c52919f455db5f5b95267e235628bc46fc2bee6ddf5ea5b8d",
   "patches": [
     {
       "bytes": 6020,
@@ -736,9 +736,55 @@
       "order": 6,
       "path": "upstream/patches/0006-plan-user-input-seam.patch",
       "sha256": "3f60afde4ebbbb8db5cfbcef31a28e7210719a94dbb7e041ac13995d9902151c"
+    },
+    {
+      "bytes": 4652,
+      "changed_files": {
+        "sdk/python/scripts/update_sdk_artifacts.py": {
+          "after": {
+            "bytes": 51098,
+            "git_mode": "100755",
+            "sha256": "e4484af2eb95860b4b83deaf6498dbb6ea51dc434413aec7bdd5c220d28d96c6"
+          },
+          "before": {
+            "bytes": 50788,
+            "git_mode": "100755",
+            "sha256": "7a530d4097d81cdffc276b68a643251ac7d482cae3e141066890094a3d0294c8"
+          }
+        },
+        "sdk/python/src/openai_codex/api.py": {
+          "after": {
+            "bytes": 33615,
+            "git_mode": "100644",
+            "sha256": "1c6e799c1577e4168747aebdbfd13627ca7fe3260af3d7d225364d4d22bf1eb9"
+          },
+          "before": {
+            "bytes": 33221,
+            "git_mode": "100644",
+            "sha256": "c89d6256a55026ab26b85cfa7fca220f8943dc745aeed854c1db041e1ece5c8b"
+          }
+        },
+        "sdk/python/tests/test_public_api_runtime_behavior.py": {
+          "after": {
+            "bytes": 7624,
+            "git_mode": "100644",
+            "sha256": "0dbfe270a882625b235c4b575c7b32ca9e3f7b1fa12a441474e740aec6b3b9b8"
+          },
+          "before": {
+            "bytes": 6543,
+            "git_mode": "100644",
+            "sha256": "9001ccefcec9b8921e271e298102415036a1ca9ee5fd3e338ca634e9fb872eab"
+          }
+        }
+      },
+      "git_mode": "100644",
+      "id": "0007-thread-start-settings",
+      "order": 7,
+      "path": "upstream/patches/0007-thread-start-settings.patch",
+      "sha256": "95d8f31f5a6ea65ee6763fdc5bd3fd711b81b439d77bc76817d5a65525e1029a"
     }
   ],
   "schema_version": 1,
   "source_file_count": 88,
-  "source_tree_sha256": "bf68dff3f12b6d312e682a5b25892ba1d470ea968222464b2a96b099593e3aa4"
+  "source_tree_sha256": "2f45f8b435ac56a344d89b25b3166d1377bcd1f8e9409a25850befed7c38ca3c"
 }

@@ -1,0 +1,128 @@
+diff --git a/sdk/python/scripts/update_sdk_artifacts.py b/sdk/python/scripts/update_sdk_artifacts.py
+index 1c6ec59..45dc037 100755
+--- a/sdk/python/scripts/update_sdk_artifacts.py
++++ b/sdk/python/scripts/update_sdk_artifacts.py
+@@ -985,7 +985,12 @@ def _render_codex_block(
+         *_model_arg_lines(thread_start_fields),
+         "        )",
+         "        started = self._client.thread_start(params)",
+-        "        return Thread(self._client, started.thread.id)",
++        "        return Thread(",
++        "            self._client,",
++        "            started.thread.id,",
++        "            started.model,",
++        "            started.reasoning_effort,",
++        "        )",
+         "",
+         "    def thread_list(",
+         "        self,",
+@@ -1065,7 +1070,12 @@ def _render_async_codex_block(
+         *_model_arg_lines(thread_start_fields),
+         "        )",
+         "        started = await self._client.thread_start(params)",
+-        "        return AsyncThread(self, started.thread.id)",
++        "        return AsyncThread(",
++        "            self,",
++        "            started.thread.id,",
++        "            started.model,",
++        "            started.reasoning_effort,",
++        "        )",
+         "",
+         "    async def thread_list(",
+         "        self,",
+diff --git a/sdk/python/src/openai_codex/api.py b/sdk/python/src/openai_codex/api.py
+index 94b1eeb..962cf24 100644
+--- a/sdk/python/src/openai_codex/api.py
++++ b/sdk/python/src/openai_codex/api.py
+@@ -167,7 +167,12 @@ class Codex:
+             thread_source=thread_source,
+         )
+         started = self._client.thread_start(params)
+-        return Thread(self._client, started.thread.id)
++        return Thread(
++            self._client,
++            started.thread.id,
++            started.model,
++            started.reasoning_effort,
++        )
+ 
+     def thread_list(
+         self,
+@@ -410,7 +415,12 @@ class AsyncCodex:
+             thread_source=thread_source,
+         )
+         started = await self._client.thread_start(params)
+-        return AsyncThread(self, started.thread.id)
++        return AsyncThread(
++            self,
++            started.thread.id,
++            started.model,
++            started.reasoning_effort,
++        )
+ 
+     async def thread_list(
+         self,
+@@ -540,6 +550,8 @@ class Thread:
+ 
+     _client: CodexClient
+     id: str
++    initial_model: str | None = None
++    initial_reasoning_effort: ReasoningEffort | None = None
+ 
+     def run(
+         self,
+@@ -628,6 +640,8 @@ class AsyncThread:
+ 
+     _codex: AsyncCodex
+     id: str
++    initial_model: str | None = None
++    initial_reasoning_effort: ReasoningEffort | None = None
+ 
+     async def run(
+         self,
+diff --git a/sdk/python/tests/test_public_api_runtime_behavior.py b/sdk/python/tests/test_public_api_runtime_behavior.py
+index 4cee695..d798844 100644
+--- a/sdk/python/tests/test_public_api_runtime_behavior.py
++++ b/sdk/python/tests/test_public_api_runtime_behavior.py
+@@ -2,6 +2,7 @@ from __future__ import annotations
+ 
+ import asyncio
+ from pathlib import Path
++from types import SimpleNamespace
+ from typing import Any
+ 
+ import pytest
+@@ -128,6 +129,33 @@ def test_async_codex_initializes_only_once_under_concurrency() -> None:
+     asyncio.run(scenario())
+ 
+ 
++def test_thread_start_preserves_native_effective_model_settings() -> None:
++    response = SimpleNamespace(
++        thread=SimpleNamespace(id="thread-1"),
++        model="configured-model",
++        reasoning_effort=SimpleNamespace(root="high"),
++    )
++    sync_codex = object.__new__(Codex)
++    sync_codex._client = SimpleNamespace(thread_start=lambda _params: response)
++    sync_thread = sync_codex.thread_start()
++    assert sync_thread.initial_model == "configured-model"
++    assert sync_thread.initial_reasoning_effort.root == "high"
++
++    async def scenario() -> None:
++        async_codex = AsyncCodex()
++        async_codex._initialized = True
++
++        async def fake_thread_start(_params):  # noqa: ANN202
++            return response
++
++        async_codex._client.thread_start = fake_thread_start  # type: ignore[method-assign]
++        async_thread = await async_codex.thread_start()
++        assert async_thread.initial_model == "configured-model"
++        assert async_thread.initial_reasoning_effort.root == "high"
++
++    asyncio.run(scenario())
++
++
+ def _approval_mode_turn_params(approval_mode: ApprovalMode) -> TurnStartParams:
+     """Build real generated turn params from one public approval mode."""
+     approval_policy, approvals_reviewer = public_api_module._approval_mode_settings(approval_mode)

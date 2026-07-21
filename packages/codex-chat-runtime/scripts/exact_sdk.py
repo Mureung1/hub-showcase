@@ -151,6 +151,15 @@ BEHAVIORAL_PATCHES = (
             "sdk/python/tests/test_public_api_signatures.py",
         ),
     ),
+    (
+        "0007-thread-start-settings",
+        PATCH_ROOT / "0007-thread-start-settings.patch",
+        (
+            "sdk/python/scripts/update_sdk_artifacts.py",
+            "sdk/python/src/openai_codex/api.py",
+            "sdk/python/tests/test_public_api_runtime_behavior.py",
+        ),
+    ),
 )
 _stable_python: str | None = None
 
