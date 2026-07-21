@@ -20,6 +20,7 @@ import {
   resolveGeneratedCurriculumPlan,
   useGeneratedCurriculumStore,
 } from '../curriculum/model/useGeneratedCurriculumStore'
+import { CurriculumLoading } from './CurriculumLoading'
 import { getTodayProgress } from '../learning-progress/api/learningProgressClient'
 import { useMistakeNoteStore } from '../mistake-notes/model/useMistakeNoteStore'
 import styles from './TodayLearningHub.module.css'
@@ -286,7 +287,7 @@ export function TodayLearningHub() {
           setGoalError('커리큘럼을 생성하지 못했습니다. 잠시 후 다시 시도해보세요.')
           setGenerationStatus('idle')
         })
-    }, 420)
+    }, 2000)
   }
 
   function handleGenerateCurriculum(event: FormEvent<HTMLFormElement>) {
@@ -426,7 +427,11 @@ export function TodayLearningHub() {
                       {goalError}
                     </p>
                   ) : null}
-                  <section className={styles.generatedSummary} aria-label="최근 생성한 커리큘럼">
+                  {generationStatus === 'generating' ? (
+                    <CurriculumLoading />
+                  ) : (
+                    <>
+                      <section className={styles.generatedSummary} aria-label="최근 생성한 커리큘럼">
                     <div>
                       <span>{generatedStateLabel}</span>
                       <strong>{generatedPlan.title}</strong>
@@ -435,19 +440,24 @@ export function TodayLearningHub() {
                       </p>
                     </div>
                     <div className={styles.generatedActions}>
+                      <Link
+                        className={styles.generatedStartLink}
+                        to="/workspace?mission=generated-first-mission"
+                      >
+                        추천 미션 시작
+                      </Link>
                       {isGoalDraftChanged ? (
                         <span className={styles.pendingNotice}>입력한 목표가 아직 적용되지 않았습니다.</span>
                       ) : null}
                       <button
                         type="button"
-                        disabled={generationStatus === 'generating'}
                         onClick={() => startCurriculumGeneration(careerGoal)}
                       >
                         다시 생성
                       </button>
                       <button
                         type="button"
-                        disabled={!generatedCurriculum || generationStatus === 'generating'}
+                        disabled={!generatedCurriculum}
                         onClick={handleResetGeneratedCurriculum}
                       >
                         초기화
@@ -481,6 +491,8 @@ export function TodayLearningHub() {
                       </article>
                     ))}
                   </div>
+                    </>
+                  )}
                 </div>
               )}
             </section>
