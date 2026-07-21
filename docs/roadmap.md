@@ -2,32 +2,37 @@
 
 > MVP 완주 이후의 실행 문서. **§1 현재 상태(실측)** 를 보고 **§2 백로그(WP)** 순서로 작업한다.
 > 기획 원천은 [plan.md](plan.md), 구현 스펙은 [prd.md](prd.md), 디자인은 [design.md](design.md).
-> 마지막 실측 검증: **2026-07-16** (WP-A 완료 시점 — 라이브 트리거·복기 생성 테스트 포함).
+> 마지막 갱신: **2026-07-21** (G2/G3 멀티유저 라우팅 코드 착지 + 문서 정합화).
+
+> **2026-07-20~21 요약**: 단일 사용자 라이브 완주(G0·G1·H1) 검증 완료 → `0007` "거울 프레임" 피벗(투자 계획 필드 + review-agent 재설계 + `repeated_mistake`→`behavior_pattern`) → **G2/G3 멀티유저 라우팅 코드 착지**(`resolveUserByDiscordId` + `monitor` 사용자별 순회, `0008` 인덱스 초안). **원격 배포·멀티유저 라이브 E2E는 다음 배포 세션으로 이연.**
 
 ## 1. 현재 상태 스냅샷 (실측)
 
 ### 1.1 배포·데이터 (원격)
 
-- **마이그레이션**: 로컬=원격 일치 — `0001_schema` / `0002_cron` / `0003_watchlists` / `0004_discord_link_and_profiles` / `0005_alerts_and_hold` / `0006_trade_fields_and_usage`.
-  - `0004`(handle_new_user 트리거 + 기존 계정 백필 + discord_link_codes) **2026-07-16 적용** — 신규 가입 FK 실패 해소, 라이브 트리거 테스트 통과.
-  - `0006`(trades.tags/emotion + ai_usage_events ledger) **2026-07-16 적용** — 라이브 insert·check 제약·기존 행 호환 검증 통과.
-- **Edge Functions**: `market-data` · `monitor` · `discord-interactions` · `review-agent` **4종 전부 배포·ACTIVE**. review-agent는 라이브 복기 1건 생성 확인(2026-07-16).
-- **시크릿**: KIS 2종 + `GEMINI_API_KEY` 등록 확인. ⚠️ `DISCORD_BOT_TOKEN`/`DISCORD_PUBLIC_KEY`/`DISCORD_APPLICATION_ID`는 **원격 미설정** — §1.3 참조.
+- **마이그레이션**: `0001`~`0006` 원격 적용 완료. **`0007_plan_fields_and_mirror_review`(계획 필드 + reviews 개편)·`0008_multiuser_indexes`(초안)는 원격 push 이연** — 다음 배포 세션.
+  - `0004`(handle_new_user 트리거 + discord_link_codes) 적용 — 신규 가입 FK 해소.
+  - `0006`(trades.tags/emotion + ai_usage_events ledger) 적용.
+  - `0007`(trades.thesis/target_price/stop_price/horizon/confidence + reviews.plan_adherence + repeated_mistake→behavior_pattern) — **코드 커밋(2026-07-20), 원격 push·검증 이연**.
+- **Edge Functions**: `market-data` · `monitor` · `discord-interactions` · `review-agent` 배포·ACTIVE. **단, G2/G3 라우팅 + 0007 거울 프레임 반영본은 재배포 이연**(로컬 코드가 앞서 있음).
+- **시크릿**: KIS 2종 + `GEMINI_API_KEY` 등록. Discord 3종(`DISCORD_BOT_TOKEN`/`DISCORD_PUBLIC_KEY`/`DISCORD_APPLICATION_ID`)은 G0 프로비저닝(3주차 Day1)으로 원격 설정 — 단일 사용자 라이브 완주 검증됨.
 
 ### 1.2 웹앱 (로컬 코드)
 
-- **라우트**: `/`(인증 인지형) · `/login` · `/dashboard` · `/watchlist` · `/conditions` · `/stock/:ticker` · `/trade/:id` · `/condition/:id` · `/history` + `/journal*`·`/review/:tradeId` 리다이렉트. `APP_HOME='/dashboard'`([src/lib/routes.js](../src/lib/routes.js)).
+- **라우트**: `/`(인증 인지형) · `/login`(+Discord 연동 온보딩) · `/dashboard` · `/watchlist` · `/conditions` · `/stock/:ticker` · `/trade/:id` · `/condition/:id` · `/history` · `/settings`(Discord 셀프 연동) + `/journal*`·`/review/:tradeId` 리다이렉트. `APP_HOME='/dashboard'`([src/lib/routes.js](../src/lib/routes.js)).
 - **종목 페이지**(`StockPage`): KIS 실데이터 차트(년/월/주/일 인터벌, US 년봉 비활성) + 마커 4종 + 가격조건 수평선(`createPriceLine`) + `TradeForm` 컴포넌트(3-way 매수/매도/관망 + 태그 pill 다중선택 + 감정 칩 단일선택, 후보 상수 [src/lib/tradeMeta.js](../src/lib/tradeMeta.js)) + 조건 폼(`fixedSymbol`) + 관심 토글.
   - 차트 클릭 → `TradeForm` 모달(일봉=날짜 고정, 주/월/년봉=date input min/max 게이트)로 과거 일자 기록 가능. `traded_at`=선택일 장마감(KR 15:30 KST / US 16:00 ET DST 인식), `source='manual'`. 인라인 폼은 기존대로 `now()`.
 - **히스토리**(`HistoryPage`): 종목별 그룹 + 소형 카드 2열 그리드(모바일 1열) — side 뱃지·태그 pill·감정 칩·복기 상태 뱃지·삭제. 편집·복기는 카드 클릭 → `/trade/:id`.
 - **mock**: **전부 제거 완료**(2026-07-16, `lib/mockDashboard.js` 삭제) — 대시보드·관심종목 모두 항상 실데이터.
-- **미구현**: `SettingsPage`(Discord 연동)만 남음 — WP-G.
+- **Discord 연동(G1)**: `SettingsPage` + `DiscordLinkPanel`(코드 발급/복사/확인/해제) + 로그인 온보딩 + `/연동` 봇 커맨드 + 벌크 커맨드 등록 스크립트 — **코드 완료**(2026-07-20).
+- **투자 계획 필드·거울 프레임(0007)**: `TradeForm`/`TradeDetailPage` 계획 필드 입력·수정, `review-agent` 거울 프레임 프롬프트·`plan_adherence`/`behavior_pattern` 출력 — **코드 완료**(2026-07-20).
 
 ### 1.3 알려진 결함·부채
 
-- **Discord 함수 시크릿 원격 미설정**: 배포된 `discord-interactions`·`monitor`가 참조하는 `DISCORD_BOT_TOKEN`/`DISCORD_PUBLIC_KEY`/`DISCORD_APPLICATION_ID`가 원격 시크릿에 없음(로컬 `.env`에는 있음) → **원격 Discord 서명 검증·발송이 동작 불가 상태로 추정**. WP-G 착수 시(또는 그 전에) `supabase secrets set`으로 등록 필요.
-- 알림의 "메모리 한 줄"은 저장된 복기 **조회** 방식(`monitor`의 `fetchMemoryLine`) — 에이전트 생성은 보류(§2 연기 항목).
-- ~~신규 가입 계정에 `profiles` 행이 안 생김~~ → **해소**(`0004`, 2026-07-16). 라이브 테스트: 신규 계정 생성 → profiles 자동생성 → watchlists insert 성공 확인.
+- ⚠️ **로컬 코드가 원격보다 앞섬(배포 지연)**: G2/G3 라우팅 + `0007` 거울 프레임이 로컬에만 있음. `0007`·`0008` push + 함수 3종(`monitor`·`discord-interactions`·`review-agent`) 재배포 전까지 **원격은 여전히 단일 사용자·구 복기 스키마**로 동작. → 다음 배포 세션 최우선.
+- 알림의 "메모리 한 줄"은 저장된 복기 **조회** 방식(`monitor`의 `fetchMemoryLine`, 현재 `behavior_pattern` 우선) — 에이전트 생성은 보류(§2 연기 항목).
+- ~~Discord 함수 시크릿 원격 미설정~~ → **해소**(G0 프로비저닝, 3주차 Day1).
+- ~~신규 가입 계정에 `profiles` 행이 안 생김~~ → **해소**(`0004`, 2026-07-16).
 
 ## 2. 작업 백로그 (Work Packages)
 
@@ -94,20 +99,32 @@ WP-A(A1) ─→ WP-G(Discord 연동, 독립 병행 가능)
 | F2 | 사용 이력 기록 | ✅ reviews insert 성공 직후만 `ai_usage_events` insert. 캐시·실패 경로 미기록, insert 실패는 로그만(응답 무영향) |
 | F3 | 재배포 | ✅ deploy + 라이브 복기 1건: `cited_trade_ids` 1건 인용(비어있지 않음 — WP-A 이연 검증 해소) · usage 0→1 적재 · 캐시 재호출 시 미기록 확인 |
 
-### WP-G. Discord 계정 연동 (선행: A1 · 독립 병행 가능)
+### WP-G. Discord 계정 연동 + 멀티유저 라우팅
 
-| # | 작업 | 내용 |
+| # | 작업 | 결과 |
 |---|------|------|
-| G1 | 셀프 연동 플로우 구현 | 설계 확정본 [discord-linking.md](discord-linking.md) 그대로: 신규 `SettingsPage`(코드 발급) + `/연동` 봇 커맨드 + `register-discord-command.mjs` 갱신 |
-| G2 | 감시 함수 사용자별 조건 조회 | `getSingleUser` → `discord_user_id` 역조회 전환(discord-linking.md §7) — 다중 사용자 시 감시가 첫 계정에만 귀속되는 문제 해소 |
-| G3 | 알림을 사용자별 Discord 채널로 발송 | `monitor`가 사용자별 순회로 각자의 `notify_channel_id`에 알림 발송(discord-linking.md §7) |
+| G0 | Discord 시크릿 원격 프로비저닝 | ✅ 3주차 Day1 — `supabase secrets set` 3종 |
+| G1 | 셀프 연동 플로우 구현 | ✅ 2026-07-20 — `SettingsPage`+`DiscordLinkPanel`(코드 발급) + 로그인 온보딩 + `/연동` 봇 커맨드 + 벌크 커맨드 등록 스크립트 |
+| G2 | 인터랙션 사용자별 해석 | ✅ 코드(2026-07-21) — `resolveUserByDiscordId`(`discord_user_id` 역조회) 신설, `getSingleUser` 제거. `/알림`·매매버튼 미연동 시 `/연동` 안내. **재배포 이연** |
+| G3 | 알림 사용자별 채널 발송 | ✅ 코드(2026-07-21) — `monitor` 사용자별 `notify_channel_id` 맵 순회. 미연동은 평가·`alerts`만, 발송 스킵. **재배포 이연** |
 
-**수용 기준**: 웹에서 발급한 코드로 `/연동` → 알림이 내 채널로 도달. 계정이 2개 이상이어도 각자 자기 조건·자기 채널로만 알림 수신.
+**수용 기준**: 웹 발급 코드로 `/연동` → 알림이 내 채널로 도달. 계정 2개 이상이어도 각자 자기 조건·자기 채널로만 수신. → **원격 재배포 후 멀티유저 라이브 E2E로 검증 예정**(WP-H).
 
-### WP-H. 라이브 E2E 검증 + 문서 마감
+### WP-I. 거울 프레임 피벗 (`0007`) — ✅ 코드 완료 (2026-07-20)
 
-- 시나리오: 가입 → 대시보드 검색 → 종목 페이지(차트 인터벌·차트 클릭 기록·관심 토글·조건 설정) → Discord 알림·원클릭 기록 → 히스토리 카드 → `/trade/:id` 수정·복기 → `/condition/:id` 수정 → `ai_usage_events` 적재 확인.
-- 본 문서 §1 스냅샷 갱신.
+자본시장법 경계(투자자문·유사투자자문 회피) 안에서 AI 복기를 "매매 추천"이 아닌 "계획 대비 실행을 비추는 거울"로 재정의. 근거·원칙은 [plan.md](plan.md) 서비스 원칙 섹션.
+
+- **기록 폼**: `trades`에 진입 계획 필드 5종(`thesis`·`target_price`·`stop_price`·`horizon`·`confidence`, 전부 선택) 추가 — `TradeForm`/`TradeDetailPage`.
+- **복기 스키마**: `reviews.plan_adherence` 신설 + `repeated_mistake`→`behavior_pattern` rename. `review-agent` 프롬프트에 미래지시·가치평가·결과론 금지 가드레일.
+- **이연**: 면책 고지 상시 노출(AppLayout/복기 카드/알림/랜딩)은 일부만 반영 — 배포 세션에서 점검.
+
+### WP-H. 배포 세션 — 원격 반영 + 라이브 E2E + 문서 마감 (다음 세션, supabase CLI 직접 실행)
+
+1. **원격 배포**: `0007`·`0008` `db push` + 함수 3종(`monitor`·`discord-interactions`·`review-agent`) 재배포. `supabase migration list`로 `0007` 미적용 여부 먼저 확인.
+2. **거울 프레임 라이브 검증**: 복기 재생성 → 미래지시·종목평가·결과론 문구 없음 + `plan_adherence` 생성. 계획 미기록 trade면 "계획 미기록" 지적.
+3. **멀티유저 라이브 E2E**: 계정 2개 각자 Discord 연동 → 각자 조건 → `monitor` 트리거 → **각자 자기 채널로만** 알림 → 버튼 기록이 자기 `user_id`로 귀속 → 웹 상호 데이터 비노출(RLS).
+4. **단일 사용자 회귀**: 가입 → 검색 → 종목 페이지(차트·클릭 기록·관심·조건) → 알림·원클릭 기록 → 히스토리 → `/trade/:id` 수정·복기 → `ai_usage_events` 적재.
+5. 본 문서 §1 스냅샷 + Notion 3주차 보드 갱신.
 
 ### 연기·보류
 
@@ -122,10 +139,11 @@ WP-A(A1) ─→ WP-G(Discord 연동, 독립 병행 가능)
 4. **디자인 = 라이트 온리.** Stripe/Linear풍 + Geist 폰트 + 1152px 중앙 레이아웃. accent 인디고 `#635bff`, 국내 관례색(상승 빨강/하락 파랑) 유지. 원천 [design.md](design.md).
 5. **홈 = 인증 인지형 `/`.** 진입점은 `APP_HOME` 상수 1곳.
 6. **웹 조건 추가 = 구조화 폼.** 자연어 파싱(Gemini)은 Discord 전용.
-7. **매매 기록 필드 = 경량형.** 기존 + **셋업 태그(다중)·감정 상태(단일)** 만 추가. 확신도·목표가/손절가 미채택(마찰 최소화). *(WP-B)*
+7. **매매 기록 필드.** WP-B: 기존 + 셋업 태그(다중)·감정 상태(단일). **`0007`에서 진입 계획 필드(thesis·target_price·stop_price·horizon·confidence, 전부 선택) 추가** — 거울 프레임의 `plan_adherence` 축 전제. (초기 "확신도·목표가/손절가 미채택"은 번복.) *(WP-B·WP-I)*
 8. **AI 복기 = 온디맨드 버튼 유지 + 사용량 ledger 기록만.** 자동 실행 아님, 횟수 제한 미적용 — 과금 모델 대비용. *(WP-B·F)*
 9. **상세 화면 = 전용 페이지 라우트.** `/trade/:id`·`/condition/:id` 신설, `/review/:tradeId`는 흡수·리다이렉트. 모달 아님. *(WP-D)*
 10. **차트 클릭 기록 = 팝업 폼.** 주/월/년봉은 일자 선택 단계 선행. *(WP-C)*
+11. **AI 복기 = "거울 프레임".** 자본시장법 경계상 AI는 매매 추천·종목 가치평가·미래 지시·결과론 판정을 하지 않고, 사용자 **자신의 과거 행동**을 계획 대비/감정/반복 패턴으로 사실 서술한다. 원칙·법적 근거는 [plan.md](plan.md). *(WP-I, `0007`)*
 
 ## 4. 범위 밖 / 이후
 
