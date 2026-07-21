@@ -41,7 +41,9 @@ export function sceneAssetUrl(path: string) {
 async function readSceneResponse(response: Response): Promise<SceneJob> {
   const payload = (await response.json()) as SceneJob | { detail?: string };
   if (!response.ok || !("id" in payload)) {
-    throw new Error("detail" in payload ? payload.detail ?? "Scene request failed." : "Scene request failed.");
+    throw new Error(
+      "detail" in payload ? (payload.detail ?? "Scene request failed.") : "Scene request failed.",
+    );
   }
   return payload;
 }
