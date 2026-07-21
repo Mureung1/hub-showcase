@@ -1,6 +1,5 @@
 // 커스텀 상황 AI 생성 — 사용자의 짧은 설명으로 상황 스펙(관계·목적·긴장·루브릭)을 구성.
-import Anthropic from "@anthropic-ai/sdk";
-import { DEFAULT_MODEL } from "./score";
+import { callGemini, extractText, GEMINI_MODEL } from "./gemini";
 import type { Situation } from "../domain/types";
 
 export interface GenerateInput {
@@ -10,29 +9,23 @@ export interface GenerateInput {
   tension?: string;
 }
 
-const level3 = {
-  type: "array",
-  items: { type: "string" },
-  minItems: 3,
-  maxItems: 3,
-} as const;
+const level3 = { type: "ARRAY", items: { type: "STRING" }, minItems: 3, maxItems: 3 } as const;
 
+// Gemini REST generateContent의 responseSchema(OpenAPI 서브셋 — type은 대문자)
 const GEN_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
+  type: "OBJECT",
   required: ["rel", "counterpart", "goal", "tension", "direction", "axis", "sample", "opener", "rubric"],
   properties: {
-    rel: { type: "string" },
-    counterpart: { type: "string" },
-    goal: { type: "string" },
-    tension: { type: "string" },
-    direction: { type: "string" },
-    axis: { type: "string", enum: ["① 맥락", "② 격식", "③ 전략"] },
-    sample: { type: "string" },
-    opener: { type: ["string", "null"] },
+    rel: { type: "STRING" },
+    counterpart: { type: "STRING" },
+    goal: { type: "STRING" },
+    tension: { type: "STRING" },
+    direction: { type: "STRING" },
+    axis: { type: "STRING", enum: ["① 맥락", "② 격식", "③ 전략"] },
+    sample: { type: "STRING" },
+    opener: { type: "STRING", nullable: true },
     rubric: {
-      type: "object",
-      additionalProperties: false,
+      type: "OBJECT",
       required: ["context", "register", "strategy"],
       properties: { context: level3, register: level3, strategy: level3 },
     },
@@ -52,13 +45,6 @@ const GEN_SYSTEM = `당신은 한국어 '화용 훈련' 상황 설계자입니�
 - rubric: 각 축(context/register/strategy)의 [1점 위험, 2점 무난, 3점 적절] 기준 3개씩
 격식은 높을수록 좋은 게 아니라 관계에 맞아야 합니다. 지정된 JSON만 출력하세요.`;
 
-let client: Anthropic | null = null;
-function anthropic(): Anthropic {
-  if (!process.env.ANTHROPIC_API_KEY) throw new Error("NO_KEY");
-  if (!client) client = new Anthropic();
-  return client;
-}
-
 export async function generateSituation(input: GenerateInput): Promise<Situation> {
   const user =
     `[제목] ${input.title}\n` +
@@ -67,18 +53,12 @@ export async function generateSituation(input: GenerateInput): Promise<Situation
     (input.tension ? `[어려운 점] ${input.tension}\n` : "") +
     `위 상황의 카드를 설계해 JSON으로만 출력하세요.`;
 
-  const stream = anthropic().messages.stream({
-    model: DEFAULT_MODEL,
-    max_tokens: 2048,
-    thinking: { type: "adaptive" },
-    system: GEN_SYSTEM,
-    messages: [{ role: "user", content: user }],
-    output_config: { format: { type: "json_schema", schema: GEN_SCHEMA } },
+  const data = await callGemini(GEMINI_MODEL, {
+    system_instruction: { parts: [{ text: GEN_SYSTEM }] },
+    contents: [{ role: "user", parts: [{ text: user }] }],
+    generationConfig: { maxOutputTokens: 2048, responseMimeType: "application/json", responseSchema: GEN_SCHEMA },
   });
-  const msg = await stream.finalMessage();
-  const textBlock = msg.content.find((b): b is Anthropic.TextBlock => b.type === "text");
-  if (!textBlock) throw new Error("빈 응답: " + (msg.stop_reason || "알 수 없음"));
-  const g = JSON.parse(textBlock.text);
+  const g = JSON.parse(extractText(data));
 
   const trim3 = (a: unknown): string[] =>
     Array.isArray(a) ? a.slice(0, 3).map((x) => String(x)) : ["", "", ""];

@@ -1,6 +1,7 @@
 "use client";
 import { useApp } from "@/lib/client/store";
 import { AXES, LEVELS, SITUATIONS } from "@/lib/domain/situations";
+import { computeStreak, levelInfo, totalXP } from "@/lib/domain/gamification";
 import type { Situation } from "@/lib/domain/types";
 
 export default function Home({ onPick, startSit }: { onPick: () => void; startSit: (s: Situation) => void }) {
@@ -8,16 +9,39 @@ export default function Home({ onPick, startSit }: { onPick: () => void; startSi
   const history = app.history;
   const last = history[history.length - 1];
   const first = history[0];
+  const lvl = levelInfo(totalXP(history));
+  const streak = computeStreak(history);
 
   // 약점 축 → 추천 상황
   const weak = last
     ? AXES.reduce((w, ax) => (last.scores[ax.key] < last.scores[w.key] ? ax : w), AXES[0])
     : AXES[0];
-  const mine = SITUATIONS.filter((s) => !s.ctx && (!app.profile?.role || s.roles?.includes(app.profile.role)));
+  const mine = SITUATIONS.filter((s) => !app.profile?.role || s.roles?.includes(app.profile.role));
   const reco = mine.find((s) => s.axis.startsWith(weak.num)) || mine[0] || SITUATIONS[0];
 
   return (
     <div>
+      {/* 레벨·XP·스트릭 */}
+      <div className="mb-4 flex items-center gap-3 rounded-2xl border p-3.5" style={{ background: "var(--surface)", borderColor: "var(--line)" }}>
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[12.5px] font-extrabold" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
+          Lv{lvl.level}
+        </div>
+        <div className="flex-1">
+          <div className="h-2 overflow-hidden rounded-full" style={{ background: "var(--bg)" }}>
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${lvl.progress * 100}%`, background: "var(--accent)", transition: "width .6s cubic-bezier(.2,.8,.2,1)" }}
+            />
+          </div>
+          <div className="mt-1 text-[11px]" style={{ color: "var(--sub)" }}>{lvl.xpIntoLevel} / {lvl.xpForNext} XP</div>
+        </div>
+        {streak.current > 0 && (
+          <div className="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[12.5px] font-bold" style={{ background: "var(--warn-soft)", color: "var(--warn)" }}>
+            🔥 {streak.current}일
+          </div>
+        )}
+      </div>
+
       <h1 className="text-2xl font-extrabold leading-snug">오늘도 훈련하러 오셨네요</h1>
       <p className="mb-5 mt-1 text-[13.5px]" style={{ color: "var(--sub)" }}>
         화용 점수는 &apos;한 번의 잘 쓴 글&apos;이 아니라 궤적으로 오릅니다.

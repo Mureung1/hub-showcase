@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useApp } from "@/lib/client/store";
 import { AXES, LEVELS, personaOf, splitBubbles, totalOf } from "@/lib/domain/situations";
+import { levelInfo, newlyUnlocked, totalXP, type Badge } from "@/lib/domain/gamification";
 import { scoreDraft, type ScoreResult } from "@/lib/client/api";
 import type { Situation, ThreadItem, Scores } from "@/lib/domain/types";
 
@@ -34,6 +35,7 @@ export default function Train({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [themTyping, setThemTyping] = useState(false);
+  const [celebration, setCelebration] = useState<{ badges: Badge[]; leveledUp: boolean; level: number } | null>(null);
 
   async function submit() {
     const d = draft.trim();
@@ -59,7 +61,6 @@ export default function Train({
       setPhase("result");
       setSaved(false);
       setTries((t) => t + 1);
-      app.addSession(sit.id, res.scores);
       setDraft("");
       // 상대 답장 — 채팅은 여러 말풍선으로 뜸들이며, 그 외는 한 덩어리로.
       if (res.counterpartReply) {
@@ -85,8 +86,44 @@ export default function Train({
     }
   }
 
+  function finishSession() {
+    if (!attempt) return;
+    const beforeHistory = app.history;
+    app.addSession(sit.id, attempt.scores);
+    const afterHistory = [...beforeHistory, { d: "", sid: sit.id, scores: attempt.scores, ts: Date.now() }];
+    const newBadges = newlyUnlocked(
+      { history: beforeHistory, assets: app.assets },
+      { history: afterHistory, assets: app.assets },
+    );
+    const levelBefore = levelInfo(totalXP(beforeHistory)).level;
+    const levelAfter = levelInfo(totalXP(afterHistory)).level;
+    if (newBadges.length > 0 || levelAfter > levelBefore) {
+      setCelebration({ badges: newBadges, leveledUp: levelAfter > levelBefore, level: levelAfter });
+    } else {
+      onFinish();
+    }
+  }
+
   return (
     <div>
+      {celebration && (
+        <div
+          className="fixed left-1/2 top-4 z-50 w-[92%] max-w-sm -translate-x-1/2 rounded-2xl border p-4 text-center shadow-lg"
+          style={{ background: "var(--surface)", borderColor: "var(--accent)", animation: "ob-pop .35s cubic-bezier(.2,.8,.2,1)" }}
+        >
+          {celebration.leveledUp && (
+            <div className="mb-1 text-[13px] font-extrabold" style={{ color: "var(--accent)" }}>🎉 레벨 {celebration.level} 달성!</div>
+          )}
+          {celebration.badges.map((b) => (
+            <div key={b.id} className="text-[13px] font-bold" style={{ color: "var(--ink)" }}>
+              {b.icon} 배지 획득: {b.label}
+            </div>
+          ))}
+          <button onClick={onFinish} className="mt-2 text-[11.5px] font-semibold" style={{ color: "var(--sub)" }}>
+            닫기
+          </button>
+        </div>
+      )}
       <div className="mb-4 flex items-center gap-3">
         <button onClick={onExit} className="rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold" style={{ background: "var(--surface)", borderColor: "var(--line)", color: "var(--sub)" }}>
           ← 상황 다시 고르기
@@ -112,12 +149,6 @@ export default function Train({
         <div className="mb-3 rounded-2xl border p-4" style={{ background: "var(--surface)", borderColor: "var(--line)" }}>
           <div className="mb-2 text-[12px] font-extrabold" style={{ color: "var(--sub)" }}>📰 무슨 일이 있었나</div>
           <div className="text-[13.5px]" style={{ color: "var(--ink)", lineHeight: 1.75 }}>{sit.background}</div>
-        </div>
-      )}
-      {sit.ctx && sit.sample && (
-        <div className="mb-3 rounded-2xl border p-4" style={{ background: "var(--bad-soft)", borderColor: "var(--bad)" }}>
-          <div className="mb-2 text-[12px] font-extrabold" style={{ color: "var(--bad)" }}>🔴 실제로 나갔던 원문 — 무엇이 문제일까요?</div>
-          <div className="rounded-lg border p-3 text-[13.5px]" style={{ background: "var(--surface)", borderColor: "var(--line)", whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{sit.sample}</div>
         </div>
       )}
 
@@ -188,7 +219,7 @@ export default function Train({
           )}
         </button>
         {phase === "result" && (
-          <button onClick={onFinish} className="rounded-xl border px-4 py-3 text-[13.5px] font-semibold" style={{ background: "var(--surface)", borderColor: "var(--line)", color: "var(--sub)" }}>
+          <button onClick={finishSession} className="rounded-xl border px-4 py-3 text-[13.5px] font-semibold" style={{ background: "var(--surface)", borderColor: "var(--line)", color: "var(--sub)" }}>
             세션 마치기
           </button>
         )}

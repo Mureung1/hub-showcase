@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     const msg = (e as Error).message;
     if (msg === "NO_KEY") {
       return NextResponse.json(
-        { error: "ANTHROPIC_API_KEY가 서버에 설정되지 않았습니다." },
+        { error: "GEMINI_API_KEY가 서버에 설정되지 않았습니다." },
         { status: 503 },
       );
     }

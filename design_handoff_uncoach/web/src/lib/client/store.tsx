@@ -80,7 +80,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     saveProfile: (p) => persist({ ...blob, profile: p }),
     addSession: (sid, scores) => {
       const now = new Date();
-      const rec: SessionRecord = { d: `${now.getMonth() + 1}.${now.getDate()}`, sid, scores };
+      const rec: SessionRecord = { d: `${now.getMonth() + 1}.${now.getDate()}`, sid, scores, ts: now.getTime() };
       persist({ ...blob, history: [...blob.history, rec] });
     },
     addAsset: (text, sid) => {
