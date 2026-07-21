@@ -1,5 +1,6 @@
-import { Link, useParams } from "react-router-dom";
-import { getMentorById } from "../data/mentors";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useParams } from "react-router-dom";
+import { getMentorById } from "../api/mentors";
 import { routePaths } from "../routes/routePaths";
 
 function MentorAvatar({ mentorName }) {
@@ -18,8 +19,48 @@ function MentorAvatar({ mentorName }) {
 }
 
 function MentorDetailPage() {
+  const location = useLocation();
   const { mentorId } = useParams();
-  const mentor = getMentorById(mentorId);
+  const [mentor, setMentor] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const returnTo = location.state?.returnTo ?? routePaths.menteeMentors;
+  const returnState = location.state?.applicationStatus
+    ? { activeStatus: location.state.applicationStatus }
+    : undefined;
+  const returnLabel = returnTo === routePaths.menteeApplications
+    ? "면담 신청 목록으로 돌아가기"
+    : "멘토 목록으로 돌아가기";
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    setIsLoading(true);
+    getMentorById(mentorId)
+      .then((response) => {
+        if (!isCancelled) setMentor(response.data);
+      })
+      .catch(() => {
+        if (!isCancelled) setMentor(null);
+      })
+      .finally(() => {
+        if (!isCancelled) setIsLoading(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [mentorId]);
+
+  if (isLoading) {
+    return (
+      <main className="mentor-detail-page">
+        <section className="card mentor-detail-not-found" role="status">
+          <p className="eyebrow">MENTOR PROFILE</p>
+          <h1 className="page-title">프로필을 불러오는 중입니다</h1>
+        </section>
+      </main>
+    );
+  }
 
   if (!mentor) {
     return (
@@ -28,7 +69,7 @@ function MentorDetailPage() {
           <p className="eyebrow">MENTOR PROFILE</p>
           <h1 className="page-title">멘토 정보를 찾을 수 없습니다</h1>
           <p className="body-text">멘토 목록에서 프로필을 다시 선택해 주세요.</p>
-          <Link className="button button-primary" to={routePaths.menteeMentors}>멘토 목록으로</Link>
+          <Link className="button button-primary" state={returnState} to={returnTo}>이전 화면으로</Link>
         </section>
       </main>
     );
@@ -42,7 +83,12 @@ function MentorDetailPage() {
             <p className="eyebrow">MENTOR PROFILE</p>
             <h1 className="page-title">프로필 상세</h1>
           </div>
-          <Link className="mentor-detail-close" to={routePaths.menteeMentors} aria-label="멘토 목록으로 돌아가기">
+          <Link
+            aria-label={returnLabel}
+            className="mentor-detail-close"
+            state={returnState}
+            to={returnTo}
+          >
             <span aria-hidden="true" />
           </Link>
         </header>
@@ -67,7 +113,7 @@ function MentorDetailPage() {
         <section className="mentor-detail-section" aria-labelledby="mentor-research-title">
           <h2 id="mentor-research-title">연구 분야</h2>
           <div className="tag-list">
-            {mentor.keywords.map((keyword) => <span className="tag" key={keyword}>#{keyword}</span>)}
+            {mentor.researchFields.map((keyword) => <span className="tag" key={keyword}>#{keyword}</span>)}
           </div>
         </section>
 

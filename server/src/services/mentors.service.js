@@ -40,12 +40,26 @@ const matchesExact = (value, filterValue) => {
   return value?.toLowerCase() === filterValue.trim().toLowerCase();
 };
 
-const matchesListField = (values, filterValue) => {
+const matchesSubstring = (value, filterValue) => {
+  if (!filterValue) return true;
+
+  return value?.toLowerCase().includes(filterValue.trim().toLowerCase());
+};
+
+const matchesListFieldExact = (values, filterValue) => {
   if (!filterValue) return true;
 
   const normalizedFilterValue = filterValue.trim().toLowerCase();
 
   return values.some((value) => value.toLowerCase() === normalizedFilterValue);
+};
+
+const matchesListFieldSubstring = (values, filterValue) => {
+  if (!filterValue) return true;
+
+  const normalizedFilterValue = filterValue.trim().toLowerCase();
+
+  return values.some((value) => value.toLowerCase().includes(normalizedFilterValue));
 };
 
 const listMentors = async ({
@@ -64,11 +78,11 @@ const listMentors = async ({
     .filter(
       (row) =>
         (!query || matchesQuery(row, query)) &&
-        matchesListField(row.research_fields, researchField) &&
-        matchesListField(row.counseling_fields, counselingField) &&
-        matchesExact(row.major, major) &&
+        matchesListFieldSubstring(row.research_fields, researchField) &&
+        matchesListFieldExact(row.counseling_fields, counselingField) &&
+        matchesSubstring(row.major, major) &&
         matchesExact(row.academic_status, academicStatus) &&
-        matchesExact(row.lab, lab),
+        matchesSubstring(row.lab, lab),
     )
     .map(toSummary);
 };
