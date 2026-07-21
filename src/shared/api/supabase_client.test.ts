@@ -23,6 +23,7 @@ describe('createSupabaseBrowserClient', () => {
         auth: {
           autoRefreshToken: true,
           detectSessionInUrl: true,
+          flowType: 'pkce',
           persistSession: true,
         },
       }
