@@ -62,15 +62,15 @@ export default function DropsGrid({
         </p>
       </div>
 
-      {/* Sub category filter chips inside the tab */}
       <div className="sub-filters" style={{ display: 'flex', gap: '8px', marginBottom: '32px', flexWrap: 'wrap' }}>
-        {(['all', 'sneakers', 'streetwear', 'tcg', 'lego'] as const).map((cat) => {
+        {(['all', 'sneakers', 'streetwear', 'tcg', 'accessories', 'collectibles'] as const).map((cat) => {
           const labelMap: Record<string, string> = {
             all: 'all items',
             sneakers: 'sneakers 👟',
             streetwear: 'wear 👕',
             tcg: 'tcg 🃏',
-            lego: 'lego 🧱',
+            accessories: 'accessories 🎒',
+            collectibles: 'collectibles 🧱',
           };
           const isSelected = activeCategory === cat;
           return (

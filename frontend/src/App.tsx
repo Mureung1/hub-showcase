@@ -55,18 +55,21 @@ export default function App() {
         const mapped: Drop[] = result.data.map((d: any) => {
           const catLabels: Record<string, string> = {
             sneakers: 'sneakers 👟',
-            streetwear: 'streetwear 👕',
-            tcg: 'tcg/toys 🃏',
-            lego: 'lego 🧱'
+            streetwear: 'wear 👕',
+            tcg: 'tcg 🃏',
+            accessories: 'accessories 🎒',
+            collectibles: 'collectibles 🧱'
           };
 
-          // Image mappings based on brand or title for premium aesthetics
-          let image = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80';
-          if (d.brand === 'Nike') image = 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&q=80';
-          else if (d.brand === 'Adidas') image = 'https://images.unsplash.com/photo-1539185441755-769473a23570?w=500&q=80';
-          else if (d.brand === 'Asics') image = 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=500&q=80';
-          else if (d.brand === 'Salomon') image = 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=500&q=80';
-          else if (d.category === 'tcg') image = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&q=80';
+          // Use crawled database image first, otherwise fallback to premium unsplash placeholders
+          let image = d.imageUrl || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80';
+          if (!d.imageUrl) {
+            if (d.brand === 'Nike') image = 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&q=80';
+            else if (d.brand === 'Adidas') image = 'https://images.unsplash.com/photo-1539185441755-769473a23570?w=500&q=80';
+            else if (d.brand === 'Asics') image = 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=500&q=80';
+            else if (d.brand === 'Salomon') image = 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=500&q=80';
+            else if (d.category === 'tcg') image = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&q=80';
+          }
 
           return {
             id: d.id,

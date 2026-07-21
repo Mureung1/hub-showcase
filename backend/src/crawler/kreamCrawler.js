@@ -33,13 +33,48 @@ const parsePrice = (priceStr) => {
 // Simple rule-based helper to infer category from product title
 const inferCategory = (title) => {
   const lowerTitle = title.toLowerCase();
+  
+  // 1. TCG / Card / Boardgames
   if (lowerTitle.includes('card') || lowerTitle.includes('pokemon') || lowerTitle.includes('tcg') || lowerTitle.includes('promo')) {
     return 'tcg';
   }
+  
+  // 2. Accessories (악세서리)
   if (
-    lowerTitle.includes('cap') ||
     lowerTitle.includes('keyring') ||
     lowerTitle.includes('strap') ||
+    lowerTitle.includes('bag') ||
+    lowerTitle.includes('backpack') ||
+    lowerTitle.includes('wallet') ||
+    lowerTitle.includes('cap') ||
+    lowerTitle.includes('hat') ||
+    lowerTitle.includes('socks') ||
+    lowerTitle.includes('belt') ||
+    lowerTitle.includes('watch') ||
+    lowerTitle.includes('glasses') ||
+    lowerTitle.includes('case')
+  ) {
+    return 'accessories';
+  }
+  
+  // 3. Collectibles / Figures / LEGO / Ornaments (장신구, 피규어, 굿즈)
+  if (
+    lowerTitle.includes('figure') ||
+    lowerTitle.includes('toy') ||
+    lowerTitle.includes('lego') ||
+    lowerTitle.includes('brick') ||
+    lowerTitle.includes('bearbrick') ||
+    lowerTitle.includes('plush') ||
+    lowerTitle.includes('doll') ||
+    lowerTitle.includes('popcorn') ||
+    lowerTitle.includes('sweet') ||
+    lowerTitle.includes('poster')
+  ) {
+    return 'collectibles';
+  }
+  
+  // 4. Streetwear / Apparel (의류)
+  if (
     lowerTitle.includes('top') ||
     lowerTitle.includes('crewneck') ||
     lowerTitle.includes('hoodie') ||
@@ -47,12 +82,18 @@ const inferCategory = (title) => {
     lowerTitle.includes('t-shirt') ||
     lowerTitle.includes('tee') ||
     lowerTitle.includes('pants') ||
-    lowerTitle.includes('bag') ||
-    lowerTitle.includes('sweater')
+    lowerTitle.includes('shorts') ||
+    lowerTitle.includes('sweater') ||
+    lowerTitle.includes('shirt') ||
+    lowerTitle.includes('vest') ||
+    lowerTitle.includes('coat') ||
+    lowerTitle.includes('jersey')
   ) {
     return 'streetwear';
   }
-  return 'sneakers'; // Default category
+  
+  // 5. Sneakers / Shoes (신발)
+  return 'sneakers';
 };
 
 // Simple rule-based helper to infer brand from product title
