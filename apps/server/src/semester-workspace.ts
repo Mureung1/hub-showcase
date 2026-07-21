@@ -28,6 +28,43 @@ import type {
   PersistedStatePatch,
   PersistedWorkspaceState,
 } from './semester-workspace-store.js'
+import {
+  actionMetadataMaxBytes,
+  cloneAssignment,
+  cloneAssignmentUpsert,
+  cloneEvidenceRef,
+  cloneModelingRun,
+  cloneStatePatch,
+  hasErrnoCode,
+  invalidWorkspaceStore as invalidStore,
+  isActionId,
+  isBoundedMeaningfulText,
+  isChatOperationId,
+  isCourseId,
+  isDecisionKey,
+  isEvidenceArray,
+  isExactAssignmentUpsert,
+  isExactRecord,
+  isMaterialId,
+  isModelingRunSourceBaseline,
+  isNativeCorrelation,
+  isOpaqueRuntimeIdentity,
+  isPatchId,
+  isProductOperationId,
+  isProposalKey,
+  isRecord,
+  isSafeAbsoluteActionPath,
+  isSafeFailureCode,
+  isSafeMaterialRelativePath,
+  isSafeSkillName,
+  isSha256Digest,
+  isWorkspaceId,
+  materialFileMaxBytes,
+  materialMediaType,
+  normalizeStatePatchPayload,
+  proposalSummaryMaxBytes,
+} from './semester-workspace-values.js'
+import type { CanonicalStatePatchPayload } from './semester-workspace-values.js'
 import { isExactAssignmentReviewQuestion } from './state-patch-review.js'
 
 export { SemesterWorkspaceError } from './semester-workspace-error.js'
@@ -37,18 +74,10 @@ const storeFormatVersion = currentWorkspaceStoreFormatVersion
 const productDirectoryName = workspaceProductDirectoryName
 const incompatibleStoreDisplayMessage =
   '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.'
-const materialMediaType = 'text/plain; charset=utf-8'
-const materialFileMaxBytes = 1024 * 1024
 const materialAggregateMaxBytes = 8 * 1024 * 1024
 const materialScanEntryMax = 4096
 const materialPreviewMaxBytes = 256 * 1024
-const proposalSummaryMaxBytes = 2 * 1024
-const assignmentTextMaxBytes = 1024
-const evidenceQuoteMaxBytes = 16 * 1024
-const proposalEvidenceMax = 64
 const actionArgumentMaxBytes = 16 * 1024
-const actionMetadataMaxBytes = 512
-const actionPathMaxBytes = 16 * 1024
 const actionStagingDirectoryName = 'assignment-runs'
 const actionScratchRelativeRoot = `${productDirectoryName}/runtime-scratch`
 const defaultActionCleanupDeadlineMs = 5_000
@@ -1563,7 +1592,12 @@ async function prepareAssignmentAction(
     try {
       await semesterWorkspaceStore.write(opened.root, nextStore)
     } catch (error) {
-      if (!(await semesterWorkspaceStore.matches(opened.root, nextStore))) {
+      if (
+        !(await semesterWorkspaceStore.matchesCanonicalBytes(
+          opened.root,
+          nextStore,
+        ))
+      ) {
         throw error
       }
     }
@@ -2146,7 +2180,14 @@ async function inspectGuardedMaterials(
 async function assertStoreBytesMatchMemory(
   opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
 ): Promise<void> {
-  if (await semesterWorkspaceStore.matches(opened.root, opened.store)) return
+  if (
+    await semesterWorkspaceStore.matchesCanonicalBytes(
+      opened.root,
+      opened.store,
+    )
+  ) {
+    return
+  }
   throw executionGuardConflict()
 }
 
@@ -2361,17 +2402,6 @@ async function removeManagedActionDirectory(directory: string): Promise<void> {
     throw error
   }
   await rm(directory, { force: true, recursive: true })
-}
-
-type CanonicalStatePatchPayload = {
-  readonly requestKey: string
-  readonly workspaceId: string
-  readonly courseId: string
-  readonly baseRevision: number
-  readonly summary: string
-  readonly changes: AssignmentUpsert
-  readonly evidence: readonly EvidenceRef[]
-  readonly origin?: string
 }
 
 async function proposeAssignmentStatePatch(
@@ -2731,24 +2761,6 @@ function isExactStatePatchPayload(
   )
 }
 
-function normalizeStatePatchPayload(
-  input: CanonicalStatePatchPayload,
-): CanonicalStatePatchPayload {
-  const evidence = input.evidence.map(cloneEvidenceRef)
-  evidence.sort(compareEvidence)
-
-  return {
-    requestKey: input.requestKey,
-    workspaceId: input.workspaceId,
-    courseId: input.courseId,
-    baseRevision: input.baseRevision,
-    summary: input.summary,
-    changes: cloneAssignmentUpsert(input.changes),
-    evidence,
-    ...(input.origin === undefined ? {} : { origin: input.origin }),
-  }
-}
-
 async function openWorkspace(workspaceRoot: string): Promise<OpenWorkspace> {
   const opened = await semesterWorkspaceStore.open(workspaceRoot)
   if (opened.status === 'ready') {
@@ -2880,27 +2892,6 @@ function cloneAssignmentProposalContext(
   }
 }
 
-function cloneModelingRun(run: ModelingRun): ModelingRun {
-  return {
-    ...run,
-    sourceBaseline: run.sourceBaseline.map((source) => ({ ...source })),
-    ...(run.nativeCorrelation === undefined
-      ? {}
-      : { nativeCorrelation: { ...run.nativeCorrelation } }),
-  }
-}
-
-function cloneExecutionGuard(guard: ExecutionGuard): ExecutionGuard {
-  return {
-    ...guard,
-    materials: guard.materials.map((material) => ({ ...material })),
-    selectedMaterials: guard.selectedMaterials.map((source) => ({ ...source })),
-    ...(guard.nativeCorrelation === undefined
-      ? {}
-      : { nativeCorrelation: { ...guard.nativeCorrelation } }),
-  }
-}
-
 function cloneReviewBinding(
   binding: AssignmentReviewBinding,
 ): AssignmentReviewBinding {
@@ -2908,54 +2899,6 @@ function cloneReviewBinding(
     interactionId: binding.interactionId,
     patchId: binding.patchId,
     decisionKey: binding.decisionKey,
-  }
-}
-
-function cloneAssignment(assignment: Assignment): Assignment {
-  return {
-    ...assignment,
-    evidence: assignment.evidence.map(cloneEvidenceRef),
-  }
-}
-
-function cloneAssignmentUpsert(changes: AssignmentUpsert): AssignmentUpsert {
-  return {
-    operation: 'assignment.upsert',
-    ...(changes.assignmentId === undefined
-      ? {}
-      : { assignmentId: changes.assignmentId }),
-    values: {
-      title: changes.values.title,
-      dueAt: changes.values.dueAt,
-      submissionMethod: changes.values.submissionMethod,
-    },
-  }
-}
-
-function cloneEvidenceRef(evidence: EvidenceRef): EvidenceRef {
-  return {
-    field: evidence.field,
-    rawMaterialId: evidence.rawMaterialId,
-    digest: evidence.digest,
-    quote: evidence.quote,
-  }
-}
-
-function cloneStatePatch(patch: StatePatch): StatePatch {
-  return {
-    id: patch.id,
-    workspaceId: patch.workspaceId,
-    courseId: patch.courseId,
-    requestKey: patch.requestKey,
-    baseRevision: patch.baseRevision,
-    summary: patch.summary,
-    changes: cloneAssignmentUpsert(patch.changes),
-    evidence: patch.evidence.map(cloneEvidenceRef),
-    ...(patch.origin === undefined ? {} : { origin: patch.origin }),
-    status: patch.status,
-    createdAt: patch.createdAt,
-    applyOutcome:
-      patch.applyOutcome === null ? null : { ...patch.applyOutcome },
   }
 }
 
@@ -3071,18 +3014,6 @@ function toDisplayPath(relativePath: string): string {
   return relativePath.split(path.sep).join('/')
 }
 
-function isSafeMaterialRelativePath(relativePath: string): boolean {
-  return (
-    relativePath.length > 0 &&
-    !relativePath.includes('\\') &&
-    !path.posix.isAbsolute(relativePath) &&
-    path.posix.normalize(relativePath) === relativePath &&
-    relativePath !== '..' &&
-    !relativePath.startsWith('../') &&
-    path.posix.extname(relativePath).toLowerCase() === '.txt'
-  )
-}
-
 function isStrictDescendant(root: string, candidate: string): boolean {
   const relative = path.relative(root, candidate)
   return (
@@ -3091,99 +3022,6 @@ function isStrictDescendant(root: string, candidate: string): boolean {
     !relative.startsWith(`..${path.sep}`) &&
     !path.isAbsolute(relative)
   )
-}
-
-const assignmentFields = [
-  'title',
-  'dueAt',
-  'submissionMethod',
-] as const satisfies readonly AssignmentField[]
-
-function isExactAssignmentUpsert(value: unknown): value is AssignmentUpsert {
-  return (
-    isExactRecord(value, ['operation', 'values'], ['assignmentId']) &&
-    value.operation === 'assignment.upsert' &&
-    (value.assignmentId === undefined || isAssignmentId(value.assignmentId)) &&
-    isExactRecord(value.values, ['dueAt', 'submissionMethod', 'title']) &&
-    isBoundedMeaningfulText(value.values.title, assignmentTextMaxBytes) &&
-    isExplicitOffsetRfc3339(value.values.dueAt) &&
-    isBoundedMeaningfulText(
-      value.values.submissionMethod,
-      assignmentTextMaxBytes,
-    )
-  )
-}
-
-function isEvidenceArray(value: unknown): value is readonly EvidenceRef[] {
-  return (
-    Array.isArray(value) &&
-    value.length > 0 &&
-    value.length <= proposalEvidenceMax &&
-    value.every(
-      (evidence) =>
-        isExactRecord(evidence, [
-          'digest',
-          'field',
-          'quote',
-          'rawMaterialId',
-        ]) &&
-        isAssignmentField(evidence.field) &&
-        isMaterialId(evidence.rawMaterialId) &&
-        typeof evidence.digest === 'string' &&
-        /^[0-9a-f]{64}$/.test(evidence.digest) &&
-        isBoundedMeaningfulText(evidence.quote, evidenceQuoteMaxBytes),
-    ) &&
-    assignmentFields.every((field) =>
-      value.some(
-        (evidence) =>
-          isRecord(evidence) && evidence.field === field,
-      ),
-    )
-  )
-}
-
-function isStatePatchApplyOutcome(
-  value: unknown,
-): value is StatePatchApplyOutcome {
-  if (value === null) return true
-  if (!isRecord(value) || typeof value.type !== 'string') return false
-  if (value.type === 'applied') {
-    return (
-      isExactRecord(value, ['assignmentId', 'resultingRevision', 'type']) &&
-      isAssignmentId(value.assignmentId) &&
-      Number.isSafeInteger(value.resultingRevision) &&
-      Number(value.resultingRevision) >= 1
-    )
-  }
-  return (
-    value.type === 'not_applied' &&
-    isExactRecord(value, ['revision', 'type']) &&
-    Number.isSafeInteger(value.revision) &&
-    Number(value.revision) >= 0
-  )
-}
-
-function isStatePatchStatus(value: unknown): value is StatePatchStatus {
-  return (
-    value === 'pending' ||
-    value === 'superseded' ||
-    value === 'applied' ||
-    value === 'rejected' ||
-    value === 'interrupted'
-  )
-}
-
-function compareEvidence(left: EvidenceRef, right: EvidenceRef): number {
-  return (
-    compareLexically(left.field, right.field) ||
-    compareLexically(left.rawMaterialId, right.rawMaterialId) ||
-    compareLexically(left.digest, right.digest) ||
-    compareLexically(left.quote, right.quote)
-  )
-}
-
-function compareLexically(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0
 }
 
 function decodeEvidenceText(bytes: Buffer): string {
@@ -3197,55 +3035,6 @@ function decodeEvidenceText(bytes: Buffer): string {
   return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(
     content,
   )
-}
-
-function isExplicitOffsetRfc3339(value: unknown): value is string {
-  if (typeof value !== 'string') return false
-  const match =
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,9})?(Z|([+-])(\d{2}):(\d{2}))$/.exec(
-      value,
-    )
-  if (!match) return false
-  if (match[7] === '-00:00') return false
-  const year = Number(match[1])
-  const month = Number(match[2])
-  const day = Number(match[3])
-  const hour = Number(match[4])
-  const minute = Number(match[5])
-  const second = Number(match[6])
-  const offsetHour = match[7] === 'Z' ? 0 : Number(match[9])
-  const offsetMinute = match[7] === 'Z' ? 0 : Number(match[10])
-  return (
-    year >= 1 &&
-    month >= 1 &&
-    month <= 12 &&
-    day >= 1 &&
-    day <= daysInMonth(year, month) &&
-    hour <= 23 &&
-    minute <= 59 &&
-    second <= 59 &&
-    offsetHour <= 23 &&
-    offsetMinute <= 59
-  )
-}
-
-function daysInMonth(year: number, month: number): number {
-  if (month === 2) {
-    return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28
-  }
-  return [4, 6, 9, 11].includes(month) ? 30 : 31
-}
-
-function isBoundedMeaningfulText(value: unknown, maxBytes: number): value is string {
-  return (
-    typeof value === 'string' &&
-    value.trim().length > 0 &&
-    Buffer.byteLength(value, 'utf8') <= maxBytes
-  )
-}
-
-function isAssignmentField(value: unknown): value is AssignmentField {
-  return assignmentFields.some((field) => field === value)
 }
 
 function assertPrepareAssignmentActionInput(
@@ -3341,46 +3130,6 @@ function actionCleanupPolicy(options: {
   }
 }
 
-function isModelingRunSourceBaseline(
-  value: unknown,
-): value is readonly [ModelingRunSource, ModelingRunSource] {
-  return (
-    Array.isArray(value) &&
-    value.length === 2 &&
-    value.every(
-      (source) =>
-        isExactRecord(source, ['digest', 'rawMaterialId']) &&
-        isMaterialId(source.rawMaterialId) &&
-        isSha256Digest(source.digest),
-    ) &&
-    value[0]?.rawMaterialId !== value[1]?.rawMaterialId
-  )
-}
-
-function isNativeCorrelation(value: unknown): value is {
-  readonly threadId: string
-  readonly turnId: string
-} {
-  return (
-    isExactRecord(value, ['threadId', 'turnId']) &&
-    isOpaqueRuntimeIdentity(value.threadId) &&
-    isOpaqueRuntimeIdentity(value.turnId)
-  )
-}
-
-function isModelingRunStatus(value: unknown): value is ModelingRunStatus {
-  return (
-    value === 'starting' ||
-    value === 'not_accepted' ||
-    value === 'acceptance_unknown' ||
-    value === 'running' ||
-    value === 'completed' ||
-    value === 'failed' ||
-    value === 'interrupted' ||
-    value === 'unknown'
-  )
-}
-
 function isTerminalModelingRunStatus(
   value: unknown,
 ): value is 'completed' | 'failed' | 'interrupted' | 'unknown' {
@@ -3392,47 +3141,10 @@ function isTerminalModelingRunStatus(
   )
 }
 
-function isModelingRunValidationOutcome(
-  value: unknown,
-): value is ModelingRunValidationOutcome {
-  return (
-    value === 'pending' ||
-    value === 'passed' ||
-    value === 'failed' ||
-    value === 'unknown'
-  )
-}
-
 function isSettledValidationOutcome(
   value: unknown,
 ): value is Exclude<ModelingRunValidationOutcome, 'pending'> {
   return value === 'passed' || value === 'failed' || value === 'unknown'
-}
-
-function isSha256Digest(value: unknown): value is string {
-  return typeof value === 'string' && /^[0-9a-f]{64}$/.test(value)
-}
-
-function isSafeFailureCode(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    /^[a-z][a-z0-9_]{0,127}$/.test(value)
-  )
-}
-
-function isSafeSkillName(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    /^[a-z0-9][a-z0-9_-]{0,127}$/.test(value)
-  )
-}
-
-function isSafeAbsoluteActionPath(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    path.isAbsolute(value) &&
-    Buffer.byteLength(value, 'utf8') <= actionPathMaxBytes
-  )
 }
 
 function digestUtf8(value: string): string {
@@ -3446,62 +3158,6 @@ async function isRegularDirectory(directory: string): Promise<boolean> {
   } catch {
     return false
   }
-}
-
-function isWorkspaceId(value: unknown): value is string {
-  return typeof value === 'string' && /^workspace_[0-9a-f]{32}$/.test(value)
-}
-
-function isActionId(value: unknown): value is string {
-  return typeof value === 'string' && /^action_[0-9a-f]{32}$/.test(value)
-}
-
-function isChatOperationId(value: unknown): value is string {
-  return typeof value === 'string' && /^chat_[0-9a-f]{32}$/.test(value)
-}
-
-function isProductOperationId(value: unknown): value is string {
-  return isActionId(value) || isChatOperationId(value)
-}
-
-function isRunId(value: unknown): value is string {
-  return typeof value === 'string' && /^run_[0-9a-f]{32}$/.test(value)
-}
-
-function isCourseId(value: unknown): value is string {
-  return typeof value === 'string' && /^course_[0-9a-f]{32}$/.test(value)
-}
-
-function isMaterialId(value: unknown): value is string {
-  return typeof value === 'string' && /^material_[0-9a-f]{32}$/.test(value)
-}
-
-function isAssignmentId(value: unknown): value is string {
-  return typeof value === 'string' && /^assignment_[0-9a-f]{32}$/.test(value)
-}
-
-function isPatchId(value: unknown): value is string {
-  return typeof value === 'string' && /^patch_[0-9a-f]{32}$/.test(value)
-}
-
-function isProposalKey(value: unknown): value is string {
-  return typeof value === 'string' && /^proposal_[0-9a-f]{32}$/.test(value)
-}
-
-function isDecisionKey(value: unknown): value is string {
-  return typeof value === 'string' && /^decision_[0-9a-f]{32}$/.test(value)
-}
-
-function isConfirmationId(value: unknown): value is string {
-  return typeof value === 'string' && /^confirmation_[0-9a-f]{32}$/.test(value)
-}
-
-function isOpaqueRuntimeIdentity(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    value.length > 0 &&
-    Buffer.byteLength(value, 'utf8') <= 512
-  )
 }
 
 function runtimeTurnKey(runtime: {
@@ -3522,41 +3178,10 @@ function guardOperationForRuntime(
     : undefined
 }
 
-function isIsoInstant(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) &&
-    Number.isFinite(Date.parse(value))
-  )
-}
-
-function isExactRecord(
-  value: unknown,
-  requiredKeys: readonly string[],
-  optionalKeys: readonly string[] = [],
-): value is Record<string, unknown> {
-  if (!isRecord(value)) return false
-  const actual = Object.keys(value).sort()
-  const allowed = new Set([...requiredKeys, ...optionalKeys])
-  return (
-    requiredKeys.every((key) => Object.hasOwn(value, key)) &&
-    actual.every((key) => allowed.has(key)) &&
-    actual.length >= requiredKeys.length &&
-    actual.length <= requiredKeys.length + optionalKeys.length
-  )
-}
-
 function invalidProposal(): StatePatchReviewError {
   return new StatePatchReviewError(
     'proposal_invalid',
     'The StatePatch proposal is invalid.',
-  )
-}
-
-function invalidStore(): SemesterWorkspaceError {
-  return new SemesterWorkspaceError(
-    'store_invalid',
-    'SemesterWorkspace state has an invalid format.',
   )
 }
 
@@ -3571,17 +3196,5 @@ function executionGuardConflict(): SemesterWorkspaceError {
   return new SemesterWorkspaceError(
     'execution_guard_conflict',
     'The protected Assignment execution baseline changed.',
-  )
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function hasErrnoCode(error: unknown, code: string): boolean {
-  return (
-    error instanceof Error &&
-    'code' in error &&
-    (error as NodeJS.ErrnoException).code === code
   )
 }
