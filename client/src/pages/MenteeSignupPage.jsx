@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
 import { navigationTargets } from "../routes/routePaths";
-import { registerAccountRole } from "../utils/authStorage";
+import { signupMentee } from "../api/auth";
 
 function MenteeSignupPage() {
   const navigate = useNavigate();
   const [isSignupComplete, setIsSignupComplete] = useState(false);
+  const [submissionError, setSubmissionError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!isSignupComplete) return undefined;
@@ -18,11 +20,32 @@ function MenteeSignupPage() {
     return () => window.clearTimeout(redirectTimer);
   }, [isSignupComplete, navigate]);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setSubmissionError("");
+
     const formData = new FormData(event.currentTarget);
-    registerAccountRole(formData.get("email"), "mentee");
-    setIsSignupComplete(true);
+    const email = formData.get("email");
+
+    setIsSubmitting(true);
+
+    try {
+      await signupMentee({
+        email,
+        password: formData.get("password"),
+        name: formData.get("name"),
+        nickname: formData.get("nickname"),
+        school: formData.get("school"),
+        major: formData.get("major"),
+        grade: formData.get("grade"),
+        enrollmentStatus: formData.get("enrollmentStatus"),
+      });
+      setIsSignupComplete(true);
+    } catch (error) {
+      setSubmissionError(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -56,11 +79,6 @@ function MenteeSignupPage() {
             <label className="signup-field-group">
               <span className="signup-field-label">닉네임 <span aria-hidden="true">*</span></span>
               <input className="field" type="text" name="nickname" autoComplete="nickname" placeholder="서비스에서 사용할 닉네임을 입력해 주세요" required />
-            </label>
-
-            <label className="signup-field-group">
-              <span className="signup-field-label">아이디 <span aria-hidden="true">*</span></span>
-              <input className="field" type="text" name="username" autoComplete="username" placeholder="영문과 숫자를 조합해 입력해 주세요" required />
             </label>
 
             <label className="signup-field-group">
@@ -114,9 +132,17 @@ function MenteeSignupPage() {
             </fieldset>
           </div>
 
+          {submissionError && (
+            <div className="signup-error" role="alert">
+              {submissionError}
+            </div>
+          )}
+
           <div className="mentee-signup-actions">
             <Link className="button button-neutral" to="/signup">이전</Link>
-            <button className="button button-primary" type="submit">가입하기</button>
+            <button className="button button-primary" disabled={isSubmitting} type="submit">
+              {isSubmitting ? "가입 처리 중..." : "가입하기"}
+            </button>
           </div>
         </form>
       </main>

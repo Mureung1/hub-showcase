@@ -1,42 +1,12 @@
 const { supabase, supabaseAnon } = require('../db/supabase');
+const { ENROLLMENT_STATUSES, GRADES } = require('../constants/mentee');
+const { ValidationError, requireString, requireStringArray } = require('../utils/validators');
 
-const GRADES = ['1', '2', '3', '4', '5+'];
-const ENROLLMENT_STATUSES = ['enrolled', 'leave', 'graduated', 'other'];
 const MIN_PASSWORD_LENGTH = 8;
-
-class ValidationError extends Error {
-  constructor(message, field) {
-    super(message);
-    this.field = field;
-  }
-}
 
 class ConflictError extends Error {}
 
 class AuthError extends Error {}
-
-const requireString = (value, field) => {
-  if (typeof value !== 'string' || value.trim() === '') {
-    throw new ValidationError(`${field} 값을 확인해 주세요.`, field);
-  }
-  return value;
-};
-
-const requireStringArray = (value, field, { min, max } = {}) => {
-  if (
-    !Array.isArray(value) ||
-    value.some((item) => typeof item !== 'string' || item.trim() === '')
-  ) {
-    throw new ValidationError(`${field} 값을 확인해 주세요.`, field);
-  }
-  if (min !== undefined && value.length < min) {
-    throw new ValidationError(`${field}는 ${min}개 이상이어야 합니다.`, field);
-  }
-  if (max !== undefined && value.length > max) {
-    throw new ValidationError(`${field}는 ${max}개 이하여야 합니다.`, field);
-  }
-  return value;
-};
 
 const requireEmail = (email) => {
   requireString(email, 'email');

@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { getMyMentorProfile, updateMyMentorProfile } from "../api/mentors";
 import { routePaths } from "../routes/routePaths";
-import { getMentorProfile, saveMentorProfile } from "../utils/mentorProfileStorage";
 
 const counselingOptions = [
   "대학원 진학 준비",
@@ -11,16 +11,26 @@ const counselingOptions = [
   "해외 진학",
 ];
 
-function createFormValues() {
-  const savedProfile = getMentorProfile();
-
+function toFormValues(profile) {
   return {
-    personalInformation: savedProfile.personalInformation,
+    personalInformation: {
+      name: profile.name,
+      nickname: profile.nickname,
+      email: profile.email,
+    },
     profileInformation: {
-      ...savedProfile.profileInformation,
-      researchFields: savedProfile.profileInformation.researchFields.join(", "),
-      careerHighlights: savedProfile.profileInformation.careerHighlights.join("\n"),
-      internationalActivities: savedProfile.profileInformation.internationalActivities.join("\n"),
+      school: profile.school,
+      major: profile.major,
+      academicStatus: profile.academicStatus,
+      program: profile.program,
+      lab: profile.lab,
+      availableTime: profile.availableTime,
+      introduction: profile.introduction,
+      detailedIntroduction: profile.detailedIntroduction,
+      researchFields: profile.researchFields.join(", "),
+      counselingFields: profile.counselingFields,
+      careerHighlights: profile.careerHighlights.join("\n"),
+      internationalActivities: profile.internationalActivities.join("\n"),
     },
   };
 }
@@ -33,8 +43,29 @@ function splitValues(value, separator) {
 }
 
 function MentorProfileEditPage() {
-  const [formValues, setFormValues] = useState(createFormValues);
+  const [formValues, setFormValues] = useState(null);
   const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    getMyMentorProfile()
+      .then((response) => {
+        if (!isCancelled) setFormValues(toFormValues(response.data));
+      })
+      .catch((error) => {
+        if (!isCancelled) setMessage(error.message);
+      })
+      .finally(() => {
+        if (!isCancelled) setIsLoading(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   const handlePersonalChange = (event) => {
     const { name, value } = event.target;
@@ -79,28 +110,59 @@ function MentorProfileEditPage() {
     setMessage("");
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const profileToSave = {
-      personalInformation: formValues.personalInformation,
-      profileInformation: {
-        ...formValues.profileInformation,
-        researchFields: splitValues(formValues.profileInformation.researchFields, ","),
-        careerHighlights: splitValues(formValues.profileInformation.careerHighlights, "\n"),
-        internationalActivities: splitValues(
-          formValues.profileInformation.internationalActivities,
-          "\n",
-        ),
-      },
+    const { profileInformation } = formValues;
+    const payload = {
+      nickname: formValues.personalInformation.nickname,
+      school: profileInformation.school,
+      major: profileInformation.major,
+      academicStatus: profileInformation.academicStatus,
+      program: profileInformation.program,
+      lab: profileInformation.lab,
+      availableTime: profileInformation.availableTime,
+      introduction: profileInformation.introduction,
+      detailedIntroduction: profileInformation.detailedIntroduction,
+      researchFields: splitValues(profileInformation.researchFields, ","),
+      counselingFields: profileInformation.counselingFields,
+      careerHighlights: splitValues(profileInformation.careerHighlights, "\n"),
+      internationalActivities: splitValues(profileInformation.internationalActivities, "\n"),
     };
-    const isSaved = saveMentorProfile(profileToSave);
-    setMessage(
-      isSaved
-        ? "개인 정보와 프로필 정보가 저장되었습니다."
-        : "저장하지 못했습니다. 다시 시도해 주세요.",
-    );
+
+    setIsSaving(true);
+    setMessage("");
+
+    try {
+      const response = await updateMyMentorProfile(payload);
+      setFormValues(toFormValues(response.data));
+      setMessage("개인 정보와 프로필 정보가 저장되었습니다.");
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="mentor-profile-edit-page">
+        <main className="page-container mentor-profile-edit-container">
+          <p role="status">프로필을 불러오는 중입니다.</p>
+        </main>
+      </div>
+    );
+  }
+
+  if (!formValues) {
+    return (
+      <div className="mentor-profile-edit-page">
+        <main className="page-container mentor-profile-edit-container">
+          <p role="alert">{message || "프로필을 불러오지 못했습니다."}</p>
+        </main>
+      </div>
+    );
+  }
 
   const { personalInformation, profileInformation } = formValues;
 
@@ -133,20 +195,16 @@ function MentorProfileEditPage() {
             <div className="mentor-profile-edit-grid">
               <label className="mentor-field-group">
                 <span className="mentor-field-label">이름</span>
-                <input className="field" name="name" onChange={handlePersonalChange} required value={personalInformation.name} />
+                <input className="field" disabled name="name" value={personalInformation.name} />
               </label>
               <label className="mentor-field-group">
-                <span className="mentor-field-label">아이디</span>
-                <input className="field" name="loginId" readOnly value={personalInformation.loginId} />
-                <small>아이디는 변경할 수 없습니다.</small>
+                <span className="mentor-field-label">닉네임</span>
+                <input className="field" name="nickname" onChange={handlePersonalChange} required value={personalInformation.nickname} />
               </label>
-              <label className="mentor-field-group">
+              <label className="mentor-field-group mentor-profile-edit-wide">
                 <span className="mentor-field-label">이메일 주소</span>
-                <input className="field" name="email" onChange={handlePersonalChange} required type="email" value={personalInformation.email} />
-              </label>
-              <label className="mentor-field-group">
-                <span className="mentor-field-label">연락처</span>
-                <input className="field" name="phone" onChange={handlePersonalChange} required type="tel" value={personalInformation.phone} />
+                <input className="field" disabled name="email" type="email" value={personalInformation.email} />
+                <small>이메일은 별도 절차로 변경합니다.</small>
               </label>
             </div>
           </section>
@@ -197,7 +255,7 @@ function MentorProfileEditPage() {
               <label className="mentor-field-group mentor-profile-edit-wide">
                 <span className="mentor-field-label">연구 주제 관련 해시태그</span>
                 <input className="field" name="researchFields" onChange={handleProfileChange} required value={profileInformation.researchFields} />
-                <small>쉼표로 구분해 입력해 주세요.</small>
+                <small>쉼표로 구분해 3개 이상 8개 이하로 입력해 주세요.</small>
               </label>
 
               <fieldset className="mentor-counseling-fieldset mentor-profile-edit-wide">
@@ -228,12 +286,12 @@ function MentorProfileEditPage() {
               <label className="mentor-field-group mentor-profile-edit-wide">
                 <span className="mentor-field-label">주요 이력</span>
                 <textarea className="field" name="careerHighlights" onChange={handleProfileChange} required value={profileInformation.careerHighlights} />
-                <small>항목마다 줄을 바꿔 입력해 주세요.</small>
+                <small>항목마다 줄을 바꿔 1개 이상 5개 이하로 입력해 주세요.</small>
               </label>
               <label className="mentor-field-group mentor-profile-edit-wide">
                 <span className="mentor-field-label">해외 활동</span>
                 <textarea className="field" name="internationalActivities" onChange={handleProfileChange} required value={profileInformation.internationalActivities} />
-                <small>항목마다 줄을 바꿔 입력해 주세요.</small>
+                <small>항목마다 줄을 바꿔 1개 이상 5개 이하로 입력해 주세요.</small>
               </label>
             </div>
           </section>
@@ -241,7 +299,9 @@ function MentorProfileEditPage() {
           <p className="mentor-profile-edit-message" role="status" aria-live="polite">{message}</p>
           <div className="mentor-profile-edit-actions">
             <Link className="button button-neutral" to={routePaths.mentorHome}>취소</Link>
-            <button className="button button-primary" type="submit">변경 내용 저장</button>
+            <button className="button button-primary" disabled={isSaving} type="submit">
+              {isSaving ? "저장 중..." : "변경 내용 저장"}
+            </button>
           </div>
         </form>
       </main>

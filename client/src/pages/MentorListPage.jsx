@@ -1,16 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { getMentors } from "../api/mentors";
 import MentorApplicationBar from "../components/MentorApplicationBar";
 import MentorCard from "../components/MentorCard";
 import MentorSearchFilter from "../components/MentorSearchFilter";
-import { mentors } from "../data/mentors";
+import { useAuth } from "../context/AuthContext";
 import { routePaths } from "../routes/routePaths";
-import { clearCurrentUserRole } from "../utils/authStorage";
-import { filterMentors, initialMentorFilters } from "../utils/mentorFilters";
+import { initialMentorFilters } from "../utils/mentorFilters";
+
+function toMentorViewModel(mentor) {
+  return { ...mentor, keywords: mentor.researchFields };
+}
 
 function MentorListPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
   const [selectedMentorIds, setSelectedMentorIds] = useState(
     () => location.state?.mentorIds ?? [],
   );
@@ -19,17 +24,38 @@ function MentorListPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [mentorToFocusId, setMentorToFocusId] = useState(null);
   const [selectionLimitNoticeVersion, setSelectionLimitNoticeVersion] = useState(0);
+  const [filteredMentors, setFilteredMentors] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+  const mentorCacheRef = useRef(new Map());
 
-  const filteredMentors = useMemo(
-    () => filterMentors(mentors, appliedFilters),
-    [appliedFilters],
-  );
+  const loadMentors = useCallback(async (filters) => {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      const response = await getMentors(filters);
+      const mentors = response.data.map(toMentorViewModel);
+
+      mentors.forEach((mentor) => mentorCacheRef.current.set(mentor.id, mentor));
+      setFilteredMentors(mentors);
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadMentors(appliedFilters);
+  }, [appliedFilters, loadMentors]);
 
   const selectedMentors = useMemo(
     () => selectedMentorIds
-      .map((mentorId) => mentors.find((mentor) => mentor.id === mentorId))
+      .map((mentorId) => mentorCacheRef.current.get(mentorId))
       .filter(Boolean),
-    [selectedMentorIds],
+    // filteredMentors 갱신 시 캐시가 채워지므로 의존성에 포함한다.
+    [selectedMentorIds, filteredMentors],
   );
 
   useEffect(() => {
@@ -67,8 +93,8 @@ function MentorListPage() {
     setAppliedFilters(initialMentorFilters);
   };
 
-  const handleLogout = () => {
-    clearCurrentUserRole();
+  const handleLogout = async () => {
+    await logout();
     navigate(routePaths.landing, { replace: true });
   };
 
@@ -144,25 +170,37 @@ function MentorListPage() {
           검색 결과 <strong>{filteredMentors.length}명</strong>
         </p>
 
-        <section className="stack" aria-label="멘토 목록">
-          {filteredMentors.map((mentor) => (
-            <MentorCard
-              key={mentor.id}
-              mentor={mentor}
-              selected={selectedMentorIds.includes(mentor.id)}
-              onSelect={(isSelected) => handleMentorSelect(mentor.id, isSelected)}
-            />
-          ))}
-          {filteredMentors.length === 0 && (
-            <div className="card mentor-empty-state">
-              <h2 className="card-title">조건에 맞는 멘토가 없습니다.</h2>
-              <p className="muted-text">검색어나 필터 조건을 바꾸거나 초기화해 주세요.</p>
-              <button className="button button-soft" onClick={handleFilterReset} type="button">
-                검색 조건 초기화
-              </button>
-            </div>
-          )}
-        </section>
+        {errorMessage && (
+          <div className="card mentor-empty-state" role="alert">
+            <p className="muted-text">{errorMessage}</p>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="card mentor-empty-state" role="status">
+            멘토 목록을 불러오는 중입니다.
+          </div>
+        ) : (
+          <section className="stack" aria-label="멘토 목록">
+            {filteredMentors.map((mentor) => (
+              <MentorCard
+                key={mentor.id}
+                mentor={mentor}
+                selected={selectedMentorIds.includes(mentor.id)}
+                onSelect={(isSelected) => handleMentorSelect(mentor.id, isSelected)}
+              />
+            ))}
+            {filteredMentors.length === 0 && !errorMessage && (
+              <div className="card mentor-empty-state">
+                <h2 className="card-title">조건에 맞는 멘토가 없습니다.</h2>
+                <p className="muted-text">검색어나 필터 조건을 바꾸거나 초기화해 주세요.</p>
+                <button className="button button-soft" onClick={handleFilterReset} type="button">
+                  검색 조건 초기화
+                </button>
+              </div>
+            )}
+          </section>
+        )}
       </main>
 
       <MentorApplicationBar
