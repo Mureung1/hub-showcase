@@ -2,12 +2,24 @@
 import { useMemo, useState } from "react";
 import { useApp } from "@/lib/client/store";
 import { SITUATIONS, REL_HINTS, personaOf } from "@/lib/domain/situations";
-import type { Situation } from "@/lib/domain/types";
+import { NEWS_CATEGORIES } from "@/lib/domain/news-categories";
+import { fetchNewsPassage } from "@/lib/client/api";
+import type { Situation, NewsPassage } from "@/lib/domain/types";
 
-export default function Picker({ onPick, onNewSit }: { onPick: (s: Situation) => void; onNewSit: () => void }) {
+export default function Picker({
+  onPick,
+  onNewSit,
+  onNewsPassage,
+}: {
+  onPick: (s: Situation) => void;
+  onNewSit: () => void;
+  onNewsPassage: (p: NewsPassage) => void;
+}) {
   const app = useApp();
-  const [mode, setMode] = useState<"scenario" | "context">("scenario");
+  const [mode, setMode] = useState<"scenario" | "news">("scenario");
   const [q, setQ] = useState("");
+  const [newsBusy, setNewsBusy] = useState(false);
+  const [newsError, setNewsError] = useState<string | null>(null);
   const role = app.profile?.role;
 
   const query = q.trim().toLowerCase();
@@ -16,21 +28,38 @@ export default function Picker({ onPick, onNewSit }: { onPick: (s: Situation) =>
 
   const all = useMemo(() => [...SITUATIONS, ...app.customSits], [app.customSits]);
   const customIds = useMemo(() => new Set(app.customSits.map((s) => s.id)), [app.customSits]);
-  const scenarioSits = all.filter((s) => !s.ctx && (!role || !s.roles || s.roles.includes(role) || customIds.has(s.id)) && match(s));
-  const contextSits = all.filter((s) => s.ctx && match(s));
+  const scenarioSits = all.filter(
+    (s) => (!role || !s.roles || s.roles.includes(role) || customIds.has(s.id)) && match(s),
+  );
 
   const relGroups = useMemo(() => {
     const order = [...new Set(scenarioSits.map((s) => s.rel))];
     return order.map((rel) => ({ rel, hint: REL_HINTS[rel] || "", items: scenarioSits.filter((s) => s.rel === rel) }));
   }, [scenarioSits]);
 
-  const list = mode === "scenario" ? scenarioSits : contextSits;
+  async function pickNews(cat: (typeof NEWS_CATEGORIES)[number]) {
+    if (newsBusy) return;
+    setNewsBusy(true);
+    setNewsError(null);
+    try {
+      const passage = await fetchNewsPassage(cat.key);
+      onNewsPassage(passage);
+    } catch (e) {
+      setNewsError((e as Error).message);
+    } finally {
+      setNewsBusy(false);
+    }
+  }
 
   return (
     <div>
       <div className="mb-1 flex items-start justify-between gap-3">
         <h1 className="text-2xl font-extrabold">훈련 상황</h1>
-        <button onClick={onNewSit} className="shrink-0 rounded-lg px-3 py-2 text-[12.5px] font-bold" style={{ background: "var(--accent)", color: "var(--accent-ink)" }}>
+        <button
+          onClick={onNewSit}
+          className="shrink-0 rounded-lg px-3 py-2 text-[12.5px] font-bold"
+          style={{ background: "var(--accent)", color: "var(--accent-ink)" }}
+        >
           ＋ 내 상황
         </button>
       </div>
@@ -38,36 +67,65 @@ export default function Picker({ onPick, onNewSit }: { onPick: (s: Situation) =>
         &apos;적절&apos;의 방향은 관계마다 달라집니다 — 교수에게는 완충이, 조원에게는 가벼움이 3점입니다.
       </p>
 
-      {/* 2모드 탭 */}
       <div className="mb-3 flex gap-1.5 rounded-xl border p-1.5" style={{ background: "var(--surface)", borderColor: "var(--line)" }}>
-        <Tab on={mode === "scenario"} onClick={() => setMode("scenario")}>시나리오 훈련 · {scenarioSits.length}</Tab>
-        <Tab on={mode === "context"} onClick={() => setMode("context")}>실전 사례 · {contextSits.length}</Tab>
+        <Tab on={mode === "scenario"} onClick={() => setMode("scenario")}>
+          시나리오 훈련 · {scenarioSits.length}
+        </Tab>
+        <Tab on={mode === "news"} onClick={() => setMode("news")}>
+          요즘 뉴스
+        </Tab>
       </div>
 
-      <input
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="상황 검색 — 제목·관계·긴장 포인트"
-        className="mb-5 w-full rounded-xl border px-3.5 py-2.5 text-[14px] outline-none"
-        style={{ background: "var(--bg)", borderColor: "var(--line)", color: "var(--ink)" }}
-      />
+      {mode === "scenario" && (
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="상황 검색 — 제목·관계·긴장 포인트"
+          className="mb-5 w-full rounded-xl border px-3.5 py-2.5 text-[14px] outline-none"
+          style={{ background: "var(--bg)", borderColor: "var(--line)", color: "var(--ink)" }}
+        />
+      )}
 
-      {list.length === 0 && (
-        <div className="rounded-2xl border border-dashed p-9 text-center text-[13.5px]" style={{ borderColor: "var(--line)", color: "var(--sub)" }}>
+      {mode === "scenario" && scenarioSits.length === 0 && (
+        <div
+          className="rounded-2xl border border-dashed p-9 text-center text-[13.5px]"
+          style={{ borderColor: "var(--line)", color: "var(--sub)" }}
+        >
           {query ? `'${q}'에 맞는 상황이 없어요. 검색어를 지우거나 다른 탭을 확인해보세요.` : "표시할 상황이 없어요."}
         </div>
       )}
 
-      {mode === "context" && contextSits.length > 0 && (
-        <div className="rounded-2xl border p-5" style={{ background: "linear-gradient(135deg,var(--accent-soft),var(--surface))", borderColor: "var(--accent)" }}>
+      {mode === "news" && (
+        <div
+          className="rounded-2xl border p-5"
+          style={{ background: "linear-gradient(135deg,var(--accent-soft),var(--surface))", borderColor: "var(--accent)" }}
+        >
           <div className="mb-3.5 text-[12.5px]" style={{ color: "var(--sub)" }}>
-            실제로 논란이 된 소통 실패(사과문·공지·갑질·해명·CS 등)를 익명·각색했습니다. 무엇이 문제인지 읽고 다시 써보세요.
+            요즘 뉴스 한 편을 읽고 핵심을 한 줄로 요약해보세요 — 사건 나열이 아니라 무엇이 왜 중요한지를 짚는 연습입니다.
           </div>
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            {contextSits.map((s) => (
-              <SitCard key={s.id} s={s} chip={s.rel} onClick={() => onPick(s)} />
+          <div className="flex flex-wrap gap-2">
+            {NEWS_CATEGORIES.map((c) => (
+              <button
+                key={c.key}
+                onClick={() => pickNews(c)}
+                disabled={newsBusy}
+                className="rounded-full border px-4 py-2 text-[13px] font-bold"
+                style={{ background: "var(--surface)", borderColor: "var(--accent)", color: "var(--accent)", opacity: newsBusy ? 0.6 : 1 }}
+              >
+                {c.label}
+              </button>
             ))}
           </div>
+          {newsBusy && (
+            <div className="mt-3 text-[12.5px]" style={{ color: "var(--sub)" }}>
+              최신 뉴스를 가져오는 중…
+            </div>
+          )}
+          {newsError && (
+            <div className="mt-3 rounded-lg px-3 py-2 text-[12.5px]" style={{ background: "var(--bad-soft)", color: "var(--bad)" }}>
+              {newsError}
+            </div>
+          )}
         </div>
       )}
 
@@ -75,8 +133,15 @@ export default function Picker({ onPick, onNewSit }: { onPick: (s: Situation) =>
         relGroups.map((g) => (
           <div key={g.rel} className="mb-6">
             <div className="mb-2.5 flex items-baseline gap-2.5">
-              <span className="rounded-full px-3 py-1 text-[12px] font-extrabold" style={{ color: "var(--accent)", background: "var(--accent-soft)" }}>{g.rel}</span>
-              <span className="text-[12px]" style={{ color: "var(--sub)" }}>{g.hint}</span>
+              <span
+                className="rounded-full px-3 py-1 text-[12px] font-extrabold"
+                style={{ color: "var(--accent)", background: "var(--accent-soft)" }}
+              >
+                {g.rel}
+              </span>
+              <span className="text-[12px]" style={{ color: "var(--sub)" }}>
+                {g.hint}
+              </span>
             </div>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {g.items.map((s) => (
@@ -107,7 +172,17 @@ function Tab({ on, onClick, children }: { on: boolean; onClick: () => void; chil
   );
 }
 
-function SitCard({ s, chip, onClick, onDelete }: { s: Situation; chip: string; onClick: () => void; onDelete?: () => void }) {
+function SitCard({
+  s,
+  chip,
+  onClick,
+  onDelete,
+}: {
+  s: Situation;
+  chip: string;
+  onClick: () => void;
+  onDelete?: () => void;
+}) {
   const p = personaOf(s);
   return (
     <div className="relative">
@@ -121,9 +196,16 @@ function SitCard({ s, chip, onClick, onDelete }: { s: Situation; chip: string; o
             <span>{p.emoji}</span>
             {s.title}
           </span>
-          <span className="shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-bold" style={{ color: "var(--accent)", background: "var(--accent-soft)" }}>{chip}</span>
+          <span
+            className="shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-bold"
+            style={{ color: "var(--accent)", background: "var(--accent-soft)" }}
+          >
+            {chip}
+          </span>
         </span>
-        <span className="text-[12.5px]" style={{ color: "var(--sub)", lineHeight: 1.55 }}>{s.tension}</span>
+        <span className="text-[12.5px]" style={{ color: "var(--sub)", lineHeight: 1.55 }}>
+          {s.tension}
+        </span>
       </button>
       {onDelete && (
         <button

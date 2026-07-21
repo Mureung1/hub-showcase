@@ -26,7 +26,6 @@ export interface Situation {
   sample?: string;
   opener?: string | null;
   medium?: Medium;
-  ctx?: boolean;
   background?: string;
   rubric?: Rubric;
   who?: string;
@@ -69,6 +68,7 @@ export interface SessionRecord {
   d: string;          // 'M.D' 표시 문자열
   sid: string;        // situation id
   scores: Scores;
+  ts?: number;         // epoch ms — 스트릭(연속일) 계산용. 과거 기록엔 없을 수 있음
 }
 
 /** 표현 자산 (잘 쓴 순간) */
@@ -92,4 +92,33 @@ export interface AppStateBlob {
   history: SessionRecord[];
   assets: AssetRecord[];
   customSits: Situation[];
+}
+
+/** 요즘 뉴스 지문 — Gemini search grounding으로 생성 */
+export interface NewsPassage {
+  id: string;
+  work: string;
+  scene: string;
+  text: string;
+  keyPoints: string[];
+  sourceHint: string;
+  sourceUrl: string;
+  sourceTitle: string;
+}
+
+/** 한 줄 요약 채점 결과 */
+export interface SummaryResult {
+  captured: string[];
+  missed: string[];
+  verdict: 'pass' | 'partial' | 'miss';
+  coach: string;
+}
+
+/** 카톡 캡쳐에서 추출한 상황 정보 */
+export interface CaptureExtract {
+  title: string;
+  who: string;
+  rel: string;
+  goal: string;
+  tension: string;
 }

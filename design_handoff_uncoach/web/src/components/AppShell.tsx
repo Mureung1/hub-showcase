@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useApp } from "@/lib/client/store";
-import type { Situation } from "@/lib/domain/types";
+import type { Situation, NewsPassage } from "@/lib/domain/types";
 import Onboarding from "./screens/Onboarding";
 import Home from "./screens/Home";
 import Picker from "./screens/Picker";
@@ -9,8 +9,9 @@ import Train from "./screens/Train";
 import Trajectory from "./screens/Trajectory";
 import NewSituation from "./screens/NewSituation";
 import Settings from "./screens/Settings";
+import ContextReading from "./screens/ContextReading";
 
-export type Screen = "home" | "picker" | "train" | "trajectory" | "newsit" | "settings";
+export type Screen = "home" | "picker" | "train" | "trajectory" | "newsit" | "context" | "settings";
 
 const NAV: { key: Screen; label: string; dot: string }[] = [
   { key: "home", label: "홈", dot: "🏠" },
@@ -23,6 +24,7 @@ export default function AppShell() {
   const app = useApp();
   const [screen, setScreen] = useState<Screen>("home");
   const [activeSit, setActiveSit] = useState<Situation | null>(null);
+  const [activePassage, setActivePassage] = useState<NewsPassage | null>(null);
   const [reprofile, setReprofile] = useState(false);
 
   if (!app.ready) {
@@ -49,7 +51,7 @@ export default function AppShell() {
   };
 
   const navActive = (key: Screen) =>
-    screen === key || (key === "picker" && (screen === "train" || screen === "newsit"));
+    screen === key || (key === "picker" && (screen === "train" || screen === "newsit" || screen === "context"));
 
   return (
     <div className="min-h-screen md:flex" style={{ background: "var(--bg)" }}>
@@ -90,11 +92,23 @@ export default function AppShell() {
       <div className="flex-1 pb-20 md:pb-0">
         <div className="mx-auto w-full max-w-3xl px-4 pb-12 pt-6 sm:px-6">
           {screen === "home" && <Home onPick={() => setScreen("picker")} startSit={startSit} />}
-          {screen === "picker" && <Picker onPick={startSit} onNewSit={() => setScreen("newsit")} />}
+          {screen === "picker" && (
+            <Picker
+              onPick={startSit}
+              onNewSit={() => setScreen("newsit")}
+              onNewsPassage={(p) => {
+                setActivePassage(p);
+                setScreen("context");
+              }}
+            />
+          )}
           {screen === "train" && activeSit && (
             <Train situation={activeSit} onExit={() => setScreen("picker")} onFinish={() => setScreen("home")} />
           )}
           {screen === "newsit" && <NewSituation onStart={startSit} onCancel={() => setScreen("picker")} />}
+          {screen === "context" && activePassage && (
+            <ContextReading passage={activePassage} onExit={() => setScreen("picker")} />
+          )}
           {screen === "trajectory" && <Trajectory />}
           {screen === "settings" && <Settings onReprofile={() => setReprofile(true)} />}
         </div>

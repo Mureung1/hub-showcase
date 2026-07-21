@@ -72,8 +72,8 @@ describe("getSituation", () => {
 });
 
 describe("SITUATIONS 데이터 무결성", () => {
-  it("69개 이상, 모든 상황에 id·title·rubric(3×3)", () => {
-    expect(SITUATIONS.length).toBeGreaterThanOrEqual(69);
+  it("61개 이상, 모든 상황에 id·title·rubric(3×3)", () => {
+    expect(SITUATIONS.length).toBeGreaterThanOrEqual(61);
     for (const s of SITUATIONS) {
       expect(s.id).toBeTruthy();
       expect(s.title).toBeTruthy();

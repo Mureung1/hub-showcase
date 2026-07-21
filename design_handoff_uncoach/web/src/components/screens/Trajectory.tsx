@@ -1,6 +1,7 @@
 "use client";
 import { useApp } from "@/lib/client/store";
 import { AXES, getSituation, totalOf } from "@/lib/domain/situations";
+import { BADGES, computeStreak, unlockedBadges } from "@/lib/domain/gamification";
 
 export default function Trajectory() {
   const app = useApp();
@@ -9,6 +10,9 @@ export default function Trajectory() {
   const avg = totals.length ? Math.round(totals.reduce((a, b) => a + b, 0) / totals.length) : 0;
   const best = totals.length ? Math.max(...totals) : 0;
   const lastTotal = totals.length ? totals[totals.length - 1] : 0;
+  const streak = computeStreak(history);
+  const unlocked = unlockedBadges({ history, assets: app.assets });
+  const unlockedIds = new Set(unlocked.map((b) => b.id));
 
   return (
     <div>
@@ -16,11 +20,31 @@ export default function Trajectory() {
       <p className="mb-5 text-[13.5px]" style={{ color: "var(--sub)" }}>훈련의 흐름과 잘 쓴 순간들.</p>
 
       {/* 요약 통계 */}
-      <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-5">
         <Stat label="총 세션" value={`${history.length}회`} />
         <Stat label="평균 총점" value={`${avg}점`} />
         <Stat label="최고 총점" value={`${best}점`} />
         <Stat label="최근 총점" value={`${lastTotal}점`} />
+        <Stat label="연속 기록" value={`${streak.current}일`} />
+      </div>
+
+      {/* 배지 */}
+      <div className="mb-3 text-[13px] font-bold" style={{ color: "var(--sub)" }}>배지 ({unlocked.length}/{BADGES.length})</div>
+      <div className="mb-6 grid grid-cols-3 gap-2.5 sm:grid-cols-5">
+        {BADGES.map((b) => {
+          const on = unlockedIds.has(b.id);
+          return (
+            <div
+              key={b.id}
+              title={b.desc}
+              className="flex flex-col items-center gap-1 rounded-xl border p-3 text-center"
+              style={{ background: on ? "var(--accent-soft)" : "var(--surface)", borderColor: on ? "var(--accent)" : "var(--line)", opacity: on ? 1 : 0.5 }}
+            >
+              <span className="text-xl">{on ? b.icon : "🔒"}</span>
+              <span className="text-[11px] font-bold" style={{ color: on ? "var(--accent)" : "var(--sub)" }}>{b.label}</span>
+            </div>
+          );
+        })}
       </div>
 
       {/* 세션 로그 */}

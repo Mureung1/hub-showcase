@@ -1,11 +1,12 @@
-// 채점 — 프로토타입 evaluate()를 서버(Claude structured outputs)로 이식.
+// 채점 — 프로토타입 evaluate()를 서버(Gemini structured outputs)로 이식.
 // per-situation 루브릭 + 프로필 배경 + 대화 맥락을 프롬프트에 반영, 1~3 척도로 판정.
-import Anthropic from '@anthropic-ai/sdk';
+// 예전 루트 프로토타입의 api/gemini.mjs 프록시와 동일한 모델을 이 서버에서 직접 호출한다(별도 프록시 불필요 — 여기가 이미 서버).
+import { callGemini, extractText } from './gemini';
 import { RUBRIC_SYSTEM } from './rubric-system';
 import { AXES, totalOf } from '../domain/situations';
 import type { Situation, ThreadItem, Attempt, AxisKey, Scores, Profile } from '../domain/types';
 
-export const DEFAULT_MODEL = process.env.SCORING_MODEL || 'claude-opus-4-8';
+export const DEFAULT_MODEL = process.env.SCORING_MODEL || 'gemini-2.5-flash';
 
 export interface ScoreInput {
   situation: Situation;
@@ -15,43 +16,37 @@ export interface ScoreInput {
   emailSubject?: string;
 }
 
-const axisScore = { type: 'integer', enum: [1, 2, 3] } as const;
-
-// Claude structured outputs 스키마 (프로토타입 evaluate 결과 구조와 동일)
+// Gemini REST generateContent의 responseSchema(OpenAPI 서브셋 — type은 대문자, additionalProperties 없음)
 export const SCORE_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
+  type: 'OBJECT',
   required: ['scores', 'reasons', 'deductions', 'coach', 'fix', 'bestSentence', 'counterpartReply'],
   properties: {
     scores: {
-      type: 'object',
-      additionalProperties: false,
+      type: 'OBJECT',
       required: ['context', 'register', 'strategy'],
-      properties: { context: axisScore, register: axisScore, strategy: axisScore },
+      properties: { context: { type: 'INTEGER' }, register: { type: 'INTEGER' }, strategy: { type: 'INTEGER' } },
     },
     reasons: {
-      type: 'object',
-      additionalProperties: false,
+      type: 'OBJECT',
       required: ['context', 'register', 'strategy'],
-      properties: { context: { type: 'string' }, register: { type: 'string' }, strategy: { type: 'string' } },
+      properties: { context: { type: 'STRING' }, register: { type: 'STRING' }, strategy: { type: 'STRING' } },
     },
     deductions: {
-      type: 'array',
+      type: 'ARRAY',
       items: {
-        type: 'object',
-        additionalProperties: false,
+        type: 'OBJECT',
         required: ['axis', 'quote', 'why'],
         properties: {
-          axis: { type: 'string', enum: ['context', 'register', 'strategy'] },
-          quote: { type: 'string' },
-          why: { type: 'string' },
+          axis: { type: 'STRING', enum: ['context', 'register', 'strategy'] },
+          quote: { type: 'STRING' },
+          why: { type: 'STRING' },
         },
       },
     },
-    coach: { type: 'string' },
-    fix: { type: 'string' },
-    bestSentence: { type: ['string', 'null'] },
-    counterpartReply: { type: 'string' },
+    coach: { type: 'STRING' },
+    fix: { type: 'STRING' },
+    bestSentence: { type: 'STRING', nullable: true },
+    counterpartReply: { type: 'STRING' },
   },
 } as const;
 
@@ -81,28 +76,15 @@ export function buildUserMessage({ situation: sit, draft, thread = [], profile, 
 
 const clamp = (v: unknown) => Math.max(1, Math.min(3, Math.round(Number(v) || 1)));
 
-let client: Anthropic | null = null;
-function anthropic(): Anthropic {
-  if (!process.env.ANTHROPIC_API_KEY) throw new Error('NO_KEY');
-  if (!client) client = new Anthropic();
-  return client;
-}
-
-/** Claude로 채점 (structured outputs). 반환은 프로토타입 Attempt 구조 + total. */
+/** Gemini로 채점 (structured outputs). 반환은 프로토타입 Attempt 구조 + total. */
 export async function scoreDraft(input: ScoreInput): Promise<Attempt & { total: number }> {
   const user = buildUserMessage(input);
-  const stream = anthropic().messages.stream({
-    model: DEFAULT_MODEL,
-    max_tokens: 4096,
-    thinking: { type: 'adaptive' }, // 화용 판단은 미묘하므로 적응형 사고
-    system: RUBRIC_SYSTEM,
-    messages: [{ role: 'user', content: user }],
-    output_config: { format: { type: 'json_schema', schema: SCORE_SCHEMA } },
+  const data = await callGemini(DEFAULT_MODEL, {
+    system_instruction: { parts: [{ text: RUBRIC_SYSTEM }] },
+    contents: [{ role: 'user', parts: [{ text: user }] }],
+    generationConfig: { maxOutputTokens: 4096, responseMimeType: 'application/json', responseSchema: SCORE_SCHEMA },
   });
-  const msg = await stream.finalMessage();
-  const textBlock = msg.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
-  if (!textBlock) throw new Error('빈 응답: ' + (msg.stop_reason || '알 수 없음'));
-  const out = JSON.parse(textBlock.text);
+  const out = JSON.parse(extractText(data));
 
   const scores: Scores = {
     context: clamp(out.scores?.context),
