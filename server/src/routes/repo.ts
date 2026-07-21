@@ -57,6 +57,8 @@ router.get("/list", async (req, res) => {
   res.json(summaries);
 });
 
+// Spec says GET /api/repo/:fullName/branches, but a "/" inside a single Express
+// param doesn't match — split "owner/repo" into two params instead.
 router.get("/:owner/:repo/branches", async (req, res) => {
   const session = await getSession();
   if (!session) {
