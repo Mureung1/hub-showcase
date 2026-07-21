@@ -1,17 +1,21 @@
 import { Router } from 'express'
 import { supabase } from '../db/supabase.js'
+import { userIdFromReq } from '../lib/auth.js'
 
-// 임시 인증: 스테이지 ④(JWT 로그인) 전까지 시드 계정 'minji' 관점으로 고정한다.
-// ④에서 이 함수만 "쿠키의 JWT에서 userId 추출"로 교체하면 나머지 코드는 그대로다.
-const TEMP_USERNAME = 'minji'
-
-async function currentUser() {
+// 쿠키의 JWT에서 로그인 사용자를 확인한다. 미로그인이면 401을 던진다.
+async function currentUser(req) {
+  const userId = userIdFromReq(req)
+  if (!userId) {
+    const err = new Error('로그인이 필요합니다.')
+    err.status = 401
+    throw err
+  }
   const { data, error } = await supabase
     .from('users')
     .select('id, username, name')
-    .eq('username', TEMP_USERNAME)
+    .eq('id', userId)
     .single()
-  if (error) throw new Error(`임시 사용자(${TEMP_USERNAME}) 조회 실패 — 시드를 먼저 실행하세요: ${error.message}`)
+  if (error) throw new Error(`사용자 조회 실패: ${error.message}`)
   return data
 }
 
@@ -56,7 +60,7 @@ export const me = Router()
 // ── 대시보드 탭: 메인 프로젝트의 팀 전체 현황 ─────────────────
 me.get('/api/me/dashboard', async (req, res) => {
   try {
-    const user = await currentUser()
+    const user = await currentUser(req)
 
     const { data: membership, error: e1 } = await supabase
       .from('project_members')
@@ -127,14 +131,14 @@ me.get('/api/me/dashboard', async (req, res) => {
       })),
     })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(err.status ?? 500).json({ error: err.message })
   }
 })
 
 // ── 프로젝트 진행 탭: 메인 프로젝트에서 "내 작업" 현황 ─────────
 me.get('/api/me/progress', async (req, res) => {
   try {
-    const user = await currentUser()
+    const user = await currentUser(req)
 
     const { data: membership, error: e1 } = await supabase
       .from('project_members')
@@ -203,14 +207,14 @@ me.get('/api/me/progress', async (req, res) => {
       uploads,
     })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(err.status ?? 500).json({ error: err.message })
   }
 })
 
 // ── 프로젝트 관리 탭: 내가 참여한 모든 프로젝트 ────────────────
 me.get('/api/me/projects', async (req, res) => {
   try {
-    const user = await currentUser()
+    const user = await currentUser(req)
 
     const { data: memberships, error: e1 } = await supabase
       .from('project_members')
@@ -251,6 +255,6 @@ me.get('/api/me/projects', async (req, res) => {
       completed: result.filter((p) => p.status === 'completed'),
     })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(err.status ?? 500).json({ error: err.message })
   }
 })

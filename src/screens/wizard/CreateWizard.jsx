@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import { PROJECT_TYPES } from '../../data/templates'
 import { parseDate, toDateInputValue, addDays, diffDays } from '../../utils/dates'
 import logo from '../../assets/logo.png'
+import { DEMO_PROJECT_ID, toFlowProject } from '../flow/flowMock'
 import FileDropzone from './FileDropzone.jsx'
 import AvoidCalendar from './AvoidCalendar.jsx'
 import './CreateWizard.css'
@@ -106,8 +107,8 @@ export default function CreateWizard() {
       <div className="wizard-page">
         <div className="wizard-card wizard-center">
           <span className="done-icon" aria-hidden="true">✓</span>
-          <h2>입력이 확인되었습니다</h2>
-          <p className="wizard-muted">AI 계획 검토 화면은 다음 단계에서 연결됩니다.</p>
+          <h2>계획 초안이 준비되었습니다</h2>
+          <p className="wizard-muted">확정 전에 역할과 일정을 검토하고 수정할 수 있어요.</p>
 
           <dl className="summary">
             <div><dt>제목</dt><dd>{form.title}</dd></div>
@@ -118,8 +119,14 @@ export default function CreateWizard() {
             <div><dt>첨부</dt><dd>{form.file ? form.file.name : '없음'}</dd></div>
           </dl>
 
-          <button type="button" className="btn btn-dark" onClick={() => navigate('/app/dashboard')}>
-            대시보드로 이동
+          <button
+            type="button"
+            className="btn btn-dark"
+            onClick={() =>
+              navigate(`/projects/${DEMO_PROJECT_ID}/plan`, { state: toFlowProject(form) })
+            }
+          >
+            AI 계획 검토하기
           </button>
         </div>
       </div>

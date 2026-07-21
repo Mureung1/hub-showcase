@@ -1,16 +1,37 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import logo from '../assets/logo.png'
+import { apiPost } from '../api/client'
 import './Auth.css'
 
 export default function Login() {
   const navigate = useNavigate()
   const [showPw, setShowPw] = useState(false)
+  const [form, setForm] = useState({ username: '', password: '', remember: false })
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  // 4단계에서 실제 인증 API로 교체 — 지금은 화면 이동만
-  function handleSubmit(e) {
+  function patch(partial) {
+    setError('')
+    setForm((f) => ({ ...f, ...partial }))
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault()
-    navigate('/app/dashboard')
+    if (!form.username.trim() || !form.password) return setError('아이디와 비밀번호를 입력해 주세요.')
+
+    setSubmitting(true)
+    try {
+      await apiPost('/api/auth/login', {
+        username: form.username.trim(),
+        password: form.password,
+        remember: form.remember,
+      })
+      navigate('/app/dashboard')
+    } catch (err) {
+      setError(err.message)
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -29,7 +50,14 @@ export default function Login() {
             <label htmlFor="login-id">아이디</label>
             <div className="auth-input">
               <span className="field-icon" aria-hidden="true">@</span>
-              <input id="login-id" name="username" placeholder="아이디를 입력하세요" autoComplete="username" />
+              <input
+                id="login-id"
+                name="username"
+                placeholder="아이디를 입력하세요"
+                autoComplete="username"
+                value={form.username}
+                onChange={(e) => patch({ username: e.target.value })}
+              />
             </div>
           </div>
 
@@ -43,6 +71,8 @@ export default function Login() {
                 type={showPw ? 'text' : 'password'}
                 placeholder="비밀번호를 입력하세요"
                 autoComplete="current-password"
+                value={form.password}
+                onChange={(e) => patch({ password: e.target.value })}
               />
               <button
                 type="button"
@@ -57,7 +87,12 @@ export default function Login() {
 
           <div className="auth-options">
             <label>
-              <input type="checkbox" name="remember" />
+              <input
+                type="checkbox"
+                name="remember"
+                checked={form.remember}
+                onChange={(e) => patch({ remember: e.target.checked })}
+              />
               로그인 상태 유지
             </label>
             <a href="#find" onClick={(e) => e.preventDefault()} title="향후 지원 예정">
@@ -65,7 +100,11 @@ export default function Login() {
             </a>
           </div>
 
-          <button type="submit" className="btn btn-dark auth-submit">로그인 →</button>
+          {error && <p className="auth-error">{error}</p>}
+
+          <button type="submit" className="btn btn-dark auth-submit" disabled={submitting}>
+            {submitting ? '로그인 중…' : '로그인 →'}
+          </button>
         </form>
 
         <div className="auth-divider" />

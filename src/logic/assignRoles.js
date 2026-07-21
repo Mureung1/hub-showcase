@@ -42,12 +42,18 @@ export function assignRoles(members, surveys, roles) {
   const roleIdx = new Map(roles.map((r, i) => [r.id, i]));
   const scores = buildScoreMatrix(members, surveys, roles);
 
+  // 조장(리더)은 '역할'이 아니라 실무 역할 위에 얹는 표식 — 부담(load) 계산에서 제외한다.
+  // 그래야 조장을 맡은 사람도 실무 역할을 하나 더 받는다.
+  const leaderRoleIds = new Set(roles.filter((r) => r.isLeader).map((r) => r.id));
+
   const byMember = Object.fromEntries(members.map((m) => [m.id, []]));
   const count = Object.fromEntries(roles.map((r) => [r.id, 0]));
   const assign = (mId, rId) => {
     byMember[mId].push(rId);
     count[rId] += 1;
   };
+  // 부담 = 맡은 실무 역할 수(조장 제외)
+  const workLoad = (mId) => byMember[mId].filter((rId) => !leaderRoleIds.has(rId)).length;
 
   /* 1단계: 역할별 최소 인원 채우기.
      맡은 역할이 적은 팀원 우선(부담 분산) → 점수 높은 조합 우선 → 입력 순서로 동점 처리.
@@ -63,7 +69,7 @@ export function assignRoles(members, surveys, roles) {
           const cand = {
             m: m.id,
             r: r.id,
-            load: byMember[m.id].length,
+            load: workLoad(m.id),
             score: scores[m.id][r.id],
             mi: memberIdx.get(m.id),
             ri: roleIdx.get(r.id),
@@ -82,12 +88,14 @@ export function assignRoles(members, surveys, roles) {
     assign(best.m, best.r);
   }
 
-  /* 2단계: 역할이 없는 팀원에게 최고 점수 역할 배정 (max 미달 역할 우선 → 다인 1역).
-     모든 역할이 max에 도달했으면 초과를 허용해서라도 전원에게 역할을 준다. */
+  /* 2단계: 실무 역할이 없는 팀원에게 최고 점수 실무 역할 배정 (max 미달 역할 우선 → 다인 1역).
+     조장만 맡은 사람도 여기서 실무 역할을 받는다. 모든 역할이 max면 초과를 허용해서라도 전원에게 준다. */
   members.forEach((m) => {
-    if (byMember[m.id].length > 0) return;
-    const open = roles.filter((r) => count[r.id] < r.max);
-    const pool = open.length > 0 ? open : roles;
+    if (workLoad(m.id) > 0) return;
+    const workRoles = roles.filter((r) => !leaderRoleIds.has(r.id));
+    const base = workRoles.length > 0 ? workRoles : roles;
+    const open = base.filter((r) => count[r.id] < r.max);
+    const pool = open.length > 0 ? open : base;
     let best = null;
     pool.forEach((r) => {
       const cand = { r: r.id, score: scores[m.id][r.id], ri: roleIdx.get(r.id) };

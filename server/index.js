@@ -1,12 +1,14 @@
 import 'dotenv/config'
 import express from 'express'
 import cookieParser from 'cookie-parser'
+import { auth } from './routes/auth.js'
 import { me } from './routes/me.js'
 
 const app = express()
 
 app.use(express.json())
 app.use(cookieParser())
+app.use(auth)
 app.use(me)
 
 // 서버 생존 확인 + 필수 환경변수 로드 여부 (값 자체는 절대 노출하지 않음)
