@@ -268,6 +268,7 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
         assert.equal(bootstrap.headers.get('cache-control'), 'no-store')
         const bootstrapBody = (await bootstrap.json()) as {
           readonly accountReadiness: Record<string, unknown>
+          readonly operationStatus: unknown
           readonly workspace: unknown
           readonly history: Record<string, unknown>
         }
@@ -277,6 +278,7 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
           displayMessage:
             'Codex 상태를 확인할 수 없습니다. 자료 작업공간은 계속 사용할 수 있습니다.',
         })
+        assert.equal(bootstrapBody.operationStatus, 'idle')
         assert.deepEqual(bootstrapBody.history, emptyProductHistory())
 
         const material = refreshed.workspace.materials[0]

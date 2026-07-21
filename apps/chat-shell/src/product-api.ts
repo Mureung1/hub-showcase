@@ -60,6 +60,7 @@ export type {
 } from '@ay-ple/product-contract'
 
 const maxProductNdjsonLineBytes = 1024 * 1024
+const productSettlementPollMs = 100
 const safeInvalidResponse = '학기 작업공간 응답을 확인하지 못했습니다.'
 
 export class ProductApiError extends Error {
@@ -90,6 +91,16 @@ export async function fetchProductBootstrap(
   })
   if (!response.ok) throw await toProductApiError(response)
   return parseJsonResponse(response, decodeProductBootstrap)
+}
+
+export async function fetchSettledProductBootstrap(
+  signal?: AbortSignal,
+): Promise<ProductBootstrap> {
+  while (true) {
+    const bootstrap = await fetchProductBootstrap(signal)
+    if (bootstrap.operationStatus === 'idle') return bootstrap
+    await waitForProductSettlement(signal)
+  }
 }
 
 export async function activateProductWorkspace(
@@ -420,4 +431,25 @@ async function toProductApiError(response: Response): Promise<ProductApiError> {
 
 function invalidResponse(): ProductApiError {
   return new ProductApiError('invalid_response', safeInvalidResponse)
+}
+
+function waitForProductSettlement(signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason)
+      return
+    }
+    const timer = setTimeout(finish, productSettlementPollMs)
+    signal?.addEventListener('abort', abort, { once: true })
+
+    function finish() {
+      signal?.removeEventListener('abort', abort)
+      resolve()
+    }
+
+    function abort() {
+      clearTimeout(timer)
+      reject(signal?.reason)
+    }
+  })
 }

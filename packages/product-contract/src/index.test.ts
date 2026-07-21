@@ -55,6 +55,7 @@ test('package root exposes the exact runtime contract surface', () => {
 test('bootstrap decoder accepts the exact Browser-safe projection only', () => {
   const bootstrap = {
     accountReadiness: { state: 'ready' },
+    operationStatus: 'idle',
     workspace: {
       state: 'ready',
       confirmedRevision: 0,
@@ -70,6 +71,14 @@ test('bootstrap decoder accepts the exact Browser-safe projection only', () => {
   } as const
 
   assert.deepEqual(decodeProductBootstrap(bootstrap), bootstrap)
+  assert.throws(
+    () =>
+      decodeProductBootstrap({
+        ...bootstrap,
+        operationStatus: 'settling',
+      }),
+    ProductContractError,
+  )
   assert.throws(
     () =>
       decodeProductBootstrap({
@@ -584,6 +593,7 @@ test('private and unsettled value families are rejected by the shared owner', ()
   const courseId = `course_${'a'.repeat(32)}`
   const bootstrap = {
     accountReadiness: { state: 'ready' },
+    operationStatus: 'idle',
     workspace: {
       state: 'ready',
       confirmedRevision: 0,
@@ -633,6 +643,7 @@ test('settled Run history owns retry ancestry and exact recovery state', () => {
   const runId = `run_${'b'.repeat(32)}`
   const bootstrap = {
     accountReadiness: { state: 'ready' },
+    operationStatus: 'idle',
     workspace: {
       state: 'ready',
       confirmedRevision: 0,

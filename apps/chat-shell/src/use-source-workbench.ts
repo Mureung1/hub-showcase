@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   activateProductWorkspace,
   createProductCourse,
-  fetchProductBootstrap,
+  fetchSettledProductBootstrap,
   fetchProductMaterialPreview,
   ProductApiError,
   refreshProductMaterials,
@@ -65,7 +65,7 @@ export function useSourceWorkbench() {
     setOperationFailure(undefined)
     setBootstrapView({ state: 'loading' })
     try {
-      const bootstrap = await fetchProductBootstrap(signal)
+      const bootstrap = await fetchSettledProductBootstrap(signal)
       setBootstrapView({ state: 'loaded', bootstrap })
     } catch (error) {
       if (!signal?.aborted) {
@@ -81,7 +81,7 @@ export function useSourceWorkbench() {
     setOperationFailure(undefined)
     setBootstrapRefreshing(true)
     try {
-      const bootstrap = await fetchProductBootstrap(signal)
+      const bootstrap = await fetchSettledProductBootstrap(signal)
       setBootstrapView({ state: 'loaded', bootstrap })
       return bootstrap
     } catch (error) {

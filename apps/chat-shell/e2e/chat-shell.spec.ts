@@ -574,6 +574,118 @@ test('settles a lost Assignment stream before Review answer and retries only fro
   ).toHaveCount(0)
 })
 
+test.describe('unresponsive disconnect interrupt', () => {
+  test.use({ scenario: 'disconnect-drain-timeout' })
+
+  test('polls coarse operation status through the final idle read before surfacing recovery', async ({
+    chatHarness,
+    chatPage: page,
+  }) => {
+    await selectCanonicalMaterials(page)
+    await page
+      .getByRole('button', { name: /선택한 자료 정리하기/u })
+      .click()
+    await expect(page.getByRole('region', { name: '검토 대기' })).toBeVisible()
+    const operationStatuses = observeBootstrapOperationStatuses(page)
+
+    await chatHarness.disconnectAssignmentStream()
+
+    const recovery = page.getByRole('region', { name: '작업 복구 기록' })
+    await expect(
+      recovery.getByRole('button', { name: '이 자료로 다시 시도' }),
+    ).toBeVisible()
+    await expect(page.getByRole('region', { name: '검토 대기' })).toHaveCount(0)
+    await expect
+      .poll(() => operationStatuses.filter((status) => status === 'active').length)
+      .toBeGreaterThan(1)
+    await expect.poll(() => operationStatuses.at(-1)).toBe('idle')
+
+    const bootstrap = await readProductBootstrap(page)
+    expect(bootstrap.operationStatus).toBe('idle')
+    expect(bootstrap.history.assignments).toEqual([])
+    expect(bootstrap.history.userConfirmations).toEqual([])
+    expect(bootstrap.history.statePatches).toEqual([
+      expect.objectContaining({ status: 'interrupted', applyOutcome: null }),
+    ])
+    expect(bootstrap.history.modelingRuns).toEqual([
+      expect.objectContaining({
+        status: 'interrupted',
+        recovery: { outcome: 'interrupted', retryable: true },
+      }),
+    ])
+    expect(
+      chatHarness.calls().filter((call) => call.operation === 'interrupt'),
+    ).toHaveLength(1)
+    expect(
+      chatHarness.calls().filter((call) => call.operation === 'startProductTurn'),
+    ).toHaveLength(1)
+  })
+})
+
+test.describe('reload before interrupt settlement', () => {
+  test.use({ scenario: 'reload-before-interrupt-settlement' })
+
+  test('does not restore the pending Review and observes settled recovery after release', async ({
+    chatHarness,
+    chatPage: page,
+  }) => {
+    await selectCanonicalMaterials(page)
+    await page
+      .getByRole('button', { name: /선택한 자료 정리하기/u })
+      .click()
+    await expect(page.getByRole('region', { name: '검토 대기' })).toBeVisible()
+    const operationStatuses = observeBootstrapOperationStatuses(page)
+
+    await page.reload()
+
+    await expect
+      .poll(
+        () =>
+          chatHarness
+            .calls()
+            .filter((call) => call.operation === 'interrupt').length,
+      )
+      .toBe(1)
+    await expect.poll(() => [...operationStatuses]).toContain('active')
+    await expect(page.getByRole('region', { name: '검토 대기' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: '수락' })).toHaveCount(0)
+    await expect(
+      page.getByRole('button', { name: '이 자료로 다시 시도' }),
+    ).toHaveCount(0)
+
+    chatHarness.releaseInterruptSettlement()
+
+    const recovery = page.getByRole('region', { name: '작업 복구 기록' })
+    await expect(recovery.getByText(/작업 연결이 끊겨/u)).toBeVisible()
+    await expect(
+      recovery.getByRole('button', { name: '이 자료로 다시 시도' }),
+    ).toBeVisible()
+    await expect.poll(() => operationStatuses.at(-1)).toBe('idle')
+    await expect(page.getByRole('region', { name: '검토 대기' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: '수락' })).toHaveCount(0)
+
+    const bootstrap = await readProductBootstrap(page)
+    expect(bootstrap.operationStatus).toBe('idle')
+    expect(bootstrap.history.assignments).toEqual([])
+    expect(bootstrap.history.userConfirmations).toEqual([])
+    expect(bootstrap.history.statePatches).toEqual([
+      expect.objectContaining({ status: 'interrupted', applyOutcome: null }),
+    ])
+    expect(bootstrap.history.modelingRuns).toEqual([
+      expect.objectContaining({
+        status: 'interrupted',
+        recovery: { outcome: 'interrupted', retryable: true },
+      }),
+    ])
+    expect(
+      chatHarness.calls().filter((call) => call.operation === 'startProductTurn'),
+    ).toHaveLength(1)
+    expect(
+      chatHarness.calls().filter((call) => call.operation === 'answerUserInput'),
+    ).toHaveLength(0)
+  })
+})
+
 test('reconciles a confirmed Assignment without inventing continuation loss when the finite Review response is lost', async ({
   chatHarness,
   chatPage: page,
@@ -1010,6 +1122,29 @@ async function failNextProductBootstrap(page: Page): Promise<{
     { times: 1 },
   )
   return { failed }
+}
+
+function observeBootstrapOperationStatuses(
+  page: Page,
+): ProductBootstrap['operationStatus'][] {
+  const statuses: ProductBootstrap['operationStatus'][] = []
+  page.on('response', (response) => {
+    if (new URL(response.url()).pathname !== '/api/product/bootstrap') return
+    void response
+      .json()
+      .then((body: unknown) => {
+        if (
+          typeof body === 'object' &&
+          body !== null &&
+          'operationStatus' in body &&
+          (body.operationStatus === 'active' || body.operationStatus === 'idle')
+        ) {
+          statuses.push(body.operationStatus)
+        }
+      })
+      .catch(() => undefined)
+  })
+  return statuses
 }
 
 async function flushProductController(page: Page): Promise<void> {

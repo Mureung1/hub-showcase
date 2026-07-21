@@ -47,6 +47,10 @@ export type ChatScenario =
   | 'not-ready'
   | 'unavailable'
   | 'acknowledged-interrupt-response-loss'
+  | 'disconnect-drain-timeout'
+  | 'reload-before-interrupt-settlement'
+
+type ProductRuntimeScenario = Exclude<ChatScenario, 'unavailable'>
 
 export const scenarioPrompts = {
   answer: '이번 주에 무엇부터 준비하면 좋을까?',
@@ -76,6 +80,7 @@ export type ChatShellHarness = {
   prepareScanLimitWorkspaceActivation(): Promise<void>
   releaseReviewContinuation(): void
   releaseInterruptResponse(): void
+  releaseInterruptSettlement(): void
   releaseLateInteraction(): void
   close(): Promise<void>
 }
@@ -158,7 +163,7 @@ async function startChatShellHarness(
         scenario === 'not-ready'
           ? { state: 'not_ready', reason: 'authentication_required' }
           : { state: 'ready' },
-        scenario === 'acknowledged-interrupt-response-loss',
+        scenario,
       )
       application = await createServerApplication({
         codexChat: {
@@ -266,6 +271,10 @@ async function startChatShellHarness(
         if (!runtime) throw new Error('E2E product runtime is unavailable')
         runtime.releaseInterruptResponse()
       },
+      releaseInterruptSettlement() {
+        if (!runtime) throw new Error('E2E product runtime is unavailable')
+        runtime.releaseInterruptSettlement()
+      },
       async close() {
         if (closed) return
         closed = true
@@ -335,6 +344,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
   private readonly activeTurns = new Set<Deferred<void>>()
   private readonly interruptObserved = deferred<void>()
   private readonly interruptResponseReleased = deferred<void>()
+  private readonly interruptSettlementReleased = deferred<void>()
   private readonly lateInteractionReleased = deferred<void>()
   private readonly reviewContinuationReleased = deferred<void>()
   private reviewContinuationPaused = false
@@ -342,7 +352,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
 
   constructor(
     private readonly readiness: CodexAccountReadiness,
-    private readonly acknowledgedInterruptResponseLoss = false,
+    private readonly scenario: ProductRuntimeScenario,
   ) {}
 
   get calls(): readonly ProductRuntimeCall[] {
@@ -405,14 +415,21 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
 
   async interrupt(input: InterruptTurnInput): Promise<void> {
     this.callLog.push({ operation: 'interrupt', input: { ...input } })
+    if (this.scenario === 'reload-before-interrupt-settlement') {
+      await this.interruptSettlementReleased.promise
+    }
     this.interruptedTurns.add(input.turnId)
     this.interruptObserved.resolve()
+    if (this.scenario === 'disconnect-drain-timeout') {
+      await this.interruptSettlementReleased.promise
+      return
+    }
     for (const pending of this.pendingInteractions.values()) {
       if (pending.turnId === input.turnId) {
         pending.settlement.resolve({ resolution: 'cancelled' })
       }
     }
-    if (this.acknowledgedInterruptResponseLoss) {
+    if (this.scenario === 'acknowledged-interrupt-response-loss') {
       await this.interruptResponseReleased.promise
     }
   }
@@ -422,6 +439,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
   async close(): Promise<void> {
     this.interruptObserved.resolve()
     this.interruptResponseReleased.resolve()
+    this.interruptSettlementReleased.resolve()
     this.lateInteractionReleased.resolve()
     this.reviewContinuationReleased.resolve()
     for (const pending of this.pendingInteractions.values()) {
@@ -445,6 +463,10 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
 
   releaseInterruptResponse(): void {
     this.interruptResponseReleased.resolve()
+  }
+
+  releaseInterruptSettlement(): void {
+    this.interruptSettlementReleased.resolve()
   }
 
   private trackTurn(
@@ -472,7 +494,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     const acknowledge = this.acknowledge.bind(this)
     const wasInterrupted = this.wasInterrupted.bind(this)
     const acknowledgedInterruptResponseLoss =
-      this.acknowledgedInterruptResponseLoss
+      this.scenario === 'acknowledged-interrupt-response-loss'
     const interruptObserved = this.interruptObserved.promise
     const lateInteractionReleased = this.lateInteractionReleased.promise
     const waitForReviewContinuation = this.waitForReviewContinuation.bind(this)
@@ -642,7 +664,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     const acknowledge = this.acknowledge.bind(this)
     const wasInterrupted = this.wasInterrupted.bind(this)
     const acknowledgedInterruptResponseLoss =
-      this.acknowledgedInterruptResponseLoss
+      this.scenario === 'acknowledged-interrupt-response-loss'
     const interruptObserved = this.interruptObserved.promise
     const lateInteractionReleased = this.lateInteractionReleased.promise
     const interactionId = `interaction-general-${this.turnOrdinal}`

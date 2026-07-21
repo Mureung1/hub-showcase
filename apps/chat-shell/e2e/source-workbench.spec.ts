@@ -247,6 +247,7 @@ test('distinguishes product loading, inactive workspace, no Course, empty materi
       contentType: 'application/json',
       body: JSON.stringify({
         accountReadiness: { state: 'ready' },
+        operationStatus: 'idle',
         history: {
           assignments: [],
           statePatches: [],

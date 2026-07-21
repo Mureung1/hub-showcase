@@ -128,6 +128,7 @@ test('canonical product startup preserves caller-owned bytes and serves an incom
           displayMessage:
             'Codex 상태를 확인할 수 없습니다. 자료 작업공간은 계속 사용할 수 있습니다.',
         },
+        operationStatus: 'idle',
         workspace: {
           state: 'incompatible',
           readOnly: true,

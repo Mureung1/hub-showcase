@@ -41,7 +41,9 @@ export function useProductChat(options: {
   readonly accountReadiness: ProductAccountReadiness | undefined
   readonly workspace: ReadyProductWorkspace | undefined
   readonly selectedMaterials: readonly ProductRawMaterial[]
-  readonly refreshProductState: () => Promise<ProductBootstrap>
+  readonly refreshProductState: (
+    signal?: AbortSignal,
+  ) => Promise<ProductBootstrap>
 }) {
   const [state, setState] = useState(createInitialProductChatState)
   const stateRef = useRef(state)
@@ -357,7 +359,7 @@ export function useProductChat(options: {
       transition({ type: 'operation.stream-ended' })
       if (kind === 'assignment') {
         try {
-          await options.refreshProductState()
+          await options.refreshProductState(controller.signal)
         } catch {
           // The authoritative stream terminal remains final. Workspace hydration
           // exposes its own failure without rewriting the operation lifecycle.
@@ -400,44 +402,39 @@ export function useProductChat(options: {
     ) {
       return false
     }
-    for (let attempt = 0; attempt < 50 && !signal.aborted; attempt += 1) {
-      try {
-        const bootstrap = await options.refreshProductState()
-        const run = bootstrap.history.modelingRuns.find(
-          (candidate) =>
-            candidate.id === active.runId &&
-            candidate.actionId === active.operationId,
-        )
-        if (run) {
-          if (run.recovery) {
-            transition({
-              type: 'operation.frame',
-              frame: {
-                type: 'operation.recovery',
-                operationId: run.actionId,
-                runId: run.id,
-                ...run.recovery,
-              },
-            })
-          }
-          transition({
-            type: 'operation.frame',
-            frame: {
-              type: 'operation.terminal',
-              operationId: run.actionId,
-              runId: run.id,
-              status: run.status,
-              validationOutcome: run.validationOutcome,
-            },
-          })
-          return stateRef.current.phase !== 'stream-failed'
-        }
-      } catch {
-        // A bounded later read may observe settlement after the lease drains.
+    try {
+      const bootstrap = await options.refreshProductState(signal)
+      const run = bootstrap.history.modelingRuns.find(
+        (candidate) =>
+          candidate.id === active.runId &&
+          candidate.actionId === active.operationId,
+      )
+      if (!run) return false
+      if (run.recovery) {
+        transition({
+          type: 'operation.frame',
+          frame: {
+            type: 'operation.recovery',
+            operationId: run.actionId,
+            runId: run.id,
+            ...run.recovery,
+          },
+        })
       }
-      await waitForRecoveryPoll()
+      transition({
+        type: 'operation.frame',
+        frame: {
+          type: 'operation.terminal',
+          operationId: run.actionId,
+          runId: run.id,
+          status: run.status,
+          validationOutcome: run.validationOutcome,
+        },
+      })
+      return stateRef.current.phase !== 'stream-failed'
+    } catch {
+      return false
     }
-    return false
   }
 
   async function hasConfirmedReviewDecision(
@@ -490,10 +487,6 @@ export function useProductChat(options: {
     cancelClarification,
     interrupt,
   }
-}
-
-function waitForRecoveryPoll(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 100))
 }
 
 type ProductResponsePending =

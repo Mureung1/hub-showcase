@@ -174,6 +174,7 @@ export function createProductRouter(
 
   router.get('/bootstrap', async (_request, response) => {
     response.setHeader('cache-control', 'no-store')
+    const operationStatus = productOperations?.operationStatus() ?? 'idle'
     const workspaceSnapshot = controller?.snapshot() ?? null
     const workspace = projectProductWorkspace(workspaceSnapshot)
     const history = projectSettledHistory(controller, workspaceSnapshot)
@@ -182,6 +183,7 @@ export function createProductRouter(
     )
     const body: ProductBootstrap = {
       accountReadiness,
+      operationStatus,
       workspace,
       history,
     }

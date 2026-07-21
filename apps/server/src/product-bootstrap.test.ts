@@ -7,6 +7,7 @@ import express from 'express'
 import { decodeProductBootstrap } from '@ay-ple/product-contract'
 
 import { createProductRouter } from './product-http.js'
+import type { ProductOperationCoordinator } from './product-operation-coordinator.js'
 import type { SemesterWorkspaceController } from './semester-workspace.js'
 
 const courseId = `course_${'a'.repeat(32)}`
@@ -65,6 +66,7 @@ test('bootstrap keeps the workspace readable when Codex readiness is unavailable
       const encoded = await response.text()
       const body = JSON.parse(encoded) as {
         readonly accountReadiness: unknown
+        readonly operationStatus: unknown
         readonly workspace: unknown
         readonly history: unknown
       }
@@ -74,9 +76,37 @@ test('bootstrap keeps the workspace readable when Codex readiness is unavailable
         displayMessage:
           'Codex 상태를 확인할 수 없습니다. 자료 작업공간은 계속 사용할 수 있습니다.',
       })
+      assert.equal(body.operationStatus, 'idle')
       assert.deepEqual(body.workspace, expectedSafeBootstrap().workspace)
       assert.deepEqual(body.history, expectedSafeBootstrap().history)
       assert.equal(encoded.includes('/private/runtime'), false)
+    },
+  )
+})
+
+test('bootstrap reads coarse operation status before projecting settled-only state', async () => {
+  let statusRead = false
+  const source = productSnapshotController()
+  const controller = {
+    ...source,
+    snapshot: () => {
+      assert.equal(statusRead, true)
+      return source.snapshot()
+    },
+  } as SemesterWorkspaceController
+  await withProductRouter(
+    controller,
+    async () => ({ state: 'ready' }),
+    async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/product/bootstrap`)
+      const body = decodeProductBootstrap(await response.json())
+
+      assert.equal(body.operationStatus, 'active')
+      assert.deepEqual(body.history, expectedSafeBootstrap().history)
+    },
+    () => {
+      statusRead = true
+      return 'active'
     },
   )
 })
@@ -228,6 +258,7 @@ function modelingRun(input: {
 function expectedSafeBootstrap() {
   return {
     accountReadiness: { state: 'ready' },
+    operationStatus: 'idle',
     workspace: {
       state: 'ready',
       confirmedRevision: 1,
@@ -315,6 +346,7 @@ async function withProductRouter(
     { readonly state: 'ready' } | { readonly state: 'not_ready' }
   >,
   run: (baseUrl: string) => Promise<void>,
+  readOperationStatus: () => 'active' | 'idle' = () => 'idle',
 ): Promise<void> {
   const app = express()
   app.use(
@@ -322,7 +354,9 @@ async function withProductRouter(
     createProductRouter(
       controller,
       undefined,
-      undefined,
+      {
+        operationStatus: readOperationStatus,
+      } as ProductOperationCoordinator,
       undefined,
       readAccountReadiness,
     ),

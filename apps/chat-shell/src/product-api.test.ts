@@ -5,6 +5,7 @@ import {
   activateProductWorkspace,
   fetchProductBootstrap,
   fetchProductMaterialPreview,
+  fetchSettledProductBootstrap,
   ProductApiError,
   ProductStreamError,
   refreshProductMaterials,
@@ -27,6 +28,7 @@ test('decodes a ready product snapshot without persistence metadata', async (t) 
       new Response(
         JSON.stringify({
           accountReadiness: { state: 'ready' },
+          operationStatus: 'idle',
           workspace,
           history: emptyHistory(),
         }),
@@ -36,9 +38,31 @@ test('decodes a ready product snapshot without persistence metadata', async (t) 
 
   assert.deepEqual(await fetchProductBootstrap(), {
     accountReadiness: { state: 'ready' },
+    operationStatus: 'idle',
     workspace,
     history: emptyHistory(),
   })
+})
+
+test('polls an active product operation until one idle bootstrap supplies the final settled read', async (t) => {
+  let requests = 0
+  t.mock.method(globalThis, 'fetch', async () => {
+    requests += 1
+    return new Response(
+      JSON.stringify({
+        accountReadiness: { state: 'ready' },
+        operationStatus: requests === 1 ? 'active' : 'idle',
+        workspace: null,
+        history: emptyHistory(),
+      }),
+      { status: 200 },
+    )
+  })
+
+  const bootstrap = await fetchSettledProductBootstrap()
+
+  assert.equal(requests, 2)
+  assert.equal(bootstrap.operationStatus, 'idle')
 })
 
 test('decodes an actionable incompatible product outcome without store versions', async (t) => {
@@ -57,6 +81,7 @@ test('decodes an actionable incompatible product outcome without store versions'
             state: 'unavailable',
             displayMessage: 'Codex 상태를 확인할 수 없습니다.',
           },
+          operationStatus: 'idle',
           workspace,
           history: emptyHistory(),
         }),
@@ -78,6 +103,7 @@ test('decodes only settled product history for reload', async (t) => {
       state: 'not_ready',
       displayMessage: 'Codex에 로그인해 주세요.',
     },
+    operationStatus: 'idle',
     workspace: {
       state: 'ready',
       confirmedRevision: 1,
@@ -166,6 +192,7 @@ test('rejects persistence metadata in the Browser product contract', async (t) =
       new Response(
         JSON.stringify({
           accountReadiness: { state: 'ready' },
+          operationStatus: 'idle',
           workspace: {
             state: 'ready',
             storeFormatVersion: 2,
@@ -195,6 +222,7 @@ test('rejects pending or privately correlated product history', async (t) => {
       new Response(
         JSON.stringify({
           accountReadiness: { state: 'ready' },
+          operationStatus: 'idle',
           workspace: {
             state: 'ready',
             confirmedRevision: 0,
@@ -233,6 +261,7 @@ test('rejects an unreconciled acceptance-unknown ModelingRun as settled history'
       new Response(
         JSON.stringify({
           accountReadiness: { state: 'ready' },
+          operationStatus: 'idle',
           workspace: {
             state: 'ready',
             confirmedRevision: 0,

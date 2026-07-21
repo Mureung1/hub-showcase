@@ -83,6 +83,7 @@ export interface ProductOperationSink {
 }
 
 export type ProductOperationCoordinator = {
+  operationStatus(): 'active' | 'idle'
   startAssignment(
     input: AssignmentActionRequest,
     options: ProductOperationOptions,
@@ -624,6 +625,10 @@ export function createProductOperationCoordinator(options: {
   }
 
   return {
+    operationStatus() {
+      return active ? 'active' : 'idle'
+    },
+
     async startAssignment(input, operationOptions) {
       assertAssignmentRequest(input)
       options.controller.nativeCwd()

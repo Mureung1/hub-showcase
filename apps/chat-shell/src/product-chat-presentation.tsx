@@ -17,7 +17,10 @@ import {
   X,
 } from 'lucide-react'
 
-import { PRODUCT_REVIEW_FEEDBACK_MAX_BYTES } from '@ay-ple/product-contract'
+import {
+  PRODUCT_REVIEW_FEEDBACK_MAX_BYTES,
+  type ProductOperationRecovery,
+} from '@ay-ple/product-contract'
 
 import type {
   ProductAccountReadiness,
@@ -292,25 +295,19 @@ function SettledRecoveryCard({
 }) {
   const recovery = run.recovery
   if (!recovery) return null
+  const presentation = recoveryPresentation(recovery)
   if (recovery.outcome === 'continuation_lost') {
     return (
       <article className="settled-recovery-card is-continuation-lost">
-        <strong>확인 반영 뒤 AY 작업의 이어짐이 끊겼습니다</strong>
-        <span>
-          학기 정보 {recovery.confirmedRevision}번째 반영은 유지했습니다.
-          같은 변경을 다시 적용하지 않습니다.
-        </span>
+        <strong>{presentation.title}</strong>
+        <span>{presentation.detail}</span>
       </article>
     )
   }
   return (
     <article className="settled-recovery-card is-interrupted">
-      <strong>
-        {recovery.outcome === 'interrupted'
-          ? '작업 연결이 끊겨 중단했습니다'
-          : '작업 결과를 확정하지 못했습니다'}
-      </strong>
-      <span>변경 제안은 반영하지 않았고 자동으로 다시 시도하지 않았습니다.</span>
+      <strong>{presentation.title}</strong>
+      <span>{presentation.detail}</span>
       {recovery.retryable ? (
         <button
           type="button"
@@ -587,20 +584,11 @@ function ProductTranscriptRow({
     )
   }
   if (entry.kind === 'recovery') {
+    const presentation = recoveryPresentation(entry)
     return (
       <li className={`product-recovery is-${entry.outcome}`}>
-        <strong>
-          {entry.outcome === 'continuation_lost'
-            ? '확인 반영 뒤 AY 작업의 이어짐이 끊겼습니다'
-            : entry.outcome === 'interrupted'
-              ? '작업 연결이 끊겨 중단했습니다'
-              : '작업 결과를 확정하지 못했습니다'}
-        </strong>
-        <span>
-          {entry.outcome === 'continuation_lost'
-            ? `학기 정보 ${entry.confirmedRevision}번째 반영은 유지했고 같은 변경을 다시 적용하지 않습니다.`
-            : '변경 제안은 반영하지 않았고 자동으로 다시 시도하지 않았습니다.'}
-        </span>
+        <strong>{presentation.title}</strong>
+        <span>{presentation.detail}</span>
       </li>
     )
   }
@@ -613,6 +601,25 @@ function ProductTranscriptRow({
       ) : null}
     </li>
   )
+}
+
+function recoveryPresentation(recovery: ProductOperationRecovery): {
+  readonly title: string
+  readonly detail: string
+} {
+  if (recovery.outcome === 'continuation_lost') {
+    return {
+      title: '확인 반영 뒤 AY 작업의 이어짐이 끊겼습니다',
+      detail: `학기 정보 ${recovery.confirmedRevision}번째 반영은 유지했고 같은 변경을 다시 적용하지 않습니다.`,
+    }
+  }
+  return {
+    title:
+      recovery.outcome === 'interrupted'
+        ? '작업 연결이 끊겨 중단했습니다'
+        : '작업 결과를 확정하지 못했습니다',
+    detail: '변경 제안은 반영하지 않았고 자동으로 다시 시도하지 않았습니다.',
+  }
 }
 
 type ReviewOutcome = NonNullable<

@@ -129,6 +129,7 @@ export type ProductSettledHistory = {
 
 export type ProductBootstrap = {
   readonly accountReadiness: ProductAccountReadiness
+  readonly operationStatus: 'active' | 'idle'
   readonly workspace: ProductWorkspace | null
   readonly history: ProductSettledHistory
 }
@@ -153,11 +154,20 @@ export type ProductMaterialPreview = {
 }
 
 export function decodeProductBootstrap(value: unknown): ProductBootstrap {
-  if (!isExactObject(value, ['accountReadiness', 'history', 'workspace'])) {
+  if (
+    !isExactObject(value, [
+      'accountReadiness',
+      'history',
+      'operationStatus',
+      'workspace',
+    ]) ||
+    (value.operationStatus !== 'active' && value.operationStatus !== 'idle')
+  ) {
     throw invalidContract()
   }
   return {
     accountReadiness: decodeProductAccountReadiness(value.accountReadiness),
+    operationStatus: value.operationStatus,
     workspace:
       value.workspace === null ? null : decodeProductWorkspace(value.workspace),
     history: decodeProductSettledHistory(value.history),
