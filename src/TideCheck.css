@@ -35,35 +35,45 @@
   margin-bottom: 14px;
 }
 
-.tide-slider {
+/* Figma 스펙: 트랙과 봉우리가 하나의 닫힌 path(wavePath, TideSlider.jsx)다.
+   같은 path를 3번 복제해 blur/mask만 다르게 입힌 progressive blur.
+   별도의 thumb/그림자/타원 없음 — 트랙 자체가 값 위치에서 부풀어 오른다. */
+.tide-slider-wrap {
+  position: relative;
+  width: 100%;
+  height: 92px;
+}
+.tide-slider-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.tide-slider-input {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
-  width: 100%;
-  height: 8px;
-  border-radius: 999px;
-  background: #e4e9fd;
-  outline: none;
 }
-.tide-slider::-webkit-slider-thumb {
+.tide-slider-input::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #4c6ef5;
-  filter: blur(3px);
-  box-shadow: 0 0 16px 5px rgba(76, 110, 245, 0.5);
-  cursor: pointer;
-  border: none;
+  width: 24px;
+  height: 24px;
 }
-.tide-slider::-moz-range-thumb {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #4c6ef5;
-  filter: blur(3px);
-  box-shadow: 0 0 16px 5px rgba(76, 110, 245, 0.5);
-  cursor: pointer;
+.tide-slider-input::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
   border: none;
+  background: transparent;
 }
 
 .tide-endlabels {
