@@ -831,7 +831,10 @@ test('released Product Chat store conflict reopens the current authority and rec
         error.code === 'execution_guard_conflict',
     )
     assert.deepEqual(await readFile(storePath), externalBytes)
-    assert.equal(fixture.controller.snapshot()?.recovery?.state, 'store_conflict')
+    const conflicted = fixture.controller.snapshot()
+    assert.equal(conflicted?.state, 'ready')
+    if (conflicted?.state !== 'ready') assert.fail('workspace must be ready')
+    assert.equal(conflicted.recovery?.state, 'store_conflict')
     await assert.rejects(
       fixture.controller.activate(),
       (error: unknown) =>
@@ -862,6 +865,78 @@ test('released Product Chat store conflict reopens the current authority and rec
     await fixture.controller.settleProductChatExecution({
       operationId: freshOperationId,
     })
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('Product Chat cleanup-state store conflict stays blocked until its operation release', async () => {
+  let storePath = ''
+  let conflictInjected = false
+  let externalBytes = Buffer.alloc(0)
+  const fixture = await createFixture(undefined, {
+    beforeActionArtifactCleanup: async () => {
+      if (conflictInjected) return
+      conflictInjected = true
+      const externalStore = JSON.parse(
+        await readFile(storePath, 'utf8'),
+      ) as Record<string, unknown>
+      externalStore.course = {
+        ...(externalStore.course as Record<string, unknown>),
+        displayName: 'cleanup 뒤 외부에서 채택할 Chat 과목',
+      }
+      externalBytes = Buffer.from(
+        `${JSON.stringify(externalStore, null, 2)}\n`,
+        'utf8',
+      )
+      await writeFile(storePath, externalBytes)
+    },
+  })
+  storePath = path.join(
+    fixture.workspaceRoot,
+    '.ay-ple',
+    'workspace-state.json',
+  )
+  try {
+    const operationId = `chat_${'a'.repeat(32)}`
+    await fixture.controller.prepareProductChatExecution({
+      operationId,
+      courseId: fixture.courseId,
+      selectedMaterials: [],
+    })
+    await fixture.controller.bindProductChatExecution({
+      operationId,
+      threadId: 'thread-chat-cleanup-store-conflict',
+      turnId: 'turn-chat-cleanup-store-conflict',
+    })
+
+    await assert.rejects(
+      fixture.controller.settleProductChatExecution({ operationId }),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'execution_guard_conflict',
+    )
+    assert.deepEqual(await readFile(storePath), externalBytes)
+    assert.equal(fixture.controller.snapshot()?.recovery?.state, 'store_conflict')
+    await assert.rejects(
+      fixture.controller.activate(),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'execution_guard_conflict',
+    )
+
+    fixture.controller.noteProductOperationReleased(operationId)
+    const recovered = await fixture.controller.activate()
+    assert.equal(recovered.status, 'activated')
+    assert.equal(
+      recovered.workspace.course?.displayName,
+      'cleanup 뒤 외부에서 채택할 Chat 과목',
+    )
+    assert.equal(recovered.workspace.recovery, null)
+    const persisted = JSON.parse(
+      await readFile(storePath, 'utf8'),
+    ) as { readonly executionGuard: unknown }
+    assert.equal(persisted.executionGuard, null)
   } finally {
     await fixture.cleanup()
   }

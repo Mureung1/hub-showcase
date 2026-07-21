@@ -713,17 +713,24 @@ export function createSemesterWorkspaceController(options: {
   return {
     activate() {
       return enqueue(async () => {
-        const recoveringStoreConflict = Boolean(
+        const activeStoreConflict =
+          active && 'store' in active ? active.storeConflict : null
+        const reactivatingStoreConflict = Boolean(
           active &&
             'store' in active &&
-            active.store.executionGuard?.state === 'active' &&
+            activeStoreConflict &&
             canReactivateStoreConflict(active),
         )
+        const reactivatingReleasedGuard =
+          reactivatingStoreConflict &&
+          activeStoreConflict !== null &&
+          activeStoreConflict.guardedOperationId !== null
         if (
           active &&
           'store' in active &&
-          active.store.executionGuard?.state === 'active' &&
-          !recoveringStoreConflict
+          ((active.storeConflict !== null && !reactivatingStoreConflict) ||
+            (active.storeConflict === null &&
+              active.store.executionGuard?.state === 'active'))
         ) {
           assertNoExecutionGuard(active)
         }
@@ -742,7 +749,7 @@ export function createSemesterWorkspaceController(options: {
         ])
         assertDisjointRoots([packageRoot, appDataRoot, workspaceRoot])
         if (
-          recoveringStoreConflict &&
+          reactivatingReleasedGuard &&
           active &&
           active.root !== workspaceRoot
         ) {
@@ -750,7 +757,7 @@ export function createSemesterWorkspaceController(options: {
         }
         const opened = await openWorkspace(workspaceRoot)
         if ('store' in opened) {
-          if (recoveringStoreConflict && active && 'store' in active) {
+          if (reactivatingStoreConflict && active && 'store' in active) {
             opened.releasedProductOperationId =
               active.releasedProductOperationId
           }
@@ -2478,9 +2485,7 @@ function markStoreConflict(
   opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
 ): void {
   const guardedOperationId =
-    opened.store.executionGuard?.state === 'active'
-      ? opened.store.executionGuard.operationId
-      : null
+    opened.store.executionGuard?.operationId ?? null
   opened.storeConflict = {
     guardedOperationId,
   }
