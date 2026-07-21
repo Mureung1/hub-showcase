@@ -1,4 +1,6 @@
-import type { ArticleDetail, ContentType } from '../api/types'
+import { useState } from 'react'
+import Mission from './Mission'
+import type { ArticleDetail, ContentType, CreateMissionRecordRequest, MissionRecord } from '../api/types'
 import './ArticleIntro.css'
 
 const CONTENT_TYPE_LABEL: Record<ContentType, string> = {
@@ -21,9 +23,28 @@ export type ArticleIntroState =
 type ArticleIntroProps = {
   state: ArticleIntroState
   onBack: () => void
+  onSubmitMission?: (request: CreateMissionRecordRequest) => Promise<MissionRecord>
 }
 
-export default function ArticleIntro({ state, onBack }: ArticleIntroProps) {
+export default function ArticleIntro({
+  state,
+  onBack,
+  onSubmitMission = () => Promise.reject(new Error('onSubmitMission not provided')),
+}: ArticleIntroProps) {
+  const [hasOpenedOriginal, setHasOpenedOriginal] = useState(false)
+  const [screen, setScreen] = useState<'intro' | 'mission'>('intro')
+
+  if (state.status === 'success' && screen === 'mission') {
+    return (
+      <Mission
+        article={state.article}
+        onBack={() => setScreen('intro')}
+        onSubmit={onSubmitMission}
+        onGoToToday={onBack}
+      />
+    )
+  }
+
   return (
     <div className="app-shell">
       <header className="screen-header">
@@ -71,6 +92,7 @@ export default function ArticleIntro({ state, onBack }: ArticleIntroProps) {
                 href={state.article.originalUrl}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() => setHasOpenedOriginal(true)}
               >
                 원문 읽으러 가기
               </a>
@@ -83,6 +105,24 @@ export default function ArticleIntro({ state, onBack }: ArticleIntroProps) {
                   원문 읽으러 가기
                 </button>
               </>
+            )}
+
+            {state.article.urlStatus === 'active' && hasOpenedOriginal && (
+              <div className="article-intro-mission-prompt">
+                <p>원문을 읽고 돌아오셨나요?</p>
+                <p>이제 짧게 생각을 남겨볼까요?</p>
+                <button type="button" className="btn-primary" onClick={() => setScreen('mission')}>
+                  미션 시작하기
+                </button>
+                <a
+                  className="article-intro-back"
+                  href={state.article.originalUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  원문 다시 보기
+                </a>
+              </div>
             )}
           </>
         )}

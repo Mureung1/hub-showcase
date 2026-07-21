@@ -51,3 +51,19 @@
   color: var(--ink-soft);
   margin-bottom: 12px;
 }
+
+.article-intro-mission-prompt {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+}
+
+.article-intro-mission-prompt p {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.article-intro-mission-prompt .btn-primary {
+  margin-top: 12px;
+  margin-bottom: 12px;
+}

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import ArticleCard from '../components/ArticleCard'
 import type { TodayArticle } from '../api/types'
 import './Today.css'
@@ -10,6 +9,9 @@ export type TodayState =
 
 type TodayProps = {
   state: TodayState
+  // 대표로 올릴 article id. 화면을 왕복해도 유지되도록 상위(App)가 소유한다.
+  selectedArticleId?: string | null
+  onSelectArticle?: (articleId: string) => void
   onOpenArticle?: (articleId: string) => void
 }
 
@@ -20,9 +22,13 @@ function formatToday(date: Date): string {
   return `${year}.${month}.${day}`
 }
 
-export default function Today({ state, onOpenArticle = () => {} }: TodayProps) {
+export default function Today({
+  state,
+  selectedArticleId = null,
+  onSelectArticle = () => {},
+  onOpenArticle = () => {},
+}: TodayProps) {
   const today = formatToday(new Date())
-  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null)
 
   const items = state.status === 'success' ? state.items : []
   const featureArticle = items.find((article) => article.id === selectedArticleId) ?? items[0]
@@ -75,7 +81,7 @@ export default function Today({ state, onOpenArticle = () => {} }: TodayProps) {
                       key={article.id}
                       article={article}
                       variant="compact"
-                      onSelect={() => setSelectedArticleId(article.id)}
+                      onSelect={() => onSelectArticle(article.id)}
                     />
                   ))}
                 </div>
