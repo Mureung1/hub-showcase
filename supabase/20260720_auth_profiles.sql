@@ -109,3 +109,4 @@ begin
     execute format('create policy %I on public.%I for delete using (auth.uid() = user_id)', table_name || '_delete_own', table_name);
   end loop;
 end;
+$$;

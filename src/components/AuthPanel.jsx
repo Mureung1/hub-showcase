@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "../auth/useAuth.js";
+import { getUsernameFromUser, USERNAME_HINT } from "../auth/authIdentity.js";
 
-const initialForm = { email: "", password: "" };
+const initialForm = { username: "", password: "" };
 
 export default function AuthPanel() {
   const { authError, isAuthLoading, isConfigured, signIn, signOut, signUp, user } = useAuth();
@@ -19,8 +20,8 @@ export default function AuthPanel() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    if (!form.email.trim() || !form.password) {
-      setLocalError("이메일과 비밀번호를 모두 입력해 주세요.");
+    if (!form.username.trim() || !form.password) {
+      setLocalError("아이디와 비밀번호를 모두 입력해 주세요.");
       return;
     }
 
@@ -29,12 +30,12 @@ export default function AuthPanel() {
     setMessage("");
     try {
       if (mode === "signup") {
-        const result = await signUp({ email: form.email.trim(), password: form.password });
+        const result = await signUp({ username: form.username, password: form.password });
         setMessage(result.needsEmailConfirmation
-          ? "가입 확인 이메일을 보냈습니다. 인증을 완료한 뒤 로그인해 주세요."
+          ? "아이디 로그인에는 Supabase의 Confirm Email 설정을 꺼야 합니다."
           : "회원가입과 로그인이 완료되었습니다.");
       } else {
-        await signIn({ email: form.email.trim(), password: form.password });
+        await signIn({ username: form.username, password: form.password });
       }
       setForm(initialForm);
     } catch (error) {
@@ -66,7 +67,7 @@ export default function AuthPanel() {
         <div>
           <p className="eyebrow">Account</p>
           <h2>로그인됨</h2>
-          <p>{user.email}</p>
+          <p>{getUsernameFromUser(user)}</p>
         </div>
         <button className="secondary-button compact-button" type="button" onClick={() => signOut().catch(() => {})}>
           로그아웃
@@ -82,7 +83,7 @@ export default function AuthPanel() {
         <div>
           <p className="eyebrow">Account</p>
           <h2 id="auth-panel-title">{isSignUp ? "회원가입" : "로그인"}</h2>
-          <p>프로필은 로그인한 계정에만 저장됩니다.</p>
+          <p>프로필과 저장 출처는 로그인한 계정에만 저장됩니다.</p>
         </div>
         <div className="auth-mode-toggle" aria-label="인증 방식">
           <button className={!isSignUp ? "is-active" : ""} type="button" onClick={() => setMode("signin")}>로그인</button>
@@ -91,8 +92,9 @@ export default function AuthPanel() {
       </div>
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <label className="field">
-          <span>이메일</span>
-          <input autoComplete="email" inputMode="email" type="email" value={form.email} onChange={(event) => updateForm("email", event.target.value)} />
+          <span>아이디</span>
+          <input autoCapitalize="none" autoComplete="username" maxLength="30" value={form.username} onChange={(event) => updateForm("username", event.target.value)} />
+          <small>{USERNAME_HINT}</small>
         </label>
         <label className="field">
           <span>비밀번호</span>

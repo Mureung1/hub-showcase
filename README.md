@@ -158,7 +158,7 @@ mock과 Gemini 분석 결과는 모두 [`DATA_SCHEMA.md`](./DATA_SCHEMA.md)에 �
 
 ### 사용자 프로필과 재판정
 
-Supabase 환경변수를 설정하면 이메일·비밀번호 로그인 후 사용자별 프로필을 `profiles` 테이블에 저장합니다. 새로고침 후에도 세션과 프로필을 복원하며, 프로필을 수정하면 Gemini를 다시 호출하지 않고 기존 공고의 매칭 결과만 현재 프로필 기준으로 재계산합니다. 기존 브라우저 프로필은 사용자가 동의할 때만 계정으로 가져옵니다. 구조와 판정 기준은 [`PROFILE_SCHEMA.md`](./PROFILE_SCHEMA.md), 인증 설정은 [`AUTH_AND_USER_DATA.md`](./AUTH_AND_USER_DATA.md)를 참고하세요.
+Supabase 환경변수를 설정하면 아이디·비밀번호 로그인 후 사용자별 프로필을 `profiles` 테이블에 저장합니다. 새로고침 후에도 세션과 프로필을 복원하며, 프로필을 수정하면 Gemini를 다시 호출하지 않고 기존 공고의 매칭 결과만 현재 프로필 기준으로 재계산합니다. 기존 브라우저 프로필은 사용자가 동의할 때만 계정으로 가져옵니다. 구조와 판정 기준은 [`PROFILE_SCHEMA.md`](./PROFILE_SCHEMA.md), 인증 설정은 [`AUTH_AND_USER_DATA.md`](./AUTH_AND_USER_DATA.md)를 참고하세요.
 
 ## Supabase 인증과 계정 프로필
 
@@ -206,3 +206,15 @@ https://github.com/clradtr/hub/wiki/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EA%B8%
 ## 배포 기반 구조
 
 기본 실행은 계속 로컬 전용입니다. 향후 도메인과 호스팅을 연결할 수 있는 production 단일 서버, CORS, 보안 헤더, 요청 제한과 Docker 구조는 [DEPLOYMENT.md](./DEPLOYMENT.md)에 정리했습니다. 로그인과 사용자별 사용량 제한이 준비되기 전에는 외부에 공개하지 않습니다.
+
+## 개인 설정
+
+로그인한 사용자는 개인 설정에서 관심 공고 종류, 선호 지역, 온라인 포함 여부, 최소 추천 점수, 마감일 미확인 공고 표시, 추천 개수를 저장할 수 있습니다. Supabase SQL Editor에서 `supabase/20260721_user_settings.sql`을 실행한 뒤 사용합니다. 설정 API·RLS·추천 반영 기준은 [USER_SETTINGS.md](./USER_SETTINGS.md)를 참고하세요.
+
+현재 분석 공고 자동 저장 설정은 사용자별 저장 공고 API 연결 전의 준비 단계입니다.
+## 계정별 저장 출처
+
+Supabase 인증을 설정한 환경에서는 저장된 출처가 `notice_sources` 테이블에 사용자별로 저장됩니다. 로그인한 계정의 출처만 조회·추가·삭제할 수 있으며, 다른 계정의 출처는 RLS 정책으로 접근할 수 없습니다. 이 기능을 사용하려면 `supabase/20260721_notice_sources.sql`을 Supabase SQL Editor에서 실행하세요. 인증 환경변수가 없는 기존 로컬 데모 모드에서는 이전처럼 브라우저 localStorage를 사용합니다.
+### 아이디·비밀번호 로그인
+
+로그인 화면은 이메일을 받지 않고 `아이디 + 비밀번호`만 사용합니다. 아이디는 영문, 숫자, `.`, `_`, `-`로 이루어진 3~30자이며 소문자로 정규화됩니다. Supabase의 Email provider를 내부 인증 수단으로 사용하므로 Dashboard의 **Authentication → Providers → Email**은 활성화하되, 아이디 가입을 사용하려면 **Confirm Email은 꺼야 합니다**. 이 MVP는 이메일 주소를 수집하거나 비밀번호 찾기 메일을 제공하지 않습니다.

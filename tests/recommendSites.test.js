@@ -85,3 +85,47 @@ test("Gemini 설명 생성이 실패해도 규칙 기반 추천을 반환한다"
   assert.equal(result.recommendations.length > 0, true);
   assert.equal(result.recommendations.every((item) => siteRegistry.some((site) => site.id === item.siteId && site.url === item.url)), true);
 });
+
+test("개인 설정은 관심 종류·지역·온라인 여부·결과 개수를 사이트 추천에 반영한다", () => {
+  const candidateSites = [
+    {
+      id: "online-scholarship",
+      name: "온라인 장학 사이트",
+      active: true,
+      trusted: true,
+      providerType: "government",
+      regions: ["온라인"],
+      informationTypes: ["scholarship"],
+      strengths: [],
+      limitations: [],
+    },
+    {
+      id: "daegu-research",
+      name: "대구 연구 사이트",
+      active: true,
+      trusted: true,
+      providerType: "university",
+      regions: ["대구"],
+      informationTypes: ["research"],
+      strengths: [],
+      limitations: [],
+    },
+  ];
+  const result = recommendSites({
+    profile,
+    candidateSites,
+    settings: {
+      recommendationCategories: ["research"],
+      preferredRegions: ["대구"],
+      includeOnline: false,
+      minimumMatchScore: 50,
+      includeUnknownDeadline: true,
+      autoSaveAnalyzedOpportunities: false,
+      recommendationLimit: 1,
+    },
+  });
+
+  assert.deepEqual(result.coverage.desiredInformation, ["research"]);
+  assert.equal(result.recommendations.length, 1);
+  assert.equal(result.recommendations[0].siteId, "daegu-research");
+});
