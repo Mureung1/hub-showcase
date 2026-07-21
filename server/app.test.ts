@@ -17,24 +17,26 @@ describe('GET /api/health', () => {
 });
 
 describe('Android WebView CORS', () => {
-  it('allows the Android capture preflight request', async () => {
-    const response = await request(createApp())
-      .options('/api/insights/capture')
-      .set('Origin', 'https://localhost')
-      .set('Access-Control-Request-Method', 'POST')
-      .set('Access-Control-Request-Headers', 'authorization,content-type');
+  it.each(['https://localhost', 'http://localhost'])(
+    'allows the Android capture preflight request for %s',
+    async (origin) => {
+      const response = await request(createApp())
+        .options('/api/insights/capture')
+        .set('Origin', origin)
+        .set('Access-Control-Request-Method', 'POST')
+        .set('Access-Control-Request-Headers', 'authorization,content-type');
 
-    expect(response.status).toBe(204);
-    expect(response.headers['access-control-allow-origin']).toBe(
-      'https://localhost'
-    );
-    expect(response.headers['access-control-allow-methods']).toBe(
-      'POST, PATCH, OPTIONS'
-    );
-    expect(response.headers['access-control-allow-headers']).toBe(
-      'Authorization, Content-Type'
-    );
-  });
+      expect(response.status).toBe(204);
+      expect(response.headers['access-control-allow-origin']).toBe(origin);
+      expect(response.headers['access-control-allow-methods']).toBe(
+        'GET, POST, PATCH, OPTIONS'
+      );
+      expect(response.headers['access-control-allow-headers']).toBe(
+        'Authorization, Content-Type'
+      );
+      expect(response.headers.vary).toBe('Origin');
+    }
+  );
 
   it('does not allow an untrusted origin', async () => {
     const response = await request(createApp())
@@ -44,6 +46,7 @@ describe('Android WebView CORS', () => {
       .set('Access-Control-Request-Headers', 'authorization,content-type');
 
     expect(response.headers['access-control-allow-origin']).toBeUndefined();
+    expect(response.headers.vary).toBe('Origin');
   });
 });
 
