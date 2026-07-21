@@ -1,9 +1,14 @@
 import { Router, type Response } from 'express'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { GetResultsResponse, ResponseStatusResponse, CloseAppointmentResponse } from 'shared'
+import type { GetResultsResponse, ResponseStatusResponse, CloseAppointmentResponse, GetParticipantsResponse } from 'shared'
 import { requireSupabase } from '../lib/supabase.js'
 import { getAppointmentDetail } from '../lib/pgTime.js'
-import { getAppointmentResponseRows, aggregateSlotCounts, countCompletedParticipants } from '../lib/results.js'
+import {
+  getAppointmentResponseRows,
+  aggregateSlotCounts,
+  countCompletedParticipants,
+  getParticipantsResponseStatus,
+} from '../lib/results.js'
 
 export const resultsRouter = Router()
 // study: 관리자인지 확인하는 함수.
@@ -74,6 +79,21 @@ resultsRouter.get('/:id/response-status', async (req, res) => {
   }
 
   const response: ResponseStatusResponse = { completedCount: countCompletedParticipants(rows) }
+  res.status(200).json(response)
+})
+
+// claude: 관리자 대시보드 하단의 참여자별 응답 상태 목록용. response-status와 마찬가지로 마감 여부와 무관하게 항상 응답한다(관리자가 마감 전에도 진행 상황을 볼 수 있어야 함).
+resultsRouter.get('/:id/participants', async (req, res) => {
+  const db = requireSupabase(res)
+  if (!db) return
+
+  const participants = await getParticipantsResponseStatus(db, req.params.id)
+  if (participants === null) {
+    res.status(500).json({ error: '서버 오류가 발생했어요' })
+    return
+  }
+
+  const response: GetParticipantsResponse = { participants }
   res.status(200).json(response)
 })
 

@@ -45,7 +45,10 @@ describe('PUT/GET .../responses (실제 Supabase 연동)', () => {
 
     const res = await request(app).get(`/api/appointments/${appointmentId}/participants/${participantId}/responses`)
     expect(res.status).toBe(200)
-    expect(res.body).toEqual({
+    // claude: completedAt은 실제 Supabase가 찍은 타임스탬프라 정확한 값을 미리 알 수 없어서, 문자열인지만 따로 확인하고
+    // 나머지 필드(availableSlots/preferredSlots)는 그대로 정확한 값으로 비교한다.
+    expect(res.body.completedAt).toEqual(expect.any(String))
+    expect(res.body).toMatchObject({
       availableSlots: [
         { date: '2026-08-20', time: '09:00' },
         { date: '2026-08-20', time: '09:30' },

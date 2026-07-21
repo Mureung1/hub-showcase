@@ -1,0 +1,27 @@
+.my-response-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.my-response-status__badge,
+.my-response-status__badge--done {
+  align-self: flex-start;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-danger);
+  background: rgba(240, 68, 82, 0.1);
+}
+
+.my-response-status__badge--done {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.my-response-status__timestamp {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}

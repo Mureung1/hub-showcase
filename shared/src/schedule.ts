@@ -35,7 +35,9 @@ export type SubmitResponseResponse = {
 export type GetResponseResponse = {
   availableSlots: ScheduleSlot[]
   preferredSlots: ScheduleSlot[]
+  completedAt: string | null
 } // study: 읽어올(Get) 때는, 원본대로 그리드에 그려줘야 하므로 실제 목록 필요.
+// claude: completedAt은 참여자 대시보드의 "내 응답 상태"용 - 응답을 하나도 안 남겼으면 null, 남겼으면 그 행들의 created_at(전부 같은 시각 - 한 번의 PUT에서 일괄 insert됨).
 
 function parseTimeToMinutes(value: string): number {
   const [hour, minute] = value.split(':').map(Number)

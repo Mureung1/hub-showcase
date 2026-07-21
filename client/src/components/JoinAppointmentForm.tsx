@@ -17,7 +17,7 @@ function JoinAppointmentForm({ appointmentId, onSuccess }: JoinAppointmentFormPr
   const linkValue = appointmentId ? buildAppointmentLink(appointmentId) : undefined // study: 부모로부터 props로 받은 링크 관련 변수 linkValue.
 
   return (
-    <form className="page-stack join-appointment-form" onSubmit={onSubmit}>
+    <form className="page-stack join-appointment-form transition-slide-up" onSubmit={onSubmit}>
       <label>
         참여 링크
         {linkValue ? (

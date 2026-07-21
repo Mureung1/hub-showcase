@@ -37,6 +37,7 @@ function SchedulePage() {
 
   return (
     <ScheduleEditor
+      key={appointmentId}
       appointmentId={appointmentId}
       candidateSlots={candidateSlots}
       initialAvailable={initialAvailable}

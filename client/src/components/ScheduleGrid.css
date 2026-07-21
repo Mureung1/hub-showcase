@@ -5,6 +5,7 @@
 }
 
 .schedule-grid {
+  table-layout: fixed;
   border-collapse: collapse;
 }
 
@@ -15,14 +16,31 @@
 }
 
 .schedule-grid thead th {
-  font-size: var(--font-size-caption);
+  overflow: hidden;
   color: var(--color-text-secondary);
+}
+
+.schedule-grid thead th:not(.schedule-grid__corner) {
+  width: 44px;
+}
+
+.schedule-grid__date,
+.schedule-grid__weekday {
+  display: block;
   white-space: nowrap;
+  font-size: var(--font-size-caption);
+  line-height: 1.3;
+}
+
+.schedule-grid__weekday {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
 }
 
 .schedule-grid tbody th {
   position: sticky;
   left: 0;
+  width: 36px;
   background: var(--color-bg-section);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-regular);
@@ -33,6 +51,7 @@
 .schedule-grid__corner {
   position: sticky;
   left: 0;
+  width: 36px;
   background: var(--color-bg-section);
 }
 

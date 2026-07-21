@@ -69,7 +69,7 @@ function NewAppointmentPage() {
 // study: submit 이벤트 발생, onSubmit 호출, 이후 handleSubmit은 true일시 onSubmit 실행
 // study: label 내부는 register(필드이름) 으로 만든 객체를 ...으로 뿌려서 input 태그안에 넣어줌, error 날시 <p>태그안 메세지 출력
   return (
-    <form className="page-stack" onSubmit={handleSubmit(onSubmit)}>
+    <form className="page-stack transition-slide-up" onSubmit={handleSubmit(onSubmit)}>
       <label>
         약속 제목
         <input {...register('title')} placeholder="예) 팀 프로젝트 회의" />

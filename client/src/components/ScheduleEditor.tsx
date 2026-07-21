@@ -2,8 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { slotKey, type ScheduleSlot, type SubmitResponseRequest } from 'shared'
 import type { SubmitResult } from '../lib/useScheduleResponse.ts'
+import { usePagedDateRange } from '../lib/usePagedDateRange.ts'
 import ScheduleGrid from './ScheduleGrid.tsx'
 import Modal from './Modal.tsx'
+import DatePaginationArrows from './DatePaginationArrows.tsx'
+import { useToast } from './ToastProvider.tsx'
+import './ScheduleEditor.css'
 
 type ScheduleEditorProps = {
   appointmentId: string
@@ -26,12 +30,16 @@ function toggleKey(keys: Set<string>, key: string): Set<string> {
 
 function ScheduleEditor({ appointmentId, candidateSlots, initialAvailable, initialPreferred, onSubmit }: ScheduleEditorProps) {
   const navigate = useNavigate()
+  const showToast = useToast()
   const [step, setStep] = useState<'available' | 'preferred'>('available')
   const [availableKeys, setAvailableKeys] = useState<Set<string>>(() => new Set(initialAvailable.map(slotKey)))
   const [preferredKeys, setPreferredKeys] = useState<Set<string>>(() => new Set(initialPreferred.map(slotKey)))
   const [confirmIntent, setConfirmIntent] = useState<'submit' | 'skip' | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const { visibleDates, canGoPrev, canGoNext, goPrev, goNext } = usePagedDateRange(candidateSlots)
+  // claude: 1단계/2단계 둘 다 같은 candidateSlots를 페이지네이션하므로 훅은 한 번만 호출하고, 그리드에 넘길 slots만 현재 페이지 날짜로 필터링한다.
+  const pageSlots = candidateSlots.filter((slot) => visibleDates.includes(slot.date))
 
   const toggleAvailable = (slot: ScheduleSlot) => {
     const key = slotKey(slot)
@@ -61,17 +69,34 @@ function ScheduleEditor({ appointmentId, candidateSlots, initialAvailable, initi
 
     if (result.success) {
       navigate(`/a/${appointmentId}`)
+      showToast('응답이 저장됐어요')
     } else {
       setSubmitError(result.error)
     }
   }
 
   if (step === 'preferred') {
+    const preferredCount = confirmIntent === 'skip' ? 0 : preferredKeys.size
+    // claude: 선호는 항상 가능의 부분집합이라(불변식), 가능 개수에서 선호 개수를 빼서 "선호 아닌 가능"만 따로 세면
+    // 두 숫자가 서로 안 겹치고 합치면 실제 선택한 슬롯 총 개수가 되도록 보여줄 수 있다.
+    const availableOnlyCount = availableKeys.size - preferredCount
+
     return (
-      <div className="page-stack">
-        <h2>특별히 더 선호하는 시간대가 있으신가요?</h2>
+      <div className="page-stack transition-slide-up">
+        <h2>가능한 시간 중 특히 더 선호하는 시간대가 있으신가요?</h2>
+        <div className="schedule-legend">
+          <span className="schedule-legend__item">
+            <span className="schedule-legend__swatch schedule-legend__swatch--preferred" />
+            선호
+          </span>
+          <span className="schedule-legend__item">
+            <span className="schedule-legend__swatch schedule-legend__swatch--available" />
+            가능(선택)
+          </span>
+        </div>
+        <DatePaginationArrows canGoPrev={canGoPrev} canGoNext={canGoNext} onPrev={goPrev} onNext={goNext} />
         <ScheduleGrid
-          slots={candidateSlots}
+          slots={pageSlots}
           eligibleKeys={availableKeys}
           selectedKeys={preferredKeys}
           variant="preferred"
@@ -105,8 +130,17 @@ function ScheduleEditor({ appointmentId, candidateSlots, initialAvailable, initi
             setConfirmIntent(null)
           }}
         >
-          <strong>입력을 확정할까요?</strong>
-          <p>제출 후에도 투표 마감 전까지는 수정할 수 있어요.</p>
+          <div className="confirm-header">
+            <span className="confirm-header__icon" aria-hidden="true">
+              ✓
+            </span>
+            <strong className="confirm-header__title">입력을 확정할까요?</strong>
+            <p className="confirm-header__desc">아래와 같이 제출됩니다.</p>
+          </div>
+          <p className="confirm-summary">
+            가능한 시간 {availableOnlyCount}건 · 선호 시간 {preferredCount}건
+          </p>
+          <p className="confirm-notice">제출 후에도 투표 마감 전까지는 수정할 수 있어요.</p>
           {submitError && <p className="field-error">{submitError}</p>}
           <button type="button" onClick={handleConfirm} disabled={isSubmitting}>
             확정하기
@@ -125,9 +159,10 @@ function ScheduleEditor({ appointmentId, candidateSlots, initialAvailable, initi
   }
 
   return (
-    <div className="page-stack">
-      <h2>가능한 시간을 선택해주세요</h2>
-      <ScheduleGrid slots={candidateSlots} selectedKeys={availableKeys} variant="available" onToggle={toggleAvailable} />
+    <div className="page-stack transition-slide-up">
+      <h2>가능한 시간을 먼저 선택해주세요</h2>
+      <DatePaginationArrows canGoPrev={canGoPrev} canGoNext={canGoNext} onPrev={goPrev} onNext={goNext} />
+      <ScheduleGrid slots={pageSlots} selectedKeys={availableKeys} variant="available" onToggle={toggleAvailable} />
       <button type="button" disabled={availableKeys.size === 0} onClick={() => setStep('preferred')}>
         다음
       </button>
