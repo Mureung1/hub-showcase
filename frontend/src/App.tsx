@@ -31,6 +31,7 @@ function App() {
   const [screen, setScreen] = useState<Screen>('home');
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [recommendedIngredientIds, setRecommendedIngredientIds] = useState<number[]>([]);
+  const [supplements, setSupplements] = useState<string[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   function handleLoggedIn(result: LoginResponse) {
@@ -44,6 +45,7 @@ function App() {
     setScreen('home');
     setSymptoms([]);
     setRecommendedIngredientIds([]);
+    setSupplements([]);
     setSelectedProduct(null);
   }
 
@@ -52,8 +54,9 @@ function App() {
     setScreen('analysis');
   }
 
-  function handleAnalysisNext(ingredientIds: number[]) {
+  function handleAnalysisNext(ingredientIds: number[], enteredSupplements: string[]) {
     setRecommendedIngredientIds(ingredientIds);
+    setSupplements(enteredSupplements);
     setScreen('overlap');
   }
 
@@ -70,6 +73,7 @@ function App() {
     setScreen('home');
     setSymptoms([]);
     setRecommendedIngredientIds([]);
+    setSupplements([]);
     setSelectedProduct(null);
   }
 
@@ -82,7 +86,9 @@ function App() {
           {screen === 'analysis' && (
             <Analysis symptoms={symptoms} onNext={handleAnalysisNext} />
           )}
-          {screen === 'overlap' && <Overlap onNext={() => setScreen('recommend')} />}
+          {screen === 'overlap' && (
+            <Overlap supplements={supplements} onNext={() => setScreen('recommend')} />
+          )}
           {screen === 'recommend' && (
             <Recommend ingredientIds={recommendedIngredientIds} onSelect={handleSelectProduct} />
           )}

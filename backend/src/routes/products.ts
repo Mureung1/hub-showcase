@@ -72,7 +72,10 @@ productsRouter.post("/check-overlap", async (req, res) => {
      FROM product_ingredients pi
      JOIN products p ON p.id = pi.product_id
      JOIN ingredients i ON i.id = pi.ingredient_id
-     WHERE p.name = ANY($1::text[])
+     WHERE EXISTS (
+       SELECT 1 FROM unnest($1::text[]) AS term
+       WHERE p.name ILIKE '%' || term || '%'
+     )
      GROUP BY i.id, i.name, i.upper_limit_mg`,
     [productNames]
   );

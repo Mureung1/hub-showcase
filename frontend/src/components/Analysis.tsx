@@ -7,7 +7,7 @@ import { ChipIcon, getChipColor } from '../chipIcons';
 
 interface AnalysisProps {
   symptoms: string[];
-  onNext: (ingredientIds: number[]) => void;
+  onNext: (ingredientIds: number[], supplements: string[]) => void;
 }
 
 export function Analysis({ symptoms, onNext }: AnalysisProps) {
@@ -90,7 +90,7 @@ export function Analysis({ symptoms, onNext }: AnalysisProps) {
         <input
           className="text-input"
           type="text"
-          placeholder="성분명 입력 (예: 비타민A)"
+          placeholder="제품명 또는 성분명 입력 (예: 마그네슘)"
           value={supplementInput}
           onChange={(e) => setSupplementInput(e.target.value)}
           style={{ flex: 1, minWidth: 0 }}
@@ -137,7 +137,7 @@ export function Analysis({ symptoms, onNext }: AnalysisProps) {
       <button
         className="btn"
         type="button"
-        onClick={() => onNext(recommendedIngredients.map((i) => i.id))}
+        onClick={() => onNext(recommendedIngredients.map((i) => i.id), supplements)}
       >
         다음
       </button>
