@@ -5,12 +5,19 @@
 //
 // 최소 수면시간처럼 "이 조합이 얼마나 안 좋은지" 판단이 필요한 제약은 여기서 걸러내지
 // 않는다 — #11(목적함수)에서 패널티로 처리하기로 했다(2026-07-20 결정). 이 파일이
-// 거르는 건 카페인을 기상 전에 마시는 것처럼 애초에 말이 안 되는 조합뿐이다.
+// 거르는 건 카페인을 기상 전에 마시는 것처럼, 또는 시험 시작 뒤에 깨는 것처럼 애초에
+// 말이 안 되는 조합뿐이다(#22 — 시험이 평소 기상 시각과 가까우면 기상 후보 그리드가
+// 시험 시각을 넘어갈 수 있어서, "아직 자고 있는데 시험 시작"인 후보가 만들어지던 버그).
 //
 // 밤 4개만 있어도 후보 조합이 81^4개로 폭발하기 때문에, 여기서는 전체 조합(cartesian
-// product)을 만들지 않는다. 대신 "밤별 취침/기상 후보 목록"과 "카페인별 섭취 시각 후보
-// 목록"을 축(axis) 단위로만 반환하고, #12(로컬 탐색)가 필요할 때마다 축 하나씩 골라
+// product)을 만들지 않는다. 대신 "밤별 취침 후보", "밤별 기상 후보", "카페인별 섭취 시각
+// 후보"를 축(axis) 단위로만 반환하고, #12(로컬 탐색)가 필요할 때마다 축 하나씩 골라
 // 쓰는 방식으로 쓰인다.
+//
+// #23 — 취침과 기상을 별개의 축으로 분리했다. 예전엔 밤 하나를 "취침×기상 81개"를 이어붙인
+// 1차원 목록으로 반환했는데, 그러면 로컬 탐색의 ±1 이웃 이동이 사실상 기상 시각만 흔들고
+// 취침 시각은 무작위 초기값에 고정돼버리는 문제가 있었다. 취침·기상은 원래 서로 독립적인
+// 결정변수이므로 각각 축으로 두는 게 맞다.
 import type { CaffeineDose } from "./caffeineConcentration.js";
 
 const GRID_RANGE_HOURS = 1; // singleExamScheduleSearch.ts와 동일한 범위
@@ -30,25 +37,28 @@ export interface NightCandidate {
 }
 
 /**
- * 밤 하나의 취침/기상 시각 후보 조합(9 × 9 = 81개)을 만든다.
- * habitualBedTime·habitualWakeTime은 그 밤의 "원래(평소 또는 시험기간 계획) 시각"을
- * 연속 타임라인 좌표(자정 기준 경과 시간에 24h × 며칠째인지를 더한 값)로 넣는다 —
- * candidateSleepSegments.ts가 쓰는 좌표계와 동일.
+ * 밤 하나의 취침 시각 후보 목록(최대 9개)을 만든다. habitualBedTime은 그 밤의
+ * "원래(평소 또는 시험기간 계획) 취침 시각"을 연속 타임라인 좌표(자정 기준 경과 시간에
+ * 24h × 며칠째인지를 더한 값)로 넣는다 — candidateSleepSegments.ts가 쓰는 좌표계와 동일.
  */
-export function nightCandidates(habitualBedTime: number, habitualWakeTime: number): NightCandidate[] {
-  const offsets = candidateOffsets();
-  const candidates: NightCandidate[] = [];
+export function bedTimeCandidates(habitualBedTime: number): number[] {
+  return candidateOffsets().map((offset) => habitualBedTime + offset);
+}
 
-  for (const bedOffset of offsets) {
-    for (const wakeOffset of offsets) {
-      candidates.push({
-        bedTime: habitualBedTime + bedOffset,
-        wakeTime: habitualWakeTime + wakeOffset,
-      });
-    }
-  }
+/**
+ * 밤 하나의 기상 시각 후보 목록(최대 9개)을 만든다. 좌표계는 bedTimeCandidates와 동일.
+ *
+ * latestWakeTime을 주면(#22) 그보다 늦게 깨는 후보는 제외한다 — 이 밤 바로 다음날
+ * 시험이 있을 때, "시험 시작 후에 깨는" 말이 안 되는 후보를 막기 위함. 제약을 만족하는
+ * 후보가 하나도 안 남으면(시험이 그리드 범위보다 훨씬 이른 경우) 크래시 대신 그리드
+ * 전체로 폴백한다 — #12에서 겪었던 "후보가 0개라 탐색이 터지는" 문제 재발 방지.
+ */
+export function wakeTimeCandidates(habitualWakeTime: number, latestWakeTime?: number): number[] {
+  const all = candidateOffsets().map((offset) => habitualWakeTime + offset);
+  if (latestWakeTime === undefined) return all;
 
-  return candidates;
+  const withinDeadline = all.filter((wakeTime) => wakeTime <= latestWakeTime);
+  return withinDeadline.length > 0 ? withinDeadline : all;
 }
 
 /**
@@ -64,7 +74,7 @@ export function doseTimeCandidates(dose: CaffeineDose, earliestTime: number): Ca
 
 export interface MultiDayCandidateInput {
   /** 시험기간에 포함되는 밤들의 원래 취침·기상 시각(연속 타임라인 좌표), 날짜 순서대로 */
-  nights: { habitualBedTime: number; habitualWakeTime: number }[];
+  nights: { habitualBedTime: number; habitualWakeTime: number; latestWakeTime?: number }[];
   /**
    * 원래 계획된 카페인 섭취(시각+용량+속한 밤의 기상 시각) 목록. 용량은 고정하고
    * 시각만 후보로 흔든다(2026-07-16 단일시험 버전과 동일한 결정 유지).
@@ -73,17 +83,20 @@ export interface MultiDayCandidateInput {
 }
 
 export interface MultiDayCandidates {
-  /** nightOptions[i] = nights[i]에 대응하는 취침/기상 후보 목록 */
-  nightOptions: NightCandidate[][];
+  /** nightBedOptions[i] = nights[i]에 대응하는 취침 시각 후보 목록 */
+  nightBedOptions: number[][];
+  /** nightWakeOptions[i] = nights[i]에 대응하는 기상 시각 후보 목록 */
+  nightWakeOptions: number[][];
   /** doseOptions[j] = plannedDoses[j]에 대응하는 섭취 시각 후보 목록 */
   doseOptions: CaffeineDose[][];
 }
 
 /** 시험기간 전체에 걸친 취침/기상/카페인 후보 축(axis)들을 만든다. */
 export function buildMultiDayCandidates({ nights, plannedDoses }: MultiDayCandidateInput): MultiDayCandidates {
-  const nightOptions = nights.map((night) => nightCandidates(night.habitualBedTime, night.habitualWakeTime));
+  const nightBedOptions = nights.map((night) => bedTimeCandidates(night.habitualBedTime));
+  const nightWakeOptions = nights.map((night) => wakeTimeCandidates(night.habitualWakeTime, night.latestWakeTime));
 
   const doseOptions = plannedDoses.map(({ dose, earliestTime }) => doseTimeCandidates(dose, earliestTime));
 
-  return { nightOptions, doseOptions };
+  return { nightBedOptions, nightWakeOptions, doseOptions };
 }

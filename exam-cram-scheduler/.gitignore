@@ -15,6 +15,9 @@ dist-ssr
 # 비밀 키(API Key 등) — 절대 커밋되면 안 됨
 .env
 
+# 검증 스크립트가 뽑는 임시 CSV/출력물 — 재생성 가능하므로 커밋 대상 아님
+tmp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
