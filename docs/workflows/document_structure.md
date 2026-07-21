@@ -20,7 +20,17 @@
 `scenario`의 챕터별 플레이어 노출 대본과 씬 구현 명세는
 `design/narrative/scripts/<chapter_slug>_ingame_script.md`를 표준 경로로 사용한다.
 상위 시나리오는 사건·분기 구조를 소유하고 인게임 스크립트는 승인된 범위의
-표현과 씬 연결을 구체화한다. 새 정사·규칙 제안은 창작 각주로 구분한다.
+표현과 씬 연결을 구체화한다. 인게임 스크립트 초안이 더 나은 사건 순서,
+공개 시점, 분기, Outcome 또는 동기를 제안할 수는 있지만 `NR-*`로 차이를
+공개하고, 승인 적용 시 상위 시나리오와 스크립트를 같은 `restructure` 항목에서
+함께 갱신해야 한다. 승인 전에는 상위 시나리오가 계속 구조의 canonical
+owner다. 새 세계관 정사·시스템 규칙 제안은 별도 고위험 승인 항목으로 분리한다.
+
+일반 시나리오 문서를 신규 작성하거나 변경할 때 메인 Codex는
+`docs/skills/scenario_review.md`로 사건 구조를 검토한다. 원안 기반 Draft는
+보존하고 개선안은 승인 항목의 `Scenario Improvement Review`에 분리한다.
+사용자가 개선안을 선택하고 갱신된 Draft를 명시적으로 승인하기 전에는 해당
+권고를 `scenario`의 canonical 내용으로 보지 않는다.
 
 - NPC의 정사 설정은 `world_setting`, 특정 장면에서의 행동은 `scenario`가
   소유한다.

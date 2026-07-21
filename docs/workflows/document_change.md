@@ -28,9 +28,11 @@
 4. 검색 결과를 확정 문서, 승인 큐, 임시 아이디어, 결정 로그, 버전 기록으로 구분한다.
 5. 기존 확정 문서에 반영하는 것이 자연스러운지, 새 문서가 필요한지, 여러
    역할이 섞인 기존 문서를 재구성해야 하는지 판정한다.
-6. 아래 Branch Rules 중 하나를 선택한다.
-7. 승인 전에는 `workspace/projects/<project_slug>/design/`을 수정하지 않는다.
-8. 생성, 수정, 삭제, 기획서화 결과물은 같은 프로젝트의 승인 큐 항목 초안으로 작성한다.
+6. 입력 단위에 `scenario` 역할이 있고 시나리오 기획서화·신규 작성·변경안을
+   만드는 요청이면 `docs/skills/scenario_review.md`로 원안을 검토한다.
+7. 아래 Branch Rules 중 하나를 선택한다.
+8. 승인 전에는 `workspace/projects/<project_slug>/design/`을 수정하지 않는다.
+9. 생성, 수정, 삭제, 기획서화 결과물은 같은 프로젝트의 승인 큐 항목 초안으로 작성한다.
 
 임시 아이디어에서 전환된 요청은
 `workspace/projects/<project_slug>/ideas/temporary_ideas.md`의 아이디어 ID를 근거로 연결한다. 전환
@@ -50,6 +52,8 @@
 
 - `docs/templates/design_doc.md` 또는 문서 타입별 템플릿을 따른다.
 - 누락 정보는 `TBD`로 남긴다.
+- 문서 역할이 `scenario`이면 원안 기반 Draft와 `Scenario Improvement Review`를
+  분리한다.
 - 승인 큐 항목 초안으로 만든다.
 
 ### update_existing_document
@@ -65,6 +69,8 @@
 - `docs/workflows/propose_change.md`를 따른다.
 - 변경 전 요약과 변경 후 초안을 분리한다.
 - `docs/skills/conflict_review.md` 기준으로 충돌과 영향 범위를 검토한다.
+- 대상 역할이 `scenario`이면 `docs/skills/scenario_review.md`로 구조를 검토하고
+  개선 권고를 변경 Draft와 분리한다.
 - 승인 큐 항목 초안으로 만든다.
 
 ### restructure_documents
@@ -84,6 +90,9 @@
 - 승인 항목의 변경 타입을 `restructure`로 두고 대상별 `create`, `update`,
   `delete` 작업 목록을 작성한다.
 - 개요서, 상세 문서와 문서 색인의 상대경로 링크를 같은 승인 범위에 둔다.
+- `scenario` 작업이 포함되면 원안 기반 대상별 Draft와 시나리오 개선 권고를
+  분리하며, 권고가 세계관·시스템 변경을 요구하면 의존 canonical owner를
+  표시한다.
 - 하나의 원자적 승인 항목으로 만들며 일부 문서만 먼저 적용하지 않는다.
 
 ### delete_existing_document
@@ -135,23 +144,29 @@
 - `docs/workflows/write_design_doc.md`를 하위 workflow로 따른다.
 - 기존 자료에 있는 내용만 확정 정보처럼 사용한다.
 - 부족한 항목은 `TBD`로 둔다.
+- 결과 문서가 `scenario`이면 `docs/skills/scenario_review.md`를 적용하고
+  개선 권고를 기획서 Draft 밖에 둔다.
 - 승인 큐 항목 초안으로 만든다.
 
 ### draft_ingame_script
 
 사용 조건:
 
-- 확정 시나리오의 챕터·Phase를 실제 플레이용 지문, 대사와 선택지로
-  구체화하는 것이 목적이다.
+- 시나리오의 챕터·Phase를 실제 플레이용 지문, 대사와 선택지로 구체화하거나
+  더 나은 플레이 경험을 위해 서사 구조까지 개선하는 것이 목적이다.
 - 씬 번호, 조건, 분기, Outcome과 제작 정보를 대본과 함께 요구한다.
 
 처리:
 
-- 프로젝트 custom agent `scenario_writer`에 범위가 명확한 저작 작업을 위임한다.
+- 프로젝트 custom agent `scenario_writer`에 범위가 명확한 전담 작가 작업을
+  위임한다.
 - `docs/workflows/write_ingame_script.md`와
   `docs/templates/ingame_script.md`를 따른다.
-- 원본에 직접 없는 모든 창작 내용을 각주로 공개한다.
-- 미래 canonical 경로와 링크 갱신을 포함한 승인 큐 항목 초안으로 만든다.
+- 프로젝트 근거로 Writer's Brief를 만들고 하나의 최적안으로 집필한다.
+- 구체 창작은 `CW-*`, 원본 서사 구조 변경은 `NR-*`로 공개한다.
+- 상위 시나리오 변경, 미래 canonical 경로와 링크 갱신을 하나의 원자적
+  `restructure` 승인 큐 항목으로 만든다.
+- 세계관 정사나 시스템 규칙 변경은 연결된 별도 고위험 제안으로 분리한다.
 
 ### ask_for_clarification
 
@@ -190,3 +205,7 @@
 - 삭제 대상이나 영향 범위를 식별할 수 없으면 삭제 제안을 확정하지 않고
   질문한다.
 - 승인 큐, 임시 아이디어, 결정 로그는 확정 문서와 구분한다.
+- 일반 시나리오 개선 권고는 사용자가 선택하기 전에는 Draft, 승인 대상 또는
+  확정 사실이 아니다. 선택 후 원본을 다시 확인하고 갱신된 `pending` 승인안으로
+  검토받는다.
+- 일반 시나리오 검토에 인게임 스크립트용 `NR-*`를 강제하지 않는다.

@@ -31,7 +31,10 @@
 5. 누락 정보는 `docs/skills/document_completion.md` 기준으로 질문한다.
 6. 다른 역할의 상세 내용을 발견하면 현재 문서에 복제하지 않고 원본 소유
    문서와 필요한 링크를 표시한다.
-7. 초안은 같은 프로젝트의 승인 큐에 `docs/templates/approval_item.md` 형식으로 만든다.
+7. 문서 타입이 `scenario`이면 `docs/skills/scenario_review.md`에 따라 원안
+   기반 초안을 검토한다. 더 나은 구조는 본문에 자동 반영하지 않고 승인 항목의
+   `Scenario Improvement Review`에 별도 권고로 기록한다.
+8. 초안은 같은 프로젝트의 승인 큐에 `docs/templates/approval_item.md` 형식으로 만든다.
 
 ## Approval Rule
 
@@ -44,5 +47,6 @@
 - 문서 타입
 - 표준 대상 경로와 관련 문서 링크
 - 초안 전문
+- 시나리오인 경우 분리된 개선 검토 결과
 - 누락 정보 질문
 - 근거 파일 목록
