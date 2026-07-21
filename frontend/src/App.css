@@ -450,12 +450,9 @@
   color: var(--color-text);
 }
 
-.drawer-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(31, 31, 31, 0.35);
-  z-index: 10;
-}
+/* 드로어는 비모달(non-modal)이다. 화면을 덮는 백드롭을 두면 드로어를 연 상태에서
+   본문 텍스트를 드래그할 수 없어 리파인 하이라이트가 막히므로, 백드롭 없이
+   '닫기' 버튼으로만 닫는다. */
 
 .side-drawer {
   position: fixed;

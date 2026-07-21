@@ -76,7 +76,13 @@ function renderSummaryWithCitations(
         key={index}
         type="button"
         className="citation-link"
-        onClick={() => onCitationClick(citation.evidence_tag_id)}
+        onClick={() => {
+          // 텍스트를 드래그하다 마커 위에서 손을 뗀 경우까지 참조 클릭으로 처리하면
+          // 드로어가 의도치 않게 열려 다음 드래그를 막는다. 선택 중이면 무시한다.
+          const selection = window.getSelection()
+          if (selection && !selection.isCollapsed && selection.toString().trim()) return
+          onCitationClick(citation.evidence_tag_id)
+        }}
       >
         {part}
       </button>
@@ -439,7 +445,6 @@ function HypothesisDetailPage() {
 
       {drawerEvidence && (
         <>
-          <div className="drawer-backdrop" onClick={() => setDrawerEvidenceId(null)} />
           <aside className="side-drawer">
             <div className="side-drawer-header">
               <span className="field-label">근거 발췌</span>
