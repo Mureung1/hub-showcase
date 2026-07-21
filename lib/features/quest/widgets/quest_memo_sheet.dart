@@ -5,6 +5,7 @@ import '../../../core/constants/reward_rules.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/reward_chip.dart';
+import '../../../repositories/quest_repository.dart';
 
 /// 메모 시트의 결과. **세 갈래를 구분해야 한다.**
 ///
@@ -137,7 +138,9 @@ class _QuestMemoSheetState extends State<QuestMemoSheet> {
                 // (메모는 선택이지 관문이 아니다).
                 maxLines: 4,
                 minLines: 3,
-                maxLength: 200,
+                // 저장소 절단 상한(normalizeMemo)과 같은 값을 인용한다. 숫자를
+                // 여기 직접 적으면 정책이 갈릴 때 UI만 낡는다.
+                maxLength: kMaxMemoLength,
                 textInputAction: TextInputAction.newline,
                 decoration: const InputDecoration(
                   hintText: '무엇을 했는지 짧게 적어보세요.',

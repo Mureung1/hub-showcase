@@ -103,9 +103,25 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
       if (mounted) setState(() => _completing.remove(quest.id));
     }
 
-    // 실제로 지급됐을 때만 축하한다. 이미 받은 퀘스트를 다시 완료했을 때
-    // 연출이 뜨면 코인을 또 받은 것으로 오해한다.
-    if (reward == null || !mounted) return;
+    if (!mounted) return;
+
+    // 여기 도달했으면 성공 경로다(실패는 catch에서 이미 return). reward가 null인
+    // 경우는 두 갈래이고, 둘을 반드시 구분한다:
+    //   (a) done == true  + reward == null  → 완료를 눌렀는데 지급이 없었다
+    //       = 이미 보상 받은 퀘스트(재완료). rewardedAt은 지워지지 않으니 다시
+    //         완료해도 코인이 안 들어온다. 무반응이면 "눌렀는데 아무 일도 안 남"으로
+    //         느끼므로, 왜 축하가 없는지 스낵바로 알린다.
+    //   (b) done == false + reward == null  → 완료 해제. 원래 지급이 없는 동작이니
+    //       조용히 통과한다(안내를 띄우면 오히려 오탐이다).
+    // 축하 다이얼로그와 이 안내는 상호배타 — reward가 있으면 축하, 없으면 여기서 끝.
+    if (reward == null) {
+      if (done) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('이미 완료한 퀘스트예요')));
+      }
+      return;
+    }
     await showQuestCompleteDialog(
       context,
       questTitle: quest.title,

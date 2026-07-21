@@ -266,9 +266,43 @@ void main() {
       expect(find.byType(QuestCompleteDialog), findsNothing);
       expect(find.byTooltip('완료 취소'), findsOneWidget);
 
+      // 무반응이 아니라 "이미 완료한 퀘스트예요"로 이유를 알린다(#0-1).
+      // 축하와 안내는 상호배타 — 축하가 없으니 안내가 떠야 한다.
+      expect(find.text('이미 완료한 퀘스트예요'), findsOneWidget);
+
       final user = await repo.users!.fetchUser('test-uid');
       expect(user.coin, 0);
       expect(user.xp, 0);
+    });
+
+    testWidgets('★ 완료 해제(done→todo)에는 "이미 완료" 안내가 뜨지 않는다', (tester) async {
+      // 완료 해제도 reward == null 경로지만, 원래 지급이 없는 동작이다.
+      // 여기에 안내를 띄우면 오탐이다 — done 여부로 갈라야 한다(#0-1).
+      final repo = await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: [
+          Quest(
+            id: 'q1',
+            title: '완료된 퀘스트',
+            difficulty: Difficulty.easy,
+            status: QuestStatus.done,
+            completedAt: DateTime(2026, 1, 1),
+          ),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('완료 취소'));
+      await tester.pumpAndSettle();
+
+      // 상태만 되돌아가고, 안내 스낵바도 축하도 뜨지 않는다.
+      expect(find.byType(QuestCompleteDialog), findsNothing);
+      expect(find.text('이미 완료한 퀘스트예요'), findsNothing);
+      expect(find.byTooltip('완료'), findsOneWidget);
+
+      final quest = (await repo.fetchQuests('test-uid')).single;
+      expect(quest.done, isFalse);
     });
 
     testWidgets('★ 지급이 실패하면 스낵바가 뜨고 상태·잔액이 그대로다', (tester) async {

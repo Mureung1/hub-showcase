@@ -1,8 +1,16 @@
+import 'package:characters/characters.dart';
+
 import '../core/constants/reward_rules.dart';
 import '../models/difficulty.dart';
 import '../models/quest.dart';
 import '../models/quest_draft.dart';
 import '../models/quest_status.dart';
+
+/// 인증 메모 최대 길이(문자 수). **UI와 저장소가 공유하는 단일 진실원.**
+///
+/// 값이 두 곳에 흩어지면(UI `maxLength`와 저장소 절단) 언젠가 갈려서 한쪽만 낡는다.
+/// `quest_memo_sheet.dart`의 TextField도 이 상수를 인용한다.
+const int kMaxMemoLength = 200;
 
 /// 퀘스트 CRUD.
 ///
@@ -90,5 +98,16 @@ abstract interface class QuestRepository {
 /// 그런 차이는 테스트가 InMemory만 보기 때문에 실기기에서야 발견된다.
 String? normalizeMemo(String? memo) {
   final trimmed = memo?.trim();
-  return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+  if (trimmed == null || trimmed.isEmpty) return null;
+
+  // UI(quest_memo_sheet)가 maxLength로 이미 막지만, completeQuest가 public API라
+  // 다른 호출부가 생기면 UI를 거치지 않은 긴 문자열이 그대로 저장소로 들어온다.
+  // 저장소 입구에서 한 번 더 막는다(방어).
+  //
+  // substring(코드유닛 기준)이 아니라 characters(문자 그래프임 기준)로 자른다.
+  // 이모지·한글 결합문자는 여러 코드유닛으로 이뤄져, 코드유닛 경계에서 자르면
+  // 문자가 반토막 나 깨진 글자가 저장된다. 사용자 눈에 보이는 "글자 수"로 센다.
+  final chars = trimmed.characters;
+  if (chars.length <= kMaxMemoLength) return trimmed;
+  return chars.take(kMaxMemoLength).toString();
 }

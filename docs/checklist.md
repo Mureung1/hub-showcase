@@ -293,7 +293,7 @@
 - [x] 메모를 입력·저장할 수 있고 재실행 후에도 유지된다.
 - [x] 빈 메모는 선택 사항으로 허용되고 보너스 조건에서 제외된다.
 - [x] 과도한 길이 입력이 안전하게 잘리거나 제한된다.
-      → `quest_memo_sheet.dart`의 시트에서 입력 → `quests/{id}.memo`에 영속. 공백만인 메모는 `normalizeMemo`가 null로 만들어 인증이 성립하지 않는다(정의는 이 함수 한 곳). 길이는 **`TextField(maxLength: 200)`의 입력 단계 제한만** 있고 **저장소 레벨 절단은 미구현** — 다음 청크에서 `normalizeMemo`에 길이 상한을 추가할 것.
+      → `quest_memo_sheet.dart`의 시트에서 입력 → `quests/{id}.memo`에 영속. 공백만인 메모는 `normalizeMemo`가 null로 만들어 인증이 성립하지 않는다(정의는 이 함수 한 곳). 길이는 **UI 입력 단계(`TextField(maxLength: kMaxMemoLength)`)와 저장소 레벨 절단 양쪽**에서 제한된다. `normalizeMemo`가 `kMaxMemoLength(200)`로 `String.characters.take`(그래프임 기준 절단이라 이모지·조합형 한글이 안전하게 유지됨) 처리하고, UI와 저장소가 같은 상수를 인용해 단일 진실원을 유지한다. 테스트: `test/repositories/normalize_memo_test.dart`(9건).
 
 ### 인증 첨부 시 보너스 보상 지급
 - [x] 사진 또는 메모 인증 시 정의된 보너스 코인·XP가 추가 지급된다.
@@ -311,8 +311,8 @@
 - [x] 이미 완료된 퀘스트를 다시 완료해도 **코인·XP가 재지급되지 않는다**.
 - [x] 완료 요청 중복(빠른 연타/재시도)에서 지급이 정확히 1회만 발생한다.
       → 가드는 상태나 `completedAt`이 아니라 **`rewardedAt`**이다. 한번 찍히면 지워지지 않으므로 완료 → 해제 → 재완료로도 재지급이 없다(코인 파밍 차단). 연타는 `_pending` + 트랜잭션 재시도 시 `alreadyPaid` 조기 반환으로 1회만 지급. 테스트: `test/features/quest_list_screen_test.dart`의 `★ 완료 → 해제 → 재완료해도 재지급되지 않는다 (파밍 차단)`.
-- [ ] 중복 시도 시 사용자에게 이미 완료됨이 안내된다.
-      → **미구현**: 재지급이 없을 때 `completeQuest`가 `null`을 반환하고 화면은 **축하 다이얼로그를 띄우지 않는 것으로 끝난다**(오해 방지). 하지만 "이미 완료됨"을 알리는 안내(스낵바 등)는 아직 없다.
+- [x] 중복 시도 시 사용자에게 이미 완료됨이 안내된다.
+      → `quest_list_screen.dart`가 `done && reward == null`(이미 보상받은 퀘스트 재완료)일 때 스낵바 '이미 완료한 퀘스트예요'를 노출한다. 완료 해제(done=false)에는 스낵바가 뜨지 않아 오탐을 막는다. 재지급이 없을 때 `completeQuest`가 `null`을 반환하고 축하 연출은 생략된다. 테스트: `test/features/quest_list_screen_test.dart`(재완료→스낵바+연출없음, 완료해제→스낵바 안 뜸).
 
 ### 출석/스트릭 체크 및 연속 출석 보너스(7일) 지급
 - [ ] 일자별 출석이 기록되고 연속 일수가 정확히 계산된다.

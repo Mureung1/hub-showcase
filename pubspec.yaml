@@ -34,6 +34,10 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  # 이미 Flutter SDK가 끌어오는 패키지지만, normalizeMemo가 이모지/한글 결합문자를
+  # 안전하게 자르려고 String.characters(그래프임 클러스터)를 직접 쓰므로 직접
+  # 의존으로 명시한다(depend_on_referenced_packages 린트). 버전은 Flutter SDK가 고정.
+  characters: any
   # riverpod 3.x는 notifier API가 바뀐 breaking change라 2.6.1에 고정한다.
   flutter_riverpod: 2.6.1
   go_router: ^17.3.0
