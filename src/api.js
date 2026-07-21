@@ -15,3 +15,19 @@ export async function submitProfile(profile) {
 
   return data;
 }
+
+export async function generateDraft(postingId, profile) {
+  const response = await fetch(`${API_BASE_URL}/api/postings/${postingId}/draft`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ profile }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || '자소서 초안을 생성하지 못했습니다.');
+  }
+
+  return data;
+}
