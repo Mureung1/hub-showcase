@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { ScenarioKey, ChannelId, Tone, Scenario, SendCampaignResponse, TrackingResponse } from "shared";
+import { buildSmsBody } from "shared";
 import { T, font, won, DAYS, DANGOL_TOTAL, DANGOL_CONSENT } from "./styles/tokens";
 import { SCENARIOS, CHANNELS, HISTORY } from "./mocks/scenarios";
 import { MOCK_MODE, getWeatherToday, getProposalToday, patchCampaign, sendCampaign, getTracking } from "./api/client";
@@ -26,6 +27,18 @@ type RemoteState =
   | { status: "empty"; message: string } // 서버는 붙었으나 오늘 제안이 아직 없음
   | { status: "error"; message: string };
 
+// 프로모션 문구에서 할인율(%)을 뽑는다. 없으면 0. (QW-4)
+function parseDiscountPct(promo: string): number {
+  const m = promo.match(/(\d+)\s*%/);
+  return m ? Number(m[1]) : 0;
+}
+// 프로모션 문구의 할인율을 pct로 바꾼다. 기존 %가 없으면 "N% 할인"으로 만든다.
+function applyDiscountPct(promo: string, pct: number): string {
+  return /(\d+)\s*%/.test(promo) ? promo.replace(/(\d+)\s*%/, `${pct}%`) : `${pct}% 할인`;
+}
+
+const MAX_DISCOUNT_PCT = 20; // 서버 가드레일과 동일 상한 (안내용 — 최종 강제는 서버)
+
 // ---- 최상위 컴포넌트 ---------------------------------------------------------
 export default function WeatherPilotV3() {
   const [scenarioKey, setScenarioKey] = useState<ScenarioKey>("rain");
@@ -36,6 +49,7 @@ export default function WeatherPilotV3() {
   const [copy, setCopy] = useState("");
   const [channels, setChannels] = useState<ChannelId[]>([]);
   const [nightMode, setNightMode] = useState(false);
+  const [discountPct, setDiscountPct] = useState(0); // 사장님이 편집하는 할인율 (QW-4)
 
   // 실연동 상태 (MOCK_MODE=off일 때만 서버에서 오늘 날씨·제안을 불러온다)
   const [remote, setRemote] = useState<RemoteState>(
@@ -57,7 +71,7 @@ export default function WeatherPilotV3() {
         if (p.proposal === null) {
           setRemote({ status: "empty", message: p.message });
         } else {
-          setRemote({ status: "ready", scenario: scenarioFromApi(w.weather, p.proposal), campaignId: p.campaignId });
+          setRemote({ status: "ready", scenario: scenarioFromApi(w.weather, p.proposal, p.diagnosis), campaignId: p.campaignId });
         }
       } catch (e) {
         if (!cancelled) {
@@ -77,6 +91,9 @@ export default function WeatherPilotV3() {
   // 실연동은 오늘 캠페인 id, mock은 발송 시점에 새로 만든다(추적 램프 리셋용).
   const campaignId = remote.status === "ready" ? remote.campaignId : "mock-demo";
 
+  // 편집된 할인율이 반영된 프로모션 문구 (미리보기·쿠폰 라벨·발송에 사용). (QW-4)
+  const promoValue = applyDiscountPct(s.promo, discountPct);
+
   function pickScenario(k: ScenarioKey) {
     setScenarioKey(k);
     setView("dashboard");
@@ -90,6 +107,7 @@ export default function WeatherPilotV3() {
     setCopy(s.copy);
     setChannels([...s.channels]);
     setNightMode(false);
+    setDiscountPct(parseDiscountPct(s.promo));
     setView("edit");
   }
   function toggleChannel(id: ChannelId) {
@@ -103,7 +121,12 @@ export default function WeatherPilotV3() {
     try {
       // mock은 발송마다 새 id로 추적 램프를 리셋, 실연동은 오늘 캠페인 id 사용.
       const sendId = MOCK_MODE ? `mock-${Date.now()}` : campaignId;
-      await patchCampaign(sendId, { status: "approved", editedCopy: copy, channels });
+      await patchCampaign(sendId, {
+        status: "approved",
+        editedCopy: copy,
+        channels,
+        editedPromo: { type: "할인", value: promoValue },
+      });
       const result = await sendCampaign(sendId, { channels, assumeNight: nightMode });
       setSentCampaignId(sendId);
       setSendResult(result);
@@ -138,7 +161,7 @@ export default function WeatherPilotV3() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 2px 14px" }}>
           <div style={{ width: 32, height: 32, borderRadius: 10, background: T.gradient, display: "grid", placeItems: "center", color: "#fff", fontSize: 16 }}>⛅</div>
           <div style={{ fontWeight: 700, fontSize: 17, letterSpacing: -0.3 }}>WeatherPilot</div>
-          <div style={{ marginLeft: "auto", fontSize: 12, color: T.sub }}>김사장 카페 · 서면점</div>
+          <div style={{ marginLeft: "auto", fontSize: 12, color: T.sub }}>김사장 카페 · 정자점</div>
         </div>
 
         {/* 세그먼트 토글 (오늘 / 성과) */}
@@ -180,7 +203,8 @@ export default function WeatherPilotV3() {
           <Dashboard s={s} onReview={goEdit} />
         ) : view === "edit" ? (
           <EditView
-            s={s} copy={copy} setCopy={setCopy}
+            copy={copy} setCopy={setCopy}
+            discountPct={discountPct} setDiscountPct={setDiscountPct} promoLabel={promoValue}
             channels={channels} toggleChannel={toggleChannel}
             nightMode={nightMode} setNightMode={setNightMode}
             onBack={() => setView("dashboard")} onSend={handleSend} sending={sending}
@@ -203,7 +227,7 @@ function Dashboard({ s, onReview }: { s: Scenario; onReview: () => void }) {
     <div className="wp-view">
       {/* 피처 카드(블루) — 날씨 + 매출 진단 히어로 */}
       <div style={{ background: T.gradient, borderRadius: 20, padding: 20, color: T.onBlue, boxShadow: T.shadowBlue }}>
-        <div style={{ fontSize: 14, fontWeight: 700 }}>오늘의 날씨 · 부산 서면</div>
+        <div style={{ fontSize: 14, fontWeight: 700 }}>오늘의 날씨 · 성남 정자동</div>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 14, marginTop: 12 }}>
           <div style={{ fontSize: 64, lineHeight: 1, flexShrink: 0 }}>{s.emoji}</div>
           <div>
@@ -212,7 +236,7 @@ function Dashboard({ s, onReview }: { s: Scenario; onReview: () => void }) {
           </div>
         </div>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 14, padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,0.28)", fontSize: 11, fontWeight: 600 }}>
-          ✓ 기상청·OpenWeather·AccuWeather 3개 소스 평균
+          ✓ {s.sourceLabel}
         </div>
 
         <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.4)" }}>
@@ -266,14 +290,15 @@ function Dashboard({ s, onReview }: { s: Scenario; onReview: () => void }) {
 }
 
 // ---- 검토·편집 (문구 + 채널 + 법적 안전장치) --------------------------------
-function EditView({ s, copy, setCopy, channels, toggleChannel, nightMode, setNightMode, onBack, onSend, sending }: {
-  s: Scenario;
+function EditView({ copy, setCopy, discountPct, setDiscountPct, promoLabel, channels, toggleChannel, nightMode, setNightMode, onBack, onSend, sending }: {
   copy: string; setCopy: (v: string) => void;
+  discountPct: number; setDiscountPct: (v: number) => void; promoLabel: string;
   channels: ChannelId[]; toggleChannel: (id: ChannelId) => void;
   nightMode: boolean; setNightMode: (v: boolean) => void;
   onBack: () => void; onSend: () => void; sending: boolean;
 }) {
   const dangolOn = channels.includes("dangol");
+  const discountOver = discountPct > MAX_DISCOUNT_PCT;
   const anyChannel = channels.length > 0;
   const sendDisabled = !anyChannel || sending;
   const sendLabel = sending ? "발송 중…"
@@ -297,9 +322,26 @@ function EditView({ s, copy, setCopy, channels, toggleChannel, nightMode, setNig
           rows={6}
           style={{ width: "100%", marginTop: 10, boxSizing: "border-box", resize: "vertical", border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 14px", fontSize: 14, lineHeight: 1.6, fontFamily: font, color: T.ink, background: T.surfaceAlt }}
         />
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 12.5, color: T.primaryDark, fontWeight: 600 }}>
-          <span style={{ fontSize: 15 }}>🎟️</span> {s.promo}
+        {/* 쿠폰 할인율 편집 (QW-4) — 서버 가드레일 ≤20% 최종 강제 */}
+        <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <label htmlFor="wp-discount" style={{ fontSize: 12.5, color: T.sub, fontWeight: 600 }}>쿠폰 할인율</label>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <input
+              id="wp-discount" type="number" min={0} max={100} value={discountPct}
+              onChange={(e) => setDiscountPct(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+              style={{ width: 66, textAlign: "right", boxSizing: "border-box", border: `1.5px solid ${discountOver ? T.downText : T.border}`, borderRadius: 10, padding: "8px 10px", fontSize: 14, fontFamily: font, color: T.ink, background: T.surfaceAlt }}
+            />
+            <span style={{ fontSize: 14, color: T.sub, fontWeight: 600 }}>%</span>
+          </span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: T.primaryDark, fontWeight: 600 }}>
+            <span style={{ fontSize: 15 }}>🎟️</span> {promoLabel}
+          </span>
         </div>
+        {discountOver && (
+          <div style={{ marginTop: 8, fontSize: 12, color: T.downText, background: T.downBg, border: `1px solid ${T.warnLine}`, borderRadius: 8, padding: "6px 10px", lineHeight: 1.5 }}>
+            할인율 상한은 {MAX_DISCOUNT_PCT}%예요. 이대로 발송하면 서버가 거부합니다.
+          </div>
+        )}
       </Card>
 
       {/* 채널 선택 + 법적 안전장치 */}
@@ -373,7 +415,7 @@ function LegalPanel({ copy, nightMode, setNightMode }: { copy: string; nightMode
       {/* 실제 발송 미리보기 */}
       <div style={{ marginTop: 10, padding: "12px 14px", borderRadius: 12, background: T.bg, border: `1px dashed ${T.border}`, fontSize: 12.5, lineHeight: 1.6, color: T.sub, whiteSpace: "pre-line" }}>
         <div style={{ fontSize: 10.5, color: T.muted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>단골 문자 실제 발송 미리보기</div>
-        {`(광고) [김사장 카페]\n${copy}\n무료수신거부 080-123-4567`}
+        {buildSmsBody({ copy, storeName: "김사장 카페" })}
       </div>
 
       {/* 데모용 야간 토글 */}

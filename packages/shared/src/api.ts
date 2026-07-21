@@ -29,6 +29,8 @@ export interface ProposalTodayFound {
   date: string;
   status: CampaignStatus;
   weather: EnsembleWeather;
+  /** 매출×날씨 진단 (조회 시 재계산). 대시보드 진단·매출 타일의 실데이터 소스. */
+  diagnosis: Diagnosis;
   proposal: Proposal;
 }
 
@@ -52,11 +54,13 @@ export interface ProposalGenerateResponse {
 
 // ---- Phase 3: 캠페인 상태 변경 · 발송 · 추적 ---------------------------------
 
-/** PATCH /campaigns/:id — 승인/수정/반려 (상태·문구·채널 갱신). */
+/** PATCH /campaigns/:id — 승인/수정/반려 (상태·문구·채널·할인율 갱신). */
 export interface CampaignPatchRequest {
   status?: CampaignStatus;
   editedCopy?: string;
   channels?: string[];
+  /** 사장님이 편집한 쿠폰 프로모션(할인율). 서버가 proposal.promo에 병합 저장한다. */
+  editedPromo?: { type: string; value: string };
 }
 export interface CampaignPatchResponse {
   campaignId: string;
