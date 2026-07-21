@@ -217,6 +217,49 @@
   color: #9fb0bc;
 }
 
+/* Lv4 전용 "캘린더에 추가" 정적 카드(#28) — 실제 연동은 4주차, 지금은 데모 카드만 */
+.calendar-slot-card {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.calendar-slot-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #eaf0f4;
+}
+
+.calendar-slot-detail {
+  margin: 0;
+  font-size: 13px;
+  color: #9fb0bc;
+}
+
+.calendar-slot-detail strong {
+  color: #eaf0f4;
+}
+
+.calendar-slot-btn {
+  margin-top: 12px;
+  width: 100%;
+  background: transparent;
+  color: var(--lv);
+  border: 1px solid var(--lv);
+  border-radius: 9px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.calendar-slot-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
 .nudge-body {
   margin-top: 12px;
 }

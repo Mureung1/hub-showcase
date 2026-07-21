@@ -4,6 +4,7 @@ import { isLockedToStart } from "../lib/nudgeMessages";
 import ReasonCheckpoint from "./ReasonCheckpoint";
 import NudgeMessage from "./NudgeMessage";
 import FreeTextPrompt from "./FreeTextPrompt";
+import CalendarSlotCard from "./CalendarSlotCard";
 import "./NudgeModal.css";
 
 // #23부터 레벨별 문구(NudgeMessage)로 교체 — 레벨 칩+본문은 NudgeMessage.jsx가 담당한다.
@@ -65,6 +66,8 @@ function NudgeModal({
         {task.level === 2 && <FreeTextPrompt />}
 
         <NudgeMessage task={task} onStart={onStart} completedTasks={completedTasks} />
+
+        {task.level === 4 && <CalendarSlotCard task={task} />}
       </div>
     </div>
   );
