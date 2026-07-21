@@ -15,6 +15,16 @@
   box-shadow: var(--shadow-md);
 }
 
+.task-item.pending {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.task-item.done .task-title {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
 .task-info {
   flex: 1;
   min-width: 0;
@@ -30,4 +40,119 @@
   font-size: var(--font-size-sm);
   color: var(--text-muted);
   margin-top: 4px;
+}
+
+/* 체크박스 */
+.checkbox {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border-default);
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform 0.1s ease;
+}
+
+.checkbox:hover {
+  border-color: var(--color-primary);
+}
+
+.checkbox:active {
+  transform: scale(0.9);
+}
+
+.checkbox.checked {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: var(--text-on-dark);
+}
+
+.checkbox.checked:hover {
+  border-color: var(--color-success);
+}
+
+.checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.checkbox:disabled:hover {
+  border-color: var(--border-default);
+}
+
+.checkbox.checked:disabled:hover {
+  border-color: var(--color-success);
+}
+
+/* 상태 뱃지 */
+.status-badge {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.status-badge.status-wait {
+  background: #F2F0F4;
+  color: var(--text-secondary);
+}
+
+.status-badge.status-progress {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.status-badge.status-done {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.status-badge:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* 삭제 버튼 */
+.delete-btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.delete-btn:hover {
+  background: var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.delete-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.delete-btn:disabled:hover {
+  background: none;
+  color: var(--text-muted);
 }
