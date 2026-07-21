@@ -220,7 +220,9 @@ export function decodeProductMaterialRefreshResponse(
     throw invalidContract()
   }
   const workspace = decodeProductWorkspace(value.workspace)
-  if (workspace.state !== 'ready') throw invalidContract()
+  if (workspace.state !== 'ready' || workspace.recovery !== null) {
+    throw invalidContract()
+  }
   return { outcome: value.outcome, workspace }
 }
 

@@ -259,6 +259,7 @@ test('distinguishes product loading, inactive workspace, no Course, empty materi
             ? null
             : {
                 state: 'ready',
+                recovery: null,
                 confirmedRevision: 0,
                 course: null,
                 materials: [],

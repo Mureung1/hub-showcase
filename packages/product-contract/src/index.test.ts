@@ -123,6 +123,14 @@ test('workspace recovery and explicit material rebaseline use one exact shared c
   )
   assert.throws(
     () =>
+      decodeProductMaterialRefreshResponse({
+        ...response,
+        workspace,
+      }),
+    ProductContractError,
+  )
+  assert.throws(
+    () =>
       decodeProductBootstrap({
         accountReadiness: { state: 'ready' },
         operationStatus: 'idle',

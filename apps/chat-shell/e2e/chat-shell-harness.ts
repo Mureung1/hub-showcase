@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { once } from 'node:events'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import {
   createServer as createHttpServer,
   type Server,
@@ -46,6 +46,8 @@ export type ChatScenario =
   | 'ready'
   | 'not-ready'
   | 'unavailable'
+  | 'source-conflict'
+  | 'invalid-store'
   | 'acknowledged-interrupt-response-loss'
   | 'disconnect-drain-timeout'
   | 'reload-before-interrupt-settlement'
@@ -74,8 +76,15 @@ type ChatShellFixtures = {
 
 export type ChatShellHarness = {
   readonly url: string
+  readonly workspace: {
+    readonly runId: string
+    readonly runRoot: string
+    readonly seedDigest: string
+    readonly workspaceRoot: string
+  }
   readonly calls: () => readonly ProductRuntimeCall[]
   readonly requests: () => readonly string[]
+  readWorkspaceBytes(relativePath: string): Promise<Buffer>
   disconnectAssignmentStream(): Promise<void>
   pauseReviewContinuation(): void
   prepareScanLimitWorkspaceActivation(): Promise<void>
@@ -88,6 +97,43 @@ export type ChatShellHarness = {
 
 const chatShellRoot = fileURLToPath(new URL('../', import.meta.url))
 const packageRoot = fileURLToPath(new URL('../../../', import.meta.url))
+
+export const sourceConflictMaterialBytes = Buffer.from(
+  [
+    '문제해결글쓰기 공지',
+    '',
+    '개요 작성하기 과제 마감은 2026년 7월 12일 23:59 KST(Asia/Seoul)입니다.',
+    'RFC 3339 마감 시각은 2026-07-12T23:59:00+09:00입니다.',
+    '주제는 수업 시간에 다룬 사회 문제 중 하나를 선택하면 됩니다.',
+    '제출 방식과 평가 기준은 강의계획서를 확인하세요.',
+    '담당 교원이 이 안내를 현재 내용으로 수정했습니다.',
+    '',
+  ].join('\n'),
+  'utf8',
+)
+
+export const invalidWorkspaceStoreBytes = Buffer.from([
+  0x7b,
+  0x22,
+  0x66,
+  0x6f,
+  0x72,
+  0x6d,
+  0x61,
+  0x74,
+  0x56,
+  0x65,
+  0x72,
+  0x73,
+  0x69,
+  0x6f,
+  0x6e,
+  0x22,
+  0x3a,
+  0xc3,
+  0x28,
+  0x7d,
+])
 
 export const test = base.extend<ChatShellFixtures>({
   scenario: ['ready', { option: true }],
@@ -125,7 +171,7 @@ export async function selectCanonicalMaterials(page: Page): Promise<void> {
   ).toBeVisible()
 }
 
-async function startChatShellHarness(
+export async function startChatShellHarness(
   scenario: ChatScenario,
 ): Promise<ChatShellHarness> {
   const frontendServer = createHttpServer()
@@ -145,6 +191,14 @@ async function startChatShellHarness(
     )
     const appDataRoot = path.join(semesterWorkspace.runRoot, 'app-data')
     await mkdir(appDataRoot)
+    if (scenario === 'invalid-store') {
+      const productRoot = path.join(semesterWorkspace.workspaceRoot, '.ay-ple')
+      await mkdir(productRoot)
+      await writeFile(
+        path.join(productRoot, 'workspace-state.json'),
+        invalidWorkspaceStoreBytes,
+      )
+    }
     const semesterWorkspaceBootstrap = {
       packageRoot,
       appDataRoot,
@@ -165,6 +219,8 @@ async function startChatShellHarness(
           ? { state: 'not_ready', reason: 'authentication_required' }
           : { state: 'ready' },
         scenario,
+        semesterWorkspace.workspaceRoot,
+        semesterWorkspace.runId,
       )
       application = await createServerApplication({
         codexChat: {
@@ -234,8 +290,31 @@ async function startChatShellHarness(
     let closed = false
     return {
       url: frontendUrl,
+      workspace: {
+        runId: semesterWorkspace.runId,
+        runRoot: semesterWorkspace.runRoot,
+        seedDigest: semesterWorkspace.seedDigest,
+        workspaceRoot: semesterWorkspace.workspaceRoot,
+      },
       calls: () => runtime?.calls ?? [],
       requests: () => [...requests],
+      async readWorkspaceBytes(relativePath) {
+        const candidate = path.resolve(
+          semesterWorkspace!.workspaceRoot,
+          relativePath,
+        )
+        const relative = path.relative(
+          semesterWorkspace!.workspaceRoot,
+          candidate,
+        )
+        assert.ok(
+          relative !== '' &&
+            relative !== '..' &&
+            !relative.startsWith(`..${path.sep}`),
+          'Expected a relative path inside the E2E SemesterWorkspace.',
+        )
+        return readFile(candidate)
+      },
       async disconnectAssignmentStream() {
         const response = [...assignmentStreams].find(
           (candidate) => !candidate.destroyed,
@@ -349,11 +428,14 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
   private readonly lateInteractionReleased = deferred<void>()
   private readonly reviewContinuationReleased = deferred<void>()
   private reviewContinuationPaused = false
+  private sourceConflictInjected = false
   private turnOrdinal = 0
 
   constructor(
     private readonly readiness: CodexAccountReadiness,
     private readonly scenario: ProductRuntimeScenario,
+    private readonly workspaceRoot: string,
+    private readonly runId: string,
   ) {}
 
   get calls(): readonly ProductRuntimeCall[] {
@@ -369,7 +451,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     assert.ok(input)
     this.threadInputs.push(structuredClone(input))
     this.callLog.push({ operation: 'startThread', input: structuredClone(input) })
-    return { threadId: 'thread-private-e2e' }
+    return { threadId: `thread-private-e2e-${this.runId}` }
   }
 
   async startTurn(_input: StartTurnInput): Promise<never> {
@@ -384,7 +466,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
       input: structuredClone(input),
     })
     this.turnOrdinal += 1
-    const turnId = `turn-private-e2e-${this.turnOrdinal}`
+    const turnId = `turn-private-e2e-${this.runId}-${this.turnOrdinal}`
     const turn = input.skill
       ? this.assignmentTurn(input, turnId)
       : this.clarificationTurn(input, turnId)
@@ -536,7 +618,30 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           itemId: `mcp-private-${turnId}`,
           tool: 'propose_state_patch',
         }
-        await callProposalTool(input.text)
+        const proposalFailed = await callProposalTool(input.text)
+        if (proposalFailed) {
+          await interruptObserved
+          yield {
+            type: 'mcp_call.failed',
+            threadId: input.threadId,
+            turnId,
+            itemId: `mcp-private-${turnId}`,
+            tool: 'propose_state_patch',
+            displayMessage: 'The product proposal tool failed.',
+          }
+          yield {
+            type: 'turn.interrupt_acknowledged',
+            threadId: input.threadId,
+            turnId,
+          }
+          yield {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId,
+            status: 'interrupted',
+          }
+          return
+        }
         yield {
           type: 'mcp_call.completed',
           threadId: input.threadId,
@@ -803,9 +908,16 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
   private async callProposalTool(
     text: string,
     overrides?: ProposalOverrides,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const threadInput = this.threadInputs[0]
     assert.ok(threadInput)
+    if (this.scenario === 'source-conflict' && !this.sourceConflictInjected) {
+      this.sourceConflictInjected = true
+      await writeFile(
+        path.join(this.workspaceRoot, 'lms-outline-notice.txt'),
+        sourceConflictMaterialBytes,
+      )
+    }
     const response = await fetch(threadInput.mcp.url, {
       method: 'POST',
       headers: {
@@ -826,7 +938,12 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     const body = (await response.json()) as {
       readonly result?: { readonly isError?: boolean }
     }
+    if (body.result?.isError === true) {
+      assert.equal(this.scenario, 'source-conflict')
+      return true
+    }
     assert.equal(body.result?.isError, false)
+    return false
   }
 
   private createPending(
