@@ -1,13 +1,28 @@
 import { Router } from "express";
 import { getSupabaseClient } from "../lib/supabase.js";
 
-const recordColumns = "id, song_title, artist_name, emotion_text, record_date, created_at";
+const recordColumns = [
+  "id",
+  "spotify_track_id",
+  "song_title",
+  "artist_name",
+  "album_name",
+  "album_image_url",
+  "external_url",
+  "emotion_text",
+  "record_date",
+  "created_at",
+].join(", ");
 
 export function mapMusicRecord(record) {
   return {
     id: record.id,
+    spotifyTrackId: record.spotify_track_id ?? null,
     songTitle: record.song_title,
     artistName: record.artist_name,
+    albumName: record.album_name ?? null,
+    albumImageUrl: record.album_image_url ?? null,
+    externalUrl: record.external_url ?? null,
     emotionText: record.emotion_text,
     recordDate: record.record_date,
     createdAt: record.created_at,
@@ -30,6 +45,10 @@ function isValidCreateBody(body) {
   return [body?.songTitle, body?.artistName, body?.emotionText].every(
     (value) => typeof value === "string" && value.trim().length > 0,
   );
+}
+
+function getOptionalText(value) {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
 function sendInternalError(response, message) {
@@ -84,8 +103,12 @@ export function createMusicRecordsRouter(
       const { data, error } = await supabase
         .from("music_records")
         .insert({
+          spotify_track_id: getOptionalText(request.body.spotifyTrackId),
           song_title: songTitle,
           artist_name: artistName,
+          album_name: getOptionalText(request.body.albumName),
+          album_image_url: getOptionalText(request.body.albumImageUrl),
+          external_url: getOptionalText(request.body.externalUrl),
           emotion_text: emotionText,
           record_date: getToday(),
         })

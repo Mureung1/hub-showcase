@@ -1,18 +1,18 @@
 :root {
-  color-scheme: dark;
-  --color-bg: #0b0d0e;
-  --color-surface: #111416;
-  --color-surface-soft: #171b1e;
-  --color-text-main: #f5f7f8;
-  --color-text-sub: #b8c0c5;
-  --color-text-muted: #7f8a91;
-  --color-border: #242b30;
-  --color-border-soft: #1b2125;
+  color-scheme: light;
+  --color-bg: #f7f8f8;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f1f3f4;
+  --color-text-main: #151719;
+  --color-text-sub: #4d565c;
+  --color-text-muted: #8b949a;
+  --color-border: #dfe5e8;
+  --color-border-soft: #edf1f3;
   --color-signature: #3e7fa3;
   --color-signature-hover: #5ea3c8;
-  --color-signature-soft: rgb(62 127 163 / 10%);
+  --color-signature-soft: rgb(62 127 163 / 7%);
   --color-frame-glow: rgb(62 127 163 / 13%);
-  --shadow-card: 0 18px 50px rgb(0 0 0 / 18%);
+  --shadow-card: 0 14px 36px rgb(21 23 25 / 6%);
   --radius-sm: 10px;
   --radius-md: 16px;
   --radius-lg: 24px;
@@ -38,9 +38,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background:
-    radial-gradient(circle at top left, var(--color-frame-glow), transparent 34rem),
-    var(--color-bg);
+  background: var(--color-bg);
 }
 
 button,
@@ -191,13 +189,13 @@ button {
 }
 
 .cover-preview,
-.album-placeholder {
+.album-placeholder,
+.track-cover-fallback {
   display: grid;
   place-items: center;
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-md);
-  background:
-    linear-gradient(135deg, var(--color-surface-soft), var(--color-signature-soft));
+  background: var(--color-surface-soft);
   color: var(--color-text-muted);
   font-size: 11px;
   font-weight: 800;
@@ -338,6 +336,14 @@ textarea[aria-invalid="true"] {
   aspect-ratio: 1;
 }
 
+.album-artwork {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  object-fit: cover;
+}
+
 .card-content {
   align-self: center;
   min-width: 0;
@@ -358,6 +364,13 @@ textarea[aria-invalid="true"] {
 .empty-state p {
   margin: 0;
   color: var(--color-text-muted);
+}
+
+.song-row small {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: 12px;
 }
 
 .like-button {
@@ -386,6 +399,160 @@ textarea[aria-invalid="true"] {
   color: var(--color-text-sub);
   line-height: 1.7;
   overflow-wrap: anywhere;
+}
+
+.spotify-link {
+  display: inline-flex;
+  margin-top: var(--space-4);
+  color: var(--color-signature-hover);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.spotify-link:hover {
+  color: var(--color-text-main);
+}
+
+.track-search {
+  position: relative;
+}
+
+.track-dropdown {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  left: 0;
+  z-index: 20;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.track-dropdown button {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  border: 0;
+  border-bottom: 1px solid var(--color-border-soft);
+  background: transparent;
+  color: var(--color-text-main);
+  text-align: left;
+}
+
+.track-dropdown button:last-child {
+  border-bottom: 0;
+}
+
+.track-dropdown button:hover,
+.track-dropdown button.active {
+  background: var(--color-signature-soft);
+}
+
+.track-dropdown img,
+.track-dropdown .track-cover-fallback {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.track-dropdown span {
+  min-width: 0;
+}
+
+.track-dropdown strong,
+.track-dropdown small,
+.track-dropdown em {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-dropdown strong {
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.track-dropdown small,
+.track-dropdown em {
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.dropdown-state {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dropdown-state strong {
+  color: var(--color-text-main);
+}
+
+.selected-track-card {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+}
+
+.selected-track-card img,
+.selected-track-card .track-cover-fallback {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.selected-track-card strong,
+.selected-track-card span,
+.selected-track-card small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-track-card strong {
+  font-size: 16px;
+}
+
+.selected-track-card span,
+.selected-track-card small {
+  margin-top: 3px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.selected-track-card button {
+  padding: 9px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-signature-hover);
+  font-weight: 800;
+}
+
+.selected-track-card button:hover {
+  border-color: var(--color-signature);
+  background: var(--color-signature-soft);
 }
 
 .empty-state {
@@ -424,6 +591,14 @@ textarea[aria-invalid="true"] {
   .field-grid {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+
+  .selected-track-card {
+    grid-template-columns: 60px minmax(0, 1fr);
+  }
+
+  .selected-track-card button {
+    grid-column: 1 / -1;
   }
 }
 

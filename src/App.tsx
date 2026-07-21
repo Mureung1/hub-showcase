@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { MusicCard } from "./components/MusicCard";
 import { MusicRecordForm } from "./components/MusicRecordForm";
-import type { MusicRecord, MusicRecordDraft } from "./types/music";
+import type { MusicRecord, MusicRecordDraft, SpotifyTrack } from "./types/music";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 interface ApiMusicRecord {
   id: string | number;
+  spotifyTrackId: string | null;
   songTitle: string;
   artistName: string;
+  albumName: string | null;
+  albumImageUrl: string | null;
+  externalUrl: string | null;
   emotionText: string;
   recordDate: string;
   createdAt: string;
@@ -21,8 +25,12 @@ interface AppProps {
 function toMusicRecord(record: ApiMusicRecord): MusicRecord {
   return {
     id: record.id,
+    spotifyTrackId: record.spotifyTrackId ?? null,
     songTitle: record.songTitle,
     artistName: record.artistName,
+    albumName: record.albumName ?? null,
+    albumImageUrl: record.albumImageUrl ?? null,
+    externalUrl: record.externalUrl ?? null,
     emotion: record.emotionText,
     recordDate: record.recordDate,
     liked: false,
@@ -32,7 +40,7 @@ function toMusicRecord(record: ApiMusicRecord): MusicRecord {
 async function getErrorMessage(response: Response, fallback: string) {
   try {
     const body = await response.json();
-    return body.error?.message || fallback;
+    return body.error?.message || body.message || fallback;
   } catch {
     return fallback;
   }
@@ -69,13 +77,30 @@ export function App({ initialRecords }: AppProps) {
     }
   }, [initialRecords, loadRecords]);
 
+  const searchTracks = useCallback(async (keyword: string, signal: AbortSignal): Promise<SpotifyTrack[]> => {
+    const response = await fetch(
+      `${apiBaseUrl}/api/spotify/search?q=${encodeURIComponent(keyword)}`,
+      { signal },
+    );
+
+    if (!response.ok) {
+      throw new Error(await getErrorMessage(response, "음악을 불러오지 못했어요"));
+    }
+
+    return response.json();
+  }, []);
+
   const saveRecord = async (draft: MusicRecordDraft) => {
     const response = await fetch(`${apiBaseUrl}/api/music-records`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        songTitle: draft.songTitle,
+        spotifyTrackId: draft.spotifyTrackId,
+        songTitle: draft.title,
         artistName: draft.artistName,
+        albumName: draft.albumName,
+        albumImageUrl: draft.albumImageUrl,
+        externalUrl: draft.externalUrl,
         emotionText: draft.emotion,
       }),
     });
@@ -108,7 +133,7 @@ export function App({ initialRecords }: AppProps) {
       <section className="intro" aria-labelledby="page-title">
         <p className="page-kicker">Record your day with music.</p>
         <h1 id="page-title">Create Record</h1>
-        <p>오늘을 기억하게 하는 한 곡과 한 줄의 감정을 남겨보세요.</p>
+        <p>오늘을 기억하게 해주는 한 곡과 한 줄의 감정을 남겨보세요.</p>
       </section>
 
       <div className="workspace-layout">
@@ -117,7 +142,7 @@ export function App({ initialRecords }: AppProps) {
             <span>Today&apos;s Song</span>
             <h2 id="form-title">음악 기록 입력</h2>
           </div>
-          <MusicRecordForm onSave={saveRecord} />
+          <MusicRecordForm onSave={saveRecord} onSearchTracks={searchTracks} />
         </section>
 
         <section aria-labelledby="records-title">
@@ -139,7 +164,7 @@ export function App({ initialRecords }: AppProps) {
             </div>
           ) : records.length === 0 ? (
             <div className="empty-state">
-              <span aria-hidden="true">♪</span>
+              <span aria-hidden="true">SWIM</span>
               <h3>아직 기록된 음악이 없어요.</h3>
               <p>왼쪽 입력 화면에서 오늘의 첫 곡을 남겨보세요.</p>
             </div>

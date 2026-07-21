@@ -4,21 +4,41 @@ import { App } from "./App";
 
 const apiRecord = {
   id: 1,
+  spotifyTrackId: "spotify-track-1",
   songTitle: "Ditto",
   artistName: "NewJeans",
-  emotionText: "조용히 위로받은 하루",
+  albumName: "OMG",
+  albumImageUrl: "https://example.com/album.jpg",
+  externalUrl: "https://open.spotify.com/track/spotify-track-1",
+  emotionText: "오늘 하루를 위로받은 기분",
   recordDate: "2026-07-16",
   createdAt: "2026-07-16T10:30:00.000Z",
+};
+
+const spotifyTrack = {
+  spotifyTrackId: "spotify-track-1",
+  title: "Ditto",
+  artistName: "NewJeans",
+  albumName: "OMG",
+  albumImageUrl: "https://example.com/album.jpg",
+  externalUrl: "https://open.spotify.com/track/spotify-track-1",
 };
 
 function response(body: unknown, ok = true, status = 200) {
   return { ok, status, json: async () => body } as Response;
 }
 
-function completeForm(title = "Ditto") {
-  fireEvent.change(screen.getByLabelText("노래 제목"), { target: { value: title } });
-  fireEvent.change(screen.getByLabelText("아티스트명"), { target: { value: "NewJeans" } });
-  fireEvent.change(screen.getByLabelText("한 줄로 남기기"), { target: { value: "조용히 위로받은 하루" } });
+async function searchAndSelectTrack() {
+  fireEvent.change(screen.getByLabelText("노래 검색"), { target: { value: "ditto" } });
+
+  await waitFor(() => {
+    expect(fetch).toHaveBeenCalledWith(
+      "http://localhost:3000/api/spotify/search?q=ditto",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  fireEvent.click(await screen.findByRole("option", { name: /Ditto/i }));
 }
 
 describe("music record API flow", () => {
@@ -38,42 +58,59 @@ describe("music record API flow", () => {
     expect(fetch).toHaveBeenCalledWith("http://localhost:3000/api/music-records");
   });
 
-  it("shows validation before sending a request", () => {
+  it("searches Spotify through the Express API and selects a track", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(response([spotifyTrack]));
     render(<App initialRecords={[]} />);
-    fireEvent.click(screen.getByRole("button", { name: "기록하기" }));
-    expect(screen.getByText("노래 제목을 입력해주세요.")).toBeInTheDocument();
-    expect(screen.getByText("아티스트명을 입력해주세요.")).toBeInTheDocument();
-    expect(screen.getByText("한 줄 감정을 입력해주세요.")).toBeInTheDocument();
-    expect(fetch).not.toHaveBeenCalled();
+
+    await searchAndSelectTrack();
+
+    expect(screen.getByText("NewJeans")).toBeInTheDocument();
+    expect(screen.getByText("OMG")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "변경" })).toBeInTheDocument();
   });
 
-  it("posts a record and refreshes the list with GET", async () => {
+  it("posts a Spotify-backed record and refreshes the list with GET", async () => {
     vi.mocked(fetch)
+      .mockResolvedValueOnce(response([spotifyTrack]))
       .mockResolvedValueOnce(response({ data: apiRecord }, true, 201))
       .mockResolvedValueOnce(response({ data: [apiRecord] }));
     render(<App initialRecords={[]} />);
-    completeForm();
+
+    await searchAndSelectTrack();
+    fireEvent.change(screen.getByLabelText("한 줄로 남기기"), {
+      target: { value: "오늘 하루를 위로받은 기분" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "기록하기" }));
 
     expect(await screen.findByRole("heading", { name: "Ditto" })).toBeInTheDocument();
-    expect(fetch).toHaveBeenNthCalledWith(1, "http://localhost:3000/api/music-records", {
+    expect(fetch).toHaveBeenNthCalledWith(2, "http://localhost:3000/api/music-records", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        spotifyTrackId: "spotify-track-1",
         songTitle: "Ditto",
         artistName: "NewJeans",
-        emotionText: "조용히 위로받은 하루",
+        albumName: "OMG",
+        albumImageUrl: "https://example.com/album.jpg",
+        externalUrl: "https://open.spotify.com/track/spotify-track-1",
+        emotionText: "오늘 하루를 위로받은 기분",
       }),
     });
-    expect(fetch).toHaveBeenNthCalledWith(2, "http://localhost:3000/api/music-records");
+    expect(fetch).toHaveBeenNthCalledWith(3, "http://localhost:3000/api/music-records");
   });
 
   it("shows a server error without using alert", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(response({
-      error: { code: "INTERNAL_SERVER_ERROR", message: "음악 기록 저장 중 오류가 발생했습니다." },
-    }, false, 500));
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(response([spotifyTrack]))
+      .mockResolvedValueOnce(response({
+        error: { code: "INTERNAL_SERVER_ERROR", message: "음악 기록 저장 중 오류가 발생했습니다." },
+      }, false, 500));
     render(<App initialRecords={[]} />);
-    completeForm();
+
+    await searchAndSelectTrack();
+    fireEvent.change(screen.getByLabelText("한 줄로 남기기"), {
+      target: { value: "오늘 하루를 위로받은 기분" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "기록하기" }));
 
     await waitFor(() => {

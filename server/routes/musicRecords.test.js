@@ -47,18 +47,26 @@ function createSupabaseQuery(result, calls = []) {
 
 const databaseRecord = {
   id: 1,
+  spotify_track_id: "spotify-track-1",
   song_title: "Ditto",
   artist_name: "NewJeans",
-  emotion_text: "조용히 위로받은 하루",
+  album_name: "OMG",
+  album_image_url: "https://example.com/album.jpg",
+  external_url: "https://open.spotify.com/track/spotify-track-1",
+  emotion_text: "오늘 하루를 위로받은 기분",
   record_date: "2026-07-16",
   created_at: "2026-07-16T10:30:00.000Z",
 };
 
 const apiRecord = {
   id: 1,
+  spotifyTrackId: "spotify-track-1",
   songTitle: "Ditto",
   artistName: "NewJeans",
-  emotionText: "조용히 위로받은 하루",
+  albumName: "OMG",
+  albumImageUrl: "https://example.com/album.jpg",
+  externalUrl: "https://open.spotify.com/track/spotify-track-1",
+  emotionText: "오늘 하루를 위로받은 기분",
   recordDate: "2026-07-16",
   createdAt: "2026-07-16T10:30:00.000Z",
 };
@@ -93,7 +101,7 @@ describe("SWIM API", () => {
     assert.deepEqual(await response.json(), { data: [] });
   });
 
-  it("creates a trimmed record with the server date", async () => {
+  it("creates a trimmed Spotify-backed record with the server date", async () => {
     const calls = [];
     const query = createSupabaseQuery({ data: databaseRecord, error: null }, calls);
     const baseUrl = await startApp({
@@ -105,18 +113,26 @@ describe("SWIM API", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        spotifyTrackId: " spotify-track-1 ",
         songTitle: "  Ditto  ",
         artistName: " NewJeans ",
-        emotionText: " 조용히 위로받은 하루 ",
+        albumName: " OMG ",
+        albumImageUrl: " https://example.com/album.jpg ",
+        externalUrl: " https://open.spotify.com/track/spotify-track-1 ",
+        emotionText: " 오늘 하루를 위로받은 기분 ",
       }),
     });
 
     assert.equal(response.status, 201);
     assert.deepEqual(await response.json(), { data: apiRecord });
     assert.deepEqual(calls.find(([name]) => name === "insert"), ["insert", {
+      spotify_track_id: "spotify-track-1",
       song_title: "Ditto",
       artist_name: "NewJeans",
-      emotion_text: "조용히 위로받은 하루",
+      album_name: "OMG",
+      album_image_url: "https://example.com/album.jpg",
+      external_url: "https://open.spotify.com/track/spotify-track-1",
+      emotion_text: "오늘 하루를 위로받은 기분",
       record_date: "2026-07-16",
     }]);
   });

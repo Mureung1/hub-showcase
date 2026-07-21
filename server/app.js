@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { createMusicRecordsRouter } from "./routes/musicRecords.js";
+import { createSpotifyRouter } from "./routes/spotifyRoutes.js";
 
 export function createApp(options = {}) {
   const app = express();
@@ -16,6 +17,7 @@ export function createApp(options = {}) {
     "/api/music-records",
     createMusicRecordsRouter(options.getSupabase, options.getCurrentDate),
   );
+  app.use("/api/spotify", createSpotifyRouter(options.searchSpotifyTracks));
 
   return app;
 }
