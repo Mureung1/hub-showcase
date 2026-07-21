@@ -8,7 +8,7 @@ export function buildPriorityReason(subject) {
     understanding: subject.understanding,
     difficulty: subject.difficulty,
     daysUntil,
-    importance: subject.importance,
+    gradeWeight: subject.gradeWeight,
     grading: subject.grading,
     studyAmount: subject.studyAmount,
   });
@@ -27,7 +27,7 @@ export function buildPriorityReason(subject) {
     parts.push("난이도가 있는 편이고");
   }
 
-  if (breakdown.importance >= 75) {
+  if (breakdown.gradeWeight >= 75) {
     parts.push("학점에서 비중이 크고");
   }
 

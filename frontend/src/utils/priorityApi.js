@@ -31,7 +31,7 @@ export function scoreSubjectsLocally(subjects, weightKey) {
         understanding: subject.understanding,
         difficulty: subject.difficulty,
         daysUntil: getDaysUntil(subject.examDate),
-        importance: subject.importance,
+        gradeWeight: subject.gradeWeight,
         grading: subject.grading,
         studyAmount: subject.studyAmount,
       },

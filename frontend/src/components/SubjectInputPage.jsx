@@ -7,10 +7,16 @@ const INITIAL_FORM = {
   examDate: "",
   understanding: 3,
   difficulty: 3,
-  importance: 3,
+  gradeWeight: 40,
   grading: 3,
   studyAmount: 3,
 };
+
+// 각 1~5 단계가 무슨 뜻인지 알려주는 라벨. "3"이 사람마다 다른 문제를 줄인다.
+const UNDERSTANDING_LEVELS = ["안 봤음", "개념만", "절반쯤", "거의 다", "완벽"];
+const DIFFICULTY_LEVELS = ["매우 쉬움", "쉬움", "보통", "어려움", "매우 어려움"];
+const GRADING_LEVELS = ["매우 후하게", "후한 편", "보통", "짠 편", "매우 짜게"];
+const STUDY_AMOUNT_LEVELS = ["아주 적음", "적음", "보통", "많음", "아주 많음"];
 
 function SubjectInputPage({
   subjects,
@@ -67,12 +73,23 @@ function SubjectInputPage({
       return;
     }
 
+    const gradeWeight = Number(form.gradeWeight);
+    if (
+      form.gradeWeight === "" ||
+      !Number.isInteger(gradeWeight) ||
+      gradeWeight < 0 ||
+      gradeWeight > 100
+    ) {
+      setErrorMessage("학점 반영 비율을 0~100 사이로 입력해 주세요.");
+      return;
+    }
+
     const payload = {
       name,
       examDate: form.examDate,
       understanding: form.understanding,
       difficulty: form.difficulty,
-      importance: form.importance,
+      gradeWeight,
       grading: form.grading,
       studyAmount: form.studyAmount,
     };
@@ -92,7 +109,7 @@ function SubjectInputPage({
       examDate: subject.examDate,
       understanding: subject.understanding,
       difficulty: subject.difficulty,
-      importance: subject.importance ?? 3,
+      gradeWeight: subject.gradeWeight ?? 40,
       grading: subject.grading ?? 3,
       studyAmount: subject.studyAmount ?? 3,
     });
@@ -162,40 +179,47 @@ function SubjectInputPage({
             label="이해도"
             value={form.understanding}
             onChange={(value) => updateField("understanding", value)}
-            minLabel="잘 모름"
-            maxLabel="잘 앎"
+            levelLabels={UNDERSTANDING_LEVELS}
           />
 
           <ScoreSelector
             label="난이도"
             value={form.difficulty}
             onChange={(value) => updateField("difficulty", value)}
-            minLabel="쉬움"
-            maxLabel="어려움"
+            levelLabels={DIFFICULTY_LEVELS}
           />
 
-          <ScoreSelector
-            label="중요도"
-            value={form.importance}
-            onChange={(value) => updateField("importance", value)}
-            minLabel="낮음"
-            maxLabel="높음"
-          />
+          <div className="form-group">
+            <label className="form-label" htmlFor="gradeWeight">
+              학점 반영 비율 (%)
+            </label>
+            <input
+              id="gradeWeight"
+              className="form-input"
+              type="number"
+              min="0"
+              max="100"
+              inputMode="numeric"
+              value={form.gradeWeight}
+              onChange={(event) => updateField("gradeWeight", event.target.value)}
+            />
+            <p className="form-hint">
+              이 시험이 성적에서 차지하는 비율이에요. 예: 기말 40%
+            </p>
+          </div>
 
           <ScoreSelector
             label="교수님 학점 성향"
             value={form.grading}
             onChange={(value) => updateField("grading", value)}
-            minLabel="후하게 주심"
-            maxLabel="짜게 주심"
+            levelLabels={GRADING_LEVELS}
           />
 
           <ScoreSelector
             label="공부 분량 (시험 범위)"
             value={form.studyAmount}
             onChange={(value) => updateField("studyAmount", value)}
-            minLabel="적음"
-            maxLabel="많음"
+            levelLabels={STUDY_AMOUNT_LEVELS}
           />
 
           <p className="form-error">{errorMessage}</p>
@@ -237,8 +261,8 @@ function SubjectInputPage({
                   <span className="entry-name">{subject.name}</span>
                   <span className="entry-meta">
                     {formatDday(getDaysUntil(subject.examDate))} · 이해도{" "}
-                    {subject.understanding} · 난이도 {subject.difficulty} · 중요도{" "}
-                    {subject.importance ?? 3}
+                    {subject.understanding} · 난이도 {subject.difficulty} · 학점{" "}
+                    {subject.gradeWeight ?? 40}%
                   </span>
                 </div>
                 <div className="entry-actions">

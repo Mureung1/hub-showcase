@@ -144,6 +144,13 @@
   color: var(--color-text-secondary);
 }
 
+.score-hint {
+  margin: 0;
+  text-align: center;
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
 /* 추가된 과목 목록 */
 .entry-list {
   list-style: none;
@@ -436,7 +443,7 @@
   background-color: var(--color-danger);
 }
 
-.breakdown-fill-importance {
+.breakdown-fill-gradeWeight {
   background-color: var(--color-success);
 }
 

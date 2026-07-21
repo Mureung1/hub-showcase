@@ -1,10 +1,10 @@
 // 우선순위 성향 프리셋. 클라이언트의 priorityCalculator.js와 값을 맞춘다.
 // 각 가중치의 합은 1.0 이다.
 export const WEIGHT_PRESETS = {
-  balanced: { understanding: 0.25, difficulty: 0.15, urgency: 0.2, importance: 0.2, grading: 0.1, studyAmount: 0.1 },
-  difficulty: { understanding: 0.2, difficulty: 0.3, urgency: 0.1, importance: 0.15, grading: 0.1, studyAmount: 0.15 },
-  urgency: { understanding: 0.15, difficulty: 0.1, urgency: 0.4, importance: 0.15, grading: 0.1, studyAmount: 0.1 },
-  grade: { understanding: 0.15, difficulty: 0.1, urgency: 0.15, importance: 0.3, grading: 0.2, studyAmount: 0.1 },
+  balanced: { understanding: 0.25, difficulty: 0.15, urgency: 0.2, gradeWeight: 0.2, grading: 0.1, studyAmount: 0.1 },
+  difficulty: { understanding: 0.2, difficulty: 0.3, urgency: 0.1, gradeWeight: 0.15, grading: 0.1, studyAmount: 0.15 },
+  urgency: { understanding: 0.15, difficulty: 0.1, urgency: 0.4, gradeWeight: 0.15, grading: 0.1, studyAmount: 0.1 },
+  grade: { understanding: 0.15, difficulty: 0.1, urgency: 0.15, gradeWeight: 0.3, grading: 0.2, studyAmount: 0.1 },
 };
 
 export const DEFAULT_WEIGHT_KEY = "balanced";
@@ -49,7 +49,7 @@ export function calculatePriorityScore(
     understanding = NEUTRAL,
     difficulty = NEUTRAL,
     daysUntil,
-    importance = NEUTRAL,
+    gradeWeight = 40,
     grading = NEUTRAL,
     studyAmount = NEUTRAL,
   },
@@ -58,7 +58,8 @@ export function calculatePriorityScore(
   const understandingScore = ((5 - understanding) / 4) * 100;
   const difficultyScore = ascendingScore(difficulty);
   const urgencyScore = calculateUrgencyScore(daysUntil);
-  const importanceScore = ascendingScore(importance);
+  // 학점 반영 비율은 이미 0~100 이므로 그 값을 그대로 점수로 쓴다.
+  const gradeWeightScore = Math.max(0, Math.min(100, gradeWeight));
   const gradingScore = ascendingScore(grading);
   const studyAmountScore = ascendingScore(studyAmount);
 
@@ -66,7 +67,7 @@ export function calculatePriorityScore(
     understandingScore * weights.understanding +
     difficultyScore * weights.difficulty +
     urgencyScore * weights.urgency +
-    importanceScore * weights.importance +
+    gradeWeightScore * weights.gradeWeight +
     gradingScore * weights.grading +
     studyAmountScore * weights.studyAmount;
 
@@ -84,7 +85,7 @@ export function scoreSubjects(subjects, weightKey) {
         understanding: subject.understanding,
         difficulty: subject.difficulty,
         daysUntil: getDaysUntil(subject.examDate),
-        importance: subject.importance,
+        gradeWeight: subject.gradeWeight,
         grading: subject.grading,
         studyAmount: subject.studyAmount,
       },

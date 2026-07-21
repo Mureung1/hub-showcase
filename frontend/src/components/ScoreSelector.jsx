@@ -1,6 +1,6 @@
 const SCORE_OPTIONS = [1, 2, 3, 4, 5];
 
-function ScoreSelector({ label, value, onChange, minLabel, maxLabel }) {
+function ScoreSelector({ label, value, onChange, minLabel, maxLabel, levelLabels }) {
   return (
     <div className="form-group">
       <span className="form-label">{label}</span>
@@ -19,11 +19,16 @@ function ScoreSelector({ label, value, onChange, minLabel, maxLabel }) {
         ))}
       </div>
 
-      {(minLabel || maxLabel) && (
-        <div className="score-scale">
-          <span>{minLabel}</span>
-          <span>{maxLabel}</span>
-        </div>
+      {levelLabels ? (
+        // 선택한 단계의 뜻을 한 줄로 보여줘 "3"이 무슨 의미인지 기준을 잡아준다.
+        <p className="score-hint">{levelLabels[value - 1]}</p>
+      ) : (
+        (minLabel || maxLabel) && (
+          <div className="score-scale">
+            <span>{minLabel}</span>
+            <span>{maxLabel}</span>
+          </div>
+        )
       )}
     </div>
   );

@@ -5,15 +5,17 @@ import {
   deleteSubject,
 } from "../services/subjectService.js";
 
-// 1~5 척도 필드 목록. name/examDate 를 뺀 점수형 필드는 같은 규칙으로 검사한다.
-// optional=true 인 필드는 값이 없으면 기본값 3 으로 채운다. (구버전/오프라인 클라이언트 호환)
+// 1~5 척도 필드 목록. optional=true 인 필드는 값이 없으면 기본값 3 으로 채운다.
+// (구버전/오프라인 클라이언트 호환)
 const SCORE_FIELDS = [
   { key: "understanding", label: "이해도", optional: false },
   { key: "difficulty", label: "난이도", optional: false },
-  { key: "importance", label: "중요도", optional: true },
   { key: "grading", label: "교수님 학점 성향", optional: true },
   { key: "studyAmount", label: "공부 분량", optional: true },
 ];
+
+// 학점 반영 비율은 0~100(%) 범위이고, 값이 없으면 기본값 40 으로 채운다.
+const GRADE_WEIGHT_DEFAULT = 40;
 
 // 저장 전에 입력값을 검사한다. 잘못된 값이면 이유 문자열을, 문제없으면 null 을 돌려준다.
 function validateSubjectInput(body) {
@@ -21,7 +23,7 @@ function validateSubjectInput(body) {
     return "요청 본문이 필요합니다.";
   }
 
-  const { name, examDate } = body;
+  const { name, examDate, gradeWeight } = body;
 
   if (typeof name !== "string" || name.trim() === "") {
     return "과목명(name)이 필요합니다.";
@@ -40,6 +42,12 @@ function validateSubjectInput(body) {
     }
   }
 
+  if (gradeWeight !== undefined) {
+    if (!Number.isInteger(gradeWeight) || gradeWeight < 0 || gradeWeight > 100) {
+      return "학점 반영 비율(gradeWeight)은 0~100 사이 정수여야 합니다.";
+    }
+  }
+
   return null;
 }
 
@@ -47,6 +55,7 @@ function normalize(body) {
   const normalized = {
     name: body.name.trim(),
     examDate: body.examDate,
+    gradeWeight: body.gradeWeight === undefined ? GRADE_WEIGHT_DEFAULT : body.gradeWeight,
   };
 
   for (const field of SCORE_FIELDS) {

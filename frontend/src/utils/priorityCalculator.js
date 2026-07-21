@@ -7,7 +7,7 @@ export const WEIGHT_PRESETS = {
     understanding: 0.25,
     difficulty: 0.15,
     urgency: 0.2,
-    importance: 0.2,
+    gradeWeight: 0.2,
     grading: 0.1,
     studyAmount: 0.1,
   },
@@ -17,7 +17,7 @@ export const WEIGHT_PRESETS = {
     understanding: 0.2,
     difficulty: 0.3,
     urgency: 0.1,
-    importance: 0.15,
+    gradeWeight: 0.15,
     grading: 0.1,
     studyAmount: 0.15,
   },
@@ -27,7 +27,7 @@ export const WEIGHT_PRESETS = {
     understanding: 0.15,
     difficulty: 0.1,
     urgency: 0.4,
-    importance: 0.15,
+    gradeWeight: 0.15,
     grading: 0.1,
     studyAmount: 0.1,
   },
@@ -37,7 +37,7 @@ export const WEIGHT_PRESETS = {
     understanding: 0.15,
     difficulty: 0.1,
     urgency: 0.15,
-    importance: 0.3,
+    gradeWeight: 0.3,
     grading: 0.2,
     studyAmount: 0.1,
   },
@@ -61,7 +61,7 @@ export function getScoreBreakdown({
   understanding = NEUTRAL,
   difficulty = NEUTRAL,
   daysUntil,
-  importance = NEUTRAL,
+  gradeWeight = 40,
   grading = NEUTRAL,
   studyAmount = NEUTRAL,
 }) {
@@ -72,8 +72,8 @@ export function getScoreBreakdown({
     difficulty: ascendingScore(difficulty),
     // 시험이 가까울수록 높인다.
     urgency: calculateUrgencyScore(daysUntil),
-    // 중요한 과목일수록 높인다.
-    importance: ascendingScore(importance),
+    // 학점 반영 비율은 이미 0~100 이므로 그 값을 그대로 점수로 쓴다.
+    gradeWeight: Math.max(0, Math.min(100, gradeWeight)),
     // 교수님이 학점을 짜게 줄수록(받기 어려울수록) 더 신경 쓰도록 높인다.
     grading: ascendingScore(grading),
     // 공부 분량(시험 범위)이 많을수록 미리 시작하도록 높인다.
@@ -88,7 +88,7 @@ export function calculatePriorityScore(input, weights = WEIGHT_PRESETS.balanced)
     breakdown.understanding * weights.understanding +
     breakdown.difficulty * weights.difficulty +
     breakdown.urgency * weights.urgency +
-    breakdown.importance * weights.importance +
+    breakdown.gradeWeight * weights.gradeWeight +
     breakdown.grading * weights.grading +
     breakdown.studyAmount * weights.studyAmount;
 
