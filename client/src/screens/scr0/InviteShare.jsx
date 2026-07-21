@@ -72,8 +72,7 @@ export function InviteShare() {
             <Button variant="accent" block>⬇ 이미지로 저장</Button>
           </div>
           <div style={{ flex: 1 }}>
-            {/* TODO: ParticipantsStatus(/scr0/status) 화면 구현 후 실제 라우팅 확인 */}
-            <Button variant="primary" block onClick={() => navigate('/scr0/status')}>현황 보기</Button>
+            <Button variant="primary" block onClick={() => navigate(`/scr0/status?token=${token}`)}>현황 보기</Button>
           </div>
         </div>
 

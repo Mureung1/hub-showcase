@@ -32,3 +32,8 @@ export function getLetterByToken(token) {
 export function createResponse(token, payload) {
   return request(`/api/letters/${token}/responses`, { method: 'POST', body: JSON.stringify(payload) })
 }
+
+// GET /api/letters/:token/responses — 참여자 응답 목록 조회
+export function getResponses(token) {
+  return request(`/api/letters/${token}/responses`)
+}

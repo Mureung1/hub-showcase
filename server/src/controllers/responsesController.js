@@ -17,14 +17,36 @@ export async function createResponse(req, res) {
 
   if (letterError) return res.status(404).json({ data: null, error: '모임을 찾을 수 없어요' })
 
-  // 2. participants 행 생성 (또는 이미 명단에 있으면 상태만 갱신 — 지금은 새로 생성)
-  const { data: participant, error: participantError } = await supabase
+  // 2. participants 행 준비 — 초대 시 명단에 이미 있으면(participant_names) 그 행의 상태만 갱신하고,
+  // 없으면 새로 생성한다. (갱신하지 않으면 같은 사람이 두 행으로 남아 응답 현황 집계가 부정확해진다.)
+  const { data: existingParticipant, error: existingError } = await supabase
     .from('participants')
-    .insert({ letter_id: letter.id, name: participant_name, status: '시간대 응답 완료' })
-    .select()
-    .single()
+    .select('id')
+    .eq('letter_id', letter.id)
+    .eq('name', participant_name)
+    .maybeSingle()
 
-  if (participantError) return res.status(500).json({ data: null, error: participantError.message })
+  if (existingError) return res.status(500).json({ data: null, error: existingError.message })
+
+  let participant
+  if (existingParticipant) {
+    const { data, error } = await supabase
+      .from('participants')
+      .update({ status: '시간대 응답 완료' })
+      .eq('id', existingParticipant.id)
+      .select()
+      .single()
+    if (error) return res.status(500).json({ data: null, error: error.message })
+    participant = data
+  } else {
+    const { data, error } = await supabase
+      .from('participants')
+      .insert({ letter_id: letter.id, name: participant_name, status: '시간대 응답 완료' })
+      .select()
+      .single()
+    if (error) return res.status(500).json({ data: null, error: error.message })
+    participant = data
+  }
 
   // 3. responses 저장
   const { data: response, error: responseError } = await supabase
