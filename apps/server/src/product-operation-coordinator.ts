@@ -38,7 +38,6 @@ import {
   StatePatchReviewError,
   type AssignmentProposalSession,
   type AssignmentReviewBinding,
-  type AssignmentReviewCommit,
   type AssignmentReviewDecisionInput,
   type ModelingRun,
   type RawMaterial,
@@ -48,6 +47,7 @@ import {
 } from './semester-workspace.js'
 import {
   ASSIGNMENT_REVIEW_QUESTION,
+  type AssignmentReviewOutcome,
   createAssignmentReviewCoordinator,
 } from './state-patch-review.js'
 
@@ -89,7 +89,7 @@ export type ProductOperationCoordinator = {
   ): Promise<void>
   submitReview(
     input: AssignmentReviewDecisionInput,
-  ): Promise<AssignmentReviewCommit>
+  ): Promise<AssignmentReviewOutcome>
   respondToInteraction(input: ProductInteractionResponseInput): Promise<void>
   disconnect(operationId: string): void
   interrupt(operationId: string): Promise<void>
@@ -106,11 +106,22 @@ type ActiveProductOperationBase = {
   readonly operationId: string
   readonly lease: ProductOperationLease
   readonly reviewBindings: Map<string, AssignmentReviewBinding>
+  readonly reviewOutcomes: Map<
+    string,
+    'accepted' | 'revised' | 'rejected'
+  >
+  readonly reviewSubmissions: Map<string, ActiveReviewSubmission>
   readonly redactionValues: string[]
   generalInteraction?: ActiveGeneralInteraction
+  pendingReplacement?: AssignmentReviewBinding
   proposal?: AssignmentProposalSession
   mcpSession?: AssignmentMcpProposalSession
   turn?: CodexProductTurn
+}
+
+type ActiveReviewSubmission = {
+  readonly input: AssignmentReviewDecisionInput
+  readonly promise: Promise<AssignmentReviewOutcome>
 }
 
 type ActiveAssignmentOperation = ActiveProductOperationBase & {
@@ -198,6 +209,8 @@ export function createProductOperationCoordinator(options: {
       operationId,
       lease,
       reviewBindings: new Map(),
+      reviewOutcomes: new Map(),
+      reviewSubmissions: new Map(),
       redactionValues: [options.mcpHost.token],
     }
   }
@@ -282,6 +295,48 @@ export function createProductOperationCoordinator(options: {
       requestKey: proposal.context.requestKey,
       invoke: (payload) => proposal.mcpTool.invoke(payload),
     })
+  }
+
+  const replaceProposal = (
+    operation: ActiveProductOperation,
+    proposal: AssignmentProposalSession,
+  ): (() => void) => {
+    const turn = operation.turn
+    if (!turn) {
+      throw new ProductOperationError(
+        'review_invalid',
+        409,
+        '검토 요청이 더 이상 활성 상태가 아닙니다.',
+      )
+    }
+    const nextSession = options.mcpHost.register({
+      requestKey: proposal.context.requestKey,
+      invoke: (payload) => proposal.mcpTool.invoke(payload),
+    })
+    try {
+      nextSession.bindNative({
+        threadId: turn.threadId,
+        turnId: turn.turnId,
+      })
+    } catch (error) {
+      nextSession.cancel()
+      throw error
+    }
+    const previousSession = operation.mcpSession
+    operation.proposal = proposal
+    operation.mcpSession = nextSession
+    operation.redactionValues.push(
+      proposal.context.requestKey,
+      proposal.context.workspaceId,
+    )
+    previousSession?.cancel()
+    return () => {
+      nextSession.cancel()
+      if (operation.mcpSession === nextSession) {
+        delete operation.mcpSession
+        if (operation.proposal === proposal) delete operation.proposal
+      }
+    }
   }
 
   const projectActivity = async (
@@ -408,6 +463,33 @@ export function createProductOperationCoordinator(options: {
         }
         operation.reviewBindings.set(binding.interactionId, binding)
         const patch = findPatch(options.controller, binding.patchId)
+        const replaces = operation.pendingReplacement
+        if (replaces) {
+          if (replaces.patchId === binding.patchId) {
+            throw new ProductOperationError(
+              'review_invalid',
+              409,
+              'replacement 변경 제안을 확인하지 못했습니다.',
+            )
+          }
+          operation.pendingReplacement = undefined
+          return {
+            ...base,
+            type: 'review.replaced',
+            interactionId: binding.interactionId,
+            patchId: binding.patchId,
+            decisionKey: binding.decisionKey,
+            patch: projectPatch(patch, operation.redactionValues),
+            questions: activity.questions.map((question) =>
+              projectQuestion(
+                question,
+                question.id,
+                operation.redactionValues,
+              ),
+            ),
+            replaces: { ...replaces },
+          }
+        }
         return {
           ...base,
           type: 'review.requested',
@@ -441,13 +523,29 @@ export function createProductOperationCoordinator(options: {
         }
         const binding = operation.reviewBindings.get(activity.interactionId)
         if (binding) {
+          const productOutcome = operation.reviewOutcomes.get(
+            activity.interactionId,
+          )
+          const outcome =
+            productOutcome === 'accepted' || productOutcome === 'rejected'
+              ? productOutcome
+              : activity.resolution === 'cancelled'
+                ? 'cancelled'
+                : productOutcome
+          if (!outcome) {
+            throw new ProductOperationError(
+              'review_invalid',
+              409,
+              '검토 응답을 확인하지 못했습니다.',
+            )
+          }
           return {
             ...base,
             type: 'review.resolved',
             interactionId: activity.interactionId,
             patchId: binding.patchId,
             decisionKey: binding.decisionKey,
-            resolution: activity.resolution,
+            outcome,
           }
         }
         return {
@@ -756,6 +854,9 @@ export function createProductOperationCoordinator(options: {
         )
         operation.generalInteraction = undefined
         operation.reviewBindings.clear()
+        operation.reviewOutcomes.clear()
+        operation.reviewSubmissions.clear()
+        operation.pendingReplacement = undefined
         const patchObserved = operation.mcpSession?.latestPatch() != null
         operation.mcpSession?.cancel()
         const requestedSettlement: Omit<
@@ -907,6 +1008,9 @@ export function createProductOperationCoordinator(options: {
         )
         operation.generalInteraction = undefined
         operation.reviewBindings.clear()
+        operation.reviewOutcomes.clear()
+        operation.reviewSubmissions.clear()
+        operation.pendingReplacement = undefined
         operation.mcpSession?.cancel()
         if (settlement.type === 'unknown') {
           await options.service.recycleProductRuntime().catch(() => undefined)
@@ -962,17 +1066,80 @@ export function createProductOperationCoordinator(options: {
     },
 
     async submitReview(input) {
-      if (!active?.turn || !active.reviewBindings.has(input.interactionId)) {
+      const operation = active
+      if (
+        !operation?.turn ||
+        !operation.reviewBindings.has(input.interactionId)
+      ) {
         throw new ProductOperationError(
           'review_invalid',
           409,
           '검토 요청이 더 이상 활성 상태가 아닙니다.',
         )
       }
-      return createAssignmentReviewCoordinator(options.controller, {
+      const existing = operation.reviewSubmissions.get(input.decisionKey)
+      if (existing) {
+        if (!sameAssignmentReviewInput(existing.input, input)) {
+          throw new ProductOperationError(
+            'review_invalid',
+            409,
+            '검토 응답이 이전 요청과 일치하지 않습니다.',
+          )
+        }
+        try {
+          const outcome = await existing.promise
+          return { ...outcome, replayed: true }
+        } catch (error) {
+          throw presentProductOperationError(error)
+        }
+      }
+
+      const expectedOutcome =
+        input.decision === 'accept'
+          ? 'accepted'
+          : input.decision === 'reject'
+            ? 'rejected'
+            : 'revised'
+      if (input.decision !== 'revise') {
+        operation.reviewOutcomes.set(input.interactionId, expectedOutcome)
+      }
+      const promise = createAssignmentReviewCoordinator(options.controller, {
         answerUserInput: (answer) =>
           options.service.answerProductUserInput(answer),
+        prepareReplacement: (proposal) => {
+          const abandon = replaceProposal(operation, proposal)
+          operation.pendingReplacement = {
+            interactionId: input.interactionId,
+            patchId: input.patchId,
+            decisionKey: input.decisionKey,
+          }
+          operation.reviewOutcomes.set(input.interactionId, 'revised')
+          return () => {
+            abandon()
+            if (
+              operation.pendingReplacement?.interactionId ===
+              input.interactionId
+            ) {
+              operation.pendingReplacement = undefined
+            }
+          }
+        },
       }).submit(input)
+      operation.reviewSubmissions.set(input.decisionKey, { input, promise })
+      try {
+        return await promise
+      } catch (error) {
+        if (
+          operation.reviewSubmissions.get(input.decisionKey)?.promise ===
+          promise
+        ) {
+          operation.reviewSubmissions.delete(input.decisionKey)
+        }
+        if (error instanceof StatePatchReviewError) {
+          operation.reviewOutcomes.delete(input.interactionId)
+        }
+        throw presentProductOperationError(error)
+      }
     },
 
     async respondToInteraction(input) {
@@ -1313,6 +1480,20 @@ function assertAssignmentRequest(
       'Assignment action 입력을 확인해 주세요.',
     )
   }
+}
+
+function sameAssignmentReviewInput(
+  left: AssignmentReviewDecisionInput,
+  right: AssignmentReviewDecisionInput,
+): boolean {
+  return (
+    left.interactionId === right.interactionId &&
+    left.patchId === right.patchId &&
+    left.decisionKey === right.decisionKey &&
+    left.decision === right.decision &&
+    (left.decision !== 'revise' ||
+      (right.decision === 'revise' && left.feedback === right.feedback))
+  )
 }
 
 function assertChatRequest(input: ProductChatRequest): void {

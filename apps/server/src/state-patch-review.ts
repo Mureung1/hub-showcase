@@ -7,6 +7,9 @@ import type { CodexUserInputQuestion } from '@ay-ple/codex-chat-runtime/contract
 import type {
   AssignmentReviewCommit,
   AssignmentReviewDecisionInput,
+  AssignmentReviewRevision,
+  AssignmentReviewRevisionInput,
+  AssignmentReviewSettlementInput,
   SemesterWorkspaceController,
 } from './semester-workspace.js'
 
@@ -34,25 +37,85 @@ export const ASSIGNMENT_REVIEW_QUESTION = {
 export type AssignmentReviewRuntime = Pick<
   CodexProductCapableRuntime,
   'answerUserInput'
->
+> & {
+  prepareReplacement?(
+    proposal: AssignmentReviewRevision['proposal'],
+  ): () => void
+}
+
+export type SettledAssignmentReviewOutcome = {
+  readonly type: 'settled'
+} & AssignmentReviewCommit
+
+export type RevisionRequestedAssignmentReviewOutcome = {
+  readonly type: 'revision_requested'
+} & AssignmentReviewRevision
+
+export type AssignmentReviewOutcome =
+  | SettledAssignmentReviewOutcome
+  | RevisionRequestedAssignmentReviewOutcome
 
 export type AssignmentReviewCoordinator = {
-  submit(input: AssignmentReviewDecisionInput): Promise<AssignmentReviewCommit>
+  submit(
+    input: AssignmentReviewSettlementInput,
+  ): Promise<SettledAssignmentReviewOutcome>
+  submit(
+    input: AssignmentReviewRevisionInput,
+  ): Promise<RevisionRequestedAssignmentReviewOutcome>
+  submit(input: AssignmentReviewDecisionInput): Promise<AssignmentReviewOutcome>
 }
 
 export function createAssignmentReviewCoordinator(
-  authority: Pick<SemesterWorkspaceController, 'commitAssignmentReviewDecision'>,
+  authority: Pick<
+    SemesterWorkspaceController,
+    | 'commitAssignmentReviewDecision'
+    | 'interruptAssignmentReviewRevision'
+    | 'requestAssignmentReviewRevision'
+  >,
   runtime: AssignmentReviewRuntime,
 ): AssignmentReviewCoordinator {
-  return {
-    async submit(input) {
-      const commit = await authority.commitAssignmentReviewDecision(input)
-      if (!commit.replayed) {
-        await runtime.answerUserInput(nativeAnswer(commit))
+  function submit(
+    input: AssignmentReviewSettlementInput,
+  ): Promise<SettledAssignmentReviewOutcome>
+  function submit(
+    input: AssignmentReviewRevisionInput,
+  ): Promise<RevisionRequestedAssignmentReviewOutcome>
+  function submit(
+    input: AssignmentReviewDecisionInput,
+  ): Promise<AssignmentReviewOutcome>
+  async function submit(
+    input: AssignmentReviewDecisionInput,
+  ): Promise<AssignmentReviewOutcome> {
+    if (input.decision === 'revise') {
+      const revision = await authority.requestAssignmentReviewRevision(input)
+      if (!revision.replayed) {
+        let abandonReplacement: () => void = () => undefined
+        try {
+          if (!runtime.prepareReplacement) {
+            throw new Error(
+              'Replacement proposal registration is unavailable.',
+            )
+          }
+          abandonReplacement = runtime.prepareReplacement(revision.proposal)
+          await runtime.answerUserInput(nativeRevisionAnswer(revision))
+        } catch (error) {
+          abandonReplacement()
+          await authority.interruptAssignmentReviewRevision({
+            ...revision.binding,
+            requestKey: revision.proposal.context.requestKey,
+          })
+          throw error
+        }
       }
-      return commit
-    },
+      return { type: 'revision_requested', ...revision }
+    }
+    const commit = await authority.commitAssignmentReviewDecision(input)
+    if (!commit.replayed) {
+      await runtime.answerUserInput(nativeAnswer(commit))
+    }
+    return { type: 'settled', ...commit }
   }
+  return { submit }
 }
 
 export function isExactAssignmentReviewQuestion(
@@ -84,6 +147,21 @@ function nativeAnswer(commit: AssignmentReviewCommit): AnswerUserInput {
     answers: {
       [ASSIGNMENT_REVIEW_QUESTION.id]: [
         commit.confirmation.decision === 'accepted' ? '수락' : '거절',
+      ],
+    },
+  }
+}
+
+function nativeRevisionAnswer(
+  revision: AssignmentReviewRevision,
+): AnswerUserInput {
+  return {
+    interactionId: revision.binding.interactionId,
+    answers: {
+      [ASSIGNMENT_REVIEW_QUESTION.id]: [
+        'AY에게 수정 요청',
+        revision.feedback,
+        `replacement requestKey: ${revision.proposal.context.requestKey}`,
       ],
     },
   }

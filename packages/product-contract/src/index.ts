@@ -112,6 +112,7 @@ export type ProductBootstrap = {
 }
 
 export const PRODUCT_JSON_ENVELOPE_MAX_BYTES = 16 * 1024
+export const PRODUCT_REVIEW_FEEDBACK_MAX_BYTES = 8 * 1024
 export const FIRST_ASSIGNMENT_RECIPE_VERSION = '1'
 export const FIRST_ASSIGNMENT_ARGUMENTS = { timezone: 'Asia/Seoul' } as const
 
@@ -136,11 +137,18 @@ export type CreateProductCourseRequest = {
   readonly displayName: string
 }
 
-export type ProductReviewRequest = {
-  readonly patchId: string
-  readonly decisionKey: string
-  readonly decision: 'accept' | 'reject'
-}
+export type ProductReviewRequest =
+  | {
+      readonly patchId: string
+      readonly decisionKey: string
+      readonly decision: 'accept' | 'reject'
+    }
+  | {
+      readonly patchId: string
+      readonly decisionKey: string
+      readonly decision: 'revise'
+      readonly feedback: string
+    }
 
 export type ProductInteractionAnswerRequest = {
   readonly answers: Readonly<Record<string, readonly string[]>>
@@ -165,14 +173,31 @@ export type ProductMaterialPreview = {
   readonly truncated: boolean
 }
 
-export type ProductReviewResponse = {
-  readonly patchId: string
-  readonly decisionKey: string
-  readonly decision: 'accepted' | 'rejected'
-  readonly outcome: 'applied' | 'not_applied'
-  readonly confirmedRevision: number
-  readonly replayed: boolean
-}
+export type ProductReviewResponse =
+  | {
+      readonly patchId: string
+      readonly decisionKey: string
+      readonly decision: 'accepted'
+      readonly outcome: 'applied'
+      readonly confirmedRevision: number
+      readonly replayed: boolean
+    }
+  | {
+      readonly patchId: string
+      readonly decisionKey: string
+      readonly decision: 'rejected'
+      readonly outcome: 'not_applied'
+      readonly confirmedRevision: number
+      readonly replayed: boolean
+    }
+  | {
+      readonly patchId: string
+      readonly decisionKey: string
+      readonly decision: 'revision_requested'
+      readonly outcome: 'replacement_pending'
+      readonly confirmedRevision: number
+      readonly replayed: boolean
+    }
 
 export type ProductError = {
   readonly code: string
@@ -285,6 +310,19 @@ export type ProductOperationFrame =
       readonly questions: readonly ProductQuestion[]
     })
   | (ProductFrameBase & {
+      readonly type: 'review.replaced'
+      readonly interactionId: string
+      readonly patchId: string
+      readonly decisionKey: string
+      readonly patch: ProductStatePatch
+      readonly questions: readonly ProductQuestion[]
+      readonly replaces: {
+        readonly interactionId: string
+        readonly patchId: string
+        readonly decisionKey: string
+      }
+    })
+  | (ProductFrameBase & {
       readonly type: 'interaction.resolved'
       readonly interactionId: string
       readonly resolution: 'answered' | 'cancelled'
@@ -294,7 +332,7 @@ export type ProductOperationFrame =
       readonly interactionId: string
       readonly patchId: string
       readonly decisionKey: string
-      readonly resolution: 'answered' | 'cancelled'
+      readonly outcome: 'accepted' | 'revised' | 'rejected' | 'cancelled'
     })
   | (ProductFrameBase & { readonly type: 'interrupt.acknowledged' })
   | (ProductFrameBase & {
@@ -399,11 +437,37 @@ export function decodeProductReviewRequest(
   value: unknown,
 ): ProductReviewRequest {
   if (
-    !isExactObject(value, ['decision', 'decisionKey', 'patchId']) ||
+    !isRecord(value) ||
     !isPatchId(value.patchId) ||
     !isDecisionKey(value.decisionKey) ||
-    (value.decision !== 'accept' && value.decision !== 'reject') ||
     !hasValidJsonEnvelope(value)
+  ) {
+    throw invalidContract()
+  }
+  if (value.decision === 'revise') {
+    if (
+      !isExactObject(value, [
+        'decision',
+        'decisionKey',
+        'feedback',
+        'patchId',
+      ]) ||
+      typeof value.feedback !== 'string' ||
+      value.feedback.trim().length === 0 ||
+      utf8Bytes(value.feedback) > PRODUCT_REVIEW_FEEDBACK_MAX_BYTES
+    ) {
+      throw invalidContract()
+    }
+    return {
+      patchId: value.patchId,
+      decisionKey: value.decisionKey,
+      decision: 'revise',
+      feedback: value.feedback,
+    }
+  }
+  if (
+    !isExactObject(value, ['decision', 'decisionKey', 'patchId']) ||
+    (value.decision !== 'accept' && value.decision !== 'reject')
   ) {
     throw invalidContract()
   }
@@ -513,21 +577,34 @@ export function decodeProductReviewResponse(
     ]) ||
     !isPatchId(value.patchId) ||
     !isDecisionKey(value.decisionKey) ||
-    (value.decision !== 'accepted' && value.decision !== 'rejected') ||
-    (value.outcome !== 'applied' && value.outcome !== 'not_applied') ||
     !isRevision(value.confirmedRevision) ||
     typeof value.replayed !== 'boolean'
   ) {
     throw invalidContract()
   }
-  return {
+  const binding = {
     patchId: value.patchId,
     decisionKey: value.decisionKey,
-    decision: value.decision,
-    outcome: value.outcome,
     confirmedRevision: value.confirmedRevision,
     replayed: value.replayed,
   }
+  if (value.decision === 'accepted' && value.outcome === 'applied') {
+    return { ...binding, decision: 'accepted', outcome: 'applied' }
+  }
+  if (value.decision === 'rejected' && value.outcome === 'not_applied') {
+    return { ...binding, decision: 'rejected', outcome: 'not_applied' }
+  }
+  if (
+    value.decision === 'revision_requested' &&
+    value.outcome === 'replacement_pending'
+  ) {
+    return {
+      ...binding,
+      decision: 'revision_requested',
+      outcome: 'replacement_pending',
+    }
+  }
+  throw invalidContract()
 }
 
 export function decodeProductError(value: unknown): ProductError {
@@ -646,6 +723,37 @@ export function decodeProductOperationFrame(
       }
       decodeProductQuestions(value.questions)
       break
+    case 'review.replaced':
+      requireExact(value, [
+        'decisionKey',
+        'interactionId',
+        'operationId',
+        'patch',
+        'patchId',
+        'questions',
+        'replaces',
+        'type',
+      ])
+      if (
+        !isProductInteractionId(value.interactionId) ||
+        !isPatchId(value.patchId) ||
+        !isDecisionKey(value.decisionKey) ||
+        !isExactObject(value.replaces, [
+          'decisionKey',
+          'interactionId',
+          'patchId',
+        ]) ||
+        !isProductInteractionId(value.replaces.interactionId) ||
+        !isPatchId(value.replaces.patchId) ||
+        !isDecisionKey(value.replaces.decisionKey)
+      ) {
+        throw invalidContract()
+      }
+      if (decodeProductStatePatch(value.patch).id !== value.patchId) {
+        throw invalidContract()
+      }
+      decodeProductQuestions(value.questions)
+      break
     case 'interaction.resolved':
       requireExact(value, [
         'interactionId',
@@ -664,16 +772,16 @@ export function decodeProductOperationFrame(
       requireExact(value, [
         'decisionKey',
         'interactionId',
+        'outcome',
         'operationId',
         'patchId',
-        'resolution',
         'type',
       ])
       if (
         !isProductInteractionId(value.interactionId) ||
         !isPatchId(value.patchId) ||
         !isDecisionKey(value.decisionKey) ||
-        !isProductResolution(value.resolution)
+        !isProductReviewOutcome(value.outcome)
       ) {
         throw invalidContract()
       }
@@ -1358,6 +1466,17 @@ function isProductResolution(
   value: unknown,
 ): value is 'answered' | 'cancelled' {
   return value === 'answered' || value === 'cancelled'
+}
+
+function isProductReviewOutcome(
+  value: unknown,
+): value is 'accepted' | 'revised' | 'rejected' | 'cancelled' {
+  return (
+    value === 'accepted' ||
+    value === 'revised' ||
+    value === 'rejected' ||
+    value === 'cancelled'
+  )
 }
 
 function isActivityId(value: unknown): value is string {

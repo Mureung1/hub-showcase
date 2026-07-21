@@ -9,10 +9,14 @@ import {
   Clock3,
   FileText,
   MessageCircle,
+  Pencil,
   Send,
   Sparkles,
   Square,
+  X,
 } from 'lucide-react'
+
+import { PRODUCT_REVIEW_FEEDBACK_MAX_BYTES } from '@ay-ple/product-contract'
 
 import type {
   ProductAccountReadiness,
@@ -127,14 +131,23 @@ export function ProductChatDock({
                   controller.state.activeOperation?.interaction
                 }
                 clarificationResponseEnabled={
-                  canRespondToCurrentClarification(controller.state)
+                  canRespondToCurrentClarification(controller.state) &&
+                  controller.responsePending === undefined
                 }
                 reviewResponseEnabled={
-                  canRespondToCurrentReview(controller.state)
+                  canRespondToCurrentReview(controller.state) &&
+                  controller.responsePending === undefined
                 }
-                responsePendingId={controller.responsePendingId}
+                responsePendingId={controller.responsePending?.interactionId}
+                reviewPendingDecision={
+                  controller.responsePending?.type === 'review'
+                    ? controller.responsePending.decision
+                    : undefined
+                }
                 materials={materials}
                 onAccept={controller.acceptReview}
+                onRevise={controller.reviseReview}
+                onReject={controller.rejectReview}
                 onAnswer={controller.answerClarification}
                 onCancel={controller.cancelClarification}
                 onNavigateEvidence={onNavigateEvidence}
@@ -349,8 +362,11 @@ function ProductTranscriptRow({
   clarificationResponseEnabled,
   reviewResponseEnabled,
   responsePendingId,
+  reviewPendingDecision,
   materials,
   onAccept,
+  onRevise,
+  onReject,
   onAnswer,
   onCancel,
   onNavigateEvidence,
@@ -361,8 +377,18 @@ function ProductTranscriptRow({
   readonly clarificationResponseEnabled: boolean
   readonly reviewResponseEnabled: boolean
   readonly responsePendingId: string | undefined
+  readonly reviewPendingDecision:
+    | 'accept'
+    | 'revise'
+    | 'reject'
+    | undefined
   readonly materials: readonly ProductRawMaterial[]
   readonly onAccept: (review: ProductReviewBinding) => Promise<void>
+  readonly onRevise: (
+    review: ProductReviewBinding,
+    feedback: string,
+  ) => Promise<void>
+  readonly onReject: (review: ProductReviewBinding) => Promise<void>
   readonly onAnswer: ProductChatController['answerClarification']
   readonly onCancel: ProductChatController['cancelClarification']
   readonly onNavigateEvidence: (focus: ProductEvidenceFocus) => void
@@ -460,8 +486,15 @@ function ProductTranscriptRow({
           active={active}
           responseEnabled={reviewResponseEnabled}
           pending={responsePendingId === entry.interactionId}
+          pendingDecision={
+            responsePendingId === entry.interactionId
+              ? reviewPendingDecision
+              : undefined
+          }
           materials={materials}
           onAccept={onAccept}
+          onRevise={onRevise}
+          onReject={onReject}
           onNavigateEvidence={onNavigateEvidence}
         />
       </li>
@@ -491,30 +524,54 @@ function ReviewCard({
   active,
   responseEnabled,
   pending,
+  pendingDecision,
   materials,
   onAccept,
+  onRevise,
+  onReject,
   onNavigateEvidence,
 }: {
   readonly review: Extract<ProductTranscriptEntry, { readonly kind: 'review' }>
   readonly active: boolean
   readonly responseEnabled: boolean
   readonly pending: boolean
+  readonly pendingDecision: 'accept' | 'revise' | 'reject' | undefined
   readonly materials: readonly ProductRawMaterial[]
   readonly onAccept: (review: ProductReviewBinding) => Promise<void>
+  readonly onRevise: (
+    review: ProductReviewBinding,
+    feedback: string,
+  ) => Promise<void>
+  readonly onReject: (review: ProductReviewBinding) => Promise<void>
   readonly onNavigateEvidence: (focus: ProductEvidenceFocus) => void
 }) {
+  const [feedback, setFeedback] = useState('')
+  const feedbackBytes = utf8Bytes(feedback)
+  const feedbackValid =
+    feedback.trim().length > 0 &&
+    feedbackBytes <= PRODUCT_REVIEW_FEEDBACK_MAX_BYTES
   const reviewStatus =
-    review.resolution === 'answered'
+    review.outcome === 'accepted'
       ? '검토 완료'
-      : review.resolution === 'cancelled'
-        ? '검토 종료'
-        : '검토 대기'
+      : review.outcome === 'revised'
+        ? '수정 요청됨'
+        : review.outcome === 'rejected'
+          ? '거절됨'
+          : review.outcome === 'cancelled'
+            ? '검토 종료'
+            : '검토 대기'
+  const badgeClass =
+    review.outcome === undefined
+      ? 'is-pending'
+      : review.outcome === 'rejected' || review.outcome === 'cancelled'
+        ? 'is-rejected'
+        : review.outcome === 'revised'
+          ? 'is-revised'
+          : 'is-applied'
   return (
     <section className="review-card" aria-label={reviewStatus}>
       <header>
-        <span
-          className={`state-badge ${review.resolution ? 'is-applied' : 'is-pending'}`}
-        >
+        <span className={`state-badge ${badgeClass}`}>
           {reviewStatus}
         </span>
         <strong>변경 제안</strong>
@@ -544,26 +601,101 @@ function ReviewCard({
         materials={materials}
         onNavigateEvidence={onNavigateEvidence}
       />
-      {review.resolution ? (
+      {review.outcome ? (
         <div className="review-resolution">
-          <Check size={15} />
-          {review.resolution === 'answered'
-            ? '검토 응답을 전달했습니다.'
-            : '검토가 종료되었습니다.'}
+          {review.outcome === 'rejected' ? <X size={15} /> : <Check size={15} />}
+          {reviewOutcomeCopy(review.outcome)}
         </div>
       ) : active ? (
-        <button
-          className="accept-review-button"
-          type="button"
-          disabled={pending || !responseEnabled}
-          onClick={() => void onAccept(review)}
-        >
-          {pending ? <Clock3 className="spinning-icon" size={15} /> : <Check size={15} />}
-          {pending ? '반영 결과 확인 중' : '수락'}
-        </button>
+        <div className="review-controls">
+          <label
+            className="review-feedback"
+            htmlFor={`review-feedback-${review.interactionId}`}
+          >
+            수정 요청 내용
+            <textarea
+              id={`review-feedback-${review.interactionId}`}
+              value={feedback}
+              rows={3}
+              maxLength={PRODUCT_REVIEW_FEEDBACK_MAX_BYTES}
+              disabled={pending || !responseEnabled}
+              aria-describedby={`review-feedback-limit-${review.interactionId}`}
+              onChange={(event) => setFeedback(event.target.value)}
+            />
+          </label>
+          <span
+            id={`review-feedback-limit-${review.interactionId}`}
+            className={`review-feedback-limit ${
+              feedbackBytes > PRODUCT_REVIEW_FEEDBACK_MAX_BYTES ? 'is-over' : ''
+            }`}
+          >
+            수정 요청은 {PRODUCT_REVIEW_FEEDBACK_MAX_BYTES.toLocaleString()}{' '}
+            bytes까지 입력할 수 있어요.
+          </span>
+          <div className="review-actions">
+            <button
+              className="accept-review-button"
+              type="button"
+              disabled={pending || !responseEnabled}
+              onClick={() => void onAccept(review)}
+            >
+              {pendingDecision === 'accept' ? (
+                <Clock3 className="spinning-icon" size={15} />
+              ) : (
+                <Check size={15} />
+              )}
+              {pendingDecision === 'accept' ? '반영 결과 확인 중' : '수락'}
+            </button>
+            <button
+              className="revise-review-button"
+              type="button"
+              disabled={pending || !responseEnabled || !feedbackValid}
+              onClick={() => void onRevise(review, feedback)}
+            >
+              {pendingDecision === 'revise' ? (
+                <Clock3 className="spinning-icon" size={15} />
+              ) : (
+                <Pencil size={15} />
+              )}
+              {pendingDecision === 'revise'
+                ? '수정 요청 전달 중'
+                : 'AY에게 수정 요청'}
+            </button>
+            <button
+              className="reject-review-button"
+              type="button"
+              disabled={pending || !responseEnabled}
+              onClick={() => void onReject(review)}
+            >
+              {pendingDecision === 'reject' ? (
+                <Clock3 className="spinning-icon" size={15} />
+              ) : (
+                <X size={15} />
+              )}
+              {pendingDecision === 'reject' ? '거절 처리 중' : '거절'}
+            </button>
+          </div>
+        </div>
       ) : null}
     </section>
   )
+}
+
+function reviewOutcomeCopy(
+  outcome: NonNullable<
+    Extract<ProductTranscriptEntry, { readonly kind: 'review' }>['outcome']
+  >,
+): string {
+  if (outcome === 'accepted') return '검토 응답을 전달했습니다.'
+  if (outcome === 'revised') {
+    return '수정 요청을 전달했습니다. 새 변경 제안을 기다립니다.'
+  }
+  if (outcome === 'rejected') return '변경 제안을 반영하지 않았습니다.'
+  return '검토가 종료되었습니다.'
+}
+
+function utf8Bytes(value: string): number {
+  return new TextEncoder().encode(value).byteLength
 }
 
 function ClarificationCard({

@@ -34,6 +34,10 @@ const agentActivityId = `activity_${'f'.repeat(32)}`
 const interactionId = `interaction_${'1'.repeat(32)}`
 const decisionKey = `decision_${'2'.repeat(32)}`
 const patchId = `patch_${'3'.repeat(32)}`
+const replacementInteractionId = `interaction_${'9'.repeat(32)}`
+const replacementDecisionKey = `decision_${'a'.repeat(32)}`
+const replacementPatchId = `patch_${'b'.repeat(32)}`
+const replacementActivityId = `activity_${'c'.repeat(32)}`
 const questionId = `question_${'4'.repeat(32)}`
 const noticeMaterial = {
   id: `material_${'5'.repeat(32)}`,
@@ -559,7 +563,7 @@ test('keeps a Review resolution in stopping until terminal settlement', () => {
   const review = state.transcript.find((entry) => entry.kind === 'review')
   assert.equal(review?.kind, 'review')
   if (review?.kind === 'review') {
-    assert.equal(review.resolution, 'answered')
+    assert.equal(review.outcome, 'accepted')
   }
 
   state = applyFrames(state, [assignmentTerminal('interrupted', 'unknown')])
@@ -649,7 +653,7 @@ test('settles Review only when operation, interaction, patch, and decision bindi
       interactionId,
       patchId,
       decisionKey: `decision_${'a'.repeat(32)}`,
-      resolution: 'answered',
+      outcome: 'accepted',
     },
   })
   assert.equal(state.phase, 'stream-failed')
@@ -662,7 +666,7 @@ test('settles Review only when operation, interaction, patch, and decision bindi
       interactionId,
       patchId,
       decisionKey,
-      resolution: 'answered',
+      outcome: 'accepted',
     },
     {
       type: 'agent_message.completed',
@@ -680,6 +684,107 @@ test('settles Review only when operation, interaction, patch, and decision bindi
   ])
   state = reduceProductChatState(state, { type: 'operation.stream-ended' })
   assert.equal(state.phase, 'completed')
+})
+
+test('replaces one revised Review with one exact pending Review', () => {
+  let state = pendingReviewState()
+  state = applyFrames(state, [
+    {
+      type: 'review.resolved',
+      operationId: actionId,
+      interactionId,
+      patchId,
+      decisionKey,
+      outcome: 'revised',
+    },
+    {
+      type: 'mcp_call.started',
+      operationId: actionId,
+      activityId: replacementActivityId,
+      tool: 'propose_state_patch',
+    },
+    {
+      type: 'mcp_call.completed',
+      operationId: actionId,
+      activityId: replacementActivityId,
+      tool: 'propose_state_patch',
+      patch: replacementPatch(),
+    },
+    {
+      type: 'review.replaced',
+      operationId: actionId,
+      interactionId: replacementInteractionId,
+      patchId: replacementPatchId,
+      decisionKey: replacementDecisionKey,
+      patch: replacementPatch(),
+      questions: [],
+      replaces: { interactionId, patchId, decisionKey },
+    },
+  ])
+
+  assert.equal(state.phase, 'awaiting-review')
+  assert.deepEqual(state.activeOperation?.review, {
+    operationId: actionId,
+    interactionId: replacementInteractionId,
+    patchId: replacementPatchId,
+    decisionKey: replacementDecisionKey,
+    patch: replacementPatch(),
+    questions: [],
+  })
+  const reviews = state.transcript.filter((entry) => entry.kind === 'review')
+  assert.equal(reviews.length, 2)
+  assert.equal(reviews[0]?.kind, 'review')
+  if (reviews[0]?.kind === 'review') {
+    assert.equal(reviews[0].outcome, 'revised')
+  }
+  assert.equal(reviews[1]?.kind, 'review')
+  if (reviews[1]?.kind === 'review') {
+    assert.equal(reviews[1].patch.id, replacementPatchId)
+    assert.equal(reviews[1].outcome, undefined)
+  }
+})
+
+test('fails closed when a replacement does not name the exact revised Review', () => {
+  let state = pendingReviewState()
+  state = applyFrames(state, [
+    {
+      type: 'review.resolved',
+      operationId: actionId,
+      interactionId,
+      patchId,
+      decisionKey,
+      outcome: 'revised',
+    },
+    {
+      type: 'mcp_call.started',
+      operationId: actionId,
+      activityId: replacementActivityId,
+      tool: 'propose_state_patch',
+    },
+    {
+      type: 'mcp_call.completed',
+      operationId: actionId,
+      activityId: replacementActivityId,
+      tool: 'propose_state_patch',
+      patch: replacementPatch(),
+    },
+    {
+      type: 'review.replaced',
+      operationId: actionId,
+      interactionId: replacementInteractionId,
+      patchId: replacementPatchId,
+      decisionKey: replacementDecisionKey,
+      patch: replacementPatch(),
+      questions: [],
+      replaces: {
+        interactionId,
+        patchId,
+        decisionKey: `decision_${'f'.repeat(32)}`,
+      },
+    },
+  ])
+
+  assertInvalidProductStream(state)
 })
 
 function acceptedAssignmentState() {
@@ -817,7 +922,7 @@ function reviewResolved(): ProductOperationFrame {
     interactionId,
     patchId,
     decisionKey,
-    resolution: 'answered',
+    outcome: 'accepted',
   }
 }
 
@@ -879,5 +984,25 @@ function assignmentPatch(): ProductStatePatch {
       },
     ],
     status: 'pending',
+  }
+}
+
+function replacementPatch(): ProductStatePatch {
+  return {
+    ...assignmentPatch(),
+    id: replacementPatchId,
+    summary: '수정 요청을 반영해 마감을 다시 확인했습니다.',
+    changes: {
+      ...assignmentPatch().changes,
+      values: {
+        ...assignmentPatch().changes.values,
+        dueAt: '2026-07-13T23:59:00+09:00',
+      },
+    },
+    evidence: assignmentPatch().evidence.map((evidence) =>
+      evidence.field === 'dueAt'
+        ? { ...evidence, quote: '2026-07-13T23:59:00+09:00' }
+        : evidence,
+    ),
   }
 }

@@ -100,7 +100,7 @@ export type ProductTranscriptEntry =
       })
   | ({ readonly kind: 'review' } &
       ProductReviewBinding & {
-        readonly resolution?: 'answered' | 'cancelled'
+        readonly outcome?: 'accepted' | 'revised' | 'rejected' | 'cancelled'
       })
   | {
       readonly kind: 'notice'
@@ -497,6 +497,7 @@ function reduceProductFrame(
     if (
       active.interaction ||
       active.review ||
+      state.transcript.some((entry) => entry.kind === 'review') ||
       !validReviewPatch(frame.patch, active.materials) ||
       !hasMatchingCompletedMcp(state.transcript, frame.patchId)
     ) {
@@ -515,6 +516,55 @@ function reduceProductFrame(
       ...state,
       phase: nextStage,
       transcript: [...state.transcript, { kind: 'review', ...review }],
+      activeOperation: { ...active, stage: nextStage, review },
+    }
+  }
+
+  if (frame.type === 'review.replaced') {
+    const replacedReviewIndex = state.transcript.findLastIndex(
+      (entry) => entry.kind === 'review',
+    )
+    const replacedReview = state.transcript[replacedReviewIndex]
+    if (
+      active.interaction ||
+      active.review ||
+      replacedReview?.kind !== 'review' ||
+      replacedReview.outcome !== 'revised' ||
+      replacedReview.operationId !== frame.operationId ||
+      replacedReview.interactionId !== frame.replaces.interactionId ||
+      replacedReview.patchId !== frame.replaces.patchId ||
+      replacedReview.decisionKey !== frame.replaces.decisionKey ||
+      frame.interactionId === frame.replaces.interactionId ||
+      frame.patchId === frame.replaces.patchId ||
+      frame.decisionKey === frame.replaces.decisionKey ||
+      !validReviewPatch(frame.patch, active.materials) ||
+      !hasMatchingCompletedMcp(state.transcript, frame.patchId)
+    ) {
+      return invalidStream(state)
+    }
+    const review: ProductReviewBinding = {
+      operationId: frame.operationId,
+      interactionId: frame.interactionId,
+      patchId: frame.patchId,
+      decisionKey: frame.decisionKey,
+      patch: clonePatch(frame.patch),
+      questions: frame.questions.map(cloneQuestion),
+    }
+    const nextStage = stagePreservingStop(active, 'awaiting-review')
+    return {
+      ...state,
+      phase: nextStage,
+      transcript: [
+        ...state.transcript.map((entry, index) =>
+          index === replacedReviewIndex && entry.kind === 'review'
+            ? {
+                ...entry,
+                patch: { ...entry.patch, status: 'superseded' as const },
+              }
+            : entry,
+        ),
+        { kind: 'review', ...review },
+      ],
       activeOperation: { ...active, stage: nextStage, review },
     }
   }
@@ -566,7 +616,7 @@ function reduceProductFrame(
         entry.interactionId === frame.interactionId &&
         entry.patchId === frame.patchId &&
         entry.decisionKey === frame.decisionKey
-          ? { ...entry, resolution: frame.resolution }
+          ? { ...entry, outcome: frame.outcome }
           : entry,
       ),
       activeOperation: { ...active, stage: nextStage, review: undefined },

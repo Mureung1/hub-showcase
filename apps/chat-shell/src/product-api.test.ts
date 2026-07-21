@@ -9,6 +9,7 @@ import {
   ProductStreamError,
   refreshProductMaterials,
   streamProductChat,
+  submitProductReview,
 } from './product-api.js'
 
 test('decodes a ready product snapshot without persistence metadata', async (t) => {
@@ -378,6 +379,70 @@ test('product Chat sends the shared request and decodes only closed frames', asy
   )
 
   assert.deepEqual(received, frames)
+})
+
+test('submits exact accept, revise feedback, and reject Review requests', async (t) => {
+  const interactionId = `interaction_${'a'.repeat(32)}`
+  const patchId = `patch_${'b'.repeat(32)}`
+  const decisionKey = `decision_${'c'.repeat(32)}`
+  const requests = [
+    { patchId, decisionKey, decision: 'accept' },
+    {
+      patchId,
+      decisionKey,
+      decision: 'revise',
+      feedback: '마감을 7월 13일 23:59로 바꿔 주세요.',
+    },
+    { patchId, decisionKey, decision: 'reject' },
+  ] as const
+  const responses = [
+    {
+      patchId,
+      decisionKey,
+      decision: 'accepted',
+      outcome: 'applied',
+      confirmedRevision: 1,
+      replayed: false,
+    },
+    {
+      patchId,
+      decisionKey,
+      decision: 'revision_requested',
+      outcome: 'replacement_pending',
+      confirmedRevision: 0,
+      replayed: false,
+    },
+    {
+      patchId,
+      decisionKey,
+      decision: 'rejected',
+      outcome: 'not_applied',
+      confirmedRevision: 0,
+      replayed: false,
+    },
+  ] as const
+  let requestIndex = 0
+  t.mock.method(globalThis, 'fetch', async (
+    input: string | URL | Request,
+    init?: RequestInit,
+  ) => {
+    assert.equal(input, `/api/product/reviews/${interactionId}`)
+    assert.deepEqual(JSON.parse(String(init?.body)), requests[requestIndex])
+    const response = responses[requestIndex]
+    requestIndex += 1
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  })
+
+  for (let index = 0; index < requests.length; index += 1) {
+    assert.deepEqual(
+      await submitProductReview(interactionId, requests[index]!),
+      responses[index],
+    )
+  }
+  assert.equal(requestIndex, requests.length)
 })
 
 test('product stream rejects private native fields', async (t) => {

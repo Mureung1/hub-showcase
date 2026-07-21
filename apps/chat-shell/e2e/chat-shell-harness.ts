@@ -270,9 +270,16 @@ async function cleanupHarnessResources({
 
 type PendingInteraction = {
   readonly turnId: string
-  readonly settlement: Deferred<'answered' | 'cancelled'>
+  readonly settlement: Deferred<PendingInteractionSettlement>
   readonly acknowledged: Deferred<void>
 }
+
+type PendingInteractionSettlement =
+  | {
+      readonly resolution: 'answered'
+      readonly answers: AnswerUserInput['answers']
+    }
+  | { readonly resolution: 'cancelled' }
 
 class ProductE2eRuntime implements CodexProductCapableRuntime {
   readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
@@ -332,7 +339,10 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
       input: structuredClone(input),
     })
     const pending = this.requirePending(input.interactionId)
-    pending.settlement.resolve('answered')
+    pending.settlement.resolve({
+      resolution: 'answered',
+      answers: structuredClone(input.answers),
+    })
     await pending.acknowledged.promise
   }
 
@@ -342,7 +352,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
       input: structuredClone(input),
     })
     const pending = this.requirePending(input.interactionId)
-    pending.settlement.resolve('cancelled')
+    pending.settlement.resolve({ resolution: 'cancelled' })
     await pending.acknowledged.promise
   }
 
@@ -352,7 +362,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     this.interruptObserved.resolve()
     for (const pending of this.pendingInteractions.values()) {
       if (pending.turnId === input.turnId) {
-        pending.settlement.resolve('cancelled')
+        pending.settlement.resolve({ resolution: 'cancelled' })
       }
     }
     if (this.acknowledgedInterruptResponseLoss) {
@@ -367,7 +377,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     this.interruptResponseReleased.resolve()
     this.lateInteractionReleased.resolve()
     for (const pending of this.pendingInteractions.values()) {
-      pending.settlement.resolve('cancelled')
+      pending.settlement.resolve({ resolution: 'cancelled' })
     }
     await Promise.all([...this.activeTurns].map((turn) => turn.promise))
   }
@@ -409,6 +419,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     const interruptObserved = this.interruptObserved.promise
     const lateInteractionReleased = this.lateInteractionReleased.promise
     const interactionId = `interaction-review-${this.turnOrdinal}`
+    const replacementInteractionId = `${interactionId}-replacement`
     return {
       threadId: input.threadId,
       turnId,
@@ -440,7 +451,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           itemId: `mcp-private-${turnId}`,
           tool: 'propose_state_patch',
         }
-        await callProposalTool(input)
+        await callProposalTool(input.text)
         yield {
           type: 'mcp_call.completed',
           threadId: input.threadId,
@@ -467,16 +478,16 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
         }
         if (acknowledgedInterruptResponseLoss) {
           await lateInteractionReleased
-          pending.settlement.resolve('cancelled')
+          pending.settlement.resolve({ resolution: 'cancelled' })
         }
-        const resolution = await pending.settlement.promise
+        const firstSettlement = await pending.settlement.promise
         yield {
           type: 'user_input.resolved',
           threadId: input.threadId,
           turnId,
           itemId: `review-private-${turnId}`,
           interactionId,
-          resolution,
+          resolution: firstSettlement.resolution,
         }
         acknowledge(interactionId)
         if (wasInterrupted(turnId)) {
@@ -488,12 +499,71 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           }
           return
         }
+        let finalChoice = assignmentReviewChoice(firstSettlement)
+        if (finalChoice.type === 'revise') {
+          yield {
+            type: 'mcp_call.started',
+            threadId: input.threadId,
+            turnId,
+            itemId: `mcp-replacement-private-${turnId}`,
+            tool: 'propose_state_patch',
+          }
+          await callProposalTool(input.text, {
+            requestKey: finalChoice.requestKey,
+            summary: '수정 요청을 반영해 제출 방식을 다시 정리했습니다.',
+            submissionMethod: 'LMS',
+          })
+          yield {
+            type: 'mcp_call.completed',
+            threadId: input.threadId,
+            turnId,
+            itemId: `mcp-replacement-private-${turnId}`,
+            tool: 'propose_state_patch',
+          }
+          const replacementPending = createPending(
+            replacementInteractionId,
+            turnId,
+          )
+          yield {
+            type: 'user_input.requested',
+            threadId: input.threadId,
+            turnId,
+            itemId: `review-replacement-private-${turnId}`,
+            interactionId: replacementInteractionId,
+            questions: [assignmentReviewQuestion],
+          }
+          const replacementSettlement =
+            await replacementPending.settlement.promise
+          yield {
+            type: 'user_input.resolved',
+            threadId: input.threadId,
+            turnId,
+            itemId: `review-replacement-private-${turnId}`,
+            interactionId: replacementInteractionId,
+            resolution: replacementSettlement.resolution,
+          }
+          acknowledge(replacementInteractionId)
+          if (wasInterrupted(turnId)) {
+            yield {
+              type: 'turn.completed',
+              threadId: input.threadId,
+              turnId,
+              status: 'interrupted',
+            }
+            return
+          }
+          finalChoice = assignmentReviewChoice(replacementSettlement)
+          assert.notEqual(finalChoice.type, 'revise')
+        }
         yield {
           type: 'agent_message.completed',
           threadId: input.threadId,
           turnId,
           itemId: `agent-private-${turnId}`,
-          text: '확인한 과제 정보를 학기 작업공간에 반영했습니다.',
+          text:
+            finalChoice.type === 'accept'
+              ? '확인한 과제 정보를 학기 작업공간에 반영했습니다.'
+              : '변경 제안을 학기 작업공간에 반영하지 않았습니다.',
         }
         yield {
           type: 'turn.completed',
@@ -547,16 +617,16 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
         }
         if (acknowledgedInterruptResponseLoss) {
           await lateInteractionReleased
-          pending.settlement.resolve('cancelled')
+          pending.settlement.resolve({ resolution: 'cancelled' })
         }
-        const resolution = await pending.settlement.promise
+        const settlement = await pending.settlement.promise
         yield {
           type: 'user_input.resolved',
           threadId: input.threadId,
           turnId,
           itemId: `question-private-${turnId}`,
           interactionId,
-          resolution,
+          resolution: settlement.resolution,
         }
         acknowledge(interactionId)
         if (wasInterrupted(turnId)) {
@@ -574,7 +644,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           turnId,
           itemId: `agent-private-${turnId}`,
           text:
-            resolution === 'answered'
+            settlement.resolution === 'answered'
               ? '답변을 바탕으로 준비 순서를 정리했습니다.'
               : '질문을 취소하고 현재 정보만으로 정리했습니다.',
         }
@@ -588,7 +658,10 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     }
   }
 
-  private async callProposalTool(input: StartProductTurnInput): Promise<void> {
+  private async callProposalTool(
+    text: string,
+    overrides?: ProposalOverrides,
+  ): Promise<void> {
     const threadInput = this.threadInputs[0]
     assert.ok(threadInput)
     const response = await fetch(threadInput.mcp.url, {
@@ -603,7 +676,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
         method: 'tools/call',
         params: {
           name: 'propose_state_patch',
-          arguments: proposalFromAssignmentInput(input.text),
+          arguments: proposalFromAssignmentInput(text, overrides),
         },
       }),
     })
@@ -620,7 +693,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
   ): PendingInteraction {
     const pending = {
       turnId,
-      settlement: deferred<'answered' | 'cancelled'>(),
+      settlement: deferred<PendingInteractionSettlement>(),
       acknowledged: deferred<void>(),
     }
     this.pendingInteractions.set(interactionId, pending)
@@ -678,24 +751,65 @@ const generalQuestion = {
   acceptsFreeform: true,
 } as const
 
-function proposalFromAssignmentInput(text: string): Record<string, unknown> {
+type ProposalOverrides = {
+  readonly requestKey: string
+  readonly summary: string
+  readonly submissionMethod: string
+}
+
+type AssignmentReviewChoice =
+  | { readonly type: 'accept' | 'reject' | 'cancelled' }
+  | {
+      readonly type: 'revise'
+      readonly feedback: string
+      readonly requestKey: string
+    }
+
+function assignmentReviewChoice(
+  settlement: PendingInteractionSettlement,
+): AssignmentReviewChoice {
+  if (settlement.resolution === 'cancelled') return { type: 'cancelled' }
+  const values = settlement.answers[assignmentReviewQuestion.id]
+  assert.ok(values)
+  if (values[0] === '수락') return { type: 'accept' }
+  if (values[0] === '거절') return { type: 'reject' }
+  assert.equal(values[0], 'AY에게 수정 요청')
+  assert.ok(values[1])
+  assert.ok(values[2])
+  return {
+    type: 'revise',
+    feedback: values[1],
+    requestKey: requireMatch(
+      values[2],
+      /^replacement requestKey: (proposal_[0-9a-f]{32})$/u,
+    ),
+  }
+}
+
+function proposalFromAssignmentInput(
+  text: string,
+  overrides?: ProposalOverrides,
+): Record<string, unknown> {
   const sources = [...text.matchAll(/RawMaterial (material_[0-9a-f]{32}) \(([0-9a-f]{64})\)/gu)]
   assert.equal(sources.length, 2)
   const notice = sources[0]
   const syllabus = sources[1]
   assert.ok(notice?.[1] && notice[2] && syllabus?.[1] && syllabus[2])
   return {
-    requestKey: requireMatch(text, /requestKey: (proposal_[0-9a-f]{32})/u),
+    requestKey:
+      overrides?.requestKey ??
+      requireMatch(text, /requestKey: (proposal_[0-9a-f]{32})/u),
     workspaceId: requireMatch(text, /workspaceId: (workspace_[0-9a-f]{32})/u),
     courseId: requireMatch(text, /courseId: (course_[0-9a-f]{32})/u),
     baseRevision: Number(requireMatch(text, /baseRevision: (\d+)/u)),
-    summary: '선택 자료에서 개요 작성 과제를 확인했습니다.',
+    summary:
+      overrides?.summary ?? '선택 자료에서 개요 작성 과제를 확인했습니다.',
     changes: {
       operation: 'assignment.upsert',
       values: {
         title: '개요 작성하기',
         dueAt: '2026-07-12T23:59:00+09:00',
-        submissionMethod: 'LMS 과제함 업로드',
+        submissionMethod: overrides?.submissionMethod ?? 'LMS 과제함 업로드',
       },
     },
     evidence: [

@@ -332,20 +332,49 @@ export function createProductRouter(
       return
     }
     try {
-      const commit = await productOperations.submitReview({
-        interactionId: request.params.interactionId,
-        patchId: input.patchId,
-        decisionKey: input.decisionKey,
-        decision: input.decision,
-      })
-      const body: ProductReviewResponse = {
-        patchId: commit.patch.id,
-        decisionKey: commit.binding.decisionKey,
-        decision: commit.confirmation.decision,
-        outcome: commit.confirmation.outcome,
-        confirmedRevision: commit.confirmedRevision,
-        replayed: commit.replayed,
-      }
+      const outcome = await productOperations.submitReview(
+        input.decision === 'revise'
+          ? {
+              interactionId: request.params.interactionId,
+              patchId: input.patchId,
+              decisionKey: input.decisionKey,
+              decision: 'revise',
+              feedback: input.feedback,
+            }
+          : {
+              interactionId: request.params.interactionId,
+              patchId: input.patchId,
+              decisionKey: input.decisionKey,
+              decision: input.decision,
+            },
+      )
+      const body: ProductReviewResponse =
+        outcome.type === 'revision_requested'
+          ? {
+              patchId: outcome.patch.id,
+              decisionKey: outcome.binding.decisionKey,
+              decision: 'revision_requested',
+              outcome: 'replacement_pending',
+              confirmedRevision: outcome.confirmedRevision,
+              replayed: outcome.replayed,
+            }
+          : outcome.confirmation.decision === 'accepted'
+            ? {
+                patchId: outcome.patch.id,
+                decisionKey: outcome.binding.decisionKey,
+                decision: 'accepted',
+                outcome: 'applied',
+                confirmedRevision: outcome.confirmedRevision,
+                replayed: outcome.replayed,
+              }
+            : {
+                patchId: outcome.patch.id,
+                decisionKey: outcome.binding.decisionKey,
+                decision: 'rejected',
+                outcome: 'not_applied',
+                confirmedRevision: outcome.confirmedRevision,
+                replayed: outcome.replayed,
+              }
       response.json(body)
     } catch (error) {
       sendProductOperationError(response, error)

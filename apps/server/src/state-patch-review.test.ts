@@ -459,6 +459,230 @@ test('reject records a durable no-apply decision and nominal retry does not answ
   }
 })
 
+test('revision feedback rotates the proposal key and atomically replaces the pending patch before a second Review', async () => {
+  const fixture = await createReviewFixture()
+
+  try {
+    const original = await createAndBindPatch(
+      fixture,
+      'thread-revision',
+      'turn-revision',
+      'interaction-revision-original',
+    )
+    const input = {
+      ...original.binding,
+      decision: 'revise',
+      feedback: '제출 방식에 발표 자료와 보고서를 모두 포함해 주세요.',
+    } as const
+
+    const revision = await fixture.controller.requestAssignmentReviewRevision(
+      input,
+    )
+    assert.equal(revision.replayed, false)
+    assert.equal(revision.patch.id, original.patch.id)
+    assert.notEqual(
+      revision.proposal.context.requestKey,
+      original.patch.requestKey,
+    )
+    assert.equal(revision.proposal.context.baseRevision, 0)
+    const pendingRevision = fixture.controller.assignmentState()
+    assert.equal(pendingRevision.confirmedRevision, 0)
+    assert.deepEqual(pendingRevision.assignments, [])
+    assert.deepEqual(pendingRevision.statePatches, [original.patch])
+    assert.deepEqual(pendingRevision.userConfirmations, [])
+
+    const replayed =
+      await fixture.controller.requestAssignmentReviewRevision(input)
+    assert.equal(replayed.replayed, true)
+    assert.equal(
+      replayed.proposal.context.requestKey,
+      revision.proposal.context.requestKey,
+    )
+    await assert.rejects(
+      fixture.controller.requestAssignmentReviewRevision({
+        ...input,
+        feedback: '다른 피드백으로 같은 decision key를 재사용합니다.',
+      }),
+      (error: unknown) =>
+        error instanceof StatePatchReviewError &&
+        error.code === 'review_conflict',
+    )
+    await assert.rejects(
+      fixture.controller.commitAssignmentReviewDecision({
+        ...original.binding,
+        decision: 'accept',
+      }),
+      (error: unknown) =>
+        error instanceof StatePatchReviewError &&
+        error.code === 'review_not_pending',
+    )
+
+    const replacementPayload = validPatchPayload(
+      revision.proposal.context,
+      fixture.notice,
+      fixture.syllabus,
+    )
+    const replacement = await revision.proposal.mcpTool.invoke({
+      ...replacementPayload,
+      summary: '수정 요청을 반영한 replacement Assignment 제안입니다.',
+      changes: {
+        ...replacementPayload.changes,
+        values: {
+          ...replacementPayload.changes.values,
+          submissionMethod: '발표 자료와 보고서를 LMS 과제함에 업로드',
+        },
+      },
+      evidence: replacementPayload.evidence.map((evidence) =>
+        evidence.field === 'submissionMethod'
+          ? {
+              ...evidence,
+              quote: '제출 방식: LMS 과제함 업로드',
+            }
+          : evidence,
+      ),
+    })
+    const replaced = fixture.controller.assignmentState()
+    assert.equal(replaced.confirmedRevision, 0)
+    assert.deepEqual(replaced.assignments, [])
+    assert.deepEqual(replaced.userConfirmations, [])
+    assert.equal(replaced.statePatches.length, 2)
+    assert.equal(replaced.statePatches[0]?.id, original.patch.id)
+    assert.equal(replaced.statePatches[0]?.status, 'superseded')
+    assert.equal(replaced.statePatches[1]?.id, replacement.id)
+    assert.equal(replaced.statePatches[1]?.status, 'pending')
+
+    const replacementBinding = await fixture.controller.bindAssignmentReview({
+      type: 'user_input.requested',
+      threadId: 'thread-revision',
+      turnId: 'turn-revision',
+      itemId: 'question-revision-replacement',
+      interactionId: 'interaction-revision-replacement',
+      questions: [ASSIGNMENT_REVIEW_QUESTION],
+    })
+    assert.ok(replacementBinding)
+    assert.equal(replacementBinding.patchId, replacement.id)
+    const accepted = await fixture.controller.commitAssignmentReviewDecision({
+      ...replacementBinding,
+      decision: 'accept',
+    })
+    assert.equal(accepted.confirmedRevision, 1)
+    const settled = fixture.controller.assignmentState()
+    assert.equal(settled.statePatches[0]?.status, 'superseded')
+    assert.equal(settled.statePatches[1]?.status, 'applied')
+    assert.equal(settled.userConfirmations.length, 1)
+    assert.equal(settled.userConfirmations[0]?.patchId, replacement.id)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('invalid replacement interrupts the original patch without confirmation or apply', async () => {
+  const fixture = await createReviewFixture()
+
+  try {
+    const original = await createAndBindPatch(
+      fixture,
+      'thread-invalid-revision',
+      'turn-invalid-revision',
+      'interaction-invalid-revision',
+    )
+    const revision =
+      await fixture.controller.requestAssignmentReviewRevision({
+        ...original.binding,
+        decision: 'revise',
+        feedback: '근거와 맞지 않는 값을 고쳐 주세요.',
+      })
+    const payload = validPatchPayload(
+      revision.proposal.context,
+      fixture.notice,
+      fixture.syllabus,
+    )
+
+    await assert.rejects(
+      revision.proposal.mcpTool.invoke({
+        ...payload,
+        evidence: payload.evidence.map((evidence, index) =>
+          index === 0 ? { ...evidence, quote: '원문에 없는 근거' } : evidence,
+        ),
+      }),
+      (error: unknown) =>
+        error instanceof StatePatchReviewError &&
+        error.code === 'proposal_invalid',
+    )
+    const state = fixture.controller.assignmentState()
+    assert.equal(state.confirmedRevision, 0)
+    assert.deepEqual(state.assignments, [])
+    assert.deepEqual(state.userConfirmations, [])
+    assert.equal(state.statePatches.length, 1)
+    assert.equal(state.statePatches[0]?.id, original.patch.id)
+    assert.equal(state.statePatches[0]?.status, 'interrupted')
+    await assert.rejects(
+      fixture.controller.commitAssignmentReviewDecision({
+        ...original.binding,
+        decision: 'accept',
+      }),
+      (error: unknown) =>
+        error instanceof StatePatchReviewError &&
+        error.code === 'review_not_pending',
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('native revision answer failure abandons the replacement and interrupts the original patch', async () => {
+  const fixture = await createReviewFixture()
+
+  try {
+    const original = await createAndBindPatch(
+      fixture,
+      'thread-answer-failure',
+      'turn-answer-failure',
+      'interaction-answer-failure',
+    )
+    let replacementPrepared = false
+    let replacementAbandoned = false
+    const coordinator = createAssignmentReviewCoordinator(
+      fixture.controller,
+      {
+        prepareReplacement: (proposal) => {
+          replacementPrepared = true
+          assert.notEqual(
+            proposal.context.requestKey,
+            original.patch.requestKey,
+          )
+          return () => {
+            replacementAbandoned = true
+          }
+        },
+        answerUserInput: async () => {
+          throw new Error('native answer failed')
+        },
+      },
+    )
+
+    await assert.rejects(
+      coordinator.submit({
+        ...original.binding,
+        decision: 'revise',
+        feedback: '마감 근거를 다시 확인해 주세요.',
+      }),
+      /native answer failed/,
+    )
+    assert.equal(replacementPrepared, true)
+    assert.equal(replacementAbandoned, true)
+    const state = fixture.controller.assignmentState()
+    assert.equal(state.confirmedRevision, 0)
+    assert.deepEqual(state.assignments, [])
+    assert.deepEqual(state.userConfirmations, [])
+    assert.equal(state.statePatches.length, 1)
+    assert.equal(state.statePatches[0]?.id, original.patch.id)
+    assert.equal(state.statePatches[0]?.status, 'interrupted')
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('invalid proposal shapes, evidence, values, and changed source bytes leave product state untouched', async () => {
   const fixture = await createReviewFixture()
 

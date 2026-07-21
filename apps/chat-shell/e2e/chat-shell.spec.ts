@@ -1,6 +1,9 @@
 import { expect, type Page } from 'playwright/test'
 
-import type { ProductSettledHistory } from '@ay-ple/product-contract'
+import type {
+  ProductBootstrap,
+  ProductSettledHistory,
+} from '@ay-ple/product-contract'
 
 import {
   scenarioPrompts,
@@ -37,14 +40,34 @@ test('runs the two-TXT Assignment through product Review, Accept, authoritative 
   )
   await expect(review).not.toContainText('unselected-control.txt')
   await expect(review.getByRole('button', { name: '수락' })).toBeEnabled()
-  await expect(review.getByRole('button', { name: /수정|거절/u })).toHaveCount(0)
+  const feedbackInput = review.getByRole('textbox', { name: '수정 요청 내용' })
+  await expect(feedbackInput).toBeEnabled()
+  await expect(
+    review.getByRole('button', { name: 'AY에게 수정 요청' }),
+  ).toBeDisabled()
+  await expect(review.getByRole('button', { name: '거절' })).toBeEnabled()
   const interrupt = chat.getByRole('button', { name: '작업 중단' })
   await expect(interrupt).toBeVisible()
 
   const reviewButtons = review.getByRole('button')
-  await expect(reviewButtons).toHaveCount(4)
+  await expect(reviewButtons).toHaveCount(6)
+  await feedbackInput.fill('키보드 이동 확인')
   await interrupt.focus()
-  for (let index = 0; index < 4; index += 1) {
+  for (let index = 0; index < 3; index += 1) {
+    await page.keyboard.press('Tab')
+    await expect(reviewButtons.nth(index)).toBeFocused()
+    expect(
+      await reviewButtons
+        .nth(index)
+        .evaluate((element) => element.matches(':focus-visible')),
+    ).toBe(true)
+  }
+  await page.keyboard.press('Tab')
+  await expect(feedbackInput).toBeFocused()
+  expect(await feedbackInput.evaluate((element) => element.matches(':focus-visible'))).toBe(
+    true,
+  )
+  for (let index = 3; index < 6; index += 1) {
     await page.keyboard.press('Tab')
     await expect(reviewButtons.nth(index)).toBeFocused()
     expect(
@@ -173,6 +196,141 @@ test('runs the two-TXT Assignment through product Review, Accept, authoritative 
   await expect(reloadedChat.getByText('자료와 함께 시작해 보세요')).toBeVisible()
 })
 
+test('revises the pending proposal in the same Turn and accepts its replacement', async ({
+  chatHarness,
+  chatPage: page,
+}) => {
+  await selectCanonicalMaterials(page)
+  await page
+    .getByRole('button', { name: /선택한 자료 정리하기/u })
+    .click()
+
+  const firstReview = page.getByRole('region', { name: '검토 대기' })
+  await expect(firstReview.locator('.assignment-values')).toContainText(
+    'LMS 과제함 업로드',
+  )
+  const feedback = '제출 방식을 LMS로 간단히 표시해 주세요.'
+  const bootstrapCountBeforeRevise = chatHarness
+    .requests()
+    .filter((pathname) => pathname === '/api/product/bootstrap').length
+  await firstReview.getByRole('textbox', { name: '수정 요청 내용' }).fill(feedback)
+  const reviseRequestPromise = page.waitForRequest((request) =>
+    new URL(request.url()).pathname.startsWith('/api/product/reviews/'),
+  )
+  await firstReview.getByRole('button', { name: 'AY에게 수정 요청' }).click()
+  const reviseRequest = await reviseRequestPromise
+  expect(reviseRequest.postDataJSON()).toEqual({
+    patchId: expect.any(String),
+    decisionKey: expect.any(String),
+    decision: 'revise',
+    feedback,
+  })
+
+  await expect(page.getByRole('region', { name: '수정 요청됨' })).toBeVisible()
+  const replacementReview = page.getByRole('region', { name: '검토 대기' })
+  await expect(
+    replacementReview.locator('.assignment-values').getByText('LMS', {
+      exact: true,
+    }),
+  ).toBeVisible()
+  await expect(
+    replacementReview
+      .locator('.assignment-values')
+      .getByText('LMS 과제함 업로드', { exact: true }),
+  ).toHaveCount(0)
+  await expect(operationPhase(page)).toHaveAttribute(
+    'data-product-operation-phase',
+    'awaiting-review',
+  )
+  expect(
+    chatHarness
+      .requests()
+      .filter((pathname) => pathname === '/api/product/bootstrap').length,
+  ).toBe(bootstrapCountBeforeRevise)
+  await replacementReview.getByRole('button', { name: '수락' }).click()
+
+  const settled = page.getByRole('region', { name: '반영된 과제' })
+  await expect(
+    settled.locator('.assignment-values').getByText('LMS', { exact: true }),
+  ).toBeVisible()
+  await expect(operationPhase(page)).toHaveAttribute(
+    'data-product-operation-phase',
+    'completed',
+  )
+  const bootstrap = await readProductBootstrap(page)
+  expect(bootstrap.workspace?.state).toBe('ready')
+  if (bootstrap.workspace?.state === 'ready') {
+    expect(bootstrap.workspace.confirmedRevision).toBe(1)
+  }
+  expect(bootstrap.history.statePatches.map((patch) => patch.status)).toEqual([
+    'superseded',
+    'applied',
+  ])
+  expect(bootstrap.history.userConfirmations).toHaveLength(1)
+  expect(bootstrap.history.userConfirmations[0]).toMatchObject({
+    patchId: bootstrap.history.statePatches[1]?.id,
+    decision: 'accepted',
+    outcome: 'applied',
+  })
+  expect(
+    chatHarness.calls().filter((call) => call.operation === 'startProductTurn'),
+  ).toHaveLength(1)
+  expect(
+    chatHarness.calls().filter((call) => call.operation === 'answerUserInput'),
+  ).toHaveLength(2)
+  expect(await page.locator('body').textContent()).not.toMatch(
+    /proposal_[0-9a-f]{32}/u,
+  )
+})
+
+test('rejects a proposal without changing the confirmed model across reload', async ({
+  chatPage: page,
+}) => {
+  await selectCanonicalMaterials(page)
+  await page
+    .getByRole('button', { name: /선택한 자료 정리하기/u })
+    .click()
+
+  const review = page.getByRole('region', { name: '검토 대기' })
+  const rejectRequestPromise = page.waitForRequest((request) =>
+    new URL(request.url()).pathname.startsWith('/api/product/reviews/'),
+  )
+  await review.getByRole('button', { name: '거절' }).click()
+  const rejectRequest = await rejectRequestPromise
+  expect(rejectRequest.postDataJSON()).toEqual({
+    patchId: expect.any(String),
+    decisionKey: expect.any(String),
+    decision: 'reject',
+  })
+
+  await expect(page.getByRole('region', { name: '거절됨' })).toBeVisible()
+  await expect(page.getByRole('region', { name: '반영된 과제' })).toHaveCount(0)
+  await expect(operationPhase(page)).toHaveAttribute(
+    'data-product-operation-phase',
+    'completed',
+  )
+  const beforeReload = await readProductBootstrap(page)
+  expect(beforeReload.workspace?.state).toBe('ready')
+  if (beforeReload.workspace?.state === 'ready') {
+    expect(beforeReload.workspace.confirmedRevision).toBe(0)
+  }
+  expect(beforeReload.history.assignments).toEqual([])
+  expect(beforeReload.history.statePatches).toEqual([
+    expect.objectContaining({
+      status: 'rejected',
+      applyOutcome: { type: 'not_applied', revision: 0 },
+    }),
+  ])
+  expect(beforeReload.history.userConfirmations).toEqual([
+    expect.objectContaining({ decision: 'rejected', outcome: 'not_applied' }),
+  ])
+
+  await page.reload()
+  await expect(page.getByRole('region', { name: '반영된 과제' })).toHaveCount(0)
+  const afterReload = await readProductBootstrap(page)
+  expect(afterReload).toEqual(beforeReload)
+})
+
 test('interrupts the active product Review through its public operation and terminal stream', async ({
   chatHarness,
   chatPage: page,
@@ -238,8 +396,14 @@ test.describe('acknowledged interrupt response loss', () => {
       'stopping',
     )
     await expect(review.getByRole('button', { name: '과제명 근거 보기' })).toBeEnabled()
+    const feedback = review.getByRole('textbox', { name: '수정 요청 내용' })
     const accept = review.getByRole('button', { name: '수락' })
+    const revise = review.getByRole('button', { name: 'AY에게 수정 요청' })
+    const reject = review.getByRole('button', { name: '거절' })
+    await expect(feedback).toBeDisabled()
     await expect(accept).toBeDisabled()
+    await expect(revise).toBeDisabled()
+    await expect(reject).toBeDisabled()
 
     chatHarness.releaseInterruptResponse()
     expect(await interruptResponse.lost).toBe(202)
@@ -248,19 +412,24 @@ test.describe('acknowledged interrupt response loss', () => {
       'data-product-operation-phase',
       'stopping',
     )
+    await expect(feedback).toBeDisabled()
     await expect(accept).toBeDisabled()
+    await expect(revise).toBeDisabled()
+    await expect(reject).toBeDisabled()
     await expect(
       page.getByText('작업 중단 요청을 전달하지 못했습니다.'),
     ).toHaveCount(0)
 
-    await accept.evaluate((element) => {
-      const button = element as typeof element & {
-        disabled: boolean
-        click(): void
-      }
-      button.disabled = false
-      button.click()
-    })
+    for (const control of [accept, revise, reject]) {
+      await control.evaluate((element) => {
+        const button = element as typeof element & {
+          disabled: boolean
+          click(): void
+        }
+        button.disabled = false
+        button.click()
+      })
+    }
     chatHarness.releaseLateInteraction()
 
     await expect(page.getByText('AY 작업을 중단했습니다.')).toBeVisible()
@@ -511,6 +680,14 @@ async function readProductHistory(page: Page): Promise<ProductSettledHistory> {
       readonly history: ProductSettledHistory
     }
     return bootstrap.history
+  })
+}
+
+async function readProductBootstrap(page: Page): Promise<ProductBootstrap> {
+  return page.evaluate(async () => {
+    const response = await fetch('/api/product/bootstrap')
+    if (!response.ok) throw new Error('Product bootstrap failed.')
+    return response.json() as Promise<ProductBootstrap>
   })
 }
 

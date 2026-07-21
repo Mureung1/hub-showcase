@@ -1435,6 +1435,16 @@
   background: rgba(52, 168, 83, 0.12);
 }
 
+.state-badge.is-revised {
+  color: #237d71;
+  background: rgba(69, 183, 167, 0.12);
+}
+
+.state-badge.is-rejected {
+  color: #9a493d;
+  background: rgba(255, 107, 87, 0.11);
+}
+
 .state-badge.is-pending,
 .state-badge.is-question {
   color: #946211;
@@ -1500,7 +1510,7 @@
   line-height: 1.5;
 }
 
-.accept-review-button,
+.review-actions button,
 .clarification-actions button {
   min-height: 33px;
   border-radius: 9px;
@@ -1509,19 +1519,78 @@
   cursor: pointer;
 }
 
-.accept-review-button {
+.review-controls {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.review-feedback {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 750;
+}
+
+.review-feedback textarea {
+  min-width: 0;
+  resize: vertical;
+  padding: 7px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  background: white;
+  font: inherit;
+  line-height: 1.45;
+}
+
+.review-feedback textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.review-feedback-limit {
+  color: var(--muted);
+  font-size: 7px;
+  line-height: 1.35;
+}
+
+.review-feedback-limit.is-over {
+  color: #9a493d;
+}
+
+.review-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.45fr) minmax(0, 0.7fr);
+  gap: 5px;
+}
+
+.review-actions button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  width: 100%;
-  margin-top: 10px;
   border: 0;
+}
+
+.accept-review-button {
+  color: white;
+  background: var(--green);
+}
+
+.revise-review-button {
   color: white;
   background: var(--teal);
 }
 
-.accept-review-button:disabled,
+.review-actions .reject-review-button {
+  color: #9a493d;
+  border: 1px solid rgba(154, 73, 61, 0.26);
+  background: rgba(255, 253, 248, 0.82);
+}
+
+.review-actions button:disabled,
 .clarification-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.5;

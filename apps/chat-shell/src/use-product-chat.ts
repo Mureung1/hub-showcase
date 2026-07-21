@@ -19,6 +19,8 @@ import {
   type ProductInteractionAnswerRequest,
   type ProductMaterialSelection,
   type ProductRawMaterial,
+  type ProductReviewRequest,
+  type ProductReviewResponse,
   type ReadyProductWorkspace,
 } from './product-api.js'
 import {
@@ -44,8 +46,11 @@ export function useProductChat(options: {
   const [draft, setDraft] = useState('')
   const [operationPending, setOperationPending] = useState(false)
   const operationPendingRef = useRef(false)
-  const [responsePendingId, setResponsePendingId] = useState<string>()
-  const responsePendingRef = useRef<string | undefined>(undefined)
+  const [responsePending, setResponsePending] =
+    useState<ProductResponsePending>()
+  const responsePendingRef = useRef<ProductResponsePending | undefined>(
+    undefined,
+  )
   const operationController = useRef<AbortController | undefined>(undefined)
 
   const transition = useCallback((action: ProductChatAction) => {
@@ -69,13 +74,13 @@ export function useProductChat(options: {
     applicationReady &&
     selected.length === 2 &&
     !operationPending &&
-    responsePendingId === undefined
+    responsePending === undefined
   const canCompose =
-    applicationReady && !operationPending && responsePendingId === undefined
+    applicationReady && !operationPending && responsePending === undefined
   const canSubmit = canCompose && draft.trim().length > 0
   const canInterrupt =
     operationPending &&
-    responsePendingId === undefined &&
+    responsePending === undefined &&
     state.activeOperation?.accepted === true &&
     state.phase !== 'stopping'
 
@@ -109,6 +114,37 @@ export function useProductChat(options: {
   }
 
   async function acceptReview(review: ProductReviewBinding) {
+    await respondToReview(review, {
+      patchId: review.patchId,
+      decisionKey: review.decisionKey,
+      decision: 'accept',
+    })
+  }
+
+  async function reviseReview(
+    review: ProductReviewBinding,
+    feedback: string,
+  ) {
+    await respondToReview(review, {
+      patchId: review.patchId,
+      decisionKey: review.decisionKey,
+      decision: 'revise',
+      feedback: feedback.trim(),
+    })
+  }
+
+  async function rejectReview(review: ProductReviewBinding) {
+    await respondToReview(review, {
+      patchId: review.patchId,
+      decisionKey: review.decisionKey,
+      decision: 'reject',
+    })
+  }
+
+  async function respondToReview(
+    review: ProductReviewBinding,
+    request: ProductReviewRequest,
+  ) {
     if (
       responsePendingRef.current ||
       !canRespondToProductReview(stateRef.current, review)
@@ -116,34 +152,32 @@ export function useProductChat(options: {
       return
     }
     transition({ type: 'operation.control-cleared' })
-    responsePendingRef.current = review.interactionId
-    setResponsePendingId(review.interactionId)
+    const pending = {
+      type: 'review',
+      interactionId: review.interactionId,
+      decision: request.decision,
+    } as const satisfies ProductResponsePending
+    responsePendingRef.current = pending
+    setResponsePending(pending)
     try {
-      const response = await submitProductReview(review.interactionId, {
-        patchId: review.patchId,
-        decisionKey: review.decisionKey,
-        decision: 'accept',
-      })
-      if (
-        response.patchId !== review.patchId ||
-        response.decisionKey !== review.decisionKey ||
-        response.decision !== 'accepted' ||
-        response.outcome !== 'applied'
-      ) {
+      const response = await submitProductReview(review.interactionId, request)
+      if (!matchesReviewResponse(review, request, response)) {
         throw new ProductStreamError()
       }
-      await options.refreshProductState()
+      if (request.decision !== 'revise') await options.refreshProductState()
     } catch (error) {
       transition({
         type: 'operation.control-failed',
         failure: safeFailure(
           error,
-          '변경 제안의 반영 결과를 확인하지 못했습니다. 새로고침한 뒤 확인해 주세요.',
+          reviewFailureMessage(request.decision),
         ),
       })
     } finally {
-      responsePendingRef.current = undefined
-      setResponsePendingId(undefined)
+      if (responsePendingRef.current === pending) {
+        responsePendingRef.current = undefined
+        setResponsePending(undefined)
+      }
     }
   }
 
@@ -189,8 +223,12 @@ export function useProductChat(options: {
       return
     }
     transition({ type: 'operation.control-cleared' })
-    responsePendingRef.current = interaction.interactionId
-    setResponsePendingId(interaction.interactionId)
+    const pending = {
+      type: 'clarification',
+      interactionId: interaction.interactionId,
+    } as const satisfies ProductResponsePending
+    responsePendingRef.current = pending
+    setResponsePending(pending)
     try {
       await respond()
     } catch (error) {
@@ -199,8 +237,10 @@ export function useProductChat(options: {
         failure: safeFailure(error, fallbackMessage),
       })
     } finally {
-      responsePendingRef.current = undefined
-      setResponsePendingId(undefined)
+      if (responsePendingRef.current === pending) {
+        responsePendingRef.current = undefined
+        setResponsePending(undefined)
+      }
     }
   }
 
@@ -275,7 +315,7 @@ export function useProductChat(options: {
     draft,
     setDraft,
     operationPending,
-    responsePendingId,
+    responsePending,
     accountReady,
     canStartAssignment,
     canCompose,
@@ -284,10 +324,57 @@ export function useProductChat(options: {
     startAssignment,
     submitMessage,
     acceptReview,
+    reviseReview,
+    rejectReview,
     answerClarification,
     cancelClarification,
     interrupt,
   }
+}
+
+type ProductResponsePending =
+  | {
+      readonly type: 'review'
+      readonly interactionId: string
+      readonly decision: ProductReviewRequest['decision']
+    }
+  | { readonly type: 'clarification'; readonly interactionId: string }
+
+function matchesReviewResponse(
+  review: ProductReviewBinding,
+  request: ProductReviewRequest,
+  response: ProductReviewResponse,
+): boolean {
+  if (
+    response.patchId !== review.patchId ||
+    response.decisionKey !== review.decisionKey
+  ) {
+    return false
+  }
+  if (request.decision === 'accept') {
+    return response.decision === 'accepted' && response.outcome === 'applied'
+  }
+  if (request.decision === 'reject') {
+    return (
+      response.decision === 'rejected' && response.outcome === 'not_applied'
+    )
+  }
+  return (
+    response.decision === 'revision_requested' &&
+    response.outcome === 'replacement_pending'
+  )
+}
+
+function reviewFailureMessage(
+  decision: ProductReviewRequest['decision'],
+): string {
+  if (decision === 'revise') {
+    return '수정 요청을 전달하지 못했습니다. 현재 변경 제안을 다시 확인해 주세요.'
+  }
+  if (decision === 'reject') {
+    return '변경 제안의 거절 결과를 확인하지 못했습니다. 새로고침한 뒤 확인해 주세요.'
+  }
+  return '변경 제안의 반영 결과를 확인하지 못했습니다. 새로고침한 뒤 확인해 주세요.'
 }
 
 function materialSelection(

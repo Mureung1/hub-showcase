@@ -24,8 +24,13 @@ import {
   decodeProductOperationFrame,
 } from '@ay-ple/product-contract'
 
-import { configuredBootstrap, postJson } from './testing/codex-chat-test-support.js'
+import {
+  configuredBootstrap,
+  postJson,
+  waitFor,
+} from './testing/codex-chat-test-support.js'
 import { withTestServer } from './testing/test-server.js'
+import { StatePatchReviewError } from './semester-workspace.js'
 import { materializeE2eSemesterWorkspace } from '../../../scripts/semester-workspace-materializer.mjs'
 
 test('account-not-ready rejects the Assignment action before a Run or native start', async () => {
@@ -66,12 +71,13 @@ test('account-not-ready rejects the Assignment action before a Run or native sta
   }
 })
 
-test('the HTTP action commits one Run before exact Skill input and streams MCP Review before authoritative settlement', async () => {
+test('accepted product authority survives a cancelled native Review continuation', async () => {
   const fixture = await createActionFixture()
   let applicationRef:
     | Parameters<Parameters<typeof withTestServer>[1]>[1]
     | undefined
   const runtime = new HttpMcpProductRuntime({
+    reviewResolution: 'cancelled',
     onStartProductTurn: async (input) => {
       const runs = applicationRef?.semesterWorkspace?.modelingRuns() ?? []
       assert.equal(runs.length, 1)
@@ -165,6 +171,14 @@ test('the HTTP action commits one Run before exact Skill input and streams MCP R
             'operation.terminal',
           ],
         )
+        assert.equal(
+          frames.find(
+            (frame) =>
+              frame.type === 'review.resolved' &&
+              frame.interactionId === review.interactionId,
+          )?.outcome,
+          'accepted',
+        )
         assert.equal(frames.at(-1)?.status, 'completed')
         assert.equal(frames.at(-1)?.validationOutcome, 'passed')
         const runId = frames[0]?.runId
@@ -242,7 +256,444 @@ test('the HTTP action commits one Run before exact Skill input and streams MCP R
         assert.equal(runs[0]?.status, 'completed')
         assert.equal(runs[0]?.validationOutcome, 'passed')
         assert.equal(runs[0]?.nativeCorrelation?.threadId, 'thread-native-A')
-        assert.equal(application.semesterWorkspace?.assignmentState().assignments.length, 1)
+        const state = application.semesterWorkspace?.assignmentState()
+        assert.equal(state?.assignments.length, 1)
+        assert.equal(state?.statePatches[0]?.status, 'applied')
+        assert.equal(state?.userConfirmations.length, 1)
+        assert.equal(state?.userConfirmations[0]?.decision, 'accepted')
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('revision feedback rotates the private MCP session, replaces the Review, and accepts the replacement exactly once', async () => {
+  const fixture = await createActionFixture()
+  const runtime = new RevisionHttpMcpProductRuntime()
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        const workspace = await activateCourse(application)
+        const selected = selectCanonicalMaterials(workspace.materials)
+        runtime.proposal = (input) =>
+          validProposalFromProductInput(
+            input,
+            workspace.course!.id,
+            selected,
+          )
+
+        const response = await postJson(
+          `${baseUrl}/api/product/actions/first-assignment`,
+          actionRequest(workspace.course!.id, selected),
+        )
+        assert.equal(response.status, 200)
+        const stream = response.body?.getReader()
+        assert.ok(stream)
+        const trace = new NdjsonTrace(stream)
+        const original = await trace.until(
+          (frame) => frame.type === 'review.requested',
+        )
+
+        const wrongBinding = await postJson(
+          `${baseUrl}/api/product/reviews/${original.interactionId}`,
+          {
+            patchId: 'patch_00000000000000000000000000000000',
+            decisionKey: original.decisionKey,
+            decision: 'revise',
+            feedback: '제출 방식에 보고서도 포함해 주세요.',
+          },
+        )
+        assert.equal(wrongBinding.status, 409)
+        assert.deepEqual(await wrongBinding.json(), {
+          code: 'review_invalid',
+          displayMessage: '변경 제안 또는 검토 상태를 확인해 주세요.',
+        })
+
+        const revisionInput = {
+          patchId: original.patchId,
+          decisionKey: original.decisionKey,
+          decision: 'revise',
+          feedback: '제출 방식에 보고서도 포함해 주세요.',
+        }
+        const firstRevision = postJson(
+          `${baseUrl}/api/product/reviews/${original.interactionId}`,
+          revisionInput,
+        )
+        const duplicateRevision = postJson(
+          `${baseUrl}/api/product/reviews/${original.interactionId}`,
+          revisionInput,
+        )
+        const revisionResponses = await Promise.all([
+          firstRevision,
+          duplicateRevision,
+        ])
+        assert.deepEqual(
+          revisionResponses.map((candidate) => candidate.status),
+          [200, 200],
+        )
+        const revisionBodies = await Promise.all(
+          revisionResponses.map(async (candidate) => candidate.json()),
+        )
+        for (const body of revisionBodies) {
+          assert.deepEqual(body, {
+            patchId: original.patchId,
+            decisionKey: original.decisionKey,
+            decision: 'revision_requested',
+            outcome: 'replacement_pending',
+            confirmedRevision: 0,
+            replayed: body.replayed,
+          })
+        }
+        assert.deepEqual(
+          revisionBodies.map((body) => body.replayed).sort(),
+          [false, true],
+        )
+        assert.equal(runtime.answerInputs.length, 1)
+        assert.ok(runtime.replacementRequestKey)
+        assert.notEqual(
+          runtime.replacementRequestKey,
+          runtime.originalRequestKey,
+        )
+
+        const lateAccept = await postJson(
+          `${baseUrl}/api/product/reviews/${original.interactionId}`,
+          {
+            patchId: original.patchId,
+            decisionKey: original.decisionKey,
+            decision: 'accept',
+          },
+        )
+        assert.equal(lateAccept.status, 409)
+        assert.deepEqual(await lateAccept.json(), {
+          code: 'review_invalid',
+          displayMessage: '검토 응답이 이전 요청과 일치하지 않습니다.',
+        })
+
+        const replacement = await trace.until(
+          (frame) => frame.type === 'review.replaced',
+        )
+        assert.deepEqual(replacement.replaces, {
+          interactionId: original.interactionId,
+          patchId: original.patchId,
+          decisionKey: original.decisionKey,
+        })
+        assert.notEqual(replacement.interactionId, original.interactionId)
+        assert.notEqual(replacement.patchId, original.patchId)
+        assert.notEqual(replacement.decisionKey, original.decisionKey)
+
+        const acceptReplacement = await postJson(
+          `${baseUrl}/api/product/reviews/${replacement.interactionId}`,
+          {
+            patchId: replacement.patchId,
+            decisionKey: replacement.decisionKey,
+            decision: 'accept',
+          },
+        )
+        assert.equal(acceptReplacement.status, 200)
+        assert.deepEqual(await acceptReplacement.json(), {
+          patchId: replacement.patchId,
+          decisionKey: replacement.decisionKey,
+          decision: 'accepted',
+          outcome: 'applied',
+          confirmedRevision: 1,
+          replayed: false,
+        })
+
+        const frames = await trace.rest()
+        const oldResolvedIndex = frames.findIndex(
+          (frame) =>
+            frame.type === 'review.resolved' &&
+            frame.interactionId === original.interactionId,
+        )
+        const replacementIndex = frames.findIndex(
+          (frame) => frame.type === 'review.replaced',
+        )
+        assert.ok(oldResolvedIndex >= 0)
+        assert.ok(replacementIndex > oldResolvedIndex)
+        assert.equal(frames[oldResolvedIndex]?.outcome, 'revised')
+        const replacementResolved = frames.find(
+          (frame) =>
+            frame.type === 'review.resolved' &&
+            frame.interactionId === replacement.interactionId,
+        )
+        assert.equal(replacementResolved?.outcome, 'accepted')
+        assert.equal(
+          JSON.stringify(frames).includes(runtime.replacementRequestKey!),
+          false,
+        )
+        assert.equal(runtime.answerInputs.length, 2)
+
+        const state = application.semesterWorkspace?.assignmentState()
+        assert.equal(state?.confirmedRevision, 1)
+        assert.equal(state?.assignments.length, 1)
+        assert.deepEqual(
+          state?.statePatches.map((patch) => patch.status),
+          ['superseded', 'applied'],
+        )
+        assert.equal(state?.userConfirmations.length, 1)
+        assert.equal(
+          state?.userConfirmations[0]?.patchId,
+          replacement.patchId,
+        )
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('cancelled revision continuation remains cancelled and interrupts the original patch at terminal', async () => {
+  const fixture = await createActionFixture()
+  const runtime = new RevisionHttpMcpProductRuntime({
+    cancelRevisionResolution: true,
+    terminateAfterRevision: true,
+  })
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        const workspace = await activateCourse(application)
+        const selected = selectCanonicalMaterials(workspace.materials)
+        runtime.proposal = (input) =>
+          validProposalFromProductInput(
+            input,
+            workspace.course!.id,
+            selected,
+          )
+
+        const response = await postJson(
+          `${baseUrl}/api/product/actions/first-assignment`,
+          actionRequest(workspace.course!.id, selected),
+        )
+        assert.equal(response.status, 200)
+        const stream = response.body?.getReader()
+        assert.ok(stream)
+        const trace = new NdjsonTrace(stream)
+        const review = await trace.until(
+          (frame) => frame.type === 'review.requested',
+        )
+        const revision = await postJson(
+          `${baseUrl}/api/product/reviews/${review.interactionId}`,
+          {
+            patchId: review.patchId,
+            decisionKey: review.decisionKey,
+            decision: 'revise',
+            feedback: '마감 근거를 다시 확인해 주세요.',
+          },
+        )
+        assert.equal(revision.status, 200)
+        assert.equal((await revision.json()).decision, 'revision_requested')
+
+        const frames = await trace.rest()
+        assert.equal(
+          frames.find(
+            (frame) =>
+              frame.type === 'review.resolved' &&
+              frame.interactionId === review.interactionId,
+          )?.outcome,
+          'cancelled',
+        )
+        assert.equal(
+          frames.some((frame) => frame.type === 'review.replaced'),
+          false,
+        )
+        const state = application.semesterWorkspace?.assignmentState()
+        assert.equal(state?.confirmedRevision, 0)
+        assert.deepEqual(state?.assignments, [])
+        assert.deepEqual(state?.userConfirmations, [])
+        assert.equal(state?.statePatches.length, 1)
+        assert.equal(state?.statePatches[0]?.id, review.patchId)
+        assert.equal(state?.statePatches[0]?.status, 'interrupted')
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('concurrent duplicate revision failures both map through the safe public 409 boundary', async () => {
+  const fixture = await createActionFixture()
+  const runtime = new RevisionHttpMcpProductRuntime({
+    failRevisionAnswer: true,
+  })
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        const workspace = await activateCourse(application)
+        const selected = selectCanonicalMaterials(workspace.materials)
+        runtime.proposal = (input) =>
+          validProposalFromProductInput(
+            input,
+            workspace.course!.id,
+            selected,
+          )
+
+        const response = await postJson(
+          `${baseUrl}/api/product/actions/first-assignment`,
+          actionRequest(workspace.course!.id, selected),
+        )
+        assert.equal(response.status, 200)
+        const stream = response.body?.getReader()
+        assert.ok(stream)
+        const trace = new NdjsonTrace(stream)
+        const review = await trace.until(
+          (frame) => frame.type === 'review.requested',
+        )
+        const input = {
+          patchId: review.patchId,
+          decisionKey: review.decisionKey,
+          decision: 'revise',
+          feedback: '근거를 다시 확인해 주세요.',
+        }
+        const first = postJson(
+          `${baseUrl}/api/product/reviews/${review.interactionId}`,
+          input,
+        )
+        await runtime.revisionAnswerStarted.promise
+        const duplicate = postJson(
+          `${baseUrl}/api/product/reviews/${review.interactionId}`,
+          input,
+        )
+        await new Promise((resolve) => setTimeout(resolve, 20))
+        runtime.rejectRevisionAnswer()
+        const failures = await Promise.all([first, duplicate])
+
+        assert.deepEqual(
+          failures.map((failure) => failure.status),
+          [409, 409],
+        )
+        assert.deepEqual(
+          await Promise.all(failures.map((failure) => failure.json())),
+          [
+            {
+              code: 'review_invalid',
+              displayMessage: '변경 제안 또는 검토 상태를 확인해 주세요.',
+            },
+            {
+              code: 'review_invalid',
+              displayMessage: '변경 제안 또는 검토 상태를 확인해 주세요.',
+            },
+          ],
+        )
+        assert.equal(runtime.answerInputs.length, 1)
+        await trace.rest()
+        await waitFor(
+          () =>
+            application.semesterWorkspace?.modelingRuns()[0]?.status !==
+            'running',
+        )
+        const state = application.semesterWorkspace?.assignmentState()
+        assert.equal(state?.confirmedRevision, 0)
+        assert.deepEqual(state?.assignments, [])
+        assert.deepEqual(state?.userConfirmations, [])
+        assert.equal(state?.statePatches[0]?.status, 'interrupted')
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('rejected product authority survives a cancelled native Review continuation without applying state', async () => {
+  const fixture = await createActionFixture()
+  const runtime = new HttpMcpProductRuntime({
+    reviewResolution: 'cancelled',
+    onStartProductTurn: async () => undefined,
+  })
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        const workspace = await activateCourse(application)
+        const selected = selectCanonicalMaterials(workspace.materials)
+        runtime.proposal = (input) =>
+          validProposalFromProductInput(
+            input,
+            workspace.course!.id,
+            selected,
+          )
+
+        const response = await postJson(
+          `${baseUrl}/api/product/actions/first-assignment`,
+          actionRequest(workspace.course!.id, selected),
+        )
+        assert.equal(response.status, 200)
+        const stream = response.body?.getReader()
+        assert.ok(stream)
+        const trace = new NdjsonTrace(stream)
+        const review = await trace.until(
+          (frame) => frame.type === 'review.requested',
+        )
+        const rejection = await postJson(
+          `${baseUrl}/api/product/reviews/${review.interactionId}`,
+          {
+            patchId: review.patchId,
+            decisionKey: review.decisionKey,
+            decision: 'reject',
+          },
+        )
+
+        assert.equal(rejection.status, 200)
+        assert.deepEqual(await rejection.json(), {
+          patchId: review.patchId,
+          decisionKey: review.decisionKey,
+          decision: 'rejected',
+          outcome: 'not_applied',
+          confirmedRevision: 0,
+          replayed: false,
+        })
+        const frames = await trace.rest()
+        assert.equal(
+          frames.find(
+            (frame) =>
+              frame.type === 'review.resolved' &&
+              frame.interactionId === review.interactionId,
+          )?.outcome,
+          'rejected',
+        )
+        assert.deepEqual(runtime.answerInputs, [
+          {
+            interactionId: review.interactionId,
+            answers: { assignment_review_decision: ['거절'] },
+          },
+        ])
+        const state = application.semesterWorkspace?.assignmentState()
+        assert.equal(state?.confirmedRevision, 0)
+        assert.deepEqual(state?.assignments, [])
+        assert.equal(state?.statePatches[0]?.status, 'rejected')
+        assert.deepEqual(
+          state?.userConfirmations.map((confirmation) => ({
+            patchId: confirmation.patchId,
+            decision: confirmation.decision,
+            outcome: confirmation.outcome,
+          })),
+          [
+            {
+              patchId: review.patchId,
+              decision: 'rejected',
+              outcome: 'not_applied',
+            },
+          ],
+        )
       },
     )
   } finally {
@@ -406,6 +857,7 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
   readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
   readonly productInputs: StartProductTurnInput[] = []
   readonly snapshotBytes: Buffer[] = []
+  readonly answerInputs: AnswerUserInput[] = []
   mcpToken?: string
   proposal?: (input: StartProductTurnInput) => Record<string, unknown>
   private readonly onStartProductTurn: (
@@ -413,14 +865,17 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
   ) => Promise<void>
   private readonly answer = deferred<void>()
   private readonly answerAcknowledged = deferred<void>()
+  private readonly reviewResolution: 'answered' | 'cancelled'
   private threadInput?: StartThreadInput
 
   constructor(options: {
     readonly onStartProductTurn: (
       input: StartProductTurnInput,
     ) => Promise<void>
+    readonly reviewResolution?: 'answered' | 'cancelled'
   }) {
     this.onStartProductTurn = options.onStartProductTurn
+    this.reviewResolution = options.reviewResolution ?? 'answered'
   }
 
   async readAccountReadiness(): Promise<CodexAccountReadiness> {
@@ -550,7 +1005,7 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
           turnId: 'turn-native-A',
           itemId: 'private-review-item',
           interactionId: 'interaction-public-A',
-          resolution: 'answered',
+          resolution: runtime.reviewResolution,
         }
         runtime.answerAcknowledged.resolve()
         yield {
@@ -579,6 +1034,7 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
 
   async answerUserInput(input: AnswerUserInput): Promise<void> {
     assert.equal(input.interactionId, 'interaction-public-A')
+    this.answerInputs.push(structuredClone(input))
     this.answer.resolve()
     await this.answerAcknowledged.promise
   }
@@ -619,6 +1075,260 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
     assert.equal(result.result?.isError, false)
   }
 }
+
+class RevisionHttpMcpProductRuntime implements CodexProductCapableRuntime {
+  readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
+  readonly answerInputs: AnswerUserInput[] = []
+  readonly revisionAnswerStarted = deferred<void>()
+  originalRequestKey?: string
+  replacementRequestKey?: string
+  proposal?: (input: StartProductTurnInput) => Record<string, unknown>
+  private readonly originalAnswer = deferred<void>()
+  private readonly originalAnswerAcknowledged = deferred<void>()
+  private readonly replacementAnswer = deferred<void>()
+  private readonly replacementAnswerAcknowledged = deferred<void>()
+  private readonly revisionAnswerRejection = deferred<void>()
+  private productInput?: StartProductTurnInput
+  private threadInput?: StartThreadInput
+
+  constructor(
+    private readonly options: {
+      readonly cancelRevisionResolution?: boolean
+      readonly failRevisionAnswer?: boolean
+      readonly terminateAfterRevision?: boolean
+    } = {},
+  ) {}
+
+  async readAccountReadiness(): Promise<CodexAccountReadiness> {
+    return { state: 'ready' }
+  }
+
+  async startThread(input?: StartThreadInput) {
+    assert.ok(input)
+    this.threadInput = structuredClone(input)
+    return { threadId: 'thread-native-revision' }
+  }
+
+  async startTurn(_input: StartTurnInput): Promise<never> {
+    throw new Error('legacy startTurn is not expected')
+  }
+
+  async startProductTurn(
+    input: StartProductTurnInput,
+  ): Promise<CodexProductTurn> {
+    assert.ok(this.proposal)
+    this.productInput = structuredClone(input)
+    this.originalRequestKey = requireMatch(
+      input.text,
+      /requestKey: (proposal_[0-9a-f]{32})/,
+    )
+    const runtime = this
+    return {
+      threadId: input.threadId,
+      turnId: 'turn-native-revision',
+      events: (async function* (): AsyncIterable<CodexProductActivity> {
+        yield {
+          type: 'skill.requested',
+          threadId: input.threadId,
+          turnId: 'turn-native-revision',
+          skillName: input.skill!.name,
+        }
+        yield {
+          type: 'mcp_call.started',
+          threadId: input.threadId,
+          turnId: 'turn-native-revision',
+          itemId: 'private-original-mcp-item',
+          tool: 'propose_state_patch',
+        }
+        await runtime.callProposalTool(runtime.proposal!(input), 1)
+        yield {
+          type: 'mcp_call.completed',
+          threadId: input.threadId,
+          turnId: 'turn-native-revision',
+          itemId: 'private-original-mcp-item',
+          tool: 'propose_state_patch',
+        }
+        yield {
+          type: 'user_input.requested',
+          threadId: input.threadId,
+          turnId: 'turn-native-revision',
+          itemId: 'private-original-review-item',
+          interactionId: 'interaction-revision-original',
+          questions: [assignmentReviewQuestion],
+        }
+        await runtime.originalAnswer.promise
+        yield {
+          type: 'user_input.resolved',
+          threadId: input.threadId,
+          turnId: 'turn-native-revision',
+          itemId: 'private-original-review-item',
+          interactionId: 'interaction-revision-original',
+          resolution: runtime.options.cancelRevisionResolution
+            ? 'cancelled'
+            : 'answered',
+        }
+        runtime.originalAnswerAcknowledged.resolve()
+        if (
+          runtime.options.terminateAfterRevision ||
+          runtime.options.failRevisionAnswer
+        ) {
+          yield {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId: 'turn-native-revision',
+            status: 'completed',
+          }
+          return
+        }
+        yield {
+          type: 'mcp_call.started',
+          threadId: input.threadId,
+          turnId: 'turn-native-revision',
+          itemId: 'private-replacement-mcp-item',
+          tool: 'propose_state_patch',
+        }
+        yield {
+          type: 'mcp_call.completed',
+          threadId: input.threadId,
+          turnId: 'turn-native-revision',
+          itemId: 'private-replacement-mcp-item',
+          tool: 'propose_state_patch',
+        }
+        yield {
+          type: 'user_input.requested',
+          threadId: input.threadId,
+          turnId: 'turn-native-revision',
+          itemId: 'private-replacement-review-item',
+          interactionId: 'interaction-revision-replacement',
+          questions: [assignmentReviewQuestion],
+        }
+        await runtime.replacementAnswer.promise
+        yield {
+          type: 'user_input.resolved',
+          threadId: input.threadId,
+          turnId: 'turn-native-revision',
+          itemId: 'private-replacement-review-item',
+          interactionId: 'interaction-revision-replacement',
+          resolution: 'answered',
+        }
+        runtime.replacementAnswerAcknowledged.resolve()
+        yield {
+          type: 'agent_message.completed',
+          threadId: input.threadId,
+          turnId: 'turn-native-revision',
+          itemId: 'private-revision-agent-item',
+          text: '수정된 Assignment을 반영했습니다.',
+        }
+        yield {
+          type: 'turn.completed',
+          threadId: input.threadId,
+          turnId: 'turn-native-revision',
+          status: 'completed',
+        }
+      })(),
+    }
+  }
+
+  async answerUserInput(input: AnswerUserInput): Promise<void> {
+    this.answerInputs.push(structuredClone(input))
+    if (input.interactionId === 'interaction-revision-original') {
+      const answer = input.answers.assignment_review_decision
+      assert.equal(answer?.[0], 'AY에게 수정 요청')
+      assert.ok(answer?.[1]?.trim())
+      this.replacementRequestKey = requireMatch(
+        answer?.[2] ?? '',
+        /replacement requestKey: (proposal_[0-9a-f]{32})/,
+      )
+      if (this.options.failRevisionAnswer) {
+        this.revisionAnswerStarted.resolve()
+        await this.revisionAnswerRejection.promise
+        this.originalAnswer.resolve()
+        throw new StatePatchReviewError(
+          'review_conflict',
+          'simulated native revision answer failure',
+        )
+      }
+      assert.ok(this.productInput)
+      assert.ok(this.proposal)
+      if (!this.options.terminateAfterRevision) {
+        const replacement = this.proposal(this.productInput)
+        replacement.requestKey = this.replacementRequestKey
+        replacement.summary =
+          '수정 요청을 반영한 replacement Assignment 제안입니다.'
+        await this.callProposalTool(replacement, 2)
+      }
+      this.originalAnswer.resolve()
+      await this.originalAnswerAcknowledged.promise
+      return
+    }
+    assert.equal(input.interactionId, 'interaction-revision-replacement')
+    this.replacementAnswer.resolve()
+    await this.replacementAnswerAcknowledged.promise
+  }
+
+  async cancelUserInput(_input: CancelUserInput): Promise<void> {
+    throw new Error('cancelUserInput is not expected')
+  }
+
+  async interrupt(_input: InterruptTurnInput): Promise<void> {}
+
+  async releaseThread(_input: ReleaseThreadInput): Promise<void> {}
+
+  async close(): Promise<void> {}
+
+  rejectRevisionAnswer(): void {
+    this.revisionAnswerRejection.resolve()
+  }
+
+  private async callProposalTool(
+    proposal: Record<string, unknown>,
+    id: number,
+  ): Promise<void> {
+    assert.ok(this.threadInput)
+    const response = await fetch(this.threadInput.mcp.url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-ay-ple-mcp-token': this.threadInput.mcp.token,
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id,
+        method: 'tools/call',
+        params: {
+          name: 'propose_state_patch',
+          arguments: proposal,
+        },
+      }),
+    })
+    assert.equal(response.status, 200)
+    const result = (await response.json()) as {
+      readonly result?: { readonly isError?: boolean }
+    }
+    assert.equal(result.result?.isError, false)
+  }
+}
+
+const assignmentReviewQuestion = {
+  id: 'assignment_review_decision',
+  header: '변경 제안 검토',
+  question: '이 Assignment 변경 제안을 어떻게 처리할까요?',
+  options: [
+    {
+      label: '수락',
+      description: '근거와 값을 확인하고 학기 상태에 반영합니다.',
+    },
+    {
+      label: 'AY에게 수정 요청',
+      description: '피드백을 전달하고 새 변경 제안을 기다립니다.',
+    },
+    {
+      label: '거절',
+      description: '제안을 반영하지 않고 결정 기록만 남깁니다.',
+    },
+  ],
+  acceptsFreeform: true,
+} as const
 
 class NdjsonTrace {
   private readonly frames: Record<string, unknown>[] = []
