@@ -3,6 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
 import { navigationTargets } from "../routes/routePaths";
 import { registerAccountRole } from "../utils/authStorage";
+import { signupMentor } from "../api/auth";
+
+const academicStatusLabels = {
+  master: "석사과정",
+  doctorate: "박사과정",
+  "combined-master-doctorate": "석박통합과정",
+  "combined-bachelor-master-doctorate": "학석박통합과정",
+};
 
 const counselingOptions = [
   "대학원 진학 준비",
@@ -12,13 +20,83 @@ const counselingOptions = [
   "해외 진학",
 ];
 
+function RepeatableProfileFields({
+  addLabel,
+  description,
+  entries,
+  fieldLabel,
+  idPrefix,
+  namePrefix,
+  onAdd,
+  onRemove,
+  placeholder,
+}) {
+  return (
+    <fieldset className="mentor-keyword-fieldset">
+      <legend className="sr-only">{fieldLabel}</legend>
+      <div className="mentor-keyword-heading">
+        <div>
+          <span className="mentor-field-label">{fieldLabel} <span aria-hidden="true">*</span></span>
+          <p className="muted-text">{description}</p>
+        </div>
+        <div className="mentor-keyword-controls">
+          <span className="tag">{entries.length} / 5</span>
+          <button
+            aria-label={addLabel}
+            className="button button-soft keyword-add-button"
+            disabled={entries.length >= 5}
+            onClick={onAdd}
+            type="button"
+          >
+            <span aria-hidden="true">+</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="mentor-keyword-list">
+        {entries.map((entryId, index) => (
+          <div className="mentor-keyword-row" key={entryId}>
+            <label className="sr-only" htmlFor={`${idPrefix}-${entryId}`}>{fieldLabel} {index + 1}</label>
+            <span className="keyword-prefix" aria-hidden="true">{index + 1}</span>
+            <input
+              className="field keyword-field"
+              id={`${idPrefix}-${entryId}`}
+              maxLength="200"
+              name={`${namePrefix}${index + 1}`}
+              placeholder={`${placeholder} ${index + 1}`}
+              required
+              type="text"
+            />
+            {entries.length > 1 && (
+              <button
+                aria-label={`${fieldLabel} ${index + 1} 삭제`}
+                className="keyword-remove-button"
+                onClick={() => onRemove(entryId)}
+                type="button"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 function MentorSignupPage() {
   const navigate = useNavigate();
   const [isSignupComplete, setIsSignupComplete] = useState(false);
+  const [submissionError, setSubmissionError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [researchKeywords, setResearchKeywords] = useState([0, 1, 2]);
   const [nextResearchKeywordId, setNextResearchKeywordId] = useState(3);
   const [counselingFields, setCounselingFields] = useState([{ id: 0, value: "" }]);
   const [nextCounselingFieldId, setNextCounselingFieldId] = useState(1);
+  const [careerHighlights, setCareerHighlights] = useState([0]);
+  const [nextCareerHighlightId, setNextCareerHighlightId] = useState(1);
+  const [internationalActivities, setInternationalActivities] = useState([0]);
+  const [nextInternationalActivityId, setNextInternationalActivityId] = useState(1);
 
   useEffect(() => {
     if (!isSignupComplete) return undefined;
@@ -58,11 +136,71 @@ function MentorSignupPage() {
     setCounselingFields((fields) => fields.filter((field) => field.id !== fieldId));
   };
 
-  const handleSubmit = (event) => {
+  const addCareerHighlight = () => {
+    if (careerHighlights.length >= 5) return;
+    setCareerHighlights((entries) => [...entries, nextCareerHighlightId]);
+    setNextCareerHighlightId((id) => id + 1);
+  };
+
+  const removeCareerHighlight = (entryId) => {
+    if (careerHighlights.length <= 1) return;
+    setCareerHighlights((entries) => entries.filter((id) => id !== entryId));
+  };
+
+  const addInternationalActivity = () => {
+    if (internationalActivities.length >= 5) return;
+    setInternationalActivities((entries) => [...entries, nextInternationalActivityId]);
+    setNextInternationalActivityId((id) => id + 1);
+  };
+
+  const removeInternationalActivity = (entryId) => {
+    if (internationalActivities.length <= 1) return;
+    setInternationalActivities((entries) => entries.filter((id) => id !== entryId));
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setSubmissionError("");
+
     const formData = new FormData(event.currentTarget);
-    registerAccountRole(formData.get("email"), "mentor");
-    setIsSignupComplete(true);
+    const email = formData.get("email");
+    const major = formData.get("major");
+    const academicStatus = academicStatusLabels[formData.get("academicProgram")] ?? "";
+    const collectEntries = (namePrefix, count) => (
+      Array.from({ length: count }, (_, index) => formData.get(`${namePrefix}${index + 1}`))
+    );
+
+    setIsSubmitting(true);
+
+    try {
+      await signupMentor({
+        email,
+        password: formData.get("password"),
+        name: formData.get("name"),
+        nickname: formData.get("nickname"),
+        school: formData.get("school"),
+        major,
+        academicStatus,
+        program: `${major} ${academicStatus}`.trim(),
+        lab: formData.get("lab"),
+        introduction: formData.get("introduction"),
+        detailedIntroduction: formData.get("detailedIntroduction"),
+        availableTime: formData.get("availableTime"),
+        researchFields: collectEntries("researchKeyword", researchKeywords.length),
+        counselingFields: collectEntries("counselingField", counselingFields.length),
+        careerHighlights: collectEntries("careerHighlight", careerHighlights.length),
+        internationalActivities: collectEntries(
+          "internationalActivity",
+          internationalActivities.length,
+        ),
+      });
+      registerAccountRole(email, "mentor");
+      setIsSignupComplete(true);
+    } catch (error) {
+      setSubmissionError(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -101,11 +239,6 @@ function MentorSignupPage() {
               <label className="mentor-field-group">
                 <span className="mentor-field-label">닉네임 <span aria-hidden="true">*</span></span>
                 <input className="field" type="text" name="nickname" autoComplete="nickname" placeholder="서비스에서 사용할 닉네임을 입력해 주세요" required />
-              </label>
-
-              <label className="mentor-field-group">
-                <span className="mentor-field-label">아이디 <span aria-hidden="true">*</span></span>
-                <input className="field" type="text" name="username" autoComplete="username" placeholder="영문과 숫자를 조합해 입력해 주세요" required />
               </label>
 
               <label className="mentor-field-group">
@@ -285,21 +418,48 @@ function MentorSignupPage() {
                 <textarea className="field mentor-detail-field" name="detailedIntroduction" maxLength="600" placeholder="연구 분야, 관심 주제와 멘토링 방향을 자세히 소개해 주세요" required />
               </label>
 
-              <label className="mentor-field-group">
-                <span className="mentor-field-label">주요 이력 <span aria-hidden="true">*</span></span>
-                <textarea className="field mentor-detail-field" name="careerHighlights" maxLength="600" placeholder="연구, 프로젝트, 수상 등 주요 이력을 입력해 주세요" required />
-              </label>
+              <RepeatableProfileFields
+                addLabel="주요 이력 추가"
+                description="연구, 프로젝트, 수상 등 주요 이력을 항목별로 입력해 주세요."
+                entries={careerHighlights}
+                fieldLabel="주요 이력"
+                idPrefix="career-highlight"
+                namePrefix="careerHighlight"
+                onAdd={addCareerHighlight}
+                onRemove={removeCareerHighlight}
+                placeholder="주요 이력"
+              />
+
+              <RepeatableProfileFields
+                addLabel="해외 활동 추가"
+                description="교환학생, 해외 연구, 학회 참석 등 해외 활동을 항목별로 입력해 주세요."
+                entries={internationalActivities}
+                fieldLabel="해외 활동"
+                idPrefix="international-activity"
+                namePrefix="internationalActivity"
+                onAdd={addInternationalActivity}
+                onRemove={removeInternationalActivity}
+                placeholder="해외 활동"
+              />
 
               <label className="mentor-field-group">
-                <span className="mentor-field-label">해외 활동 <span aria-hidden="true">*</span></span>
-                <textarea className="field mentor-detail-field" name="internationalExperience" maxLength="600" placeholder="교환학생, 해외 연구, 학회 참석 등 해외 활동을 입력해 주세요" required />
+                <span className="mentor-field-label">면담 가능 시간 <span aria-hidden="true">*</span></span>
+                <input className="field" type="text" name="availableTime" placeholder="예: 화요일 19:00, 금요일 15:00" required />
               </label>
             </div>
           </section>
 
+          {submissionError && (
+            <div className="signup-error" role="alert">
+              {submissionError}
+            </div>
+          )}
+
           <div className="mentor-signup-actions">
             <Link className="button button-neutral" to="/signup">이전</Link>
-            <button className="button button-primary" type="submit">가입하기</button>
+            <button className="button button-primary" disabled={isSubmitting} type="submit">
+              {isSubmitting ? "가입 처리 중..." : "가입하기"}
+            </button>
           </div>
         </form>
       </main>
