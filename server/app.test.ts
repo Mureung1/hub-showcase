@@ -16,6 +16,37 @@ describe('GET /api/health', () => {
   });
 });
 
+describe('Android WebView CORS', () => {
+  it('allows the Android capture preflight request', async () => {
+    const response = await request(createApp())
+      .options('/api/insights/capture')
+      .set('Origin', 'https://localhost')
+      .set('Access-Control-Request-Method', 'POST')
+      .set('Access-Control-Request-Headers', 'authorization,content-type');
+
+    expect(response.status).toBe(204);
+    expect(response.headers['access-control-allow-origin']).toBe(
+      'https://localhost'
+    );
+    expect(response.headers['access-control-allow-methods']).toBe(
+      'POST, PATCH, OPTIONS'
+    );
+    expect(response.headers['access-control-allow-headers']).toBe(
+      'Authorization, Content-Type'
+    );
+  });
+
+  it('does not allow an untrusted origin', async () => {
+    const response = await request(createApp())
+      .options('/api/insights/capture')
+      .set('Origin', 'https://untrusted.example')
+      .set('Access-Control-Request-Method', 'POST')
+      .set('Access-Control-Request-Headers', 'authorization,content-type');
+
+    expect(response.headers['access-control-allow-origin']).toBeUndefined();
+  });
+});
+
 describe('POST /api/insights/capture', () => {
   it('passes the bearer token and capture contract to the server service', async () => {
     const captureService = createCaptureService({

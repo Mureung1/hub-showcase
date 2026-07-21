@@ -17,6 +17,30 @@ export type CreateAppOptions = {
 };
 
 const captureJsonParser = express.json({ limit: '8kb' });
+const ANDROID_WEBVIEW_ORIGIN = 'https://localhost';
+const CORS_ALLOWED_HEADERS = 'Authorization, Content-Type';
+const CORS_ALLOWED_METHODS = 'POST, PATCH, OPTIONS';
+
+const allowAndroidWebViewCors: RequestHandler = (request, response, next) => {
+  if (request.header('origin') !== ANDROID_WEBVIEW_ORIGIN) {
+    next();
+    return;
+  }
+
+  response.set({
+    'Access-Control-Allow-Headers': CORS_ALLOWED_HEADERS,
+    'Access-Control-Allow-Methods': CORS_ALLOWED_METHODS,
+    'Access-Control-Allow-Origin': ANDROID_WEBVIEW_ORIGIN,
+    Vary: 'Origin',
+  });
+
+  if (request.method === 'OPTIONS') {
+    response.sendStatus(204);
+    return;
+  }
+
+  next();
+};
 
 const parseCaptureJson: RequestHandler = (request, response, next) => {
   captureJsonParser(request, response, (error) => {
@@ -35,6 +59,8 @@ export function createApp({
   memoService,
 }: CreateAppOptions = {}) {
   const app = express();
+
+  app.use('/api', allowAndroidWebViewCors);
 
   app.get('/api/health', (_request, response) => {
     response.json({ ok: true });

@@ -5,6 +5,7 @@ import { getSupabaseEnv, type SupabaseEnv } from '@/shared/config';
 const BROWSER_AUTH_OPTIONS = {
   autoRefreshToken: true,
   detectSessionInUrl: true,
+  flowType: 'pkce',
   persistSession: true,
 } as const;
 
