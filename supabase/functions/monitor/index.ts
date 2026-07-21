@@ -9,7 +9,7 @@
 //   5) delete_after_alert → status='done', 아니면 last_alerted_at 갱신
 //   6) {checked, matched, alerted, errors[]} 요약 반환 (cron 로그용)
 
-import { getServiceClient, getSingleUser } from "../_shared/db.ts";
+import { getServiceClient } from "../_shared/db.ts";
 import { sendChannelMessage } from "../_shared/discord.ts";
 import {
   evaluatePrice,
@@ -139,17 +139,6 @@ Deno.serve(async (_req) => {
   const client = getServiceClient();
   const summary = { checked: 0, matched: 0, alerted: 0, errors: [] as string[] };
 
-  // 발송 대상 사용자 (없어도 평가는 진행, 알림만 스킵)
-  let notifyChannelId: string | null = null;
-  let userId: string | null = null;
-  try {
-    const user = await getSingleUser(client);
-    userId = user.userId;
-    notifyChannelId = user.notifyChannelId ?? null;
-  } catch (e) {
-    console.warn(`getSingleUser 실패 — 알림 발송 스킵: ${(e as Error).message}`);
-  }
-
   // 1) active 조건 조회
   const { data: conditions, error: condErr } = await client
     .from("conditions")
@@ -166,6 +155,25 @@ Deno.serve(async (_req) => {
 
   // 장시간 필터
   const activeRows = rows.filter((c) => isMarketOpen(c.market));
+
+  // 사용자별 발송 채널 맵 (docs/discord-linking.md §7.1): 평가 대상 조건 소유자들의
+  // notify_channel_id를 한 번에 조회해 Map으로 보관(N+1 회피). 미연동 사용자는 맵에 없어
+  // 발송만 스킵되고 평가·alerts 기록은 진행된다.
+  const channelByUser = new Map<string, string | null>();
+  const ownerIds = [...new Set(activeRows.map((c) => c.user_id))];
+  if (ownerIds.length > 0) {
+    const { data: links, error: linkErr } = await client
+      .from("discord_links")
+      .select("user_id, notify_channel_id")
+      .in("user_id", ownerIds);
+    if (linkErr) {
+      summary.errors.push(`discord_links 조회 실패: ${linkErr.message}`);
+    } else {
+      for (const l of links ?? []) {
+        channelByUser.set(l.user_id as string, (l.notify_channel_id as string | null) ?? null);
+      }
+    }
+  }
 
   // (ticker,market,exchange) 그룹핑 → 시세 중복 호출 방지
   const groups = new Map<string, ConditionRow[]>();
@@ -225,30 +233,31 @@ Deno.serve(async (_req) => {
       let alerted = false;
 
       if (shouldAlert) {
-        if (!notifyChannelId) {
-          console.warn(`알림 채널(notify_channel_id) 없음 — ${c.ticker} 알림 스킵`);
+        // 조건 충족 이벤트 이력 (차트 "조건 충족 시점" 마커 원천, 0005_alerts_and_hold.sql).
+        // 발송 여부·연동 여부와 무관하게 "조건 충족" 사실은 조건 소유자(c.user_id) 기준으로 기록한다.
+        // 0005 미적용 환경(테이블 없음)에서도 발송 자체는 막지 않도록 실패를 삼킨다.
+        const { error: alertInsertError } = await client.from("alerts").insert({
+          user_id: c.user_id,
+          condition_id: c.id,
+          ticker: c.ticker,
+          market: c.market,
+          price,
+        });
+        if (alertInsertError) {
+          console.warn(`alerts insert 실패(0005 미적용 가능): ${alertInsertError.message}`);
+        }
+
+        // 조건 소유자의 채널로만 발송. 미연동(채널 없음)이면 발송만 스킵.
+        const channelId = channelByUser.get(c.user_id) ?? null;
+        if (!channelId) {
+          console.warn(`알림 채널 없음(미연동 사용자 ${c.user_id}) — ${c.ticker} 발송 스킵`);
         } else {
           try {
-            const memory = userId ? await fetchMemoryLine(client, userId, c.ticker) : null;
+            const memory = await fetchMemoryLine(client, c.user_id, c.ticker);
             const payload = buildAlertPayload(c, price, memory);
-            await sendChannelMessage(notifyChannelId, payload);
+            await sendChannelMessage(channelId, payload);
             alerted = true;
             summary.alerted++;
-
-            // 조건 충족 이벤트 이력 (차트 "조건 충족 시점" 마커 원천, 0005_alerts_and_hold.sql).
-            // 0005 미적용 환경(테이블 없음)에서도 알림 발송 자체는 막지 않도록 실패를 삼킨다.
-            if (userId) {
-              const { error: alertInsertError } = await client.from("alerts").insert({
-                user_id: userId,
-                condition_id: c.id,
-                ticker: c.ticker,
-                market: c.market,
-                price,
-              });
-              if (alertInsertError) {
-                console.warn(`alerts insert 실패(0005 미적용 가능): ${alertInsertError.message}`);
-              }
-            }
           } catch (e) {
             summary.errors.push(`알림 발송 실패 ${c.ticker}: ${(e as Error).message}`);
           }

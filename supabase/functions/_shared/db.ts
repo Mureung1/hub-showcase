@@ -1,6 +1,6 @@
-// Supabase 서비스 롤 클라이언트 + MVP 단일 사용자 조회 헬퍼.
-// 근거: docs/prd.md §1(단일 사용자 전제, 1단계 Edge Function은 service role로 동작 가능)
-//       docs/prd.md §2(profiles/discord_links 스키마)
+// Supabase 서비스 롤 클라이언트 + 사용자 조회 헬퍼.
+// 근거: docs/prd.md §2(profiles/discord_links 스키마),
+//       docs/discord-linking.md §7.1(다중 사용자 라우팅 — discord_user_id 역조회)
 
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 
@@ -28,47 +28,36 @@ export function getServiceClient(): SupabaseClient {
   return cachedClient;
 }
 
-export interface SingleUser {
+export interface ResolvedUser {
   userId: string;
-  discordUserId: string | null;
   notifyChannelId: string | null;
 }
 
 /**
- * MVP 단일 사용자 조회: profiles 첫 행 + discord_links 조인.
- * profiles가 비어있으면(온보딩 전) throw한다.
+ * 다중 사용자 라우팅(docs/discord-linking.md §7.1): 인터랙션의 실제 Discord user id로
+ * discord_links를 역조회해 해당 Beacon 사용자를 해석한다.
+ * 미연동(해당 discord_user_id로 링크된 사용자 없음)이면 null을 반환한다 — 호출부에서
+ * "/연동" 안내로 분기한다(throw 아님).
  */
-export async function getSingleUser(
+export async function resolveUserByDiscordId(
   client: SupabaseClient,
-): Promise<SingleUser> {
-  const { data: profile, error: profileError } = await client
-    .from("profiles")
-    .select("id")
-    .limit(1)
-    .maybeSingle();
+  discordUserId: string | null | undefined,
+): Promise<ResolvedUser | null> {
+  if (!discordUserId) return null;
 
-  if (profileError) {
-    throw new Error(`profiles 조회 실패: ${profileError.message}`);
-  }
-  if (!profile) {
-    throw new Error(
-      "profiles 테이블에 사용자가 없습니다. 온보딩(계정 생성)을 먼저 완료하세요.",
-    );
-  }
-
-  const { data: link, error: linkError } = await client
+  const { data: link, error } = await client
     .from("discord_links")
-    .select("discord_user_id, notify_channel_id")
-    .eq("user_id", profile.id)
+    .select("user_id, notify_channel_id")
+    .eq("discord_user_id", discordUserId)
     .maybeSingle();
 
-  if (linkError) {
-    throw new Error(`discord_links 조회 실패: ${linkError.message}`);
+  if (error) {
+    throw new Error(`discord_links 역조회 실패: ${error.message}`);
   }
+  if (!link) return null;
 
   return {
-    userId: profile.id as string,
-    discordUserId: (link?.discord_user_id as string | undefined) ?? null,
-    notifyChannelId: (link?.notify_channel_id as string | undefined) ?? null,
+    userId: link.user_id as string,
+    notifyChannelId: (link.notify_channel_id as string | undefined) ?? null,
   };
 }
