@@ -2,7 +2,7 @@
 title: Wiki Synthesis
 type: synthesis-index
 status: active
-updated: 2026-07-20
+updated: 2026-07-21
 source_paths:
   - docs/wiki/index.md
 confidence: high
@@ -26,3 +26,4 @@ Synthesis pages are generated summaries or decisions derived from source materia
 
 - [codex-harness-operations-evals.md](codex-harness-operations-evals.md): Codex harness operating workflow and representative evals.
 - [dynamic-asset-animation-pipeline.md](dynamic-asset-animation-pipeline.md): Dynamic asset sprite generation, playback, and source/Wiki boundary.
+- [supabase-quest-event-vertical-slice.md](supabase-quest-event-vertical-slice.md): Verified Hono and Supabase Quest Event save/read vertical slice.

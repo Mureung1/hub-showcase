@@ -30,8 +30,8 @@
 | T-007 | P0 | Done | GitHub Project 운영 가이드 작성 | 보드, 필드, 우선순위, Issue 연결 규칙이 있다 | github-project-guide.md |
 | T-007A | P0 | Done | 학습 정리 skill 작성 | 학습 문서를 키워드, 참고 코드, 질문 예시 중심으로 유지하는 규칙이 있다 | codex-skills/project-learning-agent/SKILL.md |
 | T-007B | P0 | Done | Codex 하네스 Recommended안 구축 | `.codex/agents`, `.agents/skills`, `docs/wiki`, `scripts/verify-harness.ps1`가 있고 검증을 통과했다 | plans/completed/harness-recommended-implementation-2026-07-14.md |
-| T-008 | P0 | Ready | GitHub Issue 등록 | P0/P1 Task가 Issue로 등록되고 완료 기준이 포함된다 | tasks.md |
-| T-009 | P0 | Ready | GitHub Project에 Issue 등록 | Project에 우선순위, 상태, 완료 기준이 연결된다 | github-project-guide.md |
+| T-008 | P0 | Done | GitHub Issue 등록 | P0/P1 Task가 Issue로 등록되고 완료 기준이 포함된다 | tasks.md |
+| T-009 | P0 | Done | GitHub Project에 Issue 등록 | Project에 우선순위, 상태, 완료 기준이 연결된다 | github-project-guide.md |
 
 ## 2주차 P0: Frontend mock 흐름
 
@@ -65,7 +65,7 @@
 | T-304 | P0 | Done | 기록 노트 서버 조회 연결 | 기록 노트가 `GET /api/quest-events` 응답을 렌더링한다 | mvp-functional-spec.md |
 | T-305 | P0 | Done | API 실패 UI 연결 | 저장/조회 실패 시 재시도 또는 안내 상태가 보인다 | verification-agent.md |
 | T-306 | P0 | Review | 수직 슬라이스 서버 mock 검증 | 화면 요청 -> Hono 서버 처리 -> memory store 저장 -> 화면 갱신이 확인된다 | verification-agent.md |
-| T-307 | P0 | Ready | Supabase 실제 DB 검증 | `/api/health`가 `storageMode: "supabase"`인 상태에서 화면 요청 -> Hono 서버 처리 -> Supabase 저장 -> 새로고침 후 조회가 확인된다 | verification-agent.md |
+| T-307 | P0 | Review | Supabase 실제 DB 검증 | `/api/health`가 `storageMode: "supabase"`인 상태에서 HTTP smoke test로 Hono -> Supabase 저장/조회가 확인됐고, 브라우저 UI 수동 확인만 남았다 | verification-agent.md |
 
 ## 3~4주차 P1: UI 품질과 기술부채
 

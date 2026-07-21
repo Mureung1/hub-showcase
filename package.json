@@ -3,6 +3,7 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "typecheck:server": "tsc -p server/tsconfig.json --noEmit",
+    "verify:sprites": "node scripts/verify-sprite-sheets.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
   },

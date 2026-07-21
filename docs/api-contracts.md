@@ -24,6 +24,13 @@ Success `200`:
 
 `storageMode` is `supabase` only when both `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are configured in the local server environment. Do not expose the actual values in screenshots, docs, or PR text.
 
+2026-07-21 local Supabase smoke criteria:
+
+- `GET /api/health` returns `storageMode: "supabase"` and `supabaseConfigured: true`.
+- `POST /api/quest-events` returns `201 Created`.
+- `GET /api/quest-events?limit=5` returns `200 OK`.
+- `GET /api/manager-context` returns `200 OK`.
+
 ## POST /api/quest-events
 
 Request:

@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, FormEvent, PointerEvent, ReactNode } from "react";
-import { getDesktopIconAsset, getLumiAnimationAsset, lumiMoodToSpriteState, type DesktopIconId } from "./data/assetManifest";
+import { CanvasSpriteAnimator } from "./components/CanvasSpriteAnimator";
+import { getDesktopIconAsset, getLumiAnimationAsset, lumiMoodToSpriteState, type DesktopIconId, type LumiSpriteState } from "./data/assetManifest";
 import { prependQuestLog, questLogMarks, questLogResultLabels } from "./data/questLogs";
 import type { QuestLog } from "./data/questLogs";
 import { createQuestEventViaApi, fetchManagerContextViaApi, fetchQuestEventsViaApi } from "./layers/storage/questLogApi";
@@ -56,6 +57,11 @@ interface WindowPosition {
 interface QuestLogSyncState {
   status: QuestLogSyncStatus;
   message: string;
+}
+
+interface QuestOutcomeStreak {
+  result: "success" | "failed" | null;
+  count: number;
 }
 
 const profileKey = "manager-xp.profile.v1";
@@ -348,6 +354,7 @@ export default function App() {
   const [previousQuestTitle, setPreviousQuestTitle] = useState("");
   const [startOpen, setStartOpen] = useState(false);
   const [logSync, setLogSync] = useState<QuestLogSyncState>({ status: "idle", message: "" });
+  const [questOutcomeStreak, setQuestOutcomeStreak] = useState<QuestOutcomeStreak>({ result: null, count: 0 });
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -387,6 +394,12 @@ export default function App() {
   function closeWindow(id: WindowId) { setOpenWindows((current) => current.filter((windowId) => windowId !== id)); }
   function moveWindow(id: WindowId, position: WindowPosition) { setWindowPositions((current) => ({ ...current, [id]: position })); }
   function recordQuestLog(log: QuestLog) { setLogs((current) => prependQuestLog(current, log)); }
+  function recordOutcomeStreak(result: "success" | "failed") {
+    setQuestOutcomeStreak((current) => ({
+      result,
+      count: current.result === result ? current.count + 1 : 1,
+    }));
+  }
   function applyManagerContext(context: ManagerContext) {
     setManager((current) => ({ ...current, mood: context.currentMood, line: createManagerContextLine(context) }));
   }
@@ -466,6 +479,7 @@ export default function App() {
 
   function completeQuest() {
     const result = questStatus === "recovery" ? "recovery" : "success";
+    recordOutcomeStreak("success");
     setManager((current) => addExp(current, quest.rewardExp));
     void saveQuestEvent(createQuestEventRequest(quest, result, quest.rewardExp, "happy", { managerLine: "완료 기록을 기억으로 정리했어." }));
     setQuestStatus("success");
@@ -479,6 +493,7 @@ export default function App() {
   }
 
   function createRecovery() {
+    recordOutcomeStreak("failed");
     setPreviousQuestTitle(quest.title);
     void saveQuestEvent(createQuestEventRequest(quest, "failed", 0, "recovering", { failureReason: selectedFailureReason, managerLine: "실패 이유를 기억하고 복구 분량을 다시 맞췄어." }));
     setQuest(createRecoveryQuest(quest));
@@ -501,10 +516,13 @@ export default function App() {
     return { id, position: windowPositions[id], zIndex: 10 + openWindows.indexOf(id), isActive: activeWindow === id, onFocus: () => openWindow(id), onMove: (position: WindowPosition) => moveWindow(id, position), onClose: () => closeWindow(id) };
   }
 
+  const showRecoveryHidingPet = questStatus === "recovery" && openWindows.includes("recovery") && questOutcomeStreak.result === "failed" && questOutcomeStreak.count >= 2;
+  const showQuestHangingPet = questStatus === "draft" && openWindows.includes("quest") && questOutcomeStreak.result === "success" && questOutcomeStreak.count >= 2;
+
   if (screen === "wizard") return <main className="xp-boot-screen"><ProfileSetupWizard draft={wizardDraft} needsClarify={needsClarify} onChange={setWizardDraft} onSubmit={submitWizard} /></main>;
   if (screen === "manager-created") return <main className="xp-boot-screen"><XpWindow className="created-window" title="Manager Created" titlebarIcon="◇" onClose={undefined}><p className="created-lead">매니저가 깨어났어요.</p><div className="created-card"><DesktopPet mood="happy" large /><div><strong>◇ 루미 ◇</strong><span>전자 생물형 페이스메이커</span><br /><small>목표를 오늘의 퀘스트로 나누고 실패하면 다음 분량을 다시 맞춰요.</small></div></div><div className="window-actions"><button className="xp-button primary" type="button" onClick={() => setScreen("desktop")}>데스크톱으로 이동</button></div></XpWindow></main>;
 
-  return <main className="xp-desktop" aria-label="Manager.exe desktop"><nav className="desktop-icons" aria-label="바탕화면 아이콘"><DesktopIcon label="오늘의 퀘스트" type="quest" onClick={openTodayQuest} /><DesktopIcon label="매니저" type="manager" onClick={() => openWindow("manager")} /><DesktopIcon label="내 프로필" type="profile" onClick={() => openWindow("profile")} /><DesktopIcon label="기록 노트" type="journal" onClick={() => openWindow("journal")} /><DesktopIcon label="휴지통" type="trash" onClick={() => openWindow("trash")} /></nav>{openWindows.includes("quest") && <XpWindow className="quest-window" title={questStatus === "recovery" ? "복구 퀘스트" : "오늘의 퀘스트"} {...windowChrome("quest")}><QuestWindow quest={quest} status={questStatus} previousQuestTitle={previousQuestTitle} onQuestChange={updateQuest} onAccept={acceptQuest} onOpenRunner={() => openWindow("runner")} onRecommendNext={openTodayQuest} /></XpWindow>}{openWindows.includes("runner") && <XpWindow className="runner-window" title="QuestRunner.exe" {...windowChrome("runner")}><QuestRunnerWindow quest={quest} remainingTime={remainingTime} onComplete={completeQuest} onFail={startFailureFlow} /></XpWindow>}{openWindows.includes("failure") && <XpWindow className="failure-window" title="퀘스트가 소멸했어" {...windowChrome("failure")}><FailureWindow selectedFailureReason={selectedFailureReason} onReasonChange={setSelectedFailureReason} onCreateRecovery={createRecovery} /></XpWindow>}{openWindows.includes("recovery") && <XpWindow className="recovery-window" title="복구 퀘스트" {...windowChrome("recovery")}><RecoveryWindow quest={quest} onEdit={editRecovery} onAccept={acceptQuest} /></XpWindow>}{openWindows.includes("manager") && <XpWindow className="manager-window" title="매니저" {...windowChrome("manager")}><ManagerWindow manager={manager} /></XpWindow>}{openWindows.includes("profile") && <XpWindow className="profile-window" title="내 프로필" {...windowChrome("profile")}><ProfileWindow profile={profile} onSave={saveProfile} /></XpWindow>}{openWindows.includes("journal") && <XpWindow className="journal-window" title="기록 노트" {...windowChrome("journal")}><JournalWindow logs={logs} sync={logSync} /></XpWindow>}{openWindows.includes("trash") && <XpWindow className="trash-window" title="휴지통" {...windowChrome("trash")}><div className="empty-trash">비어 있음</div></XpWindow>}<footer className="taskbar"><button className="start-button" type="button" onClick={() => setStartOpen((value) => !value)}><span className="start-mark" />시작</button>{startOpen && <StartMenu questStatus={questStatus} onOpenWindow={openWindow} onOpenQuest={openTodayQuest} />}<div className="taskbar-items">{openWindows.map((windowId) => <button className={activeWindow === windowId ? "active" : ""} key={windowId} type="button" onClick={() => openWindow(windowId)}><WindowIconMark id={windowId} className="taskbar-icon" /><span className="taskbar-label">{windowLabels[windowId]}</span></button>)}</div><div className="system-tray"><span>Lv.{manager.level}</span><span>{formatTime(now)}</span></div></footer></main>;
+  return <main className="xp-desktop" aria-label="Manager.exe desktop"><nav className="desktop-icons" aria-label="바탕화면 아이콘"><DesktopIcon label="오늘의 퀘스트" type="quest" onClick={openTodayQuest} /><DesktopIcon label="매니저" type="manager" onClick={() => openWindow("manager")} /><DesktopIcon label="내 프로필" type="profile" onClick={() => openWindow("profile")} /><DesktopIcon label="기록 노트" type="journal" onClick={() => openWindow("journal")} /><DesktopIcon label="휴지통" type="trash" onClick={() => openWindow("trash")} /></nav>{openWindows.includes("quest") && <XpWindow className="quest-window" title={questStatus === "recovery" ? "복구 퀘스트" : "오늘의 퀘스트"} {...windowChrome("quest")}><QuestWindow quest={quest} status={questStatus} previousQuestTitle={previousQuestTitle} onQuestChange={updateQuest} onAccept={acceptQuest} onOpenRunner={() => openWindow("runner")} onRecommendNext={openTodayQuest} /></XpWindow>}{showQuestHangingPet && <WindowPetInteraction state="hanging" placement="below-quest" position={windowPositions.quest} zIndex={11 + openWindows.indexOf("quest")} />}{openWindows.includes("runner") && <XpWindow className="runner-window" title="QuestRunner.exe" {...windowChrome("runner")}><QuestRunnerWindow quest={quest} remainingTime={remainingTime} onComplete={completeQuest} onFail={startFailureFlow} /></XpWindow>}{openWindows.includes("failure") && <XpWindow className="failure-window" title="퀘스트가 소멸했어" {...windowChrome("failure")}><FailureWindow selectedFailureReason={selectedFailureReason} onReasonChange={setSelectedFailureReason} onCreateRecovery={createRecovery} /></XpWindow>}{openWindows.includes("recovery") && <XpWindow className="recovery-window" title="복구 퀘스트" {...windowChrome("recovery")}><RecoveryWindow quest={quest} onEdit={editRecovery} onAccept={acceptQuest} /></XpWindow>}{showRecoveryHidingPet && <WindowPetInteraction state="hiding" placement="beside-recovery" position={windowPositions.recovery} zIndex={11 + openWindows.indexOf("recovery")} />}{openWindows.includes("manager") && <XpWindow className="manager-window" title="매니저" {...windowChrome("manager")}><ManagerWindow manager={manager} petAway={showQuestHangingPet || showRecoveryHidingPet} /></XpWindow>}{openWindows.includes("profile") && <XpWindow className="profile-window" title="내 프로필" {...windowChrome("profile")}><ProfileWindow profile={profile} onSave={saveProfile} /></XpWindow>}{openWindows.includes("journal") && <XpWindow className="journal-window" title="기록 노트" {...windowChrome("journal")}><JournalWindow logs={logs} sync={logSync} /></XpWindow>}{openWindows.includes("trash") && <XpWindow className="trash-window" title="휴지통" {...windowChrome("trash")}><div className="empty-trash">비어 있음</div></XpWindow>}<footer className="taskbar"><button className="start-button" type="button" onClick={() => setStartOpen((value) => !value)}><span className="start-mark" />시작</button>{startOpen && <StartMenu questStatus={questStatus} onOpenWindow={openWindow} onOpenQuest={openTodayQuest} />}<div className="taskbar-items">{openWindows.map((windowId) => <button className={activeWindow === windowId ? "active" : ""} key={windowId} type="button" onClick={() => openWindow(windowId)}><WindowIconMark id={windowId} className="taskbar-icon" /><span className="taskbar-label">{windowLabels[windowId]}</span></button>)}</div><div className="system-tray"><span>Lv.{manager.level}</span><span>{formatTime(now)}</span></div></footer></main>;
 }
 
 function StartMenu({ questStatus, onOpenWindow, onOpenQuest }: { questStatus: QuestStatus; onOpenWindow: (id: WindowId) => void; onOpenQuest: () => void }) {
@@ -534,8 +552,8 @@ function RecoveryWindow({ quest, onEdit, onAccept }: { quest: Quest; onEdit: () 
   return <section className="recovery-panel"><p className="recovery-title">{quest.title}</p><dl className="runner-grid"><div><dt>유형</dt><dd>{questTypeLabels[quest.type]}</dd></div><div><dt>분량</dt><dd>{quest.amount}{quest.unit}</dd></div><div><dt>보상</dt><dd className="reward">EXP {quest.rewardExp}</dd></div></dl><div className="window-actions"><button className="xp-button" type="button" onClick={onEdit}>수정</button><button className="xp-button primary" type="button" onClick={onAccept}>수락하기</button></div></section>;
 }
 
-function ManagerWindow({ manager }: { manager: ManagerState }) {
-  return <section className="manager-panel"><div className="manager-stage"><strong className="manager-name">◇ {manager.name} ◇</strong><div className="manager-visual"><div className="reaction-bubble" aria-hidden="true" /><DesktopPet mood={manager.mood} large /></div><div className="manager-progress"><span className="level">Lv.{manager.level}</span><div className="exp-bar" role="progressbar" aria-label="루미 경험치" aria-valuemin={0} aria-valuemax={100} aria-valuenow={manager.exp}><i style={{ width: `${manager.exp}%` }} /></div><span className="exp-value">{manager.exp} / 100 EXP</span></div><div className="manager-status"><span className={`status-pixel ${manager.mood}`}>{managerStatusIcons[manager.mood]}</span><span>{managerStatusLabels[manager.mood]}</span></div></div><p className="dialogue-panel">{manager.line}</p></section>;
+function ManagerWindow({ manager, petAway }: { manager: ManagerState; petAway?: boolean }) {
+  return <section className="manager-panel"><div className="manager-stage"><strong className="manager-name">◇ {manager.name} ◇</strong><div className={`manager-visual ${petAway ? "pet-away" : ""}`}><div className="reaction-bubble" aria-hidden="true" />{!petAway && <DesktopPet mood={manager.mood} large />}</div><div className="manager-progress"><span className="level">Lv.{manager.level}</span><div className="exp-bar" role="progressbar" aria-label="루미 경험치" aria-valuemin={0} aria-valuemax={100} aria-valuenow={manager.exp}><i style={{ width: `${manager.exp}%` }} /></div><span className="exp-value">{manager.exp} / 100 EXP</span></div><div className="manager-status"><span className={`status-pixel ${manager.mood}`}>{managerStatusIcons[manager.mood]}</span><span>{managerStatusLabels[manager.mood]}</span></div></div><p className="dialogue-panel">{manager.line}</p></section>;
 }
 
 function ProfileWindow({ profile, onSave }: { profile: UserProfile; onSave: (profile: UserProfile) => void }) {
@@ -586,24 +604,34 @@ function DesktopIcon({ label, type, onClick, disabled = false }: { label: string
     </button>
   );
 }
+
+function WindowPetInteraction({ state, placement, position, zIndex }: { state: Extract<LumiSpriteState, "hanging" | "hiding">; placement: "below-quest" | "beside-recovery"; position: WindowPosition; zIndex: number }) {
+  const animation = getLumiAnimationAsset(state);
+  const interactionStyle = {
+    "--window-x": `${position.x}px`,
+    "--window-y": `${position.y}px`,
+    zIndex,
+  } as CSSProperties & Record<"--window-x" | "--window-y", string>;
+
+  return (
+    <div className={`window-pet-interaction ${placement} ${state}`} style={interactionStyle} aria-hidden="true">
+      <CanvasSpriteAnimator animation={animation} ariaLabel={`${state} 플라나리아 매니저`} />
+    </div>
+  );
+}
+
 function DesktopPet({ mood, large = false }: { mood: ManagerState["mood"]; large?: boolean }) {
   const [hovered, setHovered] = useState(false);
   const spriteState = hovered ? "hover" : lumiMoodToSpriteState[mood];
   const animation = getLumiAnimationAsset(spriteState);
-  const spriteStyle = {
-    "--sprite-frame-count": animation.frameCount,
-    "--sprite-duration": `${animation.frameCount / animation.fps}s`,
-    backgroundImage: `url(${animation.src})`,
-  } as CSSProperties & Record<"--sprite-frame-count" | "--sprite-duration", string | number>;
 
   return (
     <span
       className={`desktop-pet-sprite ${mood} ${spriteState} ${large ? "large" : ""}`}
-      role="img"
-      aria-label="전자 생물 매니저 루미"
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
-      style={spriteStyle}
-    />
+    >
+      <CanvasSpriteAnimator animation={animation} ariaLabel="플라나리아 매니저" />
+    </span>
   );
 }

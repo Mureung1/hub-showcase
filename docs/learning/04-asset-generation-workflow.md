@@ -7,6 +7,10 @@
 - negative prompt
 - transparent background
 - sprite sheet
+- animation manifest
+- idle/hover icon pair
+- state-based character sheet
+- reduced-motion fallback
 - desktop wallpaper
 - icon kit
 - reward object sheet
@@ -24,7 +28,12 @@ ChatGPT로 이미지를 생성해도 웹에서 쓰려면 파일명, 위치, 투�
 - docs/asset-prompts
 - public/assets
 - public/assets/background
-- public/assets/lumi-manager.png
+- public/assets/icons
+- public/assets/lumi
+- public/assets/lumi/planaria-stage-1
+- src/data/assetManifest.ts
+- src/data/assetManifest.typecheck.ts
+- docs/dynamic-asset-requirements.md
 
 ## 생성 순서
 
@@ -32,19 +41,31 @@ ChatGPT로 이미지를 생성해도 웹에서 쓰려면 파일명, 위치, 투�
 2. docs/asset-prompts에서 프롬프트 선택
 3. ChatGPT 이미지 생성
 4. 결과물을 public/assets 아래로 저장
-5. HTML/CSS/React에서 상대 경로로 연결
+5. `src/data/assetManifest.ts`에서 상태별 경로로 연결
 6. 작은 크기에서 식별 가능한지 확인
+7. sprite sheet는 중심축, 기준선, frame count를 확인
 
 ## 에셋별 저장 기준
 
 - 배경: public/assets/background/background.png
-- 매니저: public/assets/lumi-manager.png
+- 매니저/Lumi: public/assets/lumi
+- 상태별 sprite sample: public/assets/lumi/planaria-stage-1
 - 아이콘: public/assets/icons
 - 보상: public/assets/rewards
 - FX: public/assets/fx
+- 검수용 contact sheet: public/assets/_review
+
+## 확인할 부분
+
+- `DesktopIconAsset`의 idle/hover 경로
+- `SpriteAnimationAsset`의 frame 크기와 fps
+- `image-rendering: pixelated` 적용 위치
+- hover/reaction 상태가 UI에 노출되는 시점
 
 ## ChatGPT 질문 예시
 
 - 이 프롬프트를 Windows XP 픽셀 배경 생성용으로 더 구체화해줘.
 - 투명 배경 캐릭터 스프라이트를 만들려면 프롬프트에 무엇을 넣어야 해?
 - 생성한 PNG를 React/Vite 프로젝트에서 관리하는 폴더 구조를 추천해줘.
+- sprite sheet에서 중심축이 흔들리면 React/CSS 재생 시 어떤 문제가 생겨?
+- asset manifest를 쓰면 컴포넌트 코드가 어떻게 단순해져?

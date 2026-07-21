@@ -163,6 +163,8 @@ master-plan.md
 | `status.md` | 완료, 검증, 다음 작업, 차단 요소만 기록 |
 | `plans/` | 승인된 활성 계획과 완료된 계획을 보관 |
 | `wiki/` | 원본 자료와 생성 지식을 구분하는 프로젝트 Wiki |
+| `wiki/synthesis/dynamic-asset-animation-pipeline.md` | 동적 에셋과 sprite animation pipeline의 source-backed 결정 요약 |
+| `wiki/synthesis/supabase-quest-event-vertical-slice.md` | Hono/Supabase Quest Event 저장·조회 수직 슬라이스 검증 요약 |
 | `learning/` | ChatGPT 프로젝트에 넣고 공부할 키워드와 참고 코드 위치 |
 
 ## 6. 보관 줄기
