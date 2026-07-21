@@ -1,4 +1,4 @@
-import { getTimeFilterId } from './timeFilters'
+import { getTimeFilterId } from './timeFilters.js'
 
 export function sortByCost(recipes) {
   return [...recipes].sort((a, b) => a.totalCost - b.totalCost)
