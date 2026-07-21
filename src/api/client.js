@@ -1,14 +1,35 @@
 import { useCallback, useEffect, useState } from 'react'
 
-// 서버 API 호출 래퍼 — 비 2xx 응답이면 서버가 준 error 메시지로 throw
+// GET 호출 래퍼 — 비 2xx면 서버가 준 error 메시지로 throw. 세션 쿠키를 함께 보낸다.
 export async function api(path) {
-  const res = await fetch(path)
+  const res = await fetch(path, { credentials: 'same-origin' })
   if (!res.ok) {
     const body = await res.json().catch(() => null)
-    throw new Error(body?.error ?? `요청 실패 (${res.status})`)
+    const err = new Error(body?.error ?? `요청 실패 (${res.status})`)
+    err.status = res.status
+    throw err
   }
   return res.json()
 }
+
+// 본문을 보내는 호출(POST 등) — 세션 쿠키 포함, 비 2xx면 서버 error 메시지로 throw
+export async function apiSend(path, method, body) {
+  const res = await fetch(path, {
+    method,
+    credentials: 'same-origin',
+    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const b = await res.json().catch(() => null)
+    const err = new Error(b?.error ?? `요청 실패 (${res.status})`)
+    err.status = res.status
+    throw err
+  }
+  return res.status === 204 ? null : res.json()
+}
+
+export const apiPost = (path, body) => apiSend(path, 'POST', body)
 
 // GET 데이터 로딩 훅 — 로딩/에러/데이터 3상태 + 재시도
 export function useApi(path) {
