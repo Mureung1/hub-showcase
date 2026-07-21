@@ -6,19 +6,17 @@ import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('githubService');
 
-// "진짜 외부 기여"로 인정하는 최소 스타 수 — 소속 조직 멤버십이 비공개면 조직 필터가 새는데,
-// 학교 팀프로젝트류는 스타가 거의 없으므로 스타 컷이 백스톱 역할을 한다 (2026-07-15 논의)
+// "진짜 외부 기여" 최소 스타 컷. 조직 멤버십이 비공개면 조직 필터가 새는데,
+// 팀프로젝트류는 스타가 적어 이 컷이 백스톱 역할 (2026-07-15 논의)
 const EXTERNAL_STAR_MIN = 10;
 
-// 프로필 원시 데이터를 GraphQL 쿼리 1개로 수집 (REST로 하면 레포마다 언어 조회가 필요한 N+1 구조)
-// - commitContributionsByRepository: 최근 12개월간 실제 커밋한 레포(소유·조직·팀 레포 포함)와
-//   레포별 커밋 수 + 언어 구성. 언어 비율은 이 커밋 수로 가중 평균한다 —
-//   레포에 쌓인 코드 용량이 아니라 "최근에 실제로 작성한 언어"가 반영되도록 (분석중 화면 문구와 일치)
+// 프로필 원시 데이터를 GraphQL 쿼리 1개로 수집 (REST면 레포마다 언어 조회 필요 — N+1)
+// - commitContributionsByRepository: 최근 12개월 커밋한 레포(소유·조직·팀)와 레포별 커밋 수+언어 구성.
+//   언어 비율은 이 커밋 수로 가중 평균 (레포 용량이 아니라 최근 작성 언어 반영)
 // - pullRequests/issues: 전체 누적 카운트
-// - contributionsCollection.totalCommitContributions: 최근 1년 커밋 수
-//   (전체 커밋 수는 레포별 히스토리 조회가 필요해 N+1이 되므로, 활동성 지표로는 최근 1년으로 충분하다고 판단)
-// - repositoriesContributedTo: 본인 소유가 아닌 레포 기여 이력 — 기간 제한이 없어 오래된 오픈소스 기여도 유지됨.
-//   개수는 skillLevel 판정, 목록(레포명+스타 수)은 프로필 "기여 이력" 표시용
+// - contributionsCollection.totalCommitContributions: 최근 1년 커밋 수 (전체 히스토리 조회는 N+1이라 제외)
+// - repositoriesContributedTo: 본인 소유 아닌 레포 기여 이력, 기간 제한 없음.
+//   개수는 skillLevel 판정에, 목록(레포명+스타 수)은 "기여 이력" 표시에 사용
 const PROFILE_QUERY = `
     query userProfile($login: String!) {
         user(login: $login) {
@@ -90,14 +88,12 @@ function toHttpError(error, githubId) {
     }
     logger.error('GitHub 프로필 조회 실패:', { error: error.message, status: error.status, githubId });
 
-    // GraphQL 외 HTTP 에러(토큰 누락/만료 401 등)는 error.status가 그대로 응답에 실리지 않도록
-    // status 없는 에러로 감싸서 전역 에러 핸들러가 500 INTERNAL_ERROR로 처리하게 한다
+    // 토큰 누락·만료 등 GraphQL 외 HTTP 에러는 status 없는 에러로 감싸 500 INTERNAL_ERROR로 통일
     const internal = new Error(`GitHub API 호출 실패: ${error.message}`);
     return internal;
 }
 
-// 난이도 → 레포 검색 qualifier. 해당 라벨의 오픈 이슈가 2개 이상인 레포만 —
-// "입문자를 받을 준비가 된 레포"를 검색 단계에서 거르기 위함 (2026-07-20 논의)
+// 난이도 → 레포 검색 qualifier. 해당 라벨 오픈 이슈 2개 이상인 레포만 통과 (2026-07-20 논의)
 const DIFFICULTY_REPO_QUALIFIER = {
     easy: 'good-first-issues:>=2',
     medium: 'help-wanted-issues:>=2',
@@ -120,15 +116,14 @@ function toRestHttpError(error, context) {
     return new Error(`GitHub API 호출 실패: ${error.message}`);
 }
 
-// 첫 기여 후보가 될 "건강한 레포" 검색 (레포 우선 파이프라인의 1단계)
-// 이슈 검색과 달리 레포 검색은 stars/pushed/good-first-issues qualifier를 지원하므로
-// 유령 레포·방치 레포를 검색 단계에서 걸러낸다. 반환: fullName(owner/repo) 배열
+// "건강한 레포" 검색 (레포 우선 파이프라인 1단계). stars/pushed/gfi qualifier로
+// 유령·방치 레포를 검색 단계에서 거른다. 반환: fullName(owner/repo) 배열
 export async function searchRepos({ language, difficulty, minStars, perPage = 10 }) {
     const pushedSince = new Date(Date.now() - PUSHED_WITHIN_DAYS * 24 * 60 * 60 * 1000)
         .toISOString()
         .slice(0, 10);
     const qualifiers = [
-        `language:"${language.replaceAll('"', '')}"`, // 따옴표 제거 — qualifier 문자열 조작 방지 (컨트롤러 검증의 2차 방어)
+        `language:"${language.replaceAll('"', '')}"`, // 따옴표 제거: qualifier 조작 방지 (컨트롤러 검증의 2차 방어)
         `stars:>=${minStars}`,
         `pushed:>=${pushedSince}`,
         'archived:false',
@@ -151,13 +146,13 @@ export async function searchRepos({ language, difficulty, minStars, perPage = 10
     }
 }
 
-// 레포 메타데이터 + 후보 이슈 일괄 조회 — 레포 수만큼 REST를 부르면 N+1이므로 GraphQL 쿼리 1개에 alias로 묶는다
-// issueLabels: 난이도에 맞는 이슈 라벨 필터(recommendationService.DIFFICULTY_ISSUE_LABELS). 담당자 없는 오픈 이슈만 가져온다
+// 레포 메타데이터 + 후보 이슈 일괄 조회 (레포 수만큼 REST 부르면 N+1 → GraphQL 1쿼리 alias)
+// issueLabels: 난이도별 이슈 라벨 필터. 담당자 없는 오픈 이슈만 조회
 // 반환: [{ fullName, description, url, stars, primaryLanguage, languages, topics,
 //          goodFirstIssueCount, helpWantedIssueCount, pushedAt, issues: [{ number, title, url, labels }] }]
-// 일부 레포가 삭제·비공개 상태여도(부분 에러) 조회 가능한 나머지는 그대로 반환한다
+// 일부 레포가 삭제·비공개여도 나머지는 그대로 반환
 export async function fetchReposWithIssues(fullNames, issueLabels = null) {
-    // "owner/name" 형식이 아닌 값이 섞이면 GraphQL 별칭 쿼리 문자열이 깨지므로 사전에 걸러낸다
+    // owner/name 형식 아니면 GraphQL 별칭 쿼리가 깨짐 — 사전 필터
     const validFullNames = fullNames.filter((fullName) => /^[^/]+\/[^/]+$/.test(fullName));
     if (validFullNames.length === 0) {
         return [];
@@ -217,8 +212,7 @@ export async function fetchReposWithIssues(fullNames, issueLabels = null) {
     try {
         repos = await githubGraphql(query, { issueLabels });
     } catch (error) {
-        // rate limit 여부를 먼저 확인한다 — GraphQL이 RATE_LIMITED와 함께 부분 data(전부 null인 alias)를
-        // 같이 내려주는 경우가 있어, data 유무를 먼저 보면 429가 조용히 빈 결과로 위장될 수 있다
+        // rate limit 먼저 확인 — data 유무부터 보면 429가 빈 결과로 위장될 수 있음 (RATE_LIMITED도 부분 data를 같이 줌)
         if (error instanceof GraphqlResponseError && (error.errors || []).some((e) => e.type === 'RATE_LIMITED')) {
             const rateLimited = new Error('GitHub API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
             rateLimited.status = 429;
@@ -259,7 +253,7 @@ export async function fetchReposWithIssues(fullNames, issueLabels = null) {
 // GitHub 사용자 프로필 원시 데이터 조회
 // 반환: { githubId, languageWeights: [{ name, weight }], recentRepos: [{ nameWithOwner, commits }](최근 1년 커밋한 본인·소속 조직 레포),
 //        contributedRepos: [{ nameWithOwner, stars }](외부 기여·평생·스타순), totals: { commits, pullRequests, issues, contributedRepos, ownRepos } }
-// 활동이 없는 사용자(레포/커밋 0)도 에러가 아니라 0/빈 배열로 정상 반환한다 (명세 noActivity 케이스)
+// 활동 없는 사용자도 에러 아니라 0/빈 배열 정상 반환 (명세 noActivity 케이스)
 export async function fetchUserProfile(githubId) {
     let user;
     try {
@@ -267,13 +261,11 @@ export async function fetchUserProfile(githubId) {
     } catch (error) {
         throw toHttpError(error, githubId);
     } finally {
-        // 404(없는 유저)든 성공이든 GitHub rate limit은 소모되므로 결과와 무관하게 집계한다.
-        // 기록 실패는 apiUsageService가 삼키므로 await로 본 흐름이 늦어질 이유가 없다 (fire-and-forget)
+        // 404든 성공이든 rate limit은 소모되므로 결과 무관 집계 (fire-and-forget, 실패는 apiUsageService가 삼킴)
         recordGithubCall();
     }
 
-    // "진짜 외부 기여" 판별: 본인 소유도, 소속 조직 소유도 아닌 레포 + 스타 컷 통과
-    // (GitHub은 소속 조직 레포도 '타인 소유'로 취급하므로 팀프로젝트가 기여 이력에 섞이는 것을 거른다)
+    // "진짜 외부 기여" = 본인·소속 조직 소유가 아닌 레포 + 스타 컷 통과
     const myLogins = new Set([
         user.login.toLowerCase(),
         ...user.organizations.nodes.map((org) => org.login.toLowerCase()),
@@ -281,8 +273,7 @@ export async function fetchUserProfile(githubId) {
     const isExternal = (nameWithOwner, stars) =>
         !myLogins.has(nameWithOwner.split('/')[0].toLowerCase()) && stars >= EXTERNAL_STAR_MIN;
 
-    // GraphQL orderBy(STARGAZERS)가 정렬을 보장하지 않는 것이 확인되어 여기서 직접 정렬한다
-    // (상위 N개만 노출할 때 유명 오픈소스 기여가 잘리지 않도록 정렬이 slice보다 먼저여야 함)
+    // GraphQL orderBy(STARGAZERS)가 정렬을 보장 안 해서 직접 정렬 (slice 전에 정렬해야 유명 기여가 안 잘림)
     const externalContributions = user.repositoriesContributedTo.nodes
         .map((repo) => ({ nameWithOwner: repo.nameWithOwner, stars: repo.stargazerCount }))
         .filter((repo) => isExternal(repo.nameWithOwner, repo.stars))
