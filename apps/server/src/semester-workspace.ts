@@ -608,6 +608,7 @@ type OpenWorkspace =
       readonly created: boolean
       authority: WorkspaceStoreAuthority
       store: PersistedWorkspaceState
+      coldRestoredGuardOperationId: string | null
       releasedProductOperationId: string | null
       storeConflict: StoreConflictRecovery | null
       snapshot: ReadySemesterWorkspaceSnapshot
@@ -721,7 +722,7 @@ export function createSemesterWorkspaceController(options: {
             activeStoreConflict &&
             canReactivateStoreConflict(active),
         )
-        const reactivatingReleasedGuard =
+        const reactivatingGuardedStoreConflict =
           reactivatingStoreConflict &&
           activeStoreConflict !== null &&
           activeStoreConflict.guardedOperationId !== null
@@ -749,7 +750,7 @@ export function createSemesterWorkspaceController(options: {
         ])
         assertDisjointRoots([packageRoot, appDataRoot, workspaceRoot])
         if (
-          reactivatingReleasedGuard &&
+          reactivatingGuardedStoreConflict &&
           active &&
           active.root !== workspaceRoot
         ) {
@@ -1171,6 +1172,7 @@ export function createSemesterWorkspaceController(options: {
       if (
         active &&
         'store' in active &&
+        active.coldRestoredGuardOperationId !== operationId &&
         active.store.executionGuard?.operationId === operationId
       ) {
         active.releasedProductOperationId = operationId
@@ -1196,6 +1198,7 @@ export function createSemesterWorkspaceController(options: {
           input,
           options.beforeActionStoreWrite,
         )
+        opened.coldRestoredGuardOperationId = null
         proposalContexts.set(
           prepared.activeContext.context.requestKey,
           prepared.activeContext,
@@ -1219,12 +1222,12 @@ export function createSemesterWorkspaceController(options: {
     },
 
     prepareProductChatExecution(input) {
-      return enqueue(() =>
-        prepareProductChatExecution(
-          requireReadyWorkspace(active),
-          input,
-        ),
-      )
+      return enqueue(async () => {
+        const opened = requireReadyWorkspace(active)
+        const prepared = await prepareProductChatExecution(opened, input)
+        opened.coldRestoredGuardOperationId = null
+        return prepared
+      })
     },
 
     readMaterialPreview(input) {
@@ -3291,6 +3294,8 @@ async function openWorkspace(workspaceRoot: string): Promise<OpenWorkspace> {
       created: opened.created,
       authority: opened.authority,
       store: opened.store,
+      coldRestoredGuardOperationId:
+        opened.store.executionGuard?.operationId ?? null,
       releasedProductOperationId: null,
       storeConflict: null,
       snapshot: readySnapshot(opened.store),
@@ -3665,6 +3670,7 @@ function canReactivateStoreConflict(
   const guardedOperationId = opened.storeConflict?.guardedOperationId
   return (
     guardedOperationId === null ||
+    guardedOperationId === opened.coldRestoredGuardOperationId ||
     (guardedOperationId !== undefined &&
       guardedOperationId === opened.releasedProductOperationId)
   )

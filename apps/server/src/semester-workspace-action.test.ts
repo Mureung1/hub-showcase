@@ -458,6 +458,135 @@ test('source drift preserves user bytes until explicit refresh adopts a new base
   }
 })
 
+test('cold-restored source recovery can adopt store drift without a prior-process release marker', async () => {
+  let cleanupAllowed = false
+  const blockedCleanup = new Promise<void>(() => undefined)
+  const fixture = await createFixture(undefined, {
+    actionCleanupDeadlineMs: 5,
+    beforeActionArtifactCleanup: () =>
+      cleanupAllowed ? undefined : blockedCleanup,
+  })
+  const storePath = path.join(
+    fixture.workspaceRoot,
+    '.ay-ple',
+    'workspace-state.json',
+  )
+  const firstPath = path.join(fixture.workspaceRoot, 'first.txt')
+  const driftedBytes = Buffer.from('새 process가 채택할 학생 원본', 'utf8')
+  try {
+    const prepared = await prepareAction(fixture.controller, fixture.courseId)
+    await fixture.controller.bindAssignmentAction({
+      actionId: prepared.run.actionId,
+      threadId: 'thread-cold-source-recovery',
+      turnId: 'turn-cold-source-recovery',
+    })
+    await writeFile(firstPath, driftedBytes)
+    const settled = await fixture.controller.settleAssignmentAction({
+      actionId: prepared.run.actionId,
+      status: 'interrupted',
+      validationOutcome: 'failed',
+    })
+    assert.equal(settled.status, 'failed')
+    assert.equal(
+      fixture.controller.snapshot()?.recovery?.state,
+      'source_conflict',
+    )
+    const persistedRecovery = JSON.parse(
+      await readFile(storePath, 'utf8'),
+    ) as { readonly executionGuard: { readonly state: string } | null }
+    assert.equal(persistedRecovery.executionGuard?.state, 'recovery_required')
+    assert.equal(await exists(prepared.stagedSources[0]!.path), true)
+    assert.equal(await exists(prepared.scratchPath), true)
+
+    const coldController = createSemesterWorkspaceController({
+      packageRoot: fixture.packageRoot,
+      appDataRoot: fixture.appDataRoot,
+      actionCleanupDeadlineMs: 5,
+      beforeActionArtifactCleanup: () =>
+        cleanupAllowed ? undefined : blockedCleanup,
+      chooseDirectory: async () => fixture.workspaceRoot,
+    })
+    const cold = await coldController.activate()
+    assert.equal(cold.status, 'activated')
+    assert.equal(cold.workspace.recovery?.state, 'source_conflict')
+    assert.equal(await exists(prepared.stagedSources[0]!.path), true)
+    assert.equal(await exists(prepared.scratchPath), true)
+
+    const externalStore = JSON.parse(
+      await readFile(storePath, 'utf8'),
+    ) as Record<string, unknown>
+    externalStore.course = {
+      ...(externalStore.course as Record<string, unknown>),
+      displayName: '외부에서 채택할 cold recovery 과목',
+    }
+    const externalBytes = Buffer.from(
+      `${JSON.stringify(externalStore, null, 2)}\n`,
+      'utf8',
+    )
+    await writeFile(storePath, externalBytes)
+
+    await assert.rejects(
+      coldController.refreshMaterials(),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'execution_guard_conflict',
+    )
+    assert.equal(coldController.snapshot()?.recovery?.state, 'store_conflict')
+    assert.deepEqual(await readFile(storePath), externalBytes)
+    assert.deepEqual(await readFile(firstPath), driftedBytes)
+
+    cleanupAllowed = true
+    const recovered = await coldController.activate()
+    assert.equal(recovered.status, 'activated')
+    assert.equal(
+      recovered.workspace.course?.displayName,
+      '외부에서 채택할 cold recovery 과목',
+    )
+    assert.equal(recovered.workspace.recovery?.state, 'source_conflict')
+    assert.deepEqual(await readFile(storePath), externalBytes)
+    assert.deepEqual(await readFile(firstPath), driftedBytes)
+    assert.equal(await exists(prepared.stagedSources[0]!.path), false)
+    assert.equal(await exists(prepared.scratchPath), false)
+
+    const refreshed = await coldController.refreshMaterials()
+    assert.equal(refreshed.outcome, 'source_rebaselined')
+    assert.equal(refreshed.workspace.recovery, null)
+    assert.deepEqual(await readFile(firstPath), driftedBytes)
+    const refreshedFirst = refreshed.workspace.materials.find(
+      (material) => material.relativePath === 'first.txt',
+    )!
+    assert.equal(
+      refreshedFirst.digest,
+      createHash('sha256').update(driftedBytes).digest('hex'),
+    )
+    const persistedRecovered = JSON.parse(
+      await readFile(storePath, 'utf8'),
+    ) as {
+      readonly course: { readonly displayName: string }
+      readonly executionGuard: unknown
+    }
+    assert.equal(persistedRecovered.executionGuard, null)
+    assert.equal(
+      persistedRecovered.course.displayName,
+      '외부에서 채택할 cold recovery 과목',
+    )
+
+    const fresh = await prepareAction(
+      coldController,
+      fixture.courseId,
+      `action_${'c'.repeat(32)}`,
+    )
+    await coldController.failAssignmentActionStart({
+      actionId: fresh.run.actionId,
+      status: 'not_accepted',
+      failureCode: 'test_cleanup',
+    })
+  } finally {
+    cleanupAllowed = true
+    await fixture.cleanup()
+  }
+})
+
 test('source rebaseline remains blocked until bounded artifact cleanup succeeds', async () => {
   let releaseCleanup!: () => void
   const cleanupBarrier = new Promise<void>((resolve) => {
