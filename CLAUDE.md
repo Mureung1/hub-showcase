@@ -171,10 +171,15 @@ email/logout, `Login.jsx`'s post-login redirect). `profile`/`recommended`/`effec
 top-level context values available regardless of login state; there's no `user.profile`-style nesting
 that would be `null` for guests.
 
-There is no migration path from guest-mode local data into a Supabase account on login — if a guest
-later logs in, their local data stays on the device (readable again if they log out), and the account
-starts fresh in Supabase. `src/lib/csv.js`'s header comment documents this and the separate legacy
-policy for pre-Supabase-Auth accounts in more detail.
+Guest-mode local data can be migrated into a Supabase account on login, but only via an explicit
+one-time opt-in prompt: right after login, if localStorage holds guest data, `GuestMigrationPrompt`
+(rendered globally in `router.jsx`) offers to copy it up. `src/lib/guestMigration.js` +
+`UserContext.acceptGuestMigration` do the upload — profile only if the account has none (never
+overwrites), meals deduped per record via a `guestMigration:<userId>` state (`doneMealIds`), with a
+re-entrancy guard so a double-tap can't double-insert. Declining (or having no guest data) just
+proceeds with the account. The local guest data is left on the device either way (readable again if
+they log out) — it is never deleted by the migration. `src/lib/csv.js`'s header comment documents the
+separate legacy policy for pre-Supabase-Auth accounts in more detail.
 
 `supabase/schema.sql` has the Postgres schema (`profiles`/`meals`, RLS policies scoped to
 `auth.uid()`) for the logged-in-only storage path.
