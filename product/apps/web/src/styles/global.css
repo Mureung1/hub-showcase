@@ -1001,6 +1001,11 @@ select:focus-visible {
   font-size: 11px;
   font-weight: 750;
 }
+
+html.is-english .scene-entry-button,
+html.is-english .three-d {
+  display: none;
+}
 .scene-entry-button small {
   padding: 3px 6px;
   border-radius: 4px;

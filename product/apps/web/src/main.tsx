@@ -2,6 +2,7 @@ import { StrictMode, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 
 import App from "./App.tsx";
+import { EnglishApp } from "./localization/EnglishApp.tsx";
 
 const root = document.getElementById("root");
 
@@ -13,13 +14,16 @@ const showStorefrontPrototype =
   new URLSearchParams(window.location.search).get("demo") === "storefront";
 const showFlowerMapPrototype =
   new URLSearchParams(window.location.search).get("demo") === "flower-map";
+const showEnglishSubmission = window.location.pathname === "/en";
 const reactRoot = createRoot(root);
 
 function renderApplication(application: ReactNode) {
   reactRoot.render(<StrictMode>{application}</StrictMode>);
 }
 
-if (showFlowerMapPrototype) {
+if (showEnglishSubmission) {
+  renderApplication(<EnglishApp />);
+} else if (showFlowerMapPrototype) {
   renderApplication(<main aria-busy="true">꽃 테마 점포 지도를 준비하는 중입니다.</main>);
   void import("./features/map/storefronts/FlowerStorefrontMapPrototype.tsx")
     .then(({ FlowerStorefrontMapPrototype }) => renderApplication(<FlowerStorefrontMapPrototype />))
