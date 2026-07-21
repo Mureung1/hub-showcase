@@ -4,12 +4,7 @@
 
 ## 1. Validate와 Plan
 
-```bash
-python HARNESS/run.py validate
-python HARNESS/run.py plan --target <passed|deployed|observed>
-```
-
-`validate`는 설정과 Phase 구조를 읽고 Phase·Step 수, 미설정 worker, 기본 차단 capability를 보고한다. `plan`은 target까지 선택되는 Phase, 요구 입력, approval과 현재 capability를 보여 준다. 이 두 명령은 제품 변경을 시작하지 않는다.
+`README.md` 3장의 기본 명령대로 `validate`와 `plan`을 먼저 실행한다. `validate`는 설정과 Phase 구조를 읽고 Phase·Step 수, 미설정 worker, 기본 차단 capability를 보고한다. `plan`은 target까지 선택되는 Phase, 요구 입력, approval과 현재 capability를 보여 준다. 이 두 명령은 제품 변경을 시작하지 않는다.
 
 ## 2. Preflight와 Run 생성
 
@@ -53,9 +48,7 @@ Step: pending → running → passed
                     └→ failed
 ```
 
-- `passed`: 필요한 구현·품질 Phase가 독립 검증을 통과했다.
-- `deployed`: 스테이징 Phase까지 통과했다.
-- `observed`: 승인된 프로덕션 배포와 관찰 인계까지 통과했다.
+- `passed`·`deployed`·`observed`가 포함하는 Phase 범위는 `README.md` 3장의 target 표를 따른다.
 - `blocked`: 설정, capability, approval, 범위 위반이나 남은 변경처럼 사람이 먼저 해결할 일이 있다.
 - `failed`: 자동 재시도 한도를 소진했거나 재개 대상이 아닌 최종 실패다.
 
@@ -67,15 +60,10 @@ Failure는 관측 사실, 원인 평가, 증거, 처분을 분리한다. 후속 
 
 ## 6. Resume
 
-```bash
-python HARNESS/run.py status --run <run-id>
-python HARNESS/run.py resume --run <run-id>
-```
-
-중단 시 먼저 `state.json`의 `blocked`, `safe_to_resume`, `open_failure_ids`와 해당 Failure를 확인한다. 설정·입력·capability·approval blocker는 해결 후 같은 Run을 resume한다. Controller는 시작됐지만 완료 기록이 없는 Attempt를 `interrupted` 기록으로 만들고, Attempt가 먼저 서명된 경우에는 checkpoint blob과 대조해 상태를 복구한다.
+중단 시 먼저 `status` 명령으로 `state.json`의 `blocked`, `safe_to_resume`, `open_failure_ids`와 해당 Failure를 확인한다. 설정·입력·capability·approval blocker는 해결 후 같은 Run을 resume한다. Controller는 시작됐지만 완료 기록이 없는 Attempt를 `interrupted` 기록으로 만들고, Attempt가 먼저 서명된 경우에는 checkpoint blob과 대조해 상태를 복구한다.
 
 Controller는 남은 변경을 stash, reset, 삭제하지 않는다. `safe_to_resume:false`, 범위 위반, 무단 HEAD·Git 제어면 변경이나 부분 변경으로 막혔다면 증거와 diff를 보존하고 원인을 수정한 뒤 새 `start`로 실행한다. `failed`도 최종 상태다.
 
 ## 7. Production approval과 완료
 
-Phase 08 직전에는 commit·plan·artifact·target·adapter digest에 묶인 `production-release` approval이 필요하다. challenge 확인, approve, resume 순서를 지킨다. Production adapter receipt도 같은 scope를 증명해야 한다. 마지막 Phase까지 통과하면 Controller가 current pointer를 비우고 target stage를 Run 최종 상태로 기록한다.
+Phase 08 직전에는 commit·plan·artifact·target·adapter digest에 묶인 `production-release` approval이 필요하다. challenge 확인, approve, resume 순서를 지킨다(명령은 `README.md` 4장). Production adapter receipt도 같은 scope를 증명해야 한다. 마지막 Phase까지 통과하면 Controller가 current pointer를 비우고 target stage를 Run 최종 상태로 기록한다.
