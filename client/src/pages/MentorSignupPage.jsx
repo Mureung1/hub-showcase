@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
 import { navigationTargets } from "../routes/routePaths";
-import { registerAccountRole } from "../utils/authStorage";
 import { signupMentor } from "../api/auth";
 
 const academicStatusLabels = {
@@ -194,7 +193,6 @@ function MentorSignupPage() {
           internationalActivities.length,
         ),
       });
-      registerAccountRole(email, "mentor");
       setIsSignupComplete(true);
     } catch (error) {
       setSubmissionError(error.message);

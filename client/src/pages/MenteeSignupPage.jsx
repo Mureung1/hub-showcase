@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
 import { navigationTargets } from "../routes/routePaths";
-import { registerAccountRole } from "../utils/authStorage";
 import { signupMentee } from "../api/auth";
 
 function MenteeSignupPage() {
@@ -41,7 +40,6 @@ function MenteeSignupPage() {
         grade: formData.get("grade"),
         enrollmentStatus: formData.get("enrollmentStatus"),
       });
-      registerAccountRole(email, "mentee");
       setIsSignupComplete(true);
     } catch (error) {
       setSubmissionError(error.message);
