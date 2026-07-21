@@ -235,6 +235,22 @@ function toRecommendationResponse(record) {
     };
 }
 
+// 저장된 추천 재조회 (GET /api/recommendations/:id — 목록/상세 새로고침용)
+// 없으면 getAnalysis(analysisService.js)와 동일한 패턴으로 404(RECOMMENDATION_NOT_FOUND)를 던진다
+export async function getRecommendationById(id) {
+    const record = await prisma.recommendation.findUnique({
+        where: { id },
+        include: { items: { orderBy: { position: 'asc' } } },
+    });
+    if (!record) {
+        const notFound = new Error('추천 결과를 찾을 수 없습니다.');
+        notFound.status = 404;
+        notFound.code = 'RECOMMENDATION_NOT_FOUND';
+        throw notFound;
+    }
+    return toRecommendationResponse(record);
+}
+
 // 분석 결과 + 선호 조건 → 추천 생성·저장 (openapi.yaml Recommendation 스키마)
 // 흐름: 분석 이력 확인(없으면 404) → 레포 검색(REST) → 레포·이슈 일괄 조회(GraphQL 1쿼리)
 //       → 규칙 기반 점수·정렬 → 캐시 기록 → Recommendation 저장 후 반환

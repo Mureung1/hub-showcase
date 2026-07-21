@@ -1,5 +1,5 @@
-import { createRecommendation } from '../services/recommendationService.js';
-import { isValidGithubId } from '../utils/validators.js';
+import { createRecommendation, getRecommendationById } from '../services/recommendationService.js';
+import { isValidGithubId, isValidUuid } from '../utils/validators.js';
 
 const DIFFICULTIES = ['easy', 'medium', 'hard'];
 
@@ -44,6 +44,25 @@ export async function requestRecommendation(req, res, next) {
             difficulty: preferences.difficulty,
             topics: preferences.topics ?? [],
         });
+        res.status(200).json(recommendation);
+    } catch (error) {
+        next(error);
+    }
+}
+
+// GET /api/recommendations/:id — 저장된 추천 재조회
+export async function getRecommendation(req, res, next) {
+    const { id } = req.params;
+
+    if (!isValidUuid(id)) {
+        res.status(400).json({
+            error: { code: 'VALIDATION_ERROR', message: '추천 id 형식이 올바르지 않습니다.' },
+        });
+        return;
+    }
+
+    try {
+        const recommendation = await getRecommendationById(id);
         res.status(200).json(recommendation);
     } catch (error) {
         next(error);
