@@ -19,9 +19,10 @@ API key와 DB secret은 `product/.env.example`을 기준으로 `product/.env` �
 
 ```powershell
 pnpm check
-node ../scripts/build_docs_site.mjs
-python ../scripts/check_deploy_artifacts.py
 ```
+
+`pnpm check`은 제품 web의 format, typecheck, lint, test, build와 API의 lint·test를 실행한다.
+문서 HTML build는 제품 검증에 포함하지 않는다.
 
 ## Deployment
 
@@ -30,4 +31,21 @@ python ../scripts/check_deploy_artifacts.py
 - 제품 output: `product/apps/web/dist`
 - 문서 output: `dist/docs-site`
 
-공개 제품 URL 생성과 API hosting 연결은 후속 배포·검색 통합 Task에서 수행한다.
+현재 제품 데모 URL은 <https://localtwin-product.vercel.app>이고 API health endpoint는
+<https://localtwin-api.onrender.com/health>이다. 배포 서비스가 일시적으로 sleep 상태일 수 있으므로
+시연 전에 한 번 열어 API를 깨운다.
+
+## Evaluation and demo scope
+
+LocalTwin은 예비 소상공인이 후보 상권과 점포를 검색하고, 동종 업종 경쟁·변화·유동·인구 근거를
+함께 확인하도록 돕는 제품이다. 현재 시연 범위는 연남·홍대·합정이며 서울 전체 분석을 주장하지 않는다.
+
+데이터 흐름은 다음과 같다.
+
+```text
+official snapshots -> canonical SQLite validation -> Supabase PostgreSQL
+React search/map -> FastAPI -> PostgreSQL analysis response
+```
+
+제출·시연용 설명, 영상 대본, 최종 체크리스트는
+[`docs/submissions/openai-build-week.md`](../docs/submissions/openai-build-week.md)에 있다.
