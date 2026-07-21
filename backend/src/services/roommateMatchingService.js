@@ -1,6 +1,7 @@
 import { prisma } from '../config/prismaClient.js'
 import {
   passesHardFilter,
+  passesHobbyFilter,
   cosineSimilarity,
   softFilterMatch,
   calculateFinalScore,
@@ -19,8 +20,18 @@ function extractHardFilterFields(user, lifestyleTest) {
   }
 }
 
+// hobby_test_results.hobbyTags({ primary, secondary })에서 취미 하드필터에 필요한 값을 뽑아낸다.
+// 취미 테스트를 완료하지 않은 유저는 null을 반환한다.
+function extractHobbyTags(user) {
+  return user.hobbyTestResult ? user.hobbyTestResult.hobbyTags : null
+}
+
 // 룸메이트 매칭 후보 목록 조회: userId 본인 기준으로 하드필터를 통과하는 다른 유저들을 반환한다
-export async function getCandidatesForUser(userId) {
+// applyHobbyFilter가 true면, 본인의 취미 주유형이 후보의 취미 주/보조유형과 겹치는 후보만 남긴다
+// (본인 또는 후보가 취미 테스트를 완료하지 않았다면 해당 후보는 조용히 제외된다)
+// roommateTypeOverride('friend' | 'business')가 전달되면, 하드필터에서 본인의 roommateType으로
+// DB 조회값 대신 이 값을 사용한다 (DB의 roommate_profiles는 변경하지 않는 조회 전용 오버라이드)
+export async function getCandidatesForUser(userId, applyHobbyFilter = false, roommateTypeOverride) {
   const selfId = BigInt(userId)
 
   const selfUser = await prisma.user.findUnique({
@@ -28,6 +39,7 @@ export async function getCandidatesForUser(userId) {
     include: {
       roommateProfile: true,
       personalityTests: { where: { testType: 'lifestyle' } },
+      hobbyTestResult: true,
     },
   })
 
@@ -48,6 +60,11 @@ export async function getCandidatesForUser(userId) {
   }
 
   const selfFilterFields = extractHardFilterFields(selfUser, selfLifestyleTest)
+  // roommateTypeOverride가 전달된 경우, 이번 조회에서만 본인의 roommateType을 override 값으로 취급한다
+  if (roommateTypeOverride !== undefined) {
+    selfFilterFields.roommateType = roommateTypeOverride
+  }
+  const selfHobbyTags = extractHobbyTags(selfUser)
 
   // 본인을 제외한 유저 중, roommate_profiles와 생활성향 테스트 결과가 모두 있는 유저만 후보군으로 가져온다
   const candidateUsers = await prisma.user.findMany({
@@ -59,6 +76,7 @@ export async function getCandidatesForUser(userId) {
     include: {
       roommateProfile: true,
       personalityTests: { where: { testType: 'lifestyle' } },
+      hobbyTestResult: true,
     },
   })
 
@@ -69,6 +87,13 @@ export async function getCandidatesForUser(userId) {
     const candidateFilterFields = extractHardFilterFields(candidateUser, candidateLifestyleTest)
 
     if (!passesHardFilter(selfFilterFields, candidateFilterFields)) continue
+
+    if (applyHobbyFilter) {
+      const candidateHobbyTags = extractHobbyTags(candidateUser)
+      // 본인 또는 후보가 취미 테스트를 완료하지 않았다면 이 후보는 제외
+      if (!selfHobbyTags || !candidateHobbyTags) continue
+      if (!passesHobbyFilter(selfHobbyTags, candidateHobbyTags)) continue
+    }
 
     const { scores, filters } = candidateLifestyleTest.scoreSummary
 
@@ -122,12 +147,16 @@ async function getSelfLifestyleData(userId) {
 
 // 룸메이트 매칭 점수를 계산해 matches 테이블에 저장(같은 조합이 이미 있으면 점수만 갱신)하고,
 // 점수 높은 순으로 정렬된 매칭 결과를 반환한다
-export async function calculateAndSaveRoommateMatches(userId) {
+export async function calculateAndSaveRoommateMatches(
+  userId,
+  applyHobbyFilter = false,
+  roommateTypeOverride,
+) {
   const selfId = BigInt(userId)
 
   const [selfData, candidates] = await Promise.all([
     getSelfLifestyleData(userId),
-    getCandidatesForUser(userId),
+    getCandidatesForUser(userId, applyHobbyFilter, roommateTypeOverride),
   ])
 
   if (candidates.length === 0) {

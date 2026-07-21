@@ -103,3 +103,8 @@
   transform: translateY(-4px);
   box-shadow: 0 8px 20px rgba(74, 46, 34, 0.1);
 }
+
+.purpose-select-card:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -36,7 +36,7 @@ export default function RoommateTypeSelectPage() {
     setSubmitError('')
     try {
       await apiClient.post('/roommate-profile', { roommateType: selected.apiValue })
-      navigate('/select-purpose')
+      navigate('/matches', { state: { roommateType: selected.apiValue } })
     } catch (err) {
       setSubmitError(
         err.response?.data?.message ?? '저장 중 오류가 발생했습니다. 다시 시도해주세요.',

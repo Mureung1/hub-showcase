@@ -14,6 +14,20 @@ export function passesHardFilter(userA, userB) {
 }
 
 /**
+ * 취미 성향 하드필터 통과 여부를 계산한다.
+ * 요청한 유저의 취미 주유형이 후보의 주유형 또는 보조유형과 같으면 통과.
+ * @param {{ primary: string, secondary: string }} selfHobbyTags
+ * @param {{ primary: string, secondary: string }} candidateHobbyTags
+ * @returns {boolean}
+ */
+export function passesHobbyFilter(selfHobbyTags, candidateHobbyTags) {
+  return (
+    selfHobbyTags.primary === candidateHobbyTags.primary ||
+    selfHobbyTags.primary === candidateHobbyTags.secondary
+  )
+}
+
+/**
  * 두 생활성향 벡터([깔끔루틴러, 함께루틴러, 여유마이웨이, 편한동거러] 순) 간 코사인 유사도를 계산한다.
  * @param {number[]} vectorA
  * @param {number[]} vectorB
