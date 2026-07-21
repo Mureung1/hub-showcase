@@ -640,7 +640,10 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           finalChoice = assignmentReviewChoice(replacementSettlement)
           assert.notEqual(finalChoice.type, 'revise')
         }
-        if (postReviewClarification) {
+        if (
+          postReviewClarification &&
+          (finalChoice.type === 'accept' || finalChoice.type === 'reject')
+        ) {
           const clarificationInteractionId = `${interactionId}-clarification`
           const clarificationPending = createPending(
             clarificationInteractionId,

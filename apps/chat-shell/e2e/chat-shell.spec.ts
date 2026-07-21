@@ -404,7 +404,7 @@ test.describe('post-Review same-Turn ordinary clarification', () => {
     ).toHaveLength(1)
   })
 
-  test('cancels a clarification after Reject without applying the proposal', async ({
+  test('cancels a clarification after Reject when one-shot hydration fails', async ({
     chatHarness,
     chatPage: page,
   }) => {
@@ -414,17 +414,24 @@ test.describe('post-Review same-Turn ordinary clarification', () => {
       .click()
 
     const review = page.getByRole('region', { name: '검토 대기' })
+    const bootstrapHydration = await holdNextProductBootstrapFailure(page)
     const reviewResponse = page.waitForResponse((response) =>
       new URL(response.url()).pathname.startsWith('/api/product/reviews/'),
     )
     await review.getByRole('button', { name: '거절' }).click()
     expect((await reviewResponse).status()).toBe(200)
+    await bootstrapHydration.requested
 
     const clarification = page.getByRole('region', { name: 'AY 질문' })
     await expect(clarification).toContainText('어떤 자료부터 살펴볼까요?')
-    await expect(page.getByRole('button', { name: '작업 중단' })).toBeVisible()
     const cancel = clarification.getByRole('button', { name: '질문 취소' })
-    await expect(cancel).toBeEnabled()
+    try {
+      await expect(page.getByRole('button', { name: '작업 중단' })).toBeVisible()
+      await expect(cancel).toBeEnabled()
+    } finally {
+      bootstrapHydration.fail()
+    }
+    await bootstrapHydration.failed
     await cancel.click()
 
     await expect(page.getByText('질문을 취소했습니다')).toBeVisible()
@@ -494,7 +501,11 @@ test.describe('post-Review same-Turn ordinary clarification', () => {
     await expect(clarification).toBeVisible()
     const interrupt = page.getByRole('button', { name: '작업 중단' })
     await expect(interrupt).toBeVisible()
+    const interruptResponse = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith('/interrupt'),
+    )
     await interrupt.click()
+    expect((await interruptResponse).status()).toBe(202)
 
     await expect(page.getByText('중단 요청을 전달했습니다.')).toBeVisible()
     await expect(operationPhase(page)).toHaveAttribute(
@@ -513,6 +524,9 @@ test.describe('post-Review same-Turn ordinary clarification', () => {
       'data-product-operation-phase',
       'continuation-lost',
     )
+    await expect(
+      page.getByRole('button', { name: '이 자료로 다시 시도' }),
+    ).toHaveCount(0)
     const settledBootstrap = await readProductBootstrap(page)
     expect(settledBootstrap.operationStatus).toBe('idle')
     expect(settledBootstrap.history.userConfirmations).toHaveLength(1)
@@ -1340,6 +1354,39 @@ async function failNextProductBootstrap(page: Page): Promise<{
     { times: 1 },
   )
   return { failed }
+}
+
+async function holdNextProductBootstrapFailure(page: Page): Promise<{
+  readonly requested: Promise<void>
+  readonly failed: Promise<void>
+  fail(): void
+}> {
+  let markRequested!: () => void
+  let releaseFailure!: () => void
+  let markFailed!: () => void
+  const requested = new Promise<void>((resolve) => {
+    markRequested = resolve
+  })
+  const failureReleased = new Promise<void>((resolve) => {
+    releaseFailure = resolve
+  })
+  const failed = new Promise<void>((resolve) => {
+    markFailed = resolve
+  })
+  await page.route(
+    '**/api/product/bootstrap',
+    async (route) => {
+      markRequested()
+      await failureReleased
+      try {
+        await route.abort('failed')
+      } finally {
+        markFailed()
+      }
+    },
+    { times: 1 },
+  )
+  return { requested, failed, fail: releaseFailure }
 }
 
 function observeBootstrapOperationStatuses(

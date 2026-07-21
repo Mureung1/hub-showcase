@@ -214,6 +214,7 @@ export function useProductChat(options: {
       }
       if (request.decision !== 'revise') {
         reconcileConfirmedReview(review, request.decision)
+        releaseResponsePending(pending)
         // The exact Review response already confirms the product decision.
         // Snapshot hydration reports its own failure and cannot hold the Turn.
         await options.refreshProductSnapshot().catch(() => undefined)
@@ -237,10 +238,7 @@ export function useProductChat(options: {
         ),
       })
     } finally {
-      if (responsePendingRef.current === pending) {
-        responsePendingRef.current = undefined
-        setResponsePending(undefined)
-      }
+      releaseResponsePending(pending)
     }
   }
 
@@ -300,10 +298,7 @@ export function useProductChat(options: {
         failure: safeFailure(error, fallbackMessage),
       })
     } finally {
-      if (responsePendingRef.current === pending) {
-        responsePendingRef.current = undefined
-        setResponsePending(undefined)
-      }
+      releaseResponsePending(pending)
     }
   }
 
@@ -467,6 +462,12 @@ export function useProductChat(options: {
       review,
       outcome: decision === 'accept' ? 'accepted' : 'rejected',
     })
+  }
+
+  function releaseResponsePending(expected: ProductResponsePending) {
+    if (responsePendingRef.current !== expected) return
+    responsePendingRef.current = undefined
+    setResponsePending(undefined)
   }
 
   return {
