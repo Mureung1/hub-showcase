@@ -8,67 +8,101 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
- * F4 — 적합도 매칭 엔진.
+ * 적합도 = ( Σ 가중치 × 충족도 ) × Π(필수 조건 게이트)
  *
- *   점수 = Σ ( 요구조건 가중치 × 내 이력의 충족도 )   ← 기획서 4.1
+ * ── 기존 대비 바뀐 점 ──────────────────────────────────
+ * 1. evaluator 를 직접 주입받지 않고 EvaluatorRegistry 로 타입별 분기
+ * 2. 가중치를 WeightEstimator 로 정규화 (Σw = 1 보장)
+ * 3. 필수 조건 게이트 곱산 추가
+ * 4. rebuild() 제거 — 상세를 먼저 모으고 MatchScore 를 한 번에 만든다
+ * ──────────────────────────────────────────────────
  *
- * 충족도 산출은 전략(FulfillmentEvaluator)으로 분리했다.
- * 1주차는 키워드 기반, 2주차에 임베딩(pgvector)으로 갈아끼운다.
- * 이 클래스는 그대로 둔 채 전략만 바꾸면 된다.
+ * 게이트가 필요한 이유: 가중합만 쓰면 "필수 하나가 완전 미충족인데
+ * 나머지가 좋아서 88%"가 나온다. 실제 지원 결과와 어긋나는 최대 원인이다.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class MatchingEngine {
 
-    private final FulfillmentEvaluator evaluator;
+    /** 게이트 하한. 골든셋 확보 후 튜닝 대상 */
+    public static final BigDecimal GATE_FLOOR = new BigDecimal("0.4");
+    private static final BigDecimal GATE_RANGE = BigDecimal.ONE.subtract(GATE_FLOOR);
+
+    private final EvaluatorRegistry registry;
+    private final WeightEstimator weightEstimator;
 
     public MatchScore calculate(Long userId, JobPosting posting, List<Credential> credentials) {
-        BigDecimal total = BigDecimal.ZERO;
-        MatchScore matchScore = MatchScore.builder()
-                .userId(userId)
-                .postingId(posting.getId())
-                .score((short) 0)
-                .build();
+        List<JobRequirement> requirements = posting.getRequirements();
+        Map<Long, BigDecimal> weights = weightEstimator.estimate(requirements);
 
-        for (JobRequirement req : posting.getRequirements()) {
-            FulfillmentEvaluator.Result result = evaluator.evaluate(req, credentials);
+        List<MatchDetail> details = new ArrayList<>();
+        BigDecimal weightedSum = BigDecimal.ZERO;
+        BigDecimal gateProduct = BigDecimal.ONE;
+        BigDecimal evidenceWeight = BigDecimal.ZERO;
+        BigDecimal totalWeight = BigDecimal.ZERO;
 
-            BigDecimal contribution = req.getWeight().multiply(result.fulfillment());
-            total = total.add(contribution);
+        for (JobRequirement req : requirements) {
+            BigDecimal weight = weights.getOrDefault(req.getId(), BigDecimal.ZERO);
+            FulfillmentEvaluator.Result result =
+                    registry.resolve(req.getType()).evaluate(req, credentials);
 
-            matchScore.addDetail(MatchDetail.builder()
+            BigDecimal contribution = weight.multiply(result.fulfillment());
+            weightedSum = weightedSum.add(contribution);
+
+            BigDecimal gate = BigDecimal.ONE;
+            if (req.getNecessity().isGated()) {
+                gate = GATE_FLOOR.add(GATE_RANGE.multiply(result.fulfillment()));
+                gateProduct = gateProduct.multiply(gate);
+            }
+
+            totalWeight = totalWeight.add(weight);
+            if (result.hasEvidence()) evidenceWeight = evidenceWeight.add(weight);
+
+            details.add(MatchDetail.builder()
                     .requirementId(req.getId())
+                    .requirementText(req.getName())
+                    .type(req.getType())
+                    .necessity(req.getNecessity())
+                    .weight(weight)
                     .fulfillment(result.fulfillment())
+                    .contribution(contribution)
+                    .gate(gate)
                     .evidence(result.evidence())
+                    .note(result.note())
                     .build());
         }
 
-        short score = total
-                .multiply(BigDecimal.valueOf(100))
-                .setScale(0, RoundingMode.HALF_UP)
-                .shortValue();
+        BigDecimal total = weightedSum.multiply(gateProduct);
+        BigDecimal confidence = totalWeight.compareTo(BigDecimal.ZERO) == 0
+                ? BigDecimal.ZERO
+                : evidenceWeight.divide(totalWeight, MathContext.DECIMAL64);
 
-        log.debug("적합도 계산 완료: user={} posting={} score={}", userId, posting.getId(), score);
-        return rebuild(matchScore, score);
+        MatchScore matchScore = MatchScore.builder()
+                .userId(userId)
+                .postingId(posting.getId())
+                .score(toPercent(total))
+                .weightedSum(weightedSum)
+                .confidence(confidence)
+                .build();
+        details.forEach(matchScore::addDetail);
+
+        log.debug("적합도 계산: user={} posting={} 가중합={} 게이트={} 최종={}",
+                userId, posting.getId(), weightedSum, gateProduct, matchScore.getScore());
+
+        return matchScore;
     }
 
-    /** score는 생성 시점에 알 수 없어 마지막에 확정한다. */
-    private MatchScore rebuild(MatchScore src, short score) {
-        MatchScore result = MatchScore.builder()
-                .userId(src.getUserId())
-                .postingId(src.getPostingId())
-                .score(score)
-                .build();
-        src.getDetails().forEach(d -> result.addDetail(MatchDetail.builder()
-                .requirementId(d.getRequirementId())
-                .fulfillment(d.getFulfillment())
-                .evidence(d.getEvidence())
-                .build()));
-        return result;
+    private short toPercent(BigDecimal value) {
+        return value.multiply(BigDecimal.valueOf(100))
+                .setScale(0, RoundingMode.HALF_UP)
+                .shortValue();
     }
 }
