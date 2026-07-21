@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { FinancialSummary } from '../../types/financial';
 import FinancialKPICard from '../../components/financial/FinancialKPICard';
 import InfoBox from '../../components/financial/InfoBox';
@@ -6,7 +7,7 @@ import ProfitContribution from '../../components/financial/ProfitContribution';
 import MarginWasteChart from '../../components/financial/MarginWasteChart';
 import WasteLossRanking from '../../components/financial/WasteLossRanking';
 import MonthSelector from '../../components/financial/MonthSelector';
-import CategorySelector from '../../components/financial/CategorySelector';
+import CategorySelector, { CATEGORIES } from '../../components/financial/CategorySelector';
 import ProfitStructure from '../../components/financial/ProfitStructure';
 
 function calcDelta(current: number, prev: number | undefined, goodWhenUp: boolean) {
@@ -28,8 +29,12 @@ async function fetchSummary(months: number, category: string): Promise<Financial
 }
 
 export default function FinancialPage() {
+  const [searchParams] = useSearchParams();
+  const categoryFromUrl = searchParams.get('category');
+  const initialCategory = categoryFromUrl && CATEGORIES.includes(categoryFromUrl) ? categoryFromUrl : '전체';
+
   const [selectedMonth, setSelectedMonth] = useState(6);
-  const [selectedCategory, setSelectedCategory] = useState('전체');
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [summary, setSummary] = useState<FinancialSummary | null>(null);
   const [prevSummary, setPrevSummary] = useState<FinancialSummary | null>(null);
   const [fullSummary, setFullSummary] = useState<FinancialSummary | null>(null);

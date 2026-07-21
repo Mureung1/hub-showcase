@@ -1,4 +1,4 @@
-const CATEGORIES = ['전체', '김밥', '도시락', '주먹밥', '햄버거샌드위치'];
+export const CATEGORIES = ['전체', '김밥', '도시락', '주먹밥', '햄버거샌드위치'];
 
 interface CategorySelectorProps {
   selectedCategory: string;

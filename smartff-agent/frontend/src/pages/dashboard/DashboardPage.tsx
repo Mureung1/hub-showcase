@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { FinancialRecord, FinancialSummary } from '../../types/financial';
 import type { Recommendation, RecommendationResponse } from '../../types/recommendation';
 import AIBriefCard from '../../components/dashboard/AIBriefCard';
@@ -86,19 +87,21 @@ function buildBrief(
         `순이익 ${rec.metrics.net_income_prev.toLocaleString()}원 → ${rec.metrics.net_income.toLocaleString()}원으로 증가`,
       ],
       ctaLabel: '확인 완료로 표시',
+      linkCategory: null, // 추천 확인(승인) 액션 — 아직 상태 저장 기능 없어 비활성
     };
   }
 
   const top = marginBars[0];
   return {
     titleHighlight: top?.name ?? '전체',
-    titleRest: ' 안정적으로 운영되고 있습니다',
+    titleRest: '는 마진율 기준 가장 안정적으로 운영되고 있습니다',
     reasons: [
-      `최근 1개월 마진율 ${top?.rate ?? 0}%로 가장 높음`,
+      `최근 1개월 마진율 ${top?.rate ?? 0}%로 전체 카테고리 중 가장 높음`,
       `전체 평균 마진율 ${overallMarginRate.toFixed(0)}%`,
       '이번 달 발주 확대가 필요한 카테고리는 없습니다',
     ],
     ctaLabel: '재무 페이지에서 자세히 보기',
+    linkCategory: top?.name ?? null,
   };
 }
 
@@ -126,10 +129,12 @@ function buildRisk(recommendations: Recommendation[]) {
     title: `${rec.category}\n${rec.title}`,
     reasons,
     ctaLabel: `${rec.category} 상세 보기 →`,
+    linkCategory: rec.category,
   };
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const [summary, setSummary] = useState<FinancialSummary | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -182,6 +187,10 @@ export default function DashboardPage() {
   const brief = buildBrief(currentRecs, marginBars, overallMarginRate);
   const risk = buildRisk(currentRecs);
 
+  const goToFinancial = (category?: string | null) => {
+    navigate(category ? `/financial?category=${encodeURIComponent(category)}` : '/financial');
+  };
+
   return (
     <div style={{ padding: '36px 48px 56px', minHeight: '100vh', background: '#F8FAFC', fontFamily: "'Manrope', system-ui, sans-serif" }}>
       {/* Header */}
@@ -219,8 +228,16 @@ export default function DashboardPage() {
             titleRest={brief.titleRest}
             reasons={brief.reasons}
             ctaLabel={brief.ctaLabel}
+            onCtaClick={brief.linkCategory ? () => goToFinancial(brief.linkCategory) : undefined}
           />
-          {risk && <RiskAlertCard title={risk.title} reasons={risk.reasons} ctaLabel={risk.ctaLabel} />}
+          {risk && (
+            <RiskAlertCard
+              title={risk.title}
+              reasons={risk.reasons}
+              ctaLabel={risk.ctaLabel}
+              onCtaClick={() => goToFinancial(risk.linkCategory)}
+            />
+          )}
         </div>
 
         <div style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', color: '#94A3B8', textTransform: 'uppercase', marginBottom: '16px' }}>
@@ -239,7 +256,7 @@ export default function DashboardPage() {
       {/* Bento: 판매 추세 차트 + 카테고리별 마진율 */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '20px', marginBottom: '20px' }}>
         <SalesTrendChart title="최근 6개월 판매 추세" totalLabel={totalLabel} points={points} bestWeek={bestMonth} bestWeekLabel="최고 판매 월" />
-        <MarginBarList items={marginBars} />
+        <MarginBarList items={marginBars} onViewAllClick={() => goToFinancial()} />
       </div>
 
       {/* Footer strip */}
