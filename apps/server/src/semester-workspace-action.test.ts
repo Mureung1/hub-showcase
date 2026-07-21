@@ -561,6 +561,18 @@ test('cold-restored source recovery can adopt store drift without a prior-proces
     assert.deepEqual(await readFile(storePath), externalBytes)
     assert.deepEqual(await readFile(firstPath), driftedBytes)
 
+    await assert.rejects(
+      coldController.activate(),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'execution_cleanup_required',
+    )
+    assert.equal(coldController.snapshot()?.recovery?.state, 'store_conflict')
+    assert.equal(await exists(prepared.stagedSources[0]!.path), true)
+    assert.equal(await exists(prepared.scratchPath), true)
+    assert.deepEqual(await readFile(storePath), externalBytes)
+    assert.deepEqual(await readFile(firstPath), driftedBytes)
+
     cleanupAllowed = true
     const recovered = await coldController.activate()
     assert.equal(recovered.status, 'activated')

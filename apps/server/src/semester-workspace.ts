@@ -44,6 +44,7 @@ import {
   cloneAssignment,
   cloneAssignmentUpsert,
   cloneEvidenceRef,
+  cloneExecutionGuard,
   cloneModelingRun,
   cloneStatePatch,
   hasErrnoCode,
@@ -608,18 +609,29 @@ type OpenWorkspace =
       readonly created: boolean
       authority: WorkspaceStoreAuthority
       store: PersistedWorkspaceState
-      coldRestoredGuardOperationId: string | null
-      releasedProductOperationId: string | null
+      sourceRecovery: SourceRecoveryAuthority | null
       storeConflict: StoreConflictRecovery | null
       snapshot: ReadySemesterWorkspaceSnapshot
     }
   | {
       readonly root: string
+      sourceRecovery: SourceRecoveryAuthority | null
       readonly snapshot: IncompatibleSemesterWorkspaceSnapshot
     }
 
 type StoreConflictRecovery = {
   readonly guardedOperationId: string | null
+}
+
+type SourceRecoveryAuthority = {
+  readonly guard: ExecutionGuard
+  readonly materials: readonly RawMaterial[]
+}
+
+type CurrentProcessOperationAuthority = {
+  readonly operationId: string
+  readonly root: string
+  readonly released: boolean
 }
 
 export function createSemesterWorkspaceController(options: {
@@ -635,6 +647,7 @@ export function createSemesterWorkspaceController(options: {
   const cleanupPolicy = actionCleanupPolicy(options)
   let active: OpenWorkspace | undefined
   let activeAppDataRoot: string | undefined
+  let currentProcessOperation: CurrentProcessOperationAuthority | null = null
   let operationTail = Promise.resolve()
   const proposalContexts = new Map<string, ActiveProposalContext>()
   const activePatchByTurn = new Map<string, string>()
@@ -720,12 +733,24 @@ export function createSemesterWorkspaceController(options: {
           active &&
             'store' in active &&
             activeStoreConflict &&
-            canReactivateStoreConflict(active),
+            canReactivateStoreConflict(active, currentProcessOperation),
         )
         const reactivatingGuardedStoreConflict =
           reactivatingStoreConflict &&
           activeStoreConflict !== null &&
           activeStoreConflict.guardedOperationId !== null
+        if (
+          active &&
+          'store' in active &&
+          active.storeConflict === null &&
+          active.store.executionGuard?.state !== 'active' &&
+          guardBelongsToUnreleasedCurrentProcess(
+            active,
+            currentProcessOperation,
+          )
+        ) {
+          throw executionGuardConflict()
+        }
         if (
           active &&
           'store' in active &&
@@ -757,14 +782,25 @@ export function createSemesterWorkspaceController(options: {
           throw executionGuardConflict()
         }
         const opened = await openWorkspace(workspaceRoot)
+        if (
+          active &&
+          active.root === workspaceRoot &&
+          active.sourceRecovery
+        ) {
+          opened.sourceRecovery = cloneSourceRecovery(active.sourceRecovery)
+        }
         if ('store' in opened) {
-          if (reactivatingStoreConflict && active && 'store' in active) {
-            opened.releasedProductOperationId =
-              active.releasedProductOperationId
+          if (opened.sourceRecovery) {
+            opened.snapshot = readyOpenWorkspaceSnapshot(opened)
           }
           await reconcileUncommittedExecutionArtifacts(
             opened,
             appDataRoot,
+          )
+          await reconcileSourceRecoveryArtifacts(
+            opened,
+            appDataRoot,
+            cleanupPolicy,
           )
           await reconcileExecutionGuard(
             opened,
@@ -772,7 +808,6 @@ export function createSemesterWorkspaceController(options: {
             cleanupPolicy,
           )
           if (opened.created) await refreshReadyWorkspace(opened)
-          opened.releasedProductOperationId = null
         } else if (active && active.root !== workspaceRoot) {
           throw new SemesterWorkspaceError(
             'workspace_incompatible',
@@ -1170,12 +1205,16 @@ export function createSemesterWorkspaceController(options: {
     noteProductOperationReleased(operationId) {
       if (!isProductOperationId(operationId)) return
       if (
+        currentProcessOperation?.operationId === operationId &&
         active &&
         'store' in active &&
-        active.coldRestoredGuardOperationId !== operationId &&
+        active.root === currentProcessOperation.root &&
         active.store.executionGuard?.operationId === operationId
       ) {
-        active.releasedProductOperationId = operationId
+        currentProcessOperation = {
+          ...currentProcessOperation,
+          released: true,
+        }
       }
     },
 
@@ -1198,7 +1237,11 @@ export function createSemesterWorkspaceController(options: {
           input,
           options.beforeActionStoreWrite,
         )
-        opened.coldRestoredGuardOperationId = null
+        currentProcessOperation = {
+          operationId: prepared.run.actionId,
+          root: opened.root,
+          released: false,
+        }
         proposalContexts.set(
           prepared.activeContext.context.requestKey,
           prepared.activeContext,
@@ -1225,7 +1268,11 @@ export function createSemesterWorkspaceController(options: {
       return enqueue(async () => {
         const opened = requireReadyWorkspace(active)
         const prepared = await prepareProductChatExecution(opened, input)
-        opened.coldRestoredGuardOperationId = null
+        currentProcessOperation = {
+          operationId: input.operationId,
+          root: opened.root,
+          released: false,
+        }
         return prepared
       })
     },
@@ -1292,23 +1339,25 @@ export function createSemesterWorkspaceController(options: {
       return enqueue(async () => {
         const opened = requireReadyWorkspace(active)
         const guard = opened.store.executionGuard
-        if (!guard) {
+        if (!guard && !opened.sourceRecovery) {
           await refreshReadyWorkspace(opened)
           return {
             outcome: 'refreshed',
             workspace: cloneReadySnapshot(opened.snapshot),
           }
         }
-        if (guard.state !== 'recovery_required') {
+        if (guard && guard.state !== 'recovery_required') {
           assertNoExecutionGuard(opened)
         }
         await assertStoreBytesMatchMemory(opened)
-        const cleaned = await cleanupExecutionGuardArtifacts(
-          opened.root,
-          requireActiveAppDataRoot(activeAppDataRoot),
-          guard,
-          cleanupPolicy,
-        )
+        const cleaned = guard
+          ? await cleanupExecutionGuardArtifacts(
+              opened.root,
+              requireActiveAppDataRoot(activeAppDataRoot),
+              guard,
+              cleanupPolicy,
+            )
+          : true
         if (!cleaned) {
           throw new SemesterWorkspaceError(
             'execution_cleanup_required',
@@ -1379,7 +1428,9 @@ async function refreshReadyWorkspace(
 ): Promise<void> {
   const scanned = await scanRawMaterials(opened.root)
   const existingByPath = new Map(
-    opened.store.materials.map((material) => [material.relativePath, material]),
+    (opened.sourceRecovery?.materials ?? opened.store.materials).map(
+      (material) => [material.relativePath, material],
+    ),
   )
   const materials = scanned.map(({ bytes: _bytes, ...candidate }) => ({
     id:
@@ -1393,6 +1444,10 @@ async function refreshReadyWorkspace(
     ...(clearRecovery ? { executionGuard: null } : {}),
   } satisfies PersistedWorkspaceState
   await replaceWorkspaceStore(opened, nextStore)
+  if (clearRecovery) {
+    opened.sourceRecovery = null
+    opened.snapshot = readyOpenWorkspaceSnapshot(opened)
+  }
 }
 
 function prepareProposalContext(
@@ -1401,8 +1456,10 @@ function prepareProposalContext(
 ): ActiveProposalContext {
   const executionGuard = opened.store.executionGuard
   if (
-    executionGuard &&
-    (executionGuard.kind !== 'product_chat' || executionGuard.state !== 'active')
+    opened.sourceRecovery ||
+    (executionGuard &&
+      (executionGuard.kind !== 'product_chat' ||
+        executionGuard.state !== 'active'))
   ) {
     assertNoExecutionGuard(opened)
   }
@@ -2156,7 +2213,12 @@ async function reconcileUncommittedExecutionArtifacts(
     )
   }
 
-  const guardedOperationId = opened.store.executionGuard?.operationId
+  const guardedOperationIds = new Set(
+    [
+      opened.store.executionGuard?.operationId,
+      opened.sourceRecovery?.guard.operationId,
+    ].filter((operationId): operationId is string => operationId !== undefined),
+  )
   for (const entry of entries) {
     if (
       !entry.isDirectory() ||
@@ -2168,7 +2230,7 @@ async function reconcileUncommittedExecutionArtifacts(
         'The workspace execution scratch contains an unmanaged entry.',
       )
     }
-    if (entry.name === guardedOperationId) continue
+    if (guardedOperationIds.has(entry.name)) continue
     try {
       if (isActionId(entry.name)) {
         await cleanupUncommittedActionArtifacts(
@@ -2185,6 +2247,33 @@ async function reconcileUncommittedExecutionArtifacts(
         'The stale workspace execution scratch requires cleanup.',
       )
     }
+  }
+}
+
+async function reconcileSourceRecoveryArtifacts(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  appDataRoot: string,
+  cleanupPolicy: ActionCleanupPolicy,
+): Promise<void> {
+  const sourceRecovery = opened.sourceRecovery
+  if (
+    !sourceRecovery ||
+    opened.store.executionGuard?.operationId ===
+      sourceRecovery.guard.operationId
+  ) {
+    return
+  }
+  const cleaned = await cleanupExecutionGuardArtifacts(
+    opened.root,
+    appDataRoot,
+    sourceRecovery.guard,
+    cleanupPolicy,
+  )
+  if (!cleaned) {
+    throw new SemesterWorkspaceError(
+      'execution_cleanup_required',
+      'The prior product operation artifacts require cleanup.',
+    )
   }
 }
 
@@ -2480,15 +2569,18 @@ async function replaceWorkspaceStore(
     throw error
   }
   opened.store = nextStore
+  opened.sourceRecovery ??= sourceRecoveryAuthority(nextStore)
   opened.storeConflict = null
-  opened.snapshot = readySnapshot(nextStore)
+  opened.snapshot = readyOpenWorkspaceSnapshot(opened)
 }
 
 function markStoreConflict(
   opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
 ): void {
   const guardedOperationId =
-    opened.store.executionGuard?.operationId ?? null
+    opened.store.executionGuard?.operationId ??
+    opened.sourceRecovery?.guard.operationId ??
+    null
   opened.storeConflict = {
     guardedOperationId,
   }
@@ -3289,20 +3381,24 @@ function isExactStatePatchPayload(
 async function openWorkspace(workspaceRoot: string): Promise<OpenWorkspace> {
   const opened = await semesterWorkspaceStore.open(workspaceRoot)
   if (opened.status === 'ready') {
+    const sourceRecovery = sourceRecoveryAuthority(opened.store)
     return {
       root: workspaceRoot,
       created: opened.created,
       authority: opened.authority,
       store: opened.store,
-      coldRestoredGuardOperationId:
-        opened.store.executionGuard?.operationId ?? null,
-      releasedProductOperationId: null,
+      sourceRecovery,
       storeConflict: null,
-      snapshot: readySnapshot(opened.store),
+      snapshot: readySnapshot(
+        opened.store,
+        undefined,
+        sourceRecovery?.materials,
+      ),
     }
   }
   return {
     root: workspaceRoot,
+    sourceRecovery: null,
     snapshot: {
       state: 'incompatible',
       readOnly: true,
@@ -3362,6 +3458,7 @@ function requireReadyWorkspace(
 function readySnapshot(
   store: PersistedWorkspaceState,
   recoveryOverride?: SemesterWorkspaceRecovery['state'],
+  materialsOverride?: readonly RawMaterial[],
 ): ReadySemesterWorkspaceSnapshot {
   return {
     state: 'ready',
@@ -3370,12 +3467,52 @@ function readySnapshot(
     course: store.course
       ? { id: store.course.id, displayName: store.course.displayName }
       : null,
-    materials: store.materials.map((material) => ({ ...material })),
+    materials: (materialsOverride ?? store.materials).map((material) => ({
+      ...material,
+    })),
     recovery:
       recoveryOverride === undefined
         ? workspaceRecovery(store.executionGuard)
         : recoveryState(recoveryOverride),
   }
+}
+
+function readyOpenWorkspaceSnapshot(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+): ReadySemesterWorkspaceSnapshot {
+  const recoveryOverride =
+    opened.store.executionGuard?.state === 'cleanup_required'
+      ? 'cleanup_required'
+      : opened.sourceRecovery
+        ? 'source_conflict'
+        : undefined
+  return readySnapshot(
+    opened.store,
+    recoveryOverride,
+    opened.sourceRecovery?.materials,
+  )
+}
+
+function sourceRecoveryAuthority(
+  store: PersistedWorkspaceState,
+): SourceRecoveryAuthority | null {
+  const guard = store.executionGuard
+  if (guard?.state !== 'recovery_required') return null
+  return {
+    guard: cloneExecutionGuard(guard),
+    materials: store.materials.map((material) => ({ ...material })),
+  }
+}
+
+function cloneSourceRecovery(
+  sourceRecovery: SourceRecoveryAuthority | null,
+): SourceRecoveryAuthority | null {
+  return sourceRecovery
+    ? {
+        guard: cloneExecutionGuard(sourceRecovery.guard),
+        materials: sourceRecovery.materials.map((material) => ({ ...material })),
+      }
+    : null
 }
 
 function workspaceRecovery(
@@ -3653,6 +3790,12 @@ function assertNoExecutionGuard(
   if (opened.storeConflict) {
     throw executionGuardConflict()
   }
+  if (opened.sourceRecovery) {
+    throw new SemesterWorkspaceError(
+      'execution_cleanup_required',
+      'The prior product operation requires cleanup or recovery.',
+    )
+  }
   if (!opened.store.executionGuard) return
   throw new SemesterWorkspaceError(
     opened.store.executionGuard.state === 'active'
@@ -3666,13 +3809,29 @@ function assertNoExecutionGuard(
 
 function canReactivateStoreConflict(
   opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  currentProcessOperation: CurrentProcessOperationAuthority | null,
 ): boolean {
   const guardedOperationId = opened.storeConflict?.guardedOperationId
   return (
     guardedOperationId === null ||
-    guardedOperationId === opened.coldRestoredGuardOperationId ||
-    (guardedOperationId !== undefined &&
-      guardedOperationId === opened.releasedProductOperationId)
+    guardedOperationId === undefined ||
+    currentProcessOperation === null ||
+    currentProcessOperation.root !== opened.root ||
+    currentProcessOperation.operationId !== guardedOperationId ||
+    currentProcessOperation.released
+  )
+}
+
+function guardBelongsToUnreleasedCurrentProcess(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  currentProcessOperation: CurrentProcessOperationAuthority | null,
+): boolean {
+  return Boolean(
+    currentProcessOperation &&
+      !currentProcessOperation.released &&
+      currentProcessOperation.root === opened.root &&
+      currentProcessOperation.operationId ===
+        opened.store.executionGuard?.operationId,
   )
 }
 
