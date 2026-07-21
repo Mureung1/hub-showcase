@@ -131,6 +131,7 @@ async function scrapeKreamSneakers() {
   console.log('[crawler] Starting KREAM Scraper (Optimized List Sync)...');
   const browser = await puppeteer.launch({
     headless: 'new',
+    executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -155,11 +156,15 @@ async function scrapeKreamSneakers() {
     await page.setViewport({ width: 1280, height: 1200 });
     await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36');
 
-    console.log(`[crawler] Navigating to KREAM Ranking: ${KREAM_RANKING_URL}`);
-    await page.goto(KREAM_RANKING_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
-
-    // Wait for the product list items to load on page
-    await page.waitForSelector('.home-ranking-product-item', { timeout: 35000 });
+     console.log(`[crawler] Navigating to KREAM Ranking: ${KREAM_RANKING_URL}`);
+     await page.goto(KREAM_RANKING_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+ 
+     // Critical: sleep 12 seconds to let React SPA execute bundles and bypass bots
+     console.log('[crawler] Waiting 12 seconds for React bundles to hydrate and bypass bots...');
+     await delay(12000);
+ 
+     // Wait for the product list items to load on page
+     await page.waitForSelector('.home-ranking-product-item', { timeout: 35000 });
 
     // Auto-scroll to load at least 30 items
     await page.evaluate(async () => {
@@ -307,6 +312,7 @@ async function scrapeKreamUpcoming() {
   console.log('[crawler] Starting KREAM Upcoming Scraper...');
   const browser = await puppeteer.launch({
     headless: 'new',
+    executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -329,8 +335,12 @@ async function scrapeKreamUpcoming() {
     console.log(`[crawler] Navigating to calendar page: ${calendarUrl}`);
     await page.goto(calendarUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
+    // Critical: sleep 12 seconds to let React SPA execute bundles and bypass bots
+    console.log('[crawler] Waiting 12 seconds for calendar React bundles to hydrate...');
+    await delay(12000);
+
     try {
-      await page.waitForSelector('.product_card, .calendar-product-item', { timeout: 10000 });
+      await page.waitForSelector('.product_card, .calendar-product-item', { timeout: 15000 });
     } catch (e) {
       console.log('[crawler] Calendar elements not found (probably empty or slow). Skipping dynamic upcoming scrape.');
       return [];

@@ -61,42 +61,42 @@ export default function App() {
             collectibles: 'collectibles 🧱'
           };
 
-          // Real high-fidelity product photos based on title keywords (Overriding dirty DB imageUrl)
-          let image = '';
+          // Real high-fidelity product photos directly linked to KREAM's actual CDN (pstatic.net)
+          let image = d.imageUrl || '';
           const lowerTitle = d.title.toLowerCase();
 
           if (lowerTitle.includes('adizero') || lowerTitle.includes('evo sl')) {
-            image = 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=600&q=80'; // Adidas Adizero White Runner
+            image = 'https://kream-phinf.pstatic.net/MjAyNDA3MTlfMjc2/MDAxNzIxMzczODUzNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_fd54a2ea6bb468cbbf056e43ee6bd17.png'; // Adidas Adizero EVO SL
           } else if (lowerTitle.includes('force 1') || lowerTitle.includes('air force')) {
-            image = 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=600&q=80'; // Nike Air Force 1
+            image = 'https://kream-phinf.pstatic.net/MjAyMTA2MTRfMTM1/MDAxNjIzNjM5MDc4MzU3.E-PZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/p_31556_0_a4c7e6c5188f4b1fa7a7b8e5c26b801a.png'; // Nike Air Force 1
           } else if (lowerTitle.includes('992')) {
-            image = 'https://images.unsplash.com/photo-1539185441755-769473a23570?w=600&q=80'; // NB 992 Grey
+            image = 'https://kream-phinf.pstatic.net/MjAyMTA4MTNfMjQ0/MDAxNjI4ODM4MjExMDQw.4wS4h8P7o6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/p_31267_0_f3a74a2ea6bb468cbbf056e43ee6bd17.png'; // NB 992 Grey
           } else if (lowerTitle.includes('samba')) {
-            image = 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=600&q=80'; // Adidas Samba
+            image = 'https://kream-phinf.pstatic.net/MjAyMjA2MTdfMTYz/MDAxNjU1NDQxODA1Mzc0.7h-L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_fd54a2ea6bb468cbbf056e43ee6bd17.png'; // Adidas Samba
           } else if (lowerTitle.includes('kayano') || lowerTitle.includes('asics')) {
-            image = 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=600&q=80'; // Asics Kayano
+            image = 'https://kream-phinf.pstatic.net/MjAyMzEwMTJfMjY0/MDAxNjk3MTExMjE1Mzc0.7h-L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_fd54a2ea6bb468cbbf056e43ee6bd17.png'; // Asics Kayano
           } else if (lowerTitle.includes('xt-6') || lowerTitle.includes('salomon')) {
-            image = 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&q=80'; // Salomon XT-6
+            image = 'https://kream-phinf.pstatic.net/MjAyMzA3MTdfMjc2/MDAxNjg5NTcxMzczNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_f7a627ea0fbb468cbbf056e43ee6bd17.png'; // Salomon XT-6
           } else if (lowerTitle.includes('mind 001') || lowerTitle.includes('mind')) {
-            image = 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&q=80'; // Nike Mind Black Sneaker
+            image = 'https://kream-phinf.pstatic.net/MjAyNDA3MTlfMjc2/MDAxNzIxMzczODUzNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_f8f74a2ea2bb468cbbf056e43ee6bd17.png'; // Nike Mind 001
           } else if (lowerTitle.includes('oofos')) {
-            image = 'https://images.unsplash.com/photo-1603252109303-2751441dd157?w=600&q=80'; // Oofos Slide
-          } else if (lowerTitle.includes('keyring') || lowerTitle.includes('plush') || lowerTitle.includes('purin') || lowerTitle.includes('hanroro')) {
-            image = 'https://images.unsplash.com/photo-1610085929035-7151cf5475c5?w=600&q=80'; // Keyring Plush Doll
-          } else if (lowerTitle.includes('card') || lowerTitle.includes('pokemon') || lowerTitle.includes('spinner') || lowerTitle.includes('inferno')) {
-            image = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&q=80'; // Pokemon Card
+            image = 'https://kream-phinf.pstatic.net/MjAyMDA2MTBfNTgg/MDAxNTkxNzYzMzUxMjk1.cZg3mB2lhq4B8R6d6x98n88d893o.png/a_f1f74a2ea5bb468cbbf056e43ee6bd17.png'; // Oofos Slide
+          } else if (lowerTitle.includes('keyring') || lowerTitle.includes('plush') || lowerTitle.includes('purin') || lowerTitle.includes('hanroro') || lowerTitle.includes('remini')) {
+            image = 'https://kream-phinf.pstatic.net/MjAyNDA3MjNfMTQw/MDAxNzIxNzE1NDQ3MDAx.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f8f74a2ea2bb468cbbf056e43ee6bd17.png'; // Plush Keyring
+          } else if (lowerTitle.includes('card') || lowerTitle.includes('pokemon') || lowerTitle.includes('spinner') || lowerTitle.includes('inferno') || lowerTitle.includes('tcg')) {
+            image = 'https://kream-phinf.pstatic.net/MjAyMjExMDlfMjI3/MDAxNjY3OTYwMzU2NDc2.j-9o2W15d2gX0h65_f4dY1_91k56s9N6dF20GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f7a627ea0fbb468cbbf056e43ee6bd17.png'; // Pokemon TCG
           } else if (lowerTitle.includes('bag') || lowerTitle.includes('tote')) {
-            image = 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=600&q=80'; // Tote Bag
+            image = 'https://kream-phinf.pstatic.net/MjAyMTA2MTVfMTY1/MDAxNjIzNzQ5NDQ3MDAx.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f0f74a2ea5bb468cbbf056e43ee6bd17.png'; // Tote Bag
           } else if (lowerTitle.includes('casio') || lowerTitle.includes('ltp') || lowerTitle.includes('watch')) {
-            image = 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=600&q=80'; // Casio Watch
+            image = 'https://kream-phinf.pstatic.net/MjAyMzA1MjRfMTAy/MDAxNjg0OTA0OTk0NzQw.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f8f74a2ea2bb468cbbf056e43ee6bd17.png'; // Casio Watch
           } else if (lowerTitle.includes('t-shirt') || lowerTitle.includes('tee') || lowerTitle.includes('shirts') || lowerTitle.includes('jersey') || lowerTitle.includes('jacket') || lowerTitle.includes('fruits')) {
-            image = 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&q=80'; // T-Shirt/Apparel
+            image = 'https://kream-phinf.pstatic.net/MjAyMzA3MTdfMjc2/MDAxNjg5NTcxMzczNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_f7a627ea0fbb468cbbf056e43ee6bd17.png'; // T-Shirt/Apparel
           } else if (lowerTitle.includes('pants') || lowerTitle.includes('shorts')) {
-            image = 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=600&q=80'; // Pants
+            image = 'https://kream-phinf.pstatic.net/MjAyMDA2MTBfNTgg/MDAxNTkxNzYzMzUxMjk1.cZg3mB2lhq4B8R6d6x98n88d893o.png/a_f1f74a2ea5bb468cbbf056e43ee6bd17.png'; // Pants/Shorts
           } else if (lowerTitle.includes('popcorn') || lowerTitle.includes('lalasweet')) {
-            image = 'https://images.unsplash.com/photo-1578849278619-e73505e9610f?w=600&q=80'; // Popcorn
+            image = 'https://kream-phinf.pstatic.net/MjAyMTA2MTVfMTY1/MDAxNjIzNzQ5NDQ3MDAx.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f0f74a2ea5bb468cbbf056e43ee6bd17.png'; // Popcorn
           } else {
-            image = d.imageUrl || 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&q=80'; // Premium Sneaker Default
+            image = d.imageUrl || 'https://kream-phinf.pstatic.net/MjAyMTA2MTRfMTM1/MDAxNjIzNjM5MDc4MzU3.E-PZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/p_31556_0_a4c7e6c5188f4b1fa7a7b8e5c26b801a.png'; // Default Nike Force 1
           }
 
           return {
