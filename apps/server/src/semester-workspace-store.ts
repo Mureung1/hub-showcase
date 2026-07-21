@@ -87,6 +87,10 @@ export type PersistedStatePatch = StatePatch & {
   readonly guardOperationId?: string
 }
 
+export type PersistedSourceRecovery = ExecutionGuard & {
+  readonly state: 'recovery_required'
+}
+
 export type PersistedWorkspaceState = {
   readonly formatVersion: typeof currentWorkspaceStoreFormatVersion
   readonly workspaceId: string
@@ -98,6 +102,7 @@ export type PersistedWorkspaceState = {
   readonly userConfirmations: readonly UserConfirmation[]
   readonly modelingRuns: readonly ModelingRun[]
   readonly executionGuard: ExecutionGuard | null
+  readonly sourceRecovery: PersistedSourceRecovery | null
 }
 
 export type WorkspaceStoreAuthority = {
@@ -206,6 +211,7 @@ function createEmptyWorkspaceStore(): PersistedWorkspaceState {
     userConfirmations: [],
     modelingRuns: [],
     executionGuard: null,
+    sourceRecovery: null,
   }
 }
 
@@ -220,6 +226,7 @@ function decodeCurrentStore(value: unknown): PersistedWorkspaceState {
       'formatVersion',
       'materials',
       'modelingRuns',
+      'sourceRecovery',
       'statePatches',
       'userConfirmations',
       'workspaceId',
@@ -234,7 +241,8 @@ function decodeCurrentStore(value: unknown): PersistedWorkspaceState {
     !isPersistedStatePatchArray(value.statePatches) ||
     !isUserConfirmationArray(value.userConfirmations) ||
     !isModelingRunArray(value.modelingRuns) ||
-    !isExecutionGuardOrNull(value.executionGuard)
+    !isExecutionGuardOrNull(value.executionGuard) ||
+    !isSourceRecoveryOrNull(value.sourceRecovery)
   ) {
     throw invalidStore()
   }
@@ -254,6 +262,10 @@ function decodeCurrentStore(value: unknown): PersistedWorkspaceState {
       value.executionGuard === null
         ? null
         : cloneExecutionGuard(value.executionGuard),
+    sourceRecovery:
+      value.sourceRecovery === null
+        ? null
+        : clonePersistedSourceRecovery(value.sourceRecovery),
   } satisfies PersistedWorkspaceState
   if (!hasValidWorkspaceStateInvariants(store)) throw invalidStore()
   return store
@@ -557,6 +569,26 @@ function isExecutionGuardOrNull(value: unknown): value is ExecutionGuard | null 
   )
 }
 
+function isSourceRecoveryOrNull(
+  value: unknown,
+): value is PersistedSourceRecovery | null {
+  return (
+    value === null ||
+    (isExecutionGuardOrNull(value) &&
+      value !== null &&
+      value.state === 'recovery_required')
+  )
+}
+
+function clonePersistedSourceRecovery(
+  sourceRecovery: PersistedSourceRecovery,
+): PersistedSourceRecovery {
+  return {
+    ...cloneExecutionGuard(sourceRecovery),
+    state: 'recovery_required',
+  }
+}
+
 function isGuardSelectedMaterials(
   value: unknown,
 ): value is readonly ModelingRunSource[] {
@@ -580,6 +612,18 @@ function isGuardSelectedMaterials(
 function hasValidWorkspaceStateInvariants(
   store: PersistedWorkspaceState,
 ): boolean {
+  const sourceRecovery = store.sourceRecovery
+  if (
+    sourceRecovery &&
+    sourceRecovery.selectedMaterials.some((selected) => {
+      const registered = sourceRecovery.materials.find(
+        (material) => material.id === selected.rawMaterialId,
+      )
+      return !registered || registered.digest !== selected.digest
+    })
+  ) {
+    return false
+  }
   const courseId = store.course?.id
   if (!courseId) {
     return (

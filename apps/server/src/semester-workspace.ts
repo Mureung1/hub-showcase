@@ -35,6 +35,7 @@ import {
 } from './semester-workspace-store.js'
 import type {
   ExecutionGuard,
+  PersistedSourceRecovery,
   PersistedStatePatch,
   PersistedWorkspaceState,
   WorkspaceStoreAuthority,
@@ -609,23 +610,18 @@ type OpenWorkspace =
       readonly created: boolean
       authority: WorkspaceStoreAuthority
       store: PersistedWorkspaceState
-      sourceRecovery: SourceRecoveryAuthority | null
+      sourceRecovery: PersistedSourceRecovery | null
       storeConflict: StoreConflictRecovery | null
       snapshot: ReadySemesterWorkspaceSnapshot
     }
   | {
       readonly root: string
-      sourceRecovery: SourceRecoveryAuthority | null
+      sourceRecovery: PersistedSourceRecovery | null
       readonly snapshot: IncompatibleSemesterWorkspaceSnapshot
     }
 
 type StoreConflictRecovery = {
   readonly guardedOperationId: string | null
-}
-
-type SourceRecoveryAuthority = {
-  readonly guard: ExecutionGuard
-  readonly materials: readonly RawMaterial[]
 }
 
 type CurrentProcessOperationAuthority = {
@@ -782,14 +778,19 @@ export function createSemesterWorkspaceController(options: {
           throw executionGuardConflict()
         }
         const opened = await openWorkspace(workspaceRoot)
-        if (
+        const carriedSourceRecovery =
           active &&
           active.root === workspaceRoot &&
           active.sourceRecovery
-        ) {
-          opened.sourceRecovery = cloneSourceRecovery(active.sourceRecovery)
+            ? cloneSourceRecovery(active.sourceRecovery)
+            : null
+        if (carriedSourceRecovery) {
+          opened.sourceRecovery = carriedSourceRecovery
         }
         if ('store' in opened) {
+          if (carriedSourceRecovery) {
+            await persistSourceRecovery(opened, carriedSourceRecovery)
+          }
           if (opened.sourceRecovery) {
             opened.snapshot = readyOpenWorkspaceSnapshot(opened)
           }
@@ -1207,9 +1208,7 @@ export function createSemesterWorkspaceController(options: {
       if (
         currentProcessOperation?.operationId === operationId &&
         active &&
-        'store' in active &&
-        active.root === currentProcessOperation.root &&
-        active.store.executionGuard?.operationId === operationId
+        active.root === currentProcessOperation.root
       ) {
         currentProcessOperation = {
           ...currentProcessOperation,
@@ -1441,7 +1440,9 @@ async function refreshReadyWorkspace(
   const nextStore = {
     ...opened.store,
     materials,
-    ...(clearRecovery ? { executionGuard: null } : {}),
+    ...(clearRecovery
+      ? { executionGuard: null, sourceRecovery: null }
+      : {}),
   } satisfies PersistedWorkspaceState
   await replaceWorkspaceStore(opened, nextStore)
   if (clearRecovery) {
@@ -2216,7 +2217,7 @@ async function reconcileUncommittedExecutionArtifacts(
   const guardedOperationIds = new Set(
     [
       opened.store.executionGuard?.operationId,
-      opened.sourceRecovery?.guard.operationId,
+      opened.sourceRecovery?.operationId,
     ].filter((operationId): operationId is string => operationId !== undefined),
   )
   for (const entry of entries) {
@@ -2259,14 +2260,14 @@ async function reconcileSourceRecoveryArtifacts(
   if (
     !sourceRecovery ||
     opened.store.executionGuard?.operationId ===
-      sourceRecovery.guard.operationId
+      sourceRecovery.operationId
   ) {
     return
   }
   const cleaned = await cleanupExecutionGuardArtifacts(
     opened.root,
     appDataRoot,
-    sourceRecovery.guard,
+    sourceRecovery,
     cleanupPolicy,
   )
   if (!cleaned) {
@@ -2569,9 +2570,26 @@ async function replaceWorkspaceStore(
     throw error
   }
   opened.store = nextStore
-  opened.sourceRecovery ??= sourceRecoveryAuthority(nextStore)
+  opened.sourceRecovery = sourceRecoveryAuthority(nextStore)
   opened.storeConflict = null
   opened.snapshot = readyOpenWorkspaceSnapshot(opened)
+}
+
+async function persistSourceRecovery(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  sourceRecovery: PersistedSourceRecovery,
+): Promise<void> {
+  if (
+    JSON.stringify(opened.store.sourceRecovery) ===
+    JSON.stringify(sourceRecovery)
+  ) {
+    return
+  }
+  const nextStore = {
+    ...opened.store,
+    sourceRecovery: cloneSourceRecovery(sourceRecovery),
+  } satisfies PersistedWorkspaceState
+  await replaceWorkspaceStore(opened, nextStore)
 }
 
 function markStoreConflict(
@@ -2579,7 +2597,7 @@ function markStoreConflict(
 ): void {
   const guardedOperationId =
     opened.store.executionGuard?.operationId ??
-    opened.sourceRecovery?.guard.operationId ??
+    opened.sourceRecovery?.operationId ??
     null
   opened.storeConflict = {
     guardedOperationId,
@@ -3495,22 +3513,22 @@ function readyOpenWorkspaceSnapshot(
 
 function sourceRecoveryAuthority(
   store: PersistedWorkspaceState,
-): SourceRecoveryAuthority | null {
-  const guard = store.executionGuard
-  if (guard?.state !== 'recovery_required') return null
-  return {
-    guard: cloneExecutionGuard(guard),
-    materials: store.materials.map((material) => ({ ...material })),
-  }
+): PersistedSourceRecovery | null {
+  const guard =
+    store.sourceRecovery ??
+    (store.executionGuard?.state === 'recovery_required'
+      ? store.executionGuard
+      : null)
+  return cloneSourceRecovery(guard)
 }
 
 function cloneSourceRecovery(
-  sourceRecovery: SourceRecoveryAuthority | null,
-): SourceRecoveryAuthority | null {
+  sourceRecovery: ExecutionGuard | null,
+): PersistedSourceRecovery | null {
   return sourceRecovery
     ? {
-        guard: cloneExecutionGuard(sourceRecovery.guard),
-        materials: sourceRecovery.materials.map((material) => ({ ...material })),
+        ...cloneExecutionGuard(sourceRecovery),
+        state: 'recovery_required',
       }
     : null
 }

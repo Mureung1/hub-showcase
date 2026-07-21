@@ -436,6 +436,27 @@ test('non-current workspace stores open through one read-only boundary without c
   const courseId = `course_${'a'.repeat(32)}`
   const workspaceId = `workspace_${'b'.repeat(32)}`
   const sourceBytes = Buffer.from('호환되지 않는 store의 원본 학기 자료', 'utf8')
+  const materialId = `material_${'c'.repeat(32)}`
+  const materialDigest = 'd'.repeat(64)
+  const sourceRecoveryOperationId = `chat_${'e'.repeat(32)}`
+  const recoveryMaterial = {
+    id: materialId,
+    relativePath: 'original-source.txt',
+    digest: materialDigest,
+    mediaType: 'text/plain; charset=utf-8',
+    size: sourceBytes.byteLength,
+  }
+  const sourceRecovery = {
+    operationId: sourceRecoveryOperationId,
+    kind: 'product_chat',
+    confirmedRevision: 0,
+    materials: [recoveryMaterial],
+    selectedMaterials: [{ rawMaterialId: materialId, digest: materialDigest }],
+    scratchRelativePath:
+      `.ay-ple/runtime-scratch/${sourceRecoveryOperationId}`,
+    state: 'recovery_required',
+    createdAt: '2026-07-21T00:00:00.000Z',
+  }
   const fixtures = [
     {
       name: 'version 1',
@@ -481,6 +502,7 @@ test('non-current workspace stores open through one read-only boundary without c
           statePatches: [],
           userConfirmations: [],
           executionGuard: null,
+          sourceRecovery: null,
         })}\n`,
         'utf8',
       ),
@@ -499,6 +521,71 @@ test('non-current workspace stores open through one read-only boundary without c
           statePatches: [],
           userConfirmations: [],
           modelingRuns: [],
+          sourceRecovery: null,
+        })}\n`,
+        'utf8',
+      ),
+    },
+    {
+      name: 'current version 2 without required sourceRecovery',
+      foundStoreFormatVersion: 2,
+      bytes: Buffer.from(
+        `${JSON.stringify({
+          formatVersion: 2,
+          workspaceId,
+          confirmedRevision: 0,
+          course: null,
+          materials: [],
+          assignments: [],
+          statePatches: [],
+          userConfirmations: [],
+          modelingRuns: [],
+          executionGuard: null,
+        })}\n`,
+        'utf8',
+      ),
+    },
+    {
+      name: 'current version 2 with non-recovery sourceRecovery marker',
+      foundStoreFormatVersion: 2,
+      bytes: Buffer.from(
+        `${JSON.stringify({
+          formatVersion: 2,
+          workspaceId,
+          confirmedRevision: 0,
+          course: { id: courseId, displayName: '문제해결글쓰기' },
+          materials: [recoveryMaterial],
+          assignments: [],
+          statePatches: [],
+          userConfirmations: [],
+          modelingRuns: [],
+          executionGuard: null,
+          sourceRecovery: { ...sourceRecovery, state: 'active' },
+        })}\n`,
+        'utf8',
+      ),
+    },
+    {
+      name: 'current version 2 with mismatched sourceRecovery baseline',
+      foundStoreFormatVersion: 2,
+      bytes: Buffer.from(
+        `${JSON.stringify({
+          formatVersion: 2,
+          workspaceId,
+          confirmedRevision: 0,
+          course: { id: courseId, displayName: '문제해결글쓰기' },
+          materials: [recoveryMaterial],
+          assignments: [],
+          statePatches: [],
+          userConfirmations: [],
+          modelingRuns: [],
+          executionGuard: null,
+          sourceRecovery: {
+            ...sourceRecovery,
+            selectedMaterials: [
+              { rawMaterialId: materialId, digest: 'f'.repeat(64) },
+            ],
+          },
         })}\n`,
         'utf8',
       ),
