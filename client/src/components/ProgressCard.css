@@ -1,0 +1,81 @@
+.progress-card {
+  background: var(--bg-dark);
+  border: 1px solid var(--border-dark);
+  border-radius: var(--radius-xl);
+  padding: 28px 24px;
+  box-shadow: var(--shadow-lg);
+  margin-bottom: 28px;
+}
+
+.progress-block + .progress-block {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-dark);
+}
+
+.progress-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.progress-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-on-dark-muted);
+}
+
+.dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot-team {
+  background: var(--color-primary-light);
+}
+
+.dot-mine {
+  background: var(--color-info-light);
+}
+
+.progress-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-on-dark);
+}
+
+.progress-track {
+  height: 8px;
+  background: var(--border-dark);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: var(--radius-full);
+  transition: width var(--transition-base);
+}
+
+.progress-fill.fill-team {
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+}
+
+.progress-fill.fill-mine {
+  background: linear-gradient(90deg, var(--color-info), var(--color-info-light));
+}
+
+.progress-caption {
+  font-size: 12px;
+  color: var(--text-on-dark-muted);
+  margin-top: 8px;
+}
