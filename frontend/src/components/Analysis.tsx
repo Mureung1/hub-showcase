@@ -1,20 +1,35 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { SYMPTOM_INGREDIENTS, INGREDIENT_ICONS } from '../mockData';
+import { SYMPTOM_ID_BY_NAME, INGREDIENT_ICONS } from '../mockData';
+import { getRecommendedIngredients } from '../api/ingredients';
+import type { RecommendedIngredient } from '../api/ingredients';
 import { ChipIcon, getChipColor } from '../chipIcons';
 
 interface AnalysisProps {
   symptoms: string[];
-  onNext: () => void;
+  onNext: (ingredientIds: number[]) => void;
 }
 
 export function Analysis({ symptoms, onNext }: AnalysisProps) {
   const [supplementInput, setSupplementInput] = useState('');
   const [supplements, setSupplements] = useState<string[]>([]);
+  const [recommendedIngredients, setRecommendedIngredients] = useState<RecommendedIngredient[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const recommendedIngredients = Array.from(
-    new Set(symptoms.flatMap((symptom) => SYMPTOM_INGREDIENTS[symptom] ?? []))
-  );
+  useEffect(() => {
+    const symptomIds = symptoms.map((name) => SYMPTOM_ID_BY_NAME[name]).filter(Boolean);
+    if (symptomIds.length === 0) {
+      setRecommendedIngredients([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    getRecommendedIngredients(symptomIds)
+      .then(setRecommendedIngredients)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [symptoms]);
 
   function addSupplement(e: FormEvent) {
     e.preventDefault();
@@ -39,15 +54,18 @@ export function Analysis({ symptoms, onNext }: AnalysisProps) {
         선택하신 증상을 분석한 결과예요. 1일 권장 섭취량 기준으로 추천했어요.
       </p>
 
+      {loading && <p className="sub">분석 중이에요...</p>}
+      {error && <p className="sub" style={{ color: 'var(--color-accent-pink)' }}>{error}</p>}
+
       <div className="chip-list">
         {recommendedIngredients.map((ingredient, index) => {
           const color = getChipColor(index);
           return (
-            <span className="chip-badge" key={ingredient}>
+            <span className="chip-badge" key={ingredient.id}>
               <span className="chip-icon" style={{ background: color.tint, color: color.accent }}>
-                <ChipIcon name={INGREDIENT_ICONS[ingredient] ?? 'droplet'} />
+                <ChipIcon name={INGREDIENT_ICONS[ingredient.name] ?? 'droplet'} />
               </span>
-              <span className="chip-label">{ingredient}</span>
+              <span className="chip-label">{ingredient.name}</span>
             </span>
           );
         })}
@@ -116,7 +134,11 @@ export function Analysis({ symptoms, onNext }: AnalysisProps) {
         </div>
       )}
 
-      <button className="btn" type="button" onClick={onNext}>
+      <button
+        className="btn"
+        type="button"
+        onClick={() => onNext(recommendedIngredients.map((i) => i.id))}
+      >
         다음
       </button>
     </>
