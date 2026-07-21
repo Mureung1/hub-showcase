@@ -28,6 +28,7 @@ export type AnalysisResultViewModel = {
   treeTruncated: boolean;
   qualitySignals: RepositoryAnalysisResult["analysis"]["qualitySignals"];
   collaborationSummary: RepositoryAnalysisResult["analysis"]["collaborationSummary"];
+  technicalChallenges: RepositoryAnalysisResult["analysis"]["technicalChallenges"];
   pullRequestCount: number;
   issueCount: number;
   warnings: string[];
@@ -59,6 +60,7 @@ export function getAnalysisResultViewModel(
     treeTruncated: analysis.projectStructure.treeTruncated,
     qualitySignals: analysis.qualitySignals,
     collaborationSummary: analysis.collaborationSummary,
+    technicalChallenges: analysis.technicalChallenges,
     pullRequestCount: analysis.collaborationSummary.pullRequestCount,
     issueCount: analysis.collaborationSummary.issueCount,
     warnings: analysis.warnings,
@@ -154,6 +156,57 @@ export function AnalysisResult({ result }: AnalysisResultProps) {
         <ResultList label="CI 경로" items={viewModel.ciPaths} />
         <ResultList label="배포 설정" items={viewModel.deploymentPaths} />
         {viewModel.treeTruncated && <p className="result-warning">파일 구조가 일부만 반환되었습니다.</p>}
+      </ResultCard>
+
+      <ResultCard title="기술적 도전 후보" className="result-card-wide">
+        {viewModel.technicalChallenges.length > 0 ? (
+          <ul className="technical-challenge-list">
+            {viewModel.technicalChallenges.map((challenge) => (
+              <li key={challenge.title} className="technical-challenge-item">
+                <div className="technical-challenge-heading">
+                  <h4>{challenge.title}</h4>
+                  <div className="technical-challenge-status">
+                    <span className="challenge-confidence">
+                      신뢰도 {confidenceLabels[challenge.confidence]}
+                    </span>
+                    {challenge.requiresUserConfirmation && (
+                      <span className="challenge-confirmation">사용자 확인 필요</span>
+                    )}
+                  </div>
+                </div>
+                <p>{challenge.summary}</p>
+                <dl className="challenge-details">
+                  {challenge.background && <Definition label="Background" value={challenge.background} />}
+                  {challenge.problem && <Definition label="Problem" value={challenge.problem} />}
+                  {challenge.solution && <Definition label="Solution" value={challenge.solution} />}
+                  <Definition label="기술적 도전" value={challenge.technicalChallenge} />
+                  <Definition label="의미" value={challenge.whyItMatters} />
+                </dl>
+                <div className="challenge-evidence">
+                  <span>근거</span>
+                  <ul className="evidence-list">
+                    {challenge.evidence.map((item, index) => (
+                      <li key={`${item.evidenceType}-${item.referenceId ?? item.filePath ?? index}`}>
+                        <span className="evidence-type">{evidenceTypeLabels[item.evidenceType]}</span>
+                        <div>
+                          <strong>{item.title}</strong>
+                          {item.filePath && <small>{item.filePath}</small>}
+                        </div>
+                        {item.url && (
+                          <a href={item.url} target="_blank" rel="noreferrer">
+                            열기
+                          </a>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>현재 데이터만으로 기술적 도전 후보를 만들 수 없습니다.</p>
+        )}
       </ResultCard>
 
       <div className="result-grid">
@@ -288,3 +341,9 @@ const evidenceTypeLabels: Record<RepositoryAnalysisEvidence["evidenceType"], str
   config: "Config",
   release: "Release",
 };
+
+const confidenceLabels = {
+  high: "높음",
+  medium: "보통",
+  low: "낮음",
+} as const;

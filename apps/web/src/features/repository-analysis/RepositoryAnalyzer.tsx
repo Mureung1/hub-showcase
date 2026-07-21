@@ -1,7 +1,6 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
 import type { RepositoryAnalysisResult } from "@ptop/contracts";
-import logoUrl from "../../../Logo-cropped.png";
 import { BrandSpinner } from "../../components/BrandSpinner";
 import {
   ANALYSIS_STATUS,
@@ -9,16 +8,14 @@ import {
   type AnalysisStatus,
 } from "./repositoryAnalysis";
 import { requestRepositoryAnalysis } from "./repositoryAnalysisApi";
-import { AnalysisResult } from "./AnalysisResult";
 
 type RepositoryAnalyzerProps = {
-  onAnalysisComplete: (isComplete: boolean) => void;
+  onAnalysisComplete: (result: RepositoryAnalysisResult) => void;
 };
 
 export function RepositoryAnalyzer({ onAnalysisComplete }: RepositoryAnalyzerProps) {
   const [repoUrl, setRepoUrl] = useState("");
   const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>(ANALYSIS_STATUS.idle);
-  const [analysisResult, setAnalysisResult] = useState<RepositoryAnalysisResult | null>(null);
   const [analysisError, setAnalysisError] = useState("");
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -26,22 +23,17 @@ export function RepositoryAnalyzer({ onAnalysisComplete }: RepositoryAnalyzerPro
     const error = getRepositoryUrlError(repoUrl);
     if (error) {
       setAnalysisStatus(ANALYSIS_STATUS.error);
-      setAnalysisResult(null);
       setAnalysisError(error);
-      onAnalysisComplete(false);
       return;
     }
 
     setAnalysisStatus(ANALYSIS_STATUS.loading);
-    setAnalysisResult(null);
     setAnalysisError("");
-    onAnalysisComplete(false);
 
     try {
       const result = await requestRepositoryAnalysis({ repositoryUrl: repoUrl.trim() });
-      setAnalysisResult(result);
       setAnalysisStatus(ANALYSIS_STATUS.success);
-      onAnalysisComplete(true);
+      onAnalysisComplete(result);
     } catch (requestError) {
       setAnalysisError(
         requestError instanceof Error
@@ -49,25 +41,21 @@ export function RepositoryAnalyzer({ onAnalysisComplete }: RepositoryAnalyzerPro
           : "Repository 분석 요청에 실패했습니다.",
       );
       setAnalysisStatus(ANALYSIS_STATUS.error);
-      onAnalysisComplete(false);
     }
   };
 
   const handleRepoChange = (event: ChangeEvent<HTMLInputElement>) => {
     setRepoUrl(event.target.value);
     setAnalysisStatus(ANALYSIS_STATUS.idle);
-    setAnalysisResult(null);
     setAnalysisError("");
-    onAnalysisComplete(false);
   };
 
   return (
-    <section className="intro" aria-label="PtoP Repository 분석 시작">
+    <section className="intro analyzer-intro" aria-label="PtoP Repository 분석 시작">
       <div className="intro-inner">
-        <p className="section-label">Project to Portfolio</p>
-        <h1 className="hero-logo">
-          <img src={logoUrl} alt="PtoP Project to Portfolio 로고" />
-        </h1>
+        <p className="section-label">Start with a repository</p>
+        <h2 className="analyzer-title">프로젝트 경험을 다시 꺼내볼 준비가 되었나요?</h2>
+        <p className="analyzer-description">GitHub Repository 주소를 입력하면 프로젝트의 흐름과 작업 단서를 정리합니다.</p>
 
         <form className="hero-search" onSubmit={handleSubmit}>
           <label className="sr-only" htmlFor="repo-url">
@@ -107,7 +95,6 @@ export function RepositoryAnalyzer({ onAnalysisComplete }: RepositoryAnalyzerPro
           </div>
         )}
 
-        {analysisStatus === ANALYSIS_STATUS.success && analysisResult && <AnalysisResult result={analysisResult} />}
       </div>
     </section>
   );

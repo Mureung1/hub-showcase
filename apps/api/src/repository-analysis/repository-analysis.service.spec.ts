@@ -2,6 +2,7 @@ import type { RepositoryAnalysisRequest } from "@ptop/contracts";
 import type { GitHubRepositoryClient } from "./github-repository.client";
 import type { GitHubRepositoryAnalysisSource } from "./repository-analysis.models";
 import type { RepositoryAnalysisPersistence } from "./repository-analysis.persistence";
+import type { TechnicalChallengeAnalyzer } from "./technical-challenge.analyzer";
 import {
   InvalidRepositoryUrlError,
   RepositoryAnalysisService,
@@ -51,16 +52,20 @@ describe("RepositoryAnalysisService", () => {
     const persistence = {
       save: jest.fn().mockResolvedValue({ analysisResultId: "analysis-id", reused: false }),
     };
+    const technicalChallengeAnalyzer = {
+      analyze: jest.fn().mockResolvedValue({ candidates: [], warning: null }),
+    };
     const service = new RepositoryAnalysisService(
       githubClient as unknown as GitHubRepositoryClient,
       persistence as unknown as RepositoryAnalysisPersistence,
+      technicalChallengeAnalyzer as unknown as TechnicalChallengeAnalyzer,
     );
 
-    return { service, githubClient, persistence };
+    return { service, githubClient, persistence, technicalChallengeAnalyzer };
   }
 
   it("collects, calculates, stores, and returns a Repository analysis", async () => {
-    const { service, githubClient, persistence } = createService();
+    const { service, githubClient, persistence, technicalChallengeAnalyzer } = createService();
     const request: RepositoryAnalysisRequest = {
       repositoryUrl: "https://github.com/SubJeeLee/hub",
       githubLogin: "SubJeeLee",
@@ -69,6 +74,7 @@ describe("RepositoryAnalysisService", () => {
     const result = await service.analyze(request);
 
     expect(githubClient.getRepositoryAnalysisSource).toHaveBeenCalledWith("SubJeeLee", "hub");
+    expect(technicalChallengeAnalyzer.analyze).toHaveBeenCalledTimes(1);
     expect(persistence.save).toHaveBeenCalledWith(
       expect.objectContaining({
         targetGithubLogin: "SubJeeLee",
@@ -142,8 +148,9 @@ describe("RepositoryAnalysisService", () => {
       analysis: expect.objectContaining({
         repositorySnapshot: expect.objectContaining({ readmeAvailable: false }),
         techStack: expect.objectContaining({ languages: { TypeScript: 80, CSS: 20 } }),
-        collaborationSummary: expect.objectContaining({ pullRequestCount: 0, issueCount: 0 }),
-      }),
+          collaborationSummary: expect.objectContaining({ pullRequestCount: 0, issueCount: 0 }),
+          technicalChallenges: [],
+        }),
       analyzedAt: expect.any(String),
     });
   });

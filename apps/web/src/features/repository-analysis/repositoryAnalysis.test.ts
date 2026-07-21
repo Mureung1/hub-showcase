@@ -125,6 +125,28 @@ test("analysis result view model exposes Issue #13 analysis fields without landi
           metadata: {},
         },
       ],
+      technicalChallenges: [
+        {
+          title: "분석 결과를 구조화된 데이터로 연결하기",
+          summary: "Repository 분석 결과를 API 계약에 맞춰 표시하는 작업",
+          background: "분석 결과를 여러 화면에서 재사용해야 했습니다.",
+          problem: "응답 데이터와 화면 모델의 형태가 달랐습니다.",
+          solution: "공통 계약과 view model을 분리했습니다.",
+          technicalChallenge: "분석 결과의 구조를 유지하면서 화면에 연결했습니다.",
+          whyItMatters: "결과의 근거와 표현을 일관되게 관리할 수 있습니다.",
+          confidence: "medium",
+          requiresUserConfirmation: true,
+          evidence: [
+            {
+              evidenceType: "file",
+              referenceId: null,
+              title: "apps/api/src/main.ts",
+              url: "https://github.com/owner/repository/blob/main/apps/api/src/main.ts",
+              filePath: "apps/api/src/main.ts",
+            },
+          ],
+        },
+      ],
     },
     analyzedAt: "2026-07-20T00:00:00Z",
   };
@@ -135,6 +157,9 @@ test("analysis result view model exposes Issue #13 analysis fields without landi
   assert.deepEqual(viewModel.frameworks, ["react", "@nestjs/core"]);
   assert.equal(viewModel.pullRequestCount, 4);
   assert.equal(viewModel.evidence[0]?.title, "README.md");
+  assert.equal(viewModel.technicalChallenges[0]?.confidence, "medium");
+  assert.equal(viewModel.technicalChallenges[0]?.requiresUserConfirmation, true);
+  assert.equal(viewModel.technicalChallenges[0]?.evidence[0]?.filePath, "apps/api/src/main.ts");
   assert.equal("problem" in viewModel, false);
   assert.equal("solution" in viewModel, false);
 });

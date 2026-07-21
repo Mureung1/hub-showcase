@@ -190,6 +190,7 @@ export function createAnalysisDetails(
         0,
       ),
     },
+    technicalChallenges: [],
     warnings: source.warnings ?? [],
     evidence: createEvidence(source, files, testPaths, ciPaths, deploymentPaths),
   };

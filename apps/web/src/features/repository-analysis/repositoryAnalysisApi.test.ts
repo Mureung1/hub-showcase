@@ -62,6 +62,7 @@ const result: RepositoryAnalysisResult = {
       openIssueCount: 0,
       reviewCount: 0,
     },
+    technicalChallenges: [],
     warnings: [],
     evidence: [],
   },

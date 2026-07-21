@@ -156,6 +156,7 @@ describe("RepositoryAnalysisPersistence", () => {
       expect.objectContaining({
         tech_stack: { languages: { TypeScript: 100 } },
         project_structure: {},
+        technical_challenges: [],
         warnings: ["기존 분석 결과에는 확장 분석 정보가 포함되지 않았습니다."],
       }),
     );

@@ -1,0 +1,7 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+@utility ptop-container {
+  width: min(var(--content-width), calc(100% - var(--page-gutter)));
+  margin-inline: auto;
+}

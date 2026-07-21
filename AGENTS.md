@@ -14,6 +14,9 @@ PtoP(Project to Portfolio)는 GitHub Repository를 분석해 대학생 개발자
 - 사용자의 역할을 AI가 확정적으로 단정하지 않는다.
 - 외부 UI 라이브러리는 별도 합의 없이 추가하지 않는다.
 - `.github/` 디렉토리와 GitHub Actions workflow는 사용자의 명시 요청 없이 수정하지 않는다.
+- UI 또는 시각적 인터랙션을 작업하기 전 `@docs/design/design-system.md`를 확인하고, 색상·컴포넌트·모션 규칙을 따른다.
+- 애니메이션은 상태 변화와 사용자 피드백을 설명하는 범위에서만 사용하고, `prefers-reduced-motion`과 키보드 focus 상태를 함께 지원한다.
+- 디자인 시스템과 다른 UI가 필요하면 임의로 덮어쓰지 말고, 먼저 디자인 시스템 문서의 예외 또는 규칙을 갱신한다.
 
 ## 기술 기준
 

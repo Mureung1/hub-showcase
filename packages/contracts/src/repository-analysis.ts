@@ -59,6 +59,29 @@ export type RepositoryAnalysisEvidence = {
   metadata: Record<string, string | number | boolean | null>;
 };
 
+export type TechnicalChallengeConfidence = "high" | "medium" | "low";
+
+export type TechnicalChallengeEvidenceReference = {
+  evidenceType: RepositoryAnalysisEvidenceType;
+  referenceId: string | null;
+  title: string;
+  url: string | null;
+  filePath: string | null;
+};
+
+export type TechnicalChallengeCandidate = {
+  title: string;
+  summary: string;
+  background: string | null;
+  problem: string | null;
+  solution: string | null;
+  technicalChallenge: string;
+  whyItMatters: string;
+  confidence: TechnicalChallengeConfidence;
+  requiresUserConfirmation: boolean;
+  evidence: TechnicalChallengeEvidenceReference[];
+};
+
 export type RepositoryAnalysisDetails = {
   repositorySnapshot: {
     readmeAvailable: boolean;
@@ -99,6 +122,7 @@ export type RepositoryAnalysisDetails = {
     openIssueCount: number;
     reviewCount: number;
   };
+  technicalChallenges: TechnicalChallengeCandidate[];
   warnings: string[];
   evidence: RepositoryAnalysisEvidence[];
 };

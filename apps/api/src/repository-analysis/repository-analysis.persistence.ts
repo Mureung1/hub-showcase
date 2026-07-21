@@ -106,6 +106,7 @@ export class RepositoryAnalysisPersistence {
         project_structure: analysis.projectStructure,
         quality_signals: analysis.qualitySignals,
         collaboration_summary: analysis.collaborationSummary,
+        technical_challenges: analysis.technicalChallenges,
         activity_summary: {
           contributorCount: input.contributors.length,
           commitCount: input.source.commits.length,
@@ -233,6 +234,7 @@ function createLegacyAnalysis(input: RepositoryAnalysisPersistenceInput): Analys
     projectStructure: {},
     qualitySignals: {},
     collaborationSummary: {},
+    technicalChallenges: [],
     warnings: ["기존 분석 결과에는 확장 분석 정보가 포함되지 않았습니다."],
     evidence: input.source.commits.map((commit) => ({
       evidenceType: "commit",
