@@ -257,6 +257,7 @@ test('activation reconciles an unfinished action and its pending patch before ma
     assert.equal(reconciled?.id, prepared.run.id)
     assert.equal(reconciled?.status, 'unknown')
     assert.equal(reconciled?.failureCode, 'reconciled_after_restart')
+    assert.deepEqual(reconciled?.recoveryOutcome, { outcome: 'unknown' })
     assert.equal(
       reopened
         .assignmentState()

@@ -442,6 +442,14 @@ test('settles a lost Assignment stream before Review answer and retries only fro
     ),
   ).toHaveLength(0)
 
+  await page.reload()
+  await expect(recovery.getByText(/작업 연결이 끊겨/u)).toBeVisible()
+  await expect(chat.getByRole('region', { name: '검토 대기' })).toHaveCount(0)
+  await expect(chat.getByRole('button', { name: '수락' })).toHaveCount(0)
+  await expect(
+    recovery.getByRole('button', { name: '이 자료로 다시 시도' }),
+  ).toBeVisible()
+
   const retryRequestPromise = page.waitForRequest(
     (request) =>
       new URL(request.url()).pathname ===
