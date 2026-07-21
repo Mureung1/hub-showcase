@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { validateExpense } from "./validate";
 
 // ============================================================
 // React 화면 전환 - 9개 화면 전체 연결 버전
@@ -824,7 +825,7 @@ const styles = {
   recordIcon: { flexShrink: 0, width: 36, height: 36, borderRadius: "50%", background: "#e8ede2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 },
   disclaimer: { display: "flex", gap: 8, padding: 12, background: "#e8ede2", borderRadius: 10, fontSize: 12, color: "#5c6b54", lineHeight: 1.6, marginTop: 12 },
   menuItem: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: 14, border: "1px solid #ebe6da", borderRadius: 10, fontSize: 13, marginBottom: 8, background: "#fff" },
-  disclaimerBox: { border: "1px solid #ebe6da", borderRadius: 14, padding: "16px 18px", background: "#e8ede2", marginTop: 14 },
+  disclaimerBox: { border: "1px solid #ebe6da", borderRadius: 14, padding: "16px 18px", background: "#e8ede2", marginTop: 14 },errorText: { fontSize: 12, color: "#c0392b", marginTop: -8, marginBottom: 12, textAlign: "center" },
 };
 
 // ============================================================
@@ -916,6 +917,10 @@ function ExpenseSetup({ go }) {
   const [amount, setAmount] = useState("");
   const [dueDay, setDueDay] = useState("");
   const [expenses, setExpenses] = useState([]);
+  // 수정 중인 항목의 id (null이면 등록 모드)
+  const [editingId, setEditingId] = useState(null);
+  // 입력 검증 에러 메시지 { name, amount, due_day }
+  const [errors, setErrors] = useState({});
   // ── 서버에서 지출 목록을 불러오는 함수 ──
   const loadExpenses = async () => {
     try {
@@ -931,12 +936,72 @@ function ExpenseSetup({ go }) {
   useEffect(() => {
     loadExpenses();
   }, []); // [] = 처음 한 번만 실행
-// ── 추가 버튼: 서버로 POST 요청을 보내 DB에 저장 ──
-  const handleAdd = async () => {
+  // ── 항목 삭제: 서버로 DELETE 요청 ──
+  const handleDelete = async (id) => {
+    // 실수로 지우는 걸 막기 위해 한 번 확인
+    if (!window.confirm("이 항목을 삭제할까요?")) return;
+
     try {
-      // 1. 서버의 POST 통로로 데이터를 보낸다
-      const res = await fetch("http://localhost:3001/api/expenses", {
-        method: "POST",
+      const res = await fetch(`http://localhost:3001/api/expenses/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        alert("삭제에 실패했어요.");
+        return;
+      }
+
+      loadExpenses(); // 목록 새로고침
+    } catch (err) {
+      alert("서버에 연결할 수 없어요. 서버가 켜져 있는지 확인해주세요.");
+    }
+  };
+  // ── 수정 시작: 폼에 기존 값을 채운다 ──
+  const startEdit = (item) => {
+    setEditingId(item.id);
+    setName(item.name);
+    setAmount(String(item.amount));
+    setDueDay(String(item.due_day));
+  };
+
+  // ── 수정 취소: 폼을 비우고 등록 모드로 ──
+  const cancelEdit = () => {
+    setEditingId(null);
+    setName("");
+    setAmount("");
+    setDueDay("");
+  };
+// ── 추가 버튼: 서버로 POST 요청을 보내 DB에 저장 ──
+  // ── 입력 중 실시간 검증: 해당 항목만 검사해서 에러를 갱신 ──
+  const validateField = (field, value) => {
+    // 현재 입력값 전체를 모아서 검증
+    const current = { name, amount: Number(amount), due_day: Number(dueDay) };
+    current[field] = field === "name" ? value : Number(value);
+
+    const result = validateExpense(current);
+    // 해당 항목의 에러만 갱신 (다른 항목은 건드리지 않음)
+    setErrors((prev) => ({ ...prev, [field]: result[field] }));
+  };
+  // ── 추가 또는 수정 (editingId에 따라 갈림) ──
+  const handleAdd = async () => {
+    // 입력 검증 — 문제가 있으면 여기서 멈춘다
+    const validationErrors = validateExpense({
+      name: name,
+      amount: Number(amount),
+      due_day: Number(dueDay),
+    });
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+    // 수정 모드면 PUT, 등록 모드면 POST
+    const isEdit = editingId !== null;
+    const url = isEdit
+      ? `http://localhost:3001/api/expenses/${editingId}`
+      : "http://localhost:3001/api/expenses";
+    const method = isEdit ? "PUT" : "POST";
+
+    try {
+      const res = await fetch(url, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name,
@@ -945,21 +1010,14 @@ function ExpenseSetup({ go }) {
         }),
       });
 
-      // 2. 서버 응답 확인
       if (!res.ok) {
-        alert("저장에 실패했어요. 서버 상태를 확인해주세요.");
+        alert(isEdit ? "수정에 실패했어요." : "저장에 실패했어요.");
         return;
       }
 
-      // 3. 저장 성공 → 입력칸 비우기
-      setName("");
-      setAmount("");
-      setDueDay("");
-
-      // 4. 목록 새로고침 (다음 단계에서 채움)
-      loadExpenses();
+      cancelEdit();     // 폼 비우고 등록 모드로 복귀
+      loadExpenses();   // 목록 새로고침
     } catch (err) {
-      // 서버가 꺼져 있거나 연결 실패
       alert("서버에 연결할 수 없어요. 서버가 켜져 있는지 확인해주세요.");
     }
   };
@@ -987,17 +1045,18 @@ function ExpenseSetup({ go }) {
           style={styles.input}
           placeholder="관리비"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => { setName(e.target.value); validateField("name", e.target.value); }}
         />
-
+        {errors.name && <p style={styles.errorText}>{errors.name}</p>}
         <label style={styles.label}>금액 (원)</label>
         <input
           style={styles.input}
           type="number"
           placeholder="120000"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => { setAmount(e.target.value); validateField("amount", e.target.value); }}
         />
+        {errors.amount && <p style={styles.errorText}>{errors.amount}</p>}
 
         <label style={styles.label}>납부일 (매월 며칠)</label>
         <input
@@ -1005,12 +1064,32 @@ function ExpenseSetup({ go }) {
           type="number"
           placeholder="25"
           value={dueDay}
-          onChange={(e) => setDueDay(e.target.value)}
+          onChange={(e) => { setDueDay(e.target.value); validateField("due_day", e.target.value); }}
         />
-
-        <button style={styles.primaryBtn} onClick={handleAdd}>
-          추가하기
+        {errors.due_day && <p style={styles.errorText}>{errors.due_day}</p>}
+    <button style={styles.primaryBtn} onClick={handleAdd}>
+          {editingId ? "수정하기" : "추가하기"}
         </button>
+
+        {/* 수정 중일 때만 취소 버튼 표시 */}
+        {editingId && (
+          <button
+            onClick={cancelEdit}
+            style={{
+              width: "100%",
+              height: 44,
+              marginTop: 8,
+              background: "none",
+              color: "#8a8478",
+              border: "1px solid #d9d2c4",
+              borderRadius: 10,
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            수정 취소
+          </button>
+        )}
         {/* 이번 달 총 지출 (합계) */}
         {expenses.length > 0 && (
           <div style={{
@@ -1076,6 +1155,36 @@ function ExpenseSetup({ go }) {
                 {/* 금액 */}
                 <div style={{ fontSize: 15, fontWeight: 700, color: "#2d4030" }}>
                   {item.amount.toLocaleString("ko-KR")}원
+                  <button
+                  onClick={() => startEdit(item)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#a29a8a",
+                    fontSize: 15,
+                    cursor: "pointer",
+                    padding: "0 4px",
+                    flexShrink: 0,
+                  }}
+                  title="수정"
+                >
+                  ✏️
+                </button>
+                <button
+                  onClick={() => handleDelete(item.id)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#a29a8a",
+                    fontSize: 18,
+                    cursor: "pointer",
+                    padding: "0 4px",
+                    flexShrink: 0,
+                  }}
+                  title="삭제"
+                >
+                  ×
+                </button>
                 </div>
               </div>
             ))
