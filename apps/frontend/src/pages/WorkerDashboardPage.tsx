@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { useAuth } from "../features/auth";
 import { ROUTES } from "../shared/routes";
 
 const calendarDays = [
@@ -22,136 +21,103 @@ const calendarDays = [
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 
 export function WorkerDashboardPage() {
-  const { signOut, user } = useAuth();
-  const displayName = user?.email?.split("@")[0] ?? "사용자";
-
   return (
-    <div className="stage">
-      <div className="app-shell">
-        <header className="topbar">
-          <Link className="brand" to={ROUTES.home} aria-label="알바노트 홈">
-            <span className="brand-mark">A</span>
-            <span>알바노트</span>
-          </Link>
+    <main className="dashboard">
+      <section className="hero-row" aria-labelledby="dashboard-title">
+        <div>
+          <p className="kicker">WORKER DASHBOARD</p>
+          <h1 id="dashboard-title">선택 매장 근무표</h1>
+        </div>
+        <div className="search-box">
+          <span aria-hidden="true" />
+          <p>근무, 요청, 알림 검색</p>
+        </div>
+      </section>
 
-          <nav className="topnav" aria-label="알바생 메뉴">
-            <Link className="active" to={ROUTES.schedule}>
-              근무표
-            </Link>
-            <Link to={ROUTES.substituteRequests}>대타 요청</Link>
-            <Link to={ROUTES.myWork}>내 근무 정보</Link>
-            <Link to={ROUTES.notifications}>알림</Link>
-          </nav>
+      <section className="metric-grid" aria-label="이번 달 요약">
+        <article className="metric-card">
+          <span>이번 달 근무</span>
+          <strong>12회</strong>
+          <p>48시간 예정</p>
+        </article>
+        <article className="metric-card">
+          <span>예상 급여</span>
+          <strong>528,000원</strong>
+          <p>시급 11,000원</p>
+        </article>
+        <article className="metric-card highlight">
+          <span>공개 요청</span>
+          <strong>2건</strong>
+          <p>신청 가능한 요청</p>
+        </article>
+      </section>
 
-          <div className="top-actions">
-            <Link className="store-button" to={ROUTES.storesSelect}>
-              연남점
-            </Link>
-            <button className="profile-chip profile-button" onClick={() => void signOut()} type="button">
-              <span>{displayName.slice(0, 1).toUpperCase()}</span>
-              <strong>{displayName}</strong>
-            </button>
-          </div>
-        </header>
-
-        <main className="dashboard">
-          <section className="hero-row" aria-labelledby="dashboard-title">
+      <section className="content-grid">
+        <section className="calendar-card" aria-label="월간 근무표">
+          <div className="card-head">
             <div>
-              <p className="kicker">WORKER DASHBOARD</p>
-              <h1 id="dashboard-title">연남점 근무표</h1>
+              <p className="label">MONTHLY SCHEDULE</p>
+              <h2>2026년 7월</h2>
             </div>
-            <div className="search-box">
-              <span aria-hidden="true" />
-              <p>근무, 요청, 알림 검색</p>
+            <div className="month-pills">
+              <span>이전</span>
+              <strong>오늘</strong>
+              <span>다음</span>
+            </div>
+          </div>
+
+          <div className="calendar-grid">
+            {weekdays.map((weekday) => (
+              <span className="weekday" key={weekday}>
+                {weekday}
+              </span>
+            ))}
+
+            {calendarDays.map(({ day, label, tone }) => (
+              <div className={`day ${tone}`.trim()} key={`${day}-${label}`}>
+                <strong>{day}</strong>
+                {label ? <span>{label}</span> : null}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <aside className="side-stack" aria-label="근무 요약">
+          <section className="side-card today-card">
+            <p className="label">TODAY</p>
+            <h2>18:00 - 22:00</h2>
+            <span>마감 · 4시간 · 40,000원</span>
+            <div className="mini-people">
+              <strong>김민지</strong>
+              <strong>서준</strong>
+              <strong>하은</strong>
             </div>
           </section>
 
-          <section className="metric-grid" aria-label="이번 달 요약">
-            <article className="metric-card">
-              <span>이번 달 근무</span>
-              <strong>12회</strong>
-              <p>48시간 예정</p>
-            </article>
-            <article className="metric-card">
-              <span>예상 급여</span>
-              <strong>528,000원</strong>
-              <p>시급 11,000원</p>
-            </article>
-            <article className="metric-card highlight">
-              <span>공개 요청</span>
-              <strong>2건</strong>
-              <p>신청 가능한 요청</p>
-            </article>
-          </section>
-
-          <section className="content-grid">
-            <section className="calendar-card" aria-label="월간 근무표">
-              <div className="card-head">
+          <section className="side-card">
+            <div className="card-head compact">
+              <h3>공개 요청</h3>
+              <Link to={ROUTES.substituteRequests}>전체</Link>
+            </div>
+            <div className="request-list">
+              <article>
                 <div>
-                  <p className="label">MONTHLY SCHEDULE</p>
-                  <h2>2026년 7월</h2>
+                  <strong>7월 9일 목</strong>
+                  <span>19:00 - 23:00</span>
                 </div>
-                <div className="month-pills">
-                  <span>이전</span>
-                  <strong>오늘</strong>
-                  <span>다음</span>
+                <p className="badge">대기</p>
+              </article>
+              <article>
+                <div>
+                  <strong>7월 10일 금</strong>
+                  <span>17:00 - 22:00</span>
                 </div>
-              </div>
-
-              <div className="calendar-grid">
-                {weekdays.map((weekday) => (
-                  <span className="weekday" key={weekday}>
-                    {weekday}
-                  </span>
-                ))}
-
-                {calendarDays.map(({ day, label, tone }) => (
-                  <div className={`day ${tone}`.trim()} key={`${day}-${label}`}>
-                    <strong>{day}</strong>
-                    {label ? <span>{label}</span> : null}
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <aside className="side-stack" aria-label="근무 요약">
-              <section className="side-card today-card">
-                <p className="label">TODAY</p>
-                <h2>18:00 - 22:00</h2>
-                <span>마감 · 4시간 · 40,000원</span>
-                <div className="mini-people">
-                  <strong>김민지</strong>
-                  <strong>서준</strong>
-                  <strong>하은</strong>
-                </div>
-              </section>
-
-              <section className="side-card">
-                <div className="card-head compact">
-                  <h3>공개 요청</h3>
-                  <Link to={ROUTES.substituteRequests}>전체</Link>
-                </div>
-                <div className="request-list">
-                  <article>
-                    <div>
-                      <strong>7월 9일 목</strong>
-                      <span>19:00 - 23:00</span>
-                    </div>
-                    <p className="badge">대기</p>
-                  </article>
-                  <article>
-                    <div>
-                      <strong>7월 10일 금</strong>
-                      <span>17:00 - 22:00</span>
-                    </div>
-                    <p className="badge">승인 대기</p>
-                  </article>
-                </div>
-              </section>
-            </aside>
+                <p className="badge">승인 대기</p>
+              </article>
+            </div>
           </section>
-        </main>
-      </div>
-    </div>
+        </aside>
+      </section>
+    </main>
   );
 }

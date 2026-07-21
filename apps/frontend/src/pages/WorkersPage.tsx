@@ -1,7 +1,7 @@
 export function WorkersPage() {
   return (
-    <main className="auth-stage">
-      <section className="auth-card store-select-card">
+    <main className="dashboard">
+      <section className="page-panel">
         <p className="label">WORKERS</p>
         <h1>알바생 관리</h1>
         <div className="empty-state">

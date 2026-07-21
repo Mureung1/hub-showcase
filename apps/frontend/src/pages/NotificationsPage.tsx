@@ -1,7 +1,7 @@
 export function NotificationsPage() {
   return (
-    <main className="auth-stage">
-      <section className="auth-card store-select-card">
+    <main className="dashboard">
+      <section className="page-panel">
         <p className="label">NOTIFICATIONS</p>
         <h1>알림</h1>
         <div className="empty-state">
