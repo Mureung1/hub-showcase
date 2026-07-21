@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Frontend (Supabase 키 등 — #19/#20)
+.env
+
 # Backend
 server/.env
 server/data/*.db

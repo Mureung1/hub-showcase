@@ -62,33 +62,33 @@
 
 ---
 
-## #19 — 로그인/회원가입 (세션 기반) [확장 기능]
+## #19 — 로그인/회원가입 (Supabase Auth) [확장 기능]
 
-**설명**: 북마크 기능을 쓰려면 계정이 필요하다는 요구로 추가된 확장 트랙. 세션 기반 인증(bcrypt 해싱 + 자체 `sessions` 테이블 + httpOnly 쿠키)으로 확정. 게스트 플로우(필터→스펙→결과 갭 분석)는 로그인 여부와 무관하게 지금과 100% 동일하게 유지 — 로그인은 선택 기능. 상세 작업 분해와 사용자 시나리오는 `checklist_3_login_bookmark.md` 참고.
+**설명**: 북마크 기능을 쓰려면 계정이 필요하다는 요구로 추가된 확장 트랙. **인증 방식 변경 확정 (2026-07-21)**: 원래 계획이던 자체 세션(bcrypt+sessions 테이블+httpOnly 쿠키)을 폐기하고 **Supabase Auth**로 결정 — 프론트/백엔드가 다른 origin에 배포될 때 세션 쿠키에 필요한 `sameSite=None; Secure`+CORS `credentials:true` 설정이 로컬에서는 재현 안 돼 배포 시점에야 발견될 위험이 있었기 때문. Supabase Auth는 프론트에서 `@supabase/supabase-js`로 직접 호출하고 토큰(JWT)을 `Authorization` 헤더로 넘기는 방식이라 이 문제가 아예 없다. 게스트 플로우(필터→스펙→결과 갭 분석)는 로그인 여부와 무관하게 지금과 100% 동일하게 유지 — 로그인은 선택 기능. 상세 작업 분해와 사용자 시나리오는 `checklist_3_login_bookmark.md` 참고.
 
 **완료 기준**
-- [ ] `users`/`sessions` 테이블 추가, `bcrypt` 해싱 유틸
-- [ ] `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
+- [ ] Supabase 프로젝트 생성 (사용자 직접 수행) + 프론트에 `@supabase/supabase-js` 연결
+- [ ] 회원가입/로그인/로그아웃/세션 확인 — 전부 Supabase Auth 클라이언트 SDK로 처리 (Express `/api/auth/*` 라우트는 만들지 않음)
 - [ ] `/login`, `/signup` 페이지 — `?redirect=` 파라미터 유지, 회원가입 성공 시 자동 로그인 후 `redirect` 경로로 이동
 - [ ] 헤더에 로그인/회원가입 진입점 ↔ 로그인 시 사용자 메뉴(로그아웃) 전환
-- [ ] 세션 만료(401) 시 `/login?redirect=...`로 유도하는 공통 처리
-- [ ] 인증 API 테스트 통과
+- [ ] Supabase 세션 만료/무효화 감지 시 `/login?redirect=...`로 유도하는 공통 처리
 - [ ] 게스트로 필터→스펙→결과 플로우를 끝까지 실행해도 로그인 관련 변화가 전혀 없음을 회귀 확인
 
 ---
 
-## #20 — 북마크 기능 [확장 기능, ⚠️ #19 완료 후 착수]
+## #20 — 북마크 기능 (Supabase Postgres) [확장 기능, ⚠️ #19 완료 후 착수]
 
-**설명**: 로그인 사용자가 결과 화면의 공고를 저장해뒀다가 마이페이지에서 다시 볼 수 있게 한다. **#19(로그인)가 선행돼야 함** — 북마크는 로그인 사용자 전용이라 인증 시스템 없이는 착수 불가.
+**설명**: 로그인 사용자가 결과 화면의 공고를 저장해뒀다가 마이페이지에서 다시 볼 수 있게 한다. **#19(로그인)가 선행돼야 함**. `bookmarks` 데이터는 **Supabase가 호스팅하는 별도 Postgres**에 저장(로컬 `better-sqlite3`가 아님) — 계정/북마크처럼 유실되면 안 되는 데이터를 배포 시 파일시스템이 초기화될 수 있는 로컬 SQLite에 두지 않기 위함. `jobs`/`analysis_results`는 그대로 로컬 SQLite 유지, 손대지 않는다.
 
 **완료 기준**
-- [ ] `bookmarks` 테이블 (`user_id`, `job_id` 유니크)
-- [ ] `POST /api/bookmarks`, `DELETE /api/bookmarks/:job_id`, `GET /api/bookmarks`
+- [ ] Supabase Postgres에 `bookmarks` 테이블 (`user_id`, `job_id` 유니크) + Row Level Security 정책 (본인 것만 CRUD)
+- [ ] 백엔드에 Supabase JWT 검증 미들웨어(`requireSupabaseAuth`) 추가 — `Authorization: Bearer <token>` 헤더 검증
+- [ ] `POST /api/bookmarks`(등록 전 `job_id`가 로컬 SQLite `jobs`에 실제 존재하는지 확인), `DELETE /api/bookmarks/:job_id`, `GET /api/bookmarks`(Supabase 북마크 목록 + 로컬 SQLite jobs를 애플리케이션 레벨에서 join — DB가 분리돼 있어 진짜 FK/SQL join 불가)
 - [ ] `JobCard`/`JobDetailModal`에 북마크 토글 버튼(☆/★), 비로그인 상태 클릭 시 `/login?redirect=...`로 유도
 - [ ] `/bookmarks` 마이페이지 — 북마크한 공고 목록, 빈 상태 UI 포함
 - [ ] 마이페이지에서도 북마크 해제 가능 (기존 `JobDetailModal` 재사용)
 - [ ] 로그아웃 시 화면은 유지하되 북마크 버튼 전부 ☆(미확인) 상태로 리셋
-- [ ] 북마크 API 테스트 통과
+- [ ] 북마크 API 테스트 통과 (Supabase 호출 모킹 방식 결정 필요)
 
 ---
 
@@ -154,11 +154,11 @@
 
 ## #24 — README 합성 데이터 고지 문구 + API 문서화 [P1]
 
-**설명**: `checklist_2.md` 0/1단계에 있던 "합성 데이터 고지 문구"가 README 어디에도 없다 (실제 862건 공고 + 규칙 기반 합성 스펙 필드라는 사실을 명시해야 함 — `checklist_2.md`의 확정 사항). API 문서화도 아직 없어 `POST/GET /api/gap-analysis`, `POST/GET /api/auth/*`(`#19`), `/api/bookmarks`(`#20`) 등 엔드포인트를 파악하려면 라우트 코드를 직접 읽어야 하는 상태.
+**설명**: `checklist_2.md` 0/1단계에 있던 "합성 데이터 고지 문구"가 README 어디에도 없다 (실제 862건 공고 + 규칙 기반 합성 스펙 필드라는 사실을 명시해야 함 — `checklist_2.md`의 확정 사항). API 문서화도 아직 없어 `POST/GET /api/gap-analysis`, `/api/bookmarks`(`#20`) 등 엔드포인트를 파악하려면 라우트 코드를 직접 읽어야 하는 상태. (`#19`는 Supabase Auth로 결정되면서 — 2026-07-21 — Express `/api/auth/*` 라우트 자체가 없어졌으니 여기서 문서화할 대상이 아니다. 대신 프론트가 Supabase를 직접 호출한다는 사실 자체는 README나 `docs/api.md`에 한 줄 언급 필요.)
 
 **완료 기준**
 - [ ] README에 합성 데이터 고지 문구 추가 ("JOB-ALIO 실제 862건 공고 + 규칙 기반 합성 스펙 필드" 명시)
-- [ ] README 또는 별도 `docs/api.md`에 엔드포인트별 요청/응답 스키마 정리 (`/api/gap-analysis`, `/api/auth/*`, `/api/bookmarks` — 각 이슈 완료 시점에 맞춰 추가. `#19`/`#20`은 확장 트랙이라 미착수 시 해당 부분은 생략)
+- [ ] README 또는 별도 `docs/api.md`에 엔드포인트별 요청/응답 스키마 정리 (`/api/gap-analysis`, `/api/bookmarks` — 각 이슈 완료 시점에 맞춰 추가. `#20`은 확장 트랙이라 미착수 시 해당 부분은 생략) + 인증은 Supabase Auth를 쓴다는 사실과 필요한 프론트 환경변수 한 줄 언급
 
 ---
 
