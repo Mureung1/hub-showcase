@@ -19,35 +19,37 @@ function FilterPage() {
         공고를 대상으로 합니다.
       </p>
 
-      <form className="field-grid" onSubmit={handleSubmit}>
-        <label className="field">
-          <span className="field-label">직종</span>
-          <select
-            value={filters.job_category}
-            onChange={(e) => setFilters({ job_category: e.target.value })}
-          >
-            <option value="">전체</option>
-            {JOB_CATEGORY_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </label>
+      <form className="form-card" onSubmit={handleSubmit}>
+        <div className="field-grid">
+          <label className="field">
+            <span className="field-label">직종</span>
+            <select
+              value={filters.job_category}
+              onChange={(e) => setFilters({ job_category: e.target.value })}
+            >
+              <option value="">전체</option>
+              {JOB_CATEGORY_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label className="field">
-          <span className="field-label">인턴 여부</span>
-          <select
-            value={filters.is_intern}
-            onChange={(e) => setFilters({ is_intern: e.target.value })}
-          >
-            <option value="">전체</option>
-            <option value="true">인턴 공고만</option>
-            <option value="false">정규 공고만</option>
-          </select>
-        </label>
+          <label className="field">
+            <span className="field-label">인턴 여부</span>
+            <select
+              value={filters.is_intern}
+              onChange={(e) => setFilters({ is_intern: e.target.value })}
+            >
+              <option value="">전체</option>
+              <option value="true">인턴 공고만</option>
+              <option value="false">정규 공고만</option>
+            </select>
+          </label>
+        </div>
 
-        <div className="btn-row field-full">
+        <div className="btn-row">
           <button type="submit" className="btn-primary">
             다음: 스펙 입력하기
           </button>

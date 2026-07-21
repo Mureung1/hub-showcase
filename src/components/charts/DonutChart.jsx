@@ -1,4 +1,5 @@
-// 프로토타입(demo_11.html)의 donutSvg()를 그대로 포팅 — Recharts 대신 순수 SVG (CLAUDE.md 확정 사항).
+// 프로토타입(demo_13.html)의 donutSvg()를 그대로 포팅 — Recharts 대신 순수 SVG (CLAUDE.md 확정 사항).
+// stroke는 --donut-no/--donut-ok 토큰을 참조해서 다크모드 전환 시에도 자동으로 값이 바뀐다 (#22).
 function DonutChart({ ratio, matched, total }) {
   const r = 60
   const c = 2 * Math.PI * r
@@ -7,13 +8,13 @@ function DonutChart({ ratio, matched, total }) {
   return (
     <div className="donut-wrap">
       <svg width="140" height="140" viewBox="0 0 140 140">
-        <circle cx="70" cy="70" r={r} fill="none" stroke="#3a3a3a" strokeWidth="16" />
+        <circle cx="70" cy="70" r={r} fill="none" stroke="var(--donut-no)" strokeWidth="16" />
         <circle
           cx="70"
           cy="70"
           r={r}
           fill="none"
-          stroke="#7fd9a8"
+          stroke="var(--donut-ok)"
           strokeWidth="16"
           strokeDasharray={`${okLen} ${c - okLen}`}
           strokeDashoffset={c * 0.25}

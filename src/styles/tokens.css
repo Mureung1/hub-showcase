@@ -1,0 +1,139 @@
+/* 디자인 토큰 — prototype/demo_13.html의 :root / :root[data-theme="dark"] 블록을 그대로 이식.
+   변수 이름은 프로토타입과 동일하게 유지한다 — resultDisplay.js의 STATUS_STYLE/JOB_CATEGORY_STYLE 등이
+   이 이름을 문자열(var(--green-bg) 등)로 그대로 참조하므로, 이름을 바꾸면 그 코드가 깨진다. (#22) */
+:root {
+  /* 텍스트 — 크림/더스티로즈 라이트 톤 + 쿨톤 다크네이비 */
+  --gray-900: #22285e;
+  --gray-700: #5c5e7c;
+  --gray-500: #948fa0;
+  --gray-200: #f0e4ec;
+  --gray-50: #fbf5f8;
+
+  /* 배경 */
+  --card-bg: #ffffff;
+
+  /* 상태 태그 (지원 가능/미충족 사유) */
+  --green-bg: #e1f5ee;
+  --green-text: #1f8f6e;
+  --orange-bg: #fdece0;
+  --orange-text: #c15a1c;
+  --red-bg: #fde7e4;
+  --red-text: #c0392b;
+  --purple-bg: #ece9fb;
+  --purple-text: #4b3fa0;
+  --blue-bg: #e6edfb;
+  --blue-text: #3355a8;
+
+  /* 강조 — 쿨톤 다크 네이비 단일 액센트 */
+  --accent: #2b3480;
+  --accent-dark: #1c2464;
+  --accent-light: #f2dde8;
+  --accent-contrast: #2b3480;
+  --accent-bg: #fbeef4;
+  --accent-text: #2b3480;
+  --logo-color: #2b3480;
+
+  --chip-active: #2b3480;
+  --chip-active-dark: #1c2464;
+
+  --donut-ok: #2b3480;
+  --donut-no: #f1e3ec;
+
+  --footer-bg: #fbeef4;
+  --footer-text: #5c5e7c;
+  --footer-text-dim: #b0a9bb;
+
+  --shadow-sm: 0 4px 14px rgba(43, 52, 128, 0.07), 0 1px 2px rgba(43, 52, 128, 0.05);
+  --shadow-md: 0 16px 40px rgba(43, 52, 128, 0.14);
+  --mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --sans: 'Pretendard Variable', -apple-system, 'Malgun Gothic', sans-serif;
+
+  --radius-pill: 999px;
+  --radius-chip: 14px;
+  --radius-card: 24px;
+  --radius-panel: 28px;
+  --radius-bar: 6px;
+
+  /* 다크모드에서만 값이 바뀌는, 원래는 하드코딩돼 있던 색들을 변수로 뽑아둔 것 */
+  --header-bg: rgba(255, 255, 255, 0.9);
+  --hero-gradient-from: #ffffff;
+  --btn-secondary-hover-bg: #f6e9f0;
+  --border-hover: #e0c9d6;
+  --overlay-bg: rgba(34, 40, 94, 0.55);
+  --check-ok: #2f7a4f;
+  --check-no: #9a4636;
+}
+
+/* 다크모드 — "핑크-네이비 반전" 팔레트. 변수 이름은 그대로 두고 값만 재정의한다. */
+:root[data-theme='dark'] {
+  --gray-900: #f8ecf1;
+  --gray-700: #cbb0c2;
+  --gray-500: #b6a6c0;
+  --gray-200: #3d3564;
+  --gray-50: #17142c;
+
+  --card-bg: #211c3d;
+
+  --green-bg: #153826;
+  --green-text: #4ade80;
+  --orange-bg: #3a2712;
+  --orange-text: #fb923c;
+  --red-bg: #3a1a1f;
+  --red-text: #f87171;
+  --purple-bg: #2a2350;
+  --purple-text: #c9a6e0;
+  --blue-bg: #182a48;
+  --blue-text: #7aa2f7;
+
+  --accent: #db2777;
+  --accent-dark: #be185d;
+  --accent-light: #4a3660;
+  --accent-contrast: #f472b6;
+  --accent-bg: #3a2030;
+  --accent-text: #f0a8c4;
+  --logo-color: #db2777;
+
+  --chip-active: #db2777;
+  --chip-active-dark: #be185d;
+
+  --donut-ok: #db2777;
+  --donut-no: #352c54;
+
+  --footer-bg: #1c1836;
+  --footer-text: #c2a8bc;
+  --footer-text-dim: #7e6a86;
+
+  --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.45);
+
+  --header-bg: rgba(23, 20, 44, 0.85);
+  --hero-gradient-from: #241f42;
+  --btn-secondary-hover-bg: #453a6e;
+  --border-hover: #524572;
+  --overlay-bg: rgba(0, 0, 0, 0.65);
+  --check-ok: #4ade80;
+  --check-no: #f87171;
+}
+
+body {
+  font-family: var(--sans);
+  background: var(--gray-50);
+  color: var(--gray-900);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* 다크모드 전환 시 주요 표면들이 뚝뚝 끊기지 않고 부드럽게 바뀌도록 */
+.site-header,
+.site-footer,
+.form-card,
+.how-card,
+.job-card,
+.chart-card,
+.modal-box,
+.stat-card,
+.hero-visual,
+select,
+input[type='number'],
+input[type='text'] {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}

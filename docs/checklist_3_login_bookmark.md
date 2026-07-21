@@ -7,7 +7,12 @@
 - **게스트 플로우 100% 유지**: 로그인은 선택 기능. 필터→스펙 입력→갭 분석→결과 화면은 비로그인 상태에서도 지금과 동일하게 동작해야 한다. 로그인이 필요한 것은 "북마크 저장"뿐.
 - **북마크는 로그인 사용자 전용**. 비로그인 사용자가 북마크 버튼을 누르면 로그인 페이지로 유도한다.
 - **`analysis_results`를 계정에 연결하는 것은 이번 스코프 아웃**. "분석 기록을 계정에 저장/조회"는 북마크와 별개 기능이라 필요해지면 별도 이슈로 분리한다.
-- **인증 방식: 세션 기반으로 확정 (2026-07-16)** — `bcrypt`로 비밀번호 해싱 + 자체 `sessions` 테이블 + httpOnly 쿠키. 기존 컨벤션(ORM 없이 raw SQL, 불필요한 의존성 추가 지양 — CLAUDE.md의 `better-sqlite3` 선택 이유와 동일 기조)에 맞춰 `express-session`이나 JWT 라이브러리 없이 직접 구현한다.
+- **인증 방식: 세션 기반(자체 구현) → Supabase Auth + Supabase Postgres로 변경 확정 (2026-07-21)**. 원래 계획이던 `bcrypt` + 자체 `sessions` 테이블 + httpOnly 쿠키 방식은 폐기한다.
+  - **변경 이유 1 (배포 시 쿠키 cross-origin 문제)**: 프론트(Vercel)와 백엔드(Render 등)가 다른 origin에 배포되면 세션 쿠키에 `sameSite=None; Secure` + CORS `credentials:true`가 필요한데, 로컬 개발 환경(Vite 프록시로 같은 origin처럼 동작)에서는 이 문제가 재현되지 않아 배포 시점에야 처음 발견될 위험이 있었다.
+  - **변경 이유 2 (데이터 유실 위험)**: 계정/북마크처럼 유실되면 안 되는 데이터를 로컬 `better-sqlite3` 파일에 두면, 배포 플랫폼이 재배포 시 파일시스템을 초기화하는 경우 통째로 날아갈 위험이 있었다.
+  - **적용 범위**: 인증(회원가입/로그인/로그아웃/세션)은 프론트에서 `@supabase/supabase-js`로 Supabase Auth를 직접 호출 — Express에 별도 인증 라우트(`/api/auth/*`)를 만들지 않는다. `bookmarks` 테이블은 Supabase가 호스팅하는 별도 Postgres에 신규 생성 — 기존 `better-sqlite3`(로컬 파일)와는 물리적으로 다른 DB다. `jobs`/`analysis_results`는 이미 완성·검증된 P0 슬라이스라 **그대로 유지, 손대지 않는다**.
+  - **DB 분리로 인한 제약**: `bookmarks.user_id`(Supabase Auth의 UUID)와 `bookmarks.job_id`(로컬 SQLite `jobs.job_id`)는 서로 다른 DB에 있어 진짜 외래키(FK) 제약을 걸 수 없다 — 애플리케이션 코드에서만 참조 무결성을 보장한다(예: 북마크 생성 시 `job_id`가 실제 존재하는지 로컬 SQLite에서 먼저 조회 확인).
+  - **북마크 API 보호 방식**: 프론트가 Supabase 세션의 액세스 토큰(JWT)을 `Authorization: Bearer <token>` 헤더로 실어 보내고, Express 쪽에 이를 검증하는 미들웨어(`requireSupabaseAuth`)를 새로 추가한다 — 쿠키가 아니라 헤더 기반이라 cross-origin 쿠키 설정 자체가 필요 없어진다.
 
 ---
 
@@ -27,40 +32,39 @@
 
 **의도적으로 단순화한 지점**: 로그인/가입 후 "원래 누르려던 북마크"를 자동 실행하지 않는다. 로그인 전 의도(어떤 job을 북마크하려 했는지)를 임시 저장해뒀다가 재실행하는 방식은 복잡도만 늘고, 같은 화면으로 돌아가서 한 번 더 누르게 하는 쪽이 사용자 입장에서도 더 명확하다.
 
-## 1 — DB & 인증 기반
+## 1 — Supabase 프로젝트 & DB 기반
 
-- [ ] `users` 테이블 (`id`, `email` UNIQUE NOT NULL, `password_hash`, `created_at`)
-- [ ] `sessions` 테이블 (`id`, `user_id` FK, `expires_at`, `created_at`) — JWT로 결정되면 이 테이블은 불필요, 대체 방식으로 스킵
-- [ ] `bookmarks` 테이블 (`id`, `user_id` FK, `job_id` FK, `created_at`, `UNIQUE(user_id, job_id)`)
-- [ ] `bcrypt` 패키지 추가 (`server/package.json`)
-- [ ] 비밀번호 해싱 유틸 (`hashPassword`/`verifyPassword`)
-- [ ] 세션 발급/검증 유틸 (쿠키 set/verify, 만료 처리)
-- [ ] `requireAuth` 미들웨어 (미인증 시 401)
+- [ ] Supabase 프로젝트 생성 (사용자가 직접 — Claude가 대신 할 수 없는 외부 계정 작업)
+- [ ] Supabase 대시보드에서 `bookmarks` 테이블 생성 (`id` uuid/bigint PK, `user_id` uuid — `auth.users.id` 참조하되 다른 DB의 `jobs`와 달리 이건 같은 Supabase 프로젝트 안이라 진짜 FK 가능, `job_id` text — 로컬 SQLite `jobs.job_id` 참조지만 DB가 다르므로 FK 불가·애플리케이션 레벨 검증만, `created_at`, `UNIQUE(user_id, job_id)`)
+- [ ] Supabase Row Level Security(RLS) 정책 설정 — 본인 소유 북마크만 select/insert/delete 가능하도록 (Supabase Postgres에 직접 뚫리는 경로가 생기는 만큼 RLS는 선택이 아니라 필수)
+- [ ] 프론트: `@supabase/supabase-js` 패키지 추가, Supabase 클라이언트 초기화 모듈
+- [ ] 백엔드: Supabase 발급 JWT를 검증하는 `requireSupabaseAuth` 미들웨어 (401 처리 포함) — `bcrypt`/자체 `sessions` 테이블/`users` 테이블은 전부 불필요해짐(Supabase Auth가 대신 관리)
 
-## 2 — 인증 API
+## 2 — 인증 (프론트에서 Supabase Auth 직접 호출, Express 라우트 불필요)
 
-- [ ] `POST /api/auth/signup` — 이메일 형식/중복, 비밀번호 최소 길이 등 서버 검증 (`gapAnalysisValidation.js` 패턴 재사용 검토)
-- [ ] `POST /api/auth/login` — 실패 시 "이메일 또는 비밀번호 불일치"처럼 계정 존재 여부를 노출하지 않는 동일 메시지
-- [ ] `POST /api/auth/logout` — 세션 무효화
-- [ ] `GET /api/auth/me` — 로그인 상태 확인용 (비로그인 시 401 대신 `null` 응답할지 결정)
-- [ ] 인증 API 테스트 (supertest, 기존 `gapAnalysis.routes.test.js` 패턴)
+- [ ] 회원가입 — `supabase.auth.signUp({ email, password })`
+- [ ] 로그인 — `supabase.auth.signInWithPassword({ email, password })`
+- [ ] 로그아웃 — `supabase.auth.signOut()`
+- [ ] 현재 로그인 상태 확인 — `supabase.auth.getSession()`/`onAuthStateChange` 구독
+- [ ] ~~`POST /api/auth/signup`~~ / ~~`POST /api/auth/login`~~ / ~~`POST /api/auth/logout`~~ / ~~`GET /api/auth/me`~~ — Supabase Auth가 대체하므로 Express에 만들지 않는다
+- [ ] (참고) 이메일 형식/중복, 비밀번호 최소 길이 등 검증은 Supabase Auth가 기본 제공 — 별도 서버 검증 로직 불필요
 
-## 3 — 북마크 API
+## 3 — 북마크 API (Express, Supabase Postgres 사용)
 
-- [ ] `POST /api/bookmarks` (`job_id`, `requireAuth` 필요)
+- [ ] `POST /api/bookmarks` (`job_id`, `requireSupabaseAuth` 필요) — `job_id`가 로컬 SQLite `jobs`에 실제 존재하는지 먼저 확인 후 Supabase `bookmarks`에 insert
 - [ ] `DELETE /api/bookmarks/:job_id`
-- [ ] `GET /api/bookmarks` — 로그인 사용자의 북마크한 공고 목록 (jobs 테이블과 join)
-- [ ] 북마크 API 테스트
+- [ ] `GET /api/bookmarks` — Supabase `bookmarks`에서 로그인 사용자의 `job_id` 목록 조회 → 로컬 SQLite `jobs` 테이블에서 해당 `job_id`들을 조회해 조합(두 DB를 애플리케이션 레벨에서 join)
+- [ ] 북마크 API 테스트 — Supabase 호출 부분은 실제 프로젝트 없이 단위 테스트하기 어려우므로 모킹 방식 결정 필요
 
 ## 4 — FE 인증 화면
 
 - [ ] `/login` 페이지 — `?redirect=` 쿼리 파라미터를 읽어 로그인 성공 시 해당 경로로 이동, 없으면 기본 경로(랜딩)
 - [ ] `/login` 페이지 — "계정이 없으신가요? 회원가입" 링크, `redirect` 파라미터를 그대로 `/signup`에 전달
-- [ ] `/signup` 페이지 — 가입 성공 시 자동 로그인 처리 후 `redirect` 파라미터 경로로 이동 (가입/로그인 분리하지 않음)
-- [ ] 로그인 상태 전역 관리 — 3주차 예정인 `AppStateContext`(CLAUDE.md "Planned: cross-route state sharing") 작업과 통합할지, 별도 `AuthContext`로 분리할지 결정 필요
-- [ ] 헤더: 로그인/회원가입 진입점 ↔ 로그인 시 사용자 메뉴(로그아웃)로 전환
+- [ ] `/signup` 페이지 — 가입 성공 시 자동 로그인 처리 후 `redirect` 파라미터 경로로 이동 (Supabase는 이메일 확인을 요구할 수도 있음 — 프로젝트 설정에서 "이메일 확인 없이 즉시 로그인" 여부 결정 필요, ★확인 필요)
+- [ ] 로그인 상태 전역 관리 — `AppStateContext`와 통합하지 않고 별도 `AuthContext`(또는 커스텀 훅)로 분리 — 관심사가 다르고(로그인 세션 vs 갭 분석 진행 상태), `#22`의 `useTheme` 훅처럼 독립된 작은 모듈로 두는 편이 기존 패턴과 일관됨
+- [ ] 헤더: 로그인/회원가입 진입점 ↔ 로그인 시 사용자 메뉴(로그아웃)로 전환 — `#21`에서 만든 `Header.jsx`에 추가
 - [ ] 북마크처럼 로그인 필요한 액션을 비로그인 상태에서 클릭 시 `/login?redirect=<현재 경로>`로 유도
-- [ ] 로그인 세션 만료(API 401 응답) 감지 시 동일하게 `/login?redirect=...`로 유도하는 공통 처리 (fetch 래퍼 레벨에서 처리할지 각 컴포넌트에서 처리할지 결정 필요)
+- [ ] Supabase 세션 만료/토큰 무효화 감지 시 동일하게 `/login?redirect=...`로 유도하는 공통 처리 — `src/api/gapAnalysis.js`처럼 북마크 전용 fetch 래퍼(`src/api/bookmarks.js`)에서 401 처리
 
 ## 5 — FE 북마크
 
@@ -70,5 +74,6 @@
 
 ## 6 — 배포 고려사항
 
-- [ ] 쿠키 cross-origin 설정 (FE/BE가 다른 origin에 배포되므로 `sameSite=None; Secure` + CORS `credentials: true`) — `checklist_2.md` 4단계의 "CORS 설정 점검" 항목과 함께 처리
-- [ ] 프로덕션 환경변수 추가 (세션 시크릿 등) — `server/.env.example` 갱신
+- [ ] ~~쿠키 cross-origin 설정~~ — Supabase Auth는 토큰(JWT)을 `Authorization` 헤더로 실어 보내므로 세션 쿠키의 `sameSite=None; Secure` + CORS `credentials:true` 문제 자체가 사라짐. Express `cors()`가 커스텀 헤더를 막지 않는지만 확인
+- [ ] 프로덕션 환경변수 추가 — 프론트(Vercel): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` / 백엔드(Render 등): `SUPABASE_URL`, `SUPABASE_JWT_SECRET`(또는 검증 방식에 따라 `SUPABASE_ANON_KEY`) — `server/.env.example`, 루트 `.env.example`(신규) 갱신
+- [ ] `bookmarks`는 Supabase가 관리형으로 호스팅하므로 로컬 SQLite처럼 "재배포 시 파일시스템 초기화로 유실" 위험이 없음 — `checklist_2.md`/`checklist_4`의 SQLite 파일 영속성 점검 항목은 `jobs`/`analysis_results`에만 해당

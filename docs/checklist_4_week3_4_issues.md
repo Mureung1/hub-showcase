@@ -62,64 +62,83 @@
 
 ---
 
-## #19 — 로그인/회원가입 (세션 기반) [확장 기능]
+## #19 — 로그인/회원가입 (Supabase Auth) [확장 기능]
 
-**설명**: 북마크 기능을 쓰려면 계정이 필요하다는 요구로 추가된 확장 트랙. 세션 기반 인증(bcrypt 해싱 + 자체 `sessions` 테이블 + httpOnly 쿠키)으로 확정. 게스트 플로우(필터→스펙→결과 갭 분석)는 로그인 여부와 무관하게 지금과 100% 동일하게 유지 — 로그인은 선택 기능. 상세 작업 분해와 사용자 시나리오는 `checklist_3_login_bookmark.md` 참고.
+**설명**: 북마크 기능을 쓰려면 계정이 필요하다는 요구로 추가된 확장 트랙. **인증 방식 변경 확정 (2026-07-21)**: 원래 계획이던 자체 세션(bcrypt+sessions 테이블+httpOnly 쿠키)을 폐기하고 **Supabase Auth**로 결정 — 프론트/백엔드가 다른 origin에 배포될 때 세션 쿠키에 필요한 `sameSite=None; Secure`+CORS `credentials:true` 설정이 로컬에서는 재현 안 돼 배포 시점에야 발견될 위험이 있었기 때문. Supabase Auth는 프론트에서 `@supabase/supabase-js`로 직접 호출하고 토큰(JWT)을 `Authorization` 헤더로 넘기는 방식이라 이 문제가 아예 없다. 게스트 플로우(필터→스펙→결과 갭 분석)는 로그인 여부와 무관하게 지금과 100% 동일하게 유지 — 로그인은 선택 기능. 상세 작업 분해와 사용자 시나리오는 `checklist_3_login_bookmark.md` 참고.
 
 **완료 기준**
-- [ ] `users`/`sessions` 테이블 추가, `bcrypt` 해싱 유틸
-- [ ] `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
+- [ ] Supabase 프로젝트 생성 (사용자 직접 수행) + 프론트에 `@supabase/supabase-js` 연결
+- [ ] 회원가입/로그인/로그아웃/세션 확인 — 전부 Supabase Auth 클라이언트 SDK로 처리 (Express `/api/auth/*` 라우트는 만들지 않음)
 - [ ] `/login`, `/signup` 페이지 — `?redirect=` 파라미터 유지, 회원가입 성공 시 자동 로그인 후 `redirect` 경로로 이동
 - [ ] 헤더에 로그인/회원가입 진입점 ↔ 로그인 시 사용자 메뉴(로그아웃) 전환
-- [ ] 세션 만료(401) 시 `/login?redirect=...`로 유도하는 공통 처리
-- [ ] 인증 API 테스트 통과
+- [ ] Supabase 세션 만료/무효화 감지 시 `/login?redirect=...`로 유도하는 공통 처리
 - [ ] 게스트로 필터→스펙→결과 플로우를 끝까지 실행해도 로그인 관련 변화가 전혀 없음을 회귀 확인
 
 ---
 
-## #20 — 북마크 기능 [확장 기능, ⚠️ #19 완료 후 착수]
+## #20 — 북마크 기능 (Supabase Postgres) [확장 기능, ⚠️ #19 완료 후 착수]
 
-**설명**: 로그인 사용자가 결과 화면의 공고를 저장해뒀다가 마이페이지에서 다시 볼 수 있게 한다. **#19(로그인)가 선행돼야 함** — 북마크는 로그인 사용자 전용이라 인증 시스템 없이는 착수 불가.
+**설명**: 로그인 사용자가 결과 화면의 공고를 저장해뒀다가 마이페이지에서 다시 볼 수 있게 한다. **#19(로그인)가 선행돼야 함**. `bookmarks` 데이터는 **Supabase가 호스팅하는 별도 Postgres**에 저장(로컬 `better-sqlite3`가 아님) — 계정/북마크처럼 유실되면 안 되는 데이터를 배포 시 파일시스템이 초기화될 수 있는 로컬 SQLite에 두지 않기 위함. `jobs`/`analysis_results`는 그대로 로컬 SQLite 유지, 손대지 않는다.
 
 **완료 기준**
-- [ ] `bookmarks` 테이블 (`user_id`, `job_id` 유니크)
-- [ ] `POST /api/bookmarks`, `DELETE /api/bookmarks/:job_id`, `GET /api/bookmarks`
+- [ ] Supabase Postgres에 `bookmarks` 테이블 (`user_id`, `job_id` 유니크) + Row Level Security 정책 (본인 것만 CRUD)
+- [ ] 백엔드에 Supabase JWT 검증 미들웨어(`requireSupabaseAuth`) 추가 — `Authorization: Bearer <token>` 헤더 검증
+- [ ] `POST /api/bookmarks`(등록 전 `job_id`가 로컬 SQLite `jobs`에 실제 존재하는지 확인), `DELETE /api/bookmarks/:job_id`, `GET /api/bookmarks`(Supabase 북마크 목록 + 로컬 SQLite jobs를 애플리케이션 레벨에서 join — DB가 분리돼 있어 진짜 FK/SQL join 불가)
 - [ ] `JobCard`/`JobDetailModal`에 북마크 토글 버튼(☆/★), 비로그인 상태 클릭 시 `/login?redirect=...`로 유도
 - [ ] `/bookmarks` 마이페이지 — 북마크한 공고 목록, 빈 상태 UI 포함
 - [ ] 마이페이지에서도 북마크 해제 가능 (기존 `JobDetailModal` 재사용)
 - [ ] 로그아웃 시 화면은 유지하되 북마크 버튼 전부 ☆(미확인) 상태로 리셋
-- [ ] 북마크 API 테스트 통과
+- [ ] 북마크 API 테스트 통과 (Supabase 호출 모킹 방식 결정 필요)
 
 ---
 
-## #21 — 헤더/스테퍼/초기화 버튼 + 이어하기 배너 완전판 [P0, ⚠️ #15 완료 후 착수]
+## #21 — 헤더/스테퍼/초기화 버튼 + 히어로 이어하기 버튼 고도화 [P0, ⚠️ #15 완료 후 착수]
 
-**설명**: `개발_Task.md` 3주차 P0에서 `AppStateContext`와 같이 묶여 있던 UI 작업인데 `#15`를 상태 관리 로직만으로 좁히면서 빠졌다. `#14`(홈 화면)에서 만든 이어하기 배너는 "저장된 분석 id 있으면 결과로" 정도의 최소 버전이라, 필터만 선택하고 중단했거나 스펙까지만 입력하고 중단한 경우는 감지하지 못한다. `checklist_2.md` 2단계의 `getResumeStep`/`renderResumeBanner`를 이번에 완성한다. **`#15`가 끝나야 착수 가능** — 스테퍼가 표시할 "지금 단계" 정보가 `#15`의 Context 상태에서 나온다.
+**설명**: `개발_Task.md` 3주차 P0에서 `AppStateContext`와 같이 묶여 있던 UI 작업인데 `#15`를 상태 관리 로직만으로 좁히면서 빠졌다. **`#15`가 끝나야 착수 가능** — 스테퍼가 표시할 "지금 단계" 정보가 `#15`의 Context 상태에서 나온다.
+
+**⚠️ 범위 정정 (2026-07-21)**: 이 항목은 원래 `checklist_2.md` 2단계의 `getResumeStep`/`renderResumeBanner`를 인용해서 "이어하기 배너를 완성한다"고 적혀 있었는데, 이는 이미 지나간 스펙이다 — `renderResumeBanner()`와 그 배너 UI는 2026-07-20 프로토타입 리디자인(`demo_11.html`→`demo_12.html`) 때 죽은 코드로 이미 삭제됐고, "이어하기" 역할은 히어로의 "지난 분석 이어하기" 버튼(`갭 분석 시작하기` 버튼 옆) 하나로 완전히 흡수됐다. 배너라는 별도 UI 요소는 만들지 않는다. `#22`에서 이 버튼을 처음 넣을 때 남아있던 `#14`의 옛 `.resume-banner` div(중복 UI)도 같이 정리했다 — 커밋 확인.
+`getResumeStep()`(저장된 상태를 보고 "필터만 선택함" / "스펙까지 입력함" / "결과까지 있음" 3단계 판정) 자체는 여전히 유효한 로직이지만, 그 결과를 렌더링할 곳은 배너가 아니라 **히어로의 "지난 분석 이어하기" 버튼**이다 — 지금 그 버튼은 `hasSavedAnalysis`(분석 id 존재 여부)만 보고 있어서 필터만 선택하고 중단한 경우를 못 잡는다.
 
 **완료 기준**
-- [ ] 헤더 컴포넌트 — 로고(클릭 시 홈 이동), 스테퍼(조건 필터링/스펙 입력/결과, 완료된 단계는 클릭해서 이동 가능), "홈" 버튼, "초기화" 버튼
-- [ ] `resetAll` — localStorage/Context 상태 전부 지우고 랜딩으로 이동
-- [ ] `getResumeStep` — 저장된 상태를 보고 "필터만 선택함" / "스펙까지 입력함" / "결과까지 있음" 3단계 판정
-- [ ] `renderResumeBanner` — 판정된 단계에 맞는 이어하기 배너 문구 + "이어하기"(해당 단계로 이동) / "처음부터 다시 시작"(resetAll) 버튼
-- [ ] 저장된 상태가 없으면 배너 미표시
-- [ ] 손상된 저장 상태 안전장치 — 예: 결과 단계인데 result 데이터가 없는 경우 안전하게 이전 단계로 보정
-- [ ] "홈"(상태 보존) vs "초기화"(완전 리셋)의 동작 차이가 실제로 다름을 확인 (→ 이 확인 자체는 `#16`의 E2E 테스트 항목에서 자동화됨, 이 이슈에선 수동 확인만)
+- [x] 헤더 컴포넌트 — 로고(클릭 시 홈 이동), 스테퍼(조건 필터링/스펙 입력/결과, 완료된 단계는 클릭해서 이동 가능), "홈" 버튼, "초기화" 버튼 (`#22`에서 만든 `Header.jsx`는 로고+다크모드 토글만 있는 최소 버전이었고, 이번에 그 위에 확장)
+- [x] `resetAll` — Context(filters/spec/result)와 localStorage(`specfit_app_state`, `specfit_analysis_id`) 전부 초기화하고 랜딩으로 이동
+- [x] `getResumeStep` 이식 — `src/context/AppStateContext.jsx`에 추가. 저장된 상태를 보고 "필터만 선택함" / "스펙까지 입력함" / "결과까지 있음" 3단계 판정
+- [x] `LandingPage.jsx`의 히어로 "지난 분석 이어하기" 버튼이 `getResumeStep`의 판정 결과에 따라 표시 여부와 이동 대상(`/filter`·`/spec`·`/result`)을 결정하도록 교체 (기존 `hasSavedAnalysis` 단일 불리언 + `/result` 고정 이동 → 제거)
+- [x] 판정 결과가 없으면(아무 것도 저장 안 됨) 버튼 자체를 표시하지 않음
+- [x] 손상된 저장 상태 안전장치 — `getResumeStep`이 `result`가 있어도 `stats`/`jobList`가 없으면(불완전한 저장값) 신뢰하지 않고 spec/filters 판정으로 폴백
+- [ ] "홈"(상태 보존) vs "초기화"(완전 리셋)의 동작 차이가 실제로 다름을 확인 (→ 이 확인 자체는 `#16`의 E2E 테스트 항목에서 자동화됨, 이 이슈에선 수동 확인만 — 사용자 브라우저 확인 대기)
+
+**완료 (2026-07-21)**. 구현 메모:
+- `Header.jsx`의 스테퍼 "완료된 단계" 판정은 데모 프로토타입처럼 "지금 보고 있는 화면"이 아니라 `getResumeStep`이 보는 **실제 저장된 진행 상태** 기준으로 계산했다 — 예를 들어 스펙 페이지로 URL을 직접 쳐서 들어가도(스펙을 아직 안 건드렸다면) 결과 단계로는 못 넘어간다. 프로토타입은 단일 페이지 상태머신이라 "현재 화면"과 "진행 상태"가 사실상 같았지만, 실 라우팅 앱에서는 구분해야 더 정확함
+- `App.css`에 `.stepper-inline`/`.step-item`/`.step-circle`/`.step-label`/`.step-line`/`.nav-link.pill`과 680px 모바일 브레이크포인트 이식
+- 검증: FE lint/test/build 통과, dev 서버로 모듈 트랜스폼 확인. 이번에도 headless 브라우저가 없어 실제 클릭 동작(스테퍼 이동, 초기화 vs 홈 차이)은 사용자 브라우저 확인 필요
 
 ---
 
-## #22 — 디자인 토큰 포팅 (인디고/바이올렛 단일 액센트 톤) [P1]
+## #22 — 디자인 토큰 포팅 (크림/더스티로즈 + 다크네이비, 다크모드 포함) [P1]
 
-**설명**: 지금까지 만든 모든 화면(랜딩 포함, `#14`)은 프로토타입의 실제 디자인 톤이 아니라 CLAUDE.md에 명시된 대로 임시 dark+violet placeholder 톤으로 만들어져 있다. `prototype/demo_12.html`의 `:root` CSS 변수(`--gray-900`, 상태별 `--green-bg`/`--green-text` 등)를 실제 값으로 포팅한다. 변수 이름은 프로토타입과 동일하게 유지해야 `STATUS_STYLE`/`JOBTYPE_STYLE` 등 이름으로 값을 읽는 JS 코드가 그대로 작동한다.
+**설명**: 지금까지 만든 모든 화면(랜딩 포함, `#14`)은 프로토타입의 실제 디자인 톤이 아니라 CLAUDE.md에 명시된 대로 임시 dark+violet placeholder 톤으로 만들어져 있다. `prototype/demo_13.html`의 `:root` CSS 변수(`--gray-900`, 상태별 `--green-bg`/`--green-text` 등)를 실제 값으로 포팅한다. 변수 이름은 프로토타입과 동일하게 유지해야 `STATUS_STYLE`/`JOBTYPE_STYLE` 등 이름으로 값을 읽는 JS 코드가 그대로 작동한다.
 
-**참고**: 원래 참고하던 `prototype/demo_11.html`(민트/파스텔 톤)은 2026-07-20 레퍼런스 디자인(공공 아동돌봄서비스 사이트풍) 반영을 위해 `demo_12.html`로 완전히 대체·삭제됐다. 새 톤은 인디고/바이올렛 단일 액센트(`--accent: #5b52e8`) + 라벤더 배경이고, 히어로가 2단(카피+도넛차트 미리보기 카드) 구성으로 바뀌었으며, 기존 `.site-frame`(둥근 모서리로 뜬 카드형 프레임)도 없어지고 풀블리드 레이아웃이 됐다. React 쪽 placeholder(`src/App.css`의 dark+violet)와는 별개의 색이니 혼동 금지.
+**참고**: `prototype/demo_11.html`(민트/파스텔 톤)은 2026-07-20 레퍼런스 디자인(공공 아동돌봄서비스 사이트풍) 반영을 위해 `demo_12.html`(인디고/바이올렛 단일 액센트 + 라벤더 배경)로 대체·삭제됐고, `demo_12.html`은 2026-07-21 색감/다크모드 재작업을 거쳐 `demo_13.html`로 다시 대체·삭제됐다 — **이제 `demo_13.html`이 유일한 정본**, 인디고/바이올렛이 아니라 크림·더스티로즈 라이트 톤 + 쿨톤 다크네이비 텍스트(`--accent: #2b3480` / `--gray-50: #fbf5f8`)다. 구조(히어로 2단 카피+도넛차트 미리보기 카드, `.site-frame` 없는 풀블리드 레이아웃)는 demo_12부터 변화 없음. React 쪽 placeholder(`src/App.css`의 dark+violet)와는 별개의 색이니 혼동 금지.
+
+**다크모드 스코프 결정 (2026-07-21)**: 이 문서를 처음 쓸 때(다크모드 없던 demo_12 기준) "다크모드는 프로토타입 기준 그대로 (별도 대응 범위 아님)"이라고 적었었는데, `demo_13.html`이 실제 다크모드 토글(`data-theme="dark"`, 헤더 버튼, `specfit_theme_v1` localStorage 키, `prefers-color-scheme` 폴백)을 갖추면서 그 전제가 깨졌다. **사용자 확정: React에도 다크모드를 실제로 포팅한다.** 아래 완료 기준에 반영함.
 
 **완료 기준**
-- [ ] `src/styles/tokens.css` — 프로토타입 `:root` 변수를 실제 값으로 이식 (변수명 동일 유지, 값만 교체)
-- [ ] Pretendard Variable / JetBrains Mono 폰트 `index.html`에 연결
-- [ ] 기존 placeholder 톤으로 만들어진 모든 화면(랜딩/필터/스펙/결과, 헤더 포함 시 `#21`도) 새 토큰으로 교체
-- [ ] `STATUS_STYLE`/`JOBTYPE_STYLE` 등 변수명 문자열로 값을 읽는 코드가 새 토큰에서도 정상 동작
-- [ ] 라이트/다크 모드 여부는 프로토타입 기준 그대로 (별도 다크모드 대응 범위 아님)
-- [ ] 토큰(색상 값)뿐 아니라 `demo_12.html`의 구성 변화도 함께 반영: 랜딩 히어로 2단 레이아웃(카피+도넛차트 미리보기 카드, `#14`의 기존 히어로를 대체), `.site-frame` 없는 풀블리드 페이지 레이아웃. 단순 색상 치환에서 끝내지 않기
+- [x] `src/styles/tokens.css` — 프로토타입 `:root` 변수를 실제 값으로 이식 (변수명 동일 유지, 값만 교체)
+- [x] `src/styles/tokens.css`에 `:root[data-theme="dark"]` 오버라이드 블록도 함께 이식 (라이트와 동일한 변수명, 다크 값만 재정의 — demo_13.html 그대로)
+- [x] 다크모드 토글 UI + 로직 포팅 — 헤더에 토글 버튼, `data-theme` 속성 전환, 별도 localStorage 키(`specfit_theme_v1`, `specfit_app_state`/`specfit_analysis_id`와 분리)로 저장, `prefers-color-scheme` 폴백. `index.html`에 첫 페인트 전 인라인 스크립트도 추가해 라이트→다크 전환 시 FOUC(깜빡임) 방지
+- [x] Pretendard Variable / JetBrains Mono 폰트 `index.html`에 연결
+- [x] 기존 placeholder 톤으로 만들어진 모든 화면(랜딩/필터/스펙/결과) 새 토큰으로 교체 — CSS 변수 기반이라 라이트/다크 모두 자동 대응
+- [x] `STATUS_STYLE`/`JOBTYPE_STYLE`(`resultDisplay.js`) 등 변수명 문자열로 값을 읽는 코드가 새 토큰에서도 정상 동작 (다크모드 전환 시에도) — 하드코딩 hex였던 것을 `var(--green-bg)` 등으로 교체, 실제 9개 job_category를 5개 토큰 색상에 재배분
+- [x] 토큰(색상 값)뿐 아니라 `demo_13.html`의 구성 변화도 함께 반영: 랜딩 히어로 2단 레이아웃(카피+도넛차트 미리보기 카드, `#14`의 기존 히어로를 대체), `.site-frame` 없는 풀블리드 페이지 레이아웃, sticky 헤더
+
+**완료 (2026-07-21)**. 구현 메모:
+- 새 파일: `src/styles/tokens.css`(토큰), `src/hooks/useTheme.js`(토글 훅), `src/components/layout/Header.jsx`(sticky 헤더)
+- `src/App.css` 전면 재작성(하드코딩 dark+violet → `var(--...)` 참조), `src/index.css`는 레거시 Vite 템플릿 잔재(`#root` 1126px 박스 프레임 + 자체 색상 변수 체계) 제거 — 풀블리드 레이아웃과 충돌해서 정리 필요했음
+- `Header.jsx`는 **로고+다크모드 토글만** 있는 최소 버전 — 스테퍼/초기화/홈 버튼/이어하기 배너 완전판은 여전히 `#21` 스코프, 이번에 같이 만들지 않음
+- `DonutChart.jsx`의 SVG stroke 색이 하드코딩 hex(`#7fd9a8` 등)였던 것도 `var(--donut-ok)`/`var(--donut-no)`로 교체 — 안 그러면 다크모드에서 도넛 색이 안 바뀜
+- FilterPage/SpecPage 폼을 `.form-card`로 감싸서 카드 스타일 통일 (JS 로직 무변경)
+- 검증: FE lint/test/build 전부 통과, dev 서버(FE+BE) 기동해 모든 페이지 모듈이 200으로 정상 트랜스폼되는 것 확인. **이 환경엔 headless 브라우저가 없어(chromium-cli 없음, claude-in-chrome도 이번 세션엔 미연결) 실제 렌더링/다크모드 토글 클릭은 사용자가 브라우저에서 직접 확인 필요** — 이전 세션들과 동일한 패턴
 
 ---
 
@@ -135,11 +154,11 @@
 
 ## #24 — README 합성 데이터 고지 문구 + API 문서화 [P1]
 
-**설명**: `checklist_2.md` 0/1단계에 있던 "합성 데이터 고지 문구"가 README 어디에도 없다 (실제 862건 공고 + 규칙 기반 합성 스펙 필드라는 사실을 명시해야 함 — `checklist_2.md`의 확정 사항). API 문서화도 아직 없어 `POST/GET /api/gap-analysis`, `POST/GET /api/auth/*`(`#19`), `/api/bookmarks`(`#20`) 등 엔드포인트를 파악하려면 라우트 코드를 직접 읽어야 하는 상태.
+**설명**: `checklist_2.md` 0/1단계에 있던 "합성 데이터 고지 문구"가 README 어디에도 없다 (실제 862건 공고 + 규칙 기반 합성 스펙 필드라는 사실을 명시해야 함 — `checklist_2.md`의 확정 사항). API 문서화도 아직 없어 `POST/GET /api/gap-analysis`, `/api/bookmarks`(`#20`) 등 엔드포인트를 파악하려면 라우트 코드를 직접 읽어야 하는 상태. (`#19`는 Supabase Auth로 결정되면서 — 2026-07-21 — Express `/api/auth/*` 라우트 자체가 없어졌으니 여기서 문서화할 대상이 아니다. 대신 프론트가 Supabase를 직접 호출한다는 사실 자체는 README나 `docs/api.md`에 한 줄 언급 필요.)
 
 **완료 기준**
 - [ ] README에 합성 데이터 고지 문구 추가 ("JOB-ALIO 실제 862건 공고 + 규칙 기반 합성 스펙 필드" 명시)
-- [ ] README 또는 별도 `docs/api.md`에 엔드포인트별 요청/응답 스키마 정리 (`/api/gap-analysis`, `/api/auth/*`, `/api/bookmarks` — 각 이슈 완료 시점에 맞춰 추가. `#19`/`#20`은 확장 트랙이라 미착수 시 해당 부분은 생략)
+- [ ] README 또는 별도 `docs/api.md`에 엔드포인트별 요청/응답 스키마 정리 (`/api/gap-analysis`, `/api/bookmarks` — 각 이슈 완료 시점에 맞춰 추가. `#20`은 확장 트랙이라 미착수 시 해당 부분은 생략) + 인증은 Supabase Auth를 쓴다는 사실과 필요한 프론트 환경변수 한 줄 언급
 
 ---
 

@@ -11,17 +11,19 @@
 <title>스펙핏 SpecFit</title>
 <style>
   :root {
-    /* ===== 디자인 토큰 반영 (2026-07-20, "아이월 현주" 레퍼런스 색감 재반영) =====
-       기존 변수 이름은 그대로 두고 값만 새 팔레트로 교체했다.
+    /* ===== 디자인 토큰 반영 (2026-07-21, "크림/다크네이비" 레퍼런스 색감 재반영) =====
+       레이아웃/구조는 그대로 두고 색상 값만 라벤더 계열 → 크림·더스티로즈 + 다크 네이비 계열로 교체했다.
        JS(STATUS_STYLE, JOBTYPE_STYLE, donutSvg 등)가 이 변수 이름을 문자열로 그대로 참조하므로
        변수 이름은 절대 바꾸지 않는다. */
 
-    /* 텍스트 — 2단계 기본(primary/muted) + 실사용 폼을 위한 중간톤 1개 */
-    --gray-900: #1f2347;   /* text-primary — 남색이 도는 다크 네이비 */
-    --gray-700: #5b5f82;   /* 폼 라벨 등 중간 톤 */
-    --gray-500: #8d90ac;   /* text-muted */
-    --gray-200: #e2e1f2;   /* 보더/구분선 (라벤더 틴트) */
-    --gray-50:  #f6f5fc;   /* bg-canvas — 옅은 라벤더 화이트 */
+    /* 텍스트 — 2단계 기본(primary/muted) + 실사용 폼을 위한 중간톤 1개
+       (2026-07-21, 라이트 모드만 핑크가 너무 진하다는 피드백으로 더 옅고 더 쿨하게 재보정 —
+       다크모드는 마음에 든다고 하셔서 아래 [data-theme="dark"] 블록은 건드리지 않았다) */
+    --gray-900: #22285e;   /* text-primary — 탁하지 않고 더 맑은(채도 높인) 다크 네이비 */
+    --gray-700: #5c5e7c;   /* 폼 라벨 등 중간 톤 — 쿨톤 슬레이트플럼 */
+    --gray-500: #948fa0;   /* text-muted — 쿨톤 모브그레이 */
+    --gray-200: #f0e4ec;   /* 보더/구분선 — 훨씬 옅어진 핑크라벤더 틴트 */
+    --gray-50:  #fbf5f8;   /* bg-canvas — 아주 옅은 쿨톤 핑크 화이트 */
 
     /* 배경 */
     --card-bg: #ffffff;    /* bg-surface */
@@ -33,30 +35,30 @@
     --purple-bg: #ece9fb; --purple-text: #4b3fa0;  /* 라벤더 계열 */
     --blue-bg: #e6edfb;   --blue-text: #3355a8;    /* 페리윙클 확장색 (외국어 성적 전용) */
 
-    /* 강조 — 인디고/바이올렛 단일 액센트 (2026-07-20, "SpecFit Luminous" 레퍼런스 반영) */
-    --accent: #5b52e8;
-    --accent-dark: #4740c4;
-    --accent-light: #cac5f8;      /* 히어로/비주얼 카드 그라데이션 밝은 쪽 */
-    --accent-contrast: #5b52e8;   /* 히어로 위 강조 단어 — 레퍼런스처럼 액센트와 동일 색 사용 */
-    --accent-bg: #eeecfc;         /* insight-banner, 배지 등 솔리드 라벤더 */
-    --accent-text: #4740c4;
-    --logo-color: #5b52e8;        /* 로고 마크 — 인디고 */
+    /* 강조 — 쿨톤 다크 네이비/바이올렛 단일 액센트 (2026-07-21, "더 맑은 네이비"로 채도를 올려 재보정) */
+    --accent: #2b3480;
+    --accent-dark: #1c2464;
+    --accent-light: #f2dde8;      /* 히어로/비주얼 카드 그라데이션 밝은 쪽 — 더 옅고 쿨한 더스티핑크 */
+    --accent-contrast: #2b3480;   /* 히어로 위 강조 단어 */
+    --accent-bg: #fbeef4;         /* insight-banner, 배지 등 — 더 옅어진 쿨톤 핑크라벤더 */
+    --accent-text: #2b3480;
+    --logo-color: #2b3480;        /* 로고 마크 — 맑은 네이비 */
 
-    /* 선택 상태 하이라이트 — 레퍼런스처럼 단일 액센트(인디고)로 통일 */
-    --chip-active: #5b52e8;
-    --chip-active-dark: #4740c4;
+    /* 선택 상태 하이라이트 — 단일 액센트(맑은 네이비)로 통일 */
+    --chip-active: #2b3480;
+    --chip-active-dark: #1c2464;
 
-    /* 도넛차트: 인디고(합격) vs 라벤더뉴트럴(불합격) */
-    --donut-ok: #5b52e8;
-    --donut-no: #e3e1f5;
+    /* 도넛차트: 맑은 네이비(합격) vs 쿨톤뉴트럴(불합격) */
+    --donut-ok: #2b3480;
+    --donut-no: #f1e3ec;
 
-    /* 푸터 — 레퍼런스처럼 옅은 라벤더 톤의 밝은 푸터 */
-    --footer-bg: #efedf9;
-    --footer-text: #5b5f82;
-    --footer-text-dim: #9a9dbd;
+    /* 푸터 — 더 옅어진 쿨톤 핑크 톤의 밝은 푸터 */
+    --footer-bg: #fbeef4;
+    --footer-text: #5c5e7c;
+    --footer-text-dim: #b0a9bb;
 
-    --shadow-sm: 0 4px 14px rgba(31,35,71,0.07), 0 1px 2px rgba(31,35,71,0.05);
-    --shadow-md: 0 16px 40px rgba(31,35,71,0.14);
+    --shadow-sm: 0 4px 14px rgba(43,52,128,0.07), 0 1px 2px rgba(43,52,128,0.05);
+    --shadow-md: 0 16px 40px rgba(43,52,128,0.14);
     --mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
 
     /* 모서리 스케일 (design-tokens.md) */
@@ -65,6 +67,67 @@
     --radius-card: 24px;
     --radius-panel: 28px;
     --radius-bar: 6px;
+
+    /* ===== 다크모드를 위해 새로 토큰화한 값들 (2026-07-21) =====
+       CSS 안에 색상이 직접 박혀 있던 곳들(헤더 배경, 히어로 그라데이션, 보조버튼/카드 hover,
+       모달 오버레이, 체크마크)을 변수로 뽑아냈다. 라이트 값은 기존 하드코딩 값을 그대로 옮기되,
+       보조버튼 hover만 팔레트에 맞는 더스티핑크 톤으로 다듬었다. */
+    --header-bg: rgba(255,255,255,0.9);
+    --hero-gradient-from: #ffffff;
+    --btn-secondary-hover-bg: #f6e9f0;   /* 더 옅어진 쿨톤 더스티핑크 */
+    --border-hover: #e0c9d6;             /* 더 옅어진 쿨톤 더스티핑크 보더 */
+    --overlay-bg: rgba(34,40,94,0.55);
+    --check-ok: #2f7a4f;
+    --check-no: #9a4636;
+  }
+
+  /* ===== 다크모드 — "핑크-네이비 반전" 팔레트 =====
+     라이트 모드는 옅은 더스티핑크 배경 위에 다크 네이비 텍스트/버튼이었다면,
+     다크 모드는 그 관계를 뒤집어 짙은 네이비를 배경으로 깔고, 더스티핑크였던 색을
+     밝은 로즈 액센트로 끌어올렸다. 변수 이름은 그대로 두고 값만 재정의한다. */
+  :root[data-theme="dark"] {
+    --gray-900: #f8ecf1;
+    --gray-700: #cbb0c2;
+    --gray-500: #b6a6c0;   /* 회사명/지역 등 보조텍스트 — 기존 값이 카드 배경과 대비가 약해 밝게 보정 */
+    --gray-200: #3d3564;
+    --gray-50:  #17142c;
+
+    --card-bg: #211c3d;
+
+    --green-bg: #153826;  --green-text: #4ade80;
+    --orange-bg: #3a2712; --orange-text: #fb923c;
+    --red-bg: #3a1a1f;    --red-text: #f87171;
+    --purple-bg: #2a2350; --purple-text: #c9a6e0;
+    --blue-bg: #182a48;   --blue-text: #7aa2f7;
+
+    --accent: #db2777;
+    --accent-dark: #be185d;
+    --accent-light: #4a3660;
+    --accent-contrast: #f472b6;
+    --accent-bg: #3a2030;
+    --accent-text: #f0a8c4;
+    --logo-color: #db2777;
+
+    --chip-active: #db2777;
+    --chip-active-dark: #be185d;
+
+    --donut-ok: #db2777;
+    --donut-no: #352c54;
+
+    --footer-bg: #1c1836;
+    --footer-text: #c2a8bc;
+    --footer-text-dim: #7e6a86;
+
+    --shadow-sm: 0 4px 14px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);
+    --shadow-md: 0 16px 40px rgba(0,0,0,0.45);
+
+    --header-bg: rgba(23,20,44,0.85);
+    --hero-gradient-from: #241f42;
+    --btn-secondary-hover-bg: #453a6e;
+    --border-hover: #524572;
+    --overlay-bg: rgba(0,0,0,0.65);
+    --check-ok: #4ade80;
+    --check-no: #f87171;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
@@ -75,6 +138,13 @@
     color: var(--gray-900);
     display: block;
     min-height: 100vh;
+    transition: background-color .25s ease, color .25s ease;
+  }
+  /* 다크모드 전환 시 주요 표면들이 뚝뚝 끊기지 않고 부드럽게 바뀌도록 */
+  .site-header, .site-footer, .form-card, .card-bg, .how-card, .job-card,
+  .chart-card, .modal-box, .stat-card, .banner, .hero-visual,
+  select, input[type=number], input[type=text] {
+    transition: background-color .25s ease, border-color .25s ease, color .25s ease;
   }
   /* ---------- 사이트 전체를 감싸는 프레임(민트 배경 위 둥근 창 구성) ----------
      프레임 자체는 뷰포트 높이에 맞춘 "창"이고, 내용이 더 길어지는 화면(필터/스펙/결과)은
@@ -101,7 +171,7 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* ---------- header / stepper / footer ---------- */
-  .site-header { position: sticky; top: 0; background: rgba(255,255,255,0.9); backdrop-filter: blur(6px); border-bottom: 1px solid var(--gray-200); z-index: 40; }
+  .site-header { position: sticky; top: 0; background: var(--header-bg); backdrop-filter: blur(6px); border-bottom: 1px solid var(--gray-200); z-index: 40; }
   .site-header-inner { width: 100%; max-width: 1280px; margin: 0 auto; padding: 11px 28px; display: flex; align-items: center; gap: 20px; }
   .logo { display: flex; align-items: center; gap: 8px; cursor: pointer; flex-shrink: 0; }
   .logo-mark { width: 28px; height: 28px; border-radius: var(--radius-chip); background: var(--logo-color); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
@@ -115,6 +185,11 @@
   .nav-link.pill:hover { background: var(--gray-200); }
   .nav-link.cta { background: var(--accent); color: #fff; font-weight: 600; }
   .nav-link.cta:hover { background: var(--accent-dark); }
+  .theme-toggle-btn {
+    width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; color: var(--gray-700); flex-shrink: 0;
+  }
+  .theme-toggle-btn:hover { background: var(--gray-200); color: var(--gray-900); }
 
   /* ---------- 스테퍼: 헤더와 같은 줄에 배치해 공간 낭비를 줄인다 ---------- */
   .stepper-inline { flex: 1; display: flex; align-items: center; min-width: 0; }
@@ -200,7 +275,7 @@
     flex: 1; background: var(--card-bg); color: var(--gray-900); border: 1px solid var(--gray-200); border-radius: var(--radius-pill);
     padding: 15px; font-size: 14.5px; font-weight: 600; cursor: pointer; transition: background .15s, border-color .15s;
   }
-  .btn-secondary:hover { background: var(--gray-50); border-color: #ccc; }
+  .btn-secondary:hover { background: var(--gray-50); border-color: var(--border-hover); }
   .btn-row { display: flex; gap: 14px; margin-top: 8px; }
   .btn-row .btn-primary, .btn-row .btn-secondary { margin-top: 0; }
   .btn-row .btn-primary { flex: 2; }
@@ -247,16 +322,16 @@
     width: 100%; text-align: left; background: var(--card-bg); border: 1px solid var(--gray-200); border-left: 4px solid var(--gray-200); border-radius: var(--radius-card);
     padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
     cursor: pointer; margin-bottom: 10px; box-shadow: var(--shadow-sm); transition: box-shadow .15s, transform .15s, border-color .15s;
-    font-family: inherit;
+    font-family: inherit; color: var(--gray-900);
   }
-  .job-card:hover { border-color: #ccc; box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .job-card:hover { border-color: var(--border-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
   .job-card-main { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
   .job-type-badge { width: 30px; height: 30px; border-radius: var(--radius-chip); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
   .job-title { font-size: 13px; font-weight: 600; margin: 0 0 2px; }
   .job-meta { font-size: 11px; color: var(--gray-500); margin: 0; }
   .job-check { display: flex; gap: 5px; margin-top: 6px; }
-  .job-check .ok { color: #2f7a4f; font-weight: 700; font-size: 12px; }
-  .job-check .no { color: #9a4636; font-weight: 700; font-size: 12px; }
+  .job-check .ok { color: var(--check-ok); font-weight: 700; font-size: 12px; }
+  .job-check .no { color: var(--check-no); font-weight: 700; font-size: 12px; }
   .status-tag { font-size: 11px; padding: 5px 9px; border-radius: var(--radius-pill); white-space: nowrap; font-weight: 600; flex-shrink: 0; display: inline-flex; align-items: center; }
   .job-card-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
   .job-chevron { color: var(--gray-500); font-size: 18px; line-height: 1; }
@@ -266,7 +341,7 @@
   .empty-desc { font-size: 12.5px; margin: 0 0 16px; }
 
   .modal-overlay {
-    position: fixed; inset: 0; background: rgba(28,33,66,0.55); display: flex; align-items: center;
+    position: fixed; inset: 0; background: var(--overlay-bg); display: flex; align-items: center;
     justify-content: center; padding: 16px; z-index: 50; animation: fadeIn .15s ease;
   }
   .modal-box { background: var(--card-bg); border-radius: var(--radius-card); max-width: 380px; width: 100%; padding: 22px; box-shadow: var(--shadow-md); }
@@ -295,7 +370,7 @@
      민트 페이지 배경 위에 "돔" 모양으로 얹힌 느낌을 낸다. */
   .hero {
     width: 100%; margin: 0; padding: 56px 24px 52px;
-    background: linear-gradient(180deg, #ffffff 0%, var(--gray-50) 100%);
+    background: linear-gradient(180deg, var(--hero-gradient-from) 0%, var(--gray-50) 100%);
     position: relative; overflow: hidden;
   }
   .hero-inner {
@@ -312,7 +387,7 @@
   .hero-title { font-size: 26px; font-weight: 800; line-height: 1.32; margin: 0 0 14px; color: var(--gray-900); letter-spacing: -.01em; }
   .hero-title .accent { color: var(--accent); }
   .hero-sub { font-size: 14.5px; color: var(--gray-500); line-height: 1.6; margin: 0 0 24px; max-width: 480px; }
-  .btn-hero { max-width: none; width: auto; margin: 0; padding: 14px 26px; font-size: 14.5px; box-shadow: 0 12px 28px rgba(31,35,71,0.22); background: var(--accent); color: #fff; }
+  .btn-hero { max-width: none; width: auto; margin: 0; padding: 14px 26px; font-size: 14.5px; box-shadow: 0 12px 28px rgba(43,52,128,0.22); background: var(--accent); color: #fff; }
   .btn-hero:hover { background: var(--accent-dark); }
   .hero-btn-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .btn-hero-secondary {
@@ -320,7 +395,7 @@
     background: var(--gray-200); color: var(--gray-900); border: none; cursor: pointer; font-family: inherit;
     transition: background .15s;
   }
-  .btn-hero-secondary:hover { background: #d3d1e9; }
+  .btn-hero-secondary:hover { background: var(--btn-secondary-hover-bg); }
   .hero-visual {
     justify-self: center; width: 100%; max-width: 340px;
     background: linear-gradient(160deg, var(--accent-light) 0%, var(--card-bg) 55%);
@@ -578,6 +653,25 @@ function runGapAnalysis(jobs, filters, spec) {
 // ===========================================================================
 // 3) 화면 상태 관리 (landing -> filter -> spec -> loading -> result, + 상세 모달)
 // ===========================================================================
+// ---------- 다크모드 (분석 상태(state)와는 완전히 별개의 관심사라 별도 로컬스토리지 키를 쓴다) ----------
+const THEME_KEY = "specfit_theme_v1";
+const THEME_ICON_SUN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.2M12 19.8V22M4.93 4.93l1.55 1.55M17.52 17.52l1.55 1.55M2 12h2.2M19.8 12H22M4.93 19.07l1.55-1.55M17.52 6.48l1.55-1.55"/></svg>';
+const THEME_ICON_MOON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>';
+function getPreferredTheme(){
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "dark" || saved === "light") return saved;
+  } catch (e) { /* localStorage 사용 불가 시 시스템 설정으로 대체 */ }
+  return (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+}
+function applyTheme(theme){ document.documentElement.setAttribute("data-theme", theme); }
+function toggleTheme(){
+  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  applyTheme(next);
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  render();
+}
+
 const state = {
   step: "landing",
   filters: { jobType:"", region:"", employmentType:"" },
@@ -735,6 +829,7 @@ function renderStepperInline(){
 
 function renderHeaderBar(){
   const showStepper = ["filter","spec","loading","result"].includes(state.step);
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
   return `
     <header class="site-header">
       <div class="site-header-inner">
@@ -744,6 +839,7 @@ function renderHeaderBar(){
         </div>
         ${showStepper ? renderStepperInline() : '<div class="header-spacer"></div>'}
         <nav class="site-nav">
+          <button class="nav-link theme-toggle-btn" onclick="toggleTheme()" title="${isDark ? '라이트 모드로 전환' : '다크 모드로 전환'}" aria-label="다크모드 전환">${isDark ? THEME_ICON_SUN : THEME_ICON_MOON}</button>
           <button class="nav-link" onclick="resetAll()" title="입력한 필터/스펙/결과를 모두 초기화합니다">초기화</button>
           <button class="nav-link pill" onclick="goStep('landing')">홈</button>
         </nav>
@@ -1217,6 +1313,7 @@ function render(){
   saveState();
 }
 
+applyTheme(getPreferredTheme());
 loadState();
 render();
 </script>
