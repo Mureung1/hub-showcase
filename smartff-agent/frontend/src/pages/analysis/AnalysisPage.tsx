@@ -1,15 +1,57 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Category } from '../../types/analysis';
+import type { FinancialRecord, FinancialSummary } from '../../types/financial';
 import { ANALYSIS_MOCK_DATA } from '../../constants/analysisMockData';
-import { weekdaySummary, timeSummary, trendSummary } from '../../utils/analysisSummary';
+import { weekdaySummary, timeSummary, monthlyTrendSummary } from '../../utils/analysisSummary';
 import CategoryTabs from '../../components/analysis/CategoryTabs';
 import InsightStrip from '../../components/analysis/InsightStrip';
 import PatternBarChart from '../../components/analysis/PatternBarChart';
 import TrendLineChart from '../../components/analysis/TrendLineChart';
 
+async function fetchCategoryTrend(category: Category): Promise<FinancialRecord[]> {
+  const res = await fetch(`/api/financial/summary?categories=${encodeURIComponent(category)}`);
+  if (!res.ok) throw new Error(`API Error: ${res.status}`);
+  const data: FinancialSummary = await res.json();
+  return [...data.data].sort((a, b) => a.month - b.month);
+}
+
+function trendLabelAndGood(latest: number, prev: number, isWaste: boolean) {
+  const diff = latest - prev;
+
+  if (isWaste) {
+    if (diff < 0) return { label: '안정적', good: true as boolean | null };
+    if (diff > Math.abs(prev) * 0.1) return { label: '지속 증가', good: false as boolean | null };
+    return { label: '보통', good: null as boolean | null };
+  }
+
+  const pct = prev !== 0 ? (diff / Math.abs(prev)) * 100 : 0;
+  return { label: `${pct >= 0 ? '+' : ''}${pct.toFixed(0)}%`, good: pct >= 0 };
+}
+
 export default function AnalysisPage() {
   const [category, setCategory] = useState<Category>('도시락');
+  const [trendRecords, setTrendRecords] = useState<FinancialRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchCategoryTrend(category)
+      .then(setTrendRecords)
+      .catch((err) => setError(err instanceof Error ? err.message : 'Unknown error'))
+      .finally(() => setLoading(false));
+  }, [category]);
+
   const d = ANALYSIS_MOCK_DATA[category];
+
+  const monthLabels = trendRecords.map((r) => `${r.month}월`);
+  const salesWeekly = trendRecords.map((r) => Math.round(r.sales_amount / 1000));
+  const wasteWeekly = trendRecords.map((r) => r.waste_rate);
+
+  const latest = trendRecords[trendRecords.length - 1];
+  const prev = trendRecords[trendRecords.length - 2];
+  const salesInfo = latest && prev ? trendLabelAndGood(latest.sales_amount, prev.sales_amount, false) : { label: d.salesTrend, good: d.salesGood };
+  const wasteInfo = latest && prev ? trendLabelAndGood(latest.waste_rate, prev.waste_rate, true) : { label: d.wasteTrend, good: d.wasteGood };
 
   return (
     <div style={{ padding: '36px 48px 56px', minHeight: '100vh', background: '#F8FAFC', fontFamily: "'Manrope', system-ui, sans-serif" }}>
@@ -48,7 +90,7 @@ export default function AnalysisPage() {
       {/* Insight strip */}
       <InsightStrip status={d.type} reasons={d.reasons} />
 
-      {/* Weekday / time-of-day patterns */}
+      {/* Weekday / time-of-day patterns — 원본 데이터에 요일·시간대 정보가 없어 목업 유지 (내일 연동 예정) */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
         <PatternBarChart
           title="요일별 판매 패턴"
@@ -72,33 +114,41 @@ export default function AnalysisPage() {
         />
       </div>
 
-      {/* Sales / waste trends */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-        <TrendLineChart
-          title="판매 추세 (최근 3개월)"
-          trendLabel={d.salesTrend}
-          good={d.salesGood}
-          values={d.salesWeekly}
-          xLabels={['3개월 전', '2개월 전', '1개월 전', '이번 달']}
-          summary={trendSummary(d.salesWeekly, false)}
-          goodColor="#2563EB"
-          gradientId="salesFill"
-          gradientOpacity={0.16}
-          strokeWidth={3}
-        />
-        <TrendLineChart
-          title="폐기 추세 (최근 3개월)"
-          trendLabel={d.wasteTrend}
-          good={d.wasteGood}
-          values={d.wasteWeekly}
-          xLabels={['3개월 전', '2개월 전', '1개월 전', '이번 달']}
-          summary={trendSummary(d.wasteWeekly, true)}
-          goodColor="#15803D"
-          gradientId="wasteFill"
-          gradientOpacity={0.12}
-          strokeWidth={3.5}
-        />
-      </div>
+      {/* Sales / waste trends — 실데이터(merged_dataset.csv, 월별) 연동 */}
+      {error ? (
+        <p style={{ color: '#DC2626', marginBottom: '20px' }}>추세 데이터를 불러오지 못했습니다: {error}</p>
+      ) : loading ? (
+        <p style={{ color: '#475569', marginBottom: '20px' }}>추세 데이터 로딩 중...</p>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+          <TrendLineChart
+            title={`판매 추세 (${category})`}
+            periodLabel={`최근 ${monthLabels.length}개월`}
+            trendLabel={salesInfo.label}
+            good={salesInfo.good}
+            values={salesWeekly}
+            xLabels={monthLabels}
+            summary={monthlyTrendSummary(salesWeekly, false)}
+            goodColor="#2563EB"
+            gradientId="salesFill"
+            gradientOpacity={0.16}
+            strokeWidth={3}
+          />
+          <TrendLineChart
+            title={`폐기 추세 (${category})`}
+            periodLabel={`최근 ${monthLabels.length}개월`}
+            trendLabel={wasteInfo.label}
+            good={wasteInfo.good}
+            values={wasteWeekly}
+            xLabels={monthLabels}
+            summary={monthlyTrendSummary(wasteWeekly, true)}
+            goodColor="#15803D"
+            gradientId="wasteFill"
+            gradientOpacity={0.12}
+            strokeWidth={3.5}
+          />
+        </div>
+      )}
 
       {/* Footer strip */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: '8px' }}>
