@@ -88,6 +88,55 @@
   font-weight: 600;
 }
 
+/* ---- 비회원 수정용 비밀번호 ---- */
+.rs-editor-pw {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clb-space-xs);
+}
+
+.rs-editor-pw input {
+  padding: 10px 16px;
+  border-radius: var(--clb-radius-control);
+  border: 1px solid var(--clb-edge-soft);
+  background: var(--clb-glass-faint);
+  color: var(--clb-ink);
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.rs-editor-pw input::placeholder {
+  color: var(--clb-muted-dim);
+}
+
+.rs-editor-pw input:focus-visible {
+  outline: 2px solid var(--clb-gold);
+  outline-offset: 1px;
+}
+
+.rs-editor-pw-hint {
+  margin: 0;
+  color: var(--clb-muted-dim);
+  font-size: var(--clb-text-label);
+  line-height: 1.5;
+}
+
+.rs-editor-pw-hint a {
+  color: var(--clb-gold);
+  font-weight: 700;
+}
+
+.rs-editor-ai-locked {
+  color: var(--clb-muted-dim);
+  font-size: 0.9rem;
+}
+
+.rs-editor-reviewing {
+  margin-bottom: var(--clb-space-md);
+  color: var(--clb-ink);
+  font-weight: 600;
+}
+
 /* ---- 섹션 편집 (본문 + 가이드 2단) ---- */
 .rs-editor-section {
   display: grid;

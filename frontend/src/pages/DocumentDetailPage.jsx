@@ -1,13 +1,21 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import DocumentSection from '../components/DocumentSection.jsx'
+import CommentItem from '../components/CommentItem.jsx'
 import TagBadge from '../components/TagBadge.jsx'
+import Modal from '../components/Modal.jsx'
 import { getSeedDocument } from '../data/documents.js'
-import { addCommentToPublished, getPublishedDocument } from '../lib/storage.js'
+import { addCommentToPublished, getPublishedDocument, verifyEditPassword } from '../lib/storage.js'
+import { useAuth } from '../lib/AuthContext.jsx'
 import './pages.css'
+
+// 문서 전체 AI 총평 코멘트의 sectionId (백엔드와 동일).
+const OVERALL_SECTION_ID = '__overall__'
 
 function DocumentDetailPage() {
   const { docId } = useParams()
+  const navigate = useNavigate()
+  const auth = useAuth()
   // 시드 문서는 in-memory·문자열 id라 먼저 동기로 잡고, DB 조회를 건너뛴다(uuid만 조회).
   const seedDoc = getSeedDocument(docId)
 
@@ -18,6 +26,10 @@ function DocumentDetailPage() {
   // 시드 문서에 단 코멘트는 저장소가 없어 이번 방문 동안만 유지 (발행 문서는 DB 영속화)
   const [localComments, setLocalComments] = useState([])
   const [openSectionId, setOpenSectionId] = useState(null)
+  // 비회원 문서 수정 잠금 해제 모달
+  const [pwModalOpen, setPwModalOpen] = useState(false)
+  const [pwInput, setPwInput] = useState('')
+  const [pwError, setPwError] = useState(null)
 
   useEffect(() => {
     if (seedDoc) return
@@ -53,6 +65,33 @@ function DocumentDetailPage() {
   }
 
   const comments = [...(doc.comments ?? []), ...localComments]
+  const overallComments = comments.filter((c) => c.sectionId === OVERALL_SECTION_ID)
+
+  // 수정 가능 여부: 회원 본인 문서, 또는 비밀번호가 걸린 비회원 문서(모달로 해제).
+  const isOwner = auth.isLoggedIn && doc.authorId && doc.authorId === auth.user?.id
+  const isAnonEditable = !doc.authorId && doc.hasEditPassword
+  const canEdit = !seedDoc && (isOwner || isAnonEditable)
+
+  function goEdit(editPassword) {
+    navigate(`/write/${doc.templateId}?draft=${doc.id}`, { state: { editPassword } })
+  }
+
+  function handleEditClick() {
+    if (isOwner) return goEdit()
+    setPwInput('')
+    setPwError(null)
+    setPwModalOpen(true)
+  }
+
+  async function handleUnlock() {
+    try {
+      await verifyEditPassword(doc.id, pwInput)
+      setPwModalOpen(false)
+      goEdit(pwInput)
+    } catch (err) {
+      setPwError(err.message ?? '비밀번호가 일치하지 않아요.')
+    }
+  }
 
   async function submitComment(sectionId, text) {
     const comment = {
@@ -98,8 +137,22 @@ function DocumentDetailPage() {
           <button type="button" className="rs-btn" onClick={() => setBookmarked((v) => !v)}>
             {bookmarked ? '북마크됨' : '북마크'}
           </button>
+          {canEdit && (
+            <button type="button" className="rs-btn rs-btn-primary" onClick={handleEditClick}>
+              수정하기
+            </button>
+          )}
         </div>
       </header>
+
+      {overallComments.length > 0 && (
+        <section className="rs-panel rs-overall">
+          <h2 className="rs-overall-title">AI 총평</h2>
+          {overallComments.map((c) => (
+            <CommentItem key={c.id} comment={c} />
+          ))}
+        </section>
+      )}
 
       {doc.sections.map((section) => (
         <DocumentSection
@@ -112,6 +165,27 @@ function DocumentDetailPage() {
           onCancelForm={() => setOpenSectionId(null)}
         />
       ))}
+
+      {pwModalOpen && (
+        <Modal title="수정용 비밀번호" onClose={() => setPwModalOpen(false)}>
+          <p className="rs-overall-hint">
+            이 문서를 작성할 때 정한 비밀번호를 입력하면 수정할 수 있어요.
+          </p>
+          <input
+            className="rs-pw-input"
+            type="password"
+            value={pwInput}
+            onChange={(e) => setPwInput(e.target.value)}
+            placeholder="비밀번호"
+            onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
+            autoFocus
+          />
+          {pwError && <p className="rs-pw-error">{pwError}</p>}
+          <button type="button" className="rs-btn rs-btn-primary" onClick={handleUnlock}>
+            수정하러 가기
+          </button>
+        </Modal>
+      )}
     </article>
   )
 }

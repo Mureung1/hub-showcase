@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import EditorMetaPanel from '../components/EditorMetaPanel.jsx'
 import EditorSection from '../components/EditorSection.jsx'
 import { getTemplate } from '../data/templates.js'
 import { getChallenge } from '../data/challenges.js'
 import { makeAiFeedback } from '../data/aiFeedback.js'
-import { getPublishedDocument, saveDraft, publishDocument } from '../lib/storage.js'
+import {
+  getPublishedDocument,
+  saveDraft,
+  publishDocument,
+  requestAiFeedback,
+  requestAiFeedbackPreview,
+} from '../lib/storage.js'
+import { useAuth } from '../lib/AuthContext.jsx'
 import { makeSnapshot, hasUnsavedChanges, isEmptyDraft, shouldAutosave } from '../lib/autosave.js'
 import './pages.css'
 import './EditorPage.css'
@@ -33,6 +40,8 @@ function EditorPage() {
   const { templateId } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const auth = useAuth()
 
   const template = getTemplate(templateId)
   const challenge = getChallenge(searchParams.get('challenge'))
@@ -57,6 +66,9 @@ function EditorPage() {
   )
   const [aiComments, setAiComments] = useState({})
   const [aiLoading, setAiLoading] = useState(false)
+  const [aiReviewing, setAiReviewing] = useState(false)
+  // 비회원 문서 수정용 비밀번호. 잠금해제 모달에서 넘어온 경우 location.state 로 받는다.
+  const [editPassword, setEditPassword] = useState(location.state?.editPassword ?? '')
   const [savedAt, setSavedAt] = useState(null)
   const [publishError, setPublishError] = useState(null)
   const [loadingDraft, setLoadingDraft] = useState(Boolean(draftParam))
@@ -103,6 +115,8 @@ function EditorPage() {
     // 이어쓰기로 초안을 불러오는 중이면 절대 저장하지 않는다.
     // 여기서 저장이 돌면 아직 안 채워진 빈 폼이 기존 초안을 덮어쓴다.
     if (loadingDraft || !template) return
+    // 비회원은 수정용 비밀번호가 있어야 저장할 수 있다(그래야 이후에 다시 고칠 수 있음).
+    if (!auth.isLoggedIn && !editPassword) return
 
     const form = { title, gameTag, systemTag, feedbackWanted, sections }
     const snapshot = makeSnapshot(form)
@@ -124,6 +138,7 @@ function EditorPage() {
           systemTag,
           feedbackWanted,
           sections,
+          editPassword: editPassword || undefined,
         })
         lastSavedRef.current = snapshot
         setDocId(saved.id)
@@ -147,6 +162,8 @@ function EditorPage() {
     templateId,
     loadingDraft,
     template,
+    editPassword,
+    auth.isLoggedIn,
   ])
 
   if (!template) {
@@ -190,40 +207,85 @@ function EditorPage() {
   }
 
   async function handleSaveDraft() {
+    if (!auth.isLoggedIn && !editPassword) {
+      setPublishError('비회원은 "수정용 비밀번호"를 먼저 입력해야 저장할 수 있어요.')
+      return
+    }
     savingRef.current = true
     setAutoSaved(false)
-    const saved = await saveDraft({
-      id: docId,
-      templateId,
-      title,
-      gameTag,
-      systemTag,
-      feedbackWanted,
-      sections,
-    })
-    // 수동 저장도 스냅샷을 갱신해야 직후에 자동저장이 중복으로 돌지 않는다.
-    lastSavedRef.current = makeSnapshot({ title, gameTag, systemTag, feedbackWanted, sections })
-    savingRef.current = false
-    setDocId(saved.id) // 첫 저장에서 서버 uuid를 채택, 이후 저장은 같은 row 수정
-    setSavedAt(new Date().toLocaleTimeString())
+    try {
+      const saved = await saveDraft({
+        id: docId,
+        templateId,
+        title,
+        gameTag,
+        systemTag,
+        feedbackWanted,
+        sections,
+        editPassword: editPassword || undefined,
+      })
+      // 수동 저장도 스냅샷을 갱신해야 직후에 자동저장이 중복으로 돌지 않는다.
+      lastSavedRef.current = makeSnapshot({ title, gameTag, systemTag, feedbackWanted, sections })
+      setDocId(saved.id) // 첫 저장에서 서버 uuid를 채택, 이후 저장은 같은 row 수정
+      setSavedAt(new Date().toLocaleTimeString())
+    } catch (err) {
+      setPublishError(err.message ?? '저장에 실패했어요.')
+    } finally {
+      savingRef.current = false
+    }
   }
 
   async function handleAiFeedback() {
     setAiLoading(true)
-    const feedback = await makeAiFeedback(
-      sections.map((s) => ({
-        key: s.id,
-        guideKey: s.guideKey,
-        heading: s.heading,
-        content: s.content,
-      })),
-    )
-    const grouped = {}
-    for (const item of feedback) {
-      grouped[item.sectionKey] = [...(grouped[item.sectionKey] ?? []), item.content]
+    try {
+      let feedback
+      if (auth.isLoggedIn) {
+        // 회원: 실제 Gemini 미리보기(저장 안 함). 섹션 guide·문서 메타를 함께 보내 특화 피드백을 받는다.
+        feedback = await requestAiFeedbackPreview({
+          title: title.trim(),
+          gameTag: gameTag.trim(),
+          templateName: template.name,
+          sections: sections.map((s) => ({
+            key: s.id,
+            heading: s.heading,
+            content: s.content,
+            guide: guideOf(s).guide,
+          })),
+        })
+      } else {
+        // 비회원/폴백: mock 미리보기.
+        feedback = await makeAiFeedback(
+          sections.map((s) => ({
+            key: s.id,
+            guideKey: s.guideKey,
+            heading: s.heading,
+            content: s.content,
+          })),
+        )
+      }
+      const grouped = {}
+      for (const item of feedback) {
+        grouped[item.sectionKey] = [...(grouped[item.sectionKey] ?? []), item.content]
+      }
+      setAiComments(grouped)
+    } catch {
+      // 실 API 실패 시 mock으로 폴백(오프라인/한도 등 안전망).
+      const fallback = await makeAiFeedback(
+        sections.map((s) => ({
+          key: s.id,
+          guideKey: s.guideKey,
+          heading: s.heading,
+          content: s.content,
+        })),
+      )
+      const grouped = {}
+      for (const item of fallback) {
+        grouped[item.sectionKey] = [...(grouped[item.sectionKey] ?? []), item.content]
+      }
+      setAiComments(grouped)
+    } finally {
+      setAiLoading(false)
     }
-    setAiComments(grouped)
-    setAiLoading(false)
   }
 
   async function handlePublish() {
@@ -231,33 +293,58 @@ function EditorPage() {
       setPublishError('발행하려면 제목, 대상 게임, 시스템 유형 태그가 모두 필요해요.')
       return
     }
-    const comments = sections.flatMap((s) =>
-      (aiComments[s.id] ?? []).map((content, i) => ({
-        id: `${s.id}-ai-${i}`,
-        sectionId: s.id,
-        author: null,
-        isAi: true,
-        content,
-        createdAt: new Date().toISOString().slice(0, 10),
-      })),
-    )
-    const published = await publishDocument({
-      id: docId, // 저장한 적 있으면 같은 row를 발행으로 flip, 없으면 서버가 새로 발급
-      author: '나 (데모)',
-      type: '역기획',
-      templateId,
-      title: title.trim(),
-      gameTag: gameTag.trim(),
-      jobTag: JOB_TAG_BY_TEMPLATE[templateId],
-      systemTag: systemTag.trim(),
-      challengeId: challenge?.id ?? null,
-      feedbackWanted,
-      likes: 0,
-      bookmarks: 0,
-      sections: sections.map(({ id, heading, content }) => ({ id, heading, content })),
-      comments,
-    })
-    navigate(`/archive/${published.id}`)
+    if (!auth.isLoggedIn && !editPassword) {
+      setPublishError('비회원은 "수정용 비밀번호"를 먼저 입력해야 발행할 수 있어요.')
+      return
+    }
+    try {
+      const published = await publishDocument({
+        id: docId, // 저장한 적 있으면 같은 row를 발행으로 flip, 없으면 서버가 새로 발급
+        // 회원이면 author_name은 서버가 프로필로 채운다. 비회원만 표시명을 보낸다.
+        author: auth.isLoggedIn ? undefined : '익명',
+        type: '역기획',
+        templateId,
+        title: title.trim(),
+        gameTag: gameTag.trim(),
+        jobTag: JOB_TAG_BY_TEMPLATE[templateId],
+        systemTag: systemTag.trim(),
+        challengeId: challenge?.id ?? null,
+        feedbackWanted,
+        likes: 0,
+        bookmarks: 0,
+        sections: sections.map(({ id, heading, content }) => ({ id, heading, content })),
+        // AI 코멘트는 아래에서 회원 전용 엔드포인트가 서버에 직접 append 한다(중복 방지).
+        comments: [],
+        editPassword: editPassword || undefined,
+      })
+
+      // 회원이면 제출 직후 자동 AI 피드백(섹션별 + 전체 총평). 비회원은 건너뛴다.
+      if (auth.isLoggedIn) {
+        setAiReviewing(true)
+        try {
+          // 섹션별 guide(그 섹션이 다뤄야 하는 것)와 문서 메타를 함께 보내야
+          // 백엔드가 섹션 성격에 맞는 특화 피드백을 낸다.
+          const guides = sections.map((s) => ({
+            sectionId: s.id,
+            heading: s.heading,
+            guide: guideOf(s).guide,
+          }))
+          await requestAiFeedback(published.id, {
+            title: title.trim(),
+            gameTag: gameTag.trim(),
+            templateName: template.name,
+            guides,
+          })
+        } catch {
+          // AI 실패해도 발행 자체는 성공 — 상세 페이지로 넘어간다.
+        } finally {
+          setAiReviewing(false)
+        }
+      }
+      navigate(`/archive/${published.id}`)
+    } catch (err) {
+      setPublishError(err.message ?? '발행에 실패했어요.')
+    }
   }
 
   return (
@@ -274,6 +361,12 @@ function EditorPage() {
         )}
       </header>
 
+      {aiReviewing && (
+        <div className="rs-panel rs-editor-reviewing" role="status">
+          AI가 방금 발행한 문서를 검토하고 있어요… 잠시만요.
+        </div>
+      )}
+
       <EditorMetaPanel
         title={title}
         gameTag={gameTag}
@@ -283,6 +376,10 @@ function EditorPage() {
         savedAt={savedAt}
         autoSaved={autoSaved}
         publishError={publishError}
+        isLoggedIn={auth.isLoggedIn}
+        showPasswordField={!auth.isLoggedIn}
+        editPassword={editPassword}
+        onEditPasswordChange={setEditPassword}
         onTitleChange={(v) => {
           setTitle(v)
           setPublishError(null)
