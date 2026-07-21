@@ -30,8 +30,10 @@ const { default: prisma } = await import('../../src/config/prisma.js');
 const TEST_GITHUB_ID = 'vitest-test-user';
 const createdRecommendationIds = [];
 
-// 실제 GitHub 분석 없이도 추천 API를 테스트할 수 있도록 분석 캐시를 직접 심어둔다
+// 실제 GitHub 분석 없이도 추천 API를 테스트할 수 있도록 분석 캐시를 직접 심어둔다.
+// 이전 실행이 afterAll을 못 돌고 죽었을 경우(타임아웃 등)를 대비해 먼저 잔여 데이터를 정리한다.
 beforeAll(async () => {
+    await prisma.recommendation.deleteMany({ where: { githubId: TEST_GITHUB_ID } });
     await prisma.analysis.upsert({
         where: { githubId: TEST_GITHUB_ID },
         update: { analyzedAt: new Date() },
@@ -77,6 +79,18 @@ describe('POST /api/recommendations', () => {
 
         expect(res.status).toBe(400);
         expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('한글 등 유니코드 토픽 입력을 400으로 막지 않는다', async () => {
+        const res = await request(app)
+            .post('/api/recommendations')
+            .send({
+                githubId: TEST_GITHUB_ID,
+                preferences: { languages: ['JavaScript'], difficulty: 'easy', topics: ['머신러닝'] },
+            });
+
+        expect(res.status).toBe(200);
+        createdRecommendationIds.push(res.body.id);
     });
 });
 
