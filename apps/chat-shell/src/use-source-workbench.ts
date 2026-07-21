@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   activateProductWorkspace,
   createProductCourse,
+  fetchProductBootstrap,
   fetchSettledProductBootstrap,
   fetchProductMaterialPreview,
   ProductApiError,
@@ -77,20 +78,38 @@ export function useSourceWorkbench() {
     }
   }, [])
 
-  const refreshProductState = useCallback(async (signal?: AbortSignal) => {
-    setOperationFailure(undefined)
-    setBootstrapRefreshing(true)
-    try {
-      const bootstrap = await fetchSettledProductBootstrap(signal)
-      setBootstrapView({ state: 'loaded', bootstrap })
-      return bootstrap
-    } catch (error) {
-      if (!signal?.aborted) setOperationFailure(safeMessage(error))
-      throw error
-    } finally {
-      if (!signal?.aborted) setBootstrapRefreshing(false)
-    }
-  }, [])
+  const refreshBootstrapView = useCallback(
+    async (
+      readBootstrap: ProductBootstrapReader,
+      signal?: AbortSignal,
+    ) => {
+      setOperationFailure(undefined)
+      setBootstrapRefreshing(true)
+      try {
+        const bootstrap = await readBootstrap(signal)
+        setBootstrapView({ state: 'loaded', bootstrap })
+        return bootstrap
+      } catch (error) {
+        if (!signal?.aborted) setOperationFailure(safeMessage(error))
+        throw error
+      } finally {
+        if (!signal?.aborted) setBootstrapRefreshing(false)
+      }
+    },
+    [],
+  )
+
+  const refreshProductSnapshot = useCallback(
+    (signal?: AbortSignal) =>
+      refreshBootstrapView(fetchProductBootstrap, signal),
+    [refreshBootstrapView],
+  )
+
+  const refreshSettledProductState = useCallback(
+    (signal?: AbortSignal) =>
+      refreshBootstrapView(fetchSettledProductBootstrap, signal),
+    [refreshBootstrapView],
+  )
 
   useEffect(() => {
     const controller = new AbortController()
@@ -224,14 +243,14 @@ export function useSourceWorkbench() {
             }
           : current,
       )
-      await refreshProductState()
+      await refreshSettledProductState()
     })
   }
 
   async function createCourse(displayName: string) {
     await runWorkspaceMutation(async () => {
       commitReadyWorkspace(await createProductCourse(displayName))
-      await refreshProductState()
+      await refreshSettledProductState()
     })
   }
 
@@ -239,7 +258,7 @@ export function useSourceWorkbench() {
     if (!readyWorkspace) return
     await runWorkspaceMutation(async () => {
       commitReadyWorkspace(await refreshProductMaterials())
-      await refreshProductState()
+      await refreshSettledProductState()
     })
   }
 
@@ -297,7 +316,8 @@ export function useSourceWorkbench() {
     bootstrapRefreshing,
     operationFailure,
     loadWorkspace,
-    refreshProductState,
+    refreshProductSnapshot,
+    refreshSettledProductState,
     activateWorkspace,
     createCourse,
     refreshMaterials,
@@ -306,6 +326,10 @@ export function useSourceWorkbench() {
     navigateToEvidence,
   }
 }
+
+type ProductBootstrapReader = (
+  signal?: AbortSignal,
+) => Promise<ProductBootstrap>
 
 function emptyHistory(): ProductSettledHistory {
   return {

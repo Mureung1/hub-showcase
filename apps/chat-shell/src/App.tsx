@@ -27,7 +27,8 @@ export default function App() {
     accountReadiness: workbench.accountReadiness,
     workspace: workbench.readyWorkspace,
     selectedMaterials: workbench.selectedMaterials,
-    refreshProductState: workbench.refreshProductState,
+    refreshProductSnapshot: workbench.refreshProductSnapshot,
+    refreshSettledProductState: workbench.refreshSettledProductState,
   })
   const [chatOpen, setChatOpen] = useState(true)
   const courseName = workbench.readyWorkspace?.course?.displayName

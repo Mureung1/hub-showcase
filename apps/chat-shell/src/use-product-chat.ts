@@ -41,7 +41,10 @@ export function useProductChat(options: {
   readonly accountReadiness: ProductAccountReadiness | undefined
   readonly workspace: ReadyProductWorkspace | undefined
   readonly selectedMaterials: readonly ProductRawMaterial[]
-  readonly refreshProductState: (
+  readonly refreshProductSnapshot: (
+    signal?: AbortSignal,
+  ) => Promise<ProductBootstrap>
+  readonly refreshSettledProductState: (
     signal?: AbortSignal,
   ) => Promise<ProductBootstrap>
 }) {
@@ -210,10 +213,10 @@ export function useProductChat(options: {
         throw new ProductStreamError()
       }
       if (request.decision !== 'revise') {
-        await options.refreshProductState()
-        if (response.continuation === 'lost') {
-          reconcileConfirmedReview(review, request.decision)
-        }
+        reconcileConfirmedReview(review, request.decision)
+        // The exact Review response already confirms the product decision.
+        // Snapshot hydration reports its own failure and cannot hold the Turn.
+        await options.refreshProductSnapshot().catch(() => undefined)
       }
     } catch (error) {
       if (request.decision !== 'revise') {
@@ -359,7 +362,7 @@ export function useProductChat(options: {
       transition({ type: 'operation.stream-ended' })
       if (kind === 'assignment') {
         try {
-          await options.refreshProductState(controller.signal)
+          await options.refreshSettledProductState(controller.signal)
         } catch {
           // The authoritative stream terminal remains final. Workspace hydration
           // exposes its own failure without rewriting the operation lifecycle.
@@ -403,7 +406,7 @@ export function useProductChat(options: {
       return false
     }
     try {
-      const bootstrap = await options.refreshProductState(signal)
+      const bootstrap = await options.refreshSettledProductState(signal)
       const run = bootstrap.history.modelingRuns.find(
         (candidate) =>
           candidate.id === active.runId &&
@@ -442,7 +445,7 @@ export function useProductChat(options: {
     decision: 'accept' | 'reject',
   ): Promise<boolean> {
     try {
-      const bootstrap = await options.refreshProductState()
+      const bootstrap = await options.refreshProductSnapshot()
       const confirmation = bootstrap.history.userConfirmations.find(
         (candidate) =>
           candidate.patchId === review.patchId &&

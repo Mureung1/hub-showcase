@@ -44,6 +44,27 @@ test('decodes a ready product snapshot without persistence metadata', async (t) 
   })
 })
 
+test('returns one active product snapshot without waiting for settlement', async (t) => {
+  let requests = 0
+  t.mock.method(globalThis, 'fetch', async () => {
+    requests += 1
+    return new Response(
+      JSON.stringify({
+        accountReadiness: { state: 'ready' },
+        operationStatus: 'active',
+        workspace: null,
+        history: emptyHistory(),
+      }),
+      { status: 200 },
+    )
+  })
+
+  const bootstrap = await fetchProductBootstrap()
+
+  assert.equal(requests, 1)
+  assert.equal(bootstrap.operationStatus, 'active')
+})
+
 test('polls an active product operation until one idle bootstrap supplies the final settled read', async (t) => {
   let requests = 0
   t.mock.method(globalThis, 'fetch', async () => {

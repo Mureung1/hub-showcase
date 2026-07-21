@@ -49,6 +49,7 @@ export type ChatScenario =
   | 'acknowledged-interrupt-response-loss'
   | 'disconnect-drain-timeout'
   | 'reload-before-interrupt-settlement'
+  | 'post-review-clarification'
 
 type ProductRuntimeScenario = Exclude<ChatScenario, 'unavailable'>
 
@@ -495,7 +496,11 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     const wasInterrupted = this.wasInterrupted.bind(this)
     const acknowledgedInterruptResponseLoss =
       this.scenario === 'acknowledged-interrupt-response-loss'
+    const postReviewClarification =
+      this.scenario === 'post-review-clarification'
     const interruptObserved = this.interruptObserved.promise
+    const interruptSettlementReleased =
+      this.interruptSettlementReleased.promise
     const lateInteractionReleased = this.lateInteractionReleased.promise
     const waitForReviewContinuation = this.waitForReviewContinuation.bind(this)
     const interactionId = `interaction-review-${this.turnOrdinal}`
@@ -634,6 +639,59 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           }
           finalChoice = assignmentReviewChoice(replacementSettlement)
           assert.notEqual(finalChoice.type, 'revise')
+        }
+        if (postReviewClarification) {
+          const clarificationInteractionId = `${interactionId}-clarification`
+          const clarificationPending = createPending(
+            clarificationInteractionId,
+            turnId,
+          )
+          yield {
+            type: 'user_input.requested',
+            threadId: input.threadId,
+            turnId,
+            itemId: `question-post-review-private-${turnId}`,
+            interactionId: clarificationInteractionId,
+            questions: [generalQuestion],
+          }
+          const clarificationSettlement =
+            await clarificationPending.settlement.promise
+          if (wasInterrupted(turnId)) {
+            yield {
+              type: 'turn.interrupt_acknowledged',
+              threadId: input.threadId,
+              turnId,
+            }
+          }
+          yield {
+            type: 'user_input.resolved',
+            threadId: input.threadId,
+            turnId,
+            itemId: `question-post-review-private-${turnId}`,
+            interactionId: clarificationInteractionId,
+            resolution: clarificationSettlement.resolution,
+          }
+          acknowledge(clarificationInteractionId)
+          if (wasInterrupted(turnId)) {
+            await interruptSettlementReleased
+            yield {
+              type: 'turn.completed',
+              threadId: input.threadId,
+              turnId,
+              status: 'interrupted',
+            }
+            return
+          }
+          yield {
+            type: 'agent_message.completed',
+            threadId: input.threadId,
+            turnId,
+            itemId: `agent-post-review-private-${turnId}`,
+            text:
+              clarificationSettlement.resolution === 'answered'
+                ? '같은 Turn의 답변을 바탕으로 과제 결과를 정리했습니다.'
+                : '같은 Turn의 질문을 취소하고 과제 결과를 정리했습니다.',
+          }
         }
         await waitForReviewContinuation()
         yield {

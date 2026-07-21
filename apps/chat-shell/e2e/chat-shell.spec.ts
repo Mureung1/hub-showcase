@@ -333,6 +333,224 @@ test('rejects a proposal without changing the confirmed model across reload', as
   expect(afterReload).toEqual(beforeReload)
 })
 
+test.describe('post-Review same-Turn ordinary clarification', () => {
+  test.use({ scenario: 'post-review-clarification' })
+
+  test('answers a clarification after a lost Accept response without reapplying the decision', async ({
+    chatHarness,
+    chatPage: page,
+  }) => {
+    await selectCanonicalMaterials(page)
+    await page
+      .getByRole('button', { name: /선택한 자료 정리하기/u })
+      .click()
+
+    const review = page.getByRole('region', { name: '검토 대기' })
+    const reviewResponse = await loseNextReviewResponse(page)
+    await review.getByRole('button', { name: '수락' }).click()
+    expect(await reviewResponse.lost).toBe(200)
+
+    const clarification = page.getByRole('region', { name: 'AY 질문' })
+    await expect(clarification).toContainText('어떤 자료부터 살펴볼까요?')
+    await expect(page.getByRole('button', { name: '작업 중단' })).toBeVisible()
+    await clarification.getByLabel('직접 답하기').fill('공지 자료부터')
+    const answer = clarification.getByRole('button', {
+      name: '질문 답변 보내기',
+    })
+    await expect(answer).toBeEnabled()
+    await answer.click()
+
+    await expect(page.getByText('질문에 답했습니다')).toBeVisible()
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'completed',
+    )
+    const bootstrap = await readProductBootstrap(page)
+    expect(bootstrap.workspace?.state).toBe('ready')
+    if (bootstrap.workspace?.state === 'ready') {
+      expect(bootstrap.workspace.confirmedRevision).toBe(1)
+    }
+    expect(bootstrap.history.assignments).toHaveLength(1)
+    expect(bootstrap.history.statePatches).toEqual([
+      expect.objectContaining({ status: 'applied' }),
+    ])
+    expect(bootstrap.history.userConfirmations).toEqual([
+      expect.objectContaining({ decision: 'accepted', outcome: 'applied' }),
+    ])
+    const answers = chatHarness
+      .calls()
+      .filter((call) => call.operation === 'answerUserInput')
+    expect(answers).toHaveLength(2)
+    expect(answers[0]?.input.answers).toEqual({
+      assignment_review_decision: ['수락'],
+    })
+    expect(answers[1]?.input.answers).toEqual({
+      'private-general-question': ['공지 자료부터'],
+    })
+    expect(
+      chatHarness
+        .calls()
+        .filter((call) => call.operation === 'startProductTurn'),
+    ).toHaveLength(1)
+    expect(
+      chatHarness
+        .requests()
+        .filter((pathname) => pathname.startsWith('/api/product/reviews/')),
+    ).toHaveLength(1)
+    expect(
+      chatHarness
+        .requests()
+        .filter((pathname) => pathname.endsWith('/answer')),
+    ).toHaveLength(1)
+  })
+
+  test('cancels a clarification after Reject without applying the proposal', async ({
+    chatHarness,
+    chatPage: page,
+  }) => {
+    await selectCanonicalMaterials(page)
+    await page
+      .getByRole('button', { name: /선택한 자료 정리하기/u })
+      .click()
+
+    const review = page.getByRole('region', { name: '검토 대기' })
+    const reviewResponse = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.startsWith('/api/product/reviews/'),
+    )
+    await review.getByRole('button', { name: '거절' }).click()
+    expect((await reviewResponse).status()).toBe(200)
+
+    const clarification = page.getByRole('region', { name: 'AY 질문' })
+    await expect(clarification).toContainText('어떤 자료부터 살펴볼까요?')
+    await expect(page.getByRole('button', { name: '작업 중단' })).toBeVisible()
+    const cancel = clarification.getByRole('button', { name: '질문 취소' })
+    await expect(cancel).toBeEnabled()
+    await cancel.click()
+
+    await expect(page.getByText('질문을 취소했습니다')).toBeVisible()
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'completed',
+    )
+    const bootstrap = await readProductBootstrap(page)
+    expect(bootstrap.workspace?.state).toBe('ready')
+    if (bootstrap.workspace?.state === 'ready') {
+      expect(bootstrap.workspace.confirmedRevision).toBe(0)
+    }
+    expect(bootstrap.history.assignments).toEqual([])
+    expect(bootstrap.history.statePatches).toEqual([
+      expect.objectContaining({ status: 'rejected' }),
+    ])
+    expect(bootstrap.history.userConfirmations).toEqual([
+      expect.objectContaining({
+        decision: 'rejected',
+        outcome: 'not_applied',
+      }),
+    ])
+    expect(
+      chatHarness
+        .calls()
+        .filter((call) => call.operation === 'answerUserInput'),
+    ).toHaveLength(1)
+    expect(
+      chatHarness
+        .calls()
+        .filter((call) => call.operation === 'cancelUserInput'),
+    ).toHaveLength(1)
+    expect(
+      chatHarness
+        .calls()
+        .filter((call) => call.operation === 'startProductTurn'),
+    ).toHaveLength(1)
+    expect(
+      chatHarness
+        .requests()
+        .filter((pathname) => pathname.startsWith('/api/product/reviews/')),
+    ).toHaveLength(1)
+    expect(
+      chatHarness
+        .requests()
+        .filter((pathname) => pathname.endsWith('/cancel')),
+    ).toHaveLength(1)
+  })
+
+  test('keeps interrupt acknowledgement nonterminal while the clarification is pending', async ({
+    chatHarness,
+    chatPage: page,
+  }) => {
+    await selectCanonicalMaterials(page)
+    await page
+      .getByRole('button', { name: /선택한 자료 정리하기/u })
+      .click()
+
+    const review = page.getByRole('region', { name: '검토 대기' })
+    const reviewResponse = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.startsWith('/api/product/reviews/'),
+    )
+    await review.getByRole('button', { name: '수락' }).click()
+    expect((await reviewResponse).status()).toBe(200)
+
+    const clarification = page.getByRole('region', { name: 'AY 질문' })
+    await expect(clarification).toBeVisible()
+    const interrupt = page.getByRole('button', { name: '작업 중단' })
+    await expect(interrupt).toBeVisible()
+    await interrupt.click()
+
+    await expect(page.getByText('중단 요청을 전달했습니다.')).toBeVisible()
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'stopping',
+    )
+    await expect(page.getByText('AY 작업을 중단했습니다.')).toHaveCount(0)
+    const activeBootstrap = await readProductBootstrap(page)
+    expect(activeBootstrap.operationStatus).toBe('active')
+    expect(activeBootstrap.history.userConfirmations).toHaveLength(1)
+    expect(activeBootstrap.history.assignments).toHaveLength(1)
+
+    chatHarness.releaseInterruptSettlement()
+    await expect(page.getByText('AY 작업을 중단했습니다.')).toBeVisible()
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'continuation-lost',
+    )
+    const settledBootstrap = await readProductBootstrap(page)
+    expect(settledBootstrap.operationStatus).toBe('idle')
+    expect(settledBootstrap.history.userConfirmations).toHaveLength(1)
+    expect(settledBootstrap.history.assignments).toHaveLength(1)
+    expect(
+      chatHarness
+        .calls()
+        .filter((call) => call.operation === 'answerUserInput'),
+    ).toHaveLength(1)
+    expect(
+      chatHarness.calls().filter((call) => call.operation === 'interrupt'),
+    ).toHaveLength(1)
+    expect(
+      chatHarness
+        .calls()
+        .filter((call) => call.operation === 'cancelUserInput'),
+    ).toHaveLength(0)
+    expect(
+      chatHarness
+        .calls()
+        .filter((call) => call.operation === 'startProductTurn'),
+    ).toHaveLength(1)
+    expect(
+      chatHarness
+        .requests()
+        .filter((pathname) => pathname.startsWith('/api/product/reviews/')),
+    ).toHaveLength(1)
+    expect(
+      chatHarness
+        .requests()
+        .filter(
+          (pathname) =>
+            pathname.endsWith('/answer') || pathname.endsWith('/cancel'),
+        ),
+    ).toHaveLength(0)
+  })
+})
+
 test('interrupts the active product Review through its public operation and terminal stream', async ({
   chatHarness,
   chatPage: page,
