@@ -384,10 +384,10 @@ function App() {
   return (
     <div className="app-shell">
       <header className={`site-header ${activeMainTab === "fridge" ? "fridge-context" : ""}`}>
-        <div aria-hidden="true" />
+        <div className="header-spacer" aria-hidden="true" />
         <nav className="header-nav" aria-label="상단 메뉴">
           <button type="button">서비스 소개</button>
-          {mainTabs.map(([id, label]) => <button key={id} type="button" className={activeMainTab === id ? "active" : ""} onClick={() => setActiveMainTab(id)}>{label}</button>)}
+          {mainTabs.map(([id, label]) => <button key={id} type="button" className={activeMainTab === id ? "active" : ""} aria-current={activeMainTab === id ? "page" : undefined} onClick={() => setActiveMainTab(id)}>{label}</button>)}
         </nav>
         {activeMainTab !== "fridge" && <button className="header-cta" type="button" onClick={openIngredientForm}>재료 등록하기</button>}
       </header>
@@ -471,10 +471,9 @@ function IngredientTile({ ingredient, isMenuOpen, onToggleMenu, onCloseMenu, onE
   const ingredientTags = getIngredientTags(ingredient);
 
   return <article className={`ingredient-tile ${expiration.status}`}>
-    <div className="tile-top"><span className="ingredient-emoji" aria-hidden="true">{ingredient.icon}</span><IngredientMenu ingredient={ingredient} isOpen={isMenuOpen} onToggle={onToggleMenu} onClose={onCloseMenu} onEdit={onEdit} onAction={onAction} /></div>
-    <div className="tile-title-row"><div><h3>{ingredient.name}</h3><p>{formatIngredientQuantity(ingredient)} · {storageLabels[ingredient.storage]}</p></div><span className={`dday-badge ${expiration.status}`}>{expiration.badge}</span></div>
-    <div className="tile-meta"><span>{getIngredientCategoryLabel(ingredient.category)}</span>{ingredient.isInstant && ingredient.category !== "instant" && <span className="instant-chip">인스턴트</span>}{ingredient.isPrepared && ingredient.category !== "prepared" && <span>완제품</span>}{isUrgent && <span className="use-first">먼저 사용</span>}</div>
-    {ingredientTags.length > 0 && <div className="ingredient-tag-list" aria-label="재료 특성">{ingredientTags.slice(0, 2).map((tag) => <span key={tag}>{INGREDIENT_TAG_LABELS[tag]}</span>)}{ingredientTags.length > 2 && <span>+{ingredientTags.length - 2}</span>}</div>}
+    <div className="tile-top"><div className="tile-status"><span className="ingredient-emoji" aria-hidden="true">{ingredient.icon}</span><span className={`dday-badge ${expiration.status}`}>{expiration.badge}</span></div><span className="storage-label">{storageLabels[ingredient.storage]} 보관</span><IngredientMenu ingredient={ingredient} isOpen={isMenuOpen} onToggle={onToggleMenu} onClose={onCloseMenu} onEdit={onEdit} onAction={onAction} /></div>
+    <div className="tile-title-row"><h3>{ingredient.name}</h3><span className="quantity-fact" aria-label={`수량 ${formatIngredientQuantity(ingredient)}`}><small>수량</small><strong>{formatIngredientQuantity(ingredient)}</strong></span></div>
+    <div className="ingredient-labels" aria-label="재료 분류 및 특성"><span className="category-label">{getIngredientCategoryLabel(ingredient.category)}</span>{ingredientTags.slice(0, 2).map((tag) => <span className="attribute-label" key={tag}>{INGREDIENT_TAG_LABELS[tag]}</span>)}{ingredientTags.length > 2 && <span className="more-label">+{ingredientTags.length - 2}</span>}{ingredient.isInstant && ingredient.category !== "instant" && <span className="instant-label">인스턴트</span>}{ingredient.isPrepared && ingredient.category !== "prepared" && <span className="category-label">완제품</span>}{isUrgent && <span className="use-first-label">먼저 사용</span>}</div>
     <p className={`expiration-copy ${expiration.status}`}><strong>{expiration.label}</strong><span>{expiration.sentence}</span></p>
     <button className="find-recipe-button" type="button" onClick={onFindRecipes}>이 재료로 요리 찾기 <span aria-hidden="true">→</span></button>
   </article>;
