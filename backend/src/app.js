@@ -9,6 +9,7 @@ import authRoutes from "./routes/authRoutes.js";
 import { authMiddleware } from "./middlewares/authMiddleware.js";
 import noticeRoutes from "./routes/noticeRoutes.js";
 import analysisRoutes from "./routes/analysisRoutes.js";
+import eventsRoutes from "./routes/eventsRoutes.js";
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/notices", noticeRoutes);
 app.use("/api/notices", analysisRoutes);
+app.use("/api/events", eventsRoutes);
 
 app.get("/api/test", (req, res) => {
   res.json({

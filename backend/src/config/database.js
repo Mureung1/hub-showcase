@@ -10,6 +10,7 @@ const databasePath = path.join(
   "../../data/calme.db",
 );
 
+console.log("Database path:", databasePath);
 const database = new Database(databasePath);
 
 database.pragma("journal_mode = WAL");
@@ -36,7 +37,7 @@ database.exec(`
 
   CREATE TABLE IF NOT EXISTS events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    notice_id INTEGER NOT NULL,
+    notice_id INTEGER,
     user_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     start_date TEXT,
