@@ -1,7 +1,6 @@
 import {
   AlertTriangle,
   Box,
-  CheckCircle2,
   Clock3,
   Cpu,
   FileImage,
@@ -13,6 +12,7 @@ import {
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { sceneAssetUrl, type CaptureType } from "../features/scene/sceneApi";
+import { SceneProgress } from "../features/scene/SceneProgress";
 import { useSceneJob } from "../features/scene/useSceneJob";
 import { useSceneToolchain } from "../features/scene/useSceneToolchain";
 import { SplatViewer } from "./SplatViewer";
@@ -22,12 +22,6 @@ type SceneWorkspaceProps = {
 };
 
 const sceneHours = ["10:00", "13:00", "15:00", "18:00"] as const;
-const stageLabels: Record<string, string> = {
-  validate: "입력 검증",
-  preprocess: "카메라 복원",
-  train: "Splatfacto 학습",
-  export: "PLY 내보내기",
-};
 
 export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -200,22 +194,7 @@ export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
         )}
 
         <div className="scene-modal-content">
-          <div className="scene-progress scene-job-progress" aria-label="3D 장면 처리 단계">
-            {(
-              job?.stages ?? [
-                { name: "validate", status: "pending", message: null },
-                { name: "preprocess", status: "pending", message: null },
-                { name: "train", status: "pending", message: null },
-                { name: "export", status: "pending", message: null },
-              ]
-            ).map((stage, index) => (
-              <div key={stage.name} className={`stage-${stage.status}`}>
-                <i>{stage.status === "passed" ? <CheckCircle2 size={13} /> : index + 1}</i>
-                <b>{stageLabels[stage.name]}</b>
-                <span>{stage.message ?? stage.status}</span>
-              </div>
-            ))}
-          </div>
+          <SceneProgress job={job} />
 
           <section className="scene-time-section">
             <div>
