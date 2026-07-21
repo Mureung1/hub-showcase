@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import uploadRoutes from './routes/uploadRoutes';
 import financialRoutes from './routes/financialRoutes';
+import recommendationRoutes from './routes/recommendationRoutes';
 
 const app = express();
 
@@ -14,5 +15,6 @@ app.get('/health', (req, res) => {
 
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/financial', financialRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 
 export default app;
