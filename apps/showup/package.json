@@ -12,7 +12,8 @@
     "verify:risk": "tsx src/utils/risk.test.ts",
     "verify:phone": "tsx src/utils/phone.test.ts",
     "verify:seed": "tsx src/seeds/seed.test.ts",
-    "seed:upload": "tsx src/seeds/upload.ts"
+    "seed:upload": "tsx src/seeds/upload.ts",
+    "seed:download": "tsx src/seeds/download.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
