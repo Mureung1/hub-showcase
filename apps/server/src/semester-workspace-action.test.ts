@@ -271,6 +271,81 @@ test('activation reconciles an unfinished action and its pending patch before ma
   }
 })
 
+for (const decision of ['accept', 'reject'] as const) {
+  test(`activation preserves an atomic ${decision} decision as continuation loss across repeated reopen`, async () => {
+    const fixture = await createFixture()
+    try {
+      const prepared = await prepareAction(fixture.controller, fixture.courseId)
+      await fixture.controller.bindAssignmentAction({
+        actionId: prepared.run.actionId,
+        threadId: `thread-restart-after-${decision}`,
+        turnId: `turn-restart-after-${decision}`,
+      })
+      const patch = await prepared.mcpTool.invoke(
+        validProposalPayload(prepared.context),
+      )
+      const review = await fixture.controller.bindAssignmentReview({
+        type: 'user_input.requested',
+        threadId: `thread-restart-after-${decision}`,
+        turnId: `turn-restart-after-${decision}`,
+        itemId: `item-restart-after-${decision}`,
+        interactionId: `interaction-restart-after-${decision}`,
+        questions: [ASSIGNMENT_REVIEW_QUESTION],
+      })
+      assert.ok(review)
+      const committed =
+        await fixture.controller.commitAssignmentReviewDecision({
+          ...review,
+          decision,
+        })
+      const expectedRevision = committed.confirmedRevision
+
+      const firstReopen = createSemesterWorkspaceController({
+        packageRoot: fixture.packageRoot,
+        appDataRoot: fixture.appDataRoot,
+        chooseDirectory: async () => fixture.workspaceRoot,
+      })
+      const firstActivation = await firstReopen.activate()
+      assert.equal(firstActivation.status, 'activated')
+      const firstRun = firstReopen.modelingRun(prepared.run.actionId)
+      assert.equal(firstRun?.status, 'unknown')
+      assert.deepEqual(firstRun?.recoveryOutcome, {
+        outcome: 'continuation_lost',
+        confirmedRevision: expectedRevision,
+      })
+      const firstState = firstReopen.assignmentState()
+      assert.equal(firstState.statePatches[0]?.id, patch.id)
+      assert.equal(
+        firstState.statePatches[0]?.status,
+        decision === 'accept' ? 'applied' : 'rejected',
+      )
+      assert.equal(firstState.userConfirmations.length, 1)
+      assert.equal(firstState.assignments.length, decision === 'accept' ? 1 : 0)
+
+      const secondReopen = createSemesterWorkspaceController({
+        packageRoot: fixture.packageRoot,
+        appDataRoot: fixture.appDataRoot,
+        chooseDirectory: async () => fixture.workspaceRoot,
+      })
+      const secondActivation = await secondReopen.activate()
+      assert.equal(secondActivation.status, 'activated')
+      assert.deepEqual(
+        secondReopen.modelingRun(prepared.run.actionId),
+        firstRun,
+      )
+      const secondState = secondReopen.assignmentState()
+      assert.deepEqual(
+        secondState.userConfirmations,
+        firstState.userConfirmations,
+      )
+      assert.deepEqual(secondState.assignments, firstState.assignments)
+      assert.deepEqual(secondState.statePatches, firstState.statePatches)
+    } finally {
+      await fixture.cleanup()
+    }
+  })
+}
+
 test('acceptance-unknown keeps one guard and reconciles without creating a second Run', async () => {
   const fixture = await createFixture()
   try {

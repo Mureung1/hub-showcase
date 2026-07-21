@@ -17,6 +17,11 @@ import { promisify } from 'node:util'
 import type { UserInputRequestedEvent } from '@ay-ple/codex-chat-runtime/contract'
 import { PRODUCT_REVIEW_FEEDBACK_MAX_BYTES } from '@ay-ple/product-contract'
 
+import {
+  continuationLossForSettledDecision,
+  hasSameInvocationSnapshot,
+  isRetryableModelingRun,
+} from './modeling-run-semantics.js'
 import { rootsAreDisjoint } from './root-isolation.js'
 import { SemesterWorkspaceError } from './semester-workspace-error.js'
 import {
@@ -1596,10 +1601,7 @@ async function prepareAssignmentAction(
   if (
     input.retryOfRunId !== undefined &&
     (!retrySource ||
-      (retrySource.status !== 'interrupted' &&
-        retrySource.status !== 'unknown') ||
-      (retrySource.recoveryOutcome?.outcome !== 'interrupted' &&
-        retrySource.recoveryOutcome?.outcome !== 'unknown') ||
+      !isRetryableModelingRun(retrySource) ||
       opened.store.modelingRuns.some(
         (run) => run.retryOfRunId === input.retryOfRunId,
       ))
@@ -1681,15 +1683,16 @@ async function prepareAssignmentAction(
     }))
     if (
       retrySource &&
-      (retrySource.courseId !== course.id ||
-        retrySource.requestedSkillName !== input.recipe.requestedSkillName ||
-        retrySource.requestedSkillPath !== input.recipe.requestedSkillPath ||
-        retrySource.recipeName !== input.recipe.name ||
-        retrySource.recipeVersion !== input.recipe.version ||
-        retrySource.recipeDigest !== input.recipe.digest ||
-        retrySource.argumentsDigest !== input.arguments.digest ||
-        JSON.stringify(retrySource.sourceBaseline) !==
-          JSON.stringify(sourceBaseline))
+      !hasSameInvocationSnapshot(retrySource, {
+        courseId: course.id,
+        requestedSkillName: input.recipe.requestedSkillName,
+        requestedSkillPath: input.recipe.requestedSkillPath,
+        recipeName: input.recipe.name,
+        recipeVersion: input.recipe.version,
+        recipeDigest: input.recipe.digest,
+        argumentsDigest: input.arguments.digest,
+        sourceBaseline,
+      })
     ) {
       throw new SemesterWorkspaceError(
         'action_conflict',
@@ -2197,6 +2200,11 @@ async function reconcileExecutionGuard(
       run.status === 'acceptance_unknown')
   ) {
     const now = new Date().toISOString()
+    const continuationLoss = continuationLossForSettledDecision(
+      run,
+      opened.store.statePatches,
+      opened.store.userConfirmations,
+    )
     nextRun = {
       ...run,
       status: 'unknown',
@@ -2206,7 +2214,7 @@ async function reconcileExecutionGuard(
         : 'execution_guard_conflict',
       updatedAt: now,
       settledAt: now,
-      recoveryOutcome: { outcome: 'unknown' },
+      recoveryOutcome: continuationLoss ?? { outcome: 'unknown' },
     }
   }
   const reconcilingGuard = {

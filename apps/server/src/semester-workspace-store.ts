@@ -9,6 +9,11 @@ import {
 } from 'node:fs/promises'
 import path from 'node:path'
 
+import {
+  continuationLossForSettledDecision,
+  hasSameInvocationSnapshot,
+  isRetryableModelingRun,
+} from './modeling-run-semantics.js'
 import { SemesterWorkspaceError } from './semester-workspace-error.js'
 import {
   actionMetadataMaxBytes,
@@ -579,19 +584,11 @@ function hasValidWorkspaceStateInvariants(
         patch.guardOperationId === run.actionId &&
         (patch.status === 'applied' || patch.status === 'rejected'),
     )
-    const continuationPatches =
-      run.recoveryOutcome?.outcome === 'continuation_lost'
-        ? settledDecisionPatches
-        : []
-    const continuationPatch = continuationPatches[0]
-    const continuationConfirmation = continuationPatch
-      ? store.userConfirmations.find(
-          (confirmation) => confirmation.patchId === continuationPatch.id,
-        )
-      : undefined
-    const continuationRevision = continuationConfirmation
-      ? continuationConfirmation.resultingRevision ?? continuationPatch?.baseRevision
-      : undefined
+    const continuationLoss = continuationLossForSettledDecision(
+      run,
+      store.statePatches,
+      store.userConfirmations,
+    )
     if (
       run.courseId !== courseId ||
       actionIds.has(run.actionId) ||
@@ -599,23 +596,12 @@ function hasValidWorkspaceStateInvariants(
       (run.retryOfRunId !== undefined &&
         (!retrySource ||
           retriedRunIds.has(run.retryOfRunId) ||
-          (retrySource.status !== 'interrupted' &&
-            retrySource.status !== 'unknown') ||
-          (retrySource.recoveryOutcome?.outcome !== 'interrupted' &&
-            retrySource.recoveryOutcome?.outcome !== 'unknown') ||
-          retrySource.courseId !== run.courseId ||
-          retrySource.requestedSkillName !== run.requestedSkillName ||
-          retrySource.requestedSkillPath !== run.requestedSkillPath ||
-          retrySource.recipeName !== run.recipeName ||
-          retrySource.recipeVersion !== run.recipeVersion ||
-          retrySource.recipeDigest !== run.recipeDigest ||
-          retrySource.argumentsDigest !== run.argumentsDigest ||
-          JSON.stringify(retrySource.sourceBaseline) !==
-            JSON.stringify(run.sourceBaseline))) ||
+          !isRetryableModelingRun(retrySource) ||
+          !hasSameInvocationSnapshot(retrySource, run))) ||
       (run.recoveryOutcome?.outcome === 'continuation_lost' &&
         (run.recoveryOutcome.confirmedRevision > store.confirmedRevision ||
-          continuationPatches.length !== 1 ||
-          continuationRevision !== run.recoveryOutcome.confirmedRevision)) ||
+          continuationLoss?.confirmedRevision !==
+            run.recoveryOutcome.confirmedRevision)) ||
       ((run.recoveryOutcome?.outcome === 'interrupted' ||
         run.recoveryOutcome?.outcome === 'unknown') &&
         (run.recoveryOutcome.outcome !== run.status ||
