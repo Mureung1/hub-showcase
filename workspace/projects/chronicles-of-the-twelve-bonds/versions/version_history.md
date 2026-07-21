@@ -6,6 +6,40 @@
 
 ## Entries
 
+### Version Entry: 프롤로그 Phase 1 인게임 스크립트 적용
+
+#### Metadata
+
+- ID: VER-20260721-001
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-21 01:05 KST
+- 적용자: Codex
+- 변경 타입: restructure
+- 대상 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/scripts/prologue_ingame_script.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/main_scenario.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/README.md`
+- 관련 승인 큐: `APPR-20260720-001`
+- 관련 결정 로그: `DEC-20260721-001`
+
+#### Before
+
+메인 시나리오가 프롤로그 Phase 1의 신당 진입, 흑의인의 봉인 파괴 의식과
+저지·관망·도주의 세 선택지를 소유했다. 플레이어 노출 문장, 내부 씬·선택·
+Outcome 연결과 제작 메모를 함께 관리하는 확정 인게임 스크립트는 없었다.
+
+#### After
+
+`prologue_ingame_script.md`를 생성해 Phase 1의 남녀 오프닝 변형, 공통 지문,
+세 선택지, 분기 Outcome, 저지 시도 상태 플래그, 정보 공개, 제작·QA 요구를
+한 씬 명세로 확정했다. 메인 시나리오, 게임 개요와 문서 색인에 새 canonical
+경로를 연결했다.
+
+#### Notes
+
+- 주의 사항: 원본에 없던 플레이어 문장, 내부 ID, 상태 표현과 연출 지시는
+  창작 각주 6개로 공개했다. `scene_type`, 실제 레지스트리·에셋 ID, Phase 2~4와
+  혼돈 전투 대본은 `TBD` 또는 범위 외로 남아 있다.
+
+---
+
 ### Version Entry: 게임 개요·세계관·시나리오·시스템 문서 역할 분리
 
 #### Metadata

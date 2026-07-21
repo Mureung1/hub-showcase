@@ -23,7 +23,9 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 5. 위험도, 누락 정보, 충돌 가능성을 기록한다.
 6. `restructure`이면 대상별 작업, 비교 대상, 현재 SHA-256과 적용 후 문서
    역할을 Target Operations에 기록한다.
-7. 선택한 프로젝트의 Approval Queue에 추가하고 상태는 기본적으로 `pending`으로 둔다.
+7. 검토용 이미지가 있으면 `approvals/assets/`에 두고, Asset Operations에
+   검토 경로, 승인 후 `design/assets/` 경로와 작성 당시 SHA-256을 기록한다.
+8. 선택한 프로젝트의 Approval Queue에 추가하고 상태는 기본적으로 `pending`으로 둔다.
 
 ## Apply Approved Item Steps
 
@@ -38,13 +40,51 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 6. `restructure`이면 모든 기존 대상의 비교 결과와 모든 신규 문서의 역할
    중복 여부를 먼저 확인한다. 하나라도 불일치하면 어떤 대상도 변경하지 않는다.
 7. 비교 결과가 모두 일치하면 승인된 내용을 `workspace/projects/<project_slug>/design/`에 반영한다.
-8. 비교 결과가 다르거나 기준 정보가 부족하면 적용을 중단하고
+8. 승인 항목에 검토용 에셋이 있으면 Asset Operations를 확인하고 아래 Asset
+   Promotion Rules에 따라 각 에셋을 `design/assets/`로 반영해 동일성을 검증한다.
+9. 비교 결과가 다르거나 기준 정보가 부족하면 적용을 중단하고
    `needs_reconfirmation`으로 처리한다.
-9. 재확인 결과와 필요한 후속 조치를 승인 항목의 Review Notes와
+10. 재확인 결과와 필요한 후속 조치를 승인 항목의 Review Notes와
    Decision History에 기록한다.
-10. 같은 프로젝트의 Decision Log에 결정 로그를 기록한다.
-11. 같은 프로젝트의 Version History에 버전 기록을 남긴다.
-12. 승인 큐 상태를 `applied`로 갱신한다.
+11. 승인 큐에서 실제 파일을 여는 근거 경로와 인라인 이미지 참조를 승인 후
+    `design/assets/` 경로로 갱신하고, Decision Log와 Version History에도 이
+    canonical 경로를 사용한다.
+12. 같은 프로젝트의 Decision Log에 결정 로그를 기록한다.
+13. 같은 프로젝트의 Version History에 버전 기록을 남긴다.
+14. `design/assets/` 반영, 동일성 검증과 참조 갱신이 모두 끝난 에셋만
+    `approvals/assets/`에서 삭제하고 Asset Operations의 적용 결과에
+    canonical 경로와 검토본 삭제 완료를 기록한다.
+15. 대응하는 모든 검토용 에셋의 삭제까지 끝난 뒤 승인 큐 상태를
+    `applied`로 갱신한다.
+
+## Asset Promotion Rules
+
+- `approvals/assets/`는 승인 검토 중인 에셋의 임시 위치이고,
+  `design/assets/`는 적용된 에셋의 canonical 위치다.
+- 항목이 `approved`이지만 아직 적용 전이면 검토용 에셋을 삭제하지 않는다.
+- 이전 템플릿으로 작성되어 Asset Operations가 없는 항목은 기록된 검토
+  경로, 승인 후 경로와 작성 당시 SHA-256으로 표를 먼저 보완한다. 이 중
+  하나라도 확인할 수 없으면 적용하거나 검토본을 삭제하지 않고
+  `needs_reconfirmation`으로 이동한다.
+- 적용 전 검토용 파일의 현재 SHA-256을 Asset Operations의 작성 당시 값과
+  비교한다. 값이 다르거나 파일이 없으면 에셋을 반영하거나 삭제하지 않고
+  항목을 `needs_reconfirmation`으로 이동한다.
+- 승인 후 경로에 파일이 없으면 승인된 파일을 해당 경로로 옮긴 뒤 SHA-256이
+  검토본과 같은지 확인한다.
+- 승인 후 경로에 같은 SHA-256의 파일이 이미 있으면 그 파일을 canonical
+  에셋으로 사용한다. 다른 내용의 파일이 있으면 덮어쓰거나 검토본을 삭제하지
+  않고 `needs_reconfirmation`으로 이동한다.
+- 승인 큐에서 실제 파일을 여는 근거 경로 및 인라인 이미지 링크와 새
+  Decision Log·Version History 기록은 `design/assets/`의 canonical 경로를
+  가리켜야 한다. 이런 활성 참조가 `approvals/assets/`에 남아 있는 동안에는
+  검토본을 삭제하지 않는다.
+- Asset Operations의 기존 검토 경로와 SHA-256은 감사 이력으로 보존하고,
+  적용 결과에 canonical 경로 반영과 검토본 삭제를 명시한다. 이 이력 표기는
+  삭제된 파일을 계속 사용하는 활성 참조로 보지 않는다.
+- 모든 검증과 참조 갱신이 성공한 뒤 해당 승인 항목에 연결된 검토본만
+  `approvals/assets/`에서 삭제한다. 다른 항목의 에셋은 삭제하지 않는다.
+- `on_hold`, `change_requested`, `rejected`, `needs_reconfirmation` 상태나 적용
+  실패 상태에서는 검토본을 유지한다.
 
 ## Source Reconfirmation Rules
 
@@ -59,6 +99,9 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
   확인한다.
 - `restructure`의 Target Operations는 하나의 비교 단위다. 기존 대상의
   해시·내용, 신규 문서 역할, 링크 영향 중 하나라도 달라지면 전체 항목을
+  `needs_reconfirmation`으로 이동한다.
+- Asset Operations의 검토용 파일 해시, 승인 후 경로 또는 대상 경로의 기존
+  파일 상태가 기록과 다르면 해당 에셋을 삭제하지 않고 전체 항목을
   `needs_reconfirmation`으로 이동한다.
 - 불일치 시 기존 승인을 사용해 자동 적용하지 않는다.
 
@@ -146,3 +189,5 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 다른 프로젝트의 승인 항목이나 결정 기록을 적용 근거로 사용하지 않는다.
 `restructure`는 일부 경로만 적용하지 않는다. 검증을 모두 끝낸 뒤 전체를
 적용하고 Decision Log와 Version History에 대상별 작업을 함께 기록한다.
+검토용 에셋이 포함된 항목은 대응하는 파일이 `design/assets/`에 검증되어 있고
+`approvals/assets/`에서 제거된 뒤에만 `applied`로 처리한다.

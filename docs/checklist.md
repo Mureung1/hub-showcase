@@ -18,6 +18,7 @@
 - [x] 스킬 문서 폴더를 만든다.
 - [x] 템플릿 문서 폴더를 만든다.
 - [x] 작업 공간 폴더를 만든다.
+- [x] 프로젝트 범위 custom agent 폴더와 `scenario_writer` 정의를 만든다.
 
 ## 2. 핵심 워크플로우
 
@@ -31,6 +32,7 @@
 - [x] 버전 기록 작성 흐름을 정의한다.
 - [x] 프로젝트 검색 흐름을 정의한다.
 - [x] 프로젝트 선택 및 신규 프로젝트 생성 흐름을 정의한다.
+- [x] 시나리오를 챕터별 인게임 스크립트 승인 초안으로 만드는 흐름을 정의한다.
 
 ## 3. 템플릿
 
@@ -41,6 +43,7 @@
 - [x] 버전 기록 항목 템플릿을 만든다.
 - [x] 프로젝트 Brief 템플릿을 만든다.
 - [x] 게임 개요, 세계관, 시나리오와 시스템 타입별 템플릿을 만든다.
+- [x] 플레이어 노출 대본과 씬 명세를 결합한 인게임 스크립트 템플릿을 만든다.
 
 ## 4. 스킬
 
@@ -48,6 +51,7 @@
 - [x] 충돌 검토 스킬을 만든다.
 - [x] 문서 보완 질문 스킬을 만든다.
 - [x] 한국어 게임 기획 문체 스킬을 만든다.
+- [x] 플레이어 주도권, 씬 데이터와 창작 각주를 검토하는 시나리오 저작 스킬을 만든다.
 
 ## 5. 운영 규칙
 
@@ -59,6 +63,8 @@
 - [x] 문서 역할별 canonical owner와 표준 경로를 정의한다.
 - [x] 게임 개요의 상세 누적 금지와 상세 문서 링크 규칙을 정의한다.
 - [x] 다중 문서 재구성의 원자적 승인·재확인 규칙을 정의한다.
+- [x] 승인 에셋의 canonical 경로 전환과 검토용 사본 삭제 규칙을 정의한다.
+- [x] 인게임 스크립트 창작 내용의 각주 공개와 승인 전 확정 경로 수정 금지 규칙을 정의한다.
 
 ## 6. 시나리오 기반 workflow 검증
 
@@ -168,3 +174,38 @@
 - [ ] 모든 대상이 일치할 때만 전체 문서와 링크가 함께 반영되고 Decision
   Log와 Version History에 하나의 연결된 재구성 기록이 남는다.
 - 확인 파일: 승인 큐, 대상 확정 문서, Decision Log, Version History.
+
+### 6.10 승인 에셋 반영과 검토본 정리
+
+- 검증 입력: `approvals/assets/`의 검토 이미지가 포함된 승인 항목을 명시적으로
+  승인하고 적용하는 요청.
+- [ ] 적용 전 또는 `approved` 상태에서는 검토 이미지가 유지되고
+  `design/assets/`의 확정 에셋으로 간주되지 않는다.
+- [ ] 적용 시 검토본의 SHA-256을 다시 확인하고 `design/assets/`의 승인 후
+  경로에 같은 파일이 존재하도록 반영한다.
+- [ ] 승인 큐에서 실제 파일을 여는 근거 경로와 인라인 이미지 참조, Decision
+  Log와 Version History가 `design/assets/`의 canonical 경로를 사용한다.
+- [ ] 모든 검증과 참조 갱신 후 대응하는 검토본만 `approvals/assets/`에서
+  삭제되며, 삭제가 끝난 뒤 항목이 `applied`로 이동한다.
+- [ ] 검토본 해시가 달라졌거나 승인 후 경로에 다른 내용의 파일이 있으면
+  검토본을 삭제하지 않고 `needs_reconfirmation`으로 이동한다.
+- 확인 파일: 승인 항목의 Asset Operations, `approvals/assets/`,
+  `design/assets/`, Decision Log, Version History.
+
+### 6.11 프롤로그 Phase 1 인게임 스크립트 제안
+
+- 검증 입력: 십이인연록 메인 시나리오의 프롤로그 Phase 1을 플레이어 노출
+  대본과 전체 씬 정보가 있는 문서로 작성하되 창작 부분을 모두 알리는 요청.
+- [x] `scenario_writer` 역할, 전용 workflow·skill·template이 정의되고 대상
+  프로젝트와 관련 확정 문서를 먼저 조회한다.
+- [x] `APPR-20260720-001`이 `pending`으로 생성되고 미래 canonical 경로,
+  기준 커밋, 대상별 SHA-256과 승인 후 링크 갱신을 기록한다.
+- [x] Phase 1 초안에 씬 번호·ID, 플레이어 노출 지문·대사·선택지, 진입·종료
+  조건, 분기·Outcome, 상태·참조·제작·QA 정보가 포함된다.
+- [x] 원본에 직접 없는 문장, ID, 상태 표현과 연출 지시에 각주가 연결되고
+  각주에서 창작 이유와 영향 범위를 공개한다.
+- [x] 명시적 승인 전 `design/narrative/scripts/`, Decision Log와 Version
+  History를 변경하지 않는다.
+- 확인 파일: `.codex/agents/scenario_writer.toml`,
+  `docs/workflows/write_ingame_script.md`, `docs/skills/scenario_writing.md`,
+  `docs/templates/ingame_script.md`, 대상 프로젝트의 Approval Queue와 확정 문서.

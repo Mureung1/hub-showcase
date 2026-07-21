@@ -42,6 +42,16 @@ Codex는 문서 요청 분기, 자료 기반 기획서 초안 작성, 변경안 
 - 수정 대상이나 핵심 범위가 달라지면 기존 항목을 보존하고 연결된 새 승인
   항목을 만든다.
 
+### Asset Promotion
+
+- 승인 전 검토 이미지는 프로젝트의 `approvals/assets/`에 둔다.
+- 승인된 이미지를 적용할 때 `design/assets/`에 반영하고 SHA-256 동일성과
+  문서 참조를 확인한다.
+- 검증된 canonical 경로로 승인·이력 문서의 참조를 갱신한 뒤 대응하는
+  `approvals/assets/` 파일을 삭제해야 항목을 `applied`로 처리한다.
+- 단순 `approved` 상태이거나 적용·재확인이 실패한 경우에는 검토본을
+  유지한다.
+
 ### Source Reconfirmation
 
 - 승인 항목에는 변경안 작성 당시의 기준 Git 커밋, 대상 문서 경로, 비교
@@ -67,6 +77,16 @@ Codex는 문서 요청 분기, 자료 기반 기획서 초안 작성, 변경안 
   소유하고 개요서에는 짧은 요약과 상대경로 링크만 둔다.
 - 여러 역할을 함께 분리하거나 갱신할 때는 `restructure` 승인 항목으로 묶고
   모든 대상을 재확인한 뒤 원자적으로 적용한다.
+
+### Scenario Writer
+
+- 프로젝트 custom agent `scenario_writer`는 확정 시나리오와 관련 세계관·
+  시스템·UI·기술 문서를 조회해 챕터별 인게임 스크립트 초안을 작성한다.
+- 인게임 스크립트에는 플레이어 노출 지문·대사·선택지와 씬 번호, 조건,
+  분기, Outcome, 상태, 참조 및 제작 메모를 함께 둔다.
+- 원본에 직접 없는 창작 내용은 각주로 대상과 이유, 영향 범위를 모두 공개한다.
+- 저장 요청이 있으면 결과를 확정 문서가 아니라 같은 프로젝트의 Approval
+  Queue에 `pending` 항목으로 기록한다.
 
 ## How To Use
 
@@ -114,6 +134,10 @@ docs/workflows/document_change.md 규칙에 따라 오래된 전투 문서 삭�
 AGENTS.md
 README.md
 
+.codex/
+  agents/
+    scenario_writer.toml
+
 docs/
   plan.md
   architecture.md
@@ -128,15 +152,18 @@ workspace/
     <project_slug>/
       project_brief.md
       design/
+        assets/
         game/
         world/
         narrative/
+          scripts/
         systems/
         content/
         ui/
         technical/
       ideas/
       approvals/
+        assets/
       decisions/
       versions/
 ```
@@ -149,9 +176,11 @@ workspace/
 - `docs/workflows/document_structure.md`: 문서 역할, 표준 경로, 개요서 깊이와 링크 규칙
 - `docs/workflows/temporary_idea.md`: 임시 아이디어 등록·수정·승인 제안 전환 절차
 - `docs/workflows/approval_queue.md`: 승인 상태 전환, 원본 재확인, 승인 적용 절차
+- `docs/workflows/write_ingame_script.md`: 시나리오를 플레이어 노출 대본과 씬 명세로 변환하는 절차
 - `docs/checklist.md`: 구조 확인과 시나리오 기반 workflow 검증 기준
 - `docs/templates/`: 승인 큐, 기획서, 결정 로그, 버전 기록 템플릿
 - `docs/skills/`: 반복 작업에 적용할 전문 규칙
+- `.codex/agents/scenario_writer.toml`: 챕터별 인게임 스크립트 승인 초안을 작성하는 custom agent
 - `workspace/project_registry.md`: 프로젝트 목록과 현재 기본 프로젝트
 - `workspace/projects/`: 프로젝트별 실제 기획 문서와 작업 상태
 
@@ -164,6 +193,8 @@ workspace/
 - 승인 전 확정 문서를 수정하지 않았는가
 - 변경안이 승인 큐 형식으로 작성되었는가
 - 승인된 변경에 Decision Log와 Version History 기록이 남았는가
+- 승인 에셋이 `design/assets/`에서 검증되고 문서 참조가 canonical 경로로
+  갱신된 뒤 대응하는 `approvals/assets/` 검토본이 삭제되었는가
 - 임시 아이디어 등록과 승인 제안 전환이 확정 문서와 분리되었는가
 - 문서 관련 요청이 검색 후 생성, 수정, 삭제, 자료 취합, 기획서화, 질문으로 분기되었는가
 - 승인 항목에 기준 Git 커밋, 대상 경로, 비교 대상과 원본 요약이 있는가
@@ -175,3 +206,5 @@ workspace/
 - 상세 정보가 올바른 canonical owner 문서에 있고 개요서에는 요약과 링크만 있는가
 - `restructure`가 일부 적용되지 않고 모든 대상의 원본 재확인 후 적용되었는가
 - 모든 프로젝트 자료와 승인·결정·버전 기록이 올바른 프로젝트 폴더 안에 있는가
+- 인게임 스크립트의 창작 문장·ID·연결·연출에 각주가 있고 승인 전
+  `design/narrative/scripts/`가 변경되지 않았는가

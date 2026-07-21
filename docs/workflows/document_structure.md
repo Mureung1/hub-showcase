@@ -17,6 +17,11 @@
 | UI | `ui` | `design/ui/` | 화면, 입력, 표시 정보, 상태와 UI 예외 |
 | 기술 | `technical` | `design/technical/` | 런타임 책임, 데이터 계약, 저장, 연동과 기술 예외 |
 
+`scenario`의 챕터별 플레이어 노출 대본과 씬 구현 명세는
+`design/narrative/scripts/<chapter_slug>_ingame_script.md`를 표준 경로로 사용한다.
+상위 시나리오는 사건·분기 구조를 소유하고 인게임 스크립트는 승인된 범위의
+표현과 씬 연결을 구체화한다. 새 정사·규칙 제안은 창작 각주로 구분한다.
+
 - NPC의 정사 설정은 `world_setting`, 특정 장면에서의 행동은 `scenario`가
   소유한다.
 - 퀘스트·아이템·리소스의 실제 목록과 배치는 `content`가 소유한다.

@@ -25,6 +25,8 @@ changes, but actual project changes must go through approval-oriented flows.
 - Document ownership and standard paths: `docs/workflows/document_structure.md`
 - Reusable task skills: `docs/skills/`
 - Output templates: `docs/templates/`
+- Scenario writer agent: `.codex/agents/scenario_writer.toml`
+- In-game script workflow: `docs/workflows/write_ingame_script.md`
 
 ## Archive Notes
 
@@ -56,6 +58,13 @@ changes, but actual project changes must go through approval-oriented flows.
   that the user explicitly approved the corresponding approval item.
 - If approval is not explicit, produce or update an approval queue draft instead
   of editing confirmed design documents.
+- Treat `approvals/assets/` as temporary review storage and `design/assets/` as
+  the canonical location for approved assets.
+- When applying an approved asset, verify that the file in `design/assets/`
+  matches the reviewed file, update approval and history references to the
+  canonical path, and delete only the corresponding file from
+  `approvals/assets/` before marking the item `applied`. Keep the review file
+  while an item is merely `approved`, or if application or reconfirmation fails.
 - Keep all project knowledge grounded in files under this repository.
 - Do not accumulate world setting, scenario, system, content, UI, or technical
   details in a single game overview. Keep one canonical detail owner per fact,
@@ -64,6 +73,13 @@ changes, but actual project changes must go through approval-oriented flows.
   multi-document approval proposal instead of forcing the content into one file.
 - Do not invent project facts. Use `TBD` and ask follow-up questions when
   required information is missing.
+- When the user requests an in-game script from scenario material, delegate the
+  bounded drafting task to the project custom agent `scenario_writer` and review
+  its result before presenting or saving it.
+- Scenario writing may add creative proposals only when the user allows it.
+  Every unsupported line, ID, setting detail, branch, rule, state representation,
+  or production direction must carry a creative footnote that explains the
+  source gap and impact. Never present such material as confirmed project fact.
 - Keep changes scoped to the requested behavior and avoid unrelated refactors.
 - Do not hardcode API keys, tokens, or other secrets.
 
@@ -72,9 +88,11 @@ changes, but actual project changes must go through approval-oriented flows.
 - `workspace/project_registry.md`: registered projects and the current default project.
 - `workspace/projects/<project_slug>/project_brief.md`: project identity, focus, and constraints.
 - `workspace/projects/<project_slug>/design/`: confirmed project design documents.
+- `workspace/projects/<project_slug>/design/assets/`: canonical approved image assets.
 - `workspace/projects/<project_slug>/design/game/`: game overview and top-level design direction.
 - `workspace/projects/<project_slug>/design/world/`: canonical world, character, faction, location, and object settings.
 - `workspace/projects/<project_slug>/design/narrative/`: scenario flow, scenes, branches, reveals, and endings.
+- `workspace/projects/<project_slug>/design/narrative/scripts/`: approved chapter-based in-game scripts with player-facing text and scene implementation metadata.
 - `workspace/projects/<project_slug>/design/systems/`: gameplay rules, state changes, checks, balance, and exceptions.
 - `workspace/projects/<project_slug>/design/content/`: concrete regions, nodes, quests, items, enemies, and rewards.
 - `workspace/projects/<project_slug>/design/ui/`: UI and interaction specifications.
@@ -82,6 +100,8 @@ changes, but actual project changes must go through approval-oriented flows.
 - `workspace/projects/<project_slug>/ideas/temporary_ideas.md`: unapproved ideas and loose notes.
 - `workspace/projects/<project_slug>/approvals/approval_queue.md`: pending, held, rejected, or approved
   change proposals.
+- `workspace/projects/<project_slug>/approvals/assets/`: temporary review assets;
+  remove an asset after its verified promotion to `design/assets/` is applied.
 - `workspace/projects/<project_slug>/decisions/decision_log.md`: accepted or rejected decision records.
 - `workspace/projects/<project_slug>/versions/version_history.md`: approved document change history.
 
