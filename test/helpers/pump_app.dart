@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/error/app_failure.dart';
 import 'package:one_step/core/theme/app_theme.dart';
 import 'package:one_step/models/app_user.dart';
+import 'package:one_step/models/goal.dart';
 import 'package:one_step/models/quest.dart';
 import 'package:one_step/providers/providers.dart';
 import 'package:one_step/repositories/memory/fake_auth_repository.dart';
@@ -21,6 +22,7 @@ Future<InMemoryQuestRepository> pumpScreen(
   WidgetTester tester,
   Widget screen, {
   List<Quest> quests = const [],
+  List<Goal> goals = const [],
   AppUser? user,
   AppFailure? failWith,
   List<Override> extraOverrides = const [],
@@ -40,8 +42,13 @@ Future<InMemoryQuestRepository> pumpScreen(
     users: userRepo,
   );
 
+  // 목표(폴더) 라벨을 그리는 목록 화면이 이 저장소를 읽는다. [goals]를 주면
+  // 퀘스트의 goalId가 실제 목표 텍스트로 풀린다.
+  final goalRepo = InMemoryGoalRepository(seed: goals);
+
   addTearDown(questRepo.dispose);
   addTearDown(userRepo.dispose);
+  addTearDown(goalRepo.dispose);
 
   await tester.pumpWidget(
     ProviderScope(
@@ -54,7 +61,7 @@ Future<InMemoryQuestRepository> pumpScreen(
         // 대부분의 화면 테스트는 goalRepository를 읽지 않지만, 등록 흐름을 타는
         // 화면(분해 결과 등록)은 필요하다. 기본 InMemory를 깔아 두고, 실패 경로
         // 테스트는 extraOverrides로 실패하는 goalRepo를 덮어쓴다.
-        goalRepositoryProvider.overrideWithValue(InMemoryGoalRepository()),
+        goalRepositoryProvider.overrideWithValue(goalRepo),
         ...extraOverrides,
       ],
       child: MaterialApp(theme: AppTheme.light, home: screen),

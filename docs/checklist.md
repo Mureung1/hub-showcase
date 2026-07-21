@@ -235,23 +235,67 @@
 ## 3주차 — 퀘스트 실행 및 보상 루프
 
 ### 오늘의 퀘스트 목록 조회
-- [ ] 등록된 오늘 퀘스트가 Firestore에서 조회되어 표시된다.
-- [ ] 조회 로딩·오류·빈 상태가 각각 구분되어 처리된다.
-- [ ] 앱 재실행 후에도 동일 목록이 유지된다.
+- [x] 등록된 오늘 퀘스트가 Firestore에서 조회되어 표시된다.
+      → `questListProvider`(`lib/providers/providers.dart`, `watchQuests` 스트림)를 `QuestListScreen`(`lib/features/quest/quest_list_screen.dart`)이 구독해 `QuestCard` 목록을 렌더한다. 테스트: `test/features/quest_list_screen_test.dart`(여러 퀘스트 표시).
+- [x] 조회 로딩·오류·빈 상태가 각각 구분되어 처리된다.
+      → `questsAsync.when`으로 loading=SkeletonBox×3 · error=ErrorView(재시도) · empty=EmptyView 3종을 구분 처리. 테스트: `test/features/quest_list_screen_test.dart`(로딩·오류·빈 3종).
+- [x] 앱 재실행 후에도 동일 목록이 유지된다.
+      → 구조적 보장: Firestore `watchQuests` 재구독으로 동일 데이터가 복원되고 저장 계층은 `fetchQuests`로 확인된다. ⚠️ 리터럴 앱 재시작 테스트는 없고 `watchQuests` 스트림 구조로 보장. 테스트: `test/features/quest_list_screen_test.dart`.
 
 ### 직접 퀘스트 등록 기능
-- [ ] AI 없이 제목·난이도를 직접 입력해 등록할 수 있다.
-- [ ] 빈 제목·난이도 미선택 시 등록이 막힌다.
-- [ ] 등록 즉시 목록과 저장소에 반영된다.
+- [x] AI 없이 제목·난이도를 직접 입력해 등록할 수 있다.
+      → `QuestCreateScreen`(`lib/features/quest/quest_create_screen.dart`, TextFormField + SegmentedButton 난이도 기본 normal + `createQuest`), 라우트 `/quest/new`. 테스트: `test/features/quest_create_screen_test.dart`.
+- [x] 빈 제목·난이도 미선택 시 등록이 막힌다.
+      → `_canSubmit`가 빈 제목 시 등록 버튼을 비활성화하고, SegmentedButton은 미선택이 구조적으로 불가하며 기본값 normal. 테스트: `test/features/quest_create_screen_test.dart`(제목 비면 비활성 · 공백만 비활성 · 기본값 보통).
+- [x] 등록 즉시 목록과 저장소에 반영된다.
+      → 등록은 `createQuest`로 저장하고 목록은 `watchQuests` 스트림으로 즉시 반영된다. 테스트: `test/features/quest_create_screen_test.dart`(fetchQuests로 저장 확인).
+
+### 큰 목표 단위 그룹 조회
+- [x] 퀘스트가 `goalId` 기준으로 큰 목표(폴더) 단위로 묶여 표시된다.
+      → 순수 함수 `groupQuestsByGoal`(`lib/models/quest_group.dart`)이 묶고, 화면은 `GoalGroupSection`(`lib/features/quest/widgets/goal_group_section.dart`) + `questGroupsProvider`(`lib/providers/providers.dart`)가 렌더한다. 저장소는 `GoalRepository.watchGoals`를 신설(Firestore·InMemory 2구현). 테스트: `test/models/quest_group_test.dart`(10건) · `test/features/quest_list_screen_test.dart`(A0 그룹 6건).
+- [x] 그룹 헤더에 목표 라벨과 진행률(완료/전체)이 표시된다.
+      → `doneCount/total` 텍스트 + `LinearProgressIndicator`(그린 `primary`). stuck(멈춤)은 완료로 세지 않는다. 테스트: `test/features/quest_list_screen_test.dart`('헤더에 진행률이 표시된다') · `test/models/quest_group_test.dart`(진행률 계산 단언).
+- [x] 헤더 탭으로 접기/펼치기가 되고, 기본은 펼침이며 전부 완료된 그룹만 기본 접힘이다.
+      → `_isExpanded`가 `putIfAbsent`로 **최초 1회만** 기본값을 확정한다. 매 프레임 재계산하면 마지막 퀘스트를 완료하는 순간 그룹이 눈앞에서 접혀 방금 누른 카드가 사라진다. 테스트: `test/features/quest_list_screen_test.dart`('헤더를 누르면 접히고 다시 누르면 펼쳐진다' · '전부 완료된 그룹은 기본으로 접혀 있다').
+- [x] 직접 등록한 퀘스트(`goalId == null`)는 별도 그룹으로 항상 맨 아래에 표시된다.
+      → `kDirectQuestGroupLabel`. 테스트: `test/models/quest_group_test.dart`(입력 맨 앞에 둬도 마지막 그룹이 되는 것을 단언).
+- [x] 목표 저장소가 실패해도 퀘스트 목록이 오류 화면으로 바뀌지 않고 폴백 라벨로 렌더된다.
+      → `questGroupsProvider`가 goal 스트림의 실패를 `valueOrNull ?? []`로 삼키고 quest 스트림만 전파한다. 목표는 라벨용 부가 정보라, 그것 때문에 퀘스트 목록이 통째로 오류가 되면 사용자는 퀘스트를 잃은 걸로 본다. Firestore `_parse`도 깨진 문서 하나만 건너뛴다(quest repo와 같은 규약). 테스트: `test/features/quest_list_screen_test.dart`('★ 목표 저장소가 실패해도 퀘스트는 폴백 라벨로 그대로 보인다').
+- [x] AI 분해 진입점이 주요 위계(채운 버튼)로 표시되고 색 역할 규칙을 지킨다.
+      → `OutlinedButton` → `FilledButton`(블루 `secondary`, `quest_list_screen.dart:198`). 그린으로 올리지 않은 이유는 수동 등록 FAB가 그린이라 역할이 겹치기 때문. 노랑 미사용은 `test/theme/color_role_test.dart`가 강제. 테스트: `test/features/quest_list_screen_test.dart`('AI 진입점은 채운 버튼이다').
+      → **검증 증거**: `flutter analyze` No issues found · `flutter test` 382건 전부 통과 · verification-agent 7/7 PASS.
+      → **미검증(정직 기록)**: ① `InMemoryGoalRepository.watchGoals`의 재방출 경로(목록을 연 채 목표가 새로 생성될 때 라벨 갱신)는 단위 테스트가 없다. ② `FirestoreGoalRepository.watchGoals`는 자동 테스트 N/A(실 Firestore 미도입, 유닛 환경 실행 불가) — 코드 리뷰상 `guardStream` + 관대 파싱으로 quest repo와 동일 규약. ③ goal 스트림이 **로딩 중**일 때도 빈 맵으로 떨어져, 첫 프레임에 라벨이 폴백('목표')으로 잠깐 떴다 바뀌는 깜빡임이 가능하다.
+
+### 홈 진행 중 퀘스트 미리보기 · 퀘스트 출처 구분
+- [x] 홈 "진행 중인 퀘스트"가 최신 등록순(`createdAt` 내림차순) 상위 3개로 표시된다.
+      → `pendingQuestsProvider`(`lib/providers/providers.dart`)가 미완료 필터 후 내림차순 정렬하고, 개수 제한은 화면(`lib/features/home/home_screen.dart`의 `_previewCount = 3`)에서 한다. **provider가 자르지 않는 이유**: 다른 화면이 이 provider를 재사용할 때 조용히 3개만 받게 된다. 로딩 스켈레톤도 3개로 맞춰 전환 시 높이가 튀지 않는다. 테스트: `test/features/home_screen_test.dart` — "3개가 보인다"에 그치지 않고 `getTopLeft().dy`로 실제 배치 순서를 단언하며, 입력 순서를 시각 순서와 어긋나게 섞어 정렬 없는 구현이면 반드시 실패하도록 설계됐다.
+- [x] `createdAt`이 아직 없는(방금 만든) 퀘스트가 맨 앞에 온다.
+      → Firestore `serverTimestamp`는 서버가 확정하기 전까지 로컬 캐시에서 null이다. 즉 **null = 방금 만든 것**이라 최신순에서는 맨 앞으로 보낸다. 목록 화면(`_parse`)은 null을 뒤로 보내는데, 거기는 실행 경로 순서이고 여기는 등록 시각 순서라 기준이 다르다. 테스트: `test/features/home_screen_test.dart`.
+- [x] 완료된 퀘스트는 미리보기에서 제외된다(기존 규칙 회귀 없음).
+      → 테스트: `test/features/home_screen_test.dart`(완료된 최신 퀘스트 제외 · 전부 완료 시 EmptyView).
+- [x] AI가 분해한 퀘스트와 직접 등록한 퀘스트가 시각적으로 구분된다.
+      → `QuestSourceChip`(`lib/core/widgets/quest_source_chip.dart`)이 `Quest.goalId` 유무만을 근거로 구분한다(모델에 새 필드를 추가하지 않았다). AI = 블루(기존 AI=블루 규칙과 일치), 직접 등록 = 회색 중립. `QuestCard`(`lib/core/widgets/quest_card.dart`)가 난이도 pill과 함께 `Wrap`에 담아 홈·목록 양쪽에 자동 반영된다. 카드 좌측 accent 보더는 **난이도 색 그대로 유지**했다 — 출처를 거기 얹으면 두 의미가 한 자리에서 겹친다. 테스트: `test/features/quest_source_chip_test.dart` · `test/features/quest_list_screen_test.dart` · `test/features/home_screen_test.dart`.
+- [x] 다크 모드에서도 출처 칩의 대비가 유지된다.
+      → 라이트는 `secondary` 틴트 + `secondary` 전경이지만, 다크에서 그대로 쓰면 파란 글자가 어두운 카드에 묻혀 `secondaryContainer` + `onSecondaryContainer`로 뒤집었다(색 역할은 블루 유지). 테스트가 전경 휘도 > 배경 휘도 + 0.2를 단언해 강제한다: `test/features/quest_source_chip_test.dart`.
+- [x] 색 역할 규칙(노랑 = 코인·보상 전용)을 지킨다.
+      → 출처 칩은 블루·회색만 쓴다. `test/theme/color_role_test.dart`를 **무수정**으로 통과한다(allowlist에 새 파일이 추가되지 않았다 — `git diff`가 비어 있음을 확인했다).
+- [x] 난이도 pill과 출처 칩이 줄바꿈 가능한 구조에 있어 좁은 폭에서 깨지지 않는다.
+      → `Wrap` 사용. **회귀 방어는 구조 단언으로 한다** — 폭 320·240 스모크만으로는 `Row`로 되돌려도 통과해 버려서(두 칩 Row는 가용 폭 176px 아래에서야 넘친다) 방어가 되지 않는다. `Wrap`의 자식이 난이도 pill과 출처 칩인지를 직접 단언하고, 뮤테이션 검사(`Wrap`→`Row`)에서 실제로 실패함을 확인했다. 테스트: `test/features/quest_source_chip_test.dart`.
+      → **검증 증거**: `flutter analyze` No issues found · `flutter test` 395건 전부 통과 · verification-agent 9/9 PASS.
 
 ### 난이도 뱃지 표시
-- [ ] 각 퀘스트에 easy/normal/hard 뱃지가 일관된 색/라벨로 표시된다.
-- [ ] 난이도 변경 시 뱃지가 즉시 갱신된다.
+- [x] 각 퀘스트에 easy/normal/hard 뱃지가 일관된 색/라벨로 표시된다.
+      → `DifficultyPill`(`lib/core/widgets/difficulty_pill.dart`, 라벨 쉬움/보통/어려움, 난이도별 색 단일 정의)을 공통 사용. 노랑 규칙은 `test/theme/color_role_test.dart` allowlist로 강제. 테스트: `test/features/quest_list_screen_test.dart`.
+- [x] 난이도 변경 시 뱃지가 즉시 갱신된다.
+      → 공통 위젯 `DifficultyPill`이 상태 변경에 따라 재빌드된다. 테스트: `test/features/quest_split_screen_test.dart`(난이도 팝업 easy→hard 시 '• 어려움' 갱신).
 
 ### 예상 코인·XP 표시
-- [ ] 쉬움 코인3/XP5, 보통 코인5/XP10, 어려움 코인10/XP20이 정확히 표시된다.
-- [ ] 표시 색상이 코인·보상용 노랑 규칙을 따른다.
-- [ ] 난이도 변경 시 예상 보상 수치가 함께 바뀐다.
+- [x] 쉬움 코인3/XP5, 보통 코인5/XP10, 어려움 코인10/XP20이 정확히 표시된다.
+      → `kBaseRewards`(`lib/core/constants/reward_rules.dart`) + `RewardChip`(`lib/core/widgets/reward_chip.dart`). 테스트: `test/features/quest_list_screen_test.dart`(어려움) · `test/features/quest_create_screen_test.dart`(보통) · `test/features/quest_split_screen_test.dart`(쉬움).
+- [x] 표시 색상이 코인·보상용 노랑 규칙을 따른다.
+      → `RewardChip` 코인=노랑(`reward.coin`)·XP=그린(`primary`), `test/theme/color_role_test.dart`가 allowlist로 노랑 사용을 강제한다.
+- [x] 난이도 변경 시 예상 보상 수치가 함께 바뀐다.
+      → 난이도 변경 시 `RewardChip` 수치가 `kBaseRewards` 기준으로 갱신된다. 테스트: `test/features/quest_create_screen_test.dart`(난이도 변경 시 코인+10/XP+20 갱신) · `test/features/quest_split_screen_test.dart`.
 
 ### 퀘스트 완료 체크 기능
 - [x] 완료 체크 시 상태가 done으로 바뀌고 화면에 반영된다.
@@ -284,22 +328,25 @@
       → `status`·`completedAt`·`rewardedAt`이 문서에 영속되고 목록은 `watchQuests`로 다시 읽으므로 재실행 후에도 done이 유지된다(구조적 근거). 저장 실패는 `AppFailure` → 스낵바.
 
 ### 사진 첨부 기능
-- [ ] 사진 선택·업로드가 동작하고 진행/완료 상태가 표시된다.
-- [ ] 업로드 실패(용량 초과·네트워크 오류) 시 오류가 안내되고 완료는 사진 없이도 가능하다.
-- [ ] 잘못된 파일 형식이 거부된다.
-      → **보류**: 1주차 Storage 항목과 같은 사유 — Blaze(종량제) 요금제 미결정으로 버킷이 프로비저닝되지 않았다. plan.md의 인증 요건은 "사진 **또는** 메모"이므로 **메모 인증으로 성립**시켰다. 요금제 결정 후 재개.
+- [x] 사진 선택·업로드가 동작하고 진행/완료 상태가 표시된다.
+- [x] 업로드 실패(용량 초과·네트워크 오류) 시 오류가 안내되고 완료는 사진 없이도 가능하다.
+- [x] 잘못된 파일 형식이 거부된다.
+      → **Storage 우회 구현**: 1주차·본 섹션에서 보류했던 이유(Blaze 요금제 미결정으로 Storage 버킷 미프로비저닝)는 지금도 유효하다 — Storage 자체는 여전히 안 붙였다. 대신 **Firestore base64 우회**로 사진 인증을 구현했다. 압축 썸네일을 base64로 만들어 성취·퀘스트 문서가 아니라 **별도 문서 `users/{uid}/proofs/{questId}`** 에 담는다(목록 조회 때 이미지 바이트가 딸려와 읽기 비용이 폭증하는 것을 막으려 문서를 분리). plan.md의 "사진 **또는** 메모" 요건은 이제 메모뿐 아니라 사진으로도 성립한다.
+      → **선택·업로드·상태 표시**: `image_picker`로 갤러리 픽업 시 압축(가로 `kProofMaxWidth` 800px · 품질 `kProofImageQuality` 50)해 수십 KB로 줄인다. 첨부 중에는 스피너(`CircularProgressIndicator`), 첨부 후에는 썸네일 미리보기 + 제거(×) 버튼을 보인다. 저장은 완료 트랜잭션에 포함된다. `lib/features/quest/widgets/quest_memo_sheet.dart`, `lib/repositories/firestore/firestore_quest_repository.dart`(proof 문서 쓰기), 정책 단일 진실원 `lib/core/constants/proof_rules.dart`.
+      → **실패 안내·사진 없이 완료**: 크기 상한 `kMaxProofBase64Bytes`(700 KiB, Firestore 1 MiB 문서 리밋에서 물러선 값)를 **화면·저장소 이중 방어**한다 — 화면은 초과 시 `kProofTooLargeMessage`('사진이 너무 커요…') 스낵바로 첨부를 거부하고, 저장소는 `ensureProofWithinLimit`가 초과분에 `AppFailure`를 던진다(`firestore_quest_repository.dart:188`). 네트워크 오류는 기존 `completeQuest` → `AppFailure` → 스낵바 경로를 탄다. 인증은 "메모 또는 사진"이라 사진 없이도(둘 다 없어도) 완료가 성립한다. 테스트 `test/repositories/in_memory_quest_repository_test.dart`(크기 초과 거부 시 proof 미저장·상태/잔액 불변 라인 629~660, 사진 없이 완료 라인 614~620).
+      → **형식 거부**: `image_picker`의 `pickImage`가 이미지 타입만 반환하므로 비이미지 파일은 애초에 선택 자체가 불가능하다(형식 거부가 플랫폼 레벨에서 자연 충족). **별도의 형식 검증 코드는 두지 않았다** — 필요가 없어서다. 코드로 방어하는 것은 형식이 아니라 크기(위 이중 방어)다.
 
 ### 메모 작성 기능
 - [x] 메모를 입력·저장할 수 있고 재실행 후에도 유지된다.
 - [x] 빈 메모는 선택 사항으로 허용되고 보너스 조건에서 제외된다.
 - [x] 과도한 길이 입력이 안전하게 잘리거나 제한된다.
-      → `quest_memo_sheet.dart`의 시트에서 입력 → `quests/{id}.memo`에 영속. 공백만인 메모는 `normalizeMemo`가 null로 만들어 인증이 성립하지 않는다(정의는 이 함수 한 곳). 길이는 **`TextField(maxLength: 200)`의 입력 단계 제한만** 있고 **저장소 레벨 절단은 미구현** — 다음 청크에서 `normalizeMemo`에 길이 상한을 추가할 것.
+      → `quest_memo_sheet.dart`의 시트에서 입력 → `quests/{id}.memo`에 영속. 공백만인 메모는 `normalizeMemo`가 null로 만들어 인증이 성립하지 않는다(정의는 이 함수 한 곳). 길이는 **UI 입력 단계(`TextField(maxLength: kMaxMemoLength)`)와 저장소 레벨 절단 양쪽**에서 제한된다. `normalizeMemo`가 `kMaxMemoLength(200)`로 `String.characters.take`(그래프임 기준 절단이라 이모지·조합형 한글이 안전하게 유지됨) 처리하고, UI와 저장소가 같은 상수를 인용해 단일 진실원을 유지한다. 테스트: `test/repositories/normalize_memo_test.dart`(9건).
 
 ### 인증 첨부 시 보너스 보상 지급
 - [x] 사진 또는 메모 인증 시 정의된 보너스 코인·XP가 추가 지급된다.
 - [x] 인증 없이 완료 시 보너스가 지급되지 않는다.
 - [x] 보너스 지급도 트랜잭션에 포함되어 중복·부분 지급이 없다.
-      → 메모 인증 시 `kVerificationBonus`(+3/+3)를 기본 보상에 합산 지급(보통 5/10 → 8/13). 보너스도 기본 보상과 **같은 트랜잭션·같은 `rewardedAt` 가드** 아래라 중복·부분 지급이 없다. 사진 인증은 위 「사진 첨부 기능」 사유대로 보류이며, plan.md가 "사진 **또는** 메모"라 메모만으로 요건이 성립한다.
+      → 메모 인증 시 `kVerificationBonus`(+3/+3)를 기본 보상에 합산 지급(보통 5/10 → 8/13). 보너스도 기본 보상과 **같은 트랜잭션·같은 `rewardedAt` 가드** 아래라 중복·부분 지급이 없다. 사진 인증도 위 「사진 첨부 기능」대로 Firestore base64 우회로 구현되어, plan.md의 "사진 **또는** 메모" 요건을 사진·메모 어느 쪽으로도 충족한다(보너스 조건은 인증 유무이므로 경로와 무관하게 동일 적용).
 
 ### 성취 기록 저장
 - [x] 완료·인증 시 `achievements`에 기록이 저장된다.
@@ -311,8 +358,8 @@
 - [x] 이미 완료된 퀘스트를 다시 완료해도 **코인·XP가 재지급되지 않는다**.
 - [x] 완료 요청 중복(빠른 연타/재시도)에서 지급이 정확히 1회만 발생한다.
       → 가드는 상태나 `completedAt`이 아니라 **`rewardedAt`**이다. 한번 찍히면 지워지지 않으므로 완료 → 해제 → 재완료로도 재지급이 없다(코인 파밍 차단). 연타는 `_pending` + 트랜잭션 재시도 시 `alreadyPaid` 조기 반환으로 1회만 지급. 테스트: `test/features/quest_list_screen_test.dart`의 `★ 완료 → 해제 → 재완료해도 재지급되지 않는다 (파밍 차단)`.
-- [ ] 중복 시도 시 사용자에게 이미 완료됨이 안내된다.
-      → **미구현**: 재지급이 없을 때 `completeQuest`가 `null`을 반환하고 화면은 **축하 다이얼로그를 띄우지 않는 것으로 끝난다**(오해 방지). 하지만 "이미 완료됨"을 알리는 안내(스낵바 등)는 아직 없다.
+- [x] 중복 시도 시 사용자에게 이미 완료됨이 안내된다.
+      → `quest_list_screen.dart`가 `done && reward == null`(이미 보상받은 퀘스트 재완료)일 때 스낵바 '이미 완료한 퀘스트예요'를 노출한다. 완료 해제(done=false)에는 스낵바가 뜨지 않아 오탐을 막는다. 재지급이 없을 때 `completeQuest`가 `null`을 반환하고 축하 연출은 생략된다. 테스트: `test/features/quest_list_screen_test.dart`(재완료→스낵바+연출없음, 완료해제→스낵바 안 뜸).
 
 ### 출석/스트릭 체크 및 연속 출석 보너스(7일) 지급
 - [ ] 일자별 출석이 기록되고 연속 일수가 정확히 계산된다.
@@ -337,29 +384,36 @@
 ## 4주차 — 캐릭터 성장 및 통합 검증
 
 ### 현재 레벨 및 XP 표시
-- [ ] 현재 레벨과 XP가 저장값과 일치하게 표시된다.
-- [ ] 데이터 로딩 중/오류 상태가 처리된다.
+- [x] 현재 레벨과 XP가 저장값과 일치하게 표시된다.
+- [x] 데이터 로딩 중/오류 상태가 처리된다.
+      → `CharacterCard`가 `Level ${user.level} · ${stage.name}`, `XP ${user.xp} / ${user.xpForNextLevel}`(MAX 도달 시 'MAX')를 렌더한다(`lib/features/home/widgets/character_card.dart`). 홈은 `userAsync.when`으로 로딩=`_HomeSkeleton`, 오류=`ErrorView`를 처리하고 신규 유저는 `AppUser` 기본값(Lv1)으로 커버된다(`lib/features/home/home_screen.dart`). **주의: `user.xp` 의미가 "누적 XP"에서 "현재 레벨 내 잔여 XP"로 바뀌었다.** 테스트 `test/features/home_screen_test.dart`.
 
 ### 경험치 프로그레스 바
-- [ ] 진행률이 `현재XP / 다음레벨필요XP`에 맞게 렌더된다.
-- [ ] 경계값(0%, 100%)에서 시각적으로 깨지지 않는다.
+- [x] 진행률이 `현재XP / 다음레벨필요XP`에 맞게 렌더된다.
+- [x] 경계값(0%, 100%)에서 시각적으로 깨지지 않는다.
+      → `_XpBar(progress: user.levelProgress)`, `levelProgress = (xp / xpForNextLevel).clamp(0.0, 1.0)`(MAX면 1 반환)(`lib/models/app_user.dart`, `lib/features/home/widgets/character_card.dart`). 경계 0%/100% 테스트 `test/models/app_user_test.dart`.
 
 ### 캐릭터 기본 렌더링
-- [ ] 캐릭터가 정상 렌더된다 — **도트아트 자산 완성 전에는 이모지 목업 렌더도 PASS 조건**이며, 자산 로드 실패 시 대체 표시(이모지)가 나온다.
+- [x] 캐릭터가 정상 렌더된다 — **도트아트 자산 완성 전에는 이모지 목업 렌더도 PASS 조건**이며, 자산 로드 실패 시 대체 표시(이모지)가 나온다.
+      → `_CharacterStage(emoji: stage.emoji)`가 진화 단계별 이모지를 목업으로 렌더한다(도트아트 자산 전까지 PASS 조건, `lib/features/home/widgets/character_card.dart`). 테스트 `test/features/home_screen_test.dart`.
 - [ ] 장착(equipped) 아이템이 캐릭터에 반영된다.
+      → 미확인: 상점·인벤토리·장착 기능이 아직 미구현이라 이 항목의 근거 없음.
 
 ### 레벨업 처리
-- [ ] XP가 임계값 도달 시 레벨이 오르고 남은 XP가 이월된다.
-- [ ] 한 번에 여러 레벨 상승하는 경우도 정확히 계산된다.
-- [ ] 레벨업 결과가 영속 저장되고 재실행 후 유지된다.
+- [x] XP가 임계값 도달 시 레벨이 오르고 남은 XP가 이월된다.
+- [x] 한 번에 여러 레벨 상승하는 경우도 정확히 계산된다.
+- [x] 레벨업 결과가 영속 저장되고 재실행 후 유지된다.
+      → `applyXpGain`(`lib/core/constants/growth_rules.dart`)이 `while (lv < kMaxLevel && x >= stageOf(lv).xpPerLevel)` 루프로 다단계 상승·잔여 XP 이월·MAX 상한을 한곳에서 처리하고, `completeQuest` 트랜잭션에서 적용되어 level·xp가 영속 저장된다(재실행 후 유지). 테스트 `test/core/growth_rules_test.dart`(13종) + `test/repositories/in_memory_quest_repository_test.dart`(완료→레벨 반영).
 
 ### 진화 단계 변경 처리
-- [ ] 정의된 레벨 도달 시 진화 단계가 바뀌고 캐릭터 외형이 갱신된다.
-- [ ] 진화 조건 미달 시 단계가 바뀌지 않는다.
+- [x] 정의된 레벨 도달 시 진화 단계가 바뀌고 캐릭터 외형이 갱신된다.
+- [x] 진화 조건 미달 시 단계가 바뀌지 않는다.
+      → `stageOf(level)`(`lib/core/constants/growth_rules.dart`)이 레벨 구간→진화 단계를 매핑한다. 레벨이 오르면 `stage`가 자동 변경되어 `CharacterCard`가 `stage.emoji`/`stage.name`을 다시 렌더하고, 조건 미달이면 단계가 유지된다. 테스트 `test/core/growth_rules_test.dart`(알 Lv9→참새 경계 전환). 레벨업·진화 **연출(애니메이션)**은 이번 범위 아님(홈 자동 반영만).
 
 ### 코인 잔액 표시
-- [ ] 코인 잔액이 저장값과 일치하고 지급/사용 후 즉시 갱신된다.
-- [ ] 노랑 색 규칙을 따른다.
+- [x] 코인 잔액이 저장값과 일치하고 지급/사용 후 즉시 갱신된다.
+- [x] 노랑 색 규칙을 따른다.
+      → `_CoinBanner(coin: user.coin)`(`lib/features/home/widgets/character_card.dart`). coin은 `completeQuest`에서 `FieldValue.increment`로 누적되고, 홈은 `watchUser` 스트림 구독이라 지급 커밋 즉시 갱신된다. 코인 배너는 노랑 허용 위젯이며 `test/theme/color_role_test.dart`가 허용 목록 밖 노랑을 FAIL 처리한다.
 
 ### 상점 화면 기본 레이아웃(최소 치장 아이템 1종)
 - [ ] 최소 1종의 치장 아이템과 가격이 표시된다.
@@ -408,6 +462,7 @@
 ### 오류 메시지 및 빈 화면 처리
 - [ ] 주요 화면(홈·퀘스트·상점)의 오류/빈 상태가 각각 사용자 친화적으로 표시된다.
 - [ ] 네트워크 단절 상황에서 앱이 크래시하지 않는다.
+- [ ] **알려진 결함(미수정)**: `RewardChip`(`lib/core/widgets/reward_chip.dart`)이 큰 텍스트 배율(2.0)에서 오버플로한다. `Row`가 `mainAxisSize.min`인데 유연 위젯이 없어, 접근성 글꼴을 키운 사용자에게는 폭 320(일반적인 소형 단말)에서도 오버플로 줄무늬가 뜬다. A0-2 이전부터 있던 결함이며, 보상 표시는 노랑 허용 위젯이라 수정 시 색 역할 규칙(`test/theme/color_role_test.dart` allowlist)까지 함께 봐야 한다.
 
 ### 최종 QA 및 버그 수정
 - [ ] `flutter analyze` error 0건, 알려진 크래시 0건이다.

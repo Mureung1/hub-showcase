@@ -9,9 +9,9 @@ import '../../../core/widgets/reward_chip.dart';
 /// 퀘스트 완료 연출 — 트로피 + 퀘스트명 + 방금 받은 보상.
 ///
 /// screens.md "퀘스트 완료 / 인증 화면" 기반. **트로피 원형 · 대상 퀘스트명 ·
-/// 보상 표시 카드**에 3주차-B에서 **인증 보너스 한 줄**을 덧붙였다.
-/// (메모 입력 자체는 완료 *전* 시트로 분리했다 — `quest_memo_sheet.dart` 참고.
-///  사진 업로드는 Storage 도입 전까지 보류.)
+/// 보상 표시 카드**에 3주차에서 **인증 보너스 한 줄**을 덧붙였다.
+/// (인증 입력 자체 — 메모·사진 — 은 완료 *전* 시트로 분리했다: `quest_memo_sheet.dart`.
+///  사진은 Storage 없이 압축 썸네일을 Firestore proof 문서에 base64로 저장한다.)
 ///
 /// 이 연출은 "보상이 실제로 지급됐을 때"만 뜬다. 이미 지급된 퀘스트를 다시 완료해도
 /// 축하가 뜨면 사용자가 코인을 또 받은 것으로 오해한다(`completeQuest`가 null을
@@ -33,7 +33,7 @@ class QuestCompleteDialog extends StatelessWidget {
   /// 이번 완료로 **실제 지급된** 보상. 인증 보너스가 있으면 **합산된 값**이다.
   final Reward reward;
 
-  /// 메모 인증이 성립해 [kVerificationBonus]가 포함됐는가.
+  /// 인증(메모 또는 사진)이 성립해 [kVerificationBonus]가 포함됐는가.
   ///
   /// [reward]에서 역산하지 않는다 — 합산된 값만 보고는 "보통(5) + 보너스(3)"인지
   /// "어려움에서 뭔가 빠진 8"인지 알 수 없다. 지급한 쪽이 사실을 알려 줘야 한다.
@@ -97,7 +97,7 @@ class QuestCompleteDialog extends StatelessWidget {
               child: Center(child: RewardChip(reward: reward, large: true)),
             ),
             // 인증 보너스가 포함됐다면 그 사실을 밝힌다. 합산된 총액만 보여 주면
-            // 사용자는 "왜 보통 퀘스트인데 8코인이지?"를 알 수 없고, 메모를 쓴
+            // 사용자는 "왜 보통 퀘스트인데 8코인이지?"를 알 수 없고, 인증(메모·사진)
             // 행동이 보상으로 이어졌다는 연결이 끊긴다.
             if (verified) ...[
               AppSpacing.gapSm,
@@ -112,7 +112,7 @@ class QuestCompleteDialog extends StatelessWidget {
                   ),
                   AppSpacing.gapWXs,
                   Text(
-                    '메모 인증 보너스 +${kVerificationBonus.coin} · '
+                    '인증 보너스 +${kVerificationBonus.coin} · '
                     'XP +${kVerificationBonus.xp} 포함',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: scheme.primary,

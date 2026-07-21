@@ -49,6 +49,27 @@ void main() {
       expect(record.toJson().containsKey('completedAt'), isFalse);
     });
 
+    test('hasPhoto가 손실 없이 왕복하고 기본값은 false다', () {
+      const withPhoto = Achievement(
+        id: 'a1',
+        questId: 'q1',
+        questTitle: '사진 인증',
+        coin: 8,
+        xp: 13,
+        verified: true,
+        hasPhoto: true,
+      );
+
+      final restored = Achievement.fromJson('a1', withPhoto.toJson());
+      expect(restored.hasPhoto, isTrue);
+      expect(restored, withPhoto);
+
+      // 기본값(사진 없음)도 명시적으로 false로 직렬화된다.
+      const noPhoto = Achievement(id: 'a2', questId: 'q2', questTitle: 'x');
+      expect(noPhoto.hasPhoto, isFalse);
+      expect(noPhoto.toJson()['hasPhoto'], false);
+    });
+
     test('reward 게터가 지급액을 그대로 돌려준다', () {
       const record = Achievement(
         id: 'a1',

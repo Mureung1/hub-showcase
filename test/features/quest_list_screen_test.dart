@@ -4,15 +4,20 @@ import 'package:one_step/core/constants/reward_rules.dart';
 import 'package:one_step/core/error/app_failure.dart';
 import 'package:one_step/core/widgets/difficulty_pill.dart';
 import 'package:one_step/core/widgets/quest_card.dart';
+import 'package:one_step/core/widgets/quest_source_chip.dart';
 import 'package:one_step/core/widgets/state_views.dart';
 import 'package:one_step/features/quest/quest_list_screen.dart';
+import 'package:one_step/features/quest/widgets/goal_group_section.dart';
 import 'package:one_step/features/quest/widgets/quest_complete_dialog.dart';
 import 'package:one_step/features/quest/widgets/quest_memo_sheet.dart';
 import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/difficulty.dart';
+import 'package:one_step/models/goal.dart';
 import 'package:one_step/models/quest.dart';
+import 'package:one_step/models/quest_group.dart';
 import 'package:one_step/models/quest_status.dart';
 import 'package:one_step/providers/providers.dart';
+import 'package:one_step/repositories/memory/in_memory_goal_repository.dart';
 import 'package:one_step/repositories/memory/in_memory_quest_repository.dart';
 import 'package:one_step/repositories/memory/in_memory_user_repository.dart';
 
@@ -30,6 +35,7 @@ class _FailingCompleteQuestRepository extends InMemoryQuestRepository {
     String uid,
     String questId, {
     String? memo,
+    String? photoBase64,
   }) async {
     throw const NetworkFailure();
   }
@@ -43,6 +49,19 @@ Future<void> completeSkippingMemo(WidgetTester tester) async {
   await tester.tap(find.byTooltip('완료'));
   await tester.pumpAndSettle();
   await tester.tap(find.text('건너뛰기'));
+  await tester.pumpAndSettle();
+}
+
+/// 전부 완료된 그룹은 **기본으로 접혀 있다**(A0 그룹뷰 규칙).
+///
+/// 이미 `done`인 퀘스트만 심고 시작하는 테스트(완료 해제 계열)는 카드가 처음부터
+/// 접힌 폴더 안에 있으므로, 헤더를 눌러 펼친 뒤에 카드를 만져야 한다.
+/// 검증 대상(해제 동작 자체)은 그대로다.
+Future<void> expandGroup(
+  WidgetTester tester, [
+  String label = kDirectQuestGroupLabel,
+]) async {
+  await tester.tap(find.text(label));
   await tester.pumpAndSettle();
 }
 
@@ -182,9 +201,12 @@ void main() {
       expect(find.text('XP +20'), findsWidgets);
 
       // 잔액에도 실제로 반영된다(홈의 watchUser가 이 값을 흘린다).
+      // XP 20은 알 단계 5/레벨이라 Lv1→Lv5로 오르고 레벨 내 잔여 XP는 0이다
+      // (user.xp는 총 XP가 아니라 레벨 내 잔여 XP다 — 4주차 레벨업 반영).
       final user = await repo.users!.fetchUser('test-uid');
       expect(user.coin, 10);
-      expect(user.xp, 20);
+      expect(user.level, 5);
+      expect(user.xp, 0);
     });
 
     testWidgets('연출을 닫으면 퀘스트가 완료 상태로 남는다', (tester) async {
@@ -239,10 +261,12 @@ void main() {
 
       final user = await repo.users!.fetchUser('test-uid');
       expect(user.coin, 5);
-      expect(user.xp, 10);
+      // XP 10 → 알 단계 5/레벨이라 Lv3, 레벨 내 잔여 XP 0.
+      expect(user.level, 3);
+      expect(user.xp, 0);
     });
 
-    testWidgets('★ 이미 보상을 받은 퀘스트를 다시 완료하면 연출이 뜨지 않는다', (tester) async {
+    testWidgets('★ 이미 보상받은 퀘스트를 다시 완료하면 메모 시트 없이 바로 안내된다', (tester) async {
       // rewardedAt이 이미 있는 = 예전에 지급된 퀘스트.
       // (완료 해제 상태라 completedAt은 비어 있지만, 지급 이력은 남아 있다.)
       final repo = await pumpScreen(
@@ -260,15 +284,58 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await completeSkippingMemo(tester);
+      // 시트를 통하지 않고 완료 탭만 한다(건너뛰기 헬퍼를 쓰지 않는다).
+      await tester.tap(find.byTooltip('완료'));
+      await tester.pumpAndSettle();
 
-      // 상태는 done이 되지만 축하는 없다(받지 않은 보상을 축하하면 안 된다).
-      expect(find.byType(QuestCompleteDialog), findsNothing);
+      // 이미 보상받은 퀘스트라 "오늘 어땠나요?" 메모 시트가 아예 안 뜬다.
+      expect(find.text('오늘 어땠나요?'), findsNothing);
+
+      // ★ 회귀 방지: 그래도 완료 처리는 되어야 한다 — 상태가 done으로 바뀌어
+      //   체크·밑줄이 켜진다(툴팁이 '완료'→'완료 취소'로 바뀜 = 체크된 상태).
       expect(find.byTooltip('완료 취소'), findsOneWidget);
+      expect(find.byTooltip('완료'), findsNothing);
 
+      // 무반응이 아니라 "이미 완료한 퀘스트예요"로 이유를 알린다.
+      expect(find.text('이미 완료한 퀘스트예요'), findsOneWidget);
+      // 축하는 없다(이미 받은 보상을 다시 축하하면 안 된다).
+      expect(find.byType(QuestCompleteDialog), findsNothing);
+
+      // completeQuest는 호출되지만 rewardedAt 가드가 재지급을 막으므로 잔액은 그대로다.
       final user = await repo.users!.fetchUser('test-uid');
       expect(user.coin, 0);
       expect(user.xp, 0);
+    });
+
+    testWidgets('★ 완료 해제(done→todo)에는 "이미 완료" 안내가 뜨지 않는다', (tester) async {
+      // 완료 해제도 reward == null 경로지만, 원래 지급이 없는 동작이다.
+      // 여기에 안내를 띄우면 오탐이다 — done 여부로 갈라야 한다(#0-1).
+      final repo = await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: [
+          Quest(
+            id: 'q1',
+            title: '완료된 퀘스트',
+            difficulty: Difficulty.easy,
+            status: QuestStatus.done,
+            completedAt: DateTime(2026, 1, 1),
+          ),
+        ],
+      );
+      await tester.pumpAndSettle();
+      await expandGroup(tester);
+
+      await tester.tap(find.byTooltip('완료 취소'));
+      await tester.pumpAndSettle();
+
+      // 상태만 되돌아가고, 안내 스낵바도 축하도 뜨지 않는다.
+      expect(find.byType(QuestCompleteDialog), findsNothing);
+      expect(find.text('이미 완료한 퀘스트예요'), findsNothing);
+      expect(find.byTooltip('완료'), findsOneWidget);
+
+      final quest = (await repo.fetchQuests('test-uid')).single;
+      expect(quest.done, isFalse);
     });
 
     testWidgets('★ 지급이 실패하면 스낵바가 뜨고 상태·잔액이 그대로다', (tester) async {
@@ -322,6 +389,7 @@ void main() {
         ],
       );
       await tester.pumpAndSettle();
+      await expandGroup(tester);
 
       await tester.tap(find.byTooltip('완료 취소'));
       await tester.pumpAndSettle();
@@ -369,11 +437,14 @@ void main() {
 
       // 보통 = 코인5 / XP10. 보너스는 붙지 않는다.
       expect(find.byType(QuestCompleteDialog), findsOneWidget);
-      expect(find.textContaining('메모 인증 보너스'), findsNothing);
+      expect(find.textContaining('인증 보너스'), findsNothing);
 
+      // 보통 = 코인5 / XP10. XP는 레벨업으로 소비된다(user.xp는 총 XP가 아니라
+      // 레벨 내 잔여 XP): applyXpGain(Lv1,0,+10) → Lv3, 잔여 0 (알 단계 5/lv).
       final user = await repo.users!.fetchUser('test-uid');
       expect(user.coin, 5);
-      expect(user.xp, 10);
+      expect(user.level, 3);
+      expect(user.xp, 0);
 
       final quest = (await repo.fetchQuests('test-uid')).single;
       expect(quest.memo, isNull);
@@ -400,11 +471,14 @@ void main() {
       expect(find.text('+8'), findsWidgets);
       expect(find.text('XP +13'), findsWidgets);
       // 총액만 보여 주면 왜 8인지 알 수 없다. 보너스 사실을 밝힌다.
-      expect(find.textContaining('메모 인증 보너스'), findsOneWidget);
+      expect(find.textContaining('인증 보너스'), findsOneWidget);
 
+      // 코인은 8 누적. XP 13은 레벨업으로 소비된다(잔여 XP만 user.xp에 남음):
+      // applyXpGain(Lv1,0,+13) → Lv3, 잔여 3 (알 단계 5/lv).
       final user = await repo.users!.fetchUser('test-uid');
       expect(user.coin, 8);
-      expect(user.xp, 13);
+      expect(user.level, 3);
+      expect(user.xp, 3);
 
       // 메모는 퀘스트에도 남는다(앱을 다시 켜도 유지된다).
       final quest = (await repo.fetchQuests('test-uid')).single;
@@ -470,11 +544,198 @@ void main() {
         ],
       );
       await tester.pumpAndSettle();
+      await expandGroup(tester);
 
       await tester.tap(find.byTooltip('완료 취소'));
       await tester.pumpAndSettle();
 
       expect(find.byType(QuestMemoSheet), findsNothing);
+    });
+  });
+
+  group('큰 목표 단위 그룹뷰 (A0)', () {
+    const goals = [
+      Goal(id: 'g1', text: '공모전 지원하기'),
+      Goal(id: 'g2', text: '토익 900점'),
+    ];
+    const grouped = [
+      Quest(id: 'q1', title: '공고 3개 찾기', goalId: 'g1', order: 0),
+      Quest(id: 'q2', title: '지원서 초안 쓰기', goalId: 'g1', order: 1),
+      Quest(id: 'q3', title: '단어장 사기', goalId: 'g2', order: 2),
+      Quest(id: 'q4', title: '직접 만든 퀘스트', order: 3),
+    ];
+
+    testWidgets('퀘스트가 목표 라벨 폴더로 묶여 보인다', (tester) async {
+      await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: grouped,
+        goals: goals,
+      );
+      await tester.pumpAndSettle();
+
+      // 목표별 폴더가 생기고, 기본은 펼침이라 카드가 그 아래 붙는다.
+      expect(find.byType(GoalGroupSection), findsWidgets);
+      expect(find.text('공모전 지원하기'), findsOneWidget);
+      expect(find.text('공고 3개 찾기'), findsOneWidget);
+      expect(find.text('지원서 초안 쓰기'), findsOneWidget);
+      expect(find.text('토익 900점'), findsOneWidget);
+
+      // 직접 등록 폴더는 항상 맨 아래라 스크롤해야 보인다.
+      await tester.scrollUntilVisible(
+        find.text(kDirectQuestGroupLabel),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(kDirectQuestGroupLabel), findsOneWidget);
+      expect(find.text('직접 만든 퀘스트'), findsOneWidget);
+    });
+
+    testWidgets('헤더에 진행률이 표시된다', (tester) async {
+      await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(
+            id: 'q1',
+            title: '완료한 퀘스트',
+            goalId: 'g1',
+            status: QuestStatus.done,
+          ),
+          Quest(id: 'q2', title: '남은 퀘스트', goalId: 'g1', order: 1),
+          Quest(id: 'q3', title: '남은 퀘스트2', goalId: 'g1', order: 2),
+        ],
+        goals: goals,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('1/3'), findsOneWidget);
+    });
+
+    testWidgets('헤더를 누르면 접히고 다시 누르면 펼쳐진다', (tester) async {
+      await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(id: 'q1', title: '공고 3개 찾기', goalId: 'g1'),
+        ],
+        goals: goals,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QuestCard), findsOneWidget);
+
+      await tester.tap(find.text('공모전 지원하기'));
+      await tester.pumpAndSettle();
+
+      // 접히면 카드가 사라지지만 헤더는 남는다(퀘스트가 지워진 게 아니다).
+      expect(find.byType(QuestCard), findsNothing);
+      expect(find.text('공모전 지원하기'), findsOneWidget);
+
+      await tester.tap(find.text('공모전 지원하기'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QuestCard), findsOneWidget);
+      expect(find.text('공고 3개 찾기'), findsOneWidget);
+    });
+
+    testWidgets('전부 완료된 그룹은 기본으로 접혀 있다', (tester) async {
+      await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(
+            id: 'q1',
+            title: '끝난 퀘스트',
+            goalId: 'g1',
+            status: QuestStatus.done,
+          ),
+          Quest(id: 'q2', title: '진행 중 퀘스트', goalId: 'g2', order: 1),
+        ],
+        goals: goals,
+      );
+      await tester.pumpAndSettle();
+
+      // 끝난 목표는 접히고, 진행 중인 목표는 펼쳐진다.
+      expect(find.text('끝난 퀘스트'), findsNothing);
+      expect(find.text('진행 중 퀘스트'), findsOneWidget);
+
+      // 접혔어도 폴더 자체는 보인다 — 다시 펼칠 수 있다.
+      await tester.tap(find.text('공모전 지원하기'));
+      await tester.pumpAndSettle();
+      expect(find.text('끝난 퀘스트'), findsOneWidget);
+    });
+
+    testWidgets('★ 목표 저장소가 실패해도 퀘스트는 폴백 라벨로 그대로 보인다', (tester) async {
+      // 목표는 라벨용 부가 정보다. 그것 때문에 퀘스트 목록이 오류 화면이 되면
+      // 사용자는 퀘스트를 잃은 걸로 본다.
+      final failingGoals = InMemoryGoalRepository(
+        failWith: const NetworkFailure(),
+      );
+      addTearDown(failingGoals.dispose);
+
+      await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(id: 'q1', title: '공고 3개 찾기', goalId: 'g1'),
+        ],
+        extraOverrides: [
+          goalRepositoryProvider.overrideWithValue(failingGoals),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ErrorView), findsNothing);
+      expect(find.byType(QuestCard), findsOneWidget);
+      expect(find.text('공고 3개 찾기'), findsOneWidget);
+      // 라벨만 폴백으로 떨어진다.
+      expect(find.text(kUnknownGoalLabel), findsOneWidget);
+    });
+
+    testWidgets('AI 진입점은 채운 버튼이다 (2대 핵심 기능의 입구)', (tester) async {
+      await pumpScreen(tester, const QuestListScreen());
+      await tester.pumpAndSettle();
+
+      // `FilledButton.icon`은 FilledButton의 **하위 타입**을 만든다.
+      // byType은 runtimeType 완전 일치라 잡히지 않으므로 predicate로 본다.
+      expect(
+        find.ancestor(
+          of: find.text('AI로 목표 나누기'),
+          matching: find.byWidgetPredicate((w) => w is FilledButton),
+        ),
+        findsOneWidget,
+      );
+      // 아웃라인(보조 위계)으로 남아 있으면 안 된다.
+      expect(
+        find.ancestor(
+          of: find.text('AI로 목표 나누기'),
+          matching: find.byWidgetPredicate((w) => w is OutlinedButton),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('목록 카드에도 출처 칩(AI / 직접)이 보인다', (tester) async {
+      // 폴더로 나뉜 목록에서도 카드 자체가 출처를 말해야 한다 —
+      // 홈 미리보기에는 폴더가 없어 카드만으로 구분돼야 하고, 그 카드는
+      // 두 화면이 공유하는 같은 위젯이다.
+      await pumpScreen(
+        tester,
+        const QuestListScreen(),
+        quests: const [
+          Quest(id: 'q1', title: '공고 3개 찾기', goalId: 'g1'),
+          Quest(id: 'q2', title: '직접 만든 퀘스트', order: 1),
+        ],
+        goals: goals,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QuestSourceChip), findsNWidgets(2));
+      // 'AI로 목표 나누기' 버튼과 겹치지 않는다 — find.text는 완전 일치다.
+      expect(find.text('AI'), findsOneWidget);
+      expect(find.text('직접'), findsOneWidget);
     });
   });
 

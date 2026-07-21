@@ -6,6 +6,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
 import 'difficulty_pill.dart';
+import 'quest_source_chip.dart';
 import 'reward_chip.dart';
 
 /// 퀘스트 카드. 흰 카드 + 좌측 난이도 색 accent 보더.
@@ -61,7 +62,16 @@ class QuestCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    DifficultyPill(difficulty: quest.difficulty),
+                    // 난이도 + 출처. 긴 제목·좁은 폭에서도 넘치지 않도록 Wrap을
+                    // 쓴다(Row였다면 폭이 모자랄 때 오버플로 줄무늬가 뜬다).
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.xs,
+                      children: [
+                        DifficultyPill(difficulty: quest.difficulty),
+                        QuestSourceChip(goalId: quest.goalId),
+                      ],
+                    ),
                     AppSpacing.gapSm,
                     Text(
                       quest.title,

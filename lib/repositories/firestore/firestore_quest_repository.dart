@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/constants/firestore_paths.dart';
+import '../../core/constants/growth_rules.dart';
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
+import '../../models/app_user.dart';
 import '../../models/difficulty.dart';
 import '../../models/quest.dart';
 import '../../models/quest_draft.dart';
@@ -172,11 +174,21 @@ class FirestoreQuestRepository implements QuestRepository {
   /// (다른 쪽은 문서가 바뀐 걸 감지하고 재시도 → 이때는 rewardedAt이 이미 있어
   /// 보상을 주지 않는다).
   ///
-  /// 3주차-B: [memo]가 있으면 인증 보너스를 **합산**해 지급하고, 지급이 일어난
-  /// 경우에만 `achievements` 기록을 같은 트랜잭션에 넣는다.
+  /// 3주차-B·사진: [memo]나 [photoBase64] 중 하나만 있어도 인증 보너스를 **합산**해
+  /// 지급하고(둘 다 줘도 1회), 지급이 일어난 경우에만 `achievements` 기록과 사진
+  /// proof 문서를 **같은 트랜잭션**에 넣는다.
   @override
-  Future<Reward?> completeQuest(String uid, String questId, {String? memo}) {
+  Future<Reward?> completeQuest(
+    String uid,
+    String questId, {
+    String? memo,
+    String? photoBase64,
+  }) {
     return guard(() async {
+      // 크기 상한 방어 — 트랜잭션에 들어가기 전에 막는다(단일 정의처).
+      // 넘으면 문서 쓰기가 어차피 실패하므로, 아예 시작하지 않는 편이 안전하다.
+      ensureProofWithinLimit(photoBase64);
+
       final questRef = _db.doc(FirestorePaths.quest(uid, questId));
       final userRef = _db.doc(FirestorePaths.user(uid));
       // 새 기록의 ID는 트랜잭션 밖에서 미리 뽑는다. `doc()`은 서버 왕복 없이
@@ -184,16 +196,29 @@ class FirestoreQuestRepository implements QuestRepository {
       final achievementRef = _db
           .collection(FirestorePaths.achievements(uid))
           .doc();
+      // 사진 proof 문서. ID = questId라 재완료해도 같은 문서를 덮어쓴다
+      // (퀘스트당 사진 1장). 여기도 `.doc()`은 read가 아니다.
+      final proofRef = _db.doc(FirestorePaths.proofDoc(uid, questId));
 
       // 공백만 남는 메모는 인증으로 치지 않는다(정의는 normalizeMemo 한 곳).
       final verifiedMemo = normalizeMemo(memo);
 
       return _db.runTransaction<Reward?>((transaction) async {
         // ⚠️ Firestore 트랜잭션 규칙: 모든 read가 모든 write보다 앞서야 한다.
+        // 그래서 quest·user 두 문서를 여기서 먼저 다 읽는다. 레벨업은 현재 XP·레벨을
+        // 알아야 계산되므로 user 문서 read가 추가됐다(3주차엔 coin/xp를 increment로만
+        // 쌓아 read가 필요 없었다).
         final snap = await transaction.get(questRef);
         if (!snap.exists) throw const NotFoundFailure();
+        final userSnap = await transaction.get(userRef);
 
         final quest = Quest.fromJson(snap.id, decodeDoc(snap.data()));
+        // 문서가 아직 없으면(최초 완료) 신규 사용자 기본값에서 출발한다.
+        // decodeDoc으로 Timestamp를 DateTime으로 바꿔 경계에서 정규화한다
+        // (FirestoreUserRepository와 동일한 파싱 계약).
+        final cur = userSnap.exists
+            ? AppUser.fromJson(uid, decodeDoc(userSnap.data()))
+            : AppUser.initial(uid);
         // 이미 지급 시각이 찍혀 있으면 = 예전에 보상을 받은 퀘스트다.
         // ⚠️ 하위호환: rewardedAt 도입 전에 저장된 문서는 이 값이 없어(null)
         // "미지급"으로 취급된다 → 보상이 한 번 더 지급될 수 있다.
@@ -220,19 +245,41 @@ class FirestoreQuestRepository implements QuestRepository {
 
         // 저장된 난이도로 보상을 계산한다. 트랜잭션 안이라 "읽은 난이도"와
         // "지급액"이 어긋날 수 없다.
-        // 인증이 성립하면 보너스를 합산한다 — 보너스도 rewardedAt 가드 아래라
-        // 재완료로는 다시 받을 수 없다.
-        final verified = verifiedMemo != null;
+        // 인증(메모 또는 사진)이 성립하면 보너스를 합산한다 — 보너스도 rewardedAt
+        // 가드 아래라 재완료로는 다시 받을 수 없다. 둘 다 있어도 보너스는 1회다.
+        final verified = verifiedMemo != null || photoBase64 != null;
         final reward =
             rewardFor(quest.difficulty) +
             (verified ? kVerificationBonus : Reward.zero);
 
-        // increment는 현재 잔액을 읽지 않고도 원자적으로 누적된다.
+        // 레벨업 계산: 읽어 온 현재 레벨·XP에 이번 XP를 더해 다단계 상승·진화
+        // 경계·MAX 상한을 한 번에 처리한다(applyXpGain 단일 정의).
+        final next = applyXpGain(
+          level: cur.level,
+          xp: cur.xp,
+          gained: reward.xp,
+        );
+
+        // coin은 현재 잔액을 안 읽고도 되는 단순 누적이라 increment 유지.
+        // xp·level은 계산값을 set한다 — user 문서를 read했으므로 같은 트랜잭션
+        // 안에서 일관된 값이고, 경쟁 시 Firestore가 재읽기·재시도로 정합성을 지킨다.
         // merge:true라 사용자 문서가 아직 없어도(=최초 완료) 안전하게 생성된다.
         transaction.set(userRef, {
           'coin': FieldValue.increment(reward.coin),
-          'xp': FieldValue.increment(reward.xp),
+          'xp': next.xp,
+          'level': next.level,
         }, SetOptions(merge: true));
+
+        // 사진은 별도 proof 문서에 담는다(quest·achievement 문서 비대화 방지).
+        // 지급 경로에서만 쓴다 — 재완료(alreadyPaid)는 위에서 이미 return 했다.
+        // 같은 트랜잭션이라 "보상은 줬는데 사진은 없는" 불일치가 생기지 않는다.
+        if (photoBase64 != null) {
+          transaction.set(proofRef, {
+            'questId': questId,
+            'base64': photoBase64,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
 
         // 성취 기록 — **지급이 일어난 이 경로에서만** 남긴다.
         // 재완료(alreadyPaid)는 위에서 이미 return 했으므로 여기 오지 않는다.
@@ -244,6 +291,8 @@ class FirestoreQuestRepository implements QuestRepository {
           'coin': reward.coin,
           'xp': reward.xp,
           'verified': verified,
+          // 이미지 바이트는 proof 문서에 있고, 여기엔 유무 플래그만 둔다.
+          'hasPhoto': photoBase64 != null,
           'memo': ?verifiedMemo,
           'completedAt': FieldValue.serverTimestamp(),
         });

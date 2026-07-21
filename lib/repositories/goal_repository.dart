@@ -9,6 +9,16 @@ import '../models/goal.dart';
 ///
 /// 구현체는 실패 시 반드시 `AppFailure`를 던진다.
 abstract interface class GoalRepository {
+  /// 목표 목록 스트림. 퀘스트 목록의 **폴더 라벨**을 그리는 데 쓴다.
+  ///
+  /// 단건 [fetchGoal]과 나눈 이유: 목록 화면은 화면에 뜬 퀘스트마다 goalId가 달라
+  /// 단건 조회를 N번 하면 왕복이 N번 난다. 목표는 사용자당 많아야 수십 개라
+  /// 컬렉션을 통째로 구독하는 편이 싸고, 목표 이름이 바뀌어도 즉시 반영된다.
+  ///
+  /// 문서 하나가 깨져 있어도 스트림 전체를 죽이지 않고 그 항목만 버린다
+  /// (`watchQuests`와 같은 규칙 — 목표 하나 때문에 목록이 통째로 사라지면 안 된다).
+  Stream<List<Goal>> watchGoals(String uid);
+
   /// 목표를 저장하고, 생성된(ID가 부여된) Goal을 돌려준다.
   /// 실패 시 `AppFailure`를 던진다.
   Future<Goal> createGoal(String uid, String text);
