@@ -148,6 +148,45 @@
   font-weight: 700;
 }
 
+/* ---- 로그인 상태 영역 ---- */
+.rs-nav-auth {
+  display: flex;
+  align-items: center;
+  gap: var(--clb-space-sm);
+}
+
+.rs-nav-user {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--clb-ink);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rs-nav-authbtn {
+  padding: 7px 16px;
+  border-radius: var(--clb-radius-pill);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--clb-gold-ink);
+  background: var(--clb-gold);
+  border: 1px solid var(--clb-edge);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.18s ease;
+}
+
+.rs-nav-authbtn:hover {
+  transform: translateY(-1px);
+}
+
+.rs-nav-authbtn:focus-visible {
+  outline: 2px solid var(--clb-gold);
+  outline-offset: 2px;
+}
+
 /* ---- 본문/푸터 ---- */
 .rs-main {
   position: relative;
