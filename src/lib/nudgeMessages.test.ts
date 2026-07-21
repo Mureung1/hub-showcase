@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { buildNudgeMessage, LV1_MESSAGES } from "./nudgeMessages.js";
+import { addDays } from "date-fns";
+import {
+  buildNudgeMessage,
+  isLockedToStart,
+  LV1_MESSAGES,
+} from "./nudgeMessages.js";
 import {
   MICROTASK_TEMPLATES,
   CUSTOM_FALLBACK_MICROTASKS,
@@ -18,10 +23,8 @@ describe("buildNudgeMessage", () => {
     expect(result.body).toBe(LV1_MESSAGES[1]);
   });
 
-  it("아직 채워지지 않은 레벨(0, 4)은 null을 반환한다 (경계)", () => {
-    for (const level of [0, 4]) {
-      expect(buildNudgeMessage(level, { title: "리포트", skipCount: 0 })).toBeNull();
-    }
+  it("빌더가 없는 레벨(0)은 null을 반환한다 (경계)", () => {
+    expect(buildNudgeMessage(0, { title: "리포트", skipCount: 0 })).toBeNull();
   });
 
   it("skipCount가 0부터 커져도 항상 LV1_MESSAGES 안의 비어있지 않은 문자열을 반환한다 (회귀)", () => {
@@ -107,6 +110,39 @@ describe("buildNudgeMessage", () => {
       expect(result.body).toContain(result.microtask);
       // 회피 패턴 근거: skipCount 숫자를 언급한다.
       expect(result.body).toContain(String(currentTask.skipCount));
+    });
+  });
+
+  describe("레벨 4 (마감 임박 경고)", () => {
+    it("실제 deadline 기준 D-day 숫자가 본문에 표시된다 (happy path)", () => {
+      // 마감이 3일 뒤 → D-3
+      const result = buildNudgeMessage(4, {
+        title: "기말 리포트",
+        type: "개인공부",
+        reason: "overwhelm",
+        skipCount: 5,
+        deadline: addDays(new Date(), 3).toISOString(),
+      });
+      expect(result.body).toContain("D-3");
+    });
+
+    it("deadline이 바뀌면 D-day 숫자도 그에 맞게 바뀐다 (실제 마감 기준임을 확인)", () => {
+      const result = buildNudgeMessage(4, {
+        title: "기말 리포트",
+        type: "개인공부",
+        reason: "overwhelm",
+        skipCount: 8,
+        deadline: addDays(new Date(), 10).toISOString(),
+      });
+      expect(result.body).toContain("D-10");
+    });
+
+    it("레벨 4에서는 '지금 시작하기' 외 다른 선택지를 잠근다 (다른 버튼 미노출)", () => {
+      // 레벨 4만 true, 그 외 레벨은 false — NudgeModal이 이 값으로 닫기 등 다른 버튼을 숨긴다.
+      expect(isLockedToStart(4)).toBe(true);
+      for (const level of [0, 1, 2, 3]) {
+        expect(isLockedToStart(level)).toBe(false);
+      }
     });
   });
 });
