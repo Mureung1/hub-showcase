@@ -1,4 +1,6 @@
+import { Link } from "react-router-dom";
 import { useAuth } from "../features/auth";
+import { ROUTES } from "../shared/routes";
 
 const calendarDays = [
   { day: "29", label: "", tone: "muted" },
@@ -27,24 +29,24 @@ export function WorkerDashboardPage() {
     <div className="stage">
       <div className="app-shell">
         <header className="topbar">
-          <a className="brand" href="/" aria-label="알바노트 홈">
+          <Link className="brand" to={ROUTES.home} aria-label="알바노트 홈">
             <span className="brand-mark">A</span>
             <span>알바노트</span>
-          </a>
+          </Link>
 
           <nav className="topnav" aria-label="알바생 메뉴">
-            <a className="active" href="/schedule">
+            <Link className="active" to={ROUTES.schedule}>
               근무표
-            </a>
-            <a href="/substitute-requests">대타 요청</a>
-            <a href="/my-work">내 근무 정보</a>
-            <a href="/notifications">알림</a>
+            </Link>
+            <Link to={ROUTES.substituteRequests}>대타 요청</Link>
+            <Link to={ROUTES.myWork}>내 근무 정보</Link>
+            <Link to={ROUTES.notifications}>알림</Link>
           </nav>
 
           <div className="top-actions">
-            <a className="store-button" href="/stores/select">
+            <Link className="store-button" to={ROUTES.storesSelect}>
               연남점
-            </a>
+            </Link>
             <button className="profile-chip profile-button" onClick={() => void signOut()} type="button">
               <span>{displayName.slice(0, 1).toUpperCase()}</span>
               <strong>{displayName}</strong>
@@ -127,7 +129,7 @@ export function WorkerDashboardPage() {
               <section className="side-card">
                 <div className="card-head compact">
                   <h3>공개 요청</h3>
-                  <a href="/substitute-requests">전체</a>
+                  <Link to={ROUTES.substituteRequests}>전체</Link>
                 </div>
                 <div className="request-list">
                   <article>
