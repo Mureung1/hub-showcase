@@ -3,6 +3,7 @@ import { getArticles } from '../api/articles';
 import { getBookmarks, addBookmark, removeBookmark } from '../api/bookmarks';
 import ArticleCard from '../components/ArticleCard';
 import HomeGridCard from '../components/HomeGridCard';
+import InsightSidebar from '../components/InsightSidebar';
 
 const HERO_GRID_SIZE = 7; // 톱 이슈 1(2행 병합) + 나머지 6칸 = 4열×2행
 
@@ -64,7 +65,8 @@ export default function Home() {
       {/* 섹션 상단 국소 그라데이션 (primary → transparent, linear top→bottom) */}
       <div className="absolute top-0 inset-x-0 h-64 bg-gradient-to-b from-primary/15 to-transparent pointer-events-none" />
 
-      <div className="relative max-w-5xl mx-auto px-container-padding py-stack-lg">
+      <div className="relative max-w-7xl mx-auto px-container-padding py-stack-lg flex gap-stack-lg items-start">
+      <div className="flex-1 min-w-0">
         {keywords.length > 0 && (
           <div className="flex flex-wrap gap-stack-sm mb-stack-lg">
             <button
@@ -131,6 +133,9 @@ export default function Home() {
             ))}
           </div>
         )}
+      </div>
+
+      <InsightSidebar />
       </div>
     </div>
   );
