@@ -164,4 +164,41 @@ describe('ArticleIntro', () => {
       expect(screen.queryByText(option.prompt)).not.toBeInTheDocument()
     })
   })
+
+  it('does not show the mission start CTA before the original link is clicked', () => {
+    render(<ArticleIntro state={{ status: 'success', article: ARTICLE }} onBack={vi.fn()} />)
+
+    expect(screen.queryByRole('button', { name: /미션 시작하기/ })).not.toBeInTheDocument()
+  })
+
+  it('shows the mission start CTA after the original link is clicked', async () => {
+    render(<ArticleIntro state={{ status: 'success', article: ARTICLE }} onBack={vi.fn()} />)
+
+    await userEvent.click(screen.getByRole('link', { name: /원문 읽으러 가기/ }))
+
+    expect(screen.getByText('원문을 읽고 돌아오셨나요?')).toBeInTheDocument()
+    expect(screen.getByText('이제 짧게 생각을 남겨볼까요?')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /미션 시작하기/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /원문 다시 보기/ })).toBeInTheDocument()
+  })
+
+  it('shows the mission screen with the recommended prompt when mission start is clicked', async () => {
+    render(<ArticleIntro state={{ status: 'success', article: ARTICLE }} onBack={vi.fn()} />)
+
+    await userEvent.click(screen.getByRole('link', { name: /원문 읽으러 가기/ }))
+    await userEvent.click(screen.getByRole('button', { name: /미션 시작하기/ }))
+
+    expect(screen.getByText(ARTICLE.recommendedMission.prompt)).toBeInTheDocument()
+  })
+
+  it('returns to the same article intro when the mission back button is clicked', async () => {
+    render(<ArticleIntro state={{ status: 'success', article: ARTICLE }} onBack={vi.fn()} />)
+
+    await userEvent.click(screen.getByRole('link', { name: /원문 읽으러 가기/ }))
+    await userEvent.click(screen.getByRole('button', { name: /미션 시작하기/ }))
+    await userEvent.click(screen.getByRole('button', { name: /뒤로가기/ }))
+
+    expect(screen.getByText(ARTICLE.title)).toBeInTheDocument()
+    expect(screen.queryByText(ARTICLE.recommendedMission.prompt)).not.toBeInTheDocument()
+  })
 })

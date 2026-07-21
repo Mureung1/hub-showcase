@@ -8,15 +8,28 @@ vi.mock('./lib/supabase', () => ({
   ensureAnonymousSession: vi.fn().mockResolvedValue({ access_token: 'token' }),
 }))
 
-vi.mock('./api/client', () => ({
-  api: {
-    getUserInterests: vi.fn(),
-    getInterests: vi.fn(),
-    replaceUserInterests: vi.fn(),
-    getTodayArticles: vi.fn().mockResolvedValue({ items: [], emptyStateMessage: null }),
-    getArticleDetail: vi.fn(),
-  },
-}))
+vi.mock('./api/client', () => {
+  class ApiClientError extends Error {
+    status: number
+    code: string
+    constructor(status: number, body: { code: string; message: string }) {
+      super(body.message)
+      this.status = status
+      this.code = body.code
+    }
+  }
+  return {
+    ApiClientError,
+    api: {
+      getUserInterests: vi.fn(),
+      getInterests: vi.fn(),
+      replaceUserInterests: vi.fn(),
+      getTodayArticles: vi.fn().mockResolvedValue({ items: [], emptyStateMessage: null }),
+      getArticleDetail: vi.fn(),
+      createMissionRecord: vi.fn(),
+    },
+  }
+})
 
 import { api } from './api/client'
 
@@ -191,5 +204,70 @@ describe('Today article intro flow', () => {
     expect(await screen.findByText(ARTICLE_A_DETAIL.title)).toBeInTheDocument()
     expect(api.getArticleDetail).toHaveBeenNthCalledWith(1, ARTICLE_A.id)
     expect(api.getArticleDetail).toHaveBeenNthCalledWith(2, ARTICLE_A.id)
+  })
+
+  it('completes the full flow: select feature, open article, open original, start mission, change mission, save, and return to today', async () => {
+    vi.mocked(api.getTodayArticles).mockResolvedValue({
+      items: [ARTICLE_A, ARTICLE_B],
+      emptyStateMessage: null,
+    })
+    vi.mocked(api.getArticleDetail).mockResolvedValue(ARTICLE_A_DETAIL)
+    vi.mocked(api.createMissionRecord).mockResolvedValue({
+      id: '50000000-0000-0000-0000-000000000001',
+      articleId: ARTICLE_A_DETAIL.id,
+      missionType: 'rebuttal',
+      missionPrompt: '이 주장에 반대한다면?',
+      userAnswer: '나는 동의하지 않는다.',
+      selectedQuote: null,
+      anchorType: 'whole_content',
+      createdAt: '2026-07-20T05:00:00Z',
+    })
+    render(<App />)
+
+    await userEvent.click(await screen.findByRole('button', { name: /글 살펴보기/ }))
+
+    expect(await screen.findByText(ARTICLE_A_DETAIL.title)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('link', { name: /원문 읽으러 가기/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /미션 시작하기/ }))
+
+    await userEvent.selectOptions(screen.getByRole('combobox'), 'rebuttal')
+    expect(screen.getByText('이 주장에 반대한다면?')).toBeInTheDocument()
+
+    await userEvent.type(screen.getByRole('textbox'), '나는 동의하지 않는다.')
+    await userEvent.click(screen.getByRole('button', { name: /기록 남기기/ }))
+
+    expect(await screen.findByText('생각을 기록했어요.')).toBeInTheDocument()
+    expect(api.createMissionRecord).toHaveBeenCalledExactlyOnceWith({
+      articleId: ARTICLE_A_DETAIL.id,
+      missionType: 'rebuttal',
+      userAnswer: '나는 동의하지 않는다.',
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: /오늘의 깸으로/ }))
+
+    expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+    expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the promoted feature article after returning from the article intro', async () => {
+    vi.mocked(api.getTodayArticles).mockResolvedValue({
+      items: [ARTICLE_A, ARTICLE_B],
+      emptyStateMessage: null,
+    })
+    vi.mocked(api.getArticleDetail).mockResolvedValue(ARTICLE_A_DETAIL)
+    render(<App />)
+
+    await userEvent.click(await screen.findByRole('button', { name: new RegExp(ARTICLE_B.title) }))
+    expect(screen.getAllByRole('article')[0]).toHaveTextContent(ARTICLE_B.title)
+
+    await userEvent.click(screen.getByRole('button', { name: /글 살펴보기/ }))
+    expect(await screen.findByText(ARTICLE_A_DETAIL.title)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /뒤로가기/ }))
+
+    expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+    expect(screen.getAllByRole('article')[0]).toHaveTextContent(ARTICLE_B.title)
+    expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
   })
 })
