@@ -8,6 +8,7 @@ import KPICard from '../../components/dashboard/KPICard';
 import SalesTrendChart from '../../components/dashboard/SalesTrendChart';
 import MarginBarList from '../../components/dashboard/MarginBarList';
 import type { MarginBarItem, WeeklyTrendPoint } from '../../types/dashboard';
+import { eunNeun } from '../../utils/korean';
 
 async function fetchSummary(): Promise<FinancialSummary> {
   const res = await fetch('/api/financial/summary');
@@ -92,9 +93,10 @@ function buildBrief(
   }
 
   const top = marginBars[0];
+  const topName = top?.name ?? '전체';
   return {
-    titleHighlight: top?.name ?? '전체',
-    titleRest: '는 마진율 기준 가장 안정적으로 운영되고 있습니다',
+    titleHighlight: topName,
+    titleRest: `${eunNeun(topName)} 마진율 기준 가장 안정적으로 운영되고 있습니다`,
     reasons: [
       `최근 1개월 마진율 ${top?.rate ?? 0}%로 전체 카테고리 중 가장 높음`,
       `전체 평균 마진율 ${overallMarginRate.toFixed(0)}%`,

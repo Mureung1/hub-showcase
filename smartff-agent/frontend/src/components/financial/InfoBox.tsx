@@ -1,4 +1,5 @@
 import type { FinancialRecord } from '../../types/financial';
+import { eunNeun } from '../../utils/korean';
 
 interface InfoBoxProps {
   data: FinancialRecord[]; // 항상 전체 카테고리 데이터 (카테고리 필터와 무관)
@@ -78,11 +79,13 @@ export default function InfoBox({ data, selectedCategory }: InfoBoxProps) {
       <div style={{ fontSize: '20px', fontWeight: '800', color: '#0F172A', lineHeight: '1.35', marginBottom: '10px' }}>
         {isTop ? (
           <>
-            <span style={{ color: '#2563EB' }}>{target.category}</span>은 순이익 기여도 기준 가장 높은 수익성을 보이고 있습니다.
+            <span style={{ color: '#2563EB' }}>{target.category}</span>
+            {`${eunNeun(target.category)} 순이익 기여도 기준 가장 높은 수익성을 보이고 있습니다.`}
           </>
         ) : (
           <>
-            <span style={{ color: '#2563EB' }}>{target.category}</span>는 순이익 기여도 기준 전체 {ranked.length}개 카테고리 중 {rank}위입니다.
+            <span style={{ color: '#2563EB' }}>{target.category}</span>
+            {`${eunNeun(target.category)} 순이익 기여도 기준 전체 ${ranked.length}개 카테고리 중 ${rank}위입니다.`}
           </>
         )}
       </div>
