@@ -6,9 +6,20 @@ import {
   useAuth,
   type AuthService,
 } from '@/features/auth';
+import { AndroidShareScreen, useAndroidShare } from '@/features/android-share';
 import { LandingPage } from '@/pages/landing';
 import { LoginPage } from '@/pages/login';
-import type { InsightRepository } from '@/entities/insight';
+import {
+  createBrowserInsightCaptureService,
+  createBrowserInsightMemoService,
+  type InsightCaptureService,
+  type InsightMemoService,
+  type InsightRepository,
+} from '@/entities/insight';
+import {
+  createAndroidSharePluginAdapter,
+  type AndroidSharePluginAdapter,
+} from '@/shared/capacitor';
 import { LoadingState } from '@/shared/ui';
 
 import { AuthenticatedWorkspace } from './authenticated_workspace';
@@ -20,15 +31,50 @@ import './styles/global.css';
 
 type AuthEntryView = 'login' | 'onboarding';
 
+function createLazyShareCaptureService(): InsightCaptureService {
+  let service: InsightCaptureService | undefined;
+
+  return {
+    capture(request) {
+      service ??= createBrowserInsightCaptureService();
+      return service.capture(request);
+    },
+  };
+}
+
+function createLazyShareMemoService(): InsightMemoService {
+  let service: InsightMemoService | undefined;
+
+  return {
+    updateMemo(insightId, memo) {
+      service ??= createBrowserInsightMemoService();
+      return service.updateMemo(insightId, memo);
+    },
+  };
+}
+
 export type AppProps = {
+  androidShareCaptureService?: InsightCaptureService;
+  androidShareMemoService?: InsightMemoService;
+  androidSharePlugin?: AndroidSharePluginAdapter;
   authService?: AuthService;
   createInsightRepository?: (userId: string) => InsightRepository;
 };
 
 function AppContent({
+  androidShareCaptureService,
+  androidShareMemoService,
+  androidSharePlugin,
   createInsightRepository,
-}: Pick<AppProps, 'createInsightRepository'>) {
+}: Pick<
+  AppProps,
+  | 'androidShareCaptureService'
+  | 'androidShareMemoService'
+  | 'androidSharePlugin'
+  | 'createInsightRepository'
+>) {
   const {
+    androidShareOAuthCallbackRevision,
     authAction,
     authErrorAction,
     authErrorMessage,
@@ -55,6 +101,27 @@ function AppContent({
         : undefined,
     [authState.status]
   );
+  const shareCaptureService = useMemo(
+    () => androidShareCaptureService ?? createLazyShareCaptureService(),
+    [androidShareCaptureService]
+  );
+  const shareMemoService = useMemo(
+    () => androidShareMemoService ?? createLazyShareMemoService(),
+    [androidShareMemoService]
+  );
+  const sharePlugin = useMemo(
+    () => androidSharePlugin ?? createAndroidSharePluginAdapter(),
+    [androidSharePlugin]
+  );
+  const androidShare = useAndroidShare({
+    androidShareOAuthCallbackRevision,
+    authStatus: authState.status,
+    captureService: shareCaptureService,
+    hasSignInError: authErrorAction === 'sign-in',
+    memoService: shareMemoService,
+    plugin: sharePlugin,
+    signInWithGoogle,
+  });
 
   useEffect(() => {
     if (authState.status === 'loading') {
@@ -69,6 +136,10 @@ function AppContent({
       window.history.replaceState({}, '', nextPath);
     }
   }, [authState.status]);
+
+  if (androidShare.state.status !== 'idle') {
+    return <AndroidShareScreen controller={androidShare} />;
+  }
 
   if (authState.status === 'loading') {
     return (
@@ -118,10 +189,21 @@ function AppContent({
   return <LandingPage onStart={() => setAuthEntryView('login')} />;
 }
 
-export function App({ authService, createInsightRepository }: AppProps = {}) {
+export function App({
+  androidShareCaptureService,
+  androidShareMemoService,
+  androidSharePlugin,
+  authService,
+  createInsightRepository,
+}: AppProps = {}) {
   return (
     <AuthProvider service={authService}>
-      <AppContent createInsightRepository={createInsightRepository} />
+      <AppContent
+        androidShareCaptureService={androidShareCaptureService}
+        androidShareMemoService={androidShareMemoService}
+        androidSharePlugin={androidSharePlugin}
+        createInsightRepository={createInsightRepository}
+      />
     </AuthProvider>
   );
 }

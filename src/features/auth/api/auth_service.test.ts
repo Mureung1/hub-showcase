@@ -34,6 +34,21 @@ describe('createSupabaseAuthService', () => {
     });
   });
 
+  it('uses the mobile OAuth adapter when Android provides one', async () => {
+    const client = createClientMock();
+    const mobileOAuth = {
+      signInWithGoogle: vi.fn().mockResolvedValue(undefined),
+      subscribeCallbacks: vi.fn(() => vi.fn()),
+      subscribeFailures: vi.fn(() => vi.fn()),
+    };
+    const service = createSupabaseAuthService(client, mobileOAuth);
+
+    await service.signInWithGoogle('http://localhost:5173');
+
+    expect(mobileOAuth.signInWithGoogle).toHaveBeenCalledOnce();
+    expect(client.auth.signInWithOAuth).not.toHaveBeenCalled();
+  });
+
   it('surfaces a Google OAuth initiation error', async () => {
     const client = createClientMock();
     const error = new AuthApiError(

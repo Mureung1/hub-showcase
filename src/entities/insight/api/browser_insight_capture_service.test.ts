@@ -1,6 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/shared/capacitor', () => ({
+  getInsightApiOrigin: vi.fn(() => ''),
+}));
+
+import { getInsightApiOrigin } from '@/shared/capacitor';
+
 import { createBrowserInsightCaptureService } from './browser_insight_capture_service';
 
 describe('createBrowserInsightCaptureService', () => {
@@ -40,6 +46,31 @@ describe('createBrowserInsightCaptureService', () => {
       },
       method: 'POST',
     });
+  });
+
+  it('Android API 원점에서는 공통 capture 경로를 HTTPS 원점에 결합한다', async () => {
+    vi.mocked(getInsightApiOrigin).mockReturnValueOnce(
+      'https://api.example.com'
+    );
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(
+        Response.json({ created: true, insight: createInsight(), ok: true })
+      );
+    const service = createBrowserInsightCaptureService(
+      createClient('access-token'),
+      fetcher
+    );
+
+    await service.capture({
+      source: 'android_share',
+      url: 'https://example.com/article',
+    });
+
+    expect(fetcher).toHaveBeenCalledWith(
+      'https://api.example.com/api/insights/capture',
+      expect.anything()
+    );
   });
 
   it('does not send a capture request without an authenticated session', async () => {

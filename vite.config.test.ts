@@ -26,6 +26,19 @@ describe('Vitest 설정', () => {
     );
   });
 
+  it('웹 빌드 전에 선택적인 Capacitor API 원점도 검증한다', () => {
+    expect(() =>
+      resolveWebBuildEnv(
+        {
+          VITE_CAPACITOR_API_ORIGIN: 'http://api.example.com',
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_file',
+          VITE_SUPABASE_URL: 'https://file.supabase.co',
+        },
+        {}
+      )
+    ).toThrow('HTTPS');
+  });
+
   it.each([
     ['sb_secret_private-key', 'https://project.supabase.co', '비밀키'],
     [

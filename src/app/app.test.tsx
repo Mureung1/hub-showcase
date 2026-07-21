@@ -4,8 +4,14 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import type { AuthService, AuthSession } from '@/features/auth';
-import type { InsightRepository } from '@/entities/insight';
+import type {
+  CapturedInsight,
+  InsightCaptureService,
+  InsightMemoService,
+  InsightRepository,
+} from '@/entities/insight';
 import { DesignSystemProvider } from '@/shared/ui';
+import type { AndroidSharePluginAdapter } from '@/shared/capacitor';
 
 import { App } from './index';
 
@@ -286,7 +292,102 @@ describe('App onboarding flow', () => {
     expect(window.location.pathname).toBe('/');
     expect(window.location.search).toBe('?tab=save');
   });
+
+  it('Android 공유는 로그인 뒤 자동 저장하고 선택 메모와 완료를 처리한다', async () => {
+    const user = userEvent.setup();
+    const auth = createAuthServiceMock();
+    const insight = createCapturedInsight();
+    let receiveShare:
+      Parameters<AndroidSharePluginAdapter['subscribe']>[0] | undefined;
+    const plugin: AndroidSharePluginAdapter = {
+      finishShare: vi.fn().mockResolvedValue(undefined),
+      subscribe: vi.fn(async (listener) => {
+        receiveShare = listener;
+        return vi.fn().mockResolvedValue(undefined);
+      }),
+    };
+    const captureService: InsightCaptureService = {
+      capture: vi.fn().mockResolvedValue({
+        created: true,
+        insight,
+        ok: true,
+      }),
+    };
+    const memoService: InsightMemoService = {
+      updateMemo: vi.fn().mockResolvedValue({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <App
+          androidShareCaptureService={captureService}
+          androidShareMemoService={memoService}
+          androidSharePlugin={plugin}
+          authService={auth.service}
+        />
+      </DesignSystemProvider>
+    );
+    auth.emit(null);
+
+    act(() => {
+      receiveShare?.({
+        id: 'share-1',
+        text: '읽을거리 https://example.com/article',
+        title: '공유 기사',
+      });
+    });
+
+    await waitFor(() =>
+      expect(auth.service.signInWithGoogle).toHaveBeenCalledOnce()
+    );
+    expect(auth.service.signInWithGoogle).toHaveBeenCalledWith(
+      window.location.origin,
+      'android-share'
+    );
+    auth.emit({
+      user: {
+        email: 'member@example.com',
+        id: 'user-1',
+        user_metadata: { full_name: '테스트 사용자' },
+      },
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: insight.title })
+    ).not.toBeNull();
+    expect(screen.getByText('저장됨')).not.toBeNull();
+    expect(captureService.capture).toHaveBeenCalledWith({
+      source: 'android_share',
+      title: '공유 기사',
+      url: 'https://example.com/article',
+    });
+
+    await user.click(screen.getByRole('button', { name: '메모 추가' }));
+    await user.type(screen.getByLabelText('한 줄 메모 (선택)'), '다시 읽기');
+    await user.click(screen.getByRole('button', { name: '완료' }));
+
+    await waitFor(() => expect(plugin.finishShare).toHaveBeenCalledOnce());
+    expect(memoService.updateMemo).toHaveBeenCalledWith(
+      insight.id,
+      '다시 읽기'
+    );
+  });
 });
+
+function createCapturedInsight(): CapturedInsight {
+  return {
+    category: null,
+    createdAt: '2026-07-21T00:00:00.000Z',
+    domain: 'example.com',
+    id: '10000000-0000-4000-8000-000000000001',
+    memo: null,
+    normalizedUrl: 'https://example.com/article',
+    originalUrl: 'https://example.com/article',
+    title: '공유 기사',
+    titleOrigin: 'capture',
+    updatedAt: '2026-07-21T00:00:00.000Z',
+  };
+}
 
 function createRepository(): InsightRepository {
   return {
