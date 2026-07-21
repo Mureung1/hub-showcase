@@ -130,7 +130,7 @@ export default function DepartmentGraph() {
       angle: REAL_DEPT_META[dept.id]?.angle ?? 0,
       color: REAL_DEPT_META[dept.id]?.color ?? 'var(--dept-cs)',
       implemented: true,
-      leaves: dept.leaves.map((leaf) => ({
+      leaves: dept.groups.flatMap((group) => group.leaves).map((leaf) => ({
         id: leaf.id,
         label: leaf.shortLabel ?? leaf.label,
         to: leaf.to,

@@ -14,7 +14,7 @@ import ChapterAssistant from '../../components/ChapterAssistant'
 
 const DEFAULT_COMPOUND = COORDINATION_COMPOUNDS[0]
 
-export default function InorganicChemistryPage() {
+export default function CoordinationGeometryPage() {
   const [smiles, setSmiles] = useState(DEFAULT_COMPOUND.smiles)
   const [sdf, setSdf] = useState<string | null>(DEFAULT_COMPOUND.sdf)
   const [activeCompound, setActiveCompound] = useState<CoordinationCompound | null>(
@@ -56,7 +56,7 @@ export default function InorganicChemistryPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-zinc-100">무기화학 — 배위 화합물</h1>
+      <h1 className="text-2xl font-semibold text-zinc-100">무기화학 — 배위 기하구조·이성질체</h1>
       <p className="mt-1 text-sm text-zinc-400">
         중심 금속 이온에 리간드가 배위결합으로 둘러싸인 구조를 보여줍니다. 아래 검증된 예시는
         정팔면체·평면사각형 결합각을 직접 계산한 정확한 3D 구조이고, 자유 검색은 PubChem 데이터를
@@ -104,6 +104,13 @@ export default function InorganicChemistryPage() {
         </Panel>
         <Panel title="3D 구조">
           <Structure3DViewer sdf={sdf} />
+          {activeCompound && (
+            <p className="mt-2 text-xs text-zinc-500">
+              마우스로 드래그해 돌려보세요. 3D는 배위 기하구조(중심 금속 + 리간드 배치)를 뚜렷이
+              보여주기 위해 리간드의 수소는 생략한 배위 골격만 표시합니다 — 리간드 전체 모양은
+              왼쪽 2D 구조식에서 확인하세요.
+            </p>
+          )}
         </Panel>
       </div>
 

@@ -11,9 +11,10 @@ export const e2EliminationReaction: ReactionTemplate = {
       smiles: 'CC[O-].CC(Br)C',
       title: '염기의 베타 수소 제거',
       description:
-        '에톡시화이온(염기)의 비공유 전자쌍이 베타 탄소에 붙은 수소를 떼어내는 동시에, C–Br 결합은 끊어지며 브로민이 이탈기로 떨어져 나갑니다. 수소가 붙어있던 자리(베타 탄소)에서 전자쌍이 이동해 새로운 C=C 파이 결합이 형성되며, 세 가지 변화가 동시에 일어나는 협동 반응입니다. 수소 원자는 그림에 따로 표시되지 않아 화살표가 베타 탄소 쪽을 향합니다.',
+        '에톡시화이온(염기)의 비공유 전자쌍이 베타 탄소에 붙은 수소를 떼어내고(①), 그 수소가 있던 자리의 전자쌍이 이동해 알파 탄소와 새로운 C=C 파이 결합을 형성하며(②), 동시에 C–Br 결합이 끊어지며 브로민이 이탈기로 떨어져 나갑니다(③). 세 가지 변화가 한 번에 일어나는 협동(concerted) 반응입니다. 수소 원자는 그림에 따로 표시되지 않아 ①② 화살표가 베타 탄소 쪽에서 출발·도착합니다.',
       arrows: [
         { id: 'base-removes-beta-h', source: { kind: 'lone-pair', atom: 2 }, target: 6 },
+        { id: 'pi-bond-forms', source: { kind: 'lone-pair', atom: 6 }, target: 4 },
         { id: 'c-br-breaks', source: { kind: 'sigma-bond', atoms: [4, 5] }, target: 5 },
       ],
     },

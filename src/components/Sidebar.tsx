@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { NAVIGATION } from '../data/navigation'
 import { useQnaPanel } from '../features/qna/context/QnaPanelContext'
@@ -52,6 +52,20 @@ const icons = {
       <circle cx="11.7" cy="10" r="1.5" />
     </svg>
   ),
+  osScheduling: (
+    <svg {...iconProps} strokeWidth={1.3}>
+      <circle cx="8" cy="8" r="5.5" />
+      <path d="M8 8 8 4.5" />
+      <path d="M8 8 10.5 9.5" />
+    </svg>
+  ),
+  dbBtree: (
+    <svg {...iconProps} strokeWidth={1.3}>
+      <ellipse cx="8" cy="3.2" rx="5" ry="1.6" />
+      <path d="M3 3.2v6.2c0 .9 2.2 1.6 5 1.6s5-.7 5-1.6V3.2" />
+      <path d="M3 6.3c0 .9 2.2 1.6 5 1.6s5-.7 5-1.6" />
+    </svg>
+  ),
   generalChem: (
     <svg {...iconProps} strokeWidth={1.3}>
       <path d="M6.3 2h3.4M6.9 2v3.8L3.6 12c-.5 1 .1 1.9 1.2 1.9h6.4c1.1 0 1.7-.9 1.2-1.9L9.1 5.8V2" />
@@ -79,6 +93,15 @@ const iconMap: Record<string, ReactNode> = icons
 
 export default function Sidebar() {
   const { isOpen, toggle } = useQnaPanel()
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {}
+    NAVIGATION.forEach((dept) => dept.groups.forEach((group) => (initial[group.id] = true)))
+    return initial
+  })
+
+  const toggleGroup = (groupId: string) => {
+    setOpenGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }))
+  }
 
   return (
     <aside
@@ -111,55 +134,100 @@ export default function Sidebar() {
           >
             {dept.label}
           </h3>
-          <ul className="mt-1.5 space-y-0.5">
-            {dept.leaves.map((item) => (
-              <li key={item.id}>
-                {item.to ? (
-                  <NavLink
-                    to={item.to}
-                    className={({ isActive }) =>
-                      `flex items-center gap-2.5 rounded-[9px] border px-2.5 py-2 text-[13.5px] transition-colors ${
-                        isActive ? 'font-medium' : ''
-                      }`
-                    }
-                    style={({ isActive }) =>
-                      isActive
-                        ? {
-                            background: 'var(--color-bg-card-hover)',
-                            borderColor: 'var(--color-border-card-strong)',
-                            color: 'var(--color-text-primary)',
-                            boxShadow: 'var(--shadow-glow-accent)',
-                          }
-                        : { borderColor: 'transparent', color: 'var(--color-text-secondary)' }
-                    }
+
+          <div className="mt-1.5 space-y-2.5">
+            {dept.groups.map((group) => {
+              const isGroupOpen = openGroups[group.id] ?? true
+              return (
+                <div key={group.id}>
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.id)}
+                    className="flex w-full items-center gap-1.5 rounded-[7px] px-2.5 py-1 text-[12px] font-medium"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                    aria-expanded={isGroupOpen}
                   >
-                    {({ isActive }) => (
-                      <>
-                        <span style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-text-muted)' }}>
-                          {iconMap[item.iconKey]}
-                        </span>
-                        {item.label}
-                      </>
-                    )}
-                  </NavLink>
-                ) : (
-                  <div
-                    className="flex items-center gap-2.5 rounded-[9px] px-2.5 py-2 text-[13.5px]"
-                    style={{ color: 'var(--color-text-muted)' }}
-                  >
-                    <span style={{ color: 'var(--color-text-muted)' }}>{iconMap[item.iconKey]}</span>
-                    <span className="flex-1">{item.label}</span>
-                    <span
-                      className="rounded-[5px] border px-1.5 py-0.5 text-[10px]"
-                      style={{ borderColor: 'var(--color-border-card-strong)', color: 'var(--color-text-muted)' }}
+                    <svg
+                      width={10}
+                      height={10}
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.6}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{
+                        transform: isGroupOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.15s ease',
+                      }}
                     >
-                      준비 중
-                    </span>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
+                      <path d="M5 3 11 8 5 13" />
+                    </svg>
+                    {group.label}
+                  </button>
+
+                  {isGroupOpen && (
+                    <ul className="mt-0.5 space-y-0.5 pl-3">
+                      {group.leaves.map((item) => (
+                        <li key={item.id}>
+                          {item.to ? (
+                            <NavLink
+                              to={item.to}
+                              className={({ isActive }) =>
+                                `flex items-center gap-2.5 rounded-[9px] border px-2.5 py-2 text-[13.5px] transition-colors ${
+                                  isActive ? 'font-medium' : ''
+                                }`
+                              }
+                              style={({ isActive }) =>
+                                isActive
+                                  ? {
+                                      background: 'var(--color-bg-card-hover)',
+                                      borderColor: 'var(--color-border-card-strong)',
+                                      color: 'var(--color-text-primary)',
+                                      boxShadow: 'var(--shadow-glow-accent)',
+                                    }
+                                  : { borderColor: 'transparent', color: 'var(--color-text-secondary)' }
+                              }
+                            >
+                              {({ isActive }) => (
+                                <>
+                                  <span
+                                    style={{
+                                      color: isActive ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                                    }}
+                                  >
+                                    {iconMap[item.iconKey]}
+                                  </span>
+                                  {item.label}
+                                </>
+                              )}
+                            </NavLink>
+                          ) : (
+                            <div
+                              className="flex items-center gap-2.5 rounded-[9px] px-2.5 py-2 text-[13.5px]"
+                              style={{ color: 'var(--color-text-muted)' }}
+                            >
+                              <span style={{ color: 'var(--color-text-muted)' }}>{iconMap[item.iconKey]}</span>
+                              <span className="flex-1">{item.label}</span>
+                              <span
+                                className="rounded-[5px] border px-1.5 py-0.5 text-[10px]"
+                                style={{
+                                  borderColor: 'var(--color-border-card-strong)',
+                                  color: 'var(--color-text-muted)',
+                                }}
+                              >
+                                준비 중
+                              </span>
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       ))}
 
