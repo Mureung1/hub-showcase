@@ -4,7 +4,7 @@
 
 ## 프로젝트 개요
 
-**영문 뉴스 기반 해외 주식 모의 투자 학습 AI 에이전트 (Briefly)**
+**영문 뉴스 기반 해외 주식 모의 투자 학습 AI 에이전트 (Articles)**
 
 초보자가 외신 원문을 번역기 없이 완독하고, 스스로 시장을 해석해 투자 판단
 (Bullish/Neutral/Bearish)을 내린 뒤 AI의 해석과 비교해보는 웹 서비스.
@@ -61,14 +61,19 @@ React 구현 메모:
 ### 구현 상태 (2주차 대부분 완료, 3주차 예정)
 
 - **동작함:** 전체 라우팅/API 흐름, `articleParser.js` 스크래핑+fallback,
-  `decisionStore.js` 동기 fs, `vocabularyStore.js`(Supabase 전환, 2026-07-17),
-  Supabase Auth 로그인/회원가입(`Login.jsx`, `AuthContext.jsx`), 단어장 자동
-  적재, 인사이트 노트 아코디언, 사이드바 카운트 뱃지.
+  `vocabularyStore.js`(Supabase 전환, 2026-07-17), `decisionStore.js`(Supabase
+  전환, 2026-07-21), Supabase Auth 로그인/회원가입(`Login.jsx`,
+  `AuthContext.jsx`), 단어장 자동 적재, 인사이트 노트 아코디언, 사이드바
+  카운트 뱃지.
 - **더미:** `llmService.js`의 `analyzeArticle` — 고정 용어/문장 매칭 + 고정
   요약·insight·marketSentiment 반환. 실제 Claude 프롬프트는 3주차 작업.
 - 대시보드 3개 기사도 고정 픽스처, 실제 수집 로직 없음.
-- **미완:** 바텀시트 닫기→저장 완료 토스트 미배선. 완독/판단수행률 분리
-  집계 로깅 없음.
+- **완료(07-21):** 완독/판단수행률 분리 집계 로깅(GitHub #16) —
+  `article_reads` 테이블에 완독 이벤트를 기록하고 판단 시 `decision_id`로
+  FK 연결(`server/src/services/articleReadStore.js`,
+  `POST /api/article-reads`). 완독 판정은 판단버튼 영역 도달
+  (IntersectionObserver), 이탈 감지는 SPA 내 라우트 이동만 처리(브라우저 탭
+  닫기/새로고침은 스코프 밖).
 
 ## 디렉토리 구조
 
@@ -85,8 +90,8 @@ hub/
 ├── server/
 │   ├── src/routes/     # dashboard.js, article.js, decisions.js, vocabulary.js
 │   ├── src/middleware/ # auth.js (requireAuth, attachUser)
-│   ├── src/services/   # articleParser.js, llmService.js, decisionStore.js, vocabularyStore.js, supabaseClient.js
-│   └── data/           # decisions.json (vocabulary는 Supabase로 이전, vocabulary.json 미사용)
+│   ├── src/services/   # articleParser.js, llmService.js, decisionStore.js, vocabularyStore.js, articleStore.js, supabaseClient.js
+│   └── data/           # decisions.json/vocabulary.json 모두 Supabase로 이전, 미사용
 ├── supabase/migrations/ # 20260717000000_init_schema.sql (articles/vocabulary/decisions/article_reads + RLS)
 ├── docs/               # plan.md, api-spec.md, checklist.md, backlog.md, data-model.md
 ├── prototype/          # 정적 프로토타입 — 삭제 금지
@@ -122,10 +127,11 @@ hub/
   - `GET /api/decisions` — 히스토리 조회
 - **응답 형식**: 항상 `{ success: true, data }` 또는 `{ success: false, error }`
   (`client/src/api/client.js`의 `apiRequest`가 전제)
-- **저장소**: `decisionStore.js`는 여전히 `server/data/decisions.json`을 `fs`
-  동기 API(`readFileSync`/`writeFileSync`)로 다룬다. `vocabularyStore.js`는
-  Supabase(`articles`/`vocabulary` 테이블, `server/src/services/supabaseClient.js`)로
-  전환됨(2026-07-17) — 스키마는 `docs/data-model.md`/`supabase/migrations/` 참고
+- **저장소**: `vocabularyStore.js`(2026-07-17)와 `decisionStore.js`(2026-07-21)
+  모두 Supabase(`articles`/`vocabulary`/`decisions` 테이블,
+  `server/src/services/supabaseClient.js`)로 전환됨. `articles` 테이블
+  upsert-by-url 로직은 `articleStore.js`의 `ensureArticle`로 공용화해 두
+  스토어가 함께 쓴다 — 스키마는 `docs/data-model.md`/`supabase/migrations/` 참고
 - **환경변수**: `ANTHROPIC_API_KEY`는 `server/.env`(gitignore). 현재
   `analyzeArticle`이 더미라 키 없이도 서버 동작. Supabase 연동에는
   `server/.env`의 `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`(서버 전용,
@@ -138,12 +144,13 @@ hub/
 
 - **외신 파싱**: fetch에 브라우저 `User-Agent` 헤더 필수(없으면 403 다발).
   파싱 실패 시 하드코딩 fallback 기사 반환(데모 중단 방지).
-- **decisionStore**: 반드시 동기 fs — 연속 요청 시 읽기-수정-쓰기 경합으로
-  파일 깨질 위험. `vocabularyStore`는 Supabase로 전환돼 이 제약이 없다(DB가
-  동시성을 처리).
-- **vocabularyStore 인증**: `GET /api/vocabulary`는 `req.userId` 없이 호출되지
-  않는다(라우트의 `requireAuth`가 401로 막음). `appendVocabulary`도 `userId`
-  없이는 호출하지 않는다(`llmService.js`가 비로그인 시 저장 자체를 건너뜀).
+- **vocabularyStore/decisionStore 인증**: `GET /api/vocabulary`, `GET`/`POST
+  /api/decisions` 모두 `req.userId` 없이 호출되지 않는다(각 라우트의
+  `requireAuth`가 401로 막음). `appendVocabulary`도 `userId` 없이는 호출하지
+  않는다(`llmService.js`가 비로그인 시 저장 자체를 건너뜀). 프론트도 비로그인
+  사용자를 위해 `Vocabulary.jsx`/`InsightNote.jsx`는 로그인 안내로 대체
+  렌더링하고, `Reader.jsx`의 `handleCloseSheet`는 비로그인 시 `saveDecision`
+  호출 자체를 건너뛴다(401로 리더뷰 전체가 에러 화면이 되는 것 방지).
 - **parse/analyze 분리 유지**: 합치면 스크래핑+LLM 지연 합산으로 타임아웃 위험.
   프론트는 parse 성공 후에만 analyze 호출.
 - **MOCK_LLM=true**: Claude 미호출, 더미 응답. 파라미터에 `FAIL_TEST` 포함 시

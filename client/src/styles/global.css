@@ -688,26 +688,37 @@ h2 {
   border-color: var(--action-sell-text);
 }
 
-.decision-toast {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-  margin-top: var(--space-md);
-  padding: var(--space-md);
-  border-radius: var(--radius-md);
+/* ---------- Save Toast (저장 완료 피드백, 화면4) ---------- */
+/* 화면 상단에 배치: 하단은 투자 판단 버튼이 문서 흐름상 정적 배치돼 있어
+   (docs/checklist.md 기능③) 바텀시트가 닫힌 직후에는 그 버튼들이 뷰포트
+   하단에 있는 경우가 많다. 토스트를 하단에 띄우면 방금 누른 버튼과 겹치므로
+   상단에 띄운다. */
+.save-toast {
+  position: fixed;
+  left: 50%;
+  top: var(--space-xl);
+  transform: translateX(-50%);
+  z-index: 300;
   background: var(--brand-navy);
   color: var(--text-inverse);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-md);
   font-size: 14px;
-  line-height: 22px;
+  line-height: 20px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 23, 75, 0.25);
+  animation: save-toast-in 0.2s ease;
 }
 
-.decision-toast a {
-  color: var(--accent-yellow);
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
+@keyframes save-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 /* ---------- Fallback Alert ---------- */
