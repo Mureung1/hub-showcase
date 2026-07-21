@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronRight, Bell, Shield, HelpCircle, LogOut, Tv, Music, Cloud, ShoppingBag, CreditCard, TrendingDown, Zap, Target, X, Plus, Trash2, Check, User } from 'lucide-react'
 import ToggleSwithch from '../components/ToggleSwitch'
+import { getSubscriptions, getBudget, setBudget, createSubscription, updateSubscription, deleteSubscription, type Subscription as ApiSubscription } from '../lib/api'
+
 type Subscription = {
+  id? : number
   name: string
   price: number
   billingDay: number
@@ -9,13 +12,6 @@ type Subscription = {
   color: string
   bg: string
 }
-
-const INITIAL_SUBSCRIPTIONS: Subscription[] = [
-  { name: '넷플릭스', price: 17000, billingDay: 15, icon: Tv, color: '#E50914', bg: '#FEF2F2' },
-  { name: '유튜브 프리미엄', price: 14900, billingDay: 22, icon: Tv, color: '#FF0000', bg: '#FFF0F0' },
-  { name: '멜론', price: 10900, billingDay: 28, icon: Music, color: '#00C2A1', bg: '#E6FAF7' },
-  { name: 'iCloud 50GB', price: 1200, billingDay: 31, icon: Cloud, color: '#007AFF', bg: '#EBF2FF' },
-]
 
 function getNextBillingInfo(billingDay: number) {
   const today = new Date()
@@ -124,9 +120,9 @@ function ProfileEditModal({ onClose }: { onClose: () => void }) {
 }
 
 /* ── 예산 수정 모달 ── */
-function BudgetEditModal({ onClose }: { onClose: () => void }) {
+function BudgetEditModal({ totalBudget, onClose, onSaved }: { totalBudget: number | null; onClose: () => void; onSaved: (amount: number) => void }) {
   const [items, setItems] = useState<BudgetItem[]>([
-    { label: '월 총 예산', amount: '600000' },
+    { label: '월 총 예산', amount: totalBudget != null ? String(totalBudget) : '' },
     { label: '식비',     amount: '200000' },
     { label: '외식',     amount: '150000' },
     { label: '교통',     amount: '80000' },
@@ -147,8 +143,15 @@ function BudgetEditModal({ onClose }: { onClose: () => void }) {
   }
 
   const handleSave = () => {
-    setSaved(true)
-    setTimeout(onClose, 800)
+    const amount = Number(items[0].amount)
+    if (!amount || amount <= 0) return
+    setBudget(amount)
+      .then(() => {
+        onSaved(amount)
+        setSaved(true)
+        setTimeout(onClose, 800)
+      })
+      .catch(() => {})
   }
 
   return (
@@ -262,14 +265,35 @@ function SubscriptionManageModal({
     setItems(prev => [...prev, { name: '', price: 0, billingDay: 1, ...getSubscriptionMeta('') }])
   }
 
-  const removeItem = (idx: number) => {
+  const removeItem = async (idx: number) => {
+    const item = items[idx]
+    if (item.id) {
+      try {
+        await deleteSubscription(item.id)
+      } catch {
+        return
+      }
+    }
     setItems(prev => prev.filter((_, i) => i !== idx))
   }
 
-  const handleSave = () => {
-    onSave(items.filter(i => i.name.trim() !== ''))
-    setSaved(true)
-    setTimeout(onClose, 800)
+  const handleSave = async () => {
+    const valid = items.filter(i => i.name.trim() !== '')
+    try {
+      await Promise.all(
+        valid.map(item =>
+          item.id
+            ? updateSubscription(item.id, item.name, item.price, item.billingDay)
+            : createSubscription(item.name, item.price, item.billingDay)
+        )
+      )
+      const refreshed = await getSubscriptions()
+      onSave(refreshed.map(s => ({ ...s, ...getSubscriptionMeta(s.name) })))
+      setSaved(true)
+      setTimeout(onClose, 800)
+    } catch {
+      // 지금 스코프에선 별도 에러 UI 없이 조용히 실패 처리
+    }
   }
 
   return (
@@ -369,10 +393,26 @@ export default function MyPageScreen({ survivalModeOff, onToggleSurvivalMode }: 
   const [showProfileEdit, setShowProfileEdit] = useState(false)
   const [showBudgetEdit, setShowBudgetEdit] = useState(false)
 const [showSubManage, setShowSubManage] = useState(false)
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>(INITIAL_SUBSCRIPTIONS)
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
+
+useEffect(() => {
+  getSubscriptions()
+    .then((list: ApiSubscription[]) => {
+      setSubscriptions(list.map(s => ({ ...s, ...getSubscriptionMeta(s.name) })))
+    })
+    .catch(() => {})
+}, [])
+
+  const [totalBudget, setTotalBudget] = useState<number | null>(null)
+
+  useEffect(() => {
+    getBudget()
+      .then(b => setTotalBudget(b.amount))
+      .catch(() => {})
+  }, [])
 
   const totalSub = subscriptions.reduce((s, i) => s + i.price, 0)
-
+  const hasUrgentSubscription = subscriptions.some(s => getNextBillingInfo(s.billingDay).dday <= 7)
 
   return (
     <>
@@ -451,7 +491,12 @@ const [showSubManage, setShowSubManage] = useState(false)
               수정
             </button>
           </div>
-          {[['월 총 예산', '600,000원'], ['식비', '200,000원'], ['외식', '150,000원'], ['교통', '80,000원']].map(([k, v], i) => (
+          {[
+            ['월 총 예산', totalBudget != null ? `${totalBudget.toLocaleString()}원` : '설정 안 함'],
+            ['식비', '200,000원'],
+            ['외식', '150,000원'],
+            ['교통', '80,000원'],
+          ].map(([k, v], i) => (
             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
               <span style={{ fontSize: 14, color: 'var(--muted)' }}>{k}</span>
               <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--foreground)' }}>{v}</span>
@@ -481,10 +526,12 @@ const [showSubManage, setShowSubManage] = useState(false)
           </div>
 
           {/* AI recommendation */}
-          <div style={{ margin: '0 16px 12px', background: '#FFF8E8', borderRadius: 14, padding: '12px 14px', border: '1px solid #FFE4A0', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Zap size={16} color="#FFC857" />
-            <p style={{ margin: 0, fontSize: 13, color: '#92400E', fontWeight: 600 }}>결제일이 가까운 구독이 있어요. 미리 확인해보세요!</p>
-          </div>
+{hasUrgentSubscription && (
+  <div style={{ margin: '0 16px 12px', background: '#FFF8E8', borderRadius: 14, padding: '12px 14px', border: '1px solid #FFE4A0', display: 'flex', alignItems: 'center', gap: 10 }}>
+    <Zap size={16} color="#FFC857" />
+    <p style={{ margin: 0, fontSize: 13, color: '#92400E', fontWeight: 600 }}>결제일이 가까운 구독이 있어요. 미리 확인해보세요!</p>
+  </div>
+)}
 
           {/* Subscription list — 사용률 배지 없이 이름 + 다음 결제일만 */}
           {subscriptions.map((s, idx) => {
@@ -540,7 +587,13 @@ const [showSubManage, setShowSubManage] = useState(false)
       </div>
 
       {showProfileEdit && <ProfileEditModal onClose={() => setShowProfileEdit(false)} />}
-      {showBudgetEdit && <BudgetEditModal onClose={() => setShowBudgetEdit(false)} />}
+      {showBudgetEdit && (
+        <BudgetEditModal
+          totalBudget={totalBudget}
+          onClose={() => setShowBudgetEdit(false)}
+          onSaved={(amount) => setTotalBudget(amount)}
+        />
+      )}
       {showSubManage && (
         <SubscriptionManageModal
           subscriptions={subscriptions}

@@ -96,3 +96,72 @@ export async function getDailyExpenses(): Promise<DailyAmount[]> {
   }
   return res.json()
 }
+export interface Subscription {
+  id: number
+  name: string
+  price: number
+  billingDay: number
+}
+
+export async function getSubscriptions(): Promise<Subscription[]> {
+  const res = await fetch('/api/subscriptions')
+  if (!res.ok) {
+    throw new Error('구독 목록을 불러오지 못했어요.')
+  }
+  return res.json()
+}
+
+export async function createSubscription(name: string, price: number, billingDay: number): Promise<Subscription> {
+  const res = await fetch('/api/subscriptions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, price, billingDay }),
+  })
+  if (!res.ok) {
+    throw new Error('구독 등록에 실패했어요.')
+  }
+  return res.json()
+}
+
+export async function updateSubscription(id: number, name: string, price: number, billingDay: number): Promise<Subscription> {
+  const res = await fetch(`/api/subscriptions/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, price, billingDay }),
+  })
+  if (!res.ok) {
+    throw new Error('구독 수정에 실패했어요.')
+  }
+  return res.json()
+}
+
+export async function deleteSubscription(id: number): Promise<void> {
+  const res = await fetch(`/api/subscriptions/${id}`, { method: 'DELETE' })
+  if (!res.ok) {
+    throw new Error('구독 삭제에 실패했어요.')
+  }
+}
+
+export interface Budget {
+  amount: number | null
+}
+
+export async function getBudget(): Promise<Budget> {
+  const res = await fetch('/api/budget')
+  if (!res.ok) {
+    throw new Error('예산을 불러오지 못했어요.')
+  }
+  return res.json()
+}
+
+export async function setBudget(amount: number): Promise<Budget> {
+  const res = await fetch('/api/budget', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount }),
+  })
+  if (!res.ok) {
+    throw new Error('예산 저장에 실패했어요.')
+  }
+  return res.json()
+}

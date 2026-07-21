@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "spendmate-fe",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "SpendMate/fe", "dev"],
+      "port": 8443
+    }
+  ]
+}
