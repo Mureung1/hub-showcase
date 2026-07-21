@@ -69,23 +69,19 @@ const searchInput = {
   halfLifeHours: HALF_LIFE_HOURS,
 };
 
-const unconstrained = searchMultiDaySchedule(searchInput);
-const constrained = searchMultiDaySchedule({ ...searchInput, minSleepHours: 5 });
-
+// #23 — 로컬 탐색이 무작위 초기값에 의존하므로, 한 번만 돌리면 우연히 성공/실패할 수
+// 있다. 여러 번(TRIALS) 돌려서 "최소 수면시간 제약 준수 성공률"을 통계로 확인한다.
+const TRIALS = 30;
+const MIN_SLEEP = 5;
+let successes = 0;
+for (let trial = 0; trial < TRIALS; trial++) {
+  const result = searchMultiDaySchedule({ ...searchInput, minSleepHours: MIN_SLEEP });
+  if (sleptHours(result.nights) >= MIN_SLEEP - 1e-9) successes++;
+}
+const successRate = successes / TRIALS;
+console.log(`최소 ${MIN_SLEEP}시간 제약, ${TRIALS}회 시도 — 성공 ${successes}회 (성공률 ${(successRate * 100).toFixed(1)}%)`);
 console.log(
-  "제약 없을 때 — 수면시간:",
-  sleptHours(unconstrained.nights).toFixed(2),
-  "h / 점수:",
-  unconstrained.score.toFixed(4),
-);
-console.log(
-  "최소 5시간 제약 — 수면시간:",
-  sleptHours(constrained.nights).toFixed(2),
-  "h / 점수:",
-  constrained.score.toFixed(4),
-);
-console.log(
-  sleptHours(constrained.nights) >= 5 - 1e-9
-    ? "[OK] 제약을 걸면 실제로 최소 수면시간을 지키는 스케줄을 찾음"
-    : "[FAIL] 제약을 걸어도 여전히 수면시간이 부족함 — 패널티 크기가 너무 작을 수 있음(SLEEP_SHORTFALL_PENALTY_PER_HOUR 조정 필요)",
+  successRate >= 0.95
+    ? "[OK] 제약을 걸면 안정적으로(95%+) 최소 수면시간을 지키는 스케줄을 찾음"
+    : "[FAIL] 성공률이 낮음 — 탐색이 취침 시각을 제대로 못 흔들거나 패널티가 약함",
 );
