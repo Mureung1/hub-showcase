@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 function DraftEditor({ job, onBack }) {
   const [answers, setAnswers] = useState(job.essayQuestions.map((q) => q.draft));
+  const [isSaved, setIsSaved] = useState(false);
 
   function updateAnswer(index, value) {
     setAnswers(answers.map((answer, i) => (i === index ? value : answer)));
@@ -12,6 +13,7 @@ function DraftEditor({ job, onBack }) {
       <p className="eyebrow">STEP 4</p>
       <h1>자기소개서 초안</h1>
       <p className="subtitle">{job.title} · 문항 {job.essayQuestions.length}개에 대한 초안이에요. 자유롭게 수정해보세요.</p>
+      {isSaved && <span className="tag tag--primary">저장됨</span>}
 
       {job.essayQuestions.map((essayQuestion, index) => (
         <div className="question-block" key={essayQuestion.question}>
@@ -24,6 +26,7 @@ function DraftEditor({ job, onBack }) {
             rows={5}
             maxLength={essayQuestion.maxLength}
             value={answers[index]}
+            disabled={isSaved}
             onChange={(event) => updateAnswer(index, event.target.value)}
           />
         </div>
@@ -33,8 +36,8 @@ function DraftEditor({ job, onBack }) {
         <button type="button" className="btn-link" onClick={onBack}>
           ← 다른 공고 보러 돌아가기
         </button>
-        <button type="button" className="btn-primary" onClick={onBack}>
-          저장 / 완료
+        <button type="button" className="btn-primary" onClick={() => setIsSaved(!isSaved)}>
+          {isSaved ? '수정' : '저장 / 완료'}
         </button>
       </div>
     </section>
