@@ -3,7 +3,7 @@ import React from 'react';
 // 게시글 카드 1장 컴포넌트
 // - index.html의 .feed-card 디자인을 React로 이식
 // - 부모(FeedList)로부터 post 데이터 1건을 Props로 받아서 화면에 그립니다
-const PostCard = ({ post }) => {
+const PostCard = ({ post, onClick }) => {
   // 보상 배지 렌더링 함수
   const renderRewardBadge = () => {
     if (post.reward === '음료 제공') {
@@ -33,7 +33,7 @@ const PostCard = ({ post }) => {
   };
 
   return (
-    <div className="feed-card">
+    <div className="feed-card" onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
       {/* 카드 상단: 태그 배지 + 보상 배지 */}
       <div className="feed-card-header">
         <div className="category-badges">
