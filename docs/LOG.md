@@ -1086,3 +1086,9 @@
 ### 검증
 - 전체 41파일 349개 테스트(일시적 flake 1건은 재실행으로 비재현 확인), lint, `typecheck:api`, production build, `git diff --check` 통과.
 - T24는 검증 완료로 CHECKLIST에 반영했다. 상세 근거: [T24 계획서](../harness/tasks/T24-interaction-ops-verification/plan.md)·[검증 보고서](../harness/tasks/T24-interaction-ops-verification/verification.md).
+
+## 2026-07-21 (T25 상황 카드 템플릿 288개 전수 검수 완료)
+- 한국어 관계 맥락 평가자 2명(김도엽·진현지)이 독립 수행한 288개 전수 검수 결과를 사용자가 보고했다: hard fail 0/288, 톤 블라인드 정렬 96/96, 그대로 전송 가능 231/288(80.2%, SPEC 4장 합격선 충족), 하위 관계 호환(교수님·조교님/선배·동기/친구·연인) 288/288. SPEC 4장 T25 합격선 네 항목 모두 통과했다.
+- 검수 과정에서 수집된 채점표 원본(평가자 식별정보 포함)은 T16과 동일한 방침으로 저장소에 별도 보관하지 않는다. 저장소에 남아 있던 대표 12문구(4장×3톤) preflight CSV는 이 전수 검수 이전 단계의 사전 검토 자료다.
+- `src/entities/message/situationTemplates.ts`의 정적 288개 문구가 검수 대상 원본이며, 코드 변경은 없다. CHECKLIST T25를 완료로 반영하고 MVP.md·AI_DESIGN.md·PRD.md의 "초안"·"검수 전" 표현을 검수 통과로 갱신했다.
+- CHECKLIST T26(결정적 템플릿 엔진·fallback, 의존 T3·T8·T25)이 이제 착수 가능 상태다.

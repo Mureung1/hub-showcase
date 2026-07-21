@@ -115,7 +115,7 @@ docs/SCREENS.md에서 확정한 내부 단계 S0~S3는 유지하되 한 개의 �
   - 상황 카드(SituationCard): id, 라벨, 범위(공통/시나리오 특화) — 프론트 상수 (SPEC 1장)
   - guided 질문(GuidedContextQuestion): scenarioId×situationId별 질문 1개와 option 3개, stable ID·purpose·사실 경계 — Git 정본(T34)
   - 시드 예시(CuratedExample): scenarioId, situationNote, receivedMessage?, toneLevel, message, source — 프록시 상수('직접 설명' AI few-shot 재료, 24개)
-  - 상황 카드 템플릿(CuratedTemplate): scenarioId×situationId×speechStyleId×toneLevel 조회, 시드와 독립 작성 — 프론트 상수(카드 경로 재료, 288개 초안, SPEC 4장)
+  - 상황 카드 템플릿(CuratedTemplate): scenarioId×situationId×speechStyleId×toneLevel 조회, 시드와 독립 작성 — 프론트 상수(카드 경로 재료, T25 전수 검수 통과 288개, SPEC 4장)
   - 교수 이메일 템플릿(EmailTemplate): emailSituationId×toneLevel의 제목·본문 — 사용자 입력을 로컬에서만 치환하는 18후보 초안(T33)
 - **MVP — PostgreSQL 운영 데이터 (SPEC 2장, T30)**:
   - PromptVersion / TemplateVersion: 배포 버전, checksum, 검수 상태·시각
