@@ -5,6 +5,7 @@ import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
 import LeaderboardCard from '../components/LeaderboardCard.jsx'
 import MealTypeBadge from '../components/MealTypeBadge.jsx'
+import NationalComparisonCard from '../components/NationalComparisonCard.jsx'
 import { NutrientBars } from '../components/NutritionCard.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
@@ -297,6 +298,8 @@ export default function MealsPage() {
       )}
 
       <LeaderboardCard />
+
+      <NationalComparisonCard />
 
       <SectionTitle>오늘 먹은 음식</SectionTitle>
       {deleteError && (
