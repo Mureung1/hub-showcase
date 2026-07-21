@@ -8,6 +8,7 @@ import {
   createResultFileName,
   parseJsonContent,
   parseModelList,
+  validateTechnicalChallengeResponse,
 } from "./evaluate-openai-models.lib.mjs";
 
 const OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions";
@@ -51,10 +52,8 @@ async function main() {
       const outputPath = resolve(outputDirectory, createResultFileName(model, run));
 
       await writeFile(outputPath, `${JSON.stringify(result, null, 2)}\n`, "utf8");
-      console.log(
-        `[${result.ok ? "ok" : "error"}] ${model} run ${run} ` +
-          `(${result.latencyMs}ms) -> ${outputPath}`,
-      );
+      const state = !result.ok ? "error" : result.contractValidation.valid ? "ok" : "contract-invalid";
+      console.log(`[${state}] ${model} run ${run} (${result.latencyMs}ms) -> ${outputPath}`);
 
       if (!result.ok) {
         failures.push(`${model} run ${run}`);
@@ -85,6 +84,7 @@ async function evaluateModel({ apiKey, fixture, model, run }) {
     const rawBody = await response.text();
     const responseBody = parseResponseBody(rawBody);
     const parsedResponse = responseBody ? parseJsonContent(responseBody) : null;
+    const contractValidation = validateTechnicalChallengeResponse(parsedResponse);
 
     return {
       schemaVersion: 1,
@@ -97,6 +97,7 @@ async function evaluateModel({ apiKey, fixture, model, run }) {
       responseModel: responseBody?.model ?? null,
       usage: responseBody?.usage ?? null,
       parsedResponse,
+      contractValidation,
       rawResponse: rawBody,
       error: response.ok ? null : getProviderError(responseBody, response.status),
     };
@@ -112,6 +113,7 @@ async function evaluateModel({ apiKey, fixture, model, run }) {
       responseModel: null,
       usage: null,
       parsedResponse: null,
+      contractValidation: validateTechnicalChallengeResponse(null),
       rawResponse: null,
       error: error instanceof Error ? error.message : String(error),
     };
