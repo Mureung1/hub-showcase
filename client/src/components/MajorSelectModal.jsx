@@ -48,6 +48,7 @@ export default function MajorSelectModal({ onConfirm }) {
       major,
       totalCredits: majorInfo.totalCredits,
       majorCredits: majorInfo.majorCredits,
+      generalCredits: majorInfo.generalCredits,
       track: track || null,
       trackInfo,
     });

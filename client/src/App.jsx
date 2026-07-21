@@ -6,11 +6,18 @@ import { useState } from 'react';
 
 function App() {
   // 졸업요건 입력 모달
-  const [submitted, setSubmitted] = useState(null);
   const [gradInfo, setGradInfo] = useState(() => {
   const saved = localStorage.getItem('gradInfo');
   return saved ? JSON.parse(saved) : null;
 });
+  // gradInfo로부터 파생 — 새로고침 후에도 요약 바가 유지되도록 별도 state로 두지 않음
+  const submitted = gradInfo
+    ? {
+        total: String(gradInfo.totalCredits),
+        major: String(gradInfo.majorCredits),
+        general: String(gradInfo.generalCredits),
+      }
+    : null;
 
   // 현재까지 이수학점 입력 모달
   const [showProgressModal, setShowProgressModal] = useState(false);
@@ -42,16 +49,10 @@ function App() {
   function handleMajorConfirm(info) {
   setGradInfo(info);
   localStorage.setItem('gradInfo', JSON.stringify(info)); // 추가
-  setSubmitted({
-    total: String(info.totalCredits),
-    major: String(info.majorCredits),
-    general: String(info.generalCredits),
-  });
 }
   function resetMajor() {
   setGradInfo(null);
   localStorage.removeItem('gradInfo');
-  setSubmitted(null);
 }
 
   async function toggleCourse(id) {
