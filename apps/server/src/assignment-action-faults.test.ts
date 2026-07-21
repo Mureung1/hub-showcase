@@ -693,7 +693,7 @@ test('an unregistered out-of-scratch TXT write does not invalidate the authorita
   }
 })
 
-test('coordinator stays busy until durable settlement and stream close finish', async () => {
+test('product operation coordinator keeps Chat busy until Assignment settlement and stream close finish', async () => {
   const fixture = await createFaultFixture()
   const settleEntered = deferred<void>()
   const releaseSettle = deferred<void>()
@@ -737,8 +737,8 @@ test('coordinator stays busy until durable settlement and stream close finish', 
         assert.equal(runtime.accountReadinessCalls, 1)
 
         const second = await postJson(
-          `${baseUrl}/api/product/actions/first-assignment`,
-          request,
+          `${baseUrl}/api/product/chat/messages`,
+          { text: '이 작업과 동시에 대화해 줘.', materials: [] },
         )
         assert.equal(second.status, 409)
         assert.equal((await second.json() as { code: string }).code, 'action_busy')

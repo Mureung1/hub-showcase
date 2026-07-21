@@ -57,7 +57,7 @@
 - Parent spec `StatePatch lifecycle`, `Plan request_user_input adaptation` and `Data and State Flow`
 - `apps/server/src/state-patch-review.ts`
 - `apps/server/src/semester-workspace.ts`
-- `apps/server/src/assignment-action.ts`
+- `apps/server/src/product-operation-coordinator.ts`
 - `apps/server/src/product-http.ts`
 - `apps/chat-shell/src/product-api.ts`
 - `packages/product-contract/` — 006a에서 생성한 shared Browser-safe contract owner

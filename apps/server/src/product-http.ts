@@ -37,11 +37,11 @@ import {
 } from '@ay-ple/product-contract'
 
 import {
-  AssignmentActionError,
-  type AssignmentActionCoordinator,
+  ProductOperationError,
+  type ProductOperationCoordinator,
   type ProductInteractionResponseInput,
   type ProductOperationSink,
-} from './assignment-action.js'
+} from './product-operation-coordinator.js'
 import { writeNdjsonLine } from './codex-chat.js'
 import { isLoopbackAddress } from './codex-chat-config.js'
 import {
@@ -141,7 +141,7 @@ const workspaceErrorPresentation: Record<
 export function createProductRouter(
   controller: SemesterWorkspaceController | undefined,
   configuredOrigin?: string,
-  actions?: AssignmentActionCoordinator,
+  productOperations?: ProductOperationCoordinator,
   writeDrainMs = defaultProductWriteDrainMs,
   readAccountReadiness?: ProductAccountReadinessSource,
 ): Router {
@@ -284,7 +284,7 @@ export function createProductRouter(
   })
 
   router.post('/actions/first-assignment', async (request, response) => {
-    if (!actions) {
+    if (!productOperations) {
       sendError(response, 503, 'product_unavailable', safeUnavailable)
       return
     }
@@ -297,13 +297,13 @@ export function createProductRouter(
       request,
       response,
       writeDrainMs,
-      (options) => actions.startAssignment(input, options),
-      (operationId) => actions.disconnect(operationId),
-    ).catch((error: unknown) => sendActionError(response, error))
+      (options) => productOperations.startAssignment(input, options),
+      (operationId) => productOperations.disconnect(operationId),
+    ).catch((error: unknown) => sendProductOperationError(response, error))
   })
 
   router.post('/chat/messages', async (request, response) => {
-    if (!actions) {
+    if (!productOperations) {
       sendError(response, 503, 'product_unavailable', safeUnavailable)
       return
     }
@@ -316,13 +316,13 @@ export function createProductRouter(
       request,
       response,
       writeDrainMs,
-      (options) => actions.sendChat(input, options),
-      (operationId) => actions.disconnect(operationId),
-    ).catch((error: unknown) => sendActionError(response, error))
+      (options) => productOperations.sendChat(input, options),
+      (operationId) => productOperations.disconnect(operationId),
+    ).catch((error: unknown) => sendProductOperationError(response, error))
   })
 
   router.post('/reviews/:interactionId', async (request, response) => {
-    if (!actions) {
+    if (!productOperations) {
       sendError(response, 503, 'product_unavailable', safeUnavailable)
       return
     }
@@ -332,7 +332,7 @@ export function createProductRouter(
       return
     }
     try {
-      const commit = await actions.submitReview({
+      const commit = await productOperations.submitReview({
         interactionId: request.params.interactionId,
         patchId: input.patchId,
         decisionKey: input.decisionKey,
@@ -348,14 +348,14 @@ export function createProductRouter(
       }
       response.json(body)
     } catch (error) {
-      sendActionError(response, error)
+      sendProductOperationError(response, error)
     }
   })
 
   router.post(
     '/operations/:operationId/interactions/:interactionId/answer',
     async (request, response) => {
-      if (!actions) {
+      if (!productOperations) {
         sendError(response, 503, 'product_unavailable', safeUnavailable)
         return
       }
@@ -372,7 +372,7 @@ export function createProductRouter(
         return
       }
       await respondToInteraction(
-        actions,
+        productOperations,
         response,
         request.params.operationId,
         request.params.interactionId,
@@ -384,7 +384,7 @@ export function createProductRouter(
   router.post(
     '/operations/:operationId/interactions/:interactionId/cancel',
     async (request, response) => {
-      if (!actions) {
+      if (!productOperations) {
         sendError(response, 503, 'product_unavailable', safeUnavailable)
         return
       }
@@ -397,7 +397,7 @@ export function createProductRouter(
         return
       }
       await respondToInteraction(
-        actions,
+        productOperations,
         response,
         request.params.operationId,
         request.params.interactionId,
@@ -409,7 +409,7 @@ export function createProductRouter(
   router.post(
     '/operations/:operationId/interrupt',
     async (request, response) => {
-      if (!actions) {
+      if (!productOperations) {
         sendError(response, 503, 'product_unavailable', safeUnavailable)
         return
       }
@@ -421,10 +421,10 @@ export function createProductRouter(
         return
       }
       try {
-        await actions.interrupt(request.params.operationId)
+        await productOperations.interrupt(request.params.operationId)
         response.status(202).end()
       } catch (error) {
-        sendActionError(response, error)
+        sendProductOperationError(response, error)
       }
     },
   )
@@ -522,7 +522,7 @@ function tryDecode<T>(
 
 function localMcpUrl(request: Request): string {
   const port = request.socket.localPort
-  if (!port) throw new AssignmentActionError(
+  if (!port) throw new ProductOperationError(
     'product_unavailable',
     503,
     safeUnavailable,
@@ -532,30 +532,30 @@ function localMcpUrl(request: Request): string {
 }
 
 async function respondToInteraction(
-  actions: AssignmentActionCoordinator,
+  productOperations: ProductOperationCoordinator,
   response: Response,
   operationId: string,
   interactionId: string,
   interactionResponse: ProductInteractionResponseInput['response'],
 ): Promise<void> {
   try {
-    await actions.respondToInteraction({
+    await productOperations.respondToInteraction({
       operationId,
       interactionId,
       response: interactionResponse,
     })
     response.status(202).end()
   } catch (error) {
-    sendActionError(response, error)
+    sendProductOperationError(response, error)
   }
 }
 
-function sendActionError(response: Response, error: unknown): void {
+function sendProductOperationError(response: Response, error: unknown): void {
   if (response.headersSent) {
     if (!response.writableEnded && !response.destroyed) response.end()
     return
   }
-  if (error instanceof AssignmentActionError) {
+  if (error instanceof ProductOperationError) {
     sendError(response, error.status, error.code, error.displayMessage)
     return
   }

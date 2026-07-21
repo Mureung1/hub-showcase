@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url'
 import dotenv from 'dotenv'
 import express, { type Express } from 'express'
 
-import { createAssignmentActionCoordinator } from './assignment-action.js'
+import { createProductOperationCoordinator } from './product-operation-coordinator.js'
 import {
   createAssignmentMcpHost,
   type AssignmentMcpHost,
@@ -71,9 +71,9 @@ export async function createServerApplication(
   const assignmentMcpHost = semesterWorkspace
     ? createAssignmentMcpHost()
     : undefined
-  const assignmentActions =
+  const productOperations =
     semesterWorkspace && options.semesterWorkspace && assignmentMcpHost
-      ? createAssignmentActionCoordinator({
+      ? createProductOperationCoordinator({
           controller: semesterWorkspace,
           mcpHost: assignmentMcpHost,
           service: codexChat.service,
@@ -82,7 +82,7 @@ export async function createServerApplication(
   const app = createServerExpressApp(
     codexChat,
     semesterWorkspace,
-    assignmentActions,
+    productOperations,
     assignmentMcpHost,
     options.codexChat?.httpWriteDrainMs,
   )
@@ -112,7 +112,7 @@ export async function createServerApplication(
     },
     close() {
       closing = true
-      assignmentActions?.beginShutdown()
+      productOperations?.beginShutdown()
       codexChat.beginShutdown()
       closePromise ??= closeServerApplication(
         listener,
@@ -127,7 +127,7 @@ export async function createServerApplication(
 function createServerExpressApp(
   codexChat: CodexChatComposition,
   semesterWorkspace: SemesterWorkspaceController | undefined,
-  assignmentActions: ReturnType<typeof createAssignmentActionCoordinator> | undefined,
+  productOperations: ReturnType<typeof createProductOperationCoordinator> | undefined,
   assignmentMcpHost: AssignmentMcpHost | undefined,
   productWriteDrainMs: number | undefined,
 ): Express {
@@ -141,9 +141,9 @@ function createServerExpressApp(
     createProductRouter(
       semesterWorkspace,
       codexChat.origin,
-      assignmentActions,
+      productOperations,
       productWriteDrainMs,
-      assignmentActions
+      productOperations
         ? () => codexChat.service.readProductAccountReadiness()
         : undefined,
     ),
