@@ -107,19 +107,30 @@
 
 ---
 
-## #22 — 디자인 토큰 포팅 (인디고/바이올렛 단일 액센트 톤) [P1]
+## #22 — 디자인 토큰 포팅 (크림/더스티로즈 + 다크네이비, 다크모드 포함) [P1]
 
-**설명**: 지금까지 만든 모든 화면(랜딩 포함, `#14`)은 프로토타입의 실제 디자인 톤이 아니라 CLAUDE.md에 명시된 대로 임시 dark+violet placeholder 톤으로 만들어져 있다. `prototype/demo_12.html`의 `:root` CSS 변수(`--gray-900`, 상태별 `--green-bg`/`--green-text` 등)를 실제 값으로 포팅한다. 변수 이름은 프로토타입과 동일하게 유지해야 `STATUS_STYLE`/`JOBTYPE_STYLE` 등 이름으로 값을 읽는 JS 코드가 그대로 작동한다.
+**설명**: 지금까지 만든 모든 화면(랜딩 포함, `#14`)은 프로토타입의 실제 디자인 톤이 아니라 CLAUDE.md에 명시된 대로 임시 dark+violet placeholder 톤으로 만들어져 있다. `prototype/demo_13.html`의 `:root` CSS 변수(`--gray-900`, 상태별 `--green-bg`/`--green-text` 등)를 실제 값으로 포팅한다. 변수 이름은 프로토타입과 동일하게 유지해야 `STATUS_STYLE`/`JOBTYPE_STYLE` 등 이름으로 값을 읽는 JS 코드가 그대로 작동한다.
 
-**참고**: 원래 참고하던 `prototype/demo_11.html`(민트/파스텔 톤)은 2026-07-20 레퍼런스 디자인(공공 아동돌봄서비스 사이트풍) 반영을 위해 `demo_12.html`로 완전히 대체·삭제됐다. 새 톤은 인디고/바이올렛 단일 액센트(`--accent: #5b52e8`) + 라벤더 배경이고, 히어로가 2단(카피+도넛차트 미리보기 카드) 구성으로 바뀌었으며, 기존 `.site-frame`(둥근 모서리로 뜬 카드형 프레임)도 없어지고 풀블리드 레이아웃이 됐다. React 쪽 placeholder(`src/App.css`의 dark+violet)와는 별개의 색이니 혼동 금지.
+**참고**: `prototype/demo_11.html`(민트/파스텔 톤)은 2026-07-20 레퍼런스 디자인(공공 아동돌봄서비스 사이트풍) 반영을 위해 `demo_12.html`(인디고/바이올렛 단일 액센트 + 라벤더 배경)로 대체·삭제됐고, `demo_12.html`은 2026-07-21 색감/다크모드 재작업을 거쳐 `demo_13.html`로 다시 대체·삭제됐다 — **이제 `demo_13.html`이 유일한 정본**, 인디고/바이올렛이 아니라 크림·더스티로즈 라이트 톤 + 쿨톤 다크네이비 텍스트(`--accent: #2b3480` / `--gray-50: #fbf5f8`)다. 구조(히어로 2단 카피+도넛차트 미리보기 카드, `.site-frame` 없는 풀블리드 레이아웃)는 demo_12부터 변화 없음. React 쪽 placeholder(`src/App.css`의 dark+violet)와는 별개의 색이니 혼동 금지.
+
+**다크모드 스코프 결정 (2026-07-21)**: 이 문서를 처음 쓸 때(다크모드 없던 demo_12 기준) "다크모드는 프로토타입 기준 그대로 (별도 대응 범위 아님)"이라고 적었었는데, `demo_13.html`이 실제 다크모드 토글(`data-theme="dark"`, 헤더 버튼, `specfit_theme_v1` localStorage 키, `prefers-color-scheme` 폴백)을 갖추면서 그 전제가 깨졌다. **사용자 확정: React에도 다크모드를 실제로 포팅한다.** 아래 완료 기준에 반영함.
 
 **완료 기준**
-- [ ] `src/styles/tokens.css` — 프로토타입 `:root` 변수를 실제 값으로 이식 (변수명 동일 유지, 값만 교체)
-- [ ] Pretendard Variable / JetBrains Mono 폰트 `index.html`에 연결
-- [ ] 기존 placeholder 톤으로 만들어진 모든 화면(랜딩/필터/스펙/결과, 헤더 포함 시 `#21`도) 새 토큰으로 교체
-- [ ] `STATUS_STYLE`/`JOBTYPE_STYLE` 등 변수명 문자열로 값을 읽는 코드가 새 토큰에서도 정상 동작
-- [ ] 라이트/다크 모드 여부는 프로토타입 기준 그대로 (별도 다크모드 대응 범위 아님)
-- [ ] 토큰(색상 값)뿐 아니라 `demo_12.html`의 구성 변화도 함께 반영: 랜딩 히어로 2단 레이아웃(카피+도넛차트 미리보기 카드, `#14`의 기존 히어로를 대체), `.site-frame` 없는 풀블리드 페이지 레이아웃. 단순 색상 치환에서 끝내지 않기
+- [x] `src/styles/tokens.css` — 프로토타입 `:root` 변수를 실제 값으로 이식 (변수명 동일 유지, 값만 교체)
+- [x] `src/styles/tokens.css`에 `:root[data-theme="dark"]` 오버라이드 블록도 함께 이식 (라이트와 동일한 변수명, 다크 값만 재정의 — demo_13.html 그대로)
+- [x] 다크모드 토글 UI + 로직 포팅 — 헤더에 토글 버튼, `data-theme` 속성 전환, 별도 localStorage 키(`specfit_theme_v1`, `specfit_app_state`/`specfit_analysis_id`와 분리)로 저장, `prefers-color-scheme` 폴백. `index.html`에 첫 페인트 전 인라인 스크립트도 추가해 라이트→다크 전환 시 FOUC(깜빡임) 방지
+- [x] Pretendard Variable / JetBrains Mono 폰트 `index.html`에 연결
+- [x] 기존 placeholder 톤으로 만들어진 모든 화면(랜딩/필터/스펙/결과) 새 토큰으로 교체 — CSS 변수 기반이라 라이트/다크 모두 자동 대응
+- [x] `STATUS_STYLE`/`JOBTYPE_STYLE`(`resultDisplay.js`) 등 변수명 문자열로 값을 읽는 코드가 새 토큰에서도 정상 동작 (다크모드 전환 시에도) — 하드코딩 hex였던 것을 `var(--green-bg)` 등으로 교체, 실제 9개 job_category를 5개 토큰 색상에 재배분
+- [x] 토큰(색상 값)뿐 아니라 `demo_13.html`의 구성 변화도 함께 반영: 랜딩 히어로 2단 레이아웃(카피+도넛차트 미리보기 카드, `#14`의 기존 히어로를 대체), `.site-frame` 없는 풀블리드 페이지 레이아웃, sticky 헤더
+
+**완료 (2026-07-21)**. 구현 메모:
+- 새 파일: `src/styles/tokens.css`(토큰), `src/hooks/useTheme.js`(토글 훅), `src/components/layout/Header.jsx`(sticky 헤더)
+- `src/App.css` 전면 재작성(하드코딩 dark+violet → `var(--...)` 참조), `src/index.css`는 레거시 Vite 템플릿 잔재(`#root` 1126px 박스 프레임 + 자체 색상 변수 체계) 제거 — 풀블리드 레이아웃과 충돌해서 정리 필요했음
+- `Header.jsx`는 **로고+다크모드 토글만** 있는 최소 버전 — 스테퍼/초기화/홈 버튼/이어하기 배너 완전판은 여전히 `#21` 스코프, 이번에 같이 만들지 않음
+- `DonutChart.jsx`의 SVG stroke 색이 하드코딩 hex(`#7fd9a8` 등)였던 것도 `var(--donut-ok)`/`var(--donut-no)`로 교체 — 안 그러면 다크모드에서 도넛 색이 안 바뀜
+- FilterPage/SpecPage 폼을 `.form-card`로 감싸서 카드 스타일 통일 (JS 로직 무변경)
+- 검증: FE lint/test/build 전부 통과, dev 서버(FE+BE) 기동해 모든 페이지 모듈이 200으로 정상 트랜스폼되는 것 확인. **이 환경엔 headless 브라우저가 없어(chromium-cli 없음, claude-in-chrome도 이번 세션엔 미연결) 실제 렌더링/다크모드 토글 클릭은 사용자가 브라우저에서 직접 확인 필요** — 이전 세션들과 동일한 패턴
 
 ---
 
