@@ -140,7 +140,7 @@ describe("WaitingNoShowService", () => {
     expect(dependencies.moveNoShowToEnd).toHaveBeenCalledWith(
       dependencies.transactionManager.executor,
       waiting.id,
-      waiting.updatedAt,
+      waiting.version,
     );
     expect(dependencies.createEvent).toHaveBeenCalledWith(
       dependencies.transactionManager.executor,
@@ -168,7 +168,7 @@ describe("WaitingNoShowService", () => {
     expect(dependencies.cancelExpired).toHaveBeenCalledWith(
       dependencies.transactionManager.executor,
       waiting.id,
-      waiting.updatedAt,
+      waiting.version,
       deadlineAt,
     );
     expect(dependencies.send).toHaveBeenCalledWith(

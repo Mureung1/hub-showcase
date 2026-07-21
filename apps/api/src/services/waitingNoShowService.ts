@@ -26,7 +26,7 @@ export class WaitingNoShowService {
       const moved = await this.waitingRepository.moveNoShowToEnd(
         executor,
         current.id,
-        current.updatedAt,
+        current.version,
       );
       if (!moved) throw new WaitingStateConflictError();
 
@@ -59,7 +59,7 @@ export class WaitingNoShowService {
       const cancelled = await this.waitingRepository.cancelExpired(
         executor,
         current.id,
-        current.updatedAt,
+        current.version,
         now,
       );
       if (!cancelled) throw new WaitingStateConflictError();
