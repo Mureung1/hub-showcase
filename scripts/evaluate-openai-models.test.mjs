@@ -4,6 +4,7 @@ import {
   createRequestBody,
   parseJsonContent,
   parseModelList,
+  shouldOmitTemperature,
 } from "./evaluate-openai-models.lib.mjs";
 
 test("parseModelList trims entries and removes duplicates", () => {
@@ -29,6 +30,22 @@ test("createRequestBody uses the selected model and fixed prompt", () => {
     temperature: 0,
     response_format: { type: "json_object" },
   });
+});
+
+test("createRequestBody omits unsupported temperature for affected models", () => {
+  for (const model of ["gpt-5-mini", "gpt-5-mini-2025-08-07", "gpt-5.6-luna"]) {
+    const body = createRequestBody(model, {
+      systemPrompt: "system",
+      userPrompt: "user",
+      temperature: 0,
+    });
+
+    assert.equal(shouldOmitTemperature(model), true);
+    assert.equal("temperature" in body, false);
+  }
+
+  assert.equal(shouldOmitTemperature("gpt-4.1"), false);
+  assert.equal(shouldOmitTemperature("gpt-5.4-mini"), false);
 });
 
 test("parseJsonContent returns the structured message content", () => {

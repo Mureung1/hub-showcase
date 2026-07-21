@@ -8,15 +8,29 @@ export function parseModelList(value) {
 }
 
 export function createRequestBody(model, fixture) {
-  return {
+  const body = {
     model,
     messages: [
       { role: "system", content: fixture.systemPrompt },
       { role: "user", content: fixture.userPrompt },
     ],
-    temperature: fixture.temperature ?? 0,
     response_format: { type: "json_object" },
   };
+
+  if (!shouldOmitTemperature(model)) {
+    body.temperature = fixture.temperature ?? 0;
+  }
+
+  return body;
+}
+
+export function shouldOmitTemperature(model) {
+  return (
+    model === "gpt-5-mini" ||
+    model.startsWith("gpt-5-mini-") ||
+    model === "gpt-5.6-luna" ||
+    model.startsWith("gpt-5.6-luna-")
+  );
 }
 
 export function parseJsonContent(body) {
