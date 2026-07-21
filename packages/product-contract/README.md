@@ -6,12 +6,12 @@ Server가 만드는 `/api/product/*` JSON·NDJSON과 Browser가 읽고 보내는
 
 | 소유하는 내용 | 소유하지 않는 내용 |
 | --- | --- |
-| Account Readiness, workspace·Course·RawMaterial, settled history와 material preview의 exact public type·decoder | workspace store format/version, physical path, migration과 domain transaction |
+| Account Readiness, coarse `operationStatus(active | idle)`, workspace·Course·RawMaterial, settled history와 material preview의 exact public type·decoder | workspace store format/version, physical path, migration과 domain transaction |
 | Current Assignment action·explicit retry, product Chat, 세 갈래 Review, 일반 interaction answer/cancel과 interrupt request·response literal | Express route composition, Origin guard, HTTP status와 byte framing |
 | Closed `ProductOperationFrame`, public `StatePatch`·question, Review replacement·resolution·recovery projection과 pure exact decoder | native App Server event, raw JSON-RPC identity, MCP credential·complete payload와 cross-frame lifecycle reducer |
 | First Assignment의 public Recipe version·arguments와 `16 KiB` JSON envelope bound | managed `SKILL.md` path·digest, model/reasoning choice와 private MCP binding |
 
-Decoder는 missing·extra·unknown field와 Review decision/outcome·continuation의 잘못된 조합을 거절한다. `FirstAssignmentRetryRequest`는 canonical Assignment 입력과 prior `retryOfRunId`를 exact하게 요구한다. Settled `ModelingRun`은 retry ancestry와 optional recovery를, `operation.recovery`는 `interrupted | unknown`의 retry 가능 여부 또는 apply 뒤 `continuation_lost`의 confirmed revision을 표현한다. 수정 feedback은 non-empty `8 KiB` UTF-8 bound를 가지며 전체 request는 Express의 effective `16 KiB` JSON envelope 안에 있어야 한다. Store metadata, absolute path, credential, Server-private replacement proposal key, native/MCP/request identity, traceback과 unsettled history variant는 public type에 포함하지 않는다. Product text frame은 Server의 current bounded projection만 표현한다.
+Decoder는 missing·extra·unknown field와 Review decision/outcome·continuation의 잘못된 조합을 거절한다. Bootstrap의 `operationStatus`는 Server product-operation lease가 아직 정산 중인지 나타내는 coarse synchronization field이며 active Run이나 prompt identity를 담지 않는다. `FirstAssignmentRetryRequest`는 canonical Assignment 입력과 prior `retryOfRunId`를 exact하게 요구한다. Settled `ModelingRun`은 retry ancestry와 optional recovery를, `operation.recovery`는 `interrupted | unknown`의 retry 가능 여부 또는 apply 뒤 `continuation_lost`의 confirmed revision을 표현한다. 수정 feedback은 non-empty `8 KiB` UTF-8 bound를 가지며 전체 request는 Express의 effective `16 KiB` JSON envelope 안에 있어야 한다. Store metadata, absolute path, credential, Server-private replacement proposal key, native/MCP/request identity, traceback과 unsettled history variant는 public type에 포함하지 않는다. Product text frame은 Server의 current bounded projection만 표현한다.
 
 ## 소비 경계
 
