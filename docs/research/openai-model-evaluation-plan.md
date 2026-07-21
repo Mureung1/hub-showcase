@@ -198,6 +198,50 @@ PtoP는 Repository의 코드·설정·commit·Issue·Pull Request를 바탕으�
 - 사용자 확인이 필요한 점:
 ```
 
+## 현재 구현된 평가 도구
+
+모델을 비교할 때마다 `.env`의 `AI_MODEL`을 직접 바꾸지 않도록 평가 전용 Node.js 스크립트를 추가했다.
+
+| 파일 | 역할 |
+| --- | --- |
+| `scripts/evaluate-openai-models.mjs` | 여러 모델에 동일한 fixture를 순서대로 요청하고 결과를 저장한다. |
+| `scripts/evaluate-openai-models.lib.mjs` | 요청 body 생성, 모델 목록 정리, JSON 응답 파싱을 담당한다. |
+| `scripts/evaluate-openai-models.test.mjs` | 평가 도구의 입력 정리와 JSON 파싱을 검증한다. |
+| `scripts/fixtures/technical-challenge-request.example.json` | 실행 구조 확인을 위한 예시 fixture다. 실제 결과 비교 전 입력을 교체한다. |
+| `docs/research/model-evaluation/results/` | 실행 결과가 저장되는 로컬 디렉토리다. API 응답과 Repository 코드가 포함될 수 있어 Git에 포함하지 않는다. |
+
+### 실제 실행 순서
+
+1. `scripts/fixtures/technical-challenge-request.example.json`을 복사해 로컬 fixture를 만든다.
+
+```bash
+cp scripts/fixtures/technical-challenge-request.example.json \
+  scripts/fixtures/technical-challenge-request.local.json
+```
+
+2. 로컬 fixture의 `systemPrompt`와 `userPrompt`를 실제 PtoP 분석에 사용할 고정 요청으로 교체한다. 이 단계에서 Repository 코드, API Key, 개인정보가 포함되지 않았는지 확인한다.
+
+3. 평가 도구의 자체 테스트를 실행한다.
+
+```bash
+node --test scripts/evaluate-openai-models.test.mjs
+```
+
+4. 여러 모델을 같은 입력으로 2회씩 실행한다. 스크립트는 기본적으로 `apps/api/.env`에서 `AI_API_KEY`를 읽으며, `--models` 값이 있으면 `AI_MODEL`보다 우선한다.
+
+```bash
+npm run evaluate:ai -- \
+  --fixture scripts/fixtures/technical-challenge-request.local.json \
+  --models gpt-4.1-mini,gpt-4.1,gpt-5-mini,gpt-5.4-mini,gpt-5.6-luna \
+  --runs 2
+```
+
+5. `docs/research/model-evaluation/results/` 아래 모델별 JSON을 확인한다. 결과 파일에는 원본 응답, 파싱 결과, `usage`, 응답 시간, 오류 상태가 저장된다.
+
+6. 결과를 평가 기준에 따라 점수화하고, 최종 요약을 `model-evaluation-results.md`에 작성한다. 원본 응답 전체를 공유하기보다 필요한 근거와 점수만 정리한다.
+
+도구는 OpenAI만 호출하므로 GitHub API와 Supabase 저장은 수행하지 않는다. 따라서 실제 서비스 흐름과 분리된 상태에서 모델 품질만 비교할 수 있다. 현재 예시 fixture는 파이프라인 검증용이며, 실제 Repository 품질 비교를 위해서는 반드시 실제 PtoP 분석 컨텍스트를 반영한 로컬 fixture로 교체해야 한다.
+
 ## 최종 모델 선택 기준
 
 다음 조건을 모두 만족하는 모델을 우선 후보로 삼는다.
@@ -215,6 +259,8 @@ PtoP는 Repository의 코드·설정·commit·Issue·Pull Request를 바탕으�
 - [ ] 테스트 Repository 6개와 선정 이유를 기록한다.
 - [ ] 기준 prompt와 입력 snapshot을 고정한다.
 - [ ] 모델별 API 지원 파라미터를 확인한다.
+- [ ] `node --test scripts/evaluate-openai-models.test.mjs`로 평가 도구를 확인한다.
+- [ ] 예시 fixture를 실제 분석 컨텍스트 기반의 로컬 fixture로 교체한다.
 - [ ] 1차 60회 테스트를 실행한다.
 - [ ] 응답, usage, latency, 오류를 저장한다.
 - [ ] 평가 기준에 따라 결과를 점수화한다.

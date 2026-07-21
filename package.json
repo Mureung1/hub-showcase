@@ -13,6 +13,7 @@
     "test": "npm run test --workspaces --if-present",
     "test:web": "npm run test --workspace @ptop/web",
     "test:api": "npm run test --workspace @ptop/api",
+    "evaluate:ai": "node scripts/evaluate-openai-models.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "typecheck:web": "npm run typecheck --workspace @ptop/web",
     "typecheck:api": "npm run typecheck --workspace @ptop/api",

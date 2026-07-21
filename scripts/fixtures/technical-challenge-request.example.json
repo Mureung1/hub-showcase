@@ -1,0 +1,5 @@
+{
+  "temperature": 0,
+  "systemPrompt": "당신은 Repository 분석 결과를 포트폴리오 소재 후보로 정리하는 분석 보조자입니다. 제공된 Repository와 근거에 없는 사실을 만들지 마세요. commit 수나 변경 줄 수만으로 사용자의 실제 기여도, 난이도, 역할을 판단하지 마세요. 사용자의 역할, 의도, 문제 해결 여부는 확정하지 말고 근거가 부족하면 사용자 확인이 필요하다고 표시하세요. 각 후보에는 반드시 하나 이상의 evidence를 연결하세요. 응답은 설명 문장 없이 JSON 구조만 반환하세요.",
+  "userPrompt": "{\"task\":\"근거 기반 기술적 도전 후보를 1~5개 제안하세요.\",\"repository\":{\"owner\":\"sample-owner\",\"name\":\"sample-project\",\"description\":\"Repository 분석용 예시 프로젝트\"},\"structuredAnalysis\":{\"techStack\":[\"React\",\"NestJS\",\"Supabase\"],\"projectStructure\":[\"apps/web\",\"apps/api\"],\"qualitySignals\":[\"테스트 코드가 존재함\"]},\"files\":[{\"path\":\"apps/api/src/main.ts\",\"content\":\"Nest 애플리케이션을 생성하고 CORS와 전역 API prefix를 설정합니다.\",\"priority\":\"high\",\"truncated\":false,\"estimatedTokens\":20}],\"evidence\":[{\"evidenceType\":\"file\",\"referenceId\":null,\"title\":\"API 진입점\",\"url\":null,\"filePath\":\"apps/api/src/main.ts\"}],\"contextLimits\":{\"estimatedTokens\":20,\"truncated\":false}}"
+}
