@@ -256,23 +256,6 @@ h1 {
   }
 }
 
-/* ---------- landing: resume banner ---------- */
-.resume-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  background: var(--card-bg);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-card);
-  padding: 14px 18px;
-  margin: 24px auto 0;
-  max-width: 1160px;
-  font-size: 13px;
-  color: var(--gray-700);
-  box-shadow: var(--shadow-sm);
-}
-
 /* ---------- landing: hero ---------- */
 .hero {
   width: 100%;

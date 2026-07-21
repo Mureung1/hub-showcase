@@ -44,19 +44,11 @@ function LandingPage() {
   // #14 최소 버전: 프로토타입의 getResumeStep(필터/스펙/결과 전 단계 감지)은 만들지 않는다 —
   // 저장된 분석 id 존재 여부만 보고 /result로 보낸다. 복원 실패(오래된 id 등) 처리는
   // ResultPage가 #9에서 이미 하고 있다(상태 'no-spec' → /spec 리다이렉트).
+  // (참고: getResumeStep의 3단계 감지 자체는 #21 스코프 — 이 버튼이 그 결과를 쓰게 될 예정이다.)
   const hasSavedAnalysis = Boolean(localStorage.getItem(ANALYSIS_ID_STORAGE_KEY))
 
   return (
     <>
-      {hasSavedAnalysis && (
-        <div className="resume-banner">
-          <span>이전에 분석한 결과가 있어요.</span>
-          <button className="btn-link" onClick={() => navigate('/result')}>
-            이전 분석 결과 이어보기
-          </button>
-        </div>
-      )}
-
       <section className="hero">
         <div className="hero-inner">
           <div className="hero-copy">
