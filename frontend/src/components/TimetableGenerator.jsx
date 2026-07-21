@@ -3,11 +3,15 @@ import axios from 'axios';
 import { 
   Bot, User, Send, Upload, RefreshCw, CheckCircle2, AlertTriangle, 
   X, HelpCircle, PlusCircle, Check, Info, FileText, ArrowLeft, Loader2,
+<<<<<<< HEAD
   Calendar, History, Plus
+=======
+  Calendar, History, Plus, Search, BookOpen
+>>>>>>> 3834078f (feat: 백엔드 API 연동 및 시간표 UI/데이터 확장)
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// Predefined Course Catalog Database
+// Predefined Course Catalog Database (Real-world University 2026-2 Curriculum)
 const COURSE_CATALOG = {
   'data-struct': {
     id: 'data-struct',
@@ -19,8 +23,8 @@ const COURSE_CATALOG = {
     credits: 3,
     eval: '자료구조 설계 능력을 키우는 과목. 과제 3개가 존재하지만 교수님이 친절하십니다.',
     slots: [
-      { day: 1, start: 13, end: 15 }, // 월 13:00-15:00
-      { day: 3, start: 13, end: 14 }  // 수 13:00-14:00
+      { day: 1, start: 13, end: 15 },
+      { day: 3, start: 13, end: 14 }
     ]
   },
   'db': {
@@ -31,77 +35,24 @@ const COURSE_CATALOG = {
     prof: '박영희 교수',
     room: '공학4호관 405호',
     credits: 3,
-    eval: 'SQL 실습 및 DB 정규화 개념을 배움. 기말 프로젝트로 간단한 웹 서비스 구축이 포함됩니다.',
+    eval: 'SQL 실습 및 DB 정규화 개념을 배움. 기말 프로젝트로 웹 서비스 구축이 포함됩니다.',
     slots: [
-      { day: 2, start: 14, end: 16 }, // 화 14:00-16:00
-      { day: 4, start: 14, end: 15 }  // 목 14:00-15:00
+      { day: 2, start: 14, end: 16 },
+      { day: 4, start: 14, end: 15 }
     ]
   },
-  'network': {
-    id: 'network',
-    title: '컴퓨터네트워크',
-    category: 'major-opt',
-    categoryName: '전공선택',
-    prof: '이민수 교수',
-    room: '공학4호관 102호',
+  'comp-arch': {
+    id: 'comp-arch',
+    title: '컴퓨터 구조',
+    category: 'major-req',
+    categoryName: '전공필수',
+    prof: '최성훈 교수',
+    room: '공학4호관 201호',
     credits: 3,
-    eval: 'TCP/IP 프로토콜 분석 실습 위주. 이론은 다소 어려우나 시험 족보가 제공되어 대비하기 좋습니다.',
+    eval: '파이프라이닝, 캐시 메모리 구조 및 CPU 명령어 집합 구조(ISA) 심화 학습.',
     slots: [
-      { day: 1, start: 10, end: 12 }, // 월 10:00-12:00
-      { day: 3, start: 10, end: 11 }  // 수 10:00-11:00
-    ]
-  },
-  'software-eng': {
-    id: 'software-eng',
-    title: '소프트웨어공학',
-    category: 'major-opt',
-    categoryName: '전공선택',
-    prof: '정혜원 교수',
-    room: '공학4호관 303호',
-    credits: 3,
-    eval: '애자일 방법론과 디자인 패턴 적용 실무. 조별 과제 발표 비중이 높은 편입니다.',
-    slots: [
-      { day: 2, start: 10, end: 12 }, // 화 10:00-12:00
-      { day: 4, start: 10, end: 11 }  // 목 10:00-11:00
-    ]
-  },
-  'tech-society': {
-    id: 'tech-society',
-    title: '기술과 현대사회',
-    category: 'converge-edu',
-    categoryName: '융합교양 (3영역)',
-    prof: '최은정 교수',
-    room: '교양학관 201호',
-    credits: 3,
-    eval: '인문학적 관점에서 정보통신 기술 발전을 논의함. 중간/기말 고사 대신 에세이 제출로 대체.',
-    slots: [
-      { day: 5, start: 10, end: 12 } // 금 10:00-12:00
-    ]
-  },
-  'tech-society-thu': {
-    id: 'tech-society-thu',
-    title: '기술과 현대사회 (목반)',
-    category: 'converge-edu',
-    categoryName: '융합교양 (3영역)',
-    prof: '최은정 교수',
-    room: '교양학관 201호',
-    credits: 3,
-    eval: '인문학적 관점에서 정보통신 기술 발전을 논의함. 금공강 확보를 위한 최적의 목요일 교양 반.',
-    slots: [
-      { day: 4, start: 15, end: 17 } // 목 15:00-17:00
-    ]
-  },
-  'pop-art': {
-    id: 'pop-art',
-    title: '대중예술의 이해',
-    category: 'converge-edu',
-    categoryName: '융합교양 (3영역)',
-    prof: '장기하 교수',
-    room: '예술관 105호',
-    credits: 3,
-    eval: '대중영화 및 대중음악 트렌드 토론. 영화 감상 시간이 포함되어 재미있게 학점을 채울 수 있음.',
-    slots: [
-      { day: 5, start: 13, end: 15 } // 금 13:00-15:00
+      { day: 1, start: 9, end: 10 },
+      { day: 3, start: 9, end: 11 }
     ]
   },
   'algorithm': {
@@ -112,10 +63,10 @@ const COURSE_CATALOG = {
     prof: '홍길동 교수',
     room: '공학4호관 402호',
     credits: 3,
-    eval: '시간 복잡도, 탐욕법, 동적 계획법 기초 습득. 코딩 연습 플랫폼을 활용한 매주 실습이 평가됩니다.',
+    eval: '시간 복잡도, 탐욕법, 동적 계획법 기초 습득. 코딩 연습 플랫폼 매주 실습.',
     slots: [
-      { day: 2, start: 9, end: 10 }, // 화 09:00-10:00
-      { day: 4, start: 9, end: 11 }  // 목 09:00-11:00
+      { day: 2, start: 9, end: 10 },
+      { day: 4, start: 9, end: 11 }
     ]
   },
   'os': {
@@ -126,23 +77,159 @@ const COURSE_CATALOG = {
     prof: '백지훈 교수',
     room: '공학4호관 203호',
     credits: 3,
-    eval: '프로세스 관리, 세마포어, 메모리 가상화 학습. 난이도는 높지만 면접 대비용으로 필수적인 강의.',
+    eval: '프로세스 관리, 세마포어, 메모리 가상화 학습. 난이도는 높지만 면접 필수 강의.',
     slots: [
-      { day: 3, start: 14, end: 16 }, // 수 14:00-16:00
-      { day: 5, start: 14, end: 15 }  // 금 14:00-15:00
+      { day: 3, start: 14, end: 16 },
+      { day: 5, start: 14, end: 15 }
     ]
   },
-  'art-life': {
-    id: 'art-life',
-    title: '예술과 현대생활',
-    category: 'balance-edu',
-    categoryName: '균형교양 (4영역)',
-    prof: '윤아름 교수',
-    room: '미술관 310호',
+  'compiler': {
+    id: 'compiler',
+    title: '컴파일러 개론',
+    category: 'major-req',
+    categoryName: '전공필수',
+    prof: '조민석 교수',
+    room: '공학4호관 302호',
     credits: 3,
-    eval: '서양 미술사를 생활 디자인에 접목하여 배움. 기말 레포트와 간단한 미술관 관람기가 과제입니다.',
+    eval: '어휘 분석, 파싱, 구문 해석기(Parser) 제작 및 중간 코드 생성 실무.',
     slots: [
-      { day: 1, start: 15, end: 17 } // 월 15:00-17:00
+      { day: 1, start: 16, end: 18 },
+      { day: 3, start: 16, end: 17 }
+    ]
+  },
+  'network': {
+    id: 'network',
+    title: '컴퓨터네트워크',
+    category: 'major-opt',
+    categoryName: '전공선택',
+    prof: '이민수 교수',
+    room: '공학4호관 102호',
+    credits: 3,
+    eval: 'TCP/IP 프로토콜 분석 실습 위주. 이론은 다소 어려우나 시험 족보 제공.',
+    slots: [
+      { day: 1, start: 10, end: 12 },
+      { day: 3, start: 11, end: 12 }
+    ]
+  },
+  'software-eng': {
+    id: 'software-eng',
+    title: '소프트웨어공학',
+    category: 'major-opt',
+    categoryName: '전공선택',
+    prof: '정혜원 교수',
+    room: '공학4호관 303호',
+    credits: 3,
+    eval: '애자일 방법론과 디자인 패턴 적용 실무. 조별 과제 발표 비중이 높음.',
+    slots: [
+      { day: 2, start: 10, end: 12 },
+      { day: 4, start: 11, end: 12 }
+    ]
+  },
+  'ai-intro': {
+    id: 'ai-intro',
+    title: '인공지능 개론 및 실습',
+    category: 'major-opt',
+    categoryName: '전공선택',
+    prof: '강현우 교수',
+    room: '공학4호관 501호',
+    credits: 3,
+    eval: '머신러닝 기초 알고리즘부터 PyTorch 딥러닝 실습까지 다루는 인기 전공 과목.',
+    slots: [
+      { day: 1, start: 15, end: 17 },
+      { day: 3, start: 15, end: 16 }
+    ]
+  },
+  'machine-learning': {
+    id: 'machine-learning',
+    title: '머신러닝 실무',
+    category: 'major-opt',
+    categoryName: '전공선택',
+    prof: '한상우 교수',
+    room: '공학4호관 502호',
+    credits: 3,
+    eval: '회귀 분석, 분류 모델, Scikit-learn 모델 튜닝 및 데이터 바인딩 실습.',
+    slots: [
+      { day: 2, start: 15, end: 17 },
+      { day: 4, start: 15, end: 16 }
+    ]
+  },
+  'bigdata-intro': {
+    id: 'bigdata-intro',
+    title: '빅데이터 개론',
+    category: 'major-opt',
+    categoryName: '전공선택',
+    prof: '임재성 교수',
+    room: '공학4호관 204호',
+    credits: 3,
+    eval: '하둡, 스파크 인프라 기반 분산 데이터 처리 개념 및 데이터 파이프라인 구축.',
+    slots: [
+      { day: 2, start: 13, end: 14 },
+      { day: 4, start: 13, end: 15 }
+    ]
+  },
+  'web-prog': {
+    id: 'web-prog',
+    title: '웹 프로그래밍 실습',
+    category: 'major-opt',
+    categoryName: '전공선택',
+    prof: '김태호 교수',
+    room: '공학4호관 103호',
+    credits: 3,
+    eval: 'React, Node.js 풀스택 웹 애플리케이션 제작 프로젝트 중심 수업.',
+    slots: [
+      { day: 5, start: 9, end: 12 }
+    ]
+  },
+  'mobile-app': {
+    id: 'mobile-app',
+    title: '모바일 앱 개발',
+    category: 'major-opt',
+    categoryName: '전공선택',
+    prof: '윤상현 교수',
+    room: '공학4호관 104호',
+    credits: 3,
+    eval: 'Flutter & React Native cross-platform 모바일 앱 개발 실습 강좌.',
+    slots: [
+      { day: 1, start: 11, end: 13 }
+    ]
+  },
+  'cloud-comp': {
+    id: 'cloud-comp',
+    title: '클라우드 컴퓨팅',
+    category: 'major-opt',
+    categoryName: '전공선택',
+    prof: '오승민 교수',
+    room: '공학4호관 205호',
+    credits: 3,
+    eval: 'AWS, Docker, Kubernetes 데브옵스 인프라 구축 및 가상화 실무.',
+    slots: [
+      { day: 5, start: 15, end: 18 }
+    ]
+  },
+  'sna': {
+    id: 'sna',
+    title: '사회연결망분석',
+    category: 'major-opt',
+    categoryName: '전공선택',
+    prof: '김경상 교수',
+    room: '공학4호관 305호',
+    credits: 3,
+    eval: '그래프 이론 및 소셜 네트워크 분석 기법 중심의 실습 강좌.',
+    slots: [
+      { day: 2, start: 16, end: 18 }
+    ]
+  },
+  'bpm': {
+    id: 'bpm',
+    title: '비즈니스프로세스관리',
+    category: 'major-opt',
+    categoryName: '전공선택',
+    prof: '박성진 교수',
+    room: '공학4호관 202호',
+    credits: 3,
+    eval: '기업 업무 워크플로우 모델링 및 프로세스 개선 기법 습득.',
+    slots: [
+      { day: 4, start: 16, end: 18 }
     ]
   },
   'security': {
@@ -153,22 +240,126 @@ const COURSE_CATALOG = {
     prof: '김철수 교수',
     room: '공학4호관 402호',
     credits: 3,
-    eval: '암호학 기초 및 네트워크 보안 실무. 전년 대비 난이도가 쉬워져 평점이 높은 편입니다.',
+    eval: '암호학 기초 및 네트워크 보안 실무. 전년 대비 난이도가 쉬워 평점 양호.',
     slots: [
-      { day: 4, start: 15, end: 17 } // 목 15:00-17:00
+      { day: 4, start: 15, end: 17 }
     ]
   },
-  'marketing': {
-    id: 'marketing',
-    title: '마케팅 원론',
-    category: 'major-req',
-    categoryName: '경영전공필수',
-    prof: '서지현 교수',
-    room: '경영관 101호',
+  'tech-society': {
+    id: 'tech-society',
+    title: '기술과 현대사회',
+    category: 'converge-edu',
+    categoryName: '융합교양 (3영역)',
+    prof: '최은정 교수',
+    room: '교양학관 201호',
     credits: 3,
-    eval: '마케팅 기초 개념 및 STP 전략 실전 케이스 분석. 비즈니스 프리젠테이션 발표 과제 포함.',
+    eval: '인문학적 관점에서 정보통신 기술 발전을 논의함. 에세이 제출 대체.',
     slots: [
-      { day: 3, start: 15, end: 17 } // 수 15:00-17:00
+      { day: 5, start: 10, end: 12 }
+    ]
+  },
+  'tech-society-thu': {
+    id: 'tech-society-thu',
+    title: '기술과 현대사회 (목반)',
+    category: 'converge-edu',
+    categoryName: '융합교양 (3영역)',
+    prof: '최은정 교수',
+    room: '교양학관 201호',
+    credits: 3,
+    eval: '인문학적 관점 기술 발전. 금공강 확보를 위한 최적의 목요일 교양 반.',
+    slots: [
+      { day: 4, start: 15, end: 17 }
+    ]
+  },
+  'pop-art': {
+    id: 'pop-art',
+    title: '대중예술의 이해',
+    category: 'converge-edu',
+    categoryName: '융합교양 (3영역)',
+    prof: '장기하 교수',
+    room: '예술관 105호',
+    credits: 3,
+    eval: '대중영화 및 대중음악 트렌드 토론. 영화 감상 시간 포함.',
+    slots: [
+      { day: 5, start: 13, end: 15 }
+    ]
+  },
+  'creative-coding': {
+    id: 'creative-coding',
+    title: '창의적사고와 코딩',
+    category: 'converge-edu',
+    categoryName: '융합교양 (3영역)',
+    prof: '이하늘 교수',
+    room: '교양학관 102호',
+    credits: 3,
+    eval: '비전공자 및 편입생 대상 블록 코딩 기반 소프트웨어 사고력 함양.',
+    slots: [
+      { day: 3, start: 10, end: 12 }
+    ]
+  },
+  'art-life': {
+    id: 'art-life',
+    title: '예술과 현대생활',
+    category: 'balance-edu',
+    categoryName: '균형교양 (4영역)',
+    prof: '윤아름 교수',
+    room: '미술관 310호',
+    credits: 3,
+    eval: '서양 미술사를 생활 디자인에 접목하여 배움. 미술관 관람기 과제.',
+    slots: [
+      { day: 1, start: 15, end: 17 }
+    ]
+  },
+  'oriental-phil': {
+    id: 'oriental-phil',
+    title: '동양사상의 이해',
+    category: 'balance-edu',
+    categoryName: '균형교양 (1영역)',
+    prof: '송명호 교수',
+    room: '인문학관 204호',
+    credits: 3,
+    eval: '유교, 도교, 불교 동양 철학의 현대적 재해석 토론.',
+    slots: [
+      { day: 3, start: 15, end: 17 }
+    ]
+  },
+  'universe-intro': {
+    id: 'universe-intro',
+    title: '우주의 이해',
+    category: 'balance-edu',
+    categoryName: '균형교양 (2영역)',
+    prof: '권태우 교수',
+    room: '자연과학관 101호',
+    credits: 3,
+    eval: '천체 물리학 기초 및 천문대 별자리 관측 실습 포함 재미있는 교양.',
+    slots: [
+      { day: 4, start: 13, end: 15 }
+    ]
+  },
+  'college-eng': {
+    id: 'college-eng',
+    title: '대학영어',
+    category: 'general',
+    categoryName: '기초교양',
+    prof: 'Smith 교수',
+    room: '교양학관 301호',
+    credits: 3,
+    eval: '글로벌 커뮤니케이션을 위한 원어민 에세이 및 스피킹 실습.',
+    slots: [
+      { day: 2, start: 13, end: 15 }
+    ]
+  },
+  'dream-future': {
+    id: 'dream-future',
+    title: '꿈·미래개척',
+    category: 'general',
+    categoryName: '기초교양 (0.5학점)',
+    prof: '학과지도 교수',
+    room: '온라인 강의실',
+    credits: 0.5,
+    eval: '진로 설계 및 학과 지도교수 1:1 진로 상담 이수 과목.',
+    slots: [
+      { day: 5, start: 17, end: 18 }
     ]
   }
 };
@@ -296,6 +487,20 @@ function TimetableGenerator({ initialStudentType }) {
     ];
   });
   const [activeTimetableId, setActiveTimetableId] = useState('draft-1');
+<<<<<<< HEAD
+=======
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogCategory, setCatalogCategory] = useState('all');
+
+  // Remove course from active timetable
+  const handleRemoveCourse = (courseId) => {
+    setActiveCourses(prev => prev.filter(c => c.id !== courseId));
+    const course = COURSE_CATALOG[courseId];
+    if (course) {
+      addMessage('bot', `🗑️ <strong>${course.title}</strong> 과목을 수강 목록에서 제외했습니다.`);
+    }
+  };
+>>>>>>> 3834078f (feat: 백엔드 API 연동 및 시간표 UI/데이터 확장)
 
   // Save timetables list to localStorage when changed
   useEffect(() => {
@@ -1012,7 +1217,8 @@ function TimetableGenerator({ initialStudentType }) {
                 return (
                   <React.Fragment key={hour}>
                     <div className="time-row-label" style={{ gridRow: `${hourIdx + 2}` }}>
-                      {timeString}
+                      <span className="period-name">{hourIdx + 1}교시</span>
+                      <span className="period-time">{timeString}</span>
                     </div>
                     {/* Background rows for grid borders */}
                     <div className="grid-cell-bg" style={{ gridRow: `${hourIdx + 2}`, gridColumn: '2' }}></div>
@@ -1030,13 +1236,14 @@ function TimetableGenerator({ initialStudentType }) {
                   course.slots.map((slot, slotIdx) => {
                     const startRow = slot.start - 7;
                     const endRow = slot.end - 7;
-                    
+                    const durationHours = slot.end - slot.start;
+                    const isSingleHour = durationHours === 1;
                     const isHovered = hoveredCourseId === course.id;
 
                     return (
                       <div 
                         key={`${course.id}-${slot.day}-${slotIdx}`}
-                        className={`course-block ${course.category} ${isHovered ? 'hovered' : ''}`}
+                        className={`course-block ${course.category} ${isSingleHour ? 'single-hour' : 'multi-hour'} ${isHovered ? 'hovered' : ''}`}
                         style={{
                           gridColumn: slot.day + 1,
                           gridRow: `${startRow} / ${endRow}`
@@ -1044,20 +1251,126 @@ function TimetableGenerator({ initialStudentType }) {
                         onClick={() => setSelectedCourse(course)}
                         onMouseEnter={() => setHoveredCourseId(course.id)}
                         onMouseLeave={() => setHoveredCourseId(null)}
+                        title={`${course.title} (${course.categoryName}) - ${course.prof} [${course.room}]`}
                       >
-                        <div className="course-info-top">
-                          <h4>{course.title}</h4>
-                          <span>{course.categoryName}</span>
-                        </div>
-                        <div className="course-info-bottom">
-                          <span className="prof">{course.prof}</span>
-                          <span className="room">{course.room}</span>
-                        </div>
+                        {isSingleHour ? (
+                          <div className="single-hour-content">
+                            <h4 className="course-title-single">{course.title}</h4>
+                            <p className="course-sub-single">{course.prof} · {course.room}</p>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="course-info-top">
+                              <h4>{course.title}</h4>
+                              <span>{course.categoryName}</span>
+                            </div>
+                            <div className="course-info-bottom">
+                              <span className="course-prof-room">{course.prof} | {course.room}</span>
+                              <span className="course-time-badge">{slot.start}:00~{slot.end}:00</span>
+                            </div>
+                          </>
+                        )}
                       </div>
                     );
                   })
                 ))}
               </div>
+            </div>
+          </div>
+
+          {/* 2026-2 Course Catalog List & Search Drawer */}
+          <div className="catalog-section">
+            <div className="catalog-header-row">
+              <div className="catalog-title">
+                <BookOpen size={16} className="text-indigo" />
+                <span>2026학년도 2학기 전체 개설 교과목 목록</span>
+                <span className="badge" style={{ fontSize: '0.68rem', background: 'rgba(99,102,241,0.15)', color: '#818CF8', padding: '2px 8px', borderRadius: '10px' }}>
+                  총 {Object.keys(COURSE_CATALOG).length}개 과목
+                </span>
+              </div>
+
+              <div className="catalog-search-box">
+                <Search size={14} className="text-muted" />
+                <input 
+                  type="text" 
+                  placeholder="과목명, 교수명, 강의실 검색..."
+                  value={catalogSearch}
+                  onChange={(e) => setCatalogSearch(e.target.value)}
+                />
+                {catalogSearch && (
+                  <X size={13} style={{ cursor: 'pointer' }} onClick={() => setCatalogSearch('')} />
+                )}
+              </div>
+            </div>
+
+            {/* Category Filter Chips */}
+            <div className="catalog-category-filters">
+              {[
+                { id: 'all', label: '전체 보기' },
+                { id: 'major-req', label: '전공필수' },
+                { id: 'major-opt', label: '전공선택' },
+                { id: 'converge-edu', label: '융합교양' },
+                { id: 'balance-edu', label: '균형교양' },
+                { id: 'general', label: '기초교양' }
+              ].map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setCatalogCategory(cat.id)}
+                  className={`cat-filter-btn ${catalogCategory === cat.id ? 'active' : ''}`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Catalog Course Cards Grid */}
+            <div className="catalog-cards-list">
+              {Object.values(COURSE_CATALOG)
+                .filter(course => {
+                  const matchCat = catalogCategory === 'all' || course.category === catalogCategory;
+                  const matchSearch = !catalogSearch || 
+                    course.title.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+                    course.prof.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+                    course.room.toLowerCase().includes(catalogSearch.toLowerCase());
+                  return matchCat && matchSearch;
+                })
+                .map(course => {
+                  const isAdded = activeCourses.some(c => c.id === course.id);
+                  const timeText = course.slots.map(s => {
+                    const days = ['월', '화', '수', '목', '금'];
+                    return `${days[s.day - 1]} ${s.start}:00~${s.end}:00`;
+                  }).join(', ');
+
+                  return (
+                    <div key={course.id} className="catalog-card-item">
+                      <div className="catalog-card-top">
+                        <span className="catalog-card-title">{course.title}</span>
+                        <span className={`catalog-card-cat ${course.category}`}>{course.categoryName}</span>
+                      </div>
+
+                      <p className="catalog-card-body">
+                        {course.prof} · {course.room} ({course.credits}학점)<br />
+                        <span style={{ fontSize: '0.64rem', opacity: 0.75 }}>{course.eval}</span>
+                      </p>
+
+                      <div className="catalog-card-footer">
+                        <span className="catalog-card-time">🕒 {timeText}</span>
+                        <button
+                          onClick={() => {
+                            if (isAdded) {
+                              handleRemoveCourse(course.id);
+                            } else {
+                              handleAddCourse(course.id);
+                            }
+                          }}
+                          className={`btn-catalog-add ${isAdded ? 'added' : 'add'}`}
+                        >
+                          {isAdded ? '✓ 담김' : '+ 담기'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </section>

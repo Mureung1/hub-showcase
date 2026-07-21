@@ -1,17 +1,16 @@
-# Monday (7/20) Mission Checklist - COMPLETED
+# Tuesday (7/21) Mission Checklist - COMPLETED
 
-- `[x]` **1. Supabase Schema Expansion**
-    - `[x]` Update `schema.sql` with `profiles` table (`id`, `user_id`, `name`, `student_type`, `department`)
-    - `[x]` Update `schema.sql` with `chat_messages` table (`id`, `user_id`, `role`, `content`, `created_at`)
-    - `[x]` Add RLS security policies for `profiles` and `chat_messages`
-- `[x]` **2. Express Backend Supabase Integration**
-    - `[x]` Install `@supabase/supabase-js` and `dotenv` in `backend`
-    - `[x]` Create `backend/src/supabase.js` client helper and `.env.example`
-    - `[x]` Add Chat Persistence API routes (`POST /api/chat`, `GET /api/chat`)
-    - `[x]` Add Scanned Grades Persistence API routes (`POST /api/credits/save-grades`, `GET /api/credits/saved-grades`)
-- `[x]` **3. Frontend Data Persistence (Vertical Slice)**
-    - `[x]` Connect `CreditAnalytics.jsx` to load saved grades on mount so **page refresh retains data**
-    - `[x]` Automatically save OCR-scanned grades to DB upon upload
-- `[x]` **4. Architecture Visualization & Documentation**
-    - `[x]` Add Mermaid system flow diagram to `README.md`
-    - `[x]` Add explanation guide for presentation
+- `[x]` **1. Express Backend & Supabase API Integration**
+    - `[x]` Configure `backend/.env` with Supabase credentials
+    - `[x]` Verify `/api/chat` (`POST`, `GET`) endpoints
+    - `[x]` Verify `/api/credits` (`POST`, `GET`) endpoints
+    - `[x]` Create standalone test script `backend/test_api.js` to prove API & DB data flow (Status: 200 OK)
+- `[x]` **2. Course Catalog Expansion (Real University Data)**
+    - `[x]` Add 18+ real Computer Science & General Education courses to `COURSE_CATALOG` in `TimetableGenerator.jsx`
+    - `[x]` Map courses to Major Required, Major Elective, Converge, Core, and Balance Education categories
+- `[x]` **3. Consecutive Class Grid UI Refinement**
+    - `[x]` Add distinct card borders, 1px slot spacing, gradient fills, and dark outline shadows in `index.css`
+    - `[x]` Add period labels (`1교시 09:00`, `2교시 10:00`) inside timetable grid
+    - `[x]` Add course time badges (`09:00~10:00`) and fix title truncation for consecutive 1-hour slots
+- `[x]` **4. Local Only Rule Check**
+    - `[x]` Zero Git push performed. All changes saved locally on user machine.
