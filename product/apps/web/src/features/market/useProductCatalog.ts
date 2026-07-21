@@ -4,7 +4,7 @@ import { loadProductCatalog, type ProductCatalog } from "../../services/productC
 
 export type ProductCatalogState = "loading" | "ready" | "error";
 
-export function useProductCatalog() {
+export function useProductCatalog(fallbackCatalog?: ProductCatalog) {
   const [catalog, setCatalog] = useState<ProductCatalog | null>(null);
   const [state, setState] = useState<ProductCatalogState>("loading");
   const [retryToken, setRetryToken] = useState(0);
@@ -13,6 +13,11 @@ export function useProductCatalog() {
     const controller = new AbortController();
     setCatalog(null);
     setState("loading");
+    if (fallbackCatalog) {
+      setCatalog(fallbackCatalog);
+      setState("ready");
+      return () => controller.abort();
+    }
     void loadProductCatalog(controller.signal)
       .then((result) => {
         if (controller.signal.aborted) return;
@@ -24,7 +29,7 @@ export function useProductCatalog() {
         setState("error");
       });
     return () => controller.abort();
-  }, [retryToken]);
+  }, [fallbackCatalog, retryToken]);
 
   return {
     catalog,

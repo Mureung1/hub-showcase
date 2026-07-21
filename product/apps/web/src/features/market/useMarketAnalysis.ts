@@ -13,7 +13,7 @@ import {
 } from "../../services/adminAreaBackground";
 import { isTestEnvironment } from "./model";
 import type { Category, MarketKey } from "./types";
-import type { SupportedMarket } from "../../services/productCatalog";
+import { DEMO_ANALYSIS_PERIOD, type SupportedMarket } from "../../services/productCatalog";
 
 export type AnalysisState = "loading" | "ready" | "unavailable" | "error";
 
@@ -22,8 +22,9 @@ export function useMarketAnalysis(
   markets: SupportedMarket[],
   category: Category | null,
   period: string,
+  useDemoSnapshot = false,
 ) {
-  const allowDemoSnapshot = import.meta.env.VITE_DEMO_MODE === "true";
+  const allowDemoSnapshot = useDemoSnapshot || import.meta.env.VITE_DEMO_MODE === "true";
   const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null);
   const [analysisSource, setAnalysisSource] = useState<AnalysisSource | null>(null);
   const [analysisState, setAnalysisState] = useState<AnalysisState>("loading");
@@ -36,6 +37,11 @@ export function useMarketAnalysis(
 
   useEffect(() => {
     if (!category || isTestEnvironment() || typeof fetch === "undefined") return;
+    if (allowDemoSnapshot) {
+      setAvailablePeriods([DEMO_ANALYSIS_PERIOD]);
+      setDefaultPeriod(DEMO_ANALYSIS_PERIOD);
+      return;
+    }
     const controller = new AbortController();
     loadAnalysisPeriods(category, controller.signal)
       .then((result) => {
@@ -48,7 +54,7 @@ export function useMarketAnalysis(
         setDefaultPeriod(null);
       });
     return () => controller.abort();
-  }, [category]);
+  }, [allowDemoSnapshot, category]);
 
   useEffect(() => {
     if (isTestEnvironment() || typeof fetch === "undefined") return;
