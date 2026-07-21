@@ -1,26 +1,33 @@
 import { useState } from 'react'
-import { REACTION_TEMPLATES } from '../../features/organicMechanism/data'
-import { useMechanismPlayer } from '../../features/organicMechanism/hooks/useMechanismPlayer'
-import MechanismStepViewer from '../../features/organicMechanism/components/MechanismStepViewer'
-import MechanismControls from '../../features/organicMechanism/components/MechanismControls'
-import ReactionTabs from '../../features/organicMechanism/components/ReactionTabs'
-import Panel from '../../components/Panel'
-import ChapterAssistant from '../../components/ChapterAssistant'
+import type { ReactionTemplate } from '../data/types'
+import { useMechanismPlayer } from '../hooks/useMechanismPlayer'
+import MechanismStepViewer from './MechanismStepViewer'
+import MechanismControls from './MechanismControls'
+import ReactionTabs from './ReactionTabs'
+import Panel from '../../../components/Panel'
+import ChapterAssistant from '../../../components/ChapterAssistant'
 
-export default function OrganicMechanismPage() {
-  const [activeId, setActiveId] = useState(REACTION_TEMPLATES[0].id)
-  const reaction = REACTION_TEMPLATES.find((r) => r.id === activeId) ?? REACTION_TEMPLATES[0]
+interface MechanismViewerProps {
+  title: string
+  reactions: ReactionTemplate[]
+}
+
+export default function MechanismViewer({ title, reactions }: MechanismViewerProps) {
+  const [activeId, setActiveId] = useState(reactions[0].id)
+  const reaction = reactions.find((r) => r.id === activeId) ?? reactions[0]
   const player = useMechanismPlayer(reaction.steps)
   const [showDebugIndices, setShowDebugIndices] = useState(false)
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-zinc-100">유기화학 반응 메커니즘 멘토</h1>
+      <h1 className="text-2xl font-semibold text-zinc-100">{title}</h1>
       <p className="mt-1 text-sm text-zinc-400">{reaction.summary}</p>
 
-      <div className="mt-4">
-        <ReactionTabs reactions={REACTION_TEMPLATES} activeId={activeId} onSelect={setActiveId} />
-      </div>
+      {reactions.length > 1 && (
+        <div className="mt-4">
+          <ReactionTabs reactions={reactions} activeId={activeId} onSelect={setActiveId} />
+        </div>
+      )}
 
       <div className="mt-6">
         <Panel title={`organic / ${reaction.id}.tsx`} className="relative">
