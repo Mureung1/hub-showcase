@@ -38,12 +38,14 @@ hub/
 │     └─ styles/      # 전역 스타일 + 디자인 토큰(CSS 변수)
 ├─ server/            # Express 백엔드 (ESM)
 │  └─ src/
-│     ├─ routes/      # URL → controller 연결
-│     ├─ controllers/ # 요청/응답 처리 (필요 시 생성)
-│     ├─ services/    # 도메인 로직: 재고 차감, 알림 대상 판정 등
-│     ├─ db/          # pg Pool, 쿼리, 마이그레이션 SQL
-│     ├─ app.js       # 미들웨어·라우터 조립 (supertest 대상)
-│     └─ index.js     # 서버 기동 진입점
+│     ├─ routes/        # URL → 서비스 연결, 요청/응답 처리
+│     ├─ services/      # 도메인 로직: 검증·에러 판단·오케스트레이션 (SQL 금지)
+│     ├─ repositories/  # 데이터 접근: SQL + snake_case→camelCase 매핑
+│     ├─ middlewares/   # requireUser 등
+│     ├─ lib/           # httpError, asyncHandler
+│     ├─ db/            # pg Pool, 트랜잭션 헬퍼, 마이그레이션·시딩
+│     ├─ app.js         # 미들웨어·라우터 조립 (supertest 대상)
+│     └─ index.js       # 서버 기동 진입점
 ├─ prototype/         # [동결] 기획 검증용 프로토타입 — 실제 개발에서 사용·수정하지 않는다
 └─ docs/              # 기획 문서 (빌드 대상 아님)
 ```
@@ -57,6 +59,15 @@ hub/
 - **위치 조회**: 1차 Haversine/PostGIS → Redis GeoSpatial은 "최적화 단계"로 도입해 전후 비교(기획서 §6).
 - **알림**: **FCM 푸시를 MVP에 포함**(server: `firebase-admin`, client: Firebase JS SDK + 서비스 워커). 인앱 알림을 병행하고, 푸시 권한 거부·미수신 대비 인앱 폴링을 폴백으로 둔다. Firebase 자격증명(서비스 계정 키)은 `server/.env` 경유로 관리하고 커밋하지 않는다.
 - **포트**: client 5173, server 4000. Vite dev 서버가 `/api`를 4000으로 프록시하므로 클라이언트 코드는 상대경로 `/api/...`만 사용한다.
+
+## 서버 레이어 규칙
+
+`routes → services → repositories → db/pool` 한 방향으로만 의존한다.
+
+- **services**: SQL을 쓰지 않는다. 입력 검증·에러(httpError) 판단·여러 repository 호출 조합만 담당.
+- **repositories**: SQL과 DB 표현(snake_case)을 전담하고, 바깥에는 camelCase 객체를 반환한다. 모든 함수는 마지막 인자로 `db`(기본값 `pool`)를 받아, 트랜잭션 중에는 호출부가 `client`를 넘겨 **같은 연결**을 유지한다.
+- **트랜잭션**: `withTransaction(async (client) => ...)`로 감싸고, 그 안의 repository 호출에 `client`를 전달한다. 실패해도 되는 시도는 `trySavepoint`로 감싼다(세션이 aborted 되는 것을 방지).
+- `repositories/sql.js`의 SQL 조각 함수 인자에는 **사용자 입력을 절대 넣지 않는다**(문자열로 삽입됨). 값은 항상 `$n` 파라미터로 바인딩.
 
 ## API·코드 컨벤션
 
