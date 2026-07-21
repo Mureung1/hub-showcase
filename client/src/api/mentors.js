@@ -15,3 +15,15 @@ export const getMentorById = async (mentorId) => {
 
   return response.data;
 };
+
+export const getMyMentorProfile = async () => {
+  const response = await httpClient.get('/mentors/me');
+
+  return response.data;
+};
+
+export const updateMyMentorProfile = async (payload) => {
+  const response = await httpClient.patch('/mentors/me', payload);
+
+  return response.data;
+};

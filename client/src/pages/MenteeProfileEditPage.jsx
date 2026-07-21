@@ -1,11 +1,32 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { getMyMenteeProfile, updateMyMenteeProfile } from "../api/mentees";
 import { routePaths } from "../routes/routePaths";
-import { getMenteeProfile, saveMenteeProfile } from "../utils/menteeProfileStorage";
 
 function MenteeProfileEditPage() {
-  const [profile, setProfile] = useState(getMenteeProfile);
+  const [profile, setProfile] = useState(null);
   const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    getMyMenteeProfile()
+      .then((response) => {
+        if (!isCancelled) setProfile(response.data);
+      })
+      .catch((error) => {
+        if (!isCancelled) setMessage(error.message);
+      })
+      .finally(() => {
+        if (!isCancelled) setIsLoading(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -13,11 +34,51 @@ function MenteeProfileEditPage() {
     setMessage("");
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    const isSaved = saveMenteeProfile(profile);
-    setMessage(isSaved ? "개인 정보가 저장되었습니다." : "저장하지 못했습니다. 다시 시도해 주세요.");
+
+    const payload = {
+      name: profile.name,
+      nickname: profile.nickname,
+      school: profile.school,
+      major: profile.major,
+      grade: profile.grade,
+      enrollmentStatus: profile.enrollmentStatus,
+    };
+
+    setIsSaving(true);
+    setMessage("");
+
+    try {
+      const response = await updateMyMenteeProfile(payload);
+      setProfile(response.data);
+      setMessage("개인 정보가 저장되었습니다.");
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="mentee-profile-page">
+        <main className="page-container mentee-profile-container">
+          <p role="status">프로필을 불러오는 중입니다.</p>
+        </main>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="mentee-profile-page">
+        <main className="page-container mentee-profile-container">
+          <p role="alert">{message || "프로필을 불러오지 못했습니다."}</p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="mentee-profile-page">
@@ -38,7 +99,6 @@ function MenteeProfileEditPage() {
               <h2 className="card-title">기본 정보</h2>
               <p className="muted-text">멘토에게 전달되는 기본 정보를 관리합니다.</p>
             </div>
-            <span className="tag">멘티</span>
           </div>
 
           <div className="mentee-profile-field-grid">
@@ -52,15 +112,10 @@ function MenteeProfileEditPage() {
               <input className="field" name="nickname" onChange={handleChange} required value={profile.nickname} />
             </label>
 
-            <label className="mentee-profile-field">
-              <span>아이디</span>
-              <input className="field" name="username" readOnly value={profile.username} />
-              <small>아이디는 변경할 수 없습니다.</small>
-            </label>
-
-            <label className="mentee-profile-field">
+            <label className="mentee-profile-field mentee-profile-field-wide">
               <span>이메일 주소</span>
-              <input className="field" name="email" onChange={handleChange} required type="email" value={profile.email} />
+              <input className="field" disabled name="email" type="email" value={profile.email} />
+              <small>이메일은 별도 절차로 변경합니다.</small>
             </label>
 
             <label className="mentee-profile-field">
@@ -105,7 +160,9 @@ function MenteeProfileEditPage() {
 
           <div className="mentee-profile-actions">
             <Link className="button button-neutral" to={routePaths.menteeMentors}>취소</Link>
-            <button className="button button-primary" type="submit">변경 내용 저장</button>
+            <button className="button button-primary" disabled={isSaving} type="submit">
+              {isSaving ? "저장 중..." : "변경 내용 저장"}
+            </button>
           </div>
         </form>
       </main>
