@@ -9,6 +9,7 @@ import {
 } from '../data/consultStorage';
 import type { ConsultReportInput, ConsultRequest } from '../types/consult';
 
+/** Trainer inbox — local mock storage until trainer API is implemented. */
 export function useConsultRequests() {
   const [requests, setRequests] = useState<ConsultRequest[]>(loadConsultRequests);
 

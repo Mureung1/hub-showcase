@@ -59,7 +59,7 @@ export function useUserLocation() {
           source: 'gps',
         });
         setStatus('granted');
-        setMessage('실제 GPS 위치로 이동했습니다. 헬스장 핀은 아직 부산 목업 데이터입니다.');
+        setMessage('실제 GPS 위치로 이동했습니다. 주변 헬스장을 네이버에서 검색합니다.');
         setLocateToken((token) => token + 1);
       },
       (error) => {
