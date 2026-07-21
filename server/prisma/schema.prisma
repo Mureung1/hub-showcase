@@ -64,12 +64,15 @@ model Routine {
 }
 
 model RoutineDay {
-  id         Int              @id @default(autoincrement())
-  routineId  Int
-  routine    Routine          @relation(fields: [routineId], references: [id])
-  dayOfWeek  DayOfWeek
-  targetArea String?
-  status     RoutineDayStatus @default(PLANNED)
+  id          Int              @id @default(autoincrement())
+  routineId   Int
+  routine     Routine          @relation(fields: [routineId], references: [id])
+  dayOfWeek   DayOfWeek
+  targetArea  String?
+  status      RoutineDayStatus @default(PLANNED)
+  skippedToId Int?             @unique
+  skippedTo   RoutineDay?      @relation("RoutineDaySkipReassignment", fields: [skippedToId], references: [id], onDelete: SetNull)
+  skippedFrom RoutineDay?      @relation("RoutineDaySkipReassignment")
 
   exercises    RoutineDayExercise[]
   exerciseLogs ExerciseLog[]
