@@ -1,40 +1,45 @@
-.mission-quote-label {
+.mission-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.mission-select-label {
+  display: block;
   font-size: 13px;
   font-weight: 700;
   color: var(--ink-soft);
   margin-bottom: 8px;
 }
 
-.mission-quote-text {
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-.mission-type {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 24px 0 8px;
-}
-
-.mission-type-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  color: var(--ink);
-}
-
-.mission-type-badge svg {
-  width: 16px;
-  height: 16px;
-}
-
-.mission-type-label {
+.mission-select {
+  width: 100%;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper-raised);
+  padding: 10px 14px;
   font-size: 14px;
-  font-weight: 700;
+  font-family: inherit;
+  color: var(--ink);
+  margin-bottom: 20px;
+}
+
+.mission-complete-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.mission-complete-desc {
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin-bottom: 24px;
 }
 
 .mission-question {

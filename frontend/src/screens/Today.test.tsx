@@ -1,8 +1,28 @@
+import { useState } from 'react'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import Today from './Today'
+import Today, { type TodayState } from './Today'
 import type { TodayArticle } from '../api/types'
+
+// Today는 controlled component라 선택 상태를 직접 관리하는 테스트용 wrapper가 필요하다.
+function ControlledToday({
+  state,
+  onOpenArticle,
+}: {
+  state: TodayState
+  onOpenArticle?: (articleId: string) => void
+}) {
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null)
+  return (
+    <Today
+      state={state}
+      selectedArticleId={selectedArticleId}
+      onSelectArticle={setSelectedArticleId}
+      onOpenArticle={onOpenArticle}
+    />
+  )
+}
 
 function makeTodayArticle(fields: {
   id: string
@@ -71,6 +91,16 @@ describe('Today', () => {
     expect(screen.getByText('준비 중이에요.')).toBeInTheDocument()
   })
 
+  it('uses the externally controlled selectedArticleId as the feature article', () => {
+    render(
+      <Today
+        state={{ status: 'success', items: [ARTICLE_A, ARTICLE_B, ARTICLE_C], emptyStateMessage: null }}
+        selectedArticleId={ARTICLE_B.id}
+      />,
+    )
+    expect(screen.getAllByRole('article')[0]).toHaveTextContent(ARTICLE_B.title)
+  })
+
   it('renders feature first and compact remaining cards in API order', () => {
     render(
       <Today state={{ status: 'success', items: [ARTICLE_B, ARTICLE_A], emptyStateMessage: null }} />,
@@ -96,7 +126,7 @@ describe('Today', () => {
 
   it('promotes a selected compact card to the feature card', async () => {
     render(
-      <Today
+      <ControlledToday
         state={{ status: 'success', items: [ARTICLE_A, ARTICLE_B, ARTICLE_C], emptyStateMessage: null }}
       />,
     )
@@ -109,7 +139,7 @@ describe('Today', () => {
   it('calls onOpenArticle with the newly promoted feature article id after selecting a compact card', async () => {
     const onOpenArticle = vi.fn()
     render(
-      <Today
+      <ControlledToday
         state={{ status: 'success', items: [ARTICLE_A, ARTICLE_B, ARTICLE_C], emptyStateMessage: null }}
         onOpenArticle={onOpenArticle}
       />,
@@ -123,7 +153,7 @@ describe('Today', () => {
 
   it('demotes the previous feature article to the compact list in API order after selecting B', async () => {
     const { container } = render(
-      <Today
+      <ControlledToday
         state={{ status: 'success', items: [ARTICLE_A, ARTICLE_B, ARTICLE_C], emptyStateMessage: null }}
       />,
     )
@@ -140,7 +170,7 @@ describe('Today', () => {
 
   it('updates all feature card fields to the selected article after selecting B', async () => {
     render(
-      <Today
+      <ControlledToday
         state={{ status: 'success', items: [ARTICLE_A, ARTICLE_B, ARTICLE_C], emptyStateMessage: null }}
       />,
     )
@@ -156,7 +186,7 @@ describe('Today', () => {
 
   it('re-selecting C after B makes C the feature and leaves A and B in compact', async () => {
     const { container } = render(
-      <Today
+      <ControlledToday
         state={{ status: 'success', items: [ARTICLE_A, ARTICLE_B, ARTICLE_C], emptyStateMessage: null }}
       />,
     )
@@ -177,7 +207,7 @@ describe('Today', () => {
 
   it('never loses or duplicates articles across multiple selections', async () => {
     render(
-      <Today
+      <ControlledToday
         state={{ status: 'success', items: [ARTICLE_A, ARTICLE_B, ARTICLE_C], emptyStateMessage: null }}
       />,
     )
@@ -218,7 +248,7 @@ describe('Today', () => {
 
   it('selects a compact card with the Enter key', async () => {
     render(
-      <Today
+      <ControlledToday
         state={{ status: 'success', items: [ARTICLE_A, ARTICLE_B, ARTICLE_C], emptyStateMessage: null }}
       />,
     )
@@ -232,7 +262,7 @@ describe('Today', () => {
 
   it('selects a compact card with the Space key', async () => {
     render(
-      <Today
+      <ControlledToday
         state={{ status: 'success', items: [ARTICLE_A, ARTICLE_B, ARTICLE_C], emptyStateMessage: null }}
       />,
     )

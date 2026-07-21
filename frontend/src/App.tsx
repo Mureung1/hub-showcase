@@ -74,6 +74,8 @@ type TodayFlowState =
 function TodayContainer() {
   const [todayState, setTodayState] = useState<TodayState>({ status: 'loading' })
   const [flow, setFlow] = useState<TodayFlowState>({ screen: 'today' })
+  // 대표로 올린 article id. 글 소개 화면을 왕복해도 유지되도록 여기서 소유한다.
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -116,6 +118,8 @@ function TodayContainer() {
   return (
     <Today
       state={todayState}
+      selectedArticleId={selectedArticleId}
+      onSelectArticle={setSelectedArticleId}
       onOpenArticle={(articleId) => setFlow({ screen: 'articleIntro', articleId })}
     />
   )
@@ -156,7 +160,13 @@ function ArticleIntroContainer({
     }
   }, [articleId])
 
-  return <ArticleIntro state={state} onBack={onBack} />
+  return (
+    <ArticleIntro
+      state={state}
+      onBack={onBack}
+      onSubmitMission={(request) => api.createMissionRecord(request)}
+    />
+  )
 }
 
 export default App
