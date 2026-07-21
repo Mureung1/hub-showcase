@@ -10,6 +10,9 @@ export interface ClothingItem {
   shoppingUrl?: string;
   shopName?: string;
   description?: string;
+  price?: number;
+  brand?: string;
+  catalogSource?: boolean;
 }
 
 export type WeatherType = string;
