@@ -21,15 +21,20 @@ const TIPS = {
   감자채볶음: '감자는 채썬 후 물에 헹궈야 안 뭉쳐요!',
 };
 
+// youtubeId는 src/data/mockRecipes.js에 이미 큐레이션된 실제 영상 ID를 그대로 재사용 — 프로토타입이라고
+// 임의의 영상 ID를 지어내면 엉뚱한 영상 썸네일이 뜰 수 있어서, 겹치는 레시피만 가져오고 나머지는 이모지로 대체.
 const RECIPES = [
-  { name: '계란볶음밥', timeMin: 10, ingredients: ['밥', '계란', '대파', '간장', '참기름'], variant: 'bowl', colors: ['yellow', 'coral'] },
-  { name: '두부조림', timeMin: 15, ingredients: ['두부', '대파', '마늘', '간장', '고추장'], variant: 'plate', colors: ['green', 'yellow'] },
-  { name: '김치볶음밥', timeMin: 15, ingredients: ['밥', '김치', '대파', '계란', '참기름', '간장'], variant: 'plate', colors: ['coral', 'yellow'] },
-  { name: '된장찌개', timeMin: 20, ingredients: ['두부', '애호박', '양파', '마늘', '된장'], variant: 'bowl', colors: ['orange', 'green'] },
-  { name: '소고기무국', timeMin: 25, ingredients: ['소고기', '무', '대파', '마늘', '간장'], variant: 'bowl', colors: ['orange', 'coral'] },
-  { name: '새우볶음밥', timeMin: 15, ingredients: ['밥', '새우', '계란', '대파', '참기름', '소금'], variant: 'bowl', colors: ['coral', 'green'] },
-  { name: '감자채볶음', timeMin: 15, ingredients: ['감자', '당근', '양파', '식용유', '소금'], variant: 'plate', colors: ['yellow', 'green'] },
+  { name: '계란볶음밥', timeMin: 10, ingredients: ['밥', '계란', '대파', '간장', '참기름'], variant: 'bowl', colors: ['yellow', 'coral'], emoji: '🍳', youtubeId: 'RUgH6TBDtsM' },
+  { name: '두부조림', timeMin: 15, ingredients: ['두부', '대파', '마늘', '간장', '고추장'], variant: 'plate', colors: ['green', 'yellow'], emoji: '🧈', youtubeId: 'JTNzDDQCL0k' },
+  { name: '김치볶음밥', timeMin: 15, ingredients: ['밥', '김치', '대파', '계란', '참기름', '간장'], variant: 'plate', colors: ['coral', 'yellow'], emoji: '🍚', youtubeId: 'tS7nKEMOJpw' },
+  { name: '된장찌개', timeMin: 20, ingredients: ['두부', '애호박', '양파', '마늘', '된장'], variant: 'bowl', colors: ['orange', 'green'], emoji: '🍲', youtubeId: '1Cq894mgoG4' },
+  { name: '소고기무국', timeMin: 25, ingredients: ['소고기', '무', '대파', '마늘', '간장'], variant: 'bowl', colors: ['orange', 'coral'], emoji: '🍖', youtubeId: null },
+  { name: '새우볶음밥', timeMin: 15, ingredients: ['밥', '새우', '계란', '대파', '참기름', '소금'], variant: 'bowl', colors: ['coral', 'green'], emoji: '🍤', youtubeId: 'gx7GjyacUJg' },
+  { name: '감자채볶음', timeMin: 15, ingredients: ['감자', '당근', '양파', '식용유', '소금'], variant: 'plate', colors: ['yellow', 'green'], emoji: '🥔', youtubeId: null },
 ];
+
+// 카드 썸네일 뒤에 깔리는 파스텔 배경 — 사진 로드 전/이모지 대체 시에도 빈 카드처럼 안 보이게. 카드 순서대로 순환
+const CARD_PALETTE = ['#FBEBDD', '#E5F3E9', '#F1E9F7', '#FBE7EE'];
 
 const CATEGORIES = ['채소', '육류·해산물', '가공식품', '곡류', '양념'];
 const INGREDIENTS_BY_CAT = {
@@ -39,8 +44,9 @@ const INGREDIENTS_BY_CAT = {
   '곡류': ['밥', '빵', '면', '시리얼'],
   '양념': ['소금', '고추장', '된장', '간장', '참기름', '설탕', '후추', '식용유'],
 };
-const FOOD_TYPES = ['한식', '양식', '퓨전', '간단요리'];
-const COOK_TIMES = ['10분 이내', '20분 이내', '30분 이내'];
+const FOOD_TYPES = ['전체', '한식', '양식', '퓨전', '간단요리'];
+const COOK_TIMES = ['전체', '10분 이내', '20분 이내', '30분 이내'];
+const SORT_OPTIONS = ['전체', '가격 낮은순', '가격 높은순'];
 
 // ---- SVG 아이콘 ----
 
@@ -57,6 +63,20 @@ function svgDoodle(kind, size) {
   if (kind === 'mushroom') return `<svg viewBox="0 0 40 40" width="${size}" height="${size}">
     <path d="M4 20 Q4 4 20 4 Q36 4 36 20 Z" fill="${C.coral}" stroke="${b}" stroke-width="2"/>
     <rect x="13" y="20" width="14" height="16" rx="5" fill="#FFFBF2" stroke="${b}" stroke-width="2"/>
+  </svg>`;
+  if (kind === 'tomato') return `<svg viewBox="0 0 40 40" width="${size}" height="${size}">
+    <circle cx="20" cy="22" r="15" fill="${C.coral}" stroke="${b}" stroke-width="2"/>
+    <path d="M20 7 Q16 2 12 4 M20 7 Q20 1 20 4 M20 7 Q24 2 28 4" stroke="${C.green}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  </svg>`;
+  if (kind === 'potato') return `<svg viewBox="0 0 40 32" width="${size}" height="${size}">
+    <ellipse cx="20" cy="18" rx="18" ry="12" fill="#D9A868" stroke="${b}" stroke-width="2"/>
+    <circle cx="14" cy="16" r="1.6" fill="${b}"/>
+    <circle cx="24" cy="21" r="1.6" fill="${b}"/>
+    <circle cx="27" cy="13" r="1.6" fill="${b}"/>
+  </svg>`;
+  if (kind === 'jar') return `<svg viewBox="0 0 32 40" width="${size}" height="${size}">
+    <rect x="6" y="12" width="20" height="24" rx="4" fill="${C.green}" stroke="${b}" stroke-width="2"/>
+    <rect x="10" y="4" width="12" height="10" rx="2" fill="#FFFBF2" stroke="${b}" stroke-width="2"/>
   </svg>`;
   return `<svg viewBox="0 0 40 46" width="${size}" height="${size}">
     <ellipse cx="20" cy="26" rx="16" ry="18" fill="#FFFBF2" stroke="${b}" stroke-width="2"/>
@@ -118,8 +138,9 @@ const state = {
   screen: 'fridge', // fridge | home | detail
   category: '채소',
   selected: new Set(['배추', '양파', '마늘', '대파', '두부', '계란', '밥', '간장', '참기름', '고추장', '김치']),
-  foodType: '한식',
-  cookTime: '20분 이내',
+  foodType: '전체',
+  cookTime: '전체',
+  sortOrder: '전체',
   selectedRecipe: null,
 };
 
@@ -134,18 +155,25 @@ function computeRecipes() {
 
 // ---- 화면 렌더 ----
 
+const CATEGORY_ICONS = {
+  '채소': '🥕',
+  '육류·해산물': '🐟',
+  '가공식품': '📦',
+  '곡류': '🍚',
+  '양념': '🌶️',
+};
+
 function renderTopNav() {
-  const stepClass = s => `step${state.screen === s ? ' active' : ''}`;
+  const navLink = (label, action, activeWhen) => `<div class="nav-link${activeWhen.includes(state.screen) ? ' active' : ''}" data-action="${action}">${label}</div>`;
   return `
   <div class="topnav">
-    <div class="brand">${svgMascot(30, { hat: true })}<span>끼니픽</span></div>
-    <div class="steps">
-      <div class="${stepClass('fridge')}">1. 냉장고 재료</div>
-      <div class="${stepClass('home')}">2. 추천 리스트</div>
-      <div class="${stepClass('detail')}">3. 레시피 상세</div>
+    <div class="brand"><img class="brand-mascot" src="assets/마스코트 끼니.png" alt="끼니픽"><span>끼니픽</span></div>
+    <div class="nav-links">
+      ${navLink('냉장고', 'go-fridge', ['fridge'])}
+      ${navLink('홈', 'go-home', ['home'])}
+      ${navLink('레시피', 'go-home', [])}
     </div>
-    <div class="searchbox">레시피 검색</div>
-    ${state.screen !== 'fridge' ? `<div class="backbtn" data-action="back">← 뒤로</div>` : ''}
+    <div class="nav-search">🔍 레시피 검색</div>
   </div>`;
 }
 
@@ -155,83 +183,124 @@ function renderFridgeScreen() {
     return `<div class="ingredient-chip${on ? ' selected' : ''}" data-action="toggle-ingredient" data-value="${name}">${on ? '✓ ' : ''}${name}</div>`;
   }).join('');
 
-  const tabs = CATEGORIES.map(cat => `<div class="category-tab${cat === state.category ? ' active' : ''}" data-action="set-category" data-value="${cat}">${cat}</div>`).join('');
+  const tabs = CATEGORIES.map(cat => `
+    <div class="category-tab${cat === state.category ? ' active' : ''}" data-action="set-category" data-value="${cat}">
+      <span class="category-icon">${CATEGORY_ICONS[cat] || '🍽️'}</span>
+      <span class="category-label">${cat}</span>
+    </div>`).join('');
 
   return `
   <div class="fridge-scene">
-    <div class="deco deco-carrot">${svgDoodle('carrot', 36)}</div>
-    <div class="deco deco-chili">${svgDoodle('chili', 40)}</div>
-    <div class="deco deco-mushroom">${svgDoodle('mushroom', 34)}</div>
-    <div class="deco deco-garlic">${svgDoodle('garlic', 34)}</div>
-
-    <div class="fridge-visual">
-      <div class="fridge-body">
-        <div class="freezer"><span></span><span></span></div>
-        <div class="main"><span></span><span></span><span></span></div>
+    <div class="fridge-hero">
+      <div class="fridge-photo-frame">
+        <img class="fridge-photo" src="assets/냉장고-Photoroom.png" alt="열린 냉장고를 들여다보는 기니">
       </div>
-      <div class="fridge-mascot">${svgMascot(150, { hat: true, spoon: true })}</div>
-    </div>
 
-    <div class="ingredient-panel">
-      <div class="ingredient-search">재료 검색...</div>
-      <div class="category-tabs">${tabs}</div>
-      <div class="ingredient-grid">${chips}</div>
+      <div class="ingredient-panel">
+        <div class="panel-header">
+          <div class="panel-title">🧺 냉장고에 뭐가 있나요?</div>
+          <div class="panel-search">🔍 재료 검색...</div>
+        </div>
+        <div class="category-tabs">${tabs}</div>
+        <div class="ingredient-grid">
+          ${chips}
+          <div class="chip-more" title="추후 지원 예정">+ 더보기</div>
+        </div>
+        <div class="done-btn" data-action="go-home">완료 (${state.selected.size}) ✓</div>
+      </div>
     </div>
-
-    <div class="selected-count">${state.selected.size}개 선택됨</div>
-    <div class="done-btn" data-action="go-home">완료 (${state.selected.size}) ✓</div>
   </div>`;
 }
 
-function recipeCard(r, showMissing) {
+function recipeCard(r, showMissing, index) {
+  const palette = CARD_PALETTE[index % CARD_PALETTE.length];
+  const emojiFallback = `this.replaceWith(Object.assign(document.createElement('div'),{className:'recipe-thumb-emoji',textContent:'${r.emoji}'}))`;
+  const thumbInner = r.youtubeId
+    ? `<img class="recipe-thumb-photo" src="https://img.youtube.com/vi/${r.youtubeId}/hqdefault.jpg" alt="${r.name}" onerror="${emojiFallback}">`
+    : `<div class="recipe-thumb-emoji">${r.emoji}</div>`;
   return `
   <div class="recipe-card" data-action="open-recipe" data-value="${r.name}">
-    <div class="recipe-thumb">
-      <div style="width:80px;height:80px">${svgDish(r.variant, r.colors)}</div>
+    <div class="recipe-thumb" style="background:${palette}">
+      ${thumbInner}
       <span class="time-badge">${r.timeMin}분</span>
     </div>
     <div class="recipe-name">${r.name}</div>
     ${showMissing ? `<div class="missing-badge">${r.missingCount}개만 더 있으면</div>` : ''}
-    <div class="recipe-price">${r.totalPrice.toLocaleString()}원</div>
+    <div class="recipe-foot">
+      <span class="recipe-price">${r.totalPrice.toLocaleString()}원</span>
+      <span class="recipe-clock" aria-hidden="true">🕐</span>
+    </div>
   </div>`;
 }
 
 function renderHomeScreen() {
   const computed = computeRecipes();
-  const sectionA = computed.filter(r => r.missingCount === 0).sort((a, b) => a.totalPrice - b.totalPrice);
-  const sectionB = computed.filter(r => r.missingCount >= 1 && r.missingCount <= 2).sort((a, b) => a.totalPrice - b.totalPrice);
+  const priceSort = state.sortOrder === '가격 높은순' ? (a, b) => b.totalPrice - a.totalPrice : (a, b) => a.totalPrice - b.totalPrice;
+  const sectionA = computed.filter(r => r.missingCount === 0).sort(priceSort);
+  const sectionB = computed.filter(r => r.missingCount >= 1 && r.missingCount <= 2).sort(priceSort);
+  const sectionAll = [...computed].sort(priceSort);
 
   const foodTypeChips = FOOD_TYPES.map(f => `<div class="filter-chip${f === state.foodType ? ' active' : ''}" data-action="set-foodtype" data-value="${f}">${f}</div>`).join('');
   const cookTimeChips = COOK_TIMES.map(t => `<div class="filter-chip${t === state.cookTime ? ' active' : ''}" data-action="set-cooktime" data-value="${t}">${t}</div>`).join('');
+  const sortChips = SORT_OPTIONS.map(s => `<div class="filter-chip${s === state.sortOrder ? ' active' : ''}" data-action="set-sort" data-value="${s}">${s}</div>`).join('');
 
   return `
-  <div class="home-top">
-    <div class="promo-banner">
-      <div class="deco" style="top:10px;right:20px">${svgDoodle('carrot', 30)}</div>
-      <div class="deco" style="bottom:8px;right:60px">${svgDoodle('garlic', 26)}</div>
-      <h2>끼니픽 주간 특가!<br>신선 재료 최대 30%↓</h2>
-      <span class="promo-cta">쇼핑하기</span>
+  <div class="home-wrap">
+  <div class="promo-carousel">
+    <div class="carousel-arrow" data-action="noop" aria-label="이전 슬라이드">‹</div>
+    <div class="home-top">
+      <div class="promo-banner">
+        <div class="veggie" style="top:6px;left:118px"><span class="pct-badge">-20%</span>${svgDoodle('carrot', 32)}</div>
+        <div class="veggie" style="top:0px;left:172px"><span class="pct-badge">-30%</span>${svgDoodle('garlic', 28)}</div>
+        <div class="veggie" style="top:10px;left:222px"><span class="pct-badge">30%</span>${svgDoodle('tomato', 30)}</div>
+        <div class="veggie" style="bottom:16px;left:132px"><span class="pct-badge">-30%</span>${svgDoodle('jar', 26)}</div>
+        <div class="veggie" style="bottom:10px;left:198px"><span class="pct-badge">90%</span>${svgDoodle('mushroom', 28)}</div>
+        <div class="veggie" style="bottom:2px;left:12px">${svgDoodle('potato', 26)}</div>
+        <h2>끼니픽 주간 특가!<br>신선 재료 최대 30%↓</h2>
+        <span class="promo-cta">쇼핑하기</span>
+      </div>
+      <div class="promo-card">
+        ${svgMascot(56, { hat: true, spoon: true })}
+        <p>혼자 만들기 좋은<br>신메뉴!</p>
+      </div>
     </div>
-    <div class="promo-card">
-      ${svgMascot(56, { hat: true, spoon: true })}
-      <p>혼자 만들기 좋은<br>신메뉴!</p>
-    </div>
+    <div class="carousel-arrow" data-action="noop" aria-label="다음 슬라이드">›</div>
   </div>
+  <div class="promo-dots"><span class="dot active"></span><span class="dot"></span></div>
 
   <div class="filter-row">
-    <span class="filter-label">음식 종류</span>
-    <div class="filter-group">${foodTypeChips}</div>
-  </div>
-  <div class="filter-row">
-    <span class="filter-label">조리 시간</span>
-    <div class="filter-group">${cookTimeChips}</div>
+    <div class="filter-col">
+      <span class="filter-label">음식 종류</span>
+      <div class="filter-group">${foodTypeChips}</div>
+    </div>
+    <div class="filter-col">
+      <span class="filter-label">조리 시간</span>
+      <div class="filter-group">${cookTimeChips}</div>
+    </div>
+    <div class="filter-col">
+      <span class="filter-label">정렬</span>
+      <div class="filter-group">${sortChips}</div>
+    </div>
+    <div class="filter-edit" title="필터 더보기">✏️</div>
   </div>
 
-  <div class="section-title">지금 바로 만들 수 있어요</div>
-  <div class="recipe-grid">${sectionA.map(r => recipeCard(r, false)).join('') || '<p>조건에 맞는 요리가 없어요.</p>'}</div>
+  <div class="section-heading">
+    <div class="section-title">지금 바로 만들 수 있어요<span class="dot"></span></div>
+    <span class="section-link">전체보기</span>
+  </div>
+  <div class="recipe-grid">${sectionA.map((r, i) => recipeCard(r, false, i)).join('') || '<p>조건에 맞는 요리가 없어요.</p>'}</div>
 
-  <div class="section-title">재료 조금만 사면 돼요</div>
-  <div class="recipe-grid">${sectionB.map(r => recipeCard(r, true)).join('') || '<p>조건에 맞는 요리가 없어요.</p>'}</div>
+  <div class="section-heading">
+    <div class="section-title">재료 조금만 사면 돼요 🛒</div>
+    <span class="section-link">더 보기</span>
+  </div>
+  <div class="recipe-grid">${sectionB.map((r, i) => recipeCard(r, true, i)).join('') || '<p>조건에 맞는 요리가 없어요.</p>'}</div>
+
+  <div class="section-heading">
+    <div class="section-title">전체 둘러보기 (가격순)</div>
+  </div>
+  <div class="recipe-grid">${sectionAll.map((r, i) => recipeCard(r, false, i)).join('')}</div>
+  </div>
   `;
 }
 
@@ -318,6 +387,8 @@ document.getElementById('app').addEventListener('click', (e) => {
   const value = el.dataset.value;
 
   if (action === 'back') state.screen = state.screen === 'detail' ? 'home' : 'fridge';
+  else if (action === 'go-fridge') state.screen = 'fridge';
+  else if (action === 'noop') return;
   else if (action === 'set-category') state.category = value;
   else if (action === 'toggle-ingredient') {
     if (state.selected.has(value)) state.selected.delete(value); else state.selected.add(value);
@@ -325,6 +396,7 @@ document.getElementById('app').addEventListener('click', (e) => {
   else if (action === 'go-home') state.screen = 'home';
   else if (action === 'set-foodtype') state.foodType = value;
   else if (action === 'set-cooktime') state.cookTime = value;
+  else if (action === 'set-sort') state.sortOrder = value;
   else if (action === 'open-recipe') { state.selectedRecipe = value; state.screen = 'detail'; }
   else return;
 
