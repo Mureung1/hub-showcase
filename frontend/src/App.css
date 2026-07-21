@@ -275,17 +275,40 @@
   color: var(--btn-text-color);
 }
 
-.dashboard-hypothesis-name {
+/* 원인/결과를 "제목 + 박스" 형태로 표시. 대시보드 행과 상세 화면이 공유하는 구조. */
+.hypothesis-field-group {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  font-size: var(--font-size-body);
-  color: var(--color-text);
+  gap: var(--space-xs);
+  padding: var(--space-sm) 0;
 }
 
-.dashboard-cause,
-.dashboard-effect {
+.hypothesis-index {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-muted);
+}
+
+.hypothesis-field-label {
+  display: block;
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  margin-bottom: 2px;
+}
+
+.hypothesis-field-value {
+  background: var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius-input);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-body);
+}
+
+.hypothesis-arrow {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body);
 }
 
 .dashboard-recommendation {

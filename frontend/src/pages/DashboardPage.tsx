@@ -15,6 +15,7 @@ interface VerificationResult {
 
 interface Hypothesis {
   id: string
+  display_index: number
   cause: string
   effect: string
   status: string
@@ -43,7 +44,9 @@ const STATUS_BADGE_CLASS: Record<string, string> = {
 }
 
 // 사용자가 확정하는 판단값. AI 제안(verification_status)과는 별개.
-const JUDGMENT_OPTIONS = ['유지', '수정', '폐기']
+// '수정'은 목록에서 뺐다 — 실제 편집은 여기서 일어나지 않고 상세 화면의 원인/결과 수정
+// 진입점에서만 가능하므로, 판단 버튼에 두면 눌러도 아무 일도 안 일어나는 것처럼 보인다.
+const JUDGMENT_OPTIONS = ['유지', '폐기']
 
 function DashboardPage() {
   const { id } = useParams<{ id: string }>()
@@ -164,10 +167,18 @@ function DashboardPage() {
                     aria-label={`${h.cause} 선택`}
                   />
                   <span className={`badge ${badgeClass}`}>{h.verification_status}</span>
-                  <span className="dashboard-hypothesis-name">
-                    <span className="dashboard-cause">원인: {h.cause}</span>
-                    <span className="dashboard-effect">→ 결과: {h.effect}</span>
-                  </span>
+                  <div className="hypothesis-field-group">
+                    <span className="hypothesis-index">가설 {h.display_index + 1}</span>
+                    <div className="hypothesis-field">
+                      <span className="hypothesis-field-label">원인</span>
+                      <div className="hypothesis-field-value">{h.cause}</div>
+                    </div>
+                    <span className="hypothesis-arrow">↓</span>
+                    <div className="hypothesis-field">
+                      <span className="hypothesis-field-label">결과</span>
+                      <div className="hypothesis-field-value">{h.effect}</div>
+                    </div>
+                  </div>
                   <span className="dashboard-recommendation">
                     {h.verification_result?.direction || '아직 분석 근거가 없습니다.'}
                   </span>

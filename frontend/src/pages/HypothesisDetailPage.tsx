@@ -23,6 +23,7 @@ interface EvidenceTag {
 
 interface Hypothesis {
   id: string
+  display_index: number
   cause: string
   effect: string
   status: string
@@ -42,7 +43,8 @@ const STATUS_BADGE_CLASS: Record<string, string> = {
   '수정 필요': 'badge-danger',
 }
 
-const JUDGMENT_OPTIONS = ['유지', '수정', '폐기']
+// '수정'은 판단 버튼에서 뺐다 — 실제 편집은 위쪽 "원인/결과 수정" 진입점에서만 일어난다.
+const JUDGMENT_OPTIONS = ['유지', '폐기']
 
 // summary 본문의 [n] 마커를 파싱해 citations와 매칭되는 것만 클릭 가능한 참조로 렌더한다.
 // citations에 대응이 없는 마커는 일반 텍스트로 둔다(환각 방어 — Week3 계획서 리스크 조언과 동일 원칙).
@@ -214,9 +216,17 @@ function HypothesisDetailPage() {
         </div>
 
         {!isEditing ? (
-          <div className="dashboard-hypothesis-name">
-            <span className="dashboard-cause">원인: {hypothesis.cause}</span>
-            <span className="dashboard-effect">→ 결과: {hypothesis.effect}</span>
+          <div className="hypothesis-field-group">
+            <span className="hypothesis-index">가설 {hypothesis.display_index + 1}</span>
+            <div className="hypothesis-field">
+              <span className="hypothesis-field-label">원인</span>
+              <div className="hypothesis-field-value">{hypothesis.cause}</div>
+            </div>
+            <span className="hypothesis-arrow">↓</span>
+            <div className="hypothesis-field">
+              <span className="hypothesis-field-label">결과</span>
+              <div className="hypothesis-field-value">{hypothesis.effect}</div>
+            </div>
           </div>
         ) : (
           <div className="detail-edit-form">
