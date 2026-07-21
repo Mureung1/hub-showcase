@@ -7,6 +7,7 @@ interface TrendLineChartProps {
   good: boolean | null;
   values: number[];
   xLabels: string[];
+  pointLabels?: string[];
   summary: string;
   goodColor: string;
   gradientId: string;
@@ -21,6 +22,7 @@ export default function TrendLineChart({
   good,
   values,
   xLabels,
+  pointLabels,
   summary,
   goodColor,
   gradientId,
@@ -70,14 +72,19 @@ export default function TrendLineChart({
           strokeLinejoin="round"
         />
         {geo.dots.map((dot, i) => (
-          <circle key={i} cx={dot.cx} cy={dot.cy} r={dot.r} fill={lineColor} />
+          <circle key={i} cx={dot.cx} cy={dot.cy} r={dot.r} fill={lineColor}>
+            {pointLabels?.[i] && <title>{`${xLabels[i]} · ${pointLabels[i]}`}</title>}
+          </circle>
         ))}
         <circle cx={geo.dots[maxIdx].cx} cy={geo.dots[maxIdx].cy} r={11} fill={lineColor} opacity={0.18} />
       </svg>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94A3B8', fontWeight: '600', padding: '0 4px' }}>
-        {xLabels.map((label) => (
-          <span key={label}>{label}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 4px' }}>
+        {xLabels.map((label, i) => (
+          <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+            <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '600' }}>{label}</span>
+            {pointLabels?.[i] && <span style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700' }}>{pointLabels[i]}</span>}
+          </div>
         ))}
       </div>
 

@@ -47,6 +47,8 @@ export default function AnalysisPage() {
   const monthLabels = trendRecords.map((r) => `${r.month}월`);
   const salesWeekly = trendRecords.map((r) => Math.round(r.sales_amount / 1000));
   const wasteWeekly = trendRecords.map((r) => r.waste_rate);
+  const salesQtyLabels = trendRecords.map((r) => `${r.sales_qty}개`);
+  const wasteQtyLabels = trendRecords.map((r) => `${r.waste_qty}개`);
 
   const latest = trendRecords[trendRecords.length - 1];
   const prev = trendRecords[trendRecords.length - 2];
@@ -128,6 +130,7 @@ export default function AnalysisPage() {
             good={salesInfo.good}
             values={salesWeekly}
             xLabels={monthLabels}
+            pointLabels={salesQtyLabels}
             summary={monthlyTrendSummary(salesWeekly, false)}
             goodColor="#2563EB"
             gradientId="salesFill"
@@ -141,6 +144,7 @@ export default function AnalysisPage() {
             good={wasteInfo.good}
             values={wasteWeekly}
             xLabels={monthLabels}
+            pointLabels={wasteQtyLabels}
             summary={monthlyTrendSummary(wasteWeekly, true)}
             goodColor="#15803D"
             gradientId="wasteFill"
