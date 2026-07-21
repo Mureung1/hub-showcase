@@ -8,6 +8,8 @@
 ## 문서
 
 - 🗓️ **[3주차 주간 계획](docs/WEEK3_PLAN.md)** · [GitHub Project 보드](https://github.com/users/dolphin1404/projects/2)
+- 🗄️ [Supabase 서버 재시작 영속성 검증](docs/supabase-persistence-verification-2026-07-21.md)
+- ⭐ [다음 기능 설계 — 저장 포트폴리오 즐겨찾기](docs/favorite-portfolio-design-2026-07-21.md)
 - 🗓️ **[2주차 주간 계획](docs/WEEK2_PLAN.md)** · [GitHub Project 보드](https://github.com/users/dolphin1404/projects/2)
 - ✅ [수직 슬라이스 기능 검증 결과](docs/vertical-slice-verification-2026-07-14.md)
 - 🧩 [mock 화면 흐름·state/props·데이터 모델 설계](docs/mock-flow-and-data-model-2026-07-15.md)
