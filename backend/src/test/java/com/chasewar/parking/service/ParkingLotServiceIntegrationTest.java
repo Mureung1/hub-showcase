@@ -7,6 +7,9 @@ import static org.mockito.BDDMockito.given;
 import com.chasewar.global.infra.placesearch.PlaceSearchClient;
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.domain.vo.Coordinates;
+import com.chasewar.parking.domain.vo.Fee;
+import com.chasewar.parking.domain.vo.OperatingHours;
+import com.chasewar.parking.dto.ParkingLotDetailResponse;
 import com.chasewar.parking.dto.ParkingLotSearchResponse;
 import com.chasewar.parking.repository.ParkingLotRepository;
 import com.chasewar.support.IntegrationTest;
@@ -19,7 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-class ParkingLotSearchServiceIntegrationTest extends IntegrationTest {
+class ParkingLotServiceIntegrationTest extends IntegrationTest {
 
     private static final Coordinates destinationCoordinates = new Coordinates(37.5, 127.0);
     private static final String destination = "강남역";
@@ -31,7 +34,7 @@ class ParkingLotSearchServiceIntegrationTest extends IntegrationTest {
     private ParkingLotRepository parkingLotRepository;
 
     @Autowired
-    private ParkingLotSearchService parkingLotSearchService;
+    private ParkingLotService parkingLotService;
 
     @DisplayName("목적지 주변 주차장을 검색한다")
     @Nested
@@ -48,7 +51,7 @@ class ParkingLotSearchServiceIntegrationTest extends IntegrationTest {
             persistParkingLot("67890", "1km 초과 주차장", new Coordinates(37.52, 127.0));
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotSearchService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
 
             // then
             assertThat(results)
@@ -67,7 +70,7 @@ class ParkingLotSearchServiceIntegrationTest extends IntegrationTest {
             persistParkingLot("10000", "1km 이내 가장 가까운 주차장", new Coordinates(37.501, 127.0));
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotSearchService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
 
             // then
             assertThat(results)
@@ -85,7 +88,7 @@ class ParkingLotSearchServiceIntegrationTest extends IntegrationTest {
             persistParkingLot("20000", "좌표 없는 주차장", null);
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotSearchService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
 
             // then
             assertThat(results)
@@ -104,10 +107,35 @@ class ParkingLotSearchServiceIntegrationTest extends IntegrationTest {
             }
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotSearchService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
 
             // then
             assertThat(results).hasSize(10);
+        }
+    }
+
+    @DisplayName("주차장을 상세 조회할 때")
+    @Nested
+    class GetDetail {
+
+        @DisplayName("id로 주차장의 상세 정보를 반환한다")
+        @Test
+        void success_getDetail() {
+            // given
+            ParkingLot saved = parkingLotRepository.save(ParkingLotFixtureBuilder.builder()
+                    .pkltCd("10000")
+                    .name("역삼동 공영주차장")
+                    .fee(new Fee(5000, 30, 1000, 10, 30000))
+                    .operatingHours(new OperatingHours("0900", "2200", "0900", "2400", "0900", "2400"))
+                    .build());
+
+            // when
+            ParkingLotDetailResponse response = parkingLotService.getDetail(saved.getId());
+
+            // then
+            assertThat(response.name()).isEqualTo("역삼동 공영주차장");
+            assertThat(response.fee().basicFee()).isEqualTo(5000);
+            assertThat(response.operatingHours().weekdayStart()).isEqualTo("0900");
         }
     }
 

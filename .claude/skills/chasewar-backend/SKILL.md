@@ -12,23 +12,24 @@ description: 차세워(ChaSeWar) 백엔드(Spring Boot) 코드를 작성하거�
 - 실시간 수집: `@Scheduled`
 
 ## 아키텍처
-- 계층: Controller → Service → Repository. 상위→하위 단방향 의존만.
-- 패키지는 도메인형: 비즈니스 도메인 `parking`, 공통 `global`.
-  - 외부 API 클라이언트: **데이터 소스는 도메인 안**(`parking/infra/seoul`) 
-  - **범용 기술 도구는 `global/infra`**(`geocoding`·`placesearch`)
-  - 연동 내부 = 인터페이스 최상위 + 벤더 하위폴더(`kakao/`).
-- 각 도메인 안에 `api` / `service` / `repository` / `domain`(엔티티) / `dto`
+- 패키지 구조·계층 책임·의존 방향은 `.claude/skills/chasewar-backend/architecture.md` 참고.
 
 ## API
 - REST 리소스는 명사: `/api/parking-lots`, `/api/parking-lots/{id}`
 - 응답은 항상 DTO. 엔티티 직접 반환 금지.
 - HTTP 상태코드 정확히 (200/400/404/500).
 
-## 엔티티/도메인
-- 엔티티/도메인 모델 작성 규칙은 `backend/docs/conventions/domain.md`를 따른다
+## 계층별 상세 규칙
+- 도메인: `backend/docs/conventions/domain.md`
+- 리포지토리: `backend/docs/conventions/repository.md`
+- 서비스: `backend/docs/conventions/service.md`
+- 컨트롤러: `backend/docs/conventions/controller.md`
+- DTO: `backend/docs/conventions/dto.md`
 
-## `Repository`
-- `Repository` 작성 규칙은 `backend/docs/conventions/repository.md`를 따른다.
+## 테스트
+- 비즈니스 규칙·동작을 담은 코드(도메인 로직·서비스·컨트롤러 등)는 **작성 직후 테스트로 검증**한다. 수동 확인으로 대체하지 않는다.
+- 프레임워크가 보장하는 것·단순 위임·의미 없는 데이터 홀더(getter·단순 DTO·JPA 기본 메서드 등)는 테스트하지 않는다.
+- 상세 규칙(종류·계층별 전략·케이스 도출·네이밍)은 `backend/docs/conventions/test.md` 참고.
 
 ## 외부 연동 · 실시간
 - 지오코딩: 네이버 지역검색 (목적지→좌표), 첫 결과 사용

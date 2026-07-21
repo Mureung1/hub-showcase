@@ -40,6 +40,16 @@ public class ParkingLotFixtureBuilder {
         return this;
     }
 
+    public ParkingLotFixtureBuilder fee(Fee fee) {
+        this.fee = fee;
+        return this;
+    }
+
+    public ParkingLotFixtureBuilder operatingHours(OperatingHours operatingHours) {
+        this.operatingHours = operatingHours;
+        return this;
+    }
+
     public ParkingLotFixtureBuilder coordinates(Coordinates coordinates) {
         this.coordinates = coordinates;
         return this;
