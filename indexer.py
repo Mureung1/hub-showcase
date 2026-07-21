@@ -1,7 +1,7 @@
 import json
 import os
 import torch
-from tqdm import tqdm  # [추가] 처리 속도 시각화
+from tqdm import tqdm  
 from pydantic import BaseModel, Field
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -15,7 +15,7 @@ class LawArticleSchema(BaseModel):
 # 하드웨어 가속 최적화
 if torch.cuda.is_available():
     model_kwargs = {"device": "cuda"}
-    encode_kwargs = {"batch_size": 64, "normalize_embeddings": True} # 배치 사이즈 상향
+    encode_kwargs = {"batch_size": 64, "normalize_embeddings": True}
 else:
     num_cores = os.cpu_count() or 4
     torch.set_num_threads(num_cores)
@@ -28,13 +28,16 @@ def load_and_validate_data(file_path: str):
         raw_data = json.load(f)
 
     documents = []
-    # tqdm을 사용하여 로드 과정을 시각화
     for item in tqdm(raw_data, desc="데이터 검증 중"):
         try:
             valid = LawArticleSchema(**item)
+            
+            # [핵심 수정] 텍스트만 넣지 않고, 법령명과 조항을 본문에 합쳐서 임베딩 특성 강화!
+            enhanced_content = f"법령명: {valid.law_name} | 조항: 제{valid.article_no}조 | 내용: {valid.content}"
+            
             documents.append(Document(
-                page_content=valid.content, 
-                metadata={"law_name": valid.law_name, "article_no": valid.article_no}
+                page_content=enhanced_content, 
+                metadata={"law_name": valid.law_name, "article_no": valid.article_no, "original_content": valid.content}
             ))
         except Exception:
             continue
@@ -54,10 +57,9 @@ def build_vector_store(documents):
 
     print("[Phase 2] 벡터화 및 인덱싱 시작...")
     
-    # [최적화] from_documents는 메모리를 한 번에 많이 점유합니다. 
-    # 데이터가 아주 많다면 아래와 같이 덩어리(chunk) 단위로 추가하는 방식이 훨씬 안정적입니다.
+    # [최적화] 메모리 폭발(OOM) 방지를 위한 배치 처리
     vectorstore = None
-    batch_size = 500  # 한 번에 500개씩 처리
+    batch_size = 500  
     
     for i in tqdm(range(0, len(documents), batch_size), desc="벡터 인덱싱 중"):
         batch = documents[i : i + batch_size]

@@ -88,7 +88,14 @@ function App() {
     setRelatedLaws([]);
 
     try {
-      const response = await axios.post("http://127.0.0.1:8000/api/ask", { query: query });
+      // 🚀 [핵심 수정] query와 함께 사용자가 확인/수정한 사건유형(manualForm.title)을 같이 보냅니다!
+      const payload = {
+        query: query,
+        case_type: manualForm.title || "" 
+      };
+
+      const response = await axios.post("http://127.0.0.1:8000/api/ask", payload);
+      
       setChatLog([...newChat, { sender: 'ai', text: response.data.response }]);
       if (response.data.extracted_data) setExtractedData(response.data.extracted_data);
       if (response.data.related_laws) setRelatedLaws(response.data.related_laws);
