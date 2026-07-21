@@ -442,6 +442,12 @@ test('settles a lost Assignment stream before Review answer and retries only fro
     ),
   ).toHaveLength(0)
 
+  const reactivationRequest = page.waitForRequest(
+    (request) =>
+      new URL(request.url()).pathname === '/api/product/workspaces/activate',
+  )
+  await page.getByRole('button', { name: '다른 학기 폴더 열기' }).click()
+  await reactivationRequest
   await page.reload()
   await expect(recovery.getByText(/작업 연결이 끊겨/u)).toBeVisible()
   await expect(chat.getByRole('region', { name: '검토 대기' })).toHaveCount(0)

@@ -773,7 +773,6 @@ function reduceProductRecovery(
   const active = state.activeOperation
   const matchesActive =
     active?.kind === 'assignment' &&
-    active.accepted &&
     active.operationId === frame.operationId &&
     active.runId === frame.runId
   const matchesLast =
@@ -806,7 +805,11 @@ function reduceProductRecovery(
       ? {
           activeOperation: {
             ...active,
-            stage: 'running' as const,
+            stage:
+              active.accepted || frame.outcome !== 'unknown'
+                ? ('running' as const)
+                : ('preparing' as const),
+            accepted: active.accepted || frame.outcome !== 'unknown',
             interaction: undefined,
             review: undefined,
           },

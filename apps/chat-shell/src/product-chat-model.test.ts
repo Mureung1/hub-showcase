@@ -10,6 +10,7 @@ import {
   canRespondToProductReview,
   createInitialProductChatState,
   reduceProductChatState,
+  type ProductChatState,
 } from './product-chat-model.js'
 
 type ProductTerminalFrame = Extract<
@@ -379,6 +380,55 @@ test('accepts recovery only for the exact Assignment and closes the pending Revi
       assignmentTerminal(recovery.outcome, 'unknown'),
     ])
     assert.equal(state.phase, recovery.outcome)
+    assert.equal(state.activeOperation, undefined)
+    assert.deepEqual(state.recovery, recovery)
+  }
+})
+
+test('reconciles settled recovery when the native acceptance frame was lost', () => {
+  for (const [recovery, terminal, phase] of [
+    [
+      {
+        type: 'operation.recovery',
+        operationId: actionId,
+        runId,
+        outcome: 'unknown',
+        retryable: true,
+      },
+      assignmentTerminal('unknown', 'unknown'),
+      'unknown',
+    ],
+    [
+      {
+        type: 'operation.recovery',
+        operationId: actionId,
+        runId,
+        outcome: 'interrupted',
+        retryable: true,
+      },
+      assignmentTerminal('interrupted', 'unknown'),
+      'interrupted',
+    ],
+    [
+      {
+        type: 'operation.recovery',
+        operationId: actionId,
+        runId,
+        outcome: 'continuation_lost',
+        retryable: false,
+        confirmedRevision: 1,
+      },
+      assignmentTerminal('unknown', 'unknown'),
+      'continuation-lost',
+    ],
+  ] as const satisfies readonly [
+    ProductOperationFrame,
+    ProductOperationFrame,
+    ProductChatState['phase'],
+  ][]) {
+    const state = applyFrames(preparingAssignmentState(), [recovery, terminal])
+
+    assert.equal(state.phase, phase)
     assert.equal(state.activeOperation, undefined)
     assert.deepEqual(state.recovery, recovery)
   }
