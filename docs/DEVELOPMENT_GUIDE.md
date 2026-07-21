@@ -68,6 +68,12 @@ npm.cmd run dev
 
 `.env`는 커밋하지 않습니다. 키를 추가하면 `.env.example`과 이 표를 함께 수정합니다.
 
+| `SUPABASE_URL` | `https://your-project.supabase.co` | Supabase 프로젝트 API URL |
+| `SUPABASE_SECRET_KEY` | `your-supabase-secret-key` | 서버 전용 Supabase Secret key |
+환경변수는 프로젝트 루트의 `.env` 파일에서 관리합니다.
+실제 Supabase Secret key는 `.env.example`이나 Git 저장소에 커밋하지 않습니다.
+브라우저 코드에는 Secret key를 사용하지 않습니다.
+
 ## 6. 디렉터리 구조
 
 ```text
