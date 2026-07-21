@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import unittest
+from datetime import datetime
 
 os.environ.setdefault("SUPABASE_URL", "https://example.supabase.co")
 os.environ.setdefault("SUPABASE_SECRET_KEY", "sb_secret_test")
@@ -66,17 +67,27 @@ class _FakeResult:
 
 
 class _FakeMissionRecordsListQuery:
-    def __init__(self, rows: list[dict]):
+    def __init__(self, rows: list[dict], recorded_calls: list[tuple[str, str, str]]):
         self._rows = rows
         self._user_id: str | None = None
         self._order_keys: list[tuple[str, bool]] = []
+        self._recorded_calls = recorded_calls
 
     def select(self, *_args, **_kwargs):
         return self
 
     def eq(self, field: str, value: str):
+        self._recorded_calls.append(("eq", field, value))
         if field == "user_id":
             self._user_id = value
+        return self
+
+    def gte(self, field: str, value: str):
+        self._recorded_calls.append(("gte", field, value))
+        return self
+
+    def lt(self, field: str, value: str):
+        self._recorded_calls.append(("lt", field, value))
         return self
 
     def order(self, field: str, desc: bool = False):
@@ -85,6 +96,14 @@ class _FakeMissionRecordsListQuery:
 
     def execute(self):
         rows = [row for row in self._rows if row["user_id"] == self._user_id]
+        gte_value = next((v for op, f, v in self._recorded_calls if op == "gte" and f == "created_at"), None)
+        lt_value = next((v for op, f, v in self._recorded_calls if op == "lt" and f == "created_at"), None)
+        if gte_value is not None:
+            boundary = datetime.fromisoformat(gte_value)
+            rows = [row for row in rows if datetime.fromisoformat(row["created_at"]) >= boundary]
+        if lt_value is not None:
+            boundary = datetime.fromisoformat(lt_value)
+            rows = [row for row in rows if datetime.fromisoformat(row["created_at"]) < boundary]
         for field, desc in reversed(self._order_keys):
             rows = sorted(rows, key=lambda row: row[field], reverse=desc)
         return _FakeResult(rows)
@@ -93,10 +112,11 @@ class _FakeMissionRecordsListQuery:
 class FakeMissionRecordsListClient:
     def __init__(self, rows: list[dict] | None = None):
         self.rows = rows or []
+        self.recorded_calls: list[tuple[str, str, str]] = []
 
     def table(self, name: str):
         if name == "mission_records":
-            return _FakeMissionRecordsListQuery(self.rows)
+            return _FakeMissionRecordsListQuery(self.rows, self.recorded_calls)
         raise AssertionError(f"unexpected table: {name}")
 
 
@@ -110,12 +130,122 @@ class MissionRecordsListApiTest(unittest.TestCase):
         self.client = TestClient(app)
         self.addCleanup(app.dependency_overrides.clear)
 
+    def test_missing_date_returns_422(self):
+        fake = FakeMissionRecordsListClient(rows=[])
+        override_user(fake)
+
+        response = self.client.get("/api/mission-records", headers=AUTH_HEADER)
+
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["code"], "VALIDATION_ERROR")
+
+    def test_sends_created_at_gte_and_lt_with_kst_day_converted_to_utc_boundaries(self):
+        fake = FakeMissionRecordsListClient(rows=[])
+        override_user(fake)
+
+        response = self.client.get(
+            "/api/mission-records", headers=AUTH_HEADER, params={"date": "2026-07-21"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        gte_calls = [
+            (field, value) for op, field, value in fake.recorded_calls if op == "gte"
+        ]
+        lt_calls = [(field, value) for op, field, value in fake.recorded_calls if op == "lt"]
+        self.assertEqual(len(gte_calls), 1)
+        self.assertEqual(len(lt_calls), 1)
+        gte_field, gte_value = gte_calls[0]
+        lt_field, lt_value = lt_calls[0]
+        self.assertEqual(gte_field, "created_at")
+        self.assertEqual(lt_field, "created_at")
+        self.assertEqual(
+            datetime.fromisoformat(gte_value).astimezone(),
+            datetime.fromisoformat("2026-07-20T15:00:00+00:00"),
+        )
+        self.assertEqual(
+            datetime.fromisoformat(lt_value).astimezone(),
+            datetime.fromisoformat("2026-07-21T15:00:00+00:00"),
+        )
+        eq_calls = [(field, value) for op, field, value in fake.recorded_calls if op == "eq"]
+        self.assertIn(("user_id", TEST_USER_ID), eq_calls)
+
+    def test_kst_day_start_instant_record_is_included(self):
+        row = make_record_row(
+            "50000000-0000-0000-0000-000000000001", created_at="2026-07-20T15:00:00Z"
+        )
+        fake = FakeMissionRecordsListClient(rows=[row])
+        override_user(fake)
+
+        response = self.client.get(
+            "/api/mission-records", headers=AUTH_HEADER, params={"date": "2026-07-21"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item["id"] for item in response.json()], [row["id"]])
+
+    def test_instant_just_before_kst_day_end_is_included(self):
+        row = make_record_row(
+            "50000000-0000-0000-0000-000000000001", created_at="2026-07-21T14:59:59Z"
+        )
+        fake = FakeMissionRecordsListClient(rows=[row])
+        override_user(fake)
+
+        response = self.client.get(
+            "/api/mission-records", headers=AUTH_HEADER, params={"date": "2026-07-21"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item["id"] for item in response.json()], [row["id"]])
+
+    def test_next_kst_day_start_instant_is_excluded(self):
+        row = make_record_row(
+            "50000000-0000-0000-0000-000000000001", created_at="2026-07-21T15:00:00Z"
+        )
+        fake = FakeMissionRecordsListClient(rows=[row])
+        override_user(fake)
+
+        response = self.client.get(
+            "/api/mission-records", headers=AUTH_HEADER, params={"date": "2026-07-21"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [])
+
+    def test_previous_day_record_is_excluded(self):
+        row = make_record_row(
+            "50000000-0000-0000-0000-000000000001", created_at="2026-07-20T14:59:59Z"
+        )
+        fake = FakeMissionRecordsListClient(rows=[row])
+        override_user(fake)
+
+        response = self.client.get(
+            "/api/mission-records", headers=AUTH_HEADER, params={"date": "2026-07-21"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [])
+
+    def test_invalid_date_format_and_nonexistent_date_return_422(self):
+        fake = FakeMissionRecordsListClient(rows=[])
+        override_user(fake)
+        for invalid_date in ("2026-13-01", "not-a-date", "2026-02-30", "07-14-2026"):
+            with self.subTest(date=invalid_date):
+                response = self.client.get(
+                    "/api/mission-records",
+                    headers=AUTH_HEADER,
+                    params={"date": invalid_date},
+                )
+                self.assertEqual(response.status_code, 422)
+                self.assertEqual(response.json()["code"], "VALIDATION_ERROR")
+
     def test_returns_authenticated_users_own_records(self):
         row = make_record_row("50000000-0000-0000-0000-000000000001")
         fake = FakeMissionRecordsListClient(rows=[row])
         override_user(fake)
 
-        response = self.client.get("/api/mission-records", headers=AUTH_HEADER)
+        response = self.client.get(
+            "/api/mission-records", headers=AUTH_HEADER, params={"date": "2026-07-14"}
+        )
 
         self.assertEqual(response.status_code, 200)
         body = response.json()
@@ -131,7 +261,9 @@ class MissionRecordsListApiTest(unittest.TestCase):
         fake = FakeMissionRecordsListClient(rows=[own_row, other_row])
         override_user(fake, user_id=TEST_USER_ID)
 
-        response = self.client.get("/api/mission-records", headers=AUTH_HEADER)
+        response = self.client.get(
+            "/api/mission-records", headers=AUTH_HEADER, params={"date": "2026-07-14"}
+        )
 
         self.assertEqual(response.status_code, 200)
         body = response.json()
@@ -152,7 +284,9 @@ class MissionRecordsListApiTest(unittest.TestCase):
         fake = FakeMissionRecordsListClient(rows=[row])
         override_user(fake)
 
-        response = self.client.get("/api/mission-records", headers=AUTH_HEADER)
+        response = self.client.get(
+            "/api/mission-records", headers=AUTH_HEADER, params={"date": "2026-07-14"}
+        )
 
         self.assertEqual(response.status_code, 200)
         item = response.json()[0]
@@ -172,19 +306,21 @@ class MissionRecordsListApiTest(unittest.TestCase):
             article_id=ARTICLE_A,
             mission_type="question",
             user_answer="첫 번째 생각",
-            created_at="2026-07-10T03:00:00Z",
+            created_at="2026-07-14T01:00:00Z",
         )
         second = make_record_row(
             "50000000-0000-0000-0000-000000000002",
             article_id=ARTICLE_A,
             mission_type="expression",
             user_answer="다시 읽고 든 생각",
-            created_at="2026-07-15T03:00:00Z",
+            created_at="2026-07-14T10:00:00Z",
         )
         fake = FakeMissionRecordsListClient(rows=[first, second])
         override_user(fake)
 
-        response = self.client.get("/api/mission-records", headers=AUTH_HEADER)
+        response = self.client.get(
+            "/api/mission-records", headers=AUTH_HEADER, params={"date": "2026-07-14"}
+        )
 
         self.assertEqual(response.status_code, 200)
         body = response.json()
@@ -196,24 +332,26 @@ class MissionRecordsListApiTest(unittest.TestCase):
 
     def test_orders_by_created_at_desc_then_id_desc(self):
         older = make_record_row(
-            "50000000-0000-0000-0000-000000000001", created_at="2026-07-10T03:00:00Z"
+            "50000000-0000-0000-0000-000000000001", created_at="2026-07-14T01:00:00Z"
         )
         newer = make_record_row(
-            "50000000-0000-0000-0000-000000000002", created_at="2026-07-15T03:00:00Z"
+            "50000000-0000-0000-0000-000000000002", created_at="2026-07-14T05:00:00Z"
         )
         # 같은 시각. id 내림차순으로 tie-break해야 한다.
         same_time_low_id = make_record_row(
-            "50000000-0000-0000-0000-000000000003", created_at="2026-07-20T03:00:00Z"
+            "50000000-0000-0000-0000-000000000003", created_at="2026-07-14T10:00:00Z"
         )
         same_time_high_id = make_record_row(
-            "50000000-0000-0000-0000-000000000009", created_at="2026-07-20T03:00:00Z"
+            "50000000-0000-0000-0000-000000000009", created_at="2026-07-14T10:00:00Z"
         )
         fake = FakeMissionRecordsListClient(
             rows=[older, newer, same_time_low_id, same_time_high_id]
         )
         override_user(fake)
 
-        response = self.client.get("/api/mission-records", headers=AUTH_HEADER)
+        response = self.client.get(
+            "/api/mission-records", headers=AUTH_HEADER, params={"date": "2026-07-14"}
+        )
 
         self.assertEqual(response.status_code, 200)
         ids = [item["id"] for item in response.json()]
@@ -231,7 +369,9 @@ class MissionRecordsListApiTest(unittest.TestCase):
         fake = FakeMissionRecordsListClient(rows=[])
         override_user(fake)
 
-        response = self.client.get("/api/mission-records", headers=AUTH_HEADER)
+        response = self.client.get(
+            "/api/mission-records", headers=AUTH_HEADER, params={"date": "2026-07-14"}
+        )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [])
@@ -245,7 +385,9 @@ class MissionRecordsListApiTest(unittest.TestCase):
                 fake = FakeMissionRecordsListClient(rows=[row])
                 override_user(fake)
 
-                response = self.client.get("/api/mission-records", headers=AUTH_HEADER)
+                response = self.client.get(
+                    "/api/mission-records", headers=AUTH_HEADER, params={"date": "2026-07-14"}
+                )
 
                 self.assertEqual(response.status_code, 200)
                 item = response.json()[0]
@@ -266,6 +408,12 @@ class MissionRecordsListApiTest(unittest.TestCase):
             def eq(self, *_args, **_kwargs):
                 return self
 
+            def gte(self, *_args, **_kwargs):
+                return self
+
+            def lt(self, *_args, **_kwargs):
+                return self
+
             def order(self, *_args, **_kwargs):
                 return self
 
@@ -282,7 +430,9 @@ class MissionRecordsListApiTest(unittest.TestCase):
         override_user(fake)
         no_raise_client = TestClient(app, raise_server_exceptions=False)
 
-        response = no_raise_client.get("/api/mission-records", headers=AUTH_HEADER)
+        response = no_raise_client.get(
+            "/api/mission-records", headers=AUTH_HEADER, params={"date": "2026-07-14"}
+        )
 
         self.assertEqual(response.status_code, 500)
         self.assertNotIn("secret", response.text)
@@ -292,7 +442,9 @@ class MissionRecordsListApiTest(unittest.TestCase):
         fake = FakeMissionRecordsListClient(rows=[])
         override_user(fake)
 
-        response = self.client.get("/api/mission-records", headers=AUTH_HEADER)
+        response = self.client.get(
+            "/api/mission-records", headers=AUTH_HEADER, params={"date": "2026-07-14"}
+        )
 
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(
