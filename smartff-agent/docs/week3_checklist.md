@@ -203,12 +203,15 @@
   - [ ] 마진 정보 표시 확인
   - [ ] 폐기 정보 표시 확인
 
-### Analysis 실데이터 연동 (P1, 여유 시)
+### Analysis 실데이터 연동 (P1, 여유 시) — 2026-07-22 부분 완료
 
-- [ ] 최소 1개 카테고리 실데이터 연결
-  - [ ] Analysis 페이지의 1개 카테고리 mock 제거
-  - [ ] Master Dataset 기반 API 연결
-  - [ ] 차트 업데이트 확인
+- [x] 판매/폐기 추세 차트 실데이터 연결 (4개 카테고리 전부, 최소 1개 요구사항 초과 달성)
+  - [x] Analysis 판매/폐기 추세 mock 제거
+  - [x] `/api/financial/summary` 기반 API 연결
+  - [x] 차트 업데이트 확인 (카테고리 전환 시 재조회, 수량 라벨/툴팁 추가)
+  - [x] 겸사겸사 발견한 버그 수정: `Category` 타입의 `삼각김밥`(mock 전용, 실제 미존재) → `주먹밥`
+  - [x] 겸사겸사 발견한 이슈 수정: 추세 라인차트 y축이 0 기준선이 아니라 min~max 자동 스케일이라 변동폭이 과장되어 보이던 문제 (Analysis + Dashboard 공통)
+- [ ] 요일별/시간대별 판매 패턴 실데이터 연결 — 미착수, 원본 데이터는 존재 확인(`data/raw/weekday_sales/`, `hourly_sales/`, 6월만) but 새 파서 필요. `docs/tasks.md` 백로그 2순위로 이월
 
 ### 예외 처리 및 버그 수정
 
@@ -244,7 +247,7 @@
 ### Day 5 DoD 확인
 
 - [ ] `Upload → Python ETL → Master Dataset → Express API → Dashboard → Financial → Recommendation` 전체 흐름 정상 동작
-- [ ] Analysis 최소 1개 카테고리 실데이터 연동 완료
+- [x] Analysis 최소 1개 카테고리 실데이터 연동 완료 — 판매/폐기 추세는 4개 카테고리 전부 완료, 요일/시간대 패턴은 백로그 이월 (2026-07-22)
 - [ ] `npx tsc --noEmit`, `npm run build` 성공
 - [ ] 브라우저에서 콘솔 에러·흰 화면 없이 전체 시연 가능
 
@@ -270,7 +273,8 @@
 
 - ✅ **ETL 스크립트 유실 (해결됨, 2026-07-20)**: WSL/Windows 브랜치 통합(merge 커밋 `0b031d5`) 과정에서 사라졌던 `data/scripts/*.py` 4개 파일을 git 히스토리(커밋 `eb65391`)에서 복구 완료 (커밋 `25d7ed1`)
 - **Upload → ETL 자동 연결 없음 (미해결)**: Upload 페이지는 파일명/카테고리 메타데이터만 Supabase에 기록하고, 실제 파일 저장이나 파서 실행을 트리거하지 않음. `FinancialService`도 서버 기동 시 1회만 데이터를 캐싱해 재시작 전까지 갱신 반영 안 됨. `docs/tasks.md` 백로그 최우선(⭐) 항목으로 등록 (2026-07-21, 예상 소요 1~2일)
+- **Analysis 요일별/시간대별 패턴 미연동 (미해결)**: 원본 데이터는 존재(`data/raw/weekday_sales/`, `hourly_sales/`, 6월 1~4주차만) 하나 파서가 없어 여전히 mock. `docs/tasks.md` 백로그 2순위로 등록 (2026-07-22, 예상 소요 1~2일)
 
 ---
 
-*Last Updated: 2026-07-21 (Rule Engine V1 + Dashboard 실데이터 연동 세션 반영)*
+*Last Updated: 2026-07-22 (Analysis 추세 차트 실데이터 연동 세션 반영)*
