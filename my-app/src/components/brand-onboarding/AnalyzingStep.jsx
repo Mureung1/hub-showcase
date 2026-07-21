@@ -10,12 +10,15 @@ function AnalyzingStep({ answers, onComplete }) {
 
   useEffect(() => {
     let cancelled = false;
-    setError(null);
 
-    apiClient
-      .post("/brand-profile", answers)
+    Promise.resolve()
+      .then(() => {
+        if (cancelled) return undefined;
+        setError(null);
+        return apiClient.post("/brand-profile", answers);
+      })
       .then((res) => {
-        if (!cancelled) setProfile(res);
+        if (!cancelled && res) setProfile(res);
       })
       .catch((err) => {
         if (!cancelled) setError(err);
