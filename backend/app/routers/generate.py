@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from app.services.openai_client import generate_content
+
 router = APIRouter(tags=["generate"])
 
 
@@ -8,30 +10,33 @@ class GenerateRequest(BaseModel):
     complaint: str
     temperature: int
     platform: str
+    weather: str | None = None
+    holiday: str | None = None
     business_name: str | None = None
     business_type: str | None = None
     business_description: str | None = None
 
 
 @router.post("/generate")
-def generate_content(request: GenerateRequest):
-    """하소연 → SNS 콘텐츠 생성.
+def generate(request: GenerateRequest):
+    """하소연 → SNS 콘텐츠 생성 (GPT-4o 연동).
 
-    TODO: 지금은 더미 응답. 나중에 GPT-4o 호출로 교체 예정.
-    온도 구간별 프롬프트 템플릿(0~30/31~79/80~100) + 손님 비난 방지 가드레일을
-    이 함수 안에서 구성해서 OpenAI API에 넘길 예정.
+    온도 구간별 문체, 손님 비난 방지 가드레일, 업장 정보, 날씨/공휴일 맥락을
+    프롬프트에 반영함. 외부 API가 실패해도 서버가 죽지 않도록 예외를 잡아서
+    안전하게 폴백함.
     """
-    if request.temperature <= 30:
-        result = (
-            "비 내리는 오후, 텅 빈 홀을 바라보며 조용히 앉아있습니다.\n\n"
-            "준비한 재료들이 저를 말없이 바라보는 것 같아 마음이 먹먹해지네요."
+    try:
+        result = generate_content(
+            complaint=request.complaint,
+            temperature=request.temperature,
+            platform=request.platform,
+            weather=request.weather,
+            holiday=request.holiday,
+            business_name=request.business_name,
+            business_type=request.business_type,
+            business_description=request.business_description,
         )
-    elif request.temperature >= 80:
-        result = (
-            "비가 억수로 쏟아지는데 주문 제로 실화냐구요 ㅋㅋㅋ\n\n"
-            "저희 재료들이 저한테 '사장님... 우리 이제 어떡해요?' 하고 쳐다보는 눈빛 ㅠㅠ"
-        )
-    else:
-        result = "오늘도 이런저런 일이 있었지만, 그래도 하루를 잘 마무리했습니다."
+    except Exception as e:
+        return {"result": None, "error": str(e)}
 
     return {"result": result}
