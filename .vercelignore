@@ -1,0 +1,7 @@
+.codex-tmp/
+.env*
+.vercel/
+.worktrees/
+dist/
+output/
+release/

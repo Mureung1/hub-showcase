@@ -10,10 +10,36 @@ src/
     app.tsx
     authenticated_workspace.tsx
     model/
+      create_browser_insight_repository.ts
+      use_insight_workspace.ts
       workspace_seed.ts
     styles/
       authenticated_workspace.css
       global.css
+  features/
+    android-share/
+      index.ts
+      model/
+        android_share_session.ts
+        extract_shared_url.ts
+        use_android_share.ts
+      ui/
+        android_share_screen.tsx
+        android_share_screen.css
+    auth/
+      api/
+        auth_service.ts
+      model/
+        auth_provider.tsx
+      ui/
+        account_menu.tsx
+    pwa-install/
+      index.ts
+      model/
+        use_pwa_install_prompt.ts
+      ui/
+        pwa_install_notice.tsx
+        pwa_install_notice.css
   pages/
     home/
       index.ts
@@ -49,18 +75,35 @@ src/
         app_navigation.css
   entities/
     insight/
+      api/
+        browser_insight_capture_service.ts
+        browser_insight_memo_service.ts
+        supabase_insight_repository.ts
       index.ts
       model/
         insight.ts
+        insight_repository.ts
+        search_insights.ts
       ui/
         insight_grid.tsx
         insight_grid.css
   shared/
+    api/
+      supabase_client.ts
+    capacitor/
+      android_share_plugin.ts
+      mobile_oauth.ts
+      runtime.ts
     config/
+      supabase_env.ts
       design-system/
         index.ts
         tokens.ts
         apply_design_tokens.ts
+    pwa/
+      index.ts
+      install_prompt_event_store.ts
+      register_service_worker.ts
     ui/
       index.ts
       button/
@@ -83,17 +126,19 @@ src/
 | 레이어     | 책임                                                               |
 | ---------- | ------------------------------------------------------------------ |
 | `app`      | 앱 진입 상태, provider/token 조합, authenticated shell, 전역 reset |
+| `features` | 사용자 행동 단위의 상태 정책과 UI 조합                             |
 | `pages`    | 라우트 또는 주요 화면 단위 조합                                    |
 | `widgets`  | 여러 화면에서 독립적으로 배치되는 큰 UI 블록                       |
 | `entities` | 도메인 타입, 도메인 연산, 도메인 표시 UI                           |
 | `shared`   | 비즈니스 규칙이 없는 config, UI adapter, 범용 도구                 |
 
-현재 도메인 모델과 목록 UI는 `entities/insight`, 고정 앱 내비게이션은 `widgets/app-navigation`, 런타임 토큰은 `shared/config/design-system`, 공통 UI 경계는 `shared/ui`가 소유한다.
+현재 도메인 모델·Supabase 저장 어댑터·목록 UI는 `entities/insight`, Android 공유의 URL 추출·상태·결과 화면은 `features/android-share`, Google 로그인 정책은 `features/auth`, PWA 설치 안내 정책은 `features/pwa-install`, 고정 앱 내비게이션은 `widgets/app-navigation`, Supabase 공통 클라이언트는 `shared/api`, Capacitor 런타임·공유 플러그인·모바일 OAuth 어댑터는 `shared/capacitor`, 공개 환경 검증은 `shared/config`, PWA 브라우저 수명 주기 어댑터는 `shared/pwa`, 런타임 토큰은 `shared/config/design-system`, 공통 UI 경계는 `shared/ui`가 소유한다.
 
 ## import 경계
 
 - 외부 사용자는 slice의 `index.ts` public API만 import한다.
-- `app`은 `pages`, `widgets`, `entities`, `shared`를 조합할 수 있다.
+- `app`은 `features`, `pages`, `widgets`, `entities`, `shared`를 조합할 수 있다.
+- `features`는 `entities`와 `shared`의 public API만 사용한다.
 - `pages`와 `widgets`는 `entities`와 `shared`의 public API만 사용한다.
 - `entities`는 `shared`만 import할 수 있다. 같은 entity 내부 구현은 상대 경로를 사용한다.
 - `shared`는 상위 레이어를 import하지 않는다.
@@ -113,12 +158,18 @@ src/
 
 ## 서버와 저장 경계
 
-Express 서버는 FSD 대상이 아니므로 `server/`에 둔다. 현재 로컬 우선 MVP는 `/api/health`를 개발 환경 확인에만 사용한다.
+Express 서버는 FSD 대상이 아니므로 `server/`에 둔다. `/api/health` 외에 모바일·웹·Chrome 확장이 공유하는 인증된 캡처 API와 확장 메모 API를 제공한다. 캡처 API는 Bearer access token을 검증 경계로 사용하며 Supabase RLS가 최종 사용자 데이터 경계를 강제한다.
 
-- 인사이트 타입과 저장 인터페이스는 `entities/insight`가 소유한다.
-- page와 widget은 `localStorage`를 직접 호출하지 않는다.
-- 저장 payload는 `schemaVersion`을 포함하고 유효하지 않은 데이터는 읽을 때 격리한다.
-- 원격 저장을 도입할 때도 같은 domain interface 뒤에 adapter를 추가한다.
+- 인사이트 타입과 비동기 `InsightRepository` 인터페이스는 `entities/insight`가 소유한다.
+- 브라우저 앱은 로그인한 사용자 ID로 `createBrowserInsightRepository`를 만들고, page와 widget은 Supabase나 Web Storage를 직접 호출하지 않는다.
+- Supabase 공개 URL과 publishable key는 `shared/config`에서 검증한다. 브라우저·확장 코드에 secret key 또는 service role key를 넣지 않는다.
+- `insights.user_id`와 RLS 정책은 조회·생성·수정·삭제를 현재 사용자 데이터로 제한한다. 클라이언트의 `user_id` 필터는 RLS를 대체하지 않는다.
+- 웹과 외부 저장 채널은 같은 캡처 계약을 사용한다. 링크 저장이 성공한 뒤 메모·제목·카테고리를 선택적으로 갱신한다.
+- Web Storage 어댑터는 역사적 로컬 MVP 및 호환 작업을 위한 보조 구현이며, 현재 런타임 저장소 선택은 Supabase다.
+- 데이터 계약 버전은 Web Storage의 `schemaVersion`과 Supabase의 `schema_version`에 기록한다. Supabase 저장소와 캡처 서비스도 읽은 데이터가 현재 버전인지 검증한다.
+- 검색과 `꺼내보기`는 원격 목록을 불러온 뒤 도메인 순수 함수로 실행해 저장 인프라와 결정적 랭킹 계약을 분리한다.
+
+현재 Supabase 전환 순서는 [#21](https://github.com/ppre1ude/hub/issues/21), 다중 기기 캡처 경계는 [#36](https://github.com/ppre1ude/hub/issues/36), 캡처 우선 제품 결정은 [#25](https://github.com/ppre1ude/hub/issues/25)를 따른다.
 
 ## 활성 제품 문서
 

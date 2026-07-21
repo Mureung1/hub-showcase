@@ -1,13 +1,16 @@
 import { createContext } from 'react';
 
+import type { MobileOAuthContext } from '@/shared/capacitor';
+
 import type { AuthAction, AuthState } from './auth_types';
 
 export type AuthContextValue = {
+  androidShareOAuthCallbackRevision: number;
   authAction?: AuthAction;
   authErrorAction?: AuthAction;
   authErrorMessage?: string;
   authState: AuthState;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (context?: MobileOAuthContext) => Promise<void>;
   signOut: () => Promise<void>;
 };
 

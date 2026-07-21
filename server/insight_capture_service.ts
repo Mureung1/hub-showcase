@@ -5,8 +5,8 @@ import {
   type InsightCaptureRequest,
   type InsightCaptureResult,
   type InsightTitleOrigin,
-} from '../src/entities/insight/model/insight_capture';
-import { normalizeInsightUrl } from '../src/entities/insight/model/normalize_insight_url';
+} from '../src/entities/insight/model/insight_capture.js';
+import { normalizeInsightUrl } from '../src/entities/insight/model/normalize_insight_url.js';
 
 const MAX_URL_LENGTH = 4096;
 const MAX_TITLE_LENGTH = 500;

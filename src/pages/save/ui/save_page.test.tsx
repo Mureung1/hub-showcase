@@ -40,9 +40,9 @@ describe('SavePage', () => {
         <SavePage
           {...createContextProps()}
           onSave={vi.fn()}
-          onSaveCompleteChange={vi.fn()}
           onUrlChange={vi.fn()}
           saveComplete
+          saveTitle=""
           saveUrl="https://example.com/article"
         />
       </DesignSystemProvider>
@@ -73,9 +73,9 @@ describe('SavePage', () => {
         <SavePage
           {...createContextProps()}
           onSave={onSave}
-          onSaveCompleteChange={vi.fn()}
           onUrlChange={onUrlChange}
           saveComplete={false}
+          saveTitle=""
           saveUrl=""
         />
       </DesignSystemProvider>
@@ -90,6 +90,59 @@ describe('SavePage', () => {
     expect(onSave).toHaveBeenCalledOnce();
   });
 
+  it('공유 제목을 저장 전에 보이고 수정값을 전달한다', () => {
+    const onTitleChange = vi.fn();
+
+    render(
+      <DesignSystemProvider>
+        <SavePage
+          {...createContextProps()}
+          isSharedSave
+          onSave={vi.fn()}
+          onTitleChange={onTitleChange}
+          onUrlChange={vi.fn()}
+          saveComplete={false}
+          saveTitle="공유한 기사"
+          saveUrl="https://example.com/article"
+        />
+      </DesignSystemProvider>
+    );
+
+    const titleInput = screen.getByRole('textbox', {
+      name: '공유 제목 (선택)',
+    });
+    expect((titleInput as HTMLInputElement).value).toBe('공유한 기사');
+
+    fireEvent.change(titleInput, { target: { value: '수정한 공유 기사' } });
+
+    expect(onTitleChange).toHaveBeenCalledWith('수정한 공유 기사');
+  });
+
+  it('클립보드 보조 버튼을 제공하면서 URL 직접 입력을 유지한다', () => {
+    const onPasteFromClipboard = vi.fn();
+
+    render(
+      <DesignSystemProvider>
+        <SavePage
+          {...createContextProps()}
+          onPasteFromClipboard={onPasteFromClipboard}
+          onSave={vi.fn()}
+          onUrlChange={vi.fn()}
+          saveComplete={false}
+          saveTitle=""
+          saveUrl=""
+        />
+      </DesignSystemProvider>
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '클립보드에서 붙여넣기' })
+    );
+
+    expect(onPasteFromClipboard).toHaveBeenCalledOnce();
+    expect(screen.getByRole('textbox', { name: '링크 URL' })).not.toBeNull();
+  });
+
   it('lets the user skip the optional personal context step', () => {
     const onContextSkip = vi.fn();
 
@@ -99,9 +152,9 @@ describe('SavePage', () => {
           {...createContextProps()}
           onContextSkip={onContextSkip}
           onSave={vi.fn()}
-          onSaveCompleteChange={vi.fn()}
           onUrlChange={vi.fn()}
           saveComplete
+          saveTitle=""
           saveUrl="https://example.com/article"
         />
       </DesignSystemProvider>
@@ -118,9 +171,9 @@ describe('SavePage', () => {
         <SavePage
           {...createContextProps()}
           onSave={vi.fn()}
-          onSaveCompleteChange={vi.fn()}
           onUrlChange={vi.fn()}
           saveComplete={false}
+          saveTitle=""
           saveUrl=""
         />
       </DesignSystemProvider>
@@ -137,5 +190,6 @@ function createContextProps() {
     onContextDraftChange: vi.fn(),
     onContextSave: vi.fn(),
     onContextSkip: vi.fn(),
+    onTitleChange: vi.fn(),
   };
 }

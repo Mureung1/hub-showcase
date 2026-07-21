@@ -1,5 +1,6 @@
 /* @vitest-environment jsdom */
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -8,13 +9,26 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 import type {
   Insight,
+  InsightCaptureService,
   InsightRepository as AsyncInsightRepository,
   InsightRepositoryLoadResult,
 } from '@/entities/insight';
+import {
+  pwaInstallPromptEvents,
+  type BeforeInstallPromptEvent,
+} from '@/shared/pwa';
 import { DesignSystemProvider } from '@/shared/ui';
 
 import { AuthenticatedWorkspace } from './authenticated_workspace';
@@ -26,7 +40,7 @@ type InsightRepository = {
   ) => { ok: true } | { ok: false; reason: 'write-failed' };
 };
 
-beforeAll(() => {
+beforeEach(() => {
   vi.stubGlobal(
     'ResizeObserver',
     class ResizeObserverMock {
@@ -35,7 +49,9 @@ beforeAll(() => {
       unobserve = vi.fn();
     }
   );
+});
 
+beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     value: vi.fn().mockImplementation((query: string) => ({
@@ -53,10 +69,137 @@ beforeAll(() => {
 
 afterEach(() => {
   cleanup();
+  pwaInstallPromptEvents.discardPrompt();
   localStorage.clear();
+  vi.unstubAllGlobals();
 });
 
 describe('AuthenticatedWorkspace', () => {
+  it.each(['read-failed', 'permission-denied'] as const)(
+    'distinguishes %s from an empty library across home and library tabs',
+    async (warning) => {
+      const user = userEvent.setup();
+      const repository: InsightRepository = {
+        load: () => ({ insights: [], warnings: [warning] }),
+        save: () => ({ ok: true }),
+      };
+
+      render(
+        <DesignSystemProvider>
+          <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        </DesignSystemProvider>
+      );
+
+      expect(
+        await screen.findByRole('heading', {
+          name: '보관함을 불러오지 못해 꺼내볼 수 없어요',
+        })
+      ).not.toBeNull();
+
+      await user.click(screen.getByRole('button', { name: '보관함' }));
+
+      expect(
+        screen.getByRole('heading', {
+          name: '보관함을 불러오지 못했어요',
+        })
+      ).not.toBeNull();
+      expect(
+        screen.queryByRole('heading', { name: '저장된 링크가 없어요' })
+      ).toBeNull();
+    }
+  );
+
+  it('treats an entirely corrupted remote library as unavailable', async () => {
+    const user = userEvent.setup();
+    const repository: InsightRepository = {
+      load: () => ({ insights: [], warnings: ['corrupted-entry'] }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '보관함을 불러오지 못해 꺼내볼 수 없어요',
+      })
+    ).not.toBeNull();
+    expect(screen.getByRole('alert').textContent).toContain(
+      '저장된 인사이트를 읽지 못했어요'
+    );
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+
+    expect(
+      screen.getByRole('heading', { name: '보관함을 불러오지 못했어요' })
+    ).not.toBeNull();
+    expect(
+      screen.queryByRole('heading', { name: '저장된 링크가 없어요' })
+    ).toBeNull();
+  });
+
+  it('keeps valid insights visible when only some remote rows are corrupted', async () => {
+    const user = userEvent.setup();
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [createInsight({ title: '정상 인사이트' })],
+        warnings: ['corrupted-entry'],
+      }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+      </DesignSystemProvider>
+    );
+
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      '일부 링크를 제외했어요'
+    );
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+
+    expect(screen.getByText('정상 인사이트')).not.toBeNull();
+    expect(
+      screen.queryByRole('heading', { name: '보관함을 불러오지 못했어요' })
+    ).toBeNull();
+  });
+
+  it('shows remote loading before an empty library is ready', async () => {
+    const loadResult = createDeferred<InsightRepositoryLoadResult>();
+    const repository: AsyncInsightRepository = {
+      ...toAsyncRepository(createRepository()),
+      list: () => loadResult.promise,
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      screen.getByRole('status', {
+        name: '꺼내볼 인사이트를 불러오는 중',
+      })
+    ).not.toBeNull();
+
+    await act(async () => {
+      loadResult.resolve({ insights: [], warnings: [] });
+      await loadResult.promise;
+    });
+
+    expect(
+      screen.getByRole('heading', {
+        name: '아직 저장한 인사이트가 없어요',
+      })
+    ).not.toBeNull();
+  });
+
   it('shows the shared brand logo in the workspace header', () => {
     render(
       <DesignSystemProvider>
@@ -71,6 +214,287 @@ describe('AuthenticatedWorkspace', () => {
     expect(brand).not.toBeNull();
     expect(brand?.querySelector('svg.workspace-brand__mark')).not.toBeNull();
     expect(brand?.querySelector('span.workspace-brand__mark')).toBeNull();
+  });
+
+  it('공유 초안을 저장 탭에 채우고 사용자가 저장할 때만 android_share로 캡처한다', async () => {
+    const user = userEvent.setup();
+    const capture = vi
+      .fn<InsightCaptureService['capture']>()
+      .mockResolvedValue({
+        created: true,
+        insight: createInsight({
+          id: 'shared-insight',
+          originalUrl: 'https://example.com/shared',
+          normalizedUrl: 'https://example.com/shared',
+        }),
+        ok: true,
+      });
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          captureService={{ capture }}
+          initialSaveDraft={{
+            source: 'android_share',
+            title: '공유한 기사',
+            url: 'https://example.com/shared',
+          }}
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '공유한 링크를 보관할까요?',
+      })
+    ).not.toBeNull();
+    expect((screen.getByLabelText('링크 URL') as HTMLInputElement).value).toBe(
+      'https://example.com/shared'
+    );
+    const sharedTitle = screen.getByRole('textbox', {
+      name: '공유 제목 (선택)',
+    });
+    expect((sharedTitle as HTMLInputElement).value).toBe('공유한 기사');
+    expect(capture).not.toHaveBeenCalled();
+
+    await user.clear(sharedTitle);
+    await user.type(sharedTitle, '수정한 공유 기사');
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+
+    expect(capture).toHaveBeenCalledWith({
+      source: 'android_share',
+      title: '수정한 공유 기사',
+      url: 'https://example.com/shared',
+    });
+  });
+
+  it('Android Chrome의 현재 초안 저장 성공 뒤 설치 안내를 표시한다', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('navigator', ANDROID_CHROME_NAVIGATOR);
+    pwaInstallPromptEvents.start(window);
+    window.dispatchEvent(createBeforeInstallPromptEvent());
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    await user.type(
+      screen.getByRole('textbox', { name: '링크 URL' }),
+      'https://example.com/install'
+    );
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+
+    expect(
+      await screen.findByRole('region', { name: '더 빠르게 저장하기' })
+    ).not.toBeNull();
+  });
+
+  it('공유 저장 완료 뒤 클립보드 URL은 이전 상태를 지우고 web 출처로 저장한다', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('navigator', {
+      clipboard: {
+        readText: vi.fn().mockResolvedValue(' https://example.com/pasted '),
+      },
+    });
+    const capture = vi
+      .fn<InsightCaptureService['capture']>()
+      .mockResolvedValueOnce({
+        created: true,
+        insight: createInsight({
+          id: 'shared-insight',
+          originalUrl: 'https://example.com/shared',
+          normalizedUrl: 'https://example.com/shared',
+        }),
+        ok: true,
+      })
+      .mockResolvedValueOnce({
+        created: true,
+        insight: createInsight({
+          id: 'pasted-insight',
+          originalUrl: 'https://example.com/pasted',
+          normalizedUrl: 'https://example.com/pasted',
+        }),
+        ok: true,
+      });
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          captureService={{ capture }}
+          initialSaveDraft={{
+            source: 'android_share',
+            title: '이전 공유 제목',
+            url: 'https://example.com/shared',
+          }}
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+    expect(screen.getByRole('status').textContent).toContain('저장됨');
+    expect(
+      screen.getByRole('heading', {
+        name: '언제 다시 쓰고 싶은 자료인가요?',
+      })
+    ).not.toBeNull();
+
+    await user.click(
+      screen.getByRole('button', { name: '클립보드에서 붙여넣기' })
+    );
+
+    await waitFor(() => {
+      expect(
+        (screen.getByLabelText('링크 URL') as HTMLInputElement).value
+      ).toBe('https://example.com/pasted');
+    });
+    expect(
+      screen.getByRole('heading', { name: 'URL만 넣고 바로 보관해요' })
+    ).not.toBeNull();
+    expect(
+      screen.queryByRole('textbox', { name: '공유 제목 (선택)' })
+    ).toBeNull();
+    expect(
+      screen.queryByRole('heading', {
+        name: '언제 다시 쓰고 싶은 자료인가요?',
+      })
+    ).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+
+    expect(capture).toHaveBeenLastCalledWith({
+      source: 'web',
+      url: 'https://example.com/pasted',
+    });
+  });
+
+  it('클립보드 읽기 실패 시 직접 입력한 URL을 유지한다', async () => {
+    const user = userEvent.setup();
+    const readText = vi.fn().mockRejectedValue(new Error('권한 거부'));
+    vi.stubGlobal('navigator', { clipboard: { readText } });
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
+    await user.type(saveUrl, 'https://example.com/direct');
+    await user.click(
+      screen.getByRole('button', { name: '클립보드에서 붙여넣기' })
+    );
+
+    await waitFor(() => expect(readText).toHaveBeenCalledOnce());
+    expect((saveUrl as HTMLInputElement).value).toBe(
+      'https://example.com/direct'
+    );
+  });
+
+  it('저장 중 도착한 클립보드 초안에 이전 저장 결과를 적용하지 않는다', async () => {
+    const user = userEvent.setup();
+    const clipboardRead = createDeferred<string>();
+    const captureResult =
+      createDeferred<Awaited<ReturnType<InsightCaptureService['capture']>>>();
+    vi.stubGlobal('navigator', {
+      ...ANDROID_CHROME_NAVIGATOR,
+      clipboard: {
+        readText: vi.fn(() => clipboardRead.promise),
+      },
+    });
+    pwaInstallPromptEvents.start(window);
+    window.dispatchEvent(createBeforeInstallPromptEvent());
+    const capture = vi.fn<InsightCaptureService['capture']>(
+      () => captureResult.promise
+    );
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          captureService={{ capture }}
+          initialSaveDraft={{
+            source: 'android_share',
+            title: '공유 초안 A',
+            url: 'https://example.com/a',
+          }}
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    const clipboardButton = await screen.findByRole('button', {
+      name: '클립보드에서 붙여넣기',
+    });
+    const saveButton = screen.getByRole('button', { name: '저장하기' });
+    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
+    const sharedTitle = screen.getByRole('textbox', {
+      name: '공유 제목 (선택)',
+    });
+    await waitFor(() =>
+      expect((saveButton as HTMLButtonElement).disabled).toBe(false)
+    );
+
+    await user.click(clipboardButton);
+    await user.click(saveButton);
+
+    await waitFor(() => {
+      expect(saveButton.closest('form')?.getAttribute('aria-busy')).toBe(
+        'true'
+      );
+      expect((clipboardButton as HTMLButtonElement).disabled).toBe(true);
+      expect((saveUrl as HTMLInputElement).disabled).toBe(true);
+      expect((sharedTitle as HTMLInputElement).disabled).toBe(true);
+    });
+    expect(capture).toHaveBeenCalledOnce();
+    expect(capture).toHaveBeenCalledWith({
+      source: 'android_share',
+      title: '공유 초안 A',
+      url: 'https://example.com/a',
+    });
+
+    await act(async () => {
+      clipboardRead.resolve('https://example.com/b');
+      await clipboardRead.promise;
+    });
+
+    expect((saveUrl as HTMLInputElement).value).toBe('https://example.com/b');
+    expect(
+      screen.queryByRole('textbox', { name: '공유 제목 (선택)' })
+    ).toBeNull();
+
+    await act(async () => {
+      captureResult.resolve({
+        created: true,
+        insight: createInsight({
+          id: 'shared-insight-a',
+          originalUrl: 'https://example.com/a',
+          normalizedUrl: 'https://example.com/a',
+        }),
+        ok: true,
+      });
+      await captureResult.promise;
+    });
+
+    expect((saveUrl as HTMLInputElement).value).toBe('https://example.com/b');
+    expect(screen.queryByText('저장됨')).toBeNull();
+    expect(
+      screen.queryByRole('heading', {
+        name: '언제 다시 쓰고 싶은 자료인가요?',
+      })
+    ).toBeNull();
+    expect(
+      screen.queryByRole('region', { name: '더 빠르게 저장하기' })
+    ).toBeNull();
+    expect(capture).toHaveBeenCalledOnce();
   });
 
   it('starts with examples and immediately retrieves when a suggested situation is selected', async () => {
@@ -97,7 +521,9 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     expect(
-      screen.getByRole('heading', { name: '이런 상황에서 시작해보세요' })
+      await screen.findByRole('heading', {
+        name: '이런 상황에서 시작해보세요',
+      })
     ).not.toBeNull();
     expect(screen.queryByRole('article')).toBeNull();
 
@@ -384,6 +810,35 @@ describe('AuthenticatedWorkspace', () => {
       ...moreMatches.map(({ title }) => title),
     ]);
     expect(screen.queryByText('signal 디자인 자료')).toBeNull();
+  });
+
+  it('distinguishes a category-only no-result from an empty remote library', async () => {
+    const user = userEvent.setup();
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [createInsight({ title: '디자인 자료', category: '디자인' })],
+        warnings: [],
+      }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+    await user.click(screen.getByRole('button', { name: '개발' }));
+
+    expect(
+      screen.getByRole('heading', {
+        name: '조건에 맞는 인사이트가 없어요',
+      })
+    ).not.toBeNull();
+    expect(
+      screen.queryByRole('heading', { name: '저장된 링크가 없어요' })
+    ).toBeNull();
   });
 
   it('returns to the full library when recovering from no search results', async () => {
@@ -1031,6 +1486,39 @@ describe('AuthenticatedWorkspace', () => {
     expect(screen.getByRole('status').textContent).toContain('저장됨');
   });
 
+  it('keeps the URL when the common capture service rejects permission', async () => {
+    const user = userEvent.setup();
+    const capture = vi.fn().mockResolvedValue({
+      ok: false,
+      reason: 'permission-denied',
+    });
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          captureService={{ capture }}
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
+    await user.type(saveUrl, 'https://permission.example/article');
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+
+    expect(capture).toHaveBeenCalledWith({
+      source: 'web',
+      url: 'https://permission.example/article',
+    });
+    expect(screen.getByRole('alert').textContent).toContain(
+      '입력한 URL을 그대로 두었으니 다시 로그인한 뒤 시도해주세요.'
+    );
+    expect((saveUrl as HTMLInputElement).value).toBe(
+      'https://permission.example/article'
+    );
+  });
+
   it('explains load warnings without hiding restored valid insights', async () => {
     const user = userEvent.setup();
     const repository: InsightRepository = {
@@ -1058,6 +1546,11 @@ describe('AuthenticatedWorkspace', () => {
     expect(warningText).toContain(
       '일부 손상된 링크를 제외하고 나머지를 불러왔어요.'
     );
+    expect(
+      screen.getByRole('heading', {
+        name: '보관함을 불러오지 못해 꺼내볼 수 없어요',
+      })
+    ).not.toBeNull();
 
     await user.click(screen.getByRole('button', { name: '보관함' }));
     expect(screen.getByText('정상 복원된 링크')).not.toBeNull();
@@ -1209,4 +1702,32 @@ function toAsyncRepository(
       return writeResult;
     },
   };
+}
+
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+
+  return { promise, resolve };
+}
+
+const ANDROID_CHROME_NAVIGATOR = {
+  userAgent:
+    'Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/138.0.0.0 Mobile Safari/537.36',
+  userAgentData: {
+    brands: [{ brand: 'Google Chrome', version: '138' }],
+    platform: 'Android',
+  },
+} as const;
+
+function createBeforeInstallPromptEvent(): BeforeInstallPromptEvent {
+  return Object.assign(new Event('beforeinstallprompt', { cancelable: true }), {
+    prompt: vi.fn().mockResolvedValue(undefined),
+    userChoice: Promise.resolve({
+      outcome: 'dismissed',
+      platform: '',
+    } as const),
+  });
 }

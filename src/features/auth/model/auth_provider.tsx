@@ -7,6 +7,7 @@ import {
 } from 'react';
 
 import { getSupabaseClient } from '@/shared/api';
+import { createDefaultMobileOAuth } from '@/shared/capacitor';
 
 import {
   createSupabaseAuthService,
@@ -55,7 +56,9 @@ function toAuthUser(session: AuthSession): AuthUser {
 }
 
 function createDefaultService() {
-  return createSupabaseAuthService(getSupabaseClient());
+  const client = getSupabaseClient();
+
+  return createSupabaseAuthService(client, createDefaultMobileOAuth(client));
 }
 
 function getInitialAuthError() {
@@ -89,6 +92,10 @@ export function AuthProvider({ children, service }: AuthProviderProps) {
   const [authErrorMessage, setAuthErrorMessage] = useState<string | undefined>(
     initialAuthError
   );
+  const [
+    androidShareOAuthCallbackRevision,
+    setAndroidShareOAuthCallbackRevision,
+  ] = useState(0);
 
   useEffect(() => {
     if (!initialAuthError) {
@@ -118,6 +125,34 @@ export function AuthProvider({ children, service }: AuthProviderProps) {
     [authService]
   );
 
+  useEffect(
+    () =>
+      authService.subscribeSignInFailures?.((context) => {
+        setAuthAction(undefined);
+        setAuthErrorAction('sign-in');
+        setAuthErrorMessage(
+          getActionErrorMessage(
+            'sign-in',
+            new Error('로그인을 완료하지 못했어요.')
+          )
+        );
+        if (context === 'android-share') {
+          setAndroidShareOAuthCallbackRevision((revision) => revision + 1);
+        }
+      }),
+    [authService]
+  );
+
+  useEffect(
+    () =>
+      authService.subscribeMobileOAuthCallbacks?.((context) => {
+        if (context === 'android-share') {
+          setAndroidShareOAuthCallbackRevision((revision) => revision + 1);
+        }
+      }),
+    [authService]
+  );
+
   const runAuthAction = useCallback(
     async (action: AuthAction, command: () => Promise<void>) => {
       setAuthAction(action);
@@ -136,9 +171,11 @@ export function AuthProvider({ children, service }: AuthProviderProps) {
     []
   );
   const signInWithGoogle = useCallback(
-    () =>
+    (context?: 'android-share') =>
       runAuthAction('sign-in', () =>
-        authService.signInWithGoogle(window.location.origin)
+        context
+          ? authService.signInWithGoogle(window.location.origin, context)
+          : authService.signInWithGoogle(window.location.origin)
       ),
     [authService, runAuthAction]
   );
@@ -148,6 +185,7 @@ export function AuthProvider({ children, service }: AuthProviderProps) {
   );
   const value = useMemo(
     () => ({
+      androidShareOAuthCallbackRevision,
       ...(authAction ? { authAction } : {}),
       ...(authErrorAction ? { authErrorAction } : {}),
       ...(authErrorMessage ? { authErrorMessage } : {}),
@@ -156,6 +194,7 @@ export function AuthProvider({ children, service }: AuthProviderProps) {
       signOut,
     }),
     [
+      androidShareOAuthCallbackRevision,
       authAction,
       authErrorAction,
       authErrorMessage,

@@ -1,4 +1,5 @@
-import type { SupabaseInsightCaptureConfig } from './supabase_insight_capture';
+import { parseSupabaseEnv } from '../src/shared/config/supabase_env.js';
+import type { SupabaseInsightCaptureConfig } from './supabase_insight_capture.js';
 
 export function readSupabaseServerConfig(
   env: Record<string, string | undefined>
@@ -12,5 +13,8 @@ export function readSupabaseServerConfig(
     );
   }
 
-  return { publishableKey, url };
+  return parseSupabaseEnv({
+    VITE_SUPABASE_PUBLISHABLE_KEY: publishableKey,
+    VITE_SUPABASE_URL: url,
+  });
 }

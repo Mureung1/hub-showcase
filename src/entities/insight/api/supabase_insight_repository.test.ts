@@ -200,17 +200,20 @@ describe('createSupabaseInsightRepository', () => {
       USER_ID
     );
 
-    await expect(repository.update(INSIGHT)).resolves.toEqual({
+    const changedUrlInsight = {
+      ...INSIGHT,
+      domain: 'changed.example.com',
+      normalizedUrl: 'https://changed.example.com/article',
+      originalUrl: 'https://changed.example.com/article?source=edit',
+    };
+
+    await expect(repository.update(changedUrlInsight)).resolves.toEqual({
       insight: INSIGHT,
       ok: true,
     });
     expect(update).toHaveBeenCalledWith({
       category: INSIGHT.category,
-      domain: INSIGHT.domain,
       memo: INSIGHT.memo,
-      normalized_url: INSIGHT.normalizedUrl,
-      original_url: INSIGHT.originalUrl,
-      schema_version: 1,
       title: INSIGHT.title,
       title_origin: INSIGHT.titleOrigin,
     });

@@ -1,6 +1,6 @@
 # 아맞다! 프로젝트
 
-아맞다!(Amadda)는 저장한 인사이트를 현재 상황에 맞춰 다시 찾게 해주는 개인 인사이트 저장소입니다. 현재 MVP는 계정과 자동 수집 없이 로컬에서 URL을 빠르게 저장하고, 최소한의 개인 맥락으로 다시 찾아 원문을 여는 경험을 검증합니다.
+아맞다!(Amadda)는 저장한 인사이트를 현재 상황에 맞춰 다시 찾게 해주는 개인 인사이트 저장소입니다. 현재 MVP는 Google 로그인과 Supabase 기반 개인 보관함을 사용하며, 모바일 공유·Chrome 확장·웹 입력으로 링크를 먼저 저장한 뒤 선택적으로 남긴 맥락으로 다시 찾아 원문을 여는 경험을 검증합니다. 현재 전환 계획은 [#21](https://github.com/ppre1ude/hub/issues/21), 다중 기기 저장 진행 상황은 [#36](https://github.com/ppre1ude/hub/issues/36), 저장 경험 결정은 [#25](https://github.com/ppre1ude/hub/issues/25)에서 관리합니다.
 
 ## 문서 색인
 
@@ -26,6 +26,7 @@
 - [디자인 시스템](DESIGN.md) - 화면 톤, 색상, 타이포그래피와 컴포넌트 규칙
 - [WDS 적용 메모](docs/wds-adoption.md) - WDS 컴포넌트 적용 기준과 도입 순서
 - [개발 아키텍처](docs/development-architecture.md) - FSD 레이어, import 규칙과 저장 경계
+- [Android Capacitor 개발·검증](docs/android-capacitor.md) - Android 공유 저장, OAuth, APK와 에뮬레이터 절차
 - [기술 스택 및 라이브러리](docs/tech-stack.md) - 라이브러리 선정 이유와 연결 상태
 - [코딩/커밋 컨벤션](docs/coding-commit-conventions.md) - 코드 스타일, 브랜치와 커밋 규칙
 - [에이전트 작업 지침](AGENTS.md) - 저장소 작업 규칙

@@ -94,6 +94,11 @@
   gap: var(--spacing-2);
 }
 
+button.save-page__clipboard-action {
+  width: fit-content;
+  min-height: 44px;
+}
+
 button.save-page__error-action {
   width: fit-content;
   margin-top: var(--spacing-2);
@@ -101,6 +106,11 @@ button.save-page__error-action {
 
 @media (max-width: 767px) {
   .save-page {
+    padding: var(--spacing-4);
     gap: var(--spacing-5);
+  }
+
+  button.save-page__clipboard-action {
+    width: 100%;
   }
 }

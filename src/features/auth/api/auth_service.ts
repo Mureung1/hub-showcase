@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import type { MobileOAuth, MobileOAuthContext } from '@/shared/capacitor';
+
 export type AuthSession = {
   user: {
     email?: string;
@@ -9,16 +11,31 @@ export type AuthSession = {
 };
 
 export type AuthService = {
-  signInWithGoogle: (redirectTo: string) => Promise<void>;
+  signInWithGoogle: (
+    redirectTo: string,
+    context?: MobileOAuthContext
+  ) => Promise<void>;
   signOut: () => Promise<void>;
   subscribe: (listener: (session: AuthSession | null) => void) => () => void;
+  subscribeMobileOAuthCallbacks?: (
+    listener: (context?: MobileOAuthContext) => void
+  ) => () => void;
+  subscribeSignInFailures?: (
+    listener: (context?: MobileOAuthContext) => void
+  ) => () => void;
 };
 
 export function createSupabaseAuthService(
-  client: Pick<SupabaseClient, 'auth'>
+  client: Pick<SupabaseClient, 'auth'>,
+  mobileOAuth?: MobileOAuth
 ): AuthService {
   return {
-    async signInWithGoogle(redirectTo) {
+    async signInWithGoogle(redirectTo, context) {
+      if (mobileOAuth) {
+        await mobileOAuth.signInWithGoogle(context);
+        return;
+      }
+
       const { error } = await client.auth.signInWithOAuth({
         options: { redirectTo },
         provider: 'google',
@@ -56,5 +73,12 @@ export function createSupabaseAuthService(
 
       return () => subscription.unsubscribe();
     },
+
+    ...(mobileOAuth
+      ? {
+          subscribeMobileOAuthCallbacks: mobileOAuth.subscribeCallbacks,
+          subscribeSignInFailures: mobileOAuth.subscribeFailures,
+        }
+      : {}),
   };
 }

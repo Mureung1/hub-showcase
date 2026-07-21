@@ -1,6 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/shared/capacitor', () => ({
+  getInsightApiOrigin: vi.fn(() => ''),
+}));
+
+import { getInsightApiOrigin } from '@/shared/capacitor';
+
 import { createBrowserInsightCaptureService } from './browser_insight_capture_service';
 
 describe('createBrowserInsightCaptureService', () => {
@@ -42,6 +48,31 @@ describe('createBrowserInsightCaptureService', () => {
     });
   });
 
+  it('Android API 원점에서는 공통 capture 경로를 HTTPS 원점에 결합한다', async () => {
+    vi.mocked(getInsightApiOrigin).mockReturnValueOnce(
+      'https://api.example.com'
+    );
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(
+        Response.json({ created: true, insight: createInsight(), ok: true })
+      );
+    const service = createBrowserInsightCaptureService(
+      createClient('access-token'),
+      fetcher
+    );
+
+    await service.capture({
+      source: 'android_share',
+      url: 'https://example.com/article',
+    });
+
+    expect(fetcher).toHaveBeenCalledWith(
+      'https://api.example.com/api/insights/capture',
+      expect.anything()
+    );
+  });
+
   it('does not send a capture request without an authenticated session', async () => {
     const fetcher = vi.fn();
     const service = createBrowserInsightCaptureService(
@@ -69,6 +100,38 @@ describe('createBrowserInsightCaptureService', () => {
     await expect(
       service.capture({ source: 'web', url: 'not a url' })
     ).resolves.toEqual({ ok: false, reason: 'invalid-url' });
+  });
+
+  it.each([
+    { created: true, insight: createInsight(), ok: true },
+    { ok: false, reason: 'invalid-url' },
+  ])(
+    'maps an unauthenticated HTTP response without trusting its body',
+    async (payload) => {
+      const fetcher = vi
+        .fn()
+        .mockResolvedValue(Response.json(payload, { status: 401 }));
+      const service = createBrowserInsightCaptureService(
+        createClient('expired-token'),
+        fetcher
+      );
+
+      await expect(
+        service.capture({ source: 'web', url: 'https://example.com/article' })
+      ).resolves.toEqual({ ok: false, reason: 'permission-denied' });
+    }
+  );
+
+  it('maps a network rejection to a retryable write failure', async () => {
+    const fetcher = vi.fn().mockRejectedValue(new Error('network detail'));
+    const service = createBrowserInsightCaptureService(
+      createClient('access-token'),
+      fetcher
+    );
+
+    await expect(
+      service.capture({ source: 'web', url: 'https://example.com/article' })
+    ).resolves.toEqual({ ok: false, reason: 'write-failed' });
   });
 });
 

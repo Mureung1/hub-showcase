@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 
 import {
@@ -9,9 +9,11 @@ import {
   type InsightCaptureService,
   type InsightRepositoryWarning,
 } from '@/entities/insight';
+import { PwaInstallNotice, usePwaInstallPrompt } from '@/features/pwa-install';
 import { HomePage, type SuggestedSituation } from '@/pages/home';
 import { LibraryPage } from '@/pages/library';
 import { SavePage, type SaveContextDraft } from '@/pages/save';
+import { readClipboardText } from '@/shared/browser';
 import { BrandLogo, StatusMessage } from '@/shared/ui';
 import { AppNavigation, type WorkspaceTab } from '@/widgets/app-navigation';
 
@@ -21,6 +23,7 @@ import { CATEGORY_FILTERS, SUGGESTED_SITUATIONS } from './model/workspace_seed';
 import {
   useInsightWorkspace,
   type SaveInsightFailureReason,
+  type SaveInsightInput,
 } from './model/use_insight_workspace';
 import './styles/authenticated_workspace.css';
 
@@ -61,9 +64,41 @@ const LOAD_WARNING_MESSAGES: Record<
   },
 };
 
+function hasBlockingLoadWarning(warnings: InsightRepositoryWarning[]) {
+  return warnings.some(
+    (warning) => warning === 'read-failed' || warning === 'permission-denied'
+  );
+}
+
+function isLibraryUnavailable(
+  warnings: InsightRepositoryWarning[],
+  insightCount: number
+) {
+  return (
+    hasBlockingLoadWarning(warnings) ||
+    (insightCount === 0 && warnings.includes('corrupted-entry'))
+  );
+}
+
+function getLoadWarningMessage(
+  warning: InsightRepositoryWarning,
+  insightCount: number
+) {
+  if (warning === 'corrupted-entry' && insightCount === 0) {
+    return {
+      title: '저장된 인사이트를 읽지 못했어요',
+      description:
+        '원격 보관함의 데이터를 확인하지 못했어요. 다시 불러와도 계속되면 문제를 알려주세요.',
+    };
+  }
+
+  return LOAD_WARNING_MESSAGES[warning];
+}
+
 export type AuthenticatedWorkspaceProps = {
   accountControl?: ReactNode;
   captureService?: InsightCaptureService;
+  initialSaveDraft?: SaveInsightInput;
   repository?: InsightRepository;
   userId?: string;
 };
@@ -71,9 +106,11 @@ export type AuthenticatedWorkspaceProps = {
 export function AuthenticatedWorkspace({
   accountControl,
   captureService,
+  initialSaveDraft,
   repository,
   userId,
 }: AuthenticatedWorkspaceProps) {
+  const pwaInstallPrompt = usePwaInstallPrompt();
   const workspaceRepository = useMemo(
     () =>
       repository ??
@@ -104,13 +141,18 @@ export function AuthenticatedWorkspace({
     captureService: workspaceCaptureService,
     repository: workspaceRepository,
   });
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>('home');
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>(() =>
+    initialSaveDraft ? 'save' : 'home'
+  );
   const [activeCategory, setActiveCategory] = useState('All');
   const [globalQuery, setGlobalQuery] = useState('');
   const [retrieveQuery, setRetrieveQuery] = useState('');
   const [submittedRetrieveQuery, setSubmittedRetrieveQuery] = useState('');
   const [selectedSituation, setSelectedSituation] = useState('');
-  const [saveUrl, setSaveUrl] = useState('');
+  const [saveDraft, setSaveDraft] = useState<SaveInsightInput>(
+    () => initialSaveDraft ?? { source: 'web', url: '' }
+  );
+  const saveDraftRevisionRef = useRef(0);
   const [saveComplete, setSaveComplete] = useState(false);
   const [saveErrorReason, setSaveErrorReason] =
     useState<SaveInsightFailureReason>();
@@ -126,6 +168,10 @@ export function AuthenticatedWorkspace({
   const retrieveResults = useMemo(() => {
     return retrieveInsights(insights, submittedRetrieveQuery);
   }, [insights, submittedRetrieveQuery]);
+  const libraryUnavailable = isLibraryUnavailable(
+    loadWarnings,
+    insights.length
+  );
 
   function handleSituationClick(situation: SuggestedSituation) {
     setSelectedSituation(situation.query);
@@ -150,7 +196,12 @@ export function AuthenticatedWorkspace({
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const saveResult = await saveInsight(saveUrl);
+    const submittedDraftRevision = saveDraftRevisionRef.current;
+    const saveResult = await saveInsight(saveDraft);
+
+    if (submittedDraftRevision !== saveDraftRevisionRef.current) {
+      return;
+    }
 
     if (!saveResult.ok) {
       setSaveComplete(false);
@@ -158,6 +209,7 @@ export function AuthenticatedWorkspace({
       return;
     }
 
+    pwaInstallPrompt.recordSuccessfulSave();
     setSaveErrorReason(undefined);
     setActiveCategory('All');
     setSavedInsightId(saveResult.insightId);
@@ -167,12 +219,37 @@ export function AuthenticatedWorkspace({
     setSaveComplete(true);
   }
 
-  function handleSaveUrlChange(value: string) {
-    setSaveUrl(value);
+  function resetSaveFeedback() {
+    setSaveComplete(false);
     setSaveErrorReason(undefined);
     setSavedInsightId(undefined);
+    setContextDraft(EMPTY_CONTEXT_DRAFT);
     setContextSaveComplete(false);
     setContextSaveFailed(false);
+  }
+
+  function updateSaveDraft(
+    update: (currentDraft: SaveInsightInput) => SaveInsightInput
+  ) {
+    saveDraftRevisionRef.current += 1;
+    setSaveDraft(update);
+    resetSaveFeedback();
+  }
+
+  function handleSaveUrlChange(value: string) {
+    updateSaveDraft((draft) => ({ ...draft, url: value }));
+  }
+
+  function handleSaveTitleChange(value: string) {
+    updateSaveDraft((draft) => ({ ...draft, title: value }));
+  }
+
+  async function handleClipboardPaste() {
+    const value = await readClipboardText();
+
+    if (value) {
+      updateSaveDraft(() => ({ source: 'web', url: value }));
+    }
   }
 
   async function handleContextSave(event: FormEvent<HTMLFormElement>) {
@@ -209,7 +286,7 @@ export function AuthenticatedWorkspace({
     setContextSaveComplete(false);
     setContextSaveFailed(false);
     setSaveComplete(false);
-    setSaveUrl('');
+    setSaveDraft({ source: 'web', url: '' });
     setSaveErrorReason(undefined);
     setActiveCategory('All');
     setGlobalQuery('');
@@ -233,10 +310,18 @@ export function AuthenticatedWorkspace({
       </header>
 
       <main className="workspace-main">
+        {pwaInstallPrompt.isVisible ? (
+          <PwaInstallNotice
+            isPrompting={pwaInstallPrompt.isPrompting}
+            onDismiss={pwaInstallPrompt.dismiss}
+            onInstall={pwaInstallPrompt.install}
+          />
+        ) : null}
+
         {loadWarnings.length > 0 ? (
           <div className="workspace-warnings" aria-label="저장소 안내">
             {loadWarnings.map((warning) => {
-              const message = LOAD_WARNING_MESSAGES[warning];
+              const message = getLoadWarningMessage(warning, insights.length);
 
               return (
                 <StatusMessage
@@ -261,16 +346,29 @@ export function AuthenticatedWorkspace({
             onDeleteInsight={deleteInsight}
             onOpenSave={() => setActiveTab('save')}
             onQueryChange={setGlobalQuery}
+            onRetryLoad={() => window.location.reload()}
             onUpdateInsight={updateInsightContext}
             query={globalQuery}
+            totalInsightCount={insights.length}
+            unavailable={libraryUnavailable}
           />
         ) : null}
 
         {activeTab === 'home' ? (
           <HomePage
+            insightCount={insights.length}
+            libraryState={
+              isLoading
+                ? 'loading'
+                : libraryUnavailable
+                  ? 'unavailable'
+                  : 'ready'
+            }
             onOpenLibrary={() => setActiveTab('library')}
+            onOpenSave={() => setActiveTab('save')}
             onQueryChange={handleRetrieveQueryChange}
             onRetrieve={handleRetrieve}
+            onRetryLoad={() => window.location.reload()}
             onSituationClick={handleSituationClick}
             query={retrieveQuery}
             results={retrieveResults}
@@ -297,11 +395,14 @@ export function AuthenticatedWorkspace({
             onContextDraftChange={handleContextDraftChange}
             onContextSave={handleContextSave}
             onContextSkip={handleContextSkip}
+            onPasteFromClipboard={handleClipboardPaste}
             onSave={handleSave}
-            onSaveCompleteChange={setSaveComplete}
+            onTitleChange={handleSaveTitleChange}
             onUrlChange={handleSaveUrlChange}
+            isSharedSave={saveDraft.source === 'android_share'}
             saveComplete={saveComplete}
-            saveUrl={saveUrl}
+            saveTitle={saveDraft.title ?? ''}
+            saveUrl={saveDraft.url}
             storageReady={!isLoading}
           />
         ) : null}

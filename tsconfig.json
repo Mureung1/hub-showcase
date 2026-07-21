@@ -1,7 +1,16 @@
 {
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node", "vite/client"],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmitOnError": true
+  },
   "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
+    { "path": "./tsconfig.node.json" },
+    { "path": "./tsconfig.extension.json" }
   ]
 }

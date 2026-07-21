@@ -1,0 +1,98 @@
+.android-share-shell {
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  padding: var(--spacing-8) var(--spacing-4);
+  background: var(--color-canvas);
+}
+
+.android-share-panel {
+  display: grid;
+  gap: var(--spacing-4);
+  width: min(430px, 100%);
+  padding: var(--spacing-8);
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-card);
+  background: var(--color-canvas);
+  text-align: center;
+}
+
+.android-share-status-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  justify-self: center;
+  border: 1px solid var(--color-signal-green);
+  border-radius: 50%;
+  color: var(--color-signal-green);
+  font-size: var(--typography-section-title-size);
+  font-weight: 700;
+}
+
+.android-share-panel--error .android-share-status-icon {
+  border-color: var(--color-error-ink);
+  color: var(--color-error-ink);
+}
+
+.android-share-result-label {
+  color: var(--color-signal-green);
+  font-size: var(--typography-label-size);
+  font-weight: 700;
+  line-height: var(--typography-label-line-height);
+}
+
+.android-share-panel h1 {
+  overflow-wrap: anywhere;
+  color: var(--color-ink);
+  font-size: var(--typography-screen-title-size);
+  line-height: var(--typography-screen-title-line-height);
+}
+
+.android-share-panel
+  > p:not(.android-share-result-label):not(.android-share-error) {
+  color: var(--color-graphite);
+  font-size: var(--typography-body-size);
+  line-height: var(--typography-body-line-height);
+}
+
+.android-share-memo-field {
+  display: grid;
+  gap: var(--spacing-2);
+  text-align: left;
+}
+
+.android-share-memo-field label {
+  color: var(--color-ink);
+  font-size: var(--typography-label-size);
+  font-weight: 700;
+  line-height: var(--typography-label-line-height);
+}
+
+.android-share-memo-field p {
+  color: var(--color-smoke);
+  font-size: var(--typography-meta-size);
+  line-height: var(--typography-meta-line-height);
+  text-align: right;
+}
+
+.android-share-actions {
+  display: grid;
+  gap: var(--spacing-3);
+}
+
+.android-share-error {
+  color: var(--color-error-ink);
+  font-size: var(--typography-meta-size);
+  line-height: var(--typography-meta-line-height);
+}
+
+@media (max-width: 767px) {
+  .android-share-shell {
+    align-items: start;
+  }
+
+  .android-share-panel {
+    padding: var(--spacing-6);
+  }
+}

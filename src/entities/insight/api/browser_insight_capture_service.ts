@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { getSupabaseClient } from '@/shared/api';
+import { getInsightApiOrigin } from '@/shared/capacitor';
 
 import { parseInsight } from '../model/parse_insight';
 import type {
@@ -13,7 +14,8 @@ type Fetcher = (input: string, init: RequestInit) => Promise<Response>;
 
 export function createBrowserInsightCaptureService(
   client: SupabaseClient = getSupabaseClient(),
-  fetcher: Fetcher = fetch
+  fetcher: Fetcher = fetch,
+  apiOrigin: string = getInsightApiOrigin()
 ): InsightCaptureService {
   return {
     async capture(request) {
@@ -24,7 +26,7 @@ export function createBrowserInsightCaptureService(
           return { ok: false, reason: 'permission-denied' };
         }
 
-        const response = await fetcher('/api/insights/capture', {
+        const response = await fetcher(`${apiOrigin}/api/insights/capture`, {
           body: JSON.stringify(request),
           headers: {
             Authorization: `Bearer ${data.session.access_token}`,
@@ -32,6 +34,11 @@ export function createBrowserInsightCaptureService(
           },
           method: 'POST',
         });
+
+        if (response.status === 401) {
+          return { ok: false, reason: 'permission-denied' };
+        }
+
         const payload = await readJson(response);
         const result = parseCaptureResult(payload);
 
@@ -39,9 +46,7 @@ export function createBrowserInsightCaptureService(
           return result;
         }
 
-        return response.status === 401
-          ? { ok: false, reason: 'permission-denied' }
-          : { ok: false, reason: 'write-failed' };
+        return { ok: false, reason: 'write-failed' };
       } catch {
         return { ok: false, reason: 'write-failed' };
       }
