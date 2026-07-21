@@ -1,5 +1,18 @@
 # 변경 이력
 
+## 2026-07-21
+
+- 안드로이드 앱(Capacitor)을 **원격 URL 방식**으로 구성. `capacitor.config.json`에 `server.url`(배포 사이트)·
+  `cleartext:false`·`androidScheme:"https"`·`allowNavigation`(배포 도메인+`*.supabase.co`) 추가 — 앱이 배포된
+  웹사이트를 통째로 로드하므로 웹만 배포하면 앱도 자동 갱신(APK 재빌드 불필요).
+- 하드웨어 뒤로가기 처리 추가(`src/lib/useAndroidBackButton.js`, App.jsx에서 호출): 하위 화면→이전 화면,
+  홈(`/analyze`)→앱 종료. 웹에선 no-op.
+- 보안 강화: `AndroidManifest.xml`에 `android:usesCleartextTraffic="false"`(HTTP 평문 차단), `allowNavigation`
+  화이트리스트로 낯선 사이트 인앱 이동 차단. 네트워크 상태 확인용 `ACCESS_NETWORK_STATE` 권한 추가.
+- 카메라·위치·파일 선택은 Capacitor 기본 브릿지가 처리(네이티브 코드 없이 순정 `BridgeActivity` 유지).
+- 설정만 반영하는 `npm run app:sync:config` 스크립트 추가(웹 빌드 생략). 가이드(`docs/apk-build-guide.md`)를
+  원격 URL 방식 기준으로 갱신.
+
 ## 2026-07-16
 
 - 앱 시작 시 신체정보 유무와 무관하게 항상 홈(`/analyze`)으로 진입하도록 변경(기존: 신체정보 없으면

@@ -11,6 +11,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "app:sync": "vite build && cap sync android",
+    "app:sync:config": "cap sync android",
     "app:open": "cap open android"
   },
   "dependencies": {

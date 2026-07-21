@@ -47,15 +47,25 @@ to pull team-shared env vars instead.
 ### Android app wrapper (Capacitor)
 
 The same web build (`dist/`) is also wrapped as an Android WebView app via Capacitor (`capacitor.config.json`,
-`android/` native project committed, `npm run app:sync`/`app:open`). The web app is unchanged and stays
-the primary target; the app is purely a wrapper. Two things make it work across both: `src/lib/apiBase.js`
-(`API_BASE` = `VITE_API_BASE_URL || ''` — empty on web so `/api` stays same-origin relative, set to the
-deployed backend URL when building the app; prepended in `fetchWithTimeout`) and `src/lib/externalLink.js`
+`android/` native project committed, `npm run app:sync`/`app:sync:config`/`app:open`). The web app is unchanged
+and stays the primary target; the app is purely a wrapper. **`capacitor.config.json` is currently set to
+server-URL mode** — `server.url` points at the deployed site (`hub-iota-seven.vercel.app`), so the app loads
+the live site whole and **a web push auto-updates the app with no APK rebuild**; the bundled `dist/` is then
+unused. `server.allowNavigation` (our domain + `*.supabase.co`) keeps the WebView on known origins — anything
+else Capacitor kicks to the system browser (CapConfig reads `server.allowNavigation`; `BridgeWebViewClient`
+does `bridge.launchIntent` for off-list URLs). To revert to local-bundle mode, delete the `server` block and
+build with `VITE_API_BASE_URL` set. Two things make it work across both modes: `src/lib/apiBase.js`
+(`API_BASE` = `VITE_API_BASE_URL || ''` — empty on web/server-URL so `/api` stays same-origin relative, set to
+the deployed backend URL only for local-bundle builds; prepended in `fetchWithTimeout`) and `src/lib/externalLink.js`
 (`openExternalLink` — opens external links in the system browser on native via `@capacitor/browser`, new
-tab on web; used by ad/map links since WebView blocks `target="_blank"`). Header/tab-bar use
-`env(safe-area-inset-*)`. Full build steps, remote-URL-vs-local-bundle tradeoff, and the known CSV-download
-WebView limitation are in `docs/apk-build-guide.md`. **Capacitor is additive — none of it affects the web
-build** (`@capacitor/*` is inert on web; `Capacitor.isNativePlatform()` is false there).
+tab on web; used by ad/map links since WebView blocks `target="_blank"`). `src/lib/useAndroidBackButton.js`
+(called in `App.jsx`, native-only) makes the hardware back button navigate back on sub-screens and exit at the
+`/analyze` home — being web code, it only takes effect once deployed. Camera (`<input type=file>`) and
+`navigator.geolocation` need **no native code**: Capacitor's default `BridgeWebChromeClient` handles
+`onShowFileChooser`/`onGeolocationPermissionsShowPrompt`/`onPermissionRequest`, so `MainActivity` stays a plain
+`BridgeActivity`. Header/tab-bar use `env(safe-area-inset-*)`. Full build steps, the server-URL-vs-local-bundle
+tradeoff, and the known CSV-download WebView limitation are in `docs/apk-build-guide.md`. **Capacitor is additive
+— none of it affects the web build** (`@capacitor/*` is inert on web; `Capacitor.isNativePlatform()` is false there).
 
 ## Architecture
 
