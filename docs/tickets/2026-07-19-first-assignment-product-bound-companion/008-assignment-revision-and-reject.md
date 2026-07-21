@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -56,6 +56,14 @@
   - `npm run check:docs-links`: active 28개와 historical banner 2개 모두 green
   - `git diff --check`: passed
 - Manual or live smoke: 1440×900 Chromium trace에서 revise→replacement→accept와 reject→reload를 각각 실행하고, three-way Review control·replacement 전환·reject 뒤 unchanged confirmed model을 확인했다.
+- Corrective internal split:
+  - `npm run test -w @ay-ple/product-contract`: package-root import와 exact runtime export roster를 포함해 9/9 passed
+  - `npm run typecheck -w @ay-ple/product-contract`와 `npm run build -w @ay-ple/product-contract`: passed; development/default package-root가 같은 runtime export 28개를 제공하고 기존 type consumer가 모두 typecheck를 통과했다
+  - `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`: passed; Server 122/122와 Chat Shell 44/44 포함
+  - `npm run test:e2e -w @ay-ple/chat-shell`: corrective 변경 뒤 Chromium desktop 15/15 passed
+  - package export는 `.` 하나뿐이고 app/package의 private product-contract subpath import, product-contract의 Node/Express 의존, Browser bundle의 Server domain import가 없음을 확인했다
+  - `7e6d1945..4f975f9a`를 Standards와 Spec 두 축으로 검토했다. Standards의 owner-local helper finding 1건을 수정한 뒤 actionable finding 0건, Spec finding 0건으로 종료했다.
+  - 별도 corrective manual smoke는 실행하지 않았다. public contract parity test, 전체 app test와 real Vite/Express Chromium trace를 이 behavior-preserving refactor의 검증 근거로 삼았다.
 
 ## Blocked By
 
@@ -79,3 +87,6 @@
 - Server는 fresh private request key로 same-Turn revision을 전달하고, valid replacement의 old `pending → superseded`와 new `pending` 생성을 한 product transaction으로 처리한다. 실패 시 old patch를 `interrupted`로 닫고, reject는 confirmed `SemesterModel`을 바꾸지 않는 durable no-apply 결정으로 남긴다.
 - Browser Review는 working accept·revise·reject control과 decision-specific pending 표시를 제공하며, exact replacement relation만 active Review로 전환한다.
 - 구현 커밋: `d9f47db8`, `f37b2bf3`, `fef80a9d`
+- Corrective로 `packages/product-contract/src/index.ts`를 explicit re-export만 담당하는 thin barrel로 만들고, private owner module을 contract value·workspace·request·review·operation frame 경계로 분리했다. package-root public API, exported class/function identity, JSON/NDJSON wire contract, exact rejection/return shape, UTF-8 8 KiB/16 KiB bound는 유지했다.
+- Runtime/process loss 정산이나 downstream capability는 추가하지 않았다. 해당 책임과 다음 implementation frontier는 계속 008a에 남는다.
+- Corrective 구현 커밋: `305e7cb0`, `4934ecc2`, `4f975f9a`
