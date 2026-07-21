@@ -24,3 +24,6 @@ app.use('/api/appointments', appointmentsRouter) // study: 약속 라우터
 app.use('/api/appointments', participantsRouter) // study: 참여 라우터
 app.use('/api/appointments', responsesRouter) // claude: 일정 응답 제출/조회 라우터(Day4)
 app.use('/api/appointments', resultsRouter) // claude: 일정 결과 집계/응답 현황/마감 라우터(2주차 Day1)
+
+
+export default app
