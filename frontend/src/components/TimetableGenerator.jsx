@@ -3,11 +3,7 @@ import axios from 'axios';
 import { 
   Bot, User, Send, Upload, RefreshCw, CheckCircle2, AlertTriangle, 
   X, HelpCircle, PlusCircle, Check, Info, FileText, ArrowLeft, Loader2,
-<<<<<<< HEAD
-  Calendar, History, Plus
-=======
   Calendar, History, Plus, Search, BookOpen
->>>>>>> 3834078f (feat: 백엔드 API 연동 및 시간표 UI/데이터 확장)
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -487,8 +483,6 @@ function TimetableGenerator({ initialStudentType }) {
     ];
   });
   const [activeTimetableId, setActiveTimetableId] = useState('draft-1');
-<<<<<<< HEAD
-=======
   const [catalogSearch, setCatalogSearch] = useState('');
   const [catalogCategory, setCatalogCategory] = useState('all');
 
@@ -500,7 +494,6 @@ function TimetableGenerator({ initialStudentType }) {
       addMessage('bot', `🗑️ <strong>${course.title}</strong> 과목을 수강 목록에서 제외했습니다.`);
     }
   };
->>>>>>> 3834078f (feat: 백엔드 API 연동 및 시간표 UI/데이터 확장)
 
   // Save timetables list to localStorage when changed
   useEffect(() => {
