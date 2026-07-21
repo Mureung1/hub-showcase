@@ -7,12 +7,12 @@
 - [제품 명세](docs/product.md) — 페르소나·문제정의·MVP 범위·화면별 기능 정리 (`기획서.md`+`화면-기능-정리.md` 통합)
 - [API & 기술 명세](docs/api.md) — 엔드포인트 계약, DB 스키마, Supabase 마이그레이션 (`api-design.md` 등 통합)
 - [알고리즘 설계](docs/algorithms.md) — 식단 추천·장보기 최적화 알고리즘
-- [백로그](docs/backlog.md) — 완료 작업 요약, 남은 작업, Day별 진행 기록(현재 13일차)
+- [백로그](docs/backlog.md) — 완료 작업 요약, 남은 작업, Day별 진행 기록(이 저장소엔 13일차 시점까지만 반영 — 최신 진행 상황은 이슈 #19 참고)
 - [2주차 계획수립](docs/2주차%20계획수립.md) — Day 1~10 초기 로드맵(참고용 — 최신 진행 상황은 backlog.md 참고)
 
 ## 개발 계획 / 로드맵
 
-13일차(2026-07-20)까지 진행되었습니다. 현재 진행 중인 작업과 우선순위는 GitHub Issues에서 관리합니다. (`fridge-recipe-app` 폴더의 `backend`/`frontend` 코드 변경분은 아직 이 저장소 브랜치에 반영 전 — 이슈 #19에 남은 작업으로 기록)
+`fridge-recipe-app` 폴더 기준으로는 12일차(2026-07-21)까지 진행되었습니다. 현재 진행 중인 작업과 우선순위는 GitHub Issues에서 관리합니다. (`fridge-recipe-app` 폴더의 `backend`/`frontend` 코드 변경분과 `docs/` 문서는 아직 이 저장소 브랜치에 반영 전 — 이슈 #19에 최신 진행 상황과 남은 작업으로 기록)
 
 - 📋 **[통합 개발 백로그 (#19)](https://github.com/baejh3333-del/hub/issues/19)** — 진행 중 / 다음 작업 / 백로그로 정리된 전체 작업 체크리스트
 - 🗂 **[전체 이슈 목록](https://github.com/baejh3333-del/hub/issues)** — 각 작업의 상세 구현 가이드(현재 상태 · 구현 방향 · 주의할 점 · 테스트 방법)
