@@ -1,6 +1,5 @@
 import { Router } from "express";
-import { db } from "../db/client.js";
-
+import { supabase } from "../db/supabaseClient.js";
 const router = Router();
 
 function daysUntil(dateStr) {
@@ -10,12 +9,18 @@ function daysUntil(dateStr) {
   return Math.round((deadline - today) / 86400000);
 }
 
-function toPost(row) {
-  const listing = db.prepare("SELECT deadline_date FROM listings WHERE id = ?").get(row.listing_id);
+async function toPost(row) {
+  const { data: listing } = await supabase
+    .from("listings")
+    .select("deadline_date")
+    .eq("id", row.listing_id)
+    .single();
   const dDay = listing ? daysUntil(listing.deadline_date) : undefined;
-  const comments = db
-    .prepare("SELECT who, text FROM comments WHERE post_id = ? ORDER BY id")
-    .all(row.id);
+  const { data: comments } = await supabase
+    .from("comments")
+    .select("who, text")
+    .eq("post_id", row.id)
+    .order("id");
   return {
     id: row.id,
     listingId: row.listing_id,
@@ -23,53 +28,66 @@ function toPost(row) {
     meta: row.meta,
     dDay,
     body: row.body,
-    comments,
+    comments: comments || [],
   };
 }
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   const { listingId } = req.query;
-  const rows = listingId
-    ? db.prepare("SELECT * FROM board_posts WHERE listing_id = ?").all(listingId)
-    : db.prepare("SELECT * FROM board_posts").all();
-  res.json(rows.map(toPost));
+  let query = supabase.from("board_posts").select("*");
+  if (listingId) query = query.eq("listing_id", listingId);
+  const { data, error } = await query;
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(await Promise.all(data.map(toPost)));
 });
 
-router.get("/:id", (req, res) => {
-  const row = db.prepare("SELECT * FROM board_posts WHERE id = ?").get(req.params.id);
-  if (!row) return res.status(404).json({ error: "not found" });
-  res.json(toPost(row));
+router.get("/:id", async (req, res) => {
+  const { data: row, error } = await supabase
+    .from("board_posts")
+    .select("*")
+    .eq("id", req.params.id)
+    .single();
+  if (error || !row) return res.status(404).json({ error: "not found" });
+  res.json(await toPost(row));
 });
 
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const { listingId, title, meta, body } = req.body;
   if (!listingId || !title || !meta || !body) {
     return res.status(400).json({ error: "listingId, title, meta, body는 필수입니다" });
   }
-  const listing = db.prepare("SELECT id FROM listings WHERE id = ?").get(listingId);
+  const { data: listing } = await supabase
+    .from("listings")
+    .select("id")
+    .eq("id", listingId)
+    .single();
   if (!listing) return res.status(400).json({ error: "존재하지 않는 listingId입니다" });
 
   const id = `p-${Date.now()}`;
-  db.prepare(
-    "INSERT INTO board_posts (id, listing_id, title, meta, body) VALUES (?, ?, ?, ?, ?)"
-  ).run(id, listingId, title, meta, body);
+  const { error } = await supabase
+    .from("board_posts")
+    .insert({ id, listing_id: listingId, title, meta, body });
+  if (error) return res.status(500).json({ error: error.message });
 
-  const row = db.prepare("SELECT * FROM board_posts WHERE id = ?").get(id);
-  res.status(201).json(toPost(row));
+  const { data: row } = await supabase.from("board_posts").select("*").eq("id", id).single();
+  res.status(201).json(await toPost(row));
 });
 
-router.post("/:id/comments", (req, res) => {
-  const post = db.prepare("SELECT id FROM board_posts WHERE id = ?").get(req.params.id);
+router.post("/:id/comments", async (req, res) => {
+  const { data: post } = await supabase
+    .from("board_posts")
+    .select("id")
+    .eq("id", req.params.id)
+    .single();
   if (!post) return res.status(404).json({ error: "not found" });
   const { who, text } = req.body;
   if (!text) return res.status(400).json({ error: "text is required" });
 
   const comment = { who: who || "익명", text };
-  db.prepare("INSERT INTO comments (post_id, who, text) VALUES (?, ?, ?)").run(
-    req.params.id,
-    comment.who,
-    comment.text
-  );
+  const { error } = await supabase
+    .from("comments")
+    .insert({ post_id: req.params.id, who: comment.who, text: comment.text });
+  if (error) return res.status(500).json({ error: error.message });
   res.status(201).json(comment);
 });
 

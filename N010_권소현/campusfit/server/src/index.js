@@ -1,8 +1,8 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import listingsRouter from "./routes/listings.js";
 import boardRouter from "./routes/board.js";
-
 const app = express();
 const PORT = process.env.PORT || 4000;
 
