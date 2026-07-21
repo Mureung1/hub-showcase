@@ -8,7 +8,7 @@
 
 - 프론트엔드: React (Vite), 데스크톱 브라우저 중심
 - 백엔드: Node.js API 서버 직접 구축
-- 지도: 카카오맵 JavaScript SDK
+- 지도: 네이버지도 JavaScript SDK (NAVER Cloud Platform Maps API v3) — 2주차 중 카카오맵에서 정식 교체
 - 인증: 아이디/비밀번호 기반
 
 ## 2. 디렉토리 구조
@@ -59,12 +59,12 @@
 - `react-router-dom` — 화면 전환을 SPA 라우팅으로 처리 (지도/리스트/챗봇/마이페이지 = 각각 경로)
 - `axios` — API 호출
 - `zustand` — 전역 상태(선택된 빵집 목록, 로그인 유저) 관리. Redux보다 가벼워서 이 규모엔 충분함
-- 카카오맵은 `index.html`에 SDK 스크립트 태그로 로드 (npm 패키지 대신 공식 스크립트 방식 사용 — 버전 관리 이슈 회피)
+- 네이버지도는 npm 래퍼 패키지 대신 공식 스크립트 방식 사용(버전 관리 이슈 회피) — 다만 `index.html`에 정적 `<script>` 태그로 두지 않고 `src/utils/loadNaverMaps.js`에서 동적으로 주입한다. 키 미설정/로드 실패 시 지도 화면에서 안내 메시지를 보여줘야 해서 로드 성공/실패를 Promise로 다룰 필요가 있기 때문.
 
 **백엔드**
 
 - `express` — API 서버 프레임워크
-- `better-sqlite3` — DB. 별도 서버 설치 없이 파일 기반으로 바로 시작 가능해 4주 일정에 적합. 추후 필요 시 Postgres로 교체 가능한 구조로 모델 레이어 분리
+- `pg` — Supabase(Postgres) 접속용 드라이버. 인증(bcrypt+JWT)은 Supabase Auth를 쓰지 않고 자체 Express API가 그대로 담당 — DB만 Supabase로 교체(2주차 중 SQLite에서 전환)
 - `bcrypt` — 비밀번호 해시
 - `jsonwebtoken` — 인증 토큰 (아래 4번 결정사항 참고)
 - `cors`, `dotenv`
@@ -112,7 +112,7 @@ docs: 추가 기능 스펙 문서 반영
 기획서에서 "구현 단계에서 선택"으로 남겨둔 항목들을 아래와 같이 확정합니다.
 
 - **인증 방식**: JWT 토큰 방식 채택 (세션 대신). 프론트/백엔드가 분리된 구조라 서버가 세션을 들고 있지 않아도 되는 stateless 방식이 관리하기 쉬움. 토큰은 로그인 시 발급, `localStorage`에 저장 후 API 호출 시 헤더에 포함.
-- **DB 선택**: SQLite(`better-sqlite3`)로 시작. 설치/배포 부담이 없어 4주 일정에 적합하며, 모델 레이어를 분리해두면 추후 Postgres 전환이 쉬움.
+- **DB 선택**: Supabase(관리형 Postgres). 처음엔 설치 부담이 없는 SQLite로 시작했다가 2주차 중 Supabase로 전환 — 인증까지 Supabase Auth로 넘기지는 않고, DB만 Supabase를 쓰고 회원가입/로그인(bcrypt+JWT)은 계속 자체 Express API가 처리. 연결 정보는 `server/.env`의 `DATABASE_URL`(Supabase 프로젝트의 Connection String), 저장소에는 `.env.example`만 커밋.
 - **동선 계산 위치**: 서버에서 계산 (프론트에서 위치 데이터만 보내고, 완전탐색/휴리스틱 로직은 `server/src/services/routeService.js`에서 처리). 이유: 데이터 일관성 확보, 추후 캐싱/로깅 용이.
 - **API 응답 포맷 통일**:
   
@@ -120,7 +120,7 @@ docs: 추가 기능 스펙 문서 반영
   { "success": true, "data": { ... } }
   { "success": false, "error": { "code": "AUTH_FAILED", "message": "..." } }
   ```
-- **카카오맵 API 키**: `client/.env`에 `VITE_KAKAO_MAP_KEY`로 저장, 저장소에는 `.env.example`만 커밋하고 실제 키는 커밋하지 않음.
+- **네이버지도 API 키**: `client/.env`에 `VITE_NAVER_MAP_CLIENT_ID`로 저장, 저장소에는 `.env.example`만 커밋하고 실제 키는 커밋하지 않음. NAVER Cloud Platform 콘솔(Application)에서 발급하며, 스크립트 쿼리 파라미터명은 `ncpKeyId` (콘솔 "예제 코드" 기준, 예전 문서엔 `ncpClientId`로 안내된 적도 있음 — 콘솔에서 다르게 안내되면 `client/src/utils/loadNaverMaps.js`의 스크립트 URL만 고치면 된다).
 - **에러 처리**: 서버는 공통 에러 핸들러 미들웨어 하나로 모든 라우트의 에러를 잡아 위 응답 포맷으로 반환.
 
 ## 7. 참고 문서

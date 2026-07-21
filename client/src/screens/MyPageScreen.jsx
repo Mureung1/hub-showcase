@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { bakeries, findBakery } from '../data/bakeries.js';
 import { useAppStore } from '../store/useAppStore.js';
-import { computeTopRoutes, routesMatch } from '../utils/routeCalc.js';
+import { fetchTopRoutes } from '../api/routes.js';
 import Mascot from '../components/Mascot.jsx';
 
 const STAMP_TOTAL = 10;
@@ -16,6 +15,7 @@ function stampBadge(visitedCount) {
 // TODO(3주차): GET /api/users/me 연동, 취향/가본곳/가고싶은곳을 서버 응답으로 교체.
 export default function MyPageScreen() {
   const navigate = useNavigate();
+  const bakeries = useAppStore((s) => s.bakeries);
   const user = useAppStore((s) => s.user);
   const wishlist = useAppStore((s) => s.wishlist);
   const savedCourses = useAppStore((s) => s.savedCourses);
@@ -24,6 +24,7 @@ export default function MyPageScreen() {
   const openAuthModal = useAppStore((s) => s.openAuthModal);
   const userLocation = useAppStore((s) => s.userLocation);
   const logout = useAppStore((s) => s.logout);
+  const showToast = useAppStore((s) => s.showToast);
 
   if (!user) {
     return (
@@ -42,16 +43,24 @@ export default function MyPageScreen() {
   const visitedCount = user.visited.length;
   const stamps = Array.from({ length: STAMP_TOTAL }, (_, i) => i < visitedCount);
   const wishlistNames = [
-    ...new Set([...user.wishlist, ...[...wishlist].map((id) => findBakery(id)?.name).filter(Boolean)]),
+    ...new Set([
+      ...user.wishlist,
+      ...[...wishlist].map((id) => bakeries.find((b) => b.id === id)?.name).filter(Boolean),
+    ]),
   ];
 
-  const loadSavedCourse = (course) => {
+  const loadSavedCourse = async (course) => {
     setSelectedIds(course.order);
     const chosen = course.order.map((id) => bakeries.find((b) => b.id === id));
-    const routes = computeTopRoutes(userLocation, chosen);
-    const idx = routes.findIndex((r) => routesMatch(r.order, course.order));
-    setActiveRankIdx(idx >= 0 ? idx : 0);
-    navigate('/route');
+    try {
+      const routes = await fetchTopRoutes({ origin: userLocation, bakeries: chosen });
+      // 출발점 고정이라 순서가 그대로 보존돼야 매치되는 코스다 — 저장 당시와 같은 순서만 찾는다.
+      const idx = routes.findIndex((r) => r.order.length === course.order.length && r.order.every((id, i) => id === course.order[i]));
+      setActiveRankIdx(idx >= 0 ? idx : 0);
+      navigate('/route');
+    } catch {
+      showToast('코스를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
   };
 
   return (
@@ -128,7 +137,9 @@ export default function MyPageScreen() {
             savedCourses.map((c, i) => (
               <button type="button" className="course-item" key={i} onClick={() => loadSavedCourse(c)}>
                 <span>{c.name}</span>
-                <span className="course-meta">{c.order.map((id) => findBakery(id)?.name).join(' → ')}</span>
+                <span className="course-meta">
+                  {c.order.map((id) => bakeries.find((b) => b.id === id)?.name).join(' → ')}
+                </span>
               </button>
             ))
           ) : (

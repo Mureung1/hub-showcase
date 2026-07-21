@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { bakeries } from '../data/bakeries.js';
 import { useAppStore } from '../store/useAppStore.js';
-import { computeTopRoutes, estimateMinutes, RANK_COLORS } from '../utils/routeCalc.js';
+import { fetchTopRoutes } from '../api/routes.js';
+import { estimateMinutes, RANK_COLORS } from '../utils/routeCalc.js';
 import { normalizeToViewBox } from '../utils/geo.js';
 import RankCard from '../components/RankCard.jsx';
 import Modal from '../components/Modal.jsx';
@@ -15,8 +15,8 @@ const MODES = [
   ['bus', '버스'],
 ];
 
-// TODO(3주차): POST /api/routes로 서버(완전탐색/휴리스틱) 결과를 받아 이 프론트 미리보기 계산을 대체.
 export default function RouteScreen() {
+  const bakeries = useAppStore((s) => s.bakeries);
   const selectedIds = useAppStore((s) => s.selectedIds);
   const removeFromSelection = useAppStore((s) => s.removeFromSelection);
   const activeRankIdx = useAppStore((s) => s.activeRankIdx);
@@ -30,13 +30,42 @@ export default function RouteScreen() {
   const [mode, setMode] = useState('walk');
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [courseName, setCourseName] = useState('');
+  const [routesStatus, setRoutesStatus] = useState('idle'); // idle | loading | ready | error
+  const [serverRoutes, setServerRoutes] = useState([]);
 
-  // 선택이 바뀌면(오른쪽 바에서 빼기 포함) 아래 경로/지도가 자동으로 다시 계산된다 — 별도 새로고침 불필요.
-  // 출발지(userLocation)는 고정 출발점으로 다뤄서, 선택한 빵집들의 방문 순서만 순열로 탐색한다.
-  const chosen = useMemo(() => [...selectedIds].map((id) => bakeries.find((b) => b.id === id)), [selectedIds]);
+  const chosen = useMemo(
+    () => [...selectedIds].map((id) => bakeries.find((b) => b.id === id)),
+    [selectedIds, bakeries]
+  );
+
+  // 선택/출발지가 바뀔 때마다 서버에 동선 계산을 요청한다 — 완전탐색/휴리스틱 로직은
+  // server/src/services/routeService.js에서 처리(CLAUDE.md: 프론트는 위치 데이터만 전달).
+  useEffect(() => {
+    if (chosen.length < 2) return;
+    let cancelled = false;
+    setRoutesStatus('loading');
+    fetchTopRoutes({ origin: userLocation, bakeries: chosen })
+      .then((routes) => {
+        if (cancelled) return;
+        setServerRoutes(routes);
+        setRoutesStatus('ready');
+      })
+      .catch(() => {
+        if (!cancelled) setRoutesStatus('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [chosen, userLocation]);
+
+  // 서버는 id 순서 + 거리만 주므로, 화면에 필요한 빵집 상세 정보는 store에서 매핑해 붙인다.
   const routes = useMemo(
-    () => (chosen.length >= 2 ? computeTopRoutes(userLocation, chosen) : []),
-    [chosen, userLocation]
+    () =>
+      serverRoutes.map((r) => ({
+        order: r.order.map((id) => bakeries.find((b) => b.id === id)),
+        dist: r.distanceKm,
+      })),
+    [serverRoutes, bakeries]
   );
   const route = routes[activeRankIdx] || routes[0];
   // 지도/미니맵에 출발지도 함께 그리기 위해 맨 앞에 합성 노드로 끼워 넣는다.
@@ -60,6 +89,32 @@ export default function RouteScreen() {
           <Link to="/" className="btn-solid">
             지도에서 선택하기
           </Link>
+        </div>
+      </section>
+    );
+  }
+
+  if (routesStatus === 'error') {
+    return (
+      <section className="screen-route">
+        <div className="route-empty">
+          <Mascot />
+          <p>
+            동선을 계산하지 못했어요.
+            <br />
+            잠시 후 다시 시도해주세요.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  if (!route) {
+    return (
+      <section className="screen-route">
+        <div className="route-empty">
+          <Mascot />
+          <p>동선을 계산하고 있어요...</p>
         </div>
       </section>
     );

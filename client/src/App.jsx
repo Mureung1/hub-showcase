@@ -10,9 +10,11 @@ import TopBar from './components/TopBar.jsx';
 import Footer from './components/Footer.jsx';
 import Toast from './components/Toast.jsx';
 import { useThemeSync } from './hooks/useThemeSync.js';
+import { useLoadBakeries } from './hooks/useLoadBakeries.js';
 
 export default function App() {
   useThemeSync();
+  useLoadBakeries();
 
   return (
     <>

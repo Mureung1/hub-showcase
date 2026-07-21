@@ -1,9 +1,9 @@
 import StatusBadge from './StatusBadge.jsx';
-import { HeartIcon, PinIcon, PhoneIcon, ClockIcon, CloseIcon } from './icons.jsx';
+import { HeartIcon, PinIcon, MapIcon, ClockIcon, CloseIcon } from './icons.jsx';
 
-// 지도 화면 상세 패널에서 선택된 빵집 하나를 보여주는 카드(평점/리뷰 포함).
+// 지도 화면 상세 패널에서 선택된 빵집 하나를 보여주는 카드.
+// 평점/리뷰/전화번호는 실데이터에 없는 필드라 뺐다 — 있는 필드(주소/대표메뉴/몰리는시간/휴무일)만 있을 때만 보여준다.
 export default function SelectionCard({ bakery, liked, onRemove, onToggleWishlist }) {
-  const filled = Math.round(bakery.rating);
   return (
     <div className="selection-card">
       <button type="button" className="remove-btn" aria-label={`${bakery.name} 선택 해제`} onClick={onRemove}>
@@ -23,39 +23,44 @@ export default function SelectionCard({ bakery, liked, onRemove, onToggleWishlis
           <HeartIcon />
         </button>
       </div>
-      <div className="rating-row">
-        {'★'.repeat(filled)}
-        {'☆'.repeat(5 - filled)}
-        <span>{bakery.rating.toFixed(1)}</span>
-      </div>
-      <div className="detail-row">
-        <span className="label">
-          <PinIcon />
-          대표 빵
-        </span>
-        <span>{bakery.menu}</span>
-      </div>
-      <div className="detail-row">
-        <span className="label">
-          <PhoneIcon />
-          전화
-        </span>
-        <span>{bakery.phone}</span>
-      </div>
-      <div className="detail-row" style={{ borderBottom: 'none' }}>
-        <span className="label">
-          <ClockIcon />
-          몰리는 시간
-        </span>
-        <span>{bakery.busy}</span>
-      </div>
-      <div className="review-list">
-        {bakery.reviews.map((r) => (
-          <div className="review-item" key={r}>
-            “{r}”
-          </div>
-        ))}
-      </div>
+      {bakery.address && (
+        <div className="detail-row">
+          <span className="label">
+            <MapIcon />
+            주소
+          </span>
+          <span>{bakery.address}</span>
+        </div>
+      )}
+      {bakery.menu && (
+        <div className="detail-row">
+          <span className="label">
+            <PinIcon />
+            대표 빵
+          </span>
+          <span>{bakery.menu}</span>
+        </div>
+      )}
+      {bakery.busy && (
+        <div className="detail-row">
+          <span className="label">
+            <ClockIcon />
+            몰리는 시간
+          </span>
+          <span>{bakery.busy}</span>
+        </div>
+      )}
+      {bakery.closedDays && (
+        <div className="detail-row" style={{ borderBottom: 'none' }}>
+          <span className="label">휴무일</span>
+          <span>{bakery.closedDays}</span>
+        </div>
+      )}
+      {bakery.comment && (
+        <div className="review-list">
+          <div className="review-item">“{bakery.comment}”</div>
+        </div>
+      )}
     </div>
   );
 }

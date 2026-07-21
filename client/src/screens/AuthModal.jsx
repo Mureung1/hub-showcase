@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { allCategories } from '../data/bakeries.js';
+import { BREAD_CATEGORIES } from '../data/breadCategories.js';
 import { useAppStore } from '../store/useAppStore.js';
 import * as authApi from '../api/auth.js';
 import Modal from '../components/Modal.jsx';
@@ -135,7 +135,7 @@ export default function AuthModal() {
           </div>
           <div className="field">
             <label>빵 취향</label>
-            <CheckGroup options={allCategories} values={taste} onToggle={toggleTaste} />
+            <CheckGroup options={BREAD_CATEGORIES} values={taste} onToggle={toggleTaste} />
           </div>
           <div className="modal-actions">
             <button type="button" onClick={closeAuthModal}>

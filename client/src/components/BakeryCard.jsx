@@ -3,6 +3,7 @@ import { HeartIcon } from './icons.jsx';
 
 // 리스트 화면의 빵집 카드. components/에 위치 — 화면 간 재사용 가능한 순수 UI 조각.
 export default function BakeryCard({ bakery, selected, liked, dim, onToggleSelect, onToggleWishlist }) {
+  const subtitle = [bakery.menu, bakery.price].filter(Boolean).join(' · ');
   return (
     <div className={`list-card${selected ? ' selected' : ''}${dim ? ' dim' : ''}`}>
       <div className="thumb" />
@@ -11,9 +12,7 @@ export default function BakeryCard({ bakery, selected, liked, dim, onToggleSelec
           {bakery.name}
           <StatusBadge bakery={bakery} tag="status-chip" />
         </div>
-        <div className="menu">
-          {bakery.menu} · {'₩'.repeat(bakery.price)}
-        </div>
+        {subtitle && <div className="menu">{subtitle}</div>}
         <div className="card-actions">
           <button type="button" className="select-btn" onClick={onToggleSelect}>
             {selected ? '선택됨' : '선택하기'}

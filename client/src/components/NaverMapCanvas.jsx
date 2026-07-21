@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef, useState } from 'react';
 import { loadNaverMaps } from '../utils/loadNaverMaps.js';
 import { matchesSearch } from '../utils/search.js';
 import { bakeryStatus, statusMeta } from '../utils/bakeryStatus.js';
-import { daejeonCenter } from '../data/bakeries.js';
+import { daejeonCenter } from '../data/mapDefaults.js';
 import Mascot from './Mascot.jsx';
 
 const CLIENT_ID = import.meta.env.VITE_NAVER_MAP_CLIENT_ID;

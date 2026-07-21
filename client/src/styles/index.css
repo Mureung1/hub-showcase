@@ -377,6 +377,8 @@ main{ flex: 1; position: relative; }
 .detail-panel .empty .mascot-icon{ width:120px; height:120px; margin: 0 auto 14px; }
 .detail-panel .empty p{ color: var(--ink-soft); font-size: 0.85rem; line-height:1.6; }
 .detail-row{ display:flex; justify-content: space-between; align-items:center; gap:6px; font-size: 0.82rem; padding: 9px 0; border-bottom: 1px solid var(--border-soft); color: var(--ink-soft); }
+/* selection-card는 실데이터 유무에 따라 어떤 detail-row가 마지막일지 달라져서, 항상 마지막 것만 밑줄 제거 */
+.selection-card .detail-row:last-of-type{ border-bottom: none; }
 .detail-row .label{ display:flex; align-items:center; gap:6px; }
 .detail-row .label .icon{ width:14px; height:14px; color:var(--ink-faint); }
 .detail-row span:last-child{ color: var(--ink); font-weight:600; text-align: right; }
@@ -422,9 +424,6 @@ main{ flex: 1; position: relative; }
 .heart-btn:hover{ transform: scale(1.08); }
 .heart-btn.active{ background: var(--rank3-soft); color: var(--rank3); }
 .heart-btn.active .icon{ fill: var(--rank3); }
-
-.rating-row{ font-size: 0.85rem; color: #F2A93B; margin: 0 0 12px; letter-spacing: 1px; }
-.rating-row span{ color: var(--ink-soft); font-size: 0.72rem; margin-left: 5px; letter-spacing: normal; font-weight: 700; }
 
 .review-list{ margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
 .review-item{
@@ -473,16 +472,6 @@ main{ flex: 1; position: relative; }
   margin-bottom: 18px; padding: 14px 16px;
   border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-alt);
 }
-.filter-chips{ display: flex; flex-wrap: wrap; gap: 6px; }
-.filter-chip{
-  border: 1px solid var(--border); background: var(--surface); border-radius: 999px;
-  padding: 6px 12px; font-size: 0.76rem; font-weight: 600; color: var(--ink-soft);
-  transition: all .15s ease;
-}
-.filter-chip.active{ background: var(--ink); border-color: var(--ink); color: #fff; }
-.filter-group{ display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 3px; }
-.filter-group button{ border: none; background: none; border-radius: 999px; padding: 6px 12px; font-size: 0.76rem; font-weight: 600; color: var(--ink-soft); }
-.filter-group button.active{ background: var(--accent); color: #fff; }
 .open-toggle{ display: flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 600; color: var(--ink-soft); margin-left: auto; cursor: pointer; }
 .open-toggle input{ accent-color: var(--accent); width: 15px; height: 15px; }
 

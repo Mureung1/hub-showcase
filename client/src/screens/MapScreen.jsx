@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { bakeries } from '../data/bakeries.js';
 import { useAppStore } from '../store/useAppStore.js';
 import { requestCurrentLocation } from '../utils/geolocation.js';
 import NaverMapCanvas from '../components/NaverMapCanvas.jsx';
@@ -10,6 +9,7 @@ import { LocateIcon } from '../components/icons.jsx';
 
 export default function MapScreen() {
   const navigate = useNavigate();
+  const bakeries = useAppStore((s) => s.bakeries);
   const selectedIds = useAppStore((s) => s.selectedIds);
   const toggleSelect = useAppStore((s) => s.toggleSelect);
   const removeFromSelection = useAppStore((s) => s.removeFromSelection);
