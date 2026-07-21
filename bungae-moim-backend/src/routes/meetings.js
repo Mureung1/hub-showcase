@@ -2,7 +2,7 @@ const express = require('express');
 const requireAuth = require('../middleware/auth');
 const { validateCreateMeeting } = require('../utils/validators');
 const ApiError = require('../utils/apiError');
-const { createMeeting, listMeetings, getMeetingDetail, applyToMeeting } = require('../services/meetingService');
+const { createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation } = require('../services/meetingService');
 
 const router = express.Router();
 
@@ -93,6 +93,17 @@ router.post('/:id/apply', requireAuth, async (req, res, next) => {
     const id = parseMeetingId(req.params.id);
     const result = await applyToMeeting(id, req.session.userId);
     res.status(201).json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/meetings/:id/apply — 참여/신청 취소(F2, 로그인 필요)
+router.delete('/:id/apply', requireAuth, async (req, res, next) => {
+  try {
+    const id = parseMeetingId(req.params.id);
+    const result = await cancelParticipation(id, req.session.userId);
+    res.json({ data: result });
   } catch (err) {
     next(err);
   }

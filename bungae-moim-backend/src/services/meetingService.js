@@ -299,4 +299,50 @@ async function applyToMeeting(meetingId, userId) {
   });
 }
 
-module.exports = { createMeeting, listMeetings, getMeetingDetail, applyToMeeting, normalizeMeeting, PAGE_SIZE };
+// DELETE /api/meetings/:id/apply — 참여/신청 취소(F2).
+// confirmed/approved 취소만 신뢰도 -3(0 미만 clamp) + flash가 closed면 recruiting으로 재오픈.
+// 감점은 반드시 SQL 상대 갱신으로 한다 — 한 사용자가 다른 두 모임을 동시 취소하면 모임 행
+// 잠금이 users 행을 지켜주지 못해 JS 읽기-쓰기는 갱신이 유실된다.
+// 이미 cancelled/rejected거나 신청이 없으면 아무 것도 하지 않는다(이중취소 감점 방지).
+async function cancelParticipation(meetingId, userId) {
+  return withTransaction(async (client) => {
+    const meetingRes = await client.query('SELECT * FROM meetings WHERE id = $1 FOR UPDATE', [meetingId]);
+    if (meetingRes.rows.length === 0) {
+      throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
+    }
+    const meeting = normalizeMeeting(meetingRes.rows[0]);
+
+    const partRes = await client.query(
+      'SELECT status FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, userId]
+    );
+    const status = partRes.rows.length > 0 ? partRes.rows[0].status : null;
+    if (status === null || status === 'cancelled' || status === 'rejected') {
+      throw new ApiError('NOT_FOUND', '취소할 신청이 없습니다');
+    }
+
+    const wasConfirmed = status === 'confirmed' || status === 'approved';
+
+    await client.query(
+      "UPDATE meeting_participants SET status = 'cancelled' WHERE meeting_id = $1 AND user_id = $2",
+      [meetingId, userId]
+    );
+
+    if (wasConfirmed) {
+      await client.query(
+        'UPDATE users SET trust_score = GREATEST(trust_score - 3, 0) WHERE id = $1',
+        [userId]
+      );
+      // flash가 정원 마감(closed)이었다면 자리가 비므로 다시 모집 상태로.
+      if (meeting.type === 'flash' && meeting.status === 'closed') {
+        await client.query("UPDATE meetings SET status = 'recruiting' WHERE id = $1", [meetingId]);
+      }
+    }
+
+    return { status: 'cancelled' };
+  });
+}
+
+module.exports = {
+  createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation, normalizeMeeting, PAGE_SIZE,
+};
