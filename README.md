@@ -8,11 +8,15 @@
 못하는지 파악하고 그 이유에 맞는 첫 행동(마이크로태스크)을
 제안해 실제로 시작할 수 있도록 돕는 AI입니다.
 
+> 현재 1~3주차 개발 완료, 4주차(통합·배포·발표 준비) 진행 중입니다.
+
 ## 기획 문서
 
 - [기획서 (Wiki)](https://github.com/minsss42/hub/wiki)
 - [기획서 원본 (plan.md)](./docs/plan.md)
 - [화면 단위 와이어프레임 (wireframe.md)](./docs/wireframe.md)
+- [디자인 컨셉 (design-concept.md)](./docs/design-concept.md)
+- [유사 서비스 리서치 (design-research.md)](./docs/design-research.md)
 
 ## 이번 주 계획
 
@@ -33,11 +37,23 @@
 
 - 프로토타입 데모: 순수 HTML / CSS / JS (`docs/prototype.html`)
 - 실제 앱: Vite + React
-- 백엔드: Express (`server/`) — Prisma + Supabase(Postgres) 연결 완료, 할일/회피이유/이벤트/Push 구독 라우트 구현 중(그룹3까지 진행, Push 구독 스키마+등록 API 포함)
+- 백엔드: Express (`server/`) — 할일/회피이유/이벤트/Push 구독 라우트 구현 중(그룹3까지 진행, Push 구독 스키마+등록 API 포함)
+- DB: Supabase(Postgres) + Prisma
 
 ## 개발 환경 실행
 
+### 프론트
+
 ```bash
 npm install
+npm run dev
+```
+
+### 서버
+
+```bash
+cd server
+npm install
+cp .env.example .env
 npm run dev
 ```
