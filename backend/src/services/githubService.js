@@ -157,11 +157,13 @@ export async function searchRepos({ language, difficulty, minStars, perPage = 10
 //          issues: [{ number, title, url, labels }] }]
 // 일부 레포가 삭제·비공개 상태여도(부분 에러) 조회 가능한 나머지는 그대로 반환한다
 export async function fetchReposWithIssues(fullNames, issueLabels = null) {
-    if (fullNames.length === 0) {
+    // "owner/name" 형식이 아닌 값이 섞이면 GraphQL 별칭 쿼리 문자열이 깨지므로 사전에 걸러낸다
+    const validFullNames = fullNames.filter((fullName) => /^[^/]+\/[^/]+$/.test(fullName));
+    if (validFullNames.length === 0) {
         return [];
     }
 
-    const aliases = fullNames.map((fullName, index) => {
+    const aliases = validFullNames.map((fullName, index) => {
         const [owner, name] = fullName.split('/');
         return `r${index}: repository(owner: ${JSON.stringify(owner)}, name: ${JSON.stringify(name)}) { ...repoMeta }`;
     });
