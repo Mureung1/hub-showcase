@@ -119,6 +119,25 @@
   font-variant-numeric: tabular-nums;
 }
 
+.deal-detail__code {
+  margin: 16px 0 20px;
+  padding: 24px 0;
+  text-align: center;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+}
+
+.deal-detail__error {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--color-error);
+}
+
 .deal-detail__reserve {
   width: 100%;
   padding: 15px;

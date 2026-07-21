@@ -40,7 +40,7 @@
   - DoD: 반경 밖 딜이 목록에 나오지 않음
 - [x] **T-07 딜 상세 화면 (M3)** `client` `server` — [#8](https://github.com/HappyGogildong/hub/issues/8)
   - 수량 스테퍼(최대 = 남은 수량), 가격·픽업 시간
-- [ ] **T-08 예약 API — 원자적 재고 차감** `server` ★기술 셀링포인트
+- [x] **T-08 예약 API — 원자적 재고 차감** `server` ★기술 셀링포인트 — [#9](https://github.com/HappyGogildong/hub/issues/9)
   - `UPDATE deals SET remaining_qty = remaining_qty - $qty WHERE id = $id AND remaining_qty >= $qty` + 트랜잭션으로 reservations INSERT + 픽업코드 발급
   - DoD: 동시 요청 시 오버셀 0건(k6 검증은 T-14), 재고 부족 시 409 + `{ message }`
 - [ ] **T-09 픽업코드 화면 (M4) + 내 예약 목록** `client`
