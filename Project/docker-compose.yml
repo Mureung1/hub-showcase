@@ -13,6 +13,7 @@ services:
       - '${DB_PORT:-3306}:3306'
     volumes:
       - thingdong_mysql_data:/var/lib/mysql
+      - ./backend/docker/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
     healthcheck:
       test:
         [
