@@ -118,6 +118,7 @@ hub/
 │  ├─ .env.example # PORT, CORS_ORIGIN, (Supabase 예약)
 │  └─ src/{index.js, store.js}
 ├─ .agents/skills/ # Codex 스킬(feature-planner, feature-verifier 등)
+├─ .claude/skills/ # Claude Code 스킬(submit-daily-pr 등)
 └─ docs/           # plan, checklist, context, matching-criteria, reference …
 ```
 
