@@ -11,7 +11,14 @@ import "./NudgeModal.css";
 // checkpointLevel(1|3|null): 레벨이 1/3으로 처음 올라 회피 이유 재확인을 띄워야 하면
 // 그 레벨, 아니면 null. onReconfirmReason: 재확인에서 이유를 고르면 호출된다(실제 DB
 // 저장은 #22에서 연결 — 지금은 체크포인트를 접기만 한다).
-function NudgeModal({ task, onStart, onClose, checkpointLevel, onReconfirmReason }) {
+function NudgeModal({
+  task,
+  onStart,
+  onClose,
+  checkpointLevel,
+  onReconfirmReason,
+  completedTasks = [],
+}) {
   const meta = LEVEL_META[task.level];
 
   // 재확인에 응답하면 체크포인트를 접고 평소 넛지 메시지로 넘어간다.
@@ -49,7 +56,7 @@ function NudgeModal({ task, onStart, onClose, checkpointLevel, onReconfirmReason
 
         {task.level === 2 && <FreeTextPrompt />}
 
-        <NudgeMessage task={task} onStart={onStart} />
+        <NudgeMessage task={task} onStart={onStart} completedTasks={completedTasks} />
       </div>
     </div>
   );
