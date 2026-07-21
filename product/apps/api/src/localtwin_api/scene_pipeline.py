@@ -471,18 +471,63 @@ def run_command(
         )
 
 
+def block_scene_job(store: SceneJobStore, job: SceneJob, capability: ToolchainStatus) -> SceneJob:
+    job.status = "blocked"
+    job.blocked_reason = ", ".join(capability.blockers)
+    job.next_action = "Run this job on a CUDA worker with FFmpeg, Nerfstudio and at least 6GB VRAM."
+    store.set_stage(job, "preprocess", "blocked", job.blocked_reason)
+    return store.save(job)
+
+
+def run_pipeline_stage(
+    store: SceneJobStore,
+    job: SceneJob,
+    stage_name: str,
+    command: list[str],
+    directory: Path,
+    log_path: Path,
+    capability: ToolchainStatus,
+) -> None:
+    store.set_stage(job, stage_name, "running")
+    run_command(command, directory, log_path, capability.mode, capability.image or "")
+    store.set_stage(job, stage_name, "passed")
+
+
+def export_scene_asset(
+    store: SceneJobStore,
+    job: SceneJob,
+    directory: Path,
+    log_path: Path,
+    capability: ToolchainStatus,
+) -> None:
+    configs = sorted((directory / "training").rglob("config.yml"))
+    if not configs:
+        raise RuntimeError("Nerfstudio training finished without config.yml.")
+    export_dir = directory / "asset"
+    export_command = [
+        "ns-export",
+        "gaussian-splat",
+        "--load-config",
+        str(configs[-1]),
+        "--output-dir",
+        str(export_dir),
+    ]
+    job.commands.append(export_command)
+    run_pipeline_stage(store, job, "export", export_command, directory, log_path, capability)
+    ply_files = sorted(export_dir.rglob("*.ply"))
+    if not ply_files:
+        raise RuntimeError("Nerfstudio export finished without a PLY asset.")
+    final_asset = export_dir / "scene.ply"
+    if ply_files[0] != final_asset:
+        shutil.copy2(ply_files[0], final_asset)
+
+
 def run_scene_job(job_id: str, root: Path | None = None) -> SceneJob:
     store = SceneJobStore(root)
     job = store.load(job_id)
     capability = toolchain_status()
     if not capability.ready:
-        job.status = "blocked"
-        job.blocked_reason = ", ".join(capability.blockers)
-        job.next_action = (
-            "Run this job on a CUDA worker with FFmpeg, Nerfstudio and at least 6GB VRAM."
-        )
-        store.set_stage(job, "preprocess", "blocked", job.blocked_reason)
-        return store.save(job)
+        return block_scene_job(store, job, capability)
 
     directory = store.job_dir(job.id)
     log_path = directory / "pipeline.log"
@@ -491,54 +536,9 @@ def run_scene_job(job_id: str, root: Path | None = None) -> SceneJob:
     job.status = "running"
     store.save(job)
     try:
-        store.set_stage(job, "preprocess", "running")
-        run_command(
-            commands[0],
-            directory,
-            log_path,
-            capability.mode,
-            capability.image or "",
-        )
-        store.set_stage(job, "preprocess", "passed")
-
-        store.set_stage(job, "train", "running")
-        run_command(
-            commands[1],
-            directory,
-            log_path,
-            capability.mode,
-            capability.image or "",
-        )
-        configs = sorted((directory / "training").rglob("config.yml"))
-        if not configs:
-            raise RuntimeError("Nerfstudio training finished without config.yml.")
-        store.set_stage(job, "train", "passed")
-
-        export_dir = directory / "asset"
-        export_command = [
-            "ns-export",
-            "gaussian-splat",
-            "--load-config",
-            str(configs[-1]),
-            "--output-dir",
-            str(export_dir),
-        ]
-        job.commands.append(export_command)
-        store.set_stage(job, "export", "running")
-        run_command(
-            export_command,
-            directory,
-            log_path,
-            capability.mode,
-            capability.image or "",
-        )
-        ply_files = sorted(export_dir.rglob("*.ply"))
-        if not ply_files:
-            raise RuntimeError("Nerfstudio export finished without a PLY asset.")
-        final_asset = export_dir / "scene.ply"
-        if ply_files[0] != final_asset:
-            shutil.copy2(ply_files[0], final_asset)
-        store.set_stage(job, "export", "passed")
+        run_pipeline_stage(store, job, "preprocess", commands[0], directory, log_path, capability)
+        run_pipeline_stage(store, job, "train", commands[1], directory, log_path, capability)
+        export_scene_asset(store, job, directory, log_path, capability)
         job.status = "ready"
         job.asset_url = f"/api/v1/scenes/jobs/{job.id}/asset"
         return store.save(job)

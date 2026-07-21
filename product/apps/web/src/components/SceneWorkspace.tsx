@@ -12,43 +12,15 @@ import {
 } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
+import { sceneAssetUrl, type CaptureType } from "../features/scene/sceneApi";
+import { useSceneJob } from "../features/scene/useSceneJob";
+import { useSceneToolchain } from "../features/scene/useSceneToolchain";
 import { SplatViewer } from "./SplatViewer";
-
-type CaptureType = "images" | "video" | "equirectangular_images" | "equirectangular_video";
-type JobStatus = "uploaded" | "queued" | "running" | "blocked" | "failed" | "ready";
-
-type Toolchain = {
-  ready: boolean;
-  mode: "host" | "docker";
-  image: string | null;
-  gpu_name: string | null;
-  gpu_memory_mb: number | null;
-  minimum_gpu_memory_mb: number;
-  blockers: string[];
-};
-
-type SceneJob = {
-  id: string;
-  scene_name: string;
-  capture_type: CaptureType;
-  status: JobStatus;
-  blocked_reason: string | null;
-  next_action: string | null;
-  asset_url: string | null;
-  camera_pose: {
-    position: [number, number, number];
-    target: [number, number, number];
-    up: [number, number, number];
-  } | null;
-  files: Array<{ name: string; size_bytes: number; sha256: string }>;
-  stages: Array<{ name: string; status: string; message: string | null }>;
-};
 
 type SceneWorkspaceProps = {
   onClose: () => void;
 };
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 const sceneHours = ["10:00", "13:00", "15:00", "18:00"] as const;
 const stageLabels: Record<string, string> = {
   validate: "입력 검증",
@@ -57,24 +29,14 @@ const stageLabels: Record<string, string> = {
   export: "PLY 내보내기",
 };
 
-function apiUrl(path: string) {
-  return `${API_BASE}${path}`;
-}
-
-function assetUrl(path: string) {
-  return path.startsWith("http") ? path : apiUrl(path);
-}
-
 export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const [captureType, setCaptureType] = useState<CaptureType>("equirectangular_video");
   const [sceneName, setSceneName] = useState("관평동 점포 전면");
   const [sceneHour, setSceneHour] = useState<(typeof sceneHours)[number]>("13:00");
-  const [toolchain, setToolchain] = useState<Toolchain | null>(null);
-  const [job, setJob] = useState<SceneJob | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { toolchain, error: toolchainError } = useSceneToolchain();
+  const { error: jobError, job, retry, setError, submit: submitJob, submitting } = useSceneJob();
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -93,35 +55,6 @@ export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
     };
   }, [onClose]);
 
-  useEffect(() => {
-    let active = true;
-    fetch(apiUrl("/api/v1/scenes/toolchain"))
-      .then((response) => {
-        if (!response.ok) throw new Error();
-        return response.json() as Promise<Toolchain>;
-      })
-      .then((payload) => {
-        if (active) setToolchain(payload);
-      })
-      .catch(() => {
-        if (active) setError("GPU worker API가 연결되지 않았습니다.");
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!job || !["queued", "running"].includes(job.status)) return;
-    const timer = window.setInterval(() => {
-      fetch(apiUrl(`/api/v1/scenes/jobs/${job.id}`))
-        .then((response) => response.json() as Promise<SceneJob>)
-        .then(setJob)
-        .catch(() => setError("작업 상태를 확인할 수 없습니다."));
-    }, 2_000);
-    return () => window.clearInterval(timer);
-  }, [job]);
-
   const accept = useMemo(
     () => (captureType.endsWith("video") ? ".mp4,.mov,.mkv" : ".jpg,.jpeg,.png,.heic"),
     [captureType],
@@ -134,37 +67,15 @@ export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
       setError("촬영 파일을 선택해주세요.");
       return;
     }
-    setSubmitting(true);
-    setError(null);
     const form = new FormData();
     form.set("scene_name", sceneName);
     form.set("capture_type", captureType);
     form.set("auto_run", "true");
     Array.from(files).forEach((file) => form.append("files", file));
-    try {
-      const response = await fetch(apiUrl("/api/v1/scenes/jobs"), { method: "POST", body: form });
-      const payload = (await response.json()) as SceneJob | { detail?: string };
-      if (!response.ok || !("id" in payload)) {
-        throw new Error("detail" in payload ? payload.detail : "업로드에 실패했습니다.");
-      }
-      setJob(payload);
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "업로드에 실패했습니다.");
-    } finally {
-      setSubmitting(false);
-    }
+    await submitJob(form);
   }
 
-  async function retry() {
-    if (!job) return;
-    setError(null);
-    const response = await fetch(apiUrl(`/api/v1/scenes/jobs/${job.id}/run`), { method: "POST" });
-    if (!response.ok) {
-      setError("작업을 다시 시작할 수 없습니다.");
-      return;
-    }
-    setJob((await response.json()) as SceneJob);
-  }
+  const error = jobError ?? toolchainError;
 
   return (
     <div className="modal-backdrop scene-modal-backdrop" role="presentation" onMouseDown={onClose}>
@@ -192,7 +103,7 @@ export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
 
         {job?.status === "ready" && job.asset_url ? (
           <SplatViewer
-            assetUrl={assetUrl(job.asset_url)}
+            assetUrl={sceneAssetUrl(job.asset_url)}
             filterScaleOutliers
             initialCamera={job.camera_pose}
           />
