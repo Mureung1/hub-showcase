@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { Navigate, useNavigate, useOutletContext } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, Navigate, useNavigate, useOutletContext } from 'react-router-dom'
 import { createRecommendation } from '../api/index.js'
 import { buildDefaultPreferences } from '../utils/preferences.js'
 
@@ -34,17 +34,21 @@ const SEARCH_STEPS = [
 function IssueSearch() {
   const navigate = useNavigate()
   const { analysis, setRecommendation } = useOutletContext()
+  const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
     if (!analysis) return undefined
     let cancelled = false
-    createRecommendation(analysis.githubId, buildDefaultPreferences(analysis)).then(
-      (recommendation) => {
+    createRecommendation(analysis.githubId, buildDefaultPreferences(analysis))
+      .then((recommendation) => {
         if (cancelled) return
         setRecommendation(recommendation)
         navigate('/result')
-      },
-    )
+      })
+      .catch((error) => {
+        if (cancelled) return
+        setErrorMessage(error.message || '이슈를 찾지 못했어요. 잠시 후 다시 시도해주세요.')
+      })
     return () => {
       cancelled = true
     }
@@ -52,6 +56,18 @@ function IssueSearch() {
 
   if (!analysis) {
     return <Navigate to="/input" replace />
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="panel">
+        <h1 className="a-title">이슈를 찾지 못했어요</h1>
+        <p className="a-lead">{errorMessage}</p>
+        <Link to="/profile" className="btn btn-primary">
+          다시 시도하기
+        </Link>
+      </div>
+    )
   }
 
   return (

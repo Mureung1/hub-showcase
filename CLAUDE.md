@@ -12,6 +12,8 @@
 - 작업 로그: [docs/log.md](docs/log.md)
 - 디자인 시스템: [docs/design.md](docs/design.md)
 - 코드 컨벤션: [docs/conventions.md](docs/conventions.md)
+- 보안 규칙: [docs/security.md](docs/security.md)
+- 백엔드 테스트 규칙: [docs/testing.md](docs/testing.md)
 
 ## 기술 스택
 
@@ -29,6 +31,7 @@
 - `npm run preview` — 빌드 결과 미리보기
 - `npm run lint` — 린트 검사 (frontend/backend 전체)
 - `npm run dev:backend` — 백엔드 개발 서버 실행 (`/health`, `/api-docs`)
+- `npm run test:backend` — 백엔드 유닛·통합테스트 실행 (Vitest)
 
 ## 디렉토리 구조
 - `frontend/` — 프론트엔드 (React 19 + Vite, 독립 패키지)
@@ -46,6 +49,10 @@
 - 코드 작성·수정·리뷰는 [docs/conventions.md](docs/conventions.md)의 규칙(파일 구조·네이밍·레이어 패턴·에러 처리·스타일)을 따를 것
 - `code-convention` 스킬(`.claude/skills/code-convention/`)이 이 규칙을 적용하도록 구성되어 있음
 - 백엔드(Node.js + Express + Prisma)는 `routes → controllers → services` 레이어드 구조로 시작하고, DB 스키마는 `prisma/schema.prisma`에 정의할 것
+- 새 라우트/컨트롤러를 작성·수정하거나 배포 관련 설정(환경변수·CORS·헤더)을 다룰 때는 [docs/security.md](docs/security.md)의 규칙(예외 처리·입력 검증·배포 보안 설정)을 따를 것
+- `security-convention` 스킬(`.claude/skills/security-convention/`)이 이 규칙을 적용하도록 구성되어 있음
+- 새 서비스 함수·라우트를 추가하거나 회귀 테스트가 필요할 때는 [docs/testing.md](docs/testing.md)의 규칙(유닛/통합테스트 구분, GitHub mock·DB 실연결 원칙)을 따를 것
+- `backend-testing` 스킬(`.claude/skills/backend-testing/`)이 이 규칙을 적용하도록 구성되어 있음
 
 ## 작업 규칙
 - 작은 단위로 주기적으로 커밋을 해야한다.
@@ -53,6 +60,7 @@
 - 커밋단위당 항상 코드 리뷰를 진행한다.
 - 새 API 라우트를 구현·수정한 뒤에는 `api-smoke-test` 스킬(`.claude/skills/api-smoke-test/`)로 실제 기동·요청 검증을 거칠 것
 - 업스트림(connect-AIAgentChallenge-26-1/hub)에 PR을 올릴 때는 `pr-draft` 스킬(`.claude/skills/pr-draft/`)로 `.github/pull_request_template.md` 양식의 초안을 먼저 작성할 것
+- 작업 내용을 "자세히"·"하나하나" 설명해달라는 요청에는 `explain-work` 스킬(`.claude/skills/explain-work/`)로 기능 단위 뭘/왜/어떻게/더 나은 방법을 짚어 답할 것
 
 ## 작업 시 참고사항
 - 백엔드가 추가되면 이 파일에 백엔드 스택/명령어/디렉토리 구조를 함께 갱신할 것

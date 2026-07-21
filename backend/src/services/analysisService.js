@@ -4,18 +4,16 @@ import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('analysisService');
 
-// 분석 캐시 유효 시간 — 이내 재요청은 GitHub 호출 없이 저장된 결과 재사용 (openapi.yaml 명세)
+// 분석 캐시 TTL (openapi.yaml 명세)
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
-// 저장 분석의 수명 — GET 조회여도 이보다 오래된 기록은 낡은 프로필이므로 재분석한다
-// (배치 삭제 대신 조회 시점 검사 방식 — 2026-07-16 결정)
+// GET 조회 시 이보다 오래되면 재분석 (배치 삭제 대신 조회 시점 검사, 2026-07-16 결정)
 const STALE_MS = 7 * 24 * 60 * 60 * 1000;
 
 // skillLevel 판정 규칙 (docs/decisions.md 기록)
-// - advanced:     커밋 300+ 그리고 (PR 20+ 또는 기여 레포 3+) — 협업 신호는 둘 중 하나면 충분
-//                 (자기 레포 위주로 활동하면 contributedRepos가 0이라 AND 조건은 영원히 못 닿음)
-// - intermediate: 커밋 50+ 또는 PR 5+ 또는 타인 레포 기여 1+ (혼자서라도 개발 이력 있음)
-// - beginner:     그 외 (활동 없는 사용자 포함 — 명세의 빈 분석 케이스)
+// - advanced:     커밋 300+ AND (PR 20+ 또는 기여 레포 3+). AND로 묶으면 자기 레포 위주 활동자는 영영 도달 못 함
+// - intermediate: 커밋 50+ 또는 PR 5+ 또는 타인 레포 기여 1+
+// - beginner:     그 외
 function judgeSkillLevel({ commits, pullRequests, contributedRepos }) {
     if (commits >= 300 && (pullRequests >= 20 || contributedRepos >= 3)) {
         return 'advanced';
@@ -53,9 +51,8 @@ function toAnalysisResponse(record) {
     };
 }
 
-// 캐시 조회 — GitHub 로그인은 대소문자를 구분하지 않으므로 insensitive 비교로 찾는다
-// (kimsunho2000으로 분석한 뒤 KimSunHo2000으로 요청해도 같은 캐시를 써야 함)
-// DB 장애는 분석 실패로 번지지 않게 null(캐시 미스)로 처리한다 — 서버는 DB 없이도 동작해야 함
+// 캐시 조회. GitHub 로그인은 대소문자 무관이라 insensitive 비교
+// DB 장애 시 null(캐시 미스) 반환 — 서버는 DB 없이도 동작해야 함
 async function findCachedAnalysis(githubId) {
     try {
         return await prisma.analysis.findFirst({
@@ -67,7 +64,7 @@ async function findCachedAnalysis(githubId) {
     }
 }
 
-// 분석 결과 저장(upsert) — 저장 실패도 응답 실패로 번지지 않게 로그만 남긴다
+// 분석 결과 저장(upsert). 실패해도 로그만 남기고 응답엔 영향 없음
 async function saveAnalysis(githubId, data) {
     try {
         return await prisma.analysis.upsert({
@@ -81,8 +78,7 @@ async function saveAnalysis(githubId, data) {
     }
 }
 
-// GitHub ID → 프로필 분석 결과 (openapi.yaml Analysis 스키마)
-// 24시간 이내 캐시가 있으면 GitHub 호출 없이 재사용하고, 아니면 새로 분석해 캐시를 갱신한다
+// GitHub ID → 프로필 분석 결과. 24시간 캐시 있으면 재사용, 없으면 새로 분석 후 갱신
 export async function createAnalysis(githubId) {
     const cached = await findCachedAnalysis(githubId);
     if (cached && Date.now() - cached.analyzedAt.getTime() < CACHE_TTL_MS) {
@@ -99,7 +95,7 @@ export async function createAnalysis(githubId) {
         contributedRepos: profile.totals.contributedRepos,
     };
 
-    // 캐시 키는 GitHub이 돌려준 정식 표기(user.login)를 쓴다 — 입력 대소문자에 따라 행이 갈라지지 않게
+    // 캐시 키는 GitHub 정식 표기(user.login) 사용, 대소문자 다른 요청도 한 행으로 모음
     const analysisData = {
         languages: toLanguageRatios(profile.languageWeights),
         skillLevel: judgeSkillLevel(activitySummary),
@@ -117,10 +113,10 @@ export async function createAnalysis(githubId) {
         : toAnalysisResponse({ githubId: profile.githubId, ...analysisData });
 }
 
-// 저장된 분석 조회 (GET /api/analysis/:githubId — 프로필 화면 새로고침용)
-// - 이력 없음 → 404 ANALYSIS_NOT_FOUND (먼저 POST 필요)
-// - 7일 이내 → 저장본 그대로 반환 (GitHub 호출 없음)
-// - 7일 초과 → 낡은 프로필이므로 재분석해 갱신본 반환 (createAnalysis 경로 재사용)
+// 저장된 분석 조회 (GET /api/analysis/:githubId)
+// - 이력 없음 → 404 ANALYSIS_NOT_FOUND
+// - 7일 이내 → 저장본 그대로 반환
+// - 7일 초과 → 재분석 후 갱신본 반환
 export async function getAnalysis(githubId) {
     const record = await findCachedAnalysis(githubId);
     if (!record) {
@@ -130,7 +126,7 @@ export async function getAnalysis(githubId) {
         throw notFound;
     }
     if (Date.now() - record.analyzedAt.getTime() > STALE_MS) {
-        logger.info('저장 분석이 7일 경과 — 재분석 실행', { githubId: record.githubId, analyzedAt: record.analyzedAt });
+        logger.info('저장 분석 7일 경과, 재분석 실행', { githubId: record.githubId, analyzedAt: record.analyzedAt });
         return createAnalysis(githubId);
     }
     return toAnalysisResponse(record);

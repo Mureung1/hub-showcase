@@ -102,9 +102,9 @@ function Landing() {
           {/* 추천 미리보기 목업 카드 */}
           <div className="landing-mock">
             <div className="landing-mock-head">
-              <div className="landing-mock-avatar">H</div>
+              <div className="landing-mock-avatar">O</div>
               <div>
-                <div className="landing-mock-name">@sunho-kim 님을 위한 추천</div>
+                <div className="landing-mock-name">@octocat 님을 위한 추천</div>
                 <div className="landing-mock-sub">JavaScript · Python · 주니어</div>
               </div>
             </div>
