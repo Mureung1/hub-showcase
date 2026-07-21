@@ -1,10 +1,24 @@
 import { create } from 'zustand';
-import { DEFAULT_USER_LOCATION, DEFAULT_USER_LOCATION_LABEL } from '../data/bakeries.js';
+import { DEFAULT_USER_LOCATION, DEFAULT_USER_LOCATION_LABEL } from '../data/mapDefaults.js';
+import { fetchBakeries } from '../api/bakeries.js';
 
 // 전역 상태. CLAUDE.md 3번 결정사항(zustand) 반영.
 // 로그인/빵집 선택/찜/필터/모달/토스트 등 화면 간에 공유되는 상태를 여기서 관리한다.
-// TODO: user/savedCourses는 서버 연동(3주차) 시 api/auth.js, api/routes.js 호출로 교체.
+// TODO: savedCourses는 서버 연동(3주차 후반) 시 api/routes.js 호출로 교체.
 export const useAppStore = create((set, get) => ({
+  // ----- 빵집 목록(서버 실데이터) -----
+  bakeries: [],
+  bakeriesStatus: 'idle', // idle | loading | ready | error
+  loadBakeries: async () => {
+    set({ bakeriesStatus: 'loading' });
+    try {
+      const bakeries = await fetchBakeries();
+      set({ bakeries, bakeriesStatus: 'ready' });
+    } catch {
+      set({ bakeriesStatus: 'error' });
+    }
+  },
+
   // ----- 사용자 위치(경로 출발점 고정에 사용) -----
   userLocation: DEFAULT_USER_LOCATION,
   userLocationLabel: DEFAULT_USER_LOCATION_LABEL,
@@ -60,16 +74,11 @@ export const useAppStore = create((set, get) => ({
   saveCourse: (course) => set((state) => ({ savedCourses: [...state.savedCourses, course] })),
 
   // ----- 리스트 화면 검색/필터 -----
+  // 카테고리/가격대 필터는 뺐다 — 실제 빵집 데이터엔 그 필드가 없어서(수집 항목에 없음) 필터를 걸어도
+  // 아무것도 안 걸러지는 눈속임 UI가 되기 때문. 데이터에 해당 필드가 생기면 그때 다시 추가.
   searchQuery: '',
   setSearchQuery: (q) => set({ searchQuery: q }),
-  listFilters: { categories: new Set(), price: 0, openOnly: false, sort: 'name' },
-  toggleCategoryFilter: (cat) =>
-    set((state) => {
-      const next = new Set(state.listFilters.categories);
-      next.has(cat) ? next.delete(cat) : next.add(cat);
-      return { listFilters: { ...state.listFilters, categories: next } };
-    }),
-  setPriceFilter: (price) => set((state) => ({ listFilters: { ...state.listFilters, price } })),
+  listFilters: { openOnly: false, sort: 'name' },
   setOpenOnly: (openOnly) => set((state) => ({ listFilters: { ...state.listFilters, openOnly } })),
   setSort: (sort) => set((state) => ({ listFilters: { ...state.listFilters, sort } })),
 

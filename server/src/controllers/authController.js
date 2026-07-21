@@ -34,7 +34,7 @@ export async function signup(req, res, next) {
     const taste = Array.isArray(req.body.taste) ? req.body.taste : [];
     validateCredentials(username, password);
 
-    if (findUserByUsername(username)) {
+    if (await findUserByUsername(username)) {
       const err = new Error('이미 사용 중인 아이디예요.');
       err.status = 409;
       err.code = 'USERNAME_TAKEN';
@@ -42,8 +42,8 @@ export async function signup(req, res, next) {
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    const user = createUser(username, passwordHash);
-    if (taste.length) setTastes(user.id, taste);
+    const user = await createUser(username, passwordHash);
+    if (taste.length) await setTastes(user.id, taste);
 
     const token = issueToken(user);
     res.status(201).json({ success: true, data: { token, user: { id: user.username, taste } } });
@@ -58,7 +58,7 @@ export async function login(req, res, next) {
     const password = req.body.password || '';
     validateCredentials(username, password);
 
-    const user = findUserByUsername(username);
+    const user = await findUserByUsername(username);
     const passwordOk = await bcrypt.compare(password, user?.password_hash || DUMMY_HASH);
     if (!user || !passwordOk) {
       const err = new Error('아이디 또는 비밀번호가 올바르지 않아요.');
@@ -68,7 +68,7 @@ export async function login(req, res, next) {
     }
 
     const token = issueToken(user);
-    const taste = getTastesByUserId(user.id);
+    const taste = await getTastesByUserId(user.id);
     res.json({ success: true, data: { token, user: { id: user.username, taste } } });
   } catch (err) {
     next(err);

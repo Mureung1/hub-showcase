@@ -1,24 +1,24 @@
--- 빵지도 DB 스키마 (SQLite / better-sqlite3)
--- CLAUDE.md 6번 결정사항 반영: SQLite로 시작, 모델 레이어 분리로 추후 Postgres 전환 대비
+-- 빵지도 DB 스키마 (Postgres / Supabase)
+-- CLAUDE.md 6번 결정사항 반영: Supabase(Postgres)로 DB 구성, 인증(bcrypt+JWT)은 자체 Express API가 그대로 담당
 
 CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   username TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS bakeries (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
   address TEXT,
-  lat REAL,
-  lng REAL,
+  lat DOUBLE PRECISION,
+  lng DOUBLE PRECISION,
   signature_menu TEXT,
   comment TEXT,
   price_range TEXT,
-  open_hour REAL,
-  close_hour REAL,
+  open_hour DOUBLE PRECISION,
+  close_hour DOUBLE PRECISION,
   closed_days TEXT,
   photo_url TEXT,
   busy_hours TEXT
