@@ -1,19 +1,23 @@
 import { useEffect, useRef } from "react";
 import { INGREDIENT_CATEGORIES } from "../data/ingredientDefaults";
+import { getAllowedStorageOptions, getSuggestedShelfLifeDays, getSuggestedUseByDate, isCheckDateCategory } from "../data/shelfLifeRules";
+import { getTodayDateString } from "../utils/expiration";
+import { INGREDIENT_TAG_LABELS, INGREDIENT_TAGS } from "../../shared/ingredientTags";
 
 const categoryOptions = Object.entries(INGREDIENT_CATEGORIES);
 
-export default function IngredientForm({ formValues, errors, isEditing, isSubmitting, initialFocusField = "name", onChange, onBlur, onSubmit, onCancel }) {
+export default function IngredientForm({ formValues, errors, isEditing, isSubmitting, initialFocusField = "name", onChange, onBlur, onTagToggle, onApplySuggestedDate, onSubmit, onCancel }) {
   const nameRef = useRef(null);
   const quantityRef = useRef(null);
   const expiryRef = useRef(null);
-  const expiryDays = Number(formValues.expiryDays);
-  const ddayHint = formValues.expiryDays === "" || !Number.isInteger(expiryDays) || expiryDays < 0
-    ? "남은 일수를 입력하면 D-day로 표시됩니다."
-    : expiryDays === 0 ? "D-Day로 표시됩니다." : `D-${expiryDays}로 표시됩니다.`;
+  const allowedStorageOptions = getAllowedStorageOptions(formValues.category);
+  const suggestedDays = getSuggestedShelfLifeDays(formValues.category, formValues.storage);
+  const suggestedDate = getSuggestedUseByDate(formValues.category, formValues.storage);
+  const isSuggestedValue = formValues.expirySource === "suggested" && formValues.expirationDate === suggestedDate;
+  const recommendationLabel = isCheckDateCategory(formValues.category) ? "보유 상태 확인일" : "권장 사용 날짜";
 
   useEffect(() => {
-    const focusTargets = { name: nameRef, quantity: quantityRef, expiryDays: expiryRef };
+    const focusTargets = { name: nameRef, quantity: quantityRef, expirationDate: expiryRef };
     focusTargets[initialFocusField]?.current?.focus();
   }, [initialFocusField]);
 
@@ -51,43 +55,51 @@ export default function IngredientForm({ formValues, errors, isEditing, isSubmit
         {errors.quantity && <p className="field-error" id="quantity-error">{errors.quantity}</p>}
       </div>
 
-      <div className="field-group">
-        <label htmlFor="ingredient-expiry">소비기한</label>
-        <input
-          ref={expiryRef}
-          id="ingredient-expiry"
-          name="expiryDays"
-          type="number"
-          min="0"
-          step="1"
-          value={formValues.expiryDays}
-          onChange={onChange}
-          onBlur={onBlur}
-          placeholder="예: 5"
-          aria-invalid={Boolean(errors.expiryDays)}
-          aria-describedby={errors.expiryDays ? "expiry-days-error" : undefined}
-        />
-        <p className="field-hint">{ddayHint}</p>
-        {errors.expiryDays && <p className="field-error" id="expiry-days-error">{errors.expiryDays}</p>}
-      </div>
-
       <div className="form-split">
         <div className="field-group">
-          <label htmlFor="ingredient-storage">보관 위치</label>
-          <select id="ingredient-storage" name="storage" value={formValues.storage} onChange={onChange}>
-            <option value="fridge">냉장</option>
-            <option value="freezer">냉동</option>
-            <option value="room">실온</option>
-          </select>
-        </div>
-
-        <div className="field-group">
-          <label htmlFor="ingredient-category">분류</label>
+          <label htmlFor="ingredient-category">재료 분류</label>
           <select id="ingredient-category" name="category" value={formValues.category} onChange={onChange}>
             {categoryOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
           </select>
         </div>
+
+        <div className="field-group">
+          <label htmlFor="ingredient-storage">보관 방법</label>
+          <select id="ingredient-storage" name="storage" value={formValues.storage} onChange={onChange}>
+            {allowedStorageOptions.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
+          </select>
+        </div>
       </div>
+
+      <div className="field-group expiry-field">
+        <div className="field-label-row"><label htmlFor="ingredient-expiry">{recommendationLabel}</label>{isSuggestedValue && <span>자동 제안</span>}</div>
+        <input
+          ref={expiryRef}
+          id="ingredient-expiry"
+          name="expirationDate"
+          type="date"
+          min={getTodayDateString()}
+          value={formValues.expirationDate}
+          onChange={onChange}
+          onBlur={onBlur}
+          aria-invalid={Boolean(errors.expirationDate)}
+          aria-describedby={errors.expirationDate ? "expiration-date-error" : "expiration-date-hint"}
+        />
+        <div className="expiry-recommendation" id="expiration-date-hint"><p>{suggestedDays}일 기준으로 <strong>{suggestedDate}</strong>을 제안했어요.</p>{!isSuggestedValue && <button type="button" onClick={onApplySuggestedDate}>권장값 적용</button>}</div>
+        <p className="field-hint">재료 종류와 보관 방법을 기준으로 제안한 날짜예요. 포장지의 소비기한과 실제 상태를 우선해 주세요.</p>
+        {errors.expirationDate && <p className="field-error" id="expiration-date-error">{errors.expirationDate}</p>}
+      </div>
+
+      <fieldset className="tag-fieldset">
+        <legend>추천용 재료 태그</legend>
+        <p>분류에 맞춰 자동으로 제안했어요. 실제 재료 성격에 맞게 조정할 수 있습니다.</p>
+        <div className="tag-selector">
+          {INGREDIENT_TAGS.map((tag) => <label key={tag} className={formValues.tags.includes(tag) ? "selected" : ""}>
+            <input type="checkbox" checked={formValues.tags.includes(tag)} onChange={() => onTagToggle(tag)} />
+            <span>{INGREDIENT_TAG_LABELS[tag]}</span>
+          </label>)}
+        </div>
+      </fieldset>
 
       <div className="modal-actions">
         <button className="ghost-action" type="button" onClick={onCancel} disabled={isSubmitting}>취소</button>

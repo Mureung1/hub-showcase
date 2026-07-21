@@ -1,6 +1,7 @@
-import { CATEGORY_ICONS, DEFAULT_SHELF_LIFE_DAYS, INGREDIENT_CATEGORIES, LONG_TERM_CATEGORIES } from "../data/ingredientDefaults";
+import { CATEGORY_ICONS, INGREDIENT_CATEGORIES } from "../data/ingredientDefaults";
+import { isCheckDateCategory } from "../data/shelfLifeRules";
+import { sanitizeIngredientTags } from "../../shared/ingredientTags";
 import {
-  addDaysToDate,
   formatDday,
   getDaysRemaining,
   getExpirationLabel,
@@ -41,12 +42,8 @@ export function parseQuantityInput(input) {
 
 export function buildIngredientFromForm(formValues, existingIngredient = null) {
   const today = getTodayDateString();
-  const shelfLifeDays = Number(formValues.expiryDays);
   const quantity = parseQuantityInput(formValues.quantity);
-  const isLongTerm = LONG_TERM_CATEGORIES.has(formValues.category);
   const storage = formValues.storage;
-  const defaultShelfLife = DEFAULT_SHELF_LIFE_DAYS[formValues.category]?.[storage] ?? shelfLifeDays;
-  const effectiveShelfLife = Number.isInteger(shelfLifeDays) ? shelfLifeDays : defaultShelfLife;
 
   return {
     ...existingIngredient,
@@ -54,38 +51,48 @@ export function buildIngredientFromForm(formValues, existingIngredient = null) {
     name: formValues.name.trim(),
     category: formValues.category,
     subcategory: existingIngredient?.subcategory ?? null,
-    tags: existingIngredient?.tags ?? [],
+    tags: sanitizeIngredientTags(formValues.tags),
     ...quantity,
     storage,
-    expirationType: isLongTerm ? "longTerm" : "relative",
-    expirationDate: null,
-    shelfLifeDays: isLongTerm ? null : effectiveShelfLife,
+    expirationType: "absolute",
+    expirationDate: formValues.expirationDate,
+    shelfLifeDays: null,
     storedAt: today,
-    recommendedUseBy: storage === "freezer" && !isLongTerm ? addDaysToDate(today, effectiveShelfLife) : null,
-    nextCheckDate: isLongTerm ? addDaysToDate(today, 180) : null,
+    recommendedUseBy: null,
+    nextCheckDate: null,
     isStaple: ["grain", "noodle", "instant"].includes(formValues.category),
     isInstant: formValues.category === "instant",
     isPrepared: ["prepared", "frozenFood"].includes(formValues.category),
-    isLongTerm,
+    isLongTerm: isCheckDateCategory(formValues.category),
     icon: existingIngredient?.icon ?? CATEGORY_ICONS[formValues.category] ?? CATEGORY_ICONS.other,
     memo: existingIngredient?.memo ?? "",
   };
 }
 
 export function getIngredientExpirationPresentation(ingredient) {
-  if (ingredient.expirationType === "longTerm") {
+  const dueDate = getIngredientDueDate(ingredient);
+  const daysRemaining = getDaysRemaining(dueDate);
+  const status = getExpirationStatus(daysRemaining);
+
+  if (ingredient.expirationType === "longTerm" && !dueDate) {
     return {
       badge: "보유 확인",
       daysRemaining: null,
       status: "neutral",
       label: "장기 보관 식품",
-      sentence: "6개월 후 보유 상태를 확인해 주세요.",
+      sentence: "포장지 날짜와 보유 상태를 확인해 주세요.",
     };
   }
 
-  const dueDate = getIngredientDueDate(ingredient);
-  const daysRemaining = getDaysRemaining(dueDate);
-  const status = getExpirationStatus(daysRemaining);
+  if (isCheckDateCategory(ingredient.category)) {
+    return {
+      badge: formatDday(daysRemaining),
+      daysRemaining,
+      status,
+      label: daysRemaining === null ? "보유 상태 확인" : `${Math.max(0, daysRemaining)}일 후 확인`,
+      sentence: "포장지 날짜와 보유 상태를 우선 확인해 주세요.",
+    };
+  }
 
   if (ingredient.storage === "freezer" && ingredient.storedAt) {
     const storedDays = Math.max(0, -getDaysRemaining(ingredient.storedAt));

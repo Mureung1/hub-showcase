@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { z } from "zod";
 
 dotenv.config({
-  path: fileURLToPath(new URL("../.env", import.meta.url)),
+  path: fileURLToPath(new URL("../../.env", import.meta.url)),
   quiet: true,
 });
 
