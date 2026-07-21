@@ -61,35 +61,39 @@ export default function App() {
             collectibles: 'collectibles 🧱'
           };
 
-          // Defensive Image Mapping based on title keywords to ensure exact high-fidelity product photos
-          let image = d.imageUrl || '';
+          // Real high-fidelity product photos based on title keywords (Overriding dirty DB imageUrl)
+          let image = '';
           const lowerTitle = d.title.toLowerCase();
 
-          if (lowerTitle.includes('force 1') || lowerTitle.includes('air force')) {
+          if (lowerTitle.includes('adizero') || lowerTitle.includes('evo sl')) {
+            image = 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=600&q=80'; // Adidas Adizero White Runner
+          } else if (lowerTitle.includes('force 1') || lowerTitle.includes('air force')) {
             image = 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=600&q=80'; // Nike Air Force 1
           } else if (lowerTitle.includes('992')) {
-            image = 'https://images.unsplash.com/photo-1539185441755-769473a23570?w=600&q=80'; // NB 992 Core Grey
+            image = 'https://images.unsplash.com/photo-1539185441755-769473a23570?w=600&q=80'; // NB 992 Grey
           } else if (lowerTitle.includes('samba')) {
             image = 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=600&q=80'; // Adidas Samba
           } else if (lowerTitle.includes('kayano') || lowerTitle.includes('asics')) {
             image = 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=600&q=80'; // Asics Kayano
           } else if (lowerTitle.includes('xt-6') || lowerTitle.includes('salomon')) {
             image = 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&q=80'; // Salomon XT-6
+          } else if (lowerTitle.includes('mind 001') || lowerTitle.includes('mind')) {
+            image = 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&q=80'; // Nike Mind Black Sneaker
           } else if (lowerTitle.includes('oofos')) {
             image = 'https://images.unsplash.com/photo-1603252109303-2751441dd157?w=600&q=80'; // Oofos Slide
-          } else if (lowerTitle.includes('keyring') || lowerTitle.includes('plush')) {
+          } else if (lowerTitle.includes('keyring') || lowerTitle.includes('plush') || lowerTitle.includes('purin') || lowerTitle.includes('hanroro')) {
             image = 'https://images.unsplash.com/photo-1610085929035-7151cf5475c5?w=600&q=80'; // Keyring Plush Doll
-          } else if (lowerTitle.includes('card') || lowerTitle.includes('pokemon')) {
+          } else if (lowerTitle.includes('card') || lowerTitle.includes('pokemon') || lowerTitle.includes('spinner') || lowerTitle.includes('inferno')) {
             image = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&q=80'; // Pokemon Card
           } else if (lowerTitle.includes('bag') || lowerTitle.includes('tote')) {
             image = 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=600&q=80'; // Tote Bag
-          } else if (lowerTitle.includes('casio') || lowerTitle.includes('watch')) {
-            image = 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=600&q=80'; // Watch
-          } else if (lowerTitle.includes('t-shirt') || lowerTitle.includes('tee') || lowerTitle.includes('shirts')) {
-            image = 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&q=80'; // T-Shirt
+          } else if (lowerTitle.includes('casio') || lowerTitle.includes('ltp') || lowerTitle.includes('watch')) {
+            image = 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=600&q=80'; // Casio Watch
+          } else if (lowerTitle.includes('t-shirt') || lowerTitle.includes('tee') || lowerTitle.includes('shirts') || lowerTitle.includes('jersey') || lowerTitle.includes('jacket') || lowerTitle.includes('fruits')) {
+            image = 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600&q=80'; // T-Shirt/Apparel
           } else if (lowerTitle.includes('pants') || lowerTitle.includes('shorts')) {
             image = 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=600&q=80'; // Pants
-          } else if (lowerTitle.includes('popcorn')) {
+          } else if (lowerTitle.includes('popcorn') || lowerTitle.includes('lalasweet')) {
             image = 'https://images.unsplash.com/photo-1578849278619-e73505e9610f?w=600&q=80'; // Popcorn
           } else {
             image = d.imageUrl || 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&q=80'; // Premium Sneaker Default
