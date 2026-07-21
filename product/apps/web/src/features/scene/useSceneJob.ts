@@ -8,12 +8,14 @@ export function useSceneJob() {
   const [job, setJob] = useState<SceneJob | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const jobId = job?.id;
+  const jobStatus = job?.status;
 
   useEffect(() => {
-    if (!job || !POLLABLE_STATUSES.has(job.status)) return;
+    if (!jobId || !jobStatus || !POLLABLE_STATUSES.has(jobStatus)) return;
     const controller = new AbortController();
     const poll = () =>
-      void loadSceneJob(job.id, controller.signal)
+      void loadSceneJob(jobId, controller.signal)
         .then(setJob)
         .catch((pollError: unknown) => {
           if (!controller.signal.aborted) {
@@ -25,7 +27,7 @@ export function useSceneJob() {
       controller.abort();
       window.clearInterval(timer);
     };
-  }, [job?.id, job?.status]);
+  }, [jobId, jobStatus]);
 
   async function submit(form: FormData) {
     setSubmitting(true);

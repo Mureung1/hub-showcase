@@ -69,3 +69,4 @@ refactor(scene): isolate scene job client and pipeline stages
 - [x] Existing API response contract is preserved.
 - [x] Scene feature gate remains a 404 in the product environment.
 - [x] No Scene implementation files are included in the static web artifact by this change.
+- [ ] TEST-001 will repeat the public deployment smoke after all refactors are merged.
