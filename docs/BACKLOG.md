@@ -151,6 +151,31 @@
 
 ---
 
+## Issue 8. 자격증 언급 빈도·강조도 집계 (MyBatis 전환)
+
+**요구사항**
+Wiki_Home.md FR-3: 직무별 자격증 언급 빈도·강조도를 집계해 랭킹으로 제공. CLAUDE.md 기술 스택은 이 집계 쿼리를 MyBatis 몫으로 명시하지만, Issue 2에서는 임시로 QueryDsl로 구현돼 있었음 (이 백로그 표에도 "현재는 QueryDsl 단순 조회"라고 이미 기록돼 있었음). 사람인 API 승인 대기 중이라 외부 API와 무관한 이 작업을 진행.
+
+**범위 결정** — planner 서브에이전트 검토 후 사용자 승인:
+- QueryDsl은 원래 FR-5(진행 상황 대시보드, 아직 미구현)의 동적 필터 조회를 위해 예약된 기술 — 이번 변경은 "쿼리를 나누는" 게 아니라 "잘못 배치된 기술을 올바른 자리로 되돌리는" 것
+- **가중합 해석 범위**: `certification_mention`은 이미 (certification_id, job_title) 단위로 집계된 카운트만 저장하고, "공고 하나가 자격증을 어떤 강조도로 언급했는지"를 나타내는 원시 매핑 테이블은 없음 (FR-2 정규화 에이전트 미구현). 이번 슬라이스의 "집계"는 이미 합산된 카운트에 대한 join + 언급률(mentionRate) 산출까지이며, 문자 그대로의 공고 단위 원시 가중합(`SUM(CASE WHEN emphasis=...)`)은 FR-2가 원시 데이터를 만들 때로 남겨둠 — Issue 6에서 검증 안 된 선수조건 데이터를 지어내지 않기로 한 것과 같은 원칙
+- 강조도(ESSENTIAL/PREFERRED/LOW) 임계치 분류는 SQL로 옮기지 않고 Service에 유지 — Issue 1 완료 기준에 "강조도는 DB 컬럼으로 두지 않고 Service에서 계산"이 이미 확정돼 있어 재확인된 기존 결정
+
+**작업 단계**
+- [x] `mybatis-spring-boot-starter` 의존성 추가, `DevpulseApplication`에 `@MapperScan` 배선, `application.yml`에 `map-underscore-to-camel-case` 설정
+- [x] `repository/mybatis` 패키지 신설 — `CertificationMentionAggregateRow`(프로젝션 레코드), `CertificationMentionMapper`(`@Select` 기반 join + 언급률 계산 쿼리)
+- [x] `CertificationRankingService`를 Mapper 의존으로 전환 — 강조도 임계치 분류는 그대로 유지, 정렬은 SQL의 `ORDER BY`로 이관해 Service 로직 축소
+- [x] Issue 2의 QueryDsl 랭킹 조회 삭제 (`CertificationMentionQuerydslRepository`/`Impl`), `CertificationMentionRepository`는 순수 JPA로 축소
+- [x] Mapper 통합 테스트 3종 (`CertificationMentionMapperTest`: 반도체 품질관리 5건 정렬 확인, 전산직 정확한 mentionRate 확인, 존재하지 않는 직무 빈 리스트)
+
+**완료 기준**
+- [x] `./gradlew test` 전체 15개 테스트 통과 (pathfinder 12개 + MyBatis 3개)
+- [x] 리팩터링 전(QueryDsl)/후(MyBatis) API 응답 바이트 단위 동일 확인 (`반도체 품질관리`, `전산직` 두 jobTitle, curl diff로 검증) — jobTitle 누락 400, 존재하지 않는 직무 404도 동일 유지
+- [x] `./gradlew compileJava` 빌드 성공, 삭제된 QueryDsl 파일에 대한 잔여 참조 없음 (grep 확인)
+- [x] `QuerydslConfig`(JPAQueryFactory 빈)는 FR-5용으로 보존, 스키마(V1/V2) 변경 없음
+
+---
+
 ## 백로그 (다음 슬라이스 이후, 우선순위순)
 
 | Task | 설명 | 우선순위 | 예상 시점 | 상태 |
@@ -158,7 +183,7 @@
 | 워크넷/사람인 Collector | Feign 클라이언트, 채용공고 실제 수집 | P0 | 다음 슬라이스 | Todo |
 | 자격증 정규화 에이전트 | 룰 기반 1차 매칭 + 애매 항목 LLM 배치 정규화 | P0 | 다음 슬라이스 | Todo |
 | 강조도 분류 (필수/우대/낮음) | 문맥 기반 분류 로직으로 고도화 (현재는 단순 규칙) | P1 | 다음 슬라이스 | Todo |
-| MyBatis 집계 쿼리 | 언급 빈도·강조도 join 집계 → 랭킹 (현재는 QueryDsl 단순 조회) | P1 | 다음 슬라이스 | Todo |
+| MyBatis 집계 쿼리 | 언급 빈도·강조도 join 집계 → 랭킹 | P1 | - | Done (Issue 8) |
 | Java 그래프 알고리즘 (경로 최적화) | 선수조건 그래프 구성, 위상정렬, 순환탐지 | P1 | - | Done (Issue 6) |
 | Issue 7. 경로 최적화 DB/서비스/API 연동 | `certification_prerequisite` 테이블, 엔티티, `CertificationPathService`, `CertificationPathController` — pathfinder 결과를 실제 DB 데이터와 연결 | P1 | 다음 슬라이스 | Todo |
 | Kafka 파이프라인 분리 | 수집→정규화→집계 비동기화 (동기 흐름 검증 후) | P2 | 추후 | Todo |

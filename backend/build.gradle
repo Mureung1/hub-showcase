@@ -29,6 +29,7 @@ dependencies {
 	implementation 'io.github.openfeign:feign-jackson:13.13'
 	implementation "com.querydsl:querydsl-jpa:${querydslVersion}:jakarta"
 	annotationProcessor "com.querydsl:querydsl-apt:${querydslVersion}:jakarta"
+	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.4'
 	annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
 	annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
 	runtimeOnly 'org.postgresql:postgresql'
