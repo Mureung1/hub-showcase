@@ -3,8 +3,8 @@
 https://docs.google.com/presentation/d/17vEP-xWjFfviHcAl_nzCyjVUmIHb9qRV/edit?usp=sharing&ouid=100790024314221882298&rtpof=true&sd=true
 #위키링크
 https://github.com/dabinnida/hub/wiki
-# 2주차 주간 계획 노션(3주차 수정 중)
-https://app.notion.com/p/2-39cd247dcc5480258a2ac59d134c8a29
+# 3주차 주간 계획
+[https://app.notion.com/p/2-39cd247dcc5480258a2ac59d134c8a29](https://app.notion.com/p/1f4d247dcc54809caae6de69d3d37c3f?source=copy_link)
 
 # about-me
 # AI Life Review - 기획 및 기술 설계
