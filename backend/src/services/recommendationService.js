@@ -56,7 +56,7 @@ function expandTopics(topics) {
 
 // 이슈 라벨 → 난이도 추정 (IssueCache.difficulty와 동일 규칙)
 // 입문 라벨이 최우선 — enhancement에 gfi가 같이 붙어 있으면 입문자용 기능 이슈이므로 easy
-function judgeDifficulty(labels) {
+export function judgeDifficulty(labels) {
     const lower = labels.map((label) => label.toLowerCase());
     if (lower.includes('good first issue')) {
         return 'easy';
@@ -68,7 +68,7 @@ function judgeDifficulty(labels) {
 }
 
 // 규칙 기반 매칭 점수 (0~100) — 기본 10점 + 근거별 가점, 상위 근거 2개로 추천 이유 문장을 만든다
-function scoreItem(repo, issueDifficulty, preferences, skillLevel) {
+export function scoreItem(repo, issueDifficulty, preferences, skillLevel) {
     const factors = [];
 
     // 비교는 소문자 정규화 — 검색(language qualifier)은 대소문자를 무시해 후보가 나오는데
