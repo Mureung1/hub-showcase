@@ -4,6 +4,7 @@ import path from 'path';
 import { supabase } from '../lib/supabaseClient';
 import { buildAnalysisMarkdown } from '../lib/analysisMarkdown';
 import { runAnalysisPipeline } from '../lib/analysisPipeline';
+import { refineVerificationSummary } from '../lib/refineHypothesis';
 
 const router = Router();
 const ANALYSIS_REQUESTS_DIR = path.join(__dirname, '..', '..', '..', 'analysis_requests');
@@ -237,6 +238,23 @@ router.get(
       return res.status(404).json({ error: '가설을 찾을 수 없습니다.' });
     }
 
+    // 상세 화면 최초 조회 시 방문 표시를 남긴다(대시보드의 "검토 전" 태그를 지우는 데 사용).
+    // GET에 side effect를 두는 건 이례적이지만, "읽으면 읽음 처리"는 흔한 실용적 패턴이라
+    // 별도 PATCH 왕복 없이 여기서 처리한다. 이미 방문했으면 다시 쓰지 않는다.
+    if (!hypothesis.viewed_at) {
+      const { data: updated, error: viewError } = await supabase
+        .from('hypotheses')
+        .update({ viewed_at: new Date().toISOString() })
+        .eq('id', hid)
+        .select()
+        .single();
+      if (viewError) {
+        console.error('Failed to mark hypothesis as viewed:', viewError);
+      } else if (updated) {
+        hypothesis.viewed_at = updated.viewed_at;
+      }
+    }
+
     const { data: verificationResult, error: vrError } = await supabase
       .from('verification_results')
       .select('*')
@@ -260,11 +278,245 @@ router.get(
       return res.status(500).json({ error: '근거 태그 조회에 실패했습니다.' });
     }
 
+    // 반박/의견 리파인 대화 이력(Task 11). "판단 근거가 사슬로 남는다" 원칙에 따라
+    // 재방문 시에도 대화가 그대로 복원되도록 여기서 함께 반환한다.
+    const { data: refineChats, error: refineChatsError } = await supabase
+      .from('refine_chats')
+      .select('*')
+      .eq('hypothesis_id', hid)
+      .order('created_at', { ascending: true });
+
+    if (refineChatsError) {
+      console.error('Failed to fetch refine_chats:', refineChatsError);
+      return res.status(500).json({ error: '리파인 대화 조회에 실패했습니다.' });
+    }
+
     return res.status(200).json({
       hypothesis,
       verification_result: verificationResult ?? null,
       evidence_tags: evidenceTags ?? [],
+      refine_chats: refineChats ?? [],
     });
+  },
+);
+
+// POST /api/projects/:id/hypotheses/:hid/refine — 반박/의견 프롬프트 → AI 수정 가안.
+// 검증결과를 바로 바꾸지 않는다. refine_chats에 user/assistant 메시지를 남기고, 가안은
+// FE가 미리보기로만 보여준다. 실제 반영은 별도 /apply 호출에서만 일어난다.
+router.post(
+  '/:id/hypotheses/:hid/refine',
+  async (
+    req: Request<{ id: string; hid: string }, {}, { highlighted_text?: string; message?: string }>,
+    res: Response,
+  ) => {
+    const { id, hid } = req.params;
+    const { highlighted_text: highlightedText = '', message } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'message는 필수입니다.' });
+    }
+
+    const { data: hypothesis, error: hypothesisError } = await supabase
+      .from('hypotheses')
+      .select('*')
+      .eq('id', hid)
+      .eq('project_id', id)
+      .single();
+
+    if (hypothesisError || !hypothesis) {
+      return res.status(404).json({ error: '가설을 찾을 수 없습니다.' });
+    }
+
+    const { data: verificationResult, error: vrError } = await supabase
+      .from('verification_results')
+      .select('*')
+      .eq('hypothesis_id', hid)
+      .maybeSingle();
+
+    if (vrError || !verificationResult) {
+      return res.status(400).json({ error: '검증결과가 아직 없어 리파인할 수 없습니다.' });
+    }
+
+    const { data: evidenceTags, error: evidenceError } = await supabase
+      .from('evidence_tags')
+      .select('id, quote, speaker, badge_label')
+      .eq('hypothesis_id', hid);
+
+    if (evidenceError) {
+      console.error('Failed to fetch evidence_tags for refine:', evidenceError);
+      return res.status(500).json({ error: '근거 태그 조회에 실패했습니다.' });
+    }
+
+    let draft;
+    try {
+      draft = await refineVerificationSummary({
+        cause: hypothesis.cause,
+        effect: hypothesis.effect,
+        currentSummary: verificationResult.summary,
+        evidence: (evidenceTags ?? []).map((t) => ({
+          evidence_tag_id: t.id,
+          quote: t.quote,
+          speaker: t.speaker,
+          badge_label: t.badge_label,
+        })),
+        highlightedText,
+        userMessage: message,
+      });
+    } catch (err) {
+      console.error('Failed to generate refine draft:', err);
+      const errMessage = err instanceof Error ? err.message : 'AI 리파인 생성에 실패했습니다.';
+      return res.status(500).json({ error: errMessage });
+    }
+
+    const { data: chatRows, error: insertError } = await supabase
+      .from('refine_chats')
+      .insert([
+        { hypothesis_id: hid, role: 'user', message, diff_json: null },
+        {
+          hypothesis_id: hid,
+          role: 'assistant',
+          message: draft.reply,
+          diff_json: {
+            old_text: verificationResult.summary,
+            new_text: draft.new_summary,
+            new_citations: draft.new_citations,
+          },
+        },
+      ])
+      .select();
+
+    if (insertError || !chatRows) {
+      console.error('Failed to insert refine_chats:', insertError);
+      return res.status(500).json({ error: '리파인 대화 저장에 실패했습니다.' });
+    }
+
+    const userChat = chatRows.find((c) => c.role === 'user');
+    const assistantChat = chatRows.find((c) => c.role === 'assistant');
+
+    return res.status(200).json({ user_chat: userChat, assistant_chat: assistantChat });
+  },
+);
+
+// POST /api/projects/:id/hypotheses/:hid/refine/:chatId/apply — 미리보기 가안을 실제 검증결과에 반영.
+// 클라이언트가 보낸 텍스트를 신뢰하지 않고, DB에 저장된 diff_json을 다시 읽어 적용한다.
+router.post(
+  '/:id/hypotheses/:hid/refine/:chatId/apply',
+  async (req: Request<{ id: string; hid: string; chatId: string }>, res: Response) => {
+    const { hid, chatId } = req.params;
+
+    const { data: chat, error: chatError } = await supabase
+      .from('refine_chats')
+      .select('*')
+      .eq('id', chatId)
+      .eq('hypothesis_id', hid)
+      .single();
+
+    if (chatError || !chat) {
+      return res.status(404).json({ error: '리파인 대화를 찾을 수 없습니다.' });
+    }
+    if (chat.role !== 'assistant' || !chat.diff_json) {
+      return res.status(400).json({ error: '적용할 수 있는 가안이 아닙니다.' });
+    }
+    if (chat.applied_at) {
+      return res.status(400).json({ error: '이미 적용된 가안입니다.' });
+    }
+
+    const { new_text: newText, new_citations: newCitations } = chat.diff_json as {
+      new_text: string;
+      new_citations: unknown;
+    };
+
+    const { data: updatedResult, error: updateError } = await supabase
+      .from('verification_results')
+      .update({ summary: newText, citations: newCitations, updated_at: new Date().toISOString() })
+      .eq('hypothesis_id', hid)
+      .select()
+      .single();
+
+    if (updateError || !updatedResult) {
+      console.error('Failed to apply refine draft:', updateError);
+      return res.status(500).json({ error: '가안 적용에 실패했습니다.' });
+    }
+
+    const { error: markAppliedError } = await supabase
+      .from('refine_chats')
+      .update({ applied_at: new Date().toISOString() })
+      .eq('id', chatId);
+
+    if (markAppliedError) {
+      console.error('Failed to mark refine_chats as applied:', markAppliedError);
+    }
+
+    return res.status(200).json({ verification_result: updatedResult });
+  },
+);
+
+// 사용자가 확정하는 판단값. AI 제안값인 verification_status(유력함/근거 부족/수정 필요)와는 별개 컬럼이다.
+const ALLOWED_HYPOTHESIS_STATUSES = ['검토 전', '유지', '수정', '폐기'];
+
+interface PatchHypothesisBody {
+  status?: string;
+  cause?: string;
+  effect?: string;
+}
+
+// PATCH /api/projects/:id/hypotheses/:hid — 가설 판단(유지/수정/폐기) 확정 및/또는 원인·결과 인라인 수정.
+// status·cause·effect 중 있는 필드만 갱신한다(부분 갱신).
+// 원인/결과 수정은 현재 덮어쓰기다 — 이전 값을 hypothesis_versions에 append하는 버전 히스토리는
+// 아직 붙이지 않았다(Task 12에서 연결 예정). Task 10 완료 조건("인라인 수정 진입점")은 편집·저장
+// 동작 자체를 요구하며, 버전 보존은 별도 완료 조건이다.
+router.patch(
+  '/:id/hypotheses/:hid',
+  async (
+    req: Request<{ id: string; hid: string }, {}, PatchHypothesisBody>,
+    res: Response,
+  ) => {
+    const { id, hid } = req.params;
+    const { status, cause, effect } = req.body;
+
+    if (status === undefined && cause === undefined && effect === undefined) {
+      return res.status(400).json({ error: 'status, cause, effect 중 최소 하나는 있어야 합니다.' });
+    }
+
+    const updatePayload: Record<string, string> = {};
+
+    if (status !== undefined) {
+      if (!ALLOWED_HYPOTHESIS_STATUSES.includes(status)) {
+        return res.status(400).json({
+          error: `status는 ${ALLOWED_HYPOTHESIS_STATUSES.join(' / ')} 중 하나여야 합니다.`,
+        });
+      }
+      updatePayload.status = status;
+    }
+
+    if (cause !== undefined) {
+      if (!cause.trim()) {
+        return res.status(400).json({ error: 'cause는 빈 문자열일 수 없습니다.' });
+      }
+      updatePayload.cause = cause.trim();
+    }
+
+    if (effect !== undefined) {
+      if (!effect.trim()) {
+        return res.status(400).json({ error: 'effect는 빈 문자열일 수 없습니다.' });
+      }
+      updatePayload.effect = effect.trim();
+    }
+
+    const { data: hypothesis, error } = await supabase
+      .from('hypotheses')
+      .update(updatePayload)
+      .eq('id', hid)
+      .eq('project_id', id)
+      .select()
+      .single();
+
+    if (error || !hypothesis) {
+      // 존재하지 않거나 해당 프로젝트 소속이 아니면 갱신 대상이 없다.
+      return res.status(404).json({ error: '가설을 찾을 수 없습니다.' });
+    }
+
+    return res.status(200).json({ hypothesis });
   },
 );
 

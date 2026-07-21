@@ -197,6 +197,84 @@ const stage2ResponseSchema = {
 
 ---
 
+## 3단계 — 반박/의견 리파인 (Task 11, `refineHypothesis.ts`)
+
+가설 상세 화면에서 사용자가 검증결과 `summary` 문단의 일부를 하이라이트하고 반박/의견을 남기면,
+그 부분을 반영한 **수정 가안**을 만든다. 이것도 초안 제안일 뿐이며, 사용자가 "적용"을 눌러야 실제
+`verification_results`에 반영된다.
+
+### 입력 스키마
+
+```ts
+interface Stage3Input {
+  hypothesis: { cause: string; effect: string };
+  currentSummary: string; // 현재 verification_results.summary (수정 대상)
+  evidence: { evidence_tag_id: string; quote: string; speaker: string; badge_label: string }[];
+  highlightedText: string; // 사용자가 하이라이트한 부분(문맥 좁히기용)
+  userMessage: string; // 사용자의 반박/의견
+}
+```
+
+`evidence`는 2단계와 동일하게 해당 가설의 `evidence_tags`만 넘긴다 — 리파인도 근거 목록 밖의 내용을
+지어내면 안 되므로 2단계와 동일한 환각 방어 제약을 그대로 적용한다.
+
+### System Instruction
+
+```
+당신은 PM의 가설 검증 인터뷰 분석을 돕는 리파인 보조자입니다.
+
+역할: 사용자가 기존 검증결과 문단의 특정 부분에 동의하지 않아 의견을 남겼습니다.
+사용자의 의견을 반영해 검증결과 문단(summary)의 수정 가안을 작성합니다.
+이것도 초안일 뿐이며, 사용자가 "적용"을 눌러야 실제로 반영됩니다.
+
+규칙:
+1. 반드시 입력으로 주어진 evidence 목록 안에서만 근거를 인용하세요. 사용자의 의견이
+   근거 목록과 상충하더라도, 목록에 없는 사실을 새로 지어내지 마세요.
+2. evidence 목록에 사용자 의견을 뒷받침할 근거가 없다면, 그 사실을 reply에서
+   솔직하게 알리고 summary는 원래 뉘앙스를 유지하되 표현만 다듬으세요.
+3. 수정된 summary도 [1], [2] 참조 번호 규칙을 그대로 지켜야 하며, citations는
+   evidence 목록의 evidence_tag_id만 참조해야 합니다(2단계와 동일 제약).
+4. reply는 사용자에게 보내는 짧은 대화체 응답입니다. 무엇을 어떻게 바꿨는지,
+   또는 왜 바꾸지 않았는지 한두 문장으로 설명하세요.
+```
+
+### 출력 스키마 (`responseSchema`)
+
+```ts
+const stage3ResponseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    reply: { type: Type.STRING, description: '사용자에게 보여줄 대화체 응답' },
+    new_summary: { type: Type.STRING, description: '[n] 마커가 포함된 수정된 검증결과 문단' },
+    new_citations: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          marker: { type: Type.NUMBER },
+          evidence_tag_id: { type: Type.STRING },
+        },
+        required: ['marker', 'evidence_tag_id'],
+      },
+    },
+  },
+  required: ['reply', 'new_summary', 'new_citations'],
+};
+```
+
+`refine_chats.diff_json`에는 `{ old_text: currentSummary, new_text: new_summary, new_citations }`로 저장한다
+(테이블 코멘트의 `{old_text, new_text}` 최소 계약을 지키면서 적용에 필요한 citations만 추가).
+
+### 온도 / 폴백
+
+- **온도: 0.2** — 2단계와 동일한 이유(자연스러운 문장 + 판단 일관성).
+- 2단계와 동일하게 저장 전 `new_summary`의 `[n]` 마커 집합과 `new_citations.marker`가 일치하는지,
+  `new_citations.evidence_tag_id`가 입력 evidence 목록에 실재하는지 검증 후 불일치 citation은 제거한다.
+- JSON 파싱 실패 시 1회 재시도 후 실패 처리(공통 `geminiClient` 폴백 체인과는 별개로, 스키마 파싱
+  실패에 대한 재시도).
+
+---
+
 ## 수동 검증 (완료 조건)
 
 `backend/testStage1Classification.ts`로 화자 라벨이 포함된 샘플 전사문 1건 + 가설 2건(UUID)을 입력해

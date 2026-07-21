@@ -188,6 +188,31 @@
   word-break: break-word;
 }
 
+/* 헤더와 각 행이 동일한 컬럼 폭을 공유해야 정렬이 맞는다: 체크박스 / 상태 / 가설명(가변) / AI 권고 */
+.dashboard-header-row,
+.dashboard-row-main {
+  display: grid;
+  grid-template-columns: 28px 90px 1fr 260px;
+  gap: var(--space-md);
+  align-items: center;
+}
+
+.dashboard-header-row {
+  padding: 0 0 var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-xs);
+}
+
+.dashboard-header-cell {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-muted);
+}
+
+.dashboard-header-recommendation {
+  text-align: left;
+}
+
 .hypothesis-list {
   list-style: none;
   margin: 0;
@@ -195,21 +220,20 @@
 }
 
 .dashboard-row {
-  display: grid;
-  grid-template-columns: auto auto 1fr auto;
-  gap: var(--space-md);
-  align-items: center;
   padding: var(--space-md) 0;
   border-bottom: 1px solid var(--color-border);
-  cursor: pointer;
-  transition: background-color 0.15s ease;
 }
 
 .dashboard-row:last-child {
   border-bottom: none;
 }
 
-.dashboard-row:hover {
+.dashboard-row-main {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.dashboard-row-main:hover {
   background: var(--color-bg);
 }
 
@@ -222,6 +246,8 @@
 
 .badge {
   display: inline-block;
+  justify-self: center;
+  text-align: center;
   white-space: nowrap;
   border-radius: var(--radius-pill);
   padding: var(--space-xs) var(--space-sm);
@@ -249,19 +275,277 @@
   color: var(--btn-text-color);
 }
 
-.dashboard-hypothesis-name {
-  font-size: var(--font-size-body);
-  color: var(--color-text);
+/* 원인/결과를 "제목 + 박스" 형태로 표시. 대시보드 행과 상세 화면이 공유하는 구조. */
+.hypothesis-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) 0;
+}
+
+.hypothesis-index {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-muted);
+}
+
+.hypothesis-field-label {
+  display: block;
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  margin-bottom: 2px;
+}
+
+.hypothesis-field-value {
+  background: var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius-input);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-body);
+}
+
+.hypothesis-arrow {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-body);
 }
 
 .dashboard-recommendation {
   font-size: var(--font-size-caption);
   color: var(--color-text-muted);
-  text-align: right;
-  max-width: 280px;
+  text-align: left;
 }
 
-.dashboard-direction {
+/* 사용자 확정 판단 영역 — AI 권고(위 행)와 시각적으로 분리한다. */
+.dashboard-judgment {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.dashboard-unviewed-tag {
+  margin-right: auto;
+}
+
+.judgment-group {
+  display: inline-flex;
+  gap: var(--space-xs);
+}
+
+.judgment-btn {
+  background: var(--color-surface);
   color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: var(--space-xs) var(--space-md);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.judgment-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.judgment-btn.is-active {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  color: var(--btn-text-color);
+}
+
+.judgment-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── 가설 상세 화면 (Task 10) ── */
+
+.back-link {
+  background: transparent;
+  border: none;
+  color: var(--color-primary);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: var(--space-sm);
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.detail-hypothesis-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.detail-edit-form .field {
+  margin-bottom: var(--space-sm);
+}
+
+.detail-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+.detail-judgment {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-md);
+  margin-top: var(--space-md);
+  justify-content: flex-start;
+}
+
+.detail-empty {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-regular);
+}
+
+.detail-summary {
+  font-size: var(--font-size-body);
+  line-height: 1.7;
+  color: var(--color-text);
+}
+
+.citation-link {
+  display: inline;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.citation-link:hover {
+  color: var(--color-primary-dark);
+}
+
+.detail-block {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.detail-block-label {
+  display: block;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.detail-block p {
+  margin: 0;
+  color: var(--color-text);
+}
+
+/* 드로어는 비모달(non-modal)이다. 화면을 덮는 백드롭을 두면 드로어를 연 상태에서
+   본문 텍스트를 드래그할 수 없어 리파인 하이라이트가 막히므로, 백드롭 없이
+   '닫기' 버튼으로만 닫는다. */
+
+.side-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(360px, 90vw);
+  background: var(--color-surface);
+  box-shadow: -4px 0 16px rgba(31, 31, 31, 0.15);
+  padding: var(--space-lg);
+  z-index: 11;
+  overflow-y: auto;
+}
+
+.side-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.drawer-quote {
+  margin-top: var(--space-md);
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.drawer-meta {
+  margin-top: var(--space-sm);
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted);
+}
+
+/* ── 반박/의견 리파인 (Task 11) ── */
+
+.refine-highlight {
+  background: var(--color-accent-light);
+  border-radius: var(--radius-input);
+  padding: var(--space-sm) var(--space-md);
+  margin: var(--space-md) 0;
+}
+
+.refine-highlight-text {
+  margin: var(--space-xs) 0 var(--space-sm);
+  color: var(--color-primary-dark);
+  font-style: italic;
+}
+
+.refine-chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.refine-chat-bubble {
+  border-radius: var(--radius-input);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.refine-chat-bubble p {
+  margin: var(--space-xs) 0 0;
+}
+
+.refine-chat-user {
+  background: var(--color-bg);
+  align-self: flex-end;
+  max-width: 80%;
+}
+
+.refine-chat-assistant {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.refine-chat-role {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-muted);
+}
+
+.refine-draft {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px dashed var(--color-border);
+}
+
+.refine-draft-text {
+  background: var(--color-border);
+  border-radius: var(--radius-input);
+  padding: var(--space-sm) var(--space-md);
+  margin: var(--space-xs) 0 var(--space-sm) !important;
 }
