@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { CurationData, Paper } from '../types';
+import { CurationData, Paper, LibraryItem } from '../types';
 
 interface CurationWorkspaceProps {
   lang: 'KO' | 'EN';
   curationData: CurationData | null;
   userId: string;
+  savedPapers: LibraryItem[];
+  setSavedPapers: React.Dispatch<React.SetStateAction<LibraryItem[]>>;
 }
 
-function CurationWorkspace({ lang, curationData, userId }: CurationWorkspaceProps) {
+function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPapers }: CurationWorkspaceProps) {
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
 
   useEffect(() => {
@@ -20,6 +22,12 @@ function CurationWorkspace({ lang, curationData, userId }: CurationWorkspaceProp
 
   const handleSavePaper = async (paper: Paper): Promise<void> => {
     try {
+      // 이미 저장된 논문인지 중복 검사
+      if (savedPapers.some(item => item.paperId === paper.id)) {
+        alert('이미 서재에 보관된 논문입니다.');
+        return;
+      }
+
       // DB 인서트 에러 방지를 위해 insights 필드를 제외하고 스키마에 필요한 필드만 Payload 구성 (userId 병합)
       const { id, title, authors, channel, year, matchScore } = paper;
       const paperPayload = { id, title, authors, channel, year, matchScore, userId };
@@ -33,13 +41,38 @@ function CurationWorkspace({ lang, curationData, userId }: CurationWorkspaceProp
       });
 
       if (response.ok) {
-        alert('서재에 안전하게 보관되었습니다!');
+        const resJson = await response.json() as { status: string; data: LibraryItem };
+        if (resJson.status === 'success') {
+          // 시니어 피드백: 전체 목록 GET 대신 응답으로 받아온 DTO 객체를 append
+          setSavedPapers(prev => [...prev, resJson.data]);
+          alert('서재에 안전하게 보관되었습니다!');
+        }
       } else {
         alert('보관에 실패했습니다.');
       }
     } catch (error) {
       console.error('❌ Save paper error:', error);
       alert('보관에 실패했습니다.');
+    }
+  };
+
+  const handleRemovePaper = async (paperId: string): Promise<void> => {
+    try {
+      // 시니어 피드백: DELETE /api/library/:userId/:paperId RESTful 경로 변수 사용
+      const response = await fetch(`http://localhost:5000/api/library/${userId}/${paperId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        // 로컬 상태 즉시 갱신
+        setSavedPapers(prev => prev.filter(item => item.paperId !== paperId));
+        alert('서재에서 삭제되었습니다.');
+      } else {
+        alert('삭제에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('❌ Remove paper error:', error);
+      alert('삭제에 실패했습니다.');
     }
   };
 
@@ -154,14 +187,20 @@ function CurationWorkspace({ lang, curationData, userId }: CurationWorkspaceProp
           <div className="library-panel">
             <h4 className="panel-subtitle">📚 내 서재 보관함 (My Library)</h4>
             <ul className="library-list">
-              <li className="library-item">
-                <span className="library-paper-title">Lost in the Middle: How Language...</span>
-                <button className="remove-btn">제거</button>
-              </li>
-              <li className="library-item">
-                <span className="library-paper-title">Retrieval-Augmented Generation for...</span>
-                <button className="remove-btn">제거</button>
-              </li>
+              {savedPapers.length === 0 ? (
+                <p className="empty-result" style={{ fontSize: '11px' }}>보관된 논문이 없습니다.</p>
+              ) : (
+                savedPapers.map((item) => (
+                  <li key={item.id} className="library-item">
+                    <span className="library-paper-title" title={item.title}>
+                      {item.title}
+                    </span>
+                    <button className="remove-btn" onClick={() => handleRemovePaper(item.paperId)}>
+                      제거
+                    </button>
+                  </li>
+                ))
+              )}
             </ul>
           </div>
 

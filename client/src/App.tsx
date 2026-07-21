@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import GlobalHeader from './components/GlobalHeader'
 import ProfileBoard from './components/ProfileBoard'
 import CurationWorkspace from './components/CurationWorkspace'
-import { CurationData } from './types'
+import { CurationData, LibraryItem } from './types'
 
 function App() {
   const [lang, setLang] = useState<'KO' | 'EN'>('KO')
@@ -19,6 +19,25 @@ function App() {
     return id;
   });
 
+  const [savedPapers, setSavedPapers] = useState<LibraryItem[]>([])
+
+  // 초기 렌더링 시 내 서재 데이터 로드 (Path Variable 사용)
+  useEffect(() => {
+    if (!userId) return;
+    
+    fetch(`http://localhost:5000/api/library/${userId}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch library');
+        return res.json() as Promise<{ status: string; data: LibraryItem[] }>;
+      })
+      .then(resJson => {
+        if (resJson.status === 'success') {
+          setSavedPapers(resJson.data);
+        }
+      })
+      .catch(err => console.error('❌ Fetch library error:', err));
+  }, [userId]);
+
   return (
     <div className="app-container">
       {/* A. Global Header */}
@@ -30,7 +49,13 @@ function App() {
         <ProfileBoard lang={lang} setCurationData={setCurationData} />
         
         {/* Bottom Row: Results & Workspace (100%) */}
-        <CurationWorkspace lang={lang} curationData={curationData} userId={userId} />
+        <CurationWorkspace 
+          lang={lang} 
+          curationData={curationData} 
+          userId={userId} 
+          savedPapers={savedPapers}
+          setSavedPapers={setSavedPapers}
+        />
       </main>
     </div>
   )
