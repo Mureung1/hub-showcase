@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import { createStore, editStore, getStore } from "./stores.service";
+import { createStore, editStore, getStore, listStores } from "./stores.service";
 
 const createStoreSchema = z.object({
   name: z.string().trim().min(1, "매장명을 입력해주세요."),
@@ -76,6 +76,19 @@ export async function createStoreController(req: Request, res: Response) {
 
     throw error;
   }
+}
+
+export async function listStoresController(req: Request, res: Response) {
+  if (!req.authUser) {
+    res.status(401).json({
+      message: "인증 정보가 없습니다."
+    });
+    return;
+  }
+
+  const response = await listStores(req.authUser.id);
+
+  res.status(200).json(response);
 }
 
 export async function getStoreController(req: Request, res: Response) {

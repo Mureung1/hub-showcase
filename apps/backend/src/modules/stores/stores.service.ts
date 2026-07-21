@@ -1,8 +1,9 @@
-import { createStoreWithOwner, findStoreById, updateStore } from "./stores.repository";
+import { createStoreWithOwner, findStoreById, findStoresByUserId, updateStore } from "./stores.repository";
 import {
   CreateStoreInput,
   CreateStoreResponse,
   CreateStoreWithOwnerRecord,
+  StoreListItemResponse,
   StoreRecord,
   StoreResponse,
   UpdateStoreInput
@@ -41,10 +42,31 @@ function toCreateStoreResponse(record: CreateStoreWithOwnerRecord): CreateStoreR
   };
 }
 
+function toStoreListItemResponse(membership: Awaited<ReturnType<typeof findStoresByUserId>>[number]): StoreListItemResponse {
+  const store = toStoreResponse(membership.stores);
+
+  return {
+    ...store,
+    role: membership.role,
+    hourlyWage: membership.hourly_wage,
+    defaultWorkStartTime: membership.default_work_start_time,
+    defaultWorkEndTime: membership.default_work_end_time,
+    joinedAt: membership.joined_at
+  };
+}
+
 export async function createStore(input: CreateStoreInput) {
   const record = await createStoreWithOwner(input);
 
   return toCreateStoreResponse(record);
+}
+
+export async function listStores(userId: string) {
+  const memberships = await findStoresByUserId(userId);
+
+  return {
+    stores: memberships.map(toStoreListItemResponse)
+  };
 }
 
 export async function getStore(storeId: string) {
