@@ -59,6 +59,14 @@ async function insertMeeting(hostId, overrides = {}) {
   return id;
 }
 
+// 모임 참여자 1건을 원하는 status로 직접 INSERT한다.
+async function insertParticipant(meetingId, userId, status) {
+  await pool.query(
+    'INSERT INTO meeting_participants (meeting_id, user_id, status) VALUES ($1,$2,$3)',
+    [meetingId, userId, status]
+  );
+}
+
 describe('GET /api/meetings', () => {
   it('모임이 없으면 빈 목록과 page 정보를 반환한다', async () => {
     const res = await request(app).get('/api/meetings');
@@ -274,5 +282,28 @@ describe('GET /api/meetings', () => {
     const res = await request(app).get('/api/meetings?sort=popular');
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('목록 항목에 confirmedCount가 실린다(confirmed+approved만 셈)', async () => {
+    const host = await createHost('list-count-host');
+    const meetingId = await insertMeeting(host, { capacity: 4 });
+    const u1 = await createHost('list-count-1');
+    const u2 = await createHost('list-count-2');
+    const u3 = await createHost('list-count-3');
+    await insertParticipant(meetingId, u1, 'confirmed');
+    await insertParticipant(meetingId, u2, 'approved');
+    await insertParticipant(meetingId, u3, 'pending'); // 안 세어야 함
+
+    const res = await request(app).get('/api/meetings');
+    const item = res.body.data.items.find((m) => m.id === meetingId);
+    expect(item.confirmedCount).toBe(2);
+  });
+
+  it('참여자가 없는 모임의 confirmedCount는 0이다', async () => {
+    const host = await createHost('list-count-empty');
+    const meetingId = await insertMeeting(host);
+    const res = await request(app).get('/api/meetings');
+    const item = res.body.data.items.find((m) => m.id === meetingId);
+    expect(item.confirmedCount).toBe(0);
   });
 });

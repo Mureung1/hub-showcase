@@ -42,9 +42,10 @@ function normalizeMeeting(row) {
 
 // 목록/검색 응답용. openChatUrl은 참여자에게만 의미가 있고 공개 목록에 노출할
 // 이유가 없어 목록 항목에서는 제외한다 (상세/참여 API에서 별도로 다룬다).
+// confirmed_count는 normalizeMeeting을 타지 않으므로(고정 필드만 매핑) 여기서 명시적으로 붙인다.
 function normalizeMeetingListItem(row) {
   const { openChatUrl, ...rest } = normalizeMeeting(row);
-  return rest;
+  return { ...rest, confirmedCount: Number(row.confirmed_count) };
 }
 
 async function createMeeting(hostId, fields) {
@@ -132,7 +133,10 @@ async function listMeetings(filters = {}) {
   const offset = (page - 1) * PAGE_SIZE;
 
   const { rows } = await pool.query(
-    `SELECT * FROM meetings ${where}
+    `SELECT *,
+       (SELECT COUNT(*)::int FROM meeting_participants mp
+         WHERE mp.meeting_id = meetings.id AND mp.status IN ('confirmed', 'approved')) AS confirmed_count
+       FROM meetings ${where}
      ORDER BY ${orderClause}
      LIMIT ${PAGE_SIZE} OFFSET $${params.length + 1}`,
     [...params, offset]
