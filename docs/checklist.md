@@ -235,23 +235,34 @@
 ## 3주차 — 퀘스트 실행 및 보상 루프
 
 ### 오늘의 퀘스트 목록 조회
-- [ ] 등록된 오늘 퀘스트가 Firestore에서 조회되어 표시된다.
-- [ ] 조회 로딩·오류·빈 상태가 각각 구분되어 처리된다.
-- [ ] 앱 재실행 후에도 동일 목록이 유지된다.
+- [x] 등록된 오늘 퀘스트가 Firestore에서 조회되어 표시된다.
+      → `questListProvider`(`lib/providers/providers.dart`, `watchQuests` 스트림)를 `QuestListScreen`(`lib/features/quest/quest_list_screen.dart`)이 구독해 `QuestCard` 목록을 렌더한다. 테스트: `test/features/quest_list_screen_test.dart`(여러 퀘스트 표시).
+- [x] 조회 로딩·오류·빈 상태가 각각 구분되어 처리된다.
+      → `questsAsync.when`으로 loading=SkeletonBox×3 · error=ErrorView(재시도) · empty=EmptyView 3종을 구분 처리. 테스트: `test/features/quest_list_screen_test.dart`(로딩·오류·빈 3종).
+- [x] 앱 재실행 후에도 동일 목록이 유지된다.
+      → 구조적 보장: Firestore `watchQuests` 재구독으로 동일 데이터가 복원되고 저장 계층은 `fetchQuests`로 확인된다. ⚠️ 리터럴 앱 재시작 테스트는 없고 `watchQuests` 스트림 구조로 보장. 테스트: `test/features/quest_list_screen_test.dart`.
 
 ### 직접 퀘스트 등록 기능
-- [ ] AI 없이 제목·난이도를 직접 입력해 등록할 수 있다.
-- [ ] 빈 제목·난이도 미선택 시 등록이 막힌다.
-- [ ] 등록 즉시 목록과 저장소에 반영된다.
+- [x] AI 없이 제목·난이도를 직접 입력해 등록할 수 있다.
+      → `QuestCreateScreen`(`lib/features/quest/quest_create_screen.dart`, TextFormField + SegmentedButton 난이도 기본 normal + `createQuest`), 라우트 `/quest/new`. 테스트: `test/features/quest_create_screen_test.dart`.
+- [x] 빈 제목·난이도 미선택 시 등록이 막힌다.
+      → `_canSubmit`가 빈 제목 시 등록 버튼을 비활성화하고, SegmentedButton은 미선택이 구조적으로 불가하며 기본값 normal. 테스트: `test/features/quest_create_screen_test.dart`(제목 비면 비활성 · 공백만 비활성 · 기본값 보통).
+- [x] 등록 즉시 목록과 저장소에 반영된다.
+      → 등록은 `createQuest`로 저장하고 목록은 `watchQuests` 스트림으로 즉시 반영된다. 테스트: `test/features/quest_create_screen_test.dart`(fetchQuests로 저장 확인).
 
 ### 난이도 뱃지 표시
-- [ ] 각 퀘스트에 easy/normal/hard 뱃지가 일관된 색/라벨로 표시된다.
-- [ ] 난이도 변경 시 뱃지가 즉시 갱신된다.
+- [x] 각 퀘스트에 easy/normal/hard 뱃지가 일관된 색/라벨로 표시된다.
+      → `DifficultyPill`(`lib/core/widgets/difficulty_pill.dart`, 라벨 쉬움/보통/어려움, 난이도별 색 단일 정의)을 공통 사용. 노랑 규칙은 `test/theme/color_role_test.dart` allowlist로 강제. 테스트: `test/features/quest_list_screen_test.dart`.
+- [x] 난이도 변경 시 뱃지가 즉시 갱신된다.
+      → 공통 위젯 `DifficultyPill`이 상태 변경에 따라 재빌드된다. 테스트: `test/features/quest_split_screen_test.dart`(난이도 팝업 easy→hard 시 '• 어려움' 갱신).
 
 ### 예상 코인·XP 표시
-- [ ] 쉬움 코인3/XP5, 보통 코인5/XP10, 어려움 코인10/XP20이 정확히 표시된다.
-- [ ] 표시 색상이 코인·보상용 노랑 규칙을 따른다.
-- [ ] 난이도 변경 시 예상 보상 수치가 함께 바뀐다.
+- [x] 쉬움 코인3/XP5, 보통 코인5/XP10, 어려움 코인10/XP20이 정확히 표시된다.
+      → `kBaseRewards`(`lib/core/constants/reward_rules.dart`) + `RewardChip`(`lib/core/widgets/reward_chip.dart`). 테스트: `test/features/quest_list_screen_test.dart`(어려움) · `test/features/quest_create_screen_test.dart`(보통) · `test/features/quest_split_screen_test.dart`(쉬움).
+- [x] 표시 색상이 코인·보상용 노랑 규칙을 따른다.
+      → `RewardChip` 코인=노랑(`reward.coin`)·XP=그린(`primary`), `test/theme/color_role_test.dart`가 allowlist로 노랑 사용을 강제한다.
+- [x] 난이도 변경 시 예상 보상 수치가 함께 바뀐다.
+      → 난이도 변경 시 `RewardChip` 수치가 `kBaseRewards` 기준으로 갱신된다. 테스트: `test/features/quest_create_screen_test.dart`(난이도 변경 시 코인+10/XP+20 갱신) · `test/features/quest_split_screen_test.dart`.
 
 ### 퀘스트 완료 체크 기능
 - [x] 완료 체크 시 상태가 done으로 바뀌고 화면에 반영된다.
