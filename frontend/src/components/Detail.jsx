@@ -53,7 +53,7 @@ function Detail() {
       </div>
 
       <div className="d-body">
-        <div className="why" style={{ marginBottom: '20px' }}>
+        <div className="why why-detail">
           <span className="ic">↣</span>
           <div>
             <b>왜 나에게 맞나요?</b> {selectedItem.reason}

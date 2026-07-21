@@ -658,6 +658,9 @@ h1.hero {
   color: #1b4f9e;
   line-height: 1.5;
 }
+.why-detail {
+  margin-bottom: var(--space-5);
+}
 .why .ic {
   flex: none;
   width: 20px;
