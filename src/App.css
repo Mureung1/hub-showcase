@@ -1,6 +1,6 @@
 :root { --blue:#007aff; --green:#03c75a; --ink:#171719; --muted:#73767c; --line:rgba(0,0,0,.09); --surface:#fff; --soft:#f5f5f7; }
 * { box-sizing: border-box; }
-button,input { font: inherit; }
+button,input,textarea { font: inherit; }
 button,a { -webkit-tap-highlight-color: transparent; }
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 .ui-button { min-height:44px; padding:0 18px; border:0; border-radius:12px; background:var(--blue); color:#fff; cursor:pointer; font-weight:650; }
@@ -70,6 +70,16 @@ button,a { -webkit-tap-highlight-color: transparent; }
 .auth-form { display:grid; gap:16px; }.auth-form label { display:grid; gap:7px; }.auth-form label span { font-size:12px; font-weight:700; }.auth-form input { width:100%; height:46px; padding:0 13px; border:1px solid var(--line); border-radius:11px; outline:0; background:#fff; }.auth-form input:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(0,122,255,.1); }.auth-form .ui-button { margin-top:3px; }
 .auth-error { margin:0; padding:11px 12px; border-radius:10px; background:#fff1f0; color:#c9342f; font-size:12px; }.auth-helper { display:block; margin-top:16px; color:var(--muted); font-size:10px; text-align:center; }
 
+.review-write-page { min-height:100vh; padding-bottom:64px; background:var(--soft); color:var(--ink); font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+.review-write-header { position:sticky; z-index:10; top:0; display:grid; height:64px; grid-template-columns:1fr auto 1fr; align-items:center; padding:0 28px; border-bottom:1px solid var(--line); background:rgba(255,255,255,.9); backdrop-filter:blur(20px); }.review-write-header button { justify-self:start; border:0; background:transparent; color:var(--blue); cursor:pointer; }.review-write-header strong { font-size:15px; }
+.review-write-card { display:grid; width:min(680px,calc(100% - 32px)); gap:28px; margin:32px auto 0; padding:32px; border:1px solid var(--line); border-radius:24px; background:#fff; box-shadow:0 18px 52px rgba(0,0,0,.08); }
+.review-write-intro h1 { margin:12px 0 7px; font-size:30px; letter-spacing:-.04em; }.review-write-intro p,.receipt-step p,.review-text-step p { margin:0; color:var(--muted); font-size:13px; line-height:1.55; }
+.receipt-step,.review-text-step { display:grid; gap:16px; padding-top:24px; border-top:1px solid var(--line); }.receipt-step > div:first-child,.review-text-step > div:first-child { display:flex; gap:12px; align-items:flex-start; }.receipt-step h2,.review-text-step h2 { margin:0 0 5px; font-size:18px; }.step-number { display:grid; width:28px; height:28px; flex:0 0 auto; place-items:center; border-radius:50%; background:rgba(0,122,255,.1); color:var(--blue); font-size:12px; font-weight:800; }
+.receipt-upload { position:relative; display:grid; min-height:150px; place-items:center; overflow:hidden; border:1px dashed rgba(0,122,255,.35); border-radius:16px; background:rgba(0,122,255,.035); color:var(--blue); cursor:pointer; font-size:14px; font-weight:750; }.receipt-upload input { position:absolute; width:1px; height:1px; opacity:0; }.receipt-upload.has-preview { min-height:260px; background:#111; }.receipt-upload img { width:100%; max-height:380px; object-fit:contain; }.receipt-upload.has-preview > span { position:absolute; z-index:2; right:12px; bottom:12px; padding:8px 11px; border-radius:9px; background:rgba(0,0,0,.68); color:#fff; font-size:12px; }
+.review-text-step textarea { width:100%; min-height:180px; padding:15px; resize:vertical; border:1px solid var(--line); border-radius:14px; outline:0; color:var(--ink); line-height:1.65; }.review-text-step textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(0,122,255,.1); }.review-text-step > small { justify-self:end; color:var(--muted); font-size:11px; }
+.review-form-message { margin:0; padding:12px 14px; border-radius:11px; font-size:13px; line-height:1.5; }.review-form-message.is-error { background:#fff1f0; color:#c9342f; }.review-form-message.is-saved { background:rgba(3,199,90,.1); color:#02863c; }
+.review-write-actions { display:flex; justify-content:flex-end; gap:10px; }.review-write-actions > button:first-child { min-height:44px; padding:0 18px; border:0; border-radius:12px; background:var(--soft); color:var(--muted); cursor:pointer; font-weight:650; }
+
 @media (max-width:768px) {
   .top-nav { padding:0 16px; }.top-nav span { display:none; }
   .account-menu > span:nth-child(2),.account-menu button { display:none; }.account-avatar { display:grid !important; }
@@ -82,4 +92,5 @@ button,a { -webkit-tap-highlight-color: transparent; }
   .place-facts { grid-template-columns:1fr; }.place-facts div+div { border-top:1px solid var(--line); border-left:0; }
   .review-insight { padding:20px; }.review-section__header { align-items:flex-end; }.review-section__header .ui-button { min-width:96px; padding:0 12px; }
   .auth-card { padding:26px 20px; }.auth-brand h1 { font-size:26px; }.auth-back { top:18px; left:16px; }
+  .review-write-header { height:58px; padding:0 16px; }.review-write-card { gap:24px; margin-top:16px; padding:24px 18px; border-radius:20px; }.review-write-intro h1 { font-size:26px; }.review-write-actions { display:grid; grid-template-columns:1fr 1.5fr; }.review-write-actions button { padding:0 10px; }
 }

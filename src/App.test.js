@@ -57,3 +57,29 @@ test("업체 상세에서 지도로 돌아오면 이전 검색 결과를 복원�
   sessionStorage.removeItem("jigeum-review:map-screen");
   sessionStorage.removeItem("jigeum-review:selected-place");
 });
+
+test("로그인 사용자는 별점 없이 영수증 리뷰 작성 화면을 이용한다", async () => {
+  const originalFetch = global.fetch;
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ user: { id: "user-1", name: "테스터", email: "test@example.com" } }),
+  });
+  sessionStorage.setItem("jigeum-review:selected-place", JSON.stringify({
+    id: "place-1",
+    title: "테스트 카페",
+    category: "카페",
+    address: "서울 성동구",
+  }));
+  window.history.pushState({}, "", "/places/place-1/reviews/new");
+  render(<App />);
+
+  expect(await screen.findByRole("heading", { name: "테스트 카페" })).toBeInTheDocument();
+  expect(screen.getByLabelText("리뷰 내용")).toBeInTheDocument();
+  expect(screen.queryByLabelText(/별점/)).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "작성 내용 임시 저장" }));
+  expect(screen.getByRole("alert")).toHaveTextContent("영수증 이미지를 선택");
+
+  global.fetch = originalFetch;
+  sessionStorage.removeItem("jigeum-review:selected-place");
+});
