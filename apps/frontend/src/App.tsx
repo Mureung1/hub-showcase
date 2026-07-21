@@ -1,31 +1,43 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { GuestRoute, ProtectedRoute } from "./features/auth";
+import { GuestRoute, HomeRedirect, ProtectedRoute, RequireSelectedStore } from "./features/auth";
 import { LoginPage } from "./pages/LoginPage";
+import { MyWorkPage } from "./pages/MyWorkPage";
+import { NewSubstituteRequestPage } from "./pages/NewSubstituteRequestPage";
+import { NotificationsPage } from "./pages/NotificationsPage";
+import { ScheduleDatePage } from "./pages/ScheduleDatePage";
+import { SchedulePage } from "./pages/SchedulePage";
 import { SignupPage } from "./pages/SignupPage";
 import { StoreSelectPage } from "./pages/StoreSelectPage";
-import { WorkerDashboardPage } from "./pages/WorkerDashboardPage";
+import { SubstituteRequestsPage } from "./pages/SubstituteRequestsPage";
+import { WorkersPage } from "./pages/WorkersPage";
+import { ROUTES } from "./shared/routes";
 
 export function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path={ROUTES.home} element={<HomeRedirect />} />
+
         <Route element={<GuestRoute />}>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
+          <Route path={ROUTES.login} element={<LoginPage />} />
+          <Route path={ROUTES.signup} element={<SignupPage />} />
         </Route>
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Navigate to="/schedule" replace />} />
-          <Route path="/stores/select" element={<StoreSelectPage />} />
-          <Route path="/schedule" element={<WorkerDashboardPage />} />
-          <Route path="/schedule/:date" element={<WorkerDashboardPage />} />
-          <Route path="/substitute-requests" element={<WorkerDashboardPage />} />
-          <Route path="/workers" element={<WorkerDashboardPage />} />
-          <Route path="/my-work" element={<WorkerDashboardPage />} />
-          <Route path="/notifications" element={<WorkerDashboardPage />} />
+          <Route path={ROUTES.storesSelect} element={<StoreSelectPage />} />
+
+          <Route element={<RequireSelectedStore />}>
+            <Route path={ROUTES.schedule} element={<SchedulePage />} />
+            <Route path={ROUTES.scheduleDate} element={<ScheduleDatePage />} />
+            <Route path={ROUTES.substituteRequests} element={<SubstituteRequestsPage />} />
+            <Route path={ROUTES.newSubstituteRequest} element={<NewSubstituteRequestPage />} />
+            <Route path={ROUTES.workers} element={<WorkersPage />} />
+            <Route path={ROUTES.myWork} element={<MyWorkPage />} />
+            <Route path={ROUTES.notifications} element={<NotificationsPage />} />
+          </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
       </Routes>
     </BrowserRouter>
   );

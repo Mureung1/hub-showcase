@@ -8,6 +8,8 @@ import { z } from "zod";
 import { useAuth, useMe } from "../features/auth";
 import { createStore } from "../features/store";
 import { ApiError } from "../shared/api";
+import { ROUTES } from "../shared/routes";
+import { clearSelectedStoreId, getSelectedStoreId, setSelectedStoreId } from "../shared/utils";
 
 const createStoreSchema = z.object({
   name: z.string().trim().min(1, "매장명을 입력해주세요."),
@@ -20,8 +22,6 @@ const completeProfileSchema = z.object({
 
 type CreateStoreFormValues = z.infer<typeof createStoreSchema>;
 type CompleteProfileFormValues = z.infer<typeof completeProfileSchema>;
-
-const SELECTED_STORE_ID_KEY = "selectedStoreId";
 
 export function StoreSelectPage() {
   const { retryProfileCreation, session, signOut, user } = useAuth();
@@ -61,21 +61,21 @@ export function StoreSelectPage() {
       return;
     }
 
-    const selectedStoreId = localStorage.getItem(SELECTED_STORE_ID_KEY);
+    const selectedStoreId = getSelectedStoreId();
     const hasSelectedStore = me.stores.some((store) => store.id === selectedStoreId);
 
     if (selectedStoreId && !hasSelectedStore) {
-      localStorage.removeItem(SELECTED_STORE_ID_KEY);
+      clearSelectedStoreId();
     }
 
     if (!selectedStoreId && me.stores.length === 1) {
-      localStorage.setItem(SELECTED_STORE_ID_KEY, me.stores[0].id);
+      setSelectedStoreId(me.stores[0].id);
     }
   }, [me?.stores]);
 
   const handleStoreSelect = (storeId: string) => {
-    localStorage.setItem(SELECTED_STORE_ID_KEY, storeId);
-    navigate("/schedule");
+    setSelectedStoreId(storeId);
+    navigate(ROUTES.schedule);
   };
 
   const onProfileSubmit = handleProfileSubmit(async (values) => {
@@ -105,9 +105,9 @@ export function StoreSelectPage() {
         address: values.address || undefined
       });
 
-      localStorage.setItem(SELECTED_STORE_ID_KEY, response.store.id);
+      setSelectedStoreId(response.store.id);
       await queryClient.invalidateQueries({ queryKey: ["me", user?.id] });
-      navigate("/schedule", { replace: true });
+      navigate(ROUTES.schedule, { replace: true });
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "매장 생성에 실패했습니다.");
     }
