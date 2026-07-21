@@ -60,7 +60,6 @@
 }
 
 .secondaryButton,
-.primaryButton,
 .runButton,
 .tutorComposer button,
 .helpPanel button {
@@ -74,11 +73,7 @@
   text-decoration: none;
   font-size: 13px;
   font-weight: 900;
-  transition:
-    transform 160ms ease,
-    border-color 160ms ease,
-    background 160ms ease,
-    box-shadow 160ms ease;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
 .secondaryButton,
@@ -88,7 +83,6 @@
   color: #172033;
 }
 
-.primaryButton,
 .runButton,
 .tutorComposer button {
   border: 0;
@@ -97,7 +91,6 @@
 }
 
 .secondaryButton:hover,
-.primaryButton:hover,
 .runButton:hover,
 .tutorComposer button:hover,
 .helpPanel button:hover {
@@ -119,7 +112,6 @@
 }
 
 .secondaryButton:focus-visible,
-.primaryButton:focus-visible,
 .runButton:focus-visible,
 .tutorComposer button:focus-visible,
 .helpPanel button:focus-visible,
@@ -193,7 +185,8 @@
 .workspaceGrid {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(230px, 0.72fr) minmax(360px, 1.16fr) minmax(480px, 1.6fr);
+  grid-template-columns: minmax(360px, 1fr) minmax(480px, 2.2fr);
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 16px;
   align-items: stretch;
 }
@@ -201,9 +194,26 @@
 .curriculumPanel,
 .guidePanel {
   min-width: 0;
+  min-height: 0;
   display: grid;
   align-content: start;
   gap: 14px;
+}
+
+.curriculumPanel {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: stretch;
+  max-height: 250px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.guidePanel {
+  grid-column: 1;
+  grid-row: 1;
+  overflow: auto;
 }
 
 .railCard,
@@ -254,43 +264,69 @@
   white-space: nowrap;
 }
 
-.currentStepCard {
+.currentStepCard,
+.planOverview {
   display: grid;
   gap: 8px;
   margin-top: 14px;
-  border: 1px solid rgb(11 75 179 / 22%);
-  border-radius: 8px;
-  padding: 14px;
-  background: #f8fbff;
 }
 
 .currentStepCard strong,
-.stepItem strong,
-.tutorCard strong,
-.testTable span:nth-child(1) {
+.planOverview strong {
   color: #102346;
-  font-weight: 900;
+  font-size: 15px;
+  line-height: 1.35;
 }
 
 .currentStepCard p,
-.stepItem small,
+.planOverview p,
 .missionCard p,
+.tutorCard p,
 .explanationCard p,
 .practiceCard p,
 .hintCard p,
 .reviewNoteCard p,
-.tutorCard p,
 .resultHeader p,
 .helpPanel p {
   margin: 0;
-  color: #5d6b83;
+  color: #526173;
   font-size: 13px;
   line-height: 1.55;
 }
 
-.stepList {
+.planOverview dl {
   display: grid;
-  gap: 8px;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid #e6edf6;
+}
+
+.planOverview dt,
+.planOverview dd {
+  margin: 0;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.planOverview dt {
+  color: #667085;
+  font-weight: 900;
+}
+
+.planOverview dd {
+  color: #172033;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.stepList {
+  max-height: 340px;
+  overflow: auto;
+  display: grid;
+  gap: 10px;
   margin: 14px 0 0;
   padding: 0;
   list-style: none;
@@ -298,62 +334,68 @@
 
 .stepItem {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr);
+  grid-template-columns: 30px minmax(0, 1fr);
   gap: 10px;
-  align-items: start;
+  border: 1px solid #e1e8f2;
   border-radius: 8px;
   padding: 10px;
-  color: #26344d;
+  background: #fbfcfe;
 }
 
 .stepItem[data-state='current'] {
-  border: 1px solid rgb(11 75 179 / 28%);
-  background: #eef7ff;
+  border-color: #35c8f4;
+  background: #eefaff;
 }
 
 .stepItem[data-state='done'] {
-  background: #f0faf5;
+  border-color: #cfead8;
+  background: #f2fbf5;
 }
 
 .stepIndex {
   display: grid;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   place-items: center;
-  border: 1px solid #cfd9e8;
   border-radius: 999px;
-  background: #ffffff;
-  color: #667085;
+  background: #0b4bb3;
+  color: #ffffff;
   font-size: 12px;
   font-weight: 900;
 }
 
-.stepItem[data-state='current'] .stepIndex {
-  border-color: #0b4bb3;
-  background: #0b4bb3;
-  color: #ffffff;
+.stepItem strong,
+.stepItem small {
+  display: block;
 }
 
-.supportList {
+.stepItem strong {
+  color: #102346;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.stepItem p {
+  margin: 4px 0;
+  color: #526173;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.stepItem small {
+  color: #0b4bb3;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.missionCard,
+.explanationCard,
+.practiceCard,
+.hintCard,
+.reviewNoteCard,
+.sources {
   display: grid;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.supportList button {
-  min-height: 42px;
-  border: 1px solid #d9e2ee;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #26344d;
-  cursor: pointer;
-  text-align: left;
-  font-weight: 850;
-}
-
-.missionCard {
-  display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .criteriaList {
@@ -368,6 +410,12 @@
   color: #26344d;
   font-size: 13px;
   line-height: 1.5;
+}
+
+.criteriaList li::before {
+  color: #0b4bb3;
+  content: '✓ ';
+  font-weight: 900;
 }
 
 .tutorCard {
@@ -387,15 +435,6 @@
   color: #ffffff;
   font-size: 12px;
   font-weight: 900;
-}
-
-.explanationCard,
-.practiceCard,
-.hintCard,
-.reviewNoteCard,
-.sources {
-  display: grid;
-  gap: 10px;
 }
 
 .explanationCard h3,
@@ -422,6 +461,8 @@
 }
 
 .sources ul {
+  max-height: 150px;
+  overflow: auto;
   display: grid;
   gap: 7px;
   margin: 0;
@@ -430,6 +471,10 @@
   font-size: 13px;
   line-height: 1.5;
   list-style: none;
+}
+
+.sources li {
+  overflow-wrap: anywhere;
 }
 
 .tutorComposer {
@@ -450,7 +495,10 @@
 }
 
 .editorPanel {
+  grid-column: 2;
+  grid-row: 1;
   min-width: 0;
+  min-height: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
@@ -494,31 +542,231 @@
   min-width: 82px;
 }
 
+.editorBody {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(280px, 0.92fr);
+  overflow: hidden;
+}
+
+.previewPanel {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(220px, 1fr) auto;
+  overflow: hidden;
+  border-left: 1px solid #dbe3ee;
+  background: #f3f5f8;
+}
+
+.previewToolbar {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #dbe3ee;
+  padding: 8px 12px 8px 14px;
+  background: #ffffff;
+}
+
+.previewToolbar div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.previewToolbar span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.previewToolbar strong {
+  overflow: hidden;
+  color: #102346;
+  font-size: 13px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.previewActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.previewActions button {
+  min-height: 30px;
+  border: 1px solid #cfd9e8;
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #ffffff;
+  color: #172033;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.previewActions button:hover:not(:disabled),
+.previewActions button:focus-visible {
+  border-color: #35c8f4;
+  box-shadow: 0 0 0 3px rgb(53 200 244 / 18%);
+}
+
+.previewActions button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.previewViewport {
+  min-height: 0;
+  display: grid;
+  place-items: start center;
+  overflow: auto;
+  padding: 38px 28px;
+  background:
+    linear-gradient(#f8fafc 1px, transparent 1px) 0 0 / 100% 32px,
+    #f4f6f9;
+}
+
+.previewViewport[data-state='running'] {
+  background:
+    linear-gradient(#eef7ff 1px, transparent 1px) 0 0 / 100% 32px,
+    #f7fbff;
+}
+
+.previewViewport[data-state='failed'] {
+  background:
+    linear-gradient(#fff1e8 1px, transparent 1px) 0 0 / 100% 32px,
+    #fffaf6;
+}
+
+.previewAppCard {
+  width: min(100%, 560px);
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+  padding: 30px 26px;
+  background: #ffffff;
+  box-shadow: 0 16px 34px rgb(15 23 42 / 12%);
+}
+
+.previewAppCard h3 {
+  margin: 0 0 20px;
+  color: #030712;
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.previewAppCard button {
+  min-height: 28px;
+  border: 1px solid #6b7280;
+  border-radius: 3px;
+  padding: 2px 9px;
+  background: #f9fafb;
+  color: #030712;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.previewEmpty {
+  width: min(100%, 460px);
+  display: grid;
+  gap: 8px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 26px;
+  background: #ffffff;
+  text-align: center;
+}
+
+.previewEmpty strong {
+  color: #102346;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.previewEmpty p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.previewConsole {
+  max-height: 150px;
+  overflow: auto;
+  border-top: 1px solid #dbe3ee;
+  padding: 12px 14px;
+  background: #ffffff;
+}
+
+.previewConsole > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.previewConsole strong {
+  color: #102346;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.previewConsole span {
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: #eef2f7;
+  color: #526173;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.previewConsole[data-state='passed'] span {
+  background: #e8f8ef;
+  color: #087443;
+}
+
+.previewConsole[data-state='failed'] span {
+  background: #fff1e8;
+  color: #c24c00;
+}
+
+.previewConsole ol {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.previewConsole li,
+.previewConsole p {
+  margin: 0;
+  color: #334155;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.previewError {
+  margin-bottom: 8px !important;
+  color: #c24c00 !important;
+}
+
 .codeBlock {
   min-height: 420px;
   margin: 0;
-  overflow: auto;
-  padding: 26px 24px;
-  color: #dbe4ef;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-  font-size: 14px;
-  line-height: 1.75;
-}
-
-.codeBlock code {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  gap: 14px;
-  min-height: 25px;
   padding: 0;
-  background: transparent;
-  color: inherit;
-  white-space: pre-wrap;
-}
-
-.codeBlock code span {
-  color: #8795aa;
-  text-align: right;
+  background: #151a24;
 }
 
 .resultPanel {
@@ -575,7 +823,7 @@
 }
 
 .testTable {
-  overflow: hidden;
+  overflow: auto;
   border: 1px solid #e1e8f2;
   border-radius: 8px;
 }
@@ -617,6 +865,8 @@
 }
 
 .helpPanel ol {
+  max-height: 190px;
+  overflow: auto;
   display: grid;
   gap: 12px;
   margin: 0;
@@ -643,11 +893,17 @@
 
 @media (max-width: 1280px) {
   .workspaceGrid {
-    grid-template-columns: minmax(220px, 0.72fr) minmax(360px, 1fr);
+    grid-template-columns: minmax(230px, 0.78fr) minmax(360px, 1fr);
   }
 
   .editorPanel {
     grid-column: 1 / -1;
+  }
+
+  .curriculumPanel,
+  .guidePanel {
+    max-height: none;
+    overflow: visible;
   }
 }
 
@@ -681,7 +937,6 @@
   }
 
   .secondaryButton,
-  .primaryButton,
   .runButton,
   .tutorComposer button,
   .helpPanel button {
@@ -701,7 +956,6 @@
 
   .codeBlock {
     min-height: 340px;
-    padding: 20px 16px;
-    font-size: 13px;
+    padding: 0;
   }
 }
