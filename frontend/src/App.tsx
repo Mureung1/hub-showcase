@@ -58,7 +58,10 @@ export default function App() {
             streetwear: 'wear 👕',
             tcg: 'tcg 🃏',
             accessories: 'accessories 🎒',
-            collectibles: 'collectibles 🧱'          // Real high-fidelity product photos directly linked to KREAM's actual CDN (pstatic.net)
+            collectibles: 'collectibles 🧱'
+          };
+
+          // Real high-fidelity product photos directly linked to KREAM's actual CDN (pstatic.net)
           let rawImage = d.imageUrl || '';
           const lowerTitle = d.title.toLowerCase();
 
