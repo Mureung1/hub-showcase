@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
     <title>ABCDEF - AI 기반 맞춤형 수학 교육 플랫폼</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -10,81 +11,106 @@
     <!-- Login Page -->
     <div id="login-page" class="page active">
         <div class="container">
-            <div class="card" style="max-width: 400px; margin: 60px auto;">
-                <h1 class="card-title">ABCDEF</h1>
-                <p class="card-text" style="margin-bottom: 24px;">AI 기반 맞춤형 수학 교육 플랫폼</p>
-
-                <div class="form-group">
-                    <label class="form-label">선생님 로그인</label>
-                    <input
-                        type="text"
-                        id="teacher-name"
-                        class="form-input"
-                        placeholder="선생님 이름"
-                    >
-                </div>
-                <button class="btn btn-primary w-full" onclick="loginAsTeacher()">
-                    선생님으로 로그인
-                </button>
-
-                <div style="margin: 24px 0; text-align: center; color: var(--text-secondary);">
-                    또는
+            <div class="card login-card">
+                <div class="brand">
+                    <div class="brand-mark">∑</div>
+                    <div>
+                        <h1 class="brand-title">ABCDEF</h1>
+                        <p class="brand-subtitle">AI 기반 맞춤형 수학 교육 플랫폼</p>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">학생 로그인</label>
-                    <input
-                        type="text"
-                        id="student-name"
-                        class="form-input"
-                        placeholder="학생 이름"
-                    >
-                    <input
-                        type="text"
-                        id="classroom-id"
-                        class="form-input"
-                        placeholder="교실 ID (선생님이 알려준 ID)"
-                        style="margin-top: 8px;"
-                    >
-                    <p class="form-label" style="color: var(--text-secondary); margin-top: 8px; font-size: 11px;">
-                        💡 팁: 선생님 페이지에서 교실 ID를 확인하고 입력해주세요.
-                    </p>
+                <!-- Login role tabs -->
+                <div class="login-tabs">
+                    <button class="login-tab active" data-role="teacher" onclick="switchLoginTab('teacher')">
+                        선생님
+                    </button>
+                    <button class="login-tab" data-role="student" onclick="switchLoginTab('student')">
+                        학생
+                    </button>
                 </div>
-                <button class="btn btn-primary w-full" onclick="loginAsStudent()">
-                    학생으로 로그인
-                </button>
+
+                <!-- Teacher login form -->
+                <div id="teacher-login" class="login-form active">
+                    <div class="form-group">
+                        <label class="form-label">선생님 로그인</label>
+                        <input
+                            type="text"
+                            id="teacher-name"
+                            class="form-input"
+                            placeholder="선생님 이름"
+                        >
+                    </div>
+                    <button class="btn btn-primary w-full" onclick="loginAsTeacher()">
+                        선생님으로 로그인
+                    </button>
+                </div>
+
+                <!-- Student login form -->
+                <div id="student-login" class="login-form">
+                    <div class="form-group">
+                        <label class="form-label">학생 로그인</label>
+                        <input
+                            type="text"
+                            id="student-name"
+                            class="form-input"
+                            placeholder="학생 이름"
+                        >
+                        <input
+                            type="text"
+                            id="classroom-id"
+                            class="form-input"
+                            placeholder="교실 ID (선생님이 알려준 ID)"
+                            style="margin-top: 8px;"
+                        >
+                        <p class="form-label" style="color: var(--text-secondary); margin-top: 8px; font-size: 11px;">
+                            💡 팁: 선생님 페이지에서 교실 ID를 확인하고 입력해주세요.
+                        </p>
+                    </div>
+                    <button class="btn btn-primary w-full" onclick="loginAsStudent()">
+                        학생으로 로그인
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Teacher Dashboard Page -->
     <div id="teacher-page" class="page">
-        <div class="header">
-            <div class="dashboard-header">
-                <div>
-                    <h1 class="header h1" id="teacher-title">선생님 대시보드</h1>
-                    <p class="header-subtitle" id="classroom-name">수학 1반</p>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                        <p class="header-subtitle" style="color: var(--text-emphasis); margin: 0;">
-                            교실 ID: <span id="classroom-id-display" style="font-weight: 600;">-</span>
-                        </p>
-                        <button id="copy-btn" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; cursor: pointer;" onclick="copyClassroomId()">
-                            복사
-                        </button>
+        <header class="topbar">
+            <div class="topbar-inner">
+                <div class="topbar-brand">
+                    <div class="brand-mark sm">∑</div>
+                    <div class="topbar-context">
+                        <span class="topbar-title" id="teacher-title">선생님 대시보드</span>
+                        <span class="topbar-sub" id="classroom-name">수학 1반</span>
                     </div>
                 </div>
-                <button class="btn btn-secondary" onclick="logout()">로그아웃</button>
+                <nav class="nav-tabs">
+                    <button class="tab active" onclick="switchTab('dashboard')">대시보드</button>
+                    <button class="tab" onclick="switchTab('evaluation')">평가 관리</button>
+                    <button class="tab" onclick="switchTab('students')">학생 관리</button>
+                </nav>
+                <div class="topbar-actions">
+                    <div class="classroom-chip">
+                        <span class="chip-label">교실 ID</span>
+                        <span id="classroom-id-display">-</span>
+                        <button id="copy-btn" class="chip-copy" onclick="copyClassroomId()">복사</button>
+                    </div>
+                    <button class="btn btn-secondary" onclick="logout()">로그아웃</button>
+                </div>
             </div>
-            <div class="nav-tabs">
-                <button class="tab active" onclick="switchTab('dashboard')">대시보드</button>
-                <button class="tab" onclick="switchTab('evaluation')">평가 관리</button>
-                <button class="tab" onclick="switchTab('students')">학생 관리</button>
-            </div>
-        </div>
+        </header>
 
         <div class="container">
             <!-- Dashboard Tab -->
             <div id="dashboard-tab" class="tab-content active">
+                <!-- Hero -->
+                <div class="page-hero">
+                    <div class="eyebrow">Classroom</div>
+                    <h2 class="section-title">반 전체 현황</h2>
+                </div>
+
                 <!-- Statistics Cards -->
                 <div class="grid grid-cols-3">
                     <div class="stat-card">
@@ -102,7 +128,10 @@
                 </div>
 
                 <!-- Students Table -->
-                <div class="section-title">학생별 평가</div>
+                <div class="section-head">
+                    <div class="eyebrow">성취도</div>
+                    <h2 class="section-title">학생별 평가</h2>
+                </div>
                 <table class="table" id="students-table">
                     <thead>
                         <tr>
@@ -117,25 +146,37 @@
 
             <!-- Evaluation Tab -->
             <div id="evaluation-tab" class="tab-content">
-                <div class="section-title">평가 관리</div>
+                <div class="page-hero">
+                    <div class="eyebrow">평가</div>
+                    <h2 class="section-title">평가 관리</h2>
+                </div>
                 <div style="margin-bottom: 20px;">
                     <button class="btn btn-primary" onclick="addTestQuestion()">
                         새 질문 추가
                     </button>
                 </div>
-                <div class="section-title">등록된 질문</div>
+                <div class="section-head">
+                    <div class="eyebrow">목록</div>
+                    <h2 class="section-title">등록된 질문</h2>
+                </div>
                 <div id="questions-list"></div>
             </div>
 
             <!-- Students Tab -->
             <div id="students-tab" class="tab-content">
-                <div class="section-title">학생 관리</div>
+                <div class="page-hero">
+                    <div class="eyebrow">학생</div>
+                    <h2 class="section-title">학생 관리</h2>
+                </div>
                 <div style="margin-bottom: 20px;">
                     <button class="btn btn-primary" onclick="addTestStudent()">
                         새 학생 추가
                     </button>
                 </div>
-                <div class="section-title">등록된 학생</div>
+                <div class="section-head">
+                    <div class="eyebrow">목록</div>
+                    <h2 class="section-title">등록된 학생</h2>
+                </div>
                 <table class="table" id="all-students-table">
                     <thead>
                         <tr>
@@ -163,15 +204,20 @@
 
     <!-- Student Page -->
     <div id="student-page" class="page">
-        <div class="header">
-            <div class="dashboard-header">
-                <div>
-                    <h1 class="header h1">오늘의 수학 평가</h1>
-                    <p class="header-subtitle">문제를 풀고 피드백을 받아보세요</p>
+        <header class="topbar">
+            <div class="topbar-inner">
+                <div class="topbar-brand">
+                    <div class="brand-mark sm">∑</div>
+                    <div class="topbar-context">
+                        <span class="topbar-title">오늘의 수학 평가</span>
+                        <span class="topbar-sub">문제를 풀고 피드백을 받아보세요</span>
+                    </div>
                 </div>
-                <button class="btn btn-secondary" onclick="logout()">로그아웃</button>
+                <div class="topbar-actions">
+                    <button class="btn btn-secondary" onclick="logout()">로그아웃</button>
+                </div>
             </div>
-        </div>
+        </header>
 
         <div class="container">
             <!-- Progress Indicator -->
