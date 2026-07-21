@@ -1,6 +1,6 @@
-import type { RetrievalCatalogEntry } from './catalog'
-import type { EmbeddingProvider } from './embedding'
-import type { RetrievalExampleRepository } from './repository'
+import type { RetrievalCatalogEntry } from './catalog.js'
+import type { EmbeddingProvider } from './embedding.js'
+import type { RetrievalExampleRepository } from './repository.js'
 
 export type RetrievalIngestionDependencies = {
   readonly catalog: readonly RetrievalCatalogEntry[]

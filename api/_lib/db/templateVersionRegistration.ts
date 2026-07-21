@@ -1,4 +1,4 @@
-import type { TemplateVersionInput } from './repositories'
+import type { TemplateVersionInput } from './repositories.js'
 
 export type TemplateManifestRegistrationSource = {
   checksum: string

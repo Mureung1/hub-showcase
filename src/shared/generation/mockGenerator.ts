@@ -2,14 +2,14 @@ import {
   resolveGuidedContext,
   type ScenarioId,
   type SpeechStyleId,
-} from '../../entities/message'
+} from '../../entities/message/index.js'
 import {
   createGenerationResponse,
   isValidGenerationRequest,
   type GeneratedReply,
   type GenerationRequest,
   type GenerationResult,
-} from './contracts'
+} from './contracts.js'
 
 export type MockGenerationCase = 'normal' | 'delay' | 'error500' | 'error429'
 

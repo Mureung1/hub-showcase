@@ -1,12 +1,12 @@
-import { buildPromptWithReviewedExamples } from '../prompt/buildPrompt'
-import { parseCompletedStructuredOutput } from '../prompt/outputSchema'
+import { buildPromptWithReviewedExamples } from '../prompt/buildPrompt.js'
+import { parseCompletedStructuredOutput } from '../prompt/outputSchema.js'
 import {
   createUnconfiguredGenerationProvider,
   GenerationProviderError,
   type AiGenerationRequest,
   type GenerationProvider,
   type GenerationProviderOptions,
-} from './provider'
+} from './provider.js'
 
 const defaultModel = 'gemini-3.1-flash-lite'
 const generateContentEndpoint = (model: string) =>

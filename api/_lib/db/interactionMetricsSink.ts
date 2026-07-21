@@ -1,16 +1,16 @@
-import type { InteractionEvent } from '../../../src/shared/interaction/contracts'
-import type { InteractionEventSink } from '../interaction/handler'
+import type { InteractionEvent } from '../../../src/shared/interaction/contracts.js'
+import type { InteractionEventSink } from '../interaction/handler.js'
 import {
   createDatabase,
   databaseUrlFromEnvironment,
   type DatabaseEnvironment,
-} from './database'
-import type { BackgroundTaskScheduler } from './generationMetricsSink'
+} from './database.js'
+import type { BackgroundTaskScheduler } from './generationMetricsSink.js'
 import {
   createDataRepositories,
   createDrizzleDataWriters,
   type InteractionEventRepository,
-} from './repositories'
+} from './repositories.js'
 
 type DatabaseInteractionMetricsSinkDependencies = {
   repository: InteractionEventRepository

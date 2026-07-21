@@ -1,5 +1,5 @@
-import { retrievalCoverageReport, type RetrievalCoverageReport } from './coverage'
-import { reviewedRetrievalCatalog } from './catalog'
+import { retrievalCoverageReport, type RetrievalCoverageReport } from './coverage.js'
+import { reviewedRetrievalCatalog } from './catalog.js'
 
 export type RankingEvaluationCase = {
   readonly caseId: string

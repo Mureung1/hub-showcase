@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { relationshipRules } from './relationshipRules'
-import { situationRules } from './situationRules'
+import { relationshipRules } from './relationshipRules.js'
+import { situationRules } from './situationRules.js'
 
 describe('prompt rules', () => {
   it('4개 관계 규칙을 모두 제공하고 관계별 말투 하한선을 유지한다', () => {

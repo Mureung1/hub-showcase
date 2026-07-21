@@ -1,2 +1,2 @@
-export * from './contracts'
-export * from './mockGenerator'
+export * from './contracts.js'
+export * from './mockGenerator.js'

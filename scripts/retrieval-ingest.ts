@@ -1,10 +1,10 @@
 import { config } from 'dotenv'
-import { createDatabase } from '../api/_lib/db/database'
-import { reviewedRetrievalCatalog } from '../api/_lib/retrieval/catalog'
-import { ingestReviewedRetrievalCatalog } from '../api/_lib/retrieval/ingestion'
-import { createDrizzleRetrievalExampleRepository } from '../api/_lib/retrieval/repository'
-import { createVoyageEmbeddingProvider } from '../api/_lib/retrieval/voyageEmbeddingProvider'
-import { retrievalIngestConfiguration } from './retrievalIngestEnvironment'
+import { createDatabase } from '../api/_lib/db/database.js'
+import { reviewedRetrievalCatalog } from '../api/_lib/retrieval/catalog.js'
+import { ingestReviewedRetrievalCatalog } from '../api/_lib/retrieval/ingestion.js'
+import { createDrizzleRetrievalExampleRepository } from '../api/_lib/retrieval/repository.js'
+import { createVoyageEmbeddingProvider } from '../api/_lib/retrieval/voyageEmbeddingProvider.js'
+import { retrievalIngestConfiguration } from './retrievalIngestEnvironment.js'
 
 config({ path: '.env.local', quiet: true })
 

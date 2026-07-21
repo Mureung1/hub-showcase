@@ -1,4 +1,4 @@
-import type { PurposeId } from '../../../src/entities/message'
+import type { PurposeId } from '../../../src/entities/message/index.js'
 
 export const situationRules: Record<PurposeId, string> = {
   ask: '부탁의 대상과 원하는 행동을 분명히 쓰되, 상대가 거절하거나 조정할 여지를 없애지 않는다.',

@@ -1,5 +1,5 @@
-import { parseInteractionEvent, type InteractionEvent } from '../../../src/shared/interaction/contracts'
-import type { RateLimiter } from '../generation/rateLimiter'
+import { parseInteractionEvent, type InteractionEvent } from '../../../src/shared/interaction/contracts.js'
+import type { RateLimiter } from '../generation/rateLimiter.js'
 
 export type InteractionEventSink = {
   record: (event: InteractionEvent) => void

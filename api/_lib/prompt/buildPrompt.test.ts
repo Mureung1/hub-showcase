@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { AiGenerationRequest } from '../generation/provider'
-import { buildPrompt, escapeXmlText } from './buildPrompt'
-import type { PromptExampleSet } from './examples'
-import { generatedReplyOutputConfig } from './outputSchema'
+import type { AiGenerationRequest } from '../generation/provider.js'
+import { buildPrompt, escapeXmlText } from './buildPrompt.js'
+import type { PromptExampleSet } from './examples.js'
+import { generatedReplyOutputConfig } from './outputSchema.js'
 
 const professorExamples: readonly PromptExampleSet[] = [
   {

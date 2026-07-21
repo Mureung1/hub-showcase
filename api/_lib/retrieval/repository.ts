@@ -1,11 +1,11 @@
 import { and, asc, cosineDistance, eq, sql } from 'drizzle-orm'
-import type { Mode, PurposeId, ScenarioId } from '../../../src/entities/message'
-import type { DabnyangiDatabase } from '../db/database'
+import type { Mode, PurposeId, ScenarioId } from '../../../src/entities/message/index.js'
+import type { DabnyangiDatabase } from '../db/database.js'
 import {
   retrievalExamples,
   type NewRetrievalExampleRow,
-} from '../db/schema'
-import { validateEmbedding } from './embedding'
+} from '../db/schema.js'
+import { validateEmbedding } from './embedding.js'
 
 export const retrievalResultCount = 2
 

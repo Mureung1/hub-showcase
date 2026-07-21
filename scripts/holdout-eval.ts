@@ -1,10 +1,10 @@
 import { writeFileSync } from 'node:fs'
 import { config } from 'dotenv'
-import { createEnvironmentGenerationProvider } from '../api/_lib/generation/geminiProvider'
-import type { AiGenerationRequest } from '../api/_lib/generation/provider'
-import { defaultSpeechStyleFor } from '../src/entities/message'
-import type { GeneratedReply } from '../src/shared/generation/contracts'
-import { evaluationCases, type EvaluationCase } from '../src/evaluation/generationCases'
+import { createEnvironmentGenerationProvider } from '../api/_lib/generation/geminiProvider.js'
+import type { AiGenerationRequest } from '../api/_lib/generation/provider.js'
+import { defaultSpeechStyleFor } from '../src/entities/message/index.js'
+import type { GeneratedReply } from '../src/shared/generation/contracts.js'
+import { evaluationCases, type EvaluationCase } from '../src/evaluation/generationCases.js'
 
 config({ path: '.env.local', quiet: true })
 

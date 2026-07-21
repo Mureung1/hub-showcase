@@ -1,4 +1,4 @@
-import type { SpeechStyleId } from '../../../src/entities/message'
+import type { SpeechStyleId } from '../../../src/entities/message/index.js'
 
 export const speechStyleRules: Record<SpeechStyleId, string> = {
   seumnida:

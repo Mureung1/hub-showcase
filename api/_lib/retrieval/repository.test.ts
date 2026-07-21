@@ -1,8 +1,8 @@
 import { drizzle } from 'drizzle-orm/neon-http'
 import { describe, expect, it } from 'vitest'
-import type { DabnyangiDatabase } from '../db/database'
-import { retrievalEmbeddingDimensions } from './embedding'
-import { buildExactRetrievalQuery, toRetrievalExampleRow } from './repository'
+import type { DabnyangiDatabase } from '../db/database.js'
+import { retrievalEmbeddingDimensions } from './embedding.js'
+import { buildExactRetrievalQuery, toRetrievalExampleRow } from './repository.js'
 
 const testEmbedding = () => {
   const embedding = Array.from({ length: retrievalEmbeddingDimensions }, () => 0)

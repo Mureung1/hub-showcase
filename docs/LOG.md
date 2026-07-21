@@ -1064,3 +1064,14 @@
 - `같은 선택으로 다른 표현 만들기`가 추가 입력을 요구하는지 불분명하다는 사용자 피드백을 반영했다. 버튼 앞에서 “현재 답 유지·추가 입력 없음·새 초안 3개 즉시 생성”을 설명하고, 행동명을 `이 선택으로 새 초안 3개 만들기`로 바꿨다.
 - 생성 중에는 `새 초안 3개 만들고 있어요…`로 즉시 피드백하고, 성공 뒤에는 화면상 status로 새 초안 준비 완료와 수정·복사·이전 초안 비교를 안내한다. 기존 후보 보존·성공 시에만 교체·직전 한 세트 복원 동작은 바꾸지 않았다.
 - App RTL 78개·전체 41파일 349개 테스트, lint, production build, `git diff --check`가 통과했다. 인앱 브라우저 실화면 검증은 세션 제약으로 기존 T22·T23 수동 gate에 남겼다.
+
+## 2026-07-21 (Production 배포 크래시 수정 — ESM 상대 경로 확장자 누락)
+### 발견
+- 사용자가 재배포 요청 후 Production `/api/generate`·`/api/interaction`이 500 `FUNCTION_INVOCATION_FAILED`로 크래시함을 보고했다. Vercel 함수 로그에서 `Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/api/_lib/db/generationMetricsSink' imported from /var/task/api/generate.js`를 확인했다.
+- 원인: Vercel의 Node.js 런타임이 `api/**/*.ts`를 파일 단위로 트랜스파일해 네이티브 Node ESM 로더로 실행하는데, 이 로더는 상대 경로 import에 확장자를 요구한다(Node16/NodeNext 규칙). 저장소의 `tsconfig.api.json`은 `moduleResolution: "bundler"`라 확장자 없는 import를 로컬 typecheck에서는 허용해 이 결함이 지금까지 감지되지 않았다. T20~T21 작업과는 무관한, 그 이전부터 있던 배포 결함이다.
+### 수정
+- `tsc -p`를 `module/moduleResolution: nodenext`로 반복 실행해 `TS2834/2835`(확장자 누락) 진단을 자동 수집하고, 파일별 상대 import에 `.js`(디렉터리 import는 `/index.js`)를 붙이는 codemod를 1회성으로 작성·실행했다. `api/**`와 `api/generate.ts`·`api/interaction.ts`에서 실제로 도달하는 `src/**` 전체(및 완전성을 위해 나머지 `src/shared`·`templateCompiler` 소수 파일)에 적용했다. Vite가 사용하는 프론트 전용 파일은 원래도 확장자 없는 상대 import가 정상 동작하지만, `.js` 확장자를 붙여도 Vite에서 문제없이 해석되므로 동일하게 통일했다.
+- `tsconfig.api.json`을 `moduleResolution: "bundler"`→`"nodenext"`로 바꿔(`allowImportingTsExtensions` 제거) 앞으로 `npm run typecheck:api`가 이 결함 종류를 실제로 잡아내도록 했다.
+### 검증
+- 실제 Vercel 런타임과 동일하게 `tsc`로 `.js`를 emit한 뒤 Node 네이티브 ESM 로더로 `api/generate.js`·`api/interaction.js`를 직접 import·fetch 호출해 정상 로드(모듈 해석 성공)와 정상 오류 처리(환경변수 없을 때 `generate`는 깨끗한 JSON 500 `generation_failed`, `interaction`은 202)를 확인했다 — 이전에는 이 지점에서 `ERR_MODULE_NOT_FOUND`로 크래시했다.
+- 전체 41파일 349개 테스트, `typecheck:api`(nodenext로 강화), lint, production build, `git diff --check` 통과.

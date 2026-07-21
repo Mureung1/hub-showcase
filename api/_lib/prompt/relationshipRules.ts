@@ -1,4 +1,4 @@
-import type { ScenarioId } from '../../../src/entities/message'
+import type { ScenarioId } from '../../../src/entities/message/index.js'
 
 export const relationshipRules: Record<ScenarioId, string> = {
   groupwork:

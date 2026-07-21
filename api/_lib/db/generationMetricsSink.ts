@@ -2,17 +2,17 @@ import {
   noopGenerationMetricsSink,
   type GenerationMetric,
   type GenerationMetricsSink,
-} from '../generation/metrics'
+} from '../generation/metrics.js'
 import {
   createDatabase,
   databaseUrlFromEnvironment,
   type DatabaseEnvironment,
-} from './database'
+} from './database.js'
 import {
   createDataRepositories,
   createDrizzleDataWriters,
   type GenerationRunRepository,
-} from './repositories'
+} from './repositories.js'
 
 export type BackgroundTaskScheduler = (task: Promise<void>) => void
 

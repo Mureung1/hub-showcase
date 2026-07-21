@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import type { ScenarioId } from '../../../src/entities/message'
-import type { AiGenerationRequest } from '../generation/provider'
-import { buildPromptWithReviewedExamples } from './buildPrompt'
+import type { ScenarioId } from '../../../src/entities/message/index.js'
+import type { AiGenerationRequest } from '../generation/provider.js'
+import { buildPromptWithReviewedExamples } from './buildPrompt.js'
 import {
   reviewedPromptExampleCatalog,
   reviewedPromptExamplePairs,
   reviewedPromptExamplesFor,
   reviewedSeedCatalogVersion,
-} from './seedExamples'
+} from './seedExamples.js'
 
 const reviewedScenarioIds = [
   'groupwork',

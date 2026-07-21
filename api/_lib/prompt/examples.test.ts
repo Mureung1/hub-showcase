@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { requirePromptExamplePair, type PromptExampleSet } from './examples'
+import { requirePromptExamplePair, type PromptExampleSet } from './examples.js'
 
 const examplePair: readonly PromptExampleSet[] = [
   {

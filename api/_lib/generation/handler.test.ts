@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createDatabaseGenerationMetricsSink } from '../db/generationMetricsSink'
-import { createGenerateHandler, getEphemeralClientKey } from './handler'
-import type { GenerationMetric, GenerationMetricsSink } from './metrics'
+import { createDatabaseGenerationMetricsSink } from '../db/generationMetricsSink.js'
+import { createGenerateHandler, getEphemeralClientKey } from './handler.js'
+import type { GenerationMetric, GenerationMetricsSink } from './metrics.js'
 import {
   GenerationProviderError,
   type AiGenerationRequest,
   type GenerationProvider,
   type GenerationProviderOptions,
-} from './provider'
-import { createInMemoryRateLimiter } from './rateLimiter'
+} from './provider.js'
+import { createInMemoryRateLimiter } from './rateLimiter.js'
 
 const validRequestBody = {
   mode: 'initiate',

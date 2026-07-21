@@ -1,4 +1,4 @@
-import type { Mode, PurposeId, ScenarioId } from '../entities/message'
+import type { Mode, PurposeId, ScenarioId } from '../entities/message/index.js'
 
 export type RiskCategory =
   | 'coercive_request'

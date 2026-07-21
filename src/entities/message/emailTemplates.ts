@@ -4,7 +4,7 @@ import {
   type EmailDraftInput,
   type EmailSituationId,
   type ToneLevel,
-} from './message'
+} from './message.js'
 
 export type EmailCandidate = {
   toneLevel: ToneLevel

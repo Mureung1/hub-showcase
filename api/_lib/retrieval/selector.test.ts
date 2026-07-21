@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import type { ExactRetrievalSearch } from './repository'
+import type { ExactRetrievalSearch } from './repository.js'
 import {
   reviewedRetrievalCatalog,
   type RetrievalCatalogEntry,
-} from './catalog'
-import { retrievalEmbeddingDimensions, type EmbeddingProvider } from './embedding'
-import { createReviewedExampleSelector } from './selector'
+} from './catalog.js'
+import { retrievalEmbeddingDimensions, type EmbeddingProvider } from './embedding.js'
+import { createReviewedExampleSelector } from './selector.js'
 
 const testEmbedding = () => {
   const embedding = Array.from({ length: retrievalEmbeddingDimensions }, () => 0)

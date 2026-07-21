@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createEnvironmentGenerationProvider,
   createGeminiGenerationProvider,
-} from './geminiProvider'
-import { GenerationProviderError, type AiGenerationRequest } from './provider'
+} from './geminiProvider.js'
+import { GenerationProviderError, type AiGenerationRequest } from './provider.js'
 
 const manualRequest: AiGenerationRequest = {
   mode: 'initiate',

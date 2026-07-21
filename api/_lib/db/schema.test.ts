@@ -1,8 +1,8 @@
 import { getTableConfig } from 'drizzle-orm/pg-core'
 import { describe, expect, it } from 'vitest'
-import { purposes, scenarios, situationCardsFor } from '../../../src/entities/message'
-import { interactionEventNames } from '../../../src/shared/interaction/contracts'
-import { generationMetricStatuses } from '../generation/metrics'
+import { purposes, scenarios, situationCardsFor } from '../../../src/entities/message/index.js'
+import { interactionEventNames } from '../../../src/shared/interaction/contracts.js'
+import { generationMetricStatuses } from '../generation/metrics.js'
 import {
   evaluationRuns,
   generationRuns,
@@ -17,7 +17,7 @@ import {
   scenarioValues,
   situationValues,
   templateVersions,
-} from './schema'
+} from './schema.js'
 
 const coreTables = [promptVersions, templateVersions, generationRuns, evaluationRuns]
 const tables = [...coreTables, retrievalExamples, interactionEvents]

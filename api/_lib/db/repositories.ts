@@ -1,6 +1,6 @@
-import type { InteractionEvent } from '../../../src/shared/interaction/contracts'
-import type { GenerationMetric } from '../generation/metrics'
-import type { DabnyangiDatabase } from './database'
+import type { InteractionEvent } from '../../../src/shared/interaction/contracts.js'
+import type { GenerationMetric } from '../generation/metrics.js'
+import type { DabnyangiDatabase } from './database.js'
 import {
   evaluationRuns,
   generationRuns,
@@ -13,7 +13,7 @@ import {
   type NewInteractionEventRow,
   type NewPromptVersionRow,
   type NewTemplateVersionRow,
-} from './schema'
+} from './schema.js'
 
 type ReviewStatus = (typeof reviewStatusValues)[number]
 

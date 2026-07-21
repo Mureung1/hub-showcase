@@ -3,19 +3,19 @@ import {
   parseGenerationRequest,
   type GenerationErrorCode,
   type ServerGenerationRequest,
-} from '../../../src/shared/generation/contracts'
-import { resolveGuidedContext } from '../../../src/entities/message/guidedContext'
+} from '../../../src/shared/generation/contracts.js'
+import { resolveGuidedContext } from '../../../src/entities/message/guidedContext.js'
 import {
   recordGenerationMetric,
   type GenerationMetricsSink,
   type GenerationMetricStatus,
-} from './metrics'
+} from './metrics.js'
 import {
   GenerationProviderError,
   type AiGenerationRequest,
   type GenerationProvider,
-} from './provider'
-import type { RateLimiter } from './rateLimiter'
+} from './provider.js'
+import type { RateLimiter } from './rateLimiter.js'
 
 const defaultDeadlineMs = 18_000
 const defaultMaxOutputTokens = 1_024

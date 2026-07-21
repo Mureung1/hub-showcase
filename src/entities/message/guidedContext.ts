@@ -5,7 +5,7 @@ import {
   type PurposeId,
   type ScenarioId,
   type SituationId,
-} from './message'
+} from './message.js'
 
 export const guidedContextCatalogVersion = 'guided-context-v1'
 

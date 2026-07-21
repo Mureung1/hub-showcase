@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { InteractionEvent } from '../../../src/shared/interaction/contracts'
-import type { InteractionEventRepository } from './repositories'
+import type { InteractionEvent } from '../../../src/shared/interaction/contracts.js'
+import type { InteractionEventRepository } from './repositories.js'
 import {
   createDatabaseInteractionMetricsSink,
   createEnvironmentInteractionMetricsSink,
-} from './interactionMetricsSink'
+} from './interactionMetricsSink.js'
 
 const event: InteractionEvent = {
   eventName: 'result_shown',

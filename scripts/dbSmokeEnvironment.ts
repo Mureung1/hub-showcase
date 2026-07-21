@@ -1,7 +1,7 @@
 import {
   databaseUrlFromEnvironment,
   type DatabaseEnvironment,
-} from '../api/_lib/db/database'
+} from '../api/_lib/db/database.js'
 
 export const databaseSmokeConfirmation = 't30-development-write'
 

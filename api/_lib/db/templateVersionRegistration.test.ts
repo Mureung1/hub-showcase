@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toApprovedTemplateVersionRegistration } from './templateVersionRegistration'
+import { toApprovedTemplateVersionRegistration } from './templateVersionRegistration.js'
 
 const approvedManifest = {
   checksum: 'a'.repeat(64),

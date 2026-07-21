@@ -1,7 +1,7 @@
 import { waitUntil } from '@vercel/functions'
-import { createEnvironmentInteractionMetricsSink } from './_lib/db/interactionMetricsSink'
-import { createInMemoryRateLimiter } from './_lib/generation/rateLimiter'
-import { createInteractionHandler } from './_lib/interaction/handler'
+import { createEnvironmentInteractionMetricsSink } from './_lib/db/interactionMetricsSink.js'
+import { createInMemoryRateLimiter } from './_lib/generation/rateLimiter.js'
+import { createInteractionHandler } from './_lib/interaction/handler.js'
 
 const handleInteraction = createInteractionHandler({
   eventSink: createEnvironmentInteractionMetricsSink({

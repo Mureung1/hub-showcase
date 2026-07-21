@@ -1,4 +1,4 @@
-import type { ScenarioId, SituationId, SpeechStyleId, ToneLevel } from '../message'
+import type { ScenarioId, SituationId, SpeechStyleId, ToneLevel } from '../message.js'
 
 export const templateBundleVersion = 't25-draft-2026-07-20.1' as const
 export const templateBundleReviewStatus = 'draft' as const
