@@ -30,6 +30,30 @@ const DIFFICULTY_REASON = {
     hard: '기능 구현급 이슈라 도전할 만해요',
 };
 
+// skillLevel ↔ 난이도 정합 (2026-07-20 decisions.md "추천 기준 3단 구조" ② — 화요일 추가분)
+// 같은 preferences.difficulty를 골라도 사용자의 실제 실력에 따라 가점이 갈리게 해 개인화한다
+const SKILL_DIFFICULTY_MATCH = { beginner: 'easy', intermediate: 'medium', advanced: 'hard' };
+
+// 관심 주제 유사어 — 사용자가 흔히 쓰는 표현을 GitHub 토픽 표기로 확장해 매칭 누락을 줄인다
+const TOPIC_SYNONYMS = {
+    ml: ['machine-learning'],
+    ai: ['artificial-intelligence'],
+    web: ['webdev', 'web-development', 'frontend'],
+    cli: ['command-line', 'command-line-tool'],
+    api: ['rest-api', 'graphql'],
+    db: ['database'],
+};
+
+function expandTopics(topics) {
+    const expanded = new Set(topics);
+    for (const topic of topics) {
+        for (const synonym of TOPIC_SYNONYMS[topic] ?? []) {
+            expanded.add(synonym);
+        }
+    }
+    return expanded;
+}
+
 // 이슈 라벨 → 난이도 추정 (IssueCache.difficulty와 동일 규칙)
 // 입문 라벨이 최우선 — enhancement에 gfi가 같이 붙어 있으면 입문자용 기능 이슈이므로 easy
 function judgeDifficulty(labels) {
@@ -44,13 +68,13 @@ function judgeDifficulty(labels) {
 }
 
 // 규칙 기반 매칭 점수 (0~100) — 기본 10점 + 근거별 가점, 상위 근거 2개로 추천 이유 문장을 만든다
-function scoreItem(repo, issueDifficulty, preferences) {
+function scoreItem(repo, issueDifficulty, preferences, skillLevel) {
     const factors = [];
 
     // 비교는 소문자 정규화 — 검색(language qualifier)은 대소문자를 무시해 후보가 나오는데
     // 점수만 표기 차이("javascript" vs "JavaScript")로 조용히 빠지는 비대칭을 막는다
     const preferredLanguages = preferences.languages.map((language) => language.toLowerCase());
-    const preferredTopics = preferences.topics.map((topic) => topic.toLowerCase());
+    const preferredTopics = expandTopics(preferences.topics.map((topic) => topic.toLowerCase()));
 
     // 언어: 주 언어 일치가 최우선, 아니면 레포 언어 구성에 포함돼도 가점
     if (repo.primaryLanguage && preferredLanguages.includes(repo.primaryLanguage.toLowerCase())) {
@@ -67,13 +91,20 @@ function scoreItem(repo, issueDifficulty, preferences) {
         factors.push({ score: 20, reason: DIFFICULTY_REASON[issueDifficulty] });
     }
 
-    // 레포 인지도 (스타 구간별 — 검색 최소선은 넘긴 상태이므로 순위 가중치 역할)
-    if (repo.stars >= 1000) {
-        factors.push({ score: 15, reason: `⭐${repo.stars.toLocaleString()}개의 검증된 레포예요` });
-    } else if (repo.stars >= 100) {
-        factors.push({ score: 10, reason: '커뮤니티가 자리 잡은 레포예요' });
-    } else if (repo.stars >= 20) {
-        factors.push({ score: 5, reason: '작지만 살아있는 레포예요' });
+    // skillLevel ↔ 이슈 난이도 정합 — 같은 조건을 고른 사용자라도 실력에 맞으면 더 가점
+    if (SKILL_DIFFICULTY_MATCH[skillLevel] === issueDifficulty) {
+        factors.push({ score: 8, reason: '지금 실력에 맞는 난이도예요' });
+    }
+
+    // 레포 인지도 — 로그 스케일로 가점(구간 tier 대신 연속값을 써서 대량 동점 뭉침을 완화)
+    const starScore = Math.min(15, Math.round(Math.log10(repo.stars + 1) * 4));
+    if (starScore > 0) {
+        const starReason = repo.stars >= 1000
+            ? `⭐${repo.stars.toLocaleString()}개의 검증된 레포예요`
+            : repo.stars >= 100
+                ? '커뮤니티가 자리 잡은 레포예요'
+                : '작지만 살아있는 레포예요';
+        factors.push({ score: starScore, reason: starReason });
     }
 
     // 레포 활동성 (최근 푸시가 가까울수록 리뷰받을 가능성이 높다)
@@ -84,13 +115,17 @@ function scoreItem(repo, issueDifficulty, preferences) {
         factors.push({ score: 5, reason: '최근 석 달 안에 활동한 레포예요' });
     }
 
-    // 입문 이슈 문화 (good first issue가 넉넉하면 첫 기여자 대응 경험이 많은 레포)
-    if (repo.goodFirstIssueCount >= 5) {
-        factors.push({ score: 5, reason: '입문자용 이슈가 넉넉한 레포예요' });
+    // 입문/기여 이슈 문화 — medium은 help wanted 수(성격이 다른 라벨)로, 그 외는 good first issue 수로 본다
+    const issueCultureCount = preferences.difficulty === 'medium' ? repo.helpWantedIssueCount : repo.goodFirstIssueCount;
+    const issueCultureReason = preferences.difficulty === 'medium'
+        ? '도움이 필요한 이슈가 넉넉한 레포예요'
+        : '입문자용 이슈가 넉넉한 레포예요';
+    if (issueCultureCount >= 5) {
+        factors.push({ score: 5, reason: issueCultureReason });
     }
 
-    // 관심 주제와 레포 토픽 교집합
-    const matchedTopics = repo.topics.filter((topic) => preferredTopics.includes(topic.toLowerCase()));
+    // 관심 주제와 레포 토픽 교집합 (유사어 확장 포함)
+    const matchedTopics = repo.topics.filter((topic) => preferredTopics.has(topic.toLowerCase()));
     if (matchedTopics.length > 0) {
         factors.push({
             score: Math.min(matchedTopics.length * 5, 15),
@@ -272,7 +307,7 @@ export async function createRecommendation(githubId, preferences) {
             .slice(0, MAX_ITEMS_PER_REPO);
         for (const issue of issues) {
             const difficulty = judgeDifficulty(issue.labels);
-            const { score, reason } = scoreItem(repo, difficulty, preferences);
+            const { score, reason } = scoreItem(repo, difficulty, preferences, analysis.skillLevel);
             items.push({
                 repoFullName: repo.fullName,
                 repoDescription: repo.description,

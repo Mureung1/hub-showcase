@@ -195,6 +195,9 @@ export async function fetchReposWithIssues(fullNames, issueLabels = null) {
             goodFirstIssues: issues(states: OPEN, labels: ["good first issue"]) {
                 totalCount
             }
+            helpWantedIssues: issues(states: OPEN, labels: ["help wanted"]) {
+                totalCount
+            }
             issues(first: 5, filterBy: { assignee: null, labels: $issueLabels, states: OPEN }, orderBy: { field: UPDATED_AT, direction: DESC }) {
                 nodes {
                     number
@@ -242,6 +245,7 @@ export async function fetchReposWithIssues(fullNames, issueLabels = null) {
             languages: repo.languages.nodes.map((node) => node.name),
             topics: repo.repositoryTopics.nodes.map((node) => node.topic.name),
             goodFirstIssueCount: repo.goodFirstIssues.totalCount,
+            helpWantedIssueCount: repo.helpWantedIssues.totalCount,
             pushedAt: repo.pushedAt,
             issues: repo.issues.nodes.map((issue) => ({
                 number: issue.number,
