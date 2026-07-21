@@ -241,9 +241,9 @@
       "sha256": "542ae80d715680938a5a2049c14268406935bdc7e94eee6dbdb154b616cc0c35"
     },
     "sdk/python/scripts/update_sdk_artifacts.py": {
-      "bytes": 51098,
+      "bytes": 51914,
       "git_mode": "100755",
-      "sha256": "e4484af2eb95860b4b83deaf6498dbb6ea51dc434413aec7bdd5c220d28d96c6"
+      "sha256": "c7d249115f198ef438d7ba16946973447c0e42d09c1d2b35b6b344adae8940cf"
     },
     "sdk/python/src/openai_codex/__init__.py": {
       "bytes": 2213,
@@ -296,19 +296,19 @@
       "sha256": "678f4945d9906b0150a3d84cfc217e06824b9a963e7d248bd4b0d0fb51210658"
     },
     "sdk/python/src/openai_codex/api.py": {
-      "bytes": 33615,
+      "bytes": 34759,
       "git_mode": "100644",
-      "sha256": "1c6e799c1577e4168747aebdbfd13627ca7fe3260af3d7d225364d4d22bf1eb9"
+      "sha256": "1305a5dc998bacef0a1080f8acf471101f07bc4d68c9133d15ea76cfc822bb46"
     },
     "sdk/python/src/openai_codex/async_client.py": {
-      "bytes": 16358,
+      "bytes": 16745,
       "git_mode": "100644",
-      "sha256": "4f0026860842f9db26d473068034d3a1d4f900100b8aab8ff866c7ace4106776"
+      "sha256": "12742e73f350ef2d09539318c7c82cddac17a61138e556c6b34628243f9c8493"
     },
     "sdk/python/src/openai_codex/client.py": {
-      "bytes": 53756,
+      "bytes": 54258,
       "git_mode": "100644",
-      "sha256": "b56b98c5692e0440adecca04090bd3177d2c491f4eff415725bba380c464656b"
+      "sha256": "283eca7ae6bfdb495f7e57076ef654ffef876d9c488637a3ee4fbabf2ab71fbf"
     },
     "sdk/python/src/openai_codex/errors.py": {
       "bytes": 4046,
@@ -426,14 +426,14 @@
       "sha256": "fdb0b24935368f41397c12260d774e65976fbb5222c2d6994e073ea6473092ac"
     },
     "sdk/python/tests/test_public_api_runtime_behavior.py": {
-      "bytes": 7624,
+      "bytes": 9925,
       "git_mode": "100644",
-      "sha256": "0dbfe270a882625b235c4b575c7b32ca9e3f7b1fa12a441474e740aec6b3b9b8"
+      "sha256": "3ea29456cfbeec042924a9d4ccf0fb43bfe0a34070e213c9d851b7389385e162"
     },
     "sdk/python/tests/test_public_api_signatures.py": {
-      "bytes": 19500,
+      "bytes": 20215,
       "git_mode": "100644",
-      "sha256": "703b85a8273e89441293aae734ad124a8b2f7abeef1c001858c0c39495401f62"
+      "sha256": "fca2ea9b0254a7bf678f5b685ba2b74bdd117ad69b8641f6fd8ff552923aab7a"
     },
     "sdk/python/tests/test_real_app_server_integration.py": {
       "bytes": 18880,
@@ -447,7 +447,7 @@
     }
   },
   "kind": "patched_source",
-  "patch_stack_sha256": "a27f5c2c182c379c52919f455db5f5b95267e235628bc46fc2bee6ddf5ea5b8d",
+  "patch_stack_sha256": "ffc43da6e5e7a146016404db54968d37d849b778e5e9b04db680cac4124fc1c9",
   "patches": [
     {
       "bytes": 6020,
@@ -738,7 +738,7 @@
       "sha256": "3f60afde4ebbbb8db5cfbcef31a28e7210719a94dbb7e041ac13995d9902151c"
     },
     {
-      "bytes": 4652,
+      "bytes": 3378,
       "changed_files": {
         "sdk/python/scripts/update_sdk_artifacts.py": {
           "after": {
@@ -781,10 +781,92 @@
       "id": "0007-thread-start-settings",
       "order": 7,
       "path": "upstream/patches/0007-thread-start-settings.patch",
-      "sha256": "95d8f31f5a6ea65ee6763fdc5bd3fd711b81b439d77bc76817d5a65525e1029a"
+      "sha256": "d3c99630255d7938fe691c609fe672b255ff5ec9f8f3bc52dc8ad96e8323736f"
+    },
+    {
+      "bytes": 8201,
+      "changed_files": {
+        "sdk/python/scripts/update_sdk_artifacts.py": {
+          "after": {
+            "bytes": 51914,
+            "git_mode": "100755",
+            "sha256": "c7d249115f198ef438d7ba16946973447c0e42d09c1d2b35b6b344adae8940cf"
+          },
+          "before": {
+            "bytes": 51098,
+            "git_mode": "100755",
+            "sha256": "e4484af2eb95860b4b83deaf6498dbb6ea51dc434413aec7bdd5c220d28d96c6"
+          }
+        },
+        "sdk/python/src/openai_codex/api.py": {
+          "after": {
+            "bytes": 34759,
+            "git_mode": "100644",
+            "sha256": "1305a5dc998bacef0a1080f8acf471101f07bc4d68c9133d15ea76cfc822bb46"
+          },
+          "before": {
+            "bytes": 33615,
+            "git_mode": "100644",
+            "sha256": "1c6e799c1577e4168747aebdbfd13627ca7fe3260af3d7d225364d4d22bf1eb9"
+          }
+        },
+        "sdk/python/src/openai_codex/async_client.py": {
+          "after": {
+            "bytes": 16745,
+            "git_mode": "100644",
+            "sha256": "12742e73f350ef2d09539318c7c82cddac17a61138e556c6b34628243f9c8493"
+          },
+          "before": {
+            "bytes": 16358,
+            "git_mode": "100644",
+            "sha256": "4f0026860842f9db26d473068034d3a1d4f900100b8aab8ff866c7ace4106776"
+          }
+        },
+        "sdk/python/src/openai_codex/client.py": {
+          "after": {
+            "bytes": 54258,
+            "git_mode": "100644",
+            "sha256": "283eca7ae6bfdb495f7e57076ef654ffef876d9c488637a3ee4fbabf2ab71fbf"
+          },
+          "before": {
+            "bytes": 53756,
+            "git_mode": "100644",
+            "sha256": "b56b98c5692e0440adecca04090bd3177d2c491f4eff415725bba380c464656b"
+          }
+        },
+        "sdk/python/tests/test_public_api_runtime_behavior.py": {
+          "after": {
+            "bytes": 9925,
+            "git_mode": "100644",
+            "sha256": "3ea29456cfbeec042924a9d4ccf0fb43bfe0a34070e213c9d851b7389385e162"
+          },
+          "before": {
+            "bytes": 7624,
+            "git_mode": "100644",
+            "sha256": "0dbfe270a882625b235c4b575c7b32ca9e3f7b1fa12a441474e740aec6b3b9b8"
+          }
+        },
+        "sdk/python/tests/test_public_api_signatures.py": {
+          "after": {
+            "bytes": 20215,
+            "git_mode": "100644",
+            "sha256": "fca2ea9b0254a7bf678f5b685ba2b74bdd117ad69b8641f6fd8ff552923aab7a"
+          },
+          "before": {
+            "bytes": 19500,
+            "git_mode": "100644",
+            "sha256": "703b85a8273e89441293aae734ad124a8b2f7abeef1c001858c0c39495401f62"
+          }
+        }
+      },
+      "git_mode": "100644",
+      "id": "0008-standalone-skill-extra-roots",
+      "order": 8,
+      "path": "upstream/patches/0008-standalone-skill-extra-roots.patch",
+      "sha256": "60eb7ec0fede4b97b1bd041e92bf49f93dca0ec0beadb1e3e4de9cb9637074a4"
     }
   ],
   "schema_version": 1,
   "source_file_count": 88,
-  "source_tree_sha256": "2f45f8b435ac56a344d89b25b3166d1377bcd1f8e9409a25850befed7c38ca3c"
+  "source_tree_sha256": "c0f19b682d4cf182448ebd1e47eaecb9fac3c478c3c7899fd2e10b913b30aa06"
 }

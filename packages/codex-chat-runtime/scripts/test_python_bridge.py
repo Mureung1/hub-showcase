@@ -275,6 +275,7 @@ class ProtocolUnitTests(unittest.TestCase):
 
         invalid = (
             {**product, "skillPath": "relative/SKILL.md"},
+            {**product, "skillPath": "/managed/assignment-modeling/OTHER.md"},
             {key: value for key, value in product.items() if key != "skillName"},
             {**product, "planModel": "legacy-model"},
             {**product, "reasoningEffort": "medium"},

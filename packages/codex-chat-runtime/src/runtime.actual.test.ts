@@ -225,6 +225,7 @@ test('forwards isolated cwd and private MCP config and supports a text-only prod
     assert.deepEqual(threadStart?.params?.config, {
       mcp_servers: {
         ay_ple: {
+          default_tools_approval_mode: 'approve',
           enabled_tools: ['propose_state_patch'],
           http_headers: {
             'X-AY-PLE-MCP-Token': mcp.token,
@@ -252,6 +253,12 @@ test('forwards isolated cwd and private MCP config and supports a text-only prod
         .filter((method) => method === 'model/list' || method === 'turn/start'),
       ['turn/start', 'turn/start'],
     )
+    assert.deepEqual(
+      journal.messages
+        .filter(({ method }) => method === 'skills/extraRoots/set')
+        .map(({ params }) => params),
+      [{ extraRoots: [] }, { extraRoots: [] }],
+    )
     assert.deepEqual(turnStarts[1]?.params?.collaborationMode, {
       mode: 'plan',
       settings: {
@@ -260,6 +267,37 @@ test('forwards isolated cwd and private MCP config and supports a text-only prod
         reasoning_effort: 'medium',
       },
     })
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('rejects a non-SKILL.md product skill path before native turn mutation', async () => {
+  const harness = await startHarness('product-skill-path-validation')
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    assert.throws(
+      () =>
+        harness.runtime.startProductTurn({
+          threadId,
+          skill: {
+            name: 'assignment-modeling',
+            path: '/managed/assignment-modeling/OTHER.md',
+          },
+          text: 'Review staged Markdown at /staged/assignment.md',
+        }),
+      TypeError,
+    )
+    const journal = JSON.parse(
+      await readFile(harness.journalPath, 'utf8'),
+    ) as { messages: readonly { readonly method?: string }[] }
+    assert.equal(
+      journal.messages.some(
+        ({ method }) =>
+          method === 'skills/extraRoots/set' || method === 'turn/start',
+      ),
+      false,
+    )
   } finally {
     await harness.runtime.close()
   }
@@ -350,6 +388,20 @@ test('runs a structured product turn through one pending native interaction', as
     ]) {
       assert.equal(projected.includes(privateValue), false)
     }
+    const journal = JSON.parse(
+      await readFile(harness.journalPath, 'utf8'),
+    ) as {
+      messages: readonly {
+        readonly method?: string
+        readonly params?: Record<string, unknown>
+      }[]
+    }
+    assert.deepEqual(
+      journal.messages
+        .filter(({ method }) => method === 'skills/extraRoots/set')
+        .map(({ params }) => params),
+      [{ extraRoots: ['/managed/assignment-modeling'] }],
+    )
   } finally {
     await harness.runtime.close()
   }

@@ -308,6 +308,8 @@ def decode_command_line(line: bytes) -> BridgeCommand:
             _require_exact_fields(value, base_fields | skill_fields)
             skill_name = _require_bounded_string(value.get("skillName"), max_bytes=256)
             skill_path = _require_absolute_path(value.get("skillPath"))
+            if os.path.basename(skill_path) != "SKILL.md":
+                raise ProtocolViolation("invalid_command")
         return StartProductTurnCommand(
             request_id,
             _require_nonempty_string(value.get("threadId")),

@@ -1348,7 +1348,7 @@ function renderAssignmentInput(
     sources,
     `Use scratch only for transient writes: ${prepared.scratchPath}`,
     'Call propose_state_patch with evidence from only those two RawMaterials.',
-    `After the proposal, request exactly this review question: ${JSON.stringify(ASSIGNMENT_REVIEW_QUESTION)}`,
+    `After the proposal, request exactly this review question: ${nativeReviewQuestionJson()}`,
   ].join('\n\n')
 }
 
@@ -1392,7 +1392,7 @@ async function renderChatInput(
     sources,
     `Proposal context: requestKey=${context.requestKey}, workspaceId=${context.workspaceId}, courseId=${context.courseId}, baseRevision=${context.baseRevision}.`,
     'A proposal may cite only these selected RawMaterial IDs and digests.',
-    `After a proposal, request exactly this review question: ${JSON.stringify(ASSIGNMENT_REVIEW_QUESTION)}`,
+    `After a proposal, request exactly this review question: ${nativeReviewQuestionJson()}`,
   ].filter((value): value is string => value !== undefined).join('\n\n')
   if (Buffer.byteLength(rendered, 'utf8') > productTextMaxBytes) {
     throw new ProductOperationError(
@@ -1402,6 +1402,12 @@ async function renderChatInput(
     )
   }
   return rendered
+}
+
+function nativeReviewQuestionJson(): string {
+  const { acceptsFreeform: _acceptsFreeform, ...nativeQuestion } =
+    ASSIGNMENT_REVIEW_QUESTION
+  return JSON.stringify(nativeQuestion)
 }
 
 async function writeAssignmentTerminal(

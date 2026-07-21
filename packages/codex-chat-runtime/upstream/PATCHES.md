@@ -171,10 +171,36 @@ Regression oracle은 다음과 같다.
 - 같은 actual-child matrix가 cancelled waiter 뒤 exact request 재전달, test-owned executor completion barrier 뒤 terminal이 먼저 정산한 stale request 비전달, 64회 연속 waiter cancellation 뒤 unrelated account operation·public close·child reap liveness, duplicate·late conflict, native interrupt response를 늦춘 interrupt↔answer 경쟁, concurrent second request와 exact 32 pending/33번째 overflow의 affected-Turn interrupt, saturated answer/cancel control settlement, resolved-before-answer와 in-flight terminal·interrupt·close·transport cleanup, blocked consumer release와 child reap을 검증한다. 추가 overflow와 interrupt response withholding은 failure/control reserve를 넘겨도 thread·response waiter가 증가하지 않고 transport failure와 close/reap으로 bounded하게 끝나는지 검증한다. Child stdin read side만 닫은 두 half-close trace는 internal interrupt writer와 request-local response writer 실패가 transport-terminal settlement와 close/reap으로 수렴하는지 고정한다.
 - Complete official Python suite, Ruff, deterministic ordered derivation과 manifest/provenance gate가 기존 `0001`–`0005` behavior를 함께 재검증한다.
 
+### 0007 — Preserve native effective thread settings
+
+| 항목 | 값 |
+| --- | --- |
+| Patch | `upstream/patches/0007-thread-start-settings.patch` |
+| Exact preimage | 0006 postimage의 immediate-before digest는 `manifests/patched-source.json` ordered stage 7이 소유한다. |
+| Handwritten source | `sdk/python/scripts/update_sdk_artifacts.py`, `sdk/python/src/openai_codex/api.py` |
+| Aligned official test | `sdk/python/tests/test_public_api_runtime_behavior.py` |
+| Derived evidence | `manifests/patched-source.json` ordered stage 7과 final source tree |
+| Upstream issue/PR | 아직 없음. Exact native response와 product conformance를 먼저 고정했다. |
+
+Pinned first-party client는 `thread/start`에서 `configured → advertised default → first available`로 결정한 effective `model`·`reasoningEffort`를 response에 넣지만 high-level Python Thread는 이 값을 버렸다. 0007은 sync·async high-level Thread에 그 값을 보존하고 generator가 같은 surface를 재생성하게 한다. Product policy disposition은 `adapt`로, Bridge는 caller override나 별도 `model/list`없이 native effective setting을 Plan Turn에 재사용하고 model이 없으면 acceptance 전 fail closed한다. Official runtime behavior test와 bridge actual-child의 zero·multiple·failed advertised model-list condition이 regression oracle다.
+
+### 0008 — Expose standalone Skill extra roots
+
+| 항목 | 값 |
+| --- | --- |
+| Patch | `upstream/patches/0008-standalone-skill-extra-roots.patch` |
+| Exact preimage | 0007 postimage의 immediate-before digest는 `manifests/patched-source.json` ordered stage 8이 소유한다. |
+| Handwritten source | `sdk/python/scripts/update_sdk_artifacts.py`, `sdk/python/src/openai_codex/{api,async_client,client}.py` |
+| Aligned official test | `sdk/python/tests/test_public_api_runtime_behavior.py`, `sdk/python/tests/test_public_api_signatures.py` |
+| Derived evidence | `manifests/patched-source.json` ordered stage 8과 final source tree |
+| Upstream issue/PR | 아직 없음. Exact native method와 product local-provider conformance를 먼저 고정했다. |
+
+Exact managed `SKILL.md`를 `SkillInput`으로 보내도 active catalog에 해당 Skill이 없으면 native가 조용히 건너뛴다. 0008은 exact process-wide `skills/extraRoots/set`을 string sequence만 받는 typed sync·async `set_skill_extra_roots()`로 노출해 order·duplicate와 `extraRoots` alias를 보존하고 scalar·path-like·non-string을 거부한다. Bridge는 Turn start를 직렬화해 text Turn 전에 empty roots, managed Skill product Turn 전에 exact Skill directory로 roots를 매번 교체한다. Official signature/runtime test, bridge actual-child의 replacement·invalid path, Server exact local-provider의 managed Skill injection과 same-Turn terminal이 regression oracle다.
+
 ## Production wheel derivation
 
-`manifests/unpatched.json`의 wheel은 behavioral patch 전 reproduction evidence이므로 production wheel로 재사용하지 않는다. Materializer는 immutable snapshot에 위 여섯 patch를 순서대로 적용하고 `manifests/patched-source.json`과 exact 일치를 확인한 뒤, hash-pinned macOS arm64 `uv_build==0.11.19` wheel만 허용하는 `--no-index --offline` environment에서 source epoch wheel을 두 번 build한다. 두 bytes가 동일한 경우에만 `manifests/production-runtime-darwin-arm64.json`이 build-backend evidence, patched SDK wheel digest와 installed source digest를 소유한다. Prototype의 과거 wheel이나 unpatched wheel digest는 production input이 아니다.
+`manifests/unpatched.json`의 wheel은 behavioral patch 전 reproduction evidence이므로 production wheel로 재사용하지 않는다. Materializer는 immutable snapshot에 위 여덟 patch를 순서대로 적용하고 `manifests/patched-source.json`과 exact 일치를 확인한 뒤, hash-pinned macOS arm64 `uv_build==0.11.19` wheel만 허용하는 `--no-index --offline` environment에서 source epoch wheel을 두 번 build한다. 두 bytes가 동일한 경우에만 `manifests/production-runtime-darwin-arm64.json`이 build-backend evidence, patched SDK wheel digest와 installed source digest를 소유한다. Prototype의 과거 wheel이나 unpatched wheel digest는 production input이 아니다.
 
 ## AY-PLE bridge disposition
 
-Ticket 005의 `python/bridge` 자체는 ordered upstream patch가 아니다. Source review에서 확인된 public SDK seam은 ordered patch가 소유하며 bridge는 complete `0001 → 0002 → 0003 → 0004 → 0005 → 0006` SDK 위의 AY-PLE-owned external process adapter다. Canonical production manifest가 local 5-file source roster, installed `bundle/bridge` roster와 entrypoint를 별도 evidence로 기록한다. `scripts/test_python_bridge.py` actual-child gate가 response-last acceptance-first FIFO, exact native identity, explicit `deny_all + read_only`, exact notification opt-out, malformed mutation classification, interrupt, local release/LRU, admission/cap rejection, stream·stdout terminal과 close를 검증한다.
+Ticket 005의 `python/bridge` 자체는 ordered upstream patch가 아니다. Source review에서 확인된 public SDK seam은 ordered patch가 소유하며 bridge는 complete `0001 → 0002 → 0003 → 0004 → 0005 → 0006 → 0007 → 0008` SDK 위의 AY-PLE-owned external process adapter다. Canonical production manifest가 local 5-file source roster, installed `bundle/bridge` roster와 entrypoint를 별도 evidence로 기록한다. `scripts/test_python_bridge.py` actual-child gate가 response-last acceptance-first FIFO, exact native identity, explicit `deny_all + read_only`, exact notification opt-out, malformed mutation classification, interrupt, local release/LRU, admission/cap rejection, stream·stdout terminal과 close를 검증한다.

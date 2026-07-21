@@ -99,6 +99,35 @@ test('private MCP host authenticates a loopback native client and advertises onl
         'changes',
         'evidence',
       ])
+
+      const nativeList = await postMcp(
+        url,
+        host.token,
+        jsonRpc('list-native', 'tools/list', {
+          _meta: { progressToken: 0 },
+        }),
+      )
+      assert.equal(nativeList.status, 200)
+      const nativeListBody = asRecord(await nativeList.json())
+      const nativeListResult = asRecord(nativeListBody.result)
+      assert.ok(Array.isArray(nativeListResult.tools))
+      assert.equal(nativeListResult.tools.length, 1)
+
+      for (const [id, params] of [
+        ['list-extra', { cursor: 'unexpected' }],
+        ['list-meta-invalid', { _meta: 'unexpected' }],
+      ] as const) {
+        const invalidList = await postMcp(
+          url,
+          host.token,
+          jsonRpc(id, 'tools/list', params),
+        )
+        assert.deepEqual(await invalidList.json(), {
+          jsonrpc: '2.0',
+          id,
+          error: { code: -32602, message: 'The MCP request is invalid.' },
+        })
+      }
     })
   } finally {
     host.close()

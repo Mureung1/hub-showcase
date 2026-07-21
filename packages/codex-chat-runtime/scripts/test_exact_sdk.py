@@ -333,6 +333,7 @@ class ManifestTests(unittest.TestCase):
                     "0005-strict-response-classification",
                     "0006-plan-user-input-seam",
                     "0007-thread-start-settings",
+                    "0008-standalone-skill-extra-roots",
                 ],
             )
             self.assertEqual(

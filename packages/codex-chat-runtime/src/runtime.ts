@@ -1436,6 +1436,9 @@ function requireProductTurnInput(input: StartProductTurnInput): void {
     if (!path.isAbsolute(input.skill.path)) {
       throw new TypeError('Skill path must be absolute')
     }
+    if (path.basename(input.skill.path) !== 'SKILL.md') {
+      throw new TypeError('Skill path must target SKILL.md')
+    }
   }
   requireBoundedString(input.text, 'Product turn text', 512 * 1024)
 }

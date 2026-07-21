@@ -1,0 +1,186 @@
+diff --git a/sdk/python/scripts/update_sdk_artifacts.py b/sdk/python/scripts/update_sdk_artifacts.py
+index b2c7d91..b5cb398 100755
+--- a/sdk/python/scripts/update_sdk_artifacts.py
++++ b/sdk/python/scripts/update_sdk_artifacts.py
+@@ -1052,0 +1053,8 @@ def _render_codex_block(
++        "",
++        "    def set_skill_extra_roots(",
++        "        self, extra_roots: Sequence[str]",
++        "    ) -> SkillsExtraRootsSetResponse:",
++        '        """Replace the standalone skill roots used by Codex."""',
++        "        return self._client.skills_extra_roots_set(",
++        "            _skill_extra_roots_params(extra_roots)",
++        "        )",
+@@ -1142,0 +1151,9 @@ def _render_async_codex_block(
++        "",
++        "    async def set_skill_extra_roots(",
++        "        self, extra_roots: Sequence[str]",
++        "    ) -> SkillsExtraRootsSetResponse:",
++        '        """Replace the standalone skill roots used by Codex."""',
++        "        await self._ensure_initialized()",
++        "        return await self._client.skills_extra_roots_set(",
++        "            _skill_extra_roots_params(extra_roots)",
++        "        )",
+diff --git a/sdk/python/src/openai_codex/api.py b/sdk/python/src/openai_codex/api.py
+index 8f2105f..1ac7b04 100644
+--- a/sdk/python/src/openai_codex/api.py
++++ b/sdk/python/src/openai_codex/api.py
+@@ -54,0 +55,2 @@ from .generated.v2_all import (
++    SkillsExtraRootsSetParams,
++    SkillsExtraRootsSetResponse,
+@@ -169,0 +172,12 @@ def _turn_start_params(
++def _skill_extra_roots_params(
++    extra_roots: Sequence[str],
++) -> SkillsExtraRootsSetParams:
++    """Build exact typed params without accepting scalar strings or path-like values."""
++    if isinstance(extra_roots, (str, bytes)):
++        raise TypeError("extra_roots must be a sequence of strings")
++    roots = list(extra_roots)
++    if any(not isinstance(root, str) for root in roots):
++        raise TypeError("extra_roots must contain only strings")
++    return SkillsExtraRootsSetParams(extra_roots=roots)
++
++
+@@ -381,0 +396,4 @@ class Codex:
++    def set_skill_extra_roots(self, extra_roots: Sequence[str]) -> SkillsExtraRootsSetResponse:
++        """Replace the standalone skill roots used by Codex."""
++        return self._client.skills_extra_roots_set(_skill_extra_roots_params(extra_roots))
++
+@@ -640,0 +659,7 @@ class AsyncCodex:
++    async def set_skill_extra_roots(
++        self, extra_roots: Sequence[str]
++    ) -> SkillsExtraRootsSetResponse:
++        """Replace the standalone skill roots used by Codex."""
++        await self._ensure_initialized()
++        return await self._client.skills_extra_roots_set(_skill_extra_roots_params(extra_roots))
++
+diff --git a/sdk/python/src/openai_codex/async_client.py b/sdk/python/src/openai_codex/async_client.py
+index 752339d..da443a2 100644
+--- a/sdk/python/src/openai_codex/async_client.py
++++ b/sdk/python/src/openai_codex/async_client.py
+@@ -22,0 +23,2 @@ from .generated.v2_all import (
++    SkillsExtraRootsSetParams as V2SkillsExtraRootsSetParams,
++    SkillsExtraRootsSetResponse,
+@@ -329,0 +332,7 @@ class AsyncCodexClient:
++    async def skills_extra_roots_set(
++        self,
++        params: V2SkillsExtraRootsSetParams,
++    ) -> SkillsExtraRootsSetResponse:
++        """Replace standalone skill roots using the wrapped sync client."""
++        return await self._call_sync(self._sync.skills_extra_roots_set, params)
++
+diff --git a/sdk/python/src/openai_codex/client.py b/sdk/python/src/openai_codex/client.py
+index fb75e0d..044a007 100644
+--- a/sdk/python/src/openai_codex/client.py
++++ b/sdk/python/src/openai_codex/client.py
+@@ -40,0 +41,2 @@ from .generated.v2_all import (
++    SkillsExtraRootsSetParams as V2SkillsExtraRootsSetParams,
++    SkillsExtraRootsSetResponse,
+@@ -1005,0 +1008,11 @@ class CodexClient:
++    def skills_extra_roots_set(
++        self,
++        params: V2SkillsExtraRootsSetParams,
++    ) -> SkillsExtraRootsSetResponse:
++        """Replace the standalone skill roots through the typed app-server method."""
++        return self.request(
++            "skills/extraRoots/set",
++            params.model_dump(by_alias=True, mode="json"),
++            response_model=SkillsExtraRootsSetResponse,
++        )
++
+diff --git a/sdk/python/tests/test_public_api_runtime_behavior.py b/sdk/python/tests/test_public_api_runtime_behavior.py
+index d798844..5a04c66 100644
+--- a/sdk/python/tests/test_public_api_runtime_behavior.py
++++ b/sdk/python/tests/test_public_api_runtime_behavior.py
+@@ -17 +17,7 @@ from openai_codex.api import (
+-from openai_codex.generated.v2_all import TurnStartParams
++from openai_codex.async_client import AsyncCodexClient
++from openai_codex.client import CodexClient
++from openai_codex.generated.v2_all import (
++    SkillsExtraRootsSetParams,
++    SkillsExtraRootsSetResponse,
++    TurnStartParams,
++)
+@@ -158,0 +165,60 @@ def test_thread_start_preserves_native_effective_model_settings() -> None:
++def test_skill_extra_roots_preserve_sequence_and_use_typed_request() -> None:
++    requests: list[tuple[str, dict[str, object], type[object]]] = []
++
++    def fake_request(
++        method: str,
++        params: dict[str, object],
++        *,
++        response_model: type[object],
++    ) -> object:
++        requests.append((method, params, response_model))
++        return SkillsExtraRootsSetResponse.model_validate({})
++
++    sync_client = object.__new__(CodexClient)
++    sync_client.request = fake_request  # type: ignore[method-assign]
++    sync_codex = object.__new__(Codex)
++    sync_codex._client = sync_client
++
++    roots = ("/skills/first", "/skills/first", "/skills/second")
++    response = sync_codex.set_skill_extra_roots(roots)
++
++    assert isinstance(response, SkillsExtraRootsSetResponse)
++    assert requests == [
++        (
++            "skills/extraRoots/set",
++            {"extraRoots": list(roots)},
++            SkillsExtraRootsSetResponse,
++        )
++    ]
++
++    async def scenario() -> None:
++        async_client = object.__new__(AsyncCodexClient)
++        async_client._sync = sync_client
++        async_codex = AsyncCodex()
++        async_codex._client = async_client
++        async_codex._initialized = True
++
++        async_roots = ["/skills/third", "/skills/second"]
++        async_response = await async_codex.set_skill_extra_roots(async_roots)
++        assert isinstance(async_response, SkillsExtraRootsSetResponse)
++        assert requests[-1] == (
++            "skills/extraRoots/set",
++            {"extraRoots": async_roots},
++            SkillsExtraRootsSetResponse,
++        )
++
++    asyncio.run(scenario())
++
++
++def test_skill_extra_roots_reject_scalar_and_non_string_values() -> None:
++    params: list[SkillsExtraRootsSetParams] = []
++    codex = object.__new__(Codex)
++    codex._client = SimpleNamespace(skills_extra_roots_set=lambda value: params.append(value))
++
++    for invalid in ("/skills/scalar", [Path("/skills/path-like")], ["/skills", 1]):
++        with pytest.raises(TypeError, match="sequence of strings|only strings"):
++            codex.set_skill_extra_roots(invalid)  # type: ignore[arg-type]
++
++    assert params == []
++
++
+diff --git a/sdk/python/tests/test_public_api_signatures.py b/sdk/python/tests/test_public_api_signatures.py
+index d60a786..fade2c0 100644
+--- a/sdk/python/tests/test_public_api_signatures.py
++++ b/sdk/python/tests/test_public_api_signatures.py
+@@ -560,0 +561,17 @@ def test_generated_public_signatures_are_snake_case_and_typed() -> None:
++def test_skill_extra_roots_public_signatures_are_symmetric_and_typed() -> None:
++    """The standalone-skill seam accepts exact string sequences on both clients."""
++    assert {
++        fn: str(inspect.signature(fn))
++        for fn in (Codex.set_skill_extra_roots, AsyncCodex.set_skill_extra_roots)
++    } == {
++        Codex.set_skill_extra_roots: (
++            "(self, extra_roots: 'Sequence[str]') -> 'SkillsExtraRootsSetResponse'"
++        ),
++        AsyncCodex.set_skill_extra_roots: (
++            "(self, extra_roots: 'Sequence[str]') -> 'SkillsExtraRootsSetResponse'"
++        ),
++    }
++    _assert_no_any_annotations(Codex.set_skill_extra_roots)
++    _assert_no_any_annotations(AsyncCodex.set_skill_extra_roots)
++
++

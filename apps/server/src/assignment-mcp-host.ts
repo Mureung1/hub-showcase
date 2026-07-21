@@ -292,7 +292,7 @@ export function createAssignmentMcpHost(options: {
     }
 
     if (message.method === 'tools/list') {
-      if (!isEmptyParams(message.params)) {
+      if (!isToolsListParams(message.params)) {
         sendJsonRpcError(
           response,
           message.id,
@@ -613,8 +613,14 @@ function isInitializeParams(
   )
 }
 
-function isEmptyParams(value: Record<string, unknown> | undefined): boolean {
-  return value === undefined || Object.keys(value).length === 0
+function isToolsListParams(
+  value: Record<string, unknown> | undefined,
+): boolean {
+  return (
+    value === undefined ||
+    (hasExactKeys(value, [], ['_meta']) &&
+      (value._meta === undefined || isRecord(value._meta)))
+  )
 }
 
 function parseToolCall(value: Record<string, unknown> | undefined): {
