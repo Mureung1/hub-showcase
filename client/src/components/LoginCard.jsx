@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { login } from "../api/auth";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { navigationTargets } from "../routes/routePaths";
-import { setCurrentUserRole } from "../utils/authStorage";
 
 function LoginCard() {
   const navigate = useNavigate();
-  const [message, setMessage] = useState("");
+  const location = useLocation();
+  const { login } = useAuth();
+  const [message, setMessage] = useState(location.state?.message || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event) => {
@@ -17,13 +18,12 @@ function LoginCard() {
     setIsSubmitting(true);
 
     try {
-      const response = await login({
+      const user = await login({
         email: formData.get("email"),
         password: formData.get("password"),
       });
-      const role = response.data.user.role;
+      const role = user.role;
 
-      setCurrentUserRole(role);
       navigate(
         role === "mentee"
           ? navigationTargets.afterMenteeLogin

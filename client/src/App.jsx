@@ -1,35 +1,22 @@
-import { useEffect, useState } from "react";
-import { getCurrentUser } from "./api/auth";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import AppRoutes from "./routes/AppRoutes";
-import { clearAccessToken, clearCurrentUserRole, getAccessToken, setCurrentUserRole } from "./utils/authStorage";
 
-function App() {
-  const [isRestoringSession, setIsRestoringSession] = useState(true);
+function AppShell() {
+  const { isCheckingAuth } = useAuth();
 
-  useEffect(() => {
-    if (!getAccessToken()) {
-      setIsRestoringSession(false);
-      return;
-    }
-
-    getCurrentUser()
-      .then((response) => {
-        setCurrentUserRole(response.data.role);
-      })
-      .catch(() => {
-        clearAccessToken();
-        clearCurrentUserRole();
-      })
-      .finally(() => {
-        setIsRestoringSession(false);
-      });
-  }, []);
-
-  if (isRestoringSession) {
+  if (isCheckingAuth) {
     return null;
   }
 
   return <AppRoutes />;
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppShell />
+    </AuthProvider>
+  );
 }
 
 export default App;

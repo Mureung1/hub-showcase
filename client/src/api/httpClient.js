@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-import { getAccessToken } from '../utils/authStorage';
+import { clearAccessToken, clearCurrentUserRole, getAccessToken } from '../utils/authStorage';
+
+export const SESSION_EXPIRED_EVENT = 'auth:session-expired';
 
 const httpClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api',
@@ -29,6 +31,13 @@ httpClient.interceptors.response.use(
       networkError.status = null;
 
       return Promise.reject(networkError);
+    }
+
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
+    if (error.response.status === 401 && !isLoginRequest) {
+      clearAccessToken();
+      clearCurrentUserRole();
+      window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
     }
 
     const serverError = error.response?.data?.error;

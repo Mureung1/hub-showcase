@@ -3,14 +3,15 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import MentorApplicationBar from "../components/MentorApplicationBar";
 import MentorCard from "../components/MentorCard";
 import MentorSearchFilter from "../components/MentorSearchFilter";
+import { useAuth } from "../context/AuthContext";
 import { mentors } from "../data/mentors";
 import { routePaths } from "../routes/routePaths";
-import { clearCurrentUserRole } from "../utils/authStorage";
 import { filterMentors, initialMentorFilters } from "../utils/mentorFilters";
 
 function MentorListPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
   const [selectedMentorIds, setSelectedMentorIds] = useState(
     () => location.state?.mentorIds ?? [],
   );
@@ -67,8 +68,8 @@ function MentorListPage() {
     setAppliedFilters(initialMentorFilters);
   };
 
-  const handleLogout = () => {
-    clearCurrentUserRole();
+  const handleLogout = async () => {
+    await logout();
     navigate(routePaths.landing, { replace: true });
   };
 
