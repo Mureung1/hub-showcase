@@ -3,7 +3,7 @@ import PostCard from './PostCard';
 import FeedTabs from './FeedTabs';
 
 // 게시글 목록 컴포넌트
-const FeedList = ({ onWriteClick, refreshTrigger }) => {
+const FeedList = ({ onWriteClick, refreshTrigger, onPostClick }) => {
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -68,13 +68,13 @@ const FeedList = ({ onWriteClick, refreshTrigger }) => {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} />
+              <PostCard key={post.id} post={post} onClick={() => onPostClick && onPostClick(post)} />
             ))}
           </div>
         )}
       </div>
 
-      {/* 우하단 FAB */}
+      {/* 우하단 FAB (상세 페이지가 아닐 때만 렌더링되도록 부모에서 제어됨) */}
       <button
         className="fab-btn"
         onClick={onWriteClick}
