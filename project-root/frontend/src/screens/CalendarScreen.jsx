@@ -3,15 +3,8 @@ import "./CalendarScreen.css";
 import PrimaryButton from "../components/PrimaryButton";
 import Badge from "../components/Badge";
 import TimeTableGrid from "../components/TimeTableGrid";
-import { mockSubjects } from "../data/mockSubjects";
 
 const CATEGORY_ORDER = ["전공필수", "전공선택", "교양"];
-
-function resolveLectures(lectureIds) {
-  return lectureIds
-    .map((id) => mockSubjects.find((s) => s.id === id))
-    .filter(Boolean);
-}
 
 function summarizeByCategory(lectures) {
   const counts = new Map();
@@ -54,7 +47,7 @@ export default function CalendarScreen({ confirmedSchedule, onNavigate }) {
     );
   }
 
-  const lectures = resolveLectures(confirmedSchedule.selectedLectureIds);
+  const lectures = confirmedSchedule.lectures;
   const totalCredit = lectures.reduce((sum, l) => sum + l.credit, 0);
   const categorySummary = summarizeByCategory(lectures);
 
