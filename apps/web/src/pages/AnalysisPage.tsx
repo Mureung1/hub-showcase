@@ -1,0 +1,19 @@
+import type { RepositoryAnalysisResult } from "@ptop/contracts";
+import { AnalysisResult } from "../features/repository-analysis/AnalysisResult";
+
+type AnalysisPageProps = {
+  result: RepositoryAnalysisResult;
+  onBackToLanding: () => void;
+};
+
+export function AnalysisPage({ result, onBackToLanding }: AnalysisPageProps) {
+  return (
+    <section className="analysis-page-shell" aria-label="Repository 분석 결과 페이지">
+      <button className="result-back-button" type="button" onClick={onBackToLanding}>
+        <span aria-hidden="true">←</span>
+        처음으로 돌아가기
+      </button>
+      <AnalysisResult result={result} />
+    </section>
+  );
+}
