@@ -29,7 +29,7 @@
 
 ### 기능 B: 브리핑 대시보드 (S1 홈)
 
-- [x] `src/pages/BriefingPage.tsx` — 2026-07-15 / 브리핑 홈 컴포지션 루트, 현재 `MOCK_BRIEFING` 사용 중
+- [x] `src/pages/BriefingPage.tsx` — 2026-07-15 / 브리핑 홈 컴포지션 루트, 2026-07-21에 mock 제거하고 `briefingApi`로 실 데이터 연동 완료
 - [x] `src/components/briefing/BriefingHeader.tsx` — 2026-07-15
 - [x] `src/components/briefing/ScheduleCard.tsx`, `ScheduleItem.tsx` — 2026-07-15
 - [x] `src/components/briefing/RoutineCard.tsx` — 2026-07-15 / 완료 체크가 컴포넌트 로컬 state뿐 (새로고침 시 초기화, 서버 반영 없음) → 위 "P0 선행" 섹션에서 부모 state로 승격 예정, 서버 반영은 여전히 미완
@@ -37,20 +37,20 @@
 - [x] `src/components/briefing/DeadlineCard.tsx`, `DeadlineItem.tsx` — 2026-07-15
 - [x] `src/components/briefing/MemoCard.tsx` — 2026-07-15
 - [x] `src/components/common/DdayBadge.tsx` — 2026-07-15
-- [x] `src/mocks/briefing.ts` — 2026-07-15 / 프로토타입 목데이터, 실 연동 후 제거 대상
+- [x] `src/mocks/briefing.ts` — 2026-07-15 / 프로토타입 목데이터, 2026-07-21 기준 이미 삭제됨(디렉토리 자체가 존재하지 않음) — 이 줄과 A-1 섹션의 `src/mocks/responses.ts` 관련 항목은 stale 기록
 
 **남은 작업**
-- [x] `supabase/migrations/0001_init.sql` — 2026-07-15 / schedules, tasks, routines, routine_logs, meals, memos, reminders 7개 테이블 생성. `raw_input`/`created_at` 전체 포함, `routine_logs`에 `unique(routine_id, date)` 제약 추가, `reminders.target_id`는 다형성 참조라 FK 없이 애플리케이션 레이어에서 무결성 보장하기로 함 (주석으로 명시). RLS는 켜두고 정책은 없음(서비스 롤 전용 접근 유지). **아직 실제 Supabase 프로젝트에 적용은 안 함 — 다음 세션에서 `.env` 채운 뒤 적용 필요**. 설계 근거는 [docs/data-model.md](docs/data-model.md)에 문서화 완료 (2026-07-15)
+- [x] `supabase/migrations/0001_init.sql` — 2026-07-15 / schedules, tasks, routines, routine_logs, meals, memos, reminders 7개 테이블 생성. `raw_input`/`created_at` 전체 포함, `routine_logs`에 `unique(routine_id, date)` 제약 추가, `reminders.target_id`는 다형성 참조라 FK 없이 애플리케이션 레이어에서 무결성 보장하기로 함 (주석으로 명시). RLS는 켜두고 정책은 없음(서비스 롤 전용 접근 유지). **2026-07-21에 실제 Supabase 프로젝트에 적용 완료 + `supabase/seed.sql`로 plan.md 페르소나 기반 시드 데이터 삽입 완료 (7개 테이블 전부 REST API로 조회 검증)**. 설계 근거는 [docs/data-model.md](docs/data-model.md)에 문서화 완료 (2026-07-15)
 - [x] `shared/schemas.ts` 재점검 — 2026-07-15 / `RoutineLogSchema`/`ReminderSchema`에 `rawInput`/`createdAt` 누락 확인 후 추가 완료, typecheck 통과 확인
 - [x] `server/lib/supabaseClient.ts` — 2026-07-15 / 서비스 롤 키로 Supabase 클라이언트 초기화, lazy singleton 패턴 (dotenv 로드 순서 문제 회피)
-- [ ] `server/services/briefingService.ts` — 오늘 날짜 기준 7개 테이블 조회·필터링·정렬 + 루틴 반복 규칙에서 "오늘 순번"(예: 2분할 중 상체/하체) 계산하는 순수 함수
-- [ ] `server/routes/briefing.ts` — `GET /api/briefing?date=YYYY-MM-DD`, `briefingService` 호출 후 응답 직렬화
-- [ ] `server/index.ts`에 `briefing` 라우트 등록 (현재 `/api/health`만 존재)
-- [ ] `src/api/briefingApi.ts` — FE에서 `GET /api/briefing` 호출하는 래퍼 (fetch + 응답 파싱)
-- [ ] `src/pages/BriefingPage.tsx` — `MOCK_BRIEFING` 제거, `briefingApi`로 실 데이터 로드 + 로딩/에러 상태 처리
-- [ ] 브리핑 카드 완료 체크(탭) → 서버 반영: 루틴 체크 시 `routine_logs` insert, 과제 체크 시 `tasks.completed` 업데이트
-- [ ] 완료 항목이 카드 하단으로 이동하는 정렬 로직 구현 (plan.md 3.2.2, 현재 미구현) — mock 레벨 구현은 "P0 선행" 섹션에서 완료 후 이 줄을 체크 처리
-- [ ] 루틴 순환 계산 시나리오 수동 검증: 오늘 상체 day 완료 → 다음 방문 시 하체 day로 전환되는지 확인
+- [x] `server/services/briefingService.ts` — 2026-07-21 / 오늘 날짜 기준 6개 테이블 병렬 조회 + `resolveTodayRoutines` 순수 함수로 2분할(rotation)/`weekly:`/`daily` 반복 규칙 계산. seed 데이터로 로테이션 시나리오 curl 검증 완료
+- [x] `server/routes/briefing.ts` — 2026-07-21 / `GET /api/briefing?date=YYYY-MM-DD`, 날짜 미지정 시 Asia/Seoul 기준 오늘 날짜 기본값, 잘못된 날짜 포맷은 400, 응답은 `BriefingSchema.parse()`로 검증
+- [x] `server/index.ts`에 `briefing` 라우트 등록 — 2026-07-21
+- [x] `src/api/briefingApi.ts` — 2026-07-21 / FE에서 `GET /api/briefing` 호출하는 래퍼
+- [x] `src/pages/BriefingPage.tsx` — 2026-07-21 / mock 상수 제거, `briefingApi.getBriefing()`으로 실 데이터 로드 (로딩/에러 상태 UI는 아직 없음 — console.error만, 필요 시 추가 작업)
+- [x] 브리핑 카드 완료 체크(탭) → 서버 반영 — 2026-07-21 / 과제는 기존 `PATCH /api/items/tasks/:id`에 연결, 루틴은 `routine_logs`가 `ItemType`에 없어 전용 라우트 `POST /api/items/routines/:id/complete`(`routineLogService.upsertRoutineLog`, `unique(routine_id,date)` 기준 upsert) 신설. `BriefingSchema.routines`를 `Routine[]`에서 `{ routine, completedToday }[]`로 변경해 오늘 완료 여부를 브리핑 응답에 포함시킴(`RoutineCard` 로컬 state 완전히 제거). FE는 낙관적 업데이트 후 API 호출, 실패 시 콘솔 로그만 남기고 롤백은 하지 않음(MVP 범위)
+- [x] 완료 항목이 카드 하단으로 이동하는 정렬 로직 구현 — 2026-07-21 / `src/lib/sortByCompleted.ts` 추가, `BriefingPage`에서 렌더 직전 적용. 구현 중 `briefingService`가 `tasks`를 `completed=false`로만 조회하고 있어 체크하면 하단 이동이 아니라 목록에서 즉시 사라지는 버그를 발견해 필터 제거함(전체 과제를 반환하고 정렬은 FE 책임)
+- [x] 루틴 순환 계산 시나리오 수동 검증 — 2026-07-21 / seed 데이터(하체 운동을 7/19에 완료 처리)로 7/21·7/20·7/22 각각 curl 호출해 상체 day 전환과 `weekly:mon,wed,fri` 러닝 노출을 확인함
 
 ### 기능 A-1: 자연어 저장 파이프라인 (파싱 → 분류 → 저장 + 되묻기)
 
@@ -65,7 +65,7 @@
 - [ ] `.env` 로컬 파일 생성 및 `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` 값 채우기 (커밋 금지, `.env.example` 키만 참고) — **위 마이그레이션 적용과 클라이언트 실동작 검증의 선행 조건**
 - [x] `server/lib/anthropicClient.ts` — 2026-07-15 / Claude API 클라이언트 초기화, lazy singleton 패턴 (모델명은 다음 단계 parseService에서 결정 — 프론티어 모델 vs 경량 모델 트레이드오프 아직 미확정)
 - [ ] `server/lib/promptTemplates.ts` — 자연어 → JSON 파싱 프롬프트 (intent 5종 create/update/delete/query/complete, type 6종 schedules/tasks/routines/meals/memos/reminders)
-- [ ] `server/services/itemsService.ts` — 7개 엔티티 공통 CRUD 함수 (Supabase insert/update/delete/select), 저장 시 `raw_input` 원문 보존 포함
+- [x] 6개 엔티티(schedules/tasks/routines/meals/memos/reminders) CRUD 서비스 — 2026-07-21 / 계획했던 단일 `itemsService.ts` 대신, 기존 `scheduleService.ts` 패턴을 따라 엔티티별 파일(`taskService.ts`/`routineService.ts`/`mealService.ts`/`memoService.ts`/`reminderService.ts`)로 구현 (제네릭 config 방식은 `any` 없이 타입 안전하게 만들기 어려워 기각). `server/routes/items.ts`가 `switch(type)`으로 6개 전부 디스패치하도록 일반화, `GET/POST/PATCH/DELETE` 전 타입 curl로 검증 완료. `routine_logs`는 `ItemType`에 없어 CRUD 라우트 대상 아님(브리핑 계산 전용, "완료 체크 반영" 작업에서 별도 처리 필요)
 - [ ] `server/services/parseService.ts` — Claude 응답 수신 → `ParseResultSchema`로 zod 검증 → `resolved`면 `itemsService`로 저장, `clarify`면 후보 목록 반환
 - [ ] 파싱 실패(zod 검증 실패) 예외 처리 — 원문을 `memos` 테이블에 `raw_input`으로 저장 + 재입력 유도 응답 반환 (plan.md 3.1.5)
 - [ ] `server/routes/parse.ts` — `POST /api/parse` 라우트, 에러는 `{ error: { code, message } }` 형식으로 통일
