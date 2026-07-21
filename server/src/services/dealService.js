@@ -1,6 +1,7 @@
 import { pool } from '../db/pool.js'
 import { httpError } from '../lib/httpError.js'
 import { CATEGORIES } from './storeService.js'
+import { notifyDealCreated } from './notificationService.js'
 
 function toDealDto(row) {
   return {
@@ -31,7 +32,10 @@ export async function createDeal(userId, { name, category, originalPrice, salePr
   if (Number.isNaN(deadline.getTime())) throw httpError(400, '픽업 마감 시각이 올바르지 않습니다.')
   if (deadline <= new Date()) throw httpError(400, '픽업 마감은 현재 시각 이후여야 합니다.')
 
-  const { rows: stores } = await pool.query('SELECT id FROM stores WHERE owner_id = $1', [userId])
+  const { rows: stores } = await pool.query(
+    'SELECT id, name FROM stores WHERE owner_id = $1',
+    [userId],
+  )
   if (stores.length === 0) throw httpError(404, '가게를 먼저 등록해주세요.')
 
   const { rows } = await pool.query(
@@ -43,20 +47,32 @@ export async function createDeal(userId, { name, category, originalPrice, salePr
   )
   const deal = toDealDto(rows[0])
 
-  // TODO(T-11): 알림 트리거 지점 — 등록 직후 대상 판정((카테고리 OR 즐겨찾기) AND 위치조건)
-  //             → FCM 푸시 + 인앱 알림 발송. 딜 등록 응답을 막지 않도록 비동기로 처리한다.
+  // 알림 트리거 (T-11) — 대상 판정 후 인앱 알림 생성. FCM 푸시는 T-13에서 추가.
+  // 등록 응답을 막지 않도록 await 하지 않는다(실패해도 내부에서 삼킨다).
+  notifyDealCreated(deal, stores[0].name)
 
   return deal
 }
 
-// W3 대시보드 기초 — 가게별 딜 목록 (최신 등록 순)
+// W3 대시보드 — 가게별 딜 목록 + 예약/픽업 집계 (최신 등록 순)
 export async function listDealsByStore(storeId) {
   if (!Number.isInteger(storeId) || storeId <= 0) throw httpError(400, 'storeId가 올바르지 않습니다.')
   const { rows } = await pool.query(
-    'SELECT * FROM deals WHERE store_id = $1 ORDER BY created_at DESC',
+    `SELECT d.*,
+            COUNT(r.id) FILTER (WHERE r.status = 'reserved')::int AS reserved_count,
+            COUNT(r.id) FILTER (WHERE r.status = 'picked')::int AS picked_count
+     FROM deals d
+     LEFT JOIN reservations r ON r.deal_id = d.id
+     WHERE d.store_id = $1
+     GROUP BY d.id
+     ORDER BY d.created_at DESC`,
     [storeId],
   )
-  return rows.map(toDealDto)
+  return rows.map((row) => ({
+    ...toDealDto(row),
+    reservedCount: row.reserved_count,
+    pickedCount: row.picked_count,
+  }))
 }
 
 function toNearbyDto(row) {

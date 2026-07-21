@@ -34,8 +34,17 @@ function ConsumerHomePage() {
   return (
     <main className="consumer-home">
       <header className="consumer-home__head">
-        <h1 className="consumer-home__title">내 주변 마감 할인</h1>
-        <p className="consumer-home__sub">{session?.nickname}님 · 기준 위치 반경 이내</p>
+        <div>
+          <h1 className="consumer-home__title">내 주변 마감 할인</h1>
+          <p className="consumer-home__sub">{session?.nickname}님 · 기준 위치 반경 이내</p>
+        </div>
+        <button
+          type="button"
+          className="consumer-home__my"
+          onClick={() => navigate('/app/reservations')}
+        >
+          내 예약
+        </button>
       </header>
 
       {loading && <p className="consumer-home__msg">불러오는 중...</p>}

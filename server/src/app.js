@@ -5,6 +5,7 @@ import healthRouter from './routes/health.js'
 import storesRouter from './routes/stores.js'
 import dealsRouter from './routes/deals.js'
 import reservationsRouter from './routes/reservations.js'
+import notificationsRouter from './routes/notifications.js'
 
 const app = express()
 
@@ -16,6 +17,7 @@ app.use('/api/health', healthRouter)
 app.use('/api/stores', storesRouter)
 app.use('/api/deals', dealsRouter)
 app.use('/api/reservations', reservationsRouter)
+app.use('/api/notifications', notificationsRouter)
 
 // 공통 에러 응답: { message }
 app.use((err, req, res, next) => {

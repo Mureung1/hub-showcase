@@ -83,8 +83,16 @@ function DealDetailPage() {
         <button
           type="button"
           className="deal-detail__reserve"
-          onClick={() => navigate('/app')}
+          onClick={() => navigate('/app/reservations')}
           style={{ marginTop: 20 }}
+        >
+          내 예약 보기
+        </button>
+        <button
+          type="button"
+          className="deal-detail__back"
+          onClick={() => navigate('/app')}
+          style={{ marginTop: 12, width: '100%' }}
         >
           목록으로
         </button>

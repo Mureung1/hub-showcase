@@ -93,6 +93,51 @@ export async function createReservation(userId, { dealId, qty }) {
   })
 }
 
+/*
+ * 픽업 확인 (T-10) — 사장님이 코드를 검증해 완료 처리한다.
+ * 활성 예약(status='reserved') 중에서만 코드가 유일하므로 코드로 단건 조회가 가능하다.
+ */
+export async function confirmPickup(userId, pickupCode) {
+  const code = String(pickupCode ?? '').trim()
+  if (!/^\d{4}$/.test(code)) throw httpError(400, '픽업코드는 4자리 숫자입니다.')
+
+  const { rows: stores } = await pool.query('SELECT id FROM stores WHERE owner_id = $1', [userId])
+  if (stores.length === 0) throw httpError(403, '가게 사장님만 픽업을 확인할 수 있습니다.')
+  const storeId = stores[0].id
+
+  return withTransaction(async (client) => {
+    // 내 가게의 활성 예약만 대상. 행을 잠가 동시 확인 요청을 직렬화한다.
+    const { rows } = await client.query(
+      `SELECT r.id, r.qty, r.pickup_code, d.name AS deal_name, d.sale_price, u.nickname
+       FROM reservations r
+       JOIN deals d ON d.id = r.deal_id
+       JOIN users u ON u.id = r.user_id
+       WHERE r.pickup_code = $1 AND r.status = 'reserved' AND d.store_id = $2
+       FOR UPDATE OF r`,
+      [code, storeId],
+    )
+    if (rows.length === 0) {
+      throw httpError(404, '유효하지 않거나 이미 처리된 코드입니다.')
+    }
+
+    const reservation = rows[0]
+    await client.query(
+      `UPDATE reservations SET status = 'picked', picked_at = now() WHERE id = $1`,
+      [reservation.id],
+    )
+
+    return {
+      id: Number(reservation.id),
+      pickupCode: reservation.pickup_code,
+      qty: reservation.qty,
+      dealName: reservation.deal_name,
+      salePrice: reservation.sale_price,
+      nickname: reservation.nickname,
+      status: 'picked',
+    }
+  })
+}
+
 // 내 예약 목록 (M4·T-09에서 사용)
 export async function listMyReservations(userId) {
   const { rows } = await pool.query(

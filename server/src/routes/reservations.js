@@ -1,9 +1,22 @@
 import { Router } from 'express'
 import { asyncHandler } from '../lib/asyncHandler.js'
 import { requireUser } from '../middlewares/requireUser.js'
-import { createReservation, listMyReservations } from '../services/reservationService.js'
+import {
+  createReservation,
+  listMyReservations,
+  confirmPickup,
+} from '../services/reservationService.js'
 
 const router = Router()
+
+// POST /api/reservations/pickup — 픽업코드 검증 후 완료 처리 (사장님, W4)
+router.post(
+  '/pickup',
+  requireUser,
+  asyncHandler(async (req, res) => {
+    res.json(await confirmPickup(req.userId, req.body?.pickupCode))
+  }),
+)
 
 // GET /api/reservations/me — 내 예약 목록 (M4)
 router.get(
