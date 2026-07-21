@@ -1,17 +1,15 @@
 # Local Vision Overlay Studio
 
-사진을 브라우저 안에서 분석해 1인 또는 커플 인물 프레임, 수평선, 배경 구도선을 자동 생성하는 로컬 웹 도구입니다. 사진은 외부 API나 서버로 전송되지 않습니다.
+기존 Before/After 화면에서 로컬 YOLO와 SAM2를 사용해 1인 또는 커플의 정밀 윤곽과 수평 가이드를 생성합니다. 사진은 이 PC의 로컬 서버에서 처리되며 외부 Vision API로 전송되지 않습니다.
 
 ## First-time setup
 
-```bash
-cd tools/overlay-agent/web
-npm install
-npm run setup-models
-npm run dev
+```powershell
+cd tools/overlay-agent
+.\start-yolo-sam2-studio.ps1
 ```
 
-Vite가 출력하는 로컬 주소를 브라우저에서 엽니다.
+스크립트가 FastAPI와 Vite를 함께 실행합니다. Vite가 출력하는 로컬 주소를 브라우저에서 엽니다. 최초 준비는 `tools/yolo-sam2-overlay/README.md`를 따릅니다.
 
 `setup-models`는 무료 MediaPipe Pose Landmarker 모델과 MediaPipe WASM을 로컬 폴더에 준비합니다. 이 단계에서만 인터넷 연결이 필요합니다. 배경선은 브라우저 Canvas의 가벼운 대비 분석으로 생성해, 별도 API나 무거운 런타임 없이 안정적으로 동작합니다.
 
@@ -25,8 +23,8 @@ Vite가 출력하는 로컬 주소를 브라우저에서 엽니다.
 
 ## 앱에 붙일 때
 
-분석 코드는 `src/features/vision-overlay/`에 분리되어 있습니다. 이후 포토스팟 상세나 카메라 화면에서는 `analyzePhotoLayout({ image, mode, onProgress })`만 호출해 같은 `guide.json` 결과를 받아 사용할 수 있습니다. 현재 화면은 그 모듈을 소비하는 독립 Studio UI입니다.
+분석 코드는 `src/features/vision-overlay/`에 분리되어 있습니다. 이후 포토스팟 상세나 카메라 화면에서는 `analyzePhotoLayout({ file, image, mode, onProgress })`만 호출해 같은 `guide.json` 결과를 받아 사용할 수 있습니다. Python API는 `/api/analyze`에서 정규화된 인물 윤곽 좌표를 반환합니다.
 
 ## GitHub Pages 배포
 
-저장소의 `.github/workflows/deploy-overlay-studio.yml` 워크플로가 `week2-project-structure` 브랜치의 Studio 변경을 감지해 모델 자산을 준비하고 기존 Pages의 `overlay-studio/` 경로에 정적 파일을 배포합니다. 배포 주소에서는 Vite 개발 서버를 실행할 필요가 없습니다.
+GitHub Pages에서는 Python 모델 서버를 실행할 수 없으므로 기존 MediaPipe 브라우저 분석을 사용합니다. YOLO/SAM2 배포판은 이후 GPU 또는 CPU 서버에 FastAPI를 별도로 배포한 뒤 API 주소를 연결해야 합니다.

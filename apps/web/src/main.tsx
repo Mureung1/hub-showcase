@@ -1,5 +1,5 @@
 import { ArrowLeft, Camera, ChevronRight, Heart, MapPin, Plus, Search, ShieldCheck, X } from "lucide-react";
-import { ChangeEvent, ReactNode, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, ReactNode, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { CameraCapture } from "./components/CameraCapture";
 import { NaverMap } from "./components/NaverMap";
@@ -44,8 +44,16 @@ function App() {
 }
 
 function MapScreen({ mode, spots, visibleSpots, selectedSpot, onMode, onSelect, onDetail, onPropose }: { mode: SpotKind; spots: PhotoSpot[]; visibleSpots: PhotoSpot[]; selectedSpot?: PhotoSpot; onMode: (mode: SpotKind) => void; onSelect: (spot: PhotoSpot) => void; onDetail: () => void; onPropose: () => void }) {
+  const [query, setQuery] = useState("");
+  const searchResults = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    if (!keyword) return [];
+    return spots.filter((spot) => [spot.name, spot.area, spot.address, spot.placeCategory].some((value) => value.toLowerCase().includes(keyword)));
+  }, [query, spots]);
   const setTab = (next: SpotKind) => { onMode(next); onSelect(spots.find((spot) => spot.kind === next)!); };
-  return <><header className="map-header"><label className="search-box"><Search size={21} /><input placeholder="장소 검색" aria-label="장소 검색" /></label></header><div className="segment-control" role="tablist" aria-label="포토스팟 종류"><button className={mode === "official" ? "active" : ""} type="button" onClick={() => setTab("official")}>공식 포토스팟</button><button className={mode === "candidate" ? "active" : ""} type="button" onClick={() => setTab("candidate")}>후보 보기</button></div><NaverMap spots={visibleSpots} selectedId={selectedSpot?.id} mode={mode} onSelect={onSelect} /><BottomSheet mode={mode} spots={visibleSpots} selectedId={selectedSpot?.id} onSelect={onSelect} onDetail={onDetail} onPropose={onPropose} /></>;
+  const selectSearchResult = (spot: PhotoSpot) => { onSelect(spot); setQuery(spot.name); };
+  const submitSearch = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (searchResults[0]) selectSearchResult(searchResults[0]); };
+  return <><header className="map-header"><form className="search-form" onSubmit={submitSearch}><label className="search-box"><Search size={21} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="장소 검색" aria-label="장소 검색" /><button type="submit" aria-label="검색">검색</button></label>{searchResults.length > 0 && <div className="search-results">{searchResults.map((spot) => <button type="button" key={spot.id} onClick={() => selectSearchResult(spot)}><span><b>{spot.name}</b><small>{spot.placeCategory} · {spot.address}</small></span><MapPin size={17} /></button>)}</div>}</form></header><div className="segment-control" role="tablist" aria-label="포토스팟 종류"><button className={mode === "official" ? "active" : ""} type="button" onClick={() => setTab("official")}>공식 포토스팟</button><button className={mode === "candidate" ? "active" : ""} type="button" onClick={() => setTab("candidate")}>후보 보기</button></div><NaverMap spots={visibleSpots} selectedId={selectedSpot?.id} mode={mode} onSelect={onSelect} /><BottomSheet mode={mode} spots={visibleSpots} selectedId={selectedSpot?.id} onSelect={onSelect} onDetail={onDetail} onPropose={onPropose} /></>;
 }
 
 function BottomSheet({ mode, spots, selectedId, onSelect, onDetail, onPropose }: { mode: SpotKind; spots: PhotoSpot[]; selectedId?: string; onSelect: (spot: PhotoSpot) => void; onDetail: () => void; onPropose: () => void }) { return <section className="bottom-sheet"><div className="sheet-handle" /><div className="sheet-tabs"><span className={mode === "official" ? "active" : ""}>공식</span><span className={mode === "candidate" ? "active" : ""}>후보 {mode === "candidate" ? spots.length : ""}</span><button type="button" onClick={onPropose}><Plus size={16} /> 후보 제안</button></div><div className="spot-list">{spots.map((spot) => <button className={`spot-row ${spot.id === selectedId ? "selected" : ""}`} type="button" key={spot.id} onClick={() => { onSelect(spot); onDetail(); }}><PhotoThumbnail tone={spot.imageTone} /><span className="spot-row-copy"><strong>{spot.name}</strong><small>{spot.area}</small>{spot.kind === "candidate" && <em><Heart size={14} fill="currentColor" /> {spot.likes} / {spot.threshold}</em>}</span><ChevronRight size={23} /></button>)}</div></section>; }

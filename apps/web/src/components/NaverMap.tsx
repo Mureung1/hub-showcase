@@ -13,6 +13,12 @@ type Props = {
   onCoordinateSelect?: (coordinate: { latitude: number; longitude: number }) => void;
 };
 
+type NaverMapInstance = {
+  setCenter?: (coordinate: unknown) => void;
+  panTo?: (coordinate: unknown) => void;
+  setZoom?: (zoom: number) => void;
+};
+
 export function NaverMap({ spots, selectedId, mode, selectable = false, onSelect, onCoordinateSelect }: Props) {
   const elementRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<unknown>(null);
@@ -71,9 +77,22 @@ export function NaverMap({ spots, selectedId, mode, selectable = false, onSelect
     };
   }, [spots, selectedId, status, onSelect, mode]);
 
+  useEffect(() => {
+    if (status !== "ready" || !selectedId || !mapRef.current) return;
+    const selectedSpot = spots.find((spot) => spot.id === selectedId);
+    if (!selectedSpot) return;
+
+    loadNaverMaps().then((maps) => {
+      const map = mapRef.current as NaverMapInstance | null;
+      const position = new maps.LatLng(selectedSpot.latitude, selectedSpot.longitude);
+      if (map?.panTo) map.panTo(position);
+      else map?.setCenter?.(position);
+    });
+  }, [selectedId, spots, status]);
+
   const resetMap = () => {
     loadNaverMaps().then((maps) => {
-      const map = mapRef.current as { setCenter?: (coord: unknown) => void; setZoom?: (zoom: number) => void } | null;
+      const map = mapRef.current as NaverMapInstance | null;
       map?.setCenter?.(new maps.LatLng(DURYU_CENTER.latitude, DURYU_CENTER.longitude));
       map?.setZoom?.(15);
     });

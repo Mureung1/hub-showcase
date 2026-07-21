@@ -35,6 +35,7 @@ jobs:
         working-directory: tools/overlay-agent/web
         env:
           VITE_BASE_PATH: /hub/overlay-studio/
+          VITE_ANALYSIS_MODE: browser
         run: npm run build
       - name: Publish Studio below the existing Pages site
         uses: peaceiris/actions-gh-pages@v4

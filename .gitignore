@@ -15,3 +15,4 @@ tools/yolo-sam2-overlay/models/
 tools/yolo-sam2-overlay/results/
 tools/yolo-sam2-overlay/__pycache__/
 tools/yolo-sam2-overlay/src/__pycache__/
+tools/yolo-sam2-overlay/*.log
