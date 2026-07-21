@@ -1,40 +1,47 @@
-import { useState } from 'react'
-import { companies } from './data/mockData.js'
-import Topbar from './components/Topbar.jsx'
+import { useState, useEffect } from 'react'
+import Header from './components/Header.jsx'
 import JobCard from './components/JobCard.jsx'
-import ProjectIntro from './components/ProjectIntro.jsx'
-import InterestSection from './components/InterestSection.jsx'
+import LearningLoop from './components/LearningLoop.jsx'
+import { jobs, learnReview, learnNew } from './data/copilotData.js'
 
-// App = 화면 조립 + 뷰 전환.
-//  상단 탭으로 '적합도 대시보드'(fit) ↔ '프로젝트 소개'(intro) 를 오간다.
+// 섹션 번호 라벨 (01 채용 공고 / 02 학습 루프)
+function SectionLabel({ num, title, sub }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', rowGap: 4, gap: 10, margin: '36px 0 14px' }}>
+      <span style={{ fontSize: 12, color: 'var(--text-faint)', border: '1px solid var(--border)', borderRadius: 10, padding: '2px 7px' }}>{num}</span>
+      <h2 style={{ fontSize: 15, fontWeight: 600, letterSpacing: '-0.01em', margin: 0 }}>{title}</h2>
+      <span style={{ fontSize: 12.5, color: 'var(--text-faint)', marginLeft: 2, flexBasis: '100%' }}>{sub}</span>
+    </div>
+  )
+}
+
 export default function App() {
-  const [view, setView] = useState('fit') // 'fit' | 'intro'
+  // 테마: 라이트 기본. html 의 data-theme 로 CSS 변수를 전환한다.
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('cc-theme') || 'light' } catch { return 'light' }
+  })
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    try { localStorage.setItem('cc-theme', theme) } catch { /* ignore */ }
+  }, [theme])
 
   return (
-    <div className="wrap">
-      <Topbar view={view} onNav={setView} newCount={2} urgentCount={1} />
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', transition: 'background .25s ease, color .25s ease' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '28px 24px 80px', zoom: 1.3 }}>
+        <Header theme={theme} setTheme={setTheme} />
 
-      {view === 'fit' ? (
-        <>
-          <InterestSection />
-          <div className="section-label">
-            <span className="num">01</span>
-            <h2>채용 공고</h2>
-            <span className="sub">공고별 적합도 — 펼치면 요구역량 · 개념/구현 적합도 · 갭 액션</span>
-          </div>
-          <div className="job-list">
-            {companies.map((c) => (
-              <JobCard key={c.id} job={c} defaultOpen={c.id === 'sionic'} />
-            ))}
-          </div>
-        </>
-      ) : (
-        <ProjectIntro />
-      )}
+        <SectionLabel num="01" title="채용 공고" sub="공고별 적합도 — 펼치면 요구역량 · 개념/구현 적합도 · 갭 액션" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {jobs.map((job, i) => <JobCard key={i} job={job} />)}
+        </div>
 
-      <footer className="foot-note">
-        mock 데이터 · 데이터 연결은 다음 단계 (React → Express → Supabase) · 디자인 = 프로토타입 v2
-      </footer>
+        <SectionLabel num="02" title="학습 루프" sub="갭은 새로 학습 · 아는 건 복습(까먹기 방지) — 전부 근거 기반" />
+        <LearningLoop review={learnReview} fresh={learnNew} />
+
+        <footer style={{ marginTop: 44, padding: '16px 4px 0', fontSize: 11.5, color: 'var(--text-faint)', textAlign: 'center', borderTop: '1px solid var(--border-soft)' }}>
+          러프 프로토타입 · 예시 데이터
+        </footer>
+      </div>
     </div>
   )
 }
