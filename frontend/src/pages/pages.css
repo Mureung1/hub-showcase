@@ -73,6 +73,52 @@
   font-size: 0.92rem;
 }
 
+/* ---- AI 총평 패널 ---- */
+.rs-overall {
+  margin-bottom: var(--clb-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--clb-space-sm);
+}
+
+.rs-overall-title {
+  margin: 0;
+  font-size: var(--clb-text-card-title);
+}
+
+.rs-overall-hint {
+  margin: 0;
+  color: var(--clb-muted);
+  font-size: 0.92rem;
+}
+
+/* ---- 비밀번호 잠금 해제 모달 입력 ---- */
+.rs-pw-input {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: var(--clb-radius-control);
+  border: 1px solid var(--clb-edge-soft);
+  background: var(--clb-glass-faint);
+  color: var(--clb-ink);
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.rs-pw-input::placeholder {
+  color: var(--clb-muted-dim);
+}
+
+.rs-pw-input:focus-visible {
+  outline: 2px solid var(--clb-gold);
+  outline-offset: 1px;
+}
+
+.rs-pw-error {
+  margin: 0;
+  color: #ffd9d0;
+  font-size: 0.9rem;
+}
+
 .rs-doc-tags {
   display: flex;
   gap: var(--clb-space-xs);

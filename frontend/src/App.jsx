@@ -8,6 +8,8 @@ import EditorPage from './pages/EditorPage.jsx'
 import ChallengesPage from './pages/ChallengesPage.jsx'
 import GuidePage from './pages/GuidePage.jsx'
 import MyPage from './pages/MyPage.jsx'
+import AuthPage from './pages/AuthPage.jsx'
+import TutorialPage from './pages/TutorialPage.jsx'
 
 function App() {
   return (
@@ -20,7 +22,10 @@ function App() {
         <Route path="/write/:templateId" element={<EditorPage />} />
         <Route path="/challenges" element={<ChallengesPage />} />
         <Route path="/guide" element={<GuidePage />} />
+        <Route path="/tutorial" element={<TutorialPage />} />
         <Route path="/me" element={<MyPage />} />
+        <Route path="/login" element={<AuthPage mode="login" />} />
+        <Route path="/signup" element={<AuthPage mode="signup" />} />
       </Route>
     </Routes>
   )

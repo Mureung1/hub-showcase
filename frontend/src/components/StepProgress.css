@@ -1,0 +1,66 @@
+.rs-steps {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--clb-space-xs);
+  flex-wrap: wrap;
+}
+
+.rs-step {
+  display: flex;
+  align-items: center;
+  gap: var(--clb-space-xs);
+  flex: 1;
+  min-width: 0;
+}
+
+.rs-step:not(:last-child)::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  min-width: 16px;
+  background: var(--clb-edge-soft);
+  border-radius: 2px;
+}
+
+.rs-step.is-done:not(:last-child)::after {
+  background: var(--clb-gold);
+}
+
+.rs-step-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: var(--clb-glass-faint);
+  border: 1px solid var(--clb-edge-soft);
+  color: var(--clb-muted);
+}
+
+.rs-step.is-current .rs-step-dot,
+.rs-step.is-done .rs-step-dot {
+  background: var(--clb-gold);
+  border-color: var(--clb-edge);
+  color: var(--clb-gold-ink);
+}
+
+.rs-step-label {
+  font-size: var(--clb-text-label);
+  color: var(--clb-muted);
+  white-space: nowrap;
+}
+
+.rs-step.is-current .rs-step-label {
+  color: var(--clb-ink);
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .rs-step-label {
+    display: none;
+  }
+}

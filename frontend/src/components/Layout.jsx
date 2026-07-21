@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useAuth } from '../lib/AuthContext.jsx'
 import './Layout.css'
 
 const NAV_ITEMS = [
@@ -7,10 +8,19 @@ const NAV_ITEMS = [
   { to: '/write', label: '작성하기' },
   { to: '/challenges', label: '챌린지' },
   { to: '/guide', label: '가이드' },
+  { to: '/tutorial', label: '튜토리얼' },
   { to: '/me', label: '마이페이지' },
 ]
 
 function Layout() {
+  const auth = useAuth()
+  const navigate = useNavigate()
+
+  async function handleSignOut() {
+    await auth.signOut()
+    navigate('/', { replace: true })
+  }
+
   return (
     <div className="rs-shell">
       <div className="rs-orbs" aria-hidden="true">
@@ -35,6 +45,24 @@ function Layout() {
             </NavLink>
           ))}
         </nav>
+        <div className="rs-nav-auth">
+          {auth.isLoggedIn ? (
+            <>
+              <span className="rs-nav-user" title={auth.user.email}>
+                {auth.user.email?.split('@')[0]}
+              </span>
+              <button className="rs-nav-authbtn" onClick={handleSignOut}>
+                로그아웃
+              </button>
+            </>
+          ) : (
+            auth.isAuthEnabled && (
+              <NavLink to="/login" className="rs-nav-authbtn">
+                로그인
+              </NavLink>
+            )
+          )}
+        </div>
       </header>
       <main className="rs-main">
         <Outlet />

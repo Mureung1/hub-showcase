@@ -1,0 +1,65 @@
+.rs-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--clb-space-md);
+  background: rgba(30, 20, 70, 0.38);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.rs-modal {
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--clb-glass-strong);
+  backdrop-filter: blur(var(--clb-blur-panel));
+  -webkit-backdrop-filter: blur(var(--clb-blur-panel));
+  border: 1px solid var(--clb-edge);
+  border-radius: var(--clb-radius-panel);
+  box-shadow: var(--clb-shadow-panel);
+  padding: var(--clb-space-lg);
+}
+
+.rs-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--clb-space-sm);
+  margin-bottom: var(--clb-space-md);
+}
+
+.rs-modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.rs-modal-close {
+  border: none;
+  background: transparent;
+  color: var(--clb-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--clb-radius-pill);
+}
+
+.rs-modal-close:hover {
+  color: var(--clb-ink);
+  background: var(--clb-glass-faint);
+}
+
+.rs-modal-close:focus-visible {
+  outline: 2px solid var(--clb-gold);
+  outline-offset: 2px;
+}
+
+.rs-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clb-space-md);
+}

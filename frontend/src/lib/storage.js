@@ -12,6 +12,15 @@ export function loadPublished() {
   return request('/documents?status=published')
 }
 
+// 로그인 사용자의 문서만(마이페이지용). 토큰은 api.js가 자동으로 붙인다.
+export function loadMyDrafts() {
+  return request('/documents?status=draft&mine=true')
+}
+
+export function loadMyPublished() {
+  return request('/documents?status=published&mine=true')
+}
+
 export function getPublishedDocument(id) {
   return request(`/documents/${id}`)
 }
@@ -42,4 +51,21 @@ export function publishDocument(doc) {
 // 생성된 코멘트(서버가 uuid·createdAt 부여)를 반환한다.
 export function addCommentToPublished(docId, comment) {
   return request(`/documents/${docId}/comments`, { method: 'POST', body: comment })
+}
+
+// 회원 전용: 제출 직후 AI 자동 피드백 요청(섹션별 + 전체 총평).
+// payload로 문서 메타(title/gameTag/templateName)와 섹션별 guide를 함께 보내야
+// 백엔드가 섹션 성격에 맞는 특화 피드백을 낸다. 백엔드가 LLM 호출 후 comments 에 append 한다.
+export function requestAiFeedback(docId, payload = {}) {
+  return request(`/documents/${docId}/ai-feedback`, { method: 'POST', body: payload })
+}
+
+// 회원 전용: 발행 전 에디터 미리보기. 저장하지 않고 [{sectionKey, content}] 배열을 돌려준다.
+export function requestAiFeedbackPreview(payload = {}) {
+  return request('/documents/ai-feedback/preview', { method: 'POST', body: payload })
+}
+
+// 비회원 문서 수정 비밀번호 확인(잠금 해제 모달용).
+export function verifyEditPassword(docId, editPassword) {
+  return request(`/documents/${docId}/verify-edit`, { method: 'POST', body: { editPassword } })
 }

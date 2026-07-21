@@ -1,0 +1,137 @@
+/* 로그인/회원가입 화면. 글래스 패널 레시피 재사용. */
+.rs-auth {
+  display: flex;
+  justify-content: center;
+  padding: var(--clb-space-xl) var(--clb-space-md);
+}
+
+.rs-auth-panel {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--clb-space-md);
+}
+
+.rs-auth-title {
+  margin: 0;
+  font-size: var(--clb-text-panel-title);
+}
+
+.rs-auth-sub {
+  margin: 0;
+  color: var(--clb-muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.rs-auth-providers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clb-space-sm);
+}
+
+.rs-auth-providers .rs-btn {
+  width: 100%;
+}
+
+.rs-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--clb-space-sm);
+  color: var(--clb-muted-dim);
+  font-size: var(--clb-text-label);
+}
+
+.rs-auth-divider::before,
+.rs-auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--clb-edge-soft);
+}
+
+.rs-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clb-space-md);
+}
+
+.rs-auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clb-space-xs);
+  font-size: var(--clb-text-label);
+  color: var(--clb-muted);
+}
+
+.rs-auth-field input {
+  padding: 10px 16px;
+  border-radius: var(--clb-radius-control);
+  border: 1px solid var(--clb-edge-soft);
+  background: var(--clb-glass-faint);
+  color: var(--clb-ink);
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.rs-auth-field input::placeholder {
+  color: var(--clb-muted-dim);
+}
+
+.rs-auth-field input:focus-visible {
+  outline: 2px solid var(--clb-gold);
+  outline-offset: 1px;
+}
+
+.rs-auth-submit {
+  width: 100%;
+  margin-top: var(--clb-space-xs);
+}
+
+.rs-auth-error {
+  margin: 0;
+  color: #ffd9d0;
+  font-size: 0.9rem;
+}
+
+.rs-auth-notice {
+  margin: 0;
+  color: var(--clb-success);
+  font-size: 0.9rem;
+}
+
+.rs-auth-switch {
+  margin: 0;
+  text-align: center;
+  color: var(--clb-muted);
+  font-size: 0.9rem;
+}
+
+.rs-auth-switch a {
+  color: var(--clb-gold);
+  font-weight: 700;
+}
+
+/* ---- 가입 마지막: 초심자 질문 ---- */
+.rs-auth-question {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.rs-auth-choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clb-space-sm);
+}
+
+.rs-auth-choices .rs-btn {
+  width: 100%;
+}
+
+.rs-auth-hint {
+  margin: 0;
+  color: var(--clb-muted-dim);
+  font-size: var(--clb-text-label);
+}
