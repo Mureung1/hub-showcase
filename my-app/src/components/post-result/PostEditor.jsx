@@ -21,7 +21,7 @@ function ContentBlock({ block }) {
   );
 }
 
-function PostEditor({ title, content, photoLayout, onEdit, onRegenerate, onSchedule }) {
+function PostEditor({ title, content, photoLayout = [], onEdit, onRegenerate, onSchedule }) {
   const [titleValue, setTitleValue] = useState(title);
   const contentRef = useRef(null);
 
@@ -59,25 +59,27 @@ function PostEditor({ title, content, photoLayout, onEdit, onRegenerate, onSched
           </div>
         </div>
 
-        <div className="border-t border-outline-variant pt-xl flex flex-col gap-md">
-          <h3 className="font-headline-sm text-headline-sm flex items-center gap-xs">
-            <span className="material-symbols-outlined text-primary">photo_library</span>
-            사진 배치 추천
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
-            {photoLayout.map((item) => (
-              <div
-                key={item.number}
-                className="p-md bg-surface-container-high rounded-lg flex items-center gap-sm"
-              >
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-                  {item.number}
+        {photoLayout.length > 0 && (
+          <div className="border-t border-outline-variant pt-xl flex flex-col gap-md">
+            <h3 className="font-headline-sm text-headline-sm flex items-center gap-xs">
+              <span className="material-symbols-outlined text-primary">photo_library</span>
+              사진 배치 추천
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+              {photoLayout.map((item) => (
+                <div
+                  key={item.number}
+                  className="p-md bg-surface-container-high rounded-lg flex items-center gap-sm"
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
+                    {item.number}
+                  </div>
+                  <span className="font-body-sm text-body-sm">{item.label}</span>
                 </div>
-                <span className="font-body-sm text-body-sm">{item.label}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </Card>
 
       <footer className="flex items-center justify-end gap-md py-lg mb-container-margin">

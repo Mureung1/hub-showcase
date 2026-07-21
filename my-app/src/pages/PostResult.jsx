@@ -1,17 +1,31 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import PageTopBar from "../components/PageTopBar";
 import AISummaryCard from "../components/post-result/AISummaryCard";
 import TagListCard from "../components/post-result/TagListCard";
 import ThumbnailCard from "../components/post-result/ThumbnailCard";
-import AIExplanationCard from "../components/post-result/AIExplanationCard";
 import PostEditor from "../components/post-result/PostEditor";
 import { usePostResult } from "../hooks/usePostResult";
 
+// 서버 Post.content는 규칙 기반으로 생성된 순수 문자열이라(구조화된 문단/제목
+// 블록이 아님), 줄바꿈 단위로 문단 블록화해서 PostEditor에 그대로 넣어준다.
+function toContentBlocks(content) {
+  return content.split("\n").map((line) => ({ type: "paragraph", parts: [{ text: line }] }));
+}
+
 function PostResult() {
   const navigate = useNavigate();
-  const { data: result } = usePostResult();
+  const { id } = useParams();
+  const { data: post, error } = usePostResult(id);
 
-  if (!result) {
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface font-body-md text-body-md text-error">
+        {error.message}
+      </div>
+    );
+  }
+
+  if (!post) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface font-body-md text-body-md text-on-surface-variant">
         불러오는 중...
@@ -30,18 +44,18 @@ function PostResult() {
       <main className="max-w-[1440px] mx-auto px-container-margin pt-24 pb-xl flex flex-col md:flex-row gap-xl">
         <aside className="w-full md:w-[30%] flex flex-col gap-lg">
           <AISummaryCard />
-          <TagListCard title="추천 키워드" icon="trending_up" variant="seo" tags={result.seoKeywords} />
-          <TagListCard title="추천 해시태그" variant="hashtag" tags={result.hashtags} />
-          <ThumbnailCard thumbnail={result.thumbnail} />
-          <AIExplanationCard reasons={result.aiReasons} expectedEffect={result.expectedEffect} />
+          <TagListCard title="추천 키워드" icon="trending_up" variant="seo" tags={post.seoKeywords} />
+          <TagListCard title="추천 해시태그" variant="hashtag" tags={post.hashtags} />
+          <ThumbnailCard
+            thumbnail={{ url: post.thumbnailUrl, note: "사진을 업로드하면 추천 썸네일을 보여드려요." }}
+          />
         </aside>
 
         <PostEditor
-          title={result.title}
-          content={result.content}
-          photoLayout={result.photoLayout}
+          title={post.title}
+          content={toContentBlocks(post.content)}
           onRegenerate={() => {}}
-          onSchedule={() => navigate("/posts/promotion/schedule")}
+          onSchedule={() => navigate(`/posts/promotion/schedule/${post.id}`)}
         />
       </main>
     </div>

@@ -1,6 +1,5 @@
-import { useMockResource } from "./useMockResource";
-import { mockPostResult } from "../api/mocks/postResult";
+import { useApiResource } from "./useApiResource";
 
-export function usePostResult() {
-  return useMockResource(mockPostResult);
+export function usePostResult(id) {
+  return useApiResource(`/posts/${id}`);
 }

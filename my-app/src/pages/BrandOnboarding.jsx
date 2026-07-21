@@ -4,7 +4,7 @@ import OnboardingHeader from "../components/brand-onboarding/OnboardingHeader";
 import BrandInfoStep from "../components/brand-onboarding/BrandInfoStep";
 import ChannelConnectStep from "../components/brand-onboarding/ChannelConnectStep";
 import AnalyzingStep from "../components/brand-onboarding/AnalyzingStep";
-import { CATEGORIES } from "../components/brand-onboarding/CategoryGrid";
+import { CATEGORIES } from "../components/brand-onboarding/categories";
 import { markOnboardingComplete } from "../lib/onboarding";
 
 const TOTAL_STEPS = 3;
