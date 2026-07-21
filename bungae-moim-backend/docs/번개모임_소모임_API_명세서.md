@@ -25,7 +25,7 @@
 | POST | `/api/auth/kakao` | 카카오 OAuth 인가 코드를 받아 로그인 처리 | 불필요 |
 | POST | `/api/auth/logout` | 세션 종료 | 필요 |
 | GET | `/api/users/me` | 로그인한 사용자 정보 조회 | 필요 |
-| PATCH | `/api/users/me` | 생년월일 등 최초 입력값 등록/수정 | 필요 |
+| PATCH | `/api/users/me` | 생년월일 최초 1회 등록 (이후 수정 불가) | 필요 |
 
 ### POST /api/auth/google
 
@@ -52,9 +52,15 @@
 { "birthDate": "2001-05-20" }
 ```
 
-> ⚠️ **아직 구현되지 않았습니다** (2026-07-20 기준). D5로 예정돼 있으며, 이것이 없으면 모든 사용자의
-> `birthDate`가 `null`이라 "성인만 참여 가능" 모임에 아무도 참여할 수 없습니다. 참여 신청(F1)보다
-> 먼저 구현해야 합니다.
+`birthDate`는 **최초 1회만** 설정할 수 있습니다 (현재 값이 `null`일 때만 허용). 이미 값이 있는 상태에서
+다시 요청하면 `VALIDATION_ERROR`(400) "생년월일은 수정할 수 없습니다"를 반환합니다.
+
+**검증**: `YYYY-MM-DD` 형식 + 실재하는 날짜 + 미래 날짜가 아닐 것. 하나라도 어긋나면 `VALIDATION_ERROR`.
+
+**응답**
+```json
+{ "data": { "id": 1, "nickname": "홍길동", "email": "...", "birthDate": "2001-05-20" } }
+```
 
 **`birthDate`의 형식**: 요청·응답 모두 `'YYYY-MM-DD'` 문자열입니다. 값이 없으면 `null`입니다.
 `GET /api/users/me`와 로그인 응답도 같은 형식으로 내려갑니다 — PostgreSQL의 `date` 값을 그대로
@@ -99,7 +105,7 @@
         "id": 10, "type": "flash", "title": "오늘 저녁 풋살 4명",
         "category": "운동", "regionSigungu": "강남구",
         "startAt": "2026-07-09T19:00:00+09:00",
-        "capacity": 4, "status": "recruiting"
+        "capacity": 4, "status": "recruiting", "confirmedCount": 2
       }
     ],
     "page": 1, "totalPages": 3, "total": 47
@@ -109,7 +115,7 @@
 
 - `total`은 페이지네이션으로 잘리기 전의 **전체 건수**입니다. `items`는 한 페이지(20건)로 잘리므로, 총 개수를 표시해야 하는 화면은 `items.length`가 아니라 이 값을 써야 합니다.
 - **`openChatUrl`은 목록 항목에 포함되지 않습니다.** 참여 확정자에게만 의미가 있어 상세 조회에서만 조건부로 내려갑니다.
-- ⚠️ **`confirmedCount`는 아직 목록 응답에 구현되지 않았습니다** (2026-07-20 기준). 참여 신청(F1)이 들어오는 시점에 추가할 예정이며, 그 전까지 화면은 참여 인원을 0으로 표시합니다.
+- `confirmedCount`는 각 항목의 참여 확정 인원 수입니다 (`confirmed`·`approved` 상태 합산 — 상세 응답과 동일한 정의).
 
 ### POST /api/meetings
 
@@ -141,13 +147,15 @@
     "host": { "id": 5, "nickname": "A", "trustScore": 52.0 },
     "capacity": 4, "confirmedCount": 2,
     "openChatUrl": "https://open.kakao.com/o/xxxxxxx",
-    "myParticipation": { "status": "confirmed" }
+    "myParticipation": { "status": "confirmed" },
+    "canApply": false, "blockReason": "ALREADY_APPLIED"
   }
 }
 ```
 - `openChatUrl`은 아직 참여 확정 전인 사용자에게는 내려주지 않습니다 (소모임은 승인 전, 번개모임은 신청 전) — 기획서 8번 화면 구성 원칙. **값을 `null`로 주는 것이 아니라 키 자체를 응답에서 제외**하므로, 프론트는 이 키의 존재 여부만으로 노출을 판단하면 됩니다.
 - `myParticipation`은 비로그인이거나 신청 이력이 없으면 `null`.
 - `confirmedCount`는 `confirmed`와 `approved` 상태만 셉니다(`pending`·`cancelled` 제외).
+- `canApply`(boolean)·`blockReason`(string|null): 지금 이 사용자가 참여 신청을 할 수 있는지와, 할 수 없다면 그 이유. `blockReason`은 `LOGIN_REQUIRED`·`HOST`·`ALREADY_APPLIED`·`REJECTED`·`CANCELLED_MEETING`·`ENDED`·`FULL`·`BIRTHDATE_REQUIRED`·`ADULT_ONLY` 중 하나이며, `canApply`가 `true`면 `null`입니다.
 - 목록과 달리 **지난 모임과 취소된 모임도 그대로 반환**합니다. 상세 페이지에서 "종료된 모임"으로 표시해야 하기 때문입니다 (기획서 11번).
 - `:id`가 숫자로만 이루어지지 않았거나(`1abc`, `1.9`) 안전한 정수 범위를 벗어나면 `NOT_FOUND`(404)입니다.
 
@@ -168,14 +176,35 @@
 
 ### POST /api/meetings/:id/apply
 
-- `type: "flash"` 모임: 정원 여유 있으면 즉시 `status: "confirmed"`로 생성, 정원 초과면 `VALIDATION_ERROR`(`MEETING_FULL`).
-- `type: "small"` 모임: `status: "pending"`으로 생성.
-- `adultOnly: true` 모임에 미성년 계정이 요청하면 `FORBIDDEN`(`ADULT_ONLY`).
+- `type: "flash"` 모임: 정원 여유 있으면 즉시 `status: "confirmed"`로 생성됩니다. 이 신청으로 마지막 자리가 차면 모임이 `closed` 상태로 전환됩니다.
+- `type: "small"` 모임: `status: "pending"`으로 생성됩니다.
+- 내가 취소(`cancelled`)했던 모임에는 재신청할 수 있지만, 모임장이 거절(`rejected`)한 모임에는 재신청할 수 없습니다.
 
 **응답**
 ```json
 { "data": { "status": "confirmed" } }
 ```
+(`type: "small"`이면 `"pending"`)
+
+**실패**
+- 자기 모임에 신청 / 이미 신청함 / 거절된 모임에 재신청 / 취소된 모임 / 종료된 모임 / 정원 마감 → `VALIDATION_ERROR`(400)
+- 미성년 계정이 `adultOnly` 모임에 신청 → `FORBIDDEN`(`ADULT_ONLY`, 403)
+- 생년월일 미입력 상태로 신청 → `FORBIDDEN`(403)
+- 비로그인 → `UNAUTHENTICATED`(401)
+- 없는 모임 → `NOT_FOUND`(404)
+
+### DELETE /api/meetings/:id/apply
+
+참여/신청 취소.
+- `confirmed`·`approved` 상태였던 신청을 취소하면 신청자의 신뢰도가 3점 깎입니다(0 미만으로는 내려가지 않음). 이 취소로 자리가 빈 flash 모임이 `closed` 상태였다면 다시 `recruiting`으로 재오픈됩니다.
+- `pending` 상태였던 신청을 취소하면 감점은 없습니다.
+
+**응답**
+```json
+{ "data": { "status": "cancelled" } }
+```
+
+취소할 신청이 없으면(이미 취소됨·거절됨·애초에 신청한 적 없음) `NOT_FOUND`(404).
 
 ### PATCH /api/meetings/:id/participants/:userId
 
