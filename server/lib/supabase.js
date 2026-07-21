@@ -8,7 +8,7 @@ export function getSupabaseClient() {
   const { SUPABASE_URL, SUPABASE_ANON_KEY } = process.env;
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    throw new Error("SUPABASE_URL과 SUPABASE_ANON_KEY 환경 변수가 필요합니다.");
+    throw new Error("SUPABASE_URL과 SUPABASE_ANON_KEY 환경변수가 필요합니다.");
   }
 
   supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
