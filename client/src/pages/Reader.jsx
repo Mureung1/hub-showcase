@@ -7,6 +7,7 @@ import ReaderSkeleton from "../components/ReaderSkeleton.jsx"
 import SentenceAccordion from "../components/SentenceAccordion.jsx"
 import { parseArticle, analyzeArticle } from "../api/article.js"
 import { saveDecision } from "../api/decisions.js"
+import { useAuth } from "../context/AuthContext.jsx"
 
 // LLM이 구조상 어렵다고 선별한 문장(analysis.sentences)만 아코디언으로
 // 감싸고, 나머지는 원문 그대로 둔다(전체 문장을 다 감싸지 않음).
@@ -25,6 +26,7 @@ function renderParagraph(text, sentences) {
 }
 
 export default function Reader() {
+  const { user } = useAuth()
   const [searchParams] = useSearchParams()
   const url = searchParams.get("url")
   const [article, setArticle] = useState(null)
@@ -53,14 +55,19 @@ export default function Reader() {
   }
 
   function handleCloseSheet() {
-    saveDecision({
-      url,
-      title: article.title,
-      summaryBullets: analysis?.summaryBullets ?? [],
-      decision: pendingDecision,
-      marketSentiment: analysis?.marketSentiment,
-      insight: analysis?.insight,
-    }).catch((err) => setError(err.message))
+    // decisions는 로그인 사용자별 데이터라 비로그인 상태에서는 저장을
+    // 건너뛴다(llmService.js의 saveTermsToVocabulary와 동일한 패턴) — 저장
+    // 실패를 setError로 올리면 방금 다 읽은 리더뷰가 에러 화면으로 덮인다.
+    if (user) {
+      saveDecision({
+        url,
+        title: article.title,
+        summaryBullets: analysis?.summaryBullets ?? [],
+        decision: pendingDecision,
+        marketSentiment: analysis?.marketSentiment,
+        insight: analysis?.insight,
+      }).catch((err) => setError(err.message))
+    }
 
     setPendingDecision(null)
   }

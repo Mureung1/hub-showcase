@@ -47,18 +47,19 @@ export default function Sidebar() {
   const [decisionCount, setDecisionCount] = useState(0)
 
   useEffect(() => {
-    // 단어장은 로그인 사용자별 데이터라 비로그인 상태에서는 401만 돌아온다 —
-    // 뱃지 카운트는 로그인 상태일 때만 조회한다.
+    // 단어장/판단 히스토리 모두 로그인 사용자별 데이터라 비로그인 상태에서는
+    // 401만 돌아온다 — 뱃지 카운트는 로그인 상태일 때만 조회한다.
     if (user) {
       getVocabulary()
         .then((vocabulary) => setVocabularyCount(vocabulary.length))
         .catch(() => {})
+      getDecisions()
+        .then((decisions) => setDecisionCount(decisions.length))
+        .catch(() => {})
     } else {
       setVocabularyCount(0)
+      setDecisionCount(0)
     }
-    getDecisions()
-      .then((decisions) => setDecisionCount(decisions.length))
-      .catch(() => {})
   }, [user])
 
   return (

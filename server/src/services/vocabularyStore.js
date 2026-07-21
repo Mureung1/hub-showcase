@@ -1,27 +1,5 @@
 import { getSupabase } from "./supabaseClient.js"
-
-// articles는 url을 유니크 키로 삼는 전역 마스터 테이블이다 — 이미 있으면
-// 그 row를, 없으면 새로 만든 row를 반환한다.
-async function ensureArticle(title, url) {
-  const supabase = getSupabase()
-  const { data: existing, error: selectError } = await supabase
-    .from("articles")
-    .select("id")
-    .eq("url", url)
-    .maybeSingle()
-
-  if (selectError) throw new Error(selectError.message)
-  if (existing) return existing
-
-  const { data: inserted, error: insertError } = await supabase
-    .from("articles")
-    .insert({ title, url })
-    .select("id")
-    .single()
-
-  if (insertError) throw new Error(insertError.message)
-  return inserted
-}
+import { ensureArticle } from "./articleStore.js"
 
 // 사용자의 단어장을 최신순으로 조회한다. articles와 join해 term 저장 당시의
 // 기사 제목/URL을 복원한다(client/src/pages/Vocabulary.jsx가 기대하는
