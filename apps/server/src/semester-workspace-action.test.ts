@@ -473,7 +473,7 @@ test('cold-restored source recovery can adopt store drift without a prior-proces
   let cleanupAllowed = false
   const blockedCleanup = new Promise<void>(() => undefined)
   const fixture = await createFixture(undefined, {
-    actionCleanupDeadlineMs: 5,
+    actionCleanupDeadlineMs: 250,
     beforeActionArtifactCleanup: () =>
       cleanupAllowed ? undefined : blockedCleanup,
   })
@@ -512,7 +512,7 @@ test('cold-restored source recovery can adopt store drift without a prior-proces
     const coldController = createSemesterWorkspaceController({
       packageRoot: fixture.packageRoot,
       appDataRoot: fixture.appDataRoot,
-      actionCleanupDeadlineMs: 5,
+      actionCleanupDeadlineMs: 250,
       beforeActionArtifactCleanup: () =>
         cleanupAllowed ? undefined : blockedCleanup,
       chooseDirectory: async () => fixture.workspaceRoot,
