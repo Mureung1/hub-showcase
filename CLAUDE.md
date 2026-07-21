@@ -9,6 +9,7 @@ CS 실습생을 위한 Unix/Git 명령어 사전 웹앱. 기획/화면 흐름은
 | FE | React 19 + Vite, react-router-dom | 적용됨 (`src/`) |
 | BE | Node.js + Express | 신규 (`server/`, 뼈대만 구성됨) |
 | DB | Supabase (Postgres) | Phase 2 예정 |
+| 검색엔진 | Meilisearch (Cloud) | Phase 2 예정 |
 | 배포 | FE: Vercel/Netlify, BE: Render/Railway | 예정 |
 
 ## 디렉토리 구조
@@ -45,3 +46,7 @@ docs/
 ## 디자인
 
 새 화면을 만들거나 수정할 때는 `docs/design-system/DESIGN.md` 규칙을 따르고, `.claude/skills/design-check` Skill로 검증한다.
+
+## 향후 아이디어 (방향 확정, 세부 미정)
+
+- **셸 연동 CLI `kman` (브라우저 오픈형)** — 유닉스 터미널(가상머신/SSH 등)에 패키지로 설치해두고 `kman <command>` 입력 시 배포된 상세 페이지 URL을 브라우저로 열어줌 (`gh repo view --web`류의 흔한 CLI 패턴). 명령어 이름으로 URL을 계산만 하면 되므로 데이터 복제/조회 API가 불필요 — 터미널에 직접 렌더링하는 방식은 그 부담 때문에 기각. 직접 URL 접속을 대체하지 않고 그 위에 얹는 편의 계층. 이름을 `kman`으로 정해 진짜 `man`은 전혀 건드리지 않으면서 "man의 한국어/웹 버전"이라는 연상만 줌(`man` 자체를 오버라이드하는 안은 파이프 활용이 깨지는 리스크로 기각). `--man` 플래그로 진짜 `man` 실행도 지원 예정. 사용자가 그냥 `man ls`를 직접 치는 경우는 여전히 못 잡는 갭이 남아있음(MANPAGER 훅으로 안내 문구를 덧붙이는 안 검토 중, 미결정). 설치 방식(curl\|bash vs npm, 진짜 apt 패키지는 인프라 부담 커서 기각)은 대상 환경의 Node 설치 여부에 따라 결정 예정. FE 배포가 선행되어야 함. (심화 버전, 로그인 이후 확장 후보) 로그인/북마크 시스템이 생기면 `kman`으로 내 북마크 목록을 셸에 내보내는 기능도 검토 — 이건 사용자별 실제 데이터라 URL 계산만으로는 안 되고 로그인+조회 API+CLI 인증(`kman login`류)이 필요해서 기본 kman보다 스코프가 큼. 상세는 `docs/tasks.md`/`docs/checklist.md` 참고.
