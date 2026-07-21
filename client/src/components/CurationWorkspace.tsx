@@ -4,9 +4,10 @@ import { CurationData, Paper } from '../types';
 interface CurationWorkspaceProps {
   lang: 'KO' | 'EN';
   curationData: CurationData | null;
+  userId: string;
 }
 
-function CurationWorkspace({ lang, curationData }: CurationWorkspaceProps) {
+function CurationWorkspace({ lang, curationData, userId }: CurationWorkspaceProps) {
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
 
   useEffect(() => {
@@ -19,9 +20,9 @@ function CurationWorkspace({ lang, curationData }: CurationWorkspaceProps) {
 
   const handleSavePaper = async (paper: Paper): Promise<void> => {
     try {
-      // DB 인서트 에러 방지를 위해 insights 필드를 제외하고 스키마에 필요한 필드만 Payload 구성
+      // DB 인서트 에러 방지를 위해 insights 필드를 제외하고 스키마에 필요한 필드만 Payload 구성 (userId 병합)
       const { id, title, authors, channel, year, matchScore } = paper;
-      const paperPayload = { id, title, authors, channel, year, matchScore };
+      const paperPayload = { id, title, authors, channel, year, matchScore, userId };
 
       const response = await fetch('http://localhost:5000/api/library', {
         method: 'POST',
