@@ -21,11 +21,15 @@ def generate_mock_mp3(output_path):
         f.write(mp3_data)
 
 
-def generate_voice(caption, lang='ko', output_dir='backend/ai-pipeline/output'):
+def generate_voice(caption, lang='ko', output_dir=None):
     """
     TTS 음성 생성 (현재: Mock)
     """
     try:
+        # 출력 디렉토리 설정 (기본값: 스크립트 디렉토리의 output 폴더)
+        if output_dir is None:
+            output_dir = str(Path(__file__).parent / "output")
+
         # 출력 디렉토리 생성
         Path(output_dir).mkdir(parents=True, exist_ok=True)
 
