@@ -21,6 +21,16 @@
   font-size: 15px;
 }
 
+.gnb-cta {
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  color: var(--color-primary);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--color-primary);
+}
+
 .frame-body {
   flex: 1;
   width: 100%;
