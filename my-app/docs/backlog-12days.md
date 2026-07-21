@@ -40,10 +40,11 @@
 | BrandProfile API | `GET /brand-profile`, `POST /brand-profile/interview`, `POST /brand-profile`, `PATCH /brand-profile` — summary/keywords 규칙 기반, Supabase에 저장 |
 | 예약 발행 + 브리핑 API | `GET /posts/:id/suggested-time`, `POST/DELETE /posts/:id/schedule`, `GET /briefing/today` — 계절/업종 규칙 기반, 블로그 건강도는 mock |
 | 인사이트 API + 블로그 연동 스텁 | `GET /insights/health-score`, `GET /insights/opportunities` — 실제 게시글 데이터 기반 규칙; `POST /blog/connect`, `GET /blog/analysis`는 고정 mock 스텁 |
+| 프론트-백엔드 연동 1차 | `useBrandProfile`, `useBriefing`을 `useApiResource`(실제 fetch) 기반으로 교체, 브랜드 온보딩이 실제 `POST /brand-profile` 호출, 대시보드에 에러 상태 표시 추가 |
 
 ### 미완료
 
-- 프론트 훅(`useBrandProfile`, `useBriefing`, `usePosts`, `usePostResult`, `useSchedulePublish`, `useInsights`) 전부 목업(`useMockResource`) 기반
+- 프론트 훅(`usePosts`, `usePostResult`, `useSchedulePublish`, `useInsights`) 아직 목업(`useMockResource`) 기반
 - 자동화 테스트 0개, 테스트 러너 미설치
 - 테스트코드 생성 Skill, 코드 검증 Agent, 워크플로우 문서 — 전부 없음
 - 아키텍처 다이어그램 — 없음
@@ -184,12 +185,12 @@
 
 ---
 
-## Day 10 — 2026-07-21 (화)
+## Day 10 — 2026-07-21 (화) ✅
 
 **목표:** 프론트-백엔드 연동 1차
 
-- [ ] `useBrandProfile`, `useBriefing`을 목업에서 실제 `api/client.js` 호출로 교체
-- [ ] 온보딩 → 브리핑 표시까지 실제 서버로 e2e 확인, 에러/로딩 상태 점검
+- [x] `useBrandProfile`, `useBriefing`을 목업에서 실제 `api/client.js` 호출로 교체
+- [x] 온보딩 → 브리핑 표시까지 실제 서버로 e2e 확인, 에러/로딩 상태 점검
 
 **완료 기준:** 온보딩 완료 후 대시보드 브리핑이 실제 Supabase 데이터로 표시됨
 

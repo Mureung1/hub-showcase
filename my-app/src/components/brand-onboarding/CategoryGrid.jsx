@@ -1,4 +1,4 @@
-const CATEGORIES = [
+export const CATEGORIES = [
   { id: "cafe", icon: "local_cafe", label: "카페" },
   { id: "restaurant", icon: "restaurant", label: "음식점" },
   { id: "beauty", icon: "content_cut", label: "뷰티/미용" },

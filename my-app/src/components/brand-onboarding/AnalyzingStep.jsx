@@ -1,15 +1,32 @@
 import { useEffect, useState } from "react";
-import { mockBrandProfile } from "../../api/mocks/dashboard";
+import { apiClient } from "../../api/client";
 
 const STATUS_ITEMS = ["비즈니스 성격 분석 완료", "지역구 타겟팅 전략 수립 완료", "맞춤형 보이스톤 설정 중..."];
 
-function AnalyzingStep({ onComplete }) {
-  const [done, setDone] = useState(false);
+function AnalyzingStep({ answers, onComplete }) {
+  const [profile, setProfile] = useState(null);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDone(true), 3500);
-    return () => clearTimeout(timer);
-  }, []);
+    let cancelled = false;
+    setError(null);
+
+    apiClient
+      .post("/brand-profile", answers)
+      .then((res) => {
+        if (!cancelled) setProfile(res);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [answers, attempt]);
+
+  const done = Boolean(profile);
 
   return (
     <main className="flex-1 min-h-screen flex items-center justify-center p-md relative overflow-hidden">
@@ -17,7 +34,22 @@ function AnalyzingStep({ onComplete }) {
       <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-secondary-container/20 blur-3xl rounded-full pointer-events-none opacity-60" />
 
       <div className="relative z-10 w-full max-w-[600px] bg-surface-container-lowest rounded-xl shadow-soft border border-outline-variant p-xl flex flex-col items-center text-center">
-        {!done ? (
+        {error ? (
+          <>
+            <div className="w-16 h-16 rounded-full bg-error-container flex items-center justify-center mb-lg">
+              <span className="material-symbols-outlined text-error text-[32px]">error</span>
+            </div>
+            <h1 className="font-headline-md text-headline-md text-on-surface mb-sm">브랜드 분석에 실패했습니다</h1>
+            <p className="font-body-md text-body-md text-on-surface-variant mb-xl">{error.message}</p>
+            <button
+              type="button"
+              onClick={() => setAttempt((n) => n + 1)}
+              className="w-full py-md rounded-lg font-label-md text-label-md bg-primary text-on-primary hover:bg-primary/90 transition-all active:scale-[0.98] shadow-soft"
+            >
+              다시 시도
+            </button>
+          </>
+        ) : !done ? (
           <>
             <header className="mb-xl">
               <h1 className="font-headline-md text-headline-md text-on-surface mb-sm">AI 브랜드 분석 중</h1>
@@ -99,10 +131,10 @@ function AnalyzingStep({ onComplete }) {
             </div>
             <h1 className="font-headline-md text-headline-md text-on-surface mb-lg">AI가 이해한 우리 브랜드</h1>
             <div className="w-full bg-surface-container-low p-lg rounded-lg mb-md">
-              <p className="text-body-lg text-body-lg text-on-surface italic">"{mockBrandProfile.summary}"</p>
+              <p className="text-body-lg text-body-lg text-on-surface italic">"{profile.summary}"</p>
             </div>
             <div className="flex flex-wrap justify-center gap-xs mb-xl">
-              {mockBrandProfile.keywords.map((keyword) => (
+              {profile.keywords.map((keyword) => (
                 <span
                   key={keyword}
                   className="px-md py-xs bg-secondary-container text-on-secondary-container rounded-full font-label-md text-label-md"

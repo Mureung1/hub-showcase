@@ -2,7 +2,12 @@ import CategoryGrid from "./CategoryGrid";
 import TargetChips from "./TargetChips";
 
 function BrandInfoStep({ value, onChange, onNext }) {
-  const canProceed = value.brandName.trim().length > 0;
+  const canProceed =
+    value.brandName.trim().length > 0 &&
+    value.mainProduct.trim().length > 0 &&
+    value.strength.trim().length > 0 &&
+    value.tone.trim().length > 0 &&
+    value.goal.trim().length > 0;
 
   const setField = (field) => (e) => onChange({ ...value, [field]: e.target.value });
 
@@ -73,6 +78,62 @@ function BrandInfoStep({ value, onChange, onNext }) {
               <span className="text-label-md text-on-surface-variant">중복 선택 가능</span>
             </div>
             <TargetChips value={value.targets} onToggle={toggleTarget} />
+          </div>
+
+          <div className="flex flex-col gap-sm">
+            <label className="block font-headline-sm text-headline-sm text-on-surface" htmlFor="main-product">
+              대표 상품(서비스)
+            </label>
+            <input
+              id="main-product"
+              type="text"
+              value={value.mainProduct}
+              onChange={setField("mainProduct")}
+              placeholder="예: 티라미수, 아인슈페너"
+              className="w-full px-md py-sm border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
+            />
+          </div>
+
+          <div className="flex flex-col gap-sm">
+            <label className="block font-headline-sm text-headline-sm text-on-surface" htmlFor="strength">
+              우리 가게만의 강점
+            </label>
+            <input
+              id="strength"
+              type="text"
+              value={value.strength}
+              onChange={setField("strength")}
+              placeholder="예: 가성비 좋은 디저트"
+              className="w-full px-md py-sm border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
+            />
+          </div>
+
+          <div className="flex flex-col gap-sm">
+            <label className="block font-headline-sm text-headline-sm text-on-surface" htmlFor="tone">
+              원하는 말투
+            </label>
+            <input
+              id="tone"
+              type="text"
+              value={value.tone}
+              onChange={setField("tone")}
+              placeholder="예: 친근하고 다정한 말투"
+              className="w-full px-md py-sm border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
+            />
+          </div>
+
+          <div className="flex flex-col gap-sm">
+            <label className="block font-headline-sm text-headline-sm text-on-surface" htmlFor="goal">
+              홍보 목표
+            </label>
+            <input
+              id="goal"
+              type="text"
+              value={value.goal}
+              onChange={setField("goal")}
+              placeholder="예: 신규 고객 유치"
+              className="w-full px-md py-sm border border-outline-variant rounded-lg font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
+            />
           </div>
         </div>
 
