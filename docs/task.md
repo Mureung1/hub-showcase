@@ -38,7 +38,7 @@
 - [x] **T-06 딜 목록 API + 화면 (M2)** `server` `client` — [#7](https://github.com/HappyGogildong/hub/issues/7)
   - 사용자 기준 주소 기반 Haversine 거리 계산·정렬, 남은 수량·픽업 마감 표시. 지도는 리스트 우선(지도는 Backlog)
   - DoD: 반경 밖 딜이 목록에 나오지 않음
-- [ ] **T-07 딜 상세 화면 (M3)** `client`
+- [x] **T-07 딜 상세 화면 (M3)** `client` `server` — [#8](https://github.com/HappyGogildong/hub/issues/8)
   - 수량 스테퍼(최대 = 남은 수량), 가격·픽업 시간
 - [ ] **T-08 예약 API — 원자적 재고 차감** `server` ★기술 셀링포인트
   - `UPDATE deals SET remaining_qty = remaining_qty - $qty WHERE id = $id AND remaining_qty >= $qty` + 트랜잭션으로 reservations INSERT + 픽업코드 발급

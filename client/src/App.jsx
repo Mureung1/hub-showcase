@@ -6,6 +6,7 @@ import OwnerHomePage from './pages/owner/OwnerHomePage.jsx'
 import StoreRegisterPage from './pages/owner/StoreRegisterPage.jsx'
 import DealRegisterPage from './pages/owner/DealRegisterPage.jsx'
 import ConsumerHomePage from './pages/consumer/ConsumerHomePage.jsx'
+import DealDetailPage from './pages/consumer/DealDetailPage.jsx'
 
 // C0 진입: 이미 역할을 고른 세션이면 해당 홈으로 자동 라우팅, 아니면 역할 선택.
 function Entry() {
@@ -48,6 +49,14 @@ function App() {
         element={
           <RequireRole role="consumer">
             <ConsumerHomePage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/app/deals/:id"
+        element={
+          <RequireRole role="consumer">
+            <DealDetailPage />
           </RequireRole>
         }
       />

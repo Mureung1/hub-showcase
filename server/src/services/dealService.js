@@ -63,8 +63,39 @@ function toNearbyDto(row) {
   return {
     ...toDealDto(row),
     storeName: row.store_name,
-    distanceKm: Math.round(row.distance_km * 10) / 10,
+    distanceKm: row.distance_km == null ? null : Math.round(row.distance_km * 10) / 10,
   }
+}
+
+// 사용자 기준 위치에서 특정 가게까지의 Haversine 거리(km) SQL 조각. $1=lat, $2=lng 기준점.
+const DISTANCE_SQL = `6371 * acos(LEAST(1,
+  cos(radians($1)) * cos(radians(s.lat)) * cos(radians(s.lng) - radians($2))
+  + sin(radians($1)) * sin(radians(s.lat))
+))`
+
+// M3 딜 상세 — 요청자 기준 거리 포함. 비활성/없는 딜은 404.
+export async function getDealDetail(userId, dealId) {
+  if (!Number.isInteger(dealId) || dealId <= 0) throw httpError(400, '딜 ID가 올바르지 않습니다.')
+
+  const { rows: users } = await pool.query(
+    'SELECT base_lat, base_lng FROM users WHERE id = $1',
+    [userId],
+  )
+  if (users.length === 0) throw httpError(401, '존재하지 않는 사용자입니다.')
+  const { base_lat, base_lng } = users[0]
+  const hasBase = base_lat != null && base_lng != null
+
+  const { rows } = await pool.query(
+    `SELECT d.*, s.name AS store_name,
+            ${hasBase ? DISTANCE_SQL : 'NULL'} AS distance_km
+     FROM deals d
+     JOIN stores s ON s.id = d.store_id
+     WHERE d.id = $3`,
+    [base_lat, base_lng, dealId],
+  )
+  if (rows.length === 0) throw httpError(404, '존재하지 않는 딜입니다.')
+  if (rows[0].status !== 'active') throw httpError(404, '마감되었거나 판매 종료된 딜입니다.')
+  return toNearbyDto(rows[0])
 }
 
 /*

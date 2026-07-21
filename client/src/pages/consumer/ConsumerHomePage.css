@@ -40,15 +40,24 @@
 }
 
 .deal-card {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 16px;
+  text-align: left;
   background: var(--color-canvas);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-subtle);
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 0.15s;
+}
+
+.deal-card:hover {
+  border-color: var(--color-primary);
 }
 
 .deal-card__body {

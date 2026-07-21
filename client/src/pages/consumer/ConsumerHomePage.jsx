@@ -49,20 +49,26 @@ function ConsumerHomePage() {
 
       <ul className="consumer-home__deals">
         {deals.map((d) => (
-          <li key={d.id} className="deal-card">
-            <div className="deal-card__body">
-              <b className="deal-card__name">{d.name}</b>
-              <span className="deal-card__store">{d.storeName}</span>
-              <span className="deal-card__price">
-                {d.salePrice.toLocaleString()}원 <s>{d.originalPrice.toLocaleString()}</s>
-              </span>
-            </div>
-            <div className="deal-card__meta">
-              <span className="deal-card__stock">{d.remainingQty}개 남음</span>
-              <span className="deal-card__dim">
-                {d.distanceKm}km · ~{timeOf(d.pickupDeadlineAt)}
-              </span>
-            </div>
+          <li key={d.id}>
+            <button
+              type="button"
+              className="deal-card"
+              onClick={() => navigate(`/app/deals/${d.id}`)}
+            >
+              <div className="deal-card__body">
+                <b className="deal-card__name">{d.name}</b>
+                <span className="deal-card__store">{d.storeName}</span>
+                <span className="deal-card__price">
+                  {d.salePrice.toLocaleString()}원 <s>{d.originalPrice.toLocaleString()}</s>
+                </span>
+              </div>
+              <div className="deal-card__meta">
+                <span className="deal-card__stock">{d.remainingQty}개 남음</span>
+                <span className="deal-card__dim">
+                  {d.distanceKm}km · ~{timeOf(d.pickupDeadlineAt)}
+                </span>
+              </div>
+            </button>
           </li>
         ))}
       </ul>
