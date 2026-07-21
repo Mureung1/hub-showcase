@@ -27,7 +27,18 @@ abstract final class FirestorePaths {
   /// 공개 아이템 카탈로그 (4주차 상점). 읽기 전용.
   static const items = 'items';
 
-  /// 인증 사진 업로드 경로 (Storage, 3주차).
+  /// 인증 사진 **문서** 경로 (Firestore, 3주차). 압축 썸네일을 base64로 담는다.
+  ///
+  /// `questId`를 문서 ID로 써서 **퀘스트당 사진 1장**이 되게 한다 — 재완료해도
+  /// 같은 문서를 자연스럽게 덮어쓴다. 이미지를 quest·achievement 문서가 아니라
+  /// 여기 따로 두는 이유: 목록 조회 때마다 이미지 바이트가 딸려오면 읽기 비용이
+  /// 폭증한다. 별도 문서로 떼어 두면 사진이 필요한 화면에서만 읽는다.
+  static String proofDoc(String uid, String questId) =>
+      'users/$uid/proofs/$questId';
+
+  /// ⚠️ Storage(Blaze) 업로드용 경로. **현재 미사용.**
+  /// 3주차 사진 인증은 Storage를 쓰지 않고 [proofDoc]의 Firestore 문서에 base64로
+  /// 저장한다. Storage(유료 플랜)를 도입하는 날을 위해 경로만 남겨 둔다.
   static String proof(String uid, String fileName) =>
       'users/$uid/proofs/$fileName';
 }

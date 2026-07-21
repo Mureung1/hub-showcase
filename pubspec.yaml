@@ -57,6 +57,10 @@ dependencies:
   firebase_messaging: ^16.0.0
   firebase_storage: ^13.0.0
   http: ^1.6.0
+  # 사진 인증(3주차): 갤러리에서 이미지를 골라 압축 썸네일을 얻는다.
+  # 한글 경로 APK 빌드가 되는지 스파이크로 확인했다(네이티브 플러그인이지만 재발 없음).
+  # Storage는 쓰지 않는다 — 압축 바이트를 base64로 Firestore proof 문서에 저장한다.
+  image_picker: ^1.2.3
 
 dependency_overrides:
   # firebase_core_platform_interface 7.1.0의 Dart pigeon 코덱은 필드를 14개 기대하지만

@@ -41,7 +41,12 @@ class ParseFailure extends AppFailure {
 }
 
 /// 분류되지 않은 실패.
+///
+/// [message]를 주면 그 문구를 사용자에게 보여주고, 없으면 기본 문구를 쓴다.
+/// 새 실패 타입을 늘리지 않으면서도 상황에 맞는 안내가 필요한 곳에서 쓴다
+/// (예: 사진 인증 크기 초과 → `kProofTooLargeMessage`). 두 번째 인자라
+/// 기존 `UnknownFailure(cause)` 호출은 그대로 동작한다.
 class UnknownFailure extends AppFailure {
-  const UnknownFailure([Object? cause])
-    : super('알 수 없는 오류가 발생했어요.', cause);
+  const UnknownFailure([Object? cause, String? message])
+    : super(message ?? '알 수 없는 오류가 발생했어요.', cause);
 }

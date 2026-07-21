@@ -25,6 +25,7 @@ class Achievement {
     this.xp = 0,
     this.memo,
     this.verified = false,
+    this.hasPhoto = false,
     this.completedAt,
   });
 
@@ -46,8 +47,11 @@ class Achievement {
       xp: asInt(data['xp']),
       memo: asNullableString(data['memo']),
       // verified를 memo 유무로 유추하지 않고 저장된 값을 그대로 믿는다.
-      // 사진 인증이 붙으면(Storage 도입 시) memo 없이도 인증이 성립하기 때문이다.
+      // 사진 인증이 붙으면 memo 없이도 인증이 성립하기 때문이다(3주차).
       verified: asBool(data['verified']),
+      // 이 완료에 인증 사진이 딸렸는가. 이미지 바이트 자체는 여기 없고
+      // `users/{uid}/proofs/{questId}` 문서에 base64로 따로 있다(문서 비대화 방지).
+      hasPhoto: asBool(data['hasPhoto']),
       completedAt: asDateTime(data['completedAt']),
     );
   }
@@ -82,6 +86,10 @@ class Achievement {
   /// 인증(메모·사진)이 성립해 보너스를 받았는가.
   final bool verified;
 
+  /// 이 완료에 인증 **사진**이 딸렸는가. 이미지 바이트는 별도 proof 문서에 있고,
+  /// 여기엔 "있었다"는 플래그만 둔다(보관함 목록에서 사진 유무 뱃지 등에 쓴다).
+  final bool hasPhoto;
+
   final DateTime? completedAt;
 
   /// 지급된 보상. 화면에서 [RewardChip]에 그대로 넘길 수 있다.
@@ -93,6 +101,7 @@ class Achievement {
     'coin': coin,
     'xp': xp,
     'verified': verified,
+    'hasPhoto': hasPhoto,
     // null 키는 생략한다 (Quest.toJson과 동일한 패턴).
     if (memo != null) 'memo': memo,
     if (completedAt != null) 'completedAt': completedAt!.toIso8601String(),
@@ -108,11 +117,21 @@ class Achievement {
       other.xp == xp &&
       other.memo == memo &&
       other.verified == verified &&
+      other.hasPhoto == hasPhoto &&
       other.completedAt == completedAt;
 
   @override
-  int get hashCode =>
-      Object.hash(id, questId, questTitle, coin, xp, memo, verified, completedAt);
+  int get hashCode => Object.hash(
+    id,
+    questId,
+    questTitle,
+    coin,
+    xp,
+    memo,
+    verified,
+    hasPhoto,
+    completedAt,
+  );
 
   @override
   String toString() =>

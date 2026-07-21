@@ -1,6 +1,8 @@
 import 'package:characters/characters.dart';
 
+import '../core/constants/proof_rules.dart';
 import '../core/constants/reward_rules.dart';
+import '../core/error/app_failure.dart';
 import '../models/difficulty.dart';
 import '../models/quest.dart';
 import '../models/quest_draft.dart';
@@ -68,14 +70,25 @@ abstract interface class QuestRepository {
   /// done ↔ todo로 얼마든지 토글돼도 보상은 퀘스트당 **평생 1회**다
   /// (체크를 껐다 켰다 반복하는 코인 파밍 차단).
   ///
-  /// **인증 보너스 (3주차-B).** [memo]가 공백이 아닌 값이면 인증이 성립해
-  /// 기본 보상에 [kVerificationBonus]를 **합산**해 지급한다(예: 보통 5/10 → 8/13).
-  /// 메모는 퀘스트 문서에도 함께 저장된다.
+  /// **인증 보너스 (3주차-B·사진).** 인증은 **메모 또는 사진** 중 하나만 성립해도
+  /// 된다. [memo]가 공백이 아니거나 [photoBase64]가 있으면 기본 보상에
+  /// [kVerificationBonus]를 **합산**해 지급한다(예: 보통 5/10 → 8/13). 둘 다 줘도
+  /// 보너스는 **1회**다(중복이 아니다). 메모는 퀘스트 문서에도 함께 저장된다.
   ///
-  /// 메모를 완료와 **한 트랜잭션에서** 받는 이유: 완료 후에 따로 받으면 보너스가
+  /// 인증 정보를 완료와 **한 트랜잭션에서** 받는 이유: 완료 후에 따로 받으면 보너스가
   /// 두 번째 트랜잭션이 되고, 그 트랜잭션에도 별도의 중복 지급 가드가 필요해진다.
-  /// 지금처럼 "메모 유무가 지급액을 바꾸는" 구조면 가드가 [Quest.rewardedAt] 하나로
+  /// 지금처럼 "인증 유무가 지급액을 바꾸는" 구조면 가드가 [Quest.rewardedAt] 하나로
   /// 끝난다 — 보너스도 같은 가드 아래라 **퀘스트당 평생 1회**다.
+  ///
+  /// **사진 저장.** [photoBase64]는 압축 썸네일의 base64다. quest·achievement 문서를
+  /// 비대하게 만들지 않도록 `users/{uid}/proofs/{questId}`의 **별도 문서**에 담고,
+  /// 성취 기록에는 사진 유무 플래그(`hasPhoto`)만 남긴다. 사진은 보상이 실제
+  /// 지급되는 경로에서만 저장된다(재완료는 저장하지 않는다).
+  ///
+  /// **크기 상한.** [photoBase64]는 Firestore 1 MiB 문서 리밋 때문에
+  /// [kMaxProofBase64Bytes]를 넘으면 저장할 수 없다. 화면이 첨부 단계에서 이미
+  /// 막지만, 이 메서드가 public API라 저장소도 [ensureProofWithinLimit]로 한 번 더
+  /// 막는다(초과 시 트랜잭션 전에 [AppFailure] — normalizeMemo와 같은 이중 방어).
   ///
   /// **성취 기록.** 보상이 실제 지급될 때만 `users/{uid}/achievements`에 기록 1건을
   /// 같은 트랜잭션으로 남긴다(재완료는 남기지 않는다). 같은 트랜잭션이라 "보상은
@@ -88,7 +101,12 @@ abstract interface class QuestRepository {
   /// 동일하게 `AppFailure`로 정규화해 던진다.
   ///
   /// ⚠️ 레벨업 계산은 여기서 하지 않는다(4주차 경계). 잔액만 누적한다.
-  Future<Reward?> completeQuest(String uid, String questId, {String? memo});
+  Future<Reward?> completeQuest(
+    String uid,
+    String questId, {
+    String? memo,
+    String? photoBase64,
+  });
 }
 
 /// 인증 메모를 정규화한다. 공백만 있으면 `null`(= 인증 불성립).
@@ -110,4 +128,24 @@ String? normalizeMemo(String? memo) {
   final chars = trimmed.characters;
   if (chars.length <= kMaxMemoLength) return trimmed;
   return chars.take(kMaxMemoLength).toString();
+}
+
+/// 인증 사진 base64가 저장 가능한 크기인지 검사한다. 넘으면 [AppFailure]를 던진다.
+///
+/// **"저장 가능한 크기인가"의 단일 정의처다.** normalizeMemo가 "인증이 성립하는가"를
+/// 한곳에서 정하듯, 크기 판정도 두 저장소가 각자 하면 갈라진다 — InMemory에선
+/// 통과하는데 Firestore에선 1 MiB 문서 리밋에 걸려 쓰기가 통째로 실패하는 식이다.
+///
+/// 화면(quest_memo_sheet)이 첨부 단계에서 이미 막지만, completeQuest가 public API라
+/// UI를 거치지 않은 호출이 생기면 상한 없는 문자열이 그대로 들어온다. 저장소 입구에서
+/// 한 번 더 막는다(normalizeMemo 절단과 같은 이중 방어).
+///
+/// 실패 타입: 크기 초과에 딱 맞는 기존 타입이 없어 [UnknownFailure]에 사용자용
+/// 문구([kProofTooLargeMessage])를 실어 던진다(전용 타입을 새로 늘리지 않는다).
+void ensureProofWithinLimit(String? photoBase64) {
+  if (photoBase64 == null) return;
+  // base64는 ASCII라 문자열 길이 == 바이트 수.
+  if (photoBase64.length > kMaxProofBase64Bytes) {
+    throw const UnknownFailure(null, kProofTooLargeMessage);
+  }
 }

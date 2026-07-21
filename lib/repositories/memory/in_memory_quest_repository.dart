@@ -50,6 +50,10 @@ class InMemoryQuestRepository implements QuestRepository {
   /// 기록이 섞이면 "몇 건 남았나" 검증이 무의미해지기 때문이다.
   final Map<String, List<Achievement>> _achievements = {};
 
+  /// 인증 사진(base64). Firestore의 `users/{uid}/proofs/{questId}`에 대응한다.
+  /// `uid → (questId → base64)`. 퀘스트당 1장이라 questId를 키로 덮어쓴다.
+  final Map<String, Map<String, String>> _proofs = {};
+
   final _controller = StreamController<void>.broadcast();
   int _seq = 0;
 
@@ -60,6 +64,10 @@ class InMemoryQuestRepository implements QuestRepository {
   /// Firestore 구현에도 아직 쓰이지 않는 메서드가 생긴다.
   List<Achievement> achievementsOf(String uid) =>
       List.unmodifiable(_achievements[uid] ?? const []);
+
+  /// 해당 퀘스트의 인증 사진 base64 (없으면 null). 테스트 전용 조회구.
+  /// Firestore proof 문서를 실제 네트워크 없이 검증하기 위한 것이다.
+  String? proofOf(String uid, String questId) => _proofs[uid]?[questId];
 
   void _check() {
     if (failWith != null) throw failWith!;
@@ -180,8 +188,13 @@ class InMemoryQuestRepository implements QuestRepository {
     String uid,
     String questId, {
     String? memo,
+    String? photoBase64,
   }) async {
     _check();
+    // 크기 상한 방어 — Firestore 구현과 같은 단일 정의처를 쓴다.
+    // 상태·잔액을 건드리기 전에 던져야 "초과인데 절반만 반영"이 없다.
+    ensureProofWithinLimit(photoBase64);
+
     final quest = _quests[questId];
     if (quest == null) throw const NotFoundFailure();
 
@@ -190,8 +203,9 @@ class InMemoryQuestRepository implements QuestRepository {
     final alreadyPaid = quest.isRewarded;
 
     // 공백만 남는 메모는 인증으로 치지 않는다(Firestore 구현과 같은 정의).
+    // 인증은 메모 또는 사진 중 하나만 성립해도 된다(둘 다여도 보너스 1회).
     final verifiedMemo = normalizeMemo(memo);
-    final verified = verifiedMemo != null;
+    final verified = verifiedMemo != null || photoBase64 != null;
 
     // withStatus는 rewardedAt·memo를 항상 보존한다
     // (완료 해제해도 지급 이력과 사용자가 쓴 글은 남는다).
@@ -213,6 +227,12 @@ class InMemoryQuestRepository implements QuestRepository {
         rewardFor(quest.difficulty) +
         (verified ? kVerificationBonus : Reward.zero);
 
+    // 사진은 별도 proof 저장소에 담는다(Firestore proofs 문서에 대응).
+    // 지급 경로에서만 저장 — 재완료는 위에서 return. questId 키라 덮어쓴다.
+    if (photoBase64 != null) {
+      (_proofs[uid] ??= {})[questId] = photoBase64;
+    }
+
     // 성취 기록 — 지급이 일어난 이 경로에서만 남긴다(재완료는 위에서 return).
     // 제목은 그 시점 값을 복사한다(퀘스트가 지워져도 기록은 남아야 한다).
     (_achievements[uid] ??= []).add(
@@ -224,6 +244,7 @@ class InMemoryQuestRepository implements QuestRepository {
         xp: reward.xp,
         memo: verifiedMemo,
         verified: verified,
+        hasPhoto: photoBase64 != null,
         completedAt: DateTime.now(),
       ),
     );

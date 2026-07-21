@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:one_step/core/constants/proof_rules.dart';
 import 'package:one_step/core/constants/reward_rules.dart';
 import 'package:one_step/core/error/app_failure.dart';
 import 'package:one_step/models/app_user.dart';
@@ -546,6 +547,140 @@ void main() {
 
       expect(repo.achievementsOf('u'), hasLength(1));
       expect(repo.achievementsOf('다른uid'), isEmpty);
+    });
+  });
+
+  group('사진 인증 (3주차)', () {
+    (InMemoryQuestRepository, InMemoryUserRepository) makeRepos() {
+      final users = InMemoryUserRepository(seed: AppUser.initial('u'));
+      final quests = InMemoryQuestRepository(users: users);
+      addTearDown(users.dispose);
+      addTearDown(quests.dispose);
+      return (quests, users);
+    }
+
+    Future<Quest> seedNormal(InMemoryQuestRepository repo) =>
+        repo.createQuest('u', title: '지원서 초안 쓰기', difficulty: Difficulty.normal);
+
+    // 실제 압축 썸네일을 흉내 낸 짧은 base64. 크기 판정과 무관하게 잘 통과한다.
+    const smallPhoto = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAA';
+
+    test('★ 사진만 있고 메모가 없어도 인증이 성립해 보너스가 지급된다', () async {
+      final (repo, users) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      final reward = await repo.completeQuest(
+        'u',
+        quest.id,
+        photoBase64: smallPhoto,
+      );
+
+      // 보통(5/10) + 보너스(3/3) = 8/13. 메모 없이 사진만으로 성립한다.
+      expect(reward, const Reward(coin: 8, xp: 13));
+      final user = await users.fetchUser('u');
+      expect(user.coin, 8);
+      expect(user.xp, 13);
+
+      // 사진은 별도 proof에 저장되고, 성취 기록엔 유무 플래그만 남는다.
+      expect(repo.proofOf('u', quest.id), smallPhoto);
+      final record = repo.achievementsOf('u').single;
+      expect(record.verified, isTrue);
+      expect(record.hasPhoto, isTrue);
+      expect(record.memo, isNull, reason: '메모는 없었다');
+    });
+
+    test('메모와 사진을 둘 다 줘도 보너스는 1회만 붙는다', () async {
+      final (repo, users) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      final reward = await repo.completeQuest(
+        'u',
+        quest.id,
+        memo: '초안 1장 썼다',
+        photoBase64: smallPhoto,
+      );
+
+      // 중복이 아니다 — 보통(5/10) + 보너스(3/3) = 8/13.
+      expect(reward, const Reward(coin: 8, xp: 13));
+      expect((await users.fetchUser('u')).coin, 8);
+
+      final record = repo.achievementsOf('u').single;
+      expect(record.verified, isTrue);
+      expect(record.hasPhoto, isTrue);
+      expect(record.memo, '초안 1장 썼다');
+      expect(repo.proofOf('u', quest.id), smallPhoto);
+    });
+
+    test('사진 없이 완료하면 proof도 hasPhoto도 남지 않는다', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      await repo.completeQuest('u', quest.id, memo: '메모만');
+
+      expect(repo.proofOf('u', quest.id), isNull);
+      expect(repo.achievementsOf('u').single.hasPhoto, isFalse);
+    });
+
+    test('★ 크기 상한을 넘긴 사진은 거부되고 상태·잔액이 불변한다', () async {
+      final (repo, users) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      // 상한을 1바이트 넘긴 base64.
+      final tooBig = 'A' * (kMaxProofBase64Bytes + 1);
+
+      await expectLater(
+        repo.completeQuest('u', quest.id, photoBase64: tooBig),
+        throwsA(isA<AppFailure>()),
+      );
+
+      // 트랜잭션 전에 막았으므로 아무것도 바뀌지 않았다.
+      final saved = (await repo.fetchQuests('u')).single;
+      expect(saved.done, isFalse, reason: '완료 처리되면 안 된다');
+      expect(saved.isRewarded, isFalse);
+      final user = await users.fetchUser('u');
+      expect(user.coin, 0);
+      expect(user.xp, 0);
+      expect(repo.proofOf('u', quest.id), isNull);
+      expect(repo.achievementsOf('u'), isEmpty);
+    });
+
+    test('경계값: 상한과 정확히 같은 크기는 허용된다', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      final exact = 'A' * kMaxProofBase64Bytes;
+
+      // 초과(>)만 거부하므로 상한과 같으면 통과해야 한다.
+      final reward = await repo.completeQuest(
+        'u',
+        quest.id,
+        photoBase64: exact,
+      );
+      expect(reward, const Reward(coin: 8, xp: 13));
+      expect(repo.proofOf('u', quest.id), exact);
+    });
+
+    test('★ 재완료해도 proof·기록이 중복되지 않고 보너스도 재지급되지 않는다', () async {
+      // 파밍 시나리오: 사진으로 완료 → 해제 → 다른 사진으로 재완료.
+      // rewardedAt 가드가 보너스·proof·기록 저장을 모두 막아야 한다.
+      final (repo, users) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      await repo.completeQuest('u', quest.id, photoBase64: smallPhoto);
+      await repo.setStatus('u', quest.id, QuestStatus.todo);
+      final second = await repo.completeQuest(
+        'u',
+        quest.id,
+        photoBase64: 'ZZZdifferentZZZ',
+      );
+
+      expect(second, isNull, reason: '이미 지급된 퀘스트는 아무것도 주지 않는다');
+      final user = await users.fetchUser('u');
+      expect(user.coin, 8, reason: '보너스가 다시 붙으면 안 된다');
+      expect(user.xp, 13);
+      expect(repo.achievementsOf('u'), hasLength(1));
+      // 재완료 경로는 proof를 다시 쓰지 않는다 — 최초 사진이 그대로 남는다.
+      expect(repo.proofOf('u', quest.id), smallPhoto);
     });
   });
 

@@ -86,10 +86,15 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
       final repo = ref.read(questRepositoryProvider);
 
       if (done) {
-        // 완료: 상태 변경 + 메모 저장 + 코인·XP(+인증 보너스) 지급 + 성취 기록이
-        // 한 트랜잭션으로 처리된다.
-        // 이미 보상을 받은 퀘스트면 null이 돌아온다(재지급 없음).
-        reward = await repo.completeQuest(uid, quest.id, memo: memoResult?.memo);
+        // 완료: 상태 변경 + 메모·사진 저장 + 코인·XP(+인증 보너스) 지급 + 성취
+        // 기록이 한 트랜잭션으로 처리된다. 인증은 메모 또는 사진 중 하나만 있어도
+        // 성립한다. 이미 보상을 받은 퀘스트면 null이 돌아온다(재지급 없음).
+        reward = await repo.completeQuest(
+          uid,
+          quest.id,
+          memo: memoResult?.memo,
+          photoBase64: memoResult?.photoBase64,
+        );
       } else {
         // 완료 해제: 상태만 되돌린다. 지급 이력(rewardedAt)은 해제해도 남으므로,
         // 다시 완료해도 보상은 재지급되지 않는다.

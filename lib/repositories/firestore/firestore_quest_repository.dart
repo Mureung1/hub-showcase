@@ -172,11 +172,21 @@ class FirestoreQuestRepository implements QuestRepository {
   /// (다른 쪽은 문서가 바뀐 걸 감지하고 재시도 → 이때는 rewardedAt이 이미 있어
   /// 보상을 주지 않는다).
   ///
-  /// 3주차-B: [memo]가 있으면 인증 보너스를 **합산**해 지급하고, 지급이 일어난
-  /// 경우에만 `achievements` 기록을 같은 트랜잭션에 넣는다.
+  /// 3주차-B·사진: [memo]나 [photoBase64] 중 하나만 있어도 인증 보너스를 **합산**해
+  /// 지급하고(둘 다 줘도 1회), 지급이 일어난 경우에만 `achievements` 기록과 사진
+  /// proof 문서를 **같은 트랜잭션**에 넣는다.
   @override
-  Future<Reward?> completeQuest(String uid, String questId, {String? memo}) {
+  Future<Reward?> completeQuest(
+    String uid,
+    String questId, {
+    String? memo,
+    String? photoBase64,
+  }) {
     return guard(() async {
+      // 크기 상한 방어 — 트랜잭션에 들어가기 전에 막는다(단일 정의처).
+      // 넘으면 문서 쓰기가 어차피 실패하므로, 아예 시작하지 않는 편이 안전하다.
+      ensureProofWithinLimit(photoBase64);
+
       final questRef = _db.doc(FirestorePaths.quest(uid, questId));
       final userRef = _db.doc(FirestorePaths.user(uid));
       // 새 기록의 ID는 트랜잭션 밖에서 미리 뽑는다. `doc()`은 서버 왕복 없이
@@ -184,6 +194,9 @@ class FirestoreQuestRepository implements QuestRepository {
       final achievementRef = _db
           .collection(FirestorePaths.achievements(uid))
           .doc();
+      // 사진 proof 문서. ID = questId라 재완료해도 같은 문서를 덮어쓴다
+      // (퀘스트당 사진 1장). 여기도 `.doc()`은 read가 아니다.
+      final proofRef = _db.doc(FirestorePaths.proofDoc(uid, questId));
 
       // 공백만 남는 메모는 인증으로 치지 않는다(정의는 normalizeMemo 한 곳).
       final verifiedMemo = normalizeMemo(memo);
@@ -220,9 +233,9 @@ class FirestoreQuestRepository implements QuestRepository {
 
         // 저장된 난이도로 보상을 계산한다. 트랜잭션 안이라 "읽은 난이도"와
         // "지급액"이 어긋날 수 없다.
-        // 인증이 성립하면 보너스를 합산한다 — 보너스도 rewardedAt 가드 아래라
-        // 재완료로는 다시 받을 수 없다.
-        final verified = verifiedMemo != null;
+        // 인증(메모 또는 사진)이 성립하면 보너스를 합산한다 — 보너스도 rewardedAt
+        // 가드 아래라 재완료로는 다시 받을 수 없다. 둘 다 있어도 보너스는 1회다.
+        final verified = verifiedMemo != null || photoBase64 != null;
         final reward =
             rewardFor(quest.difficulty) +
             (verified ? kVerificationBonus : Reward.zero);
@@ -234,6 +247,17 @@ class FirestoreQuestRepository implements QuestRepository {
           'xp': FieldValue.increment(reward.xp),
         }, SetOptions(merge: true));
 
+        // 사진은 별도 proof 문서에 담는다(quest·achievement 문서 비대화 방지).
+        // 지급 경로에서만 쓴다 — 재완료(alreadyPaid)는 위에서 이미 return 했다.
+        // 같은 트랜잭션이라 "보상은 줬는데 사진은 없는" 불일치가 생기지 않는다.
+        if (photoBase64 != null) {
+          transaction.set(proofRef, {
+            'questId': questId,
+            'base64': photoBase64,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+
         // 성취 기록 — **지급이 일어난 이 경로에서만** 남긴다.
         // 재완료(alreadyPaid)는 위에서 이미 return 했으므로 여기 오지 않는다.
         // → 기록 개수 = 지급 횟수. 코인 합계와 잔액이 어긋나지 않는다.
@@ -244,6 +268,8 @@ class FirestoreQuestRepository implements QuestRepository {
           'coin': reward.coin,
           'xp': reward.xp,
           'verified': verified,
+          // 이미지 바이트는 proof 문서에 있고, 여기엔 유무 플래그만 둔다.
+          'hasPhoto': photoBase64 != null,
           'memo': ?verifiedMemo,
           'completedAt': FieldValue.serverTimestamp(),
         });

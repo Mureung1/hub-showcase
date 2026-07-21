@@ -11,6 +11,7 @@ users/{uid}                                # 사용자
   ├─ goals/{goalId}                         # 사용자가 입력한 큰 목표 (2주차)
   ├─ quests/{questId}                       # 퀘스트
   ├─ achievements/{achievementId}           # 성취 기록 (3주차)
+  ├─ proofs/{questId}                        # 인증 사진 base64 (3주차)
   └─ inventory/{itemId}                     # 보유 아이템 (4주차)
 
 items/{itemId}                              # 공개 아이템 카탈로그 (4주차, 읽기 전용)
@@ -118,9 +119,10 @@ final drafts = QuestDraft.parseList(aiJson['quests']);
 | `questTitle` | string | `''` | **완료 시점 제목의 스냅샷.** 원본이 바뀌거나 지워져도 보관함에 남아야 한다 |
 | `coin` · `xp` | int | 0 | **실제 지급액**(인증 보너스 포함). 기록 합계 = 잔액 |
 | `memo` | string? | null | 남긴 인증 메모. 건너뛰었으면 없음 |
-| `verified` | bool | false | 인증이 성립해 보너스를 받았는가. **`memo` 유무로 유추하지 않는다** — 사진 인증이 붙으면 메모 없이도 성립한다 |
+| `verified` | bool | false | 인증(메모 **또는** 사진)이 성립해 보너스를 받았는가. **`memo` 유무로 유추하지 않는다** — 사진만으로도 성립한다 |
+| `hasPhoto` | bool | false | 이 완료에 인증 **사진**이 딸렸는가. 이미지 바이트는 여기 없고 `proofs/{questId}`에 있다. 목록에서 사진 유무 뱃지 등에 쓴다 |
 | `completedAt` | timestamp | 서버 시각 | 지급 시각 |
-| `photoUrl` | string? | — | 사진 인증. Storage(Blaze) 필요로 **미구현** |
+| `photoUrl` | string? | — | (구) Storage 업로드 URL 자리. **미사용** — 사진은 base64로 `proofs/{questId}`에 저장한다 |
 
 **기록은 보상이 실제 지급된 순간에만 생성된다** — `completeQuest()` 트랜잭션 안에서 퀘스트·사용자 문서와 함께 쓰이므로 "보상은 줬는데 기록이 없는" 불일치가 없다. 재완료(`rewardedAt`이 이미 있는 경우)는 기록을 남기지 않으므로 **기록 개수 = 지급 횟수**다.
 
@@ -131,6 +133,22 @@ final drafts = QuestDraft.parseList(aiJson['quests']);
 `completeQuest(uid, questId, memo:)`의 `memo`가 **공백이 아니면 인증 성립** → 기본 보상 + `kVerificationBonus`(코인 3 · XP 3)를 **합산 지급**한다(예: 보통 5/10 → 8/13). 판정은 `normalizeMemo()` 한 곳에서만 한다(두 저장소 구현이 갈리지 않게).
 
 메모를 **완료 전 시트**에서 받는 이유: 지급액이 메모 유무에 달려 있으므로, 메모를 쥔 채 한 번만 호출해야 완료·보상·보너스·기록이 **한 트랜잭션**에 담긴다. 완료 후에 받으면 보너스가 두 번째 트랜잭션이 되어 중복 지급 가드가 하나 더 필요해진다. 보너스도 `rewardedAt` 가드 아래라 **퀘스트당 평생 1회**다.
+
+### `users/{uid}/proofs/{questId}` — 인증 사진 (3주차)
+
+압축 썸네일을 **base64 문자열**로 담는다. 문서 ID가 `questId`라 **퀘스트당 사진 1장**이고, 재완료 시 같은 문서를 자연스럽게 덮어쓴다.
+
+| 필드 | 타입 | 기본값 | 설명 |
+|------|------|--------|------|
+| `questId` | string | — | 어느 퀘스트의 인증 사진인지 (문서 ID와 같은 값, 조회 편의용 중복 저장) |
+| `base64` | string | — | 압축 썸네일의 base64. 가로 `800`px · 품질 `50`으로 압축한다 |
+| `createdAt` | timestamp | 서버 시각 | 저장 시각 |
+
+**왜 Storage가 아니라 Firestore base64인가**: Storage는 Blaze(유료) 플랜이 필요하다. 데모 단계에선 이를 피하려고 압축 썸네일을 base64로 Firestore에 담는다. 대신 Firestore 문서 **1 MiB 하드 리밋**을 지켜야 한다 — base64는 원본을 ~33% 부풀리므로, ① 픽업 시 압축(수십 KB)하고 ② 저장 직전 `700 KiB`(안전선, `kMaxProofBase64Bytes`) 초과분을 **화면·저장소 양쪽에서** 거부한다. 정책 상수는 `lib/core/constants/proof_rules.dart`, 크기 방어는 `ensureProofWithinLimit()` 한 곳에서만 판정한다.
+
+**왜 별도 컬렉션인가**: 이미지 바이트를 quest·achievement 문서에 넣으면 목록을 조회할 때마다 수십 KB가 딸려와 읽기 비용이 폭증한다. 사진은 필요한 화면에서만 이 문서를 읽는다. achievement에는 **유무 플래그(`hasPhoto`)만** 둔다.
+
+**원자성**: proof 문서 쓰기는 `completeQuest()`의 **같은 트랜잭션**에 들어가고, 보상이 실제 지급되는 경로에서만 실행된다(재완료는 쓰지 않는다). proof ref의 ID는 트랜잭션 밖에서 `.doc(proofDoc(...))`로 만든다(read가 아니므로 read-before-write 규칙과 무관 — achievementRef와 같은 패턴).
 
 ### `users/{uid}/inventory/{itemId}` — 4주차
 

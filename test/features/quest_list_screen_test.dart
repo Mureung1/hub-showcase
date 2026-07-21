@@ -30,6 +30,7 @@ class _FailingCompleteQuestRepository extends InMemoryQuestRepository {
     String uid,
     String questId, {
     String? memo,
+    String? photoBase64,
   }) async {
     throw const NetworkFailure();
   }
@@ -411,7 +412,7 @@ void main() {
 
       // 보통 = 코인5 / XP10. 보너스는 붙지 않는다.
       expect(find.byType(QuestCompleteDialog), findsOneWidget);
-      expect(find.textContaining('메모 인증 보너스'), findsNothing);
+      expect(find.textContaining('인증 보너스'), findsNothing);
 
       final user = await repo.users!.fetchUser('test-uid');
       expect(user.coin, 5);
@@ -442,7 +443,7 @@ void main() {
       expect(find.text('+8'), findsWidgets);
       expect(find.text('XP +13'), findsWidgets);
       // 총액만 보여 주면 왜 8인지 알 수 없다. 보너스 사실을 밝힌다.
-      expect(find.textContaining('메모 인증 보너스'), findsOneWidget);
+      expect(find.textContaining('인증 보너스'), findsOneWidget);
 
       final user = await repo.users!.fetchUser('test-uid');
       expect(user.coin, 8);
