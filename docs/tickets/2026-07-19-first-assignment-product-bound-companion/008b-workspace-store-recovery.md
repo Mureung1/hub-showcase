@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -34,22 +34,22 @@ Registered source drift, invalid product store와 stale scratch가 있어도 사
 - [x] Registered RawMaterial drift가 action을 interrupt하고 recovery-required로 열리며 original bytes를 자동으로 수정하지 않는다.
 - [x] Settled cleanup 뒤 사용자가 선택한 explicit material refresh만 current bytes를 새 baseline으로 채택하고 fresh action을 허용한다.
 - [x] Invalid·unsupported product store가 original bytes unchanged인 `incompatible/readOnly`로 열리고 automatic restore/reset을 수행하지 않는다.
-- [ ] Active authority/guard와 persisted store bytes가 다르면 mutation을 중단하고 bytes를 overwrite하지 않으며, cold-open valid store의 외부 provenance를 감지했다고 주장하지 않는다.
-- [ ] Explicit workspace reactivation 뒤 valid canonical store의 confirmed model·history를 다시 열며 pending native interaction은 복원하지 않는다.
-- [ ] Stale guard와 app-managed scratch가 next open에서 bounded하게 reconcile되고 cleanup failure는 새 action을 차단한다.
+- [x] Active authority/guard와 persisted store bytes가 다르면 mutation을 중단하고 bytes를 overwrite하지 않으며, cold-open valid store의 외부 provenance를 감지했다고 주장하지 않는다.
+- [x] Explicit workspace reactivation 뒤 valid canonical store의 confirmed model·history를 다시 열며 pending native interaction은 복원하지 않는다.
+- [x] Stale guard와 app-managed scratch가 next open에서 bounded하게 reconcile되고 cleanup failure는 새 action을 차단한다.
 - [x] 두 fresh E2E run 사이 workspace, product state, scratch와 native session이 겹치지 않고 tracked seed digest가 그대로다.
 - [x] Source conflict→explicit refresh와 invalid store→read-only Browser traces가 shared contract를 통과한다.
 
 ## Verification
 
 - Targeted test or command:
-  - `NODE_OPTIONS=--conditions=development npx tsx --test apps/server/src/semester-workspace-action.test.ts`: Product Chat active·cleanup guard의 release-gated store recovery, scratch authority 분리와 bounded cleanup을 포함해 24/24 passed
+  - `NODE_OPTIONS=--conditions=development npx tsx --test apps/server/src/semester-workspace-action.test.ts`: cold-restored source recovery의 valid external guard·digest 교체, old baseline 유지와 bounded cleanup, current-process recovery·cleanup guard의 pre-release 차단을 포함해 25/25 passed
   - `NODE_OPTIONS=--conditions=development npx tsx --test apps/server/src/assignment-action.test.ts`: actual HTTP coordinator를 통한 Assignment store conflict settlement→release→same-root reactivation을 포함해 9/9 passed
   - `NODE_OPTIONS=--conditions=development npx tsx --test apps/server/src/semester-workspace.test.ts`: same-root invalid JSON·non-regular store의 bytes-preserving incompatible 전환을 포함해 10/10 passed
   - `cd apps/chat-shell && NODE_OPTIONS=--conditions=development npx playwright test --config playwright.config.ts e2e/workspace-recovery.spec.ts --reporter=line`: source conflict adoption, invalid cold store, active store conflict reactivation과 fresh-run isolation의 Chromium desktop 4/4 passed
   - `npm run test:e2e -w @ay-ple/chat-shell -- --grep "material mutation detects store drift|Assignment admission detects store drift|Chat admission detects store drift"`: 세 public mutation 경로의 authoritative recovery hydration과 original error 보존을 Chromium desktop 3/3 passed
 - Repository checks:
-  - `npm test`: passed; workspace materializer 7/7, product contract 12/12, Runtime 65/65, Server 137/137, Chat Shell 53/53, camp artifact 16/16
+  - `npm test`: passed; workspace materializer 7/7, product contract 12/12, Runtime 65/65, Server 138/138, Chat Shell 53/53, camp artifact 16/16
   - `npm run typecheck`: passed
   - `npm run build`: passed
   - `npm run lint -w @ay-ple/chat-shell`: passed
@@ -57,7 +57,7 @@ Registered source drift, invalid product store와 stale scratch가 있어도 사
   - `npm run check:docs-links`: active 28개와 historical banner 2개 모두 green
   - `git diff --check`: passed
 - Manual or live smoke: 기존 in-app desktop Browser smoke를 유지했고, corrective는 route mock 없는 Vite→Express→coordinator→controller Chromium trace로 active Assignment store drift, native release, explicit `작업공간 다시 선택`, current store 채택, guard·scratch cleanup과 fresh Review를 검증했다.
-- Code review: corrective fixed point `8702a677fdb570560488a92c5596a30934615b7b...2de1d47e`를 Standards와 parent Spec 두 축으로 독립 검토했다. 첫 Standards 검토는 0건이었고, Spec 검토에서 발견한 cleanup-state guard의 pre-release reactivation 1건은 RED regression과 `2de1d47e`로 닫았다. 최종 독립 재검토는 Standards 0건·Spec 0건으로 종료했다.
+- Code review: corrective fixed point `8702a677fdb570560488a92c5596a30934615b7b...2de1d47e`를 Standards와 parent Spec 두 축으로 독립 검토했다. 첫 Standards 검토는 0건이었고, Spec 검토에서 발견한 cleanup-state guard의 pre-release reactivation 1건은 RED regression과 `2de1d47e`로 닫았다. 최종 독립 재검토는 Standards 0건·Spec 0건으로 종료했다. Cold-recovery corrective는 `d3d8ed954046ee3a5cbbc54b4eb0033b6fc5e420...adde147b3b0828d64a5ff719026c49a0a211df37`에서 다시 검토했다. 첫 검토의 Standards 0건·Spec P1 2건을 `09807b58` RED와 `788e9071` 구현으로 닫고, 전체 gate 뒤 독립 재검토를 Standards 0건·Spec 0건으로 종료했다.
 
 ## Blocked By
 
@@ -86,5 +86,8 @@ Registered source drift, invalid product store와 stale scratch가 있어도 사
 - Corrective에서 Server 내부 `storeConflict`와 coordinator release marker를 public Browser recovery projection과 분리했다. Active·cleanup·recovery guard가 가리킨 operation이 release된 뒤에만 same-root reactivation을 허용하고, valid current store는 기존 reconcile 경로로 guard·scratch를 정리하며 invalid JSON·non-regular store는 exact bytes를 보존한 `incompatible/readOnly`로 전환한다. Different invalid candidate는 current workspace authority를 유지한다.
 - Route mock 없는 Chromium trace가 active Assignment drift→interrupt/settlement→release→explicit same-root reactivation→fresh Review를 검증하고, persisted external Course 채택·guard clear·scratch/staging 제거를 함께 확인한다.
 - Corrective 커밋: `f08705ce`, `73fa99c9`, `0c87ede0`, `2de1d47e`
+- Cold-recovery corrective는 current controller가 만든 operation의 exact root·ID·release 상태를 Server closure authority로 유지한다. 따라서 같은 process의 `active | cleanup_required | recovery_required` guard는 matching coordinator release 전 reactivation을 계속 거절하고, prior process에서 cold-restored된 orphan guard만 release marker 없이 same-root reactivation할 수 있다.
+- Private `sourceRecovery`는 old execution guard, material baseline과 bounded cleanup identity를 same-root authority 교체에 전달한다. External valid store가 guard를 제거하고 current TXT digest를 기록했어도 bytes를 덮어쓰지 않은 채 `source_conflict`와 old baseline을 유지하며, cleanup 성공 뒤 explicit material refresh만 새 digest를 채택하고 fresh action을 연다.
+- Cold-recovery corrective 커밋: `a94cebd7`, `7b1210f1`, `95fb1e20`, `09807b58`, `788e9071`, `adde147b`
 - Parent spec과 009/009a의 claim·구현 상태는 변경하지 않았다.
 - Exact Runtime actual-child/local/live-provider conformance는 [009-exact-runtime-product-conformance.md](009-exact-runtime-product-conformance.md)가 계속 소유한다.
