@@ -123,6 +123,7 @@ export default function DropsGrid({
                   src={drop.image}
                   alt={drop.title}
                   className="card-img"
+                  referrerPolicy="no-referrer"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
                       'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500&q=80';

@@ -69,6 +69,7 @@ export default function DetailOverlay({
             <img
               src={currentSelectedDrop.image}
               alt={currentSelectedDrop.title}
+              referrerPolicy="no-referrer"
               style={{
                 width: '90%',
                 height: '90%',
