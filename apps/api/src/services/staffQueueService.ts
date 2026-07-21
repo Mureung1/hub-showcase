@@ -8,6 +8,7 @@ import type {
   OnsiteRegistrationResult,
   OnsiteWaitingRegistrationInput,
   PatientCounts,
+  PatientInputConfiguration,
   QueueStatus,
   QueueEntry,
   StaffQueueState,
@@ -26,6 +27,7 @@ import type {
   WaitingRepository,
 } from "../repositories/waitingRepository.js";
 import type { NotificationSender } from "./notificationService.js";
+import type { AutomaticNotificationProcessor } from "./automaticNotificationService.js";
 
 export interface StaffQueueServiceOptions {
   patientWebOrigin: string;
@@ -34,6 +36,10 @@ export interface StaffQueueServiceOptions {
 
 export interface StaffQueueOperations {
   getTodayQueue(hospitalId: string): Promise<StaffQueueState>;
+  saveNextDayConfiguration(
+    hospitalId: string,
+    input: PatientInputConfiguration,
+  ): Promise<StaffQueueState>;
   registerOnsite(
     hospitalId: string,
     input: OnsiteWaitingRegistrationInput,
@@ -76,6 +82,7 @@ export class StaffQueueService implements StaffQueueOperations {
     private readonly waitingRepository: WaitingRepository,
     private readonly waitingEventRepository: WaitingEventRepository,
     private readonly notificationSender: NotificationSender,
+    private readonly automaticNotificationProcessor: AutomaticNotificationProcessor,
     private readonly options: StaffQueueServiceOptions,
   ) {}
 
@@ -83,12 +90,31 @@ export class StaffQueueService implements StaffQueueOperations {
     return this.transactionManager.run((executor) => this.buildQueueState(executor, hospitalId));
   }
 
+  async saveNextDayConfiguration(
+    hospitalId: string,
+    input: PatientInputConfiguration,
+  ): Promise<StaffQueueState> {
+    return this.transactionManager.run(async (executor) => {
+      await this.requireApprovedHospital(executor, hospitalId);
+      await this.categoryRepository.saveScheduledConfiguration(executor, {
+        hospitalId,
+        effectiveDate: this.getNextClinicDate(),
+        inputMode: input.inputMode,
+        categories: input.categories,
+      });
+      return this.buildQueueState(executor, hospitalId);
+    });
+  }
+
   async registerOnsite(
     hospitalId: string,
     input: OnsiteWaitingRegistrationInput,
   ): Promise<OnsiteRegistrationResult> {
     return this.transactionManager.run(async (executor) => {
-      const { queue, configuration, hospital } = await this.getQueueContext(executor, hospitalId);
+      const { queue, configuration, hospital } = await this.getOrCreatePausedQueueContext(
+        executor,
+        hospitalId,
+      );
       if (queue.status === "closed") {
         throw new ApiError(409, "QUEUE_CLOSED", "오늘 대기열이 종료되었습니다.");
       }
@@ -150,6 +176,7 @@ export class StaffQueueService implements StaffQueueOperations {
       if (notificationResult.duplicate || !notificationResult.notification) {
         throw new ApiError(409, "NOTIFICATION_DUPLICATED", "접수 알림이 이미 생성되었습니다.");
       }
+      await this.processQueueNotifications(executor, queue.id, hospital.name);
 
       return {
         queue: await this.buildQueueState(executor, hospitalId),
@@ -164,7 +191,24 @@ export class StaffQueueService implements StaffQueueOperations {
 
   async setQueueStatus(hospitalId: string, status: QueueStatus): Promise<StaffQueueState> {
     return this.transactionManager.run(async (executor) => {
-      const { queue } = await this.getQueueContext(executor, hospitalId);
+      await this.requireApprovedHospital(executor, hospitalId);
+      const queue = await this.dailyQueueRepository.findByHospitalAndDate(
+        executor,
+        hospitalId,
+        this.options.getClinicDate(),
+      );
+      if (!queue) {
+        if (status !== "open") {
+          return this.buildQueueState(executor, hospitalId);
+        }
+        const configuration = await this.getEffectiveConfiguration(executor, hospitalId);
+        await this.dailyQueueRepository.createOpen(executor, {
+          hospitalId,
+          categorySetId: configuration.id,
+          queueDate: this.options.getClinicDate(),
+        });
+        return this.buildQueueState(executor, hospitalId);
+      }
       const updated = await this.dailyQueueRepository.setStatus(executor, queue.id, status);
       if (!updated) throw new ApiError(409, "QUEUE_CONFLICT", "대기열 상태가 변경되었습니다.");
       return this.buildQueueState(executor, hospitalId);
@@ -208,6 +252,7 @@ export class StaffQueueService implements StaffQueueOperations {
           ...(actorAccountId ? {} : { developmentBypass: true }),
         },
       });
+      await this.processQueueNotifications(executor, current.queueId);
       return this.buildQueueState(executor, hospitalId);
     });
   }
@@ -246,6 +291,7 @@ export class StaffQueueService implements StaffQueueOperations {
           ...(actorAccountId ? {} : { developmentBypass: true }),
         },
       });
+      await this.processQueueNotifications(executor, current.queueId);
       return this.buildQueueState(executor, hospitalId);
     });
   }
@@ -296,6 +342,7 @@ export class StaffQueueService implements StaffQueueOperations {
           ...(actorAccountId ? {} : { developmentBypass: true }),
         },
       });
+      await this.processQueueNotifications(executor, current.queueId);
       return this.buildQueueState(executor, hospitalId);
     });
   }
@@ -333,7 +380,31 @@ export class StaffQueueService implements StaffQueueOperations {
           },
         });
       }
+      await this.processQueueNotifications(executor, queue.id, undefined, hospitalId);
       return this.buildQueueState(executor, hospitalId);
+    });
+  }
+
+  private async processQueueNotifications(
+    executor: DatabaseExecutor,
+    queueId: string,
+    hospitalName?: string,
+    hospitalId?: string,
+  ): Promise<void> {
+    let resolvedHospitalName = hospitalName;
+    if (!resolvedHospitalName) {
+      const queue = await this.dailyQueueRepository.findById(executor, queueId);
+      if (!queue) throw new ApiError(404, "DAILY_QUEUE_NOT_FOUND", "Daily queue was not found.");
+      const hospital = await this.requireApprovedHospital(
+        executor,
+        hospitalId ?? queue.hospitalId,
+      );
+      resolvedHospitalName = hospital.name;
+    }
+    await this.automaticNotificationProcessor.processQueue(executor, {
+      queueId,
+      hospitalName: resolvedHospitalName,
+      patientWebOrigin: this.options.patientWebOrigin,
     });
   }
 
@@ -341,29 +412,63 @@ export class StaffQueueService implements StaffQueueOperations {
     executor: DatabaseExecutor,
     hospitalId: string,
   ): Promise<StaffQueueState> {
-    const { queue, configuration } = await this.getQueueContext(executor, hospitalId);
+    await this.requireApprovedHospital(executor, hospitalId);
+    const clinicDate = this.options.getClinicDate();
+    const queue = await this.dailyQueueRepository.findByHospitalAndDate(
+      executor,
+      hospitalId,
+      clinicDate,
+    );
+    const nextDayConfiguration = await this.categoryRepository.findEffectiveConfiguration(
+      executor,
+      hospitalId,
+      this.getNextClinicDate(),
+    );
+    if (!queue) {
+      const configuration = await this.getEffectiveConfiguration(executor, hospitalId);
+      const nextConfiguration = nextDayConfiguration ?? configuration;
+      return {
+        entries: [],
+        positions: [],
+        queueDate: clinicDate,
+        queueStatus: "paused",
+        todayInputMode: configuration.inputMode,
+        nextDayInputMode: nextConfiguration.inputMode,
+        todayCategories: configuration.categories,
+        nextDayCategories: nextConfiguration.categories,
+      };
+    }
+    const configuration = await this.getConfigurationById(
+      executor,
+      hospitalId,
+      queue.categorySetId,
+    );
     const waitingEntries = await this.waitingRepository.listByQueue(executor, queue.id);
     const countRows = await this.waitingRepository.listCountsByQueue(executor, queue.id);
     const entries = waitingEntries.map((waiting) =>
       this.toQueueEntry(waiting, countRows, configuration.inputMode, configuration.categories),
     );
+    const nextConfiguration = nextDayConfiguration ?? configuration;
     return {
       entries,
       positions: calculateQueuePositions(entries),
       queueDate: queue.queueDate,
       queueStatus: queue.status,
       todayInputMode: configuration.inputMode,
-      nextDayInputMode: configuration.inputMode,
+      nextDayInputMode: nextConfiguration.inputMode,
       todayCategories: configuration.categories,
-      nextDayCategories: configuration.categories,
+      nextDayCategories: nextConfiguration.categories,
     };
   }
 
+  private getNextClinicDate(): string {
+    const clinicDate = new Date(`${this.options.getClinicDate()}T00:00:00.000Z`);
+    clinicDate.setUTCDate(clinicDate.getUTCDate() + 1);
+    return clinicDate.toISOString().slice(0, 10);
+  }
+
   private async getQueueContext(executor: DatabaseExecutor, hospitalId: string) {
-    const hospital = await this.hospitalRepository.findById(executor, hospitalId);
-    if (!hospital || hospital.approvalStatus !== "approved") {
-      throw new ApiError(403, "HOSPITAL_NOT_APPROVED", "승인된 병원을 찾을 수 없습니다.");
-    }
+    const hospital = await this.requireApprovedHospital(executor, hospitalId);
     const queue = await this.dailyQueueRepository.findByHospitalAndDate(
       executor,
       hospitalId,
@@ -372,14 +477,69 @@ export class StaffQueueService implements StaffQueueOperations {
     if (!queue) {
       throw new ApiError(404, "DAILY_QUEUE_NOT_FOUND", "오늘 대기열이 준비되지 않았습니다.");
     }
+    const configuration = await this.getConfigurationById(executor, hospitalId, queue.categorySetId);
+    return { queue, configuration, hospital };
+  }
+
+  private async getOrCreatePausedQueueContext(
+    executor: DatabaseExecutor,
+    hospitalId: string,
+  ) {
+    const hospital = await this.requireApprovedHospital(executor, hospitalId);
+    let queue = await this.dailyQueueRepository.findByHospitalAndDate(
+      executor,
+      hospitalId,
+      this.options.getClinicDate(),
+    );
+    if (!queue) {
+      const effectiveConfiguration = await this.getEffectiveConfiguration(executor, hospitalId);
+      queue = await this.dailyQueueRepository.createPaused(executor, {
+        hospitalId,
+        categorySetId: effectiveConfiguration.id,
+        queueDate: this.options.getClinicDate(),
+      });
+    }
+    const configuration = await this.getConfigurationById(
+      executor,
+      hospitalId,
+      queue.categorySetId,
+    );
+    return { queue, configuration, hospital };
+  }
+
+  private async requireApprovedHospital(executor: DatabaseExecutor, hospitalId: string) {
+    const hospital = await this.hospitalRepository.findById(executor, hospitalId);
+    if (!hospital || hospital.approvalStatus !== "approved") {
+      throw new ApiError(403, "HOSPITAL_NOT_APPROVED", "승인된 병원을 찾을 수 없습니다.");
+    }
+    return hospital;
+  }
+
+  private async getEffectiveConfiguration(executor: DatabaseExecutor, hospitalId: string) {
+    const configuration = await this.categoryRepository.findEffectiveConfiguration(
+      executor,
+      hospitalId,
+      this.options.getClinicDate(),
+    );
+    if (!configuration) {
+      throw new ApiError(409, "CATEGORY_CONFIGURATION_INVALID", "환자 분류 설정을 확인해 주세요.");
+    }
+    return configuration;
+  }
+
+  private async getConfigurationById(
+    executor: DatabaseExecutor,
+    hospitalId: string,
+    categorySetId: string,
+  ) {
     const configuration = await this.categoryRepository.findConfigurationById(
       executor,
-      queue.categorySetId,
+      categorySetId,
     );
     if (!configuration || configuration.hospitalId !== hospitalId) {
       throw new ApiError(409, "CATEGORY_CONFIGURATION_INVALID", "환자 분류 설정을 확인해 주세요.");
     }
-    return { queue, configuration, hospital };
+    return configuration;
   }
 
   private async getHospitalWaiting(

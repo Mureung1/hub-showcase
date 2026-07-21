@@ -11,9 +11,25 @@ export interface PatientCategoryConfiguration {
   categories: PatientCategoryDefinition[];
 }
 
+export interface SavePatientCategoryConfigurationInput {
+  hospitalId: string;
+  effectiveDate: string;
+  inputMode: PatientInputMode;
+  categories: PatientCategoryDefinition[];
+}
+
 export interface PatientCategoryRepository {
   findConfigurationById(
     executor: DatabaseExecutor,
     categorySetId: string,
   ): Promise<PatientCategoryConfiguration | null>;
+  findEffectiveConfiguration(
+    executor: DatabaseExecutor,
+    hospitalId: string,
+    effectiveDate: string,
+  ): Promise<PatientCategoryConfiguration | null>;
+  saveScheduledConfiguration(
+    executor: DatabaseExecutor,
+    input: SavePatientCategoryConfigurationInput,
+  ): Promise<PatientCategoryConfiguration>;
 }

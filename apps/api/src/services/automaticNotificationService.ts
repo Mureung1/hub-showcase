@@ -1,4 +1,5 @@
 import {
+  calculateQueuePositions,
   decideAutomaticNotification,
   defaultQueueSettings,
 } from "@baro-jinryo/shared";
@@ -18,11 +19,25 @@ export interface ProcessAutomaticNotificationInput {
   currentPosition: number;
   estimatedMinutes: number;
   hospitalName: string;
-  statusUrl: string;
+  statusUrl?: string;
   now: Date;
   preparationThreshold?: number;
   entryThreshold?: number;
   arrivalGraceMinutes?: number;
+}
+
+export interface ProcessQueueNotificationsInput {
+  queueId: string;
+  hospitalName: string;
+  patientWebOrigin: string;
+  now?: Date;
+}
+
+export interface AutomaticNotificationProcessor {
+  processQueue(
+    executor: DatabaseExecutor,
+    input: ProcessQueueNotificationsInput,
+  ): Promise<void>;
 }
 
 export interface ProcessAutomaticNotificationResult {
@@ -30,12 +45,50 @@ export interface ProcessAutomaticNotificationResult {
   notification: SendNotificationResult;
 }
 
-export class AutomaticNotificationService {
+export class AutomaticNotificationService implements AutomaticNotificationProcessor {
   constructor(
     private readonly waitingRepository: WaitingRepository,
     private readonly waitingEventRepository: WaitingEventRepository,
     private readonly notificationSender: NotificationSender,
   ) {}
+
+  async processQueue(
+    executor: DatabaseExecutor,
+    input: ProcessQueueNotificationsInput,
+  ): Promise<void> {
+    const waitings = await this.waitingRepository.listByQueue(executor, input.queueId);
+    const waitingsById = new Map(waitings.map((waiting) => [waiting.id, waiting]));
+    const positions = calculateQueuePositions(
+      waitings.map((waiting) => ({
+        id: waiting.id,
+        ticketNumber: waiting.ticketNumber,
+        source: waiting.source,
+        inputMode: "total_only" as const,
+        patientCounts: {},
+        patientCount: waiting.patientCount,
+        categorySnapshot: [],
+        status: waiting.status,
+        registeredAt: waiting.createdAt.toISOString(),
+        deferred: waiting.patientDeferCount > 0,
+      })),
+    );
+
+    for (const position of positions) {
+      if (position.position === null || position.estimatedMinutes === null) continue;
+      const waiting = waitingsById.get(position.entry.id);
+      if (!waiting) continue;
+      await this.process(executor, {
+        waiting,
+        currentPosition: position.position,
+        estimatedMinutes: position.estimatedMinutes,
+        hospitalName: input.hospitalName,
+        ...(waiting.source === "remote"
+          ? { statusUrl: `${input.patientWebOrigin}/my-waiting` }
+          : {}),
+        now: input.now ?? new Date(),
+      });
+    }
+  }
 
   async process(
     executor: DatabaseExecutor,
@@ -70,7 +123,7 @@ export class AutomaticNotificationService {
           hospitalName: input.hospitalName,
           currentPosition: input.currentPosition,
           estimatedMinutes: input.estimatedMinutes,
-          statusUrl: input.statusUrl,
+          ...(input.statusUrl ? { statusUrl: input.statusUrl } : {}),
         },
       });
       return { waiting, notification };
@@ -91,7 +144,6 @@ export class AutomaticNotificationService {
         variables: {
           hospitalName: input.hospitalName,
           currentPosition: input.currentPosition,
-          statusUrl: input.statusUrl,
         },
       });
       return { waiting, notification };
@@ -130,7 +182,7 @@ export class AutomaticNotificationService {
         hospitalName: input.hospitalName,
         currentPosition: input.currentPosition,
         arrivalGraceMinutes,
-        statusUrl: input.statusUrl,
+        ...(input.statusUrl ? { statusUrl: input.statusUrl } : {}),
       },
     });
     return { waiting, notification };

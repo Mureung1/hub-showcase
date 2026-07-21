@@ -155,7 +155,7 @@ export function saveNextDayCategories(
   inputMode: PatientInputMode,
   categories: PatientCategoryDefinition[],
 ): Promise<StaffQueueState> {
-  return requestJson("/mock/staff/categories/next-day", {
+  return requestJson("/staff/categories/next-day", {
     method: "PUT",
     body: JSON.stringify({ inputMode, categories }),
   });

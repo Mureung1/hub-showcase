@@ -89,6 +89,30 @@ export class PgDailyQueueRepository implements DailyQueueRepository {
         INSERT INTO public.daily_queues
           (hospital_id, category_set_id, queue_date, status, opened_at)
         VALUES ($1, $2, $3, 'open', now())
+        ON CONFLICT (hospital_id, queue_date) DO UPDATE
+        SET status = 'open',
+            opened_at = COALESCE(public.daily_queues.opened_at, now()),
+            closed_at = NULL
+        RETURNING ${dailyQueueColumns}
+      `,
+      [input.hospitalId, input.categorySetId, input.queueDate],
+    );
+    const row = result.rows[0];
+    if (!row) throw new Error("날짜별 대기열 생성 결과를 찾을 수 없습니다.");
+    return toDailyQueue(row);
+  }
+
+  async createPaused(
+    executor: DatabaseExecutor,
+    input: CreateDailyQueueInput,
+  ): Promise<DailyQueue> {
+    const result = await executor.query<DailyQueueRow>(
+      `
+        INSERT INTO public.daily_queues
+          (hospital_id, category_set_id, queue_date, status)
+        VALUES ($1, $2, $3, 'paused')
+        ON CONFLICT (hospital_id, queue_date) DO UPDATE
+        SET category_set_id = public.daily_queues.category_set_id
         RETURNING ${dailyQueueColumns}
       `,
       [input.hospitalId, input.categorySetId, input.queueDate],

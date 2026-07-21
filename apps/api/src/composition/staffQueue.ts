@@ -9,20 +9,29 @@ import { PgPatientCategoryRepository } from "../repositories/pg/pgPatientCategor
 import { PgWaitingEventRepository } from "../repositories/pg/pgWaitingEventRepository.js";
 import { PgWaitingRepository } from "../repositories/pg/pgWaitingRepository.js";
 import { NotificationService } from "../services/notificationService.js";
+import { AutomaticNotificationService } from "../services/automaticNotificationService.js";
 import { StaffQueueService } from "../services/staffQueueService.js";
 import { getClinicDate } from "../utils/clinicDate.js";
 
 export function createStaffQueueService(): StaffQueueService {
+  const waitingRepository = new PgWaitingRepository();
+  const waitingEventRepository = new PgWaitingEventRepository();
+  const notificationService = new NotificationService(
+    new PgNotificationRepository(),
+    new MockNotificationProvider(),
+  );
   return new StaffQueueService(
     new PgTransactionManager(databasePool),
     new PgDailyQueueRepository(),
     new PgHospitalRepository(),
     new PgPatientCategoryRepository(),
-    new PgWaitingRepository(),
-    new PgWaitingEventRepository(),
-    new NotificationService(
-      new PgNotificationRepository(),
-      new MockNotificationProvider(),
+    waitingRepository,
+    waitingEventRepository,
+    notificationService,
+    new AutomaticNotificationService(
+      waitingRepository,
+      waitingEventRepository,
+      notificationService,
     ),
     {
       patientWebOrigin: env.PATIENT_WEB_ORIGIN,

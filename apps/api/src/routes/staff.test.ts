@@ -27,6 +27,7 @@ function createService(
 ): StaffQueueOperations {
   return {
     getTodayQueue: vi.fn(async () => queue),
+    saveNextDayConfiguration: vi.fn(async () => queue),
     registerOnsite: vi.fn(),
     setQueueStatus: vi.fn(async () => queue),
     changeWaitingStatus: vi.fn(async () => queue),
@@ -54,6 +55,19 @@ function createTestApp(service: StaffQueueOperations) {
 }
 
 describe("staff queue routes", () => {
+  it("saves the next-day patient input configuration", async () => {
+    const saveNextDayConfiguration = vi.fn(async () => queue);
+    await request(createTestApp(createService({ saveNextDayConfiguration })))
+      .put("/api/staff/categories/next-day")
+      .send({ inputMode: "total_only", categories: [] })
+      .expect(200);
+
+    expect(saveNextDayConfiguration).toHaveBeenCalledWith(
+      "10000000-0000-4000-8000-000000000001",
+      { inputMode: "total_only", categories: [] },
+    );
+  });
+
   it("오늘 대기열을 조회한다", async () => {
     const service = createService();
 

@@ -193,10 +193,6 @@ export function StaffQueuePage({
             <UsersRound size={20} />
             통합 대기열
           </a>
-          <button type="button" onClick={() => setShowOnsiteForm(true)}>
-            <Plus size={20} />
-            현장 환자 등록
-          </button>
           <button type="button" onClick={() => setShowCategorySettings(true)}>
             <Settings2 size={20} />
             환자 분류 설정
@@ -216,7 +212,7 @@ export function StaffQueuePage({
               {formatQueueDate(queueDate)}{" "}
               <span className={`queue-operation queue-operation--${queueStatus}`}>
                 <Wifi size={14} />
-                {queueStatus === "open" ? "원격 웨이팅 운영 중" : "원격 웨이팅 일시 중지"}
+                {queueStatus === "open" ? "원격 웨이팅 운영 중" : "원격 웨이팅 종료"}
               </span>
             </p>
           </div>
@@ -287,7 +283,7 @@ export function StaffQueuePage({
           <div className="notice notice--warning">
             <PauseCircle size={20} />
             <div>
-              <strong>원격 접수가 일시 중지되었습니다</strong>
+              <strong>원격 웨이팅이 종료되었습니다</strong>
               <p>현장 접수와 기존 대기열 처리는 계속할 수 있습니다.</p>
             </div>
           </div>
