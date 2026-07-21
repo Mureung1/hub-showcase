@@ -18,6 +18,9 @@
   - `api-smoke-test`로 실서버 검증: POST 생성 → GET 200, 없는 id GET 404, 잘못된 형식 GET 400, languages 길이 초과 POST 400 — 전부 확인 후 스모크용 레코드 삭제
   - (부가) 새 라우트/컨트롤러 작성 시 예외 처리·입력 검증·배포 보안 설정을 다루는 `security-convention` 스킬과 `docs/security.md` 신설 — 기존 코드(analysisService의 404 패턴, recommendationController의 화이트리스트 검증, githubService의 qualifier 이중 방어 등)를 근거로 정리, `docs/security-convention` 브랜치에 커밋
   - (부가) 백엔드 유닛/통합테스트 프레임워크 도입 — Vitest+Supertest, `backend/tests/unit`(validators·recommendationService 순수 함수, `judgeDifficulty`/`scoreItem`은 테스트를 위해 export만 추가)·`backend/tests/integration`(추천 API, GitHub는 mock·DB는 실제 Supabase 연결) 19개 테스트 작성. `docs/testing.md` + `backend-testing` 스킬로 컨벤션 정리(유닛/통합 구분 기준, api-smoke-test와의 역할 분리), `test/backend-vitest-setup` 브랜치에 커밋
+  - 코드리뷰 후속조치: `TOPIC_PATTERN`이 ASCII만 허용해 한글 토픽 입력이 400으로 막히던 버그 수정(유니코드 허용), 통합테스트가 `beforeAll`에서 잔여 데이터를 선정리하도록 보강 → 테스트 20개로 증가
+  - `explain-work` 스킬 신설 — 작업 설명을 기능 단위 뭘/왜/어떻게/더 나은 방법으로 답하도록
+  - #6(LLM 이슈 분석) 착수 전 설계: LLM 실패 시 폴백 정책 결정(캐시는 성공 결과만 저장·TTL 없음·캐시 없고 실패 시 에러 페이지 대신 null+200) — decisions.md 기록. `IssueCache`에 `issueSummary`/`requiredSkills`/`guide`/`analyzedAt` 컬럼 선반영(전부 nullable, requiredSkills/guide는 Analysis와 같은 방식으로 Json 사용 — Prisma postgresql list는 nullable 불가라 null(미생성)과 빈 배열을 구분하기 위함)
 - 이슈/막힌 점:
   - (해당 없음)
 - 다음 할 일:
