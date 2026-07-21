@@ -10,6 +10,22 @@
 
 ---
 
+### 2026-07-21
+- 진행한 작업:
+  - #8 마감(화 파트): `GET /api/recommendations/:id` 상세 조회 구현 — uuid 형식 검증(400) → 조회(200) → 없으면 404 RECOMMENDATION_NOT_FOUND, analysisService의 404 패턴 재사용
+  - 코드리뷰 지적사항 반영: preferences languages/topics 배열 길이 상한 검증, `fetchReposWithIssues`에 `owner/name` 형식 아닌 fullName 필터 추가(GraphQL 별칭 쿼리 파손 방지)
+  - 점수 로직 다듬기: 스타 가점을 tier→로그 스케일로 전환(동점 뭉침 완화), skillLevel↔난이도 정합 가점 추가(decisions.md "추천 기준 3단 구조" ②), medium 난이도는 help wanted 이슈 수로 가점(GraphQL에 helpWantedIssues 필드 추가), 관심 주제 유사어(ml/ai/web 등) 매칭 확장
+  - `api-smoke-test`로 실서버 검증: POST 생성 → GET 200, 없는 id GET 404, 잘못된 형식 GET 400, languages 길이 초과 POST 400 — 전부 확인 후 스모크용 레코드 삭제
+  - (부가) 새 라우트/컨트롤러 작성 시 예외 처리·입력 검증·배포 보안 설정을 다루는 `security-convention` 스킬과 `docs/security.md` 신설 — 기존 코드(analysisService의 404 패턴, recommendationController의 화이트리스트 검증, githubService의 qualifier 이중 방어 등)를 근거로 정리, `docs/security-convention` 브랜치에 커밋
+- 이슈/막힌 점:
+  - (해당 없음)
+- 다음 할 일:
+  - `feat/be-recommendations-api` → `dev` 코드리뷰 후 머지, `docs/security-convention` → `dev` 머지
+  - `dev` → `main` 푸시 (하루 1회 규칙)
+  - (수) #9: FE 선호 조건 선택 화면 + mock→실제 API 교체
+
+---
+
 ### 2026-07-20
 - 진행한 작업:
   - W3 주간 계획 수립 → GitHub 이슈 등록: #8(추천 API, 월~화) · #9(FE 선호조건+실제 API 교체, 수) · #10(E2E·배포·문서 마감, 금), #6(LLM 분석)은 목요일로 일정 코멘트
