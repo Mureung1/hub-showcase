@@ -7,6 +7,6 @@
   "routes": [
     { "src": "/api/(.*)", "dest": "server/index.js" },
     { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "newssist/build/index.html" }
+    { "src": "/(.*)", "dest": "/newssist/index.html" }
   ]
 }
