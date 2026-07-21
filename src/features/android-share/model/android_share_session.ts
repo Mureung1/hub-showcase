@@ -23,7 +23,12 @@ export type AndroidShareState =
   | ({ status: 'saving' } & AndroidSharePending)
   | { status: 'saved'; insight: CapturedInsight }
   | { status: 'duplicate'; insight: CapturedInsight }
-  | { status: 'editing-memo'; insight: CapturedInsight; memo: string }
+  | {
+      status: 'editing-memo';
+      insight: CapturedInsight;
+      memo: string;
+      result: 'duplicate' | 'saved';
+    }
   | { status: 'completed' }
   | {
       status: 'error';
@@ -59,7 +64,8 @@ export type AndroidShareTransition = {
 const URL_NOT_FOUND_MESSAGE = '저장할 링크를 찾지 못했어요.';
 const UNSUPPORTED_PROTOCOL_MESSAGE = 'http 또는 https 링크만 저장할 수 있어요.';
 const AUTHENTICATION_FAILED_MESSAGE = '로그인을 완료하지 못했어요.';
-const SHARE_MEMORY_LOST_MESSAGE = '로그인은 완료됐지만 링크를 다시 받아야 해요.';
+const SHARE_MEMORY_LOST_MESSAGE =
+  '로그인은 완료됐지만 링크를 다시 받아야 해요.';
 const CAPTURE_FAILED_MESSAGE = '지금은 저장하지 못했어요.';
 const RECENT_SHARE_ID_LIMIT = 32;
 
@@ -231,6 +237,7 @@ export function reduceShareSession(
         status: 'editing-memo',
         insight: state.insight,
         memo: state.insight.memo ?? '',
+        result: state.status,
       });
 
     case 'memo-changed':
@@ -244,7 +251,8 @@ export function reduceShareSession(
       if (
         state.status !== 'saved' &&
         state.status !== 'duplicate' &&
-        state.status !== 'editing-memo'
+        state.status !== 'editing-memo' &&
+        state.status !== 'error'
       ) {
         return { effect: 'none', session };
       }

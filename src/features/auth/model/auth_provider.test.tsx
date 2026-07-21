@@ -3,6 +3,8 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import type { MobileOAuthContext } from '@/shared/capacitor';
+
 import type { AuthService, AuthSession } from '../api/auth_service';
 import { AuthProvider } from './auth_provider';
 import { useAuth } from './use_auth';
@@ -14,6 +16,8 @@ afterEach(() => {
 
 function createServiceMock() {
   let listener: ((session: AuthSession | null) => void) | undefined;
+  let signInFailureListener:
+    ((context?: MobileOAuthContext) => void) | undefined;
   const unsubscribe = vi.fn();
   const service: AuthService = {
     signInWithGoogle: vi.fn().mockResolvedValue(undefined),
@@ -22,11 +26,18 @@ function createServiceMock() {
       listener = nextListener;
       return unsubscribe;
     }),
+    subscribeSignInFailures: vi.fn((nextListener) => {
+      signInFailureListener = nextListener;
+      return vi.fn();
+    }),
   };
 
   return {
     emit(session: AuthSession | null) {
       listener?.(session);
+    },
+    emitSignInFailure(context?: MobileOAuthContext) {
+      signInFailureListener?.(context);
     },
     service,
     unsubscribe,
@@ -34,11 +45,18 @@ function createServiceMock() {
 }
 
 function AuthProbe() {
-  const { authErrorMessage, authState, signInWithGoogle, signOut } = useAuth();
+  const {
+    androidShareOAuthCallbackRevision,
+    authErrorMessage,
+    authState,
+    signInWithGoogle,
+    signOut,
+  } = useAuth();
 
   return (
     <div>
       <p>{authState.status}</p>
+      <p>공유 OAuth 복귀 {androidShareOAuthCallbackRevision}</p>
       {authErrorMessage ? <p>{authErrorMessage}</p> : null}
       {authState.status === 'signed-in' ? (
         <p>{authState.user.displayName}</p>
@@ -150,5 +168,23 @@ describe('AuthProvider', () => {
     ).not.toBeNull();
     expect(window.location.search).toBe('?keep=value');
     expect(window.location.hash).toBe('#section');
+  });
+
+  it('surfaces a mobile OAuth callback failure as a retryable sign-in error', () => {
+    const auth = createServiceMock();
+    render(
+      <AuthProvider service={auth.service}>
+        <AuthProbe />
+      </AuthProvider>
+    );
+
+    act(() => auth.emitSignInFailure('android-share'));
+
+    expect(
+      screen.getByText(
+        'Google 로그인에 실패했습니다. 로그인을 완료하지 못했어요.'
+      )
+    ).not.toBeNull();
+    expect(screen.getByText('공유 OAuth 복귀 1')).not.toBeNull();
   });
 });

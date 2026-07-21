@@ -28,6 +28,8 @@ export type {
 } from './model/insight_repository';
 export { createSupabaseInsightRepository } from './api/supabase_insight_repository';
 export { createBrowserInsightCaptureService } from './api/browser_insight_capture_service';
+export { createBrowserInsightMemoService } from './api/browser_insight_memo_service';
+export type { InsightMemoService } from './api/browser_insight_memo_service';
 export { createLocalStorageInsightRepository } from './model/local_storage_insight_repository';
 export { normalizeInsightUrl } from './model/normalize_insight_url';
 export {

@@ -171,12 +171,15 @@ describe('Android 공유 메모리 세션', () => {
       type: 'memo-changed',
       memo: '나중에 다시 읽기',
     });
-    const completed = reduceShareSession(changed.session, { type: 'completed' });
+    const completed = reduceShareSession(changed.session, {
+      type: 'completed',
+    });
 
     expect(changed.session.state).toEqual({
       status: 'editing-memo',
       insight,
       memo: '나중에 다시 읽기',
+      result: 'saved',
     });
     expect(completed.session.state).toEqual({ status: 'completed' });
   });
