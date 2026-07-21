@@ -8,9 +8,9 @@
 
 핵심 아이디어는 **회피 이유에 맞춘 맞춤 개입**이다: 에이전트가 사용자가 시작하지 못하는 이유를 파악하고, 그에 맞는 첫 행동(마이크로태스크)을 제안해 실제로 시작하도록 돕는다. 단순한 "리마인더 + AI + 캐릭터"가 아니라, 회피 이유를 진단하고 그에 맞게 반응하는 것이 차별점이며, 챗봇형 UI로 넛지를 전달하는 것 자체가 핵심은 아니다.
 
-저장소는 현재 스캐폴드 단계다: Vite + React 기반 랜딩/소개 페이지(`src/components/ProjectIntro.jsx`)가 컨셉(문제 정의, 서비스 흐름 타임라인, 기능 그룹)을 보여준다. 백엔드, 에이전트 로직, 데이터 영속화는 아직 없다.
+1~3주차 작업이 완료된 상태다: 프런트는 랜딩/소개 페이지(`ProjectIntro.jsx`) 외에도 등록·홈·포커스 모드·잔소리봇 개입 모달(Lv1~4) 등 실제 화면이 구현돼 있고, 백엔드는 Prisma + Supabase(Postgres)로 연결되어 할일/회피이유/이벤트/Push 구독 라우트(`server/src/routes/`)와 레벨 계산 로직(`server/src/lib/scoring.ts`)이 동작한다. 현재는 4주차(통합·배포·발표 준비) 진행 중이며, Web Push 발송 파이프라인(`send-push` 서버리스 함수 등)은 아직 미완성이다.
 
-참고 문서: [@docs/plan.md](docs/plan.md) (기획서), [@docs/checklist.md](docs/checklist.md) (작업 분해), [@docs/wireframe.md](docs/wireframe.md) (화면 단위 와이어프레임).
+참고 문서: [@docs/plan.md](docs/plan.md) (기획서), [@docs/checklist.md](docs/checklist.md) (작업 분해), [@docs/wireframe.md](docs/wireframe.md) (화면 단위 와이어프레임), [@docs/design-concept.md](docs/design-concept.md) (디자인 컨셉/철학), [@docs/design-research.md](docs/design-research.md) (유사 서비스 리서치·디자인 톤 결정 과정).
 
 1주차 프로토타입 범위: 등록~홈 화면까지. 포커스 화면(및 레벨 시스템)은 2주차.
 

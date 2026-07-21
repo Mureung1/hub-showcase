@@ -255,6 +255,8 @@ function HomePage() {
   const modalTask = tasks.find(
     (t) => t.id === modalTaskId && t.status === "active",
   );
+  // Lv3 기억 기반 개입이 참조할 세션 내 완료 이력(같은 회피 이유로 성공한 사례 탐색용).
+  const completedTasks = tasks.filter((t) => t.status === "done");
 
   if (isLoading) {
     return (
@@ -320,6 +322,7 @@ function HomePage() {
           onReconfirmReason={handleReconfirmReason}
           onStart={handleStartFromModal}
           onClose={closeModal}
+          completedTasks={completedTasks}
         />
       )}
     </div>

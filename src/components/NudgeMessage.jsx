@@ -3,11 +3,11 @@ import { buildNudgeMessage } from "../lib/nudgeMessages";
 
 // 레벨 칩 + 본문 (wireframe.md 4번의 NudgeMessage).
 // 레벨별 문구는 nudgeMessages.js가 담당하고, 이 컴포넌트는 그 결과를 렌더링만 한다.
-// #23 기준 Lv1만 실제 문구가 있고, Lv2~4는 buildNudgeMessage가 null을 반환해
-// 자리표시 문구로 대체된다(다음 이슈에서 nudgeMessages.js에 항목만 추가하면 채워짐).
-function NudgeMessage({ task, onStart }) {
+// Lv1~4 모두 실제 문구가 있다(#23~#27). 자리표시 문구는 빌더가 없는 레벨(Lv0)에만 남는다.
+// completedTasks: Lv3 기억 기반 개입이 참조하는 세션 내 완료 이력.
+function NudgeMessage({ task, onStart, completedTasks = [] }) {
   const meta = LEVEL_META[task.level];
-  const message = buildNudgeMessage(task.level, task);
+  const message = buildNudgeMessage(task.level, task, completedTasks);
 
   return (
     <div className="nudge-body">

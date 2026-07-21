@@ -95,7 +95,7 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/avoidance-reasons", () => {
 });
 ```
 
-`server/vitest.config.ts`는 `loadEnv("test", process.cwd(), "")`(from `"vite"`, `vitest/config`가 아님)로 `server/.env.test`를 읽어 `process.env`에 주입하도록 이미 설정돼 있다. `.env.test`가 없으면 평소 `.env`(개발 DB)만 로드되므로, 위 가드가 `isTestDb=false`로 판정해 안전하게 건너뛴다.
+`server/vitest.config.ts`는 `server/.env.test` 파일 존재 여부를 직접 검사해서, 있으면 그 값만 읽어 `test.env`로 주입하고 없으면 빈 값을 반환한다. **`vite`의 `loadEnv`는 쓰지 않는다** — `loadEnv`는 `.env.test`가 없어도 base `.env`(개발 DB의 실제 `DATABASE_URL`)를 항상 먼저 읽어버리는 하드코딩된 동작이 있어서, ".env.test가 없으면 DATABASE_URL이 비어서 skip"이라는 의도가 실제로는 "DATABASE_URL은 있는데 test 식별자가 없어서 throw" 분기로 새는 버그가 있었다(과거 이 문서엔 "`.env.test`가 없으면 평소 `.env`만 로드되므로 가드가 안전하게 건너뛴다"고 적혀 있었는데, 이 설명 자체가 그 버그를 반영하지 못한 잘못된 서술이었다). 지금은 `.env.test` 파일이 없으면 `process.env.DATABASE_URL`이 아예 비므로, 위 가드가 진짜로 `isTestDb=false`(그리고 `databaseUrl=""`)로 판정해 안전하게 건너뛴다.
 
 ### 5-2. 테스트 데이터에는 고유 prefix를 붙인다
 
