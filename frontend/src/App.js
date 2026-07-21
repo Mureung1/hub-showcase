@@ -63,6 +63,8 @@ function App() {
             return {
               ...prev,
               title: facts.case_type || prev.title,
+              // [추가된 부분] 백엔드에서 분석한 상대방(person) 이름이 있으면 피고 이름 칸에 자동 입력!
+              receiver_name: facts.person || prev.receiver_name,
               facts: aiFacts.trim() !== "" ? aiFacts.trim() : prev.facts
             };
           });
