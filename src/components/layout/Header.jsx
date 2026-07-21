@@ -7,6 +7,7 @@ import {
   getResumeStep,
   useAppState,
 } from '../../context/AppStateContext'
+import { useAuth } from '../../context/AuthContext'
 import { ANALYSIS_ID_STORAGE_KEY } from '../../constants/storageKeys'
 
 // prototype/demo_13.html의 renderHeaderBar()/renderStepperInline()을 그대로 포팅 (#21).
@@ -61,6 +62,7 @@ function Header() {
   const navigate = useNavigate()
   const location = useLocation()
   const { filters, spec, result, setFilters, setSpec, setResult } = useAppState()
+  const { user, loading: authLoading, signOut } = useAuth()
   const isDark = theme === 'dark'
 
   const showStepper = ['/filter', '/spec', '/result'].includes(location.pathname)
@@ -110,6 +112,25 @@ function Header() {
           <button type="button" className="nav-link pill" onClick={() => navigate('/')}>
             홈
           </button>
+          {!authLoading && (
+            user ? (
+              <>
+                <span className="nav-user-email mono">{user.email}</span>
+                <button type="button" className="nav-link" onClick={() => signOut()}>
+                  로그아웃
+                </button>
+              </>
+            ) : (
+              <>
+                <Link className="nav-link" to={`/login?redirect=${encodeURIComponent(location.pathname)}`}>
+                  로그인
+                </Link>
+                <Link className="nav-link pill" to={`/signup?redirect=${encodeURIComponent(location.pathname)}`}>
+                  회원가입
+                </Link>
+              </>
+            )
+          )}
         </nav>
       </div>
     </header>
