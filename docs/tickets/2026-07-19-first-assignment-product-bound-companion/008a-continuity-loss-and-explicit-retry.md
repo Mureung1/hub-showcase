@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -43,20 +43,20 @@ Browser·Server·Runtime continuity loss가 Review 전이나 atomic apply 뒤에
 
 - Targeted test or command:
   - `npm run test -w @ay-ple/product-contract`: 11/11 passed
-  - `npm run test -w @ay-ple/server`: 124/124 passed
-  - `npm run test -w @ay-ple/chat-shell`: 49/49 passed
-  - `NODE_OPTIONS=--conditions=development npx tsx --test apps/server/src/semester-workspace-action.test.ts`: 16/16 passed
-  - `npm run test:e2e -w @ay-ple/chat-shell -- --grep "settles a lost Assignment stream"`: explicit workspace reactivation 경로를 추가한 뒤 Chromium desktop 1/1 passed
+  - `npm run test -w @ay-ple/server`: 127/127 passed
+  - `npm run test -w @ay-ple/chat-shell`: 51/51 passed
+  - `NODE_OPTIONS=--conditions=development npx tsx --test apps/server/src/semester-workspace-action.test.ts`: accept·reject atomic decision의 first·second reopen을 포함해 18/18 passed
+  - `npm run test:e2e -w @ay-ple/chat-shell -- --grep "polls coarse operation status|does not restore the pending Review"`: default 5초 drain의 final read와 실제 reload delayed settlement를 Chromium desktop 2/2 passed
 - Repository checks:
-  - `npm test`: passed; workspace materializer 7/7, product contract 11/11, Runtime 65/65, Server 124/124, Chat Shell 49/49, camp artifact 16/16
+  - `npm test`: passed; workspace materializer 7/7, product contract 11/11, Runtime 65/65, Server 127/127, Chat Shell 51/51, camp artifact 16/16
   - `npm run typecheck`: passed
   - `npm run build`: passed
   - `npm run lint -w @ay-ple/chat-shell`: passed
-  - `npm run test:e2e -w @ay-ple/chat-shell`: Chromium desktop 17/17 passed
+  - `npm run test:e2e -w @ay-ple/chat-shell`: Chromium desktop 20/20 passed
   - `npm run check:docs-links`: active 28개와 historical banner 2개 모두 green
   - `git diff --check`: passed
-- Manual or live smoke: real Vite/Express와 deterministic Runtime/product store를 통과하는 `1440x900` Chromium trace에서 answer 전 stream loss→interrupted/no-apply→explicit workspace reactivation→한 번의 retry와 apply 뒤 Review response loss→confirmed revision/no-reapply를 확인했다. 별도 provider live smoke는 이 deterministic loss slice의 authority가 아니므로 실행하지 않았다.
-- Code review: `35fe16f49086f7e8ee8ecaa35cae4772111b498a...HEAD`를 Standards와 Spec 두 축으로 검토했다. Standards 2건과 Spec 2건을 수정하고 각 원 리뷰어의 재검토에서 남은 finding 0건으로 종료했다.
+- Manual or live smoke: real Vite/Express와 deterministic Runtime/product store를 통과하는 `1440x900` Chromium trace에서 answer 전 stream loss→interrupted/no-apply→한 번의 explicit retry, default disconnect drain 뒤 final `idle` read, pending Review 중 실제 reload→settled recovery, finite Review HTTP response loss 뒤 native completed 유지, authoritative terminal 뒤 bootstrap failure 격리와 apply 뒤 no-reapply를 확인했다. 별도 provider live smoke는 이 deterministic loss slice의 authority가 아니므로 실행하지 않았다.
+- Code review: `35fe16f49086f7e8ee8ecaa35cae4772111b498a...3144be35e3f6020fd53fda960914cfd562a07842`를 Standards와 Spec 두 축으로 독립 검토했다. Corrective 구현 뒤 Standards 2건과 Spec 0건을 확인해 post-terminal recovery fail-closed와 settled-decision predicate 중복을 수정했고, 새 fixed point diff의 양축 재검토에서 Standards 0건·Spec 0건으로 종료했다.
 
 ## Blocked By
 
@@ -75,8 +75,8 @@ Browser·Server·Runtime continuity loss가 Review 전이나 atomic apply 뒤에
 
 - Shared product contract에 exact `FirstAssignmentRetryRequest`, `operation.recovery`, settled Run retry ancestry·recovery와 Review continuation outcome을 추가했다.
 - Server는 prior `interrupted | unknown` receipt의 canonical Course·Recipe·arguments·source snapshot과 one-child ancestry를 serialized admission에서 검증하고, explicit retry만 새 `ModelingRun`·native Turn·proposal key를 만든다. Duplicate·late retry와 Review response는 second Turn·confirmation·apply 없이 fail closed한다.
-- Review apply/no-apply commit 뒤 native continuation이 유실되면 confirmed revision을 유지한 `continuation_lost`를 durable history와 public stream에 정산하고 same patch를 다시 적용하지 않는다.
-- Browser는 abrupt Assignment stream EOF를 bounded bootstrap으로 reconcile하고 settled recovery만 다시 열며 unanswered prompt는 복원하지 않는다. 학생용 interrupted·unknown·continuation-loss copy와 prior Run source를 사용하는 `이 자료로 다시 시도` action을 제공한다.
-- Real Vite/Express Chromium trace가 answer 전 loss→explicit workspace reactivation→retry→accept와 apply 뒤 response loss→reload/no-reapply를 검증한다. Sidebar와 ordinary Chat clarification의 기존 lifecycle은 유지했다.
-- 구현 커밋: `48e12239`, `af0e719b`, `65928d18`, `d92bfa97`, `17671388`
+- Review apply/no-apply atomic commit 직후 process가 끊겨도 first·second reopen 모두 confirmed revision을 유지한 `continuation_lost`로 수렴하고 same patch·confirmation·Assignment를 다시 만들지 않는다.
+- Browser는 finite Review HTTP response loss만으로 native recovery를 합성하지 않는다. Coarse `operationStatus(active | idle)`를 따라 Server drain 상수를 복사하지 않고 final `idle` bootstrap을 읽으며, 실제 reload도 unanswered Review를 복원하지 않은 채 settled recovery와 explicit retry CTA로 자동 수렴한다. Authoritative terminal 뒤 hydration failure는 operation lifecycle을 덮어쓰지 않는다.
+- Real Vite/Express Chromium trace가 answer 전 loss→retry→accept, default drain, pending Review 실제 reload, response-only loss와 apply 뒤 no-reapply를 검증한다. Sidebar와 ordinary Chat clarification의 기존 lifecycle은 유지했다.
+- 구현 커밋: `48e12239`, `af0e719b`, `65928d18`, `d92bfa97`, `17671388`, `26eca716`, `b8b18e02`, `645da39b`, `a08c742e`, `3144be35`
 - Workspace source/store recovery는 008b, exact actual-child/local/live-provider conformance는 009가 계속 소유한다.
