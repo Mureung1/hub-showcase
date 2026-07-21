@@ -59,7 +59,8 @@ export interface SvgSeries {
 }
 
 export function seriesToSvg(values: number[], width: number, height: number, padX: number): SvgSeries {
-  const min = Math.min(...values);
+  // 0을 기준선으로 고정 — min~max로 자동 스케일하면 작은 변동도 과장되어 보임
+  const min = Math.min(0, ...values);
   const max = Math.max(...values);
   const range = max - min || 1;
   const usableW = width - padX * 2;

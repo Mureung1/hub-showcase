@@ -20,7 +20,8 @@ export default function SalesTrendChart({ title = '최근 1개월 판매 추세'
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   const amounts = points.map((p) => p.amount);
-  const min = Math.min(...amounts);
+  // 0을 기준선으로 고정 — min~max로 자동 스케일하면 작은 변동도 과장되어 보임
+  const min = Math.min(0, ...amounts);
   const max = Math.max(...amounts);
   const range = max - min || 1;
   const maxIdx = amounts.indexOf(max);
