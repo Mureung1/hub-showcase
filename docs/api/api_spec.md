@@ -785,6 +785,8 @@ GET    /api/recipes/trash
 POST   /api/recipes/:recipeId/restore
 ```
 
+레시피 원본 수정과 위 삭제·휴지통·복원 API의 상세 요청, 응답과 오류 계약은 `COMMON-API-002`에서 구현 전에 확정한다. 계약이 확정되기 전에는 각 구현 티켓을 시작하지 않는다.
+
 라우터에서는 `GET /api/recipes/trash`를 `GET /api/recipes/:recipeId`보다 먼저 등록해 `trash`가 레시피 ID로 처리되지 않도록 한다.
 
 ---

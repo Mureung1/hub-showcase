@@ -657,6 +657,28 @@ build
 
 `FE-AUTH-002`, `BE-AI-001`처럼 `docs/product/checklist.md`의 티켓 ID가 포함된 분석, 구현 또는 상태 요청에는 `$run-project-ticket` 스킬을 사용한다.
 
+#### 역할 라우팅
+
+* 사용자가 `analyst`와 티켓 ID를 함께 명시하면 `시작`, `진행`, `구현` 표현이 있어도 analyst의 읽기 전용 분석으로 고정한다.
+* analyst는 저장소를 수정하거나 구현을 시작하지 않는다. 분석을 마친 뒤 사용자에게 `guide` 또는 `implement`를 선택하게 하고, 분석 결과와 선택을 implementer에게 인계한다.
+* `guide`와 `implement`는 모두 implementer가 담당한다. `guide`에서는 한 번에 한 단계만 안내하고 파일을 수정하지 않으며, `implement`에서만 파일을 수정하고 검증한다.
+* analyst가 명시된 요청은 root 또는 main agent가 직접 구현하지 않는다. analyst 인계와 사용자 선택이 없으면 implementer도 시작하지 않는다.
+* analyst가 명시되지 않은 직접 티켓 요청은 `$run-project-ticket`의 일반 모드 판정을 따른다.
+
+#### 역할 모델 확인
+
+* 새 역할 에이전트를 시작하거나 역할을 전환할 때 작업 전에 사용자에게 해당 TOML 모델 설정을 요청하고 확인을 기다린다.
+* analyst는 `gpt-5.6-terra`, reasoning effort `medium`; implementer는 `gpt-5.6`, reasoning effort `high`를 사용한다.
+* 사용자의 명시적 설정 완료 응답을 런타임 검증 대신 사용한다. 같은 역할의 연속 작업에는 다시 묻지 않는다.
+* 설정 모델을 자동으로 대체하거나 상향하지 않는다.
+
+#### analyst 인계 계약
+
+* 티켓 ID와 원래 요청, 선행 작업과 현재 상태
+* 확인한 문서·코드 사실, 포함·제외 범위와 최소 구현 접근
+* 성공·오류·빈 상태, 위험 요소, 완료 기준과 검증 명령
+* 사용자가 선택한 `guide` 또는 `implement`
+
 * 티켓의 선행 작업과 완료 조건을 작업 범위로 사용한다.
 * `docs/project/context.md`와 관련 작업 이력을 확인한다.
 * 분석과 상태 확인 요청에서는 저장소를 수정하지 않는다.

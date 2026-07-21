@@ -1,7 +1,7 @@
 interface:
   display_name: "Run Project Ticket"
-  short_description: "Analyze and implement repository tickets with context"
-  default_prompt: "Use $run-project-ticket to analyze or implement the requested project ticket."
+  short_description: "Route ticket analysis and implementation by role"
+  default_prompt: "Use $run-project-ticket to route the requested ticket through analyst analysis, user choice, and implementer work when analyst is named."
 
 policy:
   allow_implicit_invocation: true

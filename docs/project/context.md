@@ -16,9 +16,8 @@
 | `CTX-014` | 활성 | Firebase는 Google 로그인과 ID 토큰 검증만 담당한다. 서비스 사용자는 `users.firebase_uid`로 연결하며, 레시피 소유권과 API 응답에는 내부 `users.id`를 사용한다. | `BE-AUTH-002` |
 | `CTX-015` | 활성 | 프론트엔드 인증 상태는 Firebase `onAuthStateChanged` 기반 `AuthProvider`로 관리한다. 보호 라우트는 로그인 화면으로 보낼 때 앱 내부 상대 경로만 `returnTo`으로 보존하고 로그인 성공 후 해당 경로로 복귀한다. | `FE-AUTH-003` |
 
-| `CTX-016` | 활성 | `GET /api/recipes`는 `DB-SHARE-001`이 관계 테이블을 만들기 전까지 `OWNED`, `EXTERNAL` 활성 레시피만 반환한다. 공유 기능 구현 시 `RECEIVED`와 `receivedInfo` 조회를 추가해 `BE-RECIPE-002`의 남은 조건을 완료한다. | `BE-RECIPE-002`, `DB-SHARE-001` |
-| `CTX-017` | 활성 | 책형 목록 화면의 오른쪽 종이는 상세와 레시피 추가 기능이 준비될 때까지 비워 둔다. 상세 이동은 `BE/FE-RECIPE-004`, 추가 화면은 `FE-RECIPE-002`에서 연결한다. | `FE-RECIPE-001`, `FE-RECIPE-002`, `BE-RECIPE-004`, `FE-RECIPE-004` |
-
+| `CTX-016` | 활성 | `BE-RECIPE-002`의 목록 범위는 공유 데이터가 없는 현재 `OWNED`, `EXTERNAL` 활성 레시피까지다. `DB-SHARE-002`와 `BE-SHARE-003`에서 `RECEIVED`, `receivedInfo`와 상세 조회를 통합한다. | `BE-RECIPE-002`, `DB-SHARE-002`, `BE-SHARE-003` |
+| `CTX-017` | 활성 | `/recipes/new`은 데스크톱에서 목록을 왼쪽에 유지하고 추가 폼을 오른쪽 종이에 표시하며, 1100px 이하에서는 폼을 단일 종이 화면으로 표시한다. 목록 카드와 저장 후 상세 이동은 `FE-RECIPE-004`에서 연결한다. | `FE-RECIPE-001`, `FE-RECIPE-002`, `FE-RECIPE-004` |
 ## 알려진 문제
 
 | ID | 상태 | 내용 | 해결 티켓 |
@@ -26,7 +25,7 @@
 | `CTX-006` | 해결됨 | `apiClient`에 헤더 변수 오타와 AbortError 비교 오류가 있고 로그인 컴포넌트가 직접 `fetch`를 사용한다. | `COMMON-API-001` |
 | `CTX-007` | 해결됨 | 로그인 버튼이 존재하지 않는 `leather-texture-tile.png`를 참조한다. | `COMMON-ASSET-001` |
 | `CTX-008` | 해결됨 | 로그인 흐름에 `setRecipes` 미정의와 화면에 표시되지 않는 오류 상태가 남아 있었다. | `FE-AUTH-002` |
-| `CTX-009` | 활성 | 레시피 API는 메모리 프로토타입이며 공통 응답과 데이터 계약을 완전히 따르지 않는다. | `DB-CORE-001`, `BE-RECIPE-002`, `BE-RECIPE-003`, `BE-RECIPE-004` |
+| `CTX-009` | 활성 | 목록 API는 PostgreSQL과 공통 계약으로 전환되었지만 상세·생성 임시 경로에는 메모리 프로토타입이 남아 있다. `BE-RECIPE-003`, `BE-RECIPE-004`에서 실제 DB 경로로 교체한다. | `BE-RECIPE-001`, `BE-RECIPE-003`, `BE-RECIPE-004` |
 | `CTX-010` | 해결됨 | 인증, 조리 팁, 파일 입력과 ERD에 관한 문서가 서로 일치하지 않는다. | `COMMON-DOCS-002` |
 | `CTX-011` | 활성 | 현재 실행 환경에서 `.agents/skills` 생성·수정은 추가 승인이 필요할 수 있고, Windows에서 스킬 메타데이터는 UTF-8 인코딩을 확인해야 한다. | `COMMON-SETUP-003` |
 

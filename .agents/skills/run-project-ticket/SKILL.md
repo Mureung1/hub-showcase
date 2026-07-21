@@ -11,12 +11,23 @@ Treat the named ticket as the complete scope contract. Use `$preserve-product-in
 
 1. Extract exactly one ticket ID matching `[A-Z]+-[A-Z]+-[0-9]{3}`.
 2. Find the exact ticket in `docs/product/checklist.md` and read its whole block.
-3. Determine the requested mode:
-   - `status`: report current evidence and remaining criteria without mutation.
-   - `analyze`: produce an implementation analysis without mutation.
-   - `guide`: help the user implement one verified step at a time without mutation.
-   - `implement`: modify the repository and close only verified criteria.
+3. Resolve the role and mode:
+   - When the user explicitly says `analyst` with the ticket ID, route to the configured analyst and force `analyze` mode even if the same request says start, proceed, guide, or implement.
+   - Otherwise determine the requested mode normally:
+     - `status`: report current evidence and remaining criteria without mutation.
+     - `analyze`: produce an implementation analysis without mutation.
+     - `guide`: route to the configured implementer for one verified coaching step at a time without mutation.
+     - `implement`: route to the configured implementer to modify the repository and close only verified criteria.
 4. Ask for clarification only when the ticket ID or mode is genuinely ambiguous.
+
+## Confirm role settings
+
+Before a configured role begins work, ask the user to set and confirm the role's TOML model settings:
+
+- analyst: `gpt-5.6-terra`, reasoning effort `medium`;
+- implementer: `gpt-5.6`, reasoning effort `high`.
+
+Treat an explicit user confirmation as sufficient; do not require runtime proof. Ask once when a new agent starts or the role changes, not during uninterrupted work in the same role. Never substitute or escalate a configured model automatically.
 
 ## Load context
 
@@ -40,18 +51,22 @@ Inspect the current code and report the intended outcome, prerequisite or docume
 
 Do not edit files, check boxes, or append history. Do not implement automatically after analysis. End the report by asking the user to choose exactly one next action:
 
-1. `guide`: the user implements while Codex explains one concrete step at a time and reviews the user's changes;
-2. `implement`: Codex implements the plan directly in the main thread and performs verification.
+1. `guide`: the implementer explains one concrete step at a time without editing and reviews the user's changes;
+2. `implement`: the implementer edits the repository and performs verification.
 
-Delegate `implement` to the implementer only when the user explicitly asks for implementer execution.
+The analyst never performs either choice. After the user chooses, pass the analysis and choice to the configured implementer.
 
-If the user already explicitly asks to analyze and implement in one request, treat it as `implement` mode instead of asking again.
+The handoff must contain the ticket ID and original request, prerequisites and current state, verified document and code facts, included and excluded scope, smallest implementation approach, success/error/empty states, risks, completion criteria, validation commands, and selected mode.
+
+When `analyst` was explicitly invoked, never combine analysis and implementation or route implementation to the root/main agent.
 
 ## Guide mode
 
-Do not edit files, check boxes, append history, commit, or push. Give exactly one implementation step at a time. Each step must state the target file and location, purpose, intended code or behavior, validation command, and completion signal. After the user reports completion, inspect the diff and give either a correction or the next step. Never mark the ticket complete until the user explicitly delegates implementation or asks for completion handling.
+This mode belongs to the configured implementer. Require the analyst handoff and explicit user choice when analyst routing was used. Do not edit files, check boxes, append history, commit, or push. Give exactly one implementation step at a time. Each step must state the target file and location, purpose, intended code or behavior, validation command, and completion signal. After the user reports completion, inspect the diff and give either a correction or the next step. Never mark the ticket complete until the user explicitly delegates implementation or asks for completion handling.
 
 ## Implement mode
+
+This mode belongs to the configured implementer. Require the analyst handoff and explicit user choice when analyst routing was used.
 
 1. Confirm all material prerequisites are complete.
 2. Preserve existing user changes and limit edits to the ticket.
