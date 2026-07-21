@@ -37,7 +37,8 @@ export default function Header() {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: `${spacing.md}px ${spacing.lg}px`,
+        // 웹뷰 앱에서 상단 상태바(노치)와 겹치지 않도록 안전영역만큼 위 여백을 더한다(웹에선 0이라 무변화).
+        padding: `calc(${spacing.md}px + env(safe-area-inset-top)) ${spacing.lg}px ${spacing.md}px`,
         background: colors.surface,
       }}
     >

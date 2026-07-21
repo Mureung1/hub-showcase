@@ -1,4 +1,5 @@
 import AdCard from './AdCard.jsx'
+import { openExternalLink } from '../lib/externalLink.js'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { formatNutrient, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
@@ -129,6 +130,10 @@ export default function PlaceList({ places, todayTotal, recommended, deficientRo
                   href={place.place_url}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    openExternalLink(place.place_url)
+                  }}
                   className="tds-press"
                   style={{ ...styles.linkButton, whiteSpace: 'nowrap' }}
                 >

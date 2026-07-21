@@ -44,6 +44,19 @@ CLI로 로컬에서 서버리스 함수 테스트하기" section of README.md. S
 itself via `dotenv/config`, an existing filled-in `.env` is enough; `vercel pull`/login only needed
 to pull team-shared env vars instead.
 
+### Android app wrapper (Capacitor)
+
+The same web build (`dist/`) is also wrapped as an Android WebView app via Capacitor (`capacitor.config.json`,
+`android/` native project committed, `npm run app:sync`/`app:open`). The web app is unchanged and stays
+the primary target; the app is purely a wrapper. Two things make it work across both: `src/lib/apiBase.js`
+(`API_BASE` = `VITE_API_BASE_URL || ''` — empty on web so `/api` stays same-origin relative, set to the
+deployed backend URL when building the app; prepended in `fetchWithTimeout`) and `src/lib/externalLink.js`
+(`openExternalLink` — opens external links in the system browser on native via `@capacitor/browser`, new
+tab on web; used by ad/map links since WebView blocks `target="_blank"`). Header/tab-bar use
+`env(safe-area-inset-*)`. Full build steps, remote-URL-vs-local-bundle tradeoff, and the known CSV-download
+WebView limitation are in `docs/apk-build-guide.md`. **Capacitor is additive — none of it affects the web
+build** (`@capacitor/*` is inert on web; `Capacitor.isNativePlatform()` is false there).
+
 ## Architecture
 
 ### One Express app, two deployment entry points
