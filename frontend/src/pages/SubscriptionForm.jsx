@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createSubscription } from '../lib/subscriptions'
 import './SubscriptionForm.css'
 
 const MIN_MEMBER_COUNT = 1
@@ -13,6 +14,10 @@ const SubscriptionForm = () => {
   const [accountNumber, setAccountNumber] = useState('')
   const [accountHolderName, setAccountHolderName] = useState('')
 
+  const [status, setStatus] = useState('idle')
+  const [errorMessage, setErrorMessage] = useState('')
+  const [registeredSubscription, setRegisteredSubscription] = useState(null)
+
   const decreaseMemberCount = () => {
     setMemberCount((count) => Math.max(MIN_MEMBER_COUNT, count - 1))
   }
@@ -21,8 +26,41 @@ const SubscriptionForm = () => {
     setMemberCount((count) => Math.min(MAX_MEMBER_COUNT, count + 1))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setStatus('submitting')
+    setErrorMessage('')
+
+    try {
+      const subscription = await createSubscription({
+        serviceName,
+        subAmount: Number(subAmount),
+        billingDay: Number(billingDay),
+        memberCount,
+        bankName,
+        accountNumber,
+        accountHolderName,
+      })
+      setRegisteredSubscription(subscription)
+      setStatus('success')
+    } catch (error) {
+      setErrorMessage(error.message)
+      setStatus('error')
+    }
+  }
+
+  if (status === 'success' && registeredSubscription) {
+    return (
+      <div className="subscription-form-page">
+        <h1 className="page-title">구독 서비스 등록 완료</h1>
+        <div className="subscription-form">
+          <p className="success-message">등록이 완료됐어요.</p>
+          <p className="success-amount">{registeredSubscription.serviceName} 1인당 부담 금액 {registeredSubscription.myAmount.toLocaleString()}원</p>
+          <p className="form-label">파티원 초대 링크</p>
+          <p className="form-input">{registeredSubscription.joinUrl}</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -149,8 +187,10 @@ const SubscriptionForm = () => {
           />
         </div>
 
-        <button type="submit" className="btn-primary">
-          등록하기
+        {status === 'error' && <p className="form-error">{errorMessage}</p>}
+
+        <button type="submit" className="btn-primary" disabled={status === 'submitting'}>
+          {status === 'submitting' ? '등록 중...' : '등록하기'}
         </button>
       </form>
     </div>
