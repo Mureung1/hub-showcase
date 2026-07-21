@@ -38,9 +38,9 @@ verification evidence only
 
 ## 6. Acceptance Criteria
 
-- [ ] Clean release candidate passes full automated checks.
-- [ ] Product and API public endpoints respond successfully.
-- [ ] Scene routes remain 404 in the product configuration.
+- [x] Clean release candidate passes full automated checks.
+- [x] Product and API public endpoints respond successfully.
+- [x] Scene routes remain 404 in the product configuration.
 - [ ] Run Report and issue evidence are recorded.
 
 ## 7. Verification Plan
@@ -58,7 +58,7 @@ python scripts/check_task_packet.py
 
 ## 8. Documentation Updates
 
-- [ ] Record results after verification.
+- [x] Record results after verification.
 
 ## 9. Commit Plan
 
@@ -68,5 +68,6 @@ test: record refactor release verification
 
 ## 10. Self-check
 
-- [ ] Do not claim validation for uncommitted work.
-- [ ] Keep product Scene gate disabled.
+- [x] Do not claim validation for uncommitted work.
+- [x] Keep product Scene gate disabled.
+- [ ] Keep #71 open until WEB-018 removes the remaining ProductWorkspace temporary budget.
