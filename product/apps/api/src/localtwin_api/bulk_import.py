@@ -185,11 +185,20 @@ def parse_sbiz_store_row(
         return None, "invalid_coordinates"
     return (
         (
-            store_id, name, clean(row.get("지점명")), clean(row.get("상권업종대분류코드")),
-            clean(row.get("상권업종대분류명")), clean(row.get("상권업종중분류코드")),
-            clean(row.get("상권업종중분류명")), clean(row.get("상권업종소분류코드")),
-            clean(row.get("상권업종소분류명")), clean(row.get("도로명주소")), longitude, latitude,
-            "EPSG:4326", snapshot_id,
+            store_id,
+            name,
+            clean(row.get("지점명")),
+            clean(row.get("상권업종대분류코드")),
+            clean(row.get("상권업종대분류명")),
+            clean(row.get("상권업종중분류코드")),
+            clean(row.get("상권업종중분류명")),
+            clean(row.get("상권업종소분류코드")),
+            clean(row.get("상권업종소분류명")),
+            clean(row.get("도로명주소")),
+            longitude,
+            latitude,
+            "EPSG:4326",
+            snapshot_id,
         ),
         None,
     )
@@ -206,11 +215,18 @@ def parse_seoul_store_metric_row(
         return None, "missing_required"
     return (
         (
-            market_code, period, category_code, category_name,
-            integer(row.get("similr_induty_stor_co")), integer(row.get("stor_co")),
-            integer(row.get("frc_stor_co")), number(row.get("opbiz_rt")),
-            integer(row.get("opbiz_stor_co")), number(row.get("clsbiz_rt")),
-            integer(row.get("clsbiz_stor_co")), snapshot_id,
+            market_code,
+            period,
+            category_code,
+            category_name,
+            integer(row.get("similr_induty_stor_co")),
+            integer(row.get("stor_co")),
+            integer(row.get("frc_stor_co")),
+            number(row.get("opbiz_rt")),
+            integer(row.get("opbiz_stor_co")),
+            number(row.get("clsbiz_rt")),
+            integer(row.get("clsbiz_stor_co")),
+            snapshot_id,
         ),
         None,
     )

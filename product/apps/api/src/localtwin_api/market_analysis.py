@@ -263,9 +263,7 @@ def _ranking_group(
     return MarketRankingGroup(id=group_id, label=label, metrics=metrics)
 
 
-def _enriched_peers(
-    rows: list[AnalysisRow], totals: Mapping[str, int]
-) -> list[dict[str, float]]:
+def _enriched_peers(rows: list[AnalysisRow], totals: Mapping[str, int]) -> list[dict[str, float]]:
     enriched: list[dict[str, float]] = []
     for row in rows:
         peer_total = totals.get(str(row["market_code"]), 0)

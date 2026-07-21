@@ -18,13 +18,7 @@ git diff --check: passed
 
 ## Structure-check result
 
-The importer modules introduced by DATA-013 pass their Python function budgets.
-The repository-wide structure command still reports pre-existing, unrelated uncommitted web work:
-
-- `ProductWorkspace` is one line above its WEB-018 budget.
-- English-demo catalog changes add literals not yet registered in the web literal budget.
-
-Those web files were not changed or staged by DATA-013.
+The importer modules introduced by DATA-013 pass their Python function budgets. In the final TEST-001 candidate, the repository-wide structure command also passes with no temporary Web budgets. Importer modules were formatted with the repository Ruff formatter; no importer behavior changed.
 
 ## Deployment note
 
