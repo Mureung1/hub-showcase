@@ -587,13 +587,14 @@ function hasValidWorkspaceStateInvariants(
     const retrySource = run.retryOfRunId
       ? runsById.get(run.retryOfRunId)
       : undefined
+    const settledDecisionPatches = store.statePatches.filter(
+      (patch) =>
+        patch.guardOperationId === run.actionId &&
+        (patch.status === 'applied' || patch.status === 'rejected'),
+    )
     const continuationPatches =
       run.recoveryOutcome?.outcome === 'continuation_lost'
-        ? store.statePatches.filter(
-            (patch) =>
-              patch.guardOperationId === run.actionId &&
-              (patch.status === 'applied' || patch.status === 'rejected'),
-          )
+        ? settledDecisionPatches
         : []
     const continuationPatch = continuationPatches[0]
     const continuationConfirmation = continuationPatch
@@ -630,7 +631,8 @@ function hasValidWorkspaceStateInvariants(
           continuationRevision !== run.recoveryOutcome.confirmedRevision)) ||
       ((run.recoveryOutcome?.outcome === 'interrupted' ||
         run.recoveryOutcome?.outcome === 'unknown') &&
-        run.recoveryOutcome.outcome !== run.status)
+        (run.recoveryOutcome.outcome !== run.status ||
+          settledDecisionPatches.length > 0))
     ) {
       return false
     }

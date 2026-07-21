@@ -10,6 +10,7 @@ import {
   FileText,
   MessageCircle,
   Pencil,
+  RotateCcw,
   Send,
   Sparkles,
   Square,
@@ -22,6 +23,7 @@ import type {
   ProductAccountReadiness,
   ProductRawMaterial,
   ProductSettledHistory,
+  ProductSettledModelingRun,
 } from './product-api.js'
 import {
   canRespondToProductClarification,
@@ -104,6 +106,10 @@ export function ProductChatDock({
         aria-label="AY 작업 흐름"
         aria-live="polite"
       >
+        <SettledRecoveries
+          history={history}
+          controller={controller}
+        />
         <SettledAssignments
           history={history}
           confirmedRevision={confirmedRevision}
@@ -234,6 +240,8 @@ function ProductPhasePill({
           ? '작업 중'
           : phase === 'stopping'
             ? '중단 중'
+            : phase === 'continuation-lost'
+              ? '이어짐 끊김'
             : phase === 'completed'
               ? '완료'
               : phase === 'idle'
@@ -246,6 +254,76 @@ function ProductPhasePill({
     >
       {copy}
     </span>
+  )
+}
+
+function SettledRecoveries({
+  history,
+  controller,
+}: {
+  readonly history: ProductSettledHistory | undefined
+  readonly controller: ProductChatController
+}) {
+  const runs =
+    history?.modelingRuns.filter((run) => run.recovery !== null) ?? []
+  if (runs.length === 0) return null
+  return (
+    <section className="settled-recovery-list" aria-label="작업 복구 기록">
+      {runs.map((run) => (
+        <SettledRecoveryCard
+          key={run.id}
+          run={run}
+          retryPending={controller.operationPending}
+          onRetry={controller.retryAssignment}
+        />
+      ))}
+    </section>
+  )
+}
+
+function SettledRecoveryCard({
+  run,
+  retryPending,
+  onRetry,
+}: {
+  readonly run: ProductSettledModelingRun
+  readonly retryPending: boolean
+  readonly onRetry: (run: ProductSettledModelingRun) => Promise<void>
+}) {
+  const recovery = run.recovery
+  if (!recovery) return null
+  if (recovery.outcome === 'continuation_lost') {
+    return (
+      <article className="settled-recovery-card is-continuation-lost">
+        <strong>확인 반영 뒤 AY 작업의 이어짐이 끊겼습니다</strong>
+        <span>
+          학기 정보 {recovery.confirmedRevision}번째 반영은 유지했습니다.
+          같은 변경을 다시 적용하지 않습니다.
+        </span>
+      </article>
+    )
+  }
+  return (
+    <article className="settled-recovery-card is-interrupted">
+      <strong>
+        {recovery.outcome === 'interrupted'
+          ? '작업 연결이 끊겨 중단했습니다'
+          : '작업 결과를 확정하지 못했습니다'}
+      </strong>
+      <span>변경 제안은 반영하지 않았고 자동으로 다시 시도하지 않았습니다.</span>
+      {recovery.retryable ? (
+        <button
+          type="button"
+          className="retry-assignment-button"
+          disabled={retryPending}
+          onClick={() => void onRetry(run)}
+        >
+          <RotateCcw size={15} /> 이 자료로 다시 시도
+        </button>
+      ) : (
+        <small>이 기록에서 시작한 명시적 재시도가 있습니다.</small>
+      )}
+    </article>
   )
 }
 
@@ -505,6 +583,24 @@ function ProductTranscriptRow({
       <li className="product-activity-card is-notice">
         <strong>{entry.willRetry ? '다시 시도하고 있습니다' : '작업 안내'}</strong>
         <span>{entry.displayMessage}</span>
+      </li>
+    )
+  }
+  if (entry.kind === 'recovery') {
+    return (
+      <li className={`product-recovery is-${entry.outcome}`}>
+        <strong>
+          {entry.outcome === 'continuation_lost'
+            ? '확인 반영 뒤 AY 작업의 이어짐이 끊겼습니다'
+            : entry.outcome === 'interrupted'
+              ? '작업 연결이 끊겨 중단했습니다'
+              : '작업 결과를 확정하지 못했습니다'}
+        </strong>
+        <span>
+          {entry.outcome === 'continuation_lost'
+            ? `학기 정보 ${entry.confirmedRevision}번째 반영은 유지했고 같은 변경을 다시 적용하지 않습니다.`
+            : '변경 제안은 반영하지 않았고 자동으로 다시 시도하지 않았습니다.'}
+        </span>
       </li>
     )
   }

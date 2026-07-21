@@ -1207,6 +1207,7 @@
 .product-phase-pill.is-failed,
 .product-phase-pill.is-request-failed,
 .product-phase-pill.is-stream-failed,
+.product-phase-pill.is-continuation-lost,
 .product-phase-pill.is-unknown {
   color: #a14c3f;
   border-color: rgba(255, 107, 87, 0.28);
@@ -1294,9 +1295,11 @@
 
 .product-activity-card,
 .product-terminal,
+.product-recovery,
 .review-card,
 .clarification-card,
 .settled-assignment-card,
+.settled-recovery-card,
 .product-control-failure,
 .product-stream-failure {
   border: 1px solid var(--line);
@@ -1391,6 +1394,55 @@
   display: grid;
   gap: 8px;
   margin-bottom: 12px;
+}
+
+.settled-recovery-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.settled-recovery-card,
+.product-recovery {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border-color: rgba(242, 184, 75, 0.34);
+  background: rgba(242, 184, 75, 0.09);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.settled-recovery-card.is-continuation-lost,
+.product-recovery.is-continuation_lost {
+  border-color: rgba(255, 107, 87, 0.25);
+  background: rgba(255, 107, 87, 0.07);
+}
+
+.settled-recovery-card span,
+.settled-recovery-card small,
+.product-recovery span {
+  color: var(--muted);
+}
+
+.retry-assignment-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 8px;
+  color: white;
+  background: var(--teal);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.retry-assignment-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .settled-assignment-list > header,

@@ -690,6 +690,19 @@ test('settled Run history owns retry ancestry and exact recovery state', () => {
       }),
     ProductContractError,
   )
+  for (const invalidRun of [
+    { ...bootstrap.history.modelingRuns[0], retryOfRunId: runId },
+    { ...bootstrap.history.modelingRuns[0], status: 'completed' },
+  ]) {
+    assert.throws(
+      () =>
+        decodeProductBootstrap({
+          ...bootstrap,
+          history: { ...bootstrap.history, modelingRuns: [invalidRun] },
+        }),
+      ProductContractError,
+    )
+  }
 })
 
 function decodeRequest(value: unknown): unknown {

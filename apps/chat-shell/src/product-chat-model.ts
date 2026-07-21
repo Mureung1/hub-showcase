@@ -16,6 +16,7 @@ export type ProductChatPhase =
   | 'stopping'
   | 'completed'
   | 'interrupted'
+  | 'continuation-lost'
   | 'failed'
   | 'unknown'
   | 'request-failed'
@@ -45,6 +46,17 @@ export type ProductInterrupt = {
   readonly operationId: string
   readonly state: 'requesting' | 'acknowledged'
 }
+
+export type ProductRecoveryBinding = Extract<
+  ProductOperationFrame,
+  { readonly type: 'operation.recovery' }
+>
+
+type ProductRecoveryTranscriptEntry<
+  Recovery extends ProductRecoveryBinding = ProductRecoveryBinding,
+> = Recovery extends ProductRecoveryBinding
+  ? { readonly kind: 'recovery' } & Omit<Recovery, 'type'>
+  : never
 
 type ProductOperationKind = 'assignment' | 'chat'
 
@@ -108,6 +120,7 @@ export type ProductTranscriptEntry =
       readonly displayMessage: string
       readonly willRetry?: boolean
     }
+  | ProductRecoveryTranscriptEntry
   | {
       readonly kind: 'terminal'
       readonly operationKind: ProductOperationKind
@@ -128,6 +141,11 @@ export type ProductChatState = {
   readonly activeOperation?: ProductActiveOperation
   readonly failure?: ProductChatFailure
   readonly controlFailure?: ProductChatFailure
+  readonly recovery?: ProductRecoveryBinding
+  readonly lastAssignment?: {
+    readonly operationId: string
+    readonly runId: string
+  }
 }
 
 export type ProductChatAction =
@@ -156,6 +174,11 @@ export type ProductChatAction =
   | {
       readonly type: 'operation.control-failed'
       readonly failure: ProductChatFailure
+    }
+  | {
+      readonly type: 'operation.review-reconciled'
+      readonly review: ProductReviewBinding
+      readonly outcome: 'accepted' | 'rejected'
     }
   | { readonly type: 'operation.control-cleared' }
 
@@ -187,6 +210,7 @@ export function reduceProductChatState(
     return {
       phase: 'submitting',
       transcript,
+      recovery: undefined,
       activeOperation: {
         kind: action.kind,
         materials: action.materials.map((material) => ({ ...material })),
@@ -262,6 +286,9 @@ export function reduceProductChatState(
   if (action.type === 'operation.control-failed') {
     return { ...state, controlFailure: { ...action.failure } }
   }
+  if (action.type === 'operation.review-reconciled') {
+    return reconcileProductReview(state, action.review, action.outcome)
+  }
   if (action.type === 'operation.control-cleared') {
     return { ...state, controlFailure: undefined }
   }
@@ -312,6 +339,11 @@ function reduceProductFrame(
   frame: ProductOperationFrame,
 ): ProductChatState {
   const active = state.activeOperation
+
+  if (frame.type === 'operation.recovery') {
+    return reduceProductRecovery(state, frame)
+  }
+
   if (!active) return invalidStream(state)
 
   if (frame.type === 'operation.preparing') {
@@ -338,6 +370,14 @@ function reduceProductFrame(
         operationId: frame.operationId,
         ...(runId === undefined ? {} : { runId }),
       },
+      ...(active.kind === 'assignment' && runId !== undefined
+        ? {
+            lastAssignment: {
+              operationId: frame.operationId,
+              runId,
+            },
+          }
+        : {}),
     }
   }
 
@@ -381,7 +421,7 @@ function reduceProductFrame(
     }
     return {
       ...state,
-      phase: terminalPhase(frame.status, terminal.validationOutcome),
+      phase: recoveryTerminalPhase(state.recovery, frame),
       transcript: [
         ...stopStreamingEntries(state.transcript),
         terminal,
@@ -497,7 +537,11 @@ function reduceProductFrame(
     if (
       active.interaction ||
       active.review ||
-      state.transcript.some((entry) => entry.kind === 'review') ||
+      state.transcript.some(
+        (entry) =>
+          entry.kind === 'review' &&
+          entry.operationId === frame.operationId,
+      ) ||
       !validReviewPatch(frame.patch, active.materials) ||
       !hasMatchingCompletedMcp(state.transcript, frame.patchId)
     ) {
@@ -598,6 +642,16 @@ function reduceProductFrame(
 
   if (frame.type === 'review.resolved') {
     const review = active.review
+    const alreadySettled = state.transcript.some(
+      (entry) =>
+        entry.kind === 'review' &&
+        entry.operationId === frame.operationId &&
+        entry.interactionId === frame.interactionId &&
+        entry.patchId === frame.patchId &&
+        entry.decisionKey === frame.decisionKey &&
+        entry.outcome === frame.outcome,
+    )
+    if (!review && alreadySettled) return state
     if (
       !review ||
       review.interactionId !== frame.interactionId ||
@@ -663,6 +717,159 @@ function reduceProductFrame(
   }
 
   return invalidStream(state)
+}
+
+function reconcileProductReview(
+  state: ProductChatState,
+  review: ProductReviewBinding,
+  outcome: 'accepted' | 'rejected',
+): ProductChatState {
+  const matchingIndex = state.transcript.findIndex(
+    (entry) =>
+      entry.kind === 'review' &&
+      entry.operationId === review.operationId &&
+      entry.interactionId === review.interactionId &&
+      entry.patchId === review.patchId &&
+      entry.decisionKey === review.decisionKey,
+  )
+  const entry = state.transcript[matchingIndex]
+  if (entry?.kind !== 'review') return invalidStream(state)
+  if (entry.outcome !== undefined && entry.outcome !== outcome) {
+    return invalidStream(state)
+  }
+  const active = state.activeOperation
+  const activeMatches =
+    active?.review?.operationId === review.operationId &&
+    active.review.interactionId === review.interactionId &&
+    active.review.patchId === review.patchId &&
+    active.review.decisionKey === review.decisionKey
+  if (active?.review && !activeMatches) return invalidStream(state)
+  return {
+    ...state,
+    transcript: state.transcript.map((candidate, index) =>
+      index === matchingIndex && candidate.kind === 'review'
+        ? { ...candidate, outcome }
+        : candidate,
+    ),
+    ...(activeMatches && active
+      ? {
+          phase: state.recovery
+            ? state.phase
+            : ('running' as const),
+          activeOperation: {
+            ...active,
+            stage: 'running' as const,
+            review: undefined,
+          },
+        }
+      : {}),
+  }
+}
+
+function reduceProductRecovery(
+  state: ProductChatState,
+  frame: ProductRecoveryBinding,
+): ProductChatState {
+  const active = state.activeOperation
+  const matchesActive =
+    active?.kind === 'assignment' &&
+    active.accepted &&
+    active.operationId === frame.operationId &&
+    active.runId === frame.runId
+  const matchesLast =
+    !active &&
+    state.lastAssignment?.operationId === frame.operationId &&
+    state.lastAssignment.runId === frame.runId
+  if (!matchesActive && !matchesLast) return invalidStream(state)
+  if (state.recovery) {
+    return sameRecovery(state.recovery, frame) ? state : invalidStream(state)
+  }
+  const phase =
+    frame.outcome === 'continuation_lost'
+      ? 'continuation-lost'
+      : frame.outcome
+  return {
+    ...state,
+    phase,
+    transcript: [
+      ...stopStreamingEntries(state.transcript).map((entry) =>
+        entry.kind === 'review' &&
+        entry.operationId === frame.operationId &&
+        entry.outcome === undefined
+          ? { ...entry, outcome: 'cancelled' as const }
+          : entry,
+      ),
+      recoveryTranscriptEntry(frame),
+    ],
+    recovery: { ...frame },
+    ...(matchesActive && active
+      ? {
+          activeOperation: {
+            ...active,
+            stage: 'running' as const,
+            interaction: undefined,
+            review: undefined,
+          },
+        }
+      : {}),
+  }
+}
+
+function recoveryTranscriptEntry(
+  frame: ProductRecoveryBinding,
+): ProductRecoveryTranscriptEntry {
+  if (frame.outcome === 'continuation_lost') {
+    return {
+      kind: 'recovery',
+      operationId: frame.operationId,
+      runId: frame.runId,
+      outcome: frame.outcome,
+      retryable: frame.retryable,
+      confirmedRevision: frame.confirmedRevision,
+    }
+  }
+  return {
+    kind: 'recovery',
+    operationId: frame.operationId,
+    runId: frame.runId,
+    outcome: frame.outcome,
+    retryable: frame.retryable,
+  }
+}
+
+function recoveryTerminalPhase(
+  recovery: ProductRecoveryBinding | undefined,
+  frame: Extract<ProductOperationFrame, { readonly type: 'operation.terminal' }>,
+): ProductChatPhase {
+  if (
+    recovery &&
+    'runId' in frame &&
+    frame.runId === recovery.runId &&
+    frame.operationId === recovery.operationId
+  ) {
+    if (recovery.outcome === 'continuation_lost') return 'continuation-lost'
+    if (frame.status === recovery.outcome) return recovery.outcome
+  }
+  return terminalPhase(
+    frame.status,
+    'validationOutcome' in frame ? frame.validationOutcome : undefined,
+  )
+}
+
+function sameRecovery(
+  left: ProductRecoveryBinding,
+  right: ProductRecoveryBinding,
+): boolean {
+  return (
+    left.operationId === right.operationId &&
+    left.runId === right.runId &&
+    left.outcome === right.outcome &&
+    left.retryable === right.retryable &&
+    ('confirmedRevision' in left
+      ? 'confirmedRevision' in right &&
+        left.confirmedRevision === right.confirmedRevision
+      : !('confirmedRevision' in right))
+  )
 }
 
 function reduceTextActivity(
@@ -958,6 +1165,7 @@ function isTerminalPhase(phase: ProductChatPhase): boolean {
   return (
     phase === 'completed' ||
     phase === 'interrupted' ||
+    phase === 'continuation-lost' ||
     phase === 'failed' ||
     phase === 'unknown'
   )

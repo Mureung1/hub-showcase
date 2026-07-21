@@ -470,12 +470,21 @@ function decodeProductSettledModelingRun(
     !Array.isArray(value.sources) ||
     !value.sources.every(isModelingSource) ||
     (value.retryOfRunId !== null && !isRunId(value.retryOfRunId)) ||
+    value.retryOfRunId === value.id ||
     !isProductRecoveryOrNull(value.recovery) ||
     !isSettledRunStatus(value.status) ||
     !isValidationOutcome(value.validationOutcome) ||
     !isTimestamp(value.createdAt) ||
     !isTimestamp(value.updatedAt) ||
     !isTimestamp(value.settledAt)
+  ) {
+    throw invalidContract()
+  }
+  if (
+    value.recovery !== null &&
+    (value.recovery.outcome === 'interrupted' ||
+      value.recovery.outcome === 'unknown') &&
+    value.recovery.outcome !== value.status
   ) {
     throw invalidContract()
   }

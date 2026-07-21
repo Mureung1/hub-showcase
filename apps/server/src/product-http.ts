@@ -679,6 +679,7 @@ function projectSettledHistory(
     return emptyProductHistory()
   }
   const assignmentState = controller.assignmentState()
+  const modelingRuns = controller.modelingRuns()
   return {
     assignments: assignmentState.assignments.map(projectAssignment),
     statePatches: assignmentState.statePatches.flatMap((patch) =>
@@ -698,10 +699,9 @@ function projectSettledHistory(
     userConfirmations: assignmentState.userConfirmations.map(
       projectUserConfirmation,
     ),
-    modelingRuns: controller
-      .modelingRuns()
+    modelingRuns: modelingRuns
       .filter(isSettledModelingRun)
-      .map((run) => projectSettledModelingRun(run, controller.modelingRuns())),
+      .map((run) => projectSettledModelingRun(run, modelingRuns)),
   }
 }
 

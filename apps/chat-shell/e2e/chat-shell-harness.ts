@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
 import { once } from 'node:events'
 import { mkdir } from 'node:fs/promises'
-import { createServer as createHttpServer, type Server } from 'node:http'
+import {
+  createServer as createHttpServer,
+  type Server,
+  type ServerResponse,
+} from 'node:http'
 import type { AddressInfo } from 'node:net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -67,6 +71,7 @@ export type ChatShellHarness = {
   readonly url: string
   readonly calls: () => readonly ProductRuntimeCall[]
   readonly requests: () => readonly string[]
+  disconnectAssignmentStream(): Promise<void>
   prepareScanLimitWorkspaceActivation(): Promise<void>
   releaseInterruptResponse(): void
   releaseLateInteraction(): void
@@ -122,6 +127,7 @@ async function startChatShellHarness(
   let semesterWorkspace: E2eSemesterWorkspace | undefined
   let selectedWorkspaceRoot: string | undefined
   const requests: string[] = []
+  const assignmentStreams = new Set<ServerResponse>()
 
   try {
     semesterWorkspace = await materializeE2eSemesterWorkspace()
@@ -182,7 +188,27 @@ async function startChatShellHarness(
         hmr: false,
         middlewareMode: true,
         proxy: {
-          '/api': apiUrl,
+          '/api': {
+            target: apiUrl,
+            configure(proxy) {
+              proxy.on('proxyRes', (_proxyResponse, request, response) => {
+                const pathname = new URL(
+                  request.url ?? '/',
+                  frontendUrl,
+                ).pathname
+                if (
+                  request.method !== 'POST' ||
+                  pathname !== '/api/product/actions/first-assignment'
+                ) {
+                  return
+                }
+                assignmentStreams.add(response)
+                response.once('close', () => {
+                  assignmentStreams.delete(response)
+                })
+              })
+            },
+          },
         },
       },
     })
@@ -202,6 +228,15 @@ async function startChatShellHarness(
       url: frontendUrl,
       calls: () => runtime?.calls ?? [],
       requests: () => [...requests],
+      async disconnectAssignmentStream() {
+        const response = [...assignmentStreams].find(
+          (candidate) => !candidate.destroyed,
+        )
+        assert.ok(response, 'Expected a pending Assignment stream response.')
+        const closed = once(response, 'close')
+        response.destroy()
+        await closed
+      },
       async prepareScanLimitWorkspaceActivation() {
         if (!semesterWorkspace) {
           throw new Error('E2E SemesterWorkspace is unavailable')

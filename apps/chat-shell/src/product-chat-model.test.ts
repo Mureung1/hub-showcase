@@ -329,6 +329,150 @@ test('enforces the Assignment terminal matrix across native acceptance', () => {
   }
 })
 
+test('accepts recovery only for the exact Assignment and closes the pending Review', () => {
+  for (const frame of [
+    {
+      type: 'operation.recovery',
+      operationId: chatId,
+      runId,
+      outcome: 'interrupted',
+      retryable: true,
+    },
+    {
+      type: 'operation.recovery',
+      operationId: actionId,
+      runId: `run_${'0'.repeat(32)}`,
+      outcome: 'interrupted',
+      retryable: true,
+    },
+  ] as const satisfies readonly ProductOperationFrame[]) {
+    assertInvalidProductStream(applyFrames(pendingReviewState(), [frame]))
+  }
+
+  for (const recovery of [
+    {
+      type: 'operation.recovery',
+      operationId: actionId,
+      runId,
+      outcome: 'interrupted',
+      retryable: true,
+    },
+    {
+      type: 'operation.recovery',
+      operationId: actionId,
+      runId,
+      outcome: 'unknown',
+      retryable: true,
+    },
+  ] as const satisfies readonly ProductOperationFrame[]) {
+    let state = pendingReviewState()
+    const review = state.activeOperation!.review!
+
+    state = applyFrames(state, [recovery])
+
+    assert.equal(state.phase, recovery.outcome)
+    assert.deepEqual(state.recovery, recovery)
+    assert.equal(state.activeOperation?.review, undefined)
+    assert.equal(canRespondToProductReview(state, review), false)
+
+    state = applyFrames(state, [
+      assignmentTerminal(recovery.outcome, 'unknown'),
+    ])
+    assert.equal(state.phase, recovery.outcome)
+    assert.equal(state.activeOperation, undefined)
+    assert.deepEqual(state.recovery, recovery)
+  }
+})
+
+test('preserves confirmed continuation loss after the unknown terminal', () => {
+  const recovery = {
+    type: 'operation.recovery',
+    operationId: actionId,
+    runId,
+    outcome: 'continuation_lost',
+    retryable: false,
+    confirmedRevision: 1,
+  } as const satisfies ProductOperationFrame
+  let state = pendingReviewState()
+  const review = state.activeOperation!.review!
+
+  state = applyFrames(state, [recovery])
+
+  assert.equal(state.phase, 'continuation-lost')
+  assert.deepEqual(state.recovery, recovery)
+  assert.equal(state.activeOperation?.review, undefined)
+  assert.equal(canRespondToProductReview(state, review), false)
+
+  state = applyFrames(state, [assignmentTerminal('unknown', 'unknown')])
+
+  assert.equal(state.phase, 'continuation-lost')
+  assert.equal(state.activeOperation, undefined)
+  assert.deepEqual(state.recovery, recovery)
+})
+
+test('allows one fresh Review on an explicit retry after the interrupted Review closes', () => {
+  const retryActionId = `action_${'9'.repeat(32)}`
+  const retryRunId = `run_${'8'.repeat(32)}`
+  const retryPatch = { ...assignmentPatch(), id: replacementPatchId }
+  let state = pendingReviewState()
+  state = applyFrames(state, [
+    {
+      type: 'operation.recovery',
+      operationId: actionId,
+      runId,
+      outcome: 'interrupted',
+      retryable: true,
+    },
+    assignmentTerminal('interrupted', 'unknown'),
+  ])
+  state = reduceProductChatState(state, {
+    type: 'operation.started',
+    kind: 'assignment',
+    materials: [noticeMaterial, syllabusMaterial],
+  })
+  state = applyFrames(state, [
+    {
+      type: 'operation.preparing',
+      operationId: retryActionId,
+      runId: retryRunId,
+    },
+    {
+      type: 'operation.accepted',
+      operationId: retryActionId,
+      runId: retryRunId,
+    },
+    {
+      type: 'mcp_call.started',
+      operationId: retryActionId,
+      activityId: replacementActivityId,
+      tool: 'propose_state_patch',
+    },
+    {
+      type: 'mcp_call.completed',
+      operationId: retryActionId,
+      activityId: replacementActivityId,
+      tool: 'propose_state_patch',
+      patch: retryPatch,
+    },
+    {
+      type: 'review.requested',
+      operationId: retryActionId,
+      interactionId: replacementInteractionId,
+      patchId: replacementPatchId,
+      decisionKey: replacementDecisionKey,
+      patch: retryPatch,
+      questions: [],
+    },
+  ])
+
+  assert.equal(state.phase, 'awaiting-review')
+  assert.equal(state.activeOperation?.review?.operationId, retryActionId)
+  assert.equal(
+    state.transcript.filter((entry) => entry.kind === 'review').length,
+    2,
+  )
+})
+
 test('enforces the Chat terminal matrix across native acceptance', () => {
   for (const [status, phase] of [
     ['not_accepted', 'failed'],

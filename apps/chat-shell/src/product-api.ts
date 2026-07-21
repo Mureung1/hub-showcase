@@ -3,6 +3,7 @@ import {
   decodeCreateProductCourseRequest,
   decodeEmptyProductRequest,
   decodeFirstAssignmentRequest,
+  decodeFirstAssignmentRetryRequest,
   decodeProductBootstrap,
   decodeProductChatRequest,
   decodeProductError,
@@ -17,6 +18,7 @@ import {
   isProductOperationId,
   type CreateProductCourseRequest,
   type FirstAssignmentRequest,
+  type FirstAssignmentRetryRequest,
   type ProductBootstrap,
   type ProductChatRequest,
   type ProductInteractionAnswerRequest,
@@ -32,6 +34,7 @@ import {
 export type {
   CreateProductCourseRequest,
   FirstAssignmentRequest,
+  FirstAssignmentRetryRequest,
   IncompatibleProductWorkspace,
   ProductAccountReadiness,
   ProductAssignment,
@@ -154,6 +157,19 @@ export async function streamFirstAssignment(
   await streamProductOperation(
     '/api/product/actions/first-assignment',
     decodeShared(decodeFirstAssignmentRequest, input),
+    onFrame,
+    signal,
+  )
+}
+
+export async function streamFirstAssignmentRetry(
+  input: FirstAssignmentRetryRequest,
+  onFrame: (frame: ProductOperationFrame) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  await streamProductOperation(
+    '/api/product/actions/first-assignment/retry',
+    decodeShared(decodeFirstAssignmentRetryRequest, input),
     onFrame,
     signal,
   )

@@ -12,6 +12,7 @@ import {
   ProductApiError,
   ProductStreamError,
   streamFirstAssignment,
+  streamFirstAssignmentRetry,
   streamProductChat,
   submitProductReview,
   type ProductAccountReadiness,
@@ -21,6 +22,7 @@ import {
   type ProductRawMaterial,
   type ProductReviewRequest,
   type ProductReviewResponse,
+  type ProductSettledModelingRun,
   type ReadyProductWorkspace,
 } from './product-api.js'
 import {
@@ -104,6 +106,47 @@ export function useProductChat(options: {
     )
   }
 
+  async function retryAssignment(run: ProductSettledModelingRun) {
+    const course = options.workspace?.course
+    if (
+      !course ||
+      course.id !== run.courseId ||
+      !run.recovery?.retryable ||
+      operationPendingRef.current ||
+      isProductOperationActive(stateRef.current)
+    ) {
+      return
+    }
+    const materials = run.sources.map((source) => ({
+      id: source.materialId,
+      digest: source.digest,
+    }))
+    const sourcesAvailable = materials.every((source) =>
+      options.workspace?.materials.some(
+        (material) =>
+          material.id === source.id && material.digest === source.digest,
+      ),
+    )
+    if (!sourcesAvailable) return
+    await runOperation(
+      'assignment',
+      undefined,
+      (onFrame, signal) =>
+        streamFirstAssignmentRetry(
+          {
+            courseId: run.courseId,
+            recipeVersion: FIRST_ASSIGNMENT_RECIPE_VERSION,
+            arguments: FIRST_ASSIGNMENT_ARGUMENTS,
+            materials,
+            retryOfRunId: run.id,
+          },
+          onFrame,
+          signal,
+        ),
+      materials,
+    )
+  }
+
   async function submitMessage() {
     const text = draft.trim()
     if (!canSubmit || !text) return
@@ -164,8 +207,31 @@ export function useProductChat(options: {
       if (!matchesReviewResponse(review, request, response)) {
         throw new ProductStreamError()
       }
-      if (request.decision !== 'revise') await options.refreshProductState()
+      if (request.decision !== 'revise') {
+        await options.refreshProductState()
+        if (response.continuation === 'lost') {
+          reconcileConfirmedReview(
+            review,
+            request.decision,
+            response.confirmedRevision,
+          )
+        }
+      }
     } catch (error) {
+      if (request.decision !== 'revise') {
+        const confirmedRevision = await confirmedReviewRevision(
+          review,
+          request.decision,
+        )
+        if (confirmedRevision !== undefined) {
+          reconcileConfirmedReview(
+            review,
+            request.decision,
+            confirmedRevision,
+          )
+          return
+        }
+      }
       transition({
         type: 'operation.control-failed',
         failure: safeFailure(
@@ -266,6 +332,7 @@ export function useProductChat(options: {
       onFrame: Parameters<typeof streamFirstAssignment>[1],
       signal: AbortSignal,
     ) => Promise<void>,
+    operationMaterials: readonly ProductMaterialSelection[] = selected,
   ) {
     if (operationPendingRef.current || isProductOperationActive(stateRef.current)) {
       return
@@ -277,7 +344,7 @@ export function useProductChat(options: {
     transition({
       type: 'operation.started',
       kind,
-      materials: selected,
+      materials: operationMaterials,
       ...(text === undefined ? {} : { text }),
     })
     try {
@@ -288,10 +355,25 @@ export function useProductChat(options: {
         },
         controller.signal,
       )
+      if (
+        kind === 'assignment' &&
+        isProductOperationActive(stateRef.current) &&
+        (await reconcileLostAssignment(controller.signal))
+      ) {
+        return
+      }
       transition({ type: 'operation.stream-ended' })
+      if (kind === 'assignment') await options.refreshProductState()
     } catch (error) {
       if (!controller.signal.aborted) {
         if (stateRef.current.phase === 'stream-failed') return
+        if (
+          kind === 'assignment' &&
+          stateRef.current.activeOperation?.stage !== 'submitting' &&
+          (await reconcileLostAssignment(controller.signal))
+        ) {
+          return
+        }
         transition(
           stateRef.current.activeOperation?.stage === 'submitting'
             ? {
@@ -310,6 +392,109 @@ export function useProductChat(options: {
     }
   }
 
+  async function reconcileLostAssignment(signal: AbortSignal) {
+    const active = stateRef.current.activeOperation
+    if (
+      active?.kind !== 'assignment' ||
+      !active.operationId ||
+      !active.runId
+    ) {
+      return false
+    }
+    for (let attempt = 0; attempt < 50 && !signal.aborted; attempt += 1) {
+      try {
+        const bootstrap = await options.refreshProductState()
+        const run = bootstrap.history.modelingRuns.find(
+          (candidate) =>
+            candidate.id === active.runId &&
+            candidate.actionId === active.operationId,
+        )
+        if (run) {
+          if (run.recovery) {
+            transition({
+              type: 'operation.frame',
+              frame: {
+                type: 'operation.recovery',
+                operationId: run.actionId,
+                runId: run.id,
+                ...run.recovery,
+              },
+            })
+          }
+          transition({
+            type: 'operation.frame',
+            frame: {
+              type: 'operation.terminal',
+              operationId: run.actionId,
+              runId: run.id,
+              status: run.status,
+              validationOutcome: run.validationOutcome,
+            },
+          })
+          return stateRef.current.phase !== 'stream-failed'
+        }
+      } catch {
+        // A bounded later read may observe settlement after the lease drains.
+      }
+      await waitForRecoveryPoll()
+    }
+    return false
+  }
+
+  async function confirmedReviewRevision(
+    review: ProductReviewBinding,
+    decision: 'accept' | 'reject',
+  ): Promise<number | undefined> {
+    try {
+      const bootstrap = await options.refreshProductState()
+      const confirmation = bootstrap.history.userConfirmations.find(
+        (candidate) =>
+          candidate.patchId === review.patchId &&
+          candidate.decision ===
+            (decision === 'accept' ? 'accepted' : 'rejected'),
+      )
+      if (!confirmation) return undefined
+      if (confirmation.resultingRevision !== null) {
+        return confirmation.resultingRevision
+      }
+      return bootstrap.workspace?.state === 'ready'
+        ? bootstrap.workspace.confirmedRevision
+        : undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  function reconcileConfirmedReview(
+    review: ProductReviewBinding,
+    decision: 'accept' | 'reject',
+    confirmedRevision: number,
+  ) {
+    transition({
+      type: 'operation.review-reconciled',
+      review,
+      outcome: decision === 'accept' ? 'accepted' : 'rejected',
+    })
+    const lastAssignment = stateRef.current.lastAssignment
+    if (
+      lastAssignment?.operationId !== review.operationId ||
+      stateRef.current.recovery?.outcome === 'continuation_lost'
+    ) {
+      return
+    }
+    transition({
+      type: 'operation.frame',
+      frame: {
+        type: 'operation.recovery',
+        operationId: lastAssignment.operationId,
+        runId: lastAssignment.runId,
+        outcome: 'continuation_lost',
+        retryable: false,
+        confirmedRevision,
+      },
+    })
+  }
+
   return {
     state,
     draft,
@@ -322,6 +507,7 @@ export function useProductChat(options: {
     canSubmit,
     canInterrupt,
     startAssignment,
+    retryAssignment,
     submitMessage,
     acceptReview,
     reviseReview,
@@ -330,6 +516,10 @@ export function useProductChat(options: {
     cancelClarification,
     interrupt,
   }
+}
+
+function waitForRecoveryPoll(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 100))
 }
 
 type ProductResponsePending =

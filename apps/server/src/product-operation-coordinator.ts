@@ -134,6 +134,7 @@ type ActiveAssignmentOperation = ActiveProductOperationBase & {
     readonly recipe: ManagedAssignmentRecipe
     run?: ModelingRun
     recoveryOutcome?: ModelingRunRecoveryOutcome
+    confirmedRevision?: number
   }
   readonly chat?: never
 }
@@ -893,6 +894,17 @@ export function createProductOperationCoordinator(options: {
                 validationOutcome: 'unknown' as const,
                 failureCode: settlement.code,
               }
+        if (
+          operation.assignment.recoveryOutcome === undefined &&
+          operation.assignment.confirmedRevision !== undefined &&
+          (requestedSettlement.status === 'interrupted' ||
+            requestedSettlement.status === 'unknown')
+        ) {
+          operation.assignment.recoveryOutcome = {
+            outcome: 'continuation_lost',
+            confirmedRevision: operation.assignment.confirmedRevision,
+          }
+        }
         try {
           operation.assignment.run =
             await options.controller.settleAssignmentAction({
@@ -1144,14 +1156,16 @@ export function createProductOperationCoordinator(options: {
         const outcome = await promise
         if (
           outcome.type === 'settled' &&
-          outcome.continuation === 'lost' &&
           operation.kind === 'assignment'
         ) {
-          operation.assignment.recoveryOutcome = {
-            outcome: 'continuation_lost',
-            confirmedRevision: outcome.confirmedRevision,
+          operation.assignment.confirmedRevision = outcome.confirmedRevision
+          if (outcome.continuation === 'lost') {
+            operation.assignment.recoveryOutcome = {
+              outcome: 'continuation_lost',
+              confirmedRevision: outcome.confirmedRevision,
+            }
+            options.service.disconnectProductTurn(operation.turn)
           }
-          options.service.disconnectProductTurn(operation.turn)
         }
         return outcome
       } catch (error) {

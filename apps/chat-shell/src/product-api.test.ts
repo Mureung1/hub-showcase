@@ -8,6 +8,7 @@ import {
   ProductApiError,
   ProductStreamError,
   refreshProductMaterials,
+  streamFirstAssignmentRetry,
   streamProductChat,
   submitProductReview,
 } from './product-api.js'
@@ -137,6 +138,8 @@ test('decodes only settled product history for reload', async (t) => {
             requestedSkillName: 'ay-ple-first-assignment',
           },
           sources: [{ materialId, digest: 'e'.repeat(64) }],
+          retryOfRunId: null,
+          recovery: null,
           status: 'completed',
           validationOutcome: 'passed',
           createdAt: now,
@@ -381,6 +384,61 @@ test('product Chat sends the shared request and decodes only closed frames', asy
   assert.deepEqual(received, frames)
 })
 
+test('first Assignment explicit retry streams the exact prior Run request', async (t) => {
+  const courseId = `course_${'a'.repeat(32)}`
+  const retryOfRunId = `run_${'b'.repeat(32)}`
+  const operationId = `action_${'c'.repeat(32)}`
+  const runId = `run_${'d'.repeat(32)}`
+  const request = {
+    courseId,
+    recipeVersion: '1',
+    arguments: { timezone: 'Asia/Seoul' },
+    materials: [
+      { id: `material_${'e'.repeat(32)}`, digest: '1'.repeat(64) },
+      { id: `material_${'f'.repeat(32)}`, digest: '2'.repeat(64) },
+    ],
+    retryOfRunId,
+  } as const
+  const frames = [
+    { type: 'operation.preparing', operationId, runId },
+    { type: 'operation.accepted', operationId, runId },
+    {
+      type: 'operation.recovery',
+      operationId,
+      runId,
+      outcome: 'interrupted',
+      retryable: true,
+    },
+    {
+      type: 'operation.terminal',
+      operationId,
+      runId,
+      status: 'interrupted',
+      validationOutcome: 'unknown',
+    },
+  ] as const
+  t.mock.method(globalThis, 'fetch', async (
+    input: string | URL | Request,
+    init?: RequestInit,
+  ) => {
+    assert.equal(input, '/api/product/actions/first-assignment/retry')
+    assert.equal(init?.method, 'POST')
+    assert.deepEqual(JSON.parse(String(init?.body)), request)
+    return new Response(
+      `${frames.map((frame) => JSON.stringify(frame)).join('\n')}\n`,
+      {
+        status: 200,
+        headers: { 'content-type': 'application/x-ndjson' },
+      },
+    )
+  })
+  const received: unknown[] = []
+
+  await streamFirstAssignmentRetry(request, (frame) => received.push(frame))
+
+  assert.deepEqual(received, frames)
+})
+
 test('submits exact accept, revise feedback, and reject Review requests', async (t) => {
   const interactionId = `interaction_${'a'.repeat(32)}`
   const patchId = `patch_${'b'.repeat(32)}`
@@ -403,6 +461,7 @@ test('submits exact accept, revise feedback, and reject Review requests', async 
       outcome: 'applied',
       confirmedRevision: 1,
       replayed: false,
+      continuation: 'continued',
     },
     {
       patchId,
@@ -411,6 +470,7 @@ test('submits exact accept, revise feedback, and reject Review requests', async 
       outcome: 'replacement_pending',
       confirmedRevision: 0,
       replayed: false,
+      continuation: 'continued',
     },
     {
       patchId,
@@ -419,6 +479,7 @@ test('submits exact accept, revise feedback, and reject Review requests', async 
       outcome: 'not_applied',
       confirmedRevision: 0,
       replayed: false,
+      continuation: 'continued',
     },
   ] as const
   let requestIndex = 0

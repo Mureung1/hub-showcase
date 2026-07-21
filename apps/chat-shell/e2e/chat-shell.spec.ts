@@ -1,8 +1,10 @@
 import { expect, type Page } from 'playwright/test'
 
-import type {
-  ProductBootstrap,
-  ProductSettledHistory,
+import {
+  FIRST_ASSIGNMENT_ARGUMENTS,
+  FIRST_ASSIGNMENT_RECIPE_VERSION,
+  type ProductBootstrap,
+  type ProductSettledHistory,
 } from '@ay-ple/product-contract'
 
 import {
@@ -369,6 +371,263 @@ test('interrupts the active product Review through its public operation and term
   ).toBe(false)
 })
 
+test('settles a lost Assignment stream before Review answer and retries only from the explicit recovery action', async ({
+  chatHarness,
+  chatPage: page,
+}) => {
+  const chat = page.getByRole('complementary', { name: 'AY Chat' })
+  await selectCanonicalMaterials(page)
+  await page
+    .getByRole('button', { name: /선택한 자료 정리하기/u })
+    .click()
+
+  await expect(chat.getByRole('region', { name: '검토 대기' })).toBeVisible()
+  await chatHarness.disconnectAssignmentStream()
+
+  const recovery = chat.getByRole('region', { name: '작업 복구 기록' })
+  await expect(recovery.getByText(/작업 연결이 끊겨/u)).toBeVisible()
+  await expect(operationPhase(page)).toHaveAttribute(
+    'data-product-operation-phase',
+    'interrupted',
+  )
+  await expect(chat.getByRole('region', { name: '검토 대기' })).toHaveCount(0)
+  await expect(chat.getByRole('button', { name: '수락' })).toHaveCount(0)
+  await expect(chat.getByRole('button', { name: 'AY에게 수정 요청' })).toHaveCount(0)
+  await expect(chat.getByRole('button', { name: '거절' })).toHaveCount(0)
+
+  await expect
+    .poll(async () => {
+      const bootstrap = await readProductBootstrap(page)
+      return {
+        confirmedRevision:
+          bootstrap.workspace?.state === 'ready'
+            ? bootstrap.workspace.confirmedRevision
+            : undefined,
+        assignments: bootstrap.history.assignments.length,
+        confirmations: bootstrap.history.userConfirmations.length,
+        patches: bootstrap.history.statePatches.map((patch) => ({
+          status: patch.status,
+          applyOutcome: patch.applyOutcome,
+        })),
+        runs: bootstrap.history.modelingRuns.map((run) => ({
+          status: run.status,
+          retryOfRunId: run.retryOfRunId,
+          recovery: run.recovery,
+        })),
+      }
+    })
+    .toEqual({
+      confirmedRevision: 0,
+      assignments: 0,
+      confirmations: 0,
+      patches: [{ status: 'interrupted', applyOutcome: null }],
+      runs: [
+        {
+          status: 'interrupted',
+          retryOfRunId: null,
+          recovery: { outcome: 'interrupted', retryable: true },
+        },
+      ],
+    })
+
+  const interrupted = await readProductBootstrap(page)
+  const interruptedRun = interrupted.history.modelingRuns[0]
+  expect(interruptedRun).toBeDefined()
+  expect(
+    chatHarness.calls().filter((call) => call.operation === 'startProductTurn'),
+  ).toHaveLength(1)
+  expect(
+    chatHarness.requests().filter(
+      (pathname) => pathname === '/api/product/actions/first-assignment/retry',
+    ),
+  ).toHaveLength(0)
+
+  const retryRequestPromise = page.waitForRequest(
+    (request) =>
+      new URL(request.url()).pathname ===
+      '/api/product/actions/first-assignment/retry',
+  )
+  await recovery.getByRole('button', { name: '이 자료로 다시 시도' }).click()
+  const retryRequest = await retryRequestPromise
+  const retryPayload = retryRequest.postDataJSON() as Record<string, unknown>
+  expect(Object.keys(retryPayload).sort()).toEqual([
+    'arguments',
+    'courseId',
+    'materials',
+    'recipeVersion',
+    'retryOfRunId',
+  ])
+  expect(retryPayload).toEqual({
+    courseId: interruptedRun!.courseId,
+    recipeVersion: FIRST_ASSIGNMENT_RECIPE_VERSION,
+    arguments: FIRST_ASSIGNMENT_ARGUMENTS,
+    materials: interruptedRun!.sources.map((source) => ({
+      id: source.materialId,
+      digest: source.digest,
+    })),
+    retryOfRunId: interruptedRun!.id,
+  })
+
+  const retryReview = chat.getByRole('region', { name: '검토 대기' })
+  await expect(retryReview).toBeVisible()
+  await retryReview.getByRole('button', { name: '수락' }).click()
+  await expect(chat.getByRole('region', { name: '반영된 과제' })).toBeVisible()
+  await expect(operationPhase(page)).toHaveAttribute(
+    'data-product-operation-phase',
+    'completed',
+  )
+
+  await expect
+    .poll(async () => {
+      const bootstrap = await readProductBootstrap(page)
+      return {
+        confirmedRevision:
+          bootstrap.workspace?.state === 'ready'
+            ? bootstrap.workspace.confirmedRevision
+            : undefined,
+        assignments: bootstrap.history.assignments.length,
+        confirmations: bootstrap.history.userConfirmations.length,
+        patchStatuses: bootstrap.history.statePatches.map(
+          (patch) => patch.status,
+        ),
+        runStatuses: bootstrap.history.modelingRuns.map((run) => run.status),
+      }
+    })
+    .toEqual({
+      confirmedRevision: 1,
+      assignments: 1,
+      confirmations: 1,
+      patchStatuses: ['interrupted', 'applied'],
+      runStatuses: ['interrupted', 'completed'],
+    })
+
+  const retried = await readProductBootstrap(page)
+  const [firstRun, retryRun] = retried.history.modelingRuns
+  expect(firstRun).toMatchObject({
+    id: interruptedRun!.id,
+    retryOfRunId: null,
+    recovery: { outcome: 'interrupted', retryable: false },
+  })
+  expect(retryRun).toMatchObject({
+    retryOfRunId: interruptedRun!.id,
+    recovery: null,
+  })
+  expect(retryRun?.id).not.toBe(firstRun?.id)
+  expect(retryRun?.actionId).not.toBe(firstRun?.actionId)
+  expect(retried.history.statePatches[0]?.id).not.toBe(
+    retried.history.statePatches[1]?.id,
+  )
+  expect(retried.history.userConfirmations[0]).toMatchObject({
+    patchId: retried.history.statePatches[1]?.id,
+    decision: 'accepted',
+    outcome: 'applied',
+    resultingRevision: 1,
+  })
+  expect(
+    chatHarness.calls().filter((call) => call.operation === 'startProductTurn'),
+  ).toHaveLength(2)
+  expect(
+    chatHarness.calls().filter((call) => call.operation === 'answerUserInput'),
+  ).toHaveLength(1)
+  expect(
+    chatHarness.requests().filter(
+      (pathname) => pathname === '/api/product/actions/first-assignment/retry',
+    ),
+  ).toHaveLength(1)
+  await expect(
+    chat.getByRole('button', { name: '이 자료로 다시 시도' }),
+  ).toHaveCount(0)
+})
+
+test('keeps the confirmed Assignment authoritative when the finite Review response is lost', async ({
+  chatHarness,
+  chatPage: page,
+}) => {
+  const reviewResponse = await loseNextReviewResponse(page)
+  const chat = page.getByRole('complementary', { name: 'AY Chat' })
+  await selectCanonicalMaterials(page)
+  await page
+    .getByRole('button', { name: /선택한 자료 정리하기/u })
+    .click()
+
+  const review = chat.getByRole('region', { name: '검토 대기' })
+  await expect(review).toBeVisible()
+  await review.getByRole('button', { name: '수락' }).click()
+  expect(await reviewResponse.lost).toBe(200)
+
+  await expect(chat.getByText(/이어짐이 끊겼/u)).toBeVisible()
+  await expect(operationPhase(page)).toHaveAttribute(
+    'data-product-operation-phase',
+    'continuation-lost',
+  )
+  const settled = chat.getByRole('region', { name: '반영된 과제' })
+  await expect(settled).toBeVisible()
+  await expect(settled).toContainText('개요 작성하기')
+  await expect(settled).toContainText('학기 정보 1번째 반영')
+  await expect(chat.getByRole('region', { name: '검토 대기' })).toHaveCount(0)
+  await expect(
+    chat.getByRole('button', { name: '이 자료로 다시 시도' }),
+  ).toHaveCount(0)
+
+  await expect
+    .poll(async () => {
+      const bootstrap = await readProductBootstrap(page)
+      return {
+        confirmedRevision:
+          bootstrap.workspace?.state === 'ready'
+            ? bootstrap.workspace.confirmedRevision
+            : undefined,
+        assignments: bootstrap.history.assignments.length,
+        confirmations: bootstrap.history.userConfirmations.length,
+        patches: bootstrap.history.statePatches.map((patch) => patch.status),
+        runs: bootstrap.history.modelingRuns.map((run) => ({
+          status: run.status,
+          retryOfRunId: run.retryOfRunId,
+        })),
+      }
+    })
+    .toEqual({
+      confirmedRevision: 1,
+      assignments: 1,
+      confirmations: 1,
+      patches: ['applied'],
+      runs: [{ status: 'completed', retryOfRunId: null }],
+    })
+
+  const beforeReload = await readProductBootstrap(page)
+  expect(beforeReload.history.userConfirmations[0]).toMatchObject({
+    patchId: beforeReload.history.statePatches[0]?.id,
+    decision: 'accepted',
+    outcome: 'applied',
+    resultingRevision: 1,
+  })
+  expect(
+    chatHarness.calls().filter((call) => call.operation === 'startProductTurn'),
+  ).toHaveLength(1)
+  expect(
+    chatHarness.calls().filter((call) => call.operation === 'answerUserInput'),
+  ).toHaveLength(1)
+  expect(
+    chatHarness.requests().filter(
+      (pathname) => pathname === '/api/product/actions/first-assignment/retry',
+    ),
+  ).toHaveLength(0)
+
+  await page.reload()
+  const reloaded = page.getByRole('complementary', { name: 'AY Chat' })
+  await expect(reloaded.getByRole('region', { name: '반영된 과제' })).toContainText(
+    '개요 작성하기',
+  )
+  await expect(
+    reloaded.getByRole('region', { name: '반영된 과제' }),
+  ).toContainText('학기 정보 1번째 반영')
+  await expect(reloaded.getByRole('region', { name: '검토 대기' })).toHaveCount(0)
+  await expect(
+    reloaded.getByRole('button', { name: '이 자료로 다시 시도' }),
+  ).toHaveCount(0)
+  expect(await readProductBootstrap(page)).toEqual(beforeReload)
+})
+
 test.describe('acknowledged interrupt response loss', () => {
   test.use({ scenario: 'acknowledged-interrupt-response-loss' })
 
@@ -648,6 +907,32 @@ async function loseNextInterruptResponse(page: Page): Promise<{
   })
   await page.route(
     '**/api/product/operations/*/interrupt',
+    async (route) => {
+      try {
+        const response = await route.fetch()
+        const status = response.status()
+        await route.abort('failed')
+        resolve(status)
+      } catch (error) {
+        reject(error)
+      }
+    },
+    { times: 1 },
+  )
+  return { lost }
+}
+
+async function loseNextReviewResponse(page: Page): Promise<{
+  readonly lost: Promise<number>
+}> {
+  let resolve!: (status: number) => void
+  let reject!: (error: unknown) => void
+  const lost = new Promise<number>((settle, fail) => {
+    resolve = settle
+    reject = fail
+  })
+  await page.route(
+    '**/api/product/reviews/*',
     async (route) => {
       try {
         const response = await route.fetch()
