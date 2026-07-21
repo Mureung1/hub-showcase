@@ -36,6 +36,8 @@ export const canonicalSemesterWorkspaceSeed = path.join(
   'apps/chat-shell/e2e/fixtures',
   workspaceLeaf,
 )
+export const canonicalSemesterWorkspaceSeedDigest =
+  'ffbe1d713e1f6cbaefd12b650e597a068dd88259dc675447633640b8a3b24f55'
 
 export type DevelopmentSemesterWorkspace = {
   readonly ownership: 'managed'
@@ -47,6 +49,7 @@ export type DevelopmentSemesterWorkspace = {
 }
 
 export type E2eSemesterWorkspace = {
+  readonly runId: string
   readonly runRoot: string
   readonly seedDigest: string
   readonly workspaceRoot: string
@@ -189,6 +192,7 @@ export async function materializeE2eSemesterWorkspace(options: {
 
   let cleaned = false
   return {
+    runId,
     runRoot,
     seedDigest,
     workspaceRoot: await realpath(workspaceRoot),

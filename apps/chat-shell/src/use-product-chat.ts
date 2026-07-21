@@ -76,7 +76,10 @@ export function useProductChat(options: {
 
   const selected = materialSelection(options.selectedMaterials)
   const accountReady = options.accountReadiness?.state === 'ready'
-  const applicationReady = accountReady && options.workspace?.course != null
+  const applicationReady =
+    accountReady &&
+    options.workspace?.course != null &&
+    options.workspace.recovery === null
   const canStartAssignment =
     applicationReady &&
     selected.length === 2 &&
@@ -115,6 +118,7 @@ export function useProductChat(options: {
     const course = options.workspace?.course
     if (
       !course ||
+      options.workspace?.recovery !== null ||
       course.id !== run.courseId ||
       !run.recovery?.retryable ||
       operationPendingRef.current ||

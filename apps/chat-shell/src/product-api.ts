@@ -8,6 +8,7 @@ import {
   decodeProductChatRequest,
   decodeProductError,
   decodeProductInteractionAnswerRequest,
+  decodeProductMaterialRefreshResponse,
   decodeProductMaterialPreview,
   decodeProductOperationFrame,
   decodeProductReviewRequest,
@@ -23,6 +24,7 @@ import {
   type ProductChatRequest,
   type ProductInteractionAnswerRequest,
   type ProductMaterialPreview,
+  type ProductMaterialRefreshResponse,
   type ProductOperationFrame,
   type ProductRawMaterial,
   type ProductReviewRequest,
@@ -43,6 +45,7 @@ export type {
   ProductEvidenceRef,
   ProductInteractionAnswerRequest,
   ProductMaterialPreview,
+  ProductMaterialRefreshResponse,
   ProductMaterialSelection,
   ProductOperationFrame,
   ProductQuestion,
@@ -135,7 +138,7 @@ export async function createProductCourse(
 
 export async function refreshProductMaterials(
   signal?: AbortSignal,
-): Promise<ReadyProductWorkspace> {
+): Promise<ProductMaterialRefreshResponse> {
   const request = decodeEmptyProductRequest({})
   const response = await postJson(
     '/api/product/materials/refresh',
@@ -143,9 +146,9 @@ export async function refreshProductMaterials(
     signal,
   )
   return decodeShared(
-    decodeProductWorkspaceResponse,
+    decodeProductMaterialRefreshResponse,
     await parseJson(response),
-  ).workspace
+  )
 }
 
 export async function fetchProductMaterialPreview(

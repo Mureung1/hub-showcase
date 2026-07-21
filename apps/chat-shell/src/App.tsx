@@ -122,12 +122,28 @@ function MaterialsPane({
         pending={mutationPending}
         onRetry={() => void workbench.loadWorkspace()}
         onActivate={() => void workbench.activateWorkspace()}
+        onRefresh={() => void workbench.refreshMaterials()}
       />
 
       {workbench.operationFailure ? (
         <div className="workspace-state-card is-error" role="alert">
           <strong>요청을 완료하지 못했습니다</strong>
           <span>{workbench.operationFailure}</span>
+        </div>
+      ) : null}
+
+      {workbench.materialRefreshOutcome ? (
+        <div className="workspace-state-card" role="status">
+          <strong>
+            {workbench.materialRefreshOutcome === 'source_rebaselined'
+              ? '현재 TXT를 새 기준으로 채택했습니다'
+              : '자료 목록을 새로고침했습니다'}
+          </strong>
+          <span>
+            {workbench.materialRefreshOutcome === 'source_rebaselined'
+              ? '원본 bytes는 그대로 두고 등록 digest만 현재 내용에 맞췄습니다.'
+              : '현재 학기 폴더의 등록 가능한 TXT를 다시 확인했습니다.'}
+          </span>
         </div>
       ) : null}
 
@@ -195,7 +211,11 @@ function MaterialsPane({
                     <input
                       type="checkbox"
                       checked={selected}
-                      disabled={selectionFull || productBusy}
+                      disabled={
+                        selectionFull ||
+                        productBusy ||
+                        Boolean(workbench.readyWorkspace?.recovery)
+                      }
                       aria-label={`${material.relativePath} 선택`}
                       onChange={() => workbench.toggleMaterial(material.id)}
                     />
@@ -253,11 +273,13 @@ function WorkspaceState({
   pending,
   onRetry,
   onActivate,
+  onRefresh,
 }: {
   readonly view: ProductWorkspaceView
   readonly pending: boolean
   readonly onRetry: () => void
   readonly onActivate: () => void
+  readonly onRefresh: () => void
 }) {
   if (view.state === 'loading') {
     return (
@@ -294,6 +316,29 @@ function WorkspaceState({
         <span>{view.workspace.displayMessage}</span>
         <button type="button" disabled={pending} onClick={onActivate}>
           다른 학기 폴더 선택
+        </button>
+      </div>
+    )
+  }
+  if (view.workspace.recovery) {
+    const sourceConflict =
+      view.workspace.recovery.state === 'source_conflict'
+    return (
+      <div className="workspace-state-card is-error" role="alert">
+        <strong>
+          {sourceConflict
+            ? '원본 자료 변경을 확인해 주세요'
+            : '작업공간 복구가 필요합니다'}
+        </strong>
+        <span>{view.workspace.recovery.displayMessage}</span>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={sourceConflict ? onRefresh : onActivate}
+        >
+          {sourceConflict
+            ? '현재 TXT를 새 기준으로 채택'
+            : '작업공간 다시 선택'}
         </button>
       </div>
     )

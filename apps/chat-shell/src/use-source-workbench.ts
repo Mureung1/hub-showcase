@@ -62,10 +62,14 @@ export function useSourceWorkbench() {
   const [mutationPending, setMutationPending] = useState(false)
   const [bootstrapRefreshing, setBootstrapRefreshing] = useState(false)
   const [operationFailure, setOperationFailure] = useState<string>()
+  const [materialRefreshOutcome, setMaterialRefreshOutcome] = useState<
+    'refreshed' | 'source_rebaselined'
+  >()
 
   const loadWorkspace = useCallback(async (signal?: AbortSignal) => {
     const readGeneration = ++bootstrapReadGeneration.current
     setOperationFailure(undefined)
+    setMaterialRefreshOutcome(undefined)
     setBootstrapRefreshing(false)
     setBootstrapView({ state: 'loading' })
     try {
@@ -93,6 +97,7 @@ export function useSourceWorkbench() {
     ) => {
       const readGeneration = ++bootstrapReadGeneration.current
       setOperationFailure(undefined)
+      setMaterialRefreshOutcome(undefined)
       setBootstrapRefreshing(true)
       try {
         const bootstrap = await readBootstrap(signal)
@@ -250,6 +255,7 @@ export function useSourceWorkbench() {
 
   async function activateWorkspace() {
     await runWorkspaceMutation(async () => {
+      setMaterialRefreshOutcome(undefined)
       const activation = await activateProductWorkspace()
       if (activation.status === 'cancelled') return
       setBootstrapView((current) =>
@@ -270,6 +276,7 @@ export function useSourceWorkbench() {
 
   async function createCourse(displayName: string) {
     await runWorkspaceMutation(async () => {
+      setMaterialRefreshOutcome(undefined)
       commitReadyWorkspace(await createProductCourse(displayName))
       await refreshSettledProductState()
     })
@@ -278,8 +285,11 @@ export function useSourceWorkbench() {
   async function refreshMaterials() {
     if (!readyWorkspace) return
     await runWorkspaceMutation(async () => {
-      commitReadyWorkspace(await refreshProductMaterials())
+      setMaterialRefreshOutcome(undefined)
+      const refreshed = await refreshProductMaterials()
+      commitReadyWorkspace(refreshed.workspace)
       await refreshSettledProductState()
+      setMaterialRefreshOutcome(refreshed.outcome)
     })
   }
 
@@ -336,6 +346,7 @@ export function useSourceWorkbench() {
     mutationPending,
     bootstrapRefreshing,
     operationFailure,
+    materialRefreshOutcome,
     loadWorkspace,
     refreshProductSnapshot,
     refreshSettledProductState,

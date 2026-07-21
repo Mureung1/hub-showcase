@@ -20,6 +20,7 @@ test('decodes a ready product snapshot without persistence metadata', async (t) 
     confirmedRevision: 0,
     course: null,
     materials: [],
+    recovery: null,
   } as const
   t.mock.method(
     globalThis,
@@ -130,6 +131,7 @@ test('decodes only settled product history for reload', async (t) => {
       confirmedRevision: 1,
       course: { id: courseId, displayName: '알고리즘' },
       materials: [],
+      recovery: null,
     },
     history: {
       assignments: [
@@ -220,6 +222,7 @@ test('rejects persistence metadata in the Browser product contract', async (t) =
             confirmedRevision: 0,
             course: null,
             materials: [],
+            recovery: null,
           },
           history: emptyHistory(),
         }),
@@ -249,6 +252,7 @@ test('rejects pending or privately correlated product history', async (t) => {
             confirmedRevision: 0,
             course: { id: courseId, displayName: '알고리즘' },
             materials: [],
+            recovery: null,
           },
           history: {
             ...emptyHistory(),
@@ -288,6 +292,7 @@ test('rejects an unreconciled acceptance-unknown ModelingRun as settled history'
             confirmedRevision: 0,
             course: { id: courseId, displayName: '알고리즘' },
             materials: [],
+            recovery: null,
           },
           history: {
             ...emptyHistory(),
@@ -355,6 +360,30 @@ test('preserves a cancelled activation so application state can remain intact', 
   assert.deepEqual(await activateProductWorkspace(), response)
 })
 
+test('decodes an explicit source rebaseline response through the shared contract', async (t) => {
+  const response = {
+    outcome: 'source_rebaselined',
+    workspace: {
+      state: 'ready',
+      confirmedRevision: 0,
+      course: null,
+      materials: [],
+      recovery: null,
+    },
+  } as const
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () =>
+      new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+  )
+
+  assert.deepEqual(await refreshProductMaterials(), response)
+})
+
 test('rejects a physical store path in a refresh response', async (t) => {
   t.mock.method(
     globalThis,
@@ -362,11 +391,13 @@ test('rejects a physical store path in a refresh response', async (t) => {
     async () =>
       new Response(
         JSON.stringify({
+          outcome: 'refreshed',
           workspace: {
             state: 'ready',
             confirmedRevision: 0,
             course: null,
             materials: [],
+            recovery: null,
             storePath: '/private/workspace/.ay-ple/workspace-state.json',
           },
         }),

@@ -17,6 +17,7 @@ import { promisify } from 'node:util'
 
 import {
   canonicalSemesterWorkspaceSeed,
+  canonicalSemesterWorkspaceSeedDigest,
   digestDirectory,
   materializeDevelopmentSemesterWorkspace,
   materializeE2eSemesterWorkspace,
@@ -115,11 +116,35 @@ test('E2E materializer creates isolated runs, ignores ambient development worksp
   const second = await materializeE2eSemesterWorkspace()
 
   try {
+    assert.equal(seedDigestBefore, canonicalSemesterWorkspaceSeedDigest)
+    assert.notEqual(first.runId, second.runId)
     assert.notEqual(first.runRoot, second.runRoot)
     assert.notEqual(first.workspaceRoot, second.workspaceRoot)
     assert.notEqual(first.workspaceRoot, await realpath(ambientRoot))
     assert.equal(await digestDirectory(first.workspaceRoot), seedDigestBefore)
     assert.equal(await digestDirectory(second.workspaceRoot), seedDigestBefore)
+
+    const firstProductRoot = path.join(first.workspaceRoot, '.ay-ple')
+    const firstScratch = path.join(firstProductRoot, 'runtime-scratch', 'run-one')
+    await mkdir(firstScratch, { recursive: true })
+    await writeFile(
+      path.join(firstProductRoot, 'workspace-state.json'),
+      '{"run":"one"}\n',
+      'utf8',
+    )
+    await writeFile(path.join(firstScratch, 'only-first.txt'), 'scratch', 'utf8')
+    await assert.rejects(
+      readFile(path.join(second.workspaceRoot, '.ay-ple', 'workspace-state.json')),
+    )
+    await assert.rejects(
+      readFile(
+        path.join(
+          canonicalSemesterWorkspaceSeed,
+          '.ay-ple',
+          'workspace-state.json',
+        ),
+      ),
+    )
 
     await first.cleanup()
 

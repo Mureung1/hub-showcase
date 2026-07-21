@@ -328,10 +328,17 @@ async function writeWorkspaceStoreBytes(
 async function readCurrentRegularStoreBytes(
   workspaceRoot: string,
 ): Promise<Buffer> {
-  const storePath = workspaceStorePath(workspaceRoot)
-  const stats = await lstat(storePath)
-  if (!stats.isFile() || stats.isSymbolicLink()) throw storeAuthorityConflict()
-  return readFile(storePath)
+  try {
+    const storePath = workspaceStorePath(workspaceRoot)
+    const stats = await lstat(storePath)
+    if (!stats.isFile() || stats.isSymbolicLink()) {
+      throw storeAuthorityConflict()
+    }
+    return await readFile(storePath)
+  } catch (error) {
+    if (error instanceof SemesterWorkspaceError) throw error
+    throw storeAuthorityConflict()
+  }
 }
 
 function storeAuthority(bytes: Buffer): WorkspaceStoreAuthority {
