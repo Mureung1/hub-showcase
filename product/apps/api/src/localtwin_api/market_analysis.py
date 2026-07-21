@@ -263,23 +263,9 @@ def _ranking_group(
     return MarketRankingGroup(id=group_id, label=label, metrics=metrics)
 
 
-def _build_analysis(
-    rows: list[AnalysisRow],
-    totals: Mapping[str, int],
-    sources: Mapping[str, tuple[str, str]],
-    market_id: str,
-    category: Category,
-    period: str,
-) -> MarketAnalysisResponse:
-    target = next((row for row in rows if row["market_code"] == market_id), None)
-    if target is None:
-        raise LookupError((market_id, category, period))
-
-    total_store_count = totals.get(market_id, 0)
-    category_store_count = int(target["category_store_count"] or 0)
-    if total_store_count <= 0 or category_store_count <= 0:
-        raise LookupError((market_id, category, period))
-
+def _enriched_peers(
+    rows: list[AnalysisRow], totals: Mapping[str, int]
+) -> list[dict[str, float]]:
     enriched: list[dict[str, float]] = []
     for row in rows:
         peer_total = totals.get(str(row["market_code"]), 0)
@@ -302,55 +288,169 @@ def _build_analysis(
                 "category_share": peer_category / peer_total,
             }
         )
+    return enriched
 
+
+def _target_values(target: AnalysisRow, category_store_count: int) -> dict[str, float]:
     sales_per_store = float(target["monthly_sales_amount"] or 0) / category_store_count
     foot_traffic = float(target["total_flow"] or 0)
-    closure_rate = float(target["closure_count"] or 0) / category_store_count
     area_sqm = float(target["area_sqm"] or 0)
-    density = category_store_count / max(area_sqm / 1_000_000, 0.01)
-    net_opening_rate = (
-        float(target["opening_count"] or 0) - float(target["closure_count"] or 0)
-    ) / category_store_count
+    return {
+        "sales_per_store": sales_per_store,
+        "foot_traffic": foot_traffic,
+        "closure_rate": float(target["closure_count"] or 0) / category_store_count * 100,
+        "same_category_density": category_store_count / max(area_sqm / 1_000_000, 0.01),
+        "net_opening_rate": (
+            float(target["opening_count"] or 0) - float(target["closure_count"] or 0)
+        )
+        / category_store_count
+        * 100,
+        "area_sqm": area_sqm,
+    }
 
+
+def _score_metric(
+    key: str,
+    value: float,
+    unit: str,
+    source: tuple[str, str],
+    source_type: Literal["official", "derived"],
+    enriched: list[dict[str, float]],
+    period: str,
+) -> ScoreMetric:
+    return ScoreMetric(
+        value=value,
+        percentile=_percentile([row[key] for row in enriched], value),
+        unit=unit,
+        source_name=source[0],
+        source_url=source[1],
+        source_type=source_type,
+        period=period,
+        sample_size=len(enriched),
+        sample_basis="known",
+        age_days=90,
+    )
+
+
+def _score_metrics(
+    values: Mapping[str, float],
+    sources: Mapping[str, tuple[str, str]],
+    target: AnalysisRow,
+    enriched: list[dict[str, float]],
+    period: str,
+) -> dict[str, ScoreMetric]:
     fallback_source = ("서울 열린데이터광장", "https://data.seoul.go.kr/")
     store_source = sources.get(str(target["store_source_id"]), fallback_source)
     sales_source = sources.get(str(target["sales_source_id"]), fallback_source)
     flow_source = sources.get(str(target["flow_source_id"]), fallback_source)
-
-    def metric(
-        key: str,
-        value: float,
-        unit: str,
-        source_name: str,
-        source_url: str,
-        source_type: Literal["official", "derived"],
-    ) -> ScoreMetric:
-        return ScoreMetric(
-            value=value,
-            percentile=_percentile([row[key] for row in enriched], value),
-            unit=unit,
-            source_name=source_name,
-            source_url=source_url,
-            source_type=source_type,
-            period=period,
-            sample_size=len(enriched),
-            sample_basis="known",
-            age_days=90,
-        )
-
-    metrics = {
-        "sales_per_store": metric(
-            "sales_per_store", sales_per_store, "원/분기", *sales_source, "derived"
+    return {
+        "sales_per_store": _score_metric(
+            "sales_per_store",
+            values["sales_per_store"],
+            "원/분기",
+            sales_source,
+            "derived",
+            enriched,
+            period,
         ),
-        "foot_traffic": metric("foot_traffic", foot_traffic, "명/분기", *flow_source, "official"),
-        "closure_rate": metric("closure_rate", closure_rate * 100, "%", *store_source, "derived"),
-        "same_category_density": metric(
-            "same_category_density", density, "개/km²", *store_source, "derived"
+        "foot_traffic": _score_metric(
+            "foot_traffic",
+            values["foot_traffic"],
+            "명/분기",
+            flow_source,
+            "official",
+            enriched,
+            period,
         ),
-        "net_opening_rate": metric(
-            "net_opening_rate", net_opening_rate * 100, "%", *store_source, "derived"
+        "closure_rate": _score_metric(
+            "closure_rate", values["closure_rate"], "%", store_source, "derived", enriched, period
+        ),
+        "same_category_density": _score_metric(
+            "same_category_density",
+            values["same_category_density"],
+            "개/km²",
+            store_source,
+            "derived",
+            enriched,
+            period,
+        ),
+        "net_opening_rate": _score_metric(
+            "net_opening_rate",
+            values["net_opening_rate"],
+            "%",
+            store_source,
+            "derived",
+            enriched,
+            period,
         ),
     }
+
+
+def _evidence(
+    target: AnalysisRow, sources: Mapping[str, tuple[str, str]], period: str
+) -> list[MarketEvidence]:
+    fallback_source = ("서울 열린데이터광장", "https://data.seoul.go.kr/")
+    source_rows = (
+        ("점포·개폐업", "store_source_id"),
+        ("추정매출", "sales_source_id"),
+        ("길단위인구", "flow_source_id"),
+    )
+    return [
+        MarketEvidence(
+            metric=metric,
+            source_name=(source := sources.get(str(target[source_key]), fallback_source))[0],
+            source_url=source[1],
+            period=period,
+            source_type="official",
+        )
+        for metric, source_key in source_rows
+    ]
+
+
+def _raw_summary(
+    target: AnalysisRow,
+    category_store_count: int,
+    total_store_count: int,
+    values: Mapping[str, float],
+) -> MarketRawSummary:
+    flow_time_buckets = [
+        FlowTimeBucket(label=label, value=float(target[key]) if target[key] is not None else None)
+        for label, key in FLOW_TIME_BUCKETS
+    ]
+    return MarketRawSummary(
+        category_store_count=category_store_count,
+        total_store_count=total_store_count,
+        opening_count=int(target["opening_count"] or 0),
+        closure_count=int(target["closure_count"] or 0),
+        monthly_sales_amount=float(target["monthly_sales_amount"] or 0) or None,
+        monthly_sales_count=float(target["monthly_sales_count"] or 0) or None,
+        total_flow=values["foot_traffic"] or None,
+        flow_by_time=[bucket.value or 0 for bucket in flow_time_buckets],
+        flow_time_buckets=flow_time_buckets,
+        area_sqm=values["area_sqm"] or None,
+    )
+
+
+def _build_analysis(
+    rows: list[AnalysisRow],
+    totals: Mapping[str, int],
+    sources: Mapping[str, tuple[str, str]],
+    market_id: str,
+    category: Category,
+    period: str,
+) -> MarketAnalysisResponse:
+    target = next((row for row in rows if row["market_code"] == market_id), None)
+    if target is None:
+        raise LookupError((market_id, category, period))
+
+    total_store_count = totals.get(market_id, 0)
+    category_store_count = int(target["category_store_count"] or 0)
+    if total_store_count <= 0 or category_store_count <= 0:
+        raise LookupError((market_id, category, period))
+
+    enriched = _enriched_peers(rows, totals)
+    values = _target_values(target, category_store_count)
+    metrics = _score_metrics(values, sources, target, enriched, period)
     peer_category_share = sum(row["category_share"] for row in enriched) / len(enriched)
     score = evaluate_market_score(
         MarketScoreRequest(
@@ -365,14 +465,6 @@ def _build_analysis(
             metrics=metrics,
         )
     )
-    flow_time_buckets = [
-        FlowTimeBucket(
-            label=label,
-            value=float(target[key]) if target[key] is not None else None,
-        )
-        for label, key in FLOW_TIME_BUCKETS
-    ]
-    flow_by_time = [bucket.value or 0 for bucket in flow_time_buckets]
     same_type_rows = [row for row in rows if row["market_type_name"] == target["market_type_name"]]
     supported_rows = [row for row in rows if row["market_code"] in SUPPORTED_MARKET_CODES]
     return MarketAnalysisResponse(
@@ -384,41 +476,8 @@ def _build_analysis(
         category=category,
         period=period,
         score=score,
-        raw=MarketRawSummary(
-            category_store_count=category_store_count,
-            total_store_count=total_store_count,
-            opening_count=int(target["opening_count"] or 0),
-            closure_count=int(target["closure_count"] or 0),
-            monthly_sales_amount=float(target["monthly_sales_amount"] or 0) or None,
-            monthly_sales_count=float(target["monthly_sales_count"] or 0) or None,
-            total_flow=foot_traffic or None,
-            flow_by_time=flow_by_time,
-            flow_time_buckets=flow_time_buckets,
-            area_sqm=area_sqm or None,
-        ),
-        evidence=[
-            MarketEvidence(
-                metric="점포·개폐업",
-                source_name=store_source[0],
-                source_url=store_source[1],
-                period=period,
-                source_type="official",
-            ),
-            MarketEvidence(
-                metric="추정매출",
-                source_name=sales_source[0],
-                source_url=sales_source[1],
-                period=period,
-                source_type="official",
-            ),
-            MarketEvidence(
-                metric="길단위인구",
-                source_name=flow_source[0],
-                source_url=flow_source[1],
-                period=period,
-                source_type="official",
-            ),
-        ],
+        raw=_raw_summary(target, category_store_count, total_store_count, values),
+        evidence=_evidence(target, sources, period),
         rankings=[
             _ranking_group(
                 "same_type",
