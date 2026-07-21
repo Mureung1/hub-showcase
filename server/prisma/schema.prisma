@@ -1,0 +1,609 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Tone {
+  blue
+  violet
+  green
+  coral
+}
+
+enum ReactionKind {
+  sparkle
+  heart
+  fire
+  tear
+  wow
+  sleepy
+}
+
+enum ReportTargetType {
+  VIDEO_POST
+  COMMENT
+  USER
+}
+
+enum HomeVisitAction {
+  PAT
+  SNACK
+  MESSAGE
+  PHOTO
+  FURNITURE_USE
+}
+
+enum NotificationType {
+  SCHEDULE_REMINDER
+  TASK_DUE
+  FRIEND_REACTION
+  FRIEND_COMMENT
+  GROUP_INVITE
+  DODO_DIARY_READY
+}
+
+enum SubscriptionPlan {
+  FREE
+  PLUS
+}
+
+enum PurchaseKind {
+  ITEM
+  SUBSCRIPTION
+}
+
+enum RoomItemType {
+  FURNITURE
+  WALLPAPER
+  FLOOR
+  LIGHTING
+  WINDOW_VIEW
+  SEASONAL_DECOR
+}
+
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  passwordHash String
+  name         String
+  handle       String? @unique
+  bio          String?
+  avatarColor  String?
+  avatarEyes   Int?
+
+  equippedWallpaperId  String?
+  equippedWallpaper    RoomItem? @relation("EquippedWallpaper", fields: [equippedWallpaperId], references: [id])
+  equippedFloorId      String?
+  equippedFloor        RoomItem? @relation("EquippedFloor", fields: [equippedFloorId], references: [id])
+  equippedLightingId   String?
+  equippedLighting     RoomItem? @relation("EquippedLighting", fields: [equippedLightingId], references: [id])
+  equippedWindowViewId String?
+  equippedWindowView   RoomItem? @relation("EquippedWindowView", fields: [equippedWindowViewId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  refreshTokens          RefreshToken[]
+  categories             Category[]
+  schedules              Schedule[]
+  ownedShareGroups       ShareGroup[]               @relation("ShareGroupOwner")
+  shareGroupOf           ShareGroupMember[]         @relation("ShareGroupFriend")
+  friendshipsSent        Friendship[]               @relation("FriendshipOwner")
+  friendshipsReceived    Friendship[]               @relation("FriendshipTarget")
+  friendRequestsSent     FriendRequest[]            @relation("FriendRequestFrom")
+  friendRequestsReceived FriendRequest[]            @relation("FriendRequestTo")
+  categoryAuditLogs      CategoryAuditLog[]
+  videoPosts             VideoPost[]
+  reactions              Reaction[]
+  comments               Comment[]
+  dodoDiaryEntries       DodoDiaryEntry[]
+  dodoState              DodoState?
+  dodoAppearance         DodoAppearance?
+  pointsLedger           PointsLedgerEntry[]
+  inventory              UserInventory[]
+  roomLayout             UserRoomLayout[]
+  blocksInitiated        Block[]                    @relation("BlockBlocker")
+  blocksReceived         Block[]                    @relation("BlockBlocked")
+  reports                Report[]
+  homeVisitsSent         HomeVisit[]                @relation("VisitVisitor")
+  homeVisitsReceived     HomeVisit[]                @relation("VisitHost")
+  wishlistItems          WishlistItem[]
+  memorySceneOf          MemorySceneParticipant[]
+  focusSessionsHosted    FocusSession[]             @relation("FocusSessionHost")
+  focusSessionOf         FocusSessionParticipant[]
+  seasonEventEntries     SeasonEventParticipation[]
+  notifications          Notification[]
+  notificationSettings   NotificationSetting[]
+  purchases              Purchase[]
+  subscription           Subscription?
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Friendship {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("FriendshipOwner", fields: [userId], references: [id])
+  friendId  String
+  friend    User     @relation("FriendshipTarget", fields: [friendId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, friendId])
+}
+
+model FriendRequest {
+  id         String   @id @default(cuid())
+  fromUserId String
+  fromUser   User     @relation("FriendRequestFrom", fields: [fromUserId], references: [id])
+  toUserId   String
+  toUser     User     @relation("FriendRequestTo", fields: [toUserId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@unique([fromUserId, toUserId])
+}
+
+model Block {
+  id        String   @id @default(cuid())
+  blockerId String
+  blocker   User     @relation("BlockBlocker", fields: [blockerId], references: [id])
+  blockedId String
+  blocked   User     @relation("BlockBlocked", fields: [blockedId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+}
+
+model Report {
+  id         String           @id @default(cuid())
+  reporterId String
+  reporter   User             @relation(fields: [reporterId], references: [id])
+  targetType ReportTargetType
+  targetId   String
+  reason     String
+  createdAt  DateTime         @default(now())
+
+  @@index([targetType, targetId])
+}
+
+model ShareGroup {
+  id      String @id @default(cuid())
+  ownerId String
+  owner   User   @relation("ShareGroupOwner", fields: [ownerId], references: [id])
+  name    String
+
+  members            ShareGroupMember[]
+  categoryVisibility CategoryVisibility[]
+  scheduleOverrides  ScheduleVisibilityOverride[]
+  wishlistItems      WishlistItem[]
+  sharedHome         SharedHome?
+
+  @@unique([ownerId, name])
+}
+
+model ShareGroupMember {
+  id           String     @id @default(cuid())
+  groupId      String
+  group        ShareGroup @relation(fields: [groupId], references: [id])
+  friendUserId String
+  friend       User       @relation("ShareGroupFriend", fields: [friendUserId], references: [id])
+  createdAt    DateTime   @default(now())
+
+  @@unique([groupId, friendUserId])
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  color     String
+  tone      Tone
+  createdAt DateTime @default(now())
+
+  schedules  Schedule[]
+  visibility CategoryVisibility[]
+
+  @@index([userId])
+}
+
+enum CategoryAuditAction {
+  CREATED
+  DELETED
+}
+
+// 카테고리가 삭제된 뒤에도 남아야 하는 로그라서 Category를 FK로 참조하지 않고 값만 복사해 둔다.
+model CategoryAuditLog {
+  id         String              @id @default(cuid())
+  userId     String
+  user       User                @relation(fields: [userId], references: [id])
+  categoryId String
+  name       String
+  tone       Tone
+  action     CategoryAuditAction
+  createdAt  DateTime            @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model CategoryVisibility {
+  id           String     @id @default(cuid())
+  categoryId   String
+  category     Category   @relation(fields: [categoryId], references: [id])
+  shareGroupId String
+  shareGroup   ShareGroup @relation(fields: [shareGroupId], references: [id])
+
+  @@unique([categoryId, shareGroupId])
+}
+
+model Schedule {
+  id                    String    @id @default(cuid())
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id])
+  categoryId            String
+  category              Category  @relation(fields: [categoryId], references: [id])
+  title                 String
+  date                  DateTime  @db.Date
+  time                  String?
+  isAllDay              Boolean   @default(false)
+  location              String?
+  memo                  String?
+  recurrenceRule        String?
+  reminderMinutesBefore Int?
+  requiresVideoProof    Boolean   @default(false)
+  completed             Boolean   @default(false)
+  completedAt           DateTime?
+  visibilityOverride    Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+
+  visibilityOverrides ScheduleVisibilityOverride[]
+  videoPosts          VideoPost[]
+  tasks               ScheduleTask[]
+  memoryScene         MemoryScene?
+  wishlistResultOf    WishlistItem[]
+
+  @@index([userId, date])
+}
+
+model ScheduleTask {
+  id         String   @id @default(cuid())
+  scheduleId String
+  schedule   Schedule @relation(fields: [scheduleId], references: [id])
+  title      String
+  completed  Boolean  @default(false)
+  order      Int      @default(0)
+
+  @@index([scheduleId])
+}
+
+model ScheduleVisibilityOverride {
+  id           String     @id @default(cuid())
+  scheduleId   String
+  schedule     Schedule   @relation(fields: [scheduleId], references: [id])
+  shareGroupId String
+  shareGroup   ShareGroup @relation(fields: [shareGroupId], references: [id])
+
+  @@unique([scheduleId, shareGroupId])
+}
+
+model VideoPost {
+  id              String    @id @default(cuid())
+  scheduleId      String
+  schedule        Schedule  @relation(fields: [scheduleId], references: [id])
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  storageKey      String
+  contentType     String
+  sizeBytes       Int
+  durationSeconds Int
+  caption         String?
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  reactions                Reaction[]
+  comments                 Comment[]
+  dodoDiaryEntries         DodoDiaryEntry[]
+  focusSessionParticipants FocusSessionParticipant[]
+
+  @@index([userId, createdAt])
+  @@index([scheduleId])
+}
+
+model Reaction {
+  id          String       @id @default(cuid())
+  videoPostId String
+  videoPost   VideoPost    @relation(fields: [videoPostId], references: [id])
+  fromUserId  String
+  fromUser    User         @relation(fields: [fromUserId], references: [id])
+  kind        ReactionKind
+  createdAt   DateTime     @default(now())
+
+  @@unique([videoPostId, fromUserId])
+}
+
+model Comment {
+  id          String    @id @default(cuid())
+  videoPostId String
+  videoPost   VideoPost @relation(fields: [videoPostId], references: [id])
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id])
+  text        String
+  createdAt   DateTime  @default(now())
+
+  @@index([videoPostId, createdAt])
+}
+
+model DodoDiaryEntry {
+  id                        String    @id @default(cuid())
+  userId                    String
+  user                      User      @relation(fields: [userId], references: [id])
+  date                      DateTime  @db.Date
+  representativeVideoPostId String
+  representativeVideoPost   VideoPost @relation(fields: [representativeVideoPostId], references: [id])
+  text                      String
+  mood                      Int?
+  pointsEarned              Int?
+  createdAt                 DateTime  @default(now())
+
+  @@unique([userId, date])
+}
+
+model DodoState {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  mood      Int
+  updatedAt DateTime @updatedAt
+}
+
+model DodoAppearance {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id])
+  bodyColor       String
+  bodyPattern     String?
+  eyeShape        String
+  eyeColor        String
+  eyelidStyle     String?
+  hatItemId       String?
+  hatItem         RoomItem? @relation("DodoHat", fields: [hatItemId], references: [id])
+  glassesItemId   String?
+  glassesItem     RoomItem? @relation("DodoGlasses", fields: [glassesItemId], references: [id])
+  outfitItemId    String?
+  outfitItem      RoomItem? @relation("DodoOutfit", fields: [outfitItemId], references: [id])
+  accessoryItemId String?
+  accessoryItem   RoomItem? @relation("DodoAccessory", fields: [accessoryItemId], references: [id])
+  updatedAt       DateTime  @updatedAt
+}
+
+model HomeVisit {
+  id        String          @id @default(cuid())
+  visitorId String
+  visitor   User            @relation("VisitVisitor", fields: [visitorId], references: [id])
+  hostId    String
+  host      User            @relation("VisitHost", fields: [hostId], references: [id])
+  action    HomeVisitAction
+  message   String?
+  read      Boolean         @default(false)
+  createdAt DateTime        @default(now())
+
+  @@index([hostId, createdAt])
+}
+
+model PointsLedgerEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Int
+  reason    String
+  refType   String?
+  refId     String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  // 같은 근거(refType+refId)로 중복 지급되지 않도록. refType/refId가 둘 다 있는 지급 건에만 적용된다.
+  @@unique([userId, refType, refId])
+}
+
+model RoomItem {
+  id      String       @id @default(cuid())
+  name    String
+  cost    Int
+  type    RoomItemType
+  iconKey String
+
+  inventory            UserInventory[]
+  layouts              UserRoomLayout[]
+  sharedLayouts        SharedHomeLayout[]
+  hatOf                DodoAppearance[]   @relation("DodoHat")
+  glassesOf            DodoAppearance[]   @relation("DodoGlasses")
+  outfitOf             DodoAppearance[]   @relation("DodoOutfit")
+  accessoryOf          DodoAppearance[]   @relation("DodoAccessory")
+  equippedWallpaperBy  User[]             @relation("EquippedWallpaper")
+  equippedFloorBy      User[]             @relation("EquippedFloor")
+  equippedLightingBy   User[]             @relation("EquippedLighting")
+  equippedWindowViewBy User[]             @relation("EquippedWindowView")
+}
+
+model UserInventory {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  itemId     String
+  item       RoomItem @relation(fields: [itemId], references: [id])
+  acquiredAt DateTime @default(now())
+
+  @@unique([userId, itemId])
+}
+
+model UserRoomLayout {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  itemId   String
+  item     RoomItem @relation(fields: [itemId], references: [id])
+  x        Int
+  y        Int
+  placedAt DateTime @default(now())
+
+  @@unique([userId, itemId])
+}
+
+model WishlistItem {
+  id                 String      @id @default(cuid())
+  ownerId            String
+  owner              User        @relation(fields: [ownerId], references: [id])
+  shareGroupId       String?
+  shareGroup         ShareGroup? @relation(fields: [shareGroupId], references: [id])
+  title              String
+  resolvedScheduleId String?     @unique
+  resolvedSchedule   Schedule?   @relation(fields: [resolvedScheduleId], references: [id])
+  createdAt          DateTime    @default(now())
+
+  @@index([ownerId])
+}
+
+model MemoryScene {
+  id         String   @id @default(cuid())
+  scheduleId String   @unique
+  schedule   Schedule @relation(fields: [scheduleId], references: [id])
+  template   String
+  createdAt  DateTime @default(now())
+
+  participants MemorySceneParticipant[]
+}
+
+model MemorySceneParticipant {
+  id            String      @id @default(cuid())
+  memorySceneId String
+  memoryScene   MemoryScene @relation(fields: [memorySceneId], references: [id])
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+
+  @@unique([memorySceneId, userId])
+}
+
+model FocusSession {
+  id              String   @id @default(cuid())
+  hostId          String
+  host            User     @relation("FocusSessionHost", fields: [hostId], references: [id])
+  startAt         DateTime
+  durationMinutes Int
+  createdAt       DateTime @default(now())
+
+  participants FocusSessionParticipant[]
+}
+
+model FocusSessionParticipant {
+  id             String       @id @default(cuid())
+  focusSessionId String
+  focusSession   FocusSession @relation(fields: [focusSessionId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  completedAt    DateTime?
+  videoPostId    String?
+  videoPost      VideoPost?   @relation(fields: [videoPostId], references: [id])
+
+  @@unique([focusSessionId, userId])
+}
+
+model SharedHome {
+  id           String     @id @default(cuid())
+  shareGroupId String     @unique
+  shareGroup   ShareGroup @relation(fields: [shareGroupId], references: [id])
+  theme        String
+  gauge        Int        @default(0)
+  createdAt    DateTime   @default(now())
+
+  layout SharedHomeLayout[]
+}
+
+model SharedHomeLayout {
+  id           String     @id @default(cuid())
+  sharedHomeId String
+  sharedHome   SharedHome @relation(fields: [sharedHomeId], references: [id])
+  itemId       String
+  item         RoomItem   @relation(fields: [itemId], references: [id])
+  x            Int
+  y            Int
+  placedAt     DateTime   @default(now())
+
+  @@unique([sharedHomeId, itemId])
+}
+
+model SeasonEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startAt     DateTime
+  endAt       DateTime
+
+  participations SeasonEventParticipation[]
+}
+
+model SeasonEventParticipation {
+  id            String      @id @default(cuid())
+  seasonEventId String
+  seasonEvent   SeasonEvent @relation(fields: [seasonEventId], references: [id])
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  progress      Int         @default(0)
+
+  @@unique([seasonEventId, userId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  type      NotificationType
+  refId     String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+}
+
+model NotificationSetting {
+  id      String           @id @default(cuid())
+  userId  String
+  user    User             @relation(fields: [userId], references: [id])
+  type    NotificationType
+  enabled Boolean          @default(true)
+
+  @@unique([userId, type])
+}
+
+model Purchase {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  kind        PurchaseKind
+  refId       String?
+  amount      Int
+  currency    String       @default("KRW")
+  provider    String
+  purchasedAt DateTime     @default(now())
+}
+
+model Subscription {
+  id        String           @id @default(cuid())
+  userId    String           @unique
+  user      User             @relation(fields: [userId], references: [id])
+  plan      SubscriptionPlan @default(FREE)
+  startedAt DateTime         @default(now())
+  expiresAt DateTime?
+}
