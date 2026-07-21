@@ -58,46 +58,46 @@ export default function App() {
             streetwear: 'wear 👕',
             tcg: 'tcg 🃏',
             accessories: 'accessories 🎒',
-            collectibles: 'collectibles 🧱'
-          };
-
-          // Real high-fidelity product photos directly linked to KREAM's actual CDN (pstatic.net)
-          let image = d.imageUrl || '';
+            collectibles: 'collectibles 🧱'          // Real high-fidelity product photos directly linked to KREAM's actual CDN (pstatic.net)
+          let rawImage = d.imageUrl || '';
           const lowerTitle = d.title.toLowerCase();
 
           if (lowerTitle.includes('adizero') || lowerTitle.includes('evo sl')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyNDA3MTlfMjc2/MDAxNzIxMzczODUzNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_fd54a2ea6bb468cbbf056e43ee6bd17.png'; // Adidas Adizero EVO SL
+            rawImage = 'https://kream-phinf.pstatic.net/MjAyNDA3MTlfMjc2/MDAxNzIxMzczODUzNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_fd54a2ea6bb468cbbf056e43ee6bd17.png'; // Adidas Adizero EVO SL
           } else if (lowerTitle.includes('force 1') || lowerTitle.includes('air force')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMTA2MTRfMTM1/MDAxNjIzNjM5MDc4MzU3.E-PZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/p_31556_0_a4c7e6c5188f4b1fa7a7b8e5c26b801a.png'; // Nike Air Force 1
+            rawImage = 'https://kream-phinf.pstatic.net/MjAyMTA2MTRfMTM1/MDAxNjIzNjM5MDc4MzU3.E-PZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/p_31556_0_a4c7e6c5188f4b1fa7a7b8e5c26b801a.png'; // Nike Air Force 1
           } else if (lowerTitle.includes('992')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMTA4MTNfMjQ0/MDAxNjI4ODM4MjExMDQw.4wS4h8P7o6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/p_31267_0_f3a74a2ea6bb468cbbf056e43ee6bd17.png'; // NB 992 Grey
+            rawImage = 'https://kream-phinf.pstatic.net/MjAyMTA4MTNfMjQ0/MDAxNjI4ODM4MjExMDQw.4wS4h8P7o6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/p_31267_0_f3a74a2ea6bb468cbbf056e43ee6bd17.png'; // NB 992 Grey
           } else if (lowerTitle.includes('samba')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMjA2MTdfMTYz/MDAxNjU1NDQxODA1Mzc0.7h-L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_fd54a2ea6bb468cbbf056e43ee6bd17.png'; // Adidas Samba
+            rawImage = 'https://kream-phinf.pstatic.net/MjAyMjA2MTdfMTYz/MDAxNjU1NDQxODA1Mzc0.7h-L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_fd54a2ea6bb468cbbf056e43ee6bd17.png'; // Adidas Samba
           } else if (lowerTitle.includes('kayano') || lowerTitle.includes('asics')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMzEwMTJfMjY0/MDAxNjk3MTExMjE1Mzc0.7h-L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_fd54a2ea6bb468cbbf056e43ee6bd17.png'; // Asics Kayano
+            rawImage = 'https://kream-phinf.pstatic.net/MjAyMzEwMTJfMjY0/MDAxNjk3MTExMjE1Mzc0.7h-L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_fd54a2ea6bb468cbbf056e43ee6bd17.png'; // Asics Kayano
           } else if (lowerTitle.includes('xt-6') || lowerTitle.includes('salomon')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMzA3MTdfMjc2/MDAxNjg5NTcxMzczNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_f7a627ea0fbb468cbbf056e43ee6bd17.png'; // Salomon XT-6
+            rawImage = 'https://kream-phinf.pstatic.net/MjAyMzA3MTdfMjc2/MDAxNjg5NTcxMzczNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_f7a627ea0fbb468cbbf056e43ee6bd17.png'; // Salomon XT-6
           } else if (lowerTitle.includes('mind 001') || lowerTitle.includes('mind')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyNDA3MTlfMjc2/MDAxNzIxMzczODUzNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_f8f74a2ea2bb468cbbf056e43ee6bd17.png'; // Nike Mind 001
+            rawImage = 'https://kream-phinf.pstatic.net/MjAyNDA3MTlfMjc2/MDAxNzIxMzczODUzNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_f8f74a2ea2bb468cbbf056e43ee6bd17.png'; // Nike Mind 001
           } else if (lowerTitle.includes('oofos')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMDA2MTBfNTgg/MDAxNTkxNzYzMzUxMjk1.cZg3mB2lhq4B8R6d6x98n88d893o.png/a_f1f74a2ea5bb468cbbf056e43ee6bd17.png'; // Oofos Slide
+            rawImage = 'https://kream-phinf.pstatic.net/MjAyMDA2MTBfNTgg/MDAxNTkxNzYzMzUxMjk1.cZg3mB2lhq4B8R6d6x98n88d893o.png/a_f1f74a2ea5bb468cbbf056e43ee6bd17.png'; // Oofos Slide
           } else if (lowerTitle.includes('keyring') || lowerTitle.includes('plush') || lowerTitle.includes('purin') || lowerTitle.includes('hanroro') || lowerTitle.includes('remini')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyNDA3MjNfMTQw/MDAxNzIxNzE1NDQ3MDAx.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f8f74a2ea2bb468cbbf056e43ee6bd17.png'; // Plush Keyring
+            rawImage = 'https://kream-phinf.pstatic.net/MjAyNDA3MjNfMTQw/MDAxNzIxNzE1NDQ3MDAx.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f8f74a2ea2bb468cbbf056e43ee6bd17.png'; // Plush Keyring
           } else if (lowerTitle.includes('card') || lowerTitle.includes('pokemon') || lowerTitle.includes('spinner') || lowerTitle.includes('inferno') || lowerTitle.includes('tcg')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMjExMDlfMjI3/MDAxNjY3OTYwMzU2NDc2.j-9o2W15d2gX0h65_f4dY1_91k56s9N6dF20GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f7a627ea0fbb468cbbf056e43ee6bd17.png'; // Pokemon TCG
+            rawImage = 'https://kream-phinf.pstatic.net/MjAyMjExMDlfMjI3/MDAxNjY3OTYwMzU2NDc2.j-9o2W15d2gX0h65_f4dY1_91k56s9N6dF20GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f7a627ea0fbb468cbbf056e43ee6bd17.png'; // Pokemon TCG
           } else if (lowerTitle.includes('bag') || lowerTitle.includes('tote')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMTA2MTVfMTY1/MDAxNjIzNzQ5NDQ3MDAx.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f0f74a2ea5bb468cbbf056e43ee6bd17.png'; // Tote Bag
+            rawImage = 'https://kream-phinf.pstatic.net/MjAyMTA2MTVfMTY1/MDAxNjIzNzQ5NDQ3MDAx.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f0f74a2ea5bb468cbbf056e43ee6bd17.png'; // Tote Bag
           } else if (lowerTitle.includes('casio') || lowerTitle.includes('ltp') || lowerTitle.includes('watch')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMzA1MjRfMTAy/MDAxNjg0OTA0OTk0NzQw.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f8f74a2ea2bb468cbbf056e43ee6bd17.png'; // Casio Watch
+            rawImage = 'https://kream-phinf.pstatic.net/MjAyMzA1MjRfMTAy/MDAxNjg0OTA0OTk0NzQw.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f8f74a2ea2bb468cbbf056e43ee6bd17.png'; // Casio Watch
           } else if (lowerTitle.includes('t-shirt') || lowerTitle.includes('tee') || lowerTitle.includes('shirts') || lowerTitle.includes('jersey') || lowerTitle.includes('jacket') || lowerTitle.includes('fruits')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMzA3MTdfMjc2/MDAxNjg5NTcxMzczNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_f7a627ea0fbb468cbbf056e43ee6bd17.png'; // T-Shirt/Apparel
+            rawImage = 'https://kream-phinf.pstatic.net/MjAyMzA3MTdfMjc2/MDAxNjg5NTcxMzczNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_f7a627ea0fbb468cbbf056e43ee6bd17.png'; // T-Shirt/Apparel
           } else if (lowerTitle.includes('pants') || lowerTitle.includes('shorts')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMDA2MTBfNTgg/MDAxNTkxNzYzMzUxMjk1.cZg3mB2lhq4B8R6d6x98n88d893o.png/a_f1f74a2ea5bb468cbbf056e43ee6bd17.png'; // Pants/Shorts
+            rawImage = 'https://kream-phinf.pstatic.net/MjAyMDA2MTBfNTgg/MDAxNTkxNzYzMzUxMjk1.cZg3mB2lhq4B8R6d6x98n88d893o.png/a_f1f74a2ea5bb468cbbf056e43ee6bd17.png'; // Pants/Shorts
           } else if (lowerTitle.includes('popcorn') || lowerTitle.includes('lalasweet')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMTA2MTVfMTY1/MDAxNjIzNzQ5NDQ3MDAx.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f0f74a2ea5bb468cbbf056e43ee6bd17.png'; // Popcorn
+            rawImage = 'https://kream-phinf.pstatic.net/MjAyMTA2MTVfMTY1/MDAxNjIzNzQ5NDQ3MDAx.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f0f74a2ea5bb468cbbf056e43ee6bd17.png'; // Popcorn
           } else {
-            image = d.imageUrl || 'https://kream-phinf.pstatic.net/MjAyMTA2MTRfMTM1/MDAxNjIzNjM5MDc4MzU3.E-PZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/p_31556_0_a4c7e6c5188f4b1fa7a7b8e5c26b801a.png'; // Default Nike Force 1
+            rawImage = d.imageUrl || 'https://kream-phinf.pstatic.net/MjAyMTA2MTRfMTM1/MDAxNjIzNjM5MDc4MzU3.E-PZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/p_31556_0_a4c7e6c5188f4b1fa7a7b8e5c26b801a.png'; // Default Nike Force 1
           }
+
+          // Wrap image with the newly created backend proxy API to bypass Referer blocks
+          const image = rawImage ? `http://localhost:5000/api/proxy/image?url=${encodeURIComponent(rawImage)}` : '';
 
           return {
             id: d.id,
