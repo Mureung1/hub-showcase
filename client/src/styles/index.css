@@ -21,8 +21,8 @@
   --shadow-elevated: 0px 4px 12px rgba(0, 0, 0, 0.12);
 
   --font-sans:
-    'Toss Product Sans', 'SF Pro KR', -apple-system, BlinkMacSystemFont,
-    'Apple SD Gothic Neo', Roboto, 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+    'Toss Product Sans', 'SF Pro KR', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
+    Roboto, 'Noto Sans KR', 'Malgun Gothic', sans-serif;
 }
 
 * {

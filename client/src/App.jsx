@@ -5,7 +5,10 @@ import RoleSelectPage from './pages/RoleSelectPage.jsx'
 import OwnerHomePage from './pages/owner/OwnerHomePage.jsx'
 import StoreRegisterPage from './pages/owner/StoreRegisterPage.jsx'
 import DealRegisterPage from './pages/owner/DealRegisterPage.jsx'
+import PickupPage from './pages/owner/PickupPage.jsx'
 import ConsumerHomePage from './pages/consumer/ConsumerHomePage.jsx'
+import DealDetailPage from './pages/consumer/DealDetailPage.jsx'
+import MyReservationsPage from './pages/consumer/MyReservationsPage.jsx'
 
 // C0 진입: 이미 역할을 고른 세션이면 해당 홈으로 자동 라우팅, 아니면 역할 선택.
 function Entry() {
@@ -44,10 +47,34 @@ function App() {
         }
       />
       <Route
+        path="/owner/pickup"
+        element={
+          <RequireRole role="owner">
+            <PickupPage />
+          </RequireRole>
+        }
+      />
+      <Route
         path="/app"
         element={
           <RequireRole role="consumer">
             <ConsumerHomePage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/app/deals/:id"
+        element={
+          <RequireRole role="consumer">
+            <DealDetailPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/app/reservations"
+        element={
+          <RequireRole role="consumer">
+            <MyReservationsPage />
           </RequireRole>
         }
       />

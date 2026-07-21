@@ -1,0 +1,120 @@
+.my-rsv {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.my-rsv__back {
+  padding: 6px 0;
+  font-size: 14px;
+  color: var(--color-ink-2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.my-rsv__title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 12px 0 18px;
+}
+
+.my-rsv__msg {
+  padding: 28px 0;
+  font-size: 14px;
+  color: var(--color-ink-2);
+}
+
+.my-rsv__msg--error {
+  color: var(--color-error);
+}
+
+.my-rsv__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rsv-card {
+  padding: 16px;
+  background: var(--color-canvas);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-subtle);
+}
+
+.rsv-card--picked,
+.rsv-card--expired {
+  opacity: 0.6;
+}
+
+.rsv-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.rsv-card__badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.rsv-card__badge--reserved {
+  color: #fff;
+  background: var(--color-primary);
+}
+
+.rsv-card__badge--picked {
+  color: #fff;
+  background: var(--color-success);
+}
+
+.rsv-card__badge--expired {
+  color: var(--color-ink-2);
+  background: var(--color-surface);
+}
+
+.rsv-card__store {
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.rsv-card__code {
+  padding: 18px 0;
+  text-align: center;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  font-variant-numeric: tabular-nums;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+}
+
+.rsv-card__facts {
+  margin: 0;
+}
+
+.rsv-card__facts > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+}
+
+.rsv-card__facts dt {
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.rsv-card__facts dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

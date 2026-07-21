@@ -79,7 +79,9 @@ function DealRegisterPage() {
             onChange={(e) => update('category', e.target.value)}
           >
             {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c} value={c}>
+                {c}
+              </option>
             ))}
           </select>
         </label>
@@ -88,9 +90,13 @@ function DealRegisterPage() {
           <div className="deal-reg__label">
             수량
             <div className="deal-reg__stepper">
-              <button type="button" onClick={() => stepQty(-1)} aria-label="수량 감소">−</button>
+              <button type="button" onClick={() => stepQty(-1)} aria-label="수량 감소">
+                −
+              </button>
               <span>{form.totalQty}</span>
-              <button type="button" onClick={() => stepQty(1)} aria-label="수량 증가">+</button>
+              <button type="button" onClick={() => stepQty(1)} aria-label="수량 증가">
+                +
+              </button>
             </div>
           </div>
           <label className="deal-reg__label">

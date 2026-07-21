@@ -19,21 +19,35 @@ function OwnerHomePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api
-      .get('/stores/me')
-      .then(async (res) => {
+    let timer
+    let cancelled = false
+
+    const load = async () => {
+      try {
+        const res = await api.get('/stores/me')
+        if (cancelled) return
         setStore(res.data)
         const dealsRes = await api.get('/deals', { params: { storeId: res.data.id } })
+        if (cancelled) return
         setDeals(dealsRes.data)
-      })
-      .catch((err) => {
+      } catch (err) {
         if (err.response?.status === 404) {
           navigate('/owner/store/new', { replace: true })
-        } else {
-          console.error(err)
+          return
         }
-      })
-      .finally(() => setLoading(false))
+        console.error(err)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    load()
+    // 예약 현황 실시간 갱신 — MVP는 폴링(5초). SSE/WebSocket 전환은 Backlog
+    timer = setInterval(load, 5000)
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+    }
   }, [navigate])
 
   const switchRole = () => {
@@ -52,9 +66,14 @@ function OwnerHomePage() {
             {session?.nickname}님 · {store?.category} · {store?.address}
           </p>
         </div>
-        <Link className="owner-home__add" to="/owner/deals/new">
-          + 상품 등록
-        </Link>
+        <div className="owner-home__actions">
+          <Link className="owner-home__pickup" to="/owner/pickup">
+            픽업 확인
+          </Link>
+          <Link className="owner-home__add" to="/owner/deals/new">
+            + 상품 등록
+          </Link>
+        </div>
       </header>
 
       {deals.length === 0 ? (
@@ -72,12 +91,13 @@ function OwnerHomePage() {
                 </span>
               </div>
               <div className="owner-home__deal-side">
-                <b>
+                <b className={d.remainingQty === 0 ? 'owner-home__soldout' : undefined}>
                   {d.remainingQty}/{d.totalQty} 남음
                 </b>
                 <span>
-                  ~{timeOf(d.pickupDeadlineAt)} · {d.status}
+                  예약 {d.reservedCount ?? 0} · 픽업 {d.pickedCount ?? 0}
                 </span>
+                <span>~{timeOf(d.pickupDeadlineAt)}</span>
               </div>
             </li>
           ))}

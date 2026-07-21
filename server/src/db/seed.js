@@ -43,18 +43,84 @@ const USERS = [
 ]
 
 const STORES = [
-  { ownerEmail: 'owner1@hub.test', name: '한입 베이커리', category: '베이커리', address: '서울 서대문구 연세로 12', lat: 37.5585, lng: 126.9368 },
-  { ownerEmail: 'owner2@hub.test', name: '달콤 디저트랩', category: '디저트', address: '서울 서대문구 명물길 24', lat: 37.5571, lng: 126.9345 },
-  { ownerEmail: 'owner3@hub.test', name: '엄마손 반찬', category: '반찬', address: '서울 서대문구 신촌역로 41', lat: 37.5602, lng: 126.9422 },
+  {
+    ownerEmail: 'owner1@hub.test',
+    name: '한입 베이커리',
+    category: '베이커리',
+    address: '서울 서대문구 연세로 12',
+    lat: 37.5585,
+    lng: 126.9368,
+  },
+  {
+    ownerEmail: 'owner2@hub.test',
+    name: '달콤 디저트랩',
+    category: '디저트',
+    address: '서울 서대문구 명물길 24',
+    lat: 37.5571,
+    lng: 126.9345,
+  },
+  {
+    ownerEmail: 'owner3@hub.test',
+    name: '엄마손 반찬',
+    category: '반찬',
+    address: '서울 서대문구 신촌역로 41',
+    lat: 37.5602,
+    lng: 126.9422,
+  },
 ]
 
 // 활성 딜 5개. '조각 케이크'는 남은 수량 1 — 선착순 경합 데모용
 const DEALS = [
-  { store: '한입 베이커리', name: '크루아상', category: '베이커리', originalPrice: 4000, salePrice: 2000, totalQty: 5, remainingQty: 5, deadlineHours: 3 },
-  { store: '한입 베이커리', name: '소금빵', category: '베이커리', originalPrice: 3000, salePrice: 1500, totalQty: 4, remainingQty: 4, deadlineHours: 3 },
-  { store: '달콤 디저트랩', name: '조각 케이크', category: '디저트', originalPrice: 7000, salePrice: 3000, totalQty: 3, remainingQty: 1, deadlineHours: 4 },
-  { store: '달콤 디저트랩', name: '마카롱 세트', category: '디저트', originalPrice: 12000, salePrice: 6000, totalQty: 2, remainingQty: 2, deadlineHours: 4 },
-  { store: '엄마손 반찬', name: '제육볶음 도시락', category: '반찬', originalPrice: 9000, salePrice: 4500, totalQty: 6, remainingQty: 6, deadlineHours: 2 },
+  {
+    store: '한입 베이커리',
+    name: '크루아상',
+    category: '베이커리',
+    originalPrice: 4000,
+    salePrice: 2000,
+    totalQty: 5,
+    remainingQty: 5,
+    deadlineHours: 3,
+  },
+  {
+    store: '한입 베이커리',
+    name: '소금빵',
+    category: '베이커리',
+    originalPrice: 3000,
+    salePrice: 1500,
+    totalQty: 4,
+    remainingQty: 4,
+    deadlineHours: 3,
+  },
+  {
+    store: '달콤 디저트랩',
+    name: '조각 케이크',
+    category: '디저트',
+    originalPrice: 7000,
+    salePrice: 3000,
+    totalQty: 3,
+    remainingQty: 1,
+    deadlineHours: 4,
+  },
+  {
+    store: '달콤 디저트랩',
+    name: '마카롱 세트',
+    category: '디저트',
+    originalPrice: 12000,
+    salePrice: 6000,
+    totalQty: 2,
+    remainingQty: 2,
+    deadlineHours: 4,
+  },
+  {
+    store: '엄마손 반찬',
+    name: '제육볶음 도시락',
+    category: '반찬',
+    originalPrice: 9000,
+    salePrice: 4500,
+    totalQty: 6,
+    remainingQty: 6,
+    deadlineHours: 2,
+  },
 ]
 
 const FAVORITES = [
@@ -78,9 +144,17 @@ async function seed() {
             base_address, base_lat, base_lng, noti_location_mode, noti_radius_km)
          VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8, 'radius'), COALESCE($9, 2.0))
          RETURNING id`,
-        [u.email, PASSWORD_HASH, u.nickname, u.role,
-         u.baseAddress ?? null, u.baseLat ?? null, u.baseLng ?? null,
-         u.notiLocationMode ?? null, u.notiRadiusKm ?? null],
+        [
+          u.email,
+          PASSWORD_HASH,
+          u.nickname,
+          u.role,
+          u.baseAddress ?? null,
+          u.baseLat ?? null,
+          u.baseLng ?? null,
+          u.notiLocationMode ?? null,
+          u.notiRadiusKm ?? null,
+        ],
       )
       userIds[u.email] = rows[0].id
 
@@ -108,8 +182,16 @@ async function seed() {
            (store_id, name, category, original_price, sale_price,
             total_qty, remaining_qty, pickup_deadline_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, now() + make_interval(hours => $8))`,
-        [storeIds[d.store], d.name, d.category, d.originalPrice, d.salePrice,
-         d.totalQty, d.remainingQty, d.deadlineHours],
+        [
+          storeIds[d.store],
+          d.name,
+          d.category,
+          d.originalPrice,
+          d.salePrice,
+          d.totalQty,
+          d.remainingQty,
+          d.deadlineHours,
+        ],
       )
     }
 

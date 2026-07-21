@@ -35,20 +35,20 @@
 
 ## 2주차 — 소비자 축 + 선착순 예약 + 알림 판정 (핵심 루프 완성)
 
-- [ ] **T-06 딜 목록 API + 화면 (M2)** `server` `client`
+- [x] **T-06 딜 목록 API + 화면 (M2)** `server` `client` — [#7](https://github.com/HappyGogildong/hub/issues/7)
   - 사용자 기준 주소 기반 Haversine 거리 계산·정렬, 남은 수량·픽업 마감 표시. 지도는 리스트 우선(지도는 Backlog)
   - DoD: 반경 밖 딜이 목록에 나오지 않음
-- [ ] **T-07 딜 상세 화면 (M3)** `client`
+- [x] **T-07 딜 상세 화면 (M3)** `client` `server` — [#8](https://github.com/HappyGogildong/hub/issues/8)
   - 수량 스테퍼(최대 = 남은 수량), 가격·픽업 시간
-- [ ] **T-08 예약 API — 원자적 재고 차감** `server` ★기술 셀링포인트
+- [x] **T-08 예약 API — 원자적 재고 차감** `server` ★기술 셀링포인트 — [#9](https://github.com/HappyGogildong/hub/issues/9)
   - `UPDATE deals SET remaining_qty = remaining_qty - $qty WHERE id = $id AND remaining_qty >= $qty` + 트랜잭션으로 reservations INSERT + 픽업코드 발급
   - DoD: 동시 요청 시 오버셀 0건(k6 검증은 T-14), 재고 부족 시 409 + `{ message }`
-- [ ] **T-09 픽업코드 화면 (M4) + 내 예약 목록** `client`
+- [x] **T-09 픽업코드 화면 (M4) + 내 예약 목록** `client` — [#10](https://github.com/HappyGogildong/hub/issues/10)
   - 코드·상품·픽업 마감·가게 정보
-- [ ] **T-10 픽업 확인 API + 화면 (W4) / 대시보드 (W3)** `server` `client`
+- [x] **T-10 픽업 확인 API + 화면 (W4) / 대시보드 (W3)** `server` `client` — [#11](https://github.com/HappyGogildong/hub/issues/11)
   - 코드 검증 → 픽업 완료 처리. 대시보드는 남은 수량·예약 수를 폴링으로 갱신
   - DoD: 잘못된/처리된 코드 거부, 완료 시 대시보드 수치 반영
-- [ ] **T-11 알림 대상 판정 서비스** `server`
+- [x] **T-11 알림 대상 판정 서비스** `server` — [#12](https://github.com/HappyGogildong/hub/issues/12)
   - 규칙(기획서 §3.2): (카테고리 매칭 OR 즐겨찾기 가게) AND 위치 조건(반경 N km / 항상)
   - 발송 채널(T-13)과 분리해 판정 로직만 먼저 완성 — 위치 쿼리(T-06)를 재사용
   - DoD: 딜 등록 시 대상 사용자 ID 목록 산출, 단위 시나리오로 경계(반경 밖/조건 불일치) 확인
