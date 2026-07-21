@@ -1,14 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { createReview, getReviews } from '../api/reviews'
 import ReviewCard from '../components/ReviewCard'
 import ReviewForm from '../components/ReviewForm'
 import SearchBar from '../components/SearchBar'
 import Sidebar from '../components/Sidebar'
 import type { Review } from '../types/review'
-import {
-  localReviewRepository,
-  type CreateReviewInput,
-} from '../features/reviews/reviewRepository'
+import type { CreateReviewInput } from '../features/reviews/reviewRepository'
 import type { Store } from '../types/store'
 import './StoreDetailPage.css'
 
@@ -32,13 +30,47 @@ function StoreDetailPage() {
   const { storeId } = useParams()
   const store = (location.state as StoreDetailLocationState | null)?.store
   const [activeTab, setActiveTab] = useState<DetailTab>('reviews')
-  const [reviews, setReviews] = useState<Review[]>(() =>
-    storeId ? localReviewRepository.getByStoreId(storeId) : [],
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [isLoadingReviews, setIsLoadingReviews] = useState(true)
+  const [reviewsError, setReviewsError] = useState('')
+  const waitingTimes = reviews.flatMap((review) =>
+    review.waitingMinutes === null ? [] : [review.waitingMinutes],
   )
+  const averageWaitingMinutes =
+    waitingTimes.length > 0
+      ? Math.round(
+          waitingTimes.reduce((sum, minutes) => sum + minutes, 0) /
+            waitingTimes.length,
+        )
+      : null
 
-  const handleReviewSubmit = (input: CreateReviewInput) => {
-    localReviewRepository.create(input)
-    setReviews(localReviewRepository.getByStoreId(input.kakaoPlaceId))
+  useEffect(() => {
+    if (!storeId) return
+    let isCancelled = false
+
+    void getReviews(storeId)
+      .then((data) => {
+        if (!isCancelled) setReviews(data)
+      })
+      .catch((reason) => {
+        if (!isCancelled) {
+          setReviewsError(
+            reason instanceof Error ? reason.message : '리뷰를 불러오지 못했습니다.',
+          )
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) setIsLoadingReviews(false)
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [storeId])
+
+  const handleReviewSubmit = async (input: CreateReviewInput) => {
+    const savedReview = await createReview(input, store!)
+    setReviews((current) => [savedReview, ...current])
     setActiveTab('reviews')
   }
 
@@ -48,7 +80,7 @@ function StoreDetailPage() {
         <Sidebar />
         <main className="store-detail-page__missing">
           <h1>가게 정보를 불러올 수 없습니다.</h1>
-          <button type="button" onClick={() => navigate('/')}>지도로 돌아가기</button>
+          <button type="button" onClick={() => navigate('/app')}>지도로 돌아가기</button>
         </main>
       </div>
     )
@@ -84,6 +116,13 @@ function StoreDetailPage() {
                 : `★ ${(reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)}`}
               {' · '}리뷰 {reviews.length}개
             </p>
+            <p>
+              {isLoadingReviews
+                ? '평균 웨이팅 계산 중...'
+                : averageWaitingMinutes === null
+                  ? '평균 웨이팅 정보 없음'
+                  : `평균 웨이팅 ${averageWaitingMinutes}분`}
+            </p>
             <p>{store.roadAddress || store.address}</p>
             {store.phone && <p>{store.phone}</p>}
           </div>
@@ -114,7 +153,9 @@ function StoreDetailPage() {
         </nav>
 
         <section className="store-detail-page__panel" aria-live="polite">
-          {activeTab === 'reviews' && (reviews.length === 0 ? (
+          {activeTab === 'reviews' && isLoadingReviews && <p>리뷰를 불러오는 중...</p>}
+          {activeTab === 'reviews' && reviewsError && <p role="alert">{reviewsError}</p>}
+          {activeTab === 'reviews' && !isLoadingReviews && !reviewsError && (reviews.length === 0 ? (
             <p>아직 등록된 리뷰가 없습니다.</p>
           ) : (
             <div className="store-detail-page__reviews">

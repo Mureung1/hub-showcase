@@ -28,6 +28,8 @@
   box-shadow: 0 18px 50px rgba(66, 50, 40, 0.1);
 }
 
+.login-card--signup { width: min(100%, 420px); }
+
 .login-card__heading {
   margin-bottom: 36px;
   text-align: center;
@@ -67,6 +69,10 @@
   display: grid;
   gap: 18px;
 }
+
+.login-form__error, .login-form__success { margin: 0; padding: 10px 12px; border-radius: 9px; font-size: 12px; line-height: 1.5; }
+.login-form__error, .login-form [role='alert'] { color: #a4423a; background: #fff0ed; }
+.login-form__success { color: #356b43; background: #edf8ef; }
 
 .login-form__field {
   display: grid;
@@ -129,6 +135,7 @@
   background: transparent;
   font-size: 12px;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .login-card__signup strong {

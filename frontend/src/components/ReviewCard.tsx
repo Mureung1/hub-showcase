@@ -1,5 +1,6 @@
 import {
-  REVIEW_CATEGORY_LABELS,
+  DETAIL_RATING_CATEGORIES,
+  DETAIL_RATING_LABELS,
   type Review,
 } from '../types/review'
 import './ReviewCard.css'
@@ -18,6 +19,9 @@ function formatReviewDate(value: string) {
 }
 
 function ReviewCard({ review, showTasteMatch = false }: ReviewCardProps) {
+  const detailRatings = DETAIL_RATING_CATEGORIES.filter(
+    (category) => review[category] !== null,
+  )
   return (
     <article className="review-card">
       <header className="review-card__header">
@@ -35,14 +39,18 @@ function ReviewCard({ review, showTasteMatch = false }: ReviewCardProps) {
         )}
       </header>
 
-      <p className="review-card__content">{review.content}</p>
+      {review.content && <p className="review-card__content">{review.content}</p>}
 
-      {review.likedCategories.length > 0 && (
-        <ul className="review-card__categories" aria-label="좋았던 점">
-          {review.likedCategories.map((category) => (
-            <li key={category}>{REVIEW_CATEGORY_LABELS[category]}</li>
+      {detailRatings.length > 0 && (
+        <ul className="review-card__categories" aria-label="세부 평가">
+          {detailRatings.map((category) => (
+            <li key={category}>{DETAIL_RATING_LABELS[category]} ★ {review[category]}</li>
           ))}
         </ul>
+      )}
+
+      {review.waitingMinutes !== null && (
+        <p className="review-card__waiting">실제 웨이팅 {review.waitingMinutes}분</p>
       )}
 
       <time className="review-card__date" dateTime={review.createdAt}>

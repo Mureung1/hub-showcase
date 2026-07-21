@@ -17,3 +17,4 @@
 .store-list__empty, .store-list__error, .store-list__loading, .store-list__end { padding: 30px 12px; color: #8c857a; font-size: 13px; text-align: center; }
 .store-list__error { color: #a33b32; }
 .store-list__sentinel { height: 1px; }
+.store-card__recommendation { color: #765f00; font-size: 13px; font-weight: 800; }

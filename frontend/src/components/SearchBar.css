@@ -71,7 +71,7 @@
   cursor: pointer;
 }
 
-.search-bar__priority {
+.search-bar__situation {
   flex: 0 0 auto;
   min-width: 108px;
   height: 56px;
@@ -87,16 +87,16 @@
   transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
 }
 
-.search-bar__priority:hover {
+.search-bar__situation:hover {
   border-color: #cbb94e;
   background: #fff8d8;
 }
 
-.search-bar__priority:active {
+.search-bar__situation:active {
   transform: translateY(1px);
 }
 
-.search-bar__priority:focus-visible {
+.search-bar__situation:focus-visible {
   outline: 3px solid rgba(255, 216, 77, 0.38);
   outline-offset: 2px;
 }
@@ -107,7 +107,7 @@
   }
 
   .search-bar__input,
-  .search-bar__priority {
+  .search-bar__situation {
     height: 50px;
   }
 
@@ -119,7 +119,7 @@
     padding-inline: 45px 14px;
   }
 
-  .search-bar__priority {
+  .search-bar__situation {
     min-width: auto;
     padding-inline: 14px;
   }
@@ -127,7 +127,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .search-bar__input,
-  .search-bar__priority {
+  .search-bar__situation {
     transition: none;
   }
 }

@@ -57,7 +57,7 @@ function SettingsIcon(props: IconProps) {
 }
 
 const MENU_ITEMS: MenuItem[] = [
-  { label: '홈', path: '/', end: true, icon: HomeIcon },
+  { label: '홈', path: '/app', end: true, icon: HomeIcon },
   { label: '리뷰', path: '/reviews', icon: ReviewIcon },
   { label: '탐색', path: '/explore', icon: ExploreIcon },
   { label: '설정', path: '/settings', icon: SettingsIcon },
@@ -71,7 +71,7 @@ function Sidebar({
 
   return (
     <aside className={`tastefit-sidebar ${className}`.trim()}>
-      <NavLink className="tastefit-sidebar__brand" to="/" aria-label="TasteFit 홈">
+      <NavLink className="tastefit-sidebar__brand" to="/app" aria-label="TasteFit 홈">
         <span className="tastefit-sidebar__brand-mark" aria-hidden="true">T</span>
         <span className="tastefit-sidebar__brand-name">TasteFit</span>
       </NavLink>
