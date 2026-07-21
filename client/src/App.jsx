@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import AddTaskForm from './components/AddTaskForm'
 import Header from './components/Header'
 import ProgressCard from './components/ProgressCard'
 import TaskList from './components/TaskList'
+import Toast from './components/Toast'
 import { getTasks, updateTaskStatus, archiveTask } from './api/tasks'
 import { getMembers } from './api/members'
 import { safeGetStoredMemberId, safeSetStoredMemberId } from './utils/storage'
@@ -18,6 +19,8 @@ function App() {
     return Number.isNaN(saved) ? null : saved
   })
   const [pendingTaskIds, setPendingTaskIds] = useState(() => new Set())
+  const [toastMessage, setToastMessage] = useState('')
+  const toastTimerRef = useRef(null)
 
   useEffect(() => {
     getTasks().then(setTasks).catch((err) => console.error(err))
@@ -41,6 +44,12 @@ function App() {
 
   function handleTaskAdded(newTask) {
     setTasks((prev) => [newTask, ...prev])
+  }
+
+  function showToast(message) {
+    setToastMessage(message)
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    toastTimerRef.current = setTimeout(() => setToastMessage(''), 2500)
   }
 
   // 태스크 하나에 대한 요청이 진행 중인 동안 그 태스크 id를 pendingTaskIds에 담아
@@ -94,24 +103,28 @@ function App() {
   }
 
   return (
-    <div className="page">
-      <Header
-        members={members}
-        currentMemberId={currentMemberId}
-        onChangeCurrentMember={handleChangeCurrentMember}
-      />
-      <ProgressCard tasks={tasks} currentMemberId={currentMemberId} />
-      <TaskList
-        tasks={tasks}
-        members={members}
-        currentMemberId={currentMemberId}
-        pendingTaskIds={pendingTaskIds}
-        onToggleStatus={handleToggleStatus}
-        onCycleStatus={handleCycleStatus}
-        onDelete={handleDeleteTask}
-      />
-      <AddTaskForm members={members} onTaskAdded={handleTaskAdded} />
-    </div>
+    <>
+      <div className="page">
+        <Header
+          members={members}
+          currentMemberId={currentMemberId}
+          onChangeCurrentMember={handleChangeCurrentMember}
+        />
+        <ProgressCard tasks={tasks} currentMemberId={currentMemberId} />
+        <TaskList
+          tasks={tasks}
+          members={members}
+          currentMemberId={currentMemberId}
+          pendingTaskIds={pendingTaskIds}
+          onToggleStatus={handleToggleStatus}
+          onCycleStatus={handleCycleStatus}
+          onDelete={handleDeleteTask}
+          showToast={showToast}
+        />
+        <AddTaskForm members={members} onTaskAdded={handleTaskAdded} />
+      </div>
+      <Toast message={toastMessage} />
+    </>
   )
 }
 

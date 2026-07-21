@@ -78,16 +78,19 @@
   border-color: var(--color-success);
 }
 
-.checkbox:disabled {
+.checkbox:disabled,
+.checkbox.locked {
   cursor: not-allowed;
   opacity: 0.45;
 }
 
-.checkbox:disabled:hover {
+.checkbox:disabled:hover,
+.checkbox.locked:hover {
   border-color: var(--border-default);
 }
 
-.checkbox.checked:disabled:hover {
+.checkbox.checked:disabled:hover,
+.checkbox.checked.locked:hover {
   border-color: var(--color-success);
 }
 
@@ -119,7 +122,8 @@
   color: var(--color-success);
 }
 
-.status-badge:disabled {
+.status-badge:disabled,
+.status-badge.locked {
   cursor: not-allowed;
   opacity: 0.45;
 }
@@ -147,12 +151,14 @@
   color: var(--text-secondary);
 }
 
-.delete-btn:disabled {
+.delete-btn:disabled,
+.delete-btn.locked {
   cursor: not-allowed;
   opacity: 0.3;
 }
 
-.delete-btn:disabled:hover {
+.delete-btn:disabled:hover,
+.delete-btn.locked:hover {
   background: none;
   color: var(--text-muted);
 }

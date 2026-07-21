@@ -10,6 +10,7 @@ function TaskList({
   onToggleStatus,
   onCycleStatus,
   onDelete,
+  showToast,
 }) {
   if (tasks.length === 0) {
     return <div className="task-empty">아직 할 일이 없어요. 추가해보세요!</div>;
@@ -30,6 +31,7 @@ function TaskList({
             onToggleStatus={onToggleStatus}
             onCycleStatus={onCycleStatus}
             onDelete={onDelete}
+            showToast={showToast}
           />
         );
       })}
