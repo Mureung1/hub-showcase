@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { AppStateProvider } from './context/AppStateContext'
 import Header from './components/layout/Header'
+import Footer from './components/layout/Footer'
 import LandingPage from './pages/LandingPage'
 import FilterPage from './pages/FilterPage'
 import SpecPage from './pages/SpecPage'
@@ -21,6 +22,7 @@ function App() {
           <Route path="/result" element={<ResultPage />} />
         </Routes>
       </main>
+      <Footer />
     </AppStateProvider>
   )
 }
