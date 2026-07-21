@@ -19,6 +19,7 @@ import type { UserInputRequestedEvent } from '@ay-ple/codex-chat-runtime/contrac
 import { rootsAreDisjoint } from './root-isolation.js'
 import { SemesterWorkspaceError } from './semester-workspace-error.js'
 import {
+  actionScratchRelativeRoot,
   currentWorkspaceStoreFormatVersion,
   semesterWorkspaceStore,
   workspaceProductDirectoryName,
@@ -79,7 +80,6 @@ const materialScanEntryMax = 4096
 const materialPreviewMaxBytes = 256 * 1024
 const actionArgumentMaxBytes = 16 * 1024
 const actionStagingDirectoryName = 'assignment-runs'
-const actionScratchRelativeRoot = `${productDirectoryName}/runtime-scratch`
 const defaultActionCleanupDeadlineMs = 5_000
 const maximumActionCleanupDeadlineMs = 30_000
 const execFileAsync = promisify(execFile)

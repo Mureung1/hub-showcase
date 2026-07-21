@@ -69,10 +69,11 @@ import type {
 
 export const currentWorkspaceStoreFormatVersion = 2 as const
 export const workspaceProductDirectoryName = '.ay-ple'
+export const actionScratchRelativeRoot =
+  `${workspaceProductDirectoryName}/runtime-scratch`
 export type { ExecutionGuard } from './semester-workspace-values.js'
 
 const storeFileName = 'workspace-state.json'
-const actionScratchRelativeRoot = `${workspaceProductDirectoryName}/runtime-scratch`
 
 export type PersistedStatePatch = StatePatch & {
   readonly canonicalPayload: string
