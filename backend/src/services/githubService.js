@@ -153,8 +153,8 @@ export async function searchRepos({ language, difficulty, minStars, perPage = 10
 
 // 레포 메타데이터 + 후보 이슈 일괄 조회 — 레포 수만큼 REST를 부르면 N+1이므로 GraphQL 쿼리 1개에 alias로 묶는다
 // issueLabels: 난이도에 맞는 이슈 라벨 필터(recommendationService.DIFFICULTY_ISSUE_LABELS). 담당자 없는 오픈 이슈만 가져온다
-// 반환: [{ fullName, description, url, stars, primaryLanguage, languages, topics, goodFirstIssueCount, pushedAt,
-//          issues: [{ number, title, url, labels }] }]
+// 반환: [{ fullName, description, url, stars, primaryLanguage, languages, topics,
+//          goodFirstIssueCount, helpWantedIssueCount, pushedAt, issues: [{ number, title, url, labels }] }]
 // 일부 레포가 삭제·비공개 상태여도(부분 에러) 조회 가능한 나머지는 그대로 반환한다
 export async function fetchReposWithIssues(fullNames, issueLabels = null) {
     // "owner/name" 형식이 아닌 값이 섞이면 GraphQL 별칭 쿼리 문자열이 깨지므로 사전에 걸러낸다
