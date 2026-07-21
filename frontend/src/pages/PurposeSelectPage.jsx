@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { apiClient } from '../api/client'
 import datingIllustration from '../assets/illustrations/onboarding-dating.png'
 import roommateIllustration from '../assets/illustrations/onboarding-roommate.png'
 import './PurposeSelectPage.css'
@@ -6,8 +8,42 @@ import './PurposeSelectPage.css'
 export default function PurposeSelectPage() {
   const navigate = useNavigate()
 
+  // 테스트 완료 여부 조회 중에는 룸메 버튼을 눌러도 분기하지 않도록 로딩 상태를 따로 둔다
+  const [testStatus, setTestStatus] = useState(null)
+  const [isStatusLoading, setIsStatusLoading] = useState(true)
+
+  useEffect(() => {
+    let isMounted = true
+
+    apiClient
+      .get('/tests/status')
+      .then((res) => {
+        if (isMounted) setTestStatus(res.data)
+      })
+      .catch(() => {
+        // 조회 실패 시 testStatus는 null로 두고, 클릭 시 기존 동작(테스트 화면 이동)으로 폴백한다
+      })
+      .finally(() => {
+        if (isMounted) setIsStatusLoading(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   const handleMypageClick = () => {
     console.log('마이페이지 이동 예정')
+  }
+
+  const handleRoommateClick = () => {
+    if (isStatusLoading) return
+
+    if (testStatus?.hasCompletedLifestyleTest) {
+      navigate('/select-roommate-type')
+    } else {
+      navigate('/test/lifestyle')
+    }
   }
 
   return (
@@ -34,7 +70,8 @@ export default function PurposeSelectPage() {
         <button
           type="button"
           className="purpose-select-card purpose-select-card-roommate"
-          onClick={() => navigate('/test/lifestyle')}
+          onClick={handleRoommateClick}
+          disabled={isStatusLoading}
         >
           <img src={roommateIllustration} alt="룸메이트" className="purpose-select-card-image" />
           <div className="purpose-select-card-title">룸메이트</div>
