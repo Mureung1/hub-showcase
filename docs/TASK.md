@@ -250,22 +250,32 @@
 
 ## 할 일
 
-- [ ] `POST /api/admin/{guildId}/notice-config` 구현
-- [ ] `GET /api/admin/{guildId}/notice-config` 구현
-- [ ] 활성/비활성 카테고리 저장 정책 구현
-- [ ] roleId nullable 저장 처리
-- [ ] 서버당 공지 사이트 1개 제약 처리
-- [ ] 저장/조회 API 수동 테스트
-- [ ] `DELETE /api/admin/{guildId}/notice-config` 기본 삭제 구현
-- [ ] 삭제 후 관련 categories/notices/subscriptions 정리 확인
+- [x] `POST /api/admin/{guildId}/notice-config` 구현
+- [x] `GET /api/admin/{guildId}/notice-config` 구현
+- [x] 활성/비활성 카테고리 저장 정책 구현
+- [x] roleId nullable 저장 처리
+- [x] 서버당 공지 사이트 1개 제약 처리
+- [x] 저장/조회 API 수동 테스트
+- [x] `DELETE /api/admin/{guildId}/notice-config` 기본 삭제 구현
+- [x] 삭제 후 관련 categories/notices/subscriptions 정리 확인
+- [x] 설정 삭제 시 guildId 기준 keywords 정리 구현
 
 ## 이슈
 
 - 없음
 
+## 검증
+
+- `backend npm run type-check` 통과
+- `backend npm run lint` 통과
+- `POST /api/admin/{guildId}/notice-config` 수동 테스트 성공
+- `GET /api/admin/{guildId}/notice-config` 수동 테스트 성공
+- `DELETE /api/admin/{guildId}/notice-config` 수동 테스트 성공
+- 삭제 후 `GET /api/admin/{guildId}/notice-config` 404 응답 확인
+
 ## 이월
 
-- 없음
+- Discord Role 생성/삭제는 Discord 연동 단계에서 구현한다.
 
 ---
 

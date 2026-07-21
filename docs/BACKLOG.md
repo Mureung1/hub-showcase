@@ -67,10 +67,11 @@
 - [x] Backend 공통 구조 작성
 - [x] notice-config 도메인 모듈 생성
 - [x] 테스트 크롤링 API 구현
+- [x] notice-config 저장/조회/삭제 API 구현
 
 ## 진행 중
 
-- [ ] notice-config 저장/조회 API 구현 준비
+- [ ] Discord Bot 기본 연결 준비
 
 ## 미완료
 
@@ -117,11 +118,11 @@
 - [x] `notice_sites`, `categories`, `notices`, `subscriptions`, `keywords` Prisma model 작성
 - [x] notice-config 도메인 모듈 생성
 - [x] 테스트 크롤링 API 구현
-- [ ] 전체 설정 저장 API 구현
-- [ ] 전체 설정 조회 API 구현
+- [x] 전체 설정 저장 API 구현
+- [x] 전체 설정 조회 API 구현
 - [ ] 전체 설정 교체 API 구현
 - [ ] 카테고리 설정 PATCH API 구현
-- [ ] 전체 설정 삭제 API 구현
+- [x] 전체 설정 삭제 API 구현
 
 ## Phase 3. Discord Resource And Role
 
@@ -200,6 +201,7 @@
 - Prisma schema
 - 테스트 크롤링
 - notice-config 저장/조회
+- notice-config 삭제
 - Discord Bot 기본 연결
 - Discord 채널 조회
 - Role 생성
@@ -220,7 +222,6 @@
 - 키워드 DM 알림
 - 설정 교체
 - 카테고리 PATCH
-- 전체 설정 삭제
 - `guildDelete` 데이터 정리
 
 ## P3

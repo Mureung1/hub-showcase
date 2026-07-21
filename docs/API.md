@@ -209,16 +209,26 @@ POST /api/admin/{guildId}/notice-config
 
 **Rules**
 
-- 테스트 크롤링이 성공한 설정만 저장할 수 있습니다.
+- 관리자는 테스트 크롤링으로 확인한 설정을 저장합니다.
 - Discord 서버당 하나의 공지 사이트만 설정 할 수 있습니다.
-- 활성화된 카테고리의 Role을 Discord에 먼저 생성한 후 DB에 저장합니다.
+- Day 7 기본 저장 API에서는 Discord Role 생성 전이므로 `roleId = null`로 저장합니다.
+- Day 8 Discord Role 연동 후에는 활성화된 카테고리의 Role을 Discord에 먼저 생성한 후 DB에 저장합니다.
 - 'roleName'이 없으면 카테고리명을 기본값으로 사용합니다.
-- 활성화된 카테고리에만 Role을 생성합니다.
 - 비활성화된 카테고리는 `roleId = null`로 저장합니다.
 - 모든 카테고리는 채널과 활성화 여부를 포함해야 합니다.
 - `roleName`은 선택 값이며, 없으면 카테고리명을 기본값으로 사용합니다.
 - 생성 과정 중 하나라도 실패하면 전체 생성을 실패 처리합니다.
 - 생성이 완료되면 공지 사이트와 카테고리 설정이 함께 저장됩니다.
+
+**Error Responses**
+
+- `400 Bad Request`
+  - Request Body 필수 값이 누락되었거나 형식이 올바르지 않음
+  - 카테고리 설정이 1개도 포함되지 않음
+- `409 Conflict`
+  - 해당 Discord 서버에 이미 공지 사이트 설정이 존재함
+- `500 Internal Server Error`
+  - DB 저장 중 알 수 없는 서버 오류
 
 ---
 
@@ -276,6 +286,13 @@ GET /api/admin/{guildId}/notice-config
 - 카테고리는 저장된 순서대로 반환합니다.
 - `roleId`가 없는 경우 `null`을 반환합니다.
 - 설정이 존재하지 않으면 `404 Not Found`를 반환합니다.
+
+**Error Responses**
+
+- `404 Not Found`
+  - 해당 Discord 서버에 저장된 공지 사이트 설정이 없음
+- `500 Internal Server Error`
+  - DB 조회 중 알 수 없는 서버 오류
 
 ---
 
@@ -412,15 +429,23 @@ DELETE /api/admin/{guildId}/notice-config
 **Rules**
 
 - 현재 공지 설정이 존재하는 Discord 서버에서만 사용할 수 있습니다.
-- IRIS가 생성한 Discord Role을 삭제합니다.
 - 공지 사이트 설정을 삭제합니다.
 - 카테고리 설정을 삭제합니다.
 - 저장된 공지 이력을 (notice) 삭제합니다.
 - 카테고리 구독 정보를 삭제합니다.
 - 사용자 키워드 설정을 삭제합니다.
-- Discord Role 삭제 또는 DB 데이터 삭제 중 오류가 발생하면 삭제 실패로 처리합니다.
+- Day 7 기본 삭제 API에서는 DB에 저장된 설정 데이터만 삭제합니다.
+- Discord Role 삭제는 Discord Role 연동 후 처리합니다.
+- DB 데이터 삭제 중 오류가 발생하면 삭제 실패로 처리합니다.
 - 삭제가 완료되면 해당 Discord 서버는 공지 사이트를 등록하지 않은 초기 상태가 됩니다.
 - 삭제 완료 후 관리자는 필요한 경우 Discord 서버에서 IRIS Bot을 제거할 수 있습니다.
+
+**Error Responses**
+
+- `404 Not Found`
+  - 삭제할 공지 사이트 설정이 없음
+- `500 Internal Server Error`
+  - DB 삭제 중 알 수 없는 서버 오류
 
 ---
 

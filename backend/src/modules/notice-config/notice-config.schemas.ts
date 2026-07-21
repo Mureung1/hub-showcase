@@ -15,5 +15,18 @@ export const testCrawlBodySchema = z.object({
   categoryListSelector: z.string().min(1),
 })
 
+export const saveNoticeConfigBodySchema = z.object({
+  site: testCrawlBodySchema,
+  categories: z.array(
+    z.object({
+      name: z.string().min(1),
+      channelId: z.string().min(1),
+      roleName: z.string().optional(),
+      isActive: z.boolean(),
+    }),
+  ).min(1),
+})
+
 export type GuildParams = z.infer<typeof guildParamsSchema>
 export type TestCrawlBody = z.infer<typeof testCrawlBodySchema>
+export type SaveNoticeConfigBody = z.infer<typeof saveNoticeConfigBodySchema>
