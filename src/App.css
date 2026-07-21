@@ -78,6 +78,12 @@ select.field-input {
   resize: vertical;
 }
 
+.field-textarea[disabled] {
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-chip-neutral);
+  cursor: default;
+}
+
 .field-error .field-input {
   border-color: var(--color-error);
 }
@@ -233,8 +239,13 @@ h2 {
   cursor: pointer;
 }
 
-.btn-link:hover {
+.btn-link:not([disabled]):hover {
   color: var(--color-primary-hover);
+}
+
+.btn-link[disabled] {
+  color: var(--color-text-tertiary);
+  cursor: default;
 }
 
 .job-list {

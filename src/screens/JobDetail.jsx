@@ -1,4 +1,4 @@
-function JobDetail({ job, onBack, onGenerateDraft }) {
+function JobDetail({ job, onBack, onGenerateDraft, isGeneratingDraft, draftError }) {
   return (
     <section className="card">
       <p className="eyebrow">STEP 3</p>
@@ -32,12 +32,14 @@ function JobDetail({ job, onBack, onGenerateDraft }) {
         </ul>
       </div>
 
+      {draftError && <p className="error-text">{draftError}</p>}
+
       <div className="actions">
-        <button type="button" className="btn-link" onClick={onBack}>
+        <button type="button" className="btn-link" onClick={onBack} disabled={isGeneratingDraft}>
           ← 목록으로 돌아가기
         </button>
-        <button type="button" className="btn-primary" onClick={() => onGenerateDraft(job)}>
-          자소서 초안 생성
+        <button type="button" className="btn-primary" onClick={() => onGenerateDraft(job)} disabled={isGeneratingDraft}>
+          {isGeneratingDraft ? '초안을 준비하는 중...' : '자소서 초안 생성'}
         </button>
       </div>
     </section>
