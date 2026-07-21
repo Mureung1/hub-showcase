@@ -68,8 +68,12 @@ React 구현 메모:
 - **더미:** `llmService.js`의 `analyzeArticle` — 고정 용어/문장 매칭 + 고정
   요약·insight·marketSentiment 반환. 실제 Claude 프롬프트는 3주차 작업.
 - 대시보드 3개 기사도 고정 픽스처, 실제 수집 로직 없음.
-- **미완:** 바텀시트 닫기→저장 완료 토스트 미배선. 완독/판단수행률 분리
-  집계 로깅 없음.
+- **완료(07-21):** 완독/판단수행률 분리 집계 로깅(GitHub #16) —
+  `article_reads` 테이블에 완독 이벤트를 기록하고 판단 시 `decision_id`로
+  FK 연결(`server/src/services/articleReadStore.js`,
+  `POST /api/article-reads`). 완독 판정은 판단버튼 영역 도달
+  (IntersectionObserver), 이탈 감지는 SPA 내 라우트 이동만 처리(브라우저 탭
+  닫기/새로고침은 스코프 밖).
 
 ## 디렉토리 구조
 

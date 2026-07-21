@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import AiSummary from "../components/AiSummary.jsx"
 import BottomSheet from "../components/BottomSheet.jsx"
@@ -8,6 +8,7 @@ import SentenceAccordion from "../components/SentenceAccordion.jsx"
 import Toast from "../components/Toast.jsx"
 import { parseArticle, analyzeArticle } from "../api/article.js"
 import { saveDecision } from "../api/decisions.js"
+import { logArticleRead } from "../api/articleReads.js"
 import { useAuth } from "../context/AuthContext.jsx"
 
 // LLM이 구조상 어렵다고 선별한 문장(analysis.sentences)만 아코디언으로
@@ -35,6 +36,56 @@ export default function Reader() {
   const [error, setError] = useState(null)
   const [pendingDecision, setPendingDecision] = useState(null)
   const [toastMessage, setToastMessage] = useState(null)
+
+  // 완독(읽기 완료)/판단 분리 로깅(기능③, GitHub #16)에 쓰는 ref들.
+  // hasReachedEndRef: 판단버튼 영역 도달 여부(완독 기준). readLoggedRef:
+  // 세션당 article_reads 1회만 기록되도록 하는 중복 방지 플래그.
+  // decisionButtonsWrapRef: IntersectionObserver 관찰 대상.
+  // articleRef/userRef: unmount cleanup에서 최신 값을 읽기 위한 미러.
+  const hasReachedEndRef = useRef(false)
+  const readLoggedRef = useRef(false)
+  const decisionButtonsWrapRef = useRef(null)
+  const articleRef = useRef(null)
+  const userRef = useRef(null)
+
+  useEffect(() => {
+    articleRef.current = article
+  }, [article])
+
+  useEffect(() => {
+    userRef.current = user
+  }, [user])
+
+  // 기사/분석 콘텐츠가 렌더링된 뒤, 판단버튼 영역이 뷰포트에 들어오면
+  // 완독으로 간주한다(스크롤 비율 대신 판단버튼 도달을 기준으로 삼음 —
+  // DecisionButtons가 기사 최하단에 정적 배치돼 있어 도달 자체가 완독의
+  // 자연스러운 증거).
+  useEffect(() => {
+    if (!article || !analysis) return
+    const target = decisionButtonsWrapRef.current
+    if (!target) return
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) {
+        hasReachedEndRef.current = true
+        observer.disconnect()
+      }
+    })
+    observer.observe(target)
+
+    return () => observer.disconnect()
+  }, [article, analysis])
+
+  // 판단 없이 이탈(SPA 내 라우트 이동/뒤로가기)해도 완독은 별도로 기록한다
+  // (docs/plan.md 2026-07-13 정책). 브라우저 탭 닫기/새로고침은 스코프 밖.
+  useEffect(() => {
+    return () => {
+      if (userRef.current && hasReachedEndRef.current && !readLoggedRef.current && articleRef.current) {
+        readLoggedRef.current = true
+        logArticleRead({ url, title: articleRef.current.title, decisionId: null }).catch(() => {})
+      }
+    }
+  }, [url])
 
   useEffect(() => {
     if (!url) return
@@ -69,7 +120,13 @@ export default function Reader() {
         marketSentiment: analysis?.marketSentiment,
         insight: analysis?.insight,
       })
-        .then(() => setToastMessage("✅ 인사이트 노트에 저장되었습니다."))
+        .then((saved) => {
+          setToastMessage("✅ 인사이트 노트에 저장되었습니다.")
+          // 판단까지 마쳤다는 것은 판단버튼 영역에 도달했다는 뜻이므로
+          // 완독도 함께 기록하고, decisionId로 FK 연결한다.
+          readLoggedRef.current = true
+          return logArticleRead({ url, title: article.title, decisionId: saved.id }).catch(() => {})
+        })
         .catch((err) => setError(err.message))
     }
 
@@ -105,7 +162,9 @@ export default function Reader() {
         <AiSummary bullets={analysis.summaryBullets} />
       </main>
 
-      <DecisionButtons onDecide={handleDecide} />
+      <div ref={decisionButtonsWrapRef}>
+        <DecisionButtons onDecide={handleDecide} />
+      </div>
 
       {pendingDecision && (
         <BottomSheet

@@ -18,6 +18,10 @@
 > 헤더 없으면 401). `POST /api/article/analyze`는 로그인 여부와 무관하게 동작하되,
 > 로그인 상태면 `terms`가 해당 사용자 단어장에 자동 저장된다(비로그인 시 저장은
 > 건너뛰고 분석 응답은 동일하게 반환). `decisions`는 아직 JSON 파일 저장소 그대로다.
+>
+> **2026-07-21 변경**: `POST /api/article-reads` 신규 추가(GitHub #16, 완독/판단
+> 분리 로깅). `decisionStore.js`는 이미 Supabase로 전환됐다(위 changelog의
+> "`decisions`는 아직 JSON 파일 저장소 그대로다"는 stale — GitHub #12로 완료됨).
 
 ## 1. GET /api/dashboard — 오늘의 핵심 외신 3개
 
@@ -230,11 +234,50 @@
 }
 ```
 
-`server/data/decisions.json`을 그대로 읽어 반환한다(`readDecisions`).
-인사이트 노트의 히스토리 카드는 기본적으로 `decision`(나의 판단)과
-`marketSentiment`(AI가 본 기사 톤)만 심플하게 나란히 보여주고, "🔽 AI 관점
-해설 보기"를 탭했을 때만 `summaryBullets`와 `insight`, 원문 링크 버튼이
-아코디언으로 펼쳐진다. `isLinkExpired` 필드는 서버·저장 로직 어디에도
-존재하지 않는다 — 원문 링크 만료 여부는 아직 서버에서 판단하지 않으며,
-Fallback 복기는 아코디언 안에 항상 보존된 `summaryBullets`/`insight`만으로
-구성된다.
+`decisionStore.js`의 `readDecisions`가 Supabase `decisions` 테이블을
+`articles`와 join해 반환한다(위 changelog 참고 — 문서 본문의 예시 응답 `id`
+포맷(`"1752368400000"`)은 구 JSON 저장소 시절 값으로 stale하며, 실제로는
+Supabase가 발급하는 uuid다). 인사이트 노트의 히스토리 카드는 기본적으로
+`decision`(나의 판단)과 `marketSentiment`(AI가 본 기사 톤)만 심플하게 나란히
+보여주고, "🔽 AI 관점 해설 보기"를 탭했을 때만 `summaryBullets`와 `insight`,
+원문 링크 버튼이 아코디언으로 펼쳐진다. `isLinkExpired` 필드는 서버·저장
+로직 어디에도 존재하지 않는다 — 원문 링크 만료 여부는 아직 서버에서
+판단하지 않으며, Fallback 복기는 아코디언 안에 항상 보존된
+`summaryBullets`/`insight`만으로 구성된다.
+
+## 7. POST /api/article-reads — 완독 이벤트 저장 (신규, GitHub #16)
+
+```json
+// 요청
+{
+  "url": "https://finance.yahoo.com/news/...",
+  "title": "Tech Stocks Slide as Investors Brace for Bear Market",
+  "decisionId": "3f2a1c9e-...-uuid"
+}
+
+// 응답
+{
+  "success": true,
+  "data": {
+    "id": "b7e6d5c4-...-uuid",
+    "completedAt": "2026-07-21T10:00:00+09:00",
+    "decisionId": "3f2a1c9e-...-uuid"
+  }
+}
+```
+
+- **판단 여부와 무관하게 호출된다**: 판단(매수/관망/매도)까지 마친 경우
+  바텀시트를 닫는 시점(`decisionId`에 방금 저장된 `decisions.id`를 채워
+  FK 연결), 판단 없이 이탈한 경우 완독 기준(판단버튼 영역 도달) 충족 후
+  리더뷰를 벗어나는 시점(`decisionId: null`)에 각각 호출된다.
+- `decisionId`는 선택 필드 — 없으면 `null`로 저장되며, 이는 "완독은 했지만
+  판단은 하지 않음"을 뜻한다(`docs/plan.md`의 완독/판단수행률 분리 지표
+  정책).
+- `url`/`title`이 없으면 `500 { success: false, error: "url, title are required" }`를
+  반환한다.
+- **인증(필수)**: `Authorization: Bearer <access_token>` 헤더가 없거나
+  유효하지 않으면 `401`을 반환한다. `article_reads`는 사용자별 완독
+  히스토리이므로 로그인 사용자만 기록한다(비로그인 시 클라이언트가 호출
+  자체를 건너뜀).
+- 조회용 `GET /api/article-reads`는 아직 없다(현재 요구사항인 "분리 로깅 +
+  FK 연결"에는 불필요 — 집계/조회 화면이 필요해지면 별도 Task).
