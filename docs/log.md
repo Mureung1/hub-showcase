@@ -17,11 +17,11 @@
   - 점수 로직 다듬기: 스타 가점을 tier→로그 스케일로 전환(동점 뭉침 완화), skillLevel↔난이도 정합 가점 추가(decisions.md "추천 기준 3단 구조" ②), medium 난이도는 help wanted 이슈 수로 가점(GraphQL에 helpWantedIssues 필드 추가), 관심 주제 유사어(ml/ai/web 등) 매칭 확장
   - `api-smoke-test`로 실서버 검증: POST 생성 → GET 200, 없는 id GET 404, 잘못된 형식 GET 400, languages 길이 초과 POST 400 — 전부 확인 후 스모크용 레코드 삭제
   - (부가) 새 라우트/컨트롤러 작성 시 예외 처리·입력 검증·배포 보안 설정을 다루는 `security-convention` 스킬과 `docs/security.md` 신설 — 기존 코드(analysisService의 404 패턴, recommendationController의 화이트리스트 검증, githubService의 qualifier 이중 방어 등)를 근거로 정리, `docs/security-convention` 브랜치에 커밋
+  - (부가) 백엔드 유닛/통합테스트 프레임워크 도입 — Vitest+Supertest, `backend/tests/unit`(validators·recommendationService 순수 함수, `judgeDifficulty`/`scoreItem`은 테스트를 위해 export만 추가)·`backend/tests/integration`(추천 API, GitHub는 mock·DB는 실제 Supabase 연결) 19개 테스트 작성. `docs/testing.md` + `backend-testing` 스킬로 컨벤션 정리(유닛/통합 구분 기준, api-smoke-test와의 역할 분리), `test/backend-vitest-setup` 브랜치에 커밋
 - 이슈/막힌 점:
   - (해당 없음)
 - 다음 할 일:
-  - `feat/be-recommendations-api` → `dev` 코드리뷰 후 머지, `docs/security-convention` → `dev` 머지
-  - `dev` → `main` 푸시 (하루 1회 규칙)
+  - `dev` → `main` 푸시 (하루 1회 규칙 — #8 반영분은 이미 푸시, 테스트 프레임워크분은 `dev`까지만 반영된 상태)
   - (수) #9: FE 선호 조건 선택 화면 + mock→실제 API 교체
 
 ---
