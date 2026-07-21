@@ -11,7 +11,9 @@ import ConfirmOverlay from '../components/chat/ConfirmOverlay';
 import ClarifyOverlay from '../components/chat/ClarifyOverlay';
 import QueryResult from '../components/chat/QueryResult';
 import { toConfirmData } from '../lib/parseResultToConfirmData';
-import { getSchedules } from '../api/schedulesApi';
+import { sortByCompleted } from '../lib/sortByCompleted';
+import { getBriefing } from '../api/briefingApi';
+import { updateTaskCompleted, completeRoutine } from '../api/itemsApi';
 import type { OverlayState } from '../types/overlay';
 import type { Briefing, ResolvedParseResult } from '@shared/schemas';
 
@@ -28,15 +30,37 @@ export default function BriefingPage() {
   const [overlay, setOverlay] = useState<OverlayState>({ type: 'none' });
 
   useEffect(() => {
-    getSchedules()
-      .then((schedules) => setBriefing((prev) => ({ ...prev, schedules })))
-      .catch((err) => console.error('[BriefingPage] 일정 조회 실패:', err));
+    getBriefing()
+      .then(setBriefing)
+      .catch((err) => console.error('[BriefingPage] 브리핑 조회 실패:', err));
   }, []);
 
   const closeOverlay = () => setOverlay({ type: 'none' });
 
   // /api/parse가 아직 없어 전송은 현재 아무 동작도 하지 않음
   const handleSend = (_message: string) => {};
+
+  const handleToggleTask = (taskId: string, completed: boolean) => {
+    setBriefing((prev) => ({
+      ...prev,
+      deadlines: prev.deadlines.map((t) => (t.id === taskId ? { ...t, completed } : t)),
+    }));
+    updateTaskCompleted(taskId, completed).catch((err) =>
+      console.error('[BriefingPage] 과제 완료 처리 실패:', err),
+    );
+  };
+
+  const handleToggleRoutine = (routineId: string, completed: boolean) => {
+    setBriefing((prev) => ({
+      ...prev,
+      routines: prev.routines.map((r) =>
+        r.routine.id === routineId ? { ...r, completedToday: completed } : r,
+      ),
+    }));
+    completeRoutine(routineId, completed).catch((err) =>
+      console.error('[BriefingPage] 루틴 완료 처리 실패:', err),
+    );
+  };
 
   const handleClarifySelect = (candidate: ResolvedParseResult) => {
     setOverlay({ type: 'confirm', data: toConfirmData(candidate) });
@@ -51,9 +75,16 @@ export default function BriefingPage() {
       ) : (
         <main className="briefing-cards">
           <ScheduleCard schedules={briefing.schedules} />
-          <RoutineCard routines={briefing.routines} />
+          <RoutineCard
+            routines={sortByCompleted(briefing.routines, (r) => r.completedToday)}
+            onToggle={handleToggleRoutine}
+          />
           <MealCard meal={briefing.meal} />
-          <DeadlineCard deadlines={briefing.deadlines} baseDate={briefing.date} />
+          <DeadlineCard
+            deadlines={sortByCompleted(briefing.deadlines, (t) => t.completed)}
+            baseDate={briefing.date}
+            onToggle={handleToggleTask}
+          />
           <MemoCard memos={briefing.memos} />
         </main>
       )}

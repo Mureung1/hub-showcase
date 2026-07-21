@@ -28,6 +28,9 @@ export const TaskSchema = z.object({
   createdAt: z.string(),
 });
 
+export const TaskCreateSchema = TaskSchema.omit({ id: true, createdAt: true, completed: true });
+export const TaskUpdateSchema = TaskSchema.omit({ id: true, createdAt: true }).partial();
+
 export const RoutineSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
@@ -39,6 +42,9 @@ export const RoutineSchema = z.object({
   createdAt: z.string(),
 });
 
+export const RoutineCreateSchema = RoutineSchema.omit({ id: true, createdAt: true });
+export const RoutineUpdateSchema = RoutineCreateSchema.partial();
+
 export const MealSchema = z.object({
   id: z.string().uuid(),
   date: z.string(), // YYYY-MM-DD
@@ -49,12 +55,18 @@ export const MealSchema = z.object({
   createdAt: z.string(),
 });
 
+export const MealCreateSchema = MealSchema.omit({ id: true, createdAt: true });
+export const MealUpdateSchema = MealCreateSchema.partial();
+
 export const MemoSchema = z.object({
   id: z.string().uuid(),
   content: z.string(),
   rawInput: z.string(),
   createdAt: z.string(),
 });
+
+export const MemoCreateSchema = MemoSchema.omit({ id: true, createdAt: true });
+export const MemoUpdateSchema = MemoCreateSchema.partial();
 
 // ===== 보조 엔티티 =====
 
@@ -75,6 +87,9 @@ export const ReminderSchema = z.object({
   rawInput: z.string(),
   createdAt: z.string(),
 });
+
+export const ReminderCreateSchema = ReminderSchema.omit({ id: true, createdAt: true });
+export const ReminderUpdateSchema = ReminderCreateSchema.partial();
 
 // ===== 파싱 결과 =====
 
@@ -108,11 +123,16 @@ export const ParseResultSchema = z.discriminatedUnion('status', [
 
 // ===== 브리핑 응답 =====
 
+export const BriefingRoutineSchema = z.object({
+  routine: RoutineSchema,
+  completedToday: z.boolean(),
+});
+
 export const BriefingSchema = z.object({
   date: z.string(),
   greeting: z.string(),
   schedules: z.array(ScheduleSchema),
-  routines: z.array(RoutineSchema),
+  routines: z.array(BriefingRoutineSchema),
   meal: MealSchema.nullable(),
   deadlines: z.array(TaskSchema),
   memos: z.array(MemoSchema),
@@ -124,11 +144,22 @@ export type Schedule = z.infer<typeof ScheduleSchema>;
 export type ScheduleCreate = z.infer<typeof ScheduleCreateSchema>;
 export type ScheduleUpdate = z.infer<typeof ScheduleUpdateSchema>;
 export type Task = z.infer<typeof TaskSchema>;
+export type TaskCreate = z.infer<typeof TaskCreateSchema>;
+export type TaskUpdate = z.infer<typeof TaskUpdateSchema>;
 export type Routine = z.infer<typeof RoutineSchema>;
+export type RoutineCreate = z.infer<typeof RoutineCreateSchema>;
+export type RoutineUpdate = z.infer<typeof RoutineUpdateSchema>;
 export type Meal = z.infer<typeof MealSchema>;
+export type MealCreate = z.infer<typeof MealCreateSchema>;
+export type MealUpdate = z.infer<typeof MealUpdateSchema>;
 export type Memo = z.infer<typeof MemoSchema>;
+export type MemoCreate = z.infer<typeof MemoCreateSchema>;
+export type MemoUpdate = z.infer<typeof MemoUpdateSchema>;
 export type RoutineLog = z.infer<typeof RoutineLogSchema>;
 export type Reminder = z.infer<typeof ReminderSchema>;
+export type ReminderCreate = z.infer<typeof ReminderCreateSchema>;
+export type ReminderUpdate = z.infer<typeof ReminderUpdateSchema>;
+export type BriefingRoutine = z.infer<typeof BriefingRoutineSchema>;
 export type Briefing = z.infer<typeof BriefingSchema>;
 export type ItemType = z.infer<typeof ItemTypeSchema>;
 export type Intent = z.infer<typeof IntentSchema>;

@@ -297,11 +297,29 @@ body {
 .deadline-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-3);
   padding: var(--space-3) 0;
 }
 
+.deadline-item__checkbox {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+  cursor: pointer;
+  appearance: none;
+  background: var(--color-bg-panel);
+  transition: all 0.15s ease;
+}
+
+.deadline-item__checkbox:checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
 .deadline-item__title {
+  flex: 1;
   font-size: var(--font-size-md);
   color: var(--color-text);
 }
