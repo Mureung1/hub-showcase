@@ -1,6 +1,8 @@
 package com.chasewar.parking.domain;
 
 import com.chasewar.global.domain.BaseEntity;
+import com.chasewar.global.exception.ChasewarException;
+import com.chasewar.global.exception.errorcode.InternalServerErrorCode;
 import com.chasewar.parking.domain.vo.Coordinates;
 import com.chasewar.parking.domain.vo.Fee;
 import com.chasewar.parking.domain.vo.OperType;
@@ -71,6 +73,9 @@ public class ParkingLot extends BaseEntity {
                       PayType payType,
                       OperatingHours operatingHours
     ) {
+        if (pkltCd == null || pkltCd.isBlank()) {
+            throw new ChasewarException(InternalServerErrorCode.MISSING_PARKING_LOT_CODE);
+        }
         this.pkltCd = pkltCd;
         this.name = name;
         this.address = address;
