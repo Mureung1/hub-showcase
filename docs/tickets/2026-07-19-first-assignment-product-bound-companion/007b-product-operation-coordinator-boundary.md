@@ -58,7 +58,7 @@ General Plan interaction은 operation의 optional interaction으로, bound Revie
 
 ## Starting Points
 
-- `apps/server/src/assignment-action.ts`
+- `apps/server/src/product-operation-coordinator.ts`
 - `apps/server/src/assignment-action.test.ts`
 - `apps/server/src/assignment-action-faults.test.ts`
 - `apps/server/src/product-chat-action.test.ts`
