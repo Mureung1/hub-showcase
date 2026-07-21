@@ -102,7 +102,7 @@ Root product development command에서 실제 runtime까지 활성화하려면 e
 | Endpoint | 동작 |
 | --- | --- |
 | `GET /api/product/bootstrap` | Account readiness, coarse product `operationStatus(active | idle)`, active workspace·Course·material registry와 confirmed revision·settled product history를 `no-store`로 반환한다. Status를 먼저 읽어 `idle` 응답이 앞선 lease 정산 뒤 final history read가 되게 한다. Pending patch·active Run, native correlation, Skill path와 store metadata는 제외하며 readiness 조회 실패가 workspace read를 막지 않는다. |
-| `POST /api/product/workspaces/activate` | Server-owned chooser를 열고 선택한 registry의 첫 bounded refresh까지 성공한 경우에만 active authority를 교체한다. |
+| `POST /api/product/workspaces/activate` | Server-owned chooser를 연다. 새 workspace는 첫 bounded scan 뒤 활성화하고, 기존 current v2 store는 원본 store bytes를 authority로 채택해 연다. 같은 workspace를 명시적으로 다시 선택하면 유효한 current store/history를 재채택한다. |
 | `POST /api/product/courses` | Empty ready workspace에 first-vertical Course 하나를 만든다. |
 | `POST /api/product/materials/refresh` | 일반 상태에서는 eligible TXT registry를 bounded scan으로 갱신하고 `refreshed`를 반환한다. `source_conflict`에서는 bounded cleanup과 current TXT scan 뒤 stable ID의 새 기준을 명시적으로 채택하고 `source_rebaselined`를 반환한다. |
 | `GET /api/product/materials/:materialId/preview?digest=...` | Current registry digest와 file을 재검증한 bounded TXT preview를 `no-store`로 반환한다. |

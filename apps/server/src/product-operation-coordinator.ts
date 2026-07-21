@@ -453,7 +453,7 @@ export function createProductOperationCoordinator(options: {
           activityId: activityId(operation.operationId, activity.itemId),
           tool: activity.tool,
           displayMessage: '변경 제안을 검증하지 못했습니다.',
-      }
+        }
       case 'user_input.requested': {
         let binding: AssignmentReviewBinding | null
         try {

@@ -1563,9 +1563,10 @@ async function settleProductChatExecution(
       'The Chat execution guard is not active.',
     )
   }
-  let guardValid = true
+  let authorityValid = true
+  let artifactsValid = true
   try {
-    await assertExecutionGuard(opened, appDataRoot, input.operationId)
+    await assertExecutionGuardAuthority(opened, input.operationId)
   } catch (error) {
     if (
       !(error instanceof SemesterWorkspaceError) ||
@@ -1574,7 +1575,24 @@ async function settleProductChatExecution(
       throw error
     }
     await assertStoreBytesMatchMemory(opened)
-    guardValid = false
+    authorityValid = false
+  }
+  if (authorityValid) {
+    try {
+      await assertExecutionGuardArtifacts(
+        opened,
+        appDataRoot,
+        input.operationId,
+      )
+    } catch (error) {
+      if (
+        !(error instanceof SemesterWorkspaceError) ||
+        error.code !== 'execution_guard_conflict'
+      ) {
+        throw error
+      }
+      artifactsValid = false
+    }
   }
   const patchIds = proposalPatchIdsForOperation(
     input.operationId,
@@ -1586,7 +1604,7 @@ async function settleProductChatExecution(
     statePatches: interruptPendingPatches(opened.store.statePatches, patchIds),
     executionGuard: {
       ...guard,
-      state: guardValid ? 'cleanup_required' : 'recovery_required',
+      state: authorityValid ? 'cleanup_required' : 'recovery_required',
     },
   } satisfies PersistedWorkspaceState
   await replaceWorkspaceStore(opened, guardedSettlement)
@@ -1602,7 +1620,7 @@ async function settleProductChatExecution(
     guard,
     cleanupPolicy,
   )
-  if (!guardValid) throw executionGuardConflict()
+  if (!authorityValid) throw executionGuardConflict()
   if (!cleaned) {
     throw new SemesterWorkspaceError(
       'execution_cleanup_required',
@@ -1614,6 +1632,7 @@ async function settleProductChatExecution(
     executionGuard: null,
   } satisfies PersistedWorkspaceState
   await replaceWorkspaceStore(opened, cleanedStore)
+  if (!artifactsValid) throw executionGuardConflict()
 }
 
 async function prepareAssignmentAction(
@@ -3339,6 +3358,7 @@ function cloneReadySnapshot(
     ...snapshot,
     course: snapshot.course ? { ...snapshot.course } : null,
     materials: snapshot.materials.map((material) => ({ ...material })),
+    recovery: snapshot.recovery ? { ...snapshot.recovery } : null,
   }
 }
 

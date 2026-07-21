@@ -11,6 +11,7 @@ import {
   type ProductBootstrap,
   type ProductSettledHistory,
   type ProductMaterialPreview,
+  type ProductMaterialRefreshResponse,
   type ProductRawMaterial,
   type ProductWorkspace,
   type ReadyProductWorkspace,
@@ -63,7 +64,7 @@ export function useSourceWorkbench() {
   const [bootstrapRefreshing, setBootstrapRefreshing] = useState(false)
   const [operationFailure, setOperationFailure] = useState<string>()
   const [materialRefreshOutcome, setMaterialRefreshOutcome] = useState<
-    'refreshed' | 'source_rebaselined'
+    ProductMaterialRefreshResponse['outcome']
   >()
 
   const loadWorkspace = useCallback(async (signal?: AbortSignal) => {
@@ -247,7 +248,13 @@ export function useSourceWorkbench() {
     try {
       await operation()
     } catch (error) {
-      setOperationFailure(safeMessage(error))
+      const displayMessage = safeMessage(error)
+      try {
+        await refreshSettledProductState()
+      } catch {
+        // Keep the original mutation failure when recovery hydration also fails.
+      }
+      setOperationFailure(displayMessage)
     } finally {
       setMutationPending(false)
     }

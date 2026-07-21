@@ -794,6 +794,92 @@ test('Run-free Product Chat holds the durable source/revision guard through bind
   }
 })
 
+test('missing Product Chat scratch does not grant source rebaseline authority', async () => {
+  const fixture = await createFixture()
+  try {
+    const baseline = fixture.controller.snapshot()
+    assert.equal(baseline?.state, 'ready')
+    if (baseline?.state !== 'ready') assert.fail('workspace must be ready')
+    const baselineDigests = baseline.materials.map((material) => material.digest)
+    const operationId = `chat_${'4'.repeat(32)}`
+    const prepared = await fixture.controller.prepareProductChatExecution({
+      operationId,
+      courseId: fixture.courseId,
+      selectedMaterials: [],
+    })
+    await rm(prepared.scratchPath, { recursive: true })
+
+    await assert.rejects(
+      fixture.controller.settleProductChatExecution({ operationId }),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'execution_guard_conflict',
+    )
+    const afterSettlement = fixture.controller.snapshot()
+    assert.equal(afterSettlement?.state, 'ready')
+    if (afterSettlement?.state !== 'ready') {
+      assert.fail('workspace must be ready')
+    }
+    assert.equal(afterSettlement.recovery, null)
+
+    const refreshed = await fixture.controller.refreshMaterials()
+    assert.equal(refreshed.outcome, 'refreshed')
+    assert.deepEqual(
+      refreshed.workspace.materials.map((material) => material.digest),
+      baselineDigests,
+    )
+    const freshOperationId = `chat_${'5'.repeat(32)}`
+    await fixture.controller.prepareProductChatExecution({
+      operationId: freshOperationId,
+      courseId: fixture.courseId,
+      selectedMaterials: [],
+    })
+    await fixture.controller.settleProductChatExecution({
+      operationId: freshOperationId,
+    })
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('unsafe Product Chat scratch cleanup exposes cleanup recovery only', async () => {
+  const fixture = await createFixture()
+  try {
+    const operationId = `chat_${'6'.repeat(32)}`
+    const prepared = await fixture.controller.prepareProductChatExecution({
+      operationId,
+      courseId: fixture.courseId,
+      selectedMaterials: [],
+    })
+    await rm(prepared.scratchPath, { recursive: true })
+    await writeFile(prepared.scratchPath, 'unmanaged scratch replacement')
+
+    await assert.rejects(
+      fixture.controller.settleProductChatExecution({ operationId }),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'execution_cleanup_required',
+    )
+    const blocked = fixture.controller.snapshot()
+    assert.equal(blocked?.state, 'ready')
+    if (blocked?.state !== 'ready') assert.fail('workspace must be ready')
+    assert.equal(blocked.recovery?.state, 'cleanup_required')
+    await assert.rejects(
+      fixture.controller.refreshMaterials(),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'execution_cleanup_required',
+    )
+
+    await rm(prepared.scratchPath)
+    const recovered = await fixture.controller.activate()
+    assert.equal(recovered.status, 'activated')
+    assert.equal(recovered.workspace.recovery, null)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('Product Chat guard ignores an unregistered transient TXT while preserving registered sources', async () => {
   const fixture = await createFixture()
   try {

@@ -1,5 +1,6 @@
 import { expect } from 'playwright/test'
 
+import type { ProductBootstrap } from '../src/product-api.js'
 import {
   selectCanonicalMaterials,
   test,
@@ -96,6 +97,57 @@ test('preserves the selected sources and preview when material refresh fails', a
       '개요 작성하기 과제 마감은',
       { exact: false },
     ),
+  ).toBeVisible()
+})
+
+test('rehydrates workspace recovery after a material mutation detects store drift', async ({
+  chatPage: page,
+}) => {
+  const baseline = (await page.evaluate(async () => {
+    const response = await fetch('/api/product/bootstrap')
+    return response.json()
+  })) as ProductBootstrap
+  await page.route('**/api/product/bootstrap', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...baseline,
+        operationStatus: 'idle',
+        workspace: {
+          ...baseline.workspace,
+          recovery: {
+            state: 'store_conflict',
+            displayMessage:
+              '학기 상태 파일이 외부에서 변경되었습니다. 작업공간을 다시 선택해 현재 상태를 확인하세요.',
+          },
+        },
+      }),
+    })
+  })
+  await page.route('**/api/product/materials/refresh', async (route) => {
+    await route.fulfill({
+      status: 409,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 'execution_guard_conflict',
+        displayMessage: '학기 상태 파일이 변경되었습니다.',
+      }),
+    })
+  })
+
+  await page
+    .getByRole('complementary', { name: '학기 자료' })
+    .getByRole('button', { name: '자료 새로고침' })
+    .click()
+
+  await expect(
+    page
+      .getByRole('alert')
+      .filter({ hasText: '작업공간 복구가 필요합니다' }),
+  ).toContainText('학기 상태 파일이 외부에서 변경되었습니다.')
+  await expect(
+    page.getByRole('button', { name: '작업공간 다시 선택' }),
   ).toBeVisible()
 })
 
