@@ -85,12 +85,13 @@ export function useUserInfoForm() {
 
   function saveUserInfo() {
     if (!validateStep(0) || !validateStep(1) || !validateStep(2)) {
-      return
+      return false
     }
 
     const data = saveUserInfoToStorage(form)
     setForm({ ...defaultForm, ...data })
     setSaved(true)
+    return true
   }
 
   return {

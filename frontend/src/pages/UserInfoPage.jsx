@@ -4,7 +4,7 @@ import ReviewStep from '../components/user-info/ReviewStep'
 import SchoolStep from '../components/user-info/SchoolStep'
 import { useUserInfoForm } from '../hooks/useUserInfoForm'
 
-function UserInfoPage() {
+function UserInfoPage({ onComplete }) {
   const {
     currentStep,
     errors,
@@ -19,6 +19,13 @@ function UserInfoPage() {
     summaryItems,
     updateField,
   } = useUserInfoForm()
+
+  function handleSaveUserInfo() {
+    const isSaved = saveUserInfo()
+    if (isSaved && onComplete) {
+      onComplete()
+    }
+  }
 
   return (
     <main className="user-info-page">
@@ -65,7 +72,7 @@ function UserInfoPage() {
                 다음
               </button>
             ) : (
-              <button className="primary-button" type="button" onClick={saveUserInfo}>
+              <button className="primary-button" type="button" onClick={handleSaveUserInfo}>
                 저장하기
               </button>
             )}
