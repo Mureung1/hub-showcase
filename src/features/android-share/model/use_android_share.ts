@@ -236,6 +236,11 @@ export function useAndroidShare({
           created: result.created,
           insight: result.insight,
         });
+      })
+      .catch(() => {
+        if (activeShareIdRef.current === savingState.share.id) {
+          dispatch({ type: 'capture-failed' });
+        }
       });
   }, [beginAuthentication, captureService, state]);
 
@@ -276,18 +281,26 @@ export function useAndroidShare({
 
       if (nextMemo !== previousMemo) {
         setIsCompleting(true);
-        const result = await memoService.updateMemo(state.insight.id, nextMemo);
-        setIsCompleting(false);
+        try {
+          const result = await memoService.updateMemo(
+            state.insight.id,
+            nextMemo
+          );
+          if (!result.ok) {
+            setMemoError(MEMO_SAVE_ERROR);
+            return;
+          }
 
-        if (!result.ok) {
+          savedMemoRef.current = {
+            insightId: state.insight.id,
+            memo: nextMemo,
+          };
+        } catch {
           setMemoError(MEMO_SAVE_ERROR);
           return;
+        } finally {
+          setIsCompleting(false);
         }
-
-        savedMemoRef.current = {
-          insightId: state.insight.id,
-          memo: nextMemo,
-        };
       }
     }
 

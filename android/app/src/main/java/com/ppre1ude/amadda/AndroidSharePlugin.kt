@@ -28,14 +28,14 @@ class AndroidShareIntentRouter(
     private var pendingShare: AndroidShare? = null
 
     @Synchronized
-    fun routeInitialIntent(intent: Intent): AndroidShare? {
+    fun routeInitialIntent(intent: Intent?): AndroidShare? {
         val share = parseIntent(intent) ?: return null
         pendingShare = share
         return share
     }
 
     fun routeNewIntent(
-        intent: Intent,
+        intent: Intent?,
         onShareReceived: (AndroidShare) -> Unit,
     ): AndroidShare? {
         val share = parseIntent(intent) ?: return null
@@ -55,13 +55,17 @@ class AndroidShareIntentRouter(
         pendingShare = share
     }
 
-    private fun parseIntent(intent: Intent): AndroidShare? {
-        if (intent.action != Intent.ACTION_SEND || intent.type != TEXT_PLAIN_MIME_TYPE) {
+    private fun parseIntent(intent: Intent?): AndroidShare? {
+        val type = intent?.type ?: return null
+        if (
+            intent.action != Intent.ACTION_SEND ||
+            type.substringBefore(';').trim() != TEXT_PLAIN_MIME_TYPE
+        ) {
             return null
         }
 
-        val text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString() ?: return null
-        val title = intent.getCharSequenceExtra(Intent.EXTRA_TITLE)?.toString()
+        val text = readTextExtra(intent, Intent.EXTRA_TEXT) ?: return null
+        val title = readTextExtra(intent, Intent.EXTRA_TITLE)
         if (text.length > MAX_TEXT_LENGTH || title?.length ?: 0 > MAX_TITLE_LENGTH) {
             return null
         }
@@ -71,6 +75,14 @@ class AndroidShareIntentRouter(
             title = title,
         )
         return share
+    }
+
+    private fun readTextExtra(intent: Intent, name: String): String? {
+        return try {
+            intent.getCharSequenceExtra(name)?.toString()
+        } catch (_: RuntimeException) {
+            null
+        }
     }
 
     private companion object {

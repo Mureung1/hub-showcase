@@ -52,6 +52,43 @@ class AndroidSharePluginTest {
     }
 
     @Test
+    fun `charset 파라미터가 있는 text plain MIME type도 처리한다`() {
+        val router = AndroidShareIntentRouter { "share-1" }
+
+        val enqueued = router.routeInitialIntent(
+            sendIntent(
+                type = "text/plain; charset=utf-8",
+                text = "https://example.com",
+            ),
+        )
+
+        assertNotNull(enqueued)
+    }
+
+    @Test
+    fun `null Intent는 무시한다`() {
+        val router = AndroidShareIntentRouter { "share-1" }
+
+        val enqueued = router.routeInitialIntent(null)
+
+        assertNull(enqueued)
+    }
+
+    @Test
+    fun `공유 extra 조회가 예외를 던지면 Intent를 무시한다`() {
+        val router = AndroidShareIntentRouter { "share-1" }
+        val malformedIntent = object : Intent(ACTION_SEND) {
+            override fun getCharSequenceExtra(name: String?): CharSequence? {
+                throw ClassCastException("unexpected extra")
+            }
+        }.setType("text/plain")
+
+        val enqueued = router.routeInitialIntent(malformedIntent)
+
+        assertNull(enqueued)
+    }
+
+    @Test
     fun `공유 텍스트와 선택 제목을 전달한다`() {
         val router = AndroidShareIntentRouter { "share-1" }
 

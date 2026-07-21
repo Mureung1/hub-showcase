@@ -99,17 +99,26 @@ export function createAndroidSharePluginAdapter(
         try {
           while (!isDisposed && pendingPolls > 0) {
             pendingPolls -= 1;
-            const pending = parsePendingShare(await plugin.getPendingShare());
+            try {
+              const pending = parsePendingShare(await plugin.getPendingShare());
 
-            if (!isDisposed && pending && !deliveredShareIds.has(pending.id)) {
-              deliveredShareIds.add(pending.id);
-              if (deliveredShareIds.size > RECENT_SHARE_ID_LIMIT) {
-                const oldestShareId = deliveredShareIds.values().next().value;
-                if (typeof oldestShareId === 'string') {
-                  deliveredShareIds.delete(oldestShareId);
+              if (
+                !isDisposed &&
+                pending &&
+                !deliveredShareIds.has(pending.id)
+              ) {
+                deliveredShareIds.add(pending.id);
+                if (deliveredShareIds.size > RECENT_SHARE_ID_LIMIT) {
+                  const oldestShareId = deliveredShareIds.values().next().value;
+                  if (typeof oldestShareId === 'string') {
+                    deliveredShareIds.delete(oldestShareId);
+                  }
                 }
+                onShare(pending);
               }
-              onShare(pending);
+            } catch {
+              pendingPolls = 0;
+              break;
             }
           }
         } finally {

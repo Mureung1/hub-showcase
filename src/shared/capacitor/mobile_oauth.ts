@@ -126,6 +126,7 @@ export function createMobileOAuth(
 
   const failureListeners = new Set<(context?: MobileOAuthContext) => void>();
   const callbackListeners = new Set<(context?: MobileOAuthContext) => void>();
+  let lastProcessedUrl: string | undefined;
   let pendingSignIn: PendingSignIn | undefined;
   let unobservedCallback: { context?: MobileOAuthContext } | undefined;
   let unobservedFailure: { context?: MobileOAuthContext } | undefined;
@@ -182,6 +183,11 @@ export function createMobileOAuth(
     if (!isMobileOAuthCallback(event.url)) {
       return;
     }
+
+    if (event.url === lastProcessedUrl) {
+      return;
+    }
+    lastProcessedUrl = event.url;
 
     const request = pendingSignIn;
     pendingSignIn = undefined;

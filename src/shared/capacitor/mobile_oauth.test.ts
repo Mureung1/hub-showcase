@@ -156,6 +156,25 @@ describe('Capacitor 모바일 OAuth', () => {
     ).toHaveBeenCalledWith('restored-code');
   });
 
+  it('콜드 스타트에서 같은 OAuth 딥링크를 두 경로로 받아도 한 번만 처리한다', async () => {
+    const dependencies = createDependencies();
+    const callbackUrl = `${MOBILE_OAUTH_CALLBACK_URL}?code=restored-code`;
+    dependencies.app.getLaunchUrl.mockResolvedValue({ url: callbackUrl });
+    const oauth = createMobileOAuth({
+      ...dependencies,
+      runtime: nativeAndroid,
+    });
+    const callback = vi.fn();
+
+    oauth?.subscribeCallbacks(callback);
+    dependencies.receiveUrl(callbackUrl);
+
+    await vi.waitFor(() => expect(callback).toHaveBeenCalledTimes(1));
+    expect(
+      dependencies.client.auth.exchangeCodeForSession
+    ).toHaveBeenCalledTimes(1);
+  });
+
   it('웹에서는 모바일 OAuth 어댑터를 만들지 않아 기존 redirect 흐름을 유지한다', () => {
     const dependencies = createDependencies();
 

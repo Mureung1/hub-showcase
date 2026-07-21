@@ -183,6 +183,30 @@ describe('Android 공유 플러그인 어댑터', () => {
     expect(nativePlugin.getPendingShare).toHaveBeenCalledTimes(1);
   });
 
+  it('대기 공유 조회가 거부되어도 구독을 끝내고 다음 wake-up을 대기한다', async () => {
+    let wakeUp: (() => void) | undefined;
+    const nativePlugin: AndroidShareNativePlugin = {
+      addListener: vi.fn().mockImplementation(async (_eventName, listener) => {
+        wakeUp = listener;
+        return { remove: vi.fn().mockResolvedValue(undefined) };
+      }),
+      finishShare: vi.fn().mockResolvedValue(undefined),
+      getPendingShare: vi.fn().mockRejectedValue(new Error('bridge error')),
+    };
+    const adapter = createAndroidSharePluginAdapter({
+      registerPlugin: () => nativePlugin,
+      runtime: nativeAndroid,
+    });
+
+    const cleanup = await adapter.subscribe(vi.fn());
+    wakeUp?.();
+
+    await vi.waitFor(() =>
+      expect(nativePlugin.getPendingShare).toHaveBeenCalledTimes(2)
+    );
+    await cleanup();
+  });
+
   it('Android에서 finishShare를 네이티브 플러그인으로 전달한다', async () => {
     const nativePlugin: AndroidShareNativePlugin = {
       addListener: vi.fn(),
