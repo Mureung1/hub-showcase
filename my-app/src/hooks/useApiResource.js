@@ -8,11 +8,14 @@ export function useApiResource(path) {
 
   useEffect(() => {
     let cancelled = false;
-    setIsLoading(true);
-    setError(null);
 
-    apiClient
-      .get(path)
+    Promise.resolve()
+      .then(() => {
+        if (cancelled) return undefined;
+        setIsLoading(true);
+        setError(null);
+        return apiClient.get(path);
+      })
       .then((res) => {
         if (!cancelled) setData(res);
       })

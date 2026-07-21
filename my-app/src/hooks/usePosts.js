@@ -1,6 +1,5 @@
-import { useMockResource } from "./useMockResource";
-import { mockPosts } from "../api/mocks/dashboard";
+import { useApiResource } from "./useApiResource";
 
 export function usePosts() {
-  return useMockResource(mockPosts);
+  return useApiResource("/posts?status=published");
 }
