@@ -122,3 +122,49 @@ export async function deleteProfile(accessToken) {
   });
   if (!response.ok) await readJsonResponse(response);
 }
+export async function getUserSettings(accessToken) {
+  const response = await fetch("/api/settings", {
+    headers: createAuthorizationHeaders(accessToken),
+  });
+  return readJsonResponse(response);
+}
+
+export async function saveUserSettings(settings, accessToken) {
+  const response = await fetch("/api/settings", {
+    method: "PUT",
+    headers: createAuthorizationHeaders(accessToken, true),
+    body: JSON.stringify(settings),
+  });
+  return readJsonResponse(response);
+}
+
+export async function resetUserSettings(accessToken) {
+  const response = await fetch("/api/settings/reset", {
+    method: "POST",
+    headers: createAuthorizationHeaders(accessToken),
+  });
+  return readJsonResponse(response);
+}
+export async function getSavedNoticeSources(accessToken) {
+  const response = await fetch("/api/notice-sources", {
+    headers: createAuthorizationHeaders(accessToken),
+  });
+  return readJsonResponse(response);
+}
+
+export async function saveNoticeSource(source, accessToken) {
+  const response = await fetch("/api/notice-sources", {
+    method: "POST",
+    headers: createAuthorizationHeaders(accessToken, true),
+    body: JSON.stringify(source),
+  });
+  return readJsonResponse(response);
+}
+
+export async function deleteNoticeSource(sourceId, accessToken) {
+  const response = await fetch(`/api/notice-sources/${encodeURIComponent(String(sourceId).replace(/^custom:/, ""))}`, {
+    method: "DELETE",
+    headers: createAuthorizationHeaders(accessToken),
+  });
+  if (!response.ok) await readJsonResponse(response);
+}

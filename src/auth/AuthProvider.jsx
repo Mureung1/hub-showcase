@@ -1,15 +1,9 @@
 import { createContext, useEffect, useMemo, useState } from "react";
 import { supabase, supabaseAuthConfigured } from "./supabaseClient.js";
+import { toFriendlyAuthError } from "./authErrorMessages.js";
+import { normalizeUsername, usernameToAuthEmail } from "./authIdentity.js";
 
 export const AuthContext = createContext(null);
-
-function toFriendlyAuthError(error) {
-  const message = String(error?.message || "").toLowerCase();
-  if (message.includes("invalid login credentials")) return "이메일 또는 비밀번호를 확인해 주세요.";
-  if (message.includes("email not confirmed")) return "이메일 인증을 완료한 뒤 로그인해 주세요.";
-  if (message.includes("already registered")) return "이미 가입된 이메일입니다. 로그인해 주세요.";
-  return "인증 요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.";
-}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -51,9 +45,10 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  async function signIn({ email, password }) {
+  async function signIn({ username, password }) {
     if (!supabase) throw new Error("Supabase 인증 환경변수가 설정되지 않았습니다.");
     setAuthError(null);
+    const email = usernameToAuthEmail(username);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       const message = toFriendlyAuthError(error);
@@ -62,10 +57,16 @@ export function AuthProvider({ children }) {
     }
   }
 
-  async function signUp({ email, password }) {
+  async function signUp({ username, password }) {
     if (!supabase) throw new Error("Supabase 인증 환경변수가 설정되지 않았습니다.");
     setAuthError(null);
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const normalizedUsername = normalizeUsername(username);
+    const email = usernameToAuthEmail(normalizedUsername);
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { username: normalizedUsername } },
+    });
     if (error) {
       const message = toFriendlyAuthError(error);
       setAuthError(message);

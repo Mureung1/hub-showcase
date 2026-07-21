@@ -6,11 +6,16 @@ function repositoryError(message, code) {
   return error;
 }
 
+function normalizeUpdatedAt(value) {
+  const timestamp = typeof value === "string" ? Date.parse(value) : Number.NaN;
+  return Number.isNaN(timestamp) ? undefined : new Date(timestamp).toISOString();
+}
+
 function fromRow(row) {
   if (!row) return null;
   return {
     id: row.user_id,
-    updatedAt: row.updated_at,
+    updatedAt: normalizeUpdatedAt(row.updated_at),
     school: row.school,
     grade: row.grade,
     majors: Array.isArray(row.majors) ? row.majors : [],

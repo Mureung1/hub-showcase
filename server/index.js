@@ -37,6 +37,10 @@ import { createRequireAuth } from "./middleware/requireAuth.js";
 import { createSupabaseAuthService } from "./services/supabaseAuth.js";
 import { createProfileRepository } from "./services/profileRepository.js";
 import { profileRequestSchema } from "./schemas/profileSchemas.js";
+import { userSettingsRequestSchema } from "./schemas/userSettingsSchemas.js";
+import { createUserSettingsRepository } from "./services/userSettingsRepository.js";
+import { noticeSourceIdSchema, noticeSourceRequestSchema } from "./schemas/noticeSourceSchemas.js";
+import { createNoticeSourceRepository } from "./services/noticeSourceRepository.js";
 
 dotenv.config();
 
@@ -60,6 +64,12 @@ const opportunityStorage = createOpportunityStorage();
 const authService = createSupabaseAuthService();
 const requireAuth = createRequireAuth(authService);
 const profileRepository = createProfileRepository({
+  createUserClient: (accessToken) => authService.createUserClient(accessToken),
+});
+const userSettingsRepository = createUserSettingsRepository({
+  createUserClient: (accessToken) => authService.createUserClient(accessToken),
+});
+const noticeSourceRepository = createNoticeSourceRepository({
   createUserClient: (accessToken) => authService.createUserClient(accessToken),
 });
 
@@ -197,6 +207,136 @@ app.delete("/api/profile", requireAuth, async (request, response) => {
       message: error?.code === "profile_storage_unavailable"
         ? "프로필 저장소 설정을 확인해 주세요."
         : "프로필 초기화에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+  }
+});
+app.get("/api/settings", requireAuth, async (request, response) => {
+  try {
+    const result = await userSettingsRepository.getSettings({
+      accessToken: request.accessToken,
+      userId: request.user.id,
+    });
+    sendJson(response, 200, result);
+  } catch (error) {
+    sendJson(response, error?.code === "settings_storage_unavailable" ? 503 : 500, {
+      error: "settings_read_failed",
+      message: error?.code === "settings_storage_unavailable"
+        ? "개인 설정 저장소 설정을 확인해 주세요."
+        : "개인 설정을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+  }
+});
+
+app.put("/api/settings", requireAuth, async (request, response) => {
+  const validation = userSettingsRequestSchema.safeParse(request.body);
+  if (!validation.success) {
+    sendJson(response, 400, {
+      error: "invalid_settings",
+      message: formatZodError(validation.error),
+    });
+    return;
+  }
+
+  try {
+    const result = await userSettingsRepository.upsertSettings({
+      accessToken: request.accessToken,
+      settings: validation.data,
+      userId: request.user.id,
+    });
+    sendJson(response, 200, result);
+  } catch (error) {
+    sendJson(response, error?.code === "settings_storage_unavailable" ? 503 : 500, {
+      error: "settings_write_failed",
+      message: error?.code === "settings_storage_unavailable"
+        ? "개인 설정 저장소 설정을 확인해 주세요."
+        : "개인 설정 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+  }
+});
+
+app.post("/api/settings/reset", requireAuth, async (request, response) => {
+  try {
+    const result = await userSettingsRepository.resetSettings({
+      accessToken: request.accessToken,
+      userId: request.user.id,
+    });
+    sendJson(response, 200, result);
+  } catch (error) {
+    sendJson(response, error?.code === "settings_storage_unavailable" ? 503 : 500, {
+      error: "settings_reset_failed",
+      message: error?.code === "settings_storage_unavailable"
+        ? "개인 설정 저장소 설정을 확인해 주세요."
+        : "개인 설정 초기화에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+  }
+});
+app.get("/api/notice-sources", requireAuth, async (request, response) => {
+  try {
+    const sources = await noticeSourceRepository.listSources({
+      accessToken: request.accessToken,
+      userId: request.user.id,
+    });
+    sendJson(response, 200, { sources });
+  } catch (error) {
+    sendJson(response, ["notice_source_storage_unavailable", "notice_source_schema_missing"].includes(error?.code) ? 503 : 500, {
+      error: "notice_source_read_failed",
+      message: error?.code === "notice_source_storage_unavailable"
+        ? "저장된 출처 저장소 설정을 확인해 주세요."
+        : ["notice_source_schema_missing", "notice_source_access_denied"].includes(error?.code)
+          ? error.message
+          : "저장된 출처를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+  }
+});
+
+app.post("/api/notice-sources", requireAuth, async (request, response) => {
+  const validation = noticeSourceRequestSchema.safeParse(request.body);
+  if (!validation.success) {
+    sendJson(response, 400, { error: "invalid_notice_source", message: formatZodError(validation.error) });
+    return;
+  }
+
+  try {
+    const source = await noticeSourceRepository.upsertSource({
+      accessToken: request.accessToken,
+      source: validation.data,
+      userId: request.user.id,
+    });
+    sendJson(response, 200, { source });
+  } catch (error) {
+    sendJson(response, ["notice_source_storage_unavailable", "notice_source_schema_missing"].includes(error?.code) ? 503 : 500, {
+      error: "notice_source_write_failed",
+      message: error?.code === "notice_source_storage_unavailable"
+        ? "저장된 출처 저장소 설정을 확인해 주세요."
+        : ["notice_source_schema_missing", "notice_source_access_denied"].includes(error?.code)
+          ? error.message
+          : "출처 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+  }
+});
+
+app.delete("/api/notice-sources/:sourceId", requireAuth, async (request, response) => {
+  const validation = noticeSourceIdSchema.safeParse(request.params.sourceId);
+  if (!validation.success) {
+    sendJson(response, 400, { error: "invalid_notice_source", message: formatZodError(validation.error) });
+    return;
+  }
+
+  try {
+    await noticeSourceRepository.deleteSource({
+      accessToken: request.accessToken,
+      sourceId: validation.data,
+      userId: request.user.id,
+    });
+    sendJson(response, 204, {});
+  } catch (error) {
+    sendJson(response, ["notice_source_storage_unavailable", "notice_source_schema_missing"].includes(error?.code) ? 503 : 500, {
+      error: "notice_source_delete_failed",
+      message: error?.code === "notice_source_storage_unavailable"
+        ? "저장된 출처 저장소 설정을 확인해 주세요."
+        : ["notice_source_schema_missing", "notice_source_access_denied"].includes(error?.code)
+          ? error.message
+          : "출처 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.",
     });
   }
 });

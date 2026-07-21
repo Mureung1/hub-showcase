@@ -2611,3 +2611,119 @@ select:focus {
   .auth-form { grid-template-columns: 1fr; }
   .auth-form .primary-button { width: 100%; }
 }
+.user-settings-panel {
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 20px;
+  background: var(--color-surface);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+}
+
+.user-settings-heading {
+  align-items: flex-start;
+}
+
+.user-settings-heading h2 {
+  margin: 3px 0 5px;
+  color: var(--color-text);
+  font-size: 1.05rem;
+}
+
+.user-settings-heading p,
+.settings-fieldset > p,
+.user-settings-form small {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.user-settings-form {
+  display: grid;
+  gap: 16px;
+}
+
+.settings-fieldset {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.settings-fieldset legend {
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 820;
+}
+
+.settings-category-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.settings-category-grid label {
+  display: inline-flex;
+  min-height: 33px;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0 9px;
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 760;
+}
+
+.settings-category-grid input,
+.settings-toggle-list input {
+  width: 15px;
+  min-height: auto;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.settings-number-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.settings-toggle-list {
+  display: grid;
+  gap: 8px;
+}
+
+.settings-toggle-list label {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
+}
+
+.settings-toggle-list span {
+  display: grid;
+  gap: 2px;
+}
+
+.settings-toggle-list strong {
+  color: var(--color-text);
+  font-size: 0.84rem;
+}
+
+.settings-toggle-list small {
+  font-size: 0.76rem;
+}
+
+@media (max-width: 640px) {
+  .settings-number-grid {
+    grid-template-columns: 1fr;
+  }
+}

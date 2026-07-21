@@ -76,7 +76,7 @@ function RecommendationCard({ item, isSaved, onSave }) {
   );
 }
 
-export default function SiteRecommendations({ onAddSource, profile, savedSources = [] }) {
+export default function SiteRecommendations({ onAddSource, profile, savedSources = [], settings = null }) {
   const [sites, setSites] = useState([]);
   const [desiredInformation, setDesiredInformation] = useState([]);
   const [keyword, setKeyword] = useState("");

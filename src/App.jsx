@@ -4,11 +4,15 @@ import AuthPanel from "./components/AuthPanel.jsx";
 import ProfileAccessPanel from "./components/ProfileAccessPanel.jsx";
 import NoticeDiscovery from "./components/NoticeDiscovery.jsx";
 import SiteRecommendations from "./components/SiteRecommendations.jsx";
+import UserSettingsForm from "./components/UserSettingsForm.jsx";
 import {
+  deleteNoticeSource,
   deleteProfile,
   getHealth,
   getProfile,
+  getSavedNoticeSources,
   getSavedOpportunities,
+  saveNoticeSource,
   saveOpportunity,
   saveProfile,
 } from "./api.js";
@@ -21,6 +25,9 @@ import {
 } from "./constants/opportunity.js";
 import { analyzeOpportunity } from "./services/analyzeOpportunity.js";
 import { useAuth } from "./auth/useAuth.js";
+import { getUsernameFromUser } from "./auth/authIdentity.js";
+import { useUserSettings } from "./settings/useUserSettings.js";
+import { filterAnalysesBySettings } from "./services/filterAnalysesBySettings.js";
 import { analyzeNoticeLinks } from "./services/analyzeNoticeLinks.js";
 import { rematchAnalysisResult } from "./services/rematchAnalysisResult.js";
 import {
@@ -442,6 +449,7 @@ function ConfigPanel({
   config,
   errorMessage,
   isRunning,
+  isSavingSource,
   noticeMessage,
   onChangeConfig,
   onDeleteSource,
@@ -515,7 +523,7 @@ function ConfigPanel({
             <button
               aria-label="선택한 저장 출처 삭제"
               className="source-delete-button"
-              disabled={isRunning || !canDeleteSelectedSource}
+              disabled={isRunning || isSavingSource || !canDeleteSelectedSource}
               onClick={() => onDeleteSource(selectedSource.id)}
               title="선택한 저장 출처 삭제"
               type="button"
@@ -579,8 +587,8 @@ function ConfigPanel({
         >
           저장된 출처 모두 스캔
         </button>
-        <button className="secondary-button" type="button" onClick={onSaveSource} disabled={isRunning}>
-          출처 저장
+        <button className="secondary-button" type="button" onClick={onSaveSource} disabled={isRunning || isSavingSource}>
+          {isSavingSource ? "출처 저장 중" : "출처 저장"}
         </button>
         <button
           className="secondary-button"
@@ -864,8 +872,8 @@ function Topbar({ health, user }) {
         <div className="user-chip" aria-label="사용자">
           <span>김</span>
           <div>
-            <strong>{user?.email || "???"}</strong>
-            <small>{user ? "????" : "??? ??"}</small>
+            <strong>{user ? getUsernameFromUser(user) : "게스트"}</strong>
+            <small>{user ? "로그인됨" : "로그인 필요"}</small>
           </div>
         </div>
       </div>
@@ -883,7 +891,7 @@ function Sidebar({ status }) {
           <a
             aria-current={index === activeIndex ? "page" : undefined}
             className={index === activeIndex ? "is-active" : ""}
-            href={index === 1 ? "#profile-form" : "#agent-title"}
+            href={index === 1 ? "#profile-form" : index === 2 ? "#site-recommendation-title" : "#agent-title"}
             key={item}
             onClick={() => setActiveIndex(index)}
           >
@@ -935,7 +943,7 @@ function HeroSummary({ health, knownLinks, scan }) {
   );
 }
 
-function SavedAnalysisPanel({ errorMessage, isConfigured, isLoading, items, onRefresh, onSelect, storageLabel }) {
+function SavedAnalysisPanel({ errorMessage, filteredCount = 0, isConfigured, isLoading, items, onRefresh, onSelect, storageLabel }) {
   return (
     <section className="saved-analysis-panel" aria-labelledby="saved-analysis-title">
       <div className="saved-analysis-heading">
@@ -982,11 +990,11 @@ function LegacyProfileMigrationPanel({ isImporting, onImport }) {
     <section className="legacy-profile-panel" aria-labelledby="legacy-profile-title">
       <div>
         <p className="eyebrow">Profile migration</p>
-        <h2 id="legacy-profile-title">?? ???? ???? ?????</h2>
-        <p>?? ???? ???? ???? ?? ????? ?? ???? ??? ? ????.</p>
+        <h2 id="legacy-profile-title">기존 프로필을 가져올까요?</h2>
+        <p>이 브라우저에 저장된 프로필을 현재 로그인한 계정으로 한 번만 옮깁니다.</p>
       </div>
       <button className="primary-button" disabled={isImporting} type="button" onClick={onImport}>
-        {isImporting ? "???? ?" : "???? ????"}
+        {isImporting ? "가져오는 중" : "계정으로 가져오기"}
       </button>
     </section>
   );
@@ -1056,7 +1064,9 @@ function CategoryStrip() {
 
 export default function OpportunityAgentWorkbench() {
   const { isAuthLoading, isConfigured: isAuthConfigured, session, user } = useAuth();
-  const [customSources, setCustomSources] = useState(() => readCustomSources());
+  const { settings: userSettings } = useUserSettings();
+  const [customSources, setCustomSources] = useState([]);
+  const [isSavingSource, setIsSavingSource] = useState(false);
   const [config, setConfig] = useState(createInitialConfig);
   const [knownLinks, setKnownLinks] = useState([]);
   const [initialScan] = useState(() => readLastScanResult());
@@ -1119,6 +1129,10 @@ export default function OpportunityAgentWorkbench() {
     () => createNoticeBriefsFromLinks(displayLinks, noticeAnalysisByUrl),
     [displayLinks, noticeAnalysisByUrl],
   );
+  const filteredSavedAnalyses = useMemo(
+    () => filterAnalysesBySettings(savedAnalyses, userSettings),
+    [savedAnalyses, userSettings],
+  );
   const loadSavedAnalyses = useCallback(async () => {
     if (!health?.storageConfigured) {
       setSavedAnalyses([]);
@@ -1139,6 +1153,46 @@ export default function OpportunityAgentWorkbench() {
     }
   }, [health?.storageConfigured]);
 
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!isAuthConfigured) {
+      setCustomSources(readCustomSources());
+      return undefined;
+    }
+
+    if (!user || !session?.access_token) {
+      setCustomSources([]);
+      setConfig((currentConfig) => currentConfig.selectedSourceId.startsWith("custom:")
+        ? {
+          ...currentConfig,
+          htmlSource: "",
+          linkSelector: "a[href]",
+          selectedSourceId: "custom",
+          sourceMode: "live",
+          sourceName: "",
+          targetUrl: "",
+        }
+        : currentConfig);
+      return undefined;
+    }
+
+    getSavedNoticeSources(session.access_token)
+      .then((response) => {
+        if (!cancelled) setCustomSources(Array.isArray(response.sources) ? response.sources : []);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setCustomSources([]);
+          setErrorMessage(getErrorMessage(error));
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthConfigured, session?.access_token, user?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1257,7 +1311,7 @@ export default function OpportunityAgentWorkbench() {
 
   async function persistProfile(candidate) {
     if (!isAuthConfigured) return saveUserProfile(candidate);
-    if (!session?.access_token) throw new Error("??? ??? ???? ?????. ?? ???? ???.");
+    if (!session?.access_token) throw new Error("로그인 상태를 확인하지 못했습니다. 다시 로그인해 주세요.");
     const response = await saveProfile(candidate, session.access_token);
     return response.profile;
   }
@@ -1279,7 +1333,7 @@ export default function OpportunityAgentWorkbench() {
       setProfileDraft(profileToDraft(savedProfile));
       setIsProfileEditing(false);
       setProfileError("");
-      setProfileSuccessMessage("???? ???? ?? ??? ?? ???? ?? ??????.");
+      setProfileSuccessMessage(isAuthConfigured ? "프로필을 계정에 저장했습니다." : "프로필을 이 브라우저에 저장했습니다.");
       setAnalysisResult((currentResult) => rematchAnalysisResult(currentResult, savedProfile));
       rematchStoredNoticeResults(savedProfile);
     } catch (error) {
@@ -1300,7 +1354,7 @@ export default function OpportunityAgentWorkbench() {
       setUserProfile(savedProfile);
       setProfileDraft(profileToDraft(savedProfile));
       setIsProfileEditing(false);
-      setProfileSuccessMessage("?? ???? ???? ?? ???? ??????.");
+      setProfileSuccessMessage("기존 브라우저 프로필을 계정으로 옮겼습니다.");
       setAnalysisResult((currentResult) => rematchAnalysisResult(currentResult, savedProfile));
       rematchStoredNoticeResults(savedProfile);
     } catch (error) {
@@ -1313,7 +1367,7 @@ export default function OpportunityAgentWorkbench() {
   async function handleResetProfile() {
     try {
       if (isAuthConfigured) {
-        if (!session?.access_token) throw new Error("??? ??? ???? ?????. ?? ???? ???.");
+        if (!session?.access_token) throw new Error("로그인 상태를 확인하지 못했습니다. 다시 로그인해 주세요.");
         await deleteProfile(session.access_token);
       } else {
         clearUserProfile();
@@ -1323,7 +1377,7 @@ export default function OpportunityAgentWorkbench() {
       setProfileDraft(createEmptyProfileDraft());
       setIsProfileEditing(true);
       setProfileError("");
-      setProfileSuccessMessage("???? ???????.");
+      setProfileSuccessMessage("프로필을 초기화했습니다.");
       setAnalysisResult((currentResult) => rematchAnalysisResult(currentResult, null));
       rematchStoredNoticeResults(null);
     } catch (error) {
@@ -1356,6 +1410,12 @@ export default function OpportunityAgentWorkbench() {
     }
   }
 
+  function prepareAutoSaveAnalyzedOpportunity() {
+    if (!userSettings?.autoSaveAnalyzedOpportunities) return;
+
+    // User-specific saved opportunity persistence is connected in the next task.
+    setSaveAnalysisMessage("자동 저장 설정이 켜져 있습니다. 사용자별 저장 공고 연결 후 자동 저장이 실행됩니다.");
+  }
   function handleSelectSavedAnalysis(result) {
     setAnalysisResult(result);
     setAnalysisError("");
@@ -1439,6 +1499,7 @@ export default function OpportunityAgentWorkbench() {
       });
 
       setAnalysisResult(result);
+      prepareAutoSaveAnalyzedOpportunity();
     } catch (error) {
       setAnalysisError(getErrorMessage(error));
     } finally {
@@ -1483,6 +1544,7 @@ export default function OpportunityAgentWorkbench() {
         sourceUrl: url,
       });
       setAnalysisResult(result);
+      prepareAutoSaveAnalyzedOpportunity();
       setNoticeAnalysisProgress({ completed: 1, failedCount: 0, total: 1 });
       setNoticeAnalysisByUrl((currentEntries) => ({
         ...currentEntries,
@@ -1580,10 +1642,15 @@ export default function OpportunityAgentWorkbench() {
     };
   }
 
-  function saveSource(source, { silent = false } = {}) {
-    const { source: savedSource, sources } = upsertCustomSource(source);
-
-    setCustomSources(sources);
+  function applySavedSource(savedSource) {
+    setCustomSources((currentSources) => {
+      const existingIndex = currentSources.findIndex(
+        (item) => item.id === savedSource.id || item.targetUrl === savedSource.targetUrl,
+      );
+      return existingIndex >= 0
+        ? currentSources.map((item, index) => (index === existingIndex ? savedSource : item))
+        : [...currentSources, savedSource];
+    });
     setConfig((currentConfig) => ({
       ...currentConfig,
       htmlSource: savedSource.html ?? "",
@@ -1593,15 +1660,34 @@ export default function OpportunityAgentWorkbench() {
       sourceName: savedSource.name,
       targetUrl: savedSource.targetUrl,
     }));
+  }
 
-    if (!silent) {
-      setNoticeMessage(`${savedSource.name} 출처를 저장했습니다.`);
+  async function saveSource(source, { silent = false } = {}) {
+    if (isAuthConfigured) {
+      if (!user || !session?.access_token) {
+        throw new Error("저장된 출처는 로그인한 계정에만 저장할 수 있습니다.");
+      }
+
+      setIsSavingSource(true);
+      try {
+        const response = await saveNoticeSource(source, session.access_token);
+        const savedSource = response.source;
+        applySavedSource(savedSource);
+        if (!silent) setNoticeMessage(`${savedSource.name} 출처를 계정에 저장했습니다.`);
+        return savedSource;
+      } finally {
+        setIsSavingSource(false);
+      }
     }
 
+    const { source: savedSource, sources } = upsertCustomSource(source);
+    setCustomSources(sources);
+    applySavedSource(savedSource);
+    if (!silent) setNoticeMessage(`${savedSource.name} 출처를 이 브라우저에 저장했습니다.`);
     return savedSource;
   }
 
-  function addRecommendedSource(site) {
+  async function addRecommendedSource(site) {
     const targetUrl = resolveTargetUrl(site?.url);
 
     if (!targetUrl) {
@@ -1613,7 +1699,7 @@ export default function OpportunityAgentWorkbench() {
       return savedDefaultSource;
     }
 
-    const { source, sources } = upsertCustomSource({
+    return saveSource({
       category: "추천 추가",
       html: "",
       linkSelector: "a[href]",
@@ -1621,17 +1707,15 @@ export default function OpportunityAgentWorkbench() {
       sourceMode: "live",
       targetUrl,
     });
-
-    setCustomSources(sources);
-    return source;
   }
-  function maybeAutoSaveCurrentSource() {
+
+  async function maybeAutoSaveCurrentSource() {
     const source = createSourceFromConfig();
     const savedDefaultSource = findSourceByUrl(defaultNoticeSources, source.targetUrl);
     const savedCustomSource = findSourceByUrl(customSources, source.targetUrl);
     const shouldAutoSave = Boolean(config.sourceName.trim() && (!savedDefaultSource || savedCustomSource));
 
-    if (!shouldAutoSave) {
+    if (!shouldAutoSave || (isAuthConfigured && (!user || !session?.access_token))) {
       return {
         autoSaved: false,
         source,
@@ -1640,21 +1724,21 @@ export default function OpportunityAgentWorkbench() {
 
     return {
       autoSaved: true,
-      source: saveSource(source, { silent: true }),
+      source: await saveSource(source, { silent: true }),
     };
   }
 
-  function handleSaveSource() {
+  async function handleSaveSource() {
     setErrorMessage("");
 
     try {
-      saveSource(createSourceFromConfig());
+      await saveSource(createSourceFromConfig());
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     }
   }
 
-  function handleDeleteSource(sourceId) {
+  async function handleDeleteSource(sourceId) {
     const source = customSources.find((item) => item.id === sourceId);
 
     if (!source) {
@@ -1666,13 +1750,25 @@ export default function OpportunityAgentWorkbench() {
       return;
     }
 
-    const { source: deletedSource, sources } = removeCustomSource(sourceId);
-    if (!deletedSource) {
-      setErrorMessage("저장된 출처를 삭제하지 못했습니다.");
+    let deletedSource = source;
+    try {
+      if (isAuthConfigured) {
+        if (!session?.access_token) throw new Error("로그인 상태를 확인하지 못했습니다. 다시 로그인해 주세요.");
+        setIsSavingSource(true);
+        await deleteNoticeSource(sourceId, session.access_token);
+        setCustomSources((currentSources) => currentSources.filter((item) => item.id !== sourceId));
+      } else {
+        const result = removeCustomSource(sourceId);
+        if (!result.source) throw new Error("저장된 출처를 삭제하지 못했습니다.");
+        deletedSource = result.source;
+        setCustomSources(result.sources);
+      }
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
       return;
+    } finally {
+      setIsSavingSource(false);
     }
-
-    setCustomSources(sources);
 
     if (config.selectedSourceId === deletedSource.id) {
       setConfig((currentConfig) => ({
@@ -1729,7 +1825,7 @@ export default function OpportunityAgentWorkbench() {
   }
 
   async function runCurrentSourceScan() {
-    const { autoSaved, source } = maybeAutoSaveCurrentSource();
+    const { autoSaved, source } = await maybeAutoSaveCurrentSource();
     const result = await scanSource(source);
     const scanWithModes = createScanSummary([result]);
     const nextScan = {
@@ -1967,6 +2063,7 @@ export default function OpportunityAgentWorkbench() {
             config={config}
             errorMessage={errorMessage}
             isRunning={isRunning}
+            isSavingSource={isSavingSource}
             noticeMessage={noticeMessage}
             onChangeConfig={updateConfig}
             onDeleteSource={handleDeleteSource}
@@ -1987,7 +2084,8 @@ export default function OpportunityAgentWorkbench() {
               isConfigured={Boolean(health?.storageConfigured)}
               isLoading={isLoadingSavedAnalyses}
               storageLabel={health?.storageLabel}
-              items={savedAnalyses}
+              filteredCount={savedAnalyses.length - filteredSavedAnalyses.length}
+              items={filteredSavedAnalyses}
               onRefresh={loadSavedAnalyses}
               onSelect={handleSelectSavedAnalysis}
             />
@@ -2016,7 +2114,9 @@ export default function OpportunityAgentWorkbench() {
           />
         )}
 
-        <SiteRecommendations onAddSource={addRecommendedSource} profile={userProfile} savedSources={sourceOptions} />
+        {isAuthConfigured && user ? <UserSettingsForm /> : null}
+
+        <SiteRecommendations onAddSource={addRecommendedSource} profile={userProfile} savedSources={sourceOptions} settings={userSettings} />
 
         <NoticeDiscovery onSelectCandidate={handleSelectDiscoveredNotice} />
 

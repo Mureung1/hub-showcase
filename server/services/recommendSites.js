@@ -1,7 +1,8 @@
-﻿import {
+import {
   SITE_INFORMATION_LABELS,
   SITE_INFORMATION_TYPES,
 } from "../../src/constants/siteRecommendations.js";
+import { normalizeUserSettings } from "../../src/constants/userSettings.js";
 
 const INFORMATION_TYPE_SET = new Set(SITE_INFORMATION_TYPES);
 const SCORE_WEIGHTS = Object.freeze({
@@ -60,6 +61,17 @@ function inferDesiredInformation(profile, keyword) {
   return inferred.length ? inferred : ["scholarship", "contest", "activity", "support"];
 }
 
+function resolveDesiredInformation(desiredInformation, profile, keyword, settings) {
+  const explicit = normalizeTypes(desiredInformation);
+  if (explicit.length) return explicit;
+
+  if (settings?.recommendationCategories?.length) {
+    return normalizeTypes(settings.recommendationCategories);
+  }
+
+  return inferDesiredInformation(profile, keyword);
+}
+
 function siteMatchesMajor(site, profile) {
   const majors = profile?.majors ?? [];
   if (!majors.length) return false;
@@ -73,10 +85,19 @@ function siteMatchesMajor(site, profile) {
   ].includes(type));
 }
 
-function siteMatchesRegions(site, profile) {
-  const regions = profile?.regions ?? [];
+function isOnlineOnlySite(site) {
+  const regions = site?.regions ?? [];
+  return regions.includes("온라인") && !regions.some((region) => !["온라인", "전국"].includes(region));
+}
+
+function siteMatchesRegions(site, profile, settings) {
+  const regions = settings?.preferredRegions?.length
+    ? settings.preferredRegions
+    : (profile?.regions ?? []);
   if (!regions.length) return false;
-  if (site.regions.includes("전국") || site.regions.includes("온라인")) return true;
+  if (settings && !settings.includeOnline && isOnlineOnlySite(site)) return false;
+  if (site.regions.includes("전국")) return true;
+  if (site.regions.includes("온라인") && settings?.includeOnline !== false) return true;
   return intersect(site.regions, regions).length > 0;
 }
 
@@ -91,7 +112,7 @@ function buildProfileReasons(site, profile, interestTypes, regionMatch) {
     reasons.push("전공과 연관된 연구·교육·공모전 정보를 함께 확인할 수 있습니다.");
   }
   if (regionMatch) {
-    reasons.push("전국 또는 온라인 범위의 정보를 포함해 활동 가능 지역과 함께 검토할 수 있습니다.");
+    reasons.push("설정한 활동 가능 지역 또는 온라인 범위와 함께 검토할 수 있습니다.");
   }
 
   return reasons;
@@ -101,8 +122,8 @@ function normalizeTypes(types) {
   return unique(types).filter((type) => INFORMATION_TYPE_SET.has(type));
 }
 
-function createCoverage(trackedSites, desiredInformation, recommendations) {
-  const currentlyCovered = normalizeTypes(trackedSites.flatMap((site) => site.informationTypes));
+function createCoverage(savedSourceSites, desiredInformation, recommendations) {
+  const currentlyCovered = normalizeTypes(savedSourceSites.flatMap((site) => site.informationTypes));
   const missingCoverage = desiredInformation.filter((type) => !currentlyCovered.includes(type));
   const newlyCovered = normalizeTypes(
     recommendations.flatMap((recommendation) => recommendation.missingCoverageFilled),
@@ -124,13 +145,14 @@ function createRecommendation(site, context) {
     interestTypes,
     missingCoverage,
     profile,
+    settings,
   } = context;
   const desiredMatches = intersect(site.informationTypes, desiredInformation);
   const missingMatches = intersect(site.informationTypes, missingCoverage);
   const interestMatches = intersect(site.informationTypes, interestTypes);
   const overlappingInformation = intersect(site.informationTypes, currentlyCovered);
   const majorMatch = siteMatchesMajor(site, profile);
-  const regionMatch = siteMatchesRegions(site, profile);
+  const regionMatch = siteMatchesRegions(site, profile, settings);
   let score = 0;
 
   score += desiredMatches.length * SCORE_WEIGHTS.desiredMatch;
@@ -147,13 +169,13 @@ function createRecommendation(site, context) {
   const complementaryReasons = [];
 
   if (missingMatches.length) {
-    complementaryReasons.push(`현재 추적 범위에서 부족한 ${missingMatches.map((type) => SITE_INFORMATION_LABELS[type]).join(", ")} 정보를 보완합니다.`);
+    complementaryReasons.push(`저장된 출처에서 부족한 ${missingMatches.map((type) => SITE_INFORMATION_LABELS[type]).join(", ")} 정보를 보완합니다.`);
   }
   if (overlappingInformation.length) {
-    complementaryReasons.push(`현재 사이트와 ${overlappingInformation.map((type) => SITE_INFORMATION_LABELS[type]).join(", ")} 정보는 겹치지만 제공 기관과 범위가 다릅니다.`);
+    complementaryReasons.push(`저장된 출처와 ${overlappingInformation.map((type) => SITE_INFORMATION_LABELS[type]).join(", ")} 정보는 겹치지만 제공 기관과 범위가 다릅니다.`);
   }
   if (!complementaryReasons.length) {
-    complementaryReasons.push("현재 추적 사이트와 다른 기관의 정보를 함께 확인할 수 있습니다.");
+    complementaryReasons.push("저장된 출처와 다른 기관의 정보를 함께 확인할 수 있습니다.");
   }
 
   return {
@@ -182,28 +204,35 @@ export function recommendSites({
   desiredInformation = [],
   candidateSites = [],
   keyword = null,
+  settings = null,
 }) {
-  const normalizedDesiredInformation = normalizeTypes(desiredInformation);
-  const resolvedDesiredInformation = normalizedDesiredInformation.length
-    ? normalizedDesiredInformation
-    : inferDesiredInformation(profile, keyword);
+  const normalizedSettings = settings ? normalizeUserSettings(settings) : null;
+  const resolvedDesiredInformation = resolveDesiredInformation(
+    desiredInformation,
+    profile,
+    keyword,
+    normalizedSettings,
+  );
   const validTrackedSites = trackedSites.filter((site) => site?.active);
   const trackedSiteIds = new Set(validTrackedSites.map((site) => site.id));
   const currentlyCovered = normalizeTypes(validTrackedSites.flatMap((site) => site.informationTypes));
   const missingCoverage = resolvedDesiredInformation.filter((type) => !currentlyCovered.includes(type));
   const interestTypes = inferDesiredInformation(profile, keyword);
+  const recommendationLimit = normalizedSettings?.recommendationLimit ?? MAX_RECOMMENDATIONS;
   const recommendations = candidateSites
     .filter((site) => site?.active && !trackedSiteIds.has(site.id))
+    .filter((site) => normalizedSettings?.includeOnline !== false || !isOnlineOnlySite(site))
     .map((site) => createRecommendation(site, {
       currentlyCovered,
       desiredInformation: resolvedDesiredInformation,
       interestTypes,
       missingCoverage,
       profile,
+      settings: normalizedSettings,
     }))
     .filter((recommendation) => recommendation.score > 0)
     .sort((left, right) => right.score - left.score || left.name.localeCompare(right.name, "ko"))
-    .slice(0, MAX_RECOMMENDATIONS);
+    .slice(0, recommendationLimit);
 
   return {
     recommendations,

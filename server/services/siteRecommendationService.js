@@ -1,4 +1,4 @@
-﻿import { getAIConfig } from "./analyzeOpportunity.js";
+import { getAIConfig } from "./analyzeOpportunity.js";
 import { getFriendlyGeminiError } from "./geminiAnalyzeOpportunity.js";
 import { geminiExplainSiteRecommendations } from "./geminiExplainSiteRecommendations.js";
 import { getActiveSiteRegistry } from "../data/siteRegistry.js";
@@ -36,7 +36,7 @@ export function createSiteRecommendationService(options = {}) {
   const explain = options.geminiExplainSiteRecommendations ?? geminiExplainSiteRecommendations;
 
   return {
-    async recommend({ profile, trackedSiteIds, desiredInformation, keyword }) {
+    async recommend({ profile, trackedSiteIds, desiredInformation, keyword, settings }) {
       const trackedIdSet = new Set(trackedSiteIds);
       const trackedSites = registry.filter((site) => trackedIdSet.has(site.id));
       const baseResult = recommendSites({
