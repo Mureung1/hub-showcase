@@ -23,7 +23,12 @@ API 클라이언트 역할을 담당한다. 레이어별 상세 책임과 의존
 
 ## 3. 백엔드 책임
 
-TODO: `backend/`가 현재 빈 골격이라 API 서버 구조, 담당 도메인, 프레임워크 등이 아직 정의되지 않았다.
+`backend/`는 NestJS 기반 워크스페이스 패키지 `@gazua/backend`다. 현재는 헬스체크(`GET /health`)
+엔드포인트와 기본 툴체인(ESLint, Prettier, Jest, `class-validator` 기반 전역 `ValidationPipe`,
+`@nestjs/config` 기반 환경 변수 로딩, Vite 개발 서버용 CORS 설정)만 갖춘 상태다.
+
+TODO: API 서버가 담당할 도메인 모듈 구조(AI 분석, 최근 분석 기록, 시황 뉴스, 학습 콘텐츠), 데이터베이스·ORM
+선택은 아직 정의되지 않았다.
 
 ## 4. 외부 금융 데이터 API 연동
 
