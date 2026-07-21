@@ -63,7 +63,8 @@ app.post('/api/library', async (req, res) => {
           authors: paper.authors,
           channel: paper.channel,
           year: paper.year,
-          match_score: paper.matchScore
+          match_score: paper.matchScore,
+          user_id: paper.userId
         }
       ]);
 
