@@ -1,10 +1,10 @@
 import type { Category, CategoryAnalysis } from '../types/analysis';
 
-export const CATEGORIES: Category[] = ['도시락', '김밥', '햄버거샌드위치', '삼각김밥'];
+export const CATEGORIES: Category[] = ['도시락', '김밥', '햄버거샌드위치', '주먹밥'];
 
 export const CATEGORY_TAB_BADGES: Partial<Record<Category, '추천' | '주의'>> = {
   도시락: '추천',
-  삼각김밥: '주의',
+  주먹밥: '주의',
 };
 
 export const ANALYSIS_MOCK_DATA: Record<Category, CategoryAnalysis> = {
@@ -65,7 +65,7 @@ export const ANALYSIS_MOCK_DATA: Record<Category, CategoryAnalysis> = {
     type: 'neutral',
     reasons: ['평일 아침 판매 집중', '폐기율 보통 수준', '발주 유지 적정'],
   },
-  삼각김밥: {
+  주먹밥: {
     weekday: [120, 110, 95, 85, 70, 60, 55],
     weekdayLabels: ['월', '화', '수', '목', '금', '토', '일'],
     bestDayIdx: 0,

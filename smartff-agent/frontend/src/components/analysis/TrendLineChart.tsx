@@ -2,10 +2,12 @@ import { seriesToSvg } from '../../utils/analysisSummary';
 
 interface TrendLineChartProps {
   title: string;
+  periodLabel?: string;
   trendLabel: string;
   good: boolean | null;
   values: number[];
   xLabels: string[];
+  pointLabels?: string[];
   summary: string;
   goodColor: string;
   gradientId: string;
@@ -15,10 +17,12 @@ interface TrendLineChartProps {
 
 export default function TrendLineChart({
   title,
+  periodLabel = '최근 3개월',
   trendLabel,
   good,
   values,
   xLabels,
+  pointLabels,
   summary,
   goodColor,
   gradientId,
@@ -44,7 +48,7 @@ export default function TrendLineChart({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
         <span style={{ fontSize: '15px', fontWeight: '700', color: '#0F172A' }}>{title}</span>
         <span style={{ fontSize: '12px', color: trendTextColor, fontWeight: '700', whiteSpace: 'nowrap', flexShrink: 0 }}>
-          최근 3개월 {trendLabel}
+          {periodLabel} {trendLabel}
         </span>
       </div>
 
@@ -68,14 +72,19 @@ export default function TrendLineChart({
           strokeLinejoin="round"
         />
         {geo.dots.map((dot, i) => (
-          <circle key={i} cx={dot.cx} cy={dot.cy} r={dot.r} fill={lineColor} />
+          <circle key={i} cx={dot.cx} cy={dot.cy} r={dot.r} fill={lineColor}>
+            {pointLabels?.[i] && <title>{`${xLabels[i]} · ${pointLabels[i]}`}</title>}
+          </circle>
         ))}
         <circle cx={geo.dots[maxIdx].cx} cy={geo.dots[maxIdx].cy} r={11} fill={lineColor} opacity={0.18} />
       </svg>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94A3B8', fontWeight: '600', padding: '0 4px' }}>
-        {xLabels.map((label) => (
-          <span key={label}>{label}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 4px' }}>
+        {xLabels.map((label, i) => (
+          <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+            <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '600' }}>{label}</span>
+            {pointLabels?.[i] && <span style={{ fontSize: '10.5px', color: '#64748B', fontWeight: '700' }}>{pointLabels[i]}</span>}
+          </div>
         ))}
       </div>
 

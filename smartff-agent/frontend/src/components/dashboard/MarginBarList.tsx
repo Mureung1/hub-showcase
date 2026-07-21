@@ -3,6 +3,7 @@ import { colors } from '../../constants/colors';
 
 interface MarginBarListProps {
   items: MarginBarItem[];
+  onViewAllClick?: () => void;
 }
 
 // design_system.md 마진율 바 규칙: 1위만 진한 네이비, 나머지는 라이트 블루 (AI 추천은 배지로만 구분)
@@ -17,7 +18,7 @@ function rateColor(item: MarginBarItem) {
   return colors.textSecondary;
 }
 
-export default function MarginBarList({ items }: MarginBarListProps) {
+export default function MarginBarList({ items, onViewAllClick }: MarginBarListProps) {
   const maxRate = Math.max(...items.map((i) => i.rate)) || 1;
 
   return (
@@ -89,6 +90,7 @@ export default function MarginBarList({ items }: MarginBarListProps) {
           전월 대비 수치는 2개월 이상 데이터가 누적된 경우에만 표시됩니다
         </span>
         <button
+          onClick={onViewAllClick}
           style={{
             fontSize: '12px',
             fontWeight: '700',

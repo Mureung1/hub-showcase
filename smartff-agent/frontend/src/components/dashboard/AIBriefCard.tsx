@@ -5,9 +5,10 @@ interface AIBriefCardProps {
   titleRest: string;
   reasons: string[];
   ctaLabel: string;
+  onCtaClick?: () => void;
 }
 
-export default function AIBriefCard({ titleHighlight, titleRest, reasons, ctaLabel }: AIBriefCardProps) {
+export default function AIBriefCard({ titleHighlight, titleRest, reasons, ctaLabel, onCtaClick }: AIBriefCardProps) {
   return (
     <div style={{ background: colors.primaryTint, border: `1px solid ${colors.primaryBorder}`, borderRadius: '16px', padding: '22px 26px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
@@ -56,6 +57,8 @@ export default function AIBriefCard({ titleHighlight, titleRest, reasons, ctaLab
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
         <button
+          onClick={onCtaClick}
+          disabled={!onCtaClick}
           style={{
             fontSize: '11.5px',
             fontWeight: '700',
@@ -64,7 +67,8 @@ export default function AIBriefCard({ titleHighlight, titleRest, reasons, ctaLab
             background: colors.bgCard,
             border: '1px solid #BFDBFE',
             borderRadius: '20px',
-            cursor: 'pointer',
+            cursor: onCtaClick ? 'pointer' : 'default',
+            opacity: onCtaClick ? 1 : 0.6,
             whiteSpace: 'nowrap',
             flexShrink: 0,
             fontFamily: 'inherit',

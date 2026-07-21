@@ -54,9 +54,13 @@ router.get('/month/:month', async (req: Request, res: Response) => {
   try {
     await financialService.loadData();
 
-    const month = parseInt(req.params.month, 10);
-    if (isNaN(month) || month < 1 || month > 6) {
-      return res.status(400).json({ error: 'Invalid month (1-6)' });
+    const month = parseInt(req.params.month as string, 10);
+    const availableMonths = financialService.getAllRecords().map((r) => r.month);
+    const maxMonth = Math.max(...availableMonths);
+    const minMonth = Math.min(...availableMonths);
+
+    if (isNaN(month) || month < minMonth || month > maxMonth) {
+      return res.status(400).json({ error: `Invalid month (${minMonth}-${maxMonth})` });
     }
 
     const data = financialService.getMonthSummary(month);

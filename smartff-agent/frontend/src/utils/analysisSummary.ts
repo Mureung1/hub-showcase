@@ -32,6 +32,26 @@ export function trendSummary(weekly: number[], isWaste: boolean): string {
   return '최근 1개월 보합세를 유지하고 있습니다.';
 }
 
+// merged_dataset.csv는 월 단위 집계라(최대 6개월), 주 단위 trendSummary의 4주-vs-4주 비교 대신
+// 최신월 vs 직전월 비교로 판단한다.
+export function monthlyTrendSummary(values: number[], isWaste: boolean): string {
+  if (values.length < 2) return '데이터가 더 필요합니다.';
+
+  const latest = values[values.length - 1];
+  const prev = values[values.length - 2];
+  const diff = latest - prev;
+
+  if (isWaste) {
+    const max = Math.max(...values);
+    if (diff > Math.abs(prev) * 0.08) return `최근 1개월 폐기율 상승 추세, 최고 ${max.toFixed(1)}%까지 확인됩니다.`;
+    return `최근 1개월 ${max.toFixed(1)}% 이하 범위 내 안정 유지 중입니다.`;
+  }
+
+  if (diff > Math.abs(prev) * 0.03) return '최근 1개월 지속 상승세입니다.';
+  if (diff < -Math.abs(prev) * 0.03) return '최근 1개월 지속 하락세입니다.';
+  return '최근 1개월 보합세를 유지하고 있습니다.';
+}
+
 export interface SvgSeries {
   points: string;
   polygon: string;
@@ -39,7 +59,8 @@ export interface SvgSeries {
 }
 
 export function seriesToSvg(values: number[], width: number, height: number, padX: number): SvgSeries {
-  const min = Math.min(...values);
+  // 0을 기준선으로 고정 — min~max로 자동 스케일하면 작은 변동도 과장되어 보임
+  const min = Math.min(0, ...values);
   const max = Math.max(...values);
   const range = max - min || 1;
   const usableW = width - padX * 2;

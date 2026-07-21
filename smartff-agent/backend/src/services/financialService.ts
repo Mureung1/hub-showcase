@@ -166,6 +166,14 @@ class FinancialService {
 
     return this.data.filter((r) => r.month === month);
   }
+
+  getAllRecords(): FinancialRecord[] {
+    if (!this.loaded) {
+      throw new Error('Data not loaded. Call loadData() first.');
+    }
+
+    return this.data;
+  }
 }
 
 export default new FinancialService();

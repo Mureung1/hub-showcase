@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { FinancialSummary } from '../../types/financial';
 import FinancialKPICard from '../../components/financial/FinancialKPICard';
 import InfoBox from '../../components/financial/InfoBox';
@@ -6,7 +7,7 @@ import ProfitContribution from '../../components/financial/ProfitContribution';
 import MarginWasteChart from '../../components/financial/MarginWasteChart';
 import WasteLossRanking from '../../components/financial/WasteLossRanking';
 import MonthSelector from '../../components/financial/MonthSelector';
-import CategorySelector from '../../components/financial/CategorySelector';
+import CategorySelector, { CATEGORIES } from '../../components/financial/CategorySelector';
 import ProfitStructure from '../../components/financial/ProfitStructure';
 
 function calcDelta(current: number, prev: number | undefined, goodWhenUp: boolean) {
@@ -28,10 +29,15 @@ async function fetchSummary(months: number, category: string): Promise<Financial
 }
 
 export default function FinancialPage() {
+  const [searchParams] = useSearchParams();
+  const categoryFromUrl = searchParams.get('category');
+  const initialCategory = categoryFromUrl && CATEGORIES.includes(categoryFromUrl) ? categoryFromUrl : '전체';
+
   const [selectedMonth, setSelectedMonth] = useState(6);
-  const [selectedCategory, setSelectedCategory] = useState('전체');
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [summary, setSummary] = useState<FinancialSummary | null>(null);
   const [prevSummary, setPrevSummary] = useState<FinancialSummary | null>(null);
+  const [fullSummary, setFullSummary] = useState<FinancialSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,6 +61,13 @@ export default function FinancialPage() {
 
     fetchData();
   }, [selectedMonth, selectedCategory]);
+
+  // AI 재무 인사이트는 카테고리 필터와 무관하게 항상 전체 카테고리 기준으로 랭킹을 계산
+  useEffect(() => {
+    fetchSummary(selectedMonth, '전체')
+      .then(setFullSummary)
+      .catch(() => setFullSummary(null));
+  }, [selectedMonth]);
 
   if (loading) {
     return (
@@ -119,8 +132,8 @@ export default function FinancialPage() {
         <MonthSelector selectedMonth={selectedMonth} onSelectMonth={setSelectedMonth} />
       </div>
 
-      {/* AI Financial Insight */}
-      <InfoBox data={summary.data} />
+      {/* AI Financial Insight — 항상 전체 카테고리 데이터 기준 */}
+      {fullSummary && <InfoBox data={fullSummary.data} selectedCategory={selectedCategory} />}
 
       {/* KPI 4-Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '20px' }}>

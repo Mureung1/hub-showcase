@@ -34,7 +34,7 @@
 
 ### Data Pipeline
 
-- [x] sales Parser — ⚠️ 저장소에서 스크립트 파일 유실, git 히스토리에서 복구 필요 (week3_checklist.md 참고)
+- [x] sales Parser — 2026-07-20 세션에서 스크립트 파일 복구 완료 (커밋 25d7ed1)
 - [x] waste dtype 정리
 - [ ] inventory / orders Parser — 설계 변경으로 불필요 (카테고리+월 집계 방식, inventory/orders 미사용)
 - [ ] Product Master 생성 — 상품 단위 매칭률 낮아 P1로 이월, 카테고리+월 집계로 대체
@@ -44,9 +44,9 @@
 
 - [x] Financial Backend (마진/폐기손실 계산)
 - [x] Financial Frontend (실데이터 연동) — 월/카테고리 필터, 전월 대비 비교, 손익 구조까지 확장 (2026-07-20)
-- [ ] Dashboard KPI 실데이터 연동 — 미착수, 여전히 mock
-- [ ] Rule Engine V1 (최소 3개 규칙) — 미착수
-- [ ] Analysis 최소 1개 카테고리 실데이터 연동 (P1) — 미착수
+- [x] Dashboard KPI 실데이터 연동 — 2026-07-21 완료 (`/api/financial/summary`, `/api/recommendations` 연동, mock 제거)
+- [x] Rule Engine V1 (최소 3개 규칙) — 2026-07-21 완료 (`RecommendationService`, 카테고리 평균 폐기율/전체 평균 마진율 기반)
+- [x] Analysis 판매/폐기 추세 차트 실데이터 연동 (P1) — 2026-07-22 완료 (전 카테고리, `/api/financial/summary` 기반). 요일별/시간대별 패턴은 원본 데이터에 해당 정보가 없어 여전히 mock (아래 백로그 참고)
 
 ---
 
@@ -343,11 +343,35 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
 
 ## MVP 완성 이후 고도화 (4주차 이후)
 
+### ⭐ 최우선 — Upload → ETL 자동화 (2026-07-21 논의)
+
+- [ ] Upload → ETL → Financial 자동 반영 파이프라인 구축
+  - 현재: Upload는 파일명/카테고리 메타데이터만 Supabase에 기록, 실제 파일 저장·파서 실행 없음. ETL은 수동 실행, 백엔드 재시작 전까지 `merged_dataset.csv` 변경도 반영 안 됨
+  - 작업 범위: (1) 실제 파일 업로드 처리(`data/raw/` 저장) (2) 백엔드에서 Python ETL 스크립트 subprocess 실행 트리거 (3) `FinancialService.reloadData()` + 캐시 무효화 (4) Upload 프론트 처리 상태 표시 (5) 에러 케이스 처리 (6) E2E 테스트
+  - 예상 소요: 해피패스만이면 약 1일, 에러 처리 포함 견고하게 하면 약 2일
+  - 불확실 지점: `master_dataset_builder.py`가 월 단위 증분 갱신을 지원하는지, 아니면 raw 전체 재계산 구조인지 확인 필요 — 착수 전 먼저 확인
+  - 이 작업에 `FinancialService Cache Reload`(아래 항목) 포함됨
+  - ⚠️ `financialService.ts`의 `if (this.data.length !== 24) throw ...` 하드코딩 검증도 이때 같이 제거/완화 필요 (데이터가 24행 이상으로 늘어나면 현재 로직은 에러를 던짐). Financial/Recommendation API 계약 자체는 안 바뀌므로 프론트는 그대로 호환됨
+
+### 2순위 — Analysis 요일별/시간대별 패턴 실데이터 연동 (2026-07-22 논의)
+
+- [ ] Analysis 요일별/시간대별 판매 패턴 실데이터 연동
+  - 확인됨: `data/raw/weekday_sales/`, `data/raw/hourly_sales/`에 원본 데이터 실제로 존재 (단, **6월 1~4주차만**, 1~5월 없음 — UI 문구 "최근 1개월 평균"과는 부합)
+  - 원본 엑셀이 조회기간/비교기간/차이 3행 피벗 구조라 `sales_parser.py` 3단 헤더 문제처럼 새 파서 필요
+  - 작업 범위: (1) `weekday_sales_parser.py`, `hourly_sales_parser.py` 신규 작성, 카테고리별 4주 평균 계산 (2) 백엔드 API 엔드포인트 신설 (3) `AnalysisPage.tsx` 요일/시간대 차트 연결 (mock 제거)
+  - 예상 소요: 1개 카테고리면 약 1일, 4개 카테고리 전부 견고하게 하면 1.5~2일
+  - 판매/폐기 추세 차트는 2026-07-22 완료 (`merged_dataset.csv` 기반, 전 카테고리)
+
 - [ ] Fuzzy Matching: sales/orders 상품명 유사 매칭
 - [ ] Product Master 자동 보정: 수동 매핑 테이블 구축
 - [ ] Rule Engine V2: 더 복잡한 규칙 추가
+- [ ] FinancialService Cache Reload (V2): Upload 이후 최신 `merged_dataset.csv` 반영
+  - `reloadData()` 구현, cache invalidation, Upload API와 연동, Recommendation 기준(카테고리 평균 폐기율/전체 평균 마진율) 재계산
+  - 현재(V1)는 서버 기동 시 1회 로드 후 캐싱 — 의도적 설계 선택, 버그 아님 (2026-07-21 결정)
+  - ⚠️ 위 "Upload → ETL 자동화" 작업에 포함되므로 별도 착수 불필요
 - [ ] Dashboard AI Insight: 자연어 분석 고도화
 - [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동)
+- [ ] 프론트엔드 번들 코드 스플리팅 — `npm run build` 시 메인 청크 667KB 경고(2026-07-22 validation-agent 지적). 지금 당장 문제는 아니지만 페이지별 `React.lazy()` 분리 고려
 
 ## MVP 범위 밖 (항상 제외, CLAUDE.md 준수)
 

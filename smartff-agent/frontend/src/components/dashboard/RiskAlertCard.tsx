@@ -4,9 +4,10 @@ interface RiskAlertCardProps {
   title: string;
   reasons: string[];
   ctaLabel: string;
+  onCtaClick?: () => void;
 }
 
-export default function RiskAlertCard({ title, reasons, ctaLabel }: RiskAlertCardProps) {
+export default function RiskAlertCard({ title, reasons, ctaLabel, onCtaClick }: RiskAlertCardProps) {
   return (
     <div
       style={{
@@ -52,6 +53,7 @@ export default function RiskAlertCard({ title, reasons, ctaLabel }: RiskAlertCar
       </div>
 
       <button
+        onClick={onCtaClick}
         style={{
           marginTop: '6px',
           fontSize: '11.5px',
