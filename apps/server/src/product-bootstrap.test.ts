@@ -296,6 +296,8 @@ function expectedSafeBootstrap() {
             requestedSkillName: 'ay-ple-first-assignment',
           },
           sources: [{ materialId, digest: '3'.repeat(64) }],
+          retryOfRunId: null,
+          recovery: null,
           status: 'completed',
           validationOutcome: 'passed',
           createdAt: now,

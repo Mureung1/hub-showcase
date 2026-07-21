@@ -55,6 +55,7 @@ import {
   isProductOperationId,
   isProposalKey,
   isRecord,
+  isRunId,
   isSafeAbsoluteActionPath,
   isSafeFailureCode,
   isSafeMaterialRelativePath,
@@ -221,6 +222,13 @@ export type ModelingRunSource = {
   readonly digest: string
 }
 
+export type ModelingRunRecoveryOutcome =
+  | { readonly outcome: 'interrupted' | 'unknown' }
+  | {
+      readonly outcome: 'continuation_lost'
+      readonly confirmedRevision: number
+    }
+
 export type ModelingRun = {
   readonly id: string
   readonly actionId: string
@@ -233,6 +241,8 @@ export type ModelingRun = {
   readonly recipeDigest: string
   readonly argumentsDigest: string
   readonly sourceBaseline: readonly ModelingRunSource[]
+  readonly retryOfRunId?: string
+  readonly recoveryOutcome?: ModelingRunRecoveryOutcome
   readonly status: ModelingRunStatus
   readonly validationOutcome: ModelingRunValidationOutcome
   readonly createdAt: string
@@ -260,6 +270,7 @@ export type PrepareAssignmentActionInput = {
     readonly digest: string
   }
   readonly selectedMaterials: readonly ModelingRunSource[]
+  readonly retryOfRunId?: string
 }
 
 export type PreparedAssignmentAction = AssignmentProposalSession & {
@@ -298,6 +309,7 @@ export type SettleAssignmentActionInput = {
   readonly status: 'completed' | 'failed' | 'interrupted' | 'unknown'
   readonly validationOutcome: Exclude<ModelingRunValidationOutcome, 'pending'>
   readonly failureCode?: string
+  readonly recoveryOutcome?: ModelingRunRecoveryOutcome
 }
 
 export type PrepareProductChatExecutionInput = {
@@ -1576,6 +1588,26 @@ async function prepareAssignmentAction(
       'The Assignment action ID was already used.',
     )
   }
+  const retrySource =
+    input.retryOfRunId === undefined
+      ? undefined
+      : opened.store.modelingRuns.find((run) => run.id === input.retryOfRunId)
+  if (
+    input.retryOfRunId !== undefined &&
+    (!retrySource ||
+      (retrySource.status !== 'interrupted' &&
+        retrySource.status !== 'unknown') ||
+      (retrySource.recoveryOutcome?.outcome !== 'interrupted' &&
+        retrySource.recoveryOutcome?.outcome !== 'unknown') ||
+      opened.store.modelingRuns.some(
+        (run) => run.retryOfRunId === input.retryOfRunId,
+      ))
+  ) {
+    throw new SemesterWorkspaceError(
+      'action_conflict',
+      'The Assignment retry receipt is unavailable.',
+    )
+  }
   const course = opened.store.course
   if (!course || course.id !== input.courseId) {
     throw new SemesterWorkspaceError(
@@ -1646,6 +1678,23 @@ async function prepareAssignmentAction(
       rawMaterialId: material.id,
       digest: material.digest,
     }))
+    if (
+      retrySource &&
+      (retrySource.courseId !== course.id ||
+        retrySource.requestedSkillName !== input.recipe.requestedSkillName ||
+        retrySource.requestedSkillPath !== input.recipe.requestedSkillPath ||
+        retrySource.recipeName !== input.recipe.name ||
+        retrySource.recipeVersion !== input.recipe.version ||
+        retrySource.recipeDigest !== input.recipe.digest ||
+        retrySource.argumentsDigest !== input.arguments.digest ||
+        JSON.stringify(retrySource.sourceBaseline) !==
+          JSON.stringify(sourceBaseline))
+    ) {
+      throw new SemesterWorkspaceError(
+        'action_conflict',
+        'The Assignment retry no longer matches its receipt.',
+      )
+    }
     const invocationFingerprint = digestUtf8(
       JSON.stringify({
         actionId: input.actionId,
@@ -1659,6 +1708,7 @@ async function prepareAssignmentAction(
         recipeDigest: input.recipe.digest,
         argumentsDigest: input.arguments.digest,
         sourceBaseline,
+        retryOfRunId: input.retryOfRunId ?? null,
       }),
     )
     const run = {
@@ -1673,6 +1723,9 @@ async function prepareAssignmentAction(
       recipeDigest: input.recipe.digest,
       argumentsDigest: input.arguments.digest,
       sourceBaseline,
+      ...(input.retryOfRunId === undefined
+        ? {}
+        : { retryOfRunId: input.retryOfRunId }),
       status: 'starting',
       validationOutcome: 'pending',
       createdAt: now,
@@ -1816,7 +1869,9 @@ async function settleAssignmentAction(
     !isActionId(input.actionId) ||
     !isTerminalModelingRunStatus(input.status) ||
     !isSettledValidationOutcome(input.validationOutcome) ||
-    (input.failureCode !== undefined && !isSafeFailureCode(input.failureCode))
+    (input.failureCode !== undefined && !isSafeFailureCode(input.failureCode)) ||
+    (input.recoveryOutcome !== undefined &&
+      !isModelingRunRecoveryOutcome(input.recoveryOutcome))
   ) {
     throw invalidAction()
   }
@@ -1836,6 +1891,20 @@ async function settleAssignmentAction(
   )
 }
 
+function isModelingRunRecoveryOutcome(
+  value: unknown,
+): value is ModelingRunRecoveryOutcome {
+  return (
+    isRecord(value) &&
+    (((value.outcome === 'interrupted' || value.outcome === 'unknown') &&
+      isExactRecord(value, ['outcome'])) ||
+      (value.outcome === 'continuation_lost' &&
+        isExactRecord(value, ['confirmedRevision', 'outcome']) &&
+        Number.isSafeInteger(value.confirmedRevision) &&
+        Number(value.confirmedRevision) >= 0))
+  )
+}
+
 async function settleModelingRun(
   opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
   appDataRoot: string,
@@ -1844,6 +1913,7 @@ async function settleModelingRun(
     readonly status: Exclude<ModelingRunStatus, 'starting' | 'running'>
     readonly validationOutcome: Exclude<ModelingRunValidationOutcome, 'pending'>
     readonly failureCode?: string
+    readonly recoveryOutcome?: ModelingRunRecoveryOutcome
     readonly nativeCorrelation?: {
       readonly threadId: string
       readonly turnId: string
@@ -1915,6 +1985,14 @@ async function settleModelingRun(
     validationOutcome: guardValid ? input.validationOutcome : 'failed',
     updatedAt: now,
     settledAt: now,
+    ...(input.recoveryOutcome?.outcome === 'continuation_lost'
+      ? { recoveryOutcome: { ...input.recoveryOutcome } }
+      : guardValid && input.recoveryOutcome !== undefined
+        ? { recoveryOutcome: { ...input.recoveryOutcome } }
+        : guardValid &&
+            (input.status === 'interrupted' || input.status === 'unknown')
+        ? { recoveryOutcome: { outcome: input.status } as const }
+        : {}),
     ...(input.nativeCorrelation === undefined
       ? {}
       : { nativeCorrelation: { ...input.nativeCorrelation } }),
@@ -2141,6 +2219,7 @@ async function reconcileExecutionGuard(
         : 'execution_guard_conflict',
       updatedAt: now,
       settledAt: now,
+      recoveryOutcome: { outcome: 'unknown' },
     }
   }
   const reconcilingGuard = {
@@ -3386,13 +3465,17 @@ function assertPrepareAssignmentActionInput(
   input: PrepareAssignmentActionInput,
 ): void {
   if (
-    !isExactRecord(input, [
-      'actionId',
-      'arguments',
-      'courseId',
-      'recipe',
-      'selectedMaterials',
-    ]) ||
+    !isExactRecord(
+      input,
+      [
+        'actionId',
+        'arguments',
+        'courseId',
+        'recipe',
+        'selectedMaterials',
+      ],
+      ['retryOfRunId'],
+    ) ||
     !isActionId(input.actionId) ||
     !isCourseId(input.courseId) ||
     !isExactRecord(input.recipe, [
@@ -3413,7 +3496,8 @@ function assertPrepareAssignmentActionInput(
       actionArgumentMaxBytes ||
     !isSha256Digest(input.arguments.digest) ||
     digestUtf8(input.arguments.canonical) !== input.arguments.digest ||
-    !isModelingRunSourceBaseline(input.selectedMaterials)
+    !isModelingRunSourceBaseline(input.selectedMaterials) ||
+    (input.retryOfRunId !== undefined && !isRunId(input.retryOfRunId))
   ) {
     throw invalidAction()
   }

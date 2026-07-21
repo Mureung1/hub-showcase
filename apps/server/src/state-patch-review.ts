@@ -45,10 +45,12 @@ export type AssignmentReviewRuntime = Pick<
 
 export type SettledAssignmentReviewOutcome = {
   readonly type: 'settled'
+  readonly continuation: 'continued' | 'lost'
 } & AssignmentReviewCommit
 
 export type RevisionRequestedAssignmentReviewOutcome = {
   readonly type: 'revision_requested'
+  readonly continuation: 'continued'
 } & AssignmentReviewRevision
 
 export type AssignmentReviewOutcome =
@@ -107,13 +109,21 @@ export function createAssignmentReviewCoordinator(
           throw error
         }
       }
-      return { type: 'revision_requested', ...revision }
+      return {
+        type: 'revision_requested',
+        continuation: 'continued',
+        ...revision,
+      }
     }
     const commit = await authority.commitAssignmentReviewDecision(input)
     if (!commit.replayed) {
-      await runtime.answerUserInput(nativeAnswer(commit))
+      try {
+        await runtime.answerUserInput(nativeAnswer(commit))
+      } catch {
+        return { type: 'settled', continuation: 'lost', ...commit }
+      }
     }
-    return { type: 'settled', ...commit }
+    return { type: 'settled', continuation: 'continued', ...commit }
   }
   return { submit }
 }

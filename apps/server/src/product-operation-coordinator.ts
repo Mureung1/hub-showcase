@@ -11,6 +11,7 @@ import {
   type AssignmentOperationSettlement,
   type ChatOperationSettlement,
   type FirstAssignmentRequest,
+  type FirstAssignmentRetryRequest,
   type ProductChatRequest as SharedProductChatRequest,
   type ProductInteractionAnswerRequest,
   type ProductOperationFrame,
@@ -40,6 +41,7 @@ import {
   type AssignmentReviewBinding,
   type AssignmentReviewDecisionInput,
   type ModelingRun,
+  type ModelingRunRecoveryOutcome,
   type RawMaterial,
   type SemesterWorkspaceController,
   type SettleAssignmentActionInput,
@@ -54,7 +56,9 @@ import {
 const productTextMaxBytes = 128 * 1024
 const safeRuntimeFailure = 'Codex 작업을 계속할 수 없습니다.'
 
-export type AssignmentActionRequest = FirstAssignmentRequest
+export type AssignmentActionRequest =
+  | FirstAssignmentRequest
+  | FirstAssignmentRetryRequest
 export type ProductChatRequest = SharedProductChatRequest
 
 export type ProductInteractionResponseInput = {
@@ -129,6 +133,7 @@ type ActiveAssignmentOperation = ActiveProductOperationBase & {
   readonly assignment: {
     readonly recipe: ManagedAssignmentRecipe
     run?: ModelingRun
+    recoveryOutcome?: ModelingRunRecoveryOutcome
   }
   readonly chat?: never
 }
@@ -665,6 +670,9 @@ export function createProductOperationCoordinator(options: {
             rawMaterialId: material.id,
             digest: material.digest,
           })),
+          ...('retryOfRunId' in input
+            ? { retryOfRunId: input.retryOfRunId }
+            : {}),
         })
         operation.assignment.run = prepared.run
         operation.redactionValues.push(
@@ -890,6 +898,12 @@ export function createProductOperationCoordinator(options: {
             await options.controller.settleAssignmentAction({
               actionId,
               ...requestedSettlement,
+              ...(operation.assignment.recoveryOutcome === undefined
+                ? {}
+                : {
+                    recoveryOutcome:
+                      operation.assignment.recoveryOutcome,
+                  }),
             })
         } catch {
           await writeAssignmentTerminal(operationOptions.sink, operation, {
@@ -1127,7 +1141,19 @@ export function createProductOperationCoordinator(options: {
       }).submit(input)
       operation.reviewSubmissions.set(input.decisionKey, { input, promise })
       try {
-        return await promise
+        const outcome = await promise
+        if (
+          outcome.type === 'settled' &&
+          outcome.continuation === 'lost' &&
+          operation.kind === 'assignment'
+        ) {
+          operation.assignment.recoveryOutcome = {
+            outcome: 'continuation_lost',
+            confirmedRevision: outcome.confirmedRevision,
+          }
+          options.service.disconnectProductTurn(operation.turn)
+        }
+        return outcome
       } catch (error) {
         if (
           operation.reviewSubmissions.get(input.decisionKey)?.promise ===
@@ -1325,12 +1351,50 @@ async function writeAssignmentTerminal(
   terminal: AssignmentOperationSettlement,
 ): Promise<boolean> {
   const run = requireAssignmentRun(operation)
+  const recovery = projectRunRecovery(run)
+  if (
+    recovery &&
+    !(await safeProductWrite(sink, {
+      type: 'operation.recovery',
+      operationId: operation.operationId,
+      runId: run.id,
+      ...recovery,
+    }))
+  ) {
+    return false
+  }
   return safeProductWrite(sink, {
     type: 'operation.terminal',
     operationId: operation.operationId,
     runId: run.id,
     ...terminal,
   })
+}
+
+function projectRunRecovery(
+  run: ModelingRun,
+):
+  | {
+      readonly outcome: 'interrupted' | 'unknown'
+      readonly retryable: true
+    }
+  | {
+      readonly outcome: 'continuation_lost'
+      readonly retryable: false
+      readonly confirmedRevision: number
+    }
+  | undefined {
+  if (run.recoveryOutcome?.outcome === 'continuation_lost') {
+    return {
+      outcome: 'continuation_lost',
+      retryable: false,
+      confirmedRevision: run.recoveryOutcome.confirmedRevision,
+    }
+  }
+  if (run.status === 'interrupted' || run.status === 'unknown') {
+    return { outcome: run.status, retryable: true }
+  }
+  return undefined
 }
 
 async function writeChatTerminal(

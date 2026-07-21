@@ -41,6 +41,7 @@ export {
   decodeCreateProductCourseRequest,
   decodeEmptyProductRequest,
   decodeFirstAssignmentRequest,
+  decodeFirstAssignmentRetryRequest,
   decodeProductChatRequest,
   decodeProductError,
   decodeProductInteractionAnswerRequest,
@@ -48,6 +49,7 @@ export {
 export type {
   CreateProductCourseRequest,
   FirstAssignmentRequest,
+  FirstAssignmentRetryRequest,
   ProductChatRequest,
   ProductError,
   ProductInteractionAnswerRequest,
@@ -73,6 +75,7 @@ export type {
   AssignmentOperationSettlement,
   ChatOperationSettlement,
   ProductOperationFrame,
+  ProductOperationRecovery,
   ProductQuestion,
   ProductStatePatch,
 } from './operation-frame.js'

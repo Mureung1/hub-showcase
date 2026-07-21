@@ -11,6 +11,7 @@ import {
   decodeCreateProductCourseRequest,
   decodeEmptyProductRequest,
   decodeFirstAssignmentRequest,
+  decodeFirstAssignmentRetryRequest,
   decodeProductChatRequest,
   decodeProductInteractionAnswerRequest,
   decodeProductReviewRequest,
@@ -302,6 +303,25 @@ export function createProductRouter(
     ).catch((error: unknown) => sendProductOperationError(response, error))
   })
 
+  router.post('/actions/first-assignment/retry', async (request, response) => {
+    if (!productOperations) {
+      sendError(response, 503, 'product_unavailable', safeUnavailable)
+      return
+    }
+    const input = tryDecode(decodeFirstAssignmentRetryRequest, request.body)
+    if (!input) {
+      sendError(response, 400, 'invalid_request', safeInvalidRequest)
+      return
+    }
+    await runProductStream(
+      request,
+      response,
+      writeDrainMs,
+      (options) => productOperations.startAssignment(input, options),
+      (operationId) => productOperations.disconnect(operationId),
+    ).catch((error: unknown) => sendProductOperationError(response, error))
+  })
+
   router.post('/chat/messages', async (request, response) => {
     if (!productOperations) {
       sendError(response, 503, 'product_unavailable', safeUnavailable)
@@ -357,6 +377,7 @@ export function createProductRouter(
               outcome: 'replacement_pending',
               confirmedRevision: outcome.confirmedRevision,
               replayed: outcome.replayed,
+              continuation: outcome.continuation,
             }
           : outcome.confirmation.decision === 'accepted'
             ? {
@@ -366,6 +387,7 @@ export function createProductRouter(
                 outcome: 'applied',
                 confirmedRevision: outcome.confirmedRevision,
                 replayed: outcome.replayed,
+                continuation: outcome.continuation,
               }
             : {
                 patchId: outcome.patch.id,
@@ -374,6 +396,7 @@ export function createProductRouter(
                 outcome: 'not_applied',
                 confirmedRevision: outcome.confirmedRevision,
                 replayed: outcome.replayed,
+                continuation: outcome.continuation,
               }
       response.json(body)
     } catch (error) {
@@ -678,7 +701,7 @@ function projectSettledHistory(
     modelingRuns: controller
       .modelingRuns()
       .filter(isSettledModelingRun)
-      .map(projectSettledModelingRun),
+      .map((run) => projectSettledModelingRun(run, controller.modelingRuns())),
   }
 }
 
@@ -737,7 +760,20 @@ function projectSettledModelingRun(
     >
     readonly settledAt: string
   },
+  allRuns: readonly ModelingRun[],
 ): ProductSettledModelingRun {
+  const retryable = !allRuns.some((candidate) => candidate.retryOfRunId === run.id)
+  const recovery =
+    run.recoveryOutcome?.outcome === 'continuation_lost'
+      ? {
+          outcome: 'continuation_lost' as const,
+          retryable: false as const,
+          confirmedRevision: run.recoveryOutcome.confirmedRevision,
+        }
+      : run.recoveryOutcome?.outcome === 'interrupted' ||
+          run.recoveryOutcome?.outcome === 'unknown'
+        ? { outcome: run.recoveryOutcome.outcome, retryable }
+        : null
   return {
     id: run.id,
     actionId: run.actionId,
@@ -751,6 +787,8 @@ function projectSettledModelingRun(
       materialId: source.rawMaterialId,
       digest: source.digest,
     })),
+    retryOfRunId: run.retryOfRunId ?? null,
+    recovery,
     status: run.status,
     validationOutcome: run.validationOutcome,
     createdAt: run.createdAt,

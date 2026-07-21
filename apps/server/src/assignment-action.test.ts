@@ -149,6 +149,7 @@ test('accepted product authority survives a cancelled native Review continuation
           outcome: 'applied',
           confirmedRevision: 1,
           replayed: false,
+          continuation: 'continued',
         })
 
         const frames = await trace.rest()
@@ -268,6 +269,102 @@ test('accepted product authority survives a cancelled native Review continuation
   }
 })
 
+test('an accepted commit reports lost continuation without reapplying after native answer failure', async () => {
+  const fixture = await createActionFixture()
+  const runtime = new HttpMcpProductRuntime({
+    failReviewAnswer: true,
+    onStartProductTurn: async () => undefined,
+  })
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        const workspace = await activateCourse(application)
+        const selected = selectCanonicalMaterials(workspace.materials)
+        runtime.proposal = (input) =>
+          validProposalFromProductInput(
+            input,
+            workspace.course!.id,
+            selected,
+          )
+
+        const response = await postJson(
+          `${baseUrl}/api/product/actions/first-assignment`,
+          actionRequest(workspace.course!.id, selected),
+        )
+        assert.equal(response.status, 200)
+        const stream = response.body?.getReader()
+        assert.ok(stream)
+        const trace = new NdjsonTrace(stream)
+        const review = await trace.until(
+          (frame) => frame.type === 'review.requested',
+        )
+        const decision = {
+          patchId: review.patchId,
+          decisionKey: review.decisionKey,
+          decision: 'accept',
+        }
+
+        const reviewResponse = await postJson(
+          `${baseUrl}/api/product/reviews/${review.interactionId}`,
+          decision,
+        )
+        const reviewStatus = reviewResponse.status
+        const reviewBody = await reviewResponse.json()
+        const frames = await trace.rest()
+
+        assert.equal(reviewStatus, 200)
+        assert.deepEqual(reviewBody, {
+          patchId: review.patchId,
+          decisionKey: review.decisionKey,
+          decision: 'accepted',
+          outcome: 'applied',
+          confirmedRevision: 1,
+          replayed: false,
+          continuation: 'lost',
+        })
+
+        const recovery = frames.find(
+          (frame) => frame.type === 'operation.recovery',
+        )
+        assert.deepEqual(recovery, {
+          type: 'operation.recovery',
+          operationId: frames[0]?.operationId,
+          runId: frames[0]?.runId,
+          outcome: 'continuation_lost',
+          retryable: false,
+          confirmedRevision: 1,
+        })
+        assert.equal(frames.at(-1)?.type, 'operation.terminal')
+        assert.equal(frames.at(-1)?.status, 'unknown')
+
+        const stateAfterLoss = application.semesterWorkspace?.assignmentState()
+        assert.equal(stateAfterLoss?.confirmedRevision, 1)
+        assert.equal(stateAfterLoss?.assignments.length, 1)
+        assert.equal(stateAfterLoss?.statePatches[0]?.status, 'applied')
+        assert.equal(stateAfterLoss?.userConfirmations.length, 1)
+        assert.equal(runtime.answerInputs.length, 1)
+
+        const lateDuplicate = await postJson(
+          `${baseUrl}/api/product/reviews/${review.interactionId}`,
+          decision,
+        )
+        assert.equal(lateDuplicate.status, 409)
+        const stateAfterDuplicate =
+          application.semesterWorkspace?.assignmentState()
+        assert.deepEqual(stateAfterDuplicate, stateAfterLoss)
+        assert.equal(runtime.answerInputs.length, 1)
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('revision feedback rotates the private MCP session, replaces the Review, and accepts the replacement exactly once', async () => {
   const fixture = await createActionFixture()
   const runtime = new RevisionHttpMcpProductRuntime()
@@ -348,6 +445,7 @@ test('revision feedback rotates the private MCP session, replaces the Review, an
             outcome: 'replacement_pending',
             confirmedRevision: 0,
             replayed: body.replayed,
+            continuation: 'continued',
           })
         }
         assert.deepEqual(
@@ -403,6 +501,7 @@ test('revision feedback rotates the private MCP session, replaces the Review, an
           outcome: 'applied',
           confirmedRevision: 1,
           replayed: false,
+          continuation: 'continued',
         })
 
         const frames = await trace.rest()
@@ -660,6 +759,7 @@ test('rejected product authority survives a cancelled native Review continuation
           outcome: 'not_applied',
           confirmedRevision: 0,
           replayed: false,
+          continuation: 'continued',
         })
         const frames = await trace.rest()
         assert.equal(
@@ -915,6 +1015,7 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
   ) => Promise<void>
   private readonly answer = deferred<void>()
   private readonly answerAcknowledged = deferred<void>()
+  private readonly failReviewAnswer: boolean
   private readonly reviewResolution: 'answered' | 'cancelled'
   private threadInput?: StartThreadInput
 
@@ -922,9 +1023,11 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
     readonly onStartProductTurn: (
       input: StartProductTurnInput,
     ) => Promise<void>
+    readonly failReviewAnswer?: boolean
     readonly reviewResolution?: 'answered' | 'cancelled'
   }) {
     this.onStartProductTurn = options.onStartProductTurn
+    this.failReviewAnswer = options.failReviewAnswer ?? false
     this.reviewResolution = options.reviewResolution ?? 'answered'
   }
 
@@ -1033,6 +1136,7 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
           questions: [assignmentReviewQuestion],
         }
         await runtime.answer.promise
+        if (runtime.failReviewAnswer) return
         yield {
           type: 'user_input.resolved',
           threadId: input.threadId,
@@ -1070,6 +1174,9 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
     assert.equal(input.interactionId, 'interaction-public-A')
     this.answerInputs.push(structuredClone(input))
     this.answer.resolve()
+    if (this.failReviewAnswer) {
+      throw new Error('simulated native Review continuation loss')
+    }
     await this.answerAcknowledged.promise
   }
 

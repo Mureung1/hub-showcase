@@ -8,6 +8,7 @@ import {
   PRODUCT_REVIEW_FEEDBACK_MAX_BYTES,
   ProductContractError,
   decodeFirstAssignmentRequest,
+  decodeFirstAssignmentRetryRequest,
   decodeProductBootstrap,
   decodeProductChatRequest,
   decodeProductError,
@@ -27,6 +28,7 @@ test('package root exposes the exact runtime contract surface', () => {
     'decodeCreateProductCourseRequest',
     'decodeEmptyProductRequest',
     'decodeFirstAssignmentRequest',
+    'decodeFirstAssignmentRetryRequest',
     'decodeProductBootstrap',
     'decodeProductChatRequest',
     'decodeProductError',
@@ -76,6 +78,37 @@ test('bootstrap decoder accepts the exact Browser-safe projection only', () => {
           ...bootstrap.workspace,
           storeFormatVersion: 2,
         },
+      }),
+    ProductContractError,
+  )
+})
+
+test('first Assignment retry requires an exact prior Run binding', () => {
+  const request = {
+    courseId: `course_${'1'.repeat(32)}`,
+    recipeVersion: FIRST_ASSIGNMENT_RECIPE_VERSION,
+    arguments: FIRST_ASSIGNMENT_ARGUMENTS,
+    materials: [
+      { id: `material_${'2'.repeat(32)}`, digest: 'a'.repeat(64) },
+      { id: `material_${'3'.repeat(32)}`, digest: 'b'.repeat(64) },
+    ],
+    retryOfRunId: `run_${'4'.repeat(32)}`,
+  } as const
+
+  assert.deepEqual(decodeFirstAssignmentRetryRequest(request), request)
+  assert.throws(
+    () =>
+      decodeFirstAssignmentRetryRequest({
+        ...request,
+        automatic: true,
+      }),
+    ProductContractError,
+  )
+  assert.throws(
+    () =>
+      decodeFirstAssignmentRetryRequest({
+        ...request,
+        retryOfRunId: `action_${'4'.repeat(32)}`,
       }),
     ProductContractError,
   )
@@ -167,6 +200,28 @@ test('operation frame decoder covers the closed Assignment and Chat families', (
       displayMessage: '제안을 확인하지 못했습니다.',
     },
     {
+      type: 'operation.recovery',
+      operationId: actionId,
+      runId,
+      outcome: 'interrupted',
+      retryable: true,
+    },
+    {
+      type: 'operation.recovery',
+      operationId: actionId,
+      runId,
+      outcome: 'unknown',
+      retryable: true,
+    },
+    {
+      type: 'operation.recovery',
+      operationId: actionId,
+      runId,
+      outcome: 'continuation_lost',
+      retryable: false,
+      confirmedRevision: 1,
+    },
+    {
       type: 'interaction.requested',
       operationId: chatId,
       interactionId,
@@ -230,6 +285,19 @@ test('operation frame decoder covers the closed Assignment and Chat families', (
   for (const frame of frames) {
     assert.deepEqual(decodeProductOperationFrame(frame), frame)
   }
+
+  assert.throws(
+    () =>
+      decodeProductOperationFrame({
+        type: 'operation.recovery',
+        operationId: actionId,
+        runId,
+        outcome: 'continuation_lost',
+        retryable: true,
+        confirmedRevision: 1,
+      }),
+    ProductContractError,
+  )
   for (const invalid of [
     { ...frames[0], nativeCorrelation: { turnId: 'private-turn' } },
     { ...frames[7], patch: { ...patch, absolutePath: '/private/source.txt' } },
@@ -437,6 +505,7 @@ test('response decoders accept public fields and reject private metadata', () =>
     outcome: 'applied',
     confirmedRevision: 1,
     replayed: false,
+    continuation: 'continued',
   } as const
 
   assert.deepEqual(decodeProductMaterialPreview(preview), preview)
@@ -473,18 +542,21 @@ test('review response decoder keeps each decision paired with its exact outcome'
       decision: 'accepted',
       outcome: 'applied',
       replayed: false,
+      continuation: 'lost',
     },
     {
       ...binding,
       decision: 'rejected',
       outcome: 'not_applied',
       replayed: true,
+      continuation: 'continued',
     },
     {
       ...binding,
       decision: 'revision_requested',
       outcome: 'replacement_pending',
       replayed: false,
+      continuation: 'continued',
     },
   ] as const
 
@@ -497,6 +569,8 @@ test('review response decoder keeps each decision paired with its exact outcome'
     { ...responses[1], outcome: 'applied' },
     { ...responses[2], outcome: 'applied' },
     { ...responses[2], decision: 'revised' },
+    { ...responses[0], continuation: 'unknown' },
+    { ...responses[2], continuation: 'lost' },
     { ...responses[2], nativeRequestId: 42 },
   ]) {
     assert.throws(
@@ -552,6 +626,70 @@ test('private and unsettled value families are rejected by the shared owner', ()
   for (const value of privateBootstrapValues) {
     assert.throws(() => decodeProductBootstrap(value), ProductContractError)
   }
+})
+
+test('settled Run history owns retry ancestry and exact recovery state', () => {
+  const courseId = `course_${'a'.repeat(32)}`
+  const runId = `run_${'b'.repeat(32)}`
+  const bootstrap = {
+    accountReadiness: { state: 'ready' },
+    workspace: {
+      state: 'ready',
+      confirmedRevision: 0,
+      course: { id: courseId, displayName: '알고리즘' },
+      materials: [],
+    },
+    history: {
+      assignments: [],
+      statePatches: [],
+      userConfirmations: [],
+      modelingRuns: [
+        {
+          id: runId,
+          actionId: `action_${'c'.repeat(32)}`,
+          courseId,
+          recipe: {
+            name: 'first-assignment',
+            version: FIRST_ASSIGNMENT_RECIPE_VERSION,
+            requestedSkillName: 'ay-ple-first-assignment',
+          },
+          sources: [
+            { materialId: `material_${'d'.repeat(32)}`, digest: 'e'.repeat(64) },
+            { materialId: `material_${'f'.repeat(32)}`, digest: '0'.repeat(64) },
+          ],
+          retryOfRunId: null,
+          recovery: { outcome: 'interrupted', retryable: true },
+          status: 'interrupted',
+          validationOutcome: 'passed',
+          createdAt: '2026-07-20T00:00:00.000Z',
+          updatedAt: '2026-07-20T00:01:00.000Z',
+          settledAt: '2026-07-20T00:01:00.000Z',
+        },
+      ],
+    },
+  } as const
+
+  assert.deepEqual(decodeProductBootstrap(bootstrap), bootstrap)
+  assert.throws(
+    () =>
+      decodeProductBootstrap({
+        ...bootstrap,
+        history: {
+          ...bootstrap.history,
+          modelingRuns: [
+            {
+              ...bootstrap.history.modelingRuns[0],
+              recovery: {
+                outcome: 'continuation_lost',
+                retryable: true,
+                confirmedRevision: 1,
+              },
+            },
+          ],
+        },
+      }),
+    ProductContractError,
+  )
 })
 
 function decodeRequest(value: unknown): unknown {

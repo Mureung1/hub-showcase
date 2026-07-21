@@ -113,6 +113,9 @@ export function cloneModelingRun(run: ModelingRun): ModelingRun {
     ...(run.nativeCorrelation === undefined
       ? {}
       : { nativeCorrelation: { ...run.nativeCorrelation } }),
+    ...(run.recoveryOutcome === undefined
+      ? {}
+      : { recoveryOutcome: { ...run.recoveryOutcome } }),
   }
 }
 

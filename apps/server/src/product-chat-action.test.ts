@@ -386,6 +386,7 @@ test('selected-material Product Chat offers a private MCP proposal and Review wi
           outcome: 'applied',
           confirmedRevision: 1,
           replayed: false,
+          continuation: 'continued',
         })
 
         const frames = await trace.rest()

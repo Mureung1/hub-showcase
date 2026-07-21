@@ -13,6 +13,7 @@ import {
   isRunId,
   isValidationOutcome,
 } from './contract-values.js'
+import type { ProductOperationRecovery } from './operation-frame.js'
 
 export type ProductRawMaterial = {
   readonly id: string
@@ -102,6 +103,8 @@ export type ProductSettledModelingRun = {
     readonly materialId: string
     readonly digest: string
   }[]
+  readonly retryOfRunId: string | null
+  readonly recovery: ProductOperationRecovery | null
   readonly status:
     | 'not_accepted'
     | 'completed'
@@ -452,6 +455,8 @@ function decodeProductSettledModelingRun(
       'createdAt',
       'id',
       'recipe',
+      'recovery',
+      'retryOfRunId',
       'settledAt',
       'sources',
       'status',
@@ -464,6 +469,8 @@ function decodeProductSettledModelingRun(
     !isRecipe(value.recipe) ||
     !Array.isArray(value.sources) ||
     !value.sources.every(isModelingSource) ||
+    (value.retryOfRunId !== null && !isRunId(value.retryOfRunId)) ||
+    !isProductRecoveryOrNull(value.recovery) ||
     !isSettledRunStatus(value.status) ||
     !isValidationOutcome(value.validationOutcome) ||
     !isTimestamp(value.createdAt) ||
@@ -478,12 +485,34 @@ function decodeProductSettledModelingRun(
     courseId: value.courseId,
     recipe: value.recipe,
     sources: value.sources,
+    retryOfRunId: value.retryOfRunId,
+    recovery: value.recovery,
     status: value.status,
     validationOutcome: value.validationOutcome,
     createdAt: value.createdAt,
     updatedAt: value.updatedAt,
     settledAt: value.settledAt,
   }
+}
+
+function isProductRecoveryOrNull(
+  value: unknown,
+): value is ProductOperationRecovery | null {
+  return (
+    value === null ||
+    (isRecord(value) &&
+      (((value.outcome === 'interrupted' || value.outcome === 'unknown') &&
+        isExactObject(value, ['outcome', 'retryable']) &&
+        typeof value.retryable === 'boolean') ||
+        (value.outcome === 'continuation_lost' &&
+          isExactObject(value, [
+            'confirmedRevision',
+            'outcome',
+            'retryable',
+          ]) &&
+          value.retryable === false &&
+          isRevision(value.confirmedRevision))))
+  )
 }
 
 function decodeProductRawMaterial(value: unknown): ProductRawMaterial {

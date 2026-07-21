@@ -396,7 +396,13 @@ function isModelingRunArray(value: unknown): value is readonly ModelingRun[] {
           'updatedAt',
           'validationOutcome',
         ],
-        ['failureCode', 'nativeCorrelation', 'settledAt'],
+        [
+          'failureCode',
+          'nativeCorrelation',
+          'recoveryOutcome',
+          'retryOfRunId',
+          'settledAt',
+        ],
       ) ||
       !isRunId(run.id) ||
       !isActionId(run.actionId) ||
@@ -411,6 +417,9 @@ function isModelingRunArray(value: unknown): value is readonly ModelingRun[] {
       !isModelingRunSourceBaseline(run.sourceBaseline) ||
       !isModelingRunStatus(run.status) ||
       !isModelingRunValidationOutcome(run.validationOutcome) ||
+      (run.retryOfRunId !== undefined && !isRunId(run.retryOfRunId)) ||
+      (run.recoveryOutcome !== undefined &&
+        !isPersistedModelingRunRecovery(run.recoveryOutcome)) ||
       !isIsoInstant(run.createdAt) ||
       !isIsoInstant(run.updatedAt) ||
       (run.nativeCorrelation !== undefined &&
@@ -427,6 +436,20 @@ function isModelingRunArray(value: unknown): value is readonly ModelingRun[] {
     actionIds.add(run.actionId)
   }
   return true
+}
+
+function isPersistedModelingRunRecovery(
+  value: unknown,
+): value is NonNullable<ModelingRun['recoveryOutcome']> {
+  return (
+    isRecord(value) &&
+    (((value.outcome === 'interrupted' || value.outcome === 'unknown') &&
+      isExactRecord(value, ['outcome'])) ||
+      (value.outcome === 'continuation_lost' &&
+        isExactRecord(value, ['confirmedRevision', 'outcome']) &&
+        Number.isSafeInteger(value.confirmedRevision) &&
+        Number(value.confirmedRevision) >= 0))
+  )
 }
 
 function isExecutionGuardOrNull(value: unknown): value is ExecutionGuard | null {
@@ -559,14 +582,59 @@ function hasValidWorkspaceStateInvariants(
 
   const runsById = new Map<string, ModelingRun>()
   const actionIds = new Set<string>()
+  const retriedRunIds = new Set<string>()
   for (const run of store.modelingRuns) {
+    const retrySource = run.retryOfRunId
+      ? runsById.get(run.retryOfRunId)
+      : undefined
+    const continuationPatches =
+      run.recoveryOutcome?.outcome === 'continuation_lost'
+        ? store.statePatches.filter(
+            (patch) =>
+              patch.guardOperationId === run.actionId &&
+              (patch.status === 'applied' || patch.status === 'rejected'),
+          )
+        : []
+    const continuationPatch = continuationPatches[0]
+    const continuationConfirmation = continuationPatch
+      ? store.userConfirmations.find(
+          (confirmation) => confirmation.patchId === continuationPatch.id,
+        )
+      : undefined
+    const continuationRevision = continuationConfirmation
+      ? continuationConfirmation.resultingRevision ?? continuationPatch?.baseRevision
+      : undefined
     if (
       run.courseId !== courseId ||
       actionIds.has(run.actionId) ||
-      !hasValidModelingRunLifecycle(run)
+      !hasValidModelingRunLifecycle(run) ||
+      (run.retryOfRunId !== undefined &&
+        (!retrySource ||
+          retriedRunIds.has(run.retryOfRunId) ||
+          (retrySource.status !== 'interrupted' &&
+            retrySource.status !== 'unknown') ||
+          (retrySource.recoveryOutcome?.outcome !== 'interrupted' &&
+            retrySource.recoveryOutcome?.outcome !== 'unknown') ||
+          retrySource.courseId !== run.courseId ||
+          retrySource.requestedSkillName !== run.requestedSkillName ||
+          retrySource.requestedSkillPath !== run.requestedSkillPath ||
+          retrySource.recipeName !== run.recipeName ||
+          retrySource.recipeVersion !== run.recipeVersion ||
+          retrySource.recipeDigest !== run.recipeDigest ||
+          retrySource.argumentsDigest !== run.argumentsDigest ||
+          JSON.stringify(retrySource.sourceBaseline) !==
+            JSON.stringify(run.sourceBaseline))) ||
+      (run.recoveryOutcome?.outcome === 'continuation_lost' &&
+        (run.recoveryOutcome.confirmedRevision > store.confirmedRevision ||
+          continuationPatches.length !== 1 ||
+          continuationRevision !== run.recoveryOutcome.confirmedRevision)) ||
+      ((run.recoveryOutcome?.outcome === 'interrupted' ||
+        run.recoveryOutcome?.outcome === 'unknown') &&
+        run.recoveryOutcome.outcome !== run.status)
     ) {
       return false
     }
+    if (run.retryOfRunId !== undefined) retriedRunIds.add(run.retryOfRunId)
     runsById.set(run.id, run)
     actionIds.add(run.actionId)
   }

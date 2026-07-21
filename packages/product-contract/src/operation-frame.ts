@@ -12,6 +12,7 @@ import {
   isProductOperationId,
   isProductQuestionId,
   isRecord,
+  isRevision,
   isRunId,
   isValidationOutcome,
   utf8Bytes,
@@ -77,6 +78,17 @@ export type ChatOperationSettlement = {
   readonly failureCode?: string
 }
 
+export type ProductOperationRecovery =
+  | {
+      readonly outcome: 'interrupted' | 'unknown'
+      readonly retryable: boolean
+    }
+  | {
+      readonly outcome: 'continuation_lost'
+      readonly retryable: false
+      readonly confirmedRevision: number
+    }
+
 export type ProductOperationFrame =
   | (ProductFrameBase & {
       readonly type: 'operation.preparing' | 'operation.accepted'
@@ -112,6 +124,11 @@ export type ProductOperationFrame =
       readonly tool: 'propose_state_patch'
       readonly displayMessage: string
     })
+  | (ProductFrameBase &
+      ProductOperationRecovery & {
+        readonly type: 'operation.recovery'
+        readonly runId: string
+      })
   | (ProductFrameBase & {
       readonly type: 'interaction.requested'
       readonly interactionId: string
@@ -238,6 +255,29 @@ export function decodeProductOperationFrame(
       ])
       requireMcpFrameBase(value)
       if (!isProductText(value.displayMessage)) throw invalidContract()
+      break
+    case 'operation.recovery':
+      requireExact(value, [
+        ...(value.outcome === 'continuation_lost'
+          ? ['confirmedRevision']
+          : []),
+        'operationId',
+        'outcome',
+        'retryable',
+        'runId',
+        'type',
+      ])
+      if (
+        !value.operationId.startsWith('action_') ||
+        !isRunId(value.runId) ||
+        !isProductOperationRecovery(
+          value.outcome,
+          value.retryable,
+          value.confirmedRevision,
+        )
+      ) {
+        throw invalidContract()
+      }
       break
     case 'interaction.requested':
       requireExact(value, [
@@ -547,6 +587,21 @@ function isProductReviewOutcome(
     value === 'revised' ||
     value === 'rejected' ||
     value === 'cancelled'
+  )
+}
+
+function isProductOperationRecovery(
+  outcome: unknown,
+  retryable: unknown,
+  confirmedRevision: unknown,
+): boolean {
+  return (
+    ((outcome === 'interrupted' || outcome === 'unknown') &&
+      typeof retryable === 'boolean' &&
+      confirmedRevision === undefined) ||
+    (outcome === 'continuation_lost' &&
+      retryable === false &&
+      isRevision(confirmedRevision))
   )
 }
 

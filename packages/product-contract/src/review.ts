@@ -32,6 +32,7 @@ export type ProductReviewResponse =
       readonly outcome: 'applied'
       readonly confirmedRevision: number
       readonly replayed: boolean
+      readonly continuation: 'continued' | 'lost'
     }
   | {
       readonly patchId: string
@@ -40,6 +41,7 @@ export type ProductReviewResponse =
       readonly outcome: 'not_applied'
       readonly confirmedRevision: number
       readonly replayed: boolean
+      readonly continuation: 'continued' | 'lost'
     }
   | {
       readonly patchId: string
@@ -48,6 +50,7 @@ export type ProductReviewResponse =
       readonly outcome: 'replacement_pending'
       readonly confirmedRevision: number
       readonly replayed: boolean
+      readonly continuation: 'continued'
     }
 
 export function decodeProductReviewRequest(
@@ -101,6 +104,7 @@ export function decodeProductReviewResponse(
   if (
     !isExactObject(value, [
       'confirmedRevision',
+      'continuation',
       'decision',
       'decisionKey',
       'outcome',
@@ -110,7 +114,8 @@ export function decodeProductReviewResponse(
     !isPatchId(value.patchId) ||
     !isDecisionKey(value.decisionKey) ||
     !isRevision(value.confirmedRevision) ||
-    typeof value.replayed !== 'boolean'
+    typeof value.replayed !== 'boolean' ||
+    !isReviewContinuation(value.continuation)
   ) {
     throw invalidContract()
   }
@@ -119,22 +124,37 @@ export function decodeProductReviewResponse(
     decisionKey: value.decisionKey,
     confirmedRevision: value.confirmedRevision,
     replayed: value.replayed,
+    continuation: value.continuation,
   }
-  if (value.decision === 'accepted' && value.outcome === 'applied') {
+  if (
+    value.decision === 'accepted' &&
+    value.outcome === 'applied' &&
+    value.continuation !== undefined
+  ) {
     return { ...binding, decision: 'accepted', outcome: 'applied' }
   }
-  if (value.decision === 'rejected' && value.outcome === 'not_applied') {
+  if (
+    value.decision === 'rejected' &&
+    value.outcome === 'not_applied' &&
+    value.continuation !== undefined
+  ) {
     return { ...binding, decision: 'rejected', outcome: 'not_applied' }
   }
   if (
     value.decision === 'revision_requested' &&
-    value.outcome === 'replacement_pending'
+    value.outcome === 'replacement_pending' &&
+    value.continuation === 'continued'
   ) {
     return {
       ...binding,
       decision: 'revision_requested',
       outcome: 'replacement_pending',
+      continuation: 'continued',
     }
   }
   throw invalidContract()
+}
+
+function isReviewContinuation(value: unknown): value is 'continued' | 'lost' {
+  return value === 'continued' || value === 'lost'
 }

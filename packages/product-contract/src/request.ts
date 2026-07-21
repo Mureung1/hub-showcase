@@ -8,6 +8,7 @@ import {
   isNonEmptyString,
   isProductQuestionId,
   isRecord,
+  isRunId,
   utf8Bytes,
 } from './contract-values.js'
 
@@ -24,6 +25,10 @@ export type FirstAssignmentRequest = {
   readonly recipeVersion: typeof FIRST_ASSIGNMENT_RECIPE_VERSION
   readonly arguments: typeof FIRST_ASSIGNMENT_ARGUMENTS
   readonly materials: readonly ProductMaterialSelection[]
+}
+
+export type FirstAssignmentRetryRequest = FirstAssignmentRequest & {
+  readonly retryOfRunId: string
 }
 
 export type ProductChatRequest = {
@@ -91,6 +96,31 @@ export function decodeFirstAssignmentRequest(
     arguments: FIRST_ASSIGNMENT_ARGUMENTS,
     materials: value.materials,
   }
+}
+
+export function decodeFirstAssignmentRetryRequest(
+  value: unknown,
+): FirstAssignmentRetryRequest {
+  if (
+    !isExactObject(value, [
+      'arguments',
+      'courseId',
+      'materials',
+      'recipeVersion',
+      'retryOfRunId',
+    ]) ||
+    !isRunId(value.retryOfRunId)
+  ) {
+    throw invalidContract()
+  }
+  const request = decodeFirstAssignmentRequest({
+    arguments: value.arguments,
+    courseId: value.courseId,
+    materials: value.materials,
+    recipeVersion: value.recipeVersion,
+  })
+  if (!hasValidJsonEnvelope(value)) throw invalidContract()
+  return { ...request, retryOfRunId: value.retryOfRunId }
 }
 
 export function decodeProductChatRequest(value: unknown): ProductChatRequest {
