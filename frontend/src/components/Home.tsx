@@ -28,11 +28,8 @@ interface HomeProps {
 }
 
 export function Home({ onStart }: HomeProps) {
-  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>(['피로', '눈 피로']);
-  const [selectedLifePatterns, setSelectedLifePatterns] = useState<string[]>([
-    '사무직',
-    '교대/야간 근무',
-  ]);
+  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+  const [selectedLifePatterns, setSelectedLifePatterns] = useState<string[]>([]);
 
   function toggleSymptom(symptom: string) {
     setSelectedSymptoms((prev) =>
