@@ -16,27 +16,38 @@ EXCEPTIONS = [
 def is_exempt(line):
     return any(ex in line for ex in EXCEPTIONS)
 
+def check_lines(name, text, violations, exempted):
+    for i, line in enumerate(text.splitlines(), 1):
+        if re.search(r"#[0-9a-fA-F]{3,8}\b", line):       # 헥스코드
+            if is_exempt(line):
+                exempted[0] += 1
+            else:
+                violations.append(f"{name}:{i}  헥스코드: {line.strip()}")
+        if re.search(r"[:\s]-?\d+px", line) and "1px" not in line:  # px 직접 사용(1px 테두리 예외, 음수 포함)
+            if is_exempt(line):
+                exempted[0] += 1
+            else:
+                violations.append(f"{name}:{i}  px 직접값: {line.strip()}")
+
 violations = []
-exempted = 0
+exempted = [0]  # 함수 안에서 갱신 가능하도록 리스트로 감쌈
+
 for f in pathlib.Path("docs/prototype").glob("*.html"):
     text = f.read_text(encoding="utf-8")
 
     if 'href="tokens.css"' not in text:   # tokens.css 연결 누락 검사
         violations.append(f"{f.name}  tokens.css <link> 없음")
 
-    for i, line in enumerate(text.splitlines(), 1):
-        if re.search(r"#[0-9a-fA-F]{3,8}\b", line):       # 헥스코드
-            if is_exempt(line):
-                exempted += 1
-            else:
-                violations.append(f"{f.name}:{i}  헥스코드: {line.strip()}")
-        if re.search(r"[:\s]-?\d+px", line) and "1px" not in line:  # px 직접 사용(1px 테두리 예외, 음수 포함)
-            if is_exempt(line):
-                exempted += 1
-            else:
-                violations.append(f"{f.name}:{i}  px 직접값: {line.strip()}")
+    check_lines(f.name, text, violations, exempted)
+
+# web/ React 컴포넌트(.jsx/.css) — tokens.css 사본 자체는 토큰 정의부라 검사 대상 제외
+for f in pathlib.Path("web/src").rglob("*"):
+    if f.suffix not in (".jsx", ".css") or f.name == "tokens.css":
+        continue
+    text = f.read_text(encoding="utf-8")
+    check_lines(str(f), text, violations, exempted)
 
 if violations:
-    print(f"❌ 토큰 위반 (기존 예외 {exempted}건 통과):\n" + "\n".join(violations))
+    print(f"❌ 토큰 위반 (기존 예외 {exempted[0]}건 통과):\n" + "\n".join(violations))
     sys.exit(1)
-print(f"✅ 토큰 검사 통과 (기존 예외 {exempted}건 포함)")
+print(f"✅ 토큰 검사 통과 (기존 예외 {exempted[0]}건 포함)")

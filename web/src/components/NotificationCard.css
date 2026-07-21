@@ -19,6 +19,19 @@
   font-weight: 500;
 }
 
+/* 완료 버튼 — S2 임시 배치, 레시피 없는 신규 요소라 기존 토큰만으로 최소 구성 */
+.card-complete {
+  font: inherit;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  padding: var(--pad-badge);
+  border-radius: var(--radius-badge);
+  background: var(--surface-2);
+  color: var(--text-2);
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+
 .card-title {
   font-size: var(--fs-title);
   font-weight: 600;

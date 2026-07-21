@@ -1,4 +1,12 @@
+import { useState } from 'react'
+import AppFrame from './components/AppFrame'
+import ChipFilter from './components/ChipFilter'
+import Hero from './components/Hero'
 import NotificationList from './components/NotificationList'
+import SortIndicator from './components/SortIndicator'
+import TabBar from './components/TabBar'
+
+const categories = ['전체', '장학금', '취업', '학사']
 
 // 확정 스키마(plan.md 7-1) 형태 mock — s2.html 4개 카드
 const mockNotifications = [
@@ -57,10 +65,28 @@ const mockNotifications = [
 ]
 
 function App() {
+  const [notifications, setNotifications] = useState(mockNotifications)
+  const [activeFilter, setActiveFilter] = useState('전체')
+
+  // 완료 처리 — mock 상태에서만 반영, 새로고침하면 되살아남 (BE 연결은 이후 task)
+  const markDone = (id) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, done: true } : n)))
+  }
+
+  const filteredNotifications =
+    activeFilter === '전체'
+      ? notifications
+      : notifications.filter((n) => n.keywords.includes(activeFilter))
+
+  const urgentCount = notifications.filter((n) => n.priority === 'urgent' && !n.done).length
+
   return (
-    <div style={{ padding: 'var(--space-5)' }}>
-      <NotificationList notifications={mockNotifications} />
-    </div>
+    <AppFrame tabBar={<TabBar activeTab="home" />}>
+      <Hero urgentCount={urgentCount} />
+      <ChipFilter categories={categories} active={activeFilter} onSelect={setActiveFilter} />
+      <SortIndicator />
+      <NotificationList notifications={filteredNotifications} onComplete={markDone} />
+    </AppFrame>
   )
 }
 

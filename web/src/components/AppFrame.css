@@ -1,0 +1,30 @@
+.stage {
+  min-height: 100vh;
+  background: var(--bg-deep);
+  display: flex;
+  justify-content: center;
+  padding: var(--space-5) 0;
+}
+
+.app {
+  width: 100%;
+  max-width: var(--frame-w);
+  height: var(--frame-h);
+  margin: 0 auto;
+  background: var(--bg);
+  border-radius: var(--radius-app);
+  overflow: hidden;
+  box-shadow: var(--shadow-app);
+  display: flex;
+  flex-direction: column;
+}
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+}
+
+.app-content::-webkit-scrollbar {
+  display: none; /* Chrome/Safari — s2.html .chips 스크롤바 숨김 레시피 */
+}
