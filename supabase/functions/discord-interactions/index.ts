@@ -17,10 +17,15 @@ import {
   verifyDiscordRequest,
 } from "../_shared/discord.ts";
 import { generateStructured } from "../_shared/gemini.ts";
-import { getServiceClient, getSingleUser } from "../_shared/db.ts";
+import { getServiceClient, resolveUserByDiscordId } from "../_shared/db.ts";
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClientLike = any;
+
+// 미연동 Discord 계정 안내 (docs/discord-linking.md §7.1) — 인터랙션 user를 Beacon 계정으로
+// 해석하지 못했을 때 공통 사용.
+const NOT_LINKED_MESSAGE =
+  "이 Discord 계정이 아직 Beacon 계정과 연동되지 않았어요. 웹 설정 화면에서 코드를 발급받아 `/연동 코드:XXXXXX` 로 먼저 연결해주세요.";
 
 const DISCORD_PUBLIC_KEY = Deno.env.get("DISCORD_PUBLIC_KEY") ?? "";
 const DISCORD_APPLICATION_ID = Deno.env.get("DISCORD_APPLICATION_ID") ?? "";
@@ -407,6 +412,7 @@ async function processAlertCommand(
   content: string,
   applicationId: string,
   token: string,
+  discordUserId: string | undefined,
 ): Promise<void> {
   const client = getServiceClient();
 
@@ -432,7 +438,11 @@ async function processAlertCommand(
       return;
     }
 
-    const user = await getSingleUser(client);
+    const user = await resolveUserByDiscordId(client, discordUserId);
+    if (!user) {
+      await editOriginalResponse(applicationId, token, { content: NOT_LINKED_MESSAGE });
+      return;
+    }
 
     if (matches.length === 1) {
       const match = matches[0];
@@ -479,7 +489,8 @@ function handleCommand(interaction: DiscordInteraction): Response {
     });
   }
 
-  const task = processAlertCommand(content, applicationId, token);
+  const discordUserId = interaction.member?.user?.id ?? interaction.user?.id;
+  const task = processAlertCommand(content, applicationId, token, discordUserId);
 
   // Supabase Edge Functions(Deno Deploy 기반) 런타임은 EdgeRuntime.waitUntil로
   // 응답 반환 이후에도 백그라운드 작업을 이어갈 수 있게 해준다.
@@ -713,6 +724,7 @@ async function handleTrade(
   side: string | undefined,
   conditionId: string | undefined,
   priceRaw: string | undefined,
+  discordUserId: string | undefined,
 ): Promise<Response> {
   const price = Number(priceRaw);
 
@@ -741,7 +753,13 @@ async function handleTrade(
     });
   }
 
-  const user = await getSingleUser(client);
+  const user = await resolveUserByDiscordId(client, discordUserId);
+  if (!user) {
+    return messageResponse({
+      flags: 1 << 6,
+      content: NOT_LINKED_MESSAGE,
+    });
+  }
 
   const { error: insertError } = await client.from("trades").insert({
     user_id: user.userId,
@@ -790,7 +808,8 @@ async function handleComponent(interaction: DiscordInteraction): Promise<Respons
   // bcn|trade|{side}|{condition_id}|{price} — 다른 두 자리 필드 개수와 달라 별도 분기
   if (action === "trade") {
     const [, , side, conditionId, price] = parts;
-    return await handleTrade(client, side, conditionId, price);
+    const discordUserId = interaction.member?.user?.id ?? interaction.user?.id;
+    return await handleTrade(client, side, conditionId, price, discordUserId);
   }
 
   const conditionId = parts[2];
