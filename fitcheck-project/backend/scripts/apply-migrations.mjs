@@ -25,6 +25,8 @@ const MIGRATION_FILES = [
   '20260720000000_extend_gyms_naver.sql',
   '20260720000100_fix_gyms_naver_unique.sql',
   '20260720000200_remove_extra_seed_gyms.sql',
+  '20260721000000_add_consult_share_history_consent.sql',
+  '20260721010000_consult_pii_encryption.sql',
 ];
 
 async function markMigrationApplied(client, filename) {

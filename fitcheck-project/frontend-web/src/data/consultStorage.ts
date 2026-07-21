@@ -1,12 +1,7 @@
-import type { AppData, Notification } from '../types';
 import type {
   ConsultReportInput,
   ConsultRequest,
-  ConsultRequestInput,
 } from '../types/consult';
-import { formatRelativeTime } from '../utils/date';
-import { generateId } from '../utils/routine';
-import { loadData, saveData } from './storage';
 
 export const CONSULT_STORAGE_KEY = 'fitcheck-consult-requests';
 export const CONSULT_CHANNEL_NAME = 'fitcheck-consult';
@@ -49,46 +44,6 @@ export function loadConsultRequests(): ConsultRequest[] {
 
 function saveConsultRequests(requests: ConsultRequest[]): void {
   localStorage.setItem(CONSULT_STORAGE_KEY, JSON.stringify(requests));
-}
-
-function appendTrainerNotification(notification: Notification): void {
-  const data = loadData();
-  const next: AppData = {
-    ...data,
-    notifications: [notification, ...data.notifications],
-  };
-  saveData(next);
-  postChannel({ type: 'trainer-notifications-updated' });
-}
-
-export function addConsultRequest(input: ConsultRequestInput): ConsultRequest {
-  const now = new Date().toISOString();
-  const notificationId = generateId();
-  const request: ConsultRequest = {
-    ...input,
-    id: generateId(),
-    status: 'pending',
-    createdAt: now,
-    notificationId,
-  };
-
-  const next = [request, ...loadConsultRequests()];
-  saveConsultRequests(next);
-
-  const trainerLabel = request.trainerName
-    ? ` · ${request.trainerName}`
-    : '';
-  const shareLabel = request.shareHistoryConsent ? ' · 기록 공유 동의' : '';
-  appendTrainerNotification({
-    id: notificationId,
-    message: `${request.name}님 상담 신청 (${request.gymName}${trainerLabel}${shareLabel})`,
-    time: formatRelativeTime(now),
-    read: false,
-    createdAt: now,
-  });
-
-  postChannel({ type: 'consult-created', request });
-  return request;
 }
 
 export function markConsultRequestRead(id: string): ConsultRequest[] {
