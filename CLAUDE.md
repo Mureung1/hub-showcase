@@ -44,6 +44,19 @@ CLI로 로컬에서 서버리스 함수 테스트하기" section of README.md. S
 itself via `dotenv/config`, an existing filled-in `.env` is enough; `vercel pull`/login only needed
 to pull team-shared env vars instead.
 
+### Android app wrapper (Capacitor)
+
+The same web build (`dist/`) is also wrapped as an Android WebView app via Capacitor (`capacitor.config.json`,
+`android/` native project committed, `npm run app:sync`/`app:open`). The web app is unchanged and stays
+the primary target; the app is purely a wrapper. Two things make it work across both: `src/lib/apiBase.js`
+(`API_BASE` = `VITE_API_BASE_URL || ''` — empty on web so `/api` stays same-origin relative, set to the
+deployed backend URL when building the app; prepended in `fetchWithTimeout`) and `src/lib/externalLink.js`
+(`openExternalLink` — opens external links in the system browser on native via `@capacitor/browser`, new
+tab on web; used by ad/map links since WebView blocks `target="_blank"`). Header/tab-bar use
+`env(safe-area-inset-*)`. Full build steps, remote-URL-vs-local-bundle tradeoff, and the known CSV-download
+WebView limitation are in `docs/apk-build-guide.md`. **Capacitor is additive — none of it affects the web
+build** (`@capacitor/*` is inert on web; `Capacitor.isNativePlatform()` is false there).
+
 ## Architecture
 
 ### One Express app, two deployment entry points
@@ -110,11 +123,16 @@ schema.sql을 다시 실행해야 실제 Supabase 프로젝트에 반영된다**
 1. Photo + optional menu/brand hints go to Gemini (`src/lib/gemini.js` -> `/api/gemini`), which
    returns *only* food identification + estimated portion grams — not final nutrition numbers.
 2. For each identified item, `findFoodMatch` in `Analyze.jsx` queries the 식약처 DB
-   (`src/lib/fooddb.js` -> `/api/fooddb`) through a prioritized cascade: `dbSearchName` in the food
-   DB → `dbSearchName` in the processed-food DB → `dbSearchName` with a leading 2-char modifier
-   stripped → `fallbackSearchName` in food DB → `fallbackSearchName` in processed-food DB. If the
-   server reports `FOODDB_CONNECTION_FAILED` (upstream unreachable, e.g. certain deploy regions),
-   the cascade aborts immediately rather than retrying every remaining attempt against a dead host.
+   (`src/lib/fooddb.js` -> `/api/fooddb`) through a prioritized, de-duplicated cascade: `dbSearchName`
+   in the food DB → **normalized canonical name** (`src/lib/foodNameMap.js`'s `normalizeFoodSearchName`,
+   a client-side variant→표준명 map like 돌솥비빔밥→비빔밥·신라면→라면, as a safety net when the AI's
+   `fallbackSearchName` isn't general enough) in food DB → `dbSearchName` in the processed-food DB →
+   `dbSearchName` with a leading 2-char modifier stripped → `fallbackSearchName` in food DB →
+   normalized name in processed-food DB → `fallbackSearchName` in processed-food DB. Same (term,
+   dbSource) pairs are searched only once. If the server reports `FOODDB_CONNECTION_FAILED` (upstream
+   unreachable, e.g. certain deploy regions), the cascade aborts immediately rather than retrying
+   every remaining attempt against a dead host. In dev builds (`import.meta.env.DEV`), each resolved
+   item logs a `[분석 진단]` line (matched term / grams / final nutrients) to help spot accuracy gaps.
 3. A DB match's per-100g nutrients are scaled to the resolved consumed grams
    (`resolveConsumedGrams`/`scaleNutrients` in `src/lib/nutrition.js`), then passed through
    `clampToPlausibleNutrients`, which corrects DB records whose *per-serving* values are
@@ -153,10 +171,15 @@ email/logout, `Login.jsx`'s post-login redirect). `profile`/`recommended`/`effec
 top-level context values available regardless of login state; there's no `user.profile`-style nesting
 that would be `null` for guests.
 
-There is no migration path from guest-mode local data into a Supabase account on login — if a guest
-later logs in, their local data stays on the device (readable again if they log out), and the account
-starts fresh in Supabase. `src/lib/csv.js`'s header comment documents this and the separate legacy
-policy for pre-Supabase-Auth accounts in more detail.
+Guest-mode local data can be migrated into a Supabase account on login, but only via an explicit
+one-time opt-in prompt: right after login, if localStorage holds guest data, `GuestMigrationPrompt`
+(rendered globally in `router.jsx`) offers to copy it up. `src/lib/guestMigration.js` +
+`UserContext.acceptGuestMigration` do the upload — profile only if the account has none (never
+overwrites), meals deduped per record via a `guestMigration:<userId>` state (`doneMealIds`), with a
+re-entrancy guard so a double-tap can't double-insert. Declining (or having no guest data) just
+proceeds with the account. The local guest data is left on the device either way (readable again if
+they log out) — it is never deleted by the migration. `src/lib/csv.js`'s header comment documents the
+separate legacy policy for pre-Supabase-Auth accounts in more detail.
 
 `supabase/schema.sql` has the Postgres schema (`profiles`/`meals`, RLS policies scoped to
 `auth.uid()`) for the logged-in-only storage path.

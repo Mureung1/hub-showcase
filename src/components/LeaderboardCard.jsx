@@ -14,6 +14,8 @@ export default function LeaderboardCard() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // authMode뿐 아니라 오늘 섭취 합계(todayMealsTotal)가 바뀔 때도 다시 불러온다 — 같은 식단 탭에서 끼니를
+  // 추가/삭제하면 내 점수·순위가 바뀌는데, authMode만 의존하면 탭을 다시 열기 전까지 옛 순위가 남는다.
   useEffect(() => {
     if (authMode !== 'user') return
     let cancelled = false
@@ -32,7 +34,7 @@ export default function LeaderboardCard() {
     return () => {
       cancelled = true
     }
-  }, [authMode])
+  }, [authMode, todayMealsTotal])
 
   const myScore = calcNutritionScore(todayMealsTotal, effectiveRecommended)
 

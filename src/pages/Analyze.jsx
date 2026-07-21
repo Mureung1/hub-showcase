@@ -12,12 +12,14 @@ import ScreenHeader from '../components/ScreenHeader.jsx'
 import TextField from '../components/TextField.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { pickBestFoodMatch, searchFoodDB } from '../lib/fooddb.js'
+import { normalizeFoodSearchName } from '../lib/foodNameMap.js'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
 import { getRecommendedMealType } from '../lib/mealType.js'
 import { sumNutrients } from '../lib/mealStore.js'
 import {
   clampEstimatedGrams,
   clampToPlausibleNutrients,
+  clampToStandardPlausibleNutrients,
   fillMissingNutrients,
   isMealAnalysis,
   isNutrientSet,
@@ -101,24 +103,33 @@ function stripLeadingModifier(term) {
   return typeof term === 'string' && term.length >= 5 ? term.slice(2) : null
 }
 
-// DB 검색 우선순위: ① dbSearchName-음식 ② dbSearchName-가공식품 ③ dbSearchName 수식어 제거-음식
-// ④ fallbackSearchName-음식 ⑤ fallbackSearchName-가공식품. 가공식품 DB는 편의점/포장/프랜차이즈 제품처럼
-// "음식"(조리식) DB에 없는 제품을 보완하는 폴백이다.
+// DB 검색 우선순위: ① dbSearchName-음식 ② 정규화 표준명(foodNameMap)-음식 ③ dbSearchName-가공식품
+// ④ dbSearchName 수식어 제거-음식 ⑤ fallbackSearchName-음식 ⑥ 정규화 표준명-가공식품 ⑦ fallbackSearchName-가공식품.
+// 정규화 표준명은 AI의 fallbackSearchName이 충분히 일반적이지 않을 때를 대비한 클라이언트 측 안전망
+// (foodNameMap.js). 가공식품 DB는 편의점/포장/프랜차이즈 제품처럼 "음식"(조리식) DB에 없는 제품을 보완한다.
+// 같은 (검색어, DB) 조합은 한 번만 호출하도록 중복을 제거해 불필요한 반복 요청을 막는다.
 async function findFoodMatch(idItem) {
+  const normalized = normalizeFoodSearchName(idItem.dbSearchName) || normalizeFoodSearchName(idItem.displayName)
   const attempts = [
     { term: idItem.dbSearchName, dbSource: 'food' },
+    { term: normalized, dbSource: 'food' },
     { term: idItem.dbSearchName, dbSource: 'process' },
     { term: stripLeadingModifier(idItem.dbSearchName), dbSource: 'food' },
     { term: idItem.fallbackSearchName, dbSource: 'food' },
+    { term: normalized, dbSource: 'process' },
     { term: idItem.fallbackSearchName, dbSource: 'process' },
   ]
 
+  const seen = new Set()
   for (const attempt of attempts) {
     if (!attempt.term) continue
+    const key = `${attempt.dbSource}:${attempt.term}`
+    if (seen.has(key)) continue
+    seen.add(key)
     try {
       const results = await searchFoodDB(attempt.term, attempt.dbSource)
       const match = pickBestFoodMatch(results, attempt.term, { averageExactMatches: attempt.dbSource === 'food' })
-      if (match) return { match, dbSource: attempt.dbSource }
+      if (match) return { match, dbSource: attempt.dbSource, matchedTerm: attempt.term }
     } catch (err) {
       console.error(`fooddb search failed (${attempt.dbSource}, ${attempt.term}):`, err)
       // 식약처 서버 연결 자체가 안 되는 상황(배포 리전 등)이면 나머지 소스/재검색어도 똑같이
@@ -138,12 +149,14 @@ async function resolveFoodItem(idItem) {
   const found = await findFoodMatch(idItem)
 
   if (found) {
-    const { match, dbSource } = found
+    const { match, dbSource, matchedTerm } = found
     const baseValue = match.baseQuantity?.value > 0 ? match.baseQuantity.value : 100
     const grams = resolveConsumedGrams(match, idItem.estimatedGrams, idItem.dbSearchName)
     const scaled = scaleNutrients(match.nutrients, baseValue, grams)
     const source = dbSource === 'process' ? NUTRITION_SOURCE.DB_PROCESS : NUTRITION_SOURCE.DB
     const nutrients = clampToPlausibleNutrients(fillMissingNutrients(scaled, idItem.estimatedNutrients), idItem.dbSearchName, grams)
+    // 개발 중 정확도 점검용(운영 빌드에선 출력 안 함): 어떤 검색어로 DB 매칭됐는지, 추정 g, 최종 수치.
+    logAnalysisDebug(name, { matched: true, dbSource, matchedTerm, grams, estimatedGrams: idItem.estimatedGrams, nutrients })
     return { name, nutrients, source }
   }
 
@@ -151,7 +164,16 @@ async function resolveFoodItem(idItem) {
   const source = brand ? NUTRITION_SOURCE.OFFICIAL : NUTRITION_SOURCE.ESTIMATED
   const grams = clampEstimatedGrams(idItem.estimatedGrams, idItem.dbSearchName)
   const nutrients = clampToPlausibleNutrients(fillMissingNutrients({}, idItem.estimatedNutrients), idItem.dbSearchName, grams)
+  // DB 매칭 전부 실패 → AI 추정치 폴백. 이런 로그가 자주 뜨면 DB 검색명 매핑을 손봐야 한다는 신호다.
+  logAnalysisDebug(name, { matched: false, dbSearchName: idItem.dbSearchName, fallbackSearchName: idItem.fallbackSearchName, grams, estimatedGrams: idItem.estimatedGrams, nutrients, source })
   return { name, nutrients, source }
+}
+
+// 정확도 진단용 로그(개발 빌드에서만). 어떤 경로로 수치가 나왔는지 콘솔에 남겨, 오차가 나는 음식을
+// 찾아 PORTION_REFERENCE_G/NUTRIENT_PLAUSIBILITY/foodNameMap을 보강하는 근거로 쓴다.
+function logAnalysisDebug(name, info) {
+  if (!import.meta.env.DEV) return
+  console.log(`[분석 진단] ${name}`, info)
 }
 
 // 사진 없이 메뉴명(+브랜드)만으로 "표준 1인분" 기준 영양을 바로 추정한다. 사진 경로
@@ -230,7 +252,8 @@ async function resolveTextAnalysis(menuName, brand) {
     return {
       name: item.name,
       brand: resolvedBrand,
-      nutrients: item.nutrients,
+      // 사진 경로와 동일한 현실 범위 보정을 텍스트 추정치에도 적용(짜장면 단백질 20g 등 튀는 값 방지).
+      nutrients: clampToStandardPlausibleNutrients(item.nutrients, item.name),
       source: resolvedBrand ? NUTRITION_SOURCE.OFFICIAL : NUTRITION_SOURCE.ESTIMATED,
     }
   })

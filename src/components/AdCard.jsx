@@ -1,5 +1,6 @@
 import Card from './Card.jsx'
 import { trackAdClick } from '../lib/adData.js'
+import { openExternalLink } from '../lib/externalLink.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
 
 // "AD" 배지 + 고지 문구를 포함한 공용 광고 카드. 표시상소재(스폰서 식당/보충제 등)가 바뀌어도
@@ -31,7 +32,11 @@ export default function AdCard({ adId, title, note, link, children }) {
         href={link}
         target="_blank"
         rel="noreferrer sponsored"
-        onClick={() => trackAdClick(adId)}
+        onClick={(e) => {
+          e.preventDefault()
+          trackAdClick(adId)
+          openExternalLink(link)
+        }}
         className="tds-press"
         style={{ ...styles.linkButton, display: 'inline-block', marginTop: spacing.sm }}
       >

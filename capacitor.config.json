@@ -1,0 +1,8 @@
+{
+  "appId": "com.mealyze.app",
+  "appName": "Mealyze",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false
+  }
+}

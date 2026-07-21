@@ -253,7 +253,7 @@ export default function Calendar() {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', rowGap: spacing.xs }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', rowGap: spacing.sm, justifyItems: 'center' }}>
           {cells.map((day, i) => {
             if (day === null) return <div key={i} />
 
@@ -264,32 +264,49 @@ export default function Calendar() {
             const info = dayInfoMap[dateKey]
             const statusColor = info ? STATUS_COLORS[info.status] : null
 
+            // 상태가 있는 날은 날짜 숫자를 감싸는 큰 원(지름 36px)을 상태 색으로 채운다(기존의 작은 5px 점을
+            // 대체 — 한눈에 그날 상태가 보이게). 오늘은 원 안쪽 테두리로 강조(색이 채워진 원 위에서는 흰색,
+            // 빈 원에서는 포인트색), 선택된 날은 원 바깥에 간격을 둔 어두운 링으로 강조한다 — 안쪽 테두리=오늘,
+            // 바깥 링=선택이라 한 칸이 둘 다여도 서로 겹치지 않고 구분된다.
+            const todayRingColor = statusColor ? '#fff' : colors.primary
             return (
               <button
                 key={i}
                 type="button"
                 className="tds-press"
                 onClick={() => handleSelectDay(dateKey)}
+                aria-label={`${cursor.month + 1}월 ${day}일${info ? ` · ${AUTO_STATUS_LABELS[info.status]}` : ''}`}
                 style={{
                   border: 'none',
-                  background: isSelected ? statusColor || colors.primary : 'transparent',
-                  color: isSelected ? '#fff' : isToday ? colors.primary : isFuture ? colors.muted : colors.textStrong,
-                  opacity: isFuture ? 0.4 : 1,
-                  borderRadius: radius.pill,
-                  height: 40,
+                  background: 'none',
+                  padding: 0,
+                  height: 44,
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  fontWeight: isToday || isSelected ? 700 : 500,
-                  fontSize: font.size.sm,
+                  opacity: isFuture ? 0.4 : 1,
                 }}
               >
-                <span>{day}</span>
-                {info && !isSelected && (
-                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: statusColor, marginTop: 2 }} />
-                )}
+                <span
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxSizing: 'border-box',
+                    background: statusColor || (isToday ? colors.primarySurface : 'transparent'),
+                    color: statusColor ? '#fff' : isToday ? colors.primary : isFuture ? colors.muted : colors.textStrong,
+                    fontWeight: statusColor || isToday || isSelected ? 700 : 500,
+                    fontSize: font.size.sm,
+                    border: isToday ? `2px solid ${todayRingColor}` : 'none',
+                    boxShadow: isSelected ? `0 0 0 2px ${colors.surface}, 0 0 0 4px ${colors.textStrong}` : 'none',
+                  }}
+                >
+                  {day}
+                </span>
               </button>
             )
           })}

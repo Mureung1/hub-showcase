@@ -169,27 +169,40 @@ as $$
       sum((m.total->>'fiber')::numeric)    as fiber,
       sum((m.total->>'sodium')::numeric)   as sodium
     from public.meals m
-    where m.date = current_date
+    -- "오늘"은 앱이 기록할 때 쓰는 한국 시각(KST) 기준 날짜여야 한다. current_date는 DB 타임존(Supabase
+    -- 기본 UTC) 기준이라, 그대로 쓰면 00~09시(KST) 사이엔 어제 기록을 세고 오늘 기록을 놓쳐 다른 화면과
+    -- 어긋난다. meals.date가 KST 로컬 날짜(toDateKey)로 저장되므로 여기도 KST로 맞춘다.
+    where m.date = (now() at time zone 'Asia/Seoul')::date
     group by m.user_id
   ),
   scored as (
+    -- 영양소별 점수를 배열로 만들고 NULL(권장량이 0/없어 채점 불가한 항목)은 avg가 자동으로 무시한다.
+    -- 이렇게 해야 src/lib/nutritionScore.js의 calcNutritionScore(채점 가능한 항목만 평균)와 공식이 같다.
+    -- (기존엔 6개 합÷6 + nullif라, 한 항목이라도 권장량이 0이면 전체 score가 NULL이 돼 정렬에서 1위로
+    --  올라가고, 나트륨 분모엔 nullif가 없어 0이면 0으로 나누는 오류까지 났다.)
     select
       t.user_id,
       (
-        least(coalesce(t.calories, 0) / nullif((p.recommended->>'calories')::numeric, 0) * 100, 100)
-        + least(coalesce(t.protein, 0) / nullif((p.recommended->>'protein')::numeric, 0) * 100, 100)
-        + least(coalesce(t.carbs, 0) / nullif((p.recommended->>'carbs')::numeric, 0) * 100, 100)
-        + least(coalesce(t.fat, 0) / nullif((p.recommended->>'fat')::numeric, 0) * 100, 100)
-        + least(coalesce(t.fiber, 0) / nullif((p.recommended->>'fiber')::numeric, 0) * 100, 100)
-        -- 나트륨은 상한 지표라 방향이 반대(한도 이하면 100점, 넘으면 초과 비율만큼 감점, 0점 미만은 자름).
-        + greatest(
-            case
-              when coalesce(t.sodium, 0) <= (p.recommended->>'sodium')::numeric then 100
-              else 100 * (1 - (t.sodium - (p.recommended->>'sodium')::numeric) / (p.recommended->>'sodium')::numeric)
-            end,
-            0
-          )
-      ) / 6 as score
+        select avg(s) from unnest(array[
+          case when (p.recommended->>'calories')::numeric > 0
+               then least(coalesce(t.calories, 0) / (p.recommended->>'calories')::numeric * 100, 100) end,
+          case when (p.recommended->>'protein')::numeric > 0
+               then least(coalesce(t.protein, 0) / (p.recommended->>'protein')::numeric * 100, 100) end,
+          case when (p.recommended->>'carbs')::numeric > 0
+               then least(coalesce(t.carbs, 0) / (p.recommended->>'carbs')::numeric * 100, 100) end,
+          case when (p.recommended->>'fat')::numeric > 0
+               then least(coalesce(t.fat, 0) / (p.recommended->>'fat')::numeric * 100, 100) end,
+          case when (p.recommended->>'fiber')::numeric > 0
+               then least(coalesce(t.fiber, 0) / (p.recommended->>'fiber')::numeric * 100, 100) end,
+          -- 나트륨은 상한 지표라 방향이 반대(한도 이하면 100점, 넘으면 초과 비율만큼 감점, 0점 미만은 자름).
+          case when (p.recommended->>'sodium')::numeric > 0
+               then greatest(
+                 case
+                   when coalesce(t.sodium, 0) <= (p.recommended->>'sodium')::numeric then 100
+                   else 100 * (1 - (t.sodium - (p.recommended->>'sodium')::numeric) / (p.recommended->>'sodium')::numeric)
+                 end, 0) end
+        ]) s
+      ) as score
     from today_totals t
     join public.profiles p on p.id = t.user_id
     where p.recommended is not null and p.recommended != '{}'::jsonb
@@ -199,6 +212,7 @@ as $$
     round(score, 0) as score,
     user_id = auth.uid() as is_me
   from scored
+  where score is not null  -- 채점 가능한 영양소가 하나도 없는 프로필은 순위에서 제외
   order by score desc
   limit 100;
 $$;
