@@ -50,6 +50,7 @@ git commit -m "feat: MBTI 공부법 스트레스 관리 웹앱 기획서 및 프
 - `node_modules`, `.DS_Store`, `dist`, 임시파일은 stage하지 않는다.
 - 불필요한 `package.json`, `package-lock.json` 변경은 stage하지 않는다.
 - amend, rebase, force push는 사용자 명시 허가 없이는 사용하지 않는다.
+- **bare 이슈번호 금지:** 커밋 메시지·PR 제목·PR 본문에 `#27` 같은 bare 번호를 쓰지 않는다. 이 저장소의 PR은 **업스트림 공용 저장소**로 올라가므로, bare 번호는 업스트림의 같은 번호(= **다른 참가자 이슈**)로 자동 링크되고 그 이슈에 "언급됨" 백링크가 생긴다(수정해도 이벤트가 남을 수 있다). 자기 이슈는 full path(`bricepark94/hub#27`)·URL로 쓰거나 번호 없이 기능명으로만 적는다. 커밋·PR 직전 `grep -oE '#[0-9]+'`로 점검한다.
 
 ## 4. Push
 
