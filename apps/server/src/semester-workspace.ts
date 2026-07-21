@@ -48,6 +48,7 @@ import {
   isExactAssignmentUpsert,
   isExactRecord,
   isMaterialId,
+  isModelingRunRecoveryOutcome,
   isModelingRunSourceBaseline,
   isNativeCorrelation,
   isOpaqueRuntimeIdentity,
@@ -1888,20 +1889,6 @@ async function settleAssignmentAction(
     beforeActionStoreWrite,
     'settle',
     cleanupPolicy,
-  )
-}
-
-function isModelingRunRecoveryOutcome(
-  value: unknown,
-): value is ModelingRunRecoveryOutcome {
-  return (
-    isRecord(value) &&
-    (((value.outcome === 'interrupted' || value.outcome === 'unknown') &&
-      isExactRecord(value, ['outcome'])) ||
-      (value.outcome === 'continuation_lost' &&
-        isExactRecord(value, ['confirmedRevision', 'outcome']) &&
-        Number.isSafeInteger(value.confirmedRevision) &&
-        Number(value.confirmedRevision) >= 0))
   )
 }
 

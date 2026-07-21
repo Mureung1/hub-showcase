@@ -7,6 +7,7 @@ import type {
   AssignmentUpsert,
   EvidenceRef,
   ModelingRun,
+  ModelingRunRecoveryOutcome,
   ModelingRunSource,
   RawMaterial,
   StatePatch,
@@ -309,6 +310,20 @@ export function isModelingRunValidationOutcome(
     value === 'passed' ||
     value === 'failed' ||
     value === 'unknown'
+  )
+}
+
+export function isModelingRunRecoveryOutcome(
+  value: unknown,
+): value is ModelingRunRecoveryOutcome {
+  return (
+    isRecord(value) &&
+    (((value.outcome === 'interrupted' || value.outcome === 'unknown') &&
+      isExactRecord(value, ['outcome'])) ||
+      (value.outcome === 'continuation_lost' &&
+        isExactRecord(value, ['confirmedRevision', 'outcome']) &&
+        Number.isSafeInteger(value.confirmedRevision) &&
+        Number(value.confirmedRevision) >= 0))
   )
 }
 

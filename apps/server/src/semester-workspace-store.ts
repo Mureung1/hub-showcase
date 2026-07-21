@@ -33,6 +33,7 @@ import {
   isExplicitOffsetRfc3339,
   isIsoInstant,
   isMaterialId,
+  isModelingRunRecoveryOutcome,
   isModelingRunSourceBaseline,
   isModelingRunStatus,
   isModelingRunValidationOutcome,
@@ -419,7 +420,7 @@ function isModelingRunArray(value: unknown): value is readonly ModelingRun[] {
       !isModelingRunValidationOutcome(run.validationOutcome) ||
       (run.retryOfRunId !== undefined && !isRunId(run.retryOfRunId)) ||
       (run.recoveryOutcome !== undefined &&
-        !isPersistedModelingRunRecovery(run.recoveryOutcome)) ||
+        !isModelingRunRecoveryOutcome(run.recoveryOutcome)) ||
       !isIsoInstant(run.createdAt) ||
       !isIsoInstant(run.updatedAt) ||
       (run.nativeCorrelation !== undefined &&
@@ -436,20 +437,6 @@ function isModelingRunArray(value: unknown): value is readonly ModelingRun[] {
     actionIds.add(run.actionId)
   }
   return true
-}
-
-function isPersistedModelingRunRecovery(
-  value: unknown,
-): value is NonNullable<ModelingRun['recoveryOutcome']> {
-  return (
-    isRecord(value) &&
-    (((value.outcome === 'interrupted' || value.outcome === 'unknown') &&
-      isExactRecord(value, ['outcome'])) ||
-      (value.outcome === 'continuation_lost' &&
-        isExactRecord(value, ['confirmedRevision', 'outcome']) &&
-        Number.isSafeInteger(value.confirmedRevision) &&
-        Number(value.confirmedRevision) >= 0))
-  )
 }
 
 function isExecutionGuardOrNull(value: unknown): value is ExecutionGuard | null {

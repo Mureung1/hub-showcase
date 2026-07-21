@@ -75,7 +75,7 @@ export type {
   AssignmentOperationSettlement,
   ChatOperationSettlement,
   ProductOperationFrame,
-  ProductOperationRecovery,
   ProductQuestion,
   ProductStatePatch,
 } from './operation-frame.js'
+export type { ProductOperationRecovery } from './recovery.js'

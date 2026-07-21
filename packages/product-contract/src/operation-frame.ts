@@ -12,11 +12,14 @@ import {
   isProductOperationId,
   isProductQuestionId,
   isRecord,
-  isRevision,
   isRunId,
   isValidationOutcome,
   utf8Bytes,
 } from './contract-values.js'
+import {
+  isProductOperationRecovery,
+  type ProductOperationRecovery,
+} from './recovery.js'
 import type { ProductEvidenceRef } from './workspace.js'
 
 export type ProductQuestion = {
@@ -77,17 +80,6 @@ export type ChatOperationSettlement = {
     | 'unknown'
   readonly failureCode?: string
 }
-
-export type ProductOperationRecovery =
-  | {
-      readonly outcome: 'interrupted' | 'unknown'
-      readonly retryable: boolean
-    }
-  | {
-      readonly outcome: 'continuation_lost'
-      readonly retryable: false
-      readonly confirmedRevision: number
-    }
 
 export type ProductOperationFrame =
   | (ProductFrameBase & {
@@ -270,11 +262,13 @@ export function decodeProductOperationFrame(
       if (
         !value.operationId.startsWith('action_') ||
         !isRunId(value.runId) ||
-        !isProductOperationRecovery(
-          value.outcome,
-          value.retryable,
-          value.confirmedRevision,
-        )
+        !isProductOperationRecovery({
+          outcome: value.outcome,
+          retryable: value.retryable,
+          ...(value.confirmedRevision === undefined
+            ? {}
+            : { confirmedRevision: value.confirmedRevision }),
+        })
       ) {
         throw invalidContract()
       }
@@ -587,21 +581,6 @@ function isProductReviewOutcome(
     value === 'revised' ||
     value === 'rejected' ||
     value === 'cancelled'
-  )
-}
-
-function isProductOperationRecovery(
-  outcome: unknown,
-  retryable: unknown,
-  confirmedRevision: unknown,
-): boolean {
-  return (
-    ((outcome === 'interrupted' || outcome === 'unknown') &&
-      typeof retryable === 'boolean' &&
-      confirmedRevision === undefined) ||
-    (outcome === 'continuation_lost' &&
-      retryable === false &&
-      isRevision(confirmedRevision))
   )
 }
 

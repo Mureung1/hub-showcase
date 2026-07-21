@@ -13,7 +13,10 @@ import {
   isRunId,
   isValidationOutcome,
 } from './contract-values.js'
-import type { ProductOperationRecovery } from './operation-frame.js'
+import {
+  isProductOperationRecovery,
+  type ProductOperationRecovery,
+} from './recovery.js'
 
 export type ProductRawMaterial = {
   readonly id: string
@@ -471,7 +474,8 @@ function decodeProductSettledModelingRun(
     !value.sources.every(isModelingSource) ||
     (value.retryOfRunId !== null && !isRunId(value.retryOfRunId)) ||
     value.retryOfRunId === value.id ||
-    !isProductRecoveryOrNull(value.recovery) ||
+    (value.recovery !== null &&
+      !isProductOperationRecovery(value.recovery)) ||
     !isSettledRunStatus(value.status) ||
     !isValidationOutcome(value.validationOutcome) ||
     !isTimestamp(value.createdAt) ||
@@ -502,26 +506,6 @@ function decodeProductSettledModelingRun(
     updatedAt: value.updatedAt,
     settledAt: value.settledAt,
   }
-}
-
-function isProductRecoveryOrNull(
-  value: unknown,
-): value is ProductOperationRecovery | null {
-  return (
-    value === null ||
-    (isRecord(value) &&
-      (((value.outcome === 'interrupted' || value.outcome === 'unknown') &&
-        isExactObject(value, ['outcome', 'retryable']) &&
-        typeof value.retryable === 'boolean') ||
-        (value.outcome === 'continuation_lost' &&
-          isExactObject(value, [
-            'confirmedRevision',
-            'outcome',
-            'retryable',
-          ]) &&
-          value.retryable === false &&
-          isRevision(value.confirmedRevision))))
-  )
 }
 
 function decodeProductRawMaterial(value: unknown): ProductRawMaterial {
