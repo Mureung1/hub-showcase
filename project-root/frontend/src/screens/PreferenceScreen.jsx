@@ -1,22 +1,40 @@
 // screens/PreferenceScreen.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./PreferenceScreen.css";
 import PrimaryButton from "../components/PrimaryButton";
-import { mockSubjects } from "../data/mockSubjects";
+import { fetchLectures } from "../api/lectures";
+import { CURRENT_YEAR, CURRENT_SEMESTER } from "../config/semester";
 
 const DAYS = ["월", "화", "수", "목", "금"];
 const CREDIT_OPTIONS = [12, 15, 18, 21];
-const MAJOR_SUBJECTS = mockSubjects.filter((s) => s.category !== "교양");
 
 export default function PreferenceScreen({ onNavigate, onSubmit }) {
   const [grade, setGrade] = useState("2");
-  const [department, setDepartment] = useState("컴퓨터공학과");
+  const [department, setDepartment] = useState("컴퓨터학부");
   const [freeDays, setFreeDays] = useState([]);
   const [avoidMorning, setAvoidMorning] = useState(false);
   const [targetCredit, setTargetCredit] = useState(15);
   const [teamPreferred, setTeamPreferred] = useState(false);
   const [completedIds, setCompletedIds] = useState([]);
   const [freeText, setFreeText] = useState("");
+  const [majorSubjects, setMajorSubjects] = useState([]);
+  const [majorSubjectsError, setMajorSubjectsError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setMajorSubjectsError(false);
+    fetchLectures({ year: CURRENT_YEAR, semester: CURRENT_SEMESTER, department })
+      .then((lectures) => {
+        if (!cancelled) setMajorSubjects(lectures);
+      })
+      .catch((err) => {
+        console.error("강의 목록 조회 실패:", err);
+        if (!cancelled) setMajorSubjectsError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [department]);
 
   function toggleDay(day) {
     setFreeDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
@@ -74,7 +92,7 @@ export default function PreferenceScreen({ onNavigate, onSubmit }) {
         <div className="field">
           <label htmlFor="pref-department">학과</label>
           <select id="pref-department" value={department} onChange={(e) => setDepartment(e.target.value)}>
-            <option value="컴퓨터공학과">컴퓨터공학과</option>
+            <option value="컴퓨터학부">컴퓨터학부</option>
           </select>
         </div>
       </div>
@@ -146,8 +164,11 @@ export default function PreferenceScreen({ onNavigate, onSubmit }) {
       <div className="field-list">
         <div className="field">
           <label>이미 들은 과목 (선수과목 확인용)</label>
+          {majorSubjectsError && (
+            <p className="field__hint">과목 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.</p>
+          )}
           <div className="checkbox-list">
-            {MAJOR_SUBJECTS.map((s) => (
+            {majorSubjects.map((s) => (
               <label key={s.id} className="checkbox-item">
                 <input
                   type="checkbox"

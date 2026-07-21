@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const lecturesRouter = require('./routes/lectures');
 const app = express();
 const PORT = 3000;
 
@@ -13,6 +14,8 @@ app.get('/', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
+app.use('/api/lectures', lecturesRouter);
 
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
