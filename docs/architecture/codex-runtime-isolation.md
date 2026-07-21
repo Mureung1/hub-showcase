@@ -2,7 +2,7 @@
 
 작성일: 2026-07-07
 
-최근 갱신: 2026-07-20
+최근 갱신: 2026-07-21
 
 분류: 활성
 
@@ -23,7 +23,7 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 | Runtime stack | `@ay-ple/codex-chat-runtime`이 exact official source, generated SDK, standalone CPython과 native `0.144.4`를 canonical manifest로 검증한 뒤 package-local bundle만 시작한다. | App package가 exact Python·SDK·native runtime과 provenance를 함께 소유한다. | 지원 platform별 artifact, signing·notarization과 atomic update/rollback |
 | Runtime state | Server가 explicit `CODEX_CHAT_RUNTIME_HOME`, `CODEX_CHAT_CODEX_HOME`, `CODEX_CHAT_SQLITE_HOME`, `CODEX_CHAT_TEMP_DIR`을 writable non-symlink directory로 검증하고 workspace를 포함한 다섯 root의 ancestor·descendant 관계를 거절한다. | `appDataRoot` 아래 하나의 app-managed runtime-home pair와 관련 runtime state를 배치한다. | macOS 기본 app data 경로, account/auth UX, override·migration과 학기 rollover 정책 |
 | 작업 `cwd` | 현재 Chat은 `CODEX_CHAT_WORKSPACE`를 사용한다. Root `npm run dev -- --app-data-root <absolute-path>`와 Browser activation은 macOS chooser 결과를 `packageRoot`·`appDataRoot`와 교차 검증하고 `ready` workspace만 Server 내부 값으로 제공하며, product Turn은 이 selected workspace를 exact native `cwd`로 사용한다. | 선택 workspace를 product Turn의 exact `cwd`로 연결한다. | 최근 workspace registry |
-| 학기 제품 상태 | Workspace 내부의 exact current v2 store가 confirmed revision, opaque `Course`·stable-ID `RawMaterial`, `Assignment`·`StatePatch`·`UserConfirmation`과 required `modelingRuns`·`executionGuard`를 하나의 authority로 보존한다. 두 required field가 없는 pre-006 v2를 포함해 current decoder를 통과하지 못한 store는 variant별 migration이나 automatic restore 없이 original bytes를 보존한 `incompatible/readOnly`로 연다. Bounded preview는 ID·digest·live file을 재검증하고, action guard는 source/revision lease와 cleanup/reopen reconciliation을 소유한다. | RawMaterial과 확인된 학기 상태, execution receipt를 사용자 소유 `workspaceRoot`에서 다시 열 수 있게 한다. | [Ticket 008b](../tickets/2026-07-19-first-assignment-product-bound-companion/008b-workspace-store-recovery.md)의 explicit source rebaseline과 workspace recovery |
+| 학기 제품 상태 | Workspace 내부의 exact current v2 store가 confirmed revision, opaque `Course`·stable-ID `RawMaterial`, `Assignment`·`StatePatch`·`UserConfirmation`과 required `modelingRuns`·`executionGuard`를 하나의 authority로 보존한다. Exact-decodable current v2는 original serialized bytes를 authority로 열고 startup에서 rewrite하지 않는다. Current decoder를 통과하지 못한 store는 original bytes를 보존한 `incompatible/readOnly`로 연다. 모든 mutation은 opened bytes와 rename 직전 bytes를 비교해 external store drift를 덮어쓰지 않는다. Bounded preview는 ID·digest·live file을 재검증하고 action guard는 source/revision lease, native interrupt와 cleanup/reopen reconciliation을 소유한다. Explicit refresh는 source conflict의 current TXT를 stable-ID 새 기준으로 채택하고, explicit reactivation은 cleanup을 재시도하거나 latest valid store/history를 authority로 다시 연다. | RawMaterial과 확인된 학기 상태, execution receipt를 사용자 소유 `workspaceRoot`에서 다시 열고 source/store conflict를 원본 보존 방식으로 복구할 수 있게 한다. | Future store format migration·backup/restore·signature 정책 |
 | Native context | Controlled homes와 fixed `PATH`만 child에 전달한다. Workspace의 native `AGENTS.md`·Skills는 Codex가 발견하며 ambient host credential/provider로 fallback하지 않는다. | Native instruction·Skills를 따르고 Memory는 명시적 설정과 eligibility 확인 뒤 비권위적 맥락으로만 사용한다. | 실제 discovery 범위, Memory 활성화와 rollover UX |
 | Transport·policy | Local companion이 detached Node→Python→App Server process tree를 supervise한다. Legacy text tracer Turn은 `deny_all + read_only`를, structured product Turn은 `auto_review + workspace_write`를 explicit하게 보낸다. Product permission은 Python·command·workspace tool 실행을 허용하는 Codex technical boundary이며 AY-PLE Review·`UserConfirmation`과 별개다. | Codex 실행 권한 profile과 native request는 AY-PLE Review·`UserConfirmation`과 분리해 소유하고 제품 UI에는 browser-safe event만 전달한다. | Legacy tracer removal, final product permission conformance와 cloud threat model |
 
@@ -89,7 +89,8 @@ semester-workspace/
   .agents/
     skills/                    # 선택 사항, workspace-local native Skills
   .ay-ple/
-    <app-managed product state> # 저장 형식과 경로는 구현 PRD에서 결정
+    workspace-state.json       # current v2 product authority
+    runtime-scratch/           # Run-bound transient workspace writes
 ```
 
 이 구조는 채택한 소유권을 보여주는 예시이며 현재 여섯 environment path의 default layout을 선언하지 않는다. AY-PLE는 기존 학기 폴더를 위 구조로 재배치하도록 요구하지 않고 Codex-managed state의 내부 파일 배치에도 제품 계약을 두지 않는다.
@@ -115,6 +116,7 @@ semester-workspace/
 | Artifact drift | Bundle의 일부 file이나 native executable이 바뀌면 검토한 runtime과 달라진다. | Spawn 전에 canonical manifest와 complete tree digest를 fail closed로 검증한다. |
 | Runtime-home pair 분리 | Custom home을 잘못 조합하면 auth·SQLite 수명과 복구 책임이 갈라진다. | Current config는 각 directory를 distinct하게 검증하고 제품 layout seam은 pair를 함께 계산한다. |
 | Workspace 오선택 | Environment가 explicit해도 사용자가 의도하지 않은 workspace를 지정할 수 있다. | 제품에서는 chooser·registry가 선택을 소유하고 기존 thread 재사용 전 sticky `cwd`를 검증한다. |
+| Workspace authority drift | Registered TXT나 product store가 Run 또는 Server 수명 중 외부에서 바뀌면 stale baseline이나 in-memory state로 덮어쓸 수 있다. | Source drift는 native Turn을 interrupt하고 explicit rebaseline 전 mutation을 닫는다. Store write는 opened exact bytes를 rename 직전에 재검증하며 conflict 시 external bytes를 보존하고 explicit reactivation을 요구한다. |
 | 민감 상태 혼입 | `CODEX_HOME`을 학기 폴더에 두면 auth/session/log가 사용자 자료와 섞인다. | OS app data directory에 runtime-home pair를 두고 workspace와 분리한다. |
 | Python 또는 native artifact 누락 | Local companion 배포에서 interpreter·SDK·Codex runtime 중 하나가 빠질 수 있다. | Production verifier와 macOS packaging smoke, provenance 검사를 사용한다. |
 | Host context 혼입 | Custom `CODEX_HOME`만으로 inherited environment나 provider 설정이 모두 차단된다고 볼 수 없다. | Child environment를 allowlist로 재구성하고 exact local-provider에서 effective state를 검증한다. |
