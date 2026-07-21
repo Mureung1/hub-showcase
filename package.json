@@ -5,14 +5,14 @@
   "type": "module",
   "packageManager": "pnpm@10.33.2",
   "scripts": {
-    "dev": "pnpm --filter @gazua/frontend dev",
-    "build": "pnpm --filter @gazua/frontend build",
+    "dev": "pnpm -r --parallel --if-present dev",
+    "build": "pnpm -r --if-present build",
     "preview": "pnpm --filter @gazua/frontend preview",
-    "typecheck": "pnpm --filter @gazua/frontend typecheck",
-    "lint": "pnpm --filter @gazua/frontend lint",
-    "format": "pnpm --filter @gazua/frontend format",
-    "format:check": "pnpm --filter @gazua/frontend format:check",
-    "test": "pnpm --filter @gazua/frontend test",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint",
+    "format": "pnpm -r --if-present format",
+    "format:check": "pnpm -r --if-present format:check",
+    "test": "pnpm -r --if-present test",
     "test:watch": "pnpm --filter @gazua/frontend test:watch"
   }
 }
