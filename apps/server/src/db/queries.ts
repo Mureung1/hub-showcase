@@ -135,14 +135,33 @@ export interface CampaignPatch {
   status?: string;
   edited_copy?: string;
   channels?: string[];
+  /** 편집된 프로모션(할인율). 컬럼이 아니라 proposal jsonb 안 promo에 병합된다. */
+  editedPromo?: { type: string; value: string };
 }
 
-/** 캠페인을 부분 갱신한다(PATCH /campaigns/:id). */
+/**
+ * 캠페인을 부분 갱신한다(PATCH /campaigns/:id).
+ * editedPromo는 전용 컬럼이 아니라 proposal jsonb 안 promo → 현재 proposal을 읽어 병합해 다시 저장한다(read-modify-write).
+ */
 export async function updateCampaign(id: string, patch: CampaignPatch): Promise<CampaignRow> {
   const sb = getSupabase();
+  const { editedPromo, ...columns } = patch;
+
+  const dbPatch: Record<string, unknown> = { ...columns };
+  if (editedPromo) {
+    const current = await getCampaignById(id);
+    if (!current) throw new Error(`캠페인을 찾을 수 없습니다: ${id}`);
+    if (current.proposal) {
+      dbPatch.proposal = {
+        ...current.proposal,
+        promo: { ...current.proposal.promo, ...editedPromo },
+      };
+    }
+  }
+
   const { data, error } = await sb
     .from("campaigns")
-    .update(patch)
+    .update(dbPatch)
     .eq("id", id)
     .select()
     .single();
@@ -177,28 +196,51 @@ export async function getCustomers(storeId: string): Promise<CustomerRow[]> {
   return (data ?? []) as CustomerRow[];
 }
 
-/** 쿠폰 코드 생성 (WP + 8 hex, 전역 유니크에 충분). */
+/**
+ * 쿠폰 코드 생성 — 헷갈림 없는 5자.
+ * 사람이 문자로 받아 읽고 부르는 코드라, 혼동되는 0·O·1·I·L 을 뺀 문자 집합에서 뽑는다.
+ * (구 방식 "WP"+8hex(10자) → 5자로 단축해 가독성↑. 문자 본문 "쿠폰코드 XXXXX"에 쓰인다.)
+ */
+const COUPON_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // 0·O·1·I·L 제외
+const COUPON_CODE_LEN = 5;
+
 function newCouponCode(): string {
-  return "WP" + randomBytes(4).toString("hex").toUpperCase();
+  const bytes = randomBytes(COUPON_CODE_LEN);
+  let code = "";
+  for (let i = 0; i < COUPON_CODE_LEN; i++) {
+    // modulo 편향은 있으나 쿠폰 코드엔 무해(집합 31자). 균일성보다 가독성 우선.
+    code += COUPON_ALPHABET[bytes[i] % COUPON_ALPHABET.length];
+  }
+  return code;
 }
 
 /**
  * 발송 시 동의 단골마다 쿠폰을 발급한다(코드별 누적 추적용). 발급된 코드 목록을 돌려준다.
  * issued_to는 customers(id) FK — 진짜 발송은 본인 번호 1건뿐이지만, 추적 집계를 위해 대상 수만큼 발급.
+ *
+ * 코드가 짧아진 만큼(5자) 전역 유니크 충돌 확률이 커졌다 → 충돌 시 코드 전체를 1회 재생성해 재시도한다.
  */
 export async function issueCouponsFor(
   campaignId: string,
   recipients: { id: string }[],
 ): Promise<string[]> {
   if (recipients.length === 0) return [];
-  const rows = recipients.map((r) => ({
-    campaign_id: campaignId,
-    code: newCouponCode(),
-    issued_to: r.id,
-  }));
   const sb = getSupabase();
-  const { error } = await sb.from("coupons").insert(rows);
-  if (error) throw new Error(`쿠폰 발급 실패: ${error.message}`);
+  const buildRows = () =>
+    recipients.map((r) => ({
+      campaign_id: campaignId,
+      code: newCouponCode(),
+      issued_to: r.id,
+    }));
+
+  let rows = buildRows();
+  const first = await sb.from("coupons").insert(rows);
+  if (first.error) {
+    // 유니크 충돌 등 → 코드 재생성 후 1회 재시도
+    rows = buildRows();
+    const retry = await sb.from("coupons").insert(rows);
+    if (retry.error) throw new Error(`쿠폰 발급 실패: ${retry.error.message}`);
+  }
   return rows.map((r) => r.code);
 }
 

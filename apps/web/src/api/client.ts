@@ -73,8 +73,14 @@ async function apiSend<T>(method: "POST" | "PATCH", path: string, body: unknown)
 
 // ---- MOCK 응답 (MOCK_MODE=on 시 서버 대신 사용) -----------------------------
 
+// 서버(db/queries.ts newCouponCode)와 동일한 5자 형식 — 0·O·1·I·L 제외.
 function mockCouponCode(): string {
-  return "WP" + Math.random().toString(36).slice(2, 8).toUpperCase();
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 5; i++) {
+    code += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return code;
 }
 
 // 캠페인별 추적 시작 시각 — MOCK에서 쿠폰 사용을 시간에 따라 램프업시킨다.

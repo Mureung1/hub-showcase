@@ -9,6 +9,8 @@
  * 전부 순수 함수 — 발송 라우트(D4)와 단위테스트가 공용으로 쓴다.
  */
 
+import { buildSmsBody } from "shared";
+
 /** 야간 광고 발송 제한 경계 (KST). 21:00~08:00 차단. */
 export const NIGHT_START_HOUR = 21;
 export const NIGHT_END_HOUR = 8;
@@ -34,13 +36,17 @@ export function filterConsented<T extends Recipient>(recipients: T[]): T[] {
   );
 }
 
-/** 광고 문자 본문에 (광고)·전송자명·무료수신거부를 삽입한다. */
+/**
+ * 광고 문자 본문에 (광고)·전송자명·무료수신거부를 삽입한다.
+ * 실제 조립은 shared의 `buildSmsBody`가 담당(문자 경로 이모지 제거 + 무료수신거부 앞 빈 줄).
+ * FE 발송 미리보기와 동일 결과를 얻으려고 공용 유틸을 쓴다.
+ */
 export function buildAdMessage(
   copy: string,
   storeName: string,
   optOutNumber: string = OPT_OUT_NUMBER,
 ): string {
-  return `(광고) [${storeName}]\n${copy}\n무료수신거부 ${optOutNumber}`;
+  return buildSmsBody({ copy, storeName, optOutNumber });
 }
 
 /** 시(hour, 0~23)가 광고 발송 금지 야간대인가. */

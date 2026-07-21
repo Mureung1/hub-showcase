@@ -18,6 +18,7 @@ import {
 import { planAdSend } from "../legal/filter";
 import { sendSms } from "../sms/solapi";
 import { aggregateTracking } from "../coupons/tracking";
+import { checkGuardrails } from "../agent/guardrails";
 
 export const campaignsRouter = Router();
 
@@ -33,7 +34,12 @@ campaignsRouter.patch("/:id", async (req, res) => {
     const { id } = req.params;
     const body = (req.body ?? {}) as CampaignPatchRequest;
 
-    const patch: { status?: string; edited_copy?: string; channels?: string[] } = {};
+    const patch: {
+      status?: string;
+      edited_copy?: string;
+      channels?: string[];
+      editedPromo?: { type: string; value: string };
+    } = {};
     if (body.status !== undefined) {
       if (!ALLOWED_STATUS.includes(body.status)) {
         return res.status(400).json({ error: `허용되지 않는 status: ${body.status}` });
@@ -42,9 +48,10 @@ campaignsRouter.patch("/:id", async (req, res) => {
     }
     if (body.editedCopy !== undefined) patch.edited_copy = body.editedCopy;
     if (body.channels !== undefined) patch.channels = body.channels;
+    if (body.editedPromo !== undefined) patch.editedPromo = body.editedPromo;
 
     if (Object.keys(patch).length === 0) {
-      return res.status(400).json({ error: "변경할 필드가 없습니다 (status·editedCopy·channels)" });
+      return res.status(400).json({ error: "변경할 필드가 없습니다 (status·editedCopy·channels·editedPromo)" });
     }
 
     const updated = await updateCampaign(id, patch);
@@ -74,6 +81,15 @@ campaignsRouter.post("/:id/send", async (req, res) => {
 
     const campaign = await getCampaignById(id);
     if (!campaign) return res.status(404).json({ error: "캠페인을 찾을 수 없습니다" });
+
+    // 발송 직전 서버 가드레일 재검사 (편집된 promo/copy 반영본) — UI 우회 방지, 할인율 ≤20% 강제.
+    if (campaign.proposal) {
+      const effective = { ...campaign.proposal, copy: campaign.edited_copy ?? campaign.proposal.copy };
+      const guard = checkGuardrails(effective);
+      if (!guard.ok) {
+        return res.status(400).json({ error: `가드레일 위반: ${guard.violations.join("; ")}` });
+      }
+    }
 
     // SNS 전용(광고 문자 아님) → 법적 필터/문자 대상 아님
     if (!channels.includes("dangol")) {

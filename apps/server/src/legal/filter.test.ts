@@ -7,6 +7,7 @@ import {
   OPT_OUT_NUMBER,
   type Recipient,
 } from "./filter";
+import { stripEmoji, buildSmsBody } from "shared";
 
 function rc(over: Partial<Recipient> = {}): Recipient {
   return {
@@ -68,5 +69,28 @@ describe("planAdSend", () => {
     const plan = planAdSend({ ...base, assumeNight: true });
     expect(plan.action).toBe("schedule");
     expect(plan.recipients.map((r) => r.id)).toEqual(["a"]);
+  });
+});
+
+describe("stripEmoji (문자용 이모지 제거 · QW-3)", () => {
+  it("이모지를 제거하고 텍스트·공백은 정리한다", () => {
+    expect(stripEmoji("따뜻한 아메리카노 ☕ 픽업 🎉")).toBe("따뜻한 아메리카노 픽업");
+  });
+  it("이모지만 있던 줄로 생긴 과도한 빈 줄을 줄인다", () => {
+    expect(stripEmoji("첫 줄 ☕\n\n\n\n둘째 줄")).toBe("첫 줄\n\n둘째 줄");
+  });
+});
+
+describe("buildSmsBody (문자 본문 = 발송 미리보기 · QW-2·3)", () => {
+  const body = buildSmsBody({ copy: "오늘 픽업 10% 할인 ☔", storeName: "김사장 카페" });
+  it("(광고)·전송자명으로 시작한다", () => {
+    expect(body.startsWith("(광고) [김사장 카페]")).toBe(true);
+  });
+  it("문자 경로에서 이모지가 제거된다(LMS EUC-KR 대응)", () => {
+    expect(body).not.toMatch(/\p{Extended_Pictographic}/u);
+    expect(body).toContain("오늘 픽업 10% 할인");
+  });
+  it("무료수신거부 앞에 빈 줄(2줄)이 있다 · QW-2", () => {
+    expect(body).toContain(`\n\n\n무료수신거부 ${OPT_OUT_NUMBER}`);
   });
 });
