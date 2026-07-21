@@ -7,6 +7,7 @@ import {
   startOAuthLogin,
   takePendingOAuthCode,
 } from '../api/auth.js'
+import { updateMe } from '../api/users.js'
 
 const AppStateContext = createContext(null)
 
@@ -150,6 +151,12 @@ export function AppStateProvider({ children }) {
       }
     }
 
+    // 생년월일 최초 입력(D5). 성공하면 갱신된 사용자로 교체해 게이트가 닫히게 한다.
+    async function saveBirthDate(birthDate) {
+      const updated = await updateMe(birthDate)
+      setUser(updated)
+    }
+
     return {
       meetings,
       currentUser,
@@ -158,6 +165,7 @@ export function AppStateProvider({ children }) {
       authError,
       login,
       logout,
+      saveBirthDate,
       applyToMeeting,
       cancelMyParticipation,
       respondToApplicant,
