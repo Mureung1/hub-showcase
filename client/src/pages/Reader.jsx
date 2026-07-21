@@ -5,6 +5,7 @@ import BottomSheet from "../components/BottomSheet.jsx"
 import DecisionButtons from "../components/DecisionButtons.jsx"
 import ReaderSkeleton from "../components/ReaderSkeleton.jsx"
 import SentenceAccordion from "../components/SentenceAccordion.jsx"
+import Toast from "../components/Toast.jsx"
 import { parseArticle, analyzeArticle } from "../api/article.js"
 import { saveDecision } from "../api/decisions.js"
 import { useAuth } from "../context/AuthContext.jsx"
@@ -33,6 +34,7 @@ export default function Reader() {
   const [analysis, setAnalysis] = useState(null)
   const [error, setError] = useState(null)
   const [pendingDecision, setPendingDecision] = useState(null)
+  const [toastMessage, setToastMessage] = useState(null)
 
   useEffect(() => {
     if (!url) return
@@ -66,7 +68,9 @@ export default function Reader() {
         decision: pendingDecision,
         marketSentiment: analysis?.marketSentiment,
         insight: analysis?.insight,
-      }).catch((err) => setError(err.message))
+      })
+        .then(() => setToastMessage("✅ 인사이트 노트에 저장되었습니다."))
+        .catch((err) => setError(err.message))
     }
 
     setPendingDecision(null)
@@ -110,6 +114,10 @@ export default function Reader() {
           insight={analysis.insight}
           onClose={handleCloseSheet}
         />
+      )}
+
+      {toastMessage && (
+        <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       )}
     </div>
   )
