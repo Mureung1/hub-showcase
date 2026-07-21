@@ -2,11 +2,11 @@ import { Link } from 'react-router-dom'
 import StatusPill from './StatusPill.jsx'
 import { meetingStatusMeta } from '../utils/status.js'
 import { formatMeetingSchedule } from '../utils/date.js'
-import { getConfirmedCount } from '../utils/meetings.js'
 
 export default function MeetingCard({ meeting }) {
   const status = meetingStatusMeta(meeting.status)
-  const confirmedCount = getConfirmedCount(meeting)
+  // 서버 목록/상세가 confirmedCount를 내려준다. 없으면(예: 예외 상황) 0으로.
+  const confirmedCount = meeting.confirmedCount ?? 0
   const capacityLabel =
     meeting.type === 'flash' ? `${confirmedCount}/${meeting.capacity}명` : `${confirmedCount}명 참여중`
 

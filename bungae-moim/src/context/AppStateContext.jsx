@@ -83,41 +83,6 @@ export function AppStateProvider({ children }) {
       setMeetings((prev) => prev.map((m) => (m.id === id ? updater(m) : m)))
     }
 
-    function applyToMeeting(meetingId) {
-      updateMeeting(meetingId, (meeting) => {
-        const status = meeting.type === 'flash' ? 'confirmed' : 'pending'
-        const already = meeting.participants.some((p) => p.userId === currentUser.id)
-        const participants = already
-          ? meeting.participants.map((p) => (p.userId === currentUser.id ? { ...p, status } : p))
-          : [
-              ...meeting.participants,
-              {
-                userId: currentUser.id,
-                nickname: currentUser.nickname,
-                trustScore: currentUser.trustScore,
-                status,
-                appliedAt: meeting.startAt,
-              },
-            ]
-
-        const isFull =
-          meeting.type === 'flash' &&
-          participants.filter((p) => p.status === 'confirmed').length >= meeting.capacity
-
-        return { ...meeting, participants, status: isFull ? 'closed' : meeting.status }
-      })
-    }
-
-    function cancelMyParticipation(meetingId) {
-      updateMeeting(meetingId, (meeting) => ({
-        ...meeting,
-        participants: meeting.participants.map((p) =>
-          p.userId === currentUser.id ? { ...p, status: 'cancelled' } : p,
-        ),
-        status: meeting.type === 'flash' && meeting.status === 'closed' ? 'recruiting' : meeting.status,
-      }))
-    }
-
     function respondToApplicant(meetingId, userId, decision) {
       updateMeeting(meetingId, (meeting) => ({
         ...meeting,
@@ -166,8 +131,6 @@ export function AppStateProvider({ children }) {
       login,
       logout,
       saveBirthDate,
-      applyToMeeting,
-      cancelMyParticipation,
       respondToApplicant,
       cancelMeeting,
     }
