@@ -24,6 +24,12 @@
   text-decoration: none;
 }
 
+.gnb-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-inline-gap);
+}
+
 .gnb-cta {
   font-size: var(--font-size-body);
   font-weight: 700;
@@ -31,6 +37,17 @@
   text-decoration: none;
   padding: 6px 12px;
   border-radius: var(--radius-pill);
+  border: 1.5px solid var(--color-primary);
+}
+
+.gnb-login {
+  font-size: var(--font-size-body);
+  font-weight: 700;
+  color: var(--color-on-primary);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
   border: 1.5px solid var(--color-primary);
 }
 
