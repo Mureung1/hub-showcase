@@ -62,15 +62,15 @@ export default function DropsGrid({
         </p>
       </div>
 
-      {/* Sub category filter chips inside the tab */}
       <div className="sub-filters" style={{ display: 'flex', gap: '8px', marginBottom: '32px', flexWrap: 'wrap' }}>
-        {(['all', 'sneakers', 'streetwear', 'tcg', 'lego'] as const).map((cat) => {
+        {(['all', 'sneakers', 'streetwear', 'tcg', 'accessories', 'collectibles'] as const).map((cat) => {
           const labelMap: Record<string, string> = {
             all: 'all items',
             sneakers: 'sneakers 👟',
             streetwear: 'wear 👕',
             tcg: 'tcg 🃏',
-            lego: 'lego 🧱',
+            accessories: 'accessories 🎒',
+            collectibles: 'collectibles 🧱',
           };
           const isSelected = activeCategory === cat;
           return (
@@ -123,9 +123,10 @@ export default function DropsGrid({
                   src={drop.image}
                   alt={drop.title}
                   className="card-img"
+                  referrerPolicy="no-referrer"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
-                      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80';
+                      'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500&q=80';
                   }}
                 />
               </div>

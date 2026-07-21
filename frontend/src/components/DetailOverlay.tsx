@@ -53,6 +53,36 @@ export default function DetailOverlay({
           <span className="detail-tag">{currentSelectedDrop.catLabel}</span>
           <h2 className="detail-title">{currentSelectedDrop.title}</h2>
 
+          {/* Brutalist product image frame */}
+          <div className="detail-img-container" style={{
+            width: '100%',
+            height: '240px',
+            border: '2px solid #ffffff',
+            background: '#111111',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            marginBottom: '20px',
+            position: 'relative'
+          }}>
+            <img
+              src={currentSelectedDrop.image}
+              alt={currentSelectedDrop.title}
+              referrerPolicy="no-referrer"
+              style={{
+                width: '90%',
+                height: '90%',
+                objectFit: 'contain',
+                transition: 'all 0.3s ease'
+              }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src =
+                  'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500&q=80';
+              }}
+            />
+          </div>
+
           <div className="detail-pricing">
             <div className="price-box">
               <span className="label">정가 (retail)</span>
