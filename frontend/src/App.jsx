@@ -3,6 +3,12 @@ import SubjectInputPage from "./components/SubjectInputPage";
 import ResultScreen from "./components/ResultScreen";
 import { WEIGHT_PRESETS, DEFAULT_WEIGHT_KEY } from "./utils/priorityCalculator";
 import { fetchPriorityScores, scoreSubjectsLocally } from "./utils/priorityApi";
+import {
+  fetchSubjects,
+  createSubject,
+  updateSubject as updateSubjectOnServer,
+  deleteSubject as deleteSubjectOnServer,
+} from "./utils/subjectsApi";
 import "./App.css";
 
 const SUBJECTS_STORAGE_KEY = "exam-priority:subjects";
@@ -34,10 +40,59 @@ function App() {
   const nextIdRef = useRef(
     subjects.reduce((max, subject) => Math.max(max, subject.id), 0) + 1
   );
+  // 마운트 시점의 localStorage 과목. 서버 DB가 비어 있을 때 1회 이관에 쓴다.
+  const initialSubjectsRef = useRef(subjects);
+
+  // 서버가 로컬 id 이상을 발급하지 않도록, 서버에서 받은 과목 기준으로 다음 id를 맞춘다.
+  function bumpNextId(list) {
+    const maxId = list.reduce((max, subject) => Math.max(max, subject.id), 0);
+    nextIdRef.current = Math.max(nextIdRef.current, maxId + 1);
+  }
 
   useEffect(() => {
     localStorage.setItem(SUBJECTS_STORAGE_KEY, JSON.stringify(subjects));
   }, [subjects]);
+
+  // 마운트 시 서버(DB)에서 과목을 불러온다. 서버가 응답하지 않으면 localStorage 초기값을 유지한다.
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadFromServer() {
+      const result = await fetchSubjects();
+      if (ignore || !result.ok) {
+        return;
+      }
+
+      const cached = initialSubjectsRef.current;
+      // 서버 DB가 비었고 로컬 캐시에 과목이 있으면 한 번만 DB로 이관한다.
+      if (result.subjects.length === 0 && cached.length > 0) {
+        const migrated = [];
+        for (const subject of cached) {
+          const created = await createSubject({
+            name: subject.name,
+            examDate: subject.examDate,
+            understanding: subject.understanding,
+            difficulty: subject.difficulty,
+          });
+          migrated.push(created.ok ? created.subject : subject);
+        }
+        if (!ignore) {
+          bumpNextId(migrated);
+          setSubjects(migrated);
+        }
+        return;
+      }
+
+      bumpNextId(result.subjects);
+      setSubjects(result.subjects);
+    }
+
+    loadFromServer();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(WEIGHT_STORAGE_KEY, weightKey);
@@ -60,21 +115,35 @@ function App() {
     };
   }, [subjects, weightKey]);
 
-  function handleAddSubject(subjectInput) {
+  async function handleAddSubject(subjectInput) {
+    const result = await createSubject(subjectInput);
+
+    if (result.ok) {
+      bumpNextId([result.subject]);
+      setSubjects((prev) => [...prev, result.subject]);
+      return;
+    }
+
+    // 서버가 없으면 로컬 id로 추가한다. (정적 배포·서버 다운 폴백)
     const newSubject = { id: nextIdRef.current, ...subjectInput };
     nextIdRef.current += 1;
     setSubjects((prev) => [...prev, newSubject]);
   }
 
-  function handleUpdateSubject(id, subjectInput) {
+  async function handleUpdateSubject(id, subjectInput) {
+    const result = await updateSubjectOnServer(id, subjectInput);
+    const updated = result.ok ? result.subject : null;
+
     setSubjects((prev) =>
       prev.map((subject) =>
-        subject.id === id ? { ...subject, ...subjectInput } : subject
+        subject.id === id ? updated ?? { ...subject, ...subjectInput } : subject
       )
     );
   }
 
-  function handleRemoveSubject(id) {
+  async function handleRemoveSubject(id) {
+    // 서버 삭제 성공이든(DB 반영) 실패든(오프라인) UI 목록에서는 제거한다.
+    await deleteSubjectOnServer(id);
     setSubjects((prev) => prev.filter((subject) => subject.id !== id));
   }
 
