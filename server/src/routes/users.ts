@@ -4,6 +4,7 @@ import { requireAuth } from '../auth/requireAuth.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { AVATAR_PALETTE, HANDLE_PATTERN } from '../constants.js'
 import { getPointsBalance } from '../lib/points.js'
+import { computeCurrentStreak } from '../lib/stats.js'
 
 export const usersRouter = Router()
 usersRouter.use(requireAuth)
@@ -12,37 +13,13 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-function toDateKey(date: Date) {
-  return date.toISOString().slice(0, 10)
-}
-
 async function computeStats(userId: string) {
-  const [completedCount, friendCount, completedSchedules, points] = await Promise.all([
+  const [completedCount, friendCount, currentStreak, points] = await Promise.all([
     prisma.schedule.count({ where: { userId, completed: true } }),
     prisma.friendship.count({ where: { userId } }),
-    prisma.schedule.findMany({
-      where: { userId, completed: true, completedAt: { not: null } },
-      select: { completedAt: true },
-    }),
+    computeCurrentStreak(userId),
     getPointsBalance(userId),
   ])
-
-  const completedDates = new Set(completedSchedules.map((entry) => toDateKey(entry.completedAt!)))
-
-  const today = new Date()
-  today.setUTCHours(0, 0, 0, 0)
-  const cursor = new Date(today)
-
-  // 오늘 아직 완료한 게 없어도 어제까지 이어졌으면 연속기록이 살아있는 걸로 본다.
-  if (!completedDates.has(toDateKey(cursor))) {
-    cursor.setUTCDate(cursor.getUTCDate() - 1)
-  }
-
-  let currentStreak = 0
-  while (completedDates.has(toDateKey(cursor))) {
-    currentStreak += 1
-    cursor.setUTCDate(cursor.getUTCDate() - 1)
-  }
 
   return { completedCount, friendCount, currentStreak, points }
 }

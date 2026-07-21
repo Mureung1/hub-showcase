@@ -92,6 +92,30 @@ export type HomeVisitEntry = {
   createdAt: string
 }
 
+export type DodoBehavior =
+  | 'NO_SCHEDULE'
+  | 'WAITING'
+  | 'DEADLINE_SOON'
+  | 'VIDEO_VERIFIED'
+  | 'REACTION_RECEIVED'
+  | 'ALL_DONE'
+  | 'INCOMPLETE_DAY'
+
+export type DodoState = {
+  mood: 1 | 2 | 3 | 4
+  behavior: DodoBehavior
+}
+
+export type DodoDiaryEntry = {
+  id: string
+  date: string
+  text: string
+  mood: 1 | 2 | 3 | 4 | null
+  pointsEarned: number | null
+  representativeVideoUrl: string
+  createdAt: string
+}
+
 export type FriendPost = {
   id: string
   friendId: string

@@ -7,6 +7,7 @@ import { prisma } from '../db.js'
 import { requireAuth } from '../auth/requireAuth.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { buildPublicUrl, storageClient, STORAGE_BUCKET } from '../lib/storage.js'
+import { upsertDailyDiary } from '../lib/dodo.js'
 
 export const videosRouter = Router()
 videosRouter.use(requireAuth)
@@ -141,6 +142,11 @@ videosRouter.post('/', asyncHandler(async (req, res) => {
       caption: isNonEmptyString(caption) ? caption : null,
     },
     include: { schedule: { include: { category: true } } },
+  })
+
+  // 오늘의 두두 일기를 갱신한다 — 실패해도 영상 업로드 자체는 이미 성공했으니 로그만 남기고 응답은 정상 처리한다.
+  upsertDailyDiary(req.userId!, video.createdAt).catch((error) => {
+    console.error('두두 일기 갱신 실패:', error)
   })
 
   res.status(201).json(toResponse(video))
