@@ -1,7 +1,27 @@
 import { supabaseAdminClient } from "../../common/config/supabase";
-import { CreateStoreInput, CreateStoreWithOwnerRecord, StoreRecord, UpdateStoreInput } from "./stores.types";
+import {
+  CreateStoreInput,
+  CreateStoreWithOwnerRecord,
+  StoreMembershipWithStoreRecord,
+  StoreRecord,
+  UpdateStoreInput
+} from "./stores.types";
 
 const STORE_COLUMNS = "id,owner_id,name,address,created_at,updated_at";
+
+type StoreMembershipQueryRecord = Omit<StoreMembershipWithStoreRecord, "stores"> & {
+  stores: StoreRecord | StoreRecord[] | null;
+};
+
+function normalizeJoinedStore(stores: StoreMembershipQueryRecord["stores"]) {
+  const store = Array.isArray(stores) ? stores[0] : stores;
+
+  if (!store) {
+    throw new Error("Store membership is missing store data.");
+  }
+
+  return store;
+}
 
 export async function createStoreWithOwner(input: CreateStoreInput) {
   const { data, error } = await supabaseAdminClient.rpc("create_store_with_owner", {
@@ -35,6 +55,27 @@ export async function findStoreById(storeId: string) {
   }
 
   return data;
+}
+
+export async function findStoresByUserId(userId: string) {
+  const { data, error } = await supabaseAdminClient
+    .from("store_members")
+    .select(
+      `role,hourly_wage,default_work_start_time,default_work_end_time,joined_at,stores(${STORE_COLUMNS})`
+    )
+    .eq("user_id", userId)
+    .order("joined_at", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data as unknown as StoreMembershipQueryRecord[]).map((membership) => {
+    return {
+      ...membership,
+      stores: normalizeJoinedStore(membership.stores)
+    };
+  });
 }
 
 export async function updateStore(input: UpdateStoreInput) {

@@ -1,12 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useAuth, useMe } from "../features/auth";
-import { createStore } from "../features/store";
+import { createStore, useStores } from "../features/store";
 import { ApiError } from "../shared/api";
 import { ROUTES } from "../shared/routes";
 import { clearSelectedStoreId, getSelectedStoreId, setSelectedStoreId } from "../shared/utils";
@@ -25,11 +24,13 @@ type CompleteProfileFormValues = z.infer<typeof completeProfileSchema>;
 
 export function StoreSelectPage() {
   const { retryProfileCreation, session, signOut, user } = useAuth();
-  const { data: me, error: meError, isLoading: isMeLoading } = useMe();
+  const { error: meError, isLoading: isMeLoading } = useMe();
+  const { data: storesResponse, error: storesError, isLoading: isStoresLoading } = useStores();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState("");
   const [profileErrorMessage, setProfileErrorMessage] = useState("");
+  const stores = storesResponse?.stores ?? [];
 
   const {
     formState: { errors, isSubmitting },
@@ -57,21 +58,21 @@ export function StoreSelectPage() {
   const isProfileMissing = meError instanceof ApiError && meError.code === "PROFILE_NOT_FOUND";
 
   useEffect(() => {
-    if (!me?.stores) {
+    if (!storesResponse) {
       return;
     }
 
     const selectedStoreId = getSelectedStoreId();
-    const hasSelectedStore = me.stores.some((store) => store.id === selectedStoreId);
+    const hasSelectedStore = stores.some((store) => store.id === selectedStoreId);
 
     if (selectedStoreId && !hasSelectedStore) {
       clearSelectedStoreId();
     }
 
-    if (!selectedStoreId && me.stores.length === 1) {
-      setSelectedStoreId(me.stores[0].id);
+    if (!selectedStoreId && stores.length === 1) {
+      setSelectedStoreId(stores[0].id);
     }
-  }, [me?.stores]);
+  }, [stores, storesResponse]);
 
   const handleStoreSelect = (storeId: string) => {
     setSelectedStoreId(storeId);
@@ -84,6 +85,7 @@ export function StoreSelectPage() {
     try {
       await retryProfileCreation(values.name);
       await queryClient.invalidateQueries({ queryKey: ["me", user?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["stores", user?.id] });
     } catch (error) {
       setProfileErrorMessage(error instanceof Error ? error.message : "프로필 생성에 실패했습니다.");
     }
@@ -107,6 +109,7 @@ export function StoreSelectPage() {
 
       setSelectedStoreId(response.store.id);
       await queryClient.invalidateQueries({ queryKey: ["me", user?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["stores", user?.id] });
       navigate(ROUTES.schedule, { replace: true });
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "매장 생성에 실패했습니다.");
@@ -167,8 +170,31 @@ export function StoreSelectPage() {
       <main className="auth-stage">
         <section className="auth-card store-select-card">
           <p className="label">STORE</p>
-          <h1>정보를 불러오지 못했습니다</h1>
+          <h1>사용자 정보를 불러오지 못했습니다.</h1>
           <p className="form-error">{meError instanceof Error ? meError.message : "다시 시도해주세요."}</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (isStoresLoading) {
+    return (
+      <main className="auth-stage">
+        <section className="auth-card store-select-card">
+          <p className="label">STORE</p>
+          <h1>매장 목록을 확인 중</h1>
+        </section>
+      </main>
+    );
+  }
+
+  if (storesError) {
+    return (
+      <main className="auth-stage">
+        <section className="auth-card store-select-card">
+          <p className="label">STORE</p>
+          <h1>매장 목록을 불러오지 못했습니다.</h1>
+          <p className="form-error">{storesError instanceof Error ? storesError.message : "다시 시도해주세요."}</p>
         </section>
       </main>
     );
@@ -182,9 +208,9 @@ export function StoreSelectPage() {
           <h1 id="store-select-title">매장 선택</h1>
         </div>
 
-        {me?.stores.length ? (
+        {stores.length ? (
           <div className="store-list" aria-label="소속 매장 목록">
-            {me.stores.map((store) => (
+            {stores.map((store) => (
               <article className="store-list-item" key={store.id}>
                 <div>
                   <strong>{store.name}</strong>
@@ -201,8 +227,8 @@ export function StoreSelectPage() {
           </div>
         ) : (
           <div className="empty-state">
-            <strong>아직 소속된 매장이 없습니다.</strong>
-            <span>매장을 만들거나 사장님의 초대를 받아야 합니다.</span>
+            <strong>소속된 매장이 없습니다.</strong>
+            <span>사장님이라면 매장을 만들고, 알바생이라면 사장님의 초대를 받은 뒤 다시 확인해주세요.</span>
           </div>
         )}
 

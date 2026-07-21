@@ -15,6 +15,15 @@ export type StoreRecord = {
   updated_at: string;
 };
 
+export type StoreMembershipWithStoreRecord = {
+  role: UserRole;
+  hourly_wage: number | null;
+  default_work_start_time: string | null;
+  default_work_end_time: string | null;
+  joined_at: string;
+  stores: StoreRecord;
+};
+
 export type UpdateStoreInput = {
   storeId: string;
   name?: string;
@@ -59,4 +68,16 @@ export type StoreMembershipResponse = {
 export type CreateStoreResponse = {
   store: StoreResponse;
   membership: StoreMembershipResponse;
+};
+
+export type StoreListItemResponse = StoreResponse & {
+  role: UserRole;
+  hourlyWage: number | null;
+  defaultWorkStartTime: string | null;
+  defaultWorkEndTime: string | null;
+  joinedAt: string;
+};
+
+export type StoreListResponse = {
+  stores: StoreListItemResponse[];
 };
