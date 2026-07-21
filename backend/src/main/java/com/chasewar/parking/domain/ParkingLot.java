@@ -76,6 +76,9 @@ public class ParkingLot extends BaseEntity {
         if (pkltCd == null || pkltCd.isBlank()) {
             throw new ChasewarException(InternalServerErrorCode.MISSING_PARKING_LOT_CODE);
         }
+        if (totalSlots != null && totalSlots < 0) {
+            throw new ChasewarException(InternalServerErrorCode.INVALID_TOTAL_SLOTS);
+        }
         this.pkltCd = pkltCd;
         this.name = name;
         this.address = address;

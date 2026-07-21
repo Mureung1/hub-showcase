@@ -7,7 +7,8 @@ public enum InternalServerErrorCode implements ErrorCode {
     INTERNAL_SERVER_ERROR,
     INVALID_COORDINATES,
     MISSING_PARKING_LOT_CODE,
-    INVALID_FEE;
+    INVALID_FEE,
+    INVALID_TOTAL_SLOTS;
 
     private static final HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 

@@ -38,4 +38,16 @@ class ParkingLotTest {
                 .isInstanceOf(ChasewarException.class)
                 .hasMessage(InternalServerErrorCode.MISSING_PARKING_LOT_CODE.name());
     }
+
+    @DisplayName("주차장 총 면수가 음수면 예외를 던진다")
+    @Test
+    void fail_negativeTotalSlots() {
+        // when & then
+        assertThatThrownBy(() -> ParkingLotFixtureBuilder.builder()
+                .totalSlots(-1)
+                .build()
+        )
+                .isInstanceOf(ChasewarException.class)
+                .hasMessage(InternalServerErrorCode.INVALID_TOTAL_SLOTS.name());
+    }
 }
