@@ -1,36 +1,15 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "services": {
+  "experimentalServices": {
     "frontend": {
-      "root": "client/",
+      "entrypoint": "client",
       "framework": "vite",
-      "buildCommand": "npm --prefix .. run build -w shared && npm run build",
-      "outputDirectory": "dist",
-      "rewrites": [
-        {
-          "source": "/(.*)",
-          "destination": "/index.html"
-        }
-      ]
+      "routePrefix": "/"
     },
     "backend": {
-      "root": "server/",
+      "entrypoint": "server/src/index.ts",
       "framework": "express",
-      "buildCommand": "npm --prefix .. run build -w shared && npm run build"
+      "routePrefix": "/api"
     }
-  },
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": {
-        "service": "backend"
-      }
-    },
-    {
-      "source": "/(.*)",
-      "destination": {
-        "service": "frontend"
-      }
-    }
-  ]
+  }
 }
