@@ -4,7 +4,8 @@ import org.springframework.http.HttpStatus;
 
 public enum InternalServerErrorCode implements ErrorCode {
 
-    INTERNAL_SERVER_ERROR;
+    INTERNAL_SERVER_ERROR,
+    INVALID_COORDINATES;
 
     private static final HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 
