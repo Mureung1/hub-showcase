@@ -6,10 +6,10 @@ import Card from '../components/Card.jsx'
 import PillButton from '../components/PillButton.jsx'
 import StatusPill from '../components/StatusPill.jsx'
 import TrustBadge from '../components/TrustBadge.jsx'
-import { meetingStatusMeta, participationStatusMeta } from '../utils/status.js'
-import { formatMeetingSchedule, isAdultBirthDate } from '../utils/date.js'
+import { meetingStatusMeta, participationStatusMeta, blockReasonLabel } from '../utils/status.js'
+import { formatMeetingSchedule } from '../utils/date.js'
 import { getPendingApplicants } from '../utils/meetings.js'
-import { fetchMeeting } from '../api/meetings.js'
+import { fetchMeeting, applyToMeeting, cancelParticipation } from '../api/meetings.js'
 
 export default function MeetingDetailPage() {
   const { id } = useParams()
@@ -18,8 +18,6 @@ export default function MeetingDetailPage() {
     currentUser,
     isLoggedIn,
     authLoading,
-    applyToMeeting,
-    cancelMyParticipation,
     respondToApplicant,
     cancelMeeting,
   } = useAppState()
@@ -32,6 +30,30 @@ export default function MeetingDetailPage() {
   const [errorCode, setErrorCode] = useState(null)
   // 다시 시도 버튼을 누르면 이 값을 올려서 effect를 재실행시킨다(조회 로직을 그대로 재사용).
   const [reloadKey, setReloadKey] = useState(0)
+
+  const [actionError, setActionError] = useState(null)
+
+  // 신청/취소는 서버에 반영한 뒤 reloadKey를 올려 상세를 재조회한다. 번개모임은 신청 즉시
+  // confirmed가 되어 openChatUrl이 새로 내려오므로 재조회가 필수다.
+  async function handleApply() {
+    setActionError(null)
+    try {
+      await applyToMeeting(id)
+      setReloadKey((k) => k + 1)
+    } catch (err) {
+      setActionError(err.message)
+    }
+  }
+
+  async function handleCancelParticipation() {
+    setActionError(null)
+    try {
+      await cancelParticipation(id)
+      setReloadKey((k) => k + 1)
+    } catch (err) {
+      setActionError(err.message)
+    }
+  }
 
   // 상세 응답은 로그인 사용자 기준으로 개인화된다(myParticipation, openChatUrl).
   // 그래서 세션 복원이 끝나기 전에 부르면 비로그인 기준 응답을 받게 된다 — authLoading이
@@ -105,7 +127,6 @@ export default function MeetingDetailPage() {
   const isEnded = meeting.status === 'finished' || meeting.status === 'cancelled'
   // 서버가 openChatUrl을 내려줬다는 것 자체가 "볼 자격이 있다"는 뜻이다(E3에서 판단).
   const canSeeOpenChat = Boolean(meeting.openChatUrl)
-  const userIsAdult = isAdultBirthDate(currentUser.birthDate)
 
   return (
     <>
@@ -251,75 +272,48 @@ export default function MeetingDetailPage() {
         <Card variant="dark">
           <div className="eyebrow">참여 신청</div>
 
-          {isEnded && (
-            <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>
-              {meeting.status === 'cancelled' ? '모임장이 취소한 모임이에요.' : '이미 종료된 모임이에요.'}
-            </p>
-          )}
-
-          {/*
-            isAdultBirthDate는 3값을 반환한다: true(성인) / false(미성년으로 판별됨) / null(생년월일이
-            없어 판별 불가). 지금은 회원가입이 birthDate를 채우지 않고, 채우는 화면(D5)은 내일 만들어져서
-            실사용자는 전부 null이다. false와 null을 "!userIsAdult"로 뭉치면 판별 불가 사용자까지 전부
-            "미성년" 취급을 받는 문구를 보게 되므로, 반드시 세 갈래로 분리해서 처리한다.
-          */}
-          {!isEnded && meeting.adultOnly && userIsAdult === false && (
-            <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>성인만 참여 가능한 모임이에요.</p>
-          )}
-
-          {!isEnded && meeting.adultOnly && userIsAdult === null && (
-            <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>
-              생년월일을 등록하면 참여할 수 있어요. (곧 마이페이지에서 등록할 수 있어요)
-            </p>
-          )}
-
-          {!isEnded && (!meeting.adultOnly || userIsAdult === true) && (
+          {myParticipation && ['pending', 'confirmed', 'approved'].includes(myParticipation.status) ? (
+            // 이미 참여 중: 상태 + (자격 되면) 오픈채팅 + 취소 버튼
             <>
-              {(!myParticipation || myParticipation.status === 'cancelled') && (
-                <>
-                  {meeting.status === 'closed' ? (
-                    <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>정원이 가득 찼어요.</p>
-                  ) : (
-                    <PillButton variant="accent" block onClick={() => applyToMeeting(meeting.id)}>
-                      {meeting.type === 'flash' ? '참여 신청하기' : '참여 신청하기 (모임장 승인 필요)'}
-                    </PillButton>
-                  )}
-                </>
+              <StatusPill tone={participationStatusMeta(myParticipation.status).tone}>
+                {participationStatusMeta(myParticipation.status).label}
+              </StatusPill>
+
+              {canSeeOpenChat && (
+                <a
+                  href={meeting.openChatUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="pill-btn pill-btn--accent pill-btn--block"
+                >
+                  오픈채팅 열기
+                </a>
               )}
 
-              {myParticipation && myParticipation.status !== 'cancelled' && (
-                <>
-                  <StatusPill tone={participationStatusMeta(myParticipation.status).tone}>
-                    {participationStatusMeta(myParticipation.status).label}
-                  </StatusPill>
-
-                  {canSeeOpenChat && (
-                    <a
-                      href={meeting.openChatUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="pill-btn pill-btn--accent pill-btn--block"
-                    >
-                      오픈채팅 열기
-                    </a>
-                  )}
-
-                  {myParticipation.status === 'pending' && (
-                    <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>
-                      모임장이 확인할 때까지 대기 상태로 유지돼요. 별도 알림은 없으니 마이페이지에서 확인해주세요.
-                    </p>
-                  )}
-
-                  {myParticipation.status === 'rejected' && (
-                    <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>아쉽지만 이번 신청은 거절됐어요.</p>
-                  )}
-
-                  <PillButton variant="ghost" size="sm" onClick={() => cancelMyParticipation(meeting.id)}>
-                    신청 취소하기
-                  </PillButton>
-                </>
+              {myParticipation.status === 'pending' && (
+                <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>
+                  모임장이 확인할 때까지 대기 상태로 유지돼요. 별도 알림은 없으니 마이페이지에서 확인해주세요.
+                </p>
               )}
+
+              <PillButton variant="ghost" size="sm" onClick={handleCancelParticipation}>
+                신청 취소하기
+              </PillButton>
             </>
+          ) : meeting.canApply ? (
+            // 신청 가능: 버튼. 서버가 canApply로 판정했으므로 FE는 그대로 따른다.
+            <PillButton variant="accent" block onClick={handleApply}>
+              {meeting.type === 'flash' ? '참여 신청하기' : '참여 신청하기 (모임장 승인 필요)'}
+            </PillButton>
+          ) : (
+            // 신청 불가: 서버 blockReason에 맞는 안내 문구.
+            <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>
+              {blockReasonLabel(meeting.blockReason)}
+            </p>
+          )}
+
+          {actionError && (
+            <p style={{ fontSize: 13, color: 'var(--danger, #ffb4a2)' }}>{actionError}</p>
           )}
         </Card>
       )}

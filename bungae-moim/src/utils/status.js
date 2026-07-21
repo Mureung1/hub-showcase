@@ -22,3 +22,18 @@ export function meetingStatusMeta(status) {
 export function participationStatusMeta(status) {
   return PARTICIPATION_STATUS_META[status] ?? { label: status, tone: 'muted' }
 }
+
+// 서버 blockReason을 참여 카드에 보여줄 안내 문구로 바꾼다. LOGIN_REQUIRED/HOST/ALREADY_APPLIED는
+// 별도 UI(로그인 카드/모임장 카드/참여중 분기)가 처리하므로 여기 문구는 그 외 사유에만 쓰인다.
+const BLOCK_REASON_LABEL = {
+  REJECTED: '아쉽지만 이번 신청은 거절됐어요.',
+  CANCELLED_MEETING: '모임장이 취소한 모임이에요.',
+  ENDED: '이미 종료된 모임이에요.',
+  FULL: '정원이 가득 찼어요.',
+  BIRTHDATE_REQUIRED: '생년월일을 등록해야 참여할 수 있어요.',
+  ADULT_ONLY: '성인만 참여할 수 있는 모임이에요.',
+}
+
+export function blockReasonLabel(reason) {
+  return BLOCK_REASON_LABEL[reason] ?? '지금은 신청할 수 없어요.'
+}
