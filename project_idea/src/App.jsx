@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
+import { supabase } from "./supabaseClient";
 import StepHeader from "./StepHeader";
 import LoginScreen from "./LoginScreen";
 import RegisterScreen from "./RegisterScreen";
@@ -12,7 +13,24 @@ function App() {
   const [registration, setRegistration] = useState(null);
   const [joinedCandidate, setJoinedCandidate] = useState(null);
 
-  function handleFinish() {
+  useEffect(() => {
+    function goToRegisterIfLoggedIn(session) {
+      if (session) setStep((s) => (s === 0 ? 1 : s));
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      goToRegisterIfLoggedIn(session);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      goToRegisterIfLoggedIn(session);
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  async function handleFinish() {
+    await supabase.auth.signOut();
     setStep(0);
     setRegistration(null);
     setJoinedCandidate(null);
@@ -21,7 +39,7 @@ function App() {
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <StepHeader step={step} />
-      {step === 0 && <LoginScreen onLogin={() => setStep(1)} />}
+      {step === 0 && <LoginScreen />}
       {step === 1 && (
         <RegisterScreen
           onBack={() => setStep(0)}
