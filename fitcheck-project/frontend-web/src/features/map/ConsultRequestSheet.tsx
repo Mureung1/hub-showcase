@@ -2,8 +2,9 @@ import { useEffect, useId, useState } from 'react';
 import type { FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { addConsultRequest } from '../../data/consultStorage';
 import type { GymPlace, GymTrainer } from '../../data/userMock';
+import { createConsultRequest } from '../../services/consultRequestsApi';
+import { ApiError } from '../../services/api';
 import { CONSULT_TOPICS, type ConsultTopic } from '../../types/consult';
 import './consult.css';
 
@@ -12,6 +13,7 @@ interface ConsultRequestSheetProps {
   gym: GymPlace;
   trainer?: GymTrainer | null;
   onClose: () => void;
+  onSubmitted?: () => void;
 }
 
 function todayIsoDate() {
@@ -36,9 +38,11 @@ export default function ConsultRequestSheet({
   gym,
   trainer = null,
   onClose,
+  onSubmitted,
 }: ConsultRequestSheetProps) {
   const titleId = useId();
   const [form, setForm] = useState(INITIAL_FORM);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -61,7 +65,7 @@ export default function ConsultRequestSheet({
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!form.name.trim() || !form.phone.trim() || !form.date || !form.time) {
@@ -74,38 +78,48 @@ export default function ConsultRequestSheet({
       return;
     }
 
-    const request = addConsultRequest({
-      gymId: gym.id,
-      gymName: gym.name,
-      trainerId: trainer?.id ?? null,
-      trainerName: trainer?.name ?? null,
-      name: form.name.trim(),
-      phone: form.phone.trim(),
-      date: form.date,
-      time: form.time,
-      topic: form.topic,
-      topicDetail: form.topic === '기타' ? form.topicDetail.trim() : '',
-      memo: form.memo.trim(),
-      shareHistoryConsent: form.shareHistoryConsent,
-    });
+    setSubmitting(true);
+    try {
+      const request = await createConsultRequest({
+        gymId: gym.id,
+        trainerId: trainer?.id ?? null,
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        preferredDate: form.date,
+        preferredTime: form.time,
+        topic: form.topic,
+        topicDetail: form.topic === '기타' ? form.topicDetail.trim() : '',
+        memo: form.memo.trim(),
+        shareHistoryConsent: form.shareHistoryConsent,
+      });
 
-    alert(
-      [
-        '상담 신청이 접수되었습니다.',
-        '',
-        `헬스장: ${request.gymName}`,
-        request.trainerName ? `트레이너: ${request.trainerName}` : null,
-        `희망: ${request.date} ${request.time}`,
-        `주제: ${request.topic}${request.topicDetail ? ` (${request.topicDetail})` : ''}`,
-        `신청자: ${request.name} / ${request.phone}`,
-        request.shareHistoryConsent
-          ? '기록 공유: 동의함 (연동 중)'
-          : '기록 공유: 미동의',
-      ]
-        .filter(Boolean)
-        .join('\n'),
-    );
-    onClose();
+      alert(
+        [
+          '상담 신청이 접수되었습니다.',
+          '',
+          `헬스장: ${request.gymName || gym.name}`,
+          request.trainerName ? `트레이너: ${request.trainerName}` : null,
+          `희망: ${request.date} ${request.time}`,
+          `주제: ${request.topic}${request.topicDetail ? ` (${request.topicDetail})` : ''}`,
+          `신청자: ${request.name} / ${request.phone}`,
+          request.shareHistoryConsent
+            ? '기록 공유: 동의함 (연동 중)'
+            : '기록 공유: 미동의',
+        ]
+          .filter(Boolean)
+          .join('\n'),
+      );
+      onSubmitted?.();
+      onClose();
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : '상담 신청에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+      alert(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return createPortal(
@@ -262,8 +276,8 @@ export default function ConsultRequestSheet({
             <button type="button" className="btn btn-secondary" onClick={onClose}>
               취소
             </button>
-            <button type="submit" className="btn btn-primary">
-              신청하기
+            <button type="submit" className="btn btn-primary" disabled={submitting}>
+              {submitting ? '신청 중…' : '신청하기'}
             </button>
           </div>
         </form>

@@ -17,7 +17,7 @@ import {
 import type { GymPlace, GymTrainer } from '../../data/userMock';
 import ConsultRequestSheet from '../../features/map/ConsultRequestSheet';
 import GymThumbnail from '../../features/map/GymThumbnail';
-import { useConsultRequests } from '../../hooks/useConsultRequests';
+import { useMyConsultRequests } from '../../hooks/useMyConsultRequests';
 import { fetchGymById } from '../../services/gymsApi';
 import { formatRelativeTime } from '../../utils/date';
 import {
@@ -43,7 +43,7 @@ function InfoPlaceholder() {
 
 export default function GymDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { requests } = useConsultRequests();
+  const { requests, refresh: refreshMyConsults } = useMyConsultRequests();
   const [gym, setGym] = useState<GymPlace | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -403,6 +403,7 @@ export default function GymDetailPage() {
         gym={gym}
         trainer={selectedTrainer}
         onClose={() => setConsultOpen(false)}
+        onSubmitted={() => void refreshMyConsults()}
       />
     </div>
   );
