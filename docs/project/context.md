@@ -17,8 +17,7 @@
 | `CTX-015` | 활성 | 프론트엔드 인증 상태는 Firebase `onAuthStateChanged` 기반 `AuthProvider`로 관리한다. 보호 라우트는 로그인 화면으로 보낼 때 앱 내부 상대 경로만 `returnTo`으로 보존하고 로그인 성공 후 해당 경로로 복귀한다. | `FE-AUTH-003` |
 
 | `CTX-016` | 활성 | `BE-RECIPE-002`의 목록 범위는 공유 데이터가 없는 현재 `OWNED`, `EXTERNAL` 활성 레시피까지다. `DB-SHARE-002`와 `BE-SHARE-003`에서 `RECEIVED`, `receivedInfo`와 상세 조회를 통합한다. | `BE-RECIPE-002`, `DB-SHARE-002`, `BE-SHARE-003` |
-| `CTX-017` | 활성 | 책형 목록 화면의 오른쪽 종이는 상세와 레시피 추가 기능이 준비될 때까지 비워 둔다. 추가 진입은 `FE-RECIPE-002`, 목록 카드와 저장 후 상세 이동은 `FE-RECIPE-004`에서 연결한다. | `FE-RECIPE-001`, `FE-RECIPE-002`, `FE-RECIPE-004` |
-
+| `CTX-017` | 활성 | `/recipes/new`은 데스크톱에서 목록을 왼쪽에 유지하고 추가 폼을 오른쪽 종이에 표시하며, 1100px 이하에서는 폼을 단일 종이 화면으로 표시한다. 목록 카드와 저장 후 상세 이동은 `FE-RECIPE-004`에서 연결한다. | `FE-RECIPE-001`, `FE-RECIPE-002`, `FE-RECIPE-004` |
 ## 알려진 문제
 
 | ID | 상태 | 내용 | 해결 티켓 |

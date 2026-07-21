@@ -4,13 +4,20 @@ import RecipeListPlaceholderPage from "./pages/RecipeListPlaceholderPage";
 import TransferInvitationPlaceholderPage from "./pages/TransferInvitationPlaceholderPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-
 function App() {
   return (
     <Routes>
       <Route path="/" element={<LoginPage />} />
       <Route
         path="/recipes"
+        element={
+          <ProtectedRoute>
+            <RecipeListPlaceholderPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/recipes/new"
         element={
           <ProtectedRoute>
             <RecipeListPlaceholderPage />
