@@ -85,7 +85,7 @@
 ## 3주차 - 스펙 등록, 목표 직무, AI 분석, 미션 추천
 
 - [x] `/specs` 스펙 등록 화면 연결
-- [ ] `/job-goal` 목표 직무 설정 화면 연결
+- [x] `/job-goal` 목표 직무 설정 화면 연결
 - [x] `/analysis` AI 분석 화면 연결
 - [x] `/mission` 미션 추천 화면 연결
 - [x] `/mission/:id` 미션 상세 / 수행 화면 연결
@@ -104,16 +104,16 @@
 - [x] 스펙 정보 localStorage 저장 구현
 - [x] 스펙 저장 시 기존 분석 결과 초기화
 - [x] 저장 후 AI 분석 화면 이동 버튼 구현
-- [ ] `pages/JobGoal.jsx` 생성
-- [ ] `data/jobOptions.js` 생성
-- [ ] 목표 직무 선택 필드 구현
-- [ ] 관련 산업 선택 필드 구현
-- [ ] 희망 기업 유형 선택 필드 구현
-- [ ] 목표 이유 입력 필드 구현
-- [ ] 목표 직무 저장 버튼 구현
-- [ ] 목표 직무 정보 localStorage 저장 구현
-- [ ] 저장 후 AI 분석 화면 이동 구현
-- [ ] `data/mockAnalysis.js` 생성
+- [x] `pages/JobGoal.jsx` 생성
+- [x] `data/jobOptions.js` 생성
+- [x] 목표 직무 선택 필드 구현
+- [x] 관련 산업 선택 필드 구현
+- [x] 희망 기업 유형 선택 필드 구현
+- [x] 목표 이유 입력 필드 구현
+- [x] 목표 직무 저장 버튼 구현
+- [x] 목표 직무 정보 localStorage 저장 구현
+- [x] 저장 후 AI 분석 화면 이동 구현
+- [x] `data/mockAnalysis.js` 생성
 - [x] 규칙 기반 분석 결과 데이터 생성
 - [x] `features/career/careerStorage.js` 생성
 - [x] `pages/Analysis.jsx` 생성

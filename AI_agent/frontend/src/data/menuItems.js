@@ -1,5 +1,6 @@
 export const menuItems = [
   { label: "스펙 등록", path: "/specs" },
+  { label: "목표 직무", path: "/job-goal" },
   { label: "AI 분석", path: "/analysis" },
   { label: "미션 수행", path: "/mission" },
   { label: "피드백", path: "/feedback" },

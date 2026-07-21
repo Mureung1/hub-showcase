@@ -27,7 +27,6 @@ function Analysis() {
 
   useEffect(() => {
     if (!sessionId) {
-      setIsLoading(false);
       return;
     }
 
