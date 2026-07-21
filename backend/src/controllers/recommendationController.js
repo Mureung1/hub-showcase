@@ -6,7 +6,9 @@ const DIFFICULTIES = ['easy', 'medium', 'hard'];
 // GitHub 언어명에 실제로 쓰이는 문자만 허용 (C++, C#, Objective-C, Jupyter Notebook 등)
 // 따옴표·콜론 등을 막아 검색 qualifier 문자열 조작을 차단한다
 const LANGUAGE_PATTERN = /^[A-Za-z0-9+#.\- ]{1,50}$/;
-const TOPIC_PATTERN = /^[A-Za-z0-9\- ]{1,50}$/;
+// 토픽은 검색 qualifier에 안 들어가고 로컬 매칭에만 쓰이므로 한글 등 유니코드 문자도 허용한다
+// (LANGUAGE_PATTERN처럼 ASCII로 제한하면 안 됨 — 언어명은 qualifier에 직접 들어가 인젝션 위험이 있지만 토픽은 아님)
+const TOPIC_PATTERN = /^[\p{L}\p{N}\- ]{1,50}$/u;
 
 // recommendationService의 MAX_LANGUAGES(검색에 실제 쓰는 상한, 3)보다 넉넉하게 잡아 입력만 방어한다
 // — 초과분은 collectCandidateRepos가 조용히 잘라 쓰므로 여기서는 남용(수백 개 배열 등) 차단이 목적
