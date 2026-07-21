@@ -3,7 +3,7 @@ import { BROWSER_USER_AGENT } from "../constants/httpHeaders.js"
 
 // 스크래핑이 막히거나(403/paywall) 페이지 구조가 달라 파싱에 실패해도 데모가
 // 끊기지 않도록 반환하는 더미 기사. prototype/02_reader.html과 동일한 본문.
-const FALLBACK_ARTICLE = {
+export const FALLBACK_ARTICLE = {
   title: "Tech Stocks Slide as Investors Brace for Bear Market",
   source: "Bloomberg",
   sourceInitial: "BB",
