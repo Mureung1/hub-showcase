@@ -12,6 +12,17 @@ interface OutfitsTabProps {
 }
 
 export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDeleteOutfit, onAddItem }: OutfitsTabProps) {
+  const getSearchKeyword = (item: ClothingItem) => {
+    const itemWithKeyword = item as ClothingItem & { shoppingKeyword?: string };
+    return itemWithKeyword.shoppingKeyword || item.name;
+  };
+
+  const getImageSearchUrl = (item: ClothingItem) =>
+    `https://www.bing.com/images/search?q=${encodeURIComponent(getSearchKeyword(item))}`;
+
+  const getShoppingUrl = (item: ClothingItem) =>
+    `https://www.bing.com/search?q=${encodeURIComponent(`${getSearchKeyword(item)} 쇼핑 가격`)}`;
+
   const [subTab, setSubTab] = useState<"recommend" | "saved">("recommend");
 
   // Selection states
@@ -637,7 +648,25 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                         <li className="flex flex-col md:flex-row md:items-center gap-4 bg-surface p-3 border border-outline-variant hover:bg-surface-bright transition-colors relative">
                           <div className="flex items-center gap-4 flex-1">
                             <div className="w-16 h-16 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
-                              <img src={resultOutfit.items.top.imageUrl} alt={resultOutfit.items.top.name} className="max-w-full max-h-full object-contain" />
+                              <a
+                                href={getImageSearchUrl(resultOutfit.items.top)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`${resultOutfit.items.top.name} 이미지 검색 열기`}
+                                className="block w-full h-full"
+                              >
+                                <img
+                                  src={resultOutfit.items.top.imageUrl}
+                                  alt={resultOutfit.items.top.name}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  referrerPolicy="no-referrer"
+                                  onError={(event) => {
+                                    event.currentTarget.onerror = null;
+                                    event.currentTarget.src = "https://placehold.co/480x640?text=Image+Unavailable";
+                                  }}
+                                />
+                              </a>
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
@@ -655,15 +684,24 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
 
                           {/* Shopping & Add to closet actions */}
                           {resultOutfit.items.top.shoppingUrl && (
-                            <div className="flex gap-2 shrink-0 md:self-center">
+                            <div className="flex flex-wrap gap-2 shrink-0 md:self-center">
                               <a
-                                href={resultOutfit.items.top.shoppingUrl}
+                                href={getImageSearchUrl(resultOutfit.items.top)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-surface text-primary text-xs font-bold border border-primary shadow-[2px_2px_0_0_#000] flex items-center gap-1 hover:bg-surface-variant active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                              >
+                                <span>🔍</span>
+                                <span>이미지 보기</span>
+                              </a>
+                              <a
+                                href={getShoppingUrl(resultOutfit.items.top)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="px-3 py-1.5 bg-secondary text-on-secondary-fixed text-xs font-bold border border-secondary shadow-[2px_2px_0_0_#000] flex items-center gap-1 hover:brightness-110 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                               >
                                 <ShoppingBag size={12} />
-                                <span>쇼핑몰 가기 🛒</span>
+                                <span>상품 검색 🛒</span>
                               </a>
                               {onAddItem && (
                                 <button
@@ -688,7 +726,25 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                         <li className="flex flex-col md:flex-row md:items-center gap-4 bg-surface p-3 border border-outline-variant hover:bg-surface-bright transition-colors relative">
                           <div className="flex items-center gap-4 flex-1">
                             <div className="w-16 h-16 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
-                              <img src={resultOutfit.items.bottom.imageUrl} alt={resultOutfit.items.bottom.name} className="max-w-full max-h-full object-contain" />
+                              <a
+                                href={getImageSearchUrl(resultOutfit.items.bottom)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`${resultOutfit.items.bottom.name} 이미지 검색 열기`}
+                                className="block w-full h-full"
+                              >
+                                <img
+                                  src={resultOutfit.items.bottom.imageUrl}
+                                  alt={resultOutfit.items.bottom.name}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  referrerPolicy="no-referrer"
+                                  onError={(event) => {
+                                    event.currentTarget.onerror = null;
+                                    event.currentTarget.src = "https://placehold.co/480x640?text=Image+Unavailable";
+                                  }}
+                                />
+                              </a>
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
@@ -706,15 +762,24 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
 
                           {/* Shopping & Add to closet actions */}
                           {resultOutfit.items.bottom.shoppingUrl && (
-                            <div className="flex gap-2 shrink-0 md:self-center">
+                            <div className="flex flex-wrap gap-2 shrink-0 md:self-center">
                               <a
-                                href={resultOutfit.items.bottom.shoppingUrl}
+                                href={getImageSearchUrl(resultOutfit.items.bottom)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-surface text-primary text-xs font-bold border border-primary shadow-[2px_2px_0_0_#000] flex items-center gap-1 hover:bg-surface-variant active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                              >
+                                <span>🔍</span>
+                                <span>이미지 보기</span>
+                              </a>
+                              <a
+                                href={getShoppingUrl(resultOutfit.items.bottom)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="px-3 py-1.5 bg-secondary text-on-secondary-fixed text-xs font-bold border border-secondary shadow-[2px_2px_0_0_#000] flex items-center gap-1 hover:brightness-110 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                               >
                                 <ShoppingBag size={12} />
-                                <span>쇼핑몰 가기 🛒</span>
+                                <span>상품 검색 🛒</span>
                               </a>
                               {onAddItem && (
                                 <button
@@ -739,7 +804,25 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                         <li className="flex flex-col md:flex-row md:items-center gap-4 bg-surface p-3 border border-outline-variant hover:bg-surface-bright transition-colors relative">
                           <div className="flex items-center gap-4 flex-1">
                             <div className="w-16 h-16 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
-                              <img src={resultOutfit.items.shoes.imageUrl} alt={resultOutfit.items.shoes.name} className="max-w-full max-h-full object-contain" />
+                              <a
+                                href={getImageSearchUrl(resultOutfit.items.shoes)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`${resultOutfit.items.shoes.name} 이미지 검색 열기`}
+                                className="block w-full h-full"
+                              >
+                                <img
+                                  src={resultOutfit.items.shoes.imageUrl}
+                                  alt={resultOutfit.items.shoes.name}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  referrerPolicy="no-referrer"
+                                  onError={(event) => {
+                                    event.currentTarget.onerror = null;
+                                    event.currentTarget.src = "https://placehold.co/480x640?text=Image+Unavailable";
+                                  }}
+                                />
+                              </a>
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
@@ -757,15 +840,24 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
 
                           {/* Shopping & Add to closet actions */}
                           {resultOutfit.items.shoes.shoppingUrl && (
-                            <div className="flex gap-2 shrink-0 md:self-center">
+                            <div className="flex flex-wrap gap-2 shrink-0 md:self-center">
                               <a
-                                href={resultOutfit.items.shoes.shoppingUrl}
+                                href={getImageSearchUrl(resultOutfit.items.shoes)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-surface text-primary text-xs font-bold border border-primary shadow-[2px_2px_0_0_#000] flex items-center gap-1 hover:bg-surface-variant active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                              >
+                                <span>🔍</span>
+                                <span>이미지 보기</span>
+                              </a>
+                              <a
+                                href={getShoppingUrl(resultOutfit.items.shoes)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="px-3 py-1.5 bg-secondary text-on-secondary-fixed text-xs font-bold border border-secondary shadow-[2px_2px_0_0_#000] flex items-center gap-1 hover:brightness-110 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                               >
                                 <ShoppingBag size={12} />
-                                <span>쇼핑몰 가기 🛒</span>
+                                <span>상품 검색 🛒</span>
                               </a>
                               {onAddItem && (
                                 <button
@@ -790,7 +882,25 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                         <li className="flex flex-col md:flex-row md:items-center gap-4 bg-surface p-3 border border-outline-variant hover:bg-surface-bright transition-colors relative">
                           <div className="flex items-center gap-4 flex-1">
                             <div className="w-16 h-16 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
-                              <img src={resultOutfit.items.accessories.imageUrl} alt={resultOutfit.items.accessories.name} className="max-w-full max-h-full object-contain" />
+                              <a
+                                href={getImageSearchUrl(resultOutfit.items.accessories)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`${resultOutfit.items.accessories.name} 이미지 검색 열기`}
+                                className="block w-full h-full"
+                              >
+                                <img
+                                  src={resultOutfit.items.accessories.imageUrl}
+                                  alt={resultOutfit.items.accessories.name}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  referrerPolicy="no-referrer"
+                                  onError={(event) => {
+                                    event.currentTarget.onerror = null;
+                                    event.currentTarget.src = "https://placehold.co/480x640?text=Image+Unavailable";
+                                  }}
+                                />
+                              </a>
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
@@ -808,15 +918,24 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
 
                           {/* Shopping & Add to closet actions */}
                           {resultOutfit.items.accessories.shoppingUrl && (
-                            <div className="flex gap-2 shrink-0 md:self-center">
+                            <div className="flex flex-wrap gap-2 shrink-0 md:self-center">
                               <a
-                                href={resultOutfit.items.accessories.shoppingUrl}
+                                href={getImageSearchUrl(resultOutfit.items.accessories)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-surface text-primary text-xs font-bold border border-primary shadow-[2px_2px_0_0_#000] flex items-center gap-1 hover:bg-surface-variant active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                              >
+                                <span>🔍</span>
+                                <span>이미지 보기</span>
+                              </a>
+                              <a
+                                href={getShoppingUrl(resultOutfit.items.accessories)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="px-3 py-1.5 bg-secondary text-on-secondary-fixed text-xs font-bold border border-secondary shadow-[2px_2px_0_0_#000] flex items-center gap-1 hover:brightness-110 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                               >
                                 <ShoppingBag size={12} />
-                                <span>쇼핑몰 가기 🛒</span>
+                                <span>상품 검색 🛒</span>
                               </a>
                               {onAddItem && (
                                 <button

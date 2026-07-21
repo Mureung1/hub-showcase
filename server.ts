@@ -208,11 +208,13 @@ ${top.name}과 ${bottom.name}을 중심으로 편안하고 자연스러운 데�
       name: item.name,
       category,
       colors: item.colors,
-      imageUrl: item.imageUrl,
+      imageUrl: createDynamicFashionImageUrl(item.name, category as FashionCategory, Date.now() + index + Math.floor(Math.random() * 10_000)),
       isCustom: true,
       description: item.description,
-      shopName: "Naver Shopping",
-      shoppingUrl: `https://search.shopping.naver.com/search/all?query=${encodeURIComponent(item.name)}`,
+      shopName: "Bing Shopping Search",
+      shoppingUrl: createShoppingSearchUrl(item.name),
+      imageSearchUrl: createImageSearchUrl(item.name),
+      shoppingKeyword: item.name,
     };
   };
 
@@ -226,34 +228,52 @@ ${top.name}과 ${bottom.name}을 중심으로 편안하고 자연스러운 데�
   };
 }
 
-const NEW_FASHION_IMAGES = {
-  top: [
-    "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=400", // hoodie
-    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=400", // crop top
-    "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=400", // print tee
-    "https://images.unsplash.com/photo-1578587018452-892bacefd3f2?auto=format&fit=crop&q=80&w=400", // oversized top
-    "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&q=80&w=400"  // black tee
-  ],
-  bottom: [
-    "https://images.unsplash.com/photo-1517423568366-8b83523034fd?auto=format&fit=crop&q=80&w=400", // cargo
-    "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?auto=format&fit=crop&q=80&w=400", // skirt
-    "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&q=80&w=400", // denim shorts
-    "https://images.unsplash.com/photo-1551854838-212c50b4c184?auto=format&fit=crop&q=80&w=400", // joggers
-    "https://images.unsplash.com/photo-1506629082925-0151a14e7230?auto=format&fit=crop&q=80&w=400"  // grey jogger
-  ],
-  shoes: [
-    "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=80&w=400", // air kicks
-    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=400", // red runner
-    "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=400", // leather boots
-    "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&q=80&w=400"  // premium trainers
-  ],
-  accessories: [
-    "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&q=80&w=400", // visor
-    "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=400", // necklace
-    "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&q=80&w=400", // headphones
-    "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=400"  // bag
-  ]
+type FashionCategory = "top" | "bottom" | "shoes" | "accessories";
+
+const CATEGORY_IMAGE_KEYWORDS: Record<FashionCategory, string> = {
+  top: "fashion,shirt,top",
+  bottom: "fashion,pants,skirt",
+  shoes: "fashion,shoes,sneakers",
+  accessories: "fashion,bag,accessory",
 };
+
+function createSearchKeyword(item: any, category: FashionCategory): string {
+  const colorText = Array.isArray(item?.colors) ? item.colors.join(" ") : "";
+  const categoryText: Record<FashionCategory, string> = {
+    top: "상의",
+    bottom: "하의",
+    shoes: "신발",
+    accessories: "패션 소품",
+  };
+
+  return [item?.shoppingKeyword, colorText, item?.name, categoryText[category]]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function createDynamicFashionImageUrl(
+  keyword: string,
+  category: FashionCategory,
+  seed: number
+): string {
+  const englishCategoryKeywords = CATEGORY_IMAGE_KEYWORDS[category];
+  const safeKeyword = encodeURIComponent(`${englishCategoryKeywords},${keyword}`);
+
+  // 공개 이미지 서비스에서 검색어와 seed에 따라 다른 이미지를 요청합니다.
+  // 실제 쇼핑몰 상품 이미지 API는 아니므로, 상품 링크와 사진이 완전히 동일하지 않을 수 있습니다.
+  return `https://loremflickr.com/480/640/${safeKeyword}?lock=${seed}`;
+}
+
+function createShoppingSearchUrl(keyword: string): string {
+  const query = `${keyword} 쇼핑 가격`;
+  return `https://www.bing.com/search?q=${encodeURIComponent(query)}`;
+}
+
+function createImageSearchUrl(keyword: string): string {
+  return `https://www.bing.com/images/search?q=${encodeURIComponent(keyword)}`;
+}
 
 // API endpoint for Outfit Coordination Recommendation
 app.post("/api/recommend", async (req, res) => {
@@ -291,6 +311,7 @@ app.post("/api/recommend", async (req, res) => {
 6. 상품명은 쇼핑몰에서 검색하기 쉬운 일반적인 한국어 이름으로 작성하세요.
 7. 각 아이템 설명에는 선택한 날씨, 장소, 상황 중 어떤 조건을 반영했는지 포함하세요.
 8. stylistNote에는 세 조건을 각각 어떻게 반영했는지 4~5줄의 자연스러운 한국어로 설명하세요.
+9. shoppingKeyword는 너무 짧게 쓰지 말고 색상, 계절, 핏, 성별, 옷 종류를 포함해 실제 쇼핑 검색에 적합하게 작성하세요.
 
 응답은 responseSchema에 맞는 JSON 형식으로만 작성하세요.
 
@@ -298,8 +319,7 @@ app.post("/api/recommend", async (req, res) => {
 - name: 현실적인 한국어 상품명
 - colors: 서로 어울리는 영문 색상명 1~2개
 - description: 조건을 반영한 이유를 포함한 짧은 한국어 설명
-- shoppingKeyword: 네이버 쇼핑에서 검색하기 좋은 짧은 한국어 키워드
-- imageIndex: 해당 카테고리 이미지 목록에서 가장 어울리는 인덱스
+- shoppingKeyword: 색상, 핏, 계절, 성별, 옷 종류를 포함한 구체적인 한국어 쇼핑 검색어
 `;
 
       try {
@@ -317,10 +337,9 @@ app.post("/api/recommend", async (req, res) => {
                     name: { type: Type.STRING },
                     colors: { type: Type.ARRAY, items: { type: Type.STRING } },
                     description: { type: Type.STRING },
-                    shoppingKeyword: { type: Type.STRING },
-                    imageIndex: { type: Type.INTEGER }
+                    shoppingKeyword: { type: Type.STRING }
                   },
-                  required: ["name", "colors", "description", "shoppingKeyword", "imageIndex"]
+                  required: ["name", "colors", "description", "shoppingKeyword"]
                 },
                 bottom: {
                   type: Type.OBJECT,
@@ -328,10 +347,9 @@ app.post("/api/recommend", async (req, res) => {
                     name: { type: Type.STRING },
                     colors: { type: Type.ARRAY, items: { type: Type.STRING } },
                     description: { type: Type.STRING },
-                    shoppingKeyword: { type: Type.STRING },
-                    imageIndex: { type: Type.INTEGER }
+                    shoppingKeyword: { type: Type.STRING }
                   },
-                  required: ["name", "colors", "description", "shoppingKeyword", "imageIndex"]
+                  required: ["name", "colors", "description", "shoppingKeyword"]
                 },
                 shoes: {
                   type: Type.OBJECT,
@@ -339,10 +357,9 @@ app.post("/api/recommend", async (req, res) => {
                     name: { type: Type.STRING },
                     colors: { type: Type.ARRAY, items: { type: Type.STRING } },
                     description: { type: Type.STRING },
-                    shoppingKeyword: { type: Type.STRING },
-                    imageIndex: { type: Type.INTEGER }
+                    shoppingKeyword: { type: Type.STRING }
                   },
-                  required: ["name", "colors", "description", "shoppingKeyword", "imageIndex"]
+                  required: ["name", "colors", "description", "shoppingKeyword"]
                 },
                 accessories: {
                   type: Type.OBJECT,
@@ -350,10 +367,9 @@ app.post("/api/recommend", async (req, res) => {
                     name: { type: Type.STRING },
                     colors: { type: Type.ARRAY, items: { type: Type.STRING } },
                     description: { type: Type.STRING },
-                    shoppingKeyword: { type: Type.STRING },
-                    imageIndex: { type: Type.INTEGER }
+                    shoppingKeyword: { type: Type.STRING }
                   },
-                  required: ["name", "colors", "description", "shoppingKeyword", "imageIndex"]
+                  required: ["name", "colors", "description", "shoppingKeyword"]
                 },
                 stylistNote: { type: Type.STRING }
               },
@@ -367,25 +383,26 @@ app.post("/api/recommend", async (req, res) => {
         if (resultText) {
           const parsed = JSON.parse(resultText.trim());
 
-          // Map index to pre-selected beautiful images
-          const getImgUrl = (category: "top" | "bottom" | "shoes" | "accessories", index: number) => {
-            const list = NEW_FASHION_IMAGES[category];
-            const safeIdx = Math.max(0, Math.min(list.length - 1, isNaN(index) ? 0 : index));
-            return list[safeIdx];
-          };
+          const recommendationSeed = Date.now();
 
-          const formatItem = (item: any, category: "top" | "bottom" | "shoes" | "accessories", idx: number) => {
+          const formatItem = (item: any, category: FashionCategory, idx: number) => {
             if (!item) return undefined;
+
+            const shoppingKeyword = createSearchKeyword(item, category);
+            const seed = recommendationSeed + idx + Math.floor(Math.random() * 10_000);
+
             return {
-              id: `recommended-new-${category}-${Date.now()}-${idx}`,
+              id: `recommended-new-${category}-${recommendationSeed}-${idx}`,
               name: item.name,
               category,
               colors: item.colors,
-              imageUrl: getImgUrl(category, item.imageIndex),
+              imageUrl: createDynamicFashionImageUrl(shoppingKeyword, category, seed),
               isCustom: true,
               description: item.description,
-              shopName: "Naver Shopping",
-              shoppingUrl: `https://search.shopping.naver.com/search/all?query=${encodeURIComponent(item.shoppingKeyword || item.name)}`
+              shopName: "Bing Shopping Search",
+              shoppingUrl: createShoppingSearchUrl(shoppingKeyword),
+              imageSearchUrl: createImageSearchUrl(shoppingKeyword),
+              shoppingKeyword,
             };
           };
 
@@ -497,7 +514,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.use((_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
     console.log("Static production asset directory served.");
