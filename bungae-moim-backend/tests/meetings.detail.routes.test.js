@@ -236,4 +236,33 @@ describe('GET /api/meetings/:id', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.id).toBe(meetingId);
   });
+
+  it('성인 전용 모임을 성인이 조회하면 canApply true, blockReason null', async () => {
+    const host = await createUser('detail-canapply-host');
+    const meetingId = await insertMeeting(host, { adultOnly: true });
+    const { agent, userId } = await loginAgent('detail-canapply-adult');
+    await pool.query('UPDATE users SET birth_date = $1 WHERE id = $2', ['1990-01-01', userId]);
+
+    const res = await agent.get(`/api/meetings/${meetingId}`);
+    expect(res.body.data.canApply).toBe(true);
+    expect(res.body.data.blockReason).toBeNull();
+  });
+
+  it('성인 전용 모임을 생년월일 없는 계정이 조회하면 BIRTHDATE_REQUIRED', async () => {
+    const host = await createUser('detail-canapply-host2');
+    const meetingId = await insertMeeting(host, { adultOnly: true });
+    const { agent } = await loginAgent('detail-canapply-nobirth'); // birthDate 없음
+
+    const res = await agent.get(`/api/meetings/${meetingId}`);
+    expect(res.body.data.canApply).toBe(false);
+    expect(res.body.data.blockReason).toBe('BIRTHDATE_REQUIRED');
+  });
+
+  it('비로그인 조회는 blockReason이 LOGIN_REQUIRED', async () => {
+    const host = await createUser('detail-canapply-host3');
+    const meetingId = await insertMeeting(host);
+    const res = await request(app).get(`/api/meetings/${meetingId}`);
+    expect(res.body.data.canApply).toBe(false);
+    expect(res.body.data.blockReason).toBe('LOGIN_REQUIRED');
+  });
 });

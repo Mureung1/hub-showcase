@@ -1,8 +1,5 @@
-// 서버 목록 응답에는 participants가 없다(참여 기능은 이번 주 범위 밖). 그 경우 0명으로 센다.
-export function getConfirmedCount(meeting) {
-  return (meeting.participants ?? []).filter((p) => p.status === 'confirmed' || p.status === 'approved').length
-}
-
+// 상세 응답의 participants(모임장 신청자 목록, F3에서 제공)에서 대기 중 신청자를 추린다.
+// 아직 participants가 없으면 빈 배열로 안전하게 동작한다.
 export function getPendingApplicants(meeting) {
   return (meeting.participants ?? []).filter((p) => p.status === 'pending')
 }

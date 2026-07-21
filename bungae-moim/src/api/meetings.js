@@ -45,3 +45,13 @@ export function createMeeting(input) {
 export function fetchMeeting(id) {
   return request(`/api/meetings/${encodeURIComponent(id)}`)
 }
+
+// POST /api/meetings/:id/apply — 참여 신청(F1). 성공 시 { status } 반환.
+export function applyToMeeting(id) {
+  return request(`/api/meetings/${encodeURIComponent(id)}/apply`, { method: 'POST' })
+}
+
+// DELETE /api/meetings/:id/apply — 참여/신청 취소(F2). 성공 시 { status: 'cancelled' } 반환.
+export function cancelParticipation(id) {
+  return request(`/api/meetings/${encodeURIComponent(id)}/apply`, { method: 'DELETE' })
+}
