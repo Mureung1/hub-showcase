@@ -1,8 +1,10 @@
 const {
   listGroupPurchases,
   getGroupPurchaseById,
+  getMyGroupPurchaseActivities,
   createGroupPurchase,
   joinGroupPurchase,
+  cancelGroupPurchaseJoin,
 } = require('../services/groupPurchase.service');
 const AppError = require('../utils/appError');
 
@@ -23,6 +25,15 @@ async function get(req, res, next) {
       throw new AppError(400, '올바른 공동구매 ID가 필요합니다.', 'VALIDATION_ERROR');
     }
     const data = await getGroupPurchaseById(id);
+    return res.status(200).json({ success: true, data, error: null });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function mine(req, res, next) {
+  try {
+    const data = await getMyGroupPurchaseActivities(req.user.id);
     return res.status(200).json({ success: true, data, error: null });
   } catch (err) {
     return next(err);
@@ -92,9 +103,24 @@ async function join(req, res, next) {
   }
 }
 
+async function cancelJoin(req, res, next) {
+  try {
+    const groupPurchaseId = Number(req.params.id);
+    if (!Number.isSafeInteger(groupPurchaseId) || groupPurchaseId < 1) {
+      throw new AppError(400, '올바른 공동구매 ID가 필요합니다.', 'VALIDATION_ERROR');
+    }
+    const data = await cancelGroupPurchaseJoin(groupPurchaseId, req.user.id);
+    return res.status(200).json({ success: true, data, error: null });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   list,
   get,
+  mine,
   create,
   join,
+  cancelJoin,
 };
