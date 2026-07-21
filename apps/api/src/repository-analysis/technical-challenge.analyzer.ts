@@ -34,10 +34,9 @@ export class TechnicalChallengeAnalyzer {
 
   async analyze(context: TechnicalChallengeContext): Promise<TechnicalChallengeAnalysisResult> {
     const model = this.configService.get<string>("AI_MODEL")?.trim();
-    const apiUrl = this.configService.get<string>("AI_API_URL")?.trim();
     const apiKey = this.configService.get<string>("AI_API_KEY")?.trim();
 
-    if (!model || !apiUrl || !apiKey) {
+    if (!model || !apiKey) {
       return {
         candidates: [],
         warning: "AI 분석 provider 설정이 없어 기술적 도전 후보를 생성하지 못했습니다.",

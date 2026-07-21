@@ -191,7 +191,7 @@ export type TechnicalChallengeAiClient = {
 };
 ~~~
 
-- [ ] AI_API_URL, AI_API_KEY, AI_MODEL이 없으면 외부 요청 없이 TechnicalChallengeAiUnavailableError를 반환하는 테스트를 작성한다.
+- [ ] AI_API_KEY 또는 AI_MODEL이 없으면 외부 요청 없이 TechnicalChallengeAiUnavailableError를 반환하는 테스트를 작성한다.
 - [ ] 2xx 응답을 반환하고 4xx·5xx·body 누락을 TechnicalChallengeAiResponseError로 변환한다. API key는 로그와 오류 메시지에 포함하지 않는다.
 - [ ] Nest token provider로 client를 주입해 테스트에서 mock으로 교체할 수 있게 한다.
 - [ ] AI 설정 누락은 technicalChallenges: []와 warning을 반환하고 기존 구조화 분석은 유지한다. malformed 응답도 임의 후보를 만들지 않는다.

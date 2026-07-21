@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import type { TechnicalChallengeAiRequest } from "./technical-challenge.models";
 
 export const TECHNICAL_CHALLENGE_AI_CLIENT = Symbol("TECHNICAL_CHALLENGE_AI_CLIENT");
+export const OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions";
 
 export class TechnicalChallengeAiUnavailableError extends Error {
   constructor() {
@@ -27,15 +28,14 @@ export class HttpTechnicalChallengeAiClient implements TechnicalChallengeAiClien
   constructor(private readonly configService: ConfigService) {}
 
   async generate(request: TechnicalChallengeAiRequest): Promise<string> {
-    const url = this.configService.get<string>("AI_API_URL")?.trim();
     const apiKey = this.configService.get<string>("AI_API_KEY")?.trim();
     const configuredModel = this.configService.get<string>("AI_MODEL")?.trim();
 
-    if (!url || !apiKey || !configuredModel) {
+    if (!apiKey || !configuredModel) {
       throw new TechnicalChallengeAiUnavailableError();
     }
 
-    const response = await fetch(url, {
+    const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
       method: "POST",
       headers: {
         Accept: "application/json",

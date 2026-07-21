@@ -2,6 +2,7 @@ import { ConfigService } from "@nestjs/config";
 import { TechnicalChallengeAiRequest } from "./technical-challenge.models";
 import {
   HttpTechnicalChallengeAiClient,
+  OPENAI_CHAT_COMPLETIONS_URL,
   TechnicalChallengeAiResponseError,
   TechnicalChallengeAiUnavailableError,
 } from "./technical-challenge.client";
@@ -40,7 +41,6 @@ describe("HttpTechnicalChallengeAiClient", () => {
     ) as typeof fetch;
     const client = new HttpTechnicalChallengeAiClient(
       new ConfigService({
-        AI_API_URL: "https://ai.example.com/v1/chat/completions",
         AI_API_KEY: "secret-key",
         AI_MODEL: "configured-model",
       }),
@@ -48,7 +48,7 @@ describe("HttpTechnicalChallengeAiClient", () => {
 
     await expect(client.generate(request)).resolves.toBe('{"candidates":[]}');
     expect(global.fetch).toHaveBeenCalledWith(
-      "https://ai.example.com/v1/chat/completions",
+      OPENAI_CHAT_COMPLETIONS_URL,
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({ Authorization: "Bearer secret-key" }),
@@ -63,7 +63,6 @@ describe("HttpTechnicalChallengeAiClient", () => {
     ) as typeof fetch;
     const client = new HttpTechnicalChallengeAiClient(
       new ConfigService({
-        AI_API_URL: "https://ai.example.com/v1/chat/completions",
         AI_API_KEY: "secret-key",
         AI_MODEL: "configured-model",
       }),
