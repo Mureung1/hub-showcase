@@ -343,12 +343,22 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
 
 ## MVP 완성 이후 고도화 (4주차 이후)
 
+### ⭐ 최우선 — Upload → ETL 자동화 (2026-07-21 논의)
+
+- [ ] Upload → ETL → Financial 자동 반영 파이프라인 구축
+  - 현재: Upload는 파일명/카테고리 메타데이터만 Supabase에 기록, 실제 파일 저장·파서 실행 없음. ETL은 수동 실행, 백엔드 재시작 전까지 `merged_dataset.csv` 변경도 반영 안 됨
+  - 작업 범위: (1) 실제 파일 업로드 처리(`data/raw/` 저장) (2) 백엔드에서 Python ETL 스크립트 subprocess 실행 트리거 (3) `FinancialService.reloadData()` + 캐시 무효화 (4) Upload 프론트 처리 상태 표시 (5) 에러 케이스 처리 (6) E2E 테스트
+  - 예상 소요: 해피패스만이면 약 1일, 에러 처리 포함 견고하게 하면 약 2일
+  - 불확실 지점: `master_dataset_builder.py`가 월 단위 증분 갱신을 지원하는지, 아니면 raw 전체 재계산 구조인지 확인 필요 — 착수 전 먼저 확인
+  - 이 작업에 `FinancialService Cache Reload`(아래 항목) 포함됨
+
 - [ ] Fuzzy Matching: sales/orders 상품명 유사 매칭
 - [ ] Product Master 자동 보정: 수동 매핑 테이블 구축
 - [ ] Rule Engine V2: 더 복잡한 규칙 추가
 - [ ] FinancialService Cache Reload (V2): Upload 이후 최신 `merged_dataset.csv` 반영
   - `reloadData()` 구현, cache invalidation, Upload API와 연동, Recommendation 기준(카테고리 평균 폐기율/전체 평균 마진율) 재계산
   - 현재(V1)는 서버 기동 시 1회 로드 후 캐싱 — 의도적 설계 선택, 버그 아님 (2026-07-21 결정)
+  - ⚠️ 위 "Upload → ETL 자동화" 작업에 포함되므로 별도 착수 불필요
 - [ ] Dashboard AI Insight: 자연어 분석 고도화
 - [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동)
 
