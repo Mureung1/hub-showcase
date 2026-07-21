@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import './Layout.css'
 
 const Layout = () => {
@@ -8,11 +8,13 @@ const Layout = () => {
   return (
     <div className="app-layout">
       <header className="gnb">
-        <span className="gnb-logo">SUBZIP</span>
+        <Link to="/" className="gnb-logo">
+            SUBZIP
+        </Link>
         {!isSubscriptionFormPage && (
-          <a href="/subscriptions/new" className="gnb-cta">
+          <Link to="/subscriptions/new" className="gnb-cta">
             + 구독 서비스 등록
-          </a>
+          </Link>
         )}
       </header>
 
