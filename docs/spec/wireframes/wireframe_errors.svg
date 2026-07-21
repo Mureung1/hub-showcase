@@ -1,0 +1,79 @@
+<svg viewBox="0 0 880 880" xmlns="http://www.w3.org/2000/svg" font-family="Pretendard, -apple-system, BlinkMacSystemFont, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+  <rect width="880" height="880" fill="#FAFAFA"/>
+
+  <!-- ============ A. 부분 실패 ============ -->
+  <text x="40" y="36" font-size="13" font-weight="700" fill="#16202B">A · 부분 실패</text>
+  <text x="132" y="36" font-size="11" fill="#8A96A2">가장 흔한 결말. 화면을 대체하지 않고 타임라인 안의 항목 하나가 됩니다.</text>
+
+  <rect x="40" y="50" width="800" height="238" rx="8" fill="#FFFFFF" stroke="#DDE3E9" stroke-width="1.2"/>
+
+  <line x1="86" y1="74" x2="86" y2="266" stroke="#DDE3E9" stroke-width="1.5"/>
+
+  <!-- 정상 카드 (축약) -->
+  <circle cx="86" cy="94" r="4" fill="#2E7D5B"/>
+  <rect x="110" y="80" width="700" height="30" rx="5" fill="#FBFCFD" stroke="#EDF1F4" stroke-width="1"/>
+  <text x="126" y="99" font-size="11" fill="#98A3AE">논문 카드 1 — Tree-of-Agents (정상 완료)</text>
+
+  <circle cx="86" cy="130" r="4" fill="#2E7D5B"/>
+  <rect x="110" y="116" width="700" height="30" rx="5" fill="#FBFCFD" stroke="#EDF1F4" stroke-width="1"/>
+  <text x="126" y="135" font-size="11" fill="#98A3AE">논문 카드 2 — Self-Refine Planning (정상 완료)</text>
+
+  <!-- 실패 항목 -->
+  <circle cx="86" cy="180" r="5" fill="#B07A18"/>
+  <rect x="110" y="158" width="700" height="76" rx="6" fill="#FDF7EC" stroke="#E8D5A8" stroke-width="1.3"/>
+  <text x="130" y="182" font-size="12" font-weight="700" fill="#B07A18">3편째 — 요약하지 못했습니다</text>
+  <text x="130" y="204" font-size="11" fill="#5A6B7C">PDF 본문 추출에 실패했고, 초록만으로는 검증을 두 번 모두 통과하지 못했습니다.</text>
+  <text x="130" y="224" font-size="11" fill="#2563A8">Memory-Augmented Planning for LLM Agents — 원문에서 직접 확인 ↗</text>
+
+  <circle cx="86" cy="254" r="4" fill="#2E7D5B"/>
+  <rect x="110" y="242" width="700" height="26" rx="5" fill="#FBFCFD" stroke="#EDF1F4" stroke-width="1"/>
+  <text x="126" y="259" font-size="11" fill="#98A3AE">논문 카드 4 — VerifyFirst (정상 완료) · 이후 트렌드 종합은 3편 기준으로 진행</text>
+
+  <text x="40" y="312" font-size="11" fill="#5A6B7C">한 편이 실패해도 나머지 셋과 트렌드는 그대로 살립니다. 3분과 API 비용을 태우고 얻은 결과를 버릴 이유가 없습니다.</text>
+  <text x="40" y="330" font-size="11" fill="#5A6B7C">대신 <tspan font-weight="700" fill="#16202B">무엇이 왜 실패했는지</tspan>와 <tspan font-weight="700" fill="#16202B">원문 링크</tspan>를 줍니다. 사용자가 직접 메울 수 있게. 완료 헤더에는 '3/4편'이라 표시합니다.</text>
+
+  <!-- ============ B. 결과 없음 ============ -->
+  <text x="40" y="392" font-size="13" font-weight="700" fill="#16202B">B · 결과 없음</text>
+  <text x="140" y="392" font-size="11" fill="#8A96A2">검색은 성공했고 관련 논문이 0편. 이건 실패가 아니라 정상 응답입니다.</text>
+
+  <rect x="40" y="406" width="800" height="176" rx="8" fill="#FFFFFF" stroke="#DDE3E9" stroke-width="1.2"/>
+
+  <line x1="86" y1="430" x2="86" y2="500" stroke="#DDE3E9" stroke-width="1.5"/>
+  <circle cx="86" cy="442" r="4" fill="#C1CAD3"/>
+  <text x="110" y="446" font-size="11" fill="#98A3AE">arXiv 검색 — 'quantum blockchain agent'</text>
+  <circle cx="86" cy="478" r="5" fill="#7A8896"/>
+  <text x="110" y="474" font-size="12.5" font-weight="700" fill="#16202B">최근 7일 안에 관련 논문이 없습니다</text>
+  <text x="110" y="494" font-size="11" fill="#5A6B7C">12편을 훑었지만 주제와 맞는 논문은 없었습니다. 에이전트는 정상 작동했습니다.</text>
+
+  <text x="110" y="528" font-size="11" font-weight="600" fill="#4A5966">이렇게 해보세요</text>
+  <rect x="110" y="538" width="150" height="26" rx="13" fill="#F3F5F7" stroke="#DDE3E9" stroke-width="1"/>
+  <text x="185" y="555" font-size="10.5" fill="#4A5966" text-anchor="middle">기간을 30일로 넓히기</text>
+  <rect x="270" y="538" width="140" height="26" rx="13" fill="#F3F5F7" stroke="#DDE3E9" stroke-width="1"/>
+  <text x="340" y="555" font-size="10.5" fill="#4A5966" text-anchor="middle">'quantum agent'</text>
+  <rect x="420" y="538" width="130" height="26" rx="13" fill="#F3F5F7" stroke="#DDE3E9" stroke-width="1"/>
+  <text x="485" y="555" font-size="10.5" fill="#4A5966" text-anchor="middle">'blockchain LLM'</text>
+
+  <text x="40" y="606" font-size="11" fill="#5A6B7C">여기서 빨간 오류 화면을 띄우면 사용자는 서비스가 고장난 줄 압니다. 실제로는 <tspan font-weight="700" fill="#16202B">정확하게 작동해서 '없다'는 사실을 알아낸 것</tspan>입니다.</text>
+  <text x="40" y="624" font-size="11" fill="#5A6B7C">막다른 길로 끝내지 말고 다음 행동을 주세요. 검색어를 좁게 잡는 건 사용자 잘못이 아니라 흔한 일입니다.</text>
+
+  <!-- ============ C. 전체 실패 ============ -->
+  <text x="40" y="686" font-size="13" font-weight="700" fill="#16202B">C · 전체 실패</text>
+  <text x="142" y="686" font-size="11" fill="#8A96A2">아무것도 못 건진 경우에만. 유일하게 화면을 대체합니다.</text>
+
+  <rect x="40" y="700" width="800" height="136" rx="8" fill="#FDF2EF" stroke="#B4451F" stroke-width="1.4"/>
+
+  <circle cx="72" cy="734" r="6" fill="#B4451F"/>
+  <text x="92" y="738" font-size="13" font-weight="700" fill="#16202B">브리핑을 만들지 못했습니다</text>
+  <text x="92" y="762" font-size="11.5" fill="#5A6B7C">LLM 호출이 사용량 한도에 걸렸습니다. 잠시 뒤 다시 시도해 주세요.</text>
+  <text x="92" y="784" font-size="10.5" fill="#98A3AE">3편 중 1편을 읽던 중 중단 · 14:32 · rate_limit_exceeded</text>
+
+  <rect x="92" y="798" width="104" height="28" rx="6" fill="#16202B"/>
+  <text x="144" y="816" font-size="11" font-weight="600" fill="#FFFFFF" text-anchor="middle">다시 시도</text>
+  <rect x="208" y="798" width="126" height="28" rx="6" fill="#FFFFFF" stroke="#C9D2DA" stroke-width="1"/>
+  <text x="271" y="816" font-size="11" fill="#4A5966" text-anchor="middle">다른 주제로 시작</text>
+
+  <text x="380" y="810" font-size="10.5" fill="#8A96A2">기술 용어(rate_limit_exceeded)는 작게 남겨둡니다.</text>
+  <text x="380" y="826" font-size="10.5" fill="#8A96A2">타겟이 개발자라 이게 오히려 친절합니다. 본인 디버깅에도 필요합니다.</text>
+
+  <text x="40" y="868" font-size="11" fill="#8A96A2">세 화면의 공통 원칙 — <tspan font-weight="700" fill="#16202B">막다른 길을 만들지 않는다.</tspan> 어떤 상태에서든 사용자가 다음에 할 수 있는 행동이 화면에 있어야 합니다.</text>
+</svg>

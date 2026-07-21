@@ -1,94 +1,153 @@
-# 작업 분해 체크리스트 (MVP)
+# 개발 체크리스트
 
-> [mvp-plan.md](./mvp-plan.md)의 확정 기능(F1~F4 + 자동화 파이프라인)을 작업 단위로 쪼갠 목록.
+> 작업 분해와 진행 상황. **완료 기준(검증 방법)이 없는 항목은 체크하지 않는다.**
+> "다 한 것 같다"가 아니라 "이 명령을 쳤더니 이게 나왔다"가 완료다.
 >
-> **원칙**: 한 항목 = AI에게 내리는 **하나의 작업 지시** = 내가 **검증할 수 있는 하나의 단위**.
-> 덩어리가 크면 AI도 실패하고 나도 검증 못 한다 → **잘게 쪼갤수록 성공률이 올라간다.**
+> **참고** — 무엇을 왜: [../plan.md](../plan.md) · 인터페이스: [sse-contract.md](sse-contract.md) · 규칙: [../../CLAUDE.md](../../CLAUDE.md)
+
+**챌린지 기간:** 2026-07-06(월) ~ 07-31(금) · 데모데이 07-31 (네이버 1784, 오프라인)
+**대응:** 각 주차는 [plan.md §10](../plan.md)의 번호와 연결된다.
 
 ---
 
-> **📍 진행 점검 (2026-07-14 기준)** — 준비 완료, 프론트 프로토타입(F1~F4) 완성(목 데이터 기반). 데이터 파이프라인·자동화/배포는 미착수.
-> 표기: `[x]` 완료(뒤에 검증 근거) · `[ ]` 미완 · ⚠️ 부분 완료.
+## Week 0 — 준비 (~07/05)
 
-## 0. 준비
-- [x] 저장소 폴더 구조 잡기 (`scripts/` 수집·요약, `web/` 프론트, `data/` JSON 출력) — ✓ 세 폴더 + README 생성·커밋
-- [x] `requirements.txt` 작성 (`arxiv`, `feedparser`, `google-generativeai` 등) — ✓ 4개 의존성 명시(+python-dotenv)
-- [x] Gemini API 키 발급 + 로컬 `.env`에 저장 (`.gitignore`에 `.env` 추가) — ✓ `.env`(키 보유)·`.gitignore` 차단·`.env.example` 완비
+챌린지 시작 전. 문서와 환경을 정리해 **7/6에 바로 코드부터 칠 수 있게** 만든다.
 
-## 1주차 — 데이터 파이프라인 (Python)
+> **📍 진행 점검** — `main`에서 새 브랜치 `agent-service`를 분기해 v1(정적 MVP)과 분리 진행. v1은 `work` 브랜치 + 태그 `v1-static-mvp`에 보존.
 
-> ⚠️ **전체 미착수** — `scripts/`에 README만 있고 코드 없음. (프론트는 아래 목 데이터로 대체 진행)
+- [x] `docs/plan.md`를 v2 내용으로 교체
+  - **완료 기준:** 문서에 "정적", "cron", "매일 자동"이 남아 있지 않다 — ✓ `docs/plan.md`는 §8에서 정적+cron 방식을 **거부 근거**로만 언급(잔재 아님). 원본과 byte-identical 확인
+- [x] `docs/spec/mvp-plan.md` · `docs/user-scenarios.md` v1 잔재 정리 (갱신 또는 삭제)
+  - **완료 기준:** `grep -ri "정적\|cron\|GitHub Pages" docs/` 결과에 앱 배포 관련 언급이 없다 — ✓ `agent-service` 브랜치는 `main`(v1 없음)에서 분기해 애초에 두 파일이 존재하지 않음. grep 결과는 plan.md §8(거부 근거)·checklist 자기 설명뿐
+- [x] `docs/spec/sse-contract.md` 배치 — ✓ 원본과 byte-identical
+- [x] `prompts/` 5개 파일 + `CHANGELOG.md` 배치 — ✓ judge·select_tool·summarize·verify·trend·CHANGELOG 6파일 생성, 상호 참조(`./CHANGELOG.md` 등) 전부 유효
+- [x] 디렉토리 구조 생성 (`app/` `prompts/` `web/` `data/` `tests/`) — ✓ 5개 폴더 전부 존재 (`app/__init__.py`, 나머지 `.gitkeep`)
+- [x] `.env.example` · `.gitignore`(`.env`, `data/` 포함) 작성 — ✓ 둘 다 존재, `.env` 차단·`data/*` 무시(`.gitkeep` 제외) 확인
+- [ ] Gemini API 키 발급 + `.env` 설정 — ⚠️ **부분 완료.** `.env`에 `GEMINI_API_KEY=` 형식으로 키는 있으나, **완료 기준(실제 LLM 호출 성공)은 미검증** — `google-generativeai` 미설치(venv 없음)
+  - **완료 기준:** `python -c "..."` 한 줄로 LLM 호출이 성공한다
+- [x] `requirements.txt` (fastapi, uvicorn, arxiv, google-generativeai, pytest) — ✓ 명시 5종 전부 포함(+feedparser·python-dotenv·pypdf 추가)
 
-### 수집 (arXiv)
-- [ ] arXiv API로 `cs.CL` 카테고리 최근 논문 N편 가져오는 함수
-- [ ] 대상 카테고리 `cs.AI`·`cs.LG`까지 확장
-- [ ] LLM 관련 키워드로 논문 필터링
-- [ ] 논문 1편에서 메타데이터 파싱 (제목·저자·날짜·초록·arXiv 링크)
-- [ ] 중복 논문 제거
-
-### 요약 (LLM)
-- [ ] Gemini Flash API 호출 최소 예제 (키 연동 확인)
-- [ ] 요약 프롬프트 작성 (핵심 기여 / 방법 / 결과 + 배경 설명 + 한줄 요약)
-- [ ] 논문 1편 → 한국어 구조화 요약 반환 함수
-- [ ] 제목 한글 번역 추가
-- [ ] 여러 논문 반복 요약 (에러/재시도 처리 포함)
-
-### 데이터 저장
-- [x] 출력 JSON 스키마 정의 (id, 제목(영/한), 저자, 날짜, 태그, 중요도, 요약, 초록, 링크) — ✓ `data/2026-07-09.json`에 확정·사용(프론트-파이프라인 계약)
-- [ ] 중요도 값 부여 (MVP: 단순 규칙 — 예: 최신순/키워드 가중치) — ⚠️ 스키마 `importance` 필드·프론트 정렬은 있으나, **부여 규칙 로직 미구현**(목데이터 수기)
-- [ ] 하루치 결과를 `data/YYYY-MM-DD.json`으로 저장 — ⚠️ 파일 명명·형식은 확립, **파이프라인 자동 생성은 미구현**(현재 목데이터)
-- [ ] 로컬에서 파이프라인 1회 수동 실행 → JSON 내용 눈으로 검증
-
-## 2주차 — 프론트엔드 (정적)
-
-> ✅ **F1~F4 전부 구현** — `web/`(index.html·style.css·app.js) 정적 SPA, design.md(1c) 웜 팔레트 적용.
-
-### 골격
-- [x] 기본 페이지 HTML/CSS 골격 (프로젝트 팔레트·타이포 적용) — ✓ design.md 팔레트/Pretendard 이식
-- [x] JSON 파일 로드해서 콘솔에 출력 (데이터 연결 확인) — ✓ `fetch`로 로드해 렌더까지(콘솔 이상)
-
-### F1 · 오늘의 브리핑 피드
-- [x] 헤더 (날짜 + "오늘 N편 수집") — ✓ `renderFeed()` 날짜·수집수 헤더
-- [x] 카테고리 탭 UI — ✓ 대표 태그 기반 pill 탭
-- [x] 카드 목록을 중요도순으로 나열 — ✓ `sortByImportance()`
-- [x] 카테고리 탭 클릭 → 해당 태그 카드만 필터 — ✓ `tags[0]` 필터
-
-### F2 · 논문 카드 컴포넌트
-- [x] 카드 기본 레이아웃 (제목 영·한 + 한줄 요약) — ✓ 영문 제목+한줄요약(한글 제목은 design.md 결정에 따라 상세로 이동)
-- [x] 주제 태그 표시 — ✓ 살구색 태그
-- [x] 중요도 배지 표시 — ✓ 중요도 dot + "중요" 라벨(high)
-- [x] 저장(🔖) 버튼 배치 — ✓ 우측 정렬 북마크 버튼
-
-### F3 · 논문 상세 · 요약 열람
-- [x] 카드 클릭 → 상세 화면 이동 — ✓ `openDetail()` SPA 뷰 전환
-- [x] 상세 헤더: 제목 + 메타 행 (저자 · 날짜 · 주제 태그) — ✓
-- [x] 구조화 요약 표시 (핵심 기여 / 방법 / 결과) — ✓ 4섹션
-- [x] 배경(맥락) 설명 표시 — ✓
-- [x] 원문 초록 병기 (토글 펼치기) — ✓ 토글 동작
-- [x] arXiv 원문 링크 버튼 — ✓
-- [x] 뒤로가기로 피드 복귀 — ✓
-
-### F4 · 북마크 저장
-- [x] 저장 버튼 클릭 → 브라우저 저장(localStorage) 처리 — ✓ `briefing.bookmarks` 키
-- [x] 저장 목록 화면 (저장한 카드 나열) — ✓ `renderSaved()`
-- [x] 저장 해제 토글 — ✓ `toggleBookmark()`
-
-> ⚠️ 프론트 검증 참고: 코드/정적 검증(스키마 일치·서빙 200)은 완료. **브라우저 실제 렌더는 사용자 확인**(개발 환경에 브라우저 미구성).
-
-## 자동화 & 배포
-
-> ⚠️ **미착수** (파이프라인 완성이 선행). `.github/workflows/`엔 `auto-merge.yml`만 있고 배포용 워크플로 없음.
-
-- [ ] GitHub Actions 워크플로 파일 작성 (`.github/workflows/`)
-- [ ] cron 스케줄 지정 (매일 정해진 시각)
-- [ ] API 키를 GitHub Secrets에 등록하고 워크플로에서 참조
-- [ ] 파이프라인 실행 → 생성된 JSON을 저장소에 자동 커밋하는 스텝
-- [ ] GitHub Pages 활성화 (배포 브랜치/폴더 설정) — ⚠️ 와이어프레임 접근 정황상 Pages는 켜져 있으나, `web/` 앱 배포(main 병합)는 미확정
-- [ ] `workflow_dispatch`로 수동 트리거 → 끝까지 돌고 Pages에 반영되는지 검증
+> ⚠️ **발견된 이슈 (경로 불일치)** — 루트 `CLAUDE.md` 내부 링크(`../docs/...`, `../prompts/CHANGELOG.md` 등)가 **한 단계 중첩된 위치**(예: `.claude/CLAUDE.md`)를 전제로 쓰여 있어, 지금처럼 **루트 배치 시 전부 깨짐**(`../docs/plan.md` → repo 밖). 반면 `plan.md`·`checklist.md`는 CLAUDE.md를 **루트**로 전제(`../CLAUDE.md`, `../../CLAUDE.md`)해 서로 상충. plan.md·checklist.md 쪽(2곳)이 다수이므로 **CLAUDE.md 내부 링크에서 `../`를 한 겹 제거**하는 쪽이 맞다. 별도 수정 필요.
 
 ---
 
-## 진행 메모
-- 막히는 항목은 더 잘게 쪼갠다 (한 항목이 실패하면 그 항목이 아직 너무 크다는 신호).
-- 각 항목 완료 시 "무엇을 어떻게 확인했는지" 한 줄 검증 기준을 함께 남긴다.
-- MVP 범위 밖(검색·트렌드·카테고리 자동분류·공유)은 이 체크리스트에 넣지 않는다 → [plan.md](../plan.md) 참고.
+## Week 1 — 에이전트가 터미널에서 돈다 (07/06~07/12)
+
+**목표: [plan.md §10](../plan.md) 1번.** 웹은 손대지 않는다.
+
+### 도구 (개발 순서 [1])
+- [ ] `app/config.py` — `MAX_RETRY = 2`, 환경변수 로드
+- [ ] `app/tools.py :: search_arxiv()` — cs.CL/cs.AI/cs.LG 검색
+  - **완료 기준:** `python -m app.tools --check arxiv --topic "LLM agent"` → 논문 목록 출력
+- [ ] `app/tools.py :: ask_llm()` — Gemini Flash 호출. 교체 가능하게 추상화
+  - **완료 기준:** `python -m app.tools --check llm` → 응답 출력
+- [ ] `app/tools.py :: ask_llm_json()` — **fallback 포함.** ```json 래핑 벗기기
+  - **완료 기준:** 일부러 깨진 응답을 넣어도 fallback이 반환되고 예외가 안 난다
+- [ ] `app/tools.py :: fetch_fulltext()` — PDF 본문 추출
+  - **완료 기준:** 실패해도 예외 대신 `None`을 반환한다
+- [ ] `app/prompt_loader.py` — `prompts/*.md` 로드
+
+### 에이전트 5단계 (개발 순서 [2])
+- [ ] 1단계 판단 — `picked` + `excluded` **둘 다** 반환. 개수 검증(누락 index는 excluded로)
+- [ ] 2단계 도구 선택 — `need_fulltext` 판단 → 분기
+- [ ] 3단계 요약 — `contribution`/`method`/`result` 3키 고정
+- [ ] 4단계 자기 검증 — 실패 시 3단계로. **`MAX_RETRY = 2` 상한**
+- [ ] 5단계 트렌드 추론 — `flows[].papers` 근거 필수
+- [ ] `run_agent()`를 **제너레이터로** 조립. `sse-contract.md`의 stage를 그대로 yield
+  - **완료 기준:** `python -m app.agent --topic "LLM agent planning" --limit 3`
+    → search·found·judge·read·paper_done·trend·done이 순서대로 print된다
+
+> **이번 주 안에 반드시 겪어야 하는 것:** `retry`가 실제로 한 번은 발동하는 것.
+> 한 번도 안 나오면 4단계 프롬프트가 너무 관대한 것이다. `prompts/verify.md`를 조인다.
+
+---
+
+## Week 2 — 웹에서 돌고, 과정이 흐른다 (07/13~07/19)
+
+**목표: [plan.md §10](../plan.md) 2·3번.** 화면은 아직 안 만든다.
+
+### 서버 (개발 순서 [3])
+- [ ] `app/main.py` — `GET /api/brief/stream?topic=`. **POST 아님**
+- [ ] `run_agent()`의 yield를 `f"data: {json}\n\n"`로 감싸기 (`ensure_ascii=False`)
+- [ ] 헤더: `Cache-Control: no-cache`, **`X-Accel-Buffering: no`**
+- [ ] `request.is_disconnected()` 감지 → 즉시 중단
+- [ ] 예외 → `error` 이벤트로 종결 (브라우저가 영원히 기다리지 않게)
+  - **완료 기준:** `curl -N "http://localhost:8000/api/brief/stream?topic=LLM+agent"`
+    → `data: {...}` 가 **하나씩 시차를 두고** 흘러나온다 (마지막에 몰려 나오면 실패)
+
+### 계약 검증
+- [ ] 실제 yield되는 이벤트가 `sse-contract.md`와 일치하는지 대조
+  - **완료 기준:** 계약에 없는 필드가 없고, 있는 필드가 빠지지 않았다
+
+> **`curl -N`이 안 되는 상태에서 브라우저를 붙이지 않는다.** 원인 범위가 두 배가 된다.
+
+---
+
+## Week 3 — 화면이 산다 (07/20~07/26)
+
+**목표: [plan.md §10](../plan.md) 4·5번.**
+
+### 프론트 (개발 순서 [4] — 백엔드 없이)
+- [ ] `web/mock.js` — `sse-contract.md`의 목 데이터. **`retry`·`paper_failed` 포함**
+- [ ] `web/index.html` — 입력창 + 예시 주제 버튼 3~4개 + 빈 타임라인
+  - **완료 기준:** 처음 들어온 사람이 클릭 한 번으로 시작할 수 있다
+- [ ] `web/app.js` — stage별 분기 → 타임라인에 DOM 추가
+- [ ] `judge` 강조 블록 + **"제외된 N편 보기" 펼침**
+- [ ] `paper_done` 카드 — 3줄 요약 · **배지(본문/초록)** · 원문 초록 펼침 · arXiv 링크
+- [ ] `retry` 앰버 로그 — 감추지 않는다
+- [ ] `paper_failed` — **화면 대체 금지.** 타임라인 항목 + 원문 링크
+- [ ] `empty` — 에러 아님. 중립 톤 + 제안 버튼
+- [ ] `error` — 화면 대체. `code` 작게 노출
+- [ ] 종결 이벤트 3종에서 **`EventSource.close()`**
+  - **완료 기준:** `?mock=1`로 정상·부분실패·결과없음·전체실패 4가지가 전부 그려진다
+
+### 실연결 (개발 순서 [5])
+- [ ] 목 재생 → `new EventSource(...)` 교체
+  - **완료 기준:** 실제 주제를 넣으면 화면에 결과가 쌓인다
+
+> **에러 화면을 마지막으로 미루지 않는다.** 부분 실패는 예외가 아니라 일상이다.
+
+---
+
+## Week 4 — 근거가 이어지고, 배포된다 (07/27~07/31)
+
+**목표: [plan.md §10](../plan.md) 6번.** 7번은 여유가 있을 때만.
+
+- [ ] 트렌드 블록 + **논문 칩** — 클릭 시 해당 카드로 스크롤
+  - **완료 기준:** 트렌드 주장 → 카드 → arXiv 원문이 클릭으로 끊기지 않고 이어진다
+- [ ] 완료 헤더 고정 (검토/선별 수 · 소요시간 · LLM 호출 수)
+- [ ] `stats.failed > 0`이면 "3/4편" 표시
+- [ ] 배포 (Render / Railway / HF Spaces)
+  - **완료 기준:** 배포 URL에서 **실시간 스트리밍이 유지된다** (`X-Accel-Buffering` 확인)
+- [ ] `README.md` — 데모 URL · 스크린샷 · 무엇이 다른가
+- [ ] 데모데이 시연 시나리오 — **`judge`와 `retry`가 보이는 주제**로 리허설
+
+### 여유가 있으면 ([plan.md §10](../plan.md) 7번)
+- [ ] multi-agent — 판단·요약·검증을 독립 에이전트로 분리, 메시지 교환
+  - **착수 조건:** 1~6번이 배포 상태에서 안정적으로 동작
+
+---
+
+## 끊어내기 규칙
+
+일정이 밀릴 때 **무엇을 버릴지 미리 정해둔다.** 그래야 마지막 주에 흔들리지 않는다.
+
+| 시점 | 신호 | 버리는 것 |
+|---|---|---|
+| **07/12** | 에이전트가 터미널에서 안 돌면 | 5단계(트렌드)를 빼고 4단계까지만. 트렌드 없이도 개별 요약은 가치가 있다 |
+| **07/19** | `curl -N`이 안 되면 | SSE를 포기하고 동기 방식으로. `run_agent()`를 for로 소진해 마지막 결과만 반환 |
+| **07/26** | 화면이 안 그려지면 | `gap`(트렌드 3번 항목), 완료 헤더 통계, 원문 초록 펼침 |
+| **07/29** | 배포가 안 되면 | 로컬 시연으로 전환. 배포보다 **동작하는 데모**가 우선 |
+
+**절대 버리지 않는 것:** `judge`의 제외 사유, `retry` 로그, 카드 배지.
+이 셋이 없으면 이 프로젝트는 그냥 요약 사이트다. ([plan.md §3](../plan.md))
+
+---
+
+## 상시 점검
+
+- [ ] 개발 중 `--limit 3` 이하로 돌리고 있는가 (무료 티어 한도)
+- [ ] 프롬프트를 고칠 때마다 `prompts/CHANGELOG.md`에 **무엇을·왜·결과**를 남겼는가
+- [ ] `sse-contract.md`를 **코드보다 먼저** 고쳤는가
+- [ ] `.env`가 커밋되지 않았는가

@@ -1,4 +1,8 @@
+fastapi
+uvicorn
 arxiv
 feedparser
 google-generativeai
 python-dotenv
+pypdf
+pytest

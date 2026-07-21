@@ -1,13 +1,37 @@
-# 환경변수 (API 키)
+# ── 환경변수 / 비밀 (API 키) ─────────────────────────
 .env
 .env.*
 !.env.example
 
-# Python
+# ── 실행 결과 (런타임 산출물) ────────────────────────
+data/*
+!data/.gitkeep
+
+# ── Python ───────────────────────────────────────────
 __pycache__/
 *.py[cod]
 .venv/
 venv/
+env/
+ENV/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# OS / 편집기
+# ── 에디터 / IDE ─────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*~
+
+# ── OS 부산물 ────────────────────────────────────────
 .DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── 로그 / 임시 ──────────────────────────────────────
+*.log
+tmp/
