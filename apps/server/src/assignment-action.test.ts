@@ -8,6 +8,7 @@ import {
   type CancelUserInput,
   type CodexAccountReadiness,
   type CodexChatRuntimeError,
+  type CodexChatTurnErrorCode,
   type CodexProductActivity,
   type CodexProductCapableRuntime,
   type CodexProductTurn,
@@ -64,6 +65,46 @@ test('account-not-ready rejects the Assignment action before a Run or native sta
         assert.deepEqual(runtime.calls, [
           { operation: 'readAccountReadiness' },
         ])
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('a native camelCase failure settles with a durable safe code instead of a guard conflict', async () => {
+  const fixture = await createActionFixture()
+  const runtime = new HttpMcpProductRuntime({
+    onStartProductTurn: async () => undefined,
+    terminalFailureCode: 'usageLimitExceeded',
+  })
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        const workspace = await activateCourse(application)
+        const selected = selectCanonicalMaterials(workspace.materials)
+        const frames = await readProductFrames(
+          await postJson(
+            `${baseUrl}/api/product/actions/first-assignment`,
+            actionRequest(workspace.course!.id, selected),
+          ),
+        )
+
+        const terminal = frames.at(-1)
+        assert.equal(terminal?.type, 'operation.terminal')
+        assert.equal(terminal?.status, 'failed')
+        assert.equal(terminal?.validationOutcome, 'unknown')
+        assert.equal(terminal?.failureCode, 'usage_limit_exceeded')
+        const runs = application.semesterWorkspace?.modelingRuns() ?? []
+        assert.equal(runs.length, 1)
+        assert.equal(runs[0]?.status, 'failed')
+        assert.equal(runs[0]?.validationOutcome, 'unknown')
+        assert.equal(runs[0]?.failureCode, 'usage_limit_exceeded')
       },
     )
   } finally {
@@ -1215,6 +1256,7 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
   private readonly beforeProposal?: () => Promise<void>
   private readonly proposalFails: boolean
   private readonly reviewResolution: 'answered' | 'cancelled'
+  private readonly terminalFailureCode?: CodexChatTurnErrorCode
   private threadInput?: StartThreadInput
 
   constructor(options: {
@@ -1225,12 +1267,14 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
     readonly failReviewAnswer?: boolean
     readonly proposalFails?: boolean
     readonly reviewResolution?: 'answered' | 'cancelled'
+    readonly terminalFailureCode?: CodexChatTurnErrorCode
   }) {
     this.onStartProductTurn = options.onStartProductTurn
     this.beforeProposal = options.beforeProposal
     this.failReviewAnswer = options.failReviewAnswer ?? false
     this.proposalFails = options.proposalFails ?? false
     this.reviewResolution = options.reviewResolution ?? 'answered'
+    this.terminalFailureCode = options.terminalFailureCode
   }
 
   async readAccountReadiness(): Promise<CodexAccountReadiness> {
@@ -1268,6 +1312,19 @@ class HttpMcpProductRuntime implements CodexProductCapableRuntime {
           threadId: input.threadId,
           turnId: 'turn-native-A',
           skillName: input.skill!.name,
+        }
+        if (runtime.terminalFailureCode) {
+          yield {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId: 'turn-native-A',
+            status: 'failed',
+            failure: {
+              code: runtime.terminalFailureCode,
+              displayMessage: 'Codex reported a turn error.',
+            },
+          }
+          return
         }
         const nativeInteractionId =
           `native-interaction:${runtime.threadInput?.workspace}`

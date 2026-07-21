@@ -928,7 +928,11 @@ export function createProductOperationCoordinator(options: {
                       ? 'passed'
                       : 'unknown',
                 ...(settlement.event.status === 'failed'
-                  ? { failureCode: settlement.event.failure?.code ?? 'turn_failed' }
+                  ? {
+                      failureCode: safeFailureCode(
+                        settlement.event.failure?.code ?? 'turn_failed',
+                      ),
+                    }
                   : settlement.event.status === 'completed' && !patchObserved
                     ? { failureCode: 'proposal_not_observed' }
                     : {}),
@@ -1744,7 +1748,10 @@ function safeOperationFailureCode(error: unknown): string {
 }
 
 function safeFailureCode(code: string): string {
-  return /^[a-z][a-z0-9_]{0,63}$/.test(code) ? code : 'operation_failed'
+  const normalized = code.replaceAll(/[A-Z]/g, (value) => `_${value.toLowerCase()}`)
+  return /^[a-z][a-z0-9_]{0,63}$/.test(normalized)
+    ? normalized
+    : 'operation_failed'
 }
 
 function presentProductOperationError(error: unknown): ProductOperationError {

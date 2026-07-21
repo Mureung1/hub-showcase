@@ -31,9 +31,10 @@ const selectedRelativePaths = [
   'problem-solving-syllabus.txt',
 ] as const
 const unselectedRelativePath = 'unselected-control.txt'
+const revisionFeedback = '제안 설명을 더 명확하게 작성해 주세요.'
 
 test(
-  'completes the First Assignment product contract through the exact local provider',
+  'completes revision and acceptance through the exact local provider',
   { timeout: 120_000 },
   async () => {
     const materialized = await materializeE2eSemesterWorkspace()
@@ -138,11 +139,52 @@ test(
           assert.deepEqual(beforeReview.history.userConfirmations, [])
           assert.deepEqual(beforeReview.history.modelingRuns, [])
 
-          const reviewResponse = await postJson(
+          const revisionResponse = await postJson(
             `${baseUrl}/api/product/reviews/${review.interactionId}`,
             {
               patchId: review.patchId,
               decisionKey: review.decisionKey,
+              decision: 'revise',
+              feedback: revisionFeedback,
+            },
+          )
+          assert.equal(revisionResponse.status, 200)
+          assert.deepEqual(
+            decodeProductReviewResponse(await revisionResponse.json()),
+            {
+              patchId: review.patchId,
+              decisionKey: review.decisionKey,
+              decision: 'revision_requested',
+              outcome: 'replacement_pending',
+              confirmedRevision: 0,
+              replayed: false,
+              continuation: 'continued',
+            },
+          )
+
+          const replacement = await trace.until(
+            (frame) =>
+              frame.type === 'review.replaced' &&
+              frame.replaces.interactionId === review.interactionId,
+          )
+          assert.equal(replacement.type, 'review.replaced')
+          assert.deepEqual(replacement.replaces, {
+            interactionId: review.interactionId,
+            patchId: review.patchId,
+            decisionKey: review.decisionKey,
+          })
+          assert.notEqual(replacement.interactionId, review.interactionId)
+          assert.notEqual(replacement.patchId, review.patchId)
+          assert.notEqual(replacement.decisionKey, review.decisionKey)
+          assert.equal(replacement.patch.status, 'pending')
+          assert.deepEqual(replacement.patch.changes, review.patch.changes)
+          assert.deepEqual(replacement.patch.evidence, review.patch.evidence)
+
+          const reviewResponse = await postJson(
+            `${baseUrl}/api/product/reviews/${replacement.interactionId}`,
+            {
+              patchId: replacement.patchId,
+              decisionKey: replacement.decisionKey,
               decision: 'accept',
             },
           )
@@ -150,8 +192,8 @@ test(
           assert.deepEqual(
             decodeProductReviewResponse(await reviewResponse.json()),
             {
-              patchId: review.patchId,
-              decisionKey: review.decisionKey,
+              patchId: replacement.patchId,
+              decisionKey: replacement.decisionKey,
               decision: 'accepted',
               outcome: 'applied',
               confirmedRevision: 1,
@@ -171,6 +213,12 @@ test(
             'plan.completed',
             'review.requested',
             'review.resolved',
+            'mcp_call.started',
+            'mcp_call.completed',
+            'plan.delta',
+            'plan.completed',
+            'review.replaced',
+            'review.resolved',
             'agent_message.completed',
             'operation.terminal',
           ])
@@ -188,7 +236,7 @@ test(
               (frame) =>
                 frame.type === 'mcp_call.completed' &&
                 frame.tool === 'propose_state_patch' &&
-                frame.patch.id === review.patchId,
+                frame.patch.id === replacement.patchId,
             ),
             true,
           )
@@ -197,6 +245,15 @@ test(
               (frame) =>
                 frame.type === 'review.resolved' &&
                 frame.interactionId === review.interactionId &&
+                frame.outcome === 'revised',
+            ),
+            true,
+          )
+          assert.equal(
+            frames.some(
+              (frame) =>
+                frame.type === 'review.resolved' &&
+                frame.interactionId === replacement.interactionId &&
                 frame.outcome === 'accepted',
             ),
             true,
@@ -211,10 +268,10 @@ test(
           assert.equal(terminal.validationOutcome, 'passed')
 
           const lateDuplicate = await postJson(
-            `${baseUrl}/api/product/reviews/${review.interactionId}`,
+            `${baseUrl}/api/product/reviews/${replacement.interactionId}`,
             {
-              patchId: review.patchId,
-              decisionKey: review.decisionKey,
+              patchId: replacement.patchId,
+              decisionKey: replacement.decisionKey,
               decision: 'accept',
             },
           )
@@ -229,7 +286,14 @@ test(
           const finalBootstrap = decodeProductBootstrap(
             await finalResponse.json(),
           )
-          assertFinalState(finalBootstrap, workspace, selected, terminal.runId)
+          assertFinalState(
+            finalBootstrap,
+            workspace,
+            selected,
+            terminal.runId,
+            review.patchId,
+            replacement.patchId,
+          )
 
           const encodedFrames = JSON.stringify(frames)
           for (const managedPath of [
@@ -260,14 +324,16 @@ test(
 
       await activeFixture.closed
       assert.equal(processGroupExists(activeFixture.processGroupId), false)
-      await activeFixture.waitForProviderRequests(4)
+      await activeFixture.waitForProviderRequests(6)
       const providerEvidence = await activeFixture.readProviderEvidence()
       assert.deepEqual(providerEvidence, {
-        requestCount: 4,
+        requestCount: 6,
         stages: [
           'exec_command',
           'mcp_proposal',
           'review_question',
+          'replacement_mcp_proposal',
+          'replacement_review_question',
           'terminal',
         ],
         managedSkillObserved: true,
@@ -276,8 +342,11 @@ test(
         scratchWriteObserved: true,
         selectedSourcesRead: true,
         proposalCommittedOutputObserved: true,
+        revisionRequestedOutputObserved: true,
+        replacementProposalCommittedOutputObserved: true,
         reviewAcceptedOutputObserved: true,
         planResponseServed: true,
+        replacementPlanResponseServed: true,
         terminalServed: true,
         failureCode: null,
       })
@@ -293,8 +362,19 @@ test(
         )
       }
     } finally {
-      await fixture?.dispose()
-      await materialized.cleanup()
+      const cleanupResults = await Promise.allSettled([
+        fixture?.dispose() ?? Promise.resolve(),
+        materialized.cleanup(),
+      ])
+      const cleanupErrors = cleanupResults.flatMap((result) =>
+        result.status === 'rejected' ? [result.reason] : [],
+      )
+      if (cleanupErrors.length > 0) {
+        throw new AggregateError(
+          cleanupErrors,
+          'Exact product actual-test cleanup failed',
+        )
+      }
     }
   },
 )
@@ -338,6 +418,8 @@ function assertFinalState(
   initialWorkspace: ReadyProductWorkspace,
   selected: readonly { readonly id: string; readonly digest: string }[],
   runId: string,
+  originalPatchId: string,
+  replacementPatchId: string,
 ): void {
   assert.equal(bootstrap.operationStatus, 'idle')
   assert.equal(bootstrap.workspace?.state, 'ready')
@@ -359,11 +441,19 @@ function assertFinalState(
     new Set(selected.map((material) => material.id)),
   )
 
-  assert.equal(bootstrap.history.statePatches.length, 1)
-  const patch = bootstrap.history.statePatches[0]
-  assert.ok(patch)
-  assert.equal(patch.status, 'applied')
-  assert.deepEqual(patch.applyOutcome, {
+  assert.equal(bootstrap.history.statePatches.length, 2)
+  const originalPatch = bootstrap.history.statePatches.find(
+    (patch) => patch.id === originalPatchId,
+  )
+  assert.ok(originalPatch)
+  assert.equal(originalPatch.status, 'superseded')
+  assert.equal(originalPatch.applyOutcome, null)
+  const replacementPatch = bootstrap.history.statePatches.find(
+    (patch) => patch.id === replacementPatchId,
+  )
+  assert.ok(replacementPatch)
+  assert.equal(replacementPatch.status, 'applied')
+  assert.deepEqual(replacementPatch.applyOutcome, {
     type: 'applied',
     assignmentId: assignment.id,
     resultingRevision: 1,
@@ -372,7 +462,7 @@ function assertFinalState(
   assert.equal(bootstrap.history.userConfirmations.length, 1)
   const confirmation = bootstrap.history.userConfirmations[0]
   assert.ok(confirmation)
-  assert.equal(confirmation.patchId, patch.id)
+  assert.equal(confirmation.patchId, replacementPatch.id)
   assert.equal(confirmation.decision, 'accepted')
   assert.equal(confirmation.outcome, 'applied')
   assert.equal(confirmation.assignmentId, assignment.id)

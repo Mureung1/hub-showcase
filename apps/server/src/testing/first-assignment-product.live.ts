@@ -32,6 +32,10 @@ import {
 
 import { materializeE2eSemesterWorkspace } from '../../../../scripts/semester-workspace-materializer.mjs'
 import { ASSIGNMENT_REVIEW_QUESTION } from '../state-patch-review.js'
+import {
+  LiveSignalInterruptedError,
+  runWithLiveSignalAbort,
+} from './live-signal.js'
 
 const SERVER_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -75,6 +79,7 @@ type LiveFailureStage =
   | 'durable_outcome'
   | 'fixture_material'
   | 'http_response'
+  | 'interrupted'
   | 'timeout'
 
 type LiveTerminalDiagnostic = {
@@ -113,11 +118,12 @@ async function main(): Promise<void> {
     | { readonly status: 'harness_error' }
   let exitCode: number
   try {
-    const authSeed = await validateArguments(process.argv.slice(2))
-    const abortController = new AbortController()
-    await within(
-      runLiveTrace(authSeed, abortController.signal),
-      () => abortController.abort(),
+    await runWithLiveSignalAbort(
+      async (signal, abort) => {
+        const authSeed = await validateArguments(process.argv.slice(2))
+        signal.throwIfAborted()
+        await within(runLiveTrace(authSeed, signal), abort)
+      },
     )
     result = { status: 'passed', gate: 'first_assignment_product' }
     exitCode = EXIT.passed
@@ -125,13 +131,23 @@ async function main(): Promise<void> {
     if (error instanceof LivePrerequisiteError) {
       result = { status: 'blocked', prerequisite: error.prerequisite }
       exitCode = EXIT.blocked
-    } else if (error instanceof LiveTraceFailedError) {
+    } else if (
+      error instanceof LiveTraceFailedError ||
+      error instanceof LiveSignalInterruptedError
+    ) {
       result = {
         status: 'failed',
         gate: 'first_assignment_product',
-        stage: error.stage,
-        terminal: error.terminal,
-        missingActivities: error.missingActivities,
+        stage:
+          error instanceof LiveSignalInterruptedError
+            ? 'interrupted'
+            : error.stage,
+        terminal:
+          error instanceof LiveSignalInterruptedError ? null : error.terminal,
+        missingActivities:
+          error instanceof LiveSignalInterruptedError
+            ? []
+            : error.missingActivities,
       }
       exitCode = EXIT.failed
     } else {
@@ -151,14 +167,14 @@ async function runLiveTrace(
   const commandRoot = await mkdtemp(
     path.join(tmpdir(), 'ay-ple-first-assignment-live-'),
   )
-  await chmod(commandRoot, 0o700)
-  const materialized = await materializeE2eSemesterWorkspace()
+  let materialized:
+    | Awaited<ReturnType<typeof materializeE2eSemesterWorkspace>>
+    | undefined
   let runtime: CodexProductCapableRuntime | undefined
-  const closeRuntime = () => {
-    void runtime?.close()
-  }
-  signal.addEventListener('abort', closeRuntime, { once: true })
   try {
+    await chmod(commandRoot, 0o700)
+    materialized = await materializeE2eSemesterWorkspace()
+    signal.throwIfAborted()
     const roots = await createFreshRoots(commandRoot)
     assertDisjointRoots([
       authSeed.root,
@@ -224,14 +240,20 @@ async function runLiveTrace(
       },
     )
   } finally {
-    signal.removeEventListener('abort', closeRuntime)
-    const cleanup = await Promise.allSettled([
-      runtime?.close() ?? Promise.resolve(),
-      materialized.cleanup(),
+    const failures: unknown[] = []
+    try {
+      await runtime?.close()
+    } catch (error) {
+      failures.push(error)
+    }
+    const rootCleanup = await Promise.allSettled([
+      ...(materialized ? [materialized.cleanup()] : []),
       rm(commandRoot, { recursive: true, force: true }),
     ])
-    const failures = cleanup.flatMap((result) =>
-      result.status === 'rejected' ? [result.reason] : [],
+    failures.push(
+      ...rootCleanup.flatMap((result) =>
+        result.status === 'rejected' ? [result.reason] : [],
+      ),
     )
     if (failures.length > 0) {
       throw new AggregateError(failures, 'Live trace cleanup failed')
@@ -740,16 +762,16 @@ function throwIfProviderBlocked(
   terminal: LiveTerminalDiagnostic | null,
 ): void {
   const code = terminal?.failureCode
-  if (code === 'unauthorized' || code === 'usageLimitExceeded') {
+  if (code === 'unauthorized' || code === 'usage_limit_exceeded') {
     throw new LivePrerequisiteError('provider_account')
   }
   if (
-    code === 'serverOverloaded' ||
-    code === 'internalServerError' ||
-    code === 'httpConnectionFailed' ||
-    code === 'responseStreamConnectionFailed' ||
-    code === 'responseStreamDisconnected' ||
-    code === 'responseTooManyFailedAttempts'
+    code === 'server_overloaded' ||
+    code === 'internal_server_error' ||
+    code === 'http_connection_failed' ||
+    code === 'response_stream_connection_failed' ||
+    code === 'response_stream_disconnected' ||
+    code === 'response_too_many_failed_attempts'
   ) {
     throw new LivePrerequisiteError('external_provider')
   }

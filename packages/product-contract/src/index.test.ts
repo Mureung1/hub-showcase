@@ -495,6 +495,7 @@ test('request decoders keep the current literal and JSON envelope closed', () =>
   )
   for (const invalid of [
     { ...assignment, extra: true },
+    { ...assignment, recipeVersion: '1' },
     { ...assignment, materials: [materials[0], materials[0]] },
     { text: ' ', materials: [] },
     { text: 'a'.repeat(16 * 1024), materials: [] },

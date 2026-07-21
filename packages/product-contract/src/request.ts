@@ -12,7 +12,7 @@ import {
   utf8Bytes,
 } from './contract-values.js'
 
-export const FIRST_ASSIGNMENT_RECIPE_VERSION = '1'
+export const FIRST_ASSIGNMENT_RECIPE_VERSION = '2'
 export const FIRST_ASSIGNMENT_ARGUMENTS = { timezone: 'Asia/Seoul' } as const
 
 export type ProductMaterialSelection = {

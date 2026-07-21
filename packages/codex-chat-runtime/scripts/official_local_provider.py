@@ -32,10 +32,13 @@ from app_server_helpers import streaming_response
 _PRODUCT_EXEC_CALL_ID = "call-product-exec"
 _PRODUCT_MCP_CALL_ID = "call-product-proposal"
 _PRODUCT_REVIEW_CALL_ID = "call-product-review"
+_PRODUCT_REPLACEMENT_MCP_CALL_ID = "call-product-replacement-proposal"
+_PRODUCT_REPLACEMENT_REVIEW_CALL_ID = "call-product-replacement-review"
 _PRODUCT_MCP_NAMESPACE = "mcp__ay_ple"
 _PRODUCT_MCP_NAME = "propose_state_patch"
 _PRODUCT_MARKER_NAME = "exact-runtime-product-command.txt"
 _PRODUCT_MARKER_CONTENT = "exact-runtime-product-command-ok\n"
+_PRODUCT_REVISION_FEEDBACK = "제안 설명을 더 명확하게 작성해 주세요."
 _PRODUCT_REVIEW_QUESTION = {
     "id": "assignment_review_decision",
     "header": "변경 제안 검토",
@@ -184,8 +187,11 @@ def _empty_product_journal() -> dict[str, Any]:
         "scratchWriteObserved": False,
         "selectedSourcesRead": False,
         "proposalCommittedOutputObserved": False,
+        "revisionRequestedOutputObserved": False,
+        "replacementProposalCommittedOutputObserved": False,
         "reviewAcceptedOutputObserved": False,
         "planResponseServed": False,
+        "replacementPlanResponseServed": False,
         "terminalServed": False,
         "failureCode": None,
     }
@@ -303,6 +309,30 @@ def _json_object_line(output: str, failure_code: str) -> dict[str, Any]:
     raise _ProductProviderFailure(failure_code)
 
 
+def _review_answers(body: dict[str, Any], call_id: str) -> list[str]:
+    output = _function_output(body, call_id)
+    try:
+        answer = json.loads(output)
+    except json.JSONDecodeError:
+        raise _ProductProviderFailure("review_answer_output_invalid") from None
+    if not isinstance(answer, dict) or set(answer) != {"answers"}:
+        raise _ProductProviderFailure("review_answer_output_invalid")
+    answer_map = answer["answers"]
+    if not isinstance(answer_map, dict) or set(answer_map) != {
+        "assignment_review_decision"
+    }:
+        raise _ProductProviderFailure("review_answer_output_invalid")
+    question_answer = answer_map["assignment_review_decision"]
+    if not isinstance(question_answer, dict) or set(question_answer) != {"answers"}:
+        raise _ProductProviderFailure("review_answer_output_invalid")
+    answers = question_answer["answers"]
+    if not isinstance(answers, list) or not all(
+        isinstance(value, str) for value in answers
+    ):
+        raise _ProductProviderFailure("review_answer_output_invalid")
+    return answers
+
+
 def _response_with_call(
     response_id: str,
     call_id: str,
@@ -402,6 +432,7 @@ class _ProductController:
         self._lock = threading.Lock()
         self._scratch_path: Path | None = None
         self._proposal: dict[str, Any] | None = None
+        self._replacement_proposal: dict[str, Any] | None = None
         self._publish()
 
     def response_for(self, request: CapturedResponsesRequest) -> MockSseResponse:
@@ -422,6 +453,12 @@ class _ProductController:
                     response = self._serve_review_question(body)
                     self._record_stage("review_question")
                 elif request_index == 4:
+                    response = self._serve_replacement_mcp_proposal(body)
+                    self._record_stage("replacement_mcp_proposal")
+                elif request_index == 5:
+                    response = self._serve_replacement_review_question(body)
+                    self._record_stage("replacement_review_question")
+                elif request_index == 6:
                     response = self._serve_terminal(body)
                     self._record_stage("terminal")
                 else:
@@ -746,17 +783,87 @@ class _ProductController:
             )
         )
 
+    def _serve_replacement_mcp_proposal(
+        self,
+        body: dict[str, Any],
+    ) -> MockSseResponse:
+        if self._proposal is None:
+            raise _ProductProviderFailure("provider_stage_invalid")
+        answers = _review_answers(body, _PRODUCT_REVIEW_CALL_ID)
+        if (
+            len(answers) != 3
+            or answers[0] != "AY에게 수정 요청"
+            or answers[1] != _PRODUCT_REVISION_FEEDBACK
+        ):
+            raise _ProductProviderFailure("review_revision_output_invalid")
+        replacement_match = re.fullmatch(
+            r"replacement requestKey: (proposal_[0-9a-f]{32})",
+            answers[2],
+        )
+        if replacement_match is None:
+            raise _ProductProviderFailure("replacement_request_key_invalid")
+        replacement_request_key = replacement_match.group(1)
+        if replacement_request_key == self._proposal["requestKey"]:
+            raise _ProductProviderFailure("replacement_request_key_reused")
+        self._replacement_proposal = {
+            **self._proposal,
+            "requestKey": replacement_request_key,
+            "summary": "수정 요청을 반영해 선택 자료의 Assignment 근거를 다시 확인했습니다.",
+        }
+        self._journal["revisionRequestedOutputObserved"] = True
+        return _namespaced_response_with_call(
+            "product-replacement-proposal-response",
+            _PRODUCT_REPLACEMENT_MCP_CALL_ID,
+            _PRODUCT_MCP_NAMESPACE,
+            _PRODUCT_MCP_NAME,
+            self._replacement_proposal,
+        )
+
+    def _serve_replacement_review_question(
+        self,
+        body: dict[str, Any],
+    ) -> MockSseResponse:
+        if self._replacement_proposal is None:
+            raise _ProductProviderFailure("provider_stage_invalid")
+        _function_output(body, _PRODUCT_REPLACEMENT_MCP_CALL_ID)
+        self._journal["replacementProposalCommittedOutputObserved"] = True
+        plan = (
+            "<proposed_plan>\n"
+            "- 수정 요청을 반영해 Assignment StatePatch를 다시 제안했습니다.\n"
+            "- 앱의 대체 Assignment Review 결정을 기다립니다.\n"
+            "</proposed_plan>"
+        )
+        plan_parts = [
+            "<proposed_plan>\n",
+            "- 수정 요청을 반영해 Assignment StatePatch를 다시 제안했습니다.\n",
+            "- 앱의 대체 Assignment Review 결정을 기다립니다.\n",
+            "</proposed_plan>",
+        ]
+        self._journal["replacementPlanResponseServed"] = True
+        return MockSseResponse(
+            body=sse(
+                [
+                    ev_response_created("product-replacement-review-response"),
+                    ev_message_item_added("product-replacement-plan-message"),
+                    *[ev_output_text_delta(part) for part in plan_parts],
+                    ev_assistant_message("product-replacement-plan-message", plan),
+                    ev_function_call(
+                        _PRODUCT_REPLACEMENT_REVIEW_CALL_ID,
+                        "request_user_input",
+                        json.dumps(
+                            _PRODUCT_REQUEST_USER_INPUT,
+                            ensure_ascii=False,
+                            separators=(",", ":"),
+                        ),
+                    ),
+                    ev_completed("product-replacement-review-response"),
+                ]
+            )
+        )
+
     def _serve_terminal(self, body: dict[str, Any]) -> MockSseResponse:
-        output = _function_output(body, _PRODUCT_REVIEW_CALL_ID)
-        try:
-            answer = json.loads(output)
-        except json.JSONDecodeError:
-            raise _ProductProviderFailure("review_answer_output_invalid") from None
-        if answer != {
-            "answers": {
-                "assignment_review_decision": {"answers": ["수락"]},
-            }
-        }:
+        answers = _review_answers(body, _PRODUCT_REPLACEMENT_REVIEW_CALL_ID)
+        if answers != ["수락"]:
             raise _ProductProviderFailure("review_answer_output_invalid")
         self._journal["reviewAcceptedOutputObserved"] = True
         self._journal["terminalServed"] = True

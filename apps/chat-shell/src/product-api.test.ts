@@ -472,7 +472,7 @@ test('first Assignment explicit retry streams the exact prior Run request', asyn
   const runId = `run_${'d'.repeat(32)}`
   const request = {
     courseId,
-    recipeVersion: '1',
+    recipeVersion: '2',
     arguments: { timezone: 'Asia/Seoul' },
     materials: [
       { id: `material_${'e'.repeat(32)}`, digest: '1'.repeat(64) },

@@ -55,8 +55,11 @@ const PROVIDER_EVIDENCE_KEYS = [
   'scratchWriteObserved',
   'selectedSourcesRead',
   'proposalCommittedOutputObserved',
+  'revisionRequestedOutputObserved',
+  'replacementProposalCommittedOutputObserved',
   'reviewAcceptedOutputObserved',
   'planResponseServed',
+  'replacementPlanResponseServed',
   'terminalServed',
   'failureCode',
 ] as const
@@ -70,8 +73,11 @@ export interface ExactProductProviderEvidence {
   readonly scratchWriteObserved: boolean
   readonly selectedSourcesRead: boolean
   readonly proposalCommittedOutputObserved: boolean
+  readonly revisionRequestedOutputObserved: boolean
+  readonly replacementProposalCommittedOutputObserved: boolean
   readonly reviewAcceptedOutputObserved: boolean
   readonly planResponseServed: boolean
+  readonly replacementPlanResponseServed: boolean
   readonly terminalServed: boolean
   readonly failureCode: string | null
 }
@@ -381,11 +387,23 @@ async function readProviderEvidence(
       parsed,
       'proposalCommittedOutputObserved',
     ),
+    revisionRequestedOutputObserved: requireBoolean(
+      parsed,
+      'revisionRequestedOutputObserved',
+    ),
+    replacementProposalCommittedOutputObserved: requireBoolean(
+      parsed,
+      'replacementProposalCommittedOutputObserved',
+    ),
     reviewAcceptedOutputObserved: requireBoolean(
       parsed,
       'reviewAcceptedOutputObserved',
     ),
     planResponseServed: requireBoolean(parsed, 'planResponseServed'),
+    replacementPlanResponseServed: requireBoolean(
+      parsed,
+      'replacementPlanResponseServed',
+    ),
     terminalServed: requireBoolean(parsed, 'terminalServed'),
     failureCode: requireNullableString(parsed, 'failureCode'),
   }

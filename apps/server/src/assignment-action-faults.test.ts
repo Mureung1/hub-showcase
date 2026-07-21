@@ -1005,7 +1005,7 @@ test('recipe drift after admission settles not accepted before native start', as
     fixture.appDataRoot,
     'modeling-recipes',
     'first-assignment',
-    '1',
+    FIRST_ASSIGNMENT_RECIPE_VERSION,
     'SKILL.md',
   )
   const externalRecipePath = path.join(

@@ -126,7 +126,7 @@ Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Or
 
 `npm run test:codex-chat-actual -w @ay-ple/server`는 materialized macOS arm64 production runtime을 요구하는 명시적 actual-child gate다. 실제 HTTP mutation으로 verified Python worker와 provider-free fake native App Server child를 시작하고, Server shutdown이 새 TCP intake를 먼저 거부한 뒤 runtime close와 전체 process-group reap을 마치기 전에는 resolve하지 않는지 검증한다. Ignored bundle을 요구하므로 일반 `npm test`에는 포함하지 않는다.
 
-`npm run test:first-assignment-product-actual -w @ay-ple/server`는 exact local Responses provider, verified production Runtime, managed Recipe·Skill과 real Server HTTP·private MCP host를 통과하는 product actual gate다. Process-fixed legacy workspace와 active ready `SemesterWorkspace`를 분리하고, 후자의 exact native `cwd`, selected source read, scratch에서의 representative Python/command use, `auto_review + workspace_write`, MCP proposal → Plan Review answer → same-Turn terminal, durable confirmed outcome과 process-group disappearance를 검증한다. Sanitized provider journal과 public frame은 credential·absolute path·raw identity를 남기지 않는다.
+`npm run test:first-assignment-product-actual -w @ay-ple/server`는 exact local Responses provider, verified production Runtime, managed Recipe·Skill과 real Server HTTP·private MCP host를 통과하는 product actual gate다. Process-fixed legacy workspace와 active ready `SemesterWorkspace`를 분리하고, 후자의 exact native `cwd`, selected source read, scratch에서의 representative Python/command use, `auto_review + workspace_write`, 첫 MCP proposal → Plan → Review 수정 요청 → fresh request key의 replacement MCP proposal → Plan → 두 번째 Review 수락 → same-Turn terminal, durable confirmed outcome과 process-group disappearance를 검증한다. Sanitized provider journal과 public frame은 credential·absolute path·raw identity를 남기지 않는다.
 
 실제 provider를 사용하는 opt-in gate는 다음과 같다.
 
@@ -134,7 +134,7 @@ Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Or
 npm run trace:first-assignment-live -w @ay-ple/server -- --codex-home /absolute/path/to/isolated-auth-seed
 ```
 
-Auth seed는 caller가 명시한 owner-only non-symlink directory여야 하고 exact `auth.json`·`config.toml` roster, directory `0700`·file `0600`을 만족해야 한다. Harness는 credential content·token·digest를 출력하지 않고 auth만 fresh `CODEX_HOME`에 복사한 뒤 controlled config와 fresh·disjoint `HOME`·SQLite·temp·appDataRoot·SemesterWorkspace를 사용한다. Success는 `{"status":"passed","gate":"first_assignment_product"}`로 종료하며 auth/account/provider prerequisite 부재는 exit code 3의 `blocked`, product mismatch는 `failed`로 별도 보고한다. Ticket 009에서 이 격리 gate의 complete Assignment action·Review·confirmed outcome과 clean shutdown을 green으로 확인했다. 이 opt-in command도 일반 `npm test`에는 포함하지 않는다.
+Auth seed는 caller가 명시한 owner-only non-symlink directory여야 하고 exact `auth.json`·`config.toml` roster, directory `0700`·file `0600`을 만족해야 한다. Harness는 credential content·token·digest를 출력하지 않고 auth만 fresh `CODEX_HOME`에 복사한 뒤 controlled config와 fresh·disjoint `HOME`·SQLite·temp·appDataRoot·SemesterWorkspace를 사용한다. Success는 `{"status":"passed","gate":"first_assignment_product"}`로 종료하며 auth/account/provider prerequisite 부재는 exit code 3의 `blocked`, product mismatch는 `failed`로 별도 보고한다. Native provider failure code는 durable Run에 쓰기 전에 safe snake_case로 정규화하므로 account/provider blocker가 execution guard failure로 바뀌지 않는다. `SIGINT`·`SIGTERM`도 Runtime reap을 먼저 기다린 뒤 fresh root를 정리하고 종료한다. Ticket 009에서 이 격리 gate의 complete Assignment action·Review·confirmed outcome과 clean shutdown을 green으로 확인했다. 이 opt-in command도 일반 `npm test`에는 포함하지 않는다.
 
 일반 package 검증은 다음 명령으로 실행한다.
 
