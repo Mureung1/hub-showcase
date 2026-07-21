@@ -62,7 +62,7 @@ export interface MultiDayObjectiveResult {
   score: number;
 }
 
-const SLEEP_SHORTFALL_PENALTY_PER_HOUR = 0.1; // 근거 없는 근사치(2026-07-21) — verifyMinSleepPenalty.ts로 조정
+const SLEEP_SHORTFALL_PENALTY_PER_HOUR = 0.5; // 근거 없는 근사치(2026-07-21) — verifyMinSleepPenalty.ts로 조정
 
 export function scoreMultiDaySchedule(input: MultiDayObjectiveInput): MultiDayObjectiveResult {
   const {
