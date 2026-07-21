@@ -175,19 +175,34 @@ export default function Review() {
             <div className="space-y-6">
               <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
                 {/* 비디오 플레이어 */}
-                <div className="relative bg-black rounded-2xl overflow-hidden aspect-video mb-6 flex items-center justify-center group">
-                  <img
-                    src={videoData?.thumbnail_url || mockVideoData.thumbnail_url}
-                    alt="Video Thumbnail"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-all flex items-center justify-center">
-                    <Play
-                      size={64}
-                      className="text-white opacity-80 group-hover:opacity-100 transition-opacity"
-                      fill="white"
-                    />
-                  </div>
+                <div className="relative bg-black rounded-2xl overflow-hidden mb-6">
+                  {videoData?.video_url ? (
+                    <video
+                      width="100%"
+                      height="auto"
+                      controls
+                      poster={videoData?.thumbnail_url}
+                      className="w-full rounded-2xl"
+                    >
+                      <source src={videoData.video_url} type="video/mp4" />
+                      브라우저가 HTML5 video를 지원하지 않습니다.
+                    </video>
+                  ) : (
+                    <div className="relative bg-black rounded-2xl overflow-hidden aspect-video flex items-center justify-center group">
+                      <img
+                        src={mockVideoData.thumbnail_url}
+                        alt="Video Thumbnail"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-all flex items-center justify-center">
+                        <Play
+                          size={64}
+                          className="text-white opacity-80 group-hover:opacity-100 transition-opacity"
+                          fill="white"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* 비디오 정보 */}

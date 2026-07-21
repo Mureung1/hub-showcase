@@ -1,4 +1,9 @@
 import { getSupabaseClient } from '../db/supabaseClient.js';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * AI 파이프라인 오케스트레이션
@@ -89,20 +94,29 @@ async function runStep1(jobId) {
 
     let result;
     try {
-      const { stdout } = await execFileAsync('python', [
-        path.resolve('ai-pipeline/yolov8_crop.py'),
+      const pythonScriptPath = path.resolve(__dirname, '../../ai-pipeline/yolov8_crop.py');
+      console.log('[Step 1] YOLOv8 스크립트 경로:', pythonScriptPath);
+      console.log('[Step 1] 이미지 경로:', imagePath);
+
+      const { stdout, stderr } = await execFileAsync('python', [
+        pythonScriptPath,
         imagePath
       ]);
+
+      if (stderr) {
+        console.log('[Step 1] Python stderr:', stderr);
+      }
+
       result = JSON.parse(stdout);
+      console.log('[Step 1] YOLOv8 결과:', result);
     } catch (pythonError) {
-      console.warn('[Step 1] YOLOv8 실행 실패, Mock 데이터 사용:', pythonError.message);
-      // 실패 시 Mock 데이터
-      result = {
-        status: 'success',
-        cropped_image_path: 'https://mock.example.com/cropped.png',
-        confidence: 0.95,
-        product_label: '테스트 상품'
-      };
+      console.error('[Step 1] YOLOv8 실행 에러:', {
+        message: pythonError.message,
+        stderr: pythonError.stderr,
+        stdout: pythonError.stdout,
+        code: pythonError.code
+      });
+      throw new Error(`YOLOv8 실행 실패: ${pythonError.message}`);
     }
 
     if (result.status !== 'success') {
@@ -232,22 +246,31 @@ async function runStep2(jobId) {
 
     let result;
     try {
-      const { stdout } = await execFileAsync('python', [
-        path.resolve('ai-pipeline/kobert_caption.py'),
+      const pythonScriptPath = path.resolve(__dirname, '../../ai-pipeline/kobert_caption.py');
+      console.log('[Step 2] KoBERT 스크립트 경로:', pythonScriptPath);
+      console.log('[Step 2] 입력값:', { trendHashtag, productLabel, storeCategory });
+
+      const { stdout, stderr } = await execFileAsync('python', [
+        pythonScriptPath,
         trendHashtag,
         productLabel,
         storeCategory
       ]);
+
+      if (stderr) {
+        console.log('[Step 2] Python stderr:', stderr);
+      }
+
       result = JSON.parse(stdout);
+      console.log('[Step 2] KoBERT 결과:', result);
     } catch (pythonError) {
-      console.warn('[Step 2] KoBERT 실행 실패, Mock 데이터 사용:', pythonError.message);
-      // 실패 시 Mock 데이터
-      result = {
-        status: 'success',
-        caption: `✨ ${trendHashtag}로 핫한 ${productLabel}! 🎉`,
-        hashtags: [trendHashtag, '#맛집', '#신메뉴'],
-        similarity_score: 0.85
-      };
+      console.error('[Step 2] KoBERT 실행 에러:', {
+        message: pythonError.message,
+        stderr: pythonError.stderr,
+        stdout: pythonError.stdout,
+        code: pythonError.code
+      });
+      throw new Error(`KoBERT 실행 실패: ${pythonError.message}`);
     }
 
     if (result.status !== 'success') {
@@ -317,21 +340,30 @@ async function runStep3(jobId) {
 
     let result;
     try {
-      const { stdout } = await execFileAsync('python', [
-        path.resolve('ai-pipeline/tts_generate.py'),
+      const pythonScriptPath = path.resolve(__dirname, '../../ai-pipeline/tts_generate.py');
+      console.log('[Step 3] TTS 스크립트 경로:', pythonScriptPath);
+      console.log('[Step 3] 입력값 - 자막:', caption);
+
+      const { stdout, stderr } = await execFileAsync('python', [
+        pythonScriptPath,
         caption,
         'ko'
       ]);
+
+      if (stderr) {
+        console.log('[Step 3] Python stderr:', stderr);
+      }
+
       result = JSON.parse(stdout);
+      console.log('[Step 3] TTS 결과:', result);
     } catch (pythonError) {
-      console.warn('[Step 3] TTS 실행 실패, Mock 데이터 사용:', pythonError.message);
-      // 실패 시 Mock 데이터
-      result = {
-        status: 'success',
-        audio_path: 'https://mock.example.com/audio.mp3',
-        file_size: 45000,
-        duration_estimate: 6.5
-      };
+      console.error('[Step 3] TTS 실행 에러:', {
+        message: pythonError.message,
+        stderr: pythonError.stderr,
+        stdout: pythonError.stdout,
+        code: pythonError.code
+      });
+      throw new Error(`TTS 실행 실패: ${pythonError.message}`);
     }
 
     if (result.status !== 'success') {
@@ -464,7 +496,10 @@ async function runStep4(jobId) {
     const hashtags = job.step2_hashtags || ['#트렌드'];
 
     // URL 경로를 절대 파일 경로로 변환
+    const { execFile } = await import('child_process');
+    const { promisify } = await import('util');
     const path = await import('path');
+    const execFileAsync = promisify(execFile);
     if (imageUrl && imageUrl.startsWith('/ai-output/')) {
       const filename = imageUrl.replace('/ai-output/', '');
       imageUrl = path.resolve(process.cwd(), 'ai-pipeline/output', filename);
@@ -481,15 +516,40 @@ async function runStep4(jobId) {
       hashtags
     });
 
-    // Mock 데이터로 바로 진행 (FFmpeg Python 스크립트 실행 건너뜀)
-    console.log('[Step 4] 임시로 Mock 데이터 사용 (FFmpeg 구현 예정)');
-    const result = {
-      status: 'success',
-      video_path: '/ai-output/video_mock.mp4',
-      thumbnail_path: '/ai-output/thumbnail_mock.jpg',
-      duration: 15,
-      resolution: '1080x1920'
-    };
+    // 2. FFmpeg Python 스크립트 실행
+    let result;
+    try {
+      const pythonScriptPath = path.resolve(__dirname, '../../ai-pipeline/ffmpeg_render.py');
+      console.log('[Step 4] FFmpeg 스크립트 경로:', pythonScriptPath);
+      console.log('[Step 4] 입력값:', {
+        imageUrl: imageUrl || 'null',
+        audioUrl: audioUrl || 'null',
+        caption
+      });
+
+      const { stdout, stderr } = await execFileAsync('python', [
+        pythonScriptPath,
+        imageUrl || '',
+        audioUrl || '',
+        caption || '',
+        JSON.stringify(hashtags || [])
+      ]);
+
+      if (stderr) {
+        console.log('[Step 4] Python stderr:', stderr);
+      }
+
+      result = JSON.parse(stdout);
+      console.log('[Step 4] FFmpeg 결과:', result);
+    } catch (pythonError) {
+      console.error('[Step 4] FFmpeg 실행 에러:', {
+        message: pythonError.message,
+        stderr: pythonError.stderr,
+        stdout: pythonError.stdout,
+        code: pythonError.code
+      });
+      throw new Error(`FFmpeg 실행 실패: ${pythonError.message}`);
+    }
 
     // 3. 영상 파일 경로 처리
     let videoUrl = result.video_path;

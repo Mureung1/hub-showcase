@@ -1,5 +1,5 @@
-// 백엔드 서버 주소 (개발 환경)
-const API_BASE = 'http://localhost:5000/api';
+// 백엔드 서버 주소 (Vite 프록시 사용)
+const API_BASE = '/api';
 
 export async function saveStoreInfo(data) {
   try {
