@@ -34,6 +34,7 @@ function App() {
 
   function handleSelectJob(job) {
     setSelectedJob(job);
+    setDraftError('');
     setStep('detail');
   }
 
