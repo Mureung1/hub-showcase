@@ -146,3 +146,12 @@ export function calculateProgress(tasks) {
 export function isTaskStatus(value) {
   return Object.values(TASK_STATUS).includes(value)
 }
+
+/**
+ * Checks whether a value is part of the shared project status contract.
+ * @param {unknown} value
+ * @returns {value is ProjectStatus}
+ */
+export function isProjectStatus(value) {
+  return Object.values(PROJECT_STATUS).includes(value)
+}

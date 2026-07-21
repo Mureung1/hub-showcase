@@ -17,10 +17,13 @@ export function NewProjectModal({ onClose }) {
   const { actions } = useTeamFlow()
   const [values, setValues] = useState({ name: '', description: '', startDate: '', endDate: '', status: PROJECT_STATUS.IN_PROGRESS })
   const [errors, setErrors] = useState({})
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   function change(key, value) {
     setValues((current) => ({ ...current, [key]: value }))
     setErrors((current) => ({ ...current, [key]: undefined }))
+    setSubmitError('')
   }
 
   async function submit(event) {
@@ -32,8 +35,15 @@ export function NewProjectModal({ onClose }) {
       setErrors(nextErrors)
       return
     }
-    await actions.createProject({ ...values, name: values.name.trim(), description: values.description.trim() })
-    onClose()
+    setSubmitting(true)
+    setSubmitError('')
+    try {
+      await actions.createProject({ ...values, name: values.name.trim(), description: values.description.trim() })
+      onClose()
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : '프로젝트를 만들지 못했습니다.')
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -42,12 +52,13 @@ export function NewProjectModal({ onClose }) {
       onClose={onClose}
       footer={(
         <>
-          <button type="button" className={`${forms.footerButton} ${forms.cancelButton}`} onClick={onClose}>취소</button>
-          <button type="submit" form="new-project-form" className={`${forms.footerButton} ${forms.submitButton}`} disabled={!values.name.trim()}>프로젝트 만들기</button>
+          <button type="button" className={`${forms.footerButton} ${forms.cancelButton}`} onClick={onClose} disabled={submitting}>취소</button>
+          <button type="submit" form="new-project-form" className={`${forms.footerButton} ${forms.submitButton}`} disabled={submitting || !values.name.trim()}>{submitting ? '생성 중...' : '프로젝트 만들기'}</button>
         </>
       )}
     >
-      <form id="new-project-form" className={forms.form} onSubmit={submit}>
+      <form id="new-project-form" className={forms.form} onSubmit={submit} aria-busy={submitting}>
+        {submitError ? <p role="alert" className={forms.error}>{submitError}</p> : null}
         <label className={forms.field}>
           <span className={forms.label}>프로젝트 이름 <em>*</em></span>
           <input className={`${forms.input} ${errors.name ? forms.errorInput : ''}`} value={values.name} onChange={(event) => change('name', event.target.value)} placeholder="예: 교내 해커톤 팀 프로젝트" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'project-name-error' : undefined} />

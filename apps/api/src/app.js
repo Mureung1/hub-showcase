@@ -1,12 +1,12 @@
 import express from 'express'
 
-import { createTaskRouter } from './tasks/taskRoutes.js'
+import { createTeamFlowRouter } from './teamflow/teamFlowRoutes.js'
 
 /**
  * Creates the TeamFlow API application without binding a network port.
  * Keeping construction separate makes the service straightforward to test.
  */
-export function createApp({ taskRepository } = {}) {
+export function createApp({ authVerifier, repositoryFactory, demoRepository } = {}) {
   const app = express()
 
   app.disable('x-powered-by')
@@ -19,8 +19,8 @@ export function createApp({ taskRepository } = {}) {
     })
   })
 
-  if (taskRepository) {
-    app.use('/api/tasks', createTaskRouter({ taskRepository }))
+  if (authVerifier && repositoryFactory && demoRepository) {
+    app.use('/api', createTeamFlowRouter({ authVerifier, repositoryFactory, demoRepository }))
   }
 
   return app

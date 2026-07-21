@@ -1,4 +1,4 @@
-import { AI_MEMBER_ID, CURRENT_USER_ID, initialAiSettings, initialMembers, initialNotes, initialProjects, initialResources, initialTasks } from './mockData.js'
+import { AI_MEMBER_ID, aiHistory, CURRENT_USER_ID, initialAiSettings, initialMembers, initialNotes, initialProjects, initialResources, initialTasks } from './teamFlowFixture.js'
 
 let sequence = 1000
 
@@ -6,10 +6,9 @@ const nextId = (prefix) => `${prefix}-${Date.now()}-${sequence++}`
 const clone = (value) => structuredClone(value)
 
 /**
- * Session-only repository. Its method surface is intentionally API-shaped so
- * an Express implementation can replace it without changing page components.
+ * Mutable in-memory repository used only by component tests.
  */
-export const mockTeamFlowRepository = {
+export const testTeamFlowRepository = {
   load() {
     return Promise.resolve(clone({
       projects: initialProjects,
@@ -18,8 +17,11 @@ export const mockTeamFlowRepository = {
       notes: initialNotes,
       resources: initialResources,
       aiSettings: initialAiSettings,
+      aiHistory,
       currentUserId: CURRENT_USER_ID,
       aiMemberId: AI_MEMBER_ID,
+      accessMode: 'authenticated',
+      capabilities: { projects: true, members: true, tasks: true, notes: true, resources: true, ai: true },
     }))
   },
 

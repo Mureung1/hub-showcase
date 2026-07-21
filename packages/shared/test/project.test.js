@@ -3,8 +3,10 @@ import test from 'node:test'
 
 import {
   calculateProgress,
+  isProjectStatus,
   isTaskStatus,
   normalizeProgress,
+  PROJECT_STATUS,
   TASK_STATUS,
 } from '../src/project.js'
 
@@ -33,4 +35,9 @@ test('isTaskStatus accepts only shared task status values', () => {
   assert.equal(isTaskStatus(TASK_STATUS.COMPLETED), true)
   assert.equal(isTaskStatus('deleted'), false)
   assert.equal(isTaskStatus(null), false)
+})
+
+test('isProjectStatus accepts only shared project status values', () => {
+  assert.equal(isProjectStatus(PROJECT_STATUS.IN_PROGRESS), true)
+  assert.equal(isProjectStatus('archived'), false)
 })

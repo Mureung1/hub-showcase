@@ -8,11 +8,11 @@ import { selectProjectSummaries } from '../../state/selectors.js'
 import styles from './ProjectListPage.module.css'
 
 /**
- * Project overview route backed by the current mock repository.
+ * Project overview backed by the authenticated API or the read-only demo repository.
  */
 export function ProjectListPage() {
   const [query, setQuery] = useState('')
-  const { state } = useTeamFlow()
+  const { state, capabilities } = useTeamFlow()
   const navigate = useNavigate()
   const projects = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('ko-KR')
@@ -42,7 +42,7 @@ export function ProjectListPage() {
 
       <div className={styles.results} aria-live="polite">
         {projects.length === 0 ? (
-          <p className={styles.message}>검색 결과가 없습니다.</p>
+          <div className={styles.message}><strong>{query ? '검색 결과가 없습니다.' : '아직 프로젝트가 없습니다.'}</strong><span>{query ? '다른 검색어를 입력해 보세요.' : capabilities.projects ? '왼쪽의 새 프로젝트 버튼으로 첫 프로젝트를 만들어 보세요.' : '게스트 데모를 불러오지 못했습니다.'}</span></div>
         ) : null}
 
         {projects.length > 0 ? (

@@ -12,7 +12,7 @@ import styles from './MembersPage.module.css'
 
 export function MembersPage() {
   const { projectId } = useParams()
-  const { state } = useTeamFlow()
+  const { state, capabilities } = useTeamFlow()
   const [showAdd, setShowAdd] = useState(false)
   const project = projectId ? selectProject(state, projectId) : null
   const members = project ? state.members.filter((member) => project.memberIds.includes(member.id)) : state.members
@@ -25,7 +25,7 @@ export function MembersPage() {
       <div className={`${workspace.container} ${workspace.containerNarrow}`}>
         <header className={workspace.pageHeader}>
           <div><p>{project ? `${project.name} · 팀원` : '모든 프로젝트 · 통합 관리'}</p><h1 id="members-title">{project ? '팀원 관리' : '전체 팀원'}</h1></div>
-          {project ? <button className={workspace.primaryButton} type="button" onClick={() => setShowAdd(true)}><Plus size={15} />팀원 추가</button> : null}
+          {project && capabilities.members ? <button className={workspace.primaryButton} type="button" onClick={() => setShowAdd(true)}><Plus size={15} />팀원 추가</button> : null}
         </header>
         <div className={styles.grid}>
           {members.map((member) => {
@@ -42,7 +42,7 @@ export function MembersPage() {
           })}
         </div>
       </div>
-      {showAdd && project ? <AddMemberModal projectId={project.id} onClose={() => setShowAdd(false)} /> : null}
+      {showAdd && project && capabilities.members ? <AddMemberModal projectId={project.id} onClose={() => setShowAdd(false)} /> : null}
     </section>
   )
 }

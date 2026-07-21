@@ -19,7 +19,7 @@ import styles from './ResourcesPage.module.css'
 
 export function ResourcesPage() {
   const { project } = useOutletContext()
-  const { state } = useTeamFlow()
+  const { state, capabilities } = useTeamFlow()
   const [query, setQuery] = useState('')
   const [type, setType] = useState('all')
   const [newestFirst, setNewestFirst] = useState(true)
@@ -69,10 +69,10 @@ export function ResourcesPage() {
               {currentFolder ? <><ChevronRight size={18} aria-hidden="true" /><span>{currentFolder.name}</span></> : null}
             </h1>
           </div>
-          <div className={styles.createActions}>
+          {capabilities.resources ? <div className={styles.createActions}>
             {currentFolderId == null ? <button className={workspace.secondaryButton} type="button" onClick={() => setShowFolderCreate(true)}><FolderPlus size={15} />새 폴더</button> : null}
             <button className={workspace.primaryButton} type="button" onClick={() => setShowAdd(true)}><Plus size={15} />자료 추가</button>
-          </div>
+          </div> : null}
         </header>
         <div className={styles.toolbar}>
           <div className={workspace.searchField}><Search size={15} /><label className="visually-hidden" htmlFor="resource-search">자료 검색</label><input id="resource-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="현재 위치에서 검색" /></div>
@@ -100,8 +100,8 @@ export function ResourcesPage() {
           </div>
         </section>
       </div>
-      {showFolderCreate ? <CreateFolderModal projectId={project.id} onClose={() => setShowFolderCreate(false)} /> : null}
-      {showAdd ? <AddResourceModal projectId={project.id} folders={folders} defaultParentId={currentFolderId} onClose={() => setShowAdd(false)} /> : null}
+      {showFolderCreate && capabilities.resources ? <CreateFolderModal projectId={project.id} onClose={() => setShowFolderCreate(false)} /> : null}
+      {showAdd && capabilities.resources ? <AddResourceModal projectId={project.id} folders={folders} defaultParentId={currentFolderId} onClose={() => setShowAdd(false)} /> : null}
       {selected ? <ResourceDetailModal resource={selected} owner={memberById.get(selected.ownerId)} onClose={() => setSelectedId(null)} /> : null}
     </section>
   )

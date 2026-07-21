@@ -1,80 +1,123 @@
-import { mockTeamFlowRepository } from './mockTeamFlowRepository.js'
-
 export class TeamFlowApiError extends Error {
-  constructor(message) {
+  constructor(message, code = 'TEAMFLOW_API_ERROR') {
     super(message)
     this.name = 'TeamFlowApiError'
+    this.code = code
   }
 }
 
 async function readJson(response, fallbackMessage) {
-  if (!response.ok) {
-    throw new TeamFlowApiError(fallbackMessage)
+  let payload
+  try {
+    payload = await response.json()
+  } catch {
+    throw new TeamFlowApiError(response.ok ? 'API 응답을 읽을 수 없습니다.' : fallbackMessage)
   }
 
-  try {
-    return await response.json()
-  } catch {
-    throw new TeamFlowApiError('API 응답을 읽을 수 없습니다.')
+  if (!response.ok) {
+    throw new TeamFlowApiError(payload?.error?.message || fallbackMessage, payload?.error?.code)
   }
+  return payload
 }
 
 async function requestJson(fetchImpl, url, options, fallbackMessage) {
   let response
-
   try {
-    response = options === undefined
-      ? await fetchImpl(url)
-      : await fetchImpl(url, options)
+    response = await fetchImpl(url, options)
   } catch {
     throw new TeamFlowApiError(fallbackMessage)
   }
-
   return readJson(response, fallbackMessage)
+}
+
+function unsupportedFeature() {
+  throw new TeamFlowApiError('이 기능은 다음 영속화 단계에서 제공됩니다.', 'FEATURE_NOT_AVAILABLE')
 }
 
 export function createApiTeamFlowRepository({
   fetchImpl = globalThis.fetch,
-  mockRepository = mockTeamFlowRepository,
+  getAccessToken,
 } = {}) {
+  async function authenticatedRequest(url, options, fallbackMessage) {
+    const token = await getAccessToken?.()
+    if (!token) throw new TeamFlowApiError('로그인이 만료되었습니다. 다시 로그인해 주세요.', 'AUTH_REQUIRED')
+    const headers = {
+      authorization: `Bearer ${token}`,
+      ...(options?.body ? { 'content-type': 'application/json' } : {}),
+      ...options?.headers,
+    }
+    return requestJson(fetchImpl, url, { ...options, headers }, fallbackMessage)
+  }
+
   return {
-    ...mockRepository,
-
     async load() {
-      const [mockPayload, payload] = await Promise.all([
-        mockRepository.load(),
-        requestJson(fetchImpl, '/api/tasks', undefined, '저장된 할 일을 불러오지 못했습니다.'),
-      ])
+      return authenticatedRequest('/api/bootstrap', undefined, 'TeamFlow 데이터를 불러오지 못했습니다.')
+    },
 
-      if (!Array.isArray(payload.tasks)) {
-        throw new TeamFlowApiError('할 일 목록 응답 형식이 올바르지 않습니다.')
-      }
+    async createProject(input) {
+      const payload = await authenticatedRequest('/api/projects', {
+        method: 'POST', body: JSON.stringify(input),
+      }, '프로젝트를 만들지 못했습니다.')
+      return payload.project
+    },
 
-      const persistedTaskIds = new Set(payload.tasks.map((task) => task.id))
+    async updateProject(projectId, patch) {
+      const payload = await authenticatedRequest(`/api/projects/${projectId}`, {
+        method: 'PATCH', body: JSON.stringify(patch),
+      }, '프로젝트를 수정하지 못했습니다.')
+      return { projectId, patch: payload.project }
+    },
 
-      return {
-        ...mockPayload,
-        tasks: [
-          ...payload.tasks,
-          ...mockPayload.tasks.filter((task) => !persistedTaskIds.has(task.id)),
-        ],
-      }
+    async createMember(projectId, input) {
+      const payload = await authenticatedRequest(`/api/projects/${projectId}/members`, {
+        method: 'POST', body: JSON.stringify(input),
+      }, '팀원을 추가하지 못했습니다.')
+      return { projectId, member: payload.member }
     },
 
     async createTask(projectId, input) {
-      const payload = await requestJson(fetchImpl, '/api/tasks', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ projectId, ...input }),
+      const payload = await authenticatedRequest('/api/tasks', {
+        method: 'POST', body: JSON.stringify({ projectId, ...input }),
       }, '할 일을 저장하지 못했습니다.')
-
-      if (!payload.task?.id) {
-        throw new TeamFlowApiError('할 일 생성 응답 형식이 올바르지 않습니다.')
-      }
-
       return payload.task
     },
+
+    async updateTask(taskId, patch) {
+      const payload = await authenticatedRequest(`/api/tasks/${taskId}`, {
+        method: 'PATCH', body: JSON.stringify(patch),
+      }, '할 일 상태를 변경하지 못했습니다.')
+      return { taskId, patch: payload.task }
+    },
+
+    async deleteTask(taskId) {
+      const payload = await authenticatedRequest(`/api/tasks/${taskId}`, {
+        method: 'DELETE',
+      }, '할 일을 삭제하지 못했습니다.')
+      return { taskId: payload.taskId }
+    },
+
+    createNote: unsupportedFeature,
+    updateNote: unsupportedFeature,
+    createResource: unsupportedFeature,
+    updateAiSettings: unsupportedFeature,
   }
 }
 
-export const apiTeamFlowRepository = createApiTeamFlowRepository()
+export function createDemoTeamFlowRepository({ fetchImpl = globalThis.fetch } = {}) {
+  const readOnly = () => Promise.reject(new TeamFlowApiError('게스트 모드에서는 내용을 변경할 수 없습니다.', 'READ_ONLY'))
+  return {
+    async load() {
+      return requestJson(fetchImpl, '/api/demo', undefined, '게스트 데모를 불러오지 못했습니다.')
+    },
+    createProject: readOnly,
+    updateProject: readOnly,
+    createMember: readOnly,
+    createTask: readOnly,
+    updateTask: readOnly,
+    deleteTask: readOnly,
+    createNote: readOnly,
+    updateNote: readOnly,
+    createResource: readOnly,
+    updateAiSettings: readOnly,
+  }
+}

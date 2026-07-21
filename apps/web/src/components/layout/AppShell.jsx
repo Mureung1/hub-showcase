@@ -1,11 +1,14 @@
 import CheckSquare from 'lucide-react/dist/esm/icons/square-check-big.mjs'
 import Layers3 from 'lucide-react/dist/esm/icons/layers-3.mjs'
+import LogOut from 'lucide-react/dist/esm/icons/log-out.mjs'
 import Plus from 'lucide-react/dist/esm/icons/plus.mjs'
 import Users from 'lucide-react/dist/esm/icons/users.mjs'
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 
 import { NewProjectModal } from '../../features/projects/components/NewProjectModal.jsx'
+import { useAuth } from '../../auth/useAuth.js'
+import { useTeamFlow } from '../../state/useTeamFlow.js'
 import styles from './AppShell.module.css'
 
 const navItems = [
@@ -16,13 +19,14 @@ const navItems = [
 
 export function AppShell() {
   const [showNewProject, setShowNewProject] = useState(false)
+  const { capabilities } = useTeamFlow()
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
         <Brand />
-        <div className={styles.createArea}>
+        {capabilities.projects ? <div className={styles.createArea}>
           <button className={styles.createButton} type="button" onClick={() => setShowNewProject(true)}><Plus size={15} />새 프로젝트</button>
-        </div>
+        </div> : <div className={styles.readOnlyNotice}>읽기 전용 데모</div>}
         <nav className={styles.navigation} aria-label="개요 메뉴">
           <p className={styles.navigationLabel}>개요</p>
           {navItems.map(({ to, label, icon: Icon }) => (
@@ -44,5 +48,19 @@ export function Brand() {
 }
 
 export function Account({ label }) {
-  return <footer className={styles.accountArea}><span className={styles.accountAvatar}>이</span><span className={styles.accountCopy}><strong>이주환</strong><span>{label}</span></span></footer>
+  const auth = useAuth()
+  const guest = auth.status === 'guest'
+  const name = guest ? '게스트' : auth.user?.displayName || 'TeamFlow 사용자'
+  const detail = guest ? '읽기 전용 데모' : auth.user?.email || label
+  const initial = Array.from(name).slice(0, 1).join('') || 'T'
+
+  return (
+    <footer className={styles.accountArea}>
+      {auth.user?.avatarUrl && !guest
+        ? <img className={styles.accountAvatarImage} src={auth.user.avatarUrl} alt="" referrerPolicy="no-referrer" />
+        : <span className={styles.accountAvatar}>{initial}</span>}
+      <span className={styles.accountCopy}><strong>{name}</strong><span>{detail}</span></span>
+      <button className={styles.accountLogout} type="button" onClick={auth.signOut} aria-label={guest ? '게스트 모드 종료' : '로그아웃'} title={guest ? '게스트 모드 종료' : '로그아웃'}><LogOut size={14} /></button>
+    </footer>
+  )
 }

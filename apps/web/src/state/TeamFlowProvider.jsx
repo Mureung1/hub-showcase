@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 
-import { mockTeamFlowRepository } from '../data/mockTeamFlowRepository.js'
 import { TeamFlowContext } from './TeamFlowContext.js'
 
 function reducer(state, action) {
@@ -76,14 +75,17 @@ const emptyState = {
   notes: [],
   resources: [],
   aiSettings: {},
+  aiHistory: [],
   currentUserId: '',
   aiMemberId: '',
+  accessMode: 'authenticated',
+  capabilities: { projects: false, members: false, tasks: false, notes: false, resources: false, ai: false },
 }
 
 /**
- * Provides one session-scoped source of truth for every mock-backed screen.
+ * Provides one source of truth for either authenticated API data or the read-only demo.
  */
-export function TeamFlowProvider({ children, repository = mockTeamFlowRepository }) {
+export function TeamFlowProvider({ children, repository }) {
   const [state, dispatch] = useReducer(reducer, emptyState)
   const timers = useRef(new Set())
 
@@ -174,6 +176,8 @@ export function TeamFlowProvider({ children, repository = mockTeamFlowRepository
 
   const value = useMemo(() => ({
     state,
+    capabilities: state.capabilities,
+    readOnly: state.accessMode === 'guest',
     actions: { createProject, updateProject, createTask, updateTask, deleteTask, addMember, createNote, updateNote, createResource, updateAiSettings },
   }), [state, createProject, updateProject, createTask, updateTask, deleteTask, addMember, createNote, updateNote, createResource, updateAiSettings])
 

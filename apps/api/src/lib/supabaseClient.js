@@ -15,7 +15,7 @@ function requireEnvironmentValue(environment, name) {
 
 export function readTeamFlowSupabaseConfig(environment = process.env) {
   const url = requireEnvironmentValue(environment, 'TEAMFLOW_SUPABASE_URL')
-  const secretKey = requireEnvironmentValue(environment, 'TEAMFLOW_SUPABASE_SECRET_KEY')
+  const publishableKey = requireEnvironmentValue(environment, 'TEAMFLOW_SUPABASE_PUBLISHABLE_KEY')
 
   let hostname
   try {
@@ -32,17 +32,19 @@ export function readTeamFlowSupabaseConfig(environment = process.env) {
     throw new Error(`TEAMFLOW_SUPABASE_URL은 TeamFlow 프로젝트(${TEAMFLOW_PROJECT_REF})여야 합니다.`)
   }
 
-  if (!secretKey.startsWith('sb_secret_')) {
-    throw new Error('TEAMFLOW_SUPABASE_SECRET_KEY에는 TeamFlow의 sb_secret_ 키를 사용해야 합니다.')
+  if (!publishableKey.startsWith('sb_publishable_')) {
+    throw new Error('TEAMFLOW_SUPABASE_PUBLISHABLE_KEY에는 TeamFlow의 sb_publishable_ 키를 사용해야 합니다.')
   }
 
-  return { url, secretKey }
+  return { url, publishableKey }
 }
 
-export function createTeamFlowSupabaseClient(environment = process.env) {
-  const { url, secretKey } = readTeamFlowSupabaseConfig(environment)
+export function createTeamFlowSupabaseClient({ token, environment = process.env } = {}) {
+  const { url, publishableKey } = readTeamFlowSupabaseConfig(environment)
+  const headers = token ? { Authorization: `Bearer ${token}` } : undefined
 
-  return createClient(url, secretKey, {
+  return createClient(url, publishableKey, {
+    global: headers ? { headers } : undefined,
     auth: {
       autoRefreshToken: false,
       detectSessionInUrl: false,

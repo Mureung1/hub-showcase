@@ -18,7 +18,7 @@ const statusColors = {
   [TASK_STATUS.COMPLETED]: ['#1a6040', '#e8f5ee'],
 }
 
-export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChange }) {
+export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChange, readOnly = false }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
@@ -43,7 +43,9 @@ export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChan
     }
   }
 
-  const footer = confirmingDelete ? (
+  const footer = readOnly ? (
+    <button type="button" className={styles.closeButton} onClick={onClose}>닫기</button>
+  ) : confirmingDelete ? (
     <>
       <span className={styles.deleteConfirmation}>이 할 일을 삭제할까요?</span>
       <button type="button" className={styles.closeButton} onClick={() => setConfirmingDelete(false)} disabled={deleting}>취소</button>
@@ -64,7 +66,7 @@ export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChan
           <div><dt>담당자</dt><dd>{member ? <span className={workspace.memberLine}><Avatar member={member} />{member.name}</span> : '미지정'}</dd></div>
           <div><dt>마감일</dt><dd className={workspace.mono}><Calendar size={14} />{formatShortDate(task.dueDate)}</dd></div>
         </dl>
-        <fieldset className={styles.statusField} disabled={updatingStatus}>
+        <fieldset className={styles.statusField} disabled={updatingStatus || readOnly}>
           <legend>진행 상태</legend>
           <div className={styles.statusOptions}>
             {TASK_STATUS_ORDER.map((status) => {

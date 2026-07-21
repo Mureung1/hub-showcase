@@ -51,6 +51,18 @@
   padding: 12px 12px 6px;
 }
 
+.readOnlyNotice {
+  margin: 12px 12px 6px;
+  padding: 8px 10px;
+  border: 1px solid #ddd9cb;
+  border-radius: 10px;
+  background: #faf7ec;
+  color: #735c22;
+  font-size: 11px;
+  font-weight: 650;
+  text-align: center;
+}
+
 .createButton {
   display: flex;
   width: 100%;
@@ -124,12 +136,34 @@
   font-weight: 650;
 }
 
+.accountAvatarImage {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .accountCopy {
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: 1px;
 }
+
+.accountLogout {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #777b84;
+}
+.accountLogout:hover { background: #f0f0f2; color: #343b4c; }
 
 .accountCopy strong,
 .accountCopy span {
