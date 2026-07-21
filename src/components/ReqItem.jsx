@@ -1,104 +1,67 @@
-import { STATUS_LABEL } from '../data/mockData.js'
+import { useState } from 'react'
 
-// data 안의 <b> 같은 인라인 태그를 그대로 렌더하기 위한 헬퍼
-const H = ({ html }) => <span dangerouslySetInnerHTML={{ __html: html }} />
+// 상태 알약(강점/기본/근거부족/미보유) — 여러 곳에서 재사용
+export function StatusPill({ item }) {
+  return (
+    <span style={{ fontSize: 11, color: item.color, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
+      <span style={{ width: 7, height: 7, borderRadius: '50%', background: item.dot }} />
+      {item.label}
+    </span>
+  )
+}
 
-// 요구역량 한 줄 — 클릭하면 근거 펼침. 원본 v2 의 details.req-item 구조 그대로.
-export default function ReqItem({ req }) {
-  const isGap = req.status === 'st-gap'
-  const isWeak = req.status === 'st-weak'
-  const cls = `req-item${isGap ? ' is-gap' : ''}${isWeak ? ' is-weak' : ''}`
+// 요구역량 한 줄. 근거(why)가 있으면 펼침형(<details>), 없으면 단순 행.
+//  accent = 'bright'(필수) | 'med'(우대) — 액션 박스 색을 결정.
+export default function ReqItem({ r, accent = 'bright' }) {
+  const [open, setOpen] = useState(false)
+  const accentColor = accent === 'med' ? 'var(--blue-med)' : 'var(--blue-bright)'
+  const accentRgb = accent === 'med' ? 'var(--blue-med-rgb)' : 'var(--blue-bright-rgb)'
+
+  if (!r.hasEvidence) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 12.5, padding: '5px 0' }}>
+        <span style={{ color: 'var(--text)' }}>{r.name}</span>
+        <StatusPill item={r} />
+      </div>
+    )
+  }
 
   return (
-    <details className={cls}>
-      <summary className="req-head">
-        <span className="req-name">{req.name}</span>
-        <span className={`req-status ${req.status}`}>
-          <span className="rs-dot"></span>
-          {STATUS_LABEL[req.status]}
-        </span>
-        <span className="req-chev">▾</span>
+    <details open={open} onToggle={(e) => setOpen(e.currentTarget.open)} style={{ borderRadius: 7 }}>
+      <summary className="req-toggle" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, padding: 6, margin: '0 -6px', cursor: 'pointer', borderRadius: 7 }}>
+        <span style={{ color: 'var(--text)', flex: 1 }}>{r.name}</span>
+        <StatusPill item={r} />
+        <span className="req-chevron" style={{ fontSize: 9, color: 'var(--text-faint)', transition: 'transform 0.18s ease, color 0.15s ease', transform: open ? 'rotate(180deg)' : 'none', flexShrink: 0, marginLeft: 2 }}>▾</span>
       </summary>
 
-      <div className="req-ev">
-        {req.rich ? <RichEvidence ev={req.rich} /> : <SimpleEvidence req={req} />}
+      <div style={{ margin: '6px 4px 12px 8px', padding: '10px 12px', background: 'var(--bg)', border: '1px solid var(--border-soft)', borderLeft: `2px solid ${r.color}`, borderRadius: 12 }}>
+        <p style={{ fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.6, margin: '0 0 9px' }}>{r.why}</p>
+
+        {r.hasAiBar && (
+          <>
+            <div style={{ display: 'flex', height: 24, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-soft)', fontSize: 10, fontWeight: 700, marginBottom: 8 }}>
+              <div style={{ background: 'rgba(var(--blue-med-rgb),0.22)', color: 'var(--blue-med)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: `${r.aiAssistPct}%` }}>AI 작성 {r.aiAssistPct}%</div>
+              <div style={{ background: 'rgba(var(--blue-bright-rgb),0.22)', color: 'var(--blue-bright)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: `${r.aiSelfPct}%` }}>직접 {r.aiSelfPct}%</div>
+            </div>
+            <p style={{ fontSize: 10.5, color: 'var(--text-dim)', lineHeight: 1.55, margin: '0 0 9px', background: 'var(--card-hi)', borderRadius: 6, padding: '7px 9px' }}>{r.aiNote}</p>
+          </>
+        )}
+
+        {r.tags.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 9 }}>
+            {r.tags.map((t, i) => (
+              <span key={i} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 10, border: t.border, color: t.color, whiteSpace: 'nowrap' }}>{t.label}</span>
+            ))}
+          </div>
+        )}
+
+        {r.action && (
+          <div style={{ padding: '8px 11px', borderRadius: 12, background: `rgba(${accentRgb},0.14)`, fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.55, display: 'flex', gap: 8, alignItems: 'baseline' }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: accentColor, whiteSpace: 'nowrap', flexShrink: 0 }}>{r.actionLabel}</span>
+            <span>{r.action}</span>
+          </div>
+        )}
       </div>
     </details>
-  )
-}
-
-// 단순 근거: 한 문단 + 태그 + 액션
-function SimpleEvidence({ req }) {
-  return (
-    <>
-      <p className="req-why"><H html={req.why} /></p>
-      {req.tags && (
-        <div className="req-ev-tags">
-          {req.tags.map((t, i) => <span key={i} className={`ev-tag ${t.cls}`}>{t.text}</span>)}
-        </div>
-      )}
-      {req.action && <Action action={req.action} />}
-    </>
-  )
-}
-
-// 상세 근거: 프로젝트 + 스코프 + 직접vsAI 바 (정직 레이어의 핵심)
-function RichEvidence({ ev }) {
-  return (
-    <>
-      <div className="ev-proj">
-        <span className="ev-proj-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7l9-4 9 4v10l-9 4-9-4z" /><path d="M3 7l9 4 9-4M12 11v10" /></svg>
-        </span>
-        <div>
-          <span className="ev-proj-name">{ev.proj.name}</span>
-          <span className="ev-proj-meta">{ev.proj.meta}</span>
-        </div>
-      </div>
-
-      <div className="ev-section">
-        <div className="ev-sec-label">무엇을 구현했나</div>
-        <ul className="ev-ul">
-          {ev.built.map((b, i) => <li key={i}>{b}</li>)}
-        </ul>
-      </div>
-
-      <div className="ev-section">
-        <div className="ev-sec-label">얼마나 (스코프)</div>
-        <div className="ev-metrics">
-          {ev.metrics.map((m, i) => <span key={i} className="ev-metric"><H html={m} /></span>)}
-        </div>
-      </div>
-
-      <div className="ev-section">
-        <div className="ev-sec-label">
-          직접 vs AI 관여<span className="ev-est">실측 · Co-Authored 서명 스캔</span>
-        </div>
-        <div className="ev-ai-bar">
-          <div className="ev-ai-assist" style={{ width: `${ev.ai.assist}%` }}>{ev.ai.assistLabel}</div>
-          <div className="ev-ai-self" style={{ width: `${ev.ai.self}%` }}>{ev.ai.selfLabel}</div>
-        </div>
-        <div className="ev-ai-basis">
-          <span className="ev-ai-basis-label">실측</span><H html={ev.ai.basis} />
-        </div>
-        <p className="ev-ai-note"><H html={ev.ai.note} /></p>
-      </div>
-
-      <div className="ev-links">
-        {ev.links.map((l, i) => <span key={i} className={`ev-tag ${l.cls}`}>{l.text}</span>)}
-      </div>
-
-      {ev.action && <Action action={ev.action} />}
-      {ev.unconfirmed && <div className="ev-unconfirmed">{ev.unconfirmed}</div>}
-    </>
-  )
-}
-
-function Action({ action }) {
-  return (
-    <div className={`ev-action${action.gap ? ' gap-action' : ''}`}>
-      <span className="ea-label">{action.label}</span>
-      <span>{action.text}</span>
-    </div>
   )
 }

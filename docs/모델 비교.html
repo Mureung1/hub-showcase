@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>모델 비교 — AI 갭 분석 baseline</title>
+<style>
+  :root{
+    --bg:#f4f6f8; --card:#fff; --text:#1a2230; --dim:#5a6676; --faint:#8a95a5;
+    --border:#e3e8ee; --soft:#eef2f6;
+    --blue:#2f54ff; --blue2:#3d7bff; --green:#12a150; --amber:#c77400; --red:#e5484d;
+    --a:#12a150; --b:#3d7bff; --c:#e5484d;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#12151b; --card:#1a1e26; --text:#eaeef4; --dim:#9aa5b3; --faint:#6b7684;
+      --border:#2a2f39; --soft:#22262f; --blue:#5b8dff; --blue2:#4a8bff; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:'Pretendard','Malgun Gothic',system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.55}
+  .wrap{max-width:1180px;margin:0 auto;padding:32px 20px 80px}
+  header h1{font-size:24px;font-weight:800;margin:0 0 6px;letter-spacing:-.02em}
+  header p{margin:0;color:var(--dim);font-size:14px}
+  .meta{margin-top:10px;font-size:12px;color:var(--faint)}
+  section{margin-top:34px}
+  h2{font-size:17px;font-weight:700;margin:0 0 4px;display:flex;align-items:baseline;gap:8px}
+  h2 .n{font-size:12px;color:var(--faint);border:1px solid var(--border);border-radius:8px;padding:1px 7px;font-weight:600}
+  h2+.sub{color:var(--dim);font-size:13px;margin:0 0 14px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--soft);vertical-align:top}
+  thead th{background:var(--soft);color:var(--dim);font-weight:600;font-size:12px;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  td.num,th.num{text-align:center;white-space:nowrap}
+  .model{font-weight:700}
+  .sub2{color:var(--faint);font-size:11.5px}
+  .mockrow td{color:var(--faint);font-style:italic;background:repeating-linear-gradient(45deg,transparent,transparent 6px,var(--soft) 6px,var(--soft) 7px)}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+  .g-strong{color:#fff;background:var(--green)} .g-ok{color:#fff;background:var(--blue2)}
+  .g-weak{color:#fff;background:var(--amber)} .g-gap{color:#fff;background:var(--red)}
+  .grade{font-weight:800}
+  .A{color:var(--a)} .Bp{color:var(--blue2)} .C{color:var(--c)}
+  .tier-red{color:var(--red);font-weight:700} .tier-yellow{color:var(--amber);font-weight:700}
+  .best{box-shadow:inset 3px 0 0 var(--green)}
+  .aibar{display:flex;height:20px;border-radius:6px;overflow:hidden;font-size:10px;font-weight:700;min-width:150px;border:1px solid var(--border)}
+  .aibar .ai{background:rgba(61,123,255,.22);color:var(--blue2);display:flex;align-items:center;justify-content:center;white-space:nowrap}
+  .aibar .self{background:rgba(18,161,80,.22);color:var(--green);display:flex;align-items:center;justify-content:center;white-space:nowrap}
+  .callout{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--blue);border-radius:12px;padding:14px 16px;font-size:13.5px}
+  .callout.rec{border-left-color:var(--green)}
+  .callout b{color:var(--text)}
+  ul{margin:8px 0 0;padding-left:18px} li{margin:4px 0;font-size:13.5px}
+  .scroll{overflow-x:auto}
+  code{background:var(--soft);padding:1px 5px;border-radius:5px;font-size:12px}
+
+  /* 03 — 모델별 세로 4열 카드 */
+  .grid4{display:grid;grid-template-columns:repeat(4,minmax(240px,1fr));gap:12px}
+  .mcard{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;border-top:3px solid var(--border);display:flex;flex-direction:column}
+  .mcard.b-weak{border-top-color:var(--amber)} .mcard.b-ok{border-top-color:var(--blue2)}
+  .mcard.b-strong{border-top-color:var(--green)} .mcard.b-gap{border-top-color:var(--red)}
+  .mcard.pick{outline:2px solid var(--green);outline-offset:-1px}
+  .mcard-head{padding:11px 13px;border-bottom:1px solid var(--soft)}
+  .mcard-head .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .mname{font-size:14px;font-weight:800}
+  .mtrait{font-size:11px;color:var(--faint);margin-top:2px}
+  .mcard-body{padding:12px 13px;font-size:12.5px;display:flex;flex-direction:column;gap:10px}
+  .why{margin:0;color:var(--dim);line-height:1.6}
+  .ainote{margin:0;font-size:11px;color:var(--dim);background:var(--soft);border-radius:8px;padding:8px 10px;line-height:1.5}
+  .tags{display:flex;flex-wrap:wrap;gap:5px}
+  .tag{font-size:10.5px;padding:2px 8px;border-radius:8px;white-space:nowrap;border:1px solid var(--border);color:var(--dim)}
+  .tag.repo{color:var(--blue2);border-color:rgba(61,123,255,.4)}
+  .tag.wiki{color:var(--blue);border-color:rgba(47,84,255,.4)}
+  .tag.gap{color:var(--red);border-style:dashed;border-color:rgba(229,72,77,.5)}
+  .action{background:rgba(47,84,255,.10);border-radius:10px;padding:9px 11px;font-size:11.5px;color:var(--dim);line-height:1.5}
+  .action b{color:var(--blue);font-weight:700;margin-right:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>모델 비교 — AI 갭 분석 baseline</h1>
+    <p>동일 입력(같은 프로필 + 당근·우아한·네이버 3사 공고)을 <b>fable · haiku · sonnet · opus</b>에 돌린 정직한 갭 분석 비교.</p>
+    <div class="meta">2026-07-21 · 스키마는 강제, 검증기는 없는 "느슨한 하네스" = 진짜 하네스와 비교할 기준선 · run wf_f3f3eaf6-7d9</div>
+  </header>
+
+  <section>
+    <h2><span class="n">01</span>적합도 점수</h2>
+    <p class="sub">셀 표기: fit (개념/구현). 4개 모델 모두 회사 난이도를 당근 &gt; 우아한 &gt; 네이버로 일치시킴.</p>
+    <div class="card scroll">
+    <table>
+      <thead><tr><th>모델</th><th class="num">당근</th><th class="num">우아한</th><th class="num">네이버</th><th>성향</th></tr></thead>
+      <tbody>
+        <tr><td class="model">fable</td><td class="num">52 <span class="sub2">65/30</span></td><td class="num">47 <span class="sub2">62/27</span></td><td class="num">34 <span class="sub2">50/22</span> <span class="tier-red">🔴</span></td><td>과냉·규율형</td></tr>
+        <tr><td class="model">haiku</td><td class="num">70 <span class="sub2">75/55</span></td><td class="num">68 <span class="sub2">76/54</span></td><td class="num">55 <span class="sub2">65/45</span> <span class="tier-red">🔴</span></td><td>⚠️ 낙관 편향</td></tr>
+        <tr><td class="model">sonnet</td><td class="num">48 <span class="sub2">68/28</span></td><td class="num">42 <span class="sub2">64/22</span></td><td class="num">26 <span class="sub2">40/12</span> <span class="tier-red">🔴</span></td><td>최엄격·과냉</td></tr>
+        <tr class="best"><td class="model">opus ✅</td><td class="num">62 <span class="sub2">70/40</span></td><td class="num">58 <span class="sub2">66/38</span></td><td class="num">46 <span class="sub2">55/34</span> <span class="tier-yellow">🟡</span></td><td>최적 균형</td></tr>
+        <tr class="mockrow"><td class="model">기존 mock</td><td class="num">48 <span class="sub2">82/41</span></td><td class="num">70</td><td class="num">58</td><td>서열·개념 왜곡</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="sub" style="margin-top:12px">fit이 <b>26~70</b>으로 벌어짐 — 같은 입력·같은 스키마인데도. mock은 <code>우아한70&gt;네이버58&gt;당근48</code>이라는 이상한 서열 + 당근 개념 82로 부풀렸고, 4개 모델 다 이를 재정렬했다. (haiku만 mock을 거의 재생산.)</p>
+  </section>
+
+  <section>
+    <h2><span class="n">02</span>정직성 규칙 준수도</h2>
+    <p class="sub">(a) 근거 없이 강점/기본 남발 금지 · (b) AI 작성 코드에 aiBar 정직 표기 · (c) 구현% 보수적.</p>
+    <div class="card scroll">
+    <table>
+      <thead><tr><th>모델</th><th class="num">(a) 절제</th><th class="num">(b) aiBar</th><th class="num">(c) 구현 보수</th><th class="num">종합</th></tr></thead>
+      <tbody>
+        <tr><td class="model">fable</td><td class="num grade A">A</td><td class="num grade A">A−</td><td class="num grade A">A</td><td class="num grade A">A−</td></tr>
+        <tr><td class="model">haiku</td><td class="num grade C">C</td><td class="num grade C">C</td><td class="num grade C">C</td><td class="num grade C">C</td></tr>
+        <tr><td class="model">sonnet</td><td class="num grade A">A</td><td class="num grade A">A</td><td class="num grade A">A+</td><td class="num grade A">A</td></tr>
+        <tr class="best"><td class="model">opus</td><td class="num grade A">A−</td><td class="num grade A">A</td><td class="num grade Bp">B+</td><td class="num grade A">A</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="sub" style="margin-top:12px"><b>haiku의 핵심 결함</b>: aiBar를 "AI가 이 코드 짰다"는 정직 플래그가 아니라 일반 숙련도바로 오용 — Git 협업에 self 80, 미보유(gap) 항목에도 self:0/assist:0 aiBar를 억지로 채워 신호 희석. opus는 AI 코드가 아닌 항목(Git·네트워크·글쓰기)엔 aiBar를 <b>생략</b>해 플래그 의미를 지킴.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">03</span>같은 카드 · 모델별 4열 비교</h2>
+    <p class="sub">당근 · "Java/Spring 기반 API 개발" 요구역량 하나를 4개 모델이 어떻게 채웠나. <span class="tier-yellow">참고 mock</span>: 🔵기본 · AI72/직접28 · "과제 구현까지 근거 있으나 학습 수준".</p>
+    <div class="scroll">
+    <div class="grid4">
+
+      <div class="mcard b-weak">
+        <div class="mcard-head">
+          <div class="row"><span class="mname">fable</span><span class="pill g-weak">근거부족</span></div>
+          <div class="mtrait">과냉·규율형</div>
+        </div>
+        <div class="mcard-body">
+          <p class="why">besession0402(Spring+JPA+MySQL)·멋사 과제로 학습 근거는 있으나 커밋에 Co-Authored-By: Claude 서명이 있고 본인도 '코드는 잘 모른다'고 인정 — 독립 구현 근거 부족.</p>
+          <div class="aibar"><div class="ai" style="width:70%">AI 70%</div><div class="self" style="width:30%">직접 30%</div></div>
+          <p class="ainote">과제 커밋에 Claude 공동서명 — JPA·N+1 개념은 인정, AI 없는 독립 재현은 미검증</p>
+          <div class="tags"><span class="tag repo">besession0402(Spring+JPA)</span><span class="tag repo">2026_BE_Homework</span><span class="tag">AI 작성 비중 큼 인정</span></div>
+          <div class="action"><b>→ 검증</b>AI 없이 동일 수준 CRUD API를 백지 재구현해 단독 서명 커밋으로 남기기</div>
+        </div>
+      </div>
+
+      <div class="mcard b-ok">
+        <div class="mcard-head">
+          <div class="row"><span class="mname">haiku</span><span class="pill g-ok">기본</span></div>
+          <div class="mtrait">⚠️ 낙관 편향</div>
+        </div>
+        <div class="mcard-body">
+          <p class="why">Spring+JPA를 학습과제(besession0402, 멋사 팀 프로젝트)에서 구현했으나 과제 수준이고 프로덕션 경험은 미확인.</p>
+          <div class="aibar"><div class="ai" style="width:60%">AI 60%</div><div class="self" style="width:30%">직접 30%</div></div>
+          <p class="ainote">N+1 최적화 등 본인이 학습·주도했으나 코드 상당 부분 AI 작성. 개념 &gt; 구현</p>
+          <div class="tags"><span class="tag repo">besession0402(Spring+JPA+MySQL)</span><span class="tag repo">2026_BE_Homework(팀 62커밋)</span></div>
+          <div class="action"><b>→ 강점으로</b>실전 프로젝트로 API 설계·구현 경험 확대 (MSA 규모는 아직)</div>
+        </div>
+      </div>
+
+      <div class="mcard b-weak">
+        <div class="mcard-head">
+          <div class="row"><span class="mname">sonnet</span><span class="pill g-weak">근거부족</span></div>
+          <div class="mtrait">최엄격·과냉</div>
+        </div>
+        <div class="mcard-body">
+          <p class="why">besession0402·2026_BE_Homework·TIL에서 Spring 학습 흔적은 있으나 전부 교육과정 과제 수준이며, 실무형 API 설계·운영 경험은 없음. besession0402 커밋에 Co-Authored-By: Claude 서명이 있어 구현 상당 부분을 AI가 작성한 것으로 보임.</p>
+          <div class="aibar"><div class="ai" style="width:65%">AI 65%</div><div class="self" style="width:35%">직접 35%</div></div>
+          <p class="ainote">JPA 과제 커밋에 Claude 공동작성 서명 확인. N+1/fetch join 개념은 설명 가능하나 코드 자체 작성 능력은 검증 안 됨</p>
+          <div class="tags"><span class="tag repo">besession0402</span><span class="tag repo">2026_BE_Homework</span><span class="tag gap">실무 API 운영 경험 없음</span></div>
+          <div class="action"><b>→ 검증</b>AI 없이 개인 CRUD API(인증·예외처리·계층분리)를 처음부터 끝까지 직접 구현하고 PR 리뷰받기</div>
+        </div>
+      </div>
+
+      <div class="mcard b-weak pick">
+        <div class="mcard-head">
+          <div class="row"><span class="mname">opus ✅</span><span class="pill g-weak">근거부족</span></div>
+          <div class="mtrait">최적 균형 · 추천</div>
+        </div>
+        <div class="mcard-body">
+          <p class="why">besession0402(Spring+JPA+MySQL) 과제 근거는 있으나 실전 API 서비스 없고, 커밋에 Co-Authored-By Claude 서명 존재. 본인도 '코드는 잘 모른다' 인정 → 개념은 인정하되 독립 구현은 미검증.</p>
+          <div class="aibar"><div class="ai" style="width:70%">AI 70%</div><div class="self" style="width:30%">직접 30%</div></div>
+          <p class="ainote">besession0402 커밋에 Claude 서명. N+1·fetch join 개념은 이해하나 코드 상당수 AI 작성 → 구현·독립성 보수 평가</p>
+          <div class="tags"><span class="tag repo">besession0402</span><span class="tag">Spring/JPA 학습</span><span class="tag gap">실전 API 미보유</span></div>
+          <div class="action"><b>→ 검증</b>AI 없이 CRUD+예외처리 REST API를 처음부터 재구현해 독립성 증명</div>
+        </div>
+      </div>
+
+    </div>
+    </div>
+    <p class="sub" style="margin-top:12px"><b>3/4 모델(fable·sonnet·opus)이 "근거부족"</b> — 코드를 AI가 짰으니 구현 근거로 약하다고 판단. <b>haiku만 "기본"</b> = mock과 같은 관대함. 즉 mock의 "기본"은 살짝 후했고, 정직 규칙을 지킨 모델들은 한 등급 내렸다. (좁은 화면에선 가로 스크롤로 4열 유지)</p>
+  </section>
+
+  <section>
+    <h2><span class="n">04</span>결론 &amp; 시사점</h2>
+    <div class="callout rec" style="margin-bottom:12px">
+      <b>추천: opus.</b> 보수 규율을 지키면서 "AI 안 쓴 진짜 강점(Git·자기작성 위키)"만 정확히 크레딧해 강점을 무차별 삭제하지 않는다. 갭 분석 목적(뭘 실제로 메우나)에 가장 실용적. · 차선 <b>sonnet</b>(최엄격) · 회피 <b>haiku</b>(낙관 부풀림).
+    </div>
+    <div class="callout" style="margin-bottom:12px">
+      <b>메타 발견 — "작은 모델 = 낙관"은 균일하지 않다.</b> haiku는 낙관(전방위 부풀림), fable은 반대로 과냉(네이버 강점0·기본0). 실패 방향이 정반대. 단 fable은 근거 구체성·aiBar 배치는 상위권 유지.
+    </div>
+    <div class="callout">
+      <b>하네스에 주는 메시지 🎯</b> — 스키마만 강제해도 fit이 26~70으로 발산 → 스키마 강제만으론 부족. haiku의 실패가 곧 <b>검증기가 잡아야 할 규칙</b>:
+      <ul>
+        <li><code>status</code>가 강점/기본인데 근거 태그(repo/wiki) 없으면 → 반려</li>
+        <li><code>aiBar</code>는 코드 근거 있는 항목에만, gap 항목엔 금지</li>
+        <li><code>impl</code>이 <code>concept</code>보다 크게 높으면 → 경고(지원자 전제 위반)</li>
+      </ul>
+      → 하네스 v1 검증 규칙 = haiku가 틀린 지점들. 통과 못 하면 재생성 → 작은 모델도 opus처럼 수렴하는지가 이번 주 검증 목표.
+    </div>
+  </section>
+</div>
+</body>
+</html>

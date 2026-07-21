@@ -9,20 +9,11 @@
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <title>커리어 코파일럿 — 채용 공고 적합도</title>
     <script>
-      /* 테마 초기화(플래시 방지) + 토글. React 렌더 전에 실행되고,
-         #theme-toggle 클릭은 document 위임으로 처리 → 원본 v2와 동일 동작 */
+      /* 테마 플래시 방지 — React 렌더 전에 data-theme 을 먼저 세팅.
+         토글·저장은 App.jsx(React)가 담당. 기본은 라이트. */
       (function () {
-        var root = document.documentElement, KEY = 'cc-theme';
-        function apply(t) { t === 'light' ? root.setAttribute('data-theme', 'light') : root.removeAttribute('data-theme'); }
-        var saved; try { saved = localStorage.getItem(KEY); } catch (e) {}
-        if (!saved) saved = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
-        apply(saved);
-        document.addEventListener('click', function (e) {
-          var b = e.target.closest && e.target.closest('#theme-toggle'); if (!b) return;
-          var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-          apply(next);
-          try { localStorage.setItem(KEY, next); } catch (e) {}
-        });
+        var saved; try { saved = localStorage.getItem('cc-theme'); } catch (e) {}
+        document.documentElement.setAttribute('data-theme', saved || 'light');
       })();
     </script>
   </head>
