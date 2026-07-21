@@ -101,3 +101,14 @@ export async function fetchMyConsultRequests(params?: {
     meta: res.meta,
   };
 }
+
+interface ConsultRequestResponse {
+  success: boolean;
+  data: ApiConsultRequest;
+}
+
+/** Full decrypted detail (GET /consult-requests/:id). */
+export async function fetchConsultRequestById(id: string): Promise<ConsultRequest> {
+  const res = await apiGet<ConsultRequestResponse>(`/api/v1/consult-requests/${id}`);
+  return mapApiConsultRequest(res.data);
+}

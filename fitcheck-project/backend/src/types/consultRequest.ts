@@ -6,6 +6,7 @@ export interface ConsultRequestRow {
   trainer_id: string | null;
   name: string;
   phone: string;
+  phone_hmac?: string | null;
   preferred_date: string;
   preferred_time: string;
   topic: string;

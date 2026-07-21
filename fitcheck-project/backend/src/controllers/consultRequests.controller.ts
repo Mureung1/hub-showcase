@@ -6,6 +6,7 @@ import {
 } from '../types/consultRequest.js';
 import {
   createConsultRequest,
+  getConsultRequestByIdForUser,
   isConsultRequestStatus,
   listMyConsultRequests,
 } from '../services/consultRequests.service.js';
@@ -146,6 +147,30 @@ export async function getMyConsultRequests(req: Request, res: Response) {
       page: result.page,
       limit: result.limit,
     });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : '서버 오류가 발생했습니다.';
+    return sendError(res, 500, 'INTERNAL_ERROR', message);
+  }
+}
+
+export async function getConsultRequest(req: Request, res: Response) {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      return sendError(res, 401, 'UNAUTHORIZED', '인증이 필요합니다.');
+    }
+
+    const id = typeof req.params.id === 'string' ? req.params.id : undefined;
+    if (!id || !isUuid(id)) {
+      return sendError(res, 400, 'VALIDATION_ERROR', '유효한 id가 필요합니다.');
+    }
+
+    const item = await getConsultRequestByIdForUser(userId, id);
+    if (!item) {
+      return sendError(res, 404, 'NOT_FOUND', '상담 신청을 찾을 수 없습니다.');
+    }
+
+    return sendSuccess(res, item);
   } catch (err) {
     const message = err instanceof Error ? err.message : '서버 오류가 발생했습니다.';
     return sendError(res, 500, 'INTERNAL_ERROR', message);
