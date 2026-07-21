@@ -20,7 +20,7 @@ function MenuCard({
     <li className={width}>
       <Link
         to={to}
-        className="relative flex flex-col overflow-hidden rounded-card border border-border bg-bg-surface shadow-md transition hover:-translate-y-[2px] hover:shadow-lg"
+        className="relative flex flex-col overflow-hidden rounded-card border-2 border-ink bg-bg-surface transition hover:-translate-y-[2px]"
       >
         {rank && (
           <span className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-bg-surface/90 text-xs font-semibold text-primary-text shadow">
@@ -29,27 +29,30 @@ function MenuCard({
         )}
         <Thumbnail image={image} emoji={emoji} alt={name} className="aspect-video w-full text-4xl" />
         <div className="p-3">
-          <p className="truncate text-sm font-medium text-text-primary">{name}</p>
+          <p className="truncate font-display text-base font-bold text-text-primary">{name}</p>
           <div className="mt-1 flex items-center gap-1.5">
-            <p className="text-lg font-extrabold text-primary-text">
+            <p className="font-display text-xl font-bold text-primary-text">
               {price.toLocaleString()}
               {priceSuffix}
             </p>
             {bestTag && (
-              <span className="rounded-md bg-primary-soft px-1.5 py-0.5 text-[11px] font-bold text-primary-text">
+              <span className="rounded-md bg-primary-soft px-1.5 py-0.5 font-display text-xs font-bold text-primary-text">
                 최저가
               </span>
             )}
             {missingCount > 0 && (
-              <span className="rounded-md bg-bg-muted px-1.5 py-0.5 text-[11px] font-bold text-text-secondary">
+              <span className="rounded-md bg-bg-muted px-1.5 py-0.5 font-display text-xs font-bold text-text-secondary">
                 {missingCount}개만 더 있으면
               </span>
             )}
             {timeLabel && (
-              <span className="rounded-md bg-bg-muted px-1.5 py-0.5 text-[11px] font-bold text-text-secondary">
+              <span className="rounded-md bg-bg-muted px-1.5 py-0.5 font-display text-xs font-bold text-text-secondary">
                 {timeLabel}
               </span>
             )}
+            <span className="ml-auto text-sm text-text-secondary opacity-45" aria-hidden="true">
+              🕐
+            </span>
           </div>
         </div>
       </Link>

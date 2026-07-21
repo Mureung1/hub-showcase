@@ -13,12 +13,18 @@ import {
 } from '../data/selectors'
 import { fridgeIngredients, SEASONING_MATCH_NAMES } from '../data/fridgeIngredients'
 import { loadFridgeSelection } from '../data/fridgeStorage'
+import TopNav from '../components/TopNav'
 import MenuCard from '../components/MenuCard'
 import PromoBanner from '../components/PromoBanner'
 import FilterChipGroup from '../components/FilterChipGroup'
 import mascotWave from '../assets/mascot-wave.png'
 // 임시 목업 일러스트 — 최종본 아님, 나중에 교체 예정 (checklist.md 참고)
 import kkinniCharacter from '../assets/끼니캐릭터.png'
+
+const SORT_OPTIONS = [
+  { id: 'price-asc', label: '가격 낮은순' },
+  { id: 'price-desc', label: '가격 높은순' },
+]
 
 // 프로토타입(prototype/home.html) 구조를 그대로 포팅: 네비바 → 프로모 배너 → 냉장고 재료 추천 → 전체 둘러보기(평면 리스트).
 // 카테고리별(메인음식/반찬/간식) 미리보기 섹션은 이 구조로 대체됨 — TypePage/CategoryPage 자체는 남아있지만 홈에서 링크하지 않음.
@@ -34,6 +40,7 @@ function Home() {
   const [otherRecipes, setOtherRecipes] = useState([])
   const [selectedType, setSelectedType] = useState(null)
   const [selectedTimeFilterId, setSelectedTimeFilterId] = useState(null)
+  const [selectedSort, setSelectedSort] = useState(null)
 
   useEffect(() => {
     const selectedIds = loadFridgeSelection()
@@ -70,7 +77,10 @@ function Home() {
   }, [])
 
   function applyFilters(recipes) {
-    return filterRecipesByTimeFilter(filterRecipesByType(recipes, categories, selectedType), selectedTimeFilterId)
+    // 정렬 기준(가격순)만 다르고 나머지(음식종류/시간) 필터 로직은 selectors.js를 그대로 재사용 —
+    // 레시피 목록은 원래 저렴한 순으로 들어오므로, 높은순을 고르면 그냥 뒤집기만 하면 됨.
+    const filtered = filterRecipesByTimeFilter(filterRecipesByType(recipes, categories, selectedType), selectedTimeFilterId)
+    return selectedSort === 'price-desc' ? [...filtered].reverse() : filtered
   }
 
   const filteredReady = applyFilters(readyRecipes)
@@ -85,23 +95,26 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-bg-cream">
-      <nav className="sticky top-0 z-10 border-b border-border bg-bg-cream select-none">
-        <div className="mx-auto max-w-[960px] px-8 py-5" />
-      </nav>
+      <div className="sticky top-0 z-10">
+        <TopNav />
+      </div>
 
       <main className="mx-auto max-w-[960px] pb-8">
         <PromoBanner />
 
-        <div className="mt-6 flex flex-col gap-2 px-8">
-          <FilterChipGroup options={typeOptions} selectedId={selectedType} onSelect={setSelectedType} />
-          <FilterChipGroup options={timeOptions} selectedId={selectedTimeFilterId} onSelect={setSelectedTimeFilterId} />
-        </div>
-
-        <div className="mt-4 flex items-baseline justify-between px-8">
-          <h2 className="text-sm font-bold text-text-primary">냉장고 재료로 만들 수 있는 요리</h2>
-          <Link to="/" className="text-xs text-text-secondary underline hover:text-text-primary">
-            재료 다시 고르기 →
-          </Link>
+        <div className="mt-6 flex flex-wrap gap-6 px-8">
+          <div className="flex flex-col gap-2">
+            <span className="font-display text-base font-bold text-text-primary">음식 종류</span>
+            <FilterChipGroup options={typeOptions} selectedId={selectedType} onSelect={setSelectedType} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="font-display text-base font-bold text-text-primary">조리 시간</span>
+            <FilterChipGroup options={timeOptions} selectedId={selectedTimeFilterId} onSelect={setSelectedTimeFilterId} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="font-display text-base font-bold text-text-primary">정렬</span>
+            <FilterChipGroup options={SORT_OPTIONS} selectedId={selectedSort} onSelect={setSelectedSort} />
+          </div>
         </div>
 
         {!hasAnyMatch && closestRecipes.length === 0 && (
@@ -109,14 +122,14 @@ function Home() {
             <div className="flex flex-col items-center gap-3 rounded-card border border-border bg-bg-surface px-6 py-8 text-center shadow-sm">
               <img src={kkinniCharacter} alt="" className="w-28 select-none" />
               <div>
-                <p className="text-sm font-bold text-text-primary">어라, 딱 맞는 요리를 못 찾았더랑!</p>
-                <p className="mt-1 text-xs text-text-secondary">
+                <p className="font-display text-lg font-bold text-text-primary">어라, 딱 맞는 요리를 못 찾았더랑!</p>
+                <p className="mt-1 font-display text-sm text-text-secondary">
                   조미료 말고 진짜 재료(채소·고기·가공식품 등)를 골라주면 기니가 딱 맞는 요리를 찾아드릴게요.
                 </p>
               </div>
               <Link
                 to="/"
-                className="mt-1 rounded-full bg-primary px-5 py-2 text-sm font-bold text-text-primary transition hover:brightness-95"
+                className="mt-1 rounded-full bg-primary px-5 py-2 font-display text-base font-bold text-text-primary transition hover:brightness-95"
               >
                 재료 고르러 가기
               </Link>
@@ -124,7 +137,7 @@ function Home() {
 
             {quickRecipes.length > 0 && (
               <div className="mt-5">
-                <h3 className="text-xs font-bold text-text-primary">그래도 빨리 만들 수 있는 요리는 있어요</h3>
+                <h3 className="font-display text-base font-bold text-text-primary">그래도 빨리 만들 수 있는 요리는 있어요</h3>
                 <ol className="mt-2 grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
                   {quickRecipes.map((recipe) => (
                     <MenuCard
@@ -146,7 +159,7 @@ function Home() {
 
         {closestRecipes.length > 0 && (
           <section className="mt-4 px-8">
-            <h3 className="text-xs font-bold text-text-primary">이 재료도 있으면 만들 수 있어요</h3>
+            <h3 className="font-display text-base font-bold text-text-primary">이 재료도 있으면 만들 수 있어요</h3>
             <ol className="mt-2 grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
               {closestRecipes.map((recipe) => (
                 <MenuCard
@@ -165,14 +178,16 @@ function Home() {
         )}
 
         {hasAnyMatch && !hasFilteredMatch && (
-          <p className="mt-2 px-8 text-xs text-text-secondary">
+          <p className="mt-2 px-8 font-display text-sm text-text-secondary">
             필터 조건에 맞는 요리가 없어요. 음식종류나 시간 필터를 다르게 골라보세요.
           </p>
         )}
 
         {filteredReady.length > 0 && (
           <section className="mt-2 px-8">
-            <h3 className="text-xs font-bold text-text-primary">지금 바로 만들 수 있어요</h3>
+            <h3 className="flex items-center gap-1.5 font-display text-lg font-bold text-text-primary">
+              지금 바로 만들 수 있어요<span className="h-1.5 w-1.5 rounded-full bg-[#8BAF5E]" aria-hidden="true" />
+            </h3>
             <div className="relative mt-2">
               <div className="pointer-events-none absolute -left-[108px] top-9 z-10 hidden sm:block">
                 <span className="absolute left-2 -top-6 whitespace-nowrap rounded-full border border-border bg-bg-surface px-3 py-1 text-xs font-bold text-primary-text shadow-sm">
@@ -200,7 +215,7 @@ function Home() {
 
         {filteredShopping.length > 0 && (
           <section className="mt-6 px-8">
-            <h3 className="text-xs font-bold text-text-primary">재료 조금만 사면 돼요</h3>
+            <h3 className="font-display text-lg font-bold text-text-primary">재료 조금만 사면 돼요 🛒</h3>
             <ol className="mt-2 grid grid-cols-3 gap-3 max-[640px]:grid-cols-1">
               {filteredShopping.map((recipe) => (
                 <MenuCard
@@ -219,9 +234,9 @@ function Home() {
           </section>
         )}
 
-        <h2 className="mt-8 px-8 text-sm font-bold text-text-primary">전체 둘러보기</h2>
+        <h2 className="mt-8 px-8 font-display text-lg font-bold text-text-primary">전체 둘러보기</h2>
         {filteredAll.length === 0 && (
-          <p className="mt-2 px-8 text-xs text-text-secondary">필터 조건에 맞는 요리가 없어요.</p>
+          <p className="mt-2 px-8 font-display text-sm text-text-secondary">필터 조건에 맞는 요리가 없어요.</p>
         )}
         <ol className="mt-2 grid grid-cols-3 gap-3 px-8 max-[640px]:grid-cols-1">
           {filteredAll.map((recipe) => (

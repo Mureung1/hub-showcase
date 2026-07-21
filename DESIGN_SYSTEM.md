@@ -2,38 +2,40 @@
 
 이 문서는 "식비구조대"의 공식 디자인 토큰과 컴포넌트 패턴을 정의한다. 실제 서비스 코드(`src/`, React + Tailwind v4)와 프로토타입(`prototype/`, 정적 HTML + CSS)에 **똑같이** 적용된다 — 구현 방식만 다르고 토큰 이름과 값은 하나다.
 
-원본은 배달앱 UI 레퍼런스에서 추출한 웜톤(노랑 프라이머리)이며, `prototype/style-warm.css` / `prototype/index-warm.html`가 최초 구현이다.
+2026-07-20에 prototype-v2(마스코트 '기니' 방향)에서 검증한 웜톤(크림 배경·갈색 잉크) 팔레트로 전환했다 — 이전 팔레트(남색 잉크 `#17182B`·노랑 `#F9BE3B` 프라이머리, `prototype/style-warm.css`가 최초 구현)는 리브랜딩 전 버전이라 더 이상 기준이 아니다. `prototype-v2/style-fridge-flow.css`가 이 팔레트의 최초 구현이고, `src/index.css`의 `@theme`에도 동일하게 반영돼 있다.
 
-> 참고: 저장소 루트의 `DESIGN.md`, `miro/DESIGN.md`는 외부 사이트(Figma, Miro)를 분석해둔 참고 자료이며 이 프로젝트의 공식 시스템이 아니다. 이 파일이 식비구조대의 유일한 기준이다.
+> 참고: 저장소 루트의 `DESIGN.md`, `miro/DESIGN.md`는 외부 사이트(Figma, Miro)를 분석해둔 참고 자료이며 이 프로젝트의 공식 시스템이 아니다. 이 파일이 끼니픽의 유일한 기준이다.
 
 ## 색상
 
 | 토큰 | 값 | 용도 |
 |---|---|---|
-| `primary` | `#F9BE3B` | CTA, 활성 필터, 프로모 배너 강조 |
-| `primary-soft` | `#FDE9B9` | "최저가" 같은 배지 배경 |
-| `primary-text` | `#8A5A08` | `primary-soft` 배경 위 텍스트 |
-| `bg-page` | `#E9EBF2` | 화면 바깥 전체 배경 |
-| `bg-surface` | `#FFFFFF` | 카드·패널·네비 배경 |
-| `bg-muted` | `#F4F5F9` | 검색창, 필터 패널처럼 옅은 배경 |
-| `text-primary` | `#17182B` | 제목·본문·가격 |
-| `text-secondary` | `#9A9DAE` | 부제·캡션 |
+| `primary` | `#F0A93E` | CTA, 활성 필터, 프로모 배너 강조 |
+| `primary-soft` | `#FBE3C2` | "최저가" 같은 배지 배경 |
+| `primary-text` | `#5B4130` | `primary-soft` 배경 위 텍스트 |
+| `bg-page` | `#FBF1DE` | 화면 바깥 전체 배경 |
+| `bg-surface` | `#FFFBF2` | 카드·패널·네비 배경 |
+| `bg-muted` | `#F5F1E6` | 검색창, 필터 패널처럼 옅은 배경 |
+| `text-primary` | `#5B4130` | 제목·본문·가격 |
+| `text-secondary` | `#8A6F55` | 부제·캡션 |
 | `accent-heart` | `#F0455C` | 찜/하트 아이콘 등 포인트 액센트 |
-| `bg-cream` | `#F0F2F5` | 냉장고 씬(홈 진입 화면) 배경 |
-| `border` | `#EFEFF4` | 구분선, 카드 테두리 |
+| `bg-cream` | `#FBF1DE` | 냉장고 씬(홈 진입 화면) 배경 |
+| `border` | `#EADFC8` | 구분선, 카드 테두리 |
+| `ink` | `#5B4130` | 카드·버튼의 굵은 테두리(3~4px) + 오프셋 하드 섀도로 "3D" 느낌을 내는 잉크색. 기존 `border`(연한 구분선)와는 용도가 다름 |
 
 ## 타이포그래피
 
-- 폰트: `"Pretendard", "Noto Sans KR", -apple-system, sans-serif` (한글 지원 우선)
-- 사이즈/웨이트: title 22px·700 (배너 헤드라인) · heading 15~16px·700 (카드 제목) · body 14px·400 · caption 12px·400 (부제·라벨)
+- 폰트: 제목·버튼 `"Jua", sans-serif`(`font-display`) · 본문 `"Gowun Dodum", sans-serif`(`font-body`). 둘 다 Google Fonts에서 로드(`src/index.css` 상단 `@import url(...)`) — 별도 `@font-face` 불필요
+- 사이즈/웨이트: title 22px (배너 헤드라인) · heading 15~18px (카드 제목) · body 14px · caption 11~12px (부제·라벨). Jua는 자체 웨이트가 하나뿐이라 `font-weight`를 따로 지정하지 않음
+- 이전 `"Pretendard"` 지정은 실제로는 로드된 적이 없어(코드에 `@font-face`/링크 없음) 시스템 기본 산세리프로 폴백되고 있었음 — 이번 교체로 실제 로드되는 폰트로 정리됨
 
 ## Radius 스케일
 
 | 토큰 | 값 | 용도 |
 |---|---|---|
-| `radius-container` | 32px | 화면 전체를 감싸는 큰 패널 |
+| `radius-container` | 28px | 화면 전체를 감싸는 큰 패널 |
 | `radius-banner` | 20px | 프로모 배너 |
-| `radius-card` | 16px | 카드, 필터 패널 |
+| `radius-card` | 18px | 카드, 필터 패널 |
 | `radius-input` | 14px | 검색창 |
 | `radius-pill` | 9999px | 버튼, 필터 칩, 배지 |
 

@@ -1,26 +1,33 @@
+@import url("https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap");
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #F9BE3B;
-  --color-primary-soft: #FDE9B9;
-  --color-primary-text: #8A5A08;
-  --color-bg-page: #E9EBF2;
-  --color-bg-cream: #F0F2F5;
-  --color-bg-surface: #FFFFFF;
-  --color-bg-muted: #F4F5F9;
-  --color-text-primary: #17182B;
-  --color-text-secondary: #9A9DAE;
+  /* prototype-v2에서 검증한 웜톤(크림/갈색 잉크) 팔레트로 교체 — 기존 남색 잉크·노랑 팔레트에서 전환 */
+  --color-primary: #F0A93E;
+  --color-primary-soft: #FBE3C2;
+  --color-primary-text: #5B4130;
+  --color-bg-page: #FBF1DE;
+  --color-bg-cream: #FBF1DE;
+  --color-bg-surface: #FFFBF2;
+  --color-bg-muted: #F5F1E6;
+  --color-text-primary: #5B4130;
+  --color-text-secondary: #8A6F55;
   --color-accent-heart: #F0455C;
-  --color-border: #EFEFF4;
+  --color-border: #EADFC8;
+  --color-ink: #5B4130;
 
-  --radius-container: 32px;
+  --font-display: "Jua", sans-serif;
+  --font-body: "Gowun Dodum", sans-serif;
+
+  --radius-container: 28px;
   --radius-banner: 20px;
-  --radius-card: 16px;
+  --radius-card: 18px;
   --radius-input: 14px;
 }
 
 body {
   margin: 0;
+  font-family: var(--font-body);
 }
 
 /* ---- promo banner: prototype/style-warm.css의 라디오 hack 패턴을 그대로 포팅 (JS 없이 CSS만으로 슬라이드 전환) ---- */
@@ -30,7 +37,8 @@ body {
   margin: 24px 32px 0;
   padding: 24px 32px 30px;
   border-radius: var(--radius-banner);
-  background: linear-gradient(120deg, var(--color-primary) 0%, #ffe49a 100%);
+  border: 2px solid var(--color-ink);
+  background: #F3D9A4;
 }
 .promo-radio {
   position: absolute;
@@ -59,8 +67,9 @@ body {
 }
 .promo-banner h2 {
   margin: 0;
+  font-family: var(--font-display);
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 400;
   line-height: 1.3;
   color: var(--color-text-primary);
 }
