@@ -351,6 +351,7 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
   - 예상 소요: 해피패스만이면 약 1일, 에러 처리 포함 견고하게 하면 약 2일
   - 불확실 지점: `master_dataset_builder.py`가 월 단위 증분 갱신을 지원하는지, 아니면 raw 전체 재계산 구조인지 확인 필요 — 착수 전 먼저 확인
   - 이 작업에 `FinancialService Cache Reload`(아래 항목) 포함됨
+  - ⚠️ `financialService.ts`의 `if (this.data.length !== 24) throw ...` 하드코딩 검증도 이때 같이 제거/완화 필요 (데이터가 24행 이상으로 늘어나면 현재 로직은 에러를 던짐). Financial/Recommendation API 계약 자체는 안 바뀌므로 프론트는 그대로 호환됨
 
 - [ ] Fuzzy Matching: sales/orders 상품명 유사 매칭
 - [ ] Product Master 자동 보정: 수동 매핑 테이블 구축
