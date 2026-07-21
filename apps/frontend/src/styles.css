@@ -169,6 +169,11 @@ button {
   cursor: pointer;
 }
 
+.logout-button {
+  min-height: 40px;
+  padding: 0 8px;
+}
+
 .profile-chip span:first-child {
   width: 26px;
   height: 26px;
@@ -178,6 +183,27 @@ button {
 
 .dashboard {
   padding: 32px 36px 38px;
+}
+
+.page-panel {
+  display: grid;
+  gap: 16px;
+  max-width: 680px;
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--card-shadow);
+}
+
+.page-panel h1 {
+  margin-bottom: 0;
+  font-size: 34px;
+  line-height: 1.12;
+}
+
+.page-panel .auth-actions-row {
+  margin-top: 0;
 }
 
 .hero-row {

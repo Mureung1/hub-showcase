@@ -5,8 +5,8 @@ export function ScheduleDatePage() {
   const { date } = useParams();
 
   return (
-    <main className="auth-stage">
-      <section className="auth-card store-select-card">
+    <main className="dashboard">
+      <section className="page-panel">
         <p className="label">DAILY SCHEDULE</p>
         <h1>{date ?? "선택한 날짜"}</h1>
         <div className="empty-state">

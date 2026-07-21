@@ -3,8 +3,8 @@ import { ROUTES } from "../shared/routes";
 
 export function NewSubstituteRequestPage() {
   return (
-    <main className="auth-stage">
-      <section className="auth-card store-select-card">
+    <main className="dashboard">
+      <section className="page-panel">
         <p className="label">SUBSTITUTE</p>
         <h1>대타 요청 등록</h1>
         <div className="empty-state">

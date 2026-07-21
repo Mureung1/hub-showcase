@@ -10,6 +10,7 @@ import { SignupPage } from "./pages/SignupPage";
 import { StoreSelectPage } from "./pages/StoreSelectPage";
 import { SubstituteRequestsPage } from "./pages/SubstituteRequestsPage";
 import { WorkersPage } from "./pages/WorkersPage";
+import { AppLayout } from "./shared/components";
 import { ROUTES } from "./shared/routes";
 
 export function App() {
@@ -27,13 +28,15 @@ export function App() {
           <Route path={ROUTES.storesSelect} element={<StoreSelectPage />} />
 
           <Route element={<RequireSelectedStore />}>
-            <Route path={ROUTES.schedule} element={<SchedulePage />} />
-            <Route path={ROUTES.scheduleDate} element={<ScheduleDatePage />} />
-            <Route path={ROUTES.substituteRequests} element={<SubstituteRequestsPage />} />
-            <Route path={ROUTES.newSubstituteRequest} element={<NewSubstituteRequestPage />} />
-            <Route path={ROUTES.workers} element={<WorkersPage />} />
-            <Route path={ROUTES.myWork} element={<MyWorkPage />} />
-            <Route path={ROUTES.notifications} element={<NotificationsPage />} />
+            <Route element={<AppLayout />}>
+              <Route path={ROUTES.schedule} element={<SchedulePage />} />
+              <Route path={ROUTES.scheduleDate} element={<ScheduleDatePage />} />
+              <Route path={ROUTES.substituteRequests} element={<SubstituteRequestsPage />} />
+              <Route path={ROUTES.newSubstituteRequest} element={<NewSubstituteRequestPage />} />
+              <Route path={ROUTES.workers} element={<WorkersPage />} />
+              <Route path={ROUTES.myWork} element={<MyWorkPage />} />
+              <Route path={ROUTES.notifications} element={<NotificationsPage />} />
+            </Route>
           </Route>
         </Route>
 

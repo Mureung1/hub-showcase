@@ -1,7 +1,7 @@
 export function MyWorkPage() {
   return (
-    <main className="auth-stage">
-      <section className="auth-card store-select-card">
+    <main className="dashboard">
+      <section className="page-panel">
         <p className="label">MY WORK</p>
         <h1>내 근무 정보</h1>
         <div className="empty-state">
