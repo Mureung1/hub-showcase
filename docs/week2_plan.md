@@ -19,7 +19,7 @@ isProject: false
 
 # Week 2 GitHub Issues Plan
 
-> **진행 현황 갱신: 2026-07-16 (수요일 밤 기준)**  
+> **진행 현황 갱신: 2026-07-21 (화요일 밤 기준)**  
 > 아래 [진행 현황 요약](#진행-현황-요약-2026-07-16) 참고.
 
 ## 진행 현황 요약 (2026-07-16)
@@ -34,10 +34,10 @@ isProject: false
 | 12 | FE 상세/공용컴포넌트/데이터계층 | 화 | ✅ CLOSED | **일부 항목 미완** (아래 화요일 TODO 참고) |
 | 17 | PR CI + commitlint | (추가) | ✅ 머지 | `pr-checks.yml`, husky |
 | 18 | GitHub Actions Pages 배포 | (추가) | ✅ 머지 | `syd348.github.io/hub/` |
-| 3 | Supabase 스키마 + env | 화 | ⬜ OPEN | |
-| 4 | Express 매칭 API → Supabase | 화 | ⬜ OPEN | |
+| 3 | Supabase 스키마 + env | 화 | ✅ CLOSED | PR #20 머지 |
+| 4 | Express 매칭 API → Supabase | 화 | ✅ CLOSED | PR #21 머지, 시드 8건 확장 |
 | 5 | React 핵심 화면 mock | 수 | ⬜ OPEN | #11·#12로 대부분 선행 완료, 이슈 닫기 검토 |
-| 6 | FE ↔ Express API 연결 | 수 | ⬜ OPEN | |
+| 6 | FE ↔ Express API 연결 | 수 | ✅ 작업 완료 (PR 대기) | `client.ts` 정리 + 프록시 통한 실제 API 응답 확인 — `day5-fe-api-connect-plan.md` 참고 |
 | 7 | DB 저장 사이클 | 목 | ⬜ OPEN | |
 | 8 | 기능 검증 Agent 산출물 | 목 | ⬜ OPEN | |
 | 9 | 통합 검증 및 버그 수정 | 금 | ⬜ OPEN | |
@@ -104,7 +104,14 @@ isProject: false
 
 - 위 5개 미완 항목 전부 완료. 상세 내용은 [`day2-verification-checklist.md`](week2/day2-verification-checklist.md) 참고.
 - 검증 중 `getSubsidy`의 404 처리 버그 발견·수정: 서버 샘플 데이터(2건)가 mock(8건)보다 적어 상세 화면 진입 시 6건이 "찾을 수 없음"으로 깨지는 회귀였음. 모든 실패를 mock fallback으로 통일해 해결.
-- 남은 리스크: 서버·mock 데이터 불일치는 Supabase 연동(#3) 시 정리 필요, `getSubsidies()`는 현재 미사용 상태.
+- 남은 리스크(당시): 서버·mock 데이터 불일치는 Supabase 연동(#3) 시 정리 필요, `getSubsidies()`는 현재 미사용 상태. → 아래 #3·#4·#6에서 해소.
+
+### #3·#4·#6 완료 (2026-07-21)
+
+- **#3 Supabase 스키마·연결** (PR #20): `subsidies` 테이블 스키마, 서버 전용 클라이언트, 시드/검증 스크립트 구성.
+- **#4 매칭 API → Supabase 전환** (PR #21): `subsidies-repo.ts` 신규(조회+정렬+fallback), `GET /api/subsidies`·`GET /api/subsidies/:id`·신규 `POST /api/match`가 Supabase 조회 기반으로 전환. 시드 데이터 2건 → **8건 확장**해 mock과 개수 일치, DB 재시드 완료.
+- **#6 FE ↔ Express API 연결**: `#4`로 실제 API 경로가 이미 연결돼 있던 것을 확인. `src/api/client.ts`의 낡은 주석("#4 예정" 등) 정리, fallback 발생 시 `console.warn` 추가, 미사용 `getSubsidies()` 제거. Vite proxy(`/api/*`)를 통해 실제 Supabase 데이터가 응답되는 것을 curl로 검증(목록/상세/매칭 모두 200, 서버 중지 시 502 확인). 상세 내용은 [`day5-fe-api-connect-plan.md`](week2/day5-fe-api-connect-plan.md) 참고.
+- 남은 리스크: 매칭 조건 필터(업종/지역)는 스키마에 구조화 컬럼이 없어 정렬 위주로만 동작 — 3주차 매칭 알고리즘 범위.
 
 ### 추가 완료 (플랜 외 · 인프라)
 - [x] PR CI + commitlint (`pr-checks.yml`, husky `commit-msg`)
