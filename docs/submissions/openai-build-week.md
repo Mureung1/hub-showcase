@@ -1,7 +1,8 @@
 # OpenAI Build Week 제출 패키지 — LocalTwin
 
-문서 상태: 제출 준비 중  
-대회: [OpenAI Build Week](https://openai.devpost.com/)  
+문서 상태: 제출 준비 중
+
+대회: [OpenAI Build Week](https://openai.devpost.com/)
 제출 트랙: **Apps for your life**
 
 ## 1. 제출 화면에 입력할 내용
