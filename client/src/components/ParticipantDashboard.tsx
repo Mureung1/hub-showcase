@@ -23,7 +23,7 @@ function ParticipantDashboard({ appointmentId, participantId }: ParticipantDashb
   ) // study: "본인"(완료 여부/완료 일시)
 
   return (
-    <div className="dashboard-page page-stack">
+    <div className="dashboard-page page-stack transition-slide-up">
       {!isLoading && !error && (
         <div className="dashboard-header">
           <strong className="dashboard-header__title">{title}</strong>

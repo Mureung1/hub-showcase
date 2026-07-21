@@ -5,6 +5,7 @@
 }
 
 .result-grid {
+  table-layout: fixed;
   border-collapse: collapse;
 }
 
@@ -15,14 +16,31 @@
 }
 
 .result-grid thead th {
-  font-size: var(--font-size-caption);
+  overflow: hidden;
   color: var(--color-text-secondary);
+}
+
+.result-grid thead th:not(.result-grid__corner) {
+  width: 44px;
+}
+
+.result-grid__date,
+.result-grid__weekday {
+  display: block;
   white-space: nowrap;
+  font-size: var(--font-size-caption);
+  line-height: 1.3;
+}
+
+.result-grid__weekday {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
 }
 
 .result-grid tbody th {
   position: sticky;
   left: 0;
+  width: 36px;
   background: var(--color-bg-section);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-regular);
@@ -33,6 +51,7 @@
 .result-grid__corner {
   position: sticky;
   left: 0;
+  width: 36px;
   background: var(--color-bg-section);
 }
 

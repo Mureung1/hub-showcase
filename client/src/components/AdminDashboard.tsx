@@ -19,6 +19,7 @@ function AdminDashboard({ appointmentId, participantId }: AdminDashboardProps) {
   const [showCloseModal, setShowCloseModal] = useState(false)
   // study: useState의 초기값이 false 인 이유 = 결과 확정 확인 modal 창은 버튼을 눌러야 나오기 때문. 아래 button 에서 click event 발생시 true로 변경. 투표 생성 시 바로 나온 것과 반대
   const [closeError, setCloseError] = useState('')
+  const [isClosing, setIsClosing] = useState(false)
   const {
     isLoading,
     error,
@@ -41,7 +42,9 @@ function AdminDashboard({ appointmentId, participantId }: AdminDashboardProps) {
   // claude: 마감 성공 시에만 모달을 닫는다 - 실패하면 열어둔 채로 에러를 보여줘서 다시 시도할 수 있게 함.
   const handleClose = async () => {
     setCloseError('')
+    setIsClosing(true)
     const success = await closeVoting()
+    setIsClosing(false)
     if (success) {
       setShowCloseModal(false)
     } else {
@@ -50,7 +53,7 @@ function AdminDashboard({ appointmentId, participantId }: AdminDashboardProps) {
   }
 
   return (
-    <div className="dashboard-page page-stack">
+    <div className="dashboard-page page-stack transition-slide-up">
       {!isLoading && !error && (
         <div className="dashboard-header">
           <strong className="dashboard-header__title">{title}</strong>
@@ -124,14 +127,40 @@ function AdminDashboard({ appointmentId, participantId }: AdminDashboardProps) {
         )}
       </div>
 
-      <Modal open={showCloseModal} onClose={() => setShowCloseModal(false)}>
-        <strong>투표를 마감할까요?</strong>
-        <p>마감하면 참여자들이 더 이상 일정을 수정할 수 없어요.</p>
+      <Modal
+        open={showCloseModal}
+        onClose={() => {
+          // claude: 마감 요청 중엔 배경(overlay) 클릭으로 모달이 닫히지 않게 막는다 - ScheduleEditor.tsx의 isSubmitting 패턴과 동일.
+          if (isClosing) return
+          setShowCloseModal(false)
+        }}
+      >
+        <div className="close-modal-header">
+          <span className="close-modal-header__icon" aria-hidden="true">
+            !
+          </span>
+          <strong className="close-modal-header__title">투표를 마감할까요?</strong>
+        </div>
+        <div className="dashboard-section">
+          <div className="dashboard-status-row">
+            <span>
+              {headcount}명 중 {completedCount}명 완료
+            </span>
+            <span>{calculateProgressPercent(completedCount, headcount)}%</span>
+          </div>
+          <ProgressBar completed={completedCount} total={headcount} />
+        </div>
+        <p className="close-modal-notice">마감 후에는 참여자가 더 이상 응답을 수정할 수 없습니다.</p>
         {closeError && <p className="field-error">{closeError}</p>}
-        <button type="button" onClick={handleClose}>
+        <button type="button" className="button--danger" onClick={handleClose} disabled={isClosing}>
           마감할게요
         </button>
-        <button type="button" className="button--secondary" onClick={() => setShowCloseModal(false)}>
+        <button
+          type="button"
+          className="button--secondary"
+          onClick={() => setShowCloseModal(false)}
+          disabled={isClosing}
+        >
           취소
         </button>
       </Modal>
