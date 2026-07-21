@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import MoleculeInputForm, {
   type InputMode,
 } from '../../features/chemistry/components/MoleculeInputForm'
@@ -13,6 +13,21 @@ export default function ChemistryPage() {
   const [sdf, setSdf] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // 첫 로드 시 기본 분자(에탄올)의 3D도 자동으로 가져온다. 이게 없으면 sdf가
+  // null인 채로 시작해 "3D 구조를 찾을 수 없습니다"라는 거짓 안내가 뜬다.
+  useEffect(() => {
+    let cancelled = false
+    async function loadDefault() {
+      const cid = await smilesToCid('CCO')
+      const sdf3d = cid ? await fetchSdf3d(cid) : null
+      if (!cancelled) setSdf(sdf3d)
+    }
+    loadDefault()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleSubmit = async (value: string, mode: InputMode) => {
     setLoading(true)

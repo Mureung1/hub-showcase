@@ -104,6 +104,13 @@ export default function CoordinationGeometryPage() {
         </Panel>
         <Panel title="3D 구조">
           <Structure3DViewer sdf={sdf} />
+          {activeCompound && (
+            <p className="mt-2 text-xs text-zinc-500">
+              마우스로 드래그해 돌려보세요. 3D는 배위 기하구조(중심 금속 + 리간드 배치)를 뚜렷이
+              보여주기 위해 리간드의 수소는 생략한 배위 골격만 표시합니다 — 리간드 전체 모양은
+              왼쪽 2D 구조식에서 확인하세요.
+            </p>
+          )}
         </Panel>
       </div>
 

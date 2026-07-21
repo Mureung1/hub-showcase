@@ -86,7 +86,7 @@ export const COORDINATION_COMPOUNDS: CoordinationCompound[] = [
     smiles: '[NH3][Cu+2]([NH3])([NH3])[NH3]',
     sdf: tetraamminecopperSdf,
     description:
-      '중심 금속 이온(Cu2+) 주위에 암모니아 리간드 4개가 한 평면 위에서 사각형 모양으로 배위결합한 화합물입니다. 배위수가 4일 때 정사면체와 함께 나타날 수 있는 대표적인 기하구조입니다.',
+      '중심 금속 이온(Cu2+) 주위에 암모니아 리간드 4개가 한 평면 위에서 사각형 모양으로 배위결합한 화합물입니다. 배위수가 4일 때 정사면체와 함께 나타날 수 있는 대표적인 기하구조입니다. 다만 실제 이 구리 착이온은 물 분자가 축 방향에 추가로 약하게 결합해 5배위(사각뿔)·6배위(정팔면체, Jahn-Teller 왜곡)로 관찰되는 경우가 많고, 여기서는 배위수 4의 이상적 평면사각형만 단순화해 보여줍니다.',
     dOrbitalGroups: [2, 1, 1],
     observedColor: { label: '진한 파랑-보라 (실제 문헌 확인)', hex: '#3b4cca' },
     splitNote:
