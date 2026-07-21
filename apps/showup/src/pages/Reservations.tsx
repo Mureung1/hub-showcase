@@ -127,9 +127,6 @@ const Reservations = () => {
     return true
   })
 
-  // 오늘 날짜로 초기화
-  const today = new Date().toISOString().split('T')[0]
-
   return (
     <div className="p-4">
       <header className="mb-4">
