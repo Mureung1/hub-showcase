@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import '../App.css'
 
@@ -30,10 +30,19 @@ interface Hypothesis {
   verification_status: string
 }
 
+interface RefineChat {
+  id: string
+  role: 'user' | 'assistant'
+  message: string | null
+  diff_json: { old_text: string; new_text: string; new_citations: { marker: number; evidence_tag_id: string }[] } | null
+  applied_at: string | null
+}
+
 interface DetailData {
   hypothesis: Hypothesis
   verification_result: VerificationResult | null
   evidence_tags: EvidenceTag[]
+  refine_chats: RefineChat[]
 }
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
@@ -92,6 +101,14 @@ function HypothesisDetailPage() {
   const [editEffect, setEditEffect] = useState('')
   const [editError, setEditError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+
+  const summaryRef = useRef<HTMLParagraphElement>(null)
+  const [highlightedText, setHighlightedText] = useState('')
+  const [refineMessage, setRefineMessage] = useState('')
+  const [refineError, setRefineError] = useState<string | null>(null)
+  const [isRefining, setIsRefining] = useState(false)
+  const [applyingChatId, setApplyingChatId] = useState<string | null>(null)
+  const [applyError, setApplyError] = useState<string | null>(null)
 
   function loadDetail() {
     if (!id || !hid) return
@@ -176,6 +193,73 @@ function HypothesisDetailPage() {
     }
   }
 
+  // 검증결과 문단에서 텍스트를 드래그 선택하면 하이라이트로 캡처한다(플로팅 툴바 없는 단순 구현).
+  function handleSummaryMouseUp() {
+    const selection = window.getSelection()
+    if (!selection || selection.isCollapsed || !summaryRef.current) return
+    if (!summaryRef.current.contains(selection.anchorNode)) return
+    const text = selection.toString().trim()
+    if (text) setHighlightedText(text)
+  }
+
+  async function submitRefine() {
+    if (!refineMessage.trim()) {
+      setRefineError('의견을 입력해주세요.')
+      return
+    }
+    setRefineError(null)
+    setIsRefining(true)
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/projects/${id}/hypotheses/${hid}/refine`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ highlighted_text: highlightedText, message: refineMessage }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || '리파인 요청에 실패했습니다.')
+      }
+      const { user_chat, assistant_chat } = await res.json()
+      setData((prev) => (prev ? { ...prev, refine_chats: [...prev.refine_chats, user_chat, assistant_chat] } : prev))
+      setRefineMessage('')
+      setHighlightedText('')
+    } catch (err) {
+      setRefineError(err instanceof Error ? err.message : '리파인 요청 중 오류가 발생했습니다.')
+    } finally {
+      setIsRefining(false)
+    }
+  }
+
+  async function applyDraft(chatId: string) {
+    setApplyError(null)
+    setApplyingChatId(chatId)
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/projects/${id}/hypotheses/${hid}/refine/${chatId}/apply`, {
+        method: 'POST',
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || '가안 적용에 실패했습니다.')
+      }
+      const { verification_result: updated } = await res.json()
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              verification_result: updated,
+              refine_chats: prev.refine_chats.map((c) =>
+                c.id === chatId ? { ...c, applied_at: new Date().toISOString() } : c,
+              ),
+            }
+          : prev,
+      )
+    } catch (err) {
+      setApplyError(err instanceof Error ? err.message : '가안 적용 중 오류가 발생했습니다.')
+    } finally {
+      setApplyingChatId(null)
+    }
+  }
+
   if (error) {
     return (
       <div className="app-shell">
@@ -192,7 +276,7 @@ function HypothesisDetailPage() {
     )
   }
 
-  const { hypothesis, verification_result: vr, evidence_tags: evidenceTags } = data
+  const { hypothesis, verification_result: vr, evidence_tags: evidenceTags, refine_chats: refineChats } = data
   const badgeClass = STATUS_BADGE_CLASS[hypothesis.verification_status] ?? 'badge-pending'
   const drawerEvidence = evidenceTags.find((t) => t.id === drawerEvidenceId) ?? null
 
@@ -275,7 +359,9 @@ function HypothesisDetailPage() {
           <p className="field-label detail-empty">아직 분석 근거가 없습니다.</p>
         ) : (
           <>
-            <p className="detail-summary">{renderSummaryWithCitations(vr.summary, vr.citations, setDrawerEvidenceId)}</p>
+            <p className="detail-summary" ref={summaryRef} onMouseUp={handleSummaryMouseUp}>
+              {renderSummaryWithCitations(vr.summary, vr.citations, setDrawerEvidenceId)}
+            </p>
 
             <div className="detail-block">
               <span className="detail-block-label">수정 방향성</span>
@@ -288,6 +374,68 @@ function HypothesisDetailPage() {
           </>
         )}
       </section>
+
+      {vr && (
+        <section className="card">
+          <label className="field-label">반박 / 의견</label>
+          <p className="detail-empty">검증결과 문단에서 동의하지 않는 부분을 드래그해 선택한 뒤, 의견을 남겨보세요.</p>
+
+          {highlightedText && (
+            <div className="refine-highlight">
+              <span className="hypothesis-field-label">선택한 부분</span>
+              <p className="refine-highlight-text">“{highlightedText}”</p>
+              <button type="button" className="btn-remove" onClick={() => setHighlightedText('')}>
+                선택 지우기
+              </button>
+            </div>
+          )}
+
+          <div className="field">
+            <textarea
+              className="textarea"
+              placeholder="예: 이 부분은 근거가 부족해 보여요. 다른 발언은 없었나요?"
+              value={refineMessage}
+              onChange={(e) => setRefineMessage(e.target.value)}
+            />
+          </div>
+          {refineError && <p className="error-text">{refineError}</p>}
+          <div className="detail-edit-actions">
+            <button type="button" className="btn btn-primary" onClick={submitRefine} disabled={isRefining}>
+              {isRefining ? 'AI에게 물어보는 중...' : 'AI에게 물어보기'}
+            </button>
+          </div>
+
+          {refineChats.length > 0 && (
+            <div className="refine-chat-list">
+              {applyError && <p className="error-text">{applyError}</p>}
+              {refineChats.map((chat) => (
+                <div key={chat.id} className={`refine-chat-bubble refine-chat-${chat.role}`}>
+                  <span className="refine-chat-role">{chat.role === 'user' ? '나' : 'AI'}</span>
+                  <p>{chat.message}</p>
+                  {chat.role === 'assistant' && chat.diff_json && (
+                    <div className="refine-draft">
+                      <span className="hypothesis-field-label">수정 가안</span>
+                      <p className="refine-draft-text">{chat.diff_json.new_text}</p>
+                      {chat.applied_at ? (
+                        <span className="badge badge-strong">적용됨</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          disabled={applyingChatId === chat.id}
+                          onClick={() => applyDraft(chat.id)}
+                        >
+                          {applyingChatId === chat.id ? '적용 중...' : '적용'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {drawerEvidence && (
         <>

@@ -130,8 +130,8 @@ gantt
   - *원인/결과 인라인 수정 진입점:* 버튼으로 편집 모드 진입 → 저장 시 `PATCH`(cause/effect로 확장)로 즉시 반영. **현재는 덮어쓰기**이며, 버전 히스토리(`hypothesis_versions` append) 연결은 Task 12에서 처리(Task 10이 Task 12에 의존하지 않고 자체 완결되도록 하는 결정).
   - *완료 조건:* 검증결과 본문의 참조 번호를 클릭하면 사이드 드로어가 열리며 해당 근거 태그와 전사문 발췌가 정확히 표시됨.
 
-- [ ] **Task 11: [BE/FE] 반박 / 의견 프롬프트 ↔ AI 모델 연동**
-  - *상세:* 검증결과 문단에서 동의하지 않는 부분을 하이라이트 + 프롬프트 입력 ➡️ 원 검증결과 · 근거 · 사용자 반박을 함께 Gemini에 전달하여 **수정 가안** 수신. 대화와 가안은 `refine_chats`(스키마 존재 — `role` / `message` / `diff_json`에 `{old_text, new_text}`)에 저장. FE는 가안을 **미리보기로 먼저 제시하고, 사용자가 '적용'을 눌러야 반영**. 엔드포인트: `POST /api/projects/:id/hypotheses/:hid/refine`.
+- [x] **Task 11: [BE/FE] 반박 / 의견 프롬프트 ↔ AI 모델 연동**
+  - *상세:* 검증결과 문단(브라우저 네이티브 텍스트 선택으로 하이라이트 캡처) + 프롬프트 입력 ➡️ 원 검증결과 요약 · 근거 목록 · 사용자 의견을 함께 Gemini에 전달(`lib/refineHypothesis.ts`, 설계는 `AI_Pipeline_Design.md` 3단계)하여 **수정 가안**(`reply` + `new_summary` + `new_citations`) 수신. 리파인 대상은 `summary` 문단으로 한정(direction/key_evidence는 안 건드림 — `diff_json {old_text, new_text}` 스키마와 일치). 대화는 `refine_chats`에 user/assistant 2행으로 저장. FE는 가안을 **미리보기로만 제시**하고, 사용자가 '적용'을 눌러야 별도 엔드포인트(`POST .../refine/:chatId/apply`)로 반영 — 이때 클라이언트가 보낸 텍스트가 아니라 **DB의 diff_json을 서버가 다시 읽어** 적용(에코 신뢰 안 함 원칙 유지). `refine_chats.applied_at` 컬럼 신규 추가(마이그레이션 004)로 적용 여부 추적, 중복 적용 차단.
   - *완료 조건:* 반박 프롬프트 입력 시 AI 수정 가안이 미리보기로 표시되고, '적용' 시에만 검증결과가 갱신되며, 대화 이력이 `refine_chats`에 남음.
 
 ### 🔴 High — ③ 저장 및 공유

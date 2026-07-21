@@ -489,3 +489,66 @@
   font-size: var(--font-size-caption);
   color: var(--color-text-muted);
 }
+
+/* ── 반박/의견 리파인 (Task 11) ── */
+
+.refine-highlight {
+  background: var(--color-accent-light);
+  border-radius: var(--radius-input);
+  padding: var(--space-sm) var(--space-md);
+  margin: var(--space-md) 0;
+}
+
+.refine-highlight-text {
+  margin: var(--space-xs) 0 var(--space-sm);
+  color: var(--color-primary-dark);
+  font-style: italic;
+}
+
+.refine-chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.refine-chat-bubble {
+  border-radius: var(--radius-input);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.refine-chat-bubble p {
+  margin: var(--space-xs) 0 0;
+}
+
+.refine-chat-user {
+  background: var(--color-bg);
+  align-self: flex-end;
+  max-width: 80%;
+}
+
+.refine-chat-assistant {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.refine-chat-role {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-muted);
+}
+
+.refine-draft {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px dashed var(--color-border);
+}
+
+.refine-draft-text {
+  background: var(--color-border);
+  border-radius: var(--radius-input);
+  padding: var(--space-sm) var(--space-md);
+  margin: var(--space-xs) 0 var(--space-sm) !important;
+}

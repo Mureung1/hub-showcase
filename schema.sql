@@ -60,7 +60,8 @@ CREATE TABLE refine_chats (
   hypothesis_id UUID REFERENCES hypotheses(id) ON DELETE CASCADE,
   role TEXT NOT NULL, -- 'user' or 'assistant'
   message TEXT,
-  diff_json JSONB, -- stores { old_text: "", new_text: "" }
+  diff_json JSONB, -- stores { old_text: "", new_text: "", new_citations: [...] }
+  applied_at TIMESTAMP WITH TIME ZONE DEFAULT NULL, -- 가안이 검증결과에 실제로 적용됐는지 추적
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

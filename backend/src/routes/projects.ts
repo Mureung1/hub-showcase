@@ -4,6 +4,7 @@ import path from 'path';
 import { supabase } from '../lib/supabaseClient';
 import { buildAnalysisMarkdown } from '../lib/analysisMarkdown';
 import { runAnalysisPipeline } from '../lib/analysisPipeline';
+import { refineVerificationSummary } from '../lib/refineHypothesis';
 
 const router = Router();
 const ANALYSIS_REQUESTS_DIR = path.join(__dirname, '..', '..', '..', 'analysis_requests');
@@ -277,11 +278,176 @@ router.get(
       return res.status(500).json({ error: '근거 태그 조회에 실패했습니다.' });
     }
 
+    // 반박/의견 리파인 대화 이력(Task 11). "판단 근거가 사슬로 남는다" 원칙에 따라
+    // 재방문 시에도 대화가 그대로 복원되도록 여기서 함께 반환한다.
+    const { data: refineChats, error: refineChatsError } = await supabase
+      .from('refine_chats')
+      .select('*')
+      .eq('hypothesis_id', hid)
+      .order('created_at', { ascending: true });
+
+    if (refineChatsError) {
+      console.error('Failed to fetch refine_chats:', refineChatsError);
+      return res.status(500).json({ error: '리파인 대화 조회에 실패했습니다.' });
+    }
+
     return res.status(200).json({
       hypothesis,
       verification_result: verificationResult ?? null,
       evidence_tags: evidenceTags ?? [],
+      refine_chats: refineChats ?? [],
     });
+  },
+);
+
+// POST /api/projects/:id/hypotheses/:hid/refine — 반박/의견 프롬프트 → AI 수정 가안.
+// 검증결과를 바로 바꾸지 않는다. refine_chats에 user/assistant 메시지를 남기고, 가안은
+// FE가 미리보기로만 보여준다. 실제 반영은 별도 /apply 호출에서만 일어난다.
+router.post(
+  '/:id/hypotheses/:hid/refine',
+  async (
+    req: Request<{ id: string; hid: string }, {}, { highlighted_text?: string; message?: string }>,
+    res: Response,
+  ) => {
+    const { id, hid } = req.params;
+    const { highlighted_text: highlightedText = '', message } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'message는 필수입니다.' });
+    }
+
+    const { data: hypothesis, error: hypothesisError } = await supabase
+      .from('hypotheses')
+      .select('*')
+      .eq('id', hid)
+      .eq('project_id', id)
+      .single();
+
+    if (hypothesisError || !hypothesis) {
+      return res.status(404).json({ error: '가설을 찾을 수 없습니다.' });
+    }
+
+    const { data: verificationResult, error: vrError } = await supabase
+      .from('verification_results')
+      .select('*')
+      .eq('hypothesis_id', hid)
+      .maybeSingle();
+
+    if (vrError || !verificationResult) {
+      return res.status(400).json({ error: '검증결과가 아직 없어 리파인할 수 없습니다.' });
+    }
+
+    const { data: evidenceTags, error: evidenceError } = await supabase
+      .from('evidence_tags')
+      .select('id, quote, speaker, badge_label')
+      .eq('hypothesis_id', hid);
+
+    if (evidenceError) {
+      console.error('Failed to fetch evidence_tags for refine:', evidenceError);
+      return res.status(500).json({ error: '근거 태그 조회에 실패했습니다.' });
+    }
+
+    let draft;
+    try {
+      draft = await refineVerificationSummary({
+        cause: hypothesis.cause,
+        effect: hypothesis.effect,
+        currentSummary: verificationResult.summary,
+        evidence: (evidenceTags ?? []).map((t) => ({
+          evidence_tag_id: t.id,
+          quote: t.quote,
+          speaker: t.speaker,
+          badge_label: t.badge_label,
+        })),
+        highlightedText,
+        userMessage: message,
+      });
+    } catch (err) {
+      console.error('Failed to generate refine draft:', err);
+      const errMessage = err instanceof Error ? err.message : 'AI 리파인 생성에 실패했습니다.';
+      return res.status(500).json({ error: errMessage });
+    }
+
+    const { data: chatRows, error: insertError } = await supabase
+      .from('refine_chats')
+      .insert([
+        { hypothesis_id: hid, role: 'user', message, diff_json: null },
+        {
+          hypothesis_id: hid,
+          role: 'assistant',
+          message: draft.reply,
+          diff_json: {
+            old_text: verificationResult.summary,
+            new_text: draft.new_summary,
+            new_citations: draft.new_citations,
+          },
+        },
+      ])
+      .select();
+
+    if (insertError || !chatRows) {
+      console.error('Failed to insert refine_chats:', insertError);
+      return res.status(500).json({ error: '리파인 대화 저장에 실패했습니다.' });
+    }
+
+    const userChat = chatRows.find((c) => c.role === 'user');
+    const assistantChat = chatRows.find((c) => c.role === 'assistant');
+
+    return res.status(200).json({ user_chat: userChat, assistant_chat: assistantChat });
+  },
+);
+
+// POST /api/projects/:id/hypotheses/:hid/refine/:chatId/apply — 미리보기 가안을 실제 검증결과에 반영.
+// 클라이언트가 보낸 텍스트를 신뢰하지 않고, DB에 저장된 diff_json을 다시 읽어 적용한다.
+router.post(
+  '/:id/hypotheses/:hid/refine/:chatId/apply',
+  async (req: Request<{ id: string; hid: string; chatId: string }>, res: Response) => {
+    const { hid, chatId } = req.params;
+
+    const { data: chat, error: chatError } = await supabase
+      .from('refine_chats')
+      .select('*')
+      .eq('id', chatId)
+      .eq('hypothesis_id', hid)
+      .single();
+
+    if (chatError || !chat) {
+      return res.status(404).json({ error: '리파인 대화를 찾을 수 없습니다.' });
+    }
+    if (chat.role !== 'assistant' || !chat.diff_json) {
+      return res.status(400).json({ error: '적용할 수 있는 가안이 아닙니다.' });
+    }
+    if (chat.applied_at) {
+      return res.status(400).json({ error: '이미 적용된 가안입니다.' });
+    }
+
+    const { new_text: newText, new_citations: newCitations } = chat.diff_json as {
+      new_text: string;
+      new_citations: unknown;
+    };
+
+    const { data: updatedResult, error: updateError } = await supabase
+      .from('verification_results')
+      .update({ summary: newText, citations: newCitations, updated_at: new Date().toISOString() })
+      .eq('hypothesis_id', hid)
+      .select()
+      .single();
+
+    if (updateError || !updatedResult) {
+      console.error('Failed to apply refine draft:', updateError);
+      return res.status(500).json({ error: '가안 적용에 실패했습니다.' });
+    }
+
+    const { error: markAppliedError } = await supabase
+      .from('refine_chats')
+      .update({ applied_at: new Date().toISOString() })
+      .eq('id', chatId);
+
+    if (markAppliedError) {
+      console.error('Failed to mark refine_chats as applied:', markAppliedError);
+    }
+
+    return res.status(200).json({ verification_result: updatedResult });
   },
 );
 
