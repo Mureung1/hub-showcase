@@ -1,5 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Bookmark, BookOpen, NotebookPen, Plus } from 'lucide-react';
+import { useEffect, useId, useState } from 'react';
+import { Archive, ArrowLeft, ArrowRight, Bookmark, BookOpen, Check, NotebookPen, Plus, RotateCcw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +27,7 @@ import {
   deleteReadingRecord,
   getBook,
   getBooks,
+  updateBookStatus,
   updateReadingRecord,
 } from '@/lib/api';
 
@@ -393,6 +394,82 @@ function DeleteRecordDialog({ record, open, onOpenChange, onConfirm }) {
   );
 }
 
+function BookStatusDialog({ book, mode, open, onOpenChange, onConfirm }) {
+  const reviewId = useId();
+  const [review, setReview] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+  const isComplete = mode === 'complete';
+  const isArchive = mode === 'archive';
+
+  useEffect(() => {
+    if (open) {
+      setReview(book?.finalReview ?? '');
+      setIsSaving(false);
+      setError('');
+    }
+  }, [book, open]);
+
+  async function handleConfirm() {
+    setIsSaving(true);
+    setError('');
+    try {
+      await onConfirm({
+        status: isComplete ? 'COMPLETED' : isArchive ? 'ARCHIVED' : 'READING',
+        finalReview: isComplete ? review : '',
+      });
+      onOpenChange(false);
+    } catch (requestError) {
+      setError(requestError.message);
+      setIsSaving(false);
+    }
+  }
+
+  const title = isComplete ? '이 책을 완독으로 옮길까요?' : isArchive ? '책을 잠시 보관할까요?' : '다시 읽는 중으로 옮길까요?';
+  const description = isComplete
+    ? '완독한 책은 완독 선반에 놓이고, 긴 서평은 지금 쓰지 않아도 괜찮아요.'
+    : isArchive
+      ? '기록과 마지막 책갈피는 그대로 남아요. 언제든 다시 꺼낼 수 있어요.'
+      : '마지막 책갈피를 유지한 채 읽고 있는 책장으로 돌아가요.';
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="status-dialog" showCloseButton={false}>
+        <DialogHeader className="status-dialog__header">
+          <p className="section-kicker">{isComplete ? 'FINISH THE BOOK' : isArchive ? 'PUT ASIDE' : 'BRING IT BACK'}</p>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <div className="status-dialog__form">
+          {isComplete && (
+            <div className="field-group">
+              <Label htmlFor={reviewId}>완독 서평 <span>선택</span></Label>
+              <textarea
+                id={reviewId}
+                value={review}
+                onChange={(event) => setReview(event.target.value)}
+                placeholder="한 권을 다 읽은 뒤의 생각을 남겨 보세요. 나중에 써도 괜찮아요."
+                rows={5}
+                maxLength={10000}
+              />
+              <p className="field-help">세션 감상과 달리, 책 전체를 돌아보는 긴 글이에요.</p>
+            </div>
+          )}
+          {error && <p className="field-error" role="alert">{error}</p>}
+          <div className="status-dialog__actions">
+            <Button type="button" variant="outline" disabled={isSaving} onClick={() => onOpenChange(false)}>
+              취소
+            </Button>
+            <Button type="button" disabled={isSaving} onClick={handleConfirm}>
+              {isSaving ? '저장 중이에요…' : isComplete ? '완독으로 옮기기' : isArchive ? '보관하기' : '다시 읽는 중으로'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function BookDetailScreen({
   book,
   startInReadingContext,
@@ -400,11 +477,13 @@ function BookDetailScreen({
   onSaveRecord,
   onUpdateRecord,
   onDeleteRecord,
+  onUpdateStatus,
 }) {
   const [isReadingContextActive, setIsReadingContextActive] = useState(startInReadingContext);
   const [isRecordDialogOpen, setIsRecordDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [deletingRecord, setDeletingRecord] = useState(null);
+  const [statusMode, setStatusMode] = useState(null);
   const records = getRecords(book);
   const latestRecord = getLatestRecord(book);
   const nextStartPage = getNextStartPage(book);
@@ -446,21 +525,57 @@ function BookDetailScreen({
           <p>다음에는 {nextStartPage}쪽부터 이어 읽을 수 있어요.</p>
         </section>
 
-        <section className="start-reading-panel" aria-labelledby="start-reading-title">
-          <p className="section-kicker">NEXT READING</p>
-          <h2 id="start-reading-title">{nextStartPage}쪽부터 이어 읽어볼까요?</h2>
-          {isReadingContextActive ? (
-            <>
-              <p>다 읽고 돌아오면 기록을 남겨 주세요. 타이머 없이도 기록할 수 있어요.</p>
-              <Button type="button" onClick={() => setIsRecordDialogOpen(true)}>이번 읽기 기록 남기기</Button>
-            </>
-          ) : (
-            <Button type="button" onClick={() => setIsReadingContextActive(true)}>
-              {nextStartPage}쪽부터 이어 읽기
-              <ArrowRight aria-hidden="true" size={17} strokeWidth={1.8} />
+        <section className={`book-status book-status--${book.status.toLowerCase()}`} aria-label="책 상태">
+          <div>
+            <p className="section-kicker">BOOK STATUS</p>
+            <strong>{book.status === 'COMPLETED' ? '완독한 책' : book.status === 'ARCHIVED' ? '잠시 보관한 책' : '읽는 중인 책'}</strong>
+          </div>
+          {book.status === 'READING' ? (
+            <div className="book-status__actions">
+              <Button type="button" variant="outline" onClick={() => setStatusMode('archive')}>
+                <Archive aria-hidden="true" size={16} strokeWidth={1.8} />
+                잠시 보관하기
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setStatusMode('complete')}>
+                <Check aria-hidden="true" size={16} strokeWidth={1.8} />
+                완독으로 옮기기
+              </Button>
+            </div>
+          ) : book.status === 'ARCHIVED' ? (
+            <Button type="button" variant="outline" onClick={() => setStatusMode('resume')}>
+              <RotateCcw aria-hidden="true" size={16} strokeWidth={1.8} />
+              다시 읽는 중으로
             </Button>
+          ) : (
+            <span className="book-status__review-label">마지막 서평 페이지가 열려 있어요.</span>
           )}
         </section>
+
+        {book.status === 'COMPLETED' && (
+          <section className="final-review-page" aria-labelledby="final-review-title">
+            <p className="section-kicker">FINAL REVIEW</p>
+            <h2 id="final-review-title">한 권의 마지막 장</h2>
+            <p>{book.finalReview || '완독 서평은 아직 남기지 않았어요. 나중에 천천히 돌아와도 괜찮아요.'}</p>
+          </section>
+        )}
+
+        {book.status === 'READING' && (
+          <section className="start-reading-panel" aria-labelledby="start-reading-title">
+            <p className="section-kicker">NEXT READING</p>
+            <h2 id="start-reading-title">{nextStartPage}쪽부터 이어 읽어볼까요?</h2>
+            {isReadingContextActive ? (
+              <>
+                <p>다 읽고 돌아오면 기록을 남겨 주세요. 타이머 없이도 기록할 수 있어요.</p>
+                <Button type="button" onClick={() => setIsRecordDialogOpen(true)}>이번 읽기 기록 남기기</Button>
+              </>
+            ) : (
+              <Button type="button" onClick={() => setIsReadingContextActive(true)}>
+                {nextStartPage}쪽부터 이어 읽기
+                <ArrowRight aria-hidden="true" size={17} strokeWidth={1.8} />
+              </Button>
+            )}
+          </section>
+        )}
 
         <ReadingRecordList
           records={records}
@@ -503,6 +618,18 @@ function BookDetailScreen({
           setDeletingRecord(null);
         }}
       />
+      <BookStatusDialog
+        book={book}
+        mode={statusMode}
+        open={Boolean(statusMode)}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setStatusMode(null);
+        }}
+        onConfirm={async (statusInput) => {
+          await onUpdateStatus(book.id, statusInput);
+          if (statusInput.status === 'ARCHIVED') onBackToBookshelf();
+        }}
+      />
     </main>
   );
 }
@@ -511,13 +638,11 @@ export default function App() {
   const [user, setUser] = useState(() => readStoredUser());
   const [isAddBookOpen, setIsAddBookOpen] = useState(false);
   const [books, setBooks] = useState([]);
+  const [completedBooks, setCompletedBooks] = useState([]);
+  const [archivedBooks, setArchivedBooks] = useState([]);
   const [isBooksLoading, setIsBooksLoading] = useState(false);
   const [booksError, setBooksError] = useState('');
   const [selectedBookId, setSelectedBookId] = useState(null);
-  const [openingBookId, setOpeningBookId] = useState(null);
-  const [bookOpeningPhase, setBookOpeningPhase] = useState(null);
-  const [openingPageCount, setOpeningPageCount] = useState(0);
-  const openingTimerRef = useRef(null);
   const [bookDetail, setBookDetail] = useState(null);
   const [isBookDetailLoading, setIsBookDetailLoading] = useState(false);
   const [bookDetailError, setBookDetailError] = useState('');
@@ -528,12 +653,6 @@ export default function App() {
       window.history.replaceState({}, '', '/bookshelf');
     }
   }, [user]);
-
-  useEffect(() => {
-    return () => {
-      if (openingTimerRef.current) window.clearTimeout(openingTimerRef.current);
-    };
-  }, []);
 
   useEffect(() => {
     if (!selectedBookId || !user) return undefined;
@@ -566,9 +685,17 @@ export default function App() {
     setIsBooksLoading(true);
     setBooksError('');
 
-    getBooks(user.id)
-      .then(({ books: fetchedBooks }) => {
-        if (!isCancelled) setBooks(fetchedBooks);
+    Promise.all([
+      getBooks(user.id, 'READING'),
+      getBooks(user.id, 'COMPLETED'),
+      getBooks(user.id, 'ARCHIVED'),
+    ])
+      .then(([readingShelf, completedShelf, archivedShelf]) => {
+        if (!isCancelled) {
+          setBooks(readingShelf.books);
+          setCompletedBooks(completedShelf.books);
+          setArchivedBooks(archivedShelf.books);
+        }
       })
       .catch((requestError) => {
         if (!isCancelled) setBooksError(requestError.message);
@@ -588,57 +715,15 @@ export default function App() {
     setUser(newUser);
   }
 
-  function openBook(bookId, startInReadingContext = false, bookOverride = null) {
-    if (openingTimerRef.current) window.clearTimeout(openingTimerRef.current);
-
-    const openingBook = bookOverride ?? books.find((book) => book.id === bookId);
-    const recordCount = Number(openingBook?.recordCount ?? 0);
-    const pagesToTurn = openingBook?.status === 'COMPLETED' ? 5 : recordCount > 0 ? 3 : 0;
-
-    function zoomAndShowDetail() {
-      setBookOpeningPhase('zooming');
-      openingTimerRef.current = window.setTimeout(() => {
-        setSelectedBookId(bookId);
-        setOpeningBookId(null);
-        setBookOpeningPhase(null);
-        setOpeningPageCount(0);
-        openingTimerRef.current = null;
-      }, 520);
-    }
-
-    function turnNextPage(pageNumber) {
-      if (pageNumber > pagesToTurn) {
-        openingTimerRef.current = window.setTimeout(zoomAndShowDetail, 700);
-        return;
-      }
-
-      openingTimerRef.current = window.setTimeout(() => {
-        setOpeningPageCount(pageNumber);
-        turnNextPage(pageNumber + 1);
-      }, 700);
-    }
-
+  function openBook(bookId, startInReadingContext = false) {
     setShouldStartReading(startInReadingContext);
-    setOpeningBookId(bookId);
-    setBookOpeningPhase('pulling');
-    setOpeningPageCount(0);
-    openingTimerRef.current = window.setTimeout(() => {
-      setBookOpeningPhase('turning');
-      openingTimerRef.current = window.setTimeout(() => {
-        setBookOpeningPhase('opening');
-        if (pagesToTurn > 0) {
-          turnNextPage(1);
-        } else {
-          openingTimerRef.current = window.setTimeout(zoomAndShowDetail, 700);
-        }
-      }, 520);
-    }, 420);
+    setSelectedBookId(bookId);
   }
 
   async function handleCreateBook(input) {
     const newBook = await createBook({ userId: user.id, ...input });
     setBooks((currentBooks) => [newBook, ...currentBooks]);
-    openBook(newBook.id, false, newBook);
+    openBook(newBook.id);
   }
 
   async function handleSaveRecord(bookId, recordInput) {
@@ -646,13 +731,33 @@ export default function App() {
     await refreshBookData(bookId);
   }
 
+  async function refreshShelves() {
+    const [readingShelf, completedShelf, archivedShelf] = await Promise.all([
+      getBooks(user.id, 'READING'),
+      getBooks(user.id, 'COMPLETED'),
+      getBooks(user.id, 'ARCHIVED'),
+    ]);
+    setBooks(readingShelf.books);
+    setCompletedBooks(completedShelf.books);
+    setArchivedBooks(archivedShelf.books);
+  }
+
   async function refreshBookData(bookId) {
-    const [{ books: refreshedBooks }, refreshedDetail] = await Promise.all([
-      getBooks(user.id),
+    const [, refreshedDetail] = await Promise.all([
+      refreshShelves(),
       getBook(bookId, user.id),
     ]);
-    setBooks(refreshedBooks);
     setBookDetail(refreshedDetail);
+  }
+
+  async function handleUpdateStatus(bookId, statusInput) {
+    await updateBookStatus({ bookId, userId: user.id, ...statusInput });
+    await refreshBookData(bookId);
+  }
+
+  async function handleRestoreBook(bookId) {
+    await updateBookStatus({ bookId, userId: user.id, status: 'READING' });
+    await refreshShelves();
   }
 
   async function handleUpdateRecord(bookId, recordId, recordInput) {
@@ -672,8 +777,6 @@ export default function App() {
   function handleContinueReading(bookId) {
     openBook(bookId, true);
   }
-
-  const selectedBook = books.find((book) => book.id === selectedBookId);
 
   if (!user) {
     return <OnboardingPage onComplete={handleOnboardingComplete} />;
@@ -701,23 +804,22 @@ export default function App() {
           onBackToBookshelf={() => {
             setSelectedBookId(null);
             setShouldStartReading(false);
-            setBookOpeningPhase(null);
-            setOpeningPageCount(0);
           }}
           onSaveRecord={handleSaveRecord}
           onUpdateRecord={handleUpdateRecord}
           onDeleteRecord={handleDeleteRecord}
+          onUpdateStatus={handleUpdateStatus}
         />
-      ) : books.length ? (
+      ) : books.length || completedBooks.length || archivedBooks.length ? (
         <ReadingBookshelf
           user={user}
           books={books}
-          openingBookId={openingBookId}
-          bookOpeningPhase={bookOpeningPhase}
-          openingPageCount={openingPageCount}
+          completedBooks={completedBooks}
+          archivedBooks={archivedBooks}
           onAddBook={() => setIsAddBookOpen(true)}
           onSelectBook={handleSelectBook}
           onContinueReading={handleContinueReading}
+          onRestoreBook={handleRestoreBook}
         />
       ) : (
         <EmptyBookshelf user={user} onAddBook={() => setIsAddBookOpen(true)} />

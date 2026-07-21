@@ -39,8 +39,8 @@ export function createUser({ nickname }) {
   });
 }
 
-export function getBooks(userId) {
-  return request(`/api/users/${userId}/books`);
+export function getBooks(userId, status = 'READING') {
+  return request(`/api/users/${userId}/books?status=${encodeURIComponent(status)}`);
 }
 
 export function createBook({ userId, title, author, initialPage }) {
@@ -71,5 +71,12 @@ export function updateReadingRecord({ bookId, recordId, userId, endPage, impress
 export function deleteReadingRecord({ bookId, recordId, userId }) {
   return request(`/api/books/${bookId}/records/${recordId}?userId=${encodeURIComponent(userId)}`, {
     method: 'DELETE',
+  });
+}
+
+export function updateBookStatus({ bookId, userId, status, finalReview }) {
+  return request(`/api/books/${bookId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ userId, status, finalReview: finalReview?.trim() || null }),
   });
 }

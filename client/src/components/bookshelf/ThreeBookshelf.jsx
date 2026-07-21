@@ -1,7 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { ContactShadows, RoundedBox } from '@react-three/drei';
-import { animated, useSpring } from '@react-spring/three';
 import { CanvasTexture, DoubleSide, SRGBColorSpace } from 'three';
 
 const BOOK_COLORS = [
@@ -103,83 +102,24 @@ function BookLabel({ book, accent, variant = 'cover', position, rotation = [0, 0
   );
 }
 
-function TurningPage({ book, accent, index, shouldTurn, thickness, height, pageWidth }) {
-  const unturnedLayer = thickness / 2 - 0.01 - index * 0.004;
-  const turnedLayer = thickness / 2 - 0.034 + index * 0.004;
-  const animation = useSpring({
-    rotation: shouldTurn ? -Math.PI : 0,
-    layer: shouldTurn ? turnedLayer : unturnedLayer,
-    delay: 0,
-    immediate: false,
-    config: { mass: 0.95, tension: 135, friction: 23 },
-  });
-
-  return (
-    <animated.group
-      position-x={animation.layer}
-      rotation-y={animation.rotation}
-    >
-      <BookLabel
-        book={book}
-        accent={accent}
-        variant="page"
-        position={[0.006, height / 2, -(pageWidth - 0.18) / 2]}
-        rotation={[0, Math.PI / 2, 0]}
-        size={[pageWidth - 0.18, height - 0.2]}
-      />
-    </animated.group>
-  );
-}
-
-function BookModel({ book, index, total, selectedBookId, bookOpeningPhase, openingPageCount, hoveredBookId, onHoverBook, onSelectBook }) {
-  const thickness = 0.62;
-  const height = 2.78;
-  const pageWidth = 1.95;
-  const coverThickness = 0.075;
+function BookModel({ book, index, total, hoveredBookId, onHoverBook, onSelectBook }) {
+  const thickness = 0.54;
+  const height = 1.36;
+  const pageWidth = 0.88;
   const palette = BOOK_COLORS[index % BOOK_COLORS.length];
-  const homeX = (index - (total - 1) / 2) * 0.88;
+  const row = Math.floor(index / 6);
+  const booksInRow = Math.min(6, total - row * 6);
+  const column = index % 6;
+  const homeX = (column - (booksInRow - 1) / 2) * 0.72;
+  const homeY = [1.32, -0.25, -1.82][row] ?? -1.82;
   const homeTilt = [-0.045, 0.028, -0.018, 0.04, -0.03][index % 5];
-  const isSelected = selectedBookId === book.id;
-  const isPulling = isSelected && bookOpeningPhase === 'pulling';
-  const isTurning = isSelected && bookOpeningPhase === 'turning';
-  const isOpening = isSelected && bookOpeningPhase === 'opening';
-  const isZooming = isSelected && bookOpeningPhase === 'zooming';
-  const isBookOpen = isOpening || isZooming;
-  const isActive = isPulling || isTurning || isBookOpen;
-  const isHovered = hoveredBookId === book.id && !isActive;
-  const recordCount = Number(book.recordCount ?? 0);
-  const pagesToTurn = book.status === 'COMPLETED' ? 5 : recordCount > 0 ? 3 : 0;
-
-  const activePosition = isZooming
-    ? [0, -1.31, 3.65]
-    : isOpening
-      ? [0, -1.31, 3.05]
-    : isTurning
-      ? [-0.95, -1.31, 2.75]
-      : [0, -1.31, 2.45];
-
-  const animation = useSpring({
-    position: isActive
-      ? activePosition
-      : [homeX, -1.31, isHovered ? 0.36 : 0.22],
-    rotation: isActive
-      ? [0, 0, 0]
-      : [isHovered ? 0.16 : 0, homeTilt, 0],
-    scale: isZooming ? 1.42 : isOpening ? 1.2 : isTurning ? 1.16 : isPulling ? 1.08 : isHovered ? 1.03 : 1,
-    bookYaw: isTurning || isBookOpen ? -Math.PI / 2 : 0,
-    frontCoverRotation: isBookOpen ? -Math.PI : 0,
-    frontCoverLayer: isBookOpen
-      ? thickness / 2 - 0.09
-      : thickness / 2 + coverThickness / 2,
-    immediate: false,
-    config: { mass: 1, tension: 205, friction: 26 },
-  });
+  const isHovered = hoveredBookId === book.id;
 
   return (
-    <animated.group
-      position={animation.position}
-      rotation={animation.rotation}
-      scale={animation.scale}
+    <group
+      position={[homeX, homeY, isHovered ? 0.24 : 0.08]}
+      rotation={[isHovered ? 0.12 : 0, homeTilt, 0]}
+      scale={isHovered ? 1.06 : 1}
       onPointerEnter={(event) => {
         event.stopPropagation();
         onHoverBook(book.id);
@@ -190,118 +130,46 @@ function BookModel({ book, index, total, selectedBookId, bookOpeningPhase, openi
         onSelectBook(book.id);
       }}
     >
-      <animated.group rotation-y={animation.bookYaw}>
-        {!isBookOpen && (
-          <>
-            <RoundedBox
-              args={[thickness, height, 0.16]}
-              radius={0.055}
-              smoothness={4}
-              position={[0, height / 2, 0]}
-              castShadow
-            >
-              <meshStandardMaterial color={palette.cover} roughness={0.62} metalness={0.04} />
-            </RoundedBox>
-            <BookLabel
-              book={book}
-              accent={palette.accent}
-              variant="spine"
-              position={[0, height / 2, 0.086]}
-              size={[thickness * 0.72, height * 0.8]}
-            />
-            <RoundedBox
-              args={[thickness - 0.13, height - 0.18, pageWidth - 0.12]}
-              radius={0.035}
-              smoothness={4}
-              position={[0, height / 2, -pageWidth / 2]}
-              castShadow
-              receiveShadow
-            >
-              <meshStandardMaterial color="#eee0c9" roughness={0.95} />
-            </RoundedBox>
-            <RoundedBox
-              args={[coverThickness, height, pageWidth]}
-              radius={0.035}
-              smoothness={4}
-              position={[-thickness / 2 - coverThickness / 2, height / 2, -pageWidth / 2]}
-              castShadow
-            >
-              <meshStandardMaterial color={palette.cover} roughness={0.62} metalness={0.04} />
-            </RoundedBox>
-          </>
-        )}
-
-        <animated.group
-          position-x={animation.frontCoverLayer}
-          rotation-y={animation.frontCoverRotation}
-        >
-          <RoundedBox
-            args={[coverThickness, height, pageWidth]}
-            radius={0.035}
-            smoothness={4}
-            position={[0, height / 2, -pageWidth / 2]}
-            castShadow
-          >
-            <meshStandardMaterial color={palette.cover} roughness={0.62} metalness={0.04} />
-          </RoundedBox>
-          <BookLabel
-            book={book}
-            accent={palette.accent}
-            position={[coverThickness / 2 + 0.006, height / 2, -pageWidth / 2]}
-            rotation={[0, Math.PI / 2, 0]}
-            size={[pageWidth * 0.78, height * 0.78]}
-          />
-        </animated.group>
-
-        <BookLabel
-          book={book}
-          accent={palette.accent}
-          variant="page"
-          position={[thickness / 2 - 0.045, height / 2, -(pageWidth - 0.18) / 2]}
-          rotation={[0, Math.PI / 2, 0]}
-          size={[pageWidth - 0.18, height - 0.2]}
-        />
-
-        {Array.from({ length: 5 }, (_, pageIndex) => (
-          <TurningPage
-            key={pageIndex}
-            book={book}
-            accent={palette.accent}
-            index={pageIndex}
-            shouldTurn={isBookOpen && pageIndex < Math.min(openingPageCount, pagesToTurn)}
-            thickness={thickness}
-            height={height}
-            pageWidth={pageWidth}
-          />
-        ))}
-
-        <mesh position={[thickness / 2 - 0.04, height * 0.52, -pageWidth * 0.3]} rotation={[0, Math.PI / 2, 0]}>
-          <planeGeometry args={[0.16, 0.82]} />
-          <meshStandardMaterial color={palette.accent} roughness={0.85} side={DoubleSide} />
-        </mesh>
-      </animated.group>
-    </animated.group>
+      <RoundedBox args={[thickness, height, 0.16]} radius={0.055} smoothness={4} position={[0, height / 2, 0]} castShadow>
+        <meshStandardMaterial color={palette.cover} roughness={0.62} metalness={0.04} />
+      </RoundedBox>
+      <BookLabel
+        book={book}
+        accent={palette.accent}
+        variant="spine"
+        position={[0, height / 2, 0.086]}
+        size={[thickness * 0.72, height * 0.8]}
+      />
+      <RoundedBox
+        args={[thickness - 0.13, height - 0.18, pageWidth - 0.12]}
+        radius={0.035}
+        smoothness={4}
+        position={[0, height / 2, -pageWidth / 2]}
+        castShadow
+        receiveShadow
+      >
+        <meshStandardMaterial color="#eee0c9" roughness={0.95} />
+      </RoundedBox>
+    </group>
   );
 }
 
 function ShelfModel() {
   return (
     <group>
-      <RoundedBox args={[9.3, 4.7, 0.25]} radius={0.08} smoothness={4} position={[0, 0.45, -2.08]} receiveShadow>
+      <RoundedBox args={[5.7, 4.85, 0.22]} radius={0.08} smoothness={4} position={[0, 0.3, -1.48]} receiveShadow>
         <meshStandardMaterial color="#664532" roughness={0.84} />
       </RoundedBox>
-      <RoundedBox args={[9.6, 0.3, 4.4]} radius={0.06} smoothness={4} position={[0, -1.48, -0.05]} castShadow receiveShadow>
-        <meshStandardMaterial color="#8e5f43" roughness={0.74} />
-      </RoundedBox>
-      <RoundedBox args={[9.6, 0.24, 4.4]} radius={0.06} smoothness={4} position={[0, 2.75, -0.05]} castShadow receiveShadow>
-        <meshStandardMaterial color="#754a35" roughness={0.78} />
-      </RoundedBox>
-      <RoundedBox args={[0.3, 4.5, 4.4]} radius={0.06} smoothness={4} position={[-4.66, 0.62, -0.05]} castShadow receiveShadow>
-        <meshStandardMaterial color="#744a35" roughness={0.8} />
-      </RoundedBox>
-      <RoundedBox args={[0.3, 4.5, 4.4]} radius={0.06} smoothness={4} position={[4.66, 0.62, -0.05]} castShadow receiveShadow>
-        <meshStandardMaterial color="#744a35" roughness={0.8} />
-      </RoundedBox>
+      {[-2.02, -0.45, 1.12, 2.7].map((y) => (
+        <RoundedBox key={y} args={[5.95, 0.24, 1.7]} radius={0.06} smoothness={4} position={[0, y, -0.65]} castShadow receiveShadow>
+          <meshStandardMaterial color={y === 2.7 ? '#754a35' : '#8e5f43'} roughness={0.78} />
+        </RoundedBox>
+      ))}
+      {[-2.88, 2.88].map((x) => (
+        <RoundedBox key={x} args={[0.28, 4.75, 1.7]} radius={0.06} smoothness={4} position={[x, 0.34, -0.65]} castShadow receiveShadow>
+          <meshStandardMaterial color="#744a35" roughness={0.8} />
+        </RoundedBox>
+      ))}
     </group>
   );
 }
@@ -310,40 +178,39 @@ function ResponsiveCamera() {
   const { camera, size } = useThree();
 
   useEffect(() => {
-    camera.fov = size.width < 640 ? 54 : 31;
+    camera.fov = size.width < 480 ? 48 : 42;
+    camera.position.z = size.width < 480 ? 10.5 : 9;
     camera.updateProjectionMatrix();
   }, [camera, size.width]);
 
   return null;
 }
 
-export function ThreeBookshelf({ books, selectedBookId, bookOpeningPhase, openingPageCount, hoveredBookId, onHoverBook, onSelectBook }) {
+export function ThreeBookshelf({ books, hoveredBookId, onHoverBook, onSelectBook }) {
   return (
     <div className="three-bookshelf__canvas" aria-hidden="true">
       <Canvas
         shadows
-        dpr={[1, 1.6]}
-        camera={{ position: [0, 1.05, 8.8], fov: 31 }}
-        gl={{ antialias: true, alpha: false }}
+        frameloop="demand"
+        dpr={[1, 1.25]}
+        camera={{ position: [0, 0.3, 9], fov: 42 }}
+        gl={{ antialias: true, alpha: true }}
       >
         <ResponsiveCamera />
-        <color attach="background" args={['#d7c0aa']} />
-        <fog attach="fog" args={['#d7c0aa', 8, 16]} />
         <ambientLight intensity={1.35} />
         <directionalLight
           castShadow
           position={[-4, 7, 5]}
           intensity={3.5}
           color="#fff5e7"
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
+          shadow-mapSize-width={512}
+          shadow-mapSize-height={512}
           shadow-camera-left={-6}
           shadow-camera-right={6}
           shadow-camera-top={6}
           shadow-camera-bottom={-6}
         />
-        <pointLight position={[3.2, 2.8, 3.8]} intensity={14} distance={12} color="#e9af7d" />
-        <pointLight position={[-3.5, 0.2, 2]} intensity={8} distance={10} color="#9bb7bc" />
+        <pointLight position={[3.2, 2.8, 3.8]} intensity={10} distance={12} color="#e9af7d" />
 
         <ShelfModel />
         {books.map((book, index) => (
@@ -352,15 +219,12 @@ export function ThreeBookshelf({ books, selectedBookId, bookOpeningPhase, openin
             book={book}
             index={index}
             total={books.length}
-            selectedBookId={selectedBookId}
-            bookOpeningPhase={bookOpeningPhase}
-            openingPageCount={openingPageCount}
             hoveredBookId={hoveredBookId}
             onHoverBook={onHoverBook}
             onSelectBook={onSelectBook}
           />
         ))}
-        <ContactShadows position={[0, -1.42, 0.3]} opacity={0.42} scale={9} blur={1.8} far={4.5} resolution={512} />
+        <ContactShadows position={[0, -2.05, 0.3]} opacity={0.32} scale={6} blur={1.8} far={4} resolution={256} />
       </Canvas>
     </div>
   );

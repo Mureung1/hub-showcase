@@ -2,39 +2,56 @@ import { lazy, Suspense, useState } from 'react';
 import { ArrowRight, BookOpen, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { getContinueBook, getLatestRecord, getNextStartPage } from '@/lib/reading';
+import { getContinueBook, getNextStartPage } from '@/lib/reading';
 
 const ThreeBookshelf = lazy(() => import('@/components/bookshelf/ThreeBookshelf').then((module) => ({
   default: module.ThreeBookshelf,
 })));
 
-function ContinueReadingCard({ book, onContinueReading }) {
-  const latestRecord = getLatestRecord(book);
-  const nextStartPage = getNextStartPage(book);
-
+function StatusShelf({ title, kicker, books, emptyMessage, onSelectBook, onRestoreBook, restoringBookId, isArchive = false }) {
   return (
-    <section className="continue-reading-card" aria-labelledby="continue-reading-title">
-      <div className="continue-reading-card__book" aria-hidden="true">
-        <span className="continue-reading-card__book-spine">
-          <span className="continue-reading-card__book-title">{book.title}</span>
-          <span className="continue-reading-card__book-page">{nextStartPage}쪽</span>
-        </span>
+    <section className={`status-shelf status-shelf--${isArchive ? 'archive' : 'completed'}`} aria-labelledby={`${kicker.toLowerCase()}-shelf-title`}>
+      <div className="status-shelf__header">
+        <div>
+          <p className="section-kicker">{kicker}</p>
+          <h2 id={`${kicker.toLowerCase()}-shelf-title`}>{title}</h2>
+        </div>
+        <span>{books.length}권</span>
       </div>
-      <div>
-        <p className="section-kicker">{latestRecord ? 'PICK UP WHERE YOU LEFT OFF' : 'YOUR FIRST PAGE'}</p>
-        <h2 id="continue-reading-title">{book.title}</h2>
-        {book.author && <p className="continue-reading-card__author">{book.author}</p>}
-        <p className="continue-reading-card__summary">
-          {latestRecord
-            ? `지난번 ${latestRecord.endPage}쪽까지 읽었어요.`
-            : `${book.initialPage}쪽에서 첫 읽기를 시작해 볼까요?`}
-        </p>
-        {latestRecord?.impression && <p className="continue-reading-card__impression">“{latestRecord.impression}”</p>}
-      </div>
-      <Button type="button" onClick={() => onContinueReading(book.id)}>
-        {nextStartPage}쪽부터 {latestRecord ? '이어 읽기' : '읽기'}
-        <ArrowRight aria-hidden="true" size={17} strokeWidth={1.8} />
-      </Button>
+      {books.length ? (
+        <ul className="status-shelf__books">
+          {books.map((book) => (
+            <li key={book.id} className="status-shelf__item">
+              <button
+                className="status-book"
+                type="button"
+                onClick={() => onSelectBook(book.id)}
+                aria-label={`${book.title} ${isArchive ? '보관함' : '완독'} 상세 열기`}
+              >
+                <span className="status-book__spine" aria-hidden="true" />
+                <span className="status-book__copy">
+                  <strong>{book.title}</strong>
+                  {book.author && <small>{book.author}</small>}
+                  {!isArchive && book.finalReview && <em>“{book.finalReview}”</em>}
+                </span>
+              </button>
+              {isArchive && (
+                <Button
+                  className="status-shelf__restore"
+                  type="button"
+                  variant="link"
+                  disabled={restoringBookId === book.id}
+                  onClick={() => onRestoreBook(book.id)}
+                >
+                  {restoringBookId === book.id ? '옮기는 중…' : '다시 읽는 중으로'}
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="status-shelf__empty">{emptyMessage}</p>
+      )}
     </section>
   );
 }
@@ -42,27 +59,29 @@ function ContinueReadingCard({ book, onContinueReading }) {
 export function ReadingBookshelf({
   user,
   books,
-  openingBookId,
-  bookOpeningPhase,
-  openingPageCount,
+  completedBooks = [],
+  archivedBooks = [],
   onAddBook,
   onSelectBook,
   onContinueReading,
+  onRestoreBook,
 }) {
   const continueBook = getContinueBook(books);
   const [hoveredBookId, setHoveredBookId] = useState(null);
-  const openingBook = books.find((book) => book.id === openingBookId);
-  const targetPageCount = openingBook?.status === 'COMPLETED'
-    ? 5
-    : Number(openingBook?.recordCount ?? 0) > 0
-      ? 3
-      : 0;
-  const phaseLabels = {
-    pulling: '책 꺼내는 중',
-    turning: '표지 정면으로 회전 중',
-    opening: '책 여는 중',
-    zooming: '상세 화면으로 확대 중',
-  };
+  const [restoringBookId, setRestoringBookId] = useState(null);
+  const [restoreError, setRestoreError] = useState('');
+
+  async function handleRestoreBook(bookId) {
+    setRestoringBookId(bookId);
+    setRestoreError('');
+    try {
+      await onRestoreBook(bookId);
+    } catch (error) {
+      setRestoreError(error.message);
+    } finally {
+      setRestoringBookId(null);
+    }
+  }
 
   return (
     <main className="bookshelf-preview">
@@ -71,65 +90,100 @@ export function ReadingBookshelf({
           <BookOpen aria-hidden="true" size={19} strokeWidth={1.8} />
           <span>잇장</span>
         </a>
-        <span>{user.nickname}의 잇장</span>
-      </header>
-
-      <section className="reading-bookshelf" aria-labelledby="reading-shelf-title">
-        <ContinueReadingCard book={continueBook} onContinueReading={onContinueReading} />
-        <div className="reading-bookshelf__heading">
-          <div>
-            <p className="section-kicker">NOW READING</p>
-            <h1 id="reading-shelf-title">읽고 있는 책</h1>
-            <p>{books.length}권의 책이 다음 장을 기다리고 있어요.</p>
-          </div>
+        <nav className="bookshelf-preview__nav" aria-label="책장 바로가기">
+          <span className="bookshelf-preview__owner">{user.nickname}의 잇장</span>
+          <Button
+            className="bookshelf-preview__continue"
+            type="button"
+            variant="ghost"
+            disabled={!continueBook}
+            onClick={() => continueBook && onContinueReading(continueBook.id)}
+          >
+            {continueBook ? `${getNextStartPage(continueBook)}쪽 이어 읽기` : '이어 읽을 책 없음'}
+            <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} />
+          </Button>
+          <span className="bookshelf-preview__count">완독 <strong>{completedBooks.length}</strong></span>
+          <details className="bookshelf-preview__menu">
+            <summary>보관함 <span>{archivedBooks.length}</span></summary>
+            <StatusShelf
+              title="보관함"
+              kicker="RESTING"
+              books={archivedBooks}
+              emptyMessage="잠시 쉬어 가는 책을 이곳에 둘 수 있어요."
+              onSelectBook={onSelectBook}
+              onRestoreBook={handleRestoreBook}
+              restoringBookId={restoringBookId}
+              isArchive
+            />
+          </details>
           <Button className="reading-bookshelf__add" type="button" onClick={onAddBook}>
             <Plus aria-hidden="true" size={17} strokeWidth={1.8} />
             책 추가
           </Button>
-        </div>
+        </nav>
+      </header>
 
-        <div className="three-bookshelf" aria-label="읽는 중인 책 선반">
-          <Suspense fallback={<div className="three-bookshelf__loading">책장을 준비하고 있어요.</div>}>
-            <ThreeBookshelf
-              books={books}
-              selectedBookId={openingBookId}
-              bookOpeningPhase={bookOpeningPhase}
-              openingPageCount={openingPageCount}
-              hoveredBookId={hoveredBookId}
-              onHoverBook={setHoveredBookId}
-              onSelectBook={onSelectBook}
-            />
-          </Suspense>
-          <ul className="three-bookshelf__controls" aria-label="책 선택">
-            {books.map((book) => (
-              <li key={book.id}>
+      <section className="reading-bookshelf" aria-labelledby="reading-shelf-title">
+        <h1 className="sr-only" id="reading-shelf-title">읽고 있는 책 {books.length}권</h1>
+
+        <div className="room-stage">
+          <div className="three-bookshelf" aria-label="완독 책장과 읽는 중인 책상">
+            <Suspense fallback={<div className="three-bookshelf__loading">책장을 준비하고 있어요.</div>}>
+              <ThreeBookshelf
+                books={completedBooks}
+                hoveredBookId={hoveredBookId}
+                onHoverBook={setHoveredBookId}
+                onSelectBook={onSelectBook}
+              />
+            </Suspense>
+            <ul className="three-bookshelf__controls" aria-label="완독한 책 선택">
+              {completedBooks.map((book, index) => {
+                const row = Math.floor(index / 6);
+                const booksInRow = Math.min(6, completedBooks.length - row * 6);
+                const column = index % 6 + Math.floor((6 - booksInRow) / 2) + 1;
+
+                return (
+                  <li key={book.id} style={{ gridColumn: column, gridRow: row + 1 }}>
+                    <button
+                      className="three-bookshelf__control"
+                      type="button"
+                      onClick={() => onSelectBook(book.id)}
+                      onFocus={() => setHoveredBookId(book.id)}
+                      onBlur={() => setHoveredBookId(null)}
+                      onMouseEnter={() => setHoveredBookId(book.id)}
+                      onMouseLeave={() => setHoveredBookId(null)}
+                      aria-label={`${book.title} 서평 및 감상 보기`}
+                    >
+                      <span className="sr-only">{book.title} 서평 및 감상 보기</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <section className="room-table" aria-label="읽는 중인 책상">
+            <div className="room-table__books">
+              {books.map((book, index) => (
                 <button
-                  className="three-bookshelf__control"
+                  key={book.id}
+                  className="room-table__book"
                   type="button"
-                  onClick={() => onSelectBook(book.id)}
-                  onFocus={() => setHoveredBookId(book.id)}
-                  onBlur={() => setHoveredBookId(null)}
-                  onMouseEnter={() => setHoveredBookId(book.id)}
-                  onMouseLeave={() => setHoveredBookId(null)}
-                  aria-label={`${book.title} 상세 열기`}
+                  style={{ '--book-offset': (index % 3) - 1 }}
+                  onClick={() => onContinueReading(book.id)}
+                  aria-label={`${book.title} 이어 읽기`}
                 >
-                  <span className="sr-only">{book.title} 상세 열기</span>
+                  <strong>{book.title}</strong>
+                  {book.author && <span>{book.author}</span>}
                 </button>
-              </li>
-            ))}
-          </ul>
-          <div className="three-bookshelf__ground" aria-hidden="true" />
-          {bookOpeningPhase && (
-            <p className="three-bookshelf__motion-debug" role="status" aria-live="polite">
-              <span>{phaseLabels[bookOpeningPhase]}</span>
-              {bookOpeningPhase === 'opening' && targetPageCount > 0 && (
-                <strong>{openingPageCount} / {targetPageCount}장</strong>
-              )}
-            </p>
-          )}
+              ))}
+            </div>
+            <div className="room-table__top" aria-hidden="true" />
+            <span className="room-table__leg room-table__leg--left" aria-hidden="true" />
+            <span className="room-table__leg room-table__leg--right" aria-hidden="true" />
+          </section>
         </div>
-        <p className="three-bookshelf__note">책을 누르면 다음에는 지난 갈피부터 이어 읽을 수 있어요.</p>
       </section>
+      {restoreError && <p className="status-shelves__error" role="alert">{restoreError}</p>}
     </main>
   );
 }
