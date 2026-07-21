@@ -359,17 +359,13 @@ export function useProductChat(options: {
         return
       }
       transition({ type: 'operation.stream-ended' })
-      if (kind === 'assignment') {
-        try {
-          await options.refreshSettledProductState(controller.signal)
-        } catch {
-          // The authoritative stream terminal remains final. Workspace hydration
-          // exposes its own failure without rewriting the operation lifecycle.
-        }
-      }
+      await hydrateSettledWorkspace(controller.signal)
     } catch (error) {
       if (!controller.signal.aborted) {
-        if (stateRef.current.phase === 'stream-failed') return
+        if (stateRef.current.phase === 'stream-failed') {
+          await hydrateSettledWorkspace(controller.signal)
+          return
+        }
         if (
           kind === 'assignment' &&
           stateRef.current.activeOperation?.stage !== 'submitting' &&
@@ -385,6 +381,7 @@ export function useProductChat(options: {
               }
             : { type: 'operation.stream-failed' },
         )
+        await hydrateSettledWorkspace(controller.signal)
       }
     } finally {
       if (operationController.current === controller) {
@@ -392,6 +389,15 @@ export function useProductChat(options: {
       }
       operationPendingRef.current = false
       setOperationPending(false)
+    }
+  }
+
+  async function hydrateSettledWorkspace(signal: AbortSignal): Promise<void> {
+    try {
+      await options.refreshSettledProductState(signal)
+    } catch {
+      // The original stream terminal or request failure remains authoritative.
+      // Workspace hydration reports its own state without replacing that error.
     }
   }
 

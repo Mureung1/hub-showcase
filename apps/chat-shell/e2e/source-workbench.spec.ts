@@ -1,4 +1,4 @@
-import { expect } from 'playwright/test'
+import { expect, type Page } from 'playwright/test'
 
 import type { ProductBootstrap } from '../src/product-api.js'
 import {
@@ -103,38 +103,10 @@ test('preserves the selected sources and preview when material refresh fails', a
 test('rehydrates workspace recovery after a material mutation detects store drift', async ({
   chatPage: page,
 }) => {
-  const baseline = (await page.evaluate(async () => {
-    const response = await fetch('/api/product/bootstrap')
-    return response.json()
-  })) as ProductBootstrap
-  await page.route('**/api/product/bootstrap', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        ...baseline,
-        operationStatus: 'idle',
-        workspace: {
-          ...baseline.workspace,
-          recovery: {
-            state: 'store_conflict',
-            displayMessage:
-              '학기 상태 파일이 외부에서 변경되었습니다. 작업공간을 다시 선택해 현재 상태를 확인하세요.',
-          },
-        },
-      }),
-    })
-  })
-  await page.route('**/api/product/materials/refresh', async (route) => {
-    await route.fulfill({
-      status: 409,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        code: 'execution_guard_conflict',
-        displayMessage: '학기 상태 파일이 변경되었습니다.',
-      }),
-    })
-  })
+  await arrangeStoreConflictFailure(
+    page,
+    '**/api/product/materials/refresh',
+  )
 
   await page
     .getByRole('complementary', { name: '학기 자료' })
@@ -149,6 +121,44 @@ test('rehydrates workspace recovery after a material mutation detects store drif
   await expect(
     page.getByRole('button', { name: '작업공간 다시 선택' }),
   ).toBeVisible()
+})
+
+test('rehydrates workspace recovery after Assignment admission detects store drift', async ({
+  chatPage: page,
+}) => {
+  await arrangeStoreConflictFailure(
+    page,
+    '**/api/product/actions/first-assignment',
+  )
+  await selectCanonicalMaterials(page)
+
+  await page
+    .getByRole('button', { name: /선택한 자료 정리하기/u })
+    .click()
+
+  await expect(
+    page.getByRole('alert').filter({
+      hasText: '학기 상태 파일이 변경되었습니다.',
+    }),
+  ).toBeVisible()
+  await expectStoreConflictRecovery(page)
+})
+
+test('rehydrates workspace recovery after Chat admission detects store drift', async ({
+  chatPage: page,
+}) => {
+  await arrangeStoreConflictFailure(page, '**/api/product/chat/messages')
+  const chat = page.getByRole('complementary', { name: 'AY Chat' })
+  await chat.getByRole('textbox', { name: '메시지' }).fill('자료를 요약해 줘')
+
+  await chat.getByRole('button', { name: '메시지 보내기' }).click()
+
+  await expect(
+    chat.getByRole('alert').filter({
+      hasText: '학기 상태 파일이 변경되었습니다.',
+    }),
+  ).toBeVisible()
+  await expectStoreConflictRecovery(page)
 })
 
 test('keeps Browser and Server on the current workspace when candidate activation fails', async ({
@@ -350,4 +360,56 @@ function assertBox(
   box: { readonly x: number; readonly y: number; readonly width: number; readonly height: number } | null,
 ): asserts box is { x: number; y: number; width: number; height: number } {
   expect(box).not.toBeNull()
+}
+
+async function arrangeStoreConflictFailure(
+  page: Page,
+  operationUrl: string,
+): Promise<void> {
+  const baseline = (await page.evaluate(async () => {
+    const response = await fetch('/api/product/bootstrap')
+    return response.json()
+  })) as ProductBootstrap
+  if (baseline.workspace?.state !== 'ready') {
+    throw new Error('Expected a ready workspace.')
+  }
+  await page.route('**/api/product/bootstrap', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...baseline,
+        operationStatus: 'idle',
+        workspace: {
+          ...baseline.workspace,
+          recovery: {
+            state: 'store_conflict',
+            displayMessage:
+              '학기 상태 파일이 외부에서 변경되었습니다. 작업공간을 다시 선택해 현재 상태를 확인하세요.',
+          },
+        },
+      }),
+    })
+  })
+  await page.route(operationUrl, async (route) => {
+    await route.fulfill({
+      status: 409,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 'execution_guard_conflict',
+        displayMessage: '학기 상태 파일이 변경되었습니다.',
+      }),
+    })
+  })
+}
+
+async function expectStoreConflictRecovery(page: Page): Promise<void> {
+  await expect(
+    page
+      .getByRole('alert')
+      .filter({ hasText: '작업공간 복구가 필요합니다' }),
+  ).toContainText('학기 상태 파일이 외부에서 변경되었습니다.')
+  await expect(
+    page.getByRole('button', { name: '작업공간 다시 선택' }),
+  ).toBeVisible()
 }
