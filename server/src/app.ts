@@ -1,5 +1,6 @@
 import express from "express";
 import tasksRouter from "./routes/tasks.js";
+import pushSubscriptionsRouter from "./routes/pushSubscriptions.js";
 
 const app = express();
 
@@ -12,5 +13,6 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/tasks", tasksRouter);
+app.use("/api/push-subscriptions", pushSubscriptionsRouter);
 
 export default app;
