@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
+import { PRODUCT_CATALOG, findCatalogProduct } from "./src/data/productCatalog";
 
 dotenv.config();
 
@@ -162,98 +163,52 @@ function getOfflineRecommendation(
   };
 }
 
-// Offline list of realistic new clothes
-function getOfflineNewOutfitRecommendation(
-  weather: string,
-  destination: string,
-  situation: string
-) {
-  const newTops = [
-    { name: "베이직 코튼 셔츠", colors: ["White", "Light Blue"], imageUrl: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=400", description: "단정하면서도 편안해 학교, 카페, 데이트 등 다양한 일정에 활용하기 좋은 셔츠" },
-    { name: "오버핏 맨투맨", colors: ["Gray", "Navy"], imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=400", description: "일상에서 부담 없이 입기 좋고 활동성이 뛰어난 데일리 상의" },
-    { name: "라운드넥 니트", colors: ["Ivory", "Beige"], imageUrl: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=400", description: "차분한 색감으로 깔끔하고 포근한 분위기를 연출하는 기본 니트" },
-  ];
+type FashionCategory = "top" | "bottom" | "shoes" | "accessories";
 
-  const newBottoms = [
-    { name: "스트레이트 데님 팬츠", colors: ["Denim Blue"], imageUrl: "https://images.unsplash.com/photo-1517423568366-8b83523034fd?auto=format&fit=crop&q=80&w=400", description: "대부분의 상의와 잘 어울리고 오래 걸어도 편안한 기본 데님" },
-    { name: "와이드 슬랙스", colors: ["Black", "Charcoal"], imageUrl: "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?auto=format&fit=crop&q=80&w=400", description: "단정한 인상과 편안한 착용감을 함께 갖춘 실용적인 하의" },
-    { name: "코튼 롱스커트", colors: ["Beige", "Black"], imageUrl: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&q=80&w=400", description: "카페나 데이트처럼 편안하면서도 분위기가 필요한 일정에 잘 어울리는 스커트" },
-  ];
+function scoreCatalogProduct(item: any, weather: string, destination: string, situation: string): number {
+  let score = Math.random() * 0.25;
+  if (item.weather?.includes(weather)) score += 3;
+  if (item.destinations?.includes(destination)) score += 2;
+  if (item.styles?.includes(situation)) score += 3;
+  if (situation === "casual" && item.styles?.includes("casual")) score += 2;
+  return score;
+}
 
-  const newShoes = [
-    { name: "화이트 데일리 스니커즈", colors: ["White"], imageUrl: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=80&w=400", description: "장시간 걸어도 편하고 다양한 코디에 자연스럽게 어울리는 기본 스니커즈" },
-    { name: "블랙 로퍼", colors: ["Black"], imageUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=400", description: "학교, 회사, 데이트 등 단정한 분위기가 필요한 장소에 활용하기 좋은 신발" },
-  ];
+function pickCatalogItem(category: FashionCategory, weather: string, destination: string, situation: string) {
+  return PRODUCT_CATALOG
+    .filter((item) => item.category === category)
+    .sort((a, b) => scoreCatalogProduct(b, weather, destination, situation) - scoreCatalogProduct(a, weather, destination, situation))[0];
+}
 
-  const newAccessories = [
-    { name: "미니 크로스백", colors: ["Black", "Brown"], imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=400", description: "필요한 소지품을 간단히 넣을 수 있고 데일리 코디에 부담 없이 어울리는 가방" },
-    { name: "심플 실버 목걸이", colors: ["Silver"], imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=400", description: "과하지 않게 포인트를 더해주는 데일리 액세서리" },
-  ];
-
-  const pickRandom = (items: any[]) => items[Math.floor(Math.random() * items.length)];
-  const top = pickRandom(newTops);
-  const bottom = pickRandom(newBottoms);
-  const shoes = pickRandom(newShoes);
-  const accessory = pickRandom(newAccessories);
-
-  const stylistNote = `선택한 날씨(${weather}), 장소(${destination}), 상황(${situation})을 기준으로 실제로 구매하고 활용하기 쉬운 아이템을 골랐습니다.
-${top.name}과 ${bottom.name}을 중심으로 편안하고 자연스러운 데일리룩을 구성했습니다.
-신발과 액세서리는 장소의 활동성과 전체 색상 조화를 고려했습니다.
-현재 Gemini 연결이 원활하지 않아 기본 추천 방식으로 결과를 제공했습니다.`;
-
-  const formatWithShopping = (item: any, category: string, index: number) => {
-    const id = `recommended-new-${category}-${Date.now()}-${index}`;
-    return {
-      id,
-      name: item.name,
-      category,
-      colors: item.colors,
-      imageUrl: item.imageUrl,
-      isCustom: true,
-      description: item.description,
-      shopName: "Naver Shopping",
-      shoppingUrl: `https://search.shopping.naver.com/search/all?query=${encodeURIComponent(item.name)}`,
-    };
+function buildCatalogOutfit(ids: Record<string, string>, stylistNote: string, source: string) {
+  const safePick = (category: FashionCategory, requestedId?: string) => {
+    const requested = requestedId ? findCatalogProduct(requestedId) : undefined;
+    return requested?.category === category ? requested : PRODUCT_CATALOG.find((item) => item.category === category);
   };
 
   return {
     isNewOutfit: true,
-    top: formatWithShopping(top, "top", 1),
-    bottom: formatWithShopping(bottom, "bottom", 2),
-    shoes: formatWithShopping(shoes, "shoes", 3),
-    accessories: formatWithShopping(accessory, "accessories", 4),
+    top: safePick("top", ids.topId),
+    bottom: safePick("bottom", ids.bottomId),
+    shoes: safePick("shoes", ids.shoesId),
+    accessories: safePick("accessories", ids.accessoriesId),
     stylistNote,
+    source,
   };
 }
 
-const NEW_FASHION_IMAGES = {
-  top: [
-    "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=400", // hoodie
-    "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=400", // crop top
-    "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=400", // print tee
-    "https://images.unsplash.com/photo-1578587018452-892bacefd3f2?auto=format&fit=crop&q=80&w=400", // oversized top
-    "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&q=80&w=400"  // black tee
-  ],
-  bottom: [
-    "https://images.unsplash.com/photo-1517423568366-8b83523034fd?auto=format&fit=crop&q=80&w=400", // cargo
-    "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?auto=format&fit=crop&q=80&w=400", // skirt
-    "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&q=80&w=400", // denim shorts
-    "https://images.unsplash.com/photo-1551854838-212c50b4c184?auto=format&fit=crop&q=80&w=400", // joggers
-    "https://images.unsplash.com/photo-1506629082925-0151a14e7230?auto=format&fit=crop&q=80&w=400"  // grey jogger
-  ],
-  shoes: [
-    "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=80&w=400", // air kicks
-    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=400", // red runner
-    "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=400", // leather boots
-    "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&q=80&w=400"  // premium trainers
-  ],
-  accessories: [
-    "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&q=80&w=400", // visor
-    "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=400", // necklace
-    "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&q=80&w=400", // headphones
-    "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=400"  // bag
-  ]
-};
+function getOfflineNewOutfitRecommendation(weather: string, destination: string, situation: string) {
+  const top = pickCatalogItem("top", weather, destination, situation);
+  const bottom = pickCatalogItem("bottom", weather, destination, situation);
+  const shoes = pickCatalogItem("shoes", weather, destination, situation);
+  const accessories = pickCatalogItem("accessories", weather, destination, situation);
+
+  return buildCatalogOutfit(
+    { topId: top.id, bottomId: bottom.id, shoesId: shoes.id, accessoriesId: accessories.id },
+    `${weather} 날씨와 ${destination} 장소, ${situation} 상황을 반영해 자체 상품 카탈로그에서 코디를 골랐습니다.\n상의와 하의의 색상 균형을 맞추고, 이동하기 편한 신발을 함께 구성했습니다.\n액세서리는 전체 코디를 방해하지 않으면서 포인트가 되도록 선택했습니다.\nGemini 연결이 어려워도 자체 추천 규칙으로 안정적으로 결과를 제공합니다.`,
+    "local-catalog-fallback"
+  );
+}
 
 // API endpoint for Outfit Coordination Recommendation
 app.post("/api/recommend", async (req, res) => {
@@ -266,41 +221,28 @@ app.post("/api/recommend", async (req, res) => {
 
     const ai = getAIClient();
 
-    // If Mode is New Outfit
+    // New Outfit mode: Gemini must select IDs from the local catalog only.
     if (mode === "new_outfit") {
-      if (!ai) {
-        const fallback = getOfflineNewOutfitRecommendation(weather, destination, situation);
-        return res.json({ ...fallback, source: "local-fallback" });
-      }
+      if (!ai) return res.json(getOfflineNewOutfitRecommendation(weather, destination, situation));
+
+      const catalogText = PRODUCT_CATALOG.map((item) =>
+        `ID:${item.id} | ${item.category} | ${item.name} | colors:${item.colors.join(",")} | seasons:${item.seasons.join(",")} | styles:${item.styles.join(",")}`
+      ).join("\n");
 
       const promptString = `당신은 대한민국의 전문 패션 스타일리스트입니다.
+아래 자체 상품 카탈로그에 존재하는 상품 ID만 사용하여 코디를 추천하세요.
+새 상품명이나 존재하지 않는 ID를 절대 만들지 마세요.
 
-사용자가 선택한 조건을 모두 반영해 실제 쇼핑몰에서 검색하고 구매할 수 있을 법한 현실적인 새 옷 코디를 추천하세요.
-
-사용자 조건
+조건
 - 날씨: ${weather}
 - 장소: ${destination}
 - 상황: ${situation}
 
-추천 규칙
-1. 날씨를 가장 우선적으로 고려하고, 장소와 상황을 함께 반영하세요.
-2. 대학생이나 직장인이 일상에서 실제로 입을 수 있는 자연스러운 코디를 추천하세요.
-3. 사용자가 직접 요청하지 않은 사이버펑크, 코스프레, SF, 네온, 홀로그램, 무대 의상은 추천하지 마세요.
-4. 상의 1개, 하의 1개, 신발 1개, 액세서리 1개를 추천하세요.
-5. 색상 조합과 활동성, 계절감을 고려하세요.
-6. 상품명은 쇼핑몰에서 검색하기 쉬운 일반적인 한국어 이름으로 작성하세요.
-7. 각 아이템 설명에는 선택한 날씨, 장소, 상황 중 어떤 조건을 반영했는지 포함하세요.
-8. stylistNote에는 세 조건을 각각 어떻게 반영했는지 4~5줄의 자연스러운 한국어로 설명하세요.
+상품 카탈로그
+${catalogText}
 
-응답은 responseSchema에 맞는 JSON 형식으로만 작성하세요.
-
-각 아이템 필드
-- name: 현실적인 한국어 상품명
-- colors: 서로 어울리는 영문 색상명 1~2개
-- description: 조건을 반영한 이유를 포함한 짧은 한국어 설명
-- shoppingKeyword: 네이버 쇼핑에서 검색하기 좋은 짧은 한국어 키워드
-- imageIndex: 해당 카테고리 이미지 목록에서 가장 어울리는 인덱스
-`;
+상의, 하의, 신발, 액세서리 ID를 하나씩 고르세요.
+stylistNote는 선택 이유를 자연스러운 한국어 4줄로 설명하세요.`;
 
       try {
         const response = await withTimeout(ai.models.generateContent({
@@ -311,100 +253,20 @@ app.post("/api/recommend", async (req, res) => {
             responseSchema: {
               type: Type.OBJECT,
               properties: {
-                top: {
-                  type: Type.OBJECT,
-                  properties: {
-                    name: { type: Type.STRING },
-                    colors: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    description: { type: Type.STRING },
-                    shoppingKeyword: { type: Type.STRING },
-                    imageIndex: { type: Type.INTEGER }
-                  },
-                  required: ["name", "colors", "description", "shoppingKeyword", "imageIndex"]
-                },
-                bottom: {
-                  type: Type.OBJECT,
-                  properties: {
-                    name: { type: Type.STRING },
-                    colors: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    description: { type: Type.STRING },
-                    shoppingKeyword: { type: Type.STRING },
-                    imageIndex: { type: Type.INTEGER }
-                  },
-                  required: ["name", "colors", "description", "shoppingKeyword", "imageIndex"]
-                },
-                shoes: {
-                  type: Type.OBJECT,
-                  properties: {
-                    name: { type: Type.STRING },
-                    colors: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    description: { type: Type.STRING },
-                    shoppingKeyword: { type: Type.STRING },
-                    imageIndex: { type: Type.INTEGER }
-                  },
-                  required: ["name", "colors", "description", "shoppingKeyword", "imageIndex"]
-                },
-                accessories: {
-                  type: Type.OBJECT,
-                  properties: {
-                    name: { type: Type.STRING },
-                    colors: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    description: { type: Type.STRING },
-                    shoppingKeyword: { type: Type.STRING },
-                    imageIndex: { type: Type.INTEGER }
-                  },
-                  required: ["name", "colors", "description", "shoppingKeyword", "imageIndex"]
-                },
+                topId: { type: Type.STRING }, bottomId: { type: Type.STRING },
+                shoesId: { type: Type.STRING }, accessoriesId: { type: Type.STRING },
                 stylistNote: { type: Type.STRING }
               },
-              required: ["top", "bottom", "shoes", "stylistNote"]
+              required: ["topId", "bottomId", "shoesId", "accessoriesId", "stylistNote"]
             },
-            temperature: 0.35
+            temperature: 0.3
           }
         }));
-
-        const resultText = response.text;
-        if (resultText) {
-          const parsed = JSON.parse(resultText.trim());
-
-          // Map index to pre-selected beautiful images
-          const getImgUrl = (category: "top" | "bottom" | "shoes" | "accessories", index: number) => {
-            const list = NEW_FASHION_IMAGES[category];
-            const safeIdx = Math.max(0, Math.min(list.length - 1, isNaN(index) ? 0 : index));
-            return list[safeIdx];
-          };
-
-          const formatItem = (item: any, category: "top" | "bottom" | "shoes" | "accessories", idx: number) => {
-            if (!item) return undefined;
-            return {
-              id: `recommended-new-${category}-${Date.now()}-${idx}`,
-              name: item.name,
-              category,
-              colors: item.colors,
-              imageUrl: getImgUrl(category, item.imageIndex),
-              isCustom: true,
-              description: item.description,
-              shopName: "Naver Shopping",
-              shoppingUrl: `https://search.shopping.naver.com/search/all?query=${encodeURIComponent(item.shoppingKeyword || item.name)}`
-            };
-          };
-
-          return res.json({
-            isNewOutfit: true,
-            top: formatItem(parsed.top, "top", 1),
-            bottom: formatItem(parsed.bottom, "bottom", 2),
-            shoes: formatItem(parsed.shoes, "shoes", 3),
-            accessories: formatItem(parsed.accessories, "accessories", 4),
-            stylistNote: parsed.stylistNote,
-            source: "gemini-3.1-flash-lite",
-          });
-        } else {
-          throw new Error("Empty response from Gemini.");
-        }
-      } catch (err) {
-        console.error("Gemini Error, falling back to local new outfits:", err);
-        const fallback = getOfflineNewOutfitRecommendation(weather, destination, situation);
-        return res.json({ ...fallback, source: "local-fallback" });
+        const parsed = JSON.parse(response.text?.trim() || "{}");
+        return res.json(buildCatalogOutfit(parsed, parsed.stylistNote || "자체 상품 카탈로그에서 조건에 맞는 코디를 선택했습니다.", "gemini-local-catalog"));
+      } catch (error) {
+        console.error("Gemini catalog recommendation failed:", error);
+        return res.json(getOfflineNewOutfitRecommendation(weather, destination, situation));
       }
     }
 
@@ -497,7 +359,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.use((_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
     console.log("Static production asset directory served.");
