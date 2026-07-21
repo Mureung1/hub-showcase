@@ -35,7 +35,7 @@
 
 ## 2주차 — 소비자 축 + 선착순 예약 + 알림 판정 (핵심 루프 완성)
 
-- [ ] **T-06 딜 목록 API + 화면 (M2)** `server` `client`
+- [x] **T-06 딜 목록 API + 화면 (M2)** `server` `client` — [#7](https://github.com/HappyGogildong/hub/issues/7)
   - 사용자 기준 주소 기반 Haversine 거리 계산·정렬, 남은 수량·픽업 마감 표시. 지도는 리스트 우선(지도는 Backlog)
   - DoD: 반경 밖 딜이 목록에 나오지 않음
 - [ ] **T-07 딜 상세 화면 (M3)** `client`

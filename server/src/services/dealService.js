@@ -58,3 +58,47 @@ export async function listDealsByStore(storeId) {
   )
   return rows.map(toDealDto)
 }
+
+function toNearbyDto(row) {
+  return {
+    ...toDealDto(row),
+    storeName: row.store_name,
+    distanceKm: Math.round(row.distance_km * 10) / 10,
+  }
+}
+
+/*
+ * M2 소비자 딜 목록 — 사용자 기준 위치에서 반경 내 활성 딜을 거리순으로 (T-06).
+ * 거리: Haversine(구면 코사인). PostGIS 전환은 Backlog.
+ * always 모드 사용자도 목록은 반경으로 제한한다(무한 목록 방지). 알림은 T-11에서 별도 처리.
+ */
+export async function listNearbyDeals(userId) {
+  const { rows: users } = await pool.query(
+    'SELECT base_lat, base_lng, noti_radius_km, role FROM users WHERE id = $1',
+    [userId],
+  )
+  if (users.length === 0) throw httpError(401, '존재하지 않는 사용자입니다.')
+  const user = users[0]
+  if (user.base_lat == null || user.base_lng == null) {
+    throw httpError(400, '기준 위치가 설정되지 않았습니다.')
+  }
+
+  // 6371 = 지구 반지름(km). LEAST(1, ...)로 부동소수 오차에 의한 acos 정의역 이탈 방지.
+  // 거리 계산을 서브쿼리에서 한 번만 하고 바깥에서 반경 필터·정렬에 재사용한다.
+  const { rows } = await pool.query(
+    `SELECT * FROM (
+       SELECT d.*, s.name AS store_name,
+              6371 * acos(LEAST(1,
+                cos(radians($1)) * cos(radians(s.lat)) * cos(radians(s.lng) - radians($2))
+                + sin(radians($1)) * sin(radians(s.lat))
+              )) AS distance_km
+       FROM deals d
+       JOIN stores s ON s.id = d.store_id
+       WHERE d.status = 'active' AND d.pickup_deadline_at > now() AND d.remaining_qty > 0
+     ) nearby
+     WHERE distance_km <= $3
+     ORDER BY distance_km ASC`,
+    [user.base_lat, user.base_lng, user.noti_radius_km],
+  )
+  return rows.map(toNearbyDto)
+}

@@ -1,13 +1,30 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import api from '../../api/client.js'
 import { getSession, clearSession } from '../../lib/session.js'
+import './ConsumerHomePage.css'
+
+const timeOf = (iso) =>
+  new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
 
 /*
- * 소비자 홈 (자리표시, T-03). 실제 딜 목록(M2)은 T-06에서 구현.
- * 현재는 라우트 골격과 세션 유지 확인용.
+ * M2 소비자 딜 목록 (T-06). 기준 위치 반경 내 활성 딜을 거리순으로.
+ * 지도 전환은 Backlog, 리스트 우선. 상세·예약(M3)은 T-07/T-08.
  */
 function ConsumerHomePage() {
   const navigate = useNavigate()
   const session = getSession()
+  const [deals, setDeals] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    api
+      .get('/deals/nearby')
+      .then((res) => setDeals(res.data))
+      .catch((err) => setError(err.response?.data?.message ?? '목록을 불러오지 못했습니다.'))
+      .finally(() => setLoading(false))
+  }, [])
 
   const switchRole = () => {
     clearSession()
@@ -15,11 +32,44 @@ function ConsumerHomePage() {
   }
 
   return (
-    <main style={{ padding: 24 }}>
-      <h1>소비자 홈</h1>
-      <p>{session?.nickname}님 (userId: {session?.userId})</p>
-      <p style={{ color: '#8b95a1' }}>딜 목록(M2) · 상세·예약(M3) · 픽업코드(M4)가 이 자리에 들어옵니다.</p>
-      <button type="button" onClick={switchRole}>역할 다시 선택</button>
+    <main className="consumer-home">
+      <header className="consumer-home__head">
+        <h1 className="consumer-home__title">내 주변 마감 할인</h1>
+        <p className="consumer-home__sub">{session?.nickname}님 · 기준 위치 반경 이내</p>
+      </header>
+
+      {loading && <p className="consumer-home__msg">불러오는 중...</p>}
+      {error && <p className="consumer-home__msg consumer-home__msg--error">{error}</p>}
+
+      {!loading && !error && deals.length === 0 && (
+        <p className="consumer-home__msg">
+          반경 안에 진행 중인 마감 할인이 없어요. 조금 뒤에 다시 확인해보세요.
+        </p>
+      )}
+
+      <ul className="consumer-home__deals">
+        {deals.map((d) => (
+          <li key={d.id} className="deal-card">
+            <div className="deal-card__body">
+              <b className="deal-card__name">{d.name}</b>
+              <span className="deal-card__store">{d.storeName}</span>
+              <span className="deal-card__price">
+                {d.salePrice.toLocaleString()}원 <s>{d.originalPrice.toLocaleString()}</s>
+              </span>
+            </div>
+            <div className="deal-card__meta">
+              <span className="deal-card__stock">{d.remainingQty}개 남음</span>
+              <span className="deal-card__dim">
+                {d.distanceKm}km · ~{timeOf(d.pickupDeadlineAt)}
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <button type="button" className="consumer-home__switch" onClick={switchRole}>
+        역할 다시 선택
+      </button>
     </main>
   )
 }
