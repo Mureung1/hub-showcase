@@ -151,7 +151,8 @@ async function listMeetings(filters = {}) {
 // "종료된 모임"으로 보여줘야 하기 때문이다.
 async function getMeetingDetail(meetingId, viewerId = null) {
   const { rows } = await pool.query(
-    `SELECT m.*, u.nickname AS host_nickname, u.trust_score AS host_trust_score
+    `SELECT m.*, COALESCE(m.end_at, m.start_at) < now() AS is_past,
+            u.nickname AS host_nickname, u.trust_score AS host_trust_score
        FROM meetings m
        JOIN users u ON u.id = m.host_id
       WHERE m.id = $1`,
@@ -169,6 +170,8 @@ async function getMeetingDetail(meetingId, viewerId = null) {
   );
 
   let myParticipation = null;
+  let existingStatus = null;
+  let viewerBirthDate = null;
   if (viewerId) {
     const mine = await pool.query(
       'SELECT status FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
@@ -176,7 +179,10 @@ async function getMeetingDetail(meetingId, viewerId = null) {
     );
     if (mine.rows.length > 0) {
       myParticipation = { status: mine.rows[0].status };
+      existingStatus = mine.rows[0].status;
     }
+    const viewerRes = await pool.query('SELECT birth_date FROM users WHERE id = $1', [viewerId]);
+    viewerBirthDate = viewerRes.rows.length > 0 ? viewerRes.rows[0].birth_date : null;
   }
 
   const meeting = normalizeMeeting(row);
@@ -191,6 +197,18 @@ async function getMeetingDetail(meetingId, viewerId = null) {
     confirmedCount: countResult.rows[0].confirmed_count,
     myParticipation,
   };
+
+  // 신청 가능 여부를 서버가 판정해 내려보낸다. FE는 이 값으로만 버튼을 결정한다(FE 독립 판정 제거).
+  // is_past는 위 SELECT에서 DB 시계로 계산했다(타임존 이중 시계 방지).
+  const { canApply, blockReason } = evaluateApplicability({
+    meeting,
+    viewer: viewerId ? { id: viewerId, birthDate: viewerBirthDate } : null,
+    confirmedCount: countResult.rows[0].confirmed_count,
+    existingStatus,
+    isPast: row.is_past,
+  });
+  detail.canApply = canApply;
+  detail.blockReason = blockReason;
 
   // openChatUrl은 참여가 확정된 뒤에만 노출한다 (번개모임은 신청 전, 소모임은 승인 전
   // 비노출 — API 명세서 2번). 모임장 본인은 링크를 직접 등록한 사람이므로 항상 볼 수 있다.
