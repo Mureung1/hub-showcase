@@ -31,20 +31,25 @@ router.patch('/me', requireAuth, async (req, res, next) => {
   try {
     const birthDate = validateBirthDate(req.body);
 
-    const existing = await pool.query('SELECT birth_date FROM users WHERE id = $1', [req.session.userId]);
-    if (existing.rows.length === 0) {
-      throw new ApiError('NOT_FOUND', '사용자를 찾을 수 없습니다');
-    }
-    if (existing.rows[0].birth_date !== null) {
-      throw new ApiError('VALIDATION_ERROR', '생년월일은 수정할 수 없습니다');
-    }
-
-    const { rows } = await pool.query(
-      `UPDATE users SET birth_date = $1 WHERE id = $2
+    // 최초 1회만 설정되도록 birth_date IS NULL 조건을 UPDATE에 직접 걸어 원자적으로 잠근다.
+    // SELECT 후 UPDATE로 나누면 동시 요청이 둘 다 NULL을 읽어 통과하는 경쟁이 생긴다.
+    const updated = await pool.query(
+      `UPDATE users SET birth_date = $1 WHERE id = $2 AND birth_date IS NULL
        RETURNING id, email, nickname, birth_date, trust_score`,
       [birthDate, req.session.userId]
     );
-    res.json({ data: normalizeUser(rows[0]) });
+
+    if (updated.rows.length > 0) {
+      res.json({ data: normalizeUser(updated.rows[0]) });
+      return;
+    }
+
+    // 바뀐 행이 없음 = 사용자가 없거나(NOT_FOUND) 이미 생년월일이 설정됨(잠금).
+    const existing = await pool.query('SELECT 1 FROM users WHERE id = $1', [req.session.userId]);
+    if (existing.rows.length === 0) {
+      throw new ApiError('NOT_FOUND', '사용자를 찾을 수 없습니다');
+    }
+    throw new ApiError('VALIDATION_ERROR', '생년월일은 수정할 수 없습니다');
   } catch (err) {
     next(err);
   }
