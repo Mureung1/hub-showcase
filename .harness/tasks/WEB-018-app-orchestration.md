@@ -8,7 +8,7 @@ Backlog ID: WEB-018
 Parent Epic: EPIC-08 / GitHub #63
 Type: refactor
 Owner: HyunKN
-Status: in_progress
+Status: done
 ```
 
 ## 2. Goal
@@ -59,11 +59,11 @@ api/data/scripts: 없음
 
 ## 6. Acceptance Criteria
 
-- [ ] App에 business dataset과 API 변환 로직이 없다.
-- [ ] URL·지도·검색·panel 상태를 각각 독립 테스트할 수 있다.
-- [ ] neutral initial URL과 선택 흐름이 유지된다.
-- [ ] stale 점포와 지원 밖 분석 중심이 남지 않는다.
-- [ ] `ProductWorkspace` 임시 budget이 제거된다.
+- [x] App에 business dataset과 API 변환 로직이 없다.
+- [x] URL·지도·검색·panel 상태를 각각 독립 테스트할 수 있다.
+- [x] neutral initial URL과 선택 흐름이 유지된다.
+- [x] stale 점포와 지원 밖 분석 중심이 남지 않는다.
+- [x] `ProductWorkspace` 임시 budget이 제거된다.
 
 ## 7. Verification Plan
 
@@ -99,10 +99,10 @@ URL sync hook test, App characterization test, typecheck와 lint 통과
 
 - [x] 코드/스크립트 변경 시 관련 문서 또는 `.harness` 기록을 같은 커밋에 포함
 - [x] README 링크 필요 여부 확인
-- [ ] 기능 spec 갱신
-- [ ] data mapping 갱신
-- [ ] checklist 갱신
-- [ ] decision/failure log 필요 여부 확인
+- [x] 기능 spec 갱신 불필요: 사용자 기능·API contract를 바꾸지 않았다.
+- [x] data mapping 갱신 불필요: 데이터 contract를 바꾸지 않았다.
+- [x] checklist 갱신: Run Report에 검증 결과를 기록한다.
+- [x] decision/failure log 필요 여부 확인: 별도 decision 불필요.
 
 ## 9. Commit Plan
 
@@ -119,9 +119,10 @@ docs(web): record WEB-018 completion
 
 - [x] 한 기능/한 버그/한 문서 단위인가?
 - [x] 관련 없는 파일을 변경하지 않았는가?
-- [ ] 검증 결과를 기록했는가?
-- [ ] 문서와 체크리스트가 실제 변경과 일치하는가?
+- [x] 검증 결과를 기록했는가?
+- [x] 문서와 체크리스트가 실제 변경과 일치하는가?
 - [x] known limitation이 있으면 적었는가?
+- [ ] TEST-001 will repeat full release smoke on the merged deployment candidate.
 
 지도 toolbar·legend·control을 MarketMapPanel로 분리하고 기존 map canvas는 props로 유지
 MapLibre layer·marker·지원 범위 안내·분석 위치 control을 MarketMapCanvas로 분리

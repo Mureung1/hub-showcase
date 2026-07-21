@@ -59,6 +59,16 @@ class BulkImportReport:
     seoul_store_metrics: ImportQuality
 
 
+@dataclass(frozen=True)
+class BulkSource:
+    """Validated provenance for one raw CSV, independent of the target database."""
+
+    path: Path
+    snapshot_id: str
+    collected_at: str
+    raw_path: str
+
+
 def detect_csv_encoding(path: Path) -> str:
     sample = path.read_bytes()[:65536]
     for encoding in ("utf-8-sig", "cp949"):
@@ -94,6 +104,16 @@ def raw_path(path: Path) -> str:
     return relative.as_posix()
 
 
+def load_bulk_source(path: Path) -> BulkSource:
+    """Validate raw-file location and derive immutable snapshot metadata."""
+    return BulkSource(
+        path=path,
+        snapshot_id=sha256_file(path),
+        collected_at=collected_at(path),
+        raw_path=raw_path(path),
+    )
+
+
 def clean(value: Any) -> str | None:
     if value is None:
         return None
@@ -104,13 +124,12 @@ def clean(value: Any) -> str | None:
 def upsert_source(
     connection: sqlite3.Connection,
     *,
-    snapshot_id: str,
+    source: BulkSource,
     provider: str,
     dataset: str,
     source_url: str,
     period: str,
     row_count: int,
-    path: Path,
 ) -> None:
     connection.execute(
         """
@@ -123,16 +142,16 @@ def upsert_source(
           raw_path=excluded.raw_path
         """,
         (
-            snapshot_id,
+            source.snapshot_id,
             provider,
             dataset,
             "official_bulk_csv",
             source_url,
-            collected_at(path),
+            source.collected_at,
             period,
             row_count,
-            snapshot_id,
-            raw_path(path),
+            source.snapshot_id,
+            source.raw_path,
         ),
     )
 
@@ -153,21 +172,82 @@ def valid_wgs84(longitude: float | None, latitude: float | None) -> bool:
     )
 
 
+def parse_sbiz_store_row(
+    row: dict[str, str | None], snapshot_id: str
+) -> tuple[tuple[Any, ...] | None, str | None]:
+    store_id = clean(row.get("상가업소번호"))
+    name = clean(row.get("상호명"))
+    if not store_id or not name:
+        return None, "missing_required"
+    longitude = number(row.get("경도"))
+    latitude = number(row.get("위도"))
+    if not valid_wgs84(longitude, latitude):
+        return None, "invalid_coordinates"
+    return (
+        (
+            store_id, name, clean(row.get("지점명")), clean(row.get("상권업종대분류코드")),
+            clean(row.get("상권업종대분류명")), clean(row.get("상권업종중분류코드")),
+            clean(row.get("상권업종중분류명")), clean(row.get("상권업종소분류코드")),
+            clean(row.get("상권업종소분류명")), clean(row.get("도로명주소")), longitude, latitude,
+            "EPSG:4326", snapshot_id,
+        ),
+        None,
+    )
+
+
+def parse_seoul_store_metric_row(
+    row: dict[str, str | None], snapshot_id: str
+) -> tuple[tuple[Any, ...] | None, str | None]:
+    period = clean(row.get("stdr_yyqu_cd"))
+    market_code = clean(row.get("trdar_cd"))
+    category_code = clean(row.get("svc_induty_cd"))
+    category_name = clean(row.get("svc_induty_cd_nm"))
+    if not period or not market_code or not category_code or not category_name:
+        return None, "missing_required"
+    return (
+        (
+            market_code, period, category_code, category_name,
+            integer(row.get("similr_induty_stor_co")), integer(row.get("stor_co")),
+            integer(row.get("frc_stor_co")), number(row.get("opbiz_rt")),
+            integer(row.get("opbiz_stor_co")), number(row.get("clsbiz_rt")),
+            integer(row.get("clsbiz_stor_co")), snapshot_id,
+        ),
+        None,
+    )
+
+
+def finalize_sbiz_import(
+    connection: sqlite3.Connection, source: BulkSource, input_rows: int
+) -> None:
+    connection.execute(
+        """
+        DELETE FROM store_points
+        WHERE source_snapshot_id IN (
+          SELECT snapshot_id FROM data_sources
+          WHERE provider='공공데이터포털' AND dataset='stores'
+        )
+        """
+    )
+    connection.execute(
+        "UPDATE data_sources SET row_count=? WHERE snapshot_id=?",
+        (input_rows, source.snapshot_id),
+    )
+
+
 def import_sbiz_stores(
     connection: sqlite3.Connection, path: Path, *, chunk_size: int = 2_000
 ) -> ImportQuality:
     if chunk_size <= 0:
         raise ValueError("chunk_size must be greater than zero.")
-    snapshot_id = sha256_file(path)
+    source = load_bulk_source(path)
     upsert_source(
         connection,
-        snapshot_id=snapshot_id,
+        source=source,
         provider="소상공인시장진흥공단",
         dataset="상가(상권)정보_20260331",
         source_url=SBIZ_SOURCE_URL,
         period="202603",
         row_count=0,
-        path=path,
     )
     statement = """
         INSERT INTO store_points (
@@ -200,56 +280,26 @@ def import_sbiz_stores(
         require_columns(path, reader.fieldnames, SBIZ_REQUIRED_COLUMNS)
         for row in reader:
             input_rows += 1
-            store_id = clean(row.get("상가업소번호"))
-            name = clean(row.get("상호명"))
-            if not store_id or not name:
+            values, problem = parse_sbiz_store_row(row, source.snapshot_id)
+            if problem == "missing_required":
                 missing_required += 1
                 continue
-            longitude = number(row.get("경도"))
-            latitude = number(row.get("위도"))
-            if not valid_wgs84(longitude, latitude):
+            if problem == "invalid_coordinates":
                 invalid_coordinates += 1
                 continue
+            assert values is not None
+            store_id = str(values[0])
             if store_id in seen:
                 duplicate_keys += 1
             seen.add(store_id)
-            batch.append(
-                (
-                    store_id,
-                    name,
-                    clean(row.get("지점명")),
-                    clean(row.get("상권업종대분류코드")),
-                    clean(row.get("상권업종대분류명")),
-                    clean(row.get("상권업종중분류코드")),
-                    clean(row.get("상권업종중분류명")),
-                    clean(row.get("상권업종소분류코드")),
-                    clean(row.get("상권업종소분류명")),
-                    clean(row.get("도로명주소")),
-                    longitude,
-                    latitude,
-                    "EPSG:4326",
-                    snapshot_id,
-                )
-            )
+            batch.append(values)
             accepted_rows += 1
             if len(batch) >= chunk_size:
                 connection.executemany(statement, batch)
                 batch.clear()
     if batch:
         connection.executemany(statement, batch)
-    connection.execute(
-        """
-        DELETE FROM store_points
-        WHERE source_snapshot_id IN (
-          SELECT snapshot_id FROM data_sources
-          WHERE provider='공공데이터포털' AND dataset='stores'
-        )
-        """
-    )
-    connection.execute(
-        "UPDATE data_sources SET row_count=? WHERE snapshot_id=?",
-        (input_rows, snapshot_id),
-    )
+    finalize_sbiz_import(connection, source, input_rows)
     return ImportQuality(
         input_rows=input_rows,
         accepted_rows=accepted_rows,
@@ -264,16 +314,15 @@ def import_seoul_store_metrics(
 ) -> ImportQuality:
     if chunk_size <= 0:
         raise ValueError("chunk_size must be greater than zero.")
-    snapshot_id = sha256_file(path)
+    source = load_bulk_source(path)
     upsert_source(
         connection,
-        snapshot_id=snapshot_id,
+        source=source,
         provider="서울 열린데이터광장",
         dataset="서울시 상권분석서비스(점포-상권)_2025년",
         source_url=SEOUL_STORE_SOURCE_URL,
         period="2025",
         row_count=0,
-        path=path,
     )
     known_markets = {
         market_code for (market_code,) in connection.execute("SELECT market_code FROM markets")
@@ -304,13 +353,12 @@ def import_seoul_store_metrics(
         require_columns(path, reader.fieldnames, SEOUL_STORE_REQUIRED_COLUMNS)
         for row in reader:
             input_rows += 1
-            period = clean(row.get("stdr_yyqu_cd"))
-            market_code = clean(row.get("trdar_cd"))
-            category_code = clean(row.get("svc_induty_cd"))
-            category_name = clean(row.get("svc_induty_cd_nm"))
-            if not period or not market_code or not category_code or not category_name:
+            values, problem = parse_seoul_store_metric_row(row, source.snapshot_id)
+            if problem == "missing_required":
                 missing_required += 1
                 continue
+            assert values is not None
+            market_code, period, category_code = (str(values[index]) for index in range(3))
             if market_code not in known_markets:
                 unknown_market_codes += 1
                 continue
@@ -318,22 +366,7 @@ def import_seoul_store_metrics(
             if key in seen:
                 duplicate_keys += 1
             seen.add(key)
-            batch.append(
-                (
-                    market_code,
-                    period,
-                    category_code,
-                    category_name,
-                    integer(row.get("similr_induty_stor_co")),
-                    integer(row.get("stor_co")),
-                    integer(row.get("frc_stor_co")),
-                    number(row.get("opbiz_rt")),
-                    integer(row.get("opbiz_stor_co")),
-                    number(row.get("clsbiz_rt")),
-                    integer(row.get("clsbiz_stor_co")),
-                    snapshot_id,
-                )
-            )
+            batch.append(values)
             accepted_rows += 1
             if len(batch) >= chunk_size:
                 connection.executemany(statement, batch)
@@ -342,7 +375,7 @@ def import_seoul_store_metrics(
         connection.executemany(statement, batch)
     connection.execute(
         "UPDATE data_sources SET row_count=? WHERE snapshot_id=?",
-        (input_rows, snapshot_id),
+        (input_rows, source.snapshot_id),
     )
     return ImportQuality(
         input_rows=input_rows,

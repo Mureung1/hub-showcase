@@ -3,7 +3,13 @@ import json
 import sqlite3
 from pathlib import Path
 
-from localtwin_api.canonical_db import SCHEMA, import_public, import_seoul, table_counts
+from localtwin_api.canonical_db import (
+    SCHEMA,
+    import_public,
+    import_seoul,
+    load_canonical_snapshot,
+    table_counts,
+)
 
 
 def write_snapshot(path: Path, slug: str, rows: list[dict[str, object]]) -> dict[str, object]:
@@ -133,3 +139,25 @@ def test_public_import_links_store_and_permit_sources(tmp_path: Path) -> None:
     assert counts["store_points"] == 1
     assert counts["permit_businesses"] == 1
     assert table_counts(connection)["data_sources"] == 2
+
+
+def test_canonical_snapshot_rejects_duplicate_source_before_database_access(tmp_path: Path) -> None:
+    (tmp_path / "stores.json").write_text(json.dumps({"rows": []}), encoding="utf-8")
+    (tmp_path / "manifest.json").write_text(
+        json.dumps(
+            {
+                "sources": [
+                    {"source": "stores", "path": "stores.json"},
+                    {"source": "stores", "path": "stores.json"},
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    try:
+        load_canonical_snapshot(tmp_path)
+    except ValueError as error:
+        assert str(error) == "Snapshot manifest contains duplicate source: stores"
+    else:
+        raise AssertionError("Expected duplicate source validation to fail.")

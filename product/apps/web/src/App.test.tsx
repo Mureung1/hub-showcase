@@ -52,7 +52,10 @@ describe("App", () => {
   it("renders the analysis shell without presenting a score before the API responds", () => {
     render(<App />);
 
-    expect(screen.getByRole("link", { name: "LocalTwin 상권 분석 홈" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "LocalTwin 상권 분석 홈" })).toHaveAttribute(
+      "href",
+      "/",
+    );
     expect(screen.getByRole("link", { name: "Docs" })).toHaveAttribute(
       "href",
       "https://hub-localtwin-docs-vercel.vercel.app/docs/wiki/doc-viewer.html?doc=Home.md",

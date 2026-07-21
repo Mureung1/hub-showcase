@@ -6,6 +6,7 @@ import argparse
 import json
 import sqlite3
 from collections.abc import Iterable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -160,6 +161,39 @@ def load_json(path: Path) -> dict[str, Any]:
     return payload
 
 
+@dataclass(frozen=True)
+class SnapshotSource:
+    metadata: dict[str, Any]
+    rows: list[dict[str, Any]]
+
+
+@dataclass(frozen=True)
+class CanonicalSnapshot:
+    manifest: dict[str, Any]
+    sources: dict[str, SnapshotSource]
+
+
+def load_canonical_snapshot(snapshot_dir: Path) -> CanonicalSnapshot:
+    """Read and validate a raw snapshot before opening a database connection."""
+    manifest = load_json(snapshot_dir / "manifest.json")
+    source_items = manifest.get("sources")
+    if not isinstance(source_items, list):
+        raise ValueError("Snapshot manifest sources must be a list.")
+
+    sources: dict[str, SnapshotSource] = {}
+    for source in source_items:
+        if not isinstance(source, dict):
+            raise ValueError("Snapshot manifest source must be an object.")
+        slug = source.get("source")
+        path = source.get("path")
+        if not isinstance(slug, str) or not slug or not isinstance(path, str) or not path:
+            raise ValueError("Snapshot manifest source requires source and path.")
+        if slug in sources:
+            raise ValueError(f"Snapshot manifest contains duplicate source: {slug}")
+        sources[slug] = SnapshotSource(metadata=source, rows=rows(load_json(snapshot_dir / path)))
+    return CanonicalSnapshot(manifest=manifest, sources=sources)
+
+
 def source_id(source: dict[str, Any]) -> str:
     return str(source["sha256"])
 
@@ -200,40 +234,45 @@ def rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
     return result
 
 
-def import_seoul(connection: sqlite3.Connection, snapshot_dir: Path) -> dict[str, int]:
-    manifest = load_json(snapshot_dir / "manifest.json")
-    sources = {source["source"]: source for source in manifest["sources"]}
-    source_ids = {
-        slug: add_source(connection, manifest, source, snapshot_dir, "서울 열린데이터광장")
-        for slug, source in sources.items()
-    }
-
-    for row in rows(load_json(snapshot_dir / sources["areas"]["path"])):
+def persist_market_rows(
+    connection: sqlite3.Connection, rows_to_persist: list[dict[str, Any]], snapshot_id: str
+) -> set[str]:
+    for row in rows_to_persist:
         connection.execute(
             """
             INSERT OR REPLACE INTO markets VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                row["TRDAR_CD"],
-                row["TRDAR_CD_NM"],
-                row.get("TRDAR_SE_CD"),
-                row.get("TRDAR_SE_CD_NM"),
-                row.get("SIGNGU_CD"),
-                row.get("SIGNGU_CD_NM"),
-                row.get("ADSTRD_CD"),
-                row.get("ADSTRD_CD_NM"),
-                number(row.get("XCNTS_VALUE")),
-                number(row.get("YDNTS_VALUE")),
-                "Seoul source coordinate (not WGS84)",
-                number(row.get("RELM_AR")),
-                source_ids["areas"],
+                row["TRDAR_CD"], row["TRDAR_CD_NM"], row.get("TRDAR_SE_CD"),
+                row.get("TRDAR_SE_CD_NM"), row.get("SIGNGU_CD"), row.get("SIGNGU_CD_NM"),
+                row.get("ADSTRD_CD"), row.get("ADSTRD_CD_NM"), number(row.get("XCNTS_VALUE")),
+                number(row.get("YDNTS_VALUE")), "Seoul source coordinate (not WGS84)",
+                number(row.get("RELM_AR")), snapshot_id,
             ),
         )
+    return {market_code for (market_code,) in connection.execute("SELECT market_code FROM markets")}
 
-    known_market_codes = {
-        market_code for (market_code,) in connection.execute("SELECT market_code FROM markets")
+
+def add_snapshot_sources(
+    connection: sqlite3.Connection,
+    snapshot: CanonicalSnapshot,
+    snapshot_dir: Path,
+    provider: str,
+) -> dict[str, str]:
+    return {
+        slug: add_source(connection, snapshot.manifest, source.metadata, snapshot_dir, provider)
+        for slug, source in snapshot.sources.items()
     }
-    for row in rows(load_json(snapshot_dir / sources["stores"]["path"])):
+
+
+def import_seoul(connection: sqlite3.Connection, snapshot_dir: Path) -> dict[str, int]:
+    snapshot = load_canonical_snapshot(snapshot_dir)
+    source_ids = add_snapshot_sources(connection, snapshot, snapshot_dir, "서울 열린데이터광장")
+
+    known_market_codes = persist_market_rows(
+        connection, snapshot.sources["areas"].rows, source_ids["areas"]
+    )
+    for row in snapshot.sources["stores"].rows:
         if row["TRDAR_CD"] not in known_market_codes:
             continue
         connection.execute(
@@ -256,7 +295,7 @@ def import_seoul(connection: sqlite3.Connection, snapshot_dir: Path) -> dict[str
             ),
         )
 
-    for row in rows(load_json(snapshot_dir / sources["sales"]["path"])):
+    for row in snapshot.sources["sales"].rows:
         if row["TRDAR_CD"] not in known_market_codes:
             continue
         connection.execute(
@@ -283,7 +322,7 @@ def import_seoul(connection: sqlite3.Connection, snapshot_dir: Path) -> dict[str
             ),
         )
 
-    for row in rows(load_json(snapshot_dir / sources["flow"]["path"])):
+    for row in snapshot.sources["flow"].rows:
         if row["TRDAR_CD"] not in known_market_codes:
             continue
         connection.execute(
@@ -307,12 +346,14 @@ def import_seoul(connection: sqlite3.Connection, snapshot_dir: Path) -> dict[str
 
 
 def import_public(connection: sqlite3.Connection, snapshot_dir: Path) -> dict[str, int]:
-    manifest = load_json(snapshot_dir / "manifest.json")
-    for source in manifest["sources"]:
-        snapshot_id = add_source(connection, manifest, source, snapshot_dir, "공공데이터포털")
-        payload = load_json(snapshot_dir / source["path"])
-        if source["source"] == "stores":
-            for row in rows(payload):
+    snapshot = load_canonical_snapshot(snapshot_dir)
+    for source_name, source_snapshot in snapshot.sources.items():
+        source = source_snapshot.metadata
+        snapshot_id = add_source(
+            connection, snapshot.manifest, source, snapshot_dir, "공공데이터포털"
+        )
+        if source_name == "stores":
+            for row in source_snapshot.rows:
                 store_id = row.get("bizesId") or row.get("BIZES_ID")
                 name = row.get("bizesNm") or row.get("BIZES_NM")
                 if not store_id or not name:
@@ -340,7 +381,7 @@ def import_public(connection: sqlite3.Connection, snapshot_dir: Path) -> dict[st
                     ),
                 )
         else:
-            for row in rows(payload):
+            for row in source_snapshot.rows:
                 management_no = row.get("MNG_NO")
                 name = row.get("BPLC_NM")
                 if not management_no or not name:
