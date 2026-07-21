@@ -11,6 +11,16 @@ const router = express.Router();
 // 실려 Postgres bigint 범위 초과 에러(500 + 원문 노출)로 이어지므로 미리 끊어둔다.
 const MAX_PAGE = 100000;
 
+// :id 파라미터를 안전한 양의 정수로 파싱한다. 아니면 없는 모임 취급(404).
+// parseInt는 "1abc"→1처럼 뒷부분을 조용히 버려 엉뚱한 모임을 반환하고, 안전 정수 범위를
+// 넘는 값은 Postgres bigint 초과 에러(500+원문 노출)로 이어지므로 정규식+범위로 먼저 막는다.
+function parseMeetingId(rawId) {
+  if (!/^\d+$/.test(rawId) || Number(rawId) > Number.MAX_SAFE_INTEGER || Number(rawId) <= 0) {
+    throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
+  }
+  return Number(rawId);
+}
+
 // GET /api/meetings — 목록/검색 (인증 불필요)
 router.get('/', async (req, res, next) => {
   try {
@@ -58,15 +68,7 @@ router.post('/', requireAuth, async (req, res, next) => {
 // GET /api/meetings/:id — 상세 조회 (인증 불필요, 로그인 시 myParticipation/openChatUrl이 개인화됨)
 router.get('/:id', async (req, res, next) => {
   try {
-    const rawId = req.params.id;
-    // parseInt는 "1abc"→1, "1.9"→1 처럼 뒷부분을 조용히 버려서 엉뚱한 모임을
-    // 반환해버린다. 그래서 숫자만으로 이루어진 문자열인지 정규식으로 먼저 확인한다.
-    // 또한 안전한 정수 범위를 넘는 숫자 문자열을 그대로 쿼리에 넘기면 Postgres의
-    // bigint 범위 초과 에러가 500과 함께 원문 그대로 노출된다 — 여기서 미리 막는다.
-    if (!/^\d+$/.test(rawId) || Number(rawId) > Number.MAX_SAFE_INTEGER || Number(rawId) <= 0) {
-      throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
-    }
-    const id = Number(rawId);
+    const id = parseMeetingId(req.params.id);
 
     const meeting = await getMeetingDetail(id, req.session.userId ?? null);
     if (!meeting) {
@@ -78,14 +80,6 @@ router.get('/:id', async (req, res, next) => {
     next(err);
   }
 });
-
-// :id 파라미터를 안전한 양의 정수로 파싱한다. 아니면 없는 모임 취급(404). GET /:id와 같은 원칙.
-function parseMeetingId(rawId) {
-  if (!/^\d+$/.test(rawId) || Number(rawId) > Number.MAX_SAFE_INTEGER || Number(rawId) <= 0) {
-    throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
-  }
-  return Number(rawId);
-}
 
 // POST /api/meetings/:id/apply — 참여 신청(F1, 로그인 필요)
 router.post('/:id/apply', requireAuth, async (req, res, next) => {
