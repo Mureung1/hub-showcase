@@ -57,6 +57,15 @@ const waitingEntryColumns = `
   created_at, updated_at, version
 `;
 
+const qualifiedWaitingEntryColumns = `
+  entry.id, entry.queue_id, entry.account_id, entry.source, entry.phone_number,
+  entry.ticket_number, entry.status, entry.queue_order, entry.patient_count,
+  entry.lookup_token_hash, entry.patient_defer_count, entry.no_show_move_count,
+  entry.preparation_notified_at, entry.onsite_near_turn_notified_at,
+  entry.entry_requested_at, entry.arrival_deadline_at, entry.called_at,
+  entry.cancelled_at, entry.created_at, entry.updated_at, entry.version
+`;
+
 function toWaitingEntry(row: unknown): WaitingEntry {
   const entry = waitingEntryRowSchema.parse(row);
   return {
@@ -524,7 +533,7 @@ export class PgWaitingRepository implements WaitingRepository {
   async moveNoShowToEnd(
     executor: DatabaseExecutor,
     waitingEntryId: string,
-    expectedUpdatedAt: Date,
+    expectedVersion: number,
   ): Promise<NoShowMoveResult | null> {
     const result = await executor.query<
       WaitingEntryRow & { previous_queue_order: number }
@@ -537,7 +546,7 @@ export class PgWaitingRepository implements WaitingRepository {
             AND source = 'remote'
             AND status = 'entry_requested'
             AND no_show_move_count = 0
-            AND updated_at = $2
+            AND version = $2
           FOR UPDATE
         ),
         queue_lock AS (
@@ -557,7 +566,8 @@ export class PgWaitingRepository implements WaitingRepository {
           UPDATE public.waiting_entries AS entry
           SET queue_order = last_order.queue_order,
               no_show_move_count = 1,
-              updated_at = now()
+              updated_at = now(),
+              version = entry.version + 1
           FROM target, last_order
           WHERE entry.id = target.id
             AND NOT EXISTS (
@@ -567,13 +577,13 @@ export class PgWaitingRepository implements WaitingRepository {
                 AND ahead.status IN ('remote_waiting', 'entry_requested', 'onsite_waiting')
                 AND ahead.queue_order < target.queue_order
             )
-          RETURNING ${waitingEntryColumns}
+          RETURNING ${qualifiedWaitingEntryColumns}
         )
         SELECT moved.*, target.queue_order AS previous_queue_order
         FROM moved
         CROSS JOIN target
       `,
-      [waitingEntryId, expectedUpdatedAt],
+      [waitingEntryId, expectedVersion],
     );
     const row = result.rows[0];
     return row
@@ -584,7 +594,7 @@ export class PgWaitingRepository implements WaitingRepository {
   async cancelExpired(
     executor: DatabaseExecutor,
     waitingEntryId: string,
-    expectedUpdatedAt: Date,
+    expectedVersion: number,
     cancelledAt: Date,
   ): Promise<WaitingEntry | null> {
     const result = await executor.query<WaitingEntryRow>(
@@ -593,15 +603,16 @@ export class PgWaitingRepository implements WaitingRepository {
         SET status = 'cancelled',
             cancelled_at = $3,
             lookup_token_hash = NULL,
-            updated_at = now()
+            updated_at = now(),
+            version = version + 1
         WHERE id = $1
           AND source = 'remote'
           AND status = 'entry_requested'
           AND arrival_deadline_at <= $3
-          AND updated_at = $2
+          AND version = $2
         RETURNING ${waitingEntryColumns}
       `,
-      [waitingEntryId, expectedUpdatedAt, cancelledAt],
+      [waitingEntryId, expectedVersion, cancelledAt],
     );
     return result.rows[0] ? toWaitingEntry(result.rows[0]) : null;
   }

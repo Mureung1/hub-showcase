@@ -43,6 +43,18 @@ describe("PgDailyQueueRepository development Supabase integration", () => {
         createdQueueId = queue.id;
 
         expect(queue).toMatchObject({ status: "open", ...defaultQueueSettings });
+        const samePausedQueue = await queueRepository.createPaused(executor, {
+          hospitalId: hospital.id,
+          categorySetId,
+          queueDate: "2026-07-15",
+        });
+        const sameOpenQueue = await queueRepository.createOpen(executor, {
+          hospitalId: hospital.id,
+          categorySetId,
+          queueDate: "2026-07-15",
+        });
+        expect(samePausedQueue).toMatchObject({ id: queue.id, status: "open" });
+        expect(sameOpenQueue).toMatchObject({ id: queue.id, status: "open" });
         throw new Error("ROLLBACK_TEST");
       }),
     ).rejects.toThrow("ROLLBACK_TEST");

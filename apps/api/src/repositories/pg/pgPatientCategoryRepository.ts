@@ -4,6 +4,7 @@ import type { DatabaseExecutor } from "../../db/databaseExecutor.js";
 import type {
   PatientCategoryConfiguration,
   PatientCategoryRepository,
+  SavePatientCategoryConfigurationInput,
 } from "../patientCategoryRepository.js";
 
 const configurationRowSchema = z.object({
@@ -58,5 +59,89 @@ export class PgPatientCategoryRepository implements PatientCategoryRepository {
       inputMode: configuration.input_mode,
       categories: configuration.categories,
     };
+  }
+
+  async findEffectiveConfiguration(
+    executor: DatabaseExecutor,
+    hospitalId: string,
+    effectiveDate: string,
+  ): Promise<PatientCategoryConfiguration | null> {
+    const result = await executor.query<{ id: string }>(
+      `
+        SELECT id
+        FROM public.patient_category_sets
+        WHERE hospital_id = $1
+          AND effective_date <= $2
+          AND status <> 'retired'
+        ORDER BY effective_date DESC, created_at DESC
+        LIMIT 1
+      `,
+      [hospitalId, effectiveDate],
+    );
+    const categorySetId = result.rows[0]?.id;
+    return categorySetId
+      ? this.findConfigurationById(executor, categorySetId)
+      : null;
+  }
+
+  async saveScheduledConfiguration(
+    executor: DatabaseExecutor,
+    input: SavePatientCategoryConfigurationInput,
+  ): Promise<PatientCategoryConfiguration> {
+    await executor.query(
+      "SELECT id FROM public.hospitals WHERE id = $1 FOR UPDATE",
+      [input.hospitalId],
+    );
+
+    const scheduledResult = await executor.query<{ id: string }>(
+      `
+        SELECT id
+        FROM public.patient_category_sets
+        WHERE hospital_id = $1 AND status = 'scheduled'
+        LIMIT 1
+      `,
+      [input.hospitalId],
+    );
+    const scheduledId = scheduledResult.rows[0]?.id;
+    const categorySetResult = scheduledId
+      ? await executor.query<{ id: string }>(
+          `
+            UPDATE public.patient_category_sets
+            SET input_mode = $2, effective_date = $3
+            WHERE id = $1
+            RETURNING id
+          `,
+          [scheduledId, input.inputMode, input.effectiveDate],
+        )
+      : await executor.query<{ id: string }>(
+          `
+            INSERT INTO public.patient_category_sets
+              (hospital_id, input_mode, effective_date, status)
+            VALUES ($1, $2, $3, 'scheduled')
+            RETURNING id
+          `,
+          [input.hospitalId, input.inputMode, input.effectiveDate],
+        );
+    const categorySetId = categorySetResult.rows[0]?.id;
+    if (!categorySetId) throw new Error("Failed to save patient category configuration");
+
+    await executor.query(
+      "DELETE FROM public.patient_categories WHERE category_set_id = $1",
+      [categorySetId],
+    );
+    for (const category of input.categories) {
+      await executor.query(
+        `
+          INSERT INTO public.patient_categories
+            (category_set_id, name, description, sort_order)
+          VALUES ($1, $2, $3, $4)
+        `,
+        [categorySetId, category.name, category.description, category.sortOrder],
+      );
+    }
+
+    const configuration = await this.findConfigurationById(executor, categorySetId);
+    if (!configuration) throw new Error("Saved patient category configuration was not found");
+    return configuration;
   }
 }

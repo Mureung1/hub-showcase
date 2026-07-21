@@ -13,6 +13,7 @@ import { PgPatientCategoryRepository } from "../repositories/pg/pgPatientCategor
 import { PgWaitingEventRepository } from "../repositories/pg/pgWaitingEventRepository.js";
 import { PgWaitingRepository } from "../repositories/pg/pgWaitingRepository.js";
 import { NotificationService } from "./notificationService.js";
+import { AutomaticNotificationService } from "./automaticNotificationService.js";
 import { StaffQueueService } from "./staffQueueService.js";
 
 class ScopedTransactionManager implements TransactionManager {
@@ -54,28 +55,24 @@ describe("StaffQueueService development Supabase vertical slice", () => {
         );
         const categorySetId = categoryResult.rows[0]?.id;
         if (!categorySetId) throw new Error("테스트 분류 설정 생성 결과가 없습니다.");
-        const queueResult = await executor.query<{ id: string }>(
-          `
-            INSERT INTO public.daily_queues
-              (hospital_id, category_set_id, queue_date, status, opened_at)
-            VALUES ($1, $2, '2026-07-16', 'paused', now())
-            RETURNING id
-          `,
-          [hospitalId, categorySetId],
+        const waitingRepository = new PgWaitingRepository();
+        const waitingEventRepository = new PgWaitingEventRepository();
+        const notificationService = new NotificationService(
+          new PgNotificationRepository(),
+          new MockNotificationProvider(),
         );
-        const queueId = queueResult.rows[0]?.id;
-        if (!queueId) throw new Error("테스트 대기열 생성 결과가 없습니다.");
-
         const service = new StaffQueueService(
           new ScopedTransactionManager(executor),
           new PgDailyQueueRepository(),
           new PgHospitalRepository(),
           new PgPatientCategoryRepository(),
-          new PgWaitingRepository(),
-          new PgWaitingEventRepository(),
-          new NotificationService(
-            new PgNotificationRepository(),
-            new MockNotificationProvider(),
+          waitingRepository,
+          waitingEventRepository,
+          notificationService,
+          new AutomaticNotificationService(
+            waitingRepository,
+            waitingEventRepository,
+            notificationService,
           ),
           {
             patientWebOrigin: "http://127.0.0.1:5173",
@@ -83,6 +80,36 @@ describe("StaffQueueService development Supabase vertical slice", () => {
           },
         );
 
+        await expect(service.getTodayQueue(hospitalId)).resolves.toMatchObject({
+          entries: [],
+          queueDate: "2026-07-16",
+          queueStatus: "paused",
+          todayInputMode: "total_only",
+        });
+        const configuredQueue = await service.saveNextDayConfiguration(hospitalId, {
+          inputMode: "categorized",
+          categories: [
+            {
+              id: "client-generated-id",
+              name: "Adult",
+              description: "Age 19 or older",
+              sortOrder: 0,
+            },
+          ],
+        });
+        expect(configuredQueue).toMatchObject({
+          todayInputMode: "total_only",
+          todayCategories: [],
+          nextDayInputMode: "categorized",
+          nextDayCategories: [
+            expect.objectContaining({
+              name: "Adult",
+              description: "Age 19 or older",
+              sortOrder: 0,
+            }),
+          ],
+        });
+        expect(configuredQueue.nextDayCategories[0]?.id).not.toBe("client-generated-id");
         const registration = await service.registerOnsite(hospitalId, {
           phoneNumber: "+821012345678",
           registration: { inputMode: "total_only", totalCount: 3 },
@@ -130,9 +157,28 @@ describe("StaffQueueService development Supabase vertical slice", () => {
           hospitalName: "수직 슬라이스 테스트 병원",
           statusUrl: "[REDACTED]",
         });
+        const queueResult = await executor.query<{ id: string; status: string }>(
+          `SELECT id, status FROM public.daily_queues
+           WHERE hospital_id = $1 AND queue_date = '2026-07-16'`,
+          [hospitalId],
+        );
+        const queueId = queueResult.rows[0]?.id;
+        if (!queueId) throw new Error("현장 접수로 생성된 테스트 대기열이 없습니다.");
+        expect(queueResult.rows).toHaveLength(1);
+        expect(queueResult.rows[0]?.status).toBe("paused");
         await expect(
           new PgWaitingRepository().sumActiveRemotePatients(executor, queueId),
         ).resolves.toBe(0);
+
+        const openedQueue = await service.setQueueStatus(hospitalId, "open");
+        expect(openedQueue.queueStatus).toBe("open");
+        const openedQueueResult = await executor.query<{ id: string; status: string }>(
+          `SELECT id, status FROM public.daily_queues
+           WHERE hospital_id = $1 AND queue_date = '2026-07-16'`,
+          [hospitalId],
+        );
+        expect(openedQueueResult.rows).toHaveLength(1);
+        expect(openedQueueResult.rows[0]).toMatchObject({ id: queueId, status: "open" });
 
         const heldQueue = await service.holdWaiting(hospitalId, waitingId, null);
         expect(heldQueue.entries.find(({ id }) => id === waitingId)?.status).toBe("held");

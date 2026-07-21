@@ -11,6 +11,7 @@ import { PgProfileRepository } from "../repositories/pg/pgProfileRepository.js";
 import { PgWaitingEventRepository } from "../repositories/pg/pgWaitingEventRepository.js";
 import { PgWaitingRepository } from "../repositories/pg/pgWaitingRepository.js";
 import { NotificationService } from "./notificationService.js";
+import { AutomaticNotificationService } from "./automaticNotificationService.js";
 import { PatientWaitingService } from "./patientWaitingService.js";
 
 class ScopedTransactionManager implements TransactionManager {
@@ -87,16 +88,13 @@ describe("PatientWaitingService development Supabase vertical slice", () => {
         );
         const categorySetId = categoryResult.rows[0]?.id;
         if (!categorySetId) throw new Error("테스트 분류 설정 생성 결과가 없습니다.");
-        await executor.query(
-          `
-        INSERT INTO public.daily_queues
-          (hospital_id, category_set_id, queue_date, status, opened_at, max_remote_waiting_patients)
-        VALUES ($1, $2, '2026-07-16', 'open', now(), 5)
-      `,
-          [hospitalId, categorySetId],
-        );
 
         const waitingRepository = new PgWaitingRepository();
+        const waitingEventRepository = new PgWaitingEventRepository();
+        const notificationService = new NotificationService(
+          new PgNotificationRepository(),
+          new MockNotificationProvider(),
+        );
         const service = new PatientWaitingService(
           new ScopedTransactionManager(executor),
           new PgProfileRepository(),
@@ -104,9 +102,28 @@ describe("PatientWaitingService development Supabase vertical slice", () => {
           new PgDailyQueueRepository(),
           new PgPatientCategoryRepository(),
           waitingRepository,
-          new PgWaitingEventRepository(),
-          new NotificationService(new PgNotificationRepository(), new MockNotificationProvider()),
+          waitingEventRepository,
+          notificationService,
+          new AutomaticNotificationService(
+            waitingRepository,
+            waitingEventRepository,
+            notificationService,
+          ),
           { patientWebOrigin: "http://127.0.0.1:5173", getClinicDate: () => "2026-07-16" },
+        );
+
+        await expect(service.getHospitalConfig(hospitalId)).resolves.toMatchObject({
+          queueStatus: "paused",
+          waitingPatients: 0,
+          estimatedMinutes: 0,
+        });
+        await executor.query(
+          `
+        INSERT INTO public.daily_queues
+          (hospital_id, category_set_id, queue_date, status, opened_at, max_remote_waiting_patients)
+        VALUES ($1, $2, '2026-07-16', 'open', now(), 5)
+      `,
+          [hospitalId, categorySetId],
         );
 
         await expect(service.getHospitalConfig(hospitalId)).resolves.toMatchObject({
@@ -127,7 +144,7 @@ describe("PatientWaitingService development Supabase vertical slice", () => {
         waitingId = registered.entry.id;
         expect(registered.entry).toMatchObject({
           source: "remote",
-          status: "remote_waiting",
+          status: "entry_requested",
           patientCount: 3,
         });
         await expect(service.getHospitalConfig(hospitalId)).resolves.toMatchObject({
@@ -168,6 +185,8 @@ describe("PatientWaitingService development Supabase vertical slice", () => {
         expect(events.map(({ eventType }) => eventType).sort()).toEqual([
           "cancelled",
           "deferred",
+          "entry_requested",
+          "entry_requested",
           "registered",
         ]);
         const notification = await executor.query(
@@ -175,6 +194,14 @@ describe("PatientWaitingService development Supabase vertical slice", () => {
           [waitingId],
         );
         expect(notification.rows).toHaveLength(1);
+        const entryNotifications = await executor.query(
+          "SELECT dedupe_key FROM public.notification_logs WHERE waiting_entry_id = $1 AND notification_type = 'entry_requested' ORDER BY dedupe_key",
+          [waitingId],
+        );
+        expect(entryNotifications.rows).toEqual([
+          { dedupe_key: "entry_requested:0" },
+          { dedupe_key: "entry_requested:1" },
+        ]);
         throw new Error("ROLLBACK_TEST");
       }),
     ).rejects.toThrow("ROLLBACK_TEST");

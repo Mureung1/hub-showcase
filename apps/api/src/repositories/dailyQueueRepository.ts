@@ -33,6 +33,7 @@ export interface DailyQueueRepository {
     queueDate: string,
   ): Promise<DailyQueue | null>;
   createOpen(executor: DatabaseExecutor, input: CreateDailyQueueInput): Promise<DailyQueue>;
+  createPaused(executor: DatabaseExecutor, input: CreateDailyQueueInput): Promise<DailyQueue>;
   setStatus(
     executor: DatabaseExecutor,
     queueId: string,

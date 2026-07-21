@@ -592,6 +592,8 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock` 결과
 | `waiting_entries` | `(queue_id, status, queue_order)` | 활성 통합 대기열 조회 |
 | `waiting_entries` | `UNIQUE (account_id) WHERE status IN (...)` | 계정당 활성 웨이팅 1건 보장 |
 | `waiting_entries` | `UNIQUE (lookup_token_hash)` | 현장 상태 링크 식별 |
+| `waiting_entries` | `(arrival_deadline_at, id) WHERE source = 'remote' AND status = 'entry_requested'` | 1분 자동 작업의 만료 대상 조회 |
+| `waiting_entries` | `(queue_id, queue_order, id) WHERE source = 'remote' AND status = 'entry_requested' AND no_show_move_count = 0` | 차례 도달 미도착 후보 조회 |
 | `waiting_entry_counts` | `(patient_category_id)` | 분류별 접수 인원 조회 |
 | `waiting_events` | `(waiting_entry_id, created_at)` | 웨이팅 상태 이력 조회 |
 | `notification_logs` | `(waiting_entry_id, created_at)` | 알림 발송 이력 조회 |

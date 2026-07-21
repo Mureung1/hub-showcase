@@ -7,8 +7,6 @@ import type {
   WaitingSource,
   WaitingStatus,
 } from "./domain.js";
-import { calculateRegistrationPatientCount } from "./domain.js";
-
 export const waitingEventActorTypes = ["patient", "staff", "system"] as const;
 export type WaitingEventActorType = (typeof waitingEventActorTypes)[number];
 
@@ -238,15 +236,6 @@ export function formatPatientCounts(entry: MockQueueEntry): string {
     .join(" · ");
 }
 
-export function createMockRegistrationInput(
-  patientCounts: PatientCounts,
-): PatientRegistrationInput {
-  return { inputMode: "categorized", patientCounts };
-}
-
-export function getRegistrationPatientCount(input: PatientRegistrationInput): number {
-  return calculateRegistrationPatientCount(input);
-}
 
 export function formatPositionRange(position: QueuePosition): string {
   if (position.position === null || position.positionEnd === null) return "-";

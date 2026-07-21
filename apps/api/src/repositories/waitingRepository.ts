@@ -135,12 +135,12 @@ export interface WaitingRepository {
   moveNoShowToEnd(
     executor: DatabaseExecutor,
     waitingEntryId: string,
-    expectedUpdatedAt: Date,
+    expectedVersion: number,
   ): Promise<NoShowMoveResult | null>;
   cancelExpired(
     executor: DatabaseExecutor,
     waitingEntryId: string,
-    expectedUpdatedAt: Date,
+    expectedVersion: number,
     cancelledAt: Date,
   ): Promise<WaitingEntry | null>;
 }

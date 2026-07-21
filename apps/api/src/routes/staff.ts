@@ -1,4 +1,5 @@
 import {
+  patientInputConfigurationSchema,
   patientRegistrationInputSchema,
   queueStatusSchema,
   waitingStatusSchema,
@@ -35,6 +36,12 @@ export function createStaffRouter(
   router.get("/queue", async (_request, response) => {
     const { hospitalId } = getStaffContext(response.locals);
     response.json(await service.getTodayQueue(hospitalId));
+  });
+
+  router.put("/categories/next-day", async (request, response) => {
+    const input = patientInputConfigurationSchema.parse(request.body);
+    const { hospitalId } = getStaffContext(response.locals);
+    response.json(await service.saveNextDayConfiguration(hospitalId, input));
   });
 
   router.post("/waitings", async (request, response) => {

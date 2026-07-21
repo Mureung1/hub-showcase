@@ -39,7 +39,7 @@ const initialState: StaffQueueState = {
   entries: [],
   positions: [],
   queueDate: "",
-  queueStatus: "open",
+  queueStatus: "paused",
   todayInputMode: "categorized",
   nextDayInputMode: "categorized",
   todayCategories: defaultPatientCategories,
@@ -57,6 +57,7 @@ function StaffApp() {
   });
 
   const refresh = useCallback(async () => {
+    if (view === "hospital-management") return;
     if (view === "onboarding") {
       setOnboarding(await getHospitalOnboarding());
       return;
@@ -65,7 +66,6 @@ function StaffApp() {
     try {
       const nextQueue = await getStaffQueue();
       setQueue(nextQueue);
-      setOnboarding(await getHospitalOnboarding());
     } catch (error) {
       if (!isApiClientErrorCode(error, "HOSPITAL_ACCESS_DENIED")) throw error;
       setOnboarding(await getHospitalOnboarding());
@@ -74,14 +74,24 @@ function StaffApp() {
   }, [view]);
 
   useEffect(() => {
-    if (!session) return;
-    const initialLoad = window.setTimeout(() => void refresh(), 0);
-    const timer = window.setInterval(() => void refresh(), pollInterval);
-    return () => {
-      window.clearTimeout(initialLoad);
-      window.clearInterval(timer);
+    if (!session || view === "hospital-management") return;
+    let cancelled = false;
+    let timer: number | undefined;
+    const poll = async () => {
+      try {
+        await refresh();
+      } catch (error) {
+        console.error("Failed to refresh staff data", error);
+      } finally {
+        if (!cancelled) timer = window.setTimeout(() => void poll(), pollInterval);
+      }
     };
-  }, [refresh, session]);
+    void poll();
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [refresh, session, view]);
 
   async function updateStatus(id: string, status: WaitingStatus) {
     setQueue(await changeWaitingStatus(id, status));

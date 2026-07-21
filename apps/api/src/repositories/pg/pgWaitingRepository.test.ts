@@ -145,7 +145,7 @@ describe("PgWaitingRepository", () => {
     const result = await repository.moveNoShowToEnd(
       executor,
       "f904537c-6d56-43bc-9cf4-f33af8d5be03",
-      updatedAt,
+      1,
     );
 
     expect(result).toMatchObject({
@@ -158,12 +158,13 @@ describe("PgWaitingRepository", () => {
       },
     });
     expect(executor.calls[0]?.queryText).toContain("no_show_move_count = 0");
+    expect(executor.calls[0]?.queryText).toContain("version = $2");
+    expect(executor.calls[0]?.queryText).toContain("version = entry.version + 1");
     expect(executor.calls[0]?.queryText).toContain("ahead.queue_order < target.queue_order");
     expect(executor.calls[0]?.queryText).not.toContain("patient_defer_count =");
   });
 
   it("도착 기한이 지난 최신 입장 요청만 취소한다", async () => {
-    const updatedAt = new Date("2026-07-15T09:10:00.000Z");
     const cancelledAt = new Date("2026-07-15T09:20:00.000Z");
     const executor = new SequencedDatabaseExecutor([[]]);
     const repository = new PgWaitingRepository();
@@ -172,12 +173,12 @@ describe("PgWaitingRepository", () => {
       repository.cancelExpired(
         executor,
         "f904537c-6d56-43bc-9cf4-f33af8d5be03",
-        updatedAt,
+        1,
         cancelledAt,
       ),
     ).resolves.toBeNull();
     expect(executor.calls[0]?.queryText).toContain("arrival_deadline_at <= $3");
-    expect(executor.calls[0]?.queryText).toContain("updated_at = $2");
+    expect(executor.calls[0]?.queryText).toContain("version = $2");
     expect(executor.calls[0]?.queryText).toContain("status = 'entry_requested'");
   });
 });

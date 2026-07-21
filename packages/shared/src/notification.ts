@@ -18,18 +18,3 @@ export type NotificationTemplateVariables = Record<
   string,
   NotificationTemplateValue
 >;
-
-export const notificationTemplateVariableNames = {
-  remote_registered: ["hospitalName", "ticketNumber", "statusUrl"],
-  onsite_registered: ["hospitalName", "ticketNumber", "statusUrl"],
-  preparation: ["hospitalName", "currentPosition", "estimatedMinutes", "statusUrl"],
-  entry_requested: [
-    "hospitalName",
-    "currentPosition",
-    "arrivalGraceMinutes",
-    "statusUrl",
-  ],
-  onsite_near_turn: ["hospitalName", "currentPosition", "statusUrl"],
-  cancelled: ["hospitalName", "ticketNumber"],
-  called: ["hospitalName", "ticketNumber"],
-} as const satisfies Record<NotificationType, readonly string[]>;

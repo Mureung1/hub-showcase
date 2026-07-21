@@ -2,12 +2,14 @@ import type { Server } from "node:http";
 
 interface ShutdownHandlerOptions {
   closeDatabasePool: () => Promise<void>;
+  stopBackgroundTasks?: () => Promise<void>;
   server: Pick<Server, "close">;
   timeoutMs?: number;
 }
 
 export function createShutdownHandler({
   closeDatabasePool,
+  stopBackgroundTasks = async () => undefined,
   server,
   timeoutMs = 30_000,
 }: ShutdownHandlerOptions): (signal: NodeJS.Signals) => Promise<void> {
@@ -25,6 +27,7 @@ export function createShutdownHandler({
     forceExitTimer.unref();
 
     try {
+      await stopBackgroundTasks();
       await new Promise<void>((resolve, reject) => {
         server.close((error) => {
           if (error) reject(error);

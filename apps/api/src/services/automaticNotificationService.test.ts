@@ -70,7 +70,9 @@ function createDependencies() {
       onsiteNearTurnNotifiedAt: notifiedAt,
     }),
   );
+  const listByQueue = vi.fn(async () => [waiting]);
   const waitingRepository = {
+    listByQueue,
     markPreparationNotified,
     requestEntry,
     markOnsiteNearTurnNotified,
@@ -101,6 +103,7 @@ function createDependencies() {
   );
   return {
     service,
+    listByQueue,
     markPreparationNotified,
     requestEntry,
     createEvent,
@@ -118,6 +121,36 @@ const baseInput = {
 };
 
 describe("AutomaticNotificationService", () => {
+  it("re-evaluates the queue and omits a status link for onsite notifications", async () => {
+    const dependencies = createDependencies();
+    dependencies.listByQueue.mockResolvedValue([
+      {
+        ...waiting,
+        source: "onsite",
+        accountId: null,
+        status: "onsite_waiting",
+      },
+    ]);
+
+    await dependencies.service.processQueue(executor, {
+      queueId: waiting.queueId,
+      hospitalName: baseInput.hospitalName,
+      patientWebOrigin: "https://example.test",
+      now,
+    });
+
+    expect(dependencies.send).toHaveBeenCalledWith(
+      executor,
+      expect.objectContaining({
+        notificationType: "onsite_near_turn",
+        variables: {
+          hospitalName: baseInput.hospitalName,
+          currentPosition: 1,
+        },
+      }),
+    );
+  });
+
   it("6번째 준비 알림에 현재 순서와 예상 시간을 넣는다", async () => {
     const dependencies = createDependencies();
 
@@ -208,6 +241,10 @@ describe("AutomaticNotificationService", () => {
       expect.objectContaining({
         notificationType: "onsite_near_turn",
         dedupeKey: "onsite_near_turn",
+        variables: {
+          hospitalName: baseInput.hospitalName,
+          currentPosition: 4,
+        },
       }),
     );
   });
