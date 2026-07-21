@@ -24,6 +24,7 @@ changes, but actual project changes must go through approval-oriented flows.
 - Workflow rules: `docs/workflows/`
 - Document ownership and standard paths: `docs/workflows/document_structure.md`
 - Reusable task skills: `docs/skills/`
+- Main-agent scenario review: `docs/skills/scenario_review.md`
 - Output templates: `docs/templates/`
 - Scenario writer agent: `.codex/agents/scenario_writer.toml`
 - In-game script workflow: `docs/workflows/write_ingame_script.md`
@@ -71,15 +72,36 @@ changes, but actual project changes must go through approval-oriented flows.
   and use concise summaries plus relative links from the overview.
 - When one request spans multiple document roles, prepare a coordinated
   multi-document approval proposal instead of forcing the content into one file.
-- Do not invent project facts. Use `TBD` and ask follow-up questions when
-  required information is missing.
+- When receiving scenario material for review or drafting or changing a
+  `scenario` document, the main agent must read the relevant project sources and
+  apply `docs/skills/scenario_review.md`. Preserve a source-faithful Draft and, when a
+  stronger event order, reveal, branch, Outcome, or motivation exists, present it
+  separately in `Scenario Improvement Review` with its reason and impacts.
+- Do not merge a scenario improvement recommendation into the Draft or treat it as
+  canon before the user selects it. After selection, reconfirm the sources, revise
+  the Draft or create a linked replacement item as required, and return it to
+  `pending` for explicit approval.
+- Do not invent and present project facts as confirmed. Specialized workflows
+  may create clearly disclosed proposals; use `TBD` when a required value cannot
+  safely be proposed.
 - When the user requests an in-game script from scenario material, delegate the
-  bounded drafting task to the project custom agent `scenario_writer` and review
+  project-adapted authoring task to the custom agent `scenario_writer` and review
   its result before presenting or saving it.
-- Scenario writing may add creative proposals only when the user allows it.
-  Every unsupported line, ID, setting detail, branch, rule, state representation,
-  or production direction must carry a creative footnote that explains the
-  source gap and impact. Never present such material as confirmed project fact.
+- An in-game script request authorizes `scenario_writer` to draft creative
+  writing and a stronger narrative structure within the requested scope. This is
+  proposal authority, not approval or application authority.
+- Build a project-specific `Writer's Brief` from the Project Brief, game overview,
+  confirmed world and scenario documents, and existing approved scripts before
+  drafting. Do not reuse another project's writer identity or prose style.
+- Every unsupported concrete line, ID, setting detail, state representation, or
+  production direction must carry a `CW-*` creative footnote. Every departure
+  from the source event order, reveal, branch, Outcome, or motivation must appear
+  in the `NR-*` Narrative Revision Log with its reason and impact. Never present
+  either kind of proposal as confirmed project fact.
+- If an NR entry changes the parent scenario, put the parent update, script and
+  link updates in one atomic `restructure` approval item. World-canon or
+  system-rule changes require a separate linked high-risk proposal; keep dependent
+  script fields `TBD` until that proposal is applied and the script is reconfirmed.
 - Keep changes scoped to the requested behavior and avoid unrelated refactors.
 - Do not hardcode API keys, tokens, or other secrets.
 

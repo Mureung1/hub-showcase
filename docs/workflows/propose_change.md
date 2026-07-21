@@ -23,12 +23,17 @@
    문서를 명확히 변경하는 경우에는 `restructure_documents`로 되돌려 보낸다.
 4. 대상 문서의 현재 요약, 관련 설정, 변경 요청을 분리한다.
 5. `docs/skills/conflict_review.md` 기준으로 충돌과 영향 범위를 검토한다.
-6. 변경 후 문서 초안 또는 변경 섹션을 작성한다.
-7. 프로젝트 ID를 포함해 `docs/templates/change_proposal.md`와 `docs/templates/approval_item.md` 형식으로 같은 프로젝트의 승인 큐 항목을 만든다.
+6. 대상 역할이 `scenario`이면 `docs/skills/scenario_review.md`로 원안과 요청
+   변경을 검토한다. 더 나은 구조는 변경 후 Draft와 분리된
+   `Scenario Improvement Review`에 기록한다.
+7. 변경 후 문서 초안 또는 변경 섹션을 작성한다.
+8. 프로젝트 ID를 포함해 `docs/templates/change_proposal.md`와 `docs/templates/approval_item.md` 형식으로 같은 프로젝트의 승인 큐 항목을 만든다.
 
 ## Approval Rule
 
 변경안 생성은 허용된다. 확정 문서 수정은 사용자 승인 이후에만 허용된다.
+분리된 시나리오 개선 권고는 승인 대상 Draft가 아니며, 사용자가 선택하면
+원본을 재확인해 Draft를 개정한 뒤 다시 `pending`으로 검토받는다.
 
 ## Output
 
@@ -39,3 +44,4 @@
 - 충돌/영향 분석
 - 누락 정보
 - 승인 큐 항목 초안
+- 시나리오인 경우 분리된 개선 검토 결과

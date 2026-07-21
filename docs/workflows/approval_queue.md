@@ -21,11 +21,27 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 3. 프로젝트 ID, 대상 문서와 근거 파일을 명시한다.
 4. 변경 전 요약과 변경 후 초안을 분리한다.
 5. 위험도, 누락 정보, 충돌 가능성을 기록한다.
-6. `restructure`이면 대상별 작업, 비교 대상, 현재 SHA-256과 적용 후 문서
+6. `scenario` 작성·변경 항목이면 `docs/skills/scenario_review.md`의 결과를
+   `Scenario Improvement Review`에 기록하고 Draft와 분리한다.
+7. `restructure`이면 대상별 작업, 비교 대상, 현재 SHA-256과 적용 후 문서
    역할을 Target Operations에 기록한다.
-7. 검토용 이미지가 있으면 `approvals/assets/`에 두고, Asset Operations에
+8. 다른 승인 항목의 적용이 선행되어야 하면 Dependency Operations에 항목 ID,
+   변경 역할, 영향받는 대상과 해소 조건을 기록한다.
+9. 검토용 이미지가 있으면 `approvals/assets/`에 두고, Asset Operations에
    검토 경로, 승인 후 `design/assets/` 경로와 작성 당시 SHA-256을 기록한다.
-8. 선택한 프로젝트의 Approval Queue에 추가하고 상태는 기본적으로 `pending`으로 둔다.
+10. 선택한 프로젝트의 Approval Queue에 추가하고 상태는 기본적으로 `pending`으로 둔다.
+
+## Scenario Improvement Selection
+
+- `Scenario Improvement Review`의 권고는 해당 항목의 승인 대상 Draft가 아니다.
+- 사용자가 권고를 선택하면 원본과 관련 문서를 다시 확인하고 선택 내용을
+  Draft와 영향 분석에 반영하며 권고 상태를 `incorporated`로 바꾸고 Decision
+  History에 선택 이력을 남긴다. 거절된 권고는 `declined`로 기록할 수 있다.
+- 대상, 목적과 핵심 범위가 유지되면 기존 항목을 개정해 `pending`으로 돌리고,
+  달라지면 기존 항목을 보존한 채 연결된 새 승인 항목을 만든다.
+- 세계관·시스템 canonical owner 변경이 필요하면 별도 또는 다중 문서 승인안과
+  Dependency Operations로 분리한다.
+- 사용자의 권고 선택을 갱신된 Draft의 승인으로 간주하지 않는다.
 
 ## Apply Approved Item Steps
 
@@ -33,28 +49,37 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 2. 승인 항목의 프로젝트 ID, 대상 문서 경로, 기준 Git 커밋, 비교 대상, 작성 당시 원본
    요약이 기록되어 있는지 확인한다.
 3. 승인 큐, 대상 문서, 결정 로그와 버전 기록이 모두 같은 프로젝트에 속하는지 확인한다.
-4. 기존 문서 변경 또는 삭제는 기준 Git 커밋의 비교 대상과 현재 내용을
+4. Dependency Operations가 있으면 모든 선행 항목이 같은 프로젝트에 속하고
+   `applied`인지 확인한다. 미적용 항목이 있으면 본 항목을 적용하지 않고 Review
+   Notes에 대기 사유를 기록한다.
+5. 선행 항목이 적용되었다면 그 변경으로 본 항목의 원본, `TBD` 또는 영향 범위가
+   달라졌는지 확인한다. 달라졌으면 본 항목을 `needs_reconfirmation`으로 이동해
+   초안을 갱신하고 다시 승인받는다.
+6. 기존 문서 변경 또는 삭제는 기준 Git 커밋의 비교 대상과 현재 내용을
    비교한다.
-5. 신규 문서 생성은 현재 `workspace/projects/<project_slug>/design/`에서 동일 제목이나 같은 주제의
+7. 신규 문서 생성은 현재 `workspace/projects/<project_slug>/design/`에서 동일 제목이나 같은 주제의
    문서가 새로 생겼는지 검색한다.
-6. `restructure`이면 모든 기존 대상의 비교 결과와 모든 신규 문서의 역할
+8. `restructure`이면 모든 기존 대상의 비교 결과와 모든 신규 문서의 역할
    중복 여부를 먼저 확인한다. 하나라도 불일치하면 어떤 대상도 변경하지 않는다.
-7. 비교 결과가 모두 일치하면 승인된 내용을 `workspace/projects/<project_slug>/design/`에 반영한다.
-8. 승인 항목에 검토용 에셋이 있으면 Asset Operations를 확인하고 아래 Asset
+9. `Scenario Improvement Review`가 있으면 `proposed`나 `declined` 권고가
+   Draft에 섞이지 않았는지 확인한다. `incorporated` 권고도 갱신된 Draft가
+   명시적으로 승인된 경우에만 적용 대상으로 본다.
+10. 비교 결과가 모두 일치하면 승인된 내용을 `workspace/projects/<project_slug>/design/`에 반영한다.
+11. 승인 항목에 검토용 에셋이 있으면 Asset Operations를 확인하고 아래 Asset
    Promotion Rules에 따라 각 에셋을 `design/assets/`로 반영해 동일성을 검증한다.
-9. 비교 결과가 다르거나 기준 정보가 부족하면 적용을 중단하고
+12. 비교 결과가 다르거나 기준 정보가 부족하면 적용을 중단하고
    `needs_reconfirmation`으로 처리한다.
-10. 재확인 결과와 필요한 후속 조치를 승인 항목의 Review Notes와
+13. 재확인 결과와 필요한 후속 조치를 승인 항목의 Review Notes와
    Decision History에 기록한다.
-11. 승인 큐에서 실제 파일을 여는 근거 경로와 인라인 이미지 참조를 승인 후
+14. 승인 큐에서 실제 파일을 여는 근거 경로와 인라인 이미지 참조를 승인 후
     `design/assets/` 경로로 갱신하고, Decision Log와 Version History에도 이
     canonical 경로를 사용한다.
-12. 같은 프로젝트의 Decision Log에 결정 로그를 기록한다.
-13. 같은 프로젝트의 Version History에 버전 기록을 남긴다.
-14. `design/assets/` 반영, 동일성 검증과 참조 갱신이 모두 끝난 에셋만
+15. 같은 프로젝트의 Decision Log에 결정 로그를 기록한다.
+16. 같은 프로젝트의 Version History에 버전 기록을 남긴다.
+17. `design/assets/` 반영, 동일성 검증과 참조 갱신이 모두 끝난 에셋만
     `approvals/assets/`에서 삭제하고 Asset Operations의 적용 결과에
     canonical 경로와 검토본 삭제 완료를 기록한다.
-15. 대응하는 모든 검토용 에셋의 삭제까지 끝난 뒤 승인 큐 상태를
+18. 대응하는 모든 검토용 에셋의 삭제까지 끝난 뒤 승인 큐 상태를
     `applied`로 갱신한다.
 
 ## Asset Promotion Rules
@@ -100,6 +125,9 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 - `restructure`의 Target Operations는 하나의 비교 단위다. 기존 대상의
   해시·내용, 신규 문서 역할, 링크 영향 중 하나라도 달라지면 전체 항목을
   `needs_reconfirmation`으로 이동한다.
+- Dependency Operations의 선행 항목이 적용되면 그 결과로 본 항목의 근거,
+  `TBD` 또는 영향 범위가 달라졌는지 반드시 확인한다. 하나라도 달라지면 기존
+  승인을 사용하지 않고 `needs_reconfirmation`으로 이동한다.
 - Asset Operations의 검토용 파일 해시, 승인 후 경로 또는 대상 경로의 기존
   파일 상태가 기록과 다르면 해당 에셋을 삭제하지 않고 전체 항목을
   `needs_reconfirmation`으로 이동한다.
@@ -189,5 +217,8 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 다른 프로젝트의 승인 항목이나 결정 기록을 적용 근거로 사용하지 않는다.
 `restructure`는 일부 경로만 적용하지 않는다. 검증을 모두 끝낸 뒤 전체를
 적용하고 Decision Log와 Version History에 대상별 작업을 함께 기록한다.
+미적용 Dependency Operations가 있는 항목은 적용하지 않는다.
+`Scenario Improvement Review`의 `proposed`·`declined` 권고는 적용하지 않고,
+`incorporated` 권고도 명시적으로 승인된 Draft에 포함된 내용만 적용한다.
 검토용 에셋이 포함된 항목은 대응하는 파일이 `design/assets/`에 검증되어 있고
 `approvals/assets/`에서 제거된 뒤에만 `applied`로 처리한다.

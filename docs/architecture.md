@@ -22,8 +22,9 @@ Codex가 에이전트 실행부 역할을 하고, 이 저장소의 Markdown 파�
 ### `.codex/agents/`
 
 프로젝트에서 반복 사용하는 전문 custom agent를 정의한다.
-`scenario_writer.toml`은 확정 시나리오를 플레이어 노출 대본과 구현용 씬 명세로
-변환하되 결과를 Approval Queue 초안으로만 저장한다.
+`scenario_writer.toml`은 선택된 프로젝트의 자료에서 전담 작가 정체성을
+구성하고, 더 나은 서사 구조를 반영한 플레이어 노출 대본과 구현용 씬 명세를
+작성하되 결과를 Approval Queue 초안으로만 저장한다.
 
 ### `docs/workflows/`
 
@@ -35,7 +36,10 @@ Codex가 에이전트 실행부 역할을 하고, 이 저장소의 Markdown 파�
 
 ### `docs/skills/`
 
-반복적으로 쓰는 판단 기준과 품질 규칙을 정의한다. 예: 충돌 검토, 문서 보완 질문, 한국어 기획 문체.
+반복적으로 쓰는 판단 기준과 품질 규칙을 정의한다. 예: 충돌 검토, 문서 보완
+질문, 한국어 기획 문체와 일반 시나리오 구조 검토. 메인 Codex는 시나리오
+자료를 검토하거나 `scenario` 문서를 작성·변경할 때 `scenario_review`로 원안
+기반 Draft와 개선 권고를 분리한다.
 
 ### `docs/templates/`
 
@@ -137,15 +141,24 @@ document role과 원본 소유 문서를 정한다. `game_overview`는 상세 �
 - `delete_existing_document`: 기존 확정 문서 삭제를 안전하게 검토할 경우
 - `compile_from_sources`: 자료 정리, 요약, 출처 묶음이 목적일 경우
 - `draft_design_from_materials`: 기존 자료를 기획서 형식으로 구조화할 경우
-- `draft_ingame_script`: 확정 시나리오를 플레이어 노출 대본과 씬 명세로 구체화할 경우
+- `draft_ingame_script`: 프로젝트 적응형 작가가 시나리오를 플레이어 노출
+  대본과 씬 명세로 만들고 필요하면 서사 구조 개선까지 제안할 경우
 - `ask_for_clarification`: 분기나 대상 문서 판단 근거가 부족한 경우
 
 `restructure_documents`는 경로별 create/update/delete 작업을 하나의 승인
 항목으로 관리한다. 적용 전 모든 대상을 재확인하며 일부 문서만 적용하지 않는다.
 
+일반 시나리오 작성·변경은 `docs/skills/scenario_review.md`를 적용한다. 메인
+Codex는 요청 원안에 따른 Draft를 만들고, 더 나은 사건 순서·공개 시점·분기·
+Outcome이 있으면 `Scenario Improvement Review`에 이유와 영향을 분리해
+기록한다. 사용자가 권고를 선택한 뒤에도 원본을 재확인해 갱신된 Draft를
+`pending`으로 다시 검토받기 전에는 승인 대상이나 canonical 내용이 아니다.
+
 인게임 스크립트는 `scenario` 역할의 상세 문서이며
-`docs/workflows/write_ingame_script.md`를 따른다. 창작 보완은 각주로 모두
-공개하고 승인 전에는 `design/narrative/scripts/`에 저장하지 않는다.
+`docs/workflows/write_ingame_script.md`를 따른다. 구체 창작은 `CW-*`, 원본
+구조 변경은 `NR-*`로 공개한다. 상위 시나리오 변경은 스크립트·링크와 하나의
+`restructure` 항목으로 관리하고 승인 전에는 `design/narrative/`에 저장하지
+않는다. 세계관 정사·시스템 규칙 변경 의존성은 별도 고위험 항목으로 분리한다.
 
 ## 7. Operating Model
 
@@ -159,4 +172,6 @@ document role과 원본 소유 문서를 정한다. `game_overview`는 상세 �
 - 승인 후 Decision Log와 Version History가 함께 갱신되었는가
 - 임시 아이디어가 승인 제안으로 전환되어도 명시적 승인 전 확정 문서를
   수정하지 않았는가
+- 일반 시나리오 Draft와 미선택 개선 권고가 분리되어 있는가
+- 선택된 개선 권고가 원본 재확인과 갱신된 `pending` 승인을 거치는가
 - 모든 검색·승인·결정·버전 기록이 같은 프로젝트 ID와 루트를 사용하는가
