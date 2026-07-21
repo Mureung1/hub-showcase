@@ -18,6 +18,7 @@ export interface LocalSearchInput {
   bodyWeightKg: number;
   halfLifeHours: number;
   warmupDays?: number;
+  minSleepHours?: number;
   iterations?: number;
   initialTemperature?: number;
   finalTemperature?: number;
@@ -57,6 +58,7 @@ export function searchMultiDaySchedule(input: LocalSearchInput): LocalSearchResu
     bodyWeightKg,
     halfLifeHours,
     warmupDays,
+    minSleepHours,
     iterations = DEFAULT_ITERATIONS,
     initialTemperature = DEFAULT_INITIAL_TEMPERATURE,
     finalTemperature = DEFAULT_FINAL_TEMPERATURE,
@@ -85,6 +87,7 @@ export function searchMultiDaySchedule(input: LocalSearchInput): LocalSearchResu
       bodyWeightKg,
       halfLifeHours,
       warmupDays,
+      minSleepHours,
     }).score;
 
   let currentIndices = axes.map((axis) => randomIndex(optionsFor(axis).length));
