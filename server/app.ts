@@ -17,12 +17,18 @@ export type CreateAppOptions = {
 };
 
 const captureJsonParser = express.json({ limit: '8kb' });
-const ANDROID_WEBVIEW_ORIGIN = 'https://localhost';
+const ANDROID_WEBVIEW_ORIGINS = new Set([
+  'https://localhost',
+  'http://localhost',
+]);
 const CORS_ALLOWED_HEADERS = 'Authorization, Content-Type';
-const CORS_ALLOWED_METHODS = 'POST, PATCH, OPTIONS';
+const CORS_ALLOWED_METHODS = 'GET, POST, PATCH, OPTIONS';
 
 const allowAndroidWebViewCors: RequestHandler = (request, response, next) => {
-  if (request.header('origin') !== ANDROID_WEBVIEW_ORIGIN) {
+  response.vary('Origin');
+
+  const origin = request.header('origin');
+  if (!origin || !ANDROID_WEBVIEW_ORIGINS.has(origin)) {
     next();
     return;
   }
@@ -30,8 +36,7 @@ const allowAndroidWebViewCors: RequestHandler = (request, response, next) => {
   response.set({
     'Access-Control-Allow-Headers': CORS_ALLOWED_HEADERS,
     'Access-Control-Allow-Methods': CORS_ALLOWED_METHODS,
-    'Access-Control-Allow-Origin': ANDROID_WEBVIEW_ORIGIN,
-    Vary: 'Origin',
+    'Access-Control-Allow-Origin': origin,
   });
 
   if (request.method === 'OPTIONS') {
