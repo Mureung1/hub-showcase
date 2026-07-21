@@ -546,7 +546,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
       }
     >
       <header className="app-header">
-        <a className="brand" href="#analysis" aria-label="LocalTwin 상권 분석 홈">
+        <a className="brand" href="/" aria-label="LocalTwin 상권 분석 홈">
           <span className="brand-mark">
             <span />
           </span>
