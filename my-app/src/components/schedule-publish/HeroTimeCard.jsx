@@ -12,10 +12,12 @@ function HeroTimeCard({ day, time, confidence, reasons }) {
           <span className="material-symbols-outlined text-primary">smart_toy</span>
           <h2 className="font-headline-sm text-headline-sm">AI 추천 발행 시간</h2>
         </div>
-        <span className="flex items-center gap-xs px-sm py-xs rounded-full bg-secondary-container/30 text-on-secondary-container font-label-sm text-label-sm">
-          <span className="w-2 h-2 rounded-full bg-secondary-fixed-dim" />
-          추천도 {confidence}%
-        </span>
+        {confidence != null && (
+          <span className="flex items-center gap-xs px-sm py-xs rounded-full bg-secondary-container/30 text-on-secondary-container font-label-sm text-label-sm">
+            <span className="w-2 h-2 rounded-full bg-secondary-fixed-dim" />
+            추천도 {confidence}%
+          </span>
+        )}
       </div>
 
       <div className="py-md">

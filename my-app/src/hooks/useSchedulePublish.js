@@ -1,6 +1,5 @@
-import { useMockResource } from "./useMockResource";
-import { mockSchedulePublish } from "../api/mocks/schedulePublish";
+import { useApiResource } from "./useApiResource";
 
-export function useSchedulePublish() {
-  return useMockResource(mockSchedulePublish);
+export function useSchedulePublish(id) {
+  return useApiResource(`/posts/${id}/suggested-time`);
 }
