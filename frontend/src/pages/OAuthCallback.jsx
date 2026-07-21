@@ -14,7 +14,7 @@ const OAuthCallback = () => {
     const token = params.get('token')
     if (token) {
       setToken(token)
-      navigate('/login', { replace: true })
+      navigate('/', { replace: true })
     }
   }, [navigate])
 
@@ -22,7 +22,7 @@ const OAuthCallback = () => {
     return (
       <div>
         <p>로그인에 실패했습니다.</p>
-        <Link to="/login">로그인 페이지로 돌아가기</Link>
+        <Link to="/">홈으로 돌아가기</Link>
       </div>
     )
   }
