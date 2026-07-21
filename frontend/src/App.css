@@ -195,21 +195,24 @@
 }
 
 .dashboard-row {
-  display: grid;
-  grid-template-columns: auto auto 1fr auto;
-  gap: var(--space-md);
-  align-items: center;
   padding: var(--space-md) 0;
   border-bottom: 1px solid var(--color-border);
-  cursor: pointer;
-  transition: background-color 0.15s ease;
 }
 
 .dashboard-row:last-child {
   border-bottom: none;
 }
 
-.dashboard-row:hover {
+.dashboard-row-main {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: var(--space-md);
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.dashboard-row-main:hover {
   background: var(--color-bg);
 }
 
@@ -264,4 +267,52 @@
 
 .dashboard-direction {
   color: var(--color-text-muted);
+}
+
+/* 사용자 확정 판단 영역 — AI 권고(위 행)와 시각적으로 분리한다. */
+.dashboard-judgment {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.dashboard-judgment-label {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.judgment-group {
+  display: inline-flex;
+  gap: var(--space-xs);
+}
+
+.judgment-btn {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: var(--space-xs) var(--space-md);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.judgment-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.judgment-btn.is-active {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  color: var(--btn-text-color);
+}
+
+.judgment-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }

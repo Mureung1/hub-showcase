@@ -268,4 +268,41 @@ router.get(
   },
 );
 
+// 사용자가 확정하는 판단값. AI 제안값인 verification_status(유력함/근거 부족/수정 필요)와는 별개 컬럼이다.
+const ALLOWED_HYPOTHESIS_STATUSES = ['검토 전', '유지', '수정', '폐기'];
+
+// PATCH /api/projects/:id/hypotheses/:hid — 가설 판단(유지/수정/폐기) 확정.
+// '수정'은 여기서 상태 플래그만 세팅하며, 실제 원인/결과 편집과 버전 저장은 Task 10/12에서 연결한다.
+router.patch(
+  '/:id/hypotheses/:hid',
+  async (
+    req: Request<{ id: string; hid: string }, {}, { status?: string }>,
+    res: Response,
+  ) => {
+    const { id, hid } = req.params;
+    const { status } = req.body;
+
+    if (!status || !ALLOWED_HYPOTHESIS_STATUSES.includes(status)) {
+      return res.status(400).json({
+        error: `status는 ${ALLOWED_HYPOTHESIS_STATUSES.join(' / ')} 중 하나여야 합니다.`,
+      });
+    }
+
+    const { data: hypothesis, error } = await supabase
+      .from('hypotheses')
+      .update({ status })
+      .eq('id', hid)
+      .eq('project_id', id)
+      .select()
+      .single();
+
+    if (error || !hypothesis) {
+      // 존재하지 않거나 해당 프로젝트 소속이 아니면 갱신 대상이 없다.
+      return res.status(404).json({ error: '가설을 찾을 수 없습니다.' });
+    }
+
+    return res.status(200).json({ hypothesis });
+  },
+);
+
 export default router;
