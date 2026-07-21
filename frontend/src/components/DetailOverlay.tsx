@@ -77,7 +77,7 @@ export default function DetailOverlay({
               }}
               onError={(e) => {
                 (e.target as HTMLImageElement).src =
-                  'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80';
+                  'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500&q=80';
               }}
             />
           </div>

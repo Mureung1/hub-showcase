@@ -130,7 +130,7 @@ const inferBrand = (title) => {
 async function scrapeKreamSneakers() {
   console.log('[crawler] Starting KREAM Scraper (Optimized List Sync)...');
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: 'new',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -141,6 +141,13 @@ async function scrapeKreamSneakers() {
 
   try {
     const page = await browser.newPage();
+    
+    // Mask webdriver to bypass bot detection
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => undefined,
+      });
+    });
     
     // We load styles/images for list view to guarantee React rendering and lazy loading trigger
 
@@ -299,7 +306,7 @@ async function scrapeKreamSneakers() {
 async function scrapeKreamUpcoming() {
   console.log('[crawler] Starting KREAM Upcoming Scraper...');
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: 'new',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -310,6 +317,11 @@ async function scrapeKreamUpcoming() {
 
   try {
     const page = await browser.newPage();
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => undefined,
+      });
+    });
     await page.setViewport({ width: 1280, height: 1000 });
     await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36');
 
