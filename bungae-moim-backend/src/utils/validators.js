@@ -72,4 +72,29 @@ function validateCreateMeeting(body = {}) {
   };
 }
 
-module.exports = { validateCreateMeeting, OPEN_CHAT_URL_PATTERN };
+// PATCH /api/users/me 의 birthDate 검증. 형식 + 실제 달력 날짜 + 미래 아님.
+// 형식만 맞고 존재하지 않는 날짜(2001-02-30 등)를 걸러내려고 UTC로 되짚어 확인한다.
+function validateBirthDate(body = {}) {
+  const value = body.birthDate;
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new ApiError('VALIDATION_ERROR', 'birthDate는 YYYY-MM-DD 형식이어야 합니다');
+  }
+
+  const [year, month, day] = value.split('-').map(Number);
+  const asUtc = new Date(Date.UTC(year, month - 1, day));
+  if (
+    asUtc.getUTCFullYear() !== year ||
+    asUtc.getUTCMonth() !== month - 1 ||
+    asUtc.getUTCDate() !== day
+  ) {
+    throw new ApiError('VALIDATION_ERROR', '올바른 날짜가 아닙니다');
+  }
+
+  if (asUtc.getTime() > Date.now()) {
+    throw new ApiError('VALIDATION_ERROR', '생년월일은 미래일 수 없습니다');
+  }
+
+  return value;
+}
+
+module.exports = { validateCreateMeeting, validateBirthDate, OPEN_CHAT_URL_PATTERN };
