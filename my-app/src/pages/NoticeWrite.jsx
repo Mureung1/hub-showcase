@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiClient } from "../api/client";
 import PageTopBar from "../components/PageTopBar";
 import InfoTooltip from "../components/interview/InfoTooltip";
 import NoticeTypeChoice from "../components/notice-write/NoticeTypeChoice";
@@ -61,6 +62,8 @@ function NoticeWrite() {
   const navigate = useNavigate();
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   const step = STEPS[stepIndex];
   const isFirst = stepIndex === 0;
@@ -72,9 +75,17 @@ function NoticeWrite() {
     setAnswers((prev) => ({ ...prev, [step.id]: value }));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (isLast) {
-      navigate("/posts/notice/result");
+      setIsSubmitting(true);
+      setSubmitError(null);
+      try {
+        const post = await apiClient.post("/posts/notice", answers);
+        navigate(`/posts/notice/result/${post.id}`);
+      } catch (err) {
+        setSubmitError(err.message);
+        setIsSubmitting(false);
+      }
       return;
     }
     setStepIndex((i) => i + 1);
@@ -160,13 +171,17 @@ function NoticeWrite() {
                 placeholder={step.placeholder}
               />
             )}
+            {submitError && (
+              <p className="mt-md font-body-sm text-body-sm text-error">{submitError}</p>
+            )}
           </div>
 
           <div className="px-xl py-lg bg-surface-container-low border-t border-outline-variant/30 flex items-center justify-between">
             <button
               type="button"
               onClick={handlePrev}
-              className="px-xl py-md rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high transition-colors flex items-center gap-xs"
+              disabled={isSubmitting}
+              className="px-xl py-md rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high transition-colors flex items-center gap-xs disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_left</span>
               이전
@@ -174,10 +189,10 @@ function NoticeWrite() {
             <button
               type="button"
               onClick={handleNext}
-              disabled={!canProceed}
+              disabled={!canProceed || isSubmitting}
               className="px-xl py-md bg-primary hover:bg-primary/90 text-white rounded-lg font-label-md text-label-md font-bold transition-all shadow-md shadow-primary/10 flex items-center gap-xs active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {isLast ? "공지 생성하기" : "다음"}
+              {isLast ? (isSubmitting ? "생성 중..." : "공지 생성하기") : "다음"}
               {!isLast && (
                 <span className="material-symbols-outlined text-[18px]">chevron_right</span>
               )}
