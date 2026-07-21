@@ -3,9 +3,11 @@ import type { WeeklyTrendPoint } from '../../types/dashboard';
 import { colors } from '../../constants/colors';
 
 interface SalesTrendChartProps {
+  title?: string;
   totalLabel: string;
   points: WeeklyTrendPoint[];
   bestWeek: string;
+  bestWeekLabel?: string;
 }
 
 const VIEW_W = 720;
@@ -14,7 +16,7 @@ const TOP_Y = 50;
 const BOTTOM_Y = 175;
 const PAD_X = 60;
 
-export default function SalesTrendChart({ totalLabel, points, bestWeek }: SalesTrendChartProps) {
+export default function SalesTrendChart({ title = '최근 1개월 판매 추세', totalLabel, points, bestWeek, bestWeekLabel = '최고 판매 주차' }: SalesTrendChartProps) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   const amounts = points.map((p) => p.amount);
@@ -43,7 +45,7 @@ export default function SalesTrendChart({ totalLabel, points, bestWeek }: SalesT
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-        <span style={{ fontSize: '15px', fontWeight: '700', color: colors.textPrimary }}>최근 1개월 판매 추세</span>
+        <span style={{ fontSize: '15px', fontWeight: '700', color: colors.textPrimary }}>{title}</span>
         <span style={{ fontSize: '13px', color: colors.textPrimary, fontWeight: '700' }}>
           누적 매출 <span style={{ color: colors.primary }}>{totalLabel}</span>
         </span>
@@ -108,7 +110,7 @@ export default function SalesTrendChart({ totalLabel, points, bestWeek }: SalesT
         }}
       >
         <span style={{ fontSize: '12.5px', color: colors.textSecondary, fontWeight: '600', whiteSpace: 'nowrap', flexShrink: 0 }}>
-          최고 판매 주차 · <strong style={{ color: colors.textPrimary }}>{bestWeek}</strong>
+          {bestWeekLabel} · <strong style={{ color: colors.textPrimary }}>{bestWeek}</strong>
         </span>
         <span style={{ fontSize: '11px', color: colors.textTertiary, fontWeight: '600', textAlign: 'right' }}>단위: 천 원</span>
       </div>
