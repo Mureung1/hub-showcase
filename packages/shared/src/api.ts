@@ -29,6 +29,8 @@ export interface ProposalTodayFound {
   date: string;
   status: CampaignStatus;
   weather: EnsembleWeather;
+  /** 매출×날씨 진단 (조회 시 재계산). 대시보드 진단·매출 타일의 실데이터 소스. */
+  diagnosis: Diagnosis;
   proposal: Proposal;
 }
 

@@ -71,7 +71,7 @@ export default function WeatherPilotV3() {
         if (p.proposal === null) {
           setRemote({ status: "empty", message: p.message });
         } else {
-          setRemote({ status: "ready", scenario: scenarioFromApi(w.weather, p.proposal), campaignId: p.campaignId });
+          setRemote({ status: "ready", scenario: scenarioFromApi(w.weather, p.proposal, p.diagnosis), campaignId: p.campaignId });
         }
       } catch (e) {
         if (!cancelled) {
@@ -236,7 +236,7 @@ function Dashboard({ s, onReview }: { s: Scenario; onReview: () => void }) {
           </div>
         </div>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 14, padding: "5px 12px", borderRadius: 999, background: "rgba(255,255,255,0.28)", fontSize: 11, fontWeight: 600 }}>
-          ✓ 기상청·OpenWeather·AccuWeather 3개 소스 평균
+          ✓ {s.sourceLabel}
         </div>
 
         <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.4)" }}>

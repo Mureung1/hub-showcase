@@ -9,6 +9,7 @@ import type { ScenarioKey, Scenario, ChannelMeta, HistoryItem } from "shared";
 export const SCENARIOS: Record<ScenarioKey, Scenario> = {
   rain: {
     label: "비", emoji: "🌧️", temp: "18°C", cond: "비 · 습도 85% · 강수 6mm/h",
+    sourceLabel: "기상청·OpenWeather·AccuWeather 3개 소스 평균",
     diagText: "비 오는 날 평균 −18%", diagTone: "down",
     bars: [62, 70, 58, 66, 72, 45, 60], barToday: 5, todayDown: true,
     normalSales: 840000, predSales: 689000, target: 780000,
@@ -21,6 +22,7 @@ export const SCENARIOS: Record<ScenarioKey, Scenario> = {
   },
   sunny: {
     label: "맑음", emoji: "☀️", temp: "24°C", cond: "맑음 · 습도 40% · 바람 약함",
+    sourceLabel: "기상청·OpenWeather·AccuWeather 3개 소스 평균",
     diagText: "맑은 날 평균 +12%", diagTone: "up",
     bars: [62, 70, 58, 66, 72, 80, 60], barToday: 5, todayDown: false,
     normalSales: 840000, predSales: 940000, target: 940000,
@@ -33,6 +35,7 @@ export const SCENARIOS: Record<ScenarioKey, Scenario> = {
   },
   cold: {
     label: "한파", emoji: "❄️", temp: "-6°C", cond: "한파 · 체감 −12°C · 바람 강함",
+    sourceLabel: "기상청·OpenWeather·AccuWeather 3개 소스 평균",
     diagText: "한파 방문 −28%", diagTone: "down",
     bars: [62, 70, 58, 66, 72, 40, 55], barToday: 5, todayDown: true,
     normalSales: 840000, predSales: 605000, target: 720000,
@@ -45,6 +48,7 @@ export const SCENARIOS: Record<ScenarioKey, Scenario> = {
   },
   heat: {
     label: "폭염", emoji: "🥵", temp: "35°C", cond: "폭염 · 체감 38°C · 자외선 매우 높음",
+    sourceLabel: "기상청·OpenWeather·AccuWeather 3개 소스 평균",
     diagText: "폭염 낮 −20%", diagTone: "down",
     bars: [62, 70, 58, 66, 72, 48, 75], barToday: 6, todayDown: false,
     normalSales: 840000, predSales: 790000, target: 880000,
