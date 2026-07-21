@@ -1,4 +1,9 @@
 import { getSupabaseClient } from '../db/supabaseClient.js';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * AI 파이프라인 오케스트레이션
