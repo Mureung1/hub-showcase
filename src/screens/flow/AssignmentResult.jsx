@@ -34,7 +34,7 @@ export default function AssignmentResult() {
   )
 
   const [published, setPublished] = useState(false)
-  const [swaps, setSwaps] = useState({}) // memberId → roleId (맞교환 후 덮어쓴 역할)
+  const [swaps, setSwaps] = useState({}) // memberId → 실무 roleId 배열 (맞교환 후 덮어쓴 실무 역할)
   const [swapUsed, setSwapUsed] = useState(false)
   const [picked, setPicked] = useState([])
   const [remainSec, setRemainSec] = useState(SWAP_WINDOW_SEC)
@@ -45,7 +45,13 @@ export default function AssignmentResult() {
     return () => clearInterval(timer)
   }, [published, swapUsed, remainSec])
 
-  const roleOf = (memberId) => swaps[memberId] ?? result.byMember[memberId]?.[0]
+  // 조장은 실무 역할 위에 얹는 표식 — 실무 역할과 분리해 표시하고, 맞교환 대상에서도 제외한다
+  const leaderRoleIds = new Set(roles.filter((r) => r.isLeader).map((r) => r.id))
+  const leaderRole = roles.find((r) => r.isLeader)
+  const workRolesOf = (memberId) =>
+    swaps[memberId] ?? (result.byMember[memberId] ?? []).filter((rId) => !leaderRoleIds.has(rId))
+  const isLeaderOf = (memberId) =>
+    (result.byMember[memberId] ?? []).some((rId) => leaderRoleIds.has(rId))
   const roleInfo = (roleId) => roles.find((r) => r.id === roleId)
   const swapOpen = published && !swapUsed && remainSec > 0
 
@@ -59,8 +65,9 @@ export default function AssignmentResult() {
   function handleSwap() {
     if (picked.length !== 2) return
     const [a, b] = picked
-    const [roleA, roleB] = [roleOf(a), roleOf(b)]
-    setSwaps({ [a]: roleB, [b]: roleA })
+    // 두 팀원의 실무 역할을 통째로 교환 (조장 표식은 각자 유지)
+    const [workA, workB] = [workRolesOf(a), workRolesOf(b)]
+    setSwaps({ [a]: workB, [b]: workA })
     setSwapUsed(true)
     setPicked([])
   }
@@ -109,7 +116,7 @@ export default function AssignmentResult() {
           </div>
           <div className="assign-grid">
             {members.map((m) => {
-              const role = roleInfo(roleOf(m.id))
+              const workRoles = workRolesOf(m.id).map(roleInfo).filter(Boolean)
               const isPicked = picked.includes(m.id)
               const isSwapped = swaps[m.id] !== undefined
               return (
@@ -126,9 +133,16 @@ export default function AssignmentResult() {
                     <strong>
                       {m.name}
                       {m.isCreator && <em className="assign-tag">생성자</em>}
+                      {isLeaderOf(m.id) && (
+                        <em className="assign-tag leader">
+                          {leaderRole?.emoji} {leaderRole?.name ?? '조장'}
+                        </em>
+                      )}
                     </strong>
                     <span className="assign-role">
-                      {role ? `${role.emoji} ${role.name}` : '미배정'}
+                      {workRoles.length > 0
+                        ? workRoles.map((r) => `${r.emoji} ${r.name}`).join(' + ')
+                        : '미배정'}
                       {isSwapped && <em className="assign-tag swapped">교환됨</em>}
                     </span>
                   </span>
