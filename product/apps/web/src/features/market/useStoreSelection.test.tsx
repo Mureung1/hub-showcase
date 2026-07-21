@@ -27,10 +27,9 @@ function options(nearbyStores: MarketStore[]) {
 
 describe("useStoreSelection", () => {
   it("clears a selected nearby store when it leaves the current result set", () => {
-    const { result, rerender } = renderHook(
-      ({ stores }) => useStoreSelection(options(stores)),
-      { initialProps: { stores: [store] } },
-    );
+    const { result, rerender } = renderHook(({ stores }) => useStoreSelection(options(stores)), {
+      initialProps: { stores: [store] },
+    });
 
     act(() => result.current.selectListedStore(store.name));
     expect(result.current.selected?.id).toBe("store-1");
