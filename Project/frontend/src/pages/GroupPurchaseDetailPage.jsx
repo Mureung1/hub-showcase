@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getGroupPurchaseById, joinGroupPurchase } from '../api/groupPurchase';
+import { cancelGroupPurchaseJoin, getGroupPurchaseById, joinGroupPurchase } from '../api/groupPurchase';
 import './GroupPurchaseDetailPage.css';
 
 const mockPurchase = {
@@ -89,6 +89,28 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
       setMessage('참여 신청이 완료되었습니다!');
     } catch (error) {
       setJoinState('error');
+      setMessage(error.message);
+    }
+  }
+
+  async function handleCancelJoin() {
+    setJoinState('cancelling');
+    setMessage('');
+    try {
+      const result = await cancelGroupPurchaseJoin(purchase.id);
+      if (!result.success) {
+        throw new Error(result.error?.message || '참여 취소에 실패했습니다.');
+      }
+
+      setPurchase((current) => ({
+        ...current,
+        currentParticipants: result.data.groupPurchase.currentParticipants,
+        status: result.data.groupPurchase.status,
+      }));
+      setJoinState('idle');
+      setMessage('참여를 취소했습니다.');
+    } catch (error) {
+      setJoinState('joined');
       setMessage(error.message);
     }
   }
@@ -287,10 +309,16 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
                 
                 <button 
                   className={`td-detail-page__action-primary-btn ${joinState === 'joined' ? 'td-detail-page__action-primary-btn--joined' : ''}`}
-                  onClick={handleJoin}
-                  disabled={joinState === 'loading' || joinState === 'joined' || purchase.currentParticipants >= purchase.targetParticipants}
+                  onClick={joinState === 'joined' ? handleCancelJoin : handleJoin}
+                  disabled={joinState === 'loading' || joinState === 'cancelling' || (joinState !== 'joined' && purchase.currentParticipants >= purchase.targetParticipants)}
                 >
-                  {joinState === 'loading' ? '참여 신청 중...' : joinState === 'joined' ? '참여 신청 완료' : '공구 참여하기'}
+                  {joinState === 'loading'
+                    ? '참여 신청 중...'
+                    : joinState === 'cancelling'
+                      ? '참여 취소 중...'
+                      : joinState === 'joined'
+                        ? '참여 취소하기'
+                        : '공구 참여하기'}
                 </button>
 
                 {message && (

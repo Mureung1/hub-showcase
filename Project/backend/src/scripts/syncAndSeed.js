@@ -1,43 +1,54 @@
 const { sequelize, User, GroupPurchase } = require('../models');
 const { assertDbConnection } = require('../config/db');
 
+const seedProductUrl = 'https://example-mart.com/products/pork-belly-1kg';
+
 async function main() {
   await assertDbConnection();
-  await sequelize.sync({ force: true });
-  console.log('[seed] tables synced');
 
-  const host = await User.create({
-    email: 'host@example.com',
-    nickname: '공구장',
-    oauthProvider: 'KAKAO',
-    oauthId: 'kakao-dev-1',
+  const shouldReset = process.argv.includes('--reset');
+  await sequelize.sync({ force: shouldReset });
+  console.log(shouldReset ? '[seed] tables reset and synced' : '[seed] tables synced without deleting data');
+
+  const [host] = await User.findOrCreate({
+    where: { email: 'host@example.com' },
+    defaults: {
+      nickname: '공구왕',
+      oauthProvider: 'KAKAO',
+      oauthId: 'kakao-dev-1',
+    },
   });
 
-  const participant = await User.create({
-    email: 'participant@example.com',
-    nickname: '참여자',
-    oauthProvider: 'NAVER',
-    oauthId: 'naver-dev-1',
+  const [participant] = await User.findOrCreate({
+    where: { email: 'participant@example.com' },
+    defaults: {
+      nickname: '참여자',
+      oauthProvider: 'NAVER',
+      oauthId: 'naver-dev-1',
+    },
   });
 
-  const groupPurchase = await GroupPurchase.create({
-    hostId: host.id,
-    title: '삼겹살 대용량 공구',
-    description: '동네 마트 삼겹살 1kg 단위 소분',
-    productUrl: 'https://example-mart.com/products/pork-belly-1kg',
-    category: 'FOOD',
-    perPersonPrice: 8000,
-    totalPrice: 32000,
-    targetParticipants: 4,
-    currentParticipants: 0,
-    pickupLatitude: 37.5665,
-    pickupLongitude: 126.978,
-    pickupTimeSlot: '평일 저녁 7~9시',
-    deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
-    status: 'RECRUITING',
-  });
+  let groupPurchase = await GroupPurchase.findOne({ where: { productUrl: seedProductUrl } });
+  if (!groupPurchase) {
+    groupPurchase = await GroupPurchase.create({
+      hostId: host.id,
+      title: '삼겹살 대용량 공구',
+      description: '동네 마트 삼겹살 1kg 소분',
+      productUrl: seedProductUrl,
+      category: 'FOOD',
+      perPersonPrice: 8000,
+      totalPrice: 32000,
+      targetParticipants: 4,
+      currentParticipants: 0,
+      pickupLatitude: 37.5665,
+      pickupLongitude: 126.978,
+      pickupTimeSlot: '평일 저녁 7~9시',
+      deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      status: 'RECRUITING',
+    });
+  }
 
-  console.log('[seed] users and group purchase created');
+  console.log('[seed] users and group purchase ready');
   console.log({
     hostId: host.id,
     participantId: participant.id,
@@ -51,4 +62,3 @@ main().catch((err) => {
   console.error('[seed] failed:', err);
   process.exit(1);
 });
-

@@ -9,13 +9,17 @@ function toNumber(value, fallback) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+const defaultDbName = process.env.DB_NAME || 'thingdong';
+
 const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: toNumber(process.env.PORT, 4000),
   db: {
     host: process.env.DB_HOST || 'localhost',
     port: toNumber(process.env.DB_PORT, 3306),
-    name: process.env.DB_NAME || 'thingdong',
+    name: process.env.NODE_ENV === 'test'
+      ? (process.env.TEST_DB_NAME || `${defaultDbName}_test`)
+      : defaultDbName,
     user: process.env.DB_USER || 'thingdong',
     password: process.env.DB_PASSWORD || 'thingdong_pw',
   },

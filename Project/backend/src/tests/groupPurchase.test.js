@@ -144,6 +144,167 @@ describe('ThingDong Concurrency and State Transition Tests', () => {
     });
   });
 
+  describe('GET /group-purchases', () => {
+    test('공개 목록은 모집 중인 공동구매만 반환한다', async () => {
+      await GroupPurchase.create({
+        hostId: hostUser.id,
+        title: '모집 중 공구',
+        productUrl: 'https://example.com/recruiting-list',
+        totalPrice: 10000,
+        targetParticipants: 2,
+        currentParticipants: 0,
+        perPersonPrice: 5000,
+        pickupLatitude: 37.5665,
+        pickupLongitude: 126.978,
+        category: 'FOOD',
+        status: 'RECRUITING',
+        deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      });
+      await GroupPurchase.create({
+        hostId: hostUser.id,
+        title: '마감 공구',
+        productUrl: 'https://example.com/completed-list',
+        totalPrice: 10000,
+        targetParticipants: 2,
+        currentParticipants: 2,
+        perPersonPrice: 5000,
+        pickupLatitude: 37.5665,
+        pickupLongitude: 126.978,
+        category: 'FOOD',
+        status: 'COMPLETED',
+        deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      });
+
+      const res = await request(app).get('/group-purchases');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.map((item) => item.title)).toContain('모집 중 공구');
+      expect(res.body.data.map((item) => item.title)).not.toContain('마감 공구');
+    });
+  });
+
+  describe('DELETE /group-purchases/:id/join', () => {
+    let groupPurchase;
+
+    beforeEach(async () => {
+      await UserGroupPurchase.destroy({ where: {} });
+      groupPurchase = await GroupPurchase.create({
+        hostId: hostUser.id,
+        title: '참여 취소 테스트 공구',
+        description: '참여 취소 규칙을 검증합니다.',
+        productUrl: `https://example.com/cancel-${Date.now()}`,
+        totalPrice: 15000,
+        targetParticipants: 3,
+        currentParticipants: 1,
+        perPersonPrice: 5000,
+        pickupLatitude: 37.5665,
+        pickupLongitude: 126.978,
+        category: 'FOOD',
+        status: 'RECRUITING',
+        deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      });
+      await UserGroupPurchase.create({
+        userId: participants[0].id,
+        groupPurchaseId: groupPurchase.id,
+      });
+    });
+
+    test('모집 중인 공구는 참여자가 참여를 취소할 수 있다', async () => {
+      const res = await request(app)
+        .delete(`/group-purchases/${groupPurchase.id}/join`)
+        .set('Authorization', getAuthHeader(participants[0].id));
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.groupPurchase.currentParticipants).toBe(0);
+      expect(res.body.data.groupPurchase.status).toBe('RECRUITING');
+
+      const applicationCount = await UserGroupPurchase.count({
+        where: { groupPurchaseId: groupPurchase.id, userId: participants[0].id },
+      });
+      expect(applicationCount).toBe(0);
+    });
+
+    test('참여하지 않은 사용자는 참여를 취소할 수 없다', async () => {
+      const res = await request(app)
+        .delete(`/group-purchases/${groupPurchase.id}/join`)
+        .set('Authorization', getAuthHeader(participants[1].id));
+
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe('JOIN_NOT_FOUND');
+    });
+
+    test('모집 완료 공구는 참여를 취소할 수 없다', async () => {
+      await groupPurchase.update({ status: 'COMPLETED' });
+
+      const res = await request(app)
+        .delete(`/group-purchases/${groupPurchase.id}/join`)
+        .set('Authorization', getAuthHeader(participants[0].id));
+
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe('CANNOT_CANCEL_COMPLETED');
+    });
+  });
+
+  describe('GET /group-purchases/mine', () => {
+    let hostedPurchase;
+    let joinedPurchase;
+
+    beforeEach(async () => {
+      await UserGroupPurchase.destroy({ where: {} });
+      await GroupPurchase.destroy({ where: {} });
+
+      hostedPurchase = await GroupPurchase.create({
+        hostId: hostUser.id,
+        title: '내가 만든 공구',
+        productUrl: 'https://example.com/hosted',
+        totalPrice: 10000,
+        targetParticipants: 2,
+        currentParticipants: 0,
+        perPersonPrice: 5000,
+        pickupLatitude: 37.5665,
+        pickupLongitude: 126.978,
+        category: 'FOOD',
+        status: 'RECRUITING',
+        deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      });
+      joinedPurchase = await GroupPurchase.create({
+        hostId: hostUser.id,
+        title: '내가 참여한 공구',
+        productUrl: 'https://example.com/joined',
+        totalPrice: 12000,
+        targetParticipants: 3,
+        currentParticipants: 1,
+        perPersonPrice: 4000,
+        pickupLatitude: 37.5665,
+        pickupLongitude: 126.978,
+        category: 'FOOD',
+        status: 'RECRUITING',
+        deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      });
+      await UserGroupPurchase.create({ userId: participants[0].id, groupPurchaseId: joinedPurchase.id });
+    });
+
+    test('로그인 사용자의 프로필과 만든 공구, 참여한 공구를 반환한다', async () => {
+      const hostResponse = await request(app)
+        .get('/group-purchases/mine')
+        .set('Authorization', getAuthHeader(hostUser.id));
+      const participantResponse = await request(app)
+        .get('/group-purchases/mine')
+        .set('Authorization', getAuthHeader(participants[0].id));
+
+      expect(hostResponse.status).toBe(200);
+      expect(hostResponse.body.data.user.id).toBe(hostUser.id);
+      expect(hostResponse.body.data.hosted.map((item) => item.id)).toContain(hostedPurchase.id);
+      expect(hostResponse.body.data.joined).toHaveLength(0);
+
+      expect(participantResponse.status).toBe(200);
+      expect(participantResponse.body.data.user.id).toBe(participants[0].id);
+      expect(participantResponse.body.data.joined[0].id).toBe(joinedPurchase.id);
+      expect(participantResponse.body.data.hosted).toHaveLength(0);
+    });
+  });
+
   describe('POST /group-purchases', () => {
     test('인증된 사용자의 등록 요청은 201 Created를 반환하고 해당 사용자를 호스트로 설정한다', async () => {
       const res = await request(app)

@@ -6,9 +6,9 @@ async function listGroupPurchases(filters = {}) {
   if (filters.category) {
     where.category = filters.category;
   }
-  if (filters.status) {
-    where.status = filters.status;
-  }
+  // Public feeds only show purchases that are still open for recruitment.
+  // Closed purchases remain available through the authenticated user's activity page.
+  where.status = filters.status || 'RECRUITING';
   return await GroupPurchase.findAll({
     where,
     include: [{ model: User, as: 'host', attributes: ['id', 'nickname', 'mannerTemperature'] }],
@@ -24,6 +24,44 @@ async function getGroupPurchaseById(id) {
     throw new AppError(404, '공동구매를 찾을 수 없습니다.', 'GROUP_PURCHASE_NOT_FOUND');
   }
   return groupPurchase;
+}
+
+async function getMyGroupPurchaseActivities(userId) {
+  const user = await User.findByPk(userId, {
+    attributes: ['id', 'nickname', 'mannerTemperature', 'noShowCount'],
+  });
+  if (!user) {
+    throw new AppError(404, '사용자를 찾을 수 없습니다.', 'USER_NOT_FOUND');
+  }
+
+  const hosted = await GroupPurchase.findAll({
+    where: { hostId: userId },
+    include: [{ model: User, as: 'host', attributes: ['id', 'nickname', 'mannerTemperature'] }],
+    order: [['createdAt', 'DESC']],
+  });
+  const applications = await UserGroupPurchase.findAll({
+    where: { userId },
+    include: [{
+      model: GroupPurchase,
+      include: [{ model: User, as: 'host', attributes: ['id', 'nickname', 'mannerTemperature'] }],
+    }],
+    order: [['appliedAt', 'DESC']],
+  });
+
+  const joined = applications.map((application) => {
+    const groupPurchase = application.GroupPurchase.toJSON();
+    return {
+      ...groupPurchase,
+      application: {
+        id: application.id,
+        isApproved: application.isApproved,
+        isPaid: application.isPaid,
+        appliedAt: application.appliedAt,
+      },
+    };
+  });
+
+  return { user, hosted, joined };
 }
 
 async function createGroupPurchase(data) {
@@ -103,9 +141,50 @@ async function joinGroupPurchase(groupPurchaseId, userId) {
   });
 }
 
+async function cancelGroupPurchaseJoin(groupPurchaseId, userId) {
+  return sequelize.transaction(async (transaction) => {
+    const groupPurchase = await GroupPurchase.findByPk(groupPurchaseId, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+
+    if (!groupPurchase) {
+      throw new AppError(404, '공동구매를 찾을 수 없습니다.', 'GROUP_PURCHASE_NOT_FOUND');
+    }
+    if (groupPurchase.status !== 'RECRUITING') {
+      throw new AppError(409, '모집 완료 후에는 참여를 취소할 수 없습니다.', 'CANNOT_CANCEL_COMPLETED');
+    }
+
+    const application = await UserGroupPurchase.findOne({
+      where: { groupPurchaseId, userId },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!application) {
+      throw new AppError(404, '참여 내역을 찾을 수 없습니다.', 'JOIN_NOT_FOUND');
+    }
+
+    await application.destroy({ transaction });
+    const currentParticipants = Math.max(groupPurchase.currentParticipants - 1, 0);
+    await groupPurchase.update({ currentParticipants, status: 'RECRUITING' }, { transaction });
+
+    return {
+      cancelledApplication: { id: application.id, groupPurchaseId, userId },
+      groupPurchase: {
+        id: groupPurchase.id,
+        currentParticipants,
+        targetParticipants: groupPurchase.targetParticipants,
+        status: 'RECRUITING',
+      },
+    };
+  });
+}
+
 module.exports = {
   listGroupPurchases,
   getGroupPurchaseById,
+  getMyGroupPurchaseActivities,
   createGroupPurchase,
   joinGroupPurchase,
+  cancelGroupPurchaseJoin,
 };
