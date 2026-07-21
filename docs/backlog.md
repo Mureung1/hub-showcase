@@ -13,6 +13,7 @@
 | TSK-007 | Week 3 (July 20-24) | BE | VS-3: Type Safety & DB | Migrate BE endpoints to TypeScript and define strict request/response types | TypeScript, Express | P1 | Agent | Todo |
 | TSK-010 | Week 3 (July 20-24) | FE | VS-4: TDD & Tests | Setup Jest/React Testing Library and write unit tests for query component | Jest, RTL | P1 | Human | Todo |
 | TSK-011 | Week 3 (July 20-24) | BE | VS-4: TDD & Tests | Implement unit tests for Express endpoints using Supertest and Jest | Jest, Supertest | P1 | Agent | Todo |
+| TSK-017 | Week 3 (July 20-24) | FE | VS-3: Type Safety & DB | Establish frontend MVP user session (localStorage) | React, LocalStorage | P1 | Agent | Todo |
 | TSK-012 | Week 4 (July 27-30) | BE | VS-5: Gemini Integration | Replace mock endpoint with live Google Gemini API connection | Gemini API, Node.js | P0 | Agent | Todo |
 | TSK-013 | Week 4 (July 27-30) | FE | VS-5: Gemini Integration | Integrate E2E integration tests for live query -> Gemini -> render flow | Cypress, React | P2 | Human | Todo |
 | TSK-014 | Week 4 (July 27-30) | DB | VS-6: Deployment & QA | Optimize PostgreSQL queries and add indexing for production load | PostgreSQL | P2 | Agent | Todo |
