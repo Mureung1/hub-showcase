@@ -19,6 +19,7 @@ interface Hypothesis {
   effect: string
   status: string
   verification_status: string
+  viewed_at: string | null
   verification_result: VerificationResult | null
 }
 
@@ -147,7 +148,6 @@ function DashboardPage() {
         <ul className="hypothesis-list">
           {data.hypotheses.map((h) => {
             const badgeClass = STATUS_BADGE_CLASS[h.verification_status] ?? 'badge-pending'
-            const isDecided = h.status !== '검토 전'
 
             return (
               <li key={h.id} className="dashboard-row">
@@ -174,9 +174,8 @@ function DashboardPage() {
                 </div>
 
                 <div className="dashboard-judgment" onClick={(e) => e.stopPropagation()}>
-                  <span className="dashboard-judgment-label">
-                    내 판단{isDecided ? `: ${h.status}` : ' (미정)'}
-                  </span>
+                  {/* 상세 화면을 아직 방문하지 않았을 때만 표시. 방문(viewed_at 기록)하면 사라진다. */}
+                  {!h.viewed_at && <span className="badge badge-pending dashboard-unviewed-tag">검토 전</span>}
                   <span className="judgment-group">
                     {JUDGMENT_OPTIONS.map((option) => (
                       <button

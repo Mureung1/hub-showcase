@@ -237,6 +237,23 @@ router.get(
       return res.status(404).json({ error: '가설을 찾을 수 없습니다.' });
     }
 
+    // 상세 화면 최초 조회 시 방문 표시를 남긴다(대시보드의 "검토 전" 태그를 지우는 데 사용).
+    // GET에 side effect를 두는 건 이례적이지만, "읽으면 읽음 처리"는 흔한 실용적 패턴이라
+    // 별도 PATCH 왕복 없이 여기서 처리한다. 이미 방문했으면 다시 쓰지 않는다.
+    if (!hypothesis.viewed_at) {
+      const { data: updated, error: viewError } = await supabase
+        .from('hypotheses')
+        .update({ viewed_at: new Date().toISOString() })
+        .eq('id', hid)
+        .select()
+        .single();
+      if (viewError) {
+        console.error('Failed to mark hypothesis as viewed:', viewError);
+      } else if (updated) {
+        hypothesis.viewed_at = updated.viewed_at;
+      }
+    }
+
     const { data: verificationResult, error: vrError } = await supabase
       .from('verification_results')
       .select('*')

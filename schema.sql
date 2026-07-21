@@ -19,6 +19,7 @@ CREATE TABLE hypotheses (
   effect TEXT NOT NULL,
   status TEXT DEFAULT '검토 전', -- 유지 / 수정 / 폐기 / 검토 전
   verification_status TEXT DEFAULT '검토 전', -- 검토 전 / 유력함 / 근거 부족 / 수정 필요
+  viewed_at TIMESTAMP WITH TIME ZONE DEFAULT NULL, -- 대시보드 "검토 전" 방문 표시. status(유지/수정/폐기)와 별개
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

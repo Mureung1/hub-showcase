@@ -303,10 +303,8 @@
   margin-top: var(--space-sm);
 }
 
-.dashboard-judgment-label {
-  font-size: var(--font-size-caption);
-  color: var(--color-text-muted);
-  font-weight: var(--font-weight-medium);
+.dashboard-unviewed-tag {
+  margin-right: auto;
 }
 
 .judgment-group {
