@@ -236,7 +236,9 @@ This section contains the contents of the repository's files.
       "Bash(npm test *)",
       "Bash(pkill -f \"node.*src/index.ts\")",
       "Bash(curl -s http://localhost:5173)",
-      "Skill(run)"
+      "Skill(run)",
+      "Bash(curl -s -o /dev/null -w \"상태: %{http_code}\\\\n\" http://localhost:5174)",
+      "Bash(curl -s -o /dev/null -w \"상태: %{http_code}\\\\n\" http://localhost:3000/health)"
     ]
   }
 }
@@ -841,172 +843,6 @@ export const verifyAuth = (req: AuthRequest, res: Response, next: NextFunction) 
     return res.status(401).json({ error: '토큰 검증 실패' })
   }
 }
-</file>
-
-<file path="backend/src/routes/calendar.ts">
-import { Router } from 'express'
-import { OAuth2Client } from 'google-auth-library'
-import { PrismaClient } from '@prisma/client'
-import { verifyAuth, AuthRequest } from '../middleware/auth'
-import { CalendarService } from '../services/calendarService'
-import { GoogleCalendarProvider } from '../services/providers/googleCalendarProvider'
-
-const prisma = new PrismaClient()
-
-const router = Router()
-const googleCalendarProvider = new GoogleCalendarProvider()
-const calendarService = new CalendarService(googleCalendarProvider)
-
-// POST /api/calendar/oauth-callback
-// Google OAuth 콜백 — 액세스 토큰 저장
-router.post('/oauth-callback', verifyAuth, async (req: AuthRequest, res) => {
-  try {
-    const { code } = req.body
-    if (!code) {
-      return res.status(400).json({ error: 'No authorization code provided' })
-    }
-
-    const googleClientId = process.env.GOOGLE_CLIENT_ID
-    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
-    const googleRedirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/calendar/oauth-callback'
-
-    if (!googleClientId || !googleClientSecret) {
-      return res.status(500).json({ error: 'Google OAuth not configured' })
-    }
-
-    const oauth2Client = new OAuth2Client(googleClientId, googleClientSecret, googleRedirectUri)
-
-    console.log('📝 Google OAuth 처리 시작', {
-      code: code.substring(0, 20) + '...',
-      clientId: googleClientId?.substring(0, 20),
-      redirectUri: googleRedirectUri
-    })
-
-    const { tokens } = await oauth2Client.getToken(code)
-    const accessToken = tokens.access_token
-    const refreshToken = tokens.refresh_token
-
-    console.log('✅ 토큰 교환 성공', {
-      accessToken: accessToken?.substring(0, 20) + '...',
-      hasRefreshToken: !!refreshToken
-    })
-
-    if (!accessToken) {
-      return res.status(400).json({ error: 'Failed to get access token' })
-    }
-
-    await prisma.user.update({
-      where: { id: req.userId! },
-      data: {
-        googleAccessToken: accessToken,
-        googleRefreshToken: refreshToken || null,
-        googleConnectedAt: new Date()
-      }
-    })
-
-    console.log('💾 사용자 Google 토큰 저장 완료')
-    res.json({ success: true })
-  } catch (error) {
-    console.error('❌ Google OAuth callback error:', error instanceof Error ? error.message : error)
-    if (error instanceof Error) {
-      console.error('상세:', error.stack)
-    }
-    res.status(400).json({
-      error: 'Failed to connect Google Calendar',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    })
-  }
-})
-
-// POST /api/calendar/sync
-// 공고 → Google Calendar 동기화
-router.post('/sync', verifyAuth, async (req: AuthRequest, res) => {
-  try {
-    const { postingId } = req.body
-    if (!postingId) {
-      return res.status(400).json({ error: 'postingId required' })
-    }
-
-    const posting = await prisma.posting.findUnique({
-      where: { id: postingId }
-    })
-
-    if (!posting) {
-      return res.status(404).json({ error: 'Posting not found' })
-    }
-
-    // 마감일 검증: 오늘 이후인지 확인
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const deadline = new Date(posting.receptionEndDate)
-    deadline.setHours(0, 0, 0, 0)
-
-    console.log('📅 마감일 검증:', {
-      postingId,
-      deadline: deadline.toISOString().split('T')[0],
-      today: today.toISOString().split('T')[0],
-      isPast: deadline < today
-    })
-
-    if (deadline < today) {
-      console.log('⏰ 마감일이 과거이므로 Google Calendar 동기화 스킵')
-      return res.json({
-        success: true,
-        eventId: null,
-        message: 'Posting deadline is in the past, skipped Google Calendar sync'
-      })
-    }
-
-    const result = await calendarService.sync(req.userId!, posting)
-    console.log('✅ Google Calendar 동기화 완료:', result.eventId)
-    res.json({ success: true, eventId: result.eventId })
-  } catch (error) {
-    console.error('❌ Calendar sync error:', error instanceof Error ? error.message : error)
-    res.status(400).json({
-      error: 'Sync failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    })
-  }
-})
-
-// DELETE /api/calendar/events/:eventId
-// Google Calendar에서 삭제
-router.delete('/events/:eventId', verifyAuth, async (req: AuthRequest, res) => {
-  try {
-    const { eventId } = req.params
-
-    await calendarService.unsync(req.userId!, eventId)
-    res.json({ success: true })
-  } catch (error) {
-    console.error('Calendar delete error:', error)
-    res.status(400).json({ error: 'Delete failed' })
-  }
-})
-
-// GET /api/calendar/status
-// Google Calendar 연동 상태
-router.get('/status', verifyAuth, async (req: AuthRequest, res) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.userId! },
-      select: {
-        googleConnectedAt: true,
-        email: true
-      }
-    })
-
-    res.json({
-      connected: !!user?.googleConnectedAt,
-      email: user?.email,
-      connectedAt: user?.googleConnectedAt
-    })
-  } catch (error) {
-    console.error('Calendar status error:', error)
-    res.status(500).json({ error: 'Failed to get calendar status' })
-  }
-})
-
-export default router
 </file>
 
 <file path="backend/src/services/providers/googleCalendarProvider.ts">
@@ -9739,6 +9575,172 @@ chore(deps): bump prisma to 5.14
 # hub
 </file>
 
+<file path="backend/src/routes/calendar.ts">
+import { Router } from 'express'
+import { OAuth2Client } from 'google-auth-library'
+import { PrismaClient } from '@prisma/client'
+import { verifyAuth, AuthRequest } from '../middleware/auth'
+import { CalendarService } from '../services/calendarService'
+import { GoogleCalendarProvider } from '../services/providers/googleCalendarProvider'
+
+const prisma = new PrismaClient()
+
+const router = Router()
+const googleCalendarProvider = new GoogleCalendarProvider()
+const calendarService = new CalendarService(googleCalendarProvider)
+
+// POST /api/calendar/oauth-callback
+// Google OAuth 콜백 — 액세스 토큰 저장
+router.post('/oauth-callback', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const { code } = req.body
+    if (!code) {
+      return res.status(400).json({ error: 'No authorization code provided' })
+    }
+
+    const googleClientId = process.env.GOOGLE_CLIENT_ID
+    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
+    const googleRedirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/calendar/oauth-callback'
+
+    if (!googleClientId || !googleClientSecret) {
+      return res.status(500).json({ error: 'Google OAuth not configured' })
+    }
+
+    const oauth2Client = new OAuth2Client(googleClientId, googleClientSecret, googleRedirectUri)
+
+    console.log('📝 Google OAuth 처리 시작', {
+      code: code.substring(0, 20) + '...',
+      clientId: googleClientId?.substring(0, 20),
+      redirectUri: googleRedirectUri
+    })
+
+    const { tokens } = await oauth2Client.getToken(code)
+    const accessToken = tokens.access_token
+    const refreshToken = tokens.refresh_token
+
+    console.log('✅ 토큰 교환 성공', {
+      accessToken: accessToken?.substring(0, 20) + '...',
+      hasRefreshToken: !!refreshToken
+    })
+
+    if (!accessToken) {
+      return res.status(400).json({ error: 'Failed to get access token' })
+    }
+
+    await prisma.user.update({
+      where: { id: req.userId! },
+      data: {
+        googleAccessToken: accessToken,
+        googleRefreshToken: refreshToken || null,
+        googleConnectedAt: new Date()
+      }
+    })
+
+    console.log('💾 사용자 Google 토큰 저장 완료')
+    res.json({ success: true })
+  } catch (error) {
+    console.error('❌ Google OAuth callback error:', error instanceof Error ? error.message : error)
+    if (error instanceof Error) {
+      console.error('상세:', error.stack)
+    }
+    res.status(400).json({
+      error: 'Failed to connect Google Calendar',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    })
+  }
+})
+
+// POST /api/calendar/sync
+// 공고 → Google Calendar 동기화
+router.post('/sync', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const { postingId } = req.body
+    if (!postingId) {
+      return res.status(400).json({ error: 'postingId required' })
+    }
+
+    const posting = await prisma.posting.findUnique({
+      where: { id: postingId }
+    })
+
+    if (!posting) {
+      return res.status(404).json({ error: 'Posting not found' })
+    }
+
+    // 마감일 검증: 오늘 이후인지 확인
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const deadline = new Date(posting.receptionEndDate)
+    deadline.setHours(0, 0, 0, 0)
+
+    console.log('📅 마감일 검증:', {
+      postingId,
+      deadline: deadline.toISOString().split('T')[0],
+      today: today.toISOString().split('T')[0],
+      isPast: deadline < today
+    })
+
+    if (deadline < today) {
+      console.log('⏰ 마감일이 과거이므로 Google Calendar 동기화 스킵')
+      return res.json({
+        success: true,
+        eventId: null,
+        message: 'Posting deadline is in the past, skipped Google Calendar sync'
+      })
+    }
+
+    const result = await calendarService.sync(req.userId!, posting)
+    console.log('✅ Google Calendar 동기화 완료:', result.eventId)
+    res.json({ success: true, eventId: result.eventId })
+  } catch (error) {
+    console.error('❌ Calendar sync error:', error instanceof Error ? error.message : error)
+    res.status(400).json({
+      error: 'Sync failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    })
+  }
+})
+
+// DELETE /api/calendar/events/:eventId
+// Google Calendar에서 삭제
+router.delete('/events/:eventId', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const { eventId } = req.params
+
+    await calendarService.unsync(req.userId!, eventId)
+    res.json({ success: true })
+  } catch (error) {
+    console.error('Calendar delete error:', error)
+    res.status(400).json({ error: 'Delete failed' })
+  }
+})
+
+// GET /api/calendar/status
+// Google Calendar 연동 상태
+router.get('/status', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId! },
+      select: {
+        googleConnectedAt: true,
+        email: true
+      }
+    })
+
+    res.json({
+      connected: !!user?.googleConnectedAt,
+      email: user?.email,
+      connectedAt: user?.googleConnectedAt
+    })
+  } catch (error) {
+    console.error('Calendar status error:', error)
+    res.status(500).json({ error: 'Failed to get calendar status' })
+  }
+})
+
+export default router
+</file>
+
 <file path="backend/src/routes/scraps.ts">
 import { Router } from 'express'
 import { PrismaClient } from '@prisma/client'
@@ -11806,6 +11808,260 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 ## 새로 알게 된 것
 </file>
 
+<file path="backend/src/routes/auth.ts">
+import { Router } from 'express'
+import { PrismaClient } from '@prisma/client'
+import jwt from 'jsonwebtoken'
+import { z } from 'zod'
+import bcrypt from 'bcrypt'
+import { verifyAuth, AuthRequest } from '../middleware/auth.js'
+
+const router = Router()
+const prisma = new PrismaClient()
+
+const SignupSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+})
+
+const LoginSchema = z.object({
+  email: z.string().email(),
+  password: z.string(),
+})
+
+const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1, '현재 비밀번호를 입력해주세요'),
+  newPassword: z.string().min(6, '새 비밀번호는 6자 이상이어야 합니다'),
+  confirmPassword: z.string().min(6, '비밀번호 확인은 6자 이상이어야 합니다'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: '새 비밀번호와 확인이 일치하지 않습니다',
+  path: ['confirmPassword'],
+})
+
+const generateTokens = (userId: string) => {
+  const accessToken = jwt.sign(
+    { sub: userId, type: 'access' },
+    process.env.JWT_SECRET || 'dev-secret',
+    { expiresIn: '15m' }
+  )
+
+  const refreshToken = jwt.sign(
+    { sub: userId, type: 'refresh' },
+    process.env.JWT_SECRET || 'dev-secret',
+    { expiresIn: '7d' }
+  )
+
+  return { accessToken, refreshToken }
+}
+
+// POST /api/auth/signup - 회원가입 (프로토타입: 실제 Supabase Auth 연동 필요)
+router.post('/signup', async (req, res) => {
+  try {
+    const data = SignupSchema.parse(req.body)
+
+    // 프로토타입: 실제로는 Supabase Auth에서 처리
+    // const { data: authData, error: authError } = await supabase.auth.signUp({
+    //   email: data.email,
+    //   password: data.password,
+    // })
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: data.email },
+    })
+
+    if (existingUser) {
+      return res.status(409).json({ error: '이미 가입된 이메일입니다' })
+    }
+
+    // 프로토타입: UUID를 임시로 생성 (실제로는 Supabase UID 사용)
+    const userId = `temp-user-${Date.now()}`
+
+    // 비밀번호 해싱
+    const hashedPassword = await bcrypt.hash(data.password, 10)
+
+    const user = await prisma.user.create({
+      data: {
+        id: userId,
+        email: data.email,
+        password: hashedPassword,
+      },
+    })
+
+    const tokens = generateTokens(user.id)
+
+    res.status(201).json({
+      success: true,
+      data: {
+        userId: user.id,
+        email: user.email,
+        ...tokens,
+      },
+    })
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: '유효하지 않은 요청입니다', details: error.errors })
+    }
+    console.error('회원가입 실패:', error)
+    res.status(500).json({ error: '회원가입에 실패했습니다' })
+  }
+})
+
+// POST /api/auth/login - 로그인
+router.post('/login', async (req, res) => {
+  try {
+    const data = LoginSchema.parse(req.body)
+
+    // 프로토타입: 실제로는 Supabase Auth 검증
+    // const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    //   email: data.email,
+    //   password: data.password,
+    // })
+
+    const user = await prisma.user.findUnique({
+      where: { email: data.email },
+    })
+
+    if (!user) {
+      return res.status(401).json({ error: '이메일 또는 비밀번호가 잘못되었습니다' })
+    }
+
+    // 비밀번호 검증 (저장된 비밀번호가 있는 경우)
+    if (user.password) {
+      const isPasswordValid = await bcrypt.compare(data.password, user.password)
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: '이메일 또는 비밀번호가 잘못되었습니다' })
+      }
+    }
+
+    const tokens = generateTokens(user.id)
+
+    res.json({
+      success: true,
+      data: {
+        userId: user.id,
+        email: user.email,
+        ...tokens,
+      },
+    })
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: '유효하지 않은 요청입니다', details: error.errors })
+    }
+    console.error('로그인 실패:', error)
+    res.status(500).json({ error: '로그인에 실패했습니다' })
+  }
+})
+
+// GET /api/auth/profile-status - 프로필 등록 여부 확인
+router.get('/profile-status', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.json({ hasProfile: false, requiresAuth: true })
+    }
+
+    const token = authHeader.substring(7)
+    const decoded = jwt.decode(token) as Record<string, any>
+
+    if (!decoded?.sub) {
+      return res.json({ hasProfile: false, requiresAuth: true })
+    }
+
+    const profile = await prisma.userProfile.findUnique({
+      where: { userId: decoded.sub },
+    })
+
+    res.json({
+      hasProfile: !!profile,
+      profileId: profile?.id,
+    })
+  } catch (error) {
+    console.error('프로필 상태 확인 실패:', error)
+    res.json({ hasProfile: false })
+  }
+})
+
+// PATCH /api/auth/password - 비밀번호 변경
+router.patch('/password', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!
+    const data = ChangePasswordSchema.parse(req.body)
+
+    // 현재 사용자 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    })
+
+    if (!user) {
+      return res.status(404).json({ error: '사용자를 찾을 수 없습니다' })
+    }
+
+    // 비밀번호가 설정되지 않은 경우 (예: OAuth만 사용)
+    if (!user.password) {
+      return res.status(400).json({ error: '비밀번호 기반 인증을 사용하지 않습니다' })
+    }
+
+    // 현재 비밀번호 검증
+    const isPasswordValid = await bcrypt.compare(data.currentPassword, user.password)
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: '현재 비밀번호가 일치하지 않습니다' })
+    }
+
+    // 새 비밀번호 해싱
+    const hashedPassword = await bcrypt.hash(data.newPassword, 10)
+
+    // 비밀번호 업데이트
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    })
+
+    res.json({
+      success: true,
+      message: '비밀번호가 성공적으로 변경되었습니다',
+    })
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: '유효하지 않은 데이터입니다', details: error.errors })
+    }
+    console.error('비밀번호 변경 실패:', error)
+    res.status(500).json({ error: '비밀번호 변경에 실패했습니다' })
+  }
+})
+
+// DELETE /api/auth/account - 계정 삭제
+router.delete('/account', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!
+
+    // 현재 사용자 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    })
+
+    if (!user) {
+      return res.status(404).json({ error: '사용자를 찾을 수 없습니다' })
+    }
+
+    // 사용자와 관련된 모든 데이터 삭제 (cascade delete)
+    // User 삭제 시 UserProfile, CalendarEvent, Scrap, PushSubscription 자동 삭제
+    await prisma.user.delete({
+      where: { id: userId },
+    })
+
+    res.json({
+      success: true,
+      message: '계정이 완전히 삭제되었습니다',
+    })
+  } catch (error: any) {
+    console.error('계정 삭제 실패:', error)
+    res.status(500).json({ error: '계정 삭제에 실패했습니다' })
+  }
+})
+
+export default router
+</file>
+
 <file path="backend/src/routes/calendarEvents.ts">
 import { Router, Request, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
@@ -12117,257 +12373,244 @@ router.delete('/by-title/:title', verifyAuth, async (req: Request, res: Response
   }
 })
 
-export default router
-</file>
-
-<file path="backend/src/routes/auth.ts">
-import { Router } from 'express'
-import { PrismaClient } from '@prisma/client'
-import jwt from 'jsonwebtoken'
-import { z } from 'zod'
-import bcrypt from 'bcrypt'
-import { verifyAuth, AuthRequest } from '../middleware/auth.js'
-
-const router = Router()
-const prisma = new PrismaClient()
-
-const SignupSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-})
-
-const LoginSchema = z.object({
-  email: z.string().email(),
-  password: z.string(),
-})
-
-const ChangePasswordSchema = z.object({
-  currentPassword: z.string().min(1, '현재 비밀번호를 입력해주세요'),
-  newPassword: z.string().min(6, '새 비밀번호는 6자 이상이어야 합니다'),
-  confirmPassword: z.string().min(6, '비밀번호 확인은 6자 이상이어야 합니다'),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: '새 비밀번호와 확인이 일치하지 않습니다',
-  path: ['confirmPassword'],
-})
-
-const generateTokens = (userId: string) => {
-  const accessToken = jwt.sign(
-    { sub: userId, type: 'access' },
-    process.env.JWT_SECRET || 'dev-secret',
-    { expiresIn: '15m' }
-  )
-
-  const refreshToken = jwt.sign(
-    { sub: userId, type: 'refresh' },
-    process.env.JWT_SECRET || 'dev-secret',
-    { expiresIn: '7d' }
-  )
-
-  return { accessToken, refreshToken }
-}
-
-// POST /api/auth/signup - 회원가입 (프로토타입: 실제 Supabase Auth 연동 필요)
-router.post('/signup', async (req, res) => {
+// GET: ICS 내보내기
+router.get('/export.ics', verifyAuth, async (req: Request, res: Response) => {
   try {
-    const data = SignupSchema.parse(req.body)
-
-    // 프로토타입: 실제로는 Supabase Auth에서 처리
-    // const { data: authData, error: authError } = await supabase.auth.signUp({
-    //   email: data.email,
-    //   password: data.password,
-    // })
-
-    const existingUser = await prisma.user.findUnique({
-      where: { email: data.email },
+    const userId = (req as any).userId
+    const events = await prisma.calendarEvent.findMany({
+      where: { userId },
+      orderBy: { dtstart: 'asc' },
     })
 
-    if (existingUser) {
-      return res.status(409).json({ error: '이미 가입된 이메일입니다' })
-    }
+    // ICS 포맷 생성 (Google Calendar 호환)
+    let ics = `BEGIN:VCALENDAR\r
+VERSION:2.0\r
+PRODID:-//UniBoard//UniBoard Calendar//EN\r
+CALSCALE:GREGORIAN\r
+METHOD:PUBLISH\r
+X-WR-CALNAME:UniBoard 일정\r
+X-WR-TIMEZONE:Asia/Seoul\r
+BEGIN:VTIMEZONE\r
+TZID:Asia/Seoul\r
+BEGIN:STANDARD\r
+DTSTART:19700101T000000\r
+TZOFFSETFROM:+0900\r
+TZOFFSETTO:+0900\r
+TZNAME:KST\r
+END:STANDARD\r
+END:VTIMEZONE\r
+`
 
-    // 프로토타입: UUID를 임시로 생성 (실제로는 Supabase UID 사용)
-    const userId = `temp-user-${Date.now()}`
+    events.forEach(event => {
+      const uid = `${event.id}@uniboard.local`
+      const now = new Date()
+      const dtstamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '') + 'Z'
 
-    // 비밀번호 해싱
-    const hashedPassword = await bcrypt.hash(data.password, 10)
+      // 날짜 포맷 (YYYYMMDD)
+      const dtstart = event.dtstart.toISOString().split('T')[0].replace(/-/g, '')
+      // All-day 이벤트는 종료일을 다음날로 설정해야 함
+      const dtend = new Date(event.dtend.getTime() + 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0]
+        .replace(/-/g, '')
 
-    const user = await prisma.user.create({
-      data: {
-        id: userId,
-        email: data.email,
-        password: hashedPassword,
-      },
+      const summary = event.title
+        .replace(/\\/g, '\\\\')
+        .replace(/,/g, '\\,')
+        .replace(/;/g, '\\;')
+        .replace(/\n/g, '\\n')
+
+      const description = event.memo
+        ? event.memo
+            .replace(/\\/g, '\\\\')
+            .replace(/,/g, '\\,')
+            .replace(/;/g, '\\;')
+            .replace(/\n/g, '\\n')
+        : ''
+
+      ics += `BEGIN:VEVENT\r
+UID:${uid}\r
+DTSTAMP:${dtstamp}\r
+DTSTART;VALUE=DATE:${dtstart}\r
+DTEND;VALUE=DATE:${dtend}\r
+SUMMARY:${summary}\r
+${description ? `DESCRIPTION:${description}\r` : ''}TRANSP:TRANSPARENT\r
+STATUS:CONFIRMED\r
+SEQUENCE:0\r
+END:VEVENT\r
+`
     })
 
-    const tokens = generateTokens(user.id)
+    ics += `END:VCALENDAR\r\n`
 
-    res.status(201).json({
-      success: true,
-      data: {
-        userId: user.id,
-        email: user.email,
-        ...tokens,
-      },
-    })
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
-      return res.status(400).json({ error: '유효하지 않은 요청입니다', details: error.errors })
-    }
-    console.error('회원가입 실패:', error)
-    res.status(500).json({ error: '회원가입에 실패했습니다' })
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8')
+    res.setHeader('Content-Disposition', 'attachment; filename="uniboard-calendar.ics"')
+    res.send(ics)
+  } catch (error) {
+    console.error('ICS 내보내기 실패:', error)
+    res.status(500).json({ error: 'ICS 내보내기 실패' })
   }
 })
 
-// POST /api/auth/login - 로그인
-router.post('/login', async (req, res) => {
+// POST: ICS 가져오기
+router.post('/import.ics', verifyAuth, async (req: Request, res: Response) => {
   try {
-    const data = LoginSchema.parse(req.body)
+    const userId = (req as any).userId
+    const { icsContent } = req.body
 
-    // 프로토타입: 실제로는 Supabase Auth 검증
-    // const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-    //   email: data.email,
-    //   password: data.password,
-    // })
-
-    const user = await prisma.user.findUnique({
-      where: { email: data.email },
-    })
-
-    if (!user) {
-      return res.status(401).json({ error: '이메일 또는 비밀번호가 잘못되었습니다' })
+    if (!icsContent) {
+      return res.status(400).json({ error: 'ICS 내용이 필요합니다' })
     }
 
-    // 비밀번호 검증 (저장된 비밀번호가 있는 경우)
-    if (user.password) {
-      const isPasswordValid = await bcrypt.compare(data.password, user.password)
-      if (!isPasswordValid) {
-        return res.status(401).json({ error: '이메일 또는 비밀번호가 잘못되었습니다' })
+    // ICS 파싱
+    const eventRegex = /BEGIN:VEVENT([\s\S]*?)END:VEVENT/g
+    const events = []
+    let match
+
+    while ((match = eventRegex.exec(icsContent)) !== null) {
+      const eventBlock = match[1]
+
+      // 필드 추출 (줄바꿈 처리)
+      const summaryMatch = eventBlock.match(/SUMMARY:(.+?)(?:\r?\n|$)/)
+      const dtStartMatch = eventBlock.match(/DTSTART(?:;VALUE=DATE)?(?:;[^:]*)?:(\d{8}T?\d{0,6}Z?|[\dT\-Z:]+)/)
+      const dtEndMatch = eventBlock.match(/DTEND(?:;VALUE=DATE)?(?:;[^:]*)?:(\d{8}T?\d{0,6}Z?|[\dT\-Z:]+)/)
+      const descMatch = eventBlock.match(/DESCRIPTION:(.+?)(?:\r?\n|$)/)
+      const categoriesMatch = eventBlock.match(/CATEGORIES:(.+?)(?:\r?\n|$)/)
+
+      if (dtStartMatch) {
+        // 제목 언이스케이프 (SUMMARY가 없으면 기본값)
+        const title = summaryMatch
+          ? summaryMatch[1]
+              .trim()
+              .replace(/\\n/g, '\n')
+              .replace(/\\;/g, ';')
+              .replace(/\\,/g, ',')
+              .replace(/\\\\/g, '\\')
+          : '(제목 없음)'
+
+        const typeStr = categoriesMatch?.[1]?.trim()?.toUpperCase()
+        const type = ['EXAM', 'PART_TIME', 'POSTING', 'OTHER'].includes(typeStr)
+          ? typeStr
+          : 'OTHER'
+
+        // 날짜 파싱
+        const dtStartStr = dtStartMatch[1].trim()
+        let dtstart: Date
+
+        if (dtStartStr.length === 8) {
+          // VALUE=DATE 형식 (YYYYMMDD)
+          const year = parseInt(dtStartStr.substring(0, 4))
+          const month = parseInt(dtStartStr.substring(4, 6)) - 1
+          const day = parseInt(dtStartStr.substring(6, 8))
+          dtstart = new Date(year, month, day)
+        } else if (dtStartStr.match(/^\d{8}T\d{6}Z?$/)) {
+          // Google DateTime 형식 (YYYYMMDDTHHMMSSZ)
+          const year = parseInt(dtStartStr.substring(0, 4))
+          const month = parseInt(dtStartStr.substring(4, 6)) - 1
+          const day = parseInt(dtStartStr.substring(6, 8))
+          const hour = parseInt(dtStartStr.substring(9, 11))
+          const minute = parseInt(dtStartStr.substring(11, 13))
+          const second = parseInt(dtStartStr.substring(13, 15))
+
+          if (dtStartStr.endsWith('Z')) {
+            // UTC 시간을 로컬 시간으로 변환
+            dtstart = new Date(Date.UTC(year, month, day, hour, minute, second))
+          } else {
+            dtstart = new Date(year, month, day, hour, minute, second)
+          }
+        } else if (dtStartStr.includes('T')) {
+          // DateTime 형식 (ISO)
+          dtstart = new Date(dtStartStr.replace('Z', '+00:00'))
+        } else {
+          // ISO 형식
+          dtstart = new Date(dtStartStr)
+        }
+
+        // 종료일 파싱
+        let dtend = new Date(dtstart)
+        if (dtEndMatch) {
+          const dtEndStr = dtEndMatch[1].trim()
+          if (dtEndStr.length === 8) {
+            const year = parseInt(dtEndStr.substring(0, 4))
+            const month = parseInt(dtEndStr.substring(4, 6)) - 1
+            const day = parseInt(dtEndStr.substring(6, 8))
+            // All-day 이벤트의 경우 DTEND는 이미 다음날이므로 하루를 뺌
+            dtend = new Date(year, month, day - 1)
+          } else if (dtEndStr.match(/^\d{8}T\d{6}Z?$/)) {
+            // Google DateTime 형식
+            const year = parseInt(dtEndStr.substring(0, 4))
+            const month = parseInt(dtEndStr.substring(4, 6)) - 1
+            const day = parseInt(dtEndStr.substring(6, 8))
+            const hour = parseInt(dtEndStr.substring(9, 11))
+            const minute = parseInt(dtEndStr.substring(11, 13))
+            const second = parseInt(dtEndStr.substring(13, 15))
+
+            if (dtEndStr.endsWith('Z')) {
+              dtend = new Date(Date.UTC(year, month, day, hour, minute, second))
+            } else {
+              dtend = new Date(year, month, day, hour, minute, second)
+            }
+          } else if (dtEndStr.includes('T')) {
+            dtend = new Date(dtEndStr.replace('Z', '+00:00'))
+          } else {
+            dtend = new Date(dtEndStr)
+          }
+        }
+
+        // 설명 언이스케이프
+        const memo = descMatch?.[1]
+          ?.trim()
+          .replace(/\\n/g, '\n')
+          .replace(/\\;/g, ';')
+          .replace(/\\,/g, ',')
+          .replace(/\\\\/g, '\\') || ''
+
+        events.push({
+          title,
+          type,
+          dtstart,
+          dtend,
+          memo,
+          isAllDay: false, // Google Calendar 이벤트는 시간을 가짐
+          source: 'manual' as const,
+        })
+
+        console.log('📝 ICS 이벤트 파싱:', { title, type, dtstart, dtend })
       }
     }
 
-    const tokens = generateTokens(user.id)
+    console.log(`📥 총 ${events.length}개 이벤트 파싱 완료`)
+
+    if (events.length === 0) {
+      return res.status(400).json({
+        error: 'ICS 파일에서 이벤트를 찾을 수 없습니다',
+        details: 'VEVENT 블록이 없거나 필수 필드(SUMMARY, DTSTART)가 없습니다',
+      })
+    }
+
+    // 일정 저장
+    const created = await prisma.calendarEvent.createMany({
+      data: events.map(evt => ({
+        ...evt,
+        userId,
+        hideFromRecommendation: false,
+      })),
+      skipDuplicates: true,
+    })
+
+    console.log(`✅ ${created.count}개 일정 저장 완료`)
 
     res.json({
       success: true,
-      data: {
-        userId: user.id,
-        email: user.email,
-        ...tokens,
-      },
-    })
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
-      return res.status(400).json({ error: '유효하지 않은 요청입니다', details: error.errors })
-    }
-    console.error('로그인 실패:', error)
-    res.status(500).json({ error: '로그인에 실패했습니다' })
-  }
-})
-
-// GET /api/auth/profile-status - 프로필 등록 여부 확인
-router.get('/profile-status', async (req, res) => {
-  try {
-    const authHeader = req.headers.authorization
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.json({ hasProfile: false, requiresAuth: true })
-    }
-
-    const token = authHeader.substring(7)
-    const decoded = jwt.decode(token) as Record<string, any>
-
-    if (!decoded?.sub) {
-      return res.json({ hasProfile: false, requiresAuth: true })
-    }
-
-    const profile = await prisma.userProfile.findUnique({
-      where: { userId: decoded.sub },
-    })
-
-    res.json({
-      hasProfile: !!profile,
-      profileId: profile?.id,
+      message: `${created.count}개 일정을 가져왔습니다`,
+      count: created.count,
     })
   } catch (error) {
-    console.error('프로필 상태 확인 실패:', error)
-    res.json({ hasProfile: false })
-  }
-})
-
-// PATCH /api/auth/password - 비밀번호 변경
-router.patch('/password', verifyAuth, async (req: AuthRequest, res) => {
-  try {
-    const userId = req.userId!
-    const data = ChangePasswordSchema.parse(req.body)
-
-    // 현재 사용자 조회
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
+    console.error('❌ ICS 가져오기 실패:', error instanceof Error ? error.message : error)
+    res.status(400).json({
+      error: 'ICS 가져오기 실패',
+      details: error instanceof Error ? error.message : 'Unknown error',
     })
-
-    if (!user) {
-      return res.status(404).json({ error: '사용자를 찾을 수 없습니다' })
-    }
-
-    // 비밀번호가 설정되지 않은 경우 (예: OAuth만 사용)
-    if (!user.password) {
-      return res.status(400).json({ error: '비밀번호 기반 인증을 사용하지 않습니다' })
-    }
-
-    // 현재 비밀번호 검증
-    const isPasswordValid = await bcrypt.compare(data.currentPassword, user.password)
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: '현재 비밀번호가 일치하지 않습니다' })
-    }
-
-    // 새 비밀번호 해싱
-    const hashedPassword = await bcrypt.hash(data.newPassword, 10)
-
-    // 비밀번호 업데이트
-    await prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedPassword },
-    })
-
-    res.json({
-      success: true,
-      message: '비밀번호가 성공적으로 변경되었습니다',
-    })
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
-      return res.status(400).json({ error: '유효하지 않은 데이터입니다', details: error.errors })
-    }
-    console.error('비밀번호 변경 실패:', error)
-    res.status(500).json({ error: '비밀번호 변경에 실패했습니다' })
-  }
-})
-
-// DELETE /api/auth/account - 계정 삭제
-router.delete('/account', verifyAuth, async (req: AuthRequest, res) => {
-  try {
-    const userId = req.userId!
-
-    // 현재 사용자 조회
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    })
-
-    if (!user) {
-      return res.status(404).json({ error: '사용자를 찾을 수 없습니다' })
-    }
-
-    // 사용자와 관련된 모든 데이터 삭제 (cascade delete)
-    // User 삭제 시 UserProfile, CalendarEvent, Scrap, PushSubscription 자동 삭제
-    await prisma.user.delete({
-      where: { id: userId },
-    })
-
-    res.json({
-      success: true,
-      message: '계정이 완전히 삭제되었습니다',
-    })
-  } catch (error: any) {
-    console.error('계정 삭제 실패:', error)
-    res.status(500).json({ error: '계정 삭제에 실패했습니다' })
   }
 })
 
@@ -13835,7 +14078,7 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
         isPast
       })
 
-      // 1. 로컬 DB에 저장
+      // 1. 로컬 DB에 저장 (링크 포함)
       await calendarEventsApi.create({
         title: `[마감] ${posting.title}`,
         type: 'POSTING',
@@ -13843,6 +14086,7 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
         dtend: endDate.toISOString(),
         relatedPostingId: posting.id,
         isAllDay: true,
+        memo: posting.sourceUrl ? `링크: ${posting.sourceUrl}` : '',
       })
 
       // 2. Google Calendar에 동기화 (오늘 이후인 경우만)
@@ -15499,6 +15743,7 @@ export const calendarEventsApi = {
     dtstart: string
     dtend: string
     relatedPostingId?: string
+    memo?: string
   }) => {
     return apiCall<ApiResponse<CalendarEventData>>('/calendar-events', {
       method: 'POST',
@@ -15521,6 +15766,35 @@ export const calendarEventsApi = {
   delete: async (id: string) => {
     return apiCall<ApiResponse<{ id: string }>>(`/calendar-events/${id}`, {
       method: 'DELETE',
+    })
+  },
+
+  exportIcs: async () => {
+    const url = `${API_BASE}/calendar-events/export.ics`
+    const accessToken = tokenManager.getAccessToken()
+
+    const headers: Record<string, string> = {}
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`
+    }
+
+    const response = await fetch(url, { headers })
+    if (!response.ok) {
+      throw new Error('ICS 내보내기 실패')
+    }
+
+    const blob = await response.blob()
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `uniboard-calendar-${new Date().toISOString().split('T')[0]}.ics`
+    link.click()
+    URL.revokeObjectURL(link.href)
+  },
+
+  importIcs: async (icsContent: string) => {
+    return apiCall<ApiResponse<{ message: string; count: number }>>('/calendar-events/import.ics', {
+      method: 'POST',
+      body: JSON.stringify({ icsContent }),
     })
   },
 }
@@ -16092,6 +16366,42 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
     }
   }
 
+  const handleResetDate = async () => {
+    if (!selectedRange.start) {
+      alert('날짜를 선택해주세요')
+      return
+    }
+
+    const date = selectedRange.start as Date
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    if (!confirm(`${dateStr}의 모든 일정을 삭제하시겠습니까?`)) return
+
+    try {
+      // 해당 날짜의 모든 일정 찾기
+      const eventsToDelete = events.filter(evt => {
+        const eventDate = evt.start.split('T')[0]
+        return eventDate === dateStr
+      })
+
+      if (eventsToDelete.length === 0) {
+        alert('삭제할 일정이 없습니다')
+        return
+      }
+
+      // 일정 삭제
+      for (const evt of eventsToDelete) {
+        await calendarEventsApi.delete(evt.id)
+      }
+
+      alert(`${eventsToDelete.length}개 일정이 삭제되었습니다`)
+      setSelectedRange({})
+      loadEvents()
+    } catch (error) {
+      console.error('일정 삭제 실패:', error)
+      alert('일정 삭제에 실패했습니다')
+    }
+  }
+
   return (
     <div style={{ display: 'flex', height: '100vh', backgroundColor: '#f8f9fa' }}>
       {/* 좌측 사이드바 */}
@@ -16205,19 +16515,19 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
 
             {selectedRange.start && (
               <button
-                onClick={() => setSelectedRange({})}
+                onClick={handleResetDate}
                 style={{
                   padding: '8px 16px',
-                  backgroundColor: '#f3f4f6',
-                  color: '#111',
-                  border: '1px solid #e5e7eb',
+                  backgroundColor: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
                   borderRadius: '6px',
                   fontSize: '13px',
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'background-color 150ms',
                 }}>
-                ❌ 초기화
+                🗑️ 초기화
               </button>
             )}
 
@@ -16401,7 +16711,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [profile, setProfile] = useState<any>(null)
   const [calendarEvents, setCalendarEvents] = useState<any[]>([])
-  const [eventsMap, setEventsMap] = useState<Map<number, any[]>>(new Map())
+  const [eventsMap, setEventsMap] = useState<Map<string, any[]>>(new Map())
   const [selectedDayEvents, setSelectedDayEvents] = useState<any[] | null>(null)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [useSmartMatching, setUseSmartMatching] = useState(false)
@@ -16500,7 +16810,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
         setCalendarEvents(response.data)
 
         // 날짜별 일정 매핑 (여러 날 일정도 모두 표시)
-        const eventsByDay = new Map<number, any[]>()
+        const eventsByDay = new Map<string, any[]>()
         response.data.forEach((evt: any) => {
           const startDate = new Date(evt.dtstart)
           const endDate = new Date(evt.dtend)
@@ -16508,12 +16818,16 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
           // 시작일부터 종료일까지 모든 날에 이벤트 추가
           const currentDate = new Date(startDate)
           while (currentDate <= endDate) {
-            const day = currentDate.getDate()
+            // YYYY-MM-DD 형식의 키 생성 (월별 중복 방지)
+            const year = currentDate.getFullYear()
+            const month = String(currentDate.getMonth() + 1).padStart(2, '0')
+            const day = String(currentDate.getDate()).padStart(2, '0')
+            const dateKey = `${year}-${month}-${day}`
 
-            if (!eventsByDay.has(day)) {
-              eventsByDay.set(day, [])
+            if (!eventsByDay.has(dateKey)) {
+              eventsByDay.set(dateKey, [])
             }
-            eventsByDay.get(day)!.push(evt)
+            eventsByDay.get(dateKey)!.push(evt)
 
             currentDate.setDate(currentDate.getDate() + 1)
           }
@@ -16548,7 +16862,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
         isPast
       })
 
-      // 1. 로컬 DB에 저장
+      // 1. 로컬 DB에 저장 (링크 포함)
       await calendarEventsApi.create({
         title: `[마감] ${posting.title}`,
         type: 'POSTING',
@@ -16556,6 +16870,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
         dtend: endDate.toISOString(),
         relatedPostingId: posting.id,
         isAllDay: true,
+        memo: posting.sourceUrl ? `링크: ${posting.sourceUrl}` : '',
       })
 
       // 2. Google Calendar에 동기화 (오늘 이후인 경우만)
@@ -16968,8 +17283,11 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px' }}>
                 {calendarDays.map((day, i) => {
                   const isToday = day === today.getDate() && currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() === today.getMonth()
-                  const hasEvents = day && eventsMap.has(day)
-                  const dayEvents = hasEvents ? eventsMap.get(day) : []
+
+                  // YYYY-MM-DD 키 생성
+                  const dateKey = day ? `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : ''
+                  const hasEvents = day && eventsMap.has(dateKey)
+                  const dayEvents = hasEvents ? eventsMap.get(dateKey) : []
 
                   const EVENT_COLORS: { [key: string]: string } = {
                     EXAM: '#d97706',      // 더 진한 노랑 (주황)
@@ -17045,6 +17363,83 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
                   )
                 })}
               </div>
+            </div>
+
+            {/* ICS 내보내기/가져오기 */}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={async () => {
+                  try {
+                    await calendarEventsApi.exportIcs()
+                    alert('✅ ICS 파일이 다운로드되었습니다')
+                  } catch (error) {
+                    console.error('ICS 내보내기 실패:', error)
+                    alert('❌ ICS 내보내기 실패')
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  backgroundColor: '#f3f4f6',
+                  color: '#1f2937',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e5e7eb'
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f3f4f6'
+                }}
+              >
+                내보내기
+              </button>
+              <button
+                onClick={() => {
+                  const input = document.createElement('input')
+                  input.type = 'file'
+                  input.accept = '.ics'
+                  input.onchange = async (e: any) => {
+                    const file = e.target.files[0]
+                    if (!file) return
+
+                    try {
+                      const content = await file.text()
+                      const result = await calendarEventsApi.importIcs(content)
+                      alert(`✅ ${result.count || 0}개 일정을 가져왔습니다`)
+                      await loadCalendarEvents()
+                    } catch (error) {
+                      console.error('ICS 가져오기 실패:', error)
+                      alert('❌ ICS 가져오기 실패')
+                    }
+                  }
+                  input.click()
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  backgroundColor: '#f3f4f6',
+                  color: '#1f2937',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e5e7eb'
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f3f4f6'
+                }}
+              >
+                가져오기
+              </button>
             </div>
 
             {/* Google Calendar 연동 */}
