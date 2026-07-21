@@ -5,6 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
+    "check:nvidia": "node scripts/check-nvidia.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
