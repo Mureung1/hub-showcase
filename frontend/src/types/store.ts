@@ -14,4 +14,6 @@ export type Store = {
   placeUrl: string
   rating: number | null
   reviewCount: number
+  recommendationScore?: number
+  recommendationDataCount?: number
 }

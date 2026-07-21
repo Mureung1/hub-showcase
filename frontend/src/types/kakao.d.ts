@@ -55,6 +55,11 @@ type KakaoPlaces = {
     callback: KakaoPlacesCallback,
     options?: KakaoPlacesOptions,
   ): void
+  categorySearch(
+    categoryCode: 'FD6' | 'CE7',
+    callback: KakaoPlacesCallback,
+    options?: KakaoPlacesOptions,
+  ): void
 }
 
 type KakaoMapOptions = {

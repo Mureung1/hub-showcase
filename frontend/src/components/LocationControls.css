@@ -1,0 +1,11 @@
+.location-controls { display: flex; align-items: end; gap: 9px; margin-bottom: 12px; }
+.location-controls__search { display: flex; flex: 1 1 300px; align-items: end; gap: 8px; }
+.location-controls label { display: grid; gap: 5px; color: #6e675e; font-size: 11px; font-weight: 700; }
+.location-controls__search label { flex: 1 1 auto; }
+.location-controls input, .location-controls select { height: 40px; padding: 0 12px; border: 1px solid #ddd6ca; border-radius: 10px; outline: none; background: #fff; color: #302c27; font: inherit; box-sizing: border-box; }
+.location-controls input { width: 100%; }
+.location-controls button { height: 40px; padding: 0 13px; border: 1px solid #d8d1c4; border-radius: 10px; background: #fffdfa; color: #3c3832; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; white-space: nowrap; }
+.location-controls button:hover { border-color: #cbb94e; background: #fff8d8; }
+.location-controls__nearby { border-color: #e3c329 !important; background: #ffd84d !important; color: #28251f !important; }
+.location-controls p { margin: 0; color: #a4423a; font-size: 11px; }
+@media (max-width: 760px) { .location-controls { flex-wrap: wrap; } .location-controls__search { flex-basis: 100%; } }

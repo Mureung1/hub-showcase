@@ -98,6 +98,12 @@ function StoreList({
                     ? `★ ${store.rating.toFixed(1)} · 리뷰 ${store.reviewCount}개`
                     : '아직 리뷰가 없어요'}
                 </span>
+                {store.recommendationScore !== undefined && (
+                  <span className="store-card__recommendation">
+                    상황 적합도 {store.recommendationScore}점
+                    {store.recommendationDataCount === 0 && ' · 평가 데이터 부족'}
+                  </span>
+                )}
                 <span className="store-card__address">
                   {store.roadAddress || store.address}
                 </span>

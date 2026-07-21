@@ -1,58 +1,78 @@
 import { useState, type FormEvent } from 'react'
 import {
-  REVIEW_CATEGORIES,
-  REVIEW_CATEGORY_LABELS,
-  type ReviewCategory,
+  DETAIL_RATING_CATEGORIES,
+  DETAIL_RATING_LABELS,
+  type DetailRatingCategory,
 } from '../types/review'
 import type { CreateReviewInput } from '../features/reviews/reviewRepository'
 import './ReviewForm.css'
 
 type ReviewFormProps = {
   kakaoPlaceId: string
-  authorId?: string
-  authorName?: string
-  onSubmit: (review: CreateReviewInput) => void
+  onSubmit: (review: CreateReviewInput) => Promise<void>
 }
 
-const MIN_CONTENT_LENGTH = 10
 const MAX_CONTENT_LENGTH = 500
 
 function ReviewForm({
   kakaoPlaceId,
-  authorId = 'temporary-user',
-  authorName = '세원',
   onSubmit,
 }: ReviewFormProps) {
   const [rating, setRating] = useState(0)
   const [content, setContent] = useState('')
-  const [likedCategories, setLikedCategories] = useState<ReviewCategory[]>([])
-  const trimmedContentLength = content.trim().length
+  const [activeCategory, setActiveCategory] = useState<DetailRatingCategory | null>(null)
+  const [categoryRatings, setCategoryRatings] = useState<
+    Record<DetailRatingCategory, number | null>
+  >({
+    tasteRating: null,
+    valueRating: null,
+    atmosphereRating: null,
+    quietRating: null,
+  })
+  const [waitingMinutes, setWaitingMinutes] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const parsedWaitingMinutes = waitingMinutes === '' ? null : Number(waitingMinutes)
+  const isWaitingTimeValid =
+    parsedWaitingMinutes === null ||
+    (Number.isInteger(parsedWaitingMinutes) &&
+      parsedWaitingMinutes >= 0 &&
+      parsedWaitingMinutes <= 300)
   const canSubmit =
     rating >= 1 &&
     rating <= 5 &&
-    trimmedContentLength >= MIN_CONTENT_LENGTH &&
-    content.length <= MAX_CONTENT_LENGTH
+    content.length <= MAX_CONTENT_LENGTH &&
+    isWaitingTimeValid
 
-  const toggleCategory = (category: ReviewCategory) => {
-    setLikedCategories((current) =>
-      current.includes(category)
-        ? current.filter((item) => item !== category)
-        : [...current, category],
-    )
+  const toggleCategory = (category: DetailRatingCategory) => {
+    setActiveCategory((current) => (current === category ? null : category))
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!canSubmit) return
+  const setCategoryRating = (category: DetailRatingCategory, value: number) => {
+    setCategoryRatings((current) => ({ ...current, [category]: value }))
+  }
 
-    onSubmit({
-      kakaoPlaceId,
-      authorId,
-      authorName,
-      rating,
-      content: content.trim(),
-      likedCategories,
-    })
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!canSubmit || isSubmitting) return
+
+    setIsSubmitting(true)
+    setSubmitError('')
+    try {
+      await onSubmit({
+        kakaoPlaceId,
+        rating,
+        content: content.trim(),
+        ...categoryRatings,
+        waitingMinutes: parsedWaitingMinutes,
+      })
+    } catch (reason) {
+      setSubmitError(
+        reason instanceof Error ? reason.message : '리뷰 등록에 실패했습니다.',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -76,10 +96,10 @@ function ReviewForm({
       </fieldset>
 
       <fieldset className="review-form__group">
-        <legend>어떤 점이 좋았나요? <small>선택하지 않아도 돼요</small></legend>
+        <legend>세부 평가 <small>평가할 항목만 선택해 주세요</small></legend>
         <div className="review-form__categories">
-          {REVIEW_CATEGORIES.map((category) => {
-            const isSelected = likedCategories.includes(category)
+          {DETAIL_RATING_CATEGORIES.map((category) => {
+            const isSelected = categoryRatings[category] !== null
             return (
               <button
                 type="button"
@@ -87,28 +107,75 @@ function ReviewForm({
                 aria-pressed={isSelected}
                 onClick={() => toggleCategory(category)}
               >
-                {REVIEW_CATEGORY_LABELS[category]}
+                {DETAIL_RATING_LABELS[category]}
+                {isSelected && ` ${categoryRatings[category]}점`}
               </button>
             )
           })}
         </div>
+
+        {activeCategory && (
+          <div className="review-form__detail-rating" aria-live="polite">
+            <strong>{DETAIL_RATING_LABELS[activeCategory]} 별점</strong>
+            <div className="review-form__ratings" aria-label={`${DETAIL_RATING_LABELS[activeCategory]} 별점 선택`}>
+              {[1, 2, 3, 4, 5].map((value) => (
+                <button
+                  className={value <= (categoryRatings[activeCategory] ?? 0) ? 'review-form__star--active' : ''}
+                  type="button"
+                  key={value}
+                  aria-label={`${value}점`}
+                  aria-pressed={categoryRatings[activeCategory] === value}
+                  onClick={() => setCategoryRating(activeCategory, value)}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </fieldset>
+
+      <label className="review-form__waiting">
+        <span>실제 웨이팅 시간 <small>선택사항</small></span>
+        <span className="review-form__waiting-input">
+          <input
+            type="number"
+            min="0"
+            max="300"
+            step="5"
+            inputMode="numeric"
+            value={waitingMinutes}
+            placeholder="0"
+            aria-describedby="waiting-time-help"
+            onChange={(event) => setWaitingMinutes(event.target.value)}
+          />
+          <strong>분</strong>
+        </span>
+        <small id="waiting-time-help">기다리지 않았다면 0분을 입력해 주세요.</small>
+        {!isWaitingTimeValid && (
+          <small className="review-form__count--error" role="alert">
+            웨이팅 시간은 0~300분 정수로 입력해 주세요.
+          </small>
+        )}
+      </label>
 
       <label className="review-form__content">
         <span>리뷰 내용</span>
         <textarea
           value={content}
           maxLength={MAX_CONTENT_LENGTH}
-          placeholder="가게에 대한 솔직한 경험을 10자 이상 작성해 주세요."
+          placeholder="리뷰 내용은 선택사항입니다."
           onChange={(event) => setContent(event.target.value)}
         />
-        <small className={trimmedContentLength > 0 && trimmedContentLength < MIN_CONTENT_LENGTH ? 'review-form__count--error' : ''}>
+        <small>
           {content.length}/{MAX_CONTENT_LENGTH}
         </small>
       </label>
 
-      <button className="review-form__submit" type="submit" disabled={!canSubmit}>
-        등록
+      {submitError && <p className="review-form__error" role="alert">{submitError}</p>}
+
+      <button className="review-form__submit" type="submit" disabled={!canSubmit || isSubmitting}>
+        {isSubmitting ? '등록 중...' : '등록'}
       </button>
     </form>
   )

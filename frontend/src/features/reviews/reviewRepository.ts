@@ -1,6 +1,16 @@
 import type { Review } from '../../types/review'
 
-export type CreateReviewInput = Omit<Review, 'id' | 'createdAt'>
+export type CreateReviewInput = Pick<
+  Review,
+  | 'kakaoPlaceId'
+  | 'rating'
+  | 'tasteRating'
+  | 'valueRating'
+  | 'atmosphereRating'
+  | 'quietRating'
+  | 'waitingMinutes'
+  | 'content'
+>
 
 export type ReviewSummary = {
   rating: number | null
@@ -11,6 +21,7 @@ export interface ReviewRepository {
   getByStoreId(kakaoPlaceId: string): Review[]
   getSummaries(kakaoPlaceIds: readonly string[]): Map<string, ReviewSummary>
   create(input: CreateReviewInput): Review
+  save(review: Review): Review
   subscribe(listener: () => void): () => void
 }
 
@@ -70,11 +81,20 @@ export const localReviewRepository: ReviewRepository = {
   create(input) {
     const review: Review = {
       ...input,
+      authorId: '',
+      authorName: '사용자',
+      likedCategories: [],
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
     }
 
     writeReviews([review, ...readReviews()])
+    window.dispatchEvent(new Event(REVIEWS_CHANGED_EVENT))
+    return review
+  },
+
+  save(review) {
+    writeReviews([review, ...readReviews().filter((item) => item.id !== review.id)])
     window.dispatchEvent(new Event(REVIEWS_CHANGED_EVENT))
     return review
   },

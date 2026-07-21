@@ -5,7 +5,7 @@ type SearchBarProps = {
   initialValue?: string
   placeholder?: string
   onSearch?: (keyword: string) => void
-  onPriorityClick?: () => void
+  onSituationClick?: () => void
 }
 
 function SearchIcon() {
@@ -21,7 +21,7 @@ function SearchBar({
   initialValue = '',
   placeholder = '가게를 검색해 보세요',
   onSearch,
-  onPriorityClick,
+  onSituationClick,
 }: SearchBarProps) {
   const [keyword, setKeyword] = useState(initialValue)
 
@@ -50,8 +50,8 @@ function SearchBar({
         />
       </label>
 
-      <button className="search-bar__priority" type="button" onClick={onPriorityClick}>
-        우선순위
+      <button className="search-bar__situation" type="button" onClick={onSituationClick}>
+        상황추천
       </button>
     </form>
   )
