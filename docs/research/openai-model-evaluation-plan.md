@@ -272,8 +272,8 @@ temperature 처리 수정 이후의 재테스트는 아래 순서로 진행한�
 
 ### Task 2. PtoP 출력 계약 검증기 추가
 
-- [ ] `candidates` 배열 존재 여부를 확인한다.
-- [ ] 후보별 필수 필드를 확인한다.
+- [x] `candidates` 배열 존재 여부를 확인한다.
+- [x] 후보별 필수 필드를 확인한다.
   - `title`
   - `summary`
   - `background`
@@ -284,10 +284,10 @@ temperature 처리 수정 이후의 재테스트는 아래 순서로 진행한�
   - `confidence`
   - `requiresUserConfirmation`
   - `evidence`
-- [ ] evidence별 `evidenceType`, `referenceId`, `title`, `url`, `filePath` 구조를 확인한다.
-- [ ] 계약을 통과한 후보 수와 실패 이유를 결과 JSON에 기록한다.
+- [x] evidence별 `evidenceType`, `referenceId`, `title`, `url`, `filePath` 구조를 확인한다.
+- [x] 계약을 통과한 후보 수와 실패 이유를 결과 JSON에 기록한다.
 
-완료 기준: HTTP 200이더라도 PtoP 계약을 만족하지 못한 결과는 성공 후보로 집계하지 않고, 누락 필드를 결과에 표시한다.
+완료 기준: HTTP 200이더라도 PtoP 계약을 만족하지 못한 결과는 성공 후보로 집계하지 않고, 누락 필드를 `contractValidation.issues`에 표시한다.
 
 ### Task 3. 실제 Repository fixture 생성
 
@@ -303,7 +303,7 @@ temperature 처리 수정 이후의 재테스트는 아래 순서로 진행한�
 - [ ] 수정된 평가 스크립트 자체 테스트를 실행한다.
 - [ ] 5개 모델을 Repository별 2회 실행한다.
 - [ ] 모델, snapshot, latency, usage, provider status를 저장한다.
-- [ ] 원본 응답과 계약 검증 결과를 함께 저장한다.
+- [x] 원본 응답과 계약 검증 결과를 함께 저장하도록 평가 도구를 수정한다.
 - [ ] 결과 파일이 Git에 추가되지 않는지 확인한다.
 
 완료 기준: `6 Repository × 5 모델 × 2회 = 60회` 실행 결과가 누락 없이 저장되고, 실패 원인이 파라미터 오류와 응답 계약 오류로 구분된다.
