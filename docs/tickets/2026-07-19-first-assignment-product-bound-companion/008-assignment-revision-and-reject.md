@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -33,19 +33,29 @@
 
 ## Acceptance Criteria
 
-- [ ] Revision feedback이 same Turn으로 전달되고 fresh request key의 replacement proposal을 기다린다.
-- [ ] Valid replacement가 old patch를 supersede하고 new pending patch 하나를 active Review에 표시한다.
-- [ ] Replacement 전 terminal·loss·validation failure가 old patch를 interrupted로 끝내고 no confirmation·no apply를 증명한다.
-- [ ] Reject가 settled no-apply confirmation으로 남고 reload 뒤 confirmed model과 revision이 unchanged다.
-- [ ] 같은 decision의 retry, conflicting·late response, wrong binding과 stale base가 second confirmation/apply를 만들지 않는다.
-- [ ] Browser Review의 accept·revise·reject가 모두 working control이며 direct field editor나 별도 approval center가 없다.
-- [ ] Revise→replacement→accept와 reject→reload Chromium traces가 real Vite/Express와 deterministic Runtime/product store를 통과한다.
+- [x] Revision feedback이 same Turn으로 전달되고 fresh request key의 replacement proposal을 기다린다.
+- [x] Valid replacement가 old patch를 supersede하고 new pending patch 하나를 active Review에 표시한다.
+- [x] Replacement 전 terminal·loss·validation failure가 old patch를 interrupted로 끝내고 no confirmation·no apply를 증명한다.
+- [x] Reject가 settled no-apply confirmation으로 남고 reload 뒤 confirmed model과 revision이 unchanged다.
+- [x] 같은 decision의 retry, conflicting·late response, wrong binding과 stale base가 second confirmation/apply를 만들지 않는다.
+- [x] Browser Review의 accept·revise·reject가 모두 working control이며 direct field editor나 별도 approval center가 없다.
+- [x] Revise→replacement→accept와 reject→reload Chromium traces가 real Vite/Express와 deterministic Runtime/product store를 통과한다.
 
 ## Verification
 
-- Targeted test or command: focused StatePatch/Review coordinator and product action tests, `npm run test -w @ay-ple/chat-shell`, revise/reject Playwright traces
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run test:e2e -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
-- Manual or live smoke: desktop Browser에서 revise→replacement→accept와 reject→reload를 확인한다.
+- Targeted test or command:
+  - `npm run test -w @ay-ple/product-contract`: 8/8 passed
+  - `NODE_OPTIONS=--conditions=development npx tsx --test apps/server/src/state-patch-review.test.ts apps/server/src/assignment-action.test.ts`: 20/20 passed
+  - `npm run test -w @ay-ple/chat-shell`: 44/44 passed
+- Repository checks:
+  - `npm test`: passed, Server 122/122와 Chat Shell 44/44 포함
+  - `npm run typecheck`: passed
+  - `npm run build`: passed
+  - `npm run lint -w @ay-ple/chat-shell`: passed
+  - `npm run test:e2e -w @ay-ple/chat-shell`: Chromium desktop 15/15 passed
+  - `npm run check:docs-links`: active 28개와 historical banner 2개 모두 green
+  - `git diff --check`: passed
+- Manual or live smoke: 1440×900 Chromium trace에서 revise→replacement→accept와 reject→reload를 각각 실행하고, three-way Review control·replacement 전환·reject 뒤 unchanged confirmed model을 확인했다.
 
 ## Blocked By
 
@@ -62,3 +72,10 @@
 - `apps/chat-shell/src/product-api.ts`
 - `packages/product-contract/` — 006a에서 생성한 shared Browser-safe contract owner
 - 007 product transcript/reducer and Playwright nominal trace
+
+## Result
+
+- Shared product contract에 exact `accept | revise | reject` request/response와 bounded UTF-8 feedback, `review.replaced`/`review.resolved` frame을 추가했다.
+- Server는 fresh private request key로 same-Turn revision을 전달하고, valid replacement의 old `pending → superseded`와 new `pending` 생성을 한 product transaction으로 처리한다. 실패 시 old patch를 `interrupted`로 닫고, reject는 confirmed `SemesterModel`을 바꾸지 않는 durable no-apply 결정으로 남긴다.
+- Browser Review는 working accept·revise·reject control과 decision-specific pending 표시를 제공하며, exact replacement relation만 active Review로 전환한다.
+- 구현 커밋: `d9f47db8`, `f37b2bf3`, `fef80a9d`
