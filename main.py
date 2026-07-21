@@ -21,7 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from langchain_google_genai import ChatGoogleGenerativeAI
-from database import init_db, get_db, Competitor, Review
+from database import init_db, get_db, Competitor, Review, MyStore
 from collector import fetch_reviews
 
 # ── 목(Mock) 모드 설정 ────────────────────────────────────────
@@ -217,6 +217,31 @@ def report(competitor_id: int, db: Session = Depends(get_db)):
         **build_stats(db_reviews),
     }
 
+# ── 내 가게 저장/조회 (오늘 추가한 DB 연동 기능) ──────────────
+class MyStoreRequest(BaseModel):
+    name: str
+
+
+def my_store_to_dict(s: MyStore):
+    return {"id": s.id, "name": s.name, "category": s.category, "address": s.address}
+
+
+@app.post("/api/my-store")
+def create_my_store(req: MyStoreRequest, db: Session = Depends(get_db)):
+    name = req.name.strip()
+    if not name:
+        return {"error": "가게 이름을 입력하세요."}
+    store = MyStore(name=name)
+    db.add(store)
+    db.commit()
+    db.refresh(store)
+    return my_store_to_dict(store)
+
+
+@app.get("/api/my-stores")
+def list_my_stores(db: Session = Depends(get_db)):
+    stores = db.query(MyStore).order_by(MyStore.id.desc()).all()
+    return {"stores": [my_store_to_dict(s) for s in stores]}
 
 # ── GET /health (배포 대비 헬스체크) ──────────────────────────
 @app.get("/health")

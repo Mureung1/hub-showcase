@@ -1,6 +1,6 @@
 import os
 from sqlalchemy import (
-    create_engine, Column, BigInteger, String, Text, Enum, JSON, DateTime, ForeignKey, func,
+    create_engine, Column, BigInteger, Integer, String, Text, Enum, JSON, DateTime, ForeignKey, func,
 )
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 
@@ -10,6 +10,15 @@ engine = create_engine(DB_URL, connect_args={"check_same_thread": False} if "sql
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+class MyStore(Base):
+    __tablename__ = "my_stores"
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    name = Column(String(255), nullable=False)
+    latitude = Column(String(50), nullable=True)
+    longitude = Column(String(50), nullable=True)
+    category = Column(String(100), nullable=True)
+    address = Column(String(255), nullable=True)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
 
 class Competitor(Base):
     __tablename__ = "competitors"
