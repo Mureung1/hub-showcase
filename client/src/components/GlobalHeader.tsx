@@ -3,9 +3,11 @@ import React from 'react';
 interface GlobalHeaderProps {
   lang: 'KO' | 'EN';
   setLang: React.Dispatch<React.SetStateAction<'KO' | 'EN'>>;
+  currentView: 'dashboard' | 'library';
+  setCurrentView: React.Dispatch<React.SetStateAction<'dashboard' | 'library'>>;
 }
 
-function GlobalHeader({ lang, setLang }: GlobalHeaderProps) {
+function GlobalHeader({ lang, setLang, currentView, setCurrentView }: GlobalHeaderProps) {
   return (
     <header className="global-header">
       <div className="header-left">
@@ -14,8 +16,18 @@ function GlobalHeader({ lang, setLang }: GlobalHeaderProps) {
       </div>
       
       <nav className="header-nav">
-        <button className="nav-item active">Dashboard</button>
-        <button className="nav-item">My Library</button>
+        <button 
+          className={`nav-item ${currentView === 'dashboard' ? 'active' : ''}`}
+          onClick={() => setCurrentView('dashboard')}
+        >
+          Dashboard
+        </button>
+        <button 
+          className={`nav-item ${currentView === 'library' ? 'active' : ''}`}
+          onClick={() => setCurrentView('library')}
+        >
+          My Library
+        </button>
         <button className="nav-item">Discover</button>
         <button className="nav-item">Settings</button>
       </nav>

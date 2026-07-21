@@ -7,9 +7,10 @@ interface CurationWorkspaceProps {
   userId: string;
   savedPapers: LibraryItem[];
   setSavedPapers: React.Dispatch<React.SetStateAction<LibraryItem[]>>;
+  handleRemovePaper: (paperId: string) => Promise<void>;
 }
 
-function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPapers }: CurationWorkspaceProps) {
+function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPapers, handleRemovePaper }: CurationWorkspaceProps) {
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
 
   useEffect(() => {
@@ -53,26 +54,6 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
     } catch (error) {
       console.error('❌ Save paper error:', error);
       alert('보관에 실패했습니다.');
-    }
-  };
-
-  const handleRemovePaper = async (paperId: string): Promise<void> => {
-    try {
-      // 시니어 피드백: DELETE /api/library/:userId/:paperId RESTful 경로 변수 사용
-      const response = await fetch(`http://localhost:5000/api/library/${userId}/${paperId}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        // 로컬 상태 즉시 갱신
-        setSavedPapers(prev => prev.filter(item => item.paperId !== paperId));
-        alert('서재에서 삭제되었습니다.');
-      } else {
-        alert('삭제에 실패했습니다.');
-      }
-    } catch (error) {
-      console.error('❌ Remove paper error:', error);
-      alert('삭제에 실패했습니다.');
     }
   };
 
