@@ -1,25 +1,4 @@
-import axios from 'axios';
-
-const applicationsApi = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api',
-});
-
-applicationsApi.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const serverError = error.response?.data?.error;
-    const apiError = new Error(
-      serverError?.message || error.message || '요청 처리 중 오류가 발생했습니다.',
-    );
-
-    apiError.code = serverError?.code;
-    apiError.details = serverError?.details ?? {};
-    apiError.status = error.response?.status;
-
-    return Promise.reject(apiError);
-  },
-);
+import applicationsApi from './httpClient';
 
 const getMockAuthHeaders = (mockUserId) => ({
   'x-mock-user-id': mockUserId,
@@ -51,6 +30,16 @@ export const getApplications = async ({ status, mockUserId }) => {
 export const acceptApplication = async ({ applicationId, mockUserId }) => {
   const response = await applicationsApi.patch(
     `/applications/${applicationId}/accept`,
+    null,
+    { headers: getMockAuthHeaders(mockUserId) },
+  );
+
+  return response.data;
+};
+
+export const rejectApplication = async ({ applicationId, mockUserId }) => {
+  const response = await applicationsApi.patch(
+    `/applications/${applicationId}/reject`,
     null,
     { headers: getMockAuthHeaders(mockUserId) },
   );

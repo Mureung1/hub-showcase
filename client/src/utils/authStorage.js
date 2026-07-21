@@ -1,5 +1,6 @@
 const accountRolesKey = "mentoring.accountRoles";
 const currentUserRoleKey = "mentoring.currentUserRole";
+const accessTokenKey = "mentoring.accessToken";
 const supportedRoles = new Set(["mentee", "mentor"]);
 
 const normalizeEmail = (email) => email.trim().toLowerCase();
@@ -40,4 +41,17 @@ export function getCurrentUserRole() {
 
 export function clearCurrentUserRole() {
   window.sessionStorage.removeItem(currentUserRoleKey);
+}
+
+export function setAccessToken(token) {
+  if (!token) return;
+  window.sessionStorage.setItem(accessTokenKey, token);
+}
+
+export function getAccessToken() {
+  return window.sessionStorage.getItem(accessTokenKey);
+}
+
+export function clearAccessToken() {
+  window.sessionStorage.removeItem(accessTokenKey);
 }
