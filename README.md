@@ -57,13 +57,8 @@ backend/
 ```
 
 ## 문서 링크
-
-* [프로젝트 브리프](docs/project-brief.md)
-* [MVP 범위](docs/mvp-scope.md)
-* [GitHub 이슈](docs/github-issues.md)
-* [기능 계획 Agent](agents/relationship-ai-feature-planner.md)
-* [AGENTS 규칙](AGENTS.md)
+* [Mock 데이터 사용 및 화면 표시 현황](https://github.com/studentnoname/hub/wiki/Mock-%EB%8D%B0%EC%9D%B4%ED%84%B0-%EC%82%AC%EC%9A%A9-%EB%B0%8F-%ED%99%94%EB%A9%B4-%ED%91%9C%EC%8B%9C-%ED%98%84%ED%99%A9)
 
 ## 현재 개발 상태
+* [개발일지 - 1] ()
 
-현재는 프로젝트 초기 구조만 생성된 상태입니다. React, Express, Supabase 기능 구현은 아직 시작되지 않았습니다.
