@@ -371,6 +371,27 @@ test('interrupts the active product Review through its public operation and term
   ).toBe(false)
 })
 
+test('preserves the authoritative terminal when settled bootstrap hydration fails', async ({
+  chatPage: page,
+}) => {
+  await selectCanonicalMaterials(page)
+  await page
+    .getByRole('button', { name: /선택한 자료 정리하기/u })
+    .click()
+  await expect(page.getByRole('region', { name: '검토 대기' })).toBeVisible()
+  const { failed: bootstrapFailure } = await failNextProductBootstrap(page)
+
+  await page.getByRole('button', { name: '작업 중단' }).click()
+
+  await bootstrapFailure
+  await expect(page.getByText('AY 작업을 중단했습니다.')).toBeVisible()
+  await expect(operationPhase(page)).toHaveAttribute(
+    'data-product-operation-phase',
+    'interrupted',
+  )
+  await expect(page.getByText('AY 작업을 계속하지 못했습니다')).toHaveCount(0)
+})
+
 test('settles a lost Assignment stream before Review answer and retries only from the explicit recovery action', async ({
   chatHarness,
   chatPage: page,
@@ -553,11 +574,12 @@ test('settles a lost Assignment stream before Review answer and retries only fro
   ).toHaveCount(0)
 })
 
-test('keeps the confirmed Assignment authoritative when the finite Review response is lost', async ({
+test('reconciles a confirmed Assignment without inventing continuation loss when the finite Review response is lost', async ({
   chatHarness,
   chatPage: page,
 }) => {
   const reviewResponse = await loseNextReviewResponse(page)
+  chatHarness.pauseReviewContinuation()
   const chat = page.getByRole('complementary', { name: 'AY Chat' })
   await selectCanonicalMaterials(page)
   await page
@@ -569,10 +591,19 @@ test('keeps the confirmed Assignment authoritative when the finite Review respon
   await review.getByRole('button', { name: '수락' }).click()
   expect(await reviewResponse.lost).toBe(200)
 
-  await expect(chat.getByText(/이어짐이 끊겼/u)).toBeVisible()
   await expect(operationPhase(page)).toHaveAttribute(
     'data-product-operation-phase',
-    'continuation-lost',
+    'running',
+  )
+  await expect(chat.getByText(/이어짐이 끊겼/u)).toHaveCount(0)
+  chatHarness.releaseReviewContinuation()
+  await expect(
+    chat.getByText('확인한 과제 정보를 학기 작업공간에 반영했습니다.'),
+  ).toBeVisible()
+  await expect(chat.getByText(/이어짐이 끊겼/u)).toHaveCount(0)
+  await expect(operationPhase(page)).toHaveAttribute(
+    'data-product-operation-phase',
+    'completed',
   )
   const settled = chat.getByRole('region', { name: '반영된 과제' })
   await expect(settled).toBeVisible()
@@ -597,6 +628,7 @@ test('keeps the confirmed Assignment authoritative when the finite Review respon
         runs: bootstrap.history.modelingRuns.map((run) => ({
           status: run.status,
           retryOfRunId: run.retryOfRunId,
+          recovery: run.recovery,
         })),
       }
     })
@@ -605,7 +637,7 @@ test('keeps the confirmed Assignment authoritative when the finite Review respon
       assignments: 1,
       confirmations: 1,
       patches: ['applied'],
-      runs: [{ status: 'completed', retryOfRunId: null }],
+      runs: [{ status: 'completed', retryOfRunId: null, recovery: null }],
     })
 
   const beforeReload = await readProductBootstrap(page)
@@ -960,6 +992,24 @@ async function loseNextReviewResponse(page: Page): Promise<{
     { times: 1 },
   )
   return { lost }
+}
+
+async function failNextProductBootstrap(page: Page): Promise<{
+  readonly failed: Promise<void>
+}> {
+  let resolve!: () => void
+  const failed = new Promise<void>((settle) => {
+    resolve = settle
+  })
+  await page.route(
+    '**/api/product/bootstrap',
+    async (route) => {
+      await route.abort('failed')
+      resolve()
+    },
+    { times: 1 },
+  )
+  return { failed }
 }
 
 async function flushProductController(page: Page): Promise<void> {

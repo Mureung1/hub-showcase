@@ -72,7 +72,9 @@ export type ChatShellHarness = {
   readonly calls: () => readonly ProductRuntimeCall[]
   readonly requests: () => readonly string[]
   disconnectAssignmentStream(): Promise<void>
+  pauseReviewContinuation(): void
   prepareScanLimitWorkspaceActivation(): Promise<void>
+  releaseReviewContinuation(): void
   releaseInterruptResponse(): void
   releaseLateInteraction(): void
   close(): Promise<void>
@@ -237,6 +239,10 @@ async function startChatShellHarness(
         response.destroy()
         await closed
       },
+      pauseReviewContinuation() {
+        if (!runtime) throw new Error('E2E product runtime is unavailable')
+        runtime.pauseReviewContinuation()
+      },
       async prepareScanLimitWorkspaceActivation() {
         if (!semesterWorkspace) {
           throw new Error('E2E SemesterWorkspace is unavailable')
@@ -251,6 +257,10 @@ async function startChatShellHarness(
       releaseLateInteraction() {
         if (!runtime) throw new Error('E2E product runtime is unavailable')
         runtime.releaseLateInteraction()
+      },
+      releaseReviewContinuation() {
+        if (!runtime) throw new Error('E2E product runtime is unavailable')
+        runtime.releaseReviewContinuation()
       },
       releaseInterruptResponse() {
         if (!runtime) throw new Error('E2E product runtime is unavailable')
@@ -326,6 +336,8 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
   private readonly interruptObserved = deferred<void>()
   private readonly interruptResponseReleased = deferred<void>()
   private readonly lateInteractionReleased = deferred<void>()
+  private readonly reviewContinuationReleased = deferred<void>()
+  private reviewContinuationPaused = false
   private turnOrdinal = 0
 
   constructor(
@@ -411,6 +423,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     this.interruptObserved.resolve()
     this.interruptResponseReleased.resolve()
     this.lateInteractionReleased.resolve()
+    this.reviewContinuationReleased.resolve()
     for (const pending of this.pendingInteractions.values()) {
       pending.settlement.resolve({ resolution: 'cancelled' })
     }
@@ -419,6 +432,15 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
 
   releaseLateInteraction(): void {
     this.lateInteractionReleased.resolve()
+  }
+
+  pauseReviewContinuation(): void {
+    assert.equal(this.reviewContinuationPaused, false)
+    this.reviewContinuationPaused = true
+  }
+
+  releaseReviewContinuation(): void {
+    this.reviewContinuationReleased.resolve()
   }
 
   releaseInterruptResponse(): void {
@@ -453,6 +475,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
       this.acknowledgedInterruptResponseLoss
     const interruptObserved = this.interruptObserved.promise
     const lateInteractionReleased = this.lateInteractionReleased.promise
+    const waitForReviewContinuation = this.waitForReviewContinuation.bind(this)
     const interactionId = `interaction-review-${this.turnOrdinal}`
     const replacementInteractionId = `${interactionId}-replacement`
     return {
@@ -590,6 +613,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           finalChoice = assignmentReviewChoice(replacementSettlement)
           assert.notEqual(finalChoice.type, 'revise')
         }
+        await waitForReviewContinuation()
         yield {
           type: 'agent_message.completed',
           threadId: input.threadId,
@@ -749,6 +773,12 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
 
   private wasInterrupted(turnId: string): boolean {
     return this.interruptedTurns.has(turnId)
+  }
+
+  private async waitForReviewContinuation(): Promise<void> {
+    if (this.reviewContinuationPaused) {
+      await this.reviewContinuationReleased.promise
+    }
   }
 }
 

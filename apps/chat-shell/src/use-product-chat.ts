@@ -210,25 +210,17 @@ export function useProductChat(options: {
       if (request.decision !== 'revise') {
         await options.refreshProductState()
         if (response.continuation === 'lost') {
-          reconcileConfirmedReview(
-            review,
-            request.decision,
-            response.confirmedRevision,
-          )
+          reconcileConfirmedReview(review, request.decision)
         }
       }
     } catch (error) {
       if (request.decision !== 'revise') {
-        const confirmedRevision = await confirmedReviewRevision(
+        const decisionConfirmed = await hasConfirmedReviewDecision(
           review,
           request.decision,
         )
-        if (confirmedRevision !== undefined) {
-          reconcileConfirmedReview(
-            review,
-            request.decision,
-            confirmedRevision,
-          )
+        if (decisionConfirmed) {
+          reconcileConfirmedReview(review, request.decision)
           return
         }
       }
@@ -363,7 +355,14 @@ export function useProductChat(options: {
         return
       }
       transition({ type: 'operation.stream-ended' })
-      if (kind === 'assignment') await options.refreshProductState()
+      if (kind === 'assignment') {
+        try {
+          await options.refreshProductState()
+        } catch {
+          // The authoritative stream terminal remains final. Workspace hydration
+          // exposes its own failure without rewriting the operation lifecycle.
+        }
+      }
     } catch (error) {
       if (!controller.signal.aborted) {
         if (stateRef.current.phase === 'stream-failed') return
@@ -441,10 +440,10 @@ export function useProductChat(options: {
     return false
   }
 
-  async function confirmedReviewRevision(
+  async function hasConfirmedReviewDecision(
     review: ProductReviewBinding,
     decision: 'accept' | 'reject',
-  ): Promise<number | undefined> {
+  ): Promise<boolean> {
     try {
       const bootstrap = await options.refreshProductState()
       const confirmation = bootstrap.history.userConfirmations.find(
@@ -453,45 +452,20 @@ export function useProductChat(options: {
           candidate.decision ===
             (decision === 'accept' ? 'accepted' : 'rejected'),
       )
-      if (!confirmation) return undefined
-      if (confirmation.resultingRevision !== null) {
-        return confirmation.resultingRevision
-      }
-      return bootstrap.workspace?.state === 'ready'
-        ? bootstrap.workspace.confirmedRevision
-        : undefined
+      return confirmation !== undefined
     } catch {
-      return undefined
+      return false
     }
   }
 
   function reconcileConfirmedReview(
     review: ProductReviewBinding,
     decision: 'accept' | 'reject',
-    confirmedRevision: number,
   ) {
     transition({
       type: 'operation.review-reconciled',
       review,
       outcome: decision === 'accept' ? 'accepted' : 'rejected',
-    })
-    const lastAssignment = stateRef.current.lastAssignment
-    if (
-      lastAssignment?.operationId !== review.operationId ||
-      stateRef.current.recovery?.outcome === 'continuation_lost'
-    ) {
-      return
-    }
-    transition({
-      type: 'operation.frame',
-      frame: {
-        type: 'operation.recovery',
-        operationId: lastAssignment.operationId,
-        runId: lastAssignment.runId,
-        outcome: 'continuation_lost',
-        retryable: false,
-        confirmedRevision,
-      },
     })
   }
 
