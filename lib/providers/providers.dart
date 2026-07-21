@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/app_user.dart';
+import '../models/goal.dart';
 import '../models/quest.dart';
+import '../models/quest_group.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/goal_repository.dart';
 import '../repositories/quest_decomposer.dart';
@@ -72,9 +74,61 @@ final questListProvider = StreamProvider<List<Quest>>((ref) async* {
   yield* ref.watch(questRepositoryProvider).watchQuests(uid);
 });
 
-/// 아직 완료하지 않은 퀘스트 (홈 화면 미리보기용).
-final pendingQuestsProvider = Provider<AsyncValue<List<Quest>>>((ref) {
+/// 큰 목표 목록. 퀘스트 목록의 **폴더 라벨**을 그리는 데 쓴다.
+///
+/// [questListProvider]와 같은 형태 — 세션(uid)이 준비된 뒤 저장소 스트림을 잇는다.
+final goalListProvider = StreamProvider<List<Goal>>((ref) async* {
+  final uid = await ref.watch(sessionProvider.future);
+  yield* ref.watch(goalRepositoryProvider).watchGoals(uid);
+});
+
+/// 퀘스트를 큰 목표 단위로 묶은 목록 (퀘스트 목록 화면).
+///
+/// **목표 스트림의 실패·로딩을 화면으로 전파하지 않는다.** goal 문서는 라벨을
+/// 만들기 위한 부가 정보일 뿐이라, 그것 때문에 퀘스트 목록 전체가 오류 화면으로
+/// 바뀌면 사용자는 퀘스트를 잃은 걸로 본다. 목표를 못 읽으면 빈 맵을 넘겨
+/// 폴백 라벨([kUnknownGoalLabel])로 그리고, 퀘스트는 그대로 보여 준다.
+///
+/// 반대로 **퀘스트 스트림의 로딩·오류는 그대로 통과시킨다** — 화면의 스켈레톤과
+/// `ErrorView`가 지금처럼 동작해야 한다.
+final questGroupsProvider = Provider<AsyncValue<List<QuestGroup>>>((ref) {
+  // valueOrNull: 로딩 중이거나 실패했으면 null → 빈 목록으로 떨어진다.
+  final goals = ref.watch(goalListProvider).valueOrNull ?? const <Goal>[];
+  final goalTexts = {for (final goal in goals) goal.id: goal.text};
+
   return ref
       .watch(questListProvider)
-      .whenData((quests) => quests.where((q) => !q.done).toList());
+      .whenData((quests) => groupQuestsByGoal(quests, goalTexts));
+});
+
+/// 아직 완료하지 않은 퀘스트를 **최신 등록순**으로 (홈 화면 미리보기용).
+///
+/// 목록 화면과 정렬 기준이 다르다. 목록은 `order`(= AI가 짠 **실행 경로 순서**)를
+/// 따르지만, 홈 미리보기는 "방금 만든 걸 지금 보여 준다"가 목적이라 **등록 시각**
+/// 내림차순이다. AI로 목표를 막 분해하고 홈에 돌아왔는데 방금 만든 퀘스트가
+/// 안 보이면 분해가 실패한 것처럼 읽힌다.
+///
+/// ⚠️ **`createdAt`이 null인 퀘스트는 맨 앞에 둔다.** Firestore `serverTimestamp`는
+/// 서버가 확정하기 전까지 로컬 캐시에서 null이므로, **null = 방금 만든 것**이다
+/// (`firestore_quest_repository.dart`의 `_parse` 주석 참고).
+/// 그 `_parse`는 null을 뒤로 보내는데 모순이 아니다 — 거기는 실행 경로 순서의
+/// 2차 키라 확정되지 않은 항목을 끝에 미뤄 두는 게 맞고, 여기는 등록 시각 순서라
+/// 확정되지 않은 항목이 곧 가장 최신이다.
+///
+/// **개수는 자르지 않는다.** 홈이 3개만 쓴다고 여기서 잘라 버리면, 다른 화면이
+/// 이 provider를 재사용할 때 이유 없이 3개만 받는다. 자르는 건 화면의 몫이다.
+final pendingQuestsProvider = Provider<AsyncValue<List<Quest>>>((ref) {
+  return ref.watch(questListProvider).whenData((quests) {
+    final pending = quests.where((q) => !q.done).toList();
+
+    pending.sort((a, b) {
+      final at = a.createdAt;
+      final bt = b.createdAt;
+      if (at == null) return bt == null ? 0 : -1;
+      if (bt == null) return 1;
+      return bt.compareTo(at); // 내림차순 = 최신 먼저
+    });
+
+    return pending;
+  });
 });

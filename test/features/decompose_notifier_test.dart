@@ -225,6 +225,10 @@ class _SlowGoalRepository implements GoalRepository {
   @override
   Future<Goal> fetchGoal(String uid, String goalId) =>
       _inner.fetchGoal(uid, goalId);
+
+  // 목록 스트림은 지연시킬 이유가 없다(느리게 하려는 지점은 createGoal뿐).
+  @override
+  Stream<List<Goal>> watchGoals(String uid) => _inner.watchGoals(uid);
 }
 
 void main() {

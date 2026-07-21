@@ -250,6 +250,39 @@
 - [x] 등록 즉시 목록과 저장소에 반영된다.
       → 등록은 `createQuest`로 저장하고 목록은 `watchQuests` 스트림으로 즉시 반영된다. 테스트: `test/features/quest_create_screen_test.dart`(fetchQuests로 저장 확인).
 
+### 큰 목표 단위 그룹 조회
+- [x] 퀘스트가 `goalId` 기준으로 큰 목표(폴더) 단위로 묶여 표시된다.
+      → 순수 함수 `groupQuestsByGoal`(`lib/models/quest_group.dart`)이 묶고, 화면은 `GoalGroupSection`(`lib/features/quest/widgets/goal_group_section.dart`) + `questGroupsProvider`(`lib/providers/providers.dart`)가 렌더한다. 저장소는 `GoalRepository.watchGoals`를 신설(Firestore·InMemory 2구현). 테스트: `test/models/quest_group_test.dart`(10건) · `test/features/quest_list_screen_test.dart`(A0 그룹 6건).
+- [x] 그룹 헤더에 목표 라벨과 진행률(완료/전체)이 표시된다.
+      → `doneCount/total` 텍스트 + `LinearProgressIndicator`(그린 `primary`). stuck(멈춤)은 완료로 세지 않는다. 테스트: `test/features/quest_list_screen_test.dart`('헤더에 진행률이 표시된다') · `test/models/quest_group_test.dart`(진행률 계산 단언).
+- [x] 헤더 탭으로 접기/펼치기가 되고, 기본은 펼침이며 전부 완료된 그룹만 기본 접힘이다.
+      → `_isExpanded`가 `putIfAbsent`로 **최초 1회만** 기본값을 확정한다. 매 프레임 재계산하면 마지막 퀘스트를 완료하는 순간 그룹이 눈앞에서 접혀 방금 누른 카드가 사라진다. 테스트: `test/features/quest_list_screen_test.dart`('헤더를 누르면 접히고 다시 누르면 펼쳐진다' · '전부 완료된 그룹은 기본으로 접혀 있다').
+- [x] 직접 등록한 퀘스트(`goalId == null`)는 별도 그룹으로 항상 맨 아래에 표시된다.
+      → `kDirectQuestGroupLabel`. 테스트: `test/models/quest_group_test.dart`(입력 맨 앞에 둬도 마지막 그룹이 되는 것을 단언).
+- [x] 목표 저장소가 실패해도 퀘스트 목록이 오류 화면으로 바뀌지 않고 폴백 라벨로 렌더된다.
+      → `questGroupsProvider`가 goal 스트림의 실패를 `valueOrNull ?? []`로 삼키고 quest 스트림만 전파한다. 목표는 라벨용 부가 정보라, 그것 때문에 퀘스트 목록이 통째로 오류가 되면 사용자는 퀘스트를 잃은 걸로 본다. Firestore `_parse`도 깨진 문서 하나만 건너뛴다(quest repo와 같은 규약). 테스트: `test/features/quest_list_screen_test.dart`('★ 목표 저장소가 실패해도 퀘스트는 폴백 라벨로 그대로 보인다').
+- [x] AI 분해 진입점이 주요 위계(채운 버튼)로 표시되고 색 역할 규칙을 지킨다.
+      → `OutlinedButton` → `FilledButton`(블루 `secondary`, `quest_list_screen.dart:198`). 그린으로 올리지 않은 이유는 수동 등록 FAB가 그린이라 역할이 겹치기 때문. 노랑 미사용은 `test/theme/color_role_test.dart`가 강제. 테스트: `test/features/quest_list_screen_test.dart`('AI 진입점은 채운 버튼이다').
+      → **검증 증거**: `flutter analyze` No issues found · `flutter test` 382건 전부 통과 · verification-agent 7/7 PASS.
+      → **미검증(정직 기록)**: ① `InMemoryGoalRepository.watchGoals`의 재방출 경로(목록을 연 채 목표가 새로 생성될 때 라벨 갱신)는 단위 테스트가 없다. ② `FirestoreGoalRepository.watchGoals`는 자동 테스트 N/A(실 Firestore 미도입, 유닛 환경 실행 불가) — 코드 리뷰상 `guardStream` + 관대 파싱으로 quest repo와 동일 규약. ③ goal 스트림이 **로딩 중**일 때도 빈 맵으로 떨어져, 첫 프레임에 라벨이 폴백('목표')으로 잠깐 떴다 바뀌는 깜빡임이 가능하다.
+
+### 홈 진행 중 퀘스트 미리보기 · 퀘스트 출처 구분
+- [x] 홈 "진행 중인 퀘스트"가 최신 등록순(`createdAt` 내림차순) 상위 3개로 표시된다.
+      → `pendingQuestsProvider`(`lib/providers/providers.dart`)가 미완료 필터 후 내림차순 정렬하고, 개수 제한은 화면(`lib/features/home/home_screen.dart`의 `_previewCount = 3`)에서 한다. **provider가 자르지 않는 이유**: 다른 화면이 이 provider를 재사용할 때 조용히 3개만 받게 된다. 로딩 스켈레톤도 3개로 맞춰 전환 시 높이가 튀지 않는다. 테스트: `test/features/home_screen_test.dart` — "3개가 보인다"에 그치지 않고 `getTopLeft().dy`로 실제 배치 순서를 단언하며, 입력 순서를 시각 순서와 어긋나게 섞어 정렬 없는 구현이면 반드시 실패하도록 설계됐다.
+- [x] `createdAt`이 아직 없는(방금 만든) 퀘스트가 맨 앞에 온다.
+      → Firestore `serverTimestamp`는 서버가 확정하기 전까지 로컬 캐시에서 null이다. 즉 **null = 방금 만든 것**이라 최신순에서는 맨 앞으로 보낸다. 목록 화면(`_parse`)은 null을 뒤로 보내는데, 거기는 실행 경로 순서이고 여기는 등록 시각 순서라 기준이 다르다. 테스트: `test/features/home_screen_test.dart`.
+- [x] 완료된 퀘스트는 미리보기에서 제외된다(기존 규칙 회귀 없음).
+      → 테스트: `test/features/home_screen_test.dart`(완료된 최신 퀘스트 제외 · 전부 완료 시 EmptyView).
+- [x] AI가 분해한 퀘스트와 직접 등록한 퀘스트가 시각적으로 구분된다.
+      → `QuestSourceChip`(`lib/core/widgets/quest_source_chip.dart`)이 `Quest.goalId` 유무만을 근거로 구분한다(모델에 새 필드를 추가하지 않았다). AI = 블루(기존 AI=블루 규칙과 일치), 직접 등록 = 회색 중립. `QuestCard`(`lib/core/widgets/quest_card.dart`)가 난이도 pill과 함께 `Wrap`에 담아 홈·목록 양쪽에 자동 반영된다. 카드 좌측 accent 보더는 **난이도 색 그대로 유지**했다 — 출처를 거기 얹으면 두 의미가 한 자리에서 겹친다. 테스트: `test/features/quest_source_chip_test.dart` · `test/features/quest_list_screen_test.dart` · `test/features/home_screen_test.dart`.
+- [x] 다크 모드에서도 출처 칩의 대비가 유지된다.
+      → 라이트는 `secondary` 틴트 + `secondary` 전경이지만, 다크에서 그대로 쓰면 파란 글자가 어두운 카드에 묻혀 `secondaryContainer` + `onSecondaryContainer`로 뒤집었다(색 역할은 블루 유지). 테스트가 전경 휘도 > 배경 휘도 + 0.2를 단언해 강제한다: `test/features/quest_source_chip_test.dart`.
+- [x] 색 역할 규칙(노랑 = 코인·보상 전용)을 지킨다.
+      → 출처 칩은 블루·회색만 쓴다. `test/theme/color_role_test.dart`를 **무수정**으로 통과한다(allowlist에 새 파일이 추가되지 않았다 — `git diff`가 비어 있음을 확인했다).
+- [x] 난이도 pill과 출처 칩이 줄바꿈 가능한 구조에 있어 좁은 폭에서 깨지지 않는다.
+      → `Wrap` 사용. **회귀 방어는 구조 단언으로 한다** — 폭 320·240 스모크만으로는 `Row`로 되돌려도 통과해 버려서(두 칩 Row는 가용 폭 176px 아래에서야 넘친다) 방어가 되지 않는다. `Wrap`의 자식이 난이도 pill과 출처 칩인지를 직접 단언하고, 뮤테이션 검사(`Wrap`→`Row`)에서 실제로 실패함을 확인했다. 테스트: `test/features/quest_source_chip_test.dart`.
+      → **검증 증거**: `flutter analyze` No issues found · `flutter test` 395건 전부 통과 · verification-agent 9/9 PASS.
+
 ### 난이도 뱃지 표시
 - [x] 각 퀘스트에 easy/normal/hard 뱃지가 일관된 색/라벨로 표시된다.
       → `DifficultyPill`(`lib/core/widgets/difficulty_pill.dart`, 라벨 쉬움/보통/어려움, 난이도별 색 단일 정의)을 공통 사용. 노랑 규칙은 `test/theme/color_role_test.dart` allowlist로 강제. 테스트: `test/features/quest_list_screen_test.dart`.
@@ -429,6 +462,7 @@
 ### 오류 메시지 및 빈 화면 처리
 - [ ] 주요 화면(홈·퀘스트·상점)의 오류/빈 상태가 각각 사용자 친화적으로 표시된다.
 - [ ] 네트워크 단절 상황에서 앱이 크래시하지 않는다.
+- [ ] **알려진 결함(미수정)**: `RewardChip`(`lib/core/widgets/reward_chip.dart`)이 큰 텍스트 배율(2.0)에서 오버플로한다. `Row`가 `mainAxisSize.min`인데 유연 위젯이 없어, 접근성 글꼴을 키운 사용자에게는 폭 320(일반적인 소형 단말)에서도 오버플로 줄무늬가 뜬다. A0-2 이전부터 있던 결함이며, 보상 표시는 노랑 허용 위젯이라 수정 시 색 역할 규칙(`test/theme/color_role_test.dart` allowlist)까지 함께 봐야 한다.
 
 ### 최종 QA 및 버그 수정
 - [ ] `flutter analyze` error 0건, 알려진 크래시 0건이다.

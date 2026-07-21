@@ -121,6 +121,9 @@ class _HomeContent extends ConsumerWidget {
   }
 }
 
+/// 홈 미리보기에 띄우는 퀘스트 개수. 스켈레톤 개수도 이 값에 맞춘다.
+const int _previewCount = 3;
+
 class _PendingQuests extends StatelessWidget {
   const _PendingQuests({required this.quests});
 
@@ -129,8 +132,12 @@ class _PendingQuests extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return quests.when(
+      // 스켈레톤 개수는 데이터가 들어왔을 때의 최대 개수(_previewCount)와 맞춘다.
+      // 개수가 어긋나면 로딩 → 데이터 전환에서 목록 높이가 튄다.
       loading: () => const Column(
         children: [
+          SkeletonBox(height: 96),
+          AppSpacing.gapSm,
           SkeletonBox(height: 96),
           AppSpacing.gapSm,
           SkeletonBox(height: 96),
@@ -148,7 +155,9 @@ class _PendingQuests extends StatelessWidget {
           );
         }
         // 홈에서는 미리보기만. 전체 목록은 퀘스트 탭에 있다.
-        final preview = list.take(2).toList();
+        // 순서는 pendingQuestsProvider가 정한다(최신 등록순) — 여기서 다시
+        // 정렬하지 않는다. 화면이 하는 일은 개수를 자르는 것뿐이다.
+        final preview = list.take(_previewCount).toList();
         return Column(
           children: [
             for (final quest in preview) ...[

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../core/error/app_failure.dart';
 import '../../models/goal.dart';
 import '../goal_repository.dart';
@@ -20,10 +22,26 @@ class InMemoryGoalRepository implements GoalRepository {
   final AppFailure? failWith;
 
   final Map<String, Goal> _goals = {};
+  final _controller = StreamController<void>.broadcast();
   int _seq = 0;
 
   void _check() {
     if (failWith != null) throw failWith!;
+  }
+
+  /// 테스트가 끝날 때 호출한다(`addTearDown(repo.dispose)`).
+  /// InMemoryQuestRepository와 같은 규약.
+  void dispose() => _controller.close();
+
+  List<Goal> get _all => List.unmodifiable(_goals.values);
+
+  @override
+  Stream<List<Goal>> watchGoals(String uid) async* {
+    _check();
+    yield _all;
+    await for (final _ in _controller.stream) {
+      yield _all;
+    }
   }
 
   @override
@@ -35,6 +53,7 @@ class InMemoryGoalRepository implements GoalRepository {
       createdAt: DateTime.now(),
     );
     _goals[goal.id] = goal;
+    _controller.add(null);
     return goal;
   }
 

@@ -1,11 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:one_step/core/error/app_failure.dart';
+import 'package:one_step/core/widgets/quest_card.dart';
 import 'package:one_step/core/widgets/state_views.dart';
 import 'package:one_step/features/home/home_screen.dart';
 import 'package:one_step/features/home/widgets/character_card.dart';
 import 'package:one_step/models/app_user.dart';
+import 'package:one_step/models/quest.dart';
+import 'package:one_step/models/quest_status.dart';
 
 import '../helpers/pump_app.dart';
+
+/// 등록 시각만 다른 미완료 퀘스트.
+Quest _quest(String id, {DateTime? createdAt, QuestStatus? status}) => Quest(
+  id: id,
+  title: id,
+  status: status ?? QuestStatus.todo,
+  createdAt: createdAt,
+);
 
 /// checklist 1주차 · 홈/캐릭터 화면
 /// - 레벨·XP·코인이 데이터 바인딩되어 실제 값이 출력된다
@@ -76,5 +87,120 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('환생 (Lv.12)'), findsOneWidget);
+  });
+
+  // 화면 크기는 기본값(800x600) 그대로 쓴다.
+  //
+  // 세 번째 카드는 세로로 뷰포트(600) 아래에 놓이지만 단언은 그대로 성립한다.
+  // `_PendingQuests`가 `ListView`의 **자식 하나**(Column)라, 그 자식이 뷰포트에
+  // 걸리는 순간 Column 전체가 인플레이트되기 때문이다 — 카드 하나하나가 지연
+  // 생성되는 구조가 아니다. 실측: 세 카드의 dy가 631 / 753 / 875로 모두 트리에 있다.
+  //
+  // 화면을 키우고 싶은 유혹이 있지만, 폭을 넓히면 좁은 폭 레이아웃 검증력이 같이
+  // 떨어진다. 필요 없는 확대는 하지 않는다.
+  group('진행 중인 퀘스트 미리보기 — 최신 등록순 3개', () {
+    testWidgets('미완료가 4개여도 3개만, 최신 등록순으로 보인다', (tester) async {
+      // 저장 순서와 등록 시각을 일부러 어긋나게 섞는다. 정렬 없이 앞에서 3개를
+      // 자르는 구현이면 이 케이스가 통과하지 못한다.
+      await pumpScreen(
+        tester,
+        const HomeScreen(),
+        quests: [
+          _quest('가장오래된', createdAt: DateTime(2026, 1, 1)),
+          _quest('최신', createdAt: DateTime(2026, 5, 1)),
+          _quest('중간', createdAt: DateTime(2026, 3, 1)),
+          _quest('두번째최신', createdAt: DateTime(2026, 4, 1)),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QuestCard), findsNWidgets(3));
+      // 오래된 것이 잘린다.
+      expect(find.text('가장오래된'), findsNothing);
+
+      // 뽑힌 3개가 최신 → 과거 순으로 놓인다.
+      final ys = [
+        for (final title in ['최신', '두번째최신', '중간'])
+          tester.getTopLeft(find.text(title)).dy,
+      ];
+      expect(ys[0], lessThan(ys[1]));
+      expect(ys[1], lessThan(ys[2]));
+    });
+
+    testWidgets('createdAt이 null인 퀘스트가 맨 앞에 온다', (tester) async {
+      // serverTimestamp가 아직 확정되지 않은 상태 = 방금 만든 퀘스트.
+      await pumpScreen(
+        tester,
+        const HomeScreen(),
+        quests: [
+          _quest('예전것', createdAt: DateTime(2026, 1, 1)),
+          _quest('방금만든것'),
+          _quest('덜예전것', createdAt: DateTime(2026, 2, 1)),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      final justCreated = tester.getTopLeft(find.text('방금만든것')).dy;
+      expect(justCreated, lessThan(tester.getTopLeft(find.text('덜예전것')).dy));
+      expect(justCreated, lessThan(tester.getTopLeft(find.text('예전것')).dy));
+    });
+
+    testWidgets('완료된 퀘스트는 최신이어도 제외된다', (tester) async {
+      await pumpScreen(
+        tester,
+        const HomeScreen(),
+        quests: [
+          _quest(
+            '완료된최신',
+            createdAt: DateTime(2026, 9, 1),
+            status: QuestStatus.done,
+          ),
+          _quest('미완료', createdAt: DateTime(2026, 1, 1)),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QuestCard), findsOneWidget);
+      expect(find.text('완료된최신'), findsNothing);
+      expect(find.text('미완료'), findsOneWidget);
+    });
+
+    testWidgets('미완료가 하나도 없으면 빈 상태가 뜬다', (tester) async {
+      await pumpScreen(
+        tester,
+        const HomeScreen(),
+        quests: [
+          _quest('완료', createdAt: DateTime(2026, 1, 1), status: QuestStatus.done),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QuestCard), findsNothing);
+      expect(find.byType(EmptyView), findsOneWidget);
+    });
+
+    testWidgets('카드에 출처 칩이 함께 보인다', (tester) async {
+      await pumpScreen(
+        tester,
+        const HomeScreen(),
+        quests: [
+          Quest(
+            id: 'ai',
+            title: 'AI가 쪼갠 퀘스트',
+            goalId: 'goal-1',
+            createdAt: DateTime(2026, 2, 1),
+          ),
+          Quest(
+            id: 'manual',
+            title: '직접 등록한 퀘스트',
+            createdAt: DateTime(2026, 1, 1),
+          ),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('AI'), findsOneWidget);
+      expect(find.text('직접'), findsOneWidget);
+    });
   });
 }
