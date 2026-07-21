@@ -64,7 +64,11 @@ function toDateString(ts) {
 export function toApiDoc(row) {
   return {
     id: row.id,
+    // 소유자 판별용 uuid(공개해도 무방한 불투명 id). 프론트가 "내 문서인지" 판단에 쓴다.
+    authorId: row.author_id ?? null,
     author: row.author_name ?? null,
+    // 비회원 문서인지 + 수정 비밀번호가 걸려 있는지 힌트(해시 자체는 절대 노출하지 않는다).
+    hasEditPassword: Boolean(row.edit_password_hash),
     type: row.type,
     templateId: row.template_id,
     status: row.status,

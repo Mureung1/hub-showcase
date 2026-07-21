@@ -52,3 +52,36 @@ drop trigger if exists documents_set_updated_at on public.documents;
 create trigger documents_set_updated_at
   before update on public.documents
   for each row execute function public.set_updated_at();
+
+-- ─────────────────────────────────────────────────────────────
+-- 로그인/회원 도입(3주차): Supabase Auth 연동
+-- Auth 자체는 auth.users가 담당하고, 앱 전용 필드는 profiles에 둔다.
+-- ─────────────────────────────────────────────────────────────
+
+-- 사용자 프로필 — auth.users와 1:1.
+create table if not exists public.profiles (
+  id           uuid primary key references auth.users(id) on delete cascade,
+  nickname     text,
+  is_beginner  boolean not null default false,   -- 가입 시 "게임 기획이 처음이신가요?" 응답
+  onboarded_at timestamptz,                       -- 튜토리얼 완료 시각(선택)
+  created_at   timestamptz not null default now()
+);
+
+-- 비회원 문서 수정용 비밀번호(해시). 회원 문서는 null, 비회원 문서는 author_id null + 이 값 설정.
+alter table public.documents
+  add column if not exists edit_password_hash text;
+
+-- 회원 문서 목록(MyPage) 조회용 인덱스.
+create index if not exists documents_author_id_idx
+  on public.documents (author_id);
+
+-- AI 자동 피드백 일일 호출 제한 카운트용(기획서 §3.4).
+create table if not exists public.ai_feedback_logs (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid references auth.users(id) on delete cascade,
+  document_id uuid,
+  called_at   timestamptz not null default now()
+);
+
+create index if not exists ai_feedback_logs_user_called_idx
+  on public.ai_feedback_logs (user_id, called_at desc);
