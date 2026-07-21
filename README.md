@@ -32,8 +32,8 @@
 ## 기술 스택
 
 - 프로토타입 데모: 순수 HTML / CSS / JS (`docs/prototype.html`)
-- 실제 앱: Vite + React (프로젝트 소개 컴포넌트만 구현됨)
-- 백엔드: Express 예정 (아직 미착수)
+- 실제 앱: Vite + React
+- 백엔드: Express (`server/`) — Prisma + Supabase(Postgres) 연결 완료, 할일/회피이유/이벤트/Push 구독 라우트 구현 중(그룹3까지 진행, Push 구독 스키마+등록 API 포함)
 
 ## 개발 환경 실행
 
