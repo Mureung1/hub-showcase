@@ -377,6 +377,52 @@ h1, h2, h3, p { margin-top: 0; letter-spacing: 0; }
   font-weight: 700;
 }
 
+.expiry-field {
+  grid-column: 1 / -1;
+}
+
+.field-label-row,
+.expiry-recommendation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.field-label-row span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--primary);
+  background: var(--primary-soft);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.expiry-recommendation {
+  padding: 11px 12px;
+  border: 1px solid rgba(0, 109, 54, 0.12);
+  border-radius: 12px;
+  background: #f4fbf7;
+}
+
+.expiry-recommendation p {
+  margin: 0;
+  color: #41604f;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.expiry-recommendation button {
+  width: auto;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 9px;
+  color: var(--primary);
+  background: #fff;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 .ingredient-form input[aria-invalid="true"] {
   border-color: var(--warning);
 }
@@ -847,6 +893,53 @@ h1, h2, h3, p { margin-top: 0; letter-spacing: 0; }
 .ingredient-status.missing {
   border-color: rgba(255, 126, 71, 0.26);
   background: var(--secondary-soft);
+}
+
+.pantry-section .section-heading > p:last-child {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.pantry-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.pantry-list > div {
+  display: flex;
+  min-height: 50px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 10px 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.pantry-list button {
+  min-height: 32px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.pantry-list button.owned {
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.pantry-list button.missing {
+  color: #9a3412;
+  background: #ffedd5;
 }
 
 .ingredient-status.missing em {
@@ -1867,6 +1960,10 @@ select:focus-visible {
   }
 
   .fridge-board .ingredient-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pantry-list {
     grid-template-columns: 1fr;
   }
 

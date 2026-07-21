@@ -3,17 +3,24 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
 export function addDays(days) {
   const date = new Date();
   date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  return formatLocalDate(date);
 }
 
 export function addDaysToDate(dateString, days) {
   const date = new Date(`${dateString}T00:00:00`);
   date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  return formatLocalDate(date);
+}
+
+export function formatLocalDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function getTodayDateString() {
-  return new Date().toISOString().slice(0, 10);
+  return formatLocalDate(new Date());
 }
 
 export function getIngredientDueDate(ingredient) {
@@ -24,10 +31,10 @@ export function getIngredientDueDate(ingredient) {
   return ingredient.expirationDate ?? null;
 }
 
-export function getDaysRemaining(expirationDate) {
+export function getDaysRemaining(expirationDate, referenceDate = new Date()) {
   if (!expirationDate) return null;
 
-  const today = new Date();
+  const today = new Date(referenceDate);
   const target = new Date(`${expirationDate}T00:00:00`);
   today.setHours(0, 0, 0, 0);
   return Math.ceil((target - today) / MS_PER_DAY);

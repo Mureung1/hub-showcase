@@ -5,11 +5,13 @@ import IngredientForm from "./components/IngredientForm";
 import NaggingMessage from "./components/NaggingMessage";
 import CoachReactionModal from "./components/CoachReactionModal";
 import { cookingMethodLabels, mockRecipes, recipeDifficultyLabels } from "./data/mockRecipes";
+import { getAllowedStorageOptions, getDefaultStorage, getSuggestedUseByDate } from "./data/shelfLifeRules";
 import { deleteIngredient, getIngredients, registerIngredient, updateIngredient } from "./services/ingredients";
 import {
   getDaysRemaining,
   getExpirationSentence,
   getIngredientDueDate,
+  getTodayDateString,
   isUrgentIngredient,
 } from "./utils/expiration";
 import {
@@ -21,6 +23,7 @@ import {
 import { getNaggingMessage } from "./utils/naggingUtils";
 import { getRecipeAvailability, getRecommendedRecipes } from "./utils/recipeUtils";
 import { getCoachingTone, readMealChoiceHistory, recordMealChoice } from "./utils/mealChoiceHistory";
+import { getPantryItemByName, getRecipePantryItems, isPantryIngredientName, readPantryAvailability, writePantryAvailability } from "./utils/pantry";
 
 const storageLabels = { urgent: "먼저 먹기", all: "전체", fridge: "냉장", freezer: "냉동", room: "실온" };
 const mainTabs = [
@@ -41,14 +44,24 @@ function normalizeIngredientName(name) {
   return name.trim().replaceAll(" ", "").toLowerCase();
 }
 
-function getIngredientGroups(menu, ingredients) {
+function getIngredientGroups(menu, ingredients, pantryAvailability) {
   const ownedNames = new Set(ingredients.map((ingredient) => normalizeIngredientName(ingredient.name)));
   const requiredIngredients = [...new Set([...(menu.used ?? []), ...(menu.missing ?? [])])];
+  const isOwned = (ingredient) => {
+    const pantryItem = getPantryItemByName(ingredient);
+    return ownedNames.has(normalizeIngredientName(ingredient)) || Boolean(pantryItem && pantryAvailability[pantryItem.id]);
+  };
 
   return {
-    ownedIngredients: requiredIngredients.filter((ingredient) => ownedNames.has(normalizeIngredientName(ingredient))),
-    missingIngredients: requiredIngredients.filter((ingredient) => !ownedNames.has(normalizeIngredientName(ingredient))),
+    ownedIngredients: requiredIngredients.filter(isOwned),
+    missingIngredients: requiredIngredients.filter((ingredient) => !isOwned(ingredient)),
   };
+}
+
+function createInitialFormValues(category = "egg", requestedStorage = null) {
+  const allowedStorage = getAllowedStorageOptions(category);
+  const storage = allowedStorage.some(({ id }) => id === requestedStorage) ? requestedStorage : getDefaultStorage(category);
+  return { name: "", quantity: "", storage, category, expirationDate: getSuggestedUseByDate(category, storage), expirySource: "suggested", tags: getDefaultIngredientTags(category) };
 }
 
 const menusByFilter = {
@@ -98,6 +111,8 @@ const substitutesByMenuId = {
 };
 function App() {
   const [ingredients, setIngredients] = useState([]);
+  const [todayKey, setTodayKey] = useState(getTodayDateString);
+  const [pantryAvailability, setPantryAvailability] = useState(readPantryAvailability);
   const [isLoading, setIsLoading] = useState(true);
   const [ingredientError, setIngredientError] = useState("");
 
@@ -118,6 +133,19 @@ function App() {
   useEffect(() => {
     refreshIngredients(true).catch(() => {});
   }, []);
+  useEffect(() => {
+    let midnightTimer;
+    const scheduleNextMidnight = () => {
+      const now = new Date();
+      const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
+      midnightTimer = window.setTimeout(() => {
+        setTodayKey(getTodayDateString());
+        scheduleNextMidnight();
+      }, nextMidnight.getTime() - now.getTime());
+    };
+    scheduleNextMidnight();
+    return () => window.clearTimeout(midnightTimer);
+  }, []);
   const [activeMainTab, setActiveMainTab] = useState("fridge");
   const [activeStorage, setActiveStorage] = useState("all");
   const [selectedMenuId, setSelectedMenuId] = useState(null);
@@ -136,34 +164,39 @@ function App() {
   const [naggingMessage, setNaggingMessage] = useState(null);
   const [message, setMessage] = useState({ text: "", type: "success" });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formValues, setFormValues] = useState({ name: "", quantity: "", storage: "fridge", category: "egg", expiryDays: "5", tags: getDefaultIngredientTags("egg") });
+  const [formValues, setFormValues] = useState(createInitialFormValues);
   const [errors, setErrors] = useState({});
+  const managedIngredients = useMemo(() => ingredients.filter((ingredient) => !isPantryIngredientName(ingredient.name)), [ingredients]);
 
-  const visibleIngredients = useMemo(() => {
-    const filtered = ingredients.filter((item) => {
+  const visibleIngredients = (() => {
+    const filtered = managedIngredients.filter((item) => {
       if (activeStorage === "all") return true;
       if (activeStorage === "urgent") return isUrgentIngredient(getDaysRemaining(getIngredientDueDate(item)));
       return item.storage === activeStorage;
     });
 
     return [...filtered].sort((a, b) => {
-      if (sortOrder === "recent") return ingredients.indexOf(a) - ingredients.indexOf(b);
+      if (sortOrder === "recent") return managedIngredients.indexOf(a) - managedIngredients.indexOf(b);
       if (sortOrder === "name") return a.name.localeCompare(b.name, "ko");
       const aDays = getDaysRemaining(getIngredientDueDate(a)) ?? Number.POSITIVE_INFINITY;
       const bDays = getDaysRemaining(getIngredientDueDate(b)) ?? Number.POSITIVE_INFINITY;
       return aDays - bDays;
     });
-  }, [activeStorage, ingredients, sortOrder]);
+  })();
   const selectedMenu = useMemo(() => mockRecipes.find((menu) => menu.id === selectedMenuId) ?? Object.values(menusByFilter).flat().find((menu) => menu.id === selectedMenuId) ?? null, [selectedMenuId]);
-  const recommendedCount = useMemo(() => getRecommendedRecipes({ recipes: mockRecipes, ingredients, selectedMood: "quick" }).filter(({ availability }) => availability.status === "available").length, [ingredients]);
+  const recommendedCount = getRecommendedRecipes({ recipes: mockRecipes, ingredients: managedIngredients, pantryAvailability, selectedMood: "quick" }).filter(({ availability }) => availability.status === "available").length;
 
   const flash = (text, type = "success") => {
     setMessage({ text, type });
     window.setTimeout(() => setMessage({ text: "", type: "success" }), 2200);
   };
 
+  const togglePantryItem = (itemId) => {
+    setPantryAvailability((current) => writePantryAvailability({ ...current, [itemId]: current[itemId] === false }));
+  };
+
   const resetForm = (storage = activeStorage) => {
-    setFormValues({ name: "", quantity: "", storage: ["all", "urgent"].includes(storage) ? "fridge" : storage, category: "egg", expiryDays: "5", tags: getDefaultIngredientTags("egg") });
+    setFormValues(createInitialFormValues("egg", ["all", "urgent"].includes(storage) ? null : storage));
     setEditingIngredientId(null);
     setErrors({});
   };
@@ -184,12 +217,33 @@ function App() {
   const handleFormChange = ({ target }) => {
     const { name, value } = target;
 
-    setFormValues((current) => ({
-      ...current,
-      [name]: value,
-      ...(name === "category" ? { tags: getDefaultIngredientTags(value) } : {}),
-    }));
+    setFormValues((current) => {
+      if (name === "category") {
+        const nextStorage = getAllowedStorageOptions(value).some(({ id }) => id === current.storage) ? current.storage : getDefaultStorage(value);
+        return {
+          ...current,
+          category: value,
+          storage: nextStorage,
+          tags: getDefaultIngredientTags(value),
+          ...(current.expirySource === "suggested" ? { expirationDate: getSuggestedUseByDate(value, nextStorage) } : {}),
+        };
+      }
+      if (name === "storage") {
+        return {
+          ...current,
+          storage: value,
+          ...(current.expirySource === "suggested" ? { expirationDate: getSuggestedUseByDate(current.category, value) } : {}),
+        };
+      }
+      if (name === "expirationDate") return { ...current, expirationDate: value, expirySource: "manual" };
+      return { ...current, [name]: value };
+    });
     setErrors((current) => ({ ...current, [name]: "" }));
+  };
+
+  const applySuggestedDate = () => {
+    setFormValues((current) => ({ ...current, expirationDate: getSuggestedUseByDate(current.category, current.storage), expirySource: "suggested" }));
+    setErrors((current) => ({ ...current, expirationDate: "" }));
   };
 
   const handleTagToggle = (tag) => {
@@ -206,7 +260,7 @@ function App() {
     const messages = {
       name: "재료명을 입력해 주세요.",
       quantity: "수량을 입력해 주세요.",
-      expiryDays: "소비기한을 선택해 주세요.",
+      expirationDate: "권장 사용 날짜를 선택해 주세요.",
     };
     if (messages[name]) setErrors((current) => ({ ...current, [name]: messages[name] }));
   };
@@ -215,12 +269,12 @@ function App() {
     event.preventDefault();
     const name = formValues.name.trim();
     const quantity = formValues.quantity.trim();
-    const expiryDays = Number(formValues.expiryDays);
     const nextErrors = {};
 
     if (!name) nextErrors.name = "재료명을 입력해 주세요.";
+    if (isPantryIngredientName(name)) nextErrors.name = "기본 양념은 레시피 상세의 보유 설정에서 관리해 주세요.";
     if (!quantity) nextErrors.quantity = "수량을 입력해 주세요.";
-    if (formValues.expiryDays === "" || !Number.isInteger(expiryDays) || expiryDays < 0) nextErrors.expiryDays = "소비기한을 선택해 주세요.";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(formValues.expirationDate)) nextErrors.expirationDate = "권장 사용 날짜를 선택해 주세요.";
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -228,7 +282,7 @@ function App() {
     }
 
     setErrors({});
-    const existingIngredient = ingredients.find((item) => item.id === editingIngredientId) ?? null;
+    const existingIngredient = managedIngredients.find((item) => item.id === editingIngredientId) ?? null;
     const ingredient = buildIngredientFromForm({ ...formValues, name, quantity }, existingIngredient);
 
     if (editingIngredientId) {
@@ -264,7 +318,7 @@ function App() {
   const editIngredient = (ingredient, focusField = "name") => {
     setActiveMainTab("fridge");
     setEditingIngredientId(ingredient.id);
-    setFormValues({ name: ingredient.name, quantity: formatIngredientQuantity(ingredient) === "보유 중" ? "1개" : formatIngredientQuantity(ingredient), storage: ingredient.storage, category: ingredient.category, expiryDays: String(Math.max(0, getDaysRemaining(getIngredientDueDate(ingredient)) ?? 180)), tags: getIngredientTags(ingredient) });
+    setFormValues({ name: ingredient.name, quantity: formatIngredientQuantity(ingredient) === "보유 중" ? "1개" : formatIngredientQuantity(ingredient), storage: ingredient.storage, category: ingredient.category, expirationDate: getIngredientDueDate(ingredient) ?? getSuggestedUseByDate(ingredient.category, ingredient.storage), expirySource: "manual", tags: getIngredientTags(ingredient) });
     setErrors({});
     setInitialFocusField(focusField);
     setOpenMenuId(null);
@@ -382,7 +436,7 @@ function App() {
   };
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-current-date={todayKey}>
       <header className={`site-header ${activeMainTab === "fridge" ? "fridge-context" : ""}`}>
         <div className="header-spacer" aria-hidden="true" />
         <nav className="header-nav" aria-label="상단 메뉴">
@@ -399,14 +453,14 @@ function App() {
         {activeMainTab === "fridge" && !isLoading && ingredientError && (
           <div className="empty-board" role="alert">{ingredientError}</div>
         )}
-        {activeMainTab === "fridge" && !isLoading && !ingredientError && <FridgeWorkspace ingredients={ingredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} sortOrder={sortOrder} setSortOrder={setSortOrder} recommendedCount={recommendedCount} openIngredientForm={openIngredientForm} editIngredient={editIngredient} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} requestIngredientAction={requestIngredientAction} onIngredientSelect={handleIngredientSelect} showRecommendations={() => setActiveMainTab("recommend")} showShopping={() => setActiveMainTab("shopping")} />}
-        {activeMainTab === "recommend" && <RecommendWorkspace ingredients={ingredients} recipes={mockRecipes} selectedMood={selectedMood} setSelectedMood={setSelectedMood} includeOneMissing={includeOneMissing} setIncludeOneMissing={setIncludeOneMissing} selectedMenuId={selectedMenuId} onSelectRecipe={handleRecipeSelect} />}
-        {activeMainTab === "recipe" && <RecipeWorkspace menu={selectedMenu} ingredients={ingredients} isLoading={isRecipeLoading} onBack={() => setActiveMainTab("recommend")} />}
-        {activeMainTab === "shopping" && <ShoppingWorkspace menu={selectedMenu} ingredients={ingredients} />}
+        {activeMainTab === "fridge" && !isLoading && !ingredientError && <FridgeWorkspace ingredients={managedIngredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} sortOrder={sortOrder} setSortOrder={setSortOrder} recommendedCount={recommendedCount} openIngredientForm={openIngredientForm} editIngredient={editIngredient} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} requestIngredientAction={requestIngredientAction} onIngredientSelect={handleIngredientSelect} showRecommendations={() => setActiveMainTab("recommend")} showShopping={() => setActiveMainTab("shopping")} />}
+        {activeMainTab === "recommend" && <RecommendWorkspace ingredients={managedIngredients} pantryAvailability={pantryAvailability} recipes={mockRecipes} selectedMood={selectedMood} setSelectedMood={setSelectedMood} includeOneMissing={includeOneMissing} setIncludeOneMissing={setIncludeOneMissing} selectedMenuId={selectedMenuId} onSelectRecipe={handleRecipeSelect} />}
+        {activeMainTab === "recipe" && <RecipeWorkspace menu={selectedMenu} ingredients={managedIngredients} pantryAvailability={pantryAvailability} onTogglePantryItem={togglePantryItem} isLoading={isRecipeLoading} onBack={() => setActiveMainTab("recommend")} />}
+        {activeMainTab === "shopping" && <ShoppingWorkspace menu={selectedMenu} ingredients={managedIngredients} pantryAvailability={pantryAvailability} />}
       </main>
       {message.text && <div className={`toast-message ${message.type}`} role={message.type === "error" ? "alert" : "status"} aria-live="polite">{message.text}</div>}
       {isFormOpen && <IngredientFormModal title={editingIngredientId ? "재료 수정" : "재료 추가"} onClose={closeIngredientForm}>
-        <IngredientForm formValues={formValues} errors={errors} isEditing={Boolean(editingIngredientId)} isSubmitting={isSubmitting} initialFocusField={initialFocusField} onChange={handleFormChange} onBlur={handleFormBlur} onTagToggle={handleTagToggle} onSubmit={handleSubmitIngredient} onCancel={closeIngredientForm} />
+        <IngredientForm formValues={formValues} errors={errors} isEditing={Boolean(editingIngredientId)} isSubmitting={isSubmitting} initialFocusField={initialFocusField} onChange={handleFormChange} onBlur={handleFormBlur} onTagToggle={handleTagToggle} onApplySuggestedDate={applySuggestedDate} onSubmit={handleSubmitIngredient} onCancel={closeIngredientForm} />
       </IngredientFormModal>}
       {confirmAction && <ConfirmDialog action={confirmAction} isSubmitting={isSubmitting} onCancel={() => setConfirmAction(null)} onConfirm={completeIngredientAction} />}
       {naggingMessage && selectedIngredient && <NaggingMessage message={naggingMessage} onAcceptSuggestion={acceptNaggingSuggestion} onContinueOriginal={() => continueWithRamen("ramen-basic")} onClose={closeNaggingMessage} />}
@@ -480,7 +534,7 @@ function IngredientTile({ ingredient, isMenuOpen, onToggleMenu, onCloseMenu, onE
 function IngredientMenu({ ingredient, isOpen, onToggle, onClose, onEdit, onAction }) {
   return <div className="ingredient-menu" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) onClose(); }}>
     <button className="more-button" type="button" aria-label={`${ingredient.name} 메뉴 열기`} aria-haspopup="menu" aria-expanded={isOpen} onClick={onToggle}>···</button>
-    {isOpen && <div className="menu-popover" role="menu"><button type="button" role="menuitem" onClick={() => onEdit(ingredient, "quantity")}>수량 변경</button><button type="button" role="menuitem" onClick={() => onEdit(ingredient, "expiryDays")}>소비기한 수정</button><button type="button" role="menuitem" onClick={() => onAction("used", ingredient)}>모두 사용함</button><button className="danger" type="button" role="menuitem" onClick={() => onAction("delete", ingredient)}>삭제</button></div>}
+    {isOpen && <div className="menu-popover" role="menu"><button type="button" role="menuitem" onClick={() => onEdit(ingredient, "quantity")}>수량 변경</button><button type="button" role="menuitem" onClick={() => onEdit(ingredient, "expirationDate")}>권장 날짜 수정</button><button type="button" role="menuitem" onClick={() => onAction("used", ingredient)}>모두 사용함</button><button className="danger" type="button" role="menuitem" onClick={() => onAction("delete", ingredient)}>삭제</button></div>}
   </div>;
 }
 
@@ -521,11 +575,11 @@ const moodOptions = [
   { id: "special", icon: "✨", title: "오늘은 제대로 만들래요", description: "조금 더 분위기 있는 한 끼" },
 ];
 
-function RecommendWorkspace({ ingredients, recipes, selectedMood, setSelectedMood, includeOneMissing, setIncludeOneMissing, selectedMenuId, onSelectRecipe }) {
-  const recommendations = getRecommendedRecipes({ recipes, ingredients, selectedMood, includeOneMissing });
+function RecommendWorkspace({ ingredients, pantryAvailability, recipes, selectedMood, setSelectedMood, includeOneMissing, setIncludeOneMissing, selectedMenuId, onSelectRecipe }) {
+  const recommendations = getRecommendedRecipes({ recipes, ingredients, pantryAvailability, selectedMood, includeOneMissing });
   const regularRecommendations = recommendations.filter(({ recipe }) => !recipe.isSpecial).slice(0, 3);
   const oneMissingRecommendations = recommendations.filter(({ recipe, availability }) => !recipe.isSpecial && availability.status === "oneMissing").slice(0, 3);
-  const specialRecommendations = getRecommendedRecipes({ recipes, ingredients, selectedMood: "special", includeOneMissing: true }).filter(({ availability }) => availability.missingIngredients.length <= 3).slice(0, 3);
+  const specialRecommendations = getRecommendedRecipes({ recipes, ingredients, pantryAvailability, selectedMood: "special", includeOneMissing: true }).filter(({ availability }) => availability.missingIngredients.length <= 3).slice(0, 3);
   const primaryRecommendations = selectedMood === "special" ? specialRecommendations : regularRecommendations;
 
   return <WorkspaceShell eyebrow="Meal Coach" title="오늘 뭐 먹지?" description="지금 할 수 있는 만큼만 골라보세요. 냉장고 상황에 맞춰 선택지를 줄여드릴게요.">
@@ -562,15 +616,16 @@ function EmptyRecipeState({ onShowOneMissing }) {
   return <div className="empty-recipe-state"><span aria-hidden="true">🍽️</span><h3>지금 조건에 맞는 메뉴가 없어요.</h3><p>다른 상태를 선택하거나 재료 1개만 추가하면 만들 수 있는 메뉴를 확인해 보세요.</p><button type="button" onClick={onShowOneMissing}>재료 1개 부족한 메뉴 보기</button></div>;
 }
 
-function RecipeWorkspace({ menu, ingredients, isLoading, onBack }) {
+function RecipeWorkspace({ menu, ingredients, pantryAvailability, onTogglePantryItem, isLoading, onBack }) {
   if (isLoading) return <WorkspaceShell eyebrow="Recipe Detail" title="레시피 상세" description="선택한 메뉴 정보를 불러오고 있습니다."><div className="recipe-empty"><h2>레시피를 불러오는 중입니다...</h2><p>잠시만 기다려주세요.</p></div></WorkspaceShell>;
   if (!menu) return <WorkspaceShell eyebrow="Recipe Detail" title="레시피 상세" description="식단 추천에서 메뉴를 선택하면 조리 과정이 표시됩니다."><div className="recipe-empty"><h2>선택한 메뉴를 찾을 수 없습니다</h2><p>식단 추천 화면에서 메뉴를 선택해주세요.</p><button type="button" onClick={onBack}>추천 메뉴 보기</button></div></WorkspaceShell>;
 
   const isRecipeMock = Array.isArray(menu.requiredIngredients);
   const usedIngredients = isRecipeMock ? menu.requiredIngredients : Array.isArray(menu.used) ? menu.used : [];
   const optionalIngredients = isRecipeMock ? menu.optionalIngredients ?? [] : [];
-  const availability = isRecipeMock ? getRecipeAvailability(menu, ingredients) : getIngredientGroups(menu, ingredients);
+  const availability = isRecipeMock ? getRecipeAvailability(menu, ingredients, pantryAvailability) : getIngredientGroups(menu, ingredients, pantryAvailability);
   const { ownedIngredients, missingIngredients } = availability;
+  const pantryItems = isRecipeMock ? getRecipePantryItems(menu) : [];
   const nutrition = nutritionByMenuId[menu.id];
   const substitutes = substitutesByMenuId[menu.id] ?? [];
   const recipeSteps = Array.isArray(menu.steps) ? menu.steps : [];
@@ -583,6 +638,7 @@ function RecipeWorkspace({ menu, ingredients, isLoading, onBack }) {
   return <WorkspaceShell eyebrow="Recipe Detail" title={menu.name ?? "메뉴 상세"} description={detailDescription}>
     <div className="recipe-summary"><SummaryCard tone="green" label="조리 시간" value={cookingTime} description="예상 소요 시간" /><SummaryCard tone="neutral" label="난이도" value={difficulty} description={methodDescription} /><SummaryCard tone="orange" label="필수 재료" value={`${usedIngredients.length}개`} description={usedIngredients.length ? usedIngredients.join(", ") : "등록된 재료 정보 없음"} /></div>
     <section className="recipe-section"><div className="section-heading"><p className="eyebrow">Ingredient Check</p><h2>필수·선택 재료</h2></div><div className="ingredient-status-grid"><IngredientStatus title="보유한 필수 재료" items={ownedIngredients} tone="owned" emptyMessage="현재 보유한 필수 재료가 없습니다." /><IngredientStatus title="부족한 필수 재료" items={missingIngredients} tone="missing" emptyMessage="추가로 필요한 필수 재료가 없습니다." /></div>{optionalIngredients.length > 0 && <div className="optional-ingredients"><strong>있으면 더 좋은 선택 재료</strong><div className="chip-list">{optionalIngredients.map((item) => <em key={item}>{item}</em>)}</div></div>}</section>
+    {pantryItems.length > 0 && <section className="recipe-section pantry-section"><div className="section-heading"><p className="eyebrow">Basic Pantry</p><h2>필요한 기본 양념</h2><p>기본 보유로 가정했어요. 실제로 없다면 상태를 바꾸면 장보기 목록과 추천에 반영됩니다.</p></div><div className="pantry-list">{pantryItems.map((item) => <div key={item.id}><span>{item.name}</span><button type="button" className={pantryAvailability[item.id] === false ? "missing" : "owned"} aria-pressed={pantryAvailability[item.id] !== false} onClick={() => onTogglePantryItem(item.id)}>{pantryAvailability[item.id] === false ? "없어요" : "보유 중"}</button></div>)}</div></section>}
     {isRecipeMock && <section className="recipe-section"><div className="section-heading"><p className="eyebrow">Why This Menu</p><h2>이 메뉴를 추천한 이유</h2></div><ul className="detail-reasons">{menu.recommendationReasons.slice(0, 3).map((reason) => <li key={reason}>{reason}</li>)}</ul></section>}
     {!isRecipeMock && <section className="recipe-section"><div className="section-heading"><p className="eyebrow">Mock Nutrition</p><h2>영양 정보</h2></div>{nutrition ? <div className="nutrition-grid"><NutritionCard label="열량" value={nutrition.calories} /><NutritionCard label="단백질" value={nutrition.protein} /><NutritionCard label="탄수화물" value={nutrition.carbohydrates} /></div> : <div className="recipe-data-empty">이 메뉴의 mock 영양 정보는 아직 준비되지 않았습니다.</div>}</section>}
     <section className="recipe-section"><div className="section-heading"><p className="eyebrow">Cooking Steps</p><h2>조리 순서</h2></div>{recipeSteps.length ? <ol className="recipe-steps">{recipeSteps.map((step, index) => <li key={`${index}-${step}`}><span>{index + 1}</span><p>{step}</p></li>)}</ol> : <div className="recipe-data-empty">등록된 조리 순서가 없습니다.</div>}</section>
@@ -598,8 +654,8 @@ function NutritionCard({ label, value }) {
   return <article className="nutrition-card"><span>{label}</span><strong>{value}</strong><small>mock 데이터</small></article>;
 }
 
-function ShoppingWorkspace({ menu, ingredients }) {
-  const missingIngredients = menu ? (Array.isArray(menu.requiredIngredients) ? getRecipeAvailability(menu, ingredients).missingIngredients : menu.missing ?? []) : [];
+function ShoppingWorkspace({ menu, ingredients, pantryAvailability }) {
+  const missingIngredients = menu ? (Array.isArray(menu.requiredIngredients) ? getRecipeAvailability(menu, ingredients, pantryAvailability).missingIngredients : getIngredientGroups(menu, ingredients, pantryAvailability).missingIngredients) : [];
   return <WorkspaceShell eyebrow="Shopping Recommendation" title="구매 추천" description="선택한 메뉴에 필요한 부족 재료를 카드로 확인하세요.">
     {!menu ? <div className="empty-board">부족 재료가 있는 메뉴를 선택하면 구매 추천 카드가 표시됩니다.</div> : missingIngredients.length ? <div className="shopping-grid">{missingIngredients.map((item) => <article className="shopping-card" key={item}><span>부족 재료</span><h3>{item}</h3><p>{menu.name}에 넣으면 맛과 완성도가 올라가는 추천 구매 재료입니다.</p><small>사용될 메뉴</small><strong>{menu.name}</strong><button type="button">더미 구매 버튼</button></article>)}</div> : <div className="empty-board">이 메뉴는 현재 재료만으로 만들 수 있습니다.</div>}
   </WorkspaceShell>;

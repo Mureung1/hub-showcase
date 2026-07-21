@@ -1,15 +1,20 @@
 import { getTagsForIngredientName } from "../../shared/ingredientTags.js";
 import { getDaysRemaining, getIngredientDueDate } from "./expiration.js";
+import { getPantryItemByName, getDefaultPantryAvailability } from "./pantry.js";
 
 function normalizeName(name) {
   return name.trim().replaceAll(" ", "").toLowerCase();
 }
 
-export function getRecipeAvailability(recipe, ingredients) {
+export function getRecipeAvailability(recipe, ingredients, pantryAvailability = getDefaultPantryAvailability()) {
   const ownedNames = new Set(ingredients.map((ingredient) => normalizeName(ingredient.name)));
   const requiredIngredients = recipe.requiredIngredients ?? [];
-  const ownedIngredients = requiredIngredients.filter((name) => ownedNames.has(normalizeName(name)));
-  const missingIngredients = requiredIngredients.filter((name) => !ownedNames.has(normalizeName(name)));
+  const isOwned = (name) => {
+    const pantryItem = getPantryItemByName(name);
+    return ownedNames.has(normalizeName(name)) || Boolean(pantryItem && pantryAvailability[pantryItem.id]);
+  };
+  const ownedIngredients = requiredIngredients.filter(isOwned);
+  const missingIngredients = requiredIngredients.filter((name) => !isOwned(name));
 
   return {
     status: missingIngredients.length === 0 ? "available" : missingIngredients.length === 1 ? "oneMissing" : "shoppingNeeded",
@@ -56,8 +61,8 @@ function getNutritionScore(recipe, ingredients) {
   return Math.round((nutritionGroups.size / 3) * 20);
 }
 
-export function scoreRecipe(recipe, ingredients, selectedMood) {
-  const availability = getRecipeAvailability(recipe, ingredients);
+export function scoreRecipe(recipe, ingredients, selectedMood, pantryAvailability) {
+  const availability = getRecipeAvailability(recipe, ingredients, pantryAvailability);
   const requiredCount = Math.max(1, (recipe.requiredIngredients ?? []).length);
   const availabilityScore = Math.round((availability.ownedIngredients.length / requiredCount) * 40);
   const scoreBreakdown = {
@@ -78,10 +83,10 @@ export function scoreRecipe(recipe, ingredients, selectedMood) {
   return { availability, score, scoreBreakdown, scoreReasons };
 }
 
-export function getRecommendedRecipes({ recipes, ingredients, selectedMood, includeOneMissing = true }) {
+export function getRecommendedRecipes({ recipes, ingredients, pantryAvailability, selectedMood, includeOneMissing = true }) {
   return recipes
     .filter(moodRules[selectedMood] ?? moodRules.quick)
-    .map((recipe) => ({ recipe, ...scoreRecipe(recipe, ingredients, selectedMood) }))
+    .map((recipe) => ({ recipe, ...scoreRecipe(recipe, ingredients, selectedMood, pantryAvailability) }))
     .filter(({ availability }) => includeOneMissing || availability.status === "available")
     .sort((a, b) => b.score - a.score
       || a.availability.missingIngredients.length - b.availability.missingIngredients.length

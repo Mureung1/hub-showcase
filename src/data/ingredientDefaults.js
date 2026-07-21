@@ -18,23 +18,6 @@ export const INGREDIENT_CATEGORIES = {
   other: "기타",
 };
 
-export const DEFAULT_SHELF_LIFE_DAYS = {
-  egg: { fridge: 21 },
-  meat: { fridge: 5, freezer: 90 },
-  seafood: { fridge: 2, freezer: 90 },
-  vegetable: { fridge: 7, freezer: 30, room: 14 },
-  dairy: { fridge: 14, freezer: 90 },
-  tofu: { fridge: 7 },
-  grain: { fridge: 3, freezer: 30, room: 2 },
-  noodle: { room: 180 },
-  bread: { room: 4, fridge: 5, freezer: 90 },
-  prepared: { fridge: 7, freezer: 30 },
-  frozenFood: { freezer: 180 },
-  instant: { room: 180 },
-  sauce: { fridge: 90, room: 180 },
-  seasoning: { fridge: 30, room: 180 },
-};
-
 export const CATEGORY_ICONS = {
   egg: "🥚",
   meat: "🥩",
@@ -54,6 +37,4 @@ export const CATEGORY_ICONS = {
   oil: "🫙",
   other: "🥣",
 };
-
-export const LONG_TERM_CATEGORIES = new Set(["canned", "sauce", "seasoning", "oil"]);
 
