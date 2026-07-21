@@ -15,6 +15,29 @@ model User {
   name         String
   nickname     String
   createdAt    DateTime @default(now())
+  records      Record[]
 
   @@map("users")
+}
+
+model Challenge {
+  id        String   @id @default(uuid())
+  date      String   @unique
+  topic     String
+  createdAt DateTime @default(now())
+
+  @@map("challenges")
+}
+
+model Record {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  date      String
+  imageUrl  String
+  memo      String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+  @@map("records")
 }
