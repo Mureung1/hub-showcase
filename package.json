@@ -9,8 +9,9 @@
     "build": "npm --prefix frontend run build",
     "lint": "npm --prefix frontend run lint",
     "install:all": "npm --prefix frontend install && npm --prefix backend install",
-    "hooks:install": "git config core.hooksPath .githooks && echo '커밋 시크릿 스캔 훅 활성화됨(.githooks).'",
+    "hooks:install": "git config core.hooksPath .githooks && echo '커밋 훅 활성화됨(.githooks): 시크릿 스캔 + 업스트림 오링크 방지.'",
     "check:secrets": ".githooks/pre-commit",
+    "check:pr-refs": "node scripts/check-no-bare-issue-refs.mjs",
     "verify:backend": "npm --prefix backend run verify"
   }
 }

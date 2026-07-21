@@ -1,0 +1,30 @@
+#!/bin/sh
+# 업스트림 오링크 방지 commit-msg 훅.
+# 이 저장소의 PR은 공용 업스트림(connect-AIAgentChallenge-26-1/hub)으로 올라가므로,
+# 커밋 메시지의 bare "#27" 같은 표기는 내 포크가 아니라 업스트림의 같은 번호(=다른 참가자 이슈)로
+# 자동 링크되어 그 사람 이슈에 "언급됨" 이벤트가 남는다(2026-07-21 실제 발생, docs/pr-guide.md 참고).
+# 활성화: git config core.hooksPath .githooks (npm run hooks:install 로 이미 켜짐, pre-commit과 공유)
+
+msg_file="$1"
+[ -f "$msg_file" ] || exit 0
+
+msg=$(cat "$msg_file")
+
+# 안전한 형태(owner/repo#27, 전체 URL)는 먼저 지우고, 남은 bare "#숫자"만 검사한다.
+# 구분자로 '|'를 쓴다 — 패턴 자체에 리터럴 '#'이 들어가 '#'를 구분자로 쓰면 깨진다(BSD/macOS sed에서 확인됨).
+stripped=$(printf '%s' "$msg" \
+  | sed -E 's|[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+#[0-9]+||g' \
+  | sed -E 's|https?://[^ ]+||g')
+
+hit=$(printf '%s' "$stripped" | grep -oE '#[0-9]+')
+
+if [ -n "$hit" ]; then
+  echo "✋ 커밋 차단: 커밋 메시지에 bare 이슈번호가 있습니다 → $(printf '%s' "$hit" | tr '\n' ' ')"
+  echo "   이 저장소의 PR은 업스트림 공용 저장소로 올라갑니다."
+  echo "   bare '#27' 은 업스트림의 같은 번호(=다른 참가자 이슈)로 자동 링크됩니다."
+  echo "   → 번호 없이 기능명으로 쓰거나, 꼭 필요하면 'bricepark94/hub#27' 전체 경로로 쓰세요."
+  echo "   → 정말 의도된 것이면: git commit --no-verify (신중히)."
+  exit 1
+fi
+
+exit 0

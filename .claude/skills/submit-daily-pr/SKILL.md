@@ -106,6 +106,15 @@ git push origin work
 
 **작성 후, 제목과 본문 전체를 대화창에 그대로 보여주고 승인을 요청한다.** 승인 문구가 오기 전까지 5단계로 넘어가지 않는다. 수정 요청이 오면 반영해 다시 보여준다.
 
+**필수: 승인된 제목·본문 파일을 `gh pr create` 실행 전 아래로 반드시 점검한다** (commit-msg 훅은 커밋 메시지만 막고, `gh pr create`는 git 훅 대상이 아니라서 별도 점검이 필요하다 — 2026-07-21 이 검사 없이 PR을 올려 업스트림의 다른 참가자 이슈에 오링크된 실사고가 있었다):
+
+```bash
+echo "<승인된 제목>" | node scripts/check-no-bare-issue-refs.mjs -
+node scripts/check-no-bare-issue-refs.mjs <본문 파일 경로>
+```
+
+둘 다 `✅ bare 이슈번호 없음`이 나와야 다음 단계로 진행한다. 걸리면 번호를 빼거나 `bricepark94/hub#27` 전체 경로로 고쳐 다시 점검한다.
+
 ## 5. PR 제출 (승인 후에만)
 
 먼저 같은 head에서 이미 열려 있는 PR이 있는지 확인한다(있으면 새로 만들지 업데이트할지 `docs/pr-guide.md` §9 기준으로 사용자에게 물어본다):
