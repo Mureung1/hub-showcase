@@ -55,7 +55,11 @@ function App() {
     setIsEditingProfile(false)
   }
 
-  function handleResetProgress() {
+  async function handleResetProgress() {
+    await fetch('http://localhost:4000/api/progress/reset', {
+      method: 'POST',
+      credentials: 'include',
+    }).catch(() => {})
     setProgress({})
   }
 

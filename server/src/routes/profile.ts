@@ -3,9 +3,19 @@ import { prisma } from '../prisma.js'
 
 export const profileRouter = Router()
 
+// Prisma DateTime → "YYYY-MM-DD" 변환 (프론트 Profile 타입과 일치)
+function toShape(profile: { closureDate: Date | null; [key: string]: unknown }) {
+  return {
+    ...profile,
+    closureDate: profile.closureDate
+      ? new Date(profile.closureDate).toISOString().slice(0, 10)
+      : null,
+  }
+}
+
 profileRouter.get('/', async (req, res) => {
   const profile = await prisma.profile.findUnique({ where: { sessionId: req.sessionId } })
-  res.json(profile)
+  res.json(profile ? toShape(profile) : null)
 })
 
 profileRouter.post('/', async (req, res) => {
@@ -41,5 +51,5 @@ profileRouter.post('/', async (req, res) => {
     },
   })
 
-  res.json(profile)
+  res.json(toShape(profile))
 })

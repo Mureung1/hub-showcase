@@ -6,33 +6,33 @@
 
 | # | 레이어 | 작업 | 의존 | 상태 |
 |---|---|---|---|---|
-| 8 | 설정 | `concurrently` 추가 — 루트 `npm run dev`로 FE+BE 동시 실행 | — | [ ] |
-| 9 | FE·BE | "체크 상태 초기화" → `POST /api/progress/reset` 연결 | — | [ ] |
-| 10 | 설정 | 테스트 환경 구축 — Vitest(FE) + Supertest(BE) | — | [ ] |
-| 11 | 데이터 | `tasks.ts` sourceUrl 딥링크 개선 — 각 항목을 정확한 하위 페이지로 | — | [ ] |
-| 12 | BE | `/api/profile` 응답 shape 확인 — `closureDate` 형식 정규화 | — | [ ] |
-| 13 | FE·BE | 온보딩 제출 → `POST /api/profile` 연결 + 제출 버튼 로딩 **(TDD)** | 12, 10 | [ ] |
-| 14 | FE | 대시보드 진입 → `GET /api/profile` 연결, `useLocalStorage` 제거 **(TDD)** | 13 | [ ] |
-| 15 | BE·FE | `GET /api/tasks` 구현 (profile 기반 필터링) + 프론트 연결 **(TDD)** | 14 | [ ] |
-| 16 | FE | 에러 배너 + 초기 로딩 스켈레톤 | 14 | [ ] |
-| 17 | 문서 | 아키텍처 다이어그램 — 구조·데이터 흐름을 Mermaid로 시각화 | 14, 15 | [ ] |
-| 18 | 통합 | 전체 플로우 수동 QA + 자동 테스트 실행 | 15, 16, 11 | [ ] |
+| 9 | 설정 | `concurrently` 추가 — 루트 `npm run dev`로 FE+BE 동시 실행 | — | [ ] |
+| 10 | FE·BE | "체크 상태 초기화" → `POST /api/progress/reset` 연결 | — | [ ] |
+| 11 | 설정 | 테스트 환경 구축 — Vitest(FE) + Supertest(BE) | — | [ ] |
+| 12 | 데이터 | `tasks.ts` sourceUrl 딥링크 개선 — 각 항목을 정확한 하위 페이지로 | — | [ ] |
+| 13 | BE | `/api/profile` 응답 shape 확인 — `closureDate` 형식 정규화 | — | [ ] |
+| 14 | FE·BE | 온보딩 제출 → `POST /api/profile` 연결 + 제출 버튼 로딩 **(TDD)** | 13, 11 | [ ] |
+| 15 | FE | 대시보드 진입 → `GET /api/profile` 연결, `useLocalStorage` 제거 **(TDD)** | 14 | [ ] |
+| 16 | BE·FE | `GET /api/tasks` 구현 (profile 기반 필터링) + 프론트 연결 **(TDD)** | 15 | [ ] |
+| 17 | FE | 에러 배너 + 초기 로딩 스켈레톤 | 15 | [ ] |
+| 18 | 문서 | 아키텍처 다이어그램 — 구조·데이터 흐름을 Mermaid로 시각화 | 15, 16 | [ ] |
+| 19 | 통합 | 전체 플로우 수동 QA + 자동 테스트 실행 | 12, 16, 17 | [ ] |
 
 ## 진행 순서
 
 ```
-#8  (concurrently) ──────────────────────────────────── 독립, 먼저 처리
-#9  (reset 연동) ────────────────────────────────────── 독립, 먼저 처리
-#10 (테스트 환경) ───────────────────────────────────── 독립, 먼저 처리
-#11 (URL 딥링크) ────────────────────────────────────── 독립, 먼저 처리
+#9  (concurrently) ──────────────────────────────────── 독립, 먼저 처리
+#10 (reset 연동) ────────────────────────────────────── 독립, 먼저 처리
+#11 (테스트 환경) ───────────────────────────────────── 독립, 먼저 처리
+#12 (URL 딥링크) ────────────────────────────────────── 독립, 먼저 처리
 
-#12 (API shape 검증)
-  └─→ #13 (POST /api/profile 연결 + 테스트) ← #10 의존
-        └─→ #14 (GET /api/profile 연결 + 테스트)
-              ├─→ #15 (GET /api/tasks + 테스트)
-              ├─→ #16 (에러/로딩 UX)
-              └─→ #17 (아키텍처 다이어그램)
-                         └─→ #18 (통합 QA) ← #11, #15, #16 모두 완료 후
+#13 (API shape 검증)
+  └─→ #14 (POST /api/profile 연결 + 테스트) ← #11 의존
+        └─→ #15 (GET /api/profile 연결 + 테스트)
+              ├─→ #16 (GET /api/tasks + 테스트)
+              ├─→ #17 (에러/로딩 UX)
+              └─→ #18 (아키텍처 다이어그램)
+                         └─→ #19 (통합 QA) ← #12, #16, #17 모두 완료 후
 ```
 
 ## 스코프 밖 (이번 주 안 함)
@@ -46,7 +46,7 @@
 
 ## 이슈 상세
 
-### #8 `[설정]` concurrently 추가
+### #9 `[설정]` concurrently 추가
 
 **변경 파일:** `package.json` (루트)
 
@@ -65,7 +65,7 @@
 
 ---
 
-### #9 `[FE]` 체크 상태 초기화 → 서버 연결
+### #10 `[FE]` 체크 상태 초기화 → 서버 연결
 
 **변경 파일:** `src/App.tsx`
 
@@ -88,7 +88,7 @@ async function handleResetProgress() {
 
 ---
 
-### #10 `[설정]` 테스트 환경 구축
+### #11 `[설정]` 테스트 환경 구축
 
 **전략:** 프론트는 Vitest + React Testing Library, 백엔드는 Vitest + Supertest. E2E(Playwright)는 스코프 밖.
 
@@ -122,7 +122,7 @@ smoke test 파일 생성:
 
 ---
 
-### #11 `[데이터]` tasks.ts sourceUrl 딥링크 개선
+### #12 `[데이터]` tasks.ts sourceUrl 딥링크 개선
 
 **변경 파일:** `src/data/tasks.ts`
 
@@ -142,11 +142,11 @@ smoke test 파일 생성:
 
 **완료 조건**
 - 각 `<a>` 링크 클릭 시 해당 업무 페이지로 직접 이동 (브라우저 확인)
-- `lastCheckedDate` 오늘 날짜(`2026-07-20`)로 갱신
+- `lastCheckedDate` 오늘 날짜(`2026-07-21`)로 갱신
 
 ---
 
-### #12 `[BE]` `/api/profile` 응답 shape 확인 및 정규화
+### #13 `[BE]` `/api/profile` 응답 shape 확인 및 정규화
 
 **변경 파일:** `server/src/routes/profile.ts`
 
@@ -169,7 +169,7 @@ const toShape = (p: { closureDate: Date | null; [key: string]: unknown }) => ({
 
 ---
 
-### #13 `[FE·BE]` 온보딩 제출 → `POST /api/profile` 연결 (TDD)
+### #14 `[FE·BE]` 온보딩 제출 → `POST /api/profile` 연결 (TDD)
 
 **변경 파일:** `src/App.tsx`, `src/components/OnboardingForm.tsx`
 
@@ -198,7 +198,7 @@ async function handleComplete(newProfile: Profile) {
 
 ---
 
-### #14 `[FE]` 대시보드 → `GET /api/profile` 연결, `useLocalStorage` 제거 (TDD)
+### #15 `[FE]` 대시보드 → `GET /api/profile` 연결, `useLocalStorage` 제거 (TDD)
 
 **변경 파일:** `src/App.tsx`
 
@@ -231,7 +231,7 @@ useEffect(() => {
 
 ---
 
-### #15 `[BE·FE]` `GET /api/tasks` 구현 + 프론트 연결 (TDD)
+### #16 `[BE·FE]` `GET /api/tasks` 구현 + 프론트 연결 (TDD)
 
 **전략:** `condition` 함수를 서버에 복제해 `{ taskIds: string[] }` 반환. `reason`/`dueDate` 계산은 프론트 `src/data/tasks.ts`에 유지.
 
@@ -247,7 +247,7 @@ useEffect(() => {
 
 ---
 
-### #16 `[FE]` 에러 배너 + 초기 로딩 스켈레톤
+### #17 `[FE]` 에러 배너 + 초기 로딩 스켈레톤
 
 **변경 파일:** `src/App.tsx`, `src/components/Dashboard.tsx`, `src/components/Dashboard.css`
 
@@ -261,7 +261,7 @@ useEffect(() => {
 
 ---
 
-### #17 `[문서]` 아키텍처 다이어그램 작성
+### #18 `[문서]` 아키텍처 다이어그램 작성
 
 **새 파일:** `docs/architecture.md`
 
@@ -274,13 +274,13 @@ Mermaid 다이어그램 3개:
 
 **완료 조건**
 - GitHub에서 Mermaid 렌더링 확인
-- 이슈 #14, #15 완료 후 실제 데이터 흐름 반영
+- 이슈 #15, #16 완료 후 실제 데이터 흐름 반영
 
 ---
 
-### #18 `[통합]` 전체 플로우 수동 QA + 자동 테스트 실행
+### #19 `[통합]` 전체 플로우 수동 QA + 자동 테스트 실행
 
-**의존:** #11, #15, #16
+**의존:** #12, #16, #17
 
 시나리오별 완료 조건:
 1. **신규 방문:** Landing → OnboardingForm → Dashboard 전환, Supabase `Profile` 행 생성 확인
