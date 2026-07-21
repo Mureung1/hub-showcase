@@ -25,10 +25,18 @@ const CustomerDetail = () => {
   const [customer, setCustomer] = useState<any | null>(null)
   const [timeline, setTimeline] = useState<TimelineEvent[]>([])
   const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
-      if (!user || !id) return
+      if (!user || !id) {
+        setIsLoading(false)
+        return
+      }
+
+      setIsLoading(true)
+      setError(null)
 
       try {
         const customerData = await getCustomer(user.uid, id)
@@ -60,8 +68,11 @@ const CustomerDetail = () => {
         // 날짜순 정렬
         events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         setTimeline(events)
-      } catch (error) {
-        console.error('Failed to load customer data:', error)
+      } catch (err) {
+        console.error('Failed to load customer data:', err)
+        setError('고객 정보를 불러오는데 실패했습니다')
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -141,6 +152,28 @@ const CustomerDetail = () => {
     } catch (error) {
       toast.error('상태 변경 실패: ' + (error as Error).message)
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-4 text-center text-gray-500">
+        <p>로딩 중...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 text-center">
+        <p className="text-red-600 mb-2">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-blue-600 hover:underline font-medium"
+        >
+          다시 시도
+        </button>
+      </div>
+    )
   }
 
   if (!customer) {
