@@ -181,11 +181,14 @@ CandidateFileSchema 목록 ([[09_DATA_SCHEMA]] 참고)
   "judgement": "SUFFICIENT | AMBIGUOUS | LOW_UNDERSTANDING",
   "content_type": "PROBLEM_SOLVING | IMPLEMENTATION_INTRO",
   "next_question": "",
+  "next_cited_code": "",
   "portfolio_markdown": ""
 }
 ```
 
 `next_question`이 follow-up(재질문)인지, 같은 파일의 다음 chunk에 대한 질문인지, 다음 후보 파일의 신규 질문인지는 `judgement`와 서버가 관리하는 `current_chunk_index`/`current_candidate_index`로 판단한다 ([[08_DATABASE]] 8장 참고).
+
+`next_cited_code`는 `next_question`이 가리키는 코드 근거다. `next_question`이 `null`(인터뷰 종료)이면 `next_cited_code`도 `null`이다.
 
 ---
 
