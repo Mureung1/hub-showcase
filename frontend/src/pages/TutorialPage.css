@@ -1,0 +1,132 @@
+.rs-tutorial {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clb-space-lg);
+}
+
+.rs-tutorial-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--clb-space-md);
+  min-height: 260px;
+}
+
+.rs-tutorial-title {
+  margin: 0;
+  font-size: var(--clb-text-panel-title);
+}
+
+.rs-tutorial-body {
+  margin: 0;
+  color: var(--clb-muted);
+  line-height: 1.65;
+}
+
+/* ---- 4가지 종류 카드 ---- */
+.rs-tutorial-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--clb-space-sm);
+}
+
+.rs-tutorial-typecard {
+  background: var(--clb-glass-faint);
+  border: 1px solid var(--clb-edge-soft);
+  border-radius: var(--clb-radius-control);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  padding: var(--clb-space-md);
+}
+
+.rs-tutorial-typecard h3 {
+  margin: 0 0 var(--clb-space-xs);
+  font-size: var(--clb-text-card-title);
+}
+
+.rs-tutorial-typedesc {
+  margin: 0;
+  color: var(--clb-muted);
+  font-size: 0.9rem;
+}
+
+.rs-tutorial-typeex {
+  margin: var(--clb-space-xs) 0 0;
+  color: var(--clb-muted-dim);
+  font-size: var(--clb-text-label);
+}
+
+/* ---- 관찰 vs 추론 비교 ---- */
+.rs-tutorial-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--clb-space-sm);
+}
+
+@media (max-width: 640px) {
+  .rs-tutorial-compare {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rs-tutorial-compare-col {
+  background: var(--clb-glass-faint);
+  border: 1px solid var(--clb-edge-soft);
+  border-radius: var(--clb-radius-control);
+  padding: var(--clb-space-md);
+}
+
+.rs-tutorial-compare-col.is-good {
+  border-left: 3px solid var(--clb-gold);
+}
+
+.rs-tutorial-compare-col p {
+  margin: var(--clb-space-xs) 0 0;
+  color: var(--clb-muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.rs-tutorial-compare-label {
+  font-size: var(--clb-text-label);
+  font-weight: 700;
+  color: var(--clb-muted-dim);
+}
+
+.rs-tutorial-compare-col.is-good .rs-tutorial-compare-label {
+  color: var(--clb-gold);
+}
+
+/* ---- 직접 써보기 ---- */
+.rs-tutorial-practice {
+  width: 100%;
+  padding: var(--clb-space-md);
+  border-radius: var(--clb-radius-control);
+  border: 1px solid var(--clb-edge-soft);
+  background: var(--clb-glass-faint);
+  color: var(--clb-ink);
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.rs-tutorial-practice::placeholder {
+  color: var(--clb-muted-dim);
+}
+
+.rs-tutorial-practice:focus-visible {
+  outline: 2px solid var(--clb-gold);
+  outline-offset: 1px;
+}
+
+/* ---- 하단 네비 ---- */
+.rs-tutorial-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--clb-space-md);
+}
+
+.rs-tutorial-count {
+  color: var(--clb-muted-dim);
+  font-size: var(--clb-text-label);
+}
