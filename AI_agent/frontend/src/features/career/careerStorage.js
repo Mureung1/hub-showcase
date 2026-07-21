@@ -1,4 +1,5 @@
 const SPEC_STORAGE_KEY = "careerMissionSpecs";
+const JOB_GOAL_STORAGE_KEY = "careerMissionJobGoals";
 const ANALYSIS_STORAGE_KEY = "careerMissionAnalysis";
 
 export const specFields = [
@@ -16,6 +17,18 @@ const optionalSpecFieldNames = new Set(["certificates", "languageScore", "skills
 
 export const initialSpec = specFields.reduce(
   (spec, field) => ({ ...spec, [field.name]: "" }),
+  {}
+);
+
+export const jobGoalFields = [
+  { name: "targetRole", label: "목표 직무" },
+  { name: "industry", label: "관심 산업" },
+  { name: "companyType", label: "희망 기업 유형" },
+  { name: "reason", label: "목표 이유" },
+];
+
+export const initialJobGoal = jobGoalFields.reduce(
+  (jobGoal, field) => ({ ...jobGoal, [field.name]: "" }),
   {}
 );
 
@@ -69,6 +82,62 @@ export const saveCareerSpec = (userId, spec) => {
   clearCareerAnalysis(userId);
 
   return nextSpec;
+};
+
+export const getCareerJobGoal = (userId) => {
+  const userKey = getUserKey(userId);
+
+  if (!userKey) {
+    return null;
+  }
+
+  const savedGoal = readStorageMap(JOB_GOAL_STORAGE_KEY)[userKey];
+
+  if (savedGoal) {
+    return savedGoal;
+  }
+
+  const savedSpec = getCareerSpec(userId);
+
+  if (!savedSpec?.targetRole) {
+    return null;
+  }
+
+  return {
+    ...initialJobGoal,
+    targetRole: savedSpec.targetRole,
+  };
+};
+
+export const saveCareerJobGoal = (userId, jobGoal) => {
+  const userKey = getUserKey(userId);
+
+  if (!userKey) {
+    return null;
+  }
+
+  const jobGoalsByUser = readStorageMap(JOB_GOAL_STORAGE_KEY);
+  const nextJobGoal = {
+    ...initialJobGoal,
+    ...jobGoal,
+    updatedAt: new Date().toISOString(),
+  };
+
+  jobGoalsByUser[userKey] = nextJobGoal;
+  writeStorageMap(JOB_GOAL_STORAGE_KEY, jobGoalsByUser);
+
+  const specsByUser = readStorageMap(SPEC_STORAGE_KEY);
+  const currentSpec = specsByUser[userKey] || initialSpec;
+  specsByUser[userKey] = {
+    ...initialSpec,
+    ...currentSpec,
+    targetRole: nextJobGoal.targetRole,
+    updatedAt: new Date().toISOString(),
+  };
+  writeStorageMap(SPEC_STORAGE_KEY, specsByUser);
+  clearCareerAnalysis(userId);
+
+  return nextJobGoal;
 };
 
 export const getCareerAnalysis = (userId) => {

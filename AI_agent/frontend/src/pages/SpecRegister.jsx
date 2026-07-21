@@ -26,12 +26,11 @@ function SpecRegister() {
   const [jobResults, setJobResults] = useState([]);
   const [jobSearchMessage, setJobSearchMessage] = useState("");
   const [isSearchingJobs, setIsSearchingJobs] = useState(false);
-  const [isLoadingSpec, setIsLoadingSpec] = useState(Boolean(session));
+  const [isLoadingSpec, setIsLoadingSpec] = useState(Boolean(sessionId));
   const [isSavingSpec, setIsSavingSpec] = useState(false);
 
   useEffect(() => {
-    if (!session) {
-      setIsLoadingSpec(false);
+    if (!sessionId) {
       return;
     }
 
