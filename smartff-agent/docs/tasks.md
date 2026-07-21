@@ -346,6 +346,9 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
 - [ ] Fuzzy Matching: sales/orders 상품명 유사 매칭
 - [ ] Product Master 자동 보정: 수동 매핑 테이블 구축
 - [ ] Rule Engine V2: 더 복잡한 규칙 추가
+- [ ] FinancialService Cache Reload (V2): Upload 이후 최신 `merged_dataset.csv` 반영
+  - `reloadData()` 구현, cache invalidation, Upload API와 연동, Recommendation 기준(카테고리 평균 폐기율/전체 평균 마진율) 재계산
+  - 현재(V1)는 서버 기동 시 1회 로드 후 캐싱 — 의도적 설계 선택, 버그 아님 (2026-07-21 결정)
 - [ ] Dashboard AI Insight: 자연어 분석 고도화
 - [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동)
 
