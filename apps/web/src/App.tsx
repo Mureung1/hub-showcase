@@ -161,7 +161,7 @@ export default function WeatherPilotV3() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 2px 14px" }}>
           <div style={{ width: 32, height: 32, borderRadius: 10, background: T.gradient, display: "grid", placeItems: "center", color: "#fff", fontSize: 16 }}>⛅</div>
           <div style={{ fontWeight: 700, fontSize: 17, letterSpacing: -0.3 }}>WeatherPilot</div>
-          <div style={{ marginLeft: "auto", fontSize: 12, color: T.sub }}>김사장 카페 · 서면점</div>
+          <div style={{ marginLeft: "auto", fontSize: 12, color: T.sub }}>김사장 카페 · 정자점</div>
         </div>
 
         {/* 세그먼트 토글 (오늘 / 성과) */}
@@ -227,7 +227,7 @@ function Dashboard({ s, onReview }: { s: Scenario; onReview: () => void }) {
     <div className="wp-view">
       {/* 피처 카드(블루) — 날씨 + 매출 진단 히어로 */}
       <div style={{ background: T.gradient, borderRadius: 20, padding: 20, color: T.onBlue, boxShadow: T.shadowBlue }}>
-        <div style={{ fontSize: 14, fontWeight: 700 }}>오늘의 날씨 · 부산 서면</div>
+        <div style={{ fontSize: 14, fontWeight: 700 }}>오늘의 날씨 · 성남 정자동</div>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 14, marginTop: 12 }}>
           <div style={{ fontSize: 64, lineHeight: 1, flexShrink: 0 }}>{s.emoji}</div>
           <div>

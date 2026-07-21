@@ -17,10 +17,11 @@ const STORE = {
   category: "카페",
   menu_tags: ["아메리카노", "콜드브루", "라떼", "스콘"],
   tone: "친근",
-  lat: 35.1578,
-  lng: 129.0594,
-  nx: 98,
-  ny: 75,
+  // 네이버 1784 (성남 분당구 정자동) — nx/ny는 latLngToGrid(lat,lng) 결과
+  lat: 37.3595,
+  lng: 127.1052,
+  nx: 62,
+  ny: 122,
 };
 
 const CUSTOMER_TOTAL = 142;
