@@ -137,10 +137,18 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
     return;
   }
 
-  const nights = Array.from({ length: timeline.numNights }, (_, k) => ({
-    habitualBedTime: timeline.habitualBedTime + 24 * k,
-    habitualWakeTime: timeline.habitualWakeTime + 24 * (k + 1),
-  }));
+  // #22 — night[k]가 이어지는 날(day k+1)에 시험이 있으면, 그 시험 시작 시각보다
+  // 늦게 깨는 기상 후보는 애초에 말이 안 되므로 latestWakeTime으로 걸러낸다.
+  const nights = Array.from({ length: timeline.numNights }, (_, k) => {
+    const dayStart = 24 * (k + 1);
+    const dayEnd = 24 * (k + 2);
+    const examTimesThisDay = timeline.examTimes.filter((t) => t >= dayStart && t < dayEnd);
+    return {
+      habitualBedTime: timeline.habitualBedTime + 24 * k,
+      habitualWakeTime: timeline.habitualWakeTime + 24 * (k + 1),
+      latestWakeTime: examTimesThisDay.length > 0 ? Math.min(...examTimesThisDay) : undefined,
+    };
+  });
 
   const plannedDoses = nights.map((night) => ({
     dose: { time: night.habitualWakeTime + CAFFEINE_ANCHOR_OFFSET_HOURS, amountMg: DEFAULT_CANDIDATE_DOSE_MG },
