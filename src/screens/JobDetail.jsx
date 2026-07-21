@@ -35,7 +35,7 @@ function JobDetail({ job, onBack, onGenerateDraft, isGeneratingDraft, draftError
       {draftError && <p className="error-text">{draftError}</p>}
 
       <div className="actions">
-        <button type="button" className="btn-link" onClick={onBack}>
+        <button type="button" className="btn-link" onClick={onBack} disabled={isGeneratingDraft}>
           ← 목록으로 돌아가기
         </button>
         <button type="button" className="btn-primary" onClick={() => onGenerateDraft(job)} disabled={isGeneratingDraft}>
