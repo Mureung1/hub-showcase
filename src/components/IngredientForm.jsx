@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
 import { INGREDIENT_CATEGORIES } from "../data/ingredientDefaults";
+import { INGREDIENT_TAG_LABELS, INGREDIENT_TAGS } from "../../shared/ingredientTags";
 
 const categoryOptions = Object.entries(INGREDIENT_CATEGORIES);
 
-export default function IngredientForm({ formValues, errors, isEditing, isSubmitting, initialFocusField = "name", onChange, onBlur, onSubmit, onCancel }) {
+export default function IngredientForm({ formValues, errors, isEditing, isSubmitting, initialFocusField = "name", onChange, onBlur, onTagToggle, onSubmit, onCancel }) {
   const nameRef = useRef(null);
   const quantityRef = useRef(null);
   const expiryRef = useRef(null);
@@ -88,6 +89,17 @@ export default function IngredientForm({ formValues, errors, isEditing, isSubmit
           </select>
         </div>
       </div>
+
+      <fieldset className="tag-fieldset">
+        <legend>추천용 재료 태그</legend>
+        <p>분류에 맞춰 자동으로 제안했어요. 실제 재료 성격에 맞게 조정할 수 있습니다.</p>
+        <div className="tag-selector">
+          {INGREDIENT_TAGS.map((tag) => <label key={tag} className={formValues.tags.includes(tag) ? "selected" : ""}>
+            <input type="checkbox" checked={formValues.tags.includes(tag)} onChange={() => onTagToggle(tag)} />
+            <span>{INGREDIENT_TAG_LABELS[tag]}</span>
+          </label>)}
+        </div>
+      </fieldset>
 
       <div className="modal-actions">
         <button className="ghost-action" type="button" onClick={onCancel} disabled={isSubmitting}>취소</button>

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
 import { supabase } from "../lib/supabase.js";
+import { INGREDIENT_TAGS } from "../../shared/ingredientTags.js";
 
 export const ingredientsRouter = Router();
 
@@ -11,7 +12,7 @@ const ingredientInputSchema = z.object({
   name: z.string().trim().min(1).max(100),
   category: z.string().trim().min(1).max(50),
   subcategory: z.string().trim().max(50).nullable().default(null),
-  tags: z.array(z.string().trim().min(1).max(50)).default([]),
+  tags: z.array(z.enum(INGREDIENT_TAGS)).max(INGREDIENT_TAGS.length).default([]),
   quantity: z.number().nonnegative().nullable(),
   unit: z.string().trim().max(30).nullable(),
   quantity_mode: z.enum(["exact", "notTracked"]),

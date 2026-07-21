@@ -42,6 +42,7 @@
 .recipe-type-chip,
 .availability-dot { padding: 6px 9px; border-radius: 999px; font-size: 11px; font-weight: 900; }
 .recipe-type-chip { color: #c45c2d; background: #fff0e8; }
+.recommendation-score { padding: 7px 10px; border-radius: 999px; color: #006d36; background: #e9f7ef; font-size: 13px; font-weight: 800; }
 .availability-dot.available { color: #087a49; background: #e7f7ef; }
 .availability-dot.oneMissing { color: #a45a00; background: #fff3d5; }
 .availability-dot.shoppingNeeded { color: #9f1239; background: #ffe8ef; }
@@ -70,7 +71,7 @@
 .optional-ingredients { margin-top: 16px; padding: 18px; border: 1px dashed #ddcfc6; border-radius: 16px; background: #fffaf7; }
 .optional-ingredients > strong { display: block; margin-bottom: 10px; }
 .detail-reasons { margin-top: 0; padding: 22px 22px 22px 42px; border-radius: 18px; background: #fff7f1; color: #4b3f38; font-size: 15px; }
-.reaction-card .coach-primary { margin-top: 24px; }
+.reaction-card .coach-actions { margin-top: 24px; }
 .one-missing-section { margin-top: 30px; padding-top: 24px; border-top: 1px solid #eee3dc; }
 .one-missing-section > h3 { margin: 0 0 16px; font-size: 18px; }
 
@@ -380,6 +381,16 @@ h1, h2, h3, p { margin-top: 0; letter-spacing: 0; }
   border-color: var(--warning);
 }
 
+.tag-fieldset { grid-column: 1 / -1; margin: 0; padding: 18px; border: 1px solid #e5ddd7; border-radius: 16px; background: #fffaf7; }
+.tag-fieldset legend { padding: 0 6px; font-size: 14px; font-weight: 800; }
+.tag-fieldset > p { margin: 0 0 12px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.tag-selector { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag-selector label { cursor: pointer; }
+.tag-selector input { position: absolute; opacity: 0; pointer-events: none; }
+.tag-selector span { display: inline-flex; min-height: 34px; align-items: center; padding: 0 12px; border: 1px solid #d9d2cd; border-radius: 999px; color: #5c5e5a; background: #fff; font-size: 13px; font-weight: 700; transition: .18s ease; }
+.tag-selector label.selected span { border-color: #006d36; color: #006d36; background: #e9f7ef; box-shadow: 0 0 0 2px rgba(0,109,54,.08); }
+.tag-selector input:focus-visible + span { outline: 2px solid #006d36; outline-offset: 2px; }
+
 .tip-box {
   margin-top: 16px;
   padding: 16px;
@@ -543,6 +554,8 @@ h1, h2, h3, p { margin-top: 0; letter-spacing: 0; }
   color: #9a3412;
   background: #ffedd5;
 }
+.ingredient-tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.ingredient-tag-list span { padding: 5px 9px; border-radius: 999px; color: #3e6852; background: #eef8f2; font-size: 11px; font-weight: 800; }
 
 .tile-date {
   margin-top: 14px;

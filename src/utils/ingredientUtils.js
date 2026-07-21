@@ -1,4 +1,5 @@
 import { CATEGORY_ICONS, DEFAULT_SHELF_LIFE_DAYS, INGREDIENT_CATEGORIES, LONG_TERM_CATEGORIES } from "../data/ingredientDefaults";
+import { sanitizeIngredientTags } from "../../shared/ingredientTags";
 import {
   addDaysToDate,
   formatDday,
@@ -54,7 +55,7 @@ export function buildIngredientFromForm(formValues, existingIngredient = null) {
     name: formValues.name.trim(),
     category: formValues.category,
     subcategory: existingIngredient?.subcategory ?? null,
-    tags: existingIngredient?.tags ?? [],
+    tags: sanitizeIngredientTags(formValues.tags),
     ...quantity,
     storage,
     expirationType: isLongTerm ? "longTerm" : "relative",
