@@ -67,7 +67,8 @@ test('product development bootstrap activates and reports its explicit selected 
         await realpath(workspaceRoot),
       )
       assert.deepEqual(
-        (await application.semesterWorkspace?.refreshMaterials())?.materials,
+        (await application.semesterWorkspace?.refreshMaterials())?.workspace
+          .materials,
         [],
       )
     } finally {
