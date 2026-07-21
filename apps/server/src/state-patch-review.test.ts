@@ -1177,8 +1177,6 @@ test('reopen rejects relationally inconsistent version 2 state without rewriting
     const validStore = JSON.parse(
       await readFile(storePath, 'utf8'),
     ) as MutableStoredWorkspace
-    const previousSnapshot = fixture.controller.snapshot()
-    const previousAssignmentState = fixture.controller.assignmentState()
     const corruptions: readonly {
       readonly name: string
       readonly mutate: (store: MutableStoredWorkspace) => void
@@ -1375,17 +1373,27 @@ test('reopen rejects relationally inconsistent version 2 state without rewriting
       assert.equal(await readFile(storePath, 'utf8'), bytes, candidate.name)
 
       if (candidate === corruptions[0]) {
-        await assert.rejects(
-          fixture.controller.activate(),
+        assert.deepEqual(
+          await fixture.controller.activate(),
+          {
+            status: 'activated',
+            workspace: {
+              state: 'incompatible',
+              readOnly: true,
+              supportedStoreFormatVersion: 2,
+              foundStoreFormatVersion: 2,
+              displayMessage:
+                '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.',
+            },
+          },
+          candidate.name,
+        )
+        assert.throws(
+          () => fixture.controller.assignmentState(),
           (error: unknown) =>
             error instanceof SemesterWorkspaceError &&
             error.code === 'workspace_incompatible',
           candidate.name,
-        )
-        assert.deepEqual(fixture.controller.snapshot(), previousSnapshot)
-        assert.deepEqual(
-          fixture.controller.assignmentState(),
-          previousAssignmentState,
         )
         assert.equal(await readFile(storePath, 'utf8'), bytes, candidate.name)
       }
