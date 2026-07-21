@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.infra.seoul.dto.SeoulParkingLotResponse.GetParkInfo.Row;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,7 @@ class SeoulParkingLotResponseTest {
             Row row = rowWithAddress("강남구 대치동 111-2");
 
             // when
-            ParkingLot parkingLot = row.toParkingLot();
+            ParkingLot parkingLot = Row.toParkingLots(List.of(row)).get(0);
 
             // then
             assertThat(parkingLot.getAddress()).isEqualTo("서울특별시 강남구 대치동 111-2");
@@ -38,11 +39,50 @@ class SeoulParkingLotResponseTest {
             Row row = rowWithAddress(address);
 
             // when
-            ParkingLot parkingLot = row.toParkingLot();
+            ParkingLot parkingLot = Row.toParkingLots(List.of(row)).get(0);
 
             // then
             assertThat(parkingLot.getAddress()).isNull();
             assertThat(parkingLot.getDistrict()).isNull();
+        }
+
+        @DisplayName("같은 pkltCd 행들을 하나의 주차장으로 집계")
+        @Nested
+        class ToParkingLots {
+
+            @DisplayName("같은 pkltCd 행들의 주차면 수를 합쳐 총 주차면 수로 저장한다")
+            @Test
+            void success_sumTotalSlots() {
+                // given
+                List<Row> rows = List.of(
+                        rowWithTotalSlots("10001", 1),
+                        rowWithTotalSlots("10001", 1),
+                        rowWithTotalSlots("10001", 1)
+                );
+
+                // when
+                List<ParkingLot> parkingLots = Row.toParkingLots(rows);
+
+                // then
+                assertThat(parkingLots).hasSize(1);
+                assertThat(parkingLots.get(0).getTotalSlots()).isEqualTo(3);
+            }
+
+            @DisplayName("서로 다른 pkltCd는 별개 주차장으로 집계한다")
+            @Test
+            void success_diffParkingLots() {
+                // given
+                List<Row> rows = List.of(
+                        rowWithTotalSlots("10001", 11),
+                        rowWithTotalSlots("10002", 22)
+                );
+
+                // when
+                List<ParkingLot> parkingLots = Row.toParkingLots(rows);
+
+                // then
+                assertThat(parkingLots).hasSize(2);
+            }
         }
 
         private Row rowWithAddress(String address) {
@@ -54,6 +94,30 @@ class SeoulParkingLotResponseTest {
                     "NW",
                     "1",
                     null,
+                    "Y",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+        }
+
+        private Row rowWithTotalSlots(String pkltCd, Integer totalSlots) {
+            return new Row(
+                    pkltCd,
+                    "테스트 주차장",
+                    "강남구 역삼동 1-2",
+                    null,
+                    "NW",
+                    "1",
+                    totalSlots == null ? null : totalSlots.doubleValue(),
                     "Y",
                     null,
                     null,
