@@ -75,7 +75,12 @@ function SessionCard({
         </Link>
         <button
           onClick={onSkip}
-          className="rounded-pill border border-border px-[26px] py-[15px] text-[15px] font-semibold text-text hover:border-outline-hover"
+          disabled={isCompleted}
+          className={
+            isCompleted
+              ? 'cursor-not-allowed rounded-pill border border-border px-[26px] py-[15px] text-[15px] font-semibold text-muted'
+              : 'rounded-pill border border-border px-[26px] py-[15px] text-[15px] font-semibold text-text hover:border-outline-hover'
+          }
         >
           오늘 세션 스킵
         </button>

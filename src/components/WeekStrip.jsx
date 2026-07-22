@@ -23,11 +23,6 @@ function getThisWeekDates() {
   })
 }
 
-function getTodayDayOfWeek() {
-  const jsDayToDayOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
-  return jsDayToDayOfWeek[new Date().getDay()]
-}
-
 function DayCard({ day, date, isToday }) {
   const isRest = day.targetArea === null
   const isCompleted = day.status === 'COMPLETED'
@@ -76,9 +71,8 @@ function DayCard({ day, date, isToday }) {
   )
 }
 
-function WeekStrip({ days }) {
+function WeekStrip({ days, today }) {
   const dates = getThisWeekDates()
-  const todayDayOfWeek = getTodayDayOfWeek()
 
   return (
     <div className="grid grid-cols-7 gap-3">
@@ -87,7 +81,7 @@ function WeekStrip({ days }) {
           key={day.dayOfWeek}
           day={day}
           date={dates[i]}
-          isToday={day.dayOfWeek === todayDayOfWeek}
+          isToday={day.dayOfWeek === today}
         />
       ))}
     </div>
