@@ -39,7 +39,10 @@ function applySort(items: Subsidy[], sort: SortOption): Subsidy[] {
 
 /** Supabase에서 전체 row를 읽어 Subsidy[]로 변환. 실패 시 fallback 반환 */
 async function loadAll(): Promise<Subsidy[]> {
-  const { data, error } = await supabase.from(SUBSIDIES_TABLE).select('*')
+  const { data, error } = await supabase
+    .from(SUBSIDIES_TABLE)
+    .select('*')
+    .order('id', { ascending: true })
   if (error) {
     console.error('[subsidies-repo] Supabase 조회 실패, 샘플 데이터로 대체:', error.message)
     return FALLBACK
