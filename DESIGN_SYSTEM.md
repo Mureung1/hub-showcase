@@ -61,6 +61,7 @@
 | `ingredient-section-heading` | 냉장고 재료를 카테고리(채소/고기·해산물/가공식품/면·곡물/기타)별로 묶어 보여줄 때, 각 그룹의 `IngredientChipPicker` 위에 오는 작은 블록 헤딩. `filter-group-label`과 타이포 톤(11px bold uppercase)은 같지만 칩 옆이 아니라 위에 오는 별도 줄이라 새 패턴으로 분리. 전체 그룹은 `bg-muted` 패널(`rounded-card`) 안에 세로로 쌓임 | `bg-muted`, `radius-card`, `text-secondary` |
 | `filter-chip-group` (실제 앱 `FilterChipGroup`) | `filter-chip` 패턴을 단일 선택(라디오형)으로 쓰는 가로 칩 한 줄. 맨 앞에 항상 "전체" 칩을 넣어 선택 해제를 표현. 홈 화면의 음식종류(메인음식/반찬/간식)·시간(10분 미만/10~20분/20~30분/30분 이상) 필터에서 같은 컴포넌트를 두 번 재사용 — `ingredient-chip-picker`(다중 선택 토글)와는 선택 방식이 달라 별도 패턴으로 분리 | `radius-pill`, `border-primary`, `bg-primary`, `bg-bg-surface`, `border-border`, `text-text-primary`, `text-text-secondary` |
 | `empty-state-card` | 추천 결과가 0건일 때 보여주는 카드 — `bg-surface` 카드(`radius-card`) 안에 마스코트 일러스트 + 기니 말투 카피(제목/본문) + `primary` CTA 버튼(`radius-pill`), 바로 아래 대체 추천 리스트("그래도 빨리 만들 수 있는 요리", `recipe-card` 재사용). 홈 화면의 재료 매칭 0건 상태에 사용. 일러스트(`끼니캐릭터.png`)는 임시 목업이라 교체 예정 | `radius-card`, `bg-surface`, `text-primary`, `text-secondary`, `primary`, `radius-pill` |
+| `cooking-steps` (실제 앱 `CookingSteps`) | 재료 카드와 같은 `bg-surface`+`border-ink` 카드 안에, 순서 번호를 `radius-pill` 원형 배지(`bg-primary`+`border-ink`)로 강조하고 옆에 단계 설명 텍스트를 놓는 리스트. 레시피 상세 화면에서 재료 섹션 바로 위에 배치. `steps` 데이터가 없는 레시피에서는 아무것도 렌더링하지 않음(선택적 필드) | `radius-card`, `bg-surface`, `border-ink`, `radius-pill`, `primary`, `text-primary` |
 
 ## 구현 매핑
 

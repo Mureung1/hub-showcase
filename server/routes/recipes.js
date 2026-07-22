@@ -17,6 +17,7 @@ function mapRecipeRow(row) {
     servings: row.servings,
     totalCost: row.total_cost,
     ingredients: row.ingredients,
+    steps: row.steps,
   }
 }
 
