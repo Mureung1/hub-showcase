@@ -114,7 +114,7 @@
     "sourceFile": "/campuses/cbnu-gaesin/SOURCE.txt",
     "boundary": { "osmType": "relation", "osmId": 6705106, "query": "충북대학교, 청주시", "bounds": [36.6225972, 36.6337319, 127.4499818, 127.4634806] },
     "stops": [
-      { "id": "osm-node-6403450088", "name": "충북대학교", "lat": 36.6322957, "lon": 127.4528169, "osmType": "node", "osmId": 6403450088 },
+      { "id": "osm-node-6403450088", "name": "충북대학교", "lat": 36.627685, "lon": 127.4572942, "osmType": "node", "osmId": 6403450088 },
       { "id": "osm-node-12324240640", "name": "충북대학교중문", "lat": 36.6336022, "lon": 127.4605061, "osmType": "node", "osmId": 12324240640 },
       { "id": "osm-node-12324240641", "name": "충북대학교후문", "lat": 36.6300382, "lon": 127.4617554, "osmType": "node", "osmId": 12324240641 }
     ]
