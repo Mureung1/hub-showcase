@@ -55,6 +55,11 @@ public class ParkingLotFixtureBuilder {
         return this;
     }
 
+    public ParkingLotFixtureBuilder totalSlots(Integer totalSlots) {
+        this.totalSlots = totalSlots;
+        return this;
+    }
+
     public ParkingLot build() {
         ParkingLot parkingLot = new ParkingLot(
                 pkltCd,

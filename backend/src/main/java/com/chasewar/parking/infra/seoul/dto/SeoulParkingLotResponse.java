@@ -7,7 +7,9 @@ import com.chasewar.parking.domain.vo.OperatingHours;
 import com.chasewar.parking.domain.vo.ParkingKind;
 import com.chasewar.parking.domain.vo.PayType;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public record SeoulParkingLotResponse(
         @JsonProperty("GetParkInfo") GetParkInfo getParkInfo
@@ -47,31 +49,49 @@ public record SeoulParkingLotResponse(
         ) {
             private static final String SEOUL_CITY_PREFIX = "서울특별시 ";
 
-            public ParkingLot toParkingLot() {
+            public static List<ParkingLot> toParkingLots(List<Row> rows) {
+                return rows.stream()
+                        .collect(Collectors.groupingBy(Row::pkltCd, LinkedHashMap::new, Collectors.toList()))
+                        .values().stream()
+                        .map(Row::mergeToParkingLot)
+                        .toList();
+            }
+
+            private static ParkingLot mergeToParkingLot(List<Row> samePkltCdRows) {
+                Row representativeRow = samePkltCdRows.get(0);
+                int totalSlots = samePkltCdRows.stream()
+                        .filter(row -> row.totalSlots() != null)
+                        .mapToInt(row -> row.totalSlots().intValue())
+                        .sum();
+
+                return toParkingLot(representativeRow, totalSlots);
+            }
+
+            private static ParkingLot toParkingLot(Row row, int totalSlots) {
                 return new ParkingLot(
-                        pkltCd,
-                        name,
-                        toFullAddress(),
-                        toDistrict(),
-                        emptyToNull(tel),
-                        ParkingKind.fromCode(parkingKindCode),
-                        OperType.fromCode(operTypeCode),
-                        toInteger(totalSlots),
+                        row.pkltCd(),
+                        row.name(),
+                        row.toFullAddress(),
+                        row.toDistrict(),
+                        emptyToNull(row.tel()),
+                        ParkingKind.fromCode(row.parkingKindCode()),
+                        OperType.fromCode(row.operTypeCode()),
+                        totalSlots,
                         new Fee(
-                                toInteger(basicFee),
-                                toInteger(basicMinutes),
-                                toInteger(extraUnitFee),
-                                toInteger(extraUnitMin),
-                                toInteger(dayMaxFee)
+                                toInteger(row.basicFee()),
+                                toInteger(row.basicMinutes()),
+                                toInteger(row.extraUnitFee()),
+                                toInteger(row.extraUnitMin()),
+                                toInteger(row.dayMaxFee())
                         ),
-                        PayType.fromCode(payTypeCode),
+                        PayType.fromCode(row.payTypeCode()),
                         new OperatingHours(
-                                weekdayStart,
-                                weekdayEnd,
-                                weekendStart,
-                                weekendEnd,
-                                holidayStart,
-                                holidayEnd
+                                row.weekdayStart(),
+                                row.weekdayEnd(),
+                                row.weekendStart(),
+                                row.weekendEnd(),
+                                row.holidayStart(),
+                                row.holidayEnd()
                         )
                 );
             }

@@ -15,7 +15,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ChasewarException.class)
     public ErrorResponse<FailureBody> handleChasewarException(ChasewarException e) {
         ErrorCode errorCode = e.getErrorCode();
-        log.info("[CLIENT_ERROR] code={}, status={}", errorCode.name(), errorCode.getStatus());
+        if (errorCode.getStatus().is5xxServerError()) {
+            log.error("[SERVER_ERROR] code={}, status={}",
+                    errorCode.name(), errorCode.getStatus(), e);
+        } else {
+            log.info("[CLIENT_ERROR] code={}, status={}", errorCode.name(), errorCode.getStatus());
+        }
 
         return ErrorResponse.from(errorCode);
     }

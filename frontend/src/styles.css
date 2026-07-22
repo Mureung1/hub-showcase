@@ -380,3 +380,67 @@ button {
   opacity: 0.6;
   cursor: default;
 }
+
+/* ===== 상세 화면 ===== */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 14px var(--s5);
+  min-height: 52px;
+}
+
+/* 뒤로가기: a태그 대신 button이라 배경/테두리 리셋 */
+.topbar .back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--brand);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.detail-title {
+  margin: 0;
+  padding: var(--s2) var(--s5) 2px;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.detail-addr {
+  padding: 0 var(--s5) var(--s5);
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.info-card {
+  margin: 0 var(--s5) var(--s4);
+  padding: var(--s4);
+  background: var(--surface);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow);
+}
+
+.info-card h3 {
+  margin: 0 0 var(--s3);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 7px 0;
+  font-size: 15px;
+}
+
+.info-row .label {
+  color: var(--text-muted);
+}
+
+.info-row .value {
+  font-weight: 600;
+}
