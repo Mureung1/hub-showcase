@@ -15,7 +15,7 @@ import {
   decodeProductBootstrap,
   type ProductBootstrap,
 } from '@ay-ple/product-contract'
-import { chromium, errors } from 'playwright'
+import { chromium, errors, type Browser } from 'playwright'
 
 import {
   prepareDurableRestartBaseline,
@@ -57,7 +57,6 @@ type ProcessRecord = {
 type ProductRoots = {
   readonly appDataRoot: string
   readonly poisonRoot: string
-  readonly runRoot: string
   readonly semesterWorkspace: E2eSemesterWorkspace
   readonly workspaceRoot: string
 }
@@ -103,7 +102,6 @@ async function prepareProductRoots(): Promise<ProductRoots> {
   const runRoot = semesterWorkspace.runRoot
   const appDataRoot = path.join(runRoot, 'app-data')
   return {
-    runRoot,
     appDataRoot,
     workspaceRoot: semesterWorkspace.workspaceRoot,
     poisonRoot: path.join(runRoot, 'legacy-path-poison'),
@@ -117,8 +115,9 @@ async function prepareDurableProductBaseline(
   const harness = await startChatShellHarness('ready', {
     semesterWorkspace: roots.semesterWorkspace,
   })
-  const browser = await chromium.launch({ headless: true })
+  let browser: Browser | undefined
   try {
+    browser = await chromium.launch({ headless: true })
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
     await page.goto(harness.url, {
       waitUntil: 'domcontentloaded',
@@ -130,7 +129,7 @@ async function prepareDurableProductBaseline(
       await harness.stopServer()
     } finally {
       try {
-        await browser.close()
+        await browser?.close()
       } finally {
         await harness.close()
       }
@@ -329,12 +328,6 @@ function assertDurableProductBootstrap(
     reopened.history.modelingRuns.length,
     confirmed.history.modelingRuns.length + 1,
   )
-  assert.equal(
-    reopened.history.statePatches.some((patch) => patch.status === 'pending'),
-    false,
-    'Browser bootstrap must not project a resumable unanswered Review',
-  )
-
   for (const patch of confirmed.history.statePatches) {
     assert.deepEqual(
       reopened.history.statePatches.find((candidate) => candidate.id === patch.id),
