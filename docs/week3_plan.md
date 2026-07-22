@@ -92,10 +92,13 @@ isProject: false
 ### [29/P0/화] `crawler/` 워크스페이스 + API 클라이언트
 - **목표**: 실제 API를 호출해 원본 응답을 로컬에서 확인할 수 있는 스캐폴딩을 만든다.
 - **작업**
-  - [ ] `crawler/` npm workspace 추가 (`package.json`, TS 설정, 루트 `workspaces`에 등록)
-  - [ ] API 클라이언트: `crtfcKey`는 `.env`로, 페이지네이션(`pageUnit`/`pageIndex`) 처리
-  - [ ] 원본 응답을 로컬 JSON 또는 콘솔로 확인 (Supabase 적재는 다음 이슈)
-- **완료 기준**: 로컬에서 크롤러 스크립트를 실행해 실제 API 응답 N건을 확인할 수 있다.
+  - [x] `crawler/` npm workspace 추가 (`package.json`, `tsconfig.json`, 루트 `workspaces`에 등록)
+  - [x] API 클라이언트(`bizinfo-client.ts`) — `BIZINFO_API_KEY`는 `.env`(`env.ts`가 로드), 페이지네이션(`pageUnit`/`pageIndex`) 처리
+  - [x] `src/index.ts` 실행 스크립트로 콘솔 출력 확인 (`npm run fetch:sample -w @hub/crawler`)
+  - [x] `vitest.config.ts`에 `crawler/src/**/*.test.ts` 추가 (다음 이슈부터 테스트 작성 가능하도록)
+- **완료 기준**: 로컬에서 크롤러 스크립트를 실행해 실제 API 응답 N건을 확인할 수 있다. **완료 (2026-07-22)** — 5건 수신, 소상공인 관련 실제 공고 포함
+- **발견한 엣지 케이스**: `reqstBeginEndDe`가 항상 `"YYYY-MM-DD ~ YYYY-MM-DD"` 형식은 아니고
+  `"예산 소진시까지"` 같은 자유 텍스트도 옴 — #30 매핑/정규화에서 `dday` 계산 시 처리 필요
 
 ### [30/P0/수] 매핑·정규화 로직
 - **목표**: API 응답을 `Subsidy` 타입으로 안전하게 변환하는 함수를 만든다.
