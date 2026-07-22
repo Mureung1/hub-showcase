@@ -8,7 +8,7 @@
 
 ## Question
 
-Official SDK의 browser·device-code login start, matching completion wait, cancel·logout과 Account Readiness가 제공하는 실제 상태·failure를 어떤 Runtime·Server·Browser-safe product contract로 노출해야 하는가? npx가 연 local app이 auth token을 Browser·workspace·public log에 노출하지 않으면서 fresh login, expiry, cancel, CLI interrupt, logout, relaunch와 재인증 뒤 같은 app-managed account lifecycle로 수렴하려면 무엇이 durable하고 무엇이 transient해야 하는가?
+Official SDK의 ChatGPT browser login start, matching completion wait, cancel·logout과 Account Readiness가 제공하는 실제 상태·failure를 어떤 Runtime·Server·Browser-safe product contract로 노출해야 하는가? npx가 연 local app이 auth token을 Browser·workspace·public log에 노출하지 않으면서 fresh login, expiry, cancel, CLI interrupt, logout, relaunch와 재인증 뒤 같은 app-managed account lifecycle로 수렴하려면 무엇이 durable하고 무엇이 transient해야 하는가? 첫 preview는 API key·access token·device-code login과 전역 `~/.codex` credential import를 제공하지 않으며, matching completion success와 fresh `account/read` 없이는 인증 성공을 합성하지 않는다.
 
 ## Answer
 

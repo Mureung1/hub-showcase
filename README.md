@@ -37,7 +37,7 @@ npm install
 npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
 ```
 
-Canonical command는 explicit `appDataRoot`와 선택한 development `SemesterWorkspace`를 검증하고, `packageRoot`의 verified Runtime artifact와 app-managed runtime directory를 계산해 Express Server와 Vite Chat Shell을 함께 시작합니다. Fresh clone에서는 먼저 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 materialize해야 합니다. 시작·workspace·Runtime 제약은 [Server README](apps/server/README.md), 화면 동작과 후속 경계는 [Chat Shell README](apps/chat-shell/README.md)를 따릅니다.
+Canonical development command는 explicit `appDataRoot`와 current materialized/override directory를 검증하고, `packageRoot`의 verified Runtime artifact와 app-managed runtime directory를 계산해 Express Server와 Vite Chat Shell을 함께 시작합니다. 이 current path는 app-owned scaffold나 `WorkspaceManifest` admission을 아직 구현하지 않습니다. Fresh clone에서는 먼저 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 materialize해야 합니다. 현재 시작·workspace·Runtime 제약은 [Server README](apps/server/README.md), 채택한 workspace target은 [ADR 0014](docs/adr/0014-create-app-owned-normalized-semester-workspaces.md), 화면 동작과 후속 경계는 [Chat Shell README](apps/chat-shell/README.md)를 따릅니다.
 
 반복해서 실제 제품을 만질 때는 repository 밖의 고정 profile root를 지정하는 dogfood 명령을 사용합니다. 이 helper는 별도 실행 topology를 만들지 않고 [ADR 0013](docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)의 canonical development composition에 위임합니다.
 
@@ -45,7 +45,7 @@ Canonical command는 explicit `appDataRoot`와 선택한 development `SemesterWo
 npm run dogfood -- --root /absolute/path/to/ay-ple-dogfood
 ```
 
-첫 실행은 profile 아래에 isolated `app-data`와 sample 기반 `semester-workspace`를 한 번만 만들고, Codex 인증이 없으면 해당 profile 전용 `login --device-auth` 명령을 안내한 뒤 종료합니다. 로그인 후 같은 명령을 다시 실행하면 이후 Server·Chat Shell 시작에서도 workspace의 사용자 자료와 `.ay-ple` 상태를 그대로 보존합니다. 스크립트는 기존 내용을 reset하거나 sample로 다시 덮어쓰지 않습니다.
+첫 실행은 profile 아래에 isolated `app-data`와 sample 기반 current development workspace를 한 번만 만들고, Codex 인증이 없으면 해당 profile 전용 `login --device-auth` 명령을 안내한 뒤 종료합니다. 로그인 후 같은 명령을 다시 실행하면 이후 Server·Chat Shell 시작에서도 fixture의 사용자 자료와 `.ay-ple` 상태를 그대로 보존합니다. 이 helper는 public first-run scaffold가 아니며 기존 내용을 reset하거나 sample로 다시 덮어쓰지 않습니다.
 
 이미 수동으로 만든 동일 layout의 profile은 최초 한 번만 명시적으로 채택합니다. 소유권 marker가 생긴 뒤에는 이 flag를 빼고 평소 명령을 사용합니다.
 
@@ -90,6 +90,7 @@ npm run demo
 | ADR | [0011. Official Codex Python SDK를 Chat Shell baseline으로 재사용](docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) | Official SDK direct reuse와 supervised Node bridge 결정 |
 | ADR | [0012. Codex Chat-only runtime graph 채택](docs/adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md) | Maintained Runtime 단일화와 legacy executable·alias 제거. Chat-only public surface 결과는 ADR 0013이 대체 |
 | ADR | [0013. Product-only public surface와 durable v2 baseline](docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md) | Canonical product cutover와 workspace-local current v2의 장기 compatibility 정책 |
+| ADR | [0014. App-owned normalized SemesterWorkspace](docs/adr/0014-create-app-owned-normalized-semester-workspaces.md) | `WorkspaceManifest` authority, scaffold·admission과 `ImportSource` 경계 결정 |
 
 ### 기술 참고 문서
 

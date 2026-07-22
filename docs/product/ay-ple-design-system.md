@@ -2,6 +2,8 @@
 
 작성일: 2026-07-08
 
+최종 업데이트: 2026-07-22
+
 분류: 활성
 
 성숙도: 초안
@@ -10,7 +12,7 @@
 
 ## 방향
 
-AY-PLE의 기본 화면은 기존 다크 IDE 테마가 아니라 **밝은 학업 워크스페이스**를 따른다. 학생이 매일 자료를 읽고, AY의 제안을 확인하고, 과제 상태를 믿고 반영하는 앱이므로 화면은 개발자 도구보다 노트, 자료함, 조용한 생산성 앱에 가까워야 한다.
+AY-PLE의 local app workbench는 기존 다크 IDE 테마가 아니라 **밝은 학업 워크스페이스**를 따른다. 학생이 매일 자료를 읽고, AY의 제안을 확인하고, 과제 상태를 믿고 반영하는 앱이므로 화면은 개발자 도구보다 노트, 자료함, 조용한 생산성 앱에 가까워야 한다.
 
 | 원칙 | 설명 |
 | --- | --- |
@@ -19,6 +21,15 @@ AY-PLE의 기본 화면은 기존 다크 IDE 테마가 아니라 **밝은 학업
 | Source-grounded | 자료 목록, 원본 미리보기, 근거 연결이 흐릿해지지 않도록 정보 밀도는 유지한다. |
 | Calm productivity | 귀엽지만 유아적이지 않게, 친근하지만 장난감처럼 보이지 않게 잡는다. |
 | AY as companion | AY는 로봇이나 시스템 로그가 아니라, 자료를 함께 정리하는 companion으로 보인다. |
+
+## 제품 표면 구분
+
+| 표면 | 역할 | 표현 방향 |
+| --- | --- | --- |
+| Public Landing | AY-PLE의 product homepage이자 repository·Docs·public 실행 흐름의 공식 entrypoint | `한 학기를 함께 관리하는 AY`라는 가치를 먼저 보여주고, 바로 아래 public `npx` 명령에서 local 제품으로 이어진다. 제품 경험·작동 방식·지원 환경과 Docs·GitHub·license/trust를 짧고 탐색 가능하게 구성한다. |
+| Local app workbench | setup, 자료 반입, 학업 action과 Review가 일어나는 실제 제품 공간 | calm productivity와 source-grounded 정보 구조를 유지하며 marketing layout보다 현재 작업·상태·다음 행동을 우선한다. |
+
+Landing과 local app은 같은 브랜드를 사용하지만 같은 화면 hierarchy를 강제하지 않는다. [Remotion](https://www.remotion.dev/)은 개별 section이나 시각 요소의 donor가 아니라 product homepage를 repository와 public 실행의 entrypoint로 운영하는 방식의 benchmark다. Preview prerequisite와 limitation은 숨기지 않되 Hero를 경고문으로 대체하지 않고 install command 주변과 compatibility·trust surface에서 확인하게 한다.
 
 ## 색상
 
@@ -50,6 +61,8 @@ AY-PLE의 기본 화면은 기존 다크 IDE 테마가 아니라 **밝은 학업
 | Change proposal | `검토 대기`는 honey, `반영됨`은 green으로 구분한다. 내부 상태명은 노출하지 않는다. |
 | Buttons | command button은 실용적으로 작게 두되, 수락/수정 요청/거절 색상은 명확히 구분한다. |
 
+Public Landing의 Hero는 제품 가치를, install command는 즉시 실행 가능한 entrypoint를 소유한다. Demo와 작동 방식은 완성된 제품 비전과 현재 public preview capability를 구분하고, Docs·GitHub·license/trust link는 검증 가능한 정보로 이어져야 한다. Exact command, prerequisite와 support matrix는 [public npx 첫 출시 Wayfinder](../wayfinding/public-npx-first-release/map.md)가 소유한다.
+
 ## 피해야 할 것
 
 | 피할 표현 | 이유 |
@@ -57,7 +70,7 @@ AY-PLE의 기본 화면은 기존 다크 IDE 테마가 아니라 **밝은 학업
 | Dark IDE default | 개발자 도구처럼 보여서 전체 대학생 대상 제품과 맞지 않는다. |
 | Terminal/log styling | AY의 작업이 시스템 로그처럼 느껴진다. |
 | Purple-blue tech gradient | 흔한 AI SaaS 느낌이 강하고 AY-PLE 브랜드 자산과 맞지 않는다. |
-| Oversized marketing hero | prototype의 핵심은 실제 검토 workflow이지 랜딩 페이지가 아니다. |
+| Local app workbench 안의 marketing hero | 실제 setup·Review workflow보다 홍보 메시지가 앞서면 현재 작업과 상태를 찾기 어렵다. Public Landing의 제품 Hero에는 적용하지 않는다. |
 | Cute-only mascot UI | 학업 자료와 마감 관리를 믿고 맡기는 생산성 앱 신뢰도가 떨어진다. |
 
 ## 검증 적용 위치

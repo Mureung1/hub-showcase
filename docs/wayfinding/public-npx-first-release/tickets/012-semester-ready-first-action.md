@@ -1,14 +1,14 @@
-# 012 — Semester Ready와 첫 학업 action의 제품 표면을 검증한다
+# 012 — Semester Ready 완료와 후속 여정 진입 표면을 검증한다
 
 ## Wayfinder ticket
 
 - Type: prototype
 - State: open
-- Blocked by: [첫 public preview의 성공 여정을 고정한다](004-first-public-preview-success-journey.md), [Browser-launched Codex OAuth lifecycle을 설계한다](008-browser-oauth-lifecycle.md), [첫 public release의 SemesterWorkspace admission 경계를 정한다](009-semester-workspace-admission.md), [재개 가능한 setup과 Installer bundle의 authority를 정한다](010-resumable-setup-authority.md)
+- Blocked by: [첫 public preview의 성공 여정을 고정한다](004-first-public-preview-success-journey.md), [Browser-launched Codex OAuth lifecycle을 설계한다](008-browser-oauth-lifecycle.md), [첫 public release의 SemesterWorkspace schema·scaffold 경계를 정한다](009-semester-workspace-admission.md), [재개 가능한 setup과 Installer bundle의 authority를 정한다](010-resumable-setup-authority.md), [Bootstrap과 setup의 durability·recovery contract를 확정한다](011-bootstrap-and-setup-recovery.md)
 
 ## Question
 
-첫 `npx` 실행과 setup을 마친 학생이 AY가 자신의 학기를 이해했고 바로 일을 맡길 수 있다고 느끼려면 `Semester Ready` 화면에 어떤 최소 confirmed state·connection·material·review·next-action 정보를 보여야 하는가? [첫 public preview의 성공 여정을 고정한다](004-first-public-preview-success-journey.md)에서 고른 실제 자료와 학업 action을 어떤 onboarding·workbench·Chat 연결로 실행해 install에서 학업 가치까지 단절 없는 경험을 증명해야 하는가?
+첫 `npx` 실행과 setup을 마친 학생에게 `Semester Ready`를 `학기 공간 준비 완료`로 정직하게 전달하려면 어떤 account connection, 학년·학기·위치, `WorkspaceManifest`·validation, active workspace와 recovery 정보를 보여야 하는가? Course·RawMaterial·live model turn·학업 action을 완료 조건처럼 오인시키지 않으면서 `첫 자료 가져오기`를 후속 독립 여정으로 넘기는 onboarding·workbench 경계와 copy를 어떤 prototype으로 검증할 것인가?
 
 ## Answer
 

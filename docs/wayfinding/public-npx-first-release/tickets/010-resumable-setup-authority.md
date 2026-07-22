@@ -4,11 +4,11 @@
 
 - Type: grilling
 - State: open
-- Blocked by: [첫 public preview의 성공 여정을 고정한다](004-first-public-preview-success-journey.md), [첫 public release의 SemesterWorkspace admission 경계를 정한다](009-semester-workspace-admission.md)
+- Blocked by: [첫 public preview의 성공 여정을 고정한다](004-first-public-preview-success-journey.md), [첫 public release의 SemesterWorkspace schema·scaffold 경계를 정한다](009-semester-workspace-admission.md)
 
 ## Question
 
-새 학기 생성과 기존 폴더 연결이 하나의 `Semester Ready`로 합류하도록 App, Installer Skill과 reusable deterministic script 사이의 `inspect → propose → review → apply → verify` 책임을 어떻게 나눌 것인가? Skill이 제안할 수 있는 structured plan과 직접 수행할 수 있는 작업, App-owned Review 뒤 script가 적용·검증·owned rollback할 수 있는 작업, 사용자 원본과 OAuth secret에 대한 금지 경계를 어디에 둘 것인가?
+App code가 `SemesterWorkspace` schema, scaffold, validation과 deterministic migration의 canonical authority를 유지하면서 first-run setup을 재개 가능하게 만들려면 App, Installer Skill과 reusable deterministic script 사이의 `inspect → propose → review → apply → verify` 책임을 어떻게 나눌 것인가? Skill은 어떤 app-owned operation을 호출·조율할 수 있고 script는 어떤 deterministic 적용·검증·owned rollback을 담당하며, 어떤 artifact와 receipt가 중단 후 resume를 허용하는가? 후속 `ImportSource` migration이 같은 구조를 재사용하더라도 setup Skill이 canonical workspace schema를 정의하거나 사용자 원본·OAuth secret을 소유하지 못하게 하려면 어떤 금지 경계가 필요한가?
 
 ## Answer
 

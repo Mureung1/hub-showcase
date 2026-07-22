@@ -4,7 +4,7 @@
 
 - Type: research
 - State: open
-- Blocked by: [병렬 delivery collision과 초기 lane boundary를 조사한다](002-parallel-delivery-contracts.md), [Public repository authority와 license를 확정한다](005-public-repository-authority-and-license.md), [npx production composition을 고른다](006-npx-production-composition.md), [Runtime release delivery·integrity·versioning을 정한다](007-runtime-release-delivery-integrity.md), [Browser-launched Codex OAuth lifecycle을 설계한다](008-browser-oauth-lifecycle.md), [재개 가능한 setup과 Installer bundle의 authority를 정한다](010-resumable-setup-authority.md), [Bootstrap과 setup의 durability·recovery contract를 확정한다](011-bootstrap-and-setup-recovery.md), [Semester Ready와 첫 학업 action의 제품 표면을 검증한다](012-semester-ready-first-action.md), [Landing의 product promise와 install truth를 검증한다](013-landing-install-truth.md)
+- Blocked by: [병렬 delivery collision과 초기 lane boundary를 조사한다](002-parallel-delivery-contracts.md), [Public repository authority와 license를 확정한다](005-public-repository-authority-and-license.md), [npx production composition을 고른다](006-npx-production-composition.md), [Runtime release delivery·integrity·versioning을 정한다](007-runtime-release-delivery-integrity.md), [Browser-launched Codex OAuth lifecycle을 설계한다](008-browser-oauth-lifecycle.md), [재개 가능한 setup과 Installer bundle의 authority를 정한다](010-resumable-setup-authority.md), [Bootstrap과 setup의 durability·recovery contract를 확정한다](011-bootstrap-and-setup-recovery.md), [Semester Ready 완료와 후속 여정 진입 표면을 검증한다](012-semester-ready-first-action.md), [Landing의 product promise와 install truth를 검증한다](013-landing-install-truth.md)
 
 ## Question
 
