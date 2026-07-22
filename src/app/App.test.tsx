@@ -299,12 +299,15 @@ describe('App', () => {
     expect(editor).toHaveFocus()
     const originalText = (editor as HTMLTextAreaElement).value
     expect(editor).toHaveAttribute('maxlength', '600')
+    expect(editor).toHaveAttribute('aria-describedby', 'result-tone-1 result-edit-count-1')
+    expect(screen.getByText(`${originalText.length} / 600자`)).toBeInTheDocument()
 
     fireEvent.change(editor, { target: { value: '' } })
     expect(screen.getAllByRole('button', { name: '복사' })[0]).toBeDisabled()
     expect(screen.getByRole('alert')).toHaveTextContent('보낼 말을 입력해야 복사할 수 있어요.')
 
     fireEvent.change(editor, { target: { value: '내가 직접 다듬은 문장' } })
+    expect(screen.getByText('12 / 600자')).toBeInTheDocument()
     fireEvent.click(screen.getAllByRole('button', { name: '복사' })[0])
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('내가 직접 다듬은 문장'))
     expect(JSON.stringify(report.mock.calls)).not.toContain('내가 직접 다듬은 문장')
@@ -455,15 +458,22 @@ describe('App', () => {
     )
     expect(container.querySelectorAll('[data-asset-slot="cat"] canvas')).toHaveLength(0)
     expect(container.querySelector('.scenario-card-art-placeholder')).toBeNull()
-    expect(screen.getAllByText(/에게 이어 말하기 →/)).toHaveLength(4)
+    expect(screen.getAllByText(/에게 이어 말하기/)).toHaveLength(4)
+    expect(container.querySelectorAll('.scenario-card-paw')).toHaveLength(4)
+    expect(Array.from(container.querySelectorAll('.scenario-card-paw')).every((paw) => paw.tagName === 'SPAN')).toBe(
+      true,
+    )
   })
 
   it('빈 입력창 대신 냥이 질문과 빠른 답변으로 대화를 시작한다', () => {
-    render(<App />)
+    const { container } = render(<App />)
 
     expect(screen.getByRole('region', { name: '답냥이 가이드 대화' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: '지금 필요한 건 어떤 말이냥?' })).toBeInTheDocument()
     expect(screen.getByLabelText('빠른 답변')).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: '답냥이 특징' })).not.toBeInTheDocument()
+    expect(container.querySelectorAll('.mode-card-paw')).toHaveLength(2)
+    expect(Array.from(container.querySelectorAll('.mode-card-paw')).every((paw) => paw.tagName === 'SPAN')).toBe(true)
     expect(screen.getByRole('list', { name: '말 고르기 1/4단계' })).toBeInTheDocument()
     expect(screen.queryByRole('textbox')).toBeNull()
   })

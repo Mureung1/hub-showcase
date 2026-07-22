@@ -59,11 +59,12 @@
   object-position: center bottom;
   opacity: 1;
   transform: translateY(1.5%);
-  transition: opacity 0.2s ease;
+  transition: none;
 }
 
 .cat-stage-fallback[data-visible='false'] {
   opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
 .cat-stage-canvas canvas {
@@ -128,26 +129,6 @@
   font-weight: 600;
   word-break: keep-all;
   text-wrap: balance;
-}
-
-.brand-points {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: auto 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.brand-points li {
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: var(--radius-pill);
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.66);
-  color: var(--color-text-muted);
-  font-size: 0.78rem;
-  font-weight: 700;
-  backdrop-filter: blur(8px);
 }
 
 .chat-shell {
@@ -443,20 +424,23 @@
   position: relative;
   width: 100%;
   min-height: 86px;
-  padding: 16px 48px 16px 18px;
+  padding: 16px 54px 16px 18px;
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
   text-align: left;
 }
 
-.mode-card::after {
+.mode-card .mode-card-paw {
   position: absolute;
   top: 50%;
   right: 18px;
-  color: var(--color-primary);
-  content: '→';
-  font-size: 1.2rem;
-  font-weight: 700;
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  background: var(--color-primary);
+  -webkit-mask: url('/paw.png') no-repeat center / contain;
+  mask: url('/paw.png') no-repeat center / contain;
   transform: translateY(-50%);
 }
 
@@ -604,9 +588,22 @@
   right: 14px;
   bottom: 13px;
   left: 14px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: space-between;
   color: var(--color-primary-pressed);
   font-size: 0.7rem;
   font-weight: 700;
+}
+
+.scenario-card-paw {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  background: var(--color-primary-pressed);
+  -webkit-mask: url('/paw.png') no-repeat center / contain;
+  mask: url('/paw.png') no-repeat center / contain;
 }
 
 .scenario-card[data-selected='true'] {
@@ -1558,6 +1555,14 @@
   line-height: 1.6;
 }
 
+.result-card > .result-edit-count {
+  margin: -3px 0 10px;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-align: right;
+}
+
 .result-edit-error {
   margin: 0 0 8px;
   color: var(--color-danger);
@@ -1789,10 +1794,6 @@
     max-width: 270px;
     margin-top: 7px;
     font-size: 0.9rem;
-  }
-
-  .brand-points {
-    display: none;
   }
 
   .chat-shell {

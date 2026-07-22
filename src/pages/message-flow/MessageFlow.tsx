@@ -1253,11 +1253,6 @@ function MessageFlow({
           <span className="eyebrow">대학생 메시지 작성 도우미</span>
           <h1 id="service-title">답냥이</h1>
           <p>꺼내기 어려운 말, 관계를 아는 냥이와 빠르게 골라봐요.</p>
-          <ul className="brand-points" aria-label="답냥이 특징">
-            <li>긴 설명 없이 빠른 선택</li>
-            <li>관계별 말투</li>
-            <li>비교할 수 있는 세 가지 톤</li>
-          </ul>
         </div>
       </section>
 
