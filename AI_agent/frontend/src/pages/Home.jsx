@@ -7,7 +7,6 @@ import {
   getCareerSpec,
   isCareerSpecComplete,
 } from "../features/career/careerStorage";
-import { navigate, routes } from "../router";
 
 const workflowSteps = [
   {
@@ -24,7 +23,76 @@ const workflowSteps = [
   },
 ];
 
+const heroTools = [
+  { name: "React", icon: "react", color: "#61dafb" },
+  { name: "Vite", icon: "vite", color: "#646cff" },
+  { name: "Express", icon: "express", color: "#111827" },
+  { name: "Prisma", icon: "prisma", color: "#2d3748" },
+  { name: "PostgreSQL", icon: "postgres", color: "#336791" },
+  { name: "OpenAI API", icon: "openai", color: "#10a37f" },
+];
+
 const getRandomReadiness = () => Math.floor(Math.random() * 41) + 40;
+
+function ToolLogo({ type, color }) {
+  if (type === "react") {
+    return (
+      <svg style={styles.toolLogo} viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="2.6" fill={color} />
+        <ellipse cx="16" cy="16" rx="12" ry="4.8" fill="none" stroke={color} strokeWidth="1.8" />
+        <ellipse cx="16" cy="16" rx="12" ry="4.8" fill="none" stroke={color} strokeWidth="1.8" transform="rotate(60 16 16)" />
+        <ellipse cx="16" cy="16" rx="12" ry="4.8" fill="none" stroke={color} strokeWidth="1.8" transform="rotate(120 16 16)" />
+      </svg>
+    );
+  }
+
+  if (type === "vite") {
+    return (
+      <svg style={styles.toolLogo} viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M5 6l11 20L27 6 19 8.2 16 14 13 8.2 5 6z" fill={color} />
+        <path d="M16 14l3-5.8 4.4-1.2L16 26 8.6 7l4.4 1.2L16 14z" fill="#facc15" opacity="0.92" />
+      </svg>
+    );
+  }
+
+  if (type === "express") {
+    return (
+      <svg style={styles.toolLogo} viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="4" y="7" width="24" height="18" rx="5" fill="#f8fafc" stroke={color} strokeWidth="2" />
+        <path d="M9 12h8M9 16h6M9 20h8M19 12l4 8M23 12l-4 8" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (type === "prisma") {
+    return (
+      <svg style={styles.toolLogo} viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M17.2 3.8 6.5 24.3c-.7 1.4.6 2.9 2.1 2.4l14.8-4.5c1.2-.4 1.7-1.8 1-2.9L19.6 4c-.5-1.2-1.8-1.3-2.4-.2z" fill={color} />
+        <path d="M17.8 8.2 11.2 23l9.4-2.8-2.8-12z" fill="#ffffff" opacity="0.76" />
+      </svg>
+    );
+  }
+
+  if (type === "postgres") {
+    return (
+      <svg style={styles.toolLogo} viewBox="0 0 32 32" aria-hidden="true">
+        <ellipse cx="16" cy="8" rx="9" ry="4" fill={color} />
+        <path d="M7 8v12c0 2.2 4 4 9 4s9-1.8 9-4V8" fill={color} opacity="0.82" />
+        <ellipse cx="16" cy="20" rx="9" ry="4" fill="none" stroke="#ffffff" strokeWidth="1.6" opacity="0.9" />
+        <path d="M11 12c1.3.7 3 1 5 1s3.7-.3 5-1" fill="none" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" opacity="0.9" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg style={styles.toolLogo} viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="10" fill="none" stroke={color} strokeWidth="2" />
+      <path d="M16 6.5c3.4 2.1 5 5.2 5 9.5s-1.6 7.4-5 9.5c-3.4-2.1-5-5.2-5-9.5s1.6-7.4 5-9.5z" fill="none" stroke={color} strokeWidth="2" />
+      <path d="M7.7 12.3c3.7-1.8 7.1-1.8 10.3 0 3.2 1.9 5.3 4.6 6.3 8.2" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      <path d="M24.3 11.5c-1 3.6-3.1 6.4-6.3 8.2-3.2 1.9-6.6 1.9-10.3 0" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function Home() {
   const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
@@ -42,12 +110,6 @@ function Home() {
     : hasCompleteSpec
       ? "분석 대기 준비도"
       : "예시 준비도";
-  const primaryActionLabel = analysis
-    ? "분석 결과 보기"
-    : hasCompleteSpec
-      ? "분석하기"
-      : "스펙 등록하고 분석 받기";
-  const primaryActionPath = hasCompleteSpec || analysis ? routes.analysis : routes.specs;
   const panelMetrics = analysis
     ? [
         ["직무 적합도", analysis.fitLevel],
@@ -139,23 +201,16 @@ function Home() {
               포트폴리오로 남길 수 있는 실무형 미션을 제안합니다.
             </p>
 
-            <div style={styles.actions}>
-              <button
-                type="button"
-                className="hero-action primary"
-                style={styles.primaryAction}
-                onClick={() => navigate(primaryActionPath)}
-              >
-                {primaryActionLabel}
-              </button>
-              <button
-                type="button"
-                className="hero-action secondary"
-                style={styles.secondaryAction}
-                onClick={() => navigate(routes.mission)}
-              >
-                맞춤 미션 추천
-              </button>
+            <div style={styles.toolPanel} aria-label="사용 도구">
+              <span style={styles.toolPanelLabel}>사용 도구</span>
+              <div style={styles.toolList}>
+                {heroTools.map((tool) => (
+                  <span key={tool.name} style={styles.toolChip}>
+                    <ToolLogo type={tool.icon} color={tool.color} />
+                    {tool.name}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -303,38 +358,6 @@ function Home() {
 }
 
 const animations = `
-.hero-action {
-  border: 0;
-  cursor: pointer;
-  transition:
-    background 180ms ease,
-    border-color 180ms ease,
-    color 180ms ease,
-    box-shadow 180ms ease,
-    transform 180ms ease;
-}
-
-.hero-action.primary:hover {
-  background: linear-gradient(135deg, #1d4ed8, #0891b2) !important;
-  box-shadow: 0 18px 34px rgba(29, 78, 216, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
-}
-
-.hero-action.primary:active {
-  background: linear-gradient(135deg, #1e40af, #0e7490) !important;
-  transform: translateY(0) scale(0.98) !important;
-}
-
-.hero-action.secondary:hover {
-  background: rgba(37, 99, 235, 0.1) !important;
-  border-color: rgba(37, 99, 235, 0.34) !important;
-  color: #1d4ed8 !important;
-}
-
-.hero-action.secondary:active {
-  background: rgba(37, 99, 235, 0.18) !important;
-  transform: scale(0.98);
-}
-
 .feature-indicator {
   transition:
     background 180ms ease,
@@ -467,29 +490,40 @@ const styles = {
     color: "#475569",
     margin: "0 0 30px",
   },
-  actions: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "12px",
+  toolPanel: {
+    display: "grid",
+    gap: "10px",
     transform: "translateY(-10px)",
   },
-  primaryAction: {
-    padding: "14px 18px",
-    borderRadius: "14px",
-    background: "linear-gradient(135deg, #2563eb, #06b6d4)",
-    color: "#ffffff",
+  toolPanelLabel: {
+    color: "#2563eb",
+    fontSize: "13px",
     fontWeight: "bold",
-    boxShadow: "0 16px 30px rgba(37, 99, 235, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.28)",
-    transform: "translateY(-2px)",
   },
-  secondaryAction: {
-    padding: "14px 18px",
-    borderRadius: "14px",
-    background: "rgba(255, 255, 255, 0.56)",
+  toolList: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px",
+    maxWidth: "560px",
+  },
+  toolChip: {
+    minHeight: "34px",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "0 12px",
+    borderRadius: "12px",
+    background: "rgba(255, 255, 255, 0.66)",
     color: "#334155",
+    fontSize: "13px",
     fontWeight: "bold",
     border: "1px solid rgba(226, 232, 240, 0.9)",
-    boxShadow: "0 12px 24px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.72)",
+    boxShadow: "0 10px 20px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.72)",
+  },
+  toolLogo: {
+    width: "20px",
+    height: "20px",
+    flex: "0 0 auto",
   },
   panelStack: {
     position: "relative",
