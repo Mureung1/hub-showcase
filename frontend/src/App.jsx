@@ -68,13 +68,13 @@ function App() {
         {/* Timetable Simulation Route */}
         <Route 
           path="/timetable" 
-          element={user ? <TimetableGenerator initialStudentType={user.studentType} /> : <Navigate to="/login" replace />} 
+          element={user ? <TimetableGenerator user={user} initialStudentType={user.studentType} /> : <Navigate to="/login" replace />} 
         />
 
         {/* Credit Analytics Route */}
         <Route 
           path="/analytics" 
-          element={user ? <CreditAnalytics initialStudentType={user.studentType} /> : <Navigate to="/login" replace />} 
+          element={user ? <CreditAnalytics user={user} initialStudentType={user.studentType} /> : <Navigate to="/login" replace />} 
         />
 
         {/* Fallback Route */}

@@ -88,11 +88,21 @@ const STUDENT_GRADES_DATABASE = {
   }
 };
 
-function CreditAnalytics({ initialStudentType }) {
+function CreditAnalytics({ user, initialStudentType }) {
   const navigate = useNavigate();
   const [studentType, setStudentType] = useState(initialStudentType || 'transfer');
   
   const studentData = STUDENT_GRADES_DATABASE[studentType];
+  const realName = user ? user.name : studentData.name;
+
+  const getDynamicText = (text) => {
+    if (!text) return '';
+    return text
+      .replace(/김경상/g, realName)
+      .replace(/박경상/g, realName)
+      .replace(/이경상/g, realName);
+  };
+
   const [hoveredPoint, setHoveredPoint] = useState(null);
 
   // States for transcript upload & AI consulting
@@ -134,64 +144,64 @@ function CreditAnalytics({ initialStudentType }) {
   }, [analysisResult]);
 
   const runClientSideSimulation = () => {
-      let mockData = {};
-      if (studentType === 'transfer') {
-        mockData = {
-          studentName: '김경상',
-          overallGpa: '3.90',
-          extractedGrades: [
-            { course: '자료구조 및 실습', grade: 'C+', credit: 3, type: '전공필수' },
-            { course: '데이터베이스 시스템', grade: 'A0', credit: 3, type: '전공필수' },
-            { course: '컴퓨터네트워크', grade: 'A+', credit: 3, type: '전공선택' },
-            { course: '소프트웨어공학', grade: 'B+', credit: 3, type: '전공선택' },
-            { course: '이산수학', grade: 'A+', credit: 3, type: '전공선택' }
-          ],
-          advisory: {
-            gpaStatus: 'high',
-            recommendRetake: false,
-            targetCourse: '자료구조 및 실습',
-            title: '재수강 비권장 (타 전공심화 이수 추천)',
-            message: '김경상님은 자료구조 및 실습 과목에서 C+를 취득하셨으나, 전체 누적 평점이 3.90으로 매우 높은 우수 학생입니다. 취업 및 대학원 진학 시 개별 과목의 C+ 하나보다는 전체 평점의 균형이 훨씬 긍정적으로 작용합니다. 따라서 재수강으로 인한 학점 중복보다는 다른 전공 선택 및 심화 과목을 수강하여 지식의 폭을 넓히는 것을 적극 추천합니다.'
-          }
-        };
-      } else if (studentType === 'general') {
-        mockData = {
-          studentName: '박경상',
-          overallGpa: '3.20',
-          extractedGrades: [
-            { course: '자료구조 및 실습', grade: 'B0', credit: 3, type: '전공필수' },
-            { course: '데이터베이스 시스템', grade: 'B+', credit: 3, type: '전공필수' },
-            { course: '컴퓨터네트워크', grade: 'A0', credit: 3, type: '전공선택' },
-            { course: '소프트웨어공학', grade: 'C+', credit: 3, type: '전공선택' }
-          ],
-          advisory: {
-            gpaStatus: 'medium',
-            recommendRetake: true,
-            targetCourse: '소프트웨어공학',
-            title: '재수강 선택적 권장 (평점 3.5 진입 전략)',
-            message: '박경상님은 현재 전체 평점이 3.20인 상태로, 3.5(상위 장학금 및 우수 취업 기준선) 진입을 목표로 설계가 필요합니다. 전공선택 과목인 소프트웨어공학(C+)을 재수강하여 A학점 이상으로 업그레이드할 경우 전체 GPA 상승에 큰 보탬이 됩니다. 단, 이번 학기 수강에 여유가 없을 경우 다음 학기로 미루어 수강하시는 것도 대안입니다.'
-          }
-        };
-      } else {
-        mockData = {
-          studentName: '이경상',
-          overallGpa: '2.85',
-          extractedGrades: [
-            { course: '자료구조 및 실습', grade: 'B0', credit: 3, type: '전공필수' },
-            { course: '데이터베이스 시스템', grade: 'C+', credit: 3, type: '전공필수' },
-            { course: '컴퓨터네트워크', grade: 'C0', credit: 3, type: '전공선택' }
-          ],
-          advisory: {
-            gpaStatus: 'low',
-            recommendRetake: true,
-            targetCourse: '데이터베이스 시스템',
-            title: '재수강 강력 권장 (핵심 전필 평점 복구)',
-            message: '이경상님은 전체 평점이 2.85로 졸업 학점 하한선 경고 상태에 가깝습니다. 특히 다전공 및 주전공 복합 설계에 있어 핵심 전공필수인 데이터베이스 시스템(C+)의 평점 타격이 매우 큽니다. 본 과목은 재수강 시 기존 낮은 학점이 즉시 소멸되므로, 평점 복구를 위해 이번 학기에 반드시 재수강하여 학점을 A등급 이상으로 취득하시는 것을 강력히 권장합니다.'
-          }
-        };
-      }
-      setAnalysisResult(mockData);
-    };
+    let mockData = {};
+    if (studentType === 'transfer') {
+      mockData = {
+        studentName: realName,
+        overallGpa: '3.90',
+        extractedGrades: [
+          { course: '자료구조 및 실습', grade: 'C+', credit: 3, type: '전공필수' },
+          { course: '데이터베이스 시스템', grade: 'A0', credit: 3, type: '전공필수' },
+          { course: '컴퓨터네트워크', grade: 'A+', credit: 3, type: '전공선택' },
+          { course: '소프트웨어공학', grade: 'B+', credit: 3, type: '전공선택' },
+          { course: '이산수학', grade: 'A+', credit: 3, type: '전공선택' }
+        ],
+        advisory: {
+          gpaStatus: 'high',
+          recommendRetake: false,
+          targetCourse: '자료구조 및 실습',
+          title: '재수강 비권장 (타 전공심화 이수 추천)',
+          message: `${realName}님은 자료구조 및 실습 과목에서 C+을 취득하셨으나, 전체 성적 평점이 3.90으로 매우 높은 우수 학생입니다. 취업 및 대학원 진학 시 개별 과목의 C+ 하나보다 전체 평점의 균형이 훨씬 긍정적으로 작용합니다. 따라서 재수강으로 인한 학점 중복보다는 다른 전공 선택 및 심화 과목을 수강하여 전공의 깊이를 더 넓히는 것을 적극 추천합니다.`
+        }
+      };
+    } else if (studentType === 'general') {
+      mockData = {
+        studentName: realName,
+        overallGpa: '3.20',
+        extractedGrades: [
+          { course: '자료구조 및 실습', grade: 'B0', credit: 3, type: '전공필수' },
+          { course: '데이터베이스 시스템', grade: 'B+', credit: 3, type: '전공필수' },
+          { course: '컴퓨터네트워크', grade: 'A0', credit: 3, type: '전공선택' },
+          { course: '소프트웨어공학', grade: 'C+', credit: 3, type: '전공선택' }
+        ],
+        advisory: {
+          gpaStatus: 'medium',
+          recommendRetake: true,
+          targetCourse: '소프트웨어공학',
+          title: '재수강 선택적 권장 (평점 3.5 진입 전략)',
+          message: `${realName}님은 현재 전체 평점이 3.20인 상태로, 3.5(상위 대학원 및 우수 취업 기준선) 진입을 목표로 설계가 필요합니다. 전공선택 과목인 소프트웨어공학(C+)을 재수강하여 A학점 이상으로 업그레이드할 경우 전체 GPA 상승에 큰 보탬이 됩니다. 단, 이번 학기 수강에 여유가 없을 경우 다음 학기로 미루어 재수강하시는 것도 좋은 대안입니다.`
+        }
+      };
+    } else {
+      mockData = {
+        studentName: realName,
+        overallGpa: '2.85',
+        extractedGrades: [
+          { course: '자료구조 및 실습', grade: 'B0', credit: 3, type: '전공필수' },
+          { course: '데이터베이스 시스템', grade: 'C+', credit: 3, type: '전공필수' },
+          { course: '컴퓨터네트워크', grade: 'C0', credit: 3, type: '전공선택' }
+        ],
+        advisory: {
+          gpaStatus: 'low',
+          recommendRetake: true,
+          targetCourse: '데이터베이스 시스템',
+          title: '재수강 강력 권장 (핵심 전필 평점 복구)',
+          message: `${realName}님은 전체 평점이 2.85로 졸업 학점 하한선 경고 상태에 가깝습니다. 특히 다전공 및 주전공 복합 설계에 있어 핵심 전공필수인 데이터베이스 시스템(C+)의 평점 타격이 매우 큽니다. 본 과목은 재수강 시 기존 낮은 학점이 즉시 소멸되므로, 평점 복구를 위해 이번 학기에 반드시 재수강하여 학점을 A등급 이상으로 취득하시는 것을 강력히 권장합니다.`
+        }
+      };
+    }
+    setAnalysisResult(mockData);
+  };
 
     const handleFileChange = async (e) => {
       const selectedFile = e.target.files[0];
@@ -365,9 +375,9 @@ function CreditAnalytics({ initialStudentType }) {
               onChange={(e) => setStudentType(e.target.value)}
               className="student-type-select"
             >
-              <option value="transfer">편입생 (김경상)</option>
-              <option value="general">일반재학생 (박경상)</option>
-              <option value="double-major">다전공자 (이경상)</option>
+              <option value="transfer">편입생</option>
+              <option value="general">재학생</option>
+              <option value="double-major">다전공자</option>
             </select>
           </div>
           
@@ -383,7 +393,7 @@ function CreditAnalytics({ initialStudentType }) {
         <section className="analytics-header animate-fade-in-up">
           <h2>학점 분석 & 성적 추이 리포트</h2>
           <p>
-            {studentData.name}님의 학기별 이수 학점 세부 내역 및 평점 추이를 시각화하여 보여줍니다.
+            {realName}님의 학기별 이수 학점 세부 내역 및 평점 추이를 시각화하여 보여줍니다.
           </p>
         </section>
 
@@ -729,7 +739,7 @@ function CreditAnalytics({ initialStudentType }) {
                         )}
                         <h5>{analysisResult.advisory.title}</h5>
                       </div>
-                      <p className="advisory-message">{analysisResult.advisory.message}</p>
+                      <p className="advisory-message">{getDynamicText(analysisResult.advisory.message)}</p>
                     </div>
 
                     <div className="advisory-actions">

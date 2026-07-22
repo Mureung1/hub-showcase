@@ -13,6 +13,7 @@ function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [studentType, setStudentType] = useState('transfer'); // default to 'transfer' (김경상)
+  const [department, setDepartment] = useState('컴퓨터공학과');
   
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -57,6 +58,7 @@ function Login({ onLogin }) {
         name: profileName,
         email: email || `${studentId}@gnu.ac.kr`,
         studentType,
+        department: department,
       };
 
       onLogin(userData);
@@ -137,9 +139,26 @@ function Login({ onLogin }) {
                     onChange={(e) => setStudentType(e.target.value)}
                     required
                   >
-                    <option value="transfer">편입생 (김경상)</option>
-                    <option value="general">일반재학생 (박경상)</option>
-                    <option value="double-major">다전공자 (이경상)</option>
+                    <option value="transfer">편입생</option>
+                    <option value="general">재학생</option>
+                    <option value="double-major">다전공자</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="input-group animate-fade-in-up">
+                <label htmlFor="department">소속 학과</label>
+                <div className="input-wrapper">
+                  <GraduationCap className="input-icon" size={18} />
+                  <select
+                    id="department"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    required
+                  >
+                    <option value="컴퓨터공학과">컴퓨터공학과</option>
+                    <option value="경영정보학과">경영정보학과</option>
+                    <option value="통계학과">통계학과</option>
                   </select>
                 </div>
               </div>
