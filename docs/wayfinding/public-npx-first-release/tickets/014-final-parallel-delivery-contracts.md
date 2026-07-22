@@ -8,7 +8,7 @@
 
 ## Question
 
-002의 collision inventory와 확정된 public repository, CLI·Runtime, OAuth·setup, product UX·landing seam을 기준으로 실제 implementation을 어떤 contract-spine commit과 independently mergeable workstream으로 나눌 것인가? Clean exporter·positive allowlist·source/public provenance, public-owned legal·trust file과 workflow를 release lane의 명시적 surface로 포함하고, 각 lane의 exclusive file owner, shared contract·fixture owner, branch·worktree naming, dependency handoff, root lockfile·generated artifact mutation 권한, integration branch와 merge queue, deterministic·packed·live smoke cadence, review owner와 stop-the-line 조건을 어떻게 고정해야 `/to-tickets`가 최대 병렬성보다 authoritative release 수렴을 우선하는 DAG를 만들 수 있는가?
+002의 collision inventory와 확정된 public repository, Ticket 006의 one-package·one-host·process lifecycle, Runtime delivery, OAuth·setup, product UX·landing seam을 기준으로 실제 implementation을 어떤 contract-spine commit과 independently mergeable workstream으로 나눌 것인가? Clean exporter·positive allowlist·source/public provenance, public package/host owner, public-owned legal·trust file과 workflow를 release lane의 명시적 surface로 포함하고, 각 lane의 exclusive file owner, shared contract·fixture owner, branch·worktree naming, dependency handoff, root lockfile·generated artifact mutation 권한, integration branch와 merge queue, deterministic·packed·live smoke cadence, review owner와 stop-the-line 조건을 어떻게 고정해야 `/to-tickets`가 최대 병렬성보다 authoritative release 수렴을 우선하는 DAG를 만들 수 있는가?
 
 ## Answer
 

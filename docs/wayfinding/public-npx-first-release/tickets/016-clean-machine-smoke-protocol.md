@@ -8,7 +8,7 @@
 
 ## Question
 
-Repository·system Python·기존 AY-PLE auth/cache가 없고 supported Node/npm만 있는 clean Mac에서 public landing의 exact command로 preflight, first download·verification, OAuth, app-owned SemesterWorkspace scaffold와 `Semester Ready`를 어떻게 증명할 것인가? 정상 종료 뒤 같은 command가 exact Runtime cache·격리 OAuth session·active workspace를 재사용하고 `WorkspaceManifest` validation 뒤 setup wizard 없이 workbench를 여는 `ready-relaunch`와 complete process-tree cleanup을 어떤 자동·수동 trace로 검증할 것인가? Unsupported prerequisite, network interruption, hash mismatch·corrupt cache, auth cancel·expiry, setup conflict와 recovery·rollback을 어떤 isolated profile과 expected observable outcome으로 검증해야 product release smoke가 green인가? 자료 import·학업 action·confirmed academic state는 이 release smoke에 포함하지 않는다.
+Repository·system Python·기존 AY-PLE auth/cache가 없고 supported Node/npm만 있는 clean Mac에서 public landing의 exact `npx` command로 Ticket 006의 one-package·dynamic same-origin host·single-instance foreground process tree, preflight, first download·verification, OAuth, app-owned SemesterWorkspace scaffold와 `Semester Ready`를 어떻게 증명할 것인가? 정상 종료 뒤 같은 command가 exact Runtime cache·격리 OAuth session·active workspace를 재사용하고 `WorkspaceManifest` validation 뒤 setup wizard 없이 workbench를 여는 `ready-relaunch`와 complete process-tree cleanup을 어떤 자동·수동 trace로 검증할 것인가? Unsupported prerequisite, network interruption, hash mismatch·corrupt cache, auth cancel·expiry, setup conflict와 recovery·rollback을 어떤 isolated profile과 expected observable outcome으로 검증해야 product release smoke가 green인가? 자료 import·학업 action·confirmed academic state는 이 release smoke에 포함하지 않는다.
 
 ## Answer
 

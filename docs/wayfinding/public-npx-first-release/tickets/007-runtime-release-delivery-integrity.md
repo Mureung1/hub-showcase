@@ -8,7 +8,7 @@
 
 ## Question
 
-[Ticket 005](005-public-repository-authority-and-license.md)의 immutable source↔public mapping과 local/private RC를 고정 입력으로 두고, public npm package와 GitHub Release의 macOS arm64 Runtime archive 사이에서 CLI·Runtime·manifest version, archive SHA-256·size, extracted complete-tree verifier와 Runtime artifact provenance의 authority를 어떻게 나눌 것인가? First download, interrupted resume·retry, atomic extract/cache publish, corrupt cache repair, offline rerun, incompatible launcher·Runtime, yanked release와 명시적 rollback을 어떤 fail-closed contract로 표현해야 하는가?
+[Ticket 005](005-public-repository-authority-and-license.md)의 immutable source↔public mapping과 local/private RC, [Ticket 006](006-npx-production-composition.md)의 thin public `ay-ple` package와 foreground host가 `appDataRoot`를 주고 verified immutable `runtimeRoot`·Runtime identity를 받는 resolver seam을 고정 입력으로 둔다. 그 위에서 public npm package와 GitHub Release의 macOS arm64 Runtime archive 사이에 CLI·Runtime·manifest version, archive SHA-256·size, extracted complete-tree verifier와 Runtime artifact provenance의 authority를 어떻게 나눌 것인가? First download, interrupted resume·retry, atomic extract/cache publish, corrupt cache repair, launcher가 이미 실행된 뒤 Runtime network 없이 하는 verified-cache reuse, incompatible launcher·Runtime, yanked release와 명시적 rollback을 어떤 fail-closed contract로 표현해야 하는가? Public `npx` command 자체의 offline resolution은 보장하지 않는다.
 
 ## Answer
 
