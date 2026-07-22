@@ -138,3 +138,12 @@ a {
 .tds-sheet {
   animation: tds-sheet-in 0.26s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* 가로 스크롤 캐러셀: 스크롤바를 숨겨도 스크롤은 그대로 동작한다 */
+.tds-no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.tds-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

@@ -10,7 +10,7 @@ import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
-import { SUPPLEMENT_ADS } from '../lib/adData.js'
+import { nutrientLabel, productsForNutrient } from '../data/coupangProducts.js'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
 import { ALLERGY_OPTIONS, CONDITION_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
 import { calcAchievementPercent, NUTRIENT_LABELS } from '../lib/nutrition.js'
@@ -242,10 +242,19 @@ export default function Result() {
       ))}
 
       {(() => {
+        // 가장 부족한 영양소에 매핑된 쿠팡 파트너스 상품 1개. 상품 데이터는 src/data/coupangProducts.js
+        // 한 곳에만 있고(식단 탭 배너와 동일한 소스), 매핑된 상품이 없는 영양소면 카드를 띄우지 않는다.
         const topKey = top3Rows[0]?.key
-        const ad = topKey ? SUPPLEMENT_ADS[topKey] : null
-        if (!ad) return null
-        return <AdCard adId={`supplement:${topKey}`} title={ad.name} note={ad.note} link={ad.link} />
+        const product = topKey ? productsForNutrient(topKey)[0] : null
+        if (!product) return null
+        return (
+          <AdCard
+            adId={product.id}
+            title={product.productName}
+            note={`${nutrientLabel(product.nutrient)} · ${Number(product.price).toLocaleString('ko-KR')}원`}
+            link={product.partnersUrl}
+          />
+        )
       })()}
 
       <SectionTitle>오늘의 보충 추천 메뉴</SectionTitle>

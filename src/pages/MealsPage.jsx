@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
+import DeficientNutrientAds from '../components/DeficientNutrientAds.jsx'
 import LeaderboardCard from '../components/LeaderboardCard.jsx'
 import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import NationalComparisonCard from '../components/NationalComparisonCard.jsx'
@@ -296,6 +297,9 @@ export default function MealsPage() {
           </Link>
         </Card>
       )}
+
+      {/* PRD FR-3.1: 식단 요약 카드 "아래"에 놓는다(스크롤 최상단을 광고가 점유하지 않게). */}
+      <DeficientNutrientAds />
 
       <LeaderboardCard />
 

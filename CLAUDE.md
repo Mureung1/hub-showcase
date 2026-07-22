@@ -114,7 +114,23 @@ rollback path — `src/pages/MapPage.jsx` now sources restaurant candidates from
 `category_name`/`place_url`/`x`=lng/`y`=lat), so neither of those needs to know which search backend
 is active.
 
-### Leaderboard and ads (mockup)
+### Ads: Coupang Partners supplements (real data path, placeholder links)
+
+식단(`/meals`) 탭의 "부족한 영양소는?" 가로 캐러셀(`src/components/DeficientNutrientAds.jsx`)이 유일한
+광고 노출 지점이다(결과 화면 `Result.jsx`의 세로형 `AdCard`가 같은 데이터를 재사용). 세 층이 분리돼 있다:
+`src/data/coupangProducts.js`(상품 데이터 — **파트너스 승인 후 이 파일의 값만 교체**하면 되고 로직/화면은
+안 건드린다), `src/utils/adRecommendation.js`(순수 함수 `recommendAdProducts` — 실측 부족 영양소 상위 1~3개
+→ 없으면 폴백 미량영양소 순환. **절대 빈 배열을 반환하지 않아** 배너가 비는 상태가 없다),
+`src/lib/adData.js`(로컬 노출/클릭 집계만). 상품 `nutrient` 키는 앱이 추적하는 5개(`protein`/`fiber`/
+`calories`/`carbs`/`fat` — `NUTRIENT_LABELS`와 동일)와 앱이 추적하지 않는 폴백 전용 미량영양소
+(`vitaminD`/`calcium`/…)가 섞여 있고, `AD_NUTRIENTS`의 `tracked` 플래그가 둘을 구분한다. `sodium`은
+한도형이라 의도적으로 없다. `COUPANG_DISCLOSURE` 문구와 AD 배지는 어떤 상태에서도 렌더링을 생략하면
+안 된다(법정 고지). 추천 로직 검증은 `npm run check:ads`
+(`scripts/check-ad-recommendation.mjs` — 이 저장소엔 테스트 러너가 없어 노드 단언 스크립트로 대신한다).
+식당 광고는 PRD v2.0 §6에서 스코프 아웃돼 관련 목업(`SPONSORED_RESTAURANTS`, `PlaceList`의 `isAd` 분기)이
+제거됐다.
+
+### Leaderboard
 
 MY 탭이 아니라 식단(`/meals`) 탭에 `LeaderboardCard`(`src/components/LeaderboardCard.jsx`)가 있다.
 로그인 계정끼리만 "오늘의 순위"를 비교한다(게스트는 기기에 묶인 임시 식별자뿐이라 비교할 고정 신원이
@@ -123,10 +139,6 @@ MY 탭이 아니라 식단(`/meals`) 탭에 `LeaderboardCard`(`src/components/Le
 schema.sql을 다시 실행해야 실제 Supabase 프로젝트에 반영된다** — 아직 실행 전이면 로그인 사용자에게
 에러가 뜬다. 채점 공식(`src/lib/nutritionScore.js`의 `calcNutritionScore`와 SQL 버전)은 반드시
 동일하게 유지해야 한다. 게스트는 로그인 유도 문구와 함께 자기 자신의 "오늘의 점수"만 본다.
-
-`src/lib/adData.js`(스폰서 식당 1곳 + 부족 영양소별 보충제 매핑)와 `src/components/AdCard.jsx`(AD
-배지 + 제휴 고지 문구)는 실제 광고 네트워크/제휴 링크가 정해지지 않아 전부 목업(`link: '#'`)이다 —
-실제 링크가 정해지면 `adData.js`의 값만 바꾸면 되고 화면 컴포넌트는 손댈 필요가 없다.
 
 ### Core domain flow: photo -> nutrition (`src/pages/Analyze.jsx`)
 

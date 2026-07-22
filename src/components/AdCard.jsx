@@ -1,11 +1,19 @@
+import { useEffect } from 'react'
 import Card from './Card.jsx'
-import { trackAdClick } from '../lib/adData.js'
+import { COUPANG_DISCLOSURE } from '../data/coupangProducts.js'
+import { trackAdClick, trackAdImpression } from '../lib/adData.js'
 import { openExternalLink } from '../lib/externalLink.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
 
-// "AD" 배지 + 고지 문구를 포함한 공용 광고 카드. 표시상소재(스폰서 식당/보충제 등)가 바뀌어도
-// 이 컴포넌트는 그대로 재사용한다. 표시상거래법: 광고임을 명확히 표시해야 하므로 배지는 항상 보인다.
+// "AD" 배지 + 쿠팡 파트너스 필수 고지를 포함한 세로형 광고 카드(결과 화면의 "가장 부족한 영양소" 아래).
+// 식단 탭의 가로 캐러셀(DeficientNutrientAds.jsx)과는 형태만 다르고 같은 상품 데이터를 쓴다.
+// 표시광고법: 광고임을 명확히 표시해야 하므로 AD 배지와 고지 문구는 어떤 상태에서도 생략하지 않는다.
 export default function AdCard({ adId, title, note, link, children }) {
+  // 노출 집계(FR-3.3). 같은 광고가 다시 마운트되면 다시 세는데, 화면 진입 자체가 새 노출이므로 맞다.
+  useEffect(() => {
+    trackAdImpression(adId)
+  }, [adId])
+
   return (
     <Card style={{ border: `1px solid ${colors.border}`, boxShadow: 'none' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
@@ -31,7 +39,7 @@ export default function AdCard({ adId, title, note, link, children }) {
       <a
         href={link}
         target="_blank"
-        rel="noreferrer sponsored"
+        rel="noreferrer sponsored nofollow"
         onClick={(e) => {
           e.preventDefault()
           trackAdClick(adId)
@@ -43,8 +51,9 @@ export default function AdCard({ adId, title, note, link, children }) {
         자세히 보기
       </a>
 
-      <p style={{ margin: `${spacing.sm}px 0 0`, fontSize: font.size.xs, color: colors.muted }}>
-        본 링크는 제휴 링크이며, 구매 시 일정 수수료를 받을 수 있습니다.
+      {/* 쿠팡 파트너스 필수 고지 — 문구 변경/생략 금지(PRD FR-3.1). */}
+      <p style={{ margin: `${spacing.sm}px 0 0`, fontSize: font.size.xs, color: colors.muted, lineHeight: 1.5 }}>
+        {COUPANG_DISCLOSURE}
       </p>
     </Card>
   )
