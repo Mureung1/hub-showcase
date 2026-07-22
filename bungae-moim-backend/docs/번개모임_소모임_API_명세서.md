@@ -206,13 +206,49 @@
 
 취소할 신청이 없으면(이미 취소됨·거절됨·애초에 신청한 적 없음) `NOT_FOUND`(404).
 
+### GET /api/meetings/:id/participants
+
+모임장이 보는 신청자 목록. 모임장 본인이 아니면 `FORBIDDEN`(403). 조회는 부작용이 없으므로 **번개모임에서도 허용**합니다(승인 절차가 있는 것은 소모임뿐이지만, 모임장은 누가 오는지 알아야 합니다).
+
+**응답**
+```json
+{
+  "data": {
+    "items": [
+      {
+        "userId": 7, "nickname": "홍길동", "trustScore": 50,
+        "status": "pending",
+        "appliedAt": "2026-07-22T01:00:00.000Z", "respondedAt": null
+      }
+    ]
+  }
+}
+```
+
+- `pending`·`approved`·`rejected`·`cancelled`를 **전부** 포함합니다. 승인·거절 결과가 목록에 남아야 모임장이 자기 처리 결과를 확인할 수 있기 때문입니다. 화면의 "신청자 N명" 집계에서 취소·거절을 뺄지는 프론트가 정합니다.
+- 정렬은 `appliedAt` 오름차순이며, 같은 시각이면 `userId` 오름차순입니다(Postgres는 동률 행의 순서를 보장하지 않습니다).
+- 신청자가 없으면 `items`는 빈 배열입니다.
+- `appliedAt`·`respondedAt`은 `timestamp`(타임존 없음) 컬럼이라 서버 로컬 시각(KST)으로 해석돼 UTC 문자열로 직렬화됩니다. 예시의 `01:00Z`는 KST `10:00`입니다.
+
 ### PATCH /api/meetings/:id/participants/:userId
 
 **요청**
 ```json
 { "status": "approved" }
 ```
-`status`는 `approved` 또는 `rejected`만 허용. 모임장 본인이 아니면 `FORBIDDEN`.
+
+**응답**
+```json
+{ "data": { "userId": 7, "status": "approved" } }
+```
+
+- `status`는 `approved` 또는 `rejected`만 허용합니다. 그 외(누락·`pending`·임의 문자열)는 `VALIDATION_ERROR`(400).
+- **소모임에서만** 가능합니다. 번개모임은 승인 절차가 없으므로 `VALIDATION_ERROR`(400).
+- 모임장 본인이 아니면 `FORBIDDEN`(403).
+- **`pending`인 신청만** 처리할 수 있습니다. 이미 처리된 신청(`approved`/`rejected`/`cancelled`)은 `VALIDATION_ERROR`(400), 신청 이력 자체가 없으면 `NOT_FOUND`(404)로 구분합니다.
+- 승인 철회(`approved` → `rejected`)는 지원하지 않습니다. 확정 참여자를 강제로 내보내는 것이라 신뢰도 감점 정책이 먼저 필요합니다.
+- 소모임은 `capacity`가 `NULL`(무제한)이므로 승인에 정원 검사가 없습니다.
+- 승인하면 `responded_at`이 기록되고, 그 신청자는 다음 상세 조회부터 `openChatUrl`을 받게 됩니다.
 
 ---
 
