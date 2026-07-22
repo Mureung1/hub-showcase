@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   evaluateSyntheticRetrievalRankings,
   syntheticRankingCases,
-} from './evaluation'
+} from './evaluation.js'
 
 describe('synthetic offline retrieval evaluation', () => {
   it('compares ranking, latency, and cost without claiming generation quality or production readiness', () => {

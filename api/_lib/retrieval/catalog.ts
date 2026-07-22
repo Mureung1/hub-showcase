@@ -1,10 +1,10 @@
 import { createHash } from 'node:crypto'
-import type { Mode, PurposeId, ScenarioId } from '../../../src/entities/message'
-import type { ReviewedPromptExampleSet } from '../prompt/examples'
+import type { Mode, PurposeId, ScenarioId } from '../../../src/entities/message/index.js'
+import type { ReviewedPromptExampleSet } from '../prompt/examples.js'
 import {
   reviewedPromptExampleCatalog,
   reviewedSeedCatalogVersion,
-} from '../prompt/seedExamples'
+} from '../prompt/seedExamples.js'
 
 export const reviewedSeedReviewedAt = new Date('2026-07-20T00:00:00.000Z')
 

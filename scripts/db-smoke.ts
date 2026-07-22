@@ -2,21 +2,21 @@ import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { config } from 'dotenv'
 import { eq, sql } from 'drizzle-orm'
-import { createDatabase } from '../api/_lib/db/database'
-import { createDatabaseGenerationMetricsSink } from '../api/_lib/db/generationMetricsSink'
+import { createDatabase } from '../api/_lib/db/database.js'
+import { createDatabaseGenerationMetricsSink } from '../api/_lib/db/generationMetricsSink.js'
 import {
   createDataRepositories,
   createDrizzleDataWriters,
-} from '../api/_lib/db/repositories'
+} from '../api/_lib/db/repositories.js'
 import {
   evaluationRuns,
   generationRuns,
   promptVersions,
   templateVersions,
-} from '../api/_lib/db/schema'
-import { createGenerateHandler } from '../api/_lib/generation/handler'
-import { createInMemoryRateLimiter } from '../api/_lib/generation/rateLimiter'
-import { databaseUrlForSmoke } from './dbSmokeEnvironment'
+} from '../api/_lib/db/schema.js'
+import { createGenerateHandler } from '../api/_lib/generation/handler.js'
+import { createInMemoryRateLimiter } from '../api/_lib/generation/rateLimiter.js'
+import { databaseUrlForSmoke } from './dbSmokeEnvironment.js'
 
 config({ path: '.env.local', quiet: true })
 

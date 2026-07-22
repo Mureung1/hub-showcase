@@ -1,16 +1,16 @@
 import {
   guidedContextCatalogVersion,
   guidedContextQuestionFor,
-} from '../../../src/entities/message/guidedContext'
-import { parseGenerationRequest } from '../../../src/shared/generation/contracts'
-import type { AiGenerationRequest } from '../generation/provider'
-import { requirePromptExamplePair, type PromptExampleSet } from './examples'
-import { generatedReplyOutputConfig } from './outputSchema'
-import { relationshipRules } from './relationshipRules'
-import { reviewedPromptExamplesFor } from './seedExamples'
-import { speechStyleRules } from './speechStyleRules'
-import { situationRules } from './situationRules'
-import { systemPrompt } from './systemPrompt'
+} from '../../../src/entities/message/guidedContext.js'
+import { parseGenerationRequest } from '../../../src/shared/generation/contracts.js'
+import type { AiGenerationRequest } from '../generation/provider.js'
+import { requirePromptExamplePair, type PromptExampleSet } from './examples.js'
+import { generatedReplyOutputConfig } from './outputSchema.js'
+import { relationshipRules } from './relationshipRules.js'
+import { reviewedPromptExamplesFor } from './seedExamples.js'
+import { speechStyleRules } from './speechStyleRules.js'
+import { situationRules } from './situationRules.js'
+import { systemPrompt } from './systemPrompt.js'
 
 export type BuiltPrompt = {
   readonly system: string

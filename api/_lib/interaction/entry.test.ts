@@ -8,7 +8,7 @@ describe('production interaction entry', () => {
 
   it('returns 202 when DATABASE_URL is absent', async () => {
     vi.stubEnv('DATABASE_URL', '')
-    const { default: handleInteraction } = await import('../../interaction')
+    const { default: handleInteraction } = await import('../../interaction.js')
     const response = await handleInteraction.fetch(
       new Request('https://example.test/api/interaction', {
         body: JSON.stringify({

@@ -1420,11 +1420,13 @@ function MessageFlow({
               headingRef={stepHeadingRef}
               title="어느 톤으로 보낼까냥?"
             />
-            <p aria-atomic="true" aria-live="polite" className="sr-only">
-              {resultUpdateAnnouncement}
-            </p>
-
             <div className="result-bundle">
+              {resultUpdateAnnouncement && !isPreviousResultShown && (
+                <p aria-atomic="true" aria-live="polite" className="result-update-notice" role="status">
+                  <strong>{resultUpdateAnnouncement}</strong>
+                  <span>마음에 드는 문장을 고쳐서 복사하거나 이전 초안과 비교해보세요.</span>
+                </p>
+              )}
               {previousResult && (
                 <div className="result-version-controls" aria-label="초안 버전 비교">
                   <button
@@ -1477,7 +1479,7 @@ function MessageFlow({
               )}
               <div className="result-bundle-heading">
                 <strong>기본 · 더 부드럽게 · 더 분명하게</strong>
-                <span>하나를 골라 바로 복사해요</span>
+                <span>필요하면 고쳐서 바로 복사해요</span>
               </div>
               {displayedSource === 'ai' && <p className="mock-note">현재는 AI 연결 전 검증용 예시 후보입니다.</p>}
               {!isPreviousResultShown && generationStatus === 'error' && generationError && (
@@ -1559,8 +1561,18 @@ function MessageFlow({
                 )}
                 {resultRoute === 'guided_ai' && !guidedFallbackUsed && (
                   <>
-                    <button className="wizard-back wizard-reroll" disabled={isRerolling} onClick={reroll} type="button">
-                      {isRerolling ? '다시 만들고 있어요…' : '같은 선택으로 다른 표현 만들기'}
+                    <p className="result-action-guide" id="guided-reroll-guide">
+                      지금 고른 답은 그대로 유지돼요. 아래 버튼을 누르면 추가 입력 없이 새 초안 3개를 바로
+                      만들어요.
+                    </p>
+                    <button
+                      aria-describedby="guided-reroll-guide"
+                      className="wizard-back wizard-reroll"
+                      disabled={isRerolling}
+                      onClick={reroll}
+                      type="button"
+                    >
+                      {isRerolling ? '새 초안 3개 만들고 있어요…' : '이 선택으로 새 초안 3개 만들기'}
                     </button>
                     <button
                       className="wizard-back wizard-result-secondary"

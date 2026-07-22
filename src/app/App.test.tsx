@@ -76,10 +76,34 @@ describe('App', () => {
 
     expect(screen.getAllByText('빈칸을 채워주세요')).toHaveLength(3)
     expect(screen.getAllByText('[부탁할 내용]')).toHaveLength(3)
+    expect(screen.getAllByRole('button', { name: '빈칸 채우기' })).toHaveLength(3)
     expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3)
+    expect(screen.getByText('필요하면 고쳐서 바로 복사해요')).toBeInTheDocument()
     expect(screen.getByText('기본')).toBeInTheDocument()
     expect(screen.getByText('더 부드럽게')).toBeInTheDocument()
     expect(screen.getByText('더 분명하게')).toBeInTheDocument()
+  })
+
+  it('빈칸 후보는 수정할 부분을 자동 선택하고 채운 문장만 바로 복사한다', async () => {
+    const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    chooseProfessorMessenger()
+    chooseHaeyoSpeechStyle()
+    openTemplateDraft('부탁')
+
+    fireEvent.click(screen.getAllByRole('button', { name: '빈칸 채우기' })[0])
+    const editor = screen.getByLabelText('기본 초안 직접 수정') as HTMLTextAreaElement
+    expect(editor).toHaveFocus()
+    expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe('[부탁할 내용]')
+
+    const completedText = editor.value.replace('[부탁할 내용]', '과제 제출 기한을 하루 연장해 주실 수 있는지 확인')
+    fireEvent.change(editor, { target: { value: completedText } })
+    fireEvent.click(screen.getAllByRole('button', { name: '복사' })[0])
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(completedText))
+    expect(screen.getAllByText('빈칸을 채워주세요')).toHaveLength(2)
   })
 
   it('상황 카드는 정확히 한 개의 핵심 질문과 세 빠른 답변으로 이어진다', () => {
@@ -198,13 +222,26 @@ describe('App', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'AI로 더 맞추기' })).toHaveFocus())
   })
 
-  it('guided 결과에서 같은 답 재생성과 답 변경을 구분한다', async () => {
+  it('guided 결과에서 추가 입력 없는 재생성 행동과 완료 후 다음 행동을 안내한다', async () => {
     render(<MessageFlow interactionReporter={() => undefined} />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /팀플냥/ }))
     fireEvent.click(screen.getByRole('button', { name: '일정 조율' }))
     fireEvent.click(screen.getByRole('button', { name: '가능한 시간 묻기 선택하고 초안 만들기' }))
-    await screen.findByRole('button', { name: '같은 선택으로 다른 표현 만들기' })
+
+    const rerollButton = await screen.findByRole('button', { name: '이 선택으로 새 초안 3개 만들기' })
+    expect(screen.getByText(/아래 버튼을 누르면 추가 입력 없이 새 초안 3개를 바로 만들어요/)).toBeVisible()
+    expect(rerollButton).toHaveAccessibleDescription(
+      '지금 고른 답은 그대로 유지돼요. 아래 버튼을 누르면 추가 입력 없이 새 초안 3개를 바로 만들어요.',
+    )
+
+    fireEvent.click(rerollButton)
+    expect(screen.getByRole('button', { name: '새 초안 3개 만들고 있어요…' })).toBeDisabled()
+    await screen.findByRole('button', { name: '이 선택으로 새 초안 3개 만들기' })
+    expect(screen.getByText('새 초안 3개가 준비됐어요.').closest('[role="status"]')).toHaveClass(
+      'result-update-notice',
+    )
+    expect(screen.getByText('마음에 드는 문장을 고쳐서 복사하거나 이전 초안과 비교해보세요.')).toBeVisible()
 
     expect(screen.getByRole('button', { name: '선택한 답 바꾸기' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '선택한 답 바꾸기' }))

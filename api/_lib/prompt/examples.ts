@@ -1,10 +1,10 @@
-import type { Mode, PurposeId, ScenarioId } from '../../../src/entities/message'
+import type { Mode, PurposeId, ScenarioId } from '../../../src/entities/message/index.js'
 import {
   parseGeneratedReply,
   receivedMessageMaxLength,
   situationMaxLength,
   type GeneratedCandidate,
-} from '../../../src/shared/generation/contracts'
+} from '../../../src/shared/generation/contracts.js'
 
 export type PromptExampleSet = {
   readonly scenarioId: ScenarioId

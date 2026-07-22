@@ -3,7 +3,7 @@ import {
   metadataMaxLength,
   parseGeneratedReply,
   type GeneratedReply,
-} from '../../../src/shared/generation/contracts'
+} from '../../../src/shared/generation/contracts.js'
 
 export const generatedReplyJsonSchema = {
   type: 'object',

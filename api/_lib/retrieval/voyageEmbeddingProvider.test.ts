@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   EmbeddingProviderError,
   retrievalEmbeddingDimensions,
-} from './embedding'
-import { createVoyageEmbeddingProvider } from './voyageEmbeddingProvider'
+} from './embedding.js'
+import { createVoyageEmbeddingProvider } from './voyageEmbeddingProvider.js'
 
 const validEmbedding = () => {
   const embedding = Array.from({ length: retrievalEmbeddingDimensions }, () => 0)

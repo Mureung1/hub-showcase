@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { reviewedRetrievalCatalog } from './catalog'
-import { retrievalEmbeddingDimensions, type EmbeddingProvider } from './embedding'
-import { ingestReviewedRetrievalCatalog } from './ingestion'
-import type { RetrievalExampleMetadata } from './repository'
+import { reviewedRetrievalCatalog } from './catalog.js'
+import { retrievalEmbeddingDimensions, type EmbeddingProvider } from './embedding.js'
+import { ingestReviewedRetrievalCatalog } from './ingestion.js'
+import type { RetrievalExampleMetadata } from './repository.js'
 
 const testEmbedding = () => {
   const embedding = Array.from({ length: retrievalEmbeddingDimensions }, () => 0)

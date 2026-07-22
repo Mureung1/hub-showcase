@@ -182,7 +182,7 @@
 
 - 오류 body는 `{ "error": "<code>" }` — 사용자 표시 문구는 클라이언트가 code로 매핑한다(서버 문구를 그대로 노출하지 않음).
 - **서비스 비저장 원칙**: 요청의 `receivedMessage`/`situation`은 생성 호출에만 사용하고 서비스 로그·분석 이벤트·DB에 남기지 않는다 (EDGE_CASES 1-5).
-- **provider 처리 고지**: AI 경로 원문은 외부 provider로 전송된다. 실 연동 직전에 당시 보존 정책과 ZDR 적용 여부를 확인해 입력 화면에 안내한다. ZDR은 실제 조직 설정·계약이 확인된 경우에만 적용됐다고 표현한다. [Anthropic API 보존 정책](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)
+- **provider 처리 고지**: AI 경로 원문은 외부 provider(Google Gemini API)로 전송된다. 실 연동 직전에 당시 보존 정책과 ZDR 적용 여부를 확인해 입력 화면에 안내한다. ZDR은 실제 조직 설정·계약이 확인된 경우에만 적용됐다고 표현하며, 확인되지 않은 보존 조건을 단정하지 않는다.
 
 ### PostgreSQL 데이터 경계 (T30)
 
@@ -210,7 +210,7 @@ GenerationRequest 검증
 → guided ID의 서버 정본 해석 또는 manual 입력 정규화
 → 관계·목적·개인 말투 규칙과 검수된 few-shot 조합
 → AI provider 1회 structured output 호출
-→ stop_reason·schema·사실 충실성·금지 표현 검증
+→ finishReason·schema·사실 충실성·금지 표현 검증
 → 실패 유형이 재시도 가능할 때만 제한적으로 1회 재호출
 → GenerationResponse 정규화 + 원문 없는 generation_runs 기록
 ```
@@ -222,7 +222,7 @@ GenerationRequest 검증
 
 ### 서버 내부 구조화 출력·정규화 (T3)
 
-AI provider에는 UI 라벨·출처를 맡기지 않는다. provider 내부 출력은 아래 `GeneratedReply`만 반환하도록 structured output(`output_config.format`, JSON Schema)을 적용하고, 프록시가 `stop_reason`과 런타임 구조를 다시 검증한 뒤 200 응답 형태로 정규화한다.
+AI provider에는 UI 라벨·출처를 맡기지 않는다. provider 내부 출력은 아래 `GeneratedReply`만 반환하도록 structured output(`generationConfig.responseSchema`, JSON Schema)을 적용하고, 프록시가 `finishReason`과 런타임 구조를 다시 검증한 뒤 200 응답 형태로 정규화한다.
 
 ```ts
 type GeneratedReply = {
@@ -237,7 +237,7 @@ type GeneratedReply = {
 
 - 검증: 후보 정확히 3개, toneLevel 1·2·3 각각 1개, 공백·중복 없음, 후보 600자 이하, 선택 메타데이터 180자 이하.
 - `toneLabel`은 모델 출력이 아니라 서버의 확정 상수에서 부여한다. 모델이 임의 라벨을 보내도 UI 계약에 영향을 주지 않는다.
-- Structured Outputs는 정상 완료 응답의 스키마를 강제하지만 refusal·`max_tokens` 절단·provider 오류까지 제거하지 않는다. `stop_reason`이 정상 완료인지 확인하고 런타임 검증을 유지한다. [Anthropic Structured Outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)
+- Structured Outputs는 정상 완료 응답의 스키마를 강제하지만 안전 차단·`MAX_TOKENS` 절단·provider 오류까지 제거하지 않는다. `finishReason`이 `STOP`(정상 완료)인지 확인하고 런타임 검증을 유지한다. [Gemini structured output 가이드](https://ai.google.dev/gemini-api/docs/structured-output)
 - 파싱 실패·빈 응답·구조 불일치·검증 실패는 외부 API에서는 `generation_failed`로 매핑한다. `timeout`, `invalid_response`, `unsafe_response`은 서비스 내부 판별 코드로만 사용해 원인을 사용자에게 노출하지 않는다.
 - 명백한 협박성 표현은 1차 방어로 차단하되, 완전한 안전 판별은 프롬프트 안전 규칙·사용자 최종 검토와 함께 다룬다.
 
@@ -273,7 +273,7 @@ type GeneratedReply = {
 ```
 
 - **few-shot 주입부 분리**: 프롬프트 조립 함수는 예시 배열을 **파라미터로 받는** 형태로 구현한다. 이후 단계에서 예시 출처가 상수(시드)에서 DB(승격 예시)로 바뀌어도 조립 로직은 그대로 유지되게 하는 선행 지침 — T19 구현 시 적용.
-- **출력 형식**: structured outputs(`output_config.format`, json_schema)로 정상 완료 응답의 `candidates` 배열 스키마를 강제한다. refusal·토큰 절단·provider 오류는 별도 처리하고 런타임 검증을 유지한다.
+- **출력 형식**: structured outputs(`generationConfig.responseSchema`, json_schema)로 정상 완료 응답의 `candidates` 배열 스키마를 강제한다. 안전 차단·토큰 절단·provider 오류는 별도 처리하고 런타임 검증을 유지한다.
 - **주입 방어 표현**: XML 데이터 블록과 시스템 지시는 사용자 입력을 데이터로 취급하게 돕는 완화책이다. 프롬프트 주입을 완전히 차단한다고 표현하지 않고, 상충 지시 holdout과 출력 검증으로 실제 이탈 여부를 확인한다.
 - **후처리 검증(프록시)**: 후보가 정확히 3개인지, 각 text가 비어있지 않은지 확인. 미달 시 `generation_failed`.
 - **후처리 감지(클라이언트)**: `[...]`·`OO` 패턴 하이라이트는 클라이언트 담당 (SCREENS S3). 자리 표시자는 금지 위반이 아니라 **의도된 출력**이므로, 감지 UI는 "빈칸을 채워주세요" 안내로 전송 사고를 막는 보조 장치다.
@@ -414,15 +414,14 @@ T25 최종 판정은 작성자가 아닌 한국어 관계 맥락 평가자 2명�
 
 ## 6. 모델 선택 · 비용 · 레이트리밋
 
-최종 모델은 미리 고정하지 않는다. 동일 holdout에서 SPEC 5장 합격선을 통과하는 가장 빠르고 저렴한 모델을 선택한다. 2026-07-11 공개 단가와 입력 2K·출력 0.5K 가정의 대략적 비교는 아래와 같으며, T20에서 다시 확인한다.
+최종 모델은 미리 고정하지 않는다. 동일 holdout에서 SPEC 5장 합격선을 통과하는 가장 빠르고 저렴한 모델을 선택한다. 2026-07-21 공개 단가와 입력 2K·출력 0.5K 가정의 대략적 비교는 아래와 같으며, T20에서 다시 확인한다.
 
 | 후보 | 공개 단가(입력/출력 MTok) | 1회 추정 | 적용 순서 |
 |---|---:|---:|---|
-| `claude-haiku-4-5` | $1 / $5 | 약 $0.0045 | 첫 평가 후보 |
-| `claude-sonnet-4-6` | $3 / $15 | 약 $0.0135 | Haiku 품질 미달 시 |
-| `claude-opus-4-8` | $5 / $25 | 약 $0.0225 | 더 낮은 모델이 합격선 미달일 때 |
+| `gemini-3.1-flash-lite` | $0.25 / $1.50 | 약 $0.00125 | 첫 평가 후보(`gemini-2.5-flash-lite`는 계정에 따라 신규 사용자에게 제공되지 않아 T20 연결 시 제외) |
+| `gemini-3.5-flash` | $1.50 / $9.00 | 약 $0.0075 | flash-lite 품질 미달 시 |
 
-[Anthropic 모델 선택 가이드](https://platform.claude.com/docs/en/about-claude/models/choosing-a-model)와 최신 가격을 구현 직전에 재확인한다. 짧은 문구 생성에는 thinking을 기본 요구하지 않으며, 품질·지연 측정 없이 Opus를 고정하지 않는다.
+[Gemini API 가격 안내](https://ai.google.dev/gemini-api/docs/pricing)와 최신 가격을 구현 직전에 재확인한다. 짧은 문구 생성에는 thinking을 기본 요구하지 않으며, 품질·지연 측정 없이 상위 모델을 고정하지 않는다.
 
 - **템플릿 경로는 호출 0회**지만 채택 근거는 비용보다 즉시 응답과 독립 검수 가능성이다.
 - **레이트리밋(MVP 수준)**: 클라이언트는 생성 중 버튼 비활성. 서버는 Vercel 함수 in-memory 카운터로 IP당 분당 10회 제한 — 서버리스 인스턴스별 카운터라 완벽하지 않음을 **알고 쓰는 것**으로 한다. 정확한 분산 레이트리밋(Upstash 등)은 이후 단계 (EDGE_CASES 5-2).

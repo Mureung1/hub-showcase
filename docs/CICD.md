@@ -42,7 +42,7 @@
 | 프로덕션 | 기준 브랜치(Vercel 프로젝트 설정의 Production Branch — T17에서 `N166_진현지`로 지정) push 시 자동 배포 |
 | 프리뷰 | 그 외 브랜치 push·PR마다 고유 URL 자동 생성 — 머지 전 실물 확인용 |
 | 서버리스 함수 | `/api/generate` 1개 (SPEC 2장 계약) — 저장소의 `api/` 디렉터리를 Vercel이 자동 인식 |
-| 환경변수 | `ANTHROPIC_API_KEY`는 **Vercel 프로젝트 환경변수로만** 보관. 저장소·클라이언트 코드에 절대 넣지 않는다 (EDGE_CASES 5-1). 로컬은 `.env.local`(gitignore의 `*.local`로 이미 제외) |
+| 환경변수 | `GEMINI_API_KEY`는 **Vercel 프로젝트 환경변수로만** 보관. 저장소·클라이언트 코드에 절대 넣지 않는다 (EDGE_CASES 5-1). 로컬은 `.env.local`(gitignore의 `*.local`로 이미 제외) |
 | 롤백 | Vercel Instant Rollback — 대시보드에서 직전 배포로 즉시 전환. 별도 구축 불필요 |
 
 ### T17 실행 체크리스트 (그 시점에 이 표대로)
@@ -52,7 +52,7 @@
 3. Vercel에 GitHub 저장소 연결, 프레임워크 Vite 자동 감지 확인
 4. Production Branch 지정 + 프리뷰 배포 동작 확인 (목 상태 1차 배포 — CHECKLIST T17)
 5. `/api/interaction`의 same-origin 요청과 `waitUntil()` background write를 Preview에서 검증하고 보존 기간·집계 query를 기록(T24). 원문·후보·사용자/세션 ID는 저장하지 않음
-6. `ANTHROPIC_API_KEY` 환경변수 등록은 T20(실 provider 전환) 시점에 Preview부터 수행. T18 provider 비종속 프록시 기반에는 키를 요구하지 않음
+6. `GEMINI_API_KEY` 환경변수 등록은 T20(실 provider 전환) 시점에 Preview부터 수행. T18 provider 비종속 프록시 기반에는 키를 요구하지 않음
 7. 배포된 프리뷰 URL을 PR에 첨부해 리뷰어가 실물을 확인하고, COMPETITIVE_VALIDATION의 T22 짧은 사람 대상 비교는 같은 버전의 고정 URL에서만 수행. T20 실 provider 품질 진행 전 무참여자 모델 벤치마크는 T25 통과 콘텐츠 버전을 별도로 고정
 
 ## 이후 단계 (MVP Out)

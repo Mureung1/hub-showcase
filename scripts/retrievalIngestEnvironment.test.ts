@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   retrievalIngestConfirmation,
   retrievalIngestConfiguration,
-} from './retrievalIngestEnvironment'
+} from './retrievalIngestEnvironment.js'
 
 const validEnvironment = {
   DATABASE_URL: 'postgresql://example.test/db',

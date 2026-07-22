@@ -4,8 +4,8 @@ import {
   type Mode,
   type PurposeId,
   type ScenarioId,
-} from '../../../src/entities/message'
-import type { RetrievalCatalogEntry } from './catalog'
+} from '../../../src/entities/message/index.js'
+import type { RetrievalCatalogEntry } from './catalog.js'
 
 const requiredModes = ['reply', 'initiate'] as const satisfies readonly Mode[]
 export const minimumExamplesPerRetrievalCell = 2

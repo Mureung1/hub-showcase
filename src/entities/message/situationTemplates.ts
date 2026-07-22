@@ -5,7 +5,7 @@ import {
   type SituationId,
   type SpeechStyleId,
   type ToneLevel,
-} from './message'
+} from './message.js'
 
 type ToneTexts = Record<ToneLevel, string>
 type SpeechStyleTemplates = Record<SpeechStyleId, ToneTexts>

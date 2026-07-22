@@ -70,7 +70,7 @@ ChatGPT 같은 일반 AI 챗봇으로도 보낼 메시지를 받을 수 있지�
 4. 관계별 냥이가 제시한 **상황 카드** 중 하나를 선택하고 카드별 핵심 질문 정확히 1개에 빠른 답변. 맞는 카드가 없으면 **"내 상황을 직접 설명하기"**로 목적+모드별 텍스트를 입력한다.
 5. 생성 — 빠른 답변은 guided AI, 질문 화면의 **"질문 없이 바로 초안 보기"**는 API 없이 정적 템플릿, 직접 설명은 manual AI로 생성한다.
 6. 답냥이가 톤 3단계 후보 3개 제시 — 기본 / 더 부드럽게 / 더 분명하게 순. guided AI는 반영한 관계·카드·답변을 표시하고, 실패 fallback은 방금 답한 세부 내용이 반영되지 않았음을 명시한다.
-7. 마음에 드는 보낼 말 선택 → 필요하면 후보를 현재 탭에서 직접 수정 → 복사 (**화면상 핵심 과업 완료 지점**). 기본 초안이 마음에 안 들면 S3에서 **"AI로 더 맞추기"**를 펼치고, guided 결과는 **"같은 선택으로 다른 표현 만들기 / 선택한 답 바꾸기"**를 구분한다. 성공한 교체의 직전 1세트는 비교·복원할 수 있고 실패 중에는 현재 후보를 유지한다. 더 구체적인 사실은 `내 상황을 직접 설명하기`, 상황 자체가 다르면 `상황 다시 고르기`로 분리한다.
+7. 마음에 드는 보낼 말 선택 → 필요하면 후보를 현재 탭에서 직접 수정 → 복사 (**화면상 핵심 과업 완료 지점**). 기본 초안이 마음에 안 들면 S3에서 **"AI로 더 맞추기"**를 펼치고, guided 결과는 **"이 선택으로 새 초안 3개 만들기 / 선택한 답 바꾸기"**를 구분한다. 첫 행동 앞에는 추가 입력 없이 즉시 새 초안이 만들어진다는 안내를 둔다. 성공한 교체의 직전 1세트는 비교·복원할 수 있고 실패 중에는 현재 후보를 유지한다. 더 구체적인 사실은 `내 상황을 직접 설명하기`, 상황 자체가 다르면 `상황 다시 고르기`로 분리한다.
 8. (이후 단계 — MVP 미구현) 결과 평가 — "효과 있었어요" 피드백
 9. (이후 단계 — MVP 미구현) 좋은 평가를 받은 예시가 데이터베이스에 누적 → 다음 생성에 반영
 
@@ -99,7 +99,7 @@ docs/SCREENS.md에서 확정한 내부 단계 S0~S3는 유지하되 한 개의 �
 
 ## 기술 스택 & 아키텍처
 - 프론트엔드: React + Vite + TypeScript. 캐릭터는 Three.js + React Three Fiber 단일 Canvas로 렌더링하며 DOM UI와 분리한다
-- 백엔드/AI 연동 방식: Vercel Function `/api/generate`가 API 키 보호, 입력 검증, deadline·제한 재시도, 오류 매핑, 레이트리밋과 Claude API structured output 호출을 담당한다. 최종 모델은 T21 holdout 품질·지연·비용 비교로 결정한다
+- 백엔드/AI 연동 방식: Vercel Function `/api/generate`가 API 키 보호, 입력 검증, deadline·제한 재시도, 오류 매핑, 레이트리밋과 Gemini API structured output 호출을 담당한다. 최종 모델은 T21 holdout 품질·지연·비용 비교로 결정한다
 - AI 실행 방식: guided ID를 서버 정본으로 해석하거나 manual 입력을 검증한 뒤 provider 1회 호출+결정적 검증을 수행한다. 자율 agent loop·런타임 멀티에이전트는 두지 않는다
 - 검수 예시 retrieval: Git의 검수 예시 본문을 정본으로 두고 Neon pgvector에는 document embedding·버전·checksum만 저장한다. 현재 작은 corpus에서는 exact top-2를 합성 offline 평가에만 쓰며 운영 selector는 static이다
 - 데이터 계층: Neon PostgreSQL + Drizzle ORM. T30 핵심 네 테이블과 독립 `retrieval_examples` metadata table에 원문 없는 버전·생성·평가·embedding 메타데이터만 저장한다
@@ -115,7 +115,7 @@ docs/SCREENS.md에서 확정한 내부 단계 S0~S3는 유지하되 한 개의 �
   - 상황 카드(SituationCard): id, 라벨, 범위(공통/시나리오 특화) — 프론트 상수 (SPEC 1장)
   - guided 질문(GuidedContextQuestion): scenarioId×situationId별 질문 1개와 option 3개, stable ID·purpose·사실 경계 — Git 정본(T34)
   - 시드 예시(CuratedExample): scenarioId, situationNote, receivedMessage?, toneLevel, message, source — 프록시 상수('직접 설명' AI few-shot 재료, 24개)
-  - 상황 카드 템플릿(CuratedTemplate): scenarioId×situationId×speechStyleId×toneLevel 조회, 시드와 독립 작성 — 프론트 상수(카드 경로 재료, 288개 초안, SPEC 4장)
+  - 상황 카드 템플릿(CuratedTemplate): scenarioId×situationId×speechStyleId×toneLevel 조회, 시드와 독립 작성 — 프론트 상수(카드 경로 재료, T25 전수 검수 통과 288개, SPEC 4장)
   - 교수 이메일 템플릿(EmailTemplate): emailSituationId×toneLevel의 제목·본문 — 사용자 입력을 로컬에서만 치환하는 18후보 초안(T33)
 - **MVP — PostgreSQL 운영 데이터 (SPEC 2장, T30)**:
   - PromptVersion / TemplateVersion: 배포 버전, checksum, 검수 상태·시각

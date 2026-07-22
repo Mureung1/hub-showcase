@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { reviewedPromptExampleCatalog } from '../prompt/seedExamples'
+import { reviewedPromptExampleCatalog } from '../prompt/seedExamples.js'
 import {
   checksumForReviewedExample,
   reviewedRetrievalCatalog,
   retrievalDocumentTextFor,
-} from './catalog'
-import { retrievalCoverageReport, requireProductionRetrievalCoverage } from './coverage'
+} from './catalog.js'
+import { retrievalCoverageReport, requireProductionRetrievalCoverage } from './coverage.js'
 
 describe('reviewed retrieval catalog', () => {
   it('derives deterministic checksums from the Git-owned reviewed examples', () => {

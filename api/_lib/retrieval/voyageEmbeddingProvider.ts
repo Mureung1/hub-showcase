@@ -3,7 +3,7 @@ import {
   retrievalEmbeddingDimensions,
   validateEmbedding,
   type EmbeddingProvider,
-} from './embedding'
+} from './embedding.js'
 
 const voyageEmbeddingsEndpoint = 'https://api.voyageai.com/v1/embeddings'
 const defaultTimeoutMs = 5_000

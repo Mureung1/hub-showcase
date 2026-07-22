@@ -22,6 +22,8 @@
 | AC-8 | 통과 | `POST /api/interaction` 400/429/202와 DB·scheduler 실패 격리, 7열 allowlist repository·additive migration·DB CHECK 테스트 통과. 실제 Preview write는 T24로 분리 |
 | AC-9 | 통과 | template/guided/manual/email·세션·복사·placeholder·초점 회귀를 포함한 전체 40파일 330개 테스트 통과 |
 | AC-10 | 통과 | API 타입검사, lint, production build, Drizzle check, retrieval eval, diff check, AGENTS/CLAUDE 동기화, production TypeScript `any` 0건 통과 |
+| AC-11 | 통과 | `[부탁할 내용]` 강조·`빈칸 채우기` 라벨·편집 진입 시 첫 자리 표시자 선택·완성문 복사를 단위 테스트와 App RTL로 검증 |
+| AC-12 | 통과 | guided 결과에서 추가 입력 없이 즉시 실행됨을 설명하고 `이 선택으로 새 초안 3개 만들기`→생성 중 라벨→화면상 성공·수정/복사/비교 안내까지 App RTL로 검증 |
 
 ## 현재 판정
 
@@ -58,3 +60,16 @@
 - VoiceOver/NVDA의 live·description 발화, 실제 모바일 가상 키보드, 카카오톡 인앱 브라우저 선택 복사는 별도 수동 호환성 확인이 남는다. 이는 구현 완료를 실제 접근성 사용자 검증이나 운영 호환 완료로 과장하지 않기 위한 잔여 gate다.
 - jsdom의 기존 `Window.scrollTo not implemented` 로그는 실제 Chrome 검증과 별개인 비차단 경고다.
 - 커밋·푸시는 수행하지 않았고 `.github` 경로를 수정하거나 포함하지 않았다.
+
+## 2026-07-21 후속 UX 검증
+
+- `findFirstPlaceholderRange`가 첫 `[...]`·`OO` 범위를 반환하고 빈칸이 없으면 `null`을 반환하는 단위 테스트를 추가했다.
+- App RTL에서 빈칸 후보 3개의 `빈칸 채우기` 노출, 편집 진입 뒤 `[부탁할 내용]` 자동 선택, 사용자가 채운 완성문만 클립보드로 복사됨을 검증했다.
+- 관련 2파일 82개·전체 41파일 344개 테스트, lint, production build, `git diff --check`가 통과했다. 기존 jsdom `scrollTo` 로그와 lazy `CatCanvas` 500kB 경고만 비차단으로 유지됐다.
+- 인앱 브라우저는 이 세션에서 사용 가능한 브라우저가 없어 실제 화면 검증을 실행하지 못했다. 기존 카드 구조와 CSS 치수는 바꾸지 않았고, 실기기·인앱 브라우저 확인은 기존 T22·T23 수동 gate에 남긴다.
+
+### guided 재생성 행동 안내
+
+- 모호한 `같은 선택으로 다른 표현 만들기`를 `이 선택으로 새 초안 3개 만들기`로 바꾸고, 버튼 앞에 현재 답 유지·추가 입력 불필요·즉시 생성 결과를 설명했다. 버튼은 이 설명을 accessible description으로 참조한다.
+- 생성 중에는 `새 초안 3개 만들고 있어요…`, 성공 뒤에는 화면에 `새 초안 3개가 준비됐어요.`와 수정·복사·이전 초안 비교 안내를 표시한다. 기존 결과 보존·직전 한 세트 복원 계약은 유지했다.
+- App RTL 78개·전체 41파일 349개 테스트, lint, production build, `git diff --check`가 통과했다. 기존 jsdom `scrollTo` 로그와 lazy `CatCanvas` 500kB 경고만 비차단으로 유지됐다.

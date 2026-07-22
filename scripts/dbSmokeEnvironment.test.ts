@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { databaseSmokeConfirmation, databaseUrlForSmoke } from './dbSmokeEnvironment'
+import { databaseSmokeConfirmation, databaseUrlForSmoke } from './dbSmokeEnvironment.js'
 
 describe('T30 database smoke environment guard', () => {
   it('always rejects the production environment', () => {

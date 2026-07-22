@@ -4,7 +4,7 @@ import {
   generatedReplyOutputConfig,
   isAcceptedStopReason,
   parseCompletedStructuredOutput,
-} from './outputSchema'
+} from './outputSchema.js'
 
 const validReply = {
   candidates: [

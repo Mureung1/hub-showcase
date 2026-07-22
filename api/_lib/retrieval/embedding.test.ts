@@ -3,7 +3,7 @@ import {
   EmbeddingProviderError,
   retrievalEmbeddingDimensions,
   validateEmbedding,
-} from './embedding'
+} from './embedding.js'
 
 const validEmbedding = () => {
   const embedding = Array.from({ length: retrievalEmbeddingDimensions }, () => 0)

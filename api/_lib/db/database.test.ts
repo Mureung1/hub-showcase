@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createDatabase, databaseUrlFromEnvironment } from './database'
+import { createDatabase, databaseUrlFromEnvironment } from './database.js'
 
 describe('T30 database configuration', () => {
   it('uses only a non-empty server DATABASE_URL', () => {

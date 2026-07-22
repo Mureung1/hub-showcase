@@ -1,4 +1,4 @@
-import { databaseUrlFromEnvironment } from '../api/_lib/db/database'
+import { databaseUrlFromEnvironment } from '../api/_lib/db/database.js'
 
 export const retrievalIngestConfirmation = 't35-development-write'
 

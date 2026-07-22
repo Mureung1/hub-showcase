@@ -7,8 +7,8 @@ import {
   type ScenarioId,
   type SituationId,
   type ToneLevel,
-} from '../../entities/message'
-import type { GenerationRoute } from '../generation'
+} from '../../entities/message/index.js'
+import type { GenerationRoute } from '../generation/index.js'
 
 export const interactionEventNames = [
   'result_shown',

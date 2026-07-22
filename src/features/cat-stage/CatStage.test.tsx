@@ -31,6 +31,7 @@ const mockMatchMedia = (reducedMotion: boolean) => {
 
 const enableWebGL = () => {
   vi.stubGlobal('WebGLRenderingContext', class WebGLRenderingContextMock {})
+  vi.spyOn(window.navigator, 'hardwareConcurrency', 'get').mockReturnValue(4)
 }
 
 describe('CatStage', () => {
@@ -104,8 +105,8 @@ describe('CatStage', () => {
   })
 
   it('CPU 코어가 2개 이하인 저사양 환경에서는 정적 이미지만 보여준다', () => {
-    vi.spyOn(window.navigator, 'hardwareConcurrency', 'get').mockReturnValue(2)
     enableWebGL()
+    vi.spyOn(window.navigator, 'hardwareConcurrency', 'get').mockReturnValue(2)
     const { container } = render(<CatStage assetSrc="/cats/dabnyangi-main.webp" state="idle" />)
 
     expect(container.querySelector('.cat-stage')).toHaveAttribute('data-renderer', 'static')

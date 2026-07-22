@@ -1,18 +1,18 @@
-import type { Mode, PurposeId, ScenarioId } from '../../../src/entities/message'
+import type { Mode, PurposeId, ScenarioId } from '../../../src/entities/message/index.js'
 import {
   requirePromptExamplePair,
   type PromptExamplePair,
-} from '../prompt/examples'
+} from '../prompt/examples.js'
 import {
   reviewedPromptExamplesFor,
   reviewedSeedCatalogVersion,
-} from '../prompt/seedExamples'
+} from '../prompt/seedExamples.js'
 import {
   reviewedRetrievalEntryFor,
   type RetrievalCatalogEntry,
-} from './catalog'
-import type { EmbeddingProvider } from './embedding'
-import type { RetrievalExampleRepository } from './repository'
+} from './catalog.js'
+import type { EmbeddingProvider } from './embedding.js'
+import type { RetrievalExampleRepository } from './repository.js'
 
 export type ReviewedExampleSelectorMode = 'retrieval-eval' | 'static'
 

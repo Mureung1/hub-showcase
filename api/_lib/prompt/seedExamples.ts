@@ -1,9 +1,9 @@
-import type { ScenarioId } from '../../../src/entities/message'
+import type { ScenarioId } from '../../../src/entities/message/index.js'
 import {
   requirePromptExamplePair,
   type PromptExamplePair,
   type ReviewedPromptExampleSet,
-} from './examples'
+} from './examples.js'
 
 export const reviewedSeedCatalogVersion = 'reviewed-seeds-v1'
 

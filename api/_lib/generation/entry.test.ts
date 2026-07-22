@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import handleGenerate from '../../generate'
+import handleGenerate from '../../generate.js'
 
 describe('production generate entry', () => {
   it('fails explicitly while the live provider is unconfigured', async () => {

@@ -1,5 +1,10 @@
 import { useEffect, useRef } from 'react'
-import { hasPlaceholder, isPlaceholder, splitPlaceholderText } from '../../entities/message'
+import {
+  findFirstPlaceholderRange,
+  hasPlaceholder,
+  isPlaceholder,
+  splitPlaceholderText,
+} from '../../entities/message'
 import type { Candidate, ToneLevel } from '../../entities/message'
 import { candidateMaxLength } from '../../shared/generation'
 
@@ -50,17 +55,62 @@ function ResultCard({
   const displayedText = editedText ?? candidate.text
   const displayedCandidate = { ...candidate, text: displayedText }
   const editorRef = useRef<HTMLTextAreaElement | null>(null)
+  const wasEditingRef = useRef(false)
   const toneDescriptionId = `result-tone-${candidate.toneLevel}`
+  const displayedTextHasPlaceholder = hasPlaceholder(displayedText)
 
   useEffect(() => {
-    if (editing) editorRef.current?.focus()
-  }, [editing])
+    const editOpened = editing && !wasEditingRef.current
+    wasEditingRef.current = editing
+    if (!editOpened || !editorRef.current) return
+
+    editorRef.current.focus()
+    const placeholderRange = findFirstPlaceholderRange(displayedText)
+    if (placeholderRange) {
+      editorRef.current.setSelectionRange(placeholderRange.start, placeholderRange.end)
+    }
+  }, [displayedText, editing])
 
   return (
     <article className="result-card">
       <div className="result-meta">
-        <span id={toneDescriptionId}>{candidate.toneLabel}</span>
-        {hasPlaceholder(displayedText) && <em>빈칸을 채워주세요</em>}
+        <div className="result-meta-label">
+          <span id={toneDescriptionId}>{candidate.toneLabel}</span>
+          {displayedTextHasPlaceholder && <em>빈칸을 채워주세요</em>}
+        </div>
+        <div className="result-meta-actions">
+          {editable && editing && (
+            <button
+              aria-describedby={toneDescriptionId}
+              className="result-edit-restore"
+              disabled={disabled}
+              onClick={() => onRestoreText(candidate.toneLevel)}
+              type="button"
+            >
+              원래 문장으로
+            </button>
+          )}
+          {editable && (
+            <button
+              aria-describedby={toneDescriptionId}
+              className="result-edit-toggle"
+              disabled={disabled}
+              onClick={() => onToggleEdit(candidate.toneLevel)}
+              type="button"
+            >
+              {editing ? '수정 닫기' : displayedTextHasPlaceholder ? '빈칸 채우기' : '직접 수정'}
+            </button>
+          )}
+          <button
+            aria-describedby={toneDescriptionId}
+            className="result-copy-button"
+            disabled={disabled || displayedText.trim().length === 0}
+            onClick={() => onCopy(displayedCandidate)}
+            type="button"
+          >
+            {copied ? '복사됨 ✓' : fallbackShown ? '텍스트 선택됨' : copyFailed ? '복사 실패' : '복사'}
+          </button>
+        </div>
       </div>
       {editing ? (
         <textarea
@@ -78,46 +128,13 @@ function ResultCard({
       ) : (
         <p ref={(element) => setTextRef(candidate.toneLevel, element)}>{renderCandidateText(displayedText)}</p>
       )}
-      {editable && (
-        <div className="result-edit-actions">
-          <button
-            aria-describedby={toneDescriptionId}
-            className="result-edit-toggle"
-            disabled={disabled}
-            onClick={() => onToggleEdit(candidate.toneLevel)}
-            type="button"
-          >
-            {editing ? '수정 닫기' : '직접 수정'}
-          </button>
-          {editing && (
-            <button
-              aria-describedby={toneDescriptionId}
-              className="result-edit-restore"
-              disabled={disabled}
-              onClick={() => onRestoreText(candidate.toneLevel)}
-              type="button"
-            >
-              원래 문장으로
-            </button>
-          )}
-        </div>
-      )}
       {editing && displayedText.trim().length === 0 && (
         <p className="result-edit-error" role="alert">
           보낼 말을 입력해야 복사할 수 있어요.
         </p>
       )}
-      <button
-        aria-describedby={toneDescriptionId}
-        className="result-copy-button"
-        disabled={disabled || displayedText.trim().length === 0}
-        onClick={() => onCopy(displayedCandidate)}
-        type="button"
-      >
-        {copied ? '복사됨 ✓' : fallbackShown ? '텍스트 선택됨' : copyFailed ? '복사 실패' : '복사'}
-      </button>
       {copyNoticeShown &&
-        (hasPlaceholder(displayedText) ? (
+        (displayedTextHasPlaceholder ? (
           <p className="copy-feedback" role="status">
             복사했어요. 보내기 전에 빈칸을 채워 보내주세요.
           </p>

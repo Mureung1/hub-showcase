@@ -1,4 +1,4 @@
-import type { AiGenerationRequest } from './provider'
+import type { AiGenerationRequest } from './provider.js'
 
 export const generationMetricStatuses = [
   'deadline_exceeded',

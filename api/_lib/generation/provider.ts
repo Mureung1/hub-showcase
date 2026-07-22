@@ -4,9 +4,9 @@ import type {
   ScenarioId,
   SpeechStyleId,
   SituationId,
-} from '../../../src/entities/message'
-import type { ResolvedGuidedContext } from '../../../src/entities/message/guidedContext'
-import type { ManualAiRequest } from '../../../src/shared/generation/contracts'
+} from '../../../src/entities/message/index.js'
+import type { ResolvedGuidedContext } from '../../../src/entities/message/guidedContext.js'
+import type { ManualAiRequest } from '../../../src/shared/generation/contracts.js'
 
 export type TrustedGuidedAiGenerationRequest = {
   readonly guidedContext: ResolvedGuidedContext

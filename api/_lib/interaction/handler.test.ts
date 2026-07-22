@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createDatabaseInteractionMetricsSink } from '../db/interactionMetricsSink'
-import { createInMemoryRateLimiter, type RateLimiter } from '../generation/rateLimiter'
+import { createDatabaseInteractionMetricsSink } from '../db/interactionMetricsSink.js'
+import { createInMemoryRateLimiter, type RateLimiter } from '../generation/rateLimiter.js'
 import {
   createInteractionHandler,
   getEphemeralInteractionClientKey,
   type InteractionEventSink,
-} from './handler'
+} from './handler.js'
 
 const validEvent = {
   eventName: 'copy_succeeded',

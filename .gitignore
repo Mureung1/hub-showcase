@@ -27,4 +27,4 @@ dist-ssr
 *.sw?
 
 # CI workflows are kept local only (not uploaded to the shared repo)
-.github/workflows/
+.github/workflows/ci.yml

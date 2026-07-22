@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { GenerationRunRepository } from './repositories'
+import type { GenerationRunRepository } from './repositories.js'
 import {
   createDatabaseGenerationMetricsSink,
   createEnvironmentGenerationMetricsSink,
-} from './generationMetricsSink'
+} from './generationMetricsSink.js'
 
 const metric = {
   attemptCount: 1,

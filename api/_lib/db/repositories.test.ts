@@ -5,8 +5,8 @@ import type {
   NewInteractionEventRow,
   NewPromptVersionRow,
   NewTemplateVersionRow,
-} from './schema'
-import { createDataRepositories, type DataWriters } from './repositories'
+} from './schema.js'
+import { createDataRepositories, type DataWriters } from './repositories.js'
 
 const createCapturingWriters = () => {
   const evaluationRows: NewEvaluationRunRow[] = []

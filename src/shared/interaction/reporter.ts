@@ -1,4 +1,4 @@
-import type { InteractionEvent } from './contracts'
+import type { InteractionEvent } from './contracts.js'
 
 export type InteractionReporter = (event: InteractionEvent) => void
 
