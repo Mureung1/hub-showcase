@@ -19,7 +19,7 @@ isProject: false
 
 # Week 2 GitHub Issues Plan
 
-> **진행 현황 갱신: 2026-07-21 (화요일 밤 기준)**  
+> **진행 현황 갱신: 2026-07-22 (#9까지 머지 완료, #10 진행 중)**  
 > 아래 [진행 현황 요약](#진행-현황-요약-2026-07-16) 참고.
 
 ## 진행 현황 요약 (2026-07-16)
@@ -36,12 +36,12 @@ isProject: false
 | 18 | GitHub Actions Pages 배포 | (추가) | ✅ 머지 | `syd348.github.io/hub/` |
 | 3 | Supabase 스키마 + env | 화 | ✅ CLOSED | PR #20 머지 |
 | 4 | Express 매칭 API → Supabase | 화 | ✅ CLOSED | PR #21 머지, 시드 8건 확장 |
-| 5 | React 핵심 화면 mock | 수 | ⬜ OPEN | #11·#12로 대부분 선행 완료, 이슈 닫기 검토 |
-| 6 | FE ↔ Express API 연결 | 수 | ✅ 작업 완료 (PR 대기) | `client.ts` 정리 + 프록시 통한 실제 API 응답 확인 — `day5-fe-api-connect-plan.md` 참고 |
-| 7 | DB 저장 사이클 | 목 | ⬜ OPEN | |
-| 8 | 기능 검증 Agent 산출물 | 목 | ⬜ OPEN | |
-| 9 | 통합 검증 및 버그 수정 | 금 | ⬜ OPEN | |
-| 10 | 학습 회고 및 PR 정리 | 금 | ⬜ OPEN | `day1-presentation.md` 초안 작성됨 |
+| 5 | React 핵심 화면 mock | 수 | ✅ CLOSED | GitHub에서 이미 CLOSED 확인 — #11·#12로 완료 기준(Welcome→온보딩→완료→홈 끊김 없음, 모바일 레이아웃 유지) 충족 |
+| 6 | FE ↔ Express API 연결 | 수 | ✅ CLOSED | PR #22 머지 — `client.ts` 정리 + 프록시 통한 실제 API 응답 확인 |
+| 7 | DB 저장 사이클 | 목 | ✅ CLOSED | PR #23 머지 — `match_requests` 테이블 + best-effort insert + FE 연결 |
+| 8 | 기능 검증 Agent 산출물 | 목 | ✅ CLOSED | PR #25 머지 — `day6-verification-agent.md` |
+| 9 | 통합 검증 및 버그 수정 | 금 | ✅ CLOSED | PR #26 머지 — `sort=new` 버그 수정, stale 주석 정리 |
+| 10 | 학습 회고 및 PR 정리 | 금 | 🔶 진행 중 | `day1-presentation.md`을 한 주 전체 회고로 확장 중 |
 
 ### 캠퍼스 레포 (별도)
 
