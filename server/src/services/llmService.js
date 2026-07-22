@@ -240,13 +240,6 @@ export function parseAnalysisResponse(response, paragraphs) {
   }
 }
 
-// NOTE: buildAnalysisPrompt/parseAnalysisResponse는 완성되어 export돼 있지만
-// analyzeArticle의 else 분기는 아직 이 함수들을 호출하지 않는다(unwired).
-// 샘플 기사로 프롬프트를 반복 검증한 뒤, else 분기 교체는 별도 작업으로
-// 진행한다 — 교체 시 이 함수 두 개를 그대로 쓰면 된다:
-//   const prompt = buildAnalysisPrompt(paragraphs, title)
-//   const response = await callClaude(prompt, { maxTokens: 3072 })
-//   analysis = parseAnalysisResponse(response, paragraphs)
 export async function analyzeArticle(paragraphs, { title, url, userId } = {}) {
   const text = paragraphs.join(" ")
 
@@ -257,7 +250,15 @@ export async function analyzeArticle(paragraphs, { title, url, userId } = {}) {
     }
     analysis = mockAnalyzeSuccess(text)
   } else {
-    analysis = mockAnalyzeSuccess(text)
+    const prompt = buildAnalysisPrompt(paragraphs, title)
+    const response = await callClaude(prompt, { maxTokens: 3072 })
+    try {
+      analysis = parseAnalysisResponse(response, paragraphs)
+    } catch (err) {
+      console.error(`[llmService] analyzeArticle parse failed: ${err.message}`)
+      console.error(`[llmService] raw response text:\n${response.content?.[0]?.text ?? "(no text)"}`)
+      throw err
+    }
   }
 
   await saveTermsToVocabulary(analysis.terms, title, url, userId)

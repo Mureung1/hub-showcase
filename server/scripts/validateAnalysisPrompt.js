@@ -2,9 +2,10 @@ import "dotenv/config"
 import { FALLBACK_ARTICLE } from "../src/services/articleParser.js"
 import { buildAnalysisPrompt, callClaudeWithMetrics, parseAnalysisResponse } from "../src/services/llmService.js"
 
-// analyzeArticle 배선(#14) 전, buildAnalysisPrompt가 실제 Claude 응답에서도
-// 기대한 JSON 형식(문장 verbatim 매칭/summaryBullets 3개/marketSentiment enum)을
-// 안정적으로 만족하는지 여러 샘플 기사로 반복 확인하기 위한 일회성 스크립트.
+// analyzeArticle 배선(#14) 완료 후에도, buildAnalysisPrompt가 실제 Claude
+// 응답에서 기대한 JSON 형식(문장 verbatim 매칭/summaryBullets 3개/
+// marketSentiment enum)을 안정적으로 만족하는지 여러 샘플 기사로 반복
+// 확인할 때 재사용하는 회귀 검증 스크립트.
 // 응답 지연시간(TTFT/총 생성시간)과 토큰 사용량도 함께 기록한다.
 // 실행: MOCK_LLM=false node scripts/validateAnalysisPrompt.js (server/ 안에서)
 
