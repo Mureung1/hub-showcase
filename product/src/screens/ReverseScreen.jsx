@@ -3,18 +3,20 @@ import TopBar from '../components/TopBar'
 import useScrollSpy from '../hooks/useScrollSpy'
 import { SUPPORTED_JOB } from '../data/mock'
 
-// 03 인재상 역산 — 역산 슬라이스.
+// 03 채용공고 해설 화면.
 // 세 섹션(전체 baseline / 기업군 편차 / 개별 공고)을 항상 표시한다.
 // 데이터는 POST /api/reverse 실통신(에이전트 fixture + DB 공고 목록)으로 받는다.
 
 const CLUSTERS = ['핀테크·금융', '빅테크·플랫폼', '스타트업', 'B2B SaaS', 'SI·대기업', '게임사']
 const CONF_LABEL = { high: '신뢰도 높음', mid: '신뢰도 중간', low: '신뢰도 낮음' }
+const NAV_IDS = ['baseline', 'cluster', 'posting']
 
-async function fetchReverse(scope) {
+async function fetchReverse(scope, signal) {
   const res = await fetch('/api/reverse', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ job: 'backend', scope }),
+    signal,
   })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.json()
@@ -24,47 +26,61 @@ function ConfBadge({ level }) {
   return <span className={`conf conf--${level}`}>{CONF_LABEL[level] || level}</span>
 }
 
-function ReverseScreen({ go }) {
-  const [cluster, setCluster] = useState('핀테크·금융')
+function ReverseScreen({ go, scope, setScope }) {
+  const cluster = scope.cluster_tag || '핀테크·금융'
+  const postingId = scope.level === 'posting' ? scope.posting_id : null
   const [data, setData] = useState(null)          // cluster 범위 응답
   const [detail, setDetail] = useState(null)      // posting 범위 응답
-  const [selectedId, setSelectedId] = useState(null)
   const [search, setSearch] = useState('')
   const [annTab, setAnnTab] = useState('deviation') // deviation | baseline | signal
   const [status, setStatus] = useState('loading') // loading | ready | error
-  const activeSection = useScrollSpy(['baseline', 'cluster', 'posting'])
+  const [detailStatus, setDetailStatus] = useState(postingId ? 'loading' : 'idle')
+  const activeSection = useScrollSpy(NAV_IDS)
 
   useEffect(() => {
-    // 처음에만 전체 로딩 화면. 기업군 변경 시에는 이전 내용을 유지한 채 갱신해 스크롤 점프를 막는다.
-    setStatus((prev) => (prev === 'ready' ? 'ready' : 'loading'))
-    setDetail(null)
-    setSelectedId(null)
-    fetchReverse({ level: 'cluster', cluster_tag: cluster })
+    const controller = new AbortController()
+    fetchReverse({ level: 'cluster', cluster_tag: cluster }, controller.signal)
       .then((json) => { setData(json); setStatus('ready') })
-      .catch(() => setStatus('error'))
+      .catch((error) => { if (error.name !== 'AbortError') setStatus('error') })
+    return () => controller.abort()
   }, [cluster])
 
-  const selectPosting = (postingId) => {
-    if (postingId === selectedId) {
+  useEffect(() => {
+    if (!postingId) return undefined
+    const controller = new AbortController()
+    fetchReverse({ level: 'posting', cluster_tag: cluster, posting_id: postingId }, controller.signal)
+      .then((json) => { setDetail(json.posting); setDetailStatus('ready') })
+      .catch((error) => { if (error.name !== 'AbortError') setDetailStatus('error') })
+    return () => controller.abort()
+  }, [cluster, postingId])
+
+  const selectPosting = (nextPostingId) => {
+    if (nextPostingId === postingId) {
       // 같은 공고를 다시 누르면 접는다
-      setSelectedId(null)
       setDetail(null)
+      setDetailStatus('idle')
+      setScope({ level: 'cluster', cluster_tag: cluster, posting_id: null })
       return
     }
-    setSelectedId(postingId)
     setDetail(null)
-    fetchReverse({ level: 'posting', cluster_tag: cluster, posting_id: postingId })
-      .then((json) => setDetail(json.posting))
-      .catch(() => setDetail(null))
+    setDetailStatus('loading')
+    setScope({ level: 'posting', cluster_tag: cluster, posting_id: nextPostingId })
+  }
+
+  const selectCluster = (nextCluster) => {
+    setStatus('loading')
+    setDetail(null)
+    setDetailStatus('idle')
+    setScope({ level: 'cluster', cluster_tag: nextCluster, posting_id: null })
   }
 
   if (status === 'error') {
     return (
       <>
-        <TopBar step={3} label="인재상 역산" job={SUPPORTED_JOB} backTo="stats" backLabel="통계" go={go} />
+        <TopBar step={3} label="채용공고 해설" job={SUPPORTED_JOB} backTo="stats" backLabel="통계" go={go} />
         <main className="app-shell reader-layout">
           <p className="status-panel status-panel--error">
-            역산 서버에 연결하지 못했습니다. server(4000)와 agent(8000)가 켜져 있는지 확인해 주세요.
+            공고 해설 서버에 연결하지 못했습니다. server(4000)와 agent(8000)가 켜져 있는지 확인해 주세요.
           </p>
         </main>
       </>
@@ -78,16 +94,16 @@ function ReverseScreen({ go }) {
 
   return (
     <>
-      <TopBar step={3} label="인재상 역산" job={SUPPORTED_JOB} backTo="stats" backLabel="통계" go={go} />
+      <TopBar step={3} label="채용공고 해설" job={SUPPORTED_JOB} backTo="stats" backLabel="통계" go={go} />
       <main className="app-shell reader-layout">
         <article className="page page--wide">
           <header className="report-header" id="top">
-            <span className="eyebrow">통계 items 기반 · baseline 대비 편차 역산{data && ` · ${data.source === 'fixture' ? '표본 해석' : 'AI 해석'}`}</span>
+            <span className="eyebrow">통계 items 기반 · 직무 기준선 대비 편차 해설{data && ` · ${data.source === 'fixture' ? '표본 해설' : 'AI 해설'}`}</span>
             <h1>공고가 반복하는 문장 뒤에서, 이 회사·기업군이 유독 원하는 지점을 되짚습니다.</h1>
             <p>전체는 직군 공통 기대치(baseline)를, 기업군·개별 공고는 그 기준 위에서 더 높거나 추가로 요구되는 편차를 근거·신뢰도와 함께 보여 줍니다.</p>
           </header>
 
-          {status === 'loading' && <p className="status-panel">역산을 준비하는 중입니다…</p>}
+          {status === 'loading' && <p className="status-panel">채용공고를 해설하는 중입니다…</p>}
 
           {status === 'ready' && data && (
             <>
@@ -121,7 +137,7 @@ function ReverseScreen({ go }) {
                 </div>
                 <div className="cluster-chips">
                   {CLUSTERS.map((c) => (
-                    <button key={c} type="button" className={`scope-chip${c === cluster ? ' scope-chip--on' : ''}`} onClick={() => setCluster(c)}>
+                    <button key={c} type="button" className={`scope-chip${c === cluster ? ' scope-chip--on' : ''}`} onClick={() => selectCluster(c)}>
                       {c}
                     </button>
                   ))}
@@ -162,7 +178,7 @@ function ReverseScreen({ go }) {
               {/* 섹션 3 · 개별 공고 */}
               <section className="section-block" id="posting">
                 <div className="section-title">
-                  <h2>개별 공고 — 원문과 해석을 나란히</h2>
+                  <h2>개별 공고 — 원문과 해설을 나란히</h2>
                   <span className="hint">하이라이트 = baseline보다 높거나 baseline에 없는 요구 문장</span>
                 </div>
                 <input
@@ -181,7 +197,7 @@ function ReverseScreen({ go }) {
                     <button
                       key={p.posting_id}
                       type="button"
-                      className={`posting-row${p.posting_id === selectedId ? ' posting-row--on' : ''}`}
+                      className={`posting-row${p.posting_id === postingId ? ' posting-row--on' : ''}`}
                       onClick={() => selectPosting(p.posting_id)}
                     >
                       <span className="co">{p.company}</span>
@@ -191,7 +207,8 @@ function ReverseScreen({ go }) {
                   ))}
                 </div>
 
-                {selectedId && !detail && <p className="status-panel">공고를 해석하는 중입니다…</p>}
+                {detailStatus === 'loading' && <p className="status-panel">공고를 해설하는 중입니다…</p>}
+                {detailStatus === 'error' && <p className="status-panel status-panel--error">선택한 공고 해설을 불러오지 못했습니다.</p>}
 
                 {detail && (
                   <div className="posting-layout">
@@ -250,7 +267,7 @@ function ReverseScreen({ go }) {
                         </div>
                       ))}
                       <div className="fold-note">{detail.unchanged_note}</div>
-                      <div className="posting-input-note"><b>공고 직접 입력 (확장 예정)</b> — 다른 공고 원문을 붙여넣으면 같은 방식으로 개별 역산합니다.</div>
+                      <div className="posting-input-note"><b>공고 직접 입력</b> — 다른 공고 원문을 붙여넣으면 같은 방식으로 개별 해설합니다.</div>
                     </div>
                   </div>
                 )}
@@ -258,15 +275,15 @@ function ReverseScreen({ go }) {
 
               <div className="nav-actions">
                 <button className="btn btn-secondary" onClick={() => go('stats')}>← 통계 다시 보기</button>
-                <button className="btn btn-primary" onClick={() => go('checklist')}>합격 조건 정의 보기 →</button>
+                <button className="btn btn-primary" onClick={() => go('checklist')}>합격 전략 보기 →</button>
               </div>
             </>
           )}
         </article>
 
-        <aside className="floating-nav" aria-label="역산 목차">
-          <p className="floating-nav__label">역산</p>
-          {[['baseline', '전체 baseline'], ['cluster', '기업군 편차'], ['posting', '개별 공고 해석']].map(([id, label]) => (
+        <aside className="floating-nav" aria-label="채용공고 해설 목차">
+          <p className="floating-nav__label">공고 해설</p>
+          {[['baseline', '전체 baseline'], ['cluster', '기업군 편차'], ['posting', '개별 공고 해설']].map(([id, label]) => (
             <a key={id} className={activeSection === id ? 'is-current' : ''} href={`#${id}`}><span className="dot"></span>{label}</a>
           ))}
         </aside>

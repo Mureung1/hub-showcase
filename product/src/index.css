@@ -1086,7 +1086,7 @@ a {
   margin-left: 6px;
 }
 
-/* ---------- Checklist (합격 조건) ---------- */
+/* ---------- Checklist (합격 전략) ---------- */
 .checklist {
   width: 100%;
   border-collapse: collapse;
@@ -1695,10 +1695,10 @@ button.view-tab { font-weight: 750; }
 /* 편차 카드와 "편차 없음" 소제목 사이 간격 */
 .section-title--sub { margin-top: 16px; }
 
-/* 개별 공고: 원문·해석 같은 폭 */
+/* 개별 공고: 원문·해설 같은 폭 */
 .posting-layout { grid-template-columns: 1fr 1fr; }
 
-/* ===== 합격조건 슬라이스 ===== */
+/* ===== 합격 전략 슬라이스 ===== */
 
 .metric-grid--4 { grid-template-columns: repeat(4, 1fr); }
 .panel--table { padding: 8px 0 0; }

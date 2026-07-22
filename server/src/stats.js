@@ -1,5 +1,5 @@
 // 통계 집계 모듈 (rule) — 1차 슬라이스: 블록 1(KPI)·7(기술 빈도)·10(요구 항목 전체표)
-// 입력: 정형 공고 배열(스키마: docs 계약 4.1) / 출력: GET /api/stats 응답(계약 4.2)
+// 입력: 정형 공고 배열 / 출력: GET /api/stats 화면 계약
 //
 // 계약 정의(검증에서 확정한 규칙):
 // - 모든 % 의 분모는 recent 스냅샷 공고 수 (freq_by_cluster만 해당 기업군 공고 수)
@@ -34,6 +34,11 @@ function skillStats(list) {
 function aggregate(postings) {
   const recent = postings.filter((p) => p.snapshot === 'recent')
   const prev = postings.filter((p) => p.snapshot === 'prev')
+  if (recent.length === 0) {
+    const error = new Error('최근 스냅샷에 집계할 채용공고가 없습니다')
+    error.code = 'EMPTY_DATASET'
+    throw error
+  }
   const R = skillStats(recent)
   const P = skillStats(prev)
 
@@ -84,7 +89,7 @@ function aggregate(postings) {
     }))
     .sort((a, b) => b.count - a.count)
 
-  // --- items (블록 10 화면 + 역산 에이전트 입력을 같은 배열로) ---
+  // --- items (블록 10 화면 + 채용공고 해설 에이전트 입력을 같은 배열로) ---
   const items = [...R.values()]
     .map((e) => {
       const pv = P.get(e.slug)
@@ -185,7 +190,7 @@ function aggregate(postings) {
   const labels = { edu: dist('edu_label'), career: dist('career_label') }
 
   // ===== 3a 슬라이스: 추출 완료 필드의 rule 집계 =====
-  // 해석 문구(interpretation)는 샘플 큐레이션 — 3b에서 해석 LLM이 대체한다.
+  // 통계 설명 문구(interpretation)는 샘플 큐레이션 — 에이전트 구현 시 LLM 출력으로 대체한다.
 
   // --- advanced (블록 4) — 시니어급 문장 유형별 비율 + 원문 인용 ---
   const ADV_TYPES = { traffic: '대용량 트래픽', concurrency: '동시성·정합성', incident: '장애 대응·모니터링' }

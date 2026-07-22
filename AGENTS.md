@@ -1,6 +1,6 @@
 ## 프로젝트
 
-CareerSignal은 채용공고를 역산해, 직무·기업군이 실제로 원하는 수준을 드러내고 그에 맞춰 무엇을 준비할지 알려주는 대학생 진로탐색 리서치 에이전트다.
+CareerSignal은 채용공고의 기준선과 편차를 심층 해설해, 직무·기업군이 실제로 원하는 수준과 준비 방법을 알려주는 대학생 진로탐색 리서치 에이전트다.
 
 - 정적 프로토타입 데모: https://careersignal-prototype.vercel.app/
 - 현재 프로토타입 데이터는 백엔드 신입·주니어 공고 30건을 가정한 mock 리서치다.
@@ -13,7 +13,7 @@ CareerSignal은 채용공고를 역산해, 직무·기업군이 실제로 원하
 - `server/`: product 전용 Express 백엔드. 역시 별도의 실행 환경·`package.json`을 유지한다.
 - `prototype/`, `project-intro/`, `product/`, `server/`는 서로 다른 실행 환경이라 코드를 공유하지 않는다. 두 개 이상에서 실제 재사용이 필요해지면 그때 공유 방법(예: 워크스페이스, 패키지 추출)을 별도로 검토한다.
 - `agent/`: AI 에이전트용 Python·FastAPI 서비스. LangChain·LangGraph로 오케스트레이션하며, Express가 내부 HTTP로 호출한다.
-- DB: Supabase(Postgres + pgvector). 샘플 데이터를 적재해 사용하며, 실데이터 수집 시 데이터만 교체한다. `server/data/`의 JSON 파일은 샘플 데이터의 원본 fixture다.
+- DB: Supabase(Postgres + pgvector). 일반 화면은 사전 생성된 활성 분석 결과를 조회하고, 에이전트는 데이터 갱신과 사용자 공고 직접 입력 때 실행한다. `server/data/`의 JSON 파일은 샘플 데이터의 원본 fixture다.
 
 ## 프로토타입 배포
 
@@ -33,12 +33,13 @@ CareerSignal은 채용공고를 역산해, 직무·기업군이 실제로 원하
 
 ### 하루 작업 흐름
 
-1. `git switch N086_박주현 && git pull upstream N086_박주현` — 로컬 기준 브랜치를 upstream 최신 상태로 맞춘다.
-2. `git push origin N086_박주현` — 오리진(포크)도 같은 상태로 동기화한다.
-3. `git switch -c day/YYMMDD` — 오늘 작업 브랜치를 로컬 `N086_박주현`에서 만든다.
-4. 성격이 다른 작업 단위마다 `git switch -c <type>/<설명>`으로 로컬 브랜치를 만들어 커밋한다.
-5. 작업이 끝난 로컬 브랜치는 `git switch day/YYMMDD && git merge --no-ff <type>/<설명>`으로 병합하고, `git branch -d <type>/<설명>`으로 삭제한다.
-6. 하루 작업이 끝나면 `git push origin day/YYMMDD` 후 upstream의 `N086_박주현`으로 PR을 연다.
+1. `git switch N086_박주현` — 로컬 기준 브랜치로 전환한다.
+2. `git pull upstream N086_박주현` — 로컬 기준 브랜치를 upstream 최신 상태로 맞춘다.
+3. `git push origin N086_박주현` — 오리진(포크)도 같은 상태로 동기화한다.
+4. `git switch -c day/YYMMDD` — 오늘 작업 브랜치를 로컬 `N086_박주현`에서 만든다.
+5. 성격이 다른 작업 단위마다 `git switch -c <type>/<설명>`으로 로컬 브랜치를 만들어 커밋한다.
+6. 작업이 끝난 로컬 브랜치는 `git switch day/YYMMDD`, `git merge --no-ff <type>/<설명>`, `git branch -d <type>/<설명>` 순서로 병합·삭제한다.
+7. 하루 작업이 끝나면 `git push origin day/YYMMDD` 후 upstream의 `N086_박주현`으로 PR을 연다.
 
 ## 작업 방식
 
@@ -48,6 +49,7 @@ CareerSignal은 채용공고를 역산해, 직무·기업군이 실제로 원하
 - AI 도구는 `git status`·`git diff`·`git log`·`git show`·`git branch`·`git remote` 등 저장소를 변경하지 않는 읽기 전용 Git 명령으로 상태를 확인할 수 있다.
 - 화면 구성은 판단용 HTML 시안(레포 밖, 커밋하지 않음)으로 사용자 확정을 받은 뒤 구현한다. `server/`·`agent/` 코드 변경 후에는 재시작이 필요함을 함께 안내한다.
 - 파일 수정은 작업 범위 안에서 직접 수행한다. 삭제·이동·rename은 사용자의 명시적 요청과 대상 경로 확인 후 진행한다.
+- 파일 작업은 커밋 가능한 단위로 나누고, 각 단위가 끝날 때 변경 범위와 권장 커밋 메시지를 사용자에게 안내한다.
 - 정적 프로토타입은 JavaScript·동적 기능 없이 정보·스타일·화면 구성만 다룬다. 실제 동적 기능은 `product/`와 `server/`에서 구현한다.
 
 ## 문서 작성 규칙
@@ -64,6 +66,9 @@ CareerSignal은 채용공고를 역산해, 직무·기업군이 실제로 원하
 
 - 기획서: docs/plan.md
 - 설계: docs/architecture.md
+- 에이전트 설계: docs/agent-design.md
+- 데이터 전략: docs/data-strategy.md
 - 디자인 컨셉: docs/design-concept.md
 - 디자인 토큰: docs/design-tokens.md
+- 개발 백로그: docs/backlog.md
 - 체크리스트: docs/checklist.md

@@ -1,5 +1,5 @@
-// 추출 배치 경로: 공고 원문 → agent /extract → 정형 공고(계약 4.1 형태)
-// 통계분석 에이전트의 "수집 → 추출" 구간을 잇는 배치 스크립트다.
+// 추출 배치 경로: 공고 원문 → agent /extract → 정형 공고
+// 통계 분석 에이전트의 "수집 → 추출" 구간을 잇는 배치 스크립트다.
 // 지금은 예시 원문 1건과 fixture 응답으로 경로를 검증하고,
 // 3주차에 /extract 내부가 LLM으로 바뀌면 이 스크립트가 그대로 실전 추출 파이프라인이 된다.
 //
@@ -42,7 +42,7 @@ async function main() {
   }
   const extracted = await res.json()
 
-  // 수집 메타 + 추출 결과 = 계약 4.1의 정형 공고
+  // 수집 메타 + 추출 결과 = 정형 공고 화면·저장 계약
   const posting = {
     posting_id: collected.posting_id,
     title: collected.title,

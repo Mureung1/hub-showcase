@@ -1,5 +1,5 @@
 // Supabase 조회 모듈. 저장소 접근은 이 파일 하나로 모은다.
-// postings 는 자주 변하지 않으므로 첫 조회 후 메모리에 캐시한다.
+// 데이터 갱신이 즉시 반영되도록 공고는 요청마다 조회한다.
 
 require('dotenv').config()
 const { createClient } = require('@supabase/supabase-js')
@@ -12,18 +12,14 @@ if (!url || !key) {
 
 const supabase = createClient(url, key)
 
-let cache = null
-
 async function getPostings() {
-  if (cache) return cache
   const { data, error } = await supabase.from('postings').select('*')
-  if (error) throw new Error(`postings 조회 실패: ${error.message}`)
-  cache = data
-  return cache
+  if (error) {
+    const dbError = new Error(`postings 조회 실패: ${error.message}`)
+    dbError.code = 'DB_UNAVAILABLE'
+    throw dbError
+  }
+  return data
 }
 
-function clearCache() {
-  cache = null
-}
-
-module.exports = { getPostings, clearCache }
+module.exports = { getPostings }

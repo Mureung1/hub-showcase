@@ -123,7 +123,7 @@ class SourceRef(BaseModel):
 
 
 class Interpretation(BaseModel):
-    n: int | None = None  # 원문 하이라이트 번호. None이면 종합 해석
+    n: int | None = None  # 원문 하이라이트 번호. None이면 종합 해설
     title: str
     body: str
     confidence: str
@@ -135,7 +135,7 @@ class PostingView(BaseModel):
     posting_id: str
     company: str
     title: str
-    summary: Interpretation           # 종합 해석 (이 공고가 찾는 사람)
+    summary: Interpretation           # 종합 해설 (이 공고가 찾는 사람)
     raw_sections: list[RawSection]    # 원문 (세 종류 주석 번호 포함)
     interpretations: list[Interpretation]  # 편차 해설 (mark_n과 짝)
     baseline_notes: list[BaselineNote]     # 베이스라인 해설 (base_n과 짝)
@@ -203,7 +203,7 @@ def reverse(req: ReverseRequest):
             company="A 핀테크사",
             title="백엔드 개발자 신입 채용",
             summary=Interpretation(
-                n=None, title="종합 해석 — 이 공고가 찾는 사람",
+                n=None, title="종합 해설 — 이 공고가 찾는 사람",
                 body="기능을 만드는 사람보다 돈이 새지 않게 지키는 사람을 찾습니다. baseline 7개 항목 중 5개는 공통 기대치 그대로이고, 트랜잭션 정합성과 장애 대응 두 축이 이 공고의 실질 변별점입니다.",
                 confidence="high", ratio="편차 3건 · baseline 일치 5건",
                 sources=[SourceRef(type="posting")],
@@ -276,11 +276,11 @@ def reverse(req: ReverseRequest):
     )
 
 
-# ---------- 합격 조건 계약 ----------
+# ---------- 합격 전략 계약 ----------
 class ConditionsRequest(BaseModel):
     job: str
     scope: ReverseScope
-    reverse: dict  # 역산 응답 전체 — 합격 조건의 유일한 분석 입력
+    reverse: dict  # 채용공고 해설 응답 전체 — 합격 전략의 유일한 분석 입력
 
 
 class CheckItem(BaseModel):
@@ -469,7 +469,7 @@ def conditions(req: ConditionsRequest):
 class RoadmapRequest(BaseModel):
     job: str
     scope: ReverseScope
-    conditions: dict          # 합격 조건 응답 전체 — 로드맵의 유일한 분석 입력
+    conditions: dict          # 합격 전략 응답 전체 — 준비 로드맵의 유일한 분석 입력
     checks: dict[str, bool] = {}  # item_id → 보유 여부 (적용된 체크 상태)
 
 
@@ -560,7 +560,7 @@ def roadmap(req: RoadmapRequest):
                     deliverable="JWT 인증 구현(선택) + 기업군 맞춤 README·자소서 소개 순서",
                     fills=[Fill(item_id="security", label="보안 기본 이해 (우대)", kind="normal")],
                     reason_title="왜 마지막인가요?",
-                    reason="우대 항목과 소개 정리는 필수가 채워진 뒤의 마무리입니다. 합격 조건의 포트폴리오 전략(기업군별 소개 순서)이 이 단계의 지침입니다.",
+                    reason="우대 항목과 소개 정리는 필수가 채워진 뒤의 마무리입니다. 합격 전략의 포트폴리오 전략(기업군별 소개 순서)이 이 단계의 지침입니다.",
                     tags=["JWT 인증", "README 재구성", "소개 순서"]),
     ]
     study_tracks = [
