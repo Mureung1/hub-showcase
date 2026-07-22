@@ -345,15 +345,18 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
 
 ## MVP 완성 이후 고도화 (4주차 이후)
 
-### ⭐ 최우선 — Upload → ETL 자동화 (2026-07-21 논의)
+### Upload → ETL 자동화 (2026-07-21 논의, 2026-07-22 sales/waste 완료)
 
-- [ ] Upload → ETL → Financial 자동 반영 파이프라인 구축
-  - 현재: Upload는 파일명/카테고리 메타데이터만 Supabase에 기록, 실제 파일 저장·파서 실행 없음. ETL은 수동 실행, 백엔드 재시작 전까지 `merged_dataset.csv` 변경도 반영 안 됨
-  - 작업 범위: (1) 실제 파일 업로드 처리(`data/raw/` 저장) (2) 백엔드에서 Python ETL 스크립트 subprocess 실행 트리거 (3) `FinancialService.reloadData()` + 캐시 무효화 (4) Upload 프론트 처리 상태 표시 (5) 에러 케이스 처리 (6) E2E 테스트
-  - 예상 소요: 해피패스만이면 약 1일, 에러 처리 포함 견고하게 하면 약 2일
-  - 불확실 지점: `master_dataset_builder.py`가 월 단위 증분 갱신을 지원하는지, 아니면 raw 전체 재계산 구조인지 확인 필요 — 착수 전 먼저 확인
-  - 이 작업에 `FinancialService Cache Reload`(아래 항목) 포함됨
-  - ⚠️ `financialService.ts`의 `if (this.data.length !== 24) throw ...` 하드코딩 검증도 이때 같이 제거/완화 필요 (데이터가 24행 이상으로 늘어나면 현재 로직은 에러를 던짐). Financial/Recommendation API 계약 자체는 안 바뀌므로 프론트는 그대로 호환됨
+- [x] Upload → ETL → Financial 자동 반영 파이프라인 구축 (sales/waste만) — 2026-07-22 완료
+  - `multer`로 실제 파일 업로드 처리 추가, `data/raw/{sales,waste}/`에 저장
+  - `backend/src/services/etlService.ts`: sales_parser → waste_parser → master_dataset_builder를 child_process로 순차 실행
+  - `backend/src/services/uploadAutomationService.ts`: 파일저장→ETL→reload 오케스트레이션 (Controller는 얇게 유지)
+  - `financialService.reloadData()` 추가로 서버 재시작 없이 최신 데이터 반영 확인 완료 (RecommendationService는 캐시가 없어 자동 최신화)
+  - ETL 실패 시 reload 스킵 + 업로드 이력 '오류' 상태 기록 — 실패해도 기존 정상 데이터 유지되는 것 실제 장애 주입 테스트로 확인
+  - Upload 페이지에 상품 카테고리·월 선택 UI 추가 (기존엔 없었음)
+  - `master_dataset_builder.py`는 매번 원본부터 전체 재계산하는 stateless 구조로 확인됨 — 증분 갱신 불확실성 해소
+  - `financialService.ts`의 `data.length !== 24` 하드코딩은 건드리지 않음 (카테고리·월 그리드가 고정이라 재실행해도 24행 유지)
+  - 남은 범위: orders/inventory(파서 없음), hourly/weekday(주차 선택 필요) — 다음 스프린트로 이월. `patternService.ts`도 아직 reload 미지원
 
 - [ ] 폐기 요일/시간대 패턴 실데이터 연동 — 원본 데이터 자체가 없어 보류 (판매 패턴만 2026-07-22에 연동 완료, 위 Milestone 3 참고). 향후 waste 원본에 요일/시간대 정보가 추가되면 착수
   - 참고: `data/master/weekday_sales.csv`/`hourly_sales.csv`는 현재 6월 4주 평균 스냅샷뿐 — 이후 월이 추가되면 `data/scripts/pattern_parser.py`의 "4주 평균" 하드코딩(WEEKS 상수) 재검토 필요
