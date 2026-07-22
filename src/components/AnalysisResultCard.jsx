@@ -1,11 +1,13 @@
+import { useState } from 'react'
 import AppButton from './AppButton.jsx'
 import Card from './Card.jsx'
+import ChevronIcon from './ChevronIcon.jsx'
 import MealTypePicker from './MealTypePicker.jsx'
 import { NutrientBars } from './NutritionCard.jsx'
 import SourceBadge from './SourceBadge.jsx'
 import Spinner from './Spinner.jsx'
 import { formatNutrient } from '../lib/nutrition.js'
-import { colors, font, radius, spacing } from '../styles/theme.js'
+import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 // 홈 탭 분석 영역의 RESULT 상태 카드. 촬영 카드가 있던 **같은 자리**를 그대로 차지한다 —
 // 예전에는 결과가 화면 맨 아래에 따로 생겨서 스크롤을 내려야 보였다.
@@ -48,6 +50,23 @@ function titleOf(items) {
   return items.length === 1 ? items[0].name : `${items[0].name} 외 ${items.length - 1}개`
 }
 
+// 펼쳤을 때 보여주는 음식 하나. 식단 탭의 MealItemRow와 같은 생김새를 쓰되, 여기서는 저장 전에
+// "이 음식이 이렇게 잡혔구나"를 확인하는 자리라 한 줄 요약이 아니라 영양소 막대까지 펼쳐 보여준다.
+function ItemDetailRow({ item }) {
+  return (
+    <div style={{ paddingTop: spacing.md, marginTop: spacing.md, borderTop: `1px solid ${colors.border}` }}>
+      <div style={{ marginBottom: spacing.xs }}>
+        <SourceBadge source={item.source} />
+      </div>
+      <h4 style={{ fontSize: font.size.md, margin: `0 0 ${spacing.md}px`, color: colors.textStrong }}>
+        {item.name}
+        {item.brand ? ` (${item.brand})` : ''}
+      </h4>
+      <NutrientBars nutrients={item.nutrients} />
+    </div>
+  )
+}
+
 export default function AnalysisResultCard({
   analysis,
   photoUrl,
@@ -60,6 +79,11 @@ export default function AnalysisResultCard({
 }) {
   const { items, total } = analysis
   const title = titleOf(items)
+  // 음식이 2개 이상일 때만 펼치기를 준다 — 1개면 위의 합계 막대가 곧 그 음식의 막대라 똑같은 내용이
+  // 두 번 나온다. 기본은 접힘: 결과 카드가 촬영 카드 자리를 대신하는 만큼, 처음엔 합계만 보여 한눈에
+  // 들어오게 하고 필요한 사람만 펼치게 한다.
+  const [expanded, setExpanded] = useState(false)
+  const canExpand = items.length > 1
 
   return (
     <Card className="tds-card-swap">
@@ -102,10 +126,45 @@ export default function AnalysisResultCard({
         </div>
       </div>
 
-      {/* b. 영양소 막대 — 하단에 따로 있던 카드와 동일한 컴포넌트를 그대로 재사용 */}
+      {/* b. 영양소 막대 — 음식이 여러 개면 통합(합계) 기준. 하단에 따로 있던 카드와 같은 컴포넌트 재사용 */}
       <div style={{ marginTop: spacing.xl }}>
+        {canExpand && (
+          <p style={{ margin: `0 0 ${spacing.sm}px`, fontSize: font.size.xs, color: colors.muted }}>
+            {items.length}가지 음식을 합친 값이에요
+          </p>
+        )}
         <NutrientBars nutrients={total} />
       </div>
+
+      {/* b-2. 음식별 상세 — 여러 개일 때만. 기본 접힘, "자세한 식사"로 펼친다. */}
+      {canExpand && (
+        <>
+          <button
+            type="button"
+            className="tds-press"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            style={{
+              ...styles.linkButton,
+              display: 'flex',
+              alignItems: 'center',
+              gap: spacing.xs,
+              marginTop: spacing.xs,
+            }}
+          >
+            {expanded ? '접기' : '자세한 식사'}
+            <ChevronIcon open={expanded} />
+          </button>
+
+          {expanded && (
+            <div className="tds-card-swap">
+              {items.map((item, i) => (
+                <ItemDetailRow key={item.id ?? `${item.name}-${i}`} item={item} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
       {/* c. 시간대 선택 — 저장에 함께 실리는 값이라 저장 버튼 바로 위에 둔다 */}
       <div style={{ marginTop: spacing.lg }}>
