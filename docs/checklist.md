@@ -59,8 +59,8 @@
 - [x] **추천 상세 화면** — 상세 정보 + GitHub 외부 링크
       - DoD: 상세 렌더 + "목록으로"/"다른 이슈 보기" 동작
       - 참고: plan 화면 6, prototype `screen--detail`
-- [ ] **프로토타입 스타일 → design.md 토큰 이식** — 색/여백/카드 하드코딩 제거
-      - DoD: 화면이 `docs/design.md` CSS 변수만 사용
+- [x] **프로토타입 스타일 → design.md 토큰 이식** — 색/여백/카드 하드코딩 제거
+      - DoD: 화면이 `docs/design.md` CSS 변수만 사용 ✅ 2026-07-22 (AppFlow.css 하드코딩 hex를 `--demo-*`/`--color-surface-sunken-hover` 토큰으로 이식. 랜딩(App.css)의 장식용 그라데이션은 별도 브랜드 톤이라 범위 밖으로 유지)
       - 참고: [design.md](design.md), `firstpr-ui` 스킬
 
 ### Backend

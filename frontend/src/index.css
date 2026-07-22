@@ -19,6 +19,7 @@
   --color-surface: #ffffff;
   --color-surface-alt: #f7f8fa;
   --color-surface-sunken: #f2f4f6;
+  --color-surface-sunken-hover: #eaedf1;
 
   /* ── 색상: 텍스트 ──────────────────────────────── */
   --color-text: #191f28;
@@ -95,6 +96,20 @@
   --demo-amber: #f59f00;
   --demo-amber-soft: #fff9e6;
   --demo-star: #ffab00;
+
+  /* 언어 스와치 — 브랜드 고유색이라 단일 강조색 원칙 예외 */
+  --demo-lang-js: #dbcb3f;
+  --demo-lang-ts: #3178c6;
+
+  /* GitHub 라벨 톤 (good first issue/bug/documentation) */
+  --demo-label-gfi: #6639ba;
+  --demo-label-gfi-soft: #efeaff;
+  --demo-label-bug: #cf222e;
+  --demo-label-bug-soft: #ffe9e9;
+  --demo-label-doc: #0969da;
+  --demo-label-doc-soft: #dff0ff;
+
+  --demo-why-text: #1b4f9e; /* why 카드 배경(primary-weak) 위 텍스트 대비용 */
 }
 
 * {

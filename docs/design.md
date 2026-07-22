@@ -31,6 +31,7 @@
   --color-surface: #FFFFFF;          /* 기본 카드 표면 */
   --color-surface-alt: #F7F8FA;      /* 옅은 회색 그룹 카드 / 섹션 */
   --color-surface-sunken: #F2F4F6;   /* 입력창·눌린 영역 배경 */
+  --color-surface-sunken-hover: #EAEDF1; /* 칩/보조 버튼 hover */
 
   /* ── 색상: 텍스트 ──────────────────────────────── */
   --color-text: #191F28;             /* 기본/제목/금액 (샘플 #1A1E27) */

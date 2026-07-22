@@ -236,7 +236,7 @@ h1.hero {
   border: 1.5px solid transparent;
 }
 .chip:hover {
-  background: #eaedf1;
+  background: var(--color-surface-sunken-hover);
 }
 .chip-on {
   background: var(--color-primary-weak);
@@ -277,7 +277,7 @@ h1.hero {
   color: var(--color-text-secondary);
 }
 .btn-soft:hover {
-  background: #eaedf1;
+  background: var(--color-surface-sunken-hover);
 }
 .btn-block {
   width: 100%;
@@ -601,10 +601,10 @@ h1.hero {
   display: inline-block;
 }
 .lang-js .sw {
-  background: #dbcb3f;
+  background: var(--demo-lang-js);
 }
 .lang-ts .sw {
-  background: #3178c6;
+  background: var(--demo-lang-ts);
 }
 .i-title {
   font-size: var(--text-subtitle);
@@ -628,23 +628,23 @@ h1.hero {
   font-weight: var(--weight-medium);
 }
 .tag-gfi {
-  background: #efeaff;
-  color: #6639ba;
+  background: var(--demo-label-gfi-soft);
+  color: var(--demo-label-gfi);
   font-weight: var(--weight-semibold);
 }
 .tag-bug {
-  background: #ffe9e9;
-  color: #cf222e;
+  background: var(--demo-label-bug-soft);
+  color: var(--demo-label-bug);
   font-weight: var(--weight-semibold);
 }
 .tag-doc {
-  background: #dff0ff;
-  color: #0969da;
+  background: var(--demo-label-doc-soft);
+  color: var(--demo-label-doc);
   font-weight: var(--weight-semibold);
 }
 .tag-enh {
-  background: #e3f9f0;
-  color: #0b8f66;
+  background: var(--demo-green-soft);
+  color: var(--demo-green);
   font-weight: var(--weight-semibold);
 }
 .why {
@@ -655,7 +655,7 @@ h1.hero {
   border-radius: var(--radius-md);
   padding: 13px 15px;
   font-size: 13.5px;
-  color: #1b4f9e;
+  color: var(--demo-why-text);
   line-height: 1.5;
 }
 .why-detail {
