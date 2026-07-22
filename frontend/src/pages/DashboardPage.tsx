@@ -59,8 +59,6 @@ function DashboardPage() {
   const [judgmentError, setJudgmentError] = useState<string | null>(null)
   const [pendingJudgmentId, setPendingJudgmentId] = useState<string | null>(null)
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
-  const [saveError, setSaveError] = useState<string | null>(null)
-  const [isSavingStatus, setIsSavingStatus] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -130,30 +128,6 @@ function DashboardPage() {
     }
   }
 
-  async function toggleSaveStatus() {
-    if (!data) return
-    const nextStatus = data.project.save_status === 'saved' ? 'draft' : 'saved'
-    setSaveError(null)
-    setIsSavingStatus(true)
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/projects/${id}/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ save_status: nextStatus }),
-      })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error || '저장 상태 변경에 실패했습니다.')
-      }
-      const { project } = await res.json()
-      setData((prev) => (prev ? { ...prev, project: { ...prev.project, save_status: project.save_status } } : prev))
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : '저장 상태 변경 중 오류가 발생했습니다.')
-    } finally {
-      setIsSavingStatus(false)
-    }
-  }
-
   if (error) {
     return (
       <div className="app-shell">
@@ -170,24 +144,35 @@ function DashboardPage() {
     )
   }
 
+  // 판단 완료 진행률 — 버튼으로 수동 저장하는 대신, 가설 판단 여부로 실시간 계산한다.
+  // save_status(draft/saved)는 이 값을 BE가 그대로 따라가지만, 화면 표시는 개수를 직접 세어
+  // 여러 가설을 훑지 않고도 한눈에 진행 상황을 알 수 있게 한다.
+  const judgedCount = data.hypotheses.filter((h) => h.status !== '검토 전').length
+  const totalCount = data.hypotheses.length
+  const allJudged = totalCount > 0 && judgedCount === totalCount
+
+  const reportUrl =
+    selectedIds.size > 0
+      ? `${API_BASE_URL}/api/projects/${id}/report.md?hypothesis_ids=${[...selectedIds].join(',')}`
+      : `${API_BASE_URL}/api/projects/${id}/report.md`
+
   return (
     <div className="app-shell">
       <header className="page-header">
         <h1>{data.project.title}</h1>
         <p>{data.project.problem_definition}</p>
+        <span className={`badge ${allJudged ? 'badge-strong' : 'badge-pending'}`}>
+          판단 완료 {judgedCount}/{totalCount}
+        </span>
         <div className="share-actions">
           <button type="button" className="btn-add" onClick={copyShareLink}>
             공유 링크 복사
           </button>
-          <a className="btn-add" href={`${API_BASE_URL}/api/projects/${id}/report.md`}>
-            리포트 다운로드
+          <a className="btn-add" href={reportUrl}>
+            리포트 다운로드{selectedIds.size > 0 ? ` (선택 ${selectedIds.size}개)` : ''}
           </a>
-          <button type="button" className="btn-add" onClick={toggleSaveStatus} disabled={isSavingStatus}>
-            {data.project.save_status === 'saved' ? '저장됨 (임시저장으로 전환)' : '임시저장 중 (저장하기)'}
-          </button>
         </div>
         {copyFeedback && <p className="copy-feedback">{copyFeedback}</p>}
-        {saveError && <p className="error-text">{saveError}</p>}
       </header>
 
       <section className="card">

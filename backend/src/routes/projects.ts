@@ -553,6 +553,10 @@ router.patch(
       return res.status(404).json({ error: '가설을 찾을 수 없습니다.' });
     }
 
+    if (status !== undefined) {
+      await recomputeSaveStatus(id);
+    }
+
     return res.status(200).json({ hypothesis });
   },
 );
@@ -589,55 +593,76 @@ router.get(
   },
 );
 
-const ALLOWED_SAVE_STATUSES = ['draft', 'saved'];
+// 가설 판단(status)이 바뀔 때마다 호출. 모든 가설이 판단 완료(검토 전이 아님)면 saved,
+// 하나라도 남아있으면 draft로 자동 계산한다 — 수동 저장 버튼 없이 "판단을 다 끝냈다"는
+// 실질적 의미를 갖게 하기 위함(임시저장/저장이 그냥 라벨만 다른 문제를 해결).
+async function recomputeSaveStatus(projectId: string): Promise<void> {
+  const { data: hyps, error } = await supabase
+    .from('hypotheses')
+    .select('status')
+    .eq('project_id', projectId);
 
-// POST /api/projects/:id/save — 임시저장(draft) / 저장하기(saved) 전환.
-router.post(
-  '/:id/save',
-  async (req: Request<{ id: string }, {}, { save_status?: string }>, res: Response) => {
+  if (error) {
+    console.error('Failed to recompute save_status:', error);
+    return;
+  }
+
+  const allJudged = (hyps ?? []).length > 0 && (hyps ?? []).every((h) => h.status !== '검토 전');
+  const { error: updateError } = await supabase
+    .from('projects')
+    .update({ save_status: allJudged ? 'saved' : 'draft' })
+    .eq('id', projectId);
+
+  if (updateError) {
+    console.error('Failed to update save_status:', updateError);
+  }
+}
+
+// 파일명에 못 쓰는 문자를 치환하고 과도하게 길지 않게 자른다.
+function sanitizeFilenamePart(raw: string): string {
+  return raw.replace(/[\\/:*?"<>|]/g, '_').trim().slice(0, 80) || 'untitled';
+}
+
+// GET /api/projects/:id/report.md?hypothesis_ids=id1,id2 — 분석 결과 리포트 다운로드.
+// hypothesis_ids가 있으면 대시보드에서 체크박스로 선택한 가설만 담는다(없으면 전체).
+router.get(
+  '/:id/report.md',
+  async (req: Request<{ id: string }, {}, {}, { hypothesis_ids?: string }>, res: Response) => {
     const { id } = req.params;
-    const { save_status: saveStatus } = req.body;
+    const { hypothesis_ids: hypothesisIdsRaw } = req.query;
 
-    if (!saveStatus || !ALLOWED_SAVE_STATUSES.includes(saveStatus)) {
-      return res.status(400).json({ error: `save_status는 ${ALLOWED_SAVE_STATUSES.join(' / ')} 중 하나여야 합니다.` });
+    let report;
+    try {
+      report = await getFullProjectReport(id);
+    } catch (err) {
+      console.error('Failed to build project report:', err);
+      const message = err instanceof Error ? err.message : '리포트 생성에 실패했습니다.';
+      return res.status(500).json({ error: message });
     }
 
-    const { data: project, error } = await supabase
-      .from('projects')
-      .update({ save_status: saveStatus })
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error || !project) {
+    if (!report) {
       return res.status(404).json({ error: '프로젝트를 찾을 수 없습니다.' });
     }
 
-    return res.status(200).json({ project });
+    if (hypothesisIdsRaw) {
+      const selectedIds = new Set(hypothesisIdsRaw.split(',').map((s) => s.trim()).filter(Boolean));
+      if (selectedIds.size > 0) {
+        report = { ...report, hypotheses: report.hypotheses.filter((h) => selectedIds.has(h.id)) };
+      }
+    }
+
+    const markdown = buildReportMarkdown(report);
+    const filename = `report_${sanitizeFilenamePart(report.project.title)}.md`;
+
+    res.set('Content-Type', 'text/markdown; charset=utf-8');
+    // 한글 파일명은 RFC 5987 인코딩(filename*)이 있어야 브라우저에서 안 깨진다.
+    // filename(ASCII)은 구형 클라이언트 폴백용 고정값으로 둔다.
+    res.set(
+      'Content-Disposition',
+      `attachment; filename="report.md"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+    );
+    return res.status(200).send(markdown);
   },
 );
-
-// GET /api/projects/:id/report.md — 분석 결과 리포트 다운로드.
-router.get('/:id/report.md', async (req: Request<{ id: string }>, res: Response) => {
-  const { id } = req.params;
-
-  let report;
-  try {
-    report = await getFullProjectReport(id);
-  } catch (err) {
-    console.error('Failed to build project report:', err);
-    const message = err instanceof Error ? err.message : '리포트 생성에 실패했습니다.';
-    return res.status(500).json({ error: message });
-  }
-
-  if (!report) {
-    return res.status(404).json({ error: '프로젝트를 찾을 수 없습니다.' });
-  }
-
-  const markdown = buildReportMarkdown(report);
-  res.set('Content-Type', 'text/markdown; charset=utf-8');
-  res.set('Content-Disposition', `attachment; filename="report_${id}.md"`);
-  return res.status(200).send(markdown);
-});
 
 export default router;
