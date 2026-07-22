@@ -105,6 +105,7 @@ export type StartChatShellHarnessOptions = {
 
 const chatShellRoot = fileURLToPath(new URL('../', import.meta.url))
 const packageRoot = fileURLToPath(new URL('../../../', import.meta.url))
+const heldFrontendConnectionPath = '/__e2e__/hold-frontend-connection'
 
 export const sourceConflictMaterialBytes = Buffer.from(
   [
@@ -179,6 +180,20 @@ export async function selectCanonicalMaterials(page: Page): Promise<void> {
   await expect(
     materials.getByText('2 / 2 선택됨', { exact: true }),
   ).toBeVisible()
+}
+
+export async function holdChatShellFrontendConnection(
+  page: Page,
+  frontendUrl: string,
+): Promise<void> {
+  await page.evaluate(async (url) => {
+    const response = await fetch(url)
+    if (!response.ok) throw new Error('Expected the held frontend response.')
+    const frontendWindow = globalThis as typeof globalThis & {
+      heldChatShellFrontendResponse?: Response
+    }
+    frontendWindow.heldChatShellFrontendResponse = response
+  }, new URL(heldFrontendConnectionPath, frontendUrl).href)
 }
 
 export async function prepareDurableRestartBaseline(
@@ -342,6 +357,11 @@ export async function startChatShellHarness(
     })
     frontendServer.on('request', (request, response) => {
       const pathname = new URL(request.url ?? '/', frontendUrl).pathname
+      if (pathname === heldFrontendConnectionPath) {
+        response.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' })
+        response.write('held')
+        return
+      }
       if (pathname.startsWith('/api/')) requests.push(pathname)
       viteServer!.middlewares(request, response, () => {
         if (!response.headersSent) {
@@ -1233,5 +1253,6 @@ function closeHttpServer(server: Server): Promise<void> {
   if (!server.listening) return Promise.resolve()
   return new Promise((resolve, reject) => {
     server.close((error) => (error ? reject(error) : resolve()))
+    server.closeAllConnections()
   })
 }

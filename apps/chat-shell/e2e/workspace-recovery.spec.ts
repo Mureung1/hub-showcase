@@ -6,6 +6,7 @@ import { expect } from 'playwright/test'
 
 import type { ProductBootstrap } from '../src/product-api.js'
 import {
+  holdChatShellFrontendConnection,
   invalidWorkspaceStoreBytes,
   selectCanonicalMaterials,
   sourceConflictMaterialBytes,
@@ -235,7 +236,6 @@ test.describe('workspace recovery', () => {
 test('isolates two fresh Browser-to-Server harness runs and native session identities', async ({
   page,
 }) => {
-  test.setTimeout(90_000)
   const first = await startChatShellHarness('ready')
   let firstThreadId: string | undefined
   try {
@@ -276,7 +276,7 @@ test('isolates two fresh Browser-to-Server harness runs and native session ident
     expect(startedThreadId(second)).not.toBe(firstThreadId)
     await page.getByRole('button', { name: '작업 중단' }).click()
     await expect(page.getByText('AY 작업을 중단했습니다.')).toBeVisible()
-    await page.goto('about:blank')
+    await holdChatShellFrontendConnection(page, second.url)
   } finally {
     await second.close()
   }
