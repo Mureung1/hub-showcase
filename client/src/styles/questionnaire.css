@@ -83,6 +83,15 @@
   padding-top: var(--space-sm);
 }
 
+.questionnaire-error {
+  padding: var(--space-md);
+  color: var(--color-danger, #b42318);
+  font-weight: var(--font-weight-bold);
+  background: var(--color-danger-soft, #fff1f0);
+  border: 1px solid var(--color-danger-border, #fecdca);
+  border-radius: var(--radius-md);
+}
+
 .questionnaire-actions .button {
   min-width: 148px;
 }

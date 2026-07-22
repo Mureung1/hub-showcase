@@ -50,7 +50,6 @@ export const mentorApplications = [
       academicStatus: "4학년 재학",
     },
     meeting: {
-      method: "온라인",
       time: "2026년 7월 18일 19:00",
       place: "Google Meet",
     },
@@ -74,7 +73,6 @@ export const mentorApplications = [
       academicStatus: "졸업 예정",
     },
     meeting: {
-      method: "오프라인",
       time: "2026년 7월 8일 15:00",
       place: "KAIST 학술문화관 1층 라운지",
     },

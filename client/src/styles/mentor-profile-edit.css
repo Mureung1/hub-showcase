@@ -31,6 +31,14 @@
   padding-top: var(--space-2xl);
 }
 
+.mentor-profile-edit-grid .mentor-field-group {
+  align-content: start;
+}
+
+.mentor-profile-edit-grid .mentor-field-group > .field:not(textarea) {
+  height: var(--field-height);
+}
+
 .mentor-profile-edit-grid small,
 .mentor-field-group small {
   color: var(--color-text-muted);

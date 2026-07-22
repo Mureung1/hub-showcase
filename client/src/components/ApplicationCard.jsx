@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { routePaths } from "../routes/routePaths";
 
 const statusLabels = {
   pending: "대기",
@@ -15,10 +16,17 @@ const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
 
 const agreedStatuses = new Set(["confirmed", "completed"]);
 
-function MentorSummary({ mentor }) {
+function MentorSummary({ applicationStatus, mentor }) {
   return (
     <article className="application-mentor-card">
-      <Link className="application-mentor-name" to={`/mentee/mentors/${mentor.id}`}>
+      <Link
+        className="application-mentor-name"
+        state={{
+          applicationStatus,
+          returnTo: routePaths.menteeApplications,
+        }}
+        to={`/mentee/mentors/${mentor.id}`}
+      >
         {mentor.name} 멘토
       </Link>
       <dl className="application-mentor-details">
@@ -46,14 +54,20 @@ function QuestionnaireDetails({ questionnaire }) {
 
 function ApplicationCard({ application }) {
   const hasAgreedMeeting = agreedStatuses.has(application.status);
-  const visibleMentors = application.mentors ?? [];
+  const applicationMentors = application.mentors ?? [];
+  const visibleMentors = hasAgreedMeeting
+    ? applicationMentors.filter(
+      (mentor) => mentor.id === application.acceptedMentorId,
+    )
+    : applicationMentors;
 
   return (
     <article className="card application-card">
       <header className="application-card-header">
         <div>
-          <p className="application-card-label">신청 번호 {application.id}</p>
-          <h2 className="card-title">면담을 신청한 멘토</h2>
+          <h2 className="card-title">
+            {hasAgreedMeeting ? "면담을 수락한 멘토" : "면담을 신청한 멘토"}
+          </h2>
           <p className="muted-text application-created-at">
             신청일 {dateFormatter.format(new Date(application.createdAt))}
           </p>
@@ -64,7 +78,13 @@ function ApplicationCard({ application }) {
       </header>
 
       <section className="application-mentor-list" aria-label="멘토 정보">
-        {visibleMentors.map((mentor) => <MentorSummary key={mentor.id} mentor={mentor} />)}
+        {visibleMentors.map((mentor) => (
+          <MentorSummary
+            applicationStatus={application.status}
+            key={mentor.id}
+            mentor={mentor}
+          />
+        ))}
       </section>
 
       <div className="card-muted-box application-preferred-time">
@@ -76,10 +96,6 @@ function ApplicationCard({ application }) {
         <section className="application-meeting" aria-labelledby={`meeting-${application.id}`}>
           <h3 id={`meeting-${application.id}`}>합의된 면담 정보</h3>
           <div className="application-meeting-grid">
-            <label>
-              <span>면담 방식</span>
-              <input className="field" readOnly value={application.meeting.method} />
-            </label>
             <label>
               <span>면담 시간</span>
               <input className="field" readOnly value={application.meeting.time} />

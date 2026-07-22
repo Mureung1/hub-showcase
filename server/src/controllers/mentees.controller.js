@@ -1,5 +1,6 @@
 const menteeProfileService = require('../services/menteeProfile.service');
 const { sendError } = require('../utils/apiError');
+const { ConflictError } = require('../utils/errors');
 const { ValidationError } = require('../utils/validators');
 
 const getMyMenteeProfile = async (req, res) => {
@@ -18,6 +19,9 @@ const updateMyMenteeProfile = async (req, res) => {
   } catch (err) {
     if (err instanceof ValidationError) {
       return sendError(res, 400, 'VALIDATION_ERROR', err.message, { field: err.field });
+    }
+    if (err instanceof ConflictError) {
+      return sendError(res, 409, 'EMAIL_ALREADY_EXISTS', err.message, { field: 'email' });
     }
 
     console.error(err);

@@ -91,15 +91,9 @@
   gap: var(--space-md);
 }
 
-.application-card-label,
 .application-created-at {
   margin: 0;
   font-size: var(--font-size-xs);
-}
-
-.application-card-label {
-  color: var(--color-text-muted);
-  font-weight: var(--font-weight-bold);
 }
 
 .application-created-at {
@@ -209,7 +203,7 @@
 
 .application-meeting-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: var(--space-sm);
 }
 
@@ -219,7 +213,7 @@
 }
 
 .application-meeting-place {
-  grid-column: 1 / -1;
+  grid-column: auto;
 }
 
 .application-meeting .field[readonly] {

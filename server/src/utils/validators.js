@@ -1,3 +1,5 @@
+const MIN_PASSWORD_LENGTH = 8;
+
 class ValidationError extends Error {
   constructor(message, field) {
     super(message);
@@ -28,4 +30,29 @@ const requireStringArray = (value, field, { min, max } = {}) => {
   return value;
 };
 
-module.exports = { ValidationError, requireString, requireStringArray };
+const requireEmail = (value, field = 'email') => {
+  requireString(value, field);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    throw new ValidationError('올바른 이메일 형식이 아닙니다.', field);
+  }
+  return value;
+};
+
+const requirePassword = (value, field = 'password') => {
+  requireString(value, field);
+  if (value.length < MIN_PASSWORD_LENGTH) {
+    throw new ValidationError(
+      `비밀번호는 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다.`,
+      field,
+    );
+  }
+  return value;
+};
+
+module.exports = {
+  ValidationError,
+  requireEmail,
+  requirePassword,
+  requireString,
+  requireStringArray,
+};

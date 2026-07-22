@@ -1,3 +1,4 @@
+const { updateAccountCredentials } = require('./account.service');
 const { ENROLLMENT_STATUSES, GRADES } = require('../constants/mentee');
 const { supabase } = require('../db/supabase');
 const { ValidationError, requireString } = require('../utils/validators');
@@ -44,6 +45,11 @@ const updateMyProfile = async (user, payload = {}) => {
     profileUpdate.nickname = requireString(payload.nickname, 'nickname');
   }
 
+  const updatedEmail = await updateAccountCredentials(user.id, {
+    email: payload.email,
+    password: payload.password,
+  });
+
   if (payload.school !== undefined) {
     menteeProfileUpdate.school = requireString(payload.school, 'school');
   }
@@ -88,6 +94,7 @@ const updateMyProfile = async (user, payload = {}) => {
   return toApiProfile(
     {
       ...user,
+      email: updatedEmail ?? user.email,
       name: profileUpdate.name ?? user.name,
       nickname: profileUpdate.nickname ?? user.nickname,
     },

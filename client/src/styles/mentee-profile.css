@@ -36,8 +36,13 @@
 
 .mentee-profile-field {
   display: grid;
+  align-content: start;
   gap: var(--space-xs);
   min-width: 0;
+}
+
+.mentee-profile-field .field {
+  height: var(--field-height);
 }
 
 .mentee-profile-field > span {
@@ -48,6 +53,10 @@
 
 .mentee-profile-field small {
   color: var(--color-text-muted);
+}
+
+.mentee-profile-field-wide {
+  grid-column: 1 / -1;
 }
 
 .mentee-profile-field .field[readonly] {
@@ -76,5 +85,9 @@
   .mentee-profile-field-grid,
   .mentee-profile-actions {
     grid-template-columns: 1fr;
+  }
+
+  .mentee-profile-field-wide {
+    grid-column: auto;
   }
 }

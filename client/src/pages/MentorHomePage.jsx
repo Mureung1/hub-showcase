@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { acceptApplication, getApplications } from "../api/applications";
+import {
+  acceptApplication,
+  getApplications,
+  rejectApplication,
+} from "../api/applications";
 import MentorApplicationCard from "../components/MentorApplicationCard";
+import { useAuth } from "../context/AuthContext";
 import { routePaths } from "../routes/routePaths";
-import { clearCurrentUserRole } from "../utils/authStorage";
 
 const MOCK_MENTOR_ID = "mentor-1";
 
@@ -16,10 +20,12 @@ const statusTabs = [
 
 function MentorHomePage() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [applications, setApplications] = useState([]);
   const [activeStatus, setActiveStatus] = useState("pending");
   const [isLoading, setIsLoading] = useState(true);
   const [acceptingApplicationId, setAcceptingApplicationId] = useState(null);
+  const [rejectingApplicationId, setRejectingApplicationId] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
 
   const loadApplications = useCallback(async () => {
@@ -67,8 +73,26 @@ function MentorHomePage() {
     }
   };
 
-  const handleLogout = () => {
-    clearCurrentUserRole();
+  const handleReject = async (applicationId) => {
+    setRejectingApplicationId(applicationId);
+    setErrorMessage("");
+
+    try {
+      await rejectApplication({
+        applicationId,
+        mockUserId: MOCK_MENTOR_ID,
+      });
+      const hasReloaded = await loadApplications();
+      if (hasReloaded) setActiveStatus("rejected");
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setRejectingApplicationId(null);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
     navigate(routePaths.landing, { replace: true });
   };
 
@@ -137,8 +161,10 @@ function MentorHomePage() {
                 <MentorApplicationCard
                   application={application}
                   isAccepting={acceptingApplicationId === application.id}
+                  isRejecting={rejectingApplicationId === application.id}
                   key={application.id}
                   onAccept={handleAccept}
+                  onReject={handleReject}
                 />
               ))}
             </div>

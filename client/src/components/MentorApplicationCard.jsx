@@ -20,7 +20,13 @@ function formatCreatedAt(createdAt) {
   }).format(new Date(createdAt));
 }
 
-function MentorApplicationCard({ application, isAccepting, onAccept }) {
+function MentorApplicationCard({
+  application,
+  isAccepting,
+  isRejecting,
+  onAccept,
+  onReject,
+}) {
   const { applicationStatus, mentee, mentorStatus, questionnaire } = application;
   const visibleStatus = mentorStatus ?? applicationStatus;
   const showsMeetingFields = visibleStatus === "confirmed" || visibleStatus === "completed";
@@ -87,8 +93,16 @@ function MentorApplicationCard({ application, isAccepting, onAccept }) {
       {visibleStatus === "pending" && (
         <div className="mentor-application-actions">
           <button
+            className="button button-neutral mentor-reject-button"
+            disabled={isAccepting || isRejecting}
+            onClick={() => onReject(application.id)}
+            type="button"
+          >
+            {isRejecting ? "거부 처리 중..." : "거부"}
+          </button>
+          <button
             className="button button-primary"
-            disabled={isAccepting}
+            disabled={isAccepting || isRejecting}
             onClick={() => onAccept(application.id)}
             type="button"
           >

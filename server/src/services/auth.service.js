@@ -1,31 +1,15 @@
 const { supabase, supabaseAnon } = require('../db/supabase');
 const { ENROLLMENT_STATUSES, GRADES } = require('../constants/mentee');
-const { ValidationError, requireString, requireStringArray } = require('../utils/validators');
-
-const MIN_PASSWORD_LENGTH = 8;
-
-class ConflictError extends Error {}
+const { ConflictError } = require('../utils/errors');
+const {
+  ValidationError,
+  requireEmail,
+  requirePassword,
+  requireString,
+  requireStringArray,
+} = require('../utils/validators');
 
 class AuthError extends Error {}
-
-const requireEmail = (email) => {
-  requireString(email, 'email');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new ValidationError('올바른 이메일 형식이 아닙니다.', 'email');
-  }
-  return email;
-};
-
-const requirePassword = (password) => {
-  requireString(password, 'password');
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    throw new ValidationError(
-      `비밀번호는 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다.`,
-      'password',
-    );
-  }
-  return password;
-};
 
 const createAuthUser = async (email, password) => {
   const { data, error } = await supabase.auth.admin.createUser({

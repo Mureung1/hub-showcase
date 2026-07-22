@@ -58,11 +58,6 @@
   margin: var(--space-2xs) 0 0;
 }
 
-.application-complete-button {
-  min-width: 210px;
-  margin-top: var(--space-2xl);
-}
-
 @media (max-width: 520px) {
   .application-complete-page {
     padding: 12px;
@@ -80,9 +75,5 @@
   .application-complete-icon svg {
     width: 52px;
     height: 52px;
-  }
-
-  .application-complete-button {
-    width: 100%;
   }
 }

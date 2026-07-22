@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { getApplications } from "../api/applications";
 import ApplicationCard from "../components/ApplicationCard";
 import { routePaths } from "../routes/routePaths";
@@ -7,13 +7,16 @@ import { routePaths } from "../routes/routePaths";
 const MOCK_MENTEE_ID = "mentee-1";
 
 function MenteeApplicationListPage() {
+  const location = useLocation();
   const statusTabs = [
     { value: "pending", label: "대기" },
     { value: "confirmed", label: "확정" },
     { value: "completed", label: "완료" },
     { value: "rejected", label: "거부" },
   ];
-  const [activeStatus, setActiveStatus] = useState("pending");
+  const [activeStatus, setActiveStatus] = useState(
+    () => location.state?.activeStatus ?? "pending",
+  );
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");

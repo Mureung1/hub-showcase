@@ -1,10 +1,10 @@
 export const mentorPersonalInformation = {
   id: "mentor-account-001",
   mentorId: "kim-oo",
-  loginId: "mentor01",
+  nickname: "나노멘토",
+  password: "mentor1234",
   email: "mentor@example.com",
   name: "김OO",
-  phone: "010-1234-5678",
 };
 
 export const mentorProfileInformation = {

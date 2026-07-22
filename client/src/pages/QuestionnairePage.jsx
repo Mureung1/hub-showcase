@@ -1,12 +1,17 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { createApplication } from "../api/applications";
 import { mentors } from "../data/mentors";
 import { routePaths } from "../routes/routePaths";
 
 function QuestionnairePage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const mentorIds = location.state?.mentorIds ?? [];
+  const mentorIds = Array.isArray(location.state?.mentorIds)
+    ? location.state.mentorIds
+    : [];
+  const [submissionError, setSubmissionError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedMentors = useMemo(
     () => mentorIds
@@ -14,6 +19,7 @@ function QuestionnairePage() {
       .filter(Boolean),
     [mentorIds],
   );
+  const selectedMentorIds = selectedMentors.map((mentor) => mentor.id);
 
   const handleBack = () => {
     navigate(routePaths.menteeMentors, {
@@ -22,20 +28,57 @@ function QuestionnairePage() {
     });
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    if (selectedMentors.length === 0) return;
+    setSubmissionError("");
 
-    const questionnaire = Object.fromEntries(new FormData(event.currentTarget).entries());
-    const applicationId = `mock-${Date.now()}`;
+    if (selectedMentorIds.length === 0) {
+      setSubmissionError("면담을 신청할 멘토를 1명 이상 선택해 주세요.");
+      return;
+    }
 
-    navigate(`/mentee/applications/${applicationId}/complete`, {
-      replace: true,
-      state: {
-        mentorIds,
+    if (selectedMentorIds.length > 3) {
+      setSubmissionError("멘토는 최대 3명까지만 선택할 수 있습니다.");
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const questionnaire = {
+      introduction: formData.get("introduction")?.trim() ?? "",
+      concern: formData.get("concern")?.trim() ?? "",
+      goal: formData.get("goal")?.trim() ?? "",
+      preferredTime: formData.get("preferredTime")?.trim() ?? "",
+    };
+    const missingQuestion = Object.values(questionnaire).some((answer) => !answer);
+
+    if (missingQuestion) {
+      setSubmissionError("사전 질문지의 모든 필수 항목을 입력해 주세요.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await createApplication({
+        mentorIds: selectedMentorIds,
         questionnaire,
-      },
-    });
+        mockUserId: "mentee-1",
+      });
+      const application = response.data;
+      const completePath = routePaths.menteeApplicationComplete.replace(
+        ":applicationId",
+        application.id,
+      );
+
+      navigate(completePath, {
+        replace: true,
+        state: { application, selectedMentors },
+      });
+    } catch (error) {
+      setSubmissionError(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -65,7 +108,7 @@ function QuestionnairePage() {
           )}
         </section>
 
-        <form className="questionnaire-form" onSubmit={handleSubmit}>
+        <form className="questionnaire-form" noValidate onSubmit={handleSubmit}>
           <label className="questionnaire-field">
             <span><strong>1. 자기소개</strong><em>필수</em></span>
             <textarea
@@ -107,16 +150,26 @@ function QuestionnairePage() {
             />
           </label>
 
+          {submissionError && (
+            <div className="questionnaire-error" role="alert">
+              {submissionError}
+            </div>
+          )}
+
           <div className="questionnaire-actions">
             <button className="button button-neutral" onClick={handleBack} type="button">
               이전 화면으로
             </button>
             <button
               className="button button-primary"
-              disabled={selectedMentors.length === 0}
+              disabled={
+                selectedMentorIds.length === 0
+                || selectedMentorIds.length > 3
+                || isSubmitting
+              }
               type="submit"
             >
-              면담 신청 제출
+              {isSubmitting ? "신청 중..." : "면담 신청 제출"}
             </button>
           </div>
         </form>

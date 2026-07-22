@@ -1,6 +1,6 @@
 export const mentors = [
   {
-    id: "kim-oo",
+    id: "mentor-1",
     name: "김OO",
     school: "KAIST",
     lab: "나노소자 연구실",
@@ -16,7 +16,7 @@ export const mentors = [
     internationalActivities: ["MRS 국제학회 포스터 발표", "일본 소재 연구소 단기 교류"],
   },
   {
-    id: "lee-oo",
+    id: "mentor-2",
     name: "이OO",
     school: "KAIST",
     lab: "비전지능 연구실",
@@ -32,7 +32,7 @@ export const mentors = [
     internationalActivities: ["CVPR 2025 워크숍 참가", "싱가포르 AI 연구팀 공동 프로젝트"],
   },
   {
-    id: "park-oo",
+    id: "mentor-3",
     name: "박OO",
     school: "POSTECH",
     lab: "계산생물학 연구실",
@@ -48,7 +48,7 @@ export const mentors = [
     internationalActivities: ["ISMB 국제학회 포스터 발표", "유럽 계산생물학 연구팀 온라인 협업"],
   },
   {
-    id: "choi-oo",
+    id: "mentor-4",
     name: "최OO",
     school: "서울대학교",
     lab: "인간중심시스템 연구실",
