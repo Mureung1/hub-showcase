@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { createSubscription } from '../lib/subscriptions'
+import { getToken } from '../lib/auth'
+import LoginRequired from '../components/LoginRequired'
 import './SubscriptionForm.css'
 
 const MIN_MEMBER_COUNT = 1
@@ -14,7 +16,7 @@ const SubscriptionForm = () => {
   const [accountNumber, setAccountNumber] = useState('')
   const [accountHolderName, setAccountHolderName] = useState('')
 
-  const [status, setStatus] = useState('idle')
+  const [status, setStatus] = useState(getToken() ? 'idle' : 'unauthorized')
   const [errorMessage, setErrorMessage] = useState('')
   const [registeredSubscription, setRegisteredSubscription] = useState(null)
 
@@ -47,6 +49,14 @@ const SubscriptionForm = () => {
       setErrorMessage(error.message)
       setStatus('error')
     }
+  }
+
+  if (status === 'unauthorized') {
+    return (
+      <div className="subscription-form-page">
+        <LoginRequired message="로그인 후 구독 서비스를 등록할 수 있어요." />
+      </div>
+    )
   }
 
   if (status === 'success' && registeredSubscription) {

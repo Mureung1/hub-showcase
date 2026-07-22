@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { getSubscription } from '../lib/subscriptions'
 import { getServiceColor } from '../lib/serviceColor'
 import RoleBadge from '../components/RoleBadge'
+import LoginRequired from '../components/LoginRequired'
 import './SubscriptionDetail.css'
 
 const SubscriptionDetail = () => {
@@ -19,7 +20,9 @@ const SubscriptionDetail = () => {
       })
       .catch((error) => {
         setErrorMessage(error.message)
-        if (error.status === 404) {
+        if (error.status === 401) {
+          setStatus('unauthorized')
+        } else if (error.status === 404) {
           setStatus('notfound')
         } else if (error.status === 403) {
           setStatus('forbidden')
@@ -33,6 +36,8 @@ const SubscriptionDetail = () => {
 
   if (status === 'loading') {
     content = <p className="subscription-detail-message">불러오는 중...</p>
+  } else if (status === 'unauthorized') {
+    content = <LoginRequired message="로그인 후 파티 상세 정보를 확인할 수 있어요." />
   } else if (status === 'notfound') {
     content = <p className="subscription-detail-message">존재하지 않는 파티예요.</p>
   } else if (status === 'forbidden') {
