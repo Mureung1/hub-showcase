@@ -10,6 +10,14 @@ export const defaultFiles = {
   'software-engineer': 'solution.py',
 }
 
+export const defaultModes = {
+  frontend: 'react',
+  backend: 'python',
+  fullstack: 'react',
+  devops: 'linux',
+  'software-engineer': 'python',
+}
+
 export function normalizeAgentOutput({ output, tracks }) {
   const track = tracks.find((item) => item.trackId === output.trackId)
   if (!track) throw new Error(`Unknown trackId from Gemini: ${output.trackId}`)
@@ -21,6 +29,9 @@ export function normalizeAgentOutput({ output, tracks }) {
     .map((moduleId) => level.modules.find((module) => module.moduleId === moduleId))
     .filter(Boolean)
   if (modules.length === 0) throw new Error('Gemini output did not select valid moduleIds')
+
+  const fileName = String(output.todayMission?.fileName || defaultFiles[track.trackId])
+  const mode = normalizeWorkspaceMode(output.todayMission?.mode) || inferWorkspaceMode({ fileName, trackId: track.trackId })
 
   return {
     trackId: track.trackId,
@@ -34,7 +45,8 @@ export function normalizeAgentOutput({ output, tracks }) {
       title: String(output.todayMission?.title || `${modules[0].title} 실습`),
       detail: String(output.todayMission?.detail || modules[0].practiceIdeas[0] || level.goal),
       durationMinutes: normalizeDurationMinutes(output.todayMission?.durationMinutes),
-      fileName: String(output.todayMission?.fileName || defaultFiles[track.trackId]),
+      fileName,
+      mode,
     },
     rationale: String(output.rationale || '사용자 목표와 가장 가까운 시작 단계를 선택했습니다.'),
   }
@@ -66,6 +78,19 @@ export function createGeneratedCurriculumPlan({ goal, recommendation, tracks }) 
     steps: selectedModules.map((module, index) => createGeneratedCurriculumStep(module, level, index)),
     sources: createGeneratedCurriculumSources(selectedModules),
   }
+}
+
+function normalizeWorkspaceMode(value) {
+  return value === 'react' || value === 'linux' || value === 'docker' || value === 'python' ? value : null
+}
+
+function inferWorkspaceMode({ fileName, trackId }) {
+  const normalizedFileName = String(fileName || '').toLowerCase()
+  if (normalizedFileName === 'dockerfile' || normalizedFileName.endsWith('.dockerfile')) return 'docker'
+  if (normalizedFileName.endsWith('.jsx') || normalizedFileName.endsWith('.tsx') || normalizedFileName.endsWith('.js')) return 'react'
+  if (normalizedFileName.endsWith('.sh')) return 'linux'
+  if (normalizedFileName.endsWith('.py')) return 'python'
+  return defaultModes[trackId] || 'react'
 }
 
 function normalizeDurationMinutes(value) {

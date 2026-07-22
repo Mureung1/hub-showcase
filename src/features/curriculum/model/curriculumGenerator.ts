@@ -18,6 +18,8 @@ export type GeneratedCurriculumStep = {
   durationLabel: string
 }
 
+export type WorkspaceMode = 'react' | 'linux' | 'docker' | 'python'
+
 export type GeneratedCurriculumPlan = {
   id: string
   goal: string
@@ -30,6 +32,7 @@ export type GeneratedCurriculumPlan = {
     detail: string
     durationMinutes: number
     fileName: string
+    mode?: WorkspaceMode
   }
   steps: GeneratedCurriculumStep[]
   sources: CurriculumSource[]
@@ -72,6 +75,7 @@ type CurriculumTrackConfig = {
   track: RawCurriculumTrack
   keywords: RegExp
   defaultFileName: string
+  defaultMode: WorkspaceMode
 }
 
 const fallbackGoal = '새 기술을 실무에 적용하고 싶어'
@@ -81,27 +85,32 @@ const curriculumTracks: Record<CurriculumTrackId, CurriculumTrackConfig> = {
   frontend: {
     track: frontendTrack as RawCurriculumTrack,
     keywords: /(frontend|front-end|프론트|react|리액트|html|css|javascript|자바스크립트)/i,
-    defaultFileName: 'index.html',
+    defaultFileName: 'App.jsx',
+    defaultMode: 'react',
   },
   backend: {
     track: backendTrack as RawCurriculumTrack,
     keywords: /(backend|back-end|백엔드|api|server|서버|fastapi|db|database|데이터베이스)/i,
     defaultFileName: 'main.py',
+    defaultMode: 'python',
   },
   fullstack: {
     track: fullstackTrack as RawCurriculumTrack,
     keywords: /(fullstack|full-stack|풀스택)/i,
     defaultFileName: 'app.tsx',
+    defaultMode: 'react',
   },
   devops: {
     track: devopsTrack as RawCurriculumTrack,
     keywords: /(devops|dev ops|데브옵스|인프라|sre|cloud|클라우드|docker|도커|platform|플랫폼)/i,
     defaultFileName: 'ops-checklist.sh',
+    defaultMode: 'linux',
   },
   'software-engineer': {
     track: softwareEngineerTrack as RawCurriculumTrack,
     keywords: /(software engineer|소프트웨어|cs|computer science|알고리즘|자료구조|설계|architecture|아키텍처)/i,
     defaultFileName: 'solution.py',
+    defaultMode: 'python',
   },
 }
 
@@ -115,6 +124,13 @@ function generateCurriculumPlan(goal: string): GeneratedCurriculumPlan {
   const startLevel = config.track.levels[0]
   const firstModule = startLevel.modules[0]
 
+  let defaultFileName = config.defaultFileName
+  let defaultMode = config.defaultMode
+  if (/(docker|도커)/i.test(normalizedGoal)) {
+    defaultFileName = 'Dockerfile'
+    defaultMode = 'docker'
+  }
+
   return {
     id: `${config.track.trackId}-curriculum-plan`,
     goal: normalizedGoal,
@@ -122,7 +138,7 @@ function generateCurriculumPlan(goal: string): GeneratedCurriculumPlan {
     summary: `${config.track.description} 먼저 ${startLevel.goal}`,
     estimatedDuration: `${getTotalEstimatedWeeks(config.track)}주 로드맵`,
     focusRole: config.track.trackName,
-    todayMission: createTodayMission(firstModule, config.defaultFileName),
+    todayMission: createTodayMission(firstModule, defaultFileName, defaultMode),
     steps: startLevel.modules.map((module, index) => createCurriculumStep(module, startLevel, index)),
     sources: createCurriculumSources(startLevel),
   }
@@ -138,12 +154,13 @@ function getTotalEstimatedWeeks(track: RawCurriculumTrack) {
   return track.levels.reduce((total, level) => total + level.estimatedWeeks, 0)
 }
 
-function createTodayMission(module: RawCurriculumModule, fileName: string) {
+function createTodayMission(module: RawCurriculumModule, fileName: string, mode: WorkspaceMode) {
   return {
     title: `${module.title} 실습`,
     detail: module.practiceIdeas[0] ?? `${module.title}의 핵심 개념을 작은 예제로 확인합니다.`,
     durationMinutes: defaultMissionMinutes,
     fileName,
+    mode,
   }
 }
 

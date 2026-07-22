@@ -27,6 +27,7 @@ type MissionProgressInput = {
   runState: LearningRunState
   runAttemptCount: number
   activeStepOffset: number
+  completedAt?: string | null
   activityLog: LearningActivityItem[]
 }
 
@@ -128,7 +129,14 @@ export const useLearningProgressStore = create<LearningProgressState>((set, get)
       return { missions: nextMissions }
     })
   },
-  recordRunResult: ({ missionId, runState, runAttemptCount, activeStepOffset, activityLog }) => {
+  recordRunResult: ({
+    missionId,
+    runState,
+    runAttemptCount,
+    activeStepOffset,
+    completedAt,
+    activityLog,
+  }) => {
     set((state) => {
       const current = state.missions[missionId]
       const nextMissions = {
@@ -138,6 +146,7 @@ export const useLearningProgressStore = create<LearningProgressState>((set, get)
           runState,
           runAttemptCount,
           activeStepOffset,
+          completedAt: completedAt ?? current?.completedAt ?? null,
           activityLog,
         }),
       }

@@ -3,6 +3,7 @@ import type {
   CurriculumSource,
   GeneratedCurriculumPlan,
   GeneratedCurriculumStep,
+  WorkspaceMode,
 } from './curriculumGenerator'
 
 export type GeneratedCurriculumSnapshot = {
@@ -28,6 +29,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function normalizeString(value: unknown) {
   return typeof value === 'string' ? value : ''
+}
+
+function normalizeWorkspaceMode(value: unknown): WorkspaceMode | undefined {
+  return value === 'react' || value === 'linux' || value === 'docker' || value === 'python' ? value : undefined
 }
 
 function normalizeDurationMinutes(value: unknown) {
@@ -111,6 +116,7 @@ function normalizePlan(plan: unknown): GeneratedCurriculumPlan | null {
       detail: normalizeString(plan.todayMission.detail),
       durationMinutes: normalizeDurationMinutes(plan.todayMission.durationMinutes),
       fileName: normalizeString(plan.todayMission.fileName),
+      mode: normalizeWorkspaceMode(plan.todayMission.mode),
     },
     steps,
     sources,

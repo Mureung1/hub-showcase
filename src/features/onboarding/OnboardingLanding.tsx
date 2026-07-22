@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Link } from 'react-router'
 import styles from './OnboardingLanding.module.css'
 
@@ -54,6 +54,25 @@ const onboardingCards: OnboardingCard[] = [
 
 export function OnboardingLanding() {
   const carouselRef = useRef<HTMLDivElement>(null)
+  const fullText = '학습을 시작해볼까요?'
+  const [typedText, setTypedText] = useState('')
+
+  useEffect(() => {
+    let currentText = ''
+    let currentIndex = 0
+
+    const intervalId = setInterval(() => {
+      if (currentIndex < fullText.length) {
+        currentText += fullText[currentIndex]
+        setTypedText(currentText)
+        currentIndex++
+      } else {
+        clearInterval(intervalId)
+      }
+    }, 120)
+
+    return () => clearInterval(intervalId)
+  }, [])
 
   function scrollCarousel(direction: 'previous' | 'next') {
     const carousel = carouselRef.current
@@ -104,7 +123,7 @@ export function OnboardingLanding() {
           <div className={styles.copy}>
             <p className={styles.eyebrow}>AI Coding Tutor Desktop</p>
             <h1 className={styles.title} id="onboarding-title">
-              학습을 시작해볼까요?
+              {typedText}<span className={styles.cursor} aria-hidden="true">|</span>
             </h1>
             <p className={styles.description}>
               목표를 정하면 ICU가 오늘 학습, 실습, 복습 순서를 이어서 잡아드립니다. 학습을 시작하면

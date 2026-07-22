@@ -4,6 +4,9 @@ dist/
 vite-dev.log
 vite-dev.err
 vite-dev.pid
+.icu/
+*.sqlite
+*.sqlite-journal
 
 # OS/archive byproducts
 .DS_Store

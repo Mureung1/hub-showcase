@@ -24,7 +24,7 @@
 
 .kicker,
 .sectionLabel {
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 12px;
   font-weight: 900;
 }
@@ -86,7 +86,7 @@
 .runButton,
 .tutorComposer button {
   border: 0;
-  background: #0b4bb3;
+  background: #07003d;
   color: #ffffff;
 }
 
@@ -105,10 +105,10 @@
 }
 
 .helpPanel .nextStepButton:not(:disabled) {
-  border-color: #0b4bb3;
-  background: #0b4bb3;
+  border-color: #07003d;
+  background: #07003d;
   color: #ffffff;
-  box-shadow: 0 12px 24px rgb(11 75 179 / 14%);
+  box-shadow: 0 12px 24px rgb(7 0 61 / 14%);
 }
 
 .secondaryButton:focus-visible,
@@ -124,6 +124,134 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
+}
+
+
+.runtimeStrip {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.42fr) minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 12px;
+  border: 1px solid rgb(179 196 220 / 58%);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgb(255 255 255 / 86%);
+  box-shadow: 0 14px 30px rgb(15 23 42 / 8%);
+}
+
+.runtimeStripHeader {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.runtimeStripHeader > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.runtimeStripHeader span,
+.runtimeDetails dt {
+  color: #07003d;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.runtimeStripHeader strong {
+  color: #102346;
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 900;
+}
+
+.runtimeStripHeader p {
+  margin: 0;
+  color: #526173;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.runtimeState {
+  flex: 0 0 auto;
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 10px;
+  background: #eef2f7;
+  color: #526173 !important;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.runtimeState[data-state='running'] {
+  background: #fff7df;
+  color: #a15c00 !important;
+}
+
+.runtimeState[data-state='passed'] {
+  background: #e8f8ef;
+  color: #087443 !important;
+}
+
+.runtimeState[data-state='failed'] {
+  background: #fff1e8;
+  color: #c24c00 !important;
+}
+
+.runtimeDetails {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.runtimeDetails div {
+  min-width: 0;
+  border-left: 1px solid #e1e8f2;
+  padding-left: 12px;
+}
+
+.runtimeDetails dt,
+.runtimeDetails dd {
+  margin: 0;
+}
+
+.runtimeDetails dd {
+  margin-top: 4px;
+  color: #172033;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.runtimePreviewLink {
+  align-self: center;
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(7 0 61 / 18%);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #eef7ff;
+  color: #07003d;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.runtimePreviewLink:focus-visible {
+  outline: 3px solid rgb(53 200 244 / 36%);
+  outline-offset: 2px;
 }
 
 .statusStrip article,
@@ -179,7 +307,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #0b4bb3;
+  background: #07003d;
 }
 
 .workspaceGrid {
@@ -206,7 +334,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-content: stretch;
   max-height: 250px;
-  overflow: auto;
+  overflow: hidden;
   padding-right: 2px;
 }
 
@@ -216,7 +344,13 @@
   overflow: auto;
 }
 
-.railCard,
+.railCard {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 18px;
+}
+
 .missionCard,
 .tutorCard,
 .explanationCard,
@@ -258,7 +392,7 @@
   border-radius: 999px;
   padding: 0 10px;
   background: #eef7ff;
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 12px;
   font-weight: 900;
   white-space: nowrap;
@@ -269,6 +403,7 @@
   display: grid;
   gap: 8px;
   margin-top: 14px;
+  overflow: auto;
 }
 
 .currentStepCard strong,
@@ -323,12 +458,15 @@
 }
 
 .stepList {
-  max-height: 340px;
+  flex: 1;
+  max-height: none;
   overflow: auto;
   display: grid;
+  align-content: start;
   gap: 10px;
   margin: 14px 0 0;
   padding: 0;
+  padding-right: 4px;
   list-style: none;
 }
 
@@ -358,7 +496,7 @@
   height: 28px;
   place-items: center;
   border-radius: 999px;
-  background: #0b4bb3;
+  background: #07003d;
   color: #ffffff;
   font-size: 12px;
   font-weight: 900;
@@ -383,7 +521,7 @@
 }
 
 .stepItem small {
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 11px;
   font-weight: 900;
 }
@@ -413,7 +551,7 @@
 }
 
 .criteriaList li::before {
-  color: #0b4bb3;
+  color: #07003d;
   content: '✓ ';
   font-weight: 900;
 }
@@ -431,7 +569,7 @@
   height: 38px;
   place-items: center;
   border-radius: 999px;
-  background: #0b4bb3;
+  background: #07003d;
   color: #ffffff;
   font-size: 12px;
   font-weight: 900;
@@ -517,16 +655,38 @@
   color: #f8fafc;
 }
 
+.editorTabs {
+  min-width: 0;
+  display: flex;
+  align-items: end;
+  gap: 4px;
+  overflow-x: auto;
+}
+
 .editorTab {
   min-height: 36px;
   display: inline-flex;
   align-items: center;
+  border: 0;
   border-radius: 8px 8px 0 0;
   padding: 0 14px;
-  background: #151a24;
-  color: #e5edf7;
+  background: #182233;
+  color: #b8c4d6;
+  cursor: pointer;
   font-size: 13px;
   font-weight: 900;
+  white-space: nowrap;
+}
+
+.editorTab[data-active='true'] {
+  background: #151a24;
+  color: #e5edf7;
+  box-shadow: inset 0 2px 0 #35c8f4;
+}
+
+.editorTab:hover,
+.editorTab:focus-visible {
+  color: #ffffff;
 }
 
 .editorActions {
@@ -645,32 +805,51 @@
     #fffaf6;
 }
 
-.previewAppCard {
-  width: min(100%, 560px);
-  border: 1px solid #e4e7ec;
+.previewIframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
   border-radius: 8px;
-  padding: 30px 26px;
-  background: #ffffff;
-  box-shadow: 0 16px 34px rgb(15 23 42 / 12%);
 }
 
-.previewAppCard h3 {
-  margin: 0 0 20px;
+.renderedPreview {
+  width: 100%;
+  min-height: 100%;
+  display: grid;
+  place-items: start center;
+}
+
+.renderedPreviewCard {
+  width: min(100%, 560px);
+  display: grid;
+  gap: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 30px;
+  background: #ffffff;
+  box-shadow: 0 18px 34px rgb(15 23 42 / 12%);
+}
+
+.renderedPreviewCard h2 {
+  margin: 0;
   color: #030712;
-  font-size: 27px;
+  font-size: 30px;
   line-height: 1.2;
   font-weight: 900;
   letter-spacing: 0;
 }
 
-.previewAppCard button {
-  min-height: 28px;
-  border: 1px solid #6b7280;
-  border-radius: 3px;
-  padding: 2px 9px;
-  background: #f9fafb;
+.renderedPreviewCard button {
+  width: fit-content;
+  min-height: 32px;
+  border: 1px solid #9ca3af;
+  border-radius: 4px;
+  padding: 0 11px;
+  background: #f8fafc;
   color: #030712;
   cursor: pointer;
+  font: inherit;
   font-size: 14px;
 }
 
@@ -757,6 +936,52 @@
   overflow-wrap: anywhere;
 }
 
+
+.previewPanel[data-mode='linux'] .previewViewport,
+.previewPanel[data-mode='docker'] .previewViewport,
+.previewPanel[data-mode='python'] .previewViewport {
+  place-items: center;
+  background: #101824;
+}
+
+.previewPanel[data-mode='linux'] .previewEmpty,
+.previewPanel[data-mode='docker'] .previewEmpty,
+.previewPanel[data-mode='python'] .previewEmpty {
+  border-color: #26364d;
+  background: #151f2e;
+  text-align: left;
+}
+
+.previewPanel[data-mode='linux'] .previewEmpty strong,
+.previewPanel[data-mode='docker'] .previewEmpty strong,
+.previewPanel[data-mode='python'] .previewEmpty strong {
+  color: #e5edf7;
+}
+
+.previewPanel[data-mode='linux'] .previewEmpty p,
+.previewPanel[data-mode='docker'] .previewEmpty p,
+.previewPanel[data-mode='python'] .previewEmpty p {
+  color: #94a3b8;
+}
+
+.previewConsole[data-mode='linux'],
+.previewConsole[data-mode='docker'],
+.previewConsole[data-mode='python'] {
+  border-top-color: #26364d;
+  background: #0f1724;
+}
+
+.previewConsole[data-mode='linux'] strong,
+.previewConsole[data-mode='docker'] strong,
+.previewConsole[data-mode='python'] strong,
+.previewConsole[data-mode='linux'] li,
+.previewConsole[data-mode='docker'] li,
+.previewConsole[data-mode='python'] li,
+.previewConsole[data-mode='linux'] p,
+.previewConsole[data-mode='docker'] p,
+.previewConsole[data-mode='python'] p {
+  color: #dbe4ef;
+}
 .previewError {
   margin-bottom: 8px !important;
   color: #c24c00 !important;
@@ -908,7 +1133,16 @@
 }
 
 @media (max-width: 980px) {
-  .statusStrip,
+
+  .runtimeStrip {
+    grid-template-columns: 1fr;
+  }
+
+  .runtimeDetails {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+.statusStrip,
   .workspaceGrid,
   .resultPanel {
     grid-template-columns: 1fr;
@@ -920,7 +1154,16 @@
 }
 
 @media (max-width: 760px) {
-  .page {
+
+  .runtimeDetails {
+    grid-template-columns: 1fr;
+  }
+
+  .runtimePreviewLink {
+    width: 100%;
+  }
+
+.page {
     gap: 14px;
     padding: 16px;
   }

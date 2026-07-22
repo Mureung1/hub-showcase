@@ -7,7 +7,7 @@
   --line: #cfdae8;
   --text: #162033;
   --muted: #627089;
-  --blue: #0b4bb3;
+  --blue: #07003d;
   --cyan: #35c8f4;
   --orange: #ff8a1c;
   --navy: #07111f;
@@ -37,7 +37,7 @@ body {
   color: var(--text);
   background:
     linear-gradient(135deg, rgb(255 138 28 / 16%), transparent 26%),
-    linear-gradient(145deg, transparent 35%, rgb(53 200 244 / 18%) 72%, rgb(11 75 179 / 16%)),
+    linear-gradient(145deg, transparent 35%, rgb(53 200 244 / 18%) 72%, rgb(7 0 61 / 16%)),
     var(--bg);
 }
 

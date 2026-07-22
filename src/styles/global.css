@@ -1,4 +1,12 @@
 @font-face {
+  font-family: 'Cloudsofa_namgim-Regular';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../components/fonts/Cloudsofa_namgim-Regular.ttf') format('truetype');
+}
+
+@font-face {
   font-family: 'LINE Seed KR';
   font-style: normal;
   font-weight: 300;

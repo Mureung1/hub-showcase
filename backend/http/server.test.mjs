@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createCurriculumAgentServer } from './server.mjs'
 
 const servers = []
+const fetchBlockedPorts = new Set([6000, 6665, 6666, 6667, 6668, 6669, 6697, 10080])
 
 function createTestServer() {
   const server = createCurriculumAgentServer({
@@ -16,10 +17,17 @@ function createTestServer() {
 
 function listen(server) {
   return new Promise((resolve) => {
-    server.listen(0, '127.0.0.1', () => {
+    const listenOnAvailablePort = () => server.listen(0, '127.0.0.1', () => {
       const address = server.address()
+      if (fetchBlockedPorts.has(address.port)) {
+        server.close(listenOnAvailablePort)
+        return
+      }
+
       resolve(`http://${address.address}:${address.port}`)
     })
+
+    listenOnAvailablePort()
   })
 }
 

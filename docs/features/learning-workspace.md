@@ -2,110 +2,105 @@
 
 ## 목적
 
-Learning Workspace IDE는 사용자가 실제 학습을 진행하는 화면입니다. 커리큘럼, AI 튜터 설명, 코드 에디터, 실행 결과를 한 화면에서 연결해 학습 흐름이 끊기지 않게 합니다.
+Learning Workspace는 Today Hub에서 선택한 커리큘럼 미션을 실제 학습 세션으로 이어주는 화면입니다. 현재 미션, 단계, AI 튜터 안내, Monaco Editor, 실행 결과, 활동 기록을 한 화면에서 연결합니다.
 
-이 화면은 VS Code 같은 개발 도구의 구조를 참고하되, 파일 탐색기보다 현재 학습 단계와 미션을 더 중요하게 보여줍니다.
+Workspace는 모든 커리큘럼을 같은 Preview 화면에 억지로 넣지 않습니다. React, Linux, Docker, Python 학습은 서로 다른 실행 환경과 결과 패널을 사용합니다.
 
-## 주요 사용자 액션
+## Workspace Mode
 
-- 실행: 현재 에디터 코드를 실행하고 테스트 결과를 확인합니다.
-- 힌트 보기: 실패 원인을 바탕으로 단계별 힌트를 표시합니다.
-- 코드 리뷰 요청: 현재 코드를 AI 튜터에게 리뷰 요청합니다.
-- 다음 단계: 현재 단계를 완료하고 다음 커리큘럼 단계로 이동합니다.
-- 학습 목록: Today Learning Hub 또는 전체 학습 목록으로 돌아갑니다.
-- 미션 진입: Today Learning Hub에서 전달한 `mission` 쿼리에 맞는 학습 미션을 표시합니다.
+```ts
+type WorkspaceMode = 'react' | 'linux' | 'docker' | 'python'
+```
 
-## 화면 구성
+`GeneratedCurriculumPlan.todayMission.mode`는 optional 필드입니다. 새 커리큘럼은 가능한 경우 mode를 포함하고, 기존 저장 데이터처럼 mode가 없으면 Workspace가 `fileName`, `focusRole`, `goal`로 fallback 판별합니다.
 
-- Top Bar: 현재 트랙, 현재 단계, 오늘 진행률, 학습 목록, 오늘 학습
-- Curriculum Panel: 오늘 커리큘럼 단계, 현재 미션, 통과 조건
-- AI Tutor Panel: 공식 문서 기반 설명, 현재 미션, 힌트, 코드 리뷰, 참고 문서
-- Code Editor Panel: 파일 탭, 언어 표시, 실행 버튼, 코드 에디터
-- Test Results Panel: 실행 상태, 테스트 결과, 실패 이유, 힌트, 리뷰, 재실행 액션
+Fallback 규칙:
 
-## 표시 데이터
+- `Dockerfile` 또는 `*.dockerfile` -> `docker`
+- `*.sh` 또는 DevOps/Linux 목표 -> `linux`
+- `*.py` 또는 Python/FastAPI 목표 -> `python`
+- `*.js`, `*.jsx`, `*.tsx` 또는 그 외 기본값 -> `react`
 
-- selectedMissionId: URL의 `mission` 쿼리 값입니다. 값이 없으면 `generated-first-mission`을 사용합니다.
-- currentTrack: 트랙 id, 제목, 진행률, 남은 예상 시간
-- curriculumSteps: 커리큘럼 단계 목록과 각 단계 상태
-- activeStep: 현재 단계 제목, 미션, 통과 조건
-- editorSession: 파일명, 언어, 현재 코드
-- testResult: 실행 상태, 통과 개수, 전체 테스트 개수, 결과 메시지
-- sourceReferences: 공식 문서 제목과 원본 URL
+## mode별 화면 동작
 
-## 기본 상태 예시
+| mode | 기본 파일 | 오른쪽 패널 | 실행 언어 | v1 실행 방식 |
+| --- | --- | --- | --- | --- |
+| `react` | `App.jsx` / `app.tsx` | `Preview` | `jsx` 또는 `javascript` | JSX 구조를 학습용 preview 카드로 표시 |
+| `linux` | `ops-checklist.sh` | `Terminal` | `shell` | 주요 shell 명령을 mock terminal log로 표시 |
+| `docker` | `Dockerfile` | `Build Log` | `dockerfile` | Dockerfile 필수 instruction을 mock build log로 검증 |
+| `python` | `main.py` / `solution.py` | `Output` | `python` | print/FastAPI/function 신호를 mock output으로 표시 |
 
-- currentTrack: React 입문, 62%, 35분 남음
-- curriculumSteps:
-  - 컴포넌트 구조: 완료
-  - props 전달: 완료
-  - state와 이벤트: 현재
-  - 테스트 실행: 대기
-  - 코드 리뷰: 대기
-- activeStep:
-  - 제목: Counter 컴포넌트 실습
-  - 미션: 버튼을 클릭할 때마다 count가 1씩 증가하도록 구현합니다.
-  - 통과 조건: 숫자 표시, 클릭마다 1 증가, 테스트 3개 통과
-- editorSession:
-  - 파일명: Counter.jsx
-  - 언어: jsx
-  - 코드: React useState 기반 Counter 스타터 코드
-- testResult:
-  - 상태: failed
-  - 결과: 2/3 통과
-  - 메시지: 클릭 이벤트는 연결되었지만 state 업데이트가 누락되었습니다.
-- sourceReferences:
-  - React Docs: State: A Component Memory
-  - React Docs: Responding to Events
+React가 아닌 mode에서는 “화면 미리보기 없음”을 보여주지 않습니다. 실행 전에는 각 mode에 맞는 대기 문구를 보여주고, 실행 후에는 Console 영역에 로그를 표시합니다.
 
-## 실행 결과 상태
+## 데이터 계약
 
-- idle: 아직 실행하지 않았습니다. CTA는 실행입니다.
-- running: 실행 중입니다. 실행 버튼은 비활성화하고 진행 상태를 표시합니다.
-- passed: 모든 테스트를 통과했습니다. 코드 리뷰 요청과 다음 단계를 강조합니다.
-- failed: 일부 테스트가 실패했습니다. 실패 이유와 힌트 보기, 다시 실행을 표시합니다.
-- timeout: 실행 제한 시간을 초과했습니다. timeout 5초 기준을 안내하고 코드 구조를 확인하게 합니다.
+Workspace가 사용하는 핵심 contract는 `GeneratedCurriculumPlan`입니다.
 
-## 미션 선택 규칙
+```ts
+type GeneratedCurriculumPlan = {
+  id: string
+  goal: string
+  title: string
+  summary: string
+  estimatedDuration: string
+  focusRole: string
+  todayMission: {
+    title: string
+    detail: string
+    durationMinutes: number
+    fileName: string
+    mode?: WorkspaceMode
+  }
+  steps: GeneratedCurriculumStep[]
+  sources: CurriculumSource[]
+}
+```
 
-- `/workspace`처럼 `mission` 쿼리가 없으면 `generated-first-mission`을 기본 미션으로 사용합니다.
-- `generated-first-mission`은 현재 프로필 목표로 생성된 커리큘럼의 오늘 미션을 표시합니다.
-- 그 외 `mission` 값은 `todayQueue`의 item id와 매칭해 큐 기반 미션으로 표시합니다.
-- 매칭되는 큐 항목이 없으면 첫 번째 `todayQueue` 항목을 fallback으로 사용합니다.
-- `ai-review`는 복습/코드 리뷰 성격의 선택 미션으로 표시합니다.
+## 코드 실행 API
 
-## AI 튜터 패널 규칙
+```http
+POST /api/code/run
+Content-Type: application/json
+```
 
-- 개념 설명은 현재 단계와 직접 관련된 내용만 먼저 보여줍니다.
-- 공식 문서 출처가 있는 경우 참고 문서를 하단에 표시합니다.
-- 실패 상태에서는 정답을 바로 보여주지 않고 접근 방향, 필요한 개념, 코드 구조 순서로 힌트를 제공합니다.
-- 코드 리뷰는 통과 여부와 별개로 가독성, 간결성, 권장 사용 방식 중심으로 제공합니다.
+Request:
 
-## 코드 에디터 규칙
+```ts
+type CodeRunRequest = {
+  code: string
+  language: 'javascript' | 'jsx' | 'shell' | 'dockerfile' | 'python' | string
+}
+```
 
-- MVP 구현 전에는 Monaco Editor 대신 정적 코드 프리뷰 또는 textarea로 시작할 수 있습니다.
-- Monaco Editor를 붙일 때도 editorSession 데이터 구조는 유지합니다.
-- 채팅의 코드 블록을 에디터로 보내거나 에디터 코드를 튜터에게 인용하는 기능은 후속 단계로 둡니다.
+Response:
 
-## 구현 우선순위
+```ts
+type CodeRunResult = {
+  success: boolean
+  logs: string[]
+  error?: string
+  result?: string | null
+}
+```
 
-1. 정적 mock 데이터 기반 워크스페이스 레이아웃을 구현합니다.
-2. Today Hub의 이어서 학습하기, 학습 큐, 복습 시작에서 전달한 `mission` 쿼리로 현재 미션을 선택합니다.
-3. 실행 버튼은 우선 mock 상태 전환으로 idle, running, failed, passed를 보여줍니다.
-4. 실제 코드 실행, Judge Service, AI 코드 리뷰는 후속 Electron/Main Process 단계에서 연결합니다.
-## 테마 기준
+구현 기준:
 
-- 라이트모드와 다크모드를 모두 지원합니다.
-- 에디터 영역은 두 테마 모두 어두운 코드 표면을 기본으로 유지합니다.
-- 다크모드에서는 앱 배경을 순수 검정 대신 네이비/차콜 계열로 두고, 패널 구분은 border와 surface 차이로 처리합니다.
-- Workday 이미지의 밝은 시안과 딥블루는 포커스, 실행 버튼, 진행률, 현재 단계 표시에 사용합니다.
-- 오렌지 계열은 성공/완료 또는 친근한 안내에 제한적으로 사용합니다.
-## Mock 진행 상태 저장
+- React 화면은 `src/features/learning-workspace/api/codeRunnerClient.ts`를 통해 API를 호출합니다.
+- Express route handler는 `backend/http/codeRunRoutes.mjs`에 둡니다.
+- 실행 로직은 `backend/modules/code-runner/codeRunner.mjs`에 둡니다.
+- v1 runner는 로컬 학습 피드백용 mock 실행기입니다. 보안 격리, 실제 파일 시스템, Docker daemon, Python process 실행은 Judge Service 단계에서 강화합니다.
 
-Workspace 상호작용은 `icu.learningProgress` localStorage 값을 통해 mission별로 유지합니다.
+## 진행 상태
 
-- 화면 진입 시 저장된 `runState`, `runAttemptCount`, `activeStepOffset`, 최근 활동 로그를 초기값으로 사용합니다.
-- 실행 결과가 실패 또는 통과로 확정되면 mission progress를 저장합니다.
-- 힌트와 코드 리뷰 요청은 최근 활동 로그에 저장합니다.
-- 다음 단계 이동 시 현재 mission의 `activeStepOffset`을 증가시키고, `completedAt`을 기록한 뒤 실행 상태를 idle로 되돌립니다.
-- 실제 코드 실행, Judge Service, AI 리뷰 API는 아직 연결하지 않고 mock 상태 전환만 저장합니다.
+- `idle`: 아직 실행하지 않은 상태입니다.
+- `running`: 실행 요청이 진행 중입니다.
+- `failed`: 실행 오류 또는 검증 실패 상태입니다.
+- `passed`: 실행이 성공한 상태입니다.
+
+## 후속 범위
+
+- 실제 격리 실행을 담당하는 Judge Service
+- AI 코드 리뷰 API
+- RAG 기반 튜터 응답 생성
+- 사용자별 DB 저장 강화
+- Electron IPC 연결과 desktop packaging
