@@ -260,8 +260,22 @@ test('reopens confirmed Assignment history after a same-root Server restart with
   expect(reopened.history.statePatches).toEqual(
     expect.arrayContaining([...confirmed.history.statePatches]),
   )
+  expect(reopened.history.statePatches).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ status: 'interrupted', applyOutcome: null }),
+    ]),
+  )
   expect(reopened.history.modelingRuns).toEqual(
     expect.arrayContaining([...confirmed.history.modelingRuns]),
+  )
+  expect(reopened.history.modelingRuns).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        status: 'unknown',
+        validationOutcome: 'unknown',
+        recovery: { outcome: 'unknown', retryable: true },
+      }),
+    ]),
   )
 
   const chat = page.getByRole('complementary', { name: 'AY Chat' })
