@@ -49,17 +49,13 @@
   --shadow-sm: 0 1px 2px rgba(22,21,15,0.05);
   --shadow-md: 0 14px 34px rgba(22,21,15,0.10);
   --shadow-btn: 0 10px 22px rgba(255,122,26,0.38);
-  --shadow-app: 0 40px 80px -20px rgba(255,122,26,0.16), 0 18px 40px rgba(22,21,15,0.10);
 }
 
 *{ margin:0; padding:0; box-sizing:border-box; }
 html,body,#root{ height:100%; }
 
 body{
-  background:
-    radial-gradient(circle at 12% 0%, rgba(255,203,155,.35), transparent 40%),
-    radial-gradient(circle at 100% 30%, rgba(207,224,255,.30), transparent 42%),
-    var(--canvas);
+  background: var(--canvas);
   color: var(--ink);
   font-family: 'Pretendard Variable', Pretendard, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -74,27 +70,15 @@ img{ max-width: 100%; }
 /* ===== 아이콘 ===== */
 .icon{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
 
-/* ===== 배경 장식 ===== */
-.bg-decor{ position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
-.blob{ position: absolute; border-radius: 50%; filter: blur(64px); opacity: .6; }
-.blob-a{ width: 440px; height: 440px; left: -140px; top: -120px; background: radial-gradient(circle, var(--accent-line), transparent 70%); }
-.blob-b{ width: 400px; height: 400px; right: -160px; top: 26%; background: radial-gradient(circle, #CFE0FF, transparent 70%); }
-.blob-c{ width: 360px; height: 360px; left: 6%; bottom: -180px; background: radial-gradient(circle, #FFD8E8, transparent 70%); }
-
-/* ===== APP SHELL ===== */
+/* ===== APP SHELL (전체 화면 — 카드처럼 떠 있던 예전 레이아웃에서 뷰포트 꽉 채우는 형태로 변경) ===== */
 .app{
   position: relative;
   z-index: 1;
-  max-width: 1220px;
-  margin: 32px auto;
-  min-height: calc(100vh - 64px);
+  width: 100%;
+  min-height: 100vh;
   background: var(--surface);
   display: flex;
   flex-direction: column;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-app);
-  overflow: hidden;
   transition: background-color .3s ease, border-color .3s ease;
 }
 
@@ -106,7 +90,9 @@ img{ max-width: 100%; }
   border-bottom: 1px solid var(--border);
   background: var(--surface);
 }
-.logo{ display:flex; align-items:center; flex-shrink: 0; border:none; background:none; padding:0; }
+.logo{ display:flex; align-items:center; flex-shrink: 0; border:none; background:none; padding:0; transition: opacity .15s ease, transform .1s ease; }
+.logo:hover{ opacity: .82; }
+.logo:active{ transform: scale(.97); }
 .logo .brand-text{ display:flex; flex-direction:column; line-height:1; }
 .logo .brand-sub{ font-family: 'Pretendard Variable', sans-serif; font-weight:700; font-size:0.62rem; letter-spacing:0.16em; color: var(--ink-soft); margin-bottom:3px; }
 .logo .brand-main{ display:flex; align-items:center; gap:5px; font-family: 'Cloudsofa', 'Pretendard Variable', sans-serif; font-weight: 400; color: #452615; font-size: 1.26rem; letter-spacing:-0.01em; }
@@ -139,9 +125,10 @@ img{ max-width: 100%; }
   width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
   border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft);
   display: flex; align-items: center; justify-content: center;
-  transition: background .15s ease, border-color .15s ease;
+  transition: background .15s ease, border-color .15s ease, transform .25s ease, color .15s ease;
 }
-.theme-toggle:hover{ background: var(--surface-alt); }
+.theme-toggle:hover{ background: var(--surface-alt); border-color: var(--ink-faint); color: var(--ink); transform: rotate(20deg); }
+.theme-toggle:active{ transform: rotate(20deg) scale(.9); }
 
 .nav{
   display: flex;
@@ -161,11 +148,14 @@ img{ max-width: 100%; }
   color: var(--ink-soft);
   padding: 8px 15px;
   border-radius: 999px;
-  transition: background .15s ease, color .15s ease;
+  transition: background .15s ease, color .15s ease, transform .1s ease;
   text-decoration: none;
   white-space: nowrap;
 }
-.nav-btn .icon{ color: var(--ink-faint); }
+.nav-btn .icon{ color: var(--ink-faint); transition: color .15s ease; }
+.nav-btn:hover:not(.active){ background: var(--surface-alt); color: var(--ink); }
+.nav-btn:hover:not(.active) .icon{ color: var(--ink-soft); }
+.nav-btn:active{ transform: scale(.96); }
 .nav-btn.active{ background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: var(--shadow-sm); }
 .nav-btn.active .icon{ color: var(--accent); }
 
@@ -178,9 +168,10 @@ img{ max-width: 100%; }
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--ink);
-  transition: border-color .15s ease, background .15s ease;
+  transition: border-color .15s ease, background .15s ease, transform .1s ease;
 }
 .btn-outline:hover{ border-color: var(--ink-faint); background: var(--surface-alt); }
+.btn-outline:active{ transform: scale(.97); }
 .btn-solid{
   background: linear-gradient(135deg, #FF9C42, var(--accent) 55%, #FF6300);
   border: 1px solid var(--accent);
@@ -193,23 +184,27 @@ img{ max-width: 100%; }
   transition: filter .15s ease, transform .15s ease, box-shadow .15s ease;
 }
 .btn-solid:hover{ filter: brightness(1.05); transform: translateY(-1px); box-shadow: 0 14px 28px rgba(255,122,26,.42); }
+.btn-solid:active{ transform: translateY(0) scale(.97); filter: brightness(.98); box-shadow: var(--shadow-btn); }
 .btn-solid:disabled{ opacity:.5; cursor:not-allowed; transform:none; filter:none; }
 .user-chip{
   display:flex; align-items:center; gap:8px;
   border:1px solid var(--border); background: var(--surface-alt);
   border-radius: 999px; padding: 5px 8px 5px 6px;
   font-size: 0.82rem; font-weight:700; color: var(--ink);
-  transition: border-color .15s ease;
+  transition: border-color .15s ease, background .15s ease, transform .1s ease;
 }
-.user-chip:hover{ border-color: var(--ink-faint); }
+.user-chip:hover{ border-color: var(--ink-faint); background: var(--surface); }
+.user-chip:active{ transform: scale(.97); }
 .user-chip .avatar{ width:24px; height:24px; border-radius:50%; background: var(--accent-soft); }
 .user-chip .avatar img{ width:100%; height:100%; border-radius:50%; }
 
 /* ===== MAIN AREA ===== */
-main{ flex: 1; position: relative; }
+/* main 자체를 flex column으로 만들어서, 화면(screen-map 등)이 flex:1로 안의 남은 높이를
+   그대로 이어받게 한다 — height:100%는 main이 block이라 percentage가 정의되지 않아 동작하지 않았음. */
+main{ flex: 1; position: relative; display: flex; flex-direction: column; }
 
 /* --- 지도 화면 --- */
-.screen-map{ display: flex; height: 580px; }
+.screen-map{ display: flex; flex: 1; min-height: 0; }
 .map-canvas{
   flex: 1;
   position: relative;
@@ -255,9 +250,10 @@ main{ flex: 1; position: relative; }
   flex-shrink: 0;
   border: 1px solid var(--border); background: var(--surface-alt); color: var(--ink);
   border-radius: 999px; padding: 6px 12px; font-size: 0.74rem; font-weight: 700;
-  transition: border-color .15s ease, background .15s ease;
+  transition: border-color .15s ease, background .15s ease, transform .1s ease;
 }
 .location-btn:hover{ border-color: var(--ink-faint); background: var(--bg); }
+.location-btn:active:not(:disabled){ transform: scale(.95); }
 .location-btn:disabled{ opacity: .6; cursor: not-allowed; }
 
 /* 네이버지도 마커 컨텐츠(NaverMapCanvas). 위치는 SDK가 anchor 기준으로 잡아주므로 position/transform 없이
@@ -397,6 +393,14 @@ main{ flex: 1; position: relative; }
   background: var(--surface-alt);
 }
 .selection-card-head{ display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.selection-card-title{ display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.selection-card-title .thumb{
+  width: 40px; height: 40px; border-radius: 8px; flex-shrink: 0; overflow: hidden;
+  background: linear-gradient(135deg, var(--accent-soft), var(--accent-line));
+}
+.selection-card-title .thumb img{ width: 100%; height: 100%; object-fit: cover; display: block; }
+.selection-card-distance{ display: block; font-size: 0.72rem; color: var(--ink-faint); margin-top: 2px; }
+.selection-card-actions{ display: flex; gap: 4px; flex-shrink: 0; }
 .selection-card h4{ font-size: 0.92rem; font-weight: 800; letter-spacing:-0.01em; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .selection-card .menu{ font-size: 0.78rem; color: var(--ink-soft); }
 .selection-card .remove-btn{
@@ -424,6 +428,18 @@ main{ flex: 1; position: relative; }
 .heart-btn:hover{ transform: scale(1.08); }
 .heart-btn.active{ background: var(--rank3-soft); color: var(--rank3); }
 .heart-btn.active .icon{ fill: var(--rank3); }
+
+/* "가봤어요" 토글 — 찜(heart-btn)과 같은 형태, 색만 다르게(초록=완료) */
+.visited-btn{
+  border: none; background: var(--surface); flex-shrink: 0;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-faint);
+  transition: background .15s ease, color .15s ease, transform .15s ease;
+}
+.visited-btn .icon{ width: 15px; height: 15px; }
+.visited-btn:hover{ transform: scale(1.08); }
+.visited-btn.active{ background: #E3F3EC; color: #3FA07D; }
 
 .review-list{ margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
 .review-item{
@@ -453,7 +469,8 @@ main{ flex: 1; position: relative; }
   transition: opacity 0.15s ease, transform .15s ease;
 }
 .tray.show{ opacity: 1; pointer-events: auto; transform: translateY(0); }
-.tray.show:hover{ transform: translateY(-1px); }
+.tray.show:hover{ transform: translateY(-1px); box-shadow: 0 18px 36px rgba(22,21,15,.22); }
+.tray.show:active:not(:disabled){ transform: translateY(0) scale(.97); }
 .tray:disabled{ opacity: 0.45; cursor: not-allowed; }
 .tray .count{ font-family: 'JetBrains Mono', monospace; font-weight:700; color: var(--accent); }
 
@@ -495,7 +512,8 @@ main{ flex: 1; position: relative; }
 }
 .list-card:hover{ box-shadow: var(--shadow-sm); border-color: var(--ink-faint); transform: translateY(-1px); }
 .list-card.dim{ opacity: .35; }
-.list-card .thumb{ width: 46px; height: 46px; border-radius: 10px; background: linear-gradient(135deg, var(--accent-soft), var(--accent-line)); flex-shrink: 0; }
+.list-card .thumb{ width: 46px; height: 46px; border-radius: 10px; background: linear-gradient(135deg, var(--accent-soft), var(--accent-line)); flex-shrink: 0; overflow: hidden; }
+.list-card .thumb img{ width: 100%; height: 100%; object-fit: cover; display: block; }
 .list-card .info{ flex: 1; min-width: 0; }
 .list-card .name{ font-weight: 700; font-size: 0.93rem; letter-spacing:-0.01em; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .list-card .menu{ font-size: 0.78rem; color: var(--ink-soft); margin-bottom: 10px; }
@@ -551,7 +569,21 @@ main{ flex: 1; position: relative; }
     var(--bg);
 }
 .route-map-center svg.lines{ position: absolute; inset: 0; width: 100%; height: 100%; }
-.route-map-center .pin{ transform: translate(-50%, -50%); }
+.route-map-center svg.lines line{
+  stroke-dasharray: 1; stroke-dashoffset: 1;
+  animation: route-line-draw .35s ease forwards;
+}
+@keyframes route-line-draw{
+  to{ stroke-dashoffset: 0; }
+}
+.route-map-center .pin{
+  transform: translate(-50%, -50%);
+  animation: route-pin-pop .3s ease backwards;
+}
+@keyframes route-pin-pop{
+  from{ transform: translate(-50%, -50%) scale(.3); opacity: 0; }
+  to{ transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
 .route-map-center .pin .dot{ width: 24px; height: 24px; border-radius: 50%; transform: none; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:0.66rem; font-weight:700; color:#fff; }
 
 .route-selection{ width: 230px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
@@ -757,20 +789,12 @@ main{ flex: 1; position: relative; }
   --accent-line: #5A3F22;
   --accent-dark-text: #FFC98A;
 }
-:root[data-theme="dark"] body{
-  background:
-    radial-gradient(circle at 12% 0%, rgba(255,150,60,.14), transparent 40%),
-    radial-gradient(circle at 100% 30%, rgba(90,130,255,.12), transparent 42%),
-    var(--canvas);
-}
-:root[data-theme="dark"] .blob{ opacity: .35; }
 body{ transition: background-color .3s ease; }
 
 @media (max-width: 860px){
-  .app{ margin: 0; min-height: 100vh; border-radius: 0; border: none; }
   .topbar{ flex-wrap: wrap; }
   .search{ order: 3; max-width: none; flex-basis: 100%; }
-  .screen-map{ flex-direction: column; height: auto; }
+  .screen-map{ flex: 0 0 auto; flex-direction: column; }
   .map-canvas{ height: 380px; }
   .detail-panel{ width: auto; border-left: none; border-top: 1px solid var(--border); }
 }

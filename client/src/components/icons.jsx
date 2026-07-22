@@ -108,3 +108,10 @@ export const SendIcon = (props) => (
     <polygon points="22 2 15 22 11 13 2 9 22 2" />
   </svg>
 );
+
+export const CheckCircleIcon = (props) => (
+  <svg {...base} {...props}>
+    <circle cx="12" cy="12" r="9" />
+    <polyline points="8 12.5 10.5 15 16 9" />
+  </svg>
+);
