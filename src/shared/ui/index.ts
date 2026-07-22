@@ -23,8 +23,14 @@ export type {
   StatusMessageProps,
   StatusMessageVariant,
 } from './status-message';
-export { SearchField, TextArea, TextField } from './text-field';
+export {
+  ClearableTextField,
+  SearchField,
+  TextArea,
+  TextField,
+} from './text-field';
 export type {
+  ClearableTextFieldProps,
   SearchFieldProps,
   TextAreaProps,
   TextFieldProps,

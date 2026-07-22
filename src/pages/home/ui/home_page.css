@@ -6,8 +6,10 @@
 .home-page__hero {
   display: grid;
   width: min(820px, 100%);
-  justify-items: start;
+  margin-inline: auto;
+  justify-items: center;
   gap: var(--spacing-4);
+  text-align: center;
 }
 
 .home-page__kicker {
@@ -38,6 +40,7 @@
   width: 100%;
   gap: var(--spacing-2);
   margin-top: var(--spacing-2);
+  text-align: left;
 }
 
 .home-page__search label {
@@ -59,9 +62,14 @@ button.home-page__search-action {
 }
 
 .home-page__suggestions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--spacing-2);
+}
+
+.home-page__suggestions > .choice-chip {
+  width: 100%;
 }
 
 .home-page__results {
@@ -106,6 +114,12 @@ button.home-page__search-action {
   overflow-wrap: anywhere;
 }
 
+@media (max-width: 1199px) {
+  .home-page__suggestions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 767px) {
   .home-page {
     gap: var(--spacing-8);
@@ -118,6 +132,10 @@ button.home-page__search-action {
   button.home-page__search-action {
     width: 100%;
     min-width: 0;
+  }
+
+  .home-page__suggestions {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .home-page__results-heading {

@@ -7,30 +7,18 @@
 .insight-card {
   display: grid;
   min-width: 0;
-  min-height: 280px;
+  min-height: 240px;
   overflow: hidden;
   border: 1px solid var(--color-ash);
   border-radius: var(--radius-card);
   background: var(--color-canvas);
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: 1fr auto;
   transition: border-color var(--motion-duration-fast)
     var(--motion-easing-standard);
 }
 
 .insight-card:hover {
   border-color: var(--color-fog);
-}
-
-.insight-card__thumbnail {
-  display: grid;
-  min-height: 104px;
-  place-items: center;
-  border-bottom: 1px solid var(--color-ash);
-  background: var(--color-mist);
-  color: var(--color-electric-blue);
-  font-size: var(--typography-section-title-size);
-  font-weight: 700;
-  line-height: var(--typography-section-title-line-height);
 }
 
 .insight-card__body {
@@ -54,14 +42,6 @@
   font-weight: 700;
   line-height: var(--typography-card-title-line-height);
   overflow-wrap: anywhere;
-}
-
-.insight-card__connection-clue {
-  padding-left: var(--spacing-2);
-  border-left: 2px solid var(--color-electric-blue);
-  color: var(--color-graphite);
-  font-size: var(--typography-meta-size);
-  line-height: var(--typography-meta-line-height);
 }
 
 .insight-card__memo {

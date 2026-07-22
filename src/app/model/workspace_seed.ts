@@ -12,10 +12,13 @@ export const CATEGORY_FILTERS: CategoryFilterOption[] = [
 ];
 
 export const SUGGESTED_SITUATIONS: SuggestedSituation[] = [
-  { label: '팀 프로젝트', query: '팀 프로젝트 앱 디자인 참고' },
-  { label: '개발 공부', query: '개발 공부 정리' },
-  { label: 'UI 레퍼런스', query: 'UI 레퍼런스 찾기' },
-  { label: '포트폴리오', query: '취업 포트폴리오 준비' },
-  { label: '과제 자료', query: '과제 자료 정리' },
-  { label: '온보딩 화면', query: '온보딩 화면 만들기' },
+  { label: '과제 참고자료 다시 찾기', query: '과제 참고자료 다시 찾기' },
+  { label: '프로젝트에 쓸 자료 꺼내기', query: '프로젝트에 쓸 자료 꺼내기' },
+  { label: '공모전 아이디어 발전시키기', query: '공모전 아이디어 발전시키기' },
+  {
+    label: '여행·취미 계획 다시 이어가기',
+    query: '여행 취미 계획 다시 이어가기',
+  },
+  { label: '디자인·개발 레퍼런스 찾기', query: '디자인 개발 레퍼런스 찾기' },
+  { label: '저장해둔 영상 골라보기', query: '저장한 영상 골라보기' },
 ];

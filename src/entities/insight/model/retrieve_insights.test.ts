@@ -23,111 +23,11 @@ describe('retrieveInsights', () => {
     const retrieved = retrieveInsights(insights, 'signal');
 
     expect(retrieved).toHaveLength(6);
+    expect(retrieved[0]).not.toHaveProperty('connectionClue');
     expect(retrieved.map(({ insight }) => insight.id)).toEqual(
       sharedSearchIds.slice(0, 6)
     );
     expect(retrieved.every(({ score }) => score > 0)).toBe(true);
-  });
-
-  it('describes a memo connection using a token that actually matched the memo', () => {
-    const [result] = retrieveInsights(
-      [createInsight({ memo: '온보딩 흐름을 다시 설계할 때 참고' })],
-      '온보딩'
-    );
-
-    expect(result?.connectionClue).toBe('메모의 “온보딩” 단서가 겹쳐요.');
-  });
-
-  it('falls back to a title connection when no memo token matched', () => {
-    const [result] = retrieveInsights(
-      [createInsight({ title: 'React 폼 검증', memo: '다른 맥락' })],
-      'react'
-    );
-
-    expect(result?.connectionClue).toBe('제목에서 “React” 단서를 찾았어요.');
-  });
-
-  it('uses the matched category value when memo and title did not match', () => {
-    const [result] = retrieveInsights(
-      [createInsight({ category: '디자인 시스템' })],
-      '디자인'
-    );
-
-    expect(result?.connectionClue).toBe(
-      '“디자인 시스템” 카테고리에 저장했어요.'
-    );
-  });
-
-  it('uses the matched domain when only the source fields matched', () => {
-    const [result] = retrieveInsights(
-      [createInsight({ domain: 'react.dev' })],
-      'react'
-    );
-
-    expect(result?.connectionClue).toBe('react.dev에서 저장한 자료예요.');
-  });
-
-  it('uses a restrained URL clue instead of inventing another matched field', () => {
-    const [result] = retrieveInsights(
-      [
-        createInsight({
-          originalUrl: 'https://example.com/private-path-marker',
-        }),
-      ],
-      'private path'
-    );
-
-    expect(result?.matchedFields).toEqual(['originalUrl']);
-    expect(result?.connectionClue).toBe('URL의 “private” 단서를 찾았어요.');
-  });
-
-  it('uses the original field token in a clue after NFKC compatibility matching', () => {
-    const [result] = retrieveInsights(
-      [createInsight({ memo: 'Ｒｅａｃｔ 상태 관리 회고' })],
-      'react'
-    );
-
-    expect(result?.matchedTokens).toEqual(['react']);
-    expect(result?.connectionClue).toBe('메모의 “Ｒｅａｃｔ” 단서가 겹쳐요.');
-  });
-
-  it('falls back to the normalized matched token when an NFKC-only source token cannot be recovered', () => {
-    const [result] = retrieveInsights(
-      [
-        createInsight({
-          title: '자료',
-          memo: 'Ⓐ 상태',
-          domain: 'site.test',
-          originalUrl: 'https://site.test/x',
-          normalizedUrl: 'https://site.test/x',
-        }),
-      ],
-      'a'
-    );
-
-    expect(result?.matchedFields).toEqual(['memo']);
-    expect(result?.matchedTokens).toEqual(['a']);
-    expect(result?.connectionClue).toBe('메모의 “a” 단서가 겹쳐요.');
-  });
-
-  it('prioritizes personal context and avoids recommendation or classification claims', () => {
-    const [result] = retrieveInsights(
-      [
-        createInsight({
-          memo: 'signal 메모',
-          title: 'signal 제목',
-          category: 'signal 카테고리',
-          domain: 'signal.example',
-          originalUrl: 'https://signal.example/signal',
-        }),
-      ],
-      'signal'
-    );
-
-    expect(result?.connectionClue).toBe('메모의 “signal” 단서가 겹쳐요.');
-    expect(result?.connectionClue).not.toMatch(
-      /AI|완벽|최적|자동 분류|기획 참고|디자인 참고|구현 참고/
-    );
   });
 
   it('keeps pre-recorded targets in the Top 5 for ten representative situations', () => {
