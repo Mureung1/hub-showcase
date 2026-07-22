@@ -151,32 +151,19 @@ const createApplication = async (menteeId, { mentorIds, questionnaire } = {}) =>
   await validateMentorIds(mentorIds);
   const validatedQuestionnaire = validateQuestionnaire(questionnaire);
 
-  const { data: applicationRow, error: insertError } = await supabase
-    .from('applications')
-    .insert({
-      mentee_id: menteeId,
-      introduction: validatedQuestionnaire.introduction,
-      concern: validatedQuestionnaire.concern,
-      goal: validatedQuestionnaire.goal,
-      preferred_time: validatedQuestionnaire.preferredTime,
-    })
-    .select('*')
-    .single();
-
-  if (insertError) throw insertError;
-
-  const { error: linksError } = await supabase.from('application_mentors').insert(
-    mentorIds.map((mentorId) => ({
-      application_id: applicationRow.id,
-      mentor_id: mentorId,
-      status: 'pending',
-    })),
+  const { data: applicationRow, error } = await supabase.rpc(
+    'create_application_with_mentors',
+    {
+      p_mentee_id: menteeId,
+      p_introduction: validatedQuestionnaire.introduction,
+      p_concern: validatedQuestionnaire.concern,
+      p_goal: validatedQuestionnaire.goal,
+      p_preferred_time: validatedQuestionnaire.preferredTime,
+      p_mentor_ids: mentorIds,
+    },
   );
 
-  if (linksError) {
-    await supabase.from('applications').delete().eq('id', applicationRow.id);
-    throw linksError;
-  }
+  if (error) throw error;
 
   return {
     id: applicationRow.id,
