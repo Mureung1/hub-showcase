@@ -1,3 +1,5 @@
+import Character from "./Character";
+
 // task: 방금 끝낸 할 일 텍스트
 export default function CompleteScreen({ task }) {
   return (
@@ -11,6 +13,8 @@ export default function CompleteScreen({ task }) {
         padding: "24px",
         gap: "16px",
         textAlign: "center",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
       <div
@@ -29,6 +33,7 @@ export default function CompleteScreen({ task }) {
       </div>
       <p style={{ color: "var(--ink-soft)" }}>{task}</p>
       <h1 style={{ fontSize: "24px" }}>오늘도 해냈다</h1>
+      <Character />
     </main>
   );
 }

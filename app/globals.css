@@ -16,6 +16,8 @@
   --sky-line: #C4D9E1;
   --sky-ink: #5C7986;
   --peach: #F5E1CE;
+  --font-title: "Gowun Batang", serif;
+  --font-body: "IBM Plex Sans KR", sans-serif;
 }
 
 html {
