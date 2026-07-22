@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "title": "동네 가게 운영 도우미",
+  "summary": "소상공인이 매장 운영 정보를 한곳에서 확인하고 정리하는 서비스입니다.",
+  "category": "소상공인 운영",
+  "problem": "매출, 재고, 공지 정보를 여러 도구에서 따로 확인해야 해서 매장 운영 현황을 한눈에 파악하기 어렵습니다.",
+  "targetUsers": [
+    "매장을 운영하는 소상공인",
+    "매장 운영을 돕는 직원"
+  ],
+  "features": [
+    "오늘의 매출과 주문 현황을 요약해서 보여줍니다.",
+    "재고가 부족한 상품을 알려줍니다.",
+    "매장 공지를 작성하고 관리합니다."
+  ],
+  "featureTags": [
+    "매출 관리",
+    "재고 알림",
+    "공지 관리"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Express",
+    "SQLite"
+  ],
+  "techHighlights": [
+    "Express API로 매출과 재고 데이터를 제공합니다.",
+    "SQLite를 사용해 매장별 운영 정보를 저장합니다.",
+    "Agent가 사용자의 질문을 운영 데이터 조회 요청으로 바꿉니다."
+  ],
+  "githubUser": "student-example",
+  "demoUrl": "https://example.com/store-helper",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/dashboard.webp",
+    "screenshots/inventory.webp"
+  ],
+  "agent": {
+    "summary": "매장 운영자가 자연어로 매출과 재고를 확인할 수 있도록 구성했습니다.",
+    "agents": [
+      "운영 현황 안내 Agent",
+      "재고 확인 Agent"
+    ],
+    "skills": [
+      "매출 조회 Skill",
+      "재고 조회 Skill"
+    ],
+    "workflows": [
+      "질문 분석 → 데이터 조회 → 결과 요약"
+    ]
+  }
+}
