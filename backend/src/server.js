@@ -6,6 +6,7 @@ import storeRoutes from './routes/store.js';
 import trendsRoutes from './routes/trends.js';
 import uploadRoutes from './routes/upload.js';
 import publishRoutes from './routes/publish.js';
+import draftsRoutes from './routes/drafts.js';
 import generateRoutes from './routes/generate.js';
 
 dotenv.config();
@@ -100,6 +101,7 @@ app.use('/api/store', storeRoutes);
 app.use('/api/trends', trendsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/publish', publishRoutes);
+app.use('/api/drafts', draftsRoutes);
 app.use('/api/generate', generateRoutes);
 
 // Error handling middleware

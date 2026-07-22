@@ -167,6 +167,37 @@ export async function getPublishHistory(storeId) {
   }
 }
 
+export async function saveDraftVideo(videoData) {
+  try {
+    const { video_id, video_url, store_id, hashtags, title } = videoData;
+
+    if (!video_id || !video_url || !store_id) {
+      throw new Error('필수 정보가 부족합니다');
+    }
+
+    const response = await fetch(`${API_BASE}/drafts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        video_id,
+        video_url,
+        store_id,
+        hashtags: hashtags || '',
+        title: title || '생성된 릴스'
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || '보관함 저장에 실패했습니다');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+}
+
 // ===== AI 파이프라인 관련 함수 =====
 
 export async function startGeneration(storeId, uploadedImageUrl, trendHashtag, purpose, mood) {
