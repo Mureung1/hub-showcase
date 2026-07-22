@@ -1,0 +1,14 @@
+{
+  "name": "api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file=.env --watch server.js",
+    "start": "node --env-file=.env server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.7",
+    "express": "^4.21.0"
+  }
+}
