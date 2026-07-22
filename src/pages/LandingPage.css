@@ -99,6 +99,13 @@
   margin-top: 40px;
 }
 
+.landing-disclaimer {
+  max-width: 640px;
+  margin: 0 auto 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
 @media (max-width: 720px) {
   .hero h1 {
     font-size: 32px;

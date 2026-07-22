@@ -2,7 +2,9 @@
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  min-height: 100%;
+  /* 뷰포트 높이를 확정해 스티키 푸터 성립(부모 min-height:100% 체인이 끊겨 있어 dvh로 고정).
+     짧은 페이지선 푸터가 하단에, 긴 페이지선 콘텐츠 아래로 흐른다. */
+  min-height: 100dvh;
   text-align: left;
 }
 
@@ -136,7 +138,7 @@
 .app-footer__inner {
   max-width: 1152px;
   margin: 0 auto;
-  padding: 16px 20px;
+  padding: 10px 20px;
   box-sizing: border-box;
   font-size: 12px;
   line-height: 150%;

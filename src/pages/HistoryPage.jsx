@@ -2,16 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { EMOTION_LABEL } from '../lib/tradeMeta.js'
+import { formatPrice } from '../lib/format.js'
+import { resolveSymbolNames } from '../lib/symbols.js'
 import Icon from '../components/Icon.jsx'
 import './HistoryPage.css'
 
 const SIDE_LABEL = { buy: '매수', sell: '매도', hold: '관망' }
-
-function formatPrice(price, market) {
-  const value = Number(price)
-  if (!Number.isFinite(value)) return '-'
-  return market === 'US' ? `$${value.toLocaleString('en-US')}` : `${value.toLocaleString('ko-KR')}원`
-}
 
 function formatDateTime(iso) {
   const date = new Date(iso)
@@ -35,6 +31,7 @@ function HistoryPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [loops, setLoops] = useState([])
+  const [nameMap, setNameMap] = useState(new Map())
   const [deletingId, setDeletingId] = useState(null)
 
   const load = useCallback(async () => {
@@ -90,6 +87,12 @@ function HistoryPage() {
 
     setLoops(nextLoops)
     setLoading(false)
+
+    // 종목명 lookup (trades엔 name 컬럼이 없어 symbols 마스터에서 조회)
+    const names = await resolveSymbolNames(
+      trades.map((t) => ({ ticker: t.ticker, market: t.market })),
+    )
+    setNameMap(names)
   }, [])
 
   useEffect(() => {
@@ -116,12 +119,18 @@ function HistoryPage() {
     for (const loop of loops) {
       const key = `${loop.trade.ticker}|${loop.trade.market}`
       if (!map.has(key)) {
-        map.set(key, { key, ticker: loop.trade.ticker, market: loop.trade.market, items: [] })
+        map.set(key, {
+          key,
+          ticker: loop.trade.ticker,
+          market: loop.trade.market,
+          name: nameMap.get(key) || loop.trade.ticker,
+          items: [],
+        })
       }
       map.get(key).items.push(loop)
     }
     return [...map.values()]
-  }, [loops])
+  }, [loops, nameMap])
 
   return (
     <section className="history-page">
@@ -148,7 +157,7 @@ function HistoryPage() {
             <div key={group.key} className="history-group">
               <div className="history-group__head">
                 <span className="history-group__name">
-                  {group.ticker} <span className="history-card__market">{group.market}</span>
+                  {group.name} <span className="history-card__market mono">{group.ticker} · {group.market}</span>
                   <span className="history-group__count"> · {group.items.length}건</span>
                 </span>
                 <Link to={`/stock/${group.ticker}`} className="history-group__chart">

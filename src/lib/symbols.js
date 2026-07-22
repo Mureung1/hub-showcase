@@ -28,6 +28,27 @@ export async function searchSymbols(query, limit = 8) {
 }
 
 /**
+ * 여러 종목의 표시명을 한 번에 조회. trades는 name 컬럼이 없어(ticker만 저장) 히스토리에서
+ * 종목명을 보여주려면 symbols 마스터에서 lookup한다.
+ * @param {Array<{ticker:string, market:string}>} items
+ * @returns {Promise<Map<string, string>>} key `${ticker}|${market}` → name
+ */
+export async function resolveSymbolNames(items) {
+  const map = new Map()
+  if (!supabase || !items?.length) return map
+  const tickers = [...new Set(items.map((i) => i.ticker).filter(Boolean))]
+  if (tickers.length === 0) return map
+
+  const { data, error } = await supabase.from('symbols').select('ticker, market, name').in('ticker', tickers)
+  if (error) {
+    console.error('[symbols] 이름 일괄 조회 실패:', error)
+    return map
+  }
+  for (const s of data ?? []) map.set(`${s.ticker}|${s.market}`, s.name)
+  return map
+}
+
+/**
  * 단일 종목 조회(ticker 기준, market 선택). `/stock/:ticker` 진입 시 종목 메타 확정용.
  */
 export async function resolveSymbol(ticker, market) {

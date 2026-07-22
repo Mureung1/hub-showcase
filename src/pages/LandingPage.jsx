@@ -98,6 +98,10 @@ export default function LandingPage() {
       </section>
 
       <footer className="landing-foot caption">
+        <p className="landing-disclaimer">
+          Beacon은 회원님의 매매 기록을 돌아보기 위한 저널링·복기 도구이며, 투자자문·매매 권유
+          서비스가 아닙니다. 모든 투자 판단과 책임은 회원님 본인에게 있습니다.
+        </p>
         Beacon · Naver AI Agent Challenge
       </footer>
     </div>
