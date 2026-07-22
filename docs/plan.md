@@ -83,6 +83,50 @@
 
 ## 5. 웹 서비스 아키텍처 및 데이터 흐름 (Web Service Architecture & Data Flow)
 
+```mermaid
+flowchart TD
+    %% 1. 프론트엔드 레이어 (Top)
+    subgraph Frontend ["Frontend (React)"]
+        Auth[("Supabase Auth\n(JWT Session)")]
+        Store{"Global Store\n(Zustand / Context)"}
+        CW["Curation Workspace"]
+        ML["My Library"]
+
+        Auth -.->|"Auth State"| Store
+        Store --- CW
+        Store --- ML
+    end
+
+    %% 2. 백엔드 레이어 (Middle)
+    subgraph Backend ["Backend (Express.js)"]
+        API_Cur["Agent Orchestrator\n(POST /api/curate)"]
+        API_Lib["Library API\n(CRUD /api/library)"]
+    end
+
+    %% 3. 인프라 및 외부망 레이어 (Bottom)
+    subgraph External ["External Services"]
+        Gemini["Google Gemini\n(AI Agent Brain)"]
+        AcadDB["Academic DBs\n(arXiv, IEEE)"]
+    end
+
+    subgraph Database ["Database"]
+        DB[("saved_papers\n(Composite PK)")]
+    end
+
+    %% 코어 큐레이션 흐름 (Agentic Flow)
+    CW ==>|"1. Context & Query"| API_Cur
+    API_Cur -->|"2. Delegate Task"| Gemini
+    Gemini -.->|"3. Tool Call (Search)"| AcadDB
+    AcadDB -.->|"4. Candidates"| Gemini
+    Gemini -.->|"5. Curate & Summarize"| API_Cur
+    API_Cur -.->|"6. Final Result"| CW
+
+    %% 서재 관리 흐름
+    CW -->|"7. Save"| API_Lib
+    ML -->|"8. View/Delete"| API_Lib
+    API_Lib ==>|"9. Query"| DB
+```
+
 학습 지침의 웹 서비스 3대 부품(FE, BE, DB) 작동 원리에 의거하여, Scholar-Sync AI 서비스의 기술 지도 및 핵심 기능 아키텍처 흐름을 아래와 같이 정의합니다.
 
 ### 5.1. 내 서비스 기술 지도 (Technical Architecture Map)
