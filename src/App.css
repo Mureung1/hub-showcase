@@ -937,6 +937,31 @@ h1 {
   font-weight: 600;
   flex-shrink: 0;
 }
+.job-card-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.bookmark-toggle-btn {
+  background: none;
+  border: none;
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--gray-500);
+  padding: 2px;
+  font-family: inherit;
+  transition: color 0.15s, transform 0.1s;
+}
+.bookmark-toggle-btn:hover {
+  color: var(--accent);
+  transform: scale(1.1);
+}
+.bookmark-toggle-btn.active {
+  color: var(--accent);
+}
 
 .empty-state {
   text-align: center;

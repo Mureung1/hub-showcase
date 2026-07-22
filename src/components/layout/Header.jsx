@@ -115,6 +115,9 @@ function Header() {
           {!authLoading && (
             user ? (
               <>
+                <Link className="nav-link" to="/bookmarks">
+                  북마크
+                </Link>
                 <span className="nav-user-email mono">{user.email}</span>
                 <button type="button" className="nav-link" onClick={() => signOut()}>
                   로그아웃
