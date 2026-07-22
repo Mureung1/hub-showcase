@@ -56,8 +56,24 @@ Vercel 서버리스 경로(`api/index.js`)까지 로컬에서 그대로 재현�
 | `VITE_NAVER_MAP_CLIENT_ID` | 필수 (빌드 시점) | [네이버 클라우드 플랫폼](https://www.ncloud.com) 콘솔 → **AI·Application Service → Maps** → 등록한 애플리케이션의 **Client ID**. 브라우저가 네이버 지도 JS SDK를 직접 로드할 때 쓰는 공개용 키로(`ncpKeyId` 파라미터), `npm run build` 시점에 프론트 번들에 그대로 박힌다(런타임에 서버에서 주입하는 값이 아님). 이 키를 등록한 도메인만 지도가 뜨므로, 배포 도메인을 NCP 콘솔의 해당 애플리케이션 **Web 서비스 URL**에 등록해야 한다. (카카오맵 키 `VITE_KAKAO_JS_KEY`와 관련 코드는 롤백용으로 저장소에 남아있지만 현재 화면은 쓰지 않는다.) |
 | `FOODSAFETY_API_KEY` | 필수 (서버) | [공공데이터포털](https://www.data.go.kr)에서 "식품의약품안전처_전국통합식품영양성분정보(음식)" API를 활용신청하면 발급되는 일반 인증키(Decoding). `/api/fooddb`의 기본 조회(`source=food`, 조리식)에 사용. |
 | `FOODSAFETY_PROC_API_KEY` | 필수 (서버) | 공공데이터포털에서 "식품의약품안전처_전국통합식품영양성분정보(가공식품)" API를 **별도로** 활용신청해 발급받는 인증키. `/api/fooddb`의 가공식품 폴백 조회(`source=process`, 편의점/포장 제품)에 사용. |
-| `VITE_SUPABASE_URL` | 필수 (빌드 시점) | Supabase 프로젝트 대시보드 → **Project Settings → API → Project URL**. 로그인(Google OAuth, 이메일/비밀번호)에 쓰는 Supabase 클라이언트(`src/lib/supabase.js`) 초기화 값으로, `VITE_KAKAO_JS_KEY`와 마찬가지로 프론트 번들에 그대로 박힌다. |
-| `VITE_SUPABASE_ANON_KEY` | 필수 (빌드 시점) | 같은 화면의 **anon public** 키. 브라우저에 노출돼도 되는 공개 키다(실제 접근 제어는 Supabase의 Row Level Security가 담당 — `supabase/schema.sql` 참고). Google OAuth를 쓰려면 Supabase 대시보드 **Authentication → Providers → Google**도 별도로 활성화해야 한다. |
+| `VITE_SUPABASE_URL` | 필수 (빌드 시점) | Supabase 프로젝트 대시보드 → **Project Settings → API → Project URL**. 로그인(아이디/비밀번호)에 쓰는 Supabase 클라이언트(`src/lib/supabase.js`) 초기화 값으로, `VITE_KAKAO_JS_KEY`와 마찬가지로 프론트 번들에 그대로 박힌다. |
+| `VITE_SUPABASE_ANON_KEY` | 필수 (빌드 시점) | 같은 화면의 **anon public** 키. 브라우저에 노출돼도 되는 공개 키다(실제 접근 제어는 Supabase의 Row Level Security가 담당 — `supabase/schema.sql` 참고). |
+
+### ⚠️ Supabase 인증 설정 (아이디/비밀번호 로그인 필수 조건)
+
+로그인은 **아이디 + 비밀번호 한 가지**다(소셜 로그인 없음 — 웹뷰/APK에서 임베디드 OAuth가 막히는
+문제를 원천 제거). 앱은 사용자가 입력한 아이디를 `<아이디>@mealyze.app`이라는 **내부용 합성 이메일**로
+바꿔 Supabase Auth에 넘기므로(`src/lib/authId.js`), 대시보드에서 다음을 맞춰야 한다:
+
+- [ ] **Authentication → Sign In / Providers → Email → Confirm email: OFF** — 필수. 합성 이메일은 실제
+      수신이 불가능한 주소라, 확인 메일이 켜져 있으면 가입이 "메일 확인 대기"에서 멈춘다.
+- [ ] **Authentication → Sign In / Providers → Google: Disable** — 코드에서는 이미 전부 제거했지만,
+      provider가 켜져 있으면 엔드포인트 자체는 살아있다.
+- [ ] (권장) **Minimum password length: 8** — 클라이언트가 이미 강제하는 값과 맞춘다.
+
+기존 구글 계정/데이터 삭제와 위 절차의 백업·검증 SQL은
+[`supabase/migrations/2026-07-22_id-password-auth.sql`](supabase/migrations/2026-07-22_id-password-auth.sql)에
+한 파일로 정리해뒀다(백업 → 삭제 → 검증 순서로 한 블록씩 실행).
 | `NODE_ENV` | Render만 필수 | `production`으로 고정. 이 값일 때(그리고 `VERCEL`이 없을 때)만 `server/proxy.js`가 `dist/`를 정적 서빙하고 SPA 라우팅 폴백을 활성화한다. Vercel은 정적 서빙을 직접 처리하므로 굳이 설정할 필요 없음(설정돼 있어도 무방 — `VERCEL`이 함께 감지되면 무시된다). |
 | `APP_URL` | 선택 | 배포된 서비스의 URL(예: `https://mealyze.onrender.com`, `https://mealyze.vercel.app`). OpenRouter 요청의 `HTTP-Referer` 헤더 값으로 쓰인다. 비워두면 로컬 개발용 값(`http://localhost:5173`)으로 폴백하므로 배포 시 채워두는 걸 권장. |
 | `PORT` | 자동 (Render) | Render가 서비스 실행 시 자동 주입한다. **직접 설정하지 않는다.** 로컬에서는 기본값 8787(`PROXY_PORT`로 override 가능). Vercel은 서버리스 함수라 포트 개념이 없어 무관하다. |

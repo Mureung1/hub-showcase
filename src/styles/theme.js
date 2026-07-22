@@ -39,6 +39,11 @@ export const colors = {
   textSub: '#4E5968',
   muted: '#8B95A1',
 
+  // 로고 워드마크("Mealyze") 전용 잉크색. 로고 심볼(bowl+arrow)의 짙은 청록 끝단과 맞춘 값이라
+  // 심볼 옆에 나란히 놓았을 때 하나의 로고로 읽힌다.
+  // ⚠️ 이 색은 **로고에서만** 쓴다 — 버튼/강조/링크 등 UI 액센트는 이 앱의 원칙대로 그린 하나(primary)뿐이다.
+  brandInk: '#15566B',
+
   border: '#E5E8EB', // 카드에 그림자 대신 얇은 테두리를 쓰고 싶을 때
 
   track: '#F2F4F6',
@@ -152,6 +157,26 @@ export const styles = {
     fontSize: font.size.sm,
     fontWeight: 600,
     cursor: 'pointer',
+  },
+  // 주 버튼과 나란히 놓이는 대등한 선택지용(예: [저장하기] 옆의 [다시 찍기]).
+  // buttonSecondary(회색 필)와 달리 같은 높이·같은 라운드라 한 줄에 두 개를 나란히 둘 때 균형이 맞고,
+  // 초록 테두리 + 흰 배경이라 채워진 주 버튼보다 한 단계 낮은 위계를 유지한다(한 화면에 주 버튼은 하나).
+  buttonOutline: {
+    width: '100%',
+    boxSizing: 'border-box',
+    height: 52,
+    padding: `0 ${spacing.lg}px`,
+    borderRadius: radius.md,
+    border: `1.5px solid ${colors.primary}`,
+    background: colors.surface,
+    color: colors.primary,
+    fontSize: font.size.lg,
+    fontWeight: 700,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
   },
   linkButton: {
     background: 'none',

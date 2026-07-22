@@ -1,9 +1,12 @@
-import Card from './Card.jsx'
-import MealTypeBadge from './MealTypeBadge.jsx'
-import SourceBadge from './SourceBadge.jsx'
+import ProgressBarFill from './ProgressBarFill.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { formatNutrient, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing } from '../styles/theme.js'
+
+// [파일 이름 주의] 원래는 분석 결과를 음식별 카드로 쭉 나열하는 NutritionCard를 기본 export하던
+// 파일이지만, 홈 탭이 "같은 자리에서 카드가 전환되는" 구조로 바뀌며 그 카드는
+// AnalysisResultCard.jsx로 대체돼 제거됐다. 지금 이 파일이 제공하는 것은 아래 NutrientBars 하나뿐이고,
+// 홈 탭 결과 카드와 식단 탭의 "자세한 영양" 아코디언이 함께 쓴다.
 
 // 막대 시각화를 위한 "한 끼 기준" 참고 상한값(진단 RDA가 아님). 이 컴포넌트 전용 표시 스케일이라 로컬로 둔다.
 const BAR_MAX = {
@@ -39,58 +42,11 @@ export function NutrientBars({ nutrients }) {
               </span>
             </div>
             <div style={{ height: 6, background: colors.track, borderRadius: radius.pill, overflow: 'hidden' }}>
-              <div
-                style={{
-                  width: `${percent}%`,
-                  height: '100%',
-                  background: isUnknown ? colors.border : colors.primary,
-                  borderRadius: radius.pill,
-                  transition: 'width 0.3s ease-out',
-                }}
-              />
+              <ProgressBarFill percent={percent} color={isUnknown ? colors.border : colors.primary} />
             </div>
           </div>
         )
       })}
-    </div>
-  )
-}
-
-export default function NutritionCard({ analysis }) {
-  if (!analysis) return null
-
-  return (
-    <div style={{ marginTop: spacing.lg }}>
-      {analysis.items.map((item, i) => (
-        <Card key={i}>
-          <div
-            style={{
-              width: '100%',
-              height: 96,
-              borderRadius: radius.sm,
-              background: colors.bg,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 32,
-              marginBottom: spacing.lg,
-            }}
-          >
-            🍽️
-          </div>
-          <div style={{ marginBottom: spacing.sm, display: 'flex', gap: spacing.xs, flexWrap: 'wrap' }}>
-            <SourceBadge source={item.source} />
-            {item.mealType && <MealTypeBadge mealType={item.mealType} />}
-          </div>
-          <h3 style={{ fontSize: font.size.lg, margin: `0 0 ${spacing.md}px` }}>{item.name}</h3>
-          <NutrientBars nutrients={item.nutrients} />
-        </Card>
-      ))}
-
-      <Card style={{ background: colors.primarySurface, boxShadow: 'none' }}>
-        <h3 style={{ color: colors.primary, margin: `0 0 ${spacing.md}px` }}>합계</h3>
-        <NutrientBars nutrients={analysis.total} />
-      </Card>
     </div>
   )
 }

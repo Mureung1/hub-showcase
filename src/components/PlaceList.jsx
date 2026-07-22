@@ -1,4 +1,3 @@
-import AdCard from './AdCard.jsx'
 import { openExternalLink } from '../lib/externalLink.js'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { formatNutrient, NUTRIENT_LABELS } from '../lib/nutrition.js'
@@ -87,18 +86,8 @@ export default function PlaceList({ places, todayTotal, recommended, deficientRo
   return (
     <div>
       {places.map((place) => {
-        if (place.isAd) {
-          return (
-            <AdCard
-              key={placeIdentity(place)}
-              adId={`restaurant:${place.place_name}`}
-              title={place.place_name}
-              note={lastCategory(place.category_name)}
-              link={place.place_url}
-            />
-          )
-        }
-
+        // (식당 광고 카드 분기는 제거됐다 — PRD v2.0 §6에서 식당 광고가 이번 릴리즈 스코프 아웃됐고,
+        //  검색 결과에는 더 이상 isAd 항목이 섞이지 않는다.)
         const overageKeys = buildOverageKeys(place.expected, todayTotal, recommended)
         const reason = buildReason(place.expected, deficientRows)
 

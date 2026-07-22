@@ -2,6 +2,12 @@
   "appId": "com.mealyze.app",
   "appName": "Mealyze",
   "webDir": "dist",
+  "server": {
+    "url": "https://hub-iota-seven.vercel.app",
+    "cleartext": false,
+    "androidScheme": "https",
+    "allowNavigation": ["hub-iota-seven.vercel.app", "*.supabase.co"]
+  },
   "android": {
     "allowMixedContent": false
   }

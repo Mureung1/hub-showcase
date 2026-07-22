@@ -5,7 +5,7 @@ import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
 import CardSettingsPanel from '../components/CardSettingsPanel.jsx'
 import ChevronIcon from '../components/ChevronIcon.jsx'
-import GuestBackupPanel from '../components/GuestBackupPanel.jsx'
+import DataBackupPanel from '../components/DataBackupPanel.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import StandardComparisonList from '../components/StandardComparisonList.jsx'
 import TagMultiSelect from '../components/TagMultiSelect.jsx'
@@ -377,7 +377,7 @@ export default function Profile() {
       )}
 
       {!isOnboarding && <CardSettingsPanel />}
-      <GuestBackupPanel />
+      <DataBackupPanel />
     </div>
   )
 }

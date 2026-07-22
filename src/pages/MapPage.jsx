@@ -10,7 +10,6 @@ import Spinner from '../components/Spinner.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
 import { getCurrentPosition } from '../lib/geolocation.js'
 import { ALLERGY_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
-import { SPONSORED_RESTAURANTS } from '../lib/adData.js'
 import { geocodeLocation, reverseGeocode } from '../lib/kakao.js'
 import { searchNaverPlaces } from '../lib/naverPlaces.js'
 import { NUTRIENT_LABELS } from '../lib/nutrition.js'
@@ -290,12 +289,9 @@ export default function MapPage() {
     if (results.length === 0) return []
 
     // 4) 각 식당의 대표 메뉴 예상 섭취량(추천 근거) 계산해 부착 — 알레르기가 있으면 대표 메뉴 선정에 반영
-    const withExpectedIntake = await attachExpectedIntake(results, top3Rows, allergyLabels)
-
-    // 5) 스폰서 식당(광고)을 상위 4번째 자리 부근에 끼워 넣는다 — 예상 섭취량 계산(AI 프롬프트) 이후에
-    // 넣어야, 실제 검색 결과가 아닌 광고 항목이 그 프롬프트에 "메뉴 목록"으로 잘못 섞여 들어가지 않는다.
-    const adIndex = Math.min(3, withExpectedIntake.length)
-    return [...withExpectedIntake.slice(0, adIndex), ...SPONSORED_RESTAURANTS, ...withExpectedIntake.slice(adIndex)]
+    // (예전엔 여기서 스폰서 식당 목업을 4번째 자리에 끼워 넣었지만, 식당 광고는 PRD v2.0 §6에서 이번
+    //  릴리즈 스코프 아웃됐다. 광고는 식단 탭의 쿠팡 파트너스 영양제 배너 한 곳으로 통일한다.)
+    return attachExpectedIntake(results, top3Rows, allergyLabels)
   }
 
   async function handleFindNearby() {

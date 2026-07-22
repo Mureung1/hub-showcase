@@ -1,5 +1,5 @@
 // 최소 CSV 인코딩/디코딩 유틸(따옴표/쉼표/줄바꿈 이스케이프까지 처리). 외부 라이브러리 없이 이 정도
-// 규모의 CSV는 충분히 안전하게 다룰 수 있다. csv.js(로그인 계정 레거시 백업)와 guestBackup.js(게스트
+// 규모의 CSV는 충분히 안전하게 다룰 수 있다. csv.js(로그인 계정 레거시 백업)와 dataBackup.js(신체정보+식단 전체
 // 기기 이관)가 공통으로 쓴다.
 
 export function escapeField(value) {

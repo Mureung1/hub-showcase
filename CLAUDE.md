@@ -47,15 +47,25 @@ to pull team-shared env vars instead.
 ### Android app wrapper (Capacitor)
 
 The same web build (`dist/`) is also wrapped as an Android WebView app via Capacitor (`capacitor.config.json`,
-`android/` native project committed, `npm run app:sync`/`app:open`). The web app is unchanged and stays
-the primary target; the app is purely a wrapper. Two things make it work across both: `src/lib/apiBase.js`
-(`API_BASE` = `VITE_API_BASE_URL || ''` — empty on web so `/api` stays same-origin relative, set to the
-deployed backend URL when building the app; prepended in `fetchWithTimeout`) and `src/lib/externalLink.js`
+`android/` native project committed, `npm run app:sync`/`app:sync:config`/`app:open`). The web app is unchanged
+and stays the primary target; the app is purely a wrapper. **`capacitor.config.json` is currently set to
+server-URL mode** — `server.url` points at the deployed site (`hub-iota-seven.vercel.app`), so the app loads
+the live site whole and **a web push auto-updates the app with no APK rebuild**; the bundled `dist/` is then
+unused. `server.allowNavigation` (our domain + `*.supabase.co`) keeps the WebView on known origins — anything
+else Capacitor kicks to the system browser (CapConfig reads `server.allowNavigation`; `BridgeWebViewClient`
+does `bridge.launchIntent` for off-list URLs). To revert to local-bundle mode, delete the `server` block and
+build with `VITE_API_BASE_URL` set. Two things make it work across both modes: `src/lib/apiBase.js`
+(`API_BASE` = `VITE_API_BASE_URL || ''` — empty on web/server-URL so `/api` stays same-origin relative, set to
+the deployed backend URL only for local-bundle builds; prepended in `fetchWithTimeout`) and `src/lib/externalLink.js`
 (`openExternalLink` — opens external links in the system browser on native via `@capacitor/browser`, new
-tab on web; used by ad/map links since WebView blocks `target="_blank"`). Header/tab-bar use
-`env(safe-area-inset-*)`. Full build steps, remote-URL-vs-local-bundle tradeoff, and the known CSV-download
-WebView limitation are in `docs/apk-build-guide.md`. **Capacitor is additive — none of it affects the web
-build** (`@capacitor/*` is inert on web; `Capacitor.isNativePlatform()` is false there).
+tab on web; used by ad/map links since WebView blocks `target="_blank"`). `src/lib/useAndroidBackButton.js`
+(called in `App.jsx`, native-only) makes the hardware back button navigate back on sub-screens and exit at the
+`/analyze` home — being web code, it only takes effect once deployed. Camera (`<input type=file>`) and
+`navigator.geolocation` need **no native code**: Capacitor's default `BridgeWebChromeClient` handles
+`onShowFileChooser`/`onGeolocationPermissionsShowPrompt`/`onPermissionRequest`, so `MainActivity` stays a plain
+`BridgeActivity`. Header/tab-bar use `env(safe-area-inset-*)`. Full build steps, the server-URL-vs-local-bundle
+tradeoff, and the known CSV-download WebView limitation are in `docs/apk-build-guide.md`. **Capacitor is additive
+— none of it affects the web build** (`@capacitor/*` is inert on web; `Capacitor.isNativePlatform()` is false there).
 
 ## Architecture
 
@@ -104,7 +114,23 @@ rollback path — `src/pages/MapPage.jsx` now sources restaurant candidates from
 `category_name`/`place_url`/`x`=lng/`y`=lat), so neither of those needs to know which search backend
 is active.
 
-### Leaderboard and ads (mockup)
+### Ads: Coupang Partners supplements (real data path, placeholder links)
+
+식단(`/meals`) 탭의 "부족한 영양소는?" 가로 캐러셀(`src/components/DeficientNutrientAds.jsx`)이 유일한
+광고 노출 지점이다(결과 화면 `Result.jsx`의 세로형 `AdCard`가 같은 데이터를 재사용). 세 층이 분리돼 있다:
+`src/data/coupangProducts.js`(상품 데이터 — **파트너스 승인 후 이 파일의 값만 교체**하면 되고 로직/화면은
+안 건드린다), `src/utils/adRecommendation.js`(순수 함수 `recommendAdProducts` — 실측 부족 영양소 상위 1~3개
+→ 없으면 폴백 미량영양소 순환. **절대 빈 배열을 반환하지 않아** 배너가 비는 상태가 없다),
+`src/lib/adData.js`(로컬 노출/클릭 집계만). 상품 `nutrient` 키는 앱이 추적하는 5개(`protein`/`fiber`/
+`calories`/`carbs`/`fat` — `NUTRIENT_LABELS`와 동일)와 앱이 추적하지 않는 폴백 전용 미량영양소
+(`vitaminD`/`calcium`/…)가 섞여 있고, `AD_NUTRIENTS`의 `tracked` 플래그가 둘을 구분한다. `sodium`은
+한도형이라 의도적으로 없다. `COUPANG_DISCLOSURE` 문구와 AD 배지는 어떤 상태에서도 렌더링을 생략하면
+안 된다(법정 고지). 추천 로직 검증은 `npm run check:ads`
+(`scripts/check-ad-recommendation.mjs` — 이 저장소엔 테스트 러너가 없어 노드 단언 스크립트로 대신한다).
+식당 광고는 PRD v2.0 §6에서 스코프 아웃돼 관련 목업(`SPONSORED_RESTAURANTS`, `PlaceList`의 `isAd` 분기)이
+제거됐다.
+
+### Leaderboard
 
 MY 탭이 아니라 식단(`/meals`) 탭에 `LeaderboardCard`(`src/components/LeaderboardCard.jsx`)가 있다.
 로그인 계정끼리만 "오늘의 순위"를 비교한다(게스트는 기기에 묶인 임시 식별자뿐이라 비교할 고정 신원이
@@ -113,10 +139,6 @@ MY 탭이 아니라 식단(`/meals`) 탭에 `LeaderboardCard`(`src/components/Le
 schema.sql을 다시 실행해야 실제 Supabase 프로젝트에 반영된다** — 아직 실행 전이면 로그인 사용자에게
 에러가 뜬다. 채점 공식(`src/lib/nutritionScore.js`의 `calcNutritionScore`와 SQL 버전)은 반드시
 동일하게 유지해야 한다. 게스트는 로그인 유도 문구와 함께 자기 자신의 "오늘의 점수"만 본다.
-
-`src/lib/adData.js`(스폰서 식당 1곳 + 부족 영양소별 보충제 매핑)와 `src/components/AdCard.jsx`(AD
-배지 + 제휴 고지 문구)는 실제 광고 네트워크/제휴 링크가 정해지지 않아 전부 목업(`link: '#'`)이다 —
-실제 링크가 정해지면 `adData.js`의 값만 바꾸면 되고 화면 컴포넌트는 손댈 필요가 없다.
 
 ### Core domain flow: photo -> nutrition (`src/pages/Analyze.jsx`)
 
@@ -151,11 +173,24 @@ When touching this flow, prefer extending the keyword tables in `nutrition.js`
 Login is never required. Opening the app always lands directly on `/analyze` regardless of body-info
 profile or login state (`RootRedirect` in `src/router.jsx`) — a missing profile is handled in-place on
 that screen (`Analyze.jsx`'s `SexPromptCard`) rather than by redirecting elsewhere, and every screen
-fully works signed out. Real login (Google OAuth or email/password via Supabase Auth,
-`src/lib/supabase.js`) is an opt-in entry point surfaced in the header and the MY tab
+fully works signed out. Real login is an opt-in entry point surfaced in the header and the MY tab
 (`src/components/Header.jsx`, `src/pages/Profile.jsx`) — not a gate. `src/router.jsx` has no
 login-based redirect at all; its only guard (`LoadGate`) waits for session/profile loading to settle
 and shows a retry card on fetch failure, regardless of login state.
+
+**Auth is ID + password only** (`/login`, `/signup`; Google OAuth was removed in week 3 because
+embedded-WebView OAuth is blocked in the APK). It still runs entirely on Supabase Auth — nothing about
+sessions, JWTs, `auth.uid()`, or RLS changed. `src/lib/authId.js` is the whole seam: it maps a user's
+login id to a synthetic internal email `<id>@mealyze.app` before handing it to
+`supabase.auth.signUp`/`signInWithPassword`, so GoTrue keeps doing the bcrypt hashing and the email
+column's UNIQUE constraint doubles as login-id uniqueness. That domain never receives mail — the
+Supabase project **must have "Confirm email" off**, or signup stalls waiting for a confirmation that
+can't arrive (`supabase/migrations/2026-07-22_id-password-auth.sql` documents the dashboard settings,
+plus the backup/delete/verify SQL for purging the old Google-linked accounts). Nickname and the raw
+login id live in `user_metadata` (`authId.js`'s `displayNameOf` picks nickname > id > email local
+part); the synthetic email is never shown in the UI. `authId.js` also holds the pure validation rules
+and the per-id "5 failures → 1 min" local lockout (a UX-level deterrent in front of Supabase's own
+server-side rate limiting, not a replacement for it).
 
 `src/lib/dataStore.js` is the storage abstraction that makes this possible: `getProfile`/
 `saveProfile`/`getMeals`/`addMeal`/`deleteMeal`/`getMealsByDateRange` each call
@@ -184,6 +219,34 @@ separate legacy policy for pre-Supabase-Auth accounts in more detail.
 `supabase/schema.sql` has the Postgres schema (`profiles`/`meals`, RLS policies scoped to
 `auth.uid()`) for the logged-in-only storage path.
 
+### CSV backup: two formats, one importer, three environments
+
+**There are two export entry points and their formats differ** — MY 탭's full backup
+(`[profile]`/`[meals]` sections, via `dataBackup.js`) and 달력 탭's date-range export (a flat table with
+`recommended_*`/`compliant`, via `csv.js`). A user must never have to remember which button produced a
+file, so **the single importer auto-detects both** (by content, not filename). Every column constant,
+serializer, and parser for both formats lives in **`src/lib/backupFormat.js`** — a pure module with no
+storage/browser dependency — and both exporters import from it, so the two sides cannot drift apart.
+That drift is exactly what caused the "exported file can't be re-imported" bug: the flat format had no
+reachable reader (`csv.js`'s `importCSV` existed but nothing called it; it has since been deleted).
+`npm run check:csv` (`scripts/check-csv-roundtrip.mjs`) guards the regression by importing the *real*
+serializers and parsing their output back — never re-implement the format inside the test.
+
+
+
+MY 탭's export/import (`src/components/DataBackupPanel.jsx` → `src/lib/dataBackup.js`) works for guests
+*and* logged-in accounts — it goes through `dataStore` (`getAllMealsByDate`/`replaceMealsForDates`), so
+it never branches on login state. `src/utils/platform.js`'s `getPlatform()` (`'web' | 'mobile-web' |
+'apk'`) is the single source for platform branching, and `src/lib/fileExport.js`'s `saveTextFile()` is
+the only place that actually writes a file: browser blob download on web, `@capacitor/filesystem` →
+public `Documents` (falling back to app cache) + `@capacitor/share` on native, always with a UTF-8 BOM
+so Excel doesn't mangle Korean. Import is deliberately two-phase — `parseBackupCSV` (pure, writes
+nothing) then `applyBackup` — so the duplicate-date "overwrite / skip" dialog can sit between them;
+row-level parse failures are skipped and counted rather than aborting the file, while a wrong *file*
+(missing section markers / mismatched header) aborts before writing anything. Every outcome surfaces
+as a toast (`src/context/ToastContext.jsx`), because PRD §2 forbids silent failure. Test procedure and
+the 1,000-row sample generator: `docs/csv-crossplatform-test.md`, `scripts/generate-sample-csv.mjs`.
+
 - `src/lib/mealStore.js`: guest mode's live meal storage (via `dataStore.js`, keyed by
   `dataStore.GUEST_ID`) *and* the CSV export/import subsystem's self-contained legacy storage for
   logged-in accounts (via `src/lib/csv.js`) — see that file's header comment for which is which.
@@ -205,6 +268,17 @@ separate legacy policy for pre-Supabase-Auth accounts in more detail.
   font, layout, and shared inline `styles.*` objects like `styles.page`/`styles.card`) — components
   should reference these tokens, not hardcode hex/px values. Interactive elements get
   `className="tds-press"` (defined in `src/index.css`) for the shared press animation.
+- **Motion lives in CSS, not a library.** framer-motion was measured and rejected (+41 kB gzip on a
+  bundle the APK re-downloads on every cold start, since it loads a remote URL). `src/index.css` holds
+  every keyframe; JS only sets `<html data-nav-direction="forward|back|none">`. Three pieces:
+  `src/components/Pressable.jsx` is the *single* press-feedback component (buttons/tabs/cards all route
+  through it — don't hand-roll a scale animation anywhere else), `src/lib/tabs.js` is the tab-order
+  single source (the tab bar and the slide-direction calc must agree), and `src/lib/useTabTransition.js`
+  drives `document.startViewTransition(() => flushSync(() => navigate(…)))` with a CSS-animation
+  fallback. **Only `transform`/`opacity` may be animated** — progress bars use
+  `ProgressBarFill`'s `scaleX`, never `width`; the two remaining `stroke-dashoffset` transitions are
+  deliberate (SVG paint-only, no reflow). `AppShell` also resets `data-nav-direction` on every route
+  change and restores per-tab scroll position. Details: `docs/interaction-guide.md`.
 - **`.claude/commands/toss.md`** (invoked via `/toss`) is a project-specific skill applying Toss
   design-system conventions, with detailed docs under `디자인/docs/`. Note one intentional
   deviation documented in `theme.js`'s header comment: this app uses a single green accent

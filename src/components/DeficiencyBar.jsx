@@ -1,3 +1,4 @@
+import ProgressBarFill from './ProgressBarFill.jsx'
 import { formatNutrient } from '../lib/nutrition.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
@@ -37,15 +38,7 @@ export default function DeficiencyBar({ label, unit, recommended, actual, defici
         </span>
       </div>
       <div style={{ height: 8, background: colors.track, borderRadius: radius.pill, overflow: 'hidden' }}>
-        <div
-          style={{
-            width: `${percent}%`,
-            height: '100%',
-            background: color,
-            borderRadius: radius.pill,
-            transition: 'width 0.3s ease-out',
-          }}
-        />
+        <ProgressBarFill percent={percent} color={color} />
       </div>
     </div>
   )

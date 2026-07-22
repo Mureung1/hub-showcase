@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
+import DeficientNutrientAds from '../components/DeficientNutrientAds.jsx'
 import LeaderboardCard from '../components/LeaderboardCard.jsx'
 import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import NationalComparisonCard from '../components/NationalComparisonCard.jsx'
 import { NutrientBars } from '../components/NutritionCard.jsx'
+import ProgressBarFill from '../components/ProgressBarFill.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
 import Skeleton from '../components/Skeleton.jsx'
@@ -50,15 +52,7 @@ function IntakeBar({ label, unit, actual, recommended, isLimit }) {
         </span>
       </div>
       <div style={{ height: 8, background: colors.track, borderRadius: radius.pill, overflow: 'hidden' }}>
-        <div
-          style={{
-            width: `${percent}%`,
-            height: '100%',
-            background: barColor,
-            borderRadius: radius.pill,
-            transition: 'width 0.3s ease-out, background 0.3s ease-out',
-          }}
-        />
+        <ProgressBarFill percent={percent} color={barColor} />
       </div>
       <p style={{ margin: `${spacing.xs}px 0 0`, fontSize: font.size.xs, fontWeight: 600, color: statusColor }}>{statusText}</p>
     </div>
@@ -296,6 +290,9 @@ export default function MealsPage() {
           </Link>
         </Card>
       )}
+
+      {/* PRD FR-3.1: 식단 요약 카드 "아래"에 놓는다(스크롤 최상단을 광고가 점유하지 않게). */}
+      <DeficientNutrientAds />
 
       <LeaderboardCard />
 

@@ -7,6 +7,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="false"
         android:theme="@style/AppTheme">
 
         <activity
@@ -38,12 +39,20 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 네트워크 연결 상태 확인용(서버 URL 방식이라 인터넷이 필수 — 오프라인 안내 등에 사용) -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <!-- 사진 촬영/선택(음식 사진 분석용 <input type=file accept=image/*>가 웹뷰에서 카메라를 쓸 때 필요) -->
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- 주변 식당 찾기(navigator.geolocation)용 위치 권한 -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- CSV 내보내기(@capacitor/filesystem이 공용 Documents 폴더에 저장)용.
+         안드로이드 10(API 29)부터는 Scoped Storage라 "앱이 만든 파일"에는 이 권한 없이도 쓸 수 있어
+         maxSdkVersion으로 상한을 둔다 — 최신 기기에 불필요한 저장소 권한을 요구하지 않기 위해서다.
+         저장이 막히는 기기에서는 fileExport.js가 앱 캐시 폴더 + 공유 시트로 자동 폴백한다. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
 
     <!-- 카메라가 없는 기기에도 설치될 수 있게 카메라는 필수가 아님으로 선언 -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
