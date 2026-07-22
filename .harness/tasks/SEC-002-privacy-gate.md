@@ -8,7 +8,7 @@ Backlog ID: SEC-002
 Parent Epic: EPIC-07
 Type: security
 Owner: N187_정현우
-Status: ready
+Status: done
 ```
 
 ## 2. Goal
@@ -35,10 +35,10 @@ UI 안내가 아니라 서버가 승인된 anonymized asset만 반환하도록 �
 
 ## 6. Acceptance Criteria
 
-- [ ] pending·rejected asset 다운로드가 차단된다.
-- [ ] approved anonymized asset만 반환된다.
-- [ ] 원본 경로가 공개 응답에 없다.
-- [ ] 상태 전이와 회귀 test가 통과한다.
+- [x] pending·rejected asset 다운로드가 차단된다.
+- [x] approved anonymized asset만 반환된다.
+- [x] 원본 경로가 공개 응답에 없다.
+- [x] 상태 전이와 회귀 test가 통과한다.
 
 ## 7. Verification Plan
 
@@ -54,9 +54,9 @@ git diff --check
 
 ## 8. Documentation Updates
 
-- [ ] `docs/issues/security-hardening-review.md` 상태와 검증 기록을 갱신한다.
-- [ ] `docs/development/tasks.md` 상태를 실제 결과에 맞춘다.
-- [ ] 완료 시 `.harness/runs/` Run Report를 남긴다.
+- [x] `docs/issues/security-hardening-review.md` 상태와 검증 기록을 갱신한다.
+- [x] `docs/development/tasks.md` 상태를 실제 결과에 맞춘다.
+- [x] 완료 시 `.harness/runs/` Run Report를 남긴다.
 
 ## 9. Commit Plan
 
@@ -66,6 +66,7 @@ fix(privacy): enforce server asset gate
 
 ## 10. Self-check
 
-- [ ] 수정 전 안전한 로컬 재현과 수정 후 차단 결과를 기록했다.
-- [ ] 기존 market·score·web 흐름의 회귀 여부를 확인했다.
-- [ ] secret, 내부 경로와 사용자 원본을 노출하지 않았다.
+- [x] 수정 전 안전한 로컬 재현과 수정 후 차단 결과를 기록했다.
+- [x] 기존 market·score·web 흐름의 회귀 여부를 확인했다.
+- [x] secret, 내부 경로와 사용자 원본을 노출하지 않았다.
+- [ ] SEC-001 B단계의 인증·객체 단위 인가가 구현되면 privacy reviewer identity를 연결한다.

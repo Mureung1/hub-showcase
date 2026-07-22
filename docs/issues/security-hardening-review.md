@@ -4,7 +4,7 @@
 최초 점검: 2026-07-13
 적용 범위: LocalTwin web, API, scene worker, Vercel 정적 배포
 
-이 문서는 발견된 보안 문제를 재현하고, 조치 방향을 검토한 뒤 실제 수정과 재검증까지 추적한다. SEC-001 A단계의 제품 Scene route 기본 차단은 검증을 마쳤다. SEC-001 B단계 인증·객체 단위 인가와 SEC-002~008은 아직 계획 상태다.
+이 문서는 발견된 보안 문제를 재현하고, 조치 방향을 검토한 뒤 실제 수정과 재검증까지 추적한다. SEC-001 A단계의 제품 Scene route 기본 차단과 SEC-002 privacy asset gate는 검증을 마쳤다. SEC-001 B단계 인증·객체 단위 인가와 SEC-003~008은 아직 계획 상태다.
 
 ## 1. 안전 원칙
 
@@ -21,7 +21,7 @@
 | ID | 우선순위 | 문제 | 상태 | 완료 조건 |
 | --- | --- | --- | --- | --- |
 | SEC-001 | High | Scene API 인증·객체 단위 인가 없음 | A Verified / B Planned | 기본 제품 route는 비노출이며, 활성 환경에서도 무인증과 다른 사용자 job 접근이 차단된다 |
-| SEC-002 | High | Privacy gate가 서버에서 강제되지 않음 | Planned | 미승인 asset 다운로드가 서버에서 거부된다 |
+| SEC-002 | High | Privacy gate가 서버에서 강제되지 않음 | Fixed | 미승인 asset 다운로드가 서버에서 거부된다 |
 | SEC-003 | High | 업로드·GPU quota와 실행 제한 없음 | Planned | 크기·빈도·동시 실행·재실행 제한을 확인한다 |
 | SEC-004 | Medium | 업로드 검증이 확장자 중심 | Planned | 위장 파일과 처리 한도 초과 media를 거부한다 |
 | SEC-005 | Medium | 공개 API가 worker 내부정보를 반환 | Planned | 공개 응답에서 경로·command·상세 진단을 제거한다 |
@@ -110,7 +110,7 @@ $JobId = "로컬 테스트 job UUID"
 
 ### 쉬운 설명
 
-화면의 경고문은 표지판이고 서버 검사는 자물쇠다. 현재 UI는 익명화 전 공개하지 않는다고 말하지만 서버에는 승인 상태가 없고 `main.py:122-133`은 준비된 asset을 바로 반환한다.
+화면의 경고문은 표지판이고 서버 검사는 자물쇠다. 이제 서버 job은 `pending`, `approved`, `rejected` privacy 상태와 anonymized flag를 저장하며, asset endpoint는 `ready + approved + anonymized`를 모두 만족할 때만 PLY를 반환한다.
 
 ### 안전한 재현
 
@@ -123,7 +123,7 @@ Get-Content "product/data/scenes/jobs/$JobId/job.json" |
 (Invoke-WebRequest "$Api/api/v1/scenes/jobs/$JobId/asset" -SkipHttpErrorCheck).StatusCode
 ```
 
-현재 job에는 승인 필드가 없고 ready asset은 승인 없이 `200`이다. asset이 준비되지 않아 받은 `404`는 privacy gate 검증 결과가 아니다.
+합성 PLY fixture의 pending job은 `404`, 신뢰된 내부 승인 함수로 approved·anonymized 상태가 된 동일 job은 `200`이다. 원본 input은 `input/`, 공개 후보 asset은 `asset/` 경로로 분리되고, job 응답에는 원본 경로가 없다.
 
 ### 조치와 선택 이유
 
@@ -134,10 +134,10 @@ Get-Content "product/data/scenes/jobs/$JobId/job.json" |
 
 상태를 서버 데이터에 남겨야 UI 우회나 직접 API 호출도 차단할 수 있다.
 
-- [ ] privacy 상태 모델 승인
-- [ ] `pending`, `rejected` 다운로드 차단
-- [ ] `approved` anonymized asset만 다운로드
-- [ ] 원본 경로 비노출
+- [x] privacy 상태 모델 저장
+- [x] `pending`, `rejected` 다운로드 차단
+- [x] `approved` anonymized asset만 다운로드
+- [x] 원본 경로 비노출
 - [ ] 원본 보관·삭제 기준 확정
 
 ## 6. SEC-003 — 리소스 고갈과 비용 DoS
