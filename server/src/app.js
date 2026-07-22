@@ -34,7 +34,32 @@ io.on('connection', (socket) => {
     console.log(`🚪 User ${socket.id} joined room: ${roomId}`);
   });
 
-  socket.on('sendMessage', (data) => {
+  socket.on('sendMessage', async (data) => {
+    const dbMsg = {
+      id: data.message.id.toString(),
+      room_id: data.roomId,
+      sender: data.message.sender,
+      text: data.message.text,
+      time: data.message.time,
+      created_at: new Date().toISOString()
+    };
+    
+    if (isMock) {
+      mockDb.messages.push(dbMsg);
+      const chat = mockDb.chats.find(c => c.id === data.roomId);
+      if (chat) {
+        chat.last_message = dbMsg.text;
+        chat.last_time = dbMsg.time;
+      }
+    } else {
+      try {
+        await supabase.from('messages').insert([dbMsg]);
+        await supabase.from('chats').update({ last_message: dbMsg.text, last_time: dbMsg.time }).eq('id', data.roomId);
+      } catch (e) {
+        console.error("DB Save Error:", e.message);
+      }
+    }
+
     socket.to(data.roomId).emit('receiveMessage', data.message);
   });
 
@@ -137,6 +162,72 @@ app.post('/api/posts', async (req, res) => {
 
     if (error) throw error;
     res.status(201).json(data[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/chats - Fetch chat rooms
+app.get('/api/chats', async (req, res) => {
+  if (isMock) {
+    return res.json(mockDb.chats);
+  }
+  try {
+    const { data, error } = await supabase.from('chats').select('*').order('last_time', { ascending: false });
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/chats - Create a chat room
+app.post('/api/chats', async (req, res) => {
+  const { id, postId, postTitle, partnerName, partnerGrade, lastMessage, lastTime, initialMsgs } = req.body;
+  
+  const newChat = {
+    id, post_id: postId, post_title: postTitle, partner_name: partnerName, 
+    partner_grade: partnerGrade, last_message: lastMessage, last_time: lastTime, created_at: new Date().toISOString()
+  };
+
+  if (isMock) {
+    mockDb.chats.push(newChat);
+    if (initialMsgs) {
+      initialMsgs.forEach(m => mockDb.messages.push({
+        id: m.id.toString(), room_id: id, sender: m.sender, text: m.text, time: m.time, created_at: new Date().toISOString()
+      }));
+    }
+    return res.status(201).json(newChat);
+  }
+
+  try {
+    const { data, error } = await supabase.from('chats').insert([newChat]).select();
+    if (error) throw error;
+
+    if (initialMsgs && initialMsgs.length > 0) {
+      const msgsToInsert = initialMsgs.map(m => ({
+        id: m.id.toString(), room_id: id, sender: m.sender, text: m.text, time: m.time, created_at: new Date().toISOString()
+      }));
+      await supabase.from('messages').insert(msgsToInsert);
+    }
+
+    res.status(201).json(data[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/chats/:roomId/messages - Fetch messages for a room
+app.get('/api/chats/:roomId/messages', async (req, res) => {
+  const { roomId } = req.params;
+  if (isMock) {
+    const msgs = mockDb.messages.filter(m => m.room_id === roomId);
+    return res.json(msgs);
+  }
+  try {
+    const { data, error } = await supabase.from('messages').select('*').eq('room_id', roomId).order('created_at', { ascending: true });
+    if (error) throw error;
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

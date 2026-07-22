@@ -9,19 +9,21 @@ const ChatRoom = ({ room, onBack }) => {
   const [inputText, setInputText] = useState('');
   const scrollRef = useRef(null);
 
-  // 컴포넌트 마운트 시 로컬 스토리지에서 해당 방의 메시지 내역 불러오기
+  // 컴포넌트 마운트 시 서버 API에서 해당 방의 메시지 내역 불러오기
   useEffect(() => {
-    if (room && room.id) {
-      try {
-        const stored = localStorage.getItem(`chat_messages_${room.id}`);
-        if (stored && stored !== 'undefined') {
-          setMessages(JSON.parse(stored));
+    const fetchMessages = async () => {
+      if (room && room.id) {
+        try {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          const res = await fetch(`${API_URL}/api/chats/${room.id}/messages`);
+          const data = await res.json();
+          setMessages(data);
+        } catch (e) {
+          console.error("Failed to fetch chat messages", e);
         }
-      } catch (e) {
-        console.error("Failed to parse chat messages", e);
-        localStorage.removeItem(`chat_messages_${room.id}`);
       }
-    }
+    };
+    fetchMessages();
   }, [room]);
 
   const socket = useSocket();
@@ -43,25 +45,8 @@ const ChatRoom = ({ room, onBack }) => {
     }
   }, [socket, room]);
 
-  // 새 메시지가 추가될 때마다 로컬 스토리지에 저장 및 목록 업데이트
+  // 메시지 업데이트 시 스크롤만 맨 아래로 이동 (저장은 서버에서 처리됨)
   useEffect(() => {
-    if (room && messages.length > 0) {
-      // 1. 메시지 내역 덮어쓰기
-      localStorage.setItem(`chat_messages_${room.id}`, JSON.stringify(messages));
-      
-      // 2. ChatList 목록에 보이는 '가장 마지막 메시지' 업데이트
-      const rooms = JSON.parse(localStorage.getItem('mock_chat_rooms') || '[]');
-      const updatedRooms = rooms.map(r => {
-        if (r.id === room.id) {
-          const lastMsg = messages[messages.length - 1];
-          return { ...r, lastMessage: lastMsg.text, lastTime: lastMsg.time };
-        }
-        return r;
-      });
-      localStorage.setItem('mock_chat_rooms', JSON.stringify(updatedRooms));
-    }
-    
-    // 3. 스크롤 맨 아래로 이동
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
