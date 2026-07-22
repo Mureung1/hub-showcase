@@ -84,6 +84,40 @@ test('bootstrap keeps the workspace readable when Codex readiness is unavailable
   )
 })
 
+test('bootstrap does not probe Runtime readiness for an incompatible workspace', async () => {
+  let readinessReads = 0
+  const controller = {
+    snapshot: () => ({
+      state: 'incompatible',
+      readOnly: true,
+      supportedStoreFormatVersion: 2,
+      foundStoreFormatVersion: 3,
+      displayMessage: '지원되지 않는 SemesterWorkspace입니다.',
+    }),
+  } as unknown as SemesterWorkspaceController
+
+  await withProductRouter(
+    controller,
+    async () => {
+      readinessReads += 1
+      return { state: 'ready' }
+    },
+    async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/product/bootstrap`)
+      assert.equal(response.status, 200)
+      const bootstrap = decodeProductBootstrap(await response.json())
+
+      assert.equal(bootstrap.workspace?.state, 'incompatible')
+      assert.deepEqual(bootstrap.accountReadiness, {
+        state: 'unavailable',
+        displayMessage:
+          'Codex 상태를 확인할 수 없습니다. 자료 작업공간은 계속 사용할 수 있습니다.',
+      })
+      assert.equal(readinessReads, 0)
+    },
+  )
+})
+
 test('bootstrap reads coarse operation status before projecting settled-only state', async () => {
   let statusRead = false
   const source = productSnapshotController()

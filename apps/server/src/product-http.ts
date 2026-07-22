@@ -187,7 +187,9 @@ export function createProductRouter(
     const workspace = projectProductWorkspace(workspaceSnapshot)
     const history = projectSettledHistory(controller, workspaceSnapshot)
     const accountReadiness = await projectAccountReadiness(
-      readAccountReadiness,
+      workspaceSnapshot?.state === 'ready'
+        ? readAccountReadiness
+        : undefined,
     )
     const body: ProductBootstrap = {
       accountReadiness,

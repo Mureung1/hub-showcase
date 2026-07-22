@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
@@ -105,6 +106,104 @@ test('Product bootstrap starts a supervised Runtime that Server shutdown fully r
     }
   }
 })
+
+test('Product bootstrap recovers Runtime readiness after activating a valid workspace', async () => {
+  const testRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-product-runtime-recovery-'),
+  )
+  const packageRoot = path.join(testRoot, 'package')
+  const appDataRoot = path.join(testRoot, 'app-data')
+  const incompatibleWorkspace = path.join(testRoot, 'incompatible-workspace')
+  const readyWorkspace = path.join(testRoot, 'ready-workspace')
+  const choices = [incompatibleWorkspace, readyWorkspace]
+
+  try {
+    await Promise.all(
+      [packageRoot, appDataRoot, incompatibleWorkspace, readyWorkspace].map(
+        (root) => mkdir(root),
+      ),
+    )
+    const productStateRoot = path.join(incompatibleWorkspace, '.ay-ple')
+    await mkdir(productStateRoot)
+    await writeFile(
+      path.join(productStateRoot, 'workspace-state.json'),
+      '{"formatVersion":3}\n',
+      'utf8',
+    )
+
+    await withTestServer(
+      {
+        productRuntime: {
+          appDataRoot,
+          runtimeRoot: RUNTIME_ROOT,
+          environment: {
+            home: path.join(appDataRoot, 'runtime/home'),
+            codexHome: path.join(appDataRoot, 'runtime/codex-home'),
+            codexSqliteHome: path.join(
+              appDataRoot,
+              'runtime/codex-sqlite-home',
+            ),
+            tempDirectory: path.join(appDataRoot, 'runtime/temp'),
+          },
+          origin: 'http://127.0.0.1:4173',
+        },
+        semesterWorkspace: {
+          appDataRoot,
+          packageRoot,
+          chooseDirectory: async () => choices.shift() ?? null,
+        },
+      },
+      async (baseUrl) => {
+        const incompatibleActivation = await activateWorkspace(baseUrl)
+        assert.equal(incompatibleActivation.status, 200)
+        assert.equal(
+          ((await incompatibleActivation.json()) as {
+            readonly workspace: { readonly state: string }
+          }).workspace.state,
+          'incompatible',
+        )
+
+        const incompatibleBootstrap = decodeProductBootstrap(
+          await (await fetch(`${baseUrl}/api/product/bootstrap`)).json(),
+        )
+        assert.equal(incompatibleBootstrap.workspace?.state, 'incompatible')
+        assert.deepEqual(incompatibleBootstrap.accountReadiness, {
+          state: 'unavailable',
+          displayMessage:
+            'Codex 상태를 확인할 수 없습니다. 자료 작업공간은 계속 사용할 수 있습니다.',
+        })
+
+        const readyActivation = await activateWorkspace(baseUrl)
+        assert.equal(readyActivation.status, 200)
+        assert.equal(
+          ((await readyActivation.json()) as {
+            readonly workspace: { readonly state: string }
+          }).workspace.state,
+          'ready',
+        )
+
+        const readyBootstrap = decodeProductBootstrap(
+          await (await fetch(`${baseUrl}/api/product/bootstrap`)).json(),
+        )
+        assert.equal(readyBootstrap.workspace?.state, 'ready')
+        assert.deepEqual(readyBootstrap.accountReadiness, {
+          state: 'not_ready',
+          displayMessage: 'Codex에 로그인한 뒤 다시 시도해 주세요.',
+        })
+      },
+    )
+  } finally {
+    await rm(testRoot, { force: true, recursive: true })
+  }
+})
+
+function activateWorkspace(baseUrl: string): Promise<Response> {
+  return fetch(`${baseUrl}/api/product/workspaces/activate`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: '{}',
+  })
+}
 
 async function withDeadline<T>(
   promise: Promise<T>,
