@@ -31,7 +31,6 @@ export interface CurationResponse {
 }
 
 export interface LibraryItem {
-  id: string;
   userId: string;
   paperId: string;
   title: string;

@@ -25,7 +25,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- TypeScript Interfaces ---
 export interface DbPaper {
-  id: string;
   user_id: string | null;
   paper_id: string;
   title: string;
@@ -47,7 +46,6 @@ export interface PaperPayload {
 }
 
 export interface LibraryItem {
-  id: string;
   userId: string;
   paperId: string;
   title: string;
@@ -65,7 +63,6 @@ export function mapToCamelCase(dbPaper: DbPaper | DbPaper[]): LibraryItem | Libr
   if (!dbPaper) return null;
   if (Array.isArray(dbPaper)) {
     return dbPaper.map(item => ({
-      id: item.id,
       userId: item.user_id || '',
       paperId: item.paper_id,
       title: item.title,
@@ -77,7 +74,6 @@ export function mapToCamelCase(dbPaper: DbPaper | DbPaper[]): LibraryItem | Libr
     }));
   }
   return {
-    id: dbPaper.id,
     userId: dbPaper.user_id || '',
     paperId: dbPaper.paper_id,
     title: dbPaper.title,

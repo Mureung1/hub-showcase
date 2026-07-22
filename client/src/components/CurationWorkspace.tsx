@@ -172,7 +172,7 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
                 <p className="empty-result" style={{ fontSize: '11px' }}>보관된 논문이 없습니다.</p>
               ) : (
                 savedPapers.map((item) => (
-                  <li key={item.id} className="library-item">
+                  <li key={item.paperId} className="library-item">
                     <span className="library-paper-title" title={item.title}>
                       {item.title}
                     </span>
