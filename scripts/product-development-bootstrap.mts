@@ -45,16 +45,19 @@ async function canonicalAppDataRoot(selected: string): Promise<string> {
   return realpath(selected)
 }
 
-async function main(): Promise<void> {
+export async function runProductDevelopment(options: {
+  readonly arguments: readonly string[]
+  readonly environment: NodeJS.ProcessEnv
+}): Promise<void> {
   const appDataRoot = await canonicalAppDataRoot(
     resolveExplicitAppDataRoot({
-      arguments: process.argv.slice(2),
-      environment: process.env,
+      arguments: options.arguments,
+      environment: options.environment,
     }),
   )
   const selected = await materializeDevelopmentSemesterWorkspace({
     appDataRoot,
-    environment: process.env,
+    environment: options.environment,
     packageRoot: repositoryRoot,
   })
   const ownership =
@@ -92,7 +95,10 @@ async function main(): Promise<void> {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  void main().catch((error: unknown) => {
+  void runProductDevelopment({
+    arguments: process.argv.slice(2),
+    environment: process.env,
+  }).catch((error: unknown) => {
     console.error(error instanceof Error ? error.message : String(error))
     process.exitCode = 1
   })

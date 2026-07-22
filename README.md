@@ -39,6 +39,20 @@ npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
 
 Canonical command는 explicit `appDataRoot`와 선택한 development `SemesterWorkspace`를 검증하고, `packageRoot`의 verified Runtime artifact와 app-managed runtime directory를 계산해 Express Server와 Vite Chat Shell을 함께 시작합니다. Fresh clone에서는 먼저 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 materialize해야 합니다. 시작·workspace·Runtime 제약은 [Server README](apps/server/README.md), 화면 동작과 후속 경계는 [Chat Shell README](apps/chat-shell/README.md)를 따릅니다.
 
+반복해서 실제 제품을 만질 때는 repository 밖의 고정 profile root를 지정하는 dogfood 명령을 사용합니다.
+
+```bash
+npm run dogfood -- --root /absolute/path/to/ay-ple-dogfood
+```
+
+첫 실행은 profile 아래에 isolated `app-data`와 sample 기반 `semester-workspace`를 한 번만 만들고, Codex 인증이 없으면 해당 profile 전용 `login --device-auth` 명령을 안내한 뒤 종료합니다. 로그인 후 같은 명령을 다시 실행하면 이후 Server·Chat Shell 시작에서도 workspace의 사용자 자료와 `.ay-ple` 상태를 그대로 보존합니다. 스크립트는 기존 내용을 reset하거나 sample로 다시 덮어쓰지 않습니다.
+
+이미 수동으로 만든 동일 layout의 profile은 최초 한 번만 명시적으로 채택합니다. 소유권 marker가 생긴 뒤에는 이 flag를 빼고 평소 명령을 사용합니다.
+
+```bash
+npm run dogfood -- --root /absolute/path/to/existing-profile --adopt-existing
+```
+
 ## 캠프 데모
 
 캠프 발표 deck과 동적 제품 prototype을 하나의 정적 artifact 경로에서 실행한다. 발표 artifact는 현재 제품·아키텍처의 정본이 아니며, Runtime Inspector 화면은 완료된 Week 1의 정적 증거로만 남긴다. 구현 상태는 활성 문서와 코드를 우선한다.
@@ -126,6 +140,7 @@ npm run demo
 
 ```bash
 npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
+npm run dogfood -- --root /absolute/path/to/ay-ple-dogfood
 npm run demo
 npm test
 npm run test:e2e
