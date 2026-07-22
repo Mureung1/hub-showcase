@@ -22,7 +22,7 @@
 | --- | --- | --- | --- | --- |
 | SEC-001 | High | Scene API 인증·객체 단위 인가 없음 | A Verified / B Planned | 기본 제품 route는 비노출이며, 활성 환경에서도 무인증과 다른 사용자 job 접근이 차단된다 |
 | SEC-002 | High | Privacy gate가 서버에서 강제되지 않음 | Fixed | 미승인 asset 다운로드가 서버에서 거부된다 |
-| SEC-003 | High | 업로드·GPU quota와 실행 제한 없음 | Planned | 크기·빈도·동시 실행·재실행 제한을 확인한다 |
+| SEC-003 | High | 업로드·GPU quota와 실행 제한 없음 | Fixed | API 크기·빈도·저장소·실행·재시도 한도를 검증했다 |
 | SEC-004 | Medium | 업로드 검증이 확장자 중심 | Planned | 위장 파일과 처리 한도 초과 media를 거부한다 |
 | SEC-005 | Medium | 공개 API가 worker 내부정보를 반환 | Planned | 공개 응답에서 경로·command·상세 진단을 제거한다 |
 | SEC-006 | Medium | Seoul API key가 평문 HTTP URL 경로로 전송 | Planned | HTTPS 또는 승인된 격리 대안을 적용한다 |
@@ -144,7 +144,7 @@ Get-Content "product/data/scenes/jobs/$JobId/job.json" |
 
 ### 쉬운 설명
 
-한 사람이 운동장의 모든 자리를 예약하면 다른 사람은 사용할 수 없다. 현재는 job당 최대 8GB를 받고 요청마다 비싼 GPU 작업을 시작할 수 있지만 사용자별 횟수와 동시 실행 상한이 없다.
+한 사람이 운동장의 모든 자리를 예약하면 다른 사람은 사용할 수 없다. 이제 Scene API에는 요청 크기, 생성 빈도, 저장소, 활성 job, worker 동시 실행과 재시도 대기 시간이 있다. 아직 인증이 없으므로 이 한도는 모든 무인증 요청이 함께 쓰는 공용 한도이며, 사용자별 quota는 SEC-001 B 이후에 적용한다.
 
 ### 안전한 재현
 
@@ -156,24 +156,24 @@ rg -n "MAX_TOTAL_BYTES|rate|quota|semaphore|cooldown|idempot|queue" `
   product/apps/api/src/localtwin_api/scene_pipeline.py
 ```
 
-현재 예상은 `MAX_TOTAL_BYTES`만 있고 rate, quota, queue 제한은 없는 것이다.
+수정 전에는 `MAX_TOTAL_BYTES`만 있었고 rate, quota, queue 제한이 없었다. 현재는 `SCENE_*` 서버 환경변수로 제한을 조정한다.
 
 ### 조치와 선택 이유
 
-- proxy와 API에 upload 크기 제한
-- 인증 사용자별 일일 job·저장량 quota
-- durable queue와 worker 동시 실행 상한
-- 중복 실행 방지와 retry cooldown
-- 만료 cleanup과 디스크 여유 공간 검사
+- API upload 크기 제한: 초과 시 `413`, 부분 job 폴더 삭제
+- 공용 생성 빈도·저장량·활성 job quota: 초과 시 `429`
+- process 내 worker 동시 실행 상한과 중복 실행 차단
+- retry cooldown과 만료 terminal job cleanup 함수
+- production proxy body limit·사용자별 quota·durable queue는 인증/배포 경계 확정 뒤 후속 작업
 
 크기 제한만으로 작은 요청 여러 개를 막을 수 없어 서로 다른 지점에 방어층을 둔다.
 
-- [ ] MVP 한도 수치 승인
-- [ ] 초과 upload `413`
-- [ ] rate/quota 초과 `429`
-- [ ] 같은 job 중복 실행 차단
-- [ ] worker 동시 실행 상한 검증
-- [ ] cleanup과 디스크 부족 검증
+- [x] 기본 한도와 환경변수 경계 기록
+- [x] 초과 upload `413`
+- [x] rate/quota 초과 `429`
+- [x] 같은 job 중복 실행 차단
+- [x] worker 동시 실행 상한·cleanup 함수 검증
+- [ ] SEC-001 B 뒤 사용자별 quota와 production proxy body limit 검증
 
 ## 7. SEC-004 — 확장자 중심 파일 검증
 

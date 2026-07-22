@@ -196,7 +196,7 @@ Outcome: 공개 또는 제품 환경에서 Scene·데이터 경로가 기본 차
 | ------- | ------------------------------------------ | -------- | ------- | ------- | ---------- | ---------- |
 | SEC-001 | Scene API 제품 기본 차단 후 인증·객체 단위 인가 | P0 | A Verified / B Backlog | Phase 2 | - | A단계에서 제품 route가 기본 비활성화되고, B단계에서 무인증·다른 사용자 job 접근이 차단된다 |
 | SEC-002 | 서버 privacy 상태와 asset gate             | P0       | Done | Phase 2 | SEC-001    | 승인된 anonymized asset만 다운로드할 수 있다 |
-| SEC-003 | upload·GPU quota와 실행 제한               | P0       | Backlog | Phase 2 | SEC-001    | 크기·빈도·동시 실행·retry 제한이 API와 worker에서 검증된다 |
+| SEC-003 | upload·GPU quota와 실행 제한               | P0       | Done | Phase 2 | SEC-001    | 공용 크기·빈도·저장소·동시 실행·retry 제한이 API와 worker에서 검증된다. 사용자별 quota는 SEC-001 B 후속이다 |
 | SEC-004 | media·PLY 내용 기반 검증                   | P0       | Backlog | Phase 2 | -          | 위장 파일과 처리 한도 초과 입력이 GPU 실행 전에 거부된다 |
 | SEC-005 | 사용자·관리자 response schema 분리         | P1       | Backlog | Phase 2 | SEC-001    | 공개 응답에 path·command·상세 exception이 없다 |
 | SEC-006 | Seoul API key 전송·log 보호                | P1       | Backlog | Phase 2 | -          | HTTPS 또는 승인된 격리 대안과 log redaction이 검증된다 |
