@@ -20,9 +20,33 @@ export function formatKstWeekday(iso: string): string {
   return new Intl.DateTimeFormat('ko-KR', { timeZone: KST, weekday: 'short' }).format(new Date(iso));
 }
 
-/** ISO 시각 -> "월 05:30" */
+/** ISO 시각 -> "월 05:30". 자리가 좁은 그래프 라벨용 */
 export function formatKstDayTime(iso: string): string {
   return `${formatKstWeekday(iso)} ${formatKstTime(iso)}`;
+}
+
+/**
+ * ISO 시각 -> "7/23(목)"
+ *
+ * "오늘"·"내일" 같은 상대 표현은 쓰지 않는다(2026-07-22 결정). 저장한 스케줄을
+ * 며칠 뒤에 다시 열어보면 거짓말이 되기 때문 — 월요일에 저장한 "오늘 취침"을
+ * 토요일에 보는 상황이 실제로 생긴다(#19 저장 기능).
+ */
+export function formatKstDate(iso: string): string {
+  const d = new Date(iso);
+  const parts = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: KST,
+    month: 'numeric',
+    day: 'numeric',
+  }).format(d);
+  // ko-KR은 "7. 23." 형태를 주므로 "7/23"으로 다듬는다
+  const [month, day] = parts.replace(/\s/g, '').split('.').filter(Boolean);
+  return `${month}/${day}(${formatKstWeekday(iso)})`;
+}
+
+/** ISO 시각 -> "7/23(목) 05:30" */
+export function formatKstDateTime(iso: string): string {
+  return `${formatKstDate(iso)} ${formatKstTime(iso)}`;
 }
 
 /** ISO 시각 -> "2026-07-24" (한국 기준 날짜). 같은 날인지 비교할 때 쓴다. */
@@ -77,7 +101,7 @@ export function buildDayPlans(
       .join(', ');
 
     return {
-      title: `${formatKstDayTime(night.wakeTime)} 기상`,
+      title: `${formatKstDateTime(night.wakeTime)} 기상`,
       subtitle: 뒷부분 ? `${앞부분} → ${뒷부분}` : 앞부분,
     };
   });
@@ -104,7 +128,11 @@ export function buildSummary(
     .sort()
     .at(-1);
 
-  const eyebrow = 마지막시험 ? `오늘부터 ${formatKstWeekday(마지막시험)}요일 시험까지` : '추천 스케줄';
+  // 첫 취침부터 마지막 시험까지가 이 스케줄이 적용되는 기간
+  const eyebrow =
+    첫밤 && 마지막시험
+      ? `${formatKstDate(첫밤.bedTime)} ~ ${formatKstDate(마지막시험)} 스케줄`
+      : '추천 스케줄';
 
   if (!첫밤) {
     return { eyebrow, headline: '추천 스케줄', subtext: '' };
@@ -117,7 +145,7 @@ export function buildSummary(
 
   return {
     eyebrow,
-    headline: `오늘 ${formatKstTime(첫밤.bedTime)} 취침`,
-    subtext: `→ ${formatKstDayTime(첫밤.wakeTime)} 기상${카페인문구} 시, ${시험수문구} 시작 시각 예측 각성도가 가장 높아요.`,
+    headline: `${formatKstDate(첫밤.bedTime)} ${formatKstTime(첫밤.bedTime)} 취침`,
+    subtext: `→ ${formatKstDateTime(첫밤.wakeTime)} 기상${카페인문구} 시, ${시험수문구} 시작 시각 예측 각성도가 가장 높아요.`,
   };
 }
