@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { getAllowedStorageOptions, getSuggestedShelfLifeDays, getSuggestedUseByDate } from "../src/data/shelfLifeRules.js";
-import { getDaysRemaining } from "../src/utils/expiration.js";
+import { getDaysRemaining, getExpirationStatus } from "../src/utils/expiration.js";
 
 test("육류는 냉장 3일과 냉동 7일만 제안한다", () => {
   assert.deepEqual(getAllowedStorageOptions("meat").map(({ id }) => id), ["fridge", "freezer"]);
@@ -16,6 +16,10 @@ test("장기 보관 카테고리는 실온 90일 확인일을 제안한다", () 
     assert.deepEqual(getAllowedStorageOptions(category).map(({ id }) => id), ["room"]);
     assert.equal(getSuggestedShelfLifeDays(category, "room"), 90);
   }
+});
+
+test("90일 남은 재료는 여유 있는 상태로 표시한다", () => {
+  assert.equal(getExpirationStatus(90), "fresh");
 });
 
 test("월말과 연말에도 권장 날짜를 올바르게 계산한다", () => {

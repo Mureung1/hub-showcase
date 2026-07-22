@@ -17,7 +17,6 @@ import {
 import {
   buildIngredientFromForm,
   formatIngredientQuantity,
-  getIngredientCategoryLabel,
   getIngredientExpirationPresentation,
 } from "./utils/ingredientUtils";
 import { getNaggingMessage } from "./utils/naggingUtils";
@@ -451,7 +450,11 @@ function App() {
           <div className="empty-board">재료를 불러오는 중입니다...</div>
         )}
         {activeMainTab === "fridge" && !isLoading && ingredientError && (
-          <div className="empty-board" role="alert">{ingredientError}</div>
+          <div className="empty-board" role="alert">
+            <strong>재료를 불러오지 못했습니다.</strong>
+            <span>{ingredientError}</span>
+            <button type="button" onClick={() => refreshIngredients(true).catch(() => {})}>다시 시도</button>
+          </div>
         )}
         {activeMainTab === "fridge" && !isLoading && !ingredientError && <FridgeWorkspace ingredients={managedIngredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} sortOrder={sortOrder} setSortOrder={setSortOrder} recommendedCount={recommendedCount} openIngredientForm={openIngredientForm} editIngredient={editIngredient} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} requestIngredientAction={requestIngredientAction} onIngredientSelect={handleIngredientSelect} showRecommendations={() => setActiveMainTab("recommend")} showShopping={() => setActiveMainTab("shopping")} />}
         {activeMainTab === "recommend" && <RecommendWorkspace ingredients={managedIngredients} pantryAvailability={pantryAvailability} recipes={mockRecipes} selectedMood={selectedMood} setSelectedMood={setSelectedMood} includeOneMissing={includeOneMissing} setIncludeOneMissing={setIncludeOneMissing} selectedMenuId={selectedMenuId} onSelectRecipe={handleRecipeSelect} />}
@@ -521,12 +524,11 @@ function SummaryCard({ tone, label, value, description }) {
 
 function IngredientTile({ ingredient, isMenuOpen, onToggleMenu, onCloseMenu, onEdit, onAction, onFindRecipes }) {
   const expiration = getIngredientExpirationPresentation(ingredient);
-  const isUrgent = isUrgentIngredient(expiration.daysRemaining);
   const ingredientTags = getIngredientTags(ingredient);
 
   return <article className={`ingredient-tile ${expiration.status}`}>
     <div className="tile-top"><span className="ingredient-emoji" aria-hidden="true">{ingredient.icon}</span><div className="tile-primary"><div className="tile-title-row"><h3>{ingredient.name}</h3><strong className="quantity-text">{formatIngredientQuantity(ingredient)}</strong></div><div className={`expiration-line ${expiration.status}`}><span className="dday-badge">{expiration.badge}</span><strong>{expiration.label}</strong></div><span className="storage-info">{storageLabels[ingredient.storage]} 보관</span></div><IngredientMenu ingredient={ingredient} isOpen={isMenuOpen} onToggle={onToggleMenu} onClose={onCloseMenu} onEdit={onEdit} onAction={onAction} /></div>
-    <div className="ingredient-labels" aria-label="재료 분류 및 특성"><span className="category-label">분류 · {getIngredientCategoryLabel(ingredient.category)}</span>{ingredientTags.map((tag) => <span className="attribute-label" key={tag}>{tag.startsWith("nutrition:") ? "영양" : "가공"} · {INGREDIENT_TAG_LABELS[tag]}</span>)}{ingredient.isInstant && ingredient.category !== "instant" && <span className="instant-label">인스턴트</span>}{ingredient.isPrepared && ingredient.category !== "prepared" && <span className="category-label">완제품</span>}{isUrgent && <span className="use-first-label">먼저 사용</span>}</div>
+    {ingredientTags.length > 0 && <div className="ingredient-labels" aria-label="재료 태그">{ingredientTags.map((tag) => <span className="tag-label" key={tag}>{INGREDIENT_TAG_LABELS[tag]}</span>)}</div>}
     <button className="find-recipe-button" type="button" onClick={onFindRecipes}>이 재료로 요리 찾기 <span aria-hidden="true">→</span></button>
   </article>;
 }
@@ -578,7 +580,6 @@ const moodOptions = [
 function RecommendWorkspace({ ingredients, pantryAvailability, recipes, selectedMood, setSelectedMood, includeOneMissing, setIncludeOneMissing, selectedMenuId, onSelectRecipe }) {
   const recommendations = getRecommendedRecipes({ recipes, ingredients, pantryAvailability, selectedMood, includeOneMissing });
   const regularRecommendations = recommendations.filter(({ recipe }) => !recipe.isSpecial).slice(0, 3);
-  const oneMissingRecommendations = recommendations.filter(({ recipe, availability }) => !recipe.isSpecial && availability.status === "oneMissing").slice(0, 3);
   const specialRecommendations = getRecommendedRecipes({ recipes, ingredients, pantryAvailability, selectedMood: "special", includeOneMissing: true }).filter(({ availability }) => availability.missingIngredients.length <= 3).slice(0, 3);
   const primaryRecommendations = selectedMood === "special" ? specialRecommendations : regularRecommendations;
 
@@ -591,7 +592,6 @@ function RecommendWorkspace({ ingredients, pantryAvailability, recipes, selected
     <section className="recommendation-section" aria-labelledby="recommendation-title">
       <div className="recommendation-section-heading"><div><p className="eyebrow">For You</p><h2 id="recommendation-title">지금 고르기 좋은 메뉴</h2></div><label className="one-missing-toggle"><input type="checkbox" checked={includeOneMissing} onChange={(event) => setIncludeOneMissing(event.target.checked)} /> 재료 1개 부족한 메뉴도 보기</label></div>
       {primaryRecommendations.length ? <div className="recipe-recommendation-grid">{primaryRecommendations.map((recommendation) => <RecipeCard key={recommendation.recipe.id} {...recommendation} isSelected={selectedMenuId === recommendation.recipe.id} onSelect={() => onSelectRecipe(recommendation.recipe)} />)}</div> : <EmptyRecipeState onShowOneMissing={() => setIncludeOneMissing(true)} />}
-      {selectedMood !== "special" && includeOneMissing && oneMissingRecommendations.length > 0 && <div className="one-missing-section"><h3>재료 하나만 더 있으면 가능한 메뉴</h3><div className="recipe-recommendation-grid compact">{oneMissingRecommendations.map((recommendation) => <RecipeCard key={recommendation.recipe.id} {...recommendation} isSelected={selectedMenuId === recommendation.recipe.id} onSelect={() => onSelectRecipe(recommendation.recipe)} />)}</div></div>}
     </section>
 
     {selectedMood !== "special" && <section className="special-recipe-section" aria-labelledby="special-title"><div className="recommendation-section-heading"><div><p className="eyebrow">A Little Special</p><h2 id="special-title">오늘 조금 분위기 내고 싶다면</h2><p>추가 재료는 최대 3개까지만 필요한 메뉴예요.</p></div><button type="button" onClick={() => setSelectedMood("special")}>스페셜 메뉴 모아보기 →</button></div><div className="recipe-recommendation-grid compact">{specialRecommendations.map((recommendation) => <RecipeCard key={recommendation.recipe.id} {...recommendation} isSelected={selectedMenuId === recommendation.recipe.id} onSelect={() => onSelectRecipe(recommendation.recipe)} />)}</div></section>}
