@@ -7,7 +7,9 @@ import { env } from "./common/config/env";
 import { errorHandler } from "./common/middlewares/errorHandler";
 import { authRouter, meRouter } from "./modules/auth/auth.routes";
 import { healthRouter } from "./modules/health/health.routes";
+import { invitationsRouter, storeInvitationsRouter } from "./modules/invitations/invitations.routes";
 import { storesRouter } from "./modules/stores/stores.routes";
+import { workersRouter } from "./modules/workers/workers.routes";
 
 export function createApp() {
   const app = express();
@@ -33,6 +35,9 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/me", meRouter);
   app.use("/api/health", healthRouter);
+  app.use("/api/stores/:storeId/invitations", storeInvitationsRouter);
+  app.use("/api/stores/:storeId/workers", workersRouter);
+  app.use("/api/invitations", invitationsRouter);
   app.use("/api/stores", storesRouter);
 
   app.use((req: Request, res: Response) => {
