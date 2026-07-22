@@ -2,9 +2,65 @@
 
 (구 CJMT) 사진으로 식사를 기록하면 AI(Gemini, OpenRouter 경유)가 음식을 식별하고, 식약처 식품영양성분DB로
 실제 영양수치를 채워주는 영양 관리 웹앱. 오늘 부족한 영양소를 계산해 주변 식당을 추천해준다
-(식당 검색은 카카오 로컬 API, 지도 표시는 네이버 지도).
+(식당 검색·지도 표시 모두 네이버 — 카카오 경로는 롤백용으로만 남아 있다).
 
-## 아키텍처
+## 아키텍처 한눈에 보기
+
+> 그림은 [Mermaid](https://mermaid.js.org)로 그렸다 — GitHub에서 빌드 없이 그대로 렌더되고, 텍스트라
+> 코드와 함께 버전 관리된다. **전체 다이어그램(핵심 흐름·인증·배포·CSV·광고 + 구조 점검 결과)은
+> [`docs/architecture.md`](docs/architecture.md)에 있다.**
+
+한 문장 요약: **브라우저가 화면을 다 그리고, 비밀 키가 필요한 외부 호출만 Express 프록시가 대신하며,
+데이터는 로그인 여부에 따라 localStorage나 Supabase로 갈린다.**
+
+```mermaid
+graph TD
+    subgraph C["🖥️ 클라이언트 · React SPA (브라우저 / Android WebView)"]
+        SC["<b>화면 8개</b><br/>analyze · result · meals · calendar<br/>map · profile · login · signup"]
+        DS{{"<b>dataStore.js</b><br/>저장소 분기점"}}
+        SC --- DS
+    end
+
+    subgraph P["⚙️ Express 프록시 · server/proxy.js — 비밀 키 보관소"]
+        API["/api/gemini · /api/fooddb<br/>/api/naver-places · /api/reverse-geocode"]
+    end
+
+    subgraph X["🌐 외부 서비스"]
+        OR["OpenRouter<br/>Gemini"]
+        FD["식약처<br/>영양성분 DB"]
+        NV["NAVER<br/>지역검색"]
+        KK["Kakao<br/>좌표→지역명"]
+    end
+
+    subgraph D["💾 저장소 · Supabase"]
+        AU[["Auth<br/>bcrypt · JWT"]]
+        SB[("profiles · meals<br/>RLS: auth.uid()")]
+    end
+
+    LS[("localStorage<br/>게스트 데이터")]
+    PUB["Naver Maps SDK<br/>쿠팡 파트너스 링크<br/><i>공개 키 / 외부 이동</i>"]
+
+    SC ==>|"fetch"| API
+    API --> OR & FD & NV & KK
+    SC -.->|"직접"| PUB
+    SC <==>|"세션"| AU
+    AU -.->|"auth.uid()"| SB
+    DS ==>|"세션 없음"| LS
+    DS ==>|"세션 있음"| SB
+
+    classDef sub fill:#fafafa,stroke:#ccc
+    class C,P,X,D sub
+```
+
+| 구성 | 한 줄 설명 |
+|---|---|
+| **화면** | React SPA. 로그인 없이도 모든 기능이 동작한다(게스트 우선) |
+| **`dataStore.js`** | 매 호출마다 세션을 보고 localStorage/Supabase를 고른다. 화면은 저장소를 모른다 |
+| **Express 프록시** | 존재 이유는 오직 하나 — 비밀 키를 브라우저에 노출하지 않기 위해 |
+| **Supabase** | 인증 + 로그인 계정 데이터. 접근 제어는 키가 아니라 RLS가 한다 |
+| **APK** | 같은 웹을 WebView가 원격 URL로 로드 → 웹 배포가 곧 앱 업데이트 |
+
+## 아키텍처 (상세)
 
 - **프론트엔드**: React + Vite (`src/`)
 - **API 로직**: `/api/gemini`, `/api/places`, `/api/fooddb` — OpenRouter(Gemini) / 카카오 로컬 /
