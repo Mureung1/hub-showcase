@@ -2,6 +2,7 @@
 
 import re
 import requests
+from bs4 import BeautifulSoup
 
 from sources import SOURCES, HEADERS, MAX_ITEMS_PER_RUN
 
@@ -16,11 +17,29 @@ def fetch_list(source):
 
     return items
 
+def fetch_body(source, seq):
+    """글번호 하나로 본문 페이지를 긁어 텍스트를 뽑는다."""
+    
+    url = source["view_url"].format(id=seq)      # ① 틀에 글번호 끼우기
+    resp = requests.get(url, headers=HEADERS, timeout=10)
+    resp.encoding = resp.apparent_encoding
+
+    soup = BeautifulSoup(resp.text, "html.parser")  # ② HTML 파싱
+    box = soup.select_one(".sub04-05-view-wrap")
+    return box.get_text(" ", strip=True) if box else ""
 
 if __name__ == "__main__":
     for source in SOURCES:
         if not source["active"]:            # 꺼둔 소스는 건너뜀
             continue
         print(f"=== {source['name']} ===")
-        for seq, title in fetch_list(source):
+
+        items = fetch_list(source)
+        for seq, title in items:
             print(" ", seq, title.strip())
+
+        # 첫 글 하나만 본문 뽑아보기 (확인용)
+        first_seq = items[0][0]              # 첫 글의 글번호
+        print("\n--- 첫 글 본문 (앞 400자) ---")
+        print(fetch_body(source, first_seq)[:400])
+
