@@ -126,6 +126,134 @@
   gap: 12px;
 }
 
+
+.runtimeStrip {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.42fr) minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 12px;
+  border: 1px solid rgb(179 196 220 / 58%);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgb(255 255 255 / 86%);
+  box-shadow: 0 14px 30px rgb(15 23 42 / 8%);
+}
+
+.runtimeStripHeader {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.runtimeStripHeader > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.runtimeStripHeader span,
+.runtimeDetails dt {
+  color: #07003d;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.runtimeStripHeader strong {
+  color: #102346;
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 900;
+}
+
+.runtimeStripHeader p {
+  margin: 0;
+  color: #526173;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.runtimeState {
+  flex: 0 0 auto;
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 10px;
+  background: #eef2f7;
+  color: #526173 !important;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.runtimeState[data-state='running'] {
+  background: #fff7df;
+  color: #a15c00 !important;
+}
+
+.runtimeState[data-state='passed'] {
+  background: #e8f8ef;
+  color: #087443 !important;
+}
+
+.runtimeState[data-state='failed'] {
+  background: #fff1e8;
+  color: #c24c00 !important;
+}
+
+.runtimeDetails {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.runtimeDetails div {
+  min-width: 0;
+  border-left: 1px solid #e1e8f2;
+  padding-left: 12px;
+}
+
+.runtimeDetails dt,
+.runtimeDetails dd {
+  margin: 0;
+}
+
+.runtimeDetails dd {
+  margin-top: 4px;
+  color: #172033;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.runtimePreviewLink {
+  align-self: center;
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(7 0 61 / 18%);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #eef7ff;
+  color: #07003d;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.runtimePreviewLink:focus-visible {
+  outline: 3px solid rgb(53 200 244 / 36%);
+  outline-offset: 2px;
+}
+
 .statusStrip article,
 .railCard,
 .missionCard,
@@ -1005,7 +1133,16 @@
 }
 
 @media (max-width: 980px) {
-  .statusStrip,
+
+  .runtimeStrip {
+    grid-template-columns: 1fr;
+  }
+
+  .runtimeDetails {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+.statusStrip,
   .workspaceGrid,
   .resultPanel {
     grid-template-columns: 1fr;
@@ -1017,7 +1154,16 @@
 }
 
 @media (max-width: 760px) {
-  .page {
+
+  .runtimeDetails {
+    grid-template-columns: 1fr;
+  }
+
+  .runtimePreviewLink {
+    width: 100%;
+  }
+
+.page {
     gap: 14px;
     padding: 16px;
   }

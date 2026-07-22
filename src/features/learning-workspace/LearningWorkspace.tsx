@@ -259,11 +259,26 @@ function resolveWorkspaceMode(input: {
 }
 
 function createWorkspaceModeLabel(mode: WorkspaceMode) {
-  if (mode === 'linux') return 'Linux 터미널'
-  if (mode === 'docker') return 'Docker 빌드'
-  if (mode === 'python') return 'Python 실행'
-  return 'React 미리보기'
+  if (mode === 'linux') return 'Linux ???'
+  if (mode === 'docker') return 'Docker ??'
+  if (mode === 'python') return 'Python ??'
+  return 'React ????'
 }
+
+function createWorkspaceModeDescription(mode: WorkspaceMode) {
+  if (mode === 'linux') return '??? ??? ?? ?? ??? ?????.'
+  if (mode === 'docker') return '??? ??? Dockerfile ?? ??? ?????.'
+  if (mode === 'python') return '??? ??? Python ?? ??? ?????.'
+  return '??? ??? ?? ? React ?? ??? ?????.'
+}
+
+function createRunStateLabel(state: RunState) {
+  if (state === 'running') return '?? ?'
+  if (state === 'passed') return '??'
+  if (state === 'failed') return '??'
+  return '??'
+}
+
 function createQueueMission(item: TodayQueueItem): WorkspaceMission {
   return {
     id: item.id,
@@ -670,6 +685,13 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
     [activeMission.fileName, activeMission.mode, previewCode, runnableFile?.name],
   )
 
+  const runtimeSummaryItems = [
+    { label: '?? ??', value: createWorkspaceModeLabel(activeMission.mode) },
+    { label: '?? ??', value: runnableFile?.name ?? activeMission.fileName },
+    { label: '?? ID', value: activeMission.id },
+    { label: '?? ??', value: hasSavedGeneratedPlan ? '??? ????' : '?? ??' },
+  ]
+
   const consoleLines = runPreview.logs.length > 0
     ? runPreview.logs
     : runPreview.status === 'idle'
@@ -911,6 +933,26 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
         </nav>
       </header>
 
+      <section className={styles.runtimeStrip} aria-label="?????? ?? ??">
+        <div className={styles.runtimeStripHeader}>
+          <div>
+            <span>{createWorkspaceModeLabel(activeMission.mode)}</span>
+            <strong>{executionPanel.title}</strong>
+            <p>{createWorkspaceModeDescription(activeMission.mode)}</p>
+          </div>
+          <span className={styles.runtimeState} data-state={runPreview.status}>{createRunStateLabel(runPreview.status)}</span>
+        </div>
+        <dl className={styles.runtimeDetails}>
+          {runtimeSummaryItems.map((item) => (
+            <div key={item.label}>
+              <dt>{item.label}</dt>
+              <dd>{item.value}</dd>
+            </div>
+          ))}
+        </dl>
+        <Link className={styles.runtimePreviewLink} to="/workspace?mission=counter-mission">React ???? ???</Link>
+      </section>
+
       <section className={styles.statusStrip} aria-label="학습 상태 요약">
         <article>
           <span>진행률</span>
@@ -1084,7 +1126,7 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
                 disabled={runState === 'running'}
                 onClick={handleRun}
               >
-                {runState === 'running' ? '실행 중' : runState === 'failed' ? '다시 실행' : '실행'}
+                {runState === 'running' ? '?? ?' : runState === 'failed' ? '?? ??' : '??'}
               </button>
             </div>
           </div>
@@ -1116,9 +1158,9 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
                   <span>{executionPanel.title}</span>
                   <strong>{executionPanel.statusLabel}</strong>
                 </div>
-                <div className={styles.previewActions} aria-label="실행 동작">
-                  <button type="button" onClick={handleRun} disabled={runState === 'running'}>새로고침</button>
-                  <button type="button" onClick={resetActiveFile}>초기화</button>
+                <div className={styles.previewActions} aria-label="?? ??">
+                  <button type="button" onClick={handleRun} disabled={runState === 'running'}>????</button>
+                  <button type="button" onClick={resetActiveFile}>???</button>
                 </div>
               </div>
               <div className={styles.previewViewport} data-state={runPreview.status}>
@@ -1139,7 +1181,7 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
               <div className={styles.previewConsole} data-mode={activeMission.mode} data-state={runPreview.status} aria-live="polite">
                 <div>
                   <strong>Console</strong>
-                  <span>{runPreview.status === 'running' ? 'running' : runPreview.status}</span>
+                  <span>{createRunStateLabel(runPreview.status)}</span>
                 </div>
                 {runPreview.error ? <p className={styles.previewError}>{runPreview.error}</p> : null}
                 {runPreview.result ? <p>return: {runPreview.result}</p> : null}
