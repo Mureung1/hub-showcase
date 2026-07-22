@@ -142,6 +142,33 @@ public class ExpenseService {
         long remainingDays = Math.round(remainingBudget / dailyAverage);
         return LocalDate.now().plusDays(remainingDays);
     }
+    public record PredictionResponse(LocalDate depletionDate, Double dailyAverage, Integer remainingBudget, String dataQualityNotice, boolean survivalMode) {}
+
+    /**
+     * F6 예측 API 응답용 — 소진 예상일 + 일평균 + 남은 예산(고정비/누적지출 차감 후)을 한 번에 반환한다.
+     */
+    public PredictionResponse getPrediction() {
+        Budget budget = budgetRepository.findByUserIdAndCategoryIsNull(SEED_USER_ID).orElse(null);
+        Integer remainingBudget = null;
+        if (budget != null && budget.getAmount() != null) {
+            int fixedCost = subscriptionRepository.findByUserId(SEED_USER_ID).stream()
+                    .mapToInt(Subscription::getAmount)
+                    .sum();
+            int cumulativeSpend = getSummary("month").total();
+            remainingBudget = budget.getAmount() - fixedCost - cumulativeSpend;
+        }
+
+        int daysElapsed = LocalDate.now().getDayOfMonth();
+        String dataQualityNotice = daysElapsed < 5
+                ? "아직 데이터가 적어 예측 정확도가 낮을 수 있어요. 데이터가 쌓일수록 예측이 더 정확해져요."
+                : null;
+
+        LocalDate depletionDate = predictDepletionDate();
+        LocalDate endOfMonth = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
+        boolean survivalMode = depletionDate != null && !depletionDate.isAfter(endOfMonth);
+
+        return new PredictionResponse(depletionDate, getDailyAverageThisMonth(), remainingBudget, dataQualityNotice, survivalMode);
+    }
 
     private LocalDateTime resolveStart(String period) {
         LocalDateTime now = LocalDateTime.now();

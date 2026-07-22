@@ -57,19 +57,19 @@
 
 ### 리스크 점검 (2주차 planner 에이전트 점검에서 발견, 체크리스트에 항목 없어 일정 누락 우려)
 - [ ] 로그인/인증 처리 방향 결정 — `ExpenseService`의 `SEED_USER_ID=1L` 하드코딩이 아직 남아있음(`TODO: 로그인 붙으면 실제 로그인 유저로 교체`). 데모 자체는 문제없지만 plan.md 6.1의 "회원가입/로그인 후 업로드" 요구사항과의 괴리를 정리할지 결정 필요
-- [ ] `AICoachScreen.tsx`/`SurvivalModeScreen.tsx` mock 데이터 → 실제 API 연동 — 현재 전부 하드코딩 mock 상태. 3주차 Context/Agent API가 나온 뒤 화면 연동 작업 시간이 별도로 필요함 (기존 체크리스트 항목엔 "화면 연동"이 명시적으로 안 잡혀 있었음)
+- [ ] `AICoachScreen.tsx` mock 데이터 → 실제 API 연동 — F16 Agent API가 나온 뒤 진행 (`SurvivalModeScreen.tsx`는 #30/#31에서 완료됨)
 
 ### 예측 & 생존 모드
 - [x] 월 총예산 입력/조회 API (`BudgetService`/`BudgetController`, 기존 `Budget` 엔티티 재사용) — F6 소진 예측의 전제조건이라 F9(선택기능)에서 최소 범위만 이번 주에 먼저 구현 (#18)
 - [ ] 생활비 소진 예측 로직 (이번 달 누적 일평균 + 고정비 결합)
   - [ ] 이번 달 누적 일평균 변동비 계산 메서드 (#25)
   - [ ] 일평균×남은일수 + 구독 고정비 → 소진 예상일 계산 (#26)
-  - [ ] `GET /api/expenses/prediction` API (#27)
-- [ ] 예측 신뢰성 안내 문구 (이번 달 데이터 5일 미만 시 안내) (#28)
+  - [x] `GET /api/expenses/prediction` API (#27)
+- [x] 예측 신뢰성 안내 문구 (이번 달 데이터 5일 미만 시 안내) (#28)
 - [ ] 월말 생존 모드 UI (남은 돈 / 남은 기간 / 오늘 쓸 수 있는 금액)
-  - [ ] 예산 임계치 이하 자동 판정 (survivalMode flag) (#29)
-  - [ ] SurvivalModeScreen.tsx mock → 실제 API 연동 (#30)
-- [ ] 예산 임계치 이하 시 생존 모드 자동 전환 로직 (#31)
+  - [x] 예산 임계치 이하 자동 판정 (survivalMode flag) (#29)
+  - [x] SurvivalModeScreen.tsx mock → 실제 API 연동 (#30)
+- [x] 예산 임계치 이하 시 생존 모드 자동 전환 로직 (#31)
 
 ### Context 계산
 - [ ] 단기 신호 계산 (배달비 증가율, 예산 대비 지출률) (#32)
@@ -93,15 +93,25 @@
 - [ ] `AICoachScreen.tsx` mock → 실제 Agent 연동 (#47)
 
 ### 이번 주 부트캠프 공통 요구사항 (아키텍처 시각화 / TDD / Agent 산출물)
-- [ ] 아키텍처 다이어그램 작성 (mermaid, README에 화면-서버-DB 데이터 흐름) (#49)
-- [ ] 테스트코드 생성 Skill 제작 (#50)
-- [ ] F6 계산 로직 TDD로 개발 (테스트 먼저 작성 → 구현, #25/#26 대상) (#51)
+- [x] 아키텍처 다이어그램 작성 (mermaid, README에 화면-서버-DB 데이터 흐름) (#49)
+- [x] 테스트코드 생성 Skill 제작 (#50)
+- [x] F6 계산 로직 TDD로 개발 (테스트 먼저 작성 → 구현, #25/#26 대상) (#51)
 - [ ] code-reviewer 에이전트로 이번 주 커밋 검증 (매일 커밋 전) (#52)
 - [ ] 나만의 워크플로우 문서로 정리 (`docs/workflow.md` 신규) (#53)
 
 ---
 
-## 4주차 — 마무리 및 데모 준비
+## 4주차 — 마무리 및 실제 배포 준비
+
+### 회원가입/로그인 (최우선 — 2026-07-22 결정: 부트캠프 데모로 끝나지 않고 4주 안에 실제 배포하기로 함)
+- [ ] 비밀번호 해싱 방식 결정 및 의존성 추가 (Spring Security의 `BCryptPasswordEncoder` 등 — 평문 저장 금지)
+- [ ] 회원가입 API (이메일 중복 확인 + 비밀번호 해싱 후 `users` 테이블 저장)
+- [ ] 로그인 API (이메일/비밀번호 검증 후 세션 또는 토큰 발급 — 방식은 구현 시점에 확정)
+- [ ] 로그인 상태 유지 (새로고침해도 로그인 풀리지 않게)
+- [ ] `AuthScreen.tsx`의 가짜 로그인(`setTimeout`으로 아무 값이나 통과) 제거하고 실제 API 연동
+- [ ] 백엔드 전 서비스(`ExpenseService`/`SubscriptionService`/`BudgetService`/`ReceiptService`/추가될 `ContextService`/`AgentService`)의 `SEED_USER_ID=1L` 하드코딩을 실제 로그인 유저로 일괄 교체
+- [ ] 인증 안 된 요청 차단 확인 (다른 사람 API를 토큰/세션 없이 호출하면 401/403)
+- [ ] 여러 계정으로 가입 후 각자 데이터(구독/예산/지출)가 안 섞이는지 실제로 확인
 
 ### 선택 기능 (시간 남으면)
 - [ ] 예산 목표 설정 (카테고리별/전체)

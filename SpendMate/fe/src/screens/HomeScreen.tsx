@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Bell, ChevronRight, TrendingUp, TrendingDown, Coffee, ShoppingCart, Utensils, Car, Zap, Package, X, Search } from 'lucide-react'
 import SurvivalModeScreen from './SurvivalModeScreen'
+import { getBudget, getPrediction, getSubscriptions, getDailyExpenses, type Prediction, type Subscription, type DailyAmount } from '../lib/api'
 const CALENDAR_DAYS = ['일', '월', '화', '수', '목', '금', '토']
 
 const ALL_EXPENSES = [
@@ -19,7 +20,7 @@ const ALL_EXPENSES = [
 ]
 
 function buildCalendar() {
-  const today = new Date(2026, 6, 8)
+  const today = new Date()
   const year = today.getFullYear()
   const month = today.getMonth()
   const firstDay = new Date(year, month, 1).getDay()
@@ -169,15 +170,36 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings }: HomeScre
   const { cells, today } = buildCalendar()
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [showAllExpenses, setShowAllExpenses] = useState(false)
-  const budget = 600000
-  const spent = 287400
-  const remaining = budget - spent
-  const percent = Math.round((spent / budget) * 100)
   const recentExpenses = ALL_EXPENSES.slice(0, 5)
 
-  const lastDayOfMonth = new Date(2026, 7, 0).getDate()
-  const daysLeft = lastDayOfMonth - today + 1
-  const inSurvivalMode = remaining / budget < 0.15 && !survivalModeOff
+  const [budgetTotal, setBudgetTotal] = useState<number | null>(null)
+  const [prediction, setPrediction] = useState<Prediction | null>(null)
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
+  const [dailyExpenses, setDailyExpenses] = useState<DailyAmount[]>([])
+
+  useEffect(() => {
+    getBudget().then(b => setBudgetTotal(b.amount)).catch(() => {})
+    getPrediction().then(setPrediction).catch(() => {})
+    getSubscriptions().then(setSubscriptions).catch(() => {})
+    getDailyExpenses().then(setDailyExpenses).catch(() => {})
+  }, [])
+
+  const budget = budgetTotal ?? 0
+  const remaining = prediction?.remainingBudget ?? 0
+  const spent = budget - remaining
+  const percent = budget > 0 ? Math.round((spent / budget) * 100) : 0
+
+  const realToday = new Date()
+  const lastDayOfRealMonth = new Date(realToday.getFullYear(), realToday.getMonth() + 1, 0).getDate()
+  const daysLeft = lastDayOfRealMonth - realToday.getDate() + 1
+  const inSurvivalMode = (prediction?.survivalMode ?? false) && !survivalModeOff
+
+  const todaySpend = dailyExpenses.length > 0 ? dailyExpenses[dailyExpenses.length - 1].amount : 0
+  const dailyLimit = daysLeft > 0 ? Math.floor(remaining / daysLeft) : 0
+  const subTotal = subscriptions.reduce((s, x) => s + x.price, 0)
+  const subLabel = subscriptions.length > 0
+    ? `${subscriptions[0].name}${subscriptions.length > 1 ? ` 등` : ''} 포함 ${subscriptions.length}건 · ${subTotal.toLocaleString()}원`
+    : '등록된 구독이 없어요'
 
   if (inSurvivalMode) {
     return (
@@ -241,15 +263,15 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings }: HomeScre
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
             <div style={{ flex: 1, background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '10px 12px' }}>
               <p style={{ margin: 0, fontSize: 11, opacity: 0.8 }}>오늘 지출</p>
-              <p style={{ margin: '2px 0 0', fontSize: 16, fontWeight: 700 }}>10,700원</p>
+              <p style={{ margin: '2px 0 0', fontSize: 16, fontWeight: 700 }}>{todaySpend.toLocaleString()}원</p>
             </div>
             <div style={{ flex: 1, background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '10px 12px' }}>
               <p style={{ margin: 0, fontSize: 11, opacity: 0.8 }}>하루 한도</p>
-              <p style={{ margin: '2px 0 0', fontSize: 16, fontWeight: 700 }}>20,000원</p>
+              <p style={{ margin: '2px 0 0', fontSize: 16, fontWeight: 700 }}>{dailyLimit.toLocaleString()}원</p>
             </div>
             <div style={{ flex: 1, background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '10px 12px' }}>
               <p style={{ margin: 0, fontSize: 11, opacity: 0.8 }}>남은 일수</p>
-              <p style={{ margin: '2px 0 0', fontSize: 16, fontWeight: 700 }}>23일</p>
+              <p style={{ margin: '2px 0 0', fontSize: 16, fontWeight: 700 }}>{daysLeft}일</p>
             </div>
           </div>
         </div>
@@ -365,7 +387,7 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings }: HomeScre
           </div>
           <div style={{ flex: 1 }}>
             <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>생존 모드</p>
-            <p style={{ margin: '2px 0 0', fontSize: 15, fontWeight: 800, color: 'white' }}>오늘 한도까지 9,300원 남았어요</p>
+            <p style={{ margin: '2px 0 0', fontSize: 15, fontWeight: 800, color: 'white' }}>오늘 한도까지 {Math.max(dailyLimit - todaySpend, 0).toLocaleString()}원 남았어요</p>
           </div>
           <ChevronRight size={18} color="rgba(255,255,255,0.4)" />
         </div>
@@ -377,7 +399,7 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings }: HomeScre
           </div>
           <div style={{ flex: 1 }}>
             <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--foreground)' }}>이번 달 구독 결제</p>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--muted)' }}>넷플릭스·유튜브 포함 4건 · 48,500원</p>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--muted)' }}>{subLabel}</p>
           </div>
           <button style={{ background: '#EBF2FF', border: 'none', borderRadius: 10, padding: '8px 12px', color: '#4F8EF7', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Pretendard', whiteSpace: 'nowrap', minHeight: 44 }}>
             관리

@@ -52,6 +52,10 @@ public class ExpenseController {
         return ResponseEntity.ok(expenseService.getDailySummary());
     }
 
+    @GetMapping("/api/expenses/prediction")
+    public ResponseEntity<ExpenseService.PredictionResponse> prediction() {
+        return ResponseEntity.ok(expenseService.getPrediction());
+    }
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException e) {
         return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
