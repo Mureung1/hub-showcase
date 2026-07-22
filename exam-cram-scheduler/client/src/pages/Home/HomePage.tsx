@@ -7,7 +7,9 @@ import text from '../../styles/text.module.css';
 const nearestExam = {
   dDay: 'D-2',
   subject: '생화학',
-  scheduleSummary: '금요일 10:00 시작 · 지금부터 계산하면 취침·기상·카페인 스케줄을 바로 알려드려요.',
+  // 시험 시각과 안내 문구는 성격이 달라서 줄을 나눈다(2026-07-22)
+  examTime: '금요일 10:00 시작',
+  hint: '지금부터 계산하면 취침·기상·카페인 스케줄을 바로 알려드려요.',
 };
 
 const recentRecord = {
@@ -30,7 +32,11 @@ export function HomePage() {
       <h1 className={text.displayNum}>
         {nearestExam.dDay} · {nearestExam.subject}
       </h1>
-      <p className={text.subtext}>{nearestExam.scheduleSummary}</p>
+      <p className={text.subtext}>
+        {nearestExam.examTime}
+        <br />
+        {nearestExam.hint}
+      </p>
 
       <div className={text.sectionBlock}>
         <div className={text.sectionHead}>
