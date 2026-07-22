@@ -4,11 +4,13 @@ data/example/fy2025(단일연도, 재무제표·정답지 포함)와 data/exampl
 이관 결과가 원본 CSV와 일치하는지, 그리고 전기사업연도id·전기자산id가 올바르게 연결되는지 확인한다.
 """
 
+import shutil
 import sqlite3
+import tempfile
 import unittest
 from pathlib import Path
 
-from taxengine.db.migrate import 이관, db_열기
+from taxengine.db.migrate import 검증실패, 이관, db_열기
 
 ROOT = Path(__file__).resolve().parent.parent
 FY2025 = ROOT / "data" / "example" / "fy2025"
@@ -153,6 +155,50 @@ class DB_파일_새로_생성(unittest.TestCase):
                 self.assertIn("계산스냅샷", tables)
             finally:
                 conn.close()
+
+
+class 검증실패_이관_거부(unittest.TestCase):
+    """DB의 CHECK 제약이 못 잡는 무결성 오류(대차평형·자산 정합성)는 검증()이 막아야 한다."""
+
+    def test_대차가_안맞으면_이관이_거부되고_아무것도_안_남는다(self):
+        with tempfile.TemporaryDirectory() as td:
+            broken = Path(td) / "broken"
+            shutil.copytree(FY2025, broken)
+            (broken / "balance_sheet.csv").write_text(
+                "계정,구분,금액\n보통예금,자산,99999999\n", encoding="utf-8"
+            )
+            conn = _메모리_conn()
+            with self.assertRaises(검증실패):
+                이관(conn, [broken], company_name="검증실패테스트1")
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM 회사").fetchone()[0], 0)
+
+    def test_기초누계가_취득가_넘으면_이관이_거부된다(self):
+        with tempfile.TemporaryDirectory() as td:
+            broken = Path(td) / "broken"
+            shutil.copytree(FY2025, broken)
+            (broken / "assets.csv").write_text(
+                "명,구분,취득일,취득가,기초누계,회사계상액,방법,내용연수,전기이월부인액,업무용승용차\n"
+                "이상자산,비품,2020-01-01,1000000,2000000,100000,정액,5,0,false\n",
+                encoding="utf-8",
+            )
+            conn = _메모리_conn()
+            with self.assertRaises(검증실패):
+                이관(conn, [broken], company_name="검증실패테스트2")
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM 자산").fetchone()[0], 0)
+
+    def test_2개년_이관에서_두번째_폴더가_실패하면_첫번째도_같이_롤백된다(self):
+        with tempfile.TemporaryDirectory() as td:
+            broken_2025 = Path(td) / "2025"
+            shutil.copytree(E2Y / "2025", broken_2025)
+            (broken_2025 / "assets.csv").write_text(
+                "명,구분,취득일,취득가,기초누계,회사계상액,방법,내용연수,전기이월부인액,업무용승용차\n"
+                "이상자산,비품,2020-01-01,1000000,2000000,100000,정액,5,0,false\n",
+                encoding="utf-8",
+            )
+            conn = _메모리_conn()
+            with self.assertRaises(검증실패):
+                이관(conn, [E2Y / "2024", broken_2025], company_name="검증실패테스트3")
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM 사업연도").fetchone()[0], 0)
 
 
 if __name__ == "__main__":

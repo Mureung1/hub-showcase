@@ -66,6 +66,9 @@
 - [x] DB → 엔진 리더 + 계산스냅샷 저장 (`taxengine/db/reader.py`, `taxengine/db/snapshot.py`,
       `taxengine/cli/snapshot.py`, `tests/test_db_reader_snapshot.py` 10개) — 2026-07-20. DB에 이관된
       사업연도로 `pipeline.실행_데이터()`를 돌려 CSV 직접계산과 금액이 완전히 같음을 테스트로 확인
+- [x] 이관 시 무결성 검증 게이트 (`taxengine.db.migrate.검증실패`, `이관()`이 `validate.검증()`을
+      통과 못 하면 전체 롤백) — 2026-07-20. DB의 CHECK 제약이 못 잡는 대차평형·자산정합성 오류를
+      막음(`tests/test_migrate.py`의 `검증실패_이관_거부` 3개)
 - [ ] 🔲 **HTTP API 서버 — 아직 없음.** `taxengine`은 CLI 전용. FE가 백엔드를 쓰려면 `pipeline.실행_데이터()`
       + `db.reader.로드()`/`db.migrate.이관()`을 감싸는 API가 필요 — **FE 완성 후 진행하기로 합의(2026-07-20)**
 - [ ] ⚠️ **taxwiz-fe/ 존재함(미커밋)** — 부가세 계산기로 구현돼 있어 법인세 조정(이 프로젝트)과 목적이

@@ -5,9 +5,14 @@ pipeline.py가 쓰는 것과 같은 한글 키 딕셔너리로 파싱해 두므�
 받아 taxengine/db/schema.sql의 테이블에 그대로 옮겨 담는다 — CSV 파싱을 다시 하지 않는다.
 
 범위: 순수 이관만 한다(설계문서 §9 1~4단계). 계산스냅샷(pipeline.실행() 결과 저장)은
-만들지 않는다 — 그건 "이관 직후 최초 계산"이라는 별도 관심사라 여기 넣지 않았다(§9 5단계).
-ORM은 쓰지 않는다 — schema.sql이 이미 sqlite3 표준 라이브러리로 검증됐고(§8), 행 개수가
-소상공인 1개 사업연도 규모라 ORM이 벌어주는 게 거의 없다(과설계 회피).
+"이관 직후 최초 계산"이라는 별도 관심사라 여기 넣지 않았다(§9 5단계) — taxengine.db.snapshot이
+그 역할을 한다. ORM은 쓰지 않는다 — schema.sql이 이미 sqlite3 표준 라이브러리로 검증됐고(§8),
+행 개수가 소상공인 1개 사업연도 규모라 ORM이 벌어주는 게 거의 없다(과설계 회피).
+
+폴더 하나를 이관하기 전에 taxengine.validate.검증()을 반드시 통과시킨다 — DB의 CHECK 제약은
+행 하나짜리 오타(구분 값 등)만 잡고, 대차평형·당기순이익처럼 여러 행을 합산해야 아는 무결성
+오류는 못 잡는다. "정답지 원칙"(PLAN.md §2-2 — "대충 맞는 AI는 실무에서 아무도 안 쓴다")을
+CSV 계산 경로(cli/reproduce.py)뿐 아니라 DB 이관 경로에도 똑같이 적용한 것.
 
 여러 사업연도 폴더를 한 번에 넘기면(오래된 연도 → 최신 연도 순서) 사업연도.전기사업연도id·
 자산.전기자산id를 자동으로 연결한다 — assets.csv의 '명' 문자열로 전기 자산을 찾는다
@@ -22,6 +27,7 @@ from pathlib import Path
 
 from taxengine.loader import 로드
 from taxengine.money import 원, 반올림
+from taxengine.validate import 검증
 
 SCHEMA_PATH = Path(__file__).parent / "schema.sql"
 
@@ -221,12 +227,28 @@ def 정답지_삽입(conn: sqlite3.Connection, 사업연도id: int, 정답: dict
     )
 
 
-# ── 폴더 단위 이관 ────────────────────────────────────────────────────
+class 검증실패(ValueError):
+    """이관하려는 CSV가 taxengine.validate.검증()을 통과하지 못했을 때 발생."""
 
-def 폴더_이관(conn: sqlite3.Connection, 회사id: int, folder: Path,
-           전기사업연도id: int | None, 전기자산_매핑: dict[str, int]) -> tuple[int, dict[str, int]]:
-    """사업연도 폴더 하나를 이관하고 (새 사업연도id, 이 폴더의 자산 명→id 매핑)을 돌려준다."""
-    data = 로드(folder)
+
+# ── 데이터(딕셔너리) 단위 이관 — 폴더(CSV)든 API 요청 바디든 이 함수로 수렴한다 ─────
+
+def 데이터_이관(
+    conn: sqlite3.Connection, 회사id: int, data: dict,
+    전기사업연도id: int | None, 전기자산_매핑: dict[str, int], *, 라벨: str = "입력",
+) -> tuple[int, dict[str, int]]:
+    """이미 로드된 데이터(loader.로드()와 같은 모양)를 이관하고 (새 사업연도id, 자산 명→id 매핑)을 돌려준다.
+
+    이관 전에 taxengine.validate.검증()을 반드시 통과해야 한다 — DB에 잘못된 데이터를
+    조용히 담지 않는다(모듈 docstring 참고). 실패하면 검증실패를 던져 호출자가 롤백하게 한다.
+    CSV(폴더_이관)든 API 요청 바디(taxengine.api)든 이 함수 하나로 들어온다 — "어디서 왔는지"는
+    호출자가 라벨로만 알려주면 된다(에러 메시지 맥락용).
+    """
+    v = 검증(재무상태표=data["재무상태표"], 손익계산서=data["손익계산서"], 자산대장=data["자산대장"])
+    if not v["ok"]:
+        실패내역 = "; ".join(f"{c['name']} — {c['detail']}" for c in v["checks"] if not c["ok"])
+        raise 검증실패(f"{라벨}: 입력 무결성 검증 실패 — {실패내역}")
+
     사업연도id = 사업연도_삽입(conn, 회사id, data["회사"], 전기사업연도id)
     if data["재무상태표"]:
         재무상태표_삽입(conn, 사업연도id, data["재무상태표"])
@@ -237,6 +259,12 @@ def 폴더_이관(conn: sqlite3.Connection, 회사id: int, folder: Path,
     세무조정_삽입(conn, 사업연도id, data["조정"])
     정답지_삽입(conn, 사업연도id, data["정답"])
     return 사업연도id, 새자산매핑
+
+
+def 폴더_이관(conn: sqlite3.Connection, 회사id: int, folder: Path,
+           전기사업연도id: int | None, 전기자산_매핑: dict[str, int]) -> tuple[int, dict[str, int]]:
+    """사업연도 폴더 하나(CSV)를 로드해 데이터_이관()에 넘긴다."""
+    return 데이터_이관(conn, 회사id, 로드(folder), 전기사업연도id, 전기자산_매핑, 라벨=str(folder))
 
 
 # ── 전체 이관 오케스트레이션 ──────────────────────────────────────────
