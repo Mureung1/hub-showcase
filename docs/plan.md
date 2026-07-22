@@ -1,340 +1,132 @@
-# DevChat MVP 개발 계획
+# DevChat / ICU MVP 개발 계획
 
-## 1. 프로젝트 개요
+## 프로젝트 개요
 
-DevChat은 새로운 기술을 배워야 하지만 무엇부터 시작해야 할지 막막한 사용자를 위한 AI 코딩 튜터 데스크탑 앱입니다. 사용자에게 노출되는 데스크톱 앱 이름은 `ICU`이며, `I CODE U`의 약자입니다. ChatGPT처럼 자연스럽게 질문하면서도, AI가 커리큘럼을 제안하고 오른쪽 코드 에디터에서 바로 실습, 실행, 검증까지 이어지는 학습 경험을 목표로 합니다.
+ICU는 `I CODE U`의 약자이며, 사용자가 오늘 무엇을 공부해야 하는지 정하고, 커리큘럼을 따라 실습하고, 실행 피드백과 오답 기록까지 이어갈 수 있게 하는 AI coding tutor desktop app입니다. 저장소와 기획 문서에서는 DevChat 이름도 함께 사용합니다.
 
-현재 저장소는 DevChat/ICU 전체 MVP 중 프로젝트 소개와 커리큘럼 데모 UI를 React + TypeScript 기반으로 정리한 프론트엔드 단계입니다. 여기에 Product Design 기반 화면 설계, Figma 라이트/다크 프레임, 정적 HTML/CSS 프로토타입을 추가했으며, 최종 제품은 Electron 기반 데스크탑 앱으로 확장하는 것을 목표로 합니다.
+현재 우선순위는 React product flow 위에 Monaco Workspace와 Express local API boundary를 안정화하고, Electron/RAG/Notion은 이후 단계로 분리하는 것입니다.
 
-사용자 관점의 상세 흐름은 [DevChat 사용자 흐름](./user-flow.md)을 참고합니다.
-화면, 프론트 상태, REST API, Node backend 모듈 경계를 포함한 전체 구조는 [ICU Architecture Guide](./architecture.md)를 참고합니다.
-제품 화면 설계와 Figma 핸드오프 기준은 [DevChat Design](./design/README.md)을 참고합니다.
+## 현재 구현 상태
 
-## 2. 문제 정의
+### Frontend
 
-개발 학습에서 사용자는 자료 부족보다 학습 흐름의 부재를 더 크게 겪습니다.
+- Vite + React + TypeScript 기반 화면 구현
+- React Router 기반 route 구성
+- Zustand + localStorage 기반 mock 상태 관리
+- Today Learning Hub 구현
+- Learning Workspace IDE 구현
+- Workspace 코드 입력 영역에 Monaco Editor 도입
+- Workspace 실행 버튼을 Express 기반 `/api/code/run`에 연결
+- Git Branching Lab 구현
+- Mistake Notes 목록 화면 구현
+- Profile Setup 구현
+- 생성 커리큘럼 snapshot 공유 상태 구현
+- Today Hub에서 생성한 커리큘럼을 Workspace로 연결
+- Workspace에서 생성 플랜 요약, 오늘 미션, 단계 목록, 추천 근거와 출처 표시
+- 긴 단계/출처/활동 기록은 패널 내부 스크롤로 처리
 
-- 공식 문서를 열어도 어떤 순서로 읽어야 할지 판단하기 어렵습니다.
-- 강의, 문서, 에디터, 문제풀이 사이트가 분리되어 학습 흐름이 끊깁니다.
-- AI 챗봇은 편하지만 사용자의 진도, 수준, 오답 맥락을 지속적으로 기억하지 못합니다.
-- 개념 학습과 코딩테스트 준비가 분리되어 실전 연결이 어렵습니다.
-- 학습 기록과 복습 일정이 남지 않아 회고와 반복 학습이 어렵습니다.
+### Backend
 
-ICU는 대화형 AI 튜터가 학습 순서를 잡아주고, 사용자가 한 화면에서 개념 이해, 코드 실습, 실행 결과 확인, 복습 기록까지 이어갈 수 있게 하는 것을 핵심 해결 방향으로 둡니다.
+- Express 기반 Node backend 추가
+- `POST /api/curriculum/recommend` 구현
+- 학습 진행 상태 API 구현
+- 오답노트 API 구현
+- Git Lab attempt API 구현
+- `POST /api/code/run` 코드 실행 API 구현
+- in-memory repository 기반 mock backend 상태 관리
+- 선택형 SQLite repository mode 준비
+- Gemini provider adapter 구현
+- JSON curriculum catalog loader 구현
+- JSONL knowledge loader 구현
+- React/Docker 지식 데이터 context 연결
 
-## 3. 목표 사용자
+### Data
 
-- 입문 개발자: Python, JavaScript 등을 처음 배우는 학생 또는 부트캠프 수강생
-- 취업 준비생: 개념 학습과 코딩테스트 풀이를 함께 준비해야 하는 사용자
-- 직장인 사이드러너: 퇴근 후 짧은 시간에 꾸준히 새 기술을 익히고 싶은 사용자
-- AI로 공부하는 개발자: ChatGPT식 대화 학습에는 익숙하지만 에디터와 실행 연동이 아쉬운 사용자
+- 커리큘럼 track 데이터는 `shared/curriculum/*.json`을 기준으로 사용
+- 공식 문서 기반 knowledge chunk는 `data/*.jsonl`에서 로드
+- React JSONL의 `{ title, content, url }` alias schema 지원
+- React `/learn/` 문서를 우선 참고하도록 scoring 보강
 
-## 4. MVP 핵심 기능
+## 현재 주요 흐름
 
-### AI 튜터 채팅
+```txt
+/profile
+  -> 학습 프로필 저장
+  -> /today
+  -> 목표 입력 또는 저장된 목표 사용
+  -> POST /api/curriculum/recommend 또는 mock generator
+  -> icu.generatedCurriculum 저장
+  -> /workspace?mission=generated-first-mission
+  -> 생성 커리큘럼 기반 오늘 미션 학습
+  -> Monaco Editor에서 코드 수정
+  -> POST /api/code/run으로 실행 결과 확인
+```
 
-- 현재 학습 주제, 사용자 수준, 최근 오답을 바탕으로 대화 맥락을 유지합니다.
-- 커리큘럼 모드와 자유 질문 모드를 함께 지원합니다.
-- 공식 문서 기반 RAG 답변으로 신뢰도 높은 설명을 제공합니다.
+Git Lab 흐름:
 
-### 커리큘럼 및 학습 흐름
+```txt
+/git-lab
+  -> Pro Git 커리큘럼 레벨 선택
+  -> 터미널 명령 입력
+  -> gitEngine 실행
+  -> 현재 그래프와 목표 비교
+  -> 실패 명령은 오답노트로 기록
+```
 
-- 사용자가 주제를 선택하거나 입력하면 AI가 학습 순서를 제안합니다.
-- 기본 흐름은 `개념 설명 -> 퀴즈 -> 실습 미션 -> 실행 검증 -> 코드 리뷰 -> 다음 단계 추천`으로 구성합니다.
-- 사용자는 중간에 자유 질문을 할 수 있고, AI는 답변 후 다시 학습 흐름으로 복귀를 제안합니다.
+## 아키텍처 방향
 
-### 오늘 학습 관리
+현재 구조는 Express 기반 modular monolith입니다. 기능별 module 안에서 application/domain/adapters를 나누고 있어 헥사고날 아키텍처 방향을 일부 적용한 상태입니다.
 
-- 앱 첫 화면은 오늘 학습 허브로 구성합니다.
-- 사용자는 오늘의 학습 목표, 진행 중인 학습, 오늘 복습할 항목, 최근 오답을 한 화면에서 확인합니다.
-- 학습 목록에서 React, Python, FastAPI, BFS 등 트랙별 진행률과 다음 액션을 확인합니다.
-- 학습을 시작하거나 이어서 진행하면 `mission` 쿼리로 선택 미션을 전달해 IDE형 학습 워크스페이스로 이동합니다.
-- 최근 오답은 Today Hub의 대시보드형 요약에서 보여주고, `전체보기`로 오답노트 리스트형 관리 화면에 진입해 다시 풀기 흐름으로 이어집니다.
+```txt
+React screen
+  -> frontend API client / Zustand store
+  -> REST API
+  -> backend/http route
+  -> backend/modules/*/application
+  -> backend/modules/*/domain
+  -> backend/modules/*/adapters
+  -> Gemini / JSON data / in-memory or SQLite repository / code runner
+```
 
-### 코드 에디터
+아직 완성형 헥사고날 구조는 아닙니다. `ports/` 계층과 DB/provider interface는 DB, RAG, code runner가 더 커지는 시점에 강화합니다.
 
-- Monaco Editor를 오른쪽 패널에 내장합니다.
-- MVP에서는 Python과 JavaScript를 우선 지원합니다.
-- 실습 미션 시작 시 스타터 코드를 자동 주입합니다.
-- 채팅의 코드 블록을 에디터로 보내거나, 에디터 코드를 채팅에 인용할 수 있게 합니다.
+## 다음 우선순위
 
-### 코드 실행 및 검증
+1. 현재 코드 변경과 문서/issue 동기화 커밋 정리
+2. Workspace에서 Monaco 편집, 실행, 단계 진행 경험 QA
+3. 코드 실행 API의 JavaScript 성공/실패/timeout edge case 보강
+4. Git Lab의 불필요한 주석/문구 정리
+5. 커리큘럼 생성 결과와 Workspace 진행 상태의 edge case 보강
+6. backend repository를 in-memory에서 실제 저장소로 바꿀 준비
 
-- Python과 JavaScript 코드를 로컬 서브프로세스로 실행합니다.
-- 기본 실행 제한은 timeout 5초로 둡니다.
-- 함수형 실습은 assert 기반 테스트를 자동 실행합니다.
-- 실행 결과는 오른쪽 하단 패널과 채팅 인라인 요약으로 함께 표시합니다.
+## 후속 범위
 
-### 학습 진도와 복습
-
-- 퀴즈 정답률, 실습 통과율, 자기평가를 바탕으로 mastery_score를 계산합니다.
-- 오답은 자동으로 오답노트에 저장합니다.
-- 복습 주기는 `1일 -> 3일 -> 7일 -> 14일 -> 30일` 간격 반복을 기본으로 합니다.
-
-### Notion 연동
-
-- 앱 종료 또는 수동 동기화 시 오늘 학습 내용을 Notion에 정리합니다.
-- 저장 내용은 학습 개념, 퀴즈 정답률, 실습 통과율, 오답 요약, 다음 복습 일정입니다.
-- 같은 날짜의 재동기화는 기존 페이지를 업데이트하는 방식으로 처리합니다.
-
-## 5. 학습 데이터 정확성 관리
-
-DevChat의 답변 품질은 학습 데이터의 정확성에 크게 의존합니다. MVP에서는 답변의 근거를 공식 문서로 제한하고, 수집부터 답변 생성까지 출처를 추적할 수 있게 설계합니다.
-
-### 공식 문서 소스 제한
-
-MVP 학습 데이터는 라이선스와 출처가 명확한 공식 문서만 사용합니다.
-
-- MDN Web Docs
-- Python 공식 문서
-- React Docs
-- FastAPI Docs
-
-블로그, 개인 튜토리얼, Q&A 사이트, 커뮤니티 글은 MVP 학습 데이터에서 제외합니다. 필요한 경우 사용자가 참고 링크로 열람할 수는 있지만, AI 답변의 근거 데이터로는 사용하지 않습니다.
-
-### 문서 메타데이터 저장
-
-수집한 문서는 나중에 출처와 최신성을 추적할 수 있도록 다음 정보를 함께 저장합니다.
-
-- 문서 제목
-- 원본 URL
-- 섹션 경로
-- 라이선스
-- 수집 날짜
-- 문서 버전 또는 last updated 정보
-- content hash
-
-content hash는 문서 변경 감지에 사용합니다. 원문이 변경된 문서만 다시 파싱하고 임베딩하여 불필요한 재처리를 줄입니다.
-
-### 문서 청크 품질 기준
-
-RAG 검색 품질을 높이기 위해 문서는 단순 글자 수 기준이 아니라 heading 단위로 나눕니다.
-
-- 제목과 섹션 경로를 청크 메타데이터에 포함합니다.
-- 코드 예제와 해당 설명은 가능하면 같은 청크에 유지합니다.
-- 너무 짧거나 의미 없는 텍스트는 제외합니다.
-- 서로 다른 주제가 섞인 긴 섹션은 하위 heading 기준으로 다시 분리합니다.
-
-### 답변 생성 정책
-
-AI 튜터는 검색된 공식 문서 근거가 있을 때만 확정적으로 답변합니다.
-
-- 답변 하단에 참고 문서명, 섹션명, 원본 링크를 표시합니다.
-- 검색 결과가 부족하면 추측하지 않고 "현재 공식 문서 기준으로는 확인되지 않습니다"라고 안내합니다.
-- 문서 내용과 모델의 일반 지식이 충돌하면 문서 내용을 우선합니다.
-- 코드 예시는 가능한 한 검색된 문서의 API와 버전 기준에 맞춥니다.
-
-### 문서 업데이트 정책
-
-공식 문서도 계속 바뀌므로 정기 동기화와 변경 감지를 둡니다.
-
-- content hash가 바뀐 문서만 재수집합니다.
-- 변경된 문서의 청크만 재임베딩합니다.
-- 변경된 문서를 참조한 오래된 답변 캐시는 무효화합니다.
-- 동기화 실패 시 기존 데이터는 유지하고, 사용자에게 마지막 동기화 시점을 표시합니다.
-
-## 6. 추천 기술 스택
-
-| 영역 | 기술 | 목적 |
-| --- | --- | --- |
-| 데스크탑 프레임워크 | Electron | Windows/macOS/Linux 데스크탑 앱 배포 |
-| UI | React + TypeScript | 채팅, 에디터, 상태 기반 UI 구현 |
-| 스타일링 | CSS Modules + `src/styles` 토큰 | 컴포넌트 단위 스타일링, 라이트/다크모드 토큰 관리 |
-| 코드 에디터 | Monaco Editor | VS Code 기반 편집 경험 |
-| 상태 관리 | Zustand | 가벼운 전역 상태 관리 |
-| 로컬 DB | SQLite, better-sqlite3 | 진도, 오답, 문제, 설정 저장 |
-| 벡터 DB | ChromaDB | 공식 문서 RAG 검색 |
-| LLM | OpenAI API | 설명, 힌트, 코드 리뷰, 요약 생성 |
-| 코드 실행 | Node.js child_process | Python/Node 코드 실행 |
-| 외부 연동 | Notion API | 학습 기록 자동 정리 |
-
-### 브랜드와 테마
-
-- 데스크톱 앱의 사용자-facing 이름은 ICU로 사용합니다.
-- ICU는 I CODE U의 약자이며, AI가 사용자의 코딩 학습을 함께한다는 의미를 담습니다.
-- 기존 DevChat 명칭은 저장소와 기획 문서의 프로젝트명으로 유지할 수 있습니다.
-- Figma의 색감 레이어를 기준으로 오렌지, 시안, 딥블루가 조화되는 브랜드 악센트를 사용합니다.
-- 학습과 코딩이 중심인 데스크톱 앱이므로 전체 UI는 과한 그라데이션보다 중립 표면, 명확한 대비, 제한된 악센트 사용을 우선합니다.
-- MVP UI는 라이트모드와 다크모드를 모두 고려해 토큰 기반으로 설계합니다.
-
-## 7. 시스템 구조
-
-DevChat은 Electron의 Renderer Process와 Main Process를 분리해 구성합니다.
-
-- Renderer Process
-  - React 기반 채팅 UI
-  - Monaco Editor
-  - 실행 결과 패널
-  - 커리큘럼 사이드바와 진도 표시
-
-- Main Process
-  - Tutor Agent
-  - RAG Service
-  - Docs Ingestion
-  - Code Runner
-  - Judge Service
-  - Progress Service
-  - Notion Sync Service
-
-Renderer와 Main은 IPC로 통신합니다. Renderer는 화면과 사용자 입력을 담당하고, Main은 LLM 호출, 로컬 DB 접근, 코드 실행, 문서 검색, Notion 동기화를 담당합니다.
-
-## 8. 12주 MVP 로드맵
-
-### Phase 1: Electron 기본 앱 + 채팅 UI (1~3주)
-
-- Today Learning Hub React 화면 구현
-- Learning Workspace IDE React 화면 구현
-- Electron 프로젝트 셋업
-- React 기반 채팅 UI 구현
-- Monaco Editor 통합
-- Renderer/Main IPC 구조 설계
-- SQLite 기본 스키마 작성
-
-### Phase 2: AI 튜터 채팅 + RAG (4~6주)
-
-- Tutor Agent 구현
-- 커리큘럼 모드와 자유 질문 모드 구현
-- 공식 문서 수집 파이프라인 작성
-- ChromaDB 또는 SQLite FTS 기반 검색 구성
-- 검색된 문서 기반 답변 생성
-
-### Phase 3: 코드 실행 + 실습 (7~9주)
-
-- Python/JavaScript Code Runner 구현
-- timeout, 임시 디렉토리, 기본 격리 설정
 - Judge Service 구현
-- 함수형 실습과 표준입출력 문제 지원
-- 실행 결과를 채팅과 결과 패널에 표시
+- Python 실행 지원
+- 코드 실행 격리 강화 또는 Electron IPC 전환
+- AI 코드 리뷰 API 연결
+- full RAG 검색/embedding/vector store
+- 사용자별 DB 저장 강화
+- Notion API 연동
+- Electron desktop packaging
 
-### Phase 4: 고도화 + 연동 (10~12주)
+## 검증 기준
 
-- LLM 기반 문제 생성 및 검증 파이프라인
-- 단계별 힌트와 코드 리뷰
-- mastery_score 기반 진도 관리
-- 오답노트와 복습 스케줄
-- Notion 동기화
-- `.exe` / `.dmg` 빌드 준비
+코드 변경 시 아래 명령을 확인합니다.
 
-## 9. MVP 제외 및 2차 확장
+```bash
+npm test
+npm run build
+npm run lint
+git diff --check
+```
 
-MVP에서는 다음 항목을 제외하고 2차 기능으로 분리합니다.
+문서만 변경한 경우 `git diff --check`를 우선 확인하고, 코드와 함께 커밋할 경우 전체 검증을 수행합니다.
 
-- Docker 기반 강한 코드 실행 샌드박스
-- TypeScript, Java, C++, Go 코드 실행
-- 백준, 프로그래머스 문제 자동 수집
-- 음성 입력과 TTS
-- GitHub 자동 커밋 연동
-- 클라우드 저장과 멀티 디바이스 동기화
-- 웹 버전 SaaS
-- 팀 기능, 강사 대시보드, 결제 시스템
+## SQLite Persistence Update
 
-## 10. 위험 요소와 대응 전략
-
-| 위험 요소 | 영향도 | 대응 방안 |
-| --- | --- | --- |
-| OpenAI API 비용 증가 | 높음 | gpt-4o-mini 기본 사용, 문제/퀴즈 캐싱, 임베딩 재사용 |
-| 코드 실행 보안 | 높음 | timeout, 임시 디렉토리 격리, 메모리 제한, 2차 Docker 샌드박스 |
-| LLM 생성 문제 오류 | 중간 | 정답 코드와 테스트케이스 실행 검증 후 공개 |
-| Electron 앱 용량 증가 | 중간 | 불필요한 모듈 제거, 지연 로딩, 빌드 최적화 |
-| 문서 라이선스 문제 | 높음 | 라이선스가 명확한 공식 문서만 사용하고 출처 표시 |
-| 학습 데이터 부정확성 | 높음 | 공식 문서 기반 소스 제한, 출처 표시, 근거 부족 시 불확실성 안내 |
-| ChromaDB 통합 복잡도 | 중간 | MVP에서는 SQLite FTS 폴백 허용 |
-
-## 11. 현재 구현 상태
-
-현재 저장소에는 Vite + React + TypeScript 기반 소개 화면과 ICU 제품 설계 문서가 정리되어 있습니다.
-
-- DevChat 프로젝트 주제 소개
-- 새 기술 입력 기반 로컬 커리큘럼 데모
-- 커리큘럼 단계 선택 UI
-- AI 튜터 채팅과 코드 에디터 형태의 미리보기
-- README의 프로젝트 소개와 실행 방법 정리
-- `docs/design/` 디자인 산출물 작성
-- Figma 기반 ICU 라이트/다크 화면 이미지 반영
-  - Today Learning Hub Light/Dark
-  - Learning Workspace IDE Light/Dark
-- Today Learning Hub React mock 화면 구현
-- Learning Workspace IDE React mock 화면 구현
-- Today Hub의 학습 시작, 학습 큐, 복습 시작을 `mission` 쿼리 기반 Workspace mock 상태와 연결
-- 오답노트 MVP 구현: Today Hub 대시보드형 요약에서 `/mistake-notes` 리스트형 전체보기로 이동하고, Git Lab 실패 명령은 자동 기록 후 다시 풀기 흐름으로 이어지는 구조
-- Curriculum Planner Agent 구현: `shared/curriculum/*.json` 직무별 커리큘럼 데이터를 Today Hub/Workspace용 `GeneratedCurriculumPlan`으로 변환
-- React + TypeScript + TSX 개발 환경 정리
-- React Router, Zustand, CSS Modules 기준 확정
-- `AGENTS.md` 개발 컨벤션 작성
-- `skills/design/SKILL.md` 디자인 작업 가이드 정리
-
-선택된 제품 화면 방향은 `Today Learning Hub + Learning Workspace IDE` 조합입니다. 앱 첫 화면은 AI 채팅만 여는 구조가 아니라 오늘 학습, 학습 목록, 복습 항목, 이어하기 액션을 관리하는 허브로 시작합니다. 학습을 시작하면 커리큘럼, AI 튜터, 코드 에디터, 실행 결과가 결합된 IDE형 워크스페이스로 이동합니다.
-
-다음 단계는 React mock 화면의 밀도, 반응형, mock 데이터 흐름을 다듬고 오답노트와 Curriculum Planner Agent를 연결한 뒤 Monaco Editor, 코드 실행, Electron Main Process, RAG, Notion API를 순차적으로 연결하는 것입니다. 기능별 구현 기준은 [오늘 학습 허브](./features/today-learning.md), [학습 워크스페이스](./features/learning-workspace.md), [오답노트](./features/mistake-notes.md), [Curriculum Planner Agent](./features/curriculum-planner-agent.md), [Curriculum Agent API](./features/curriculum-agent-api.md), [학습 지식 데이터](./features/learning-knowledge-data.md)를 참고합니다.
-
-### React Mock 진행 상태 저장
-
-React mock 화면 단계에서는 실제 DB 없이 `icu.learningProgress` localStorage로 학습 진행 상태를 유지합니다.
-
-- Workspace에서 실행 결과, 시도 횟수, 현재 단계, 최근 활동 로그를 mission별로 저장합니다.
-- Today Hub는 저장된 mission 상태를 합성해 Today Queue 상태와 완료율을 표시합니다.
-- 오답노트는 `icu.mistakeNotes` localStorage 값으로 Git Lab 실패 명령, 자동 기록 여부, 다시 풀기 상태를 유지합니다.
-- 생성된 커리큘럼은 `icu.generatedCurriculum` localStorage/Zustand snapshot으로 Today Hub와 Workspace가 같은 plan을 공유합니다.
-- 이 persistence는 React mock 화면 검증용이며, Electron/SQLite 단계에서 정식 Progress Service로 대체합니다.
-
-### Git Lab 구현 상태
-
-현재 Git Lab은 Pro Git 기반 커리큘럼을 따라가는 deterministic 시뮬레이터로 구현되어 있습니다. 지원 범위는 config/init/status, diff/staged diff, add/restore, commit/amend, branch/delete, checkout/switch, merge fast-forward/merge commit, log/oneline, reset soft/mixed/hard입니다. Repository State 패널은 HEAD, index, working tree와 파일 상태를 함께 보여주며, 실패한 Git 명령은 오답노트에 자동 기록됩니다.
-
-다음 Git Lab 후보 작업은 `rebase`, `tag`, remote/fetch/pull/push, reflog, conflict resolution, 실제 파일 편집 UI입니다. 이 기능들은 React mock 화면의 안정성을 유지하면서 goal type과 엔진 테스트를 먼저 확장한 뒤 화면에 연결합니다.
-
-## 12. 향후 Agent Architecture 계획
-
-ICU의 agent는 React 컴포넌트처럼 화면에 직접 붙는 단위가 아니라, 역할이 분리된 기능 모듈 또는 서버 실행 단위로 관리합니다. 초기에는 같은 저장소 안의 CLI/module로 시작하고, 기능이 커지면 Node.js 백엔드, Electron Main Process, Python worker, 별도 Agent Service 중 적절한 위치로 이동합니다.
-
-### 기본 방향
-
-- Node.js는 제품 백엔드 역할을 맡습니다: 사용자 인증, API 라우팅, 학습 기록 저장, 권한 체크, 화면에 맞는 응답 조립, agent 실행 요청을 담당합니다.
-- Agent는 판단과 생성 역할을 맡습니다: 커리큘럼 추천, 오답 분석, 복습 추천, 코드 피드백, RAG 기반 답변, 응답 JSON 정규화를 담당합니다.
-- Agent는 기능별로 분리합니다: Curriculum Planner Agent, Review Agent, Code Feedback Agent, RAG Answer Agent처럼 목적이 다른 agent를 독립적으로 관리합니다.
-- 모든 agent는 프론트 화면이 직접 모델 API를 호출하지 않도록 서버 또는 로컬 실행 계층 뒤에 둡니다.
-- 1차 실제 agent 호출 위치는 데스크톱 앱 전환 전 Node.js backend로 정합니다. Electron 전환 후에는 같은 core 로직을 Main Process에서 재사용합니다.
-- Agent 응답은 화면에서 바로 사용할 수 있는 typed JSON contract로 정규화합니다.
-
-### 단계별 확장 계획
-
-1. 로컬 CLI agent 단계
-   - 현재 `scripts/curriculum-planner-agent.mjs`처럼 로컬에서 실행 가능한 CLI로 검증합니다.
-   - `shared/curriculum/*.json`을 읽고, Gemini API를 호출하고, 검증된 JSON을 출력합니다.
-   - API key는 `.env` 또는 `src/.env`에서만 읽고 커밋하지 않습니다.
-
-2. Node module/API 단계
-   - CLI에 있는 핵심 로직을 Node module로 분리합니다.
-   - 데스크톱 앱 전환 전에는 Node.js backend에서 같은 로직을 호출합니다. Electron 전환 후에는 Main Process에서 재사용합니다.
-   - React 화면은 `/api/curriculum/recommend` 같은 API만 호출하고 agent 내부 구조를 알지 않도록 합니다.
-
-3. Python worker 검토 단계
-   - RAG, 문서 chunking, embedding, vector search, 학습 로그 분석처럼 Python 생태계가 유리한 작업이 커지면 Python worker를 추가합니다.
-   - Node.js 백엔드는 요청 저장과 상태 조회를 담당하고, Python worker는 무거운 AI 작업을 처리합니다.
-   - Node와 Python 사이의 입출력은 JSON contract로 고정합니다.
-
-4. Queue 기반 비동기 처리 단계
-   - 코드 리뷰, 긴 문서 검색, 개인화 커리큘럼 생성처럼 시간이 오래 걸리는 작업은 queue/job으로 분리합니다.
-   - Node API는 job을 만들고, worker는 agent를 실행한 뒤 결과를 DB에 저장합니다.
-   - React는 job 상태를 polling 또는 실시간 구독으로 확인합니다.
-
-5. 별도 Agent Service 단계
-   - 여러 agent가 커지고 재사용이 필요해지면 별도 Agent Service로 분리합니다.
-   - Agent Service는 모델 선택, 프롬프트 버전, tool 호출, 비용 추적, 로그, 재시도, 응답 검증을 한곳에서 관리합니다.
-   - Node.js 백엔드는 제품 도메인 API와 권한 관리를 유지하고, Agent Service를 내부 API로 호출합니다.
-
-### ICU Agent 후보
-
-- Curriculum Planner Agent: 사용자 목표와 커리큘럼 데이터를 기반으로 학습 track, level, module, 오늘 미션을 추천합니다.
-- Review Agent: 오답노트와 학습 기록을 기반으로 복습 우선순위와 다음 복습 시점을 추천합니다.
-- Code Feedback Agent: 코드, 실행 결과, 테스트 실패 내용을 보고 초보자가 이해하기 쉬운 피드백을 생성합니다.
-- RAG Answer Agent: 공식 문서 검색 결과를 근거로 개념 설명과 참고 출처를 제공합니다.
-- Progress Coach Agent: 최근 학습 흐름, 완료율, 반복 실패 항목을 보고 다음 학습 행동을 제안합니다.
-
-### 운영 원칙
-
-- 프론트엔드에서 API key나 model 호출 코드를 직접 다루지 않습니다.
-- Agent별 입력/출력 schema를 문서화하고 테스트합니다.
-- 모델 응답은 그대로 믿지 않고 trackId, levelId, moduleIds, required fields를 검증합니다.
-- Gemini Developer API, Vertex AI, OpenAI 등 provider는 agent 내부 설정으로 숨기고 화면 contract는 유지합니다.
-- 초기에는 Node.js agent로 단순하게 유지하고, RAG와 데이터 처리 복잡도가 커질 때 Python worker 또는 Agent Service로 분리합니다.
+- Added optional SQLite repository mode for backend persistence.
+- Enable with `ICU_REPOSITORY_MODE=sqlite` and optional `ICU_SQLITE_PATH`.
+- Current persisted data: learning progress, mistake notes, Git Lab attempts.
+- Prepared schema for generated curriculum snapshots; API wiring remains next.
+- In-memory repositories remain the default for mock mode and tests.

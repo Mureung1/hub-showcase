@@ -9,12 +9,13 @@
 
 ## Current Priority
 
-Build the React mock product screens before adding desktop/backend complexity.
+Build the React product screens and the minimum local backend needed for the learning workflow before adding desktop packaging or RAG complexity.
 
 1. Today Learning Hub
-2. Learning Workspace IDE
+2. Learning Workspace IDE with Monaco Editor
 3. Mock learning data and screen state
-4. Monaco Editor, code execution, Electron Main Process, RAG, and Notion sync later
+4. Express-backed curriculum, progress, mistake-note, Git Lab attempt, and code-runner APIs
+5. Electron Main Process, RAG, and Notion sync later
 
 ## Tech Decisions
 
@@ -24,9 +25,9 @@ Build the React mock product screens before adding desktop/backend complexity.
 - State management: Zustand.
 - Styling: CSS Modules for new component-scoped styles.
 - Global styling: keep only app-wide reset, typography, and tokens in `src/styles`.
-- Express: do not install or add yet. Add it later only when RAG/code-runner APIs need a backend layer.
+- Express: use the existing lightweight local backend for curriculum, progress, mistake notes, Git Lab attempts, and code execution boundaries.
 - Electron: add after React screens and mock data flows are stable.
-- Monaco: add when implementing the Workspace editor surface.
+- Monaco: use `@monaco-editor/react` for the Workspace editor surface.
 
 ## Directory Convention
 
@@ -69,7 +70,7 @@ When designing, redesigning, auditing, or implementing any user-facing screen, a
 - Read `skills/design/SKILL.md` together with the relevant feature docs.
 - Preserve the existing ICU product direction: practical learning workflow, beginner-friendly hierarchy, readable Korean copy, clear next action, accessible controls, and calm IDE-like density.
 - When the user explicitly invokes a Product Design skill such as `product-design:design-qa`, follow that skill in addition to the local ICU design workflow skill.
-- Do not add Tailwind, icon libraries, Monaco, Electron, Express, RAG, Notion API integration, or other new dependencies unless the user explicitly asks or the task requires it.
+- Do not add Tailwind, icon libraries, Electron, RAG, Notion API integration, or other new dependencies unless the user explicitly asks or the task requires it. Monaco and Express are approved project dependencies.
 - Design and generated code must be user-friendly and easy to learn, especially for beginner developers using the app repeatedly.
 ## Commit Convention
 
@@ -95,6 +96,7 @@ Use Korean Conventional Commit messages:
 ## Guardrails
 
 - Do not modify unrelated untracked folders such as `skills/` unless the user explicitly asks.
-- Do not introduce Express, Electron, Monaco, RAG, or Notion API implementation during React mock screen work.
+- Do not introduce Electron, RAG, or Notion API implementation during React screen work.
+- Monaco and Express are already approved for the Workspace editor and local API boundary; keep their usage scoped to those flows.
 - Prefer small, typed mock data over hardcoded screen-only strings once a UI surface becomes part of the app.
 - Keep implementation aligned with the existing ICU design direction: practical IDE structure, beginner-friendly Today Hub entry, light/dark readiness, and restrained Workday-inspired orange/cyan/deep-blue accents.

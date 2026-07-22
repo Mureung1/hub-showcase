@@ -8,13 +8,18 @@ import { handleCurriculumApiRequest } from './curriculumRoutes.mjs'
 import { handleGitLabAttemptApiRequest } from './gitLabAttemptRoutes.mjs'
 import { handleLearningProgressApiRequest } from './learningProgressRoutes.mjs'
 import { handleMistakeNoteApiRequest } from './mistakeNoteRoutes.mjs'
+import { handleCodeRunApiRequest } from './codeRunRoutes.mjs'
 import { loadCurriculumTracks } from '../modules/curriculum/adapters/jsonCurriculumCatalogRepository.mjs'
 import { createInMemoryGitLabAttemptRepository } from '../modules/git-lab/adapters/inMemoryGitLabAttemptRepository.mjs'
+import { createSqliteGitLabAttemptRepository } from '../modules/git-lab/adapters/sqliteGitLabAttemptRepository.mjs'
 import { createInMemoryLearningProgressRepository } from '../modules/learning-progress/adapters/inMemoryLearningProgressRepository.mjs'
+import { createSqliteLearningProgressRepository } from '../modules/learning-progress/adapters/sqliteLearningProgressRepository.mjs'
 import { createInMemoryMistakeNoteRepository } from '../modules/mistake-notes/adapters/inMemoryMistakeNoteRepository.mjs'
+import { createSqliteMistakeNoteRepository } from '../modules/mistake-notes/adapters/sqliteMistakeNoteRepository.mjs'
 import { loadKnowledgeChunks } from '../modules/knowledge/adapters/jsonlKnowledgeRepository.mjs'
 import { createAgentConfig, loadEnvFiles } from '../shared/env.mjs'
 import { createCorsHeaders, createRouteNotFoundResponse } from '../shared/http.mjs'
+import { createSqliteDatabase } from '../shared/sqliteDatabase.mjs'
 
 export const defaultCurriculumAgentHost = '127.0.0.1'
 export const defaultCurriculumAgentPort = 8787
@@ -65,6 +70,7 @@ export function createCurriculumAgentApp({
         (await handleLearningProgressApiRequest(routeContext)) ??
         (await handleMistakeNoteApiRequest(routeContext)) ??
         (await handleGitLabAttemptApiRequest(routeContext)) ??
+        (await handleCodeRunApiRequest(routeContext)) ??
         createRouteNotFoundResponse()
 
       sendJson(response, result)
@@ -93,13 +99,32 @@ export function createCurriculumAgentApp({
 export function createRuntimeContext() {
   loadEnvFiles({ fs, path, repoRoot })
 
+  const repositories = createRuntimeRepositories()
+
   return {
     tracks: loadCurriculumTracks({ fs, path, repoRoot }),
     config: createAgentConfig(),
-    progressRepository: createInMemoryLearningProgressRepository(),
-    mistakeNoteRepository: createInMemoryMistakeNoteRepository(),
-    gitLabAttemptRepository: createInMemoryGitLabAttemptRepository(),
+    ...repositories,
     knowledgeChunks: loadKnowledgeChunks({ fs, path, repoRoot }),
+  }
+}
+
+export function createRuntimeRepositories(env = process.env) {
+  if (env.ICU_REPOSITORY_MODE !== 'sqlite') {
+    return {
+      progressRepository: createInMemoryLearningProgressRepository(),
+      mistakeNoteRepository: createInMemoryMistakeNoteRepository(),
+      gitLabAttemptRepository: createInMemoryGitLabAttemptRepository(),
+    }
+  }
+
+  const database = createSqliteDatabase({ dbPath: env.ICU_SQLITE_PATH, repoRoot })
+
+  return {
+    sqliteDatabase: database,
+    progressRepository: createSqliteLearningProgressRepository(database),
+    mistakeNoteRepository: createSqliteMistakeNoteRepository(database),
+    gitLabAttemptRepository: createSqliteGitLabAttemptRepository(database),
   }
 }
 

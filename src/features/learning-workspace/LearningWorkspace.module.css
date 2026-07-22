@@ -206,7 +206,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-content: stretch;
   max-height: 250px;
-  overflow: auto;
+  overflow: hidden;
   padding-right: 2px;
 }
 
@@ -216,7 +216,13 @@
   overflow: auto;
 }
 
-.railCard,
+.railCard {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 18px;
+}
+
 .missionCard,
 .tutorCard,
 .explanationCard,
@@ -269,6 +275,7 @@
   display: grid;
   gap: 8px;
   margin-top: 14px;
+  overflow: auto;
 }
 
 .currentStepCard strong,
@@ -323,12 +330,15 @@
 }
 
 .stepList {
-  max-height: 340px;
+  flex: 1;
+  max-height: none;
   overflow: auto;
   display: grid;
+  align-content: start;
   gap: 10px;
   margin: 14px 0 0;
   padding: 0;
+  padding-right: 4px;
   list-style: none;
 }
 
@@ -645,33 +655,12 @@
     #fffaf6;
 }
 
-.previewAppCard {
-  width: min(100%, 560px);
-  border: 1px solid #e4e7ec;
+.previewIframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
   border-radius: 8px;
-  padding: 30px 26px;
-  background: #ffffff;
-  box-shadow: 0 16px 34px rgb(15 23 42 / 12%);
-}
-
-.previewAppCard h3 {
-  margin: 0 0 20px;
-  color: #030712;
-  font-size: 27px;
-  line-height: 1.2;
-  font-weight: 900;
-  letter-spacing: 0;
-}
-
-.previewAppCard button {
-  min-height: 28px;
-  border: 1px solid #6b7280;
-  border-radius: 3px;
-  padding: 2px 9px;
-  background: #f9fafb;
-  color: #030712;
-  cursor: pointer;
-  font-size: 14px;
 }
 
 .previewEmpty {

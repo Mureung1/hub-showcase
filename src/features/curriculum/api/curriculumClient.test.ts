@@ -16,7 +16,7 @@ describe('curriculumClient', () => {
 
   it('creates the same fallback plan used by mock screens', () => {
     expect(createFallbackCurriculumPlan('I want to learn React').todayMission.fileName).toBe(
-      'index.html',
+      'App.jsx',
     )
   })
 

@@ -2,31 +2,17 @@
 
 This folder contains server-side code for ICU. The frontend must not call Gemini, Vertex AI, OpenAI, or other model providers directly from the browser.
 
-## Curriculum Agent API
+## Local API Server
 
 ```bash
 npm run server:curriculum
 ```
 
-The Express server entrypoint is `backend/http/server.mjs`. It listens on `http://127.0.0.1:8787` by default and exposes:
+The Express server entrypoint is `backend/http/server.mjs`. It listens on `http://127.0.0.1:8787` by default.
 
-```http
-POST /api/curriculum/recommend
-Content-Type: application/json
-```
+## Implemented APIs
 
-Request:
-
-```json
-{ "goal": "백엔드 개발자가 되고 싶어" }
-```
-
-The response returns a `GeneratedCurriculumPlan`-compatible `plan` for the React Today Hub and Workspace.
-
-
-## Implemented Mock Backend APIs
-
-The current backend uses Express with in-memory repositories. These APIs are a server boundary for the React screens before Electron, SQLite, RAG, or code execution are introduced.
+The current backend uses Express with in-memory repositories by default. These APIs are the local boundary for React screens before Electron and RAG are introduced. Code execution already goes through this backend boundary, with the current runner kept intentionally minimal for local learning feedback.
 
 ```http
 POST   /api/curriculum/recommend
@@ -42,14 +28,52 @@ DELETE /api/mistake-notes
 GET    /api/git-lab/attempts
 POST   /api/git-lab/attempts
 DELETE /api/git-lab/attempts
+POST   /api/code/run
 ```
 
-Current module boundaries:
+## Curriculum Agent API
+
+```http
+POST /api/curriculum/recommend
+Content-Type: application/json
+```
+
+Request:
+
+```json
+{ "goal": "백엔드 개발자가 되고 싶어" }
+```
+
+The response returns a `GeneratedCurriculumPlan`-compatible `plan` for the React Today Hub and Workspace.
+
+## Code Runner API
+
+```http
+POST /api/code/run
+Content-Type: application/json
+```
+
+Request:
+
+```json
+{ "language": "javascript", "code": "console.log('hello ICU')" }
+```
+
+Response:
+
+```json
+{ "success": true, "logs": ["hello ICU"], "result": null }
+```
+
+The current runner supports JavaScript/JSX snippets through Node's `vm` module. It is suitable for local learning feedback only; process isolation, filesystem isolation, and stronger limits belong to the Judge Service phase.
+
+## Module Boundaries
 
 - `backend/modules/curriculum`: matches a user goal to curriculum data and model output.
 - `backend/modules/learning-progress`: stores mission run state, attempt count, active step, completion time, and activity log.
 - `backend/modules/mistake-notes`: stores reusable mistake records from Git Lab, Workspace, algorithm, and API practice flows.
 - `backend/modules/git-lab`: records Git command attempts and can create a linked mistake note for failed attempts.
+- `backend/modules/code-runner`: runs JavaScript/JSX snippets for Workspace learning feedback through `/api/code/run`.
 - `backend/modules/knowledge`: loads official-doc JSONL chunks from `data` for agent/RAG grounding.
 
 ## Local Environment
@@ -71,9 +95,11 @@ VITE_ICU_API_MODE=server
 
 Without those flags, the React app keeps using mock curriculum generation and localStorage-backed screen state.
 
+Keep `GEMINI_API_KEY` server-side only in `.env`. Do not create a `VITE_*` API key.
+
 ## Full Local Dev Mode
 
-Use this when you want the React app to call the local backend API while developing the mock product screens.
+Use this when you want the React app to call the local backend API while developing the product screens.
 
 ```bash
 npm run dev:server
@@ -91,11 +117,27 @@ VITE_ICU_API_MODE=server
 VITE_CURRICULUM_RECOMMENDATION_MODE=server
 ```
 
-Keep `GEMINI_API_KEY` server-side only in `.env`. Do not create a `VITE_*` API key.
-
 Quick QA path:
 
 1. Run `npm run dev:server`.
 2. Open the Vite URL shown in the terminal.
 3. Go to Today Hub and generate a curriculum from a Docker or backend learning goal.
 4. Confirm the generated plan is saved, then open Workspace and check that the same plan is used.
+5. Edit JavaScript in the Monaco editor and run it through `/api/code/run`.
+
+## SQLite Persistence Mode
+
+Use SQLite when backend state should survive server restarts during local development or desktop-app preparation.
+
+```env
+ICU_REPOSITORY_MODE=sqlite
+ICU_SQLITE_PATH=.icu/icu.sqlite
+```
+
+Then run:
+
+```bash
+npm run server:curriculum
+```
+
+The default mode still uses in-memory repositories. SQLite mode currently persists learning progress, mistake notes, and Git Lab attempts. The `generated_curriculums` table is prepared for the next step, but Today Hub generated-plan persistence is not connected yet.

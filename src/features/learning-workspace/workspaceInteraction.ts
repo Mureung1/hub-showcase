@@ -29,6 +29,18 @@ export function getInitialStepOffset(missionId: string) {
   return missionId === generatedMissionId ? 0 : 1
 }
 
+export function clampStepOffset(activeStepOffset: number, totalSteps: number) {
+  if (totalSteps <= 0) {
+    return 0
+  }
+
+  return Math.min(Math.max(activeStepOffset, 0), totalSteps - 1)
+}
+
+export function isFinalStep(activeStepOffset: number, totalSteps: number) {
+  return totalSteps > 0 && clampStepOffset(activeStepOffset, totalSteps) === totalSteps - 1
+}
+
 export function getNextRunState(runAttemptCount: number): Exclude<RunState, 'idle' | 'running'> {
   return runAttemptCount === 0 ? 'failed' : 'passed'
 }
@@ -50,13 +62,27 @@ export function createWorkspaceTestCases({
 
   if (isGeneratedMission) {
     return [
-      { id: 'TC 01', input: 'pwd', expected: '현재 경로 출력', actual: '현재 경로 출력', state: 'passed', runtime: '8ms' },
-      { id: 'TC 02', input: 'ls -la', expected: '파일 목록 출력', actual: '파일 목록 출력', state: 'passed', runtime: '11ms' },
+      {
+        id: 'TC 01',
+        input: '학습 목표 요약',
+        expected: '오늘 단계의 핵심을 한 문장으로 설명',
+        actual: '오늘 단계의 핵심을 한 문장으로 설명',
+        state: 'passed',
+        runtime: '8ms',
+      },
+      {
+        id: 'TC 02',
+        input: '예제 실행',
+        expected: '파일의 핵심 흐름 확인',
+        actual: '파일의 핵심 흐름 확인',
+        state: 'passed',
+        runtime: '11ms',
+      },
       {
         id: 'TC 03',
-        input: 'ps aux',
-        expected: '프로세스 확인',
-        actual: runState === 'failed' ? '권한 확인 필요' : '실행 대기',
+        input: '근거 정리',
+        expected: '공식 문서 기준으로 다음 질문 기록',
+        actual: runState === 'failed' ? '근거 문서 확인 필요' : '실행 대기',
         state: runState === 'failed' ? 'failed' : 'pending',
         runtime: runState === 'failed' ? '15ms' : '-',
       },
@@ -66,7 +92,7 @@ export function createWorkspaceTestCases({
   return [
     { id: 'TC 01', input: 'initial = 0', expected: '0 표시', actual: '0 표시', state: 'passed', runtime: '12ms' },
     { id: 'TC 02', input: 'click once', expected: '1 표시', actual: '1 표시', state: 'passed', runtime: '14ms' },
-    { id: 'TC 03', input: 'click many', expected: '누적 증가', actual: '확인 필요', state: 'failed', runtime: '16ms' },
+    { id: 'TC 03', input: 'click many', expected: '계속 증가', actual: '확인 필요', state: 'failed', runtime: '16ms' },
     { id: 'TC 04', input: 'negative case', expected: '오류 없음', actual: '대기', state: 'pending', runtime: '-' },
   ]
 }
@@ -74,16 +100,16 @@ export function createWorkspaceTestCases({
 function createRunningTestCases(isGeneratedMission: boolean): TestCase[] {
   if (isGeneratedMission) {
     return [
-      { id: 'TC 01', input: 'pwd', expected: '현재 경로 출력', actual: '실행 중', state: 'pending', runtime: '-' },
-      { id: 'TC 02', input: 'ls -la', expected: '파일 목록 출력', actual: '실행 중', state: 'pending', runtime: '-' },
-      { id: 'TC 03', input: 'ps aux', expected: '프로세스 확인', actual: '실행 중', state: 'pending', runtime: '-' },
+      { id: 'TC 01', input: '학습 목표 요약', expected: '오늘 단계의 핵심을 한 문장으로 설명', actual: '실행 중', state: 'pending', runtime: '-' },
+      { id: 'TC 02', input: '예제 실행', expected: '파일의 핵심 흐름 확인', actual: '실행 중', state: 'pending', runtime: '-' },
+      { id: 'TC 03', input: '근거 정리', expected: '공식 문서 기준으로 다음 질문 기록', actual: '실행 중', state: 'pending', runtime: '-' },
     ]
   }
 
   return [
     { id: 'TC 01', input: 'initial = 0', expected: '0 표시', actual: '실행 중', state: 'pending', runtime: '-' },
     { id: 'TC 02', input: 'click once', expected: '1 표시', actual: '실행 중', state: 'pending', runtime: '-' },
-    { id: 'TC 03', input: 'click many', expected: '누적 증가', actual: '실행 중', state: 'pending', runtime: '-' },
+    { id: 'TC 03', input: 'click many', expected: '계속 증가', actual: '실행 중', state: 'pending', runtime: '-' },
     { id: 'TC 04', input: 'negative case', expected: '오류 없음', actual: '실행 중', state: 'pending', runtime: '-' },
   ]
 }
@@ -91,16 +117,16 @@ function createRunningTestCases(isGeneratedMission: boolean): TestCase[] {
 function createPassedTestCases(isGeneratedMission: boolean): TestCase[] {
   if (isGeneratedMission) {
     return [
-      { id: 'TC 01', input: 'pwd', expected: '현재 경로 출력', actual: '현재 경로 출력', state: 'passed', runtime: '7ms' },
-      { id: 'TC 02', input: 'ls -la', expected: '파일 목록 출력', actual: '파일 목록 출력', state: 'passed', runtime: '10ms' },
-      { id: 'TC 03', input: 'ps aux', expected: '프로세스 확인', actual: '프로세스 목록 출력', state: 'passed', runtime: '14ms' },
+      { id: 'TC 01', input: '학습 목표 요약', expected: '오늘 단계의 핵심을 한 문장으로 설명', actual: '오늘 단계의 핵심을 한 문장으로 설명', state: 'passed', runtime: '7ms' },
+      { id: 'TC 02', input: '예제 실행', expected: '파일의 핵심 흐름 확인', actual: '파일의 핵심 흐름 확인', state: 'passed', runtime: '10ms' },
+      { id: 'TC 03', input: '근거 정리', expected: '공식 문서 기준으로 다음 질문 기록', actual: '다음 질문 1개 기록', state: 'passed', runtime: '14ms' },
     ]
   }
 
   return [
     { id: 'TC 01', input: 'initial = 0', expected: '0 표시', actual: '0 표시', state: 'passed', runtime: '11ms' },
     { id: 'TC 02', input: 'click once', expected: '1 표시', actual: '1 표시', state: 'passed', runtime: '12ms' },
-    { id: 'TC 03', input: 'click many', expected: '누적 증가', actual: '3까지 증가', state: 'passed', runtime: '13ms' },
+    { id: 'TC 03', input: 'click many', expected: '계속 증가', actual: '3까지 증가', state: 'passed', runtime: '13ms' },
     { id: 'TC 04', input: 'negative case', expected: '오류 없음', actual: '오류 없음', state: 'passed', runtime: '10ms' },
   ]
 }
@@ -120,7 +146,7 @@ export function getResultMessage(
   }
 
   if (runState === 'failed') {
-    return `${failedCount}개 테스트를 다시 확인해야 합니다. 힌트를 보고 재실행하세요.`
+    return `${failedCount}개 테스트를 다시 확인해야 합니다. 힌트를 보고 다시 실행해보세요.`
   }
 
   return `${passedCount} / ${totalCount} 테스트 통과`
