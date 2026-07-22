@@ -12,6 +12,10 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { runProductDevelopment } from './product-development-bootstrap.mjs'
+import {
+  canonicalProductDirectory as canonicalDirectory,
+  productPathExists as pathExists,
+} from './product-path-utils.mjs'
 import { assertProductRootsDoNotOverlap } from './semester-workspace-materializer.mjs'
 
 const profileMarkerName = '.ay-ple-dogfood-profile.json'
@@ -134,15 +138,7 @@ export async function prepareDogfoodProfile(options: {
     'dogfood profile root',
   )
   const layout = resolveProfileLayout(canonicalProfileRoot)
-  await Promise.all([
-    canonicalDirectory(layout.appDataRoot, 'dogfood app data root'),
-    secureDirectory(layout.codexHome, 'dogfood Codex home'),
-    canonicalDirectory(layout.workspaceRoot, 'dogfood SemesterWorkspace'),
-    secureRegularFile(
-      path.join(layout.codexHome, 'config.toml'),
-      'config.toml',
-    ),
-  ])
+  await validateProfileLayout(layout)
 
   return {
     ...layout,
@@ -181,21 +177,7 @@ async function adoptExistingProfile(profileRoot: string): Promise<void> {
     'dogfood profile root',
   )
   const layout = resolveProfileLayout(canonicalProfileRoot)
-  await Promise.all([
-    canonicalDirectory(
-      layout.appDataRoot,
-      'dogfood app data root',
-    ),
-    secureDirectory(layout.codexHome, 'dogfood Codex home'),
-    canonicalDirectory(
-      layout.workspaceRoot,
-      'dogfood SemesterWorkspace',
-    ),
-    secureRegularFile(
-      path.join(layout.codexHome, 'config.toml'),
-      'config.toml',
-    ),
-  ])
+  await validateProfileLayout(layout)
   await resolveAuthState(layout.codexHome)
   await writeOwnershipMarker(canonicalProfileRoot)
 }
@@ -208,6 +190,20 @@ function resolveProfileLayout(profileRoot: string): DogfoodProfileLayout {
     profileRoot,
     workspaceRoot: path.join(profileRoot, 'semester-workspace'),
   }
+}
+
+async function validateProfileLayout(
+  layout: DogfoodProfileLayout,
+): Promise<void> {
+  await Promise.all([
+    canonicalDirectory(layout.appDataRoot, 'dogfood app data root'),
+    secureDirectory(layout.codexHome, 'dogfood Codex home'),
+    canonicalDirectory(layout.workspaceRoot, 'dogfood SemesterWorkspace'),
+    secureRegularFile(
+      path.join(layout.codexHome, 'config.toml'),
+      'config.toml',
+    ),
+  ])
 }
 
 async function writeOwnershipMarker(profileRoot: string): Promise<void> {
@@ -311,18 +307,6 @@ function shellQuote(value: string): string {
   return `'${value.replaceAll("'", `'"'"'`)}'`
 }
 
-async function canonicalDirectory(
-  directory: string,
-  label: string,
-): Promise<string> {
-  const stats = await lstat(directory)
-  if (!stats.isDirectory() || stats.isSymbolicLink()) {
-    throw new TypeError(`${label} must be a non-symlink directory`)
-  }
-  await access(directory, constants.R_OK | constants.X_OK)
-  return realpath(directory)
-}
-
 async function canonicalCandidatePath(candidate: string): Promise<string> {
   const parent = await realpath(path.dirname(path.resolve(candidate)))
   const stats = await lstat(parent)
@@ -331,16 +315,6 @@ async function canonicalCandidatePath(candidate: string): Promise<string> {
   }
   await access(parent, constants.R_OK | constants.W_OK | constants.X_OK)
   return path.join(parent, path.basename(path.resolve(candidate)))
-}
-
-async function pathExists(candidate: string): Promise<boolean> {
-  try {
-    await lstat(candidate)
-    return true
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false
-    throw error
-  }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
