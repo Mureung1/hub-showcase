@@ -46,10 +46,10 @@
 
 .headerActions button {
   min-height: 40px;
-  border: 1px solid #0b4bb3;
+  border: 1px solid #07003d;
   border-radius: 8px;
   padding: 0 16px;
-  background: #0b4bb3;
+  background: #07003d;
   color: #ffffff;
   cursor: pointer;
   font-size: 13px;
@@ -62,13 +62,13 @@
 
 .headerActions button:not(:disabled):hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgb(11 75 179 / 14%);
+  box-shadow: 0 12px 24px rgb(7 0 61 / 14%);
 }
 
 .headerActions button:disabled {
-  border-color: rgb(11 75 179 / 24%);
+  border-color: rgb(7 0 61 / 24%);
   background: #eef7ff;
-  color: #0b4bb3;
+  color: #07003d;
   cursor: not-allowed;
   opacity: 1;
 }
@@ -109,7 +109,7 @@
 
 .tabs .activeTab {
   border-bottom-color: #35c8f4;
-  color: #0b4bb3;
+  color: #07003d;
 }
 
 .toolbar {
@@ -146,7 +146,7 @@
 .summary span:nth-child(3) {
   border-color: rgb(53 200 244 / 26%);
   background: #eaf9fc;
-  color: #0b4bb3;
+  color: #07003d;
 }
 
 .filters button,
@@ -179,22 +179,22 @@
 .rowActions button:hover,
 .actionButton:hover,
 .pagination button:not(:disabled):hover {
-  border-color: #0b4bb3;
-  color: #0b4bb3;
+  border-color: #07003d;
+  color: #07003d;
   transform: translateY(-1px);
 }
 
 .actionButton {
-  border-color: rgb(11 75 179 / 28%);
+  border-color: rgb(7 0 61 / 28%);
   background: #eef7ff;
-  color: #0b4bb3;
+  color: #07003d;
 }
 
 .filters .activeFilter {
-  border-color: #0b4bb3;
-  background: #0b4bb3;
+  border-color: #07003d;
+  background: #07003d;
   color: #ffffff;
-  box-shadow: 0 12px 24px rgb(11 75 179 / 14%);
+  box-shadow: 0 12px 24px rgb(7 0 61 / 14%);
 }
 
 .tableScroller {
@@ -295,7 +295,7 @@
 .statusBadge[data-status='resolved'] {
   border-color: rgb(53 200 244 / 26%);
   background: #eaf9fc;
-  color: #0b4bb3;
+  color: #07003d;
 }
 
 .deleteButton {
@@ -335,7 +335,7 @@
   align-items: center;
   border-radius: 8px;
   padding: 0 16px;
-  background: #0b4bb3;
+  background: #07003d;
   color: #ffffff;
   text-decoration: none;
   font-size: 13px;

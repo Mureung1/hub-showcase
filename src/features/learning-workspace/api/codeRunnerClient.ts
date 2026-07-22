@@ -1,3 +1,5 @@
+export type CodeRunLanguage = 'javascript' | 'jsx' | 'shell' | 'dockerfile' | 'python' | string
+
 export type CodeRunResult = {
   success: boolean
   logs: string[]
@@ -7,7 +9,7 @@ export type CodeRunResult = {
 
 export const codeRunEndpoint = '/api/code/run'
 
-export async function executeCode(code: string, language: string, fetchImpl: typeof fetch = fetch): Promise<CodeRunResult> {
+export async function executeCode(code: string, language: CodeRunLanguage, fetchImpl: typeof fetch = fetch): Promise<CodeRunResult> {
   const response = await fetchImpl(codeRunEndpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

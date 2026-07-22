@@ -97,7 +97,7 @@ describe('generated curriculum plan domain', () => {
       title: '백엔드 시작하기',
       estimatedDuration: '3주 로드맵',
       focusRole: '백엔드 개발자',
-      todayMission: { fileName: 'main.py' },
+      todayMission: { fileName: 'main.py', mode: 'python' },
       steps: [
         { id: 'be-01-01', detail: 'HTTP 메서드, 상태 코드를 순서대로 학습합니다.' },
         { id: 'be-01-02', detail: '라우팅를 순서대로 학습합니다.' },
@@ -106,6 +106,25 @@ describe('generated curriculum plan domain', () => {
     })
   })
 
+
+  it('infers Docker workspace mode from the mission file name', () => {
+    const recommendation = normalizeAgentOutput({
+      tracks,
+      output: {
+        trackId: 'backend',
+        levelId: 'be-01',
+        moduleIds: ['be-01-01'],
+        todayMission: {
+          fileName: 'Dockerfile',
+        },
+      },
+    })
+
+    expect(recommendation.todayMission).toMatchObject({
+      fileName: 'Dockerfile',
+      mode: 'docker',
+    })
+  })
   it('rejects unknown track ids', () => {
     expect(() =>
       normalizeAgentOutput({

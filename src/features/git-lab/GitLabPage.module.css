@@ -12,7 +12,7 @@
     radial-gradient(circle at 7% 16%, rgb(255 138 28 / 62%), transparent 30%),
     radial-gradient(circle at 39% 0%, rgb(243 184 216 / 42%), transparent 30%),
     radial-gradient(circle at 58% 8%, rgb(53 200 244 / 54%), transparent 34%),
-    radial-gradient(circle at 91% 4%, rgb(11 75 179 / 72%), transparent 36%),
+    radial-gradient(circle at 91% 4%, rgb(7 0 61 / 72%), transparent 36%),
     linear-gradient(115deg, #fff2d9 0%, #eef9ff 42%, #d8f4ff 66%, #c4dbff 100%);
 }
 
@@ -25,7 +25,7 @@
 
 .eyebrow {
   margin: 0 0 6px;
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 13px;
   font-weight: 850;
 }
@@ -52,7 +52,7 @@
   border: 0;
   border-radius: 8px;
   padding: 0 18px;
-  background: #0b4bb3;
+  background: #07003d;
   color: #ffffff;
   cursor: pointer;
   font-weight: 850;
@@ -158,12 +158,12 @@
 
 .lessonButton:hover,
 .lessonButton:focus-visible {
-  border-color: #0b4bb3;
+  border-color: #07003d;
   outline: none;
 }
 
 .currentLessonButton {
-  border-color: #0b4bb3;
+  border-color: #07003d;
   background: #e7f6fb;
 }
 
@@ -270,7 +270,7 @@
 
 .pendingState {
   background: #e7f6fb;
-  color: #0b4bb3;
+  color: #07003d;
 }
 
 .graphCanvas {

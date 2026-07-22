@@ -14,8 +14,8 @@
     .softArrow{stroke:#64748b;stroke-width:2.5;fill:none;stroke-dasharray:8 8;marker-end:url(#softArrow)}
     .entry{fill:#ffffff;stroke:#d3dce8}
     .hub{fill:#e7f8fe;stroke:#35c8f4}
-    .primary{fill:#e9f0ff;stroke:#0b4bb3}
-    .module{fill:#f8fafc;stroke:#0b4bb3}
+    .primary{fill:#e9f0ff;stroke:#07003d}
+    .module{fill:#f8fafc;stroke:#07003d}
     .review{fill:#fff3e8;stroke:#ff8a1c}
     .mistake{fill:#fdf2f8;stroke:#f3b8d8}
     .store{fill:#f8fafc;stroke:#64748b}

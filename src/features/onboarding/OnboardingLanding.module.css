@@ -3,12 +3,13 @@
   width: 100%;
   min-height: 100vh;
   overflow: hidden;
-  background:
+  /* background:
     radial-gradient(circle at 7% 16%, rgb(255 138 28 / 62%), transparent 30%),
     radial-gradient(circle at 39% 0%, rgb(243 184 216 / 42%), transparent 30%),
     radial-gradient(circle at 58% 8%, rgb(53 200 244 / 54%), transparent 34%),
-    radial-gradient(circle at 91% 4%, rgb(11 75 179 / 72%), transparent 36%),
-    linear-gradient(115deg, #fff2d9 0%, #eef9ff 42%, #d8f4ff 66%, #c4dbff 100%);
+    radial-gradient(circle at 91% 4%, rgb(7 0 61 / 72%), transparent 36%),
+    linear-gradient(115deg, #fff2d9 0%, #eef9ff 42%, #d8f4ff 66%, #c4dbff 100%); */
+  background: transparent;
   color: #102346;
 }
 
@@ -35,6 +36,7 @@
   color: #102346;
   font-size: 15px;
   font-weight: 800;
+  font-family: 'Cloudsofa_namgim-Regular', sans-serif;
 }
 
 .brandMark {
@@ -42,10 +44,10 @@
   width: 34px;
   height: 34px;
   place-items: center;
-  border: 1px solid rgb(11 75 179 / 24%);
+  border: 1px solid rgb(7 0 61 / 24%);
   border-radius: 8px;
   background: rgb(255 255 255 / 62%);
-  color: #0b4bb3;
+  color: #07003d;
 }
 
 .controls {
@@ -72,9 +74,9 @@
 
 .arrowButton:hover,
 .arrowButton:focus-visible {
-  border-color: #0b4bb3;
+  border-color: #07003d;
   background: #ffffff;
-  color: #0b4bb3;
+  color: #07003d;
 }
 
 .hero {
@@ -91,7 +93,7 @@
 
 .eyebrow {
   margin: 0 0 18px;
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 14px;
   font-weight: 800;
 }
@@ -104,6 +106,22 @@
   font-weight: 850;
   line-height: 0.96;
   letter-spacing: 0;
+  word-break: keep-all;
+}
+
+.cursor {
+  display: inline-block;
+  font-weight: 300;
+  margin-left: 2px;
+  color: #07003d;
+  animation: blink 1s step-end infinite;
+  vertical-align: text-bottom;
+  line-height: 1;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
 .description {
@@ -123,7 +141,7 @@
   border: 0;
   border-radius: 9999px;
   padding: 0 20px 0 22px;
-  background: #0b4bb3;
+  background: #07003d;
   color: #ffffff;
   font-size: 14px;
   font-weight: 850;
@@ -144,7 +162,7 @@
   place-items: center;
   border-radius: 9999px;
   background: #ffffff;
-  color: #0b4bb3;
+  color: #07003d;
 }
 
 .preview {
@@ -209,7 +227,7 @@
   margin-top: 18px;
   overflow: hidden;
   border-radius: 9999px;
-  background: rgb(11 75 179 / 12%);
+  background: rgb(7 0 61 / 12%);
 }
 
 .progress span {
@@ -217,7 +235,7 @@
   width: 64%;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #35c8f4, #0b4bb3);
+  background: linear-gradient(90deg, #35c8f4, #07003d);
 }
 
 .code {

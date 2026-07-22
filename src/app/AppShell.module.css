@@ -6,7 +6,7 @@
     radial-gradient(circle at 5% 10%, rgb(255 138 28 / 44%), transparent 28%),
     radial-gradient(circle at 38% 0%, rgb(243 184 216 / 34%), transparent 30%),
     radial-gradient(circle at 70% 8%, rgb(53 200 244 / 42%), transparent 32%),
-    radial-gradient(circle at 100% 0%, rgb(11 75 179 / 62%), transparent 34%),
+    radial-gradient(circle at 100% 0%, rgb(7 0 61 / 62%), transparent 34%),
     linear-gradient(115deg, #fff2d9 0%, #eef9ff 42%, #d8f4ff 66%, #c4dbff 100%);
 }
 
@@ -18,18 +18,16 @@
   gap: 44px;
   border-right: 1px solid rgb(179 196 220 / 58%);
   padding: 34px 24px;
-  background:
-    radial-gradient(circle at 0% 0%, rgb(255 138 28 / 22%), transparent 34%),
-    radial-gradient(circle at 100% 0%, rgb(53 200 244 / 18%), transparent 34%),
-    rgb(255 255 255 / 58%);
+  background: #ffffff;
   backdrop-filter: blur(14px);
 }
 
 .brand {
   display: grid;
   gap: 4px;
-  color: #0b4bb3;
+  color: #07003d;
   text-decoration: none;
+  font-family: 'Cloudsofa_namgim-Regular', sans-serif;
 }
 
 .brand span {
@@ -63,9 +61,9 @@
 .navList a:hover,
 .navList a:focus-visible,
 .activeNavItem {
-  border-color: rgb(11 75 179 / 24%) !important;
+  border-color: rgb(7 0 61 / 24%) !important;
   background: rgb(255 255 255 / 70%);
-  color: #0b4bb3 !important;
+  color: #07003d !important;
   outline: none;
 }
 

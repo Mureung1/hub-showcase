@@ -19,6 +19,7 @@ export const curriculumAgentResponseSchema = {
         detail: { type: 'STRING' },
         durationMinutes: { type: 'NUMBER' },
         fileName: { type: 'STRING' },
+        mode: { type: 'STRING' },
       },
       required: ['title', 'detail', 'durationMinutes', 'fileName'],
     },
@@ -92,7 +93,8 @@ export function createSystemInstruction() {
     'Return only valid JSON. Do not wrap the answer in markdown.',
     'Pick one track, one starting level, and exactly three modules from that level.',
     'Use Korean for title, summary, todayMission, and rationale.',
-    'Required JSON shape: {"trackId":"string","levelId":"string","moduleIds":["string"],"title":"string","summary":"string","todayMission":{"title":"string","detail":"string","durationMinutes":number,"fileName":"string"},"rationale":"string"}',
+    'Use todayMission.mode to identify the workspace environment: react, linux, docker, or python.',
+    'Required JSON shape: {"trackId":"string","levelId":"string","moduleIds":["string"],"title":"string","summary":"string","todayMission":{"title":"string","detail":"string","durationMinutes":number,"fileName":"string","mode":"react|linux|docker|python"},"rationale":"string"}',
   ].join('\n')
 }
 

@@ -14,10 +14,10 @@
 .controls button,
 .collapsed button {
   min-height: 32px;
-  border: 1px solid rgb(11 75 179 / 20%);
+  border: 1px solid rgb(7 0 61 / 20%);
   border-radius: 9999px;
   background: rgb(255 255 255 / 72%);
-  color: #0b4bb3;
+  color: #07003d;
   cursor: pointer;
   font-size: 12px;
   font-weight: 900;
@@ -35,10 +35,7 @@
   place-items: start center;
   border-right: 1px solid rgb(179 196 220 / 58%);
   padding-top: 18px;
-  background:
-    radial-gradient(circle at 0% 0%, rgb(255 138 28 / 22%), transparent 34%),
-    radial-gradient(circle at 100% 0%, rgb(53 200 244 / 18%), transparent 34%),
-    rgb(255 255 255 / 58%);
+  background: #ffffff;
   backdrop-filter: blur(14px);
 }
 

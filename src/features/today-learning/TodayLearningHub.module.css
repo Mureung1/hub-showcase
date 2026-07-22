@@ -1,4 +1,4 @@
-﻿.page {
+.page {
   min-height: 100vh;
   display: block;
   background: transparent;
@@ -66,6 +66,7 @@
 .emptyState a,
 .welcomeCopy a,
 .panelTitleRow a,
+.generatedStartLink,
 .goalInputRow button {
   min-width: 96px;
   min-height: 40px;
@@ -75,7 +76,7 @@
   border: 0;
   border-radius: 9999px;
   padding: 0 18px;
-  background: #0b4bb3;
+  background: #07003d;
   color: #ffffff;
   cursor: pointer;
   text-decoration: none;
@@ -185,7 +186,7 @@
 }
 
 .welcomeVisual strong {
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 18px;
   font-weight: 900;
 }
@@ -314,9 +315,9 @@
 }
 
 .tabs .activeTab {
-  border-color: #0b4bb3;
+  border-color: #07003d;
   background: #eef5ff;
-  color: #0b4bb3;
+  color: #07003d;
 }
 
 .docsCurriculum,
@@ -364,7 +365,7 @@
 
 .docsCurriculum strong,
 .trackCard > strong {
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 18px;
 }
 
@@ -438,7 +439,7 @@
 }
 
 .generatedSummary span {
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 12px;
   font-weight: 900;
 }
@@ -507,7 +508,7 @@
 }
 
 .aiPlanHeader strong {
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 16px;
 }
 
@@ -523,7 +524,7 @@
   border-radius: 9999px;
   padding: 5px 9px;
   background: #ffffff;
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 12px;
   font-weight: 900;
 }
@@ -553,7 +554,7 @@
   place-items: center;
   border-radius: 9999px;
   background: #f6e9ef;
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 12px;
   font-weight: 900;
 }
@@ -572,7 +573,7 @@
 .aiPlanList small {
   display: block;
   margin-top: 5px;
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 12px;
   font-weight: 850;
   line-height: 1.45;
@@ -656,7 +657,7 @@
   border-radius: 9999px;
   padding: 6px 10px;
   background: #ffffff;
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 12px;
   font-weight: 900;
   box-shadow: 0 10px 20px rgb(15 23 42 / 8%);
@@ -732,7 +733,7 @@
   border-radius: 9999px;
   padding: 5px 9px;
   background: #eef7ff;
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 12px;
   font-weight: 900;
   white-space: nowrap;
@@ -927,4 +928,9 @@ input:focus-visible {
   }
 }
 
+
+
+.generatedStartLink:hover {
+  transform: translateY(-1px);
+}
 

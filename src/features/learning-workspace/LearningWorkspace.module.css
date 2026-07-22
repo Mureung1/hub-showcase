@@ -24,7 +24,7 @@
 
 .kicker,
 .sectionLabel {
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 12px;
   font-weight: 900;
 }
@@ -86,7 +86,7 @@
 .runButton,
 .tutorComposer button {
   border: 0;
-  background: #0b4bb3;
+  background: #07003d;
   color: #ffffff;
 }
 
@@ -105,10 +105,10 @@
 }
 
 .helpPanel .nextStepButton:not(:disabled) {
-  border-color: #0b4bb3;
-  background: #0b4bb3;
+  border-color: #07003d;
+  background: #07003d;
   color: #ffffff;
-  box-shadow: 0 12px 24px rgb(11 75 179 / 14%);
+  box-shadow: 0 12px 24px rgb(7 0 61 / 14%);
 }
 
 .secondaryButton:focus-visible,
@@ -179,7 +179,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #0b4bb3;
+  background: #07003d;
 }
 
 .workspaceGrid {
@@ -264,7 +264,7 @@
   border-radius: 999px;
   padding: 0 10px;
   background: #eef7ff;
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 12px;
   font-weight: 900;
   white-space: nowrap;
@@ -368,7 +368,7 @@
   height: 28px;
   place-items: center;
   border-radius: 999px;
-  background: #0b4bb3;
+  background: #07003d;
   color: #ffffff;
   font-size: 12px;
   font-weight: 900;
@@ -393,7 +393,7 @@
 }
 
 .stepItem small {
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 11px;
   font-weight: 900;
 }
@@ -423,7 +423,7 @@
 }
 
 .criteriaList li::before {
-  color: #0b4bb3;
+  color: #07003d;
   content: '✓ ';
   font-weight: 900;
 }
@@ -441,7 +441,7 @@
   height: 38px;
   place-items: center;
   border-radius: 999px;
-  background: #0b4bb3;
+  background: #07003d;
   color: #ffffff;
   font-size: 12px;
   font-weight: 900;
@@ -808,6 +808,52 @@
   overflow-wrap: anywhere;
 }
 
+
+.previewPanel[data-mode='linux'] .previewViewport,
+.previewPanel[data-mode='docker'] .previewViewport,
+.previewPanel[data-mode='python'] .previewViewport {
+  place-items: center;
+  background: #101824;
+}
+
+.previewPanel[data-mode='linux'] .previewEmpty,
+.previewPanel[data-mode='docker'] .previewEmpty,
+.previewPanel[data-mode='python'] .previewEmpty {
+  border-color: #26364d;
+  background: #151f2e;
+  text-align: left;
+}
+
+.previewPanel[data-mode='linux'] .previewEmpty strong,
+.previewPanel[data-mode='docker'] .previewEmpty strong,
+.previewPanel[data-mode='python'] .previewEmpty strong {
+  color: #e5edf7;
+}
+
+.previewPanel[data-mode='linux'] .previewEmpty p,
+.previewPanel[data-mode='docker'] .previewEmpty p,
+.previewPanel[data-mode='python'] .previewEmpty p {
+  color: #94a3b8;
+}
+
+.previewConsole[data-mode='linux'],
+.previewConsole[data-mode='docker'],
+.previewConsole[data-mode='python'] {
+  border-top-color: #26364d;
+  background: #0f1724;
+}
+
+.previewConsole[data-mode='linux'] strong,
+.previewConsole[data-mode='docker'] strong,
+.previewConsole[data-mode='python'] strong,
+.previewConsole[data-mode='linux'] li,
+.previewConsole[data-mode='docker'] li,
+.previewConsole[data-mode='python'] li,
+.previewConsole[data-mode='linux'] p,
+.previewConsole[data-mode='docker'] p,
+.previewConsole[data-mode='python'] p {
+  color: #dbe4ef;
+}
 .previewError {
   margin-bottom: 8px !important;
   color: #c24c00 !important;

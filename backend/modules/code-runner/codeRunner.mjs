@@ -100,3 +100,44 @@ export async function runShellCode(code) {
     result: null,
   }
 }
+
+export async function runDockerfileCode(code) {
+  const hasFrom = /^FROM\s+\S+/im.test(code)
+  const hasWorkdir = /^WORKDIR\s+\S+/im.test(code)
+  const hasCommand = /^(CMD|ENTRYPOINT)\s+/im.test(code)
+  const logs = [
+    '#1 [internal] load build definition from Dockerfile',
+    '#1 transferring dockerfile: 512B done',
+    hasFrom ? '#2 [base] resolve base image done' : '#2 [base] missing FROM instruction',
+    hasWorkdir ? '#3 [workspace] set working directory done' : '#3 [workspace] WORKDIR not configured',
+    hasCommand ? '#4 [runtime] command configured' : '#4 [runtime] CMD or ENTRYPOINT missing',
+  ]
+  const success = hasFrom && hasCommand
+
+  return {
+    success,
+    logs,
+    result: null,
+    error: success ? undefined : 'Dockerfile must include FROM and CMD or ENTRYPOINT for this practice.',
+  }
+}
+
+export async function runPythonCode(code) {
+  const logs = []
+  const printCalls = [...code.matchAll(/print\((['"])(.*?)\1\)/g)].map((match) => match[2])
+
+  if (printCalls.length > 0) {
+    logs.push(...printCalls)
+  } else if (/FastAPI\(/.test(code)) {
+    logs.push('FastAPI app object detected')
+    logs.push('GET /learning-topics/{topic} route ready')
+  } else if (/def\s+\w+\s*\(/.test(code)) {
+    logs.push('Python function parsed successfully')
+  }
+
+  return {
+    success: true,
+    logs: logs.length ? logs : ['Python script completed.'],
+    result: null,
+  }
+}

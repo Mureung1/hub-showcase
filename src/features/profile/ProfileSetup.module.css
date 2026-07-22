@@ -8,7 +8,7 @@
     radial-gradient(circle at 7% 16%, rgb(255 138 28 / 50%), transparent 30%),
     radial-gradient(circle at 39% 0%, rgb(243 184 216 / 38%), transparent 30%),
     radial-gradient(circle at 58% 8%, rgb(53 200 244 / 46%), transparent 34%),
-    radial-gradient(circle at 91% 4%, rgb(11 75 179 / 64%), transparent 36%),
+    radial-gradient(circle at 91% 4%, rgb(7 0 61 / 64%), transparent 36%),
     linear-gradient(115deg, #fff2d9 0%, #eef9ff 42%, #d8f4ff 66%, #c4dbff 100%);
   color: #172033;
 }
@@ -31,8 +31,9 @@
 .brand {
   display: inline-grid;
   gap: 4px;
-  color: #0b4bb3;
+  color: #07003d;
   text-decoration: none;
+  font-family: 'Cloudsofa_namgim-Regular', sans-serif;
 }
 
 .brand span {
@@ -43,7 +44,7 @@
 }
 
 .brand small {
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 13px;
   letter-spacing: 5px;
   font-weight: 900;
@@ -108,13 +109,13 @@
 }
 
 .activeStep {
-  color: #0b4bb3 !important;
+  color: #07003d !important;
 }
 
 .activeStep .stepNumber {
   border: 2px solid #ffffff;
-  background: #0b4bb3;
-  box-shadow: 0 0 0 2px #0b4bb3;
+  background: #07003d;
+  box-shadow: 0 0 0 2px #07003d;
   color: #ffffff;
 }
 
@@ -153,7 +154,7 @@
 
 .helpCard a {
   margin-top: 8px;
-  color: #0b4bb3;
+  color: #07003d;
   text-decoration: none;
   font-weight: 850;
 }
@@ -177,7 +178,7 @@
 
 .eyebrow {
   margin: 0;
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 13px;
   font-weight: 900;
   letter-spacing: 0;
@@ -306,16 +307,16 @@
   place-items: center;
   border-radius: 9999px;
   background: #eef7ff;
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 13px;
   font-weight: 900;
 }
 
 .selected {
-  border-color: #0b4bb3 !important;
+  border-color: #07003d !important;
   background: linear-gradient(180deg, #ffffff 0%, #eef7ff 100%) !important;
-  box-shadow: 0 0 0 2px rgb(11 75 179 / 10%) !important;
-  color: #0b4bb3 !important;
+  box-shadow: 0 0 0 2px rgb(7 0 61 / 10%) !important;
+  color: #07003d !important;
 }
 
 .selected .trackIcon {
@@ -347,8 +348,8 @@
   justify-content: center;
   gap: 10px;
   border: 0;
-  background: #0b4bb3;
-  box-shadow: 0 18px 32px rgb(11 75 179 / 24%);
+  background: #07003d;
+  box-shadow: 0 18px 32px rgb(7 0 61 / 24%);
   color: #ffffff;
   cursor: pointer;
 }
@@ -369,7 +370,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #0b4bb3;
+  color: #07003d;
   text-decoration: none;
 }
 
@@ -382,7 +383,7 @@
   border-left: 1px solid rgb(179 196 220 / 42%);
   padding: clamp(30px, 3.2vw, 46px) clamp(24px, 3vw, 42px);
   background:
-    radial-gradient(circle at 100% 0%, rgb(11 75 179 / 18%), transparent 28%),
+    radial-gradient(circle at 100% 0%, rgb(7 0 61 / 18%), transparent 28%),
     radial-gradient(circle at 0% 12%, rgb(243 184 216 / 20%), transparent 30%),
     rgb(255 255 255 / 60%);
   backdrop-filter: blur(14px);
@@ -392,18 +393,18 @@
   display: flex;
   gap: 14px;
   align-items: flex-start;
-  color: #0b4bb3;
+  color: #07003d;
 }
 
 .previewTitle > span {
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 24px;
   line-height: 1;
 }
 
 .previewTitle h2 {
   margin: 0;
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 19px;
   line-height: 1.25;
 }
@@ -444,7 +445,7 @@
 }
 
 .todayHeader span {
-  color: #0b4bb3;
+  color: #07003d;
   font-weight: 900;
 }
 
@@ -505,7 +506,7 @@
 
 .metricIcon {
   background: #e8f3ff;
-  color: #0b4bb3;
+  color: #07003d;
 }
 
 .metricIconWarm {
@@ -564,7 +565,7 @@
   border-radius: 8px;
   padding: 12px 14px;
   background: #eefcff;
-  color: #0b4bb3;
+  color: #07003d;
   font-size: 14px;
   font-weight: 850;
 }

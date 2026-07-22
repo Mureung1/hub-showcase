@@ -23,6 +23,8 @@ Curriculum Planner Agent는 ICU에서 사용자의 학습 목표를 받아 적�
 Today Hub와 Workspace는 기존처럼 `GeneratedCurriculumPlan`을 사용합니다.
 
 ```ts
+type WorkspaceMode = 'react' | 'linux' | 'docker' | 'python'
+
 type GeneratedCurriculumPlan = {
   id: string
   goal: string
@@ -35,6 +37,7 @@ type GeneratedCurriculumPlan = {
     detail: string
     durationMinutes: number
     fileName: string
+    mode?: WorkspaceMode
   }
   steps: GeneratedCurriculumStep[]
   sources: CurriculumSource[]
@@ -49,6 +52,7 @@ type GeneratedCurriculumPlan = {
 - 선택된 트랙의 첫 레벨을 시작 레벨로 사용합니다.
 - 첫 레벨의 modules를 Today Hub/Workspace steps로 변환합니다.
 - 첫 모듈의 `practiceIdeas[0]`를 오늘 미션으로 사용합니다.
+- 오늘 미션에는 가능한 경우 `mode`를 포함합니다. mode가 없으면 Workspace가 파일명과 트랙 정보로 fallback 판별합니다.
 - resource type은 다음처럼 변환합니다.
   - `official-doc` -> `official_docs`
   - `reference` -> `practice_guide`

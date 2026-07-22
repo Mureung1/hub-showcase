@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { shouldUseServerApi } from '../../app/icuApiMode'
 import { createFallbackCurriculumPlan } from '../curriculum/api/curriculumClient'
-import { type GeneratedCurriculumPlan, type GeneratedCurriculumStep } from '../curriculum/model/curriculumGenerator'
+import { type GeneratedCurriculumPlan, type GeneratedCurriculumStep, type WorkspaceMode } from '../curriculum/model/curriculumGenerator'
 import {
   resolveGeneratedCurriculumPlan,
   useGeneratedCurriculumStore,
@@ -45,6 +45,7 @@ type WorkspaceMission = {
   detail: string
   durationMinutes: number
   fileName: string
+  mode: WorkspaceMode
   trackTitle: string
   stepLabel: string
   sourceLabel: string
@@ -75,6 +76,14 @@ type RenderPreviewModel = {
   title: string
   buttonLabel: string
   componentName: string
+}
+
+type ExecutionPanelModel = {
+  title: string
+  ariaLabel: string
+  emptyTitle: string
+  emptyDetail: string
+  statusLabel: string
 }
 
 type WorkspaceEditorFile = {
@@ -193,6 +202,12 @@ function resolveWorkspaceMission(
       detail: generatedPlan.todayMission.detail,
       durationMinutes: generatedPlan.todayMission.durationMinutes,
       fileName: generatedPlan.todayMission.fileName,
+      mode: resolveWorkspaceMode({
+        explicitMode: generatedPlan.todayMission.mode,
+        fileName: generatedPlan.todayMission.fileName,
+        trackTitle: generatedPlan.focusRole || generatedPlan.title,
+        goal: generatedPlan.goal,
+      }),
       trackTitle: generatedPlan.focusRole || generatedPlan.title,
       stepLabel: 'AI 추천 미션',
       sourceLabel: '생성 커리큘럼 기반',
@@ -215,6 +230,40 @@ function resolveWorkspaceMission(
   return createQueueMission(queueItem)
 }
 
+function resolveWorkspaceMode(input: {
+  explicitMode?: WorkspaceMode
+  fileName: string
+  trackTitle?: string
+  goal?: string
+}): WorkspaceMode {
+  if (input.explicitMode) {
+    return input.explicitMode
+  }
+
+  const fileName = input.fileName.toLowerCase()
+  const context = `${input.trackTitle ?? ''} ${input.goal ?? ''}`.toLowerCase()
+
+  if (fileName === 'dockerfile' || fileName.endsWith('.dockerfile') || context.includes('docker') || context.includes('도커')) {
+    return 'docker'
+  }
+
+  if (fileName.endsWith('.sh') || context.includes('linux') || context.includes('리눅스') || context.includes('devops')) {
+    return 'linux'
+  }
+
+  if (fileName.endsWith('.py') || context.includes('python') || context.includes('파이썬') || context.includes('fastapi')) {
+    return 'python'
+  }
+
+  return 'react'
+}
+
+function createWorkspaceModeLabel(mode: WorkspaceMode) {
+  if (mode === 'linux') return 'Linux 터미널'
+  if (mode === 'docker') return 'Docker 빌드'
+  if (mode === 'python') return 'Python 실행'
+  return 'React 미리보기'
+}
 function createQueueMission(item: TodayQueueItem): WorkspaceMission {
   return {
     id: item.id,
@@ -222,6 +271,7 @@ function createQueueMission(item: TodayQueueItem): WorkspaceMission {
     detail: item.detail,
     durationMinutes: item.durationMinutes,
     fileName: item.id === 'run-tests' ? 'Counter.test.jsx' : 'Counter.jsx',
+    mode: 'react',
     trackTitle: 'React 입문',
     stepLabel: '오늘 학습 항목',
     sourceLabel: item.status === 'optional' ? 'AI 리뷰 기반' : '공식 문서 기반',
@@ -246,12 +296,11 @@ function getEditorLanguage(fileName: string) {
   return 'javascript'
 }
 
-function getExecutionLanguage(fileName: string) {
-  const ext = fileName.toLowerCase()
-  if (ext.endsWith('.py')) return 'python'
-  if (ext.endsWith('.jsx') || ext.endsWith('.tsx')) return 'jsx'
-  if (ext.endsWith('.sh')) return 'shell'
-  if (ext.includes('dockerfile')) return 'dockerfile'
+function getExecutionLanguage(fileName: string, mode: WorkspaceMode) {
+  if (mode === 'react') return fileName.toLowerCase().endsWith('.jsx') || fileName.toLowerCase().endsWith('.tsx') ? 'jsx' : 'javascript'
+  if (mode === 'linux') return 'shell'
+  if (mode === 'docker') return 'dockerfile'
+  if (mode === 'python') return 'python'
   return 'javascript'
 }
 
@@ -285,7 +334,7 @@ function createWorkspaceEditorFiles(mission: WorkspaceMission): WorkspaceEditorF
     },
   ]
 
-  if (/\.(jsx?|tsx?)$/i.test(fileName)) {
+  if (mission.mode === 'react') {
     files.push({
       path: `file:///${mission.id}/styles.css`,
       name: 'styles.css',
@@ -303,11 +352,20 @@ function createWorkspaceEditorFiles(mission: WorkspaceMission): WorkspaceEditorF
     })
   }
 
+  if (mission.mode === 'docker') {
+    files.push({
+      path: `file:///${mission.id}/.dockerignore`,
+      name: '.dockerignore',
+      language: 'plaintext',
+      value: ['node_modules', 'dist', '.env'].join('\n'),
+    })
+  }
+
   files.push({
     path: `file:///${mission.id}/mission-notes.md`,
     name: 'mission-notes.md',
     language: 'markdown',
-    value: `# ${mission.title}\n\n- 실행 결과를 확인합니다.\n- 막힌 지점과 다음 질문을 기록합니다.`,
+    value: `# ${mission.title}\n\n- ${createWorkspaceModeLabel(mission.mode)} 결과를 확인합니다.\n- 막힌 지점과 다음 질문을 기록합니다.`,
   })
 
   return files
@@ -371,9 +429,9 @@ function extractJsxText(code: string, tagName: string) {
   return stripJsxText(pattern.exec(code)?.[1])
 }
 
-function createRenderPreviewModel(code: string, fileName: string): RenderPreviewModel {
+function createRenderPreviewModel(code: string, fileName: string, mode: WorkspaceMode): RenderPreviewModel {
   const language = fileName.toLowerCase()
-  const canRender = language.endsWith('.js') || language.endsWith('.jsx') || language.endsWith('.tsx')
+  const canRender = mode === 'react' && (language.endsWith('.js') || language.endsWith('.jsx') || language.endsWith('.tsx'))
 
   if (!canRender) {
     return {
@@ -429,6 +487,46 @@ function getIframeSrcDoc(code: string, componentName: string = 'App') {
   `
 }
 
+
+function getExecutionPanelModel(mode: WorkspaceMode, fileName: string): ExecutionPanelModel {
+  if (mode === 'linux') {
+    return {
+      title: 'Terminal',
+      ariaLabel: 'Linux 터미널 실행 결과',
+      emptyTitle: '터미널 실행 대기 중',
+      emptyDetail: '실행 버튼을 누르면 명령어 출력이 이 패널에 표시됩니다.',
+      statusLabel: fileName,
+    }
+  }
+
+  if (mode === 'docker') {
+    return {
+      title: 'Build Log',
+      ariaLabel: 'Docker 빌드 로그',
+      emptyTitle: '빌드 대기 중',
+      emptyDetail: '실행 버튼을 누르면 Dockerfile 빌드 단계가 이 패널에 표시됩니다.',
+      statusLabel: fileName,
+    }
+  }
+
+  if (mode === 'python') {
+    return {
+      title: 'Output',
+      ariaLabel: 'Python 실행 출력',
+      emptyTitle: 'Python 실행 대기 중',
+      emptyDetail: '실행 버튼을 누르면 Python 출력과 검증 로그가 이 패널에 표시됩니다.',
+      statusLabel: fileName,
+    }
+  }
+
+  return {
+    title: 'Preview',
+    ariaLabel: 'React 실행 화면',
+    emptyTitle: '실행 대기 중',
+    emptyDetail: '실행 버튼을 누르면 오른쪽 패널에 결과 화면이 표시됩니다.',
+    statusLabel: fileName,
+  }
+}
 function createInitialRunPreviewState(): CodeRunPreviewState {
   return { status: 'idle', logs: [] }
 }
@@ -563,9 +661,13 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
     )
   }
 
+  const executionPanel = useMemo(
+    () => getExecutionPanelModel(activeMission.mode, runnableFile?.name ?? activeMission.fileName),
+    [activeMission.fileName, activeMission.mode, runnableFile?.name],
+  )
   const renderPreview = useMemo(
-    () => createRenderPreviewModel(previewCode, runnableFile?.name ?? activeMission.fileName),
-    [activeMission.fileName, previewCode, runnableFile?.name],
+    () => createRenderPreviewModel(previewCode, runnableFile?.name ?? activeMission.fileName, activeMission.mode),
+    [activeMission.fileName, activeMission.mode, previewCode, runnableFile?.name],
   )
 
   const consoleLines = runPreview.logs.length > 0
@@ -655,7 +757,7 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
     const runLog = addActivity('테스트 실행', `${activeMission.fileName} 기준으로 백엔드에 코드를 전송하여 실행합니다.`)
 
     try {
-      const language = getExecutionLanguage(runnableFile?.name ?? activeMission.fileName)
+      const language = getExecutionLanguage(runnableFile?.name ?? activeMission.fileName, activeMission.mode)
       const res = await executeCode(runnableCode, language)
       const nextState = res.success ? 'passed' : 'failed'
       const detailMsg = res.success
@@ -975,7 +1077,7 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
               ))}
             </div>
             <div className={styles.editorActions}>
-              <span className={styles.languageBadge}>{activeMission.stepLabel}</span>
+              <span className={styles.languageBadge}>{createWorkspaceModeLabel(activeMission.mode)}</span>
               <button
                 type="button"
                 className={styles.runButton}
@@ -1008,20 +1110,20 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
                 }}
               />
             </div>
-            <aside className={styles.previewPanel} aria-label="실행 결과 화면">
+            <aside className={styles.previewPanel} data-mode={activeMission.mode} aria-label={executionPanel.ariaLabel}>
               <div className={styles.previewToolbar}>
                 <div>
-                  <span>Preview</span>
-                  <strong>{runnableFile?.name ?? renderPreview.componentName}</strong>
+                  <span>{executionPanel.title}</span>
+                  <strong>{executionPanel.statusLabel}</strong>
                 </div>
-                <div className={styles.previewActions} aria-label="미리보기 동작">
+                <div className={styles.previewActions} aria-label="실행 동작">
                   <button type="button" onClick={handleRun} disabled={runState === 'running'}>새로고침</button>
                   <button type="button" onClick={resetActiveFile}>초기화</button>
                 </div>
               </div>
               <div className={styles.previewViewport} data-state={runPreview.status}>
                 {renderPreview.canRender && runPreview.status !== 'idle' ? (
-                  <div className={styles.renderedPreview} aria-label={`${renderPreview.componentName} 실행 화면`}>
+                  <div className={styles.renderedPreview} aria-label={executionPanel.ariaLabel}>
                     <div className={styles.renderedPreviewCard}>
                       <h2>{renderPreview.title}</h2>
                       <button type="button">{renderPreview.buttonLabel}</button>
@@ -1029,12 +1131,12 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
                   </div>
                 ) : (
                   <div className={styles.previewEmpty}>
-                    <strong>{renderPreview.canRender ? '실행 대기 중' : '화면 미리보기 없음'}</strong>
-                    <p>{renderPreview.canRender ? '실행 버튼을 누르면 오른쪽 패널에 결과 화면이 표시됩니다.' : '현재 파일은 콘솔 실행 결과로 확인합니다.'}</p>
+                    <strong>{executionPanel.emptyTitle}</strong>
+                    <p>{executionPanel.emptyDetail}</p>
                   </div>
                 )}
               </div>
-              <div className={styles.previewConsole} data-state={runPreview.status} aria-live="polite">
+              <div className={styles.previewConsole} data-mode={activeMission.mode} data-state={runPreview.status} aria-live="polite">
                 <div>
                   <strong>Console</strong>
                   <span>{runPreview.status === 'running' ? 'running' : runPreview.status}</span>

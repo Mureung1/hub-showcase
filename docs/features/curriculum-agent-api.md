@@ -38,6 +38,8 @@ type CurriculumRecommendationResponse = {
 `GeneratedCurriculumPlan`은 Today Hub와 Workspace가 함께 사용하는 화면 contract입니다.
 
 ```ts
+type WorkspaceMode = 'react' | 'linux' | 'docker' | 'python'
+
 type GeneratedCurriculumPlan = {
   id: string
   goal: string
@@ -50,6 +52,7 @@ type GeneratedCurriculumPlan = {
     detail: string
     durationMinutes: number
     fileName: string
+    mode?: WorkspaceMode
   }
   steps: GeneratedCurriculumStep[]
   sources: CurriculumSource[]
@@ -65,6 +68,7 @@ type GeneratedCurriculumPlan = {
 - Gemini provider는 `backend/modules/curriculum/adapters/geminiCurriculumRecommendationProvider.mjs`에 있습니다.
 - JSONL knowledge loader는 `backend/modules/knowledge/adapters/jsonlKnowledgeRepository.mjs`에 있습니다.
 - React, Docker 같은 공식 문서 chunk는 추천 근거 context로 사용합니다.
+- `todayMission.mode`는 `react`, `linux`, `docker`, `python` 중 하나이며 기존 클라이언트 호환을 위해 optional입니다.
 
 ## Today Hub와 Workspace 연결
 

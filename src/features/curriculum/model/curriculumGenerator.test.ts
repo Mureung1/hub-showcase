@@ -7,6 +7,7 @@ describe('generateMockCurriculum', () => {
 
     expect(plan.title).toBe('프론트엔드 개발자 커리큘럼')
     expect(plan.todayMission.fileName).toBe('App.jsx')
+    expect(plan.todayMission.mode).toBe('react')
     expect(plan.steps.map((step) => step.title)).toContain('HTML 구조와 시맨틱')
     expect(plan.todayMission.detail).toBe('자기소개 페이지를 시맨틱 태그로만 구성해보기')
   })
@@ -17,16 +18,24 @@ describe('generateMockCurriculum', () => {
     expect(plan.goal).toBe('FastAPI로 API 서버 만들고 싶어')
     expect(plan.title).toBe('백엔드 개발자 커리큘럼')
     expect(plan.todayMission.fileName).toBe('main.py')
+    expect(plan.todayMission.mode).toBe('python')
   })
 
   it('creates curriculums for fullstack, DevOps, and software engineering goals', () => {
     expect(generateMockCurriculum('풀스택 개발자가 되고 싶어').title).toBe('풀스택 개발자 커리큘럼')
-    expect(generateMockCurriculum('DEVOPS 엔지니어가 되고 싶어').title).toBe(
-      'DevOps 엔지니어 커리큘럼',
-    )
+    const devopsPlan = generateMockCurriculum('DEVOPS 엔지니어가 되고 싶어')
+    expect(devopsPlan.title).toBe('DevOps 엔지니어 커리큘럼')
+    expect(devopsPlan.todayMission.mode).toBe('linux')
     expect(generateMockCurriculum('자료구조와 알고리즘을 공부하고 싶어').title).toBe(
       '소프트웨어 엔지니어 (CS/설계 기초) 커리큘럼',
     )
+  })
+
+  it('creates a Docker workspace mode for Docker goals', () => {
+    const plan = generateMockCurriculum('Docker 이미지 빌드를 배우고 싶어')
+
+    expect(plan.todayMission.fileName).toBe('Dockerfile')
+    expect(plan.todayMission.mode).toBe('docker')
   })
 
   it('falls back to the frontend curriculum for an empty goal', () => {

@@ -80,10 +80,10 @@ color.dark.border: #25364d
 color.brand.orange: #ff8a1c
 color.brand.pink: #f3b8d8
 color.brand.cyan: #35c8f4
-color.brand.blue: #0b4bb3
+color.brand.blue: #07003d
 color.brand.navy: #112b5f
 
-color.accent: #0b4bb3
+color.accent: #07003d
 color.accentBright: #35c8f4
 color.editorBg: #151a24
 color.editorText: #dbe4ef

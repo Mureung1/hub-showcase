@@ -21,7 +21,7 @@
   border-radius: 50%;
   animation: pulseGlow 1.5s infinite alternate ease-in-out;
   background-color: var(--color-brand-cyan, #35c8f4);
-  box-shadow: 0 0 20px var(--color-brand-cyan, #35c8f4), 0 0 40px var(--color-brand-blue, #0b4bb3);
+  box-shadow: 0 0 20px var(--color-brand-cyan, #35c8f4), 0 0 40px var(--color-brand-blue, #07003d);
 }
 
 .loadingMessage {
