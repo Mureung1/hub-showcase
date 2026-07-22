@@ -107,7 +107,7 @@ export type MarketAnalysis = {
     source_name: string;
     source_url: string;
     period: string;
-    source_type: "official" | "derived";
+    source_type: "official" | "official_estimate" | "derived";
   }>;
   rankings?: Array<{
     id: "same_type" | "supported";
