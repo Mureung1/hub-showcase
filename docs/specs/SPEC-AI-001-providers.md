@@ -1,6 +1,6 @@
 # SPEC-AI-001. AI Provider 실호출·SourceAnswer 생성 (Real Provider Pipeline)
 
-- 상태: **Ready (Step 1~7 확정, 구현 대기)** — 2026-07-22
+- 상태: **완료 (2026-07-22 — T-016.1·2a·2b·3 구현·실측 PASS)**
 - 기준 문서: `docs/domain-policy.md`(2·3·5장), `docs/data-model.md`(3.4 source_answers·1.5 JSONB·1.6 NO_VALUE), `docs/decisions/ADR-002-data-access-clients.md`, `docs/decisions/ADR-003-ai-provider-scope.md`, `docs/decisions/ADR-005-ai-pipeline-module-boundaries.md`, `docs/specs/SPEC-SCHEMA-001-core-contracts.md`(5.3 SourceAnswer·5.3.1 StructuredContent·7 errorCode), `docs/specs/SPEC-DB-001-user-ownership-and-rls.md`(2-클라이언트·BYOK 암호화·apiStorageAdapter), `CLAUDE.md` 5·6·8장
 - 작성 방식:
   - 0장 "고정 사항"은 확정된 정책·데이터 모델·이전 Spec에서 온 것이며, 이 Spec에서 임의로 바꾸지 않는다.
@@ -259,14 +259,14 @@ response_meta (jsonb)
 
 ## 11. Acceptance Criteria (초안 — 구현 T-016 완료 조건)
 
-- [ ] AC1. "생성 시작" 요청 시 서버가 3사를 **병렬** 실호출하고, 각 응답을 `StructuredContent`로 정규화·Zod 검증해 `source_answers`에 저장한다(Secret Key 시스템 쓰기 + Service 소유권 검증). `raw_content`·`response_meta`(토큰·지연)·`model`·`prompt_version` 동시 기록.
-- [ ] AC2. 진행이 **SSE**로 web에 푸시되어 provider별 점등(pending→processing→succeeded/failed)이 실시간 갱신되고, 3개 최종 도달 시 답변 카드로 전환된다. 새로고침 시 GET 스냅샷으로 복원된다.
-- [ ] AC3. 타임아웃 45초·재시도 정책(5장)이 동작한다: 일시적 오류·스키마 검증 실패는 1회 재시도, 영구 오류는 즉시 제외. 재시도/제외가 `retry_count`·`excluded_from_comparison`·`excluded_at`·errorCode에 반영.
-- [ ] AC4. 부분 실패 시 성공 답변만으로 진행하고 제외를 표시한다. **3사 전멸 시 고정 안내 문구로 마무리+완료**된다(6.2).
-- [ ] AC5. BYOK: 사용자 키 있으면 그 키, 없으면 앱 키(플래그 ON). **하나라도 키 없으면 생성 시작을 차단하고 없는 Provider를 안내**한다. 플래그 OFF면 앱 키를 쓰지 않는다. 평문 키는 프론트·로그·에러에 노출되지 않는다.
-- [ ] AC6. StructuredContent 확장(`summary`·`order`·`kind`)이 공통 계약·Mock·web에 반영되고, `kind`는 자유 문자열로 저장된다.
-- [ ] AC7. web이 Mock SourceAnswer 생성을 멈추고 서버 실호출로 대체한다. **Agenda~FinalAnswer~DecisionNote는 실제 SourceAnswer를 입력으로 한 브라우저 Mock으로 끝까지 동작**한다(회귀 없음).
-- [ ] AC8. 루트 `typecheck`·`build` 통과, `lint`(web) 통과. 실호출 실측(3사 성공/부분 실패/전멸/키 없음) 시나리오 확인. `.env` 키·비밀값 미노출·미커밋.
+- [x] AC1. "생성 시작" 요청 시 서버가 3사를 **병렬** 실호출하고, 각 응답을 `StructuredContent`로 정규화·Zod 검증해 `source_answers`에 저장한다(Secret Key 시스템 쓰기 + Service 소유권 검증). `raw_content`·`response_meta`(토큰·지연)·`model`·`prompt_version` 동시 기록.
+- [x] AC2. 진행이 **SSE**로 web에 푸시되어 provider별 점등(pending→processing→succeeded/failed)이 실시간 갱신되고, 3개 최종 도달 시 답변 카드로 전환된다. 새로고침 시 GET 스냅샷으로 복원된다.
+- [x] AC3. 타임아웃 45초·재시도 정책(5장)이 동작한다: 일시적 오류·스키마 검증 실패는 1회 재시도, 영구 오류는 즉시 제외. 재시도/제외가 `retry_count`·`excluded_from_comparison`·`excluded_at`·errorCode에 반영.
+- [x] AC4. 부분 실패 시 성공 답변만으로 진행하고 제외를 표시한다. **3사 전멸 시 고정 안내 문구로 마무리+완료**된다(6.2).
+- [x] AC5. BYOK: 사용자 키 있으면 그 키, 없으면 앱 키(플래그 ON). **하나라도 키 없으면 생성 시작을 차단하고 없는 Provider를 안내**한다. 플래그 OFF면 앱 키를 쓰지 않는다. 평문 키는 프론트·로그·에러에 노출되지 않는다.
+- [x] AC6. StructuredContent 확장(`summary`·`order`·`kind`)이 공통 계약·Mock·web에 반영되고, `kind`는 자유 문자열로 저장된다.
+- [x] AC7. web이 Mock SourceAnswer 생성을 멈추고 서버 실호출로 대체한다. **Agenda~FinalAnswer~DecisionNote는 실제 SourceAnswer를 입력으로 한 브라우저 Mock으로 끝까지 동작**한다(회귀 없음).
+- [x] AC8. 루트 `typecheck`·`build` 통과, `lint`(web) 통과. 실호출 실측(3사 성공/부분 실패/전멸/키 없음) 시나리오 확인. `.env` 키·비밀값 미노출·미커밋.
 
 ---
 
@@ -289,3 +289,4 @@ response_meta (jsonb)
 |---|---|
 | 2026-07-22 | 최초 작성(뼈대). Step 1~7 사용자 결정 반영(1장 표). 비동기+SSE, 명시적 생성, 타임아웃 45초·재시도 구분, 전멸=고정문구+완료, 좌초=미룸, BYOK 하이브리드(플래그 기본 ON·사전 점검), 관측 메타 JSONB, StructuredContent 확장(summary·order·kind 자유), provider별 프롬프트, Context=web 전달(임시). 어젠다 분류·충돌 판단 기준은 AI-002로 명시(사용자 제기) |
 | 2026-07-22 | 모듈 경계 반영(ADR-005). §2.3 추가 — AI 파이프라인 5개 포트(ProviderClient·AnswerPromptTemplate·AnswerNormalizer·AgendaClassifier·ConflictComparator), 설정 선택 + 버전 스탬프로 교체·재현. AI-001 구현=provider/prompt/normalizer, 분류/비교=AI-002. 기준 문서·§12 반영 |
+| 2026-07-22 | **완료** (T-016.1·2a·2b·3 구현·실측 PASS). 서버 provider 포트·어댑터·정규화·프롬프트·BYOK·저장(2a) → SSE 전환·GET 복원·최소모델 고정(2b) → web 재배선·SSE 구독·복원·Context·전멸 처리(3). AC1~8 전부 PASS. 실제 3사 SSE 스트리밍이 브라우저에서 관통. Cowork 완료 처리 |

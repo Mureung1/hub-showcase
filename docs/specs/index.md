@@ -27,7 +27,7 @@
 | 회원가입·로그인 UI | `SPEC-AUTH-001-email-auth-ui.md` | 완료 (2026-07-20 — AC1~8 전 항목 PASS) |
 | Auth Session·Protected Route | `SPEC-AUTH-002-auth-session.md` | 완료 (2026-07-20, T-013 — AC1~6 전 항목 PASS) |
 | Express Auth Middleware | `SPEC-AUTH-003-api-auth-middleware.md` | 완료 (2026-07-20, T-014 — AC1~7 실측 PASS) |
-| AI Provider API | `SPEC-AI-001-providers.md` | Ready (2026-07-22 — Step 1~7 확정, 구현 대기) |
+| AI Provider API | `SPEC-AI-001-providers.md` | 완료 (2026-07-22, T-016.1~.3 — AC1~8 실측 PASS) |
 | Manager AI 비교·재검토 Prompt | `SPEC-AI-002-manager.md` | 미작성 |
 | FinalAnswer 생성 | `SPEC-AI-003-final-answer.md` | 미작성 |
 | 사용자 소유권·RLS·Migration | `SPEC-DB-001-user-ownership-and-rls.md` | 완료 (2026-07-22, T-015 — AC1~AC6 실측 PASS) |
