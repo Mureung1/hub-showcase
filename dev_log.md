@@ -63,3 +63,17 @@
 * **수정될 파일명**:
   * `server/package.json`
   * `server/src/app.js`
+
+### ✅ 2단계: 프론트엔드 Socket.io 클라이언트 설정 (완료)
+* **목표**: 프론트엔드 환경에 `socket.io-client` 패키지를 적용하고, 앱 전역에서 소켓을 활용할 수 있도록 Context 구축
+* **작업 내역**: 
+  * `client` 디렉토리 내에 `socket.io-client` 설치
+  * `client/src/contexts/SocketContext.jsx` 파일을 생성하여 백엔드(포트 5000 등)와 연결하는 Socket 인스턴스 전역 제공(`Provider`) 로직 구현
+  * `client/src/main.jsx`에 `SocketProvider`를 감싸서 어느 컴포넌트에서든 실시간 통신이 가능하도록 연동
+* **관련 파일**:
+  * `client/package.json` (수정)
+  * `client/src/contexts/SocketContext.jsx` (생성)
+  * `client/src/main.jsx` (수정)
+* **완료 조건(검증 방법)**:
+  * 프론트엔드 앱이 정상 구동되며 렌더링 에러가 발생하지 않아야 함.
+  * 프론트엔드 접속 시 백엔드 터미널에 `🔗 A user connected: <socket-id>` 메시지가 찍혀 정상적으로 양방향 통신 준비가 완료되었음을 확인해야 함.
