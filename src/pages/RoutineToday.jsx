@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useRoutineToday } from '@/hooks/useRoutineToday'
 import Sidebar from '@/components/Sidebar'
@@ -7,25 +8,34 @@ import SkipResultPanel from '@/components/SkipResultPanel'
 
 function RoutineToday() {
   const { data, loading, error, refetch } = useRoutineToday()
+  const [actionError, setActionError] = useState(null)
 
-  const handleComplete = () => {
-    fetch(`/api/sessions/${data.routineDayId}/complete`, {
+  const handleComplete = async () => {
+    setActionError(null)
+    const res = await fetch(`/api/sessions/${data.routineDayId}/complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
-    }).then(() => {
-      refetch()
     })
+    if (!res.ok) {
+      setActionError((await res.json()).error)
+      return
+    }
+    refetch()
   }
 
-  const handleSkip = () => {
-    fetch(`/api/sessions/${data.routineDayId}/skip`, {
+  const handleSkip = async () => {
+    setActionError(null)
+    const res = await fetch(`/api/sessions/${data.routineDayId}/skip`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
-    }).then(() => {
-      refetch()
     })
+    if (!res.ok) {
+      setActionError((await res.json()).error)
+      return
+    }
+    refetch()
   }
 
   if (loading) {
@@ -57,6 +67,9 @@ function RoutineToday() {
       <main className="max-w-[1080px] flex-1 p-8">
         <WeekStrip days={data.days} today={data.dayOfWeek} />
         <div className="mt-6">
+          {actionError && (
+            <p className="mb-4 text-[13px] text-text-secondary">⚠ {actionError}</p>
+          )}
           {data.targetArea === null ? (
             <p className="text-text-secondary">오늘은 휴식일입니다.</p>
           ) : data.status === 'SKIPPED' ? (
