@@ -9,7 +9,7 @@
 const CANDIDATE_EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx'];
 const OTHER_LANGUAGE_EXTENSIONS = ['.py', '.java'];
 
-const CONTEXT_BASENAMES = new Set([
+const CONTEXT_BASENAMES = new Set([ //Set의 .has(검색)이  .includes()보다 빠름
   'readme.md',
   'package.json',
   'requirements.txt',
@@ -22,22 +22,25 @@ const CONTEXT_BASENAMES = new Set([
 const EXCLUDED_PREFIX_PATTERN = /(^|\/)(node_modules|dist|build)\//;
 const EXCLUDED_ENV_PATTERN = /(^|\/)\.env(\.|$)/;
 
-function hasExtension(path, extensions) {
+//목록 속 확장자인지 확인 (TF로 반환)
+function hasExtension(path, extensions) { //들어온 문자열 = ext 비교할 대상 = extensions
   const lower = path.toLowerCase();
   return extensions.some((ext) => lower.endsWith(ext));
 }
 
+//제외 파일 여부 확인 (TF로 반환)
 function isExplicitlyExcludedPath(path) {
   return EXCLUDED_PREFIX_PATTERN.test(path) || EXCLUDED_ENV_PATTERN.test(path);
 }
 
+//파일 이름 소문자
 function basename(path) {
   const segments = path.split('/');
-  return segments[segments.length - 1].toLowerCase();
+  return segments[segments.length - 1].toLowerCase(); //길이-1이 가장 마지막 요소임
 }
 
 export function classifyTree(treeEntries) {
-  const blobs = treeEntries.filter((entry) => entry.type === 'blob');
+  const blobs = treeEntries.filter((entry) => entry.type === 'blob'); //타입이 파일
   const totalFileCount = blobs.length;
 
   const candidateFilePaths = [];
@@ -54,12 +57,12 @@ export function classifyTree(treeEntries) {
     }
 
     if (hasExtension(path, CANDIDATE_EXTENSIONS)) {
-      candidateFilePaths.push({ path, sha: blob.sha });
+      candidateFilePaths.push({ path, sha: blob.sha, size: blob.size });
       continue;
     }
 
     if (CONTEXT_BASENAMES.has(basename(path))) {
-      contextFilePaths.push({ path, sha: blob.sha });
+      contextFilePaths.push({ path, sha: blob.sha, size: blob.size });
       continue;
     }
 
@@ -67,7 +70,7 @@ export function classifyTree(treeEntries) {
       hasOtherLanguageSource = true;
     }
 
-    excludedFileCount += 1;
+    excludedFileCount += 1;//그외 파일도 제외 파일로 함
   }
 
   return {

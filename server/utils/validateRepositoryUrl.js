@@ -1,4 +1,5 @@
 /**
+ * 깃허브 URL 보안 확인
  * 07_API_SPEC.md 10장 / 05_CODE_SCANNER_SCORER.md "SSRF 방지" 참고.
  * repository_url이 실제로 github.com을 가리키는지 서버에서 검증한다.
  * 내부망 주소(예: http://169.254.169.254, http://localhost)를 GitHub URL처럼
@@ -7,12 +8,12 @@
 export function isAllowedGithubUrl(rawUrl) {
   let parsed;
   try {
-    parsed = new URL(rawUrl);
+    parsed = new URL(rawUrl); //자동으로 보안 체크해줌
   } catch {
     return false;
   }
 
   // hostname은 URL 파서가 "github.com@evil.com" 같은 userinfo 트릭,
   // "evil.com/github.com" 같은 path 트릭을 모두 걸러내고 실제 호스트만 반환한다.
-  return parsed.protocol === 'https:' && parsed.hostname === 'github.com';
+  return parsed.protocol === 'https:' && parsed.hostname === 'github.com'; //둘 다 트루면 트루 반환
 }
