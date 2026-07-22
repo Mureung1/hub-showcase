@@ -31,8 +31,12 @@
 6. 입력 단위에 `scenario` 역할이 있고 시나리오 기획서화·신규 작성·변경안을
    만드는 요청이면 `docs/skills/scenario_review.md`로 원안을 검토한다.
 7. 아래 Branch Rules 중 하나를 선택한다.
-8. 승인 전에는 `workspace/projects/<project_slug>/design/`을 수정하지 않는다.
-9. 생성, 수정, 삭제, 기획서화 결과물은 같은 프로젝트의 승인 큐 항목 초안으로 작성한다.
+8. 신규·수정·재구성 Draft이면 `docs/skills/document_completion.md`로 누락을
+   분류하고 `Creative Completion Review`를 작성한다.
+9. `creative_fillable` 공백이 있으면 창작 가능한 항목을 한 번에 보여주고
+   사용자가 명시적으로 허가하기 전에는 대안을 만들지 않는다.
+10. 승인 전에는 `workspace/projects/<project_slug>/design/`을 수정하지 않는다.
+11. 생성, 수정, 삭제, 기획서화 결과물은 같은 프로젝트의 승인 큐 항목 초안으로 작성한다.
 
 임시 아이디어에서 전환된 요청은
 `workspace/projects/<project_slug>/ideas/temporary_ideas.md`의 아이디어 ID를 근거로 연결한다. 전환
@@ -51,7 +55,9 @@
 처리:
 
 - `docs/templates/design_doc.md` 또는 문서 타입별 템플릿을 따른다.
-- 누락 정보는 `TBD`로 남긴다.
+- 누락 정보는 `TBD`로 남기고 유형별 GAP으로 분류한다.
+- `creative_fillable` GAP은 허가 전까지 대안을 만들지 않고 창작 보완 여부를
+  묻는다.
 - 문서 역할이 `scenario`이면 원안 기반 Draft와 `Scenario Improvement Review`를
   분리한다.
 - 승인 큐 항목 초안으로 만든다.
@@ -87,6 +93,7 @@
 - `docs/workflows/document_structure.md`에 따라 내용별 원본 소유 문서를 정한다.
 - 현재 문서의 모든 확정 내용을 새 소유 문서, 상위 요약 또는 `TBD` 중 하나에
   배정하고 누락 여부를 검토한다.
+- 각 대상 Draft의 GAP을 분류하고 창작 가능한 공백은 한 번에 허가받는다.
 - 승인 항목의 변경 타입을 `restructure`로 두고 대상별 `create`, `update`,
   `delete` 작업 목록을 작성한다.
 - 개요서, 상세 문서와 문서 색인의 상대경로 링크를 같은 승인 범위에 둔다.
@@ -143,7 +150,8 @@
 
 - `docs/workflows/write_design_doc.md`를 하위 workflow로 따른다.
 - 기존 자료에 있는 내용만 확정 정보처럼 사용한다.
-- 부족한 항목은 `TBD`로 둔다.
+- 부족한 항목은 `TBD`와 GAP으로 분류하고 창작 가능한 공백은 명시적 허가를
+  받은 뒤에만 대안을 만든다.
 - 결과 문서가 `scenario`이면 `docs/skills/scenario_review.md`를 적용하고
   개선 권고를 기획서 Draft 밖에 둔다.
 - 승인 큐 항목 초안으로 만든다.
@@ -183,6 +191,25 @@
 - 질문은 승인이나 분기에 필요한 것만 묻는다.
 - 파일을 수정하지 않는다.
 
+## Creative Completion Subflow
+
+이 하위 흐름은 `create_new_document`, `update_existing_document`,
+`restructure_documents`, `draft_design_from_materials`의 Draft에만 사용한다.
+
+1. `Creative Completion Review`에서 `creative_fillable`, `user_fact`,
+   `dependency` GAP을 구분한다.
+2. 사용자가 창작 보완을 허가하지 않으면 모든 GAP을 `TBD`로 유지한다.
+3. 사용자가 전체 또는 일부 GAP을 명시적으로 허가하면
+   `docs/skills/design_creative_completion.md`에 따라 저·중위험은 2개,
+   고위험은 3개 대안과 추천안을 만든다.
+4. 사용자가 대안을 선택하기 전에는 `CP-*`를 Draft에 넣지 않는다.
+5. 선택 후 원본을 다시 확인하고 선택안만 `CP-*` 각주와 함께 Draft에 넣는다.
+6. 선택은 승인이 아니다. 갱신한 승인 항목을 `pending`으로 다시 검토받는다.
+7. canonical owner나 핵심 범위가 달라지면 기존 항목을 보존하고 연결된 새
+   승인 항목 또는 원자적 `restructure` 항목을 만든다.
+8. 일반 시나리오 구조와 인게임 스크립트에는 각각 Scenario Improvement,
+   `CW-*`·`NR-*` 규칙을 우선하고 `CP-*`를 중복 부여하지 않는다.
+
 ## Output
 
 - 선택한 branch
@@ -190,6 +217,7 @@
 - 판정 이유
 - 승인 큐 항목 초안 또는 질문
 - 누락 정보
+- Creative Completion Review와, 허가된 경우 Creative Proposal Log
 - 근거 파일 목록
 
 ## Safety Rules
@@ -209,3 +237,5 @@
   확정 사실이 아니다. 선택 후 원본을 다시 확인하고 갱신된 `pending` 승인안으로
   검토받는다.
 - 일반 시나리오 검토에 인게임 스크립트용 `NR-*`를 강제하지 않는다.
+- 기획 창작 대안은 사용자의 명시적 허가 전에는 생성하지 않으며, 대안 선택을
+  갱신된 Draft의 승인으로 간주하지 않는다.

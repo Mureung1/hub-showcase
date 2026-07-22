@@ -23,13 +23,21 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 5. 위험도, 누락 정보, 충돌 가능성을 기록한다.
 6. `scenario` 작성·변경 항목이면 `docs/skills/scenario_review.md`의 결과를
    `Scenario Improvement Review`에 기록하고 Draft와 분리한다.
-7. `restructure`이면 대상별 작업, 비교 대상, 현재 SHA-256과 적용 후 문서
+7. 신규·수정·재구성 Draft이면 `docs/skills/document_completion.md`의 GAP
+   분류를 `Creative Completion Review`에 기록한다.
+8. 사용자가 창작 보완을 허가한 GAP이 있으면
+   `docs/skills/design_creative_completion.md`에 따른 대안, 추천안과 상태를
+   `Creative Proposal Log`에 기록한다.
+9. `restructure`이면 대상별 작업, 비교 대상, 현재 SHA-256과 적용 후 문서
    역할을 Target Operations에 기록한다.
-8. 다른 승인 항목의 적용이 선행되어야 하면 Dependency Operations에 항목 ID,
+10. 확정 문서의 생성·삭제·이동·역할 또는 한 문장 담당 범위가 바뀌면 프로젝트
+    루트 `README.md`, `design/README.md`와 `game_overview`의 영향받는 색인·링크
+    갱신을 같은 승인 범위와 Target Operations에 포함한다.
+11. 다른 승인 항목의 적용이 선행되어야 하면 Dependency Operations에 항목 ID,
    변경 역할, 영향받는 대상과 해소 조건을 기록한다.
-9. 검토용 이미지가 있으면 `approvals/assets/`에 두고, Asset Operations에
+12. 검토용 이미지가 있으면 `approvals/assets/`에 두고, Asset Operations에
    검토 경로, 승인 후 `design/assets/` 경로와 작성 당시 SHA-256을 기록한다.
-10. 선택한 프로젝트의 Approval Queue에 추가하고 상태는 기본적으로 `pending`으로 둔다.
+13. 선택한 프로젝트의 Approval Queue에 추가하고 상태는 기본적으로 `pending`으로 둔다.
 
 ## Scenario Improvement Selection
 
@@ -42,6 +50,22 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 - 세계관·시스템 canonical owner 변경이 필요하면 별도 또는 다중 문서 승인안과
   Dependency Operations로 분리한다.
 - 사용자의 권고 선택을 갱신된 Draft의 승인으로 간주하지 않는다.
+
+## Creative Proposal Selection
+
+- `Creative Completion Review`의 `creative_fillable` GAP만 창작 대상으로 삼는다.
+  `user_fact`나 `dependency`는 사용자가 창작을 허가해도 임의로 채우지 않는다.
+- 사용자가 전체 또는 일부 GAP의 창작을 명시적으로 허가한 뒤에만
+  `Creative Proposal Log`에 대안을 만든다.
+- 사용자가 대안을 선택하면 원본과 관련 문서를 다시 확인하고 선택안만 Draft에
+  `CP-*` 각주와 함께 반영한다. 상태는 `incorporated`로 바꾸고 Decision
+  History에 선택자, 선택일과 선택 이유를 남긴다.
+- 선택되지 않은 대안은 Draft에 넣지 않고 Log에 보존한다. 명시적으로 제외한
+  제안은 `declined`로 기록한다.
+- 대상, 목적과 핵심 범위가 유지되면 기존 항목을 개정해 `pending`으로 돌리고,
+  달라지면 기존 항목을 보존한 채 연결된 새 승인 항목을 만든다.
+- 창작 허가, 대안 선택이나 “추천안 적용”을 갱신된 Draft의 승인으로 간주하지
+  않는다. 이미 `approved`였던 항목의 Draft가 바뀌면 승인을 재사용하지 않는다.
 
 ## Apply Approved Item Steps
 
@@ -64,22 +88,31 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 9. `Scenario Improvement Review`가 있으면 `proposed`나 `declined` 권고가
    Draft에 섞이지 않았는지 확인한다. `incorporated` 권고도 갱신된 Draft가
    명시적으로 승인된 경우에만 적용 대상으로 본다.
-10. 비교 결과가 모두 일치하면 승인된 내용을 `workspace/projects/<project_slug>/design/`에 반영한다.
-11. 승인 항목에 검토용 에셋이 있으면 Asset Operations를 확인하고 아래 Asset
+10. `Creative Proposal Log`가 있으면 `proposed`·`declined` 대안이 Draft에
+    섞이지 않았는지, 모든 `incorporated` 내용에 대응하는 `CP-*` 각주가 있는지
+    확인한다. 수치 제안은 `provisional`과 검증 기준이 있어야 한다.
+11. 확정 문서 목록·경로·역할·담당 범위가 바뀌면 프로젝트 루트 README와
+    `design/README.md`, `game_overview`의 영향받는 갱신이 승인 범위에 있는지
+    확인한다. 누락되었으면 적용하지 않고 `needs_reconfirmation`으로 이동한다.
+12. 비교 결과가 모두 일치하면 승인된 내용을 `workspace/projects/<project_slug>/design/`과
+    승인 범위에 포함된 프로젝트 README·색인에 반영한다.
+13. 승인 항목에 검토용 에셋이 있으면 Asset Operations를 확인하고 아래 Asset
    Promotion Rules에 따라 각 에셋을 `design/assets/`로 반영해 동일성을 검증한다.
-12. 비교 결과가 다르거나 기준 정보가 부족하면 적용을 중단하고
+14. 비교 결과가 다르거나 기준 정보가 부족하면 적용을 중단하고
    `needs_reconfirmation`으로 처리한다.
-13. 재확인 결과와 필요한 후속 조치를 승인 항목의 Review Notes와
+15. 재확인 결과와 필요한 후속 조치를 승인 항목의 Review Notes와
    Decision History에 기록한다.
-14. 승인 큐에서 실제 파일을 여는 근거 경로와 인라인 이미지 참조를 승인 후
+16. 승인 큐에서 실제 파일을 여는 근거 경로와 인라인 이미지 참조를 승인 후
     `design/assets/` 경로로 갱신하고, Decision Log와 Version History에도 이
     canonical 경로를 사용한다.
-15. 같은 프로젝트의 Decision Log에 결정 로그를 기록한다.
-16. 같은 프로젝트의 Version History에 버전 기록을 남긴다.
-17. `design/assets/` 반영, 동일성 검증과 참조 갱신이 모두 끝난 에셋만
+17. 같은 프로젝트의 Decision Log에 적용된 CP ID와 `provisional` 항목을 포함한
+    결정 로그를 기록한다.
+18. 같은 프로젝트의 Version History에 적용된 CP ID와 `provisional` 항목을
+    포함한 버전 기록을 남긴다.
+19. `design/assets/` 반영, 동일성 검증과 참조 갱신이 모두 끝난 에셋만
     `approvals/assets/`에서 삭제하고 Asset Operations의 적용 결과에
     canonical 경로와 검토본 삭제 완료를 기록한다.
-18. 대응하는 모든 검토용 에셋의 삭제까지 끝난 뒤 승인 큐 상태를
+20. 대응하는 모든 검토용 에셋의 삭제까지 끝난 뒤 승인 큐 상태를
     `applied`로 갱신한다.
 
 ## Asset Promotion Rules
@@ -128,6 +161,9 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 - Dependency Operations의 선행 항목이 적용되면 그 결과로 본 항목의 근거,
   `TBD` 또는 영향 범위가 달라졌는지 반드시 확인한다. 하나라도 달라지면 기존
   승인을 사용하지 않고 `needs_reconfirmation`으로 이동한다.
+- `CP-*` 선택 후에는 선택 대안의 프로젝트 근거, 대상 필드와 영향 범위를
+  다시 확인한다. 달라졌으면 선택이나 이전 승인을 재사용하지 않고 Draft와
+  Creative Proposal Log를 갱신해 `pending`으로 되돌린다.
 - Asset Operations의 검토용 파일 해시, 승인 후 경로 또는 대상 경로의 기존
   파일 상태가 기록과 다르면 해당 에셋을 삭제하지 않고 전체 항목을
   `needs_reconfirmation`으로 이동한다.
@@ -220,5 +256,8 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 미적용 Dependency Operations가 있는 항목은 적용하지 않는다.
 `Scenario Improvement Review`의 `proposed`·`declined` 권고는 적용하지 않고,
 `incorporated` 권고도 명시적으로 승인된 Draft에 포함된 내용만 적용한다.
+`Creative Proposal Log`의 `proposed`·`declined` 대안은 적용하지 않고,
+`incorporated` 내용도 CP 각주가 연결된 갱신 Draft가 명시적으로 승인된
+경우에만 적용한다.
 검토용 에셋이 포함된 항목은 대응하는 파일이 `design/assets/`에 검증되어 있고
 `approvals/assets/`에서 제거된 뒤에만 `applied`로 처리한다.

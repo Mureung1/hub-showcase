@@ -6,6 +6,46 @@
 
 ## Entries
 
+### Decision: 요괴 후보 목록 문서 생성 승인
+
+#### Metadata
+
+- ID: DEC-20260721-002
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-21
+- 결정자: 사용자
+- 상태: approved
+- 관련 승인 큐: `APPR-20260721-001`
+- 관련 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/content/yokai_candidates.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/README.md`
+
+#### Context
+
+확정 시스템은 탐험에서 요괴 사건이 발생한다고 정하지만 개별 요괴 후보와
+설명을 계속 축적할 독립 콘텐츠 문서는 없었다. 최초 후보 네 종은 임시
+아이디어에만 기록되어 있었다.
+
+#### Decision
+
+`요괴 후보 목록`을 신규 콘텐츠 문서로 생성해 `백귀야행`,
+`불가살(중국 설화의 맥)`, `두억시니+이매망량`, `그슨대`를 최초 후보로
+등록한다. 아직 제공되지 않은 설명과 조우 정보는 `TBD`로 유지하고 게임 개요와
+문서 색인에서 새 문서를 연결한다.
+
+#### Rationale
+
+사용자가 `APPR-20260721-001`을 승인했다. 적용 전 재확인에서 게임 개요와 문서
+색인의 SHA-256이 승인안 작성 당시 값과 일치했고 같은 제목·역할의 확정 문서도
+존재하지 않았다. 후보 목록을 별도 콘텐츠 문서로 두면 새 요괴와 설명을 같은
+구조로 축적하면서 실제 채택 여부를 구분할 수 있다.
+
+#### Follow-up
+
+- 후속 작업: 사용자가 새 요괴나 설명을 제공할 때 후보별 항목을 갱신하고,
+  실제 조우로 채택할 후보는 권역·노드, 십이지신, 판정·전투와 보상을 별도
+  승인 범위에서 구체화한다.
+
+---
+
 ### Decision: 프롤로그 Phase 1 인게임 스크립트 승인
 
 #### Metadata

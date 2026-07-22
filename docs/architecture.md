@@ -41,6 +41,10 @@ Codex가 에이전트 실행부 역할을 하고, 이 저장소의 Markdown 파�
 자료를 검토하거나 `scenario` 문서를 작성·변경할 때 `scenario_review`로 원안
 기반 Draft와 개선 권고를 분리한다.
 
+`design_creative_completion`은 신규·수정·재구성 기획 Draft의 GAP을 분류하고,
+사용자가 명시적으로 허가한 설계 공백에 복수 대안과 추천안을 만든다. 선택된
+기획 창작은 `CP-*`로 공개하며 선택 후에도 `pending` 승인을 거친다.
+
 ### `docs/templates/`
 
 산출물 형식을 정의한다. 승인 큐, 변경안, 기획서, 결정 로그, 버전 기록은 템플릿을 따른다.
@@ -51,6 +55,8 @@ Codex가 에이전트 실행부 역할을 하고, 이 저장소의 Markdown 파�
 프로젝트 레지스트리와 프로젝트별 상태를 저장한다.
 
 - `project_registry.md`: 등록 프로젝트와 현재 기본 프로젝트
+- `projects/<project_slug>/README.md`: Project Brief와 확정 문서에서 파생한
+  프로젝트 소개, 현재 초점, 확정 문서 지도와 작업 기록 링크
 - `projects/<project_slug>/project_brief.md`: 프로젝트 정체성, 현재 초점과 제약
 - `projects/<project_slug>/design/`: 승인된 확정 기획 문서와 문서 색인
   - `assets/`: 승인 적용과 동일성 검증이 끝난 canonical 이미지 에셋
@@ -92,6 +98,7 @@ Codex는 다음 작업을 승인 없이 수행할 수 있다.
 - 문서 요청 분기
 - 자료 기반 기획서 초안 작성
 - 변경안 초안 작성
+- 명시적으로 허가된 기획 창작 대안 작성
 - 승인 큐 항목 작성
 - 충돌/영향도 분석
 
@@ -147,6 +154,17 @@ document role과 원본 소유 문서를 정한다. `game_overview`는 상세 �
 
 `restructure_documents`는 경로별 create/update/delete 작업을 하나의 승인
 항목으로 관리한다. 적용 전 모든 대상을 재확인하며 일부 문서만 적용하지 않는다.
+확정 문서의 목록·경로·역할이나 한 문장 담당 범위가 바뀌면 프로젝트 루트
+README, `design/README.md`와 game overview의 영향받는 링크·설명을 같은 승인
+범위에 포함한다. 프로젝트 README는 탐색용 파생 색인이며 상세 사실을 소유하지 않는다.
+
+신규·수정·재구성 Draft는 `document_completion`으로 누락을
+`creative_fillable`, `user_fact`, `dependency` GAP으로 분류한다. 에이전트는
+창작 가능한 GAP을 먼저 보여주고, 사용자의 명시적 허가 후에만 저·중위험 2개,
+고위험 3개 대안을 만든다. 선택된 안만 `CP-*` 각주와 Creative Proposal Log를
+갖춘 Draft에 넣는다. 실제 프로젝트 사실은 창작하지 않고, 밸런스 수치는
+검증 조건이 있는 `provisional` 가설로 둔다. 창작안 선택은 승인이 아니며
+원본 재확인과 갱신된 `pending` 검토를 거친다.
 
 일반 시나리오 작성·변경은 `docs/skills/scenario_review.md`를 적용한다. 메인
 Codex는 요청 원안에 따른 Draft를 만들고, 더 나은 사건 순서·공개 시점·분기·
@@ -174,4 +192,7 @@ Outcome이 있으면 `Scenario Improvement Review`에 이유와 영향을 분리
   수정하지 않았는가
 - 일반 시나리오 Draft와 미선택 개선 권고가 분리되어 있는가
 - 선택된 개선 권고가 원본 재확인과 갱신된 `pending` 승인을 거치는가
+- 기획 GAP이 유형별로 분류되고 명시적 허가 전에는 창작 대안이 생성되지 않는가
+- 선택된 기획 창작만 `CP-*`로 Draft에 포함되고 선택 후 다시 `pending`을 거치는가
+- `user_fact`는 `TBD`, 검증 전 수치는 `provisional`과 검증 조건을 유지하는가
 - 모든 검색·승인·결정·버전 기록이 같은 프로젝트 ID와 루트를 사용하는가

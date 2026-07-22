@@ -6,6 +6,23 @@ Codex는 문서 요청 분기, 자료 기반 기획서 초안 작성, 변경안 
 검토, 승인 큐 정리, 결정 로그 작성, 버전 기록 초안 생성을 돕는다.
 단, 확정 문서는 사용자의 명시적 승인 이후에만 수정한다.
 
+## 주요 제공 기능
+
+- 프로젝트 관리: 게임마다 Brief, 확정 기획 문서, 아이디어, 승인 큐, 결정과
+  버전 기록을 독립적으로 관리한다.
+- 기획서 작성: 게임 개요, 세계관, 시스템, 콘텐츠, UI와 기술 문서를 기존
+  프로젝트 자료에 근거해 신규 작성하거나 변경안으로 만든다.
+- 기획 창작: 기획서의 빈 부분을 창작 가능한 GAP과 사용자 확인이 필요한
+  사실로 구분한다. 사용자가 허가한 GAP에는 복수 대안과 추천안을 만들고,
+  선택된 창작 내용은 `CP-*`로 공개한다.
+- 시나리오 창작·검수: 원안 기반 시나리오 Draft를 보존하면서 사건 순서,
+  정보 공개, 인물 동기, 선택·분기와 Outcome의 개선안을 별도로 제안한다.
+- 인게임 스크립트 창작: 프로젝트 전담 `scenario_writer`가 플레이어 노출
+  대사·지문·선택지와 씬 명세를 작성한다. 구체 창작은 `CW-*`, 원본 서사
+  구조 변경은 `NR-*`로 공개한다.
+- 승인과 추적: 모든 창작·변경안은 승인 전 제안이며, 명시적 승인과 원본
+  재확인 후에만 확정 문서에 반영하고 Decision Log와 Version History에 남긴다.
+
 ## Core Principle
 
 ### Human in the Loop
@@ -21,6 +38,8 @@ Codex는 문서 요청 분기, 자료 기반 기획서 초안 작성, 변경안 
 
 - 등록 프로젝트와 현재 기본 프로젝트는 `workspace/project_registry.md`에서 확인한다.
 - 모든 게임별 자료는 `workspace/projects/<project_slug>/` 아래에서 독립적으로 관리한다.
+- 각 프로젝트 루트의 `README.md`에서 간단한 소개, 현재 초점, 생성된 확정
+  기획 문서와 작업 기록 링크를 확인한다.
 - 새 게임을 만들 때는 기존 프로젝트 폴더를 재사용하지 않고 Project Brief, Design, Ideas, Approvals, Decisions와 Versions 구조를 새로 만든다.
 - 여러 프로젝트가 있고 요청에서 대상을 알 수 없으면 Codex는 파일을 변경하기 전에 대상 프로젝트를 확인한다.
 
@@ -77,6 +96,22 @@ Codex는 문서 요청 분기, 자료 기반 기획서 초안 작성, 변경안 
   소유하고 개요서에는 짧은 요약과 상대경로 링크만 둔다.
 - 여러 역할을 함께 분리하거나 갱신할 때는 `restructure` 승인 항목으로 묶고
   모든 대상을 재확인한 뒤 원자적으로 적용한다.
+
+### Design Creative Completion
+
+- 신규·수정·재구성 기획 Draft의 누락은 `creative_fillable`, `user_fact`,
+  `dependency` GAP으로 분류한다.
+- 에이전트는 창작 가능한 GAP 목록과 “창작으로 채울까요?”를 먼저 제시한다.
+  사용자가 전체 또는 일부 GAP을 명시적으로 허가하기 전에는 대안을 만들지 않는다.
+- 허가된 저·중위험 GAP에는 대안 2개, 고위험 GAP에는 대안 3개와 추천안을
+  제시한다. 선택된 안만 Draft에 `CP-*` 각주로 넣고 모든 대안과 영향을
+  `Creative Proposal Log`에 보존한다.
+- 실제 플랫폼·엔진·예산·일정·에셋 ID·외부 계약 같은 사실은 창작하지 않고
+  `TBD`로 유지한다. 밸런스 수치는 검증 계획이 있는 `provisional` 가설로만 제안한다.
+- 창작 허가와 대안 선택은 승인이 아니다. 원본 재확인 후 갱신된 Draft를
+  `pending`으로 다시 검토하고, 명시적 승인 뒤에만 확정 문서에 반영한다.
+- 일반 시나리오 구조는 `Scenario Improvement Review`, 인게임 스크립트는
+  `CW-*`·`NR-*`를 우선하며 같은 내용에 `CP-*`를 중복 사용하지 않는다.
 
 ### Scenario Authoring Modes
 
@@ -184,6 +219,12 @@ docs/workflows/document_change.md 규칙에 따라 있는 자료들로 전투 �
 ```
 
 ```text
+전투 시스템 기획서의 누락을 GAP으로 분류해줘.
+창작 가능한 항목은 먼저 목록으로 보여주고 내가 허가한 GAP에만 복수 대안과
+추천안을 만들어줘. 선택한 내용은 CP 각주와 Creative Proposal Log에 남겨줘.
+```
+
+```text
 docs/workflows/document_change.md 규칙에 따라 전투 시스템 변경 요청을 검토해줘.
 기존 문서 수정인지 신규 문서 생성인지 먼저 판정해줘.
 ```
@@ -229,6 +270,7 @@ workspace/
   project_registry.md
   projects/
     <project_slug>/
+      README.md
       project_brief.md
       design/
         assets/
@@ -253,6 +295,8 @@ workspace/
 - `docs/workflows/project_workspace.md`: 대상 프로젝트 선택과 새 프로젝트 생성·분리 절차
 - `docs/workflows/`: 작업별 실행 절차. 문서 관련 요청은 `document_change`를 먼저 따른다.
 - `docs/workflows/document_structure.md`: 문서 역할, 표준 경로, 개요서 깊이와 링크 규칙
+- `docs/templates/project_readme.md`: 프로젝트 소개와 생성된 확정 문서를 보여주는 랜딩 페이지 형식
+- `docs/skills/design_creative_completion.md`: 기획 공백의 창작 허가, 복수 대안, `CP-*` 공개와 선택 규칙
 - `docs/skills/scenario_review.md`: 메인 에이전트의 일반 시나리오 구조 검토와 분리 권고 규칙
 - `docs/workflows/temporary_idea.md`: 임시 아이디어 등록·수정·승인 제안 전환 절차
 - `docs/workflows/approval_queue.md`: 승인 상태 전환, 원본 재확인, 승인 적용 절차
@@ -284,10 +328,18 @@ workspace/
 - `docs/checklist.md`의 시나리오 항목을 실제 검증 없이 완료 표시하지 않았는가
 - 기획 문서와 변경안이 `docs/templates/`의 형식을 따르는가
 - 상세 정보가 올바른 canonical owner 문서에 있고 개요서에는 요약과 링크만 있는가
+- 프로젝트 루트 README가 간단한 소개와 현재 존재하는 확정 문서만 보여주며
+  상세 사실의 원본 역할을 대신하지 않는가
 - `restructure`가 일부 적용되지 않고 모든 대상의 원본 재확인 후 적용되었는가
 - 모든 프로젝트 자료와 승인·결정·버전 기록이 올바른 프로젝트 폴더 안에 있는가
 - 일반 시나리오 Draft와 `Scenario Improvement Review`가 분리되고, 선택된
   권고도 갱신된 `pending` 승인안으로 다시 검토되는가
+- 기획 Draft의 GAP이 유형별로 분류되고, 명시적 허가 전에는 창작 대안이
+  생성되지 않으며 선택된 내용만 `CP-*`로 공개되는가
+- `user_fact`는 `TBD`로 유지되고 수치 창작은 `provisional` 상태, 검증 지표와
+  재조정 조건을 가지는가
+- 창작안 선택 후 원본을 재확인한 Draft가 `pending`으로 다시 검토되며 적용된
+  CP ID가 Decision Log와 Version History에 남는가
 - 인게임 스크립트에 프로젝트별 Writer's Brief가 있고, 구조 변경은 `NR-*`,
   구체 창작은 `CW-*`로 빠짐없이 공개되었는가
 - 상위 시나리오 구조 변경과 대본·링크가 하나의 `restructure` 항목으로 묶이고

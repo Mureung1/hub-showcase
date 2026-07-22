@@ -9,6 +9,7 @@
 - 상태: approved | rejected | on_hold | change_requested
 - 관련 승인 큐:
 - 관련 문서:
+- 적용된 창작 제안: 없음 | `CP-*` 목록
 
 ## Context
 
@@ -25,3 +26,4 @@
 ## Follow-up
 
 - 후속 작업:
+- `provisional` 검증·재조정:
