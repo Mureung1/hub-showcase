@@ -14,7 +14,20 @@ interface Exam {
 interface CaffeineIntake {
   label: string;
   mg: number;
+  /**
+   * 오늘 몇 시에 마셨는지 — "HH:MM"(24시간제). 예전에는 '방금' 같은 표시용 문구였는데,
+   * 서버가 실제 시각을 필요로 해서 입력받는 값으로 바꿨다(#16, 2026-07-22).
+   * 날짜는 "오늘 이미 섭취한 카페인"이라 오늘로 고정한다.
+   */
   time: string;
+}
+
+/** 지금 시각을 "HH:MM"으로. 음료 추가 시트를 열 때 기본값으로 쓴다. */
+function nowHhMm(): string {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
 }
 
 // docs/디자인.md 9번: DB 참고 데이터(caffeine_reference)에서 내려받아야 할 목록. 지금은 자리표시용.
@@ -33,7 +46,7 @@ export function InputPage() {
   const [bedtime, setBedtime] = useState('00:00');
   const [wakeTime, setWakeTime] = useState('07:00');
   const [caffeineIntakes, setCaffeineIntakes] = useState<CaffeineIntake[]>([
-    { label: '아이스 아메리카노', mg: 150, time: '오늘 09:00' },
+    { label: '아이스 아메리카노', mg: 150, time: '09:00' },
   ]);
   const [sensitivity, setSensitivity] = useState<'둔감' | '보통' | '예민'>('보통');
   const [age, setAge] = useState(23);
@@ -47,6 +60,7 @@ export function InputPage() {
 
   const [examSheetOpen, setExamSheetOpen] = useState(false);
   const [drinkSheetOpen, setDrinkSheetOpen] = useState(false);
+  const [newDrinkTime, setNewDrinkTime] = useState(nowHhMm);
   const [newExam, setNewExam] = useState<Exam>({ subject: '', date: '', time: '', studyHours: 4 });
   const [editingExamIndex, setEditingExamIndex] = useState<number | null>(null);
   const [examActionIndex, setExamActionIndex] = useState<number | null>(null);
@@ -94,8 +108,15 @@ export function InputPage() {
     setExamActionIndex(null);
   }
 
+  // 시트를 열 때마다 시각을 "지금"으로 되돌린다. 대부분 방금 마신 걸 넣으므로
+  // 기본값이 지금이면 대개 그냥 고르기만 하면 된다.
+  function openAddDrink() {
+    setNewDrinkTime(nowHhMm());
+    setDrinkSheetOpen(true);
+  }
+
   function addDrink(label: string, mg: number) {
-    setCaffeineIntakes((prev) => [...prev, { label, mg, time: '방금' }]);
+    setCaffeineIntakes((prev) => [...prev, { label, mg, time: newDrinkTime }]);
     setDrinkSheetOpen(false);
   }
 
@@ -177,13 +198,13 @@ export function InputPage() {
               icon="☕"
               iconVariant="caffeine"
               title={intake.label}
-              subtitle={intake.time}
+              subtitle={`오늘 ${intake.time}`}
               value={`${intake.mg}mg`}
               chevron
               onClick={() => setCaffeineActionIndex(index)}
             />
           ))}
-          <Row isAdd title="음료 추가" onClick={() => setDrinkSheetOpen(true)} />
+          <Row isAdd title="음료 추가" onClick={openAddDrink} />
         </Card>
       </div>
 
@@ -320,7 +341,10 @@ export function InputPage() {
         </Button>
       </BottomSheet>
 
-      <BottomSheet open={drinkSheetOpen} onClose={() => setDrinkSheetOpen(false)} title="방금 마신 음료 선택">
+      <BottomSheet open={drinkSheetOpen} onClose={() => setDrinkSheetOpen(false)} title="마신 음료 선택">
+        <Field label="마신 시각 (오늘)" style={{ marginBottom: 14 }}>
+          <input type="time" value={newDrinkTime} onChange={(e) => setNewDrinkTime(e.target.value)} />
+        </Field>
         {DRINK_PRESETS.map((drink) => (
           <Row
             key={drink.label}
