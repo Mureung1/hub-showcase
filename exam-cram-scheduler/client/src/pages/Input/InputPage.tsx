@@ -1,26 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppShell } from '../../layouts/AppShell/AppShell';
 import { Card, Row, Button, Field, Segmented, Switch, Slider, BottomSheet, WarningBanner } from '../../components';
 import text from '../../styles/text.module.css';
 import styles from './InputPage.module.css';
-
-interface Exam {
-  subject: string;
-  date: string;
-  time: string;
-  studyHours: number;
-}
-
-interface CaffeineIntake {
-  label: string;
-  mg: number;
-  /**
-   * 오늘 몇 시에 마셨는지 — "HH:MM"(24시간제). 예전에는 '방금' 같은 표시용 문구였는데,
-   * 서버가 실제 시각을 필요로 해서 입력받는 값으로 바꿨다(#16, 2026-07-22).
-   * 날짜는 "오늘 이미 섭취한 카페인"이라 오늘로 고정한다.
-   */
-  time: string;
-}
+import { buildScheduleRequest, validateInputForm, type CaffeineIntake, type Exam } from './buildScheduleRequest';
+import { useSchedule } from '../../context/ScheduleContext';
 
 /** 지금 시각을 "HH:MM"으로. 음료 추가 시트를 열 때 기본값으로 쓴다. */
 function nowHhMm(): string {
@@ -38,6 +23,11 @@ const DRINK_PRESETS = [
 ];
 
 export function InputPage() {
+  const navigate = useNavigate();
+  const { setRequest, setStatus, setErrorMessage } = useSchedule();
+  /** 계산하기를 눌렀을 때 막힌 이유. null이면 문제 없음 */
+  const [formError, setFormError] = useState<string | null>(null);
+
   const [exams, setExams] = useState<Exam[]>([
     { subject: '세포생물학', date: '', time: '', studyHours: 3 },
     { subject: '유전학', date: '', time: '', studyHours: 5 },
@@ -120,6 +110,38 @@ export function InputPage() {
     setDrinkSheetOpen(false);
   }
 
+  // 계산하기 — 검증을 통과하면 화면 값을 서버 요청 모양으로 바꿔서 보관함에 담고 처리중 화면으로.
+  // 실제 서버 호출은 처리중 화면이 맡는다(#17).
+  function handleCalculate() {
+    const form = {
+      exams,
+      bedtime,
+      wakeTime,
+      caffeineIntakes,
+      sensitivity,
+      age,
+      weightKg,
+      gender,
+      pregnant,
+      oralContraceptive,
+      heartCondition,
+      anxiety,
+      minSleepHours,
+    };
+
+    const 문제 = validateInputForm(form);
+    if (문제 !== null) {
+      setFormError(문제);
+      return;
+    }
+
+    setFormError(null);
+    setRequest(buildScheduleRequest(form));
+    setErrorMessage(null);
+    setStatus('loading');
+    navigate('/processing');
+  }
+
   function deleteCaffeine(index: number) {
     setCaffeineIntakes((prev) => prev.filter((_, i) => i !== index));
     setCaffeineActionIndex(null);
@@ -131,9 +153,13 @@ export function InputPage() {
       step={2}
       backTo="/"
       footer={
-        <Button to="/processing" variant="primary">
-          계산하기
-        </Button>
+        <>
+          {/* 버튼 바로 위에 띄운다 — 화면 위쪽에 있으면 눌렀을 때 안 보일 수 있어서 */}
+          {formError !== null && <WarningBanner>{formError}</WarningBanner>}
+          <Button variant="primary" onClick={handleCalculate}>
+            계산하기
+          </Button>
+        </>
       }
     >
       <h1 className={text.headline}>상황을 알려주세요</h1>
