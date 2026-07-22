@@ -2,9 +2,16 @@ import RequirementModal from './components/RequirementModal';
 import DashboardSection from './components/DashboardSection';
 import CourseBasketSection from './components/CourseBasketSection';
 import MajorSelectModal from './components/MajorSelectModal';
+import NavBar from './components/NavBar';
+import SimulationPage from './pages/SimulationPage';
+import PlaceholderPage from './pages/PlaceholderPage';
+import { evaluateTrackRequirements } from './utils/gradRequirements';
 import { useState } from 'react';
 
 function App() {
+  // 상단 탭 (홈 / 수강 바구니 / 시뮬레이션 / 챗봇)
+  const [activeTab, setActiveTab] = useState('basket');
+
   // 졸업요건 입력 모달
   const [gradInfo, setGradInfo] = useState(() => {
   const saved = localStorage.getItem('gradInfo');
@@ -114,13 +121,26 @@ function App() {
   
   
 
-  const hasCategory = (cat) => selectedCourses.some((c) => c.category === cat);
+  // evaluateTrackRequirements가 요구하는 형태({ name, credit, category })로 변환
+  const completedCourses = selectedCourses.map((c) => ({
+    name: c.name,
+    credit: c.credits,
+    category: c.category,
+  }));
+
+  // 트랙이 없는 전공이거나 아직 트랙을 선택하지 않았으면 판정 결과 없이 전부 미충족으로 처리
+  const requirementResults = gradInfo?.track
+    ? evaluateTrackRequirements(completedCourses, gradInfo.track)
+    : {};
+
+  const isSatisfied = (label) => requirementResults[label]?.satisfied ?? false;
+
   const badges = [
-    { label: '다중전공', done: false },
-    { label: '현장실습', done: true },
-    { label: '해외학점', done: false },
-    { label: '창업교과목', done: hasCategory('창업교과목') },
-    { label: '종합설계', done: hasCategory('종합설계') },
+    { label: '다중전공', done: isSatisfied('다중전공 이수') },
+    { label: '현장실습', done: isSatisfied('현장실습') },
+    { label: '해외학점', done: isSatisfied('해외대학 인정학점') },
+    { label: '창업교과목', done: isSatisfied('창업교과목') },
+    { label: '종합설계', done: isSatisfied('종합설계교과목') },
   ];
 
   const gapList = [];
@@ -142,96 +162,118 @@ if (gapList.length === 0) gapList.push('모든 요건을 충족했어요 🎉');
   return (
     <div className="app">
       {!gradInfo && <MajorSelectModal onConfirm={handleMajorConfirm} />}
-      <div className="hero-header">
-      <p className="eyebrow">Course Basket</p>
-      <h1>이번 학기 후보 과목, 담아볼까요?</h1>
-      <p className="sub">
-        아래 과목들을 선택하여 이번 학기의 수업을 계획해보세요.
-      </p>
-      
-      <button
-        type="button"
-        className="cta"
-        onClick={() => setShowProgressModal(true)}
-      >
-        현재까지 이수학점 입력하기
-      </button>
-    </div>
 
-      {(submitted || progressSubmitted) && (
-        <div className="req-summary-bar">
-          {submitted && (
-            <div className="req-summary-group">
-              [졸업요건] 총 {submitted.total}학점 · 전공 {submitted.major}학점 · 교양 {submitted.general}학점
-              <button type="button" className="req-summary-edit" onClick={resetMajor}>
-                학과 다시 선택
-              </button>
-            </div>
-      )}
+      <NavBar activeTab={activeTab} onNavigate={setActiveTab} />
 
-          {submitted && progressSubmitted && (
-            <span className="req-summary-sep">/</span>
-          )}
+      {activeTab === 'home' && <PlaceholderPage title="홈" />}
+      {activeTab === 'chatbot' && <PlaceholderPage title="챗봇" />}
 
-          {progressSubmitted && (
+      {activeTab === 'basket' && (
+        <>
+          <div className="hero-header">
+            <p className="eyebrow">Course Basket</p>
+            <h1>이번 학기 후보 과목, 담아볼까요?</h1>
+            <p className="sub">
+              아래 과목들을 선택하여 이번 학기의 수업을 계획해보세요.
+            </p>
+
             <button
               type="button"
-              className="req-summary-group"
+              className="cta"
               onClick={() => setShowProgressModal(true)}
             >
-              [현재까지] 총 {progressSubmitted.total}학점 · 전공 {progressSubmitted.major}학점 · 교양 {progressSubmitted.general}학점
+              현재까지 이수학점 입력하기
             </button>
+          </div>
+
+          {(submitted || progressSubmitted) && (
+            <div className="req-summary-bar">
+              {submitted && (
+                <div className="req-summary-group">
+                  [졸업요건] 총 {submitted.total}학점 · 전공 {submitted.major}학점 · 교양 {submitted.general}학점
+                  <button type="button" className="req-summary-edit" onClick={resetMajor}>
+                    학과 다시 선택
+                  </button>
+                </div>
+              )}
+
+              {submitted && progressSubmitted && (
+                <span className="req-summary-sep">/</span>
+              )}
+
+              {progressSubmitted && (
+                <button
+                  type="button"
+                  className="req-summary-group"
+                  onClick={() => setShowProgressModal(true)}
+                >
+                  [현재까지] 총 {progressSubmitted.total}학점 · 전공 {progressSubmitted.major}학점 · 교양 {progressSubmitted.general}학점
+                </button>
+              )}
+            </div>
           )}
-        </div>
+          <CourseBasketSection
+            courses={basketCourses}
+            selectedIds={selectedIds}
+            onToggle={toggleCourse}
+          />
+
+          <div className="summary-bar">
+            <div className="summary-stat">
+              <div className="label">총 학점</div>
+              <div className="frac">{combinedTotal}/{goalTotal}</div>
+            </div>
+            <div className="summary-stat">
+              <div className="label">전공 학점</div>
+              <div className="frac">{combinedMajor}/{goalMajor}</div>
+            </div>
+          </div>
+
+          {showProgressModal && (
+            <RequirementModal
+              idPrefix="prog"
+              title="지금까지 들은 학점을 기입해주세요"
+              subtitle="입력한 이수 학점은 아래 요약 바에서 확인하고 언제든 다시 수정할 수 있어요."
+              totalLabel="총 이수 학점"
+              majorLabel="전공 이수 학점"
+              generalLabel="교양 이수 학점"
+              totalValue={progTotalDraft}
+              majorValue={progMajorDraft}
+              generalValue={progGeneralDraft}
+              onTotalChange={setProgTotalDraft}
+              onMajorChange={setProgMajorDraft}
+              onGeneralChange={setProgGeneralDraft}
+              onClose={() => setShowProgressModal(false)}
+              onSubmit={() => {
+                const progress = { total: progTotalDraft, major: progMajorDraft, general: progGeneralDraft };
+                setProgressSubmitted(progress);
+                localStorage.setItem('progressSubmitted', JSON.stringify(progress)); // 추가
+                setShowProgressModal(false);
+              }}
+            />
+          )}
+
+          <DashboardSection
+            requirementRows={requirementRows}
+            badges={badges}
+            gapList={gapList}
+          />
+        </>
       )}
-      <CourseBasketSection
-        courses={basketCourses}
-        selectedIds={selectedIds}
-        onToggle={toggleCourse}
-      />
 
-      <div className="summary-bar">
-        <div className="summary-stat">
-          <div className="label">총 학점</div>
-          <div className="frac">{combinedTotal}/{goalTotal}</div>
-        </div>
-        <div className="summary-stat">
-          <div className="label">전공 학점</div>
-          <div className="frac">{combinedMajor}/{goalMajor}</div>
-        </div>
-      </div>
-
-      {showProgressModal && (
-        <RequirementModal
-          idPrefix="prog"
-          title="지금까지 들은 학점을 기입해주세요"
-          subtitle="입력한 이수 학점은 아래 요약 바에서 확인하고 언제든 다시 수정할 수 있어요."
-          totalLabel="총 이수 학점"
-          majorLabel="전공 이수 학점"
-          generalLabel="교양 이수 학점"
-          totalValue={progTotalDraft}
-          majorValue={progMajorDraft}
-          generalValue={progGeneralDraft}
-          onTotalChange={setProgTotalDraft}
-          onMajorChange={setProgMajorDraft}
-          onGeneralChange={setProgGeneralDraft}
-          onClose={() => setShowProgressModal(false)}
-          onSubmit={() => {
-            const progress = { total: progTotalDraft, major: progMajorDraft, general: progGeneralDraft };
-            setProgressSubmitted(progress);
-            localStorage.setItem('progressSubmitted', JSON.stringify(progress)); // 추가
-            setShowProgressModal(false);
-          }}
+      {activeTab === 'simulation' && (
+        <SimulationPage
+          combinedTotal={combinedTotal}
+          combinedMajor={combinedMajor}
+          combinedGeneral={combinedGeneral}
+          goalTotal={goalTotal}
+          goalMajor={goalMajor}
+          goalGeneral={goalGeneral}
+          basketCourses={basketCourses}
         />
       )}
-
-      <DashboardSection
-        requirementRows={requirementRows}
-        badges={badges}
-        gapList={gapList}
-        />
-      </div>
-   );
+    </div>
+  );
 }
 
 export default App;
