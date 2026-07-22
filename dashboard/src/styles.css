@@ -99,11 +99,21 @@ button {
 }
 
 .project-card {
+  position: relative;
   overflow: hidden;
+  cursor: pointer;
   border: 1px solid hsl(0 0% 88%);
   border-radius: 12px;
   background: white;
   box-shadow: 0 2px 12px rgb(0 0 0 / 7%);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.project-card:hover,
+.project-card:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 11%);
+  outline: none;
 }
 
 .thumbnail {
@@ -194,6 +204,133 @@ button {
   font-size: 11px;
 }
 
+.card-action {
+  display: block;
+  margin-top: 12px;
+  color: hsl(220 35% 14%);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.detail-layer {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  background: rgb(13 22 38 / 38%);
+}
+
+.detail-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  width: min(520px, 100%);
+  height: 100%;
+  flex-direction: column;
+  overflow-y: auto;
+  background: hsl(0 0% 98%);
+  box-shadow: -12px 0 36px rgb(0 0 0 / 16%);
+  animation: detail-in 180ms ease-out;
+}
+
+.close-detail {
+  position: absolute;
+  z-index: 1;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgb(255 255 255 / 75%);
+  border-radius: 50%;
+  background: rgb(13 22 38 / 72%);
+  color: white;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.detail-thumbnail {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: hsl(0 0% 90%);
+}
+
+.detail-content {
+  padding: 28px 32px 48px;
+}
+
+.detail-content h2 {
+  margin: 12px 0 8px;
+  font-size: 28px;
+  line-height: 1.25;
+}
+
+.detail-summary {
+  margin: 0;
+  color: hsl(220 15% 36%);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.detail-section {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid hsl(0 0% 87%);
+}
+
+.detail-section h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+
+.detail-section p,
+.detail-section li {
+  color: hsl(220 15% 30%);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.detail-section p {
+  margin: 0;
+}
+
+.detail-section ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.detail-tags {
+  margin-top: 12px;
+}
+
+.detail-links {
+  display: flex;
+  gap: 8px;
+  margin-top: 32px;
+}
+
+.detail-links a {
+  padding: 10px 13px;
+  border-radius: 8px;
+  background: hsl(220 35% 14%);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@keyframes detail-in {
+  from { transform: translateX(16px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-card,
+  .detail-panel { transition: none; animation: none; }
+}
+
 @media (max-width: 1050px) {
   .project-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -216,4 +353,21 @@ button {
   .project-grid {
     grid-template-columns: 1fr;
   }
+
+  .detail-panel {
+    top: 8vh;
+    width: 100%;
+    height: 92%;
+    border-radius: 18px 18px 0 0;
+    animation-name: detail-up;
+  }
+
+  .detail-content {
+    padding: 24px 20px 36px;
+  }
+}
+
+@keyframes detail-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }

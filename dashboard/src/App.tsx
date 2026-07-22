@@ -1,4 +1,6 @@
 import './styles.css';
+import { useState } from 'react';
+import type { KeyboardEvent } from 'react';
 
 export type Project = {
   id: string;
@@ -9,6 +11,19 @@ export type Project = {
   techStack: string[];
   githubUser: string;
   thumbnailUrl: string;
+  problem?: string;
+  targetUsers?: string[];
+  features?: string[];
+  screenshots?: string[];
+  screenshotUrls?: string[];
+  demoUrl?: string;
+  sourceBranch?: string | null;
+  agent?: {
+    summary?: string;
+    agents?: string[];
+    skills?: string[];
+    workflows?: string[];
+  };
   isDummy?: boolean;
 };
 
@@ -17,6 +32,17 @@ type AppProps = {
 };
 
 export default function App({ projects }: AppProps) {
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+  const openProject = (project: Project) => setSelectedProject(project);
+
+  const handleCardKeyDown = (event: KeyboardEvent, project: Project) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openProject(project);
+    }
+  };
+
   return (
     <>
       <header className="camp-banner">
@@ -38,7 +64,15 @@ export default function App({ projects }: AppProps) {
 
         <section className="project-grid" aria-label="프로젝트 목록">
           {projects.map((project) => (
-            <article className="project-card" key={project.id}>
+            <article
+              className="project-card"
+              key={project.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => openProject(project)}
+              onKeyDown={(event) => handleCardKeyDown(event, project)}
+              aria-label={`${project.title} 상세 보기`}
+            >
               <img
                 className="thumbnail"
                 src={project.thumbnailUrl}
@@ -68,11 +102,75 @@ export default function App({ projects }: AppProps) {
                 </div>
 
                 <footer>@{project.githubUser}</footer>
+                <span className="card-action">상세 보기 <span aria-hidden="true">↗</span></span>
               </div>
             </article>
           ))}
         </section>
       </main>
+
+      {selectedProject && (
+        <div className="detail-layer" onClick={() => setSelectedProject(null)}>
+          <aside
+            className="detail-panel"
+            aria-label={`${selectedProject.title} 상세 정보`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              className="close-detail"
+              type="button"
+              onClick={() => setSelectedProject(null)}
+              aria-label="상세 보기 닫기"
+            >
+              ×
+            </button>
+            <img
+              className="detail-thumbnail"
+              src={selectedProject.thumbnailUrl}
+              alt={`${selectedProject.title} 대표 화면`}
+            />
+            <div className="detail-content">
+              <div className="card-meta">
+                <span className="project-category">{selectedProject.category}</span>
+                {selectedProject.isDummy && <span className="dummy-badge">더미</span>}
+              </div>
+              <h2>{selectedProject.title}</h2>
+              <p className="detail-summary">{selectedProject.summary}</p>
+
+              {selectedProject.problem && (
+                <section className="detail-section">
+                  <h3>해결하려는 문제</h3>
+                  <p>{selectedProject.problem}</p>
+                </section>
+              )}
+
+              {selectedProject.features && selectedProject.features.length > 0 && (
+                <section className="detail-section">
+                  <h3>주요 기능</h3>
+                  <ul>{selectedProject.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
+                </section>
+              )}
+
+              {selectedProject.agent?.summary && (
+                <section className="detail-section">
+                  <h3>Agent 활용</h3>
+                  <p>{selectedProject.agent.summary}</p>
+                  <div className="tags detail-tags">
+                    {[...(selectedProject.agent.agents ?? []), ...(selectedProject.agent.skills ?? []), ...(selectedProject.agent.workflows ?? [])]
+                      .slice(0, 8)
+                      .map((tag) => <span className="tag" key={tag}>{tag}</span>)}
+                  </div>
+                </section>
+              )}
+
+              <div className="detail-links">
+                {selectedProject.demoUrl && <a href={selectedProject.demoUrl} target="_blank" rel="noreferrer">서비스 열기 ↗</a>}
+                <a href={`https://github.com/connect-AIAgentChallenge-26-1/hub/tree/${selectedProject.sourceBranch ?? ''}`} target="_blank" rel="noreferrer">소스 보기 ↗</a>
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
     </>
   );
 }
