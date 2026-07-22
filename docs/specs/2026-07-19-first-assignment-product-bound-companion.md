@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-ticketing
+- State: completed
 - Surface: local-spec
-- Next actor: /to-tickets
+- Next actor: none
 - Source: [AY-PLE 첫 학업 vertical의 Codex runtime sufficiency](../wayfinding/codex-chat-application-foundation/map.md)
 
 ## Problem Statement
@@ -366,6 +366,21 @@ PR-ready final verification은 `npm test`, `npm run typecheck`, `npm run build`,
 
 None.
 
+## Completion
+
+이 spec의 tracer-bullet implementation ticket `16`개가 모두 완료됐다. Current product topology와 capability fact는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), durable compatibility policy는 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), work order의 완료 상태는 [AY-PLE 개발 backlog](../product/ay-ple-development-backlog.md)가 소유한다.
+
+| Completed tickets | Completed tickets |
+| --- | --- |
+| [001 — repeatable SemesterWorkspace foundation](../tickets/2026-07-19-first-assignment-product-bound-companion/001-repeatable-semester-workspace-foundation.md) | [002 — source-centered three-pane workbench](../tickets/2026-07-19-first-assignment-product-bound-companion/002-source-centered-three-pane-workbench.md) |
+| [003 — Plan-capable official SDK seam](../tickets/2026-07-19-first-assignment-product-bound-companion/003-plan-capable-official-sdk-seam.md) | [004 — product-capable Codex Runtime](../tickets/2026-07-19-first-assignment-product-bound-companion/004-product-capable-codex-runtime.md) |
+| [005 — StatePatch Review authority](../tickets/2026-07-19-first-assignment-product-bound-companion/005-state-patch-review-authority.md) | [005a — pre-release product store baseline cleanup](../tickets/2026-07-19-first-assignment-product-bound-companion/005a-pre-release-product-store-baseline-cleanup.md) |
+| [006 — First Assignment action stream](../tickets/2026-07-19-first-assignment-product-bound-companion/006-first-assignment-action-stream.md) | [006a — Browser-safe product contract ownership](../tickets/2026-07-19-first-assignment-product-bound-companion/006a-browser-safe-product-contract-ownership.md) |
+| [007 — Chat-first Assignment product vertical](../tickets/2026-07-19-first-assignment-product-bound-companion/007-chat-first-assignment-product-vertical.md) | [007a — product store persistence boundary](../tickets/2026-07-19-first-assignment-product-bound-companion/007a-product-store-persistence-boundary.md) |
+| [007b — product operation coordinator boundary](../tickets/2026-07-19-first-assignment-product-bound-companion/007b-product-operation-coordinator-boundary.md) | [008 — Assignment revision and reject](../tickets/2026-07-19-first-assignment-product-bound-companion/008-assignment-revision-and-reject.md) |
+| [008a — continuity loss and explicit retry](../tickets/2026-07-19-first-assignment-product-bound-companion/008a-continuity-loss-and-explicit-retry.md) | [008b — workspace store recovery](../tickets/2026-07-19-first-assignment-product-bound-companion/008b-workspace-store-recovery.md) |
+| [009 — exact Runtime product conformance](../tickets/2026-07-19-first-assignment-product-bound-companion/009-exact-runtime-product-conformance.md) | [009a — product cutover and durable baseline](../tickets/2026-07-19-first-assignment-product-bound-companion/009a-product-cutover-and-durable-baseline.md) |
+
 ## Further Notes
 
 - Product/domain authority: [AY-PLE Product Brief](../product/ay-ple-product-brief.md), [Review Workspace Scenario](../product/ay-ple-review-workspace-scenario.md), [CONTEXT.md](../../CONTEXT.md)
@@ -376,4 +391,4 @@ None.
 - Permission decision evidence: [Codex 실행 권한과 AY-PLE 제품 확인 경계](../wayfinding/codex-chat-application-foundation/assets/codex-execution-permission-boundary.md)
 - Plan interaction evidence: [StatePatch Review interaction donor](../wayfinding/codex-chat-application-foundation/assets/state-patch-review-interaction-donor.md)
 
-이 spec은 current implementation이 완료됐다는 기록이 아니다. Local implementation tickets가 위 behavior contract를 end-to-end tracer-bullet slices로 나누며, 각 ticket이 current seam을 유지·확장·교체하는 exact 범위와 verification을 소유한다.
+이 spec은 완료된 behavior contract와 구현 ticket 집합을 보존한다. 이후 current implementation fact나 work order가 바뀌면 위 owning document를 먼저 갱신한다.

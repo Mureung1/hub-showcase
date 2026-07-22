@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -41,19 +41,19 @@ Deterministic Browser product vertical과 exact Runtime conformance가 모두 gr
 
 ## Acceptance Criteria
 
-- [ ] Existing Full Browser E2E가 parent spec의 아홉 representative trace와 1440×900 desktop accessibility를 cutover 뒤에도 통과하며 같은 behavior를 위한 중복 workflow/harness가 생기지 않는다.
-- [ ] Canonical product startup이 verified package artifact, explicit appDataRoot와 active ready SemesterWorkspace만으로 product action·Chat을 실행하고 bounded shutdown하며, caller에게 여섯 legacy path env 조립을 요구하지 않는다.
-- [ ] Product composition과 actual entrypoint tests가 active SemesterWorkspace를 exact native `cwd`로 사용한다. Manual-development `CODEX_CHAT_WORKSPACE` override는 workspace selection input으로만 동작하고 independent Runtime root·`cwd` authority가 아니다.
-- [ ] Product caller·sidebar가 legacy `/api/codex-chat/*` frame/thread/status와 `useChatShell`을 사용하지 않는다.
-- [ ] 네 tracer route/status, Browser legacy Chat owner와 stale fixed permission copy가 caller migration 뒤 compatibility alias 없이 제거된다.
-- [ ] `dev:chat-only` script와 tracer-only entrypoint를 전제한 test·documentation이 제거되고 canonical product command만 supported local entrypoint로 남는다.
-- [ ] Canonical product Server process stop/start 뒤 Browser bootstrap이 같은 workspace의 confirmed Assignment·revision과 settled history를 다시 열고 transient transcript·unanswered Review는 복원하지 않는다. 이 trace는 existing process-control과 Browser hydration infrastructure를 재사용한다.
-- [ ] Product lifecycle survivor, shared NDJSON writer와 process/shutdown test support가 tracer-only HTTP/Server caller에서 분리되고 009의 product actual/local-provider conformance가 cutover 뒤에도 green이다. 이를 위해 `CodexChatService`나 Runtime interface를 이름 때문에 분해하지 않는다.
-- [ ] Current store format과 support policy가 새 cutover/durable-compatibility ADR에 first durable compatibility baseline으로 기록되고 user state를 삭제·silent reset하지 않는다. ADR 0012에서 계속 유효한 official SDK·single Runtime·no-alias 결정은 보존하며 `docs/README.md`의 active ADR index를 갱신한다.
-- [ ] Generic transcript persistence, conversation catalog, unanswered Review hydration, approval center와 mobile scope를 구현에 섞지 않는다.
-- [ ] Root `npm test`, `npm run test:e2e`, typecheck, build, Chat lint, docs links와 provider-free exact Runtime/product conformance gate가 모두 green이다. 009의 isolated external live-provider evidence는 보존하며 credentials가 다시 명시적으로 제공되지 않아도 009a를 block하지 않는다.
-- [ ] Parent spec, root README, docs index, product-contract·Runtime·Server·Chat Shell README, native product composition, implementation map, Runtime isolation과 development backlog가 pre-implementation baseline, current implementation과 deferred work를 정확히 구분한다.
-- [ ] Source/Standards/Spec review finding을 해결하고 tracked working tree가 clean이다.
+- [x] Existing Full Browser E2E가 parent spec의 아홉 representative trace와 1440×900 desktop accessibility를 cutover 뒤에도 통과하며 같은 behavior를 위한 중복 workflow/harness가 생기지 않는다.
+- [x] Canonical product startup이 verified package artifact, explicit appDataRoot와 active ready SemesterWorkspace만으로 product action·Chat을 실행하고 bounded shutdown하며, caller에게 여섯 legacy path env 조립을 요구하지 않는다.
+- [x] Product composition과 actual entrypoint tests가 active SemesterWorkspace를 exact native `cwd`로 사용한다. Manual-development `CODEX_CHAT_WORKSPACE` override는 workspace selection input으로만 동작하고 independent Runtime root·`cwd` authority가 아니다.
+- [x] Product caller·sidebar가 legacy `/api/codex-chat/*` frame/thread/status와 `useChatShell`을 사용하지 않는다.
+- [x] 네 tracer route/status, Browser legacy Chat owner와 stale fixed permission copy가 caller migration 뒤 compatibility alias 없이 제거된다.
+- [x] `dev:chat-only` script와 tracer-only entrypoint를 전제한 test·documentation이 제거되고 canonical product command만 supported local entrypoint로 남는다.
+- [x] Canonical product Server process stop/start 뒤 Browser bootstrap이 같은 workspace의 confirmed Assignment·revision과 settled history를 다시 열고 transient transcript·unanswered Review는 복원하지 않는다. 이 trace는 existing process-control과 Browser hydration infrastructure를 재사용한다.
+- [x] Product lifecycle survivor, shared NDJSON writer와 process/shutdown test support가 tracer-only HTTP/Server caller에서 분리되고 009의 product actual/local-provider conformance가 cutover 뒤에도 green이다. 이를 위해 `CodexChatService`나 Runtime interface를 이름 때문에 분해하지 않는다.
+- [x] Current store format과 support policy가 새 cutover/durable-compatibility ADR에 first durable compatibility baseline으로 기록되고 user state를 삭제·silent reset하지 않는다. ADR 0012에서 계속 유효한 official SDK·single Runtime·no-alias 결정은 보존하며 `docs/README.md`의 active ADR index를 갱신한다.
+- [x] Generic transcript persistence, conversation catalog, unanswered Review hydration, approval center와 mobile scope를 구현에 섞지 않는다.
+- [x] Root `npm test`, `npm run test:e2e`, typecheck, build, Chat lint, docs links와 provider-free exact Runtime/product conformance gate가 모두 green이다. 009의 isolated external live-provider evidence는 보존하며 credentials가 다시 명시적으로 제공되지 않아도 009a를 block하지 않는다.
+- [x] Parent spec, root README, docs index, product-contract·Runtime·Server·Chat Shell README, native product composition, implementation map, Runtime isolation과 development backlog가 pre-implementation baseline, current implementation과 deferred work를 정확히 구분한다.
+- [x] Source/Standards/Spec review finding을 해결하고 tracked working tree가 clean이다.
 
 ## Verification
 
@@ -61,6 +61,18 @@ Deterministic Browser product vertical과 exact Runtime conformance가 모두 gr
 - Provider-free conformance: `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime`, `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime`, `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime`
 - Repository checks: `npm test`, `npm run test:e2e`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
 - Manual smoke: canonical product command을 fresh appDataRoot와 explicitly selected caller-owned development workspace로 열어 Browser activation·readiness와 bounded shutdown을 확인한다. Complete two-TXT action과 same-workspace Server stop/start durability는 provider-free actual/E2E가 필수로 증명한다. External live-provider는 isolated auth가 다시 명시적으로 provision되고 실행이 승인된 경우에만 opt-in으로 재실행하며 mandatory 009a gate가 아니다.
+
+| Gate | Outcome |
+| --- | --- |
+| Product cutover와 durability | Full Chat Shell Playwright `31`개와 camp E2E `8`개가 통과했다. Canonical entrypoint actual은 같은 appDataRoot·SemesterWorkspace로 두 OS process generation을 기동·종료하고, confirmed Assignment·revision·settled history의 exact reopen과 unanswered Review·transient transcript 비복원을 Browser에서 검증했다. |
+| Root와 lifecycle | `packageRoot`·`appDataRoot`·`workspaceRoot` pairwise overlap은 canonical materialization 전에 fail closed한다. Product shutdown actual은 Server listener, Python bridge와 native app-server descendant를 bounded하게 reap한다. |
+| Exact product conformance | Exact SDK official suite `162 passed, 38 skipped`, production bundle `23` tests·bridge `20` tests, Node actual `68` tests와 local-provider actual이 통과했다. First Assignment product actual과 product shutdown actual도 각각 통과했다. |
+| Repository | `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs link check와 `git diff --check`가 green이다. |
+| Review | Fixed point `177f3a30c8b668d56538f343e067037658323c7f`의 최초 Standards·Spec 병렬 리뷰 findings를 모두 수정했다. Corrective review의 lifecycle findings도 해결한 뒤 fixed point `a29add4f` 기준 최종 독립 Standards·Spec 리뷰가 각각 actionable finding `0`건으로 종료했다. |
+
+## Result
+
+Implementation commits `f67fc166`, `b79f6460`, `6f22b694`, `f2bf9aed`에서 Browser·Server·canonical entrypoint를 product-only public surface로 cut over하고 current v2 store를 첫 durable compatibility baseline으로 기록했다. Corrective commits `a29add4f`, `0034e678`에서 actual OS-process restart trace, 세 root의 pairwise isolation, parent pre-implementation baseline, docs ownership과 failure-path cleanup을 보강했다. Legacy `/api/codex-chat/*`, Browser owner와 `dev:chat-only` alias 없이 exact official SDK 기반 product lifecycle만 남았고, parent spec의 모든 local implementation ticket이 완료됐다.
 
 ## Blocked By
 
