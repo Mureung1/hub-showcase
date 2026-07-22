@@ -5,6 +5,7 @@ langchain-google-genai
 pydantic
 sqlalchemy
 pymysql
+psycopg2-binary
 cryptography
 python-dotenv
 requests
