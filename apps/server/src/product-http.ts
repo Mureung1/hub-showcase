@@ -45,7 +45,7 @@ import {
   type ProductInteractionResponseInput,
   type ProductOperationSink,
 } from './product-operation-coordinator.js'
-import { writeNdjsonLine } from './codex-chat.js'
+import { writeNdjsonLine } from './http-ndjson.js'
 import { isLoopbackAddress } from './codex-chat-config.js'
 import {
   SemesterWorkspaceError,

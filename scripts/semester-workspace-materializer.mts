@@ -24,12 +24,6 @@ const ownershipMarkerName = '.ay-ple-materialized-workspace.json'
 const ownershipMarkerKind = 'ay-ple-development-semester-workspace'
 const e2eRunMarkerName = '.ay-ple-owned-e2e-run.json'
 const e2eRunMarkerKind = 'ay-ple-e2e-semester-workspace-run'
-const managedEnvironmentRootKeys = [
-  'CODEX_CHAT_RUNTIME_HOME',
-  'CODEX_CHAT_CODEX_HOME',
-  'CODEX_CHAT_SQLITE_HOME',
-  'CODEX_CHAT_TEMP_DIR',
-] as const
 
 export const canonicalSemesterWorkspaceSeed = path.join(
   repositoryRoot,
@@ -57,6 +51,7 @@ export type E2eSemesterWorkspace = {
 }
 
 export async function materializeDevelopmentSemesterWorkspace(options: {
+  readonly appDataRoot?: string
   readonly environment?: NodeJS.ProcessEnv
   readonly packageRoot?: string
   readonly seedRoot?: string
@@ -70,18 +65,19 @@ export async function materializeDevelopmentSemesterWorkspace(options: {
     'canonical seed',
   )
   const environment = options.environment ?? process.env
-  const configuredManagedRoots = await Promise.all(
-    managedEnvironmentRootKeys
-      .filter((key) => environment[key] !== undefined)
-      .map((key) => canonicalDirectory(environment[key] as string, key)),
-  )
+  const managedRoots = [packageRoot]
+  if (options.appDataRoot !== undefined) {
+    managedRoots.push(
+      await canonicalDirectory(options.appDataRoot, 'product app data root'),
+    )
+  }
   const configuredWorkspace = environment.CODEX_CHAT_WORKSPACE
   if (configuredWorkspace !== undefined) {
     const workspaceRoot = await canonicalDirectory(
       configuredWorkspace,
       'CODEX_CHAT_WORKSPACE',
     )
-    for (const managedRoot of [packageRoot, ...configuredManagedRoots]) {
+    for (const managedRoot of managedRoots) {
       assertRootsDoNotOverlap(managedRoot, workspaceRoot)
     }
     return { ownership: 'caller', workspaceRoot }
@@ -91,7 +87,7 @@ export async function materializeDevelopmentSemesterWorkspace(options: {
     managedParentLeaf,
     workspaceLeaf,
   )
-  for (const managedRoot of [packageRoot, ...configuredManagedRoots]) {
+  for (const managedRoot of managedRoots) {
     assertRootsDoNotOverlap(managedRoot, workspaceRootCandidate)
   }
   const managedParentRoot = await ensureManagedParent(packageRoot)

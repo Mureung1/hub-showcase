@@ -54,9 +54,23 @@ test('product development bootstrap activates and reports its explicit selected 
     })
     assert.ok(product)
     assert.equal(product.selectedWorkspaceRoot, workspaceRoot)
+    assert.deepEqual(product.runtime, {
+      appDataRoot,
+      runtimeRoot: path.join(
+        packageRoot,
+        'packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64',
+      ),
+      environment: {
+        home: path.join(appDataRoot, 'runtime/home'),
+        codexHome: path.join(appDataRoot, 'runtime/codex-home'),
+        codexSqliteHome: path.join(appDataRoot, 'runtime/codex-sqlite-home'),
+        tempDirectory: path.join(appDataRoot, 'runtime/temp'),
+      },
+      origin: 'http://127.0.0.1:4173',
+    })
 
     const application = await createServerApplication({
-      codexChatEnvironment: {},
+      productRuntime: product.runtime,
       semesterWorkspace: product.semesterWorkspace,
     })
     try {
@@ -77,6 +91,26 @@ test('product development bootstrap activates and reports its explicit selected 
   } finally {
     await rm(testRoot, { force: true, recursive: true })
   }
+})
+
+test('product development bootstrap ignores legacy runtime path authorities', () => {
+  const product = resolveProductDevelopmentBootstrap({
+    AY_PLE_PRODUCT_MODE: '1',
+    AY_PLE_PACKAGE_ROOT: '/explicit/package',
+    AY_PLE_APP_DATA_ROOT: '/explicit/app-data',
+    AY_PLE_WORKSPACE_ROOT: '/explicit/workspace',
+    CODEX_CHAT_RUNTIME_ROOT: '/legacy/runtime',
+    CODEX_CHAT_RUNTIME_HOME: '/legacy/home',
+    CODEX_CHAT_CODEX_HOME: '/legacy/codex-home',
+    CODEX_CHAT_SQLITE_HOME: '/legacy/sqlite-home',
+    CODEX_CHAT_TEMP_DIR: '/legacy/temp',
+  })
+
+  assert.equal(
+    product?.runtime.runtimeRoot,
+    '/explicit/package/packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64',
+  )
+  assert.equal(product?.runtime.environment.home, '/explicit/app-data/runtime/home')
 })
 
 test('canonical product startup preserves caller-owned bytes and serves an incompatible snapshot', async () => {
@@ -143,6 +177,24 @@ test('canonical product startup preserves caller-owned bytes and serves an incom
           modelingRuns: [],
         },
       })
+      const removedTracerRoutes = await Promise.all([
+        fetch(`http://127.0.0.1:${started.port}/api/codex-chat/status`),
+        fetch(`http://127.0.0.1:${started.port}/api/codex-chat/threads`, {
+          method: 'POST',
+        }),
+        fetch(
+          `http://127.0.0.1:${started.port}/api/codex-chat/threads/old/turns`,
+          { method: 'POST' },
+        ),
+        fetch(
+          `http://127.0.0.1:${started.port}/api/codex-chat/threads/old/turns/old/interrupt`,
+          { method: 'POST' },
+        ),
+      ])
+      assert.deepEqual(
+        removedTracerRoutes.map(({ status }) => status),
+        [404, 404, 404, 404],
+      )
       assert.equal(await readFile(storePath, 'utf8'), newerStore)
       assert.deepEqual(await readFile(sourcePath), sourceBytes)
     } finally {

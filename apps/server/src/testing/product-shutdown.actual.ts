@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict'
+import { mkdir } from 'node:fs/promises'
+import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
@@ -7,11 +9,14 @@ import {
   type CodexChatProcessTreeTestFixture,
   type CodexChatTestProcessTree,
 } from '@ay-ple/codex-chat-runtime/testing'
+import { decodeProductBootstrap } from '@ay-ple/product-contract'
 
 import {
+  materializeE2eSemesterWorkspace,
+} from '../../../../scripts/semester-workspace-materializer.mjs'
+import {
   codexChatIdentity,
-  connectWithoutReuse,
-  postJson,
+  connectProductWithoutReuse,
   settlesBeforeImmediate,
 } from './codex-chat-test-support.js'
 import { withTestServer } from './test-server.js'
@@ -23,29 +28,51 @@ const RUNTIME_ROOT = fileURLToPath(
   ),
 )
 
-test('Server shutdown refuses fresh intake and reaps the supervised process tree before resolving', async () => {
+test('Product bootstrap starts a supervised Runtime that Server shutdown fully reaps', async () => {
+  const materialized = await materializeE2eSemesterWorkspace()
+  const packageRoot = path.join(materialized.runRoot, 'package')
+  const appDataRoot = path.join(materialized.runRoot, 'app-data')
   let fixture: CodexChatProcessTreeTestFixture | undefined
+  let runtimeFactoryCalls = 0
   try {
+    await Promise.all([packageRoot, appDataRoot].map((root) => mkdir(root)))
     await withTestServer(
       {
         codexChat: {
           ...codexChatIdentity,
           createRuntime: async () => {
+            runtimeFactoryCalls += 1
             fixture = await startCodexChatProcessTreeTestFixture({
               runtimeRoot: RUNTIME_ROOT,
             })
             return fixture.runtime
           },
         },
+        semesterWorkspace: {
+          appDataRoot,
+          packageRoot,
+          chooseDirectory: async () => materialized.workspaceRoot,
+        },
       },
       async (baseUrl, application) => {
         try {
-          const threadResponse = await postJson(
-            `${baseUrl}/api/codex-chat/threads`,
-            {},
+          const activation = await application.semesterWorkspace?.activate()
+          assert.ok(activation)
+          assert.equal(activation.status, 'activated')
+          assert.equal(activation.workspace.state, 'ready')
+          assert.equal(runtimeFactoryCalls, 0)
+
+          const bootstrapResponse = await fetch(
+            `${baseUrl}/api/product/bootstrap`,
           )
-          assert.equal(threadResponse.status, 201)
-          assert.deepEqual(await threadResponse.json(), { threadId: 'thread-1' })
+          assert.equal(bootstrapResponse.status, 200)
+          const bootstrap = decodeProductBootstrap(
+            await bootstrapResponse.json(),
+          )
+          assert.deepEqual(bootstrap.accountReadiness, { state: 'ready' })
+          assert.equal(bootstrap.operationStatus, 'idle')
+          assert.equal(bootstrap.workspace?.state, 'ready')
+          assert.equal(runtimeFactoryCalls, 1)
 
           const activeFixture = fixture
           assert.ok(activeFixture)
@@ -58,7 +85,7 @@ test('Server shutdown refuses fresh intake and reaps the supervised process tree
             3_000,
             'Server shutdown did not request runtime close',
           )
-          await assert.rejects(connectWithoutReuse(baseUrl))
+          await assert.rejects(connectProductWithoutReuse(baseUrl))
           assert.equal(await settlesBeforeImmediate(closing), false)
           assertProcessTreeRunning(processTree)
 
@@ -71,7 +98,11 @@ test('Server shutdown refuses fresh intake and reaps the supervised process tree
       },
     )
   } finally {
-    await fixture?.dispose()
+    try {
+      await fixture?.dispose()
+    } finally {
+      await materialized.cleanup()
+    }
   }
 })
 

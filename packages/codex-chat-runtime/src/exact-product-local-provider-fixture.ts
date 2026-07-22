@@ -84,7 +84,7 @@ export interface ExactProductProviderEvidence {
 
 export interface ExactProductLocalProviderFixture {
   readonly runtime: CodexProductCapableRuntime
-  readonly fixedWorkspace: string
+  readonly runtimeWorkspace: string
   readonly processGroupId: number
   readonly closed: Promise<void>
   readonly providerJournalPath: string
@@ -112,7 +112,6 @@ export async function startExactProductLocalProviderFixture(options: {
   let spawned: SpawnedCodexChatRuntime | undefined
   try {
     const roots = {
-      fixedWorkspace: path.join(fixtureRoot, 'legacy-fixed-workspace'),
       home: path.join(fixtureRoot, 'runtime-home'),
       codexHome: path.join(fixtureRoot, 'runtime-codex-home'),
       codexSqliteHome: path.join(fixtureRoot, 'runtime-codex-sqlite-home'),
@@ -125,7 +124,6 @@ export async function startExactProductLocalProviderFixture(options: {
       ),
     )
     const [
-      fixedWorkspace,
       home,
       codexHome,
       codexSqliteHome,
@@ -136,7 +134,6 @@ export async function startExactProductLocalProviderFixture(options: {
     )
     assertDisjointRoots(activeWorkspace, [
       managedAppDataRoot,
-      fixedWorkspace,
       home,
       codexHome,
       codexSqliteHome,
@@ -148,7 +145,6 @@ export async function startExactProductLocalProviderFixture(options: {
       activeWorkspace,
       managedAppDataRoot,
       bundle,
-      fixedWorkspace,
       providerRoot,
     })
     await writeLocalProviderConfig(codexHome, provider.url)
@@ -160,7 +156,7 @@ export async function startExactProductLocalProviderFixture(options: {
     }
     spawned = await startVerifiedCodexChatRuntime({
       bundle,
-      workspace: fixedWorkspace,
+      workspace: activeWorkspace,
       environment,
       disableManagedConfigForTest: true,
       deadlines: {
@@ -178,7 +174,7 @@ export async function startExactProductLocalProviderFixture(options: {
     let disposePromise: Promise<void> | undefined
     return {
       runtime: activeRuntime.runtime,
-      fixedWorkspace,
+      runtimeWorkspace: activeWorkspace,
       processGroupId,
       closed: activeRuntime.closed,
       providerJournalPath: activeProvider.journalPath,
@@ -218,7 +214,6 @@ interface ProductLocalProvider {
 async function startProductLocalProvider(options: {
   readonly activeWorkspace: string
   readonly bundle: VerifiedBundle
-  readonly fixedWorkspace: string
   readonly managedAppDataRoot: string
   readonly providerRoot: string
 }): Promise<ProductLocalProvider> {
@@ -236,8 +231,6 @@ async function startProductLocalProvider(options: {
       journalPath,
       '--active-workspace',
       options.activeWorkspace,
-      '--legacy-workspace',
-      options.fixedWorkspace,
       '--app-data-root',
       options.managedAppDataRoot,
     ],

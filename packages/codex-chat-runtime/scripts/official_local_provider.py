@@ -97,7 +97,6 @@ def _parser() -> argparse.ArgumentParser:
     serve_product.add_argument("--ready-file", required=True)
     serve_product.add_argument("--journal-file", required=True)
     serve_product.add_argument("--active-workspace", required=True)
-    serve_product.add_argument("--legacy-workspace", required=True)
     serve_product.add_argument("--app-data-root", required=True)
     return parser
 
@@ -397,32 +396,27 @@ class _ProductController:
         *,
         active_workspace: Path,
         app_data_root: Path,
-        legacy_workspace: Path,
         journal_path: Path,
     ) -> None:
         try:
             self._active_workspace = active_workspace.resolve(strict=True)
             self._app_data_root = app_data_root.resolve(strict=True)
-            self._legacy_workspace = legacy_workspace.resolve(strict=True)
         except OSError:
             raise _ProductProviderFailure("workspace_unavailable") from None
         if (
             not self._active_workspace.is_dir()
             or not self._app_data_root.is_dir()
-            or not self._legacy_workspace.is_dir()
             or any(
                 _is_within(left, right) or _is_within(right, left)
                 for index, left in enumerate(
                     (
                         self._active_workspace,
                         self._app_data_root,
-                        self._legacy_workspace,
                     )
                 )
                 for right in (
                     self._active_workspace,
                     self._app_data_root,
-                    self._legacy_workspace,
                 )[index + 1 :]
             )
         ):
@@ -527,11 +521,7 @@ class _ProductController:
             raise _ProductProviderFailure("product_tool_surface_invalid")
         self._journal["toolSurfaceObserved"] = True
 
-        body_text = request.body.decode("utf-8")
-        if (
-            str(self._active_workspace) not in prompt
-            or str(self._legacy_workspace) in body_text
-        ):
+        if str(self._active_workspace) not in prompt:
             raise _ProductProviderFailure("product_workspace_prompt_invalid")
         expected_question = json.dumps(
             _PRODUCT_REQUEST_USER_INPUT["questions"][0],
@@ -724,7 +714,6 @@ class _ProductController:
         if (
             marker_content != _PRODUCT_MARKER_CONTENT
             or not _is_within(marker_resolved, self._scratch_path)
-            or str(self._legacy_workspace) in output
             or command_evidence
             != {
                 "cwd": str(self._active_workspace),
@@ -950,7 +939,6 @@ def _serve_product(args: argparse.Namespace) -> int:
         controller = _ProductController(
             active_workspace=Path(args.active_workspace),
             app_data_root=Path(args.app_data_root),
-            legacy_workspace=Path(args.legacy_workspace),
             journal_path=journal_path,
         )
     except _ProductProviderFailure as error:

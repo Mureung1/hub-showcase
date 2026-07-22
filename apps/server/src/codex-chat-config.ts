@@ -1,5 +1,5 @@
 import { constants as fsConstants } from 'node:fs'
-import { access, lstat, realpath } from 'node:fs/promises'
+import { access, lstat, mkdir, realpath } from 'node:fs/promises'
 import path from 'node:path'
 
 import {
@@ -8,24 +8,14 @@ import {
   type CodexChatRuntime,
   type CodexChatRuntimeEnvironment,
   type CodexChatRuntimeEvidence,
-  type CodexChatStatus,
 } from '@ay-ple/codex-chat-runtime'
 
 import { rootsAreDisjoint } from './root-isolation.js'
 
-const CONFIG_KEYS = [
-  'CODEX_CHAT_RUNTIME_ROOT',
-  'CODEX_CHAT_WORKSPACE',
-  'CODEX_CHAT_RUNTIME_HOME',
-  'CODEX_CHAT_CODEX_HOME',
-  'CODEX_CHAT_SQLITE_HOME',
-  'CODEX_CHAT_TEMP_DIR',
-] as const
-
-export type CodexChatUnavailableReason = Extract<
-  CodexChatStatus,
-  { state: 'unavailable' }
->['reason']
+export type CodexChatUnavailableReason =
+  | 'invalid_configuration'
+  | 'not_configured'
+  | 'runtime_missing'
 
 export type CodexChatPreparedRuntime = CodexChatRuntimeEvidence & {
   readonly createRuntime: () => Promise<CodexChatRuntime>
@@ -66,13 +56,23 @@ export interface CodexChatBootstrap extends CodexChatRuntimeEvidence {
   readonly httpWriteDrainMs?: number
 }
 
+export interface ProductRuntimeBootstrap {
+  readonly appDataRoot: string
+  readonly runtimeRoot: string
+  readonly environment: CodexChatRuntimeEnvironment
+  readonly origin: string
+}
+
 export function resolveCodexChatRuntimeSource(options: {
   readonly bootstrap?: CodexChatBootstrap
-  readonly environment: NodeJS.ProcessEnv
+  readonly productRuntime?: ProductRuntimeBootstrap
+  readonly workspace?: () => string
 }): CodexChatRuntimeSource {
-  return options.bootstrap
-    ? sourceFromBootstrap(options.bootstrap)
-    : sourceFromEnvironment(options.environment)
+  if (options.bootstrap) return sourceFromBootstrap(options.bootstrap)
+  if (options.productRuntime && options.workspace) {
+    return sourceFromProductRuntime(options.productRuntime, options.workspace)
+  }
+  return { kind: 'unavailable', reason: 'not_configured' }
 }
 
 export function isLoopbackAddress(address: string | undefined): boolean {
@@ -108,64 +108,97 @@ function sourceFromBootstrap(
   }
 }
 
-function sourceFromEnvironment(
-  environment: NodeJS.ProcessEnv,
+function sourceFromProductRuntime(
+  productRuntime: ProductRuntimeBootstrap,
+  workspace: () => string,
 ): CodexChatRuntimeSource {
-  const configuredValues = CONFIG_KEYS.map((key) => environment[key])
-  const configuredOrigin = environment.CODEX_CHAT_ORIGIN
-  const noneConfigured =
-    configuredValues.every((value) => value === undefined) &&
-    configuredOrigin === undefined
-  if (noneConfigured) {
-    return { kind: 'unavailable', reason: 'not_configured' }
-  }
   if (
-    configuredValues.some(
-      (value) => value === undefined || value.length === 0 || !path.isAbsolute(value),
+    !path.isAbsolute(productRuntime.appDataRoot) ||
+    !path.isAbsolute(productRuntime.runtimeRoot) ||
+    Object.values(productRuntime.environment).some(
+      (value) => value.length === 0 || !path.isAbsolute(value),
     )
   ) {
     return { kind: 'unavailable', reason: 'invalid_configuration' }
   }
-  const origin = canonicalLocalOrigin(configuredOrigin)
-  if (configuredOrigin !== undefined && origin === undefined) {
+  const origin = canonicalLocalOrigin(productRuntime.origin)
+  if (origin === undefined) {
     return { kind: 'unavailable', reason: 'invalid_configuration' }
   }
-
-  const [runtimeRoot, workspace, home, codexHome, codexSqliteHome, tempDirectory] =
-    configuredValues as [string, string, string, string, string, string]
-  const runtimeEnvironment = {
-    home,
-    codexHome,
-    codexSqliteHome,
-    tempDirectory,
-  } satisfies CodexChatRuntimeEnvironment
 
   return {
     kind: 'candidate',
     origin,
     prepare: async () => {
-      if (!(await validateRuntimePaths(workspace, runtimeEnvironment))) {
-        return { kind: 'unavailable', reason: 'invalid_configuration' }
-      }
       let evidence: CodexChatRuntimeEvidence
       try {
-        evidence = await verifyCodexChatRuntimeBundle(runtimeRoot)
+        evidence = await verifyCodexChatRuntimeBundle(productRuntime.runtimeRoot)
       } catch {
         return { kind: 'unavailable', reason: 'runtime_missing' }
+      }
+      try {
+        await ensureManagedRuntimeDirectories(productRuntime)
+      } catch {
+        return { kind: 'unavailable', reason: 'invalid_configuration' }
       }
       return {
         kind: 'prepared',
         prepared: {
           ...evidence,
-          createRuntime: () =>
-            createCodexChatRuntime({
-              runtimeRoot,
-              workspace,
-              environment: runtimeEnvironment,
-            }),
+          createRuntime: async () => {
+            const activeWorkspace = workspace()
+            if (
+              !(await validateRuntimePaths(
+                activeWorkspace,
+                productRuntime.environment,
+              ))
+            ) {
+              throw new TypeError('Product Runtime paths are not isolated')
+            }
+            return createCodexChatRuntime({
+              runtimeRoot: productRuntime.runtimeRoot,
+              workspace: activeWorkspace,
+              environment: productRuntime.environment,
+            })
+          },
         },
       }
     },
+  }
+}
+
+async function ensureManagedRuntimeDirectories(
+  productRuntime: ProductRuntimeBootstrap,
+): Promise<void> {
+  const appDataRoot = await validateDirectory(productRuntime.appDataRoot, true)
+  for (const directory of Object.values(productRuntime.environment)) {
+    const relative = path.relative(productRuntime.appDataRoot, directory)
+    if (
+      relative.length === 0 ||
+      path.isAbsolute(relative) ||
+      relative === '..' ||
+      relative.startsWith(`..${path.sep}`)
+    ) {
+      throw new TypeError('Runtime state must be below appDataRoot')
+    }
+    let current = productRuntime.appDataRoot
+    for (const segment of relative.split(path.sep)) {
+      current = path.join(current, segment)
+      try {
+        await mkdir(current, { mode: 0o700 })
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+      }
+      const canonical = await validateDirectory(current, true)
+      const canonicalRelative = path.relative(appDataRoot, canonical)
+      if (
+        canonicalRelative === '..' ||
+        canonicalRelative.startsWith(`..${path.sep}`) ||
+        path.isAbsolute(canonicalRelative)
+      ) {
+        throw new TypeError('Runtime state escaped appDataRoot')
+      }
+    }
   }
 }
 

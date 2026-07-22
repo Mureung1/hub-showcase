@@ -7,7 +7,7 @@
     "dev": "NODE_OPTIONS=--conditions=development tsx watch src/server.ts",
     "build": "tsc",
     "test": "NODE_OPTIONS=--conditions=development tsx --test \"src/**/*.test.ts\"",
-    "test:codex-chat-actual": "NODE_OPTIONS=--conditions=development tsx --test src/testing/codex-chat-shutdown.actual.ts",
+    "test:product-shutdown-actual": "NODE_OPTIONS=--conditions=development tsx --test src/testing/product-shutdown.actual.ts",
     "test:first-assignment-product-actual": "NODE_OPTIONS=--conditions=development tsx --test src/testing/first-assignment-product.actual.ts",
     "trace:first-assignment-live": "NODE_OPTIONS=--conditions=development tsx src/testing/first-assignment-product.live.ts",
     "typecheck": "tsc --noEmit",

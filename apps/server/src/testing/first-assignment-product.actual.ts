@@ -61,9 +61,8 @@ test(
         managedAppDataRoot: appDataRoot,
       })
       const activeFixture = fixture
-      const fixedWorkspace = await realpath(activeFixture.fixedWorkspace)
-      assert.notEqual(fixedWorkspace, materialized.workspaceRoot)
-      assert.equal(rootsOverlap(fixedWorkspace, materialized.workspaceRoot), false)
+      const runtimeWorkspace = await realpath(activeFixture.runtimeWorkspace)
+      assert.equal(runtimeWorkspace, await realpath(materialized.workspaceRoot))
 
       try {
         await withTestServer({
@@ -296,7 +295,6 @@ test(
           const encodedFrames = JSON.stringify(frames)
           for (const managedPath of [
             materialized.workspaceRoot,
-            fixedWorkspace,
             packageRoot,
             appDataRoot,
             activeFixture.providerJournalPath,
@@ -349,7 +347,6 @@ test(
       })
       const encodedEvidence = JSON.stringify(providerEvidence)
       assert.equal(encodedEvidence.includes(materialized.workspaceRoot), false)
-      assert.equal(encodedEvidence.includes(fixedWorkspace), false)
       assert.equal(encodedEvidence.includes(appDataRoot), false)
 
       for (const [relativePath, before] of sourceBytes) {
@@ -553,18 +550,6 @@ class ProductNdjsonTrace {
       }
     }
   }
-}
-
-function rootsOverlap(left: string, right: string): boolean {
-  return isSameOrAncestor(left, right) || isSameOrAncestor(right, left)
-}
-
-function isSameOrAncestor(parent: string, child: string): boolean {
-  const relative = path.relative(parent, child)
-  return (
-    relative === '' ||
-    (relative !== '..' && !relative.startsWith(`..${path.sep}`))
-  )
 }
 
 function processGroupExists(processGroupId: number): boolean {

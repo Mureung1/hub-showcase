@@ -14,6 +14,7 @@ import {
   createCodexChatComposition,
   type CodexChatBootstrap,
   type CodexChatComposition,
+  type ProductRuntimeBootstrap,
 } from './codex-chat.js'
 import {
   createSemesterWorkspaceController,
@@ -29,7 +30,7 @@ const serverHost = '127.0.0.1'
 
 export type CreateServerAppOptions = {
   codexChat?: CodexChatBootstrap
-  codexChatEnvironment?: NodeJS.ProcessEnv
+  productRuntime?: ProductRuntimeBootstrap
   semesterWorkspace?: SemesterWorkspaceBootstrap
 }
 
@@ -66,7 +67,10 @@ export async function createServerApplication(
     : undefined
   const codexChat = createCodexChatComposition({
     bootstrap: options.codexChat,
-    environment: options.codexChatEnvironment,
+    productRuntime: options.productRuntime,
+    workspace: semesterWorkspace
+      ? () => semesterWorkspace.nativeCwd()
+      : undefined,
   })
   const assignmentMcpHost = semesterWorkspace
     ? createAssignmentMcpHost()
@@ -132,7 +136,6 @@ function createServerExpressApp(
   productWriteDrainMs: number | undefined,
 ): Express {
   const app = express()
-  app.use('/api/codex-chat', codexChat.router)
   if (assignmentMcpHost) {
     app.use('/api/product-mcp', assignmentMcpHost.router)
   }
@@ -187,7 +190,7 @@ export async function startConfiguredServerApplication(
   const log = options.log ?? console.log
   const productDevelopment = resolveProductDevelopmentBootstrap(environment)
   const application = await createServerApplication({
-    codexChatEnvironment: environment,
+    productRuntime: productDevelopment?.runtime,
     semesterWorkspace: productDevelopment?.semesterWorkspace,
   })
   try {

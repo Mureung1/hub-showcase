@@ -186,7 +186,7 @@ async function runLiveTrace(
     const evidence = await verifyCodexChatRuntimeBundle(RUNTIME_ROOT)
     runtime = await createCodexChatRuntime({
       runtimeRoot: RUNTIME_ROOT,
-      workspace: roots.legacyWorkspace,
+      workspace: materialized.workspaceRoot,
       environment: {
         home: roots.home,
         codexHome: roots.codexHome,
@@ -575,7 +575,6 @@ async function readPrivateFile(file: string): Promise<Buffer> {
 
 async function createFreshRoots(commandRoot: string) {
   const candidates = {
-    legacyWorkspace: path.join(commandRoot, 'legacy-workspace'),
     home: path.join(commandRoot, 'home'),
     codexHome: path.join(commandRoot, 'codex-home'),
     codexSqliteHome: path.join(commandRoot, 'codex-sqlite-home'),

@@ -219,13 +219,23 @@ test('development workspace override remains caller-owned and unsafe roots fail 
       }),
       /non-symlink/,
     )
+    assert.equal(
+      (
+        await materializeDevelopmentSemesterWorkspace({
+          packageRoot,
+          environment: {
+            CODEX_CHAT_WORKSPACE: callerWorkspace,
+            CODEX_CHAT_RUNTIME_HOME: runtimeHome,
+          },
+        })
+      ).workspaceRoot,
+      await realpath(callerWorkspace),
+    )
     await assert.rejects(
       materializeDevelopmentSemesterWorkspace({
+        appDataRoot: runtimeHome,
         packageRoot,
-        environment: {
-          CODEX_CHAT_WORKSPACE: callerWorkspace,
-          CODEX_CHAT_RUNTIME_HOME: runtimeHome,
-        },
+        environment: { CODEX_CHAT_WORKSPACE: callerWorkspace },
       }),
       /overlap/,
     )
@@ -283,7 +293,7 @@ test('development materializer rejects a symlinked managed parent without touchi
   }
 })
 
-test('default development workspace rejects overlap with a configured managed root', async () => {
+test('default development workspace ignores legacy roots and rejects explicit app data overlap', async () => {
   const testRoot = await mkdtemp(
     path.join(tmpdir(), 'ay-ple-default-workspace-overlap-test-'),
   )
@@ -293,10 +303,21 @@ test('default development workspace rejects overlap with a configured managed ro
   try {
     await Promise.all([mkdir(packageRoot), mkdir(managedParent)])
 
+    const selected = await materializeDevelopmentSemesterWorkspace({
+      packageRoot,
+      environment: { CODEX_CHAT_RUNTIME_HOME: managedParent },
+    })
+    assert.equal(
+      selected.workspaceRoot,
+      await realpath(
+        path.join(managedParent, 'first-assignment-semester-workspace'),
+      ),
+    )
     await assert.rejects(
       materializeDevelopmentSemesterWorkspace({
+        appDataRoot: managedParent,
         packageRoot,
-        environment: { CODEX_CHAT_RUNTIME_HOME: managedParent },
+        environment: {},
       }),
       /overlap/,
     )
