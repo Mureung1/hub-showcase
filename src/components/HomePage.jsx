@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import TaskCard from "./TaskCard";
 import EmptyState from "./EmptyState";
 import FocusMode from "./FocusMode";
@@ -47,6 +48,7 @@ function StatsRow({ tasks }) {
 }
 
 function HomePage() {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState(null); // 포커스 중인 task(= modalLocked)
@@ -238,6 +240,12 @@ function HomePage() {
     }
   }
 
+  // Lv4 "캘린더에 추가" 카드(#28) → 히스토리의 캘린더 뷰로 이동, 등록일이 선택된 상태로 연다(#43).
+  function handleAddToCalendar(task) {
+    closeModal();
+    navigate("/history", { state: { selectedDate: task.createdAt } });
+  }
+
   // 삭제: 목록에서 로컬 필터링만 하면 tasks가 바뀌어 타이머 정리 effect(154행)와
   // 모달 자동 닫힘 effect(177행)가 그대로 반응한다 — 별도 cleanup 코드 불필요.
   async function handleDeleteTask(id) {
@@ -322,6 +330,7 @@ function HomePage() {
           onReconfirmReason={handleReconfirmReason}
           onStart={handleStartFromModal}
           onClose={closeModal}
+          onAddToCalendar={handleAddToCalendar}
           completedTasks={completedTasks}
         />
       )}

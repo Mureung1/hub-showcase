@@ -1,0 +1,124 @@
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.calendar-nav-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.calendar-month-label {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink-soft);
+  padding: 6px 0;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: var(--panel-bg);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.calendar-day-number {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.calendar-day-out .calendar-day-number {
+  color: var(--ink-soft);
+  opacity: 0.5;
+}
+
+.calendar-day-today {
+  border-color: var(--accent);
+}
+
+.calendar-day-selected {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.calendar-day-selected .calendar-day-number {
+  color: #fff;
+}
+
+.calendar-day-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.calendar-day-selected .calendar-day-dot {
+  background: #fff;
+}
+
+.calendar-day-detail {
+  margin-top: 18px;
+  background: var(--panel-bg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.calendar-day-detail-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 10px;
+}
+
+.calendar-day-detail-empty {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.calendar-day-detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calendar-day-detail-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.calendar-day-detail-status {
+  color: var(--ink-soft);
+}

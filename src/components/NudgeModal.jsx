@@ -19,6 +19,7 @@ function NudgeModal({
   onClose,
   checkpointLevel,
   onReconfirmReason,
+  onAddToCalendar,
   completedTasks = [],
 }) {
   const meta = LEVEL_META[task.level];
@@ -67,7 +68,9 @@ function NudgeModal({
 
         <NudgeMessage task={task} onStart={onStart} completedTasks={completedTasks} />
 
-        {task.level === 4 && <CalendarSlotCard task={task} />}
+        {task.level === 4 && (
+          <CalendarSlotCard task={task} onAddToCalendar={onAddToCalendar} />
+        )}
       </div>
     </div>
   );

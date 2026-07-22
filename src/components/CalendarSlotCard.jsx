@@ -1,10 +1,9 @@
 import { formatDday } from "../lib/nudgeMessages";
 
-// Lv4 전용 "캘린더에 추가" 정적 카드 (wireframe.md 4번의 CalendarSlotCard).
-// #28 기준 정적 데모 카드만 구현한다 — 실제 캘린더 히스토리 뷰 연결(클릭 시 해당 task를
-// 캘린더 히스토리 뷰에 표시)은 4주차 "캘린더 히스토리 뷰" 작업과 함께 처리한다
-// (checklist.md 참고). 그래서 클릭해도 페이지 이동이나 데이터 반영이 없다.
-function CalendarSlotCard({ task }) {
+// Lv4 전용 "캘린더에 추가" 카드 (wireframe.md 4번의 CalendarSlotCard).
+// #43에서 캘린더 히스토리 뷰가 생겨 실제로 연결됨 — 클릭 시 onAddToCalendar(task)를
+// 호출해 히스토리의 캘린더 뷰로 이동시킨다(#28은 정적 데모였음).
+function CalendarSlotCard({ task, onAddToCalendar }) {
   return (
     <div className="calendar-slot-card">
       <p className="calendar-slot-title">
@@ -13,7 +12,11 @@ function CalendarSlotCard({ task }) {
       <p className="calendar-slot-detail">
         <strong>{formatDday(task.deadline)}</strong> {task.title}
       </p>
-      <button type="button" className="calendar-slot-btn">
+      <button
+        type="button"
+        className="calendar-slot-btn"
+        onClick={() => onAddToCalendar?.(task)}
+      >
         캘린더에 추가 →
       </button>
     </div>
