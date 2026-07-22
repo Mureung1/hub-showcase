@@ -88,8 +88,12 @@ function ResultHeatmap({ slots, levelMap, resultMap }: ResultHeatmapProps) { // 
             <strong>
               {formatDateLabel(selectedSlot.date)} {selectedSlot.time}
             </strong>
+            {/* claude: ScheduleEditor.tsx의 확정 모달과 동일한 방식 - availableCount는 선호까지 포함한 값이라
+                그대로 나란히 보여주면 선호로 뽑힌 인원이 가능/선호 양쪽에 중복 집계된 것처럼 보인다.
+                선호가 아닌 가능 인원만 "가능"으로 보여줘서 두 숫자가 겹치지 않게 한다. */}
             <p>
-              가능 {selectedResult.availableCount}명 · 선호 {selectedResult.preferredCount}명
+              가능 {selectedResult.availableCount - selectedResult.preferredCount}명 · 선호{' '}
+              {selectedResult.preferredCount}명
             </p>
             <button type="button" onClick={() => setSelectedSlot(null)}>
               닫기
