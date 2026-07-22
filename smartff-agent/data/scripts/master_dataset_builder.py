@@ -116,27 +116,28 @@ def validate_dataset(df: pd.DataFrame):
     """데이터셋 검증"""
     print("\n=== Validation ===")
 
-    # 총 row 수
+    # 총 row 수 — 카테고리 x 월이 빠짐없이 채워진 "완전한 격자"인지 동적으로 검증
+    # (특정 개월 수를 하드코딩하지 않음 — 업로드가 누적되면서 월 수가 늘어날 수 있음)
     total_rows = len(df)
-    expected_rows = 24  # 4 categories × 6 months
-    print(f"Total rows: {total_rows} (expected: {expected_rows})")
-    assert total_rows == expected_rows, f"Row count mismatch: {total_rows} != {expected_rows}"
+    categories = sorted(df['category'].unique())
+    months = sorted([int(m) for m in df['month'].unique()])
+    expected_rows = len(categories) * len(months)
+    print(f"Total rows: {total_rows} (expected: {expected_rows} = {len(categories)} categories x {len(months)} months)")
+    assert total_rows == expected_rows, f"Row count mismatch: {total_rows} != {expected_rows} (카테고리x월 격자에 빠진 조합이 있는지 확인)"
 
-    # 카테고리별 분포
+    # 카테고리별 분포 — 모든 카테고리가 동일하게 전체 월수만큼 있어야 함
     print(f"\nCategory distribution:")
-    for category in sorted(df['category'].unique()):
+    for category in categories:
         count = len(df[df['category'] == category])
         print(f"  {category}: {count} rows")
-        assert count == 6, f"Category {category} has {count} rows, expected 6"
+        assert count == len(months), f"Category {category} has {count} rows, expected {len(months)}"
 
-    # 월별 분포
+    # 월별 분포 — 모든 월이 동일하게 전체 카테고리 수만큼 있어야 함
     print(f"\nMonth distribution:")
-    months = sorted([int(m) for m in df['month'].unique()])
-    assert months == [1, 2, 3, 4, 5, 6], f"Missing months: {months}"
     for month in months:
         count = len(df[df['month'] == month])
         print(f"  {month}월: {count} rows")
-        assert count == 4, f"Month {month} has {count} rows, expected 4"
+        assert count == len(categories), f"Month {month} has {count} rows, expected {len(categories)}"
 
     # 결측치
     print(f"\nMissing values:")

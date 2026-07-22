@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { CATEGORIES } from '../../constants/analysisMockData';
 
-const AUTOMATED_MONTHS = [1, 2, 3, 4, 5, 6];
+const AUTOMATED_MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 type UploadRecord = {
   id: string;

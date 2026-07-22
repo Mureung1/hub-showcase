@@ -9,7 +9,7 @@ import pandas as pd
 from pathlib import Path
 
 CATEGORIES = ["김밥", "도시락", "주먹밥", "햄버거샌드위치"]
-MONTHS = [f"{i:02d}" for i in range(1, 7)]
+MONTHS = [f"{i:02d}" for i in range(1, 13)]
 
 
 def is_summary_row(product_name: str) -> bool:

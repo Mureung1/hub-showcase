@@ -3,7 +3,7 @@ interface MonthSelectorProps {
   onSelectMonth: (month: number) => void;
 }
 
-const MONTHS = [1, 2, 3, 4, 5, 6];
+const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 export default function MonthSelector({ selectedMonth, onSelectMonth }: MonthSelectorProps) {
   return (
