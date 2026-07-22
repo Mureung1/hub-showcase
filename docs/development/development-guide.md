@@ -32,6 +32,30 @@ Project
 └─ README.md
 ```
 
+## NestJS API 기능 구조
+
+`apps/api`는 역할별 전역 폴더보다 기능별 모듈을 우선한다. 현재 Repository 분석 기능은 하나의 NestJS feature module 안에서 HTTP 진입점, 분석 흐름, 순수 분석 로직, 외부 시스템 연결을 분리한다.
+
+```text
+apps/api/src/repository-analysis/
+├─ repository-analysis.module.ts
+├─ presentation/
+│  └─ repository-analysis.controller.ts
+├─ application/
+│  ├─ repository-analysis.service.ts
+│  └─ technical-challenge/
+├─ domain/
+│  ├─ repository-analysis.analyzer.ts
+│  ├─ repository-analysis.models.ts
+│  └─ repository-analysis.utils.ts
+└─ infrastructure/
+   ├─ github/
+   ├─ ai/
+   └─ persistence/
+```
+
+의존성은 `presentation → application → domain/port → infrastructure` 방향을 따른다. Controller가 GitHub API나 Supabase를 직접 호출하지 않도록 유지하며, WebSocket을 사용하지 않는 현재 구조에는 `gateway`를 추가하지 않는다.
+
 ## 모노레포를 선택한 이유
 
 - PtoP는 `Repository 입력 → 분석 요청 → 결과 표시` 흐름에서 FE와 BE가 강하게 연결된다.
