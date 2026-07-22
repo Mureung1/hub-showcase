@@ -1092,3 +1092,8 @@
 - 검수 과정에서 수집된 채점표 원본(평가자 식별정보 포함)은 T16과 동일한 방침으로 저장소에 별도 보관하지 않는다. 저장소에 남아 있던 대표 12문구(4장×3톤) preflight CSV는 이 전수 검수 이전 단계의 사전 검토 자료다.
 - `src/entities/message/situationTemplates.ts`의 정적 288개 문구가 검수 대상 원본이며, 코드 변경은 없다. CHECKLIST T25를 완료로 반영하고 MVP.md·AI_DESIGN.md·PRD.md의 "초안"·"검수 전" 표현을 검수 통과로 갱신했다.
 - CHECKLIST T26(결정적 템플릿 엔진·fallback, 의존 T3·T8·T25)이 이제 착수 가능 상태다.
+
+## 2026-07-22 (`.github/workflows/ci.yml` 추적 되돌림)
+- 사용자가 이전에 "`.github` 폴더 내용은 공유 저장소에 push하지 말라"고 지시했었는데, `79a9478`(이번 세션 이전 커밋)이 `.gitignore`의 `.github/workflows/` 제외 규칙을 지우고 `ci.yml`을 추적·push한 상태였다. 오늘 세션에서 그 위에 계속 작업하면서 이 지시를 다시 확인하지 않고 지나쳤다.
+- 사용자 확인 후 `git rm --cached .github/workflows/ci.yml`로 추적만 제거하고(로컬 파일은 유지), `.gitignore`에 `.github/workflows/ci.yml` 규칙을 복원했다. 과제 제공 워크플로 `auto-merge.yml`과 `pull_request_template.md`·`ISSUE_TEMPLATE/*`는 건드리지 않았다(사용자가 명시적으로 유지 요청).
+- CHECKLIST T17 문구에서 "`ci.yml` 재설치로 `verify` Actions run 복구" 표현을 제거해 실제 상태(로컬 전용 유지)와 맞췄다.
