@@ -7,7 +7,7 @@ function ResultPage() {
   const { id } = useParams()
   const appointmentId = id ?? ''
   const session = getSession(appointmentId)
-  const { isLoading, error, candidateSlots, levelMap, closedAt } = useScheduleResult(appointmentId)
+  const { isLoading, error, candidateSlots, resultMap, levelMap, closedAt } = useScheduleResult(appointmentId)
 
   if (!session) {
     return <Navigate to={`/a/${appointmentId}`} replace />
@@ -26,7 +26,7 @@ function ResultPage() {
     return <Navigate to={`/a/${appointmentId}`} replace />
   }
 
-  return <ResultHeatmap slots={candidateSlots} levelMap={levelMap} />
+  return <ResultHeatmap slots={candidateSlots} levelMap={levelMap} resultMap={resultMap} />
 }
 
 export default ResultPage
