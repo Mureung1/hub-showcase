@@ -1,33 +1,18 @@
-# GameForge Agent — 2주차 작업 세분화 (Day 6~10)
+# GameForge Agent — 2주차 작업 세분화 (Day 7~10)
 
+> Day 6(Roslyn 실제 파싱)까지는 완료됨. 이 시점에서 AI 벤더를 Claude → **Gemini**로 전환하기로 결정해서, Day 7 맨 앞에 마이그레이션 작업을 끼워 넣었다.
 > 남은 일수 자체에 마감 압박을 걸지 않는다 — 어차피 이후에도 계속 이어서 개발할 프로젝트이기 때문. 대신 이번 스프린트가 끝나는 시점(Day 10)에는 **"로그인 → 저장소 선택 → 분석 리포트 → 워크스페이스에서 Agent와 대화 → 문서 승인"까지 한 바퀴가 실제로 돌아가는 데모**가 가능해야 한다는 목표는 유지한다.
 > `docs/GameForge_Agent_Week1_Tasks.md`와 같은 형식으로, 하루 작업이 반나절을 넘지 않도록 세분화했다.
 
 ---
 
-## Day 6 — Roslyn 분석기: 실제 파싱 로직 구현
+## Day 7 — [0단계] Claude → Gemini 마이그레이션 + 중복 코드 탐지·리포트 파이프라인
 
-### 분석 엔진 (`tools/analyzer/`)
-- 1주차 Day 5에 만든 더미 로직(파일 개수만 세는 것)을 실제 파싱 로직으로 교체
-- `CSharpSyntaxTree.ParseText()`로 대상 저장소의 `**/*.cs` 파일 순회
-- 각 `ClassDeclarationSyntax`에서 추출:
-  - 클래스명, 파일 경로
-  - 상속 목록 (`BaseList.Types`)
-  - 클래스 본문 내 `IdentifierNameSyntax`로 언급된 타입 이름 (의존성 근사치)
-  - 메서드 개수 (`MethodDeclarationSyntax` 카운트)
-- 출력 JSON 스키마 확정: `{ classes: [{ name, filePath, baseTypes, referencedTypes, methodCount }] }`
-- `Console.WriteLine(JsonSerializer.Serialize(...))`로 stdout 출력
-
-### 백엔드 연동 재확인
-- Express의 `child_process.spawn` 호출부가 실제 JSON 스키마를 파싱하도록 업데이트 (1주차엔 더미 스키마였음)
-- 로컬의 작은 테스트용 C# 파일 몇 개(2~3개 클래스, 상속 관계 있는 것)로 직접 실행해서 결과 검증
-- 분석기가 빈 결과/파싱 에러를 냈을 때 Express가 죽지 않고 에러를 잡아서 반환하는지 최소 확인 (데모 중 저장소에 이상한 파일이 섞여 있어도 안 죽게)
-
-**Day 6 완료 기준**: 실제 `.cs` 파일 몇 개를 분석기에 넣으면, 클래스명/상속관계/참조타입/메서드수가 정확히 담긴 JSON이 출력된다.
-
----
-
-## Day 7 — 중복 코드 탐지 + 리포트 생성 파이프라인
+### 0단계: AI 벤더 마이그레이션 (이 스프린트 신규 작업)
+- 코드베이스에서 `@anthropic-ai/sdk` 사용처를 전부 검색해 목록화
+- `@google/genai`로 교체 (단순 문자열 치환이 아니라 요청/응답 구조를 SDK 문서에 맞게 재작성)
+- `GEMINI_API_KEY`는 사용자가 이미 `.env`에 직접 넣어둠 — `.env` 파일 자체는 건드리지 않고, 코드에서 `process.env.GEMINI_API_KEY`를 읽어서 쓰기만 하면 됨
+- 마이그레이션 커밋과 아래 Day 7 신규 기능 커밋은 분리해서 작업 (히스토리에서 구분되도록)
 
 ### 중복 코드 탐지
 - `jscpd` npm 패키지 설치 및 연동 (C# 지원 옵션 확인)
@@ -37,12 +22,12 @@
 - God Class 기준: 메서드 수 > 30 → 플래그
 - 순환 의존성 간단 체크 (시간이 부족하면 다음으로 미뤄도 되지만, 우선 시도)
 
-### 리포트 텍스트화
-- Roslyn 결과 JSON + jscpd 결과 JSON을 하나로 합쳐 Claude API에 전달
+### 리포트 텍스트화 (Gemini API 사용)
+- Roslyn 결과 JSON + jscpd 결과 JSON을 하나로 합쳐 **Gemini API**에 전달
 - 프롬프트에 "정적 분석 기반 추정치이며 완전한 컴파일 분석이 아니다"라는 문구를 리포트에 포함하도록 명시
 - 응답을 `00_Analysis_Report.md` 형식(통계 요약 + 상세 목록)으로 저장
 
-**Day 7 완료 기준**: 분석 시작 요청을 curl/Postman으로 직접 호출했을 때, 완전한 형태의 Markdown 리포트 텍스트가 반환된다.
+**Day 7 완료 기준**: (1) Claude 관련 코드가 모두 Gemini SDK로 교체되었다. (2) 분석 시작 요청을 curl/Postman으로 직접 호출했을 때, 완전한 형태의 Markdown 리포트 텍스트가 Gemini API를 통해 반환된다.
 
 ---
 
@@ -71,12 +56,12 @@
 - 완료/진행중 단계만 클릭 가능, pending은 `disabled` + 툴팁
 - Step 클릭 시 해당 Step의 `Document`/`Message` 로드해서 메인 패널 갱신
 
-### 채팅 백엔드 뼈대 (Planning Agent 대상)
+### 채팅 백엔드 뼈대 (Planning Agent 대상, Gemini API 사용)
 - `POST /api/chat/{step_id}/message` 구현 — 우선 단발 요청/응답 (스트리밍은 여유 되면 추가)
-- Planning Agent system prompt 1차 버전 작성 (이전 단계 문서 + 대화 이력을 입력으로 받는 구조)
+- Planning Agent system prompt 1차 버전 작성 (이전 단계 문서 + 대화 이력을 입력으로 받는 구조) — Gemini의 system instruction 방식에 맞게 작성
 - `messages/{step_id}.json`에 대화 저장
 
-**Day 9 완료 기준**: 사이드바가 실제 상태값대로 렌더되고 클릭 이동이 되며, 채팅 API를 curl로 직접 호출하면 Claude 응답이 정상적으로 온다.
+**Day 9 완료 기준**: 사이드바가 실제 상태값대로 렌더되고 클릭 이동이 되며, 채팅 API를 curl로 직접 호출하면 Gemini 응답이 정상적으로 온다.
 
 ---
 
@@ -88,7 +73,7 @@
 - `ChatThread` / `ChatInput` 컴포넌트 — 프로토타입의 mock 데이터를 실제 fetch 호출로 교체
 - "입력 중…" 표시를 실제 API 응답 대기 시간에 맞춰 표시
 
-### 질문 큐 자동 진행 + 문서 자동 생성
+### 질문 큐 자동 진행 + 문서 자동 생성 (Gemini API 사용)
 - Planning Agent가 몇 차례 대화 후 "충분한 정보가 모였다"고 판단하면, 대화 내용을 바탕으로 `02_Game_Design.md` 초안을 자동 생성하도록 프롬프트/로직 구현
 - 문서 초안이 만들어지면 우측 Markdown 미리보기 패널에 자동으로 표시
 
@@ -96,15 +81,15 @@
 - Markdown 원문 직접 수정(저장/취소) — 프로토타입 로직 그대로 이식
 - Approve 클릭 → 현재 Step `done` 처리, 다음 Step `active`로 전환 (아직 실제 GitHub 커밋까지는 하지 않아도 됨 — 로컬 JSON 상태 전환까지만)
 
-**Day 10 완료 기준 (= 데모 체크리스트)**: 로그인 → 저장소/Branch 선택 → 분석 시작 → 리포트 Approve → 워크스페이스 진입 → 2단계(게임 기획) 클릭 → Planning Agent와 몇 차례 채팅 → 문서 자동 생성 → 필요 시 직접 수정 → Approve까지, **중간에 새로고침 없이 한 번에 시연 가능하다.**
+**Day 10 완료 기준 (= 데모 체크리스트)**: 로그인 → 저장소/Branch 선택 → 분석 시작 → 리포트 Approve → 워크스페이스 진입 → 2단계(게임 기획) 클릭 → Planning Agent와 몇 차례 채팅(Gemini 기반) → 문서 자동 생성 → 필요 시 직접 수정 → Approve까지, **중간에 새로고침 없이 한 번에 시연 가능하다.**
 
 ---
 
-## 이번 스프린트(Day 6~10)에서 아직 하지 않는 것 (마감 때문이 아니라 데모 범위상 자연스럽게 다음으로 미루는 것)
+## 이번 스프린트(Day 7~10)에서 아직 하지 않는 것 (마감 때문이 아니라 데모 범위상 자연스럽게 다음으로 미루는 것)
 
 - Planning Agent 외 나머지 Agent(Requirements, System Design, Architecture, Code Generation, Refactoring, Documentation)의 프롬프트 — 데모는 2단계 하나로 스토리를 보여주고, 나머지는 이어서 확장
 - 4.6 커밋 리뷰(Diff) 화면 — 코드가 실제로 나오는 7~8단계 작업이라 아직 이르다
 - Approve 시 실제 GitHub 커밋 — 이번 스프린트는 로컬 상태 전환까지, 실제 커밋 연동은 다음
 - 자동 테스트 스위트 — 수동 확인으로 대체 (다음 스프린트에 도입 검토)
 - 정교한 에러 분기 — Day 8에 최소 수준만 넣고, 세밀한 케이스별 처리는 이후
-
+- 스트리밍 응답(SSE) — Day 9~10은 우선 단발 요청/응답으로 진행, 스트리밍은 여유 될 때 추가
