@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Category } from '../../types/analysis';
 import type { FinancialRecord, FinancialSummary } from '../../types/financial';
+import type { WeekdayPatternResponse, HourlyPatternResponse } from '../../types/pattern';
 import { ANALYSIS_MOCK_DATA } from '../../constants/analysisMockData';
 import { weekdaySummary, timeSummary, monthlyTrendSummary } from '../../utils/analysisSummary';
 import CategoryTabs from '../../components/analysis/CategoryTabs';
@@ -13,6 +14,42 @@ async function fetchCategoryTrend(category: Category): Promise<FinancialRecord[]
   if (!res.ok) throw new Error(`API Error: ${res.status}`);
   const data: FinancialSummary = await res.json();
   return [...data.data].sort((a, b) => a.month - b.month);
+}
+
+async function fetchWeekdayPattern(category: Category): Promise<WeekdayPatternResponse> {
+  const res = await fetch(`/api/patterns/weekday?category=${encodeURIComponent(category)}`);
+  if (!res.ok) throw new Error(`API Error: ${res.status}`);
+  return res.json();
+}
+
+async function fetchHourlyPattern(category: Category): Promise<HourlyPatternResponse> {
+  const res = await fetch(`/api/patterns/hourly?category=${encodeURIComponent(category)}`);
+  if (!res.ok) throw new Error(`API Error: ${res.status}`);
+  return res.json();
+}
+
+function timeSuffix(hour: number): string {
+  if (hour >= 6 && hour <= 10) return ' (아침)';
+  if (hour >= 11 && hour <= 13) return ' (점심)';
+  if (hour >= 14 && hour <= 17) return ' (오후)';
+  if (hour >= 18 && hour <= 21) return ' (저녁)';
+  return ' (심야)';
+}
+
+function bestIdxOf(values: number[]): number {
+  return values.reduce((best, v, i) => (v > values[best] ? i : best), 0);
+}
+
+/** 최고값 인덱스와 그보다 값이 큰 쪽 인접 인덱스, 오름차순 2개 — "구간" 요약용 */
+function peakIdxsOf(values: number[]): number[] {
+  const best = bestIdxOf(values);
+  const prev = best - 1;
+  const next = best + 1;
+  const prevVal = prev >= 0 ? values[prev] : -Infinity;
+  const nextVal = next < values.length ? values[next] : -Infinity;
+  const neighbor = prevVal >= nextVal ? prev : next;
+  if (neighbor < 0 || neighbor >= values.length) return [best];
+  return [best, neighbor].sort((a, b) => a - b);
 }
 
 function trendLabelAndGood(latest: number, prev: number, isWaste: boolean) {
@@ -34,6 +71,10 @@ export default function AnalysisPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [weekdayPattern, setWeekdayPattern] = useState<WeekdayPatternResponse | null>(null);
+  const [hourlyPattern, setHourlyPattern] = useState<HourlyPatternResponse | null>(null);
+  const [patternError, setPatternError] = useState<string | null>(null);
+
   useEffect(() => {
     setLoading(true);
     fetchCategoryTrend(category)
@@ -42,7 +83,25 @@ export default function AnalysisPage() {
       .finally(() => setLoading(false));
   }, [category]);
 
+  useEffect(() => {
+    Promise.all([fetchWeekdayPattern(category), fetchHourlyPattern(category)])
+      .then(([weekday, hourly]) => {
+        setWeekdayPattern(weekday);
+        setHourlyPattern(hourly);
+      })
+      .catch((err) => setPatternError(err instanceof Error ? err.message : 'Unknown error'));
+  }, [category]);
+
   const d = ANALYSIS_MOCK_DATA[category];
+
+  const weekdayValues = weekdayPattern?.data.map((r) => r.avg_sales_amount) ?? [];
+  const weekdayLabels = weekdayPattern?.data.map((r) => r.weekday) ?? [];
+  const bestDayIdx = weekdayValues.length ? bestIdxOf(weekdayValues) : 0;
+
+  const timeValues = hourlyPattern?.data.map((r) => r.avg_sales_amount) ?? [];
+  const timeLabels = hourlyPattern?.data.map((r) => `${String(r.hour).padStart(2, '0')}시`) ?? [];
+  const bestTimeIdx = timeValues.length ? bestIdxOf(timeValues) : 0;
+  const peakIdxs = timeValues.length ? peakIdxsOf(timeValues) : [];
 
   const monthLabels = trendRecords.map((r) => `${r.month}월`);
   const salesWeekly = trendRecords.map((r) => Math.round(r.sales_amount / 1000));
@@ -92,29 +151,35 @@ export default function AnalysisPage() {
       {/* Insight strip */}
       <InsightStrip status={d.type} reasons={d.reasons} />
 
-      {/* Weekday / time-of-day patterns — 원본 데이터에 요일·시간대 정보가 없어 목업 유지 (내일 연동 예정) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-        <PatternBarChart
-          title="요일별 판매 패턴"
-          subtitle={`${category} · 최근 1개월 평균`}
-          values={d.weekday}
-          labels={d.weekdayLabels}
-          gap={12}
-          bestPrefix="최고 판매 요일"
-          bestLabel={d.bestDay}
-          summary={weekdaySummary(d.weekday, d.bestDay, d.bestDayIdx)}
-        />
-        <PatternBarChart
-          title="시간대별 판매 패턴"
-          subtitle={`${category} · 최근 1개월 평균`}
-          values={d.time}
-          labels={d.timeLabels}
-          gap={8}
-          bestPrefix="최고 판매 시간대"
-          bestLabel={d.timeLabels[d.bestTimeIdx] + d.bestTimeSuffix}
-          summary={timeSummary(d.time, d.timeLabels, d.peakIdxs)}
-        />
-      </div>
+      {/* Weekday / time-of-day patterns — data/master/weekday_sales.csv, hourly_sales.csv 실데이터 (6월 4주 평균) */}
+      {patternError ? (
+        <p style={{ color: '#DC2626', marginBottom: '20px' }}>패턴 데이터를 불러오지 못했습니다: {patternError}</p>
+      ) : !weekdayPattern || !hourlyPattern ? (
+        <p style={{ color: '#475569', marginBottom: '20px' }}>패턴 데이터 로딩 중...</p>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+          <PatternBarChart
+            title="요일별 판매 패턴"
+            subtitle={`${category} · 최근 1개월 평균`}
+            values={weekdayValues}
+            labels={weekdayLabels}
+            gap={12}
+            bestPrefix="최고 판매 요일"
+            bestLabel={`${weekdayLabels[bestDayIdx]}요일`}
+            summary={weekdaySummary(weekdayValues, `${weekdayLabels[bestDayIdx]}요일`, bestDayIdx)}
+          />
+          <PatternBarChart
+            title="시간대별 판매 패턴"
+            subtitle={`${category} · 최근 1개월 평균`}
+            values={timeValues}
+            labels={timeLabels}
+            gap={2}
+            bestPrefix="최고 판매 시간대"
+            bestLabel={timeLabels[bestTimeIdx] + timeSuffix(hourlyPattern.data[bestTimeIdx].hour)}
+            summary={timeSummary(timeValues, timeLabels, peakIdxs)}
+          />
+        </div>
+      )}
 
       {/* Sales / waste trends — 실데이터(merged_dataset.csv, 월별) 연동 */}
       {error ? (
