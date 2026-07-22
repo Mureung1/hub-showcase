@@ -29,3 +29,47 @@ self.addEventListener("fetch", (event) => {
     }),
   );
 });
+
+// #33: send-push(발송 쪽)가 아직 없어 payload 스키마가 확정되지 않았다 —
+// title/body 정도만 기대하고, 그 밖의 필드 검증은 하지 않는다.
+const DEFAULT_NOTIFICATION_TITLE = "잔소리봇";
+const DEFAULT_NOTIFICATION_BODY = "확인할 게 있어요!";
+const NOTIFICATION_ICON = "/icons/icon.svg";
+
+// PushMessageData의 json()/text()는 Fetch body와 달리 여러 번 호출해도 안전하다
+// (스펙상 스트림이 아니라 바이트 시퀀스 래퍼) — json() 실패 시 text()로 그대로 폴백한다.
+function parsePushPayload(data) {
+  if (!data) {
+    return { title: DEFAULT_NOTIFICATION_TITLE, body: DEFAULT_NOTIFICATION_BODY };
+  }
+  try {
+    const json = data.json();
+    return {
+      title: json.title || DEFAULT_NOTIFICATION_TITLE,
+      body: json.body || DEFAULT_NOTIFICATION_BODY,
+    };
+  } catch {
+    return { title: DEFAULT_NOTIFICATION_TITLE, body: data.text() || DEFAULT_NOTIFICATION_BODY };
+  }
+}
+
+self.addEventListener("push", (event) => {
+  const { title, body } = parsePushPayload(event.data);
+  event.waitUntil(
+    self.registration.showNotification(title, { body, icon: NOTIFICATION_ICON }),
+  );
+});
+
+// 알림 클릭 시 이미 열려있는 앱 탭이 있으면 그쪽으로 포커스, 없으면 새 탭을 연다.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsList) => {
+      for (const client of clientsList) {
+        if ("focus" in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow("/");
+      return undefined;
+    }),
+  );
+});
