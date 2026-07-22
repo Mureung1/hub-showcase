@@ -80,7 +80,8 @@ export const fridgeIngredients = [
   // 기름류(식용유·올리브유·참기름)는 "조미료"라 부르기 애매해서 위 "기타"로 뺐다.
   { id: 'salt', label: '소금', emoji: '🧂', matchNames: ['소금'], category: 'seasoning' },
   { id: 'sugar', label: '설탕', emoji: '🫙', matchNames: ['설탕'], category: 'seasoning' },
-  { id: 'soy-sauce', label: '간장', emoji: '🍶', matchNames: ['간장'], category: 'seasoning' },
+  { id: 'soy-sauce', label: '간장', emoji: '🍶', matchNames: ['간장', '진간장'], category: 'seasoning' },
+  { id: 'cooking-wine', label: '맛술', emoji: '🍶', matchNames: ['맛술'], category: 'seasoning' },
   { id: 'soup-soy-sauce', label: '국간장', emoji: '🍶', matchNames: ['국간장'], category: 'seasoning' },
   { id: 'vinegar', label: '식초', emoji: '🧪', matchNames: ['식초'], category: 'seasoning' },
   { id: 'corn-syrup', label: '물엿', emoji: '🍯', matchNames: ['물엿'], category: 'seasoning' },
