@@ -13,3 +13,13 @@ const HALF_LIFE_HOURS: Record<CaffeineSensitivity, number> = {
 export function sensitivityToHalfLife(sensitivity: CaffeineSensitivity): number {
   return HALF_LIFE_HOURS[sensitivity];
 }
+
+// 경구피임약은 카페인 대사를 늦춰 반감기를 약 2배로 늘린다고 알려져 있다.
+// TODO: 출처 미확인 근사치(2026-07-22 결정 — 일단 2배로 두고, 논문 자료를 따로 확인한 뒤
+// 값·표기 방식을 확정하기로 함). 확정 전까지 화면에 근거 문구는 노출하지 않는다.
+export const ORAL_CONTRACEPTIVE_HALF_LIFE_MULTIPLIER = 2;
+
+/** 경구피임약 복용 중이면 반감기를 늘려서 돌려준다. 아니면 받은 값 그대로. */
+export function applyOralContraceptive(halfLifeHours: number, taking: boolean | undefined): number {
+  return taking ? halfLifeHours * ORAL_CONTRACEPTIVE_HALF_LIFE_MULTIPLIER : halfLifeHours;
+}
