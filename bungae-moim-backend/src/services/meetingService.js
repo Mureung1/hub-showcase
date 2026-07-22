@@ -406,7 +406,54 @@ async function listParticipants(meetingId, viewerId) {
   };
 }
 
+// PATCH /api/meetings/:id/participants/:userId — 승인/거절(F4). 소모임에서 모임장만.
+// 소모임은 capacity가 NULL(무제한)이라 정원 검사가 필요 없다 — 승인이 정원을 넘길 수 없다.
+async function respondToApplicant(meetingId, hostId, targetUserId, status) {
+  const meetingRes = await pool.query('SELECT host_id, type FROM meetings WHERE id = $1', [meetingId]);
+  if (meetingRes.rows.length === 0) {
+    throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
+  }
+  const row = meetingRes.rows[0];
+
+  // host_id는 bigint라 문자열로 온다 — Number로 맞추지 않으면 모임장 본인도 막힌다.
+  if (Number(row.host_id) !== Number(hostId)) {
+    throw new ApiError('FORBIDDEN', '모임장만 신청을 처리할 수 있습니다');
+  }
+  if (row.type !== 'small') {
+    throw new ApiError('VALIDATION_ERROR', '소모임에서만 승인/거절할 수 있습니다');
+  }
+
+  // 상태 확인과 갱신을 한 문장에 담는다. 그래서 F1/F2와 달리 트랜잭션·FOR UPDATE가 필요 없다 —
+  // 같은 신청을 동시에 두 번 처리해도 두 번째 UPDATE는 0 rows가 되어 아래 분기로 떨어진다.
+  //
+  // WHERE status = 'pending' 때문에 승인 철회(approved → rejected)는 불가능하다. 이걸 열려면
+  // 확정 참여자를 강제로 내보내는 셈이므로, 먼저 신뢰도 감점 여부(F2는 본인 취소에 -3)와
+  // flash 재오픈 대상인지를 정해야 한다. 조건만 넓히면 정책 없이 동작이 생긴다.
+  const updated = await pool.query(
+    `UPDATE meeting_participants
+        SET status = $3, responded_at = now()
+      WHERE meeting_id = $1 AND user_id = $2 AND status = 'pending'
+     RETURNING status`,
+    [meetingId, targetUserId, status]
+  );
+
+  if (updated.rowCount === 0) {
+    // 0 rows인 이유가 "신청이 없어서"인지 "이미 처리돼서"인지를 여기서만 구분한다.
+    // 이 조회는 에러 메시지를 고르기 위한 것이라, 그 사이 상태가 또 바뀌어도 데이터는 이미 안전하다.
+    const existing = await pool.query(
+      'SELECT status FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, targetUserId]
+    );
+    if (existing.rows.length === 0) {
+      throw new ApiError('NOT_FOUND', '신청을 찾을 수 없습니다');
+    }
+    throw new ApiError('VALIDATION_ERROR', '이미 처리된 신청입니다');
+  }
+
+  return { userId: targetUserId, status: updated.rows[0].status };
+}
+
 module.exports = {
   createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation,
-  listParticipants, normalizeMeeting, PAGE_SIZE,
+  listParticipants, respondToApplicant, normalizeMeeting, PAGE_SIZE,
 };

@@ -97,4 +97,21 @@ function validateBirthDate(body = {}) {
   return value;
 }
 
-module.exports = { validateCreateMeeting, validateBirthDate, OPEN_CHAT_URL_PATTERN };
+// PATCH /api/meetings/:id/participants/:userId 의 본문 검증(F4).
+// pending으로 되돌리는 것은 허용하지 않는다 — 승인/거절은 단방향이다(설계서 D5).
+const RESPOND_STATUSES = ['approved', 'rejected'];
+
+function validateRespondStatus(body) {
+  const status = body && body.status;
+  if (!RESPOND_STATUSES.includes(status)) {
+    throw new ApiError('VALIDATION_ERROR', 'status는 approved 또는 rejected여야 합니다');
+  }
+  return status;
+}
+
+module.exports = {
+  validateCreateMeeting,
+  validateBirthDate,
+  validateRespondStatus,
+  OPEN_CHAT_URL_PATTERN,
+};

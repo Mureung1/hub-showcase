@@ -1,8 +1,8 @@
 const express = require('express');
 const requireAuth = require('../middleware/auth');
-const { validateCreateMeeting } = require('../utils/validators');
+const { validateCreateMeeting, validateRespondStatus } = require('../utils/validators');
 const ApiError = require('../utils/apiError');
-const { createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation, listParticipants } = require('../services/meetingService');
+const { createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation, listParticipants, respondToApplicant } = require('../services/meetingService');
 
 const router = express.Router();
 
@@ -109,6 +109,22 @@ router.get('/:id/participants', requireAuth, async (req, res, next) => {
   try {
     const id = parseIdParam(req.params.id);
     const result = await listParticipants(id, req.session.userId);
+    res.json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/meetings/:id/participants/:userId — 승인/거절(F4, 모임장만·소모임만)
+router.patch('/:id/participants/:userId', requireAuth, async (req, res, next) => {
+  try {
+    // 본문 검증을 먼저 한다. 잘못된 본문이 FORBIDDEN보다 먼저 걸리므로 남의 모임
+    // 존재 여부가 덜 새어나간다.
+    const status = validateRespondStatus(req.body);
+    const id = parseIdParam(req.params.id);
+    const targetUserId = parseIdParam(req.params.userId, '신청을 찾을 수 없습니다');
+
+    const result = await respondToApplicant(id, req.session.userId, targetUserId, status);
     res.json({ data: result });
   } catch (err) {
     next(err);

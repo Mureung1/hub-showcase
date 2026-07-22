@@ -150,3 +150,124 @@ describe('GET /api/meetings/:id/participants', () => {
     expect(res.body.data.items[0].status).toBe('confirmed');
   });
 });
+
+describe('PATCH /api/meetings/:id/participants/:userId', () => {
+  it('비로그인은 401', async () => {
+    const host = await createUser('r-h0');
+    const meetingId = await insertMeeting(host);
+    const a = await createUser('r-a0');
+    await insertParticipant(meetingId, a, 'pending');
+
+    const res = await request(app)
+      .patch(`/api/meetings/${meetingId}/participants/${a}`)
+      .send({ status: 'approved' });
+    expect(res.status).toBe(401);
+  });
+
+  it('모임장이 아니면 403 FORBIDDEN', async () => {
+    const host = await createUser('r-h1');
+    const meetingId = await insertMeeting(host);
+    const { agent, userId } = await loginAgent('r-u1');
+    await insertParticipant(meetingId, userId, 'pending');
+
+    const res = await agent
+      .patch(`/api/meetings/${meetingId}/participants/${userId}`)
+      .send({ status: 'approved' });
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+  });
+
+  it('flash 모임에서는 승인할 수 없다(400)', async () => {
+    const { agent, userId: hostId } = await loginAgent('r-h2', '모임장');
+    const meetingId = await insertMeeting(hostId, { type: 'flash', capacity: 4, endAt: null });
+    const a = await createUser('r-a2');
+    await insertParticipant(meetingId, a, 'pending');
+
+    const res = await agent
+      .patch(`/api/meetings/${meetingId}/participants/${a}`)
+      .send({ status: 'approved' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('status가 없으면 400', async () => {
+    const { agent, userId: hostId } = await loginAgent('r-h3', '모임장');
+    const meetingId = await insertMeeting(hostId);
+    const a = await createUser('r-a3');
+    await insertParticipant(meetingId, a, 'pending');
+
+    const res = await agent.patch(`/api/meetings/${meetingId}/participants/${a}`).send({});
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('status가 approved/rejected가 아니면 400', async () => {
+    const { agent, userId: hostId } = await loginAgent('r-h4', '모임장');
+    const meetingId = await insertMeeting(hostId);
+    const a = await createUser('r-a4');
+    await insertParticipant(meetingId, a, 'pending');
+
+    const res = await agent
+      .patch(`/api/meetings/${meetingId}/participants/${a}`)
+      .send({ status: 'pending' });
+    expect(res.status).toBe(400);
+  });
+
+  it('pending을 승인하면 approved가 되고 responded_at이 채워진다', async () => {
+    const { agent, userId: hostId } = await loginAgent('r-h5', '모임장');
+    const meetingId = await insertMeeting(hostId);
+    const a = await createUser('r-a5');
+    await insertParticipant(meetingId, a, 'pending');
+
+    const res = await agent
+      .patch(`/api/meetings/${meetingId}/participants/${a}`)
+      .send({ status: 'approved' });
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe('approved');
+    expect(res.body.data.userId).toBe(a);
+
+    const { rows } = await pool.query(
+      'SELECT status, responded_at FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, a]
+    );
+    expect(rows[0].status).toBe('approved');
+    expect(rows[0].responded_at).not.toBeNull();
+  });
+
+  it('pending을 거절하면 rejected가 된다', async () => {
+    const { agent, userId: hostId } = await loginAgent('r-h6', '모임장');
+    const meetingId = await insertMeeting(hostId);
+    const a = await createUser('r-a6');
+    await insertParticipant(meetingId, a, 'pending');
+
+    const res = await agent
+      .patch(`/api/meetings/${meetingId}/participants/${a}`)
+      .send({ status: 'rejected' });
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe('rejected');
+  });
+
+  it('이미 처리된 신청은 다시 처리할 수 없다(400)', async () => {
+    const { agent, userId: hostId } = await loginAgent('r-h7', '모임장');
+    const meetingId = await insertMeeting(hostId);
+    const a = await createUser('r-a7');
+    await insertParticipant(meetingId, a, 'approved');
+
+    const res = await agent
+      .patch(`/api/meetings/${meetingId}/participants/${a}`)
+      .send({ status: 'rejected' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('신청한 적 없는 사용자는 404', async () => {
+    const { agent, userId: hostId } = await loginAgent('r-h8', '모임장');
+    const meetingId = await insertMeeting(hostId);
+    const a = await createUser('r-a8');
+
+    const res = await agent
+      .patch(`/api/meetings/${meetingId}/participants/${a}`)
+      .send({ status: 'approved' });
+    expect(res.status).toBe(404);
+  });
+});
