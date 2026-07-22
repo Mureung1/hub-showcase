@@ -84,7 +84,7 @@ export interface ExactProductProviderEvidence {
 
 export interface ExactProductLocalProviderFixture {
   readonly runtime: CodexProductCapableRuntime
-  readonly runtimeWorkspace: string
+  readonly runtimeFallbackWorkspace: string
   readonly processGroupId: number
   readonly closed: Promise<void>
   readonly providerJournalPath: string
@@ -180,7 +180,7 @@ export async function startExactProductLocalProviderFixture(options: {
     let disposePromise: Promise<void> | undefined
     return {
       runtime: activeRuntime.runtime,
-      runtimeWorkspace: runtimeFallbackWorkspace,
+      runtimeFallbackWorkspace,
       processGroupId,
       closed: activeRuntime.closed,
       providerJournalPath: activeProvider.journalPath,
