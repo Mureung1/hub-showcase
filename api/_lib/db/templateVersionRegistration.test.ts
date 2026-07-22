@@ -1,13 +1,35 @@
 import { describe, expect, it } from 'vitest'
+import { generatedTemplateManifest } from '../../../src/entities/message/templateCompiler/generated/templates.generated.js'
 import { toApprovedTemplateVersionRegistration } from './templateVersionRegistration.js'
 
 const approvedManifest = {
   checksum: 'a'.repeat(64),
   reviewStatus: 'approved' as const,
-  version: 't25-approved-2026-07-20.1',
+  version: 't25-approved-2026-07-21.1',
 }
 
-describe('T25 template version registration boundary', () => {
+describe('T26 template version registration boundary', () => {
+  it('maps the generated approved manifest to the metadata-only DB allowlist', () => {
+    const registration = toApprovedTemplateVersionRegistration(
+      generatedTemplateManifest,
+      new Date('2026-07-21T09:30:00.000Z'),
+    )
+
+    expect(registration).toMatchObject({
+      checksum: generatedTemplateManifest.checksum,
+      isActive: true,
+      reviewStatus: 'approved',
+      version: generatedTemplateManifest.version,
+    })
+    expect(Object.keys(registration).sort()).toEqual([
+      'checksum',
+      'isActive',
+      'reviewStatus',
+      'reviewedAt',
+      'version',
+    ])
+  })
+
   it('creates an active registration input only from an approved manifest and valid review time', () => {
     const reviewedAt = new Date('2026-07-20T09:30:00.000Z')
 

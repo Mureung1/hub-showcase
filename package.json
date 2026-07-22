@@ -16,6 +16,8 @@
     "db:smoke:interaction": "tsx scripts/interaction-smoke.ts",
     "retrieval:eval": "tsx scripts/retrieval-eval.ts",
     "retrieval:ingest": "tsx scripts/retrieval-ingest.ts",
+    "templates:generate": "node --import tsx scripts/templates-generate.ts",
+    "templates:check": "node --import tsx scripts/templates-check.ts",
     "typecheck:api": "tsc -p tsconfig.api.json",
     "lint": "oxlint",
     "test": "vitest run",

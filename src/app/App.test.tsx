@@ -68,7 +68,10 @@ describe('App', () => {
   })
 
   it('상황 카드 뒤 질문 없이 바로 초안을 고르면 입력·API 없이 템플릿 결과가 나온다', () => {
-    render(<App />)
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(null, { status: 204 }))
+    render(<MessageFlow interactionReporter={() => undefined} />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     chooseProfessorMessenger()
     chooseHaeyoSpeechStyle()
@@ -82,6 +85,7 @@ describe('App', () => {
     expect(screen.getByText('기본')).toBeInTheDocument()
     expect(screen.getByText('더 부드럽게')).toBeInTheDocument()
     expect(screen.getByText('더 분명하게')).toBeInTheDocument()
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 
   it('빈칸 후보는 수정할 부분을 자동 선택하고 채운 문장만 바로 복사한다', async () => {
@@ -166,6 +170,35 @@ describe('App', () => {
     await waitFor(() => expect(screen.queryByText(/방금 고른 세부 답은 반영되지 않았어요/)).toBeNull())
     expect(screen.getByLabelText('선택한 내용')).toHaveTextContent('팀플·조모임 · 일정 조율 · 가능한 시간 묻기')
     expect(screen.getByText('현재는 AI 연결 전 검증용 예시 후보입니다.')).toBeInTheDocument()
+  })
+
+  it('guided AI 429도 다른 카드가 아닌 같은 조합의 템플릿으로 fallback한다', async () => {
+    render(<MessageFlow interactionReporter={() => undefined} mockGenerationCase="error429" />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /팀플냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '일정 조율' }))
+    fireEvent.click(screen.getByRole('button', { name: '가능한 시간 묻기 선택하고 초안 만들기' }))
+
+    expect(await screen.findByText('다음 모임 시간 맞추려고 하는데 언제가 괜찮으세요?')).toBeInTheDocument()
+    expect(screen.getByLabelText('선택한 내용')).toHaveTextContent('팀플·조모임 · 일정 조율 · 가능한 시간 묻기')
+    expect(screen.getByText(/방금 고른 세부 답은 반영되지 않았어요/)).toBeInTheDocument()
+  })
+
+  it('guided AI timeout도 같은 조합의 템플릿으로 fallback한다', async () => {
+    vi.useFakeTimers()
+    render(<MessageFlow interactionReporter={() => undefined} mockGenerationCase="delay" />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /팀플냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '일정 조율' }))
+    fireEvent.click(screen.getByRole('button', { name: '가능한 시간 묻기 선택하고 초안 만들기' }))
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(20_000)
+    })
+
+    expect(screen.getByText('다음 모임 시간 맞추려고 하는데 언제가 괜찮으세요?')).toBeInTheDocument()
+    expect(screen.getByLabelText('선택한 내용')).toHaveTextContent('팀플·조모임 · 일정 조율 · 가능한 시간 묻기')
+    expect(screen.getByText(/방금 고른 세부 답은 반영되지 않았어요/)).toBeInTheDocument()
   })
 
   it('질문 없이 바로 초안은 생성 오류 설정과 무관하게 로컬 템플릿을 즉시 보여준다', () => {
@@ -342,6 +375,8 @@ describe('App', () => {
     expect(screen.getByLabelText('상황 설명')).toHaveValue('바꾼 최신 입력')
     expect(screen.getByRole('button', { name: '부탁하기' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.queryByRole('heading', { level: 2, name: '어느 톤으로 보낼까냥?' })).toBeNull()
+    expect(screen.queryByText(/방금 고른 세부 답은 반영되지 않았어요/)).toBeNull()
+    expect(screen.queryByRole('button', { name: '복사' })).toBeNull()
   })
 
   it('수정 textarea에서 복사 API를 쓸 수 없으면 수정문 자체를 선택한다', async () => {
@@ -807,6 +842,8 @@ describe('App', () => {
     })
     expect(screen.getByLabelText('상황 설명')).toHaveValue('동아리 회의 시간을 다시 확인하고 싶어요.')
     expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument()
+    expect(screen.queryByText(/방금 고른 세부 답은 반영되지 않았어요/)).toBeNull()
+    expect(screen.queryByRole('button', { name: '복사' })).toBeNull()
   })
 
   it('20초 안에 응답이 없으면 타임아웃 안내와 입력을 유지한다', async () => {

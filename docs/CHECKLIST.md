@@ -38,7 +38,7 @@
 > T25는 T7의 목 텍스트 UI 골격이 아니라 T26의 실제 템플릿 경로 선행 조건이다. T7은 목 텍스트로 완료할 수 있고, T26 전에는 T25 작성·검수가 끝나야 한다 — PLAN.md 주차 매핑 참고.
 
 - [x] **T25. 상황 카드 템플릿 288개 작성·전수 검수** — 의존: 코드 없음(SPEC 1·4장). 4관계×6상황×4말투×3톤 초안(`src/entities/message/situationTemplates.ts`)을 사용자가 반복 검토했다. 한국어 관계 맥락 평가자 2명(김도엽·진현지) 독립 검수 결과: hard fail 0/288, 톤 블라인드 정렬 96/96, 그대로 전송 가능 231/288(80.2%, 합격선 충족), 하위 관계 호환 288/288 — SPEC 4장 합격선 전부 통과(2026-07-21, 사용자 보고). 검수자 식별정보 외 원시 채점표는 T16과 동일 방침으로 저장소에 별도 보관하지 않는다
-- [ ] **T26. 결정적 템플릿 엔진·fallback** — 의존: T3, T8, T25. `template_fallback` route가 API 호출 없이 `scenarioId × situationId × speechStyleId`로 tone 3개를 즉시 반환하고 T34 guided AI 실패에서도 같은 카드를 안전하게 제공한다. T25 검수 전에는 `준비된 기본 초안`으로만 표현하고, 세부 답 미반영을 명시한다. 컴파일 산출물·manifest·checksum·DB 승인 경계까지 통과해야 운영 자산으로 전환한다
+- [x] **T26. 결정적 템플릿 엔진·fallback** — 의존: T3, T8, T25. `template_fallback` route가 API 호출 없이 `scenarioId × situationId × speechStyleId`로 tone 3개를 즉시 반환하고 T34 guided AI 실패에서도 같은 카드를 안전하게 제공한다. 완료(2026-07-22: 24개 의미 프레임→12개 말투×톤 규칙→96세트·288문구 결정적 컴파일, T25 검수 원문 byte 동일성, approved manifest·SHA-256 checksum·provenance, Git 산출물 drift 검사, DB metadata-only 승인 경계, 생성 API 0회·guided timeout/429/500 동일 키 fallback·manual/취소 비fallback을 전체 365개 테스트로 검증)
 
 ## 3단계 — 실 연동 · 마감
 

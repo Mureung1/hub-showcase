@@ -2,9 +2,13 @@
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { toneLabels, type ScenarioId, type SituationId, type SpeechStyleId } from './message'
 import { templateCandidatesFor } from './situationTemplates'
+import {
+  generatedTemplateManifest,
+  generatedTemplates,
+} from './templateCompiler/generated/templates.generated'
 
 const speechStyleIds: SpeechStyleId[] = ['seumnida', 'haeyo', 'ida', 'yongyong']
 const scenarioSituations: Record<ScenarioId, SituationId[]> = {
@@ -15,6 +19,36 @@ const scenarioSituations: Record<ScenarioId, SituationId[]> = {
 }
 
 describe('상황 카드 개인 말투 템플릿', () => {
+  it('승인된 생성 산출물 288개를 같은 키와 문구로 조회한다', () => {
+    expect(generatedTemplateManifest.reviewStatus).toBe('approved')
+    expect(generatedTemplateManifest.setCount).toBe(96)
+    expect(generatedTemplateManifest.templateCount).toBe(288)
+    expect(generatedTemplates).toHaveLength(288)
+
+    for (const template of generatedTemplates) {
+      const candidates = templateCandidatesFor(
+        template.scenarioId,
+        template.situationId,
+        template.speechStyleId,
+      )
+
+      expect(candidates?.find((candidate) => candidate.toneLevel === template.toneLevel)?.text).toBe(
+        template.message,
+      )
+    }
+  })
+
+  it('정적 템플릿 조회 중 생성 API를 호출하지 않는다', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+
+    try {
+      expect(templateCandidatesFor('friend', 'schedule', 'haeyo')).toHaveLength(3)
+      expect(fetchSpy).not.toHaveBeenCalled()
+    } finally {
+      fetchSpy.mockRestore()
+    }
+  })
+
   it('96세트와 288개 정적 문구를 누락 없이 제공한다', () => {
     const allTexts: string[] = []
     let setCount = 0

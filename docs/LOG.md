@@ -1109,3 +1109,16 @@
 - 사용자가 말한 "맨 처음의 고양이 발바닥"은 첨부한 두 발 이미지가 아니라 기존 화면 상단 `발자국 n/4`의 작은 파란 발자국 아이콘임을 확인했다. 방식·관계 카드도 같은 `public/paw.png`를 CSS 마스크로 재사용하고 별도로 만든 긴 발 파생 에셋은 제거했다.
 - DOM 선택 흐름과 뒤로가기 방향 표시는 바꾸지 않았으며 사용자 제공 원본 두 장은 모두 변경하지 않았다.
 
+## 2026-07-22 (T26 결정적 템플릿 엔진·fallback 완료)
+### 컴파일 자산·검증 규칙
+- T25 승인 288문구를 24개 의미 프레임과 12개 말투×톤 규칙으로 옮기고, 정본 순서의 96세트·288문구를 만드는 순수 컴파일러를 추가했다. 말투 말끝·문장부호, intent 화행, tone 2 완화, tone 3 간결성 경계를 컴파일 단계에서 검사한다.
+- bundle version은 `t25-approved-2026-07-21.1`, review status는 `approved`로 고정했다. manifest는 24/96/288 수치·문구별 provenance·소문자 SHA-256 checksum `4ac4ea33750c42164fac4b14d6b43071de122fccf3c5136868beb7ba6261c69f`를 가진다.
+- `templates:generate`가 Git TypeScript·JSON 산출물을 재생성하고 `templates:check`가 1 byte라도 drift하면 실패한다. 컴파일 288개는 T25 검수지와 byte 단위로 같다.
+### 런타임·장애 fallback·DB 경계
+- `templateCandidatesFor` 런타임 원천을 generated artifact 하나로 전환하고 중복 288문구 상수를 제거했다. 기존 `Candidate[] | null`, tone 1→2→3, 호출마다 새 후보 객체와 생성 API 0회 계약을 유지했다. Backend/Frontend 교차검토로 브라우저 번들에 compiler·frames·`node:crypto`가 연결되지 않음도 확인했다.
+- guided AI timeout·429·500은 같은 관계×상황×말투 키의 기본 초안으로 fallback하고 세부 답 미반영을 안내한다. manual AI 실패·취소는 기본 초안으로 강제 전환하지 않는 것을 App 회귀 테스트로 고정했다.
+- approved manifest와 유효한 검수 시각만 `template_versions` active 입력으로 변환하며, DB 입력 allowlist에는 version·checksum·review status/time만 남기고 템플릿 본문·사용자 원문을 제외했다. 실제 검수 시각은 정본에 없어 임의로 만들거나 DB에 쓰지 않았다.
+### 검증·완료 판정
+- T26 관련 5파일 110테스트와 전체 43파일 365테스트, `templates:generate`, `templates:check`, `typecheck:api`, lint, production build, `git diff --check`, `any` 금지 검사가 통과했다. 빌드의 기존 CatCanvas 500 kB 경고만 비차단으로 남았다.
+- 화면·카피 변경은 없어 신규 실화면 검증은 비적용으로 판정했다. 실제 DB 등록·커밋·push·배포는 수행하지 않았다. 상세 근거: [T26 계획서](../harness/tasks/T26-deterministic-template-engine/plan.md)·[검증 보고서](../harness/tasks/T26-deterministic-template-engine/verification.md).
+

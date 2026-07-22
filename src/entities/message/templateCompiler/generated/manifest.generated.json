@@ -1,0 +1,1162 @@
+{
+  "checksum": "4ac4ea33750c42164fac4b14d6b43071de122fccf3c5136868beb7ba6261c69f",
+  "entries": [
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "groupwork.schedule.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "groupwork.schedule.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "groupwork.schedule.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "groupwork.schedule.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "groupwork.schedule.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "groupwork.schedule.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "groupwork.schedule.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "groupwork.schedule.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "groupwork.schedule.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "groupwork.schedule.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "groupwork.schedule.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "groupwork.schedule.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "groupwork.thanks_check.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "groupwork.thanks_check.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "groupwork.thanks_check.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "groupwork.thanks_check.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "groupwork.thanks_check.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "groupwork.thanks_check.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "groupwork.thanks_check.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "groupwork.thanks_check.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "groupwork.thanks_check.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "groupwork.thanks_check.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "groupwork.thanks_check.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "groupwork.thanks_check.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "groupwork.ask.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "groupwork.ask.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "groupwork.ask.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "groupwork.ask.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "groupwork.ask.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "groupwork.ask.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "groupwork.ask.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "groupwork.ask.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "groupwork.ask.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "groupwork.ask.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "groupwork.ask.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "groupwork.ask.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "groupwork.apologize.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "groupwork.apologize.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "groupwork.apologize.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "groupwork.apologize.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "groupwork.apologize.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "groupwork.apologize.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "groupwork.apologize.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "groupwork.apologize.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "groupwork.apologize.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "groupwork.apologize.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "groupwork.apologize.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "groupwork.apologize.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "groupwork.decline.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "groupwork.decline.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "groupwork.decline.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "groupwork.decline.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "groupwork.decline.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "groupwork.decline.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "groupwork.decline.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "groupwork.decline.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "groupwork.decline.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "groupwork.decline.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "groupwork.decline.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "groupwork.decline.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "groupwork.contribution_check.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "groupwork.contribution_check.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "groupwork.contribution_check.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "groupwork.contribution_check.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "groupwork.contribution_check.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "groupwork.contribution_check.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "groupwork.contribution_check.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "groupwork.contribution_check.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "groupwork.contribution_check.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "groupwork.contribution_check.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "groupwork.contribution_check.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "groupwork.contribution_check.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "professor.schedule.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "professor.schedule.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "professor.schedule.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "professor.schedule.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "professor.schedule.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "professor.schedule.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "professor.schedule.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "professor.schedule.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "professor.schedule.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "professor.schedule.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "professor.schedule.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "professor.schedule.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "professor.thanks_check.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "professor.thanks_check.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "professor.thanks_check.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "professor.thanks_check.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "professor.thanks_check.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "professor.thanks_check.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "professor.thanks_check.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "professor.thanks_check.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "professor.thanks_check.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "professor.thanks_check.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "professor.thanks_check.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "professor.thanks_check.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "professor.ask.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "professor.ask.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "professor.ask.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "professor.ask.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "professor.ask.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "professor.ask.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "professor.ask.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "professor.ask.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "professor.ask.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "professor.ask.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "professor.ask.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "professor.ask.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "professor.apologize.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "professor.apologize.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "professor.apologize.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "professor.apologize.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "professor.apologize.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "professor.apologize.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "professor.apologize.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "professor.apologize.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "professor.apologize.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "professor.apologize.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "professor.apologize.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "professor.apologize.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "professor.decline.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "professor.decline.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "professor.decline.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "professor.decline.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "professor.decline.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "professor.decline.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "professor.decline.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "professor.decline.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "professor.decline.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "professor.decline.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "professor.decline.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "professor.decline.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "professor.absence_inquiry.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "professor.absence_inquiry.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "professor.absence_inquiry.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "professor.absence_inquiry.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "professor.absence_inquiry.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "professor.absence_inquiry.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "professor.absence_inquiry.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "professor.absence_inquiry.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "professor.absence_inquiry.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "professor.absence_inquiry.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "professor.absence_inquiry.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "professor.absence_inquiry.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "senior.schedule.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "senior.schedule.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "senior.schedule.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "senior.schedule.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "senior.schedule.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "senior.schedule.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "senior.schedule.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "senior.schedule.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "senior.schedule.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "senior.schedule.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "senior.schedule.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "senior.schedule.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "senior.thanks_check.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "senior.thanks_check.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "senior.thanks_check.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "senior.thanks_check.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "senior.thanks_check.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "senior.thanks_check.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "senior.thanks_check.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "senior.thanks_check.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "senior.thanks_check.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "senior.thanks_check.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "senior.thanks_check.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "senior.thanks_check.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "senior.ask.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "senior.ask.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "senior.ask.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "senior.ask.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "senior.ask.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "senior.ask.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "senior.ask.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "senior.ask.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "senior.ask.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "senior.ask.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "senior.ask.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "senior.ask.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "senior.apologize.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "senior.apologize.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "senior.apologize.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "senior.apologize.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "senior.apologize.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "senior.apologize.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "senior.apologize.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "senior.apologize.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "senior.apologize.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "senior.apologize.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "senior.apologize.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "senior.apologize.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "senior.decline.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "senior.decline.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "senior.decline.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "senior.decline.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "senior.decline.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "senior.decline.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "senior.decline.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "senior.decline.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "senior.decline.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "senior.decline.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "senior.decline.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "senior.decline.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "senior.casual_request.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "senior.casual_request.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "senior.casual_request.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "senior.casual_request.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "senior.casual_request.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "senior.casual_request.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "senior.casual_request.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "senior.casual_request.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "senior.casual_request.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "senior.casual_request.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "senior.casual_request.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "senior.casual_request.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "friend.schedule.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "friend.schedule.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "friend.schedule.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "friend.schedule.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "friend.schedule.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "friend.schedule.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "friend.schedule.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "friend.schedule.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "friend.schedule.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "friend.schedule.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "friend.schedule.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "friend.schedule.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "friend.thanks_check.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "friend.thanks_check.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "friend.thanks_check.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "friend.thanks_check.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "friend.thanks_check.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "friend.thanks_check.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "friend.thanks_check.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "friend.thanks_check.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "friend.thanks_check.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "friend.thanks_check.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "friend.thanks_check.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "friend.thanks_check.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "friend.ask.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "friend.ask.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "friend.ask.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "friend.ask.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "friend.ask.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "friend.ask.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "friend.ask.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "friend.ask.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "friend.ask.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "friend.ask.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "friend.ask.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "friend.ask.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "friend.apologize.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "friend.apologize.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "friend.apologize.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "friend.apologize.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "friend.apologize.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "friend.apologize.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "friend.apologize.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "friend.apologize.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "friend.apologize.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "friend.apologize.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "friend.apologize.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "friend.apologize.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "friend.decline.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "friend.decline.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "friend.decline.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "friend.decline.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "friend.decline.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "friend.decline.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "friend.decline.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "friend.decline.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "friend.decline.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "friend.decline.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "friend.decline.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "friend.decline.yongyong.3"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.1",
+      "templateId": "friend.express_feelings.seumnida.1"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.2",
+      "templateId": "friend.express_feelings.seumnida.2"
+    },
+    {
+      "ruleId": "speech.seumnida.tone.3",
+      "templateId": "friend.express_feelings.seumnida.3"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.1",
+      "templateId": "friend.express_feelings.haeyo.1"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.2",
+      "templateId": "friend.express_feelings.haeyo.2"
+    },
+    {
+      "ruleId": "speech.haeyo.tone.3",
+      "templateId": "friend.express_feelings.haeyo.3"
+    },
+    {
+      "ruleId": "speech.ida.tone.1",
+      "templateId": "friend.express_feelings.ida.1"
+    },
+    {
+      "ruleId": "speech.ida.tone.2",
+      "templateId": "friend.express_feelings.ida.2"
+    },
+    {
+      "ruleId": "speech.ida.tone.3",
+      "templateId": "friend.express_feelings.ida.3"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.1",
+      "templateId": "friend.express_feelings.yongyong.1"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.2",
+      "templateId": "friend.express_feelings.yongyong.2"
+    },
+    {
+      "ruleId": "speech.yongyong.tone.3",
+      "templateId": "friend.express_feelings.yongyong.3"
+    }
+  ],
+  "frameCount": 24,
+  "reviewStatus": "approved",
+  "setCount": 96,
+  "templateCount": 288,
+  "version": "t25-approved-2026-07-21.1"
+}
