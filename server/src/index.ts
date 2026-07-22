@@ -13,6 +13,7 @@ import { homeRouter } from './routes/home.js'
 import { videosRouter } from './routes/videos.js'
 import { pointsRouter } from './routes/points.js'
 import { dodoRouter } from './routes/dodo.js'
+import { roomItemsRouter } from './routes/roomItems.js'
 
 const app = express()
 const port = Number(process.env.PORT ?? 4000)
@@ -36,6 +37,7 @@ app.use('/api/home', homeRouter)
 app.use('/api/videos', videosRouter)
 app.use('/api/points', pointsRouter)
 app.use('/api/dodo', dodoRouter)
+app.use('/api/room-items', roomItemsRouter)
 
 // 라우터에서 던진 에러가 여기로 모인다 — 이게 없으면 비동기 핸들러 에러가 프로세스 전체를 죽인다.
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
