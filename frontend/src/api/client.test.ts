@@ -115,6 +115,88 @@ describe('api client', () => {
     })
   })
 
+  it('getMissionRecords calls the encoded date path with GET and returns the array as-is', async () => {
+    const records = [
+      {
+        id: '50000000-0000-0000-0000-000000000001',
+        articleId: '40000000-0000-0000-0000-000000000001',
+        articleTitle: '숏폼 시대, 우리는 정말 더 많이 이해하고 있을까',
+        sourceName: '요즘IT',
+        interestTags: [{ id: '20000000-0000-0000-0000-000000000001', name: 'IT·개발' }],
+        missionType: 'connection',
+        missionPrompt: '내 상황이나 프로젝트와 연결해보면?',
+        userAnswer: '생각을 정리해봤다.',
+        createdAt: '2026-07-21T03:00:00Z',
+        originalUrl: 'https://example.com/article',
+        urlStatus: 'active',
+      },
+    ]
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(records), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    const api = createApiClient(async () => 'token', fetcher)
+    const result = await api.getMissionRecords('2026-07-21')
+
+    expect(fetcher.mock.calls[0][0]).toBe('/api/mission-records?date=2026-07-21')
+    expect(fetcher.mock.calls[0][1]?.method ?? 'GET').toBe('GET')
+    expect(fetcher.mock.calls[0][1]?.body).toBeUndefined()
+    expect(result).toEqual(records)
+  })
+
+  it('getMissionRecords encodes special characters in the date value', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    const api = createApiClient(async () => 'token', fetcher)
+    await api.getMissionRecords('2026-07-21&x=1')
+
+    expect(fetcher.mock.calls[0][0]).toBe('/api/mission-records?date=2026-07-21%26x%3D1')
+  })
+
+  it('getMissionRecordsCalendar calls the encoded month path with GET and returns the response as-is', async () => {
+    const calendar = {
+      month: '2026-07',
+      days: [
+        { date: '2026-07-03', recordCount: 1, firstMissionType: 'question' },
+        { date: '2026-07-21', recordCount: 3, firstMissionType: 'connection' },
+      ],
+    }
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(calendar), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    const api = createApiClient(async () => 'token', fetcher)
+    const result = await api.getMissionRecordsCalendar('2026-07')
+
+    expect(fetcher.mock.calls[0][0]).toBe('/api/mission-records/calendar?month=2026-07')
+    expect(fetcher.mock.calls[0][1]?.method ?? 'GET').toBe('GET')
+    expect(fetcher.mock.calls[0][1]?.body).toBeUndefined()
+    expect(result).toEqual(calendar)
+  })
+
+  it('getMissionRecordsCalendar encodes special characters in the month value', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ month: '', days: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    const api = createApiClient(async () => 'token', fetcher)
+    await api.getMissionRecordsCalendar('2026-07&x=1')
+
+    expect(fetcher.mock.calls[0][0]).toBe(
+      '/api/mission-records/calendar?month=2026-07%26x%3D1',
+    )
+  })
+
   it('throws ApiClientError with the common error envelope', async () => {
     const fetcher = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({

@@ -6,6 +6,8 @@ import type {
   ErrorResponse,
   Interest,
   MissionRecord,
+  MissionRecordCalendarResponse,
+  MissionRecordListItem,
   ReplaceUserInterestsResponse,
   TodayArticlesResponse,
   UserInterestsResponse,
@@ -59,6 +61,12 @@ export function createApiClient(
         method: 'POST',
         body: JSON.stringify({ articleId, missionType, userAnswer }),
       }),
+    getMissionRecords: (date: string) =>
+      request<MissionRecordListItem[]>(`/mission-records?date=${encodeURIComponent(date)}`),
+    getMissionRecordsCalendar: (month: string) =>
+      request<MissionRecordCalendarResponse>(
+        `/mission-records/calendar?month=${encodeURIComponent(month)}`,
+      ),
   }
 }
 
