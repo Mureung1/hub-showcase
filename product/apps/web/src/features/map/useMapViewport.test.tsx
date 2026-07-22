@@ -32,4 +32,38 @@ describe("useMapViewport", () => {
     expect(result.current.prefabMode).toBe(true);
     expect(result.current.baseBuildingsVisible).toBe(true);
   });
+
+  it("hides base buildings when a LocalTwin overlay is visible at the edge of the map", () => {
+    const initial: [number, number] = [126.923, 37.56];
+    const { result } = renderHook(() => useMapViewport(initial));
+
+    act(() => {
+      result.current.updateVisibleCenter([126.904, 37.547]);
+      result.current.updateVisibleBounds({
+        west: 126.912,
+        south: 37.548,
+        east: 126.928,
+        north: 37.558,
+      });
+    });
+
+    expect(result.current.baseBuildingsRendered).toBe(false);
+  });
+
+  it("keeps the demo viewport's existing center-only building rule", () => {
+    const initial: [number, number] = [126.923, 37.56];
+    const { result } = renderHook(() => useMapViewport(initial, false));
+
+    act(() => {
+      result.current.updateVisibleCenter([126.904, 37.547]);
+      result.current.updateVisibleBounds({
+        west: 126.912,
+        south: 37.548,
+        east: 126.928,
+        north: 37.558,
+      });
+    });
+
+    expect(result.current.baseBuildingsRendered).toBe(true);
+  });
 });

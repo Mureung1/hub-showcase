@@ -55,6 +55,13 @@ export type ReadyOverlayRegion = SupportedRegion & {
   availability: "ready";
 };
 
+export type MapBounds = {
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+};
+
 function isReadyOverlayRegion(region: SupportedRegion): region is ReadyOverlayRegion {
   return (
     region.availability === "ready" &&
@@ -88,4 +95,16 @@ export function findReadyOverlayRegion(center: [number, number]) {
   return READY_OVERLAY_REGIONS.find(
     (region) => distanceMeters(center, region.center) <= region.overlayRadiusMeters,
   );
+}
+
+export function doesMapBoundsIntersectReadyOverlay(bounds: MapBounds) {
+  return READY_OVERLAY_REGIONS.some((region) => {
+    const [longitude, latitude] = region.center;
+    const nearestPoint: [number, number] = [
+      Math.min(Math.max(longitude, bounds.west), bounds.east),
+      Math.min(Math.max(latitude, bounds.south), bounds.north),
+    ];
+
+    return distanceMeters(region.center, nearestPoint) <= region.overlayRadiusMeters;
+  });
 }

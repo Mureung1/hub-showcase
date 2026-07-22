@@ -83,6 +83,7 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
             marketId={catalogState.marketIdByKey[selection.marketKey]}
             mapRef={viewport.mapRef}
             onVisibleCenterChange={viewport.updateVisibleCenter}
+            onVisibleBoundsChange={viewport.updateVisibleBounds}
             mapMode={viewport.mapMode}
             baseBuildingsVisible={viewport.baseBuildingsVisible}
             baseBuildingsRendered={viewport.baseBuildingsRendered}

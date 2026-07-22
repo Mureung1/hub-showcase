@@ -4,9 +4,16 @@ import type { MapRef } from "react-map-gl/maplibre";
 import type { AnalysisMoveMode } from "../analysis/types";
 import type { MapMode } from "../market/types";
 import { shouldShowBaseBuildings } from "./baseMap";
-import { findReadyOverlayRegion } from "./supportedRegions";
+import {
+  doesMapBoundsIntersectReadyOverlay,
+  findReadyOverlayRegion,
+  type MapBounds,
+} from "./supportedRegions";
 
-export function useMapViewport(initialCenter: [number, number]) {
+export function useMapViewport(
+  initialCenter: [number, number],
+  preventOverlayCollisions = true,
+) {
   const [mapMode, setMapMode] = useState<MapMode>("localtwin");
   const [prefabMode, setPrefabMode] = useState(true);
   const [storefront3dUnavailable, setStorefront3dUnavailable] = useState(false);
@@ -15,6 +22,7 @@ export function useMapViewport(initialCenter: [number, number]) {
   const [draftCenter, setDraftCenter] = useState<[number, number] | null>(null);
   const [analysisMoveMode, setAnalysisMoveMode] = useState<AnalysisMoveMode>("idle");
   const [visibleMapCenter, setVisibleMapCenter] = useState<[number, number]>(initialCenter);
+  const [visibleMapBounds, setVisibleMapBounds] = useState<MapBounds | null>(null);
   const mapRef = useRef<MapRef>(null);
   const visibleSupportedRegion = useMemo(
     () => findReadyOverlayRegion(visibleMapCenter),
@@ -23,6 +31,13 @@ export function useMapViewport(initialCenter: [number, number]) {
   const draftSupportedRegion = useMemo(
     () => (draftCenter ? findReadyOverlayRegion(draftCenter) : undefined),
     [draftCenter],
+  );
+  const hasVisibleLocalTwinOverlay = useMemo(
+    () =>
+      preventOverlayCollisions && visibleMapBounds
+        ? doesMapBoundsIntersectReadyOverlay(visibleMapBounds)
+        : visibleSupportedRegion !== undefined,
+    [preventOverlayCollisions, visibleMapBounds, visibleSupportedRegion],
   );
 
   function commitDraftCenter() {
@@ -46,7 +61,7 @@ export function useMapViewport(initialCenter: [number, number]) {
     baseBuildingsRendered: shouldShowBaseBuildings(
       baseBuildingsVisible,
       mapMode,
-      visibleSupportedRegion !== undefined,
+      hasVisibleLocalTwinOverlay,
     ),
     committedCenter,
     focusCenter: (center: [number, number], store: boolean) => {
@@ -66,6 +81,7 @@ export function useMapViewport(initialCenter: [number, number]) {
       setVisibleMapCenter(center);
       if (analysisMoveMode === "moving") setDraftCenter(center);
     },
+    updateVisibleBounds: (bounds: MapBounds) => setVisibleMapBounds(bounds),
     visibleSupportedRegion,
     draftSupportedRegion,
     startMove: () => {
