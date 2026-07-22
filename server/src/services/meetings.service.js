@@ -14,7 +14,7 @@ const toApiMeeting = (row) => ({
 const fetchMeetingRow = async (meetingId) => {
   const { data, error } = await supabase
     .from('meetings')
-    .select('*, applications ( accepted_mentor_id )')
+    .select('*, applications ( accepted_mentor_id, mentee_id )')
     .eq('id', meetingId)
     .single();
 
@@ -25,10 +25,12 @@ const fetchMeetingRow = async (meetingId) => {
   return data;
 };
 
-const updateMeeting = async (mentorId, meetingId, payload = {}) => {
+const updateMeeting = async (userId, meetingId, payload = {}) => {
   const meeting = await fetchMeetingRow(meetingId);
+  const isAcceptedMentor = meeting.applications.accepted_mentor_id === userId;
+  const isMentee = meeting.applications.mentee_id === userId;
 
-  if (meeting.applications.accepted_mentor_id !== mentorId) {
+  if (!isAcceptedMentor && !isMentee) {
     throw new ForbiddenError('이 면담 정보를 수정할 권한이 없습니다.');
   }
 

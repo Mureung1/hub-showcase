@@ -103,7 +103,7 @@ Authorization: Bearer <access-token>
 | `GET` | `/api/applications/:applicationId` | 관계 사용자 | 신청 상세 조회 |
 | `PATCH` | `/api/applications/:applicationId/accept` | 대상 멘토 | 신청 수락 |
 | `PATCH` | `/api/applications/:applicationId/reject` | 대상 멘토 | 신청 거절 |
-| `PATCH` | `/api/meetings/:meetingId` | 확정 멘토 | 면담 시간·장소 수정 |
+| `PATCH` | `/api/meetings/:meetingId` | 확정 멘토·신청 멘티 | 면담 시간·장소 수정 |
 | `PATCH` | `/api/applications/:applicationId/complete` | 확정 멘토 | 면담 완료 처리 |
 
  4. 인증 API
@@ -616,7 +616,7 @@ Query parameters:
 
 검증:
 
-- 로그인 사용자가 해당 신청의 `acceptedMentorId`와 같아야 한다(확정 멘토만 수정 가능).
+- 로그인 사용자가 해당 신청의 `acceptedMentorId` 또는 신청을 생성한 멘티와 같아야 한다(확정 멘토와 신청 멘티만 수정 가능).
 - `scheduledAt`, `place`는 각각 선택적으로 전달할 수 있으며, 전달한 필드만 갱신한다.
 - `method` 필드는 받지 않는다.
 
@@ -669,7 +669,7 @@ Query parameters:
 | 신청 생성 | 가능 | 불가 |
 | 자신의 신청 조회 | 가능 | 대상 신청만 가능 |
 | 신청 수락·거절 | 불가 | 대상 멘토만 가능 |
-| 면담 정보 수정 | 불가 | 확정 멘토만 가능 |
+| 면담 정보 수정 | 자신의 신청만 가능 | 확정 멘토만 가능 |
 | 신청 완료 처리 | 불가 | 확정 멘토만 가능 |
 
 ## 9. MVP 이후 API

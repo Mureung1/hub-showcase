@@ -4,10 +4,6 @@ const { ForbiddenError, NotFoundError } = require('../utils/errors');
 const { ValidationError } = require('../utils/validators');
 
 const updateMeeting = async (req, res) => {
-  if (req.user.role !== 'mentor') {
-    return sendError(res, 403, 'FORBIDDEN', '멘토만 면담 정보를 수정할 수 있습니다.');
-  }
-
   try {
     const meeting = await meetingsService.updateMeeting(
       req.user.id,
