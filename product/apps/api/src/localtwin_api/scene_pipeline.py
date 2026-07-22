@@ -30,6 +30,7 @@ CaptureType = Literal[
 JobStatus = Literal["uploaded", "queued", "running", "blocked", "failed", "ready"]
 StageStatus = Literal["pending", "running", "passed", "blocked", "failed"]
 WorkerMode = Literal["host", "docker"]
+PrivacyReviewStatus = Literal["pending", "approved", "rejected"]
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".heic"}
 VIDEO_SUFFIXES = {".mp4", ".mov", ".mkv"}
@@ -71,6 +72,9 @@ class SceneJob(BaseModel):
     blocked_reason: str | None = None
     next_action: str | None = None
     asset_url: str | None = None
+    privacy_review_status: PrivacyReviewStatus = "pending"
+    is_anonymized: bool = False
+    privacy_reviewed_at: str | None = None
     camera_pose: SceneCameraPose | None = None
     commands: list[list[str]] = Field(default_factory=list)
 
@@ -226,8 +230,30 @@ def import_gaussian_asset(
         stage.finished_at = utc_now()
         stage.message = "Completed on an external GPU worker."
     job.status = "ready"
-    job.asset_url = f"/api/v1/scenes/jobs/{job.id}/asset"
     job.camera_pose = camera_pose
+    return store.save(job)
+
+
+def approve_anonymized_asset(store: SceneJobStore, job_id: str) -> SceneJob:
+    """Publish a ready asset only after a trusted privacy review has approved it."""
+    job = store.load(job_id)
+    asset = store.job_dir(job.id) / "asset" / "scene.ply"
+    if job.status != "ready" or not asset.is_file():
+        raise ValueError("Only ready jobs with a generated asset can be approved.")
+    job.privacy_review_status = "approved"
+    job.is_anonymized = True
+    job.privacy_reviewed_at = utc_now()
+    job.asset_url = f"/api/v1/scenes/jobs/{job.id}/asset"
+    return store.save(job)
+
+
+def reject_scene_asset(store: SceneJobStore, job_id: str) -> SceneJob:
+    """Record a privacy rejection without leaving a public asset URL behind."""
+    job = store.load(job_id)
+    job.privacy_review_status = "rejected"
+    job.is_anonymized = False
+    job.privacy_reviewed_at = utc_now()
+    job.asset_url = None
     return store.save(job)
 
 
@@ -540,7 +566,6 @@ def run_scene_job(job_id: str, root: Path | None = None) -> SceneJob:
         run_pipeline_stage(store, job, "train", commands[1], directory, log_path, capability)
         export_scene_asset(store, job, directory, log_path, capability)
         job.status = "ready"
-        job.asset_url = f"/api/v1/scenes/jobs/{job.id}/asset"
         return store.save(job)
     except (subprocess.CalledProcessError, OSError, RuntimeError) as error:
         running_stage = next((stage for stage in job.stages if stage.status == "running"), None)

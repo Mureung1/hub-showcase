@@ -9,10 +9,12 @@ from localtwin_api.scene_pipeline import (
     SceneInputFile,
     SceneJobStore,
     ToolchainStatus,
+    approve_anonymized_asset,
     build_execution_command,
     build_pipeline_commands,
     import_gaussian_asset,
     load_nerfstudio_camera_pose,
+    reject_scene_asset,
     run_scene_job,
     safe_name,
     save_uploads,
@@ -146,8 +148,23 @@ def test_import_gaussian_asset_creates_ready_local_job(tmp_path: Path) -> None:
 
     assert job.status == "ready"
     assert job.capture_type == "gaussian_ply"
+    assert job.privacy_review_status == "pending"
+    assert job.is_anonymized is False
+    assert job.asset_url is None
     assert all(stage.status == "passed" for stage in job.stages)
     assert (job_root / job.id / "asset" / "scene.ply").read_bytes() == source.read_bytes()
+
+    approved = approve_anonymized_asset(SceneJobStore(job_root), job.id)
+
+    assert approved.privacy_review_status == "approved"
+    assert approved.is_anonymized is True
+    assert approved.asset_url == f"/api/v1/scenes/jobs/{job.id}/asset"
+
+    rejected = reject_scene_asset(SceneJobStore(job_root), job.id)
+
+    assert rejected.privacy_review_status == "rejected"
+    assert rejected.is_anonymized is False
+    assert rejected.asset_url is None
 
 
 def test_import_gaussian_asset_rejects_plain_point_cloud(tmp_path: Path) -> None:

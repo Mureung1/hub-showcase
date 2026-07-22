@@ -75,11 +75,18 @@ def create_scene_router(settings: Settings) -> APIRouter:
     @router.get("/jobs/{job_id}/asset", **route_options)
     async def get_scene_asset(job_id: str) -> FileResponse:
         try:
-            directory = SceneJobStore().job_dir(job_id)
-        except ValueError:
+            store = SceneJobStore()
+            job = store.load(job_id)
+            directory = store.job_dir(job_id)
+        except (FileNotFoundError, ValueError):
             raise HTTPException(status_code=404, detail="Scene asset not found.") from None
         asset = directory / "asset" / "scene.ply"
-        if not asset.exists() or not asset.is_file():
+        if (
+            job.status != "ready"
+            or job.privacy_review_status != "approved"
+            or not job.is_anonymized
+            or not asset.is_file()
+        ):
             raise HTTPException(status_code=404, detail="Scene asset is not ready.")
         return FileResponse(asset, media_type="application/octet-stream", filename="scene.ply")
 
