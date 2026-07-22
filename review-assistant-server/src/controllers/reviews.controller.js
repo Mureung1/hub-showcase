@@ -26,19 +26,19 @@ function validateReviews(reviews) {
 export async function analyzeReviews(req, res) {
   const reviews = validateReviews(req.body?.reviews)
   const results = await analyzeReviewsText(reviews)
-  saveAnalyzedReviews(req.sessionId, results, req.user?.id ?? null)
-  const recurringIssues = getRecurringIssues(req.sessionId)
+  await saveAnalyzedReviews(req.sessionId, results, req.user?.id ?? null)
+  const recurringIssues = await getRecurringIssues(req.sessionId)
   res.json({ results, recurringIssues })
 }
 
-export function resetHistory(req, res) {
-  clearHistory(req.sessionId)
+export async function resetHistory(req, res) {
+  await clearHistory(req.sessionId)
   res.status(204).end()
 }
 
-export function myReviews(req, res) {
+export async function myReviews(req, res) {
   if (!req.user) {
     throw new ApiError(401, 'UNAUTHORIZED', '로그인이 필요해요.')
   }
-  res.json({ reviews: getReviewsByUser(req.user.id) })
+  res.json({ reviews: await getReviewsByUser(req.user.id) })
 }

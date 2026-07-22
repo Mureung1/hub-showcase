@@ -5,5 +5,5 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 export const reviewsRouter = Router()
 
 reviewsRouter.post('/analyze', asyncHandler(analyzeReviews))
-reviewsRouter.delete('/history', resetHistory)
-reviewsRouter.get('/mine', myReviews)
+reviewsRouter.delete('/history', asyncHandler(resetHistory))
+reviewsRouter.get('/mine', asyncHandler(myReviews))

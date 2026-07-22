@@ -37,10 +37,12 @@ hub_/
 - `express` — API 서버
 - `cors` — 프론트엔드 dev origin 허용
 - `dotenv` — `.env` 로드
+- `@supabase/supabase-js` — DB(Postgres) + Auth 클라이언트 (2026-07-22 추가)
 - `eslint` + `prettier` — 프론트엔드와 동일 스택
 - 개발 서버 재시작: 별도 `nodemon` 의존성 대신 **Node 18+ 내장 `node --watch`** 사용 (`npm run dev`)
-- **DB**: `node:sqlite` (Node 22+ 내장 모듈, 별도 패키지 설치·네이티브 빌드 불필요) 사용. `review-assistant-server/data/reviews.db` 파일에 세션별 분석 리뷰를 저장 — 반복 문제 감지, 총 분석 요약, 월별 통계의 공통 데이터 소스. DB 파일은 git에 커밋하지 않음(`.gitignore`).
-  - (2026-07-13 결정 변경: 애초 "DB 없음, 인메모리"로 시작했으나 "리뷰 매니저 AI" 컨셉 확장으로 영속 저장이 필요해져 전환.)
+- **DB**: Supabase(Postgres) 사용. `@supabase/supabase-js`로 백엔드에서만 접근하며, `SUPABASE_SERVICE_ROLE_KEY`로 RLS를 우회한다(백엔드 전용 키 — `ANTHROPIC_API_KEY`와 동일 원칙으로 프론트엔드에 절대 노출하지 않음). 테이블은 `reviews`, `dashboard_insights` 두 개뿐 — 반복 문제 감지, 총 분석 요약, 월별 통계, 인사이트 캐시의 공통 데이터 소스.
+  - (2026-07-13 결정 변경: 애초 "DB 없음, 인메모리"로 시작했으나 "리뷰 매니저 AI" 컨셉 확장으로 영속 저장이 필요해져 `node:sqlite`로 전환.)
+  - (2026-07-22 결정 변경: `node:sqlite`(로컬 파일) → Supabase(Postgres)로 재전환. 회원 인증도 같은 시점에 Supabase Auth로 옮기면서 함께 결정.)
 
 ## 컨벤션
 
@@ -65,7 +67,7 @@ hub_/
 - **포트**: 프론트엔드 5173(Vite 기본값), 백엔드 4000. `review-assistant-server/.env.example`에 `PORT=4000` 기본값 포함.
 - **CORS**: 백엔드가 `CORS_ORIGIN` 환경변수(기본 `http://localhost:5173`)만 허용.
 - **세션 ID**: 리뷰 분석·반복 문제 감지·통계는 여전히 로그인과 무관한 익명 세션 기준으로 동작한다. 백엔드 `sessionId` 미들웨어가 `X-Session-Id` 요청 헤더를 읽고, 없으면 `crypto.randomUUID()`로 생성해 응답 헤더로 그대로 돌려준다. 프론트엔드가 이 값을 `localStorage`에 저장해 재사용한다(구현 완료, 2주차).
-- **회원 인증** (2026-07-15 결정 변경): 애초 "로그인 없는 익명 세션"만으로 가기로 했으나, 회원가입/로그인 화면 + 토큰 기반 인증을 실제로 구현하기로 컨셉을 확장했다. `users`/`auth_tokens` 테이블(SQLite) 추가, 비밀번호는 `node:crypto`의 `scrypt`로 해싱(별도 패키지 없음, bcrypt 미사용), 로그인 시 발급되는 토큰은 프론트가 `Authorization: Bearer <token>` 헤더로 매 요청에 실어 보낸다. 리뷰 저장은 여전히 `X-Session-Id` 기준이 기본이지만, **2026-07-20부터 로그인 상태면 `reviews.user_id`도 함께 채워 계정과 연결**한다 — `session_id` 저장을 대체하는 게 아니라 병행. `/my-reviews` 화면(`GET /api/v1/reviews/mine`)에서 계정에 연결된 리뷰를 기기·세션 상관없이 모아볼 수 있다.
+- **회원 인증** (2026-07-15 결정, 2026-07-22 구현 방식 변경): 애초 "로그인 없는 익명 세션"만으로 가기로 했으나, 회원가입/로그인 화면 + 토큰 기반 인증을 실제로 구현하기로 컨셉을 확장했다. 처음엔 자체 `users`/`auth_tokens` 테이블(SQLite) + `node:crypto` `scrypt` 해싱으로 구현했으나, 2026-07-22 DB를 Supabase로 옮기면서 인증도 **Supabase Auth**로 교체했다 — **프론트엔드 코드는 한 줄도 안 바뀌었다**: `review-assistant-server`의 `/api/v1/auth/*` 라우트가 여전히 같은 요청/응답 모양(`{user:{id,email}, token}`)을 유지하고, 내부적으로만 `supabase.auth.admin.createUser`/`signInWithPassword`/`getUser`를 호출하는 방식으로 바뀌었다(백엔드가 대신 Supabase를 부르는 구조 — Claude API를 서버에만 감춰둔 것과 같은 패턴). 로그인 시 내려주는 `token`은 이제 Supabase가 발급한 JWT다. 리뷰 저장은 여전히 `X-Session-Id` 기준이 기본이지만, **2026-07-20부터 로그인 상태면 `reviews.user_id`도 함께 채워 계정과 연결**한다(타입은 Supabase 유저 id에 맞춰 `uuid`) — `session_id` 저장을 대체하는 게 아니라 병행. `/my-reviews` 화면(`GET /api/v1/reviews/mine`)에서 계정에 연결된 리뷰를 기기·세션 상관없이 모아볼 수 있다.
 - **에러 응답 형식**: `{ "error": { "code": "...", "message": "..." } }` — 기획서 5-4절과 동일. 코드: `EMPTY_INPUT` / `NO_VALID_REVIEW` / `TOO_MANY_REVIEWS` / `INVALID_JSON`(400), `ANALYSIS_FAILED` (500). `review-assistant-server/src/middleware/errorHandler.js`에서 일괄 처리.
 - **환경변수**: `.env`는 git에 올리지 않고 `.env.example`만 커밋. 향후 Claude API 연동 시 `ANTHROPIC_API_KEY`는 **백엔드 전용** — 프론트엔드에 절대 노출하지 않는다.
 

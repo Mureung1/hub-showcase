@@ -1,50 +1,55 @@
-import { db } from '../db/db.js'
+import { supabase } from '../db/supabaseClient.js'
 import { suggestionForKeyword } from './reviews.service.js'
 
 const RECURRING_THRESHOLD = 2
 
-const insertStmt = db.prepare(`
-  INSERT INTO reviews (session_id, original_text, sentiment, keywords, score, user_id)
-  VALUES (?, ?, ?, ?, ?, ?)
-`)
-
-const negativeReviewsStmt = db.prepare(`
-  SELECT keywords FROM reviews WHERE session_id = ? AND sentiment = 'negative'
-`)
-
-const deleteHistoryStmt = db.prepare(`DELETE FROM reviews WHERE session_id = ?`)
-
-const reviewsByUserStmt = db.prepare(`
-  SELECT original_text, sentiment, keywords, score, created_at
-  FROM reviews WHERE user_id = ? ORDER BY created_at DESC
-`)
-
 // userId는 로그인 상태일 때만 채워진다(optionalAuth 미들웨어) — 비로그인 사용자는 그대로 null.
-export function saveAnalyzedReviews(sessionId, results, userId = null) {
-  for (const result of results) {
-    insertStmt.run(sessionId, result.originalText, result.sentiment, JSON.stringify(result.keywords), result.score, userId)
-  }
+export async function saveAnalyzedReviews(sessionId, results, userId = null) {
+  const rows = results.map((result) => ({
+    session_id: sessionId,
+    original_text: result.originalText,
+    sentiment: result.sentiment,
+    keywords: result.keywords,
+    score: result.score,
+    user_id: userId,
+  }))
+
+  const { error } = await supabase.from('reviews').insert(rows)
+  if (error) throw new Error(`리뷰 저장 실패: ${error.message}`)
 }
 
 // 로그인 계정에 연결된 리뷰 전체 — "내 리뷰 모아보기"용. session_id와 무관하게 이 계정으로
 // 분석했던 모든 리뷰를 기기/세션 상관없이 모아서 보여준다.
-export function getReviewsByUser(userId) {
-  return reviewsByUserStmt.all(userId).map((row) => ({
+export async function getReviewsByUser(userId) {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('original_text, sentiment, keywords, score, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(`리뷰 조회 실패: ${error.message}`)
+
+  return data.map((row) => ({
     originalText: row.original_text,
     sentiment: row.sentiment,
-    keywords: JSON.parse(row.keywords),
+    keywords: row.keywords,
     score: row.score,
     createdAt: row.created_at,
   }))
 }
 
-export function getRecurringIssues(sessionId) {
-  const rows = negativeReviewsStmt.all(sessionId)
+export async function getRecurringIssues(sessionId) {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('keywords')
+    .eq('session_id', sessionId)
+    .eq('sentiment', 'negative')
+
+  if (error) throw new Error(`반복 문제 조회 실패: ${error.message}`)
 
   const counts = {}
-  for (const row of rows) {
-    const keywords = JSON.parse(row.keywords)
-    for (const keyword of keywords) {
+  for (const row of data) {
+    for (const keyword of row.keywords) {
       counts[keyword] = (counts[keyword] || 0) + 1
     }
   }
@@ -59,6 +64,7 @@ export function getRecurringIssues(sessionId) {
     }))
 }
 
-export function resetHistory(sessionId) {
-  deleteHistoryStmt.run(sessionId)
+export async function resetHistory(sessionId) {
+  const { error } = await supabase.from('reviews').delete().eq('session_id', sessionId)
+  if (error) throw new Error(`기록 초기화 실패: ${error.message}`)
 }

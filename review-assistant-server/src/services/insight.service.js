@@ -1,15 +1,7 @@
-import { db } from '../db/db.js'
+import { supabase } from '../db/supabaseClient.js'
 import { getSummary } from './stats.service.js'
 import { getRecurringIssues } from './history.service.js'
 import { callClaudeTool } from './claude.client.js'
-
-const findCacheStmt = db.prepare(`
-  SELECT insight_text, generated_at FROM dashboard_insights WHERE session_id = ?
-`)
-const upsertCacheStmt = db.prepare(`
-  INSERT OR REPLACE INTO dashboard_insights (session_id, insight_text, generated_at)
-  VALUES (?, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
-`)
 
 const INSIGHT_TOOL = {
   name: 'submit_dashboard_insight',
@@ -48,22 +40,32 @@ function buildPrompt(summary, recurringIssues) {
 // session_id당 하루 1건만 생성해서 캐싱한다 — 대시보드를 열 때마다 API를 부르면
 // 느려지고 비용도 쌓이기 때문(기획서.md 참고 없음, 오늘 대화에서 결정).
 export async function getOrGenerateInsight(sessionId) {
-  const summary = getSummary(sessionId)
+  const summary = await getSummary(sessionId)
   if (summary.totalReviews === 0) {
     return null
   }
 
-  const cached = findCacheStmt.get(sessionId)
+  const { data: cached, error: findError } = await supabase
+    .from('dashboard_insights')
+    .select('insight_text, generated_at')
+    .eq('session_id', sessionId)
+    .maybeSingle()
+  if (findError) throw new Error(`인사이트 캐시 조회 실패: ${findError.message}`)
+
   if (cached && isToday(cached.generated_at)) {
     return cached.insight_text
   }
 
-  const recurringIssues = getRecurringIssues(sessionId)
+  const recurringIssues = await getRecurringIssues(sessionId)
   const { insight } = await callClaudeTool({
     tool: INSIGHT_TOOL,
     userMessage: buildPrompt(summary, recurringIssues),
   })
 
-  upsertCacheStmt.run(sessionId, insight)
+  const { error: upsertError } = await supabase
+    .from('dashboard_insights')
+    .upsert({ session_id: sessionId, insight_text: insight, generated_at: new Date().toISOString() })
+  if (upsertError) throw new Error(`인사이트 캐시 저장 실패: ${upsertError.message}`)
+
   return insight
 }

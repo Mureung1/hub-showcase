@@ -29,9 +29,21 @@ const REVIEW_ANALYSIS_TOOL = {
       replyDrafts: {
         type: 'object',
         properties: {
-          polite: { type: 'string' },
-          friendly: { type: 'string' },
-          concise: { type: 'string' },
+          polite: {
+            type: 'string',
+            description:
+              '정중함 톤: 격식 있는 존댓말. 리뷰 내용을 짧게 언급하며 감사 인사로 시작하고, 부정 리뷰면 정중히 사과 후 구체적 개선 약속으로 마무리. 3~4문장.',
+          },
+          friendly: {
+            type: 'string',
+            description:
+              '친근함 톤: 편안한 구어체 존댓말(사장님이 단골에게 말하듯). 이모지는 최대 1개만. 부정 리뷰여도 가볍게 넘기지 말고 진심으로 아쉬워하는 느낌을 담을 것. 2~4문장.',
+          },
+          concise: {
+            type: 'string',
+            description:
+              '간결함 톤: 존댓말 유지하되 수식어 없이 핵심만. 최대 2문장, 80자 이내. 부정 리뷰면 "개선하겠다"는 말은 넣되 길게 설명하지 않기.',
+          },
         },
         required: ['polite', 'friendly', 'concise'],
       },
@@ -62,7 +74,7 @@ function computeScore(sentiment, keywords) {
 async function analyzeOne(text, index) {
   const { sentiment, keywords, replyDrafts } = await callClaudeTool({
     tool: REVIEW_ANALYSIS_TOOL,
-    userMessage: `다음 손님 리뷰를 분석해서 submit_review_analysis 도구로 결과를 제출해줘.\n\n리뷰: "${text}"`,
+    userMessage: `너는 소상공인 사장님이 손님 리뷰에 답글을 달 때 쓰는 초안을 대신 써주는 도우미야. 다음 손님 리뷰를 분석하고, submit_review_analysis 도구의 replyDrafts 스키마에 적힌 톤별 지침을 지켜 답변 초안 3개를 각각 다르게 써서 제출해줘. 같은 문장을 어미만 바꿔 재사용하지 말고, 톤마다 실제로 다르게 느껴지게 써줘.\n\n리뷰: "${text}"`,
   })
 
   return {
