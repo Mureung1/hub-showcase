@@ -102,7 +102,7 @@ cwd=C:\Users\thats\OneDrive\Desktop\codex project\hub-N031. 새 기능을 추가
 | D04 | 07-17 | 대기 |
 | D05 | 07-20 | 완료 · N031-2026-07-20-modu-brain-ui-ux · 디자인 개선을 위한 커스텀 스킬 제작 및 디자이너 서브에이전트 정의 · 없음 |
 | D06 | 07-21 | 완료 · N031-2026-07-21-modu-brain-deployment-prep · 배포 준비 과정 정리 및 Supabase 연동성 검사 · 없음 |
-| D07 | 07-22 | 대기 |
+| D07 | 07-22 | 완료 · N031-2026-07-22-architecture-visualization · 시스템 데이터 흐름 및 아키텍처 시각화(Mermaid) · 없음 |
 | D08 | 07-23 | 대기 |
 | D09 | 07-24 | 대기 |
 | D10 | 07-27 | 대기 |
