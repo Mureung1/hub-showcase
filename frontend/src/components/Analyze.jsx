@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Link, Navigate, useNavigate, useOutletContext } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
 import { createAnalysis } from '../api/index.js'
 
 // 2 · 프로필 분석 중 — 분석 API 응답을 기다렸다가 프로필 화면으로 자동 전환
@@ -29,37 +30,34 @@ const ANALYZE_STEPS = [
 function Analyze() {
   const navigate = useNavigate()
   const { githubId, setAnalysis } = useOutletContext()
-  const [errorMessage, setErrorMessage] = useState('')
+
+  const { mutate, error } = useMutation({
+    // 최소 표시 시간: API가 빨라도 분석 단계를 읽을 시간을 확보 (API가 느리면 추가 지연 없음)
+    mutationFn: () =>
+      Promise.all([
+        createAnalysis(githubId),
+        new Promise((resolve) => setTimeout(resolve, MIN_DISPLAY_MS)),
+      ]).then(([analysis]) => analysis),
+    onSuccess: (analysis) => {
+      setAnalysis(analysis)
+      navigate('/profile')
+    },
+  })
 
   useEffect(() => {
-    if (!githubId) return undefined
-    let cancelled = false
-    // 최소 표시 시간: API가 빨라도 분석 단계를 읽을 시간을 확보 (API가 느리면 추가 지연 없음)
-    const minDisplay = new Promise((resolve) => setTimeout(resolve, MIN_DISPLAY_MS))
-    Promise.all([createAnalysis(githubId), minDisplay])
-      .then(([analysis]) => {
-        if (cancelled) return
-        setAnalysis(analysis)
-        navigate('/profile')
-      })
-      .catch((error) => {
-        if (cancelled) return
-        setErrorMessage(error.message || '분석에 실패했어요. 잠시 후 다시 시도해주세요.')
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [githubId, setAnalysis, navigate])
+    if (!githubId) return
+    mutate()
+  }, [githubId, mutate])
 
   if (!githubId) {
     return <Navigate to="/input" replace />
   }
 
-  if (errorMessage) {
+  if (error) {
     return (
       <div className="panel">
         <h1 className="a-title">분석하지 못했어요</h1>
-        <p className="a-lead">{errorMessage}</p>
+        <p className="a-lead">{error.message || '분석에 실패했어요. 잠시 후 다시 시도해주세요.'}</p>
         <Link to="/input" className="btn btn-primary">
           다시 입력하기
         </Link>
