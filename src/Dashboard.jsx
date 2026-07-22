@@ -51,7 +51,7 @@ export default function Dashboard() {
       <style>{`@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');`}</style>
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "48px 24px" }}>
         <p style={{ fontSize: 11, color: GREEN, fontWeight: 700, letterSpacing: "0.15em", margin: "0 0 6px" }}>
-          AI MYSTERY SHOPPER
+          상권 스캐너
         </p>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 16px" }}>내 가게 등록</h1>
 
