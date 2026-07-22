@@ -23,10 +23,23 @@ GitHub ID와 선호 조건(언어·난이도·주제)을 입력하면, 사용자
 
 | 구분 | 스택 |
 | --- | --- |
-| Frontend | React 19, Vite |
+| Frontend | React 19, Vite, TanStack Query, axios |
 | Lint | oxlint |
-| Backend | Node.js, Express *(예정, 미착수)* |
-| DB | 미정 *(MVP는 MongoDB 검토, 관계 복잡 시 PostgreSQL 고려)* |
+| Backend | Node.js, Express |
+| DB | Supabase (PostgreSQL) + Prisma ORM |
+| 외부 API | GitHub GraphQL/REST (`@octokit/graphql`, `@octokit/rest`) |
+
+## 아키텍처
+
+화면(React) → API(Express) → GitHub API / Supabase(Prisma)로 이어지는 전체 흐름입니다.
+API 경로·DB 테이블 등 상세 구성은 [`docs/architecture.md`](docs/architecture.md)를 참고하세요.
+
+```mermaid
+flowchart LR
+  FE["Frontend\n(React 19 + Vite)"] -- REST --> BE["Backend\n(Express + Prisma)"]
+  BE --> GH[("GitHub API")]
+  BE --> DB[("Supabase\nPostgreSQL")]
+```
 
 ## 시작하기
 
@@ -62,7 +75,6 @@ npm run lint     # 린트 검사
 | [docs/plan.md](docs/plan.md) | 기획서 (요약) |
 | [docs/checklist.md](docs/checklist.md) | 주차별 작업 체크리스트 (Notion 태스크 보드 원본) |
 | [docs/architecture.md](docs/architecture.md) | 아키텍처 설계 |
-| [docs/checklist.md](docs/checklist.md) | 주차별 작업 체크리스트 |
 | [docs/decisions.md](docs/decisions.md) | 주요 기술/기획 의사결정 기록 |
 | [docs/log.md](docs/log.md) | 날짜별 작업 로그 |
 | [docs/design.md](docs/design.md) | 디자인 시스템 (색·폰트·모서리·여백·카드 규칙) |

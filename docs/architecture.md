@@ -8,54 +8,30 @@
 ```mermaid
 flowchart LR
   subgraph FE["Frontend (React + Vite)"]
-    S1[랜딩] --> S2[ID입력]
-    S2 --> S3[분석중]
-    S3 --> S4[프로필결과]
-    S4 --> S5[조건선택]
-    S5 --> S6[추천목록]
-    S6 --> S7[상세]
+    direction TB
+    S1[랜딩] --> S2[ID입력] --> S3[분석중] --> S4[프로필결과] --> S5[조건선택] --> S6[추천목록] --> S7[상세]
   end
 
   subgraph BE["Backend (Express: routes → controllers → services)"]
-    R1["POST /api/analysis"]
-    R2["GET /api/analysis/:githubId"]
-    R3["POST /api/recommendations"]
-    R4["GET /api/recommendations/:id"]
-    R1 --> AS[analysisService]
-    R2 --> AS
-    R3 --> RS[recommendationService]
-    R4 --> RS
-    AS --> GH1[["@octokit/graphql"]]
-    RS --> GH2[["@octokit/rest search"]]
+    direction TB
+    AS[analysisService]
+    RS[recommendationService]
   end
 
-  GitHub[("GitHub API")]
-  GH1 --> GitHub
-  GH2 --> GitHub
+  S2 -- "POST /api/analysis" --> AS
+  S4 -- "GET /api/analysis/:githubId (새로고침·재진입)" --> AS
+  S5 -- "POST /api/recommendations" --> RS
+  S6 -- "GET /api/recommendations/:id (목록)" --> RS
+  S7 -- "GET /api/recommendations/:id (상세)" --> RS
 
-  subgraph DB["Supabase Postgres (Prisma)"]
-    T1[(analyses)]
-    T2[(repo_cache)]
-    T3[(issue_cache)]
-    T4[(recommendations)]
-    T5[(recommendation_items)]
-    T6[(api_usage)]
-  end
+  AS -- GraphQL --> GitHub[("GitHub API")]
+  RS -- "REST search" --> GitHub
 
-  S2 -- "POST /api/analysis" --> R1
-  S4 -- "GET /api/analysis/:githubId\n(새로고침·재진입)" --> R2
-  S5 -- "POST /api/recommendations" --> R3
-  S6 -- "GET /api/recommendations/:id\n(목록)" --> R4
-  S7 -- "GET /api/recommendations/:id\n(상세)" --> R4
-
-  AS --> T1
-  AS --> T6
-  RS --> T2
-  RS --> T3
-  RS --> T4
-  RS --> T5
-  RS --> T6
+  AS --> DB[("Supabase Postgres · Prisma")]
+  RS --> DB
 ```
+
+> DB 테이블(`analyses`/`repo_cache`/`issue_cache`/`recommendations`/`recommendation_items`/`api_usage`) 세부 역할은 아래 "데이터 흐름" 참고.
 
 ## 프론트엔드
 - 폴더 구조 및 레이어링
