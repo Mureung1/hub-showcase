@@ -237,3 +237,66 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/avoidance-reasons", () => {
     expect(res.body.error.code).toBe("not_found");
   });
 });
+
+describe.skipIf(!isTestDb)("POST /api/tasks/:id/feedbacks", () => {
+  afterEach(async () => {
+    const testTasks = await prisma.task.findMany({
+      where: { title: { startsWith: TEST_PREFIX } },
+    });
+    const ids = testTasks.map((t) => t.id);
+    if (ids.length === 0) return;
+
+    await prisma.$transaction([
+      prisma.avoidanceReason.deleteMany({ where: { taskId: { in: ids } } }),
+      prisma.taskEvent.deleteMany({ where: { taskId: { in: ids } } }),
+      prisma.feedback.deleteMany({ where: { taskId: { in: ids } } }),
+      prisma.task.deleteMany({ where: { id: { in: ids } } }),
+    ]);
+  });
+
+  it("response가 helpful이면 피드백이 저장된다 (happy path)", async () => {
+    const task = await createTestTask();
+
+    const res = await request(app)
+      .post(`/api/tasks/${task.id}/feedbacks`)
+      .send({ response: "helpful" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.taskId).toBe(task.id);
+    expect(res.body.data.response).toBe("helpful");
+
+    const rows = await prisma.feedback.findMany({ where: { taskId: task.id } });
+    expect(rows).toHaveLength(1);
+  });
+
+  it("response가 annoying이면 피드백이 저장된다 (happy path)", async () => {
+    const task = await createTestTask();
+
+    const res = await request(app)
+      .post(`/api/tasks/${task.id}/feedbacks`)
+      .send({ response: "annoying" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.response).toBe("annoying");
+  });
+
+  it("response가 helpful/annoying이 아니면 400 invalid_response를 반환한다 (경계)", async () => {
+    const task = await createTestTask();
+
+    const res = await request(app)
+      .post(`/api/tasks/${task.id}/feedbacks`)
+      .send({ response: "not_a_real_response" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("invalid_response");
+  });
+
+  it("존재하지 않는 taskId면 404 not_found를 반환한다 (경계)", async () => {
+    const res = await request(app)
+      .post("/api/tasks/does-not-exist/feedbacks")
+      .send({ response: "helpful" });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("not_found");
+  });
+});

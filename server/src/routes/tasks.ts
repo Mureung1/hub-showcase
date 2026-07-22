@@ -243,6 +243,43 @@ router.post("/:id/avoidance-reasons", async (req, res) => {
   }
 });
 
+// 완료 직후 개입이 도움됐는지에 대한 피드백(#39 FeedbackButtons)을 저장한다(#40).
+const VALID_FEEDBACK_RESPONSES = ["helpful", "annoying"];
+
+router.post("/:id/feedbacks", async (req, res) => {
+  const { id } = req.params;
+  const { response } = req.body;
+
+  if (!VALID_FEEDBACK_RESPONSES.includes(response)) {
+    res.status(400).json({
+      error: { code: "invalid_response", message: "유효하지 않은 피드백 응답입니다." },
+    });
+    return;
+  }
+
+  try {
+    // 삭제와 경합할 수 있으므로(다른 하위 리소스 라우트와 동일) 존재 확인을 먼저 해 404로 끝낸다.
+    const exists = await prisma.task.findUnique({ where: { id } });
+    if (!exists) {
+      res.status(404).json({
+        error: { code: "not_found", message: "할일을 찾을 수 없습니다." },
+      });
+      return;
+    }
+
+    const created = await prisma.feedback.create({
+      data: { taskId: id, response },
+    });
+
+    res.json({ data: created });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: { code: "internal_error", message: "피드백을 저장하지 못했습니다." },
+    });
+  }
+});
+
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -259,6 +296,7 @@ router.delete("/:id", async (req, res) => {
     await prisma.$transaction([
       prisma.avoidanceReason.deleteMany({ where: { taskId: id } }),
       prisma.taskEvent.deleteMany({ where: { taskId: id } }),
+      prisma.feedback.deleteMany({ where: { taskId: id } }),
       prisma.task.delete({ where: { id } }),
     ]);
 

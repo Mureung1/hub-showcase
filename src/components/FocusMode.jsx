@@ -62,8 +62,14 @@ function FocusMode({ taskId, title, onComplete, onStop }) {
     }
   }
 
-  // #40에서 이 자리에 피드백 저장 API 호출이 들어갈 예정 — 지금은 로컬 처리만 하고 닫는다.
-  function handleFeedbackSelect() {
+  // 저장 실패해도 완료→닫힘 흐름은 그대로 유지한다(#35/#42와 동일한 원칙) — 피드백은
+  // 부가 데이터일 뿐 사용자가 다시 시도하게 막을 정도로 중요하지 않다.
+  function handleFeedbackSelect(value) {
+    apiFetch(`/api/tasks/${taskId}/feedbacks`, {
+      method: "POST",
+      body: JSON.stringify({ response: value }),
+    }).catch((err) => console.error(err));
+
     feedbackTimeoutRef.current = setTimeout(() => {
       onComplete?.();
     }, FEEDBACK_CLOSE_DELAY_MS);
