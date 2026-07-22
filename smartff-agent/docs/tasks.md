@@ -366,13 +366,11 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
 - [ ] Fuzzy Matching: sales/orders 상품명 유사 매칭
 - [ ] Product Master 자동 보정: 수동 매핑 테이블 구축
 - [ ] Rule Engine V2: 더 복잡한 규칙 추가
-- [ ] FinancialService Cache Reload (V2): Upload 이후 최신 `merged_dataset.csv` 반영
-  - `reloadData()` 구현, cache invalidation, Upload API와 연동, Recommendation 기준(카테고리 평균 폐기율/전체 평균 마진율) 재계산
-  - 현재(V1)는 서버 기동 시 1회 로드 후 캐싱 — 의도적 설계 선택, 버그 아님 (2026-07-21 결정)
-  - ⚠️ 위 "Upload → ETL 자동화" 작업에 포함되므로 별도 착수 불필요
+- [x] FinancialService Cache Reload (V2) — 2026-07-22 "Upload → ETL 자동화" 작업에 포함되어 완료. `financialService.reloadData()` 구현, `uploadAutomationService`가 ETL 성공 시 호출. Recommendation은 캐시가 없어 자동 최신화됨
 - [ ] Dashboard AI Insight: 자연어 분석 고도화
-- [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동)
+- [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동) — 배포 시점에 "접속 비밀번호" 수준 경량 보호부터 우선 검토하기로 결정 (2026-07-22)
 - [ ] 프론트엔드 번들 코드 스플리팅 — `npm run build` 시 메인 청크 667KB 경고(2026-07-22 validation-agent 지적). 지금 당장 문제는 아니지만 페이지별 `React.lazy()` 분리 고려
+- [ ] Upload 페이지 "데이터 검증 결과" 카드 실데이터 연동 (2026-07-22 발견) — 지금은 `UploadPage.tsx`의 `validationResults` 배열이 완전 mock(항상 동일한 4줄, 카테고리명도 실제 업로드 종류와 불일치). 실제로 연결하려면 (1) `sales_parser.py`/`waste_parser.py`가 "N개 상품 정상 인식/매칭 실패" 같은 통계를 구조화해 반환하도록 수정 (2) `etlService.ts`의 `EtlResult`에 통계 포함 (3) `uploadAutomationService` → `uploadController` → 프론트까지 전달 (4) 발주/재고는 파서가 없어 카드 자체를 뺄지 결정 필요. Upload→ETL 자동화(성공/실패 여부)보다 한 단계 더 들어간 상세 통계라 별도 작업으로 분리
 
 ## MVP 범위 밖 (항상 제외, CLAUDE.md 준수)
 
