@@ -154,12 +154,6 @@ export function HomePage({
 
           {results.length > 0 ? (
             <InsightGrid
-              connectionClues={Object.fromEntries(
-                results.map(({ connectionClue, insight }) => [
-                  insight.id,
-                  connectionClue,
-                ])
-              )}
               insights={results.map(({ insight }) => insight)}
             />
           ) : (

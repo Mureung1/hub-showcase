@@ -199,7 +199,6 @@ describe('HomePage', () => {
       score: 12,
       matchedFields: ['memo'],
       matchedTokens: ['온보딩'],
-      connectionClue: '메모의 “온보딩” 단서가 겹쳐요.',
     };
 
     render(
@@ -224,7 +223,7 @@ describe('HomePage', () => {
 
     expect(screen.getByRole('status').textContent).toContain('온보딩 작업');
     expect(screen.getByRole('status').textContent).toContain('1개');
-    expect(screen.getByText(result.connectionClue)).not.toBeNull();
+    expect(screen.queryByText(/단서가 겹쳐요/)).toBeNull();
     const sourceLink = screen.getByRole('link', { name: '원문 열기' });
     expect(sourceLink.getAttribute('href')).toBe(
       'https://example.com/onboarding'
