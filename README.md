@@ -3,3 +3,8 @@
 백로그: https://github.com/psm300418/Albanote/blob/main/docs/DevelopmentBacklog.md
 
 개발 관련 문서: https://github.com/psm300418/Albanote/tree/main/docs
+
+
+#10 알바생 초대 기능 아키텍처 시각화
+<img width="1536" height="1024" alt="3" src="https://github.com/user-attachments/assets/899417a3-8a79-48fa-8267-b69c9a924291" />
+
