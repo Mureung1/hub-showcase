@@ -71,6 +71,8 @@ Deterministic Browser product vertical과 exact Runtime conformance가 모두 gr
 - `apps/server/src/codex-chat-config.ts`
 - `apps/server/src/codex-chat-service.ts`
 - `apps/server/src/codex-chat-http.ts`
+- `apps/server/src/testing/first-assignment-product.actual.ts`
+- `apps/server/src/testing/first-assignment-product.live.ts`
 - `apps/chat-shell/src/App.tsx`
 - `apps/chat-shell/src/use-chat-shell.ts`
 - `apps/chat-shell/src/chat-api.ts`
@@ -79,9 +81,11 @@ Deterministic Browser product vertical과 exact Runtime conformance가 모두 gr
 - `apps/chat-shell/src/use-product-chat.ts`
 - `apps/chat-shell/src/product-api.ts`
 - `packages/codex-chat-runtime/src/runtime-contract.ts`
+- `packages/codex-chat-runtime/src/exact-product-local-provider-fixture.ts`
 - `packages/codex-chat-runtime/src/runtime.actual.test.ts`
 - `packages/codex-chat-runtime/src/local-provider.actual.test.ts`
 - `packages/codex-chat-runtime/manifests/`
+- `packages/codex-chat-runtime/upstream/PATCHES.md`
 - `docs/architecture/codex-chat-implementation-map.md`
 - `docs/architecture/codex-runtime-isolation.md`
 - `docs/product/ay-ple-development-backlog.md`

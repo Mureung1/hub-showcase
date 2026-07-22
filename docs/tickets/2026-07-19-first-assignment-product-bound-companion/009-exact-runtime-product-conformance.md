@@ -46,9 +46,9 @@ Exact Python SDK/native bundle, Node Runtime와 Server product seam이 determini
 
 ## Verification
 
-- Targeted test or command: `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime`, `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime`, `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime`, existing `npm run test:codex-chat-actual -w @ay-ple/server` baseline, 009가 소유할 product actual Server command와 isolated live-provider product trace
+- Targeted test or command: `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime`, `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime`, `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime`, existing `npm run test:codex-chat-actual -w @ay-ple/server` baseline, `npm run test:first-assignment-product-actual -w @ay-ple/server`, `npm run trace:first-assignment-live -w @ay-ple/server`
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
-- Manual or live smoke: fresh materialized SemesterWorkspace에서 complete two-TXT Assignment action, Review answer, confirmed outcome와 clean shutdown. Credential 부재는 explicit blocker다.
+- Manual or live smoke: fresh materialized SemesterWorkspace에서 complete two-TXT Assignment action, 첫 Review 수락, confirmed outcome와 clean shutdown. Credential 부재는 explicit blocker다.
 
 | Gate | Outcome |
 | --- | --- |
@@ -56,7 +56,7 @@ Exact Python SDK/native bundle, Node Runtime와 Server product seam이 determini
 | Server actual | `test:codex-chat-actual`과 `test:first-assignment-product-actual` green. Product actual은 첫 proposal의 Review 수정 요청, fresh replacement request key, 두 번째 MCP→Plan→Review 수락과 same-Turn terminal을 실제 verified Runtime/local provider로 통과했다. |
 | Repository | `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs link check와 fixed-point diff check green. |
 | Review | Fixed point `4d9674d7b4fc670a3fbddaedc15e9742ae46f114`의 Standards·Spec 병렬 리뷰를 완료하고 signal cleanup, cleanup ordering, independent actual cleanup, Recipe revision loop와 Recipe v2 compatibility findings를 모두 수정했다. |
-| Live provider | Final Recipe v2 코드에서 isolated live command가 exit code `0`, `{"status":"passed","gate":"first_assignment_product"}`로 complete Assignment action·수정 요청·replacement Review·confirmed outcome과 clean shutdown을 통과했다. 이전 provider 사용량 소진 때에는 exit code `3`, `{"status":"blocked","prerequisite":"provider_account"}`로 prerequisite를 정확히 분류했다. |
+| Live provider | Final Recipe v2 코드에서 isolated live command가 exit code `0`, `{"status":"passed","gate":"first_assignment_product"}`로 complete Assignment action·첫 Review 수락·confirmed outcome과 clean shutdown을 통과했다. 수정 요청→fresh replacement proposal→두 번째 Review 수락은 위 Server actual/local-provider gate가 증명하며 live trace의 assertion이 아니다. 이전 provider 사용량 소진 때에는 exit code `3`, `{"status":"blocked","prerequisite":"provider_account"}`로 prerequisite를 정확히 분류했다. |
 
 ## Result
 

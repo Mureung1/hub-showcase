@@ -274,7 +274,7 @@ Browser transcript는 한 app lifecycle 안에서 누적된다. 오른쪽 sideba
 - Product cutover 전에는 current canonical v2 store만 지원하고 pre-release v1·legacy-v2 decoder나 migration을 유지하지 않는다. Current decoder를 통과하지 못한 store는 original bytes를 보존한 `incompatible/readOnly`로 열며 사용자 원본 파일을 이동·rename·rewrite하지 않는다.
 - Existing `CODEX_HOME`, native session, Runtime Harness history와 deleted legacy runtime graph를 import하거나 복구하지 않는다. Final product cutover 전까지 app-owned root pair와 official SDK 기반 Codex Chat Runtime graph를 유지한다. Cutover는 이 Runtime을 대체하지 않고 caller를 product seam으로 이동한 뒤 tracer-only `dev:chat-only`·HTTP·Browser surface를 함께 제거한다.
 - Runtime contract는 기존 text-only tracer behavior를 유지한 채 structured input, interaction response와 curated activity를 additive product seam으로 확장했다. Existing deterministic/actual gates가 green인 상태에서 product Browser를 새 seam으로 cut over한 뒤 tracer-only route와 fixed permission copy를 제거한다.
-- Ordered SDK patches `0001`–`0006`은 exact source preimage, original oracle, patch ledger와 conformance tests를 유지한다. Pin upgrade 때 각 patch를 개별 재검증하고 upstream이 같은 behavior를 제공할 때만 제거한다.
+- Ordered SDK patches `0001`–`0008`은 exact source preimage, original oracle, patch ledger와 conformance tests를 유지한다. `0007`은 native `thread/start`가 정한 effective model·reasoning을 high-level SDK Thread에 보존하고, `0008`은 standalone managed Skill을 위해 typed `skills/extraRoots/set` adaptation만 추가한다. `skills/list` preflight와 private catalog port는 채택하지 않는다. Pin upgrade 때 각 patch를 개별 재검증하고 upstream이 같은 behavior를 제공할 때만 제거한다.
 - Product rollout rollback은 new product surface를 비활성화해도 workspace-local confirmed state와 history를 삭제하지 않아야 한다. 지원하지 않는 newer store version은 write하지 않고 actionable read-only/incompatible 상태로 멈춘다.
 - Final product cutover가 current v2를 첫 durable compatibility baseline으로 확정한다. 이후 physical schema change는 explicit version bump와 migration 또는 fail-closed rejection을 요구하며 silent reset을 허용하지 않는다.
 
@@ -291,7 +291,7 @@ Browser transcript는 한 app lifecycle 안에서 누적된다. 오른쪽 sideba
 | Accept/reject만 settled `UserConfirmation` | 수정 요청은 decision이 아니라 same-Turn feedback이며 replacement patch를 다시 검토한다. |
 | App transaction이 apply authority | Native question answer, permission approval, MCP completion이나 filesystem write가 confirmed academic state를 직접 바꾸지 못하게 한다. |
 | `auto_review + workspace_write`와 product guard 병행 | Codex가 Python·command를 쓸 수 있게 하면서 staged sources, digest guard와 atomic apply로 proposal-only 제품 효과를 유지한다. |
-| `skills/list` preflight 제외 | High-level SDK public seam이 없고 first vertical은 exact path request와 downstream validation으로 충분하다. Silent-skip/provenance 문제가 실제 발생하거나 official seam이 생길 때만 다시 admission한다. |
+| `skills/list` preflight 제외 | Exact managed Skill의 native silent-skip는 typed `skills/extraRoots/set` adaptation과 exact local-provider conformance로 닫는다. `skills/list` preflight와 private catalog port는 채택하지 않으며 official public seam이나 새 provenance need가 생길 때만 다시 검토한다. |
 | Tracked seed와 materialized workspace 분리 | Repository fixture를 native `cwd`로 사용하지 않는다. Manual dev는 repository 밖의 predictable sibling root와 explicit override를, E2E는 같은 seed의 fresh temp copy를 사용해 inspectability와 isolation을 함께 보장한다. |
 | 3-pane workbench + right Chat sidebar | Camp demo의 공간 구조를 유지하면서 Skill·MCP·Review를 familiar Chat interaction에 누적한다. 중앙 pane은 real TXT preview만 구현하고 IDE를 가장하지 않는다. |
 | One active Chat limitation | First vertical의 product flow를 닫는 데 충분하며 catalog·multi-client·generic replay를 미리 설계하지 않는다. |
