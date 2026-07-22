@@ -103,10 +103,20 @@ isProject: false
 ### [30/P0/수] 매핑·정규화 로직
 - **목표**: API 응답을 `Subsidy` 타입으로 안전하게 변환하는 함수를 만든다.
 - **작업**
-  - [ ] `crawler/src/mapper.ts` — 월요일 매핑표대로 변환, `dday`는 `reqstDt` 종료일 기준 계산
-  - [ ] 원본 공고 고유 id로 중복 판단 (재수집 시 동일 공고 재처리 방지)
-  - [ ] 매핑 함수 단위 테스트 — 실제 API 응답 샘플(월요일에 확보) 기준 케이스 포함
+  - [x] `crawler/src/mapper.ts` — `mapAnnouncementToSubsidy()`, `#28` 매핑안대로 변환
+  - [x] `parseDeadline()` — `reqstBeginEndDe` 종료일 기준 `deadline`/`dday` 계산. "예산 소진시까지"
+        같은 비-날짜 텍스트는 원문 유지 + `dday=9999`(정렬 시 뒤로 밀림)로 처리 (#29에서 발견한
+        엣지 케이스 대응)
+  - [x] `inferMethod()` — 접수방법 원문에서 온라인/방문/온라인+방문/기타 짧은 라벨 유추
+  - [x] `pblancId`를 `Subsidy.id`로 그대로 사용 → 원본 공고 고유 id 기반 중복 판단(#31 upsert의
+        `onConflict` 키로 재사용)
+  - [x] `trgetNm`/`printFileNm`이 있으면 `qualifications`/`documents`에 실제 값 반영, 없으면
+        #28에서 정한 안내 문구로 대체 (완전 fallback보다 실데이터 활용도를 높임)
+  - [x] 매핑 함수 단위 테스트 12건 (`mapper.test.ts`) — 날짜 파싱, 방법 유추, 필드 누락 케이스,
+        여러 줄 텍스트 정리 포함
+  - [x] 실제 API 응답 5건에 매퍼를 직접 적용해 결과 확인 (임시 스크립트, 전부 정상 매핑)
 - **완료 기준**: 실제 API 응답 샘플이 `Subsidy` 형태로 정확히 변환되는 것을 테스트로 검증한다.
+  **완료 (2026-07-22)** — 단위 테스트 12건 + 실제 API 5건 수동 검증
 
 ### [31/P1/목] Supabase upsert 파이프라인
 - **목표**: 변환된 데이터를 `subsidies` 테이블에 실제로 채워 넣는다.
