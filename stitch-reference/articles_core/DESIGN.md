@@ -1,5 +1,5 @@
 ---
-name: Briefly Core
+name: Articles Core
 colors:
   surface: '#f8f9ff'
   surface-dim: '#d5dae7'
