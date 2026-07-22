@@ -14,6 +14,60 @@
 
 초기 Mock 데이터는 제품 코드에서 제거했습니다. Google 사용자는 빈 프로젝트 목록에서 시작하고, 게스트만 읽기 전용 데모를 봅니다. 로그인 사용자의 노트·자료·AI 영속화는 다음 단계 범위입니다.
 
+## 시스템 아키텍처
+
+```mermaid
+flowchart LR
+    U[사용자 브라우저]
+
+    subgraph WEB[React + Vite 웹]
+        UI[화면과 라우터]
+        AUTH[AuthProvider]
+        STATE[TeamFlowProvider]
+        CLIENT[API Repository]
+    end
+
+    subgraph API[Node.js + Express API]
+        ROUTES[TeamFlow Routes]
+        VERIFY[JWT 인증 미들웨어]
+        REPO[TeamFlow Repository]
+        DEMO[게스트 데모 Repository]
+    end
+
+    subgraph SB[Supabase]
+        SAUTH[Google OAuth와 Auth]
+        RLS[PostgreSQL + RLS]
+        DEMODB[(읽기 전용 데모 데이터)]
+        USERDB[(프로젝트·팀원·할 일)]
+    end
+
+    U --> UI
+    UI --> AUTH
+    AUTH <-->|로그인·세션·JWT| SAUTH
+    UI <--> STATE
+    STATE <--> CLIENT
+
+    CLIENT <-->|게스트 GET /api/demo · JSON 응답| ROUTES
+    ROUTES <-->|데모 조회| DEMO
+    DEMO <-->|anon 권한 + RLS| DEMODB
+
+    CLIENT -->|Bearer JWT + API 요청| ROUTES
+    ROUTES --> VERIFY
+    VERIFY -->|JWT 검증| SAUTH
+    VERIFY -->|인증 사용자| REPO
+    REPO <-->|사용자 JWT로 CRUD| RLS
+    RLS <--> USERDB
+    REPO -->|처리 결과| ROUTES
+    ROUTES -->|JSON 응답| CLIENT
+    CLIENT -->|응답 데이터| STATE
+    STATE -->|상태 갱신| UI
+```
+
+- 브라우저의 `AuthProvider`가 Supabase Auth와 직접 통신해 Google 로그인 세션과 JWT를 관리합니다.
+- 로그인 사용자의 프로젝트·팀원·할 일 요청은 API Repository에서 Bearer JWT를 붙여 Express로 보냅니다.
+- Express는 JWT를 검증하고 같은 토큰으로 Supabase에 접근합니다. PostgreSQL RLS가 사용자별 데이터 접근을 최종 제한합니다.
+- 게스트는 인증 없이 `/api/demo`의 활성 데모 데이터만 조회할 수 있으며 변경 작업은 웹 Repository에서 차단됩니다.
+
 ## Workspace
 
 - `apps/web`: React + Vite 프론트엔드
@@ -102,4 +156,6 @@ npm.cmd run build
 ## 프로젝트 문서
 
 - [기획서](./docs/plan.md)
+- [아키텍처 설명서](./docs/architecture.md)
+- [API 명세서](./docs/api.md)
 - [2주차 주간 개발 계획](https://github.com/connect-AIAgentChallenge-26-1/hub/issues/700)

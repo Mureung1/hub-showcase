@@ -2,9 +2,10 @@ import { RESOURCE_TYPE } from '@teamflow/shared'
 import ArrowDownUp from 'lucide-react/dist/esm/icons/arrow-down-up.mjs'
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right.mjs'
 import FolderPlus from 'lucide-react/dist/esm/icons/folder-plus.mjs'
+import MoreHorizontal from 'lucide-react/dist/esm/icons/ellipsis.mjs'
 import Plus from 'lucide-react/dist/esm/icons/plus.mjs'
 import Search from 'lucide-react/dist/esm/icons/search.mjs'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 
 import { ResourceIcon } from '../../components/ui/ResourceIcon.jsx'
@@ -19,7 +20,8 @@ import styles from './ResourcesPage.module.css'
 
 export function ResourcesPage() {
   const { project } = useOutletContext()
-  const { state, capabilities } = useTeamFlow()
+  const { state, capabilities, actions, readOnly } = useTeamFlow()
+  const { reloadOnEntry } = actions
   const [query, setQuery] = useState('')
   const [type, setType] = useState('all')
   const [newestFirst, setNewestFirst] = useState(true)
@@ -33,9 +35,15 @@ export function ResourcesPage() {
   const currentFolder = folders.find((folder) => folder.id === currentFolderId) ?? null
   const selected = state.resources.find((resource) => resource.id === selectedId) ?? null
 
+  useEffect(() => {
+    if (!readOnly) void reloadOnEntry().catch(() => {})
+  }, [project.id, readOnly, reloadOnEntry])
+
   const normalizedQuery = query.trim().toLocaleLowerCase('ko-KR')
   const matchesQuery = (resource) => `${resource.name} ${resource.description ?? ''} ${memberById.get(resource.ownerId)?.name ?? ''}`.toLocaleLowerCase('ko-KR').includes(normalizedQuery)
-  const byUpdatedAt = (a, b) => newestFirst ? b.updatedAt.localeCompare(a.updatedAt) : a.updatedAt.localeCompare(b.updatedAt)
+  const byUpdatedAt = (a, b) => newestFirst
+    ? String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? ''))
+    : String(a.updatedAt ?? '').localeCompare(String(b.updatedAt ?? ''))
   const visibleFolders = currentFolderId == null && type === 'all'
     ? folders.filter(matchesQuery).sort(byUpdatedAt)
     : []
@@ -69,10 +77,13 @@ export function ResourcesPage() {
               {currentFolder ? <><ChevronRight size={18} aria-hidden="true" /><span>{currentFolder.name}</span></> : null}
             </h1>
           </div>
-          {capabilities.resources ? <div className={styles.createActions}>
+          <div className={styles.createActions}>
+            {currentFolder ? <button className={workspace.secondaryButton} type="button" onClick={() => setSelectedId(currentFolder.id)}><MoreHorizontal size={15} />폴더 정보</button> : null}
+            {capabilities.resources ? <>
             {currentFolderId == null ? <button className={workspace.secondaryButton} type="button" onClick={() => setShowFolderCreate(true)}><FolderPlus size={15} />새 폴더</button> : null}
             <button className={workspace.primaryButton} type="button" onClick={() => setShowAdd(true)}><Plus size={15} />자료 추가</button>
-          </div> : null}
+            </> : null}
+          </div>
         </header>
         <div className={styles.toolbar}>
           <div className={workspace.searchField}><Search size={15} /><label className="visually-hidden" htmlFor="resource-search">자료 검색</label><input id="resource-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="현재 위치에서 검색" /></div>
@@ -85,7 +96,7 @@ export function ResourcesPage() {
         {currentFolderId == null && type === 'all' ? (
           <section className={styles.folderSection} aria-labelledby="folders-title">
             <header className={styles.sectionTitle}><h2 id="folders-title">폴더</h2><span>{visibleFolders.length}개</span></header>
-            {visibleFolders.length > 0 ? <div className={styles.folderGrid}>{visibleFolders.map((folder) => { const itemCount = projectResources.filter((resource) => resource.parentId === folder.id).length; return <button className={styles.folderCard} type="button" key={folder.id} onClick={() => openFolder(folder.id)}><ResourceIcon type={RESOURCE_TYPE.FOLDER} /><span><strong>{folder.name}</strong><small>{itemCount}개 항목 · {formatShortDate(folder.updatedAt)}</small></span><ChevronRight size={16} aria-hidden="true" /></button> })}</div> : <p className={styles.folderEmpty}>{query ? '검색 조건에 맞는 폴더가 없습니다.' : '아직 폴더가 없습니다.'}</p>}
+            {visibleFolders.length > 0 ? <div className={styles.folderGrid}>{visibleFolders.map((folder) => { const itemCount = projectResources.filter((resource) => resource.parentId === folder.id).length; return <div className={styles.folderCard} key={folder.id}><button className={styles.folderOpen} type="button" onClick={() => openFolder(folder.id)}><ResourceIcon type={RESOURCE_TYPE.FOLDER} /><span><strong>{folder.name}</strong><small>{itemCount}개 항목 · {formatShortDate(folder.updatedAt)}</small></span><ChevronRight size={16} aria-hidden="true" /></button><button className={styles.folderDetails} type="button" onClick={() => setSelectedId(folder.id)} aria-label="폴더 정보 보기" title={`${folder.name} 정보`}><MoreHorizontal size={16} /></button></div> })}</div> : <p className={styles.folderEmpty}>{query ? '검색 조건에 맞는 폴더가 없습니다.' : '아직 폴더가 없습니다.'}</p>}
           </section>
         ) : null}
 
@@ -102,7 +113,7 @@ export function ResourcesPage() {
       </div>
       {showFolderCreate && capabilities.resources ? <CreateFolderModal projectId={project.id} onClose={() => setShowFolderCreate(false)} /> : null}
       {showAdd && capabilities.resources ? <AddResourceModal projectId={project.id} folders={folders} defaultParentId={currentFolderId} onClose={() => setShowAdd(false)} /> : null}
-      {selected ? <ResourceDetailModal resource={selected} owner={memberById.get(selected.ownerId)} onClose={() => setSelectedId(null)} /> : null}
+      {selected ? <ResourceDetailModal resource={selected} owner={memberById.get(selected.ownerId)} folders={folders} canEdit={capabilities.resources} onClose={() => setSelectedId(null)} onDeleted={(resourceId) => { setSelectedId(null); if (resourceId === currentFolderId) goRoot() }} /> : null}
     </section>
   )
 }

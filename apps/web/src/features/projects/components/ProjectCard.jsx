@@ -1,5 +1,6 @@
 import { normalizeProgress, PROJECT_STATUS } from '@teamflow/shared'
 import Layers3 from 'lucide-react/dist/esm/icons/layers-3.mjs'
+import Settings from 'lucide-react/dist/esm/icons/settings.mjs'
 
 import { formatPeriod } from '../../../lib/format.js'
 import styles from './ProjectCard.module.css'
@@ -20,14 +21,14 @@ const STATUS_CLASS = Object.freeze({
  * Displays one project summary without coupling the UI to the data source.
  * @param {{ project: import('@teamflow/shared/project').ProjectSummary }} props
  */
-export function ProjectCard({ project, onSelect }) {
+export function ProjectCard({ project, onSelect, onSettings }) {
   const progress = normalizeProgress(project.progress)
   const titleId = `project-${project.id}-title`
   const memberNames = project.members.map((member) => member.name).join(', ')
 
   return (
     <article className={styles.card} aria-labelledby={titleId}>
-      <button className={styles.cardButton} type="button" onClick={onSelect} aria-label={`${project.name} 프로젝트 열기`}>
+      <button className={`${styles.cardButton} ${onSettings ? styles.cardButtonWithSettings : ''}`} type="button" onClick={onSelect} aria-label={`${project.name} 프로젝트 열기`}>
       <div className={styles.headingRow}>
         <div className={styles.projectIdentity}>
           <span className={styles.projectIcon} aria-hidden="true">
@@ -78,6 +79,7 @@ export function ProjectCard({ project, onSelect }) {
         </time>
       </div>
       </button>
+      {onSettings ? <button className={styles.settingsButton} type="button" onClick={onSettings} aria-label={`${project.name} 프로젝트 설정`} title="프로젝트 설정"><Settings size={14} /></button> : null}
     </article>
   )
 }

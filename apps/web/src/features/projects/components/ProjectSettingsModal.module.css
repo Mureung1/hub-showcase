@@ -1,0 +1,41 @@
+.deleteEntryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  background: #fff0ee;
+  color: #a63a32;
+}
+
+.dangerButton {
+  background: #b94339;
+  color: #fff;
+}
+
+.dangerButton:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+.dangerNotice {
+  padding: 14px;
+  border: 1px solid #efc6c2;
+  border-radius: 12px;
+  background: #fff7f6;
+  color: #8f302a;
+}
+
+.dangerNotice strong,
+.dangerNotice p {
+  margin: 0;
+}
+
+.dangerNotice strong {
+  font-size: 14px;
+}
+
+.dangerNotice p {
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.55;
+}

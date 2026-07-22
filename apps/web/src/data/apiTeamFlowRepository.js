@@ -30,10 +30,6 @@ async function requestJson(fetchImpl, url, options, fallbackMessage) {
   return readJson(response, fallbackMessage)
 }
 
-function unsupportedFeature() {
-  throw new TeamFlowApiError('이 기능은 다음 영속화 단계에서 제공됩니다.', 'FEATURE_NOT_AVAILABLE')
-}
-
 export function createApiTeamFlowRepository({
   fetchImpl = globalThis.fetch,
   getAccessToken,
@@ -50,6 +46,7 @@ export function createApiTeamFlowRepository({
   }
 
   return {
+    refreshOnEntry: true,
     async load() {
       return authenticatedRequest('/api/bootstrap', undefined, 'TeamFlow 데이터를 불러오지 못했습니다.')
     },
@@ -68,11 +65,63 @@ export function createApiTeamFlowRepository({
       return { projectId, patch: payload.project }
     },
 
+    async deleteProject(projectId) {
+      const payload = await authenticatedRequest(`/api/projects/${projectId}`, {
+        method: 'DELETE',
+      }, '프로젝트를 삭제하지 못했습니다.')
+      return { projectId: payload.projectId }
+    },
+
     async createMember(projectId, input) {
       const payload = await authenticatedRequest(`/api/projects/${projectId}/members`, {
         method: 'POST', body: JSON.stringify(input),
       }, '팀원을 추가하지 못했습니다.')
       return { projectId, member: payload.member }
+    },
+
+    async updateMember(memberId, patch) {
+      const payload = await authenticatedRequest(`/api/members/${memberId}`, {
+        method: 'PATCH', body: JSON.stringify(patch),
+      }, '담당자를 수정하지 못했습니다.')
+      return { memberId, patch: payload.member }
+    },
+
+    async deleteMember(memberId) {
+      const payload = await authenticatedRequest(`/api/members/${memberId}`, {
+        method: 'DELETE',
+      }, '담당자를 삭제하지 못했습니다.')
+      return {
+        memberId: payload.memberId,
+        projectId: payload.projectId,
+        wasCollaborator: Boolean(payload.wasCollaborator),
+      }
+    },
+
+    async createInvitation(projectId, input) {
+      const payload = await authenticatedRequest(`/api/projects/${projectId}/invitations`, {
+        method: 'POST', body: JSON.stringify(input),
+      }, '프로젝트 초대를 만들지 못했습니다.')
+      return payload.invitation
+    },
+
+    async acceptInvitation(invitationId) {
+      return authenticatedRequest(`/api/invitations/${invitationId}/accept`, {
+        method: 'POST',
+      }, '프로젝트 초대를 수락하지 못했습니다.')
+    },
+
+    async rejectInvitation(invitationId) {
+      const payload = await authenticatedRequest(`/api/invitations/${invitationId}/reject`, {
+        method: 'POST',
+      }, '프로젝트 초대를 거절하지 못했습니다.')
+      return { invitationId: payload.invitationId ?? invitationId }
+    },
+
+    async cancelInvitation(invitationId) {
+      const payload = await authenticatedRequest(`/api/invitations/${invitationId}`, {
+        method: 'DELETE',
+      }, '프로젝트 초대를 취소하지 못했습니다.')
+      return { invitationId: payload.invitationId ?? invitationId }
     },
 
     async createTask(projectId, input) {
@@ -85,7 +134,7 @@ export function createApiTeamFlowRepository({
     async updateTask(taskId, patch) {
       const payload = await authenticatedRequest(`/api/tasks/${taskId}`, {
         method: 'PATCH', body: JSON.stringify(patch),
-      }, '할 일 상태를 변경하지 못했습니다.')
+      }, '할 일을 수정하지 못했습니다.')
       return { taskId, patch: payload.task }
     },
 
@@ -96,28 +145,80 @@ export function createApiTeamFlowRepository({
       return { taskId: payload.taskId }
     },
 
-    createNote: unsupportedFeature,
-    updateNote: unsupportedFeature,
-    createResource: unsupportedFeature,
-    updateAiSettings: unsupportedFeature,
+    async createNote(projectId, input) {
+      const payload = await authenticatedRequest(`/api/projects/${projectId}/notes`, {
+        method: 'POST', body: JSON.stringify(input),
+      }, '노트를 만들지 못했습니다.')
+      return payload.note
+    },
+
+    async updateNote(noteId, patch) {
+      const payload = await authenticatedRequest(`/api/notes/${noteId}`, {
+        method: 'PATCH', body: JSON.stringify(patch),
+      }, '노트를 저장하지 못했습니다.')
+      return { noteId, patch: payload.note }
+    },
+
+    async deleteNote(noteId) {
+      const payload = await authenticatedRequest(`/api/notes/${noteId}`, {
+        method: 'DELETE',
+      }, '노트를 삭제하지 못했습니다.')
+      return { noteId: payload.noteId ?? noteId }
+    },
+
+    async createResource(projectId, input) {
+      const payload = await authenticatedRequest(`/api/projects/${projectId}/resources`, {
+        method: 'POST', body: JSON.stringify(input),
+      }, '자료를 만들지 못했습니다.')
+      return payload.resource
+    },
+
+    async updateResource(resourceId, patch) {
+      const payload = await authenticatedRequest(`/api/resources/${resourceId}`, {
+        method: 'PATCH', body: JSON.stringify(patch),
+      }, '자료를 수정하지 못했습니다.')
+      return { resourceId, patch: payload.resource }
+    },
+
+    async deleteResource(resourceId) {
+      const payload = await authenticatedRequest(`/api/resources/${resourceId}`, {
+        method: 'DELETE',
+      }, '자료를 삭제하지 못했습니다.')
+      return { resourceId: payload.resourceId ?? resourceId }
+    },
+
+    updateAiSettings() {
+      throw new TeamFlowApiError('AI 기능은 이번 구현 범위에서 제외됩니다.', 'FEATURE_NOT_AVAILABLE')
+    },
   }
 }
 
 export function createDemoTeamFlowRepository({ fetchImpl = globalThis.fetch } = {}) {
   const readOnly = () => Promise.reject(new TeamFlowApiError('게스트 모드에서는 내용을 변경할 수 없습니다.', 'READ_ONLY'))
   return {
+    refreshOnEntry: false,
     async load() {
       return requestJson(fetchImpl, '/api/demo', undefined, '게스트 데모를 불러오지 못했습니다.')
     },
     createProject: readOnly,
     updateProject: readOnly,
+    deleteProject: readOnly,
     createMember: readOnly,
+    updateMember: readOnly,
+    deleteMember: readOnly,
+    createInvitation: readOnly,
+    acceptInvitation: readOnly,
+    rejectInvitation: readOnly,
+    cancelInvitation: readOnly,
     createTask: readOnly,
     updateTask: readOnly,
     deleteTask: readOnly,
     createNote: readOnly,
     updateNote: readOnly,
+    deleteNote: readOnly,
     createResource: readOnly,
+    updateResource: readOnly,
+    deleteResource: readOnly,
     updateAiSettings: readOnly,
   }
 }

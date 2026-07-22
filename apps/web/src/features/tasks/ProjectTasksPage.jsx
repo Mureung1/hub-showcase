@@ -4,7 +4,7 @@ import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up.mjs'
 import Search from 'lucide-react/dist/esm/icons/search.mjs'
 import Plus from 'lucide-react/dist/esm/icons/plus.mjs'
 import X from 'lucide-react/dist/esm/icons/x.mjs'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 
 import { Avatar } from '../../components/ui/Avatar.jsx'
@@ -26,7 +26,8 @@ const statColors = {
 
 export function ProjectTasksPage() {
   const { project, openTaskCreate, openTaskDetail } = useOutletContext()
-  const { state, actions, capabilities } = useTeamFlow()
+  const { state, actions, capabilities, readOnly } = useTeamFlow()
+  const { reloadOnEntry } = actions
   const [view, setView] = useState('list')
   const [filter, setFilter] = useState('all')
   const [query, setQuery] = useState('')
@@ -34,6 +35,10 @@ export function ProjectTasksPage() {
   const tasks = useMemo(() => selectProjectTasks(state, project.id), [state, project.id])
   const members = useMemo(() => selectProjectMembers(state, project.id), [state, project.id])
   const memberById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members])
+
+  useEffect(() => {
+    if (!readOnly) void reloadOnEntry().catch(() => {})
+  }, [project.id, readOnly, reloadOnEntry])
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('ko-KR')

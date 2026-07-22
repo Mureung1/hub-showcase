@@ -1,5 +1,5 @@
 import Layers3 from 'lucide-react/dist/esm/icons/layers-3.mjs'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { StatusBadge } from '../../components/ui/StatusBadge.jsx'
 import { formatShortDate } from '../../lib/format.js'
@@ -9,12 +9,21 @@ import { TaskDetailModal } from './components/TaskDetailModal.jsx'
 
 export function MyTasksPage() {
   const { state, actions, readOnly } = useTeamFlow()
+  const { reloadOnEntry } = actions
   const [selectedTaskId, setSelectedTaskId] = useState(null)
   const selectedTask = state.tasks.find((task) => task.id === selectedTaskId) ?? null
   const groups = useMemo(() => state.projects.map((project) => ({
     project,
-    tasks: state.tasks.filter((task) => task.projectId === project.id && task.assigneeId === state.currentUserId),
-  })).filter((group) => group.tasks.length > 0), [state])
+    tasks: state.tasks.filter((task) => {
+      const currentMemberId = state.currentMemberIdsByProject?.[project.id]
+        ?? (state.accessMode === 'guest' ? state.currentUserId : null)
+      return task.projectId === project.id && task.assigneeId === currentMemberId
+    }),
+  })).filter((group) => group.tasks.length > 0), [state.accessMode, state.currentMemberIdsByProject, state.currentUserId, state.projects, state.tasks])
+
+  useEffect(() => {
+    if (!readOnly) void reloadOnEntry().catch(() => {})
+  }, [readOnly, reloadOnEntry])
 
   return (
     <section className={workspace.scrollPage} aria-labelledby="my-tasks-title">

@@ -49,10 +49,15 @@ export function Brand() {
 
 export function Account({ label }) {
   const auth = useAuth()
+  const { actions } = useTeamFlow()
   const guest = auth.status === 'guest'
   const name = guest ? '게스트' : auth.user?.displayName || 'TeamFlow 사용자'
   const detail = guest ? '읽기 전용 데모' : auth.user?.email || label
   const initial = Array.from(name).slice(0, 1).join('') || 'T'
+
+  async function leave() {
+    if (await actions.flushPending()) await auth.signOut()
+  }
 
   return (
     <footer className={styles.accountArea}>
@@ -60,7 +65,7 @@ export function Account({ label }) {
         ? <img className={styles.accountAvatarImage} src={auth.user.avatarUrl} alt="" referrerPolicy="no-referrer" />
         : <span className={styles.accountAvatar}>{initial}</span>}
       <span className={styles.accountCopy}><strong>{name}</strong><span>{detail}</span></span>
-      <button className={styles.accountLogout} type="button" onClick={auth.signOut} aria-label={guest ? '게스트 모드 종료' : '로그아웃'} title={guest ? '게스트 모드 종료' : '로그아웃'}><LogOut size={14} /></button>
+      <button className={styles.accountLogout} type="button" onClick={() => void leave()} aria-label={guest ? '게스트 모드 종료' : '로그아웃'} title={guest ? '게스트 모드 종료' : '로그아웃'}><LogOut size={14} /></button>
     </footer>
   )
 }

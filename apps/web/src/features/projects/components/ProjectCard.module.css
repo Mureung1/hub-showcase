@@ -1,4 +1,5 @@
 .card {
+  position: relative;
   min-width: 0;
   min-height: 158px;
   border: 1px solid var(--color-border);
@@ -11,6 +12,11 @@
 }
 
 .cardButton { display: block; width: 100%; padding: 16px; border: 0; border-radius: inherit; background: transparent; color: inherit; text-align: left; }
+.settingsButton { position: absolute; right: 12px; bottom: 11px; display: grid; width: 30px; height: 30px; place-items: center; border: 0; border-radius: 9px; background: transparent; color: var(--color-text-secondary); opacity: 0; transition: background .15s ease, color .15s ease, opacity .15s ease; }
+.card:hover .settingsButton,
+.settingsButton:focus-visible { opacity: 1; }
+.settingsButton:hover { background: var(--color-surface-sunken); color: var(--color-accent); }
+.cardButtonWithSettings .period { padding-right: 34px; }
 
 .card:hover {
   border-color: var(--color-border-strong);

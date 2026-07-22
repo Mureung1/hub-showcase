@@ -1,12 +1,21 @@
 import { Router } from 'express'
 
-import { isProjectStatus, isTaskStatus } from '@teamflow/shared'
+import { RESOURCE_TYPE, isProjectStatus, isResourceType, isTaskStatus } from '@teamflow/shared'
 
 import { createAuthenticationMiddleware } from '../lib/auth.js'
-import { TeamFlowNotFoundError } from './teamFlowRepository.js'
+import {
+  TeamFlowConflictError,
+  TeamFlowNotFoundError,
+  TeamFlowValidationError,
+} from './teamFlowRepository.js'
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function hasOwn(value, key) {
+  return Object.prototype.hasOwnProperty.call(value ?? {}, key)
+}
 
 function calendarDate(value, optional = false) {
   if (optional && (value === '' || value == null)) return true
@@ -19,30 +28,51 @@ function cleanString(value) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-function validateProject(body) {
-  const value = {
-    name: cleanString(body?.name),
-    description: cleanString(body?.description),
-    status: body?.status,
-    startDate: body?.startDate ?? '',
-    endDate: body?.endDate ?? '',
+function validHttpUrl(value) {
+  if (typeof value !== 'string' || !value.trim()) return false
+  try {
+    const url = new URL(value.trim())
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
   }
-  const fields = {}
-  if (!value.name || value.name.length > 120) fields.name = '프로젝트 이름은 1자 이상 120자 이하여야 합니다.'
-  if (value.description.length > 500) fields.description = '설명은 500자 이하여야 합니다.'
-  if (!isProjectStatus(value.status)) fields.status = '프로젝트 상태를 확인해 주세요.'
-  if (!calendarDate(value.startDate, true)) fields.startDate = '시작일을 확인해 주세요.'
-  if (!calendarDate(value.endDate, true)) fields.endDate = '종료일을 확인해 주세요.'
-  if (value.startDate && value.endDate && value.endDate < value.startDate) fields.endDate = '종료일은 시작일보다 빠를 수 없습니다.'
-  return Object.keys(fields).length ? { fields } : { value }
 }
 
-function validateProjectPeriod(body) {
-  const value = { startDate: body?.startDate ?? '', endDate: body?.endDate ?? '' }
+function validateProject(body, { partial = false } = {}) {
+  const value = {}
   const fields = {}
-  if (!calendarDate(value.startDate)) fields.startDate = '시작일을 확인해 주세요.'
-  if (!calendarDate(value.endDate)) fields.endDate = '종료일을 확인해 주세요.'
-  if (!fields.startDate && !fields.endDate && value.endDate < value.startDate) fields.endDate = '종료일은 시작일보다 빠를 수 없습니다.'
+  const keys = ['name', 'description', 'status', 'startDate', 'endDate']
+  const included = keys.filter((key) => hasOwn(body, key))
+  if (partial && included.length === 0) fields.body = '수정할 프로젝트 정보를 입력해 주세요.'
+
+  if (!partial || hasOwn(body, 'name')) {
+    value.name = cleanString(body?.name)
+    if (!value.name || value.name.length > 120) fields.name = '프로젝트 이름은 1자 이상 120자 이하여야 합니다.'
+  }
+  if (!partial || hasOwn(body, 'description')) {
+    value.description = cleanString(body?.description)
+    if (value.description.length > 500) fields.description = '설명은 500자 이하여야 합니다.'
+  }
+  if (!partial || hasOwn(body, 'status')) {
+    value.status = body?.status
+    if (!isProjectStatus(value.status)) fields.status = '프로젝트 상태를 확인해 주세요.'
+  }
+  if (!partial || hasOwn(body, 'startDate')) {
+    value.startDate = body?.startDate ?? ''
+    if (!calendarDate(value.startDate, true)) fields.startDate = '시작일을 확인해 주세요.'
+  }
+  if (!partial || hasOwn(body, 'endDate')) {
+    value.endDate = body?.endDate ?? ''
+    if (!calendarDate(value.endDate, true)) fields.endDate = '종료일을 확인해 주세요.'
+  }
+  if (
+    hasOwn(value, 'startDate')
+    && hasOwn(value, 'endDate')
+    && value.startDate
+    && value.endDate
+    && value.endDate < value.startDate
+  ) fields.endDate = '종료일은 시작일보다 빠를 수 없습니다.'
+
   return Object.keys(fields).length ? { fields } : { value }
 }
 
@@ -56,10 +86,31 @@ function validateMember(body) {
   }
   const fields = {}
   if (!value.name || value.name.length > 80) fields.name = '이름은 1자 이상 80자 이하여야 합니다.'
-  if (!value.initial || Array.from(value.initial).length > 4) fields.initial = '이니셜을 확인해 주세요.'
+  if (!value.initial || Array.from(value.initial).length > 4) fields.initial = '이니셜은 1자 이상 4자 이하여야 합니다.'
   if (!value.role || value.role.length > 120) fields.role = '역할은 1자 이상 120자 이하여야 합니다.'
   if (value.description.length > 500) fields.description = '소개는 500자 이하여야 합니다.'
   if (!/^#[0-9a-f]{6}$/i.test(value.color)) fields.color = '색상 값을 확인해 주세요.'
+  return Object.keys(fields).length ? { fields } : { value }
+}
+
+function validateMemberPatch(body) {
+  const value = {
+    role: cleanString(body?.role),
+    description: cleanString(body?.description),
+    color: cleanString(body?.color) || '#3a6898',
+  }
+  const fields = {}
+  if (!value.role || value.role.length > 120) fields.role = '역할은 1자 이상 120자 이하여야 합니다.'
+  if (value.description.length > 500) fields.description = '소개는 500자 이하여야 합니다.'
+  if (!/^#[0-9a-f]{6}$/i.test(value.color)) fields.color = '색상 값을 확인해 주세요.'
+  if (hasOwn(body, 'name')) {
+    value.name = cleanString(body.name)
+    if (!value.name || value.name.length > 80) fields.name = '이름은 1자 이상 80자 이하여야 합니다.'
+  }
+  if (hasOwn(body, 'initial')) {
+    value.initial = cleanString(body.initial)
+    if (!value.initial || Array.from(value.initial).length > 4) fields.initial = '이니셜은 1자 이상 4자 이하여야 합니다.'
+  }
   return Object.keys(fields).length ? { fields } : { value }
 }
 
@@ -82,16 +133,121 @@ export function validateTaskCreateInput(body) {
   return Object.keys(fields).length ? { fields } : { value }
 }
 
+function validateTaskPatch(body) {
+  const value = {}
+  const fields = {}
+  const keys = ['title', 'assigneeId', 'dueDate', 'status', 'description']
+  if (!keys.some((key) => hasOwn(body, key))) fields.body = '수정할 할 일 정보를 입력해 주세요.'
+
+  if (hasOwn(body, 'title')) {
+    value.title = cleanString(body.title)
+    if (!value.title || value.title.length > 200) fields.title = '제목은 1자 이상 200자 이하여야 합니다.'
+  }
+  if (hasOwn(body, 'assigneeId')) {
+    value.assigneeId = cleanString(body.assigneeId)
+    if (!UUID_PATTERN.test(value.assigneeId)) fields.assigneeId = '담당자 ID를 확인해 주세요.'
+  }
+  if (hasOwn(body, 'dueDate')) {
+    value.dueDate = body.dueDate
+    if (!calendarDate(value.dueDate)) fields.dueDate = '마감일을 확인해 주세요.'
+  }
+  if (hasOwn(body, 'status')) {
+    value.status = body.status
+    if (!isTaskStatus(value.status)) fields.status = '진행 상태를 확인해 주세요.'
+  }
+  if (hasOwn(body, 'description')) {
+    value.description = body.description
+    if (typeof value.description !== 'string' || value.description.length > 2000) fields.description = '설명은 2000자 이하여야 합니다.'
+  }
+  return Object.keys(fields).length ? { fields } : { value }
+}
+
+function validateNote(body, { partial = false } = {}) {
+  const value = {}
+  const fields = {}
+  const keys = ['title', 'content']
+  if (partial && !keys.some((key) => hasOwn(body, key))) fields.body = '수정할 노트 정보를 입력해 주세요.'
+
+  if (!partial || hasOwn(body, 'title')) {
+    value.title = typeof body?.title === 'string' ? body.title.trim() : ''
+    if (!value.title || value.title.length > 200) fields.title = '노트 제목은 1자 이상 200자 이하여야 합니다.'
+  }
+  if (!partial || hasOwn(body, 'content')) {
+    value.content = body?.content
+    if (typeof value.content !== 'string' || value.content.length > 100000) fields.content = '노트 내용은 100,000자 이하여야 합니다.'
+  }
+  return Object.keys(fields).length ? { fields } : { value }
+}
+
+function validateResource(body, { partial = false } = {}) {
+  const value = {}
+  const fields = {}
+  const keys = ['name', 'description', 'type', 'parentId', 'url']
+  if (partial && !keys.some((key) => hasOwn(body, key))) fields.body = '수정할 자료 정보를 입력해 주세요.'
+
+  if (!partial || hasOwn(body, 'name')) {
+    value.name = cleanString(body?.name)
+    if (!value.name || value.name.length > 200) fields.name = '자료 이름은 1자 이상 200자 이하여야 합니다.'
+  }
+  if (!partial || hasOwn(body, 'description')) {
+    value.description = cleanString(body?.description)
+    if (value.description.length > 2000) fields.description = '설명은 2000자 이하여야 합니다.'
+  }
+  if (!partial || hasOwn(body, 'type')) {
+    value.type = body?.type
+    if (!isResourceType(value.type)) fields.type = '자료 유형을 확인해 주세요.'
+  }
+  if (!partial || hasOwn(body, 'parentId')) {
+    value.parentId = body?.parentId || null
+    if (value.parentId !== null && !UUID_PATTERN.test(value.parentId)) fields.parentId = '폴더 ID를 확인해 주세요.'
+  }
+  if (!partial || hasOwn(body, 'url')) {
+    value.url = cleanString(body?.url) || null
+    if (value.url && (value.url.length > 2048 || !validHttpUrl(value.url))) fields.url = '2048자 이하의 http 또는 https 주소를 입력해 주세요.'
+  }
+
+  if (value.type === RESOURCE_TYPE.FOLDER) {
+    if (value.parentId) fields.parentId = '폴더는 자료실 루트에만 만들 수 있습니다.'
+    if (value.url) fields.url = '폴더에는 외부 주소를 저장할 수 없습니다.'
+  }
+  if (value.type === RESOURCE_TYPE.LINK && !value.url) fields.url = '링크 자료에는 외부 주소가 필요합니다.'
+
+  return Object.keys(fields).length ? { fields } : { value }
+}
+
+function validateInvitation(body) {
+  const email = cleanString(body?.inviteeEmail ?? body?.email).toLocaleLowerCase('en-US')
+  return EMAIL_PATTERN.test(email) && email.length <= 320
+    ? { value: { email } }
+    : { fields: { email: '올바른 이메일 주소를 입력해 주세요.' } }
+}
+
 function validationError(response, fields) {
   response.status(400).json({
     error: { code: 'VALIDATION_ERROR', message: '입력값을 확인해 주세요.', fields },
   })
 }
 
+function validId(response, key, value) {
+  if (UUID_PATTERN.test(value)) return true
+  validationError(response, { [key]: `${key}를 확인해 주세요.` })
+  return false
+}
+
 function routeError(response, error) {
+  if (error instanceof TeamFlowValidationError) {
+    validationError(response, error.fields)
+    return
+  }
   if (error instanceof TeamFlowNotFoundError) {
     response.status(404).json({
-      error: { code: 'NOT_FOUND', message: '요청한 데이터를 찾을 수 없습니다.' },
+      error: { code: 'NOT_FOUND', message: error.message },
+    })
+    return
+  }
+  if (error instanceof TeamFlowConflictError) {
+    response.status(409).json({
+      error: { code: 'CONFLICT', message: error.message },
     })
     return
   }
@@ -100,86 +256,187 @@ function routeError(response, error) {
   })
 }
 
+function asyncRoute(handler) {
+  return async (request, response) => {
+    try {
+      await handler(request, response)
+    } catch (error) {
+      routeError(response, error)
+    }
+  }
+}
+
 export function createTeamFlowRouter({ authVerifier, repositoryFactory, demoRepository }) {
   const router = Router()
 
-  router.get('/demo', async (_request, response) => {
-    try {
-      response.status(200).json(await demoRepository.loadDemo())
-    } catch (error) {
-      routeError(response, error)
-    }
-  })
+  router.get('/demo', asyncRoute(async (_request, response) => {
+    response.status(200).json(await demoRepository.loadDemo())
+  }))
 
   router.use(createAuthenticationMiddleware({ authVerifier, repositoryFactory }))
 
-  router.get('/bootstrap', async (request, response) => {
-    try {
-      response.status(200).json(await request.teamFlow.repository.load())
-    } catch (error) {
-      routeError(response, error)
-    }
-  })
+  router.get('/bootstrap', asyncRoute(async (request, response) => {
+    response.status(200).json(await request.teamFlow.repository.load())
+  }))
+
+  router.get('/invitations', asyncRoute(async (request, response) => {
+    response.status(200).json({ invitations: await request.teamFlow.repository.listInvitations() })
+  }))
 
   router.post('/projects', async (request, response) => {
     const validation = validateProject(request.body)
     if (validation.fields) return validationError(response, validation.fields)
-    try {
+    return asyncRoute(async () => {
       response.status(201).json({ project: await request.teamFlow.repository.createProject(validation.value) })
-    } catch (error) {
-      routeError(response, error)
-    }
+    })(request, response)
   })
 
   router.patch('/projects/:projectId', async (request, response) => {
-    if (!UUID_PATTERN.test(request.params.projectId)) return validationError(response, { projectId: '프로젝트 ID를 확인해 주세요.' })
-    const validation = validateProjectPeriod(request.body)
+    if (!validId(response, 'projectId', request.params.projectId)) return
+    const validation = validateProject(request.body, { partial: true })
     if (validation.fields) return validationError(response, validation.fields)
-    try {
+    return asyncRoute(async () => {
       response.status(200).json({ project: await request.teamFlow.repository.updateProject(request.params.projectId, validation.value) })
-    } catch (error) {
-      routeError(response, error)
-    }
+    })(request, response)
+  })
+
+  router.delete('/projects/:projectId', async (request, response) => {
+    if (!validId(response, 'projectId', request.params.projectId)) return
+    return asyncRoute(async () => {
+      response.status(200).json({ projectId: await request.teamFlow.repository.deleteProject(request.params.projectId) })
+    })(request, response)
+  })
+
+  router.post('/projects/:projectId/invitations', async (request, response) => {
+    if (!validId(response, 'projectId', request.params.projectId)) return
+    const validation = validateInvitation(request.body)
+    if (validation.fields) return validationError(response, validation.fields)
+    return asyncRoute(async () => {
+      response.status(201).json({ invitation: await request.teamFlow.repository.createInvitation(request.params.projectId, validation.value) })
+    })(request, response)
+  })
+
+  for (const [action, method] of [
+    ['accept', 'acceptInvitation'],
+    ['reject', 'rejectInvitation'],
+  ]) {
+    router.post(`/invitations/:invitationId/${action}`, async (request, response) => {
+      if (!validId(response, 'invitationId', request.params.invitationId)) return
+      return asyncRoute(async () => {
+        const result = await request.teamFlow.repository[method](request.params.invitationId)
+        response.status(200).json(action === 'accept'
+          ? { result }
+          : { invitationId: result.invitationId ?? request.params.invitationId })
+      })(request, response)
+    })
+  }
+
+  router.delete('/invitations/:invitationId', async (request, response) => {
+    if (!validId(response, 'invitationId', request.params.invitationId)) return
+    return asyncRoute(async () => {
+      const result = await request.teamFlow.repository.cancelInvitation(request.params.invitationId)
+      response.status(200).json({ invitationId: result.invitationId ?? request.params.invitationId })
+    })(request, response)
   })
 
   router.post('/projects/:projectId/members', async (request, response) => {
-    if (!UUID_PATTERN.test(request.params.projectId)) return validationError(response, { projectId: '프로젝트 ID를 확인해 주세요.' })
+    if (!validId(response, 'projectId', request.params.projectId)) return
     const validation = validateMember(request.body)
     if (validation.fields) return validationError(response, validation.fields)
-    try {
+    return asyncRoute(async () => {
       response.status(201).json({ member: await request.teamFlow.repository.createMember(request.params.projectId, validation.value) })
-    } catch (error) {
-      routeError(response, error)
-    }
+    })(request, response)
+  })
+
+  router.patch('/members/:memberId', async (request, response) => {
+    if (!validId(response, 'memberId', request.params.memberId)) return
+    const validation = validateMemberPatch(request.body)
+    if (validation.fields) return validationError(response, validation.fields)
+    return asyncRoute(async () => {
+      response.status(200).json({ member: await request.teamFlow.repository.updateMember(request.params.memberId, validation.value) })
+    })(request, response)
+  })
+
+  router.delete('/members/:memberId', async (request, response) => {
+    if (!validId(response, 'memberId', request.params.memberId)) return
+    return asyncRoute(async () => {
+      const result = await request.teamFlow.repository.deleteMember(request.params.memberId)
+      response.status(200).json(typeof result === 'string' ? { memberId: result } : result)
+    })(request, response)
   })
 
   router.post('/tasks', async (request, response) => {
     const validation = validateTaskCreateInput(request.body)
     if (validation.fields) return validationError(response, validation.fields)
-    try {
+    return asyncRoute(async () => {
       response.status(201).json({ task: await request.teamFlow.repository.createTask(validation.value) })
-    } catch (error) {
-      routeError(response, error)
-    }
+    })(request, response)
   })
 
   router.patch('/tasks/:taskId', async (request, response) => {
-    if (!UUID_PATTERN.test(request.params.taskId)) return validationError(response, { taskId: '할 일 ID를 확인해 주세요.' })
-    if (!isTaskStatus(request.body?.status)) return validationError(response, { status: '진행 상태를 확인해 주세요.' })
-    try {
-      response.status(200).json({ task: await request.teamFlow.repository.updateTask(request.params.taskId, { status: request.body.status }) })
-    } catch (error) {
-      routeError(response, error)
-    }
+    if (!validId(response, 'taskId', request.params.taskId)) return
+    const validation = validateTaskPatch(request.body)
+    if (validation.fields) return validationError(response, validation.fields)
+    return asyncRoute(async () => {
+      response.status(200).json({ task: await request.teamFlow.repository.updateTask(request.params.taskId, validation.value) })
+    })(request, response)
   })
 
   router.delete('/tasks/:taskId', async (request, response) => {
-    if (!UUID_PATTERN.test(request.params.taskId)) return validationError(response, { taskId: '할 일 ID를 확인해 주세요.' })
-    try {
+    if (!validId(response, 'taskId', request.params.taskId)) return
+    return asyncRoute(async () => {
       response.status(200).json({ taskId: await request.teamFlow.repository.deleteTask(request.params.taskId) })
-    } catch (error) {
-      routeError(response, error)
-    }
+    })(request, response)
+  })
+
+  router.post('/projects/:projectId/notes', async (request, response) => {
+    if (!validId(response, 'projectId', request.params.projectId)) return
+    const validation = validateNote(request.body)
+    if (validation.fields) return validationError(response, validation.fields)
+    return asyncRoute(async () => {
+      response.status(201).json({ note: await request.teamFlow.repository.createNote(request.params.projectId, validation.value) })
+    })(request, response)
+  })
+
+  router.patch('/notes/:noteId', async (request, response) => {
+    if (!validId(response, 'noteId', request.params.noteId)) return
+    const validation = validateNote(request.body, { partial: true })
+    if (validation.fields) return validationError(response, validation.fields)
+    return asyncRoute(async () => {
+      response.status(200).json({ note: await request.teamFlow.repository.updateNote(request.params.noteId, validation.value) })
+    })(request, response)
+  })
+
+  router.delete('/notes/:noteId', async (request, response) => {
+    if (!validId(response, 'noteId', request.params.noteId)) return
+    return asyncRoute(async () => {
+      response.status(200).json({ noteId: await request.teamFlow.repository.deleteNote(request.params.noteId) })
+    })(request, response)
+  })
+
+  router.post('/projects/:projectId/resources', async (request, response) => {
+    if (!validId(response, 'projectId', request.params.projectId)) return
+    const validation = validateResource(request.body)
+    if (validation.fields) return validationError(response, validation.fields)
+    return asyncRoute(async () => {
+      response.status(201).json({ resource: await request.teamFlow.repository.createResource(request.params.projectId, validation.value) })
+    })(request, response)
+  })
+
+  router.patch('/resources/:resourceId', async (request, response) => {
+    if (!validId(response, 'resourceId', request.params.resourceId)) return
+    const validation = validateResource(request.body, { partial: true })
+    if (validation.fields) return validationError(response, validation.fields)
+    return asyncRoute(async () => {
+      response.status(200).json({ resource: await request.teamFlow.repository.updateResource(request.params.resourceId, validation.value) })
+    })(request, response)
+  })
+
+  router.delete('/resources/:resourceId', async (request, response) => {
+    if (!validId(response, 'resourceId', request.params.resourceId)) return
+    return asyncRoute(async () => {
+      response.status(200).json({ resourceId: await request.teamFlow.repository.deleteResource(request.params.resourceId) })
+    })(request, response)
   })
 
   return router

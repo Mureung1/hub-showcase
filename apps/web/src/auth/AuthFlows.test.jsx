@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { describe, expect, test, vi } from 'vitest'
 
 import App from '../App.jsx'
@@ -9,13 +9,15 @@ import { authenticatedSession, createTestAuthClient } from '../test/renderTeamFl
 import { AuthProvider } from './AuthProvider.jsx'
 
 function renderWithAuth({ initialEntry = '/', client = createTestAuthClient(null), guestRepository = testTeamFlowRepository } = {}) {
-  return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
+  const router = createMemoryRouter([{
+    path: '*',
+    element: (
       <AuthProvider client={client}>
         <App authenticatedRepository={testTeamFlowRepository} guestRepository={guestRepository} />
       </AuthProvider>
-    </MemoryRouter>,
-  )
+    ),
+  }], { initialEntries: [initialEntry] })
+  return { ...render(<RouterProvider router={router} />), router }
 }
 
 describe('TeamFlow authentication flows', () => {

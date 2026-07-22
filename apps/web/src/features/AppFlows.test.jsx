@@ -99,6 +99,72 @@ describe('connected prototype flows', () => {
     expect(screen.getAllByText(/<img src=x/).length).toBeGreaterThan(0)
   })
 
+  test('auto-saves note drafts and flushes a newer draft before internal navigation', async () => {
+    const user = userEvent.setup()
+    const updates = []
+    const repository = {
+      ...testTeamFlowRepository,
+      updateNote: async (noteId, patch) => {
+        updates.push({ noteId, patch })
+        return { noteId, patch }
+      },
+    }
+    renderApp('/projects/1/notes?note=note-3', repository)
+    const title = await screen.findByPlaceholderText('제목 없음')
+
+    fireEvent.change(title, { target: { value: '800ms 자동 저장 확인' } })
+    expect(await screen.findByText('저장됨', {}, { timeout: 2_000 })).toBeInTheDocument()
+    expect(updates.at(-1)).toMatchObject({ noteId: 'note-3', patch: { title: '800ms 자동 저장 확인' } })
+
+    fireEvent.change(title, { target: { value: '이동 전 저장 확인' } })
+    await user.click(screen.getByRole('link', { name: '할 일' }))
+    expect(await screen.findByRole('heading', { name: '할 일 관리' })).toBeInTheDocument()
+    expect(updates.at(-1)).toMatchObject({ noteId: 'note-3', patch: { title: '이동 전 저장 확인' } })
+  })
+
+  test('waits for a pending note save before browser history navigation', async () => {
+    const user = userEvent.setup()
+    const updates = []
+    let completeSave
+    const repository = {
+      ...testTeamFlowRepository,
+      updateNote: (noteId, patch) => {
+        updates.push({ noteId, patch })
+        return new Promise((resolve) => {
+          completeSave = () => resolve({ noteId, patch })
+        })
+      },
+    }
+    const { router } = renderApp('/projects/1/tasks', repository)
+    expect(await screen.findByRole('heading', { name: '할 일 관리' })).toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: '공유 노트' }))
+    const title = await screen.findByPlaceholderText('제목 없음')
+    fireEvent.change(title, { target: { value: '뒤로 가기 저장 확인' } })
+
+    const navigation = router.navigate(-1)
+    expect(await screen.findByRole('status')).toHaveTextContent('저장 중')
+    expect(screen.getByRole('heading', { name: '공유 노트' })).toBeInTheDocument()
+    expect(updates.at(-1)).toMatchObject({ noteId: 'note-1', patch: { title: '뒤로 가기 저장 확인' } })
+
+    completeSave()
+    await navigation
+    expect(await screen.findByRole('heading', { name: '할 일 관리' })).toBeInTheDocument()
+  })
+
+  test('labels notes whose author has left the project', async () => {
+    const payload = await testTeamFlowRepository.load()
+    const repository = {
+      ...testTeamFlowRepository,
+      load: async () => ({
+        ...payload,
+        notes: payload.notes.map((note) => note.id === 'note-3' ? { ...note, authorId: null } : note),
+      }),
+    }
+
+    renderApp('/projects/1/notes?note=note-3', repository)
+    expect((await screen.findAllByText('탈퇴한 사용자')).length).toBeGreaterThanOrEqual(2)
+  })
+
   test('keeps the task modal open when persistent creation fails', async () => {
     const user = userEvent.setup()
     const failingRepository = {

@@ -3,7 +3,8 @@ import Calendar from 'lucide-react/dist/esm/icons/calendar-days.mjs'
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down.mjs'
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right.mjs'
 import Plus from 'lucide-react/dist/esm/icons/plus.mjs'
-import { useMemo, useState } from 'react'
+import Settings from 'lucide-react/dist/esm/icons/settings.mjs'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 
 import { Avatar } from '../../components/ui/Avatar.jsx'
@@ -14,6 +15,7 @@ import { useTeamFlow } from '../../state/useTeamFlow.js'
 import { selectProjectMembers, selectProjectTasks } from '../../state/selectors.js'
 import workspace from '../../styles/workspace.module.css'
 import styles from './ProjectDashboardPage.module.css'
+import { ProjectSettingsModal } from '../projects/components/ProjectSettingsModal.jsx'
 import { ProjectPeriodModal } from './ProjectPeriodModal.jsx'
 
 const priority = { [TASK_STATUS.IN_PROGRESS]: 0, [TASK_STATUS.IN_REVIEW]: 1, [TASK_STATUS.NOT_STARTED]: 2, [TASK_STATUS.COMPLETED]: 3 }
@@ -21,11 +23,17 @@ const DASHBOARD_TASK_LIMIT = 10
 
 export function ProjectDashboardPage() {
   const { project, openTaskCreate, openTaskDetail } = useOutletContext()
-  const { state, capabilities } = useTeamFlow()
+  const { state, actions, capabilities, readOnly } = useTeamFlow()
+  const { reloadOnEntry } = actions
   const navigate = useNavigate()
   const [expandedTasks, setExpandedTasks] = useState(false)
   const [periodOpen, setPeriodOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [panels, setPanels] = useState({ team: true, notes: true, resources: true })
+
+  useEffect(() => {
+    if (!readOnly) void reloadOnEntry().catch(() => {})
+  }, [project.id, readOnly, reloadOnEntry])
   const tasks = selectProjectTasks(state, project.id)
   const members = selectProjectMembers(state, project.id)
   const notes = state.notes.filter((note) => note.projectId === project.id)
@@ -53,7 +61,7 @@ export function ProjectDashboardPage() {
       <div className={workspace.container}>
         <header className={workspace.pageHeader}>
           <div><p>내 프로젝트</p><h1 id="dashboard-title">{project.name}</h1>{capabilities.projects ? <button type="button" className={styles.period} aria-label="프로젝트 기간 수정" onClick={() => setPeriodOpen(true)}><Calendar size={12} /><span className={workspace.mono}>{formatPeriod(project.startDate, project.endDate)}</span></button> : <span className={styles.period}><Calendar size={12} /><span className={workspace.mono}>{formatPeriod(project.startDate, project.endDate)}</span></span>}</div>
-          {capabilities.tasks ? <button className={workspace.primaryButton} type="button" onClick={openTaskCreate}><Plus size={15} />새 할 일</button> : null}
+          <div className={styles.headerActions}>{capabilities.projects ? <button className={workspace.secondaryButton} type="button" onClick={() => setSettingsOpen(true)}><Settings size={14} />프로젝트 설정</button> : null}{capabilities.tasks ? <button className={workspace.primaryButton} type="button" onClick={openTaskCreate}><Plus size={15} />새 할 일</button> : null}</div>
         </header>
 
         <section className={`${workspace.card} ${styles.progressStrip}`}>
@@ -85,6 +93,7 @@ export function ProjectDashboardPage() {
         </div>
       </div>
       {periodOpen && capabilities.projects ? <ProjectPeriodModal project={project} onClose={() => setPeriodOpen(false)} /> : null}
+      {settingsOpen && capabilities.projects ? <ProjectSettingsModal project={project} onClose={() => setSettingsOpen(false)} onDeleted={() => navigate('/projects', { replace: true })} /> : null}
     </section>
   )
 }
