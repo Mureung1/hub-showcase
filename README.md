@@ -1,52 +1,52 @@
 # CareerSignal
 
-CareerSignal은 채용공고를 역산해, 직무·기업군이 실제로 원하는 수준을 드러내고 그에 맞춰 무엇을 준비할지 알려주는 대학생 진로탐색 리서치 에이전트입니다. 기술 이름을 나열하는 데 그치지 않고, baseline 대비 편차로 인재상을 읽어 자소서·포트폴리오·면접에 무엇을 담을지, 그리고 그것을 채울 학습·프로젝트 로드맵을 제안합니다.
+CareerSignal은 여러 채용공고의 반복 요구를 통계로 정리하고, 직무 기준선과 기업군·개별 공고의 편차를 심층 해설해 취업 준비 전략으로 연결하는 대학생 진로탐색 리서치 에이전트입니다.
+
+사용자는 `통계 분석 → 채용공고 해설 → 합격 전략 → 준비 로드맵` 순서로 요구 수준과 근거를 확인하고, 체크리스트의 미보유 항목을 채우는 프로젝트·학습 순서를 받습니다. 일반 화면은 미리 생성·검증한 분석 결과를 조회하며, 에이전트는 데이터 갱신과 사용자 공고 직접 입력 때 실행합니다.
 
 ## 데모
 
-- [정적 프로토타입 보기](https://careersignal-prototype.vercel.app/)
-- 정적 프로토타입은 최근 1년의 백엔드 신입·주니어 공고 30건을 가정한 mock 리서치로 구성했습니다. 실제 채용공고 수집이나 AI 분석 결과가 아닙니다.
+- [정적 프로토타입](https://careersignal-prototype.vercel.app/)
+- 프로토타입은 백엔드 신입·주니어 공고 30건을 가정한 mock 리서치이며 실제 수집·분석 결과가 아닙니다.
 
-## 문서
+## 핵심 구조
 
-- [기획서](docs/plan.md): 문제 정의, 사용자, 프로토타입과 제품 확장 계획
-- [설계 문서](docs/architecture.md): 프로토타입과 MVP의 기술 구조, 데이터 설계, 에이전트 구조
-- [디자인 컨셉](docs/design-concept.md): 확정된 화면 구조와 정보 위계
-- [디자인 토큰](docs/design-tokens.md): `prototype/style.css`와 동기화하는 시각 토큰
-- [작업 체크리스트](docs/checklist.md): 프로토타입 완료 기록과 실제 제품 백로그
-- [개발 백로그](docs/backlog.md): 우선순위, 4주 개발 로드맵, MVP Task
-- [Wiki](https://github.com/joo-hyun/hub/wiki)
+- 화면: 직무 선택, 통계 분석, 채용공고 해설, 합격 전략, 준비 로드맵
+- 분석 범위: 직무 전체, 기업군, 개별 공고
+- 실행 방식: 데이터 갱신 시 다섯 에이전트가 분석 결과를 생성·검증해 Supabase에 저장
+- 일반 조회: React가 Express를 통해 활성 분석 버전을 조회
+- 체크 상태: 준비 현황과 프로젝트·학습 로드맵만 규칙으로 재조합
+- 검색 구조: 키워드·벡터 검색과 지식 그래프를 결합한 Hybrid RAG·GraphRAG
 
-## 프로젝트 관리
+발표용 전체 구조와 흐름은 [아키텍처](docs/architecture.md), 에이전트별 입출력과 내부 단계는 [에이전트 설계](docs/agent-design.md)에서 확인할 수 있습니다.
 
-- [작업 보드 (GitHub Projects)](https://github.com/users/joo-hyun/projects/2): 주차별 이슈 등록과 진행 상태를 관리합니다.
+## 프로젝트 구조
 
-## 실행 및 확인
-
-### 정적 프로토타입
-
-`prototype/index.html`을 브라우저에서 열면 됩니다. 다섯 페이지는 HTML/CSS만 사용하며 `prototype/style.css`를 공유합니다. 별도 설치, 개발 서버, JavaScript가 필요하지 않습니다.
-
-### 프로젝트 소개 React 화면 (`project-intro/`)
-
-프로젝트 소개 페이지 전용 독립 Vite 환경입니다. 실제 서비스와 코드를 공유하지 않습니다.
-
-```powershell
-cd project-intro
-npm install
-npm.cmd run dev
+```text
+hub/
+  prototype/       HTML/CSS 정적 프로토타입
+  project-intro/   프로젝트 소개용 독립 React 앱
+  product/         실제 서비스 React 앱
+  server/          product 전용 Express API
+  agent/           FastAPI·LangGraph 에이전트 서비스
+  docs/            기획·아키텍처·데이터·에이전트·디자인 문서
 ```
 
-빌드와 린트는 아래처럼 확인합니다.
+각 디렉터리는 독립 실행 환경이며 코드와 `node_modules`를 공유하지 않습니다.
 
-```powershell
-npm.cmd run build
-npm.cmd run lint
-```
+## 기술 스택
 
-### 실제 제품 React 화면 (`product/`)
+- Frontend: React, Vite
+- Backend: Express
+- Agent: Python, FastAPI, LangChain, LangGraph
+- Database: Supabase Postgres, pgvector
+- LLM: OpenAI API, 공개 YouTube 보강용 Gemini API
 
-실제 서비스 React 코드를 위한 독립 Vite 환경입니다.
+## 로컬 실행
+
+PowerShell에서는 실행 정책 충돌을 피하기 위해 `npm.cmd`를 사용합니다.
+
+### 실제 제품 화면
 
 ```powershell
 cd product
@@ -54,73 +54,53 @@ npm install
 npm.cmd run dev
 ```
 
-빌드와 린트는 아래처럼 확인합니다.
+Vite 개발 서버는 `/api` 요청을 `http://localhost:4000`의 Express로 전달합니다.
+
+### Express 서버
+
+`server/.env`에 Supabase와 에이전트 주소를 설정합니다.
 
 ```powershell
-npm.cmd run build
+cd server
+npm install
+npm.cmd start
+```
+
+### FastAPI 에이전트 서비스
+
+```powershell
+cd agent
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+`server/`나 `agent/` 코드를 변경하면 해당 프로세스를 재시작합니다.
+
+## 검증
+
+```powershell
+cd product
 npm.cmd run lint
+npm.cmd run build
 ```
 
-PowerShell 실행 정책으로 `npm run ...`이 막히면 `npm.cmd run ...`을 사용합니다.
+Express의 통계 집계는 `server/data/backend-postings.sample.json`을 Supabase에 적재한 뒤 `/api/stats?job=backend`에서 확인합니다.
 
-## 프로젝트 구조
+## 문서
 
-```text
-hub/
-  docs/
-    architecture.md
-    checklist.md
-    design-concept.md
-    design-tokens.md
-    plan.md
+- [기획서](docs/plan.md): 문제·사용자·핵심 기능·화면 흐름
+- [아키텍처](docs/architecture.md): 전체 구조·데이터 갱신·런타임·버전
+- [에이전트 설계](docs/agent-design.md): 다섯 에이전트의 입출력·도구·내부 흐름
+- [데이터 전략](docs/data-strategy.md): 자료 계층·출처·획득·신뢰도·평가 세트
+- [디자인 컨셉](docs/design-concept.md): 화면 구조와 정보 위계
+- [디자인 토큰](docs/design-tokens.md): 색상·레이아웃·컴포넌트 규칙
+- [개발 백로그](docs/backlog.md): 주차별 이니셔티브·우선순위·완료 조건
+- [릴리스 체크리스트](docs/checklist.md): MVP·최종 결과물 수용 기준
+- [GitHub Projects](https://github.com/users/joo-hyun/projects/2): Issue 실행 상태와 일정
+- [Wiki](https://github.com/joo-hyun/hub/wiki)
 
-  prototype/
-    assets/
-    index.html      (01 직무 선택)
-    report.html     (02 통계 분석)
-    reverse.html    (03 인재상 역산)
-    checklist.html  (04 합격 조건)
-    roadmap.html    (05 준비 로드맵)
-    style.css
+## 개발 범위
 
-  project-intro/              (독립 Vite+React 앱: 프로젝트 소개 화면)
-    package.json
-    vite.config.js
-    index.html
-    src/
-
-  product/                    (독립 Vite+React 앱: 실제 서비스 화면)
-    package.json
-    vite.config.js
-    index.html
-    src/
-      pages/
-      data/
-      components/
-      services/
-
-  server/                     (product 전용 Express 서버, 독립 실행 환경)
-```
-
-`prototype/`, `project-intro/`, `product/`, `server/`는 각자 독립 실행 환경입니다. 서로 코드나 `node_modules`를 공유하지 않으며, 한쪽을 수정해도 다른 쪽 실행에 영향을 주지 않습니다.
-
-## 현재 구현 상태
-
-- CareerSignal 프로젝트 소개 React 화면
-- HTML/CSS 기반 정적 프로토타입 5페이지(직무 선택·통계 분석·인재상 역산·합격 조건·준비 로드맵)
-- 고정 상단바(STEP n/5), 오른쪽 글래스 목차, 반응형 본문 레이아웃
-- 통계·역산(baseline·편차·신뢰도)·합격 조건 체크리스트·4단계 로드맵 정보 구조
-- Vercel 정적 배포
-
-## 아직 구현하지 않은 범위
-
-- 실제 React 기반 직무 입력과 결과 상태 관리
-- mock job data 조회와 rule 기반 분석 로직
-- Express API, 실제 채용공고 수집, LLM API 연동
-- DB 저장, 로그인, 사용자 역량 기반 Gap 분석
-
-## 다음 단계
-
-1. `product/`에 5화면 React MVP와 상태 관리를 구현합니다.
-2. `server/`에 백엔드 샘플 공고·rule 통계·분석 API를 추가합니다.
-3. FastAPI·LangGraph 기반 역산 에이전트를 붙여 baseline 대비 편차·합격 조건·로드맵을 생성합니다.
+백엔드 직무는 최초 검증 범위입니다. 데이터·화면·에이전트 계약은 다른 디지털·기술 직무를 같은 구조로 추가할 수 있도록 직무 식별자를 입력으로 사용합니다. 세부 진행 상태와 3·4주차 범위는 [개발 백로그](docs/backlog.md)를 따릅니다.
