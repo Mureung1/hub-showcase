@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppShell } from '../../layouts/AppShell/AppShell';
 import { Card, Row, Button, WarningBanner } from '../../components';
 import text from '../../styles/text.module.css';
@@ -5,9 +7,12 @@ import styles from './ResultPage.module.css';
 import { useSchedule } from '../../context/ScheduleContext';
 import { buildDayPlans, buildSummary } from './formatSchedule';
 import { buildChartGeometry, VIEW_HEIGHT, VIEW_WIDTH, type ChartGeometry } from './buildChart';
+import { saveSchedule } from '../../storage/savedSchedules';
 
 export function ResultPage() {
   const { request, response } = useSchedule();
+  const navigate = useNavigate();
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // 계산 없이 주소로 직접 들어왔거나 새로고침한 경우 — 보관함이 비어 있으므로
   // 그리려다 크래시하지 않도록 안내만 띄운다(#18).
@@ -35,6 +40,18 @@ export function ResultPage() {
   const dailySchedule = buildDayPlans(response, request);
   const chartGeometry = buildChartGeometry(response, request);
 
+  // #19 — 이 브라우저에만 저장한다. 저장이 안 되더라도(시크릿 모드·용량 초과) 홈으로는
+  // 보내주되, 저장 안 됐다는 사실은 알려준다. 조용히 실패하면 나중에 기록이 없어서 당황한다.
+  function handleSave() {
+    if (request === null || response === null) return;
+    const { ok } = saveSchedule(request, response);
+    if (!ok) {
+      setSaveError('이 브라우저에 저장하지 못했어요. 저장 공간이 부족하거나 브라우저가 저장을 막고 있을 수 있어요.');
+      return;
+    }
+    navigate('/');
+  }
+
   return (
     <AppShell
       title="추천 스케줄"
@@ -42,10 +59,11 @@ export function ResultPage() {
       backTo="/input"
       footer={
         <>
+          {saveError !== null && <WarningBanner>{saveError}</WarningBanner>}
           <Button to="/adjust" variant="secondary">
             조건 조정하기
           </Button>
-          <Button to="/" variant="primary">
+          <Button variant="primary" onClick={handleSave}>
             저장하고 마치기
           </Button>
         </>
