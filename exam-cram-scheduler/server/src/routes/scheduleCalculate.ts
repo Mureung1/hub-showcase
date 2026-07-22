@@ -6,7 +6,7 @@ import { buildMultiDayCandidates } from "../calc/multiDayCandidates.js";
 import { searchMultiDaySchedule } from "../calc/multiDayLocalSearch.js";
 import { buildAlertnessTimeline } from "../calc/alertnessTimeline.js";
 import type { CaffeineDose } from "../calc/caffeineConcentration.js";
-import type { CaffeineSensitivity } from "../calc/sensitivityToHalfLife.js";
+import { applyOralContraceptive, type CaffeineSensitivity } from "../calc/sensitivityToHalfLife.js";
 import { buildExamTimeline } from "../timeline/examTimeline.js";
 import { fromContinuousCoordinate, toContinuousCoordinate } from "../timeline/kstTime.js";
 import { fetchDailyCaffeineLimitMg, fetchHalfLifeHours, type HealthProfile } from "../db/referenceData.js";
@@ -78,6 +78,10 @@ function validateRequestBody(body: unknown): { data: ScheduleCalculateRequestBod
   ) {
     return { error: "healthProfile(age, weightKg, pregnant, heartCondition, anxiety)이 올바르지 않습니다." };
   }
+  // 경구피임약은 선택 항목(남성 선택 시 화면에서 아예 안 보냄) — 오면 boolean이어야 한다.
+  if (hp.oralContraceptive !== undefined && typeof hp.oralContraceptive !== "boolean") {
+    return { error: "healthProfile.oralContraceptive는 true/false여야 합니다." };
+  }
 
   const todayCaffeineIntakes = Array.isArray(b.todayCaffeineIntakes) ? b.todayCaffeineIntakes : [];
   for (const intake of todayCaffeineIntakes as Record<string, unknown>[]) {
@@ -136,6 +140,9 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
     res.status(500).json({ error: (err as Error).message });
     return;
   }
+
+  // 민감도로 정해진 반감기에 경구피임약 보정을 곱한다(#16, 2026-07-22 결정).
+  halfLifeHours = applyOralContraceptive(halfLifeHours, healthProfile.oralContraceptive);
 
   // #22 — night[k]가 이어지는 날(day k+1)에 시험이 있으면, 그 시험 시작 시각보다
   // 늦게 깨는 기상 후보는 애초에 말이 안 되므로 latestWakeTime으로 걸러낸다.
