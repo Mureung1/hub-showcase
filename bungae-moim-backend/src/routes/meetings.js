@@ -1,8 +1,8 @@
 const express = require('express');
 const requireAuth = require('../middleware/auth');
-const { validateCreateMeeting } = require('../utils/validators');
+const { validateCreateMeeting, validateRespondStatus } = require('../utils/validators');
 const ApiError = require('../utils/apiError');
-const { createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation } = require('../services/meetingService');
+const { createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation, listParticipants, respondToApplicant } = require('../services/meetingService');
 
 const router = express.Router();
 
@@ -11,12 +11,13 @@ const router = express.Router();
 // 실려 Postgres bigint 범위 초과 에러(500 + 원문 노출)로 이어지므로 미리 끊어둔다.
 const MAX_PAGE = 100000;
 
-// :id 파라미터를 안전한 양의 정수로 파싱한다. 아니면 없는 모임 취급(404).
-// parseInt는 "1abc"→1처럼 뒷부분을 조용히 버려 엉뚱한 모임을 반환하고, 안전 정수 범위를
+// 경로 파라미터를 안전한 양의 정수로 파싱한다. 아니면 없는 리소스 취급(404).
+// parseInt는 "1abc"→1처럼 뒷부분을 조용히 버려 엉뚱한 대상을 반환하고, 안전 정수 범위를
 // 넘는 값은 Postgres bigint 초과 에러(500+원문 노출)로 이어지므로 정규식+범위로 먼저 막는다.
-function parseMeetingId(rawId) {
+// message를 받는 이유: :id와 :userId가 같은 규칙을 쓰지만 안내 문구는 달라야 하기 때문이다.
+function parseIdParam(rawId, message = '모임을 찾을 수 없습니다') {
   if (!/^\d+$/.test(rawId) || Number(rawId) > Number.MAX_SAFE_INTEGER || Number(rawId) <= 0) {
-    throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
+    throw new ApiError('NOT_FOUND', message);
   }
   return Number(rawId);
 }
@@ -68,7 +69,7 @@ router.post('/', requireAuth, async (req, res, next) => {
 // GET /api/meetings/:id — 상세 조회 (인증 불필요, 로그인 시 myParticipation/openChatUrl이 개인화됨)
 router.get('/:id', async (req, res, next) => {
   try {
-    const id = parseMeetingId(req.params.id);
+    const id = parseIdParam(req.params.id);
 
     const meeting = await getMeetingDetail(id, req.session.userId ?? null);
     if (!meeting) {
@@ -84,7 +85,7 @@ router.get('/:id', async (req, res, next) => {
 // POST /api/meetings/:id/apply — 참여 신청(F1, 로그인 필요)
 router.post('/:id/apply', requireAuth, async (req, res, next) => {
   try {
-    const id = parseMeetingId(req.params.id);
+    const id = parseIdParam(req.params.id);
     const result = await applyToMeeting(id, req.session.userId);
     res.status(201).json({ data: result });
   } catch (err) {
@@ -95,8 +96,35 @@ router.post('/:id/apply', requireAuth, async (req, res, next) => {
 // DELETE /api/meetings/:id/apply — 참여/신청 취소(F2, 로그인 필요)
 router.delete('/:id/apply', requireAuth, async (req, res, next) => {
   try {
-    const id = parseMeetingId(req.params.id);
+    const id = parseIdParam(req.params.id);
     const result = await cancelParticipation(id, req.session.userId);
+    res.json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/meetings/:id/participants — 신청자 목록(F3, 모임장만)
+router.get('/:id/participants', requireAuth, async (req, res, next) => {
+  try {
+    const id = parseIdParam(req.params.id);
+    const result = await listParticipants(id, req.session.userId);
+    res.json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/meetings/:id/participants/:userId — 승인/거절(F4, 모임장만·소모임만)
+router.patch('/:id/participants/:userId', requireAuth, async (req, res, next) => {
+  try {
+    // 본문 검증을 먼저 한다. 잘못된 본문이 FORBIDDEN보다 먼저 걸리므로 남의 모임
+    // 존재 여부가 덜 새어나간다.
+    const status = validateRespondStatus(req.body);
+    const id = parseIdParam(req.params.id);
+    const targetUserId = parseIdParam(req.params.userId, '신청을 찾을 수 없습니다');
+
+    const result = await respondToApplicant(id, req.session.userId, targetUserId, status);
     res.json({ data: result });
   } catch (err) {
     next(err);

@@ -63,7 +63,7 @@ export default function MyPage() {
 
       {hostedMeetings.map((m) => {
         const status = meetingStatusMeta(m.status)
-        const pending = getPendingApplicants(m)
+        const pending = getPendingApplicants(m.participants)
         return (
           <Link key={m.id} to={`/meetings/${m.id}`} className="meeting-card">
             <div className="meeting-card-top">

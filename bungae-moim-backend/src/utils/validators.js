@@ -3,11 +3,34 @@ const ApiError = require('./apiError');
 // 카카오 오픈채팅 링크 패턴만 검증한다 (기획서 11번 — 그 이상 유효성은 확인하지 않음).
 const OPEN_CHAT_URL_PATTERN = /^https?:\/\/open\.kakao\.com\//;
 
+// 마이그레이션의 varchar 한도와 같은 값을 앱에서도 강제한다. 앱이 먼저 막지 않으면
+// Postgres가 거절하면서 500 + DB 에러 원문("character varying(100) 자료형에 너무 긴
+// 자료를...")이 그대로 클라이언트까지 나간다. 컬럼 길이를 바꾸면 여기도 같이 바꿔야 한다.
+// (open_chat_url·description은 text라 한도가 없으므로 목록에 없다.)
+const MAX_LENGTHS = {
+  title: 100,
+  category: 30,
+  regionSido: 20,
+  regionSigungu: 20,
+  regionEupmyeondong: 20,
+};
+
+function checkMaxLength(value, field) {
+  const max = MAX_LENGTHS[field];
+  // 문자 수로 센다. JS의 .length는 UTF-16 코드유닛 수라서 이모지 같은 서로게이트 페어를
+  // 2로 세는데, Postgres varchar(n)은 코드포인트를 1로 센다. .length로 재면 사용자가 보기엔
+  // 60자인 제목이 "100자 초과"로 거절된다. 전개 연산자는 코드포인트 단위로 쪼갠다.
+  if (max !== undefined && [...value].length > max) {
+    throw new ApiError('VALIDATION_ERROR', `${field}는(은) ${max}자를 넘을 수 없습니다`);
+  }
+  return value;
+}
+
 function requireString(value, field) {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new ApiError('VALIDATION_ERROR', `${field}는(은) 필수입니다`);
   }
-  return value.trim();
+  return checkMaxLength(value.trim(), field);
 }
 
 // POST /api/meetings 요청 본문을 검증하고, DB에 넣을 정규화된 값으로 변환한다.
@@ -62,7 +85,7 @@ function validateCreateMeeting(body = {}) {
     regionSigungu,
     regionEupmyeondong:
       typeof body.regionEupmyeondong === 'string' && body.regionEupmyeondong.trim() !== ''
-        ? body.regionEupmyeondong.trim()
+        ? checkMaxLength(body.regionEupmyeondong.trim(), 'regionEupmyeondong')
         : null,
     startAt,
     endAt,
@@ -97,4 +120,21 @@ function validateBirthDate(body = {}) {
   return value;
 }
 
-module.exports = { validateCreateMeeting, validateBirthDate, OPEN_CHAT_URL_PATTERN };
+// PATCH /api/meetings/:id/participants/:userId 의 본문 검증(F4).
+// pending으로 되돌리는 것은 허용하지 않는다 — 승인/거절은 단방향이다(설계서 D5).
+const RESPOND_STATUSES = ['approved', 'rejected'];
+
+function validateRespondStatus(body) {
+  const status = body && body.status;
+  if (!RESPOND_STATUSES.includes(status)) {
+    throw new ApiError('VALIDATION_ERROR', 'status는 approved 또는 rejected여야 합니다');
+  }
+  return status;
+}
+
+module.exports = {
+  validateCreateMeeting,
+  validateBirthDate,
+  validateRespondStatus,
+  OPEN_CHAT_URL_PATTERN,
+};

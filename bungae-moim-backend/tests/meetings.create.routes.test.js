@@ -126,4 +126,67 @@ describe('POST /api/meetings', () => {
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
+
+  // 길이 검증이 없으면 Postgres가 "character varying(100) 자료형에 너무 긴 자료를..."로
+  // 거절하고, 그게 500 + DB 에러 원문 노출로 나간다(실제로 재현됨). 컬럼 제약과 같은
+  // 한도를 앱에서 먼저 확인해 400으로 돌려줘야 한다.
+  it('title이 100자를 넘으면 400 VALIDATION_ERROR', async () => {
+    const agent = await loginAgent('host-len1');
+    const res = await agent.post('/api/meetings').send({ ...validFlashBody, title: '가'.repeat(101) });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('title이 정확히 100자면 정상 등록된다(경계값)', async () => {
+    const agent = await loginAgent('host-len2');
+    const res = await agent.post('/api/meetings').send({ ...validFlashBody, title: '가'.repeat(100) });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.title).toHaveLength(100);
+  });
+
+  // 길이는 JS의 .length(UTF-16 코드유닛)가 아니라 문자 수로 세야 한다. 이모지 같은
+  // 서로게이트 페어는 JS에서 2로 세지만 Postgres varchar(n)은 1로 센다. 코드유닛으로 세면
+  // 사용자가 보기엔 60자인 제목이 "100자 초과"로 거절된다(실제로 재현됨).
+  it('이모지 60자 제목은 등록된다(varchar(100)에 들어가므로)', async () => {
+    const agent = await loginAgent('host-emoji1');
+    const res = await agent.post('/api/meetings').send({ ...validFlashBody, title: '🎉'.repeat(60) });
+
+    expect(res.status).toBe(201);
+  });
+
+  it('이모지 101자 제목은 400(문자 수로 세도 한도를 넘으므로)', async () => {
+    const agent = await loginAgent('host-emoji2');
+    const res = await agent.post('/api/meetings').send({ ...validFlashBody, title: '🎉'.repeat(101) });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('category가 30자를 넘으면 400 VALIDATION_ERROR', async () => {
+    const agent = await loginAgent('host-len3');
+    const res = await agent.post('/api/meetings').send({ ...validFlashBody, category: '가'.repeat(31) });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('지역 값이 20자를 넘으면 400 VALIDATION_ERROR', async () => {
+    const agent = await loginAgent('host-len4');
+    const res = await agent.post('/api/meetings').send({ ...validFlashBody, regionSigungu: '가'.repeat(21) });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('regionEupmyeondong(선택 항목)도 20자를 넘으면 400', async () => {
+    const agent = await loginAgent('host-len5');
+    const res = await agent
+      .post('/api/meetings')
+      .send({ ...validFlashBody, regionEupmyeondong: '가'.repeat(21) });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
 });

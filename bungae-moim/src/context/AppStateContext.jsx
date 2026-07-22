@@ -83,13 +83,6 @@ export function AppStateProvider({ children }) {
       setMeetings((prev) => prev.map((m) => (m.id === id ? updater(m) : m)))
     }
 
-    function respondToApplicant(meetingId, userId, decision) {
-      updateMeeting(meetingId, (meeting) => ({
-        ...meeting,
-        participants: meeting.participants.map((p) => (p.userId === userId ? { ...p, status: decision } : p)),
-      }))
-    }
-
     function cancelMeeting(meetingId) {
       updateMeeting(meetingId, (meeting) => ({
         ...meeting,
@@ -131,7 +124,6 @@ export function AppStateProvider({ children }) {
       login,
       logout,
       saveBirthDate,
-      respondToApplicant,
       cancelMeeting,
     }
   }, [meetings, currentUser, isLoggedIn, authLoading, authError])

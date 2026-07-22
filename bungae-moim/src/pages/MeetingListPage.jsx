@@ -31,6 +31,9 @@ export default function MeetingListPage() {
   const [debouncedKeyword, setDebouncedKeyword] = useState('')
 
   const [items, setItems] = useState([])
+  // 조건에 맞는 전체 건수. items는 한 페이지(20건)로 잘리므로 개수 표시에 items.length를
+  // 쓰면 21건부터 실제보다 작게 나온다(명세서 GET /api/meetings 항목의 경고 그대로).
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -58,6 +61,7 @@ export default function MeetingListPage() {
       .then((data) => {
         if (!active) return
         setItems(data.items)
+        setTotal(data.total)
         setLoading(false)
       })
       .catch((err) => {
@@ -138,7 +142,10 @@ export default function MeetingListPage() {
 
       {!loading && !error && (
         <>
-          <div className="eyebrow">{items.length}개의 모임</div>
+          <div className="eyebrow">
+            {total}개의 모임
+            {total > items.length && ` · ${items.length}개 표시 중`}
+          </div>
 
           {items.length === 0 && (
             <Card variant="solid">

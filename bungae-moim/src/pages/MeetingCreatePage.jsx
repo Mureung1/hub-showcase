@@ -116,6 +116,9 @@ export default function MeetingCreatePage() {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="예: 오늘 저녁 풋살 4명 모집"
               required
+              /* 서버 검증(=DB 컬럼 varchar(100))과 같은 한도. 여기서 막아야 사용자가
+                 다 입력하고 제출한 뒤에야 거절당하는 일이 없다. */
+              maxLength={100}
             />
           </div>
 

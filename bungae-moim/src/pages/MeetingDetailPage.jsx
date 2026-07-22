@@ -8,8 +8,14 @@ import StatusPill from '../components/StatusPill.jsx'
 import TrustBadge from '../components/TrustBadge.jsx'
 import { meetingStatusMeta, participationStatusMeta, blockReasonLabel } from '../utils/status.js'
 import { formatMeetingSchedule } from '../utils/date.js'
-import { getPendingApplicants } from '../utils/meetings.js'
-import { fetchMeeting, applyToMeeting, cancelParticipation } from '../api/meetings.js'
+import { getPendingApplicants, countActiveApplicants } from '../utils/meetings.js'
+import {
+  fetchMeeting,
+  applyToMeeting,
+  cancelParticipation,
+  fetchParticipants,
+  respondToApplicant,
+} from '../api/meetings.js'
 
 export default function MeetingDetailPage() {
   const { id } = useParams()
@@ -18,7 +24,6 @@ export default function MeetingDetailPage() {
     currentUser,
     isLoggedIn,
     authLoading,
-    respondToApplicant,
     cancelMeeting,
   } = useAppState()
 
@@ -32,6 +37,12 @@ export default function MeetingDetailPage() {
   const [reloadKey, setReloadKey] = useState(0)
 
   const [actionError, setActionError] = useState(null)
+  const [participants, setParticipants] = useState([])
+  const [participantsError, setParticipantsError] = useState(null)
+  const [participantsReloadKey, setParticipantsReloadKey] = useState(0)
+  // 승인 응답을 기다리는 동안 그 사람의 버튼 두 개를 모두 잠근다. 승인 직후 거절이 눌리면
+  // 두 번째 요청이 "이미 처리된 신청입니다"로 실패해 사용자에게 혼란스러운 에러가 뜬다.
+  const [respondingUserId, setRespondingUserId] = useState(null)
 
   // 신청/취소는 서버에 반영한 뒤 reloadKey를 올려 상세를 재조회한다. 번개모임은 신청 즉시
   // confirmed가 되어 openChatUrl이 새로 내려오므로 재조회가 필수다.
@@ -52,6 +63,32 @@ export default function MeetingDetailPage() {
       setReloadKey((k) => k + 1)
     } catch (err) {
       setActionError(err.message)
+    }
+  }
+
+  // 아래 effect가 Hooks 규칙을 지키려면 조기 return(로딩/에러)보다 위에서 계산해야 한다.
+  // meeting이 아직 null일 수 있으므로 가드가 필수다. currentUser는 비로그인일 때
+  // GUEST_USER(id: null)가 들어오도록 Context가 이미 방어하고 있어 가드가 필요 없다.
+  const isHost = meeting ? meeting.host.id === currentUser.id : false
+
+  // 승인/거절(F4). 성공하면 신청자 목록과 상세를 모두 재조회한다 — 상세의 confirmedCount가
+  // approved를 세므로 승인하면 값이 달라진다.
+  async function handleRespond(userId, status) {
+    setRespondingUserId(userId)
+    try {
+      await respondToApplicant(id, userId, status)
+      setParticipantsReloadKey((k) => k + 1)
+      setReloadKey((k) => k + 1)
+    } catch (err) {
+      // 알림창으로 띄운다. 이 실패는 모임장이 방금 누른 버튼에 대한 답이라 놓치면 안 되는데,
+      // 카드 안 문구로 두면 신청자 목록 아래에 작게 붙어 클릭 지점에서 멀고 눈에 안 띈다.
+      window.alert(err.message)
+      // 실패 원인이 대부분 "그 사이 신청자 상태가 바뀜"(예: 신청자가 방금 취소)이라,
+      // 신청자 목록을 서버 진실로 다시 맞춰야 모임장이 낡은 화면을 보고 같은 버튼을
+      // 반복해서 누르는 걸 막는다.
+      setParticipantsReloadKey((k) => k + 1)
+    } finally {
+      setRespondingUserId(null)
     }
   }
 
@@ -85,6 +122,35 @@ export default function MeetingDetailPage() {
       cancelled = true
     }
   }, [id, authLoading, isLoggedIn, reloadKey])
+
+  // 신청자 목록(F3)은 모임장에게만, 소모임에서만 필요하다. 상세가 로드돼야 모임장 여부를
+  // 알 수 있으므로 meeting을 기다린다.
+  // deps에 meeting 객체 대신 id/type을 쓰는 이유: 승인 후 상세를 재조회하면 객체 정체성이
+  // 바뀌는데, 객체를 넣으면 신청자 목록을 불필요하게 한 번 더 조회하게 된다.
+  useEffect(() => {
+    if (!isHost || meeting?.type !== 'small') {
+      setParticipants([])
+      return
+    }
+
+    let cancelled = false
+    setParticipantsError(null)
+
+    fetchParticipants(id)
+      .then((data) => {
+        if (cancelled) return
+        setParticipants(data.items)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        // 목록 조회 실패로 상세 페이지 전체를 에러 화면으로 만들지 않는다. 카드 안에만 알린다.
+        setParticipantsError(err.message)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [id, isHost, meeting?.type, participantsReloadKey])
 
   if (loading) {
     return (
@@ -122,8 +188,7 @@ export default function MeetingDetailPage() {
   const status = meetingStatusMeta(meeting.status)
   const confirmedCount = meeting.confirmedCount
   const myParticipation = meeting.myParticipation
-  const pendingApplicants = getPendingApplicants(meeting)
-  const isHost = meeting.host.id === currentUser.id
+  const pendingApplicants = getPendingApplicants(participants)
   const isEnded = meeting.status === 'finished' || meeting.status === 'cancelled'
   // 서버가 openChatUrl을 내려줬다는 것 자체가 "볼 자격이 있다"는 뜻이다(E3에서 판단).
   const canSeeOpenChat = Boolean(meeting.openChatUrl)
@@ -188,12 +253,22 @@ export default function MeetingDetailPage() {
           {meeting.type === 'small' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cream-mute)' }}>
-                신청자 {(meeting.participants ?? []).length}명 · 대기중 {pendingApplicants.length}명
+                신청자 {countActiveApplicants(participants)}명 · 대기중 {pendingApplicants.length}명
               </span>
-              {(meeting.participants ?? []).length === 0 && (
+
+              {participantsError && (
+                <span style={{ fontSize: 13, color: 'var(--cream-mute)' }}>
+                  신청자 목록을 불러오지 못했어요. {participantsError}
+                </span>
+              )}
+
+              {/* 빈 상태는 목록 자체가 비었을 때만. 위 카운트는 취소·거절을 빼므로,
+                  카운트 기준으로 판단하면 "신청자가 없어요" 아래에 사람이 깔린다. */}
+              {!participantsError && participants.length === 0 && (
                 <span style={{ fontSize: 13, color: 'var(--cream-mute)' }}>아직 신청자가 없어요.</span>
               )}
-              {(meeting.participants ?? []).map((p) => {
+
+              {participants.map((p) => {
                 const meta = participationStatusMeta(p.status)
                 return (
                   <div
@@ -216,14 +291,16 @@ export default function MeetingDetailPage() {
                         <PillButton
                           variant="accent"
                           size="sm"
-                          onClick={() => respondToApplicant(meeting.id, p.userId, 'approved')}
+                          disabled={respondingUserId === p.userId}
+                          onClick={() => handleRespond(p.userId, 'approved')}
                         >
                           승인
                         </PillButton>
                         <PillButton
                           variant="ghost"
                           size="sm"
-                          onClick={() => respondToApplicant(meeting.id, p.userId, 'rejected')}
+                          disabled={respondingUserId === p.userId}
+                          onClick={() => handleRespond(p.userId, 'rejected')}
                         >
                           거절
                         </PillButton>
@@ -234,6 +311,7 @@ export default function MeetingDetailPage() {
                   </div>
                 )
               })}
+
             </div>
           )}
 

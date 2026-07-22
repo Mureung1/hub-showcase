@@ -111,4 +111,49 @@ describe('DELETE /api/meetings/:id/apply', () => {
     expect(res.status).toBe(404);
     expect(await trustScore(userId)).toBe(afterFirst); // 더 안 깎임
   });
+
+  // 이미 끝난 모임은 취소할 수 없다. 지난 모임을 "취소"한다는 게 말이 안 되기도 하지만,
+  // 신뢰도 개편 설계(2026-07-22-신뢰도-알고리즘-design.md 6.3)의 선행 조건이기도 하다 —
+  // 종료 후 취소가 되면 status가 cancelled로 바뀌어 평가 대상에서 빠지므로,
+  // 노쇼한 사람이 취소를 눌러 노쇼 감점을 회피하는 경로가 열린다.
+  it('종료된 모임은 취소할 수 없다(400)', async () => {
+    const host = await createUser('cancel-h9');
+    const meetingId = await insertMeeting(host, { startAt: '2020-01-01T10:00:00+09:00' });
+    const { agent, userId } = await loginAgent('cancel-u9');
+    await insertParticipant(meetingId, userId, 'confirmed');
+
+    const res = await agent.delete(`/api/meetings/${meetingId}/apply`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('종료된 모임 취소 시도는 신뢰도를 깎지 않고 상태도 그대로 둔다', async () => {
+    const host = await createUser('cancel-h10');
+    const meetingId = await insertMeeting(host, { startAt: '2020-01-01T10:00:00+09:00' });
+    const { agent, userId } = await loginAgent('cancel-u10');
+    await insertParticipant(meetingId, userId, 'confirmed');
+    const before = await trustScore(userId);
+
+    await agent.delete(`/api/meetings/${meetingId}/apply`);
+
+    expect(await trustScore(userId)).toBe(before);
+    expect(await participantStatus(meetingId, userId)).toBe('confirmed');
+  });
+
+  // 소모임은 end_at이 기준이다. 시작은 지났지만 아직 진행 중인 모임은 취소할 수 있어야 한다.
+  it('시작은 지났지만 아직 끝나지 않은 소모임은 취소할 수 있다', async () => {
+    const host = await createUser('cancel-h11');
+    const meetingId = await insertMeeting(host, {
+      type: 'small', capacity: null,
+      startAt: '2020-01-01T10:00:00+09:00', endAt: '2030-12-31T10:00:00+09:00',
+    });
+    const { agent, userId } = await loginAgent('cancel-u11');
+    await insertParticipant(meetingId, userId, 'approved');
+
+    const res = await agent.delete(`/api/meetings/${meetingId}/apply`);
+
+    expect(res.status).toBe(200);
+    expect(await participantStatus(meetingId, userId)).toBe('cancelled');
+  });
 });

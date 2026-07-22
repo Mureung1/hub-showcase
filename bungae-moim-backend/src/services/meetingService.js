@@ -328,10 +328,24 @@ async function applyToMeeting(meetingId, userId) {
 // 이미 cancelled/rejected거나 신청이 없으면 아무 것도 하지 않는다(이중취소 감점 방지).
 async function cancelParticipation(meetingId, userId) {
   return withTransaction(async (client) => {
-    const meetingRes = await client.query('SELECT * FROM meetings WHERE id = $1 FOR UPDATE', [meetingId]);
+    // is_past는 신청(F1)과 똑같이 DB 시계로 계산한다 — JS Date로 다시 비교하면 목록과 어긋난다.
+    const meetingRes = await client.query(
+      `SELECT *, COALESCE(end_at, start_at) < now() AS is_past
+         FROM meetings WHERE id = $1 FOR UPDATE`,
+      [meetingId]
+    );
     if (meetingRes.rows.length === 0) {
       throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
     }
+
+    // 이미 끝난 모임은 취소할 수 없다. 지난 모임을 "취소"한다는 게 성립하지 않기도 하지만,
+    // 더 중요하게는 취소가 status를 cancelled로 바꿔 평가 대상에서 빼기 때문이다 —
+    // 가드가 없으면 노쇼한 사람이 모임 끝난 뒤 취소를 눌러 노쇼 감점을 회피할 수 있다
+    // (신뢰도 개편 설계 6.3). 참여자 상태 확인보다 먼저 막아 어느 상태든 동일하게 거절한다.
+    if (meetingRes.rows[0].is_past) {
+      throw new ApiError('VALIDATION_ERROR', '이미 종료된 모임입니다');
+    }
+
     const meeting = normalizeMeeting(meetingRes.rows[0]);
 
     const partRes = await client.query(
@@ -365,6 +379,95 @@ async function cancelParticipation(meetingId, userId) {
   });
 }
 
+// GET /api/meetings/:id/participants — 신청자 목록(F3). 모임장만 볼 수 있다.
+// 타입 제한은 없다 — 조회는 부작용이 없고 flash 모임장도 참여자를 알아야 하기 때문이다.
+// 모든 상태(pending/approved/rejected/cancelled)를 그대로 준다. 승인·거절 결과가 목록에
+// 남아야 모임장이 자기 행동의 결과를 확인할 수 있다.
+async function listParticipants(meetingId, viewerId) {
+  const meetingRes = await pool.query('SELECT host_id FROM meetings WHERE id = $1', [meetingId]);
+  if (meetingRes.rows.length === 0) {
+    throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
+  }
+
+  // host_id는 bigint라 pg가 문자열("5")로 준다. 세션의 userId는 숫자다(userService가
+  // Number로 정규화해 넣는다). 양쪽을 Number로 맞추지 않으면 "5" !== 5가 항상 참이 되어
+  // 모임장 본인까지 전원 FORBIDDEN이 된다.
+  if (Number(meetingRes.rows[0].host_id) !== Number(viewerId)) {
+    throw new ApiError('FORBIDDEN', '모임장만 신청자 목록을 볼 수 있습니다');
+  }
+
+  // applied_at 동률에서 Postgres는 순서를 보장하지 않는다. user_id tiebreak가 없으면
+  // 같은 요청이 매번 다른 순서를 줄 수 있고, 나중에 페이징을 붙이면 경계에서 행이 새거나 겹친다.
+  const { rows } = await pool.query(
+    `SELECT p.user_id, u.nickname, u.trust_score, p.status, p.applied_at, p.responded_at
+       FROM meeting_participants p
+       JOIN users u ON u.id = p.user_id
+      WHERE p.meeting_id = $1
+      ORDER BY p.applied_at ASC, p.user_id ASC`,
+    [meetingId]
+  );
+
+  return {
+    items: rows.map((row) => ({
+      // user_id는 bigint, trust_score는 numeric — 둘 다 문자열로 오므로 여기서 숫자로 되돌린다.
+      userId: Number(row.user_id),
+      nickname: row.nickname,
+      trustScore: Number(row.trust_score),
+      status: row.status,
+      appliedAt: row.applied_at,
+      respondedAt: row.responded_at,
+    })),
+  };
+}
+
+// PATCH /api/meetings/:id/participants/:userId — 승인/거절(F4). 소모임에서 모임장만.
+// 소모임은 capacity가 NULL(무제한)이라 정원 검사가 필요 없다 — 승인이 정원을 넘길 수 없다.
+async function respondToApplicant(meetingId, hostId, targetUserId, status) {
+  const meetingRes = await pool.query('SELECT host_id, type FROM meetings WHERE id = $1', [meetingId]);
+  if (meetingRes.rows.length === 0) {
+    throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
+  }
+  const row = meetingRes.rows[0];
+
+  // host_id는 bigint라 문자열로 온다 — Number로 맞추지 않으면 모임장 본인도 막힌다.
+  if (Number(row.host_id) !== Number(hostId)) {
+    throw new ApiError('FORBIDDEN', '모임장만 신청을 처리할 수 있습니다');
+  }
+  if (row.type !== 'small') {
+    throw new ApiError('VALIDATION_ERROR', '소모임에서만 승인/거절할 수 있습니다');
+  }
+
+  // 상태 확인과 갱신을 한 문장에 담는다. 그래서 F1/F2와 달리 트랜잭션·FOR UPDATE가 필요 없다 —
+  // 같은 신청을 동시에 두 번 처리해도 두 번째 UPDATE는 0 rows가 되어 아래 분기로 떨어진다.
+  //
+  // WHERE status = 'pending' 때문에 승인 철회(approved → rejected)는 불가능하다. 이걸 열려면
+  // 확정 참여자를 강제로 내보내는 셈이므로, 먼저 신뢰도 감점 여부(F2는 본인 취소에 -3)와
+  // flash 재오픈 대상인지를 정해야 한다. 조건만 넓히면 정책 없이 동작이 생긴다.
+  const updated = await pool.query(
+    `UPDATE meeting_participants
+        SET status = $3, responded_at = now()
+      WHERE meeting_id = $1 AND user_id = $2 AND status = 'pending'
+     RETURNING status`,
+    [meetingId, targetUserId, status]
+  );
+
+  if (updated.rowCount === 0) {
+    // 0 rows인 이유가 "신청이 없어서"인지 "이미 처리돼서"인지를 여기서만 구분한다.
+    // 이 조회는 에러 메시지를 고르기 위한 것이라, 그 사이 상태가 또 바뀌어도 데이터는 이미 안전하다.
+    const existing = await pool.query(
+      'SELECT status FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, targetUserId]
+    );
+    if (existing.rows.length === 0) {
+      throw new ApiError('NOT_FOUND', '신청을 찾을 수 없습니다');
+    }
+    throw new ApiError('VALIDATION_ERROR', '이미 처리된 신청입니다');
+  }
+
+  return { userId: targetUserId, status: updated.rows[0].status };
+}
+
 module.exports = {
-  createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation, normalizeMeeting, PAGE_SIZE,
+  createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation,
+  listParticipants, respondToApplicant, normalizeMeeting, PAGE_SIZE,
 };
