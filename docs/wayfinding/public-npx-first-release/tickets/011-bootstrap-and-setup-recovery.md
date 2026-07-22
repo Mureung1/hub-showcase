@@ -8,7 +8,7 @@
 
 ## Question
 
-[Ticket 006](006-npx-production-composition.md)의 foreground supervisor, `appDataRoot` 단위 single-instance lease와 signal cleanup을 process-level baseline으로 두고 duplicate process ownership을 다시 정하지 않는다. Download·cache·OAuth·workspace setup과 `Semester Ready` 사이에서 CLI interrupt, browser close, Server·Runtime loss와 반복 `npx` 실행이 발생해도 성공을 합성하거나 app-owned workspace를 불완전하게 남기지 않으려면 어떤 identity·version·digest·operation receipt를 어디에 기록해야 하는가? First-run 뒤 같은 명령이 exact Runtime cache·격리 OAuth session·workspace registry를 재사용하고 `WorkspaceManifest` validation 뒤 setup wizard 없이 workbench를 여는 `ready-relaunch`를 보장하려면 resume, already-ready, corrupt-cache repair, setup conflict, recovery-required와 App-owned artifact rollback을 어떤 observable contract로 구분해야 하는가?
+[Ticket 006](006-npx-production-composition.md)의 foreground supervisor, `appDataRoot` 단위 single-instance lease와 signal cleanup을 process-level baseline으로 두고 duplicate process ownership을 다시 정하지 않는다. [Ticket 007](007-runtime-release-delivery-integrity.md)의 `RuntimeResolver`가 download·cache receipt·complete-tree reuse·corrupt generation repair·Runtime recovery-required를 전부 소유하므로 이 ticket은 그 내부 transaction을 다시 정하지 않는다. Resolver outcome, OAuth와 workspace setup부터 `Semester Ready` 사이에서 CLI interrupt, browser close, Server·Runtime loss와 반복 `npx` 실행이 발생해도 성공을 합성하거나 app-owned workspace를 불완전하게 남기지 않으려면 어떤 identity·version·digest·operation receipt를 어디에 기록해야 하는가? First-run 뒤 같은 명령이 exact Runtime cache·격리 OAuth session·workspace registry를 재사용하고 `WorkspaceManifest` validation 뒤 setup wizard 없이 workbench를 여는 `ready-relaunch`를 보장하려면 resume, already-ready, resolver failure passthrough·retry, setup conflict, recovery-required와 App-owned artifact rollback을 어떤 observable contract로 구분해야 하는가?
 
 ## Answer
 

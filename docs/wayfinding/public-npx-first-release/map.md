@@ -39,6 +39,7 @@ Node와 npm이 설치된 supported macOS arm64에서 repository·system Python·
 - [첫 public preview의 성공 여정을 고정한다](tickets/004-first-public-preview-success-journey.md) — 공식 Landing·public `npx`·ChatGPT browser OAuth·app-owned SemesterWorkspace scaffold·`Semester Ready`를 첫 여정으로, `ready-relaunch`를 별도 필수 gate로 고정하고 자료 import·학업 action을 post-Ready 범위로 분리했다.
 - [Public repository authority와 license를 확정한다](tickets/005-public-repository-authority-and-license.md) — Reviewed clean snapshot, pre/post-Demo canonical cutover, Apache-2.0 first-party license와 fail-closed public trust·export 경계를 고정했다.
 - [npx production composition을 고른다](tickets/006-npx-production-composition.md) — Public `ay-ple` package/bin 하나가 prebuilt UI·Server를 foreground Node host 하나로 실행하고, dynamic loopback same-origin listener·single instance·bounded Runtime cleanup을 소유하도록 고정했다.
+- [Runtime release delivery·integrity·versioning을 정한다](tickets/007-runtime-release-delivery-integrity.md) — Exact npm package의 embedded descriptor가 deterministic GitHub Runtime asset 하나를 pin하고, 단일 `RuntimeResolver`가 complete-tree verification·content-addressed cache·resume·retained-archive offline repair를 fail closed하게 소유하며 rollback 단위를 still-supported 이전 exact app release로 제한했다.
 
 ## Not yet specified
 
