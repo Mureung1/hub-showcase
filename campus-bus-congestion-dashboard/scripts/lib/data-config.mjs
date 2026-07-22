@@ -47,7 +47,7 @@ export const DIRECTIONAL_CAMPUS_CONFIGS = Object.freeze({
     route: ['osm-node-357899513', 'osm-node-357899388', 'osm-node-11560054597'],
     directions: {
       a: { endpointStopId: 'osm-node-357899513', label: '서울대입구역 방향' },
-      c: { endpointStopId: 'osm-node-11560054597', label: '기숙사삼거리 방향' },
+      c: { endpointStopId: 'osm-node-11560054597', label: '관악사삼거리 방향' },
     },
   },
   'jnu-yongbong': {

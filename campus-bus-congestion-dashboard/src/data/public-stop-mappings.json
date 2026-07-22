@@ -55,7 +55,7 @@
       ],
       "directions": {
         "a": { "endpointStopId": "osm-node-357899513", "label": "서울대입구역 방향" },
-        "c": { "endpointStopId": "osm-node-11560054597", "label": "기숙사삼거리 방향" }
+        "c": { "endpointStopId": "osm-node-11560054597", "label": "관악사삼거리 방향" }
       }
     },
     "jnu-yongbong": {
@@ -637,16 +637,22 @@
       "campusId": "snu-gwanak",
       "ctpvCd": "11",
       "sggCd": "11620",
-      "sttnId": "9010560",
-      "sourceName": "기숙사삼거리",
+      "sttnId": "0071957",
+      "sourceName": "관악사삼거리",
       "matchedBy": "manual",
       "verifiedAt": "2026-07-22T12:00:00.000Z",
       "directions": {
-        "c": {
-          "sttnId": "9010560",
-          "sourceName": "기숙사삼거리",
+        "a": {
+          "sttnId": "0071957",
+          "sourceName": "관악사삼거리",
           "matchedBy": "manual",
-          "verifiedAt": "2026-07-22T14:00:00.000Z"
+          "verifiedAt": "2026-07-23T00:00:00.000Z"
+        },
+        "c": {
+          "sttnId": "0070672",
+          "sourceName": "관악사삼거리",
+          "matchedBy": "manual",
+          "verifiedAt": "2026-07-23T00:00:00.000Z"
         }
       }
     },
