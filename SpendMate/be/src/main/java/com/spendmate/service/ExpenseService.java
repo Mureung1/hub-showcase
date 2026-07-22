@@ -1,10 +1,14 @@
 package com.spendmate.service;
 
+import com.spendmate.domain.Budget;
 import com.spendmate.domain.Category;
 import com.spendmate.domain.Expense;
 import com.spendmate.domain.ExpenseInputType;
+import com.spendmate.domain.Subscription;
 import com.spendmate.domain.User;
+import com.spendmate.repository.BudgetRepository;
 import com.spendmate.repository.ExpenseRepository;
+import com.spendmate.repository.SubscriptionRepository;
 import com.spendmate.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
@@ -25,14 +29,19 @@ public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
     private final UserRepository userRepository;
+    private final SubscriptionRepository subscriptionRepository;
+    private final BudgetRepository budgetRepository;
 
     public record CategorySummary(Category category, Integer amount, Integer percent) {}
     public record ExpenseSummary(Integer total, List<CategorySummary> categories) {}
     public record DailyAmount(String day, Integer amount) {}
 
-    public ExpenseService(ExpenseRepository expenseRepository, UserRepository userRepository) {
+    public ExpenseService(ExpenseRepository expenseRepository, UserRepository userRepository,
+                           SubscriptionRepository subscriptionRepository, BudgetRepository budgetRepository) {
         this.expenseRepository = expenseRepository;
         this.userRepository = userRepository;
+        this.subscriptionRepository = subscriptionRepository;
+        this.budgetRepository = budgetRepository;
     }
 
     /**
@@ -99,6 +108,39 @@ public class ExpenseService {
             result.add(new DailyAmount(DAY_LABELS.get(dayOfWeek.getValue() % 7), entry.getValue()));
         }
         return result;
+    }
+
+    /**
+     * 이번 달 누적 변동비 일평균 (월초부터 오늘까지 데이터로 계산, F6).
+     */
+    public double getDailyAverageThisMonth() {
+        int cumulativeSpend = getSummary("month").total();
+        int daysElapsed = LocalDate.now().getDayOfMonth();
+        return cumulativeSpend / (double) daysElapsed;
+    }
+
+    /**
+     * 예산 - 구독 고정비 - 이번 달 누적 지출을 일평균으로 나눠 소진 예상일을 계산한다 (F6).
+     * 예산이 설정되지 않았거나 아직 일평균이 0이면(소비 데이터 없음) 예측할 수 없어 null을 반환한다.
+     */
+    public LocalDate predictDepletionDate() {
+        Budget budget = budgetRepository.findByUserIdAndCategoryIsNull(SEED_USER_ID).orElse(null);
+        if (budget == null || budget.getAmount() == null) {
+            return null;
+        }
+
+        int fixedCost = subscriptionRepository.findByUserId(SEED_USER_ID).stream()
+                .mapToInt(Subscription::getAmount)
+                .sum();
+        int cumulativeSpend = getSummary("month").total();
+        double dailyAverage = getDailyAverageThisMonth();
+        if (dailyAverage <= 0) {
+            return null;
+        }
+
+        int remainingBudget = budget.getAmount() - fixedCost - cumulativeSpend;
+        long remainingDays = Math.round(remainingBudget / dailyAverage);
+        return LocalDate.now().plusDays(remainingDays);
     }
 
     private LocalDateTime resolveStart(String period) {
