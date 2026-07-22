@@ -7,6 +7,7 @@ import './Dashboard.css'
 interface DashboardProps {
   profile: Profile
   progress: Record<string, boolean>
+  taskIds: string[] | null
   loadingTaskId: string | null
   onToggle: (taskId: string) => void
   onEditProfile: () => void
@@ -22,12 +23,15 @@ const filterOptions: { value: FilterOption; label: string }[] = [
   { value: 'subsidy', label: groupLabels.subsidy },
 ]
 
-function Dashboard({ profile, progress, loadingTaskId, onToggle, onEditProfile, onResetProgress }: DashboardProps) {
+function Dashboard({ profile, progress, taskIds, loadingTaskId, onToggle, onEditProfile, onResetProgress }: DashboardProps) {
   const [selected, setSelected] = useState<FilterOption | null>('all')
 
   const applicableTasks = useMemo(
-    () => tasks.filter((task) => task.condition(profile)),
-    [profile],
+    () =>
+      taskIds
+        ? tasks.filter((task) => taskIds.includes(task.id))
+        : tasks.filter((task) => task.condition(profile)),
+    [profile, taskIds],
   )
 
   const countFor = (option: FilterOption) =>

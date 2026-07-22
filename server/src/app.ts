@@ -4,6 +4,7 @@ import express from 'express'
 import { sessionMiddleware } from './middleware/session.js'
 import { profileRouter } from './routes/profile.js'
 import { progressRouter } from './routes/progress.js'
+import { tasksRouter } from './routes/tasks.js'
 
 export const app = express()
 
@@ -18,3 +19,4 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/profile', profileRouter)
 app.use('/api/progress', progressRouter)
+app.use('/api/tasks', tasksRouter)
