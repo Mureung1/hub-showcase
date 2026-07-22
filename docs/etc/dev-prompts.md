@@ -1,0 +1,107 @@
+# 개발 프롬프트 모음 (Phase별)
+
+새 세션에서 그대로 복사해 쓰는 지시 프롬프트다. 전부 [instructions.md](../instructions.md) 절차를 타므로, 붙여넣으면 선행조건 확인 → 계약·완료조건 로드 → `npm run verify` → 보고까지 자동으로 돈다. Task·완료조건(C)·계약(S) 매핑은 [backlog.md](../backlog.md) 참고.
+
+> 막히면 프롬프트를 바꿀 필요 없다 — 각 프롬프트에 `BLOCKED로 기록하고 멈춰`가 들어 있어 억지 구현 대신 사유를 보고하고 멈춘다.
+
+## Phase 1 — Brain Dump 완성 (Feat-2)
+
+**T01 (Notion 연동 기반)** ※ 선행: Notion 토큰·DB ID 필요 ([prerequisites.md](../prerequisites.md))
+
+```
+docs/instructions.md 절차에 따라 T01(Notion 연동 기반)을 진행해줘.
+완료 조건은 checklist.md C01이고, 계약은 skills.md S3야.
+Notion 토큰/DB ID가 없으면 BLOCKED로 기록하고 멈춰서 보고해줘.
+```
+
+**T02 (category 추가 + Notion 저장)** ※ 선행: T01 완료
+
+```
+docs/instructions.md 절차에 따라 T02(Brain Dump category 추가 + Notion 저장)를 진행해줘.
+완료 조건은 checklist.md C02, 계약은 skills.md S1·S3야.
+category는 skills.md 고정 셋 7개를 z.enum으로 강제해줘.
+```
+
+## Phase 2 — 화면·타이머 (Feat-3)
+
+**T03 (One-Focus 실데이터 연결)**
+
+```
+docs/instructions.md 절차에 따라 T03(One-Focus View 실데이터 연결)을 진행해줘.
+완료 조건은 checklist.md C03이야. 하드코딩 task를 제거하고
+저장된 마이크로스텝을 순서대로 순회하게 해줘.
+```
+
+**T04 (타이머 지속성)**
+
+```
+docs/instructions.md 절차에 따라 T04(Full Screen Timer 지속성)를 진행해줘.
+완료 조건은 checklist.md C04야. 새로고침해도 남은 시간이 유지되게
+(시작 시각 기준 재계산) 고쳐줘.
+```
+
+## Phase 3 — Agent 루프 (Feat-4, 핵심)
+
+이 Phase는 [agent-design.md](agent-design.md)(동결된 설계)를 근거로 진행한다. 순서: T05 → T06 → T08(+T07) → T09 → T10.
+
+**T05 (AgentLog DB + 기록 lib)**
+
+```
+docs/instructions.md 절차에 따라 T05(AgentLog Notion DB + 기록/조회 lib)를 진행해줘.
+완료 조건은 checklist.md C05, 계약은 skills.md S3야.
+DB 구조는 etc/agent-design.md의 AgentLog flat DB(7 property)를 따라줘.
+```
+
+**T06 (힘들어 루프 판단 API)**
+
+```
+docs/instructions.md 절차에 따라 T06("힘들어" 루프 판단 API)를 진행해줘.
+완료 조건은 checklist.md C06, 계약은 skills.md S2야.
+cold start(로그 없을 때 reason_chip prior)까지 포함하고,
+proposedTool은 정의된 9개로 스키마 강제해줘.
+```
+
+**T08 (이유 칩 + 수락/거절 UI)** ※ T07(재판단 시간 게이트)을 함께 넣는다
+
+```
+docs/instructions.md 절차에 따라 T08(이유 칩 + 제안/수락/거절 UI)을 진행해줘.
+완료 조건은 checklist.md C08이야. onStruggle을 고정 RestSuggestion 대신
+이유 칩 → 제안 카드(reason 노출) → 수락/거절 플로우로 교체하고,
+T07(재판단 시간 게이트, C07)도 이 흐름에 함께 넣어줘.
+```
+
+**T09 (outcome 기록)**
+
+```
+docs/instructions.md 절차에 따라 T09(outcome 기록)를 진행해줘.
+완료 조건은 checklist.md C09, 계약은 skills.md S4야.
+완료 시 즉시 done, 다음 방문 시 이전 날짜 pending 일괄 not_done으로.
+```
+
+**T10 (개인화)**
+
+```
+docs/instructions.md 절차에 따라 T10(개인화 — 최근 로그 프롬프트 주입)을 진행해줘.
+완료 조건은 checklist.md C10, 계약은 skills.md S2·S3야.
+반복 거절한 tool/category를 피하도록 최근 로그를 판단 프롬프트에 넣어줘.
+```
+
+## Phase 4 — 평가 (Feat-5)
+
+**T11 (Precision/Recall)**
+
+```
+docs/instructions.md 절차에 따라 T11(Agent 평가 — 정답 세트 + Precision/Recall)을 진행해줘.
+완료 조건은 checklist.md C11, 계약은 skills.md S5야.
+정답 세트 파일을 만들고 AgentLog를 읽어 수치를 출력하는 스크립트를 짜줘.
+```
+
+## 리뷰 (선택, 각 Task 종료 후)
+
+구현 세션 뒤 리뷰를 돌리려면 새 세션에서:
+
+```
+docs/report/review.md A절 따라 방금 T0X 구현을 점검해줘.
+checklist.md 해당 C 섹션·skills.md 계약과 대조하고,
+판정을 report_gpt.md에 append한 뒤 report_claude.md의 확인 줄을 체크해줘.
+```

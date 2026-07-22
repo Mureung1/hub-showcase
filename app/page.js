@@ -8,21 +8,52 @@ import FocusTimer from "./components/FocusTimer";
 import CompleteScreen from "./components/CompleteScreen";
 import RestSuggestion from "./components/RestSuggestion";
 
-// 지금은 진짜 Agent 호출 없이, 어떤 화면을 보여줄지만 관리한다.
 // "input" -> "preview" -> "focus" -> "timer" -> "complete" / "rest"
 export default function Home() {
   const [step, setStep] = useState("input");
+  const [microsteps, setMicrosteps] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isSplitting, setIsSplitting] = useState(false);
+  const [splitError, setSplitError] = useState(null);
 
-  // mock 데이터: 진짜로는 Agent가 쪼갠 결과가 들어갈 자리
-  const task = "책상 위 물건 세 개만 제 자리에";
+  const task = microsteps[currentIndex]?.title ?? "";
+
+  async function handleSubmit(text) {
+    setIsSplitting(true);
+    setSplitError(null);
+
+    try {
+      const response = await fetch("/api/brain-dump", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) throw new Error("할 일을 쪼개는 데 실패했어요, 다시 시도해줘");
+
+      const { microsteps: steps } = await response.json();
+      setMicrosteps(steps);
+      setCurrentIndex(0);
+      setStep("preview");
+    } catch (err) {
+      setSplitError(err.message);
+    } finally {
+      setIsSplitting(false);
+    }
+  }
+
+  function goHome() {
+    setMicrosteps([]);
+    setCurrentIndex(0);
+    setStep("input");
+  }
 
   if (step === "input") {
     return (
       <BrainDumpInput
-        onSubmit={(text) => {
-          console.log("제출된 텍스트:", text);
-          setStep("preview");
-        }}
+        onSubmit={handleSubmit}
+        isLoading={isSplitting}
+        error={splitError}
       />
     );
   }
@@ -50,7 +81,7 @@ export default function Home() {
   }
 
   if (step === "rest") {
-    return <RestSuggestion onBackHome={() => setStep("input")} />;
+    return <RestSuggestion onBackHome={goHome} />;
   }
 
   return null;
