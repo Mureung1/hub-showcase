@@ -1,0 +1,20 @@
+[project]
+name = "annual-report-automation"
+version = "0.1.0"
+description = "법인 연간결산 보고서 자동화 — 세무조정(4단계) 엔진 (Python)"
+requires-python = ">=3.11"
+# 계산 엔진 자체는 의존성 0개(표준 라이브러리만). Excel 출력(taxengine.export.excel)만 openpyxl,
+# HTTP API(taxengine.api)만 fastapi+uvicorn 필요 — 둘 다 엔진·DB 계층에는 새지 않는다.
+dependencies = [
+    "openpyxl>=3.1",
+    "fastapi>=0.135",
+    "uvicorn>=0.42",
+    "PyJWT[crypto]>=2.9",  # Supabase Auth JWT 검증 (taxengine/api/auth.py)
+]
+
+[project.optional-dependencies]
+test = ["httpx>=0.28"]  # fastapi.testclient가 내부적으로 씀 (tests/test_api.py)
+postgres = ["psycopg[binary]>=3.2"]  # Supabase(Postgres) 접속용 — SQLite만 쓰면 설치 불필요
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

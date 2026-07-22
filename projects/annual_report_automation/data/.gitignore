@@ -1,0 +1,7 @@
+# 실데이터는 절대 커밋하지 않는다 (개인정보: 주민번호·거래처·계좌·금액)
+# 이 폴더 규칙은 루트 .gitignore를 보강한다.
+# private/ 내용은 전부 무시하되, 폴더 자체는 .gitkeep으로 유지한다.
+private/*
+!private/.gitkeep
+
+# templates/·README.md는 이 폴더에 함께 있으며 무시 대상이 아니다 (별도 예외 불필요)

@@ -1,0 +1,107 @@
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 14px max(20px, calc(50% - 300px));
+  background: rgba(15, 17, 23, 0.9);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--color-border);
+}
+
+@media (max-width: 560px) {
+  .topbar { padding: 12px 14px; }
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  padding: 7px 12px 7px 8px;
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
+}
+
+.backBtn:hover:not(:disabled) {
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+}
+
+.backBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.track {
+  flex: 1;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-2);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--color-primary), #8bb4ff);
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pct {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  width: 34px;
+  text-align: right;
+  flex: none;
+}
+
+.strip {
+  padding: 9px max(20px, calc(50% - 300px)) 0;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.strip::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  .strip { padding: 8px 14px 0; }
+}
+
+.pill {
+  flex: none;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 5px 11px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-2);
+  color: var(--color-text-tertiary);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.pillActive {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: rgba(79, 128, 255, 0.35);
+}
+
+.pillDone {
+  color: var(--color-success);
+}

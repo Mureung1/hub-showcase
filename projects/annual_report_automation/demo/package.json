@@ -1,0 +1,14 @@
+{
+  "name": "annual-report-automation-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "연간결산 보고서 자동화 — 1~5단계 파이프라인 흐름 데모 (mock 데이터)",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
