@@ -32,6 +32,12 @@ h1 {
   align-items: center;
   gap: 20px;
 }
+.logo-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
 .logo {
   display: flex;
   align-items: center;

@@ -82,16 +82,11 @@ function Header() {
   return (
     <header className="site-header">
       <div className="site-header-inner">
-        <Link className="logo" to="/">
-          <span className="logo-mark">S</span>
-          <span className="logo-text">SpecFit</span>
-        </Link>
-        {showStepper ? (
-          <StepperInline currentRank={currentRank} maxReached={maxReached} navigate={navigate} />
-        ) : (
-          <div className="header-spacer" />
-        )}
-        <nav className="site-nav">
+        <div className="logo-group">
+          <Link className="logo" to="/">
+            <span className="logo-mark">S</span>
+            <span className="logo-text">SpecFit</span>
+          </Link>
           <button
             type="button"
             className="nav-link theme-toggle-btn"
@@ -101,6 +96,13 @@ function Header() {
           >
             {isDark ? SUN_ICON : MOON_ICON}
           </button>
+        </div>
+        {showStepper ? (
+          <StepperInline currentRank={currentRank} maxReached={maxReached} navigate={navigate} />
+        ) : (
+          <div className="header-spacer" />
+        )}
+        <nav className="site-nav">
           <button
             type="button"
             className="nav-link"
