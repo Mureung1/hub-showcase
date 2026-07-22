@@ -90,6 +90,23 @@ export default function App() {
     setResultTemp(temperature);
 
     try {
+      // 날씨/공휴일을 먼저 조회해서 GPT 프롬프트에 같이 넣어줌.
+      // 둘 중 하나가 실패해도 콘텐츠 생성 자체는 계속 진행되도록 개별 처리.
+      const [weatherRes, holidayRes] = await Promise.allSettled([
+        fetch(`${API_BASE}/weather`).then((r) => r.json()),
+        fetch(`${API_BASE}/holiday`).then((r) => r.json()),
+      ]);
+
+      const weatherText =
+        weatherRes.status === "fulfilled" && weatherRes.value.temp
+          ? `${weatherRes.value.label}, ${weatherRes.value.temp}`
+          : null;
+
+      const holidayText =
+        holidayRes.status === "fulfilled" && holidayRes.value.is_special_day
+          ? holidayRes.value.name
+          : null;
+
       const res = await fetch(`${API_BASE}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -97,6 +114,8 @@ export default function App() {
           complaint,
           temperature,
           platform,
+          weather: weatherText,
+          holiday: holidayText,
           business_name: businessProfile?.name || null,
           business_type: businessProfile?.type || null,
           business_description: businessProfile?.description || null,

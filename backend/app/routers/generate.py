@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.services.openai_client import generate_content
+from app.services.temperature_suggester import record_temperature
 
 router = APIRouter(tags=["generate"])
 
@@ -38,5 +39,8 @@ def generate(request: GenerateRequest):
         )
     except Exception as e:
         return {"result": None, "error": str(e)}
+
+    # 온도 자동 제안의 반복 회피 로직이 참고할 수 있도록 실제 사용된 온도를 기록
+    record_temperature(request.temperature)
 
     return {"result": result}
