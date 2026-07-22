@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { getDiscordChannels } from '../../features/discord/api/discordApi'
+import type { DiscordChannel } from '../../features/discord/types/discordTypes'
 import { CategorySettingsStep } from '../../features/notice-config/components/CategorySettingsStep'
 import { CompleteStep } from '../../features/notice-config/components/CompleteStep'
 import { GuidePanel } from '../../features/notice-config/components/GuidePanel'
@@ -35,11 +37,18 @@ const initialForm: NoticeConfigForm = {
   categoryListSelector: '',
 }
 
-function AdminPage() {
+interface AdminPageProps {
+  guildId: string
+}
+
+function AdminPage({ guildId }: AdminPageProps) {
   const [step, setStep] = useState<AdminStep>('site')
   const [form, setForm] = useState<NoticeConfigForm>(initialForm)
   const [notices, setNotices] = useState<NoticePreview[]>([])
   const [categories, setCategories] = useState<DetectedCategory[]>([])
+  const [discordChannels, setDiscordChannels] = useState<DiscordChannel[]>([])
+  const [isLoadingChannels, setIsLoadingChannels] = useState(true)
+  const [channelLoadError, setChannelLoadError] = useState<string | null>(null)
   const [isCrawling, setIsCrawling] = useState(false)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
 
@@ -55,11 +64,44 @@ function AdminPage() {
     }))
   }
 
+  useEffect(() => {
+    let isCurrent = true
+
+    async function loadDiscordChannels() {
+      setIsLoadingChannels(true)
+      setChannelLoadError(null)
+
+      try {
+        const channels = await getDiscordChannels(guildId)
+
+        if (!isCurrent) {
+          return
+        }
+
+        setDiscordChannels(channels)
+      } catch {
+        if (isCurrent) {
+          setChannelLoadError('Discord 채널 목록을 불러오지 못했습니다.')
+        }
+      } finally {
+        if (isCurrent) {
+          setIsLoadingChannels(false)
+        }
+      }
+    }
+
+    void loadDiscordChannels()
+
+    return () => {
+      isCurrent = false
+    }
+  }, [guildId])
+
   const handleTestCrawl = async () => {
     setIsCrawling(true)
     const result = await testCrawlMock(form)
     setNotices(result.notices)
-    setCategories(result.categories)
+    setCategories(fillMissingChannelIds(result.categories, discordChannels))
     setSaveStatus('dirty')
     setIsCrawling(false)
   }
@@ -113,6 +155,9 @@ function AdminPage() {
       return (
         <CategorySettingsStep
           categories={categories}
+          discordChannels={discordChannels}
+          isLoadingChannels={isLoadingChannels}
+          channelLoadError={channelLoadError}
           saveStatus={saveStatus}
           onCategoryChange={updateCategory}
           onPrevious={() => setStep('site')}
@@ -166,3 +211,13 @@ function AdminPage() {
 }
 
 export default AdminPage
+
+function fillMissingChannelIds(categories: DetectedCategory[], channels: DiscordChannel[]) {
+  const fallbackChannelId = channels[0]?.id || ''
+  const channelIds = new Set(channels.map((channel) => channel.id))
+
+  return categories.map((category) => ({
+    ...category,
+    channelId: channelIds.has(category.channelId) ? category.channelId : fallbackChannelId,
+  }))
+}

@@ -219,6 +219,17 @@
   color: #64748b;
 }
 
+.table-message {
+  margin: 0 0 14px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.table-message.error {
+  color: #dc2626;
+}
+
 .preview-header {
   display: flex;
   align-items: center;

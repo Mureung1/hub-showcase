@@ -5,6 +5,7 @@ import type {
   GuildParams,
   SaveNoticeConfigBody,
   TestCrawlBody,
+  UpdateNoticeCategoriesBody,
 } from './notice-config.schemas.js'
 
 export const deleteNoticeConfig: RequestHandler<GuildParams> = async (request, response, next) => {
@@ -22,6 +23,20 @@ export const getNoticeConfig: RequestHandler<GuildParams> = async (request, resp
     const noticeConfig = await noticeConfigService.getNoticeConfig(request.params.guildId)
 
     response.status(200).json(ok(noticeConfig))
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const updateNoticeCategories: RequestHandler<
+  GuildParams,
+  unknown,
+  UpdateNoticeCategoriesBody
+> = async (request, response, next) => {
+  try {
+    const result = await noticeConfigService.updateNoticeCategories(request.params.guildId, request.body)
+
+    response.status(200).json(ok(result))
   } catch (error) {
     next(error)
   }
@@ -50,6 +65,20 @@ export const saveNoticeConfig: RequestHandler<GuildParams, unknown, SaveNoticeCo
     const result = await noticeConfigService.saveNoticeConfig(request.params.guildId, request.body)
 
     response.status(201).json(ok(result))
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const replaceNoticeConfig: RequestHandler<GuildParams, unknown, SaveNoticeConfigBody> = async (
+  request,
+  response,
+  next,
+) => {
+  try {
+    const result = await noticeConfigService.replaceNoticeConfig(request.params.guildId, request.body)
+
+    response.status(200).json(ok(result))
   } catch (error) {
     next(error)
   }

@@ -128,7 +128,7 @@
 
 ## 할 일
 
-- [x] 관리자 route 구조 초안 작성 (`/admin`)
+- [x] 관리자 route 구조 초안 작성 (`/admin/{guildId}`)
 - [x] 사이트 등록 화면 구현
 - [x] selector 입력 form 구현
 - [x] selector 설정 방법 외부 가이드 링크 연결
@@ -285,25 +285,28 @@
 
 - Discord Bot 연결과 채널/Role 관리 기능을 구현한다.
 - 설정 수정/교체와 카테고리 부분 수정 흐름을 완성한다.
-- Backend 배포 준비 파일을 작성한다.
+- Backend 배포 준비 파일은 별도 배포 단계로 이월한다.
 
 ## 할 일
 
-- [ ] discord.js client 구성
-- [ ] Bot env 설정
-- [ ] Discord Bot login smoke test
-- [ ] Discord 채널 목록 조회 구현
-- [ ] `GET /api/admin/{guildId}/discord/channels` 구현
-- [ ] `/setup` 관리자 권한 확인 골격 작성
-- [ ] `/setup` Admin 링크 ephemeral 응답 골격 작성
-- [ ] 활성 카테고리 Role 생성 구현
-- [ ] Bot Role hierarchy 에러 처리
-- [ ] `PUT /api/admin/{guildId}/notice-config` 구현
-- [ ] `PATCH /api/admin/{guildId}/notice-config/categories` 구현
-- [ ] Role 이름 변경 구현
-- [ ] Role 삭제 구현
-- [ ] 기존 Role 정리 흐름 구현
-- [ ] `guildDelete` 이벤트 DB 정리 구현
+- [x] discord.js client 구성
+- [x] Bot env 설정
+- [x] Discord Bot login smoke test
+- [x] Discord 채널 목록 조회 구현
+- [x] `GET /api/admin/{guildId}/discord/channels` 구현
+- [x] `/admin/{guildId}` 관리자 화면 route 반영
+- [x] 관리자 화면 Discord 채널 목록 API 연결
+- [x] Discord Bot 초대 링크 환경 변수 연결
+- [x] `/setup` 관리자 권한 확인 골격 작성
+- [x] `/setup` Admin 링크 ephemeral 응답 골격 작성
+- [x] 활성 카테고리 Role 생성 구현
+- [x] Bot Role hierarchy 에러 처리
+- [x] `PUT /api/admin/{guildId}/notice-config` 구현
+- [x] `PATCH /api/admin/{guildId}/notice-config/categories` 구현
+- [x] Role 이름 변경 구현
+- [x] Role 삭제 구현
+- [x] 기존 Role 정리 흐름 구현
+- [x] `guildDelete` 이벤트 DB 정리 구현
 - [ ] Backend Dockerfile 초안 작성
 - [ ] Backend 배포용 Docker Compose 작성
 
@@ -311,9 +314,26 @@
 
 - 없음
 
+## 검증
+
+- `backend npm run type-check` 통과
+- `backend npm run lint` 통과
+- Discord Bot login smoke test 성공
+- Discord 채널 목록 조회 API 수동 테스트 성공
+- `/setup` 관리자 링크가 `/admin/{guildId}` 형식으로 응답됨
+- `/admin/{guildId}` 관리자 화면에서 Discord 채널 목록 API 호출 연결 확인
+- 랜딩의 Discord Bot 초대 버튼이 `VITE_DISCORD_INVITE_URL` 값으로 이동하도록 확인
+- `guildDelete` 이벤트 DB 정리 수동 테스트 성공
+- 공지 설정 저장 시 Discord Role 생성/재사용 수동 테스트 성공
+- 잘못된 `channelId` 저장 실패 수동 테스트 성공
+- 카테고리 설정 PATCH 수동 테스트 성공
+- 전체 설정 PUT 교체 수동 테스트 성공
+- 설정 삭제 시 Discord Role 삭제 수동 테스트 성공
+
 ## 이월
 
-- 없음
+- Backend Dockerfile과 배포용 Docker Compose는 배포 단계에서 진행한다.
+- 에러 종류가 늘어나면 `AppError(status, message)` 직접 사용 대신 에러 코드/정의 기반 구조로 리팩토링한다.
 
 ---
 
@@ -326,16 +346,16 @@
 
 ## 할 일
 
-- [ ] frontend 공통 API client 작성
+- [x] frontend 공통 API client 작성
 - [ ] notice-config test crawl API 함수 작성
 - [ ] notice-config save/read/delete API 함수 작성
-- [ ] Discord channels API 함수 작성
+- [x] Discord channels API 함수 작성
 - [ ] mock test crawl 함수 제거 또는 fallback 처리
 - [ ] 사이트 등록 화면 테스트 크롤링 API 연동
-- [ ] 카테고리 설정 화면 Discord 채널 API 연동
+- [x] 카테고리 설정 화면 Discord 채널 API 연동
 - [ ] 설정 저장/조회 API 연동
 - [ ] loading/error/success 상태 처리
-- [ ] Frontend API base URL 환경 변수 연결 확인
+- [x] Frontend API base URL 환경 변수 연결 확인
 - [ ] 관리자 flow end-to-end 수동 테스트
 
 ## 이슈

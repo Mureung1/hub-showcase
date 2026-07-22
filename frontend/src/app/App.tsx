@@ -2,8 +2,10 @@ import LandingPage from '../pages/landing/LandingPage'
 import AdminPage from '../pages/admin/AdminPage'
 
 function App() {
-  if (window.location.pathname === '/admin') {
-    return <AdminPage />
+  const adminMatch = window.location.pathname.match(/^\/admin\/([^/]+)$/)
+
+  if (adminMatch) {
+    return <AdminPage guildId={decodeURIComponent(adminMatch[1])} />
   }
 
   return <LandingPage />

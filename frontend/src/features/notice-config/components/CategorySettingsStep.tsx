@@ -1,9 +1,12 @@
-import { mockDiscordChannels } from '../api/mockNoticeConfigApi'
+import type { DiscordChannel } from '../../discord/types/discordTypes'
 import type { SaveStatus } from '../types/adminFlowTypes'
 import type { DetectedCategory } from '../types/noticeConfigTypes'
 
 interface CategorySettingsStepProps {
   categories: DetectedCategory[]
+  discordChannels: DiscordChannel[]
+  isLoadingChannels: boolean
+  channelLoadError: string | null
   saveStatus: SaveStatus
   onCategoryChange: (
     categoryName: string,
@@ -17,6 +20,9 @@ interface CategorySettingsStepProps {
 
 export function CategorySettingsStep({
   categories,
+  discordChannels,
+  isLoadingChannels,
+  channelLoadError,
   saveStatus,
   onCategoryChange,
   onPrevious,
@@ -32,6 +38,8 @@ export function CategorySettingsStep({
 
       <section className="table-card">
         <h2>감지된 카테고리 목록</h2>
+        {isLoadingChannels && <p className="table-message">Discord 채널 목록을 불러오는 중입니다.</p>}
+        {channelLoadError && <p className="table-message error">{channelLoadError}</p>}
         <div className="category-table">
           <div className="table-row table-head">
             <span>카테고리</span>
@@ -44,9 +52,11 @@ export function CategorySettingsStep({
               <span className="category-name">{category.name}</span>
               <select
                 value={category.channelId}
+                disabled={isLoadingChannels || discordChannels.length === 0}
                 onChange={(event) => onCategoryChange(category.name, 'channelId', event.target.value)}
               >
-                {mockDiscordChannels.map((channel) => (
+                {discordChannels.length === 0 && <option value="">채널 없음</option>}
+                {discordChannels.map((channel) => (
                   <option key={channel.id} value={channel.id}>
                     {channel.name}
                   </option>

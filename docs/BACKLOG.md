@@ -68,10 +68,12 @@
 - [x] notice-config 도메인 모듈 생성
 - [x] 테스트 크롤링 API 구현
 - [x] notice-config 저장/조회/삭제 API 구현
+- [x] notice-config 교체/카테고리 수정 API 구현
+- [x] Discord 채널 조회 및 Role 생성/수정/삭제 구현
 
 ## 진행 중
 
-- [ ] Discord Bot 기본 연결 준비
+- [ ] Discord 이벤트와 Slash Command 골격 구현
 
 ## 미완료
 
@@ -120,20 +122,20 @@
 - [x] 테스트 크롤링 API 구현
 - [x] 전체 설정 저장 API 구현
 - [x] 전체 설정 조회 API 구현
-- [ ] 전체 설정 교체 API 구현
-- [ ] 카테고리 설정 PATCH API 구현
+- [x] 전체 설정 교체 API 구현
+- [x] 카테고리 설정 PATCH API 구현
 - [x] 전체 설정 삭제 API 구현
 
 ## Phase 3. Discord Resource And Role
 
-- [ ] Discord Bot 기본 클라이언트 구성
-- [ ] Discord 채널 목록 조회 API 구현
-- [ ] 활성 카테고리 Role 생성 구현
-- [ ] Role 이름 변경 구현
-- [ ] Role 삭제 구현
-- [ ] Bot Role hierarchy 에러 처리
+- [x] Discord Bot 기본 클라이언트 구성
+- [x] Discord 채널 목록 조회 API 구현
+- [x] 활성 카테고리 Role 생성 구현
+- [x] Role 이름 변경 구현
+- [x] Role 삭제 구현
+- [x] Bot Role hierarchy 에러 처리
 - [ ] EC2 환경에서 Discord Bot login 확인
-- [ ] `guildDelete` 이벤트 DB 정리 구현
+- [x] `guildDelete` 이벤트 DB 정리 구현
 
 ## Phase 4. Admin Web
 
@@ -146,13 +148,14 @@
 - [x] 설정 완료 화면 구현
 - [ ] 설정 삭제 UI 구현
 - [ ] Vercel preview 배포 확인
-- [ ] Frontend API base URL 환경 변수 연결 확인
+- [x] Frontend API base URL 환경 변수 연결 확인
+- [x] Discord Bot 초대 링크 환경 변수 연결
 
 ## Phase 5. Discord Commands
 
 - [ ] `/help` 구현
-- [ ] `/setup` 관리자 권한 확인 구현
-- [ ] `/setup` Admin 링크 ephemeral 응답 구현
+- [x] `/setup` 관리자 권한 확인 구현
+- [x] `/setup` Admin 링크 ephemeral 응답 구현
 - [ ] `/subscribe` active category 조회 구현
 - [ ] `/subscribe` multi-select interaction 구현
 - [ ] 구독 Role 부여/제거 구현
@@ -276,3 +279,4 @@
 - 한 Discord 서버에 여러 공지 사이트 지원
 - 관리자 대시보드
 - Google Calendar 연동
+- 에러 코드/정의 기반 공통 에러 처리 구조 리팩토링

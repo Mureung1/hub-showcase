@@ -23,11 +23,6 @@ export interface DetectedCategory {
   isActive: boolean
 }
 
-export interface DiscordChannel {
-  id: string
-  name: string
-}
-
 export interface TestCrawlResult {
   notices: NoticePreview[]
   categories: DetectedCategory[]

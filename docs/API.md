@@ -211,13 +211,15 @@ POST /api/admin/{guildId}/notice-config
 
 - 관리자는 테스트 크롤링으로 확인한 설정을 저장합니다.
 - Discord 서버당 하나의 공지 사이트만 설정 할 수 있습니다.
-- Day 7 기본 저장 API에서는 Discord Role 생성 전이므로 `roleId = null`로 저장합니다.
-- Day 8 Discord Role 연동 후에는 활성화된 카테고리의 Role을 Discord에 먼저 생성한 후 DB에 저장합니다.
-- 'roleName'이 없으면 카테고리명을 기본값으로 사용합니다.
-- 비활성화된 카테고리는 `roleId = null`로 저장합니다.
+- 활성화된 카테고리만 Discord Role 생성 대상입니다.
+- `roleName`을 입력하지 않으면 기본 Role 이름은 `IRIS-{카테고리명}`입니다.
+- `roleName`을 입력하면 입력한 이름을 그대로 Role 이름으로 사용합니다.
+- 같은 이름의 Role이 이미 있으면 새로 만들지 않고 기존 Role을 재사용합니다.
+- 같은 이름의 Role이 없으면 새로 생성합니다.
+- 비활성화된 카테고리는 Role을 생성하지 않고 `roleId = null`로 저장합니다.
 - 모든 카테고리는 채널과 활성화 여부를 포함해야 합니다.
-- `roleName`은 선택 값이며, 없으면 카테고리명을 기본값으로 사용합니다.
-- 생성 과정 중 하나라도 실패하면 전체 생성을 실패 처리합니다.
+- `roleName`은 선택 값입니다.
+- Role 생성 또는 DB 저장 중 하나라도 실패하면 전체 생성을 실패 처리합니다.
 - 생성이 완료되면 공지 사이트와 카테고리 설정이 함께 저장됩니다.
 
 **Error Responses**
@@ -225,10 +227,12 @@ POST /api/admin/{guildId}/notice-config
 - `400 Bad Request`
   - Request Body 필수 값이 누락되었거나 형식이 올바르지 않음
   - 카테고리 설정이 1개도 포함되지 않음
+  - Discord 채널이 존재하지 않거나 Bot이 메시지를 보낼 수 없음
+  - Bot이 Discord Role을 관리할 권한이 없음
 - `409 Conflict`
   - 해당 Discord 서버에 이미 공지 사이트 설정이 존재함
 - `500 Internal Server Error`
-  - DB 저장 중 알 수 없는 서버 오류
+  - DB 저장 또는 Discord API 연동 중 알 수 없는 서버 오류
 
 ---
 
@@ -280,7 +284,7 @@ GET /api/admin/{guildId}/notice-config
 
 **Rules**
 
-- Role은 저장 시 사용자가 입력한 `roleName`으로 IRIS가 생성한다.
+- Role은 저장 시 확정된 `roleName`으로 생성합니다.
 - 현재 Discord 서버의 공지 사이트 설정이 있는 경우에만 조회할 수 있습니다.
 - 공지 사이트 정보와 카테고리 설정을 함께 반환합니다.
 - 카테고리는 저장된 순서대로 반환합니다.
@@ -352,12 +356,25 @@ PUT /api/admin/{guildId}/notice-config
 - 사이트 정보와 카테고리 설정을 한 번에 교체합니다.
 - 카테고리 설정은 1개 이상 포함되어야 합니다.
 - `channelId`는 기존 Discord 채널이어야 한다.
-- 활성화된 카테고리에 대해서만 `roleName`을 사용하여 새로운 Discord Role을 생성합니다.
+- 활성화된 카테고리에 대해서만 Role 이름 정책에 따라 Discord Role을 생성하거나 재사용합니다.
 - 비활성화된 카테고리는 Role을 생성하지 않으며 roleId는 null로 저장합니다.
-- roleName이 비어 있으면 카테고리명을 기본 역할 이름으로 사용합니다.
+- roleName이 비어 있으면 `IRIS-{카테고리명}`을 기본 역할 이름으로 사용합니다.
 - 기존 카테고리, 카테고리 구독 정보, 저장된 공지 데이터는 삭제한 후 새 설정으로 다시 생성합니다.
-- 기존 IRIS가 생성한 Discord Role은 새 설정이 정상적으로 저장된 후 삭제합니다.
+- 기존 Discord Role은 새 설정이 정상적으로 저장된 후 정리합니다.
+- 기존 Discord Role 정리 실패는 로그로 남기고, 새 설정 저장 성공 응답은 유지합니다.
 - 새 Role 생성 또는 DB 저장 중 하나라도 실패하면 전체 교체를 실패 처리합니다.
+
+**Error Responses**
+
+- `400 Bad Request`
+  - Request Body 필수 값이 누락되었거나 형식이 올바르지 않음
+  - 카테고리 설정이 1개도 포함되지 않음
+  - Discord 채널이 존재하지 않거나 Bot이 메시지를 보낼 수 없음
+  - Bot이 Discord Role을 관리할 권한이 없음
+- `404 Not Found`
+  - 교체할 공지 사이트 설정이 없음
+- `500 Internal Server Error`
+  - DB 교체 또는 Discord API 연동 중 알 수 없는 서버 오류
 
 ## 3.5 카테고리 설정만 수정
 
@@ -392,6 +409,26 @@ PATCH /api/admin/{guildId}/notice-config/categories
 }
 ```
 
+**Response Body**
+
+```json
+{
+  "data": {
+    "message": "카테고리 설정이 수정되었습니다.",
+    "categories": [
+      {
+        "categoryId": 1,
+        "name": "학사",
+        "channelId": "444444444444444444",
+        "roleId": "222222222222222222",
+        "roleName": "학사 알림",
+        "isActive": true
+      }
+    ]
+  }
+}
+```
+
 **Rules**
 
 - 변경된 카테고리만 요청에 포함합니다.
@@ -401,8 +438,20 @@ PATCH /api/admin/{guildId}/notice-config/categories
 - 활성화 여부가 변경되면 isActive를 수정합니다.
 - 카테고리를 비활성화하면 IRIS가 생성한 Discord Role을 삭제합니다.
 - Role 삭제 후 `roleId`는 `null`로 저장하며, `roleName`은 유지합니다.
-- 비활성화된 카테고리를 다시 활성화하면 저장된 `roleName`으로 새로운 Discord Role을 생성합니다.
+- 비활성화된 카테고리를 다시 활성화하면 Role 이름 정책에 따라 Discord Role을 생성하거나 재사용합니다.
 - 비활성화된 카테고리는 구독 목록에 표시하지 않고 공지 저장 및 알림 대상에서도 제외합니다.
+
+**Error Responses**
+
+- `400 Bad Request`
+  - Request Body 필수 값이 누락되었거나 형식이 올바르지 않음
+  - 중복된 `categoryId`가 포함됨
+  - Discord 채널이 존재하지 않거나 Bot이 메시지를 보낼 수 없음
+  - Bot이 Discord Role을 관리할 권한이 없음
+- `404 Not Found`
+  - 공지 사이트 설정이 없거나 요청한 카테고리가 현재 서버 설정에 속하지 않음
+- `500 Internal Server Error`
+  - DB 수정 또는 Discord API 연동 중 알 수 없는 서버 오류
 
 ---
 
@@ -434,9 +483,8 @@ DELETE /api/admin/{guildId}/notice-config
 - 저장된 공지 이력을 (notice) 삭제합니다.
 - 카테고리 구독 정보를 삭제합니다.
 - 사용자 키워드 설정을 삭제합니다.
-- Day 7 기본 삭제 API에서는 DB에 저장된 설정 데이터만 삭제합니다.
-- Discord Role 삭제는 Discord Role 연동 후 처리합니다.
-- DB 데이터 삭제 중 오류가 발생하면 삭제 실패로 처리합니다.
+- 저장된 Discord Role을 삭제합니다.
+- Discord Role 삭제 또는 DB 데이터 삭제 중 오류가 발생하면 삭제 실패로 처리합니다.
 - 삭제가 완료되면 해당 Discord 서버는 공지 사이트를 등록하지 않은 초기 상태가 됩니다.
 - 삭제 완료 후 관리자는 필요한 경우 Discord 서버에서 IRIS Bot을 제거할 수 있습니다.
 
@@ -444,8 +492,10 @@ DELETE /api/admin/{guildId}/notice-config
 
 - `404 Not Found`
   - 삭제할 공지 사이트 설정이 없음
+- `400 Bad Request`
+  - Bot이 Discord Role을 관리할 권한이 없음
 - `500 Internal Server Error`
-  - DB 삭제 중 알 수 없는 서버 오류
+  - DB 삭제 또는 Discord API 연동 중 알 수 없는 서버 오류
 
 ---
 
@@ -480,6 +530,13 @@ GET /api/admin/{guildId}/discord/channels
 }
 ```
 
+**Error Responses**
+
+- `404 Not Found`
+  - Bot이 해당 Discord 서버에 참여하고 있지 않음
+- `500 Internal Server Error`
+  - Discord API 조회 중 알 수 없는 서버 오류
+
 **Rules**
 
 - Bot이 접근 가능한 텍스트 채널만 반환합니다.
@@ -487,6 +544,7 @@ GET /api/admin/{guildId}/discord/channels
 - 채널은 Discord 서버의 현재 상태를 기준으로 조회합니다.
 - 채널 이름과 ID를 함께 반환합니다.
 - Discord 서버에 접근할 수 없으면 조회를 실패 처리합니다.
+- `guildId`는 URL path parameter로 받고, Discord client에서 해당 guild를 조회합니다.
 
 ---
 
@@ -520,7 +578,11 @@ GET /api/admin/{guildId}/discord/channels
 **Rules**
 - Discord 서버 안에서만 실행할 수 있습니다.
 - 관리자 권한이 없는 사용자는 실행할 수 없습니다.
+- 관리자 페이지 링크는 `{ADMIN_WEB_URL}/admin/{guildId}` 형식으로 제공합니다.
 - MVP에서는 링크에 별도 인증 토큰을 포함하지 않는다.
+- 개발 중에는 테스트 서버에만 slash command를 등록합니다.
+- 운영에서는 전역 slash command로 등록합니다.
+- slash command 등록 방식과 관계없이 실행 시 서버 식별은 `interaction.guildId`를 사용합니다.
 
 ---
 

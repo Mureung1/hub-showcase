@@ -1,11 +1,11 @@
 import type {
   DetectedCategory,
-  DiscordChannel,
   NoticeConfigDraft,
   NoticeConfigForm,
   SelectorHelpRequest,
   TestCrawlResult,
 } from '../types/noticeConfigTypes'
+import type { DiscordChannel } from '../../discord/types/discordTypes'
 
 export const mockDiscordChannels: DiscordChannel[] = [
   { id: 'channel-academic', name: '#학사-공지' },
