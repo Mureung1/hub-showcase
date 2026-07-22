@@ -9,6 +9,7 @@ import SpecPage from './pages/SpecPage'
 import ResultPage from './pages/ResultPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
+import BookmarksPage from './pages/BookmarksPage'
 import './styles/tokens.css'
 import './App.css'
 
@@ -27,6 +28,7 @@ function App() {
             <Route path="/result" element={<ResultPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/bookmarks" element={<BookmarksPage />} />
           </Routes>
         </main>
         <Footer />

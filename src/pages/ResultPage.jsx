@@ -9,6 +9,8 @@ import JobDetailModal from '../components/result/JobDetailModal'
 import InsightModal from '../components/result/InsightModal'
 import EmptyState from '../components/result/EmptyState'
 import { ANALYSIS_ID_STORAGE_KEY } from '../constants/storageKeys'
+import { useAuth } from '../context/AuthContext'
+import { useBookmarks } from '../hooks/useBookmarks'
 import {
   apiFiltersFromForm,
   apiSpecFromForm,
@@ -29,6 +31,8 @@ function ResultPage() {
   // 이 일회성 라우터 state로만 구분할 수 있다.
   const isFresh = location.state?.fresh === true
   const { filters, spec, result, setSpec, setFilters, setResult } = useAppState()
+  const { user } = useAuth()
+  const { isBookmarked, toggle: toggleBookmark } = useBookmarks()
 
   const [status, setStatus] = useState('loading')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -148,6 +152,15 @@ function ResultPage() {
   const matchCount = displayJobs.filter((j) => j.overallMatch).length
   const missingCount = displayJobs.length - matchCount
 
+  // 비로그인 상태에서 별 아이콘을 클릭하면 토글하지 않고 로그인 화면으로 보낸다(redirect로 현재 경로 유지).
+  function handleToggleBookmark(jobId) {
+    if (!user) {
+      navigate(`/login?redirect=${encodeURIComponent(location.pathname)}`)
+      return
+    }
+    toggleBookmark(jobId)
+  }
+
   const specChips = [
     { label: '직종', value: result.filters?.job_category ?? '전체' },
     {
@@ -257,7 +270,13 @@ function ResultPage() {
             />
           ) : (
             displayedJobs.map((job) => (
-              <JobCard key={job.job_id} job={job} onClick={() => setSelectedJobId(job.job_id)} />
+              <JobCard
+                key={job.job_id}
+                job={job}
+                onClick={() => setSelectedJobId(job.job_id)}
+                bookmarked={isBookmarked(job.job_id)}
+                onToggleBookmark={() => handleToggleBookmark(job.job_id)}
+              />
             ))
           )}
         </div>
@@ -268,6 +287,8 @@ function ResultPage() {
         <JobDetailModal
           job={displayJobs.find((j) => j.job_id === selectedJobId)}
           onClose={() => setSelectedJobId(null)}
+          bookmarked={isBookmarked(selectedJobId)}
+          onToggleBookmark={() => handleToggleBookmark(selectedJobId)}
         />
       )}
     </div>

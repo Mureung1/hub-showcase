@@ -81,14 +81,21 @@
 **설명**: 로그인 사용자가 결과 화면의 공고를 저장해뒀다가 마이페이지에서 다시 볼 수 있게 한다. **#19(로그인)가 선행돼야 함**. `bookmarks` 데이터는 **Supabase가 호스팅하는 별도 Postgres**에 저장(로컬 `better-sqlite3`가 아님) — 계정/북마크처럼 유실되면 안 되는 데이터를 배포 시 파일시스템이 초기화될 수 있는 로컬 SQLite에 두지 않기 위함. `jobs`/`analysis_results`는 그대로 로컬 SQLite 유지, 손대지 않는다.
 
 **완료 기준**
-- [ ] Supabase Postgres에 `bookmarks` 테이블 (`user_id`, `job_id` 유니크) + Row Level Security 정책 (본인 것만 CRUD)
-- [ ] 백엔드에 Supabase JWT 검증 미들웨어(`requireSupabaseAuth`) 추가 — `Authorization: Bearer <token>` 헤더 검증
-- [ ] `POST /api/bookmarks`(등록 전 `job_id`가 로컬 SQLite `jobs`에 실제 존재하는지 확인), `DELETE /api/bookmarks/:job_id`, `GET /api/bookmarks`(Supabase 북마크 목록 + 로컬 SQLite jobs를 애플리케이션 레벨에서 join — DB가 분리돼 있어 진짜 FK/SQL join 불가)
-- [ ] `JobCard`/`JobDetailModal`에 북마크 토글 버튼(☆/★), 비로그인 상태 클릭 시 `/login?redirect=...`로 유도
-- [ ] `/bookmarks` 마이페이지 — 북마크한 공고 목록, 빈 상태 UI 포함
-- [ ] 마이페이지에서도 북마크 해제 가능 (기존 `JobDetailModal` 재사용)
-- [ ] 로그아웃 시 화면은 유지하되 북마크 버튼 전부 ☆(미확인) 상태로 리셋
-- [ ] 북마크 API 테스트 통과 (Supabase 호출 모킹 방식 결정 필요)
+- [x] Supabase Postgres에 `bookmarks` 테이블 (`user_id`, `job_id` 유니크) + Row Level Security 정책 (본인 것만 CRUD)
+- [x] 백엔드에 Supabase JWT 검증 미들웨어(`requireSupabaseAuth`) 추가 — `Authorization: Bearer <token>` 헤더 검증
+- [x] `POST /api/bookmarks`(등록 전 `job_id`가 로컬 SQLite `jobs`에 실제 존재하는지 확인), `DELETE /api/bookmarks/:job_id`, `GET /api/bookmarks`(Supabase 북마크 목록 + 로컬 SQLite jobs를 애플리케이션 레벨에서 join — DB가 분리돼 있어 진짜 FK/SQL join 불가)
+- [x] `JobCard`/`JobDetailModal`에 북마크 토글 버튼(☆/★), 비로그인 상태 클릭 시 `/login?redirect=...`로 유도
+- [x] `/bookmarks` 마이페이지 — 북마크한 공고 목록, 빈 상태 UI 포함
+- [x] 마이페이지에서도 북마크 해제 가능 (기존 `JobDetailModal` 재사용)
+- [x] 로그아웃 시 화면은 유지하되 북마크 버튼 전부 ☆(미확인) 상태로 리셋 (`useBookmarks`가 `user`를 의존성으로 구독 — 로그아웃되면 북마크 Set을 즉시 비움)
+- [x] 북마크 API 테스트 통과 (`supabaseAdmin.js`/`supabaseAuthClient.js`를 `vi.mock`, 로컬 SQLite `jobs`는 실제 시드 데이터로 검증)
+- [x] **마이페이지 상세 비교 (2026-07-22 추가 결정)**: 마이페이지를 열 때 북마크한 공고를 "북마크했을 때의 스펙"이 아니라 **지금 Context에 저장된 최신 스펙** 기준으로 재평가해서, 결과 화면에서 공고를 클릭했을 때와 동일한 체크리스트/상태 배지를 보여준다. `POST /api/bookmarks/evaluate`(신규) — 기존 `evaluateJob`(공고 1건 판정 함수)을 그대로 재사용해 결과 화면의 `jobList` 원소와 동일한 모양을 응답하므로, FE도 기존 `buildJobDisplay`를 그대로 재사용한다(별도 판정 로직 중복 없음).
+
+**완료 (2026-07-22)**. 구현 메모:
+- 백엔드: `server/src/db/supabaseAuthClient.js`(anon key, 토큰 검증 전용)/`supabaseAdmin.js`(service_role key, RLS 우회 CRUD) 두 클라이언트 분리, `requireSupabaseAuth` 미들웨어(throw 없이 401 직접 응답, `gapAnalysis.routes.js`의 404 스타일과 동일), `bookmarks.routes.js`(POST/DELETE/GET). 테스트가 `app.js`를 직접 import해 `index.js`의 `dotenv/config` 로딩을 거치지 않는 문제를 발견해 `server/vitest.config.js`에 `setupFiles: ['dotenv/config']` 추가.
+- 프론트: `src/hooks/useBookmarks.js`(로그인 사용자의 북마크 id Set을 들고 토글) — `ResultPage`에서 사용. `BookmarksPage.jsx`는 목록 자체가 곧 북마크라 이 훅을 쓰지 않고 직접 조회. `JobCard`/`JobDetailModal`은 `checklist`/`statusLabel`이 없는 경우(마이페이지의 원본 job row)를 옵셔널로 처리하도록 가드 추가 — 갭 분석을 거치지 않은 공고이기 때문.
+- `JobCard`는 최상위가 `<button>`이라 북마크 버튼을 진짜 `<button>`으로 중첩할 수 없어(무효 HTML) `role="button"` span + 수동 키보드 핸들러로 구현.
+- 검증: 백엔드 56개 테스트 통과, 프론트 lint/test/build 통과. 실제 Supabase 프로젝트에 대해 인증 미들웨어 curl 검증(토큰 없음/잘못된 토큰 모두 401). 이번에도 headless 브라우저가 없어 실제 북마크 클릭/토글 동작은 사용자 브라우저 확인 필요.
 
 ---
 

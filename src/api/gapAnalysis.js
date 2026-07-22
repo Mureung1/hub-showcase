@@ -4,7 +4,7 @@
 
 // 백엔드가 400 등으로 { error: '...' } 형태의 본문을 내려주면 그 메시지를 그대로 쓰고,
 // JSON이 아니거나 error 필드가 없으면(네트워크 오류 등) 상태 코드 기반 기본 메시지로 대체한다.
-async function throwWithServerMessage(res, fallback) {
+export async function throwWithServerMessage(res, fallback) {
   let message = fallback
   try {
     const body = await res.json()
