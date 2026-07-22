@@ -17,7 +17,10 @@ const MAX_LENGTHS = {
 
 function checkMaxLength(value, field) {
   const max = MAX_LENGTHS[field];
-  if (max !== undefined && value.length > max) {
+  // 문자 수로 센다. JS의 .length는 UTF-16 코드유닛 수라서 이모지 같은 서로게이트 페어를
+  // 2로 세는데, Postgres varchar(n)은 코드포인트를 1로 센다. .length로 재면 사용자가 보기엔
+  // 60자인 제목이 "100자 초과"로 거절된다. 전개 연산자는 코드포인트 단위로 쪼갠다.
+  if (max !== undefined && [...value].length > max) {
     throw new ApiError('VALIDATION_ERROR', `${field}는(은) ${max}자를 넘을 수 없습니다`);
   }
   return value;
