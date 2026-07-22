@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useSocket } from '../contexts/SocketContext';
 
 const ChatRoom = ({ room, onBack }) => {
   const { currentUser } = useAuth();
@@ -22,6 +23,25 @@ const ChatRoom = ({ room, onBack }) => {
       }
     }
   }, [room]);
+
+  const socket = useSocket();
+
+  // Socket.io 실시간 통신 연결 (joinRoom 및 receiveMessage)
+  useEffect(() => {
+    if (socket && room && room.id) {
+      socket.emit('joinRoom', room.id);
+
+      const handleReceiveMessage = (msg) => {
+        setMessages(prev => [...prev, msg]);
+      };
+
+      socket.on('receiveMessage', handleReceiveMessage);
+
+      return () => {
+        socket.off('receiveMessage', handleReceiveMessage);
+      };
+    }
+  }, [socket, room]);
 
   // 새 메시지가 추가될 때마다 로컬 스토리지에 저장 및 목록 업데이트
   useEffect(() => {
@@ -52,12 +72,16 @@ const ChatRoom = ({ room, onBack }) => {
     if (inputText.trim() === '') return;
     const now = new Date();
     const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-    setMessages(prev => [
-      ...prev,
-      // 글쓴이의 실제 역할을 sender로 저장
-      { id: Date.now(), sender: currentUser?.role || 'helper', text: inputText, time: timeStr }
-    ]);
+    
+    const newMsg = { id: Date.now(), sender: currentUser?.role || 'helper', text: inputText, time: timeStr };
+    
+    setMessages(prev => [...prev, newMsg]);
     setInputText(''); // 입력창 초기화
+
+    // 실시간 메시지 발송
+    if (socket && room && room.id) {
+      socket.emit('sendMessage', { roomId: room.id, message: newMsg });
+    }
   };
 
   // 엔터키 전송 지원 (Shift+Enter는 줄바꿈)

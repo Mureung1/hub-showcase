@@ -77,3 +77,15 @@
 * **완료 조건(검증 방법)**:
   * 프론트엔드 앱이 정상 구동되며 렌더링 에러가 발생하지 않아야 함.
   * 프론트엔드 접속 시 백엔드 터미널에 `🔗 A user connected: <socket-id>` 메시지가 찍혀 정상적으로 양방향 통신 준비가 완료되었음을 확인해야 함.
+
+### ✅ 3단계: 실시간 양방향 메시지 송수신 구현 (완료)
+* **목표**: 임시 식별자(UUID) 방식을 활용해 프론트엔드와 백엔드 간에 실시간 `joinRoom`, `sendMessage`, `receiveMessage` 이벤트를 주고받는 로직 구축
+* **작업 내역**: 
+  * 백엔드(`app.js`): `joinRoom` 이벤트 발생 시 해당 방 번호로 `socket.join(roomId)` 처리. `sendMessage` 이벤트 수신 시 같은 방 참여자들에게 `receiveMessage` 브로드캐스팅
+  * 프론트엔드(`ChatRoom.jsx`): `SocketContext`에서 `socket`을 불러와 마운트 시 `joinRoom` emit. 입력창 전송 시 `sendMessage` emit 처리 및 `receiveMessage` 리스너를 통한 상태(State) 갱신
+* **수정될 파일명**:
+  * `server/src/app.js`
+  * `client/src/components/ChatRoom.jsx`
+* **완료 조건(검증 방법)**:
+  * 브라우저 탭 2개를 열어 하나는 '방장', 하나는 '도와주는 사람' 역할로 설정 후 같은 채팅방에 입장.
+  * 한쪽에서 메시지를 보냈을 때 새로고침 없이 다른 쪽 브라우저 화면에 말풍선이 즉시 뜨는지 확인.
