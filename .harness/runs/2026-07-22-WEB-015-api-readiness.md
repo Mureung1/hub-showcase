@@ -37,6 +37,12 @@ Task Packet check: 69 packets passed
 git diff --check: passed
 ```
 
+## Regression coverage
+
+- `MarketSearch` remains disabled until the API readiness signal is `ready`.
+- Nearby-store requests do not start before that signal, then use the active
+  selection once it is ready.
+
 ## Public verification pending
 
 - Deploy the exact commit to the Vercel production project.
