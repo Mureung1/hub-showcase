@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>아맞다 서비스 아키텍처</title>
+    <style>
+      :root {
+        --paper: #ffffff;
+        --ink: #151619;
+        --charcoal: #25272d;
+        --graphite: #363940;
+        --smoke: #667085;
+        --ash: #e1e2e5;
+        --mist: #f3f3f5;
+        --blue: #0560fd;
+        --pale-blue: #c3d9ff;
+        --green: #047857;
+        --amber: #f59e0b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--mist);
+        color: var(--ink);
+        font-family:
+          Pretendard,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+      }
+      .page {
+        width: min(1500px, calc(100vw - 48px));
+        margin: 24px auto;
+        padding: 44px 48px 36px;
+        border: 1px solid var(--ash);
+        background: var(--paper);
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        gap: 40px;
+        align-items: flex-start;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--ash);
+      }
+      .eyebrow {
+        margin-bottom: 12px;
+        color: var(--blue);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+      h1 {
+        max-width: 920px;
+        margin: 0;
+        font-size: clamp(34px, 4vw, 56px);
+        line-height: 1.06;
+        letter-spacing: -0.045em;
+      }
+      .subtitle {
+        max-width: 780px;
+        margin: 14px 0 0;
+        color: var(--graphite);
+        font-size: 16px;
+        line-height: 1.65;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        white-space: nowrap;
+        font-size: 17px;
+        font-weight: 800;
+      }
+      .brand-mark {
+        position: relative;
+        width: 26px;
+        height: 26px;
+      }
+      .brand-mark::before,
+      .brand-mark::after {
+        content: '';
+        position: absolute;
+        width: 12px;
+        height: 19px;
+        border-radius: 2px;
+        transform: skewY(-16deg);
+      }
+      .brand-mark::before {
+        left: 2px;
+        top: 5px;
+        background: var(--blue);
+      }
+      .brand-mark::after {
+        right: 2px;
+        top: 1px;
+        background: var(--amber);
+      }
+
+      .architecture {
+        margin-top: 28px;
+      }
+      .section-heading {
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        gap: 18px;
+        align-items: baseline;
+        margin-bottom: 14px;
+      }
+      .section-number {
+        color: var(--blue);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+      }
+      .section-number.amber {
+        color: #a86600;
+      }
+      .section-heading h2 {
+        margin: 0;
+        font-size: 20px;
+        letter-spacing: -0.02em;
+      }
+      .section-heading p {
+        grid-column: 2;
+        margin: 2px 0 0;
+        color: var(--smoke);
+        font-size: 13px;
+      }
+
+      .save-grid {
+        display: grid;
+        grid-template-columns: 1.05fr 44px 1.25fr 44px 1.35fr;
+        align-items: stretch;
+      }
+      .group {
+        min-width: 0;
+        border: 1px solid var(--ash);
+        border-radius: 16px;
+        background: var(--paper);
+        padding: 16px;
+      }
+      .group.clients {
+        border-top: 4px solid var(--blue);
+      }
+      .group.application {
+        border-top: 4px solid var(--charcoal);
+      }
+      .group.data {
+        border-top: 4px solid var(--green);
+      }
+      .group-label {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 12px;
+        color: var(--smoke);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .group-title {
+        margin: 0 0 4px;
+        font-size: 17px;
+      }
+      .group-copy {
+        margin: 0 0 14px;
+        color: var(--smoke);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      .node-list {
+        display: grid;
+        gap: 8px;
+      }
+      .node {
+        display: grid;
+        grid-template-columns: 34px 1fr;
+        gap: 10px;
+        align-items: center;
+        min-height: 54px;
+        padding: 9px 10px;
+        border: 1px solid var(--ash);
+        border-radius: 10px;
+        background: #fff;
+      }
+      .node-icon {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        background: var(--mist);
+        color: var(--charcoal);
+        font-size: 11px;
+        font-weight: 900;
+      }
+      .clients .node-icon {
+        background: #f2f6ff;
+        color: var(--blue);
+      }
+      .data .node-icon {
+        background: #f0faf6;
+        color: var(--green);
+      }
+      .node strong {
+        display: block;
+        font-size: 13px;
+      }
+      .node span {
+        display: block;
+        margin-top: 2px;
+        color: var(--smoke);
+        font-size: 10px;
+        line-height: 1.35;
+      }
+      .flow-arrow {
+        position: relative;
+        display: grid;
+        place-items: center;
+        color: var(--smoke);
+        font-size: 10px;
+        font-weight: 700;
+        text-align: center;
+      }
+      .flow-arrow::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 6px;
+        right: 9px;
+        height: 1px;
+        background: var(--pewter, #b0b3bb);
+      }
+      .flow-arrow::after {
+        content: '';
+        position: absolute;
+        right: 7px;
+        top: calc(50% - 4px);
+        width: 7px;
+        height: 7px;
+        border-top: 1px solid #b0b3bb;
+        border-right: 1px solid #b0b3bb;
+        transform: rotate(45deg);
+      }
+      .flow-arrow em {
+        position: relative;
+        top: 17px;
+        z-index: 1;
+        padding: 2px 4px;
+        background: var(--paper);
+        font-style: normal;
+      }
+      .api-box {
+        margin-top: 10px;
+        padding: 11px;
+        border-radius: 10px;
+        background: var(--charcoal);
+        color: #fff;
+      }
+      .api-title {
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .api-routes {
+        margin-top: 5px;
+        color: #d8dae0;
+        font:
+          10px/1.55 ui-monospace,
+          SFMono-Regular,
+          Consolas,
+          monospace;
+      }
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 5px;
+        margin-top: 9px;
+      }
+      .step {
+        padding: 7px 5px;
+        border: 1px solid #4b4e57;
+        border-radius: 6px;
+        color: #f4f4f5;
+        font-size: 9px;
+        line-height: 1.3;
+        text-align: center;
+      }
+      .direct-path {
+        margin-top: 8px;
+        padding: 7px 9px;
+        border: 1px dashed #9ba0aa;
+        border-radius: 8px;
+        color: var(--graphite);
+        font-size: 10px;
+        line-height: 1.35;
+      }
+
+      .retrieve {
+        margin-top: 26px;
+        padding-top: 22px;
+        border-top: 1px solid var(--ash);
+      }
+      .retrieve-flow {
+        display: grid;
+        grid-template-columns: 1fr 30px 1.05fr 30px 1.05fr 30px 1.05fr 30px 1fr;
+        align-items: center;
+      }
+      .retrieve-node {
+        min-height: 92px;
+        padding: 13px;
+        border: 1px solid var(--ash);
+        border-radius: 12px;
+        background: #fffaf0;
+      }
+      .retrieve-node strong {
+        display: block;
+        font-size: 13px;
+      }
+      .retrieve-node span {
+        display: block;
+        margin-top: 6px;
+        color: var(--smoke);
+        font-size: 10px;
+        line-height: 1.45;
+      }
+      .retrieve-arrow {
+        color: #b0b3bb;
+        font-size: 20px;
+        text-align: center;
+      }
+      .score-row {
+        margin-top: 7px;
+        color: #9a6200;
+        font-size: 9px;
+        font-weight: 700;
+      }
+
+      footer {
+        display: grid;
+        grid-template-columns: 1.25fr 1fr auto;
+        gap: 24px;
+        align-items: center;
+        margin-top: 26px;
+        padding-top: 20px;
+        border-top: 1px solid var(--ash);
+      }
+      .security {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        color: var(--graphite);
+        font-size: 11px;
+        line-height: 1.5;
+      }
+      .security-badge {
+        flex: 0 0 auto;
+        padding: 4px 7px;
+        border-radius: 6px;
+        background: #f0faf6;
+        color: var(--green);
+        font-weight: 800;
+      }
+      .legend {
+        display: flex;
+        gap: 13px;
+        flex-wrap: wrap;
+        color: var(--smoke);
+        font-size: 10px;
+      }
+      .legend i {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        margin-right: 4px;
+        border-radius: 50%;
+      }
+      .date {
+        color: var(--smoke);
+        font-size: 10px;
+        text-align: right;
+      }
+
+      @media (max-width: 1050px) {
+        .page {
+          width: min(900px, calc(100vw - 24px));
+          padding: 32px 28px;
+        }
+        .save-grid {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+        .flow-arrow {
+          min-height: 28px;
+          transform: rotate(90deg);
+        }
+        .flow-arrow em {
+          display: none;
+        }
+        .retrieve-flow {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+        .retrieve-arrow {
+          transform: rotate(90deg);
+        }
+        footer {
+          grid-template-columns: 1fr;
+        }
+        .date {
+          text-align: left;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header>
+        <div>
+          <div class="eyebrow">
+            System map · Current production architecture
+          </div>
+          <h1>발견한 링크가<br />다시 필요한 순간까지</h1>
+          <p class="subtitle">
+            아맞다는 세 가지 저장 채널을 하나의 인증·저장 계약으로 연결하고,
+            개인 보관함의 데이터를 브라우저에서 결정적으로 검색해 다시 꺼냅니다.
+          </p>
+        </div>
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>아맞다
+        </div>
+      </header>
+
+      <section class="architecture" aria-labelledby="save-title">
+        <div class="section-heading">
+          <div class="section-number">01 · SAVE</div>
+          <h2 id="save-title">어디서 발견해도 같은 개인 보관함에 저장</h2>
+          <p>
+            모든 외부 입력은 신뢰하지 않으며, 로그인 세션과 공통 캡처 API를 지나
+            저장됩니다.
+          </p>
+        </div>
+
+        <div class="save-grid">
+          <article class="group clients">
+            <div class="group-label">
+              <span>Entry channels</span><span>사용자 접점</span>
+            </div>
+            <h3 class="group-title">세 가지 저장 진입점</h3>
+            <p class="group-copy">
+              입력 방식은 달라도 URL·선택 제목·출처라는 같은 계약으로
+              합쳐집니다.
+            </p>
+            <div class="node-list">
+              <div class="node">
+                <div class="node-icon">WEB</div>
+                <div>
+                  <strong>웹 URL 입력</strong
+                  ><span>React 저장 화면 · source: web</span>
+                </div>
+              </div>
+              <div class="node">
+                <div class="node-icon">EXT</div>
+                <div>
+                  <strong>Chrome 확장</strong
+                  ><span>현재 탭 한 번 클릭 · chrome.storage 세션</span>
+                </div>
+              </div>
+              <div class="node">
+                <div class="node-icon">AND</div>
+                <div>
+                  <strong>Android 공유</strong
+                  ><span>ACTION_SEND → Capacitor 플러그인</span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <div class="flow-arrow">
+            <em>HTTPS<br />Bearer token</em>
+          </div>
+
+          <article class="group application">
+            <div class="group-label">
+              <span>Application · Vercel</span><span>단일 HTTPS 원점</span>
+            </div>
+            <h3 class="group-title">React 웹 + Express API</h3>
+            <p class="group-copy">
+              Vite 웹과 서버 함수가 같은 배포 경계 안에서 동작합니다.
+            </p>
+            <div class="node">
+              <div class="node-icon">UI</div>
+              <div>
+                <strong>React 작업공간</strong
+                ><span>홈 · 보관함 · 저장 · 인증 상태</span>
+              </div>
+            </div>
+            <div class="api-box">
+              <div class="api-title">공통 캡처·메모 API</div>
+              <div class="api-routes">
+                POST /api/insights/capture<br />PATCH /api/insights/:id/memo
+              </div>
+              <div class="steps">
+                <div class="step">세션 확인</div>
+                <div class="step">URL 검증</div>
+                <div class="step">정규화·중복</div>
+                <div class="step">링크 먼저 저장</div>
+              </div>
+            </div>
+            <div class="direct-path">
+              <strong>보관함 CRUD</strong>는 브라우저의 Supabase JS가 사용자
+              세션으로 직접 수행하고 RLS가 최종 권한을 강제합니다.
+            </div>
+          </article>
+
+          <div class="flow-arrow">
+            <em>user-scoped<br />Supabase client</em>
+          </div>
+
+          <article class="group data">
+            <div class="group-label">
+              <span>Data · Supabase</span><span>사용자별 경계</span>
+            </div>
+            <h3 class="group-title">인증과 개인 데이터</h3>
+            <p class="group-copy">
+              공개 설정과 사용자 토큰만 사용하며 service role key는 클라이언트에
+              두지 않습니다.
+            </p>
+            <div class="node-list">
+              <div class="node">
+                <div class="node-icon">AUTH</div>
+                <div>
+                  <strong>Supabase Auth</strong
+                  ><span>Google OAuth · 웹/확장/Android 세션</span>
+                </div>
+              </div>
+              <div class="node">
+                <div class="node-icon">DB</div>
+                <div>
+                  <strong>Postgres · public.insights</strong
+                  ><span>URL · 제목 · 메모 · 단일 카테고리</span>
+                </div>
+              </div>
+              <div class="node">
+                <div class="node-icon">RLS</div>
+                <div>
+                  <strong>Row Level Security</strong
+                  ><span>auth.uid() = user_id · 사용자별 격리</span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="retrieve" aria-labelledby="retrieve-title">
+        <div class="section-heading">
+          <div class="section-number amber">02 · RETRIEVE</div>
+          <h2 id="retrieve-title">
+            저장된 데이터에서 지금 필요한 인사이트를 다시 꺼내기
+          </h2>
+          <p>
+            AI 추측 대신 사용자가 저장한 제목·메모·카테고리·출처 단서를 결정적인
+            규칙으로 정렬합니다.
+          </p>
+        </div>
+        <div class="retrieve-flow">
+          <div class="retrieve-node">
+            <strong>개인 인사이트 목록</strong
+            ><span
+              >Supabase에서 최신순으로 불러오고 계약에 맞지 않는 행만
+              제외합니다.</span
+            >
+          </div>
+          <div class="retrieve-arrow">→</div>
+          <div class="retrieve-node">
+            <strong>브라우저 메모리</strong
+            ><span
+              >원격 저장 인프라와 검색 코어를 분리한 순수 데이터
+              목록입니다.</span
+            >
+          </div>
+          <div class="retrieve-arrow">→</div>
+          <div class="retrieve-node">
+            <strong>결정적 검색 코어</strong
+            ><span
+              >정확·접두·부분 일치와 필드별 가중치로 점수를 계산합니다.</span
+            >
+            <div class="score-row">메모 4 · 제목 3 · 카테고리 2 · 도메인 1</div>
+          </div>
+          <div class="retrieve-arrow">→</div>
+          <div class="retrieve-node">
+            <strong>상위 6개 인사이트</strong
+            ><span
+              >점수순, 동점이면 최신 저장순으로 카드 결과를 보여줍니다.</span
+            >
+          </div>
+          <div class="retrieve-arrow">→</div>
+          <div class="retrieve-node">
+            <strong>원문 열기</strong
+            ><span
+              >사용자가 저장한 original_url을 안전한 새 탭에서 다시
+              사용합니다.</span
+            >
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <div class="security">
+          <span class="security-badge">보안 경계</span
+          ><span
+            >외부 URL 검증 · Bearer 토큰 인증 · publishable key · 사용자별 RLS ·
+            클라이언트 secret 금지</span
+          >
+        </div>
+        <div class="legend">
+          <span><i style="background: #0560fd"></i>진입점</span
+          ><span><i style="background: #25272d"></i>애플리케이션</span
+          ><span><i style="background: #047857"></i>인증·데이터</span
+          ><span><i style="background: #f59e0b"></i>꺼내보기</span>
+        </div>
+        <div class="date">AMADDA · 2026.07</div>
+      </footer>
+    </main>
+  </body>
+</html>
