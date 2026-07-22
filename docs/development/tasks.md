@@ -114,8 +114,8 @@ Outcome: 화면용 임의 수치가 아니라 출처와 기준 기간이 있는 
 | DATA-002 | 공공데이터포털 점포·인허가 API 실제 응답 검증       | P0       | Done        | 1    | DATA-001   | 3개 API 60행 sample과 secret 미포함을 확인했다              |
 | DATA-003 | Store·Permit·Population·Sales canonical schema 확정 | P0       | Done        | 1    | DATA-002   | 7개 SQLite table, source FK와 좌표계를 정의했다             |
 | DATA-004 | provider별 raw-to-canonical importer 구현           | P0       | Done        | 1    | DATA-003   | 같은 명령을 2회 실행해 동일 row count를 확인했다            |
-| DATA-005 | 중복·결측·좌표·기간 품질 검사 작성                  | P0       | Backlog     | 1    | DATA-004   | 오류 건수와 제외 이유를 표로 출력한다                       |
-| DATA-006 | 시연 상권과 비교 상권 sample 확정                   | P0       | Backlog     | 1    | DATA-005   | 최소 2개 상권과 카페·음식점·베이커리·편의점 분석이 가능하다 |
+| DATA-005 | 중복·결측·좌표·기간 품질 검사 작성                  | P0       | Done        | 1    | DATA-004   | 오류 건수와 제외 이유를 표로 출력하고 fixture 회귀 검증을 완료했다 |
+| DATA-006 | 시연 상권과 비교 상권 sample 확정                   | P0       | Done        | 1    | DATA-005   | 연남·홍대·합정과 카페·음식점·베이커리·편의점 product catalog·test를 확정했다 |
 | DB-001   | Supabase PostgreSQL schema·migration·전체 canonical seed | P0 | Done | Phase 2 | ARCH-002, DATA-004 | development Supabase migration·2회 전체 seed·47 API test와 GitHub #11 종료를 완료했고 Jira 수동 동기화만 남는다 |
 | DATA-007 | 운영 수집 범위·요청 시점·갱신·보존 정책 결정       | P1       | In Progress | Later | DATA-009 | 공공데이터만 사용하며 최초 bulk import 후 실행 주기, quota, raw 보존·rollback 기준과 자동화 범위를 확정한다 |
 | DATA-008 | 분기 상가정보·인허가·상권영역 bulk importer와 품질 검사 | P0 | In Progress | Phase 2 | DATA-004 | 서울 상가정보 537,489행·점포-상권 304,775행과 3개 상권 polygon 적재를 완료했고 전체 인허가 확장을 남겼다 |
