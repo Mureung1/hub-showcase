@@ -125,12 +125,15 @@ export async function getStudentByNameInClassroom(name, classroomId) {
 }
 
 // ===== Question =====
-export async function addQuestion(questionId, text, classroomId, modelAnswer = '') {
+export async function addQuestion(questionId, text, classroomId, modelAnswer = '', subject = '', unit = '', graph = '') {
   return insert('questions', {
     id: questionId,
     text,
     classroom_id: classroomId,
-    model_answer: modelAnswer
+    model_answer: modelAnswer,
+    subject,
+    unit,
+    graph
   });
 }
 

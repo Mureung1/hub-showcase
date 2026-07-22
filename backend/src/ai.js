@@ -85,6 +85,94 @@ export async function gradeAnswer(questionText, modelAnswer, studentAnswer) {
   }
 }
 
+const RECOMMEND_SYSTEM_PROMPT = `당신은 고등학교 수학 선생님을 돕는 조교입니다.
+주어진 과목과 단원에 맞는, 학생의 이해도를 확인할 수 있는 수학 문제(질문)를 추천하세요.
+
+규칙:
+- 한국 고등학교 교육과정 수준에 맞춥니다.
+- 서로 다른 유형의 문제 3개를 제안합니다.
+- 각 문제는 한두 문장으로 명확하게, 학생이 실제로 풀고 답할 수 있는 구체적인 문제로 씁니다.
+- 문제에 함수 그래프가 필요하면 "graph" 에 x 에 대한 함수식 문자열을 넣습니다.
+  (예: "x^2 - 2*x", "2^x", "sin(x)") 두 개 이상이면 문자열 배열로 넣습니다.
+  그래프가 필요 없는 문제면 "graph" 를 빈 문자열("")로 둡니다.
+- 함수식은 변수 x 만 쓰고, 곱셈은 반드시 * 기호를 씁니다. (2x 가 아니라 2*x)
+
+반드시 아래 형식의 JSON으로만 답하세요:
+{"questions": [{"text": "문제", "graph": "x^2-2*x"}, {"text": "문제", "graph": ""}]}`;
+
+// 모델이 준 graph 값을 함수식 문자열 배열로 정규화한다.
+function normalizeGraph(g) {
+  if (Array.isArray(g)) return g.filter((s) => typeof s === 'string' && s.trim()).map((s) => s.trim());
+  if (typeof g === 'string' && g.trim()) return [g.trim()];
+  return [];
+}
+
+/**
+ * 과목·단원에 맞는 문제(질문) 후보를 Ollama로 생성한다.
+ * 저장은 하지 않고 후보 목록만 돌려준다. 각 후보는 {text, graph} 형태이며
+ * graph 는 그래프로 그릴 함수식 문자열 배열(없으면 빈 배열)이다.
+ * 실패해도 예외를 던지지 않고 {questions, error, message} 를 반환한다.
+ */
+export async function recommendQuestions(subject, unit) {
+  const target = [subject, unit].filter(Boolean).join(' - ') || '고등학교 수학';
+  const userPrompt = `과목/단원: ${target}\n이 단원에 맞는 문제 3개를 추천해주세요.`;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${OLLAMA_URL}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        messages: [
+          { role: 'system', content: RECOMMEND_SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt }
+        ],
+        stream: false,
+        format: 'json'
+      }),
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ollama HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const parsed = JSON.parse(data.message.content);
+    const rawList = Array.isArray(parsed.questions) ? parsed.questions : [];
+    const questions = rawList
+      .map((item) => {
+        // 모델이 문자열만 줄 때(구식 응답)도 관대하게 받는다.
+        if (typeof item === 'string') return { text: item.trim(), graph: [] };
+        if (item && typeof item === 'object' && typeof item.text === 'string') {
+          return { text: item.text.trim(), graph: normalizeGraph(item.graph) };
+        }
+        return null;
+      })
+      .filter((q) => q && q.text);
+
+    if (!questions.length) {
+      return { questions: [], error: true, message: 'AI가 추천 문제를 생성하지 못했습니다. 다시 시도해주세요.' };
+    }
+    return { questions, error: false };
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      return { questions: [], error: true, message: `AI 추천이 ${TIMEOUT_MS / 1000}초 안에 끝나지 않았습니다. 다시 시도해주세요.` };
+    }
+    if (err instanceof SyntaxError) {
+      console.error('[ai] 추천 응답 파싱 실패:', err.message);
+      return { questions: [], error: true, message: 'AI 추천 결과를 읽지 못했습니다. 다시 시도해주세요.' };
+    }
+    console.error('[ai] 추천 요청 실패:', err.message);
+    return { questions: [], error: true, message: 'AI 추천 서버에 연결할 수 없습니다. Ollama가 실행 중인지 확인해주세요.' };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const CHAT_SYSTEM_PROMPT = `당신은 학생과 함께 수학을 공부하는 친절한 선생님입니다.
 학생이 스스로 개념을 이해하도록 소크라테스식으로 도와주세요.
 

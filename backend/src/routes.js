@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { randomUUID } from 'crypto';
 import * as db from './db.js';
-import { gradeAnswer, chatTutor } from './ai.js';
+import { gradeAnswer, chatTutor, recommendQuestions } from './ai.js';
 
 const router = Router();
 
@@ -153,15 +153,44 @@ router.get('/classroom/:classroomId/students', wrap(async (req, res) => {
 }));
 
 // ===== Question =====
+// 그래프 함수식을 안전하게 정규화해 저장용 문자열(JSON 배열)로 만든다.
+function normalizeGraphForStore(input) {
+  let arr = [];
+  if (Array.isArray(input)) arr = input;
+  else if (typeof input === 'string' && input.trim()) arr = [input];
+  arr = arr
+    .filter((s) => typeof s === 'string' && s.trim())
+    .map((s) => s.trim())
+    .slice(0, 3);
+  return arr.length ? JSON.stringify(arr) : '';
+}
+
 router.post('/question/create', wrap(async (req, res) => {
   const questionId = randomUUID();
+  const subject = (req.body.subject || '').trim();
+  const unit = (req.body.unit || '').trim();
+  const graph = normalizeGraphForStore(req.body.graph);
   await db.addQuestion(
     questionId,
     req.body.text || '',
     req.body.classroom_id,
-    req.body.model_answer || ''
+    req.body.model_answer || '',
+    subject,
+    unit,
+    graph
   );
-  res.status(201).json({ id: questionId, text: req.body.text });
+  res.status(201).json({ id: questionId, text: req.body.text, subject, unit, graph });
+}));
+
+// 과목·단원에 맞는 문제를 AI가 추천한다. 저장하지 않고 후보 목록만 돌려준다.
+router.post('/question/recommend', wrap(async (req, res) => {
+  const subject = (req.body.subject || '').trim();
+  const unit = (req.body.unit || '').trim();
+  const result = await recommendQuestions(subject, unit);
+  if (result.error) {
+    return res.status(503).json({ error: result.message });
+  }
+  res.json({ questions: result.questions });
 }));
 
 router.get('/question/:questionId', wrap(async (req, res) => {
