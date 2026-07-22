@@ -8,6 +8,9 @@ interface MatchedProductRow {
   name: string;
   company_name: string | null;
   price: number | null;
+  haccp_certified: boolean;
+  smartstore_url: string | null;
+  test_report_url: string | null;
   match_count: string;
 }
 
@@ -30,11 +33,11 @@ productsRouter.get("/match", async (req, res) => {
   }
 
   const result = await pool.query<MatchedProductRow>(
-    `SELECT p.id, p.name, p.company_name, p.price, COUNT(*) AS match_count
+    `SELECT p.id, p.name, p.company_name, p.price, p.haccp_certified, p.smartstore_url, p.test_report_url, COUNT(*) AS match_count
      FROM product_ingredients pi
      JOIN products p ON p.id = pi.product_id
      WHERE pi.ingredient_id = ANY($1::int[])
-     GROUP BY p.id, p.name, p.company_name, p.price
+     GROUP BY p.id, p.name, p.company_name, p.price, p.haccp_certified, p.smartstore_url, p.test_report_url
      ORDER BY match_count DESC
      LIMIT 10`,
     [ingredientIds]
@@ -45,6 +48,9 @@ productsRouter.get("/match", async (req, res) => {
     name: row.name,
     companyName: row.company_name,
     price: row.price,
+    haccpCertified: row.haccp_certified,
+    smartstoreUrl: row.smartstore_url,
+    testReportUrl: row.test_report_url,
     matchCount: Number(row.match_count),
   }));
 

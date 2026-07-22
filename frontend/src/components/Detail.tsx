@@ -21,24 +21,28 @@ export function Detail({ product, onBuy, onRestart }: DetailProps) {
       </div>
 
       <div className="chip-list">
-        <span className="chip-badge">
-          <span
-            className="chip-icon"
-            style={{ background: 'var(--tint-purple)', color: 'var(--color-primary-dark)' }}
-          >
-            <ChipIcon name="shield" />
+        {product.haccpCertified && (
+          <span className="chip-badge">
+            <span
+              className="chip-icon"
+              style={{ background: 'var(--tint-purple)', color: 'var(--color-primary-dark)' }}
+            >
+              <ChipIcon name="shield" />
+            </span>
+            <span className="chip-label">HACCP</span>
           </span>
-          <span className="chip-label">HACCP</span>
-        </span>
-        <span className="chip-badge">
-          <span
-            className="chip-icon"
-            style={{ background: 'var(--tint-blue)', color: 'var(--color-accent-blue)' }}
-          >
-            <ChipIcon name="certificate" />
+        )}
+        {product.testReportUrl && (
+          <span className="chip-badge">
+            <span
+              className="chip-icon"
+              style={{ background: 'var(--tint-blue)', color: 'var(--color-accent-blue)' }}
+            >
+              <ChipIcon name="certificate" />
+            </span>
+            <span className="chip-label">시험성적서</span>
           </span>
-          <span className="chip-label">시험성적서</span>
-        </span>
+        )}
       </div>
 
       <div className="card stat-row">
@@ -52,7 +56,7 @@ export function Detail({ product, onBuy, onRestart }: DetailProps) {
         </div>
       </div>
 
-      <button className="btn" type="button" onClick={onBuy}>
+      <button className="btn" type="button" onClick={onBuy} disabled={!product.smartstoreUrl}>
         스마트스토어로 이동
       </button>
       <button className="btn-outline" type="button" onClick={onRestart}>

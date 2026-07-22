@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AuthForm } from './components/AuthForm';
 import { Home } from './components/Home';
 import { Header } from './components/Header';
@@ -10,11 +10,28 @@ import type { AuthUser, LoginResponse } from './api/auth';
 import type { Product, Screen } from './types';
 
 const STORAGE_KEY = 'gc_auth';
+const FLOW_STORAGE_KEY = 'gc_flow';
 
 interface StoredAuth {
   token: string;
   user: AuthUser;
 }
+
+interface StoredFlow {
+  screen: Screen;
+  symptoms: string[];
+  recommendedIngredientIds: number[];
+  supplements: string[];
+  selectedProduct: Product | null;
+}
+
+const INITIAL_FLOW: StoredFlow = {
+  screen: 'home',
+  symptoms: [],
+  recommendedIngredientIds: [],
+  supplements: [],
+  selectedProduct: null,
+};
 
 function loadStoredAuth(): StoredAuth | null {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -26,13 +43,32 @@ function loadStoredAuth(): StoredAuth | null {
   }
 }
 
+function loadStoredFlow(): StoredFlow {
+  const raw = sessionStorage.getItem(FLOW_STORAGE_KEY);
+  if (!raw) return INITIAL_FLOW;
+  try {
+    return { ...INITIAL_FLOW, ...(JSON.parse(raw) as Partial<StoredFlow>) };
+  } catch {
+    return INITIAL_FLOW;
+  }
+}
+
 function App() {
   const [auth, setAuth] = useState<StoredAuth | null>(loadStoredAuth);
-  const [screen, setScreen] = useState<Screen>('home');
-  const [symptoms, setSymptoms] = useState<string[]>([]);
-  const [recommendedIngredientIds, setRecommendedIngredientIds] = useState<number[]>([]);
-  const [supplements, setSupplements] = useState<string[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [screen, setScreen] = useState<Screen>(() => loadStoredFlow().screen);
+  const [symptoms, setSymptoms] = useState<string[]>(() => loadStoredFlow().symptoms);
+  const [recommendedIngredientIds, setRecommendedIngredientIds] = useState<number[]>(
+    () => loadStoredFlow().recommendedIngredientIds
+  );
+  const [supplements, setSupplements] = useState<string[]>(() => loadStoredFlow().supplements);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(
+    () => loadStoredFlow().selectedProduct
+  );
+
+  useEffect(() => {
+    const flow: StoredFlow = { screen, symptoms, recommendedIngredientIds, supplements, selectedProduct };
+    sessionStorage.setItem(FLOW_STORAGE_KEY, JSON.stringify(flow));
+  }, [screen, symptoms, recommendedIngredientIds, supplements, selectedProduct]);
 
   function handleLoggedIn(result: LoginResponse) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
@@ -41,6 +77,7 @@ function App() {
 
   function handleLogout() {
     localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(FLOW_STORAGE_KEY);
     setAuth(null);
     setScreen('home');
     setSymptoms([]);
@@ -66,7 +103,9 @@ function App() {
   }
 
   function handleBuy() {
-    console.log('스마트스토어로 이동 (mock):', selectedProduct);
+    if (selectedProduct?.smartstoreUrl) {
+      window.open(selectedProduct.smartstoreUrl, '_blank', 'noopener,noreferrer');
+    }
   }
 
   function handleRestart() {
