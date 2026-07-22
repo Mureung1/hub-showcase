@@ -1,4 +1,7 @@
 /* @vitest-environment jsdom */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -26,6 +29,32 @@ beforeAll(() => {
 afterEach(cleanup);
 
 describe('LibraryPage', () => {
+  it('centers the library header and work area while preserving result content width', () => {
+    const styles = readFileSync(
+      join(process.cwd(), 'src/pages/library/ui/library_page.css'),
+      'utf8'
+    );
+    const headerRule = getCssRule(styles, '.library-page__header');
+    const workAreaRule = getCssRule(styles, '.library-page__work-area');
+    const filterRule = getCssRule(
+      styles,
+      '.library-page__filter > .category-filter'
+    );
+    const mobileStyles = styles.slice(
+      styles.indexOf('@media (max-width: 767px)')
+    );
+
+    expect(headerRule).toContain('width: min(820px, 100%);');
+    expect(headerRule).toContain('margin-inline: auto;');
+    expect(headerRule).toContain('text-align: center;');
+    expect(workAreaRule).toContain('width: min(820px, 100%);');
+    expect(workAreaRule).toContain('margin-inline: auto;');
+    expect(filterRule).toContain('justify-content: center;');
+    expect(
+      getCssRule(mobileStyles, '.library-page__filter > .category-filter')
+    ).toContain('justify-content: flex-start;');
+  });
+
   it('distinguishes an unavailable remote library from an empty library', async () => {
     const user = userEvent.setup();
     const onRetryLoad = vi.fn();
@@ -201,3 +230,15 @@ describe('LibraryPage', () => {
     expect(onOpenSave).toHaveBeenCalledOnce();
   });
 });
+
+function getCssRule(styles: string, selector: string) {
+  const ruleStart = styles.indexOf(`${selector} {`);
+
+  if (ruleStart < 0) {
+    throw new Error(`Missing CSS rule for ${selector}`);
+  }
+
+  const ruleEnd = styles.indexOf('}', ruleStart);
+
+  return styles.slice(ruleStart, ruleEnd + 1);
+}

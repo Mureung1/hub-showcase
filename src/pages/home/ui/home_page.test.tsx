@@ -63,6 +63,34 @@ function renderHomePage(props: Partial<HomePageProps> = {}) {
 }
 
 describe('HomePage', () => {
+  it('defines a centered retrieval axis with responsive suggestion columns', () => {
+    const styles = readFileSync(
+      join(process.cwd(), 'src/pages/home/ui/home_page.css'),
+      'utf8'
+    );
+    const heroRule = getCssRule(styles, '.home-page__hero');
+    const suggestionsRule = getCssRule(styles, '.home-page__suggestions');
+    const tabletStyles = styles.slice(
+      styles.indexOf('@media (max-width: 1199px)')
+    );
+    const mobileStyles = styles.slice(
+      styles.indexOf('@media (max-width: 767px)')
+    );
+
+    expect(heroRule).toContain('width: min(820px, 100%);');
+    expect(heroRule).toContain('margin-inline: auto;');
+    expect(heroRule).toContain('text-align: center;');
+    expect(suggestionsRule).toContain(
+      'grid-template-columns: repeat(3, minmax(0, 1fr));'
+    );
+    expect(getCssRule(tabletStyles, '.home-page__suggestions')).toContain(
+      'grid-template-columns: repeat(2, minmax(0, 1fr));'
+    );
+    expect(getCssRule(mobileStyles, '.home-page__suggestions')).toContain(
+      'grid-template-columns: minmax(0, 1fr);'
+    );
+  });
+
   it('shows loading before treating the remote library as empty', () => {
     renderHomePage({ insightCount: 0, libraryState: 'loading' });
 
