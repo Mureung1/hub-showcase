@@ -217,7 +217,7 @@ test('dogfood profile resolves a symlinked parent before package overlap checks'
 
     await assert.rejects(
       prepareDogfoodProfile({ packageRoot, profileRoot }),
-      /must not overlap the package root/,
+      /Product roots cannot overlap/,
     )
   } finally {
     await rm(testRoot, { force: true, recursive: true })

@@ -39,7 +39,7 @@ npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
 
 Canonical command는 explicit `appDataRoot`와 선택한 development `SemesterWorkspace`를 검증하고, `packageRoot`의 verified Runtime artifact와 app-managed runtime directory를 계산해 Express Server와 Vite Chat Shell을 함께 시작합니다. Fresh clone에서는 먼저 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 materialize해야 합니다. 시작·workspace·Runtime 제약은 [Server README](apps/server/README.md), 화면 동작과 후속 경계는 [Chat Shell README](apps/chat-shell/README.md)를 따릅니다.
 
-반복해서 실제 제품을 만질 때는 repository 밖의 고정 profile root를 지정하는 dogfood 명령을 사용합니다.
+반복해서 실제 제품을 만질 때는 repository 밖의 고정 profile root를 지정하는 dogfood 명령을 사용합니다. 이 helper는 별도 실행 topology를 만들지 않고 [ADR 0013](docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)의 canonical development composition에 위임합니다.
 
 ```bash
 npm run dogfood -- --root /absolute/path/to/ay-ple-dogfood

@@ -12,6 +12,7 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { runProductDevelopment } from './product-development-bootstrap.mjs'
+import { assertProductRootsDoNotOverlap } from './semester-workspace-materializer.mjs'
 
 const profileMarkerName = '.ay-ple-dogfood-profile.json'
 const profileMarkerKind = 'ay-ple-persistent-dogfood-profile'
@@ -37,6 +38,8 @@ export type DogfoodProfile = {
   readonly profileRoot: string
   readonly workspaceRoot: string
 }
+
+type DogfoodProfileLayout = Omit<DogfoodProfile, 'authState'>
 
 export function resolveDogfoodArguments(arguments_: readonly string[]): {
   readonly adoptExisting: boolean
@@ -109,7 +112,7 @@ export async function prepareDogfoodProfile(options: {
     'package root',
   )
   const profileRoot = await canonicalCandidatePath(options.profileRoot)
-  assertRootsDoNotOverlap(packageRoot, profileRoot)
+  assertProductRootsDoNotOverlap(packageRoot, profileRoot)
 
   const existing = await pathExists(profileRoot)
   if (existing) {
@@ -130,22 +133,20 @@ export async function prepareDogfoodProfile(options: {
     profileRoot,
     'dogfood profile root',
   )
-  const appDataRoot = path.join(canonicalProfileRoot, 'app-data')
-  const codexHome = path.join(appDataRoot, 'runtime/codex-home')
-  const workspaceRoot = path.join(canonicalProfileRoot, 'semester-workspace')
+  const layout = resolveProfileLayout(canonicalProfileRoot)
   await Promise.all([
-    canonicalDirectory(appDataRoot, 'dogfood app data root'),
-    secureDirectory(codexHome, 'dogfood Codex home'),
-    canonicalDirectory(workspaceRoot, 'dogfood SemesterWorkspace'),
-    secureRegularFile(path.join(codexHome, 'config.toml'), 'config.toml'),
+    canonicalDirectory(layout.appDataRoot, 'dogfood app data root'),
+    secureDirectory(layout.codexHome, 'dogfood Codex home'),
+    canonicalDirectory(layout.workspaceRoot, 'dogfood SemesterWorkspace'),
+    secureRegularFile(
+      path.join(layout.codexHome, 'config.toml'),
+      'config.toml',
+    ),
   ])
 
   return {
-    appDataRoot,
-    authState: await resolveAuthState(codexHome),
-    codexHome,
-    profileRoot: canonicalProfileRoot,
-    workspaceRoot,
+    ...layout,
+    authState: await resolveAuthState(layout.codexHome),
   }
 }
 
@@ -155,20 +156,18 @@ async function initializeProfile(
 ): Promise<void> {
   await mkdir(profileRoot, { mode: 0o700 })
   const canonicalProfileRoot = await realpath(profileRoot)
-  const appDataRoot = path.join(canonicalProfileRoot, 'app-data')
-  const codexHome = path.join(appDataRoot, 'runtime/codex-home')
-  const workspaceRoot = path.join(canonicalProfileRoot, 'semester-workspace')
+  const layout = resolveProfileLayout(canonicalProfileRoot)
   const sampleWorkspaceRoot = path.join(
     packageRoot,
     'apps/chat-shell/e2e/fixtures/first-assignment-semester-workspace',
   )
-  await mkdir(codexHome, { mode: 0o700, recursive: true })
-  await cp(sampleWorkspaceRoot, workspaceRoot, {
+  await mkdir(layout.codexHome, { mode: 0o700, recursive: true })
+  await cp(sampleWorkspaceRoot, layout.workspaceRoot, {
     errorOnExist: true,
     force: false,
     recursive: true,
   })
-  await writeFile(path.join(codexHome, 'config.toml'), codexConfig, {
+  await writeFile(path.join(layout.codexHome, 'config.toml'), codexConfig, {
     encoding: 'utf8',
     flag: 'wx',
     mode: 0o600,
@@ -181,24 +180,34 @@ async function adoptExistingProfile(profileRoot: string): Promise<void> {
     profileRoot,
     'dogfood profile root',
   )
-  const codexHome = path.join(
-    canonicalProfileRoot,
-    'app-data/runtime/codex-home',
-  )
+  const layout = resolveProfileLayout(canonicalProfileRoot)
   await Promise.all([
     canonicalDirectory(
-      path.join(canonicalProfileRoot, 'app-data'),
+      layout.appDataRoot,
       'dogfood app data root',
     ),
-    secureDirectory(codexHome, 'dogfood Codex home'),
+    secureDirectory(layout.codexHome, 'dogfood Codex home'),
     canonicalDirectory(
-      path.join(canonicalProfileRoot, 'semester-workspace'),
+      layout.workspaceRoot,
       'dogfood SemesterWorkspace',
     ),
-    secureRegularFile(path.join(codexHome, 'config.toml'), 'config.toml'),
+    secureRegularFile(
+      path.join(layout.codexHome, 'config.toml'),
+      'config.toml',
+    ),
   ])
-  await resolveAuthState(codexHome)
+  await resolveAuthState(layout.codexHome)
   await writeOwnershipMarker(canonicalProfileRoot)
+}
+
+function resolveProfileLayout(profileRoot: string): DogfoodProfileLayout {
+  const appDataRoot = path.join(profileRoot, 'app-data')
+  return {
+    appDataRoot,
+    codexHome: path.join(appDataRoot, 'runtime/codex-home'),
+    profileRoot,
+    workspaceRoot: path.join(profileRoot, 'semester-workspace'),
+  }
 }
 
 async function writeOwnershipMarker(profileRoot: string): Promise<void> {
@@ -322,22 +331,6 @@ async function canonicalCandidatePath(candidate: string): Promise<string> {
   }
   await access(parent, constants.R_OK | constants.W_OK | constants.X_OK)
   return path.join(parent, path.basename(path.resolve(candidate)))
-}
-
-function assertRootsDoNotOverlap(first: string, second: string): void {
-  if (rootContains(first, second) || rootContains(second, first)) {
-    throw new TypeError('Dogfood profile must not overlap the package root')
-  }
-}
-
-function rootContains(root: string, candidate: string): boolean {
-  const relative = path.relative(root, candidate)
-  return (
-    relative === '' ||
-    (relative !== '..' &&
-      !relative.startsWith(`..${path.sep}`) &&
-      !path.isAbsolute(relative))
-  )
 }
 
 async function pathExists(candidate: string): Promise<boolean> {

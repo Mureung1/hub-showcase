@@ -63,7 +63,7 @@ flowchart LR
   SDK --> Native
 ```
 
-Canonical `npm run dev -- --app-data-root <absolute-path>`는 package, app data와 materialized/override workspace를 검증한 뒤 Server와 Chat Shell을 exact local Origin으로 시작한다. Runtime은 product bootstrap의 Account Readiness read에서 lazy start할 수 있고, Python worker가 SDK initialize 후 private `ready`를 보낸 뒤에만 public factory가 resolve한다. Product native thread는 active ready workspace와 exact `cwd`를 가지며 private MCP URL·token은 그 thread에만 결합한다.
+Canonical `npm run dev -- --app-data-root <absolute-path>`는 package, app data와 materialized/override workspace를 검증한 뒤 Server와 Chat Shell을 exact local Origin으로 시작한다. Root `npm run dogfood -- --root <absolute-path>`는 repository 밖의 persistent profile과 isolated auth state를 준비·검증하고 같은 canonical composition에 `appDataRoot`와 caller-owned `SemesterWorkspace`를 전달한다. Runtime은 product bootstrap의 Account Readiness read에서 lazy start할 수 있고, Python worker가 SDK initialize 후 private `ready`를 보낸 뒤에만 public factory가 resolve한다. Product native thread는 active ready workspace와 exact `cwd`를 가지며 private MCP URL·token은 그 thread에만 결합한다.
 
 ## HTTP와 Browser contract
 
