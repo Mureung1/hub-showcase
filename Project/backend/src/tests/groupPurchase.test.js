@@ -174,12 +174,27 @@ describe('ThingDong Concurrency and State Transition Tests', () => {
         status: 'COMPLETED',
         deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
       });
+      await GroupPurchase.create({
+        hostId: hostUser.id,
+        title: '시간이 지난 모집 공구',
+        productUrl: 'https://example.com/expired-list',
+        totalPrice: 10000,
+        targetParticipants: 2,
+        currentParticipants: 0,
+        perPersonPrice: 5000,
+        pickupLatitude: 37.5665,
+        pickupLongitude: 126.978,
+        category: 'FOOD',
+        status: 'RECRUITING',
+        deadlineAt: new Date(Date.now() - 1000 * 60),
+      });
 
       const res = await request(app).get('/group-purchases');
 
       expect(res.status).toBe(200);
       expect(res.body.data.map((item) => item.title)).toContain('모집 중 공구');
       expect(res.body.data.map((item) => item.title)).not.toContain('마감 공구');
+      expect(res.body.data.map((item) => item.title)).not.toContain('시간이 지난 모집 공구');
     });
   });
 
@@ -302,6 +317,96 @@ describe('ThingDong Concurrency and State Transition Tests', () => {
       expect(participantResponse.body.data.user.id).toBe(participants[0].id);
       expect(participantResponse.body.data.joined[0].id).toBe(joinedPurchase.id);
       expect(participantResponse.body.data.hosted).toHaveLength(0);
+    });
+  });
+
+  describe('공동구매 주문·픽업 통합 흐름', () => {
+    let groupPurchase;
+
+    beforeEach(async () => {
+      await UserGroupPurchase.destroy({ where: {} });
+      await GroupPurchase.destroy({ where: {} });
+      groupPurchase = await GroupPurchase.create({
+        hostId: hostUser.id,
+        title: '주문부터 수령까지 테스트 공구',
+        productUrl: 'https://example.com/lifecycle',
+        totalPrice: 10000,
+        targetParticipants: 2,
+        currentParticipants: 2,
+        perPersonPrice: 5000,
+        pickupLatitude: 37.5665,
+        pickupLongitude: 126.978,
+        pickupTimeSlot: '토요일 오후 2시, 관리실 앞',
+        category: 'FOOD',
+        status: 'COMPLETED',
+        deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      });
+      await UserGroupPurchase.create({ userId: participants[0].id, groupPurchaseId: groupPurchase.id });
+      await UserGroupPurchase.create({ userId: participants[1].id, groupPurchaseId: groupPurchase.id });
+    });
+
+    test('방장만 순서대로 주문 완료와 픽업 대기 상태로 바꿀 수 있다', async () => {
+      const participantResponse = await request(app)
+        .patch(`/group-purchases/${groupPurchase.id}/status`)
+        .set('Authorization', getAuthHeader(participants[0].id))
+        .send({ status: 'ORDERED' });
+      expect(participantResponse.status).toBe(403);
+
+      const skippedResponse = await request(app)
+        .patch(`/group-purchases/${groupPurchase.id}/status`)
+        .set('Authorization', getAuthHeader(hostUser.id))
+        .send({ status: 'WAITING_PICKUP' });
+      expect(skippedResponse.status).toBe(409);
+
+      const orderedResponse = await request(app)
+        .patch(`/group-purchases/${groupPurchase.id}/status`)
+        .set('Authorization', getAuthHeader(hostUser.id))
+        .send({ status: 'ORDERED' });
+      expect(orderedResponse.status).toBe(200);
+      expect(orderedResponse.body.data.status).toBe('ORDERED');
+
+      const pickupResponse = await request(app)
+        .patch(`/group-purchases/${groupPurchase.id}/status`)
+        .set('Authorization', getAuthHeader(hostUser.id))
+        .send({ status: 'WAITING_PICKUP' });
+      expect(pickupResponse.status).toBe(200);
+      expect(pickupResponse.body.data.status).toBe('WAITING_PICKUP');
+    });
+
+    test('참여자의 수령 완료 기록이 모두 있어야 방장이 공구를 완료할 수 있다', async () => {
+      await request(app)
+        .patch(`/group-purchases/${groupPurchase.id}/status`)
+        .set('Authorization', getAuthHeader(hostUser.id))
+        .send({ status: 'ORDERED' });
+      await request(app)
+        .patch(`/group-purchases/${groupPurchase.id}/status`)
+        .set('Authorization', getAuthHeader(hostUser.id))
+        .send({ status: 'WAITING_PICKUP' });
+
+      const firstReceipt = await request(app)
+        .patch(`/group-purchases/${groupPurchase.id}/receipt`)
+        .set('Authorization', getAuthHeader(participants[0].id));
+      expect(firstReceipt.status).toBe(200);
+      expect(firstReceipt.body.data.isReceived).toBe(true);
+
+      const earlyFinish = await request(app)
+        .patch(`/group-purchases/${groupPurchase.id}/status`)
+        .set('Authorization', getAuthHeader(hostUser.id))
+        .send({ status: 'FINISHED' });
+      expect(earlyFinish.status).toBe(409);
+      expect(earlyFinish.body.error.code).toBe('PARTICIPANTS_NOT_RECEIVED');
+
+      const secondReceipt = await request(app)
+        .patch(`/group-purchases/${groupPurchase.id}/receipt`)
+        .set('Authorization', getAuthHeader(participants[1].id));
+      expect(secondReceipt.status).toBe(200);
+
+      const finishedResponse = await request(app)
+        .patch(`/group-purchases/${groupPurchase.id}/status`)
+        .set('Authorization', getAuthHeader(hostUser.id))
+        .send({ status: 'FINISHED' });
+      expect(finishedResponse.status).toBe(200);
+      expect(finishedResponse.body.data.status).toBe('FINISHED');
     });
   });
 

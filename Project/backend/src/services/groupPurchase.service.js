@@ -1,4 +1,5 @@
 const { GroupPurchase, UserGroupPurchase, User, sequelize } = require('../models');
+const { Op } = require('sequelize');
 const AppError = require('../utils/appError');
 
 async function listGroupPurchases(filters = {}) {
@@ -9,6 +10,9 @@ async function listGroupPurchases(filters = {}) {
   // Public feeds only show purchases that are still open for recruitment.
   // Closed purchases remain available through the authenticated user's activity page.
   where.status = filters.status || 'RECRUITING';
+  if (!filters.status || filters.status === 'RECRUITING') {
+    where.deadlineAt = { [Op.gt]: new Date() };
+  }
   return await GroupPurchase.findAll({
     where,
     include: [{ model: User, as: 'host', attributes: ['id', 'nickname', 'mannerTemperature'] }],
@@ -16,14 +20,28 @@ async function listGroupPurchases(filters = {}) {
   });
 }
 
-async function getGroupPurchaseById(id) {
+async function getGroupPurchaseById(id, viewerId = null) {
   const groupPurchase = await GroupPurchase.findByPk(id, {
     include: [{ model: User, as: 'host', attributes: ['id', 'nickname', 'mannerTemperature', 'noShowCount'] }],
   });
   if (!groupPurchase) {
     throw new AppError(404, '공동구매를 찾을 수 없습니다.', 'GROUP_PURCHASE_NOT_FOUND');
   }
-  return groupPurchase;
+  const data = groupPurchase.toJSON();
+  if (!viewerId) {
+    return { ...data, viewer: null };
+  }
+
+  const application = await UserGroupPurchase.findOne({ where: { groupPurchaseId: id, userId: viewerId } });
+  return {
+    ...data,
+    viewer: {
+      isHost: data.hostId === viewerId,
+      application: application
+        ? { id: application.id, isReceived: application.isReceived, isPaid: application.isPaid }
+        : null,
+    },
+  };
 }
 
 async function getMyGroupPurchaseActivities(userId) {
@@ -180,6 +198,69 @@ async function cancelGroupPurchaseJoin(groupPurchaseId, userId) {
   });
 }
 
+const nextStatuses = {
+  COMPLETED: 'ORDERED',
+  ORDERED: 'WAITING_PICKUP',
+  WAITING_PICKUP: 'FINISHED',
+};
+
+async function updateGroupPurchaseStatus(groupPurchaseId, hostId, nextStatus) {
+  return sequelize.transaction(async (transaction) => {
+    const groupPurchase = await GroupPurchase.findByPk(groupPurchaseId, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!groupPurchase) {
+      throw new AppError(404, '공동구매를 찾을 수 없습니다.', 'GROUP_PURCHASE_NOT_FOUND');
+    }
+    if (groupPurchase.hostId !== hostId) {
+      throw new AppError(403, '방장만 공동구매 상태를 변경할 수 있습니다.', 'HOST_ONLY');
+    }
+    if (nextStatuses[groupPurchase.status] !== nextStatus) {
+      throw new AppError(409, '현재 상태에서는 다음 단계로만 변경할 수 있습니다.', 'INVALID_STATUS_TRANSITION');
+    }
+    if (nextStatus === 'FINISHED') {
+      const notReceivedCount = await UserGroupPurchase.count({
+        where: { groupPurchaseId, isReceived: false },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (notReceivedCount > 0) {
+        throw new AppError(409, '모든 참여자의 수령 완료 후 공구를 마감할 수 있습니다.', 'PARTICIPANTS_NOT_RECEIVED');
+      }
+    }
+
+    await groupPurchase.update({ status: nextStatus }, { transaction });
+    return { id: groupPurchase.id, status: groupPurchase.status };
+  });
+}
+
+async function markGroupPurchaseReceipt(groupPurchaseId, userId) {
+  return sequelize.transaction(async (transaction) => {
+    const groupPurchase = await GroupPurchase.findByPk(groupPurchaseId, {
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!groupPurchase) {
+      throw new AppError(404, '공동구매를 찾을 수 없습니다.', 'GROUP_PURCHASE_NOT_FOUND');
+    }
+    if (groupPurchase.status !== 'WAITING_PICKUP') {
+      throw new AppError(409, '픽업 대기 상태에서만 수령 완료를 표시할 수 있습니다.', 'NOT_WAITING_PICKUP');
+    }
+    const application = await UserGroupPurchase.findOne({
+      where: { groupPurchaseId, userId },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!application) {
+      throw new AppError(404, '참여 내역을 찾을 수 없습니다.', 'JOIN_NOT_FOUND');
+    }
+
+    await application.update({ isReceived: true }, { transaction });
+    return { id: application.id, groupPurchaseId, isReceived: application.isReceived };
+  });
+}
+
 module.exports = {
   listGroupPurchases,
   getGroupPurchaseById,
@@ -187,4 +268,6 @@ module.exports = {
   createGroupPurchase,
   joinGroupPurchase,
   cancelGroupPurchaseJoin,
+  updateGroupPurchaseStatus,
+  markGroupPurchaseReceipt,
 };
