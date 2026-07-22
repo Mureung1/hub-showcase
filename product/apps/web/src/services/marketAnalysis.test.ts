@@ -134,6 +134,35 @@ describe("market analysis service", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("normalizes legacy snapshot flow arrays into time buckets", async () => {
+    const { flow_time_buckets: _flowTimeBuckets, ...legacyRaw } = analysis.raw;
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ analyses: { "연남:카페": { ...analysis, raw: legacyRaw } } }),
+            { status: 200 },
+          ),
+        ),
+    );
+
+    const result = await loadMarketAnalysis(markets[0], "카페", new AbortController().signal, {
+      allowDemoSnapshot: true,
+      period: "20251",
+    });
+
+    expect(result.analysis.raw.flow_time_buckets).toEqual([
+      { label: "00:00-06:00", value: 1 },
+      { label: "06:00-11:00", value: 2 },
+      { label: "11:00-14:00", value: 3 },
+      { label: "14:00-17:00", value: 4 },
+      { label: "17:00-21:00", value: 5 },
+      { label: "21:00-24:00", value: 6 },
+    ]);
+  });
+
   it("builds a comparison only when every market snapshot exists", async () => {
     const snapshot = {
       analyses: {

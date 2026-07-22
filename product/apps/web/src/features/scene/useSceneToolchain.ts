@@ -12,7 +12,11 @@ export function useSceneToolchain() {
       .then(setToolchain)
       .catch((loadError: unknown) => {
         if (!controller.signal.aborted) {
-          setError(loadError instanceof Error ? loadError.message : "GPU worker API가 연결되지 않았습니다.");
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "GPU worker API가 연결되지 않았습니다.",
+          );
         }
       });
     return () => controller.abort();

@@ -1,11 +1,4 @@
-import {
-  Box,
-  Clock3,
-  FileImage,
-  Lock,
-  UploadCloud,
-  X,
-} from "lucide-react";
+import { Box, Clock3, FileImage, Lock, UploadCloud, X } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { sceneAssetUrl, type CaptureType } from "../features/scene/sceneApi";

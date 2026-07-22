@@ -1,9 +1,6 @@
 import { useCallback, useState } from "react";
 
-import {
-  quickCategorySelection,
-  storeCategorySelection,
-} from "../market/categorySelection";
+import { quickCategorySelection, storeCategorySelection } from "../market/categorySelection";
 import type { AnalysisTopic, Category, CategorySelection } from "../market/types";
 import type { AnalysisUrlState } from "./analysisUrlState";
 import type { NearbyStoreResponse } from "./types";

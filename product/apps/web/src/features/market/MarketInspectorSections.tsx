@@ -91,7 +91,9 @@ export function InspectorHeader({
       {analysisState === "error" && categorySelection.coverage === "full" && (
         <div className="nearby-state is-error" role="alert">
           <b>상권 분석 데이터를 불러오지 못했습니다.</b>
-          <span>오류를 정적 예시 값으로 바꾸지 않았습니다. 연결을 확인한 뒤 다시 시도해 주세요.</span>
+          <span>
+            오류를 정적 예시 값으로 바꾸지 않았습니다. 연결을 확인한 뒤 다시 시도해 주세요.
+          </span>
           <button type="button" onClick={onAnalysisRetry}>
             다시 시도
           </button>
@@ -207,14 +209,20 @@ export function InspectorTurnoverAndSales({
                 <div>
                   <span>개업</span>
                   <i>
-                    <b className="positive" style={{ width: `${(openingCount / turnoverMaximum) * 100}%` }} />
+                    <b
+                      className="positive"
+                      style={{ width: `${(openingCount / turnoverMaximum) * 100}%` }}
+                    />
                   </i>
                   <strong>{openingCount}개</strong>
                 </div>
                 <div>
                   <span>폐업</span>
                   <i>
-                    <b className="negative" style={{ width: `${(closureCount / turnoverMaximum) * 100}%` }} />
+                    <b
+                      className="negative"
+                      style={{ width: `${(closureCount / turnoverMaximum) * 100}%` }}
+                    />
                   </i>
                   <strong>{closureCount}개</strong>
                 </div>
@@ -230,7 +238,9 @@ export function InspectorTurnoverAndSales({
           ) : (
             <p className="population-boundary-note">개·폐업 집계 데이터를 불러오지 못했습니다.</p>
           )}
-          <p className="turnover-note">월별 변화가 아닌 선택 분기 합계입니다. 기간별 추이는 후속 분석에서 제공합니다.</p>
+          <p className="turnover-note">
+            월별 변화가 아닌 선택 분기 합계입니다. 기간별 추이는 후속 분석에서 제공합니다.
+          </p>
         </section>
       )}
       {topic === "sales" && (
@@ -257,7 +267,9 @@ export function InspectorTurnoverAndSales({
               </b>
             </div>
           </div>
-          <p className="population-boundary-note">서울시 추정매출 집계이며 실제 개별 점포 매출이 아닙니다.</p>
+          <p className="population-boundary-note">
+            서울시 추정매출 집계이며 실제 개별 점포 매출이 아닙니다.
+          </p>
         </section>
       )}
     </>
@@ -285,9 +297,14 @@ export function InspectorRankings({
 }) {
   const [rankingGroupId, setRankingGroupId] = useState<"same_type" | "supported">("same_type");
   const rankingGroup = analysis?.rankings?.find((group) => group.id === rankingGroupId);
-  const visibleRankings = rankingGroup?.metrics.filter((metric) => rankingKeys[topic].includes(metric.key)) ?? [];
+  const visibleRankings =
+    rankingGroup?.metrics.filter((metric) => rankingKeys[topic].includes(metric.key)) ?? [];
 
-  if (categorySelection.coverage !== "full" || analysis === null || rankingKeys[topic].length === 0) {
+  if (
+    categorySelection.coverage !== "full" ||
+    analysis === null ||
+    rankingKeys[topic].length === 0
+  ) {
     return null;
   }
 
@@ -298,10 +315,18 @@ export function InspectorRankings({
         <small>높은 값 순 · 성공 순위 아님</small>
       </div>
       <div className="ranking-group-toggle" aria-label="순위 비교집단">
-        <button type="button" aria-pressed={rankingGroupId === "same_type"} onClick={() => setRankingGroupId("same_type")}>
+        <button
+          type="button"
+          aria-pressed={rankingGroupId === "same_type"}
+          onClick={() => setRankingGroupId("same_type")}
+        >
           같은 상권 유형
         </button>
-        <button type="button" aria-pressed={rankingGroupId === "supported"} onClick={() => setRankingGroupId("supported")}>
+        <button
+          type="button"
+          aria-pressed={rankingGroupId === "supported"}
+          onClick={() => setRankingGroupId("supported")}
+        >
           지원 상권
         </button>
       </div>
@@ -327,7 +352,9 @@ export function InspectorRankings({
           ))}
         </div>
       ) : (
-        <p className="population-boundary-note">API 순위 근거가 없습니다. 정적 fallback 값으로 순위를 만들지 않습니다.</p>
+        <p className="population-boundary-note">
+          API 순위 근거가 없습니다. 정적 fallback 값으로 순위를 만들지 않습니다.
+        </p>
       )}
     </section>
   );
@@ -348,7 +375,11 @@ export function InspectorFlow({
   activeHour: number;
   onActiveHourChange: (hour: number) => void;
 }) {
-  if (categorySelection.coverage !== "full" || analysis === null || (topic !== "overview" && topic !== "flow")) {
+  if (
+    categorySelection.coverage !== "full" ||
+    analysis === null ||
+    (topic !== "overview" && topic !== "flow")
+  ) {
     return null;
   }
 
@@ -364,8 +395,16 @@ export function InspectorFlow({
             <button
               key={market.demandLabels[index] ?? index}
               type="button"
-              title={value === null ? `${market.demandLabels[index]} 데이터 없음` : `${market.demandLabels[index]} 유동인구 상대값 ${value}`}
-              aria-label={value === null ? `${market.demandLabels[index]} 데이터 없음` : `${market.demandLabels[index]} 유동인구 상대값 ${value}`}
+              title={
+                value === null
+                  ? `${market.demandLabels[index]} 데이터 없음`
+                  : `${market.demandLabels[index]} 유동인구 상대값 ${value}`
+              }
+              aria-label={
+                value === null
+                  ? `${market.demandLabels[index]} 데이터 없음`
+                  : `${market.demandLabels[index]} 유동인구 상대값 ${value}`
+              }
               className={activeHour === index ? "active" : ""}
               style={{ height: `${value === null ? 10 : Math.max(10, value)}%` }}
               disabled={value === null}
@@ -397,7 +436,11 @@ export function InspectorFootfall({
   analysis: MarketAnalysis | null;
   topic: AnalysisTopic;
 }) {
-  if (categorySelection.coverage !== "full" || analysis === null || (topic !== "overview" && topic !== "flow")) {
+  if (
+    categorySelection.coverage !== "full" ||
+    analysis === null ||
+    (topic !== "overview" && topic !== "flow")
+  ) {
     return null;
   }
 
@@ -424,7 +467,8 @@ export function InspectorPopulation({
   backgroundState: "loading" | "ready" | "unavailable" | "error";
   topic: AnalysisTopic;
 }) {
-  if (categorySelection.coverage !== "full" || (topic !== "overview" && topic !== "population")) return null;
+  if (categorySelection.coverage !== "full" || (topic !== "overview" && topic !== "population"))
+    return null;
 
   return (
     <section className="population-metric-section">
@@ -434,29 +478,39 @@ export function InspectorPopulation({
       </div>
       {background ? (
         <>
-          <p className="population-space-label">서울시 상권 경계 · {background.market_resident_population.period}</p>
+          <p className="population-space-label">
+            서울시 상권 경계 · {background.market_resident_population.period}
+          </p>
           <div className="population-section">
             <div>
               <span>상권 상주인구</span>
               <b>{market.residentPopulation}</b>
               <small>
-                {background.market_resident_population.rank}/{background.market_resident_population.peer_count}위 · 상위 {background.market_resident_population.percentile}%
+                {background.market_resident_population.rank}/
+                {background.market_resident_population.peer_count}위 · 상위{" "}
+                {background.market_resident_population.percentile}%
               </small>
             </div>
             <div>
               <span>상권 직장인구</span>
               <b>{market.workPopulation}</b>
               <small>
-                {background.market_workers.rank}/{background.market_workers.peer_count}위 · 상위 {background.market_workers.percentile}%
+                {background.market_workers.rank}/{background.market_workers.peer_count}위 · 상위{" "}
+                {background.market_workers.percentile}%
               </small>
             </div>
           </div>
           <div className="population-density-row">
             <span>
-              상주 밀도 {Math.round(background.market_resident_density.value).toLocaleString("ko-KR")}명/km² · {background.market_resident_density.rank}/{background.market_resident_density.peer_count}위
+              상주 밀도{" "}
+              {Math.round(background.market_resident_density.value).toLocaleString("ko-KR")}명/km² ·{" "}
+              {background.market_resident_density.rank}/
+              {background.market_resident_density.peer_count}위
             </span>
             <span>
-              직장 밀도 {Math.round(background.market_worker_density.value).toLocaleString("ko-KR")}명/km² · {background.market_worker_density.rank}/{background.market_worker_density.peer_count}위
+              직장 밀도 {Math.round(background.market_worker_density.value).toLocaleString("ko-KR")}
+              명/km² · {background.market_worker_density.rank}/
+              {background.market_worker_density.peer_count}위
             </span>
           </div>
           <p className="population-space-label">행정동 배후통계 · {background.admin_area_name}</p>
@@ -464,17 +518,23 @@ export function InspectorPopulation({
             <div>
               <span>행정동 주민</span>
               <b>{background.resident_population.value.toLocaleString("ko-KR")}명</b>
-              <small>{background.resident_population.rank}/{background.resident_population.peer_count}위</small>
+              <small>
+                {background.resident_population.rank}/{background.resident_population.peer_count}위
+              </small>
             </div>
             <div>
               <span>행정동 종사자</span>
               <b>{background.workers.value.toLocaleString("ko-KR")}명</b>
-              <small>{background.workers.rank}/{background.workers.peer_count}위</small>
+              <small>
+                {background.workers.rank}/{background.workers.peer_count}위
+              </small>
             </div>
             <div>
               <span>사업체</span>
               <b>{background.businesses.value.toLocaleString("ko-KR")}개</b>
-              <small>{background.businesses.peer_count}개 동 중 {background.businesses.rank}위</small>
+              <small>
+                {background.businesses.peer_count}개 동 중 {background.businesses.rank}위
+              </small>
             </div>
           </div>
           <p className="population-boundary-note">{background.boundary_note}</p>
@@ -483,7 +543,9 @@ export function InspectorPopulation({
               .filter(
                 (item, index, items) =>
                   items.findIndex(
-                    (candidate) => candidate.source_name === item.source_name && candidate.period === item.period,
+                    (candidate) =>
+                      candidate.source_name === item.source_name &&
+                      candidate.period === item.period,
                   ) === index,
               )
               .map((item) => (
@@ -498,7 +560,9 @@ export function InspectorPopulation({
         </>
       ) : (
         <p className="population-boundary-note" role="status">
-          {backgroundState === "error" ? "배후 인구 통계를 불러오지 못했습니다." : "배후 인구 통계를 불러오는 중입니다."}
+          {backgroundState === "error"
+            ? "배후 인구 통계를 불러오지 못했습니다."
+            : "배후 인구 통계를 불러오는 중입니다."}
         </p>
       )}
     </section>
@@ -516,7 +580,8 @@ export function InspectorSummary({
   analysis: MarketAnalysis | null;
   topic: AnalysisTopic;
 }) {
-  if (categorySelection.coverage !== "full" || analysis === null || topic !== "overview") return null;
+  if (categorySelection.coverage !== "full" || analysis === null || topic !== "overview")
+    return null;
 
   return (
     <section className="insight-section">

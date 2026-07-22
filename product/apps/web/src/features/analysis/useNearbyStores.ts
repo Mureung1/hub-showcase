@@ -5,7 +5,7 @@ import type { NearbyStoreResponse } from "./types";
 
 export type NearbyStoreState = "loading" | "ready" | "empty" | "unsupported" | "error";
 
-export function useNearbyStores(request: NearbyRequest) {
+export function useNearbyStores(request: NearbyRequest, enabled = true) {
   const [state, setState] = useState<NearbyStoreState>("loading");
   const [data, setData] = useState<NearbyStoreResponse | null>(null);
   const [retryToken, setRetryToken] = useState(0);
@@ -13,6 +13,11 @@ export function useNearbyStores(request: NearbyRequest) {
   const { category, radius } = request;
 
   useEffect(() => {
+    if (!enabled) {
+      setData(null);
+      setState("loading");
+      return;
+    }
     const controller = new AbortController();
     setData(null);
     setState("loading");
@@ -28,7 +33,7 @@ export function useNearbyStores(request: NearbyRequest) {
         setState(error instanceof NearbyApiError && error.status === 422 ? "unsupported" : "error");
       });
     return () => controller.abort();
-  }, [category, radius, latitude, longitude, retryToken]);
+  }, [category, enabled, radius, latitude, longitude, retryToken]);
 
   return {
     state,

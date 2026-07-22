@@ -2,6 +2,15 @@ import type { Category, MarketKey } from "../features/market/types";
 import { apiUrl } from "./api";
 import type { SupportedMarket } from "./productCatalog";
 
+const FLOW_TIME_BUCKET_LABELS = [
+  "00:00-06:00",
+  "06:00-11:00",
+  "11:00-14:00",
+  "14:00-17:00",
+  "17:00-21:00",
+  "21:00-24:00",
+] as const;
+
 export type AnalysisSource = "api" | "demo";
 export type MarketAnalysisOptions = {
   allowDemoSnapshot?: boolean;
@@ -124,10 +133,39 @@ type Snapshot = {
   analyses: Record<string, MarketAnalysis>;
 };
 
+type SnapshotAnalysis = Omit<MarketAnalysis, "raw"> & {
+  raw: Omit<MarketAnalysis["raw"], "flow_time_buckets"> & {
+    flow_time_buckets?: MarketAnalysis["raw"]["flow_time_buckets"];
+  };
+};
+
+function normalizeSnapshotAnalysis(analysis: SnapshotAnalysis): MarketAnalysis {
+  if (analysis.raw.flow_time_buckets) return analysis as MarketAnalysis;
+
+  return {
+    ...analysis,
+    raw: {
+      ...analysis.raw,
+      flow_time_buckets: FLOW_TIME_BUCKET_LABELS.map((label, index) => ({
+        label,
+        value: analysis.raw.flow_by_time[index] ?? null,
+      })),
+    },
+  };
+}
+
 async function loadSnapshot(signal: AbortSignal) {
   const response = await fetch("/data/market-analysis.json", { signal });
   if (!response.ok) throw new Error(`Snapshot ${response.status}`);
-  return (await response.json()) as Snapshot;
+  const snapshot = (await response.json()) as { analyses: Record<string, SnapshotAnalysis> };
+  return {
+    analyses: Object.fromEntries(
+      Object.entries(snapshot.analyses).map(([key, analysis]) => [
+        key,
+        normalizeSnapshotAnalysis(analysis),
+      ]),
+    ),
+  } satisfies Snapshot;
 }
 
 export async function loadMarketAnalysis(

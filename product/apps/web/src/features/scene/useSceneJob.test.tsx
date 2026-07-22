@@ -24,9 +24,9 @@ afterEach(() => {
 describe("useSceneJob", () => {
   it("cleans up polling when the workspace closes", async () => {
     vi.useFakeTimers();
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(queuedJob), { status: 200 }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify(queuedJob), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
     const { result, unmount } = renderHook(() => useSceneJob());
 

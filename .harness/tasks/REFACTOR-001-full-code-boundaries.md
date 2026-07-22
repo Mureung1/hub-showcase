@@ -45,6 +45,7 @@ docs/development/architecture.md
 docs/development/tasks.md
 docs/development/validation.md
 GitHub #63, #62, #64~#71
+.harness/runs/2026-07-22-REFACTOR-001-completion-audit.md
 ```
 
 ## 5. Expected Changes
@@ -62,11 +63,11 @@ scripts: structure ratchet와 full check 연결
 
 ## 6. Acceptance Criteria
 
-- [ ] GitHub #63의 모든 하위 Issue가 검증 증거와 함께 종료된다.
-- [ ] runtime hardcoding과 production fixture fallback이 제거된다.
-- [ ] Web/API/Data/Scene의 책임 경계가 표준 문서와 일치한다.
+- [x] GitHub #63의 모든 하위 Issue가 검증 증거와 함께 종료된다.
+- [x] runtime hardcoding과 production fixture fallback이 제거된다.
+- [x] Web/API/Data/Scene의 책임 경계가 표준 문서와 일치한다.
 - [ ] 전체 자동 검사와 공개 핵심 흐름 smoke가 통과한다.
-- [ ] 새 구조 위반이 local check에서 실패한다.
+- [x] 새 구조 위반이 local check에서 실패한다.
 
 ## 7. Verification Plan
 
@@ -113,6 +114,6 @@ test(release): verify full refactoring regression
 
 - [x] 한 기능/한 버그/한 문서 단위인가?
 - [x] 관련 없는 파일을 변경하지 않았는가?
-- [ ] 검증 결과를 기록했는가?
+- [x] 검증 결과를 기록했는가?
 - [ ] 문서와 체크리스트가 실제 변경과 일치하는가?
 - [x] known limitation이 있으면 적었는가?
