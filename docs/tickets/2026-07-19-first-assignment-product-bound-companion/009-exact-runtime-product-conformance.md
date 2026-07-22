@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: needs-info
+- State: claimed
 - Surface: local-ticket
-- Next actor: human
+- Next actor: /implement
 
 ## Parent Spec
 
