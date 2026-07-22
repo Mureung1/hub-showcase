@@ -125,7 +125,7 @@ Signal handler를 설치하고 즉시 `process.exit()`하거나 cleanup 뒤 self
 | Ticket | Ticket 006이 고정 입력으로 넘기는 것 | 다시 열지 않을 것 |
 | --- | --- | --- |
 | 007 | Thin npm host가 `appDataRoot`와 cancellation/reporting을 주고 verified immutable `runtimeRoot`·Runtime identity를 받는 resolver seam | npm package composition, public command, listener·browser·instance lifecycle |
-| 008 | Workspace 없이 시작 가능한 single-origin host, verified-but-not-yet-started Runtime과 app-managed state, dynamic exact Origin. OAuth용 lazy Runtime의 non-workspace cwd와 workspace admission 전환을 결정한다. | 별도 OAuth web server·port 또는 global `~/.codex` authority |
+| 008 | Workspace 없이 시작 가능한 single-origin host, verified-but-not-yet-started Runtime과 app-managed state, dynamic exact Origin. OAuth용 lazy Runtime의 non-workspace cwd와 workspace admission 전환을 결정한다. | AY-PLE-owned 별도 OAuth web server·port 또는 global `~/.codex` authority. Official Codex가 managed browser login 내부에서 여는 loopback callback listener는 Ticket 008의 runtime dependency다. |
 | 009–010 | app-created workspace만 registry에 들어가는 three-root host | cwd/existing folder를 workspace로 채택하는 bootstrap |
 | 011 | Foreground supervisor와 `appDataRoot` instance lease를 process-level baseline으로 사용 | duplicate process ownership과 signal protocol |
 | 013 | Release manifest의 exact version을 넣는 Landing command `npx ay-ple@<release-version>`, conditional npm prompt, foreground terminal과 local dynamic URL | package/bin 이름, moving tag 사용 여부와 `--yes` 여부 |

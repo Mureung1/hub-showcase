@@ -29,8 +29,8 @@
 - 첫 preview의 지원 lane은 Apple Silicon Mac의 macOS 13.5 이상, Node `>=22.12 <23`, npm 10.x와 최신 Chrome/Chromium이다. npm registry, GitHub Releases, Codex OAuth와 provider endpoint에 연결 가능한 network를 prerequisite로 둔다.
 - Node 24, Safari, Intel Mac과 다른 OS는 별도 clean smoke 전까지 지원을 약속하지 않는다. 감지 시 검증하지 않은 환경임을 알리고 이 release의 green evidence로 계산하지 않는다.
 - First preview의 public 인증은 AY-PLE `appDataRoot`에 격리한 ChatGPT browser OAuth 하나다. API key, access token, device-code login과 전역 `~/.codex` credential import는 지원하지 않는다.
-- OAuth 성공은 matching login completion의 success 뒤 fresh `account/read`가 ChatGPT account와 `requiresOpenaiAuth: false`를 반환할 때만 인정한다. credential 파일 존재만으로 성공을 합성하지 않는다.
-- OAuth 취소·Browser 종료·실패는 workspace scaffold 전의 actionable `로그인 필요` 상태로 돌아가며 같은 UI에서 재시도한다. 만료된 session도 재인증으로 수렴하고, 오류를 이유로 다른 auth 방식으로 자동 fallback하지 않는다.
+- 새 active OAuth attempt를 성공으로 판정할 때는 matching login completion의 success 뒤 fresh `account/read`가 [Ticket 008의 contract](008-browser-oauth-lifecycle.md)에 따라 ChatGPT account를 확인해야 한다. Launch·relaunch의 기존 managed session은 fresh account read로 다시 확인하며, credential 파일 존재만으로 성공을 합성하지 않는다.
+- 명시적 OAuth 취소와 login failure는 workspace scaffold 전의 actionable `로그인 필요` 상태로 돌아가며 같은 UI에서 재시도한다. OAuth tab이나 전체 Browser 종료는 foreground host의 lifetime owner가 아니고 reliable close signal도 아니므로 즉시 terminal을 합성하지 않으며, Runtime의 matching completion 또는 bounded timeout 뒤 재실행의 fresh `account/read`로 수렴한다. 만료된 session도 재인증으로 수렴하고, 오류를 이유로 다른 auth 방식으로 자동 fallback하지 않는다.
 - `Semester Ready`는 live model turn을 요구하지 않으므로 완료 화면은 `Codex 연결됨`만 표시한다. Landing은 Codex를 사용할 수 있는 기존 ChatGPT account가 필요하다고 알리되, account read만으로 별도의 product entitlement나 실제 model 사용 가능성을 검증했다고 주장하지 않는다.
 - First-run golden path와 별도로 `ready-relaunch`를 필수 release gate로 둔다. `Semester Ready`에서 정상 종료한 뒤 같은 public `npx` 명령을 다시 실행하면 exact Runtime cache와 격리 OAuth session을 재사용하고 workspace registry의 active `SemesterWorkspace`를 다시 찾아 `WorkspaceManifest` validation 후 setup wizard 없이 workbench를 연다.
 - `ready-relaunch`는 scaffold나 기본값을 중복 생성·재작성하지 않는다. Setup 중 중단되면 마지막 안전 단계에서 재개하고, 불완전 scaffold는 Ready로 합성하지 않고 recovery 상태로 보내며, 충돌 경로나 사용자 파일을 자동 덮어쓰기·삭제하지 않는다.
