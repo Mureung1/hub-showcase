@@ -32,6 +32,7 @@ function AppFlowLayout() {
   // 화면 흐름 간 공유 상태 — 각 화면은 useOutletContext()로 읽고 쓴다
   const [githubId, setGithubId] = useState('')
   const [analysis, setAnalysis] = useState(null)
+  const [preferences, setPreferences] = useState(null)
   const [recommendation, setRecommendation] = useState(null)
   const [selectedItem, setSelectedItem] = useState(null)
   const activeIndex = ROUTE_STEP[pathname]
@@ -80,6 +81,8 @@ function AppFlowLayout() {
           setGithubId,
           analysis,
           setAnalysis,
+          preferences,
+          setPreferences,
           recommendation,
           setRecommendation,
           selectedItem,

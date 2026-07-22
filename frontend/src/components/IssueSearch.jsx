@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link, Navigate, useNavigate, useOutletContext } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
 import { createRecommendation } from '../api/index.js'
 import { buildDefaultPreferences } from '../utils/preferences.js'
 
-// 4 · 이슈 검색 (에이전트) — 추천 API(mock) 응답을 기다렸다가 결과 화면으로 자동 전환
+// 4 · 이슈 검색 (에이전트) — 추천 API 응답을 기다렸다가 결과 화면으로 자동 전환
 const SEARCH_STEPS = [
   {
     state: 'done',
@@ -33,36 +34,43 @@ const SEARCH_STEPS = [
 
 function IssueSearch() {
   const navigate = useNavigate()
-  const { analysis, setRecommendation } = useOutletContext()
-  const [errorMessage, setErrorMessage] = useState('')
+  const { analysis, preferences, setRecommendation } = useOutletContext()
+  // useMemo로 참조를 고정 — preferences가 null인 동안 매 렌더 새 객체가 생기면 아래 useEffect가 반복 실행된다
+  const effectivePreferences = useMemo(
+    () => preferences ?? (analysis ? buildDefaultPreferences(analysis) : null),
+    [preferences, analysis],
+  )
+
+  const { mutate, error } = useMutation({
+    mutationFn: () => createRecommendation(analysis.githubId, effectivePreferences),
+  })
 
   useEffect(() => {
-    if (!analysis) return undefined
+    if (!analysis || !effectivePreferences) return
     let cancelled = false
-    createRecommendation(analysis.githubId, buildDefaultPreferences(analysis))
-      .then((recommendation) => {
+    // analysis/preferences가 바뀌어 이 effect가 다시 실행되기 전에 응답이 오면 무시 — 늦게 도착한
+    // 이전 요청이 최신 상태를 덮어쓰고 엉뚱한 화면으로 넘기는 걸 막는다
+    mutate(undefined, {
+      onSuccess: (recommendation) => {
         if (cancelled) return
         setRecommendation(recommendation)
         navigate('/result')
-      })
-      .catch((error) => {
-        if (cancelled) return
-        setErrorMessage(error.message || '이슈를 찾지 못했어요. 잠시 후 다시 시도해주세요.')
-      })
+      },
+    })
     return () => {
       cancelled = true
     }
-  }, [analysis, setRecommendation, navigate])
+  }, [analysis, effectivePreferences, mutate, setRecommendation, navigate])
 
   if (!analysis) {
     return <Navigate to="/input" replace />
   }
 
-  if (errorMessage) {
+  if (error) {
     return (
       <div className="panel">
         <h1 className="a-title">이슈를 찾지 못했어요</h1>
-        <p className="a-lead">{errorMessage}</p>
+        <p className="a-lead">{error.message || '이슈를 찾지 못했어요. 잠시 후 다시 시도해주세요.'}</p>
         <Link to="/profile" className="btn btn-primary">
           다시 시도하기
         </Link>
