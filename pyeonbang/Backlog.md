@@ -19,15 +19,15 @@
 - [x] 파일명 기반 Mock 데이터 매핑 API 구조 설계
 - [x] API 호출 레이어 분리 및 로딩 애니메이션/토스트 UI 연동
 
-### 3주차: BE-DB 연동 및 데이터 흐름 완성 (7/20 ~ 7/24) - [진행 중]
-- [ ] **[1단계] Database 구조 파악 및 테이블 생성 실습**
+### 3주차: BE-DB 연동 및 데이터 흐름 완성 (7/20 ~ 7/24) - [완료 🎉]
+- [x] **[1단계] Database 구조 파악 및 테이블 생성 실습**
   - [pyeonbang.db](file:///home/ohbyeongjun/AI%20Agent/hub/pyeonbang/backend/pyeonbang.db) SQLite3 테이블 구조 이해 및 초기화 코드 분석
-- [ ] **[2단계] Backend(Flask) DB CRUD API 구현**
-  - GET `/api/history`: DB에서 저장된 내역을 읽어와 JSON 형태로 반환하는 로직 이해
-  - POST `/api/history`: 사용자가 보낸 분석 결과를 DB에 안전하게 기록(INSERT)하는 로직 이해
-  - DELETE `/api/history`: 누적 데이터를 DB에서 모두 지우는(DELETE) 로직 이해
-- [ ] **[3단계] Frontend(JS) fetch API 연결 및 화면 동기화**
-  - 기존 LocalStorage 의존도를 낮추고 백엔드 DB 서버로부터 실시간 데이터를 받아와 대시보드 갱신
+- [x] **[2단계] Backend(Flask) DB CRUD API 구현**
+  - GET `/api/history`: DB에서 저장된 내역을 읽어와 JSON 형태로 반환하는 로직 구현
+  - POST `/api/history`: 사용자가 보낸 분석 결과를 DB에 안전하게 기록(INSERT)하는 로직 구현
+  - DELETE `/api/history`: 누적 데이터를 DB에서 전체 또는 개별 삭제(DELETE)하는 로직 구현
+- [x] **[3단계] Frontend(JS) fetch API 연결 및 화면 동기화**
+  - 기존 LocalStorage 의존도를 낮추고 백엔드 DB 서버로부터 실시간 데이터를 받아와 대시보드 및 히스토리 이력 갱신
 
 ### 4주차: 비즈니스 로직 설계 및 종합 복습 (7/27 ~ 7/31)
 - [ ] **[4단계] 3단계 가성비 필터링 비즈니스 로직 결합**
