@@ -47,7 +47,7 @@ npm run preview   # 빌드 결과 미리보기
 - **구조**: 현재 루트는 그대로 Vite 프론트엔드로 두고, 신규 `backend/` 폴더에 별도 `package.json`(Express)을 둔다. 모노레포 툴 없이 프론트/백엔드 2-패키지로 단순하게 간다.
 - **백엔드**: Node.js + Express.
 - **AI 연동**: Anthropic Claude API(`@anthropic-ai/sdk`) — 공고 적합도 분석, 자소서 초안 생성에 사용.
-- **데이터**: 공고 목업 데이터는 `backend/data/postings.json` 파일로 관리한다(T3). Supabase는 **사용자 입력(프로필)**을 저장·조회하는 `profiles` 테이블 하나만 둔다([docs/checklist.md](docs/checklist.md) T2-b, T6) — 이걸로 2주차 미션의 CRUD 요구사항(화면→서버→DB 저장→응답)을 충족한다.
+- **데이터**: 공고 목업 데이터는 `backend/data/postings.json` 파일로 관리한다(T3). Supabase는 **사용자 입력(프로필)**을 저장·조회하는 `profiles` 테이블([docs/checklist.md](docs/checklist.md) T2-b, T6) — 이걸로 2주차 미션의 CRUD 요구사항(화면→서버→DB 저장→응답)을 충족한다. 3주차에 자소서 초안 영속 저장용 `drafts` 테이블을 추가했다(`docs/data-model.md` 참고).
 - **예상 라이브러리**: `express`, `cors`, `dotenv`, `@supabase/supabase-js`, 개발용 `nodemon`, `@anthropic-ai/sdk`.
 
 ## 커밋 컨벤션

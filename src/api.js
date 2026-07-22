@@ -31,6 +31,10 @@ export function submitProfile(profile) {
   return postJson('/api/profiles', profile, '추천 공고를 불러오지 못했습니다.');
 }
 
-export function generateDraft(postingId, profile) {
-  return postJson(`/api/postings/${postingId}/draft`, { profile }, '자소서 초안을 생성하지 못했습니다.');
+export function generateDraft(postingId, profileId, profile) {
+  return postJson(`/api/postings/${postingId}/draft`, { profileId, profile }, '자소서 초안을 생성하지 못했습니다.');
+}
+
+export function saveDraft(postingId, profileId, answers) {
+  return postJson(`/api/postings/${postingId}/draft/save`, { profileId, answers }, '초안을 저장하지 못했습니다.');
 }
