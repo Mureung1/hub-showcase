@@ -1,182 +1,224 @@
-# 다음 작업 프롬프트 — 부족 영양소 기반 쿠팡 파트너스 링크 자동 생성
+# 다음 작업 — 부족 영양소 기반 쿠팡 파트너스 상품 자동 수집
 
-> **목표**: 지금은 `src/data/coupangProducts.js`에 사람이 손으로 링크를 넣는 방식이다. 이걸
-> **쿠팡 파트너스 Open API**로 바꿔서, 사용자의 실제 부족 영양소에 맞는 상품을 그때그때 검색하고
-> 제휴 링크·상품명·가격·이미지를 자동으로 받아오게 한다.
->
-> 사용법: 아래 단계를 **순서대로**. `[대괄호]`는 본인 값으로 채운다.
-> **한 단계가 검증을 통과하기 전에 다음으로 넘어가지 말 것.**
+> **Step 1(조사·설계) 완료 상태 문서.** 조사 결과 **처음 구상했던 "사용자 요청마다 API 호출" 설계는
+> 불가능**한 것으로 확인됐다. 아래에 근거와 대안 설계를 정리했고, Step 2부터의 프롬프트는 대안 설계
+> 기준으로 다시 썼다.
 
 ---
 
-## Step 0 — 내가 먼저 확인할 것 (Claude Code 실행 **전**)
+## ⛔ 조사 결과: 원래 구상이 불가능한 이유
 
-쿠팡 파트너스 **Open API는 일반 가입만으로 바로 열리지 않을 수 있다.** 아래를 먼저 확인해야
-이 작업 전체가 의미가 있다.
+### 1. 검색 API 호출 한도가 **시간당 10회** (전체 계정 기준)
 
-1. [partners.coupang.com](https://partners.coupang.com) 로그인 → **내 정보 / 설정** 메뉴에서
-   **Open API** 또는 **API 키 발급** 항목이 있는지 확인
-2. 있다면 **ACCESS KEY / SECRET KEY** 발급 → 아래 표를 채워둔다
-3. **없거나 신청 후 승인 대기라면** — 이 작업은 대기해야 한다. 대신 지금 구조(수동 링크)에서
-   상품명·가격만 채워 넣는 게 낫다(`src/data/coupangProducts.js`의 `sourceUrl` 주석 참고)
+공식 문서에는 분당 50회로 적혀 있지만 **실제 적용은 시간당 10회**다. 초과하면 `rCode: 403`이 오고,
+**이 403이 3번 누적되면 파트너스 계정의 API 사용이 영구 제한될 수 있다.**
+
+이게 무슨 뜻이냐면:
+
+| 설계 | 결과 |
+|---|---|
+| 사용자가 식단 탭에 들어올 때마다 호출 | **사용자 10명이면 한 시간 한도 소진.** 반복되면 계정 정지 |
+| 사용자별로 다른 상품을 실시간 검색 | 한도상 불가능 |
+
+즉 "웹에서 사용자별로 실시간 추천"은 이 API로는 **어떤 캐싱을 얹어도 원래 형태로는 못 만든다.**
+
+### 2. API 키 발급에 **누적 판매금액 약 15만원** 조건
+
+파트너스 가입만으로는 API 키가 안 나온다. 공유한 링크를 통해 **누적 15만원어치 구매가 발생해야**
+최종 승인 → API 키 발급이다. 방금 제휴 링크를 만든 단계라면 아직 키를 받을 수 없다.
+
+### 3. 기타 제약
+
+- 검색 결과 **최대 10개**
+- `minPrice`/`maxPrice` 파라미터 **미지원** (넣어도 조용히 무시되고 가격이 뒤섞여 온다)
+
+---
+
+## ✅ 대안 설계 — "사전 수집 + 정적 서빙"
+
+### 핵심 통찰
+
+**사용자별로 달라지는 건 "어떤 영양소가 부족한가"이지, "상품 카탈로그"가 아니다.**
+
+- 영양소는 **11개로 고정**이다(`AD_NUTRIENTS`). 사용자가 100만 명이어도 11개다.
+- 부족 영양소 판정(사용자별 개인화)은 **이미 `src/utils/adRecommendation.js`가 하고 있다.**
+- 그러니 API로 자동화할 부분은 **"영양소별 상품 목록을 최신으로 유지하는 것"** 하나뿐이다.
+
+### 구조
+
+```
+[주기적 배치]  scripts/fetch-coupang-products.mjs
+   영양소 11개 × 검색 1회 = 11회 호출  (시간당 10회 한도 → 2시간에 나눠서, 또는 주 1회)
+        ↓ 상품명·가격·이미지·제휴링크 수집
+   src/data/coupangProducts.generated.json  (커밋해서 저장소에 포함)
+        ↓
+[런타임]  API 호출 0회. 기존 코드가 이 파일을 읽기만 한다.
+   src/utils/adRecommendation.js  ← 사용자별 부족 영양소 판정 (그대로, 안 바뀜)
+   src/components/DeficientNutrientAds.jsx  ← 표시 (그대로, 안 바뀜)
+```
+
+### 이 설계의 장점
+
+| | |
+|---|---|
+| **한도 안전** | 런타임 호출이 0회라 사용자가 아무리 늘어도 계정 정지 위험이 없다 |
+| **속도** | 광고 배너에 네트워크 대기가 없다(지금과 동일) |
+| **서버 불필요** | `/api/coupang-products` 라우트를 만들 필요가 없다. Render/Vercel 이중 배포 문제도 안 생긴다 |
+| **키 노출 위험 0** | 키는 개발자 로컬(또는 CI Secret)에만 있고, 배포물에는 아예 안 들어간다 |
+| **기존 코드 그대로** | 데이터 공급원만 바뀌고 추천 로직·화면은 손대지 않는다 |
+| **폴백 자동** | 배치가 실패하면 직전에 커밋된 JSON이 그대로 쓰인다 |
+
+### 잃는 것
+
+- "실시간 개인화 상품 검색"은 포기한다. → 하지만 **개인화는 이미 영양소 판정 단계에서 일어나고 있다.**
+  사용자 A는 단백질 상품을, 사용자 B는 식이섬유 상품을 본다. 그 차이가 개인화의 본질이고,
+  같은 "단백질" 사용자끼리 다른 상품을 보여줄 실익은 크지 않다.
+
+---
+
+## Step 0 — 내가 먼저 확인할 것
+
+1. [partners.coupang.com](https://partners.coupang.com) → 누적 판매금액이 **15만원**을 넘었는지 확인
+2. 넘었다면 **최종 승인** 여부 확인 → 승인 후 API 키(ACCESS/SECRET) 발급
 
 | 항목 | 값 |
 |---|---|
+| 누적 판매금액 | |
+| 최종 승인 상태 | 승인 / 미승인 |
 | ACCESS KEY | |
 | SECRET KEY | |
-| API 사용 가능 여부 | 가능 / 승인 대기 / 불가 |
-| 일일 호출 한도 | |
-
-> ⚠️ SECRET KEY는 **절대 `VITE_` 접두사를 붙이지 않는다.** 붙이면 프론트 번들에 그대로 박혀
-> 누구나 꺼내 쓸 수 있다. 이 앱의 다른 서버 키들처럼 `.env`에 서버 전용으로 둔다.
 
 ### ✅ Step 0 검증
-- [ ] API 키 2개 확보 (또는 "불가"로 확정 — 이 경우 작업 중단)
-- [ ] 현재 코드가 `main`에 머지되어 있고 빌드가 깨지지 않음
+- [ ] 키 2개 확보 → Step 2로
+- [ ] **아직 15만원 미달 → 이 작업 전체를 보류.** 대신 아래 "지금 당장 할 수 있는 것"을 한다
+
+### 💡 키가 없는 동안 할 수 있는 것 (권장)
+
+현재 등록된 제휴 링크 9개의 **상품명·가격·이미지만 손으로 채우면** 지금 구조에서 카드가 완성된다.
+[`src/data/coupangProducts.js`](../src/data/coupangProducts.js)의 각 항목에 `// sourceUrl:` 주석으로
+실제 상품 페이지 주소가 적혀 있으니, 열어서 복사해 붙이면 된다. 5분이면 끝나고 API가 필요 없다.
+상품명을 채우면 **같은 영양소의 2·3번 상품도 자동으로 노출 대상이 된다**(지금은 중복 카드 방지를 위해
+1번만 쓰고 있다).
 
 ---
 
-## Step 1 — 조사 및 설계 (구현 금지)
+## Step 1 — 조사 (완료됨)
 
-### 🤖 프롬프트 1
+이 문서 상단의 "조사 결과"와 "대안 설계"가 Step 1의 산출물이다. 아래는 확정된 기술 사양이다.
+
+### 인증 (HMAC)
 
 ```
-docs/next-쿠팡API-자동추천-프롬프트.md 와 docs/PRD_v2.md 의 "3. 영양제 광고" 섹션을 읽어와.
-
-지금은 src/data/coupangProducts.js 에 사람이 파트너스 링크를 손으로 넣는 방식인데,
-이걸 쿠팡 파트너스 Open API로 자동화하려고 한다.
-발급받은 키: ACCESS_KEY=[있음/없음], SECRET_KEY=[있음/없음]
-
-**아직 코드를 고치지 말고**, 먼저 다음 조사 결과만 보여줘:
-
-1. 쿠팡 파트너스 Open API 실제 스펙 확인 (웹 검색해서 최신 문서 기준으로):
-   - 엔드포인트 목록 중 이 기능에 쓸 수 있는 것 (상품 검색 / deeplink 생성 / 골드박스 등)
-   - 인증 방식(HMAC 서명 알고리즘, 헤더 형식)과 서명 생성에 필요한 입력값
-   - 응답에 상품명·가격·이미지URL·제휴링크가 다 들어오는지, 아니면 여러 번 호출해야 하는지
-   - 호출 한도(rate limit)와 캐싱 권장사항
-   - 링크 유효기간이 있는지 (있다면 캐시 TTL 설계에 영향)
-
-2. 이 저장소에 얹을 때의 설계:
-   - 서버 라우트는 server/proxy.js 한 파일에 다 있다. 여기에 /api/coupang-products 를
-     추가하는 게 기존 패턴(/api/naver-places 등)과 일치하는지 확인하고, 그 라우트의
-     요청/응답 스키마를 제안해줘
-   - 캐싱 위치 제안 2가지 이상 + 각 장단점 + 추천안
-     (서버 메모리 / 파일 / Supabase 테이블 / 클라이언트 localStorage)
-     주의: Vercel 서버리스는 인스턴스가 수시로 죽어 메모리 캐시가 오래 못 산다.
-     이 저장소는 Render와 Vercel 두 곳에 동시 배포된다(CLAUDE.md 참고) — 양쪽에서
-     다 동작하는 방식이어야 한다
-   - 영양소 -> 검색 키워드 매핑을 어디에 둘지
-     (현재 AD_NUTRIENTS는 앱이 추적하는 5개 + 폴백 미량영양소 6개로 나뉘어 있다)
-
-3. 기존 코드와의 접합면:
-   - src/utils/adRecommendation.js 의 recommendAdProducts()는 순수 동기 함수다.
-     API를 붙이면 비동기가 되는데, 이 함수의 시그니처를 바꿀지 / 데이터 공급만
-     교체하고 함수는 그대로 둘지 두 안을 비교하고 추천해줘
-     (추천 로직 자체는 npm run check:ads 로 검증되고 있으니 그 테스트가 계속
-      돌아가는 쪽이 유리하다)
-   - API가 실패하거나 한도 초과일 때 지금의 정적 파일(coupangProducts.js)로
-     폴백하는 구조가 가능한지 — "배너는 항상 표시"(FR-3.4)가 깨지면 안 된다
-
-4. 수정 예상 파일 목록과 작업 순서
-
-조사 결과를 보고 내가 방향을 승인하면 그때 구현을 시작해.
+message   = datetime + method + path + query      // 이 순서로 단순 연결
+datetime  = UTC, "yyMMddTHHmmssZ" 형식             // 예: 260722T143022Z
+signature = HMAC-SHA256(message, SECRET_KEY)      // hex
+header    = Authorization: CEA algorithm=HmacSHA256, access-key=<ACCESS>, signed-date=<datetime>, signature=<sig>
 ```
 
-> ⏸ **여기서 멈추고** 조사 결과를 읽는다. 특히 **캐싱 방식**과 **recommendAdProducts 시그니처**
-> 두 가지는 반드시 직접 판단할 것. 승인 후 Step 2.
+주의: `path`에 query를 포함하지 않고, `query`는 `?` 없이 따로 붙인다.
 
-### ✅ Step 1 검증
-- [ ] API 문서 기준의 실제 엔드포인트/인증 방식이 확인됨 (추측이 아니라 문서 근거)
-- [ ] 캐싱 방식이 Render·Vercel 양쪽에서 동작하는 안으로 정해짐
-- [ ] API 실패 시 폴백 경로가 설계에 포함됨
+### 검색 API 응답 필드
+
+```
+{ rCode: "0", rMessage: "", data: { productData: [
+    { productId, productName, productPrice, productImage, productUrl, isRocket, categoryName }
+] } }
+```
+
+`rCode`가 `"0"`이면 성공. `productUrl`이 **이미 제휴 추적이 붙은 링크**다(별도 deeplink 변환 불필요).
+
+### 우리 스키마와의 매핑
+
+| 쿠팡 응답 | `coupangProducts.js` 스키마 |
+|---|---|
+| `productId` | `id` (`cp-<nutrient>-<productId>`) |
+| `productName` | `productName` |
+| `productPrice` | `price` |
+| `productImage` | `imageUrl` |
+| `productUrl` | `partnersUrl` |
+| (검색 키워드로 역산) | `nutrient` |
 
 ---
 
-## Step 2 — 서버 구현
+## Step 2 — 수집 스크립트 구현 (키 확보 후)
 
 ### 🤖 프롬프트 2
 
 ```
-좋아, [승인한 방식]으로 구현해. 서버 쪽부터.
+docs/next-쿠팡API-자동추천-프롬프트.md 를 읽어와. 조사는 이미 끝났고, "대안 설계"대로 구현한다.
+API 키를 발급받았다: ACCESS_KEY / SECRET_KEY 확보.
 
-1. 환경변수:
-   - .env / .env.example / README.md 환경변수 표에 COUPANG_ACCESS_KEY,
-     COUPANG_SECRET_KEY 추가 (서버 전용 — VITE_ 접두사 절대 금지)
-   - 키가 없으면 라우트가 500으로 죽지 말고, "설정 안 됨"을 명확히 알리는 응답을 주고
-     클라이언트가 정적 폴백으로 넘어가게 할 것
+**중요 제약(반드시 지킬 것)**: 검색 API는 시간당 10회 한도이고, 403이 3번 쌓이면 파트너스 계정의
+API가 영구 정지될 수 있다. 그래서 이 작업에서 만드는 건 런타임 API 호출이 아니라 **오프라인 배치
+스크립트**다. 서버 라우트(/api/...)는 만들지 않는다.
 
-2. server/proxy.js 에 /api/coupang-products 추가:
-   - 요청: 영양소 키 목록 (예: ?nutrients=protein,fiber,fat)
-   - 응답: 기존 상품 스키마와 **동일한 모양**으로 정규화
-     { id, nutrient, productName, price, imageUrl, partnersUrl }
-     -> 이렇게 해야 화면 컴포넌트를 안 고쳐도 된다
-   - HMAC 서명 생성은 별도 함수로 분리 (테스트 가능하게)
-   - 기존 라우트들과 동일한 타임아웃/재시도/에러 처리 패턴을 따를 것
-     (server/proxy.js의 다른 라우트를 먼저 읽고 맞춰줘)
-   - express-rate-limit이 이미 있으니 이 라우트에도 적용
+1. scripts/fetch-coupang-products.mjs (신규):
+   - .env에서 COUPANG_ACCESS_KEY / COUPANG_SECRET_KEY를 읽는다(VITE_ 접두사 금지)
+   - src/data/coupangProducts.js의 AD_NUTRIENTS 11개 각각에 대해 검색 키워드를 정의하고
+     (키워드 표는 이 스크립트 안이 아니라 데이터 파일 쪽에 두는 게 나은지 판단해서 제안해줘)
+     영양소당 1회씩 검색
+   - **호출 사이에 최소 6분 간격을 강제**할 것(시간당 10회 = 6분당 1회). 진행 상황을 콘솔에
+     출력해서 몇 분 남았는지 보이게
+   - --nutrient=protein 처럼 특정 영양소만 갱신하는 옵션, --dry-run 옵션 제공
+   - 403(rCode 403)을 받으면 **즉시 중단**하고 남은 호출을 시도하지 말 것. 다시 실행하기까지
+     얼마나 기다려야 하는지 안내 출력
+   - HMAC 서명 생성은 별도 함수로 분리하고, 서명 결과를 검증하는 단위 확인을 스크립트 안에 포함
 
-3. 캐싱: [승인한 방식]으로. 영양소별로 캐시하고 TTL은 [정한 값].
-   캐시 히트/미스를 서버 로그에 남겨 한도 초과를 미리 감지할 수 있게 해줘.
+2. 결과 저장: src/data/coupangProducts.generated.json
+   - 스키마는 기존과 동일: { id, nutrient, productName, price, imageUrl, partnersUrl }
+   - 수집 시각(fetchedAt)도 함께 기록
+   - 의약품 오인 표현("치료"/"예방"/"개선 보장")이 상품명에 있으면 그 상품은 제외
+     (scripts/check-ad-recommendation.mjs에 같은 검사가 있다)
+   - 가격이 0이거나 상품명이 비면 제외
+   - 이 파일은 **커밋한다**(배포물에 포함되어야 하고, 배치 실패 시 폴백이 되어야 하므로)
 
-4. 안전장치:
-   - 쿠팡 응답에 상품명이 없거나 가격이 이상하면(0원 등) 그 항목은 버릴 것
-   - "치료/예방/개선 보장" 같은 의약품 오인 표현이 상품명에 들어있으면 그 상품은
-     제외 (식품표시광고법 — scripts/check-ad-recommendation.mjs에 같은 검사가 있다)
-   - 응답 상품 수 상한을 둬서 거대한 페이로드가 오지 않게
+3. src/data/coupangProducts.js:
+   - generated.json이 있으면 그걸 우선 쓰고, 없거나 비어 있으면 지금 손으로 넣은 목록을
+     쓰도록 병합한다. 손으로 넣은 항목이 사라지면 안 된다
+   - 영양소당 최소 1개 보장(하나라도 비면 배너가 빌 수 있다)
 
-5. 완료 후: curl로 라우트를 직접 때려보는 명령과 기대 응답 예시를 알려줘.
-   API 키가 없는 상태에서의 동작도 함께 확인시켜줘.
+4. .env.example / README.md 환경변수 표에 COUPANG_ACCESS_KEY, COUPANG_SECRET_KEY 추가.
+   "서버 런타임에는 쓰이지 않고 수집 스크립트에서만 쓰는 키"라고 명시할 것
+
+5. 완료 후: --dry-run으로 서명 생성까지만 확인하는 방법과, 실제 수집 시 예상 소요 시간을 알려줘.
 ```
 
 ### ✅ Step 2 검증
-- [ ] `curl "http://localhost:8787/api/coupang-products?nutrients=protein"` → 상품 배열 반환
-- [ ] 키를 비운 상태로 재시작 → 500이 아니라 "설정 안 됨" 응답
-- [ ] 같은 요청 2회 → 두 번째는 캐시 히트(로그로 확인)
-- [ ] `git grep VITE_COUPANG` → **0건** (프론트에 키가 새지 않았는지)
-- [ ] 브라우저 devtools Network에서 SECRET KEY가 안 보임
+- [ ] `node scripts/fetch-coupang-products.mjs --dry-run` → 실제 호출 없이 서명·요청 URL만 출력
+- [ ] `--nutrient=protein` 1개만 실행 → `generated.json`에 단백질 상품이 채워짐
+- [ ] 상품명·가격·이미지가 **실제 값**으로 들어옴
+- [ ] 403을 받으면 즉시 중단하고 대기 안내가 뜸 (일부러 연달아 호출해 확인)
+- [ ] `git grep VITE_COUPANG` → 0건
+- [ ] `npm run check:ads` 통과 / `npm run build` 통과
+- [ ] 식단 탭에서 실제 상품명·가격·이미지가 보임
 
 ---
 
-## Step 3 — 클라이언트 통합
+## Step 3 — 갱신 자동화 (선택)
 
 ### 🤖 프롬프트 3
 
 ```
-서버가 되니 이제 화면에 붙이자.
+수집 스크립트가 잘 도니, 주기적으로 돌게 만들자.
 
-1. src/lib/coupangProducts.js (신규, lib 쪽) — /api/coupang-products 호출 래퍼.
-   fetchWithTimeout을 쓰고 apiBase를 거칠 것(src/lib/apiBase.js — APK 원격 URL 방식
-   때문에 필요하다).
+1. 갱신 주기 제안과 근거를 먼저 알려줘 (상품 가격이 얼마나 자주 바뀌는지 / 한도가 시간당
+   10회인 점 / 11개 영양소를 다 돌면 1시간 이상 걸리는 점을 고려)
 
-2. src/components/DeficientNutrientAds.jsx:
-   - 부족 영양소가 정해지면 그 영양소로 API를 호출해 상품을 채운다
-   - 로딩 중에는 Skeleton(src/components/Skeleton.jsx) 3장
-   - **API가 실패하거나 비어 있으면 기존 정적 데이터(src/data/coupangProducts.js)로
-     폴백** — 배너가 비는 상태는 절대 만들지 말 것(FR-3.4)
-   - AD 배지와 쿠팡 파트너스 고지 문구는 어떤 상태에서도(로딩/실패 포함) 그대로 표시
+2. 실행 방식 2가지를 비교하고 추천해줘:
+   (a) GitHub Actions cron — 키를 GitHub Secrets에 두고, 결과 JSON을 자동 커밋/PR
+   (b) 로컬에서 수동 실행 후 커밋
+   이 저장소는 Render와 Vercel에 동시 배포되므로, JSON이 커밋되면 양쪽에 자동 반영된다는 점도 확인
 
-3. src/utils/adRecommendation.js:
-   - [승인한 방식]대로. 추천 로직(어떤 영양소가 부족한지)은 그대로 순수 함수로 두고,
-     상품 공급만 교체하는 쪽이면 npm run check:ads가 계속 통과해야 한다
+3. (a)를 고르면 워크플로 파일을 만들고, 실패 시(403 등) 조용히 넘어가지 않고
+   알림이 남게 해줘. 이전 JSON을 덮어쓰지 않는 것도 중요하다
 
-4. 중복 호출 방지: 식단 탭을 오갈 때마다 API를 새로 때리지 않게 클라이언트에도
-   짧은 캐시(또는 세션 단위 메모이제이션)를 둘 것
-
-5. 트래킹(src/lib/adData.js): 상품 id가 이제 쿠팡 상품 id 기반으로 바뀌므로,
-   기존 로컬 집계 데이터와 섞이지 않게 처리 방안을 알려줘
-
-6. 완료 후: npm run lint / npm run check:ads / npm run build 결과와,
-   API 정상 / API 실패 / 기록 없음 3가지 상태를 어떻게 재현해 확인하는지 알려줘.
+4. 수집이 오래된 경우(예: 30일 이상) check:ads가 경고를 출력하도록 추가
 ```
 
 ### ✅ Step 3 검증
-- [ ] 식단 기록 후 식단 탭 → 부족 영양소에 맞는 **실제 상품명·가격·이미지**가 뜬다
-- [ ] 서버를 끄고 새로고침 → 배너가 사라지지 않고 정적 폴백 상품이 뜬다
-- [ ] 기록이 없는 계정 → 폴백 영양소(비타민D 등) 상품이 뜬다
-- [ ] 카드 탭 → 실제 쿠팡 상품 페이지 (APK에서는 외부 브라우저)
-- [ ] AD 배지 + 파트너스 고지 문구가 **로딩 중에도** 보인다
-- [ ] `npm run check:ads` 통과 / `npm run build` 통과
-- [ ] 커밋: `git commit -m "feat: Coupang Partners API auto-recommendation"`
+- [ ] 수동 트리거로 워크플로 1회 성공
+- [ ] 403 상황에서 기존 JSON이 손상되지 않음
+- [ ] 오래된 데이터 경고가 뜸
 
 ---
 
@@ -184,27 +226,32 @@ docs/next-쿠팡API-자동추천-프롬프트.md 와 docs/PRD_v2.md 의 "3. 영�
 
 | 항목 | 왜 |
 |---|---|
-| **SECRET KEY 노출** | `VITE_` 접두사를 붙이면 프론트 번들에 평문으로 박힌다. 반드시 서버 전용 |
-| **호출 한도** | 사용자가 식단 탭에 들어올 때마다 호출하면 금방 한도를 넘긴다. 영양소 조합은 경우의 수가 적으니 캐시 효율이 아주 좋다 |
-| **Vercel 서버리스** | 인스턴스가 수시로 죽어 메모리 캐시가 오래 못 산다. Render와 Vercel **양쪽**에 배포되는 저장소임을 잊지 말 것 |
-| **배너가 비는 상태** | FR-3.4가 "배너는 항상 표시"를 요구한다. API 실패·한도 초과·네트워크 끊김 모두 정적 폴백으로 이어져야 한다 |
-| **의약품 오인 표현** | 쿠팡에서 받아온 상품명에 "혈압 개선" 같은 표현이 섞여 올 수 있다. 서버에서 걸러야 한다 |
-| **고지 문구** | 문구 변경·생략 금지. 상품이 API에서 오든 정적 파일에서 오든 동일하게 표시 |
-| **개인정보** | 부족 영양소는 건강 관련 정보다. 쿠팡에 보내는 건 **검색 키워드**뿐이어야 하고, 사용자 식별자나 식단 내역을 함께 보내면 안 된다 |
+| **시간당 10회 한도** | 가장 위험하다. 403 3회면 **계정 API 영구 정지 가능**. 호출 간 6분 간격 강제 + 403 시 즉시 중단이 필수 |
+| **런타임 호출 금지** | 사용자 요청 경로에서 이 API를 부르면 안 된다. 배치 전용 |
+| **SECRET KEY** | `VITE_` 접두사 금지. 이 설계에서는 아예 배포물에 안 들어간다(로컬/CI Secret에만) |
+| **배너가 비는 상태** | FR-3.4 "배너는 항상 표시". generated.json이 비거나 깨져도 손으로 넣은 목록으로 폴백되어야 한다 |
+| **의약품 오인 표현** | 쿠팡에서 받아온 상품명에 "혈압 개선" 같은 표현이 섞여 올 수 있다. 수집 단계에서 걸러야 한다 |
+| **개인정보** | 이 설계에서는 쿠팡에 사용자 정보가 전혀 안 나간다(검색 키워드는 고정 11개). 실시간 설계였다면 부족 영양소가 건강정보로 새어나갈 수 있었다 — 대안 설계의 부수적 이점 |
 
 ---
 
 ## 참고: 지금 구조에서 이미 준비된 것
 
-이 작업이 쉬운 이유는 3주차에 층이 분리돼 있기 때문이다.
-
 ```
-src/data/coupangProducts.js      ← 상품 "데이터" (여기를 API로 교체)
-src/utils/adRecommendation.js    ← 어떤 영양소가 부족한지 판단 (순수 함수, 안 바뀜)
-src/components/DeficientNutrientAds.jsx  ← 표시 (스키마가 같으면 거의 안 바뀜)
+src/data/coupangProducts.js      ← 상품 "데이터"  (여기만 generated.json 병합으로 교체)
+src/utils/adRecommendation.js    ← 사용자별 부족 영양소 판정 (순수 함수, 안 바뀜)
+src/components/DeficientNutrientAds.jsx  ← 표시 (안 바뀜)
 ```
 
-응답을 `{ id, nutrient, productName, price, imageUrl, partnersUrl }` 모양으로만 맞추면
-화면 코드는 손대지 않아도 된다. `productName`/`price`/`imageUrl`이 비어도 화면이 알아서
-대체 표기하도록 이미 만들어져 있어서(`displayProductName`), API 응답이 부분적으로만 와도
-깨지지 않는다.
+`productName`/`price`/`imageUrl`이 비어도 화면이 대체 표기하도록 이미 만들어져 있어서
+(`displayProductName`), 수집이 부분적으로만 성공해도 깨지지 않는다.
+
+---
+
+## 출처
+
+- [HMAC Signature 생성 — 쿠팡 Open API 공식](https://developers.coupang.com/hc/en-us/articles/360033461914-Creating-HMAC-Signature)
+- [API 인증 — 쿠팡 Open API 공식](https://developers.coupangcorp.com/hc/en-us/sections/360004301613-API-authentication)
+- [쿠팡파트너스 검색 API 호출 제한 및 가격 필터링 이슈 (시간당 10회, 403 3회 영구정지)](https://velog.io/@shwj203/%EC%BF%A0%ED%8C%A1%ED%8C%8C%ED%8A%B8%EB%84%88%EC%8A%A4-%EA%B2%80%EC%83%89-API-%ED%98%B8%EC%B6%9C-%EC%A0%9C%ED%95%9C-%EB%B0%8F-%EA%B0%80%EA%B2%A9-%ED%95%84%ED%84%B0%EB%A7%81-%EC%9D%B4%EC%8A%88)
+- [쿠팡 파트너스 API 키 발급 조건 (누적 15만원)](https://www.inflearn.com/en/community/questions/1485079/)
+- [쿠팡 파트너스 SDK (응답 필드 참고)](https://github.com/mooooburg-dev/coupang-partners-sdk-standalone)
