@@ -103,7 +103,7 @@ Server shutdown은 다음 순서를 유지한다.
 
 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)이 workspace-local current store를 첫 durable baseline으로 채택한다. 구현 topology에서의 결과는 cutover·restart가 confirmed state를 삭제하지 않고, 이해할 수 없는 store가 product mutation을 열지 않는다는 것이다. Exact codec·invariant·physical I/O 동작은 [Server README](../../apps/server/README.md)가 소유한다.
 
-[ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md)의 `WorkspaceManifest`를 추가하더라도 current v2 directory를 자동으로 canonical `SemesterWorkspace`로 채택하지 않는다. Current v2의 workspace·Course identity와 `WorkspaceManifest` 사이의 single authority, version transition과 bytes-preserving failure는 scaffold implementation 전에 결정해야 한다.
+[ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md)는 public target을 existing `.ay-ple/workspace-state.json` seam의 single v3 aggregate로 정해 logical `WorkspaceManifest`만 workspace·Course identity를 소유하게 했다. Current v2는 계속 current implementation authority이며 target admission은 아직 구현되지 않았다. First preview는 current v2를 자동 migration·adopt하지 않고 original bytes를 `legacy_migration_required/readOnly`로 보존한다.
 
 ## 검증 표면
 

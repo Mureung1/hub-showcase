@@ -184,7 +184,7 @@ First Assignment vertical은 다음 kernel을 이미 증명했다.
 | 제공 형태 | macOS에서 local companion과 browser UI를 함께 사용하는 local web app. Packaged Desktop App은 후속 |
 | runtime 전제 | First Assignment vertical에서 검증한 observable execution contract, 격리된 제품 layout과 native Codex mapping. 일반 Chat completeness를 전제로 하지 않는다. |
 | 다음 vertical 후보 | `ImportSource` admission, PDF, `Exam`, 여러 과목 공지에서 시험·과제 표 만들기, derived timeline, 읽기용 정리 문서, 학기 상태 질의 |
-| 후속 아키텍처 | 학기 rollover와 memory 관리 UX, history·rollback, first vertical의 proposal 경계 밖에 있는 추가 Codex extension surface, 안정화된 source locator, exact workspace schema·migration |
+| 후속 아키텍처 | 학기 rollover와 memory 관리 UX, history·rollback, first vertical의 proposal 경계 밖에 있는 추가 Codex extension surface, 안정화된 source locator, 첫 normalized format 이후 workspace schema evolution·migration |
 | 제외 | 과제 정답 대행, 시험 답안 대행, 자동 제출, LMS 우회 자동화, 클라우드 동기화, 다중 실행 엔진 추상화 |
 
 `ScheduleEvent`는 Assignment나 Exam이 소유하지 않는 독립 시간 사실이라는 경계만 정했으며 첫 vertical 범위 밖이다. `MarkdownProjection`과 `WorkspaceHistory`도 정의된 후속 개념이지만 이번 범위에는 포함하지 않는다. 학생의 할 일, timeline, 공지 해석, 불확실성 표현처럼 아직 이름과 owner가 정해지지 않은 모델은 실제 다음 vertical에서 의미를 확인한 뒤 도입한다.
@@ -247,6 +247,6 @@ PDF text extraction, OCR, HWP/HWPX parsing처럼 결정적으로 처리할 수 �
 | 기존 자료 폴더를 workspace로 오인함 | 외부 자료는 `ImportSource`, app-owned scaffold만 `SemesterWorkspace`로 구분한다. |
 | Landing이 kernel과 public capability를 혼동함 | 구현된 내부 vertical과 새 사용자가 끝까지 도달할 수 있는 release claim을 분리한다. |
 
-## 열린 질문
+## 결정된 경계와 열린 질문
 
-Workspace schema의 app ownership은 채택했으며 exact `WorkspaceManifest` field, physical layout과 version migration은 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md)의 경계 안에서 후속 spec이 정한다. EvidenceRef locator, thread UX, Memory rollover와 후속 derived view의 작업 순서는 [개발 백로그](ay-ple-development-backlog.md)에서 관리한다.
+첫 normalized workspace의 single aggregate authority, exclusive new-leaf scaffold와 current v2 no-auto-migration은 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md)가 채택했다. Exact field roster·encoding·filesystem recovery는 resulting implementation spec이 고정하고, 이후 실제 schema evolution·migration은 supported source→target pair가 생길 때 별도로 결정한다. EvidenceRef locator, thread UX, Memory rollover와 후속 derived view의 작업 순서는 [개발 백로그](ay-ple-development-backlog.md)에서 관리한다.

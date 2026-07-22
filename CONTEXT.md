@@ -15,7 +15,7 @@ _Avoid_: Codex의 별칭, 앱 관리자, 상태 소유자, 챗봇
 ## 학기 작업공간과 학업 객체
 
 **SemesterWorkspace**:
-AY-PLE이 한 학년의 한 학기 자료와 학기 상태를 정규화해 관리하도록 생성하는 사용자 로컬 작업공간이다. 임의의 기존 자료 폴더나 Codex 작업 디렉터리를 SemesterWorkspace로 간주하지 않는다.
+AY-PLE이 학생이 선택한 학년 단계와 학기에 맞춰 자료와 학기 상태를 정규화해 관리하도록 생성하는 사용자 로컬 작업공간이다. 임의의 기존 자료 폴더나 Codex 작업 디렉터리를 SemesterWorkspace로 간주하지 않는다.
 _Avoid_: Codex thread, 임의의 기존 폴더, Agent가 구조를 정하는 저장소
 
 **WorkspaceManifest**:

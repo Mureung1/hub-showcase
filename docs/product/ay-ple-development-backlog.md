@@ -98,7 +98,7 @@
   - [ ] Local UI가 official Codex-managed ChatGPT Browser login을 중재하고 fresh login·취소·실패·Browser reopen·relaunch·만료 뒤 reauth·explicit logout을 fresh managed account authority로 정산한다. Unsupported account는 fail closed하고 workspace와 학업 상태를 보존한다.
   - [ ] Workspace 전 account operation은 isolated auth-only bootstrap Runtime에서만 수행하고 signal·process cleanup을 검증한다.
   - [ ] OAuth credential bytes가 AY-PLE product Origin·API·Browser storage·workspace·receipt·public log를 통과하지 않고, 자체 token parser·auth receipt·global credential import가 없음을 deterministic·live release evidence로 확인한다.
-  - [ ] 학생이 학년·학기와 위치를 고르면 App code가 versioned `WorkspaceManifest`를 가진 normalized `SemesterWorkspace`를 scaffold·validate한다.
+  - [ ] 학생이 학년·학기와 위치를 고르면 App code가 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md)의 normalized `SemesterWorkspace`를 exclusive scaffold·fresh validate하고 current v2와 existing directory를 bytes-preserving fail closed한다.
   - [ ] Admitted `SemesterWorkspace`로 bounded Runtime 전환·account 재확인을 마친 뒤에만 정확한 `학기 공간 준비 완료`를 표시한다.
   - [ ] Setup progress와 active workspace registry를 app data에 보존해 중단 뒤 안전하게 재개하거나 recovery로 수렴하고, 같은 public 명령의 `ready-relaunch`가 workspace admission·account state를 다시 확인한 뒤 중복 scaffold 없이 준비된 workspace를 다시 연다.
   - [ ] Fixed `hub` SHA의 reviewed positive allowlist로 public source를 deterministic export하고 Apache-2.0 first-party legal material, privacy·security·contribution surface와 source provenance를 검증한 final snapshot만 공개한다.

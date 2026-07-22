@@ -92,7 +92,7 @@ chooser-selected-directory/
     runtime-scratch/          # Run-bound transient workspace writes
 ```
 
-채택한 target의 논리 seam은 아래와 같다. `<WorkspaceManifest>`는 authority 이름이며 exact file name·encoding을 뜻하지 않는다. Physical roster와 current v2 transition은 구현 spec이 고정한다.
+채택한 target의 논리 seam은 아래와 같다. `.ay-ple/workspace-state.json`은 logical `WorkspaceManifest`와 app-owned dynamic state를 한 v3 atomic authority에 담는다. Exact field roster·encoding과 filesystem recovery primitive는 resulting implementation spec이 고정한다.
 
 ```text
 user-app-data/
@@ -102,10 +102,10 @@ user-app-data/
   <workspace-registry>/       # active·recent pointer, identity authority가 아님
 
 semester-workspace/
-  <WorkspaceManifest>         # workspace·Course identity와 format authority
-  <material-inbox>/           # 검토 전후 자료 반입의 논리 seam
-  <course-projections>/       # human-readable Course projection의 논리 seam
-  <app-owned-state>/          # confirmed state와 recovery data
+  .ay-ple/
+    workspace-state.json      # v3 WorkspaceManifest identity + app-owned state
+  inbox/                      # 검토 전후 자료 반입의 논리 seam
+  courses/                    # human-readable Course projection의 논리 seam
   AGENTS.md                   # 선택 사항, native instruction
   .agents/skills/             # 선택 사항, native Skills
 ```
@@ -114,7 +114,7 @@ semester-workspace/
 
 ## Durable store와 rollback
 
-Workspace-local store는 app data나 native session과 다른 durable authority다. 따라서 Server lifecycle과 public-surface cutover는 confirmed state의 삭제 권한을 갖지 않고, store를 안전하게 이해하지 못하는 Runtime은 product mutation authority를 얻지 못한다. Current v2가 가진 stable workspace ID·Course identity와 새 `WorkspaceManifest`를 동시에 authoritative하게 두지 않는다. Physical 통합 또는 비중첩 분리는 explicit version·migration으로 결정하고, 지원하지 않는 current bytes는 자동 scaffold·adopt·reset하지 않는다. Baseline과 이후 schema 변경 정책은 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), workspace authority는 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), exact current codec·I/O 동작은 [Server README](../../apps/server/README.md#workspace-local-durable-store)가 소유한다.
+Workspace-local store는 app data나 native session과 다른 durable authority다. 따라서 Server lifecycle과 public-surface cutover는 confirmed state의 삭제 권한을 갖지 않고, store를 안전하게 이해하지 못하는 Runtime은 product mutation authority를 얻지 못한다. Public target은 current aggregate seam을 v3로 올려 logical `WorkspaceManifest`만 stable workspace·Course identity를 정의하고 dynamic state는 그 ID를 참조하게 한다. Current v2 옆에 sidecar authority를 추가하거나 first preview에서 자동 scaffold·adopt·migration하지 않으며 original bytes를 `legacy_migration_required/readOnly`로 보존한다. Baseline과 이후 schema 변경 정책은 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), workspace authority는 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), exact current codec·I/O 동작은 [Server README](../../apps/server/README.md#workspace-local-durable-store)가 소유한다.
 
 ## 리스크와 대응
 
@@ -126,7 +126,7 @@ Workspace-local store는 app data나 native session과 다른 durable authority�
 | Credential authority 분열 | AY-PLE token store, global Codex home와 app-managed store를 함께 쓰면 refresh·logout·update owner가 갈라진다. | Official managed account method와 한 app-scoped store만 사용하고 AY-PLE이 credential bytes를 parse·migration하지 않는다. |
 | Pre-workspace Runtime 오인 | OAuth를 위해 만든 inert cwd가 workspace처럼 thread·Skill·학업 action을 열 수 있다. | Auth-only role의 command를 제한하고 admitted workspace로 넘어갈 때 process tree를 완전히 교체·재확인한다. |
 | Workspace 오선택 | Registry나 development override가 사용자 의도와 다른 root를 가리킬 수 있다. | `WorkspaceManifest` identity·schema를 재검증하고 thread 재사용 전 sticky `cwd`를 확인한다. Registry는 pointer로만 사용한다. |
-| Workspace authority 분열 | Current v2와 새 `WorkspaceManifest`가 같은 workspace·Course identity를 각각 소유하면 migration과 rollback 결과가 달라진다. | 하나의 authority만 남기는 explicit version transition 또는 비중첩 state split을 사용하고, 지원하지 않는 bytes는 보존한 채 fail closed한다. |
+| Workspace authority 분열 | Current v2와 새 `WorkspaceManifest`가 같은 workspace·Course identity를 각각 소유하면 migration과 rollback 결과가 달라진다. | 첫 target은 `.ay-ple/workspace-state.json` 하나를 v3 aggregate authority로 사용하고 sidecar를 만들지 않는다. Current v2는 자동 migration하지 않고 bytes를 보존한 채 fail closed한다. |
 | `ImportSource` 오인 | 기존 자료 폴더를 곧바로 workspace로 열면 외부 tree의 우연한 구조가 schema가 된다. | App-owned scaffold만 활성화하고 import 분석·mapping·apply를 별도 검토 흐름으로 둔다. |
 | Workspace authority drift | Registered TXT나 store가 Turn·Server 수명 중 바뀌면 stale authority로 덮어쓸 수 있다. | Source drift는 interrupt·explicit rebaseline, store drift는 compare-before-rename·explicit reactivation으로 원본을 보존한다. |
 | 민감 상태 혼입 | `CODEX_HOME`을 workspace에 두면 auth·session·log가 사용자 자료와 섞인다. | App data에 runtime-home pair를 두고 workspace와 분리한다. |
