@@ -262,5 +262,18 @@
   - **검증**: 루트 `typecheck`·`lint`·`build`(shared→api→web 순서) 통과. psql로 `response_meta` 컬럼·마이그레이션 이력·RLS 정책 3개·GRANT 확인. 브라우저 회귀 happy-path(FinalAnswer·DecisionNote까지)·provider-excluded(제외 배너)·all-rejected(고정 문구+노트) 정상, 검증 배너 미표시·콘솔 오류 없음
   - **미확인**: `supabase db push` CLI 프로세스가 적용·이력 기록 후 2분 타임아웃으로 잘려 CLI 완료 메시지는 못 봄(결과는 psql로 직접 확인). `recheck-path`·`context-next-question` 시나리오는 미실행
   - **다음**: T-016.2 — 외부 AI SDK 설치, provider 계층·포트(ProviderClient·AnswerPromptTemplate·AnswerNormalizer), `response_meta` Zod 계약·실제 기록, 서버 저장. `SPEC-SCHEMA-001` 5.3.1·개정 기록 반영은 Cowork 담당
+- **T-016.2a 완료 (2026-07-22)** — SPEC-AI-001 서버 Provider 파이프라인 코어(실호출·정규화·저장, 동기 엔드포인트). SSE·GET 복원·web 재배선은 T-016.2b/.3
+  - **계약**: `packages/shared`에 `ResponseMetaSchema`(inputTokens·outputTokens nullable, latencyMs) + `SourceAnswerSchema.responseMeta` 추가. web Mock은 관측값이 없으므로 `null`
+  - **패키지**: `apps/api`에 `@anthropic-ai/sdk@0.112.5`·`openai@6.48.0`·`@google/genai@2.13.0` 설치. 루트 `package-lock.json` 단일 유지
+  - **포트·어댑터(ADR-005)**: `apps/api/src/modules/sourceAnswers/`에 `ProviderClient`+레지스트리(45초 타임아웃·에러 5종 매핑), claude·openai·gemini 어댑터, `AnswerNormalizer`(raw→StructuredContent, 실패=SCHEMA_VALIDATION_FAILED), `AnswerPromptTemplate`
+  - **프롬프트**: 루트 `/prompts/answer/{claude,openai,gemini}/v1.md` — **런타임에 읽는 텍스트 템플릿**(재빌드 없이 교체). 경로는 `ANSWER_PROMPTS_DIR`(기본값이 dev·dist 모두 루트 `/prompts`로 해석), 사용 버전은 `prompt_version`에 스탬프
+  - **BYOK(7장)**: 사용자 키 → 앱 키(`APP_DEFAULT_AI_KEYS_ENABLED`, 기본 ON) 순. 사전 점검에서 하나라도 없으면 저장 없이 `NO_AVAILABLE_KEYS` 거절
+  - **저장(ADR-002)**: Service가 검증 JWT userId로 소유권 확인 후 adminClient로 시스템 쓰기. pending→processing→succeeded/failed, raw·structured·response_meta·model·prompt_version·타임스탬프 기록. 오케스트레이션은 `req`/`res`를 모르고 `onUpdate` 콜백만 있어 2b에서 SSE로 감쌀 수 있음
+  - **엔드포인트**: `POST /api/chats/:chatId/questions/:questionId/source-answers`(requireAuth) — 저장 완료 후 `SourceAnswer[]` 반환. 2b에서 같은 URL을 SSE로 전환
+  - **검증**: 루트 `typecheck`·`lint`·`build`(shared→api→web) 통과. 실호출 실측 — claude `succeeded`(5 sections·summary·meta 22.8s), gemini `succeeded`(4 sections, **retry_count=1**로 재시도 정책 실증), openai `failed`+`excluded`(HTTP 429). psql로 `order`·`kind`(자유 문자열)·`summary`·`response_meta`·`prompt_version`·`model` 저장 확인. `NO_AVAILABLE_KEYS` 400(플래그 OFF), 미소유 Question 404, 무토큰 401, body `userId` 위조해도 소유권=JWT 확인
+  - **환경 이슈(코드 아님)**: `.env`의 **OpenAI 키가 크레딧 소진(insufficient_quota)** 상태라 OpenAI만 계속 실패한다. 덕분에 부분 실패 경로(6.1)는 실증됐지만, 3사 전원 성공은 결제 복구 후 재확인 필요
+  - **모델 기본값**: `CLAUDE_MODEL=claude-opus-4-8`, `OPENAI_MODEL=gpt-5`, `GEMINI_MODEL=gemini-3.5-flash`(2.5-flash는 신규 사용자 지원 종료). Claude가 45초 예산에 근접(39초)해 프롬프트에 분량 제약(섹션 3~5개)을 넣어 23초로 낮춤
+  - **남은 문제**: 새 env 6종(`ANTHROPIC_API_KEY`·`OPENAI_API_KEY`·`GEMINI_API_KEY`·`APP_DEFAULT_AI_KEYS_ENABLED`·프롬프트/모델 선택키)이 `docs/dev-setup.md`에 아직 없음. 실측용 테스트 Chat 2건이 DB에 남아 있음(미완료 Question 포함 → 해당 Chat에서만 새 질문 차단)
+  - **다음**: T-016.2b — SSE 전환 + `GET .../source-answers` 복원 엔드포인트
 - 이후: SPEC-AI-001~003(Provider·Manager·FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

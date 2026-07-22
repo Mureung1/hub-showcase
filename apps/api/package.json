@@ -10,11 +10,14 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.112.5",
     "@decision-log/shared": "*",
+    "@google/genai": "^2.13.0",
     "@supabase/supabase-js": "^2.110.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "openai": "^6.48.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

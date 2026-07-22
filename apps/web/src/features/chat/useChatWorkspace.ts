@@ -242,6 +242,9 @@ function buildContextNextQuestionState(): ChatWorkspaceState {
         summary: mockSummaryByProvider[id],
         sections: [...mockSectionsByProvider[id]],
       },
+      // 브라우저 Mock에는 실제 토큰·지연 관측값이 없다(값 부재 = null, data-model 1.6).
+      // 실제 값은 서버 파이프라인이 채운다(SPEC-AI-001 8.3).
+      responseMeta: null,
       errorCode: null,
       errorMessage: null,
       retryCount: 0,
@@ -323,6 +326,8 @@ function buildPendingSourceAnswers(questionId: string): SourceAnswer[] {
     model: mockModelByProvider[id],
     status: "pending",
     structuredContent: null,
+    // 아직 호출 전이므로 관측 메타 없음(8.3)
+    responseMeta: null,
     errorCode: null,
     errorMessage: null,
     retryCount: 0,

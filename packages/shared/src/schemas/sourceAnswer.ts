@@ -29,6 +29,19 @@ export const StructuredContentSchema = z.object({
 });
 export type StructuredContent = z.infer<typeof StructuredContentSchema>;
 
+/**
+ * SPEC-AI-001 8.3 — 관측 메타(응답 메타용 JSONB 한 칸).
+ * 토큰 수는 provider가 주지 않을 수 있으므로 null 허용(data-model 1.6).
+ * latencyMs는 started_at~completed_at 기반이라 서버가 항상 채운다.
+ * model·promptVersion·startedAt·completedAt은 전용 칸을 쓰므로 여기 넣지 않는다.
+ */
+export const ResponseMetaSchema = z.object({
+  inputTokens: z.number().int().min(0).nullable(),
+  outputTokens: z.number().int().min(0).nullable(),
+  latencyMs: z.number().int().min(0),
+});
+export type ResponseMeta = z.infer<typeof ResponseMetaSchema>;
+
 /** SPEC-SCHEMA-001 5.3 — SourceAnswer */
 export const SourceAnswerSchema = z
   .object({
@@ -38,6 +51,8 @@ export const SourceAnswerSchema = z
     model: z.string().min(1),
     status: SourceAnswerStatusSchema,
     structuredContent: StructuredContentSchema.nullable(),
+    /** 관측 메타(8.3). 아직 호출 전이거나 메타를 못 얻으면 null */
+    responseMeta: ResponseMetaSchema.nullable(),
     errorCode: ErrorCodeSchema.nullable(),
     errorMessage: z.string().nullable(),
     retryCount: z.number().int().min(0).max(1),
