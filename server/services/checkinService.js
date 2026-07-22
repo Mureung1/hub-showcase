@@ -65,3 +65,25 @@ export async function createCheckin(entry) {
 
   return toCheckin(data)
 }
+
+export async function deleteCheckin(id) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('checkins')
+    .delete()
+    .eq('id', id)
+    .select()
+
+  if (error) {
+    const serviceError = new Error('기록을 삭제하지 못했습니다.')
+    serviceError.status = 503
+    serviceError.cause = error
+    throw serviceError
+  }
+
+  if (data.length === 0) {
+    const serviceError = new Error('삭제할 기록을 찾을 수 없습니다.')
+    serviceError.status = 404
+    throw serviceError
+  }
+}

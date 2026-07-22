@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import multer from 'multer'
-import { getCheckins, createCheckin } from '../services/checkinService.js'
+import { getCheckins, createCheckin, deleteCheckin } from '../services/checkinService.js'
 import { createSummary } from '../services/summaryService.js'
 import { uploadCheckinPhoto } from '../services/storageService.js'
 
@@ -90,6 +90,11 @@ router.post('/', asyncHandler(async (req, res) => {
     mood,
   })
   res.status(201).json(checkin)
+}))
+
+router.delete('/:id', asyncHandler(async (req, res) => {
+  await deleteCheckin(req.params.id)
+  res.status(204).end()
 }))
 
 export default router

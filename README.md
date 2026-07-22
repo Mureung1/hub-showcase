@@ -15,8 +15,15 @@
 ## 기술 스택
 - Vite + React
 
+## 아키텍처
+
+화면(React) · 서버(Express) · DB(Supabase)가 어떻게 연결되고 데이터가 어디로 흐르는지 한 장으로 정리. 화면별 설명은 [docs/screen-flow.md](docs/screen-flow.md) 참고.
+
+![하루 체크아웃 아키텍처 다이어그램](docs/architecture-diagram.png)
+
 ## 문서
 - [기획서](docs/plan.md) ([위키](https://github.com/Yooseunghyeok/hub/wiki/기획서))
+- [화면·서버·DB 아키텍처](docs/screen-flow.md)
 - [개발 백로그](docs/backlog.md)
 - [프로토타입](docs/prototype.html) — 순수 HTML/CSS, 목데이터
 - [프로토타입 디자인 가이드 (토스 참고)](docs/toss-design.md)

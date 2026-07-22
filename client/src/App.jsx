@@ -156,6 +156,19 @@ function App() {
     setScreen(detailReturn)
   }
 
+  async function handleDeleteCheckin(id) {
+    setError('')
+    setNotice('')
+    try {
+      await requestJson(`/api/checkins/${id}`, { method: 'DELETE' })
+      setCheckins((current) => current.filter((c) => c.id !== id))
+      setNotice('기록을 삭제했어요.')
+      backToList()
+    } catch (requestError) {
+      setError(requestError.message)
+    }
+  }
+
   function switchTab(nextScreen) {
     setError('')
     setNotice('')
@@ -269,7 +282,7 @@ function App() {
         )}
 
         {screen === 'detail' && selectedCheckin && (
-          <RecordDetail checkin={selectedCheckin} onBack={backToList} />
+          <RecordDetail checkin={selectedCheckin} onBack={backToList} onDelete={handleDeleteCheckin} />
         )}
 
         {error && <p className="feedback feedback-error" role="alert">{error}</p>}
