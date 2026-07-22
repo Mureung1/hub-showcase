@@ -7,6 +7,7 @@ import DropsGrid from './components/DropsGrid';
 import Leaderboard from './components/Leaderboard';
 import DetailOverlay from './components/DetailOverlay';
 import ToastAlert from './components/ToastAlert';
+import AuthModal, { UserSession } from './components/AuthModal';
 import Footer from './components/Footer';
 
 // 1. Core Interfaces
@@ -51,10 +52,27 @@ export default function App() {
   const [selectedDropId, setSelectedDropId] = useState<string | null>(null);
   const [rankingPeriod, setRankingPeriod] = useState<'current' | 'last'>('current');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [userPoints, setUserPoints] = useState<number>(1000);
+
+  // Auth User Session State
+  const [userSession, setUserSession] = useState<UserSession | null>(() => {
+    const saved = localStorage.getItem('dropcast_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
   const API_BASE = 'http://localhost:5000/api';
-  const TEST_USER_ID = '64700eed-4e7e-4a57-b75b-7e81f999caaa';
+
+  const handleLoginSuccess = (user: UserSession) => {
+    setUserSession(user);
+    localStorage.setItem('dropcast_user', JSON.stringify(user));
+    showToast(`🎉 환영합니다, ${user.username}님! (포인트: ${user.points.toLocaleString()} pts)`);
+  };
+
+  const handleLogout = () => {
+    setUserSession(null);
+    localStorage.removeItem('dropcast_user');
+    showToast('로그아웃 되었습니다.');
+  };
 
   // Fetch Drops & Polymarket Pricing from Backend
   const fetchDrops = async () => {
@@ -158,6 +176,12 @@ export default function App() {
   };
 
   const castVote = async (id: string, isUp: boolean, stakedPoints: number = 100) => {
+    if (!userSession) {
+      showToast('[안내] 투표 및 지분 매수를 위해 먼저 로그인해 주세요.');
+      setIsAuthModalOpen(true);
+      return;
+    }
+
     const item = drops.find((d) => d.id === id);
     if (!item) return;
 
@@ -168,7 +192,7 @@ export default function App() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          userId: TEST_USER_ID,
+          userId: userSession.id,
           dropId: id,
           direction: isUp ? 'UP' : 'DOWN',
           stakedPoints
@@ -178,7 +202,11 @@ export default function App() {
       const result = await res.json();
       if (res.ok && result.success) {
         const { boughtSharePrice, sharesCount, remainingPoints, odds } = result.data;
-        if (remainingPoints !== undefined) setUserPoints(remainingPoints);
+        if (remainingPoints !== undefined) {
+          const updated = { ...userSession, points: remainingPoints };
+          setUserSession(updated);
+          localStorage.setItem('dropcast_user', JSON.stringify(updated));
+        }
 
         const priceCent = Math.round(boughtSharePrice * 100);
         showToast(
@@ -209,6 +237,9 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         setActiveCategory={setActiveCategory}
+        userSession={userSession}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onLogout={handleLogout}
       />
 
       {activeTab === 'upcoming' && activeCategory === 'all' && (
@@ -240,7 +271,13 @@ export default function App() {
         setSelectedDropId={setSelectedDropId}
         currentSelectedDrop={currentSelectedDrop}
         castVote={castVote}
-        userPoints={userPoints}
+        userPoints={userSession?.points || 0}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
       />
 
       <ToastAlert toasts={toasts} />
