@@ -12,6 +12,7 @@ interface CurationWorkspaceProps {
 
 function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPapers, handleRemovePaper }: CurationWorkspaceProps) {
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
+  const [savingIds, setSavingIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (curationData?.papers && curationData.papers.length > 0) {
@@ -23,11 +24,15 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
 
   const handleSavePaper = async (paper: Paper): Promise<void> => {
     try {
+      if (savingIds.includes(paper.paperId)) return;
+      
       // 이미 저장된 논문인지 중복 검사
       if (savedPapers.some(item => item.paperId === paper.paperId)) {
         alert('이미 서재에 보관된 논문입니다.');
         return;
       }
+
+      setSavingIds(prev => [...prev, paper.paperId]);
 
       // DB 인서트 에러 방지를 위해 insights 필드를 제외하고 스키마에 필요한 필드만 Payload 구성 (userId 병합)
       const { paperId, title, authors, channel, year, matchScore } = paper;
@@ -54,6 +59,8 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
     } catch (error) {
       console.error('❌ Save paper error:', error);
       alert('보관에 실패했습니다.');
+    } finally {
+      setSavingIds(prev => prev.filter(id => id !== paper.paperId));
     }
   };
 
@@ -107,9 +114,10 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
                     e.stopPropagation(); // 카드 클릭 이벤트 전파 차단
                     handleSavePaper(paper);
                   }}
+                  disabled={savingIds.includes(paper.paperId)}
                   style={{ marginTop: '10px', padding: '6px 12px', fontSize: '11px' }}
                 >
-                  내 서재 보관
+                  {savingIds.includes(paper.paperId) ? '보관 중...' : '내 서재 보관'}
                 </button>
               </div>
             ))
@@ -154,8 +162,9 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
                 id="add-to-library-btn" 
                 className="archive-btn"
                 onClick={() => handleSavePaper(selectedPaper)}
+                disabled={savingIds.includes(selectedPaper.paperId)}
               >
-                내 서재 보관
+                {savingIds.includes(selectedPaper.paperId) ? '보관 중...' : '내 서재 보관'}
               </button>
             </div>
           ) : (

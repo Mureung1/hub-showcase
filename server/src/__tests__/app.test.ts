@@ -67,6 +67,7 @@ describe('Backend Express Server E2E/Unit Tests', () => {
 
     // supabaseClient 가로채기
     const supabase = (await import('../utils/supabaseClient.js')).default;
+    // @ts-expect-error: Supabase Client "then" promise interface mapping does not match mock client signature perfectly
     vi.spyOn(supabase, 'then').mockImplementation((resolve: any) => {
       return Promise.resolve(resolve({ data: mockDbResponse, error: null }));
     });
@@ -109,6 +110,7 @@ describe('Backend Express Server E2E/Unit Tests', () => {
     ];
 
     const supabase = (await import('../utils/supabaseClient.js')).default;
+    // @ts-expect-error: Supabase Client "then" promise interface mapping does not match mock client signature perfectly
     vi.spyOn(supabase, 'then').mockImplementation((resolve: any) => {
       return Promise.resolve(resolve({ data: mockDbResponse, error: null }));
     });
@@ -123,6 +125,7 @@ describe('Backend Express Server E2E/Unit Tests', () => {
 
   it('5. DELETE /api/library/:userId/:paperId should delete paper from library', async () => {
     const supabase = (await import('../utils/supabaseClient.js')).default;
+    // @ts-expect-error: Supabase Client "then" promise interface mapping does not match mock client signature perfectly
     vi.spyOn(supabase, 'then').mockImplementation((resolve: any) => {
       return Promise.resolve(resolve({ data: null, error: null }));
     });
