@@ -1,12 +1,71 @@
-import { useEffect, useState } from 'react'
-import type { CSSProperties, FormEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties, FormEvent, PointerEvent as ReactPointerEvent } from 'react'
 import { FriendFeed } from './FriendFeed'
 import { AVATAR_PALETTE, PixelAvatar, getAvatarProps } from './shared'
 import type { FriendsManager } from './useFriendsManager'
 import type { DodoManager } from './useDodoManager'
 import type { HomeManager } from './useHomeManager'
 import type { ProfileManager } from './useProfileManager'
+import type { RoomShopManager } from './useRoomShopManager'
 import type { FriendPost, HomeVisitActionKind } from './types'
+
+const SHOP_ITEM_ICON_CLASS: Record<string, string> = {
+  'game-console': 'shop-item-console',
+  'pillow': 'shop-item-pillow',
+  'headphones': 'shop-item-headphones',
+  'table': 'shop-item-table',
+}
+
+// 원래 마이홈 방에 고정 붙박이로 있던 그래픽(창문·별 장식·선반 장식·화분) — 디자인은 그대로 재사용하고
+// 상점/인벤토리 목록에서는 48px 프레임에 축소해서(.shop-fixture-frame-*), 마이홈에 배치하면 원래 크기로 보여준다.
+const ROOM_FIXTURE_ICON_KEYS = new Set(['window', 'wall-star', 'wall-shelf', 'plant'])
+
+function renderRoomFixture(iconKey: string, color: string | null) {
+  switch (iconKey) {
+    case 'window':
+      return <div className="myhome-window" aria-hidden="true"><i /><i /><i /></div>
+    case 'wall-star':
+      return <div className="myhome-wall-star" style={itemIconStyle(color)} aria-hidden="true" />
+    case 'wall-shelf':
+      return <div className="myhome-shelf" aria-hidden="true"><i /><i /></div>
+    case 'plant':
+      return <div className="myhome-plant" aria-hidden="true"><i /><i /><i /></div>
+    default:
+      return null
+  }
+}
+
+// 상점/인벤토리 목록용 아이콘 — 붙박이 그래픽은 프레임에 넣어 축소, 나머지는 기존 방식 그대로.
+// .shop-fixture-slot(48px, 정상 레이아웃)에 넣는 .shop-fixture-frame은 position:absolute라 원본 크기(예: 화분 135px)가
+// 그리드 행 높이에 영향을 주지 않는다 — absolute가 아니면 transform:scale은 시각적으로만 줄어들 뿐 레이아웃 차지 크기는 그대로라 행이 길어져 보였다.
+function renderListIcon(iconKey: string, color: string | null) {
+  if (ROOM_FIXTURE_ICON_KEYS.has(iconKey)) {
+    return (
+      <div className="shop-fixture-slot" aria-hidden="true">
+        <div className={`shop-fixture-frame shop-fixture-frame-${iconKey}`}>
+          {renderRoomFixture(iconKey, color)}
+        </div>
+      </div>
+    )
+  }
+  return <i className={SHOP_ITEM_ICON_CLASS[iconKey] ?? ''} style={itemIconStyle(color)} aria-hidden="true" />
+}
+
+const SHOP_ITEM_INTERACT_MESSAGE: Record<string, string> = {
+  'game-console': '두두가 게임기를 붙잡고 신나게 버튼을 눌러봐요!',
+  'pillow': '두두가 베개에 폭 안겨서 뒹굴뒹굴해요.',
+  'headphones': '두두가 헤드폰을 쓰고 리듬을 타요!',
+  'plant': '두두가 화분에 물을 줬어요!',
+}
+
+
+// 창문·별 장식·선반 장식처럼 wallMounted인 아이템은 방의 벽 영역(y 5~45%) 안에서만 옮길 수 있다.
+// 서버(lib/roomLayout.ts)도 같은 범위로 한 번 더 clamp하지만, 드래그하는 동안 바로 시각적으로 막히도록 여기서도 적용한다.
+const WALL_BAND = { min: 5, max: 45 }
+
+function itemIconStyle(color: string | null): CSSProperties | undefined {
+  return color ? ({ '--item-color': color } as CSSProperties) : undefined
+}
 
 const VISIT_ACTION_LABEL: Record<HomeVisitActionKind, string> = {
   PAT: '두두를 쓰다듬어줬어요',
@@ -28,13 +87,18 @@ type MyHomeViewProps = {
   onInteract: (message: string) => void
   homeManager: HomeManager
   dodoManager: DodoManager
+  shopManager: RoomShopManager
   points: number
+  onTestGrantPoints: () => void
 }
 
-export function MyHomeView({ message, onInteract, homeManager, dodoManager, points }: MyHomeViewProps) {
+export function MyHomeView({ message, onInteract, homeManager, dodoManager, shopManager, points, onTestGrantPoints }: MyHomeViewProps) {
   const { visits, visitsLoading, markVisitsRead } = homeManager
   const { refreshDodoState } = dodoManager
   const mood = dodoManager.state?.mood ?? 3
+  const [shopOpen, setShopOpen] = useState(false)
+  const roomRef = useRef<HTMLDivElement>(null)
+  const draggingIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     markVisitsRead()
@@ -43,17 +107,63 @@ export function MyHomeView({ message, onInteract, homeManager, dodoManager, poin
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const positionFromPointer = (event: ReactPointerEvent, wallMounted: boolean) => {
+    const rect = roomRef.current?.getBoundingClientRect()
+    if (!rect) return null
+    const x = Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100))
+    let y = Math.min(100, Math.max(0, ((event.clientY - rect.top) / rect.height) * 100))
+    if (wallMounted) y = Math.min(WALL_BAND.max, Math.max(WALL_BAND.min, y))
+    return { x, y }
+  }
+
+  const startDrag = (inventoryId: string) => (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    draggingIdRef.current = inventoryId
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  const handleRoomPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const inventoryId = draggingIdRef.current
+    if (!inventoryId) return
+    const wallMounted = shopManager.inventory.find((entry) => entry.id === inventoryId)?.wallMounted ?? false
+    const position = positionFromPointer(event, wallMounted)
+    if (position) shopManager.setLocalPosition(inventoryId, position.x, position.y)
+  }
+
+  const endDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const inventoryId = draggingIdRef.current
+    if (!inventoryId) return
+    draggingIdRef.current = null
+    const wallMounted = shopManager.inventory.find((entry) => entry.id === inventoryId)?.wallMounted ?? false
+    const position = positionFromPointer(event, wallMounted)
+    if (position) shopManager.commitPosition(inventoryId, position.x, position.y)
+  }
+
   return (
     <section className="myhome-view" aria-labelledby="myhome-title">
       <div className="tab-page-heading">
         <div><span>MY LITTLE ROOM</span><h1 id="myhome-title">두두의 마이홈</h1></div>
-        <div className="myhome-points"><i>✦</i><strong>{points}</strong><span>포인트</span></div>
+        <div className="myhome-points-row">
+          <div className="myhome-points"><i>✦</i><strong>{points}</strong><span>포인트</span></div>
+          <button
+            type="button"
+            className="myhome-points-test-add"
+            onClick={onTestGrantPoints}
+            aria-label="테스트용 포인트 50 추가"
+            title="테스트용: 포인트 50 추가"
+          >
+            +
+          </button>
+        </div>
       </div>
 
-      <div className="myhome-room">
-        <div className="myhome-window" aria-hidden="true"><i /><i /><i /></div>
-        <div className="myhome-wall-star" aria-hidden="true" />
-        <div className="myhome-shelf" aria-hidden="true"><i /><i /></div>
+      <div
+        className="myhome-room"
+        ref={roomRef}
+        onPointerMove={handleRoomPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+      >
         <div className="myhome-rug" aria-hidden="true" />
         <div className="myhome-message" role="status">{message}</div>
 
@@ -65,11 +175,43 @@ export function MyHomeView({ message, onInteract, homeManager, dodoManager, poin
             <span className="home-dodo-cheek right" />
             <span className="home-dodo-mouth" />
           </div>
+          {dodoManager.appearance && Object.values(dodoManager.appearance).map((slot) => {
+            if (!slot || slot.iconKey !== 'headphones') return null
+            // 이어컵(타원)이 밴드보다 훨씬 아래로 늘어지므로, 밴드에 clip-path를 걸면 같은 요소의
+            // ::before/::after인 이어컵까지 그 clip-path 영역에 잘려버린다 — 그래서 셋을 별도 엘리먼트로 나눈다.
+            return (
+              <div key={slot.itemId} className="home-dodo-headphones" style={itemIconStyle(slot.color)} aria-hidden="true">
+                <i className="home-dodo-headphones-band" />
+                <i className="home-dodo-headphones-strut left" />
+                <i className="home-dodo-headphones-strut right" />
+                <i className="home-dodo-headphones-cup left" />
+                <i className="home-dodo-headphones-cup right" />
+              </div>
+            )
+          })}
           <i className="home-dodo-leg left" />
           <i className="home-dodo-leg right" />
         </div>
 
-        <div className="myhome-plant" aria-hidden="true"><i /><i /><i /></div>
+        {shopManager.layout.map((entry) => {
+          const item = shopManager.inventory.find((candidate) => candidate.id === entry.inventoryId)
+          if (!item) return null
+          return (
+            <div
+              key={entry.inventoryId}
+              className="myhome-placed-item"
+              style={{ left: `${entry.x}%`, top: `${entry.y}%` }}
+              onPointerDown={startDrag(entry.inventoryId)}
+              role="button"
+              tabIndex={0}
+              aria-label={`${item.name} 위치 옮기기`}
+            >
+              {ROOM_FIXTURE_ICON_KEYS.has(item.iconKey)
+                ? renderRoomFixture(item.iconKey, item.color)
+                : <i className={SHOP_ITEM_ICON_CLASS[item.iconKey] ?? ''} style={itemIconStyle(item.color)} aria-hidden="true" />}
+            </div>
+          )
+        })}
       </div>
 
       <div className="dodo-status-card">
@@ -82,8 +224,10 @@ export function MyHomeView({ message, onInteract, homeManager, dodoManager, poin
       <div className="myhome-actions" aria-label="두두와 상호작용">
         <button type="button" onClick={() => onInteract('두두가 기분 좋게 눈을 깜빡였어요!')}><i className="action-pat" />쓰다듬기</button>
         <button type="button" onClick={() => onInteract('두두가 간식을 냠냠 먹었어요.')}><i className="action-snack" />간식 주기</button>
-        <button type="button" onClick={() => onInteract('새로운 옷을 고르러 가볼까요?')}><i className="action-dress" />꾸미기</button>
+        <button type="button" aria-expanded={shopOpen} onClick={() => setShopOpen((open) => !open)}><i className="action-dress" />꾸미기</button>
       </div>
+
+      {shopOpen && <RoomShopPanel shopManager={shopManager} dodoManager={dodoManager} points={points} onInteract={onInteract} />}
 
       <div className="myhome-visitors" aria-labelledby="myhome-visitors-title">
         <div className="tab-page-heading">
@@ -108,6 +252,160 @@ export function MyHomeView({ message, onInteract, homeManager, dodoManager, poin
         )}
       </div>
     </section>
+  )
+}
+
+type RoomShopPanelProps = {
+  shopManager: RoomShopManager
+  dodoManager: DodoManager
+  points: number
+  onInteract: (message: string) => void
+}
+
+function RoomShopPanel({ shopManager, dodoManager, points, onInteract }: RoomShopPanelProps) {
+  const [tab, setTab] = useState<'shop' | 'inventory'>('shop')
+
+  return (
+    <div className="room-shop-panel" aria-labelledby="room-shop-title">
+      <div className="tab-page-heading">
+        <div><span>SHOP</span><h2 id="room-shop-title">마이홈 꾸미기</h2></div>
+      </div>
+      <div className="room-shop-tabs" role="tablist" aria-label="꾸미기 메뉴">
+        <button type="button" role="tab" aria-selected={tab === 'shop'} className={tab === 'shop' ? 'active' : ''} onClick={() => setTab('shop')}>
+          상점
+        </button>
+        <button type="button" role="tab" aria-selected={tab === 'inventory'} className={tab === 'inventory' ? 'active' : ''} onClick={() => setTab('inventory')}>
+          인벤토리
+        </button>
+      </div>
+      {shopManager.notice && <p className="scheduler-notice" role="status">{shopManager.notice}</p>}
+      {tab === 'shop' ? (
+        <ShopSection shopManager={shopManager} points={points} />
+      ) : (
+        <InventorySection shopManager={shopManager} dodoManager={dodoManager} onInteract={onInteract} />
+      )}
+    </div>
+  )
+}
+
+function ShopSection({ shopManager, points }: { shopManager: RoomShopManager; points: number }) {
+  const { catalog, catalogLoading, inventory, purchasingId, purchase } = shopManager
+  // 구매 전 색을 고르는 동안만 쓰는 임시 선택값 — 인스턴스별로 인벤토리에 쌓이므로 구매 후에도 상점 목록엔 계속 남는다.
+  const [pendingColor, setPendingColor] = useState<Record<string, string>>({})
+
+  if (catalogLoading) return <p className="empty-agenda">상점 목록을 불러오는 중이에요...</p>
+
+  return (
+    <div className="room-shop-list">
+      {catalog.map((item) => {
+        const ownedColors = inventory.filter((entry) => entry.itemId === item.id).map((entry) => entry.color)
+        const isOwnedNonCustomizable = !item.colorCustomizable && ownedColors.length > 0
+        const availableColors = item.colorCustomizable ? AVATAR_PALETTE.filter((color) => !ownedColors.includes(color)) : []
+        const allColorsOwned = item.colorCustomizable && availableColors.length === 0
+        const chosenColor = item.colorCustomizable
+          ? (pendingColor[item.id] && availableColors.includes(pendingColor[item.id]) ? pendingColor[item.id] : availableColors[0])
+          : undefined
+
+        return (
+          <article key={item.id} className="room-shop-item">
+            {renderListIcon(item.iconKey, chosenColor ?? null)}
+            <div>
+              <strong>{item.name}</strong>
+              <span>{isOwnedNonCustomizable ? '보유중' : allColorsOwned ? '모든 색을 가지고 있어요' : `${item.cost} 포인트`}</span>
+              {item.colorCustomizable && !allColorsOwned && (
+                <div className="room-shop-item-colors" role="radiogroup" aria-label={`${item.name} 색상 선택`}>
+                  <span className="room-shop-item-colors-label">색상 선택</span>
+                  <div className="avatar-color-picker">
+                    {AVATAR_PALETTE.map((color) => {
+                      const owned = ownedColors.includes(color)
+                      return (
+                        <button
+                          type="button"
+                          key={color}
+                          className={`avatar-color-swatch ${chosenColor === color ? 'active' : ''}`}
+                          style={{ '--avatar': color } as CSSProperties}
+                          disabled={owned}
+                          aria-pressed={chosenColor === color}
+                          aria-label={owned ? `${color} (보유중)` : `${color} 선택`}
+                          onClick={() => setPendingColor((current) => ({ ...current, [item.id]: color }))}
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+            {!isOwnedNonCustomizable && !allColorsOwned && (
+              <button
+                type="button"
+                className="save"
+                disabled={points < item.cost || purchasingId === item.id || (item.colorCustomizable && !chosenColor)}
+                onClick={() => purchase(item.id, item.colorCustomizable ? chosenColor : undefined)}
+              >
+                {purchasingId === item.id ? '구매 중...' : '구매하기'}
+              </button>
+            )}
+          </article>
+        )
+      })}
+    </div>
+  )
+}
+
+function InventorySection({ shopManager, dodoManager, onInteract }: { shopManager: RoomShopManager; dodoManager: DodoManager; onInteract: (message: string) => void }) {
+  const { inventory, inventoryLoading, layout, placeInRoom, removeFromRoom } = shopManager
+  const { appearance, equip, unequip } = dodoManager
+
+  if (inventoryLoading) return <p className="empty-agenda">인벤토리를 불러오는 중이에요...</p>
+  if (inventory.length === 0) return <p className="empty-agenda">아직 가진 아이템이 없어요. 상점에서 사보세요!</p>
+
+  return (
+    <div className="room-shop-list">
+      {inventory.map((item) => {
+        const isPlaced = layout.some((entry) => entry.inventoryId === item.id)
+        const isEquipped = item.equippable && appearance
+          ? Object.values(appearance).some((slot) => slot?.itemId === item.itemId)
+          : false
+        return (
+          <article key={item.id} className="room-shop-item">
+            {renderListIcon(item.iconKey, item.color)}
+            <div>
+              <strong>{item.name}</strong>
+              <span>보유중</span>
+            </div>
+            <div className="room-shop-item-actions">
+              {item.interactable && (
+                <button
+                  type="button"
+                  onClick={() => onInteract(SHOP_ITEM_INTERACT_MESSAGE[item.iconKey] ?? '두두가 좋아해요!')}
+                >
+                  가지고 놀기
+                </button>
+              )}
+              {item.equippable && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isEquipped) unequip(item.id)
+                    else {
+                      equip(item.id)
+                      onInteract(SHOP_ITEM_INTERACT_MESSAGE[item.iconKey] ?? '두두가 좋아해요!')
+                    }
+                  }}
+                >
+                  {isEquipped ? '장착 해제하기' : '장착하기'}
+                </button>
+              )}
+              {item.placeable && (
+                <button type="button" onClick={() => (isPlaced ? removeFromRoom(item.id) : placeInRoom(item.id))}>
+                  {isPlaced ? '방에서 치우기' : '방에 놓기'}
+                </button>
+              )}
+            </div>
+          </article>
+        )
+      })}
+    </div>
   )
 }
 

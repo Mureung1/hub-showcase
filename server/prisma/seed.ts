@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
-import { DEMO_CATEGORIES, DEMO_USER_ID } from '../src/constants.js'
+import { DEMO_CATEGORIES, DEMO_USER_ID, ROOM_ITEMS } from '../src/constants.js'
 
 const prisma = new PrismaClient()
 const DEMO_PASSWORD = 'demo1234!'
@@ -35,6 +35,25 @@ async function main() {
       where: { id: category.id },
       update: {},
       create: { ...category, userId: user.id },
+    })
+  }
+
+  for (const item of ROOM_ITEMS) {
+    await prisma.roomItem.upsert({
+      where: { id: item.id },
+      update: {
+        name: item.name,
+        cost: item.cost,
+        type: item.type,
+        iconKey: item.iconKey,
+        equippable: item.equippable,
+        interactable: item.interactable,
+        colorCustomizable: item.colorCustomizable,
+        placeable: item.placeable,
+        wallMounted: item.wallMounted,
+        equipSlot: item.equipSlot,
+      },
+      create: item,
     })
   }
 

@@ -12,7 +12,9 @@ import { useDodoManager } from './scheduler/useDodoManager'
 import { useFriendsManager } from './scheduler/useFriendsManager'
 import { useHomeManager } from './scheduler/useHomeManager'
 import { useProfileManager } from './scheduler/useProfileManager'
+import { useRoomShopManager } from './scheduler/useRoomShopManager'
 import { useScheduleManager } from './scheduler/useScheduleManager'
+import * as pointsApi from './scheduler/pointsApi'
 import * as videosApi from './scheduler/videosApi'
 import './scheduler.css'
 
@@ -36,6 +38,12 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
   const profileManager = useProfileManager()
   const homeManager = useHomeManager()
   const dodoManager = useDodoManager()
+  const roomShopManager = useRoomShopManager(() => profileManager.refreshProfile())
+
+  // 테스트용 — 포인트 소비 흐름(상점 구매 등)을 확인하기 위한 임시 버튼 핸들러.
+  const grantTestPoints = () => {
+    pointsApi.grantTestPoints().then(() => profileManager.refreshProfile()).catch(() => {})
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -63,6 +71,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
 
   const deleteMyPost = (postId: string) => {
     setMyPosts((current) => current.filter((post) => post.id !== postId))
+    videosApi.deleteVideoPost(postId).catch(() => {})
   }
 
   const changeTab = (tab: AppTab) => {
@@ -160,7 +169,9 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
               onInteract={setDodoMessage}
               homeManager={homeManager}
               dodoManager={dodoManager}
+              shopManager={roomShopManager}
               points={profileManager.profile?.stats.points ?? 0}
+              onTestGrantPoints={grantTestPoints}
             />
           )
         )}
