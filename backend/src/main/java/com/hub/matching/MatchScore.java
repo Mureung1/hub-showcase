@@ -20,7 +20,7 @@ import java.util.List;
  */
 @Entity
 @Table(
-    name = "match_score",
+    name = "match_scores",
     uniqueConstraints = @UniqueConstraint(
         name = "uk_match_score_cache",
         columnNames = {"user_id", "posting_id", "credential_set_version"})

@@ -34,8 +34,8 @@ public class ExperienceYearsEvaluator implements FulfillmentEvaluator {
         List<Credential> careers = credentials.stream()
                 .filter(c -> c.getType() == CredentialType.CAREER)
                 .filter(c -> req.getSubject() == null || req.getSubject().equals(c.getSubject()))
-                .filter(c -> c.getStartedAt() != null)
-                .sorted(Comparator.comparing(Credential::getStartedAt))
+                .filter(c -> c.getStartedOn() != null)
+                .sorted(Comparator.comparing(Credential::getStartedOn))
                 .toList();
 
         if (careers.isEmpty()) return Result.none("해당 경력 없음");
@@ -52,9 +52,9 @@ public class ExperienceYearsEvaluator implements FulfillmentEvaluator {
         long days = 0;
         LocalDate cursor = null;
         for (Credential c : careers) {
-            LocalDate start = (cursor == null || c.getStartedAt().isAfter(cursor))
-                    ? c.getStartedAt() : cursor;
-            LocalDate end = c.getEndedAt() == null ? LocalDate.now() : c.getEndedAt();
+            LocalDate start = (cursor == null || c.getStartedOn().isAfter(cursor))
+                    ? c.getStartedOn() : cursor;
+            LocalDate end = c.getEndedOn() == null ? LocalDate.now() : c.getEndedOn();
             if (end.isAfter(start)) {
                 days += ChronoUnit.DAYS.between(start, end);
                 cursor = end;

@@ -38,7 +38,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(res.status, body.message);
   }
 
-  return res.status === 204 ? (undefined as T) : res.json();
+  // 202/204 등 본문 없는 응답도 안전하게 처리
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 function authHeader(): Record<string, string> {

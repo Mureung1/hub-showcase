@@ -26,7 +26,7 @@ public class CertificationEvaluator implements FulfillmentEvaluator {
         if (req.getSubject() == null) return Result.none("요구 자격 미분류");
 
         for (Credential c : credentials) {
-            if (c.getType() != CredentialType.CERTIFICATION) continue;
+            if (c.getType() != CredentialType.CERTIFICATE) continue;
             if (req.getSubject().equals(c.getSubject())) {
                 return Result.met(c.getTitle());
             }
