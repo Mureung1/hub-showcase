@@ -13,6 +13,7 @@
 - Lucide React
 - Vitest, Testing Library
 - ESLint, Prettier
+- NestJS, Jest (백엔드)
 
 선택 배경은 [docs/decisions.md](./docs/decisions.md)를 참고한다.
 
@@ -20,7 +21,8 @@
 
 - 루트는 pnpm workspace 기반 모노레포다.
 - 프론트엔드 앱과 프로토타입은 `frontend/`에 둔다.
-- 백엔드 작업 영역은 `backend/`에 두며 현재는 빈 골격만 유지한다.
+- 백엔드는 `backend/`에 NestJS 기반 `@gazua/backend` 패키지로 구성한다. 현재는 헬스체크(`GET /health`)
+  엔드포인트만 제공하며, 도메인 모듈은 아직 없다.
 - 프론트엔드 소스는 `frontend/src` 아래에서 관리한다.
 - Feature-Sliced Design을 따른다.
 - 의존성 방향은 `app → pages → widgets → features → entities → shared`다.
@@ -76,7 +78,8 @@
 
 ## 6. 실행 및 검증 명령어
 
-루트에서 실행한다. 현재 루트 스크립트는 `@gazua/frontend` 패키지로 위임된다.
+루트에서 실행한다. 루트 스크립트는 `pnpm -r`로 프론트엔드(`@gazua/frontend`)와
+백엔드(`@gazua/backend`) 전체 워크스페이스에 위임된다.
 
 ```bash
 pnpm lint
