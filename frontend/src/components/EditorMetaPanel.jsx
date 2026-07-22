@@ -1,12 +1,18 @@
+import { categories } from '../data/gameSystems.js'
+
 function EditorMetaPanel({
   title,
   gameTag,
   systemTag,
+  category,
+  onCategoryChange,
   feedbackWanted,
   aiLoading,
   savedAt,
   autoSaved,
   publishError,
+  aiPreviewError,
+  isPublished,
   isLoggedIn,
   showPasswordField,
   editPassword,
@@ -41,6 +47,19 @@ function EditorMetaPanel({
           placeholder="시스템 유형 — 예: 강화 시스템 (필수)"
           aria-label="시스템 유형 태그"
         />
+        {/* 둘러보기 필터가 문서 수만큼 늘지 않도록 분류는 고정 목록에서 고르게 한다. */}
+        <select
+          value={category ?? ''}
+          onChange={(e) => onCategoryChange(e.target.value)}
+          aria-label="문서 분류"
+        >
+          <option value="">분류 선택 (선택 사항)</option>
+          {categories.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
         <label className="rs-editor-feedback-toggle">
           <input
             type="checkbox"
@@ -76,18 +95,20 @@ function EditorMetaPanel({
         ) : (
           <span className="rs-editor-ai-locked">AI 피드백은 회원 전용이에요</span>
         )}
+        {/* 이미 발행한 글을 고치는 중이면 "임시저장"이 아니라 발행분에 바로 반영된다. */}
         <button type="button" className="rs-btn" onClick={onSaveDraft}>
-          임시저장
+          {isPublished ? '저장' : '임시저장'}
         </button>
         <button type="button" className="rs-btn rs-btn-primary" onClick={onPublish}>
-          발행
+          {isPublished ? '수정 반영' : '발행'}
         </button>
         {savedAt && (
           <span className="rs-editor-saved">
-            {autoSaved ? '자동저장됨' : '임시저장됨'} · {savedAt}
+            {autoSaved ? '자동저장됨' : '저장됨'} · {savedAt}
           </span>
         )}
       </div>
+      {aiPreviewError && <p className="rs-editor-error">{aiPreviewError}</p>}
       {publishError && <p className="rs-editor-error">{publishError}</p>}
     </div>
   )

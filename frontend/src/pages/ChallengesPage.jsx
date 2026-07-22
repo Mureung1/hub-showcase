@@ -3,20 +3,26 @@ import ChallengeCard from '../components/ChallengeCard.jsx'
 import DocumentCard from '../components/DocumentCard.jsx'
 import { challenges } from '../data/challenges.js'
 import { getSeedDocument } from '../data/documents.js'
-import { loadPublished } from '../lib/storage.js'
+import { loadMyPublished } from '../lib/storage.js'
+import { useAuth } from '../lib/AuthContext.jsx'
 import './pages.css'
 
 function ChallengesPage() {
+  const auth = useAuth()
   const ongoing = challenges.filter((c) => c.status === 'ongoing')
   const ended = challenges.filter((c) => c.status === 'ended')
-  // 내가 발행한 문서 중 챌린지에 제출한 것 (프로토타입: 발행 문서는 전부 내 문서)
-  const [published, setPublished] = useState([])
+  // "내 제출작"은 반드시 내 문서만이어야 한다(예전엔 전체 발행 문서를 썼다).
+  const [myDocs, setMyDocs] = useState([])
   useEffect(() => {
-    loadPublished()
-      .then(setPublished)
-      .catch(() => {})
-  }, [])
-  const mySubmissions = (challengeId) => published.filter((d) => d.challengeId === challengeId)
+    if (auth.loading || !auth.isLoggedIn) {
+      setMyDocs([])
+      return
+    }
+    loadMyPublished()
+      .then(setMyDocs)
+      .catch(() => setMyDocs([]))
+  }, [auth.loading, auth.isLoggedIn])
+  const mySubmissions = (challengeId) => myDocs.filter((d) => d.challengeId === challengeId)
 
   return (
     <section>
