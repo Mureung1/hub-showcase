@@ -7,7 +7,9 @@ import DatingTestPage from './pages/DatingTestPage'
 import LifestyleTestPage from './pages/LifestyleTestPage'
 import PurposeSelectPage from './pages/PurposeSelectPage'
 import RoommateTypeSelectPage from './pages/RoommateTypeSelectPage'
+import TeamSizeSelectPage from './pages/TeamSizeSelectPage'
 import MatchResultsPage from './pages/MatchResultsPage'
+import DatingSameResultsPage from './pages/DatingSameResultsPage'
 
 function App() {
   return (
@@ -21,7 +23,9 @@ function App() {
         <Route path="/test/lifestyle" element={<LifestyleTestPage />} />
         <Route path="/select-purpose" element={<PurposeSelectPage />} />
         <Route path="/select-roommate-type" element={<RoommateTypeSelectPage />} />
+        <Route path="/select-team-size" element={<TeamSizeSelectPage />} />
         <Route path="/matches" element={<MatchResultsPage />} />
+        <Route path="/matching/dating-same" element={<DatingSameResultsPage />} />
       </Routes>
     </BrowserRouter>
   )
