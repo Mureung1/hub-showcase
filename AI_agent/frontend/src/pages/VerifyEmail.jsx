@@ -75,7 +75,7 @@ function VerifyEmail() {
 
           <button
             type="button"
-            style={styles.primaryButton}
+            className="cm-button cm-button-primary"
             onClick={() => navigate(routes.login)}
           >
             로그인으로 이동
@@ -143,18 +143,6 @@ const styles = {
     fontSize: "16px",
     fontWeight: 700,
     lineHeight: 1.7,
-  },
-  primaryButton: {
-    minHeight: "44px",
-    padding: "0 18px",
-    margin: "0 5px",
-    border: 0,
-    borderRadius: "999px",
-    background: "linear-gradient(135deg, #2563eb, #06b6d4)",
-    color: "#ffffff",
-    fontWeight: 800,
-    cursor: "pointer",
-    boxShadow: "0 14px 26px rgba(37, 99, 235, 0.28)",
   },
 };
 

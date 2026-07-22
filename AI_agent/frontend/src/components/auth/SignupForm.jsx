@@ -30,43 +30,43 @@ function SignupForm({
       </div>
 
       <div style={styles.fieldGrid}>
-        <label style={styles.field}>
-          <span style={styles.label}>이름</span>
+        <label className="cm-field">
+          <span className="cm-label">이름</span>
           <input
             name="name"
             value={form.name}
             onChange={onChange}
-            style={styles.input}
+            className="cm-input"
             placeholder="홍길동"
           />
         </label>
 
-        <label style={styles.field}>
-          <span style={styles.label}>아이디</span>
+        <label className="cm-field">
+          <span className="cm-label">아이디</span>
           <input
             name="username"
             value={form.username}
             onChange={onChange}
-            style={styles.input}
+            className="cm-input"
             placeholder="career01"
           />
         </label>
 
-        <label style={styles.field}>
-          <span style={styles.label}>이메일</span>
+        <label className="cm-field">
+          <span className="cm-label">이메일</span>
           <input
             type="email"
             name="email"
             value={form.email}
             onChange={onChange}
-            style={styles.input}
+            className="cm-input"
             placeholder="user@example.com"
           />
         </label>
 
-        <label style={{ ...styles.field, ...styles.lookupField }}>
-          <span style={styles.label}>학교</span>
-          <div style={styles.schoolSearch}>
+        <label className="cm-field" style={styles.lookupField}>
+          <span className="cm-label">학교</span>
+          <div className="cm-lookup-row">
             <input
               name="school"
               value={form.school}
@@ -77,12 +77,12 @@ function SignupForm({
                   onSchoolSearch();
                 }
               }}
-              style={styles.input}
+              className="cm-input"
               placeholder="학교명을 검색하세요"
             />
             <button
               type="button"
-              style={styles.searchButton}
+              className="cm-button cm-button-secondary cm-button-square cm-button-compact"
               onClick={onSchoolSearch}
               disabled={isSearchingSchool}
             >
@@ -100,7 +100,7 @@ function SignupForm({
                 <button
                   key={school.id}
                   type="button"
-                  style={styles.schoolResultItem}
+                  className="cm-select-button"
                   onClick={() => onSchoolSelect(school)}
                 >
                   <strong>{school.name}</strong>
@@ -115,9 +115,9 @@ function SignupForm({
           )}
         </label>
 
-        <label style={{ ...styles.field, ...styles.lookupField }}>
-          <span style={styles.label}>전공</span>
-          <div style={styles.schoolSearch}>
+        <label className="cm-field" style={styles.lookupField}>
+          <span className="cm-label">전공</span>
+          <div className="cm-lookup-row">
             <input
               name="major"
               value={form.major}
@@ -128,13 +128,13 @@ function SignupForm({
                   onMajorSearch();
                 }
               }}
-              style={styles.input}
+              className="cm-input"
               placeholder={selectedSchool ? "학과명을 검색하세요" : "학교를 먼저 선택하세요"}
               disabled={!selectedSchool}
             />
             <button
               type="button"
-              style={styles.searchButton}
+              className="cm-button cm-button-secondary cm-button-square cm-button-compact"
               onClick={onMajorSearch}
               disabled={!selectedSchool || isSearchingMajor}
             >
@@ -152,7 +152,7 @@ function SignupForm({
                 <button
                   key={major.id}
                   type="button"
-                  style={styles.schoolResultItem}
+                  className="cm-select-button"
                   onClick={() => onMajorSelect(major)}
                 >
                   <strong>{major.name}</strong>
@@ -169,19 +169,20 @@ function SignupForm({
 
         <div style={styles.emptyCell}></div>
 
-        <label style={styles.field}>
-          <span style={styles.label}>비밀번호</span>
-          <div style={styles.passwordField}>
+        <label className="cm-field">
+          <span className="cm-label">비밀번호</span>
+          <div className="cm-password-field">
             <input
               type={isPasswordVisible ? "text" : "password"}
               name="password"
               value={form.password}
               onChange={onChange}
-              style={{ ...styles.input, ...styles.passwordInput }}
+              className="cm-input cm-password-input"
               placeholder="영문, 숫자, 특수문자 포함"
             />
             <button
               type="button"
+              className="cm-button cm-button-ghost cm-button-tight"
               style={styles.passwordToggle}
               onClick={onTogglePassword}
               aria-label={isPasswordVisible ? "비밀번호 숨기기" : "비밀번호 보기"}
@@ -191,19 +192,20 @@ function SignupForm({
           </div>
         </label>
 
-        <label style={styles.field}>
-          <span style={styles.label}>비밀번호 확인</span>
-          <div style={styles.passwordField}>
+        <label className="cm-field">
+          <span className="cm-label">비밀번호 확인</span>
+          <div className="cm-password-field">
             <input
               type={isPasswordConfirmVisible ? "text" : "password"}
               name="passwordConfirm"
               value={form.passwordConfirm}
               onChange={onChange}
-              style={{ ...styles.input, ...styles.passwordInput }}
+              className="cm-input cm-password-input"
               placeholder="비밀번호 재입력"
             />
             <button
               type="button"
+              className="cm-button cm-button-ghost cm-button-tight"
               style={styles.passwordToggle}
               onClick={onTogglePasswordConfirm}
               aria-label={
@@ -221,10 +223,10 @@ function SignupForm({
       {errorMessage && <p style={styles.error}>{errorMessage}</p>}
 
       <div style={styles.actions}>
-        <button type="button" style={styles.secondaryButton} onClick={onMoveToLogin}>
+        <button type="button" className="cm-button cm-button-ghost" onClick={onMoveToLogin}>
           로그인으로 이동
         </button>
-        <button type="submit" style={styles.primaryButton} disabled={isSubmitting}>
+        <button type="submit" className="cm-button cm-button-primary" disabled={isSubmitting}>
           {isSubmitting ? "메일 발송 중" : "회원가입 완료"}
         </button>
       </div>
@@ -261,68 +263,15 @@ const styles = {
     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
     gap: "14px",
   },
-  field: {
-    position: "relative",
-    display: "grid",
-    gap: "8px",
-    alignContent: "start",
-  },
   lookupField: {
     minHeight: "224px",
-  },
-  schoolSearch: {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
-    gap: "8px",
-  },
-  label: {
-    color: "#334155",
-    fontSize: "14px",
-    fontWeight: 700,
-  },
-  input: {
-    width: "100%",
-    minHeight: "42px",
-    padding: "0 12px",
-    borderRadius: "12px",
-    border: "1px solid #dbe3ef",
-    background: "#ffffff",
-    color: "#0f172a",
-    fontSize: "14px",
-    boxSizing: "border-box",
-  },
-  passwordField: {
-    position: "relative",
-  },
-  passwordInput: {
-    paddingRight: "72px",
   },
   passwordToggle: {
     position: "absolute",
     top: "50%",
     right: "8px",
     minWidth: "48px",
-    height: "34px",
-    padding: "0 10px",
-    border: "1px solid #dbe3ef",
-    borderRadius: "999px",
-    background: "#f8fafc",
-    color: "#334155",
-    cursor: "pointer",
     transform: "translateY(-50%)",
-    fontWeight: 700,
-  },
-  searchButton: {
-    minHeight: "42px",
-    padding: "0 10px",
-    border: "1px solid #bfdbfe",
-    borderRadius: "12px",
-    background: "#eff6ff",
-    color: "#1d4ed8",
-    fontSize: "13px",
-    fontWeight: 800,
-    whiteSpace: "nowrap",
-    cursor: "pointer",
   },
   schoolMessage: {
     color: "#64748b",
@@ -346,19 +295,6 @@ const styles = {
     border: "1px solid #e2e8f0",
     boxShadow: "0 18px 34px rgba(15, 23, 42, 0.14)",
   },
-  schoolResultItem: {
-    display: "grid",
-    gap: "3px",
-    width: "100%",
-    minHeight: "40px",
-    padding: "7px 10px",
-    border: 0,
-    borderRadius: "10px",
-    background: "#ffffff",
-    color: "#0f172a",
-    textAlign: "left",
-    cursor: "pointer",
-  },
   emptyCell: {
     display: "block",
   },
@@ -377,27 +313,6 @@ const styles = {
     flexWrap: "wrap",
     gap: "10px",
     marginTop: "16px",
-  },
-  primaryButton: {
-    minHeight: "44px",
-    padding: "0 18px",
-    border: 0,
-    borderRadius: "999px",
-    background: "linear-gradient(135deg, #2563eb, #06b6d4)",
-    color: "#ffffff",
-    fontWeight: 800,
-    cursor: "pointer",
-    boxShadow: "0 14px 26px rgba(37, 99, 235, 0.28)",
-  },
-  secondaryButton: {
-    minHeight: "44px",
-    padding: "0 18px",
-    border: "1px solid #dbe3ef",
-    borderRadius: "999px",
-    background: "#ffffff",
-    color: "#334155",
-    fontWeight: 800,
-    cursor: "pointer",
   },
 };
 

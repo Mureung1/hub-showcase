@@ -34,7 +34,7 @@ function Header() {
       <div className="header-inner">
         <button
           type="button"
-          className="brand"
+          className="cm-brand-button brand"
           onClick={() => navigate(routes.home)}
         >
           <img
@@ -60,7 +60,7 @@ function Header() {
           >
             <button
               type="button"
-              className="feature-button"
+              className="cm-button cm-button-primary cm-button-compact"
               aria-expanded={isMenuOpen}
               onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
             >
@@ -73,7 +73,7 @@ function Header() {
                   <button
                     key={item.path}
                     type="button"
-                    className="submenu-item"
+                    className="cm-select-button"
                     onClick={() => {
                       navigate(item.path);
                       setIsMenuOpen(false);
@@ -89,7 +89,7 @@ function Header() {
           {isLoggedIn ? (
             <button
               type="button"
-              className="auth-button secondary"
+              className="cm-button cm-button-dark cm-button-compact"
               onClick={handleLogout}
             >
               로그아웃
@@ -98,14 +98,14 @@ function Header() {
             <>
               <button
                 type="button"
-                className="auth-button secondary"
+                className="cm-button cm-button-dark cm-button-compact"
                 onClick={() => navigate(routes.login)}
               >
                 로그인
               </button>
               <button
                 type="button"
-                className="auth-button secondary"
+                className="cm-button cm-button-dark cm-button-compact"
                 onClick={() => navigate(routes.signup)}
               >
                 회원가입
@@ -114,7 +114,7 @@ function Header() {
           )}
           <button
             type="button"
-            className="auth-button mypage"
+            className="cm-button cm-button-dark cm-button-compact"
             onClick={handleMyPageClick}
           >
             마이페이지
@@ -149,8 +149,6 @@ const styles = `
   align-items: center;
   gap: 10px;
   padding: 0;
-  border: 0;
-  background: transparent;
   color: #ffffff;
   font-size: clamp(15px, 2vw, 18px);
   font-weight: 700;
@@ -181,66 +179,6 @@ const styles = `
   margin-bottom: -10px;
 }
 
-.feature-button,
-.auth-button,
-.submenu-item {
-  font: inherit;
-  cursor: pointer;
-}
-
-.feature-button,
-.auth-button {
-  min-height: 36px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-  transition:
-    background 180ms ease,
-    border-color 180ms ease,
-    color 180ms ease,
-    box-shadow 180ms ease,
-    transform 180ms ease;
-}
-
-.feature-button {
-  color: #ffffff;
-  background: linear-gradient(135deg, #2563eb, #06b6d4);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24);
-}
-
-.feature-button:hover {
-  background: linear-gradient(135deg, #1d4ed8, #0891b2);
-  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.34);
-}
-
-.feature-button:active {
-  background: linear-gradient(135deg, #1e40af, #0e7490);
-  transform: scale(0.96);
-}
-
-.auth-button.secondary,
-.auth-button.mypage {
-  color: #e2e8f0;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.auth-button.secondary:hover,
-.auth-button.mypage:hover {
-  color: #ffffff;
-  background: rgba(37, 99, 235, 0.32);
-  border-color: rgba(96, 165, 250, 0.5);
-}
-
-.auth-button.secondary:active,
-.auth-button.mypage:active {
-  background: rgba(29, 78, 216, 0.5);
-  transform: scale(0.96);
-}
-
 .submenu {
   position: absolute;
   top: 100%;
@@ -254,33 +192,6 @@ const styles = `
   background: #ffffff;
   border: 1px solid #e2e8f0;
   box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
-}
-
-.submenu-item {
-  width: 100%;
-  padding: 11px 12px;
-  border: 0;
-  border-radius: 11px;
-  background: #f8fafc;
-  color: #0f172a;
-  font-size: 14px;
-  font-weight: 700;
-  text-align: left;
-  transition:
-    background 180ms ease,
-    color 180ms ease,
-    transform 180ms ease;
-}
-
-.submenu-item:hover {
-  background: #eef6ff;
-  color: #2563eb;
-}
-
-.submenu-item:active {
-  background: #dbeafe;
-  color: #1d4ed8;
-  transform: scale(0.98);
 }
 
 @media (max-width: 720px) {

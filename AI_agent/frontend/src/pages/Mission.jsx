@@ -73,11 +73,11 @@ function Mission() {
         <style>{styles}</style>
         <Header />
         <section className="mission-content">
-          <div className="mission-empty">
+          <div className="cm-empty-state mission-empty">
             <span className="mission-badge">Career Mission</span>
             <h1>미션 추천</h1>
             <p>로그인하고 전공, 스펙, 목표 직무를 등록하면 맞춤 미션을 확인할 수 있습니다.</p>
-            <button type="button" className="mission-primary" onClick={() => navigate(routes.login)}>
+            <button type="button" className="cm-button cm-button-primary cm-button-start" onClick={() => navigate(routes.login)}>
               로그인으로 이동
             </button>
           </div>
@@ -105,7 +105,7 @@ function Mission() {
             <span>추천 기준</span>
             <strong>{targetRole || user?.major || "미등록"}</strong>
             <small>{trackLabels[inferredTrack] || "일반 직무"} 기반 추천</small>
-            <button type="button" onClick={() => navigate(routes.specs)}>
+            <button type="button" className="cm-button cm-button-secondary cm-button-compact" onClick={() => navigate(routes.specs)}>
               스펙 수정
             </button>
           </div>
@@ -153,7 +153,11 @@ function MissionCard({ mission, isSubmitted }) {
               </div>
               <button
                 type="button"
-                className={isSubmitted ? "mission-complete-button" : "mission-primary"}
+                className={
+                  isSubmitted
+                    ? "cm-button cm-button-success cm-button-start"
+                    : "cm-button cm-button-primary cm-button-start"
+                }
                 onClick={() =>
                   navigate(isSubmitted ? routes.feedback : getMissionDetailPath(mission.id))
                 }
@@ -217,7 +221,6 @@ const styles = `
 }
 
 .mission-summary,
-.mission-empty,
 .mission-notice,
 .mission-card {
   border: 1px solid rgba(226, 232, 240, 0.9);
@@ -247,16 +250,6 @@ const styles = `
   color: #475569;
   font-size: 13px;
   font-weight: 800;
-}
-
-.mission-summary button {
-  min-height: 38px;
-  border: 1px solid #bfdbfe;
-  border-radius: 999px;
-  background: #ffffff;
-  color: #1d4ed8;
-  font-weight: 800;
-  cursor: pointer;
 }
 
 .mission-notice {
@@ -345,41 +338,8 @@ const styles = `
   line-height: 1.45;
 }
 
-.mission-primary {
-  justify-self: start;
-  min-height: 42px;
-  padding: 0 18px;
-  border: 0;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #2563eb, #06b6d4);
-  color: #ffffff;
-  font-weight: 900;
-  cursor: pointer;
-  box-shadow: 0 14px 26px rgba(37, 99, 235, 0.28);
-}
-
-.mission-complete-button {
-  justify-self: start;
-  min-height: 42px;
-  padding: 0 18px;
-  border: 1px solid #86efac;
-  border-radius: 999px;
-  background: #dcfce7;
-  color: #15803d;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.mission-primary:hover {
-  background: linear-gradient(135deg, #1d4ed8, #0891b2);
-}
-
 .mission-empty {
   max-width: 720px;
-  display: grid;
-  gap: 16px;
-  padding: 24px;
-  border-radius: 18px;
 }
 
 @media (max-width: 820px) {

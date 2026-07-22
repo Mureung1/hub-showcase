@@ -1,48 +1,48 @@
-﻿# Career Mission AI
+# Career Mission AI Frontend
 
-취업 준비에 어려움을 겪는 대학생을 위한 AI 커리어 매니저 소개 페이지입니다.
+React + Vite 기반의 Career Mission AI 클라이언트입니다. 사용자는 회원가입과 로그인 후 스펙 등록에서 목표 직무를 함께 입력하고, AI 분석, 미션 수행, 결과물 업로드, 피드백, 포트폴리오 흐름을 한 번에 사용할 수 있습니다.
 
-이 프로젝트는 React 컴포넌트 1개를 개발하여 서비스 주제, 주요 기능, 서비스 목표를 한 화면에 보여줍니다.
+## Tech Stack
 
-## 프로젝트 주제
+- React
+- React Router
+- Vite
+- CSS / shared utility classes
+- localStorage fallback
+- Express API client modules
 
-Career Mission AI는 사용자의 목표 직무와 현재 역량을 바탕으로 맞춤형 실무 미션을 제공하는 서비스입니다.
-
-단순히 스펙을 더 많이 쌓게 하는 것이 아니라, 대학생이 실무 경험을 만들고 포트폴리오로 연결하며 지치지 않고 취업 준비를 이어갈 수 있도록 돕는 것을 목표로 합니다.
-
-## 주요 기능 소개
-
-- 목표 직무와 현재 스펙 기반 AI 역량 분석
-- 개인 맞춤형 실무 미션 생성
-- 제출 결과물에 대한 AI 피드백 제공
-- 프로젝트 경험을 포트폴리오로 자동 정리
-- 컨디션 체크를 통한 번아웃 위험 감지
-- 학습과 휴식의 균형을 위한 AI 휴식 추천
-
-## 개발한 컴포넌트
+## Key Screens
 
 - `src/pages/Home.jsx`
+- `src/pages/Signup.jsx`
+- `src/pages/Login.jsx`
+- `src/pages/MyPage.jsx`
+- `src/pages/SpecRegister.jsx`
+- `src/pages/Analysis.jsx`
+- `src/pages/Mission.jsx`
+- `src/pages/MissionDetail.jsx`
+- `src/pages/UploadResult.jsx`
+- `src/pages/Feedback.jsx`
+- `src/pages/Portfolio.jsx`
 
-프로젝트 주제를 소개하는 React 컴포넌트입니다. 인라인 스타일을 사용하여 카드형 소개 화면을 구성했습니다.
+## Styling Notes
 
-`src/App.jsx`에서는 `Home` 컴포넌트만 렌더링합니다.
+공통 버튼, 입력폼, 선택 카드, 빈 상태 스타일은 `src/index.css`의 `cm-*` 유틸리티 클래스를 사용합니다. 주요 2열 레이아웃은 모바일에서 1열로 접히도록 반응형 규칙을 적용했습니다.
 
-## 실행 방법
+## Run
 
 ```bash
 npm install
 npm run dev
 ```
 
-브라우저에서 아래 주소로 접속합니다.
-
-```text
+```txt
 http://localhost:5173
 ```
 
-## 빌드
+## Verify
 
 ```bash
+npm run lint
 npm run build
 ```
-

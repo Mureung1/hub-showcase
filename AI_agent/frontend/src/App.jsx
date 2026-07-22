@@ -7,7 +7,6 @@ import VerifyEmail from "./pages/VerifyEmail";
 import Login from "./pages/Login";
 import MyPage from "./pages/MyPage";
 import SpecRegister from "./pages/SpecRegister";
-import JobGoal from "./pages/JobGoal";
 import Analysis from "./pages/Analysis";
 import Mission from "./pages/Mission";
 import MissionDetail from "./pages/MissionDetail";
@@ -50,14 +49,6 @@ function App() {
           element={
             <ProtectedRoute>
               <SpecRegister />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={routes.jobGoal}
-          element={
-            <ProtectedRoute>
-              <JobGoal />
             </ProtectedRoute>
           }
         />

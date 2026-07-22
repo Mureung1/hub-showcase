@@ -40,6 +40,15 @@ const buildPortfolioDraft = (submission) => {
   const processItems = descriptionSentences.length
     ? descriptionSentences.slice(0, 4)
     : mission?.guide?.slice(0, 4) || [];
+  const learningItems = [
+    "문제를 먼저 정의해야 결과물의 방향과 평가 기준이 명확해진다는 점을 확인했습니다.",
+    mission?.skills?.length
+      ? `${mission.skills.slice(0, 2).join(", ")} 역량은 결과물로 보여줄 때 더 설득력 있게 전달됩니다.`
+      : "수행 과정과 의사결정 근거를 함께 기록해야 포트폴리오 설득력이 높아집니다.",
+    descriptionSentences.length
+      ? "제출 설명을 바탕으로 수행 과정, 결과, 개선점을 분리해 정리하는 연습이 필요합니다."
+      : "결과물만 제출하기보다 과정과 배운 점을 함께 남겨야 면접 답변으로 확장하기 쉽습니다.",
+  ];
 
   return {
     title: submission?.missionTitle || mission?.title || "미션 프로젝트",
@@ -55,6 +64,7 @@ const buildPortfolioDraft = (submission) => {
       "수행 결과를 포트폴리오에 넣을 수 있는 프로젝트 경험으로 정리했습니다.",
     interviewPitch: `${submission?.missionTitle || "이번 프로젝트"}에서는 문제를 먼저 정의하고, 대상자에게 필요한 정보를 실행 가능한 결과물로 바꾸는 데 집중했습니다. 자료 조사와 결과 정리 과정을 통해 실무에서 필요한 문서화 역량과 사용자 관점의 사고를 보여줄 수 있습니다.`,
     portfolioPoints: feedback.portfolioPoints,
+    learningItems,
   };
 };
 
@@ -105,7 +115,7 @@ function Portfolio() {
             <aside className="portfolio-status">
               <span>최근 업데이트</span>
               <strong>{formatDate(submission.submittedAt)}</strong>
-              <button type="button" onClick={() => navigate(routes.upload)}>
+              <button type="button" className="cm-button cm-button-secondary cm-button-compact" onClick={() => navigate(routes.upload)}>
                 결과물 수정
               </button>
             </aside>
@@ -183,6 +193,21 @@ function Portfolio() {
               </div>
             </section>
 
+            <section className="portfolio-learning">
+              <div className="section-title">
+                <span>Learning</span>
+                <h3>배운 점</h3>
+              </div>
+              <div className="learning-grid">
+                {draft.learningItems.map((item, index) => (
+                  <article key={item}>
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <p>{item}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+
             <section className="portfolio-proof">
               <div className="section-title">
                 <span>Proof Points</span>
@@ -199,10 +224,10 @@ function Portfolio() {
             </section>
 
             <div className="portfolio-actions">
-              <button type="button" className="portfolio-secondary" onClick={() => navigate(routes.feedback)}>
+              <button type="button" className="cm-button cm-button-secondary" onClick={() => navigate(routes.feedback)}>
                 피드백 다시 보기
               </button>
-              <button type="button" className="portfolio-primary" onClick={() => navigate(routes.mission)}>
+              <button type="button" className="cm-button cm-button-primary" onClick={() => navigate(routes.mission)}>
                 다른 미션 찾기
               </button>
             </div>
@@ -225,11 +250,11 @@ function StoryBlock({ number, title, text }) {
 
 function EmptyState({ title, text, actionLabel, onAction }) {
   return (
-    <div className="portfolio-empty">
+    <div className="cm-empty-state portfolio-empty">
       <strong>{title}</strong>
       <p>{text}</p>
       {actionLabel && (
-        <button type="button" className="portfolio-primary" onClick={onAction}>
+        <button type="button" className="cm-button cm-button-primary cm-button-start" onClick={onAction}>
           {actionLabel}
         </button>
       )}
@@ -287,7 +312,6 @@ const styles = `
 }
 
 .portfolio-status,
-.portfolio-empty,
 .portfolio-hero-panel,
 .portfolio-story article,
 .portfolio-process,
@@ -319,16 +343,6 @@ const styles = `
   font-size: 24px;
 }
 
-.portfolio-status button {
-  min-height: 38px;
-  border: 1px solid #bfdbfe;
-  border-radius: 999px;
-  background: #ffffff;
-  color: #1d4ed8;
-  font-weight: 800;
-  cursor: pointer;
-}
-
 .portfolio-case {
   display: grid;
   gap: 16px;
@@ -351,7 +365,6 @@ const styles = `
 
 .portfolio-hero-panel p,
 .portfolio-card p,
-.portfolio-empty p,
 .portfolio-story p,
 .portfolio-proof p {
   margin: 0;
@@ -408,6 +421,7 @@ const styles = `
 }
 
 .portfolio-process,
+.portfolio-learning,
 .portfolio-proof {
   display: grid;
   gap: 16px;
@@ -463,6 +477,34 @@ const styles = `
   gap: 12px;
 }
 
+.learning-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.learning-grid article {
+  min-width: 0;
+  display: grid;
+  gap: 9px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.learning-grid span {
+  color: #06b6d4;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.learning-grid p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.7;
+}
+
 .proof-grid article {
   min-width: 0;
   padding: 16px;
@@ -478,11 +520,7 @@ const styles = `
 }
 
 .portfolio-empty {
-  display: grid;
-  gap: 12px;
   max-width: 680px;
-  padding: 22px;
-  border-radius: 18px;
 }
 
 .portfolio-actions {
@@ -492,34 +530,12 @@ const styles = `
   gap: 10px;
 }
 
-.portfolio-primary,
-.portfolio-secondary {
-  min-height: 42px;
-  padding: 0 18px;
-  border-radius: 999px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.portfolio-primary {
-  justify-self: start;
-  border: 0;
-  background: linear-gradient(135deg, #2563eb, #06b6d4);
-  color: #ffffff;
-  box-shadow: 0 14px 26px rgba(37, 99, 235, 0.28);
-}
-
-.portfolio-secondary {
-  border: 1px solid #bfdbfe;
-  background: #ffffff;
-  color: #1d4ed8;
-}
-
 @media (max-width: 900px) {
   .portfolio-heading,
   .portfolio-hero-panel,
   .portfolio-story,
   .portfolio-side-grid,
+  .learning-grid,
   .proof-grid {
     grid-template-columns: 1fr;
   }
