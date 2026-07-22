@@ -95,7 +95,41 @@ async function triggerKreamCrawler(req, res) {
   }
 }
 
+/**
+ * Updates image URLs for one or more products manually
+ * Route: POST /api/admin/update-images
+ * Body: { updates: [{ kreamProductId: string, imageUrl: string }] }
+ */
+async function updateProductImages(req, res) {
+  try {
+    const { updates } = req.body;
+    if (!updates || !Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({ success: false, message: '"updates" array is required.' });
+    }
+
+    const results = [];
+    for (const { kreamProductId, imageUrl } of updates) {
+      if (!kreamProductId || !imageUrl) continue;
+      const updated = await prisma.drop.updateMany({
+        where: { kreamProductId: String(kreamProductId) },
+        data: { imageUrl },
+      });
+      results.push({ kreamProductId, updated: updated.count });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Updated images for ${results.length} products.`,
+      data: results,
+    });
+  } catch (error) {
+    console.error('[admin] Error updating product images:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
 module.exports = {
   dumpKreamPrices,
-  triggerKreamCrawler
+  triggerKreamCrawler,
+  updateProductImages,
 };
