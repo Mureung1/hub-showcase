@@ -48,8 +48,8 @@ flowchart LR
 
 | 메서드 | 경로 | 설명 | 주요 응답 |
 | --- | --- | --- | --- |
-| POST | `/api/analysis` | 프로필 분석 실행(동기) + 캐시 저장. 신선한 캐시(24h)면 재사용 | `200` Analysis |
-| GET | `/api/analysis/:githubId` | 분석 캐시 조회 (프로필 화면 새로고침/재진입) | `200` Analysis / `404 ANALYSIS_NOT_FOUND` |
+| POST | `/api/analysis` | 프로필 분석 실행(동기) + 캐시 저장. 신선한 캐시(24h 이내)면 재사용 | `200` Analysis |
+| GET | `/api/analysis/:githubId` | 분석 캐시 조회 (프로필 화면 새로고침/재진입). 7일 이내면 그대로, 7일 초과면 재분석 후 갱신 | `200` Analysis / `404 ANALYSIS_NOT_FOUND` |
 | POST | `/api/recommendations` | 추천 생성+저장. 재조회/필터링은 조건 바꿔 재 POST | `200` Recommendation (빈 결과는 `items: []`) |
 | GET | `/api/recommendations/:id` | 저장된 추천 재조회 (목록·상세 새로고침 공용) | `200` Recommendation / `404` |
 | GET | `/health` | 서버 상태 확인 | `200 { status: "ok" }` |
@@ -69,7 +69,7 @@ flowchart LR
 (위 "전체 구조" 다이어그램 참조)
 - 화면 → API: 각 화면 전환 시점에 대응하는 REST 호출이 정확히 1개씩 매핑됨 (ID입력→분석, 프로필 새로고침→분석 재조회, 조건선택→추천 생성, 목록/상세→추천 재조회)
 - API → GitHub: `analysisService`는 GraphQL로 언어·활동 집계, `recommendationService`는 REST 검색으로 레포/이슈 후보 수집 (용도별 분담, [decisions.md](decisions.md))
-- API → DB: 분석 결과는 `analyses`에 24h 캐시, 레포/이슈 메타는 `repo_cache`/`issue_cache`에 캐시, 추천 결과는 `recommendations`+`recommendation_items`에 스냅샷 저장(재조회용), GitHub 호출량은 `api_usage`에 집계
+- API → DB: 분석 결과는 `analyses`에 저장 — 신규 요청(POST)은 24h 이내 캐시면 재사용, 재조회(GET)는 7일 이내면 그대로·7일 초과면 재분석 후 갱신(두 기준이 다른 이유: 24h는 짧은 시간 내 중복 요청 방지용, 7일은 오래된 프로필 방치 방지용). 레포/이슈 메타는 `repo_cache`/`issue_cache`에 캐시, 추천 결과는 `recommendations`+`recommendation_items`에 스냅샷 저장(재조회용), GitHub 호출량은 `api_usage`에 집계
 
 ## 인프라 / 배포
 - 배포 환경, CI/CD
