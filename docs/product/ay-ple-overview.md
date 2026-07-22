@@ -10,6 +10,8 @@
 
 AY-PLE는 대학생이 한 학기 동안 받는 공지, 강의계획서, 수업 자료를 AY(에이)와 함께 정리하도록 돕는다. 학생이 자료와 작업을 고르면 AY가 필요한 정보를 찾아 서로 연결하고, 어디에서 찾았는지 보여준다. 학생이 확인한 내용만 과제와 시험 같은 학기 정보로 반영된다.
 
+`local-first`는 workspace와 app state를 로컬에 두는 원칙이지 `offline`을 뜻하지 않는다. Codex 실행에는 provider 전송이 발생할 수 있으며 정확한 공개 privacy 경계는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)가 소유한다.
+
 과제를 대신 풀거나 자동으로 제출하는 앱은 아니다. 학생이 자료를 다시 뒤지고 여러 앱에 옮겨 적는 일을 줄이되, 무엇을 믿고 반영할지는 학생이 결정하게 만드는 것이 목표다.
 
 ```mermaid

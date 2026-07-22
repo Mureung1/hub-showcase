@@ -19,7 +19,7 @@
 
 ## AY-PLE는 무엇인가
 
-AY-PLE(에이플)는 학생이 한 학기 작업공간에서 공지, 강의계획서, 수업 자료를 고르면 AY가 필요한 정보를 찾고, 원본 근거가 연결된 변경안을 제시하는 local-first 학업 Agent 앱입니다. 학생이 확인한 내용만 학기 상태에 반영합니다.
+AY-PLE(에이플)는 학생이 한 학기 작업공간에서 공지, 강의계획서, 수업 자료를 고르면 AY가 필요한 정보를 찾고, 원본 근거가 연결된 변경안을 제시하는 local-first 학업 Agent 앱입니다. 학생이 확인한 내용만 학기 상태에 반영합니다. Local-first는 offline을 뜻하지 않으며 Codex 실행의 provider 전송 경계는 [Public repository clean snapshot ADR](docs/adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)에 기록합니다.
 
 현재 코드베이스는 official Python SDK 기반 `@ay-ple/codex-chat-runtime`을 하나의 supervised Runtime graph로 유지하고, Express Server의 `/api/product/*`와 desktop Chat Shell을 유일한 public 제품 경로로 사용합니다. 학생은 두 TXT 자료를 선택해 First Assignment action을 실행하고, 근거가 연결된 제안을 수락·수정 요청·거절한 뒤 confirmed 학기 상태를 Server restart 후에도 다시 열 수 있습니다. Deterministic Browser, exact local-provider와 isolated live-provider 경로가 같은 product seam과 bounded shutdown을 검증했으며, conversation catalog·generic transcript persistence·packaged Desktop은 [개발 백로그](docs/product/ay-ple-development-backlog.md)의 후속 경계입니다.
 
@@ -91,6 +91,7 @@ npm run demo
 | ADR | [0012. Codex Chat-only runtime graph 채택](docs/adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md) | Maintained Runtime 단일화와 legacy executable·alias 제거. Chat-only public surface 결과는 ADR 0013이 대체 |
 | ADR | [0013. Product-only public surface와 durable v2 baseline](docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md) | Canonical product cutover와 workspace-local current v2의 장기 compatibility 정책 |
 | ADR | [0014. App-owned normalized SemesterWorkspace](docs/adr/0014-create-app-owned-normalized-semester-workspaces.md) | `WorkspaceManifest` authority, scaffold·admission과 `ImportSource` 경계 결정 |
+| ADR | [0015. Reviewed clean snapshot public repository](docs/adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md) | Public source lineage·canonical cutover, Apache-2.0 first-party license와 trust·export authority |
 
 ### 기술 참고 문서
 

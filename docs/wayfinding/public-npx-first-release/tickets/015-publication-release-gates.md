@@ -8,7 +8,7 @@
 
 ## Question
 
-Clean public source snapshot, `npm pack` 결과, Runtime archive·manifest·checksum과 landing이 하나의 exact release version을 가리킨다고 판정하려면 어떤 source SHA·export manifest·license/provenance·secret scan·package allowlist·artifact immutability와 publish ordering evidence가 필요한가? Release candidate, final tag, npm publish, GitHub Release·Pages 노출, failed publish, yanked version과 manual rollback을 어떤 blocking gate와 기록으로 관리할 것인가?
+[Ticket 005](005-public-repository-authority-and-license.md)의 fixed `hub` SHA에서 deterministic하게 만든 local/private RC, gate 실패 시 `hub` 수정 후 전체 재생성, final clean root commit의 immutable source↔public mapping과 published commit·tag 불변성을 고정 입력으로 둔다. 그 위에서 clean public source snapshot, `npm pack` 결과, Runtime archive·manifest·checksum과 Landing이 하나의 exact release version을 가리킨다고 자동 판정하려면 어떤 blocking evidence가 필요한가? npm publish, GitHub Release·Pages 노출의 ordering과 partial failure 정산, yanked version·manual rollback을 어떤 기록과 재개 계약으로 관리할 것인가?
 
 ## Answer
 

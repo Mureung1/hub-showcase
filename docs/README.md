@@ -91,6 +91,7 @@ Root companion docs:
 | Codex Chat-only cutover ADR | [adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md](adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md) | maintained Runtime을 단일화하고 legacy executable surface와 compatibility alias를 제거한 결정. Chat-only public surface 결과는 ADR 0013이 대체함 |
 | Product-only cutover·durable v2 ADR | [adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md](adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md) | public caller를 product path로 단일화하고 current v2 store를 첫 durable compatibility baseline으로 채택한 결정 |
 | App-owned SemesterWorkspace ADR | [adr/0014-create-app-owned-normalized-semester-workspaces.md](adr/0014-create-app-owned-normalized-semester-workspaces.md) | `WorkspaceManifest` authority, scaffold·admission과 `ImportSource` 경계 결정 |
+| Public repository clean snapshot ADR | [adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md](adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md) | Public source lineage·canonical cutover, first-party license와 trust·export authority 결정 |
 
 ### 기술 참고
 
@@ -156,6 +157,7 @@ Root companion docs:
 | 제품 작업의 Codex mapping | [Codex-native product composition](architecture/codex-native-product-composition.md) | 제품 문서는 사용자 의미, 구현 문서는 현재 지원 여부만 설명 |
 | runtime root의 소유권 불변 조건 | [ADR 0006](adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | 다른 문서는 결정 결과만 요약하고 ADR을 연결 |
 | SemesterWorkspace admission·identity와 `WorkspaceManifest` authority | [ADR 0014](adr/0014-create-app-owned-normalized-semester-workspaces.md) | 제품·architecture·package 문서는 현재 구현 또는 사용자 결과만 요약하고 exact schema를 재정의하지 않음 |
+| Public repository lineage·canonical source·first-party license와 trust authority | [ADR 0015](adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md) | 제품·release 문서는 public 진입 결과만 요약하고 allowlist·cutover·legal policy를 재정의하지 않음 |
 | runtime 격리의 현재·목표·후속 기술 배치 | [Codex Runtime 격리](architecture/codex-runtime-isolation.md) | 구현 문서는 현재 동작만, Backlog는 후속 일정만 설명 |
 | Codex Chat의 횡단 topology와 gap | [Codex Chat 구현 지도](architecture/codex-chat-implementation-map.md) | 제품 문서는 구현 여부만 짧게 요약 |
 | package별 현재 동작과 명령 | 관련 package README, 코드와 테스트 | 구현 지도와 소비 문서는 필요한 사실만 요약하고 package 문서를 연결 |

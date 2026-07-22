@@ -67,7 +67,7 @@ AY-PLE의 역할은 Codex를 대체하는 것이 아니라 Codex의 일반적인
 
 ## 제품 제공 형태
 
-첫 public 제품 진입점은 공식 product homepage인 Landing에서 public `npx` 명령을 복사해 실행하고, local companion과 browser UI를 여는 **macOS-first local web app**이다. Landing은 AY-PLE의 장기 제품 가치와 현재 preview capability를 구분해 보여주며 Docs, public repository와 license·trust 정보로 이어진다. Packaged Desktop App은 이 경로를 검증한 뒤의 후속 로드맵이다.
+첫 public 제품 진입점은 공식 product homepage인 Landing에서 public `npx` 명령을 복사해 실행하고, local companion과 browser UI를 여는 **macOS-first local web app**이다. Landing은 AY-PLE의 장기 제품 가치와 현재 preview capability를 구분해 보여주며 Docs, public repository와 license·trust 정보로 이어진다. Public source는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)의 clean snapshot·Apache-2.0·trust authority를 따르며, Packaged Desktop App은 이 경로를 검증한 뒤의 후속 로드맵이다.
 
 [Official SDK 기반 Codex Chat Shell](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)과 First Assignment vertical은 native 실행과 학업 product boundary를 검증한 현재 kernel이다. Public `npx` 배포, Browser OAuth와 first-run setup은 이 kernel 앞에 추가하는 채택 목표이며 구현 완료로 서술하지 않는다. 정확한 배포 방식, prerequisite와 지원 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)와 [public npx 첫 출시 Wayfinder](../wayfinding/public-npx-first-release/map.md)가 소유한다.
 
@@ -204,6 +204,7 @@ PDF text extraction, OCR, HWP/HWPX parsing처럼 결정적으로 처리할 수 �
 ## 보안과 학업 윤리
 
 - `RawMaterial`과 `SemesterModel`은 사용자의 로컬 환경에 둔다.
+- `local-first`는 `offline`을 뜻하지 않는다. Codex 실행 중 대화·Agent가 읽은 workspace content·tool result는 provider로 전송될 수 있으며, 정확한 공개 privacy 경계는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)가 소유한다.
 - app-managed runtime 상태와 secret은 Git에 포함하지 않는다.
 - 브라우저가 Codex App Server나 파일시스템에 직접 접근하지 않고 local companion server가 중재한다.
 - RawMaterial 원본은 자동 수정하거나 삭제하지 않는다.

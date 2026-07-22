@@ -61,7 +61,7 @@ Landing과 local app은 같은 브랜드를 사용하지만 같은 화면 hierar
 | Change proposal | `검토 대기`는 honey, `반영됨`은 green으로 구분한다. 내부 상태명은 노출하지 않는다. |
 | Buttons | command button은 실용적으로 작게 두되, 수락/수정 요청/거절 색상은 명확히 구분한다. |
 
-Public Landing의 Hero는 제품 가치를, install command는 즉시 실행 가능한 entrypoint를 소유한다. Demo와 작동 방식은 완성된 제품 비전과 현재 public preview capability를 구분하고, Docs·GitHub·license/trust link는 검증 가능한 정보로 이어져야 한다. Exact command, prerequisite와 support matrix는 [public npx 첫 출시 Wayfinder](../wayfinding/public-npx-first-release/map.md)가 소유한다.
+Public Landing의 Hero는 제품 가치를, install command는 즉시 실행 가능한 entrypoint를 소유한다. Demo와 작동 방식은 완성된 제품 비전과 현재 public preview capability를 구분하고, Docs·GitHub·license/trust link는 검증 가능한 정보로 이어져야 한다. Exact command, prerequisite와 support matrix는 [public npx 첫 출시 Wayfinder](../wayfinding/public-npx-first-release/map.md), public source·license·trust authority는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)가 소유한다.
 
 ## 피해야 할 것
 
