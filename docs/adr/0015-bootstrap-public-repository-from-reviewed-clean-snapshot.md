@@ -4,7 +4,7 @@
 
 성숙도: 채택
 
-관련 결정: [ADR 0009 — macOS-first local web app 제품 경로를 사용한다](0009-use-a-macos-first-local-web-app-product-path.md), [ADR 0014 — SemesterWorkspace를 app-owned normalized scaffold로 생성한다](0014-create-app-owned-normalized-semester-workspaces.md)
+관련 결정: [ADR 0009 — macOS-first local web app 제품 경로를 사용한다](0009-use-a-macos-first-local-web-app-product-path.md), [ADR 0014 — SemesterWorkspace를 app-owned normalized scaffold로 생성한다](0014-create-app-owned-normalized-semester-workspaces.md), [ADR 0016 — Exact npx launcher와 verified Runtime release로 첫 public preview를 배포한다](0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)
 
 ## 맥락
 

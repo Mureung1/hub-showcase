@@ -8,7 +8,7 @@
 
 성숙도: 초안
 
-관련 문서: [CONTEXT.md](../../CONTEXT.md), [Review Workspace Scenario](ay-ple-review-workspace-scenario.md), [Native Codex composition ADR](../adr/0007-use-native-codex-composition-for-product-actions.md), [Official Codex Python SDK Chat Shell ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [Codex Chat-only cutover ADR](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [app-owned SemesterWorkspace ADR](../adr/0014-create-app-owned-normalized-semester-workspaces.md), [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), [public npx 첫 출시 Wayfinder](../wayfinding/public-npx-first-release/map.md), [개발 백로그](ay-ple-development-backlog.md)
+관련 문서: [CONTEXT.md](../../CONTEXT.md), [Review Workspace Scenario](ay-ple-review-workspace-scenario.md), [Native Codex composition ADR](../adr/0007-use-native-codex-composition-for-product-actions.md), [Official Codex Python SDK Chat Shell ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [Codex Chat-only cutover ADR](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [app-owned SemesterWorkspace ADR](../adr/0014-create-app-owned-normalized-semester-workspaces.md), [public repository authority ADR](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md), [public npx distribution ADR](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md), [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), [개발 백로그](ay-ple-development-backlog.md)
 
 ## 한 줄 요약
 
@@ -36,7 +36,7 @@ AY-PLE는 새로운 범용 Agent framework를 만드는 제품이 아니다. 일
 
 | 순서 | 학생이 하는 일 | AY-PLE가 하는 일 | 결과 |
 | --- | --- | --- | --- |
-| 1 | 공식 Landing의 public `npx` 명령으로 AY-PLE을 시작하고, Codex에 연결한 뒤 학년·학기와 생성 위치를 고른다. | 새 `SemesterWorkspace`를 scaffold하고 기본 설정·validation을 끝낸다. | `학기 공간 준비 완료` 상태에서 이후 자료 반입을 시작할 수 있다. |
+| 1 | 공식 Landing의 exact-version public `npx` 명령으로 AY-PLE을 시작하고, Codex에 연결한 뒤 학년·학기와 생성 위치를 고른다. | 새 `SemesterWorkspace`를 scaffold하고 기본 설정·validation을 끝낸다. | `학기 공간 준비 완료` 상태에서 이후 자료 반입을 시작할 수 있다. |
 | 2 | 기존 자료 폴더나 자료 묶음을 `ImportSource`로 고른다. | AY가 분석을 돕고 App이 mapping·반입 제안을 검증 가능한 형태로 준비한다. | 학생이 검토한 자료만 workspace 안의 `RawMaterial`과 Course 맥락으로 들어온다. |
 | 3 | 이번에 정리할 두 자료를 고른다. | 이번 요청에 사용할 `SourceSelection`을 준비한다. | 이번 작업의 우선 입력이 명확해진다. |
 | 4 | `선택한 자료 정리하기`를 누른다. | Recipe와 이번 입력을 `ModelingInvocation`으로 실행한다. | AY가 과제 후보와 근거를 찾는다. |
@@ -44,7 +44,7 @@ AY-PLE는 새로운 범용 Agent framework를 만드는 제품이 아니다. 일
 | 6 | 수락·수정 요청·거절한다. | 수락과 거절은 `UserConfirmation`을 확정하고, 수락만 반영한다. 수정 요청은 product decision을 확정하지 않고 feedback을 반영한 replacement `StatePatch`를 다시 검토하게 한다. | 확정된 결정과 학기 정보가 남는다. |
 | 7 | 이후 학기 정보를 조회한다. | 확인된 모델에서 일정, 요약 문서 같은 화면을 파생한다. | 원본을 다시 뒤지지 않고 학기를 운영한다. |
 
-첫 public preview의 release claim은 1단계와 같은 명령으로 다시 여는 `ready-relaunch`까지다. 자료 archive/import와 실제 학업 action은 `Semester Ready` 이후의 별도 제품 여정이며, 현재 구현된 First Assignment kernel을 새 scaffold에서 바로 사용할 수 있는 public capability로 과장하지 않는다. 정확한 release journey와 지원 경계는 [public npx 첫 출시 Wayfinder](../wayfinding/public-npx-first-release/map.md)가 소유한다.
+첫 public preview의 release claim은 1단계와 같은 명령으로 다시 여는 `ready-relaunch`까지다. 자료 archive/import와 실제 학업 action은 `Semester Ready` 이후의 별도 제품 여정이며, 현재 구현된 First Assignment kernel을 새 scaffold에서 바로 사용할 수 있는 public capability로 과장하지 않는다. 이 setup·relaunch의 제품 범위는 이 Product Brief가 소유한다. macOS-first 제품·OS 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md), exact public 명령과 application↔Runtime distribution 경계는 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)을 따른다.
 
 ## 제품 경계
 
@@ -67,9 +67,9 @@ AY-PLE의 역할은 Codex를 대체하는 것이 아니라 Codex의 일반적인
 
 ## 제품 제공 형태
 
-첫 public 제품 진입점은 공식 product homepage인 Landing에서 public `npx` 명령을 복사해 실행하고, local companion과 browser UI를 여는 **macOS-first local web app**이다. Landing은 AY-PLE의 장기 제품 가치와 현재 preview capability를 구분해 보여주며 Docs, public repository와 license·trust 정보로 이어진다. Public source는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)의 clean snapshot·Apache-2.0·trust authority를 따르며, Packaged Desktop App은 이 경로를 검증한 뒤의 후속 로드맵이다.
+첫 public 제품 진입점은 공식 product homepage인 Landing에서 exact-version public `npx` 명령을 복사해 실행하고, local companion과 browser UI를 여는 **macOS-first local web app**이다. Landing은 AY-PLE의 장기 제품 가치와 현재 preview capability를 구분해 보여주며 Docs, public repository와 license·trust 정보로 이어진다. Public source는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)의 clean snapshot·Apache-2.0·trust authority를 따르며, Packaged Desktop App은 이 경로를 검증한 뒤의 후속 로드맵이다.
 
-[Official SDK 기반 Codex Chat Shell](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)과 First Assignment vertical은 native 실행과 학업 product boundary를 검증한 현재 kernel이다. Public `npx` 배포, Browser OAuth와 first-run setup은 이 kernel 앞에 추가하는 채택 목표이며 구현 완료로 서술하지 않는다. 정확한 배포 방식, prerequisite와 지원 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)와 [public npx 첫 출시 Wayfinder](../wayfinding/public-npx-first-release/map.md)가 소유한다.
+[Official SDK 기반 Codex Chat Shell](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)과 First Assignment vertical은 native 실행과 학업 product boundary를 검증한 현재 kernel이다. Public `npx` 배포, Browser OAuth와 first-run setup은 이 kernel 앞에 추가하는 채택 목표이며 구현 완료로 서술하지 않는다. macOS-first local web app의 제품 형태·OS 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md), exact public command·application host·Runtime delivery·offline과 rollback 경계는 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)이 소유한다.
 
 ## 학기 작업공간과 Codex 사용 모델
 

@@ -39,7 +39,7 @@ AY-PLE는 이 과정을 앱이 생성하고 검증하는 한 학기 공간 안�
 
 이 과정이 끝난 `Semester Ready`는 화면에서 **학기 공간 준비 완료**로 표현한다. 아직 Course나 자료가 있고 AY가 학기 내용을 이해했다는 뜻은 아니다. 다음 행동은 `첫 자료 가져오기`이며, 같은 public 명령으로 다시 실행하면 중복 생성 없이 준비된 workspace를 다시 열 수 있어야 한다.
 
-첫 public preview의 release claim은 이 setup과 `ready-relaunch`까지다. 자료 archive/import와 실제 학업 action은 그 이후의 별도 제품 여정이다. 정확한 배포 방식, prerequisite와 지원 경계는 [public npx 첫 출시 Wayfinder](../wayfinding/public-npx-first-release/map.md)가 소유한다.
+첫 public preview의 release claim은 이 setup과 `ready-relaunch`까지다. 자료 archive/import와 실제 학업 action은 그 이후의 별도 제품 여정이다. 이 제품 범위는 [Product Brief](ay-ple-product-brief.md), macOS-first 제품·OS 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md), exact public 명령과 application↔Runtime distribution 경계는 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)을 따른다. 출시별 Node/npm·browser version matrix는 release-owned compatibility surface가 고정한다.
 
 ## Semester Ready 이후에는 이렇게 작동한다
 
@@ -147,4 +147,4 @@ Official SDK와 exact native Runtime을 supervised bridge로 실행하는 produc
 
 이 구현은 AY-PLE의 학업 kernel을 증명하지만 새 public setup 계약은 아직 구현하지 않는다. 현재 explicit local path activation은 app-owned scaffold나 `ImportSource` admission을 대신하지 않으며, public `npx`, in-app Browser OAuth, `Semester Ready`와 `ready-relaunch`는 채택한 다음 제품 목표다. 새 scaffold에서 post-Ready import와 First Assignment action이 연결되기 전에는 Landing에서 이를 현재 public capability로 제시하지 않는다.
 
-[통합 제품 prototype](../../artifacts/camp-demo/product-flow/index.html?step=1&present=1)은 Review Workspace의 초기 화면 결정을 보존하는 역사적 시각 근거다. 제품 범위는 [Product Brief](ay-ple-product-brief.md), 정확한 용어는 [CONTEXT.md](../../CONTEXT.md), workspace authority는 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), 제품 실행 mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), 현재 구현은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 작업 순서는 [개발 백로그](ay-ple-development-backlog.md)에서 확인할 수 있다.
+[통합 제품 prototype](../../artifacts/camp-demo/product-flow/index.html?step=1&present=1)은 Review Workspace의 초기 화면 결정을 보존하는 역사적 시각 근거다. 제품 범위는 [Product Brief](ay-ple-product-brief.md), 정확한 용어는 [CONTEXT.md](../../CONTEXT.md), workspace authority는 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), public distribution authority는 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md), 제품 실행 mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), 현재 구현은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 작업 순서는 [개발 백로그](ay-ple-development-backlog.md)에서 확인할 수 있다.

@@ -9,7 +9,7 @@
 
 이 문서는 AY-PLE의 실제 작업 순서와 완료 상태를 날짜 없는 Markdown task list로 관리한다. 먼저 일반적인 Codex 사용 흐름에 준하는 웹 제품 기반을 닫고, 그 위에 AY-PLE의 학업 제품 기능을 올린다. 과거 캠프 제출 일정과 당시 판단은 [과거 캠프 제출 백로그](../archive/2026-07-ay-ple-4-week-submission-backlog.md)에 역사 기록으로 보존한다.
 
-제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 작업의 Codex mapping은 [Codex-native product composition](../architecture/codex-native-product-composition.md)이 소유한다. Official SDK Runtime baseline은 [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), single maintained graph·no-alias 경계는 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), product-only public cutover와 durable v2 store 정책은 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), macOS-first local web app 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md), app-owned workspace admission·identity는 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), public repository lineage·license·trust authority는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)를 따른다. 이 백로그는 해당 결정들을 다시 정의하지 않고 구현 순서와 완료 조건만 관리한다.
+제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 작업의 Codex mapping은 [Codex-native product composition](../architecture/codex-native-product-composition.md)이 소유한다. Official SDK Runtime baseline은 [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), single maintained graph·no-alias 경계는 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), product-only public cutover와 durable v2 store 정책은 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), macOS-first local web app 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md), app-owned workspace admission·identity는 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), public repository lineage·license·trust authority는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md), public application↔Runtime distribution authority는 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)을 따른다. 이 백로그는 해당 결정들을 다시 정의하지 않고 구현 순서와 완료 조건만 관리한다.
 
 ## 운영 규칙
 
@@ -91,14 +91,15 @@
   - [x] 첫 action이 실제로 발생시키는 Codex approval과 일반 Plan clarification은 원래 request identity로 처리하고 학업 상태를 바꾸지 않으며, `StatePatch` Review의 built-in `request_user_input` 답변은 같은 native Turn을 이어가되 settled `UserConfirmation`만 apply authority가 되게 한다.
   - [x] 자료 선택·근거·변경 제안·Review와 오른쪽 companion이 같은 desktop product flow에서 이해 가능하게 동작하는지 1440px~1920px에서 검증했다.
 
-- [ ] 공식 Landing과 public `npx`에서 app-owned 학기 공간 setup을 완료한다. 정확한 release contract와 병렬 구현 seam은 [public npx 첫 출시 Wayfinder](../wayfinding/public-npx-first-release/map.md)를 implementation-ready spec으로 전환한 뒤 따른다.
+- [ ] 공식 Landing과 public `npx`에서 app-owned 학기 공간 setup을 완료한다. Public distribution 경계는 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md), 남은 release journey와 병렬 구현 seam은 [public npx 첫 출시 Wayfinder](../wayfinding/public-npx-first-release/map.md)를 implementation-ready spec으로 전환한 뒤 따른다.
   - [ ] Public Landing에서 AY-PLE의 제품 가치, 복사 가능한 public `npx` entrypoint와 Docs·GitHub·license/trust 경로를 제공하고 현재 preview capability와 post-Ready 제품 비전을 구분한다.
-  - [ ] Public `npx`가 repository checkout이나 system Python 없이 verified Runtime과 local companion을 준비하고 local AY-PLE Browser UI를 연다.
+  - [ ] Exact `npx ay-ple@<release-version>`의 thin application package와 foreground host가 preflight, verified `runtimeRoot`, dynamic single-origin local companion과 Browser open을 repository checkout·system Python·consumer build 없이 조합한다.
+  - [ ] Embedded descriptor가 pin한 immutable Runtime asset을 single `RuntimeResolver`가 안전하게 download·resume·extract하고 complete-tree·legal roster를 검증해 versioned cache로 publish한다. 손상 cache는 scoped repair하고 exact launcher 실행 뒤 valid cache·archive는 network 없이 reuse·repair하되 moving catalog·silent fallback·automatic downgrade를 사용하지 않는다.
   - [ ] Local UI에서 app-managed Browser OAuth를 완료하고 취소·실패·만료를 재시도 가능한 상태로 정산한다.
   - [ ] 학생이 학년·학기와 위치를 고르면 App code가 versioned `WorkspaceManifest`를 가진 normalized `SemesterWorkspace`를 scaffold·validate하고 정확한 `학기 공간 준비 완료`를 표시한다.
   - [ ] Setup progress와 active workspace registry를 app data에 보존해 중단 뒤 안전하게 재개하거나 recovery로 수렴하고, 같은 public 명령의 `ready-relaunch`가 중복 scaffold 없이 준비된 workspace를 다시 연다.
   - [ ] Fixed `hub` SHA의 reviewed positive allowlist로 public source를 deterministic export하고 Apache-2.0 first-party legal material, privacy·security·contribution surface와 source provenance를 검증한 final snapshot만 공개한다.
-  - [ ] 채택한 support lane의 clean-machine smoke와 publication·provenance gate를 통과하고, 자료 import·Course·학업 action을 현재 public capability로 과장하지 않는다.
+  - [ ] 채택한 support lane의 clean-machine smoke와 source↔exact npm descriptor↔Runtime manifest·asset↔Landing command publication·provenance gate를 통과하고, mismatch·partial publication을 성공으로 처리하거나 자료 import·Course·학업 action을 현재 public capability로 과장하지 않는다.
 
 - [ ] 확인된 사용자 필요에 따라 post-Ready capability를 순서대로 추가한다.
   - [ ] 기존 폴더와 자료 묶음을 `ImportSource`로 분석하고 mapping·반입 제안을 사용자 검토 뒤 app-owned `SemesterWorkspace`의 Course·`RawMaterial`로 만드는 첫 자료 가져오기 여정을 추가한다. 임의의 기존 폴더를 workspace로 직접 열지 않는다.
