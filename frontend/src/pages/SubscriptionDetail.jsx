@@ -2,12 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getSubscription } from '../lib/subscriptions'
 import { getServiceColor } from '../lib/serviceColor'
+import RoleBadge from '../components/RoleBadge'
 import './SubscriptionDetail.css'
-
-const ROLE_LABEL = {
-  owner: '파티장',
-  member: '파티원',
-}
 
 const SubscriptionDetail = () => {
   const { id } = useParams()
@@ -51,7 +47,7 @@ const SubscriptionDetail = () => {
         <div className="subscription-detail-header">
           <span className="subscription-dot" style={{ backgroundColor: getServiceColor(serviceName) }} />
           <h1 className="subscription-detail-title">{serviceName}</h1>
-          <span className={`role-badge role-badge-${role}`}>{ROLE_LABEL[role]}</span>
+          <RoleBadge role={role} />
         </div>
 
         <div className="subscription-detail-card">

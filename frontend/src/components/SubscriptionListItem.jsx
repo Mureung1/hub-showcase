@@ -1,11 +1,7 @@
 import { Link } from 'react-router-dom'
 import { getServiceColor } from '../lib/serviceColor'
+import RoleBadge from './RoleBadge'
 import './SubscriptionListItem.css'
-
-const ROLE_LABEL = {
-  owner: '파티장',
-  member: '파티원',
-}
 
 const SubscriptionListItem = ({ subscription }) => {
   const { id, serviceName, billingDay, memberCount, myAmount, role } = subscription
@@ -19,7 +15,7 @@ const SubscriptionListItem = ({ subscription }) => {
       </div>
       <div className="subscription-summary">
         <p className="subscription-amount">{myAmount.toLocaleString()}원</p>
-        <span className={`role-badge role-badge-${role}`}>{ROLE_LABEL[role]}</span>
+        <RoleBadge role={role} />
       </div>
     </Link>
   )
