@@ -1,11 +1,18 @@
 import { useState } from 'react';
 
-function DraftEditor({ job, onBack }) {
+function DraftEditor({ job, onBack, isSaved, isSaving, saveError, onSave, onUnlock }) {
   const [answers, setAnswers] = useState(job.essayQuestions.map((q) => q.draft));
-  const [isSaved, setIsSaved] = useState(false);
 
   function updateAnswer(index, value) {
     setAnswers(answers.map((answer, i) => (i === index ? value : answer)));
+  }
+
+  function handleSaveClick() {
+    if (isSaved) {
+      onUnlock();
+      return;
+    }
+    onSave(answers);
   }
 
   return (
@@ -32,12 +39,14 @@ function DraftEditor({ job, onBack }) {
         </div>
       ))}
 
+      {saveError && <p className="error-text">{saveError}</p>}
+
       <div className="actions">
-        <button type="button" className="btn-link" onClick={onBack}>
+        <button type="button" className="btn-link" onClick={onBack} disabled={isSaving}>
           ← 다른 공고 보러 돌아가기
         </button>
-        <button type="button" className="btn-primary" onClick={() => setIsSaved(!isSaved)}>
-          {isSaved ? '수정' : '저장 / 완료'}
+        <button type="button" className="btn-primary" onClick={handleSaveClick} disabled={isSaving}>
+          {isSaving ? '저장하는 중...' : isSaved ? '수정' : '저장 / 완료'}
         </button>
       </div>
     </section>
