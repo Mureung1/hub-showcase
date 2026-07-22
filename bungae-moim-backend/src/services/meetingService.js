@@ -328,10 +328,24 @@ async function applyToMeeting(meetingId, userId) {
 // 이미 cancelled/rejected거나 신청이 없으면 아무 것도 하지 않는다(이중취소 감점 방지).
 async function cancelParticipation(meetingId, userId) {
   return withTransaction(async (client) => {
-    const meetingRes = await client.query('SELECT * FROM meetings WHERE id = $1 FOR UPDATE', [meetingId]);
+    // is_past는 신청(F1)과 똑같이 DB 시계로 계산한다 — JS Date로 다시 비교하면 목록과 어긋난다.
+    const meetingRes = await client.query(
+      `SELECT *, COALESCE(end_at, start_at) < now() AS is_past
+         FROM meetings WHERE id = $1 FOR UPDATE`,
+      [meetingId]
+    );
     if (meetingRes.rows.length === 0) {
       throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
     }
+
+    // 이미 끝난 모임은 취소할 수 없다. 지난 모임을 "취소"한다는 게 성립하지 않기도 하지만,
+    // 더 중요하게는 취소가 status를 cancelled로 바꿔 평가 대상에서 빼기 때문이다 —
+    // 가드가 없으면 노쇼한 사람이 모임 끝난 뒤 취소를 눌러 노쇼 감점을 회피할 수 있다
+    // (신뢰도 개편 설계 6.3). 참여자 상태 확인보다 먼저 막아 어느 상태든 동일하게 거절한다.
+    if (meetingRes.rows[0].is_past) {
+      throw new ApiError('VALIDATION_ERROR', '이미 종료된 모임입니다');
+    }
+
     const meeting = normalizeMeeting(meetingRes.rows[0]);
 
     const partRes = await client.query(
