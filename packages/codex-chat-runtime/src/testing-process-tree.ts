@@ -4,7 +4,6 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import type {
-  CodexChatRuntime,
   InterruptTurnInput,
   ReleaseThreadInput,
   StartTurnInput,
@@ -14,6 +13,13 @@ import {
   startVerifiedCodexChatRuntime,
   type SpawnedCodexChatRuntime,
 } from './runtime.js'
+import type {
+  AnswerUserInput,
+  CancelUserInput,
+  CodexProductCapableRuntime,
+  StartProductTurnInput,
+  StartThreadInput,
+} from './runtime-contract.js'
 
 const PACKAGE_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -32,7 +38,7 @@ export type CodexChatTestProcessTree = {
 }
 
 export interface CodexChatProcessTreeTestFixture {
-  readonly runtime: CodexChatRuntime
+  readonly runtime: CodexProductCapableRuntime
   readProcessTree(): Promise<CodexChatTestProcessTree>
   waitForCloseRequest(): Promise<void>
   releaseClose(): Promise<void>
@@ -89,10 +95,20 @@ export async function startCodexChatProcessTreeTestFixture(options: {
     const closeRequested = createDeferred()
     const closeReleased = createDeferred()
     let closePromise: Promise<void> | undefined
-    const runtime: CodexChatRuntime = {
+    const runtime: CodexProductCapableRuntime = {
       terminal: spawned.runtime.terminal,
-      startThread: () => spawned!.runtime.startThread(),
+      startThread: (input?: StartThreadInput) =>
+        input === undefined
+          ? spawned!.runtime.startThread()
+          : spawned!.runtime.startThread(input),
+      readAccountReadiness: () => spawned!.runtime.readAccountReadiness(),
       startTurn: (input: StartTurnInput) => spawned!.runtime.startTurn(input),
+      startProductTurn: (input: StartProductTurnInput) =>
+        spawned!.runtime.startProductTurn(input),
+      answerUserInput: (input: AnswerUserInput) =>
+        spawned!.runtime.answerUserInput(input),
+      cancelUserInput: (input: CancelUserInput) =>
+        spawned!.runtime.cancelUserInput(input),
       interrupt: (input: InterruptTurnInput) => spawned!.runtime.interrupt(input),
       releaseThread: (input: ReleaseThreadInput) =>
         spawned!.runtime.releaseThread(input),

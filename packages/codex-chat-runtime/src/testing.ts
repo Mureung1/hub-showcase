@@ -30,6 +30,12 @@ export {
   type CodexChatTestProcessTree,
 } from './testing-process-tree.js'
 
+export {
+  startExactProductLocalProviderFixture,
+  type ExactProductLocalProviderFixture,
+  type ExactProductProviderEvidence,
+} from './exact-product-local-provider-fixture.js'
+
 export type DeterministicCodexChatRuntimeCall =
   | { readonly operation: 'readAccountReadiness' }
   | { readonly operation: 'startThread'; readonly input?: StartThreadInput }

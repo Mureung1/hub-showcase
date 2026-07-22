@@ -24,11 +24,11 @@ import {
   type StartThreadInput,
   type StartTurnInput,
 } from '@ay-ple/codex-chat-runtime'
-
 import {
   FIRST_ASSIGNMENT_ARGUMENTS,
   FIRST_ASSIGNMENT_RECIPE_VERSION,
-} from './assignment-recipe.js'
+} from '@ay-ple/product-contract'
+
 import { createSemesterWorkspaceController } from './semester-workspace.js'
 import {
   codexChatIdentity,
@@ -283,6 +283,108 @@ test('an explicit retry after known rejection creates a distinct Run and only th
       },
     )
   } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('an explicit retry binds one new Run and Turn to the interrupted receipt while a duplicate race starts no second Turn', async () => {
+  const fixture = await createFaultFixture()
+  const retryStarted = deferred<void>()
+  const releaseRetry = deferred<void>()
+  let attempts = 0
+  const runtime = new FaultRuntime({
+    startProductTurn: async (input) => {
+      attempts += 1
+      if (attempts === 1) {
+        return {
+          threadId: input.threadId,
+          turnId: 'turn-native-interrupted',
+          events: activities([
+            {
+              type: 'turn.completed',
+              threadId: input.threadId,
+              turnId: 'turn-native-interrupted',
+              status: 'interrupted',
+            },
+          ]),
+        }
+      }
+      retryStarted.resolve()
+      return {
+        threadId: input.threadId,
+        turnId: 'turn-native-explicit-retry',
+        events: (async function* (): AsyncIterable<CodexProductActivity> {
+          await releaseRetry.promise
+          yield {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId: 'turn-native-explicit-retry',
+            status: 'completed',
+          }
+        })(),
+      }
+    },
+  })
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        const workspace = await activateCourse(application)
+        const selected = selectCanonicalMaterials(workspace.materials)
+        const request = actionRequest(workspace.course!.id, selected)
+        await readFrames(
+          await postJson(
+            `${baseUrl}/api/product/actions/first-assignment`,
+            request,
+          ),
+        )
+        const interrupted = application.semesterWorkspace?.modelingRuns()[0]
+        assert.ok(interrupted)
+        assert.equal(interrupted.status, 'interrupted')
+
+        const retryRequest = {
+          ...request,
+          retryOfRunId: interrupted.id,
+        }
+        const retryResponse = await postJson(
+          `${baseUrl}/api/product/actions/first-assignment/retry`,
+          retryRequest,
+        )
+        assert.equal(retryResponse.status, 200)
+        await retryStarted.promise
+
+        const duplicate = await postJson(
+          `${baseUrl}/api/product/actions/first-assignment/retry`,
+          retryRequest,
+        )
+        assert.equal(duplicate.status, 409)
+        releaseRetry.resolve()
+        await readFrames(retryResponse)
+
+        const lateDuplicate = await postJson(
+          `${baseUrl}/api/product/actions/first-assignment/retry`,
+          retryRequest,
+        )
+        assert.equal(lateDuplicate.status, 409)
+
+        const runs = application.semesterWorkspace?.modelingRuns() ?? []
+        assert.equal(runs.length, 2)
+        assert.equal(runs[0]?.id, interrupted.id)
+        assert.equal(runs[0]?.status, 'interrupted')
+        assert.equal(runs[1]?.retryOfRunId, interrupted.id)
+        assert.equal(runs[1]?.status, 'completed')
+        assert.notEqual(runs[1]?.id, interrupted.id)
+        assert.notEqual(runs[1]?.actionId, interrupted.actionId)
+        assert.equal(runtime.startProductTurnCalls, 2)
+        assert.equal(runtime.acceptedTurns, 2)
+      },
+    )
+  } finally {
+    releaseRetry.resolve()
     await fixture.cleanup()
   }
 })
@@ -693,7 +795,7 @@ test('an unregistered out-of-scratch TXT write does not invalidate the authorita
   }
 })
 
-test('coordinator stays busy until durable settlement and stream close finish', async () => {
+test('product operation coordinator keeps Chat busy until Assignment settlement and stream close finish', async () => {
   const fixture = await createFaultFixture()
   const settleEntered = deferred<void>()
   const releaseSettle = deferred<void>()
@@ -737,8 +839,8 @@ test('coordinator stays busy until durable settlement and stream close finish', 
         assert.equal(runtime.accountReadinessCalls, 1)
 
         const second = await postJson(
-          `${baseUrl}/api/product/actions/first-assignment`,
-          request,
+          `${baseUrl}/api/product/chat/messages`,
+          { text: '이 작업과 동시에 대화해 줘.', materials: [] },
         )
         assert.equal(second.status, 409)
         assert.equal((await second.json() as { code: string }).code, 'action_busy')
@@ -903,7 +1005,7 @@ test('recipe drift after admission settles not accepted before native start', as
     fixture.appDataRoot,
     'modeling-recipes',
     'first-assignment',
-    '1',
+    FIRST_ASSIGNMENT_RECIPE_VERSION,
     'SKILL.md',
   )
   const externalRecipePath = path.join(

@@ -1,36 +1,21 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Check,
   Clock3,
   FileText,
   FolderOpen,
-  MessageCircle,
   PanelRightClose,
   PanelRightOpen,
-  Plus,
   RefreshCw,
-  Send,
   Sparkles,
-  Square,
 } from 'lucide-react'
 
-import {
-  composerPlaceholder,
-  ControlFailureCard,
-  ConversationStatePill,
-  ConversationTerminal,
-  EmptyConversation,
-  messageKey,
-  MessageRow,
-  RuntimeStatusCard,
-  SafeFailureCard,
-  ThreadMetadata,
-  TurnNotice,
-} from './chat-presentation.js'
+import { ProductChatDock } from './product-chat-presentation.js'
 import type { ProductRawMaterial } from './product-api.js'
-import { useChatShell } from './use-chat-shell.js'
+import { useProductChat } from './use-product-chat.js'
 import {
   useSourceWorkbench,
+  type ProductEvidenceFocus,
   type ProductPreviewView,
   type ProductWorkspaceView,
 } from './use-source-workbench.js'
@@ -38,6 +23,13 @@ import './App.css'
 
 export default function App() {
   const workbench = useSourceWorkbench()
+  const productChat = useProductChat({
+    accountReadiness: workbench.accountReadiness,
+    workspace: workbench.readyWorkspace,
+    selectedMaterials: workbench.selectedMaterials,
+    refreshProductSnapshot: workbench.refreshProductSnapshot,
+    refreshSettledProductState: workbench.refreshSettledProductState,
+  })
   const [chatOpen, setChatOpen] = useState(true)
   const courseName = workbench.readyWorkspace?.course?.displayName
 
@@ -69,15 +61,24 @@ export default function App() {
       </header>
 
       <div className="workbench-grid">
-        <MaterialsPane workbench={workbench} />
+        <MaterialsPane workbench={workbench} productChat={productChat} />
         <PreviewPane
           selectedMaterials={workbench.selectedMaterials}
           activeMaterialId={workbench.activeMaterialId}
           previewView={workbench.previewView}
-          onSelectTab={workbench.setActiveMaterialId}
+          evidenceFocus={workbench.evidenceFocus}
+          onSelectTab={workbench.selectMaterialTab}
         />
         <aside className="chat-dock" aria-label="AY Chat" hidden={!chatOpen}>
-          <ChatDock />
+          <ProductChatDock
+            controller={productChat}
+            accountReadiness={workbench.accountReadiness}
+            history={workbench.history}
+            confirmedRevision={workbench.readyWorkspace?.confirmedRevision}
+            materials={workbench.readyWorkspace?.materials ?? []}
+            bootstrapRefreshing={workbench.bootstrapRefreshing}
+            onNavigateEvidence={workbench.navigateToEvidence}
+          />
         </aside>
       </div>
     </div>
@@ -86,11 +87,15 @@ export default function App() {
 
 function MaterialsPane({
   workbench,
+  productChat,
 }: {
   readonly workbench: ReturnType<typeof useSourceWorkbench>
+  readonly productChat: ReturnType<typeof useProductChat>
 }) {
   const [courseName, setCourseName] = useState('문제해결글쓰기')
   const view = workbench.workspaceView
+  const productBusy = productChat.operationPending
+  const mutationPending = workbench.mutationPending || productBusy
 
   return (
     <aside className="materials-pane" aria-label="학기 자료">
@@ -104,7 +109,7 @@ function MaterialsPane({
             className="icon-button"
             type="button"
             aria-label="자료 새로고침"
-            disabled={workbench.mutationPending}
+            disabled={mutationPending}
             onClick={() => void workbench.refreshMaterials()}
           >
             <RefreshCw size={17} />
@@ -114,15 +119,31 @@ function MaterialsPane({
 
       <WorkspaceState
         view={view}
-        pending={workbench.mutationPending}
+        pending={mutationPending}
         onRetry={() => void workbench.loadWorkspace()}
         onActivate={() => void workbench.activateWorkspace()}
+        onRefresh={() => void workbench.refreshMaterials()}
       />
 
       {workbench.operationFailure ? (
         <div className="workspace-state-card is-error" role="alert">
           <strong>요청을 완료하지 못했습니다</strong>
           <span>{workbench.operationFailure}</span>
+        </div>
+      ) : null}
+
+      {workbench.materialRefreshOutcome ? (
+        <div className="workspace-state-card" role="status">
+          <strong>
+            {workbench.materialRefreshOutcome === 'source_rebaselined'
+              ? '현재 TXT를 새 기준으로 채택했습니다'
+              : '자료 목록을 새로고침했습니다'}
+          </strong>
+          <span>
+            {workbench.materialRefreshOutcome === 'source_rebaselined'
+              ? '원본 bytes는 그대로 두고 등록 digest만 현재 내용에 맞췄습니다.'
+              : '현재 학기 폴더의 등록 가능한 TXT를 다시 확인했습니다.'}
+          </span>
         </div>
       ) : null}
 
@@ -147,13 +168,13 @@ function MaterialsPane({
                   <input
                     id="course-name"
                     value={courseName}
-                    disabled={workbench.mutationPending}
+                    disabled={mutationPending}
                     onChange={(event) => setCourseName(event.target.value)}
                   />
                   <button
                     type="submit"
                     disabled={
-                      workbench.mutationPending || courseName.trim().length === 0
+                      mutationPending || courseName.trim().length === 0
                     }
                   >
                     만들기
@@ -190,7 +211,11 @@ function MaterialsPane({
                     <input
                       type="checkbox"
                       checked={selected}
-                      disabled={selectionFull}
+                      disabled={
+                        selectionFull ||
+                        productBusy ||
+                        Boolean(workbench.readyWorkspace?.recovery)
+                      }
                       aria-label={`${material.relativePath} 선택`}
                       onChange={() => workbench.toggleMaterial(material.id)}
                     />
@@ -209,9 +234,30 @@ function MaterialsPane({
           )}
 
           <button
+            className="assignment-action-button"
+            type="button"
+            disabled={!productChat.canStartAssignment || workbench.mutationPending}
+            onClick={() => void productChat.startAssignment()}
+          >
+            {productChat.operationPending ? (
+              <Clock3 size={17} className="spinning-icon" />
+            ) : (
+              <Sparkles size={17} />
+            )}
+            <span>
+              <strong>선택한 자료 정리하기</strong>
+              <small>
+                {workbench.selectedMaterialIds.length === 2
+                  ? '두 TXT에서 과제 정보를 찾아 변경 제안으로 준비합니다.'
+                  : 'TXT 자료 두 개를 먼저 선택해 주세요.'}
+              </small>
+            </span>
+          </button>
+
+          <button
             className="change-workspace-button"
             type="button"
-            disabled={workbench.mutationPending}
+            disabled={mutationPending}
             onClick={() => void workbench.activateWorkspace()}
           >
             <FolderOpen size={16} /> 다른 학기 폴더 열기
@@ -227,11 +273,13 @@ function WorkspaceState({
   pending,
   onRetry,
   onActivate,
+  onRefresh,
 }: {
   readonly view: ProductWorkspaceView
   readonly pending: boolean
   readonly onRetry: () => void
   readonly onActivate: () => void
+  readonly onRefresh: () => void
 }) {
   if (view.state === 'loading') {
     return (
@@ -272,6 +320,29 @@ function WorkspaceState({
       </div>
     )
   }
+  if (view.workspace.recovery) {
+    const sourceConflict =
+      view.workspace.recovery.state === 'source_conflict'
+    return (
+      <div className="workspace-state-card is-error" role="alert">
+        <strong>
+          {sourceConflict
+            ? '원본 자료 변경을 확인해 주세요'
+            : '작업공간 복구가 필요합니다'}
+        </strong>
+        <span>{view.workspace.recovery.displayMessage}</span>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={sourceConflict ? onRefresh : onActivate}
+        >
+          {sourceConflict
+            ? '현재 TXT를 새 기준으로 채택'
+            : '작업공간 다시 선택'}
+        </button>
+      </div>
+    )
+  }
   return null
 }
 
@@ -279,13 +350,30 @@ function PreviewPane({
   selectedMaterials,
   activeMaterialId,
   previewView,
+  evidenceFocus,
   onSelectTab,
 }: {
   readonly selectedMaterials: readonly ProductRawMaterial[]
   readonly activeMaterialId: string | undefined
   readonly previewView: ProductPreviewView
+  readonly evidenceFocus: ProductEvidenceFocus | undefined
   readonly onSelectTab: (materialId: string) => void
 }) {
+  const evidenceMarker = useRef<HTMLElement>(null)
+  const focusedQuote =
+    previewView.state === 'loaded' &&
+    evidenceFocus?.materialId === previewView.preview.materialId &&
+    evidenceFocus.digest === previewView.preview.digest &&
+    previewView.preview.text.includes(evidenceFocus.quote)
+      ? evidenceFocus.quote
+      : undefined
+
+  useEffect(() => {
+    if (!focusedQuote) return
+    evidenceMarker.current?.scrollIntoView({ block: 'center' })
+    evidenceMarker.current?.focus({ preventScroll: true })
+  }, [focusedQuote, evidenceFocus])
+
   return (
     <main className="preview-pane" aria-label="자료 미리보기">
       <header className="preview-header">
@@ -337,10 +425,30 @@ function PreviewPane({
             <div className="source-document-meta">
               <span>TXT 원문</span>
               <span>{formatBytes(previewView.preview.size)}</span>
-              <span>digest {previewView.preview.digest.slice(0, 8)}</span>
+              <span>원문 확인됨</span>
             </div>
             <pre aria-label={`${previewView.preview.relativePath} 원문`}>
-              {previewView.preview.text}
+              {focusedQuote ? (
+                <>
+                  {previewView.preview.text.slice(
+                    0,
+                    previewView.preview.text.indexOf(focusedQuote),
+                  )}
+                  <mark
+                    ref={evidenceMarker}
+                    tabIndex={-1}
+                    aria-label="선택한 원문 근거"
+                  >
+                    {focusedQuote}
+                  </mark>
+                  {previewView.preview.text.slice(
+                    previewView.preview.text.indexOf(focusedQuote) +
+                      focusedQuote.length,
+                  )}
+                </>
+              ) : (
+                previewView.preview.text
+              )}
             </pre>
             {previewView.preview.truncated ? (
               <p className="preview-truncated">안전한 미리보기 범위까지만 표시했습니다.</p>
@@ -349,134 +457,6 @@ function PreviewPane({
         )}
       </section>
     </main>
-  )
-}
-
-function ChatDock() {
-  const {
-    status,
-    conversation,
-    draft,
-    setDraft,
-    threadPending,
-    actionFailure,
-    runtimeCanStart,
-    canStartThread,
-    canCompose,
-    canSubmit,
-    canInterrupt,
-    showInterrupt,
-    loadStatus,
-    startConversation,
-    submitTurn,
-    interruptTurn,
-  } = useChatShell()
-
-  const onSubmit = (event: FormEvent) => {
-    event.preventDefault()
-    void submitTurn()
-  }
-
-  return (
-    <div className="chat-shell">
-      <header className="chat-header">
-        <div>
-          <p className="eyebrow">Companion</p>
-          <h2>AY Chat</h2>
-        </div>
-        <ConversationStatePill phase={conversation.phase} />
-      </header>
-
-      <div className="chat-controls">
-        <button
-          className="new-conversation-button"
-          type="button"
-          disabled={!canStartThread}
-          aria-busy={threadPending}
-          onClick={() => void startConversation()}
-        >
-          {threadPending ? <Clock3 size={16} className="spinning-icon" /> : <Plus size={16} />}
-          {threadPending ? '대화 준비 중' : '새 대화'}
-        </button>
-        {showInterrupt ? (
-          <button
-            className="interrupt-button"
-            type="button"
-            disabled={!canInterrupt}
-            aria-busy={conversation.phase === 'stopping'}
-            onClick={() => void interruptTurn()}
-          >
-            <Square size={12} fill="currentColor" />
-            {conversation.interrupt?.state === 'requesting'
-              ? '중단 요청 중'
-              : conversation.interrupt?.state === 'acknowledged'
-                ? '중단 확인 대기'
-                : '답변 중단'}
-          </button>
-        ) : null}
-      </div>
-
-      <RuntimeStatusCard status={status} onRetry={() => void loadStatus()} />
-
-      <section className="transcript-panel" aria-label="대화" aria-live="polite">
-        {conversation.threadId ? <ThreadMetadata state={conversation} /> : null}
-        {conversation.messages.length === 0 ? (
-          <EmptyConversation
-            hasThread={conversation.threadId !== undefined}
-            runtimeReady={runtimeCanStart}
-          />
-        ) : (
-          <div className="message-list">
-            {conversation.messages.map((message, index) => (
-              <MessageRow key={messageKey(message, index)} message={message} />
-            ))}
-          </div>
-        )}
-        {conversation.notices.map((notice, index) => (
-          <TurnNotice key={`${notice.turnId}:${notice.code}:${index}`} notice={notice} />
-        ))}
-        <ConversationTerminal state={conversation} />
-        {conversation.controlFailure ? <ControlFailureCard state={conversation} /> : null}
-        {actionFailure ? (
-          <SafeFailureCard
-            title="대화를 시작하지 못했어요"
-            description="새 대화를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요."
-            failure={actionFailure}
-          />
-        ) : null}
-      </section>
-
-      <form className="composer" onSubmit={onSubmit}>
-        <label htmlFor="chat-prompt">메시지</label>
-        <div className="composer-row">
-          <textarea
-            id="chat-prompt"
-            value={draft}
-            disabled={!canCompose}
-            placeholder={composerPlaceholder(conversation)}
-            rows={2}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault()
-                event.currentTarget.form?.requestSubmit()
-              }
-            }}
-          />
-          <button
-            className="send-button"
-            type="submit"
-            disabled={!canSubmit}
-            aria-label="메시지 보내기"
-          >
-            <Send size={17} />
-          </button>
-        </div>
-        <div className="composer-footnote">
-          <MessageCircle size={12} /> transcript는 새로고침하면 사라집니다.
-        </div>
-      </form>
-    </div>
   )
 }
 

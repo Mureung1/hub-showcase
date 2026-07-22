@@ -1,6 +1,10 @@
-import { expect } from 'playwright/test'
+import { expect, type Page } from 'playwright/test'
 
-import { scenarioPrompts, test } from './chat-shell-harness.js'
+import type { ProductBootstrap } from '../src/product-api.js'
+import {
+  selectCanonicalMaterials,
+  test,
+} from './chat-shell-harness.js'
 
 test('selects exactly two registered TXT and reads each source in the center preview', async ({
   chatPage: page,
@@ -96,6 +100,67 @@ test('preserves the selected sources and preview when material refresh fails', a
   ).toBeVisible()
 })
 
+test('rehydrates workspace recovery after a material mutation detects store drift', async ({
+  chatPage: page,
+}) => {
+  await arrangeStoreConflictFailure(
+    page,
+    '**/api/product/materials/refresh',
+  )
+
+  await page
+    .getByRole('complementary', { name: '학기 자료' })
+    .getByRole('button', { name: '자료 새로고침' })
+    .click()
+
+  await expect(
+    page
+      .getByRole('alert')
+      .filter({ hasText: '작업공간 복구가 필요합니다' }),
+  ).toContainText('학기 상태 파일이 외부에서 변경되었습니다.')
+  await expect(
+    page.getByRole('button', { name: '작업공간 다시 선택' }),
+  ).toBeVisible()
+})
+
+test('rehydrates workspace recovery after Assignment admission detects store drift', async ({
+  chatPage: page,
+}) => {
+  await arrangeStoreConflictFailure(
+    page,
+    '**/api/product/actions/first-assignment',
+  )
+  await selectCanonicalMaterials(page)
+
+  await page
+    .getByRole('button', { name: /선택한 자료 정리하기/u })
+    .click()
+
+  await expect(
+    page.getByRole('alert').filter({
+      hasText: '학기 상태 파일이 변경되었습니다.',
+    }),
+  ).toBeVisible()
+  await expectStoreConflictRecovery(page)
+})
+
+test('rehydrates workspace recovery after Chat admission detects store drift', async ({
+  chatPage: page,
+}) => {
+  await arrangeStoreConflictFailure(page, '**/api/product/chat/messages')
+  const chat = page.getByRole('complementary', { name: 'AY Chat' })
+  await chat.getByRole('textbox', { name: '메시지' }).fill('자료를 요약해 줘')
+
+  await chat.getByRole('button', { name: '메시지 보내기' }).click()
+
+  await expect(
+    chat.getByRole('alert').filter({
+      hasText: '학기 상태 파일이 변경되었습니다.',
+    }),
+  ).toBeVisible()
+  await expectStoreConflictRecovery(page)
+})
+
 test('keeps Browser and Server on the current workspace when candidate activation fails', async ({
   chatHarness,
   chatPage: page,
@@ -137,42 +202,42 @@ test('keeps Browser and Server on the current workspace when candidate activatio
 })
 
 test.describe('toggleable AY Chat companion', () => {
-  test.use({ scenario: 'interrupt-follow-up' })
-
-  test('keeps the mounted conversation and active stream while hidden', async ({
+  test('keeps the mounted product Review and active stream while hidden', async ({
     chatHarness,
     chatPage: page,
   }) => {
-    await page.getByRole('button', { name: '새 대화' }).click()
-    await expect(page.getByText('thread-native-interrupt-follow-up', { exact: true })).toBeVisible()
-    await page
-      .getByRole('textbox', { name: '메시지', exact: true })
-      .fill(scenarioPrompts['interrupt-follow-up'])
-    await page.getByRole('button', { name: '메시지 보내기' }).click()
-    await expect(page.locator('[data-conversation-phase]')).toHaveAttribute(
-      'data-conversation-phase',
-      'running',
-    )
+    const materials = page.getByRole('complementary', { name: '학기 자료' })
+    await selectCanonicalMaterials(page)
+    await materials
+      .getByRole('button', { name: /선택한 자료 정리하기/u })
+      .click()
+    await expect(
+      page.getByRole('region', { name: '검토 대기' }),
+    ).toContainText('개요 작성하기')
 
     await page.getByRole('button', { name: 'AY Chat 숨기기' }).click()
     await expect(
       page.getByRole('complementary', { name: 'AY Chat' }),
     ).toBeHidden()
-    expect(chatHarness.calls().map((call) => call.operation)).toEqual([
-      'startThread',
-      'startTurn',
-    ])
+    expect(
+      chatHarness
+        .calls()
+        .filter((call) => call.operation === 'startProductTurn'),
+    ).toHaveLength(1)
 
     await page.getByRole('button', { name: 'AY Chat 열기' }).click()
     await expect(
       page.getByRole('complementary', { name: 'AY Chat' }),
     ).toBeVisible()
-    await expect(page.getByText('thread-native-interrupt-follow-up', { exact: true })).toBeVisible()
     await expect(
-      page.getByText('중단 전까지 작성한 답변입니다.', { exact: true }),
-    ).toBeVisible()
-    await page.getByRole('button', { name: '답변 중단' }).click()
-    await expect(page.getByText('답변이 중단됐어요', { exact: true })).toBeVisible()
+      page.getByRole('region', { name: '검토 대기' }),
+    ).toContainText('개요 작성하기')
+    await expect(page.locator('[data-product-operation-phase]')).toHaveAttribute(
+      'data-product-operation-phase',
+      'awaiting-review',
+    )
+    await page.getByRole('button', { name: '작업 중단' }).click()
+    await expect(page.getByText('AY 작업을 중단했습니다.')).toBeVisible()
   })
 })
 
@@ -244,6 +309,7 @@ test('distinguishes product loading, inactive workspace, no Course, empty materi
       contentType: 'application/json',
       body: JSON.stringify({
         accountReadiness: { state: 'ready' },
+        operationStatus: 'idle',
         history: {
           assignments: [],
           statePatches: [],
@@ -255,6 +321,7 @@ test('distinguishes product loading, inactive workspace, no Course, empty materi
             ? null
             : {
                 state: 'ready',
+                recovery: null,
                 confirmedRevision: 0,
                 course: null,
                 materials: [],
@@ -293,4 +360,56 @@ function assertBox(
   box: { readonly x: number; readonly y: number; readonly width: number; readonly height: number } | null,
 ): asserts box is { x: number; y: number; width: number; height: number } {
   expect(box).not.toBeNull()
+}
+
+async function arrangeStoreConflictFailure(
+  page: Page,
+  operationUrl: string,
+): Promise<void> {
+  const baseline = (await page.evaluate(async () => {
+    const response = await fetch('/api/product/bootstrap')
+    return response.json()
+  })) as ProductBootstrap
+  if (baseline.workspace?.state !== 'ready') {
+    throw new Error('Expected a ready workspace.')
+  }
+  await page.route('**/api/product/bootstrap', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...baseline,
+        operationStatus: 'idle',
+        workspace: {
+          ...baseline.workspace,
+          recovery: {
+            state: 'store_conflict',
+            displayMessage:
+              '학기 상태 파일이 외부에서 변경되었습니다. 작업공간을 다시 선택해 현재 상태를 확인하세요.',
+          },
+        },
+      }),
+    })
+  })
+  await page.route(operationUrl, async (route) => {
+    await route.fulfill({
+      status: 409,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 'execution_guard_conflict',
+        displayMessage: '학기 상태 파일이 변경되었습니다.',
+      }),
+    })
+  })
+}
+
+async function expectStoreConflictRecovery(page: Page): Promise<void> {
+  await expect(
+    page
+      .getByRole('alert')
+      .filter({ hasText: '작업공간 복구가 필요합니다' }),
+  ).toContainText('학기 상태 파일이 외부에서 변경되었습니다.')
+  await expect(
+    page.getByRole('button', { name: '작업공간 다시 선택' }),
+  ).toBeVisible()
 }

@@ -17,6 +17,7 @@ import { promisify } from 'node:util'
 
 import {
   canonicalSemesterWorkspaceSeed,
+  canonicalSemesterWorkspaceSeedDigest,
   digestDirectory,
   materializeDevelopmentSemesterWorkspace,
   materializeE2eSemesterWorkspace,
@@ -115,11 +116,35 @@ test('E2E materializer creates isolated runs, ignores ambient development worksp
   const second = await materializeE2eSemesterWorkspace()
 
   try {
+    assert.equal(seedDigestBefore, canonicalSemesterWorkspaceSeedDigest)
+    assert.notEqual(first.runId, second.runId)
     assert.notEqual(first.runRoot, second.runRoot)
     assert.notEqual(first.workspaceRoot, second.workspaceRoot)
     assert.notEqual(first.workspaceRoot, await realpath(ambientRoot))
     assert.equal(await digestDirectory(first.workspaceRoot), seedDigestBefore)
     assert.equal(await digestDirectory(second.workspaceRoot), seedDigestBefore)
+
+    const firstProductRoot = path.join(first.workspaceRoot, '.ay-ple')
+    const firstScratch = path.join(firstProductRoot, 'runtime-scratch', 'run-one')
+    await mkdir(firstScratch, { recursive: true })
+    await writeFile(
+      path.join(firstProductRoot, 'workspace-state.json'),
+      '{"run":"one"}\n',
+      'utf8',
+    )
+    await writeFile(path.join(firstScratch, 'only-first.txt'), 'scratch', 'utf8')
+    await assert.rejects(
+      readFile(path.join(second.workspaceRoot, '.ay-ple', 'workspace-state.json')),
+    )
+    await assert.rejects(
+      readFile(
+        path.join(
+          canonicalSemesterWorkspaceSeed,
+          '.ay-ple',
+          'workspace-state.json',
+        ),
+      ),
+    )
 
     await first.cleanup()
 
@@ -194,13 +219,23 @@ test('development workspace override remains caller-owned and unsafe roots fail 
       }),
       /non-symlink/,
     )
+    assert.equal(
+      (
+        await materializeDevelopmentSemesterWorkspace({
+          packageRoot,
+          environment: {
+            CODEX_CHAT_WORKSPACE: callerWorkspace,
+            CODEX_CHAT_RUNTIME_HOME: runtimeHome,
+          },
+        })
+      ).workspaceRoot,
+      await realpath(callerWorkspace),
+    )
     await assert.rejects(
       materializeDevelopmentSemesterWorkspace({
+        appDataRoot: runtimeHome,
         packageRoot,
-        environment: {
-          CODEX_CHAT_WORKSPACE: callerWorkspace,
-          CODEX_CHAT_RUNTIME_HOME: runtimeHome,
-        },
+        environment: { CODEX_CHAT_WORKSPACE: callerWorkspace },
       }),
       /overlap/,
     )
@@ -258,7 +293,7 @@ test('development materializer rejects a symlinked managed parent without touchi
   }
 })
 
-test('default development workspace rejects overlap with a configured managed root', async () => {
+test('default development workspace ignores legacy roots and rejects explicit app data overlap', async () => {
   const testRoot = await mkdtemp(
     path.join(tmpdir(), 'ay-ple-default-workspace-overlap-test-'),
   )
@@ -268,13 +303,64 @@ test('default development workspace rejects overlap with a configured managed ro
   try {
     await Promise.all([mkdir(packageRoot), mkdir(managedParent)])
 
+    const selected = await materializeDevelopmentSemesterWorkspace({
+      packageRoot,
+      environment: { CODEX_CHAT_RUNTIME_HOME: managedParent },
+    })
+    assert.equal(
+      selected.workspaceRoot,
+      await realpath(
+        path.join(managedParent, 'first-assignment-semester-workspace'),
+      ),
+    )
     await assert.rejects(
       materializeDevelopmentSemesterWorkspace({
+        appDataRoot: managedParent,
         packageRoot,
-        environment: { CODEX_CHAT_RUNTIME_HOME: managedParent },
+        environment: {},
       }),
       /overlap/,
     )
+  } finally {
+    await rm(testRoot, { force: true, recursive: true })
+  }
+})
+
+test('development materializer rejects package and app data root overlap before workspace selection', async () => {
+  const testRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-product-root-overlap-test-'),
+  )
+  const callerWorkspace = path.join(testRoot, 'caller-workspace')
+  const packageParent = path.join(testRoot, 'package-parent')
+  const packageRoot = path.join(packageParent, 'package-root')
+  const packageChildAppData = path.join(packageRoot, 'app-data')
+  const appDataParent = path.join(testRoot, 'app-data-parent')
+  const appDataChildPackage = path.join(appDataParent, 'package-root')
+  const sentinel = path.join(callerWorkspace, 'preserve.txt')
+
+  try {
+    await Promise.all([
+      mkdir(callerWorkspace),
+      mkdir(packageChildAppData, { recursive: true }),
+      mkdir(appDataChildPackage, { recursive: true }),
+    ])
+    await writeFile(sentinel, 'preserve', 'utf8')
+
+    for (const roots of [
+      { packageRoot, appDataRoot: packageChildAppData },
+      { packageRoot: appDataChildPackage, appDataRoot: appDataParent },
+      { packageRoot, appDataRoot: packageRoot },
+    ]) {
+      await assert.rejects(
+        materializeDevelopmentSemesterWorkspace({
+          ...roots,
+          environment: { CODEX_CHAT_WORKSPACE: callerWorkspace },
+        }),
+        /overlap/,
+      )
+    }
+
+    assert.equal(await readFile(sentinel, 'utf8'), 'preserve')
   } finally {
     await rm(testRoot, { force: true, recursive: true })
   }

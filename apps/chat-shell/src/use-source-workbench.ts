@@ -1,13 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
   activateProductWorkspace,
   createProductCourse,
   fetchProductBootstrap,
+  fetchSettledProductBootstrap,
   fetchProductMaterialPreview,
   ProductApiError,
   refreshProductMaterials,
+  type ProductBootstrap,
+  type ProductSettledHistory,
   type ProductMaterialPreview,
+  type ProductMaterialRefreshResponse,
   type ProductRawMaterial,
   type ProductWorkspace,
   type ReadyProductWorkspace,
@@ -32,8 +36,20 @@ export type ProductPreviewView =
       readonly displayMessage: string
     }
 
+export type ProductEvidenceFocus = {
+  readonly materialId: string
+  readonly digest: string
+  readonly quote: string
+}
+
+type ProductBootstrapView =
+  | { readonly state: 'loading' }
+  | { readonly state: 'loaded'; readonly bootstrap: ProductBootstrap }
+  | { readonly state: 'error'; readonly displayMessage: string }
+
 export function useSourceWorkbench() {
-  const [workspaceView, setWorkspaceView] = useState<ProductWorkspaceView>({
+  const bootstrapReadGeneration = useRef(0)
+  const [bootstrapView, setBootstrapView] = useState<ProductBootstrapView>({
     state: 'loading',
   })
   const [selectedMaterialIds, setSelectedMaterialIds] = useState<
@@ -43,18 +59,31 @@ export function useSourceWorkbench() {
   const [previewView, setPreviewView] = useState<ProductPreviewView>({
     state: 'idle',
   })
+  const [evidenceFocus, setEvidenceFocus] = useState<ProductEvidenceFocus>()
   const [mutationPending, setMutationPending] = useState(false)
+  const [bootstrapRefreshing, setBootstrapRefreshing] = useState(false)
   const [operationFailure, setOperationFailure] = useState<string>()
+  const [materialRefreshOutcome, setMaterialRefreshOutcome] = useState<
+    ProductMaterialRefreshResponse['outcome']
+  >()
 
   const loadWorkspace = useCallback(async (signal?: AbortSignal) => {
+    const readGeneration = ++bootstrapReadGeneration.current
     setOperationFailure(undefined)
-    setWorkspaceView({ state: 'loading' })
+    setMaterialRefreshOutcome(undefined)
+    setBootstrapRefreshing(false)
+    setBootstrapView({ state: 'loading' })
     try {
-      const bootstrap = await fetchProductBootstrap(signal)
-      setWorkspaceView({ state: 'loaded', workspace: bootstrap.workspace })
+      const bootstrap = await fetchSettledProductBootstrap(signal)
+      if (bootstrapReadGeneration.current === readGeneration) {
+        setBootstrapView({ state: 'loaded', bootstrap })
+      }
     } catch (error) {
-      if (!signal?.aborted) {
-        setWorkspaceView({
+      if (
+        !signal?.aborted &&
+        bootstrapReadGeneration.current === readGeneration
+      ) {
+        setBootstrapView({
           state: 'error',
           displayMessage: safeMessage(error),
         })
@@ -62,22 +91,79 @@ export function useSourceWorkbench() {
     }
   }, [])
 
+  const refreshBootstrapView = useCallback(
+    async (
+      readBootstrap: ProductBootstrapReader,
+      signal?: AbortSignal,
+    ) => {
+      const readGeneration = ++bootstrapReadGeneration.current
+      setOperationFailure(undefined)
+      setMaterialRefreshOutcome(undefined)
+      setBootstrapRefreshing(true)
+      try {
+        const bootstrap = await readBootstrap(signal)
+        if (bootstrapReadGeneration.current === readGeneration) {
+          setBootstrapView({ state: 'loaded', bootstrap })
+        }
+        return bootstrap
+      } catch (error) {
+        if (
+          !signal?.aborted &&
+          bootstrapReadGeneration.current === readGeneration
+        ) {
+          setOperationFailure(safeMessage(error))
+        }
+        throw error
+      } finally {
+        if (
+          !signal?.aborted &&
+          bootstrapReadGeneration.current === readGeneration
+        ) {
+          setBootstrapRefreshing(false)
+        }
+      }
+    },
+    [],
+  )
+
+  const refreshProductSnapshot = useCallback(
+    (signal?: AbortSignal) =>
+      refreshBootstrapView(fetchProductBootstrap, signal),
+    [refreshBootstrapView],
+  )
+
+  const refreshSettledProductState = useCallback(
+    (signal?: AbortSignal) =>
+      refreshBootstrapView(fetchSettledProductBootstrap, signal),
+    [refreshBootstrapView],
+  )
+
   useEffect(() => {
     const controller = new AbortController()
     void loadWorkspace(controller.signal)
     return () => controller.abort()
   }, [loadWorkspace])
 
+  const bootstrap =
+    bootstrapView.state === 'loaded' ? bootstrapView.bootstrap : undefined
+  const workspaceView: ProductWorkspaceView =
+    bootstrapView.state === 'loading'
+      ? { state: 'loading' }
+      : bootstrapView.state === 'error'
+        ? bootstrapView
+        : { state: 'loaded', workspace: bootstrapView.bootstrap.workspace }
   const readyWorkspace =
-    workspaceView.state === 'loaded' &&
-    workspaceView.workspace?.state === 'ready'
-      ? workspaceView.workspace
+    bootstrap?.workspace?.state === 'ready'
+      ? bootstrap.workspace
       : undefined
+  const accountReadiness = bootstrap?.accountReadiness
+  const history = bootstrap?.history
 
   useEffect(() => {
     if (!readyWorkspace) {
       setSelectedMaterialIds([])
       setActiveMaterialId(undefined)
+      setEvidenceFocus(undefined)
       return
     }
     const available = new Set(
@@ -88,6 +174,16 @@ export function useSourceWorkbench() {
     )
     setActiveMaterialId((current) =>
       current && available.has(current) ? current : undefined,
+    )
+    setEvidenceFocus((current) =>
+      current &&
+      readyWorkspace.materials.some(
+        (material) =>
+          material.id === current.materialId &&
+          material.digest === current.digest,
+      )
+        ? current
+        : undefined,
     )
   }, [readyWorkspace])
 
@@ -133,7 +229,16 @@ export function useSourceWorkbench() {
   }, [activeMaterial, activeMaterialId])
 
   const commitReadyWorkspace = (workspace: ReadyProductWorkspace) => {
-    setWorkspaceView({ state: 'loaded', workspace })
+    setBootstrapView((current) => {
+      if (current.state !== 'loaded') return current
+      return {
+        state: 'loaded',
+        bootstrap: {
+          ...current.bootstrap,
+          workspace,
+        },
+      }
+    })
   }
 
   async function runWorkspaceMutation(operation: () => Promise<void>) {
@@ -143,7 +248,13 @@ export function useSourceWorkbench() {
     try {
       await operation()
     } catch (error) {
-      setOperationFailure(safeMessage(error))
+      const displayMessage = safeMessage(error)
+      try {
+        await refreshSettledProductState()
+      } catch {
+        // Keep the original mutation failure when recovery hydration also fails.
+      }
+      setOperationFailure(displayMessage)
     } finally {
       setMutationPending(false)
     }
@@ -151,21 +262,41 @@ export function useSourceWorkbench() {
 
   async function activateWorkspace() {
     await runWorkspaceMutation(async () => {
-      const workspace = await activateProductWorkspace()
-      setWorkspaceView({ state: 'loaded', workspace })
+      setMaterialRefreshOutcome(undefined)
+      const activation = await activateProductWorkspace()
+      if (activation.status === 'cancelled') return
+      setBootstrapView((current) =>
+        current.state === 'loaded'
+          ? {
+              state: 'loaded',
+              bootstrap: {
+                ...current.bootstrap,
+                workspace: activation.workspace,
+                history: emptyHistory(),
+              },
+            }
+          : current,
+      )
+      await refreshSettledProductState()
     })
   }
 
   async function createCourse(displayName: string) {
     await runWorkspaceMutation(async () => {
+      setMaterialRefreshOutcome(undefined)
       commitReadyWorkspace(await createProductCourse(displayName))
+      await refreshSettledProductState()
     })
   }
 
   async function refreshMaterials() {
     if (!readyWorkspace) return
     await runWorkspaceMutation(async () => {
-      commitReadyWorkspace(await refreshProductMaterials())
+      setMaterialRefreshOutcome(undefined)
+      const refreshed = await refreshProductMaterials()
+      commitReadyWorkspace(refreshed.workspace)
+      await refreshSettledProductState()
+      setMaterialRefreshOutcome(refreshed.outcome)
     })
   }
 
@@ -175,6 +306,9 @@ export function useSourceWorkbench() {
       if (current.includes(materialId)) {
         const next = current.filter((candidate) => candidate !== materialId)
         if (activeMaterialId === materialId) setActiveMaterialId(next[0])
+        if (evidenceFocus?.materialId === materialId) {
+          setEvidenceFocus(undefined)
+        }
         return next
       }
       if (current.length >= 2) return current
@@ -184,21 +318,64 @@ export function useSourceWorkbench() {
     })
   }
 
+  function selectMaterialTab(materialId: string) {
+    if (!selectedMaterialIds.includes(materialId)) return
+    setEvidenceFocus(undefined)
+    setActiveMaterialId(materialId)
+  }
+
+  function navigateToEvidence(focus: ProductEvidenceFocus) {
+    const material = readyWorkspace?.materials.find(
+      (candidate) =>
+        candidate.id === focus.materialId && candidate.digest === focus.digest,
+    )
+    if (!material || !focus.quote) return
+    setSelectedMaterialIds((current) =>
+      current.includes(material.id)
+        ? current
+        : [...current.slice(0, 1), material.id],
+    )
+    setActiveMaterialId(material.id)
+    setEvidenceFocus({ ...focus })
+  }
+
   return {
+    bootstrap,
+    accountReadiness,
+    history,
     workspaceView,
     readyWorkspace,
     selectedMaterialIds,
     selectedMaterials,
     activeMaterialId: activeMaterial?.id,
     previewView,
+    evidenceFocus,
     mutationPending,
+    bootstrapRefreshing,
     operationFailure,
+    materialRefreshOutcome,
     loadWorkspace,
+    refreshProductSnapshot,
+    refreshSettledProductState,
     activateWorkspace,
     createCourse,
     refreshMaterials,
     toggleMaterial,
-    setActiveMaterialId,
+    selectMaterialTab,
+    navigateToEvidence,
+  }
+}
+
+type ProductBootstrapReader = (
+  signal?: AbortSignal,
+) => Promise<ProductBootstrap>
+
+function emptyHistory(): ProductSettledHistory {
+  return {
+    assignments: [],
+    statePatches: [],
+    userConfirmations: [],
+    modelingRuns: [],
   }
 }
 

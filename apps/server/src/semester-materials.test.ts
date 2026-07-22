@@ -52,8 +52,10 @@ test('material refresh registers only bounded workspace TXT with stable opaque i
       chooseDirectory: async () => materialized.workspaceRoot,
     })
     await controller.activate()
-    const refreshed = await controller.refreshMaterials()
+    const refreshResult = await controller.refreshMaterials()
+    const refreshed = refreshResult.workspace
 
+    assert.equal(refreshResult.outcome, 'refreshed')
     assert.equal(refreshed.state, 'ready')
     assert.deepEqual(
       refreshed.materials.map((material) => material.relativePath),
@@ -86,7 +88,7 @@ test('material refresh registers only bounded workspace TXT with stable opaque i
       `${await readFile(path.join(materialized.workspaceRoot, before.relativePath), 'utf8')}\n변경됨\n`,
       'utf8',
     )
-    const changed = await controller.refreshMaterials()
+    const changed = (await controller.refreshMaterials()).workspace
     const changedMaterial = changed.materials.find(
       (material) => material.relativePath === before.relativePath,
     )
@@ -106,7 +108,10 @@ test('material refresh registers only bounded workspace TXT with stable opaque i
         : undefined,
       changed.materials,
     )
-    assert.deepEqual((await reopened.refreshMaterials()).materials, changed.materials)
+    assert.deepEqual(
+      (await reopened.refreshMaterials()).workspace.materials,
+      changed.materials,
+    )
   } finally {
     await chmod(unreadableText, 0o600).catch(() => undefined)
     await rm(outsideText, { force: true })
@@ -128,7 +133,7 @@ test('material preview revalidates registry digest and refuses a path that becom
       chooseDirectory: async () => materialized.workspaceRoot,
     })
     await controller.activate()
-    const snapshot = await controller.refreshMaterials()
+    const snapshot = (await controller.refreshMaterials()).workspace
     const material = snapshot.materials.find(
       (candidate) => candidate.relativePath === 'lms-outline-notice.txt',
     )
@@ -247,6 +252,7 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
         })
         assert.equal(refresh.status, 200)
         const refreshed = (await refresh.json()) as {
+          readonly outcome: string
           readonly workspace: {
             readonly materials: readonly {
               readonly id: string
@@ -255,6 +261,7 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
             }[]
           }
         }
+        assert.equal(refreshed.outcome, 'refreshed')
         const internalSnapshot = application.semesterWorkspace?.snapshot()
         assert.equal(internalSnapshot?.state, 'ready')
         if (internalSnapshot?.state === 'ready') {
@@ -268,6 +275,7 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
         assert.equal(bootstrap.headers.get('cache-control'), 'no-store')
         const bootstrapBody = (await bootstrap.json()) as {
           readonly accountReadiness: Record<string, unknown>
+          readonly operationStatus: unknown
           readonly workspace: unknown
           readonly history: Record<string, unknown>
         }
@@ -277,6 +285,7 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
           displayMessage:
             'Codex 상태를 확인할 수 없습니다. 자료 작업공간은 계속 사용할 수 있습니다.',
         })
+        assert.equal(bootstrapBody.operationStatus, 'idle')
         assert.deepEqual(bootstrapBody.history, emptyProductHistory())
 
         const material = refreshed.workspace.materials[0]
@@ -397,6 +406,7 @@ function assertReadyWorkspaceEnvelopeKeys(
     'confirmedRevision',
     'course',
     'materials',
+    'recovery',
     'state',
   ])
 }

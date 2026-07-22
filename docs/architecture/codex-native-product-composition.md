@@ -8,7 +8,7 @@
 
 ## 목적
 
-이 문서는 AY-PLE의 제품 기능을 official SDK 기반 Codex App Server 경로에 어떻게 얇게 연결하는지 설명한다. 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 조합 결정은 [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md)을 따른다. AY-PLE는 별도 Agent workflow engine을 만들지 않고 native Codex 입력과 제어를 조합하며, 앱은 학기 상태와 검토 권한을 소유한다.
+이 문서는 AY-PLE의 제품 기능을 official SDK 기반 Codex App Server 경로에 어떻게 얇게 연결하는지 설명한다. 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 조합 결정은 [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), public cutover와 store compatibility는 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)을 따른다. AY-PLE는 별도 Agent workflow engine을 만들지 않고 native Codex 입력과 제어를 조합하며, 앱은 학기 상태와 검토 권한을 소유한다.
 
 ## 경계
 
@@ -25,8 +25,8 @@
 | 진행 중 정정 | 필요할 때 `turn/steer` | 정확한 active turn과 사용자 의도가 확인된 기능에만 사용한다. |
 | 중단 | 필요할 때 `turn/interrupt` | 실제 terminal 결과를 확인하기 전 성공으로 표시하지 않는다. |
 | 실행 권한·운영 입력 | 원래 server request에 대한 typed response | 학업 Review나 UserConfirmation과 합치지 않는다. |
-| StatePatch Review의 answer carrier | exact Plan mode의 built-in `request_user_input`과 같은 native Turn continuation | App이 exact active patch binding을 검증한 답변만 반환한다. Native answer는 UserConfirmation이나 apply authority가 아니다. |
-| UserConfirmation과 apply | App-owned StatePatch persistence와 decision reconciliation | Settled product decision에서 허용한 apply만 confirmed SemesterModel을 바꾼다. 일반 Plan clarification과 unsettled 수정 요청은 학업 상태를 바꾸지 않는다. |
+| StatePatch Review의 answer carrier | exact Plan mode의 built-in `request_user_input`과 같은 native Turn continuation | App이 exact active patch binding을 검증한 답변만 반환한다. 수정 요청은 bounded feedback과 Server-private fresh proposal key를 같은 Turn에 전달하며, native answer 자체는 UserConfirmation이나 apply authority가 아니다. |
+| UserConfirmation과 apply | App-owned StatePatch persistence와 decision reconciliation | 수락만 confirmed SemesterModel을 바꾸고 거절은 durable no-apply로 정산한다. 일반 Plan clarification과 unsettled 수정 요청은 학업 상태를 바꾸지 않으며 valid replacement만 이전 patch supersede와 새 pending patch를 한 transaction으로 기록한다. |
 | AY 작업 활동 | 선택한 `item`·`turn` observation | 진행 설명이며 그 자체가 EvidenceRef나 SemesterModel 사실은 아니다. |
 
 raw `threadId`, `turnId`, `itemId`, `requestId`와 protocol message는 Codex 통합 내부에 둔다. 제품에는 기능을 복구하거나 결과를 연결하는 데 필요한 correlation과 검증된 의미만 전달한다.
@@ -52,7 +52,7 @@ ModelingRecipe version
 → ModelingRun receipt 정산
 ```
 
-ModelingInvocation은 영속 receipt가 아니다. 앱이 실행 시도를 등록할 때 ModelingRun을 먼저 만들고, native 호출에서 얻은 correlation과 terminal 결과를 여기에 연결한다. Retry는 같은 Invocation 입력을 다시 사용하더라도 새 Run을 만든다. Run의 기록 계약은 [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md)이 소유한다. raw thread/turn identifier는 Codex 통합 내부에서만 해석하며 렌더링한 전체 prompt나 raw protocol stream을 제품 감사 기록으로 복사하지 않는다.
+ModelingInvocation은 영속 receipt가 아니다. 앱이 실행 시도를 등록할 때 ModelingRun을 먼저 만들고, native 호출에서 얻은 correlation과 terminal 결과를 여기에 연결한다. Explicit retry는 prior `interrupted | unknown` Run의 canonical Course·Recipe·arguments·source snapshot을 다시 검증하더라도 새 Run·native Turn·proposal key를 만들고 `retryOfRunId` ancestry로 연결한다. 한 prior Run에는 retry child를 하나만 허용하며 원래 receipt를 덮어쓰거나 자동 retry하지 않는다. Run의 기록 계약은 [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md)이 소유한다. raw thread/turn identifier는 Codex 통합 내부에서만 해석하며 렌더링한 전체 prompt나 raw protocol stream을 제품 감사 기록으로 복사하지 않는다.
 
 ## StatePatch, Review와 UserConfirmation
 
@@ -65,10 +65,10 @@ Skill 또는 일반 Chat Turn
 → Plan request_user_input으로 같은 native Turn에서 Review answer 전달
 → 수락: settled UserConfirmation → confirmed SemesterModel apply outcome
 → 거절: settled UserConfirmation → no-apply
-→ 수정 요청: unsettled feedback → same-Turn replacement StatePatch 제안 → 이전 patch supersede → Review 반복
+→ 수정 요청: unsettled feedback + fresh private proposal key → same-Turn replacement StatePatch 제안 → 이전 supersede + 새 pending atomic commit → Review 반복
 ```
 
-`request_user_input`은 conversation continuation을 운반할 뿐 product apply authority가 아니다. MCP elicitation도 이 confirmation 경로에 사용하지 않는다. 답변 전에 Browser·Server/runtime continuity를 잃으면 native Turn을 `interrupted`로 끝내고 confirmed SemesterModel을 바꾸지 않는다. 자동 retry하지 않으며, 사용자가 명시적으로 retry할 때 새 action을 시작한다. Pending StatePatch를 receipt로 저장할 수는 있지만 first vertical은 원래 native prompt의 reload·restart hydration이나 며칠 뒤 Review를 보장하지 않는다. 반대로 App이 exact patch binding을 검증해 UserConfirmation과 apply outcome을 정산한 뒤에는 그 product state가 authoritative하며, Codex response가 유실돼도 같은 patch를 다시 적용하지 않는다.
+`request_user_input`은 conversation continuation을 운반할 뿐 product apply authority가 아니다. MCP elicitation도 이 confirmation 경로에 사용하지 않는다. 같은 decision retry는 기존 product outcome을 반환하고, wrong binding·상충하거나 늦은 decision·stale base는 두 번째 confirmation이나 apply 없이 fail closed한다. Replacement 전에 terminal 또는 proposal validation failure가 발생하면 이전 patch를 `interrupted`로 끝내고 confirmation·apply를 만들지 않는다. 답변 전에 Browser·Server/runtime continuity를 잃으면 native Turn과 pending patch를 `interrupted`로 정산하고 confirmed SemesterModel을 바꾸지 않는다. Browser는 authoritative settled recovery만 다시 읽고 unanswered native prompt를 복원하지 않으며, 사용자가 prior canonical 입력으로 명시적으로 retry할 때만 새 Run과 Turn을 만든다. 반대로 App이 exact patch binding을 검증해 UserConfirmation과 apply outcome을 정산한 뒤에는 그 product state가 authoritative하다. 이후 native answer나 HTTP response가 유실되면 confirmed revision과 apply를 유지한 `continuation_lost`를 표시하고 같은 patch를 다시 적용하거나 retry CTA를 열지 않는다.
 
 ## Thread 사용 경계
 
@@ -87,6 +87,6 @@ Pinned official source와 official Python SDK는 `TextInput`, `SkillInput`, `Men
 
 현재 runtime package는 optional `SkillInput`과 bounded `TextInput`을 product Turn으로 받고, Plan mode에 필요한 model·reasoning은 caller 설정이 아니라 first-party advertised default에서 해석한다. Server는 versioned Recipe·selected-source context를 이 Turn에 연결하고 `ModelingRun`·`StatePatch`·`UserConfirmation`·confirmed SemesterModel의 app-owned authority를 유지한다.
 
-현재 지원 결과는 durable Run을 갖는 First Assignment와 Run-free Chat, registered source/revision guard, proposal-only MCP, app-owned Review transaction, 학업 상태를 바꾸지 않는 ephemeral 일반 clarification이다. Browser에는 safe bootstrap과 curated activity·clarification·Review 결과만 projection하며 native identity, credential, absolute path와 raw MCP payload를 노출하지 않는다. Package와 Server의 세부 동작은 [runtime README](../../packages/codex-chat-runtime/README.md)와 [Server README](../../apps/server/README.md)가 소유한다.
+현재 지원 결과는 durable Run을 갖는 First Assignment와 Run-free Chat, registered source/revision guard, proposal-only MCP, app-owned 세 갈래 Review transaction, answer 전 continuity loss의 settled recovery·explicit retry, apply 뒤 continuation-loss·no-reapply, source drift 시 native interrupt·explicit rebaseline, store conflict의 exact-byte no-overwrite·explicit reactivation과 학업 상태를 바꾸지 않는 ephemeral 일반 clarification이다. Browser에는 safe bootstrap과 curated activity·clarification, evidence-linked Review·replacement·operation/workspace recovery 결과만 projection하며 native identity, Server-private proposal key, credential, absolute path와 raw MCP payload를 노출하지 않는다. Package와 Server의 세부 동작은 [runtime README](../../packages/codex-chat-runtime/README.md)와 [Server README](../../apps/server/README.md)가 소유한다.
 
-현재 미지원 결과는 Browser action·clarification·Review 표현, 수정 요청 replacement, 더 넓은 continuity-loss recovery와 final actual-child/live-provider conformance다. Current four text tracer routes는 별도 compatibility path로 유지된다. 횡단 topology와 확인된 gap은 [Codex Chat 구현 지도](codex-chat-implementation-map.md), 작업 순서와 완료 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다. Raw capability의 저수준 근거는 [context delivery 조사](../spikes/codex-app-server-context-delivery/research.md)에 둔다.
+현재 exact local-provider product actual은 수정 요청→fresh replacement proposal→두 번째 Review 수락과 same-Turn terminal을, isolated live-provider trace는 complete Assignment action→첫 Review 수락→confirmed outcome과 clean shutdown을 증명한다. Canonical Browser·Server caller와 root startup은 `/api/product/*`를 사용하며 active ready `SemesterWorkspace`를 exact native `cwd`로 전달한다. Tracer-only HTTP·Browser surface는 compatibility alias 없이 제거됐고, workspace-local current v2 store는 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)의 첫 durable compatibility baseline이다. 횡단 topology와 확인된 gap은 [Codex Chat 구현 지도](codex-chat-implementation-map.md), 작업 순서와 완료 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다. Raw capability의 저수준 근거는 [context delivery 조사](../spikes/codex-app-server-context-delivery/research.md)에 둔다.

@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url'
 import dotenv from 'dotenv'
 import express, { type Express } from 'express'
 
-import { createAssignmentActionCoordinator } from './assignment-action.js'
+import { createProductOperationCoordinator } from './product-operation-coordinator.js'
 import {
   createAssignmentMcpHost,
   type AssignmentMcpHost,
@@ -14,6 +14,7 @@ import {
   createCodexChatComposition,
   type CodexChatBootstrap,
   type CodexChatComposition,
+  type ProductRuntimeBootstrap,
 } from './codex-chat.js'
 import {
   createSemesterWorkspaceController,
@@ -29,7 +30,7 @@ const serverHost = '127.0.0.1'
 
 export type CreateServerAppOptions = {
   codexChat?: CodexChatBootstrap
-  codexChatEnvironment?: NodeJS.ProcessEnv
+  productRuntime?: ProductRuntimeBootstrap
   semesterWorkspace?: SemesterWorkspaceBootstrap
 }
 
@@ -66,14 +67,17 @@ export async function createServerApplication(
     : undefined
   const codexChat = createCodexChatComposition({
     bootstrap: options.codexChat,
-    environment: options.codexChatEnvironment,
+    productRuntime: options.productRuntime,
+    workspace: semesterWorkspace
+      ? () => semesterWorkspace.nativeCwd()
+      : undefined,
   })
   const assignmentMcpHost = semesterWorkspace
     ? createAssignmentMcpHost()
     : undefined
-  const assignmentActions =
+  const productOperations =
     semesterWorkspace && options.semesterWorkspace && assignmentMcpHost
-      ? createAssignmentActionCoordinator({
+      ? createProductOperationCoordinator({
           controller: semesterWorkspace,
           mcpHost: assignmentMcpHost,
           service: codexChat.service,
@@ -82,7 +86,7 @@ export async function createServerApplication(
   const app = createServerExpressApp(
     codexChat,
     semesterWorkspace,
-    assignmentActions,
+    productOperations,
     assignmentMcpHost,
     options.codexChat?.httpWriteDrainMs,
   )
@@ -112,7 +116,7 @@ export async function createServerApplication(
     },
     close() {
       closing = true
-      assignmentActions?.beginShutdown()
+      productOperations?.beginShutdown()
       codexChat.beginShutdown()
       closePromise ??= closeServerApplication(
         listener,
@@ -127,12 +131,11 @@ export async function createServerApplication(
 function createServerExpressApp(
   codexChat: CodexChatComposition,
   semesterWorkspace: SemesterWorkspaceController | undefined,
-  assignmentActions: ReturnType<typeof createAssignmentActionCoordinator> | undefined,
+  productOperations: ReturnType<typeof createProductOperationCoordinator> | undefined,
   assignmentMcpHost: AssignmentMcpHost | undefined,
   productWriteDrainMs: number | undefined,
 ): Express {
   const app = express()
-  app.use('/api/codex-chat', codexChat.router)
   if (assignmentMcpHost) {
     app.use('/api/product-mcp', assignmentMcpHost.router)
   }
@@ -141,9 +144,9 @@ function createServerExpressApp(
     createProductRouter(
       semesterWorkspace,
       codexChat.origin,
-      assignmentActions,
+      productOperations,
       productWriteDrainMs,
-      assignmentActions
+      productOperations
         ? () => codexChat.service.readProductAccountReadiness()
         : undefined,
     ),
@@ -187,7 +190,7 @@ export async function startConfiguredServerApplication(
   const log = options.log ?? console.log
   const productDevelopment = resolveProductDevelopmentBootstrap(environment)
   const application = await createServerApplication({
-    codexChatEnvironment: environment,
+    productRuntime: productDevelopment?.runtime,
     semesterWorkspace: productDevelopment?.semesterWorkspace,
   })
   try {

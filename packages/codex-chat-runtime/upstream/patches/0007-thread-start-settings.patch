@@ -1,0 +1,80 @@
+diff --git a/sdk/python/scripts/update_sdk_artifacts.py b/sdk/python/scripts/update_sdk_artifacts.py
+index 19ceac2..b2c7d91 100755
+--- a/sdk/python/scripts/update_sdk_artifacts.py
++++ b/sdk/python/scripts/update_sdk_artifacts.py
+@@ -993 +993,6 @@ def _render_codex_block(
+-        "        return Thread(self._client, started.thread.id)",
++        "        return Thread(",
++        "            self._client,",
++        "            started.thread.id,",
++        "            started.model,",
++        "            started.reasoning_effort,",
++        "        )",
+@@ -1073 +1078,6 @@ def _render_async_codex_block(
+-        "        return AsyncThread(self, started.thread.id)",
++        "        return AsyncThread(",
++        "            self,",
++        "            started.thread.id,",
++        "            started.model,",
++        "            started.reasoning_effort,",
++        "        )",
+diff --git a/sdk/python/src/openai_codex/api.py b/sdk/python/src/openai_codex/api.py
+index 0f2eb9d..8f2105f 100644
+--- a/sdk/python/src/openai_codex/api.py
++++ b/sdk/python/src/openai_codex/api.py
+@@ -265 +265,6 @@ class Codex:
+-        return Thread(self._client, started.thread.id)
++        return Thread(
++            self._client,
++            started.thread.id,
++            started.model,
++            started.reasoning_effort,
++        )
+@@ -514 +519,6 @@ class AsyncCodex:
+-        return AsyncThread(self, started.thread.id)
++        return AsyncThread(
++            self,
++            started.thread.id,
++            started.model,
++            started.reasoning_effort,
++        )
+@@ -643,0 +654,2 @@ class Thread:
++    initial_model: str | None = None
++    initial_reasoning_effort: ReasoningEffort | None = None
+@@ -738,0 +751,2 @@ class AsyncThread:
++    initial_model: str | None = None
++    initial_reasoning_effort: ReasoningEffort | None = None
+diff --git a/sdk/python/tests/test_public_api_runtime_behavior.py b/sdk/python/tests/test_public_api_runtime_behavior.py
+index 4cee695..d798844 100644
+--- a/sdk/python/tests/test_public_api_runtime_behavior.py
++++ b/sdk/python/tests/test_public_api_runtime_behavior.py
+@@ -4,0 +5 @@ from pathlib import Path
++from types import SimpleNamespace
+@@ -130,0 +132,27 @@ def test_async_codex_initializes_only_once_under_concurrency() -> None:
++def test_thread_start_preserves_native_effective_model_settings() -> None:
++    response = SimpleNamespace(
++        thread=SimpleNamespace(id="thread-1"),
++        model="configured-model",
++        reasoning_effort=SimpleNamespace(root="high"),
++    )
++    sync_codex = object.__new__(Codex)
++    sync_codex._client = SimpleNamespace(thread_start=lambda _params: response)
++    sync_thread = sync_codex.thread_start()
++    assert sync_thread.initial_model == "configured-model"
++    assert sync_thread.initial_reasoning_effort.root == "high"
++
++    async def scenario() -> None:
++        async_codex = AsyncCodex()
++        async_codex._initialized = True
++
++        async def fake_thread_start(_params):  # noqa: ANN202
++            return response
++
++        async_codex._client.thread_start = fake_thread_start  # type: ignore[method-assign]
++        async_thread = await async_codex.thread_start()
++        assert async_thread.initial_model == "configured-model"
++        assert async_thread.initial_reasoning_effort.root == "high"
++
++    asyncio.run(scenario())
++
++

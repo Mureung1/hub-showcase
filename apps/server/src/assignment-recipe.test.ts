@@ -31,11 +31,61 @@ test('managed Assignment Recipe materializes and verifies below app data', async
         await realpath(fixture.appDataRoot),
         'modeling-recipes',
         'first-assignment',
-        '1',
+        '2',
         'SKILL.md',
       ),
     )
     await verifyManagedAssignmentRecipe(recipe, fixture.appDataRoot)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('managed Assignment Recipe creates v2 without changing pre-existing v1 bytes', async () => {
+  const fixture = await createFixture()
+  try {
+    const versionOneDirectory = path.join(
+      fixture.appDataRoot,
+      'modeling-recipes',
+      'first-assignment',
+      '1',
+    )
+    await mkdir(versionOneDirectory, { recursive: true })
+    const versionOnePath = path.join(versionOneDirectory, 'SKILL.md')
+    const versionOneBytes = Buffer.from(
+      'historical first-assignment Recipe v1\nbyte-for-byte fixture\n',
+      'utf8',
+    )
+    await writeFile(versionOnePath, versionOneBytes)
+
+    const recipe = await materializeManagedAssignmentRecipe(fixture.appDataRoot)
+    const versionTwoBytes = await readFile(recipe.path)
+
+    assert.equal(recipe.version, '2')
+    assert.equal(
+      recipe.path,
+      path.join(
+        await realpath(fixture.appDataRoot),
+        'modeling-recipes',
+        'first-assignment',
+        '2',
+        'SKILL.md',
+      ),
+    )
+    assert.deepEqual(await readFile(versionOnePath), versionOneBytes)
+    assert.notDeepEqual(versionTwoBytes, versionOneBytes)
+    assert.match(
+      versionTwoBytes.toString('utf8'),
+      /For each requestKey\/attempt, call `propose_state_patch` exactly once/,
+    )
+    assert.match(
+      versionTwoBytes.toString('utf8'),
+      /fresh replacement requestKey/,
+    )
+    assert.match(
+      versionTwoBytes.toString('utf8'),
+      /Repeat the MCP -> Plan -> Review sequence in this same Turn/,
+    )
   } finally {
     await fixture.cleanup()
   }

@@ -5,8 +5,13 @@ import {
   activateProductWorkspace,
   fetchProductBootstrap,
   fetchProductMaterialPreview,
+  fetchSettledProductBootstrap,
   ProductApiError,
+  ProductStreamError,
   refreshProductMaterials,
+  streamFirstAssignmentRetry,
+  streamProductChat,
+  submitProductReview,
 } from './product-api.js'
 
 test('decodes a ready product snapshot without persistence metadata', async (t) => {
@@ -15,6 +20,7 @@ test('decodes a ready product snapshot without persistence metadata', async (t) 
     confirmedRevision: 0,
     course: null,
     materials: [],
+    recovery: null,
   } as const
   t.mock.method(
     globalThis,
@@ -23,6 +29,7 @@ test('decodes a ready product snapshot without persistence metadata', async (t) 
       new Response(
         JSON.stringify({
           accountReadiness: { state: 'ready' },
+          operationStatus: 'idle',
           workspace,
           history: emptyHistory(),
         }),
@@ -32,9 +39,52 @@ test('decodes a ready product snapshot without persistence metadata', async (t) 
 
   assert.deepEqual(await fetchProductBootstrap(), {
     accountReadiness: { state: 'ready' },
+    operationStatus: 'idle',
     workspace,
     history: emptyHistory(),
   })
+})
+
+test('returns one active product snapshot without waiting for settlement', async (t) => {
+  let requests = 0
+  t.mock.method(globalThis, 'fetch', async () => {
+    requests += 1
+    return new Response(
+      JSON.stringify({
+        accountReadiness: { state: 'ready' },
+        operationStatus: 'active',
+        workspace: null,
+        history: emptyHistory(),
+      }),
+      { status: 200 },
+    )
+  })
+
+  const bootstrap = await fetchProductBootstrap()
+
+  assert.equal(requests, 1)
+  assert.equal(bootstrap.operationStatus, 'active')
+})
+
+test('polls an active product operation until one idle bootstrap supplies the final settled read', async (t) => {
+  let requests = 0
+  t.mock.method(globalThis, 'fetch', async () => {
+    requests += 1
+    return new Response(
+      JSON.stringify({
+        accountReadiness: { state: 'ready' },
+        operationStatus: requests === 1 ? 'active' : 'idle',
+        workspace: null,
+        history: emptyHistory(),
+      }),
+      { status: 200 },
+    )
+  })
+
+  const bootstrap = await fetchSettledProductBootstrap()
+
+  assert.equal(requests, 2)
+  assert.equal(bootstrap.operationStatus, 'idle')
 })
 
 test('decodes an actionable incompatible product outcome without store versions', async (t) => {
@@ -53,6 +103,7 @@ test('decodes an actionable incompatible product outcome without store versions'
             state: 'unavailable',
             displayMessage: 'Codex 상태를 확인할 수 없습니다.',
           },
+          operationStatus: 'idle',
           workspace,
           history: emptyHistory(),
         }),
@@ -74,11 +125,13 @@ test('decodes only settled product history for reload', async (t) => {
       state: 'not_ready',
       displayMessage: 'Codex에 로그인해 주세요.',
     },
+    operationStatus: 'idle',
     workspace: {
       state: 'ready',
       confirmedRevision: 1,
       course: { id: courseId, displayName: '알고리즘' },
       materials: [],
+      recovery: null,
     },
     history: {
       assignments: [
@@ -134,6 +187,8 @@ test('decodes only settled product history for reload', async (t) => {
             requestedSkillName: 'ay-ple-first-assignment',
           },
           sources: [{ materialId, digest: 'e'.repeat(64) }],
+          retryOfRunId: null,
+          recovery: null,
           status: 'completed',
           validationOutcome: 'passed',
           createdAt: now,
@@ -160,12 +215,14 @@ test('rejects persistence metadata in the Browser product contract', async (t) =
       new Response(
         JSON.stringify({
           accountReadiness: { state: 'ready' },
+          operationStatus: 'idle',
           workspace: {
             state: 'ready',
             storeFormatVersion: 2,
             confirmedRevision: 0,
             course: null,
             materials: [],
+            recovery: null,
           },
           history: emptyHistory(),
         }),
@@ -189,11 +246,13 @@ test('rejects pending or privately correlated product history', async (t) => {
       new Response(
         JSON.stringify({
           accountReadiness: { state: 'ready' },
+          operationStatus: 'idle',
           workspace: {
             state: 'ready',
             confirmedRevision: 0,
             course: { id: courseId, displayName: '알고리즘' },
             materials: [],
+            recovery: null,
           },
           history: {
             ...emptyHistory(),
@@ -227,11 +286,13 @@ test('rejects an unreconciled acceptance-unknown ModelingRun as settled history'
       new Response(
         JSON.stringify({
           accountReadiness: { state: 'ready' },
+          operationStatus: 'idle',
           workspace: {
             state: 'ready',
             confirmedRevision: 0,
             course: { id: courseId, displayName: '알고리즘' },
             materials: [],
+            recovery: null,
           },
           history: {
             ...emptyHistory(),
@@ -284,6 +345,45 @@ test('rejects compatibility diagnostics in an activation response', async (t) =>
   await assertInvalidResponse(activateProductWorkspace())
 })
 
+test('preserves a cancelled activation so application state can remain intact', async (t) => {
+  const response = { status: 'cancelled', workspace: null } as const
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () =>
+      new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+  )
+
+  assert.deepEqual(await activateProductWorkspace(), response)
+})
+
+test('decodes an explicit source rebaseline response through the shared contract', async (t) => {
+  const response = {
+    outcome: 'source_rebaselined',
+    workspace: {
+      state: 'ready',
+      confirmedRevision: 0,
+      course: null,
+      materials: [],
+      recovery: null,
+    },
+  } as const
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () =>
+      new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+  )
+
+  assert.deepEqual(await refreshProductMaterials(), response)
+})
+
 test('rejects a physical store path in a refresh response', async (t) => {
   t.mock.method(
     globalThis,
@@ -291,11 +391,13 @@ test('rejects a physical store path in a refresh response', async (t) => {
     async () =>
       new Response(
         JSON.stringify({
+          outcome: 'refreshed',
           workspace: {
             state: 'ready',
             confirmedRevision: 0,
             course: null,
             materials: [],
+            recovery: null,
             storePath: '/private/workspace/.ay-ple/workspace-state.json',
           },
         }),
@@ -330,6 +432,182 @@ test('rejects a store version in a preview response', async (t) => {
 
   await assertInvalidResponse(
     fetchProductMaterialPreview({ id: materialId, digest }),
+  )
+})
+
+test('product Chat sends the shared request and decodes only closed frames', async (t) => {
+  const operationId = `chat_${'a'.repeat(32)}`
+  const frames = [
+    { type: 'operation.preparing', operationId },
+    { type: 'operation.terminal', operationId, status: 'completed' },
+  ] as const
+  t.mock.method(globalThis, 'fetch', async (
+    input: string | URL | Request,
+    init?: RequestInit,
+  ) => {
+    assert.equal(input, '/api/product/chat/messages')
+    assert.deepEqual(JSON.parse(String(init?.body)), {
+      text: '자료를 비교해 줘',
+      materials: [],
+    })
+    return new Response(`${frames.map((frame) => JSON.stringify(frame)).join('\n')}\n`, {
+      status: 200,
+      headers: { 'content-type': 'application/x-ndjson' },
+    })
+  })
+  const received: unknown[] = []
+
+  await streamProductChat(
+    { text: '자료를 비교해 줘', materials: [] },
+    (frame) => received.push(frame),
+  )
+
+  assert.deepEqual(received, frames)
+})
+
+test('first Assignment explicit retry streams the exact prior Run request', async (t) => {
+  const courseId = `course_${'a'.repeat(32)}`
+  const retryOfRunId = `run_${'b'.repeat(32)}`
+  const operationId = `action_${'c'.repeat(32)}`
+  const runId = `run_${'d'.repeat(32)}`
+  const request = {
+    courseId,
+    recipeVersion: '2',
+    arguments: { timezone: 'Asia/Seoul' },
+    materials: [
+      { id: `material_${'e'.repeat(32)}`, digest: '1'.repeat(64) },
+      { id: `material_${'f'.repeat(32)}`, digest: '2'.repeat(64) },
+    ],
+    retryOfRunId,
+  } as const
+  const frames = [
+    { type: 'operation.preparing', operationId, runId },
+    { type: 'operation.accepted', operationId, runId },
+    {
+      type: 'operation.recovery',
+      operationId,
+      runId,
+      outcome: 'interrupted',
+      retryable: true,
+    },
+    {
+      type: 'operation.terminal',
+      operationId,
+      runId,
+      status: 'interrupted',
+      validationOutcome: 'unknown',
+    },
+  ] as const
+  t.mock.method(globalThis, 'fetch', async (
+    input: string | URL | Request,
+    init?: RequestInit,
+  ) => {
+    assert.equal(input, '/api/product/actions/first-assignment/retry')
+    assert.equal(init?.method, 'POST')
+    assert.deepEqual(JSON.parse(String(init?.body)), request)
+    return new Response(
+      `${frames.map((frame) => JSON.stringify(frame)).join('\n')}\n`,
+      {
+        status: 200,
+        headers: { 'content-type': 'application/x-ndjson' },
+      },
+    )
+  })
+  const received: unknown[] = []
+
+  await streamFirstAssignmentRetry(request, (frame) => received.push(frame))
+
+  assert.deepEqual(received, frames)
+})
+
+test('submits exact accept, revise feedback, and reject Review requests', async (t) => {
+  const interactionId = `interaction_${'a'.repeat(32)}`
+  const patchId = `patch_${'b'.repeat(32)}`
+  const decisionKey = `decision_${'c'.repeat(32)}`
+  const requests = [
+    { patchId, decisionKey, decision: 'accept' },
+    {
+      patchId,
+      decisionKey,
+      decision: 'revise',
+      feedback: '마감을 7월 13일 23:59로 바꿔 주세요.',
+    },
+    { patchId, decisionKey, decision: 'reject' },
+  ] as const
+  const responses = [
+    {
+      patchId,
+      decisionKey,
+      decision: 'accepted',
+      outcome: 'applied',
+      confirmedRevision: 1,
+      replayed: false,
+      continuation: 'continued',
+    },
+    {
+      patchId,
+      decisionKey,
+      decision: 'revision_requested',
+      outcome: 'replacement_pending',
+      confirmedRevision: 0,
+      replayed: false,
+      continuation: 'continued',
+    },
+    {
+      patchId,
+      decisionKey,
+      decision: 'rejected',
+      outcome: 'not_applied',
+      confirmedRevision: 0,
+      replayed: false,
+      continuation: 'continued',
+    },
+  ] as const
+  let requestIndex = 0
+  t.mock.method(globalThis, 'fetch', async (
+    input: string | URL | Request,
+    init?: RequestInit,
+  ) => {
+    assert.equal(input, `/api/product/reviews/${interactionId}`)
+    assert.deepEqual(JSON.parse(String(init?.body)), requests[requestIndex])
+    const response = responses[requestIndex]
+    requestIndex += 1
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  })
+
+  for (let index = 0; index < requests.length; index += 1) {
+    assert.deepEqual(
+      await submitProductReview(interactionId, requests[index]!),
+      responses[index],
+    )
+  }
+  assert.equal(requestIndex, requests.length)
+})
+
+test('product stream rejects private native fields', async (t) => {
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () =>
+      new Response(
+        `${JSON.stringify({
+          type: 'operation.preparing',
+          operationId: `chat_${'a'.repeat(32)}`,
+          nativeRequestId: 42,
+        })}\n`,
+        {
+          status: 200,
+          headers: { 'content-type': 'application/x-ndjson' },
+        },
+      ),
+  )
+
+  await assert.rejects(
+    streamProductChat({ text: '질문', materials: [] }, () => undefined),
+    ProductStreamError,
   )
 })
 

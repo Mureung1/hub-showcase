@@ -6,6 +6,8 @@
 
 관련 결정: [ADR 0011 — Official Codex Python SDK를 Chat Shell runtime baseline으로 재사용한다](0011-reuse-official-codex-python-sdk-for-chat-shell.md)
 
+일부 결과를 대체한 결정: [ADR 0013 — Product-only public surface와 durable v2 store baseline을 채택한다](0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md). 이 문서의 single maintained Runtime graph, legacy executable 제거와 no-alias hard cutover는 계속 유효하고, Chat-only root entrypoint·네 public route에 관한 결과만 product-only surface로 대체됐다.
+
 ## 맥락
 
 Official Python SDK 기반 Codex Chat 경로는 native thread·turn·item identity, AgentMessage stream, interrupt, same-thread follow-up과 bounded process-tree cleanup을 실제 Server와 Browser 경계까지 구현했다. 반면 Runtime Harness와 `HeadlessCodexClientHost`는 현재 Chat conversation을 관찰하거나 대체하지 못했고, production caller와 유지 책임도 없었다.
@@ -16,7 +18,7 @@ Official Python SDK 기반 Codex Chat 경로는 native thread·turn·item identi
 
 - Maintained runtime graph는 `@ay-ple/codex-chat-runtime`, Chat-only `@ay-ple/server`, `@ay-ple/chat-shell` 세 workspace로 한정한다. 새 generic engine abstraction이나 두 번째 runtime compatibility layer를 만들지 않는다.
 - Executable legacy exception은 0개다. `apps/inspector`, `packages/runtime-core`, `packages/runtime-fake`, `packages/runtime-codex`, executable runtime-ownership spike, legacy Server composition·route·store, generated method inventory와 이를 시작하는 root command를 tracked graph에서 제거한다.
-- `npm run dev`는 exact Chat Origin을 설정한 Server와 Chat Shell만 시작한다. Current HTTP contract는 `/api/codex-chat/*` 네 route이며 `/api/health`와 `/api/runtime/*`를 Chat alias로 바꾸지 않는다.
+- 이 hard cutover 시점의 `npm run dev`는 exact Chat Origin을 설정한 Server와 Chat Shell만 시작했고 HTTP contract를 `/api/codex-chat/*` 네 route로 닫았다. 이 임시 Chat-only public-surface 결과는 ADR 0013의 product-only cutover가 대체했으며 `/api/health`·`/api/runtime/*`를 alias로 만들지 않는 원칙은 유지한다.
 - 이 변경은 deprecation period가 없는 hard cutover다. 삭제한 package alias, compatibility export, redirect, executable archive와 dual-run을 남기지 않는다. Historical ADR·spec·ticket·Wayfinder와 static evidence는 당시 기록으로만 보존한다.
 - Runtime Diagnostic History, legacy Codex auth·config·session·SQLite와 ownership spike state를 Chat transcript, native conversation, `ModelingRun`, `SemesterModel` 또는 `WorkspaceHistory`로 migration하지 않는다.
 - Permanent local cleanup은 tracked cutover와 분리한다. Completed rehearsal을 confidence evidence로 유지하고, 별도 deletion session이 claim commit 뒤 clean tracked state, exact root shape·tracked-zero, effective Chat path 비중첩과 관련 process 부재를 다시 확인한 경우에만 승인된 일곱 repository-relative root를 literal command로 직렬 삭제한다. 이 ADR을 도입하는 tracked cutover에서는 해당 영구 삭제를 실행하지 않으며 recovery copy도 만들지 않는다.
@@ -40,4 +42,4 @@ Official Python SDK 기반 Codex Chat 경로는 native thread·turn·item identi
 - Current source·build·install·navigation topology는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다.
 - Runtime Harness를 먼저 검증한 [ADR 0003](0003-build-runtime-harness-before-product-layer.md), Runtime Diagnostic History의 [ADR 0004](0004-split-runtime-history-semantics-from-workspace-storage.md)와 Headless Host의 [ADR 0008](0008-separate-headless-codex-client-host-from-product-ui.md)은 완료·역사 기록이다. 이 문서들의 당시 결정을 current executable fallback으로 해석하지 않는다.
 - Tracked legacy owner가 제거된 뒤에도 ignored·untracked local residue는 물리적으로 남아 있을 수 있다. 그 inventory, completed rehearsal과 영구 삭제 완료 여부는 별도 deletion ticket의 current-clone precheck와 post-delete evidence가 증명하며 이 ADR이나 tracked graph 완료만으로 추론하지 않는다.
-- Current Chat의 status, browser-safe contract, native identity·stream·terminal·interrupt, local `.env`·`PORT` startup과 process lifecycle은 compatibility alias가 아니라 보존해야 할 survivor contract다.
+- Chat-only cutover 당시 status·Browser consumer와 native identity·stream·terminal·interrupt, local `.env`·`PORT` startup과 process lifecycle을 survivor contract로 보존했다. ADR 0013은 그중 public status·Browser consumer·별도 Chat-only startup을 제거했고, Runtime internal contract·native lifecycle·bounded process cleanup은 product lifecycle의 survivor로 유지한다.

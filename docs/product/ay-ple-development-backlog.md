@@ -9,7 +9,7 @@
 
 이 문서는 AY-PLE의 실제 작업 순서와 완료 상태를 날짜 없는 Markdown task list로 관리한다. 먼저 일반적인 Codex 사용 흐름에 준하는 웹 제품 기반을 닫고, 그 위에 AY-PLE의 학업 제품 기능을 올린다. 과거 캠프 제출 일정과 당시 판단은 [과거 캠프 제출 백로그](../archive/2026-07-ay-ple-4-week-submission-backlog.md)에 역사 기록으로 보존한다.
 
-제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 작업의 Codex mapping은 [Codex-native product composition](../architecture/codex-native-product-composition.md)이 소유한다. Codex Chat Shell의 runtime baseline은 [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), Chat-only maintained graph는 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), macOS-first local web app 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)를 따른다. 이 백로그는 해당 결정들을 다시 정의하지 않고 구현 순서와 완료 조건만 관리한다.
+제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 작업의 Codex mapping은 [Codex-native product composition](../architecture/codex-native-product-composition.md)이 소유한다. Official SDK Runtime baseline은 [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), single maintained graph·no-alias 경계는 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), product-only public cutover와 durable v2 store 정책은 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), macOS-first local web app 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)를 따른다. 이 백로그는 해당 결정들을 다시 정의하지 않고 구현 순서와 완료 조건만 관리한다.
 
 ## 운영 규칙
 
@@ -50,9 +50,9 @@
   - [x] 진행 중 turn interrupt, 같은 thread의 후속 turn과 deterministic bridge close를 end-to-end로 검증한다.
   - [x] Exact fake와 root test·typecheck·build·Chat Shell lint를 통과시키고, official local-provider conformance를 green으로 확인했다. 완료 뒤 cutover 전에 명시적으로 승인한 격리 인증 상태를 사용한 manual live-provider T0도 green으로 확인했으며, 이 point-in-time 증거는 전용 disposable auth 자동화와 구분한다.
 
-- [x] Tracked repository를 Codex Chat-only graph로 전환한다.
-  - [x] `@ay-ple/codex-chat-runtime`, Chat-only Server와 Chat Shell만 maintained runtime workspace로 남기고 이전 executable runtime·Inspector graph와 generated inventory를 compatibility alias나 redirect 없이 제거했다.
-  - [x] Cutover 시점의 root `npm run dev`가 exact Chat Origin과 함께 Server+Chat Shell만 시작하고 Server의 application API를 네 `/api/codex-chat/*` route로 닫았다. 후속 제품 bootstrap은 이 Chat-only 진입점을 `npm run dev:chat-only`로 보존하면서 root `npm run dev`를 명시적 product root를 받는 진입점으로 전환했다.
+- [x] Tracked repository를 Codex Chat-only graph로 전환한다. 이 항목은 product-only cutover 이전의 완료된 역사적 단계다.
+  - [x] 당시 `@ay-ple/codex-chat-runtime`, Chat-only Server와 Chat Shell만 maintained runtime workspace로 남기고 이전 executable runtime·Inspector graph와 generated inventory를 compatibility alias나 redirect 없이 제거했다.
+  - [x] 당시 root `npm run dev`는 exact Chat Origin과 함께 Server+Chat Shell만 시작하고 Server의 application API를 네 `/api/codex-chat/*` route로 닫았다. 후속 제품 bootstrap에서 이 진입점을 잠시 `npm run dev:chat-only`로 옮겼고, 최종 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md) cutover에서 route와 script를 alias 없이 제거했다.
   - [x] Current navigation, product·architecture·package 문서를 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)와 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)로 전환했다.
   - [x] Native identity, AgentMessage FIFO, terminal, interrupt, disconnect와 listener/runtime shutdown contract를 survivor test에서 보존했다.
 
@@ -64,32 +64,32 @@
   - [x] Completed rehearsal을 confidence evidence로 유지하고, claim commit 뒤 clean tracked state, exact root shape·tracked-zero, effective Chat path 비중첩과 관련 process 부재를 다시 확인한 뒤 승인된 exact roots만 literal serial command로 삭제한다.
   - [x] 삭제 뒤 bundle protection, repository PR-ready checks, canonical `npm run dev`와 root absence를 검증하고 no-migration·no-data-rollback·필요 시 fresh isolated Chat roots 재로그인 경계를 handoff에 기록한다.
 
-- [ ] 첫 Assignment vertical에 필요한 Codex runtime sufficiency를 증명한다.
+- [x] 첫 Assignment vertical에 필요한 Codex runtime sufficiency를 증명한다.
   - [x] [Runtime sufficiency envelope](../wayfinding/codex-chat-application-foundation/tickets/004-first-assignment-runtime-envelope.md)에 따라 explicit `SemesterWorkspace`와 두 TXT `SourceSelection`으로 Skill 기반 `ModelingInvocation`을 실행해 `ModelingRun` receipt를 남기는 경로와, 같은 native Turn에서 `ModelingRun`과 독립적인 EvidenceRef 연결 Assignment `StatePatch`를 `propose_state_patch`로 제안해 exact Plan mode Review·`UserConfirmation`을 거쳐 다시 열 수 있는 `SemesterModel`로 반영하는 흐름의 observable runtime contract를 역산한다.
   - [x] Exact App Server·official SDK·first-party surface와 current `CodexChatRuntime`·Server·Browser tracer가 required outcome을 어디까지 소유하는지 확인하고, 일반 Chat capability를 requirement로 자동 승격하지 않는다.
   - [x] Additive `CodexProductCapableRuntime`이 native work 없는 Account Readiness, exact `SkillInput` 하나와 bounded `TextInput` 하나, Plan mode의 `auto_review + workspace_write`, curated Skill·Plan·`propose_state_patch` MCP·user-input activity와 opaque answer/cancel을 제공한다. Existing text tracer의 `deny_all + read_only`는 final cutover 전까지 유지한다.
   - [x] UI 없는 representative trace가 검증한 explicit `cwd`, exact `SkillInput`·selected source Markdown path를 담은 `TextInput`, native acceptance·terminal과 bounded failure settlement를 보존한다. Product action seam은 `propose_state_patch` MCP의 canonical input·stable patch result, exact Plan mode의 built-in `request_user_input` same-Turn request·answer와 opaque execution correlation을 함께 검증한다.
-  - [ ] Versioned fixture와 fresh isolated roots로 deterministic contract·exact actual-child gate를 자동 반복하고, 기존 3회 live extraction evidence와 구분되는 final live-provider product trace가 complete action을 수동 복구 없이 통과한다. Credential 부재는 pass·skip이 아니라 blocked로 보고한다.
+  - [x] Versioned fixture와 fresh isolated roots로 deterministic contract·exact actual-child gate를 반복해 current adapter가 product Browser vertical을 시작하기에 충분함을 증명했다. Complete Browser semantics를 요구하는 final exact/local/live product trace는 아래 제품 vertical의 후반 conformance gate가 소유하며, credential 부재는 pass·skip이 아니라 blocked로 보고한다.
   - [x] Account readiness, interrupt, process crash·restart, retry와 unknown outcome은 deterministic representative failure가 요구하는 범위에서 검증하고, 실제 child/provider conformance는 final conformance gate에 남긴다.
   - [x] Official Python SDK·ordered patches·Node supervision·Python bridge·네 Chat route와 fixed `deny_all + read_only` tracer를 `keep | adapt | replace | frozen limitation`으로 판정하고, official SDK와 supervised thin local-web integration을 product path로 유지한다.
   - [x] 제품 caller는 raw JSON-RPC, generated protocol type, secret과 bridge 내부 process 계약을 직접 사용하지 않으며, native execution state·Codex permission과 `ModelingRun`·Review·`UserConfirmation`의 학업 상태 소유권을 분리한다.
 
-- [ ] 검증된 runtime seam 위에 AY-PLE 학업 제품 layer의 첫 수직 흐름을 완성한다.
+- [x] 검증된 runtime seam 위에 AY-PLE 학업 제품 layer의 첫 수직 흐름을 완성한다.
   - [x] 사용자가 명시적인 local path를 `SemesterWorkspace`로 열고 `Course`를 식별한 뒤 같은 학기 상태를 다시 열 수 있으며 기존 사용자 파일을 임의로 바꾸지 않는다.
   - [x] `RawMaterial`의 원본 또는 참조를 보존해 목록과 preview에 표시하고, 사용자가 다음 작업에 사용할 `SourceSelection`을 명시적으로 고를 수 있다.
   - [x] Versioned `ModelingRecipe`와 검증된 arguments, `SourceSelection`, 활성 workspace 맥락으로 일회성 `ModelingInvocation`을 만들고 native Codex input으로 번역하며, 각 실행 시도를 얇은 `ModelingRun` receipt로 남긴다. raw: `turn/start`.
   - [x] 첫 Assignment 작업이 호출한 좁은 `propose_state_patch` MCP의 canonical structured input을 검증해 필드별 `EvidenceRef`가 있는 독립 `StatePatch`로 제안하고, Review 전에는 `SemesterModel`의 확인된 값을 바꾸지 않는다.
-  - [ ] 사용자가 exact Plan mode의 built-in `request_user_input`을 통해 같은 native Turn에서 제안을 수락·수정 요청·거절할 수 있다. App은 exact active patch binding을 검증해 수락·거절만 settled `UserConfirmation`으로 기록하고 수락한 값만 확인된 `SemesterModel`에 반영하며, 수정 요청은 unsettled feedback으로 replacement patch Review를 이어간다.
+  - [x] 사용자가 exact Plan mode의 built-in `request_user_input`을 통해 같은 native Turn에서 제안을 수락·수정 요청·거절할 수 있다. App은 exact active patch binding을 검증해 수락·거절만 settled `UserConfirmation`으로 기록하고 수락한 값만 확인된 `SemesterModel`에 반영하며, 수정 요청은 unsettled feedback으로 replacement patch Review를 이어간다.
   - [x] 이 proposal-only 제품 효과를 Codex `Sandbox.read_only`, network 차단이나 command/file approval과 동일시하지 않고, 실제 action에 필요한 native permission은 별도 설정·request 흐름으로 다룬다.
-  - [ ] Recipe rendering, Codex 실행, `StatePatch` proposal·evidence validation과 제품 상태 반영 실패를 구분해 원본과 확인된 상태를 손상하지 않는 재시도 행동을 제공한다.
-  - [ ] 대표 TXT 자료의 선택부터 `propose_state_patch` Assignment 제안, exact Plan mode의 built-in `request_user_input` same-Turn Review, settled confirmation과 새로고침 뒤 확인된 상태 조회까지 browser E2E와 실제 Codex smoke를 통과한다. 답변 전 Browser·Server/runtime continuity loss는 `interrupted`·no-apply·명시적 retry로 정산하는 negative trace를 포함한다.
+  - [x] Recipe rendering, Codex 실행, `StatePatch` proposal·evidence validation과 제품 상태 반영 실패를 구분해 원본과 확인된 상태를 손상하지 않는 재시도 행동을 제공한다.
+  - [x] 대표 TXT 자료의 선택부터 `propose_state_patch` Assignment 제안, exact Plan mode의 built-in `request_user_input` same-Turn Review, settled confirmation과 새로고침 뒤 확인된 상태 조회까지 deterministic Browser E2E를 닫았다. Revision·recovery semantics 고정 뒤 exact actual-child·local-provider와 명시적 isolated auth·fresh roots를 쓴 live-provider product trace가 complete action을 수동 복구 없이 통과했고, 답변 전 Browser·Server/runtime continuity loss는 `interrupted`·no-apply·명시적 retry로 정산했다. Canonical product-only cutover와 current v2 first durable compatibility baseline도 확정했다.
 
-- [ ] 첫 vertical이 요구한 product-bound companion interaction만 완성한다.
+- [x] 첫 vertical이 요구한 product-bound companion interaction만 완성한다.
   - [x] 선택한 surface에서 필요한 Account Readiness와 explicit workspace activation만 제공하고 자체 account center나 generic conversation workspace를 만들지 않는다.
-  - [ ] 사용자가 대표 action의 준비·실행·중단·완료·실패·결과 불명을 이해할 수 있게 하되, 모든 native activity를 transcript에 1:1로 노출하지 않는다.
-  - [ ] Browser reload나 local process restart 뒤 transcript나 unanswered `request_user_input` prompt를 복원하지 않고, settled `UserConfirmation`·apply outcome·확인된 `SemesterModel`의 사실 상태를 다시 연다. 답변 전 continuity loss는 `interrupted`·no-apply로 표시하고 명시적 retry를 제시한다.
-  - [ ] 첫 action이 실제로 발생시키는 Codex approval과 일반 Plan clarification은 원래 request identity로 처리하고 학업 상태를 바꾸지 않으며, `StatePatch` Review의 built-in `request_user_input` 답변은 같은 native Turn을 이어가되 settled `UserConfirmation`만 apply authority가 되게 한다.
-  - [ ] 자료 선택·근거·변경 제안·Review와 오른쪽 companion이 같은 desktop product flow에서 이해 가능하게 동작하는지 1440px~1920px에서 검증한다.
+  - [x] 사용자가 대표 action의 준비·실행·중단·완료·실패·결과 불명을 이해할 수 있게 하되, 모든 native activity를 transcript에 1:1로 노출하지 않는다.
+  - [x] Browser reload나 local process restart 뒤 transcript나 unanswered `request_user_input` prompt를 복원하지 않고, settled `UserConfirmation`·apply outcome·확인된 `SemesterModel`의 사실 상태를 다시 연다. 답변 전 continuity loss는 `interrupted`·no-apply로 표시하고 명시적 retry를 제시한다.
+  - [x] 첫 action이 실제로 발생시키는 Codex approval과 일반 Plan clarification은 원래 request identity로 처리하고 학업 상태를 바꾸지 않으며, `StatePatch` Review의 built-in `request_user_input` 답변은 같은 native Turn을 이어가되 settled `UserConfirmation`만 apply authority가 되게 한다.
+  - [x] 자료 선택·근거·변경 제안·Review와 오른쪽 companion이 같은 desktop product flow에서 이해 가능하게 동작하는지 1440px~1920px에서 검증했다.
 
 - [ ] 확인된 사용자 필요에 따라 후속 capability를 순서대로 추가한다.
   - [ ] 여러 대화를 다시 찾고 이어가는 행동이 확인되면 workspace-scoped `thread/list`·`thread/read`·`thread/resume`, 선택 상태와 최소 catalog UX를 추가한다. Rename·archive·pagination은 각각의 need가 있을 때만 포함한다.

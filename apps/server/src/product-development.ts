@@ -4,7 +4,12 @@ import {
   createMacOsSemesterWorkspaceChooser,
   type SemesterWorkspaceDirectoryChooser,
 } from './semester-workspace.js'
+import type { ProductRuntimeBootstrap } from './codex-chat-config.js'
 import type { SemesterWorkspaceBootstrap } from './server.js'
+
+const productionRuntimeRelativePath =
+  'packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64'
+const productOrigin = 'http://127.0.0.1:4173'
 
 export type ProductDevelopmentBootstrapErrorCode =
   | 'product_app_data_root_required'
@@ -23,6 +28,7 @@ export class ProductDevelopmentBootstrapError extends Error {
 }
 
 export type ProductDevelopmentBootstrap = {
+  readonly runtime: ProductRuntimeBootstrap
   readonly selectedWorkspaceRoot: string
   readonly semesterWorkspace: SemesterWorkspaceBootstrap
 }
@@ -60,6 +66,17 @@ export function resolveProductDevelopmentBootstrap(
   let initialSelection = selectedWorkspaceRoot
 
   return {
+    runtime: {
+      appDataRoot,
+      runtimeRoot: path.join(packageRoot, productionRuntimeRelativePath),
+      environment: {
+        home: path.join(appDataRoot, 'runtime/home'),
+        codexHome: path.join(appDataRoot, 'runtime/codex-home'),
+        codexSqliteHome: path.join(appDataRoot, 'runtime/codex-sqlite-home'),
+        tempDirectory: path.join(appDataRoot, 'runtime/temp'),
+      },
+      origin: productOrigin,
+    },
     selectedWorkspaceRoot,
     semesterWorkspace: {
       packageRoot,
