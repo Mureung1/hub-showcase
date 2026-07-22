@@ -7,12 +7,15 @@ import {
   buildCompanyCsv, buildBalanceSheetCsv, buildIncomeStatementCsv, buildAssetsCsv,
   buildCarsCsv, buildAdjustmentsCsv, buildAnswerCsv, downloadCsv,
 } from '../csv';
-import { submitAndCalculate, ApiError, type CalcResult } from '../api';
+import { submitAndCalculate, ApiError, type CalcResult, type CompanyDto } from '../api';
 import styles from './ReviewPanel.module.css';
 
 interface ReviewPanelProps {
   data: TaxInputState;
+  company: CompanyDto;
   onToast: (msg: string) => void;
+  /** 계산(=서버 저장) 성공 시 — 위저드가 localStorage 임시저장을 지우는 데 쓴다 */
+  onCalculated?: () => void;
 }
 
 type CalcStatus =
@@ -21,14 +24,15 @@ type CalcStatus =
   | { kind: 'done'; result: CalcResult }
   | { kind: 'error'; message: string; checks?: { name: string; ok: boolean; detail: string }[] };
 
-export const ReviewPanel: React.FC<ReviewPanelProps> = ({ data, onToast }) => {
+export const ReviewPanel: React.FC<ReviewPanelProps> = ({ data, company, onToast, onCalculated }) => {
   const [calc, setCalc] = useState<CalcStatus>({ kind: 'idle' });
 
   const runCalculate = async () => {
     setCalc({ kind: 'loading' });
     try {
-      const result = await submitAndCalculate(data);
+      const result = await submitAndCalculate(company.id, data);
       setCalc({ kind: 'done', result });
+      onCalculated?.(); // 서버에 저장됐으니 로컬 임시저장은 지운다
     } catch (e) {
       if (e instanceof ApiError) {
         setCalc({ kind: 'error', message: e.message, checks: e.checks });
@@ -86,7 +90,7 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({ data, onToast }) => {
       <div className={styles.calcCard}>
         <div className={styles.calcHead}>
           <b>세무조정·세액 계산</b>
-          <span>taxengine API로 지금 입력한 내용을 바로 계산해요. 매번 새 회사·사업연도로 제출돼요.</span>
+          <span>{company.회사명}의 사업연도로 저장하고 바로 계산해요. 같은 연도를 다시 제출하면 입력이 교체되고 계산 이력은 쌓여요.</span>
         </div>
         <button type="button" className={styles.calcBtn} onClick={runCalculate} disabled={calc.kind === 'loading'}>
           {calc.kind === 'loading' ? '계산 중…' : '세액 계산하기'}

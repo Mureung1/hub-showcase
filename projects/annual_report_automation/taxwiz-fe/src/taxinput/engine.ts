@@ -3,14 +3,15 @@
 // 반복 항목 루프)이 자동으로 다음 cell을 만들어낸다 — React 쪽 useEngine.ts가 그 결과를
 // 그대로 그린다.
 import {
-  ADJ_DISPOSAL, ADJ_TYPES, ASSET_TYPES, DEP_METHODS, BS_GROUPS, IS_GROUPS, GLOSSARY, resolveCore,
+  ADJ_DISPOSAL, ADJ_TYPES, ASSET_TYPES, DEP_METHODS, BS_GROUPS, IS_GROUPS, GLOSSARY,
+  SECTION_PREP, TOPIC_META, resolveCore,
 } from './catalog';
-import type { BsIsGroup } from './catalog';
+import type { BsIsGroup, PrepItem } from './catalog';
 import type {
   TaxInputState, AssetRow, CarRow, AdjustmentRow, Shareholder,
 } from './types';
 
-export type CellKind = 'text' | 'number' | 'date-ymd' | 'select' | 'yesno' | 'shareholders' | 'info';
+export type CellKind = 'text' | 'number' | 'date-ymd' | 'select' | 'yesno' | 'shareholders' | 'info' | 'section-intro';
 export interface SelectOpt { value: string; label: string; description?: string }
 
 export interface FieldSeqItem {
@@ -40,6 +41,9 @@ export interface Cell {
   label: string;
   glossaryKey?: string;
   isGate?: boolean;
+  prep?: PrepItem[]; // section-intro 전용 — 준비물 목록
+  yesLabel?: string; // yesno 전용 — 기본 "네, 있어요"가 안 어울리는 질문용
+  noLabel?: string;
   get: () => any;
   set: (v: any) => void;
   onGate?: (v: boolean) => void;
@@ -59,8 +63,8 @@ export function setIn<T>(obj: T, path: (string | number)[], value: any): T {
 }
 
 // ── static field sequences ─────────────────────────────────────────────
+// 회사명은 온보딩(PROFILE_FIELDS)으로 이동 — 연간 위저드에서는 선택된 회사가 이미 정해져 있다.
 export const FY_FIELDS: (FieldSeqItem & { id: string; bind: (string | number)[] })[] = [
-  { id: 'fy_name', k: 'name', kind: 'text', title: '회사명을 알려주세요', ph: '예: ㈜예시임대', bind: ['fy', 'companyName'] },
   { id: 'fy_start', k: 'start', kind: 'date-ymd', title: '사업연도 개시일은 언제인가요?', bind: ['fy', 'start'] },
   { id: 'fy_end', k: 'end', kind: 'date-ymd', title: '사업연도 종료일은 언제인가요?', bind: ['fy', 'end'] },
   {
@@ -72,11 +76,19 @@ export const FY_FIELDS: (FieldSeqItem & { id: string; bind: (string | number)[] 
   },
 ];
 
-export const COMPANY_FIELDS: (FieldSeqItem & { id: string; bind: (string | number)[]; label: string })[] = [
+// "거의 고정" 프로필 — 온보딩에서 최초 1회 입력해 DB(회사·지배주주 테이블)에 저장하고,
+// 연간 위저드는 'profile-confirm' 토픽에서 "작년과 같나요?"로 확인만 한다(아니오 → 재질문).
+export const PROFILE_FIELDS: (FieldSeqItem & { id: string; bind: (string | number)[]; label: string })[] = [
+  { id: 'pf_name', k: 'name', kind: 'text', title: '회사명을 알려주세요', ph: '예: ㈜예시임대', bind: ['fy', 'companyName'], label: '회사명' },
+  { id: 'pf_year', k: '설립연도', kind: 'number', unit: '년', skippable: true, title: '설립연도는 언제인가요?', ph: '예: 2017', bind: ['company', '설립연도'], label: '설립연도' },
   { id: 'co_sme', k: '중소기업', kind: 'yesno', title: '중소기업에 해당하나요?', sub: '중소기업 기준검토표 판정 결과예요', bind: ['company', '중소기업'], label: '중소기업 해당', glossaryKey: '중소기업' },
   { id: 'co_rent', k: '부동산임대업주업', kind: 'yesno', title: '부동산임대업이 주업인가요?', sub: '소규모 임대법인 특례 판정에 쓰여요', bind: ['company', '부동산임대업주업'], label: '부동산임대업 주업', glossaryKey: '부동산임대업주업' },
   { id: 'co_emp', k: '상시근로자수', kind: 'number', unit: '명', title: '상시근로자수는 몇 명인가요?', bind: ['company', '상시근로자수'], label: '상시근로자수' },
   { id: 'co_share', k: '지배주주목록', kind: 'shareholders', title: '지배주주 지분율을 알려주세요', sub: '지배주주와 특수관계자를 각각 이름(또는 역할코드)과 지분율로 적어주세요', bind: ['company', '지배주주목록'], label: '지배주주 지분', glossaryKey: '지배주주 지분' },
+];
+
+// 매년 바뀌는 세액 관련 입력 — 연간 위저드의 'company' 토픽
+export const COMPANY_FIELDS: (FieldSeqItem & { id: string; bind: (string | number)[]; label: string })[] = [
   { id: 'co_paid', k: '기납부세액', kind: 'number', money: true, skippable: true, title: '기납부세액이 있나요?', sub: '원천납부세액명세서 + 중간예납', bind: ['company', '기납부세액'], label: '기납부세액', glossaryKey: '기납부세액' },
   { id: 'co_loss', k: '이월결손금', kind: 'number', money: true, skippable: true, title: '이월결손금이 있나요?', sub: '자본금과적립금(갑)표 이월결손금 잔액', bind: ['company', '이월결손금'], label: '이월결손금', glossaryKey: '이월결손금' },
   { id: 'co_credit', k: '공제감면세액', kind: 'number', money: true, skippable: true, title: '세액공제·감면 받은 금액이 있나요?', bind: ['company', '공제감면세액'], label: '공제감면세액', glossaryKey: '공제감면세액' },
@@ -237,8 +249,55 @@ function genRepeatable<TRow>(
   return cells;
 }
 
+// 연간 위저드의 "작년과 같나요?" 확인 게이트 — 아니오라고 답하면 프로필 질문(회사명 제외)이
+// 그 자리에서 다시 나타난다. 수정된 값은 제출 시 PATCH /companies/{id}로 반영된다(api.ts).
+function genProfileConfirm(io: EngineIO): Cell[] {
+  const gid = 'profile_confirm';
+  const c = io.data.company;
+  const 요약 = [
+    c.중소기업 == null ? null : `중소기업 ${c.중소기업 ? 'O' : 'X'}`,
+    c.부동산임대업주업 == null ? null : `부동산임대업 ${c.부동산임대업주업 ? 'O' : 'X'}`,
+    c.상시근로자수 !== '' ? `상시근로자 ${c.상시근로자수}명` : null,
+    c.지배주주목록.length ? `지배주주 ${c.지배주주목록.length}명` : null,
+  ].filter(Boolean).join(' · ');
+  const cells: Cell[] = [{
+    id: gid, kind: 'yesno', isGate: true, label: '프로필 확인',
+    title: '회사 프로필이 그대로인가요?',
+    sub: (요약 ? `저장된 프로필: ${요약} — ` : '') + '"아니요"를 누르면 다시 물어봐요',
+    yesLabel: '네, 그대로예요', noLabel: '아니요, 바뀌었어요',
+    get: () => io.gateAnswers[gid], set: (v: boolean) => io.setGateAnswer(gid, v),
+  }];
+  if (io.gateAnswers[gid] === false) {
+    // 회사명(pf_name)은 제외 — 회사 이름 변경은 홈 화면 몫이지 연간 입력 흐름이 아니다
+    cells.push(...PROFILE_FIELDS.filter((f) => f.id !== 'pf_name').map((f) => wrapBoundField(f, io)));
+  }
+  return cells;
+}
+
+/** 섹션의 첫 토픽이면 "미리 준비할 것" 카드 셀을 돌려준다(없으면 null).
+ * cellsForTopic 앞에 붙는 의사 셀 — 기존 frontier/뒤로가기 스테이트머신에 그대로 편입되어
+ * "뒤로 가서 준비물 다시 보기"가 공짜로 된다. useEngine.ts의 cellsFor()가 호출한다. */
+export function sectionIntroCellFor(topicKey: string, topicOrder: string[], io: EngineIO): Cell | null {
+  const section = TOPIC_META[topicKey]?.section;
+  if (!section) return null;
+  const prep = SECTION_PREP[section];
+  if (!prep) return null;
+  const firstTopicOfSection = topicOrder.find((k) => TOPIC_META[k]?.section === section);
+  if (firstTopicOfSection !== topicKey) return null;
+  const id = `prep_${section}`;
+  return {
+    id, kind: 'section-intro', prep, label: `${section} 준비물`,
+    title: '미리 준비하면 좋아요',
+    sub: '지금 없어도 괜찮아요 — 해당 질문에서 건너뛸 수 있어요.',
+    get: () => io.gateAnswers[id],
+    set: () => io.setGateAnswer(id, true),
+  };
+}
+
 export function cellsForTopic(topicKey: string, io: EngineIO): Cell[] {
   if (topicKey === 'fy') return FY_FIELDS.map((f) => wrapBoundField(f, io));
+  if (topicKey === 'profile') return PROFILE_FIELDS.map((f) => wrapBoundField(f, io));
+  if (topicKey === 'profile-confirm') return genProfileConfirm(io);
   if (topicKey === 'company') return COMPANY_FIELDS.map((f) => wrapBoundField(f, io));
   if (topicKey === 'q1') return Q1_FIELDS.map((f) => wrapBoundField(f, io));
   if (topicKey.startsWith('bs:')) {

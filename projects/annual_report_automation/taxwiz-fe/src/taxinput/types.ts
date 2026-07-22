@@ -14,6 +14,7 @@ export interface Shareholder {
 }
 
 export interface CompanyProfile {
+  설립연도: string;
   중소기업: boolean | null;
   부동산임대업주업: boolean | null;
   상시근로자수: string;
@@ -89,6 +90,7 @@ export function createInitialState(): TaxInputState {
   return {
     fy: { companyName: '', start: '', end: '', mode: '' },
     company: {
+      설립연도: '',
       중소기업: null,
       부동산임대업주업: null,
       상시근로자수: '',

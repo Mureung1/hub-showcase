@@ -1,10 +1,24 @@
 // taxengine/api/main.py(FastAPI)를 호출하는 얇은 클라이언트.
 // 요청 바디 필드명은 taxengine/api/schemas.py와 1:1로 맞춘다 — CSV/DB/API가 전부 같은
 // 한글 키 계약을 쓴다는 그 프로젝트 전역 원칙을 FE에서도 그대로 따른다.
+// 모든 요청에 Supabase 세션의 JWT를 Authorization 헤더로 싣는다(BE가 검증·스코핑).
 import { BS_GROUPS, IS_GROUPS, resolveCore } from './catalog';
+import { supabase } from '../lib/supabase';
 import type { TaxInputState } from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+
+async function authFetch(path: string, init?: RequestInit): Promise<Response> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers || {}),
+      ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+    },
+  });
+}
 
 const ADJ_LABEL_TO_ENGINE: Record<string, string> = {
   '익금산입(가산)': '익금산입',
@@ -120,23 +134,88 @@ async function asJson(res: Response) {
   return body;
 }
 
-/** 회사 생성 → 사업연도 생성(=입력 전체 제출) → 계산 실행까지 한 번에 — 매번 새 회사/사업연도를
- * 만든다. API에 "기존 사업연도 수정" 엔드포인트가 없어서, 재계산은 항상 새로 만들고 새로 계산한다. */
-export async function submitAndCalculate(data: TaxInputState): Promise<CalcResult> {
-  const companyRes = await fetch(`${API_BASE}/companies`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 회사명: data.fy.companyName || '이름 없는 회사' }),
-  });
-  const company = await asJson(companyRes);
+// ── 회사(고정 프로필) CRUD ──────────────────────────────────────────
 
-  const fyRes = await fetch(`${API_BASE}/companies/${company.id}/fiscal-years`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(buildFiscalYearPayload(data)),
-  });
-  const fiscalYear = await asJson(fyRes);
+export interface ShareholderDto { 명: string; 지분율: number }
 
-  const calcRes = await fetch(`${API_BASE}/fiscal-years/${fiscalYear.id}/calculate`, { method: 'POST' });
-  return asJson(calcRes);
+/** GET /companies(목록)의 행 — 요약만 온다. 전체 프로필은 getCompany(id)로 받을 것. */
+export interface CompanySummary { id: number; 회사명: string }
+
+export interface CompanyDto extends CompanySummary {
+  설립연도: number | null;
+  중소기업: boolean;
+  부동산임대업주업: boolean;
+  상시근로자수: number | null;
+  지배주주목록: ShareholderDto[];
+}
+
+export interface FiscalYearListItem {
+  id: number;
+  사업연도개시일: string;
+  사업연도종료일: string;
+  전기사업연도id: number | null;
+}
+
+export interface SnapshotListItem {
+  id: number;
+  계산일시: string;
+  차감납부세액: number;
+  엔진버전: string | null;
+}
+
+/** 위저드 상태 → 회사 프로필 페이로드 (온보딩 POST / 연간 확인 후 PATCH 공용) */
+export function buildProfilePayload(data: TaxInputState) {
+  const c = data.company;
+  return {
+    회사명: data.fy.companyName || '이름 없는 회사',
+    설립연도: c.설립연도 === '' ? null : Number(c.설립연도),
+    중소기업: c.중소기업 === true,
+    부동산임대업주업: c.부동산임대업주업 === true,
+    상시근로자수: c.상시근로자수 === '' ? null : Number(c.상시근로자수),
+    지배주주목록: c.지배주주목록
+      .filter((r) => r.명.trim())
+      .map((r) => ({ 명: r.명, 지분율: Number(r.비율 || 0) })),
+  };
+}
+
+export async function listCompanies(): Promise<CompanySummary[]> {
+  return asJson(await authFetch('/companies'));
+}
+
+export async function getCompany(id: number): Promise<CompanyDto> {
+  return asJson(await authFetch(`/companies/${id}`));
+}
+
+export async function createCompany(payload: ReturnType<typeof buildProfilePayload>): Promise<CompanyDto> {
+  return asJson(await authFetch('/companies', { method: 'POST', body: JSON.stringify(payload) }));
+}
+
+export async function patchCompany(id: number, patch: Partial<ReturnType<typeof buildProfilePayload>>): Promise<CompanyDto> {
+  return asJson(await authFetch(`/companies/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }));
+}
+
+export async function listFiscalYears(companyId: number): Promise<FiscalYearListItem[]> {
+  return asJson(await authFetch(`/companies/${companyId}/fiscal-years`));
+}
+
+export async function listSnapshots(fiscalYearId: number): Promise<SnapshotListItem[]> {
+  return asJson(await authFetch(`/fiscal-years/${fiscalYearId}/snapshots`));
+}
+
+/** 연간 입력 제출 → 계산. 회사는 이미 존재한다(온보딩) — 더 이상 매번 새로 만들지 않는다.
+ * ① 위저드에서 확인/수정한 프로필을 PATCH로 동기화
+ * ② 같은 종료일의 사업연도가 있으면 PUT(재제출 — id 유지, 스냅샷 이력 보존), 없으면 POST
+ * ③ 계산 실행 */
+export async function submitAndCalculate(companyId: number, data: TaxInputState): Promise<CalcResult> {
+  await patchCompany(companyId, buildProfilePayload(data));
+
+  const existing = (await listFiscalYears(companyId)).find((f) => f.사업연도종료일 === data.fy.end);
+  const payload = JSON.stringify(buildFiscalYearPayload(data));
+  const fiscalYear = await asJson(
+    existing
+      ? await authFetch(`/companies/${companyId}/fiscal-years/${existing.id}`, { method: 'PUT', body: payload })
+      : await authFetch(`/companies/${companyId}/fiscal-years`, { method: 'POST', body: payload }),
+  );
+
+  return asJson(await authFetch(`/fiscal-years/${fiscalYear.id}/calculate`, { method: 'POST' }));
 }

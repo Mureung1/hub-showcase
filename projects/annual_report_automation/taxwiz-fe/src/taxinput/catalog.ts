@@ -128,9 +128,51 @@ export const GLOSSARY: Record<string, string> = {
   adj_소득처분: '이 조정 금액이 실제로 누구에게 귀속되는지 표시하는 꼬리표예요. 사내에 남아있으면 "유보", 회사 밖으로 나갔지만 특정 개인 소득이 아니면 "기타사외유출", 대표·임직원에게 갔으면 "상여" 등으로 나뉘어요.',
 };
 
+// ── 섹션별 "미리 준비할 것" — 머릿속에 없는 값(장부·서류에서 찾아야 하는 값)을
+// 입력하기 전에 무슨 서류가 필요한지 미리 알려준다. 섹션 첫 질문 앞에 카드로 나오고
+// (engine.ts sectionIntroCellFor), 홈 화면 "시작 전 준비물 전체 보기"에서도 재사용된다.
+export interface PrepItem { label: string; hint?: string }
+
+export const SECTION_PREP: Record<string, PrepItem[]> = {
+  '회사 프로필': [
+    { label: '중소기업 기준검토표', hint: '세무사무소가 준 결산보고서에 철되어 있어요 — 중소기업 판정 결과' },
+    { label: '주주명부', hint: '지배주주와 가족·특수관계인의 지분율' },
+  ],
+  '연간 정보': [
+    { label: '원천납부세액명세서 · 중간예납 영수증', hint: '기납부세액 — 이미 낸 세금' },
+    { label: '자본금과적립금조정명세서(갑)', hint: '이월결손금 잔액이 적혀 있어요' },
+    { label: '작년 법인세 신고서(공제·감면 항목)', hint: '세액공제·감면 받은 금액' },
+  ],
+  재무상태표: [
+    { label: '결산서의 재무상태표', hint: '회계프로그램 출력물 또는 세무사무소 결산서 — 계정별 잔액' },
+  ],
+  손익계산서: [
+    { label: '결산서의 손익계산서', hint: '매출부터 법인세비용까지 계정별 금액' },
+  ],
+  자산대장: [
+    { label: '유형자산 감가상각비 명세서', hint: '자산별 취득일·취득가·내용연수·전기 누계액' },
+    { label: '작년 자본금과적립금조정명세서(을)', hint: '전기이월부인액 — 첫 해면 필요 없어요' },
+  ],
+  차량대장: [
+    { label: '차량별 연간 비용 내역', hint: '유류비·보험료·수선비·자동차세·통행료 합계' },
+    { label: '업무전용자동차보험 증권', hint: '가입 여부 확인용' },
+    { label: '운행기록부', hint: '작성했다면 업무사용비율 계산에 필요해요' },
+  ],
+  세무조정: [
+    { label: '소득금액조정합계표(작년 것 참고)', hint: '반복되는 조정 항목이 뭔지 미리 볼 수 있어요' },
+    { label: '벌금·과태료 납부 내역', hint: '있다면 손금불산입 조정 대상이에요' },
+  ],
+};
+
 // ── Topic 순서 / 표시명 / 진행바 가중치 ────────────────────────
-export const TOPIC_ORDER: string[] = [
+// 두 위저드가 같은 셀 엔진을 다른 토픽 순서로 쓴다:
+//   온보딩(최초 1회): 고정 프로필만 → DB(회사·지배주주)에 저장
+//   연간 입력(매년): 프로필은 확인만(profile-confirm), 나머지는 기존 흐름
+export const ONBOARDING_TOPIC_ORDER: string[] = ['profile'];
+
+export const ANNUAL_TOPIC_ORDER: string[] = [
   'fy',
+  'profile-confirm',
   'company',
   'q1',
   ...BS_GROUPS.map((g) => `bs:${g.key}`),
@@ -141,7 +183,8 @@ export const TOPIC_ORDER: string[] = [
   'review',
 ];
 
-export const SECTION_ORDER = ['시작', '회사 프로필', '포지셔닝', '재무상태표', '손익계산서', '자산대장', '차량대장', '세무조정', '검토'];
+// 하위호환 별칭 — 기존 import처(TopBar 등)가 아직 이 이름을 쓴다
+export const TOPIC_ORDER = ANNUAL_TOPIC_ORDER;
 
 export interface TopicMeta {
   title: string;
@@ -150,8 +193,10 @@ export interface TopicMeta {
 }
 
 export const TOPIC_META: Record<string, TopicMeta> = {
-  fy: { title: '회사·사업연도를 알려주세요', section: '시작' },
-  company: { title: '회사 기본 정보를 입력해요', desc: '중소기업 기준검토표·별지1 표지 내용이에요.', section: '회사 프로필' },
+  fy: { title: '사업연도를 알려주세요', section: '시작' },
+  profile: { title: '회사 정보를 알려주세요', desc: '한 번만 입력하면 저장돼요 — 다음부터는 확인만 해요.', section: '회사 프로필' },
+  'profile-confirm': { title: '회사 프로필을 확인할게요', desc: '온보딩 때 저장한 정보예요.', section: '회사 프로필' },
+  company: { title: '올해의 세액 관련 정보를 입력해요', desc: '기납부세액·이월결손금 등 매년 달라지는 값이에요.', section: '연간 정보' },
   q1: { title: '외부조정 대상인지 판별할게요', section: '포지셔닝' },
   assets: { title: '자산대장', desc: '유형자산감가상각비명세서를 보고 자산 1개당 하나씩 적어요.', section: '자산대장' },
   cars: { title: '업무용승용차 관련비용', desc: '별지 제29호 명세서예요. 법인 명의 승용차가 없으면 건너뛰어도 돼요.', section: '차량대장' },
@@ -164,7 +209,13 @@ IS_GROUPS.forEach((g) => { TOPIC_META[`is:${g.key}`] = { title: g.label, desc: g
 function coreCountEstimate(g: BsIsGroup): number {
   return resolveCore(g, true).length; // 가중치 산출용 — 어느 쪽이든 근사치면 충분
 }
-export const TOPIC_WEIGHT: Record<string, number> = { fy: 3, company: 11, q1: 5, assets: 14, cars: 7, adj: 7, review: 3 };
+// 가중치 ≈ 예상 질문 수 — 진행률(%)과 "약 N문항 남음" 추정에 함께 쓰인다.
+export const TOPIC_WEIGHT: Record<string, number> = {
+  fy: 3, profile: 6, 'profile-confirm': 2, company: 7, q1: 5, assets: 14, cars: 7, adj: 7, review: 3,
+};
 BS_GROUPS.forEach((g) => { TOPIC_WEIGHT[`bs:${g.key}`] = 2 + coreCountEstimate(g); });
 IS_GROUPS.forEach((g) => { TOPIC_WEIGHT[`is:${g.key}`] = 2 + coreCountEstimate(g); });
-export const TOPIC_WEIGHT_TOTAL = TOPIC_ORDER.reduce((s, k) => s + TOPIC_WEIGHT[k], 0);
+export function topicWeightTotal(order: string[]): number {
+  return order.reduce((s, k) => s + (TOPIC_WEIGHT[k] || 3), 0);
+}
+export const TOPIC_WEIGHT_TOTAL = topicWeightTotal(ANNUAL_TOPIC_ORDER);
