@@ -145,9 +145,10 @@ CLAUDE.md의 "로그인 없는 익명 세션" 결정을 뒤집고, 실제 회원
 - [x] 프론트: `components/dashboard/InsightBanner.jsx` 신규 — 대시보드 통계(즉시 응답)와 분리해서 자체 로딩 상태로 인사이트를 불러옴
 - [x] curl로 첫 호출(~2초, 실제 API 호출)과 재호출(~0.2~0.3초, 캐시 히트, 내용 동일) 응답 시간 차이로 캐싱 동작 확인, Playwright로 대시보드에 배너가 실제로 뜨는 것 확인
 
-- [ ] **P1** — [#29](https://github.com/rldbs5353/hub/issues/29) 답변 초안 3종(정중함/친근함/간결함) 프롬프트 튜닝 (수 7/22)
-- [ ] **P1** — [#30](https://github.com/rldbs5353/hub/issues/30) API 파싱 실패·타임아웃 에러 코드 매핑 (수 7/22)
-- [ ] **P1** — [#31](https://github.com/rldbs5353/hub/issues/31) 반복 문제 감지 로직 재검증 (수 7/22)
+- [x] **P1** — [#29](https://github.com/rldbs5353/hub/issues/29) 답변 초안 3종(정중함/친근함/간결함) 프롬프트 튜닝 (수 7/22 완료. `REVIEW_ANALYSIS_TOOL.replyDrafts`의 각 톤 필드에 문체·길이 지침을 `description`으로 추가(정중함: 격식체 3~4문장, 친근함: 구어체+이모지 최대 1개, 간결함: 80자 이내 2문장), `userMessage`에도 "톤마다 실제로 다르게 느껴지게" 지시 추가. 튜닝 전에는 세 톤이 어미만 다른 비슷한 문장이었는데, 실제 호출로 확인해보니 톤별로 길이·표현이 뚜렷이 구분되는 것 확인)
+- [x] **P1** — [#30](https://github.com/rldbs5353/hub/issues/30) API 파싱 실패·타임아웃 에러 코드 매핑 (수 7/22 완료. 새 에러 코드는 추가하지 않고 기존 `ANALYSIS_FAILED`(500)로 계속 매핑하는 게 확정된 설계(`기획서.md` 8-5) — 대신 `claude.client.js`에 `AbortController`로 15초 타임아웃을 추가하고(기존엔 타임아웃이 아예 없어서 API가 응답을 안 주면 요청이 무한정 걸릴 수 있었음), 네트워크 오류/응답 JSON 파싱 실패도 각각 명확한 에러 메시지로 던지도록 하드닝. 5가지 실패 케이스(타임아웃/네트워크 오류/비정상 상태코드/JSON 파싱 실패/tool_use 누락)를 fetch를 모킹한 스크립트로 재현해 전부 의도한 메시지로 던지는 것 확인 — 전부 `.status`/`.code`가 없는 순수 Error라 `errorHandler`가 기존대로 500 `ANALYSIS_FAILED`로 통일해서 응답하는 것도 코드 리뷰로 재확인)
+- [x] **P1** — [#31](https://github.com/rldbs5353/hub/issues/31) 반복 문제 감지 로직 재검증 (수 7/22 완료. "시끄럽다"는 공통 불만이 담긴 리뷰 3개를 같은 세션으로 연달아 분석해 curl+DB 직접 조회로 확인 — 부정/중립 리뷰에 걸쳐 `분위기` 키워드가 반복 감지되어 `recurringIssues`에 정상적으로 뜨는 것 확인. 검증 과정에서 별개의 사실도 하나 발견: Windows Git Bash에서 한글이 든 `curl -d`를 그대로 넘기면 인코딩이 깨져 AI가 리뷰 원문을 제대로 못 읽고 엉뚱한 감정/키워드를 내는 경우가 있었음 — 코드 버그가 아니라 테스트 방법 문제였고, `--data-binary @file`(UTF-8 파일)로 바꾸니 정상 동작. 앞으로 한글 리뷰로 API를 curl 검증할 땐 inline `-d` 대신 파일로 넘기기로)
+
 - [ ] **P1** — [#32](https://github.com/rldbs5353/hub/issues/32) 핵심 로직 테스트 보강 (목 7/23)
 - [ ] **P1** — [#33](https://github.com/rldbs5353/hub/issues/33) 규칙 기반 로직 정리 및 리팩토링 (목 7/23)
 - [ ] **P1** — [#34](https://github.com/rldbs5353/hub/issues/34) 코드 리뷰 — 에이전트 활용 (목 7/23)
