@@ -1,7 +1,7 @@
 import { Share2, Instagram, Play, Loader } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { publishVideo, getLatestStore, getGenerationResult } from '../api/client';
+import { publishVideo, saveDraftVideo, getLatestStore, getGenerationResult } from '../api/client';
 
 export default function Review() {
   const navigate = useNavigate();
@@ -44,37 +44,61 @@ export default function Review() {
           setCurrentStore(storeData.data);
         }
 
-        // 생성 결과 로드
-        const jobId = location.state?.jobId;
-        if (jobId) {
-          try {
-            const result = await getGenerationResult(jobId);
-            if (result.status === 'completed' && result.video) {
-              setVideoData({
-                video_id: result.video.video_id,
-                video_url: result.video.video_url,
-                thumbnail_url: result.video.thumbnail,
-                caption: result.metadata?.caption || '생성된 자막',
-                hashtags: result.metadata?.hashtags || [],
-                trend: result.metadata?.trend,
-                purpose: result.metadata?.purpose,
-                mood: result.metadata?.mood,
-                stats: {
-                  views: 0,
-                  clicks: 0,
-                  ctr: 0,
-                  likes: 0,
-                  comments: 0,
-                  shares: 0
+        // 보관함에서 온 영상 데이터 (우선순위 1)
+        const videoFromArchive = location.state?.video;
+        if (videoFromArchive) {
+          setVideoData(videoFromArchive);
+        } else {
+          // 생성 페이지에서 온 jobId (우선순위 2)
+          const jobId = location.state?.jobId;
+          if (jobId) {
+            try {
+              const result = await getGenerationResult(jobId);
+              if (result.status === 'completed' && result.video) {
+                const generatedVideo = {
+                  video_id: result.video.video_id,
+                  video_url: result.video.video_url,
+                  thumbnail_url: result.video.thumbnail,
+                  caption: result.metadata?.caption || '생성된 자막',
+                  hashtags: result.metadata?.hashtags || [],
+                  trend: result.metadata?.trend,
+                  purpose: result.metadata?.purpose,
+                  mood: result.metadata?.mood,
+                  stats: {
+                    views: 0,
+                    clicks: 0,
+                    ctr: 0,
+                    likes: 0,
+                    comments: 0,
+                    shares: 0
+                  }
+                };
+                setVideoData(generatedVideo);
+
+                // 생성된 영상 자동 저장 (발행 전 Draft 상태)
+                if (storeData.data) {
+                  try {
+                    await saveDraftVideo({
+                      video_id: generatedVideo.video_id,
+                      video_url: generatedVideo.video_url,
+                      store_id: storeData.data.store_id,
+                      hashtags: (generatedVideo.hashtags || []).join(' '),
+                      title: generatedVideo.caption
+                    });
+                    console.log('영상이 보관함에 저장되었습니다');
+                  } catch (saveError) {
+                    console.warn('보관함 저장 실패 (계속 진행):', saveError);
+                  }
                 }
-              });
+              }
+            } catch (error) {
+              console.warn('생성 결과 조회 실패, Mock 데이터 사용:', error);
+              setVideoData(mockVideoData);
             }
-          } catch (error) {
-            console.warn('생성 결과 조회 실패, Mock 데이터 사용:', error);
+          } else {
+            // 둘 다 없으면 Mock 데이터 (우선순위 3)
             setVideoData(mockVideoData);
           }
-        } else {
-          setVideoData(mockVideoData);
         }
       } catch (error) {
         console.error('데이터 로드 실패:', error);
@@ -85,7 +109,7 @@ export default function Review() {
     };
 
     loadData();
-  }, [location.state?.jobId]);
+  }, [location.state?.jobId, location.state?.video]);
 
   const handlePublish = async (platform) => {
     if (!currentStore) {
@@ -98,11 +122,12 @@ export default function Review() {
       return;
     }
 
-    setIsPublishing(platform);
     setPublishError(null);
     setPublishSuccess(null);
+    setIsPublishing(platform);
 
     try {
+      // DB에 발행 이력 저장
       const hashtags = Array.isArray(videoData.hashtags)
         ? videoData.hashtags.join(' ')
         : videoData.hashtags || '';
@@ -116,13 +141,23 @@ export default function Review() {
         title: videoData.caption || '생성된 영상'
       });
 
-      setPublishSuccess(`${platform}에 발행 완료! (Post ID: ${result.data.post_id})`);
-      console.log(`${platform} 발행 성공:`, result);
+      // 로그인 페이지로 이동
+      let loginUrl = '';
+      if (platform === 'Instagram') {
+        loginUrl = 'https://www.instagram.com/accounts/login/';
+      } else if (platform === 'TikTok') {
+        loginUrl = 'https://www.tiktok.com/login';
+      }
 
-      // 3초 후 성공 메시지 숨기기
+      if (loginUrl) {
+        window.open(loginUrl, '_blank');
+      }
+
+      setPublishSuccess(`${platform} 로그인 페이지로 이동했습니다. 로그인 후 영상을 업로드하세요.`);
+
       setTimeout(() => {
         setPublishSuccess(null);
-      }, 3000);
+      }, 5000);
     } catch (error) {
       setPublishError(error.message || `${platform} 발행에 실패했습니다`);
       console.error(`${platform} 발행 오류:`, error);

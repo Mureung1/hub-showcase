@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Trash2, RotateCcw, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getLatestStore } from '../api/client';
+import { getLatestStore, getPublishHistory } from '../api/client';
 
 export default function Archive() {
   const navigate = useNavigate();
@@ -63,10 +63,34 @@ export default function Archive() {
         const storeData = await getLatestStore();
         if (storeData.data) {
           setCurrentStore(storeData.data);
-        }
 
-        // Mock 데이터 로드
-        setVideos(mockVideos);
+          // 발행 이력 로드
+          try {
+            const publishData = await getPublishHistory(storeData.data.store_id);
+            if (publishData && Array.isArray(publishData)) {
+              // API 응답을 UI 포맷으로 변환
+              const formattedVideos = publishData.map((item, index) => ({
+                video_id: item.post_id || index,
+                thumbnail_url: item.thumbnail_url || 'https://via.placeholder.com/300x400?text=Video',
+                caption: item.title || '제목 없음',
+                platform: item.platform || 'instagram',
+                created_at: new Date(item.published_at),
+                stats: {
+                  views: item.stats?.views || 0,
+                  clicks: item.stats?.clicks || 0,
+                  ctr: item.stats?.ctr || 0,
+                  likes: item.stats?.likes || 0
+                }
+              }));
+              setVideos(formattedVideos.length > 0 ? formattedVideos : mockVideos);
+            } else {
+              setVideos(mockVideos);
+            }
+          } catch (publishError) {
+            console.warn('발행 이력 로드 실패, Mock 데이터 사용:', publishError);
+            setVideos(mockVideos);
+          }
+        }
       } catch (error) {
         console.error('데이터 로드 실패:', error);
         setVideos(mockVideos);

@@ -40,18 +40,19 @@ def render_video(image_path, audio_path, caption, hashtags, output_dir=None):
         print(f"[DEBUG] 입력 이미지: {image_path}", file=sys.stderr)
         print(f"[DEBUG] 입력 오디오: {audio_path}", file=sys.stderr)
 
-        # FFmpeg으로 이미지 + 오디오 합성
-        # -loop 1: 이미지를 반복
-        # -shortest: 더 짧은 스트림 길이에 맞춤
-        # -vf: 비디오 필터 (높이/너비를 2의 배수로 조정)
-        # -c:v libx264: H.264 비디오 코덱
-        # -c:a aac: AAC 오디오 코덱
+        # FFmpeg으로 이미지 + 오디오 + 자막 합성
+        # -vf: drawtext로 자막 오버레이 (한글 폰트)
+        caption_escaped = caption.replace("'", "\\'")
+        # Windows 맑은 고딕 폰트 사용
+        fontfile = "C\\:/Windows/Fonts/malgun.ttf"
+        video_filter = f"scale=trunc(iw/2)*2:trunc(ih/2)*2,drawtext=fontfile='{fontfile}':text='{caption_escaped}':fontsize=24:fontcolor=white:x=(w-text_w)/2:y=h-80:box=1:boxcolor=black@0.5:boxborderw=5"
+
         ffmpeg_cmd = [
             "ffmpeg",
             "-loop", "1",
             "-i", image_path,
             "-i", audio_path,
-            "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+            "-vf", video_filter,
             "-c:v", "libx264",
             "-c:a", "aac",
             "-shortest",
