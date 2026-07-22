@@ -2,8 +2,8 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 /**
- * Cast a vote / buy Polymarket prediction shares on a specific Drop (UP or DOWN)
- * Lock-in Policy: Voting is blocked from Friday 09:00 KST until Sunday 23:59 KST (unless DISABLE_VOTE_LOCK is true)
+ * Cast a vote on a specific Drop (UP or DOWN)
+ * Lock-in Policy: Voting is blocked from Friday 09:00 KST until Sunday 23:59 KST
  * Route: POST /api/votes
  */
 async function castVote(req, res) {
