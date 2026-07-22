@@ -34,14 +34,14 @@ void main() {
       expect(streakBonusFor(365), const Reward(coin: 60, xp: 100));
     });
 
-    test('상한 주차는 상수로 노출된다', () {
+    test('상한 주차는 상수로 노출되고 그 값이 실제 금액과 맞는다', () {
       expect(kMaxStreakBonusWeeks, 4);
+      expect(kStreakBonusPerWeek, const Reward(coin: 15, xp: 25));
+      // 기대값을 같은 상수에서 도출하면 항등식이라 아무것도 막지 못한다.
+      // 정책 표(docs/plan.md)의 리터럴로 앵커를 박는다.
       expect(
         streakBonusFor(kStreakBonusDays * kMaxStreakBonusWeeks),
-        Reward(
-          coin: kStreakBonusPerWeek.coin * kMaxStreakBonusWeeks,
-          xp: kStreakBonusPerWeek.xp * kMaxStreakBonusWeeks,
-        ),
+        const Reward(coin: 60, xp: 100),
       );
     });
 
@@ -221,15 +221,31 @@ void main() {
       expect(again.bonus, isNull);
     });
 
-    test('8일째에는 보너스가 없다 (다음은 14일째)', () {
-      expect(
-        applyAttendance(now: kstNoon(21), lastDateKey: '2026-07-20', streak: 7).bonus,
-        isNull,
+    test('오늘 이미 보너스를 받은 문서면 출석일이 어제여도 재지급하지 않는다', () {
+      // attendanceDate(어제)와 streakBonusDate(오늘)가 어긋난 문서 —
+      // 저장소가 두 필드를 한 트랜잭션에 쓰므로 정상 경로에선 안 생기지만,
+      // 수동 수정·부분 마이그레이션으로 들어오면 상한 밖 지급이 두 번 나간다.
+      final result = applyAttendance(
+        now: kstNoon(21),
+        lastDateKey: '2026-07-20',
+        streak: 6,
+        lastBonusKey: '2026-07-21',
       );
-      expect(
-        applyAttendance(now: kstNoon(21), lastDateKey: '2026-07-20', streak: 13).bonus,
-        const Reward(coin: 30, xp: 50),
+
+      expect(result.streak, 7); // 출석 자체는 정상 기록된다
+      expect(result.isNewDay, isTrue);
+      expect(result.bonus, isNull); // 보너스만 막힌다
+    });
+
+    test('어제 받은 보너스 키는 오늘 지급을 막지 않는다', () {
+      final result = applyAttendance(
+        now: kstNoon(21),
+        lastDateKey: '2026-07-20',
+        streak: 6,
+        lastBonusKey: '2026-07-20',
       );
+
+      expect(result.bonus, const Reward(coin: 15, xp: 25));
     });
 
     test('7의 배수가 아닌 날에는 보너스가 없다 (6일·8일 경계)', () {

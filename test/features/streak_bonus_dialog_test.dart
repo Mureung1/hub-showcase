@@ -51,6 +51,47 @@ void main() {
     expect(find.text('XP +100'), findsOneWidget);
   });
 
+  testWidgets('정책 공식과 다른 금액을 받아도 **받은 값 그대로** 표시한다 (재계산 금지)', (
+    tester,
+  ) async {
+    // 이 화면의 계약은 "지급한 쪽이 돌려준 값을 그대로 보여 준다"이다.
+    // 화면이 streakBonusFor로 다시 계산하면 상한 절삭·정책 변경 순간
+    // 표시와 실지급이 어긋난다. 그래서 공식으로는 나올 수 없는 값을 주입한다.
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const StreakBonusDialog(
+          streak: 14,
+          bonus: Reward(coin: 999, xp: 777),
+        ),
+      ),
+    );
+
+    expect(find.text('+999'), findsOneWidget);
+    expect(find.text('XP +777'), findsOneWidget);
+    // 공식대로 재계산했다면 30/50이 떴을 것이다.
+    expect(find.text('+30'), findsNothing);
+    expect(find.text('XP +50'), findsNothing);
+  });
+
+  testWidgets('7의 배수가 아닌 연속 일수를 받아도 문장이 깨지지 않는다 (일 단위 폴백)', (
+    tester,
+  ) async {
+    // 정상 호출부는 배수일 때만 띄우지만 위젯은 public이라 임의 값이 올 수 있다.
+    // "1주 동안"처럼 반올림해 말하면 사용자가 받은 사실과 어긋난다.
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const StreakBonusDialog(streak: 10, bonus: Reward(coin: 15, xp: 25)),
+      ),
+    );
+
+    expect(find.text('10일 연속!'), findsOneWidget);
+    expect(find.textContaining('10일 동안'), findsOneWidget);
+    expect(find.textContaining('주 동안'), findsNothing);
+    expect(find.textContaining('일주일'), findsNothing);
+  });
+
   testWidgets('확인 버튼을 누르면 닫힌다', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

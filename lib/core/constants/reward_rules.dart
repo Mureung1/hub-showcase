@@ -173,8 +173,15 @@ class AttendanceResult {
 ///
 /// 보너스는 연속 일수가 [kStreakBonusDays]의 배수일 때 나가고(7·14·21…),
 /// 금액은 [streakBonusFor]가 주차에 따라 정한다.
-/// 여기에 [lastBonusKey] 가드를 하나 더 둔다 — 같은 날 두 경로에서 출석이
-/// 기록되더라도 하루에 보너스가 두 번 나갈 수 없게 한다.
+/// 여기에 [lastBonusKey](= 저장된 `streakBonusDate`) 가드를 하나 더 둔다.
+///
+/// **정상 경로에서는 도달하지 않는다.** 출석일과 보너스일은 한 트랜잭션에서
+/// 함께 쓰이므로, `streakBonusDate`가 오늘인데 `attendanceDate`가 오늘이 아닌
+/// 상태는 저장소가 만들지 않는다(그 경우는 위 조기 반환이 이미 막는다).
+/// 그럼에도 남겨 두는 이유는 이 보너스가 **하루 코인 상한 밖에서** 나가는
+/// 유일한 지급이라, 중복되면 상한이 통째로 우회되기 때문이다. 두 필드가
+/// 어긋난 문서(수동 수정·부분 마이그레이션·과거 데이터)를 만나도 하루 1회를
+/// 지킨다. 계약은 `reward_economy_test.dart`가 고정한다.
 AttendanceResult applyAttendance({
   required DateTime now,
   required String? lastDateKey,
