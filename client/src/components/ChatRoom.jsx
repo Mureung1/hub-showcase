@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useSocket } from '../contexts/SocketContext';
 
 const ChatRoom = ({ room, onBack }) => {
   const { currentUser } = useAuth();
@@ -8,40 +9,49 @@ const ChatRoom = ({ room, onBack }) => {
   const [inputText, setInputText] = useState('');
   const scrollRef = useRef(null);
 
-  // 컴포넌트 마운트 시 로컬 스토리지에서 해당 방의 메시지 내역 불러오기
+  // 컴포넌트 마운트 시 서버 API에서 해당 방의 메시지 내역 불러오기
   useEffect(() => {
-    if (room && room.id) {
-      try {
-        const stored = localStorage.getItem(`chat_messages_${room.id}`);
-        if (stored && stored !== 'undefined') {
-          setMessages(JSON.parse(stored));
+    const fetchMessages = async () => {
+      if (room && room.id) {
+        try {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          const res = await fetch(`${API_URL}/api/chats/${room.id}/messages`);
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setMessages(data);
+          } else {
+            console.error("Failed to load messages, API returned:", data);
+            setMessages([]);
+          }
+        } catch (e) {
+          console.error("Failed to fetch chat messages", e);
         }
-      } catch (e) {
-        console.error("Failed to parse chat messages", e);
-        localStorage.removeItem(`chat_messages_${room.id}`);
       }
-    }
+    };
+    fetchMessages();
   }, [room]);
 
-  // 새 메시지가 추가될 때마다 로컬 스토리지에 저장 및 목록 업데이트
+  const socket = useSocket();
+
+  // Socket.io 실시간 통신 연결 (joinRoom 및 receiveMessage)
   useEffect(() => {
-    if (room && messages.length > 0) {
-      // 1. 메시지 내역 덮어쓰기
-      localStorage.setItem(`chat_messages_${room.id}`, JSON.stringify(messages));
-      
-      // 2. ChatList 목록에 보이는 '가장 마지막 메시지' 업데이트
-      const rooms = JSON.parse(localStorage.getItem('mock_chat_rooms') || '[]');
-      const updatedRooms = rooms.map(r => {
-        if (r.id === room.id) {
-          const lastMsg = messages[messages.length - 1];
-          return { ...r, lastMessage: lastMsg.text, lastTime: lastMsg.time };
-        }
-        return r;
-      });
-      localStorage.setItem('mock_chat_rooms', JSON.stringify(updatedRooms));
+    if (socket && room && room.id) {
+      socket.emit('joinRoom', room.id);
+
+      const handleReceiveMessage = (msg) => {
+        setMessages(prev => [...prev, msg]);
+      };
+
+      socket.on('receiveMessage', handleReceiveMessage);
+
+      return () => {
+        socket.off('receiveMessage', handleReceiveMessage);
+      };
     }
-    
-    // 3. 스크롤 맨 아래로 이동
+  }, [socket, room]);
+
+  // 메시지 업데이트 시 스크롤만 맨 아래로 이동 (저장은 서버에서 처리됨)
+  useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
@@ -52,12 +62,16 @@ const ChatRoom = ({ room, onBack }) => {
     if (inputText.trim() === '') return;
     const now = new Date();
     const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-    setMessages(prev => [
-      ...prev,
-      // 글쓴이의 실제 역할을 sender로 저장
-      { id: Date.now(), sender: currentUser?.role || 'helper', text: inputText, time: timeStr }
-    ]);
+    
+    const newMsg = { id: Date.now(), sender: currentUser?.role || 'helper', text: inputText, time: timeStr };
+    
+    setMessages(prev => [...prev, newMsg]);
     setInputText(''); // 입력창 초기화
+
+    // 실시간 메시지 발송
+    if (socket && room && room.id) {
+      socket.emit('sendMessage', { roomId: room.id, message: newMsg });
+    }
   };
 
   // 엔터키 전송 지원 (Shift+Enter는 줄바꿈)
@@ -69,7 +83,7 @@ const ChatRoom = ({ room, onBack }) => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)', background: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-divider)', overflow: 'hidden' }}>
+    <div className="feed-column" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)', background: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-divider)', overflow: 'hidden' }}>
       
       {/* 1. 상단 헤더 영역 */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '16px', borderBottom: '1px solid var(--color-divider)', background: '#fff', zIndex: 10 }}>

@@ -4,22 +4,36 @@ const ChatList = ({ onSelectChat }) => {
   const [rooms, setRooms] = useState([]);
 
   useEffect(() => {
-    try {
-      // 로컬 스토리지에서 생성된 채팅방 목록 불러오기
-      const stored = localStorage.getItem('mock_chat_rooms');
-      if (stored && stored !== 'undefined') {
-        const storedRooms = JSON.parse(stored);
-        // 최신 대화 순으로 보여주기 위해 뒤집기 (가장 최근 방이 위로)
-        setRooms(storedRooms.reverse());
+    const fetchRooms = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const res = await fetch(`${API_URL}/api/chats`);
+        const data = await res.json();
+        
+        if (Array.isArray(data)) {
+          const mappedRooms = data.map(r => ({
+            id: r.id,
+            postId: r.post_id,
+            postTitle: r.post_title,
+            partnerName: r.partner_name,
+            partnerGrade: r.partner_grade,
+            lastMessage: r.last_message,
+            lastTime: r.last_time
+          }));
+          setRooms(mappedRooms);
+        } else {
+          console.error("Failed to load chats, API returned:", data);
+          setRooms([]);
+        }
+      } catch (e) {
+        console.error("Failed to fetch chat rooms", e);
       }
-    } catch (e) {
-      console.error("Failed to parse mock_chat_rooms", e);
-      localStorage.removeItem('mock_chat_rooms');
-    }
+    };
+    fetchRooms();
   }, []);
 
   return (
-    <div style={{ background: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-divider)', minHeight: '600px', padding: '24px' }}>
+    <div className="feed-column" style={{ background: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-divider)', minHeight: '600px', padding: '24px' }}>
       <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '24px' }}>1:1 대화</h2>
       
       {rooms.length === 0 ? (

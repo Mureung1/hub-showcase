@@ -51,3 +51,55 @@
   * 나와 상대방의 역할을 스위칭할 때 말풍선 위치가 꼬이는 버그 수정. 메시지를 저장할 때 발송자의 역할을 함께 저장(`sender: currentUser.role`)하고, 현재 접속자의 역할과 일치할 때만 우측 정렬되도록 로직 변경.
   * 오렌지색 말풍선 내부의 글자 색상을 흰색에서 검은색(`var(--color-text-primary)`)으로 변경하여 가독성 개선.
 * **관련 파일**: `ChatRoom.jsx`, `App.jsx`
+
+## 2026-07-22
+
+### ✅ 1단계: 백엔드 Socket.io 설정 (완료)
+* **목표**: 기존 Express 서버에 실시간 양방향 통신을 위한 Socket.io 패키지 적용 및 초기 세팅
+* **작업 내역**: 
+  * `server` 디렉토리 내에 `socket.io` 패키지 설치
+  * Node.js 내장 `http` 모듈로 `express` 앱을 래핑하여 `socket.io` 인스턴스 연결 및 CORS 환경 구성
+  * 실시간 연결 확인용 `connection` 및 `disconnect` 로깅 로직 작성
+* **수정될 파일명**:
+  * `server/package.json`
+  * `server/src/app.js`
+
+### ✅ 2단계: 프론트엔드 Socket.io 클라이언트 설정 (완료)
+* **목표**: 프론트엔드 환경에 `socket.io-client` 패키지를 적용하고, 앱 전역에서 소켓을 활용할 수 있도록 Context 구축
+* **작업 내역**: 
+  * `client` 디렉토리 내에 `socket.io-client` 설치
+  * `client/src/contexts/SocketContext.jsx` 파일을 생성하여 백엔드(포트 5000 등)와 연결하는 Socket 인스턴스 전역 제공(`Provider`) 로직 구현
+  * `client/src/main.jsx`에 `SocketProvider`를 감싸서 어느 컴포넌트에서든 실시간 통신이 가능하도록 연동
+* **관련 파일**:
+  * `client/package.json` (수정)
+  * `client/src/contexts/SocketContext.jsx` (생성)
+  * `client/src/main.jsx` (수정)
+* **완료 조건(검증 방법)**:
+  * 프론트엔드 앱이 정상 구동되며 렌더링 에러가 발생하지 않아야 함.
+  * 프론트엔드 접속 시 백엔드 터미널에 `🔗 A user connected: <socket-id>` 메시지가 찍혀 정상적으로 양방향 통신 준비가 완료되었음을 확인해야 함.
+
+### ✅ 3단계: 실시간 양방향 메시지 송수신 구현 (완료)
+* **목표**: 임시 식별자(UUID) 방식을 활용해 프론트엔드와 백엔드 간에 실시간 `joinRoom`, `sendMessage`, `receiveMessage` 이벤트를 주고받는 로직 구축
+* **작업 내역**: 
+  * 백엔드(`app.js`): `joinRoom` 이벤트 발생 시 해당 방 번호로 `socket.join(roomId)` 처리. `sendMessage` 이벤트 수신 시 같은 방 참여자들에게 `receiveMessage` 브로드캐스팅
+  * 프론트엔드(`ChatRoom.jsx`): `SocketContext`에서 `socket`을 불러와 마운트 시 `joinRoom` emit. 입력창 전송 시 `sendMessage` emit 처리 및 `receiveMessage` 리스너를 통한 상태(State) 갱신
+* **수정될 파일명**:
+  * `server/src/app.js`
+  * `client/src/components/ChatRoom.jsx`
+* **완료 조건(검증 방법)**:
+  * 브라우저 탭 2개를 열어 하나는 '방장', 하나는 '도와주는 사람' 역할로 설정 후 같은 채팅방에 입장.
+  * 한쪽에서 메시지를 보냈을 때 새로고침 없이 다른 쪽 브라우저 화면에 말풍선이 즉시 뜨는지 확인.
+
+### ✅ 4단계: 데이터베이스(Supabase) 연동 및 채팅 내역 API 구현 (완료)
+* **목표**: 오고 가는 실시간 메시지를 영구적으로 보존하기 위해 DB에 저장하고, 다시 채팅방에 접속했을 때 이전 대화 기록을 불러오는 로직 구축
+* **작업 내역**: 
+  * 백엔드(`app.js`): 
+    - `GET /api/chat/:roomId` 엔드포인트를 만들어 특정 방의 메시지 내역을 반환 (Mock DB / Supabase 분기 처리)
+    - 기존 `socket.on('sendMessage')` 안에서 수신받은 메시지 데이터를 실시간으로 DB(또는 `mockDb.messages`)에 `insert` 하도록 로직 추가
+  * 프론트엔드(`ChatRoom.jsx`): 
+    - `useEffect`에 있던 기존 `localStorage` 로드 로직을 제거하고, `fetch`를 이용해 `GET /api/chat/:roomId`에서 대화 내역을 받아오도록 교체
+* **수정될 파일명**:
+  * `server/src/app.js`
+  * `client/src/components/ChatRoom.jsx`
+* **완료 조건(검증 방법)**:
+  * 채팅방에서 메시지를 몇 개 전송한 뒤, 브라우저를 완전히 새로고침(F5) 했을 때 로컬 스토리지가 아닌 서버 API를 통해 이전 메시지들이 정상적으로 복구되어 렌더링되는지 확인.

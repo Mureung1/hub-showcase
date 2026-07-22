@@ -7,15 +7,15 @@ const AppHeader = ({ currentTab = 'community', onTabChange }) => {
 
   return (
     <header className="app-header">
-      <div className="app-header__title logo" onClick={() => window.location.reload()}>
+      <div className="app-header__title logo" onClick={() => window.location.reload()} style={{ flex: 1, display: 'flex' }}>
         meetry
       </div>
-      <nav className="web-nav">
+      <nav className="web-nav" style={{ flexShrink: 0 }}>
         <a href="#" className={`web-nav__item ${currentTab === 'community' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); if(onTabChange) onTabChange('community'); }}>커뮤니티</a>
         <a href="#" className={`web-nav__item ${currentTab === 'chat' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); if(onTabChange) onTabChange('chat'); }}>1:1 대화</a>
         <a href="#" className="web-nav__item">내 프로필</a>
       </nav>
-      <div className="app-header__actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div className="app-header__actions" style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px' }}>
         {currentUser && (
           <button 
             onClick={toggleRole}

@@ -22,14 +22,11 @@ function App() {
   // 활성화된 채팅방 상태 (room 객체)
   const [activeChat, setActiveChat] = useState(null);
 
-  // 새로운 채팅 시작 시 방을 생성하고 로컬 스토리지에 저장하는 로직
-  const handleStartChat = (post, initialMessage) => {
-    const rooms = JSON.parse(localStorage.getItem('mock_chat_rooms') || '[]');
-    
-    // UUID 안전 발급 (HTTP 환경 대비)
+  // 새로운 채팅 시작 시 방을 생성하고 API로 저장하는 로직
+  const handleStartChat = async (post, initialMessage) => {
     const generateId = () => window.crypto?.randomUUID ? window.crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
     
-    // 새 채팅방 객체 생성
+    const timeStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
     const newRoom = {
       id: generateId(),
       postId: post.id,
@@ -37,16 +34,23 @@ function App() {
       partnerName: post.authorName,
       partnerGrade: post.grade_tag || post.authorGrade,
       lastMessage: initialMessage,
-      lastTime: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+      lastTime: timeStr
     };
-    localStorage.setItem('mock_chat_rooms', JSON.stringify([...rooms, newRoom]));
-    
-    // 해당 방의 초기 메시지 기록 세팅 (sender를 명확히 역할로 지정)
+
     const initialMsgs = [
-      { id: 1, sender: 'helper', text: initialMessage, time: newRoom.lastTime },
-      { id: 2, sender: 'host', text: '안녕하세요! 남겨주신 인사말 잘 보았습니다.', time: newRoom.lastTime }
+      { id: Date.now(), sender: 'helper', text: initialMessage, time: timeStr }
     ];
-    localStorage.setItem(`chat_messages_${newRoom.id}`, JSON.stringify(initialMsgs));
+
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      await fetch(`${API_URL}/api/chats`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newRoom, initialMsgs })
+      });
+    } catch (e) {
+      console.error("Failed to create chat room", e);
+    }
     
     setSelectedPost(null);
     setCurrentTab('chat');
