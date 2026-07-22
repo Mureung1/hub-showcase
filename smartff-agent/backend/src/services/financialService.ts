@@ -73,6 +73,11 @@ class FinancialService {
     console.log(`[Financial] Loaded ${this.data.length} records`);
   }
 
+  async reloadData(): Promise<void> {
+    this.loaded = false;
+    await this.loadData();
+  }
+
   getSummary(filter?: FinancialFilter): FinancialSummary {
     if (!this.loaded) {
       throw new Error('Data not loaded. Call loadData() first.');

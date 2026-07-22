@@ -11,4 +11,5 @@ export interface UploadRecord {
 export interface CreateUploadInput {
   category: UploadCategory;
   filename: string;
+  status?: string;
 }
