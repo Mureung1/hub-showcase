@@ -17,14 +17,14 @@
 
 ## 제품 경계
 
-- 범위는 [docs/backlog.md](docs/backlog.md)의 T01~T12 + [docs/dev-plan.md](docs/dev-plan.md). Phase 2 백로그(2분 스타터·통계·화이트노이즈 등)와 선제적 개입은 **지금 구현하지 않는다**.
+- 범위는 [docs/backlog.md](docs/backlog.md)의 T01~T15 + [docs/dev-plan.md](docs/dev-plan.md). Phase 2 백로그(2분 스타터·통계·화이트노이즈 등)와 선제적 개입은 **지금 구현하지 않는다**.
 - checklist에 없는 기능을 임의 추가하지 않는다. 필요하면 문서(skills/backlog/checklist)를 먼저 갱신하고 구현한다.
 
 ## 현재 구현 상태 (작업 시 갱신)
 
-- **완료**: 화면 뼈대(6개 화면 조건부 렌더링, `docs/etc/component-tree.md`), Brain Dump → Solar `generateObject` 분할 API 연결(mock 제거).
-- **진행/예정**: Notion 연동(T01)부터. Agent 루프(Feat-4)는 설계 동결, 미구현.
-- **아직 mock/미완**: `task_category` 미도입, AgentLog 미구현, "힘들어" 버튼은 여전히 고정 `RestSuggestion`로 직행.
+- **완료**: 화면 뼈대(6개 화면 조건부 렌더링, `docs/etc/component-tree.md`), Notion 연동 기반(`app/lib/notion.js`, T01), Brain Dump category 확장 + Notion 저장(T02) — `/api/brain-dump`가 실제로 Solar 호출 후 마이크로스텝을 Notion에 저장한다.
+- **진행/예정**: One-Focus View 실데이터 연결(T03)부터. Agent 루프(Feat-4)는 설계 동결, 미구현.
+- **아직 mock/미완**: AgentLog 미구현, "힘들어" 버튼은 여전히 고정 `RestSuggestion`로 직행.
 
 ## 현재 실행 명령
 

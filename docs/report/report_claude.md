@@ -33,3 +33,21 @@
 - 검증: `npm run verify` 통과. 브라우저 스크린샷으로 말풍선 꼬리와 캐릭터 귀 사이 간격 확보 확인.
 - 미결: 없음. (1)번은 의도된 결정이므로 재지적 시 이 근거를 참고.
 - 확인: [x] 2026-07-21 22:21 GPT — 승인: 말풍선-캐릭터 간격 확보, 확대는 사용자 명시적 디자인 결정, verify 재현 통과.
+
+## 2026-07-22 13:50 | T01 | Notion 연동 기반
+- 작업: `app/lib/notion.js` 신규 생성 — `getNotionClient()`(환경변수 `NOTION_TOKEN` 없으면 `NotionConfigError` throw), `queryDatabase()`/`createPage()` 범용 read/write 헬퍼. Notion API가 database 대신 하위 data source 단위로 조회하도록 바뀌어서(`@notionhq/client` 5.23.2, `databases.query`가 제거되고 `dataSources.query`로 교체됨) `databases.retrieve()`로 `data_source_id`를 먼저 얻어 캐싱 후 사용하도록 구현. 온보딩용 헬스체크 라우트 `app/api/notion-health/route.js` 추가(read/write 왕복 확인 + 에러를 500 대신 `{ ok:false, message }`로 반환).
+- 검증: `npm run verify` 통과(lint+build). 실제 `.env.local`(NOTION_TOKEN·NOTION_STEPS_DB_ID)로 dev 서버 띄워 `/api/notion-health` 호출 → 정상 시 `{ok:true}` 확인. `NOTION_TOKEN` 빈 값으로 직접 `queryDatabase()` 호출해 `NotionConfigError` + 친절한 메시지로 처리됨을 별도 스크립트로 확인. 테스트 중 생성된 더미 행 2건은 이후 별도 스크립트로 archive 처리해 정리함. `docs/checklist.md` C01 3개 전부 체크, `docs/backlog.md` T01 상태를 완료로 변경, `CLAUDE.md` 현재 구현 상태 갱신.
+- 미결: 없음
+- 확인: [x] 2026-07-22 14:13 GPT — 승인: C01 구현·S3 범위 대조, npm run verify 및 미설정 온보딩 응답 재현 통과.
+
+## 2026-07-22 14:35 | T01 | 헬스체크 테스트 행 정리 추가
+- 작업: `/api/notion-health`가 호출 때마다 실제 Notion DB에 테스트 행을 남기고 지우지 않던 문제 발견(사용자 지적). `app/lib/notion.js`에 `archivePage()` 추가, 라우트의 `finally` 블록에서 생성한 테스트 페이지를 항상 archive 처리하도록 수정.
+- 검증: `npm run verify` 통과. dev 서버로 `/api/notion-health` 재호출 후 별도 스크립트로 확인 — 미보관(archived:false) 테스트 행 0건.
+- 미결: 없음
+- 확인: [x] 2026-07-22 14:36 GPT — 승인: 실제 Notion 왕복·archive 후 활성 테스트 행 0건 및 npm run verify 재현 통과.
+
+## 2026-07-22 15:40 | T02 | Brain Dump category 확장 + Notion 저장
+- 작업: `app/api/brain-dump/route.js`의 `brainDumpSchema`에 `category`(고정 셋 7개, `z.enum`) 추가. 분할 결과에 서버가 `scheduledDate`(생성 시점 오늘 날짜)를 채워 넣고, 각 마이크로스텝을 `app/lib/notion.js`의 `createPage()`로 `NOTION_STEPS_DB_ID`에 저장하도록 구현. 실제 테스트 중 두 가지 기존 버그를 발견해 같이 수정함: (1) Upstage `response_format: json_object`는 프롬프트에 "json" 단어가 포함돼야 동작하는데 system 프롬프트에 없어서 400 에러가 났음 → 문구 추가. (2) Solar가 `@ai-sdk/openai-compatible`에서 strict structured output을 지원하지 않아(`generateObject`가 schema를 강제 못 함) 모델이 스키마와 다른 필드명(`steps`, `note`)으로 응답해 ZodError가 났음 → system 프롬프트에 정확한 JSON 키 이름을 명시해서 해결.
+- 검증: `npm run verify` 통과(lint+build). 실제 `.env.local`(UPSTAGE_API_KEY·NOTION_TOKEN·NOTION_STEPS_DB_ID)로 dev 서버에서 `POST /api/brain-dump` 호출 → 5개 마이크로스텝이 title/estimatedMinutes/category/scheduledDate 전부 채워진 채 반환됨을 확인. Notion에 재조회해서 5건 전부 올바른 속성으로 저장된 것 확인, 이후 별도 스크립트로 archive 정리. `docs/checklist.md` C02 3개 전부 체크, `docs/backlog.md` T02 완료로 변경, `CLAUDE.md` 현재 구현 상태 갱신.
+- 미결: Solar가 structured output을 strict하게 지원하지 않는 점은 T13(모델 비교·결정)에서 다른 모델과 비교할 때 참고할 사항.
+- 확인: [x] 2026-07-22 18:30 GPT — 승인: C02·S1·S3 대조 및 npm run verify 재현 통과.

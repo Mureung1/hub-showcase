@@ -1,6 +1,6 @@
 # 백로그 (Task 구현 순서·선행조건·상태)
 
-남은 개발(Feat-2 잔여 ~ Feat-5)을 구현 단위(T01~T12)로 나눈 것. 각 Task는 선행조건이 `완료`일 때만 착수한다. 상태는 `대기` | `진행중` | `완료` | `BLOCKED(사유)`.
+남은 개발(Feat-2 잔여 ~ Feat-5)을 구현 단위(T01~T15)로 나눈 것. 각 Task는 선행조건이 `완료`일 때만 착수한다. 상태는 `대기` | `진행중` | `완료` | `BLOCKED(사유)`.
 
 작업 절차는 [instructions.md](instructions.md)를 따른다. 완료조건은 [checklist.md](checklist.md)의 C 섹션, 계약은 [skills.md](skills.md)의 S 섹션에 있다.
 
@@ -8,8 +8,8 @@
 
 | Task | 내용 | Feat | 선행 | 완료조건 | 계약 | 상태 |
 |---|---|---|---|---|---|---|
-| T01 | Notion 연동 기반 (토큰·DB 연결, `lib/notion.js`) | 2 | — | C01 | S3 | 대기 |
-| T02 | Brain Dump 스키마에 `category` 추가 + Notion 저장 | 2 | T01 | C02 | S1, S3 | 대기 |
+| T01 | Notion 연동 기반 (토큰·DB 연결, `lib/notion.js`) | 2 | — | C01 | S3 | 완료 |
+| T02 | Brain Dump 스키마에 `category` 추가 + Notion 저장 | 2 | T01 | C02 | S1, S3 | 완료 |
 | T03 | One-Focus View를 실제 마이크로스텝 순회로 연결 | 3 | T02 | C03 | — | 대기 |
 | T04 | Full Screen Timer 지속성 (새로고침 내구성) | 3 | T03 | C04 | — | 대기 |
 | T05 | AgentLog Notion DB 생성 + 기록/조회 `lib` | 4 | T01 | C05 | S3 | 대기 |
@@ -20,6 +20,9 @@
 | T10 | 개인화 (최근 로그를 판단 프롬프트에 주입) | 4 | T06, T09 | C10 | S2, S3 | 대기 |
 | T11 | Agent 평가 — 정답 세트 + Precision/Recall 스크립트 | 5 | T10 | C11 | S5 | 대기 |
 | T12 | 화면 디자인을 기획 화면 흐름에 맞게 보완 (물 차오르는 타이머 포함) | 3 | — | C12 | — | 완료 |
+| T13 | Solar 외 모델(GPT-4o-mini/Claude Haiku/Gemini Flash) 성능 비교·결정 | 2 | — | C13 | S1 | 대기 |
+| T14 | Brain Dump 일정 확인 멀티턴 (기한 미정 항목 최대 2턴 질문 후 확정) | 2 | T02 | C14 | S1 | 대기 |
+| T15 | 타이머 종료 시 완료 확인 + Agent 판단 연장 | 3 | T04 | C15 | S6 | 대기 |
 
 ## Task 상세
 
@@ -34,7 +37,9 @@
 - 종료: C02. 계약 S1(분할 I/O)·S3(저장).
 
 ### T03 — One-Focus View 실데이터 연결
-- 지금 하드코딩 `task` 대신 저장된 마이크로스텝을 순서대로 순회, 완료 시 다음 스텝으로.
+- 지금 하드코딩 `task` 대신 저장된 마이크로스텝을 순서대로 순회, 완료 시 다음 스텝으로. 노션에서 읽어올 때 `scheduledDate`가 오늘(또는 그 이전)인 스텝만 필터링(`postpone_task`로 미뤄진 스텝은 오늘 목록에 다시 안 보임).
+- Notion Steps DB에 `Done`(체크박스) 속성 추가. 완료 시 `Done=true`로 갱신해서 영구적으로 남긴다(지금까지 설계엔 완료를 Notion에 기록할 방법이 없었음).
+- 알려진 제약(T01에서 발견): `app/lib/notion.js`의 `queryDatabase()`는 Notion 페이지네이션(응답 1건당 최대 100행)을 처리하지 않는다. 하루 마이크로스텝이 100개를 넘을 일은 없지만, 여러 날짜를 누적 조회하게 되면 `has_more`/`next_cursor` 처리가 필요할 수 있다.
 - 선행: T02.
 - 종료: C03.
 
@@ -70,6 +75,7 @@
 
 ### T10 — 개인화
 - 판단 호출 시 최근 로그(전체 + 같은 category)를 프롬프트에 주입, 반복 거절 tool/category를 피하도록.
+- Notion Steps DB에 `ActualMinutes`·`StartedAt`·`CompletedAt`·`PostponeCount` 속성 추가, 스텝 진행에 따라 채워서 행동 패턴(예상 대비 실제 소요 시간, 미룬 횟수 등)을 판단 프롬프트에 참고 정보로 포함.
 - 선행: T06, T09.
 - 종료: C10. 계약 S2·S3.
 
@@ -82,3 +88,19 @@
 - 타이머 화면에 물이 차오르는 시각 효과 추가, 화면 색감·구성요소를 원래 화면 흐름(`docs/images/screen-flow.png`) 디자인에 맞춰 보완.
 - 선행: 없음.
 - 종료: C12.
+
+### T13 — 모델 비교·결정
+- Solar(Upstage) 외 GPT-4o-mini/Claude Haiku/Gemini Flash로 동일 입력을 분할해보고 한국어 품질·estimatedMinutes 합리성을 비교, 어떤 모델을 쓸지 결정.
+- 선행: 없음. 단 **T06(힘들어 루프 판단 API) 착수 전에 끝내는 것을 권장** — S2도 같은 모델을 쓰게 되므로 판단 품질에 더 민감함. 표 순서(맨 아래)는 Task 생성 순서일 뿐 실행 순서 아님.
+- 종료: C13. 계약 S1.
+
+### T14 — Brain Dump 일정 확인 멀티턴
+- 사용자가 입력한 할 일에 기한이 없으면, 최대 2턴까지 되물어서(예: "이거 언제까지 하면 돼?") `scheduledDate`나 우선순위를 확정한다. 3턴 이상 넘어가면 피로도가 올라가므로 질문 횟수를 2번으로 제한한다.
+- 선행: T02(Brain Dump 저장), scheduledDate 필드 설계(완료, `docs/skills.md` S1).
+- 종료: C14. 계약 S1(확장).
+
+### T15 — 타이머 종료 시 완료 확인 + Agent 판단 연장
+- `FocusTimer`가 0이 되면 "이 스텝 다 끝났어?" 확인 화면을 보여준다. "아니오"면 Agent(Solar)가 현재 스텝 정보(원래 예상 시간, 이미 연장한 횟수 등)를 보고 몇 분 더 줄지 직접 판단해서 반환하고, 그 시간만큼 타이머를 재시작한다. `suggest_break`과 같은 패턴(고정 계단이 아니라 모델이 상황을 보고 분 단위를 직접 정함).
+- `docs/etc/agent-design.md`(Feat-4 동결 설계)는 건드리지 않는다. 타이머 종료는 "힘들어" 버튼과 트리거가 다르므로 S2를 재사용하지 않고 별도 계약(S6)으로 분리한다.
+- 선행: T04(Full Screen Timer 지속성).
+- 종료: C15. 계약 S6.

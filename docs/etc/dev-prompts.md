@@ -22,7 +22,33 @@ docs/instructions.md 절차에 따라 T02(Brain Dump category 추가 + Notion �
 category는 skills.md 고정 셋 7개를 z.enum으로 강제해줘.
 ```
 
+**T13 (모델 비교·결정)** ※ 선행: 없음, 단 T06 착수 전 완료 권장
+
+```
+docs/instructions.md 절차에 따라 T13(Solar 외 모델 성능 비교·결정)을 진행해줘.
+완료 조건은 checklist.md C13, 계약은 skills.md S1이야.
+Solar/GPT-4o-mini/Claude Haiku/Gemini Flash 중 최소 3개에 같은 입력으로
+분할 결과를 비교하고, 어떤 모델을 쓸지 근거와 함께 정리해줘.
+```
+
+**T14 (Brain Dump 일정 확인 멀티턴)** ※ 선행: T02
+
+```
+docs/instructions.md 절차에 따라 T14(Brain Dump 일정 확인 멀티턴)를 진행해줘.
+완료 조건은 checklist.md C14, 계약은 skills.md S1(확장)이야.
+기한이 없는 항목만 최대 2턴까지 되물어서 scheduledDate/우선순위를 확정해줘.
+```
+
 ## Phase 2 — 화면·타이머 (Feat-3)
+
+**T15 (타이머 종료 시 완료 확인 + Agent 판단 연장)** ※ 선행: T04
+
+```
+docs/instructions.md 절차에 따라 T15(타이머 종료 시 완료 확인 + Agent 판단 연장)를 진행해줘.
+완료 조건은 checklist.md C15, 계약은 skills.md S6이야.
+agent-design.md는 건드리지 말고, 연장 분은 suggest_break과 같은 패턴으로
+모델이 상황을 보고 직접 정하게 해줘.
+```
 
 **T03 (One-Focus 실데이터 연결)**
 
