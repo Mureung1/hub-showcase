@@ -48,6 +48,7 @@ Tarball의 positive allowlist는 다음 논리 표면만 포함한다.
 - bin과 prebuilt Node application host
 - built Chat Shell의 `index.html`과 hashed static asset
 - launcher가 읽는 compatibility·package resource descriptor
+- Fresh workspace에 설치할 dedicated workspace instruction/Skill resource subtree와 `AGENTS.md`·built-in Skill root별 exact complete-tree roster·digest descriptor
 - package 자체의 `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES`, original license tree, SBOM·provenance evidence
 
 Python/native Runtime bytes, `.artifacts/**`, TypeScript source·source map, test·fixture, dogfood·materializer·development script, Vite·Playwright·`tsx`·`concurrently`, vendored source checkout은 제외한다. Exact legal roster와 pack/publication gate는 Tickets 003a·015가 소유한다.
@@ -69,7 +70,7 @@ Application factory는 environment loading과 CLI main에서 분리한 pure comp
 
 | Root | Authority와 기본값 |
 | --- | --- |
-| `packageRoot` | 실행 중인 ESM module의 `import.meta.url`을 `fileURLToPath()`로 바꾸고 package directory를 `realpath()`해 구한다. 모든 resource path는 이 canonical root containment를 다시 검사한다. Exact-version npx install을 process lifetime 동안 read-only resource로 취급한다. |
+| `packageRoot` | 실행 중인 ESM module의 `import.meta.url`을 `fileURLToPath()`로 바꾸고 package directory를 `realpath()`해 구한다. 모든 resource path는 이 canonical root containment를 다시 검사한다. Workspace instruction/Skill bundle은 dedicated product-resource subtree만 사용하고 ambient source-repository root `AGENTS.md`·`.agents/`를 복사하지 않는다. Exact-version npx install을 process lifetime 동안 read-only resource로 취급한다. |
 | `appDataRoot` | caller-controlled `$HOME`이 아니라 effective OS user record의 `os.userInfo().homedir`를 기준으로 canonical default `~/Library/Application Support/AY-PLE`을 계산하고 owner-only `0700`으로 생성한다. Runtime state, app-managed Codex home, setup state, workspace registry와 instance coordination은 여기 아래에서 서로 분리한다. |
 | `workspaceRoot` | 첫 setup 전에는 없다. 이후에도 app이 scaffold하고 `WorkspaceManifest`로 검증한 registry selection만 받으며 cwd나 기존 arbitrary folder를 workspace로 암묵 채택하지 않는다. |
 
@@ -80,6 +81,7 @@ Launcher는 persistent mutation과 Runtime download 전에 다음을 한 번에 
 - 실행 중인 Node `>=22.12 <23`
 - `npm_config_user_agent`가 명시적으로 보고하는 npm 10.x. 이 값은 조작 가능한 launch hint이지 실제 parent executable의 security proof가 아니다. Public `npx` path에서는 누락·불일치를 unsupported invocation으로 진단하고 arbitrary `PATH` npm을 대신 실행하지 않으며, 실제 npm 10.x 지원 주장은 outer `npx` clean smoke가 증명한다.
 - package의 compatibility descriptor가 허용하는 Google Chrome 또는 Chromium bundle과 version
+- package descriptor가 선언한 workspace instruction/Skill resource의 contained regular-file·no-symlink complete roster와 exact digest. 실패하면 workspace mutation 전에 종료한다.
 
 `최신 browser`와 온라인으로 동일한지 launcher가 매번 판정한다고 약속하지 않는다. Package release가 tested minimum major를 descriptor에 고정하고 Ticket 015가 당시 current stable clean smoke를 기록한다. 사용자는 최신 Chrome/Chromium을 prerequisite로 안내받고, launcher는 설치된 supported bundle identity와 최소 version을 검증한다.
 
@@ -126,12 +128,12 @@ Signal handler를 설치하고 즉시 `process.exit()`하거나 cleanup 뒤 self
 | --- | --- | --- |
 | 007 | Thin npm host가 `appDataRoot`와 cancellation/reporting을 주고 verified immutable `runtimeRoot`·Runtime identity를 받는 resolver seam | npm package composition, public command, listener·browser·instance lifecycle |
 | 008 | Workspace 없이 시작 가능한 single-origin host, verified-but-not-yet-started Runtime과 app-managed state, dynamic exact Origin. OAuth용 lazy Runtime의 non-workspace cwd와 workspace admission 전환을 결정한다. | AY-PLE-owned 별도 OAuth web server·port 또는 global `~/.codex` authority. Official Codex가 managed browser login 내부에서 여는 loopback callback listener는 Ticket 008의 runtime dependency다. |
-| 009–010 | app-created workspace만 registry에 들어가는 three-root host | cwd/existing folder를 workspace로 채택하는 bootstrap |
+| 009–010 | App-created workspace와 preverified workspace instruction/Skill bundle만 Ready 후보가 되는 three-root host | cwd/existing folder를 workspace로 채택하거나 setup Skill에 bootstrap을 맡기는 경로 |
 | 011 | Foreground supervisor와 `appDataRoot` instance lease를 process-level baseline으로 사용 | duplicate process ownership과 signal protocol |
 | 013 | Release manifest의 exact version을 넣는 Landing command `npx ay-ple@<release-version>`, conditional npm prompt, foreground terminal과 local dynamic URL | package/bin 이름, moving tag 사용 여부와 `--yes` 여부 |
 | 014–016 | One package/one host/one Runtime tree의 file·process·pack smoke surface | production topology 자체 |
 
-Runtime archive URL·version pin·size·hash·download/cache·atomic extraction·corrupt repair·offline/yank/rollback은 Ticket 007이 소유한다. OAuth state machine은 008, Workspace scaffold는 009–010, setup durability는 011, publication ordering과 cross-artifact evidence는 015, clean Mac 전체 여정은 016이 소유한다.
+Runtime archive URL·version pin·size·hash·download/cache·atomic extraction·corrupt repair·offline/yank/rollback은 Ticket 007이 소유한다. OAuth state machine은 008, Workspace scaffold·Browser setup authority·workspace instruction/Skill bundle은 009–010, setup durability는 011, publication ordering과 cross-artifact evidence는 015, clean Mac 전체 여정은 016이 소유한다.
 
 Exact public `npx` command 자체의 offline resolution은 보장하지 않는다. npm cache는 AY-PLE의 durable state가 아니며 map이 npm registry network를 prerequisite로 둔다. Ticket 007의 `offline rerun`은 npm이 package/bin을 이미 resolve해 실행한 뒤 verified Runtime cache를 재다운로드 없이 재사용하는 범위다.
 

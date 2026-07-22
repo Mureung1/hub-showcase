@@ -2,7 +2,7 @@
 
 작성일: 2026-07-07
 
-최종 업데이트: 2026-07-22
+최종 업데이트: 2026-07-23
 
 분류: 활성
 
@@ -36,7 +36,7 @@ AY-PLE는 새로운 범용 Agent framework를 만드는 제품이 아니다. 일
 
 | 순서 | 학생이 하는 일 | AY-PLE가 하는 일 | 결과 |
 | --- | --- | --- | --- |
-| 1 | 공식 Landing의 exact-version public `npx` 명령으로 AY-PLE을 시작하고, Codex에 연결한 뒤 학년·학기와 생성 위치를 고른다. | 새 `SemesterWorkspace`를 scaffold하고 기본 설정·validation을 끝낸다. | `학기 공간 준비 완료` 상태에서 이후 자료 반입을 시작할 수 있다. |
+| 1 | 공식 Landing의 exact-version public `npx` 명령으로 AY-PLE을 시작하고, Codex에 연결한 뒤 학년·학기, 생성 위치와 제안된 folder name을 확인·승인한다. | 새 `SemesterWorkspace`를 scaffold하고 workspace instruction/Skill bundle 설치·validation을 끝낸다. | `학기 공간 준비 완료` 상태에서 이후 자료 반입을 시작할 수 있다. |
 | 2 | 기존 자료 폴더나 자료 묶음을 `ImportSource`로 고른다. | AY가 분석을 돕고 App이 mapping·반입 제안을 검증 가능한 형태로 준비한다. | 학생이 검토한 자료만 workspace 안의 `RawMaterial`과 Course 맥락으로 들어온다. |
 | 3 | 이번에 정리할 두 자료를 고른다. | 이번 요청에 사용할 `SourceSelection`을 준비한다. | 이번 작업의 우선 입력이 명확해진다. |
 | 4 | `선택한 자료 정리하기`를 누른다. | Recipe와 이번 입력을 `ModelingInvocation`으로 실행한다. | AY가 과제 후보와 근거를 찾는다. |
@@ -52,8 +52,8 @@ AY-PLE의 역할은 Codex를 대체하는 것이 아니라 Codex의 일반적인
 
 | 층 | 책임 | 책임이 아닌 것 |
 | --- | --- | --- |
-| 사용자 | 학년·학기와 workspace 생성 위치를 고르고, 자료 반입·학업 작업·변경 제안을 검토한다. | Codex protocol, workspace schema나 프롬프트 조합을 직접 관리할 필요가 없다. |
-| AY-PLE App | Codex 연결 UX와 transient Browser-safe account projection, `SemesterWorkspace` scaffold·`WorkspaceManifest`·validation, 자료 반입 경계, action UI, 자료 선택, 실행 조합, `StatePatch`, 검토와 저장을 소유한다. | OAuth·token lifecycle을 직접 구현하거나 외부 `ImportSource`를 임의로 workspace로 채택하고 모든 학업 작업을 별도 workflow engine으로 소유하지 않는다. |
+| 사용자 | 학년·학기, workspace 생성 위치와 folder name을 최종 확인하고, 자료 반입·학업 작업·변경 제안을 검토한다. | Codex protocol, workspace schema나 프롬프트 조합을 직접 관리할 필요가 없다. |
+| AY-PLE App | Codex 연결 UX와 transient Browser-safe account projection, Browser setup journey, `SemesterWorkspace` scaffold·`WorkspaceManifest`·validation, workspace instruction/Skill bundle, 자료 반입 경계, action UI, 자료 선택, 실행 조합, `StatePatch`, 검토와 저장을 소유한다. | OAuth·token lifecycle을 직접 구현하거나 setup을 live Codex Turn에 맡기고, 외부 `ImportSource`를 임의로 workspace로 채택하거나 모든 학업 작업을 별도 workflow engine으로 소유하지 않는다. |
 | AY | 학생과 소통하고 Codex의 작업을 학업 맥락에서 설명하며 변경을 제안한다. | 사용자 대신 학업 사실을 확정하지 않는다. |
 | Codex | Managed ChatGPT login·credential과 대화·작업 실행, Skills, 파일·도구 사용과 선택적인 native context를 제공하는 실행 엔진이다. | `SemesterModel`이나 학업 검토 정책의 source of truth가 아니다. |
 
@@ -75,7 +75,9 @@ AY-PLE의 역할은 Codex를 대체하는 것이 아니라 Codex의 일반적인
 
 ## 학기 작업공간과 Codex 사용 모델
 
-`SemesterWorkspace`는 학생이 학년·학기와 위치를 고르면 AY-PLE이 생성하는 app-owned normalized 학기 공간이다. `WorkspaceManifest`가 학기와 Course의 정체성·관계를 소유하며 폴더명은 사람이 읽기 위한 표현이다. App code가 workspace format과 lifecycle을 소유하고 Setup Skill은 app-owned operation을 우회하지 않는다.
+`SemesterWorkspace`는 학생이 학년·학기, 위치와 editable folder name을 최종 확인하면 AY-PLE이 생성하는 app-owned normalized 학기 공간이다. `WorkspaceManifest`가 학기와 Course의 정체성·관계를 소유하며 폴더명은 사람이 읽기 위한 표현이다. Mandatory setup은 Browser wizard와 App code가 소유하고 Codex `Thread`·live Turn·setup Skill을 사용하지 않는다. Fresh workspace에는 학생에게 built-in instructions·Skills로 보이는 package-owned **workspace instruction/Skill bundle**을 설치하며, App은 이를 `Semester Ready`와 같은 exact application version의 relaunch에서 검증한다. Workspace-local native context가 이 bundle을 가리거나 확장하면 첫 preview는 사용자 byte를 바꾸지 않고 Codex action을 막는다.
+
+첫 preview의 기본 설정은 학생이 선택한 학년·학기 metadata와 workspace instruction/Skill bundle뿐이다. Default Course, timezone, locale, model, reasoning effort와 service tier는 setup 완료 조건에 넣지 않는다.
 
 기존 폴더나 자료 묶음은 `SemesterWorkspace`가 아니라 외부 `ImportSource`다. 후속 반입 여정에서 분석·mapping 제안과 사용자 검토를 거쳐 workspace 안으로 들어온 뒤에만 `RawMaterial`이 된다. AY-PLE의 runtime 상태는 workspace와 분리하고, app data가 없어져도 workspace identity와 확인된 학기 상태를 다시 열 수 있어야 한다. 정확한 admission·identity 결정은 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), root 소유권은 [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), 현재·목표 실행 경로는 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 소유한다.
 
@@ -165,7 +167,7 @@ flowchart LR
 | 확인된 학업 사실 | 앱이 관리하는 `SemesterModel` | 정확한 저장 기술과 경로는 구현 PRD에서 정한다. |
 | 변경 제안 | `StatePatch` | 반영하려는 내용과 원본 근거를 소유하며 available origin provenance만 선택적으로 참조한다. |
 | 사용자 결정 | `UserConfirmation` | first vertical에서는 수락·거절의 settled product decision을 기록한다. 수정 요청은 replacement patch Review를 계속하는 feedback이며 settled `UserConfirmation`이 아니다. |
-| Agent 보조 맥락 | Codex `Thread`, built-in Memories, `AGENTS.md` | 학업 사실의 SSOT가 아니다. |
+| Agent 보조 맥락 | Codex `Thread`, built-in Memories, `AGENTS.md`와 Skills | 학업 사실의 SSOT가 아니다. |
 | Assignment/Exam 기반 일정·마감 view와 정리 문서 | `SemesterModel`에서 파생 | 필요하면 다시 생성할 수 있어야 한다. 별도 학생 행동·할 일 모델의 owner는 아직 정하지 않는다. |
 
 ## MVP 범위
@@ -195,7 +197,7 @@ Multi-conversation catalog, generic transcript persistence, two-client synchroni
 
 Skills는 앱 lifecycle을 흉내 내는 단계명이 아니라 사용자가 반복해서 수행할 **학업 action의 처리 전략**을 담는다.
 
-First-run setup과 `SemesterWorkspace`의 canonical schema·validation은 App code가 소유한다. Setup Skill은 app-owned operation을 호출·조율하거나 후속 import·migration plan을 돕는 범위에서만 재사용한다.
+First-run setup과 `SemesterWorkspace`의 canonical schema·validation은 App code가 소유한다. Setup Skill이나 별도의 “학기 시작 Skill”은 만들지 않는다. Workspace에 설치되는 built-in Skills는 setup orchestration이 아니라 `Semester Ready` 이후 반복 가능한 학업 action의 처리 전략이다. 후속 import에서 Agent 분석을 사용하더라도 App의 검토 가능한 operation과 사용자 승인을 우회하지 않는다.
 
 | Recipe 예시 | Skill이 안내할 전략 | 예상 결과 |
 | --- | --- | --- |
@@ -222,8 +224,8 @@ PDF text extraction, OCR, HWP/HWPX parsing처럼 결정적으로 처리할 수 �
 | --- | --- |
 | public 진입 가능성 | 학생이 공식 Landing의 명령으로 local AY-PLE을 시작하고 현재 prerequisite와 preview 범위를 이해할 수 있는가? |
 | Codex 연결 lifecycle | Fresh login·취소·재시도·relaunch·만료 뒤 reauth·logout이 Browser-safe 상태로 수렴하고 workspace나 학업 상태를 손상하지 않는가? |
-| setup 완료성 | App이 새 `SemesterWorkspace`를 생성·검증하고, Course나 자료가 없어도 정확한 `Semester Ready`를 표시하는가? |
-| 재실행 지속성 | 같은 public 명령으로 다시 실행했을 때 중복 scaffold 없이 준비된 workspace를 다시 여는가? |
+| setup 완료성 | 학생의 생성 승인 뒤 App이 새 `SemesterWorkspace`와 workspace instruction/Skill bundle을 생성·검증하고, Course나 자료가 없어도 정확한 `Semester Ready`를 표시하는가? |
+| 재실행 지속성 | 같은 exact application version의 public 명령으로 다시 실행했을 때 중복 scaffold 없이 workspace·bundle·effective native context·account를 다시 확인하고 준비된 workspace를 여는가? |
 | release claim의 진실성 | post-Ready import와 학업 action을 현재 public capability로 과장하지 않는가? |
 | 학업 작업 시작 가능성 | 준비된 workspace에서 학생이 자료를 선택하고 action을 시작할 수 있는가? |
 | 실행 경계의 명확성 | Recipe, Invocation과 Run을 구분하고 한 실행 시도를 추적할 수 있는가? |

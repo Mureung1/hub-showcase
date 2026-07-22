@@ -4,7 +4,7 @@
 
 성숙도: 채택
 
-관련 결정: [ADR 0006 — package·app data·SemesterWorkspace root를 분리한다](0006-separate-package-app-data-and-semester-workspace-roots.md), [ADR 0009 — macOS-first local web app 제품 경로를 사용한다](0009-use-a-macos-first-local-web-app-product-path.md), [ADR 0011 — Official Codex Python SDK를 재사용한다](0011-reuse-official-codex-python-sdk-for-chat-shell.md), [ADR 0015 — Reviewed clean snapshot으로 public repository를 시작한다](0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)
+관련 결정: [ADR 0006 — package·app data·SemesterWorkspace root를 분리한다](0006-separate-package-app-data-and-semester-workspace-roots.md), [ADR 0009 — macOS-first local web app 제품 경로를 사용한다](0009-use-a-macos-first-local-web-app-product-path.md), [ADR 0011 — Official Codex Python SDK를 재사용한다](0011-reuse-official-codex-python-sdk-for-chat-shell.md), [ADR 0014 — SemesterWorkspace를 app-owned normalized scaffold로 생성한다](0014-create-app-owned-normalized-semester-workspaces.md), [ADR 0015 — Reviewed clean snapshot으로 public repository를 시작한다](0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)
 
 ## 맥락
 
@@ -15,7 +15,8 @@
 ### Public application과 Runtime을 분리한다
 
 - 첫 public 명령은 Node와 npm을 명시적 prerequisite로 둔 exact `npx ay-ple@<release-version>`이다. Public `ay-ple` package와 bin 하나가 prebuilt Server·Browser UI를 foreground local host 하나로 실행한다. `.app`·`.dmg`, zero-prerequisite installer와 background updater는 첫 public 경로가 아니다.
-- npm package는 application code, prebuilt UI와 package-owned exact Runtime descriptor·canonical manifest를 담는 thin application artifact다. Python·native Runtime byte는 별도의 immutable GitHub Release asset으로 배포한다. Public 실행은 repository checkout, system Python, consumer source build와 npm install lifecycle hook에 의존하지 않는다.
+- npm package는 application code, prebuilt UI, dedicated product-resource subtree의 workspace instruction/Skill bundle과 `AGENTS.md`·built-in Skill root별 exact complete-tree roster·digest descriptor, exact Runtime descriptor·canonical manifest를 담는 thin application artifact다. Ambient source-repository root의 `AGENTS.md`·`.agents/`는 product resource가 아니다. Python·native Runtime byte는 별도의 immutable GitHub Release asset으로 배포한다. Public 실행은 repository checkout, system Python, consumer source build와 npm install lifecycle hook에 의존하지 않는다.
+- Production host는 workspace mutation 전에 package-root containment, descriptor-declared regular file·no-symlink roster와 digest를 complete-tree 검증한다. Missing·corrupt bundle resource는 setup을 시작하지 않고, verified package·bundle identity를 approved setup transaction에 bind한다.
 - [ADR 0009](0009-use-a-macos-first-local-web-app-product-path.md)의 macOS-first local companion·browser UI 경계와 [ADR 0011](0011-reuse-official-codex-python-sdk-for-chat-shell.md)의 official SDK·supervised Runtime graph는 유지한다. 이 ADR은 그 앞의 public application↔Runtime distribution authority만 소유한다.
 
 ### Exact binding과 검증을 한 resolver가 소유한다

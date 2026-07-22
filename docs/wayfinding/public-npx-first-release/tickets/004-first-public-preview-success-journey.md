@@ -18,13 +18,13 @@
 
 - First public preview의 release-blocking golden path는 `Landing → npx → preflight·Runtime 준비 → ChatGPT browser OAuth → 새 SemesterWorkspace scaffold → 기본 설정 → Semester Ready`로 끝낸다.
 - `SemesterWorkspace`는 임의의 기존 폴더가 아니라, 사용자가 학년·학기와 위치를 선택하면 AY-PLE이 생성하고 정규화해 관리하는 학기 공간이다.
-- App code가 scaffold, `WorkspaceManifest`, schema version, validation과 deterministic migration 규칙을 소유한다. Setup Skill은 canonical schema를 정의하지 않고 app-owned 작업을 호출·조율하거나 후속 migration을 돕는다.
+- App code가 Browser setup journey, scaffold, `WorkspaceManifest`, schema version, validation과 deterministic migration 규칙을 소유한다. Mandatory setup에는 Codex `Thread`·live Turn·setup Skill을 사용하지 않으며 후속 migration의 Agent 분석도 app-owned 작업과 사용자 검토를 우회하지 않는다.
 - 학년 1~4와 1·2학기는 setup UI의 기본 선택지다. 계절학기·초과학기를 막는 schema 절대 제약이 아니다.
 - 디렉터리 schema는 `WorkspaceManifest`, inbox, courses, app-owned state와 같은 안정적인 seam만 최소로 정의한다. Course 정체성·관계는 `WorkspaceManifest`가 authoritative하고 폴더명은 human-readable projection이다.
 - 기존 자료 폴더는 `SemesterWorkspace`가 아니라 후보 `ImportSource`다. 후속 반입 여정에서 Agent/Skill이 분석과 mapping·migration plan을 제안하고 사용자가 검토·승인한 뒤 app-owned scaffold 내부에 반입한다.
 - `/Users/swh/Desktop/code/2nd-1st-semester`는 후속 학업 capability와 import/migration을 발굴하는 실제 사용 evidence이며 onboarding fixture가 아니다.
 - 자료 archive/import, 실제 학업 action과 confirmed state 복원은 `Semester Ready` 이후의 독립된 제품 여정으로 분리한다. 이 Ticket의 golden path는 그 capability를 public preview 성공 조건으로 두지 않는다.
-- `Semester Ready`는 UI에서 `학기 공간 준비 완료`로 표현하는 setup 완료 checkpoint다. Runtime 연결과 OAuth Account Readiness가 성공하고, scaffold·`WorkspaceManifest`가 생성되며, schema version·validation을 통과하고, 학년·학기·위치·기본값과 active workspace 등록이 저장되고, 미완료 setup·recovery 상태가 없을 때 도달한다.
+- `Semester Ready`는 UI에서 `학기 공간 준비 완료`로 표현하는 setup 완료 checkpoint다. Runtime 연결과 OAuth Account Readiness가 성공하고, scaffold·`WorkspaceManifest`와 package-owned `AGENTS.md`·built-in Skill complete trees가 생성·검증되며, effective native context에 workspace-local conflict가 없고, schema version·validation을 통과하고, 학년·학기와 active workspace 등록이 저장되고, 미완료 setup·recovery 상태가 없을 때 도달한다.
 - `Semester Ready`는 Course, RawMaterial, live model turn이나 학업 action을 요구하지 않으며 AY가 학기를 이해했다는 뜻도 아니다. 완료 화면의 다음 CTA는 후속 여정인 `첫 자료 가져오기`다.
 - 첫 preview의 지원 lane은 Apple Silicon Mac의 macOS 13.5 이상, Node `>=22.12 <23`, npm 10.x와 최신 Chrome/Chromium이다. npm registry, GitHub Releases, Codex OAuth와 provider endpoint에 연결 가능한 network를 prerequisite로 둔다.
 - Node 24, Safari, Intel Mac과 다른 OS는 별도 clean smoke 전까지 지원을 약속하지 않는다. 감지 시 검증하지 않은 환경임을 알리고 이 release의 green evidence로 계산하지 않는다.

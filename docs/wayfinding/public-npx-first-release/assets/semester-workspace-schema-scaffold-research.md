@@ -71,21 +71,23 @@ Physical split의 장점은 실제 multi-Course·large history에서 manifest-on
 - UI는 `1학기`·`2학기`를 기본 term으로 제시하지만 `term.key`·`displayName`은 closed enum이 아닌 bounded extensible value다. 계절학기·custom term은 format bump 없이 표현할 수 있다.
 - Course catalog는 empty일 수 있다. Initial admission과 `Semester Ready`는 default Course, Course folder나 `RawMaterial`을 요구하지 않는다.
 - Folder name과 `courses/` 아래 path는 human-readable projection이다. Absolute path, app-data registry, account·credential, Runtime/thread identity는 aggregate에 넣지 않는다.
-- `settings`의 exact first defaults는 Ticket 010과 resulting spec이 고정한다. 이 조사 문서의 logical example은 구현 contract가 아니다.
+- Ticket 010은 initial defaults를 선택한 year-level·term metadata와 workspace instruction/Skill bundle로 제한했다. Default Course, timezone, locale, model·reasoning setting은 만들지 않는다. Exact aggregate field는 resulting spec이 고정한다.
 
 ## Minimal directory seam
 
 ```text
 <semester-workspace>/
+  AGENTS.md                     # setup-required workspace instruction/Skill bundle
+  .agents/skills/               # descriptor-declared built-in Skill roots
   .ay-ple/
     workspace-state.json      # v3 logical WorkspaceManifest + app-owned state
   inbox/                      # 후속 import 검토 seam; 자동 RawMaterial 아님
   courses/                    # human-readable Course projection root
 ```
 
-- `.ay-ple`, aggregate, `inbox/`, `courses/`는 supported version이 type·symlink·permission과 required presence를 검증하는 app-owned seam이다.
+- `.ay-ple`, aggregate, `inbox/`, `courses/`는 supported version이 type·symlink·permission과 required presence를 검증하는 app-owned schema seam이다.
 - Unknown root entry를 자동 import하거나 identity 근거로 사용하지 않는다. Incomplete scaffold에 unknown entry가 생기면 destructive cleanup을 중지한다.
-- `AGENTS.md`, `.agents/skills`, runtime scratch와 projection child roster는 admission identity가 아니다. Setup bundle·recovery와 후속 Course/import 작업이 필요할 때 app-owned operation으로 추가한다.
+- `AGENTS.md`와 descriptor-declared `.agents/skills/` built-in Skill root는 Ticket 010이 fresh setup과 같은 exact application version의 relaunch에 필요한 workspace instruction/Skill bundle로 정했다. `AGENTS.md`와 각 declared Skill root의 exact complete tree를 별도로 검증하고 descriptor 밖 sibling root는 소유하지 않는다. 다만 workspace-local `AGENTS.override.md`, `.codex/`와 descriptor 밖 Skill entry는 first-preview effective-native-context gate를 닫는다. Bundle은 admission identity가 아니며 runtime scratch와 projection child roster도 identity authority가 아니다.
 - V3 aggregate는 current store와 같은 `.ay-ple/workspace-state.json` 경로를 사용한다. 따라서 older v2-only code도 새 root에 별도 empty v2를 만들지 않고 future version `incompatible/readOnly`로 멈춘다. Exact field roster·encoding은 resulting spec이, 구현 뒤 current 동작은 Server README가 소유한다.
 
 ## Deep Module seam
@@ -100,7 +102,7 @@ interface SemesterWorkspaceAdmission {
 ```
 
 - `inspect`는 side effect 없이 parent·target·format·ownership·root relation을 fresh하게 분류하고 opaque observed authority가 bind된 plan을 만든다.
-- `apply`는 Server가 발급·보관한 authority-bound plan과 current filesystem authority를 다시 비교한 뒤 create·open·owned resume·owned discard 중 plan에 허용된 operation 하나를 수행한다. `ready-relaunch`의 valid committed reopen은 사용자 review를 요구하지 않으며, create·resume·discard 중 무엇을 사용자 review 대상으로 둘지는 Ticket 010이 정한다. Caller와 Setup Skill은 `mkdir`, JSON, version, ID 발급, validation 순서나 cleanup을 조립하지 않는다.
+- `apply`는 Server가 발급·보관한 authority-bound plan과 current filesystem authority를 다시 비교한 뒤 create·open·owned resume·owned discard 중 plan에 허용된 operation 하나를 수행한다. `ready-relaunch`의 valid committed reopen은 사용자 재확인을 요구하지 않는다. Ticket 010은 create 전 최종 확인과 approved exact setup plan만 durable하게 두고, matching owned incomplete의 resume·safe discard만 recovery action으로 허용했다. Browser와 script는 `mkdir`, JSON, version, ID 발급, validation 순서나 cleanup을 조립하지 않는다.
 - `AdmittedSemesterWorkspace`만 Server-private canonical root와 Manifest snapshot을 가진다. 이 capability만 active `workspaceRoot`·native `cwd`가 될 수 있다.
 - Migration entry point와 generic filesystem port는 first preview에 만들지 않는다. 실제 supported migration이 생길 때 같은 Module 내부에 concrete operation을 추가한다.
 
@@ -112,7 +114,7 @@ Fresh inspection은 다음 의미를 구분한다. Exact enum과 public copy는 
 | `admitted` | Explicit reopen intent에서 supported v3 aggregate와 required seam이 모두 valid하다. | Opaque admitted capability 발급 가능 |
 | `already_ready` | 같은 setup request·expected workspace ID의 target이 이미 valid v3 workspace다. | 같은 admitted capability로 idempotent 수렴 |
 | `workspace_exists` | Create intent의 target에 다른 valid v3 workspace가 있다. | Preserve하고 explicit reopen을 요구 |
-| `owned_incomplete` | Matching setup evidence가 있지만 v3 publish·validation이 끝나지 않았다. | Ticket 010/011의 exact resume·owned discard만 가능 |
+| `owned_incomplete` | Matching setup evidence가 있지만 v3 publish·validation이 끝나지 않았다. | Ticket 010의 생성 승인·recovery policy와 Ticket 011의 exact protocol에 따른 resume·owned discard만 가능 |
 | `legacy_migration_required` | Decoder-valid current v2 bytes가 있다. | First preview에서는 read-only·no admission |
 | `collision` | Create intent의 target에 existing empty/nonempty directory, file 또는 unowned partial tree가 있다. | Preserve and fail closed |
 | `incompatible` | Explicit reopen intent에서 decoder-invalid/pre-baseline/future format 또는 controlled seam drift를 발견했다. | Preserve bytes and fail closed |
@@ -140,9 +142,9 @@ Target leaf가 보이지만 final aggregate가 없거나 invalid하면 workspace
 
 ## Downstream input
 
-| Ticket | 이 조사에서 고정한 입력 | 남겨 둔 결정 |
+| Ticket | 이 조사에서 고정한 입력 | 후속 책임 |
 | --- | --- | --- |
-| [Ticket 010](../tickets/010-resumable-setup-authority.md) | App-owned `inspect`·`apply`, authority-bound plan, schema write 우회 금지 | Skill/script orchestration, user review policy, exact defaults·Installer bundle |
+| [Ticket 010](../tickets/010-resumable-setup-authority.md) | App-owned `inspect`·`apply`, authority-bound plan, schema write 우회 금지 | Browser `SetupJourney`, 최종 확인·approved-only durability, workspace instruction/Skill bundle와 thin repository-only smoke adapter를 결정했다. |
 | [Ticket 011](../tickets/011-bootstrap-and-setup-recovery.md) | Opaque workspace ID, v3 aggregate authority/digest, `owned_incomplete`·`admitted` publish boundary | app-data receipt·registry, setup resume/discard, process interruption |
 | [Ticket 012](../tickets/012-semester-ready-first-action.md) | Course-free admitted workspace, Browser-safe semester/display projection | Exact onboarding/workbench UI와 copy |
 
