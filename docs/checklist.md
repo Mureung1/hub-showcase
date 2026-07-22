@@ -21,9 +21,9 @@
 - [x] 서버 자체가 안 떠 있을 때(네트워크 에러)와 API가 4xx/5xx를 준 경우를 구분해서 메시지 다르게 — 서버 끄고 직접 재현해서 검증
 
 ## 아키텍처 다이어그램
-- [ ] mermaid로 화면(React) → 서버(Express) → DB(Supabase) 흐름 그리기
-- [ ] README에 삽입
-- [ ] 내 말로(자료 없이) 설명할 수 있도록 준비 — 목요일 화이트보드 발표 대비
+- [x] mermaid로 화면(React) → 서버(Express) → DB(Supabase) 흐름 그리기
+- [x] README에 삽입
+- [x] 설명하며 발견한 gap 기록 (Episodes/ChatView는 아직 mock, TideCheck만 실제 DB 연결) — 오늘 그룹 세션에서 이 그림으로 직접 설명
 
 ## Agent 산출물
 - [ ] 테스트코드 생성 Skill 문서 작성 (`.claude/skills/`)
