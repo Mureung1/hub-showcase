@@ -18,12 +18,13 @@ function CheckGroup({ options, values, onToggle }) {
   );
 }
 
-// TODO: 빵집 데이터 수집 끝나면 "가본 곳"/"가고 싶은 곳"을 여기 다시 추가 (서버 user_bakery_status 테이블은 이미 있음).
+// "가본 곳"/"가고 싶은 곳"은 회원가입 시점이 아니라 지도/리스트에서 하트·체크 눌러서 쌓는 방식으로 바뀌었다
+// (client/src/store/useAppStore.js의 toggleWishlist/toggleVisited, 서버 user_bakery_status 테이블).
 export default function AuthModal() {
   const authModal = useAppStore((s) => s.authModal);
   const closeAuthModal = useAppStore((s) => s.closeAuthModal);
   const openAuthModal = useAppStore((s) => s.openAuthModal);
-  const login = useAppStore((s) => s.login);
+  const restoreSession = useAppStore((s) => s.restoreSession);
   const showToast = useAppStore((s) => s.showToast);
 
   const [id, setId] = useState('');
@@ -46,9 +47,10 @@ export default function AuthModal() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const { token, user } = await authApi.login({ username: id, password });
+      const { token } = await authApi.login({ username: id, password });
       localStorage.setItem('token', token);
-      login(user);
+      await restoreSession();
+      closeAuthModal();
     } catch (err) {
       showToast(err.message || '로그인에 실패했어요.');
     } finally {
@@ -60,9 +62,10 @@ export default function AuthModal() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const { token, user } = await authApi.signup({ username: id, password, taste });
+      const { token } = await authApi.signup({ username: id, password, taste });
       localStorage.setItem('token', token);
-      login(user);
+      await restoreSession();
+      closeAuthModal();
       showToast('회원가입을 완료했어요');
     } catch (err) {
       showToast(err.message || '회원가입에 실패했어요.');

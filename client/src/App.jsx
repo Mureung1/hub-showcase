@@ -5,20 +5,20 @@ import RouteScreen from './screens/RouteScreen.jsx';
 import ChatScreen from './screens/ChatScreen.jsx';
 import MyPageScreen from './screens/MyPageScreen.jsx';
 import AuthModal from './screens/AuthModal.jsx';
-import BgDecor from './components/BgDecor.jsx';
 import TopBar from './components/TopBar.jsx';
 import Footer from './components/Footer.jsx';
 import Toast from './components/Toast.jsx';
 import { useThemeSync } from './hooks/useThemeSync.js';
 import { useLoadBakeries } from './hooks/useLoadBakeries.js';
+import { useRestoreSession } from './hooks/useRestoreSession.js';
 
 export default function App() {
   useThemeSync();
   useLoadBakeries();
+  useRestoreSession();
 
   return (
     <>
-      <BgDecor />
       <div className="app">
         <TopBar />
         <main>
