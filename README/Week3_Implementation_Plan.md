@@ -136,20 +136,25 @@ gantt
 
 ### 🔴 High — ③ 저장 및 공유
 
-- [ ] **Task 12: [BE/DB] 임시 저장 · 저장하기 (버전 히스토리 관리)**
-  - *상세:* `projects`에 `save_status`(`draft` / `saved`) 컬럼 추가 마이그레이션. 가설 인라인 수정 시 **기존 값을 `hypothesis_versions`에 `version`을 증가시켜 append한 뒤** `hypotheses`를 최신값으로 UPDATE — **덮어쓰기 금지, 히스토리 보존**. 엔드포인트: `POST /api/projects/:id/save`(임시저장/저장 전환), `GET /api/projects/:id/hypotheses/:hid/versions`.
+- [x] **Task 12: [BE/DB] 임시 저장 · 저장하기 (버전 히스토리 관리)**
+  - *상세:* `projects.save_status`(`draft` / `saved`) 컬럼 추가(마이그레이션 005). `PATCH /:id/hypotheses/:hid`(Task 10에서 만든 인라인 수정 라우트)에 버전 아카이빙을 연결 — cause/effect 변경 시 **덮어쓰기 직전** 현재 값을 `hypothesis_versions`에 `version = 기존 개수+1`로 INSERT한 뒤 `hypotheses`를 UPDATE. `GET /api/projects/:id/hypotheses/:hid/versions`(오래된 순)로 조회.
+  - *사후 개선(사용자 리뷰):* 수동 `POST /:id/save` 토글은 draft/saved 사이에 실질적 동작 차이가 없어 의미 없는 라벨이었음을 확인 → 제거하고, 가설 판단(`status`)이 바뀔 때마다 `recomputeSaveStatus()`가 **모든 가설이 판단 완료(검토 전 아님)면 자동으로 `saved`**로 계산하도록 변경. 대시보드에는 버튼 대신 `hypotheses` 배열에서 직접 계산한 "판단 완료 N/M" 배지를 표시해, 가설이 많아도 개별 행을 훑지 않고 진행률을 한눈에 확인 가능.
   - *완료 조건:* 가설을 2회 수정한 뒤 `hypothesis_versions`에 이전 버전이 모두 남아 있고, 임시저장/저장 상태가 DB에 반영되어 재방문 시 복원됨.
 
-- [ ] **Task 13: [BE/FE] 결과 공유하기 (MD / URL / PDF)**
-  - *상세:*
-    - **MD:** 기존 `backend/src/lib/analysisMarkdown.ts`의 빌더 패턴을 재사용하여 `buildReportMarkdown`(가설별 상태 · 판단 · 검증결과 · 근거 포함) 신규 작성 ➡️ `GET /api/projects/:id/report.md` 다운로드.
-    - **URL:** `projects`에 `share_token` 컬럼 추가, `GET /api/share/:token` 읽기 전용 조회 + FE `/share/:token` 라우트. 추측 불가한 랜덤 토큰 사용.
-    - **PDF:** 신규 의존성 없이 공유 화면에 print 전용 CSS(`@media print`) 적용 후 브라우저 인쇄 ➡️ PDF 저장. (Puppeteer는 번들 크기 · 배포 부담이 커서 3주차 범위에서 제외.)
+- [x] **Task 13: [BE/FE] 결과 공유하기 (MD / URL / PDF)**
+  - *상세:* 사전 검토에서 계획을 개선: MD/URL 두 출력이 각자 쿼리를 새로 짜면 정보가 어긋날 위험이 있어, `lib/projectReport.ts`의 `getFullProjectReport()` 하나로 데이터 집계를 통합하고 두 출력이 재사용하도록 변경.
+    - **MD:** `lib/reportMarkdown.ts`의 `buildReportMarkdown()`(가설별 상태 · 판단 · 검증결과 · 근거 목록 포함, `analysisMarkdown.ts`와는 별개 — 그건 분석 요청용, 이건 결과 리포트용) ➡️ `GET /api/projects/:id/report.md` 다운로드.
+    - **URL:** `projects.share_token`을 다른 id 컬럼들과 동일하게 `DEFAULT uuid_generate_v4()::text`로 자동 발급(별도 "링크 생성" 엔드포인트 불필요, 마이그레이션 006). `GET /api/share/:token`은 **완전히 별도 라우터**(`routes/share.ts`)로 분리해 GET만 존재 — Task 17("공유 URL 접근 범위 제한")이 구조적으로 이미 해결됨. `save_status`와 무관하게 항상 공유 가능(결정 확인함). FE `/share/:token`은 드로어 대신 근거를 인라인 목록으로 표시(드로어는 `position:fixed`라 인쇄에 안 나옴).
+    - **PDF:** 신규 의존성 없이 공유 화면에 `.no-print`/`.print-only` + `@media print` CSS 적용 후 브라우저 인쇄. (Puppeteer는 3주차 범위에서 제외.)
+    - **대시보드 진입점 추가(계획서에 없었지만 필요):** "공유 링크 복사" · "리포트 다운로드" 버튼을 대시보드 헤더에 추가 — 없으면 토큰에 도달할 방법이 없어 기능이 도달 불가능함.
+  - *사후 개선(사용자 리뷰 3건):*
+    1. **MD 파일명:** `report_${id}.md`(UUID)였던 걸 `sanitizeFilenamePart()`로 파일명 금지문자를 치환한 뒤 **프로젝트 제목** 기반으로 변경, 한글은 `Content-Disposition: filename*=UTF-8''...`(RFC 5987)로 인코딩해 브라우저에서 안 깨지게 함.
+    2. **체크박스 선택 다운로드:** Task 8 설계 당시 "체크박스는 공유·Export 대상 선택용"이라 적어놓고 실제로 연결을 안 했던 걸 발견 → `GET /:id/report.md?hypothesis_ids=id1,id2`로 확장, FE는 `selectedIds`가 있으면 쿼리로 실어 보내고 없으면 전체 다운로드(기존 동작 유지). 공유 URL(`/share/:token`)은 고정 링크여야 하므로 이 필터를 적용하지 않음(체크박스는 매번 바뀌는 일시적 상태).
   - *완료 조건:* 세 가지 공유 방식이 모두 동작하고, 공유 URL을 로그아웃/시크릿 창에서 열었을 때 읽기 전용으로 정상 표시됨.
 
-- [ ] **Task 14: [검증] E2E 전체 동선 테스트**
-  - *상세:* 입력 ➡️ 분석 ➡️ 대시보드 ➡️ 상세 ➡️ 참조 번호 클릭/드로어 ➡️ 반박 프롬프트 ➡️ 판단 지정 ➡️ 임시저장/저장 ➡️ 공유(MD/URL/PDF) 전체 동선 수동 검증.
-  - *완료 조건:* 전체 시나리오가 에러 없이 완주되고, 각 단계의 DB 적재 상태가 화면과 일치함.
+- [x] **Task 14: [검증] E2E 전체 동선 테스트**
+  - *상세:* 입력 ➡️ 분석 ➡️ 대시보드 ➡️ 상세 ➡️ 참조 번호 클릭/드로어 ➡️ 반박 프롬프트 ➡️ 판단 지정 ➡️ 임시저장/저장 ➡️ 공유(MD/URL/PDF) 전체 동선 수동 검증. 이전 Task들과 달리 API 스크립트로 시드하지 않고 **입력 화면 폼을 실제로 채워서** 첫 단계부터 브라우저로 진행.
+  - *완료 조건:* 전체 시나리오가 에러 없이 완주되고, 각 단계의 DB 적재 상태가 화면과 일치함. 실제 검증: 입력→분석→대시보드 자동 이동 확인 → 상세 화면 `[1]` 마커 클릭 시 드로어에 정확한 근거 표시 → 검증결과 문단 드래그 하이라이트 → 반박 의견 제출 → 가안 미리보기(원본 불변) → 적용 시에만 반영 → 상세 화면에서 "유지" 판단 → 대시보드 복귀 시 판단·"검토 전" 태그 소멸 모두 유지 → 임시저장→저장 전환 → MD 리포트·공유 API·공유 화면 모두 리파인 반영분과 판단("유지")까지 정확히 반영. DB 5개 테이블(projects/hypotheses/evidence_tags/verification_results/refine_chats) 전부 화면과 일치 확인. 콘솔 에러 없음.
 
 ### 🟡 Medium (예외 처리 및 안전성 강화)
 

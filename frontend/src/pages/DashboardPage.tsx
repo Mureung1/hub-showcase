@@ -28,6 +28,8 @@ interface Project {
   id: string
   title: string
   problem_definition: string
+  save_status: string
+  share_token: string
 }
 
 interface DashboardData {
@@ -56,6 +58,7 @@ function DashboardPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [judgmentError, setJudgmentError] = useState<string | null>(null)
   const [pendingJudgmentId, setPendingJudgmentId] = useState<string | null>(null)
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -114,6 +117,17 @@ function DashboardPage() {
     }
   }
 
+  async function copyShareLink() {
+    if (!data) return
+    const url = `${window.location.origin}/share/${data.project.share_token}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopyFeedback('공유 링크가 복사되었습니다.')
+    } catch {
+      setCopyFeedback(url) // 클립보드 권한이 없으면 링크 텍스트라도 보여준다.
+    }
+  }
+
   if (error) {
     return (
       <div className="app-shell">
@@ -130,11 +144,42 @@ function DashboardPage() {
     )
   }
 
+  // 판단 완료 진행률 — 버튼으로 수동 저장하는 대신, 가설 판단 여부로 실시간 계산한다.
+  // save_status(draft/saved)는 이 값을 BE가 그대로 따라가지만, 화면 표시는 개수를 직접 세어
+  // 여러 가설을 훑지 않고도 한눈에 진행 상황을 알 수 있게 한다.
+  const judgedCount = data.hypotheses.filter((h) => h.status !== '검토 전').length
+  const totalCount = data.hypotheses.length
+  const allJudged = totalCount > 0 && judgedCount === totalCount
+
+  const hypothesisIdsQuery = selectedIds.size > 0 ? [...selectedIds].join(',') : null
+  const reportUrl = hypothesisIdsQuery
+    ? `${API_BASE_URL}/api/projects/${id}/report.md?hypothesis_ids=${hypothesisIdsQuery}`
+    : `${API_BASE_URL}/api/projects/${id}/report.md`
+  const printUrl = hypothesisIdsQuery
+    ? `/projects/${id}/print?hypothesis_ids=${hypothesisIdsQuery}`
+    : `/projects/${id}/print`
+  const selectionSuffix = selectedIds.size > 0 ? ` (선택 ${selectedIds.size}개)` : ''
+
   return (
     <div className="app-shell">
       <header className="page-header">
         <h1>{data.project.title}</h1>
         <p>{data.project.problem_definition}</p>
+        <span className={`badge ${allJudged ? 'badge-strong' : 'badge-pending'}`}>
+          판단 완료 {judgedCount}/{totalCount}
+        </span>
+        <div className="share-actions">
+          <button type="button" className="btn-add" onClick={copyShareLink}>
+            공유 링크 복사
+          </button>
+          <a className="btn-add" href={reportUrl}>
+            MD 다운로드{selectionSuffix}
+          </a>
+          <a className="btn-add" href={printUrl} target="_blank" rel="noreferrer">
+            PDF (인쇄){selectionSuffix}
+          </a>
+        </div>
+        {copyFeedback && <p className="copy-feedback">{copyFeedback}</p>}
       </header>
 
       <section className="card">

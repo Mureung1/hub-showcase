@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabaseClient';
 import { buildAnalysisMarkdown } from '../lib/analysisMarkdown';
 import { runAnalysisPipeline } from '../lib/analysisPipeline';
 import { refineVerificationSummary } from '../lib/refineHypothesis';
+import { getFullProjectReport, filterReportByHypothesisIds } from '../lib/projectReport';
+import { buildReportMarkdown } from '../lib/reportMarkdown';
 
 const router = Router();
 const ANALYSIS_REQUESTS_DIR = path.join(__dirname, '..', '..', '..', 'analysis_requests');
@@ -462,9 +464,8 @@ interface PatchHypothesisBody {
 
 // PATCH /api/projects/:id/hypotheses/:hid — 가설 판단(유지/수정/폐기) 확정 및/또는 원인·결과 인라인 수정.
 // status·cause·effect 중 있는 필드만 갱신한다(부분 갱신).
-// 원인/결과 수정은 현재 덮어쓰기다 — 이전 값을 hypothesis_versions에 append하는 버전 히스토리는
-// 아직 붙이지 않았다(Task 12에서 연결 예정). Task 10 완료 조건("인라인 수정 진입점")은 편집·저장
-// 동작 자체를 요구하며, 버전 보존은 별도 완료 조건이다.
+// 원인/결과를 바꿀 때는 덮어쓰기 전에 현재 값을 hypothesis_versions에 append한다(Task 12,
+// 버전 히스토리는 append-only — 절대 UPDATE로 이전 값을 유실시키지 않는다).
 router.patch(
   '/:id/hypotheses/:hid',
   async (
@@ -503,6 +504,42 @@ router.patch(
       updatePayload.effect = effect.trim();
     }
 
+    // 원인/결과 중 하나라도 바뀌면, 덮어쓰기 직전의 현재 값을 버전으로 먼저 보존한다.
+    if (updatePayload.cause !== undefined || updatePayload.effect !== undefined) {
+      const { data: current, error: currentError } = await supabase
+        .from('hypotheses')
+        .select('cause, effect')
+        .eq('id', hid)
+        .eq('project_id', id)
+        .single();
+
+      if (currentError || !current) {
+        return res.status(404).json({ error: '가설을 찾을 수 없습니다.' });
+      }
+
+      const { count, error: countError } = await supabase
+        .from('hypothesis_versions')
+        .select('*', { count: 'exact', head: true })
+        .eq('hypothesis_id', hid);
+
+      if (countError) {
+        console.error('Failed to count hypothesis_versions:', countError);
+        return res.status(500).json({ error: '버전 히스토리 조회에 실패했습니다.' });
+      }
+
+      const { error: versionInsertError } = await supabase.from('hypothesis_versions').insert({
+        hypothesis_id: hid,
+        version: (count ?? 0) + 1,
+        cause: current.cause,
+        effect: current.effect,
+      });
+
+      if (versionInsertError) {
+        console.error('Failed to insert hypothesis_versions:', versionInsertError);
+        return res.status(500).json({ error: '버전 히스토리 저장에 실패했습니다.' });
+      }
+    }
+
     const { data: hypothesis, error } = await supabase
       .from('hypotheses')
       .update(updatePayload)
@@ -516,7 +553,139 @@ router.patch(
       return res.status(404).json({ error: '가설을 찾을 수 없습니다.' });
     }
 
+    if (status !== undefined) {
+      await recomputeSaveStatus(id);
+    }
+
     return res.status(200).json({ hypothesis });
+  },
+);
+
+// GET /api/projects/:id/hypotheses/:hid/versions — 버전 히스토리 조회. 오래된 순(version 오름차순).
+router.get(
+  '/:id/hypotheses/:hid/versions',
+  async (req: Request<{ id: string; hid: string }>, res: Response) => {
+    const { id, hid } = req.params;
+
+    const { data: hypothesis, error: hypothesisError } = await supabase
+      .from('hypotheses')
+      .select('id')
+      .eq('id', hid)
+      .eq('project_id', id)
+      .single();
+
+    if (hypothesisError || !hypothesis) {
+      return res.status(404).json({ error: '가설을 찾을 수 없습니다.' });
+    }
+
+    const { data: versions, error } = await supabase
+      .from('hypothesis_versions')
+      .select('*')
+      .eq('hypothesis_id', hid)
+      .order('version', { ascending: true });
+
+    if (error) {
+      console.error('Failed to fetch hypothesis_versions:', error);
+      return res.status(500).json({ error: '버전 히스토리 조회에 실패했습니다.' });
+    }
+
+    return res.status(200).json({ versions: versions ?? [] });
+  },
+);
+
+// 가설 판단(status)이 바뀔 때마다 호출. 모든 가설이 판단 완료(검토 전이 아님)면 saved,
+// 하나라도 남아있으면 draft로 자동 계산한다 — 수동 저장 버튼 없이 "판단을 다 끝냈다"는
+// 실질적 의미를 갖게 하기 위함(임시저장/저장이 그냥 라벨만 다른 문제를 해결).
+async function recomputeSaveStatus(projectId: string): Promise<void> {
+  const { data: hyps, error } = await supabase
+    .from('hypotheses')
+    .select('status')
+    .eq('project_id', projectId);
+
+  if (error) {
+    console.error('Failed to recompute save_status:', error);
+    return;
+  }
+
+  const allJudged = (hyps ?? []).length > 0 && (hyps ?? []).every((h) => h.status !== '검토 전');
+  const { error: updateError } = await supabase
+    .from('projects')
+    .update({ save_status: allJudged ? 'saved' : 'draft' })
+    .eq('id', projectId);
+
+  if (updateError) {
+    console.error('Failed to update save_status:', updateError);
+  }
+}
+
+// 파일명에 못 쓰는 문자를 치환하고 과도하게 길지 않게 자른다.
+function sanitizeFilenamePart(raw: string): string {
+  return raw.replace(/[\\/:*?"<>|]/g, '_').trim().slice(0, 80) || 'untitled';
+}
+
+// GET /api/projects/:id/report.md?hypothesis_ids=id1,id2 — 분석 결과 리포트 다운로드.
+// hypothesis_ids가 있으면 대시보드에서 체크박스로 선택한 가설만 담는다(없으면 전체).
+router.get(
+  '/:id/report.md',
+  async (req: Request<{ id: string }, {}, {}, { hypothesis_ids?: string }>, res: Response) => {
+    const { id } = req.params;
+    const { hypothesis_ids: hypothesisIdsRaw } = req.query;
+
+    let report;
+    try {
+      report = await getFullProjectReport(id);
+    } catch (err) {
+      console.error('Failed to build project report:', err);
+      const message = err instanceof Error ? err.message : '리포트 생성에 실패했습니다.';
+      return res.status(500).json({ error: message });
+    }
+
+    if (!report) {
+      return res.status(404).json({ error: '프로젝트를 찾을 수 없습니다.' });
+    }
+
+    report = filterReportByHypothesisIds(report, hypothesisIdsRaw);
+
+    const markdown = buildReportMarkdown(report);
+    const filename = `report_${sanitizeFilenamePart(report.project.title)}.md`;
+
+    res.set('Content-Type', 'text/markdown; charset=utf-8');
+    // 한글 파일명은 RFC 5987 인코딩(filename*)이 있어야 브라우저에서 안 깨진다.
+    // filename(ASCII)은 구형 클라이언트 폴백용 고정값으로 둔다.
+    res.set(
+      'Content-Disposition',
+      `attachment; filename="report.md"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+    );
+    return res.status(200).send(markdown);
+  },
+);
+
+// GET /api/projects/:id/print?hypothesis_ids=id1,id2 — PDF 인쇄 미리보기용 JSON.
+// 공유 링크(/api/share/:token)와 달리 소유자가 대시보드에서 바로 쓰는 경로라 실제 project id를
+// 쓴다. hypothesis_ids가 있으면 체크박스로 선택한 가설만(없으면 전체) — MD 다운로드와 동일한
+// filterReportByHypothesisIds()를 재사용해 두 출력이 어긋나지 않게 한다.
+router.get(
+  '/:id/print',
+  async (req: Request<{ id: string }, {}, {}, { hypothesis_ids?: string }>, res: Response) => {
+    const { id } = req.params;
+    const { hypothesis_ids: hypothesisIdsRaw } = req.query;
+
+    let report;
+    try {
+      report = await getFullProjectReport(id);
+    } catch (err) {
+      console.error('Failed to build print report:', err);
+      const message = err instanceof Error ? err.message : '리포트 생성에 실패했습니다.';
+      return res.status(500).json({ error: message });
+    }
+
+    if (!report) {
+      return res.status(404).json({ error: '프로젝트를 찾을 수 없습니다.' });
+    }
+
+    report = filterReportByHypothesisIds(report, hypothesisIdsRaw);
+
+    return res.status(200).json(report);
   },
 );
 
