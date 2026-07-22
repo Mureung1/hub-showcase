@@ -311,6 +311,18 @@ button {
   padding-left: 18px;
 }
 
+.detail-screenshots {
+  display: grid;
+  gap: 10px;
+}
+
+.detail-screenshots img {
+  display: block;
+  width: 100%;
+  border: 1px solid #d3dbd7;
+  border-radius: 8px;
+}
+
 .detail-tags {
   margin-top: 12px;
 }

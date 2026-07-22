@@ -14,6 +14,7 @@ export type Project = {
   problem?: string;
   targetUsers?: string[];
   features?: string[];
+  techHighlights?: string[];
   screenshots?: string[];
   screenshotUrls?: string[];
   demoUrl?: string;
@@ -151,6 +152,20 @@ export default function App({ projects }: AppProps) {
                 </section>
               )}
 
+              {selectedProject.targetUsers && selectedProject.targetUsers.length > 0 && (
+                <section className="detail-section">
+                  <h3>대상 사용자</h3>
+                  <ul>{selectedProject.targetUsers.map((user) => <li key={user}>{user}</li>)}</ul>
+                </section>
+              )}
+
+              {selectedProject.techHighlights && selectedProject.techHighlights.length > 0 && (
+                <section className="detail-section">
+                  <h3>기술적 특징</h3>
+                  <ul>{selectedProject.techHighlights.map((highlight) => <li key={highlight}>{highlight}</li>)}</ul>
+                </section>
+              )}
+
               {selectedProject.agent?.summary && (
                 <section className="detail-section">
                   <h3>Agent 활용</h3>
@@ -159,6 +174,17 @@ export default function App({ projects }: AppProps) {
                     {[...(selectedProject.agent.agents ?? []), ...(selectedProject.agent.skills ?? []), ...(selectedProject.agent.workflows ?? [])]
                       .slice(0, 8)
                       .map((tag) => <span className="tag" key={tag}>{tag}</span>)}
+                  </div>
+                </section>
+              )}
+
+              {(selectedProject.screenshotUrls ?? selectedProject.screenshots ?? []).length > 0 && (
+                <section className="detail-section">
+                  <h3>추가 화면</h3>
+                  <div className="detail-screenshots">
+                    {(selectedProject.screenshotUrls ?? selectedProject.screenshots ?? []).map((screenshot, index) => (
+                      <img key={screenshot} src={screenshot} alt={`${selectedProject.title} 화면 ${index + 1}`} />
+                    ))}
                   </div>
                 </section>
               )}
