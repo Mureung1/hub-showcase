@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { buildAnalysisMarkdown } from '../lib/analysisMarkdown';
 import { runAnalysisPipeline } from '../lib/analysisPipeline';
 import { refineVerificationSummary } from '../lib/refineHypothesis';
-import { getFullProjectReport } from '../lib/projectReport';
+import { getFullProjectReport, filterReportByHypothesisIds } from '../lib/projectReport';
 import { buildReportMarkdown } from '../lib/reportMarkdown';
 
 const router = Router();
@@ -644,12 +644,7 @@ router.get(
       return res.status(404).json({ error: '프로젝트를 찾을 수 없습니다.' });
     }
 
-    if (hypothesisIdsRaw) {
-      const selectedIds = new Set(hypothesisIdsRaw.split(',').map((s) => s.trim()).filter(Boolean));
-      if (selectedIds.size > 0) {
-        report = { ...report, hypotheses: report.hypotheses.filter((h) => selectedIds.has(h.id)) };
-      }
-    }
+    report = filterReportByHypothesisIds(report, hypothesisIdsRaw);
 
     const markdown = buildReportMarkdown(report);
     const filename = `report_${sanitizeFilenamePart(report.project.title)}.md`;
@@ -662,6 +657,35 @@ router.get(
       `attachment; filename="report.md"; filename*=UTF-8''${encodeURIComponent(filename)}`,
     );
     return res.status(200).send(markdown);
+  },
+);
+
+// GET /api/projects/:id/print?hypothesis_ids=id1,id2 — PDF 인쇄 미리보기용 JSON.
+// 공유 링크(/api/share/:token)와 달리 소유자가 대시보드에서 바로 쓰는 경로라 실제 project id를
+// 쓴다. hypothesis_ids가 있으면 체크박스로 선택한 가설만(없으면 전체) — MD 다운로드와 동일한
+// filterReportByHypothesisIds()를 재사용해 두 출력이 어긋나지 않게 한다.
+router.get(
+  '/:id/print',
+  async (req: Request<{ id: string }, {}, {}, { hypothesis_ids?: string }>, res: Response) => {
+    const { id } = req.params;
+    const { hypothesis_ids: hypothesisIdsRaw } = req.query;
+
+    let report;
+    try {
+      report = await getFullProjectReport(id);
+    } catch (err) {
+      console.error('Failed to build print report:', err);
+      const message = err instanceof Error ? err.message : '리포트 생성에 실패했습니다.';
+      return res.status(500).json({ error: message });
+    }
+
+    if (!report) {
+      return res.status(404).json({ error: '프로젝트를 찾을 수 없습니다.' });
+    }
+
+    report = filterReportByHypothesisIds(report, hypothesisIdsRaw);
+
+    return res.status(200).json(report);
   },
 );
 

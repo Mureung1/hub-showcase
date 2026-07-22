@@ -112,3 +112,17 @@ export async function getFullProjectReport(projectId: string): Promise<ProjectRe
 
   return { project, hypotheses: reportHypotheses };
 }
+
+// 체크박스 선택 다운로드/인쇄에 쓰는 필터. MD(/report.md)와 인쇄 미리보기(/print) 둘 다 이걸 쓴다.
+// idsParam이 없거나 비어 있으면 전체를 그대로 반환한다(기본값 = 전체).
+export function filterReportByHypothesisIds(report: ProjectReport, idsParam?: string): ProjectReport {
+  if (!idsParam) return report;
+  const ids = new Set(
+    idsParam
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+  if (ids.size === 0) return report;
+  return { ...report, hypotheses: report.hypotheses.filter((h) => ids.has(h.id)) };
+}

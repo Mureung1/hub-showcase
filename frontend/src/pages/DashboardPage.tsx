@@ -151,10 +151,14 @@ function DashboardPage() {
   const totalCount = data.hypotheses.length
   const allJudged = totalCount > 0 && judgedCount === totalCount
 
-  const reportUrl =
-    selectedIds.size > 0
-      ? `${API_BASE_URL}/api/projects/${id}/report.md?hypothesis_ids=${[...selectedIds].join(',')}`
-      : `${API_BASE_URL}/api/projects/${id}/report.md`
+  const hypothesisIdsQuery = selectedIds.size > 0 ? [...selectedIds].join(',') : null
+  const reportUrl = hypothesisIdsQuery
+    ? `${API_BASE_URL}/api/projects/${id}/report.md?hypothesis_ids=${hypothesisIdsQuery}`
+    : `${API_BASE_URL}/api/projects/${id}/report.md`
+  const printUrl = hypothesisIdsQuery
+    ? `/projects/${id}/print?hypothesis_ids=${hypothesisIdsQuery}`
+    : `/projects/${id}/print`
+  const selectionSuffix = selectedIds.size > 0 ? ` (선택 ${selectedIds.size}개)` : ''
 
   return (
     <div className="app-shell">
@@ -169,7 +173,10 @@ function DashboardPage() {
             공유 링크 복사
           </button>
           <a className="btn-add" href={reportUrl}>
-            리포트 다운로드{selectedIds.size > 0 ? ` (선택 ${selectedIds.size}개)` : ''}
+            MD 다운로드{selectionSuffix}
+          </a>
+          <a className="btn-add" href={printUrl} target="_blank" rel="noreferrer">
+            PDF (인쇄){selectionSuffix}
           </a>
         </div>
         {copyFeedback && <p className="copy-feedback">{copyFeedback}</p>}
