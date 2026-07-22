@@ -5,9 +5,12 @@ export type RepositoryAnalysisRequest = {
 
 export type RepositoryAnalysisErrorCode =
   | "INVALID_REPOSITORY_URL"
+  | "INVALID_REFLECTION_DRAFT"
   | "REPOSITORY_NOT_FOUND"
   | "GITHUB_RATE_LIMITED"
   | "EXTERNAL_SERVICE_ERROR"
+  | "REFLECTION_LOAD_FAILED"
+  | "REFLECTION_SAVE_FAILED"
   | "INTERNAL_SERVER_ERROR";
 
 export type RepositoryAnalysisErrorResponse = {

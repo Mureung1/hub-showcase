@@ -8,11 +8,11 @@ import {
   GitHubRateLimitError,
   GitHubRepositoryNotFoundError,
   GitHubRequestError,
-} from "./github-repository.client";
+} from "../infrastructure/github/github-repository.client";
 import {
   InvalidRepositoryUrlError,
   RepositoryAnalysisService,
-} from "./repository-analysis.service";
+} from "../application/repository-analysis.service";
 
 @Controller("repository-analyses")
 export class RepositoryAnalysisController {

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { GitHubRepositoryAnalysisSource } from "./repository-analysis.models";
+import type { GitHubRepositoryAnalysisSource } from "../../domain/repository-analysis.models";
 
 const GITHUB_API_URL = "https://api.github.com";
 

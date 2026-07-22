@@ -1,14 +1,14 @@
 import { Module } from "@nestjs/common";
 import { SupabaseModule } from "../supabase/supabase.module";
-import { GitHubRepositoryClient } from "./github-repository.client";
-import { RepositoryAnalysisController } from "./repository-analysis.controller";
-import { RepositoryAnalysisPersistence } from "./repository-analysis.persistence";
-import { RepositoryAnalysisService } from "./repository-analysis.service";
+import { GitHubRepositoryClient } from "./infrastructure/github/github-repository.client";
+import { RepositoryAnalysisController } from "./presentation/repository-analysis.controller";
+import { RepositoryAnalysisPersistence } from "./infrastructure/persistence/repository-analysis.persistence";
+import { RepositoryAnalysisService } from "./application/repository-analysis.service";
 import {
   HttpTechnicalChallengeAiClient,
   TECHNICAL_CHALLENGE_AI_CLIENT,
-} from "./technical-challenge.client";
-import { TechnicalChallengeAnalyzer } from "./technical-challenge.analyzer";
+} from "./infrastructure/ai/technical-challenge.client";
+import { TechnicalChallengeAnalyzer } from "./application/technical-challenge/technical-challenge.analyzer";
 
 @Module({
   imports: [SupabaseModule],

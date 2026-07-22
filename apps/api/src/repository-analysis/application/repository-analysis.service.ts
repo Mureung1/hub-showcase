@@ -3,18 +3,18 @@ import type {
   RepositoryAnalysisRequest,
   RepositoryAnalysisResult,
 } from "@ptop/contracts";
-import { GitHubRepositoryClient } from "./github-repository.client";
-import { createAnalysisDetails, createContributorMetrics } from "./repository-analysis.analyzer";
-import { RepositoryAnalysisPersistence } from "./repository-analysis.persistence";
-import { buildTechnicalChallengeContext } from "./technical-challenge.context";
-import { TechnicalChallengeAnalyzer } from "./technical-challenge.analyzer";
+import { GitHubRepositoryClient } from "../infrastructure/github/github-repository.client";
+import { RepositoryAnalysisPersistence } from "../infrastructure/persistence/repository-analysis.persistence";
+import { createAnalysisDetails, createContributorMetrics } from "../domain/repository-analysis.analyzer";
+import { buildTechnicalChallengeContext } from "./technical-challenge/technical-challenge.context";
+import { TechnicalChallengeAnalyzer } from "./technical-challenge/technical-challenge.analyzer";
 import {
   calculateCommitActivityPercent,
   createResultHash,
   parseGitHubRepositoryUrl,
-} from "./repository-analysis.utils";
+} from "../domain/repository-analysis.utils";
 
-const ANALYZER_VERSION = "repository-v2";
+const ANALYZER_VERSION = "repository-v3";
 
 export class InvalidRepositoryUrlError extends Error {
   constructor() {
@@ -48,9 +48,17 @@ export class RepositoryAnalysisService {
     );
     const contributors = calculateCommitActivityPercent(createContributorMetrics(source));
     const baseAnalysis = createAnalysisDetails(source);
-    const technicalChallengeResult = await this.technicalChallengeAnalyzer.analyze(
-      buildTechnicalChallengeContext(source, baseAnalysis),
-    );
+    const hasTargetActivity = targetGithubLogin
+      ? hasGithubActivity(source, targetGithubLogin)
+      : true;
+    const technicalChallengeResult = hasTargetActivity
+      ? await this.technicalChallengeAnalyzer.analyze(
+          buildTechnicalChallengeContext(source, baseAnalysis, targetGithubLogin),
+        )
+      : {
+          candidates: [],
+          warning: "입력한 GitHub ID의 활동을 Repository에서 찾지 못했습니다.",
+        };
     const analysis = {
       ...baseAnalysis,
       technicalChallenges: technicalChallengeResult.candidates,
@@ -105,4 +113,17 @@ export class RepositoryAnalysisService {
       analyzedAt,
     };
   }
+}
+
+function hasGithubActivity(
+  source: Awaited<ReturnType<GitHubRepositoryClient["getRepositoryAnalysisSource"]>>,
+  targetLogin: string,
+): boolean {
+  const normalizedTargetLogin = targetLogin.toLowerCase();
+
+  return [
+    ...source.commits.map((commit) => commit.authorLogin),
+    ...(source.pullRequests ?? []).map((pullRequest) => pullRequest.authorLogin),
+    ...(source.issues ?? []).map((issue) => issue.authorLogin),
+  ].some((login) => login?.toLowerCase() === normalizedTargetLogin);
 }

@@ -1,5 +1,5 @@
-import type { SupabaseClientService } from "../supabase/supabase-client.service";
-import type { RepositoryAnalysisPersistenceInput } from "./repository-analysis.models";
+import type { SupabaseClientService } from "../../../supabase/supabase-client.service";
+import type { RepositoryAnalysisPersistenceInput } from "../../domain/repository-analysis.models";
 import { RepositoryAnalysisPersistence } from "./repository-analysis.persistence";
 
 type QueryResult = { data: unknown; error: { message: string } | null };

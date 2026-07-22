@@ -1,22 +1,39 @@
 import type { ChangeEvent, FormEvent } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { RepositoryAnalysisResult } from "@ptop/contracts";
 import { BrandSpinner } from "../../components/BrandSpinner";
+import { ReflectionDraftEditor } from "../reflection/ReflectionDraftEditor";
+import { createEmptyReflectionDraft, type ReflectionDraft } from "../reflection/reflection";
+import { saveReflectionDraftToApi } from "../reflection/reflectionApi";
+import { useAuth } from "../auth/useAuth";
 import {
   ANALYSIS_STATUS,
   getRepositoryUrlError,
+  isAnalysisReady,
   type AnalysisStatus,
 } from "./repositoryAnalysis";
 import { requestRepositoryAnalysis } from "./repositoryAnalysisApi";
 
 type RepositoryAnalyzerProps = {
-  onAnalysisComplete: (result: RepositoryAnalysisResult) => void;
+  onAnalysisComplete: (result: RepositoryAnalysisResult, reflectionDraft: ReflectionDraft) => void;
 };
 
 export function RepositoryAnalyzer({ onAnalysisComplete }: RepositoryAnalyzerProps) {
+  const { user } = useAuth();
   const [repoUrl, setRepoUrl] = useState("");
+  const [githubLogin, setGithubLogin] = useState("");
   const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>(ANALYSIS_STATUS.idle);
   const [analysisError, setAnalysisError] = useState("");
+  const [reflectionDraft, setReflectionDraft] = useState<ReflectionDraft | null>(null);
+  const [pendingAnalysisResult, setPendingAnalysisResult] = useState<RepositoryAnalysisResult | null>(null);
+  const authGithubLogin =
+    user?.user_metadata?.user_name ?? user?.user_metadata?.preferred_username ?? "";
+
+  useEffect(() => {
+    if (!githubLogin && authGithubLogin) {
+      setGithubLogin(authGithubLogin);
+    }
+  }, [authGithubLogin, githubLogin]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -29,11 +46,15 @@ export function RepositoryAnalyzer({ onAnalysisComplete }: RepositoryAnalyzerPro
 
     setAnalysisStatus(ANALYSIS_STATUS.loading);
     setAnalysisError("");
+    setPendingAnalysisResult(null);
 
     try {
-      const result = await requestRepositoryAnalysis({ repositoryUrl: repoUrl.trim() });
+      const result = await requestRepositoryAnalysis({
+        repositoryUrl: repoUrl.trim(),
+        githubLogin: githubLogin.trim() || undefined,
+      });
       setAnalysisStatus(ANALYSIS_STATUS.success);
-      onAnalysisComplete(result);
+      setPendingAnalysisResult(result);
     } catch (requestError) {
       setAnalysisError(
         requestError instanceof Error
@@ -48,6 +69,19 @@ export function RepositoryAnalyzer({ onAnalysisComplete }: RepositoryAnalyzerPro
     setRepoUrl(event.target.value);
     setAnalysisStatus(ANALYSIS_STATUS.idle);
     setAnalysisError("");
+    setPendingAnalysisResult(null);
+    setReflectionDraft(null);
+  };
+
+  const handleViewResults = () => {
+    if (!pendingAnalysisResult || !isAnalysisReady(analysisStatus, true)) {
+      return;
+    }
+
+    onAnalysisComplete(
+      pendingAnalysisResult,
+      reflectionDraft ?? createEmptyReflectionDraft(),
+    );
   };
 
   return (
@@ -75,6 +109,20 @@ export function RepositoryAnalyzer({ onAnalysisComplete }: RepositoryAnalyzerPro
         </form>
         <p className="input-guide">분석하고 싶은 프로젝트의 GitHub Repository 주소를 입력해보세요.</p>
 
+        <div className="analyzer-filter-field">
+          <label htmlFor="github-login">
+            내 GitHub ID <span>선택</span>
+          </label>
+          <input
+            id="github-login"
+            type="text"
+            value={githubLogin}
+            onChange={(event) => setGithubLogin(event.target.value)}
+            placeholder="예: SubJeeLee"
+          />
+          <p>입력하면 다른 참여자의 작업을 제외하고 내 활동에서 기술적 도전 후보를 찾습니다.</p>
+        </div>
+
         {analysisStatus === ANALYSIS_STATUS.loading && (
           <div className="analysis-status" role="status" aria-live="polite">
             <BrandSpinner />
@@ -82,6 +130,37 @@ export function RepositoryAnalyzer({ onAnalysisComplete }: RepositoryAnalyzerPro
               <strong>Repository를 분석하고 있어요</strong>
               <span>참여자, 기여도, 최근 커밋 흐름을 확인하는 중입니다.</span>
             </div>
+          </div>
+        )}
+
+        {(analysisStatus === ANALYSIS_STATUS.loading ||
+          analysisStatus === ANALYSIS_STATUS.success ||
+          analysisStatus === ANALYSIS_STATUS.error) &&
+          repoUrl.trim() && (
+            <ReflectionDraftEditor
+              repositoryUrl={repoUrl}
+              isAnalysisComplete={analysisStatus === ANALYSIS_STATUS.success}
+              onChange={setReflectionDraft}
+              onSave={
+                pendingAnalysisResult
+                  ? (draft) =>
+                      saveReflectionDraftToApi(pendingAnalysisResult.id, draft).then(() => undefined)
+                  : undefined
+              }
+            />
+          )}
+
+        {isAnalysisReady(analysisStatus, pendingAnalysisResult !== null) && (
+          <div className="analysis-complete-panel" role="status" aria-live="polite">
+            <div className="analysis-status analysis-ready">
+              <div>
+                <strong>분석이 완료되었습니다</strong>
+                <span>회고를 마무리한 뒤 결과 확인하기를 눌러주세요.</span>
+              </div>
+            </div>
+            <button className="analysis-result-button" type="button" onClick={handleViewResults}>
+              결과 확인하기
+            </button>
           </div>
         )}
 

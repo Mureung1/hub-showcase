@@ -1,5 +1,5 @@
 import { ConfigService } from "@nestjs/config";
-import { TechnicalChallengeAiRequest } from "./technical-challenge.models";
+import { TechnicalChallengeAiRequest } from "../../application/technical-challenge/technical-challenge.models";
 import {
   HttpTechnicalChallengeAiClient,
   OPENAI_CHAT_COMPLETIONS_URL,

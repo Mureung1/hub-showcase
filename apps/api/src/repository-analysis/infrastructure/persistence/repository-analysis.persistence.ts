@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { SupabaseClientService } from "../supabase/supabase-client.service";
-import type { RepositoryAnalysisPersistenceInput } from "./repository-analysis.models";
+import { SupabaseClientService } from "../../../supabase/supabase-client.service";
+import type { RepositoryAnalysisPersistenceInput } from "../../domain/repository-analysis.models";
 
 type IdentifierRow = { id: string };
 type ContributorIdentifierRow = IdentifierRow & { github_login: string };

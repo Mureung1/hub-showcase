@@ -4,6 +4,7 @@ import type { RepositoryAnalysisResult } from "@ptop/contracts";
 import {
   ANALYSIS_STATUS,
   getRepositoryUrlError,
+  isAnalysisReady,
   parseGitHubRepositoryUrl,
 } from "./repositoryAnalysis";
 import { getAnalysisResultViewModel } from "./AnalysisResult";
@@ -41,6 +42,13 @@ test("ANALYSIS_STATUS keeps the UI state model explicit", () => {
     success: "success",
     error: "error",
   });
+});
+
+test("analysis becomes ready without requiring an immediate page transition", () => {
+  assert.equal(isAnalysisReady(ANALYSIS_STATUS.loading, false), false);
+  assert.equal(isAnalysisReady(ANALYSIS_STATUS.success, false), false);
+  assert.equal(isAnalysisReady(ANALYSIS_STATUS.success, true), true);
+  assert.equal(isAnalysisReady(ANALYSIS_STATUS.error, true), false);
 });
 
 test("analysis result view model exposes Issue #13 analysis fields without landing copy", () => {

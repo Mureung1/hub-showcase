@@ -1,8 +1,8 @@
 import type { RepositoryAnalysisRequest } from "@ptop/contracts";
-import type { GitHubRepositoryClient } from "./github-repository.client";
-import type { GitHubRepositoryAnalysisSource } from "./repository-analysis.models";
-import type { RepositoryAnalysisPersistence } from "./repository-analysis.persistence";
-import type { TechnicalChallengeAnalyzer } from "./technical-challenge.analyzer";
+import type { GitHubRepositoryClient } from "../infrastructure/github/github-repository.client";
+import type { GitHubRepositoryAnalysisSource } from "../domain/repository-analysis.models";
+import type { RepositoryAnalysisPersistence } from "../infrastructure/persistence/repository-analysis.persistence";
+import type { TechnicalChallengeAnalyzer } from "./technical-challenge/technical-challenge.analyzer";
 import {
   InvalidRepositoryUrlError,
   RepositoryAnalysisService,
@@ -75,10 +75,13 @@ describe("RepositoryAnalysisService", () => {
 
     expect(githubClient.getRepositoryAnalysisSource).toHaveBeenCalledWith("SubJeeLee", "hub");
     expect(technicalChallengeAnalyzer.analyze).toHaveBeenCalledTimes(1);
+    expect(technicalChallengeAnalyzer.analyze).toHaveBeenCalledWith(
+      expect.objectContaining({ targetGithubLogin: "SubJeeLee" }),
+    );
     expect(persistence.save).toHaveBeenCalledWith(
       expect.objectContaining({
         targetGithubLogin: "SubJeeLee",
-        analyzerVersion: "repository-v2",
+        analyzerVersion: "repository-v3",
         resultHash: expect.stringMatching(/^[a-f0-9]{64}$/),
         contributors: expect.arrayContaining([
           expect.objectContaining({ login: "SubJeeLee", commitCount: 3, commitActivityPercent: 75 }),
@@ -162,5 +165,25 @@ describe("RepositoryAnalysisService", () => {
       service.analyze({ repositoryUrl: "https://example.com/user/repo" }),
     ).rejects.toBeInstanceOf(InvalidRepositoryUrlError);
     expect(githubClient.getRepositoryAnalysisSource).not.toHaveBeenCalled();
+  });
+
+  it("does not ask AI to invent challenges when the selected GitHub ID has no activity", async () => {
+    const { service, technicalChallengeAnalyzer, persistence } = createService();
+
+    await service.analyze({
+      repositoryUrl: "https://github.com/SubJeeLee/hub",
+      githubLogin: "unknown-user",
+    });
+
+    expect(technicalChallengeAnalyzer.analyze).not.toHaveBeenCalled();
+    expect(persistence.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetGithubLogin: "unknown-user",
+        analysis: expect.objectContaining({
+          technicalChallenges: [],
+          warnings: ["입력한 GitHub ID의 활동을 Repository에서 찾지 못했습니다."],
+        }),
+      }),
+    );
   });
 });

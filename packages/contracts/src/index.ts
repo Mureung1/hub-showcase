@@ -14,3 +14,9 @@ export type {
   TechnicalChallengeConfidence,
   TechnicalChallengeEvidenceReference,
 } from "./repository-analysis";
+export type {
+  ReflectionChallengeAnswers,
+  ReflectionDraft,
+  ReflectionDraftSaveRequest,
+  ReflectionDraftSaveResponse,
+} from "./reflection";

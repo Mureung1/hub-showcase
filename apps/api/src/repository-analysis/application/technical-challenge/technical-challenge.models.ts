@@ -3,7 +3,7 @@ import type {
   RepositoryAnalysisEvidence,
   TechnicalChallengeCandidate,
 } from "@ptop/contracts";
-import type { GitHubRepositoryAnalysisSource } from "./repository-analysis.models";
+import type { GitHubRepositoryAnalysisSource } from "../../domain/repository-analysis.models";
 
 export type RepositoryContextFile = {
   path: string;
@@ -15,6 +15,13 @@ export type RepositoryContextFile = {
 
 export type TechnicalChallengeContext = {
   repository: GitHubRepositoryAnalysisSource["repository"];
+  targetGithubLogin: string | null;
+  targetActivity: {
+    commits: GitHubRepositoryAnalysisSource["commits"];
+    pullRequests: NonNullable<GitHubRepositoryAnalysisSource["pullRequests"]>;
+    issues: NonNullable<GitHubRepositoryAnalysisSource["issues"]>;
+    changedPaths: string[];
+  };
   analysis: RepositoryAnalysisDetails;
   files: RepositoryContextFile[];
   evidence: RepositoryAnalysisEvidence[];

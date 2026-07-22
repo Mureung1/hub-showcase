@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import type { RepositoryAnalysisDetails } from "@ptop/contracts";
-import type { GitHubRepositoryAnalysisSource } from "./repository-analysis.models";
+import type { GitHubRepositoryAnalysisSource } from "../../domain/repository-analysis.models";
 import {
   TECHNICAL_CHALLENGE_CONTEXT_LIMITS,
   buildTechnicalChallengeContext,
@@ -131,5 +131,73 @@ describe("buildTechnicalChallengeContext", () => {
     expect(totalCharacters).toBeLessThanOrEqual(40_000);
     expect(context.truncated).toBe(true);
     expect(context.estimatedTokens).toBe(Math.ceil(totalCharacters / 4));
+  });
+
+  it("limits files and evidence to the selected GitHub contributor", () => {
+    const source = createSource();
+    source.commits = [
+      {
+        sha: "mine",
+        authorLogin: "SubJeeLee",
+        message: "implement reflection flow",
+        committedAt: "2026-07-20T00:00:00.000Z",
+        url: "https://github.com/owner/repository/commit/mine",
+        changedFiles: ["src/reflection.ts"],
+      },
+      {
+        sha: "other",
+        authorLogin: "camper",
+        message: "update landing page",
+        committedAt: "2026-07-19T00:00:00.000Z",
+        url: "https://github.com/owner/repository/commit/other",
+        changedFiles: ["src/landing.tsx"],
+      },
+    ];
+    source.files = [
+      {
+        path: "src/reflection.ts",
+        type: "blob",
+        size: 20,
+        content: "export function reflect() {}",
+        contentAvailable: true,
+      },
+      {
+        path: "src/landing.tsx",
+        type: "blob",
+        size: 20,
+        content: "export function landing() {}",
+        contentAvailable: true,
+      },
+    ];
+    analysis.evidence = [
+      {
+        evidenceType: "commit",
+        referenceId: "mine",
+        title: "implement reflection flow",
+        url: "https://github.com/owner/repository/commit/mine",
+        filePath: null,
+        occurredAt: "2026-07-20T00:00:00.000Z",
+        contributorLogin: "SubJeeLee",
+        metadata: {},
+      },
+      {
+        evidenceType: "commit",
+        referenceId: "other",
+        title: "update landing page",
+        url: "https://github.com/owner/repository/commit/other",
+        filePath: null,
+        occurredAt: "2026-07-19T00:00:00.000Z",
+        contributorLogin: "camper",
+        metadata: {},
+      },
+    ];
+
+    const context = buildTechnicalChallengeContext(source, analysis, "subjeelee");
+
+    expect(context.targetGithubLogin).toBe("subjeelee");
+    expect(context.files.map((file) => file.path)).toEqual(["src/reflection.ts"]);
+    expect(context.targetActivity.commits.map((commit) => commit.sha)).toEqual(["mine"]);
+    expect(context.evidence.map((evidence) => evidence.referenceId)).toEqual(["mine"]);
+    expect(context.analysis.evidence.map((evidence) => evidence.referenceId)).toEqual(["mine"]);
   });
 });

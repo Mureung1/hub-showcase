@@ -11,7 +11,7 @@ import {
   TechnicalChallengeAiResponseError,
   TechnicalChallengeAiUnavailableError,
   type TechnicalChallengeAiClient,
-} from "./technical-challenge.client";
+} from "../../infrastructure/ai/technical-challenge.client";
 import type {
   TechnicalChallengeAnalysisResult,
   TechnicalChallengeContext,

@@ -1,8 +1,8 @@
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
-import { RepositoryAnalysisController } from "../src/repository-analysis/repository-analysis.controller";
-import { RepositoryAnalysisService } from "../src/repository-analysis/repository-analysis.service";
+import { RepositoryAnalysisController } from "../src/repository-analysis/presentation/repository-analysis.controller";
+import { RepositoryAnalysisService } from "../src/repository-analysis/application/repository-analysis.service";
 
 describe("Repository analysis endpoint", () => {
   let app: INestApplication;
@@ -39,7 +39,7 @@ describe("Repository analysis endpoint", () => {
 
   it("returns a stable 400 response for an invalid URL", async () => {
     const { InvalidRepositoryUrlError } = await import(
-      "../src/repository-analysis/repository-analysis.service"
+      "../src/repository-analysis/application/repository-analysis.service"
     );
     analyze.mockRejectedValue(new InvalidRepositoryUrlError());
 
