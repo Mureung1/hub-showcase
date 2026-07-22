@@ -16,6 +16,14 @@ import { fileURLToPath } from 'node:url'
 
 import { verifyProductionBundle } from './production-bundle.js'
 import {
+  controlledPythonEnvironment,
+  delay,
+  terminateDetachedProcessGroup,
+  waitForJsonFile,
+  waitForProcessGroupExit,
+  withinDuration,
+} from './local-provider-test-support.js'
+import {
   startVerifiedCodexChatRuntime,
   type CodexChatRuntimeEnvironment,
   type SpawnedCodexChatRuntime,
@@ -35,14 +43,6 @@ const LOCAL_PROVIDER = path.join(
   PACKAGE_ROOT,
   'scripts',
   'official_local_provider.py',
-)
-const OFFICIAL_SDK_TESTS = path.join(
-  PACKAGE_ROOT,
-  'python',
-  'openai-codex',
-  'sdk',
-  'python',
-  'tests',
 )
 const PROVIDER_WAIT_MS = 30_000
 const CLEANUP_WAIT_MS = 5_000
@@ -252,12 +252,23 @@ async function startProductLocalProvider(options: {
   child.stderr.resume()
   let ready: { readonly url: string }
   try {
-    ready = await waitForJson<{ readonly url: string }>(readyPath, child)
+    ready = await waitForJsonFile<{ readonly url: string }>({
+      child,
+      exitedMessage:
+        'Exact product local provider exited before publishing readiness',
+      filePath: readyPath,
+      retryReadError: isMissingFileError,
+      timeoutMessage: 'Timed out waiting for exact product provider readiness',
+      timeoutMs: 10_000,
+    })
     if (typeof ready.url !== 'string' || ready.url.length === 0) {
       throw new Error('Exact product local provider published an invalid URL')
     }
   } catch (error) {
-    await terminateDetachedChild(child, processGroupId).catch(() => undefined)
+    await terminateDetachedProcessGroup({
+      child,
+      processGroupId,
+    }).catch(() => undefined)
     throw error
   }
   let closePromise: Promise<ExactProductProviderEvidence> | undefined
@@ -276,31 +287,6 @@ async function startProductLocalProvider(options: {
       })()
       return closePromise
     },
-  }
-}
-
-function controlledPythonEnvironment(
-  bundle: VerifiedBundle,
-  root: string,
-): NodeJS.ProcessEnv {
-  return {
-    HOME: root,
-    LANG: 'en_US.UTF-8',
-    LC_ALL: 'en_US.UTF-8',
-    PATH: [
-      bundle.codexPathDirectory,
-      path.dirname(bundle.pythonExecutable),
-      '/usr/bin',
-      '/bin',
-      '/usr/sbin',
-      '/sbin',
-    ].join(path.delimiter),
-    PYTHONDONTWRITEBYTECODE: '1',
-    PYTHONNOUSERSITE: '1',
-    PYTHONPATH: [OFFICIAL_SDK_TESTS, bundle.sitePackages].join(path.delimiter),
-    PYTHONUNBUFFERED: '1',
-    PYTHONUTF8: '1',
-    TMPDIR: root,
   }
 }
 
@@ -422,19 +408,19 @@ async function disposeFixture(options: {
     await options.runtime.closed
   } catch (error) {
     errors.push(error)
-    await terminateDetachedChild(
-      options.runtime.child,
-      options.runtimeProcessGroupId,
-    ).catch((cleanupError) => errors.push(cleanupError))
+    await terminateDetachedProcessGroup({
+      child: options.runtime.child,
+      processGroupId: options.runtimeProcessGroupId,
+    }).catch((cleanupError) => errors.push(cleanupError))
   }
   try {
     await options.provider.close()
   } catch (error) {
     errors.push(error)
-    await terminateDetachedChild(
-      options.provider.child,
-      options.provider.processGroupId,
-    ).catch((cleanupError) => errors.push(cleanupError))
+    await terminateDetachedProcessGroup({
+      child: options.provider.child,
+      processGroupId: options.provider.processGroupId,
+    }).catch((cleanupError) => errors.push(cleanupError))
   }
   await Promise.all([
     waitForProcessGroupExit(options.runtimeProcessGroupId).catch((error) =>
@@ -453,27 +439,6 @@ async function disposeFixture(options: {
       'Exact product local-provider fixture cleanup failed',
     )
   }
-}
-
-async function waitForJson<T>(
-  filePath: string,
-  child: ChildProcessWithoutNullStreams,
-): Promise<T> {
-  const deadline = Date.now() + 10_000
-  while (Date.now() < deadline) {
-    try {
-      return JSON.parse(await readFile(filePath, 'utf8')) as T
-    } catch (error) {
-      if (!isMissingFileError(error)) throw error
-      if (child.exitCode !== null || child.signalCode !== null) {
-        throw new Error(
-          'Exact product local provider exited before publishing readiness',
-        )
-      }
-      await delay(10)
-    }
-  }
-  throw new Error('Timed out waiting for exact product provider readiness')
 }
 
 async function waitForChildExit(
@@ -497,7 +462,7 @@ async function waitForChildExit(
         'Exact product local provider did not close',
       )
     } catch (error) {
-      await terminateDetachedChild(child, processGroupId)
+      await terminateDetachedProcessGroup({ child, processGroupId })
       throw error
     }
     if (result.signal !== null || result.code !== 0) {
@@ -511,43 +476,6 @@ async function waitForChildExit(
     )
   }
   await waitForProcessGroupExit(processGroupId)
-}
-
-async function terminateDetachedChild(
-  child: ChildProcessWithoutNullStreams,
-  processGroupId: number,
-): Promise<void> {
-  child.stdin.destroy()
-  for (const signal of ['SIGTERM', 'SIGKILL'] as const) {
-    try {
-      process.kill(-processGroupId, signal)
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error
-    }
-    try {
-      await waitForProcessGroupExit(processGroupId, 2_000)
-      return
-    } catch (error) {
-      if (signal === 'SIGKILL') throw error
-    }
-  }
-}
-
-async function waitForProcessGroupExit(
-  processGroupId: number,
-  timeoutMs = CLEANUP_WAIT_MS,
-): Promise<void> {
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    try {
-      process.kill(-processGroupId, 0)
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ESRCH') return
-      throw error
-    }
-    await delay(10)
-  }
-  throw new Error(`Process group ${processGroupId} did not disappear`)
 }
 
 function assertDisjointRoots(activeWorkspace: string, roots: string[]): void {
@@ -641,26 +569,4 @@ function requireNullableString(
 
 function isMissingFileError(error: unknown): boolean {
   return (error as NodeJS.ErrnoException).code === 'ENOENT'
-}
-
-function delay(milliseconds: number): Promise<void> {
-  return new Promise((resolvePromise) => setTimeout(resolvePromise, milliseconds))
-}
-
-async function withinDuration<T>(
-  value: Promise<T>,
-  milliseconds: number,
-  message: string,
-): Promise<T> {
-  let timer: NodeJS.Timeout | undefined
-  try {
-    return await Promise.race([
-      value,
-      new Promise<never>((_resolve, reject) => {
-        timer = setTimeout(() => reject(new Error(message)), milliseconds)
-      }),
-    ])
-  } finally {
-    if (timer) clearTimeout(timer)
-  }
 }

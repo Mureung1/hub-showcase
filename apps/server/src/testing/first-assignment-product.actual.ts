@@ -66,16 +66,14 @@ test(
       assert.equal(rootsOverlap(fixedWorkspace, materialized.workspaceRoot), false)
 
       try {
-        await withTestServer(
-          {
+        await withTestServer({
           codexChat: configuredBootstrap(activeFixture.runtime),
           semesterWorkspace: {
             appDataRoot,
             packageRoot,
             chooseDirectory: async () => materialized.workspaceRoot,
           },
-        },
-        async (baseUrl) => {
+        }, async (baseUrl) => {
           const workspace = await activateAndCreateCourse(baseUrl)
           const selected = selectedRelativePaths.map((relativePath) => {
             const material = requireMaterial(workspace, relativePath)
@@ -309,8 +307,7 @@ test(
           assert.equal(encodedFrames.includes(unselected.id), false)
           assert.equal(encodedFrames.includes(unselected.digest), false)
           assert.equal(encodedFrames.includes('최종 보고서'), false)
-          },
-        )
+        })
       } catch (error) {
         const evidence = await activeFixture.readProviderEvidence()
         if (evidence.failureCode !== null) {
