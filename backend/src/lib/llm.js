@@ -64,6 +64,20 @@ const SYSTEM_INSTRUCTION = [
   "출력은 반드시 주어진 JSON 스키마를 따른다.",
 ].join(" ");
 
+// 보충 모드(ADR-008 확장): 사용자가 이미 확정한 MBTI(공식 입력 또는 간이 추정)에 대해 대화 근거를 "보충"한다.
+// 유형을 새로 판정·변경하지 않고, 대화에서 관찰된 일상 근거(observedSignals)와 그 유형과의 연결(rationale)만 만든다.
+function buildSupplementInstruction(knownMbti) {
+  return [
+    `사용자의 MBTI는 이미 ${knownMbti}로 확정돼 있다(공식 입력 또는 간이 추정).`,
+    "너의 역할은 유형을 새로 판정하거나 바꾸는 것이 아니라, 짧은 대화에서 관찰된 일상 근거로 그 유형을 '보충 설명'하는 것이다.",
+    `mbti 필드에는 반드시 ${knownMbti}를 그대로 넣는다(다른 유형으로 바꾸지 않는다).`,
+    "진단·성적 예측·유형 간 우열 표현을 절대 하지 않고, 항상 가능성의 언어(…일 수 있음)를 쓴다.",
+    "observedSignals에는 대화에서 실제로 관찰된 공부·생활 근거를 2~3개 담고, 각 근거를 제공된 행동지표 키 중 가장 관련된 하나에 연결한다(애매하면 빈 문자열).",
+    "rationale은 이 근거들이 해당 유형·공부 방식과 어떻게 이어지는지 1~2문장으로 보충 설명한다(단정 금지).",
+    "출력은 반드시 주어진 JSON 스키마를 따른다.",
+  ].join(" ");
+}
+
 // 타임아웃 경쟁 래퍼. SDK 자체 abort 지원 여부와 무관하게 상한 지연을 보장한다.
 function withTimeout(promise, ms) {
   return Promise.race([
@@ -84,10 +98,14 @@ function isRetriable(error) {
 }
 
 // 대화 원문 → 간이 추정 JSON. 실패 시 null(호출부가 규칙 폴백).
-export async function estimateMbtiFromChat(messages = []) {
+// options.knownMbti(16유형)가 오면 "보충 모드": 유형은 유지하고 근거(observedSignals·rationale)만 만든다.
+export async function estimateMbtiFromChat(messages = [], options = {}) {
   if (!isLlmAvailable) {
     return null;
   }
+  const rawKnown = typeof options.knownMbti === "string" ? options.knownMbti.trim().toUpperCase() : "";
+  const knownMbti = MBTI_TYPES.has(rawKnown) ? rawKnown : "";
+  const systemInstruction = knownMbti ? buildSupplementInstruction(knownMbti) : SYSTEM_INSTRUCTION;
   const ai = new GoogleGenAI({ apiKey: API_KEY });
   const contents = messages
     .filter((m) => m && typeof m.text === "string" && m.text.trim())
@@ -107,7 +125,7 @@ export async function estimateMbtiFromChat(messages = []) {
           model,
           contents,
           config: {
-            systemInstruction: SYSTEM_INSTRUCTION,
+            systemInstruction,
             responseMimeType: "application/json",
             responseSchema: ESTIMATE_SCHEMA,
             temperature: 0.4,
@@ -119,7 +137,8 @@ export async function estimateMbtiFromChat(messages = []) {
       const parsed = safeParseJson(response?.text);
       const validated = validateEstimate(parsed);
       if (validated) {
-        return { ...validated, model };
+        // 보충 모드는 유형을 바꾸지 않는다 — 모델 응답과 무관하게 확정 유형을 유지한다.
+        return { ...validated, mbti: knownMbti || validated.mbti, model };
       }
       // JSON 은 왔지만 계약 위반 → 폴백(다음 모델로 넘기지 않고 종료: 재호출 이득 적음).
       return null;

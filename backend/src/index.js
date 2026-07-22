@@ -171,8 +171,10 @@ app.post("/api/mbti-chat", async (req, res) => {
   if (messages.length === 0) {
     return res.status(400).json({ error: "messages_required" });
   }
+  // knownMbti(선택): 보충 모드 — 확정 유형은 유지하고 근거만 만든다(검증은 llm.js가 16유형 화이트리스트로).
+  const knownMbti = typeof body.knownMbti === "string" ? body.knownMbti : "";
   try {
-    const estimate = await estimateMbtiFromChat(messages);
+    const estimate = await estimateMbtiFromChat(messages, { knownMbti });
     if (!estimate) {
       // LLM 실패/계약위반 → 폴백 신호.
       return res.status(200).json({ available: true, mbti: null, fallback: true });
