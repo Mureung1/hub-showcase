@@ -1,0 +1,178 @@
+.myggaem-calendar-card {
+  margin-bottom: 24px;
+  min-width: 0;
+}
+
+.myggaem-calendar-title {
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 14px;
+}
+
+.myggaem-calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.myggaem-month-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: var(--ink);
+  font-size: 18px;
+  padding: 0;
+}
+
+.myggaem-weekdays,
+.myggaem-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.myggaem-weekdays {
+  margin-bottom: 8px;
+}
+
+.myggaem-weekday {
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.myggaem-weekday--sunday {
+  color: var(--hl-rebut);
+}
+
+.myggaem-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.myggaem-day--today {
+  border: 1.5px solid var(--brand);
+}
+
+.myggaem-day--selected {
+  background: var(--ink);
+  color: #ffffff;
+}
+
+.myggaem-day:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.myggaem-day-stamp {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.myggaem-stamp--question {
+  background: var(--hl-question);
+}
+
+.myggaem-stamp--rebuttal {
+  background: var(--hl-rebut);
+}
+
+.myggaem-stamp--connection {
+  background: var(--hl-connect);
+}
+
+.myggaem-stamp--expression {
+  background: var(--hl-express);
+}
+
+.myggaem-empty-month {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.myggaem-records-label {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.myggaem-record-card {
+  margin-bottom: 12px;
+  min-width: 0;
+}
+
+.myggaem-record-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 8px;
+}
+
+.myggaem-mission-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.myggaem-record-date {
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.myggaem-record-title {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  overflow-wrap: break-word;
+}
+
+.myggaem-record-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.myggaem-record-prompt {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  overflow-wrap: break-word;
+}
+
+.myggaem-record-answer {
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+  margin-bottom: 10px;
+}
+
+.myggaem-record-url-notice {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}

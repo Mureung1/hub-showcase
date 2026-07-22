@@ -66,6 +66,7 @@ class MissionRecordCalendarDay(BaseModel):
 
     date: Date
     record_count: int
+    first_mission_type: MissionType
 
 
 class MissionRecordCalendarResponse(BaseModel):
