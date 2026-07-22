@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { ConfigService } from "@nestjs/config";
-import { RepositoryAnalysisPersistence } from "../src/repository-analysis/repository-analysis.persistence";
+import { RepositoryAnalysisPersistence } from "../src/repository-analysis/infrastructure/persistence/repository-analysis.persistence";
 import { SupabaseClientService } from "../src/supabase/supabase-client.service";
 
 const describeRemote = process.env.RUN_SUPABASE_INTEGRATION === "1" ? describe : describe.skip;

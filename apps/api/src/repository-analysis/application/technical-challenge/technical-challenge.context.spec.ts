@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import type { RepositoryAnalysisDetails } from "@ptop/contracts";
-import type { GitHubRepositoryAnalysisSource } from "./repository-analysis.models";
+import type { GitHubRepositoryAnalysisSource } from "../../domain/repository-analysis.models";
 import {
   TECHNICAL_CHALLENGE_CONTEXT_LIMITS,
   buildTechnicalChallengeContext,

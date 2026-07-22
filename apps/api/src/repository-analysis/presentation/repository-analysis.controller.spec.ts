@@ -3,12 +3,12 @@ import {
   GitHubRateLimitError,
   GitHubRepositoryNotFoundError,
   GitHubRequestError,
-} from "./github-repository.client";
+} from "../infrastructure/github/github-repository.client";
 import { RepositoryAnalysisController } from "./repository-analysis.controller";
 import {
   InvalidRepositoryUrlError,
   type RepositoryAnalysisService,
-} from "./repository-analysis.service";
+} from "../application/repository-analysis.service";
 
 describe("RepositoryAnalysisController", () => {
   function createController(error?: Error) {

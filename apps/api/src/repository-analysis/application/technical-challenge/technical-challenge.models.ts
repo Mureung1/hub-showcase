@@ -3,7 +3,7 @@ import type {
   RepositoryAnalysisEvidence,
   TechnicalChallengeCandidate,
 } from "@ptop/contracts";
-import type { GitHubRepositoryAnalysisSource } from "./repository-analysis.models";
+import type { GitHubRepositoryAnalysisSource } from "../../domain/repository-analysis.models";
 
 export type RepositoryContextFile = {
   path: string;

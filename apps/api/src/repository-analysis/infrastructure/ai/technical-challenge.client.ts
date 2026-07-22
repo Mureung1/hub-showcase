@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { TechnicalChallengeAiRequest } from "./technical-challenge.models";
+import type { TechnicalChallengeAiRequest } from "../../application/technical-challenge/technical-challenge.models";
 
 export const TECHNICAL_CHALLENGE_AI_CLIENT = Symbol("TECHNICAL_CHALLENGE_AI_CLIENT");
 export const OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions";

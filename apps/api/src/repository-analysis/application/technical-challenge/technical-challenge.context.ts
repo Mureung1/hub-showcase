@@ -1,5 +1,5 @@
 import type { RepositoryAnalysisDetails } from "@ptop/contracts";
-import type { GitHubRepositoryAnalysisSource } from "./repository-analysis.models";
+import type { GitHubRepositoryAnalysisSource } from "../../domain/repository-analysis.models";
 import type { RepositoryContextFile, TechnicalChallengeContext } from "./technical-challenge.models";
 
 export const TECHNICAL_CHALLENGE_CONTEXT_LIMITS = {

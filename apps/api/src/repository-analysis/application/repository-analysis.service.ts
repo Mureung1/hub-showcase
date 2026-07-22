@@ -3,16 +3,16 @@ import type {
   RepositoryAnalysisRequest,
   RepositoryAnalysisResult,
 } from "@ptop/contracts";
-import { GitHubRepositoryClient } from "./github-repository.client";
-import { createAnalysisDetails, createContributorMetrics } from "./repository-analysis.analyzer";
-import { RepositoryAnalysisPersistence } from "./repository-analysis.persistence";
-import { buildTechnicalChallengeContext } from "./technical-challenge.context";
-import { TechnicalChallengeAnalyzer } from "./technical-challenge.analyzer";
+import { GitHubRepositoryClient } from "../infrastructure/github/github-repository.client";
+import { RepositoryAnalysisPersistence } from "../infrastructure/persistence/repository-analysis.persistence";
+import { createAnalysisDetails, createContributorMetrics } from "../domain/repository-analysis.analyzer";
+import { buildTechnicalChallengeContext } from "./technical-challenge/technical-challenge.context";
+import { TechnicalChallengeAnalyzer } from "./technical-challenge/technical-challenge.analyzer";
 import {
   calculateCommitActivityPercent,
   createResultHash,
   parseGitHubRepositoryUrl,
-} from "./repository-analysis.utils";
+} from "../domain/repository-analysis.utils";
 
 const ANALYZER_VERSION = "repository-v3";
 

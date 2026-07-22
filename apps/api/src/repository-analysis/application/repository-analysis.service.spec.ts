@@ -1,8 +1,8 @@
 import type { RepositoryAnalysisRequest } from "@ptop/contracts";
-import type { GitHubRepositoryClient } from "./github-repository.client";
-import type { GitHubRepositoryAnalysisSource } from "./repository-analysis.models";
-import type { RepositoryAnalysisPersistence } from "./repository-analysis.persistence";
-import type { TechnicalChallengeAnalyzer } from "./technical-challenge.analyzer";
+import type { GitHubRepositoryClient } from "../infrastructure/github/github-repository.client";
+import type { GitHubRepositoryAnalysisSource } from "../domain/repository-analysis.models";
+import type { RepositoryAnalysisPersistence } from "../infrastructure/persistence/repository-analysis.persistence";
+import type { TechnicalChallengeAnalyzer } from "./technical-challenge/technical-challenge.analyzer";
 import {
   InvalidRepositoryUrlError,
   RepositoryAnalysisService,
