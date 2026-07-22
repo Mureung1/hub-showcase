@@ -46,7 +46,8 @@
 - [x] Financial Frontend (실데이터 연동) — 월/카테고리 필터, 전월 대비 비교, 손익 구조까지 확장 (2026-07-20)
 - [x] Dashboard KPI 실데이터 연동 — 2026-07-21 완료 (`/api/financial/summary`, `/api/recommendations` 연동, mock 제거)
 - [x] Rule Engine V1 (최소 3개 규칙) — 2026-07-21 완료 (`RecommendationService`, 카테고리 평균 폐기율/전체 평균 마진율 기반)
-- [x] Analysis 판매/폐기 추세 차트 실데이터 연동 (P1) — 2026-07-22 완료 (전 카테고리, `/api/financial/summary` 기반). 요일별/시간대별 패턴은 원본 데이터에 해당 정보가 없어 여전히 mock (아래 백로그 참고)
+- [x] Analysis 판매/폐기 추세 차트 실데이터 연동 (P1) — 2026-07-22 완료 (전 카테고리, `/api/financial/summary` 기반)
+- [x] Analysis 요일별/시간대별 판매 패턴 실데이터 연동 — 2026-07-22 완료. `data/scripts/pattern_parser.py` 신규(6월 4주 평균), `data/master/weekday_sales.csv`/`hourly_sales.csv`, `GET /api/patterns/weekday|hourly?category=` 신설, `AnalysisPage.tsx` mock 제거. 이로써 Analysis 페이지 4개 차트 전부 실데이터 기반
 
 ---
 
@@ -353,14 +354,8 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
   - 이 작업에 `FinancialService Cache Reload`(아래 항목) 포함됨
   - ⚠️ `financialService.ts`의 `if (this.data.length !== 24) throw ...` 하드코딩 검증도 이때 같이 제거/완화 필요 (데이터가 24행 이상으로 늘어나면 현재 로직은 에러를 던짐). Financial/Recommendation API 계약 자체는 안 바뀌므로 프론트는 그대로 호환됨
 
-### 2순위 — Analysis 요일별/시간대별 패턴 실데이터 연동 (2026-07-22 논의)
-
-- [ ] Analysis 요일별/시간대별 판매 패턴 실데이터 연동
-  - 확인됨: `data/raw/weekday_sales/`, `data/raw/hourly_sales/`에 원본 데이터 실제로 존재 (단, **6월 1~4주차만**, 1~5월 없음 — UI 문구 "최근 1개월 평균"과는 부합)
-  - 원본 엑셀이 조회기간/비교기간/차이 3행 피벗 구조라 `sales_parser.py` 3단 헤더 문제처럼 새 파서 필요
-  - 작업 범위: (1) `weekday_sales_parser.py`, `hourly_sales_parser.py` 신규 작성, 카테고리별 4주 평균 계산 (2) 백엔드 API 엔드포인트 신설 (3) `AnalysisPage.tsx` 요일/시간대 차트 연결 (mock 제거)
-  - 예상 소요: 1개 카테고리면 약 1일, 4개 카테고리 전부 견고하게 하면 1.5~2일
-  - 판매/폐기 추세 차트는 2026-07-22 완료 (`merged_dataset.csv` 기반, 전 카테고리)
+- [ ] 폐기 요일/시간대 패턴 실데이터 연동 — 원본 데이터 자체가 없어 보류 (판매 패턴만 2026-07-22에 연동 완료, 위 Milestone 3 참고). 향후 waste 원본에 요일/시간대 정보가 추가되면 착수
+  - 참고: `data/master/weekday_sales.csv`/`hourly_sales.csv`는 현재 6월 4주 평균 스냅샷뿐 — 이후 월이 추가되면 `data/scripts/pattern_parser.py`의 "4주 평균" 하드코딩(WEEKS 상수) 재검토 필요
 
 - [ ] Fuzzy Matching: sales/orders 상품명 유사 매칭
 - [ ] Product Master 자동 보정: 수동 매핑 테이블 구축
