@@ -105,12 +105,31 @@ export const ActiveCell: React.FC<ActiveCellProps> = ({ cell, editing, primary, 
     const val = cell.get();
     body = (
       <div className={styles.ynRow}>
-        <button type="button" className={[styles.ynBtn, styles.ynYes, val === true ? styles.selected : ''].join(' ')} onClick={() => selectAndAdvance(true)}>네, 있어요</button>
-        <button type="button" className={[styles.ynBtn, styles.ynNo, val === false ? styles.selected : ''].join(' ')} onClick={() => selectAndAdvance(false)}>아니요</button>
+        <button type="button" className={[styles.ynBtn, styles.ynYes, val === true ? styles.selected : ''].join(' ')} onClick={() => selectAndAdvance(true)}>{cell.yesLabel || '네, 있어요'}</button>
+        <button type="button" className={[styles.ynBtn, styles.ynNo, val === false ? styles.selected : ''].join(' ')} onClick={() => selectAndAdvance(false)}>{cell.noLabel || '아니요'}</button>
       </div>
     );
   } else if (cell.kind === 'shareholders') {
     body = <ShareholdersField value={cell.get() || []} onDone={(rows) => onCommit(rows)} />;
+  } else if (cell.kind === 'section-intro') {
+    body = (
+      <>
+        <ul className={styles.prepList}>
+          {(cell.prep || []).map((p) => (
+            <li key={p.label} className={styles.prepItem}>
+              <span className={styles.prepCheck}>✓</span>
+              <span>
+                <b>{p.label}</b>
+                {p.hint && <small>{p.hint}</small>}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <button type="button" className={styles.goBtn} style={{ width: '100%', borderRadius: 12, marginTop: 12 }} onClick={() => onCommit(true)}>
+          준비됐어요 · 시작하기
+        </button>
+      </>
+    );
   } else if (cell.kind === 'info') {
     const c = data.company;
     const target = !!(c.성실신고확인서 || c.세액감면 || c.매출3억초과);

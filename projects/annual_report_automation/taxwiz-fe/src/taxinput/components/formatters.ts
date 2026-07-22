@@ -17,6 +17,7 @@ export function fmtCellValue(cell: Cell): string {
     return o ? o.label : '-';
   }
   if (cell.kind === 'yesno') return v === true ? '네' : v === false ? '아니요' : '-';
+  if (cell.kind === 'section-intro') return '확인함';
   if (cell.kind === 'shareholders') {
     const arr = (v || []) as { 비율: string }[];
     if (!arr.length) return '해당 없음';

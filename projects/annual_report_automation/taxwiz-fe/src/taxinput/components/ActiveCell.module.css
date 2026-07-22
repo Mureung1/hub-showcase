@@ -212,3 +212,42 @@
   background: rgba(34, 197, 94, 0.12);
   color: var(--color-success);
 }
+
+/* ── section-intro: "미리 준비할 것" 카드 ── */
+.prepList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+}
+
+.prepItem {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+}
+
+.prepItem b {
+  color: var(--color-text-primary);
+  font-weight: 700;
+  display: block;
+}
+
+.prepItem small {
+  color: var(--color-text-tertiary);
+  display: block;
+  margin-top: 2px;
+}
+
+.prepCheck {
+  flex: none;
+  color: var(--color-primary);
+  font-weight: 800;
+  margin-top: 1px;
+}

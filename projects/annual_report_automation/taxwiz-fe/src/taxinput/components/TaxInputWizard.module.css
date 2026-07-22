@@ -112,3 +112,10 @@
   font-size: var(--font-size-sm);
   z-index: 50;
 }
+
+.remainNote {
+  color: var(--color-text-tertiary);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
