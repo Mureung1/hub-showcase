@@ -34,6 +34,34 @@ items/{itemId}                              # 공개 아이템 카탈로그 (4�
 | `rebirth` | int | 0 | 환생 횟수 |
 | `equipped` | map<string,string> | `{}` | 슬롯 → 아이템 ID (예: `{"background": "arcane_library"}`) |
 | `createdAt` | timestamp | 서버 시각 | 최초 접속 시각 |
+| `dailyCoinDate` | string? | null | 하루 코인 카운터가 가리키는 **KST 날짜 키**(`yyyy-MM-dd`) |
+| `dailyCoinEarned` | int | 0 | 그 날짜에 **퀘스트로** 받은 코인 누적. 상한 판정의 근거 |
+| `attendanceDate` | string? | null | 마지막 출석일 (KST 날짜 키) |
+| `streak` | int | 0 | 연속 출석 일수. 끊기면 0이 아니라 **1**부터 다시 센다 |
+| `streakBonusDate` | string? | null | 마지막으로 연속 출석 보너스를 지급한 날. 하루 1회 가드 |
+
+#### 보상 경제 — 하루 코인 상한과 출석 스트릭 (3주차)
+
+**적용 순서가 정본이다.**
+
+1. 난이도별 기본 보상 (`kBaseRewards`)
+2. \+ 인증 보너스 (`kVerificationBonus`, 메모 **또는** 사진이면 1회) — 여기까지가 `questReward()`
+3. 위 합산 **코인**에 하루 상한(`kDailyCoinCap` = 70) 절삭 (`applyDailyCoinCap()`) → 이 결과가 `dailyCoinEarned`에 누적
+4. 연속 출석 보너스(`streakBonusFor(streak)`)는 **3의 밖에서** 별도 지급 — 상한 미적용, 카운터 미반영
+   - 주차별 점증: 7일 15/25 · 14일 30/50 · 21일 45/75 · 28일 이후 60/100 (`kMaxStreakBonusWeeks` = 4에서 상한)
+   - 상한을 두는 이유: 상한 **밖에서** 나가는 보너스가 무한히 자라면 하루 코인 상한이 무력해진다
+
+- **부분 지급한다.** 68코인 쌓인 상태에서 어려움(10코인)을 완료하면 **2코인**을 준다(0이 아니다).
+- **코인만 절삭한다. XP는 상한이 없다.** XP까지 막으면 성장이 멈춰 "오늘은 더 해도 소용없다"가 된다.
+- **반복 보상 점감은 구현하지 않는다.** 반복 문제는 상한 하나로 막는다(사용자 결정, 2026-07-22).
+
+**왜 날짜 키가 문자열이고, 왜 KST인가**: Firestore는 시각을 UTC로 저장한다. UTC 자정을 하루 경계로 쓰면 한국 사용자에게 하루가 **오전 9시에 리셋**된다. 그래서 `lib/core/utils/kst_date.dart`의 `kstDateKey()`가 고정 오프셋(+9)으로 `yyyy-MM-dd` 문자열을 만들고, 이 값을 그대로 저장한다. 문자열이라 콘솔에서 읽히고, 읽는 쪽 타임존 해석이 끼어들 여지가 없다.
+
+**자정에 카운터를 미는 배치는 없다**(서버가 없다). 대신 **읽는 쪽**이 `dailyCoinDate`를 오늘과 비교해 만료를 판정한다(`AppUser.coinEarnedToday()`). `dailyCoinEarned`가 `FieldValue.increment`가 아니라 **계산값 set**인 것도 같은 이유다 — increment로는 날짜가 바뀔 때의 리셋을 표현할 수 없다.
+
+**출석은 `recordAttendance()`가 별도 트랜잭션으로 기록한다.** 기준은 "퀘스트를 완료했다"가 아니라 **"앱을 열었다"**이므로 세션 준비 직후(`attendanceProvider`)에 1회 호출된다. `ensureUser()`에 합치지 않은 이유는 그 메서드의 계약이 **멱등한 생성**이기 때문이다 — 날짜마다 문서를 바꾸는 쓰기를 합치면 그 멱등성이 깨진다. 같은 날 다시 불리면 날짜 키가 같아 아무것도 쓰지 않으므로 앱 재실행으로 보너스가 두 번 나가지 않는다.
+
+계산(날짜 키·상한 절삭·스트릭 판정)은 전부 **순수 함수**(`kst_date.dart`, `reward_rules.dart`)에 있고 두 저장소 구현이 그것만 호출한다. `applyXpGain`·`normalizeMemo`와 같은 이유 — 각자 계산하면 갈라지고, 그 차이는 InMemory만 보는 테스트에서 안 잡힌다.
 
 **문서가 없어도 앱은 정상 동작한다.** `UserRepository.watchUser`가 문서 부재 시 `AppUser.initial(uid)`(Lv.1 / XP 0 / 코인 0)을 흘리기 때문에, 신규 사용자도 특수 분기 없이 홈 화면이 렌더된다.
 문서 자체는 `ensureUser(uid)`가 최초 접속 시 `set(merge: true)`로 만든다(멱등 — 여러 번 불려도 기존 값을 밀어내지 않는다).
@@ -60,7 +88,7 @@ items/{itemId}                              # 공개 아이템 카탈로그 (4�
 | `order` | int | 0 | 목록 정렬 순서 = AI 분해 결과의 **실행 경로 순서** |
 | `deadline` | timestamp? | null | 마감일 (선택) |
 | `goalId` | string? | null | 어느 목표에서 분해됐는지 (`goals/{goalId}`). 직접 등록이면 null |
-| `parentQuestId` | string? | null | 재분해로 생긴 자식이면 원본 퀘스트 ID |
+| `parentQuestId` | string? | null | 재분해로 생긴 자식이면 원본 퀘스트 ID (4주차부터 실제로 쓰인다) |
 | `createdAt` | timestamp | 서버 시각 | 생성 시각 |
 | `completedAt` | timestamp? | null | **언제 완료했나.** 완료 해제 시 null로 지움 |
 | `rewardedAt` | timestamp? | null | **보상을 지급한 시각.** 한번 찍히면 절대 지우지 않는다 |
@@ -86,6 +114,16 @@ items/{itemId}                              # 공개 아이템 카탈로그 (4�
 > "각 퀘스트의 진행 상태(완료·미완료·**멈춤**)를 영속 저장해, 앱을 다시 열어도 어디까지 했고 **어디서 멈췄는지** 기억한다."
 
 그리고 핵심 성공 지표 「**재분해 복귀율** — 멈춘 퀘스트를 더 작게 나눈 뒤 다시 실행한 비율」의 **분모가 `stuck` 상태다.** 이 상태가 없으면 지표를 계산할 근거 자체가 없다. `parentQuestId`가 분자(재분해로 생겨난 자식)를 제공한다.
+
+#### `parentQuestId` — 재분해 계보 (4주차 B-5)
+
+`createQuests(uid, drafts, goalId:, parentQuestId:)`가 **유일한 쓰기 경로**다. 멈춘 퀘스트를 재분해해 등록할 때만 값이 들어가고, 그 batch 안의 자식 전부가 같은 원본 ID를 갖는다.
+
+- **원본은 지우지도 상태를 바꾸지도 않는다.** 자식으로 대체하면 「재분해 복귀율」의 **분모(stuck 원본)**가 사라진다. 원본은 `stuck` 그대로 남고 자식이 그 아래에 중첩된다.
+- **자식은 원본의 `goalId`를 상속한다.** 같은 목표 폴더 안에 남아야 "이 목표를 어디까지 걸어왔나"가 깨지지 않는다. 직접 등록한 퀘스트를 재분해하면 원본과 같이 `goalId`가 null이다.
+- **깊이 제한 2단계.** `Quest`에는 `redecomposeCount`가 없다(그건 저장 전 초안 세션 전용 값이다). 저장된 퀘스트의 깊이는 `parentQuestId` 체인이 유일한 근거이며, `arrangeQuestTree()`(`lib/models/quest_group.dart`)가 계산해 **자식의 자식은 더 나눌 수 없게** 막는다(`kMaxRedecomposeCount` = 2와 같은 기준). 무한 중첩은 목록 표시가 감당하지 못한다.
+- **고아 자식은 숨기지 않는다.** 부모 문서를 못 찾는 자식은 깊이 0의 뿌리로 올려 그린다 — 목표 문서를 못 찾아도 퀘스트를 숨기지 않는 것과 같은 원칙이다. 순환 참조(a→b→a)에도 목록이 멈추지 않고 항목을 잃지 않는다.
+- **부모 자동 완료는 하지 않는다.** 자식을 전부 끝내도 `stuck` 부모는 `doneCount`에 들어가지 않아 그룹 진행률이 100%가 되지 않는다. 자동 완료는 곧 `completeQuest()` 트랜잭션(= 보상 지급)을 사용자가 누르지 않았는데 태우는 일이라, 보상 정책 변경으로 따로 결정할 문제다.
 
 **하위호환**: `status` 도입 전 문서는 `done: true/false`만 갖고 있다. `Quest.fromJson`은 `status`가 없으면 `done`으로 폴백하므로 **마이그레이션 없이 기존 문서가 그대로 읽힌다.**
 

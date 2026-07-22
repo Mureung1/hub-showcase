@@ -20,8 +20,13 @@ import 'widgets/quest_draft_card.dart';
 /// - AI 요소(아이콘 타일·로딩 인디케이터·폴백 배너) = **블루**(`colorScheme.secondary`).
 /// - 주요 행동("분해하기") = **그린**(FilledButton 기본 = `colorScheme.primary`).
 /// - 노랑은 직접 쓰지 않는다. 보상은 [RewardChip](allowlist)이 담당한다.
+/// **재분해 모드 (4주차 B-5).** [target]을 주면 큰 목표 입력 대신 "이미 저장된 퀘스트
+/// 하나"를 더 작게 나누는 화면이 된다. null이면 기존 큰 목표 분해 흐름 그대로다.
 class QuestSplitScreen extends ConsumerStatefulWidget {
-  const QuestSplitScreen({super.key});
+  const QuestSplitScreen({super.key, this.target});
+
+  /// 재분해할 원본 퀘스트. null이면 큰 목표 분해(기존 무인자 진입).
+  final RedecomposeTarget? target;
 
   @override
   ConsumerState<QuestSplitScreen> createState() => _QuestSplitScreenState();
@@ -29,6 +34,8 @@ class QuestSplitScreen extends ConsumerStatefulWidget {
 
 class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
   final _goalController = TextEditingController();
+
+  bool get _isRedecompose => widget.target != null;
 
   /// 분해 요청이 진행 중인지. 중복 탭 방지 + 버튼 스피너의 근거.
   bool _isDecomposing = false;
@@ -48,6 +55,27 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
     super.initState();
     // 버튼 활성 상태를 입력과 동기화한다.
     _goalController.addListener(() => setState(() {}));
+
+    // 분해 상태는 화면보다 오래 산다(전역 provider). 그래서 **진입 모드와 남아 있는
+    // 세션이 어긋나는 경우**를 진입 시점에 정리한다. build 중에는 provider를 바꿀 수
+    // 없어 첫 프레임 뒤로 미룬다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final notifier = ref.read(decomposeNotifierProvider.notifier);
+      final target = widget.target;
+
+      if (target != null) {
+        // 재분해 모드: 목표를 타이핑할 이유가 없으므로 곧바로 나눈다.
+        notifier.redecomposeQuest(target);
+        return;
+      }
+      // 큰 목표 분해로 들어왔는데 직전 재분해 세션이 남아 있으면 비운다.
+      // 그대로 두면 그 결과를 등록했을 때 엉뚱한 퀘스트의 자식이 만들어진다.
+      if (ref.read(decomposeNotifierProvider).valueOrNull?.isRedecompose ??
+          false) {
+        notifier.reset();
+      }
+    });
   }
 
   @override
@@ -101,8 +129,12 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
     final result = decomposeState.valueOrNull;
     final hasResult = result != null && result.drafts.isNotEmpty;
 
+    final target = widget.target;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('AI 도전 분해')),
+      appBar: AppBar(
+        title: Text(_isRedecompose ? '멈춘 퀘스트 다시 나누기' : 'AI 도전 분해'),
+      ),
       // 스크롤과 무관하게 항상 보이도록 등록 버튼은 본문이 아니라 하단 바에 둔다.
       bottomNavigationBar: hasResult
           ? _RegisterBar(isSaving: result.isSaving, onRegister: _register)
@@ -111,13 +143,18 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
         child: ListView(
           padding: AppSpacing.screenPadding,
           children: [
-            _SplitterCard(
-              controller: _goalController,
-              isDecomposing: _isDecomposing,
-              canSubmit: _canSubmit,
-              isWhitespaceOnly: _isWhitespaceOnly,
-              onSubmit: _submit,
-            ),
+            // 재분해 모드에서는 목표 입력란을 띄우지 않는다 — 대상은 이미 정해져
+            // 있고, 사용자가 제목을 다시 타이핑할 이유가 없다.
+            if (target != null)
+              _RedecomposeCard(target: target)
+            else
+              _SplitterCard(
+                controller: _goalController,
+                isDecomposing: _isDecomposing,
+                canSubmit: _canSubmit,
+                isWhitespaceOnly: _isWhitespaceOnly,
+                onSubmit: _submit,
+              ),
             AppSpacing.gapLg,
             // 결과 영역: 초기(null)엔 아무것도, 로딩엔 블루 인디케이터, 데이터엔 목록.
             decomposeState.when(
@@ -125,7 +162,11 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
               // decompose는 상태를 error로 두지 않지만(항상 폴백), 방어적으로 처리한다.
               error: (error, _) => ErrorView(
                 message: '퀘스트를 나누지 못했어요.',
-                onRetry: _canSubmit ? _submit : null,
+                onRetry: target != null
+                    ? () => ref
+                          .read(decomposeNotifierProvider.notifier)
+                          .redecomposeQuest(target)
+                    : (_canSubmit ? _submit : null),
               ),
               data: (state) {
                 if (state == null) return const SizedBox.shrink();
@@ -140,9 +181,15 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
                     actionLabel: '다시 시도',
                     onAction: _isDecomposing
                         ? null
-                        : () => ref
-                              .read(decomposeNotifierProvider.notifier)
-                              .decompose(state.goalText),
+                        // 재분해 세션이면 같은 원본을 다시 나눈다. decompose를 부르면
+                        // 목표 전체가 새로 쪼개져 대상이 바뀌어 버린다.
+                        : () => target != null
+                              ? ref
+                                    .read(decomposeNotifierProvider.notifier)
+                                    .redecomposeQuest(target)
+                              : ref
+                                    .read(decomposeNotifierProvider.notifier)
+                                    .decompose(state.goalText),
                   );
                 }
                 return _ResultSection(state: state);
@@ -154,6 +201,115 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
     );
   }
 }
+
+/// 재분해 대상 카드 — 입력 필드 대신 **원본 퀘스트 제목**을 보여준다 (B-5).
+///
+/// 여기서 사용자가 할 일은 "무엇을 나눌지 정하는 것"이 아니라 "나눈 결과를 확인하는
+/// 것"이다. 그래서 입력·버튼이 없고, 진입과 동시에 분해가 시작된다.
+/// 목표 맥락을 함께 보여 주는 이유: AI에 넘긴 맥락이 무엇인지 사용자도 알아야
+/// 결과가 엉뚱할 때 원인을 짐작할 수 있다.
+class _RedecomposeCard extends StatelessWidget {
+  const _RedecomposeCard({required this.target});
+
+  final RedecomposeTarget target;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final goalText = target.goalText;
+
+    return Container(
+      padding: AppSpacing.cardPadding,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLowest,
+        borderRadius: AppRadius.lgAll,
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // AI = 블루 아이콘 타일(_SplitterCard와 같은 규칙).
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: scheme.secondaryContainer,
+                  borderRadius: AppRadius.mdAll,
+                ),
+                child: Icon(
+                  Symbols.alt_route,
+                  fill: 1,
+                  color: scheme.onSecondary,
+                ),
+              ),
+              AppSpacing.gapWMd,
+              Expanded(
+                child: Text('막힌 퀘스트 나누기', style: theme.textTheme.headlineMedium),
+              ),
+            ],
+          ),
+          AppSpacing.gapMd,
+          Text(
+            '여기서 막혔군요. 이 퀘스트를 오늘 할 수 있는 크기로 더 나눠드릴게요.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+          AppSpacing.gapMd,
+          Container(
+            width: double.infinity,
+            padding: AppSpacing.cardPadding,
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHigh,
+              borderRadius: AppRadius.mdAll,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '나눌 퀘스트',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                AppSpacing.gapXs,
+                Text(target.questTitle, style: theme.textTheme.bodyLarge),
+                if (goalText != null) ...[
+                  AppSpacing.gapSm,
+                  Row(
+                    children: [
+                      Icon(
+                        Symbols.target,
+                        size: _contextIconSize,
+                        color: scheme.secondary,
+                      ),
+                      AppSpacing.gapWXs,
+                      Expanded(
+                        child: Text(
+                          goalText,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.secondary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// bodySmall과 눈높이를 맞춘 맥락 아이콘 크기.
+const double _contextIconSize = 14;
 
 /// 입력 카드 — 블루 AI 타일 + 제목 + 설명 + 입력 필드 + 그린 분해 버튼 + 안내 박스.
 class _SplitterCard extends StatelessWidget {

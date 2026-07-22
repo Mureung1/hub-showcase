@@ -40,11 +40,20 @@ abstract interface class QuestRepository {
   ///   이걸 안 하면 AI가 뱉은 0..4와 기존 퀘스트의 0..2가 겹쳐 목록 순서가 뒤엉킨다.
   ///   마이크로 퀘스트는 순서가 곧 실행 경로라 순서가 섞이면 분해의 의미가 사라진다.
   ///
+  /// **재분해 자식 등록 (4주차 B-5).** [parentQuestId]를 주면 저장되는 퀘스트들이
+  /// "그 원본 퀘스트를 더 작게 나눈 결과"로 기록된다.
+  ///
+  /// 원본은 지우지도 바꾸지도 않는다 — 성공 지표 「재분해 복귀율」은
+  /// **분모 = 멈춘(stuck) 원본 · 분자 = `parentQuestId`가 달린 자식**이라,
+  /// 원본을 자식으로 대체해 버리면 지표의 근거가 통째로 사라진다.
+  /// 자식은 원본의 `goalId`를 그대로 [goalId]로 받아 **같은 목표 폴더에 남는다.**
+  ///
   /// 저장된 퀘스트(ID 부여됨)를 순서대로 돌려준다.
   Future<List<Quest>> createQuests(
     String uid,
     List<QuestDraft> drafts, {
     String? goalId,
+    String? parentQuestId,
   });
 
   Future<void> updateQuest(String uid, Quest quest);

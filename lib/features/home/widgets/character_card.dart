@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/reward_colors.dart';
 import '../../../core/widgets/coin_pill.dart';
 import '../../../models/app_user.dart';
 
@@ -61,7 +63,7 @@ class CharacterCard extends StatelessWidget {
                 AppSpacing.gapSm,
                 _XpBar(progress: user.levelProgress),
                 AppSpacing.gapMd,
-                _CoinBanner(coin: user.coin),
+                _CoinBanner(coin: user.coin, streak: user.streak),
               ],
             ),
           ),
@@ -125,10 +127,21 @@ class _XpBar extends StatelessWidget {
   }
 }
 
+/// 코인 잔액 + 연속 출석 일수.
+///
+/// 스트릭을 여기 둔 이유는 두 가지다. ① 디자인 규칙상 **노랑은 코인·보상·스트릭
+/// 전용**인데, 이 위젯이 노랑 사용이 허용된 곳이다(`color_role_test`의 allowlist).
+/// ② 스트릭은 보상 경제의 일부다 — 7일마다 코인·XP가 나오므로 코인 옆이 제자리다.
+///
+/// `Row`가 아니라 `Wrap`인 이유: 접근성 글꼴을 키운 사용자의 좁은 화면에서
+/// 두 항목이 한 줄에 안 들어가면 줄바꿈된다(오버플로 줄무늬 대신).
 class _CoinBanner extends StatelessWidget {
-  const _CoinBanner({required this.coin});
+  const _CoinBanner({required this.coin, required this.streak});
 
   final int coin;
+
+  /// 연속 출석 일수. 0이면 아직 기록이 없으므로 표시하지 않는다.
+  final int streak;
 
   @override
   Widget build(BuildContext context) {
@@ -141,9 +154,57 @@ class _CoinBanner extends StatelessWidget {
         color: theme.colorScheme.surfaceContainer,
         borderRadius: AppRadius.fullAll,
       ),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: AppSpacing.md,
+        runSpacing: AppSpacing.xs,
+        children: [
+          CoinPill(amount: coin),
+          if (streak > 0) _StreakPill(streak: streak),
+        ],
+      ),
+    );
+  }
+}
+
+/// 🔥 N일 연속 — 출석 스트릭. 노랑(코인·보상·스트릭 전용) 사용 지점이다.
+class _StreakPill extends StatelessWidget {
+  const _StreakPill({required this.streak});
+
+  final int streak;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final reward = theme.reward;
+
+    // 배경 틴트·글자색을 [CoinPill]과 똑같이 맞춘다. 나란히 놓이는 형제 위젯이라
+    // 한쪽만 다른 대비 규칙을 쓰면 다크 테마에서 한쪽만 안 읽히게 된다.
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: reward.coinGlow.withValues(alpha: 0.22),
+        borderRadius: AppRadius.fullAll,
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [CoinPill(amount: coin)],
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Symbols.local_fire_department,
+            size: 20,
+            fill: 1,
+            color: reward.coin,
+          ),
+          AppSpacing.gapWXs,
+          Text(
+            '$streak일 연속',
+            style: theme.textTheme.labelMedium?.copyWith(color: reward.onCoin),
+          ),
+        ],
       ),
     );
   }

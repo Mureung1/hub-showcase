@@ -25,6 +25,7 @@ Future<InMemoryQuestRepository> pumpScreen(
   List<Goal> goals = const [],
   AppUser? user,
   AppFailure? failWith,
+  DateTime Function()? clock,
   List<Override> extraOverrides = const [],
 }) async {
   const uid = 'test-uid';
@@ -32,14 +33,18 @@ Future<InMemoryQuestRepository> pumpScreen(
   final userRepo = InMemoryUserRepository(
     seed: user ?? AppUser.initial(uid),
     failWith: failWith,
+    clock: clock,
   );
   // 퀘스트 완료(completeQuest)는 사용자 문서의 coin·xp까지 올린다. 사용자 저장소를
   // 주입해야 화면 테스트에서 "완료 → 잔액 증가"를 끝까지 확인할 수 있다.
   // 주입된 인스턴스는 `questRepo.users`로 다시 꺼내 검증할 수 있다.
+  // [clock]을 주면 저장소와 화면이 **같은 시각**을 본다. 하루 코인 상한은 KST 날짜
+  // 경계에 걸려 있어, 실제 시계로는 "자정을 넘겼다"를 재현할 수 없다.
   final questRepo = InMemoryQuestRepository(
     seed: quests,
     failWith: failWith,
     users: userRepo,
+    clock: clock,
   );
 
   // 목표(폴더) 라벨을 그리는 목록 화면이 이 저장소를 읽는다. [goals]를 주면
@@ -62,6 +67,7 @@ Future<InMemoryQuestRepository> pumpScreen(
         // 화면(분해 결과 등록)은 필요하다. 기본 InMemory를 깔아 두고, 실패 경로
         // 테스트는 extraOverrides로 실패하는 goalRepo를 덮어쓴다.
         goalRepositoryProvider.overrideWithValue(goalRepo),
+        if (clock != null) clockProvider.overrideWithValue(clock),
         ...extraOverrides,
       ],
       child: MaterialApp(theme: AppTheme.light, home: screen),

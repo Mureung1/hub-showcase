@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
@@ -13,6 +14,16 @@ import '../../models/quest.dart';
 import '../../providers/providers.dart';
 import '../shell/tab_scroll_registry.dart';
 import 'widgets/character_card.dart';
+import 'widgets/streak_bonus_dialog.dart';
+
+/// 7일 보너스 축하를 **이번 세션에 이미 띄웠는가.**
+///
+/// 홈 위젯의 필드가 아니라 provider인 이유: 탭을 오가면 홈 State가 새로 만들어질
+/// 수 있어 위젯 안에 둔 플래그는 그때 초기화된다. ProviderScope는 앱 실행 동안
+/// 살아 있으므로 "앱 실행당 한 번"이라는 뜻이 그대로 유지된다.
+/// (전역 static이 아닌 이유는 테스트마다 새 ProviderScope가 깨끗하게 시작되게
+///  하기 위해서다.)
+final streakBonusShownProvider = StateProvider<bool>((ref) => false);
 
 /// 홈 / 캐릭터 화면.
 ///
@@ -32,9 +43,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   int get tabIndex => 0;
 
+  /// 7일 보너스 축하를 띄운다. **앱 실행당 한 번만.**
+  ///
+  /// 타이밍: `ref.listen` 콜백은 build 도중(위젯 트리가 잠긴 상태)에 불릴 수 있어
+  /// 여기서 곧장 `showDialog`를 호출하면 Navigator를 빌드 중에 건드리게 된다.
+  /// 그래서 항상 **다음 프레임**으로 미룬다.
+  ///
+  /// 그 사이에 화면이 사라졌을 수 있으므로 프레임이 돌아온 뒤 다시 확인한다:
+  /// - `mounted` — 탭을 옮겨 dispose된 홈이 모달을 띄우면 안 된다.
+  /// - `route.isCurrent` — 전환 중이거나 다른 다이얼로그/시트가 위에 있으면 건너뛴다.
+  ///   축하가 다른 모달을 덮거나 사라지는 화면 위에 뜨는 편보다, 이번 한 번을
+  ///   조용히 넘기는 편이 낫다(보상은 이미 지급됐고 잔액·연속 일수는 캐릭터
+  ///   카드에 그대로 반영된다).
+  void _showStreakBonus({required int streak, required Reward bonus}) {
+    // 세션 가드는 스케줄 시점에 잠근다. 지급 가드(streakBonusDate)는 서버 쪽
+    // 재지급만 막을 뿐이라, 탭을 오갔다 홈으로 돌아왔을 때 축하가 다시 뜨는 것은
+    // 화면이 따로 막아야 한다.
+    if (ref.read(streakBonusShownProvider)) return;
+    ref.read(streakBonusShownProvider.notifier).state = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final route = ModalRoute.of(context);
+      if (route == null || !route.isCurrent) return;
+      showStreakBonusDialog(context, streak: streak, bonus: bonus);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProvider);
+
+    // 출석 기록을 시작시키는 지점이자, 7일 보너스를 알리는 지점이다.
+    //
+    // watch가 아니라 listen인 이유: 출석 결과는 화면을 다시 그릴 이유가 없다
+    // (연속 일수는 사용자 문서 스트림을 타고 캐릭터 카드로 들어온다).
+    // 여기서 필요한 건 "보너스가 나갔다"는 1회성 사건뿐이다.
+    //
+    // 실패는 무시한다 — 출석 쓰기가 실패해도 앱은 정상 동작해야 하고,
+    // 사용자가 할 수 있는 조치도 없다(내일 다시 시도된다).
+    ref.listen(attendanceProvider, (previous, next) {
+      final result = next.valueOrNull;
+      final bonus = result?.bonus;
+      if (result == null || bonus == null) return;
+      // 연속 일수는 지급 결과가 들고 있는 값을 그대로 쓴다 — 화면이 세지 않는다.
+      _showStreakBonus(streak: result.streak, bonus: bonus);
+    });
 
     return Scaffold(
       body: SafeArea(

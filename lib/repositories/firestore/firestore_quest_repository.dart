@@ -4,6 +4,7 @@ import '../../core/constants/firestore_paths.dart';
 import '../../core/constants/growth_rules.dart';
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
+import '../../core/utils/kst_date.dart';
 import '../../models/app_user.dart';
 import '../../models/difficulty.dart';
 import '../../models/quest.dart';
@@ -13,10 +14,18 @@ import '../quest_repository.dart';
 import 'firestore_codec.dart';
 
 class FirestoreQuestRepository implements QuestRepository {
-  FirestoreQuestRepository([FirebaseFirestore? firestore])
-    : _db = firestore ?? FirebaseFirestore.instance;
+  FirestoreQuestRepository([
+    FirebaseFirestore? firestore,
+    DateTime Function()? clock,
+  ]) : _db = firestore ?? FirebaseFirestore.instance,
+      _clock = clock ?? DateTime.now;
 
   final FirebaseFirestore _db;
+
+  /// 현재 시각 공급자. 하루 코인 상한의 날짜 경계(KST) 판정에 쓴다.
+  /// `serverTimestamp`는 커밋 전까지 값을 알 수 없어 트랜잭션 안에서
+  /// "오늘인가"를 비교할 수 없다(FirestoreUserRepository와 같은 이유).
+  final DateTime Function() _clock;
 
   CollectionReference<Map<String, dynamic>> _collection(String uid) =>
       _db.collection(FirestorePaths.quests(uid));
@@ -103,6 +112,7 @@ class FirestoreQuestRepository implements QuestRepository {
     String uid,
     List<QuestDraft> drafts, {
     String? goalId,
+    String? parentQuestId,
   }) {
     return guard(() async {
       if (drafts.isEmpty) return const <Quest>[];
@@ -123,6 +133,8 @@ class FirestoreQuestRepository implements QuestRepository {
           id: ref.id,
           goalId: goalId,
           order: offset + i,
+          // 재분해 자식이면 원본 퀘스트 ID가 문서에 심긴다(없으면 toJson이 생략).
+          parentQuestId: parentQuestId,
         );
         batch.set(ref, {
           ...quest.toJson(),
@@ -248,12 +260,24 @@ class FirestoreQuestRepository implements QuestRepository {
         // 인증(메모 또는 사진)이 성립하면 보너스를 합산한다 — 보너스도 rewardedAt
         // 가드 아래라 재완료로는 다시 받을 수 없다. 둘 다 있어도 보너스는 1회다.
         final verified = verifiedMemo != null || photoBase64 != null;
-        final reward =
-            rewardFor(quest.difficulty) +
-            (verified ? kVerificationBonus : Reward.zero);
+        // 적용 순서 1+2 (questReward가 단일 정의처다).
+        final gross = questReward(quest.difficulty, verified: verified);
+
+        // 적용 순서 3: 하루 코인 상한 절삭. 읽어 온 user 문서의 카운터를 쓰므로
+        // 왕복이 늘지 않는다(레벨업 계산 때문에 이미 읽고 있었다).
+        // 날짜가 바뀌었으면 coinEarnedToday가 0을 준다 — 자정에 카운터를 밀어 주는
+        // 배치가 없어도 읽는 쪽에서 만료된다.
+        final now = _clock();
+        final capped = applyDailyCoinCap(
+          reward: gross,
+          earnedToday: cur.coinEarnedToday(now),
+        );
+        // 이후 잔액·기록·반환값은 전부 **실제 지급액**을 쓴다.
+        final reward = capped.paid;
 
         // 레벨업 계산: 읽어 온 현재 레벨·XP에 이번 XP를 더해 다단계 상승·진화
         // 경계·MAX 상한을 한 번에 처리한다(applyXpGain 단일 정의).
+        // XP는 상한 대상이 아니므로 절삭 여부와 무관하게 온전히 들어간다.
         final next = applyXpGain(
           level: cur.level,
           xp: cur.xp,
@@ -264,10 +288,16 @@ class FirestoreQuestRepository implements QuestRepository {
         // xp·level은 계산값을 set한다 — user 문서를 read했으므로 같은 트랜잭션
         // 안에서 일관된 값이고, 경쟁 시 Firestore가 재읽기·재시도로 정합성을 지킨다.
         // merge:true라 사용자 문서가 아직 없어도(=최초 완료) 안전하게 생성된다.
+        //
+        // dailyCoinEarned는 increment가 아니라 **계산값 set**이다 — 날짜가 바뀌면
+        // 0에서 다시 시작해야 하는데 increment로는 리셋을 표현할 수 없다.
+        // 카운터에는 퀘스트 보상만 쌓인다(스트릭 보너스는 상한 밖이라 제외).
         transaction.set(userRef, {
           'coin': FieldValue.increment(reward.coin),
           'xp': next.xp,
           'level': next.level,
+          'dailyCoinDate': kstDateKey(now),
+          'dailyCoinEarned': capped.dailyCoin,
         }, SetOptions(merge: true));
 
         // 사진은 별도 proof 문서에 담는다(quest·achievement 문서 비대화 방지).

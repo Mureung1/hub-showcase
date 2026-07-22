@@ -5,7 +5,9 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/quest_actions_menu.dart';
 import '../../core/widgets/quest_card.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/quest.dart';
@@ -13,6 +15,7 @@ import '../../models/quest_group.dart';
 import '../../models/quest_status.dart';
 import '../../providers/providers.dart';
 import '../shell/tab_scroll_registry.dart';
+import 'decompose_notifier.dart';
 import 'widgets/goal_group_section.dart';
 import 'widgets/quest_complete_dialog.dart';
 import 'widgets/quest_memo_sheet.dart';
@@ -150,12 +153,103 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
       }
       return;
     }
+    // 하루 코인 상한에 걸려 깎였는지는 **절삭 전 금액과 실지급액의 차이**로 안다.
+    // 절삭 전 금액은 저장소와 같은 식(questReward)으로 구하므로 두 값이 갈라지지
+    // 않는다. 표시하는 금액 자체는 저장소가 돌려준 reward 그대로다.
+    final expected = questReward(
+      quest.difficulty,
+      verified: memoResult?.isVerified ?? false,
+    );
+
     await showQuestCompleteDialog(
       context,
       questTitle: quest.title,
       reward: reward,
       // 보너스 포함 여부는 지급한 쪽이 안다. reward 총액에서 역산하지 않는다.
       verified: memoResult?.isVerified ?? false,
+      cutCoin: expected.coin - reward.coin,
+    );
+  }
+
+  /// 진행 상태만 바꾼다(보상 경로와 무관).
+  ///
+  /// **`completeQuest`가 아니라 `setStatus`를 부른다.** 멈춤 표시는 완료가 아니므로
+  /// 코인·XP가 오갈 일이 없고, `rewardedAt`도 건드리지 않는다.
+  /// 중복 실행 방지는 완료 흐름과 **같은 [_pending] 잠금**을 공유한다 — 메모 시트가
+  /// 떠 있는 사이에 `⋮`로 상태를 바꾸면 두 흐름이 같은 퀘스트를 두고 경쟁한다.
+  Future<void> _setStatus(Quest quest, QuestStatus status) async {
+    if (_pending.contains(quest.id)) return;
+    _pending.add(quest.id);
+    if (mounted) setState(() => _completing.add(quest.id));
+
+    try {
+      final uid = await ref.read(sessionProvider.future);
+      await ref.read(questRepositoryProvider).setStatus(uid, quest.id, status);
+    } on AppFailure catch (failure) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(failure.message)));
+    } finally {
+      _pending.remove(quest.id);
+      if (mounted) setState(() => _completing.remove(quest.id));
+    }
+  }
+
+  /// 카드 `⋮` 메뉴 항목. **이번 범위는 멈춤 관련만**이다(제목 수정·삭제는 별개 기능).
+  ///
+  /// 상태별로 노출이 갈린다:
+  /// - `todo` → 「여기서 막혔어요」 하나. 멈춤 표시가 「재분해 복귀율」의 분모를 만든다.
+  /// - `stuck` → 「다시 진행할게요」 + (깊이가 남았으면)「더 작게 나누기」.
+  /// - `done` → 없음. 끝낸 퀘스트에 멈춤·재분해를 권할 이유가 없다(메뉴 자체가 안 뜬다).
+  List<QuestMenuAction> _menuActionsFor(QuestNode node, QuestGroup group) {
+    final quest = node.quest;
+
+    if (quest.done) return const [];
+
+    if (!quest.isStuck) {
+      return [
+        QuestMenuAction(
+          label: '여기서 막혔어요',
+          icon: Symbols.pause_circle,
+          onSelected: () => _setStatus(quest, QuestStatus.stuck),
+        ),
+      ];
+    }
+
+    return [
+      QuestMenuAction(
+        label: '다시 진행할게요',
+        icon: Symbols.undo,
+        onSelected: () => _setStatus(quest, QuestStatus.todo),
+      ),
+      // 깊이가 남았을 때만 노출한다. 자식의 자식까지 또 나누면 목록이 감당 못 한다.
+      if (node.canRedecompose)
+        QuestMenuAction(
+          label: '더 작게 나누기',
+          icon: Symbols.alt_route,
+          onSelected: () => _openRedecompose(quest, group),
+        ),
+    ];
+  }
+
+  /// 재분해 화면으로 이동한다. **여기서는 아무것도 저장하지 않는다** —
+  /// 원본은 stuck 그대로 남고, 등록은 그 화면의 「등록하기」가 한다.
+  void _openRedecompose(Quest quest, QuestGroup group) {
+    // 목표 텍스트는 폴더 라벨에서 가져온다. 목표 문서를 못 찾은 그룹의 폴백 라벨
+    // ('목표')이나 직접 등록 그룹 라벨은 맥락이 아니므로 넘기지 않는다 —
+    // 그런 경우 퀘스트 제목 자체가 맥락이 된다(RedecomposeTarget.contextText).
+    final hasGoalText = group.goalId != null && group.label != kUnknownGoalLabel;
+
+    context.go(
+      '/quest/split',
+      extra: RedecomposeTarget(
+        questId: quest.id,
+        questTitle: quest.title,
+        difficulty: quest.difficulty,
+        goalId: quest.goalId,
+        goalText: hasGoalText ? group.label : null,
+      ),
     );
   }
 
@@ -206,6 +300,7 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
                 label: const Text('AI로 목표 나누기'),
               ),
             ),
+            const _DailyCapNotice(),
             Expanded(
               child: groupsAsync.when(
                 // 로딩: 스켈레톤 카드 3장.
@@ -253,16 +348,88 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
                           onToggleExpanded: () => setState(() {
                             _expanded[group.key] = !_isExpanded(group);
                           }),
-                          questBuilder: (context, quest) => QuestCard(
-                            quest: quest,
-                            isCompleting: _completing.contains(quest.id),
-                            onToggleDone: (done) => _toggleDone(quest, done),
+                          questBuilder: (context, node) => QuestCard(
+                            quest: node.quest,
+                            isCompleting: _completing.contains(node.quest.id),
+                            onToggleDone: (done) =>
+                                _toggleDone(node.quest, done),
+                            menuActions: _menuActionsFor(node, group),
                           ),
                         ),
                       );
                     },
                   );
                 },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 오늘 코인 상한에 도달했을 때만 뜨는 안내 줄.
+///
+/// **왜 상시가 아니라 도달했을 때만 뜨는가**: 평소에 "70/70까지 받을 수 있어요"를
+/// 붙여 두면 상한이 목표처럼 읽혀 퀘스트가 숙제가 된다. 안내가 필요한 순간은
+/// "코인이 왜 안 들어오지?"가 생기는 순간뿐이다.
+///
+/// 색은 🔵 블루(정보)다. 코인 이야기지만 **노랑은 코인 수치 자체를 표시할 때만**
+/// 쓴다 — 안내문까지 노랑으로 칠하면 색 역할이 "코인 관련 아무거나"로 넓어진다.
+///
+/// 로딩·오류에는 아무것도 그리지 않는다. 부가 안내라 사용자 문서를 못 읽었다고
+/// 퀘스트 목록 위에 오류를 띄우면 손해가 더 크다(questGroupsProvider가 goal 스트림
+/// 실패를 삼키는 것과 같은 판단).
+///
+/// ⚠️ **알려진 한계(의도된 선택)**: 시각을 build 시점에 한 번 읽으므로, 앱을 켜 둔 채
+/// KST 자정을 넘기면 rebuild 전까지 이 안내가 남는다. 자동으로 지우려면 자정까지
+/// 세는 타이머를 위젯 수명에 매달아야 하는데, 그 비용(타이머 생존 관리 · 테스트의
+/// 시간 의존성)이 얻는 것보다 크다. 실제 지급은 저장소가 매번 날짜를 다시 계산하므로
+/// **안내만 낡을 뿐 코인은 정상 지급되고**, 그 완료 시점에 사용자 문서 스트림이
+/// 갱신되며 안내도 사라진다. 버그가 아니라 감수한 지연이다.
+class _DailyCapNotice extends ConsumerWidget {
+  const _DailyCapNotice();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider).valueOrNull;
+    if (user == null) return const SizedBox.shrink();
+
+    final now = ref.watch(clockProvider)();
+    if (!user.isDailyCoinCapped(now)) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenH,
+        0,
+        AppSpacing.screenH,
+        AppSpacing.sm,
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainer,
+          borderRadius: AppRadius.mdAll,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Symbols.info,
+              size: 18,
+              fill: 1,
+              color: theme.colorScheme.secondary,
+            ),
+            AppSpacing.gapWSm,
+            Expanded(
+              child: Text(
+                '오늘 코인은 $kDailyCoinCap개까지 받았어요. '
+                '내일 다시 쌓여요 — XP는 계속 올라갑니다.',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.secondary,
+                ),
               ),
             ),
           ],

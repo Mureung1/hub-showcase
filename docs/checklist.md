@@ -312,8 +312,8 @@
 - [x] `계산(easy)=코인3·XP5`, `계산(normal)=코인5·XP10`, `계산(hard)=코인10·XP20` 단위 테스트가 통과한다.
 - [x] 알 수 없는 난이도 입력 시 안전한 기본값 또는 예외 처리가 된다.
       → `rewardFor`(`lib/core/constants/reward_rules.dart`). 테스트: `test/core/reward_rules_test.dart`, `test/models/quest_test.dart`. `Difficulty`가 enum이라 알 수 없는 값 자체가 타입 수준에서 불가능하다.
-- [ ] 보너스·상한·점감 적용 순서가 명확히 정의되어 있다.
-      → **보류**: 인증 보너스(`kVerificationBonus`)만 구현됐고 **하루 코인 상한·반복 보상 점감이 미구현**이라 셋의 적용 순서를 정의할 대상이 없다. 상한·점감(chunk C) 구현 시 함께 판정한다.
+- [x] 보너스·상한·점감 적용 순서가 명확히 정의되어 있다.
+      → **점감이 N/A로 빠지면서 순서가 확정됐다.** 정본 순서: ① 난이도별 기본 보상(`kBaseRewards`) → ② + 인증 보너스(`kVerificationBonus`, 메모 또는 사진 시 1회) → ③ 위 합산 **코인**에 하루 상한 절삭 적용(`applyDailyCoinCap`, **XP는 절삭하지 않는다**), 이 결과가 `dailyCoinEarned` 카운터에 누적 → ④ 스트릭 보너스(`streakBonusFor(streak)`, 주차별 점증)는 ③의 **밖에서** 별도 지급(상한 미적용·카운터 미반영). **점증이 붙어도 이 성질은 변하지 않는다** — 금액만 주차에 따라 커질 뿐, 상한 절삭과 `dailyCoinEarned` 누적에서 빠져 있다는 규칙은 그대로다. 상수·순수 함수 정의는 `lib/core/constants/reward_rules.dart` 한 곳이고, 같은 순서가 `docs/firestore-schema.md`에도 기록되어 있다.
 
 ### Firestore 트랜잭션 기반 코인·XP 지급
 - [x] 코인·XP 지급이 **트랜잭션으로 원자적**으로 처리되어 부분 반영이 없다.
@@ -362,22 +362,44 @@
       → `quest_list_screen.dart`가 `done && reward == null`(이미 보상받은 퀘스트 재완료)일 때 스낵바 '이미 완료한 퀘스트예요'를 노출한다. 완료 해제(done=false)에는 스낵바가 뜨지 않아 오탐을 막는다. 재지급이 없을 때 `completeQuest`가 `null`을 반환하고 축하 연출은 생략된다. 테스트: `test/features/quest_list_screen_test.dart`(재완료→스낵바+연출없음, 완료해제→스낵바 안 뜸).
 
 ### 출석/스트릭 체크 및 연속 출석 보너스(7일) 지급
-- [ ] 일자별 출석이 기록되고 연속 일수가 정확히 계산된다.
-- [ ] 7일 연속 달성 시 보너스가 1회만 지급된다.
-- [ ] 하루 걸러 접속 시 스트릭이 올바르게 초기화된다.
-      → **미착수**: chunk C 예정.
+- [x] 일자별 출석이 기록되고 연속 일수가 정확히 계산된다.
+      → `recordAttendance`(`lib/repositories/user_repository.dart` + Firestore/InMemory 2구현)와 순수 함수 `applyAttendance`(`lib/core/constants/reward_rules.dart`). 상한과 **같은 KST 날짜 키**를 공유한다. `ensureUser`에 합치지 않고 별도 트랜잭션으로 둔 이유는 `ensureUser`의 계약이 "없으면 만든다"는 멱등인데 출석은 날짜마다 문서를 바꾸는 쓰기라 합치면 멱등성이 깨지기 때문이다. 호출도 `sessionProvider`가 아니라 별도 `attendanceProvider`(`lib/providers/providers.dart`)다 — 출석 쓰기 실패가 세션 실패가 되면 홈·퀘스트가 통째로 오류 화면이 된다. 테스트: `test/repositories/attendance_streak_test.dart`, `test/core/reward_economy_test.dart`.
+- [x] 7일 연속 달성 시 보너스가 1회만 지급된다.
+      → **금액은 고정이 아니라 주차별로 점증한다.** 순수 함수 `streakBonusFor(streak)`(`lib/core/constants/reward_rules.dart`)가 `주차 × 15코인 / 주차 × 25XP`를 계산한다(주차 = `streak ~/ kStreakBonusDays`). 기존의 **고정 금액 상수는 삭제됐고**, 금액 정의처는 이제 이 순수 함수와 `kStreakBonusPerWeek`(15/25) 한 곳이다.
+
+| 연속 일수 | 코인 | XP |
+|---|---|---|
+| 7일 (1주) | 15 | 25 |
+| 14일 (2주) | 30 | 50 |
+| 21일 (3주) | 45 | 75 |
+| 28일 (4주) | 60 | 100 |
+| 35일 이후 | 60 | 100 (고정) |
+
+      → **4주 상한(`kMaxStreakBonusWeeks = 4`)을 둔 이유**: 하루 코인 상한 70의 목적이 코인 경제 보호인데, 상한 **밖에서** 지급되는 보너스가 무한히 자라면 그 장치가 무력해진다.
+      → **지급은 여전히 1회만. 이중 가드** — 날짜 키가 같으면 write 자체가 없고(`isNewDay`), 추가로 `lastBonusKey != todayKey`를 본다. 같은 날 재접속·앱 재실행에도 중복되지 않는다. **이 보너스는 하루 코인 상한과 무관하다**: 카운터에 더하지도, 상한에 걸려 깎이지도 않는다(여러 주를 버틴 보상이 "오늘 이미 70 채웠다"는 이유로 사라지면 스트릭 자체가 무의미해진다).
+      → **다이얼로그가 실제 연속 일수를 표시한다.** 14일이면 "14일 연속!"이다. 이전에는 7을 하드코딩해 14일·21일에도 "7일 연속!"이라고 떠서 오래 버틴 사실이 화면에서 사라지던 버그가 있었고, 이를 고쳤다. 근거: `lib/features/home/widgets/streak_bonus_dialog.dart`, 테스트 `test/features/streak_bonus_dialog_test.dart` · `test/features/streak_ui_test.dart`.
+      → 테스트: `test/core/reward_economy_test.dart`(`streakBonusFor` 그룹 — 주차별 금액·4주 상한), `test/repositories/attendance_streak_test.dart`(`dailyCoinEarned`=70인 상태에서 전액 지급 · 14일 30/50 지급 시 `dailyCoinEarned` 불변 · 28·35일 고정 · 7일 루프에서 보너스 정확히 1회), `test/features/streak_ui_test.dart`.
+      → **검증 증거(A-5 후속 정리 완료 시점, 2026-07-22)**: `flutter analyze` No issues found(0건) · `flutter test` **473건 전부 통과** · verification-agent **PASS** · `test/theme/color_role_test.dart` 무수정 통과. (473 = 470 − 1(중복 테스트 삭제) + 4(가드 계약 2건 · 다이얼로그 재계산 금지 2건). 문서 내 다른 건수는 각기 **다른 시점**의 스위트 기준이다.)
+      → 뮤테이션 검증 — 보너스를 상한에 태우면 실패, 4주 상한을 해제하면 3건 실패, 다이얼로그 제목을 다시 7로 하드코딩하면 3건(홈 화면 경로 포함) 실패.
+      → **뮤테이션에서 생존했던 갭 2가지를 계약 테스트로 고정했다.** ① **다이얼로그는 지급값을 재계산하지 않고 저장소가 준 값을 그대로 표시한다** — 정책과 다른 금액을 주입해도 화면이 그 주입값을 그대로 보여주는지 확인하는 테스트로 고정. 다이얼로그가 자체 계산을 시작하면 표시액과 실지급액이 조용히 갈라진다. ② **하루 1회 가드(날짜 키 저장 필드)가 계약 테스트로 고정됐다** — 정상 경로에선 `isNewDay`에서 이미 걸러져 도달하지 않지만, 스트릭 보너스는 하루 코인 상한 **밖에서** 나가는 유일한 지급이라 중복되면 상한 장치가 통째로 우회된다. 그래서 도달하지 않는 가드까지 테스트로 못 박았다.
+- [x] 하루 걸러 접속 시 스트릭이 올바르게 초기화된다.
+      → 연속이 끊기면 0이 아니라 **1**로 초기화된다(오늘은 출석했으니 오늘이 1일째다). 테스트: `test/core/reward_economy_test.dart`, `test/repositories/attendance_streak_test.dart`.
 
 ### 하루 코인 획득 상한 처리
-- [ ] 하루 누적 코인이 상한에 도달하면 초과분이 지급되지 않는다.
-- [ ] 상한 도달 상태가 사용자에게 안내된다.
-- [ ] 날짜가 바뀌면 상한 카운터가 초기화된다(시간대 기준 명확).
-      → **미착수**: chunk C 예정. 「난이도별 보상 계산 로직」의 적용 순서 항목이 이것과 아래 점감에 물려 있다.
+- [x] 하루 누적 코인이 상한에 도달하면 초과분이 지급되지 않는다.
+      → 순수 함수 `applyDailyCoinCap`(`lib/core/constants/reward_rules.dart`, `kDailyCoinCap = 70`)이 `paidCoin = min(wanted, room)`으로 **부분 지급**한다 — 68코인이 쌓인 상태에서 어려움(10코인)을 완료하면 2코인이 지급된다(0이 아니다). **코인만 절삭하고 XP는 온전히 지급한다**: XP까지 막으면 성장이 멈춰 "오늘은 더 해도 소용없다"가 되기 때문이다. 테스트: `test/core/reward_economy_test.dart`, `test/repositories/daily_coin_cap_test.dart`(경계 2코인 지급 · XP 20 정상 지급 + 레벨 상승).
+- [x] 상한 도달 상태가 사용자에게 안내된다.
+      → **이중 안내**. 목록 상단 `_DailyCapNotice`(`lib/features/quest/quest_list_screen.dart`)와 완료 다이얼로그의 절삭 사유 표시(`quest_complete_dialog.dart`). 다이얼로그는 저장소가 반환한 **실지급액**을 그대로 보여주므로 절삭이 일어나도 표시와 실지급이 어긋나지 않는다. 테스트: `test/features/daily_coin_cap_ui_test.dart`(도달 시 노출 · 69코인이면 미노출 · 어제 70이면 미노출).
+- [x] 날짜가 바뀌면 상한 카운터가 초기화된다(시간대 기준 명확).
+      → **KST 자정 기준.** `lib/core/utils/kst_date.dart`가 `toLocal()`이 아니라 고정 `+9h` 오프셋(`kKstOffset`)을 쓴다 — `toLocal()`은 기기·CI 타임존에 따라 경계가 흔들린다. `dailyCoinEarned`는 `FieldValue.increment`가 아니라 **계산값으로 set**한다(increment로는 날짜 리셋을 표현할 수 없다). 자정 배치가 없으므로 만료 판정은 읽는 쪽이 날짜 키 비교로 한다(`app_user.dart`의 `dailyCoinDate == kstDateKey(now)`). 테스트: `test/core/kst_date_test.dart`, `test/repositories/daily_coin_cap_test.dart` — **UTC와 결과가 갈리는 시각을 명시적으로 찍고 입력이 전부 `DateTime.utc(...)`라 실행 머신 타임존과 무관하다.** 뮤테이션 검증 — 오프셋을 0(UTC)으로 되돌리면 5개 테스트가 실패한다.
+      → **검증 결과(하루 코인 상한 처리 완료 시점)**: `flutter analyze` No issues found · `flutter test` **455건 전부 통과** · verification-agent **12/12 PASS** · `test/theme/color_role_test.dart` 무수정 통과. ※ 455는 **이 시점의 스위트 기준 건수**다(이후 출석/스트릭 A-5까지 끝난 최신 기준은 473건). 소급 수정하지 않는다 — 어느 시점에 무엇으로 검증했는지가 증거의 핵심이다.
+      → **알려진 제약(정직하게)**: ① **Firestore 트랜잭션 경로는 자동 테스트 N/A**다(`fake_cloud_firestore` 미도입). 판정 로직이 InMemory와 같은 순수 함수 하나(`applyDailyCoinCap`/`applyAttendance`)로 수렴하도록 구조를 맞췄고 read-before-write 규칙을 지켰지만, 실제 확인은 에뮬레이터 몫으로 남는다. ② `_DailyCapNotice`는 앱을 켜 둔 채 자정을 넘기면 rebuild 전까지 안내가 남는다(의도된 선택). 실제 지급은 저장소가 매번 날짜를 다시 계산하므로 **안내만 낡을 뿐 코인은 정상 지급**된다.
 
 ### 동일·유사 퀘스트 반복 보상 점감(diminishing) 처리
 - [ ] 동일/유사 퀘스트 반복 완료 시 보상이 정의된 규칙대로 점감한다.
 - [ ] 점감 후에도 음수 보상이 발생하지 않는다(하한 0 또는 최소값).
 - [ ] 점감 계산에 대한 단위 테스트가 통과한다.
-      → **미착수**: chunk C 예정.
+      → **N/A (사용자 결정, 2026-07-22)**: 점감을 구현하지 않기로 했다. 반복 완료로 인한 보상 남용은 **하루 코인 상한(70) 하나로 막는다.** 같은 퀘스트의 재완료는 이미 `rewardedAt` 가드가 영구 차단하므로(위 「중복 완료 방지 처리」), 점감이 실제로 대상으로 삼는 것은 "비슷한 퀘스트를 새로 만들어 반복 등록하는" 경우뿐이다. 이를 제목 유사도로 판정하면 오탐 시 사용자가 이유를 모른 채 보상을 잃는다. 데모 단계에서는 상한만으로 충분하다고 판단했다. **코드에 점감 구현은 존재하지 않는다**(검증에서 grep으로 확인 — `lib/`에서 '점감'은 `reward_rules.dart`의 "구현하지 않는다" 주석 1건뿐). 위 3항목은 구현 대상이 아니므로 체크하지 않고 미체크로 남긴다.
 
 ---
 
@@ -434,9 +456,49 @@
 - [ ] 연출 생략(빠른 진행) 시에도 보상은 정상 지급된다.
 
 ### 멈춘 퀘스트 재분해 기능
-- [ ] 멈춤 상태 퀘스트를 더 작은 퀘스트로 재분해할 수 있다.
-- [ ] 재분해 결과가 기존 진행 상태를 근거로 생성되고, 원본과의 연결이 유지된다.
-- [ ] 재분해 실패 시 기존 퀘스트가 보존된다.
+> plan.md **기능 A의 마지막 요구사항**이자 성공 지표 「재분해 복귀율」의 근거다.
+
+- [x] 멈춤 상태 퀘스트를 더 작은 퀘스트로 재분해할 수 있다.
+      → 카드 우측 `⋮` 메뉴(`lib/core/widgets/quest_actions_menu.dart`)로 멈춤 표시/해제하고, **멈춤 카드에서만** 재분해로 진입한다
+      (「재분해 복귀율」의 분모가 `stuck`이라 `done` 카드에는 메뉴가 없다).
+      재분해는 기존 AI 분해 화면(`quest_split_screen.dart`)을 **재사용**한다 — 폴백·재생성 방어가 이미 거기 다 있어 새로 만들지 않았다.
+      개수 상한은 `kMaxRedecomposeDrafts`(**3**)로 큰 목표 분해의 5개와 다르다. **깊이 2(자식의 자식)는 재분해할 수 없다**(`QuestNode.canRedecompose`).
+      테스트: `test/features/quest_redecompose_test.dart` · `test/models/quest_group_test.dart`
+- [x] 재분해 결과가 기존 진행 상태를 근거로 생성되고, 원본과의 연결이 유지된다.
+      → `parentQuestId` **쓰기 경로를 신설**했다(이전에는 모델에 필드만 있고 넘길 방법이 없었다).
+      `QuestDraft.toQuest`와 `createQuests`에 추가하고 Firestore·InMemory 2구현에 반영했으며, `createQuests`의 **원자성(batch) 계약은 유지**했다.
+      자식은 원본의 `goalId`를 상속해 같은 목표 폴더에 남는다. 프롬프트에는 원본 목표(goal) 맥락을 함께 넘긴다 —
+      맥락 없이 퀘스트 제목만 던지면 엉뚱한 결과가 나온다. **원본은 `stuck` 상태로 그대로 둔다**(연결이 사라지면 지표를 계산할 수 없다).
+      목록에서는 `arrangeQuestTree`(순수 함수)가 자식을 부모 바로 뒤에 두고 깊이만큼 들여쓴다.
+      테스트: `test/features/quest_redecompose_test.dart`(계보 저장 · **편집 후 계보 유지** · **「다시 나누기」 후 계보 유지**) ·
+      `test/repositories/in_memory_quest_repository_test.dart`
+- [x] 재분해 실패 시 기존 퀘스트가 보존된다.
+      → 등록 전까지 아무것도 쓰지 않는다. AI 실패 시 템플릿으로 폴백하고 원본은 불변, 등록 실패 시 스낵바만 뜨고 화면·원본이 유지된다.
+      테스트: `test/features/quest_redecompose_test.dart`(AI 실패 폴백 · 등록 실패 시 원본 보존)
+
+**설계 결정**
+- **부모(stuck)를 자동 완료 처리하지 않는다.** 자식을 다 끝내도 원본이 멈춤인 한 그룹 진행률이 100%가 되지 않는다.
+  완료는 보상 지급 트랜잭션(`completeQuest`)을 타는 경로라, 자식 완료를 근거로 부모를 자동 완료시키면 **사용자가 누르지 않은 지급**이 발생한다.
+  그건 보상 정책 변경이므로 별개 결정이다. 사용자가 원본을 직접 완료 체크하면 해소된다.
+- **고아 자식(부모를 못 찾는 자식)을 숨기지 않는다.** 부모를 삭제하면 실제로 도달 가능한 경로이며,
+  목표 문서를 못 찾아도 퀘스트를 숨기지 않는 것과 같은 원칙이다 — 데이터를 잃은 것처럼 보이면 안 된다.
+- 멈춤 pill은 **중립 회색**이다. 빨강은 어려움 난이도, 블루는 AI 출처, 노랑은 코인·보상·스트릭 전용이라 남는 색 역할이 없고,
+  "진행이 꺼진 상태"는 채도를 빼는 쪽이 의미와 맞다.
+
+**검증 증거**
+- `flutter analyze` No issues found · `flutter test` **499건 전부 통과**(B-5 착수 시점 기선 473건) · `test/theme/color_role_test.dart` 무수정 통과.
+- verification-agent 판정 **FAIL → 테스트 2건 보강 후 해소**. FAIL 사유는 동작 결함이 아니라 **검증 공백**이었다 —
+  이 기능의 유일한 계보 불변식(`target` 보존)이 어떤 테스트로도 검증되지 않아, 상태 전이 헬퍼 7곳과 `regenerateAll`에서 `target`을 `null`로 바꿔도 497건이 전부 통과했다.
+  그 상태에서 사용자가 초안 제목을 고치거나 「다시 나누기」를 누른 뒤 등록하면 `confirm`이 큰 목표 분기로 떨어져 새 Goal을 만들고 `parentQuestId` 없이 저장된다(원본 연결 단절).
+- 뮤테이션 검증: 자식 정렬 파괴 5건 실패 · 깊이 가드 해제 2건 실패 · `parentQuestId` null 2건 실패 ·
+  `stuck`이 보상을 건드리는지 확인하는 `rewardedAt` 가드 뮤테이션 6건 실패 ·
+  **계보 보존 뮤테이션 2종(편집 경로 · 「다시 나누기」 경로)이 각각 해당 테스트를 정확히 실패시킴**.
+
+**남은 제약(미해소)**
+- Firestore 구현의 batch 원자성은 자동 테스트 **N/A**(`fake_cloud_firestore` 미도입). InMemory 쪽은 "여러 개를 등록해도 스트림이 1회만 방출"로 부분 반영 부재를 관찰 가능하게 못 박았다.
+- `lib/router.dart`의 split 라우트 배선 자체는 테스트가 복제 분기를 써서 **한 번도 실행되지 않는다.** `extra` 유실 시 큰 목표 분해로 안전하게 떨어지는 표현식이지만 자동 검증은 없다.
+- 에뮬레이터 실기기 확인(멈춤 → 재분해 → 등록 → 재실행 유지)은 **아직 하지 않았다.**
+- `arrangeQuestTree`의 순환 참조 방어는 앱 쓰기 경로로 도달 불가하다(구조적으로 트리다). 비용이 O(n) 한 번이고 중복 ID 방어를 겸해 유지하기로 했다.
 
 ### 전체 사용자 흐름 통합 테스트
 - [ ] 목표 입력 → AI 분해 → 수정 → 등록 → 완료 → 보상 → 캐릭터 성장 전 과정이 한 번에 통과하는 시나리오 테스트가 존재한다.

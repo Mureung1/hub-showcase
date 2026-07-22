@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/constants/reward_rules.dart';
 import '../models/app_user.dart';
 import '../models/goal.dart';
 import '../models/quest.dart';
@@ -66,6 +67,28 @@ final sessionProvider = FutureProvider<String>((ref) async {
 final currentUserProvider = StreamProvider<AppUser>((ref) async* {
   final uid = await ref.watch(sessionProvider.future);
   yield* ref.watch(userRepositoryProvider).watchUser(uid);
+});
+
+/// 화면이 쓰는 현재 시각 공급자.
+///
+/// 하루 코인 상한은 **KST 날짜 경계**에 걸려 있어, 화면이 `DateTime.now()`를 직접
+/// 부르면 "상한 도달 안내가 뜨는가"를 테스트할 방법이 사라진다(오늘 날짜로 사용자
+/// 문서를 만들어야 하고, 자정 경계는 아예 재현이 불가능하다).
+/// 저장소가 `clock`을 주입받는 것과 같은 이유다.
+final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
+/// 오늘의 출석 기록 (+ 7일 연속 보너스).
+///
+/// **세션과 분리한 이유**: 출석 기록이 네트워크 실패로 죽어도 로그인과 앱 사용은
+/// 계속돼야 한다. [sessionProvider] 안에서 호출하면 출석 쓰기 실패가 곧 세션 실패가
+/// 되어 홈·퀘스트가 통째로 오류 화면이 된다 — 스트릭은 부가 기능이지 앱의 전제가
+/// 아니다. 실패는 이 provider 안에 갇히고, 구독자(홈)는 조용히 무시한다.
+///
+/// 한 번만 도는 [FutureProvider]라 앱 실행당 1회 호출된다. 같은 날 여러 번 불려도
+/// 저장소가 멱등이라(날짜 키가 같으면 쓰지 않는다) 보너스가 두 번 나가지 않는다.
+final attendanceProvider = FutureProvider<AttendanceResult>((ref) async {
+  final uid = await ref.watch(sessionProvider.future);
+  return ref.watch(userRepositoryProvider).recordAttendance(uid);
 });
 
 /// 퀘스트 목록.

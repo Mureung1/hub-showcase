@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../core/constants/growth_rules.dart';
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
+import '../../core/utils/kst_date.dart';
 import '../../models/achievement.dart';
 import '../../models/difficulty.dart';
 import '../../models/quest.dart';
@@ -24,13 +25,18 @@ class InMemoryQuestRepository implements QuestRepository {
     this.failWith,
     List<Quest> seed = const [],
     this.users,
-  }) {
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now {
     for (final quest in seed) {
       _quests.putIfAbsent(quest.id, () => quest);
     }
   }
 
   final AppFailure? failWith;
+
+  /// 현재 시각 공급자. 하루 코인 상한의 **날짜 경계(KST)** 판정에 쓴다.
+  /// 테스트가 실제 시계에 의존하지 않도록 주입 가능하다.
+  final DateTime Function() _clock;
 
   /// 보상을 적립할 사용자 저장소. **선택적이다.**
   ///
@@ -41,6 +47,10 @@ class InMemoryQuestRepository implements QuestRepository {
   /// 주입하지 않으면 **잔액 적립만 생략**하고 [Reward] 계산·반환과 중복 지급 차단은
   /// 그대로 동작한다. 보상 규칙(난이도별 금액·재지급 금지)만 검증하는 테스트는
   /// 사용자 저장소 없이도 쓸 수 있고, 잔액까지 보려면 주입하면 된다.
+  ///
+  /// ⚠️ **하루 코인 상한도 여기에 달려 있다.** 카운터(`dailyCoinEarned`)가 사용자
+  /// 문서 필드라, 주입하지 않으면 절삭할 근거 자체가 없어 상한이 적용되지 않는다.
+  /// 상한을 검증하는 테스트는 반드시 주입해야 한다.
   final InMemoryUserRepository? users;
 
   final Map<String, Quest> _quests = {};
@@ -128,6 +138,7 @@ class InMemoryQuestRepository implements QuestRepository {
     String uid,
     List<QuestDraft> drafts, {
     String? goalId,
+    String? parentQuestId,
   }) async {
     _check();
     if (drafts.isEmpty) return const [];
@@ -144,6 +155,8 @@ class InMemoryQuestRepository implements QuestRepository {
         id: 'mem-${++_seq}',
         goalId: goalId,
         order: offset + i,
+        // 재분해 자식이면 원본 퀘스트 ID를 심는다(Firestore 구현과 동일한 계약).
+        parentQuestId: parentQuestId,
       );
       staged[quest.id] = quest;
       created.add(quest);
@@ -222,11 +235,24 @@ class InMemoryQuestRepository implements QuestRepository {
 
     if (alreadyPaid) return null;
 
-    // 인증이 성립하면 보너스를 합산한다(예: 보통 5/10 → 8/13).
+    // 적용 순서 1+2: 기본 보상 + 인증 보너스(예: 보통 5/10 → 8/13).
     // 보너스도 rewardedAt 가드 아래라 재완료로 다시 받을 수 없다.
-    final reward =
-        rewardFor(quest.difficulty) +
-        (verified ? kVerificationBonus : Reward.zero);
+    final gross = questReward(quest.difficulty, verified: verified);
+
+    // 적용 순서 3: 하루 코인 상한 절삭. 카운터가 사용자 문서 필드라 users를
+    // 주입하지 않으면 절삭 근거가 없어 그대로 지급한다(위 주석 참고).
+    final userRepo = users;
+    final current = userRepo == null ? null : await userRepo.fetchUser(uid);
+    final now = _clock();
+    final capped = current == null
+        ? (paid: gross, dailyCoin: 0, capped: false)
+        : applyDailyCoinCap(
+            reward: gross,
+            earnedToday: current.coinEarnedToday(now),
+          );
+    // 이후 기록·잔액·반환값은 전부 **실제 지급액**을 쓴다.
+    // 여기서 갈라지면 다이얼로그 표시와 실지급이 어긋난다.
+    final reward = capped.paid;
 
     // 사진은 별도 proof 저장소에 담는다(Firestore proofs 문서에 대응).
     // 지급 경로에서만 저장 — 재완료는 위에서 return. questId 키라 덮어쓴다.
@@ -250,11 +276,10 @@ class InMemoryQuestRepository implements QuestRepository {
       ),
     );
 
-    final userRepo = users;
-    if (userRepo != null) {
-      final current = await userRepo.fetchUser(uid);
+    if (userRepo != null && current != null) {
       // Firestore 구현과 같은 의미: coin은 단순 누적, xp·level은 applyXpGain으로
       // 다단계 상승·진화 경계·MAX 상한을 반영한 계산값으로 갱신한다.
+      // XP는 절삭되지 않으므로 상한에 걸려도 성장은 그대로 진행된다.
       final next = applyXpGain(
         level: current.level,
         xp: current.xp,
@@ -265,6 +290,10 @@ class InMemoryQuestRepository implements QuestRepository {
           coin: current.coin + reward.coin,
           xp: next.xp,
           level: next.level,
+          // 카운터에는 **퀘스트 보상만** 쌓는다(스트릭 보너스는 넣지 않는다).
+          // 날짜 키를 오늘로 덮어써야 어제 값이 만료된다.
+          dailyCoinDate: kstDateKey(now),
+          dailyCoinEarned: capped.dailyCoin,
         ),
       );
     }

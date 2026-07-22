@@ -889,6 +889,139 @@ void main() {
         throwsA(isA<NetworkFailure>()),
       );
     });
+
+    // ===== 재분해 자식 등록 (B-5) =====
+
+    test('★ parentQuestId를 주면 모든 자식에 원본 ID가 심긴다', () async {
+      // 이 값이 「재분해 복귀율」의 분자다. 하나라도 비면 지표가 어긋난다.
+      final repo = InMemoryQuestRepository();
+      addTearDown(repo.dispose);
+
+      final created = await repo.createQuests(
+        'u',
+        const [
+          QuestDraft(localId: 'd0', title: '한 문단만 쓰기', difficulty: Difficulty.easy),
+          QuestDraft(localId: 'd1', title: '다음 문단 쓰기', difficulty: Difficulty.easy),
+        ],
+        goalId: 'goal-1',
+        parentQuestId: 'parent-1',
+      );
+
+      expect(created.map((q) => q.parentQuestId), ['parent-1', 'parent-1']);
+      // 자식은 원본의 goalId를 물려받아 **같은 목표 폴더에 남는다.**
+      expect(created.map((q) => q.goalId), ['goal-1', 'goal-1']);
+      // 자식은 언제나 미완료로 시작한다(원본의 상태를 물려받지 않는다).
+      expect(created.map((q) => q.status), [
+        QuestStatus.todo,
+        QuestStatus.todo,
+      ]);
+
+      // 다시 읽어도 계보가 남아 있다(앱 재실행 동치).
+      final stored = await repo.fetchQuests('u');
+      expect(stored.map((q) => q.parentQuestId), ['parent-1', 'parent-1']);
+    });
+
+    test('parentQuestId를 주지 않으면 null이다 (기존 큰 목표 분해 경로)', () async {
+      final repo = InMemoryQuestRepository();
+      addTearDown(repo.dispose);
+
+      final created = await repo.createQuests('u', const [
+        QuestDraft(localId: 'd0', title: 'x', difficulty: Difficulty.easy),
+      ], goalId: 'goal-1');
+
+      expect(created.single.parentQuestId, isNull);
+    });
+
+    test('★ 여러 개를 등록해도 목록 스트림은 한 번만 갱신된다 (부분 반영 없음)', () async {
+      // 원자성의 관찰 가능한 신호다. 한 건씩 쓰도록 바꾸면 방출이 3번이 되고,
+      // 그 중간 프레임은 "일부만 저장된 목록"이다.
+      final repo = InMemoryQuestRepository();
+      final emissions = <List<Quest>>[];
+      final sub = repo.watchQuests('u').listen(emissions.add);
+      // 순서가 중요하다: 컨트롤러를 먼저 닫아야 watchQuests의 `await for`가 끝나고
+      // 그제서야 cancel이 완료된다(반대 순서면 tearDown이 영원히 기다린다).
+      addTearDown(() async {
+        repo.dispose();
+        await sub.cancel();
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(emissions, hasLength(1)); // 최초 빈 목록
+
+      await repo.createQuests(
+        'u',
+        const [
+          QuestDraft(localId: 'd0', title: 'a', difficulty: Difficulty.easy),
+          QuestDraft(localId: 'd1', title: 'b', difficulty: Difficulty.easy),
+          QuestDraft(localId: 'd2', title: 'c', difficulty: Difficulty.easy),
+        ],
+        parentQuestId: 'parent-1',
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emissions, hasLength(2));
+      expect(emissions.last, hasLength(3));
+    });
+  });
+
+  // ===== 멈춤 상태 전이 (B-5) =====
+  //
+  // 멈춤은 **보상과 완전히 무관한 경로**다. 여기가 흔들리면 재지급 가드가
+  // 뚫리거나(파밍) 멈춤 표시가 완료로 오인된다.
+  group('멈춤 상태 전이 — todo ↔ stuck', () {
+    test('todo → stuck → todo 로 오갈 수 있다', () async {
+      final repo = InMemoryQuestRepository();
+      addTearDown(repo.dispose);
+
+      final quest = await repo.createQuest(
+        'u',
+        title: '지원서 초안 쓰기',
+        difficulty: Difficulty.hard,
+      );
+      expect(quest.status, QuestStatus.todo);
+
+      await repo.setStatus('u', quest.id, QuestStatus.stuck);
+      expect((await repo.fetchQuests('u')).single.isStuck, isTrue);
+
+      await repo.setStatus('u', quest.id, QuestStatus.todo);
+      final back = (await repo.fetchQuests('u')).single;
+      expect(back.status, QuestStatus.todo);
+      expect(back.isStuck, isFalse);
+      expect(back.done, isFalse);
+    });
+
+    test('★ 멈춤 표시는 보상을 주지도 지급 이력을 지우지도 않는다', () async {
+      final users = InMemoryUserRepository(seed: AppUser.initial('u'));
+      final repo = InMemoryQuestRepository(users: users);
+      addTearDown(repo.dispose);
+      addTearDown(users.dispose);
+
+      final quest = await repo.createQuest(
+        'u',
+        title: '지원서 초안 쓰기',
+        difficulty: Difficulty.normal,
+      );
+
+      // 아직 완료 전: 멈춤으로 바꿔도 잔액은 0 그대로다.
+      await repo.setStatus('u', quest.id, QuestStatus.stuck);
+      expect((await users.fetchUser('u')).coin, 0);
+      expect((await repo.fetchQuests('u')).single.isRewarded, isFalse);
+
+      // 완료해서 보상을 받은 뒤,
+      await repo.setStatus('u', quest.id, QuestStatus.todo);
+      final paid = await repo.completeQuest('u', quest.id);
+      expect(paid, isNotNull);
+      final coinAfterPay = (await users.fetchUser('u')).coin;
+      expect(coinAfterPay, greaterThan(0));
+
+      // 멈춤 → 재완료를 거쳐도 **재지급은 없다**(rewardedAt 가드 회귀 방어).
+      await repo.setStatus('u', quest.id, QuestStatus.stuck);
+      final stuck = (await repo.fetchQuests('u')).single;
+      expect(stuck.isStuck, isTrue);
+      expect(stuck.isRewarded, isTrue); // 지급 이력은 상태 전이로 지워지지 않는다
+
+      expect(await repo.completeQuest('u', quest.id), isNull);
+      expect((await users.fetchUser('u')).coin, coinAfterPay);
+    });
   });
 
   group('실패 주입 — 2·3주차 실패 경로 테스트의 토대', () {
