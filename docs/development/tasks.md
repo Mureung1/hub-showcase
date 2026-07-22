@@ -212,7 +212,7 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 | EVAL-001   | 핵심 분석 평가 fixture와 score script 작성 | P0       | Done    | 4    | EPIC-03    | 12개 canonical case와 정상·경계·실패 test를 재현한다 |
 | EVAL-002   | Front-API 통합 smoke test                  | P0       | Done | 4    | EPIC-04    | 주요 시연 경로가 새 환경에서 통과한다              |
 | DEMO-003 (DEMO-001) | 5분 발표 시나리오와 복구 경로 작성 | P0 | Done | Phase 2 | EVAL-002, WEB-015 | 공개 URL, Render cold start 대기, API 오류·지도 대체 경로와 발표 순서가 문서화된다 |
-| DEPLOY-001 | docs/prototype 배포와 공개 경로 검증       | P0       | Backlog | 4    | EVAL-002, SEC-008 | Home, Tasks, Architecture와 prototype URL이 열린다 |
+| DEPLOY-001 | docs/prototype 배포와 공개 경로 검증       | P0       | Done | 4    | EVAL-002, SEC-008 | 공개 제품·문서 Home·Tasks·Architecture·prototype URL의 HTTP 200을 확인했다 |
 | DEPLOY-002 | production Supabase 생성·migration·배포 연결 | P0 | Done | 공개 배포 | DB-001, EVAL-002, SEC-008 | 별도 production DB, Render secret, Vercel Web과 공개 FE-BE smoke를 완료했다 |
 | DOCS-004   | 실제 구현 결과로 스펙·아키텍처·백로그 마감 | P0       | Done | 4    | EPIC-03~07 | current/canonical 문서 감사, 독립 artifact 검사와 공개 docs 배포 검증을 완료했다 |
 
