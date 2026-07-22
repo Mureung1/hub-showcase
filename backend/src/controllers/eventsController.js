@@ -60,11 +60,10 @@ export async function saveEventsHandler(req, res) {
           ...event,
         });
       } catch (error) {
-        console.error("일정 저장 오류:", error.message, error.stack);
+        console.error("일정 저장 오류:", error.message);
         return res.status(500).json({
           success: false,
           message: "일정 저장 중 오류가 발생했습니다.",
-          error: error.message,
         });
       }
     }
@@ -79,6 +78,116 @@ export async function saveEventsHandler(req, res) {
     return res.status(500).json({
       success: false,
       message: error.message || "서버 오류가 발생했습니다.",
+    });
+  }
+}
+
+export async function getEventsHandler(req, res) {
+  try {
+    const userId = req.user.userId;
+
+    const stmt = database.prepare(`
+      SELECT
+        id,
+        name,
+        start_date as startDate,
+        end_date as endDate,
+        deadline,
+        time_start,
+        time_end,
+        location,
+        deliverables,
+        notes,
+        is_selected as isSelected,
+        created_at as createdAt
+      FROM events
+      WHERE user_id = ?
+      ORDER BY created_at DESC
+    `);
+
+    const events = stmt.all(userId);
+
+    const formattedEvents = events.map(event => ({
+      id: event.id,
+      name: event.name,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      deadline: event.deadline,
+      time: {
+        start: event.time_start,
+        end: event.time_end,
+      },
+      location: event.location,
+      deliverables: event.deliverables ? JSON.parse(event.deliverables) : [],
+      notes: event.notes,
+      isSelected: event.isSelected,
+      createdAt: event.createdAt,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      message: `${formattedEvents.length}개의 일정을 조회했습니다.`,
+      data: formattedEvents,
+    });
+  } catch (error) {
+    console.error("일정 조회 오류:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "일정 조회 중 오류가 발생했습니다.",
+    });
+  }
+}
+
+export async function checkDuplicateHandler(req, res) {
+  try {
+    const { events } = req.body;
+    const userId = req.user.userId;
+
+    if (!events || !Array.isArray(events) || events.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "검사할 일정이 없습니다.",
+      });
+    }
+
+    const duplicates = [];
+
+    for (const event of events) {
+      if (!event.name || !event.startDate) {
+        continue;
+      }
+
+      const stmt = database.prepare(`
+        SELECT id, name, start_date as startDate
+        FROM events
+        WHERE user_id = ? AND name = ? AND start_date = ?
+        LIMIT 1
+      `);
+
+      const duplicate = stmt.get(userId, event.name, event.startDate);
+
+      if (duplicate) {
+        duplicates.push({
+          name: event.name,
+          startDate: event.startDate,
+          existingId: duplicate.id,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      hasDuplicates: duplicates.length > 0,
+      message: duplicates.length > 0
+        ? `${duplicates.length}개의 중복된 일정이 발견되었습니다.`
+        : "중복된 일정이 없습니다.",
+      data: duplicates,
+    });
+  } catch (error) {
+    console.error("중복 검사 오류:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "중복 검사 중 오류가 발생했습니다.",
     });
   }
 }

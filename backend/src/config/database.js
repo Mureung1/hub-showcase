@@ -10,7 +10,6 @@ const databasePath = path.join(
   "../../data/calme.db",
 );
 
-console.log("Database path:", databasePath);
 const database = new Database(databasePath);
 
 database.pragma("journal_mode = WAL");
