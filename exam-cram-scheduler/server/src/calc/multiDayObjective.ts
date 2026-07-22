@@ -52,17 +52,42 @@ export interface MultiDayObjectiveInput {
    * 반환하는 examScores/score에만 반영되고 schedule 자체(추천 목록)에는 안 섞인다.
    */
   fixedDoses?: CaffeineDose[];
+  /**
+   * 하루 안전 섭취 한도(mg). 넘기면 이 한도를 넘는 날에 패널티를 준다(#3, 2026-07-22).
+   * 안 넘기면 패널티 없음(기존 동작 그대로).
+   */
+  dailyLimitMg?: number;
 }
 
 export interface MultiDayObjectiveResult {
   examScores: ExamScore[];
   /** 최소 수면시간에 못 미친 밤들의 부족분 합(시간). 패널티 계산 근거를 그대로 노출. */
   sleepShortfallHours: number;
-  /** 시험별 점수의 최솟값에서 수면 부족 패널티를 뺀 최종 점수(2026-07-20 결정 + #21) */
+  /** 자는 동안 마시게 된 카페인들이 "기상까지 남은 시간"의 합(시간). 0이면 문제 없음. */
+  asleepDoseHours: number;
+  /** 하루 안전 한도를 넘은 양의 합(mg). 날짜별로 계산해서 더한다. 0이면 문제 없음. */
+  dailyExcessMg: number;
+  /** 시험별 점수의 최솟값에서 수면 부족·수면 중 섭취·한도 초과 패널티를 뺀 최종 점수 */
   score: number;
 }
 
 const SLEEP_SHORTFALL_PENALTY_PER_HOUR = 0.5; // 근거 없는 근사치(2026-07-21) — verifyMinSleepPenalty.ts로 조정
+
+// 자고 있는 동안 카페인을 마시는 건 실행 불가능한 스케줄이다. multiDayCandidates.ts가
+// 후보를 만들 때 "평소 기상 시각" 기준으로 걸러내지만, 탐색이 기상을 평소보다 최대 1시간
+// 늦추면 그 사이에 낀 섭취 시각이 그대로 남는다(2026-07-22 발견: 기상 07:45인데 07:15
+// 섭취 추천). 후보 단계에서는 실제 기상 시각을 모르므로, 둘 다 정해진 이 채점 단계에서
+// 패널티로 밀어낸다 — 이 파일 상단 주석의 "제약은 #11에서 패널티로" 방침과 같은 방식.
+// 기상까지 남은 시간에 비례해서 깎아야 탐색이 "더 늦게 마시는" 방향을 찾아갈 수 있다.
+const ASLEEP_DOSE_PENALTY_PER_HOUR = 1.0;
+
+// #3 — 섭취량을 탐색 대상으로 열었더니(2026-07-22) 목적함수에는 "카페인이 많을수록
+// 각성도가 높다"만 있고 안전 한도가 없어서 추천이 상한으로 몰렸다. 한도는 계산이 끝난 뒤
+// 경고 문구로만 쓰이고 있었는데, "많이 마셔라 → 그런데 위험하다"는 앞뒤가 안 맞는 결과다.
+// 한도를 넘는 양에 비례해 깎아서 탐색 단계에서부터 피하게 한다.
+// 100mg 초과 = 0.5점 감점 — 시험 각성도 차이(대개 0.01~0.05)보다 훨씬 커서 사실상
+// 한도를 지키는 쪽이 항상 이긴다. 안전 관련 제약이므로 의도적으로 세게 잡았다.
+const DAILY_EXCESS_PENALTY_PER_MG = 0.005;
 
 export function scoreMultiDaySchedule(input: MultiDayObjectiveInput): MultiDayObjectiveResult {
   const {
@@ -75,6 +100,7 @@ export function scoreMultiDaySchedule(input: MultiDayObjectiveInput): MultiDayOb
     warmupDays,
     minSleepHours,
     fixedDoses,
+    dailyLimitMg,
   } = input;
 
   const segments = buildMultiNightSegments(habitualBedTime, habitualWakeTime, schedule.nights, warmupDays);
@@ -91,7 +117,35 @@ export function scoreMultiDaySchedule(input: MultiDayObjectiveInput): MultiDayOb
     return sum + Math.max(0, (minSleepHours ?? 0) - sleptHours);
   }, 0);
 
-  const score = Math.min(...examScores.map((exam) => exam.score)) - SLEEP_SHORTFALL_PENALTY_PER_HOUR * sleepShortfallHours;
+  // 추천 카페인만 검사한다 — fixedDoses는 사용자가 이미 마신 것이라 바꿀 수 없다.
+  const asleepDoseHours = schedule.doses.reduce((sum, dose) => {
+    const 자는중인밤 = schedule.nights.find(
+      (night) => dose.time >= night.bedTime && dose.time < night.wakeTime,
+    );
+    return sum + (자는중인밤 ? 자는중인밤.wakeTime - dose.time : 0);
+  }, 0);
 
-  return { examScores, sleepShortfallHours, score };
+  // 하루 한도는 "그날 마신 전부"가 기준이므로 이미 마신 것(fixedDoses)까지 합쳐서 센다.
+  // 연속 좌표에서 날짜는 24로 나눈 몫이다(0일차 = 오늘).
+  const dailyExcessMg = (() => {
+    if (dailyLimitMg === undefined) return 0;
+    const 날짜별합 = new Map<number, number>();
+    for (const dose of allDoses) {
+      const 날짜 = Math.floor(dose.time / 24);
+      날짜별합.set(날짜, (날짜별합.get(날짜) ?? 0) + dose.amountMg);
+    }
+    let 초과 = 0;
+    for (const 합 of 날짜별합.values()) {
+      초과 += Math.max(0, 합 - dailyLimitMg);
+    }
+    return 초과;
+  })();
+
+  const score =
+    Math.min(...examScores.map((exam) => exam.score)) -
+    SLEEP_SHORTFALL_PENALTY_PER_HOUR * sleepShortfallHours -
+    ASLEEP_DOSE_PENALTY_PER_HOUR * asleepDoseHours -
+    DAILY_EXCESS_PENALTY_PER_MG * dailyExcessMg;
+
+  return { examScores, sleepShortfallHours, asleepDoseHours, dailyExcessMg, score };
 }

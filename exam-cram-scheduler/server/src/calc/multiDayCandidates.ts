@@ -76,10 +76,15 @@ export interface MultiDayCandidateInput {
   /** 시험기간에 포함되는 밤들의 원래 취침·기상 시각(연속 타임라인 좌표), 날짜 순서대로 */
   nights: { habitualBedTime: number; habitualWakeTime: number; latestWakeTime?: number }[];
   /**
-   * 원래 계획된 카페인 섭취(시각+용량+속한 밤의 기상 시각) 목록. 용량은 고정하고
-   * 시각만 후보로 흔든다(2026-07-16 단일시험 버전과 동일한 결정 유지).
+   * 원래 계획된 카페인 섭취(시각+용량+속한 밤의 기상 시각) 목록.
+   * dose.amountMg는 amountOptionsMg를 안 넘겼을 때 쓰는 고정값이다.
    */
   plannedDoses: { dose: CaffeineDose; earliestTime: number }[];
+  /**
+   * 섭취량 후보(mg). 넘기면 용량도 탐색 대상이 된다(#3, 2026-07-22 결정 —
+   * 잔 수 단위로 고르게 하기 위해 도입). 안 넘기면 기존처럼 dose.amountMg 고정.
+   */
+  amountOptionsMg?: number[];
 }
 
 export interface MultiDayCandidates {
@@ -89,14 +94,27 @@ export interface MultiDayCandidates {
   nightWakeOptions: number[][];
   /** doseOptions[j] = plannedDoses[j]에 대응하는 섭취 시각 후보 목록 */
   doseOptions: CaffeineDose[][];
+  /**
+   * doseAmountOptions[j] = plannedDoses[j]에 대응하는 섭취량(mg) 후보 목록.
+   * 시각과 같은 목록에 섞지 않고 별도 축으로 둔다 — #23에서 취침×기상을 한 목록으로
+   * 이어붙였다가 로컬 탐색의 ±1 이동이 한쪽 축만 흔드는 문제를 겪었기 때문.
+   */
+  doseAmountOptions: number[][];
 }
 
 /** 시험기간 전체에 걸친 취침/기상/카페인 후보 축(axis)들을 만든다. */
-export function buildMultiDayCandidates({ nights, plannedDoses }: MultiDayCandidateInput): MultiDayCandidates {
+export function buildMultiDayCandidates({
+  nights,
+  plannedDoses,
+  amountOptionsMg,
+}: MultiDayCandidateInput): MultiDayCandidates {
   const nightBedOptions = nights.map((night) => bedTimeCandidates(night.habitualBedTime));
   const nightWakeOptions = nights.map((night) => wakeTimeCandidates(night.habitualWakeTime, night.latestWakeTime));
 
   const doseOptions = plannedDoses.map(({ dose, earliestTime }) => doseTimeCandidates(dose, earliestTime));
+  const doseAmountOptions = plannedDoses.map(({ dose }) =>
+    amountOptionsMg && amountOptionsMg.length > 0 ? amountOptionsMg : [dose.amountMg],
+  );
 
-  return { nightBedOptions, nightWakeOptions, doseOptions };
+  return { nightBedOptions, nightWakeOptions, doseOptions, doseAmountOptions };
 }

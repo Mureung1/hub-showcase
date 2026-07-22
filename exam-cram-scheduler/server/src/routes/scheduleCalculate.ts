@@ -6,7 +6,7 @@ import { buildMultiDayCandidates } from "../calc/multiDayCandidates.js";
 import { searchMultiDaySchedule } from "../calc/multiDayLocalSearch.js";
 import { buildAlertnessTimeline } from "../calc/alertnessTimeline.js";
 import type { CaffeineDose } from "../calc/caffeineConcentration.js";
-import type { CaffeineSensitivity } from "../calc/sensitivityToHalfLife.js";
+import { applyOralContraceptive, type CaffeineSensitivity } from "../calc/sensitivityToHalfLife.js";
 import { buildExamTimeline } from "../timeline/examTimeline.js";
 import { fromContinuousCoordinate, toContinuousCoordinate } from "../timeline/kstTime.js";
 import { fetchDailyCaffeineLimitMg, fetchHalfLifeHours, type HealthProfile } from "../db/referenceData.js";
@@ -15,7 +15,15 @@ import { fetchDailyCaffeineLimitMg, fetchHalfLifeHours, type HealthProfile } fro
 // ±1시간(multiDayCandidates.ts 그리드) 범위에서 탐색한다. 기본 용량은 검증 스크립트들과
 // 동일하게 200mg(근거 없는 근사치)로 둔다.
 const CAFFEINE_ANCHOR_OFFSET_HOURS = 1;
-const DEFAULT_CANDIDATE_DOSE_MG = 200;
+
+// #3(2026-07-22 결정) — 예전엔 200mg 고정이라 추천이 늘 "200mg"으로만 나왔고, 그 숫자에
+// 근거도 없었다. 이제 용량도 탐색 대상으로 두되, 사용자가 실행할 수 있게 "잔" 단위로
+// 고르게 한다. 기준 한 잔은 아이스 아메리카노 1잔 = 150mg(DRINK_PRESETS와 맞춤).
+const CUP_MG = 150;
+const CUP_OPTIONS = [0.5, 1, 1.5, 2];
+const CANDIDATE_DOSE_MG_OPTIONS = CUP_OPTIONS.map((cups) => Math.round(cups * CUP_MG));
+/** 탐색이 amountOptionsMg를 쓰므로 기준값은 후보 중 가운데(1잔)로 둔다 */
+const DEFAULT_CANDIDATE_DOSE_MG = CUP_MG;
 
 interface ExamInput {
   subject: string;
@@ -78,6 +86,10 @@ function validateRequestBody(body: unknown): { data: ScheduleCalculateRequestBod
   ) {
     return { error: "healthProfile(age, weightKg, pregnant, heartCondition, anxiety)이 올바르지 않습니다." };
   }
+  // 경구피임약은 선택 항목(남성 선택 시 화면에서 아예 안 보냄) — 오면 boolean이어야 한다.
+  if (hp.oralContraceptive !== undefined && typeof hp.oralContraceptive !== "boolean") {
+    return { error: "healthProfile.oralContraceptive는 true/false여야 합니다." };
+  }
 
   const todayCaffeineIntakes = Array.isArray(b.todayCaffeineIntakes) ? b.todayCaffeineIntakes : [];
   for (const intake of todayCaffeineIntakes as Record<string, unknown>[]) {
@@ -137,6 +149,9 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
     return;
   }
 
+  // 민감도로 정해진 반감기에 경구피임약 보정을 곱한다(#16, 2026-07-22 결정).
+  halfLifeHours = applyOralContraceptive(halfLifeHours, healthProfile.oralContraceptive);
+
   // #22 — night[k]가 이어지는 날(day k+1)에 시험이 있으면, 그 시험 시작 시각보다
   // 늦게 깨는 기상 후보는 애초에 말이 안 되므로 latestWakeTime으로 걸러낸다.
   const nights = Array.from({ length: timeline.numNights }, (_, k) => {
@@ -155,7 +170,11 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
     earliestTime: night.habitualWakeTime,
   }));
 
-  const candidates = buildMultiDayCandidates({ nights, plannedDoses });
+  const candidates = buildMultiDayCandidates({
+    nights,
+    plannedDoses,
+    amountOptionsMg: CANDIDATE_DOSE_MG_OPTIONS,
+  });
 
   const fixedDoses: CaffeineDose[] = todayCaffeineIntakes.map((intake) => ({
     time: toContinuousCoordinate(nowIso, intake.consumedAt),
@@ -171,20 +190,27 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
     halfLifeHours,
     minSleepHours,
     fixedDoses,
+    // #3 — 한도를 채점에 반영해야 "많이 마셔라"와 "한도 초과 경고"가 동시에 나오지 않는다
+    dailyLimitMg,
   });
 
   // 기획서.md 6.3 "추천/조정된 스케줄의 총 카페인이 개인별 한도를 넘으면 경고 문구를 표시한다"
-  // — 날짜별로 그날 이미 마신 것(0일차만 해당) + 그날 추천된 양을 합쳐서 한도와 비교한다.
-  const totalTodayMg = todayCaffeineIntakes.reduce((sum, intake) => sum + intake.mg, 0);
+  // — 실제 날짜(연속 좌표를 24로 나눈 몫, 0 = 오늘)로 묶어서 그날 마신 전부를 합산한다.
+  // 예전에는 밤 번호로 묶었는데, 카페인은 그 밤의 "다음날 아침"에 마시므로 오늘 이미 마신
+  // 양이 내일 추천분과 합산되어 없는 초과를 경고했다(2026-07-22 수정).
+  const dailyTotals = new Map<number, number>();
+  for (const dose of [...fixedDoses, ...best.doses]) {
+    const day = Math.floor(dose.time / 24);
+    dailyTotals.set(day, (dailyTotals.get(day) ?? 0) + dose.amountMg);
+  }
+
   const warnings: string[] = [];
-  nights.forEach((_, i) => {
-    const consumedTodayMg = i === 0 ? totalTodayMg : 0;
-    const recommendedMg = best.doses[i]?.amountMg ?? 0;
-    const totalMg = consumedTodayMg + recommendedMg;
+  for (const [day, totalMg] of [...dailyTotals.entries()].sort((a, b) => a[0] - b[0])) {
     if (totalMg > dailyLimitMg) {
-      warnings.push(`${i + 1}일차 카페인 섭취량(${totalMg}mg)이 안전 한도(${dailyLimitMg}mg)를 초과합니다.`);
+      const 라벨 = day === 0 ? '오늘' : `${day}일 뒤`;
+      warnings.push(`${라벨} 카페인 섭취량(${totalMg}mg)이 안전 한도(${dailyLimitMg}mg)를 초과합니다.`);
     }
-  });
+  }
 
   const timelinePoints = buildAlertnessTimeline({
     habitualBedTime: timeline.habitualBedTime,
@@ -210,7 +236,13 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
       caffeineDoses: best.doses.map((dose) => ({
         time: fromContinuousCoordinate(nowIso, dose.time),
         amountMg: dose.amountMg,
+        // 화면은 mg 대신 잔 수로 보여준다(#3) — mg는 안전 한도 경고에서 계속 쓰이므로 함께 내려준다
+        cups: Math.round((dose.amountMg / CUP_MG) * 10) / 10,
       })),
+    caffeineReference: {
+      cupMg: CUP_MG,
+      label: '아이스 아메리카노 1잔',
+    },
     },
     warnings,
   });

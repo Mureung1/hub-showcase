@@ -23,6 +23,8 @@ export interface HealthProfile {
   pregnant: boolean;
   heartCondition: boolean;
   anxiety: boolean;
+  /** 경구피임약 복용 여부. 안전 한도에는 안 쓰고 반감기 보정에만 쓴다(#16, 2026-07-22) */
+  oralContraceptive?: boolean;
 }
 
 // dailyCaffeineLimit.ts의 나이 구간 분류와 동일한 기준(기획서.md 6.3, 2026-07-15 결정)

@@ -21,6 +21,8 @@ export interface LocalSearchInput {
   warmupDays?: number;
   minSleepHours?: number;
   fixedDoses?: CaffeineDose[];
+  /** 하루 안전 섭취 한도(mg). 넘기면 초과분에 패널티가 붙는다(#3) */
+  dailyLimitMg?: number;
   /** 담금질 1회당 반복 횟수 */
   iterations?: number;
   /** 무작위 초기값에서 담금질을 몇 번 다시 시작해 그중 최고를 취할지(#23) */
@@ -60,7 +62,9 @@ function neighborIndex(currentIndex: number, length: number): number {
 type Axis =
   | { kind: "bed"; nightIndex: number }
   | { kind: "wake"; nightIndex: number }
-  | { kind: "dose"; doseIndex: number };
+  | { kind: "dose"; doseIndex: number }
+  // #3 — 섭취량도 탐색 대상. 시각과 별도 축으로 둬야 ±1 이동이 두 축을 각각 흔든다(#23 교훈).
+  | { kind: "doseAmount"; doseIndex: number };
 
 export function searchMultiDaySchedule(input: LocalSearchInput): LocalSearchResult {
   const {
@@ -73,37 +77,47 @@ export function searchMultiDaySchedule(input: LocalSearchInput): LocalSearchResu
     warmupDays,
     minSleepHours,
     fixedDoses,
+    dailyLimitMg,
     iterations = DEFAULT_ITERATIONS,
     restarts = DEFAULT_RESTARTS,
     initialTemperature = DEFAULT_INITIAL_TEMPERATURE,
     finalTemperature = DEFAULT_FINAL_TEMPERATURE,
   } = input;
 
-  const { nightBedOptions, nightWakeOptions, doseOptions } = candidates;
+  const { nightBedOptions, nightWakeOptions, doseOptions, doseAmountOptions } = candidates;
 
-  // 축 순서: [밤별 취침 …, 밤별 기상 …, 카페인 …]. indices 배열도 이 순서와 1:1로 대응한다.
+  // 축 순서: [밤별 취침 …, 밤별 기상 …, 카페인 시각 …, 카페인 용량 …].
+  // indices 배열도 이 순서와 1:1로 대응한다.
   const axes: Axis[] = [
     ...nightBedOptions.map((_, nightIndex): Axis => ({ kind: "bed", nightIndex })),
     ...nightWakeOptions.map((_, nightIndex): Axis => ({ kind: "wake", nightIndex })),
     ...doseOptions.map((_, doseIndex): Axis => ({ kind: "dose", doseIndex })),
+    ...doseAmountOptions.map((_, doseIndex): Axis => ({ kind: "doseAmount", doseIndex })),
   ];
 
   const lengthFor = (axis: Axis): number => {
     if (axis.kind === "bed") return nightBedOptions[axis.nightIndex].length;
     if (axis.kind === "wake") return nightWakeOptions[axis.nightIndex].length;
-    return doseOptions[axis.doseIndex].length;
+    if (axis.kind === "dose") return doseOptions[axis.doseIndex].length;
+    return doseAmountOptions[axis.doseIndex].length;
   };
 
   const numNights = nightBedOptions.length;
+  const numDoses = doseOptions.length;
   const wakeAxisOffset = numNights; // indices에서 기상 축이 시작하는 위치
-  const doseAxisOffset = 2 * numNights; // indices에서 카페인 축이 시작하는 위치
+  const doseAxisOffset = 2 * numNights; // indices에서 카페인 시각 축이 시작하는 위치
+  const doseAmountAxisOffset = doseAxisOffset + numDoses; // 카페인 용량 축이 시작하는 위치
 
   const scheduleFromIndices = (indices: number[]) => ({
     nights: nightBedOptions.map((bedOptions, i) => ({
       bedTime: bedOptions[indices[i]],
       wakeTime: nightWakeOptions[i][indices[wakeAxisOffset + i]],
     })),
-    doses: doseOptions.map((options, i) => options[indices[doseAxisOffset + i]]),
+    // 시각은 시각 축에서, 용량은 용량 축에서 각각 골라 하나의 섭취로 합친다
+    doses: doseOptions.map((options, i) => ({
+      time: options[indices[doseAxisOffset + i]].time,
+      amountMg: doseAmountOptions[i][indices[doseAmountAxisOffset + i]],
+    })),
   });
 
   const scoreOf = (indices: number[]) =>
@@ -117,6 +131,7 @@ export function searchMultiDaySchedule(input: LocalSearchInput): LocalSearchResu
       warmupDays,
       minSleepHours,
       fixedDoses,
+      dailyLimitMg,
     }).score;
 
   const coolingRatio = Math.pow(finalTemperature / initialTemperature, 1 / iterations);
