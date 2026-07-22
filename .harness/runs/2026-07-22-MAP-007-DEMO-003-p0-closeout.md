@@ -38,12 +38,15 @@ full harness: passed (web 32 files / 98 tests, API 119 tests)
 
 ## Public Readiness Verification
 
+- production deployment: `dpl_3evMg7DV4BQLzWBPZP4sRK1Mxhfg`
+- deployment alias: `https://localtwin-product.vercel.app`
 - `https://localtwin-product.vercel.app/`: HTTP 200
 - `https://localtwin-api.onrender.com/ready`: `{"status":"ready"}`
 - 첫 `/ready` 요청은 Render Free idle wake-up으로 34초 이상 대기 후 timeout 되었고, 바로 다음 요청은 ready를 반환했다.
 - 이 실제 관찰을 `docs/development/environment.md`의 사전 wake-up·대기·retry 절차와 대조했다.
+- public `/`: Overlay 가장자리를 포함하도록 pan한 뒤 LocalTwin 건물과 기본 건물이 중복되지 않는 것을 확인했다.
+- public `/en`: 제출용 데모 경로는 렌더되며 console error가 없음을 확인했다.
 
 ## Remaining Manual Follow-up
 
-- commit·push 뒤 최신 Web build를 공개 배포하고 MAP-007 browser smoke를 다시 확인한다.
 - Jira LT-15와 LT-16은 사용자가 run report·commit 링크를 붙인 뒤 완료 처리한다.
