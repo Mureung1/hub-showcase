@@ -3,6 +3,7 @@ import "./App.css";
 import { supabase } from "./supabaseClient";
 import StepHeader from "./StepHeader";
 import LoginScreen from "./LoginScreen";
+import ProfileScreen from "./ProfileScreen";
 import RegisterScreen from "./RegisterScreen";
 import CandidateListScreen from "./CandidateListScreen";
 import GroupChatScreen from "./GroupChatScreen";
@@ -10,20 +11,36 @@ import RatingScreen from "./RatingScreen";
 
 function App() {
   const [step, setStep] = useState(0);
+  const [session, setSession] = useState(null);
+  const [needsProfile, setNeedsProfile] = useState(false);
   const [registration, setRegistration] = useState(null);
   const [joinedCandidate, setJoinedCandidate] = useState(null);
 
   useEffect(() => {
-    function goToRegisterIfLoggedIn(session) {
-      if (session) setStep((s) => (s === 0 ? 1 : s));
+    async function handleSession(currentSession) {
+      setSession(currentSession);
+      if (!currentSession) return;
+
+      const { data: profile } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", currentSession.user.id)
+        .maybeSingle();
+
+      if (profile) {
+        setNeedsProfile(false);
+        setStep((s) => (s === 0 ? 1 : s));
+      } else {
+        setNeedsProfile(true);
+      }
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      goToRegisterIfLoggedIn(session);
+      handleSession(session);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      goToRegisterIfLoggedIn(session);
+      handleSession(session);
     });
 
     return () => listener.subscription.unsubscribe();
@@ -32,6 +49,7 @@ function App() {
   async function handleFinish() {
     await supabase.auth.signOut();
     setStep(0);
+    setNeedsProfile(false);
     setRegistration(null);
     setJoinedCandidate(null);
   }
@@ -39,9 +57,21 @@ function App() {
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
       <StepHeader step={step} />
+      {session && needsProfile ? (
+        <ProfileScreen
+          userId={session.user.id}
+          email={session.user.email}
+          onSaved={() => {
+            setNeedsProfile(false);
+            setStep(1);
+          }}
+        />
+      ) : (
+        <>
       {step === 0 && <LoginScreen />}
       {step === 1 && (
         <RegisterScreen
+          userId={session?.user?.id}
           onBack={() => setStep(0)}
           onSubmit={(data) => {
             setRegistration(data);
@@ -63,6 +93,8 @@ function App() {
         <GroupChatScreen candidate={joinedCandidate} onComplete={() => setStep(4)} />
       )}
       {step === 4 && <RatingScreen candidate={joinedCandidate} onFinish={handleFinish} />}
+        </>
+      )}
     </div>
   );
 }
