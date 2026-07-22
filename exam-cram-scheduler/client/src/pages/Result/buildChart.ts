@@ -107,14 +107,15 @@ export function buildChartGeometry(
       label: `${formatKstWeekday(new Date(exam.ms).toISOString())} ${formatKstTime(new Date(exam.ms).toISOString())}`,
     }));
 
-  // 날짜가 바뀌는 지점마다 요일 눈금 하나
+  // 날짜가 바뀌는 지점마다 요일 눈금 하나.
+  // "오늘" 같은 상대 표현은 쓰지 않는다 — 저장한 스케줄을 며칠 뒤에 열면 틀린 말이 된다(2026-07-22).
   const dayTicks: { x: number; label: string }[] = [];
   let 이전날짜 = '';
   points.forEach((p, i) => {
     const 날짜 = kstDateKey(p.time);
     if (날짜 !== 이전날짜) {
       이전날짜 = 날짜;
-      dayTicks.push({ x: toX(times[i]), label: i === 0 ? '오늘' : formatKstWeekday(p.time) });
+      dayTicks.push({ x: toX(times[i]), label: formatKstWeekday(p.time) });
     }
   });
 
