@@ -2,6 +2,12 @@
 // Owner UID based store isolation and field validation
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Helper: store owner 검증 — 동일 요청 내 get() 결과 캐싱됨 (비용 1회)
+    function isStoreOwner(storeId) {
+      return request.auth != null
+        && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid;
+    }
+
     // Store level isolation: only owner can read/write the store document
     match /stores/{storeId} {
       allow create: if request.auth != null && request.resource.data.ownerUid == request.auth.uid;
@@ -10,16 +16,13 @@ service cloud.firestore {
 
       // Customers sub-collection: only store owner can access
       match /customers/{customerId} {
-        allow read: if request.auth != null
-          && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid;
-        allow create: if request.auth != null
-          && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid
+        allow read: if isStoreOwner(storeId);
+        allow create: if isStoreOwner(storeId)
           && request.resource.data.name is string
           && request.resource.data.name.size() > 0
           && request.resource.data.phone is string
           && request.resource.data.phoneLast4 is string;
-        allow update: if request.auth != null
-          && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid
+        allow update: if isStoreOwner(storeId)
           // riskStats 클라이언트 직접 수정 차단 (Cloud Function 전용)
           && !('riskStats' in request.resource.data.keys())
           // phoneLast4는 phone과 함께만 변경 가능
@@ -32,48 +35,39 @@ service cloud.firestore {
             || request.resource.data.phone is string)
           && (!('phoneLast4' in request.resource.data.keys())
             || request.resource.data.phoneLast4 is string);
-        allow delete: if request.auth != null
-          && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid;
+        allow delete: if isStoreOwner(storeId);
 
         // Incidents sub-collection under a customer: only store owner can access
         match /incidents/{incidentId} {
-          allow read: if request.auth != null
-            && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid;
-          allow create: if request.auth != null
-            && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid
+          allow read: if isStoreOwner(storeId);
+          allow create: if isStoreOwner(storeId)
             && request.resource.data.type is string
             && request.resource.data.type in ['abuse', 'dispute', 'late', 'unreasonable']
             && request.resource.data.memo is string;
-          allow update: if request.auth != null
-            && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid
+          allow update: if isStoreOwner(storeId)
             && (!('type' in request.resource.data.keys())
               || request.resource.data.type is string
               && request.resource.data.type in ['abuse', 'dispute', 'late', 'unreasonable'])
             && (!('memo' in request.resource.data.keys())
               || request.resource.data.memo is string);
-          allow delete: if request.auth != null
-            && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid;
+          allow delete: if isStoreOwner(storeId);
         }
       }
 
       // Reservations sub-collection: only store owner can access
       match /reservations/{reservationId} {
-        allow read: if request.auth != null
-          && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid;
-        allow create: if request.auth != null
-          && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid
+        allow read: if isStoreOwner(storeId);
+        allow create: if isStoreOwner(storeId)
           && request.resource.data.customerId is string
           && request.resource.data.date is string
           && request.resource.data.time is string
           && request.resource.data.status is string
           && request.resource.data.status in ['pending', 'confirmed', 'visited', 'noShow', 'cancelled'];
-        allow update: if request.auth != null
-          && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid
+        allow update: if isStoreOwner(storeId)
           && (!('status' in request.resource.data.keys())
             || request.resource.data.status is string
             && request.resource.data.status in ['pending', 'confirmed', 'visited', 'noShow', 'cancelled']);
-        allow delete: if request.auth != null
-          && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid;
+        allow delete: if isStoreOwner(storeId);
       }
     }
   }
