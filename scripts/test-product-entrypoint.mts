@@ -2,16 +2,11 @@ import assert from 'node:assert/strict'
 import { execFile, spawn, type ChildProcess } from 'node:child_process'
 import {
   access,
-  cp,
   lstat,
-  mkdir,
-  mkdtemp,
   realpath,
-  rm,
   stat,
 } from 'node:fs/promises'
 import { createServer } from 'node:net'
-import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
@@ -21,6 +16,15 @@ import {
   type ProductBootstrap,
 } from '@ay-ple/product-contract'
 import { chromium, errors } from 'playwright'
+
+import {
+  prepareDurableRestartBaseline,
+  startChatShellHarness,
+} from '../apps/chat-shell/e2e/chat-shell-harness.js'
+import {
+  materializeE2eSemesterWorkspace,
+  type E2eSemesterWorkspace,
+} from './semester-workspace-materializer.mjs'
 
 const execFileAsync = promisify(execFile)
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url))
@@ -54,6 +58,7 @@ type ProductRoots = {
   readonly appDataRoot: string
   readonly poisonRoot: string
   readonly runRoot: string
+  readonly semesterWorkspace: E2eSemesterWorkspace
   readonly workspaceRoot: string
 }
 
@@ -72,35 +77,72 @@ async function main(): Promise<void> {
 
   const roots = await prepareProductRoots()
   try {
-    await runCanonicalProductCase(roots)
+    const confirmed = await prepareDurableProductBaseline(roots)
+    const firstOpen = await runCanonicalProductCase(
+      roots,
+      confirmed,
+      'canonical product first open',
+    )
+    const restarted = await runCanonicalProductCase(
+      roots,
+      confirmed,
+      'canonical product restart',
+    )
+    assert.deepEqual(restarted.workspace, firstOpen.workspace)
+    assert.deepEqual(restarted.history, firstOpen.history)
+    assert.equal(restarted.operationStatus, 'idle')
   } finally {
-    await rm(roots.runRoot, { force: true, recursive: true })
+    await roots.semesterWorkspace.cleanup()
   }
 
   console.log('canonical product Server + Chat Shell entrypoint: green')
 }
 
 async function prepareProductRoots(): Promise<ProductRoots> {
-  const runRoot = await realpath(
-    await mkdtemp(path.join(tmpdir(), 'ay-ple-product-entrypoint-')),
-  )
+  const semesterWorkspace = await materializeE2eSemesterWorkspace()
+  const runRoot = semesterWorkspace.runRoot
   const appDataRoot = path.join(runRoot, 'app-data')
-  const workspaceRoot = path.join(runRoot, 'semester-workspace')
-  await mkdir(appDataRoot)
-  await cp(semesterWorkspaceSeed, workspaceRoot, {
-    errorOnExist: true,
-    force: false,
-    recursive: true,
-  })
   return {
     runRoot,
-    appDataRoot: await realpath(appDataRoot),
-    workspaceRoot: await realpath(workspaceRoot),
+    appDataRoot,
+    workspaceRoot: semesterWorkspace.workspaceRoot,
     poisonRoot: path.join(runRoot, 'legacy-path-poison'),
+    semesterWorkspace,
   }
 }
 
-async function runCanonicalProductCase(roots: ProductRoots): Promise<void> {
+async function prepareDurableProductBaseline(
+  roots: ProductRoots,
+): Promise<ProductBootstrap> {
+  const harness = await startChatShellHarness('ready', {
+    semesterWorkspace: roots.semesterWorkspace,
+  })
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+    await page.goto(harness.url, {
+      waitUntil: 'domcontentloaded',
+      timeout: readinessTimeoutMs,
+    })
+    return await prepareDurableRestartBaseline(page)
+  } finally {
+    try {
+      await harness.stopServer()
+    } finally {
+      try {
+        await browser.close()
+      } finally {
+        await harness.close()
+      }
+    }
+  }
+}
+
+async function runCanonicalProductCase(
+  roots: ProductRoots,
+  confirmed: ProductBootstrap,
+  label: string,
+): Promise<ProductBootstrap> {
   const child = spawn(
     'npm',
     ['run', 'dev', '--', '--app-data-root', roots.appDataRoot],
@@ -118,9 +160,10 @@ async function runCanonicalProductCase(roots: ProductRoots): Promise<void> {
       stdio: ['ignore', 'pipe', 'pipe'],
     },
   )
+  let reopened: ProductBootstrap | undefined
   await verifyDetachedProcess({
     child,
-    label: 'canonical product',
+    label,
     ports: [serverPort, shellPort],
     verify: async (output) => {
       const initial = await pollProductBootstrap(child, readinessTimeoutMs)
@@ -131,8 +174,7 @@ async function runCanonicalProductCase(roots: ProductRoots): Promise<void> {
         'verified product Runtime must report fresh app-managed account state',
       )
       assert.equal(initial.operationStatus, 'idle')
-      assert.equal(initialWorkspace.course, null)
-      assert.equal(initialWorkspace.confirmedRevision, 0)
+      assertDurableProductBootstrap(initial, confirmed)
       assert.deepEqual(
         initialWorkspace.materials
           .map(({ relativePath }) => relativePath)
@@ -141,17 +183,7 @@ async function runCanonicalProductCase(roots: ProductRoots): Promise<void> {
       )
 
       await assertLegacyRoutesAbsent()
-      await verifyProductBrowser()
-
-      const afterCourseCreation = await pollForCourse(child, courseName)
-      const readyWorkspace = requireReadyWorkspace(afterCourseCreation)
-      assert.equal(readyWorkspace.course?.displayName, courseName)
-      assert.deepEqual(
-        readyWorkspace.materials
-          .map(({ relativePath }) => relativePath)
-          .sort(),
-        expectedMaterials,
-      )
+      await verifyProductBrowser(initial)
 
       await assertManagedRuntimeRoots(roots.appDataRoot)
       await requireAbsent(
@@ -160,11 +192,14 @@ async function runCanonicalProductCase(roots: ProductRoots): Promise<void> {
       )
       await assertProductOwnershipOutput(output, roots)
       await assertCanonicalProcessGraph(child.pid, roots.appDataRoot)
+      reopened = initial
     },
   })
+  assert.ok(reopened)
+  return reopened
 }
 
-async function verifyProductBrowser(): Promise<void> {
+async function verifyProductBrowser(expected: ProductBootstrap): Promise<void> {
   const browser = await chromium.launch({ headless: true })
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
@@ -180,9 +215,8 @@ async function verifyProductBrowser(): Promise<void> {
         .getByText(relativePath, { exact: true })
         .waitFor({ timeout: readinessTimeoutMs })
     }
-    await page
-      .getByRole('complementary', { name: 'AY Chat' })
-      .waitFor({ timeout: readinessTimeoutMs })
+    const chat = page.getByRole('complementary', { name: 'AY Chat' })
+    await chat.waitFor({ timeout: readinessTimeoutMs })
     await materials
       .getByRole('button', { name: /선택한 자료 정리하기/u })
       .waitFor({ timeout: readinessTimeoutMs })
@@ -191,13 +225,29 @@ async function verifyProductBrowser(): Promise<void> {
       0,
       'product Browser must not restore the legacy Runtime-status owner',
     )
-
-    await materials.getByLabel('과목 이름').fill(courseName)
-    await materials.getByRole('button', { name: '만들기' }).click()
     await page
       .locator('section[aria-label="현재 과목"]')
       .getByText(courseName, { exact: true })
       .waitFor({ timeout: readinessTimeoutMs })
+    const settled = chat.getByRole('region', { name: '반영된 과제' })
+    await settled.getByText('개요 작성하기', { exact: true }).waitFor({
+      timeout: readinessTimeoutMs,
+    })
+    assert.equal(await chat.getByRole('region', { name: '검토 대기' }).count(), 0)
+    assert.equal(await chat.getByText('AY 작업을 완료했습니다.').count(), 0)
+    await chat.getByText('자료와 함께 시작해 보세요').waitFor({
+      timeout: readinessTimeoutMs,
+    })
+
+    const bootstrap = decodeProductBootstrap(
+      await page.evaluate(async () => {
+        const response = await fetch('/api/product/bootstrap')
+        if (!response.ok) throw new Error('Product bootstrap failed.')
+        return response.json()
+      }),
+    )
+    assert.deepEqual(bootstrap.workspace, expected.workspace)
+    assert.deepEqual(bootstrap.history, expected.history)
   } finally {
     await browser.close()
   }
@@ -247,24 +297,6 @@ async function pollProductBootstrap(
   )
 }
 
-async function pollForCourse(
-  child: ChildProcess,
-  expectedCourseName: string,
-): Promise<ProductBootstrap> {
-  const deadline = Date.now() + readinessTimeoutMs
-  while (Date.now() < deadline) {
-    const bootstrap = await pollProductBootstrap(child, readinessTimeoutMs)
-    if (
-      bootstrap.workspace?.state === 'ready' &&
-      bootstrap.workspace.course?.displayName === expectedCourseName
-    ) {
-      return bootstrap
-    }
-    await delay(100)
-  }
-  throw new BlockedError('product course creation did not settle')
-}
-
 function requireReadyWorkspace(
   bootstrap: ProductBootstrap,
 ): Extract<NonNullable<ProductBootstrap['workspace']>, { state: 'ready' }> {
@@ -273,6 +305,66 @@ function requireReadyWorkspace(
     throw new Error('canonical product workspace must be ready')
   }
   return bootstrap.workspace
+}
+
+function assertDurableProductBootstrap(
+  reopened: ProductBootstrap,
+  confirmed: ProductBootstrap,
+): void {
+  const reopenedWorkspace = requireReadyWorkspace(reopened)
+  const confirmedWorkspace = requireReadyWorkspace(confirmed)
+  assert.equal(reopened.operationStatus, 'idle')
+  assert.equal(reopenedWorkspace.confirmedRevision, 1)
+  assert.deepEqual(reopenedWorkspace.course, confirmedWorkspace.course)
+  assert.deepEqual(reopened.history.assignments, confirmed.history.assignments)
+  assert.deepEqual(
+    reopened.history.userConfirmations,
+    confirmed.history.userConfirmations,
+  )
+  assert.equal(
+    reopened.history.statePatches.length,
+    confirmed.history.statePatches.length + 1,
+  )
+  assert.equal(
+    reopened.history.modelingRuns.length,
+    confirmed.history.modelingRuns.length + 1,
+  )
+  assert.equal(
+    reopened.history.statePatches.some((patch) => patch.status === 'pending'),
+    false,
+    'Browser bootstrap must not project a resumable unanswered Review',
+  )
+
+  for (const patch of confirmed.history.statePatches) {
+    assert.deepEqual(
+      reopened.history.statePatches.find((candidate) => candidate.id === patch.id),
+      patch,
+    )
+  }
+  assert.equal(
+    reopened.history.statePatches.some(
+      (patch) => patch.status === 'interrupted' && patch.applyOutcome === null,
+    ),
+    true,
+    'unanswered Review must settle as interrupted before Browser hydration',
+  )
+
+  for (const run of confirmed.history.modelingRuns) {
+    assert.deepEqual(
+      reopened.history.modelingRuns.find((candidate) => candidate.id === run.id),
+      run,
+    )
+  }
+  assert.equal(
+    reopened.history.modelingRuns.some(
+      (run) =>
+        (run.status === 'interrupted' || run.status === 'unknown') &&
+        run.recovery?.outcome === run.status &&
+        run.recovery.retryable,
+    ),
+    true,
+    'unfinished Run must reopen as a settled, explicitly retryable receipt',
+  )
 }
 
 async function assertManagedRuntimeRoots(appDataRoot: string): Promise<void> {

@@ -326,6 +326,46 @@ test('default development workspace ignores legacy roots and rejects explicit ap
   }
 })
 
+test('development materializer rejects package and app data root overlap before workspace selection', async () => {
+  const testRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-product-root-overlap-test-'),
+  )
+  const callerWorkspace = path.join(testRoot, 'caller-workspace')
+  const packageParent = path.join(testRoot, 'package-parent')
+  const packageRoot = path.join(packageParent, 'package-root')
+  const packageChildAppData = path.join(packageRoot, 'app-data')
+  const appDataParent = path.join(testRoot, 'app-data-parent')
+  const appDataChildPackage = path.join(appDataParent, 'package-root')
+  const sentinel = path.join(callerWorkspace, 'preserve.txt')
+
+  try {
+    await Promise.all([
+      mkdir(callerWorkspace),
+      mkdir(packageChildAppData, { recursive: true }),
+      mkdir(appDataChildPackage, { recursive: true }),
+    ])
+    await writeFile(sentinel, 'preserve', 'utf8')
+
+    for (const roots of [
+      { packageRoot, appDataRoot: packageChildAppData },
+      { packageRoot: appDataChildPackage, appDataRoot: appDataParent },
+      { packageRoot, appDataRoot: packageRoot },
+    ]) {
+      await assert.rejects(
+        materializeDevelopmentSemesterWorkspace({
+          ...roots,
+          environment: { CODEX_CHAT_WORKSPACE: callerWorkspace },
+        }),
+        /overlap/,
+      )
+    }
+
+    assert.equal(await readFile(sentinel, 'utf8'), 'preserve')
+  } finally {
+    await rm(testRoot, { force: true, recursive: true })
+  }
+})
+
 test('development materializer refuses to reset an unmarked default leaf', async () => {
   const testRoot = await mkdtemp(
     path.join(tmpdir(), 'ay-ple-unmarked-workspace-test-'),

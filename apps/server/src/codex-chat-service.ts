@@ -18,7 +18,6 @@ import type {
 
 type ActiveTurn = {
   threadId: string
-  readonly kind: 'chat' | 'product'
   phase: 'starting' | 'streaming'
   turn?: CodexProductTurn
   disconnected: boolean
@@ -122,7 +121,6 @@ export class CodexChatService {
     this.productOperationLease = lease
     this.activeTurn = {
       threadId: '',
-      kind: 'product',
       phase: 'starting',
       disconnected: false,
       interruptRequested: false,
@@ -138,7 +136,7 @@ export class CodexChatService {
   ): Promise<void> {
     if (this.productOperationLease !== lease) return
     const active = this.activeTurn
-    if (active?.kind === 'product' && active.turn === undefined) {
+    if (active?.turn === undefined) {
       this.activeTurn = undefined
     }
     try {
@@ -198,7 +196,6 @@ export class CodexChatService {
       }
       reservation = {
         threadId: '',
-        kind: 'product',
         phase: 'starting',
         disconnected: disconnected(),
         interruptRequested: false,
@@ -243,7 +240,6 @@ export class CodexChatService {
     const active = this.activeTurn
     if (
       !active ||
-      active.kind !== 'product' ||
       active.turn !== turn
     ) {
       throw stateError('unknown_turn')
@@ -308,7 +304,7 @@ export class CodexChatService {
 
   disconnectProductTurn(turn: CodexProductTurn): void {
     const active = this.activeTurn
-    if (active?.kind !== 'product' || active.turn !== turn) return
+    if (active?.turn !== turn) return
     this.disconnectActiveTurn(active)
   }
 
@@ -341,7 +337,7 @@ export class CodexChatService {
     code: string,
   ): Promise<void> {
     const active = this.activeTurn
-    if (active?.kind === 'product' && active.turn === turn) {
+    if (active?.turn === turn) {
       try {
         await this.runtime?.interrupt({
           threadId: turn.threadId,
@@ -488,7 +484,7 @@ export class CodexChatService {
   private requireProductLease(lease: ProductOperationLease): void {
     if (
       this.productOperationLease !== lease ||
-      this.activeTurn?.kind !== 'product' ||
+      !this.activeTurn ||
       this.activeTurn.turn !== undefined
     ) {
       throw stateError('active_turn')

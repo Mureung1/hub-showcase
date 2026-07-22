@@ -98,7 +98,7 @@ Server shutdown은 다음 순서를 유지한다.
 
 ## Store compatibility
 
-Current canonical `formatVersion: 2`는 ADR 0013이 채택한 첫 durable baseline이다. Exact-decodable v2는 startup이 rewrite하지 않고 original serialized bytes를 authority로 연다. Unsupported·invalid bytes는 원본을 보존한 `incompatible/readOnly`로 열리며 empty state로 reset하지 않는다. 후속 physical schema 변경은 version bump와 migration 또는 bytes-preserving fail-closed rejection을 필요로 한다. Exact codec·invariant·write ordering은 [Server README](../../apps/server/README.md)가 소유한다.
+[ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)이 workspace-local current store를 첫 durable baseline으로 채택한다. 구현 topology에서의 결과는 cutover·restart가 confirmed state를 삭제하지 않고, 이해할 수 없는 store가 product mutation을 열지 않는다는 것이다. Exact codec·invariant·physical I/O 동작은 [Server README](../../apps/server/README.md)가 소유한다.
 
 ## 검증 표면
 

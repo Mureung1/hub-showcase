@@ -4,7 +4,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import concurrently from 'concurrently'
 
-import { materializeDevelopmentSemesterWorkspace } from './semester-workspace-materializer.mjs'
+import {
+  assertProductRootsDoNotOverlap,
+  materializeDevelopmentSemesterWorkspace,
+} from './semester-workspace-materializer.mjs'
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url))
 
@@ -33,6 +36,7 @@ export function resolveExplicitAppDataRoot(options: {
 }
 
 async function canonicalAppDataRoot(selected: string): Promise<string> {
+  assertProductRootsDoNotOverlap(repositoryRoot, path.resolve(selected))
   await mkdir(selected, { recursive: true })
   const stats = await lstat(selected)
   if (!stats.isDirectory() || stats.isSymbolicLink()) {

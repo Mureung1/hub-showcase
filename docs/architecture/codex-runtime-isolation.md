@@ -85,9 +85,7 @@ semester-workspace/
 
 ## Durable store와 rollback
 
-Cutover 시점의 exact current `formatVersion: 2`는 첫 durable compatibility baseline이다. Server restart·public-surface cutover·app version rollback은 workspace-local confirmed state와 settled history를 삭제하지 않는다. Exact-decodable current v2는 original serialized bytes를 authority로 열고 startup에서 rewrite하지 않는다.
-
-Unsupported·invalid bytes는 original entry를 보존한 `incompatible/readOnly`로 열고 empty state로 reset하지 않는다. Baseline 후 physical schema를 바꾸려면 explicit version bump와 migration을 제공하거나, 지원하지 않는 version을 bytes-preserving read-only로 거절한다. Generic migration·backup·signature framework는 실제 compatibility need 앞에서 만들지 않는다.
+Workspace-local store는 app data나 native session과 다른 durable authority다. 따라서 Server lifecycle과 public-surface cutover는 confirmed state의 삭제 권한을 갖지 않고, store를 안전하게 이해하지 못하는 Runtime은 product mutation authority를 얻지 못한다. Baseline과 이후 schema 변경 정책은 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md), exact current codec·I/O 동작은 [Server README](../../apps/server/README.md#workspace-local-durable-store)가 소유한다.
 
 ## 리스크와 대응
 

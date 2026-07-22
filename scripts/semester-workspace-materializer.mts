@@ -67,9 +67,12 @@ export async function materializeDevelopmentSemesterWorkspace(options: {
   const environment = options.environment ?? process.env
   const managedRoots = [packageRoot]
   if (options.appDataRoot !== undefined) {
-    managedRoots.push(
-      await canonicalDirectory(options.appDataRoot, 'product app data root'),
+    const appDataRoot = await canonicalDirectory(
+      options.appDataRoot,
+      'product app data root',
     )
+    assertProductRootsDoNotOverlap(packageRoot, appDataRoot)
+    managedRoots.push(appDataRoot)
   }
   const configuredWorkspace = environment.CODEX_CHAT_WORKSPACE
   if (configuredWorkspace !== undefined) {
@@ -78,7 +81,7 @@ export async function materializeDevelopmentSemesterWorkspace(options: {
       'CODEX_CHAT_WORKSPACE',
     )
     for (const managedRoot of managedRoots) {
-      assertRootsDoNotOverlap(managedRoot, workspaceRoot)
+      assertProductRootsDoNotOverlap(managedRoot, workspaceRoot)
     }
     return { ownership: 'caller', workspaceRoot }
   }
@@ -88,7 +91,7 @@ export async function materializeDevelopmentSemesterWorkspace(options: {
     workspaceLeaf,
   )
   for (const managedRoot of managedRoots) {
-    assertRootsDoNotOverlap(managedRoot, workspaceRootCandidate)
+    assertProductRootsDoNotOverlap(managedRoot, workspaceRootCandidate)
   }
   const managedParentRoot = await ensureManagedParent(packageRoot)
   const workspaceRoot = path.join(managedParentRoot, workspaceLeaf)
@@ -106,15 +109,15 @@ export async function materializeDevelopmentSemesterWorkspace(options: {
   }
 }
 
-function assertRootsDoNotOverlap(
-  packageRoot: string,
-  workspaceRoot: string,
+export function assertProductRootsDoNotOverlap(
+  firstRoot: string,
+  secondRoot: string,
 ): void {
   if (
-    isSameOrAncestor(packageRoot, workspaceRoot) ||
-    isSameOrAncestor(workspaceRoot, packageRoot)
+    isSameOrAncestor(firstRoot, secondRoot) ||
+    isSameOrAncestor(secondRoot, firstRoot)
   ) {
-    throw new Error('SemesterWorkspace cannot overlap a managed root')
+    throw new Error('Product roots cannot overlap')
   }
 }
 

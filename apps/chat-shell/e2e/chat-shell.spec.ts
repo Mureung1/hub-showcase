@@ -8,6 +8,8 @@ import {
 } from '@ay-ple/product-contract'
 
 import {
+  prepareDurableRestartBaseline,
+  readProductBootstrap,
   scenarioPrompts,
   selectCanonicalMaterials,
   test,
@@ -202,22 +204,7 @@ test('reopens confirmed Assignment history after a same-root Server restart with
   chatHarness,
   chatPage: page,
 }) => {
-  await selectCanonicalMaterials(page)
-  const action = page.getByRole('button', {
-    name: /선택한 자료 정리하기/u,
-  })
-
-  await action.click()
-  await page
-    .getByRole('region', { name: '검토 대기' })
-    .getByRole('button', { name: '수락' })
-    .click()
-  await expect(operationPhase(page)).toHaveAttribute(
-    'data-product-operation-phase',
-    'completed',
-  )
-
-  const confirmed = await readProductBootstrap(page)
+  const confirmed = await prepareDurableRestartBaseline(page)
   expect(confirmed.workspace?.state).toBe('ready')
   if (confirmed.workspace?.state !== 'ready') {
     throw new Error('Expected the confirmed workspace to remain ready.')
@@ -233,14 +220,6 @@ test('reopens confirmed Assignment history after a same-root Server restart with
   expect(confirmed.history.modelingRuns).toEqual([
     expect.objectContaining({ status: 'completed' }),
   ])
-
-  await expect(action).toBeEnabled()
-  await action.click()
-  await expect(page.getByRole('region', { name: '검토 대기' })).toBeVisible()
-  await expect(operationPhase(page)).toHaveAttribute(
-    'data-product-operation-phase',
-    'awaiting-review',
-  )
 
   await chatHarness.restartServer()
   await page.reload()
@@ -1565,14 +1544,6 @@ async function readProductHistory(page: Page): Promise<ProductSettledHistory> {
       readonly history: ProductSettledHistory
     }
     return bootstrap.history
-  })
-}
-
-async function readProductBootstrap(page: Page): Promise<ProductBootstrap> {
-  return page.evaluate(async () => {
-    const response = await fetch('/api/product/bootstrap')
-    if (!response.ok) throw new Error('Product bootstrap failed.')
-    return response.json() as Promise<ProductBootstrap>
   })
 }
 

@@ -24,6 +24,7 @@ import {
   type StartThreadInput,
   type StartTurnInput,
 } from '@ay-ple/codex-chat-runtime'
+import type { ProductBootstrap } from '@ay-ple/product-contract'
 import react from '@vitejs/plugin-react'
 import { expect, test as base, type Page } from 'playwright/test'
 import {
@@ -94,7 +95,12 @@ export type ChatShellHarness = {
   releaseInterruptSettlement(): void
   releaseLateInteraction(): void
   restartServer(): Promise<void>
+  stopServer(): Promise<void>
   close(): Promise<void>
+}
+
+export type StartChatShellHarnessOptions = {
+  readonly semesterWorkspace?: E2eSemesterWorkspace
 }
 
 const chatShellRoot = fileURLToPath(new URL('../', import.meta.url))
@@ -175,8 +181,48 @@ export async function selectCanonicalMaterials(page: Page): Promise<void> {
   ).toBeVisible()
 }
 
+export async function prepareDurableRestartBaseline(
+  page: Page,
+): Promise<ProductBootstrap> {
+  await selectCanonicalMaterials(page)
+  const action = page.getByRole('button', {
+    name: /선택한 자료 정리하기/u,
+  })
+
+  await action.click()
+  await page
+    .getByRole('region', { name: '검토 대기' })
+    .getByRole('button', { name: '수락' })
+    .click()
+  await expect(page.locator('[data-product-operation-phase]')).toHaveAttribute(
+    'data-product-operation-phase',
+    'completed',
+  )
+  const confirmed = await readProductBootstrap(page)
+
+  await expect(action).toBeEnabled()
+  await action.click()
+  await expect(page.getByRole('region', { name: '검토 대기' })).toBeVisible()
+  await expect(page.locator('[data-product-operation-phase]')).toHaveAttribute(
+    'data-product-operation-phase',
+    'awaiting-review',
+  )
+  return confirmed
+}
+
+export async function readProductBootstrap(
+  page: Page,
+): Promise<ProductBootstrap> {
+  return page.evaluate(async () => {
+    const response = await fetch('/api/product/bootstrap')
+    if (!response.ok) throw new Error('Product bootstrap failed.')
+    return response.json() as Promise<ProductBootstrap>
+  })
+}
+
 export async function startChatShellHarness(
   scenario: ChatScenario,
+  options: StartChatShellHarnessOptions = {},
 ): Promise<ChatShellHarness> {
   const frontendServer = createHttpServer()
   let viteServer: ViteDevServer | undefined
@@ -187,9 +233,11 @@ export async function startChatShellHarness(
   const requests: string[] = []
   const assignmentStreams = new Set<ServerResponse>()
   const runtimeGenerations: ProductE2eRuntime[] = []
+  const ownsSemesterWorkspace = options.semesterWorkspace === undefined
 
   try {
-    semesterWorkspace = await materializeE2eSemesterWorkspace()
+    semesterWorkspace =
+      options.semesterWorkspace ?? (await materializeE2eSemesterWorkspace())
     const activeSemesterWorkspace = semesterWorkspace
     selectedWorkspaceRoot = semesterWorkspace.workspaceRoot
     process.stdout.write(
@@ -380,6 +428,12 @@ export async function startChatShellHarness(
         application = await createAndActivateApplication()
         await application.listen(apiPort, '127.0.0.1')
       },
+      async stopServer() {
+        const previousApplication = application
+        if (!previousApplication) return
+        application = undefined
+        await previousApplication.close()
+      },
       async close() {
         if (closed) return
         closed = true
@@ -387,7 +441,9 @@ export async function startChatShellHarness(
           frontendServer,
           viteServer,
           application,
-          semesterWorkspace,
+          semesterWorkspace: ownsSemesterWorkspace
+            ? semesterWorkspace
+            : undefined,
         })
       },
     }
@@ -396,7 +452,7 @@ export async function startChatShellHarness(
       frontendServer,
       viteServer,
       application,
-      semesterWorkspace,
+      semesterWorkspace: ownsSemesterWorkspace ? semesterWorkspace : undefined,
     }).catch(() => undefined)
     throw error
   }

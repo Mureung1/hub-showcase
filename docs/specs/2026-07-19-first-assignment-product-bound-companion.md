@@ -42,7 +42,9 @@ Runtime은 official Python SDK, exact native identity, acceptance-first ordering
 
 ## Current State and Constraints
 
-### Current implementation
+### Pre-implementation baseline
+
+다음 표는 이 spec을 ticket으로 분해하기 직전의 출발 상태를 기록한다. 완료 뒤의 current topology와 capability status는 owning architecture/package 문서와 아래 Completion에서 확인한다.
 
 | Layer | Current fact | First-vertical consequence |
 | --- | --- | --- |
