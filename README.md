@@ -51,6 +51,49 @@ Profile Setup Wizard
 -> 기록 노트 저장
 ```
 
+## 데이터 흐름 구조
+
+```mermaid
+flowchart LR
+  User["User"]
+
+  subgraph Browser["React Browser App"]
+    UI["XP Desktop UI<br/>src/App.tsx"]
+    State["React state<br/>questStatus, manager, logs"]
+    Assets["Asset manifest<br/>src/data/assetManifest.ts"]
+    Lumi["Canvas sprite<br/>CanvasSpriteAnimator"]
+  end
+
+  subgraph Api["Local API Boundary"]
+    Adapter["questLogApi.ts"]
+    Vite["Vite /api middleware"]
+    Hono["Hono routes<br/>/api/quest-events"]
+  end
+
+  subgraph Store["Server Store"]
+    Memory["Memory fallback"]
+    SupabaseStore["Supabase store"]
+  end
+
+  DB[("Supabase<br/>quest_logs")]
+
+  User -->|"complete / fail / recovery"| UI
+  UI -->|"setState"| State
+  State -->|"mood"| Lumi
+  Assets -->|"sprite/icon path"| Lumi
+  UI -->|"CreateQuestEventRequest"| Adapter
+  Adapter -->|"fetch /api/*"| Vite
+  Vite --> Hono
+  Hono -->|"valid event"| SupabaseStore
+  Hono -.->|"no env"| Memory
+  SupabaseStore -->|"insert/select"| DB
+  DB -->|"QuestEventRecord[]"| SupabaseStore
+  SupabaseStore -->|"QuestLog[] + ManagerContext"| Adapter
+  Adapter -->|"logs + manager context"| UI
+```
+
+자세한 구조도와 대표 코드 스키마는 [Architecture Data Flow](docs/architecture-data-flow.md)에 정리했습니다.
+
 ## 현재 구현 판단
 
 - 정적 HTML 버전은 시각 목표와 클릭 흐름의 기준안입니다.

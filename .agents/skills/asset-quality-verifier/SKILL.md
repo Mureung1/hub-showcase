@@ -28,9 +28,14 @@ Verify that generated assets can be used in the React XP desktop app without vis
    - one state per sheet
    - equal frame width and height
    - consistent row/column layout
+   - for variable-frame sheets, sheet width must equal `sourceFrameCount * frameWidth`
+   - manifest `playbackFrames` must reference only valid source frame indexes
+   - `hold` and `mirrorX` playback metadata may change runtime rhythm, but must not hide a broken source frame
    - same character center x across frames
    - same lower baseline y across frames
+   - same apparent character scale and visible body bounding-box size across frames in the same PNG
    - no cropped antenna, halo, glow, or accessory
+   - generated review boards or contact sheets are not valid crop sources unless they already satisfy exact production grid rules
 3. Check reference fidelity for Lumi assets:
    - compare against `public/assets/lumi-manager.png`
    - preserve the pink electronic-biological body, cream core, side modules, antenna light, lower base pieces, and small glowing device panel
@@ -64,6 +69,9 @@ Verify that generated assets can be used in the React XP desktop app without vis
    - hover is attention without scale jump
    - hanging is a window-edge interaction with a stable grip/top anchor
    - hiding is a window-behind or peek interaction with stable peek-edge alignment
+   - walk and run are locomotion loops; actual x/y travel should be handled by React/Canvas, not baked into the sheet
+   - jump may be one-shot and can use held apex/landing frames in `playbackFrames`
+   - climbing should imply grip alternation without drawing the ladder into the sprite
    - disabled icons are muted but still recognizable
 8. Check implementation fit:
    - transparent PNG/WebP for sprites/icons/rewards/FX
@@ -75,6 +83,7 @@ Verify that generated assets can be used in the React XP desktop app without vis
 
 - Open the PNG and inspect at native size and 4x zoom.
 - For sprite sheets, mentally overlay frame cells: body center and lower baseline should not wander.
+- Within one sheet, the pet should not grow or shrink between frames. Motion can change pose, but scale and identity-defining body size should stay stable.
 - For same-size evolution sheets, compare each stage's bounding box. Stage 3 and Stage 4 may become more detailed but should not become noticeably taller, wider, older, or more humanoid.
 - For real-creature cyber pet sheets, allow Stage 1 to be smaller, then compare Stage 2-4 for same-size stability.
 - For window interaction sheets, overlay the grip point or peek edge instead of only the lower baseline.

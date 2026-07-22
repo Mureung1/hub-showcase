@@ -26,6 +26,7 @@
 | [tasks.md](tasks.md) | 우선순위가 표시된 전체 개발 Task 백로그 | 개발 Task 백로그 |
 | [github-project-guide.md](github-project-guide.md) | GitHub Issues/Projects 보드, 필드, 우선순위 표시 방식 | GitHub Project 운영 가이드 |
 | [status.md](status.md) | 완료, 검증, 다음 작업, 차단 요소 | 진행 상황 |
+| [architecture-data-flow.md](architecture-data-flow.md) | React 화면, Hono API, Supabase DB, asset manifest의 데이터 흐름 구조도와 코드 스키마 | Architecture Data Flow |
 | [api-contracts.md](api-contracts.md) | Hono Quest Event API 요청/응답 계약 | API Contracts |
 | [db-schema.md](db-schema.md) | Supabase `quest_logs` 테이블 설계 | DB Schema |
 | [environment-setup.md](environment-setup.md) | 로컬 Vite/Hono/Supabase 환경 변수와 실행 명령 | Environment Setup |

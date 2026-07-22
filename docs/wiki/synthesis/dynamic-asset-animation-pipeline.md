@@ -2,7 +2,7 @@
 title: Dynamic Asset Animation Pipeline
 type: synthesis
 status: active
-updated: 2026-07-20
+updated: 2026-07-22
 source_paths:
   - docs/dynamic-asset-requirements.md
   - docs/asset-prompts/README.md
@@ -39,7 +39,7 @@ This page summarizes the current source-backed decision for generating and using
 
 ## Sprite Sheet Contract
 
-Every generated character state should follow the Planaria Stage 1 sample contract unless a later approved sample replaces it.
+Every generated character state should be reviewed as the production sprite sheet itself. Direction boards or contact sheets may help compare assets, but they are not production sources and should not be cropped into runtime sheets.
 
 | Rule | Current contract |
 |---|---|
@@ -52,6 +52,8 @@ Every generated character state should follow the Planaria Stage 1 sample contra
 | `hanging` anchor | stable top grip anchor |
 | `hiding` anchor | stable peek edge |
 | Expected drift after normalization | about `1px` or less |
+
+Within one PNG sheet, the character must keep the same apparent scale and visible body-size footprint across frames. Bounces, jumps, hanging, and hiding may move the pose inside the canvas, but they must not make the pet look larger or smaller from frame to frame.
 
 ## State Set
 
@@ -98,7 +100,7 @@ frame 3: -192px 0
 | Output paths and reference image paths | `docs/asset-prompts/...` |
 | Manifest type, runtime state names, canonical folders | `docs/dynamic-asset-requirements.md` and `src/data/assetManifest.ts` |
 | Generated PNG/WebP files | `public/assets/...` |
-| Review contact sheets | `public/assets/_review/...` |
+| Optional review previews | `public/assets/_review/...` |
 | Reusable verification rules | `.agents/skills/asset-quality-verifier/SKILL.md` and `docs/codex-skills/asset-quality-verifier/SKILL.md` |
 | Cross-document decision summary | `docs/wiki/synthesis/...` |
 

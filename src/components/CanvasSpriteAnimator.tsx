@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import type { SpriteAnimationAsset } from "../data/assetManifest";
+import type { SpriteAnimationAsset, SpritePlaybackFrame } from "../data/assetManifest";
 
 interface CanvasSpriteAnimatorProps {
   animation: SpriteAnimationAsset;
   className?: string;
   ariaLabel: string;
+  forceMotion?: boolean;
 }
 
 function getReducedMotionPreference() {
@@ -13,7 +14,17 @@ function getReducedMotionPreference() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function CanvasSpriteAnimator({ animation, className = "", ariaLabel }: CanvasSpriteAnimatorProps) {
+function getPlaybackSequence(animation: SpriteAnimationAsset): SpritePlaybackFrame[] {
+  const sourceFrames: SpritePlaybackFrame[] =
+    animation.playbackFrames ?? Array.from({ length: animation.frameCount }, (_, frame) => ({ frame }));
+
+  return sourceFrames.flatMap((step) => {
+    const hold = Math.max(1, step.hold ?? 1);
+    return Array.from({ length: hold }, () => step);
+  });
+}
+
+export function CanvasSpriteAnimator({ animation, className = "", ariaLabel, forceMotion = false }: CanvasSpriteAnimatorProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [isReducedMotion, setIsReducedMotion] = useState(getReducedMotionPreference);
@@ -50,13 +61,37 @@ export function CanvasSpriteAnimator({ animation, className = "", ariaLabel }: C
     let animationFrameId = 0;
     let startTime = 0;
     let cancelled = false;
+    const playbackSequence = getPlaybackSequence(animation);
 
-    function drawFrame(frameIndex: number) {
+    function drawFrame(step: SpritePlaybackFrame) {
       if (!canvas || !imageRef.current) return;
+      const frameIndex = Math.min(Math.max(step.frame, 0), animation.frameCount - 1);
+      const sourceX = frameIndex * animation.frameWidth;
+
       renderingContext.clearRect(0, 0, animation.frameWidth, animation.frameHeight);
+
+      if (step.mirrorX) {
+        renderingContext.save();
+        renderingContext.translate(animation.frameWidth, 0);
+        renderingContext.scale(-1, 1);
+        renderingContext.drawImage(
+          imageRef.current,
+          sourceX,
+          0,
+          animation.frameWidth,
+          animation.frameHeight,
+          0,
+          0,
+          animation.frameWidth,
+          animation.frameHeight,
+        );
+        renderingContext.restore();
+        return;
+      }
+
       renderingContext.drawImage(
         imageRef.current,
-        frameIndex * animation.frameWidth,
+        sourceX,
         0,
         animation.frameWidth,
         animation.frameHeight,
@@ -68,7 +103,7 @@ export function CanvasSpriteAnimator({ animation, className = "", ariaLabel }: C
     }
 
     function drawReducedMotionFrame() {
-      drawFrame(Math.min(animation.reducedMotionFrame, animation.frameCount - 1));
+      drawFrame({ frame: animation.reducedMotionFrame });
     }
 
     function tick(timestamp: number) {
@@ -77,17 +112,19 @@ export function CanvasSpriteAnimator({ animation, className = "", ariaLabel }: C
 
       const elapsedSeconds = (timestamp - startTime) / 1000;
       const rawFrame = Math.floor(elapsedSeconds * animation.fps);
-      const frameIndex = animation.loop ? rawFrame % animation.frameCount : Math.min(rawFrame, animation.frameCount - 1);
-      drawFrame(frameIndex);
+      const playbackIndex = animation.loop
+        ? rawFrame % playbackSequence.length
+        : Math.min(rawFrame, playbackSequence.length - 1);
+      drawFrame(playbackSequence[playbackIndex]);
 
-      if (animation.loop || frameIndex < animation.frameCount - 1) {
+      if (animation.loop || playbackIndex < playbackSequence.length - 1) {
         animationFrameId = window.requestAnimationFrame(tick);
       }
     }
 
     function startDrawing() {
       renderingContext.imageSmoothingEnabled = false;
-      if (isReducedMotion) {
+      if (isReducedMotion && !forceMotion) {
         drawReducedMotionFrame();
         return;
       }
@@ -105,7 +142,7 @@ export function CanvasSpriteAnimator({ animation, className = "", ariaLabel }: C
       window.cancelAnimationFrame(animationFrameId);
       image.removeEventListener("load", startDrawing);
     };
-  }, [animation, isReducedMotion]);
+  }, [animation, forceMotion, isReducedMotion]);
 
   const canvasStyle = {
     "--sprite-frame-width": `${animation.frameWidth}px`,

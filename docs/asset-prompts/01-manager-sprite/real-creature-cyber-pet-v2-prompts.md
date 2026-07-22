@@ -12,8 +12,9 @@ Use `call_5sUTBQlinROYVyU6ME7HGChS` as the official source contact sheet for the
 - Workspace review copy: `public/assets/_review/real-creature-candidates-stage-1-4-v2-contact.png`
 - For animation production, use only Stage 1 and Stage 2 from this sheet as base forms.
 - Stage 3 and Stage 4 are no longer active animation bases because the forms are too similar or risk unnecessary regeneration.
-- Stage 1 and Stage 2 are expanded independently into `idle`, `focused`, `happy`, `recovering`, `hover`, `hanging`, and `hiding` sheets.
+- Stage 1 and Stage 2 remain the animation bases. The current implemented batch expands Stage 1 only for 9 selected pets, excluding planaria, gecko, and `hover`.
 - Use `planaria-stage-1-animation-sample.md` as the reference contract for animation sheet generation, post-alignment, playback metadata, reduced-motion frame `0`, and placement anchors.
+- Use `stage-1-pet-interaction-motion-contract.md` for the 9-pet Stage 1 interaction batch: `idle`, `focused`, `happy`, `recovering`, `hanging`, `hiding`, `run`, `jump`, `walk`, and `climbing`.
 
 Shared rule:
 
@@ -22,9 +23,9 @@ Shared rule:
 - Stage 2, Stage 3, and Stage 4 keep the same size, center, lower baseline, camera angle, and rough footprint.
 - For 8 non-gecko candidates, Stage 3 and Stage 4 need a visibly stronger detail upgrade without getting bigger.
 - For the leaf-tailed gecko, V2 needs a much simpler silhouette.
-- Choose silhouettes that can later support the shared dynamic MVP states: `idle`, `focused`, `happy`, `recovering`, `hover`, `hanging`, and `hiding`.
+- Choose silhouettes that can later support the shared dynamic MVP states and pet interaction motions: `idle`, `focused`, `happy`, `recovering`, `hover`, `hanging`, `hiding`, `run`, `jump`, `walk`, and `climbing`.
 - `hanging` needs a stable top/grip anchor; `hiding` needs a stable peek edge. Do not add loose accessories that would jitter or be hard to mask behind a window.
-- Each generated animation state must be one `256x64` horizontal sheet with four `64x64` frames. Default states align by center x and lower float anchor; `hanging` aligns by top grip anchor; `hiding` aligns by peek edge. Keep anchor drift within about 1px after normalization.
+- Planaria sample sheets stay `256x64` with four `64x64` frames. The 9-pet Stage 1 interaction batch uses variable source frame counts: every cell is `64x64`, sheet height is `64`, and sheet width is `sourceFrameCount * 64`. Default states align by center x and lower float anchor; `hanging` and `climbing` align by top grip anchor; `hiding` aligns by peek edge. Keep anchor drift within about 1px after normalization.
 
 Use a flat `#00ff00` chroma-key background and save raw plus `-chromakey.png` variants under `public/assets/lumi/`.
 

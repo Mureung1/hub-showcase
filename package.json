@@ -4,6 +4,7 @@
     "typecheck": "tsc --noEmit",
     "typecheck:server": "tsc -p server/tsconfig.json --noEmit",
     "verify:sprites": "node scripts/verify-sprite-sheets.mjs",
+    "review:sprites": "vite --host 127.0.0.1 --port 5174 --open \"/?review=sprites\"",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
   },

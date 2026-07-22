@@ -11,6 +11,7 @@
 - 개인화 AI 매니저
 - 하루의 흐름을 WEB에 반영
 - 현실 픽셀화 TV
+- Single-plane Pepper projection mode
 - 공개 퀘스트 탐색
 - 웹캠 손 제스처 탐색
 - 캐릭터 애니메이션
@@ -19,6 +20,10 @@
 - 창 테마
 - 기억 조각
 - 사운드
+- blink focus scene
+- 사다리/평지/창탈출 interaction object
+- Stage 회귀 외형 선택
+- 퀘스트 능력치 growth
 
 ## Common Asset Rules
 
@@ -30,6 +35,8 @@
 - React는 asset path를 직접 하드코딩하지 않고 manifest data를 통해 참조한다.
 - `prefers-reduced-motion`에서는 animation을 정지하거나 1 frame fallback을 사용한다.
 - Camera, microphone, public data 기능은 명시적 동의와 fallback UI가 필요하다.
+- Character interaction object는 sprite에 UI chrome을 굽지 않고 React/CSS object layer에서 위치, resize, collision을 처리한다.
+- Sound assets must not autoplay before user interaction.
 
 ## Recommended Folders
 
@@ -43,8 +50,11 @@ public/assets/memory-fragments/
 public/assets/fx/
 public/assets/sounds/
 public/assets/pixel-tv/
+public/assets/projection/
 public/assets/social-world/
 public/assets/gestures/
+public/assets/interaction-objects/
+public/assets/fx/blink/
 ```
 
 ## Manifest Types
@@ -60,7 +70,7 @@ interface SpriteAnimationAsset {
   frameCount: number;
   fps: number;
   loop: boolean;
-  states: Array<"idle" | "focused" | "happy" | "recovering" | "resting" | "hover" | "hanging" | "hiding">;
+  states: Array<"idle" | "focused" | "happy" | "recovering" | "resting" | "hover" | "hanging" | "hiding" | "climbing" | "jumping" | "landing" | "walking_outside">;
   reducedMotionFrame: number;
 }
 ```
@@ -75,6 +85,10 @@ Needed assets:
 - `lumi-hover-sheet.png`
 - `lumi-hanging-sheet.png`: window-edge hanging interaction
 - `lumi-hiding-sheet.png`: hiding behind or peeking from a window interaction
+- `lumi-climbing-sheet.png`: ladder climbing interaction
+- `lumi-jumping-sheet.png`: platform jump interaction
+- `lumi-landing-sheet.png`: platform landing interaction
+- `lumi-walking-outside-sheet.png`: window escape overlay interaction
 - level or growth variants: `lumi-growth-01.png`, `lumi-growth-02.png`, `lumi-growth-03.png`
 - accessory overlays: small hat, badge, glow, memory shard, theme charm
 
@@ -85,6 +99,9 @@ Window interaction notes:
 - React/CSS should provide the window edge, z-index layer, and clipping mask.
 - `hanging` keeps a stable grip or top-anchor point across frames.
 - `hiding` keeps a stable peek edge and visible bbox across frames.
+- `climbing` keeps stable hand/foot contact points so ladder resize can preserve progress ratio.
+- `jumping` and `landing` should keep a predictable floor anchor.
+- `walking_outside` uses the desktop overlay coordinate system, not the manager window coordinate system.
 
 ### Desktop Icon
 
@@ -110,6 +127,7 @@ Needed icons:
 - 테마 설정
 - 공개 퀘스트 탐색
 - 픽셀 TV
+- 픽셀 TV projection-connected variant
 
 ### Theme
 
@@ -159,11 +177,16 @@ Needed rewards:
 - Lamp
 - Plant
 - CRT pixel TV
+- Projection jar or transparent plate prop
 - Wallpaper roll
 - Window theme chip
 - Meadow badge
 - Memory fragment
 - Recovery seed or repair part
+- Ladder object
+- Flat platform object
+- Stage return token
+- Stat badge
 
 ### Sound
 
@@ -171,7 +194,7 @@ Needed rewards:
 interface SoundAsset {
   id: string;
   src: string;
-  event: "complete" | "recovery" | "level_up" | "hover" | "open_window";
+  event: "complete" | "recovery" | "level_up" | "hover" | "open_window" | "cyber_purr" | "blink_transition" | "climb" | "jump" | "window_escape";
   defaultVolume: number;
 }
 ```
@@ -183,11 +206,49 @@ Needed sounds:
 - Level up
 - Window open
 - Gentle hover or select
+- Default cyber-purr voice for each manager/persona
+- Blink transition soft focus sound
+- Ladder climb
+- Platform jump/land
+- Window escape
 
 Default behavior:
 
 - sound is muted until the user enables it.
 - no autoplay BGM before user interaction.
+
+### Interaction Object
+
+```ts
+interface InteractionObjectAsset {
+  id: string;
+  type: "ladder" | "platform" | "window_escape_edge";
+  src: string;
+  hoverSrc?: string;
+  resizeAxis: "vertical" | "horizontal" | "none";
+  anchorPoints: Array<"top" | "bottom" | "left" | "right" | "center">;
+}
+```
+
+Needed objects:
+
+- Ladder: vertical resize, climb progress ratio preserved during resize.
+- Flat platform: horizontal resize only, jump/land target.
+- Window escape edge: trigger area for leaving the window into desktop overlay.
+
+### Blink Focus FX
+
+```ts
+interface BlinkFocusEffectAsset {
+  id: string;
+  mode: "start_day" | "end_day" | "focus_manager" | "defocus_manager";
+  overlaySrc?: string;
+  durationMs: number;
+  blurFrom: number;
+  blurTo: number;
+  reducedMotion: "fade" | "none";
+}
+```
 
 ## Feature Requirements
 
@@ -201,12 +262,16 @@ Needs data more than images:
 - failure/recovery summary
 - reward hints
 - rule fallback line when LLM is unavailable
+- persona id, tone, boundaries, preferred choice style
+- direct choices selected by the user
+- indirect preference signals from completion/failure/recovery history
 
 Optional assets:
 
 - thinking indicator sprite
 - memory fragment glow
 - gentle response FX
+- persona-specific cyber-purr sound
 
 ### Web Day Flow
 
@@ -216,6 +281,34 @@ Needs:
 - quest state overlay: draft, active, success, failed, recovery
 - wallpaper and Lumi idle variation for each state
 - CSS variable mapping for window/taskbar color
+- blink focus transition at day start/end or manager focus scenes
+
+### Character Interaction Objects
+
+Needs:
+
+- object rect state: x, y, width, height
+- resize constraint: ladder vertical, platform horizontal
+- proximity trigger between Lumi and object
+- state transitions: idle -> climbing -> transfer/jump -> landing -> idle
+- resize during climbing preserves normalized progress, not absolute pixel position
+- desktop overlay layer for window escape
+
+Implementation notes:
+
+- Start with deterministic anchor/collision checks, not a full physics engine.
+- Keep mouse/touch controls as the primary interaction.
+- Use `prefers-reduced-motion` to replace climb/jump with short pose changes.
+
+### Stage Return and Stats
+
+Needs:
+
+- unlocked stage list from level/reward history
+- selected appearance stage setting
+- stat taxonomy: diligence, persistence, creativity, knowledge, strength, agility, stamina, charm
+- Quest Event metadata mapping quest type/difficulty to stat deltas
+- UI summary that explains growth without turning quests into pressure
 
 ### Reality Pixel TV
 
@@ -232,6 +325,26 @@ Privacy rules:
 - webcam frames stay local
 - no raw frame upload
 - permission prompt before camera use
+
+### Single-plane Pepper Projection Mode
+
+Needs:
+
+- black fullscreen or windowed projection layout
+- single-view Lumi sprite/video with bright glow and transparent-safe edges
+- optional projection jar/plate guide asset
+- `pixel-tv` icon transform state: default TV -> projection-connected app icon
+- right-click context action plan: TV icon -> properties -> transform
+- minimum controls: exit, brightness hint, mute
+- no 4-way pyramid layout for this mode
+
+Interaction rules:
+
+- The transform action should not appear in visible UI until implemented.
+- The transform should be reversible or represented as a mode binding.
+- Projection output should avoid UI labels inside the reflected area.
+- Use high contrast: black background, bright character, minimal UI chrome.
+- Reduced motion fallback should use one frame plus fade.
 
 ### Public Quest Exploration
 
@@ -272,10 +385,14 @@ Implementation notes:
 5. Reward inventory and memory fragment rendering
 6. Sound manager with mute setting
 7. Web day flow state mapping
-8. AI manager adapter using ManagerContext
-9. Pixel TV canvas prototype
-10. Public quest exploration prototype
-11. Gesture input adapter prototype
+8. Blink focus scene prototype
+9. Character interaction object prototype: ladder/platform/window escape
+10. Stage return and stat growth mapping
+11. AI manager adapter using ManagerContext and Persona data
+12. Pixel TV canvas prototype
+13. Single-plane Pepper projection mode prototype
+14. Public quest exploration prototype
+15. Gesture input adapter prototype
 
 ## Verification
 
