@@ -14,6 +14,8 @@ export default function RequestFormPage() {
   const [content, setContent] = useState('');
   const [reward, setReward] = useState(3);
   const [dueDate, setDueDate] = useState('');
+  const [imageFile, setImageFile] = useState(null);      // 사용자가 고른 파일
+  const [imagePreview, setImagePreview] = useState('');   // 미리보기용 임시 주소
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -29,16 +31,47 @@ export default function RequestFormPage() {
     );
   }
 
+  // 파일을 고르면 미리보기를 만든다 (아직 업로드 아님 — 등록 버튼 누를 때 올림)
+  function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file)); // 브라우저 안에서만 보이는 임시 주소
+  }
+
   async function handleSubmit() {
     if (!tag) return setError('작업 태그를 선택해 주세요');
     if (!title.trim()) return setError('제목을 입력해 주세요');
-    if (!content.trim()) return setError('요청 내용을 입력해 주세요');
+    if (!content.trim() && !imageFile)
+      return setError('글이나 이미지 중 하나로 어떤 결과물을 원하는지 알려주세요');
 
     setSaving(true);
+    setError('');
+
+    // 1. 이미지가 있으면 results 창고에 먼저 업로드하고 공개 주소를 받는다
+    let imageUrl = 'https://placehold.co/600x400'; // 이미지를 안 올렸으면 기본 자리표시
+    if (imageFile) {
+      // 파일 이름이 겹치지 않게 시간+원본이름으로 경로를 만든다
+      const path = `examples/${Date.now()}_${imageFile.name}`;
+      const { error: upErr } = await supabase.storage
+        .from('results')          // 아까 만든 버킷 이름
+        .upload(path, imageFile);
+
+      if (upErr) {
+        setSaving(false);
+        return setError('이미지 업로드 실패: ' + upErr.message);
+      }
+
+      // 업로드한 파일의 공개 URL 얻기 (버킷이 public이라 이 주소로 바로 볼 수 있음)
+      const { data: pub } = supabase.storage.from('results').getPublicUrl(path);
+      imageUrl = pub.publicUrl;
+    }
+
+    // 2. 요청글 저장 — 이미지 주소(글자)를 DB에 넣는다
     const { error: e } = await supabase.from('requests').insert({
       owner_id: profile.id,
       tag, title, content,
-      example_image_url: 'https://placehold.co/600x400', // TODO: 이미지 업로드로 교체
+      example_image_url: imageUrl,
       reward_count: reward,
       due_date: dueDate || null,
       region: '부산대 앞',
@@ -94,11 +127,27 @@ export default function RequestFormPage() {
         </div>
 
         <div>
-          <span style={label}>요청 내용<em style={required}>필수</em></span>
+          <span style={label}>요청 내용<em style={optional}>글 또는 이미지</em></span>
           <textarea style={{ ...input, minHeight: 100, padding: 16, lineHeight: 1.7,
                              resize: 'vertical', fontFamily: 'inherit' }}
             placeholder="어떤 결과물을 원하는지, 참고하고 싶은 스타일이 있는지 적어주세요"
             value={content} onChange={(e) => setContent(e.target.value)} />
+        </div>
+
+        <div>
+          <span style={label}>기대 결과물 예시<em style={optional}>글 또는 이미지</em></span>
+          <p style={{ fontSize: '.74rem', color: 'var(--muted)', margin: '0 0 8px' }}>
+            글 설명과 참고 이미지 중 최소 하나는 넣어주세요. 둘 다 넣어도 좋아요
+          </p>
+          {imagePreview && (
+            <img src={imagePreview} alt="미리보기"
+              style={{ width: '100%', borderRadius: 14, marginBottom: 8, display: 'block' }} />
+          )}
+          <label style={{ ...chip(false), display: 'inline-block', textAlign: 'center' }}>
+            {imageFile ? '📷 다시 고르기' : '📷 이미지 선택'}
+            <input type="file" accept="image/*" onChange={handleFileChange}
+              style={{ display: 'none' }} />
+          </label>
         </div>
 
         <div>
