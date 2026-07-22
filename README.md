@@ -15,6 +15,7 @@
 * Frontend: React, Tailwind CSS, React Router (`react-router`)
 * Backend: Express, PostgreSQL
 * Authentication: Firebase Authentication
+* AI: OpenAI Responses API, GPT-5.6 Luna (`gpt-5.6-luna`)
 
 ## 인증
 
@@ -84,6 +85,8 @@ VITE_API_BASE_URL=
 ```dotenv
 FIREBASE_PROJECT_ID=your-project-id
 GOOGLE_APPLICATION_CREDENTIALS=C:/absolute/path/to/firebase-admin-service-account.json
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-5.6-luna
 PORT=3000
 # 로컬 프론트엔드 또는 배포 프론트엔드의 정확한 Origin 하나를 설정한다.
 CORS_ALLOWED_ORIGIN=http://localhost:5173
@@ -91,6 +94,17 @@ CORS_ALLOWED_ORIGIN=http://localhost:5173
 
 `GOOGLE_APPLICATION_CREDENTIALS`가 가리키는 서비스 계정 JSON은 저장소 밖에 보관하고 Commit하지 않는다.
 `CORS_ALLOWED_ORIGIN`을 설정하면 해당 Origin의 브라우저 요청만 교차 출처로 허용한다. 로컬 Vite proxy만 사용할 때는 생략할 수 있으며, 배포 환경에서는 실제 프론트엔드 Origin으로 설정한다.
+`OPENAI_API_KEY`는 백엔드에서만 사용하고 프론트엔드 환경 변수나 로그에 노출하지 않는다.
+
+### AI 운영 기준
+
+MVP는 OpenAI Responses API와 `gpt-5.6-luna`를 사용한다. 2026-07-22 기준 공식 가격은 입력 100만 토큰당 1달러, 출력 100만 토큰당 6달러이며, 구조화 출력을 지원해 레시피 초안 스키마를 요청 단계에서 제한할 수 있다. 자세한 사양과 변경된 가격은 [GPT-5.6 Luna 공식 문서](https://developers.openai.com/api/docs/models/gpt-5.6-luna)에서 확인한다.
+
+AI 요청은 15초 후 중단하며 자동으로 재시도하지 않는다. 직접 입력은 공백 제거 후 최대 20,000자, 인증된 사용자별 구조화 요청은 10분에 10회로 제한한다. Timeout이나 제공자 장애가 발생하면 입력을 유지한 채 재시도할 수 있는 오류를 반환한다.
+
+요청에는 Responses API의 `store: false`를 사용해 응답을 애플리케이션 상태로 보관하지 않는다. 이는 OpenAI의 별도 abuse monitoring 보존 정책까지 제거한다는 의미는 아니므로 운영 전 [공식 데이터 정책](https://developers.openai.com/api/docs/guides/your-data)을 다시 확인한다.
+
+AI 결과에는 `RecipeDraft`와 `RecipeWarning`의 엄격한 JSON Schema를 적용한다. 백엔드는 구조화된 결과도 다시 검증하며, 서버 전용 필드나 사용자가 제출하지 않은 출처 URL을 거부한다. 모호한 값은 `warnings`로 표시하고, 검증 실패는 `AI_RESPONSE_INVALID`로 처리한다. 검증된 결과도 자동 저장하지 않으며 사용자가 수정한 뒤 저장 API에서 전체 규칙을 다시 검증한다.
 
 ### 개발 서버 실행
 

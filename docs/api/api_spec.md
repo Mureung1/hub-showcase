@@ -272,6 +272,26 @@ Authorization: Bearer firebase-id-token
 
 구체적인 timeout, redirect 횟수, 응답 크기와 본문 길이는 URL 수집 구현 시 환경 설정으로 확정하고 README에 기록한다.
 
+#### AI 제공자와 요청 제한
+
+- OpenAI Responses API와 `gpt-5.6-luna`를 사용한다.
+- 비밀 키는 백엔드의 `OPENAI_API_KEY`, 모델은 `OPENAI_MODEL`로 설정한다.
+- AI 제공자 요청은 15초 후 중단하며 자동으로 재시도하지 않는다.
+- 공백을 제거한 `rawText`는 최대 20,000자까지 허용한다.
+- 인증된 사용자별 구조화 요청은 10분에 10회로 제한한다.
+- OpenAI 요청은 `store: false`로 보내며 요청 원문과 응답 전문을 애플리케이션 로그에 남기지 않는다.
+
+#### AI 응답 검증
+
+- 제공자 요청에는 `RecipeDraft`와 `RecipeWarning`에 대응하는 엄격한 JSON Schema를 사용하고 스키마 밖 필드를 허용하지 않는다.
+- 서버는 구조화 출력도 신뢰하지 않고 JSON 파싱, 필수 필드와 타입, null 허용 범위, 배열 항목과 1부터 시작하는 중복 없는 `order`, 숫자 범위를 다시 검증한다.
+- `id`, `ownerId`, `type`, `memo`, `receivedInfo`, 날짜 필드는 AI 응답에 포함할 수 없다.
+- 직접 입력만 사용한 요청의 `source`는 `null`이어야 한다.
+- URL 입력의 `source.url`은 사용자가 제출하고 서버가 안전성을 검증한 URL과 같아야 한다.
+- AI가 원문에 없는 값을 추정하거나 모호한 값을 정리하면 편집 가능한 필드 경로를 `warnings`에 포함한다.
+- 검증에 실패한 응답은 일부 필드를 임의로 보정하지 않고 `AI_RESPONSE_INVALID`로 거부한다.
+- 성공한 초안도 저장하지 않으며, 사용자가 수정한 저장 요청을 레시피 저장 API에서 다시 검증한다.
+
 #### 성공 응답
 
 ```json
@@ -320,6 +340,7 @@ Authorization: Bearer firebase-id-token
 - `INVALID_URL`
 - `URL_NOT_ALLOWED`
 - `URL_FETCH_FAILED`
+- `AI_RATE_LIMITED`
 - `AI_REQUEST_FAILED`
 - `AI_RESPONSE_INVALID`
 
