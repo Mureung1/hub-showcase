@@ -4,48 +4,61 @@ Modu Brain은 회의록, 리서치, 피드백에 흩어진 결정 배경과 참�
 
 ![Modu Brain 웹 화면](docs/images/modu-brain-web-desktop.png)
 
-## 시스템 아키텍처 및 데이터 흐름
+## 시스템 아키텍처 및 데이터 흐름 (`modu-brain-tjwnsdhfz.onrender.com`)
 
 ```mermaid
 flowchart TB
-    subgraph Frontend ["🖥️ React (프론트엔드 화면)"]
+    subgraph Frontend ["🖥️ 프론트엔드 레이어 (React SPA)"]
         direction TB
-        UI_Lesson["ReactBasicsLessonPage\n(학습 & 퀴즈)"]
-        UI_Project["ProjectPage\n(브레인 캔버스)"]
-        UI_Share["SharePage\n(공유 뷰어)"]
-        
-        UI_Lesson -- "1. 메모 / 퀴즈 응답 (fetch)" --> API_V1
-        UI_Project -- "2. 기록 저장 / 분석 (fetch)" --> API_V1
+        UI_Home["공개 워크스페이스 (/)\n카카오톡 TXT · Teams · Notion JSON"]
+        UI_Demo["공개 데모 (/demo)\n사전 구성 한국어 기록 & 결정 이력"]
+        UI_Login["보안 로그인 (/login)\nTurnstile CAPTCHA & Magic Link"]
+        UI_Project["브레인 캔버스 (/projects/:id)\n지식맵 · 원문 백링크 · 결정 이유 · Diff"]
+        UI_Share["안전 공유 뷰어 (/share#token=...)\nFragment SHA-256 토큰 검증"]
+
+        UI_Home -- "1. 비영속 로컬 분석 (fetch)" --> API_V1
+        UI_Login -- "2. Magic Link & HttpOnly 쿠키" --> API_Auth
+        UI_Project -- "3. 기록 저장 & 4단계 AI 분석" --> API_V1
+        UI_Share -- "4. 만료/폐기 토큰 검증" --> API_Share
     end
 
-    subgraph Backend ["⚙️ Express / Node Server (백엔드 API)"]
+    subgraph Backend ["⚙️ 백엔드 레이어 (Node BFF & Service Gateway)"]
         direction TB
-        API_V1["POST /api/v1/projects\nPOST /api/v1/analysis-runs\n(BFF Router)"]
-        Repo["moduBrainRepository.mjs\n(데이터 리포지토리)"]
-        Gateway["supabaseGateway.mjs\n(RLS 세션 검증)"]
+        API_Auth["POST /api/v1/auth/magic-link\n(Origin/IP/CAPTCHA 검증)"]
+        API_V1["POST /api/v1/projects\nPOST /api/v1/analysis-runs\n(BFF API Router)"]
+        API_Share["POST /api/v1/shared/resolve\n(공유 해시 검증)"]
         
+        Core["contextAnalysisCore.mjs\n1. 스냅숏 → 2. 분석 → 3. 근거 검증 → 4. 저장"]
+        Repo["moduBrainRepository.mjs\n(PostgreSQL OpenApi & RPC 매핑)"]
+        Gateway["supabaseGateway.mjs\n(JWT 세션 & Service-Role Isolation)"]
+
         API_V1 --> Gateway
-        Gateway --> Repo
+        API_Auth --> Gateway
+        API_Share --> Gateway
+        Gateway --> Core
+        Core --> Repo
     end
 
-    subgraph Database ["🗄️ Supabase PostgreSQL (DB & RLS)"]
+    subgraph Database ["🗄️ 데이터베이스 레이어 (Supabase PostgreSQL + RLS)"]
         direction TB
-        DB_Projects[("projects\n(프로젝트 데이터)")]
-        DB_Runs[("analysis_runs\n(분석 이력 & 근거)")]
-        DB_Notes[("user_notes / quiz_responses\n(학습 이력 영구 저장)")]
-        
-        Repo -- "3. SELECT / INSERT (RLS 제어)" --> DB_Projects
-        Repo -- "4. PERSIST (분석 및 인용문)" --> DB_Runs
-        Repo -- "5. UPSERT (실습 메모 및 퀴즈)" --> DB_Notes
+        DB_Projects[("projects\n(소유권 auth.uid() = owner_id)")]
+        DB_Sources[("source_records\n(회의록 · 리서치 · 피드백 원문)")]
+        DB_Runs[("analysis_runs & step_events\n(결정 이유 · 근거 부분문자열 인용)")]
+        DB_Shares[("share_links\n(SHA-256 해시 토큰)")]
+
+        Repo -- "5. SELECT / INSERT (RLS 제어)" --> DB_Projects
+        Repo -- "6. 불변 원문 저장" --> DB_Sources
+        Repo -- "7. 분석 이력 & 인용문 확정" --> DB_Runs
+        Repo -- "8. 토큰 해시 검증 & 조회" --> DB_Shares
     end
 
     classDef fe fill:#e8f4fd,stroke:#0075de,stroke-width:2px,color:#000;
     classDef be fill:#fbfaf9,stroke:#615d59,stroke-width:2px,color:#000;
     classDef db fill:#e8f7ee,stroke:#1f7a3f,stroke-width:2px,color:#000;
 
-    class UI_Lesson,UI_Project,UI_Share fe;
-    class API_V1,Repo,Gateway be;
-    class DB_Projects,DB_Runs,DB_Notes db;
+    class UI_Home,UI_Demo,UI_Login,UI_Project,UI_Share fe;
+    class API_Auth,API_V1,API_Share,Core,Repo,Gateway be;
+    class DB_Projects,DB_Sources,DB_Runs,DB_Shares db;
 ```
 
 - `/`: 로그인 없이 붙여넣기·카카오톡 TXT·Teams JSON·Notion JSON을 정규화하고 분석하는 비영속 워크스페이스
