@@ -28,6 +28,7 @@ Node와 npm이 설치된 supported macOS arm64에서 repository·system Python·
 
 - [Public npx release 경로를 채택한다](tickets/001-adopt-public-npx-release-route.md) — Signed·notarized public DMG를 제외하고 public repository·landing·npm launcher·versioned Runtime release를 첫 배포 경로로 선택했다.
 - [병렬 delivery collision과 초기 lane boundary를 조사한다](tickets/002-parallel-delivery-contracts.md) — Wayfinder writer를 한 명으로 유지하고 shared contract·root lockfile·Runtime generated surface·cross-surface E2E를 single-owner seam으로 격리하되 exact writer 수와 protocol은 Ticket 014로 넘겼다.
+- [공개 inventory와 provenance gap을 조사한다](tickets/003-audit-publication-inventory-and-redistribution.md) — Fixed revision의 source·npm·Runtime·asset inventory를 고정했으며 public package·first-party license·native notice·clean snapshot·secret/SBOM gate 부재를 owner ticket의 fail-closed blocker로 분류했다.
 
 ## Not yet specified
 

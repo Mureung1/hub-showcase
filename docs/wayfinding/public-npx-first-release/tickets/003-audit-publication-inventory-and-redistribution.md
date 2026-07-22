@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: research
-- State: open
+- State: resolved
 - Blocked by: None
 
 ## Question
@@ -12,4 +12,6 @@
 
 ## Answer
 
-아직 조사하지 않음.
+감사 기준 revision `022bd4e71f2f2f515864f4a77fafb96e35a3a00b`의 tracked source 493 entries, npm 외부 package records 139개, exact OpenAI SDK source·8-patch derivation, verified macOS arm64 Runtime closure, raster assets 11개와 repository history·ignored private state의 gap을 조사했다. Exact 수치·digest·잠정 분류는 [machine-readable inventory](../assets/publication-inventory-index.json), 판단 근거와 publication blocker handoff는 [human review audit](../assets/publication-inventory-audit.md)가 소유한다.
+
+현재 public `npx` package와 AY-PLE first-party root license는 없으며, verified Runtime도 archive boundary와 native `codex-code-mode-host`·`rg`·`zsh`의 component별 license·NOTICE evidence가 미완성이다. 따라서 이 결과는 publication 허가가 아니다. Third-party 실제 재배포 조건과 fail-closed notice checklist는 [Ticket 003a](003a-third-party-redistribution-evidence.md), public clean snapshot·first-party license·brand provenance는 [Ticket 005](005-public-repository-authority-and-license.md), package·Runtime·publication artifact gate는 Tickets 006·007·015로 넘겼다.
