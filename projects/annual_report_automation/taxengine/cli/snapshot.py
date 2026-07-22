@@ -1,6 +1,8 @@
 """DB 기반 세무조정 계산 + 계산스냅샷 저장 CLI.
 
-    python -m taxengine.cli.snapshot --db PATH --fiscal-year-id N [--engine-version STR]
+    python -m taxengine.cli.snapshot --fiscal-year-id N [--db PATH|URL] [--engine-version STR]
+
+--db를 생략하면 환경변수를 따른다(TAXWIZ_DATABASE_URL 우선, 없으면 TAXWIZ_DB — conn.기본_대상).
 
 taxengine.cli.migrate로 이관해 둔 사업연도를 DB에서 읽어(taxengine.db.reader) 계산하고
 (pipeline.실행_데이터), 결과를 계산스냅샷 1행으로 append한다(taxengine.db.snapshot) —
@@ -8,8 +10,8 @@ CSV 경로의 `python -m taxengine.cli.reproduce`와 같은 계산을 DB 입력�
 """
 
 import sys
-from pathlib import Path
 
+from taxengine.db.conn import 기본_대상
 from taxengine.db.migrate import db_열기
 from taxengine.db.reader import 로드
 from taxengine.db.snapshot import 저장
@@ -20,8 +22,8 @@ def won(n) -> str:
     return f"{int(n):,}"
 
 
-def run(db_path: str, 사업연도id: int, 엔진버전: str | None) -> int:
-    conn = db_열기(Path(db_path))
+def run(db_대상, 사업연도id: int, 엔진버전: str | None) -> int:
+    conn = db_열기(db_대상)
     try:
         data = 로드(conn, 사업연도id)
         out = 실행_데이터(data)
@@ -64,12 +66,11 @@ def main():
     def opt(flag):
         return argv[argv.index(flag) + 1] if flag in argv else None
 
-    db_path = opt("--db")
     fyid = opt("--fiscal-year-id")
-    if not db_path or not fyid:
+    if not fyid:
         print(__doc__)
         sys.exit(2)
-    sys.exit(run(db_path, int(fyid), opt("--engine-version")))
+    sys.exit(run(opt("--db") or 기본_대상(), int(fyid), opt("--engine-version")))
 
 
 if __name__ == "__main__":

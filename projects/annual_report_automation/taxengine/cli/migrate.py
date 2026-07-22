@@ -3,7 +3,8 @@
     python -m taxengine.cli.migrate --company "회사명" 폴더1 [폴더2 ...]
     python -m taxengine.cli.migrate --company-id 1 --owner-email a@b.com 폴더3
 
-    --db PATH          DB 파일 경로 (기본 taxengine/db/taxwiz.db, 없으면 schema.sql로 새로 만듦)
+    --db PATH|URL      DB 파일 경로 또는 postgres:// URL (기본: TAXWIZ_DATABASE_URL 환경변수,
+                        그것도 없으면 taxengine/db/taxwiz.db — SQLite는 없으면 schema.sql로 새로 만듦)
     --company 이름      새 회사를 만들어 이관
     --company-id ID     기존 회사id에 이어붙임 (연도가 자동으로 전기와 연결됨)
     --owner-email 이메일  이 회사의 소유자로 연결할 사용자 (없으면 사용자 연결 생략)
@@ -16,6 +17,7 @@
 import sys
 from pathlib import Path
 
+from taxengine.db.conn import 기본_대상
 from taxengine.db.migrate import db_열기, 이관
 
 _값있는_플래그 = {"--db", "--company", "--company-id", "--owner-email"}
@@ -52,8 +54,8 @@ def run(argv: list[str]) -> int:
         print("⚠️ --company(새 회사) 또는 --company-id(기존 회사) 중 정확히 하나를 지정하세요.")
         return 2
 
-    db_path = Path(값.get("--db") or "taxengine/db/taxwiz.db")
-    conn = db_열기(db_path)
+    대상 = 값.get("--db") or 기본_대상()  # 문자열 postgres:// URL이면 Postgres, 아니면 SQLite 경로
+    conn = db_열기(대상)
     try:
         결과 = 이관(
             conn, [Path(d) for d in dirs],
@@ -69,7 +71,9 @@ def run(argv: list[str]) -> int:
         conn.close()
 
     태그 = "[dry-run] " if dry_run else ""
-    print(f"\n  {태그}DB: {db_path}")
+    # URL에는 비밀번호가 들어 있으므로 콘솔에 그대로 찍지 않는다
+    표시 = "Postgres(접속 URL은 표시 생략)" if str(대상).startswith("postgres") else str(대상)
+    print(f"\n  {태그}DB: {표시}")
     print(f"  회사id={결과['회사id']}, {len(결과['사업연도id들'])}개 사업연도 이관"
           f"{'(커밋 안 함)' if dry_run else ' 완료'}:")
     for d, 사업연도id in zip(결과["dirs"], 결과["사업연도id들"]):

@@ -13,6 +13,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["httpx>=0.28"]  # fastapi.testclient가 내부적으로 씀 (tests/test_api.py)
+postgres = ["psycopg[binary]>=3.2"]  # Supabase(Postgres) 접속용 — SQLite만 쓰면 설치 불필요
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

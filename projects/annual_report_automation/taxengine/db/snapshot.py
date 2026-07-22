@@ -7,9 +7,9 @@
 """
 
 import json
-import sqlite3
 from decimal import Decimal
 
+from taxengine.db.conn import 삽입후id, 연결
 from taxengine.money import 원
 
 
@@ -39,7 +39,7 @@ def _정답대조(r: dict, 정답: dict | None) -> tuple[int | None, int | None]
 
 
 def 저장(
-    conn: sqlite3.Connection, 사업연도id: int, out: dict,
+    conn: 연결, 사업연도id: int, out: dict,
     *, 엔진버전: str | None = None, 입력해시: str | None = None,
 ) -> int:
     """pipeline.실행_데이터()의 반환값을 계산스냅샷 1행으로 저장하고 새 id를 돌려준다.
@@ -50,7 +50,8 @@ def 저장(
     최저한세 = r["최저한세"]
     일치, 전체 = _정답대조(r, out.get("정답"))
 
-    cur = conn.execute(
+    return 삽입후id(
+        conn,
         """INSERT INTO 계산스냅샷 (
             사업연도id, 엔진버전, 입력해시,
             당기순이익, 가산조정, 차감조정, 각사업연도소득, 이월결손금공제, 과세표준, 산출세액,
@@ -70,4 +71,3 @@ def 저장(
             json.dumps(out, ensure_ascii=False, default=_json_안전),
         ),
     )
-    return cur.lastrowid
