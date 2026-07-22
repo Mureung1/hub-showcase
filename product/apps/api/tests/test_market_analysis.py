@@ -220,6 +220,49 @@ def test_market_analysis_endpoint_reads_the_runtime_database(tmp_path: Path) -> 
     engine.dispose()
 
 
+def test_store_trend_returns_actual_quarters_without_inventing_months(tmp_path: Path) -> None:
+    canonical_database = tmp_path / "canonical.db"
+    build_market_database(canonical_database)
+    with sqlite3.connect(canonical_database) as connection:
+        for period, opening, closure, stores in (("20252", 5, 2, 21), ("20253", 3, 4, 20)):
+            connection.execute(
+                "INSERT INTO store_metrics VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    "m2",
+                    period,
+                    "CS100010",
+                    "커피-음료",
+                    stores,
+                    stores - 1,
+                    2,
+                    5,
+                    opening,
+                    3,
+                    closure,
+                    "stores",
+                ),
+            )
+        connection.commit()
+
+    runtime_url = f"sqlite:///{tmp_path / 'runtime.db'}"
+    command.upgrade(alembic_config(runtime_url), "head")
+    engine = create_database_engine(runtime_url, require_postgresql=False)
+    seed_canonical(canonical_database, engine)
+    factory = create_session_factory(engine)
+    client = TestClient(create_app(Settings(_env_file=None), search_session_factory=factory))
+
+    response = client.get("/api/v1/markets/m2/store-trend", params={"category": "카페"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert [point["period"] for point in payload["points"]] == ["20251", "20252", "20253"]
+    assert [point["net_opening_count"] for point in payload["points"]] == [1, 3, -1]
+    assert all(point["unit"] == "stores_per_quarter" for point in payload["points"])
+    assert payload["operating_duration_status"] == "unavailable"
+    assert "영업 시작일" in payload["operating_duration_reason"]
+    engine.dispose()
+
+
 def test_market_analysis_endpoint_hides_runtime_database_errors(tmp_path: Path) -> None:
     engine = create_database_engine(
         f"sqlite:///{tmp_path / 'missing-analysis-schema.db'}", require_postgresql=False

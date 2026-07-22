@@ -104,6 +104,30 @@ class AnalysisPeriodsResponse(BaseModel):
     policy: Literal["latest_complete_quarter"] = "latest_complete_quarter"
 
 
+class MarketStoreTrendPoint(BaseModel):
+    period: str
+    opening_count: int
+    closure_count: int
+    net_opening_count: int
+    category_store_count: int
+    source_name: str
+    source_url: str
+    source_type: Literal["official"] = "official"
+    unit: Literal["stores_per_quarter"] = "stores_per_quarter"
+    method: Literal["sum_official_category_rows"] = "sum_official_category_rows"
+
+
+class MarketStoreTrendResponse(BaseModel):
+    market_id: str
+    category: Category
+    points: list[MarketStoreTrendPoint]
+    operating_duration_status: Literal["unavailable"] = "unavailable"
+    operating_duration_reason: str = (
+        "현재 canonical 점포 원본에는 상권에 연결된 개별 영업 시작일이 없어 "
+        "영업기간 분포를 계산할 수 없습니다."
+    )
+
+
 MIN_RANKING_SAMPLE = 3
 RANKING_METRICS = (
     ("category_store_count", "동일 업종 점포", "개"),
@@ -550,6 +574,56 @@ class MarketAnalysisRepository:
         if not periods:
             raise LookupError("No complete analysis period is available.")
         return AnalysisPeriodsResponse(periods=periods, default_period=periods[0])
+
+    def store_trend(self, market_id: str, category: Category) -> MarketStoreTrendResponse:
+        statement = (
+            select(
+                StoreMetric.period.label("period"),
+                func.sum(func.coalesce(StoreMetric.opening_count, 0)).label("opening_count"),
+                func.sum(func.coalesce(StoreMetric.closure_count, 0)).label("closure_count"),
+                func.sum(func.coalesce(StoreMetric.similar_store_count, 0)).label(
+                    "category_store_count"
+                ),
+                func.max(StoreMetric.source_snapshot_id).label("source_snapshot_id"),
+            )
+            .where(
+                StoreMetric.market_code == market_id,
+                StoreMetric.category_code.in_(CATEGORY_CODES[category]),
+            )
+            .group_by(StoreMetric.period)
+            .order_by(StoreMetric.period)
+        )
+        rows = list(self.session.execute(statement))
+        if not rows:
+            raise LookupError((market_id, category))
+        source_ids = {str(row.source_snapshot_id) for row in rows if row.source_snapshot_id}
+        sources = {
+            source.snapshot_id: (
+                SOURCE_LABELS.get(source.dataset, source.dataset),
+                source.source_url,
+            )
+            for source in self.session.scalars(
+                select(DataSource).where(DataSource.snapshot_id.in_(source_ids))
+            )
+        }
+        fallback = ("서울 열린데이터광장", "https://data.seoul.go.kr/")
+        points = []
+        for row in rows:
+            source = sources.get(str(row.source_snapshot_id), fallback)
+            opening = int(row.opening_count or 0)
+            closure = int(row.closure_count or 0)
+            points.append(
+                MarketStoreTrendPoint(
+                    period=str(row.period),
+                    opening_count=opening,
+                    closure_count=closure,
+                    net_opening_count=opening - closure,
+                    category_store_count=int(row.category_store_count or 0),
+                    source_name=source[0],
+                    source_url=source[1],
+                )
+            )
+        return MarketStoreTrendResponse(market_id=market_id, category=category, points=points)
 
     def _category_rows(self, period: str, codes: tuple[str, ...]) -> list[AnalysisRow]:
         statement = (

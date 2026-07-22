@@ -9,6 +9,7 @@ from localtwin_api.market_analysis import (
     AnalysisPeriodsResponse,
     MarketAnalysisRepository,
     MarketAnalysisResponse,
+    MarketStoreTrendResponse,
 )
 from localtwin_api.product_catalog import Category
 
@@ -46,6 +47,20 @@ def create_analysis_router(get_session_factory: Callable[[], sessionmaker[Sessio
         except (RuntimeError, SQLAlchemyError):
             raise HTTPException(
                 status_code=503, detail="Market analysis service is unavailable."
+            ) from None
+
+    @router.get("/api/v1/markets/{market_id}/store-trend", response_model=MarketStoreTrendResponse)
+    def market_store_trend(market_id: str, category: Category) -> MarketStoreTrendResponse:
+        try:
+            with get_session_factory()() as session:
+                return MarketAnalysisRepository(session).store_trend(market_id, category)
+        except LookupError:
+            raise HTTPException(
+                status_code=404, detail="Market store trend is not available."
+            ) from None
+        except (RuntimeError, SQLAlchemyError):
+            raise HTTPException(
+                status_code=503, detail="Market store trend service is unavailable."
             ) from None
 
     return router

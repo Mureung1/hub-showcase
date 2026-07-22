@@ -354,6 +354,21 @@ polygon 안으로 제한하지만 원은 상권 경계를 넘을 수 있으며, 
 
 ## 11. 구현 우선순위
 
+### 10.1 실제 분기 개·폐업 변화 API
+
+`GET /api/v1/markets/{market_id}/store-trend?category=카페`는 서울시 상권분석서비스의
+`store_metrics`에 실제로 존재하는 분기만 오름차순으로 반환한다. 각 점에는 개업·폐업·순증,
+동일 업종 점포 수, source·period·unit·집계 방법이 포함된다. 없는 월을 만들거나 0으로
+보간하지 않는다.
+
+현재 `permit_businesses`는 전체 인허가 snapshot과 상권 공간 연결이 아직 끝나지 않았으므로
+개별 점포 영업기간 분포를 반환하지 않는다. 응답은 `operating_duration_status=unavailable`과
+그 이유를 함께 반환한다. 이 상태는 `0일`이나 `0건`과 다르며, 전체 인허가 적재(DATA-008)와
+공간 연결 이후에만 실제 값으로 교체한다.
+
+이 API는 먼저 data contract를 검증하는 범위다. 기존 한국어/`/en` Inspector 화면의 표현은
+바꾸지 않는다.
+
 ### 필수 지표
 
 ```text
