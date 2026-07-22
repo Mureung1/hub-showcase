@@ -1,5 +1,22 @@
 import * as cheerio from "cheerio"
 import { BROWSER_USER_AGENT } from "../constants/httpHeaders.js"
+import { CNBC_BODY_SELECTOR } from "../constants/scraping.js"
+
+// 사이트별 본문 마크업이 제각각이라 여러 셀렉터를 순서대로 시도해, 처음으로
+// 결과가 나오는 셀렉터를 채택한다. CNBC 전용 셀렉터를 앞에 두고, 매치가
+// 없으면(다른 출처거나 마크업이 다르면) 일반 article/main 셀렉터로 폴백한다.
+const PARAGRAPH_SELECTORS = [`${CNBC_BODY_SELECTOR} p`, "article p, main p"]
+
+function extractParagraphs($) {
+  for (const selector of PARAGRAPH_SELECTORS) {
+    const paragraphs = $(selector)
+      .map((_, el) => $(el).text().trim())
+      .get()
+      .filter((text) => text.length > 40)
+    if (paragraphs.length > 0) return paragraphs
+  }
+  return []
+}
 
 // 스크래핑이 막히거나(403/paywall) 페이지 구조가 달라 파싱에 실패해도 데모가
 // 끊기지 않도록 반환하는 더미 기사. prototype/02_reader.html과 동일한 본문.
@@ -24,10 +41,7 @@ export async function parseArticle(url) {
     const html = await res.text()
     const $ = cheerio.load(html)
     const title = $("h1").first().text().trim()
-    const paragraphs = $("article p, main p")
-      .map((_, el) => $(el).text().trim())
-      .get()
-      .filter((text) => text.length > 40)
+    const paragraphs = extractParagraphs($)
 
     if (!title || paragraphs.length === 0) {
       throw new Error("parsed page had no usable title/paragraphs")
