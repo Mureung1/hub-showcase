@@ -83,6 +83,14 @@ function MentorHomePage() {
     }
   };
 
+  const handleMeetingUpdated = (applicationId, updatedMeeting) => {
+    setApplications((currentApplications) =>
+      currentApplications.map((application) =>
+        application.id === applicationId
+          ? { ...application, meeting: updatedMeeting }
+          : application));
+  };
+
   const handleLogout = async () => {
     await logout();
     navigate(routePaths.landing, { replace: true });
@@ -156,6 +164,7 @@ function MentorHomePage() {
                   isRejecting={rejectingApplicationId === application.id}
                   key={application.id}
                   onAccept={handleAccept}
+                  onMeetingUpdated={handleMeetingUpdated}
                   onReject={handleReject}
                 />
               ))}

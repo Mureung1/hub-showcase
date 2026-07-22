@@ -201,27 +201,6 @@
   font-size: 17px;
 }
 
-.application-meeting-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-sm);
-}
-
-.application-meeting label {
-  display: grid;
-  gap: var(--space-xs);
-}
-
-.application-meeting-place {
-  grid-column: auto;
-}
-
-.application-meeting .field[readonly] {
-  color: var(--color-text-strong);
-  background: var(--color-bg-muted);
-  font-weight: var(--font-weight-bold);
-}
-
 .application-questionnaire {
   margin-top: var(--space-lg);
   border: 1px solid var(--color-border-light);
@@ -262,14 +241,6 @@
   .application-card-header {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .application-meeting-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .application-meeting-place {
-    grid-column: auto;
   }
 }
 

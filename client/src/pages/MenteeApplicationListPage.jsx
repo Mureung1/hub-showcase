@@ -48,6 +48,14 @@ function MenteeApplicationListPage() {
     [activeStatus, applications],
   );
 
+  const handleMeetingUpdated = (applicationId, updatedMeeting) => {
+    setApplications((currentApplications) =>
+      currentApplications.map((application) =>
+        application.id === applicationId
+          ? { ...application, meeting: updatedMeeting }
+          : application));
+  };
+
   return (
     <div className="mentee-applications-page">
       <header className="page-header mentee-applications-header">
@@ -95,7 +103,11 @@ function MenteeApplicationListPage() {
           ) : filteredApplications.length > 0 ? (
             <div className="stack">
               {filteredApplications.map((application) => (
-                <ApplicationCard application={application} key={application.id} />
+                <ApplicationCard
+                  application={application}
+                  key={application.id}
+                  onMeetingUpdated={handleMeetingUpdated}
+                />
               ))}
             </div>
           ) : (

@@ -1,3 +1,5 @@
+import MeetingScheduleEditor from "./MeetingScheduleEditor";
+
 const statusLabels = {
   pending: "대기",
   confirmed: "확정",
@@ -25,6 +27,7 @@ function MentorApplicationCard({
   isAccepting,
   isRejecting,
   onAccept,
+  onMeetingUpdated,
   onReject,
 }) {
   const { applicationStatus, mentee, mentorStatus, questionnaire } = application;
@@ -111,29 +114,13 @@ function MentorApplicationCard({
         </div>
       )}
 
-      {showsMeetingFields && (
+      {showsMeetingFields && application.meeting && (
         <section className="mentor-meeting-fields" aria-labelledby={`meeting-${application.id}`}>
           <h3 id={`meeting-${application.id}`}>면담 약속 정보</h3>
-          <div className="mentor-meeting-grid">
-            <label>
-              <span>약속 시간</span>
-              <input
-                className="field"
-                defaultValue={application.meeting?.time ?? ""}
-                placeholder="예: 2026년 7월 20일 19:00"
-                type="text"
-              />
-            </label>
-            <label>
-              <span>장소</span>
-              <input
-                className="field"
-                defaultValue={application.meeting?.place ?? ""}
-                placeholder="예: 온라인 또는 교내 라운지"
-                type="text"
-              />
-            </label>
-          </div>
+          <MeetingScheduleEditor
+            meeting={application.meeting}
+            onUpdated={(updatedMeeting) => onMeetingUpdated(application.id, updatedMeeting)}
+          />
         </section>
       )}
     </article>

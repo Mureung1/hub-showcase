@@ -234,17 +234,6 @@
   font-size: 17px;
 }
 
-.mentor-meeting-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-sm);
-}
-
-.mentor-meeting-grid label {
-  display: grid;
-  gap: var(--space-xs);
-}
-
 @media (max-width: 760px) {
   .mentor-home-header-actions {
     display: grid;
@@ -261,8 +250,7 @@
     flex-direction: column;
   }
 
-  .mentor-applicant-info,
-  .mentor-meeting-grid {
+  .mentor-applicant-info {
     grid-template-columns: 1fr;
   }
 

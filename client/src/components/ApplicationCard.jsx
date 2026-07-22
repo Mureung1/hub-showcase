@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import MeetingScheduleEditor from "./MeetingScheduleEditor";
 import { routePaths } from "../routes/routePaths";
 
 const statusLabels = {
@@ -52,7 +53,7 @@ function QuestionnaireDetails({ questionnaire }) {
   );
 }
 
-function ApplicationCard({ application }) {
+function ApplicationCard({ application, onMeetingUpdated }) {
   const hasAgreedMeeting = agreedStatuses.has(application.status);
   const applicationMentors = application.mentors ?? [];
   const visibleMentors = hasAgreedMeeting
@@ -95,16 +96,10 @@ function ApplicationCard({ application }) {
       {hasAgreedMeeting && application.meeting && (
         <section className="application-meeting" aria-labelledby={`meeting-${application.id}`}>
           <h3 id={`meeting-${application.id}`}>합의된 면담 정보</h3>
-          <div className="application-meeting-grid">
-            <label>
-              <span>면담 시간</span>
-              <input className="field" readOnly value={application.meeting.time} />
-            </label>
-            <label className="application-meeting-place">
-              <span>장소</span>
-              <input className="field" readOnly value={application.meeting.place} />
-            </label>
-          </div>
+          <MeetingScheduleEditor
+            meeting={application.meeting}
+            onUpdated={(updatedMeeting) => onMeetingUpdated(application.id, updatedMeeting)}
+          />
         </section>
       )}
 
