@@ -168,7 +168,7 @@ class HubServerApplicationTests {
     }
 
     @Test
-    void updatesStatusToCompletedWithOptionalReviewAndKeepsBookmark() throws Exception {
+    void completesAndResumesBookWithoutLosingReviewOrBookmark() throws Exception {
         Long userId = userRepository.save(new User("다정", Instant.now())).getId();
         Long bookId = bookRepository.save(new Book(userId, "독서 기록", null, 20, Instant.now())).getId();
 
@@ -208,6 +208,16 @@ class HubServerApplicationTests {
                         .param("status", "COMPLETED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.books.length()").value(1));
+
+        mockMvc.perform(patch("/api/books/{bookId}/status", bookId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "userId": %d, "status": "READING" }
+                                """.formatted(userId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("READING"))
+                .andExpect(jsonPath("$.finalReview").value("끝까지 읽고 나서야 전체 흐름이 보였어요."))
+                .andExpect(jsonPath("$.nextStartPage").value(33));
     }
 
     @Test

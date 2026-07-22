@@ -93,8 +93,8 @@ public class BookService {
                 book.archive();
             }
             case READING -> {
-                require(book.getStatus() == BookStatus.ARCHIVED,
-                        "보관한 책만 다시 읽는 중으로 옮길 수 있어요.");
+                require(book.getStatus() == BookStatus.ARCHIVED || book.getStatus() == BookStatus.COMPLETED,
+                        "완독하거나 보관한 책만 다시 읽는 중으로 옮길 수 있어요.");
                 require(finalReview == null, "읽는 중으로 옮길 때는 완독 서평을 저장할 수 없어요.");
                 book.resume();
             }
