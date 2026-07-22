@@ -39,3 +39,61 @@ flowchart TD
 ## 핵심 기능 2개
   1. 과목별 정보 입력 기능
   2. 공부 우선순위 계산 및 추천 기능
+
+---
+
+## 시스템 구조 (데이터 흐름)
+
+화면(React), 계산 API(Express), 데이터 저장소(SQLite)가 어떻게 연결되고 데이터가 어디로 흐르는지를 나타낸다.
+실선은 정상 흐름, 점선은 서버가 없을 때의 폴백 경로다. 초록색으로 표시한 곳(`localStorage`, `SQLite`)이 데이터가 저장되는 지점이다.
+
+```mermaid
+flowchart TB
+  User(["사용자"])
+
+  subgraph BROWSER["브라우저 · React (Vite)"]
+    direction TB
+    Pages["SubjectInputPage · ResultScreen<br/>과목 입력 · 우선순위 결과 화면"]
+    App["App.jsx<br/>과목 · 성향 상태 관리"]
+    SubjApi["subjectsApi.js"]
+    PrioApi["priorityApi.js"]
+    Calc["priorityCalculator.js<br/>로컬 점수 계산 · 폴백"]
+    LS[("localStorage<br/>폴백 캐시 · 성향")]
+  end
+
+  subgraph SERVER["Express API 서버 · localhost:3001"]
+    direction TB
+    SubR["routes/subjects<br/>→ controller → service"]
+    PriR["routes/priority → controller → service<br/>우선순위 점수 계산"]
+  end
+
+  DB[("SQLite · server/data/app.db<br/>subjects 테이블")]
+
+  User --> Pages
+  Pages --> App
+  App --> Pages
+  App <-->|"과목 캐시 · 성향"| LS
+  App -->|"과목 추가 · 수정 · 삭제"| SubjApi
+  App -->|"점수 계산 요청"| PrioApi
+
+  SubjApi -->|"/api/subjects<br/>GET · POST · PUT · DELETE"| SubR
+  PrioApi -->|"POST /api/priority"| PriR
+  SubR <-->|"저장 · 조회"| DB
+
+  SubjApi -.->|"서버 없으면"| LS
+  PrioApi -.->|"서버 없으면"| Calc
+  Calc -.-> App
+
+  classDef store fill:#ecfdf5,stroke:#10b981,color:#065f46;
+  class LS,DB store;
+```
+
+> Vite dev/preview가 `/api` 요청을 `localhost:3001`로 프록시한다.
+
+### 데이터 흐름 요약
+
+| 흐름 | 경로 | 비고 |
+|---|---|---|
+| 과목 저장·조회 | App → `subjectsApi` → `/api/subjects` → controller·service → **SQLite** | 재시작·새로고침에도 유지 |
+| 우선순위 계산 | App → `priorityApi` → `POST /api/priority` → `priorityService` | 6개 요인 가중 합산, DB 미접근 |
+| 폴백 | 서버 없으면 과목은 `localStorage`, 점수는 `priorityCalculator` | 서버 없는 정적 배포에서도 동작 |
