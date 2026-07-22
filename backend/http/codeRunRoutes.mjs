@@ -1,4 +1,4 @@
-import { runJavaScriptCode } from '../modules/code-runner/codeRunner.mjs'
+import { runJavaScriptCode, runShellCode } from '../modules/code-runner/codeRunner.mjs'
 
 export async function handleCodeRunApiRequest({ method, url, bodyText }) {
   if (method === 'POST' && url === '/api/code/run') {
@@ -11,6 +11,11 @@ export async function handleCodeRunApiRequest({ method, url, bodyText }) {
 
       if (!language || language === 'javascript' || language === 'jsx') {
         const result = await runJavaScriptCode(code, { previewOnly: language === 'jsx' })
+        return { status: 200, body: result }
+      }
+
+      if (language === 'shell') {
+        const result = await runShellCode(code)
         return { status: 200, body: result }
       }
 

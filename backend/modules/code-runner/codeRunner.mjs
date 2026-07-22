@@ -57,3 +57,46 @@ function createPreviewRunResult(code) {
     error: hasReturn ? undefined : 'Preview target did not include a renderable return block.',
   }
 }
+
+export async function runShellCode(code) {
+  const logs = []
+  const lines = code
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('#'))
+
+  for (const line of lines) {
+    if (line.startsWith('echo ')) {
+      logs.push(line.slice(5).replace(/^['"]|['"]$/g, ''))
+      continue
+    }
+
+    if (line === 'pwd') {
+      logs.push('/workspace/icu-practice')
+      continue
+    }
+
+    if (line === 'ls' || line === 'ls -la') {
+      logs.push('total 24')
+      logs.push('drwxr-xr-x  4 learner learner 4096 .')
+      logs.push('-rw-r--r--  1 learner learner  420 ops-checklist.sh')
+      logs.push('-rw-r--r--  1 learner learner  216 mission-notes.md')
+      continue
+    }
+
+    if (line === 'ps aux | head') {
+      logs.push('USER       PID %CPU %MEM COMMAND')
+      logs.push('learner      1  0.0  0.1 node /workspace/server.js')
+      logs.push('learner     12  0.0  0.0 sh ops-checklist.sh')
+      continue
+    }
+
+    logs.push(`$ ${line}`)
+  }
+
+  return {
+    success: true,
+    logs: logs.length ? logs : ['Shell script completed.'],
+    result: null,
+  }
+}
