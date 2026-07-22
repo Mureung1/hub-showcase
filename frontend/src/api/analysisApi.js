@@ -22,3 +22,65 @@ export async function analyzeNotice(text) {
 
   return data;
 }
+
+export async function saveEvents(events) {
+  const token = getToken();
+
+  const response = await fetch(`${API_BASE_URL}/api/events`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ events }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "일정 저장 실패");
+  }
+
+  return data;
+}
+
+export async function getEvents() {
+  const token = getToken();
+
+  const response = await fetch(`${API_BASE_URL}/api/events`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "일정 조회 실패");
+  }
+
+  return data;
+}
+
+export async function checkDuplicate(events) {
+  const token = getToken();
+
+  const response = await fetch(`${API_BASE_URL}/api/events/check-duplicate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ events }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "중복 검사 실패");
+  }
+
+  return data;
+}

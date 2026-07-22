@@ -36,7 +36,7 @@ database.exec(`
 
   CREATE TABLE IF NOT EXISTS events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    notice_id INTEGER NOT NULL,
+    notice_id INTEGER,
     user_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     start_date TEXT,
