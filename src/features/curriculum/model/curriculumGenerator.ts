@@ -81,7 +81,7 @@ const curriculumTracks: Record<CurriculumTrackId, CurriculumTrackConfig> = {
   frontend: {
     track: frontendTrack as RawCurriculumTrack,
     keywords: /(frontend|front-end|프론트|react|리액트|html|css|javascript|자바스크립트)/i,
-    defaultFileName: 'index.html',
+    defaultFileName: 'App.jsx',
   },
   backend: {
     track: backendTrack as RawCurriculumTrack,
@@ -115,6 +115,11 @@ function generateCurriculumPlan(goal: string): GeneratedCurriculumPlan {
   const startLevel = config.track.levels[0]
   const firstModule = startLevel.modules[0]
 
+  let defaultFileName = config.defaultFileName
+  if (/(docker|도커)/i.test(normalizedGoal)) {
+    defaultFileName = 'Dockerfile'
+  }
+
   return {
     id: `${config.track.trackId}-curriculum-plan`,
     goal: normalizedGoal,
@@ -122,7 +127,7 @@ function generateCurriculumPlan(goal: string): GeneratedCurriculumPlan {
     summary: `${config.track.description} 먼저 ${startLevel.goal}`,
     estimatedDuration: `${getTotalEstimatedWeeks(config.track)}주 로드맵`,
     focusRole: config.track.trackName,
-    todayMission: createTodayMission(firstModule, config.defaultFileName),
+    todayMission: createTodayMission(firstModule, defaultFileName),
     steps: startLevel.modules.map((module, index) => createCurriculumStep(module, startLevel, index)),
     sources: createCurriculumSources(startLevel),
   }

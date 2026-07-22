@@ -2,40 +2,10 @@
 
 ## 목적
 
-데스크톱 앱 전환 전에도 실제 Curriculum Planner Agent를 검증할 수 있도록 React 화면과 LLM 호출 사이에 서버 API 경계를 둡니다. React는 API key, provider, model 설정을 직접 알지 않고 `POST /api/curriculum/recommend`만 호출합니다.
+Curriculum Agent API는 React 화면이 LLM provider key를 직접 다루지 않고, Node backend를 통해 학습 목표 기반 커리큘럼을 추천받기 위한 서버 경계입니다.
 
-## v1 선택
+현재 v1은 Express 기반 Node backend에서 동작합니다. React는 `src/features/curriculum/api/curriculumClient.ts`를 통해 mock 또는 server mode로 커리큘럼을 요청합니다.
 
-v1 실제 호출 위치는 Node.js backend입니다.
-
-- Node.js backend는 이후 인증, 학습 기록 DB, queue, worker, 코드 실행, RAG, Electron 연동을 같은 제품 서버 구조 안에서 관리하기에 적합합니다.
-- Supabase Edge Function은 빠른 배포 대안으로만 남깁니다. 현재 ICU의 기본 계획에는 포함하지 않습니다.
-
-현재 React mock 단계에서는 `src/features/curriculum/api/curriculumClient.ts`가 mock adapter로 동작합니다. 서버가 준비되면 같은 파일의 server mode가 `POST /api/curriculum/recommend`를 호출하도록 전환합니다.
-
-## Node Backend 구현 계획
-
-1. 서버 앱 경계 만들기
-   - React/Vite 앱과 분리된 Node.js backend를 둡니다.
-   - 브라우저는 `/api/curriculum/recommend`만 호출하고 provider, model, API key를 알지 않습니다.
-   - 서버 프레임워크는 Express를 사용합니다. React mock 화면은 API만 호출하고, route handler는 request validation, core 호출, response mapping만 담당합니다.
-
-2. agent core 재사용
-   - `backend/modules/curriculum`를 CLI가 아닌 API route에서도 호출할 수 있게 유지합니다.
-   - route handler는 request validation, auth/session 확인, core 호출, response mapping만 담당합니다.
-   - LLM 응답 검증과 fallback 정규화는 core 또는 agent service 계층에 둡니다.
-   - `shared/curriculum/*.json`은 학습 순서와 module 후보를 제공하고, `data/*chunks.jsonl`은 공식 문서 근거 검색에만 사용합니다.
-   - Docker JSONL은 `backend/modules/knowledge` adapter로 읽고, React PDF는 텍스트 추출/chunking 이후 같은 JSONL 형식으로 편입합니다.
-
-3. 환경 변수와 보안
-   - `GEMINI_API_KEY`, `GEMINI_MODEL`, provider 설정은 Node backend 환경 변수에서만 읽습니다.
-   - `.env`, `src/.env`, 서버 secret 파일은 커밋하지 않습니다.
-   - 실패 로그에는 API key, 원문 prompt, 민감한 사용자 입력을 그대로 남기지 않습니다.
-
-4. 이후 확장
-   - 사용자별 학습 기록 저장이 필요해지면 DB schema와 auth를 backend에 붙입니다.
-   - 긴 작업은 queue/job으로 분리하고 React는 job status를 조회합니다.
-   - RAG, 문서 chunking, embedding이 커지면 Python worker 또는 별도 Agent Service로 분리합니다.
 ## Endpoint
 
 ```http
@@ -53,17 +23,9 @@ type CurriculumRecommendationRequest = {
 
 규칙:
 
-- `goal`은 사용자가 Today Hub에서 입력한 학습 목표입니다.
-- 빈 문자열은 클라이언트에서 먼저 막습니다.
-- 서버는 trim된 goal을 기준으로 agent를 호출합니다.
-
-예시:
-
-```json
-{
-  "goal": "백엔드 개발자가 되고 싶어"
-}
-```
+- `goal`은 Today Hub에서 사용자가 입력한 학습 목표입니다.
+- 빈 문자열은 클라이언트와 서버에서 모두 거부합니다.
+- API key, provider, model 설정은 브라우저에 노출하지 않습니다.
 
 ## Response
 
@@ -73,7 +35,7 @@ type CurriculumRecommendationResponse = {
 }
 ```
 
-`GeneratedCurriculumPlan`은 Today Hub와 Workspace가 이미 사용하는 화면 contract를 유지합니다.
+`GeneratedCurriculumPlan`은 Today Hub와 Workspace가 함께 사용하는 화면 contract입니다.
 
 ```ts
 type GeneratedCurriculumPlan = {
@@ -94,47 +56,53 @@ type GeneratedCurriculumPlan = {
 }
 ```
 
-예시:
+## 현재 구현 상태
 
-```json
-{
-  "plan": {
-    "id": "backend-curriculum-plan",
-    "goal": "백엔드 개발자가 되고 싶어",
-    "title": "백엔드 개발자 커리큘럼",
-    "summary": "HTTP 요청-응답 흐름부터 시작합니다.",
-    "estimatedDuration": "15주 로드맵",
-    "focusRole": "백엔드 개발자",
-    "todayMission": {
-      "title": "HTTP 기본 실습",
-      "detail": "간단한 GET 요청을 처리하는 서버를 작성합니다.",
-      "durationMinutes": 30,
-      "fileName": "main.py"
-    },
-    "steps": [],
-    "sources": []
-  }
-}
+- backend entrypoint는 `backend/http/server.mjs`입니다.
+- route handler는 `backend/http/curriculumRoutes.mjs`입니다.
+- application use case는 `backend/modules/curriculum/application/recommendCurriculum.mjs`입니다.
+- curriculum catalog는 `shared/curriculum/*.json`에서 읽습니다.
+- Gemini provider는 `backend/modules/curriculum/adapters/geminiCurriculumRecommendationProvider.mjs`에 있습니다.
+- JSONL knowledge loader는 `backend/modules/knowledge/adapters/jsonlKnowledgeRepository.mjs`에 있습니다.
+- React, Docker 같은 공식 문서 chunk는 추천 근거 context로 사용합니다.
+
+## Today Hub와 Workspace 연결
+
+1. Today Hub에서 사용자가 목표를 입력합니다.
+2. `recommendCurriculum({ goal })`이 mock 또는 server mode로 실행됩니다.
+3. server mode에서는 `/api/curriculum/recommend`를 호출합니다.
+4. 응답받은 `plan`을 `icu.generatedCurriculum` snapshot으로 저장합니다.
+5. 사용자가 `추천 미션 시작`을 누르면 `/workspace?mission=generated-first-mission`으로 이동합니다.
+6. Workspace는 같은 snapshot을 읽어 오늘 미션, 단계 목록, 추천 근거와 출처를 표시합니다.
+
+## Knowledge Data 정책
+
+- `shared/curriculum/*.json`은 커리큘럼 track/level/module 구조의 기준 데이터입니다.
+- `data/*.jsonl`은 공식 문서 chunk 기반 추천 근거입니다.
+- 현재 구현은 full RAG가 아니라, Agent 추천 품질을 높이기 위한 lightweight knowledge context 단계입니다.
+- React JSONL은 `{ title, content, url }` 형태도 처리합니다.
+- React 학습 목표에서는 deprecated/legacy API보다 `/learn/` 문서를 우선하도록 scoring을 조정했습니다.
+
+## 환경 변수
+
+```env
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-flash-latest
+CURRICULUM_AGENT_PORT=8787
+VITE_CURRICULUM_RECOMMENDATION_MODE=server
+VITE_ICU_API_MODE=server
 ```
 
-## Server Behavior
+주의:
 
-- 서버는 `backend/modules/curriculum`의 core 로직을 재사용합니다.
-- API key, provider, model 설정은 서버 환경 변수에서만 읽습니다.
-- Gemini Developer API가 v1 기본 provider이며, Vertex AI는 provider option으로 추가합니다.
-- 모델 응답은 `trackId`, `levelId`, `moduleIds`, `todayMission`, `sources`를 검증한 뒤 `GeneratedCurriculumPlan`으로 정규화합니다.
-- 실패 시 React가 기존 mock/fallback UX를 유지할 수 있도록 4xx/5xx와 짧은 error message를 반환합니다.
-
-## Client Integration
-
-- React는 `src/features/curriculum/api/curriculumClient.ts`를 통해서만 커리큘럼 생성을 요청합니다.
-- 현재 기본 mode는 `mock`입니다.
-- 서버 연결 시 Today Hub의 호출 옵션만 `server`로 바꿉니다.
-- 생성 결과는 `icu.generatedCurriculum` snapshot에 저장하고 Workspace는 이 snapshot을 우선 사용합니다.
+- 실제 provider key는 `.env` 또는 배포 secret store에만 둡니다.
+- `VITE_*` 이름으로 API key를 만들지 않습니다.
 
 ## 제외 범위
 
-- React 클라이언트에서 Gemini/Vertex/OpenAI API key를 읽는 구현
-- Supabase Edge Function, Electron, RAG의 실제 구현
-- 사용자별 DB 저장, 인증, queue, worker
+- 브라우저에서 직접 Gemini/Vertex/OpenAI key 사용
+- Supabase Edge Function 전환
+- full RAG 검색/embedding/vector store
+- 사용자별 DB 저장
 - multi-agent orchestration
+- Notion API 연동

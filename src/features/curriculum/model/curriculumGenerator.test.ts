@@ -6,7 +6,7 @@ describe('generateMockCurriculum', () => {
     const plan = generateMockCurriculum('React로 프론트엔드 개발자가 되고 싶어')
 
     expect(plan.title).toBe('프론트엔드 개발자 커리큘럼')
-    expect(plan.todayMission.fileName).toBe('index.html')
+    expect(plan.todayMission.fileName).toBe('App.jsx')
     expect(plan.steps.map((step) => step.title)).toContain('HTML 구조와 시맨틱')
     expect(plan.todayMission.detail).toBe('자기소개 페이지를 시맨틱 태그로만 구성해보기')
   })
