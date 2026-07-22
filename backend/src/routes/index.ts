@@ -2,6 +2,12 @@ import { Router } from 'express'
 import multer from 'multer'
 import { getItemDisposalRuleHandler, searchItemsHandler } from '../controllers/itemController'
 import { recognizeItemHandler } from '../controllers/recognizeController'
+import {
+  getDistrictsHandler,
+  getProvincesHandler,
+  getRegionRuleHandler,
+  getZoneOptionsHandler,
+} from '../controllers/regionController'
 import { AppError } from '../middlewares/errorHandler'
 
 export const router = Router()
@@ -27,3 +33,7 @@ router.get('/health', (_req, res) => {
 router.get('/items/search', searchItemsHandler)
 router.get('/items/:id/disposal-rule', getItemDisposalRuleHandler)
 router.post('/recognize', upload.single('photo'), recognizeItemHandler)
+router.get('/regions/provinces', getProvincesHandler)
+router.get('/regions/districts', getDistrictsHandler)
+router.get('/regions/zones', getZoneOptionsHandler)
+router.get('/regions/rules', getRegionRuleHandler)
