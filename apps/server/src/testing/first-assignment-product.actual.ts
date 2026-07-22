@@ -62,7 +62,8 @@ test(
       })
       const activeFixture = fixture
       const runtimeWorkspace = await realpath(activeFixture.runtimeWorkspace)
-      assert.equal(runtimeWorkspace, await realpath(materialized.workspaceRoot))
+      const activeWorkspace = await realpath(materialized.workspaceRoot)
+      assert.notEqual(runtimeWorkspace, activeWorkspace)
 
       try {
         await withTestServer({
@@ -295,6 +296,7 @@ test(
           const encodedFrames = JSON.stringify(frames)
           for (const managedPath of [
             materialized.workspaceRoot,
+            runtimeWorkspace,
             packageRoot,
             appDataRoot,
             activeFixture.providerJournalPath,

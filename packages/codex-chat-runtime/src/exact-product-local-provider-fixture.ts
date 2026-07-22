@@ -112,6 +112,10 @@ export async function startExactProductLocalProviderFixture(options: {
   let spawned: SpawnedCodexChatRuntime | undefined
   try {
     const roots = {
+      runtimeFallbackWorkspace: path.join(
+        fixtureRoot,
+        'runtime-fallback-workspace',
+      ),
       home: path.join(fixtureRoot, 'runtime-home'),
       codexHome: path.join(fixtureRoot, 'runtime-codex-home'),
       codexSqliteHome: path.join(fixtureRoot, 'runtime-codex-sqlite-home'),
@@ -124,6 +128,7 @@ export async function startExactProductLocalProviderFixture(options: {
       ),
     )
     const [
+      runtimeFallbackWorkspace,
       home,
       codexHome,
       codexSqliteHome,
@@ -134,6 +139,7 @@ export async function startExactProductLocalProviderFixture(options: {
     )
     assertDisjointRoots(activeWorkspace, [
       managedAppDataRoot,
+      runtimeFallbackWorkspace,
       home,
       codexHome,
       codexSqliteHome,
@@ -156,7 +162,7 @@ export async function startExactProductLocalProviderFixture(options: {
     }
     spawned = await startVerifiedCodexChatRuntime({
       bundle,
-      workspace: activeWorkspace,
+      workspace: runtimeFallbackWorkspace,
       environment,
       disableManagedConfigForTest: true,
       deadlines: {
@@ -174,7 +180,7 @@ export async function startExactProductLocalProviderFixture(options: {
     let disposePromise: Promise<void> | undefined
     return {
       runtime: activeRuntime.runtime,
-      runtimeWorkspace: activeWorkspace,
+      runtimeWorkspace: runtimeFallbackWorkspace,
       processGroupId,
       closed: activeRuntime.closed,
       providerJournalPath: activeProvider.journalPath,
