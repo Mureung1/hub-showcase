@@ -136,8 +136,8 @@ gantt
 
 ### 🔴 High — ③ 저장 및 공유
 
-- [ ] **Task 12: [BE/DB] 임시 저장 · 저장하기 (버전 히스토리 관리)**
-  - *상세:* `projects`에 `save_status`(`draft` / `saved`) 컬럼 추가 마이그레이션. 가설 인라인 수정 시 **기존 값을 `hypothesis_versions`에 `version`을 증가시켜 append한 뒤** `hypotheses`를 최신값으로 UPDATE — **덮어쓰기 금지, 히스토리 보존**. 엔드포인트: `POST /api/projects/:id/save`(임시저장/저장 전환), `GET /api/projects/:id/hypotheses/:hid/versions`.
+- [x] **Task 12: [BE/DB] 임시 저장 · 저장하기 (버전 히스토리 관리)**
+  - *상세:* `projects.save_status`(`draft` / `saved`) 컬럼 추가(마이그레이션 005). `PATCH /:id/hypotheses/:hid`(Task 10에서 만든 인라인 수정 라우트)에 버전 아카이빙을 연결 — cause/effect 변경 시 **덮어쓰기 직전** 현재 값을 `hypothesis_versions`에 `version = 기존 개수+1`로 INSERT한 뒤 `hypotheses`를 UPDATE. 엔드포인트: `POST /api/projects/:id/save`(임시저장/저장 전환), `GET /api/projects/:id/hypotheses/:hid/versions`(오래된 순).
   - *완료 조건:* 가설을 2회 수정한 뒤 `hypothesis_versions`에 이전 버전이 모두 남아 있고, 임시저장/저장 상태가 DB에 반영되어 재방문 시 복원됨.
 
 - [ ] **Task 13: [BE/FE] 결과 공유하기 (MD / URL / PDF)**

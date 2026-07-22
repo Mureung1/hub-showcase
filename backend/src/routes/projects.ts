@@ -462,9 +462,8 @@ interface PatchHypothesisBody {
 
 // PATCH /api/projects/:id/hypotheses/:hid — 가설 판단(유지/수정/폐기) 확정 및/또는 원인·결과 인라인 수정.
 // status·cause·effect 중 있는 필드만 갱신한다(부분 갱신).
-// 원인/결과 수정은 현재 덮어쓰기다 — 이전 값을 hypothesis_versions에 append하는 버전 히스토리는
-// 아직 붙이지 않았다(Task 12에서 연결 예정). Task 10 완료 조건("인라인 수정 진입점")은 편집·저장
-// 동작 자체를 요구하며, 버전 보존은 별도 완료 조건이다.
+// 원인/결과를 바꿀 때는 덮어쓰기 전에 현재 값을 hypothesis_versions에 append한다(Task 12,
+// 버전 히스토리는 append-only — 절대 UPDATE로 이전 값을 유실시키지 않는다).
 router.patch(
   '/:id/hypotheses/:hid',
   async (
@@ -503,6 +502,42 @@ router.patch(
       updatePayload.effect = effect.trim();
     }
 
+    // 원인/결과 중 하나라도 바뀌면, 덮어쓰기 직전의 현재 값을 버전으로 먼저 보존한다.
+    if (updatePayload.cause !== undefined || updatePayload.effect !== undefined) {
+      const { data: current, error: currentError } = await supabase
+        .from('hypotheses')
+        .select('cause, effect')
+        .eq('id', hid)
+        .eq('project_id', id)
+        .single();
+
+      if (currentError || !current) {
+        return res.status(404).json({ error: '가설을 찾을 수 없습니다.' });
+      }
+
+      const { count, error: countError } = await supabase
+        .from('hypothesis_versions')
+        .select('*', { count: 'exact', head: true })
+        .eq('hypothesis_id', hid);
+
+      if (countError) {
+        console.error('Failed to count hypothesis_versions:', countError);
+        return res.status(500).json({ error: '버전 히스토리 조회에 실패했습니다.' });
+      }
+
+      const { error: versionInsertError } = await supabase.from('hypothesis_versions').insert({
+        hypothesis_id: hid,
+        version: (count ?? 0) + 1,
+        cause: current.cause,
+        effect: current.effect,
+      });
+
+      if (versionInsertError) {
+        console.error('Failed to insert hypothesis_versions:', versionInsertError);
+        return res.status(500).json({ error: '버전 히스토리 저장에 실패했습니다.' });
+      }
+    }
+
     const { data: hypothesis, error } = await supabase
       .from('hypotheses')
       .update(updatePayload)
@@ -517,6 +552,66 @@ router.patch(
     }
 
     return res.status(200).json({ hypothesis });
+  },
+);
+
+// GET /api/projects/:id/hypotheses/:hid/versions — 버전 히스토리 조회. 오래된 순(version 오름차순).
+router.get(
+  '/:id/hypotheses/:hid/versions',
+  async (req: Request<{ id: string; hid: string }>, res: Response) => {
+    const { id, hid } = req.params;
+
+    const { data: hypothesis, error: hypothesisError } = await supabase
+      .from('hypotheses')
+      .select('id')
+      .eq('id', hid)
+      .eq('project_id', id)
+      .single();
+
+    if (hypothesisError || !hypothesis) {
+      return res.status(404).json({ error: '가설을 찾을 수 없습니다.' });
+    }
+
+    const { data: versions, error } = await supabase
+      .from('hypothesis_versions')
+      .select('*')
+      .eq('hypothesis_id', hid)
+      .order('version', { ascending: true });
+
+    if (error) {
+      console.error('Failed to fetch hypothesis_versions:', error);
+      return res.status(500).json({ error: '버전 히스토리 조회에 실패했습니다.' });
+    }
+
+    return res.status(200).json({ versions: versions ?? [] });
+  },
+);
+
+const ALLOWED_SAVE_STATUSES = ['draft', 'saved'];
+
+// POST /api/projects/:id/save — 임시저장(draft) / 저장하기(saved) 전환.
+router.post(
+  '/:id/save',
+  async (req: Request<{ id: string }, {}, { save_status?: string }>, res: Response) => {
+    const { id } = req.params;
+    const { save_status: saveStatus } = req.body;
+
+    if (!saveStatus || !ALLOWED_SAVE_STATUSES.includes(saveStatus)) {
+      return res.status(400).json({ error: `save_status는 ${ALLOWED_SAVE_STATUSES.join(' / ')} 중 하나여야 합니다.` });
+    }
+
+    const { data: project, error } = await supabase
+      .from('projects')
+      .update({ save_status: saveStatus })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error || !project) {
+      return res.status(404).json({ error: '프로젝트를 찾을 수 없습니다.' });
+    }
+
+    return res.status(200).json({ project });
   },
 );
 

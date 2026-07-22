@@ -7,6 +7,7 @@ CREATE TABLE projects (
   title TEXT NOT NULL,
   problem_definition TEXT,
   additional_notes TEXT,
+  save_status TEXT DEFAULT 'draft', -- 'draft' / 'saved'
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
