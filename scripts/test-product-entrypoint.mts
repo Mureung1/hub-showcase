@@ -44,6 +44,7 @@ const expectedMaterials = [
 ]
 const serverPort = 3000
 const shellPort = 4173
+const ambientServerPort = 3999
 const readinessTimeoutMs = 60_000
 const shutdownTimeoutMs = 10_000
 const courseName = '문제해결글쓰기'
@@ -72,7 +73,7 @@ async function main(): Promise<void> {
   await requirePath(semesterWorkspaceSeed, 'canonical SemesterWorkspace seed')
   await requirePath(chromium.executablePath(), 'Playwright Chromium')
   await requireAbsent(serverEnvPath, 'apps/server/.env')
-  await assertPortsAvailable([serverPort, shellPort])
+  await assertPortsAvailable([serverPort, shellPort, ambientServerPort])
 
   const roots = await prepareProductRoots()
   try {
@@ -149,6 +150,7 @@ async function runCanonicalProductCase(
       cwd: repositoryRoot,
       detached: true,
       env: controlledEnvironment({
+        PORT: String(ambientServerPort),
         CODEX_CHAT_WORKSPACE: roots.workspaceRoot,
         CODEX_CHAT_RUNTIME_ROOT: path.join(roots.poisonRoot, 'runtime-root'),
         CODEX_CHAT_RUNTIME_HOME: path.join(roots.poisonRoot, 'runtime-home'),
@@ -163,9 +165,10 @@ async function runCanonicalProductCase(
   await verifyDetachedProcess({
     child,
     label,
-    ports: [serverPort, shellPort],
+    ports: [serverPort, shellPort, ambientServerPort],
     verify: async (output) => {
       const initial = await pollProductBootstrap(child, readinessTimeoutMs)
+      await assertPortAvailable(ambientServerPort)
       const initialWorkspace = requireReadyWorkspace(initial)
       assert.equal(
         initial.accountReadiness.state,

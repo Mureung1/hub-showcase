@@ -63,6 +63,7 @@ async function main(): Promise<void> {
   console.log(`Product app data: ${appDataRoot}`)
 
   const productEnvironment = {
+    PORT: '3000',
     AY_PLE_PRODUCT_MODE: '1',
     AY_PLE_PACKAGE_ROOT: repositoryRoot,
     AY_PLE_APP_DATA_ROOT: appDataRoot,
