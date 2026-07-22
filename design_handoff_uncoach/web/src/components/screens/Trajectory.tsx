@@ -91,9 +91,19 @@ export default function Trajectory() {
               .map((a) => {
                 const sit = getSituation(a.sid, app.customSits);
                 return (
-                  <div key={a.id} className="rounded-xl border p-3.5" style={{ background: "var(--surface)", borderColor: "var(--line)" }}>
-                    <div className="text-[13.5px]" style={{ color: "var(--ink)", lineHeight: 1.6 }}>{a.text}</div>
+                  <div key={a.id} className="relative rounded-xl border p-3.5" style={{ background: "var(--surface)", borderColor: "var(--line)" }}>
+                    <div className="pr-6 text-[13.5px]" style={{ color: "var(--ink)", lineHeight: 1.6 }}>{a.text}</div>
                     <div className="mt-1.5 text-[11px]" style={{ color: "var(--sub)" }}>{sit?.title || a.sid} · {a.date}</div>
+                    <button
+                      onClick={() => {
+                        if (confirm("이 표현을 삭제할까요?")) app.removeAsset(a.id);
+                      }}
+                      aria-label="삭제"
+                      className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-md text-[14px] transition"
+                      style={{ color: "var(--sub)" }}
+                    >
+                      ×
+                    </button>
                   </div>
                 );
               })}

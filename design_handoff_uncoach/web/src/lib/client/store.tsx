@@ -23,6 +23,7 @@ interface Store {
   saveProfile: (p: Profile) => void;
   addSession: (sid: string, scores: Scores) => void;
   addAsset: (text: string, sid: string) => void;
+  removeAsset: (id: string) => void;
   addCustomSit: (s: Situation) => void;
   removeCustomSit: (id: string) => void;
   reset: () => void;
@@ -88,6 +89,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       const rec: AssetRecord = { id: "a" + Date.now(), text, sid, date: `${now.getMonth() + 1}.${now.getDate()}` };
       persist({ ...blob, assets: [...blob.assets, rec] });
     },
+    removeAsset: (id) => persist({ ...blob, assets: blob.assets.filter((a) => a.id !== id) }),
     addCustomSit: (s) => persist({ ...blob, customSits: [...blob.customSits, s] }),
     removeCustomSit: (id) => persist({ ...blob, customSits: blob.customSits.filter((c) => c.id !== id) }),
     reset: () => persist(EMPTY),
