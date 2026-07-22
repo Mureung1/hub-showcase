@@ -3,11 +3,13 @@
 import { useState } from "react";
 
 // onSubmit: 사용자가 입력을 제출했을 때 부모(page.js)에게 텍스트를 전달하는 함수
-export default function BrainDumpInput({ onSubmit }) {
+// isLoading: Agent가 마이크로 스텝으로 쪼개는 중인지
+// error: 쪼개기가 실패했을 때 보여줄 메시지
+export default function BrainDumpInput({ onSubmit, isLoading = false, error = null }) {
   const [text, setText] = useState("");
 
   function handleSubmit() {
-    if (text.trim() === "") return;
+    if (text.trim() === "" || isLoading) return;
     onSubmit(text);
   }
 
@@ -43,6 +45,7 @@ export default function BrainDumpInput({ onSubmit }) {
       />
       <button
         onClick={handleSubmit}
+        disabled={isLoading}
         style={{
           padding: "14px 32px",
           borderRadius: "100px",
@@ -51,11 +54,16 @@ export default function BrainDumpInput({ onSubmit }) {
           color: "var(--rose-ink)",
           fontFamily: "var(--font-body)",
           fontSize: "16px",
-          cursor: "pointer",
+          cursor: isLoading ? "default" : "pointer",
+          opacity: isLoading ? 0.6 : 1,
         }}
       >
-        보내기
+        {isLoading ? "쪼개는 중..." : "보내기"}
       </button>
+
+      {error && (
+        <p style={{ color: "var(--rose-ink)", fontSize: "14px" }}>{error}</p>
+      )}
     </main>
   );
 }

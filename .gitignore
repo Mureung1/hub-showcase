@@ -1,5 +1,6 @@
 .local/
 .DS_Store
+.github/
 docs/wiki/
 .claude/skills/docs-convention/
 .claude/skills/coding-guide/

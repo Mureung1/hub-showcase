@@ -11,7 +11,7 @@ Feat-N → GitHub Issue 등록 → 설계 → 개발 → PR(dev 브랜치) → �
 ## Feat 목록
 
 - [ ] Feat-1. A. 기반 설정 — 현재 단계: 개발 (Next.js 뼈대 생성 완료, Vercel 배포·노션 연동 남음)
-- [ ] Feat-2. B. Brain Dump — 현재 단계: 설계 전
+- [ ] Feat-2. B. Brain Dump — 현재 단계: 개발 (Solar `generateObject` 분할 API 연결 완료, Notion 저장·회피 패턴 반영 남음)
 - [ ] Feat-3. C. One-Focus View + Full Screen Timer — 현재 단계: 설계 전
 - [ ] Feat-4. D. 나 지금 힘들어 (Agent 루프) — 현재 단계: 설계 전
 - [ ] Feat-5. E. Agent 평가 — 현재 단계: 설계 전
