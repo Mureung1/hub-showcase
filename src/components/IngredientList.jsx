@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { buildNaverSearchUrl, buildCoupangSearchUrl } from '../utils/purchaseLinks'
 
-// 냉장고에서 고른 재료(ownedNames)는 "보유"로, 나머지는 "구매 필요"로 배지를 붙이고 구매 필요를 먼저 보여준다.
-// 체크박스는 구매 필요 기본 체크 / 보유 기본 해제 — 보유 재료도 다시 살 거면 직접 체크할 수 있다(해제된 행은 흐리게 표시).
+// 냉장고에서 고른 재료(ownedNames)는 "있는 재료" 카드에, 나머지는 "없는 재료" 카드에 나뉘어 들어가므로
+// (RecipeDetailPage.jsx) 행 안에 따로 배지를 붙이지 않는다 — 없는 재료를 먼저 보여준다.
+// 체크박스는 없는 재료 기본 체크 / 있는 재료 기본 해제 — 있는 재료도 다시 살 거면 직접 체크할 수 있다(해제된 행은 흐리게 표시).
+// 재료를 클릭하면 아래 PurchaseLinkPanel에 실제 최저가·링크가 뜨므로 행 안에 별도 네이버 링크는 두지 않는다.
 function IngredientList({ ingredients, ownedNames = [], selectedName, onSelect }) {
   const sorted = [...ingredients].sort((a, b) => {
     const aOwned = ownedNames.includes(a.name)
@@ -36,7 +37,6 @@ function IngredientList({ ingredients, ownedNames = [], selectedName, onSelect }
     <ul className="flex flex-col gap-2">
       {sorted.map((ingredient) => {
         const isSelected = ingredient.name === selectedName
-        const isOwned = ownedNames.includes(ingredient.name)
         const isChecked = checkedNames.has(ingredient.name)
         return (
           <li key={ingredient.name}>
@@ -54,37 +54,8 @@ function IngredientList({ ingredients, ownedNames = [], selectedName, onSelect }
                 onChange={() => toggleChecked(ingredient.name)}
                 className="h-4 w-4 shrink-0 accent-primary"
               />
-              <span className="flex flex-1 items-center gap-2">
-                <span className="font-medium text-text-primary">{ingredient.name}</span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                    isOwned ? 'bg-bg-muted text-text-secondary' : 'bg-primary-soft text-primary-text'
-                  }`}
-                >
-                  {isOwned ? '보유' : '구매 필요'}
-                </span>
-              </span>
-              <span className="flex shrink-0 items-center gap-2">
-                <a
-                  href={buildNaverSearchUrl(ingredient.name)}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(event) => event.stopPropagation()}
-                  className="text-xs text-text-secondary underline hover:text-text-primary"
-                >
-                  네이버
-                </a>
-                <a
-                  href={buildCoupangSearchUrl(ingredient.name)}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(event) => event.stopPropagation()}
-                  className="text-xs text-text-secondary underline hover:text-text-primary"
-                >
-                  쿠팡
-                </a>
-                <span className="text-sm text-text-secondary">{ingredient.amount}</span>
-              </span>
+              <span className="flex-1 font-medium text-text-primary">{ingredient.name}</span>
+              <span className="shrink-0 text-sm text-text-secondary">{ingredient.amount}</span>
             </button>
           </li>
         )
