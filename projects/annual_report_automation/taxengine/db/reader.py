@@ -10,11 +10,12 @@ domain/company.py 등 기존 코드를 손대지 않고 그대로 재사용할 �
 
 from __future__ import annotations
 
-import sqlite3
 from decimal import Decimal
 
+from taxengine.db.conn import 연결
 
-def _회사(conn: sqlite3.Connection, 사업연도id: int) -> dict:
+
+def _회사(conn: 연결, 사업연도id: int) -> dict:
     row = conn.execute(
         """SELECT 사업연도개시일, 사업연도종료일, 중소기업, 부동산임대업주업, 상시근로자수,
                   지배주주지분율_bp, 기납부세액, 이월결손금, 공제감면세액, 가산세, 기부금한도초과,
@@ -39,8 +40,9 @@ def _회사(conn: sqlite3.Connection, 사업연도id: int) -> dict:
     }
 
 
-def _재무제표(conn: sqlite3.Connection, 테이블: str, 사업연도id: int, *, 선택: bool) -> list[dict] | None:
+def _재무제표(conn: 연결, 테이블: str, 사업연도id: int, *, 선택: bool) -> list[dict] | None:
     rows = conn.execute(
+        # 테이블은 로드()가 넘기는 내부 리터럴 2종뿐(사용자 입력 아님) — f-string이어도 안전
         f"SELECT 계정, 구분, 금액 FROM {테이블} WHERE 사업연도id = ? ORDER BY 정렬순서, id",
         (사업연도id,),
     ).fetchall()
@@ -49,7 +51,7 @@ def _재무제표(conn: sqlite3.Connection, 테이블: str, 사업연도id: int,
     return [{"계정": 계정, "구분": 구분, "금액": 금액} for 계정, 구분, 금액 in rows]
 
 
-def _자산대장(conn: sqlite3.Connection, 사업연도id: int) -> list[dict]:
+def _자산대장(conn: 연결, 사업연도id: int) -> list[dict]:
     rows = conn.execute(
         """SELECT 명, 구분, 취득일, 취득가, 기초누계, 회사계상액, 방법, 내용연수,
                   전기이월부인액, 업무용승용차
@@ -68,7 +70,7 @@ def _자산대장(conn: sqlite3.Connection, 사업연도id: int) -> list[dict]:
     ]
 
 
-def _차량대장(conn: sqlite3.Connection, 사업연도id: int) -> list[dict]:
+def _차량대장(conn: 연결, 사업연도id: int) -> list[dict]:
     rows = conn.execute(
         """SELECT 명, 감가상각비, 기타관련비용, 전용보험가입, 운행기록부작성, 업무사용비율_bp
            FROM 차량 WHERE 사업연도id = ? ORDER BY id""",
@@ -84,7 +86,7 @@ def _차량대장(conn: sqlite3.Connection, 사업연도id: int) -> list[dict]:
     ]
 
 
-def _조정(conn: sqlite3.Connection, 사업연도id: int) -> list[dict]:
+def _조정(conn: 연결, 사업연도id: int) -> list[dict]:
     rows = conn.execute(
         "SELECT 과목, 구분, 금액, 소득처분, 근거 FROM 세무조정 WHERE 사업연도id = ? ORDER BY id",
         (사업연도id,),
@@ -95,7 +97,7 @@ def _조정(conn: sqlite3.Connection, 사업연도id: int) -> list[dict]:
     ]
 
 
-def _정답지(conn: sqlite3.Connection, 사업연도id: int) -> dict | None:
+def _정답지(conn: 연결, 사업연도id: int) -> dict | None:
     row = conn.execute(
         """SELECT 각사업연도소득, 과세표준, 산출세액, 차감납부세액, 지방소득세
            FROM 정답지 WHERE 사업연도id = ?""",
@@ -110,7 +112,28 @@ def _정답지(conn: sqlite3.Connection, 사업연도id: int) -> dict | None:
     }
 
 
-def 로드(conn: sqlite3.Connection, 사업연도id: int) -> dict:
+def 회사_프로필(conn: 연결, 회사id: int) -> dict | None:
+    """회사의 "거의 고정" 프로필 + 지배주주 명단. 없으면 None. bp는 퍼센트로 풀어 돌려준다."""
+    row = conn.execute(
+        "SELECT id, 회사명, 설립연도, 중소기업, 부동산임대업주업, 상시근로자수 FROM 회사 WHERE id = ?",
+        (회사id,),
+    ).fetchone()
+    if row is None:
+        return None
+    주주들 = conn.execute(
+        "SELECT 명, 지분율_bp FROM 지배주주 WHERE 회사id = ? ORDER BY 정렬순서, id",
+        (회사id,),
+    ).fetchall()
+    return {
+        "id": row[0], "회사명": row[1], "설립연도": row[2],
+        "중소기업": bool(row[3]), "부동산임대업주업": bool(row[4]), "상시근로자수": row[5],
+        "지배주주목록": [
+            {"명": 명, "지분율": float(Decimal(bp) / 100)} for 명, bp in 주주들
+        ],
+    }
+
+
+def 로드(conn: 연결, 사업연도id: int) -> dict:
     """사업연도id 하나를 taxengine.loader.로드()와 같은 모양의 딕셔너리로 읽어온다."""
     return {
         "회사": _회사(conn, 사업연도id),

@@ -11,8 +11,34 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 
+class 지배주주입력(BaseModel):
+    명: str
+    지분율: float = Field(description="퍼센트(예: 33.33), bp 아님")
+
+
 class 회사생성요청(BaseModel):
+    """POST /companies — 온보딩에서 최초 1회 제출하는 회사 "거의 고정" 프로필.
+
+    회사명 외에는 전부 선택 — 기존 호출(회사명만)과 하위호환된다.
+    """
+
     회사명: str
+    설립연도: int | None = None
+    중소기업: bool = False
+    부동산임대업주업: bool = False
+    상시근로자수: int | None = None
+    지배주주목록: list[지배주주입력] = []
+
+
+class 회사수정요청(BaseModel):
+    """PATCH /companies/{id} — 보낸 필드만 반영한다(부분 수정). 지배주주목록은 명단 전체 교체."""
+
+    회사명: str | None = None
+    설립연도: int | None = None
+    중소기업: bool | None = None
+    부동산임대업주업: bool | None = None
+    상시근로자수: int | None = None
+    지배주주목록: list[지배주주입력] | None = None
 
 
 class 회사프로필입력(BaseModel):

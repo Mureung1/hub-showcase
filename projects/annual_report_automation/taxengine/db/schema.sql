@@ -23,6 +23,9 @@ CREATE TABLE 사용자 (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     이메일      TEXT NOT NULL UNIQUE,
     이름        TEXT,
+    -- Supabase Auth 사용자 id(JWT의 sub 클레임). 로그인 없이 만들어진 행(--owner-email)은 NULL,
+    -- 그 이메일로 처음 로그인할 때 채워진다 — taxengine/api/auth.py 현재사용자() 연결 규칙.
+    auth_uid    TEXT UNIQUE,
     생성일시    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
@@ -31,9 +34,33 @@ CREATE TABLE 회사 (
     회사명      TEXT NOT NULL,
     -- 사업자등록번호는 통째로 저장하지 않는다(마스킹 규칙, data/README.md). 필요하면
     -- 뒤 3~4자리만 코드로 저장하는 컬럼을 나중에 추가한다.
+
+    -- "거의 고정" 프로필 (온보딩에서 최초 1회 입력, 이후 매년 "작년과 같나요?"로 확인만).
+    -- ⚠️ 사업연도 테이블에도 같은 이름의 컬럼이 있는 건 중복이 아니라 의도다: 여기가 원본이고,
+    --    사업연도 쪽은 "그 해 신고에 실제로 쓴 확정값" 스냅샷(감사 추적) — 매년 위저드의
+    --    확인 단계가 여기 값을 사업연도 행으로 복사한다.
+    설립연도            INTEGER,
+    중소기업            INTEGER NOT NULL DEFAULT 0 CHECK (중소기업 IN (0, 1)),
+    부동산임대업주업     INTEGER NOT NULL DEFAULT 0 CHECK (부동산임대업주업 IN (0, 1)),
+    상시근로자수        INTEGER,
+
     생성일시    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     수정일시    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
+
+-- 지배주주 목록 — 회사 고정 프로필의 일부(FE ShareholdersField가 여러 명을 입력받으므로
+-- 합계 한 숫자가 아니라 명단으로 정규화). 사업연도.지배주주지분율_bp는 이 명단의 합계를
+-- 그 해 확정값으로 복사한 스냅샷이다.
+CREATE TABLE 지배주주 (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    회사id      INTEGER NOT NULL REFERENCES 회사(id) ON DELETE CASCADE,
+    명          TEXT NOT NULL,
+    지분율_bp   INTEGER NOT NULL CHECK (지분율_bp BETWEEN 0 AND 10000),
+    정렬순서    INTEGER NOT NULL DEFAULT 0,
+    생성일시    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE INDEX idx_지배주주_회사id ON 지배주주(회사id);
 
 -- 사용자 1명이 여러 회사를, 회사 1개를 여러 사용자가 다룰 수 있게 N:N으로 잡아둔다
 -- (지금은 1인·1회사만 쓰지만 프론트엔드가 붙으면 바로 막힌다 — PLAN.md §7-F).
