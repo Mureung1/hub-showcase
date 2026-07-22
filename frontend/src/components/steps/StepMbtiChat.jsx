@@ -44,7 +44,12 @@ export function StepMbtiChat({ onEstimated, onFallback, onBack, onHome }) {
         onFallback("대화만으로는 유형을 뚜렷이 추정하기 어려웠어요. 규칙 설문으로 계속 진행할게요.");
         return;
       }
-      onEstimated(res.mbti, { confidence: res.confidence, rationale: res.rationale, uncertainty: res.uncertainty });
+      onEstimated(res.mbti, {
+        confidence: res.confidence,
+        rationale: res.rationale,
+        uncertainty: res.uncertainty,
+        observedSignals: res.observedSignals ?? [],
+      });
     } catch {
       onFallback("추정 중 문제가 생겼어요. 규칙 설문으로 계속 진행할게요.");
     } finally {

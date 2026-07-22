@@ -19,7 +19,7 @@ export function StepIntro({ hasCompleteResult, canClear, onStart, onResume, onCl
           </div>
           <nav className="hero-nav-actions">
             <button className="hero-link" onClick={onShowAnalysis} type="button">
-              연구 데이터 분석 보기
+              전체 경향(연구 집계) 보기
             </button>
           </nav>
         </header>
@@ -29,7 +29,9 @@ export function StepIntro({ hasCompleteResult, canClear, onStart, onResume, onCl
           <p className="script-accent hero-script">Study &amp; Recover</p>
           <h1 className="hero-title">나에게 맞는 공부·회복 루틴을 오늘 바로 찾기</h1>
           <p className="lead hero-lead">
-            MBTI와 공부·스트레스 설문을 함께 보고, 성향을 단정하지 않은 채 학습 선호와 피로 패턴을 행동지표로 정리합니다.
+            성격풀이가 아니라 <strong>자기조절 회고 도구</strong>입니다. MBTI를 친숙한 입구로 삼아, 당신의 실제 공부 행동과
+            피로 신호를 정리하고 → 오늘 바로 시도할 방법·루틴으로 바꾸고 → 해본 결과를 예측과 대조해 "나에게 맞는 방식"을
+            스스로 검증하도록 돕습니다.
           </p>
 
           <div className="hero-actions">

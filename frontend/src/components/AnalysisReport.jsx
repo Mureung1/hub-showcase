@@ -47,9 +47,12 @@ export default function AnalysisReport({ onClose }) {
 
   return (
     <section className="panel">
-      <p className="eyebrow">Research data · analysis</p>
-      <h2>연구 데이터 분석</h2>
-      <p>동의로 수집된 익명 요약을 집계한 결과입니다. 개인 기록은 표시하지 않고, 전체 경향만 보여줍니다.</p>
+      <p className="eyebrow">Research data · 전체 경향(연구 집계)</p>
+      <h2>전체 경향(연구 집계)</h2>
+      <p>
+        동의로 수집된 익명 요약을 <strong>참가자 전체 기준으로 집계</strong>한 결과입니다. 개인 기록은 표시하지 않습니다.
+        내 결과·실행 이력을 개인 관점으로 보려면 결과 화면의 <strong>"내 회고 리포트"</strong>를 이용하세요.
+      </p>
 
       {status === "loading" && <p className="hint" style={{ marginTop: 16 }}>불러오는 중…</p>}
       {status === "error" && (

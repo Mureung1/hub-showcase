@@ -75,6 +75,8 @@ export function useAssessmentFlow() {
   );
   const [studyAnswers, setStudyAnswers] = useState(() => storedSnapshot?.studyAnswers ?? {});
   const [stressAnswers, setStressAnswers] = useState(() => storedSnapshot?.stressAnswers ?? {});
+  // AI 간이 추정 근거 메타(ADR-008 보완). 새로고침 후에도 결과·회고에서 근거를 보이도록 프로필에 함께 저장한다.
+  const [estimatedMeta, setEstimatedMeta] = useState(() => storedSnapshot?.profile?.estimatedMeta ?? null);
   const [completed, setCompleted] = useState(false);
   const [focusLevel, setFocusLevel] = useState(3);
   const [fatigueLevel, setFatigueLevel] = useState(3);
@@ -197,13 +199,14 @@ export function useAssessmentFlow() {
         mbtiKnown,
         mbtiEstimated,
         mbtiSource,
+        estimatedMeta: mbtiEstimated ? estimatedMeta : null,
         createdAt,
       },
       studyAnswers,
       stressAnswers,
       result,
     });
-  }, [hasCompleteResult, inputFingerprint, mbti, mbtiKnown, mbtiEstimated, useMbtiSignal, mbtiSource, result, resultId, stressAnswers, studyAnswers]);
+  }, [hasCompleteResult, inputFingerprint, mbti, mbtiKnown, mbtiEstimated, useMbtiSignal, mbtiSource, estimatedMeta, result, resultId, stressAnswers, studyAnswers]);
 
   function continueWithoutOfficialMbti() {
     setMbti("");
@@ -212,9 +215,11 @@ export function useAssessmentFlow() {
   }
 
   // AI 간이 추정 결과를 흐름에 반영(ADR-008). 공식 아님 — src="ai-estimated" 로 라벨 구분.
-  function applyEstimatedMbti(estimatedMbti) {
+  // meta(rationale·uncertainty·observedSignals)는 판정을 대체하지 않는 "근거 보완"으로 저장한다.
+  function applyEstimatedMbti(estimatedMbti, meta = null) {
     setMbti(estimatedMbti);
     setMbtiSource("ai-estimated");
+    setEstimatedMeta(meta);
     setStep(2); // 공부 설문으로 계속
   }
 
@@ -257,6 +262,7 @@ export function useAssessmentFlow() {
     resultLifecycleRef.current = { fingerprint: null, resultId: freshId, createdAt: null };
     setMbti("");
     setMbtiSource("");
+    setEstimatedMeta(null);
     setResultId(freshId);
     setStudyAnswers({});
     setStressAnswers({});
@@ -280,6 +286,7 @@ export function useAssessmentFlow() {
     resultLifecycleRef.current = { fingerprint: null, resultId: freshId, createdAt: null };
     setMbti("");
     setMbtiSource("");
+    setEstimatedMeta(null);
     setResultId(freshId);
     setStudyAnswers({});
     setStressAnswers({});
@@ -308,6 +315,7 @@ export function useAssessmentFlow() {
     setMbtiSource,
     mbtiKnown,
     mbtiEstimated,
+    estimatedMeta,
     studyAnswers,
     setStudyAnswers,
     stressAnswers,

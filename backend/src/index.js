@@ -178,6 +178,7 @@ app.post("/api/mbti-chat", async (req, res) => {
       return res.status(200).json({ available: true, mbti: null, fallback: true });
     }
     // "간이 추정" 계약: 공식 판정 아님. 대화 원문은 응답에도 되돌려 저장하지 않는다.
+    // observedSignals는 원문이 아닌 파생 근거(지표 매핑)만 — 판정 보완용으로 프론트에 전달한다.
     return res.status(200).json({
       available: true,
       estimated: true,
@@ -185,6 +186,7 @@ app.post("/api/mbti-chat", async (req, res) => {
       confidence: estimate.confidence,
       rationale: estimate.rationale,
       uncertainty: estimate.uncertainty,
+      observedSignals: estimate.observedSignals ?? [],
     });
   } catch (error) {
     return res.status(200).json({ available: true, mbti: null, fallback: true, detail: error.message });
