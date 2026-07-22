@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "sync:catalog": "tsx scripts/syncGovCatalog.ts"
+    "sync:catalog": "tsx scripts/syncGovCatalog.ts",
+    "sync:districts": "tsx scripts/syncRegionDistricts.ts"
   },
   "keywords": [],
   "author": "",
