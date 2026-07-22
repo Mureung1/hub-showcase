@@ -75,3 +75,38 @@ node scripts/generate-sample-csv.mjs 1000 scripts/sample-broken.csv --broken   #
 | APK에서 공유 시트가 안 뜸 | `AndroidManifest.xml`의 `FileProvider` + `res/xml/file_paths.xml` |
 | 무반응(토스트 없음) | `App.jsx`가 `ToastProvider`로 감싸고 있는지 — `useToast()`는 Provider 밖에서 no-op으로 폴백한다 |
 | 가져왔는데 화면이 그대로 | `DataBackupPanel`의 `refetchProfile()`/`refetchTodayMeals()` 호출부 |
+
+---
+
+## 형식이 둘이라는 점 (2026-07-22 버그 수정)
+
+이 앱에는 내보내기 진입점이 **둘**이고 형식도 다르다. 한때 가져오기가 그중 하나만 읽을 수 있어서
+"내보낸 파일을 다시 못 읽는" 버그가 있었다(자세한 경위: [fix-csv-roundtrip-프롬프트.md](fix-csv-roundtrip-프롬프트.md)).
+
+| 내보내기 | 형식 | 파일명 |
+|---|---|---|
+| MY 탭 "데이터 내보내기(CSV)" | `[profile]` / `[meals]` 섹션 (신체정보 포함) | `mealog_YYYY-MM-DD.csv` |
+| 달력 탭 "기간별 기록 내보내기" | 평면 표 (`recommended_*`/`compliant` 포함, 신체정보 없음) | `mealog_<시작>_to_<종료>.csv` |
+
+지금은 **가져오기 하나가 두 형식을 자동 인식**한다. 판별은 파일 **내용**으로만 하므로 파일명을 바꿔도
+읽힌다. 형식 정의(컬럼 상수·직렬화·파싱)는 전부 [src/lib/backupFormat.js](../src/lib/backupFormat.js)
+한 곳에 있고, 내보내는 쪽(`dataBackup.js`, `csv.js`)이 같은 상수를 참조한다.
+
+### 회귀 방지
+
+```bash
+npm run check:csv    # 두 형식 각각 내보내기→파싱 왕복 + 컬럼 순서 변경·깨진 행·거부 케이스
+```
+
+이 검사는 **실제 앱의 직렬화 함수와 컬럼 상수를 그대로 import**한다. 테스트가 형식을 따로 재현하면
+앱만 바뀌었을 때 테스트는 통과하는데 앱은 깨지므로, 그 함정을 구조적으로 막았다.
+
+샘플 파일은 두 형식 모두 만들 수 있다:
+
+```bash
+node scripts/generate-sample-csv.mjs 1000 scripts/s.csv                    # 섹션 형식
+node scripts/generate-sample-csv.mjs 1000 scripts/s-flat.csv --format=flat # 평면 형식
+node scripts/generate-sample-csv.mjs 1000 scripts/s-broken.csv --broken    # 50행 고의 손상
+```
+
+실측(1,000행): 섹션 5.0ms / 평면 9.7ms — 수용 기준 3초에 크게 못 미친다.

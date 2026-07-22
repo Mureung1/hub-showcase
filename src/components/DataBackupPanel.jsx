@@ -5,7 +5,7 @@ import ImportConflictDialog from './ImportConflictDialog.jsx'
 import Spinner from './Spinner.jsx'
 import { useToast } from '../context/ToastContext.jsx'
 import { useUser } from '../context/UserContext.jsx'
-import { applyBackup, exportBackupCSV, parseBackupCSV } from '../lib/dataBackup.js'
+import { applyBackup, BACKUP_FORMAT, exportBackupCSV, parseBackupCSV } from '../lib/dataBackup.js'
 import { getPlatform, PLATFORM } from '../utils/platform.js'
 import { colors, font, radius, spacing } from '../styles/theme.js'
 
@@ -15,6 +15,12 @@ import { colors, font, radius, spacing } from '../styles/theme.js'
 //
 // 흐름: 파일 선택 -> parseBackupCSV(쓰기 없음) -> 중복 날짜가 있으면 다이얼로그 -> applyBackup.
 // 성공/실패는 항상 토스트로 알린다(PRD FR-2.1: silent fail 금지).
+
+// 가져오기 완료 토스트에서 "어느 형식으로 읽었는지" 알려줄 이름.
+const FORMAT_LABEL = {
+  [BACKUP_FORMAT.SECTIONED]: '전체 백업',
+  [BACKUP_FORMAT.FLAT]: '기간별 기록',
+}
 
 const PLATFORM_HINT = {
   [PLATFORM.WEB]: 'PC 브라우저의 다운로드 폴더에 저장돼요.',
@@ -98,11 +104,14 @@ export default function DataBackupPanel() {
     // 다시 불러와야 새로고침 없이 바로 반영된다.
     await Promise.all([refetchProfile(), refetchTodayMeals()])
 
-    const parts = [`${result.importedRows}건 가져옴`]
+    // 어느 형식으로 읽었는지 알려준다 — 두 내보내기 버튼이 만드는 파일이 비슷해 보여서,
+    // 사용자가 "내가 올린 게 어느 쪽 파일인지" 확인할 수 있어야 한다.
+    const parts = [`${FORMAT_LABEL[result.format] ?? '백업'}에서 ${result.importedRows}건 가져옴`]
     if (result.failedRows > 0) parts.push(`${result.failedRows}건 실패`)
     if (result.skippedDateCount > 0) parts.push(`${result.skippedDateCount}일 건너뜀`)
     if (result.profileRestored) parts.push('신체정보 복원')
     else if (result.profileSkipped) parts.push('신체정보는 기존 값 유지')
+    else if (result.profileAbsent) parts.push('이 형식엔 신체정보가 없어요')
 
     showToast(parts.join(', '), { tone: result.failedRows > 0 ? 'info' : 'success' })
   }

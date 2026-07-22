@@ -10,6 +10,7 @@
     "start": "cross-env NODE_ENV=production node server/proxy.js",
     "lint": "oxlint",
     "check:ads": "node scripts/check-ad-recommendation.mjs",
+    "check:csv": "node scripts/check-csv-roundtrip.mjs",
     "preview": "vite preview",
     "app:sync": "vite build && cap sync android",
     "app:sync:config": "cap sync android",

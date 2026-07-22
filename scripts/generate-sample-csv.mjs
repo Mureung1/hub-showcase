@@ -4,6 +4,12 @@
 //   node scripts/generate-sample-csv.mjs                    # 1000행, scripts/sample-1000.csv
 //   node scripts/generate-sample-csv.mjs 5000 out.csv       # 행 수/경로 지정
 //   node scripts/generate-sample-csv.mjs 1000 broken.csv --broken   # 일부러 깨진 행을 섞음
+//   node scripts/generate-sample-csv.mjs 1000 flat.csv --format=flat # 달력 탭(평면) 형식으로
+//
+// --format 은 이 앱의 두 내보내기 형식에 대응한다. 둘 다 가져오기가 읽어야 하므로 성능/깨진 행
+// 처리도 양쪽에서 확인해야 한다:
+//   sectioned (기본) — MY 탭 "데이터 내보내기(CSV)" 형식([profile]/[meals])
+//   flat            — 달력 탭 "기간별 기록 내보내기" 형식(평면 표)
 //
 // --broken 옵션은 "행 단위 파싱 실패는 건너뛰고 결과 요약(N건 가져옴, M건 실패)" 동작을 확인하는 용도로,
 // 열 개수 부족 / 날짜 형식 오류 / 이름 누락 / 숫자 아닌 영양소 4가지를 20행마다 하나씩 끼워 넣는다.
@@ -26,6 +32,21 @@ const SOURCES = ['식약처DB', '식약처DB(가공)', '추정']
 const rowCount = Number(process.argv[2]) || 1000
 const outPath = process.argv[3] || 'scripts/sample-1000.csv'
 const withBroken = process.argv.includes('--broken')
+const format = (process.argv.find((a) => a.startsWith('--format='))?.split('=')[1] ?? 'sectioned').toLowerCase()
+if (!['sectioned', 'flat'].includes(format)) {
+  console.error(`알 수 없는 --format 값: ${format} (sectioned | flat)`)
+  process.exit(1)
+}
+// 평면 형식은 끼니 시간대를 담지 않고 컬럼 구성이 다르다(src/lib/backupFormat.js의 FLAT_EXPORT_COLUMNS).
+const FLAT_COLUMNS = [
+  'date',
+  'source',
+  'item_name',
+  'brand',
+  ...NUTRIENT_KEYS,
+  ...NUTRIENT_KEYS.map((key) => `recommended_${key}`),
+  'compliant',
+]
 
 // 재현 가능한 의사난수(같은 인자면 항상 같은 파일이 나오게 — 테스트 비교가 가능해야 한다).
 let seed = 20260722
@@ -100,30 +121,48 @@ function buildRows() {
 }
 
 const { rows, brokenCount } = buildRows()
+const csvLine = (row) => row.map(escapeField).join(',')
 
-const text = [
-  '# Mealyze 데이터 백업(기기 이동용) — scripts/generate-sample-csv.mjs로 생성한 테스트 파일',
-  `# rows=${rowCount} broken=${withBroken ? brokenCount : 0}`,
+// 섹션 형식 행 [date, mealType, name, brand, source, ...nutrients]
+//   -> 평면 형식 행 [date, source, name, brand, ...nutrients, ...recommended, compliant]
+// 깨뜨린 행(열 개수가 모자란 행 등)은 그 성격을 유지해야 하므로 길이가 맞을 때만 변환한다.
+function toFlatRow(row) {
+  if (row.length !== MEAL_COLUMNS.length) return row.slice(0, 5)
+  const [date, , name, brand, source, ...nutrients] = row
+  return [date, source, name, brand, ...nutrients, 2500, 125, 313, 83, 30, 2000, 'false']
+}
+
+const header = [
+  `# Mealyze ${format === 'flat' ? '기간별 기록' : '데이터 백업'} — scripts/generate-sample-csv.mjs로 생성한 테스트 파일`,
+  `# format=${format} rows=${rowCount} broken=${withBroken ? brokenCount : 0}`,
   '',
-  '[profile]',
-  'key,value',
-  'age,30',
-  'sex,male',
-  'heightCm,175',
-  'weightKg,70',
-  'activity,moderate',
-  'conditions,',
-  'allergies,',
-  '',
-  '[meals]',
-  MEAL_COLUMNS.join(','),
-  ...rows.map((row) => row.map(escapeField).join(',')),
-].join('\r\n')
+]
+
+const text =
+  format === 'flat'
+    ? [...header, FLAT_COLUMNS.join(','), ...rows.map((row) => csvLine(toFlatRow(row)))].join('\r\n')
+    : [
+        ...header,
+        '[profile]',
+        'key,value',
+        'age,30',
+        'sex,male',
+        'heightCm,175',
+        'weightKg,70',
+        'activity,moderate',
+        'conditions,',
+        'allergies,',
+        '',
+        '[meals]',
+        MEAL_COLUMNS.join(','),
+        ...rows.map(csvLine),
+      ].join('\r\n')
 
 // 엑셀 한글 깨짐 방지를 위해 앱이 내보내는 파일과 동일하게 UTF-8 BOM을 붙인다.
 writeFileSync(outPath, '﻿' + text, 'utf8')
 
 console.log(`생성 완료: ${outPath}`)
+console.log(`  형식: ${format === 'flat' ? '평면(달력 탭 기간별 기록)' : '섹션(MY 탭 전체 백업)'}`)
 console.log(`  식단 행: ${rows.length}행 (그중 의도적으로 깨뜨린 행: ${withBroken ? brokenCount : 0}행)`)
 console.log(`  날짜 수: ${new Set(rows.map((r) => r[0])).size}일`)
-console.log('  앱의 MY 탭 > "데이터 가져오기(CSV)"에 그대로 올려 확인하세요.')
+console.log('  앱의 MY 탭 > "데이터 가져오기(CSV)"에 그대로 올려 확인하세요(두 형식 모두 읽힙니다).')

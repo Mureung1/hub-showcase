@@ -219,7 +219,20 @@ separate legacy policy for pre-Supabase-Auth accounts in more detail.
 `supabase/schema.sql` has the Postgres schema (`profiles`/`meals`, RLS policies scoped to
 `auth.uid()`) for the logged-in-only storage path.
 
-### CSV backup: one path, three environments
+### CSV backup: two formats, one importer, three environments
+
+**There are two export entry points and their formats differ** — MY 탭's full backup
+(`[profile]`/`[meals]` sections, via `dataBackup.js`) and 달력 탭's date-range export (a flat table with
+`recommended_*`/`compliant`, via `csv.js`). A user must never have to remember which button produced a
+file, so **the single importer auto-detects both** (by content, not filename). Every column constant,
+serializer, and parser for both formats lives in **`src/lib/backupFormat.js`** — a pure module with no
+storage/browser dependency — and both exporters import from it, so the two sides cannot drift apart.
+That drift is exactly what caused the "exported file can't be re-imported" bug: the flat format had no
+reachable reader (`csv.js`'s `importCSV` existed but nothing called it; it has since been deleted).
+`npm run check:csv` (`scripts/check-csv-roundtrip.mjs`) guards the regression by importing the *real*
+serializers and parsing their output back — never re-implement the format inside the test.
+
+
 
 MY 탭's export/import (`src/components/DataBackupPanel.jsx` → `src/lib/dataBackup.js`) works for guests
 *and* logged-in accounts — it goes through `dataStore` (`getAllMealsByDate`/`replaceMealsForDates`), so
