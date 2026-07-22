@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-ticketing
+- State: completed
 - Surface: local-spec
-- Next actor: /implement
+- Next actor: none
 - Source: [AY-PLE 첫 학업 vertical의 Codex runtime sufficiency](../wayfinding/codex-chat-application-foundation/map.md)
 
 ## Problem Statement

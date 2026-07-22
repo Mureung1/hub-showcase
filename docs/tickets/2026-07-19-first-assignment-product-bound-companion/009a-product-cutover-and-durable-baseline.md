@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -71,11 +71,11 @@ Deterministic Browser product vertical과 exact Runtime conformance가 모두 gr
 | Corrective recovery | Incompatible workspace bootstrap은 Runtime을 시작하지 않고 `unavailable`을 안전하게 projection한다. 같은 Server process에서 valid workspace를 다시 활성화하면 verified production Runtime의 Account Readiness가 `not_ready`로 회복하며 process-fatal Runtime failure의 sticky latch는 그대로 유지된다. |
 | Corrective port·cwd | Canonical entrypoint는 ambient `PORT=3999`를 무시하고 Server를 `3000`에 pin해 Vite의 proxy target과 일치시키며 두 process generation의 Browser/API·cleanup을 통과했다. Exact product actual은 Runtime fallback decoy와 active SemesterWorkspace를 분리하고 provider가 native `cwd`를 active workspace로 관찰해야만 통과한다. |
 | Corrective full gate | Root unit(`Server 112/112`)·typecheck·build·Chat lint·docs links, exact SDK `162 passed, 38 skipped`, production bundle `23`·bridge `20`, Node actual `68`·local-provider, First Assignment actual, product shutdown/recovery actual `2`, Browser `31`·camp `8`, hostile-port product entrypoint와 `git diff --check`가 green이다. External live-provider는 scope에 따라 재실행하지 않았다. |
-| Review | Fixed point `177f3a30c8b668d56538f343e067037658323c7f`의 최초 Standards·Spec 병렬 리뷰 findings를 모두 수정했다. Corrective review의 lifecycle findings도 해결한 뒤 fixed point `a29add4f` 기준 최종 독립 Standards·Spec 리뷰가 각각 actionable finding `0`건으로 종료했다. |
+| Review | Fixed point `177f3a30c8b668d56538f343e067037658323c7f`의 최초 Standards·Spec 병렬 리뷰 findings를 모두 수정했다. Corrective review의 lifecycle findings도 해결한 뒤 fixed point `a29add4f` 기준 독립 Standards·Spec 리뷰를 각각 actionable finding `0`건으로 종료했다. 후속 corrective는 fixed point `a8432678538df507670157ab26fc5a6fad6dd15a` 기준 최초 Standards naming finding `1`건과 Spec `0`건을 확인했고, `96102ff4`로 이름을 교정한 최종 재리뷰에서 두 축 모두 actionable finding `0`건으로 종료했다. |
 
 ## Result
 
-Implementation commits `f67fc166`, `b79f6460`, `6f22b694`, `f2bf9aed`에서 Browser·Server·canonical entrypoint를 product-only public surface로 cut over하고 current v2 store를 첫 durable compatibility baseline으로 기록했다. Corrective commits `a29add4f`, `0034e678`에서 actual OS-process restart trace, 세 root의 pairwise isolation, parent pre-implementation baseline, docs ownership과 failure-path cleanup을 보강했다. 후속 corrective commits `4ff2faca`, `e35a6224`, `b2c24dde`에서 incompatible workspace 뒤 Runtime readiness 회복, canonical Server port와 exact product `cwd` differential oracle을 닫았다. Legacy `/api/codex-chat/*`, Browser owner와 `dev:chat-only` alias 없이 exact official SDK 기반 product lifecycle만 남았고, parent spec의 모든 local implementation ticket이 완료됐다.
+Implementation commits `f67fc166`, `b79f6460`, `6f22b694`, `f2bf9aed`에서 Browser·Server·canonical entrypoint를 product-only public surface로 cut over하고 current v2 store를 첫 durable compatibility baseline으로 기록했다. Corrective commits `a29add4f`, `0034e678`에서 actual OS-process restart trace, 세 root의 pairwise isolation, parent pre-implementation baseline, docs ownership과 failure-path cleanup을 보강했다. 후속 corrective commits `4ff2faca`, `e35a6224`, `b2c24dde`, `96102ff4`에서 incompatible workspace 뒤 Runtime readiness 회복, canonical Server port와 exact product `cwd` differential oracle을 닫고 fixture 이름을 명확히 했다. Legacy `/api/codex-chat/*`, Browser owner와 `dev:chat-only` alias 없이 exact official SDK 기반 product lifecycle만 남았고, parent spec의 모든 local implementation ticket이 완료됐다.
 
 ## Blocked By
 
