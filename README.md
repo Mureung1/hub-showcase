@@ -39,7 +39,7 @@
 
 ## 아키텍처
 
-```mermaid
+mermaid
 flowchart LR
     subgraph FE["React (화면)"]
         A["내 가게 등록<br/>입력·목록"]
@@ -69,7 +69,7 @@ flowchart LR
     E -->|리뷰 수집| G
     E -->|AI 분석| H
     E -->|결과 저장| F
-```
+
 
 - 프론트엔드는 내 가게를 등록하면 `POST /api/my-store`로, 목록 조회는 `GET /api/my-stores`로 서버와 통신
 - 리뷰 분석은 `POST /api/analyze`로 가게 이름을 전송
