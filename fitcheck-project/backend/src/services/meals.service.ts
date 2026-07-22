@@ -1,4 +1,9 @@
 import { getSupabase } from '../lib/supabase.js';
+import {
+  analyzeMealWithGemini,
+  hasExplicitMacros,
+  isGeminiConfigured,
+} from './mealAi.service.js';
 import type {
   CreateMealLogInput,
   ListMealLogsQuery,
@@ -109,24 +114,60 @@ export async function listMealLogs(
   };
 }
 
+async function enrichMealInputWithAi(input: CreateMealLogInput): Promise<CreateMealLogInput> {
+  if (!isGeminiConfigured()) return input;
+
+  const clientMacros = hasExplicitMacros(input.macros);
+  const needsFeedback = !input.aiFeedback?.trim();
+  const hasImage = Boolean(input.imageUrl?.trim());
+
+  if (!needsFeedback && clientMacros) return input;
+  if (!hasImage && !needsFeedback) return input;
+  if (!hasImage && !input.memo?.trim()) return input;
+
+  try {
+    const analysis = await analyzeMealWithGemini({
+      mealType: input.mealType,
+      memo: input.memo ?? '',
+      imageUrl: input.imageUrl,
+      estimateMacros: hasImage && !clientMacros,
+    });
+
+    if (!analysis) return input;
+
+    return {
+      ...input,
+      macros: clientMacros
+        ? mergeMacros(undefined, input.macros)
+        : mergeMacros(undefined, analysis.macros),
+      aiFeedback: input.aiFeedback ?? analysis.aiFeedback,
+    };
+  } catch (err) {
+    console.error('[mealAi] Gemini analysis failed:', err);
+    return input;
+  }
+}
+
 export async function createMealLog(
   userId: string,
   input: CreateMealLogInput,
 ): Promise<MealLogDto> {
   await ensureProfile(userId);
 
+  const enriched = await enrichMealInputWithAi(input);
+
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('meal_logs')
     .insert({
       user_id: userId,
-      date: input.date,
-      meal_type: input.mealType,
-      time: input.time ?? null,
-      memo: input.memo ?? null,
-      image_url: input.imageUrl ?? null,
-      macros: mergeMacros(undefined, input.macros),
-      ai_feedback: input.aiFeedback ?? null,
+      date: enriched.date,
+      meal_type: enriched.mealType,
+      time: enriched.time ?? null,
+      memo: enriched.memo ?? null,
+      image_url: enriched.imageUrl ?? null,
+      macros: mergeMacros(undefined, enriched.macros),
+      ai_feedback: enriched.aiFeedback ?? null,
     })
     .select('*')
     .single();

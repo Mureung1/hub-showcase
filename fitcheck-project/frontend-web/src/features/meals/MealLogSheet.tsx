@@ -3,7 +3,6 @@ import type { FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { createMeal } from '../../services/mealsApi';
-import { analyzeMealWithAi } from '../../services/mealAi';
 import { uploadMealImage, MEAL_IMAGE_ACCEPT_ATTR, validateMealImageFile } from '../../services/uploadsApi';
 import { ApiError } from '../../services/api';
 import { MEAL_TYPES, type MealType } from '../../types/meal';
@@ -159,7 +158,6 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
     }
 
     const memo = form.memo.trim() || (mode === 'photo' ? '사진으로 기록한 식단' : '');
-    const hasPhoto = Boolean(photoFile);
 
     if (mode === 'manual') {
       const carb = parseMacroField(form.carb, '탄수화물');
@@ -187,15 +185,13 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
       setSubmitting(true);
       try {
         const imageUrl = await resolveImageUrl();
-        const ai = await analyzeMealWithAi(form.mealType, memo, hasPhoto);
         await createMeal({
           date: todayIsoDate(),
           mealType: form.mealType,
           time: form.time,
           memo: memo || null,
           imageUrl,
-          macros: ai?.macros ?? { carb, protein, fat, kcal },
-          aiFeedback: ai?.aiFeedback ?? null,
+          macros: { carb, protein, fat, kcal },
         });
         onSubmitted?.();
         onClose();
@@ -214,15 +210,17 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
     setSubmitting(true);
     try {
       const imageUrl = await resolveImageUrl();
-      const ai = await analyzeMealWithAi(form.mealType, memo, true);
+      if (!imageUrl) {
+        alert('사진 업로드에 실패했습니다.');
+        return;
+      }
+
       await createMeal({
         date: todayIsoDate(),
         mealType: form.mealType,
         time: form.time,
         memo,
         imageUrl,
-        macros: ai?.macros ?? { carb: 0, protein: 0, fat: 0, kcal: 0 },
-        aiFeedback: ai?.aiFeedback ?? null,
       });
       onSubmitted?.();
       onClose();
@@ -238,6 +236,11 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
   };
 
   const sheetTitle = mode === 'photo' ? '사진으로 식단 기록' : '칼로리 직접 입력';
+  const submitLabel = submitting
+    ? mode === 'photo'
+      ? 'AI 분석·저장 중…'
+      : '저장 중…'
+    : '식단 저장';
 
   return createPortal(
     <div className="consult-overlay" onClick={onClose}>
@@ -254,8 +257,8 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
             <h2 id={titleId}>{sheetTitle}</h2>
             <p className="consult-sheet-sub">
               {mode === 'photo'
-                ? '사진과 메모를 남기면 AI가 탄단지·피드백을 추정합니다.'
-                : '탄단지·칼로리를 입력하고, 원하면 사진도 함께 남길 수 있습니다.'}
+                ? '사진을 올리면 서버에서 Gemini가 탄단지·칼로리·피드백을 추정합니다.'
+                : '탄단지·칼로리를 입력하고, 사진을 넣으면 AI 피드백을 받을 수 있습니다.'}
             </p>
           </div>
           <button type="button" className="consult-close" onClick={onClose} aria-label="닫기">
@@ -360,7 +363,7 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
           )}
 
           <button type="submit" className="btn btn-primary consult-submit" disabled={submitting}>
-            {submitting ? '저장 중…' : '식단 저장'}
+            {submitLabel}
           </button>
         </form>
       </div>

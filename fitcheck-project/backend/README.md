@@ -33,6 +33,8 @@ API Base URL: `http://localhost:5001/api/v1`
 | `NAVER_SEARCH_CLIENT_SECRET` | | 지역 검색 API |
 | `ENCRYPTION_KEY` | ✅* | 상담 PII AES-256-GCM 키 (32바이트 base64) |
 | `PHONE_HMAC_PEPPER` | ✅* | 전화번호 HMAC pepper |
+| `GEMINI_API_KEY` | | 식단 사진 AI 분석 ([Google AI Studio](https://aistudio.google.com/apikey)) |
+| `GEMINI_MODEL` | | Gemini 모델명 (기본 `gemini-flash-latest`) |
 
 \* 상담 API(`consult_requests`) 사용 시 필수. 식단·프로필만 쓸 때도 `.env.example` 기준으로 함께 두는 것을 권장합니다.
 
@@ -77,6 +79,7 @@ backend/
 | **로그인·회원** | Supabase Auth | 비밀번호 **해시** (Supabase) | 가입·로그인 시 | JWT는 Supabase가 서명·발급 |
 | **프로필** | `profiles` | ❌ 없음 (평문) | — | `GET/PATCH /me` |
 | **식단** | `meal_logs` | ❌ 없음 (평문) | — | `memo`, `macros`, `ai_feedback` 등 |
+| **식단 AI** | Gemini Vision API | — | `POST /meals` 저장 직전 | `GEMINI_API_KEY` 없으면 AI 생략, 식단만 저장 |
 | **식단 사진** | Storage `meal-images` | ❌ 없음 | — | public bucket, URL을 `image_url`에 저장 |
 | **상담 신청** | `consult_requests` | ✅ **AES-256-GCM** (PII) | **INSERT 직전** encrypt, **SELECT 직후** decrypt | 아래 [상담 PII 상세](#상담-신청-개인정보-암호화) |
 | **헬스장·강좌·트레이너** | `gyms`, `courses`, `trainers` | ❌ 없음 (평문) | — | 공개 조회 API |

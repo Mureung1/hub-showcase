@@ -7,6 +7,10 @@ interface MealTimelineItemProps {
 
 export default function MealTimelineItem({ meal }: MealTimelineItemProps) {
   const title = meal.memo?.trim() || `${meal.mealType} 식단`;
+  const aiEstimated =
+    Boolean(meal.aiFeedback) ||
+    (Boolean(meal.imageUrl) &&
+      (meal.macros.kcal > 0 || meal.macros.carb > 0 || meal.macros.protein > 0 || meal.macros.fat > 0));
 
   return (
     <article className="meal-item panel">
@@ -18,6 +22,7 @@ export default function MealTimelineItem({ meal }: MealTimelineItemProps) {
         <div>
           <span className="meal-type-label">{meal.mealType}</span>
           {meal.time ? <span className="meal-time">{meal.time}</span> : null}
+          {aiEstimated ? <span className="meal-ai-badge">AI 추정</span> : null}
           <h3>{title}</h3>
         </div>
       </div>
