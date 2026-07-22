@@ -22,6 +22,7 @@ function toListing(row) {
     eligibleGrades: row.eligible_grades ? JSON.parse(row.eligible_grades) : undefined,
     interest: row.interest || undefined,
     teamBoardCount: row.team_board_count || undefined,
+    sourceUrl: row.source_url || undefined,
   };
 }
 

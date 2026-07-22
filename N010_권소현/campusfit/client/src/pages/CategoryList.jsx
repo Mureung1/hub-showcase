@@ -8,7 +8,6 @@ const GRADE_GUIDE_CATEGORIES = ["contest", "activity", "internship"];
 export default function CategoryList() {
   const { categoryId } = useParams();
   const {
-    univLabel,
     regionLabel,
     gradeLabel,
     region,
@@ -27,7 +26,7 @@ export default function CategoryList() {
   const category = categories.find((c) => c.id === categoryId);
   const interestOptions = interestOptionsByCategory[categoryId];
   const showGradeGuide = GRADE_GUIDE_CATEGORIES.includes(categoryId) && grade !== "all";
-
+const totalCount = listings.filter((l) => l.categoryId === categoryId).length;
   const categoryListings = listings
     .filter((l) => l.categoryId === categoryId)
     .filter((l) => region === "all" || !l.eligibleRegions || l.eligibleRegions.includes(region))
@@ -52,8 +51,10 @@ export default function CategoryList() {
         </p>
         <div className="cat-head">
           <h1>{category.label}</h1>
+          <p className="cat-sub">전체 {totalCount}개 중 내 조건에 맞는 {categoryListings.length}개</p>
+      
           <span className="filter-pill">
-            {univLabel} · {regionLabel} · {gradeLabel}
+            {regionLabel} · {gradeLabel}
           </span>
         </div>
         <p className="cat-sub">{category.desc}</p>
@@ -93,6 +94,9 @@ export default function CategoryList() {
                   {showGradeGuide && l.eligibleGrades?.includes(grade) && (
                     <span className="pill-grade">{gradeLabel} 추천</span>
                   )}
+                  {region !== "all" && l.eligibleRegions?.includes(region) && (
+  <span className="pill-grade">{regionLabel} 추천</span>
+)}
                 </div>
                 <div className="desc">{l.desc}</div>
               </div>

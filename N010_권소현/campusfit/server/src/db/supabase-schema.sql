@@ -23,7 +23,8 @@ create table listings (
   eligible_regions text,
   eligible_grades text,
   interest text,
-  team_board_count integer not null default 0
+  team_board_count integer not null default 0,
+  source_url text
 );
 
 create table board_posts (
