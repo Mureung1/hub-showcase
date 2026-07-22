@@ -24,6 +24,7 @@ Depends on: SEARCH-001, WEB-010, DEPLOY-002
 - API error와 retry UI
 - 오류 시 정적 점수·그래프·점포 숨김
 - API와 Demo source 문구 분리
+- Free API sleep 상태에서 지원 범위 snapshot으로 화면을 열고, `/ready` 확인 뒤 최신 API 요청 시작
 
 제외:
 
@@ -43,9 +44,9 @@ Depends on: SEARCH-001, WEB-010, DEPLOY-002
 
 ```text
 service: API와 명시적 Demo snapshot 경로 분리
-hook: 분석 retry token과 source state
-web: error alert, retry, 가짜 분석 값 차단
-tests: API 503 no-fallback과 명시적 Demo 회귀
+hook: 분석 retry token·API readiness와 source state
+web: error alert, retry, API 준비 상태와 가짜 분석 값 차단
+tests: API 503 no-fallback, API wake-up, 명시적 Demo 회귀
 ```
 
 ## 6. Acceptance Criteria
@@ -55,6 +56,9 @@ tests: API 503 no-fallback과 명시적 Demo 회귀
 - [x] API error, unsupported와 Demo source 문구가 구분된다.
 - [x] 오류 화면에 다시 시도 동작이 있다.
 - [x] 오류 시 입지 점수·시간대 그래프·분석 요약을 표시하지 않는다.
+- [x] API가 준비되기 전에는 분석·주변 점포·검색 API 요청을 시작하지 않는다.
+- [x] `/ready`가 성공하면 현재 선택 조건으로 실제 API 요청을 자동 시작한다.
+- [x] API 준비 대기 중에는 정적인 지원 범위만 표시하고 실제 분석 값을 대체하지 않는다.
 - [x] FE test·typecheck·lint·build가 통과한다.
 - [x] 로컬 브라우저에서 실패 화면을 검증한다.
 - [x] 최신 Web을 공개 배포하고 Render API와 함께 smoke test한다.

@@ -42,6 +42,31 @@ export const DEMO_MARKETS: SupportedMarket[] = [
   },
 ];
 
+// Keep the stable product support contract available while the free API instance wakes up.
+// The API response remains authoritative and replaces this bootstrap snapshot in the background.
+export const PRODUCT_CATALOG_BOOTSTRAP: ProductCatalog = {
+  markets: DEMO_MARKETS,
+  categories: [
+    { name: "카페", codes: ["CS100010"] },
+    {
+      name: "음식점",
+      codes: [
+        "CS100001",
+        "CS100002",
+        "CS100003",
+        "CS100004",
+        "CS100006",
+        "CS100007",
+        "CS100008",
+        "CS100009",
+      ],
+    },
+    { name: "베이커리", codes: ["CS100005"] },
+    { name: "편의점", codes: ["CS300002"] },
+  ],
+  radii: [100, 300, 500],
+};
+
 export async function loadProductCatalog(signal: AbortSignal): Promise<ProductCatalog> {
   const response = await fetch(apiUrl("/api/v1/catalog"), { signal });
   if (!response.ok) throw new Error(`API ${response.status}`);

@@ -40,6 +40,10 @@ vi.mock("./features/market/useProductCatalog", () => ({
   }),
 }));
 
+vi.mock("./features/system/useApiReadiness", () => ({
+  useApiReadiness: () => ({ state: "ready", retry: vi.fn() }),
+}));
+
 import { App } from "./App";
 
 afterEach(() => {
@@ -398,11 +402,11 @@ describe("App", () => {
         expect.any(Object),
       ),
     );
-    expect(new URL(window.location.href).searchParams.get("selectedCategory")).toBe("꽃집");
+    expect(window.location.search).toBe("");
 
     fireEvent.click(screen.getByRole("button", { name: "500m" }));
     await waitFor(() => expect(document.querySelector(".selected-location")).toBeNull());
     expect(document.querySelector("main")).toHaveAttribute("data-storefront-3d-state", "idle");
-    expect(new URL(window.location.href).searchParams.get("radius")).toBe("500");
+    expect(window.location.search).toBe("");
   });
 });

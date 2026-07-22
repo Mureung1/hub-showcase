@@ -4,19 +4,24 @@ import { loadProductCatalog, type ProductCatalog } from "../../services/productC
 
 export type ProductCatalogState = "loading" | "ready" | "error";
 
-export function useProductCatalog(fallbackCatalog?: ProductCatalog) {
-  const [catalog, setCatalog] = useState<ProductCatalog | null>(null);
-  const [state, setState] = useState<ProductCatalogState>("loading");
+export function useProductCatalog(initialCatalog?: ProductCatalog, loadRemote = true) {
+  const [catalog, setCatalog] = useState<ProductCatalog | null>(initialCatalog ?? null);
+  const [state, setState] = useState<ProductCatalogState>(initialCatalog ? "ready" : "loading");
   const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
-    setCatalog(null);
-    setState("loading");
-    if (fallbackCatalog) {
-      setCatalog(fallbackCatalog);
-      setState("ready");
+    if (!loadRemote) {
+      setCatalog(initialCatalog ?? null);
+      setState(initialCatalog ? "ready" : "error");
       return () => controller.abort();
+    }
+    if (initialCatalog) {
+      setCatalog(initialCatalog);
+      setState("ready");
+    } else {
+      setCatalog(null);
+      setState("loading");
     }
     void loadProductCatalog(controller.signal)
       .then((result) => {
@@ -26,10 +31,10 @@ export function useProductCatalog(fallbackCatalog?: ProductCatalog) {
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        setState("error");
+        if (!initialCatalog) setState("error");
       });
     return () => controller.abort();
-  }, [fallbackCatalog, retryToken]);
+  }, [initialCatalog, loadRemote, retryToken]);
 
   return {
     catalog,
