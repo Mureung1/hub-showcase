@@ -83,3 +83,4 @@ src/
 
 - [기획서](docs/plan.md) · [작업 체크리스트(완료 이력)](docs/checklist.md) · [Task 관리(백로그/로드맵)](docs/tasks.md)
 - [디자인 시스템](docs/design-system/DESIGN.md)
+- [GitHub Project 칸반 보드](https://github.com/users/ParkSeong-min/projects/2) (Day 1~4 이슈 진행 상황)

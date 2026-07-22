@@ -163,6 +163,13 @@ input {
     margin: 0;
 }
 
+.app-tagline {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 8px 0 0 0;
+}
+
 /* ── 카테고리 선택 화면 ─────────────────────────── */
 
 .category-select-grid {

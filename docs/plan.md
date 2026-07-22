@@ -80,6 +80,17 @@ graph TD
 
 **DB 전환 방향 (결정, 컬럼 상세 미정):** Supabase 이전 시 `category`는 별도 `categories` 테이블로 분리한다(현재 배열+`CATEGORY_LABELS` 이중 관리 구조 해소, 카테고리 확장 예정과도 맞음). `options`/`examples`는 항상 부모 명령어와 함께만 조회되고 독립 쿼리 요구가 없어, 정규화 대신 JSONB 컬럼으로 유지한다. 실제 컬럼 목록/타입은 아직 확정 전.
 
+**Meilisearch 인덱스 필드 스펙 (2주차 Day 2 확정):** 검색 인덱스는 Supabase 원본 테이블 전체를 그대로 복제하지 않고, 검색·결과카드 렌더링에 실제로 쓰이는 필드만 담는다.
+
+| 필드 | 타입 | 속성 | 용도 |
+| --- | --- | --- | --- |
+| `id` | string | primary key | 문서 고유 식별자, 상세페이지 링크(`/commands/:id`)에 사용 |
+| `category` | string | filterable | `unix`/`git` 범위 제한(카테고리별 검색) |
+| `name` | string | searchable (1순위) | `commandSort.js`의 랭킹 로직과 동일하게, 이름 일치가 최우선 |
+| `summary` | string | searchable (2순위) | 이름에 없으면 summary에서 매치 |
+
+`description`/`options`/`examples`는 인덱스에 넣지 않는다 — 기존 검색 정책(동료 피드백 반영, `commandSort.js` 주석 참고)상 `description`은 애초에 검색 대상이 아니었고("검색 결과는 목록 카드에서 보이는 것만으로 매치 이유가 설명되어야 함"), `options`/`examples`는 결과 카드(`CommandCard`)에 표시되지 않아 검색 인덱스에 넣을 이유가 없다. 상세 정보는 상세페이지 진입 시 별도로(Supabase 등에서) 조회한다.
+
 ## 7. 기술 스택 (Technical Standards)
 
 | 영역 | 사용 기술 | 상태 | 비고 |

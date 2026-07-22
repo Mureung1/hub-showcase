@@ -28,6 +28,9 @@ function CategoryHomePage() {
                 <p className="app-desc">
                     실습 중 헷갈리는 명령어를 찾아보세요. 먼저 카테고리를 선택하면 검색창과 목록이 나타납니다.
                 </p>
+                <p className="app-tagline">
+                    방대한 매뉴얼을 뒤지는 대신, 실습에 진짜 필요한 명령어만 골라 담았습니다.
+                </p>
             </header>
 
             <div className="category-select-grid">
