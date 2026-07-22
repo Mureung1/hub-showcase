@@ -309,6 +309,7 @@ function SubscriptionManageModal({
             <div>
               <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: 'var(--foreground)' }}>구독 관리</h2>
               <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--muted)' }}>정기결제 서비스를 등록하고 관리해요</p>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--muted)' }}>여기 등록한 구독은 예산 계산에 자동 반영돼요 — 지출 내역에 따로 안 넣어도 돼요</p>
             </div>
             <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 99, background: '#F3F4F6', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <X size={16} color="var(--muted)" />
