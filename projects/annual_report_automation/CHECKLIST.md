@@ -69,8 +69,11 @@
 - [x] 이관 시 무결성 검증 게이트 (`taxengine.db.migrate.검증실패`, `이관()`이 `validate.검증()`을
       통과 못 하면 전체 롤백) — 2026-07-20. DB의 CHECK 제약이 못 잡는 대차평형·자산정합성 오류를
       막음(`tests/test_migrate.py`의 `검증실패_이관_거부` 3개)
-- [ ] 🔲 **HTTP API 서버 — 아직 없음.** `taxengine`은 CLI 전용. FE가 백엔드를 쓰려면 `pipeline.실행_데이터()`
-      + `db.reader.로드()`/`db.migrate.이관()`을 감싸는 API가 필요 — **FE 완성 후 진행하기로 합의(2026-07-20)**
+- [x] **HTTP API 서버** (`taxengine/api/main.py`, `taxengine/api/schemas.py`,
+      `tests/test_api.py` 6개) — 2026-07-20. FastAPI. 회사 생성→사업연도 입력→계산→스냅샷 이력
+      조회가 한 바퀴 돔. `python -m taxengine.api.main`으로 기동, `/docs`에 자동 문서.
+      ⚠️ **아직 taxwiz-fe와 연결은 안 함** — "연결 지점만 만들고 연결은 나중에" 합의(2026-07-20)에
+      따라 엔드포인트만 존재. CORS `*` 허용·인증 없음은 FE 연결 시점에 다시 볼 것
 - [ ] ⚠️ **taxwiz-fe/ 존재함(미커밋)** — 부가세 계산기로 구현돼 있어 법인세 조정(이 프로젝트)과 목적이
       다름. 방향 재확인 필요 — 상세는 `taxwiz-fe/README.md`
 - [ ] FE — 판정 큐 최소 UI

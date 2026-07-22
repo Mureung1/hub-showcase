@@ -106,7 +106,43 @@ python -m taxengine.cli.export   --dir data/private/fy2025 --out 결과.xlsx  # 
 - `export`: 별지3·감가상각시부인·기업업무추진비·업무용승용차·정답대조를 시트별로 나눠 xlsx로
   저장합니다. 숫자마다 "이 값이 어디서/어느 조문에서 왔는지" 각주가 붙어 있습니다.
 
-## 5. 자주 겪는 것
+## 5. 웹으로 실행하기 (로컬 서버) ★
+
+터미널 대신 **웹 화면**으로 쓰려면 서버 두 개를 각각 띄웁니다.
+백엔드(FastAPI)가 계산을 하고, 프론트엔드(React/Vite)가 입력 화면입니다.
+
+### (1) 백엔드 API 서버
+
+```bash
+cd projects/annual_report_automation
+pip install -e .                      # 최초 1회 — fastapi·uvicorn 설치
+python -m taxengine.api.main
+```
+
+- 주소: **http://127.0.0.1:8000**
+- API 문서(자동): **http://127.0.0.1:8000/docs**
+- 잘 떴는지 확인: 다른 터미널에서 `curl http://127.0.0.1:8000/health` → `{"status":"ok"}`
+- DB 파일 경로를 바꾸려면 앞에 `TAXWIZ_DB=경로/이름.db`(기본값 `taxengine/db/taxwiz.db`).
+  Windows PowerShell은 `$env:TAXWIZ_DB="경로/이름.db"; python -m taxengine.api.main`.
+- `--reload`가 켜져 있어 코드를 고치면 자동 재기동됩니다. 끄려면 `Ctrl+C`.
+
+### (2) 프론트엔드 개발 서버
+
+**새 터미널**을 하나 더 열어서(백엔드는 켜둔 채):
+
+```bash
+cd projects/annual_report_automation/taxwiz-fe
+npm install                           # 최초 1회
+npm run dev
+```
+
+- 주소: **http://localhost:5173** (브라우저로 여세요. 끄려면 `Ctrl+C`)
+- 5173이 이미 쓰이면 Vite가 5174·5175…로 올려 잡습니다 — 터미널에 뜨는 `Local:` 주소를 보세요.
+
+> ⚠️ 지금은 FE↔BE가 아직 fetch로 연결되지 않았습니다(2026-07-20 기준). 백엔드 없이 FE만
+> 띄워도 화면(부가세 계산 마법사)은 뜹니다. 연결 현황은 `taxwiz-fe/README.md` 참고.
+
+## 6. 자주 겪는 것
 
 - **`data/private/`는 git에 안 올라갑니다** (개인정보 보호). 안심하고 실데이터를 넣으세요.
 - **Python이 없다면**: [python.org](https://python.org)에서 3.11 이상 설치.
