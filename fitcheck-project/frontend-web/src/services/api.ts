@@ -76,3 +76,22 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
 
   return parsed;
 }
+
+export async function apiPostForm<T>(path: string, formData: FormData): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: formData,
+  });
+  const parsed = (await res.json().catch(() => ({}))) as T & ErrorBody;
+
+  if (!res.ok) {
+    throw new ApiError(
+      parsed.error?.message ?? `요청에 실패했습니다. (${res.status})`,
+      res.status,
+      parsed.error?.code,
+    );
+  }
+
+  return parsed;
+}

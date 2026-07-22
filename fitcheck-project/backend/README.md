@@ -31,8 +31,10 @@ API Base URL: `http://localhost:5001/api/v1`
 | `SUPABASE_DB_PASSWORD` 또는 `DATABASE_URL` | | `npm run db:migrate`용 |
 | `NAVER_SEARCH_CLIENT_ID` | | 지역 검색 API |
 | `NAVER_SEARCH_CLIENT_SECRET` | | 지역 검색 API |
-| `ENCRYPTION_KEY` | ✅ | 상담 PII AES-256-GCM 키 (32바이트 base64) |
-| `PHONE_HMAC_PEPPER` | ✅ | 전화번호 HMAC pepper |
+| `ENCRYPTION_KEY` | ✅* | 상담 PII AES-256-GCM 키 (32바이트 base64) |
+| `PHONE_HMAC_PEPPER` | ✅* | 전화번호 HMAC pepper |
+
+\* 상담 API(`consult_requests`) 사용 시 필수. 식단·프로필만 쓸 때도 `.env.example` 기준으로 함께 두는 것을 권장합니다.
 
 키 생성:
 
@@ -59,6 +61,68 @@ backend/
 │   └── apply-migrations.mjs
 └── docs/API.md
 ```
+
+---
+
+## 기능별 데이터 보호
+
+프론트 → Express → Supabase 로 저장되는 모든 요청은 **HTTPS(TLS)** 로 전송됩니다.  
+그 외 **DB·Storage에 넣기 전/후 앱 레벨 암호화**는 **기능(도메인)마다 다릅니다.**
+
+### 요약
+
+| 기능 | API / 저장소 | 앱 레벨 암호화 | 암·복호화 시점 | 비고 |
+|------|----------------|----------------|----------------|------|
+| **전송 구간** | 프론트 ↔ Express | TLS (HTTPS) | 네트워크 구간 | Vite dev는 `/api` 프록시도 동일 |
+| **로그인·회원** | Supabase Auth | 비밀번호 **해시** (Supabase) | 가입·로그인 시 | JWT는 Supabase가 서명·발급 |
+| **프로필** | `profiles` | ❌ 없음 (평문) | — | `GET/PATCH /me` |
+| **식단** | `meal_logs` | ❌ 없음 (평문) | — | `memo`, `macros`, `ai_feedback` 등 |
+| **식단 사진** | Storage `meal-images` | ❌ 없음 | — | public bucket, URL을 `image_url`에 저장 |
+| **상담 신청** | `consult_requests` | ✅ **AES-256-GCM** (PII) | **INSERT 직전** encrypt, **SELECT 직후** decrypt | 아래 [상담 PII 상세](#상담-신청-개인정보-암호화) |
+| **헬스장·강좌·트레이너** | `gyms`, `courses`, `trainers` | ❌ 없음 (평문) | — | 공개 조회 API |
+
+> **앱 레벨 암호화**란 Express 코드(`fieldEncryption.ts` 등)에서 평문 ↔ ciphertext 변환을 하는 것을 말합니다.  
+> 식단·프로필 등은 **인증(JWT) + DB 접근 통제**로 보호하고, 필드 자체는 평문입니다.
+
+### 공통 흐름
+
+```
+[암호화 없는 기능 — 식단, 프로필, gyms …]
+
+Client ──HTTPS(평문 JSON)──▶ Express ──평문──▶ Supabase Postgres / Storage
+
+
+[상담 PII — consult_requests 만]
+
+Client ──HTTPS(평문 JSON)──▶ Express ──encryptField()──▶ Supabase (ciphertext)
+                              ▲
+                              └── GET 시 decryptField() 후 응답
+```
+
+### 기능별 설명
+
+#### 로그인·인증 (`requireAuth`)
+
+- 클라이언트: Supabase Auth로 로그인 → **access token(JWT)** 획득
+- API 호출: `Authorization: Bearer <token>`
+- 백엔드: `auth.middleware.ts`에서 JWT 검증 → `req.userId` 설정
+- 비밀번호 원문은 백엔드·DB에 저장하지 않음 (Supabase Auth 영역)
+
+#### 식단 (`/api/v1/meals`, `/api/v1/uploads/meals`)
+
+- `POST /uploads/meals`: multipart 파일 → Storage 업로드 → **public URL** 반환
+- `POST /meals`: JSON 평문 → `meal_logs` row INSERT
+- `GET /meals`: DB 평문 그대로 JSON 응답 (본인 `user_id`만)
+
+#### 프로필 (`/api/v1/me`)
+
+- `name`, `phone` 등 **평문** 저장·조회
+- 상담 PII와 달리 `encryptField()` 미적용
+
+#### 공개 데이터 (`/gyms`, `/courses`, …)
+
+- 인증 없이 조회 가능한 마스터 데이터
+- 평문 저장
 
 ---
 

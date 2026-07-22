@@ -1,18 +1,24 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Camera, Plus } from 'lucide-react';
 import MealLogSheet, { type MealLogSheetMode } from '../../features/meals/MealLogSheet';
 import MealTimelineItem from '../../features/meals/MealTimelineItem';
-import { useMeals } from '../../hooks/useMeals';
+import { useMealTimeline } from '../../hooks/useMeals';
 import { todayString } from '../../utils/date';
 import '../../features/meals/meals.css';
 import './user.css';
 
 export default function MealsPage() {
   const today = todayString();
-  const { meals, loading, error, refresh } = useMeals(today);
+  const { meals, loading, error, refresh } = useMealTimeline();
   const [sheetMode, setSheetMode] = useState<MealLogSheetMode | null>(null);
 
-  const totalCalories = meals.reduce((sum, meal) => sum + (meal.macros.kcal ?? 0), 0);
+  const todayMeals = useMemo(
+    () => meals.filter((meal) => meal.date === today),
+    [meals, today],
+  );
+
+  const totalCalories = todayMeals.reduce((sum, meal) => sum + (meal.macros.kcal ?? 0), 0);
+  const timelineMeals = todayMeals.length > 0 ? todayMeals : meals;
 
   return (
     <div className="user-page">
@@ -32,7 +38,7 @@ export default function MealsPage() {
         <article className="stat-card">
           <span className="stat-dot stat-dot-green" />
           <div>
-            <strong>{meals.length}</strong>
+            <strong>{todayMeals.length}</strong>
             <span>기록된 끼니</span>
           </div>
         </article>
@@ -53,11 +59,16 @@ export default function MealsPage() {
         <p className="meal-empty-state">식단을 불러오는 중…</p>
       ) : error ? (
         <p className="meal-empty-state">{error}</p>
-      ) : meals.length === 0 ? (
-        <p className="meal-empty-state">오늘 기록된 식단이 없습니다. 위 버튼으로 추가해 보세요.</p>
+      ) : timelineMeals.length === 0 ? (
+        <p className="meal-empty-state">기록된 식단이 없습니다. 위 버튼으로 추가해 보세요.</p>
       ) : (
         <div className="meal-timeline">
-          {meals.map((meal) => (
+          {todayMeals.length === 0 && meals.length > 0 ? (
+            <p className="meal-empty-state meal-empty-state-inline">
+              오늘 기록은 없습니다. 최근 식단을 표시합니다.
+            </p>
+          ) : null}
+          {timelineMeals.map((meal) => (
             <MealTimelineItem key={meal.id} meal={meal} />
           ))}
         </div>

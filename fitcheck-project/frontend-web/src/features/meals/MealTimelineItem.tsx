@@ -11,7 +11,7 @@ export default function MealTimelineItem({ meal }: MealTimelineItemProps) {
   return (
     <article className="meal-item panel">
       {meal.imageUrl ? (
-        <img src={meal.imageUrl} alt="" className="meal-item-photo" />
+        <img src={meal.imageUrl} alt={title} className="meal-item-photo" />
       ) : null}
 
       <div className="meal-item-header">

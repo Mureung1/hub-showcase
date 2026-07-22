@@ -10,6 +10,14 @@
   margin-bottom: 0.25rem;
 }
 
+.meal-photo-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
 .meal-photo-input {
   display: none;
 }
@@ -104,4 +112,10 @@
   font-size: 0.875rem;
   border: 1px dashed var(--border);
   border-radius: var(--radius-sm);
+}
+
+.meal-empty-state-inline {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
+  text-align: left;
 }

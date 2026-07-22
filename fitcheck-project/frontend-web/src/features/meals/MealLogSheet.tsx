@@ -1,11 +1,13 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type RefObject } from 'react';
 import type { FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { createMeal } from '../../services/mealsApi';
 import { analyzeMealWithAi } from '../../services/mealAi';
+import { uploadMealImage, MEAL_IMAGE_ACCEPT_ATTR, validateMealImageFile } from '../../services/uploadsApi';
 import { ApiError } from '../../services/api';
 import { MEAL_TYPES, type MealType } from '../../types/meal';
+import { todayString } from '../../utils/date';
 import '../map/consult.css';
 import './mealSheet.css';
 
@@ -19,9 +21,7 @@ interface MealLogSheetProps {
 }
 
 function todayIsoDate() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset() * 60_000;
-  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+  return todayString();
 }
 
 function nowTimeHHmm() {
@@ -38,6 +38,45 @@ const INITIAL_FORM = {
   fat: '',
   kcal: '',
 };
+
+function MealPhotoPicker({
+  fileInputRef,
+  photoPreview,
+  onPick,
+  required,
+  label,
+}: {
+  fileInputRef: RefObject<HTMLInputElement | null>;
+  photoPreview: string | null;
+  onPick: (file: File | null) => void;
+  required?: boolean;
+  label: string;
+}) {
+  return (
+    <div className="meal-photo-field">
+      <span className="meal-photo-label">{label}</span>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={MEAL_IMAGE_ACCEPT_ATTR}
+        capture={required ? 'environment' : undefined}
+        className="meal-photo-input"
+        onChange={(event) => onPick(event.target.files?.[0] ?? null)}
+      />
+      <button
+        type="button"
+        className="meal-photo-picker"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        {photoPreview ? (
+          <img src={photoPreview} alt="선택한 식단 사진" className="meal-photo-preview" />
+        ) : (
+          <span className="meal-photo-placeholder">📷 사진 선택</span>
+        )}
+      </button>
+    </div>
+  );
+}
 
 export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealLogSheetProps) {
   const titleId = useId();
@@ -89,6 +128,12 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
       return;
     }
 
+    const validationError = validateMealImageFile(file);
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     setPhotoFile(file);
     setPhotoPreview(URL.createObjectURL(file));
   };
@@ -100,6 +145,11 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
     return n;
   };
 
+  const resolveImageUrl = async (): Promise<string | null> => {
+    if (!photoFile) return null;
+    return uploadMealImage(photoFile);
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -109,6 +159,7 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
     }
 
     const memo = form.memo.trim() || (mode === 'photo' ? '사진으로 기록한 식단' : '');
+    const hasPhoto = Boolean(photoFile);
 
     if (mode === 'manual') {
       const carb = parseMacroField(form.carb, '탄수화물');
@@ -135,13 +186,14 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
 
       setSubmitting(true);
       try {
-        const ai = await analyzeMealWithAi(form.mealType, memo, false);
+        const imageUrl = await resolveImageUrl();
+        const ai = await analyzeMealWithAi(form.mealType, memo, hasPhoto);
         await createMeal({
           date: todayIsoDate(),
           mealType: form.mealType,
           time: form.time,
           memo: memo || null,
-          imageUrl: null,
+          imageUrl,
           macros: ai?.macros ?? { carb, protein, fat, kcal },
           aiFeedback: ai?.aiFeedback ?? null,
         });
@@ -149,7 +201,9 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
         onClose();
       } catch (err) {
         const message =
-          err instanceof ApiError ? err.message : '식단 저장에 실패했습니다.';
+          err instanceof ApiError || err instanceof Error
+            ? err.message
+            : '식단 저장에 실패했습니다.';
         alert(message);
       } finally {
         setSubmitting(false);
@@ -159,13 +213,14 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
 
     setSubmitting(true);
     try {
+      const imageUrl = await resolveImageUrl();
       const ai = await analyzeMealWithAi(form.mealType, memo, true);
       await createMeal({
         date: todayIsoDate(),
         mealType: form.mealType,
         time: form.time,
         memo,
-        imageUrl: null,
+        imageUrl,
         macros: ai?.macros ?? { carb: 0, protein: 0, fat: 0, kcal: 0 },
         aiFeedback: ai?.aiFeedback ?? null,
       });
@@ -173,7 +228,9 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
       onClose();
     } catch (err) {
       const message =
-        err instanceof ApiError ? err.message : '식단 저장에 실패했습니다.';
+        err instanceof ApiError || err instanceof Error
+          ? err.message
+          : '식단 저장에 실패했습니다.';
       alert(message);
     } finally {
       setSubmitting(false);
@@ -197,8 +254,8 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
             <h2 id={titleId}>{sheetTitle}</h2>
             <p className="consult-sheet-sub">
               {mode === 'photo'
-                ? '사진과 메모를 남기면 AI가 탄단지·피드백을 추정합니다. (이미지 저장은 추후 연동)'
-                : '탄단지·칼로리를 입력하면 타임라인에 쌓입니다.'}
+                ? '사진과 메모를 남기면 AI가 탄단지·피드백을 추정합니다.'
+                : '탄단지·칼로리를 입력하고, 원하면 사진도 함께 남길 수 있습니다.'}
             </p>
           </div>
           <button type="button" className="consult-close" onClick={onClose} aria-label="닫기">
@@ -207,29 +264,13 @@ export default function MealLogSheet({ open, mode, onClose, onSubmitted }: MealL
         </div>
 
         <form className="consult-form meal-log-form" onSubmit={handleSubmit}>
-          {mode === 'photo' && (
-            <div className="meal-photo-field">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="meal-photo-input"
-                onChange={(event) => handlePhotoChange(event.target.files?.[0] ?? null)}
-              />
-              <button
-                type="button"
-                className="meal-photo-picker"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {photoPreview ? (
-                  <img src={photoPreview} alt="선택한 식단 사진" className="meal-photo-preview" />
-                ) : (
-                  <span className="meal-photo-placeholder">📷 사진 선택</span>
-                )}
-              </button>
-            </div>
-          )}
+          <MealPhotoPicker
+            fileInputRef={fileInputRef}
+            photoPreview={photoPreview}
+            onPick={handlePhotoChange}
+            required={mode === 'photo'}
+            label={mode === 'photo' ? '식단 사진' : '사진 (선택)'}
+          />
 
           <label className="consult-field">
             <span>끼니</span>
