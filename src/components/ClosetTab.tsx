@@ -34,10 +34,29 @@ export default function ClosetTab({ closet, onAddItem, onDeleteItem }: ClosetTab
     }
     const reader = new FileReader();
     reader.onload = (e) => {
-      if (e.target?.result) {
-        setImageUrl(e.target.result as string);
+      if (!e.target?.result) return;
+      const originalDataUrl = e.target.result as string;
+      const image = new Image();
+      image.onload = () => {
+        const maxEdge = 900;
+        const scale = Math.min(1, maxEdge / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+        if (!context) {
+          setImageUrl(originalDataUrl);
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        setImageUrl(canvas.toDataURL("image/webp", 0.78));
         setErrorMsg("");
-      }
+      };
+      image.onerror = () => {
+        setImageUrl(originalDataUrl);
+        setErrorMsg("");
+      };
+      image.src = originalDataUrl;
     };
     reader.readAsDataURL(file);
   };

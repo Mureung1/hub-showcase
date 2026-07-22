@@ -107,66 +107,49 @@ function getOfflineRecommendation(
   weather: string,
   destination: string,
   situation: string,
-  closet: any[]
+  closet: any[],
+  excludeItemIds: string[] = []
 ) {
-  const tops = closet.filter((item) => item.category === "top");
-  const bottoms = closet.filter((item) => item.category === "bottom");
-  const shoes = closet.filter((item) => item.category === "shoes");
-  const accessories = closet.filter((item) => item.category === "accessories");
+  const excluded = new Set(excludeItemIds);
 
-  const pickRandom = (items: any[]) =>
-    items.length > 0 ? items[Math.floor(Math.random() * items.length)] : null;
+  const pickDifferent = (category: string) => {
+    const all = closet.filter((item) => item.category === category);
+    const available = all.filter((item) => !excluded.has(item.id));
+    const pool = available.length > 0 ? available : all;
+    return pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
+  };
 
-  const selectedTop = pickRandom(tops);
-  const selectedBottom = pickRandom(bottoms);
-  const selectedShoes = pickRandom(shoes);
-  const selectedAccessory = pickRandom(accessories);
+  const selectedTop = pickDifferent("top");
+  const selectedBottom = pickDifferent("bottom");
+  const selectedShoes = pickDifferent("shoes");
+  const selectedAccessory = pickDifferent("accessories");
 
   const weatherLabel: Record<string, string> = {
-    sun: "맑은 날",
-    cloud: "흐린 날",
-    rain: "비 오는 날",
-    snow: "눈 오는 날",
+    sun: "맑은 날", cloud: "흐린 날", rain: "비 오는 날", snow: "눈 오는 날",
   };
-
   const destinationLabel: Record<string, string> = {
-    cafe: "카페",
-    home: "집",
-    school: "학교",
-    office: "회사",
-    party: "모임",
+    cafe: "카페", home: "집", school: "학교", office: "회사", party: "모임",
   };
-
   const situationLabel: Record<string, string> = {
-    date: "데이트",
-    workout: "운동",
-    formal: "격식 있는 일정",
-    daily: "일상",
+    date: "데이트", workout: "운동", formal: "격식 있는 일정", daily: "일상", casual: "일상",
   };
 
   const selectedItems = [selectedTop, selectedBottom, selectedShoes, selectedAccessory]
-    .filter(Boolean)
-    .map((item) => item.name)
-    .join(", ");
-
-  const stylistNote = `선택한 조건인 ${weatherLabel[weather] ?? weather}, ${destinationLabel[destination] ?? destination}, ${situationLabel[situation] ?? situation}을 고려했습니다.
-옷장에 등록된 아이템 중 실제로 입기 편하고 색상 조합이 자연스러운 구성을 우선했습니다.
-추천 아이템: ${selectedItems || "선택 가능한 옷이 부족합니다."}
-현재 Gemini 연결이 원활하지 않아 기본 추천 방식으로 결과를 제공했습니다.`;
+    .filter(Boolean).map((item) => item.name).join(", ");
 
   return {
     topId: selectedTop?.id ?? "",
     bottomId: selectedBottom?.id ?? "",
     shoesId: selectedShoes?.id ?? "",
     accessoriesId: selectedAccessory?.id ?? "",
-    stylistNote,
+    stylistNote: `선택한 조건인 ${weatherLabel[weather] ?? weather}, ${destinationLabel[destination] ?? destination}, ${situationLabel[situation] ?? situation}을 고려했습니다.\n직전 추천 상품을 우선 제외해 새로운 조합으로 구성했습니다.\n추천 아이템: ${selectedItems || "선택 가능한 옷이 부족합니다."}\n현재 Gemini 연결이 원활하지 않아 기본 추천 방식으로 결과를 제공했습니다.`,
   };
 }
 
 type FashionCategory = "top" | "bottom" | "shoes" | "accessories";
 
 function scoreCatalogProduct(item: any, weather: string, destination: string, situation: string): number {
-  let score = Math.random() * 0.25;
+  let score = Math.random() * 0.5;
   if (item.weather?.includes(weather)) score += 3;
   if (item.destinations?.includes(destination)) score += 2;
   if (item.styles?.includes(situation)) score += 3;
@@ -174,16 +157,57 @@ function scoreCatalogProduct(item: any, weather: string, destination: string, si
   return score;
 }
 
-function pickCatalogItem(category: FashionCategory, weather: string, destination: string, situation: string) {
-  return PRODUCT_CATALOG
-    .filter((item) => item.category === category)
-    .sort((a, b) => scoreCatalogProduct(b, weather, destination, situation) - scoreCatalogProduct(a, weather, destination, situation))[0];
+function pickCatalogItem(
+  category: FashionCategory,
+  weather: string,
+  destination: string,
+  situation: string,
+  excludeItemIds: string[] = []
+) {
+  const excluded = new Set(excludeItemIds);
+  const all = PRODUCT_CATALOG.filter((item) => item.category === category);
+  const available = all.filter((item) => !excluded.has(item.id));
+  const pool = available;
+  const ranked = [...pool].sort(
+    (a, b) => scoreCatalogProduct(b, weather, destination, situation) - scoreCatalogProduct(a, weather, destination, situation)
+  );
+  const topCandidates = ranked.slice(0, Math.min(5, ranked.length));
+  return topCandidates[Math.floor(Math.random() * topCandidates.length)];
 }
 
-function buildCatalogOutfit(ids: Record<string, string>, stylistNote: string, source: string) {
+function forceDifferentCatalogIds(
+  ids: Record<string, string>,
+  weather: string,
+  destination: string,
+  situation: string,
+  excludeItemIds: string[] = []
+) {
+  const excluded = new Set(excludeItemIds);
+  const mapping: Array<[keyof typeof ids, FashionCategory]> = [
+    ["topId", "top"], ["bottomId", "bottom"], ["shoesId", "shoes"], ["accessoriesId", "accessories"],
+  ];
+
+  const next = { ...ids };
+  for (const [key, category] of mapping) {
+    const selected = findCatalogProduct(next[key]);
+    if (!selected || selected.category !== category || excluded.has(next[key])) {
+      next[key] = pickCatalogItem(category, weather, destination, situation, excludeItemIds)?.id ?? "";
+    }
+  }
+  return next;
+}
+
+function buildCatalogOutfit(
+  ids: Record<string, string>,
+  stylistNote: string,
+  source: string,
+  excludeItemIds: string[] = []
+) {
+  const excluded = new Set(excludeItemIds);
   const safePick = (category: FashionCategory, requestedId?: string) => {
     const requested = requestedId ? findCatalogProduct(requestedId) : undefined;
-    return requested?.category === category ? requested : PRODUCT_CATALOG.find((item) => item.category === category);
+    if (requested?.category === category && !excluded.has(requested.id)) return requested;
+    return PRODUCT_CATALOG.find((item) => item.category === category && !excluded.has(item.id));
   };
 
   return {
@@ -197,23 +221,30 @@ function buildCatalogOutfit(ids: Record<string, string>, stylistNote: string, so
   };
 }
 
-function getOfflineNewOutfitRecommendation(weather: string, destination: string, situation: string) {
-  const top = pickCatalogItem("top", weather, destination, situation);
-  const bottom = pickCatalogItem("bottom", weather, destination, situation);
-  const shoes = pickCatalogItem("shoes", weather, destination, situation);
-  const accessories = pickCatalogItem("accessories", weather, destination, situation);
+function getOfflineNewOutfitRecommendation(
+  weather: string,
+  destination: string,
+  situation: string,
+  excludeItemIds: string[] = []
+) {
+  const top = pickCatalogItem("top", weather, destination, situation, excludeItemIds);
+  const bottom = pickCatalogItem("bottom", weather, destination, situation, excludeItemIds);
+  const shoes = pickCatalogItem("shoes", weather, destination, situation, excludeItemIds);
+  const accessories = pickCatalogItem("accessories", weather, destination, situation, excludeItemIds);
 
   return buildCatalogOutfit(
-    { topId: top.id, bottomId: bottom.id, shoesId: shoes.id, accessoriesId: accessories.id },
-    `${weather} 날씨와 ${destination} 장소, ${situation} 상황을 반영해 자체 상품 카탈로그에서 코디를 골랐습니다.\n상의와 하의의 색상 균형을 맞추고, 이동하기 편한 신발을 함께 구성했습니다.\n액세서리는 전체 코디를 방해하지 않으면서 포인트가 되도록 선택했습니다.\nGemini 연결이 어려워도 자체 추천 규칙으로 안정적으로 결과를 제공합니다.`,
-    "local-catalog-fallback"
+    { topId: top?.id ?? "", bottomId: bottom?.id ?? "", shoesId: shoes?.id ?? "", accessoriesId: accessories?.id ?? "" },
+    `${weather} 날씨와 ${destination} 장소, ${situation} 상황을 반영했습니다.\n직전 추천 상품을 우선 제외한 뒤, 조건 점수가 높은 후보 중 무작위로 새 조합을 골랐습니다.\n상의·하의·신발·액세서리의 균형을 고려했습니다.\n버튼을 다시 누를 때마다 가능한 범위에서 다른 상품으로 변경됩니다.`,
+    "local-catalog-fallback",
+    excludeItemIds
   );
 }
 
 // API endpoint for Outfit Coordination Recommendation
 app.post("/api/recommend", async (req, res) => {
   try {
-    const { weather, destination, situation, closet, mode } = req.body;
+    const { weather, destination, situation, closet, mode, retrySeed, excludeItemIds = [] } = req.body;
+    const safeExcludeItemIds: string[] = Array.isArray(excludeItemIds) ? excludeItemIds.filter((id): id is string => typeof id === "string") : [];
 
     if (!weather || !destination || !situation || !closet || !Array.isArray(closet)) {
       return res.status(400).json({ error: "Missing required selection parameters or closet inventory." });
@@ -223,9 +254,20 @@ app.post("/api/recommend", async (req, res) => {
 
     // New Outfit mode: Gemini must select IDs from the local catalog only.
     if (mode === "new_outfit") {
-      if (!ai) return res.json(getOfflineNewOutfitRecommendation(weather, destination, situation));
+      const ownedCatalogIds = PRODUCT_CATALOG
+        .filter((catalogItem) => closet.some((closetItem) =>
+          closetItem?.id === catalogItem.id ||
+          closetItem?.name === catalogItem.name ||
+          closetItem?.imageUrl === catalogItem.imageUrl
+        ))
+        .map((item) => item.id);
+      const catalogExcludeItemIds = [...new Set([...safeExcludeItemIds, ...ownedCatalogIds])];
 
-      const catalogText = PRODUCT_CATALOG.map((item) =>
+      if (!ai) return res.json(getOfflineNewOutfitRecommendation(weather, destination, situation, catalogExcludeItemIds));
+
+      const catalogText = PRODUCT_CATALOG
+        .filter((item) => !catalogExcludeItemIds.includes(item.id))
+        .map((item) =>
         `ID:${item.id} | ${item.category} | ${item.name} | colors:${item.colors.join(",")} | seasons:${item.seasons.join(",")} | styles:${item.styles.join(",")}`
       ).join("\n");
 
@@ -236,7 +278,7 @@ app.post("/api/recommend", async (req, res) => {
 조건
 - 날씨: ${weather}
 - 장소: ${destination}
-- 상황: ${situation}
+- 상황: ${situation}\n- 추천 요청 고유값: ${retrySeed ?? Date.now()}\n- 추천에서 제외할 상품 ID(직전 추천 및 이미 옷장에 추가한 상품): ${catalogExcludeItemIds.join(", ")}\n\n같은 조건으로 다시 추천하더라도 직전 결과와 다른 아이템 조합을 선택하세요.\n제외 상품 ID는 절대 선택하지 마세요.
 
 상품 카탈로그
 ${catalogText}
@@ -259,26 +301,37 @@ stylistNote는 선택 이유를 자연스러운 한국어 4줄로 설명하세�
               },
               required: ["topId", "bottomId", "shoesId", "accessoriesId", "stylistNote"]
             },
-            temperature: 0.3
+            temperature: 0.95
           }
         }));
         const parsed = JSON.parse(response.text?.trim() || "{}");
-        return res.json(buildCatalogOutfit(parsed, parsed.stylistNote || "자체 상품 카탈로그에서 조건에 맞는 코디를 선택했습니다.", "gemini-local-catalog"));
+        const forcedIds = forceDifferentCatalogIds(parsed, weather, destination, situation, catalogExcludeItemIds);
+        return res.json(buildCatalogOutfit(
+          forcedIds,
+          parsed.stylistNote || "자체 상품 카탈로그에서 조건에 맞는 새로운 코디를 선택했습니다.",
+          "gemini-local-catalog",
+          catalogExcludeItemIds
+        ));
       } catch (error) {
         console.error("Gemini catalog recommendation failed:", error);
-        return res.json(getOfflineNewOutfitRecommendation(weather, destination, situation));
+        return res.json(getOfflineNewOutfitRecommendation(weather, destination, situation, catalogExcludeItemIds));
       }
     }
 
     // Default My Closet mode
     if (!ai) {
-      const fallback = getOfflineRecommendation(weather, destination, situation, closet);
+      const fallback = getOfflineRecommendation(weather, destination, situation, closet, safeExcludeItemIds);
       return res.json({ ...fallback, source: "local-fallback" });
     }
 
     // Prepare catalog text description for Gemini AI
-    const closetDescription = closet.map((item, idx) => {
-      return `ID: ${item.id} | Name: ${item.name} | Category: ${item.category} | Colors: ${item.colors.join(", ")}`;
+    const closetDescription = closet.map((item) => {
+      const colors = Array.isArray(item?.colors)
+        ? item.colors.join(", ")
+        : typeof item?.colors === "string"
+          ? item.colors
+          : "색상 정보 없음";
+      return `ID: ${item?.id ?? "unknown"} | Name: ${item?.name ?? "이름 없는 옷"} | Category: ${item?.category ?? "unknown"} | Colors: ${colors}`;
     }).join("\n");
 
     const promptString = `당신은 대한민국의 전문 패션 스타일리스트입니다.
@@ -288,7 +341,7 @@ stylistNote는 선택 이유를 자연스러운 한국어 4줄로 설명하세�
 사용자 조건
 - 날씨: ${weather}
 - 장소: ${destination}
-- 상황: ${situation}
+- 상황: ${situation}\n- 추천 요청 고유값: ${retrySeed ?? Date.now()}\n- 직전 추천에서 제외할 상품 ID: ${safeExcludeItemIds.join(", ")}\n\n같은 조건으로 다시 추천하더라도 직전 결과와 가능한 한 다른 아이템 조합을 선택하세요.\n제외 상품 ID에 포함된 상품은 대체 상품이 충분한 경우 선택하지 마세요.
 
 사용자 옷장 목록
 ${closetDescription}
@@ -322,23 +375,36 @@ ${closetDescription}
             },
             required: ["topId", "bottomId", "shoesId", "stylistNote"]
           },
-          temperature: 0.25
+          temperature: 0.75
         }
       });
 
       const resultText = response.text;
       if (resultText) {
         const parsedResult = JSON.parse(resultText.trim());
+        const excluded = new Set(safeExcludeItemIds);
+        const forceDifferentClosetId = (category: string, requestedId: string | undefined) => {
+          const validRequested = closet.find((item) => item.id === requestedId && item.category === category);
+          if (validRequested && !excluded.has(validRequested.id)) return validRequested.id;
+          const alternatives = closet.filter((item) => item.category === category && !excluded.has(item.id));
+          const fallbackPool = alternatives.length > 0 ? alternatives : closet.filter((item) => item.category === category);
+          return fallbackPool.length > 0 ? fallbackPool[Math.floor(Math.random() * fallbackPool.length)].id : "";
+        };
+
         return res.json({
           ...parsedResult,
-          source: "gemini-3.1-flash-lite",
+          topId: forceDifferentClosetId("top", parsedResult.topId),
+          bottomId: forceDifferentClosetId("bottom", parsedResult.bottomId),
+          shoesId: forceDifferentClosetId("shoes", parsedResult.shoesId),
+          accessoriesId: forceDifferentClosetId("accessories", parsedResult.accessoriesId),
+          source: "gemini-3.1-flash-lite-forced-different",
         });
       } else {
         throw new Error("Empty response from Gemini model.");
       }
     } catch (apiError) {
       console.error("Gemini API Error, falling back to local recommendation rules:", apiError);
-      const fallback = getOfflineRecommendation(weather, destination, situation, closet);
+      const fallback = getOfflineRecommendation(weather, destination, situation, closet, safeExcludeItemIds);
       return res.json({ ...fallback, source: "local-fallback" });
     }
   } catch (err: any) {

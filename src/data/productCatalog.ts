@@ -1,3 +1,5 @@
+import { ADDITIONAL_PRODUCT_CATALOG } from "./additionalProductCatalog";
+
 export type ProductCategory = "top" | "bottom" | "shoes" | "accessories";
 
 export interface CatalogProduct {
@@ -6,7 +8,7 @@ export interface CatalogProduct {
   description: string; imageUrl: string; price: number; brand: string; catalogSource: true;
 }
 
-export const PRODUCT_CATALOG: CatalogProduct[] = [
+const BASE_PRODUCT_CATALOG: CatalogProduct[] = [
   {
     "id": "top-001",
     "name": "화이트 오버핏 코튼 셔츠",
@@ -3419,5 +3421,10 @@ export const PRODUCT_CATALOG: CatalogProduct[] = [
     "catalogSource": true
   }
 ] as CatalogProduct[];
+
+export const PRODUCT_CATALOG: CatalogProduct[] = [
+  ...BASE_PRODUCT_CATALOG,
+  ...ADDITIONAL_PRODUCT_CATALOG,
+];
 
 export const findCatalogProduct = (id: string) => PRODUCT_CATALOG.find((item) => item.id === id);

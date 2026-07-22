@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ClothingItem, WeatherType, DestinationType, SituationType, SavedOutfit } from "../types";
-import { Sun, Cloud, CloudRain, Snowflake, Coffee, GraduationCap, Briefcase, Sparkles, Home, Heart, Dumbbell, Gamepad2, RefreshCw, Save, ChevronRight, Terminal, Star, Trash2, Plus, Settings } from "lucide-react";
+import { PRODUCT_CATALOG } from "../data/productCatalog";
+import { Sun, Cloud, CloudRain, Snowflake, Coffee, GraduationCap, Briefcase, Sparkles, Home, Heart, Dumbbell, Gamepad2, RefreshCw, Save, ChevronRight, Terminal, Star, Trash2, Plus, Settings, Search } from "lucide-react";
 import DynamicPixelCharacter from "./DynamicPixelCharacter";
 
 interface OutfitsTabProps {
@@ -17,7 +18,7 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
   // Selection states
   const [weather, setWeather] = useState<string>("sun");
   const [destination, setDestination] = useState<string>("cafe");
-  const [situation, setSituation] = useState<string>("casual");
+  const [situation, setSituation] = useState<string>("date");
   const [recommendMode, setRecommendMode] = useState<"my_closet" | "new_outfit">("my_closet");
 
   // Loading states
@@ -38,6 +39,7 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
     hairColorName: string;
     accessoryType: "coffee" | "gamepad" | "umbrella" | "shades" | "dumbbells" | "none";
   } | null>(null);
+  const [characterNonce, setCharacterNonce] = useState(0);
 
   const generateRandomCharacter = () => {
     const bodies: ("bunny" | "kitty" | "bear" | "elf" | "human")[] = ["bunny", "kitty", "bear", "elf", "human"];
@@ -88,11 +90,27 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
       acc = "none";
     }
 
-    setPixelCharacter({
-      bodyType: selectedBody,
-      hairColorName: hairColor,
-      accessoryType: acc
+    setPixelCharacter((previous) => {
+      let next = {
+        bodyType: selectedBody,
+        hairColorName: hairColor,
+        accessoryType: acc,
+      };
+
+      // 같은 캐릭터가 연속으로 나오지 않도록 최대 8번 다시 생성합니다.
+      for (let attempt = 0; attempt < 8 && previous &&
+        previous.bodyType === next.bodyType &&
+        previous.hairColorName === next.hairColorName &&
+        previous.accessoryType === next.accessoryType; attempt += 1) {
+        next = {
+          bodyType: bodies[Math.floor(Math.random() * bodies.length)],
+          hairColorName: ["pink", "violet", "green", "cyan", "yellow", "orange", "grey"][Math.floor(Math.random() * 7)],
+          accessoryType: (["coffee", "gamepad", "umbrella", "shades", "dumbbells", "none"] as const)[Math.floor(Math.random() * 6)],
+        };
+      }
+      return next;
     });
+    setCharacterNonce((value) => value + 1);
   };
 
   // Helper mappings
@@ -138,8 +156,28 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
     }
   };
 
+  const isItemAlreadyInCloset = (item: ClothingItem) =>
+    !!addedItems[item.id] || closet.some((closetItem) =>
+      closetItem.id === item.id ||
+      closetItem.name === item.name ||
+      closetItem.imageUrl === item.imageUrl
+    );
+
+  const buildRetryStylistNote = (items: SavedOutfit["items"]) => {
+    const names = [items.top, items.bottom, items.shoes, items.accessories]
+      .filter((item): item is ClothingItem => !!item)
+      .map((item) => item.name)
+      .join(", ");
+    return `${weather} 날씨와 ${destination} 장소, ${situation} 상황을 다시 분석했습니다.\n직전 코디와 다른 아이템을 중심으로 새 조합을 구성했습니다.\n이번 추천 아이템: ${names || "선택 가능한 아이템이 없습니다."}\n재추천 완료: ${new Date().toLocaleTimeString("ko-KR")}`;
+  };
+
   // Run Recommendation Request
   const handleRecommend = async (isRetry: boolean = false) => {
+    const previousItems = isRetry ? resultOutfit?.items : undefined;
+    const previousItemIds = previousItems
+      ? Object.values(previousItems).filter(Boolean).map((item) => item!.id)
+      : [];
+
     if (isRetry) {
       setIsRecommending(true);
     } else {
@@ -170,6 +208,7 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
     try {
       const response = await fetch("/api/recommend", {
         method: "POST",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
         body: JSON.stringify({
@@ -177,7 +216,9 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
           destination: destination.trim().slice(0, 50),
           situation: situation.trim().slice(0, 80),
           closet,
-          mode: recommendMode
+          mode: recommendMode,
+          retrySeed: `${Date.now()}-${Math.random()}`,
+          excludeItemIds: previousItemIds
         })
       });
 
@@ -191,38 +232,92 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
       let recommendedOutfit: SavedOutfit;
 
       if (data.isNewOutfit) {
-        recommendedOutfit = {
-          id: "outfit-" + Date.now(),
-          weather: weather as WeatherType,
-          destination: destination as DestinationType,
-          situation: situation as SituationType,
-          items: {
-            top: data.top,
-            bottom: data.bottom,
-            shoes: data.shoes,
-            accessories: data.accessories
-          },
-          stylistNote: data.stylistNote || "> SYSTEM: New outfit compiled successfully.",
-          savedAt: new Date().toISOString()
+        const excludedCatalogIds = new Set(previousItemIds);
+        PRODUCT_CATALOG.forEach((catalogItem) => {
+          const isOwned = closet.some((closetItem) =>
+            closetItem.id === catalogItem.id ||
+            closetItem.name === catalogItem.name ||
+            closetItem.imageUrl === catalogItem.imageUrl
+          );
+          if (isOwned) excludedCatalogIds.add(catalogItem.id);
+        });
+
+        const pickSafeCatalogItem = (
+          category: ClothingItem["category"],
+          requestedItem: ClothingItem | undefined
+        ): ClothingItem | undefined => {
+          const requestedCatalogItem = requestedItem
+            ? PRODUCT_CATALOG.find((item) => item.id === requestedItem.id)
+            : undefined;
+          if (
+            requestedCatalogItem?.category === category &&
+            !excludedCatalogIds.has(requestedCatalogItem.id)
+          ) {
+            return requestedCatalogItem;
+          }
+
+          const alternatives = PRODUCT_CATALOG.filter((item) =>
+            item.category === category && !excludedCatalogIds.has(item.id)
+          );
+          return alternatives.length > 0
+            ? alternatives[Math.floor(Math.random() * alternatives.length)]
+            : undefined;
         };
-      } else {
-        const topItem = closet.find(item => item.id === data.topId) || closet.find(item => item.category === "top");
-        const bottomItem = closet.find(item => item.id === data.bottomId) || closet.find(item => item.category === "bottom");
-        const shoesItem = closet.find(item => item.id === data.shoesId) || closet.find(item => item.category === "shoes");
-        const accessoriesItem = closet.find(item => item.id === data.accessoriesId) || closet.find(item => item.category === "accessories");
+
+        const selectedItems: SavedOutfit["items"] = {
+          top: pickSafeCatalogItem("top", data.top),
+          bottom: pickSafeCatalogItem("bottom", data.bottom),
+          shoes: pickSafeCatalogItem("shoes", data.shoes),
+          accessories: pickSafeCatalogItem("accessories", data.accessories)
+        };
 
         recommendedOutfit = {
           id: "outfit-" + Date.now(),
           weather: weather as WeatherType,
           destination: destination as DestinationType,
           situation: situation as SituationType,
-          items: {
-            top: topItem,
-            bottom: bottomItem,
-            shoes: shoesItem,
-            accessories: accessoriesItem
-          },
-          stylistNote: data.stylistNote || "> SYSTEM: Core compiled successfully.",
+          items: selectedItems,
+          stylistNote: isRetry ? buildRetryStylistNote(selectedItems) : (data.stylistNote || "> SYSTEM: New outfit compiled successfully."),
+          savedAt: new Date().toISOString()
+        };
+      } else {
+        const pickClosetItem = (
+          category: ClothingItem["category"],
+          recommendedId: string | undefined,
+          previousId: string | undefined
+        ) => {
+          const categoryItems = closet.filter((item) => item.category === category);
+          const alternatives = categoryItems.filter((item) => item.id !== previousId);
+          const recommendedItem = categoryItems.find((item) => item.id === recommendedId);
+
+          if (isRetry && alternatives.length > 0) {
+            return recommendedItem && recommendedItem.id !== previousId
+              ? recommendedItem
+              : alternatives[Math.floor(Math.random() * alternatives.length)];
+          }
+
+          return recommendedItem || categoryItems[0];
+        };
+
+        const topItem = pickClosetItem("top", data.topId, previousItems?.top?.id);
+        const bottomItem = pickClosetItem("bottom", data.bottomId, previousItems?.bottom?.id);
+        const shoesItem = pickClosetItem("shoes", data.shoesId, previousItems?.shoes?.id);
+        const accessoriesItem = pickClosetItem("accessories", data.accessoriesId, previousItems?.accessories?.id);
+
+        const selectedItems: SavedOutfit["items"] = {
+          top: topItem,
+          bottom: bottomItem,
+          shoes: shoesItem,
+          accessories: accessoriesItem
+        };
+
+        recommendedOutfit = {
+          id: "outfit-" + Date.now(),
+          weather: weather as WeatherType,
+          destination: destination as DestinationType,
+          situation: situation as SituationType,
+          items: selectedItems,
+          stylistNote: isRetry ? buildRetryStylistNote(selectedItems) : (data.stylistNote || "> SYSTEM: Core compiled successfully."),
           savedAt: new Date().toISOString()
         };
       }
@@ -232,6 +327,80 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
       setLoadingStep(100);
     } catch (err) {
       console.error("AI Stylist Error:", err);
+
+      if (recommendMode === "new_outfit") {
+        const excludedIds = new Set(previousItemIds);
+        PRODUCT_CATALOG.forEach((catalogItem) => {
+          if (closet.some((closetItem) =>
+            closetItem.id === catalogItem.id ||
+            closetItem.name === catalogItem.name ||
+            closetItem.imageUrl === catalogItem.imageUrl
+          )) {
+            excludedIds.add(catalogItem.id);
+          }
+        });
+        const pickLocalAlternative = (category: ClothingItem["category"]) => {
+          const alternatives = PRODUCT_CATALOG.filter((item) =>
+            item.category === category && !excludedIds.has(item.id)
+          );
+          return alternatives.length > 0
+            ? alternatives[Math.floor(Math.random() * alternatives.length)]
+            : undefined;
+        };
+
+        const selectedItems: SavedOutfit["items"] = {
+          top: pickLocalAlternative("top"),
+          bottom: pickLocalAlternative("bottom"),
+          shoes: pickLocalAlternative("shoes"),
+          accessories: pickLocalAlternative("accessories"),
+        };
+
+        generateRandomCharacter();
+        setResultOutfit({
+          id: "outfit-" + Date.now(),
+          weather: weather as WeatherType,
+          destination: destination as DestinationType,
+          situation: situation as SituationType,
+          items: selectedItems,
+          stylistNote: isRetry
+            ? buildRetryStylistNote(selectedItems)
+            : "> SYSTEM: 서버 응답이 지연되어 로컬 카탈로그에서 보유 상품을 제외한 새 조합을 추천했습니다.",
+          savedAt: new Date().toISOString(),
+        });
+        setLoadingStep(100);
+        return;
+      }
+
+      if (recommendMode === "my_closet") {
+        const pickLocalClosetItem = (category: ClothingItem["category"], previousId?: string) => {
+          const categoryItems = closet.filter((item) => item.category === category);
+          const alternatives = categoryItems.filter((item) => item.id !== previousId);
+          const pool = alternatives.length > 0 ? alternatives : categoryItems;
+          return pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : undefined;
+        };
+
+        const selectedItems: SavedOutfit["items"] = {
+          top: pickLocalClosetItem("top", previousItems?.top?.id),
+          bottom: pickLocalClosetItem("bottom", previousItems?.bottom?.id),
+          shoes: pickLocalClosetItem("shoes", previousItems?.shoes?.id),
+          accessories: pickLocalClosetItem("accessories", previousItems?.accessories?.id),
+        };
+
+        generateRandomCharacter();
+        setResultOutfit({
+          id: "outfit-" + Date.now(),
+          weather: weather as WeatherType,
+          destination: destination as DestinationType,
+          situation: situation as SituationType,
+          items: selectedItems,
+          stylistNote: isRetry
+            ? buildRetryStylistNote(selectedItems)
+            : "> SYSTEM: 로그인 옷장 데이터를 안전하게 불러와 로컬 추천을 완료했습니다. 서버 연결이 복구되면 AI 스타일 노트가 다시 제공됩니다.",
+          savedAt: new Date().toISOString(),
+        });
+        setLoadingStep(100);
+        return;
+      }
 
       const message =
         err instanceof DOMException && err.name === "AbortError"
@@ -580,6 +749,7 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                         </div>
                       ) : pixelCharacter ? (
                         <DynamicPixelCharacter
+                          key={characterNonce}
                           bodyType={pixelCharacter.bodyType}
                           topColorName={resultOutfit.items.top?.colors}
                           bottomColorName={resultOutfit.items.bottom?.colors}
@@ -639,7 +809,7 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                       {/* Top */}
                       {resultOutfit.items.top && (
                         <li className="flex flex-col md:flex-row md:items-center gap-4 bg-surface p-3 border border-outline-variant hover:bg-surface-bright transition-colors relative">
-                          <div className="flex items-center gap-4 flex-1">
+                          <div className="flex min-w-0 flex-1 items-center gap-3">
                             <div className="w-16 h-16 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
                                 <img
                                   src={resultOutfit.items.top.imageUrl}
@@ -660,7 +830,7 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                                   <span className="px-1.5 py-0.5 bg-secondary/20 text-secondary border border-secondary/30 text-[8px] uppercase font-bold">NEW 🆕</span>
                                 )}
                               </div>
-                              <p className="font-body-md text-sm text-on-surface font-bold truncate">{resultOutfit.items.top.name}</p>
+                              <p className="font-body-md text-base leading-snug text-on-surface font-bold break-words">{resultOutfit.items.top.name}</p>
                               {resultOutfit.items.top.description && (
                                 <p className="text-[11px] text-on-surface-variant line-clamp-2 mt-0.5">{resultOutfit.items.top.description}</p>
                               )}
@@ -668,25 +838,29 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                           </div>
 
                           {/* Catalog details & Add to closet */}
-                          {resultOutfit.items.top.catalogSource && (
+                          {resultOutfit.items.top.catalogSource && !isItemAlreadyInCloset(resultOutfit.items.top) && (
                             <div className="flex flex-wrap items-center gap-2 shrink-0 md:self-center">
-                              <div className="px-3 py-1.5 bg-secondary/10 text-secondary text-xs font-bold border border-secondary/30">
-                                <span>{resultOutfit.items.top.brand || "PMC Select"}</span>
-                                {typeof resultOutfit.items.top.price === "number" && (
-                                  <span className="ml-2">{resultOutfit.items.top.price.toLocaleString("ko-KR")}원</span>
-                                )}
-                              </div>
+                              <a
+                                href={`https://www.google.com/search?q=${encodeURIComponent(resultOutfit.items.top.name)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-secondary/10 text-secondary text-xs font-bold border border-secondary/30 flex items-center gap-1 hover:bg-secondary/20 transition-colors"
+                                aria-label={`${resultOutfit.items.top.name} Google 검색`}
+                              >
+                                <Search size={12} />
+                                <span>검색하기</span>
+                              </a>
                               {onAddItem && (
                                 <button
                                   onClick={() => handleAddToCloset(resultOutfit!.items.top!)}
                                   disabled={!!addedItems[resultOutfit.items.top.id]}
-                                  className={`px-3 py-1.5 text-xs font-bold border flex items-center gap-1 transition-all ${addedItems[resultOutfit.items.top.id]
+                                  className={`min-w-0 max-w-full px-2.5 py-1.5 text-xs font-bold border flex items-center gap-1 transition-all ${addedItems[resultOutfit.items.top.id]
                                     ? "bg-neutral-800 text-neutral-400 border-neutral-700 cursor-not-allowed"
                                     : "bg-surface text-primary border-primary shadow-[2px_2px_0_0_#000] hover:bg-surface-variant active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer"
                                     }`}
                                 >
                                   <Plus size={12} />
-                                  <span>{addedItems[resultOutfit.items.top.id] ? "추가 완료 ✅" : "내 옷장에 추가"}</span>
+                                  <span className="whitespace-normal break-keep text-center leading-tight">{addedItems[resultOutfit.items.top.id] ? "추가 완료 ✅" : "내 옷장에 추가"}</span>
                                 </button>
                               )}
                             </div>
@@ -697,7 +871,7 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                       {/* Bottom */}
                       {resultOutfit.items.bottom && (
                         <li className="flex flex-col md:flex-row md:items-center gap-4 bg-surface p-3 border border-outline-variant hover:bg-surface-bright transition-colors relative">
-                          <div className="flex items-center gap-4 flex-1">
+                          <div className="flex min-w-0 flex-1 items-center gap-3">
                             <div className="w-16 h-16 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
                                 <img
                                   src={resultOutfit.items.bottom.imageUrl}
@@ -718,7 +892,7 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                                   <span className="px-1.5 py-0.5 bg-secondary/20 text-secondary border border-secondary/30 text-[8px] uppercase font-bold">NEW 🆕</span>
                                 )}
                               </div>
-                              <p className="font-body-md text-sm text-on-surface font-bold truncate">{resultOutfit.items.bottom.name}</p>
+                              <p className="font-body-md text-base leading-snug text-on-surface font-bold break-words">{resultOutfit.items.bottom.name}</p>
                               {resultOutfit.items.bottom.description && (
                                 <p className="text-[11px] text-on-surface-variant line-clamp-2 mt-0.5">{resultOutfit.items.bottom.description}</p>
                               )}
@@ -726,25 +900,29 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                           </div>
 
                           {/* Catalog details & Add to closet */}
-                          {resultOutfit.items.bottom.catalogSource && (
+                          {resultOutfit.items.bottom.catalogSource && !isItemAlreadyInCloset(resultOutfit.items.bottom) && (
                             <div className="flex flex-wrap items-center gap-2 shrink-0 md:self-center">
-                              <div className="px-3 py-1.5 bg-secondary/10 text-secondary text-xs font-bold border border-secondary/30">
-                                <span>{resultOutfit.items.bottom.brand || "PMC Select"}</span>
-                                {typeof resultOutfit.items.bottom.price === "number" && (
-                                  <span className="ml-2">{resultOutfit.items.bottom.price.toLocaleString("ko-KR")}원</span>
-                                )}
-                              </div>
+                              <a
+                                href={`https://www.google.com/search?q=${encodeURIComponent(resultOutfit.items.bottom.name)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-secondary/10 text-secondary text-xs font-bold border border-secondary/30 flex items-center gap-1 hover:bg-secondary/20 transition-colors"
+                                aria-label={`${resultOutfit.items.bottom.name} Google 검색`}
+                              >
+                                <Search size={12} />
+                                <span>검색하기</span>
+                              </a>
                               {onAddItem && (
                                 <button
                                   onClick={() => handleAddToCloset(resultOutfit!.items.bottom!)}
                                   disabled={!!addedItems[resultOutfit.items.bottom.id]}
-                                  className={`px-3 py-1.5 text-xs font-bold border flex items-center gap-1 transition-all ${addedItems[resultOutfit.items.bottom.id]
+                                  className={`min-w-0 max-w-full px-2.5 py-1.5 text-xs font-bold border flex items-center gap-1 transition-all ${addedItems[resultOutfit.items.bottom.id]
                                     ? "bg-neutral-800 text-neutral-400 border-neutral-700 cursor-not-allowed"
                                     : "bg-surface text-primary border-primary shadow-[2px_2px_0_0_#000] hover:bg-surface-variant active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer"
                                     }`}
                                 >
                                   <Plus size={12} />
-                                  <span>{addedItems[resultOutfit.items.bottom.id] ? "추가 완료 ✅" : "내 옷장에 추가"}</span>
+                                  <span className="whitespace-normal break-keep text-center leading-tight">{addedItems[resultOutfit.items.bottom.id] ? "추가 완료 ✅" : "내 옷장에 추가"}</span>
                                 </button>
                               )}
                             </div>
@@ -755,7 +933,7 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                       {/* Shoes */}
                       {resultOutfit.items.shoes && (
                         <li className="flex flex-col md:flex-row md:items-center gap-4 bg-surface p-3 border border-outline-variant hover:bg-surface-bright transition-colors relative">
-                          <div className="flex items-center gap-4 flex-1">
+                          <div className="flex min-w-0 flex-1 items-center gap-3">
                             <div className="w-16 h-16 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
                                 <img
                                   src={resultOutfit.items.shoes.imageUrl}
@@ -776,7 +954,7 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                                   <span className="px-1.5 py-0.5 bg-secondary/20 text-secondary border border-secondary/30 text-[8px] uppercase font-bold">NEW 🆕</span>
                                 )}
                               </div>
-                              <p className="font-body-md text-sm text-on-surface font-bold truncate">{resultOutfit.items.shoes.name}</p>
+                              <p className="font-body-md text-base leading-snug text-on-surface font-bold break-words">{resultOutfit.items.shoes.name}</p>
                               {resultOutfit.items.shoes.description && (
                                 <p className="text-[11px] text-on-surface-variant line-clamp-2 mt-0.5">{resultOutfit.items.shoes.description}</p>
                               )}
@@ -784,25 +962,29 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                           </div>
 
                           {/* Catalog details & Add to closet */}
-                          {resultOutfit.items.shoes.catalogSource && (
+                          {resultOutfit.items.shoes.catalogSource && !isItemAlreadyInCloset(resultOutfit.items.shoes) && (
                             <div className="flex flex-wrap items-center gap-2 shrink-0 md:self-center">
-                              <div className="px-3 py-1.5 bg-secondary/10 text-secondary text-xs font-bold border border-secondary/30">
-                                <span>{resultOutfit.items.shoes.brand || "PMC Select"}</span>
-                                {typeof resultOutfit.items.shoes.price === "number" && (
-                                  <span className="ml-2">{resultOutfit.items.shoes.price.toLocaleString("ko-KR")}원</span>
-                                )}
-                              </div>
+                              <a
+                                href={`https://www.google.com/search?q=${encodeURIComponent(resultOutfit.items.shoes.name)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-secondary/10 text-secondary text-xs font-bold border border-secondary/30 flex items-center gap-1 hover:bg-secondary/20 transition-colors"
+                                aria-label={`${resultOutfit.items.shoes.name} Google 검색`}
+                              >
+                                <Search size={12} />
+                                <span>검색하기</span>
+                              </a>
                               {onAddItem && (
                                 <button
                                   onClick={() => handleAddToCloset(resultOutfit!.items.shoes!)}
                                   disabled={!!addedItems[resultOutfit.items.shoes.id]}
-                                  className={`px-3 py-1.5 text-xs font-bold border flex items-center gap-1 transition-all ${addedItems[resultOutfit.items.shoes.id]
+                                  className={`min-w-0 max-w-full px-2.5 py-1.5 text-xs font-bold border flex items-center gap-1 transition-all ${addedItems[resultOutfit.items.shoes.id]
                                     ? "bg-neutral-800 text-neutral-400 border-neutral-700 cursor-not-allowed"
                                     : "bg-surface text-primary border-primary shadow-[2px_2px_0_0_#000] hover:bg-surface-variant active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer"
                                     }`}
                                 >
                                   <Plus size={12} />
-                                  <span>{addedItems[resultOutfit.items.shoes.id] ? "추가 완료 ✅" : "내 옷장에 추가"}</span>
+                                  <span className="whitespace-normal break-keep text-center leading-tight">{addedItems[resultOutfit.items.shoes.id] ? "추가 완료 ✅" : "내 옷장에 추가"}</span>
                                 </button>
                               )}
                             </div>
@@ -813,7 +995,7 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                       {/* Accessories */}
                       {resultOutfit.items.accessories && (
                         <li className="flex flex-col md:flex-row md:items-center gap-4 bg-surface p-3 border border-outline-variant hover:bg-surface-bright transition-colors relative">
-                          <div className="flex items-center gap-4 flex-1">
+                          <div className="flex min-w-0 flex-1 items-center gap-3">
                             <div className="w-16 h-16 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
                                 <img
                                   src={resultOutfit.items.accessories.imageUrl}
@@ -834,7 +1016,7 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                                   <span className="px-1.5 py-0.5 bg-secondary/20 text-secondary border border-secondary/30 text-[8px] uppercase font-bold">NEW 🆕</span>
                                 )}
                               </div>
-                              <p className="font-body-md text-sm text-on-surface font-bold truncate">{resultOutfit.items.accessories.name}</p>
+                              <p className="font-body-md text-base leading-snug text-on-surface font-bold break-words">{resultOutfit.items.accessories.name}</p>
                               {resultOutfit.items.accessories.description && (
                                 <p className="text-[11px] text-on-surface-variant line-clamp-2 mt-0.5">{resultOutfit.items.accessories.description}</p>
                               )}
@@ -842,25 +1024,29 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                           </div>
 
                           {/* Catalog details & Add to closet */}
-                          {resultOutfit.items.accessories.catalogSource && (
+                          {resultOutfit.items.accessories.catalogSource && !isItemAlreadyInCloset(resultOutfit.items.accessories) && (
                             <div className="flex flex-wrap items-center gap-2 shrink-0 md:self-center">
-                              <div className="px-3 py-1.5 bg-secondary/10 text-secondary text-xs font-bold border border-secondary/30">
-                                <span>{resultOutfit.items.accessories.brand || "PMC Select"}</span>
-                                {typeof resultOutfit.items.accessories.price === "number" && (
-                                  <span className="ml-2">{resultOutfit.items.accessories.price.toLocaleString("ko-KR")}원</span>
-                                )}
-                              </div>
+                              <a
+                                href={`https://www.google.com/search?q=${encodeURIComponent(resultOutfit.items.accessories.name)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-secondary/10 text-secondary text-xs font-bold border border-secondary/30 flex items-center gap-1 hover:bg-secondary/20 transition-colors"
+                                aria-label={`${resultOutfit.items.accessories.name} Google 검색`}
+                              >
+                                <Search size={12} />
+                                <span>검색하기</span>
+                              </a>
                               {onAddItem && (
                                 <button
                                   onClick={() => handleAddToCloset(resultOutfit!.items.accessories!)}
                                   disabled={!!addedItems[resultOutfit.items.accessories.id]}
-                                  className={`px-3 py-1.5 text-xs font-bold border flex items-center gap-1 transition-all ${addedItems[resultOutfit.items.accessories.id]
+                                  className={`min-w-0 max-w-full px-2.5 py-1.5 text-xs font-bold border flex items-center gap-1 transition-all ${addedItems[resultOutfit.items.accessories.id]
                                     ? "bg-neutral-800 text-neutral-400 border-neutral-700 cursor-not-allowed"
                                     : "bg-surface text-primary border-primary shadow-[2px_2px_0_0_#000] hover:bg-surface-variant active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer"
                                     }`}
                                 >
                                   <Plus size={12} />
-                                  <span>{addedItems[resultOutfit.items.accessories.id] ? "추가 완료 ✅" : "내 옷장에 추가"}</span>
+                                  <span className="whitespace-normal break-keep text-center leading-tight">{addedItems[resultOutfit.items.accessories.id] ? "추가 완료 ✅" : "내 옷장에 추가"}</span>
                                 </button>
                               )}
                             </div>

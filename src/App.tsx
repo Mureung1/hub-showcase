@@ -44,18 +44,30 @@ export default function App() {
 
   // Helper to check if a Supabase user is logged in
   const isUserLoggedIn = () => currentUserId !== null;
+  const scopedLocalKey = (key: string) => currentUserId
+    ? `pmc_user_${currentUserId}_${key}`
+    : `pmc_guest_${key}`;
+  const safeSetLocalStorage = (key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (error) {
+      console.warn(`[Storage] Failed to save ${key}; continuing with database sync.`, error);
+      return false;
+    }
+  };
 
   const loadGuestData = () => {
-    const storedCloset = localStorage.getItem("pmc_closet");
+    const storedCloset = localStorage.getItem("pmc_guest_closet");
     setCloset(storedCloset ? JSON.parse(storedCloset) : DEFAULT_CLOSET);
 
-    const storedStyles = localStorage.getItem("pmc_saved_styles");
+    const storedStyles = localStorage.getItem("pmc_guest_saved_styles");
     setSavedStyles(storedStyles ? JSON.parse(storedStyles) : []);
 
-    const storedEvents = localStorage.getItem("pmc_calendar_events");
+    const storedEvents = localStorage.getItem("pmc_guest_calendar_events");
     setCalendarEvents(storedEvents ? JSON.parse(storedEvents) : []);
 
-    const storedStickerDiaries = localStorage.getItem("pmc_sticker_diaries");
+    const storedStickerDiaries = localStorage.getItem("pmc_guest_sticker_diaries");
     setStickerDiaries(storedStickerDiaries ? JSON.parse(storedStickerDiaries) : []);
 
     const storedProfile = localStorage.getItem("pmc_profile");
@@ -84,6 +96,8 @@ export default function App() {
     }
 
     if (!data) {
+      const localBackupRaw = localStorage.getItem(`pmc_user_${userId}_closet`);
+      const initialCloset: ClothingItem[] = localBackupRaw ? JSON.parse(localBackupRaw) : DEFAULT_CLOSET;
       const initialProfile = {
         username: localStorage.getItem("pmc_username") || "Cyber Stylist",
         avatarUrl: localStorage.getItem("pmc_avatar") || "cute-bunny",
@@ -93,7 +107,7 @@ export default function App() {
 
       const { error: insertError } = await supabase.from("user_data").insert({
         user_id: userId,
-        closet: DEFAULT_CLOSET,
+        closet: initialCloset,
         saved_styles: [],
         calendar_events: [],
         sticker_diary: [],
@@ -105,7 +119,7 @@ export default function App() {
         return;
       }
 
-      setCloset(DEFAULT_CLOSET);
+      setCloset(initialCloset);
       setSavedStyles([]);
       setCalendarEvents([]);
       setStickerDiaries([]);
@@ -113,7 +127,25 @@ export default function App() {
       return;
     }
 
-    setCloset(Array.isArray(data.closet) ? data.closet : DEFAULT_CLOSET);
+    const remoteCloset: ClothingItem[] = Array.isArray(data.closet) ? data.closet : DEFAULT_CLOSET;
+    const localBackupRaw = localStorage.getItem(`pmc_user_${userId}_closet`);
+    const localBackup: ClothingItem[] = localBackupRaw ? JSON.parse(localBackupRaw) : [];
+    const mergedCloset = [...localBackup, ...remoteCloset].filter((item, index, items) =>
+      index === items.findIndex((candidate) =>
+        candidate.id === item.id ||
+        (candidate.name === item.name && candidate.imageUrl === item.imageUrl)
+      )
+    );
+
+    setCloset(mergedCloset);
+    safeSetLocalStorage(`pmc_user_${userId}_closet`, JSON.stringify(mergedCloset));
+    if (mergedCloset.length !== remoteCloset.length) {
+      const { error: recoveryError } = await supabase
+        .from("user_data")
+        .update({ closet: mergedCloset, updated_at: new Date().toISOString() })
+        .eq("user_id", userId);
+      if (recoveryError) console.error("[Supabase] Failed to recover local closet backup:", recoveryError.message);
+    }
     setSavedStyles(Array.isArray(data.saved_styles) ? data.saved_styles : []);
     setCalendarEvents(Array.isArray(data.calendar_events) ? data.calendar_events : []);
     setStickerDiaries(Array.isArray(data.sticker_diary) ? data.sticker_diary : []);
@@ -138,22 +170,35 @@ export default function App() {
       profile: UserProfile;
     }>
   ) => {
-    if (!currentUserId) return;
-
-    const { error } = await supabase
-      .from("user_data")
-      .upsert(
-        {
-          user_id: currentUserId,
-          ...updates,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
-
-    if (error) {
-      console.error("[Supabase] Failed to sync user data:", error.message);
+    let userId = currentUserId;
+    if (!userId) {
+      const { data, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error("[Supabase] Failed to resolve session before sync:", sessionError.message);
+        return;
+      }
+      userId = data.session?.user.id ?? null;
     }
+    if (!userId) return;
+
+    if (updates.closet) {
+      safeSetLocalStorage(`pmc_user_${userId}_closet`, JSON.stringify(updates.closet));
+    }
+    if (updates.saved_styles) {
+      safeSetLocalStorage(`pmc_user_${userId}_saved_styles`, JSON.stringify(updates.saved_styles));
+    }
+
+    const { error: updateError } = await supabase
+      .from("user_data")
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq("user_id", userId);
+
+    if (updateError) {
+      console.error("[Supabase] Failed to update user data:", updateError.message);
+      return false;
+    }
+
+    return true;
   };
 
   // Restore Supabase session and load the matching user data.
@@ -218,25 +263,24 @@ export default function App() {
   const handleAddItem = (item: ClothingItem) => {
     const updated = [item, ...closet];
     setCloset(updated);
-    localStorage.setItem("pmc_closet", JSON.stringify(updated));
-    if (isUserLoggedIn()) {
-      syncUserDataToSupabase({ closet: updated });
-    }
+    const storageKey = currentUserId ? `pmc_user_${currentUserId}_closet` : "pmc_guest_closet";
+    void syncUserDataToSupabase({ closet: updated });
+    safeSetLocalStorage(storageKey, JSON.stringify(updated));
   };
 
   const handleDeleteItem = (id: string) => {
     const updated = closet.filter(item => item.id !== id);
     setCloset(updated);
-    localStorage.setItem("pmc_closet", JSON.stringify(updated));
-    if (isUserLoggedIn()) {
-      syncUserDataToSupabase({ closet: updated });
-    }
+    const storageKey = currentUserId ? `pmc_user_${currentUserId}_closet` : "pmc_guest_closet";
+    safeSetLocalStorage(storageKey, JSON.stringify(updated));
+    void syncUserDataToSupabase({ closet: updated });
   };
 
   const handleSaveOutfit = (outfit: SavedOutfit) => {
     const updated = [outfit, ...savedStyles];
     setSavedStyles(updated);
-    localStorage.setItem("pmc_saved_styles", JSON.stringify(updated));
+    const storageKey = currentUserId ? `pmc_user_${currentUserId}_saved_styles` : "pmc_guest_saved_styles";
+    localStorage.setItem(storageKey, JSON.stringify(updated));
     if (isUserLoggedIn()) {
       syncUserDataToSupabase({ saved_styles: updated });
     }
@@ -245,12 +289,12 @@ export default function App() {
   const handleDeleteOutfit = (id: string) => {
     const updated = savedStyles.filter(o => o.id !== id);
     setSavedStyles(updated);
-    localStorage.setItem("pmc_saved_styles", JSON.stringify(updated));
+    localStorage.setItem(scopedLocalKey("saved_styles"), JSON.stringify(updated));
 
     // Also cascade delete related calendar schedules on that outfit
     const updatedEvents = calendarEvents.filter(e => e.outfitId !== id);
     setCalendarEvents(updatedEvents);
-    localStorage.setItem("pmc_calendar_events", JSON.stringify(updatedEvents));
+    localStorage.setItem(scopedLocalKey("calendar_events"), JSON.stringify(updatedEvents));
 
     if (isUserLoggedIn()) {
       syncUserDataToSupabase({
@@ -265,7 +309,7 @@ export default function App() {
     const base = calendarEvents.filter(e => e.date !== date);
     const updated = [...base, { date, outfitId }];
     setCalendarEvents(updated);
-    localStorage.setItem("pmc_calendar_events", JSON.stringify(updated));
+    localStorage.setItem(scopedLocalKey("calendar_events"), JSON.stringify(updated));
     if (isUserLoggedIn()) {
       syncUserDataToSupabase({ calendar_events: updated });
     }
@@ -274,7 +318,7 @@ export default function App() {
   const handleRemoveCalendarEvent = (date: string) => {
     const updated = calendarEvents.filter(e => e.date !== date);
     setCalendarEvents(updated);
-    localStorage.setItem("pmc_calendar_events", JSON.stringify(updated));
+    localStorage.setItem(scopedLocalKey("calendar_events"), JSON.stringify(updated));
     if (isUserLoggedIn()) {
       syncUserDataToSupabase({ calendar_events: updated });
     }
@@ -288,7 +332,7 @@ export default function App() {
         : [page, ...stickerDiaries];
 
     setStickerDiaries(updated);
-    localStorage.setItem("pmc_sticker_diaries", JSON.stringify(updated));
+    localStorage.setItem(scopedLocalKey("sticker_diaries"), JSON.stringify(updated));
 
     if (isUserLoggedIn()) {
       const { error } = await supabase
@@ -315,7 +359,7 @@ export default function App() {
     const updated = stickerDiaries.filter(page => page.id !== id);
 
     setStickerDiaries(updated);
-    localStorage.setItem("pmc_sticker_diaries", JSON.stringify(updated));
+    localStorage.setItem(scopedLocalKey("sticker_diaries"), JSON.stringify(updated));
 
     if (isUserLoggedIn()) {
       const { error } = await supabase

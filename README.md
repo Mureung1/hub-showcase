@@ -197,6 +197,87 @@ AI Agent에게 질문
 
 ---
 
+## 시스템 아키텍처
+
+Pick My Clothes는 React 프론트엔드, Express 서버, Gemini API,
+Supabase로 구성되어 있습니다.
+
+```
+flowchart LR
+    USER([사용자])
+
+    subgraph FRONT["React · Vite 프론트엔드"]
+        direction TB
+
+        APP["App.tsx<br/>전체 상태 및 화면 관리"]
+
+        LOGIN["LoginPanel<br/>회원가입 · 로그인"]
+        CLOSET["ClosetTab<br/>내 옷장 조회 · 추가 · 삭제"]
+        OUTFIT["OutfitsTab<br/>날씨 · 장소 · 상황 선택"]
+        RESULT["추천 결과 화면<br/>코디 및 스타일리스트 설명"]
+        SAVED["저장 코디 · 캘린더<br/>추천 기록 관리"]
+
+        LOCAL[("LocalStorage<br/>비회원 데이터 임시 저장")]
+
+        APP --> LOGIN
+        APP --> CLOSET
+        APP --> OUTFIT
+        OUTFIT --> RESULT
+        RESULT --> SAVED
+
+        APP <-->|비회원 데이터 저장·불러오기| LOCAL
+    end
+
+    subgraph SERVER["Express 서버"]
+        direction TB
+
+        API["POST /api/recommend<br/>추천 요청 처리"]
+        VALIDATE["입력값 및 추천 모드 확인<br/>My Closet / New Outfit"]
+        CATALOG[("자체 상품 카탈로그<br/>productCatalog.ts")]
+        FALLBACK["로컬 추천 규칙<br/>Gemini 실패 시 fallback"]
+
+        API --> VALIDATE
+        VALIDATE -->|New Outfit 상품 조회| CATALOG
+        VALIDATE --> FALLBACK
+    end
+
+    subgraph AI["Google Gemini API"]
+        GEMINI["Gemini AI 스타일리스트<br/>조건 분석 및 상품 ID 선택"]
+    end
+
+    subgraph DB["Supabase"]
+        direction TB
+
+        AUTH["Supabase Auth<br/>사용자 인증"]
+        USERDATA[("user_data 테이블<br/>closet<br/>saved_styles<br/>calendar_events<br/>profile")]
+    end
+
+    USER -->|화면 조작| APP
+
+    OUTFIT -->|"POST /api/recommend<br/>날씨 + 장소 + 상황 + 옷장 + 추천 모드"| API
+
+    VALIDATE -->|"프롬프트 + 선택 가능한 옷 목록"| GEMINI
+    GEMINI -->|"추천 상품 ID + stylistNote"| VALIDATE
+
+    CATALOG -->|"상품 이미지 · 이름 · 브랜드 · 가격"| API
+    FALLBACK -->|"대체 추천 결과"| API
+
+    API -->|"JSON 추천 결과"| OUTFIT
+    OUTFIT -->|"상품 ID를 실제 옷 정보와 연결"| RESULT
+
+    LOGIN <-->|"회원가입 · 로그인 · 세션 확인"| AUTH
+
+    APP <-->|"옷장 · 저장 코디<br/>캘린더 · 프로필 조회/저장"| USERDATA
+    AUTH -->|"인증된 user_id"| USERDATA
+
+    RESULT -->|"추천 코디 저장"| APP
+    CLOSET -->|"옷 추가 · 삭제"| APP
+    SAVED -->|"저장 코디 · 일정 수정"| APP
+
+```
+
+---
+
 # 📄 프로젝트 문서
 
 ## 📋 Project Management
