@@ -138,6 +138,7 @@ ${xmlParagraphs}
 1. sentences — 영어 문장 구조상 초보 학습자가 읽기 어려운 문장을 2~4개 선별합니다. 예: 길게 이어진 주어+동격구/분사구문, 'A rather than B' 같은 비교 구문, 삽입절 등 구조가 복잡한 문장.
    - "text" 필드는 반드시 위 원문에서 글자 하나, 공백 하나, 문장부호 하나까지 정확히 그대로 복사한 값이어야 합니다. 절대로 다시 타이핑하거나, 의역하거나, 요약하거나, 일부 단어만 잘라내거나, 여러 문장을 이어붙이지 마세요.
    - 곧은따옴표(", ')를 스마트따옴표(", ", ', ')로 바꾸지 마세요. 원문에 있는 그대로 유지하세요.
+   - 문장 안에 큰따옴표(")가 포함되어 있다면, 그 앞에 반드시 백슬래시를 붙여 \" 로 이스케이프하세요(JSON 문자열 규칙을 지키기 위한 이스케이프이며, 문장 내용을 바꾸는 것이 아닙니다). 이스케이프를 빠뜨리면 JSON 파싱이 깨집니다.
    - 연속된 공백이나 줄바꿈을 하나로 합치거나 다듬지 마세요. 원문의 공백을 그대로 복사하세요.
    - 선택한 문장은 반드시 하나의 <paragraph> 태그 안에만 온전히 포함되어야 하며, 두 문단에 걸쳐 있으면 안 됩니다.
    - "translation"은 자연스러운 한국어 번역, "reason"은 이 문장이 왜 구조적으로 어려운지 한국어로 한 줄 설명입니다.
@@ -291,6 +292,29 @@ export async function callClaude(prompt, options = {}) {
     max_tokens: options.maxTokens ?? 1024,
     messages: [{ role: "user", content: prompt }],
   })
+}
+
+// 검증 스크립트(validateAnalysisPrompt.js) 전용 — TTFT/총 생성시간을 재려면
+// 스트리밍이 필요하다(비스트리밍 callClaude는 첫 토큰 도착 시점을 관측할
+// 수 없음). finalMessage()가 비스트리밍 응답과 동일한 모양(content/usage)을
+// 반환하므로 parseAnalysisResponse를 그대로 재사용할 수 있다.
+export async function callClaudeWithMetrics(prompt, options = {}) {
+  const startedAt = Date.now()
+  let ttftMs = null
+
+  const stream = client.messages.stream({
+    model: MODEL,
+    max_tokens: options.maxTokens ?? 1024,
+    messages: [{ role: "user", content: prompt }],
+  })
+  stream.on("text", () => {
+    if (ttftMs === null) ttftMs = Date.now() - startedAt
+  })
+
+  const response = await stream.finalMessage()
+  const totalMs = Date.now() - startedAt
+
+  return { response, ttftMs, totalMs }
 }
 
 // 3단계 통과 기준. 투자가치는 "시장에 영향을 주는 정보인가"를, 독해적합성은
