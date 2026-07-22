@@ -12,4 +12,5 @@ export interface MarginBarItem {
   isTop: boolean;
   isAiPick: boolean;
   isRisk: boolean;
+  riskLabel?: string;
 }

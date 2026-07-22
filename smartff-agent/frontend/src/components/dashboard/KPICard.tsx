@@ -10,12 +10,17 @@ interface KPICardProps {
 }
 
 export default function KPICard({ salesTrend, salesNote, wasteRate, wasteNote, marginRate, marginNote }: KPICardProps) {
+  const isDownTrend = salesTrend.trim().startsWith('-');
+  const trendTint = isDownTrend ? colors.dangerTint : colors.primaryTint;
+  const trendBorder = isDownTrend ? colors.dangerBorder : colors.primaryBorder;
+  const trendColor = isDownTrend ? colors.danger : colors.primary;
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
       {/* 판매 추세 — 강조 카드 */}
-      <div style={{ background: colors.primaryTint, border: `1px solid ${colors.primaryBorder}`, borderRadius: '14px', padding: '20px 22px' }}>
-        <div style={{ fontSize: '13px', fontWeight: '700', color: colors.primaryStrong, marginBottom: '8px' }}>판매 추세</div>
-        <div style={{ fontSize: '56px', fontWeight: '800', color: colors.primary, lineHeight: '1', letterSpacing: '-0.02em' }}>
+      <div style={{ background: trendTint, border: `1px solid ${trendBorder}`, borderRadius: '14px', padding: '20px 22px' }}>
+        <div style={{ fontSize: '13px', fontWeight: '700', color: trendColor, marginBottom: '8px' }}>판매 추세</div>
+        <div style={{ fontSize: '56px', fontWeight: '800', color: trendColor, lineHeight: '1', letterSpacing: '-0.02em' }}>
           {salesTrend}
           <span style={{ fontSize: '24px' }}>%</span>
         </div>
