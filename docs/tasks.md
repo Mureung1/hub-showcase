@@ -81,8 +81,8 @@
 
 | ID | 우선순위 | 상태 | Task | 완료 기준 | 연결 문서 |
 |---|---|---|---|---|---|
-| T-701 | P1 | Ready | 확장 기능 asset/data manifest 설계 | sprite, icon, theme, reward, sound, memory fragment manifest가 정의된다 | dynamic-asset-requirements.md |
-| T-702 | P1 | Backlog | 캐릭터 애니메이션 적용 | 루미 상태별 sprite animation과 hover/reaction 상태가 적용된다 | design-system.md |
+| T-701 | P1 | Review | 확장 기능 asset/data manifest 설계 | sprite, icon, theme, reward, sound, projection, interaction object manifest가 코드와 문서에 정의됐고, UI/에셋 추가 시 확장 검증이 남았다 | dynamic-asset-requirements.md |
+| T-702 | P1 | Review | 캐릭터 애니메이션 적용 | 루미 상태별 Canvas sprite animation과 hover/reaction 상태가 적용됐고, 브라우저 시각 확인이 남았다 | design-system.md |
 | T-703 | P1 | Backlog | 외적 성장 보상 구현 | 레벨 또는 보상 해금에 따라 루미 accessory/growth variant가 바뀐다 | future-expansion-plan.md |
 | T-704 | P1 | Backlog | 데스크톱 배경 테마 구현 | 해금된 wallpaper theme를 선택하고 XP desktop에 적용할 수 있다 | future-expansion-plan.md |
 | T-705 | P1 | Backlog | 창 테마 구현 | 제목 표시줄, 창 프레임, taskbar skin이 theme token으로 바뀐다 | future-expansion-plan.md |
@@ -90,6 +90,14 @@
 | T-707 | P1 | Backlog | 사운드 feedback 구현 | 완료/복구/레벨업 사운드가 muted 기본값과 함께 동작한다 | future-expansion-plan.md |
 | T-708 | P1 | Backlog | 하루의 흐름 web theme 구현 | 시간대와 퀘스트 상태가 배경/루미 idle/theme state에 반영된다 | future-expansion-plan.md |
 | T-709 | P1 | Backlog | 개인화 AI 매니저 adapter 구현 | ManagerContext 기반 대사/추천 adapter와 rule fallback이 분리된다 | agent-design.md |
+| T-710 | P1 | Review | blink focus scene 구현 | 데스크톱 진입/매니저 focus 전환에서 눈 깜빡임/blur/fade overlay가 동작하고 reduced-motion fallback이 있다. 브라우저 시각 확인이 남았다 | dynamic-asset-requirements.md |
+| T-711 | P1 | Backlog | 전자 매니저 Persona와 제한 선택지 설계 | 직접 선택과 간접 선택이 구분되고, LLM은 Persona 경계 안에서 대사/추천을 생성한다 | future-expansion-plan.md |
+| T-712 | P1 | Backlog | 퀘스트 능력치 growth 설계 | Quest Event metadata가 성실성, 끈기, 창의성, 지식, 힘, 민첩함, 체력, 매력 등 stat delta로 매핑된다 | db-schema.md |
+| T-713 | P1 | Backlog | cyber-purr 사운드 탐색 및 적용 후보 정리 | 전자/사이버틱한 기본 고롱고롱 사운드 후보와 mute/fallback 기준이 정리된다 | dynamic-asset-requirements.md |
+| T-714 | P2 | Backlog | 사다리 interaction prototype | 사다리 오브젝트를 세로 resize할 수 있고, 루미가 올라가는 중 resize되어도 progress ratio 기준으로 위치가 유지된다 | dynamic-asset-requirements.md |
+| T-715 | P2 | Backlog | 평지 interaction prototype | 평지 오브젝트는 가로 resize만 가능하고, 루미가 점프/착지하거나 사다리에서 옮겨갈 수 있다 | dynamic-asset-requirements.md |
+| T-716 | P2 | Backlog | 창탈출 interaction prototype | 루미가 창 밖 desktop overlay layer로 나와 이동하는 prototype이 동작한다 | future-expansion-plan.md |
+| T-717 | P2 | Backlog | Stage 회귀 엔드 컨텐츠 설계 | 해금한 Stage 1~4 외형 중 원하는 모습으로 회귀/장착할 수 있는 구조가 정의된다 | future-expansion-plan.md |
 
 ## 3~4주차 P2: 승격 실험 기능
 
@@ -98,6 +106,7 @@
 | T-721 | P2 | Backlog | 현실 픽셀화 TV prototype | 로컬 이미지 또는 권한 허용 웹캠 프레임이 canvas에서 픽셀화되어 TV 안에 표시된다 | future-expansion-plan.md |
 | T-722 | P2 | Backlog | 공개 퀘스트 탐색 read-only prototype | `anonymous_public` Quest Event를 공개 탐색 오브젝트로 표시하고 기본 비공개를 유지한다 | future-expansion-plan.md |
 | T-723 | P2 | Backlog | 웹캠 손 제스처 탐색 prototype | 손 제스처가 공개 탐색 화면의 보조 입력으로 동작하고 마우스/터치 fallback이 유지된다 | future-expansion-plan.md |
+| T-724 | P2 | Review | Single-plane Pepper projection mode 설계 | Pixel TV 우클릭 속성 창에서 projection 연결 변환/원복이 가능하고, 변환된 TV 아이콘 실행 시 hidden route `?projection=pepper`로 연결된다 | dynamic-asset-requirements.md |
 
 ## 3~4주차 P2: 문서·발표·운영
 
@@ -130,6 +139,7 @@
 - `[P1] 캐릭터 애니메이션과 theme 보상 적용`
 - `[P1] 개인화 AI 매니저 adapter 구현`
 - `[P2] 현실 픽셀화 TV prototype`
+- `[P2] Single-plane Pepper projection mode 설계`
 - `[P2] 공개 퀘스트 탐색 read-only prototype`
 - `[P2] 웹캠 손 제스처 탐색 prototype`
 - `[P1] API 로딩/빈 상태 polish`

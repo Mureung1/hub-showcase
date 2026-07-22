@@ -7,15 +7,42 @@ export type LumiSpriteState =
   | "hover"
   | "hanging"
   | "hiding";
-export type PetAnimationState = Exclude<LumiSpriteState, "resting">;
+export type PetMotionState =
+  | "idle"
+  | "focused"
+  | "happy"
+  | "recovering"
+  | "hanging"
+  | "hiding"
+  | "run"
+  | "jump"
+  | "walk"
+  | "climbing";
+export type PetAnimationState = PetMotionState | "hover";
 export type LumiMood = "waiting" | "focused" | "happy" | "recovering";
-export type PetId = "planaria";
-export type PetStageId = "stage-1";
+export type PetId =
+  | "planaria"
+  | "pink-manager"
+  | "white-headed-long-tailed-tit"
+  | "costasiella-kuroshimae"
+  | "sea-bunny-slug"
+  | "platypus"
+  | "axolotl"
+  | "glass-frog"
+  | "fried-egg-jellyfish"
+  | "yeti-crab";
+export type PetStageId = "stage-1" | "stage-2" | "stage-3" | "stage-4";
 
 export interface SpriteAnchor {
   type: "float" | "top-grip" | "peek-edge";
   x: number;
   y: number;
+}
+
+export interface SpritePlaybackFrame {
+  frame: number;
+  mirrorX?: boolean;
+  hold?: number;
 }
 
 export interface SpriteAnimationAsset {
@@ -30,8 +57,9 @@ export interface SpriteAnimationAsset {
   frameCount: number;
   fps: number;
   loop: boolean;
-  states: LumiSpriteState[];
+  states: (LumiSpriteState | PetMotionState)[];
   reducedMotionFrame: number;
+  playbackFrames?: SpritePlaybackFrame[];
   anchor: SpriteAnchor;
 }
 
@@ -81,9 +109,49 @@ export interface RewardAsset {
   hoverFx?: string;
 }
 
+export interface SoundAsset {
+  id: string;
+  src: string;
+  event:
+    | "complete"
+    | "recovery"
+    | "level_up"
+    | "hover"
+    | "open_window"
+    | "cyber_purr"
+    | "blink_transition"
+    | "climb"
+    | "jump"
+    | "window_escape";
+  defaultVolume: number;
+  mutedByDefault: boolean;
+}
+
+export interface InteractionObjectAsset {
+  id: string;
+  type: "ladder" | "platform" | "window_escape_edge";
+  src: string;
+  hoverSrc?: string;
+  resizeAxis: "vertical" | "horizontal" | "none";
+  anchorPoints: Array<"top" | "bottom" | "left" | "right" | "center">;
+}
+
+export interface ProjectionModeAsset {
+  id: string;
+  mode: "single_plane_pepper";
+  iconId: DesktopIconId;
+  connectedIconSrc: string;
+  connectedIconHoverSrc: string;
+  projectionRoot: string;
+  defaultSpriteId: string;
+  background: "#000000";
+  glowStrength: "medium" | "high";
+  reducedMotion: "fade" | "still";
+}
+
 export interface FutureAssetSlot {
   id: string;
-  feature: "pixel-tv" | "social-world" | "gestures" | "sound";
+  feature: "pixel-tv" | "projection" | "social-world" | "gestures" | "sound" | "interaction-object";
   promptDoc: string;
   status: "prompt-ready" | "manifest-slot-only";
   iconId?: DesktopIconId;
@@ -91,6 +159,17 @@ export interface FutureAssetSlot {
 
 const planariaStage1Path = "/assets/lumi/planaria-stage-1";
 const planariaFloatAnchor: SpriteAnchor = { type: "float", x: 32, y: 60 };
+const stage1PetFloatAnchor: SpriteAnchor = { type: "float", x: 32, y: 58 };
+const stage1PetHangingAnchor: SpriteAnchor = { type: "top-grip", x: 32, y: 5 };
+const stage1PetHidingAnchor: SpriteAnchor = { type: "peek-edge", x: 53, y: 32 };
+export const defaultLumiPetId = "pink-manager" as const satisfies PetId;
+export const fallbackLumiStage = "stage-1" as const satisfies PetStageId;
+export const petStageUnlockLevels: Record<PetStageId, number> = {
+  "stage-1": 1,
+  "stage-2": 3,
+  "stage-3": 6,
+  "stage-4": 10,
+};
 
 const planariaStage1Animation = (
   state: PetAnimationState,
@@ -113,6 +192,110 @@ const planariaStage1Animation = (
   anchor,
 });
 
+interface Stage1MotionSpec {
+  state: PetMotionState;
+  frameCount: number;
+  fps: number;
+  loop: boolean;
+  anchor: SpriteAnchor;
+  playbackFrames?: SpritePlaybackFrame[];
+}
+
+const stage1PetMotionSpecs = [
+  { state: "idle", frameCount: 4, fps: 4, loop: true, anchor: stage1PetFloatAnchor },
+  { state: "focused", frameCount: 4, fps: 6, loop: true, anchor: stage1PetFloatAnchor },
+  { state: "happy", frameCount: 6, fps: 8, loop: true, anchor: stage1PetFloatAnchor },
+  { state: "recovering", frameCount: 4, fps: 4, loop: true, anchor: stage1PetFloatAnchor },
+  { state: "hanging", frameCount: 6, fps: 6, loop: true, anchor: stage1PetHangingAnchor },
+  { state: "hiding", frameCount: 6, fps: 5, loop: true, anchor: stage1PetHidingAnchor },
+  {
+    state: "run",
+    frameCount: 6,
+    fps: 10,
+    loop: true,
+    anchor: stage1PetFloatAnchor,
+    playbackFrames: [{ frame: 0 }, { frame: 1 }, { frame: 2 }, { frame: 3 }, { frame: 4 }, { frame: 5 }, { frame: 2 }, { frame: 1 }],
+  },
+  {
+    state: "jump",
+    frameCount: 6,
+    fps: 8,
+    loop: false,
+    anchor: stage1PetFloatAnchor,
+    playbackFrames: [{ frame: 0 }, { frame: 1 }, { frame: 2, hold: 2 }, { frame: 3 }, { frame: 4 }, { frame: 5, hold: 2 }],
+  },
+  {
+    state: "walk",
+    frameCount: 6,
+    fps: 7,
+    loop: true,
+    anchor: stage1PetFloatAnchor,
+    playbackFrames: [
+      { frame: 0 },
+      { frame: 1 },
+      { frame: 0 },
+      { frame: 2 },
+      { frame: 0, mirrorX: true },
+      { frame: 3 },
+      { frame: 0, mirrorX: true },
+      { frame: 4 },
+      { frame: 0 },
+      { frame: 5 },
+    ],
+  },
+  {
+    state: "climbing",
+    frameCount: 6,
+    fps: 8,
+    loop: true,
+    anchor: stage1PetHangingAnchor,
+    playbackFrames: [{ frame: 0 }, { frame: 1 }, { frame: 2 }, { frame: 3 }, { frame: 4 }, { frame: 5 }, { frame: 4 }, { frame: 3 }],
+  },
+] as const satisfies readonly Stage1MotionSpec[];
+
+const stage1PetIds = [
+  "pink-manager",
+  "white-headed-long-tailed-tit",
+  "costasiella-kuroshimae",
+  "sea-bunny-slug",
+  "platypus",
+  "axolotl",
+  "glass-frog",
+  "fried-egg-jellyfish",
+  "yeti-crab",
+] as const;
+
+const stage1PetAnimation = (petId: (typeof stage1PetIds)[number], spec: Stage1MotionSpec): SpriteAnimationAsset => ({
+  id: `${petId}-stage-1-${spec.state}`,
+  petId,
+  stage: "stage-1",
+  src: `/assets/lumi/${petId}-stage-1/${petId}-stage-1-${spec.state}-sheet.png`,
+  sheetWidth: spec.frameCount * 64,
+  sheetHeight: 64,
+  frameWidth: 64,
+  frameHeight: 64,
+  frameCount: spec.frameCount,
+  fps: spec.fps,
+  loop: spec.loop,
+  states: [spec.state],
+  reducedMotionFrame: 0,
+  playbackFrames: spec.playbackFrames ? [...spec.playbackFrames] : undefined,
+  anchor: spec.anchor,
+});
+
+const stage1PetCatalog = Object.fromEntries(
+  stage1PetIds.map((petId) => [
+    petId,
+    {
+      "stage-1": Object.fromEntries(stage1PetMotionSpecs.map((spec) => [spec.state, stage1PetAnimation(petId, spec)])),
+    },
+  ]),
+) as {
+  [K in (typeof stage1PetIds)[number]]: {
+    "stage-1": Record<PetMotionState, SpriteAnimationAsset>;
+  };
+};
+
 export const petAnimationCatalog = {
   planaria: {
     "stage-1": {
@@ -125,22 +308,64 @@ export const petAnimationCatalog = {
       hiding: planariaStage1Animation("hiding", 5, { type: "peek-edge", x: 53, y: 32 }),
     },
   },
-} as const satisfies Record<PetId, Record<PetStageId, Record<PetAnimationState, SpriteAnimationAsset>>>;
+  ...stage1PetCatalog,
+} as const satisfies Record<PetId, Partial<Record<PetStageId, Partial<Record<PetAnimationState, SpriteAnimationAsset>>>>>;
+
+function getAvailablePetStage(petId: PetId, stage: PetStageId): PetStageId {
+  const catalog = petAnimationCatalog[petId] as Partial<Record<PetStageId, Partial<Record<PetAnimationState, SpriteAnimationAsset>>>>;
+  return catalog[stage] ? stage : fallbackLumiStage;
+}
+
+export function resolvePetStageFromLevel(level: number): PetStageId {
+  if (level >= petStageUnlockLevels["stage-4"]) return "stage-4";
+  if (level >= petStageUnlockLevels["stage-3"]) return "stage-3";
+  if (level >= petStageUnlockLevels["stage-2"]) return "stage-2";
+  return "stage-1";
+}
+
+export function getUnlockedPetStages(level: number): PetStageId[] {
+  return (Object.keys(petStageUnlockLevels) as PetStageId[]).filter((stage) => level >= petStageUnlockLevels[stage]);
+}
+
+export function getRenderablePetStage(petId: PetId, stage: PetStageId): PetStageId {
+  return getAvailablePetStage(petId, stage);
+}
+
+export function getLumiAnimationAsset(state: LumiSpriteState, petId: PetId = defaultLumiPetId, stage: PetStageId = fallbackLumiStage) {
+  const renderableStage = getAvailablePetStage(petId, stage);
+
+  if (state === "resting") {
+    const idle = getPetAnimationAsset(petId, renderableStage, "idle");
+    return {
+      ...idle,
+      id: `${petId}-${stage}-resting-fallback`,
+      fps: 3,
+      states: ["resting"],
+    } satisfies SpriteAnimationAsset;
+  }
+
+  if (state === "hover") {
+    const happy = getPetAnimationAsset(petId, renderableStage, "happy");
+    return {
+      ...happy,
+      id: `${petId}-${stage}-hover-fallback`,
+      fps: 7,
+      states: ["hover"],
+    } satisfies SpriteAnimationAsset;
+  }
+
+  return getPetAnimationAsset(petId, renderableStage, state);
+}
 
 export const lumiAnimations: Record<LumiSpriteState, SpriteAnimationAsset> = {
-  idle: petAnimationCatalog.planaria["stage-1"].idle,
-  focused: petAnimationCatalog.planaria["stage-1"].focused,
-  happy: petAnimationCatalog.planaria["stage-1"].happy,
-  recovering: petAnimationCatalog.planaria["stage-1"].recovering,
-  resting: {
-    ...petAnimationCatalog.planaria["stage-1"].idle,
-    id: "planaria-stage-1-resting-fallback",
-    fps: 3,
-    states: ["resting"],
-  },
-  hover: petAnimationCatalog.planaria["stage-1"].hover,
-  hanging: petAnimationCatalog.planaria["stage-1"].hanging,
-  hiding: petAnimationCatalog.planaria["stage-1"].hiding,
+  idle: getLumiAnimationAsset("idle"),
+  focused: getLumiAnimationAsset("focused"),
+  happy: getLumiAnimationAsset("happy"),
+  recovering: getLumiAnimationAsset("recovering"),
+  resting: getLumiAnimationAsset("resting"),
+  hover: getLumiAnimationAsset("hover"),
+  hanging: getLumiAnimationAsset("hanging"),
+  hiding: getLumiAnimationAsset("hiding"),
 };
 
 const lumiSpritePath = "/assets/lumi";
@@ -328,6 +553,48 @@ export const rewardAssets: RewardAsset[] = [
   },
 ];
 
+export const soundAssets: SoundAsset[] = [
+  {
+    id: "cyber-purr-placeholder",
+    src: "/assets/sounds/cyber-purr-placeholder.webm",
+    event: "cyber_purr",
+    defaultVolume: 0.35,
+    mutedByDefault: true,
+  },
+];
+
+export const interactionObjectAssets: InteractionObjectAsset[] = [
+  {
+    id: "ladder-object-placeholder",
+    type: "ladder",
+    src: "/assets/interaction-objects/ladder-placeholder.png",
+    resizeAxis: "vertical",
+    anchorPoints: ["top", "bottom", "center"],
+  },
+  {
+    id: "platform-object-placeholder",
+    type: "platform",
+    src: "/assets/interaction-objects/platform-placeholder.png",
+    resizeAxis: "horizontal",
+    anchorPoints: ["left", "right", "center"],
+  },
+];
+
+export const projectionModeAssets: ProjectionModeAsset[] = [
+  {
+    id: "pixel-tv-single-plane-pepper",
+    mode: "single_plane_pepper",
+    iconId: "pixel-tv",
+    connectedIconSrc: "/assets/icons/pixel-tv-projection-connected-pixel-v1.png",
+    connectedIconHoverSrc: "/assets/icons/pixel-tv-projection-connected-hover-pixel-v1.png",
+    projectionRoot: "/assets/projection",
+    defaultSpriteId: `${defaultLumiPetId}-${fallbackLumiStage}-idle`,
+    background: "#000000",
+    glowStrength: "high",
+    reducedMotion: "fade",
+  },
+];
+
 export const futureAssetSlots: FutureAssetSlot[] = [
   {
     id: "pixel-tv-frame",
@@ -335,6 +602,19 @@ export const futureAssetSlots: FutureAssetSlot[] = [
     promptDoc: "docs/asset-prompts/06-pixel-tv/reality-pixel-tv.md",
     status: "prompt-ready",
     iconId: "pixel-tv",
+  },
+  {
+    id: "pixel-tv-single-plane-pepper",
+    feature: "projection",
+    promptDoc: "docs/dynamic-asset-requirements.md",
+    status: "manifest-slot-only",
+    iconId: "pixel-tv",
+  },
+  {
+    id: "ladder-platform-window-escape",
+    feature: "interaction-object",
+    promptDoc: "docs/dynamic-asset-requirements.md",
+    status: "manifest-slot-only",
   },
   {
     id: "public-quest-field",
@@ -356,12 +636,14 @@ export const futureAssetSlots: FutureAssetSlot[] = [
   },
 ];
 
-export function getLumiAnimationAsset(state: LumiSpriteState) {
-  return lumiAnimations[state];
-}
-
 export function getPetAnimationAsset(petId: PetId, stage: PetStageId, state: PetAnimationState) {
-  return petAnimationCatalog[petId][stage][state];
+  const petCatalog = petAnimationCatalog[petId] as Partial<Record<PetStageId, Partial<Record<PetAnimationState, SpriteAnimationAsset>>>>;
+  const stageCatalog = petCatalog[stage];
+  const animation = stageCatalog?.[state];
+  if (!animation) {
+    throw new Error(`Missing pet animation asset: ${petId}/${stage}/${state}`);
+  }
+  return animation;
 }
 
 export function getDesktopIconAsset(id: DesktopIconId) {

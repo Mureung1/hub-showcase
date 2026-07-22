@@ -20,15 +20,20 @@
 |---|---|---|
 | 개인화 AI 매니저 | `managerContext`와 Quest Event 요약을 바탕으로 매니저 대사/퀘스트 추천을 개인화하는 adapter 구조와 rule fallback | Quest Event 저장, ManagerContext, prompt/fallback 분리 |
 | 하루의 흐름을 WEB에 반영 | 시간대와 퀘스트 상태에 따라 배경, 루미 idle, 작업표시줄/창 테마가 바뀌는 web theme state | theme manifest, wallpaper assets, CSS 변수 |
+| blink focus scene | 하루 시작/종료 또는 전환 시 1인칭 눈 깜빡임처럼 화면이 감겼다 열리고 매니저에게 초점이 맞거나 흐려지는 transition | overlay FX, reduced-motion fallback, day flow state |
+| 캐릭터 상호작용 오브젝트 | 사다리/평지/창탈출 같은 화면 오브젝트와 루미 이동 상태를 prototype으로 검증 | draggable/resizable object model, anchor/collision rules, character locomotion states |
 | 현실 픽셀화 TV | 로컬 이미지 또는 웹캠 프레임을 canvas에서 픽셀화해 TV 오브젝트 안에 표시, 프레임 저장 금지 | TV frame asset, canvas pixelizer, permission UI |
+| Single-plane Pepper projection mode | Pixel TV 아이콘을 우클릭해 속성에서 변환하면 투명판 반사용 단일면 projection 앱 모드로 전환 | projection layout, transform icon state, black background, glow sprite |
 | 공개 퀘스트 탐색 | `visibility=anonymous_public` Quest Event를 읽어 별/꽃/조각 형태로 탐색하는 read-only 화면 | visibility 필드, 공개 카드 UI, 신고/차단 전 출시 제한 |
 | 웹캠 손 제스처 탐색 | 공개 탐색 화면의 선택/이동을 손 제스처로 보조하는 실험, 마우스/터치 fallback 필수 | MediaPipe 실험, camera consent, gesture adapter |
 | 캐릭터 애니메이션 | 루미 상태별 sprite sheet와 hover/reaction animation 적용 | sprite sheet, animation metadata |
 | 외적 성장 | 레벨/보상에 따라 루미 accessory 또는 성장 단계가 바뀌는 표현 | manager level, reward inventory, growth sprite variants |
+| Stage 회귀 엔드 컨텐츠 | Stage 1~4 중 해금한 모습으로 자유롭게 회귀/장착할 수 있는 장기 보상 | growth archive, unlocked stages, appearance setting |
+| 퀘스트 능력치 | 퀘스트 타입별로 성실성, 끈기, 창의성, 지식, 힘, 민첩함, 체력, 매력 같은 능력치가 증가 | stat taxonomy, event metadata, reward UI |
 | 데스크톱 배경 테마 | 해금된 wallpaper theme 선택/적용 | theme manifest, wallpaper preview |
 | 창 테마 | 제목 표시줄/창 프레임/taskbar skin 선택/적용 | CSS variable skin, preview asset |
 | 기억 조각 | 완료/복구 Quest Event가 collectible fragment로 기록 노트/월드에 표시 | event id, memory fragment asset |
-| 사운드 | 완료/복구/레벨업 효과음을 muted 기본값과 함께 제공 | audio files, mute setting, reduced motion/audio preference |
+| 사운드 | 완료/복구/레벨업 효과음과 전자 매니저별 cyber-purr 기본 음성을 muted 기본값과 함께 제공 | audio files, mute setting, voice/persona mapping, reduced motion/audio preference |
 
 ## 1. 개인화 AI 매니저
 
@@ -49,6 +54,14 @@
 1. 현재 규칙 기반 결과와 LLM 결과를 비교한다.
 2. 퀘스트 문장화와 매니저 대사부터 LLM에 맡긴다.
 3. 안정성이 확인된 뒤 퀘스트 분해와 리밸런싱에 적용한다.
+
+### Persona와 선택지
+
+- 각 전자 매니저의 Persona는 LLM이 매번 즉흥 생성하기보다, `personaId`, 말투, 금지 표현, 선호 퀘스트 스타일, 기본 음성 톤을 데이터로 고정하고 LLM은 그 범위 안에서 문장화한다.
+- MVP에서는 사용자가 모든 성격 문장을 직접 입력하지 않게 하고, 제한된 선택지를 제공한다.
+- 직접 선택: 사용자가 성격/말투/응원 방식/소리 선호를 고른다.
+- 간접 선택: 사용자의 완료/실패/복구 기록과 선택 반응으로 매니저가 선호를 조정한다.
+- 모델은 작은 추천/대사 생성에는 비용 효율 모델을 기본으로 쓰고, 복잡한 계획 분해나 긴 기억 요약에는 더 강한 reasoning 모델을 옵션으로 둔다.
 
 ## 2. 하루의 흐름이 반영되는 픽셀 월드
 
@@ -71,6 +84,25 @@
 - 기본값은 로컬 실시간 렌더링이며 프레임을 저장하지 않음
 - 웹캠은 HTTPS 또는 localhost에서 사용자 권한을 받은 뒤 사용
 - 카메라가 없거나 거부된 경우 업로드 이미지와 기본 영상을 제공
+
+### Single-plane Pepper projection mode
+
+Pixel TV 확장의 다른 모드로, 4면 피라미드가 아니라 한 방향 관람용 Pepper's Ghost 연출을 지원한다.
+
+- 사용자는 바탕화면의 TV 아이콘을 우클릭한다.
+- `속성` 창에서 `변환`을 누르면 TV 아이콘이 projection 앱과 연결된 아이콘 상태로 바뀐다.
+- 연결된 아이콘을 실행하면 전체 화면 또는 전용 창이 검은 배경 projection mode로 전환된다.
+- 태블릿 위에 영상을 띄우고 45도 투명판/아크릴/필름을 덧댄 용기나 무대 앞에서 보면 루미가 떠 있는 것처럼 보인다.
+- 4면용 영상처럼 상하좌우 4분할하지 않고, 단일 시점 Lumi sprite/video를 밝은 glow와 검은 배경으로 출력한다.
+- 실제 구현 전까지 visible UI에는 `변환` 메뉴를 노출하지 않는다.
+
+Implementation notes:
+
+- `pixel-tv` desktop icon은 기본 TV 상태와 projection-connected 상태를 구분한다.
+- 변환은 irreversible permanent change가 아니라 mode binding 또는 shortcut state로 취급한다.
+- Projection mode는 앱 UI를 숨기고, 종료/밝기/음소거 같은 최소 제어만 제공한다.
+- `prefers-reduced-motion`에서는 깜빡임이나 강한 blur 대신 정적 fade를 사용한다.
+- 화면 밝기 안내, 어두운 공간 안내, 투명판 45도 배치 안내는 문서/설정 도움말에 두고 메인 UI를 복잡하게 만들지 않는다.
 
 ## 4. 음성 입력
 
@@ -114,12 +146,16 @@
 EXP와 레벨 외에도 사용자의 시간이 공간에 남는 보상을 중심으로 설계한다.
 
 - 방 오브젝트: 램프, 식물, 책, TV, 벽지
+- 상호작용 오브젝트: 사다리, 평지, 창 밖 이동 경로
 - 데스크톱 배경 테마: XP 초원, 새벽 하늘, 노을, 별밤, 픽셀 방 등 레벨별 해금
 - 창 테마: 제목 표시줄, 창 프레임, 버튼, 작업표시줄 색과 질감을 하나의 스킨 세트로 해금
 - 테마 장착: 해금한 배경과 창 스킨을 사용자가 설정 창에서 자유롭게 조합하거나 프리셋으로 적용
 - 매니저 행동: 작업 모드, 기다림, 응원, 수면 모션
+- 매니저 행동 오브젝트: 사다리 오르기, 평지 점프, 창 가장자리 붙잡기, 창 밖 산책
+- 엔드 컨텐츠: Stage 1~4 중 해금한 외형으로 회귀하거나 장착
+- 능력치 성장: 퀘스트 성격에 따라 성실성, 끈기, 창의성, 지식, 힘, 민첩함, 체력, 매력 등 증가
 - 기억 조각: 완료 퀘스트가 별, 꽃, 사진 또는 스티커로 저장
-- 사운드: 로파이 BGM, 환경음, 완료 효과음
+- 사운드: 로파이 BGM, 환경음, 완료 효과음, 전자/사이버틱한 기본 고롱고롱 음성
 - 일기 카드: 하루의 완료와 복구 기록을 픽셀 카드로 보관
 - 회복 보상: 복구 퀘스트 성공 시 작은 불빛, 씨앗, 수리 부품 지급
 - 시즌 배지: 시험 기간, 운동 주간, 포트폴리오 주간
@@ -142,6 +178,11 @@ EXP와 레벨 외에도 사용자의 시간이 공간에 남는 보상을 중심
 - 에셋 경로와 상태 매핑은 별도 데이터 파일로 분리한다.
 - 생성 프롬프트는 `asset-prompts/`에서 관리한다.
 - 시간대, 매니저 상태, 방 테마와 보상 아이템을 조합해 렌더링한다.
+- blink focus scene은 CSS overlay와 blur/opacity/mask animation으로 시작하고, reduced-motion에서는 정적 fade로 대체한다.
+- 사다리/평지/창탈출은 처음부터 물리 엔진을 도입하지 않고, object rect와 anchor point 기반의 2D 상태 머신으로 검증한다.
+- 사다리는 창 오브젝트처럼 상하 resize를 허용하고, 루미가 올라가는 중 resize되면 progress ratio를 유지해 위치를 재계산한다.
+- 평지는 좌우 resize만 허용하고, 루미가 근처에 있으면 jump/land 또는 ladder transfer 상태로 이동한다.
+- 창탈출은 XP window 밖 별도 overlay layer에서 루미가 이동하는 prototype으로 검증한다.
 
 ## 9. Unity WebGL과 TouchDesigner 평가
 
@@ -162,13 +203,15 @@ React 기반 UI를 유지하고, 픽셀 월드는 CSS/Canvas에서 시작한다.
 | 단계 | 기능 | 도입 조건 |
 |---:|---|---|
 | 1 | 테마/보상 manifest와 sprite metadata | React 상태와 asset 경로 분리 |
-| 2 | 시간대별 web theme + 캐릭터 애니메이션 | 기본 XP shell 안정화 |
-| 3 | 기억 조각과 외적 성장 | Quest Event 저장/조회 안정화 |
-| 4 | AI 매니저 문장화와 기억 | ManagerContext와 fallback 검증 |
-| 5 | 현실 픽셀화 TV | 카메라 권한 및 개인정보 UX 설계 |
-| 6 | 익명 공개 퀘스트 탐색 | 공개 범위, 신고/차단 정책 준비 |
-| 7 | 손 제스처 탐색 | 기본 마우스/터치 탐색 완성 |
-| 8 | Unity/TouchDesigner 실험 | 웹 기술만으로 목표 달성이 어려울 때 |
+| 2 | 시간대별 web theme + blink focus scene + 캐릭터 애니메이션 | 기본 XP shell 안정화 |
+| 3 | 캐릭터 상호작용 오브젝트: 사다리/평지/창탈출 prototype | sprite anchor와 window/object rect 모델 |
+| 4 | 기억 조각, 외적 성장, Stage 회귀 | Quest Event 저장/조회 안정화 |
+| 5 | 퀘스트 능력치와 보상 연결 | stat taxonomy와 event metadata |
+| 6 | AI 매니저 문장화, Persona, 제한 선택지 | ManagerContext와 fallback 검증 |
+| 7 | 현실 픽셀화 TV + Single-plane Pepper projection mode | 카메라 권한, 개인정보 UX, projection layout 설계 |
+| 8 | 익명 공개 퀘스트 탐색 | 공개 범위, 신고/차단 정책 준비 |
+| 9 | 손 제스처 탐색 | 기본 마우스/터치 탐색 완성 |
+| 10 | Unity/TouchDesigner 실험 | 웹 기술만으로 목표 달성이 어려울 때 |
 
 ## 현재 MVP와의 경계
 

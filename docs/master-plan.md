@@ -62,9 +62,10 @@
 - 2주차에서 미완료된 수직 슬라이스 항목이 있으면 최우선 처리
 
 - 확장 기능의 데이터/에셋 manifest 설계
-- 캐릭터 애니메이션, 배경 테마, 창 테마, 기억 조각, 사운드의 web 적용 기반 구현
+- 캐릭터 애니메이션, blink focus scene, 사다리/평지/창탈출 상호작용 prototype, 배경 테마, 창 테마, 기억 조각, 사운드의 web 적용 기반 구현
 - 시간대별 web theme 상태 적용
-- 매니저 대사 개인화 adapter와 rule fallback 구현
+- 매니저 대사 개인화 adapter, Persona 데이터, 제한 선택지 UX, rule fallback 구현
+- Quest Event metadata 기반 능력치 성장과 Stage 회귀 보상 구조 설계
 
 ### 4주차: 7월 30일까지
 
@@ -77,6 +78,7 @@
 - 최종 결과물 정리
 
 - 현실 픽셀화 TV의 로컬 canvas prototype 구현
+- Pixel TV 아이콘의 속성/변환 흐름과 single-plane Pepper projection mode prototype 설계
 - 공개 퀘스트 탐색 read-only prototype 구현
 - 웹캠 손 제스처 탐색 adapter prototype 구현
 - 확장 기능은 권한, fallback, 비공개 기본값을 검증한 범위까지만 시연
@@ -108,7 +110,10 @@
 - 웹캠 손 제스처: 기간 내 prototype, 마우스/터치 기본 조작 유지
 - 공개 퀘스트 탐색: 기간 내 read-only prototype, 기본 비공개와 신고/차단 정책 필요
 - 현실 픽셀화 TV: 기간 내 local canvas prototype, 프레임 저장 금지
+- Single-plane Pepper projection mode: Pixel TV 아이콘을 projection 앱 모드로 변환하고 단일면 투명판 반사용 검은 배경/Lumi glow 출력 prototype
 - 보상 확장: 기간 내 캐릭터 애니메이션, 외적 성장, 배경/창 테마, 기억 조각, 사운드 적용 기반 구현
+- 캐릭터 상호작용: 기간 내 blink focus scene과 사다리/평지/창탈출 prototype을 React/CSS/object state로 검증
+- 성장 컨텐츠: Stage 1~4 회귀, 퀘스트 능력치, Persona별 cyber-purr 사운드를 보상/개인화 후보로 반영
 - Unity WebGL/TouchDesigner: MVP 본체가 아니라 실험 후보
 
 ## 완료 기준

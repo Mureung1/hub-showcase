@@ -51,6 +51,63 @@ Profile Setup Wizard
 -> 기록 노트 저장
 ```
 
+## 데이터 흐름 구조
+
+```mermaid
+flowchart LR
+  User["User"]
+
+  subgraph Browser["React Browser"]
+    App["App.tsx"]
+    State["React state"]
+    Manifest["assetManifest.ts"]
+    Pet["DesktopPet"]
+    Canvas["CanvasSpriteAnimator"]
+  end
+
+  subgraph Api["Local API"]
+    Adapter["questLogApi.ts"]
+    Vite["Vite middleware"]
+    Server["createServer"]
+    Hono["Hono route"]
+    Contract["Contract parser"]
+  end
+
+  subgraph Store["Selected Store"]
+    Selector["createQuestEventStore"]
+    Memory["Memory store"]
+    SupabaseStore["Supabase store"]
+    StoreApi["QuestEventStore"]
+  end
+
+  DB[("quest_logs")]
+
+  User --> App
+  App --> State
+  State --> Pet
+  Manifest --> Pet
+  Pet --> Canvas
+  App --> Adapter
+  Adapter --> Vite
+  Vite --> Server
+  Server --> Selector
+  Server --> Hono
+  Hono --> Contract
+  Contract -->|"valid"| StoreApi
+  Contract -.->|"invalid"| Hono
+  Selector -->|"missing env"| Memory
+  Selector -->|"SUPABASE env"| SupabaseStore
+  Memory --> StoreApi
+  SupabaseStore --> StoreApi
+  SupabaseStore --> DB
+  DB --> SupabaseStore
+  StoreApi --> Hono
+  Hono --> Adapter
+  Adapter --> App
+```
+
+자세한 구조도와 대표 코드 스키마는 [Architecture Data Flow](docs/architecture-data-flow.md)에 정리했습니다.
+
 ## 현재 구현 판단
 
 - 정적 HTML 버전은 시각 목표와 클릭 흐름의 기준안입니다.
