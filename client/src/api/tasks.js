@@ -46,3 +46,13 @@ export async function archiveTask(taskId, memberId) {
   });
   return res.data;
 }
+
+export async function getArchivedTasks() {
+  const res = await apiClient.get('/tasks/archived');
+  return res.data;
+}
+
+export async function restoreTask(taskId, memberId) {
+  const res = await apiClient.patch(`/tasks/${taskId}/restore`, { memberId });
+  return res.data;
+}

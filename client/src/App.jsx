@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import AddTaskForm from './components/AddTaskForm'
+import ArchivedTasks from './components/ArchivedTasks'
 import Header from './components/Header'
 import ProgressCard from './components/ProgressCard'
 import TaskList from './components/TaskList'
 import Toast from './components/Toast'
 import {
   getTasks,
+  getArchivedTasks,
   updateTaskStatus,
   updateTaskTitle,
   updateTaskAssignee,
   updateTaskDueDate,
   archiveTask,
+  restoreTask,
 } from './api/tasks'
 import { getMembers } from './api/members'
 import { safeGetStoredMemberId, safeSetStoredMemberId } from './utils/storage'
@@ -20,6 +23,7 @@ const NEXT_STATUS = { pending: 'in_progress', in_progress: 'done', done: 'pendin
 
 function App() {
   const [tasks, setTasks] = useState([])
+  const [archivedTasks, setArchivedTasks] = useState([])
   const [members, setMembers] = useState([])
   const [currentMemberId, setCurrentMemberId] = useState(() => {
     const saved = safeGetStoredMemberId()
@@ -31,6 +35,7 @@ function App() {
 
   useEffect(() => {
     getTasks().then(setTasks).catch((err) => console.error(err))
+    getArchivedTasks().then(setArchivedTasks).catch((err) => console.error(err))
 
     getMembers()
       .then((data) => {
@@ -104,8 +109,20 @@ function App() {
 
   function handleDeleteTask(taskId) {
     runTaskAction(taskId, async () => {
-      await archiveTask(taskId, currentMemberId)
+      const archived = await archiveTask(taskId, currentMemberId)
       setTasks((prev) => prev.filter((t) => t.id !== taskId))
+      setArchivedTasks((prev) => [archived, ...prev])
+    })
+  }
+
+  function handleRestoreTask(taskId) {
+    runTaskAction(taskId, async () => {
+      await restoreTask(taskId, currentMemberId)
+      setArchivedTasks((prev) => prev.filter((t) => t.id !== taskId))
+      // 복원된 태스크는 created_at이 예전 값이라 맨 앞에 끼워 넣으면 정렬이 어긋날 수 있어
+      // 서버가 정렬해서 내려주는 목록을 다시 받아옴
+      const refreshed = await getTasks()
+      setTasks(refreshed)
     })
   }
 
@@ -155,6 +172,14 @@ function App() {
           showToast={showToast}
         />
         <AddTaskForm members={members} onTaskAdded={handleTaskAdded} />
+        <ArchivedTasks
+          archivedTasks={archivedTasks}
+          members={members}
+          currentMemberId={currentMemberId}
+          pendingTaskIds={pendingTaskIds}
+          onRestore={handleRestoreTask}
+          showToast={showToast}
+        />
       </div>
       <Toast message={toastMessage} />
     </>
