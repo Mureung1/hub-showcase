@@ -21,3 +21,15 @@ export async function confirmRequest(requestId, userId) {
   if (!res.ok) throw new Error(data.error || '완료 확인에 실패했어요.');
   return data;
 }
+
+// 식사권 1장 사용 차감 — 대면 확인 방식 (사장님이 눈앞에서 확인)
+export async function redeemTicket(ticketId) {
+  const res = await fetch(`${API}/api/tickets/${ticketId}/redeem`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || '식사권 사용에 실패했어요.');
+  return data;
+}
