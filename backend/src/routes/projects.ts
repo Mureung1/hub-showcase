@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabaseClient';
 import { buildAnalysisMarkdown } from '../lib/analysisMarkdown';
 import { runAnalysisPipeline } from '../lib/analysisPipeline';
 import { refineVerificationSummary } from '../lib/refineHypothesis';
+import { getFullProjectReport } from '../lib/projectReport';
+import { buildReportMarkdown } from '../lib/reportMarkdown';
 
 const router = Router();
 const ANALYSIS_REQUESTS_DIR = path.join(__dirname, '..', '..', '..', 'analysis_requests');
@@ -614,5 +616,28 @@ router.post(
     return res.status(200).json({ project });
   },
 );
+
+// GET /api/projects/:id/report.md — 분석 결과 리포트 다운로드.
+router.get('/:id/report.md', async (req: Request<{ id: string }>, res: Response) => {
+  const { id } = req.params;
+
+  let report;
+  try {
+    report = await getFullProjectReport(id);
+  } catch (err) {
+    console.error('Failed to build project report:', err);
+    const message = err instanceof Error ? err.message : '리포트 생성에 실패했습니다.';
+    return res.status(500).json({ error: message });
+  }
+
+  if (!report) {
+    return res.status(404).json({ error: '프로젝트를 찾을 수 없습니다.' });
+  }
+
+  const markdown = buildReportMarkdown(report);
+  res.set('Content-Type', 'text/markdown; charset=utf-8');
+  res.set('Content-Disposition', `attachment; filename="report_${id}.md"`);
+  return res.status(200).send(markdown);
+});
 
 export default router;

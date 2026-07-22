@@ -8,6 +8,7 @@ CREATE TABLE projects (
   problem_definition TEXT,
   additional_notes TEXT,
   save_status TEXT DEFAULT 'draft', -- 'draft' / 'saved'
+  share_token TEXT UNIQUE DEFAULT uuid_generate_v4()::text, -- 공유 URL용. 생성 시 자동 발급
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

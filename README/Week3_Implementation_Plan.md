@@ -140,11 +140,12 @@ gantt
   - *상세:* `projects.save_status`(`draft` / `saved`) 컬럼 추가(마이그레이션 005). `PATCH /:id/hypotheses/:hid`(Task 10에서 만든 인라인 수정 라우트)에 버전 아카이빙을 연결 — cause/effect 변경 시 **덮어쓰기 직전** 현재 값을 `hypothesis_versions`에 `version = 기존 개수+1`로 INSERT한 뒤 `hypotheses`를 UPDATE. 엔드포인트: `POST /api/projects/:id/save`(임시저장/저장 전환), `GET /api/projects/:id/hypotheses/:hid/versions`(오래된 순).
   - *완료 조건:* 가설을 2회 수정한 뒤 `hypothesis_versions`에 이전 버전이 모두 남아 있고, 임시저장/저장 상태가 DB에 반영되어 재방문 시 복원됨.
 
-- [ ] **Task 13: [BE/FE] 결과 공유하기 (MD / URL / PDF)**
-  - *상세:*
-    - **MD:** 기존 `backend/src/lib/analysisMarkdown.ts`의 빌더 패턴을 재사용하여 `buildReportMarkdown`(가설별 상태 · 판단 · 검증결과 · 근거 포함) 신규 작성 ➡️ `GET /api/projects/:id/report.md` 다운로드.
-    - **URL:** `projects`에 `share_token` 컬럼 추가, `GET /api/share/:token` 읽기 전용 조회 + FE `/share/:token` 라우트. 추측 불가한 랜덤 토큰 사용.
-    - **PDF:** 신규 의존성 없이 공유 화면에 print 전용 CSS(`@media print`) 적용 후 브라우저 인쇄 ➡️ PDF 저장. (Puppeteer는 번들 크기 · 배포 부담이 커서 3주차 범위에서 제외.)
+- [x] **Task 13: [BE/FE] 결과 공유하기 (MD / URL / PDF)**
+  - *상세:* 사전 검토에서 계획을 개선: MD/URL 두 출력이 각자 쿼리를 새로 짜면 정보가 어긋날 위험이 있어, `lib/projectReport.ts`의 `getFullProjectReport()` 하나로 데이터 집계를 통합하고 두 출력이 재사용하도록 변경.
+    - **MD:** `lib/reportMarkdown.ts`의 `buildReportMarkdown()`(가설별 상태 · 판단 · 검증결과 · 근거 목록 포함, `analysisMarkdown.ts`와는 별개 — 그건 분석 요청용, 이건 결과 리포트용) ➡️ `GET /api/projects/:id/report.md` 다운로드.
+    - **URL:** `projects.share_token`을 다른 id 컬럼들과 동일하게 `DEFAULT uuid_generate_v4()::text`로 자동 발급(별도 "링크 생성" 엔드포인트 불필요, 마이그레이션 006). `GET /api/share/:token`은 **완전히 별도 라우터**(`routes/share.ts`)로 분리해 GET만 존재 — Task 17("공유 URL 접근 범위 제한")이 구조적으로 이미 해결됨. `save_status`와 무관하게 항상 공유 가능(결정 확인함). FE `/share/:token`은 드로어 대신 근거를 인라인 목록으로 표시(드로어는 `position:fixed`라 인쇄에 안 나옴).
+    - **PDF:** 신규 의존성 없이 공유 화면에 `.no-print`/`.print-only` + `@media print` CSS 적용 후 브라우저 인쇄. (Puppeteer는 3주차 범위에서 제외.)
+    - **대시보드 진입점 추가(계획서에 없었지만 필요):** "공유 링크 복사" · "리포트 다운로드" · "임시저장/저장 전환" 버튼을 대시보드 헤더에 추가 — 없으면 토큰에 도달할 방법이 없어 기능이 도달 불가능함.
   - *완료 조건:* 세 가지 공유 방식이 모두 동작하고, 공유 URL을 로그아웃/시크릿 창에서 열었을 때 읽기 전용으로 정상 표시됨.
 
 - [ ] **Task 14: [검증] E2E 전체 동선 테스트**

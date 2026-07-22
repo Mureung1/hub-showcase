@@ -28,6 +28,8 @@ interface Project {
   id: string
   title: string
   problem_definition: string
+  save_status: string
+  share_token: string
 }
 
 interface DashboardData {
@@ -56,6 +58,9 @@ function DashboardPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [judgmentError, setJudgmentError] = useState<string | null>(null)
   const [pendingJudgmentId, setPendingJudgmentId] = useState<string | null>(null)
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [isSavingStatus, setIsSavingStatus] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -114,6 +119,41 @@ function DashboardPage() {
     }
   }
 
+  async function copyShareLink() {
+    if (!data) return
+    const url = `${window.location.origin}/share/${data.project.share_token}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopyFeedback('공유 링크가 복사되었습니다.')
+    } catch {
+      setCopyFeedback(url) // 클립보드 권한이 없으면 링크 텍스트라도 보여준다.
+    }
+  }
+
+  async function toggleSaveStatus() {
+    if (!data) return
+    const nextStatus = data.project.save_status === 'saved' ? 'draft' : 'saved'
+    setSaveError(null)
+    setIsSavingStatus(true)
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/projects/${id}/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ save_status: nextStatus }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || '저장 상태 변경에 실패했습니다.')
+      }
+      const { project } = await res.json()
+      setData((prev) => (prev ? { ...prev, project: { ...prev.project, save_status: project.save_status } } : prev))
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : '저장 상태 변경 중 오류가 발생했습니다.')
+    } finally {
+      setIsSavingStatus(false)
+    }
+  }
+
   if (error) {
     return (
       <div className="app-shell">
@@ -135,6 +175,19 @@ function DashboardPage() {
       <header className="page-header">
         <h1>{data.project.title}</h1>
         <p>{data.project.problem_definition}</p>
+        <div className="share-actions">
+          <button type="button" className="btn-add" onClick={copyShareLink}>
+            공유 링크 복사
+          </button>
+          <a className="btn-add" href={`${API_BASE_URL}/api/projects/${id}/report.md`}>
+            리포트 다운로드
+          </a>
+          <button type="button" className="btn-add" onClick={toggleSaveStatus} disabled={isSavingStatus}>
+            {data.project.save_status === 'saved' ? '저장됨 (임시저장으로 전환)' : '임시저장 중 (저장하기)'}
+          </button>
+        </div>
+        {copyFeedback && <p className="copy-feedback">{copyFeedback}</p>}
+        {saveError && <p className="error-text">{saveError}</p>}
       </header>
 
       <section className="card">
