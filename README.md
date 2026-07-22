@@ -17,64 +17,75 @@
 - 코드 검증 Agent 제작
 - 개인 개발 Workflow 문서화
 
-### 서비스 구조와 데이터 흐름
+## 서비스 아키텍처 및 데이터 흐름
 
-이 서비스는 React가 화면을 보여주고, Express가 API 요청을 처리합니다. `studyPlans.js`는 Express가 사용하는 학습 계획 검증 및 데이터 변환 모듈입니다. Supabase는 학습 계획 데이터를 저장하고 조회합니다.
+### 1. 학습 계획 저장
 
-```mermaid
-flowchart LR
-  React[React 화면]
-  Express[Express 서버]
-  StudyPlans[studyPlans.js]
-  Supabase[Supabase DB]
-  Storage[브라우저 localStorage<br/>studyPlanId]
-
-  React -->|API 요청| Express
-  Express -->|JSON 응답| React
-
-  Express -->|검증 및 데이터 변환 요청| StudyPlans
-  StudyPlans -->|검증 결과 및 변환 데이터| Express
-
-  Express -->|읽기/쓰기| Supabase
-  Supabase -->|조회 결과| Express
-
-  React -->|저장 성공 후 ID 기록| Storage
-  Storage -.->|페이지 시작 시 React가 ID 확인| React
-```
-
-### 저장 및 새로고침 복원 흐름
+사용자가 입력한 학습 계획을 서버 검증 후 Supabase에 저장하고, 생성된 id를 브라우저에 보관합니다.
 
 ```mermaid
 sequenceDiagram
-  participant User as 사용자
-  participant React as React 화면
-  participant Storage as localStorage
-  participant Express as Express 서버
-  participant Supabase as Supabase DB
+  actor User as 사용자
+  participant React as React 화면<br/>(ProjectIntro.jsx)
+  participant API as Express API
+  participant DB as Supabase DB
 
-  User->>React: 학습계획 저장 요청
-  React->>Express: POST /api/study-plans
-  Express->>Supabase: 학습계획 저장
-  Supabase-->>Express: 저장된 학습계획 ID 반환
-  Express-->>React: 저장 성공 응답
-  React->>Storage: 학습계획 ID 저장
-  React->>Express: GET /api/study-plans/:id
-  Express->>Supabase: 학습계획 조회
-  Supabase-->>Express: 학습계획 데이터 반환
-  Express-->>React: 조회 성공 응답
-  React->>React: savedStudyPlan 상태 반영
-
-  User->>React: 새로고침
-  React->>Storage: 저장된 학습계획 ID 확인
-  React->>Express: GET /api/study-plans/:id
-  Express->>Supabase: 학습계획 조회
-  alt 조회 성공
-    Supabase-->>Express: 학습계획 데이터 반환
-    Express-->>React: 조회 성공 응답
-    React->>React: savedStudyPlan 상태 복원
-  else 조회 실패
-    Express-->>React: 404 또는 오류 응답
-    React->>Storage: 저장된 학습계획 ID 제거
-    React->>React: 사용자 메시지 표시
-  end
+  User->>React: 시험/학습 정보 입력
+  React->>API: POST /api/study-plans
+  API->>API: 입력값 검증
+  API->>DB: study_plans insert
+  DB-->>API: 생성된 row 반환
+  API-->>React: studyPlanId 반환
+  React->>React: localStorage setItem
 ```
+
+- `study_plans · insert`: Supabase의 학습 계획 테이블에 새 학습 계획을 저장
+- `localStorage · setItem`: 브라우저에 생성된 studyPlanId를 저장
+
+### 2. 새로고침 후 학습 계획 복원
+
+페이지가 다시 열리면 브라우저에 저장된 id로 기존 학습 계획을 조회해 화면에 복원합니다.
+
+```mermaid
+sequenceDiagram
+  participant React as React 화면<br/>(ProjectIntro.jsx)
+  participant Storage as localStorage
+  participant API as Express API
+  participant DB as Supabase DB
+
+  React->>Storage: studyPlanId 확인
+  Storage-->>React: 저장된 id 반환
+  React->>API: GET /api/study-plans/:id
+  API->>API: UUID 검증
+  API->>DB: study_plans select
+  DB-->>API: 저장된 row 반환
+  API-->>React: 학습 계획 반환
+  React->>React: savedStudyPlan 반영
+  React->>React: 학습 계획 화면 표시
+```
+
+조회에 실패하면 잘못된 studyPlanId를 localStorage에서 삭제하고 정보 입력 화면을 유지합니다.
+
+- `localStorage · getItem`: 브라우저에 저장된 studyPlanId를 확인
+- `study_plans · select`: 해당 id의 학습 계획을 Supabase에서 조회
+- `localStorage · removeItem`: 조회 실패 시 잘못된 studyPlanId를 브라우저에서 삭제
+
+### 구조를 정리하며 확인한 점
+
+#### 현재 구조에서 보완할 수 있는 부분
+
+- `ProjectIntro.jsx`에서 화면 전환, 입력 상태 관리, API 요청, 새로고침 복원 로직을 함께 처리하고 있다.
+- 현재 구현 범위에서는 정상적으로 동작하지만, 이후 기능이 추가되면 한 파일이 복잡해질 수 있다.
+- 추후 화면, 상태 관리, API 요청과 복원 로직을 역할별로 분리하는 방향을 고려한다.
+
+#### 이후 구현할 확장 기능
+
+- 취약 영역 선택 결과는 현재 React state에만 저장된다.
+- 이번 DB 저장 및 새로고침 복원 구현 범위에는 취약 영역 저장이 포함되지 않았다.
+- 이후 취약 영역도 학습 계획과 함께 DB에 저장하고 새로고침 후 복원되도록 확장할 예정이다.
+
+### 다음 작업에 반영할 내용
+
+- 화면 전환, 상태 관리, API 요청과 복원 로직을 역할별로 분리하기
+- 취약 영역을 학습 계획과 함께 DB에 저장하기
+- 저장된 취약 영역도 새로고침 후 복원하기
