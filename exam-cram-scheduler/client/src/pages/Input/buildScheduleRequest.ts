@@ -28,8 +28,9 @@ export interface InputFormState {
   wakeTime: string;
   caffeineIntakes: CaffeineIntake[];
   sensitivity: CaffeineSensitivity;
-  age: number;
-  weightKg: number;
+  /** 입력칸을 다 지우면 ''가 된다(0이 남으면 "021"처럼 입력되므로) — 계산 전에 검증한다 */
+  age: number | '';
+  weightKg: number | '';
   gender: '여성' | '남성';
   pregnant: boolean;
   oralContraceptive: boolean;
@@ -73,6 +74,13 @@ export function validateInputForm(form: InputFormState): string | null {
     }
   }
 
+  if (form.age === '' || form.age <= 0) {
+    return '나이를 입력해주세요.';
+  }
+  if (form.weightKg === '' || form.weightKg <= 0) {
+    return '체중을 입력해주세요.';
+  }
+
   return null;
 }
 
@@ -104,8 +112,9 @@ export function buildScheduleRequest(form: InputFormState): ScheduleCalculateReq
     })),
     caffeineSensitivity: form.sensitivity,
     healthProfile: {
-      age: form.age,
-      weightKg: form.weightKg,
+      // validateInputForm을 먼저 통과했다면 ''가 아니다
+      age: Number(form.age),
+      weightKg: Number(form.weightKg),
       pregnant: form.gender === '여성' ? form.pregnant : false,
       heartCondition: form.heartCondition,
       anxiety: form.anxiety,
