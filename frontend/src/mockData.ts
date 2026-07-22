@@ -13,7 +13,9 @@ export const SYMPTOM_ID_BY_NAME: Record<string, number> = {
 };
 
 export const INGREDIENT_ICONS: Record<string, ChipIconName> = {
-  '비타민 B군': 'battery',
+  니아신: 'battery',
+  '비타민 B6': 'battery',
+  엽산: 'battery',
   마그네슘: 'moon',
   프로바이오틱스: 'stomach',
   루테인: 'eye',
