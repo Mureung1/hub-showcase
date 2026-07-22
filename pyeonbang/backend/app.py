@@ -449,14 +449,34 @@ def add_history():
         return jsonify({'status': 'fail', 'message': str(e)}), 500
 
 @app.route('/api/history', methods=['DELETE'])
-def clear_history():
+@app.route('/api/history/<int:history_id>', methods=['DELETE'])
+def clear_history(history_id=None):
     try:
+        # URL 파라미터가 없으면 쿼리 파라미터나 JSON 바디에서 id 확인
+        if history_id is None:
+            history_id = request.args.get('id', type=int)
+        if history_id is None and request.is_json and request.get_json(silent=True):
+            history_id = request.get_json(silent=True).get('id')
+
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM analysis_history")
-        conn.commit()
-        conn.close()
-        return jsonify({'status': 'success', 'message': '모든 분석 이력이 초기화되었습니다.'}), 200
+
+        if history_id is not None:
+            cursor.execute("SELECT id FROM analysis_history WHERE id = ?", (history_id,))
+            row = cursor.fetchone()
+            if not row:
+                conn.close()
+                return jsonify({'status': 'fail', 'message': f'ID {history_id}에 해당하는 이력을 찾을 수 없습니다.'}), 404
+
+            cursor.execute("DELETE FROM analysis_history WHERE id = ?", (history_id,))
+            conn.commit()
+            conn.close()
+            return jsonify({'status': 'success', 'message': f'ID {history_id} 분석 이력이 삭제되었습니다.'}), 200
+        else:
+            cursor.execute("DELETE FROM analysis_history")
+            conn.commit()
+            conn.close()
+            return jsonify({'status': 'success', 'message': '모든 분석 이력이 초기화되었습니다.'}), 200
     except Exception as e:
         return jsonify({'status': 'fail', 'message': str(e)}), 500
 
