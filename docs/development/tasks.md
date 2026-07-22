@@ -167,6 +167,7 @@ Outcome: 발표자가 실제 지도에서 주요 분석 기능을 직접 조작�
 | MAP-004 | 핵심 점포 방향 독립형 3D store marker와 업종 asset system | P1 | In Progress | Phase 2 | ARCH-002, SEARCH-001, WEB-003 | 첫 5개 canonical 업종을 공유 GLB body·SVG atlas·procedural attachment에 연결하고 asset 1회 load, style loading race, marker LOD·cleanup을 검증했다. 복수 점포 건물 묶음과 회전·reduced-motion 성능 검증은 남았다 |
 | MAP-005 | 전체 basemap과 지원 지역 LocalTwin 3D Overlay 분리 | P0 | Done | Phase 2 | MAP-003 | 기본 지도는 모든 위치에서 유지되고 연남·홍대·합정의 검증 Overlay만 독립적으로 표시되며 관평동은 planned 상태로 구분된다 |
 | MAP-006 | 분석 기준·주제·지도 Layer 정보구조 분리 | P0 | Done | Phase 2 | MAP-005 | 공간 기준·분석 주제·지도 표현을 독립 state로 선택하고 미지원 조합을 명시한다 |
+| MAP-007 | viewport 경계의 기본 건물·LocalTwin Overlay 중복 제거 | P0 | Done | Phase 2 | MAP-005 | 지도 중심이 지원 범위 밖이어도 화면이 전용 Overlay를 포함하면 기본 3D 건물을 숨겨 중복 extrusion을 만들지 않는다. `/en` 데모 경로는 변경하지 않는다 |
 | DESIGN-001 | 업종별 low-poly 점포 prefab 고도화        | P1       | Done    | 3    | MAP-003               | 지붕·창문·간판·차양·화분으로 후보 점포를 구분한다          |
 
 ### EPIC-05. 보조 3D 장면 탐색
@@ -210,7 +211,7 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 | ---------- | ------------------------------------------ | -------- | ------- | ---- | ---------- | -------------------------------------------------- |
 | EVAL-001   | 핵심 분석 평가 fixture와 score script 작성 | P0       | Done    | 4    | EPIC-03    | 12개 canonical case와 정상·경계·실패 test를 재현한다 |
 | EVAL-002   | Front-API 통합 smoke test                  | P0       | Done | 4    | EPIC-04    | 주요 시연 경로가 새 환경에서 통과한다              |
-| DEMO-001   | 5분 발표 시나리오와 복구 경로 작성         | P0       | Backlog | 4    | EVAL-002   | 발표 순서, 예상 결과와 fallback이 문서화된다       |
+| DEMO-003 (DEMO-001) | 5분 발표 시나리오와 복구 경로 작성 | P0 | Done | Phase 2 | EVAL-002, WEB-015 | 공개 URL, Render cold start 대기, API 오류·지도 대체 경로와 발표 순서가 문서화된다 |
 | DEPLOY-001 | docs/prototype 배포와 공개 경로 검증       | P0       | Backlog | 4    | EVAL-002, SEC-008 | Home, Tasks, Architecture와 prototype URL이 열린다 |
 | DEPLOY-002 | production Supabase 생성·migration·배포 연결 | P0 | Done | 공개 배포 | DB-001, EVAL-002, SEC-008 | 별도 production DB, Render secret, Vercel Web과 공개 FE-BE smoke를 완료했다 |
 | DOCS-004   | 실제 구현 결과로 스펙·아키텍처·백로그 마감 | P0       | Done | 4    | EPIC-03~07 | current/canonical 문서 감사, 독립 artifact 검사와 공개 docs 배포 검증을 완료했다 |
