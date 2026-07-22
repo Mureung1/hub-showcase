@@ -1,10 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useAuth, useMe } from "../features/auth";
+import { acceptInvitation, usePendingInvitations } from "../features/invitation";
 import { createStore, useStores } from "../features/store";
 import { ApiError } from "../shared/api";
 import { ROUTES } from "../shared/routes";
@@ -22,15 +23,27 @@ const completeProfileSchema = z.object({
 type CreateStoreFormValues = z.infer<typeof createStoreSchema>;
 type CompleteProfileFormValues = z.infer<typeof completeProfileSchema>;
 
+function formatTime(value: string | null) {
+  return value ? value.slice(0, 5) : "";
+}
+
 export function StoreSelectPage() {
   const { retryProfileCreation, session, signOut, user } = useAuth();
   const { error: meError, isLoading: isMeLoading } = useMe();
   const { data: storesResponse, error: storesError, isLoading: isStoresLoading } = useStores();
+  const {
+    data: pendingInvitationsResponse,
+    error: pendingInvitationsError,
+    isLoading: isPendingInvitationsLoading
+  } = usePendingInvitations();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState("");
   const [profileErrorMessage, setProfileErrorMessage] = useState("");
+  const [acceptErrorMessage, setAcceptErrorMessage] = useState("");
   const stores = storesResponse?.stores ?? [];
+  const pendingInvitations = pendingInvitationsResponse?.invitations ?? [];
+  const accessToken = session?.access_token ?? "";
 
   const {
     formState: { errors, isSubmitting },
@@ -74,6 +87,20 @@ export function StoreSelectPage() {
     }
   }, [stores, storesResponse]);
 
+  const acceptInvitationMutation = useMutation({
+    mutationFn: (invitationId: string) => acceptInvitation(accessToken, invitationId),
+    onSuccess: async (response) => {
+      setSelectedStoreId(response.store.id);
+      await queryClient.invalidateQueries({ queryKey: ["me", user?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["stores", user?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["pendingInvitations", user?.id] });
+      navigate(ROUTES.schedule, { replace: true });
+    },
+    onError: (error) => {
+      setAcceptErrorMessage(error instanceof Error ? error.message : "초대 수락에 실패했습니다.");
+    }
+  });
+
   const handleStoreSelect = (storeId: string) => {
     setSelectedStoreId(storeId);
     navigate(ROUTES.schedule);
@@ -86,6 +113,7 @@ export function StoreSelectPage() {
       await retryProfileCreation(values.name);
       await queryClient.invalidateQueries({ queryKey: ["me", user?.id] });
       await queryClient.invalidateQueries({ queryKey: ["stores", user?.id] });
+      await queryClient.invalidateQueries({ queryKey: ["pendingInvitations", user?.id] });
     } catch (error) {
       setProfileErrorMessage(error instanceof Error ? error.message : "프로필 생성에 실패했습니다.");
     }
@@ -93,8 +121,6 @@ export function StoreSelectPage() {
 
   const onSubmit = handleSubmit(async (values) => {
     setErrorMessage("");
-
-    const accessToken = session?.access_token;
 
     if (!accessToken) {
       setErrorMessage("로그인 세션을 확인할 수 없습니다.");
@@ -177,7 +203,7 @@ export function StoreSelectPage() {
     );
   }
 
-  if (isStoresLoading) {
+  if (isStoresLoading || isPendingInvitationsLoading) {
     return (
       <main className="auth-stage">
         <section className="auth-card store-select-card">
@@ -207,6 +233,47 @@ export function StoreSelectPage() {
           <p className="label">STORE</p>
           <h1 id="store-select-title">매장 선택</h1>
         </div>
+
+        {pendingInvitations.length ? (
+          <section className="store-invitation-section" aria-labelledby="pending-invitation-title">
+            <h2 id="pending-invitation-title">받은 초대</h2>
+            <div className="store-list">
+              {pendingInvitations.map((invitation) => (
+                <article className="store-list-item" key={invitation.id}>
+                  <div>
+                    <strong>{invitation.store.name}</strong>
+                    <span>
+                      {invitation.hourlyWage === null ? "시급 미입력" : `${invitation.hourlyWage.toLocaleString()}원`}
+                      {" · "}
+                      {formatTime(invitation.defaultWorkStartTime) || "--:--"}-
+                      {formatTime(invitation.defaultWorkEndTime) || "--:--"}
+                    </span>
+                  </div>
+                  <button
+                    className="secondary-button"
+                    disabled={acceptInvitationMutation.isPending}
+                    onClick={() => {
+                      setAcceptErrorMessage("");
+                      acceptInvitationMutation.mutate(invitation.id);
+                    }}
+                    type="button"
+                  >
+                    수락
+                  </button>
+                </article>
+              ))}
+            </div>
+            {acceptErrorMessage ? <p className="form-error">{acceptErrorMessage}</p> : null}
+          </section>
+        ) : null}
+
+        {pendingInvitationsError ? (
+          <p className="form-error">
+            {pendingInvitationsError instanceof Error
+              ? pendingInvitationsError.message
+              : "받은 초대를 불러오지 못했습니다."}
+          </p>
+        ) : null}
 
         {stores.length ? (
           <div className="store-list" aria-label="소속 매장 목록">
