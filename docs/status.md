@@ -255,5 +255,12 @@
 - **SPEC-DB-001 완료 (2026-07-22)** — T-015 AC1~AC6 실측 PASS로 완료 처리. Cowork가 Spec 상태 헤더·개정 기록·index.md 갱신. 인증·영속성 토대(스키마·RLS·2-클라이언트·Chat/Question 실저장·BYOK 암호화 경로)까지 실제 Supabase로 섬. **다음: SPEC-AI-001**(실제 3사 AI 파이프라인 — 서버 SourceAnswer 생성·정규화·저장 + web 실호출로 Mock 교체)
 - **SPEC-AI-001 뼈대 작성 (2026-07-22, Ready)** — AI Provider 실호출·SourceAnswer 생성 Spec. Step 1~7 확정: 비동기+SSE·명시적 생성, 타임아웃 45초·재시도 구분(일시적+스키마실패만), 전멸=고정문구+완료, 좌초=미룸(안정화), BYOK 하이브리드(플래그 기본 ON·사전 키 점검·키 없으면 시작 차단), 관측 메타 JSONB, StructuredContent 확장(summary·order·kind 자유), provider별 프롬프트, Context=web 전달(임시→서버화 후 DB 기반). 어젠다 분류·충돌 판단 기준은 SPEC-AI-002로 명시(사용자 제기). 키 입력 UI는 SPEC-SETTINGS-001 분리. 다음: 사용자 컨펌 → T-016 구현
 - **ADR-005 작성 + SPEC-AI-001 §2.3 반영 (2026-07-22)** — AI 파이프라인 모듈 경계(포트 & 어댑터). 5개 포트(ProviderClient·AnswerPromptTemplate·AnswerNormalizer·AgendaClassifier·ConflictComparator) 인터페이스 확정, **설정 선택 + 버전 스탬프**로 교체·재현. 구현은 provider/prompt/정규화=AI-001, 분류/비교=AI-002(빈 코드 없음). '프레임워크가 아니라 이음새' 원칙
+- **T-016.1 완료 (2026-07-22)** — SPEC-AI-001 계약·마이그레이션·Mock 반영(3단계 중 1단계, 외부 AI 호출 없음)
+  - **공통 계약(§8.1)**: `packages/shared` `SectionSchema`에 `order`(정수·0 이상)·`kind`(자유 문자열, 부재 시 `null`), `StructuredContentSchema`에 `summary`(부재 시 `null`) 추가. 기존 `sectionId`/`title`/`content`와 `SourceAnswerSchema` superRefine 3종은 무변경
+  - **마이그레이션(§8.3)**: `20260722120000_source_answers_response_meta.sql` — `source_answers.response_meta jsonb NOT NULL DEFAULT '{}'`. `model`·`prompt_version`·`started_at`·`completed_at`은 기존 칸 유지(추가 컬럼 없음). RLS(행 단위)·GRANT(테이블 단위 + default privileges)는 컬럼 추가 영향 없어 변경 불필요 — psql로 확인만
+  - **Mock 반영**: 18개 Section(3사×6)에 `order`·`kind` 부여, `mockSummaryByProvider` 신설로 `useChatWorkspace` 2곳의 `structuredContent`에 `summary` 주입. **스키마를 느슨하게 풀지 않고 Mock을 계약에 맞춤**
+  - **검증**: 루트 `typecheck`·`lint`·`build`(shared→api→web 순서) 통과. psql로 `response_meta` 컬럼·마이그레이션 이력·RLS 정책 3개·GRANT 확인. 브라우저 회귀 happy-path(FinalAnswer·DecisionNote까지)·provider-excluded(제외 배너)·all-rejected(고정 문구+노트) 정상, 검증 배너 미표시·콘솔 오류 없음
+  - **미확인**: `supabase db push` CLI 프로세스가 적용·이력 기록 후 2분 타임아웃으로 잘려 CLI 완료 메시지는 못 봄(결과는 psql로 직접 확인). `recheck-path`·`context-next-question` 시나리오는 미실행
+  - **다음**: T-016.2 — 외부 AI SDK 설치, provider 계층·포트(ProviderClient·AnswerPromptTemplate·AnswerNormalizer), `response_meta` Zod 계약·실제 기록, 서버 저장. `SPEC-SCHEMA-001` 5.3.1·개정 기록 반영은 Cowork 담당
 - 이후: SPEC-AI-001~003(Provider·Manager·FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

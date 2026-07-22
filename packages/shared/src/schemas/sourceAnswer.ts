@@ -3,17 +3,28 @@ import { AiProviderSchema, SourceAnswerStatusSchema } from "./enums.js";
 import { ErrorCodeSchema } from "./errorCodes.js";
 
 /**
- * SPEC-SCHEMA-001 5.3.1 — StructuredContent 최소 골격.
- * 필드 확장은 SPEC-AI-001에서. sectionId는 Agenda 근거 추적을 위한 필수 안정 식별자.
+ * SPEC-SCHEMA-001 5.3.1 — StructuredContent 골격.
+ * sectionId는 Agenda 근거 추적을 위한 필수 안정 식별자.
+ *
+ * SPEC-AI-001 8.1에서 order·kind 확장. kind는 자유 문자열이며, 어젠다 분류·충돌
+ * 판단 기준과 저장 구조는 SPEC-AI-002(Manager)에서 확정한다. AI-001은 provider가
+ * 붙인 유형 데이터를 담아두기만 한다.
+ * 값 부재(data-model 1.6): provider가 kind를 주지 못하면 null.
  */
 export const SectionSchema = z.object({
   sectionId: z.string().min(1),
   title: z.string(),
   content: z.string(),
+  /** 표시·정렬 순서 (정수, 0부터) */
+  order: z.number().int().min(0),
+  /** 유형 라벨 (자유 문자열). provider가 주지 못하면 null */
+  kind: z.string().nullable(),
 });
 export type Section = z.infer<typeof SectionSchema>;
 
 export const StructuredContentSchema = z.object({
+  /** 답변 전체 한 줄 요약. provider가 주지 못하면 null (data-model 1.6) */
+  summary: z.string().nullable(),
   sections: z.array(SectionSchema).min(1),
 });
 export type StructuredContent = z.infer<typeof StructuredContentSchema>;

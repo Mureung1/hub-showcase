@@ -28,6 +28,7 @@ import {
   mockFinalAnswerContent,
   mockModelByProvider,
   mockSectionsByProvider,
+  mockSummaryByProvider,
   providerMeta,
 } from "./mockData";
 
@@ -237,7 +238,10 @@ function buildContextNextQuestionState(): ChatWorkspaceState {
       provider: id,
       model: mockModelByProvider[id],
       status: "succeeded",
-      structuredContent: { sections: [...mockSectionsByProvider[id]] },
+      structuredContent: {
+        summary: mockSummaryByProvider[id],
+        sections: [...mockSectionsByProvider[id]],
+      },
       errorCode: null,
       errorMessage: null,
       retryCount: 0,
@@ -472,7 +476,10 @@ export function useChatWorkspace() {
               : answer.errorCode,
           // 6장: succeeded면 structuredContent 필수 (Mock Section을 채운다)
           structuredContent: isSucceeded
-            ? { sections: [...mockSectionsByProvider[provider]] }
+            ? {
+                summary: mockSummaryByProvider[provider],
+                sections: [...mockSectionsByProvider[provider]],
+              }
             : answer.structuredContent,
           startedAt:
             isProcessing && answer.startedAt === null
