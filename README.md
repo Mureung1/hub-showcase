@@ -11,35 +11,33 @@ https://github.com/dabinnida/hub/wiki
 
 > 2026-07-22 기준. 실제로 연결된 부분과, 아직 안 된 부분(점선)을 구분해서 그렸습니다.
 
-​```mermaid
+```mermaid
 flowchart LR
-    subgraph Client["🖥️ 화면 (React - lifelog)"]
-        Home["홈 화면<br/>(키워드 카드, 월별 기록)"]
-        Timeline["타임라인 화면<br/>(기간 선택, 카드)"]
+    subgraph Client["화면 React lifelog"]
+        Home["홈 화면 키워드카드 월별기록"]
+        Timeline["타임라인 화면 기간선택 카드"]
         Modal["월별 기록 모달"]
     end
 
-    subgraph Server["🔧 백엔드 (Express) — 아직 없음"]
-        API["API 엔드포인트<br/>(이름/구조 미정)"]
+    subgraph Server["백엔드 Express 아직없음"]
+        API["API 엔드포인트 이름구조 미정"]
     end
 
-    subgraph LLMLogic["🧪 LLM 분석 로직 (지금은 llm-test 안에 독립적으로만 존재)"]
-        Prompt["프롬프트 조립<br/>(기존 키워드 참고 로직 포함)"]
+    subgraph LLMLogic["LLM 분석로직 llmtest 안에 독립적으로만 존재"]
+        Prompt["프롬프트 조립 기존키워드 참고로직 포함"]
     end
 
-    Gemini[("🤖 Gemini API")]
-    Supabase[("🗄️ Supabase DB<br/>keywords 테이블만 실제 존재<br/>entries·monthly_records는 설계만 됨")]
+    Gemini[("Gemini API")]
+    Supabase[("Supabase DB keywords테이블만 실제존재")]
 
-    Home -. "❌ 미연결<br/>(더미 데이터 사용 중)" .-> API
-    Timeline -. "❌ 미연결" .-> API
-    Modal -. "❌ 미연결" .-> API
-
-    API -. "⬜ 예정<br/>(아직 연결 코드 없음)" .-> Prompt
-
-    Prompt -->|"✅ 실제 호출"| Gemini
-    Gemini -->|"✅ 응답(keyword, emotion)"| Prompt
-    Prompt -->|"✅ 조회/저장(keywords만)"| Supabase
-​```
+    Home -.->|"미연결"| API
+    Timeline -.->|"미연결"| API
+    Modal -.->|"미연결"| API
+    API -.->|"예정"| Prompt
+    Prompt -->|"실제호출"| Gemini
+    Gemini -->|"응답"| Prompt
+    Prompt -->|"조회저장"| Supabase
+```
 
 ## 이 그림을 보고 내 말로 설명해보면
 
@@ -52,17 +50,14 @@ flowchart LR
 ## 설명하면서 발견한 어색한 구조 / 빠진 연결
 
 - React ↔ 백엔드 연결이 전혀 없다
-- `entries`, `monthly_records` 테이블이 실제로 존재하지 않는다
-- `llm-test`가 독립 스크립트로만 존재한다
+- entries, monthly_records 테이블이 실제로 존재하지 않는다
+- llm-test가 독립 스크립트로만 존재한다
 
 ## 다음 작업에 반영할 것
 
-1. Supabase에 `entries` 테이블 실제로 생성
-2. `llm-test`의 로직을 Express API 엔드포인트 안으로 옮기기
+1. Supabase에 entries 테이블 실제로 생성
+2. llm-test의 로직을 Express API 엔드포인트 안으로 옮기기
 3. React 화면의 더미 데이터를, 그 API를 호출하는 코드로 교체
-
-
-
 
 # about-me
 # AI Life Review - 기획 및 기술 설계
