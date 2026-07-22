@@ -59,6 +59,30 @@ class BulkImportReport:
     seoul_store_metrics: ImportQuality
 
 
+def format_quality_report(report: BulkImportReport) -> str:
+    """Return a compact, copyable quality table for a completed bulk import."""
+    rows = (
+        ("SBDC stores", report.sbiz),
+        ("Seoul store metrics", report.seoul_store_metrics),
+    )
+    lines = [
+        "| Dataset | Input | Accepted | Excluded | Duplicate keys | Missing required | "
+        "Invalid coordinates | Unknown markets |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for name, quality in rows:
+        excluded = (
+            quality.missing_required + quality.invalid_coordinates + quality.unknown_market_codes
+        )
+        lines.append(
+            "| "
+            f"{name} | {quality.input_rows:,} | {quality.accepted_rows:,} | {excluded:,} | "
+            f"{quality.duplicate_keys:,} | {quality.missing_required:,} | "
+            f"{quality.invalid_coordinates:,} | {quality.unknown_market_codes:,} |"
+        )
+    return "\n".join(lines)
+
+
 @dataclass(frozen=True)
 class BulkSource:
     """Validated provenance for one raw CSV, independent of the target database."""
@@ -451,6 +475,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--sbiz-csv", type=Path)
     parser.add_argument("--market-csv", type=Path)
     parser.add_argument("--chunk-size", type=int, default=2_000)
+    parser.add_argument("--report-format", choices=("json", "markdown"), default="json")
     return parser
 
 
@@ -462,7 +487,10 @@ def main() -> int:
         arguments.market_csv or find_seoul_market_csv(),
         chunk_size=arguments.chunk_size,
     )
-    print(json.dumps(asdict(report), ensure_ascii=False, indent=2))
+    if arguments.report_format == "markdown":
+        print(format_quality_report(report))
+    else:
+        print(json.dumps(asdict(report), ensure_ascii=False, indent=2))
     return 0
 
 

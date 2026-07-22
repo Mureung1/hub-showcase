@@ -2,7 +2,12 @@ import csv
 import sqlite3
 from pathlib import Path
 
-from localtwin_api.bulk_import import detect_csv_encoding, import_bulk_files, load_bulk_source
+from localtwin_api.bulk_import import (
+    detect_csv_encoding,
+    format_quality_report,
+    import_bulk_files,
+    load_bulk_source,
+)
 from localtwin_api.canonical_db import SCHEMA
 
 
@@ -154,6 +159,15 @@ def test_bulk_import_is_idempotent_and_reports_quality(tmp_path: Path, monkeypat
     assert second.seoul_store_metrics.input_rows == 2
     assert second.seoul_store_metrics.accepted_rows == 1
     assert second.seoul_store_metrics.unknown_market_codes == 1
+    assert format_quality_report(second) == "\n".join(
+        (
+            "| Dataset | Input | Accepted | Excluded | Duplicate keys | Missing required | "
+            "Invalid coordinates | Unknown markets |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+            "| SBDC stores | 2 | 1 | 1 | 0 | 0 | 1 | 0 |",
+            "| Seoul store metrics | 2 | 1 | 1 | 0 | 0 | 0 | 1 |",
+        )
+    )
 
 
 def test_encoding_detection_accepts_utf8_sample_ending_mid_character(tmp_path: Path) -> None:

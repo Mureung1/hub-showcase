@@ -872,6 +872,14 @@ foreign key violations: 0
 second import counts: unchanged
 ```
 
+같은 수치를 재실행 가능한 Markdown 표로 보려면 다음 명령을 사용한다. 표의 `Excluded`는
+`missing required + invalid coordinates + unknown markets`의 합계이며, `Duplicate keys`는
+upsert로 덮어쓴 입력 키를 별도로 기록한다.
+
+```powershell
+uv run --directory product/apps/api python -m localtwin_api.bulk_import --report-format markdown
+```
+
 `store_points`에는 대분류 10개, 중분류 75개, 소분류 247개가 있으며, 상권별 집계는
 `20251` 76,383행, `20252` 76,238행, `20253` 76,169행, `20254` 75,985행이다.
 
