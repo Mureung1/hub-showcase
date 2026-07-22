@@ -84,9 +84,40 @@ export async function getMealsByDateRange(startDate, endDate) {
   return db.getMealsByDateRange(startDate, endDate)
 }
 
-// ---- 게스트 전용 원시 접근자 (CSV 백업, 로그인 시 1회 마이그레이션에서 쓴다) ----
+// ---- CSV 백업/복원 (게스트·로그인 계정 공통) ----
+// 위의 화면용 함수들과 같은 규칙으로 모드를 자동 판단한다 — 백업 UI(DataBackupPanel)는 지금이 게스트인지
+// 로그인 계정인지 알 필요 없이 이 두 함수만 부른다.
+
+// 저장된 모든 끼니를 { [date]: mealRecord[] }로 반환.
+export async function getAllMealsByDate() {
+  const userId = await getSessionUserId()
+  if (!userId) {
+    const byDate = {}
+    for (const date of getDatesWithMeals(GUEST_ID)) {
+      const meals = getLocalMeals(GUEST_ID, date)
+      if (meals.length > 0) byDate[date] = meals
+    }
+    return byDate
+  }
+  return db.getAllMeals()
+}
+
+// 여러 날짜의 끼니를 한 번에 통째로 교체(덮어쓰기). mealsByDate: { [date]: mealRecord[] }.
+// 날짜 하나씩 부르지 않고 통째로 받는 이유는 db.replaceMealsForDates 주석 참고(왕복 횟수).
+export async function replaceMealsForDates(mealsByDate) {
+  const userId = await getSessionUserId()
+  if (!userId) {
+    for (const [date, mealRecords] of Object.entries(mealsByDate)) {
+      setMeals(GUEST_ID, date, mealRecords)
+    }
+    return
+  }
+  await db.replaceMealsForDates(mealsByDate)
+}
+
+// ---- 게스트 전용 원시 접근자 (로그인 시 1회 마이그레이션에서 쓴다) ----
 // 위 함수들과 달리 "지금" 로그인 상태인지는 신경 쓰지 않고 항상 게스트 버킷(GUEST_ID)만 직접
-// 읽고/쓴다 — 호출부(guestBackup.js/guestMigration.js)가 이미 "게스트 데이터를 다루는 중"이라는
+// 읽고/쓴다 — 호출부(guestMigration.js)가 이미 "게스트 데이터를 다루는 중"이라는
 // 걸 알고 부르므로, 세션 상태에 따라 조용히 다른 데이터를 돌려주면 오히려 혼란스럽다.
 
 export function getGuestProfileRaw() {
@@ -103,10 +134,4 @@ export function getGuestMealDates() {
 
 export function getGuestMealsForDate(date) {
   return getLocalMeals(GUEST_ID, date)
-}
-
-// mealRecords: 그 날짜의 끼니 기록을 통째로 교체한다(덮어쓰기 — CSV 가져오기가 "이 날짜는 이
-// 내용으로 완전히 대체" 의미로 쓴다).
-export function replaceGuestMealsForDate(date, mealRecords) {
-  setMeals(GUEST_ID, date, mealRecords)
 }

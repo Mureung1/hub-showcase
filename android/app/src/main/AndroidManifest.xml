@@ -48,6 +48,12 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- CSV 내보내기(@capacitor/filesystem이 공용 Documents 폴더에 저장)용.
+         안드로이드 10(API 29)부터는 Scoped Storage라 "앱이 만든 파일"에는 이 권한 없이도 쓸 수 있어
+         maxSdkVersion으로 상한을 둔다 — 최신 기기에 불필요한 저장소 권한을 요구하지 않기 위해서다.
+         저장이 막히는 기기에서는 fileExport.js가 앱 캐시 폴더 + 공유 시트로 자동 폴백한다. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
+
     <!-- 카메라가 없는 기기에도 설치될 수 있게 카메라는 필수가 아님으로 선언 -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>

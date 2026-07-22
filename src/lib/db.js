@@ -162,6 +162,62 @@ export async function getMealsByDateRange(startDate, endDate) {
   return byDate
 }
 
+// 이 계정의 모든 끼니 기록을 날짜별로 묶어 반환한다({ [date]: mealRecord[] }). CSV 전체 백업 전용 —
+// 화면들은 날짜/기간이 정해진 getMeals/getMealsByDateRange를 쓴다. RLS가 본인 행만 돌려주므로 여기서
+// 별도 소유권 조건을 걸지 않는다.
+export async function getAllMeals() {
+  const userId = await getCurrentUserId()
+  if (!userId) return {}
+
+  const { data, error } = await supabase
+    .from('meals')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: true })
+    .order('created_at', { ascending: true })
+  if (error) await throwFriendly(error)
+
+  const byDate = {}
+  for (const row of data ?? []) {
+    ;(byDate[row.date] ??= []).push(mealRowToApp(row))
+  }
+  return byDate
+}
+
+// 여러 날짜의 끼니를 한 번에 통째로 교체한다(CSV 가져오기의 "덮어쓰기"). mealsByDate: { [date]: mealRecord[] }.
+// 날짜별로 delete+insert를 반복하지 않고 **delete 1회 + insert 1회**로 끝낸다 — 1,000행짜리 백업이면
+// 날짜가 250일을 넘기도 하는데, 날짜마다 왕복하면 수용 기준(1,000행 3초 이내)을 도저히 못 맞춘다.
+// 지우고 넣는 두 단계라 중간에 실패하면 그 날짜들이 비어버릴 수 있어, 호출부(dataBackup.js)가 쓰기 전
+// 스냅샷을 들고 있다가 되돌린다(meals 테이블을 트랜잭션으로 묶을 RPC가 없어 클라이언트 보상 방식).
+export async function replaceMealsForDates(mealsByDate) {
+  const userId = await getCurrentUserId()
+  if (!userId) throw new Error('로그인이 필요합니다.')
+
+  const dates = Object.keys(mealsByDate)
+  if (dates.length === 0) return
+
+  const { error: deleteError } = await supabase.from('meals').delete().eq('user_id', userId).in('date', dates)
+  if (deleteError) await throwFriendly(deleteError)
+
+  const rows = []
+  for (const date of dates) {
+    for (const record of mealsByDate[date] ?? []) {
+      if (!Array.isArray(record.items) || record.items.length === 0) continue
+      rows.push({
+        user_id: userId,
+        date,
+        meal_type: normalizeMealType(record.mealType),
+        items: record.items.map(normalizeItem),
+        total: record.total ?? {},
+      })
+    }
+  }
+  if (rows.length === 0) return
+
+  const { error } = await supabase.from('meals').insert(rows)
+  if (error) await throwFriendly(error)
+}
+
 // 끼니 단위 삭제(그 끼니를 구성하는 음식 전체가 함께 제거된다) — mealStore.removeMealRecord와 동일한 단위.
 // user_id로 다시 필터링하지 않아도 RLS가 본인 행만 지우게 강제하지만, 로그인 자체가 안 된 상태에서
 // 불필요한 요청을 보내지 않도록 다른 함수들과 동일하게 여기서도 먼저 확인한다.

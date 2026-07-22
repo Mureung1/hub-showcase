@@ -207,6 +207,21 @@ separate legacy policy for pre-Supabase-Auth accounts in more detail.
 `supabase/schema.sql` has the Postgres schema (`profiles`/`meals`, RLS policies scoped to
 `auth.uid()`) for the logged-in-only storage path.
 
+### CSV backup: one path, three environments
+
+MY 탭's export/import (`src/components/DataBackupPanel.jsx` → `src/lib/dataBackup.js`) works for guests
+*and* logged-in accounts — it goes through `dataStore` (`getAllMealsByDate`/`replaceMealsForDates`), so
+it never branches on login state. `src/utils/platform.js`'s `getPlatform()` (`'web' | 'mobile-web' |
+'apk'`) is the single source for platform branching, and `src/lib/fileExport.js`'s `saveTextFile()` is
+the only place that actually writes a file: browser blob download on web, `@capacitor/filesystem` →
+public `Documents` (falling back to app cache) + `@capacitor/share` on native, always with a UTF-8 BOM
+so Excel doesn't mangle Korean. Import is deliberately two-phase — `parseBackupCSV` (pure, writes
+nothing) then `applyBackup` — so the duplicate-date "overwrite / skip" dialog can sit between them;
+row-level parse failures are skipped and counted rather than aborting the file, while a wrong *file*
+(missing section markers / mismatched header) aborts before writing anything. Every outcome surfaces
+as a toast (`src/context/ToastContext.jsx`), because PRD §2 forbids silent failure. Test procedure and
+the 1,000-row sample generator: `docs/csv-crossplatform-test.md`, `scripts/generate-sample-csv.mjs`.
+
 - `src/lib/mealStore.js`: guest mode's live meal storage (via `dataStore.js`, keyed by
   `dataStore.GUEST_ID`) *and* the CSV export/import subsystem's self-contained legacy storage for
   logged-in accounts (via `src/lib/csv.js`) — see that file's header comment for which is which.

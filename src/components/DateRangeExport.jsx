@@ -2,6 +2,7 @@ import { useState } from 'react'
 import AppButton from './AppButton.jsx'
 import Card from './Card.jsx'
 import TextField from './TextField.jsx'
+import { useToast } from '../context/ToastContext.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { exportCSV } from '../lib/csv.js'
 import { toDateKey } from '../lib/records.js'
@@ -11,13 +12,15 @@ import { colors, font, spacing, styles } from '../styles/theme.js'
 // 내보낸다(lib/csv.js의 exportCSV를 range와 함께 호출) — MY 탭의 전체 내보내기와는 별개 진입점이다.
 export default function DateRangeExport() {
   const { effectiveUserId } = useUser()
+  const { showToast } = useToast()
   const todayKey = toDateKey(new Date())
   const [startDate, setStartDate] = useState(todayKey)
   const [endDate, setEndDate] = useState(todayKey)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  function handleExport() {
+  async function handleExport() {
     setMessage('')
     setError('')
 
@@ -30,16 +33,25 @@ export default function DateRangeExport() {
       return
     }
 
+    setBusy(true)
     try {
-      const dayCount = exportCSV(effectiveUserId, { startDate, endDate })
-      if (dayCount === 0) {
+      const result = await exportCSV(effectiveUserId, { startDate, endDate })
+      if (!result) {
         setError('선택한 기간에는 기록이 없어요.')
         return
       }
-      setMessage(`${dayCount}일치 기록을 내보냈습니다.`)
+      setMessage(`${result.dayCount}일치 기록을 내보냈습니다.`)
+      showToast(`${result.dayCount}일치 기록 · ${result.save.message}`, {
+        tone: 'success',
+        action: result.save.share ? { label: '공유하기', onClick: () => result.save.share() } : null,
+      })
     } catch (err) {
       console.error('date range export failed:', err)
-      setError(err.message || '내보내기에 실패했습니다.')
+      const msg = err.message || '내보내기에 실패했습니다.'
+      setError(msg)
+      showToast(msg, { tone: 'error' })
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -73,8 +85,8 @@ export default function DateRangeExport() {
           />
         </div>
       </div>
-      <AppButton variant="secondary" onClick={handleExport}>
-        CSV로 내보내기
+      <AppButton variant="secondary" onClick={handleExport} disabled={busy}>
+        {busy ? '내보내는 중...' : 'CSV로 내보내기'}
       </AppButton>
       {message && (
         <p style={{ color: colors.success, fontSize: font.size.sm, margin: `${spacing.sm}px 0 0` }}>{message}</p>

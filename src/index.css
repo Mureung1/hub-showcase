@@ -108,3 +108,33 @@ a {
     transform: rotate(360deg);
   }
 }
+
+/* 토스트 등장: 아래에서 살짝 올라오며 나타난다(transform/opacity만 사용) */
+@keyframes tds-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tds-toast {
+  animation: tds-toast-in 0.22s ease-out;
+}
+
+/* 하단 시트(다이얼로그): 아래에서 올라온다 */
+@keyframes tds-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tds-sheet {
+  animation: tds-sheet-in 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}

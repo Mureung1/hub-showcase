@@ -18,6 +18,9 @@ dist-ssr
 # Environment variables
 .env
 
+# scripts/generate-sample-csv.mjs가 만드는 CSV 테스트 파일(필요할 때 다시 생성하면 되므로 커밋하지 않음)
+scripts/sample-*.csv
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

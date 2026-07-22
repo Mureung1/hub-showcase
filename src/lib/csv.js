@@ -25,6 +25,7 @@
 // 날짜인데도 CSV에서 통째로 빠지는 문제가 생긴다. recommended 스냅샷은 있으면 참고로만 곁들이고,
 // "그 날짜를 내보낼지"는 순수하게 mealStore에 끼니가 있는지로만 정한다.
 import { parseCsv, rowsToCsv } from './csvFormat.js'
+import { saveTextFile, todayFileStamp } from './fileExport.js'
 import { getRecommendedSnapshot, getRecord, replaceDay, setRecommendedSnapshot } from './dailyRecord.js'
 import { flattenMealItems, getDatesWithMeals, getMeals, setMeals } from './mealStore.js'
 import { NUTRIENT_LABELS, NUTRITION_SOURCE } from './nutrition.js'
@@ -79,33 +80,22 @@ function buildRows(userId, { startDate, endDate } = {}) {
   return rows
 }
 
-// userId의 DailyRecord를 CSV로 만들어 파일 다운로드까지 트리거한다. range({startDate, endDate})를 주면
-// 그 기간만 내보낸다 — MY 탭의 전체 내보내기는 range 없이, 달력 탭의 기간별 내보내기는 range와 함께
-// 이 함수를 그대로 호출한다. 내보낸 날짜 수를 반환한다(기록이 없으면 0, 다운로드도 트리거하지 않는다).
-export function exportCSV(userId, range = {}) {
+// userId의 DailyRecord를 CSV로 만들어 파일로 저장한다. range({startDate, endDate})를 주면 그 기간만
+// 내보낸다(달력 탭의 기간별 내보내기). 저장 자체는 fileExport.saveTextFile이 3개 환경(PC 웹/모바일 웹/
+// APK)을 알아서 처리하고 UTF-8 BOM도 거기서 붙인다.
+// 반환: 기록이 없으면 null(파일도 만들지 않는다), 있으면 { dayCount, save } — save는 플랫폼별 완료
+// 문구와 네이티브 공유 함수를 담고 있다.
+export async function exportCSV(userId, range = {}) {
   const { startDate, endDate } = range
   const rows = buildRows(userId, range)
-  if (rows.length === 0) return 0
+  if (rows.length === 0) return null
 
   const dayCount = new Set(rows.map((row) => row[0])).size
-  const BOM = '﻿' // Excel에서 한글이 깨지지 않도록 UTF-8 BOM을 앞에 붙인다
-  const csv = BOM + rowsToCsv([COLUMNS, ...rows])
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
   const filename =
-    startDate && endDate
-      ? `mealyze_records_${startDate}_to_${endDate}.csv`
-      : `mealyze_records_${new Date().toISOString().slice(0, 10)}.csv`
+    startDate && endDate ? `mealog_${startDate}_to_${endDate}.csv` : `mealog_${todayFileStamp()}.csv`
 
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
-
-  return dayCount
+  const save = await saveTextFile({ filename, content: rowsToCsv([COLUMNS, ...rows]) })
+  return { dayCount, save }
 }
 
 // CSV 파일을 파싱해 날짜별로 묶은 뒤, 각 날짜를 dailyRecord.replaceDay로 통째로 덮어써 복원한다.
@@ -156,7 +146,7 @@ export async function importCSV(userId, file) {
 
   // 여기까지는 순수 파싱이라 아직 아무 것도 쓰지 않았다. setItem이 중간에 실패할 수 있으므로(예:
   // 저장 공간 부족) 쓰기 시작 전 날짜별 상태를 스냅샷해뒀다가, 실패하면 이미 덮어쓴 날짜만 그대로
-  // 되돌린다 — guestBackup.js의 importGuestBackupCSV와 같은 이유(형식이 깨진 파일이 기존 기록을
+  // 되돌린다 — dataBackup.js의 applyBackup과 같은 이유(형식이 깨진 파일이 기존 기록을
   // 절반만 덮어쓰고 끝나는 걸 막는다).
   const previousByDate = new Map(
     Array.from(byDate.keys()).map((date) => [
