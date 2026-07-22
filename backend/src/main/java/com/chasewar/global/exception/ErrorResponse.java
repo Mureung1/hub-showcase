@@ -12,7 +12,7 @@ public class ErrorResponse<T> extends ResponseEntity<T> {
 
     public static ErrorResponse<FailureBody> from(ErrorCode errorCode) {
         return new ErrorResponse<>(
-                new FailureBody(errorCode.name()),
+                new FailureBody(errorCode.name(), errorCode.getMessage()),
                 errorCode.getStatus()
         );
     }
