@@ -12,6 +12,63 @@ import '../../repositories/decompose/quest_templates.dart';
 /// checklist #13: "폴백 발생 사실이 사용자 또는 로그로 구분 가능".
 enum DecomposeSource { ai, template }
 
+/// **이미 저장된 퀘스트**를 재분해할 때의 대상 (4주차 B-5).
+///
+/// ⚠️ [DecomposeNotifier.redecomposeOne]과 혼동하지 말 것. 그쪽은 **저장 전 초안**을
+/// 화면 안에서 쪼개 그 자리에 갈아끼우는 편집이고, 이쪽은 **Firestore에 이미 있는
+/// 퀘스트**를 원본으로 두고 자식을 새로 저장하는 흐름이다. 원본은 지우지 않는다 —
+/// 성공 지표 「재분해 복귀율」의 분모가 그 원본(stuck)이기 때문이다.
+class RedecomposeTarget {
+  const RedecomposeTarget({
+    required this.questId,
+    required this.questTitle,
+    required this.difficulty,
+    this.goalId,
+    this.goalText,
+  });
+
+  /// 원본 퀘스트 ID. 저장되는 자식의 `parentQuestId`가 된다.
+  final String questId;
+
+  final String questTitle;
+
+  /// 원본 퀘스트의 난이도. AI에 넘길 항목([QuestDraft])을 복원하는 데 쓴다.
+  final Difficulty difficulty;
+
+  /// 원본 퀘스트의 `goalId`. 자식이 **같은 목표 폴더에 남도록** 그대로 물려준다.
+  /// 직접 등록한 퀘스트면 null.
+  final String? goalId;
+
+  /// 원본 큰 목표의 텍스트(있으면). 프롬프트 맥락으로 넘긴다 —
+  /// "공모전 지원하기"라는 맥락 없이 "지원서 초안 쓰기"만 던지면 엉뚱한 결과가 나온다
+  /// (`goal_repository.dart` 주석).
+  final String? goalText;
+
+  /// AI에 넘길 맥락. 목표를 모르면(직접 등록) 퀘스트 제목 자체가 맥락이 된다.
+  String get contextText => goalText ?? questTitle;
+
+  /// 재분해 요청에 실을 항목. 저장된 퀘스트를 초안 형태로 되돌린 것뿐이라
+  /// `redecomposeCount`(초안 세션 전용 값)는 쓰지 않는다.
+  QuestDraft get item =>
+      QuestDraft(localId: questId, title: questTitle, difficulty: difficulty);
+
+  @override
+  bool operator ==(Object other) =>
+      other is RedecomposeTarget &&
+      other.questId == questId &&
+      other.questTitle == questTitle &&
+      other.difficulty == difficulty &&
+      other.goalId == goalId &&
+      other.goalText == goalText;
+
+  @override
+  int get hashCode =>
+      Object.hash(questId, questTitle, difficulty, goalId, goalText);
+
+  @override
+  String toString() => 'RedecomposeTarget($questId, "$questTitle")';
+}
+
 /// 분해 화면이 들고 있는 상태(저장 전 초안 목록 + 출처 + 원본 목표).
 class DecomposeState {
   const DecomposeState({
@@ -22,6 +79,7 @@ class DecomposeState {
     this.isSaving = false,
     this.regeneratingItemId,
     this.justSplitIds = const {},
+    this.target,
   });
 
   final List<QuestDraft> drafts;
@@ -56,11 +114,23 @@ class DecomposeState {
   /// 기본 `const {}`라 기존 호출부는 그대로 유효하다.
   final Set<String> justSplitIds;
 
+  /// **이 세션이 「이미 저장된 퀘스트」의 재분해인가.** null이면 큰 목표 분해다.
+  ///
+  /// 이 값 하나가 등록([confirm]) 경로를 가른다: 재분해면 새 목표를 만들지 않고
+  /// 원본의 `goalId`를 물려받으며 `parentQuestId`를 심는다. 상태 전이 헬퍼들이
+  /// 이 값을 반드시 보존해야 하는 이유이기도 하다 — 중간에 잃으면 자식이
+  /// 계보 없는 퀘스트로 저장돼 「재분해 복귀율」을 계산할 수 없다.
+  final RedecomposeTarget? target;
+
+  /// 재분해 모드인가.
+  bool get isRedecompose => target != null;
+
   @override
   bool operator ==(Object other) =>
       other is DecomposeState &&
       other.source == source &&
       other.goalText == goalText &&
+      other.target == target &&
       other.isRegenerating == isRegenerating &&
       other.isSaving == isSaving &&
       other.regeneratingItemId == regeneratingItemId &&
@@ -71,6 +141,7 @@ class DecomposeState {
   int get hashCode => Object.hash(
     source,
     goalText,
+    target,
     isRegenerating,
     isSaving,
     regeneratingItemId,
@@ -84,7 +155,7 @@ class DecomposeState {
       'DecomposeState(source: ${source.name}, goalText: "$goalText", '
       'drafts: ${drafts.length}, isRegenerating: $isRegenerating, '
       'isSaving: $isSaving, regeneratingItemId: $regeneratingItemId, '
-      'justSplitIds: ${justSplitIds.length})';
+      'justSplitIds: ${justSplitIds.length}, target: $target)';
 }
 
 /// 리스트 요소 비교(길이 + 각 요소 ==). QuestDraft가 ==를 구현하므로 값 비교가 된다.
@@ -140,6 +211,67 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
     goalText: goalText,
   );
 
+  // ===== 저장된 퀘스트 재분해 (4주차 B-5) =====
+  //
+  // ⚠️ [redecomposeOne](저장 전 초안 쪼개기)과 **다른 흐름**이다. 여기서는 이미
+  // Firestore에 있는 퀘스트가 원본이고, 결과는 그 원본의 **자식으로 새로 저장**된다.
+  // 원본은 건드리지 않는다(상태도 stuck 그대로). 화면은 같은 [QuestSplitScreen]을
+  // 재사용하므로 편집·재생성·폴백 방어가 그대로 따라온다.
+
+  /// 저장된 퀘스트 하나를 더 작은 퀘스트들로 나눈다. 결과는 아직 저장되지 않는다 —
+  /// 사용자가 확인·수정한 뒤 [confirm]에서 자식으로 등록된다.
+  ///
+  /// 개수 상한은 큰 목표 분해(5개)가 아니라 [kMaxRedecomposeDrafts](3개)다.
+  /// 이미 한 번 쪼개진 항목을 또 잘게 나누면 목록이 순식간에 불어난다.
+  ///
+  /// 실패·빈 결과면 [decompose]와 같은 정책으로 템플릿 폴백한다 — 여기서 아무것도
+  /// 안 주면 "막혔는데 도와주지도 않는" 화면이 된다. 폴백이든 AI든 **저장된 원본은
+  /// 이 시점에 전혀 건드리지 않는다**(등록 전까지 쓰기가 없다).
+  Future<void> redecomposeQuest(RedecomposeTarget target) async {
+    state = const AsyncValue.loading();
+    try {
+      final drafts =
+          (await ref
+                  .read(questDecomposerProvider)
+                  .redecompose(goalText: target.contextText, item: target.item))
+              .take(kMaxRedecomposeDrafts)
+              .toList();
+      state = AsyncValue.data(
+        drafts.isEmpty
+            ? _redecomposeFallback(target)
+            : DecomposeState(
+                drafts: drafts,
+                source: DecomposeSource.ai,
+                goalText: target.contextText,
+                target: target,
+              ),
+      );
+    } on AppFailure {
+      state = AsyncValue.data(_redecomposeFallback(target));
+    }
+  }
+
+  /// 재분해 폴백. 템플릿도 3개까지만 쓴다(AI 성공 경로와 같은 상한).
+  DecomposeState _redecomposeFallback(RedecomposeTarget target) =>
+      DecomposeState(
+        drafts: [
+          for (final (i, d) in templateFor(
+            target.questTitle,
+          ).take(kMaxRedecomposeDrafts).indexed)
+            d.copyWith(order: i),
+        ],
+        source: DecomposeSource.template,
+        goalText: target.contextText,
+        target: target,
+      );
+
+  /// 화면 상태를 초기(null)로 되돌린다.
+  ///
+  /// 큰 목표 분해로 **새로 들어왔을 때** 직전 재분해 세션이 남아 있으면,
+  /// 사용자가 그 결과를 그대로 등록해 엉뚱한 퀘스트의 자식이 만들어진다.
+  /// 화면이 진입 시 모드가 어긋나면 이걸 부른다.
+  void reset() => state = const AsyncValue.data(null);
+
   // ===== 전체 재생성 (같은 목표로 다시 나누기) =====
   //
   // **첫 분해(decompose)와 정책이 다르다.** decompose는 실패 시 템플릿으로 폴백한다
@@ -156,6 +288,7 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
         isRegenerating: value,
         isSaving: s.isSaving,
         regeneratingItemId: s.regeneratingItemId,
+        target: s.target,
       );
 
   /// 같은 목표로 전체 재생성. **실패/빈결과 시 기존 결과를 보존**한다(템플릿으로 덮지 않음).
@@ -170,12 +303,25 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
     // 기존 결과를 유지한 채 재생성 표시만 켠다(전체 로딩으로 카드를 숨기지 않는다).
     state = AsyncValue.data(_withRegenerating(current, true));
     try {
-      // #4 최대 5개 캡: 첫 분해와 동일 정책(실제 LLM 초과 방어).
-      final fresh = (await ref
-              .read(questDecomposerProvider)
-              .decompose(current.goalText))
-          .take(kMaxDecomposeDrafts)
-          .toList();
+      // 재분해 세션이면 같은 원본을 다시 나눈다(개수 상한도 3개 그대로). 여기서
+      // decompose를 부르면 원본 퀘스트가 아니라 목표 전체가 5개로 다시 쪼개져
+      // "이 퀘스트를 더 작게"라는 의도가 사라진다.
+      final target = current.target;
+      final fresh = target != null
+          ? (await ref
+                    .read(questDecomposerProvider)
+                    .redecompose(
+                      goalText: target.contextText,
+                      item: target.item,
+                    ))
+                .take(kMaxRedecomposeDrafts)
+                .toList()
+          // #4 최대 5개 캡: 첫 분해와 동일 정책(실제 LLM 초과 방어).
+          : (await ref
+                    .read(questDecomposerProvider)
+                    .decompose(current.goalText))
+                .take(kMaxDecomposeDrafts)
+                .toList();
       if (fresh.isEmpty) {
         // 새 결과가 비었다 = 보여줄 게 없다 → 기존 유지(덮지 않음).
         state = AsyncValue.data(_withRegenerating(current, false));
@@ -187,6 +333,8 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
           drafts: fresh,
           source: DecomposeSource.ai,
           goalText: current.goalText,
+          // 재분해 세션이면 원본 계보를 유지한다(잃으면 자식이 고아로 저장된다).
+          target: current.target,
         ),
       );
       return true;
@@ -214,6 +362,7 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
         isRegenerating: s.isRegenerating,
         isSaving: s.isSaving,
         regeneratingItemId: itemId,
+        target: s.target,
       );
 
   /// 초안 하나([localId])를 더 작은 하위 퀘스트들로 재분해해 **그 자리에 교체**한다.
@@ -285,6 +434,7 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
           isSaving: current.isSaving,
           regeneratingItemId: null, // 재분해 완료 → 플래그 해제.
           justSplitIds: justSplitIds,
+          target: current.target,
         ),
       );
       return true;
@@ -310,6 +460,7 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
     isRegenerating: s.isRegenerating,
     isSaving: value,
     regeneratingItemId: s.regeneratingItemId,
+    target: s.target,
   );
 
   /// 편집이 끝난 초안 목록을 확정 등록한다.
@@ -332,6 +483,25 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
     state = AsyncValue.data(_withSaving(current, true));
     try {
       final uid = await ref.read(sessionProvider.future);
+      final target = current.target;
+
+      if (target != null) {
+        // 재분해 등록: 새 목표를 만들지 않는다. 원본의 goalId를 그대로 물려줘
+        // 자식이 **같은 목표 폴더에 남고**, parentQuestId로 계보를 남긴다.
+        // 원본 퀘스트는 손대지 않는다 — stuck 그대로 두는 게 「재분해 복귀율」의
+        // 분모다. 실패하면 아래 catch로 빠지고 아무것도 저장되지 않는다(batch).
+        await ref
+            .read(questRepositoryProvider)
+            .createQuests(
+              uid,
+              current.drafts,
+              goalId: target.goalId,
+              parentQuestId: target.questId,
+            );
+        state = const AsyncValue.data(null);
+        return true;
+      }
+
       // 원본 목표를 먼저 저장하고, 그 goalId를 퀘스트에 심는다(개별 재분해 맥락용).
       final goal = await ref
           .read(goalRepositoryProvider)
@@ -364,6 +534,7 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
         isRegenerating: s.isRegenerating,
         isSaving: s.isSaving,
         regeneratingItemId: s.regeneratingItemId,
+        target: s.target,
       );
 
   /// 특정 초안의 제목을 바꾼다. 빈 제목/공백만이면 무시한다(이전 값 유지).

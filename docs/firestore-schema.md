@@ -88,7 +88,7 @@ items/{itemId}                              # 공개 아이템 카탈로그 (4�
 | `order` | int | 0 | 목록 정렬 순서 = AI 분해 결과의 **실행 경로 순서** |
 | `deadline` | timestamp? | null | 마감일 (선택) |
 | `goalId` | string? | null | 어느 목표에서 분해됐는지 (`goals/{goalId}`). 직접 등록이면 null |
-| `parentQuestId` | string? | null | 재분해로 생긴 자식이면 원본 퀘스트 ID |
+| `parentQuestId` | string? | null | 재분해로 생긴 자식이면 원본 퀘스트 ID (4주차부터 실제로 쓰인다) |
 | `createdAt` | timestamp | 서버 시각 | 생성 시각 |
 | `completedAt` | timestamp? | null | **언제 완료했나.** 완료 해제 시 null로 지움 |
 | `rewardedAt` | timestamp? | null | **보상을 지급한 시각.** 한번 찍히면 절대 지우지 않는다 |
@@ -114,6 +114,16 @@ items/{itemId}                              # 공개 아이템 카탈로그 (4�
 > "각 퀘스트의 진행 상태(완료·미완료·**멈춤**)를 영속 저장해, 앱을 다시 열어도 어디까지 했고 **어디서 멈췄는지** 기억한다."
 
 그리고 핵심 성공 지표 「**재분해 복귀율** — 멈춘 퀘스트를 더 작게 나눈 뒤 다시 실행한 비율」의 **분모가 `stuck` 상태다.** 이 상태가 없으면 지표를 계산할 근거 자체가 없다. `parentQuestId`가 분자(재분해로 생겨난 자식)를 제공한다.
+
+#### `parentQuestId` — 재분해 계보 (4주차 B-5)
+
+`createQuests(uid, drafts, goalId:, parentQuestId:)`가 **유일한 쓰기 경로**다. 멈춘 퀘스트를 재분해해 등록할 때만 값이 들어가고, 그 batch 안의 자식 전부가 같은 원본 ID를 갖는다.
+
+- **원본은 지우지도 상태를 바꾸지도 않는다.** 자식으로 대체하면 「재분해 복귀율」의 **분모(stuck 원본)**가 사라진다. 원본은 `stuck` 그대로 남고 자식이 그 아래에 중첩된다.
+- **자식은 원본의 `goalId`를 상속한다.** 같은 목표 폴더 안에 남아야 "이 목표를 어디까지 걸어왔나"가 깨지지 않는다. 직접 등록한 퀘스트를 재분해하면 원본과 같이 `goalId`가 null이다.
+- **깊이 제한 2단계.** `Quest`에는 `redecomposeCount`가 없다(그건 저장 전 초안 세션 전용 값이다). 저장된 퀘스트의 깊이는 `parentQuestId` 체인이 유일한 근거이며, `arrangeQuestTree()`(`lib/models/quest_group.dart`)가 계산해 **자식의 자식은 더 나눌 수 없게** 막는다(`kMaxRedecomposeCount` = 2와 같은 기준). 무한 중첩은 목록 표시가 감당하지 못한다.
+- **고아 자식은 숨기지 않는다.** 부모 문서를 못 찾는 자식은 깊이 0의 뿌리로 올려 그린다 — 목표 문서를 못 찾아도 퀘스트를 숨기지 않는 것과 같은 원칙이다. 순환 참조(a→b→a)에도 목록이 멈추지 않고 항목을 잃지 않는다.
+- **부모 자동 완료는 하지 않는다.** 자식을 전부 끝내도 `stuck` 부모는 `doneCount`에 들어가지 않아 그룹 진행률이 100%가 되지 않는다. 자동 완료는 곧 `completeQuest()` 트랜잭션(= 보상 지급)을 사용자가 누르지 않았는데 태우는 일이라, 보상 정책 변경으로 따로 결정할 문제다.
 
 **하위호환**: `status` 도입 전 문서는 `done: true/false`만 갖고 있다. `Quest.fromJson`은 `status`가 없으면 `done`으로 폴백하므로 **마이그레이션 없이 기존 문서가 그대로 읽힌다.**
 

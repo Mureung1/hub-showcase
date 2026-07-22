@@ -112,6 +112,7 @@ class FirestoreQuestRepository implements QuestRepository {
     String uid,
     List<QuestDraft> drafts, {
     String? goalId,
+    String? parentQuestId,
   }) {
     return guard(() async {
       if (drafts.isEmpty) return const <Quest>[];
@@ -132,6 +133,8 @@ class FirestoreQuestRepository implements QuestRepository {
           id: ref.id,
           goalId: goalId,
           order: offset + i,
+          // 재분해 자식이면 원본 퀘스트 ID가 문서에 심긴다(없으면 toJson이 생략).
+          parentQuestId: parentQuestId,
         );
         batch.set(ref, {
           ...quest.toJson(),

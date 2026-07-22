@@ -32,7 +32,10 @@ class GoalGroupSection extends StatelessWidget {
   final VoidCallback onToggleExpanded;
 
   /// 퀘스트 하나를 카드로 그리는 콜백. 완료 토글·진행 표시는 화면이 안다.
-  final Widget Function(BuildContext context, Quest quest) questBuilder;
+  ///
+  /// [QuestNode]를 넘기는 이유: 재분해 깊이는 화면도 필요하다(깊이 초과면 `⋮`에서
+  /// 재분해 항목을 숨긴다). 들여쓰기는 이 위젯이, 깊이에 따른 동작은 화면이 맡는다.
+  final Widget Function(BuildContext context, QuestNode node) questBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -97,12 +100,21 @@ class GoalGroupSection extends StatelessWidget {
             ),
           ),
         ),
+        // 재분해 자식은 부모 바로 뒤에 들여쓰기해서 그린다. 순서·깊이 규칙은
+        // 위젯이 아니라 [arrangeQuestTree](순수 함수)가 정한다.
         if (expanded)
-          for (final quest in group.quests) ...[
+          for (final node in group.nodes) ...[
             AppSpacing.gapSm,
-            questBuilder(context, quest),
+            Padding(
+              padding: EdgeInsets.only(left: node.depth * _indentPerDepth),
+              child: questBuilder(context, node),
+            ),
           ],
       ],
     );
   }
 }
+
+/// 재분해 깊이 한 단계당 들여쓰기. 깊이는 최대 2라 좁은 화면에서도 카드가
+/// 뭉개지지 않는다(2단계여야 32px).
+const double _indentPerDepth = AppSpacing.md;

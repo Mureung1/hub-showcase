@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import 'features/home/home_screen.dart';
 import 'features/placeholder_screen.dart';
+import 'features/quest/decompose_notifier.dart';
 import 'features/quest/quest_create_screen.dart';
 import 'features/quest/quest_list_screen.dart';
 import 'features/quest/quest_split_screen.dart';
@@ -48,9 +49,20 @@ GoRouter createRouter({String initialLocation = '/home'}) => GoRouter(
                   path: 'new',
                   builder: (context, state) => const QuestCreateScreen(),
                 ),
+                // 무인자 진입 = 큰 목표 분해(기존 그대로).
+                // `extra`에 [RedecomposeTarget]을 실어 오면 **멈춘 퀘스트 재분해**
+                // 모드가 된다. 쿼리 파라미터가 아니라 extra인 이유: 원본 퀘스트
+                // ID·목표 ID·목표 텍스트를 URL에 늘어놓으면 링크가 길어지고
+                // 인코딩 문제가 생긴다. 앱 내 이동 전용 경로라 extra로 충분하다.
+                // extra가 없거나 타입이 다르면(딥링크·복원) 큰 목표 분해로 떨어진다.
                 GoRoute(
                   path: 'split',
-                  builder: (context, state) => const QuestSplitScreen(),
+                  builder: (context, state) {
+                    final extra = state.extra;
+                    return QuestSplitScreen(
+                      target: extra is RedecomposeTarget ? extra : null,
+                    );
+                  },
                 ),
               ],
             ),

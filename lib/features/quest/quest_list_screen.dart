@@ -7,6 +7,7 @@ import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/quest_actions_menu.dart';
 import '../../core/widgets/quest_card.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/quest.dart';
@@ -14,6 +15,7 @@ import '../../models/quest_group.dart';
 import '../../models/quest_status.dart';
 import '../../providers/providers.dart';
 import '../shell/tab_scroll_registry.dart';
+import 'decompose_notifier.dart';
 import 'widgets/goal_group_section.dart';
 import 'widgets/quest_complete_dialog.dart';
 import 'widgets/quest_memo_sheet.dart';
@@ -169,6 +171,88 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
     );
   }
 
+  /// 진행 상태만 바꾼다(보상 경로와 무관).
+  ///
+  /// **`completeQuest`가 아니라 `setStatus`를 부른다.** 멈춤 표시는 완료가 아니므로
+  /// 코인·XP가 오갈 일이 없고, `rewardedAt`도 건드리지 않는다.
+  /// 중복 실행 방지는 완료 흐름과 **같은 [_pending] 잠금**을 공유한다 — 메모 시트가
+  /// 떠 있는 사이에 `⋮`로 상태를 바꾸면 두 흐름이 같은 퀘스트를 두고 경쟁한다.
+  Future<void> _setStatus(Quest quest, QuestStatus status) async {
+    if (_pending.contains(quest.id)) return;
+    _pending.add(quest.id);
+    if (mounted) setState(() => _completing.add(quest.id));
+
+    try {
+      final uid = await ref.read(sessionProvider.future);
+      await ref.read(questRepositoryProvider).setStatus(uid, quest.id, status);
+    } on AppFailure catch (failure) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(failure.message)));
+    } finally {
+      _pending.remove(quest.id);
+      if (mounted) setState(() => _completing.remove(quest.id));
+    }
+  }
+
+  /// 카드 `⋮` 메뉴 항목. **이번 범위는 멈춤 관련만**이다(제목 수정·삭제는 별개 기능).
+  ///
+  /// 상태별로 노출이 갈린다:
+  /// - `todo` → 「여기서 막혔어요」 하나. 멈춤 표시가 「재분해 복귀율」의 분모를 만든다.
+  /// - `stuck` → 「다시 진행할게요」 + (깊이가 남았으면)「더 작게 나누기」.
+  /// - `done` → 없음. 끝낸 퀘스트에 멈춤·재분해를 권할 이유가 없다(메뉴 자체가 안 뜬다).
+  List<QuestMenuAction> _menuActionsFor(QuestNode node, QuestGroup group) {
+    final quest = node.quest;
+
+    if (quest.done) return const [];
+
+    if (!quest.isStuck) {
+      return [
+        QuestMenuAction(
+          label: '여기서 막혔어요',
+          icon: Symbols.pause_circle,
+          onSelected: () => _setStatus(quest, QuestStatus.stuck),
+        ),
+      ];
+    }
+
+    return [
+      QuestMenuAction(
+        label: '다시 진행할게요',
+        icon: Symbols.undo,
+        onSelected: () => _setStatus(quest, QuestStatus.todo),
+      ),
+      // 깊이가 남았을 때만 노출한다. 자식의 자식까지 또 나누면 목록이 감당 못 한다.
+      if (node.canRedecompose)
+        QuestMenuAction(
+          label: '더 작게 나누기',
+          icon: Symbols.alt_route,
+          onSelected: () => _openRedecompose(quest, group),
+        ),
+    ];
+  }
+
+  /// 재분해 화면으로 이동한다. **여기서는 아무것도 저장하지 않는다** —
+  /// 원본은 stuck 그대로 남고, 등록은 그 화면의 「등록하기」가 한다.
+  void _openRedecompose(Quest quest, QuestGroup group) {
+    // 목표 텍스트는 폴더 라벨에서 가져온다. 목표 문서를 못 찾은 그룹의 폴백 라벨
+    // ('목표')이나 직접 등록 그룹 라벨은 맥락이 아니므로 넘기지 않는다 —
+    // 그런 경우 퀘스트 제목 자체가 맥락이 된다(RedecomposeTarget.contextText).
+    final hasGoalText = group.goalId != null && group.label != kUnknownGoalLabel;
+
+    context.go(
+      '/quest/split',
+      extra: RedecomposeTarget(
+        questId: quest.id,
+        questTitle: quest.title,
+        difficulty: quest.difficulty,
+        goalId: quest.goalId,
+        goalText: hasGoalText ? group.label : null,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -264,10 +348,12 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
                           onToggleExpanded: () => setState(() {
                             _expanded[group.key] = !_isExpanded(group);
                           }),
-                          questBuilder: (context, quest) => QuestCard(
-                            quest: quest,
-                            isCompleting: _completing.contains(quest.id),
-                            onToggleDone: (done) => _toggleDone(quest, done),
+                          questBuilder: (context, node) => QuestCard(
+                            quest: node.quest,
+                            isCompleting: _completing.contains(node.quest.id),
+                            onToggleDone: (done) =>
+                                _toggleDone(node.quest, done),
+                            menuActions: _menuActionsFor(node, group),
                           ),
                         ),
                       );

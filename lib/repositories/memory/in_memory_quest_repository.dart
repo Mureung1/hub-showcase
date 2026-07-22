@@ -138,6 +138,7 @@ class InMemoryQuestRepository implements QuestRepository {
     String uid,
     List<QuestDraft> drafts, {
     String? goalId,
+    String? parentQuestId,
   }) async {
     _check();
     if (drafts.isEmpty) return const [];
@@ -154,6 +155,8 @@ class InMemoryQuestRepository implements QuestRepository {
         id: 'mem-${++_seq}',
         goalId: goalId,
         order: offset + i,
+        // 재분해 자식이면 원본 퀘스트 ID를 심는다(Firestore 구현과 동일한 계약).
+        parentQuestId: parentQuestId,
       );
       staged[quest.id] = quest;
       created.add(quest);

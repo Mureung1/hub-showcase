@@ -128,4 +128,134 @@ void main() {
     final keys = groups.map((g) => g.key).toSet();
     expect(keys, hasLength(3));
   });
+
+  // ===== 재분해 계보 (B-5) =====
+  //
+  // 「재분해 복귀율」의 근거가 되는 부모-자식 관계를 목록에서 어떻게 펼치는가.
+  // 규칙은 UI와 무관하므로 순수 함수로 검증한다(groupQuestsByGoal과 같은 이유).
+
+  group('arrangeQuestTree — 부모-자식 정렬과 깊이', () {
+    Quest child(String id, String parentId, {String? goalId}) => Quest(
+      id: id,
+      title: '퀘스트 $id',
+      goalId: goalId,
+      parentQuestId: parentId,
+    );
+
+    test('빈 목록은 빈 결과', () {
+      expect(arrangeQuestTree(const []), isEmpty);
+    });
+
+    test('부모-자식이 없으면 입력 순서 그대로 깊이 0이다', () {
+      final nodes = arrangeQuestTree([quest('a'), quest('b'), quest('c')]);
+
+      expect(nodes.map((n) => n.quest.id), ['a', 'b', 'c']);
+      expect(nodes.map((n) => n.depth), [0, 0, 0]);
+    });
+
+    test('자식은 입력 순서와 무관하게 부모 바로 뒤로 온다', () {
+      // 저장소 정렬(order)상 자식이 부모에서 멀리 떨어져 있는 상황.
+      // 그냥 입력 순서를 흘려보내면 이 단언이 깨진다.
+      final nodes = arrangeQuestTree([
+        quest('p'),
+        quest('other1'),
+        child('c2', 'p'),
+        quest('other2'),
+        child('c1', 'p'),
+      ]);
+
+      expect(nodes.map((n) => n.quest.id), [
+        'p',
+        'c2', // 자식끼리는 입력 순서를 지킨다
+        'c1',
+        'other1',
+        'other2',
+      ]);
+      expect(nodes.map((n) => n.depth), [0, 1, 1, 0, 0]);
+    });
+
+    test('자식의 자식은 깊이 2이고 더 나눌 수 없다', () {
+      final nodes = arrangeQuestTree([
+        quest('p'),
+        child('c', 'p'),
+        child('g', 'c'),
+      ]);
+
+      expect(nodes.map((n) => n.quest.id), ['p', 'c', 'g']);
+      expect(nodes.map((n) => n.depth), [0, 1, 2]);
+
+      // 깊이 가드 — 손자(2)만 막힌다.
+      expect(nodes[0].canRedecompose, isTrue);
+      expect(nodes[1].canRedecompose, isTrue);
+      expect(nodes[2].canRedecompose, isFalse);
+      expect(nodes[0].isChild, isFalse);
+      expect(nodes[1].isChild, isTrue);
+    });
+
+    test('부모를 못 찾는 고아 자식도 숨기지 않고 뿌리로 낸다', () {
+      // 부모가 삭제된 상황. 데이터를 잃은 것처럼 보이면 안 된다.
+      final nodes = arrangeQuestTree([quest('a'), child('orphan', 'gone')]);
+
+      expect(nodes.map((n) => n.quest.id), ['a', 'orphan']);
+      expect(nodes.map((n) => n.depth), [0, 0]);
+    });
+
+    test('자기 자신을 부모로 가리켜도 무한 루프에 빠지지 않는다', () {
+      final nodes = arrangeQuestTree([child('self', 'self')]);
+
+      expect(nodes.map((n) => n.quest.id), ['self']);
+      expect(nodes.single.depth, 0);
+    });
+
+    test('순환 참조가 있어도 항목을 잃지 않는다', () {
+      // a→b→a. 어느 쪽도 뿌리가 아니지만 둘 다 목록에 남아야 한다.
+      final nodes = arrangeQuestTree([child('a', 'b'), child('b', 'a')]);
+
+      expect(nodes.map((n) => n.quest.id).toSet(), {'a', 'b'});
+      expect(nodes, hasLength(2));
+    });
+
+    test('그룹 안에서도 자식이 부모 뒤에 온다 (QuestGroup.nodes)', () {
+      final group = groupQuestsByGoal([
+        quest('p', goalId: 'g1'),
+        quest('q', goalId: 'g1'),
+        child('c', 'p', goalId: 'g1'),
+      ], const {'g1': '공모전 지원하기'}).single;
+
+      // 저장 순서(quests)는 손대지 않는다.
+      expect(group.quests.map((q) => q.id), ['p', 'q', 'c']);
+      // 화면 순서(nodes)만 계보를 반영한다.
+      expect(group.nodes.map((n) => n.quest.id), ['p', 'c', 'q']);
+      expect(group.nodes.map((n) => n.depth), [0, 1, 0]);
+    });
+
+    test('멈춘 부모는 자식을 다 끝내도 완료로 세지 않는다 (자동 완료 없음)', () {
+      final group = groupQuestsByGoal([
+        Quest(
+          id: 'p',
+          title: '지원서 초안 쓰기',
+          goalId: 'g1',
+          status: QuestStatus.stuck,
+        ),
+        Quest(
+          id: 'c1',
+          title: '한 문단만 쓰기',
+          goalId: 'g1',
+          parentQuestId: 'p',
+          status: QuestStatus.done,
+        ),
+        Quest(
+          id: 'c2',
+          title: '다음 문단 쓰기',
+          goalId: 'g1',
+          parentQuestId: 'p',
+          status: QuestStatus.done,
+        ),
+      ], const {'g1': '공모전 지원하기'}).single;
+
+      expect(group.doneCount, 2);
+      expect(group.total, 3);
+      expect(group.isAllDone, isFalse);
+    });
+  });
 }

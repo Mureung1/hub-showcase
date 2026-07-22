@@ -6,7 +6,9 @@ import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
 import 'difficulty_pill.dart';
+import 'quest_actions_menu.dart';
 import 'quest_source_chip.dart';
+import 'quest_status_pill.dart';
 import 'reward_chip.dart';
 
 /// 퀘스트 카드. 흰 카드 + 좌측 난이도 색 accent 보더.
@@ -17,11 +19,19 @@ class QuestCard extends StatelessWidget {
     this.onTap,
     this.onToggleDone,
     this.isCompleting = false,
+    this.menuActions = const [],
   });
 
   final Quest quest;
   final VoidCallback? onTap;
   final ValueChanged<bool>? onToggleDone;
+
+  /// 우측 `⋮` 더보기 메뉴 항목. 비어 있으면 `⋮` 자체가 뜨지 않는다.
+  ///
+  /// **카드는 저장소를 모른다** — 어떤 항목을 줄지도, 눌렀을 때 무엇을 할지도
+  /// 화면이 정해서 주입한다([onToggleDone]과 같은 방식). 덕분에 나중에 항목이
+  /// 늘어나도(제목 수정·삭제 등) 이 위젯은 그대로다.
+  final List<QuestMenuAction> menuActions;
 
   /// 완료 처리(트랜잭션 지급)가 진행 중인지. true면 토글을 비활성화하고 스피너를
   /// 띄운다 — 지급 트랜잭션이 커밋되기 전에 다시 눌러 중복 요청이 나가는 걸 막고,
@@ -70,6 +80,8 @@ class QuestCard extends StatelessWidget {
                       children: [
                         DifficultyPill(difficulty: quest.difficulty),
                         QuestSourceChip(goalId: quest.goalId),
+                        // 멈춤일 때만 렌더된다(그 외 상태는 빈 위젯).
+                        QuestStatusPill(status: quest.status),
                       ],
                     ),
                     AppSpacing.gapSm,
@@ -89,12 +101,23 @@ class QuestCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (onToggleDone != null)
-                _DoneButton(
-                  done: quest.done,
-                  isCompleting: isCompleting,
-                  onPressed: () => onToggleDone!(!quest.done),
-                ),
+              // 우측 세로 스택: 위가 `⋮` 더보기(components.md), 아래가 완료 토글.
+              // 주요 행동(완료)이 아래에 오지만 크기·색으로 위계가 이미 갈린다.
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  QuestActionsMenu(
+                    actions: menuActions,
+                    tooltip: '${quest.title} 더보기',
+                  ),
+                  if (onToggleDone != null)
+                    _DoneButton(
+                      done: quest.done,
+                      isCompleting: isCompleting,
+                      onPressed: () => onToggleDone!(!quest.done),
+                    ),
+                ],
+              ),
             ],
           ),
         ),

@@ -98,7 +98,18 @@ class QuestDraft {
   /// 확정 시 저장 가능한 [Quest]로 바꾼다.
   ///
   /// [id]는 Firestore가 부여한다. [order]는 기존 퀘스트 뒤에 붙도록 저장소가 오프셋을 더한다.
-  Quest toQuest({required String id, required String? goalId, int? order}) {
+  ///
+  /// [parentQuestId]는 **이미 저장된 퀘스트를 재분해해 생긴 자식**일 때만 넘긴다
+  /// (B-5 멈춘 퀘스트 재분해). 성공 지표 「재분해 복귀율」의 분자를 만드는 값이라
+  /// 원본과의 연결이 여기서 끊기면 지표를 계산할 근거가 사라진다.
+  /// ⚠️ [redecomposeCount](저장 전 초안 세션의 depth)와 혼동하지 말 것 — 그쪽은
+  /// 저장되지 않는 값이고, 이쪽은 저장 문서의 실제 계보다.
+  Quest toQuest({
+    required String id,
+    required String? goalId,
+    int? order,
+    String? parentQuestId,
+  }) {
     return Quest(
       id: id,
       title: title,
@@ -106,6 +117,7 @@ class QuestDraft {
       status: QuestStatus.todo,
       order: order ?? this.order,
       goalId: goalId,
+      parentQuestId: parentQuestId,
       createdAt: DateTime.now(),
     );
   }
