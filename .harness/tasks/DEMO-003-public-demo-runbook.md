@@ -33,7 +33,7 @@ Depends on: EVAL-002, WEB-015, DEPLOY-002
 
 ## 4. Related Documents
 
-- `docs/operations/public-demo-runbook.md`
+- `docs/development/environment.md`
 - `.harness/tasks/WEB-015-api-error-demo-policy.md`
 - `.harness/tasks/EVAL-002-front-api-smoke.md`
 - `docs/development/tasks.md`
