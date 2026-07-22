@@ -51,17 +51,41 @@
 - [ ] eclass Open API 존재 여부 확인 — 2주차로 이연 (공개 채널 2종으로 MVP 충분, 채널 플러그인 구조라 추후 추가)
 
 ## 2주차 — 화면과 서버를 연결한 핵심기능 (수직슬라이스)
+> ⚠️ 초안 — 커리큘럼 요구사항 기반. 각 단계는 착수 시점에 학습 내용을 반영해 재분해한다 (1주차 S3~S4 방식과 동일)
 > 스택 확정(커리큘럼): React / Express / Supabase / REST
 
 ### 0. 계획·계약 (최우선)
-- [ ] 알림 스키마 확정 — s3.html 빈칸에서 역산 → Supabase 테이블 설계로 사용
+- [x] 알림 스키마 확정 — s3.html 빈칸에서 역산 → Supabase 테이블 설계로 사용
 - [ ] 핵심 시나리오를 작업 단위로 나눠 GitHub 이슈 등록 (커리큘럼 요구)
 - [ ] 계획 수립 전용 Agent 제작 — 요구사항→작업 분해·우선순위
 - [ ] 기능 검증 전용 Agent 제작 — check_tokens.py의 정신을 기능 검증으로 확장
 
 ### 1. FE 선행 — mock으로 화면 흐름 (커리큘럼 순서)
-- [ ] React 세팅 + S2 컴포넌트 이관 (Card, Chip, DdayBadge, TabBar)
-- [ ] mock JSON으로 카드 목록 렌더 + 필터 state 동작
+> 컴포넌트 트리: HomeScreen(state: notifications, filter 보유)
+>   ├─ Hero (presentational)
+>   ├─ ChipFilter (props: categories, active, onFilterChange)
+>   ├─ NotificationList → NotificationCard (props: notification, onComplete)
+>   └─ TabBar (props: activeTab)
+> 진행 방식: 아래에서부터 하나씩 — 한 task 완성 → 브라우저 검증 → 확인 → 다음 task
+- [x] Vite 프로젝트 세팅 (web/) — npm run dev로 빈 화면 확인
+- [x] tokens.css 사본 이식 (+출처 주석)
+- [x] DdayBadge 컴포넌트 — 3단계(urgent/interest/normal) 배색 렌더 확인
+- [x] NotificationCard — mock 1건을 props로 받아 s2 카드와 동일 렌더
+- [x] NotificationList + mock 배열 — 카드 여러 개 렌더
+- [x] ChipFilter — 필터 클릭 시 목록 변경
+- [x] TabBar
+- [x] Hero 컴포넌트 — 날짜·인사·임박건수(urgent 개수 계산) + 그라데이션 배경,
+      s2.html 히어로 레시피 기준
+- [x] 정렬 표시 — "마감 임박순 ↓", s2.html .sortbar 레시피 (필터와 목록 사이)
+- [x] AppFrame — 2층 배경(--bg-deep 무대 + 340px 앱 면), 부품들을 이 안에 담기
+- [x] HomeScreen 조립 — Hero→필터→정렬→목록→탭 배치 + 완료 동작
+      · 완료 트리거는 카드에 작은 임시 버튼(체크)으로 붙임 — 카드 전체 클릭이
+        아님 (카드 클릭 = 상세 열기 자리는 비워둠)
+      · 완료 클릭 → 카드 흐려짐 + 필터에서 제외 (mock, 새로고침하면 되살아남)
+      · 이 완료 버튼은 S2 임시 배치. 정식 위치는 S3 "완료로 표시" 버튼 —
+        S3 React 이관 시 이어붙임 (기록용 주석 필수)
+> 화면 전환(탭 라우팅)은 s1~s4 React 이관 후 연결, 원문 링크(카드→상세)는
+> S3 이관 시 연결 — 둘 다 이번 FE 선행 범위 밖
 
 ### 2. BE·DB — 한 사이클 관통
 - [ ] Supabase notifications 테이블 1개 생성
@@ -73,3 +97,14 @@
 - [ ] Gmail/포털 수집 → LLM 판단 → Supabase에 알림 insert
       (2번까지 완성돼 있으면 에이전트가 넣는 순간 화면에 나타남)
 - [ ] eclass Open API 확인 (1주차 이연분)
+
+## 향후 고려
+- 사용자 로그인 + 개인화 렌더링: 2~3번 사이 착수, 핵심 기능 B(관심 키워드 기반 필터링)와 연결 — S1 온보딩 등록값이 기준
+- 알림 목록 개수 관리: 완료 처리·기간 지난 건 자동 정리로 1차 대응, 실제 데이터가 많아지면 페이징/제한 재검토 (지금은 미구현)
+- 앱 높이 660px(`--frame-h`) 고정은 프로토타입/데스크톱 기준 — 실제 폰 화면 반응형(뷰포트 꽉 채우기)은 배포 단계에서 다듬을 것
+- 완료 항목 목록 하단 정렬 — done인 카드를 아래로 내리는 정렬은 "실제 정렬(마감순)" task와 함께 처리 (지금은 제자리 흐림)
+
+### 하드코딩 → 실데이터 전환 대기
+- Hero 날짜: 현재 "7월 13일" 고정 → `new Date()`로 실제 날짜 계산. 단 mock의 D-day 기준과 맞물려 있으므로 deadline→D-day 계산 task와 함께 처리
+- Hero 사용자 이름: "두희님" 고정 → 로그인/사용자 정보 단계에서 실제 이름으로 (위 "사용자 로그인 + 개인화 렌더링" 항목과 연결)
+- D-day 라벨: `ddayLabel` 임시 하드코딩 → deadline에서 계산

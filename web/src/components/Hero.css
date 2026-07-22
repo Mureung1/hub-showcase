@@ -1,0 +1,55 @@
+.hero {
+  position: relative;
+  height: var(--hero-h);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background:
+    radial-gradient(120% 90% at 85% 0%, var(--hero-c) 0%, transparent 55%),
+    radial-gradient(140% 110% at 15% 10%, var(--hero-b) 0%, transparent 60%),
+    linear-gradient(180deg, var(--hero-a) 0%, var(--bg) 100%);
+}
+
+/* 도시 실루엣 — 레퍼런스의 "창밖 풍경" 느낌을 CSS만으로 (design-system.md reference 편입) */
+.hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--hero-skyline-h);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--bg) 93%, transparent), color-mix(in srgb, var(--bg) 93%, transparent));
+  clip-path: polygon(0 100%, 0 62%, 6% 62%, 6% 40%, 13% 40%, 13% 70%, 20% 70%, 20% 30%, 24% 30%, 24% 22%, 29% 22%, 29% 58%, 37% 58%, 37% 44%, 44% 44%, 44% 66%, 52% 66%, 52% 36%, 57% 36%, 57% 50%, 64% 50%, 64% 26%, 70% 26%, 70% 60%, 78% 60%, 78% 46%, 85% 46%, 85% 68%, 92% 68%, 92% 52%, 100% 52%, 100% 100%);
+  opacity: .85;
+}
+
+.hero-date {
+  position: relative;
+  z-index: 1;
+  font-size: var(--fs-caption);
+  color: var(--text-1);
+  opacity: .8;
+  margin-bottom: var(--space-2);
+}
+
+.hero-greeting {
+  position: relative;
+  z-index: 1;
+  font-size: var(--fs-display);
+  color: var(--text-1);
+  margin-bottom: var(--space-3);
+}
+
+.hero-urgent {
+  position: relative;
+  z-index: 1;
+  font-size: var(--fs-body);
+  color: var(--text-1);
+  opacity: .9;
+}
+
+.hero-count {
+  font-weight: 700;
+}
