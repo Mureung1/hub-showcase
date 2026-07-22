@@ -119,7 +119,7 @@ Outcome: 화면용 임의 수치가 아니라 출처와 기준 기간이 있는 
 | DB-001   | Supabase PostgreSQL schema·migration·전체 canonical seed | P0 | Done | Phase 2 | ARCH-002, DATA-004 | development Supabase migration·2회 전체 seed·47 API test와 GitHub #11 종료를 완료했고 Jira 수동 동기화만 남는다 |
 | DATA-007 | 운영 수집 범위·요청 시점·갱신·보존 정책 결정       | P1       | In Progress | Later | DATA-009 | 공공데이터만 사용하며 최초 bulk import 후 실행 주기, quota, raw 보존·rollback 기준과 자동화 범위를 확정한다 |
 | DATA-008 | 분기 상가정보·인허가·상권영역 bulk importer와 품질 검사 | P0 | In Progress | Phase 2 | DATA-004 | 서울 상가정보 537,489행·점포-상권 304,775행과 3개 상권 polygon 적재를 완료했고 전체 인허가 확장을 남겼다 |
-| DATA-009 | 개별 점포-상권 공간 결합과 공식 밀집 집계 비교 | P0 | In Progress | Phase 2 | DATA-008 | 3개 상권에 4,548개 점포를 공간 결합했고 공식 업종 집계와 차이 보고를 남겼다 |
+| DATA-009 | 개별 점포-상권 공간 결합과 공식 밀집 집계 비교 | P0 | Done | Phase 2 | DATA-008 | 3개 상권에 4,548개 점포를 공간 결합하고 20254 공식 업종 집계와 차이 보고를 남겼다 |
 | DATA-010 | KOSIS 행정동 인구·사업체 종사자 보강 | P1 | Done | Phase 2 | DATA-008 | `DT_1B04005N` 2025.12 JSON 66행과 전국사업체조사 2024 XLSX 66행을 provenance와 함께 적재하고 경계 차이·비공개 값·secret 미노출을 검증했다 |
 | DATA-011 | 상권·행정동 주거·직장인구 API·화면 연결 | P0 | Done | Phase 2 | DATA-010 | 서울시 상권 인구와 KOSIS 행정동 배후통계를 공간 단위·출처·기간을 분리하고 오류를 0으로 숨기지 않는다 |
 
