@@ -196,7 +196,7 @@ const CustomerDetail = () => {
           <h1 className="text-2xl font-bold text-gray-900">{customer.name}</h1>
           <RiskBadge score={customer.riskStats.score} />
         </div>
-        <p className="text-gray-600">010-****-{customer.phoneLast4}</p>
+        <p className="text-gray-600">{customer.phoneMasked ?? '****-****'}</p>
         {showAlert && (
           <div className="mt-3">
             <RiskAlertBanner
