@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-22 · COMMON-AI-001 · 완료
+
+- 결과: 사용자가 승인한 OpenAI Responses API와 `gpt-5.6-luna`를 MVP AI 제공자·모델로 확정하고 백엔드 환경 변수, 요청 제한, 실패 정책과 AI 출력 검증 경계를 문서화했다.
+- 결정: 구조화 출력에 `RecipeDraft`와 `RecipeWarning` 스키마를 적용하되 서버가 형식·업무 규칙을 다시 검증한다. AI 결과는 자동 저장하지 않고 사용자가 수정한 저장 요청을 별도로 검증한다.
+- 시행착오: 공식 OpenAI 문서 MCP가 현재 세션에 없어 전역 MCP 서버를 등록했고, 이번 결정 근거는 공식 OpenAI 개발자 문서를 직접 확인했다.
+- 검증: `git diff --check`, `backend npm run type-check`, `backend npm run build`를 실행했다. 의존성 변경이 없는지 `package.json` diff를 확인했다.
+- 후속: `BE-AI-001`, `FE-AI-001`
+- 반복 패턴: 없음
+
 ## 2026-07-21 · FE-RECIPE-002 · 완료
 
 - 결과: `/recipes/new` 보호 경로와 레시피 입력 폼을 구현했다. 데스크톱에서는 기존 목록 오른쪽 종이에 폼을 표시하고, 1100px 이하에서는 폼을 단일 종이 화면으로 전환한다. URL과 직접 입력은 둘 중 하나 이상과 `http`·`https` URL을 검증하며 `{ sourceUrl, rawText }` 형태로 다음 AI 연결 경계에 전달한다.
