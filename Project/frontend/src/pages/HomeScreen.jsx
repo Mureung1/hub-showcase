@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getGroupPurchases, joinGroupPurchase } from '../api/groupPurchase';
+import { getGroupPurchases, getMyGroupPurchaseActivities, joinGroupPurchase } from '../api/groupPurchase';
 import './HomeScreen.css';
 
 const categories = [
@@ -23,6 +23,7 @@ export default function HomeScreen({ onNavigate }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [joinedItems, setJoinedItems] = useState({});
   const [joiningId, setJoiningId] = useState(null);
+  const hasToken = Boolean(localStorage.getItem('accessToken'));
 
   // Fetch group purchases from database
   const { data: apiResponse, isLoading, error } = useQuery({
@@ -37,6 +38,13 @@ export default function HomeScreen({ onNavigate }) {
       return getGroupPurchases(categoryEnum ? { category: categoryEnum } : {});
     }
   });
+  const { data: myActivityResponse } = useQuery({
+    queryKey: ['myGroupPurchaseActivities'],
+    queryFn: getMyGroupPurchaseActivities,
+    enabled: hasToken,
+  });
+  const joinedPurchaseIds = new Set((myActivityResponse?.data?.joined || []).map((purchase) => purchase.id));
+  const hostedPurchaseIds = new Set((myActivityResponse?.data?.hosted || []).map((purchase) => purchase.id));
 
   const purchases = (apiResponse?.data || []).map(item => {
     let categoryLabel = '기타';
@@ -98,6 +106,7 @@ export default function HomeScreen({ onNavigate }) {
         setJoinedItems(prev => ({ ...prev, [id]: true }));
         alert('참여 신청이 완료되었습니다!');
         queryClient.invalidateQueries({ queryKey: ['groupPurchases'] });
+        queryClient.invalidateQueries({ queryKey: ['myGroupPurchaseActivities'] });
       } else {
         alert(result.error?.message || '참여 신청에 실패했습니다.');
       }
@@ -164,7 +173,7 @@ export default function HomeScreen({ onNavigate }) {
         {/* Featured Section */}
         <section className="td-home-page__featured-section">
           <div className="td-home-page__featured-header">
-            <h2 className="td-headline-md text-on-surface">내 주변 인기 공구</h2>
+            <h2 className="td-headline-md text-on-surface">내 주변 인기 공동구매</h2>
             <div className="td-home-page__filters">
               {['Recent', 'Deadline'].map((filter) => (
                 <button 
@@ -187,7 +196,8 @@ export default function HomeScreen({ onNavigate }) {
             {visiblePurchases
               .map((item) => {
                 const progress = (item.currentParticipants / item.targetParticipants) * 100;
-                const isJoined = joinedItems[item.id];
+                const isJoined = joinedItems[item.id] || joinedPurchaseIds.has(item.id);
+                const isHosted = hostedPurchaseIds.has(item.id);
                 const isFull = item.currentParticipants >= item.targetParticipants;
                 const isJoining = joiningId === item.id;
                 return (
@@ -225,11 +235,11 @@ export default function HomeScreen({ onNavigate }) {
                         <div className="td-home-page__card-progress-fill" style={{ width: `${progress}%` }}></div>
                       </div>
                       <button 
-                        className={`td-home-page__card-action-btn ${isJoined ? 'td-home-page__card-action-btn--joined' : ''}`}
+                        className={`td-home-page__card-action-btn ${isJoined || isHosted ? 'td-home-page__card-action-btn--joined' : ''}`}
                         onClick={(e) => handleJoin(item.id, e)}
-                        disabled={isJoined || isFull || isJoining}
+                        disabled={isHosted || isJoined || isFull || isJoining}
                       >
-                        {isJoining ? '처리중...' : isJoined ? '신청 완료' : isFull ? '마감 완료' : '참여하기'}
+                        {isHosted ? '내가 쓴 글' : isJoining ? '처리중...' : isJoined ? '참여 중' : isFull ? '마감 완료' : '참여하기'}
                       </button>
                     </div>
                   </div>
