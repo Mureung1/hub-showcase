@@ -18,7 +18,8 @@
 }
 
 .rs-editor-meta input[type='text'],
-.rs-editor-meta input:not([type]) {
+.rs-editor-meta input:not([type]),
+.rs-editor-meta select {
   padding: 10px 16px;
   border-radius: var(--clb-radius-control);
   border: 1px solid var(--clb-edge-soft);
@@ -32,6 +33,12 @@
   color: var(--clb-muted-dim);
 }
 
+/* 드롭다운 목록 자체는 OS가 그리므로 항목 색만 맞춰준다(글래스 배경에선 흰 글씨가 안 보인다). */
+.rs-editor-meta select option {
+  color: #1b1f2a;
+}
+
+.rs-editor-meta select:focus-visible,
 .rs-editor-meta input:focus-visible,
 .rs-editor-section textarea:focus-visible,
 .rs-editor-heading:focus-visible {

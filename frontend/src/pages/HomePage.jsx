@@ -1,15 +1,30 @@
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ChallengeCard from '../components/ChallengeCard.jsx'
 import DocumentCard from '../components/DocumentCard.jsx'
 import { getOngoingChallenge } from '../data/challenges.js'
 import { seedDocuments } from '../data/documents.js'
+import { loadPublished } from '../lib/storage.js'
 import './pages.css'
 
 function HomePage() {
   const ongoing = getOngoingChallenge()
-  const latestDocs = [...seedDocuments]
-    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
-    .slice(0, 3)
+  // 실제 발행 문서 + 시드를 병합해야 "내가 발행한 글"이 홈에 보인다(ArchivePage와 같은 패턴).
+  const [published, setPublished] = useState([])
+
+  useEffect(() => {
+    loadPublished()
+      .then(setPublished)
+      .catch(() => setPublished([])) // 홈은 시드만으로도 의미가 있어 조용히 넘어간다
+  }, [])
+
+  const latestDocs = useMemo(
+    () =>
+      [...published, ...seedDocuments]
+        .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''))
+        .slice(0, 3),
+    [published],
+  )
 
   return (
     <div>

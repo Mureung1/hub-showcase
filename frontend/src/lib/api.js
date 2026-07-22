@@ -10,8 +10,8 @@ export function setAuthToken(token) {
   authToken = token ?? null
 }
 
-export async function request(path, { method = 'GET', body } = {}) {
-  const headers = {}
+export async function request(path, { method = 'GET', body, headers: extraHeaders } = {}) {
+  const headers = { ...extraHeaders }
   if (body) headers['Content-Type'] = 'application/json'
   if (authToken) headers.Authorization = `Bearer ${authToken}`
 

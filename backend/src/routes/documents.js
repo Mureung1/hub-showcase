@@ -7,8 +7,9 @@ import { generateAiFeedback } from '../lib/aiFeedback.js'
 
 // AI 자동 피드백: 문서 전체 총평을 담는 특수 코멘트의 sectionId.
 const OVERALL_SECTION_ID = '__overall__'
-// 유저당 일일 AI 피드백 호출 제한(기획서 §3.4).
-const AI_DAILY_LIMIT = 5
+// 유저당 일일 AI 호출 제한(기획서 §3.4).
+// 비용이 드는 건 "저장"이 아니라 "호출"이므로 발행 피드백과 미리보기를 합산해 센다.
+const AI_DAILY_LIMIT = 10
 
 const router = Router()
 
@@ -37,6 +38,19 @@ function readEditPassword(req) {
   return req.body?.editPassword ?? req.headers['x-edit-password'] ?? null
 }
 
+// 최근 24시간 AI 호출 수를 세고, 한도를 넘었으면 true. 발행 피드백/미리보기 공통.
+async function isAiLimitExceeded(userId) {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const logs = unwrap(
+    await supabase
+      .from('ai_feedback_logs')
+      .select('id')
+      .eq('user_id', userId)
+      .gte('called_at', since),
+  )
+  return logs.length >= AI_DAILY_LIMIT
+}
+
 // 수정/삭제 권한 확인: 회원 문서는 소유자만, 비회원 문서는 올바른 비밀번호만.
 // 통과하면 null, 실패하면 { status, error } 를 돌려준다.
 async function authorizeEdit(req, id) {
@@ -61,27 +75,50 @@ async function authorizeEdit(req, id) {
 }
 
 // GET /api/documents?status=draft|published&mine=true — 목록
+// 초안(draft)은 절대 전체 공개하지 않는다. mine 파라미터와 무관하게 항상 소유자 스코프.
 router.get('/', optionalAuth, async (req, res) => {
   const { status, mine } = req.query
   const orderColumn = status === 'draft' ? 'updated_at' : 'published_at'
   let query = supabase.from('documents').select('*').order(orderColumn, { ascending: false })
-  if (status) query = query.eq('status', status)
-  // mine=true 는 로그인 사용자의 문서만(초안 포함). 비로그인이면 빈 목록.
-  if (mine === 'true') {
+
+  // 초안은 남의 것을 볼 수 없다(비로그인이면 빈 목록). mine=true 도 동일하게 소유자 스코프.
+  const ownerScoped = status === 'draft' || mine === 'true'
+  if (ownerScoped) {
     if (!req.user) return res.json([])
     query = query.eq('author_id', req.user.id)
+    if (status) query = query.eq('status', status)
+  } else {
+    // 공개 목록은 항상 발행분만. status를 생략해도 남의 초안이 섞이지 않게 강제한다.
+    query = query.eq('status', 'published')
   }
   const rows = unwrap(await query)
   res.json(rows.map(toApiDoc))
 })
 
-// GET /api/documents/:id — 단건(초안·발행 무관)
-router.get('/:id', async (req, res) => {
+// GET /api/documents/:id — 단건.
+// 발행 문서는 누구나, 초안은 소유자(회원) 또는 올바른 수정 비밀번호(비회원)만.
+router.get('/:id', optionalAuth, async (req, res) => {
   const { id } = req.params
-  if (!UUID_RE.test(id)) return res.status(404).json({ error: '문서를 찾을 수 없어요.' })
+  const notFound = { error: '문서를 찾을 수 없어요.' }
+  if (!UUID_RE.test(id)) return res.status(404).json(notFound)
   const rows = unwrap(await supabase.from('documents').select('*').eq('id', id).limit(1))
-  if (rows.length === 0) return res.status(404).json({ error: '문서를 찾을 수 없어요.' })
-  res.json(toApiDoc(rows[0]))
+  if (rows.length === 0) return res.status(404).json(notFound)
+  const row = rows[0]
+
+  if (row.status === 'draft') {
+    if (row.author_id) {
+      // 회원 초안 — 소유자만. 존재 여부도 숨기려 404로 응답.
+      if (!req.user || req.user.id !== row.author_id) return res.status(404).json(notFound)
+    } else {
+      // 비회원 초안 — 수정 비밀번호를 제시해야 열람 가능.
+      const ok =
+        row.edit_password_hash &&
+        (await verifyPassword(readEditPassword(req) ?? '', row.edit_password_hash))
+      if (!ok) return res.status(404).json(notFound)
+    }
+  }
+
+  res.json(toApiDoc(row))
 })
 
 // POST /api/documents — 생성. 로그인 시 회원 문서(author_id), 아니면 비회원 문서(수정 비번).
@@ -126,12 +163,21 @@ router.delete('/:id', optionalAuth, async (req, res) => {
 })
 
 // POST /api/documents/:id/comments — comments jsonb read-modify-write append
-router.post('/:id/comments', async (req, res) => {
+// 보안: is_ai 는 클라이언트 입력을 무시하고 항상 false(사람 코멘트의 AI 위장 차단),
+// 작성자명도 클라이언트를 믿지 않고 서버가 결정한다.
+router.post('/:id/comments', optionalAuth, async (req, res) => {
   const { id } = req.params
   if (!UUID_RE.test(id)) return res.status(404).json({ error: '문서를 찾을 수 없어요.' })
   const rows = unwrap(await supabase.from('documents').select('comments').eq('id', id).limit(1))
   if (rows.length === 0) return res.status(404).json({ error: '문서를 찾을 수 없어요.' })
-  const comment = buildDbComment(req.body)
+
+  const author = req.user ? await resolveAuthorName(req.user) : '익명'
+  const comment = buildDbComment({
+    sectionId: req.body?.sectionId,
+    content: req.body?.content,
+    author,
+    isAi: false,
+  })
   const next = [...(rows[0].comments ?? []), comment]
   unwrap(await supabase.from('documents').update({ comments: next }).eq('id', id))
   res.status(201).json(mapCommentToApi(comment))
@@ -142,26 +188,22 @@ router.post('/:id/ai-feedback', requireAuth, async (req, res) => {
   const { id } = req.params
   if (!UUID_RE.test(id)) return res.status(404).json({ error: '문서를 찾을 수 없어요.' })
 
-  // 일일 호출 제한 확인(최근 24시간).
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  const logs = unwrap(
-    await supabase
-      .from('ai_feedback_logs')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .gte('called_at', since),
-  )
-  if (logs.length >= AI_DAILY_LIMIT) {
+  if (await isAiLimitExceeded(req.user.id)) {
     return res
       .status(429)
       .json({ error: `AI 피드백은 하루 ${AI_DAILY_LIMIT}회까지 받을 수 있어요.` })
   }
 
   const rows = unwrap(
-    await supabase.from('documents').select('sections, comments').eq('id', id).limit(1),
+    await supabase.from('documents').select('author_id, sections, comments').eq('id', id).limit(1),
   )
   if (rows.length === 0) return res.status(404).json({ error: '문서를 찾을 수 없어요.' })
   const doc = rows[0]
+
+  // AI 코멘트는 남의 문서에 붙일 수 없다(예시 문서는 author_id가 null이라 함께 거부된다).
+  if (doc.author_id !== req.user.id) {
+    return res.status(403).json({ error: '본인 문서에만 AI 피드백을 받을 수 있어요.' })
+  }
 
   // 프론트가 보낸 섹션별 guide(그 섹션이 다뤄야 하는 것)를 sectionId로 매칭한다.
   // guide가 있어야 모델이 섹션 성격에 맞는 특화 피드백을 낸다(없으면 heading/content만으로 일반적).
@@ -195,6 +237,68 @@ router.post('/:id/ai-feedback', requireAuth, async (req, res) => {
   res.status(201).json(aiComments.map(mapCommentToApi))
 })
 
+const REACTION_TYPES = ['like', 'bookmark']
+
+// 문서의 좋아요/북마크 수를 세어 documents 캐시 컬럼에 반영하고 현재 수치를 돌려준다.
+async function syncReactionCounts(docId) {
+  const rows = unwrap(await supabase.from('reactions').select('type').eq('document_id', docId))
+  const likes = rows.filter((r) => r.type === 'like').length
+  const bookmarks = rows.filter((r) => r.type === 'bookmark').length
+  unwrap(await supabase.from('documents').update({ likes, bookmarks }).eq('id', docId))
+  return { likes, bookmarks }
+}
+
+// 로그인 사용자가 이 문서에 남긴 반응.
+async function myReactions(userId, docId) {
+  if (!userId) return { liked: false, bookmarked: false }
+  const rows = unwrap(
+    await supabase.from('reactions').select('type').eq('document_id', docId).eq('user_id', userId),
+  )
+  return {
+    liked: rows.some((r) => r.type === 'like'),
+    bookmarked: rows.some((r) => r.type === 'bookmark'),
+  }
+}
+
+// GET /api/documents/:id/reactions — 현재 카운트 + 내 반응 여부
+router.get('/:id/reactions', optionalAuth, async (req, res) => {
+  const { id } = req.params
+  if (!UUID_RE.test(id)) return res.status(404).json({ error: '문서를 찾을 수 없어요.' })
+  const rows = unwrap(await supabase.from('reactions').select('type').eq('document_id', id))
+  res.json({
+    likes: rows.filter((r) => r.type === 'like').length,
+    bookmarks: rows.filter((r) => r.type === 'bookmark').length,
+    ...(await myReactions(req.user?.id, id)),
+  })
+})
+
+// POST /api/documents/:id/reactions — 회원 전용 토글(있으면 취소, 없으면 추가)
+router.post('/:id/reactions', requireAuth, async (req, res) => {
+  const { id } = req.params
+  const { type } = req.body ?? {}
+  if (!UUID_RE.test(id)) return res.status(404).json({ error: '문서를 찾을 수 없어요.' })
+  if (!REACTION_TYPES.includes(type)) {
+    return res.status(400).json({ error: '지원하지 않는 반응이에요.' })
+  }
+
+  const existing = unwrap(
+    await supabase
+      .from('reactions')
+      .select('id')
+      .eq('document_id', id)
+      .eq('user_id', req.user.id)
+      .eq('type', type),
+  )
+  if (existing.length > 0) {
+    unwrap(await supabase.from('reactions').delete().eq('id', existing[0].id))
+  } else {
+    unwrap(await supabase.from('reactions').insert({ document_id: id, user_id: req.user.id, type }))
+  }
+
+  const counts = await syncReactionCounts(id)
+  res.json({ ...counts, ...(await myReactions(req.user.id, id)) })
+})
+
 // POST /api/documents/ai-feedback/preview — 회원 전용. 저장하지 않는 AI 미리보기.
 // 에디터에서 발행 전에 실제 Gemini 피드백을 보기 위한 것(DB·일일 제한 기록 안 함).
 router.post('/ai-feedback/preview', requireAuth, async (req, res) => {
@@ -205,11 +309,19 @@ router.post('/ai-feedback/preview', requireAuth, async (req, res) => {
     guide: s.guide,
   }))
   if (sections.length === 0) return res.json([])
+
+  // 저장은 안 하지만 Gemini는 실제로 호출되므로, 미리보기로 한도를 우회하지 못하게 같이 센다.
+  if (await isAiLimitExceeded(req.user.id)) {
+    return res.status(429).json({ error: `AI 호출은 하루 ${AI_DAILY_LIMIT}회까지 가능해요.` })
+  }
+
   const feedback = await generateAiFeedback(sections, {
     title: req.body?.title,
     gameTag: req.body?.gameTag,
     templateName: req.body?.templateName,
   })
+  unwrap(await supabase.from('ai_feedback_logs').insert({ user_id: req.user.id }))
+
   // 에디터 handleAiFeedback가 기대하는 [{sectionKey, content}] 형태로 반환.
   res.json(feedback.sectionComments)
 })

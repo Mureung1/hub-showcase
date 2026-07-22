@@ -4,11 +4,12 @@
 // 변경 감지에 쓸 필드만 뽑아 문자열로 만든다.
 // guideKey처럼 화면 표시용이라 저장 내용과 무관한 필드는 일부러 제외한다 —
 // 안 그러면 내용이 그대로인데도 저장이 계속 돈다.
-export function makeSnapshot({ title, gameTag, systemTag, feedbackWanted, sections }) {
+export function makeSnapshot({ title, gameTag, systemTag, category, feedbackWanted, sections }) {
   return JSON.stringify({
     title,
     gameTag,
     systemTag,
+    category,
     feedbackWanted,
     sections: (sections ?? []).map((s) => ({
       id: s.id,

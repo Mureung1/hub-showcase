@@ -61,6 +61,13 @@
   flex: 1;
 }
 
+/* 필터 축이 둘이 되면서 어느 줄이 무슨 기준인지 알려주는 라벨 */
+.rs-filter-label {
+  color: var(--clb-muted-dim);
+  font-size: var(--clb-text-label);
+  margin-right: 2px;
+}
+
 .rs-compare-hint {
   margin: 0 0 var(--clb-space-md);
   color: var(--clb-muted);
@@ -90,6 +97,48 @@
   margin: 0;
   color: var(--clb-muted);
   font-size: 0.92rem;
+}
+
+/* ---- AI 예시 문서 면책 문구 ---- */
+.rs-example-notice {
+  margin: var(--clb-space-sm) 0 0;
+  padding: var(--clb-space-sm) var(--clb-space-md);
+  border-left: 3px solid var(--clb-gold);
+  border-radius: var(--clb-radius-control);
+  background: var(--clb-glass-faint);
+  color: var(--clb-muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+/* ---- 아카이브 검색 ---- */
+.rs-search-input {
+  width: 100%;
+  margin-bottom: var(--clb-space-md);
+  padding: 10px 16px;
+  border-radius: var(--clb-radius-control);
+  border: 1px solid var(--clb-edge-soft);
+  background: var(--clb-glass-faint);
+  color: var(--clb-ink);
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.rs-search-input::placeholder {
+  color: var(--clb-muted-dim);
+}
+
+.rs-search-input:focus-visible {
+  outline: 2px solid var(--clb-gold);
+  outline-offset: 1px;
+}
+
+/* ---- 닉네임 폼 ---- */
+.rs-nickname-form {
+  display: flex;
+  gap: var(--clb-space-sm);
+  align-items: center;
+  margin-top: var(--clb-space-sm);
 }
 
 /* ---- 비밀번호 잠금 해제 모달 입력 ---- */

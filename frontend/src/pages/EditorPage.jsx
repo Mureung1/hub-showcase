@@ -13,6 +13,7 @@ import {
   requestAiFeedbackPreview,
 } from '../lib/storage.js'
 import { useAuth } from '../lib/AuthContext.jsx'
+import { rememberLocalDoc } from '../lib/localDocs.js'
 import { makeSnapshot, hasUnsavedChanges, isEmptyDraft, shouldAutosave } from '../lib/autosave.js'
 import './pages.css'
 import './EditorPage.css'
@@ -21,6 +22,7 @@ const JOB_TAG_BY_TEMPLATE = {
   system: '시스템',
   content: '컨텐츠',
   uiux: 'UI/UX',
+  level: '레벨',
   free: '자유',
 }
 
@@ -49,9 +51,14 @@ function EditorPage() {
 
   // 문서 식별자는 서버가 발급한 uuid 하나로 통일한다(신규는 null, 첫 저장 때 채워짐).
   const [docId, setDocId] = useState(null)
+  // 이미 발행한 문서를 고치는 중인지. 자동저장이 발행 상태를 초안으로 되돌리면 안 된다.
+  const [docStatus, setDocStatus] = useState('draft')
   const [title, setTitle] = useState('')
-  const [gameTag, setGameTag] = useState('')
-  const [systemTag, setSystemTag] = useState('')
+  // 작성 시작 화면에서 게임·시스템을 고르고 왔다면(?game=&system=) 태그를 미리 채운다.
+  const [gameTag, setGameTag] = useState(() => searchParams.get('game') ?? '')
+  const [systemTag, setSystemTag] = useState(() => searchParams.get('system') ?? '')
+  // 둘러보기 필터용 고정 분류. 카탈로그에서 시작했으면 그 시스템의 분류가 미리 채워진다.
+  const [category, setCategory] = useState(() => searchParams.get('category') ?? '')
   const [feedbackWanted, setFeedbackWanted] = useState(false)
   // 신규 문서는 템플릿 프리셋으로 즉시 초기화, 이어쓰기는 아래 useEffect에서 서버 데이터로 채운다.
   const [sections, setSections] = useState(() =>
@@ -66,6 +73,8 @@ function EditorPage() {
   )
   const [aiComments, setAiComments] = useState({})
   const [aiLoading, setAiLoading] = useState(false)
+  // AI 미리보기 실패 사유. 조용히 mock으로 대체하면 정형 문구를 AI 답변으로 오해한다.
+  const [aiPreviewError, setAiPreviewError] = useState(null)
   const [aiReviewing, setAiReviewing] = useState(false)
   // 비회원 문서 수정용 비밀번호. 잠금해제 모달에서 넘어온 경우 location.state 로 받는다.
   const [editPassword, setEditPassword] = useState(location.state?.editPassword ?? '')
@@ -81,13 +90,16 @@ function EditorPage() {
   useEffect(() => {
     if (!draftParam) return
     let alive = true
-    getPublishedDocument(draftParam)
+    // 비회원 초안은 서버가 비밀번호를 요구한다(잠금해제 모달에서 넘어온 값).
+    getPublishedDocument(draftParam, { editPassword: location.state?.editPassword })
       .then((doc) => {
         if (!alive || !doc) return
         setDocId(doc.id)
+        setDocStatus(doc.status ?? 'draft')
         setTitle(doc.title ?? '')
         setGameTag(doc.gameTag ?? '')
         setSystemTag(doc.systemTag ?? '')
+        setCategory(doc.category ?? '')
         setFeedbackWanted(doc.feedbackWanted ?? false)
         setSections(doc.sections ?? [])
         // 방금 불러온 내용은 이미 저장된 상태다. 스냅샷을 맞춰두지 않으면
@@ -96,6 +108,7 @@ function EditorPage() {
           title: doc.title ?? '',
           gameTag: doc.gameTag ?? '',
           systemTag: doc.systemTag ?? '',
+          category: doc.category ?? '',
           feedbackWanted: doc.feedbackWanted ?? false,
           sections: doc.sections ?? [],
         })
@@ -118,7 +131,7 @@ function EditorPage() {
     // 비회원은 수정용 비밀번호가 있어야 저장할 수 있다(그래야 이후에 다시 고칠 수 있음).
     if (!auth.isLoggedIn && !editPassword) return
 
-    const form = { title, gameTag, systemTag, feedbackWanted, sections }
+    const form = { title, gameTag, systemTag, category, feedbackWanted, sections }
     const snapshot = makeSnapshot(form)
     const decision = shouldAutosave({
       hasChanges: hasUnsavedChanges(snapshot, lastSavedRef.current),
@@ -132,10 +145,12 @@ function EditorPage() {
       try {
         const saved = await saveDraft({
           id: docId,
+          status: docStatus, // 발행 문서를 고치는 중이면 발행 상태를 유지한다
           templateId,
           title,
           gameTag,
           systemTag,
+          category,
           feedbackWanted,
           sections,
           editPassword: editPassword || undefined,
@@ -156,9 +171,11 @@ function EditorPage() {
     title,
     gameTag,
     systemTag,
+    category,
     feedbackWanted,
     sections,
     docId,
+    docStatus,
     templateId,
     loadingDraft,
     template,
@@ -216,18 +233,31 @@ function EditorPage() {
     try {
       const saved = await saveDraft({
         id: docId,
+        status: docStatus, // 발행 문서를 고치는 중이면 발행 상태를 유지한다
         templateId,
         title,
         gameTag,
         systemTag,
+        category,
         feedbackWanted,
         sections,
         editPassword: editPassword || undefined,
       })
       // 수동 저장도 스냅샷을 갱신해야 직후에 자동저장이 중복으로 돌지 않는다.
-      lastSavedRef.current = makeSnapshot({ title, gameTag, systemTag, feedbackWanted, sections })
+      lastSavedRef.current = makeSnapshot({
+        title,
+        gameTag,
+        systemTag,
+        category,
+        feedbackWanted,
+        sections,
+      })
       setDocId(saved.id) // 첫 저장에서 서버 uuid를 채택, 이후 저장은 같은 row 수정
       setSavedAt(new Date().toLocaleTimeString())
+      // 비회원은 계정이 없어 URL을 잃으면 못 찾는다 → 이 브라우저에 기록해 둔다.
+      if (!auth.isLoggedIn) {
+        rememberLocalDoc({ id: saved.id, title, templateId, status: docStatus })
+      }
     } catch (err) {
       setPublishError(err.message ?? '저장에 실패했어요.')
     } finally {
@@ -235,13 +265,22 @@ function EditorPage() {
     }
   }
 
+  function groupBySection(feedback) {
+    const grouped = {}
+    for (const item of feedback) {
+      grouped[item.sectionKey] = [...(grouped[item.sectionKey] ?? []), item.content]
+    }
+    return grouped
+  }
+
   async function handleAiFeedback() {
     setAiLoading(true)
+    setAiPreviewError(null)
     try {
-      let feedback
       if (auth.isLoggedIn) {
         // 회원: 실제 Gemini 미리보기(저장 안 함). 섹션 guide·문서 메타를 함께 보내 특화 피드백을 받는다.
-        feedback = await requestAiFeedbackPreview({
+        // 실패해도 mock으로 갈아타지 않는다 — 정형 문구를 AI 답변으로 오해하게 되기 때문.
+        const feedback = await requestAiFeedbackPreview({
           title: title.trim(),
           gameTag: gameTag.trim(),
           templateName: template.name,
@@ -252,9 +291,10 @@ function EditorPage() {
             guide: guideOf(s).guide,
           })),
         })
+        setAiComments(groupBySection(feedback))
       } else {
-        // 비회원/폴백: mock 미리보기.
-        feedback = await makeAiFeedback(
+        // 비회원은 AI를 쓸 수 없다. 어떤 피드백이 오는지 보여주는 예시 미리보기(mock).
+        const feedback = await makeAiFeedback(
           sections.map((s) => ({
             key: s.id,
             guideKey: s.guideKey,
@@ -262,27 +302,15 @@ function EditorPage() {
             content: s.content,
           })),
         )
+        setAiComments(groupBySection(feedback))
       }
-      const grouped = {}
-      for (const item of feedback) {
-        grouped[item.sectionKey] = [...(grouped[item.sectionKey] ?? []), item.content]
-      }
-      setAiComments(grouped)
-    } catch {
-      // 실 API 실패 시 mock으로 폴백(오프라인/한도 등 안전망).
-      const fallback = await makeAiFeedback(
-        sections.map((s) => ({
-          key: s.id,
-          guideKey: s.guideKey,
-          heading: s.heading,
-          content: s.content,
-        })),
+    } catch (err) {
+      setAiComments({})
+      setAiPreviewError(
+        err.status === 429
+          ? '오늘 AI 호출 한도를 모두 썼어요. 내일 다시 시도할 수 있어요.'
+          : (err.message ?? 'AI 피드백을 받지 못했어요. 잠시 후 다시 시도해 주세요.'),
       )
-      const grouped = {}
-      for (const item of fallback) {
-        grouped[item.sectionKey] = [...(grouped[item.sectionKey] ?? []), item.content]
-      }
-      setAiComments(grouped)
     } finally {
       setAiLoading(false)
     }
@@ -297,6 +325,8 @@ function EditorPage() {
       setPublishError('비회원은 "수정용 비밀번호"를 먼저 입력해야 발행할 수 있어요.')
       return
     }
+    // 첫 발행인지(= AI 자동 피드백 대상인지). 재발행 때마다 부르면 총평이 계속 쌓인다.
+    const isFirstPublish = docStatus !== 'published'
     try {
       const published = await publishDocument({
         id: docId, // 저장한 적 있으면 같은 row를 발행으로 flip, 없으면 서버가 새로 발급
@@ -308,18 +338,36 @@ function EditorPage() {
         gameTag: gameTag.trim(),
         jobTag: JOB_TAG_BY_TEMPLATE[templateId],
         systemTag: systemTag.trim(),
+        category: category || null,
         challengeId: challenge?.id ?? null,
         feedbackWanted,
-        likes: 0,
-        bookmarks: 0,
-        sections: sections.map(({ id, heading, content }) => ({ id, heading, content })),
-        // AI 코멘트는 아래에서 회원 전용 엔드포인트가 서버에 직접 append 한다(중복 방지).
-        comments: [],
+        // guideKey를 남겨야 이어쓰기 때 섹션 가이드가 복원되고 AI 재요청도 정확해진다.
+        sections: sections.map(({ id, guideKey, heading, content }) => ({
+          id,
+          guideKey,
+          heading,
+          content,
+        })),
+        // 좋아요·북마크·코멘트는 보내지 않는다 — 서버가 관리하며,
+        // 여기서 보내면 재발행 때 기존 코멘트와 카운트를 덮어써 지운다.
         editPassword: editPassword || undefined,
       })
+      setDocStatus('published')
+
+      // 비회원은 계정이 없어 URL을 잃으면 못 찾는다 → 이 브라우저에 기록해 둔다.
+      if (!auth.isLoggedIn) {
+        rememberLocalDoc({
+          id: published.id,
+          title: title.trim(),
+          templateId,
+          status: 'published',
+        })
+      }
 
       // 회원이면 제출 직후 자동 AI 피드백(섹션별 + 전체 총평). 비회원은 건너뛴다.
-      if (auth.isLoggedIn) {
+      // 재발행(수정 반영)에서는 호출하지 않는다 — 상세 페이지에서 직접 다시 받을 수 있다.
+      let aiError = null
+      if (auth.isLoggedIn && isFirstPublish) {
         setAiReviewing(true)
         try {
           // 섹션별 guide(그 섹션이 다뤄야 하는 것)와 문서 메타를 함께 보내야
@@ -335,13 +383,15 @@ function EditorPage() {
             templateName: template.name,
             guides,
           })
-        } catch {
-          // AI 실패해도 발행 자체는 성공 — 상세 페이지로 넘어간다.
+        } catch (err) {
+          // 발행 자체는 성공. 다만 실패를 삼키면 총평이 왜 없는지 알 수 없으므로
+          // 상세 페이지로 사유를 넘겨 재시도 배너를 띄운다.
+          aiError = { message: err.message ?? 'AI 피드백을 받지 못했어요.', status: err.status }
         } finally {
           setAiReviewing(false)
         }
       }
-      navigate(`/archive/${published.id}`)
+      navigate(`/archive/${published.id}`, { state: { aiError } })
     } catch (err) {
       setPublishError(err.message ?? '발행에 실패했어요.')
     }
@@ -371,11 +421,15 @@ function EditorPage() {
         title={title}
         gameTag={gameTag}
         systemTag={systemTag}
+        category={category}
+        onCategoryChange={setCategory}
         feedbackWanted={feedbackWanted}
         aiLoading={aiLoading}
         savedAt={savedAt}
         autoSaved={autoSaved}
         publishError={publishError}
+        aiPreviewError={aiPreviewError}
+        isPublished={docStatus === 'published'}
         isLoggedIn={auth.isLoggedIn}
         showPasswordField={!auth.isLoggedIn}
         editPassword={editPassword}
