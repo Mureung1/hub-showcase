@@ -4,7 +4,7 @@
 
 ## 주소와 배포 흐름
 
-- 안정 주소: `https://hub-ppre1ude-ppre1udes-projects.vercel.app`
+- 안정 주소: `https://hub-ppre1udes-projects.vercel.app`
 - 상태 확인: `GET /api/health`
 - Pull Request: Vercel 미리보기 배포
 - `main` 병합: Vercel 운영 배포
@@ -93,8 +93,8 @@ gh run view <run-id> --log-failed
 
 ## 인증 URL
 
-- Site URL: `https://hub-ppre1ude-ppre1udes-projects.vercel.app`
-- 운영 Redirect URL: `https://hub-ppre1ude-ppre1udes-projects.vercel.app/**`
+- Site URL: `https://hub-ppre1udes-projects.vercel.app`
+- 운영 Redirect URL: `https://hub-ppre1udes-projects.vercel.app/**`
 - 미리보기 Redirect URL: `https://*-ppre1udes-projects.vercel.app/**`
 - 로컬 Redirect URL: `http://localhost:5173/**`
 - Chrome 확장 Redirect URL: `https://plajiifgmookjagiandpdagekoaimkgk.chromiumapp.org/auth`
@@ -105,7 +105,7 @@ gh run view <run-id> --log-failed
 셸 또는 CI의 환경 변수가 `.env.local`보다 우선한다. 공개 Supabase 설정을 `.env.local`에 둔 상태에서 운영 API 주소를 주입해 ZIP을 만든다.
 
 ```powershell
-$env:VITE_EXTENSION_API_ORIGIN='https://hub-ppre1ude-ppre1udes-projects.vercel.app'
+$env:VITE_EXTENSION_API_ORIGIN='https://hub-ppre1udes-projects.vercel.app'
 npm run package:extension
 ```
 
@@ -115,7 +115,7 @@ npm run package:extension
 
 - Vercel 운영 배포: `https://hub-ms4s5qwx5-ppre1udes-projects.vercel.app` (`dpl_EqxmoCVMyFNSHkvw6MPXb9a8r2FC`)
 - Vercel 미리보기: `https://hub-mayu38j04-ppre1udes-projects.vercel.app`
-- 안정 주소: 운영 배포를 가리키는 `https://hub-ppre1ude-ppre1udes-projects.vercel.app`
+- 안정 주소: 운영 배포를 가리키는 `https://hub-ppre1udes-projects.vercel.app`
 - Vercel 원격 빌드: Preview와 Production 성공, TypeScript 함수 오류 없음
 - Vercel Authentication: 공개 웹과 확장 API 접근을 위해 비활성화
 - 웹 첫 화면: 인증 정보가 없는 HTTPS 요청에서 HTTP 200과 `text/html` 확인

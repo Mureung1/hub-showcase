@@ -17,7 +17,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_공개키
 셸이나 CI에 같은 이름의 환경 변수가 있으면 `.env.local`보다 우선한다. 운영 확장은 다음처럼 안정 API 주소를 주입해 만든다.
 
 ```powershell
-$env:VITE_EXTENSION_API_ORIGIN='https://hub-ppre1ude-ppre1udes-projects.vercel.app'
+$env:VITE_EXTENSION_API_ORIGIN='https://hub-ppre1udes-projects.vercel.app'
 npm run package:extension
 ```
 

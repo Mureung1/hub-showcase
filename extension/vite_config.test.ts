@@ -11,15 +11,14 @@ describe('Chrome 확장 빌드 환경', () => {
         VITE_SUPABASE_URL: 'https://file-project.supabase.co',
       },
       {
-        VITE_EXTENSION_API_ORIGIN:
-          'https://hub-ppre1ude-ppre1udes-projects.vercel.app',
+        VITE_EXTENSION_API_ORIGIN: 'https://hub-ppre1udes-projects.vercel.app',
         VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_ci',
         VITE_SUPABASE_URL: 'https://ci-project.supabase.co',
       }
     );
 
     expect(environment).toEqual({
-      apiOrigin: 'https://hub-ppre1ude-ppre1udes-projects.vercel.app',
+      apiOrigin: 'https://hub-ppre1udes-projects.vercel.app',
       publishableKey: 'sb_publishable_ci',
       supabaseUrl: 'https://ci-project.supabase.co',
     });
