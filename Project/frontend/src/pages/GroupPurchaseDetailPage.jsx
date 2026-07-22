@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react';
-import { cancelGroupPurchaseJoin, getGroupPurchaseById, joinGroupPurchase } from '../api/groupPurchase';
+import {
+  cancelGroupPurchaseJoin,
+  getGroupPurchaseById,
+  joinGroupPurchase,
+  markGroupPurchaseReceipt,
+  updateGroupPurchaseStatus,
+} from '../api/groupPurchase';
 import './GroupPurchaseDetailPage.css';
 
 const mockPurchase = {
@@ -23,10 +29,16 @@ const images = [
 const won = (value) => `${new Intl.NumberFormat('ko-KR').format(value)}원`;
 
 const statusSteps = ['RECRUITING', 'COMPLETED', 'ORDERED', 'WAITING_PICKUP', 'FINISHED'];
+const hostActions = {
+  COMPLETED: { status: 'ORDERED', label: '주문 완료 처리' },
+  ORDERED: { status: 'WAITING_PICKUP', label: '픽업 가능 처리' },
+  WAITING_PICKUP: { status: 'FINISHED', label: '공동구매 완료 처리' },
+};
 
 export default function GroupPurchaseDetailPage({ onNavigate, id }) {
   const [purchase, setPurchase] = useState(mockPurchase);
   const [joinState, setJoinState] = useState('idle');
+  const [workflowState, setWorkflowState] = useState('idle');
   const [message, setMessage] = useState('');
   const [isLiked, setIsLiked] = useState(false);
   const activeStepIndex = Math.max(statusSteps.indexOf(purchase.status), 0);
@@ -52,8 +64,9 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
             description: data.description,
             productUrl: data.productUrl,
             status: data.status,
+            viewer: data.viewer,
           });
-          setJoinState('idle');
+          setJoinState(data.viewer?.application ? 'joined' : 'idle');
           setMessage('');
         }
       } catch (err) {
@@ -83,7 +96,11 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
       setPurchase((current) => ({ 
         ...current, 
         currentParticipants: result.data.groupPurchase.currentParticipants,
-        status: result.data.groupPurchase.status 
+        status: result.data.groupPurchase.status,
+        viewer: {
+          ...current.viewer,
+          application: result.data.application,
+        },
       }));
       setJoinState('joined');
       setMessage('참여 신청이 완료되었습니다!');
@@ -106,12 +123,49 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
         ...current,
         currentParticipants: result.data.groupPurchase.currentParticipants,
         status: result.data.groupPurchase.status,
+        viewer: { ...current.viewer, application: null },
       }));
       setJoinState('idle');
       setMessage('참여를 취소했습니다.');
     } catch (error) {
       setJoinState('joined');
       setMessage(error.message);
+    }
+  }
+
+  async function handleHostStatus() {
+    const action = hostActions[purchase.status];
+    if (!action) return;
+
+    setWorkflowState('loading');
+    setMessage('');
+    try {
+      const result = await updateGroupPurchaseStatus(purchase.id, action.status);
+      if (!result.success) throw new Error(result.error?.message || '상태 변경에 실패했습니다.');
+      setPurchase((current) => ({ ...current, status: result.data.status }));
+      setMessage(`${action.label}이 완료되었습니다.`);
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setWorkflowState('idle');
+    }
+  }
+
+  async function handleReceipt() {
+    setWorkflowState('loading');
+    setMessage('');
+    try {
+      const result = await markGroupPurchaseReceipt(purchase.id);
+      if (!result.success) throw new Error(result.error?.message || '수령 완료 처리에 실패했습니다.');
+      setPurchase((current) => ({
+        ...current,
+        viewer: { ...current.viewer, application: { ...current.viewer.application, isReceived: true } },
+      }));
+      setMessage('수령 완료로 기록했습니다.');
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setWorkflowState('idle');
     }
   }
 
@@ -211,7 +265,7 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
                     <div className="td-detail-page__tracker-icon-circle">
                       <span className="material-symbols-outlined text-sm">local_shipping</span>
                     </div>
-                    <span className="td-label-sm">배송중</span>
+                    <span className="td-label-sm">주문완료</span>
                   </div>
                   <div className={`td-detail-page__tracker-step ${activeStepIndex >= 3 ? 'td-detail-page__tracker-step--active' : ''}`}>
                     <div className="td-detail-page__tracker-icon-circle">
@@ -223,7 +277,7 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
                     <div className="td-detail-page__tracker-icon-circle">
                       <span className="material-symbols-outlined text-sm">check_circle</span>
                     </div>
-                    <span className="td-label-sm">종료</span>
+                    <span className="td-label-sm">공동구매 완료</span>
                   </div>
                 </div>
               </div>
@@ -254,7 +308,7 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
               <div className="td-detail-page__card td-detail-page__sidebar-card">
                 <h3 className="td-detail-page__sidebar-title">
                   <span className="material-symbols-outlined text-primary">location_on</span>
-                  픽업 위치
+                  픽업 장소·시간
                 </h3>
                 <div className="td-detail-page__map-wrapper">
                   <img 
@@ -307,7 +361,32 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
                   <strong className="td-headline-md td-detail-page__action-price-value">{won(purchase.perPersonPrice)}</strong>
                 </div>
                 
-                <button 
+                {purchase.viewer?.isHost && hostActions[purchase.status] && (
+                  <button
+                    className="td-detail-page__action-primary-btn"
+                    onClick={handleHostStatus}
+                    disabled={workflowState === 'loading'}
+                  >
+                    {workflowState === 'loading' ? '처리 중...' : hostActions[purchase.status].label}
+                  </button>
+                )}
+
+                {purchase.viewer?.application && purchase.status === 'WAITING_PICKUP' && !purchase.viewer.application.isReceived && (
+                  <button
+                    className="td-detail-page__action-primary-btn"
+                    onClick={handleReceipt}
+                    disabled={workflowState === 'loading'}
+                  >
+                    {workflowState === 'loading' ? '처리 중...' : '수령 완료'}
+                  </button>
+                )}
+
+                {purchase.viewer?.application?.isReceived && purchase.status === 'WAITING_PICKUP' && (
+                  <p className="td-detail-page__action-message td-body-md td-detail-page__action-message--success">수령 완료가 기록되었습니다.</p>
+                )}
+
+                <button
+                  style={{ display: purchase.status === 'RECRUITING' && !purchase.viewer?.isHost ? undefined : 'none' }}
                   className={`td-detail-page__action-primary-btn ${joinState === 'joined' ? 'td-detail-page__action-primary-btn--joined' : ''}`}
                   onClick={joinState === 'joined' ? handleCancelJoin : handleJoin}
                   disabled={joinState === 'loading' || joinState === 'cancelling' || (joinState !== 'joined' && purchase.currentParticipants >= purchase.targetParticipants)}
@@ -317,8 +396,8 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
                     : joinState === 'cancelling'
                       ? '참여 취소 중...'
                       : joinState === 'joined'
-                        ? '참여 취소하기'
-                        : '공구 참여하기'}
+                          ? '참여 중 · 취소하기'
+                          : '공동구매 참여하기'}
                 </button>
 
                 {message && (
