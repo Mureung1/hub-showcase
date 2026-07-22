@@ -25,7 +25,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- TypeScript Interfaces ---
 export interface DbPaper {
-  id: string;
   user_id: string | null;
   paper_id: string;
   title: string;
@@ -37,7 +36,7 @@ export interface DbPaper {
 }
 
 export interface PaperPayload {
-  id: string;
+  paperId: string;
   title: string;
   authors: string;
   channel: string;
@@ -47,7 +46,6 @@ export interface PaperPayload {
 }
 
 export interface LibraryItem {
-  id: string;
   userId: string;
   paperId: string;
   title: string;
@@ -65,7 +63,6 @@ export function mapToCamelCase(dbPaper: DbPaper | DbPaper[]): LibraryItem | Libr
   if (!dbPaper) return null;
   if (Array.isArray(dbPaper)) {
     return dbPaper.map(item => ({
-      id: item.id,
       userId: item.user_id || '',
       paperId: item.paper_id,
       title: item.title,
@@ -77,7 +74,6 @@ export function mapToCamelCase(dbPaper: DbPaper | DbPaper[]): LibraryItem | Libr
     }));
   }
   return {
-    id: dbPaper.id,
     userId: dbPaper.user_id || '',
     paperId: dbPaper.paper_id,
     title: dbPaper.title,
@@ -88,6 +84,27 @@ export function mapToCamelCase(dbPaper: DbPaper | DbPaper[]): LibraryItem | Libr
     createdAt: dbPaper.created_at
   };
 }
+
+import { z } from 'zod';
+
+// --- Zod Validation Schemas ---
+const curateSchema = z.object({
+  query: z.string()
+    .trim()
+    .min(2, { message: "연구 질문(Query)은 최소 2글자 이상 입력해야 합니다." })
+});
+
+const librarySchema = z.object({
+  paper: z.object({
+    paperId: z.string().trim().min(1, { message: "paperId는 필수값입니다." }),
+    title: z.string().trim().min(1, { message: "논문 제목은 필수값입니다." }),
+    authors: z.string().trim().min(1, { message: "저자 정보는 필수값입니다." }),
+    channel: z.string().trim().min(1, { message: "학술 채널은 필수값입니다." }),
+    year: z.number().int().min(1900).max(new Date().getFullYear() + 1, { message: "올바른 발행 연도가 아닙니다." }),
+    matchScore: z.number().int().min(0).max(100, { message: "매칭 스코어는 0에서 100 사이여야 합니다." }),
+    userId: z.string().trim().min(1, { message: "유효한 형식의 userId가 필요합니다." }) // 시니어 피드백: uuid() 제약 제거
+  })
+});
 
 // 서버 동작 확인용 기본 루트 엔드포인트
 app.get('/', (req: Request, res: Response) => {
@@ -100,6 +117,18 @@ app.get('/', (req: Request, res: Response) => {
 
 // POST /api/curate - 지능형 논문 큐레이션 및 에이전트 분석 수행 (Mock)
 app.post('/api/curate', (req: Request, res: Response) => {
+  const validationResult = curateSchema.safeParse(req.body);
+  if (!validationResult.success) {
+    return res.status(400).json({
+      status: 'error',
+      message: '요청 데이터의 유효성 검증에 실패했습니다.',
+      errors: validationResult.error.issues.map(issue => ({
+        field: issue.path.join('.'),
+        message: issue.message
+      }))
+    });
+  }
+
   console.log("📥 수신된 쿼리:", req.body.query);
   
   setTimeout(() => {
@@ -110,10 +139,19 @@ app.post('/api/curate', (req: Request, res: Response) => {
 // POST /api/library - 연구 논문 서재 보관 처리
 app.post('/api/library', async (req: Request, res: Response) => {
   try {
-    const { paper } = req.body as { paper: PaperPayload };
-    if (!paper) {
-      return res.status(400).json({ status: 'error', message: 'Paper data is required.' });
+    const validationResult = librarySchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({
+        status: 'error',
+        message: '요청 데이터의 유효성 검증에 실패했습니다.',
+        errors: validationResult.error.issues.map(issue => ({
+          field: issue.path.join('.'),
+          message: issue.message
+        }))
+      });
     }
+
+    const { paper } = validationResult.data;
 
     if (!supabase) {
       throw new Error('Supabase client is not initialized. Please configure env variables.');
@@ -123,7 +161,7 @@ app.post('/api/library', async (req: Request, res: Response) => {
       .from('saved_papers')
       .insert([
         {
-          paper_id: paper.id,
+          paper_id: paper.paperId,
           title: paper.title,
           authors: paper.authors,
           channel: paper.channel,

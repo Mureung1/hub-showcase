@@ -1,6 +1,5 @@
 export interface Paper {
-  id: string;
-  paperId?: string;
+  paperId: string;
   title: string;
   authors: string;
   channel: string;
@@ -31,7 +30,6 @@ export interface CurationResponse {
 }
 
 export interface LibraryItem {
-  id: string;
   userId: string;
   paperId: string;
   title: string;

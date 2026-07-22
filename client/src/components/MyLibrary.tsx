@@ -26,7 +26,7 @@ function MyLibrary({ savedPapers, handleRemovePaper }: MyLibraryProps) {
       ) : (
         <div className="library-grid">
           {savedPapers.map((item) => (
-            <div key={item.id} className="paper-card library-card-content">
+            <div key={item.paperId} className="paper-card library-card-content">
               <div className="library-card-top">
                 <div className="ribbon-badge">
                   {item.matchScore}% Match
