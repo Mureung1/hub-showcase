@@ -12,6 +12,8 @@ import json
 import os
 import pathlib
 from typing import Optional, TypedDict
+from scout import fetch_list, fetch_body
+from sources import SOURCES
 
 from dotenv import load_dotenv
 from google import genai
@@ -33,6 +35,15 @@ class State(TypedDict):
     raw_text: str                 # 입력: 공지 원문
     extraction: Optional[dict]    # 출력: 추출된 구조화 정보
     error: Optional[str]          # 실패 시 메시지
+    
+    
+def scout_node(state: State) -> dict:
+    # 첫 번째 active 소스에서 최신 공지 1건의 본문을 가져온다. (지금은 1건만)
+    source = next(s for s in SOURCES if s["active"])   # active인 첫 소스
+    items = fetch_list(source)                          # [(글번호, 제목), ...]
+    first_seq = items[0][0]                             # 최신 글번호
+    body = fetch_body(source, first_seq)                      # ① 그 글의 본문
+    return {"raw_text": body}
 
 
 # ── 노드: 그냥 파이썬 함수. State 읽고 -> State 업데이트(부분 dict) 반환 ──
@@ -60,7 +71,9 @@ def extract_node(state: State) -> dict:
 # ── 그래프 조립: 노드 1개, 시작 -> extract -> 끝 ───────────────────────
 builder = StateGraph(State)
 builder.add_node("extract", extract_node)
-builder.set_entry_point("extract")
+builder.add_node("scout", scout_node)  # MIRI-13: 보초 세우기 노드 추가)
+builder.add_edge("scout", "extract")  
+builder.set_entry_point("scout")
 builder.add_edge("extract", END)
 app = builder.compile()
 
@@ -71,13 +84,11 @@ def run(raw_text: str) -> dict:
 
 
 if __name__ == "__main__":
-    example_path = ROOT / "docs" / "eval-dataset" / "wonchon-0330.example.json"
-    example = json.loads(example_path.read_text(encoding="utf-8"))
+    # scout 노드가 raw_text를 채우므로, 시작할 때는 빈 값으로 넣는다.
+    result = app.invoke({"raw_text": "", "extraction": None, "error": None})
 
-    print("=== 입력: 공지 원문 ===")
-    print(example["raw_text"])
-
-    result = run(example["raw_text"])
+    print("=== scout가 가져온 공지 ===")
+    print(result["raw_text"])
 
     print("\n=== 그래프 출력: 추출 결과 ===")
     if result.get("error"):
@@ -85,5 +96,3 @@ if __name__ == "__main__":
     else:
         print(json.dumps(result["extraction"], ensure_ascii=False, indent=2))
 
-    print("\n=== 정답(ground_truth) — 대조용 ===")
-    print(json.dumps(example["ground_truth"], ensure_ascii=False, indent=2))

@@ -2,3 +2,5 @@ langgraph
 google-genai
 pydantic
 python-dotenv
+beautifulsoup4
+supabase
