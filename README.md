@@ -2,15 +2,16 @@
 
 대학생의 전공·경험 기반 공고 추천 + 자소서 초안 생성 Agent. 기획은 [docs/plan.md](docs/plan.md), 4주 개발 Task는 [docs/checklist.md](docs/checklist.md) 참고.
 
-이번 주 작업 현황은 [GitHub Issues](https://github.com/dohyeon-k/hub/issues)에서 확인할 수 있다(우선순위는 `P0`/`P1`/`P2` 라벨로 표시). 진행 상황은 [GitHub Project 보드](https://github.com/users/dohyeon-k/projects/1)에서 칸반 형태로도 볼 수 있다.
+이번 주 작업 현황은 [GitHub Issues](https://github.com/dohyeon-k/hub/issues)에서 확인할 수 있다(우선순위는 `P0`/`P1`/`P2` 라벨로 표시). 진행 상황은 Project 보드에서도 칸반 형태로 볼 수 있다: [2주차 - 공고 추천 슬라이스](https://github.com/users/dohyeon-k/projects/1), [3주차 - 자소서 초안 생성 슬라이스](https://github.com/users/dohyeon-k/projects/2).
 
 ## 아키텍처
 
-화면(4개) → Express 라우트 → 서비스 로직 → 데이터(Supabase/목업 JSON)로 이어지는 전체 구조. 추천 흐름(정보입력→추천)과 자소서 흐름(공고상세→초안) 두 개의 수직 슬라이스가 있다. 이 4개 화면 앞에는 로그인 게이트(`LoginScreen.jsx`)가 있고, 아래 다이어그램에 나오는 `/api/profiles`·`/api/postings` 라우트는 전부 `requireAuth` 미들웨어(HTTP Basic Auth)를 거친다 — 다이어그램 단순화를 위해 인증 화살표는 생략했다:
+화면(로그인+4개) → Express 라우트 → 서비스 로직 → 데이터(Supabase/목업 JSON)로 이어지는 전체 구조. 로그인 흐름, 추천 흐름(정보입력→추천), 자소서 흐름(공고상세→초안) 세 개의 수직 슬라이스가 있다:
 
 ```mermaid
 flowchart LR
     subgraph Frontend["React (src/)"]
+        LoginScreen["로그인\nLoginScreen.jsx"]
         InfoInput["정보입력\nInfoInput.jsx"]
         RecommendList["추천목록\nRecommendList.jsx"]
         JobDetail["공고상세\nJobDetail.jsx"]
@@ -19,6 +20,8 @@ flowchart LR
     end
 
     subgraph Backend["Express (backend/src/)"]
+        RequireAuth{{"requireAuth 미들웨어\nHTTP Basic Auth"}}
+        AuthRoute["routes/auth.js\nGET /api/auth/check"]
         ProfilesRoute["routes/profiles.js\nPOST /api/profiles"]
         DraftsRoute["routes/drafts.js\nPOST /api/postings/:id/draft"]
         Matching["services/matching.js\nscoreAndRank"]
@@ -33,7 +36,10 @@ flowchart LR
         Postings[["postings.json\n(목업 공고 10건)"]]
     end
 
-    InfoInput -->|"제출"| Api --> ProfilesRoute
+    LoginScreen -->|"아이디/비밀번호"| Api --> RequireAuth --> AuthRoute
+    AuthRoute -->|"200이면 인증 헤더를\n이후 모든 요청에 첨부"| Api --> InfoInput
+
+    InfoInput -->|"제출"| Api --> RequireAuth --> ProfilesRoute
     ProfilesRoute -->|"프로필 저장"| Profiles
     ProfilesRoute -->|"공고 조회"| Postings
     ProfilesRoute --> Matching
@@ -42,18 +48,39 @@ flowchart LR
     ProfilesRoute -->|"201 profileId + recommendations"| Api
     Api --> RecommendList --> JobDetail
 
-    JobDetail -->|"자소서 초안 생성 클릭\n(profileId+profile을 body로 재전송)"| Api --> DraftsRoute
+    JobDetail -->|"자소서 초안 생성 클릭\n(profileId+profile을 body로 재전송)"| Api --> RequireAuth --> DraftsRoute
     DraftsRoute -->|"공고 조회"| Postings
     DraftsRoute -->|"저장된 초안 있는지 조회"| Drafts
     DraftsRoute --> EssayAnalysis
     EssayAnalysis -->|"문항별 분석"| DraftGen
     DraftGen -->|"저장된 게 없을 때만: 문항별 초안 생성\n(LLM 또는 템플릿 폴백)"| DraftsRoute
     DraftsRoute -->|"200 essayQuestions + isSaved"| Api --> DraftEditor
-    DraftEditor -->|"저장 클릭"| Api -->|"POST .../draft/save"| DraftsRoute
+    DraftEditor -->|"저장 클릭"| Api --> RequireAuth --> DraftsRoute
     DraftsRoute -->|"upsert(profile_id, posting_id)"| Drafts
 ```
 
-요청 하나가 실제로 어떻게 도는지(수직 슬라이스)는 시퀀스로 보면 더 명확하다. 먼저 추천 흐름:
+로그인 성공 여부와 이후 모든 화면/데이터 상태(`step`/`profile`/`profileId`/`jobs`/`selectedJob`/`isDraftSaved`/`authHeader`)는 `sessionStorage`에 저장돼, 새로고침해도 로그인부터 다시 할 필요가 없다.
+
+요청 하나가 실제로 어떻게 도는지(수직 슬라이스)는 시퀀스로 보면 더 명확하다. 가장 먼저 로그인:
+
+```mermaid
+sequenceDiagram
+    participant U as 사용자
+    participant F as React (LoginScreen → App.jsx)
+    participant E as Express (requireAuth)
+
+    U->>F: 아이디/비밀번호 입력 후 로그인
+    F->>E: GET /api/auth/check (Authorization: Basic ...)
+    alt 아이디/비밀번호 일치
+        E-->>F: 200 { ok: true }
+        F-->>U: authHeader를 sessionStorage에 저장, 정보입력 화면으로 이동
+    else 불일치
+        E-->>F: 401
+        F-->>U: 에러 문구 표시, 로그인 화면 유지
+    end
+```
+
+그 다음 추천 흐름:
 
 ```mermaid
 sequenceDiagram
