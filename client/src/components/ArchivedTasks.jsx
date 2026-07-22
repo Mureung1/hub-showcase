@@ -2,6 +2,7 @@ import { useState } from 'react';
 import './ArchivedTasks.css';
 import ArchivedTaskItem from './ArchivedTaskItem';
 import { memberName } from '../utils/members';
+import { canMemberChange } from '../utils/permission';
 
 function ArchivedTasks({
   archivedTasks,
@@ -29,7 +30,7 @@ function ArchivedTasks({
             <div className="archived-empty">삭제된 항목이 없어요.</div>
           ) : (
             archivedTasks.map((task) => {
-              const canChange = task.assignee_id === null || task.assignee_id === currentMemberId;
+              const canChange = canMemberChange(task, currentMemberId);
 
               return (
                 <ArchivedTaskItem

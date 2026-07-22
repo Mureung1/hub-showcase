@@ -1,6 +1,7 @@
 import './TaskList.css';
 import TaskItem from './TaskItem';
 import { memberName } from '../utils/members';
+import { canMemberChange } from '../utils/permission';
 
 function TaskList({
   tasks,
@@ -22,7 +23,7 @@ function TaskList({
   return (
     <div className="task-list">
       {tasks.map((task) => {
-        const canChange = task.assignee_id === null || task.assignee_id === currentMemberId;
+        const canChange = canMemberChange(task, currentMemberId);
 
         return (
           <TaskItem

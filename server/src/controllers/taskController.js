@@ -1,12 +1,9 @@
 const taskModel = require('../models/taskModel');
 const activityLogModel = require('../models/activityLogModel');
 const CURRENT_TEAM_ID = require('../currentTeamId');
+const { canMemberChange } = require('../utils/permission');
 
 const VALID_STATUSES = ['pending', 'in_progress', 'done'];
-
-function canMemberChange(task, memberId) {
-  return task.assignee_id === null || memberId === task.assignee_id;
-}
 
 function getTodayDateString() {
   const now = new Date();
