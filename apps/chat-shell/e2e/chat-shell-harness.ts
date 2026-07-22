@@ -93,6 +93,7 @@ export type ChatShellHarness = {
   releaseInterruptResponse(): void
   releaseInterruptSettlement(): void
   releaseLateInteraction(): void
+  restartServer(): Promise<void>
   close(): Promise<void>
 }
 
@@ -185,9 +186,11 @@ export async function startChatShellHarness(
   let selectedWorkspaceRoot: string | undefined
   const requests: string[] = []
   const assignmentStreams = new Set<ServerResponse>()
+  const runtimeGenerations: ProductE2eRuntime[] = []
 
   try {
     semesterWorkspace = await materializeE2eSemesterWorkspace()
+    const activeSemesterWorkspace = semesterWorkspace
     selectedWorkspaceRoot = semesterWorkspace.workspaceRoot
     process.stdout.write(
       `E2E SemesterWorkspace: ${semesterWorkspace.workspaceRoot}\n`,
@@ -211,40 +214,50 @@ export async function startChatShellHarness(
     await once(frontendServer, 'listening')
     const frontendUrl = serverUrl(frontendServer)
 
-    if (scenario === 'unavailable') {
-      application = await createServerApplication({
-        codexChatEnvironment: {},
-        semesterWorkspace: semesterWorkspaceBootstrap,
-      })
-    } else {
-      runtime = new ProductE2eRuntime(
-        scenario === 'not-ready'
-          ? { state: 'not_ready', reason: 'authentication_required' }
-          : { state: 'ready' },
-        scenario,
-        semesterWorkspace.workspaceRoot,
-        semesterWorkspace.runId,
-      )
-      application = await createServerApplication({
-        codexChat: {
-          ...codexChatIdentity,
-          origin: frontendUrl,
-          createRuntime: async () => runtime!,
-        },
-        semesterWorkspace: semesterWorkspaceBootstrap,
-      })
+    const createAndActivateApplication = async (): Promise<ServerApplication> => {
+      let nextRuntime: ProductE2eRuntime | undefined
+      let nextApplication: ServerApplication
+      if (scenario === 'unavailable') {
+        nextApplication = await createServerApplication({
+          semesterWorkspace: semesterWorkspaceBootstrap,
+        })
+      } else {
+        nextRuntime = new ProductE2eRuntime(
+          scenario === 'not-ready'
+            ? { state: 'not_ready', reason: 'authentication_required' }
+            : { state: 'ready' },
+          scenario,
+          activeSemesterWorkspace.workspaceRoot,
+          activeSemesterWorkspace.runId,
+        )
+        runtimeGenerations.push(nextRuntime)
+        nextApplication = await createServerApplication({
+          codexChat: {
+            ...codexChatIdentity,
+            origin: frontendUrl,
+            createRuntime: async () => nextRuntime!,
+          },
+          semesterWorkspace: semesterWorkspaceBootstrap,
+        })
+      }
+
+      const activation = await nextApplication.semesterWorkspace?.activate()
+      if (
+        activation?.status === 'activated' &&
+        activation.workspace.state === 'ready' &&
+        activation.workspace.course === null
+      ) {
+        await nextApplication.semesterWorkspace?.createCourse('문제해결글쓰기')
+      }
+      runtime = nextRuntime
+      application = nextApplication
+      return nextApplication
     }
 
-    const activation = await application.semesterWorkspace?.activate()
-    if (
-      activation?.status === 'activated' &&
-      activation.workspace.state === 'ready' &&
-      activation.workspace.course === null
-    ) {
-      await application.semesterWorkspace?.createCourse('문제해결글쓰기')
-    }
+    application = await createAndActivateApplication()
 
     const apiAddress = await application.listen(0, '127.0.0.1')
+    const apiPort = apiAddress.port
     const apiUrl = `http://127.0.0.1:${apiAddress.port}`
     viteServer = await createViteServer({
       appType: 'spa',
@@ -299,7 +312,7 @@ export async function startChatShellHarness(
         seedDigest: semesterWorkspace.seedDigest,
         workspaceRoot: semesterWorkspace.workspaceRoot,
       },
-      calls: () => runtime?.calls ?? [],
+      calls: () => runtimeGenerations.flatMap((generation) => generation.calls),
       requests: () => [...requests],
       async readWorkspaceBytes(relativePath) {
         const candidate = path.resolve(
@@ -357,6 +370,15 @@ export async function startChatShellHarness(
       releaseInterruptSettlement() {
         if (!runtime) throw new Error('E2E product runtime is unavailable')
         runtime.releaseInterruptSettlement()
+      },
+      async restartServer() {
+        const previousApplication = application
+        if (!previousApplication) {
+          throw new Error('E2E Server application is unavailable')
+        }
+        await previousApplication.close()
+        application = await createAndActivateApplication()
+        await application.listen(apiPort, '127.0.0.1')
       },
       async close() {
         if (closed) return

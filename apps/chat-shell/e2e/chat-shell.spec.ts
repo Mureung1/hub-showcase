@@ -198,6 +198,81 @@ test('runs the two-TXT Assignment through product Review, Accept, authoritative 
   await expect(reloadedChat.getByText('자료와 함께 시작해 보세요')).toBeVisible()
 })
 
+test('reopens confirmed Assignment history after a same-root Server restart without restoring an unanswered Review', async ({
+  chatHarness,
+  chatPage: page,
+}) => {
+  await selectCanonicalMaterials(page)
+  const action = page.getByRole('button', {
+    name: /선택한 자료 정리하기/u,
+  })
+
+  await action.click()
+  await page
+    .getByRole('region', { name: '검토 대기' })
+    .getByRole('button', { name: '수락' })
+    .click()
+  await expect(operationPhase(page)).toHaveAttribute(
+    'data-product-operation-phase',
+    'completed',
+  )
+
+  const confirmed = await readProductBootstrap(page)
+  expect(confirmed.workspace?.state).toBe('ready')
+  if (confirmed.workspace?.state !== 'ready') {
+    throw new Error('Expected the confirmed workspace to remain ready.')
+  }
+  expect(confirmed.workspace.confirmedRevision).toBe(1)
+  expect(confirmed.history.assignments).toHaveLength(1)
+  expect(confirmed.history.statePatches).toEqual([
+    expect.objectContaining({ status: 'applied' }),
+  ])
+  expect(confirmed.history.userConfirmations).toEqual([
+    expect.objectContaining({ decision: 'accepted', outcome: 'applied' }),
+  ])
+  expect(confirmed.history.modelingRuns).toEqual([
+    expect.objectContaining({ status: 'completed' }),
+  ])
+
+  await expect(action).toBeEnabled()
+  await action.click()
+  await expect(page.getByRole('region', { name: '검토 대기' })).toBeVisible()
+  await expect(operationPhase(page)).toHaveAttribute(
+    'data-product-operation-phase',
+    'awaiting-review',
+  )
+
+  await chatHarness.restartServer()
+  await page.reload()
+
+  const reopened = await readProductBootstrap(page)
+  expect(reopened.operationStatus).toBe('idle')
+  expect(reopened.workspace?.state).toBe('ready')
+  if (reopened.workspace?.state !== 'ready') {
+    throw new Error('Expected the restarted workspace to remain ready.')
+  }
+  expect(reopened.workspace.confirmedRevision).toBe(1)
+  expect(reopened.workspace.course).toEqual(confirmed.workspace.course)
+  expect(reopened.history.assignments).toEqual(confirmed.history.assignments)
+  expect(reopened.history.userConfirmations).toEqual(
+    confirmed.history.userConfirmations,
+  )
+  expect(reopened.history.statePatches).toEqual(
+    expect.arrayContaining([...confirmed.history.statePatches]),
+  )
+  expect(reopened.history.modelingRuns).toEqual(
+    expect.arrayContaining([...confirmed.history.modelingRuns]),
+  )
+
+  const chat = page.getByRole('complementary', { name: 'AY Chat' })
+  await expect(chat.getByRole('region', { name: '반영된 과제' })).toContainText(
+    '개요 작성하기',
+  )
+  await expect(chat.getByRole('region', { name: '검토 대기' })).toHaveCount(0)
+  await expect(chat.getByText('AY 작업을 완료했습니다.')).toHaveCount(0)
+  await expect(chat.getByText('자료와 함께 시작해 보세요')).toBeVisible()
+})
+
 test('revises the pending proposal in the same Turn and accepts its replacement', async ({
   chatHarness,
   chatPage: page,
