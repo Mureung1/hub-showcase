@@ -55,7 +55,7 @@ function RoutineToday() {
     <div className="flex min-h-screen bg-bg text-text">
       <Sidebar weekProgress={data.weekProgress} routine={data.routine} />
       <main className="max-w-[1080px] flex-1 p-8">
-        <WeekStrip days={data.days} />
+        <WeekStrip days={data.days} today={data.dayOfWeek} />
         <div className="mt-6">
           {data.targetArea === null ? (
             <p className="text-text-secondary">오늘은 휴식일입니다.</p>
