@@ -1,13 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import DocumentCard from '../components/DocumentCard.jsx'
-import {
-  loadDrafts,
-  deleteDraft,
-  loadPublished,
-  loadMyDrafts,
-  loadMyPublished,
-} from '../lib/storage.js'
+import { deleteDraft, loadMyDrafts, loadMyPublished } from '../lib/storage.js'
+import { getLocalDocs, forgetLocalDoc } from '../lib/localDocs.js'
 import { useAuth } from '../lib/AuthContext.jsx'
 import './pages.css'
 
@@ -15,33 +10,89 @@ function MyPage() {
   const auth = useAuth()
   const [drafts, setDrafts] = useState([])
   const [published, setPublished] = useState([])
+  const [loadError, setLoadError] = useState(null)
+  // 비회원이 이 브라우저에서 쓴 글(계정이 없어 서버로는 찾을 수 없다)
+  const [localDocs, setLocalDocs] = useState([])
+  // 닉네임 — 설정하지 않으면 작성자명이 이메일 앞부분으로 공개된다
+  const [nickname, setNickname] = useState('')
+  const [nicknameSaved, setNicknameSaved] = useState(false)
 
-  // 로그인 상태면 내 문서만, 인증 미설정(프로토타입)이면 기존처럼 전체.
-  const useMine = auth.isAuthEnabled && auth.isLoggedIn
-  const fetchDrafts = useMine ? loadMyDrafts : loadDrafts
-  const fetchPublished = useMine ? loadMyPublished : loadPublished
+  useEffect(() => {
+    setLocalDocs(getLocalDocs())
+  }, [])
 
   useEffect(() => {
     if (auth.loading) return
-    // 인증이 켜져 있는데 로그아웃 상태면 목록을 부르지 않는다(로그인 안내만 노출).
-    if (auth.isAuthEnabled && !auth.isLoggedIn) {
+    if (!auth.isLoggedIn) {
       setDrafts([])
       setPublished([])
       return
     }
-    Promise.all([fetchDrafts(), fetchPublished()])
+    Promise.all([loadMyDrafts(), loadMyPublished()])
       .then(([d, p]) => {
         setDrafts(d)
         setPublished(p)
+        setLoadError(null)
       })
+      .catch((err) => setLoadError(err.message ?? '문서를 불러오지 못했어요.'))
+    auth
+      .getProfile()
+      .then((p) => setNickname(p.nickname ?? ''))
       .catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.loading, auth.isLoggedIn])
 
   async function handleDelete(id) {
     await deleteDraft(id)
-    setDrafts(await fetchDrafts())
+    setDrafts(await loadMyDrafts())
   }
+
+  async function saveNickname(e) {
+    e.preventDefault()
+    setNicknameSaved(false)
+    try {
+      await auth.updateProfile({ nickname: nickname.trim() })
+      setNicknameSaved(true)
+    } catch (err) {
+      setLoadError(err.message ?? '닉네임을 저장하지 못했어요.')
+    }
+  }
+
+  // 이 브라우저에서 쓴 글 목록 — 비회원의 유일한 회수 수단이라 로그인 여부와 무관하게 보여준다.
+  const localDocsSection = localDocs.length > 0 && (
+    <div className="rs-panel rs-home-section">
+      <h2>이 브라우저에서 쓴 글 ({localDocs.length})</h2>
+      <p className="rs-empty">
+        비회원으로 작성한 글이에요. 수정하려면 작성할 때 정한 비밀번호가 필요해요.
+      </p>
+      {localDocs.map((d) => (
+        <div key={d.id} className="rs-draft-row">
+          <div>
+            <p className="rs-draft-title">{d.title}</p>
+            <p className="rs-draft-meta">
+              {d.status === 'published' ? '발행함' : '초안'} · 마지막 기록{' '}
+              {d.updatedAt?.slice(0, 10)}
+            </p>
+          </div>
+          <div className="rs-draft-actions">
+            <Link to={`/archive/${d.id}`} className="rs-btn rs-btn-primary">
+              열기
+            </Link>
+            <button
+              type="button"
+              className="rs-btn"
+              onClick={() => {
+                forgetLocalDoc(d.id)
+                setLocalDocs(getLocalDocs())
+              }}
+            >
+              목록에서 지우기
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
 
   if (auth.isAuthEnabled && !auth.loading && !auth.isLoggedIn) {
     return (
@@ -52,10 +103,18 @@ function MyPage() {
         </header>
         <div className="rs-panel rs-home-section">
           <p className="rs-empty">
-            <Link to="/login">로그인</Link> 또는 <Link to="/signup">회원가입</Link> 후 이용해
-            주세요.
+            {/* 로그인 후 다시 이 페이지로 돌아오도록 from 을 넘긴다 */}
+            <Link to="/login" state={{ from: '/me' }}>
+              로그인
+            </Link>{' '}
+            또는{' '}
+            <Link to="/signup" state={{ from: '/me' }}>
+              회원가입
+            </Link>{' '}
+            후 이용해 주세요.
           </p>
         </div>
+        {localDocsSection}
       </section>
     )
   }
@@ -68,6 +127,33 @@ function MyPage() {
         <h1>마이페이지</h1>
         <p>내 초안과 발행한 문서를 관리합니다.</p>
       </header>
+
+      {loadError && <p className="rs-editor-error">{loadError}</p>}
+
+      {auth.isLoggedIn && (
+        <div className="rs-panel rs-home-section">
+          <h2>닉네임</h2>
+          <p className="rs-empty">
+            문서와 코멘트에 표시되는 이름이에요. 설정하지 않으면 이메일 앞부분이 공개돼요.
+          </p>
+          <form className="rs-nickname-form" onSubmit={saveNickname}>
+            <input
+              className="rs-pw-input"
+              value={nickname}
+              onChange={(e) => {
+                setNickname(e.target.value)
+                setNicknameSaved(false)
+              }}
+              placeholder="예: 기획하는 곰"
+              aria-label="닉네임"
+            />
+            <button type="submit" className="rs-btn rs-btn-primary">
+              저장
+            </button>
+          </form>
+          {nicknameSaved && <p className="rs-editor-saved">저장했어요.</p>}
+        </div>
+      )}
 
       <div className="rs-panel rs-home-section">
         <h2>내 초안 ({drafts.length})</h2>
@@ -116,6 +202,8 @@ function MyPage() {
           </div>
         )}
       </div>
+
+      {localDocsSection}
     </section>
   )
 }
