@@ -25,6 +25,8 @@ export interface HealthProfile {
   pregnant: boolean;
   heartCondition: boolean;
   anxiety: boolean;
+  /** 경구피임약 복용 여부. 여성 선택일 때만 보낸다(반감기 2배 보정에 쓰임) */
+  oralContraceptive?: boolean;
 }
 
 /** 서버로 보내는 요청 바디 전체 */
