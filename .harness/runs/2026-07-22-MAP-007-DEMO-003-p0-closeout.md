@@ -26,6 +26,7 @@ web production build: passed
 Task Packet check: 71 packets passed
 Docs index check: passed
 git diff --check: passed
+full harness: passed (web 32 files / 98 tests, API 119 tests)
 ```
 
 ## Browser Verification
@@ -40,7 +41,7 @@ git diff --check: passed
 - `https://localtwin-product.vercel.app/`: HTTP 200
 - `https://localtwin-api.onrender.com/ready`: `{"status":"ready"}`
 - 첫 `/ready` 요청은 Render Free idle wake-up으로 34초 이상 대기 후 timeout 되었고, 바로 다음 요청은 ready를 반환했다.
-- 이 실제 관찰을 `docs/operations/public-demo-runbook.md`의 사전 wake-up·대기·retry 절차와 대조했다.
+- 이 실제 관찰을 `docs/development/environment.md`의 사전 wake-up·대기·retry 절차와 대조했다.
 
 ## Remaining Manual Follow-up
 

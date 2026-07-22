@@ -10,10 +10,7 @@ import {
   type MapBounds,
 } from "./supportedRegions";
 
-export function useMapViewport(
-  initialCenter: [number, number],
-  preventOverlayCollisions = true,
-) {
+export function useMapViewport(initialCenter: [number, number], preventOverlayCollisions = true) {
   const [mapMode, setMapMode] = useState<MapMode>("localtwin");
   const [prefabMode, setPrefabMode] = useState(true);
   const [storefront3dUnavailable, setStorefront3dUnavailable] = useState(false);

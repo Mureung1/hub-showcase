@@ -23,7 +23,12 @@ const SelectedStorefrontLayer = lazy(() =>
 );
 
 function readMapBounds(map: {
-  getBounds: () => { getWest: () => number; getSouth: () => number; getEast: () => number; getNorth: () => number };
+  getBounds: () => {
+    getWest: () => number;
+    getSouth: () => number;
+    getEast: () => number;
+    getNorth: () => number;
+  };
 }): MapBounds {
   const bounds = map.getBounds();
   return {
