@@ -71,6 +71,12 @@ export const NAVIGATION: NavDept[] = [
             iconKey: 'generalChem',
           },
           {
+            id: 'orbitals',
+            label: '오비탈 모양과 결합',
+            to: '/chemistry/orbitals',
+            iconKey: 'generalChem',
+          },
+          {
             id: 'lewis-structure',
             label: '루이스 구조 그리기',
             to: '/chemistry/lewis-structure',
@@ -116,6 +122,12 @@ export const NAVIGATION: NavDept[] = [
             id: 'crystal-field',
             label: '결정장 이론',
             to: '/chemistry/inorganic/crystal-field',
+            iconKey: 'inorganicChem',
+          },
+          {
+            id: 'isomerism',
+            label: 'cis/trans·킬레이트',
+            to: '/chemistry/inorganic/isomerism',
             iconKey: 'inorganicChem',
           },
         ],

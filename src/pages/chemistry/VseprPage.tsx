@@ -1,21 +1,18 @@
 import { useEffect, useState } from 'react'
 import { VSEPR_MOLECULES, type VseprMolecule } from '../../features/chemistry/data/vseprMolecules'
 import { fetchSdf3d, nameToSmiles, smilesToCid } from '../../features/chemistry/lib/pubchem'
-import Structure2DViewer from '../../features/chemistry/components/Structure2DViewer'
+import VseprDiagram from '../../features/chemistry/components/VseprDiagram'
 import Structure3DViewer from '../../features/chemistry/components/Structure3DViewer'
 import Panel from '../../components/Panel'
 import ChapterAssistant from '../../components/ChapterAssistant'
 
 export default function VseprPage() {
   const [activeMolecule, setActiveMolecule] = useState<VseprMolecule>(VSEPR_MOLECULES[0])
-  const [smiles, setSmiles] = useState<string | null>(null)
   const [sdf, setSdf] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
     setError(null)
 
     async function load() {
@@ -23,18 +20,15 @@ export default function VseprPage() {
       if (!resolvedSmiles) {
         if (!cancelled) {
           setError('PubChem에서 분자를 찾을 수 없습니다.')
-          setLoading(false)
         }
         return
       }
       if (cancelled) return
-      setSmiles(resolvedSmiles)
 
       const cid = await smilesToCid(resolvedSmiles)
       const sdf3d = cid ? await fetchSdf3d(cid) : null
       if (!cancelled) {
         setSdf(sdf3d)
-        setLoading(false)
       }
     }
 
@@ -75,17 +69,18 @@ export default function VseprPage() {
         <ChapterAssistant
           context={`${activeMolecule.label} (${activeMolecule.formula}): 결합쌍 ${activeMolecule.bondingPairs}개, 비공유쌍 ${activeMolecule.lonePairs}개, ${activeMolecule.geometry}, 결합각 ${activeMolecule.approxBondAngle}`}
         />
-        <Panel title="2D 구조식">
-          {smiles ? (
-            <Structure2DViewer smiles={smiles} />
-          ) : (
-            <p className="p-4 text-sm text-zinc-500">{loading ? '조회 중...' : '데이터 없음'}</p>
-          )}
+        <Panel title="전자쌍 배치 (VSEPR)">
+          <VseprDiagram spec={activeMolecule.diagram} />
         </Panel>
-        <Panel title="3D 구조">
+        <Panel title="3D 구조 (실제 좌표 확인용)">
           <Structure3DViewer sdf={sdf} />
         </Panel>
       </div>
+      <p className="mt-2 text-xs text-zinc-500">
+        결합각 라벨은 실제 3차원 각도이며, 위 2D 그림은 이를 평면에 도식적으로 표현한 것이라 그림에서
+        자로 잰 각도와는 다를 수 있습니다. 비공유쌍(청록색 구름)은 결합쌍보다 더 넓게 퍼져있어서 결합쌍을
+        더 세게 밀어냅니다.
+      </p>
 
       <div className="mt-6">
         <Panel title="설명">
