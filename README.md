@@ -48,3 +48,118 @@ ConGraduation은 복잡한 졸업요건을 가진 대학생이 자신의 졸업 
 # 📄 문서 모음
 - 📘 [프로젝트 기획서 (Wiki)](https://github.com/zlnzzaro/hub/wiki/AI-%EA%B8%B0%EB%B0%98-%EC%A1%B8%EC%97%85-%ED%94%8C%EB%9E%98%EB%84%88-%EA%B8%B0%ED%9A%8D%EC%84%9C)
 - 🎨 [Figma로 디자인한 기획서](https://www.figma.com/make/1NPfTNkS2et79zArWZtfEp/Modern-Presentation-Landing-Page?code-node-id=0-9&p=f&t=b8ilbpssH4uMvK8p-0&fullscreen=1)
+
+## 아키텍처
+
+client(React) / server(Express) / Supabase 사이의 전체 데이터 흐름이다. 점선 화살표(`-.->`)와 옅은 스타일로 표시된 노드는 **코드는 존재하지만 실제로는 연결되어 있지 않은 부분**이다.
+
+```mermaid
+flowchart TD
+    %% ================= CLIENT (React) =================
+    subgraph CLIENT["Client (React) — client/src"]
+        direction TB
+        AppJsx["App.jsx<br/>(gradInfo, progressSubmitted,<br/>selectedIds, basketCourses, activeTab)"]
+        Submitted["submitted<br/>(gradInfo에서 파생 — 별도 저장 없음, 매 렌더마다 계산)"]
+        NavBar["NavBar.jsx"]
+        MajorModal["MajorSelectModal.jsx"]
+        ReqModal["RequirementModal.jsx<br/>(이수학점 입력 모달)"]
+        Basket["CourseBasketSection.jsx"]
+        Dashboard["DashboardSection.jsx"]
+        Sim["SimulationPage.jsx<br/>(currentSemester, result,<br/>scenarios, activeIndex)"]
+        ScenarioCard["ScenarioCard.jsx"]
+        Placeholder["PlaceholderPage.jsx<br/>(홈 / 챗봇 탭)"]
+        RecordForm["RecordForm.jsx"]
+
+        MajorData["data/majorData.js<br/>(단과대/학부/전공/트랙 목데이터)"]
+        GradReqUtil["utils/gradRequirements.js<br/>evaluateTrackRequirements()"]
+        SemesterUtil["utils/semesterPlan.js<br/>calculateSemesterPlan()"]
+    end
+
+    %% ================= LOCAL STORAGE =================
+    subgraph LOCALSTORAGE["localStorage — 서버를 거치지 않는 저장"]
+        direction TB
+        LS_gradInfo[("gradInfo")]
+        LS_progress[("progressSubmitted")]
+        LS_scenarios[("scenarios")]
+        LS_activeIndex[("scenarioActiveIndex")]
+    end
+
+    %% ================= SERVER (Express) =================
+    subgraph SERVER["Server (Express) — server/src"]
+        direction TB
+        RootRoute["GET /"]
+        PostRecords["POST /api/records"]
+        GetRecords["GET /api/records/:userId"]
+        PostBasket["POST /api/basket"]
+        GetBasket["GET /api/basket"]
+        ServerGradReq["utils/gradRequirements.js<br/>evaluateTrackRequirements()<br/>(어떤 라우트/컨트롤러도 호출하지 않음,<br/>테스트에서만 사용됨)"]
+    end
+
+    %% ================= SUPABASE =================
+    subgraph SUPABASE["Supabase"]
+        direction TB
+        T_records[("user_records")]
+        T_basket[("basket_items")]
+    end
+
+    %% ---------- 실제 연결된 흐름 ----------
+    AppJsx --> Submitted
+    MajorModal --> MajorData
+    MajorModal -->|"onConfirm(info)"| AppJsx
+    AppJsx -->|"저장"| LS_gradInfo
+    LS_gradInfo -.->|"새로고침 시 초기값 복원"| AppJsx
+
+    AppJsx -->|"입력값 props"| ReqModal
+    ReqModal -->|"onSubmit"| AppJsx
+    AppJsx -->|"저장"| LS_progress
+    LS_progress -.->|"새로고침 시 초기값 복원"| AppJsx
+
+    AppJsx --> NavBar
+    NavBar -->|"activeTab 변경"| AppJsx
+    AppJsx --> Placeholder
+
+    AppJsx -->|"courses, selectedIds"| Basket
+    Basket -->|"onToggle(courseId)"| AppJsx
+    AppJsx -->|"toggleCourse(): fetch POST"| PostBasket
+    PostBasket --> T_basket
+
+    AppJsx -->|"completedCourses"| GradReqUtil
+    GradReqUtil --> MajorData
+    GradReqUtil -->|"requirementResults → badges"| AppJsx
+    AppJsx -->|"requirementRows, badges, gapList"| Dashboard
+
+    AppJsx -->|"combinedTotal/Major/General,<br/>goalTotal/Major/General,<br/>basketCourses"| Sim
+    Sim -->|"계산하기"| SemesterUtil
+    SemesterUtil -->|"perSemester.needed"| Sim
+    Sim -->|"과목 담기 모달 안에서 재사용"| Basket
+    Sim -->|"subtotal, needed"| ScenarioCard
+    Sim -->|"저장"| LS_scenarios
+    LS_scenarios -.->|"새로고침 시 초기값 복원"| Sim
+    Sim -->|"저장"| LS_activeIndex
+    LS_activeIndex -.->|"새로고침 시 초기값 복원"| Sim
+
+    %% ---------- 아직 연결 안 됨 / 죽은 코드 ----------
+    AppJsx -.->|"RecordForm은 App.jsx에서 렌더링되지 않음 (미사용 컴포넌트)"| RecordForm
+    RecordForm --> PostRecords
+    RecordForm --> GetRecords
+    PostRecords --> T_records
+    GetRecords --> T_records
+
+    AppJsx -.->|"구현되어 있지만 클라이언트가 호출하지 않음<br/>(담은 과목을 서버에서 다시 불러오는 흐름 없음)"| GetBasket
+    GetBasket --> T_basket
+
+    %% ---------- 스타일 ----------
+    classDef notConnected stroke-dasharray: 4 3,opacity:0.55;
+    class RecordForm,GetBasket,ServerGradReq,PostRecords,GetRecords,T_records notConnected;
+
+    classDef storage fill:#FFF7E6,stroke:#FF9800,color:#7A4A00;
+    class LS_gradInfo,LS_progress,LS_scenarios,LS_activeIndex,Submitted storage;
+
+    classDef db fill:#E8F3FF,stroke:#3182F6,color:#1B3A66;
+    class T_records,T_basket db;
+```
+
+**아직 실제로 연결되지 않은 부분 (옅게 표시된 노드 + 점선 화살표)**
+- `RecordForm.jsx` — `POST/GET /api/records`를 호출하는 코드는 완성돼 있지만, `App.jsx`가 이 컴포넌트를 import/렌더링하지 않아 화면에 노출되지 않는다. 따라서 `/api/records`와 `user_records` 테이블 전체가 지금 UI에서는 도달 불가능한 상태다.
+- `GET /api/basket` — 컨트롤러 구현은 있지만 클라이언트 어디서도 호출하지 않는다. `POST /api/basket`으로 담은 과목이 Supabase에는 저장되지만, 새로고침해도 다시 불러오지 않아 `selectedIds`는 매번 초기화된다.
+- `server/src/utils/gradRequirements.js` — `client/src/utils/gradRequirements.js`와 동일한 로직의 서버 사본이지만, 어떤 라우트/컨트롤러에서도 import되지 않는다(자체 Jest 테스트에서만 실행됨). 실제 요건 판정은 전부 클라이언트에서 `completedCourses`를 계산해 클라이언트 로직으로만 처리된다 — 서버 왕복이 없다.
