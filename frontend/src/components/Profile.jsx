@@ -3,12 +3,16 @@ import { DIFFICULTY_META, SKILL_LEVEL_LABELS } from '../utils/format.js'
 import { LANGUAGE_OPTIONS, TOPIC_OPTIONS, buildDefaultPreferences } from '../utils/preferences.js'
 
 // 3 · 분석 결과 + 조건 입력
-function Chip({ label, on }) {
-  return <span className={on ? 'chip chip-on' : 'chip'}>{label}</span>
+function Chip({ label, on, onClick }) {
+  return (
+    <button type="button" className={on ? 'chip chip-on' : 'chip'} onClick={onClick}>
+      {label}
+    </button>
+  )
 }
 
 function Profile() {
-  const { analysis } = useOutletContext()
+  const { analysis, preferences: savedPreferences, setPreferences } = useOutletContext()
 
   if (!analysis) {
     return <Navigate to="/input" replace />
@@ -18,9 +22,10 @@ function Profile() {
   const recentRepos = analysis.recentRepos ?? []
   const contributionHistory = analysis.contributionHistory ?? []
   const hasActivity = languages.length > 0
-  const preferences = buildDefaultPreferences(analysis)
+  const recommendedPreferences = buildDefaultPreferences(analysis)
+  const preferences = savedPreferences ?? recommendedPreferences
   const skillLabel = SKILL_LEVEL_LABELS[skillLevel]
-  const difficultyLabel = DIFFICULTY_META[preferences.difficulty].label
+  const difficultyLabel = DIFFICULTY_META[recommendedPreferences.difficulty].label
   const topLanguages = languages
     .slice(0, 2)
     .map((language) => language.name)
@@ -32,6 +37,29 @@ function Profile() {
     { k: '커밋 · PR', v: `${activitySummary.commits} · ${activitySummary.pullRequests}` },
     { k: '기여 레포', v: `${activitySummary.contributedRepos}개` },
   ]
+
+  function toggleLanguage(language) {
+    const isOn = preferences.languages.includes(language)
+    if (isOn && preferences.languages.length === 1) return
+    setPreferences({
+      ...preferences,
+      languages: isOn
+        ? preferences.languages.filter((l) => l !== language)
+        : [...preferences.languages, language],
+    })
+  }
+
+  function selectDifficulty(difficulty) {
+    setPreferences({ ...preferences, difficulty })
+  }
+
+  function toggleTopic(topic) {
+    const isOn = preferences.topics.includes(topic)
+    setPreferences({
+      ...preferences,
+      topics: isOn ? preferences.topics.filter((t) => t !== topic) : [...preferences.topics, topic],
+    })
+  }
 
   return (
     <div className="panel">
@@ -102,7 +130,12 @@ function Profile() {
       <label className="label">언어</label>
       <div className="chips">
         {LANGUAGE_OPTIONS.map((label) => (
-          <Chip key={label} label={label} on={preferences.languages.includes(label)} />
+          <Chip
+            key={label}
+            label={label}
+            on={preferences.languages.includes(label)}
+            onClick={() => toggleLanguage(label)}
+          />
         ))}
       </div>
 
@@ -114,7 +147,12 @@ function Profile() {
       </label>
       <div className="chips">
         {Object.entries(DIFFICULTY_META).map(([value, meta]) => (
-          <Chip key={value} label={meta.label} on={value === preferences.difficulty} />
+          <Chip
+            key={value}
+            label={meta.label}
+            on={value === preferences.difficulty}
+            onClick={() => selectDifficulty(value)}
+          />
         ))}
       </div>
 
@@ -127,6 +165,7 @@ function Profile() {
             key={topic.value}
             label={topic.label}
             on={preferences.topics.includes(topic.value)}
+            onClick={() => toggleTopic(topic.value)}
           />
         ))}
       </div>
