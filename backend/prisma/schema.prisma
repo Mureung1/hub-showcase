@@ -33,3 +33,32 @@ model DisposalRule {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
+
+// 행정안전부_생활쓰레기배출정보 조회서비스(household_waste_info/info)에서 시/도+구/군+동으로 매칭한 결과를 캐시.
+// 원본 API는 구/군당 여러 행(생활쓰레기/음식물쓰레기/재활용품/대형폐기물 카테고리별로 동 범위가 다를 수 있음)을
+// 반환하므로, 사용자가 동을 선택한 시점에 카테고리별로 매칭되는 행을 찾아 categories에 병합해 저장한다.
+model RegionRule {
+  id         String    @id @default(cuid())
+  ctpvNm     String // 시/도 (예: 대구광역시)
+  sggNm      String // 구/군 (예: 북구)
+  dongNm     String // 사용자가 선택한 동 (매칭 키, 예: 산격1동)
+  categories Json // { 생활쓰레기: {dow, method, beginTime, endTime}, 음식물쓰레기: {...}, 재활용품: {...}, 대형폐기물: {...} }
+  unclltDay  String? // 미수거일 (UNCLLT_DAY 원본 텍스트)
+  fetchedAt  DateTime  @default(now())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([ctpvNm, sggNm, dongNm])
+}
+
+// household_waste_info/info 데이터가 실제로 존재하는 (시/도, 구/군) 쌍의 전체 목록.
+// 커버리지가 시/도별로 매우 불균등함이 실측으로 확인됨(예: 부산 32건 vs 강원 2252건 전국 기준) — 특정
+// 구/군에 데이터가 없을 때 "같은 시/도 내 데이터가 있는 구/군" 목록을 즉시 보여주기 위해 한 번 전체 동기화해서 캐시.
+// scripts/syncRegionDistricts.ts로 동기화 (공공데이터 API에 매 요청마다 라이브로 조회하면 레이트리밋 위험).
+model RegionDistrict {
+  id     String @id @default(cuid())
+  ctpvNm String
+  sggNm  String
+
+  @@unique([ctpvNm, sggNm])
+}
