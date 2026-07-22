@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: research
-- State: open
+- State: resolved
 - Blocked by: [npx production composition을 고른다](006-npx-production-composition.md), [Runtime release delivery·integrity·versioning을 정한다](007-runtime-release-delivery-integrity.md), [Browser-launched Codex OAuth lifecycle을 설계한다](008-browser-oauth-lifecycle.md), [재개 가능한 setup과 workspace instruction/Skill bundle의 authority를 정한다](010-resumable-setup-authority.md)
 
 ## Question
@@ -12,4 +12,18 @@
 
 ## Answer
 
-아직 조사하지 않음.
+Primary-source 근거, current code audit, Interface 대안 비교와 전체 crash matrix는 [Bootstrap·setup durability와 recovery 최소 Interface 조사](../assets/bootstrap-setup-durability-recovery-research.md)에 기록했다.
+
+채택안은 `reconcile(command)`와 read-only `observe()`만 노출하는 deep `SetupJourney`다. Host-only `launch` reconciliation은 Ticket 006의 primary instance가 package·bundle preflight와 `RuntimeResolver` 성공, bare listener bind·exact Origin 확정과 product router delegate activation 뒤 한 번 시작하고, Browser는 exact-Origin `prepare | approve | recover`만 보낸다. Browser GET·poll과 tab reopen은 `observe()`만 사용해 automatic resume를 mutation 없는 read에 숨기지 않는다. Browser disconnect는 operation을 취소하지 않고 foreground host lifecycle signal만 safe checkpoint에서 cancellation authority를 가진다.
+
+Durable setup과 active registry는 owner-only `appDataRoot/setup/v1/state.json`의 strict single envelope `empty | pending | active_ready`로 함께 소유한다. 승인 전에는 `setup/` absence를 logical `empty`로만 읽고 durable byte를 만들지 않으며, 최초 approve가 complete `pending/approved` store tree를 atomic publish한다. 그 뒤 existing store의 missing state를 pristine으로 추측하지 않는다. 별도 pending file과 active pointer file을 두지 않아 Ready commit이 `pending → active_ready` 한 번의 atomic replace로 끝난다. State Adapter는 same-filesystem staging 또는 same-directory exclusive temp, `0600`, no-follow, canonical full write, file sync, Ticket 006 app-writer exclusivity 아래 observed prior-byte 비교, atomic rename, parent directory sync와 strict readback을 숨긴다. 이는 supported macOS의 process crash·signal·`SIGKILL` recovery contract이며 Node-only `fsync`로 physical power-loss 절대 보장을 주장하지 않는다.
+
+`pending` receipt는 opaque setup/plan ID, canonical semester plan digest, canonical parent·target authority, expected workspace ID, exact root marker·owned scaffold plan과 initial v3 aggregate digest, exact package name/version, Runtime release descriptor·manifest identity, workspace instruction/Skill bundle descriptor·complete-tree identity를 묶는다. Package/cache path, PID, Runtime handle, OAuth attempt/token, account-success flag와 transient failure는 저장하지 않는다. Bundle source는 preflight 때 verified immutable process snapshot으로 캡처해 delayed approval·recovery가 mutable package path를 다시 읽지 않는다. Active pointer는 같은 release binding과 canonical workspace locator·workspace ID·format만 가진 locator이며 `WorkspaceManifest` identity authority나 current account proof가 아니다.
+
+정상 전진의 durable phase는 `approved → prepared → active_ready`다. `approved`를 sync한 뒤에만 workspace mutation을 시작하고, `prepared`는 v3 aggregate·required seam·bundle·effective native context를 disk에서 fresh validate한 pending 결과다. Auth-only Runtime의 complete close, exact workspace Runtime start와 fresh ChatGPT account read가 끝난 뒤에만 single-envelope Ready commit을 하고 응답한다. App data와 workspace가 다른 filesystem일 수 있으므로 둘을 cross-root transaction으로 가장하지 않고 receipt-first ordering, Ticket 009 ownership marker와 idempotent fresh reconciliation으로 수렴시킨다.
+
+Matching `owned_incomplete`의 explicit safe discard는 fresh root device/inode/birthtime identity와 삭제 의도를 어떤 unlink보다 먼저 `discard_requested`로 durable하게 기록한다. 따라서 cleanup 중 crash 뒤 scaffold resume로 되돌아가지 않고 known app-created entry의 no-follow 개별 제거와 same-identity empty directory removal만 계속한다. Admitted workspace, unknown·modified·symlink byte와 active Ready workspace에는 discard가 없다. Ready bundle의 missing declared path는 active pointer를 보존한 채 explicit no-clobber recovery를 다시 요청할 수 있지만 modified·extra byte는 보존하고 `manual_recovery_required`로 닫는다.
+
+한 primary process 안에서는 모든 reconcile command를 직렬화하고 host `launch`, `setupPlanId`별 approve와 `recoveryId + action`별 recover는 각각 같은 terminal promise에 join한다. 다른 plan은 first durable writer가 이기는 `setup_conflict`, current verified release binding이 다르면 mutation 없는 `setup_release_mismatch`다. Repeat `npx`의 process join은 Ticket 006이 계속 소유한다. Runtime transition은 Ticket 008과 같은 app-wide account/Runtime lease를 Ready state readback까지 잡아 concurrent login·cancel·logout·turn을 막는다. 실패는 workspace와 bundle을 보존한 `reauth_required`, `setup_transition_unavailable` 또는 `account_unavailable`이다. Previous Runtime tree가 proven dead일 때만 opaque recovery ID의 bounded `resume`을 허용하고, ambiguous close는 same-process retry 없이 host shutdown·next invocation으로 넘긴다. Fresh account RPC 실패는 provider outage로 추측하지 않는다. Ticket 007의 `runtime_*` resolver failure는 setup state를 바꾸지 않은 채 그대로 통과한다.
+
+`active_ready` relaunch도 이전 성공을 그대로 신뢰하지 않는다. 같은 exact application version과 release binding을 확인하고 `WorkspaceManifest`, required seam, bundle·effective context를 fresh validate한 뒤 workspace Runtime의 fresh account read를 통과해야 setup wizard 없이 `ready_relaunch`가 된다. Account 만료·unsupported account·account/Runtime failure에는 pointer와 academic data를 보존한다. Missing app-data pointer를 filesystem scan이나 incomplete-root adoption으로 추측하지 않으며, cross-version migration·update, multi-workspace switching, generic workflow journal과 SQLite 도입은 첫 release 범위에서 제외한다.

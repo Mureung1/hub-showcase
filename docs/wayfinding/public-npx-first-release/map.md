@@ -45,6 +45,7 @@ Node와 npm이 설치된 supported macOS arm64에서 repository·system Python·
 - [Product OAuth lifecycle 결정을 formal owner에 채택한다](tickets/008a-record-product-auth-decision.md) — ADR 0017을 단일 account lifecycle 정본으로 채택하고 Product Brief·Runtime 격리·구현 지도·Development Backlog에 current와 adopted target을 분리해 전파했다.
 - [첫 public release의 SemesterWorkspace schema·scaffold 경계를 정한다](tickets/009-semester-workspace-admission.md) — Exclusive new leaf와 single v3 aggregate를 채택해 logical WorkspaceManifest만 identity를 소유하게 하고, Course-free admission·fresh validation과 current v2 no-auto-migration을 고정했다.
 - [재개 가능한 setup과 workspace instruction/Skill bundle의 authority를 정한다](tickets/010-resumable-setup-authority.md) — Browser `SetupJourney` + deep admission Module, 최종 확인·approved-only transaction, exact-match resume·safe recovery, declared built-in Skill root별 complete-tree bundle·effective-native-context·native project boundary gate를 채택하고 setup Skill을 제외했다.
+- [Bootstrap과 setup의 durability·recovery contract를 확정한다](tickets/011-bootstrap-and-setup-recovery.md) — `SetupJourney.reconcile/observe`, owner-only single state envelope, `approved → prepared → active_ready` commit과 durable `discard_requested`, evidence-based cross-root resume·same-version ready-relaunch를 채택했다.
 
 ## Not yet specified
 
