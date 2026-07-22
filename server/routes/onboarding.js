@@ -10,6 +10,7 @@ const WEEKDAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 // 분할별 고정 요일 배치. PPL은 요일 수가 다양해서(5~7일) 규칙(Push→Pull→Legs 반복)으로 계산한다.
 const FIXED_ARRANGEMENTS = {
   전신: {
+    1: { MON: '전신' },
     2: { MON: '전신', THU: '전신' },
     3: { MON: '전신', WED: '전신', FRI: '전신' },
   },

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 const KOREAN_DAY_LABEL = { MON: '월', TUE: '화', WED: '수', THU: '목', FRI: '금', SAT: '토', SUN: '일' }
 
@@ -20,8 +20,8 @@ function DayEditCard({ day, options, onChange }) {
           {[...options, null].map((option) => (
             <button
               key={option ?? 'rest'}
-              onClick={() => {
-                onChange(day.id, option)
+              onClick={async () => {
+                await onChange(day.id, option)
                 setEditing(false)
               }}
               className="rounded-pill border border-border px-2.5 py-1 text-xs text-text-secondary hover:border-outline-hover"
@@ -48,25 +48,34 @@ function OnboardingReview() {
     fetchToday().then(setData)
   }, [])
 
-  const handleChange = (routineDayId, targetArea) => {
+  const handleChange = async (routineDayId, targetArea) => {
     setError(null)
-    fetch(`/api/routine/days/${routineDayId}`, {
+    const res = await fetch(`/api/routine/days/${routineDayId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetArea }),
     })
-      .then((res) => res.json().then((json) => ({ ok: res.ok, json })))
-      .then(({ ok, json }) => {
-        if (!ok) {
-          setError(json.error)
-          return
-        }
-        fetchToday().then(setData)
-      })
+    const json = await res.json()
+    if (!res.ok) {
+      setError(json.error)
+      return
+    }
+    setData(await fetchToday())
   }
 
   if (!data) {
     return <p className="p-8 text-text-secondary">로딩 중...</p>
+  }
+
+  if (!data.hasRoutine) {
+    return (
+      <div className="p-8 text-text-secondary">
+        아직 루틴이 없습니다.{' '}
+        <Link to="/onboarding" className="text-accent hover:text-link-hover">
+          온보딩을 먼저 완료해주세요.
+        </Link>
+      </div>
+    )
   }
 
   return (

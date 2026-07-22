@@ -5,16 +5,24 @@ const DAY_OPTIONS = [1, 2, 3, 4, 5, 6, 7]
 
 function Onboarding() {
   const [selectedDays, setSelectedDays] = useState(null)
+  const [error, setError] = useState(null)
   const navigate = useNavigate()
 
   const handleSubmit = () => {
+    setError(null)
     fetch('/api/onboarding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ daysPerWeek: selectedDays }),
-    }).then(() => {
-      navigate('/onboarding/review')
     })
+      .then((res) => res.json().then((json) => ({ ok: res.ok, json })))
+      .then(({ ok, json }) => {
+        if (!ok) {
+          setError(json.error)
+          return
+        }
+        navigate('/onboarding/review')
+      })
   }
 
   return (
@@ -26,6 +34,8 @@ function Onboarding() {
         <p className="mb-8 text-[14px] leading-relaxed text-text-secondary">
           가능일수에 맞는 분할을 추천해드려요. 나중에 요일별로 직접 수정할 수 있어요.
         </p>
+
+        {error && <p className="mb-6 text-[13px] text-text-secondary">⚠ {error}</p>}
 
         <div className="mb-8 flex flex-wrap justify-center gap-3">
           {DAY_OPTIONS.map((day) => {
