@@ -1,3 +1,5 @@
+> **#9 업데이트 (2026-07-22)**: 아래 체크리스트의 미해결 항목을 다시 실행하고 발견된 버그를 수정했다. 변경 내역은 파일 맨 아래 "#9 통합 검증 결과" 참고.
+
 # 기능 검증 체크리스트 — FE-BE-DB 수직 슬라이스 (#4·#6·#7)
 
 `day2-verification-checklist.md`(2주차 월/화 범위)를 확장해, 이후 구현된 매칭 API의
@@ -28,14 +30,15 @@ Supabase 전환(#4), 프론트-Express 실연결(#6), 매칭 요청 DB 쓰기 �
 - [x] `[API]` `curl http://localhost:5175/api/subsidies` → 200, 8건 (Supabase 시드 데이터)
 - [x] `[API]` `curl http://localhost:5175/api/subsidies/1` → 200 / `curl .../nope-404` → `{"error":"Not found"}` 404
 - [x] `[API]` `POST /api/match` 잘못된 body(`{}`) → 400 `{"error":"Invalid match request"}`
-- [x] `[코드 → 버그 확인, 미수정]` **`sort=new` 순서 미보장**: `loadAll()`([subsidies-repo.ts](../../server/src/db/subsidies-repo.ts) L42)에 `.order()` 절이 없어 Supabase가 반환하는 순서가 insert 순서와 다름. `curl ".../api/subsidies?sort=new"`를 3회 반복 호출해도 항상 `['5','6','1','2','3','4','7','8']`로 동일(랜덤은 아님)하지만 id 오름차순이 아님 — **#9에서 `.order('id', { ascending: true })` 추가로 수정 예정** (계획서에 이미 등록됨, 이번 세션에선 코드 변경 없이 재확인만 함)
+- [x] `[코드 → 수정 완료, #9]` **`sort=new` 순서 미보장 버그 수정**: `loadAll()`([subsidies-repo.ts](../../server/src/db/subsidies-repo.ts) L42-45)에 `.order('id', { ascending: true })` 추가. 수정 전 `curl ".../api/subsidies?sort=new"` → `['5','6','1','2','3','4','7','8']`, 수정 후 재기동해 재확인 → `['1','2','3','4','5','6','7','8']`
 
 ## 3. FE ↔ Express 실연결 (#6)
 
 - [x] `[코드]` `src/api/client.ts`가 유일한 API 경계 — `getSubsidy`/`submitProfile` 모두 실패 시 mock으로 fallback + `console.warn`
 - [x] `[코드]` `useSubsidies`(홈), `useSubsidy`(상세), `useSubmitProfile`(완료 화면 mutation) 모두 `client.ts` 경유
-- [ ] `[코드 → 발견, 미수정]` `useSubsidies.ts` JSDoc이 "`POST /api/match`가 준비되기 전까지는 mock fallback을 그대로 사용한다"고 되어 있으나, #4·#6에서 이미 실제 서버 연동이 끝나 **주석이 stale함** — 동작에는 영향 없음(fallback 로직 자체는 여전히 유효), #9 또는 이후 정리 때 주석만 수정 권장
+- [x] `[코드 → 수정 완료, #9]` `useSubsidies.ts`의 stale JSDoc 주석("`POST /api/match`가 준비되기 전까지는...") 정리 — 실패 시 `submitProfile`이 내부적으로 mock 대체한다는 현재 사실만 남김
 - [x] `[API]` Vite dev 프록시(`/api/*` → `:3001`) 정상 동작 확인 (`curl localhost:5175/api/health` → `localhost:3001`과 동일 응답)
+- [x] `[API]` 서버 프로세스 중지 후 `curl localhost:5175/api/subsidies` → **502** 확인 (Vite 프록시가 서버 부재를 감지해 502 반환). 이 조건이 `client.ts`의 `fetchJson` 예외를 트리거해 mock fallback 경로로 진입함 — 서버 재기동 후 정상 복구 확인
 
 ## 4. DB 쓰기 사이클 (#7)
 
@@ -61,6 +64,14 @@ Supabase 전환(#4), 프론트-Express 실연결(#6), 매칭 요청 DB 쓰기 �
 
 ## 남은 리스크 / 다음에 볼 것
 
-1. **`sort=new` 순서 미보장** — 위 2번 항목. `.order('id', { ascending: true })` 추가로 #9에서 수정 예정 (계획서에 이미 등록).
-2. **`useSubsidies.ts` stale 주석** — 동작엔 영향 없으나 `POST /api/match` 미구현 시절 문구가 남아 있어 혼동 소지. #9 또는 별도 정리 커밋에서 수정 권장.
-3. 위 `[UI 미검증]` 항목들은 브라우저 자동화 도구가 없어 이번 세션에선 실제 클릭 확인을 못했음 — #9에서 `npm run dev` 기동 후 온보딩 → 홈 → 정렬 칩 → 상세 → 외부 링크 전체 흐름을 눈으로 한 번 훑는 걸 권장.
+1. ~~**`sort=new` 순서 미보장**~~ **해결 (2026-07-22, #9)** — `.order('id', { ascending: true })` 추가, curl로 수정 전/후 비교 확인.
+2. ~~**`useSubsidies.ts` stale 주석**~~ **해결 (2026-07-22, #9)** — 주석 정리 완료.
+3. 위 `[UI 미검증]` 항목들은 이번 세션도 브라우저 자동화 도구가 없어 실제 클릭 확인은 못 함 — curl 기반으로 최대한 대체 검증(502 트리거 조건, DB row 증감)했으나, 완료 화면 버튼 클릭 자체와 화면 전환 애니메이션은 여전히 사람이 직접 브라우저에서 한 번 훑어보는 걸 권장.
+
+## #9 통합 검증 결과 (2026-07-22)
+
+- **버그 수정 2건**: `sort=new` 순서 보장(`subsidies-repo.ts`), `useSubsidies.ts` stale 주석 정리
+- **재검증**: `GET /api/subsidies`(200/8건), `/:id`(200/404), `POST /api/match`(200/400), `sort=deadline`·`amount`·`match`·`new` 4종 모두 curl로 순서 확인
+- **신규 검증**: 서버 프로세스 중지 → 프록시 502 확인 → 서버 재기동 → 정상 복구까지 실제로 재현
+- **자동 검사**: `npm run build -w @hub/server`, `npm run build:client`, `npm test`(3 files/21 tests), `npm run lint` 모두 통과
+- **미해결로 남긴 것**: 완료 화면 버튼 클릭·화면 전환 등 순수 UI 상호작용은 여전히 `[UI 미검증]` — 브라우저 자동화 도구 부재가 이번 세션 내내 동일한 제약이었음
