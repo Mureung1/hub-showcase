@@ -11,6 +11,7 @@
 import {
   COUPANG_PRODUCTS,
   FALLBACK_NUTRIENT_ORDER,
+  hasRealProductName,
   productsForNutrient,
 } from '../data/coupangProducts.js'
 import { NUTRIENT_SATISFY_RATIO } from '../lib/nutrition.js'
@@ -61,13 +62,39 @@ function pickFallbackNutrients(dateKey, count) {
   return rotated.filter((key) => productsForNutrient(key).length > 0).slice(0, count)
 }
 
-// 영양소 키 목록 -> 상품 목록. 한 영양소에 상품이 여러 개면 첫 번째만 쓴다(같은 영양소 상품이 배너를
-// 다 차지해 다른 부족 영양소가 밀려나지 않게).
-function toProducts(nutrientKeys) {
-  return nutrientKeys
-    .map((key) => productsForNutrient(key)[0])
+// 영양소 키 목록 -> 상품 목록.
+// 규칙 1: 영양소 하나당 먼저 1개씩만 뽑는다 — 한 영양소의 상품이 배너를 다 차지해 다른 부족 영양소가
+//         밀려나는 걸 막는다(부족한 게 3가지면 서로 다른 3장이 보이는 게 맞다).
+// 규칙 2: 그렇게 채우고도 자리가 남으면(부족 영양소가 1~2개뿐일 때) 같은 영양소의 **다른** 상품으로
+//         채운다. 단 **상품명이 실제로 채워진 것만** — 이름이 비어 있으면 화면이 "<영양소> 보충제"로
+//         대체 표기하기 때문에, 같은 영양소 상품을 2장 이상 늘어놓으면 완전히 똑같은 카드가 나란히
+//         뜬다. 데이터 파일에 진짜 상품명을 넣는 순간 이 경로가 자동으로 살아난다.
+// 규칙 3: 같은 영양소 안에서 어느 상품을 먼저 쓸지는 날짜로 순환시킨다 — 상품 3개를 등록해두고 늘
+//         1번만 노출되는 낭비를 막는다(하루 안에서는 항상 같은 결과라 화면이 흔들리지 않는다).
+function toProducts(nutrientKeys, dateKey) {
+  const offset = rotationOffset(dateKey)
+  const byNutrient = nutrientKeys
+    .map((key) => {
+      const candidates = productsForNutrient(key)
+      if (candidates.length === 0) return null
+      // 날짜 기준으로 시작 위치를 돌려, 등록된 상품이 골고루 노출되게 한다.
+      const start = offset % candidates.length
+      return [...candidates.slice(start), ...candidates.slice(0, start)]
+    })
     .filter(Boolean)
-    .slice(0, MAX_AD_PRODUCTS)
+
+  const picked = byNutrient.map((candidates) => candidates[0]).slice(0, MAX_AD_PRODUCTS)
+  if (picked.length >= MAX_AD_PRODUCTS) return picked
+
+  for (const candidates of byNutrient) {
+    for (const product of candidates.slice(1)) {
+      if (picked.length >= MAX_AD_PRODUCTS) return picked
+      if (!hasRealProductName(product)) continue // 규칙 2 — 이름이 없으면 중복 카드가 되므로 건너뛴다
+      picked.push(product)
+    }
+  }
+
+  return picked
 }
 
 // recommended: 하루 권장 영양정보(없으면 판단 불가 -> 폴백)
@@ -80,14 +107,14 @@ export function recommendAdProducts({ recommended, total, mealCount = 0, dateKey
 
   if (canJudge) {
     const deficient = findDeficientNutrients(recommended, total)
-    const products = toProducts(deficient.map((d) => d.key))
+    const products = toProducts(deficient.map((d) => d.key), dateKey)
     if (products.length > 0) return { source: 'deficiency', products }
     // 기록은 있는데 부족한 영양소가 하나도 없는 경우(전부 달성)도 폴백으로 내려간다 — 배너를 비우는 것보다
     // 흔히 부족한 미량영양소를 보여주는 편이 PRD의 "배너는 항상 표시" 요구에 맞는다.
   }
 
   const fallback = pickFallbackNutrients(dateKey, MAX_AD_PRODUCTS)
-  const products = toProducts(fallback)
+  const products = toProducts(fallback, dateKey)
 
   // 데이터 파일에 폴백 상품이 모자란 비정상 상황에서도 빈 배열은 내보내지 않는다.
   if (products.length < MIN_FALLBACK_PRODUCTS) {

@@ -10,7 +10,7 @@ import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
-import { nutrientLabel, productsForNutrient } from '../data/coupangProducts.js'
+import { displayProductName, nutrientLabel, productsForNutrient } from '../data/coupangProducts.js'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
 import { ALLERGY_OPTIONS, CONDITION_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
 import { calcAchievementPercent, NUTRIENT_LABELS } from '../lib/nutrition.js'
@@ -250,8 +250,12 @@ export default function Result() {
         return (
           <AdCard
             adId={product.id}
-            title={product.productName}
-            note={`${nutrientLabel(product.nutrient)} · ${Number(product.price).toLocaleString('ko-KR')}원`}
+            title={displayProductName(product)}
+            note={
+              Number.isFinite(product.price)
+                ? `${nutrientLabel(product.nutrient)} · ${Number(product.price).toLocaleString('ko-KR')}원`
+                : `${nutrientLabel(product.nutrient)} 보충에 도움이 되는 상품이에요`
+            }
             link={product.partnersUrl}
           />
         )

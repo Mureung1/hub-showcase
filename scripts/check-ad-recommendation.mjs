@@ -44,14 +44,63 @@ console.log('\n[데이터 파일 무결성]')
     FALLBACK_NUTRIENT_ORDER.every((key) => COUPANG_PRODUCTS.some((p) => p.nutrient === key)),
   )
   check(
-    '모든 상품에 productName/price/partnersUrl이 채워져 있음',
-    COUPANG_PRODUCTS.every((p) => p.productName && Number.isFinite(p.price) && p.partnersUrl),
+    '모든 상품에 partnersUrl이 채워져 있음(링크는 필수)',
+    COUPANG_PRODUCTS.every((p) => p.partnersUrl && /^https:\/\//.test(p.partnersUrl)),
+    COUPANG_PRODUCTS.filter((p) => !p.partnersUrl).map((p) => p.id).join(', '),
+  )
+  check(
+    'price는 숫자이거나 null (문자열/NaN 금지)',
+    COUPANG_PRODUCTS.every((p) => p.price === null || (Number.isFinite(p.price) && p.price > 0)),
   )
   check('나트륨(sodium) 상품은 없음 — 한도형이라 보충 대상이 아님', !COUPANG_PRODUCTS.some((p) => p.nutrient === 'sodium'))
   check(
     '의약품 오인 표현(치료/예방/개선 보장)이 상품명에 없음',
-    !COUPANG_PRODUCTS.some((p) => /치료|예방|개선\s*보장/.test(p.productName)),
+    !COUPANG_PRODUCTS.some((p) => /치료|예방|개선\s*보장/.test(p.productName ?? '')),
   )
+
+  // 이름이 비어 있어도 화면이 "<영양소> 보충제"로 대체 표기하므로 동작에는 문제가 없다.
+  // 다만 채워 넣을수록 카드가 풍부해지고, 같은 영양소의 2·3번 상품도 노출 대상이 되므로 진행률을 알린다.
+  const named = COUPANG_PRODUCTS.filter((p) => p.productName).length
+  const priced = COUPANG_PRODUCTS.filter((p) => Number.isFinite(p.price)).length
+  console.log(`    (참고) 상품명 입력됨 ${named}/${COUPANG_PRODUCTS.length} · 가격 입력됨 ${priced}/${COUPANG_PRODUCTS.length}`)
+
+  const partnerLinks = COUPANG_PRODUCTS.filter((p) => p.partnersUrl.includes('link.coupang.com')).length
+  console.log(`    (참고) 실제 파트너스 제휴 링크 ${partnerLinks}개 / 검색 URL ${COUPANG_PRODUCTS.length - partnerLinks}개`)
+}
+
+console.log('\n[같은 영양소 상품 여러 개 처리]')
+{
+  // 식이섬유만 크게 부족한 상황 — 식이섬유 상품이 3개 등록돼 있다.
+  const RECOMMENDED_ONE = { calories: 2200, protein: 110, carbs: 275, fat: 73, fiber: 30, sodium: 2000 }
+  const totalFiberOnly = { calories: 2100, protein: 105, carbs: 265, fat: 70, fiber: 3, sodium: 1500 }
+  const result = recommendAdProducts({
+    recommended: RECOMMENDED_ONE,
+    total: totalFiberOnly,
+    mealCount: 3,
+    dateKey: '2026-07-22',
+  })
+  const ids = result.products.map((p) => p.id)
+
+  check('부족 영양소가 1개면 그 영양소 상품이 노출됨', result.products[0]?.nutrient === 'fiber', ids.join(', '))
+  check('노출된 상품 id가 서로 중복되지 않음', new Set(ids).size === ids.length, ids.join(', '))
+  check(
+    '상품명이 비어 있는 동안에는 같은 영양소를 여러 장 늘어놓지 않음(동일 카드 방지)',
+    result.products.filter((p) => p.nutrient === 'fiber').length === 1,
+    ids.join(', '),
+  )
+
+  // 날짜를 바꾸면 같은 영양소 안에서 다른 상품이 앞으로 온다(등록해둔 3개가 골고루 노출되게).
+  const seenFiberIds = new Set()
+  for (let d = 1; d <= 9; d++) {
+    const r = recommendAdProducts({
+      recommended: RECOMMENDED_ONE,
+      total: totalFiberOnly,
+      mealCount: 3,
+      dateKey: `2026-07-0${d}`,
+    })
+    r.products.filter((p) => p.nutrient === 'fiber').forEach((p) => seenFiberIds.add(p.id))
+  }
+  check('날짜가 바뀌면 같은 영양소의 다른 상품도 노출된다(3개 전부)', seenFiberIds.size === 3, [...seenFiberIds].join(', '))
 }
 
 console.log('\n[2순위 — 폴백: 기록이 없을 때]')

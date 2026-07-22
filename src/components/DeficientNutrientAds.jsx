@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import Pressable from './Pressable.jsx'
 import { useUser } from '../context/UserContext.jsx'
-import { COUPANG_DISCLOSURE, nutrientLabel } from '../data/coupangProducts.js'
+import { COUPANG_DISCLOSURE, displayProductName, nutrientLabel } from '../data/coupangProducts.js'
 import { trackAdClick, trackAdImpression } from '../lib/adData.js'
 import { openExternalLink } from '../lib/externalLink.js'
 import { toDateKey } from '../lib/records.js'
@@ -20,8 +20,10 @@ import { colors, font, radius, spacing } from '../styles/theme.js'
 const CARD_HEIGHT = 80
 const THUMB_SIZE = 56
 
-function formatPrice(price) {
-  return `${Number(price).toLocaleString('ko-KR')}원`
+// price가 null이면(아직 데이터 파일에 안 채운 상품) 가격을 지어내지 않고 "쿠팡에서 보기"로 대체한다 —
+// 카드의 아랫줄이 비어 보이지 않으면서, 없는 정보를 있는 척하지도 않는다.
+function priceLabel(price) {
+  return Number.isFinite(price) ? `${Number(price).toLocaleString('ko-KR')}원` : '쿠팡에서 보기'
 }
 
 // 이미지가 없거나(승인 전 자리표시자) 로드에 실패해도 카드가 비어 보이지 않게, 영양소 라벨 첫 글자를
@@ -107,11 +109,17 @@ function AdProductCard({ product }) {
             textOverflow: 'ellipsis',
           }}
         >
-          {product.productName}
+          {displayProductName(product)}
         </p>
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs, marginTop: 2 }}>
-          <span style={{ fontSize: font.size.sm, fontWeight: 700, color: colors.textStrong }}>
-            {formatPrice(product.price)}
+          <span
+            style={{
+              fontSize: font.size.sm,
+              fontWeight: Number.isFinite(product.price) ? 700 : 600,
+              color: Number.isFinite(product.price) ? colors.textStrong : colors.muted,
+            }}
+          >
+            {priceLabel(product.price)}
           </span>
           <span
             style={{
