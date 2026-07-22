@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { fridgeIngredients, SEASONING_MATCH_NAMES } from '../data/fridgeIngredients'
+import YouTube from 'react-youtube'
+import { fridgeIngredients } from '../data/fridgeIngredients'
 import { loadFridgeSelection } from '../data/fridgeStorage'
 import { buildNaverSearchUrl, buildCoupangSearchUrl } from '../utils/purchaseLinks'
+import CookingSteps from '../components/CookingSteps'
 import IngredientList from '../components/IngredientList'
 import PurchaseLinkPanel from '../components/PurchaseLinkPanel'
 import Thumbnail from '../components/Thumbnail'
 import TopNav from '../components/TopNav'
-import mascotWave from '../assets/mascot-wave.png'
+import mascotKkini from '../assets/마스코트-끼니 - 여백 줄임.png'
 
 // prototype/recipe-*.html의 video-block + detail-grid + summary-card 구조를 그대로 포팅.
 function RecipeDetailPage() {
@@ -15,11 +17,15 @@ function RecipeDetailPage() {
   const [recipe, setRecipe] = useState(null)
   const [notFound, setNotFound] = useState(false)
   const [selectedIngredient, setSelectedIngredient] = useState(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [videoAspectRatio, setVideoAspectRatio] = useState(16 / 9)
 
   useEffect(() => {
     setRecipe(null)
     setNotFound(false)
     setSelectedIngredient(null)
+    setIsPlaying(false)
+    setVideoAspectRatio(16 / 9)
 
     fetch(`/api/recipes/${recipeId}`)
       .then((res) => {
@@ -29,6 +35,29 @@ function RecipeDetailPage() {
       .then((data) => setRecipe(data.recipe))
       .catch(() => setNotFound(true))
   }, [recipeId])
+
+  // 유튜브 쇼츠처럼 세로 영상이면 16:9로 고정된 히어로 박스에 필러박스(양옆 여백)가 생기므로,
+  // 실제 영상 크기를 가져와 컨테이너 비율을 맞춘다 (실패하면 16:9로 그대로 둠).
+  // 서버(/api/youtube/dimensions)를 거쳐 워치 페이지의 og:video 메타 태그에서 진짜 크기를 읽어온다
+  // (oEmbed의 width/height는 실제 영상과 무관하게 고정값이라 못 씀 — 실측으로 확인됨).
+  useEffect(() => {
+    const youtubeId = recipe?.youtubeId
+    if (!youtubeId) return
+
+    let cancelled = false
+    fetch(`/api/youtube/dimensions?videoId=${youtubeId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.width && data?.height) {
+          setVideoAspectRatio(data.width / data.height)
+        }
+      })
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [recipe?.youtubeId])
 
   if (notFound) {
     return (
@@ -60,11 +89,6 @@ function RecipeDetailPage() {
     .filter((ingredient) => selectedIds.includes(ingredient.id))
     .flatMap((ingredient) => ingredient.matchNames)
 
-  // 홈 화면의 트랙 구분(지금 바로 만들 수 있어요/재료 조금만 사면 돼요)과 같은 기준 — 조미료는 부족 개수에서 제외.
-  const missingCount = recipe.ingredients.filter(
-    (ingredient) => !SEASONING_MATCH_NAMES.includes(ingredient.name) && !ownedNames.includes(ingredient.name),
-  ).length
-
   const ownedIngredients = recipe.ingredients.filter((ingredient) => ownedNames.includes(ingredient.name))
   const missingIngredients = recipe.ingredients.filter((ingredient) => !ownedNames.includes(ingredient.name))
 
@@ -72,77 +96,106 @@ function RecipeDetailPage() {
     <>
       <TopNav />
       <main className="min-h-screen bg-bg-page px-4 py-8">
-      <div className="mx-auto max-w-2xl">
-        {/* 히어로 사진 */}
-        <div className="relative mt-4 overflow-hidden rounded-banner border-2 border-ink">
-          <Thumbnail image={recipe.image} emoji={recipe.emoji} alt={recipe.name} className="aspect-video w-full text-6xl" />
-          {recipe.youtubeId && (
-            <a
-              href={`https://www.youtube.com/watch?v=${recipe.youtubeId}`}
-              target="_blank"
-              rel="noreferrer"
-              className="absolute inset-0 flex items-center justify-center"
-            >
-              <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-ink bg-bg-surface/90 pl-1 text-xl text-text-primary shadow">
-                ▶
-              </span>
-            </a>
-          )}
-        </div>
-
-        <div className="mt-5 text-center">
-          <h1 className="font-display text-2xl font-bold text-text-primary">{recipe.name}</h1>
-          <p className="mt-2 font-display text-sm text-text-secondary">
-            {recipe.servings}인분{recipe.cookTimeMinutes ? ` · ${recipe.cookTimeMinutes}분` : ''}
-          </p>
-          <span className="mt-3 inline-block rounded-full bg-primary-soft px-3 py-1 font-display text-xs font-bold text-primary-text">
-            {missingCount === 0 ? '지금 있는 재료로 완성돼요' : `재료 ${missingCount}개만 더 있으면 완성돼요`}
-          </span>
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="rounded-card border-2 border-ink bg-bg-surface p-4">
-            <h2 className="text-center font-display text-base font-bold text-text-primary">보유 재료</h2>
-            <div className="mt-3">
-              {ownedIngredients.length > 0 ? (
-                <IngredientList
-                  ingredients={ownedIngredients}
-                  ownedNames={ownedNames}
-                  selectedName={selectedIngredient?.name}
-                  onSelect={setSelectedIngredient}
-                />
-              ) : (
-                <p className="text-center font-display text-sm text-text-secondary">보유한 재료가 없어요.</p>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-card border-2 border-[#F0B7A8] bg-[#FDEDE9] p-4">
-            <h2 className="text-center font-display text-base font-bold text-text-primary">구매 필요 재료</h2>
-            <div className="mt-3">
-              {missingIngredients.length > 0 ? (
-                <IngredientList
-                  ingredients={missingIngredients}
-                  ownedNames={ownedNames}
-                  selectedName={selectedIngredient?.name}
-                  onSelect={setSelectedIngredient}
-                />
-              ) : (
-                <p className="text-center font-display text-sm text-text-secondary">구매할 재료가 없어요!</p>
-              )}
-            </div>
+      <div className={videoAspectRatio < 1 ? 'mx-auto max-w-5xl' : 'mx-auto max-w-2xl'}>
+        {/* 제목/부제 — 영상보다 위, 페이지 맨 위에 항상 고정 (레이아웃·영상 방향과 무관).
+            부족 재료 개수 배지는 없앰 — 바로 아래 "있는 재료"/"없는 재료" 카드가 같은 정보를 더 정확히 보여줌. */}
+        <div className="text-center">
+          <div className="flex flex-wrap items-baseline justify-center gap-2">
+            <h1 className="font-display text-2xl font-bold text-text-primary">{recipe.name}</h1>
+            <p className="font-display text-sm text-text-secondary">
+              {recipe.servings}인분{recipe.cookTimeMinutes ? ` · ${recipe.cookTimeMinutes}분` : ''}
+            </p>
           </div>
         </div>
 
-        <div className="mt-4">
-          <PurchaseLinkPanel ingredient={selectedIngredient} />
+        {/* 영상 + 재료/구매패널 묶음 — 가로 영상은 항상 세로로 쌓임(기존과 동일).
+            세로 영상(쇼츠 등)은 데스크톱(lg 이상)에서만 영상(왼쪽 고정폭)+정보(오른쪽)를 2단으로 배치해
+            영상 옆의 빈 공간을 활용한다. 모바일에서는 세로 영상도 기존처럼 위/아래로 쌓인다.
+            재료가 많아 오른쪽 컬럼이 영상보다 길어지면 영상 아래 왼쪽에 빈 공간이 생기므로,
+            데스크톱에서는 영상을 sticky로 고정해 오른쪽을 스크롤해도 계속 따라오게 한다.
+            youtubeId가 있으면 재생 버튼을 눌렀을 때만 iframe을 마운트한다 (지연 로딩). */}
+        <div className={`mt-4 flex flex-col gap-6 ${videoAspectRatio < 1 ? 'lg:flex-row lg:items-start' : ''}`}>
+          <div
+            className={`relative overflow-hidden rounded-banner border-2 border-ink ${
+              videoAspectRatio < 1
+                ? 'mx-auto w-full max-w-sm shrink-0 aspect-[9/16] lg:sticky lg:top-8 lg:mx-0'
+                : 'w-full aspect-video'
+            }`}
+          >
+            {isPlaying && recipe.youtubeId ? (
+              <YouTube
+                videoId={recipe.youtubeId}
+                opts={{ width: '100%', height: '100%', playerVars: { autoplay: 1 } }}
+                className="h-full w-full"
+                iframeClassName="h-full w-full"
+              />
+            ) : (
+              <>
+                <Thumbnail image={recipe.image} emoji={recipe.emoji} alt={recipe.name} className="h-full w-full text-6xl" />
+                {recipe.youtubeId && (
+                  <button
+                    type="button"
+                    onClick={() => setIsPlaying(true)}
+                    className="absolute inset-0 flex items-center justify-center"
+                  >
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-ink bg-bg-surface/90 pl-1 text-xl text-text-primary shadow">
+                      ▶
+                    </span>
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="flex-1">
+            <CookingSteps steps={recipe.steps} twoColumn={videoAspectRatio >= 1} />
+
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="rounded-card border-2 border-ink bg-bg-surface p-4">
+                <h2 className="text-center font-display text-base font-bold text-text-primary">있는 재료</h2>
+                <div className="mt-3">
+                  {ownedIngredients.length > 0 ? (
+                    <IngredientList
+                      ingredients={ownedIngredients}
+                      ownedNames={ownedNames}
+                      selectedName={selectedIngredient?.name}
+                      onSelect={setSelectedIngredient}
+                    />
+                  ) : (
+                    <p className="text-center font-display text-sm text-text-secondary">있는 재료가 없어요.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-card border-2 border-[#F0B7A8] bg-[#FDEDE9] p-4">
+                <h2 className="text-center font-display text-base font-bold text-text-primary">없는 재료</h2>
+                <div className="mt-3">
+                  {missingIngredients.length > 0 ? (
+                    <IngredientList
+                      ingredients={missingIngredients}
+                      ownedNames={ownedNames}
+                      selectedName={selectedIngredient?.name}
+                      onSelect={setSelectedIngredient}
+                    />
+                  ) : (
+                    <p className="text-center font-display text-sm text-text-secondary">구매할 재료가 없어요!</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <PurchaseLinkPanel ingredient={selectedIngredient} />
+            </div>
+          </div>
         </div>
 
         <div className="mt-6 flex items-end justify-end gap-3">
-          <div className="max-w-xs rounded-2xl rounded-br-sm bg-[#FFF3DF] px-4 py-3 font-display text-sm text-text-primary">
+          <div className="relative max-w-xs rounded-2xl border-2 border-ink bg-[#FFF3DF] px-4 py-3 font-display text-sm text-text-primary">
             Tip: 재료를 신선하게 준비해두면 더 맛있어요!
+            <span className="absolute top-1/2 -right-[7px] h-3 w-3 -translate-y-1/2 rotate-45 border-r-2 border-t-2 border-ink bg-[#FFF3DF]" />
           </div>
-          <img src={mascotWave} alt="" className="w-14 select-none" />
+          <img src={mascotKkini} alt="" className="w-14 select-none" />
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-card border-2 border-ink bg-primary px-5 py-4">
