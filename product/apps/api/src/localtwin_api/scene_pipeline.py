@@ -38,6 +38,9 @@ VIDEO_SUFFIXES = {".mp4", ".mov", ".mkv"}
 CHUNK_SIZE = 1024 * 1024
 MAX_TOTAL_BYTES = 8 * 1024 * 1024 * 1024
 MIN_GPU_MEMORY_MB = 6_000
+MAX_PLY_HEADER_BYTES = 64 * 1024
+MAX_PLY_VERTICES = 50_000_000
+MEDIA_PROBE_TIMEOUT_SECONDS = 10
 TERMINAL_JOB_STATUSES = {"blocked", "failed", "ready"}
 _execution_lock = threading.Lock()
 _active_scene_jobs: set[str] = set()
@@ -143,9 +146,18 @@ def validate_file_set(capture_type: CaptureType, filenames: list[str]) -> None:
 
 def validate_gaussian_ply(path: Path) -> None:
     with path.open("rb") as stream:
-        header = stream.read(64 * 1024)
-    if not header.startswith(b"ply\n") or b"end_header" not in header:
+        header = stream.read(MAX_PLY_HEADER_BYTES)
+    header_end = header.find(b"end_header\n")
+    if not header.startswith(b"ply\n") or header_end < 0:
         raise ValueError("Asset is not a valid PLY file.")
+    if b"format binary_little_endian 1.0" not in header:
+        raise ValueError("PLY must use binary_little_endian format.")
+    vertex_match = re.search(rb"^element vertex (\d+)$", header, flags=re.MULTILINE)
+    if vertex_match is None:
+        raise ValueError("PLY is missing an element vertex declaration.")
+    vertex_count = int(vertex_match.group(1))
+    if vertex_count < 1 or vertex_count > MAX_PLY_VERTICES:
+        raise ValueError("PLY vertex count is outside the supported limit.")
     required = (
         b"element vertex",
         b"property float opacity",
@@ -155,6 +167,62 @@ def validate_gaussian_ply(path: Path) -> None:
     missing = [item.decode("ascii") for item in required if item not in header]
     if missing:
         raise ValueError(f"PLY is missing Gaussian properties: {', '.join(missing)}")
+    minimum_payload_bytes = vertex_count * len(required) * 4
+    if path.stat().st_size < header_end + len(b"end_header\n") + minimum_payload_bytes:
+        raise ValueError("PLY payload is shorter than its declared Gaussian vertex data.")
+
+
+def validate_capture_content(path: Path, capture_type: CaptureType) -> None:
+    """Reject renamed text/binary files before a GPU worker receives them."""
+    if capture_type == "gaussian_ply":
+        validate_gaussian_ply(path)
+        return
+    with path.open("rb") as stream:
+        header = stream.read(32)
+    suffix = path.suffix.lower()
+    if suffix in {".jpg", ".jpeg"}:
+        valid = header.startswith(b"\xff\xd8\xff")
+    elif suffix == ".png":
+        valid = header.startswith(b"\x89PNG\r\n\x1a\n")
+    elif suffix == ".heic":
+        valid = header[4:8] == b"ftyp" and header[8:12] in {b"heic", b"heix", b"hevc", b"hevx"}
+    elif suffix in {".mp4", ".mov"}:
+        valid = header[4:8] == b"ftyp"
+    elif suffix == ".mkv":
+        valid = header.startswith(b"\x1aE\xdf\xa3")
+    else:
+        valid = False
+    if not valid:
+        raise ValueError(f"Capture content does not match {suffix or 'the declared'} file type.")
+
+
+def probe_video_file(
+    path: Path,
+    *,
+    timeout_seconds: int = MEDIA_PROBE_TIMEOUT_SECONDS,
+    runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
+) -> None:
+    """Use ffprobe with a bounded subprocess call before a video reaches Nerfstudio."""
+    command = [
+        "ffprobe",
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration:stream=codec_type,width,height,nb_frames",
+        "-of",
+        "json",
+        str(path),
+    ]
+    try:
+        result = runner(
+            command, capture_output=True, text=True, timeout=timeout_seconds, check=False
+        )
+    except subprocess.TimeoutExpired as error:
+        raise ValueError("Video probe timed out.") from error
+    except OSError as error:
+        raise ValueError("Video probe is unavailable.") from error
+    if result.returncode != 0:
+        raise ValueError("Video decoder probe rejected the capture.")
 
 
 def file_sha256(path: Path) -> str:
@@ -376,6 +444,9 @@ async def save_uploads(
                     stream.write(chunk)
             if size == 0:
                 raise ValueError(f"Capture file is empty: {name}")
+            validate_capture_content(path, job.capture_type)
+            if job.capture_type.endswith("video"):
+                probe_video_file(path)
             saved.append(
                 SceneInputFile(
                     name=path.name,

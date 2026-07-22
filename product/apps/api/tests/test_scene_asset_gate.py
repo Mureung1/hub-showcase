@@ -18,8 +18,7 @@ def write_gaussian_ply(path: Path) -> None:
         b"property float opacity\n"
         b"property float scale_0\n"
         b"property float rot_0\n"
-        b"end_header\n"
-        b"placeholder"
+        b"end_header\n" + b"\x00" * 16
     )
 
 
