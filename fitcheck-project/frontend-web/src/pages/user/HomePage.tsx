@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PlayCircle, UtensilsCrossed, MapPinned, Flame } from 'lucide-react';
 import type { Course } from '../../data/userMock';
-import { MOCK_MEALS, MOCK_USER_LOCATION } from '../../data/userMock';
+import { MOCK_USER_LOCATION } from '../../data/userMock';
+import { useAuth } from '../../hooks/useAuth';
 import { fetchCourses } from '../../services/coursesApi';
 import { fetchGyms } from '../../services/gymsApi';
+import { fetchMeals } from '../../services/mealsApi';
+import { todayString } from '../../utils/date';
 import './user.css';
 
 const QUICK_LINKS = [
@@ -29,7 +32,9 @@ const QUICK_LINKS = [
 ] as const;
 
 export default function HomePage() {
-  const todayMealCount = MOCK_MEALS.length;
+  const { isAuthenticated } = useAuth();
+  const [todayMealCount, setTodayMealCount] = useState(0);
+  const [latestMealFeedback, setLatestMealFeedback] = useState<string | null>(null);
   const [nearbyGyms, setNearbyGyms] = useState(0);
   const [recommended, setRecommended] = useState<Course | null>(null);
   const [loadingRecommended, setLoadingRecommended] = useState(true);
@@ -39,7 +44,11 @@ export default function HomePage() {
 
     async function load() {
       try {
-        const [{ courses }, { meta }] = await Promise.all([
+        const mealPromise = isAuthenticated
+          ? fetchMeals({ date: todayString(), limit: 10 }).catch(() => null)
+          : Promise.resolve(null);
+
+        const [{ courses }, { meta }, mealsResult] = await Promise.all([
           fetchCourses({ limit: 1 }),
           fetchGyms({
             lat: MOCK_USER_LOCATION.lat,
@@ -47,10 +56,15 @@ export default function HomePage() {
             radiusKm: 3,
             limit: 50,
           }),
+          mealPromise,
         ]);
         if (!cancelled) {
           setRecommended(courses[0] ?? null);
           setNearbyGyms(meta.total);
+          if (mealsResult) {
+            setTodayMealCount(mealsResult.meals.length);
+            setLatestMealFeedback(mealsResult.meals[0]?.aiFeedback ?? null);
+          }
         }
       } catch {
         if (!cancelled) {
@@ -66,7 +80,7 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isAuthenticated]);
 
   return (
     <div className="user-page">
@@ -176,7 +190,9 @@ export default function HomePage() {
               <p>방금 기록한 식단의 AI 코멘트입니다.</p>
             </div>
           </div>
-          <p className="home-meal-snippet">{MOCK_MEALS[0]?.feedback}</p>
+          <p className="home-meal-snippet">
+            {latestMealFeedback ?? '오늘 식단을 기록하면 AI 피드백이 여기에 표시됩니다.'}
+          </p>
         </article>
       </section>
     </div>
