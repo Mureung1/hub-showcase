@@ -1,13 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { Globe, MoreHorizontal, Trash2, CornerDownRight, ImageOff } from "lucide-react";
+import {
+  Globe,
+  MoreHorizontal,
+  Trash2,
+  CornerDownRight,
+  ImageOff,
+  FolderInput,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { timeAgo } from "@/lib/format";
 
 export default function LinkCard({ link, tree, onRemove, onMove }) {
   const [imageFailed, setImageFailed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuView, setMenuView] = useState("root"); // root: [이동, 삭제] | move: 카테고리 목록
   const showImage = link.imageUrl && !imageFailed;
+
+  const openMenu = () => {
+    setMenuView("root");
+    setMenuOpen(true);
+  };
 
   return (
     <li className="group relative">
@@ -62,7 +77,7 @@ export default function LinkCard({ link, tree, onRemove, onMove }) {
       <button
         type="button"
         aria-label="링크 관리"
-        onClick={() => setMenuOpen(true)}
+        onClick={openMenu}
         className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-lg text-ink-weak transition-colors hover:bg-gray-100 hover:text-ink md:opacity-0 md:group-hover:opacity-100"
       >
         <MoreHorizontal size={16} />
@@ -72,43 +87,65 @@ export default function LinkCard({ link, tree, onRemove, onMove }) {
         <>
           <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
           <div className="absolute right-3 top-10 z-30 max-h-80 w-52 overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-lg">
-            <p className="px-2.5 pb-1 pt-2 text-xs font-medium text-ink-weak">카테고리 이동</p>
-            {tree.map((major) => (
-              <div key={major.id}>
-                <MoveItem
-                  label={major.name}
-                  current={link.categoryId === major.id}
+            {menuView === "root" ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setMenuView("move")}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-ink-sub hover:bg-gray-50"
+                >
+                  <FolderInput size={14} />
+                  이동
+                  <ChevronRight size={14} className="ml-auto text-ink-weak" />
+                </button>
+                <button
+                  type="button"
                   onClick={() => {
                     setMenuOpen(false);
-                    onMove(link.id, major.id);
+                    onRemove(link.id); // 실행취소 토스트가 확인 절차를 대신한다
                   }}
-                />
-                {major.children.map((sub) => (
-                  <MoveItem
-                    key={sub.id}
-                    label={sub.name}
-                    indent
-                    current={link.categoryId === sub.id}
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onMove(link.id, sub.id);
-                    }}
-                  />
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-red-500 hover:bg-red-50"
+                >
+                  <Trash2 size={14} />
+                  삭제
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setMenuView("root")}
+                  className="flex w-full items-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium text-ink-weak hover:bg-gray-50"
+                >
+                  <ChevronLeft size={14} />
+                  카테고리 이동
+                </button>
+                {tree.map((major) => (
+                  <div key={major.id}>
+                    <MoveItem
+                      label={major.name}
+                      current={link.categoryId === major.id}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onMove(link.id, major.id);
+                      }}
+                    />
+                    {major.children.map((sub) => (
+                      <MoveItem
+                        key={sub.id}
+                        label={sub.name}
+                        indent
+                        current={link.categoryId === sub.id}
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onMove(link.id, sub.id);
+                        }}
+                      />
+                    ))}
+                  </div>
                 ))}
-              </div>
-            ))}
-            <div className="my-1 h-px bg-line" />
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                onRemove(link.id);
-              }}
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-red-500 hover:bg-red-50"
-            >
-              <Trash2 size={14} />
-              삭제
-            </button>
+              </>
+            )}
           </div>
         </>
       )}
