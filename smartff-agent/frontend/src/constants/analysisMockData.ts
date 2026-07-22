@@ -2,11 +2,6 @@ import type { Category, CategoryAnalysis } from '../types/analysis';
 
 export const CATEGORIES: Category[] = ['도시락', '김밥', '햄버거샌드위치', '주먹밥'];
 
-export const CATEGORY_TAB_BADGES: Partial<Record<Category, '추천' | '주의'>> = {
-  도시락: '추천',
-  주먹밥: '주의',
-};
-
 export const ANALYSIS_MOCK_DATA: Record<Category, CategoryAnalysis> = {
   도시락: {
     weekday: [88, 76, 82, 94, 112, 150, 104],

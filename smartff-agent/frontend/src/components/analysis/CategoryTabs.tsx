@@ -1,17 +1,18 @@
 import type { Category } from '../../types/analysis';
-import { CATEGORIES, CATEGORY_TAB_BADGES } from '../../constants/analysisMockData';
+import { CATEGORIES } from '../../constants/analysisMockData';
 
 interface CategoryTabsProps {
   selectedCategory: Category;
   onSelectCategory: (category: Category) => void;
+  badges: Partial<Record<Category, '추천' | '주의'>>;
 }
 
-export default function CategoryTabs({ selectedCategory, onSelectCategory }: CategoryTabsProps) {
+export default function CategoryTabs({ selectedCategory, onSelectCategory, badges }: CategoryTabsProps) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
       {CATEGORIES.map((category) => {
         const active = category === selectedCategory;
-        const badge = CATEGORY_TAB_BADGES[category];
+        const badge = badges[category];
         const badgeIsRisk = badge === '주의';
         const badgeColor = active ? '#fff' : badgeIsRisk ? '#DC2626' : '#1D4ED8';
 

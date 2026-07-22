@@ -3,7 +3,7 @@ import type { Category, CategoryStatus } from '../../types/analysis';
 import type { FinancialRecord, FinancialSummary } from '../../types/financial';
 import type { WeekdayPatternResponse, HourlyPatternResponse } from '../../types/pattern';
 import type { Recommendation, RecommendationResponse } from '../../types/recommendation';
-import { ANALYSIS_MOCK_DATA } from '../../constants/analysisMockData';
+import { ANALYSIS_MOCK_DATA, CATEGORIES } from '../../constants/analysisMockData';
 import { weekdaySummary, timeSummary, monthlyTrendSummary } from '../../utils/analysisSummary';
 import CategoryTabs from '../../components/analysis/CategoryTabs';
 import InsightStrip from '../../components/analysis/InsightStrip';
@@ -40,6 +40,12 @@ function statusFromRecommendations(categoryRecs: Recommendation[]): CategoryStat
   if (categoryRecs.some((r) => r.rule === 'SALES_UP_WASTE_LOW')) return 'opportunity';
   if (categoryRecs.some((r) => r.rule === 'SALES_DOWN_WASTE_UP' || r.rule === 'LOW_MARGIN')) return 'risk';
   return 'neutral';
+}
+
+function badgeFromStatus(status: CategoryStatus): '추천' | '주의' | undefined {
+  if (status === 'opportunity') return '추천';
+  if (status === 'risk') return '주의';
+  return undefined;
 }
 
 function ruleReason(rec: Recommendation | undefined, fallback: string): string {
@@ -153,6 +159,14 @@ export default function AnalysisPage() {
 
   const insightReady = recommendations !== null && weekdayPattern !== null && hourlyPattern !== null;
   const insightStatus = statusFromRecommendations(categoryRecs);
+
+  const tabBadges: Partial<Record<Category, '추천' | '주의'>> = {};
+  if (recommendations !== null) {
+    for (const c of CATEGORIES) {
+      const badge = badgeFromStatus(statusFromRecommendations(recommendations.filter((r) => r.category === c)));
+      if (badge) tabBadges[c] = badge;
+    }
+  }
   const insightReasons = insightReady
     ? [
         `${weekdayLabels[bestDayIdx]}요일 판매 집중`,
@@ -193,7 +207,7 @@ export default function AnalysisPage() {
       </div>
 
       {/* Category selector */}
-      <CategoryTabs selectedCategory={category} onSelectCategory={setCategory} />
+      <CategoryTabs selectedCategory={category} onSelectCategory={setCategory} badges={tabBadges} />
 
       {/* Insight strip — /api/recommendations(Rule Engine) + 요일/시간대 패턴 실데이터 기반 */}
       {recError ? (
