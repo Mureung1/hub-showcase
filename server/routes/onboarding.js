@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { prisma } from '../db.js'
 import { SPLIT_TYPE_BY_DAYS_PER_WEEK, SPLIT_DAY_TYPES } from '../splitPresets.js'
+import { violatesAdjacentAreaRule } from '../scheduleConstraints.js'
 
 export const onboardingRouter = Router()
 
@@ -94,6 +95,23 @@ routineDayRouter.patch('/routine/days/:id', async (req, res) => {
   })
   if (!routineDay) {
     return res.status(404).json({ error: '해당 요일을 찾을 수 없습니다.' })
+  }
+
+  // 휴식으로 바꾸는 경우는 겹칠 부위 자체가 없어 검증이 필요 없다.
+  if (targetArea !== null) {
+    const allDays = await prisma.routineDay.findMany({
+      where: { routineId: routineDay.routineId },
+      include: { exercises: { include: { exercise: true } } },
+    })
+    const daysWithAreas = allDays.map((d) => ({
+      dayOfWeek: d.dayOfWeek,
+      targetAreas: [...new Set(d.exercises.map((e) => e.exercise.targetArea))],
+    }))
+    const areasToPlace = SPLIT_DAY_TYPES[routineDay.routine.splitType][targetArea] ?? []
+
+    if (violatesAdjacentAreaRule({ days: daysWithAreas, candidateDayOfWeek: routineDay.dayOfWeek, areasToPlace })) {
+      return res.status(400).json({ error: '인접한 요일과 부위가 겹쳐서 이 조합으로는 바꿀 수 없습니다.' })
+    }
   }
 
   await prisma.routineDayExercise.deleteMany({ where: { routineDayId } })

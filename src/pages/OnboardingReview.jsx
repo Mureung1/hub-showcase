@@ -41,6 +41,7 @@ function DayEditCard({ day, options, onChange }) {
 
 function OnboardingReview() {
   const [data, setData] = useState(null)
+  const [error, setError] = useState(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -48,11 +49,20 @@ function OnboardingReview() {
   }, [])
 
   const handleChange = (routineDayId, targetArea) => {
+    setError(null)
     fetch(`/api/routine/days/${routineDayId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetArea }),
-    }).then(() => fetchToday().then(setData))
+    })
+      .then((res) => res.json().then((json) => ({ ok: res.ok, json })))
+      .then(({ ok, json }) => {
+        if (!ok) {
+          setError(json.error)
+          return
+        }
+        fetchToday().then(setData)
+      })
   }
 
   if (!data) {
@@ -66,6 +76,8 @@ function OnboardingReview() {
           {data.routine.splitType} 분할을 추천했어요
         </h1>
         <p className="mb-8 text-[14px] text-text-secondary">마음에 안 드는 요일이 있으면 직접 바꿀 수 있어요.</p>
+
+        {error && <p className="mb-6 text-[13px] text-text-secondary">⚠ {error}</p>}
 
         <div className="mb-8 grid grid-cols-7 gap-3">
           {data.days.map((day) => (
