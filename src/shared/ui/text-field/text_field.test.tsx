@@ -1,12 +1,17 @@
 /* @vitest-environment jsdom */
-import { createRef } from 'react';
+import { createRef, type FormEvent } from 'react';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { DesignSystemProvider } from '@/shared/ui/design-system-provider';
 
-import { SearchField, TextArea, TextField } from './text_field';
+import {
+  ClearableTextField,
+  SearchField,
+  TextArea,
+  TextField,
+} from './text_field';
 
 beforeAll(() => {
   vi.stubGlobal(
@@ -38,6 +43,97 @@ beforeAll(() => {
 afterEach(cleanup);
 
 describe('field adapters', () => {
+  it('shows a clear action only for a non-empty controlled value', async () => {
+    const user = userEvent.setup();
+    const onClear = vi.fn();
+    const { rerender } = render(
+      <DesignSystemProvider>
+        <ClearableTextField
+          aria-label="상황"
+          clearLabel="입력 지우기"
+          onClear={onClear}
+          value=""
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(screen.queryByRole('button', { name: '입력 지우기' })).toBeNull();
+
+    rerender(
+      <DesignSystemProvider>
+        <ClearableTextField
+          aria-label="상황"
+          clearLabel="입력 지우기"
+          onChange={vi.fn()}
+          onClear={onClear}
+          value="프로젝트"
+        />
+      </DesignSystemProvider>
+    );
+
+    const clearButton = screen.getByRole('button', { name: '입력 지우기' });
+
+    expect(clearButton.textContent).toBe('×');
+
+    await user.click(clearButton);
+
+    expect(onClear).toHaveBeenCalledOnce();
+  });
+
+  it('does not show a clear action for disabled or read-only fields', () => {
+    render(
+      <DesignSystemProvider>
+        <ClearableTextField
+          aria-label="비활성 상황"
+          clearLabel="입력 지우기"
+          disabled
+          onClear={vi.fn()}
+          value="프로젝트"
+        />
+        <ClearableTextField
+          aria-label="읽기 전용 상황"
+          clearLabel="입력 지우기"
+          onClear={vi.fn()}
+          readOnly
+          value="프로젝트"
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(screen.queryByRole('button', { name: '입력 지우기' })).toBeNull();
+  });
+
+  it('keeps focus on the input and does not submit its form when cleared', async () => {
+    const user = userEvent.setup();
+    const onClear = vi.fn();
+    const onSubmit = vi.fn((event: FormEvent<HTMLFormElement>) =>
+      event.preventDefault()
+    );
+
+    render(
+      <DesignSystemProvider>
+        <form onSubmit={onSubmit}>
+          <ClearableTextField
+            aria-label="상황"
+            clearLabel="입력 지우기"
+            onChange={vi.fn()}
+            onClear={onClear}
+            value="프로젝트"
+          />
+        </form>
+      </DesignSystemProvider>
+    );
+
+    const input = screen.getByRole('textbox', { name: '상황' });
+
+    input.focus();
+    await user.click(screen.getByRole('button', { name: '입력 지우기' }));
+
+    expect(onClear).toHaveBeenCalledOnce();
+    expect(document.activeElement).toBe(input);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it('forwards text input changes through the product field', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

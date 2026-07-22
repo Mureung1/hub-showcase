@@ -1,4 +1,10 @@
-import { forwardRef, type ComponentProps } from 'react';
+import {
+  forwardRef,
+  useImperativeHandle,
+  useRef,
+  type ComponentProps,
+  type MouseEvent,
+} from 'react';
 import {
   SearchField as WdsSearchField,
   TextArea as WdsTextArea,
@@ -23,6 +29,14 @@ export type TextAreaProps = Omit<
   ComponentProps<typeof WdsTextArea>,
   FieldImplementationProp
 >;
+export type ClearableTextFieldProps = Omit<
+  TextFieldProps,
+  'defaultValue' | 'onReset' | 'trailingContent' | 'value'
+> & {
+  clearLabel: string;
+  onClear: () => void;
+  value: string;
+};
 
 export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
   function TextField({ className, ...props }, ref) {
@@ -35,6 +49,54 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
     );
   }
 );
+
+export const ClearableTextField = forwardRef<
+  HTMLInputElement,
+  ClearableTextFieldProps
+>(function ClearableTextField({
+  className,
+  clearLabel,
+  onClear,
+  value,
+  ...props
+}, ref) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const canClear =
+    value.length > 0 && !props.disabled && !props.readOnly;
+
+  useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
+
+  function handleClear() {
+    onClear();
+    inputRef.current?.focus();
+  }
+
+  function preventClearButtonFocus(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+  }
+
+  return (
+    <WdsTextField
+      {...props}
+      className={clsx('ui-field', 'ui-field--clearable', className)}
+      ref={inputRef}
+      trailingContent={
+        canClear ? (
+          <button
+            aria-label={clearLabel}
+            className="ui-field__clear"
+            onClick={handleClear}
+            onMouseDown={preventClearButtonFocus}
+            type="button"
+          >
+            ×
+          </button>
+        ) : undefined
+      }
+      value={value}
+    />
+  );
+});
 
 export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
   function SearchField({ className, ...props }, ref) {
