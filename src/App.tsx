@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { MusicCard } from "./components/MusicCard";
 import { MusicRecordForm } from "./components/MusicRecordForm";
+import { AuthScreen } from "./components/AuthScreen";
 import type { MusicRecord, MusicRecordDraft, SpotifyTrack } from "./types/music";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
@@ -20,6 +21,7 @@ interface ApiMusicRecord {
 
 interface AppProps {
   initialRecords?: MusicRecord[];
+  initialView?: "auth" | "diary";
 }
 
 function toMusicRecord(record: ApiMusicRecord): MusicRecord {
@@ -46,7 +48,7 @@ async function getErrorMessage(response: Response, fallback: string) {
   }
 }
 
-export function App({ initialRecords }: AppProps) {
+export function App({ initialRecords, initialView = "auth" }: AppProps) {
   const [records, setRecords] = useState<MusicRecord[]>(initialRecords ?? []);
   const [isLoading, setIsLoading] = useState(initialRecords === undefined);
   const [loadError, setLoadError] = useState("");
@@ -119,6 +121,10 @@ export function App({ initialRecords }: AppProps) {
       ),
     );
   };
+
+  if (initialView === "auth") {
+    return <AuthScreen />;
+  }
 
   return (
     <main className="app-shell">
