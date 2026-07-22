@@ -1,6 +1,6 @@
 :root {
-  color: hsl(220 35% 14%);
-  background: hsl(0 0% 94%);
+  color: #182536;
+  background: #f3f5f3;
   font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
 }
@@ -32,19 +32,21 @@ button {
 .camp-banner {
   position: relative;
   display: flex;
-  height: 72px;
+  height: 68px;
   align-items: center;
   overflow: hidden;
-  border-bottom: 1px solid hsl(0 0% 88%);
-  background: white;
+  border-bottom: 1px solid #d9dfdc;
+  background: #fbfcfa;
 }
 
 .camp-banner span {
   position: absolute;
   z-index: 1;
   left: max(24px, calc((100vw - 1320px) / 2 + 24px));
-  font-size: 14px;
-  font-weight: 750;
+  color: #182536;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .camp-banner img {
@@ -56,19 +58,21 @@ button {
 .page {
   width: min(1320px, 100%);
   margin: 0 auto;
-  padding: 24px 24px 72px;
+  padding: 32px 24px 80px;
 }
 
 .categories {
-  border-bottom: 1px solid hsl(0 0% 80%);
+  border-bottom: 1px solid #cbd4d0;
 }
 
 .category-tab {
   position: relative;
-  padding: 0 0 12px;
+  padding: 0 0 13px;
   border: 0;
   background: transparent;
-  font-size: 12px;
+  color: #53615f;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .category-tab strong {
@@ -82,37 +86,39 @@ button {
   bottom: -1px;
   left: 0;
   height: 2px;
-  background: hsl(220 35% 14%);
+  background: #19a86a;
   content: "";
 }
 
 .result-count {
-  margin: 18px 0;
-  color: hsl(0 0% 42%);
-  font-size: 12px;
+  margin: 20px 0 18px;
+  color: #687572;
+  font-size: 13px;
+  font-weight: 650;
 }
 
 .project-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  gap: 20px;
 }
 
 .project-card {
   position: relative;
   overflow: hidden;
   cursor: pointer;
-  border: 1px solid hsl(0 0% 88%);
-  border-radius: 12px;
-  background: white;
-  box-shadow: 0 2px 12px rgb(0 0 0 / 7%);
+  border: 1px solid #d3dbd7;
+  border-radius: 14px;
+  background: #fbfcfa;
+  box-shadow: 0 3px 0 rgb(24 37 54 / 5%);
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
 .project-card:hover,
 .project-card:focus-visible {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 24px rgb(0 0 0 / 11%);
+  transform: translateY(-4px);
+  border-color: #19a86a;
+  box-shadow: 0 12px 24px rgb(24 37 54 / 12%);
   outline: none;
 }
 
@@ -120,13 +126,13 @@ button {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
-  border-bottom: 1px solid hsl(0 0% 88%);
-  background: hsl(0 0% 90%);
+  border-bottom: 1px solid #d3dbd7;
+  background: #e7ece9;
   object-fit: cover;
 }
 
 .card-content {
-  padding: 16px;
+  padding: 18px 18px 16px;
 }
 
 .card-meta {
@@ -137,29 +143,31 @@ button {
 }
 
 .project-category {
-  color: hsl(0 0% 42%);
+  color: #16885a;
   font-size: 11px;
   font-weight: 700;
 }
 
 .dummy-badge {
   padding: 3px 7px;
-  border: 1px solid hsl(0 0% 78%);
+  border: 1px solid #c9d2ce;
   border-radius: 999px;
-  color: hsl(0 0% 42%);
+  color: #66736f;
   font-size: 10px;
   font-weight: 700;
 }
 
 .project-card h2 {
   margin: 10px 0 8px;
-  font-size: 18px;
+  color: #182536;
+  font-size: 19px;
+  letter-spacing: -0.035em;
   line-height: 1.3;
 }
 
 .summary {
   margin: 0;
-  color: hsl(220 15% 36%);
+  color: #53615f;
   font-size: 13px;
   line-height: 1.55;
 }
@@ -187,27 +195,29 @@ button {
 }
 
 .tag {
-  background: hsl(0 0% 90%);
+  background: #dff3e9;
+  color: #126d49;
   font-weight: 650;
 }
 
 .tech {
-  border: 1px solid hsl(0 0% 82%);
-  color: hsl(0 0% 36%);
+  border: 1px solid #cbdde8;
+  background: #f0f6fa;
+  color: #315d78;
 }
 
 .project-card footer {
   margin-top: 16px;
   padding-top: 12px;
-  border-top: 1px solid hsl(0 0% 92%);
-  color: hsl(0 0% 42%);
+  border-top: 1px solid #e1e7e3;
+  color: #687572;
   font-size: 11px;
 }
 
 .card-action {
   display: block;
   margin-top: 12px;
-  color: hsl(220 35% 14%);
+  color: #182536;
   font-size: 11px;
   font-weight: 750;
 }
@@ -216,7 +226,7 @@ button {
   position: fixed;
   z-index: 10;
   inset: 0;
-  background: rgb(13 22 38 / 38%);
+  background: rgb(24 37 54 / 42%);
 }
 
 .detail-panel {
@@ -228,7 +238,7 @@ button {
   height: 100%;
   flex-direction: column;
   overflow-y: auto;
-  background: hsl(0 0% 98%);
+  background: #fbfcfa;
   box-shadow: -12px 0 36px rgb(0 0 0 / 16%);
   animation: detail-in 180ms ease-out;
 }
@@ -277,7 +287,7 @@ button {
 .detail-section {
   margin-top: 28px;
   padding-top: 20px;
-  border-top: 1px solid hsl(0 0% 87%);
+  border-top: 1px solid #dbe3df;
 }
 
 .detail-section h3 {
@@ -314,7 +324,7 @@ button {
 .detail-links a {
   padding: 10px 13px;
   border-radius: 8px;
-  background: hsl(220 35% 14%);
+  background: #182536;
   color: white;
   font-size: 12px;
   font-weight: 700;
