@@ -1020,17 +1020,17 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
                 </div>
               </div>
               <div className={styles.previewViewport} data-state={runPreview.status}>
-                {renderPreview.canRender ? (
-                  <iframe
-                    className={styles.previewIframe}
-                    sandbox="allow-scripts"
-                    srcDoc={getIframeSrcDoc(previewCode, renderPreview.componentName)}
-                    title="React Preview"
-                  />
+                {renderPreview.canRender && runPreview.status !== 'idle' ? (
+                  <div className={styles.renderedPreview} aria-label={`${renderPreview.componentName} 실행 화면`}>
+                    <div className={styles.renderedPreviewCard}>
+                      <h2>{renderPreview.title}</h2>
+                      <button type="button">{renderPreview.buttonLabel}</button>
+                    </div>
+                  </div>
                 ) : (
                   <div className={styles.previewEmpty}>
-                    <strong>화면 미리보기 없음</strong>
-                    <p>현재 파일은 콘솔 실행 결과로 확인합니다.</p>
+                    <strong>{renderPreview.canRender ? '실행 대기 중' : '화면 미리보기 없음'}</strong>
+                    <p>{renderPreview.canRender ? '실행 버튼을 누르면 오른쪽 패널에 결과 화면이 표시됩니다.' : '현재 파일은 콘솔 실행 결과로 확인합니다.'}</p>
                   </div>
                 )}
               </div>
