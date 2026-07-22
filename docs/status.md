@@ -254,5 +254,6 @@
   - StrictMode 이중 마운트 하이드레이트 버그 수정(ref 가드 제거, per-run cancelled). 실측 로그인은 기존 계정(비밀번호 채팅 전용·미기록), 비밀·DB URL·키를 로그·커밋에 미노출
 - **SPEC-DB-001 완료 (2026-07-22)** — T-015 AC1~AC6 실측 PASS로 완료 처리. Cowork가 Spec 상태 헤더·개정 기록·index.md 갱신. 인증·영속성 토대(스키마·RLS·2-클라이언트·Chat/Question 실저장·BYOK 암호화 경로)까지 실제 Supabase로 섬. **다음: SPEC-AI-001**(실제 3사 AI 파이프라인 — 서버 SourceAnswer 생성·정규화·저장 + web 실호출로 Mock 교체)
 - **SPEC-AI-001 뼈대 작성 (2026-07-22, Ready)** — AI Provider 실호출·SourceAnswer 생성 Spec. Step 1~7 확정: 비동기+SSE·명시적 생성, 타임아웃 45초·재시도 구분(일시적+스키마실패만), 전멸=고정문구+완료, 좌초=미룸(안정화), BYOK 하이브리드(플래그 기본 ON·사전 키 점검·키 없으면 시작 차단), 관측 메타 JSONB, StructuredContent 확장(summary·order·kind 자유), provider별 프롬프트, Context=web 전달(임시→서버화 후 DB 기반). 어젠다 분류·충돌 판단 기준은 SPEC-AI-002로 명시(사용자 제기). 키 입력 UI는 SPEC-SETTINGS-001 분리. 다음: 사용자 컨펌 → T-016 구현
+- **ADR-005 작성 + SPEC-AI-001 §2.3 반영 (2026-07-22)** — AI 파이프라인 모듈 경계(포트 & 어댑터). 5개 포트(ProviderClient·AnswerPromptTemplate·AnswerNormalizer·AgendaClassifier·ConflictComparator) 인터페이스 확정, **설정 선택 + 버전 스탬프**로 교체·재현. 구현은 provider/prompt/정규화=AI-001, 분류/비교=AI-002(빈 코드 없음). '프레임워크가 아니라 이음새' 원칙
 - 이후: SPEC-AI-001~003(Provider·Manager·FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

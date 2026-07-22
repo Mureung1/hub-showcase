@@ -1,7 +1,7 @@
 # SPEC-AI-001. AI Provider 실호출·SourceAnswer 생성 (Real Provider Pipeline)
 
 - 상태: **Ready (Step 1~7 확정, 구현 대기)** — 2026-07-22
-- 기준 문서: `docs/domain-policy.md`(2·3·5장), `docs/data-model.md`(3.4 source_answers·1.5 JSONB·1.6 NO_VALUE), `docs/decisions/ADR-002-data-access-clients.md`, `docs/decisions/ADR-003-ai-provider-scope.md`, `docs/specs/SPEC-SCHEMA-001-core-contracts.md`(5.3 SourceAnswer·5.3.1 StructuredContent·7 errorCode), `docs/specs/SPEC-DB-001-user-ownership-and-rls.md`(2-클라이언트·BYOK 암호화·apiStorageAdapter), `CLAUDE.md` 5·6·8장
+- 기준 문서: `docs/domain-policy.md`(2·3·5장), `docs/data-model.md`(3.4 source_answers·1.5 JSONB·1.6 NO_VALUE), `docs/decisions/ADR-002-data-access-clients.md`, `docs/decisions/ADR-003-ai-provider-scope.md`, `docs/decisions/ADR-005-ai-pipeline-module-boundaries.md`, `docs/specs/SPEC-SCHEMA-001-core-contracts.md`(5.3 SourceAnswer·5.3.1 StructuredContent·7 errorCode), `docs/specs/SPEC-DB-001-user-ownership-and-rls.md`(2-클라이언트·BYOK 암호화·apiStorageAdapter), `CLAUDE.md` 5·6·8장
 - 작성 방식:
   - 0장 "고정 사항"은 확정된 정책·데이터 모델·이전 Spec에서 온 것이며, 이 Spec에서 임의로 바꾸지 않는다.
   - 1장 "결정 사항"은 사용자가 직접 결정했다(Step 1~7). Agent는 질문과 (a)/(b) 선택지·추천을 제시하고 결정을 받아 적었다.
@@ -75,6 +75,18 @@
 | 좌초 복구(processing timeout 회수·중단 재구독) | 마지막 주 안정화 |
 | 서버 DB 기반 Context 구성(직전 FinalAnswer·이전 DecisionNote를 DB에서) | FinalAnswer·노트 서버화 이후 |
 | 앱 기본 키 사용량 제한·비용 가드 | 후속(운영) |
+
+---
+
+### 2.3 모듈 경계 (포트 & 어댑터 — ADR-005)
+
+AI 파이프라인은 교체 가능한 **5개 포트**로 나눈다(ADR-005: `ProviderClient`·`AnswerPromptTemplate`·`AnswerNormalizer`·`AgendaClassifier`·`ConflictComparator`). **AI-001은 이 중 셋을 실제 구현·배선**한다:
+
+- `ProviderClient` — provider별 어댑터 + 레지스트리(`Map<AiProvider, ProviderClient>`), 호출·타임아웃·재시도 캡슐화.
+- `AnswerPromptTemplate` — `/prompts`에 provider별·버전별. 사용 버전을 `source_answers.prompt_version`에 스탬프.
+- `AnswerNormalizer` — 원문 → `StructuredContent`(Zod). Provider 호출과 분리(파싱 규칙만 교체 가능).
+
+활성 구현·버전은 **설정(config/env)** 으로 선택하고, 사용 버전은 저장 레코드에 스탬프한다(교체 + 재현성). 분류(`AgendaClassifier`)·비교(`ConflictComparator`) 포트는 인터페이스를 **ADR-005에서 예약**하고 **구현은 SPEC-AI-002**에서 한다(이번 슬라이스에선 서버 호출 지점이 없어 빈 구현을 만들지 않는다). "프레임워크가 아니라 이음새" — 이음새당 인터페이스 하나·초기 구현 하나, 범용 플러그인 장치는 만들지 않는다.
 
 ---
 
@@ -262,7 +274,7 @@ response_meta (jsonb)
 
 | 항목 | 다루는 곳 |
 |---|---|
-| 어젠다 분류 기준·비교/충돌 판단 기준·근거 저장 구조 | **SPEC-AI-002 (Manager)** — 사용자 제기 핵심. 커지면 분류/비교 분리 검토 |
+| 어젠다 분류 기준·비교/충돌 판단 기준·근거 저장 구조 (ADR-005 `AgendaClassifier`·`ConflictComparator` 포트 구현) | **SPEC-AI-002 (Manager)** — 사용자 제기 핵심. 커지면 분류/비교 분리 검토 |
 | FinalAnswer 서버 생성·`generation_mode` 전 Provider 실패 표현 | SPEC-AI-003 |
 | BYOK 키 입력·검증·마스킹 UI | SPEC-SETTINGS-001 |
 | 좌초 복구(processing 회수·실시간 재구독) | 마지막 주 안정화 |
@@ -276,3 +288,4 @@ response_meta (jsonb)
 | 일자 | 내용 |
 |---|---|
 | 2026-07-22 | 최초 작성(뼈대). Step 1~7 사용자 결정 반영(1장 표). 비동기+SSE, 명시적 생성, 타임아웃 45초·재시도 구분, 전멸=고정문구+완료, 좌초=미룸, BYOK 하이브리드(플래그 기본 ON·사전 점검), 관측 메타 JSONB, StructuredContent 확장(summary·order·kind 자유), provider별 프롬프트, Context=web 전달(임시). 어젠다 분류·충돌 판단 기준은 AI-002로 명시(사용자 제기) |
+| 2026-07-22 | 모듈 경계 반영(ADR-005). §2.3 추가 — AI 파이프라인 5개 포트(ProviderClient·AnswerPromptTemplate·AnswerNormalizer·AgendaClassifier·ConflictComparator), 설정 선택 + 버전 스탬프로 교체·재현. AI-001 구현=provider/prompt/normalizer, 분류/비교=AI-002. 기준 문서·§12 반영 |
