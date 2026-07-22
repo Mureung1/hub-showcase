@@ -1,4 +1,5 @@
 import Card from './Card.jsx'
+import ProgressBarFill from './ProgressBarFill.jsx'
 import MealTypeBadge from './MealTypeBadge.jsx'
 import SourceBadge from './SourceBadge.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
@@ -39,15 +40,7 @@ export function NutrientBars({ nutrients }) {
               </span>
             </div>
             <div style={{ height: 6, background: colors.track, borderRadius: radius.pill, overflow: 'hidden' }}>
-              <div
-                style={{
-                  width: `${percent}%`,
-                  height: '100%',
-                  background: isUnknown ? colors.border : colors.primary,
-                  borderRadius: radius.pill,
-                  transition: 'width 0.3s ease-out',
-                }}
-              />
+              <ProgressBarFill percent={percent} color={isUnknown ? colors.border : colors.primary} />
             </div>
           </div>
         )

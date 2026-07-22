@@ -1,4 +1,7 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import Pressable from './Pressable.jsx'
+import { TABS } from '../lib/tabs.js'
+import { useTabTransition } from '../lib/useTabTransition.js'
 import { colors, font, layout, spacing } from '../styles/theme.js'
 
 // lucide-react가 설치돼 있지 않아, 같은 스타일(24x24, stroke=currentColor, 2px)의
@@ -59,17 +62,20 @@ function UserIcon() {
   )
 }
 
-const TABS = [
-  { key: 'home', label: '홈', path: '/analyze', match: (p) => p.startsWith('/analyze') || p.startsWith('/result'), Icon: CameraIcon },
-  { key: 'meals', label: '식단', path: '/meals', match: (p) => p.startsWith('/meals'), Icon: UtensilsIcon },
-  { key: 'calendar', label: '달력', path: '/calendar', match: (p) => p.startsWith('/calendar'), Icon: CalendarIcon },
-  { key: 'map', label: '지도', path: '/map', match: (p) => p.startsWith('/map'), Icon: MapPinIcon },
-  { key: 'my', label: 'MY', path: '/profile', match: (p) => p.startsWith('/profile'), Icon: UserIcon },
-]
+// 탭 순서/경로는 lib/tabs.js가 단일 소스다(화면 전환 방향 계산이 같은 순서를 봐야 하므로).
+// 아이콘만 여기서 키에 붙인다.
+const TAB_ICONS = {
+  home: CameraIcon,
+  meals: UtensilsIcon,
+  calendar: CalendarIcon,
+  map: MapPinIcon,
+  my: UserIcon,
+}
 
 export default function BottomTabBar() {
   const location = useLocation()
-  const navigate = useNavigate()
+  // 탭 인덱스를 비교해 슬라이드 방향을 정하고, 전환 중 중복 클릭을 무시한다(FR-4.2).
+  const navigateWithTransition = useTabTransition()
 
   return (
     <nav
@@ -85,16 +91,16 @@ export default function BottomTabBar() {
       }}
     >
       <div style={{ maxWidth: layout.shellMaxWidth, margin: '0 auto', display: 'flex' }}>
-        {TABS.map(({ key, label, path, match, Icon: TabIcon }) => {
+        {TABS.map(({ key, label, path, match }) => {
+          const TabIcon = TAB_ICONS[key]
           const active = match(location.pathname)
           const color = active ? colors.primary : colors.muted
 
           return (
-            <button
+            <Pressable
               key={key}
               type="button"
-              className="tds-press"
-              onClick={() => navigate(path)}
+              onClick={() => navigateWithTransition(path)}
               aria-current={active ? 'page' : undefined}
               style={{
                 flex: 1,
@@ -110,9 +116,14 @@ export default function BottomTabBar() {
                 cursor: 'pointer',
               }}
             >
-              <TabIcon />
+              {/* 선택될 때 1회 바운스(FR-4.1). key에 active를 섞어 두면 선택 상태가 바뀌는 순간
+                  React가 노드를 새로 만들어 CSS 애니메이션이 처음부터 다시 재생된다 — 별도의
+                  타이머나 상태 없이 "선택 시 1회"가 정확히 나온다. */}
+              <span key={active ? 'on' : 'off'} className={active ? 'tds-tab-bounce' : undefined} style={{ display: 'block' }}>
+                <TabIcon />
+              </span>
               <span style={{ fontSize: font.size.xs, fontWeight: active ? 700 : 500 }}>{label}</span>
-            </button>
+            </Pressable>
           )
         })}
       </div>

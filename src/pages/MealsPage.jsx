@@ -8,6 +8,7 @@ import LeaderboardCard from '../components/LeaderboardCard.jsx'
 import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import NationalComparisonCard from '../components/NationalComparisonCard.jsx'
 import { NutrientBars } from '../components/NutritionCard.jsx'
+import ProgressBarFill from '../components/ProgressBarFill.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
 import Skeleton from '../components/Skeleton.jsx'
@@ -51,15 +52,7 @@ function IntakeBar({ label, unit, actual, recommended, isLimit }) {
         </span>
       </div>
       <div style={{ height: 8, background: colors.track, borderRadius: radius.pill, overflow: 'hidden' }}>
-        <div
-          style={{
-            width: `${percent}%`,
-            height: '100%',
-            background: barColor,
-            borderRadius: radius.pill,
-            transition: 'width 0.3s ease-out, background 0.3s ease-out',
-          }}
-        />
+        <ProgressBarFill percent={percent} color={barColor} />
       </div>
       <p style={{ margin: `${spacing.xs}px 0 0`, fontSize: font.size.xs, fontWeight: 600, color: statusColor }}>{statusText}</p>
     </div>

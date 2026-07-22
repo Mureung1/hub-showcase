@@ -255,6 +255,17 @@ the 1,000-row sample generator: `docs/csv-crossplatform-test.md`, `scripts/gener
   font, layout, and shared inline `styles.*` objects like `styles.page`/`styles.card`) — components
   should reference these tokens, not hardcode hex/px values. Interactive elements get
   `className="tds-press"` (defined in `src/index.css`) for the shared press animation.
+- **Motion lives in CSS, not a library.** framer-motion was measured and rejected (+41 kB gzip on a
+  bundle the APK re-downloads on every cold start, since it loads a remote URL). `src/index.css` holds
+  every keyframe; JS only sets `<html data-nav-direction="forward|back|none">`. Three pieces:
+  `src/components/Pressable.jsx` is the *single* press-feedback component (buttons/tabs/cards all route
+  through it — don't hand-roll a scale animation anywhere else), `src/lib/tabs.js` is the tab-order
+  single source (the tab bar and the slide-direction calc must agree), and `src/lib/useTabTransition.js`
+  drives `document.startViewTransition(() => flushSync(() => navigate(…)))` with a CSS-animation
+  fallback. **Only `transform`/`opacity` may be animated** — progress bars use
+  `ProgressBarFill`'s `scaleX`, never `width`; the two remaining `stroke-dashoffset` transitions are
+  deliberate (SVG paint-only, no reflow). `AppShell` also resets `data-nav-direction` on every route
+  change and restores per-tab scroll position. Details: `docs/interaction-guide.md`.
 - **`.claude/commands/toss.md`** (invoked via `/toss`) is a project-specific skill applying Toss
   design-system conventions, with detailed docs under `디자인/docs/`. Note one intentional
   deviation documented in `theme.js`'s header comment: this app uses a single green accent

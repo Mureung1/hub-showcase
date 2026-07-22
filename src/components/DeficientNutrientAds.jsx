@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
+import Pressable from './Pressable.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { COUPANG_DISCLOSURE, nutrientLabel } from '../data/coupangProducts.js'
 import { trackAdClick, trackAdImpression } from '../lib/adData.js'
@@ -66,7 +67,8 @@ function AdProductCard({ product }) {
   }
 
   return (
-    <a
+    <Pressable
+      as="a"
       href={product.partnersUrl}
       target="_blank"
       rel="noreferrer sponsored nofollow"
@@ -74,7 +76,6 @@ function AdProductCard({ product }) {
         e.preventDefault()
         handleClick()
       }}
-      className="tds-press"
       style={{
         flexShrink: 0,
         width: 232,
@@ -126,7 +127,7 @@ function AdProductCard({ product }) {
           </span>
         </div>
       </div>
-    </a>
+    </Pressable>
   )
 }
 

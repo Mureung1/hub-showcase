@@ -1,3 +1,4 @@
+import ProgressBarFill from './ProgressBarFill.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { buildNutrientStatusRows, calcAchievementPercent, NUTRIENT_STATUS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing } from '../styles/theme.js'
@@ -47,15 +48,7 @@ function NutrientBarRow({ row }) {
     <div style={{ display: 'grid', gridTemplateColumns: '68px 1fr 56px', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
       <span style={{ fontSize: font.size.sm, color: colors.textStrong, fontWeight: 600 }}>{row.label}</span>
       <div style={{ height: 10, background: colors.track, borderRadius: radius.pill, overflow: 'hidden' }}>
-        <div
-          style={{
-            width: `${fillPercent}%`,
-            height: '100%',
-            background: meta.color,
-            borderRadius: radius.pill,
-            transition: 'width 0.3s ease-out',
-          }}
-        />
+        <ProgressBarFill percent={fillPercent} color={meta.color} />
       </div>
       <span style={{ fontSize: font.size.sm, fontWeight: 700, color: meta.color, textAlign: 'right' }}>
         {row.percent}%{isOver ? '!' : ''}
