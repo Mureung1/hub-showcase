@@ -51,3 +51,15 @@
   * 나와 상대방의 역할을 스위칭할 때 말풍선 위치가 꼬이는 버그 수정. 메시지를 저장할 때 발송자의 역할을 함께 저장(`sender: currentUser.role`)하고, 현재 접속자의 역할과 일치할 때만 우측 정렬되도록 로직 변경.
   * 오렌지색 말풍선 내부의 글자 색상을 흰색에서 검은색(`var(--color-text-primary)`)으로 변경하여 가독성 개선.
 * **관련 파일**: `ChatRoom.jsx`, `App.jsx`
+
+## 2026-07-22
+
+### ✅ 1단계: 백엔드 Socket.io 설정 (완료)
+* **목표**: 기존 Express 서버에 실시간 양방향 통신을 위한 Socket.io 패키지 적용 및 초기 세팅
+* **작업 내역**: 
+  * `server` 디렉토리 내에 `socket.io` 패키지 설치
+  * Node.js 내장 `http` 모듈로 `express` 앱을 래핑하여 `socket.io` 인스턴스 연결 및 CORS 환경 구성
+  * 실시간 연결 확인용 `connection` 및 `disconnect` 로깅 로직 작성
+* **수정될 파일명**:
+  * `server/package.json`
+  * `server/src/app.js`

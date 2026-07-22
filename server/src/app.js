@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import http from 'http';
+import { Server } from 'socket.io';
 import { supabase, isMock, mockDb } from './supabase.js';
 
 dotenv.config();
@@ -15,6 +17,22 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: CLIENT_URL,
+    credentials: true
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log(`🔗 A user connected: ${socket.id}`);
+
+  socket.on('disconnect', () => {
+    console.log(`🔌 User disconnected: ${socket.id}`);
+  });
+});
 
 // Health Check API
 app.get('/api/health', (req, res) => {
@@ -115,7 +133,7 @@ app.post('/api/posts', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📡 Database mode: ${isMock ? 'Mock DB (In-memory)' : 'Supabase Cloud'}`);
 });
