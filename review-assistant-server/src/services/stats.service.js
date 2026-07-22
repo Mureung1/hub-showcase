@@ -1,13 +1,19 @@
-import { db } from '../db/db.js'
-
-const allRowsStmt = db.prepare(`
-  SELECT sentiment, keywords, score, created_at FROM reviews WHERE session_id = ?
-`)
+import { supabase } from '../db/supabaseClient.js'
 
 const TOP_KEYWORDS_LIMIT = 5
 
-export function getSummary(sessionId) {
-  const rows = allRowsStmt.all(sessionId)
+async function fetchRows(sessionId) {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('sentiment, keywords, score, created_at')
+    .eq('session_id', sessionId)
+
+  if (error) throw new Error(`통계 조회 실패: ${error.message}`)
+  return data
+}
+
+export async function getSummary(sessionId) {
+  const rows = await fetchRows(sessionId)
 
   const sentimentBreakdown = { positive: 0, negative: 0, neutral: 0 }
   const keywordCounts = {}
@@ -16,8 +22,7 @@ export function getSummary(sessionId) {
   for (const row of rows) {
     sentimentBreakdown[row.sentiment] += 1
     scoreSum += row.score
-    const keywords = JSON.parse(row.keywords)
-    for (const keyword of keywords) {
+    for (const keyword of row.keywords) {
       keywordCounts[keyword] = (keywordCounts[keyword] || 0) + 1
     }
   }
@@ -35,8 +40,8 @@ export function getSummary(sessionId) {
   }
 }
 
-export function getMonthlyStats(sessionId) {
-  const rows = allRowsStmt.all(sessionId)
+export async function getMonthlyStats(sessionId) {
+  const rows = await fetchRows(sessionId)
 
   const months = {}
   for (const row of rows) {

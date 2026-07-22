@@ -149,6 +149,18 @@ CLAUDE.md의 "로그인 없는 익명 세션" 결정을 뒤집고, 실제 회원
 - [x] **P1** — [#30](https://github.com/rldbs5353/hub/issues/30) API 파싱 실패·타임아웃 에러 코드 매핑 (수 7/22 완료. 새 에러 코드는 추가하지 않고 기존 `ANALYSIS_FAILED`(500)로 계속 매핑하는 게 확정된 설계(`기획서.md` 8-5) — 대신 `claude.client.js`에 `AbortController`로 15초 타임아웃을 추가하고(기존엔 타임아웃이 아예 없어서 API가 응답을 안 주면 요청이 무한정 걸릴 수 있었음), 네트워크 오류/응답 JSON 파싱 실패도 각각 명확한 에러 메시지로 던지도록 하드닝. 5가지 실패 케이스(타임아웃/네트워크 오류/비정상 상태코드/JSON 파싱 실패/tool_use 누락)를 fetch를 모킹한 스크립트로 재현해 전부 의도한 메시지로 던지는 것 확인 — 전부 `.status`/`.code`가 없는 순수 Error라 `errorHandler`가 기존대로 500 `ANALYSIS_FAILED`로 통일해서 응답하는 것도 코드 리뷰로 재확인)
 - [x] **P1** — [#31](https://github.com/rldbs5353/hub/issues/31) 반복 문제 감지 로직 재검증 (수 7/22 완료. "시끄럽다"는 공통 불만이 담긴 리뷰 3개를 같은 세션으로 연달아 분석해 curl+DB 직접 조회로 확인 — 부정/중립 리뷰에 걸쳐 `분위기` 키워드가 반복 감지되어 `recurringIssues`에 정상적으로 뜨는 것 확인. 검증 과정에서 별개의 사실도 하나 발견: Windows Git Bash에서 한글이 든 `curl -d`를 그대로 넘기면 인코딩이 깨져 AI가 리뷰 원문을 제대로 못 읽고 엉뚱한 감정/키워드를 내는 경우가 있었음 — 코드 버그가 아니라 테스트 방법 문제였고, `--data-binary @file`(UTF-8 파일)로 바꾸니 정상 동작. 앞으로 한글 리뷰로 API를 curl 검증할 땐 inline `-d` 대신 파일로 넘기기로)
 
+### 보너스 — DB/인증을 SQLite에서 Supabase로 전환 (수 7/22)
+
+계획에는 없었지만, "이거 지금 supabase야?" 질문에서 시작해서 실제로 Supabase(Postgres + Auth)로 전면 교체까지 진행했다. Auth 연동은 프론트엔드 코드를 한 줄도 안 건드리는 방식(백엔드가 대신 Supabase Auth를 호출)으로 결정 — Claude API를 서버에만 감춰둔 것과 같은 패턴.
+
+- [x] Supabase 프로젝트 생성(사용자가 직접), `.env`에 `SUPABASE_URL`/`SUPABASE_ANON_KEY`/`SUPABASE_SERVICE_ROLE_KEY` 설정 — 값은 절대 채팅에 노출하지 않고 role/연결 성공 여부만 확인
+- [x] `reviews`/`dashboard_insights` 테이블을 Supabase SQL Editor에서 생성(`users`/`auth_tokens`는 Supabase 내장 `auth.users`가 대체), RLS는 활성화하되 정책 없이 기본 거부 — 백엔드는 `service_role` 키로 우회
+- [x] `db.js`(SQLite) 삭제 → `db/supabaseClient.js` 신설. `history`/`stats`/`insight`/`auth` 서비스 전부 sync SQLite 호출 → async Supabase 호출로 재작성, 관련 컨트롤러/라우트에 `asyncHandler` 적용 범위 확대
+- [x] `auth.service.js`를 Supabase Auth(`admin.createUser`/`signInWithPassword`/`getUser`/`admin.signOut`)로 전면 교체 — 함수 시그니처와 응답 모양(`{user, token}`)은 그대로 유지해서 프론트/컨트롤러 변경 없음
+- [x] **실전 버그 발견 및 수정**: 로그인(`signInWithPassword`)과 DB 쿼리를 같은 Supabase 클라이언트 인스턴스로 하면, 로그인 호출이 그 클라이언트의 세션을 바꿔버려서 이후 DB 쿼리 인증 헤더가 `service_role`이 아니라 방금 로그인한 유저 권한으로 나가 RLS에 막히는 것을 확인(`supabase-js` 소스의 `_getSessionToken()`까지 확인). 세션을 만들거나 읽는 호출(`signInWithPassword`/`getUser`)은 매번 새 클라이언트 인스턴스로 분리해서 해결
+- [x] curl로 회원가입→`/me`→리뷰분석(DB insert)→통계→인사이트 캐싱→로그아웃(토큰 실제 무효화 확인)→중복 이메일(`EMAIL_TAKEN`)/오타 비밀번호(`INVALID_CREDENTIALS`) 에러 코드→익명 세션 분석까지 전 구간 curl로 검증, 테스트 데이터 정리
+- [x] `CLAUDE.md` DB/인증 결정 문단 갱신(2026-07-22), 아키텍처 다이어그램(README.md)도 Supabase 반영해서 갱신
+
 - [ ] **P1** — [#32](https://github.com/rldbs5353/hub/issues/32) 핵심 로직 테스트 보강 (목 7/23)
 - [ ] **P1** — [#33](https://github.com/rldbs5353/hub/issues/33) 규칙 기반 로직 정리 및 리팩토링 (목 7/23)
 - [ ] **P1** — [#34](https://github.com/rldbs5353/hub/issues/34) 코드 리뷰 — 에이전트 활용 (목 7/23)

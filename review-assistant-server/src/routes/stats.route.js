@@ -4,6 +4,6 @@ import { asyncHandler } from '../middleware/asyncHandler.js'
 
 export const statsRouter = Router()
 
-statsRouter.get('/summary', summary)
-statsRouter.get('/monthly', monthly)
+statsRouter.get('/summary', asyncHandler(summary))
+statsRouter.get('/monthly', asyncHandler(monthly))
 statsRouter.get('/insight', asyncHandler(insight))
