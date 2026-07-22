@@ -7,11 +7,15 @@ import styles from './InputPage.module.css';
 import { buildScheduleRequest, validateInputForm, type CaffeineIntake, type Exam } from './buildScheduleRequest';
 import { useSchedule } from '../../context/ScheduleContext';
 
-/** 지금 시각을 "HH:MM"으로. 음료 추가 시트를 열 때 기본값으로 쓴다. */
+/**
+ * 지금 시각을 "HH:MM"으로. 음료 추가 시트를 열 때 기본값으로 쓴다.
+ * 입력칸이 10분 단위(step=600)라 기본값도 10분 단위로 내림한다 — 안 맞으면
+ * 브라우저가 값을 잘못된 것으로 표시한다(2026-07-22).
+ */
 function nowHhMm(): string {
   const now = new Date();
   const hh = String(now.getHours()).padStart(2, '0');
-  const mm = String(now.getMinutes()).padStart(2, '0');
+  const mm = String(Math.floor(now.getMinutes() / 10) * 10).padStart(2, '0');
   return `${hh}:${mm}`;
 }
 
@@ -27,6 +31,8 @@ export function InputPage() {
   const { setRequest, setStatus, setErrorMessage } = useSchedule();
   /** 계산하기를 눌렀을 때 막힌 이유. null이면 문제 없음 */
   const [formError, setFormError] = useState<string | null>(null);
+  /** 시험 추가·수정 시트에서 막힌 이유 */
+  const [examSheetError, setExamSheetError] = useState<string | null>(null);
 
   const [exams, setExams] = useState<Exam[]>([
     { subject: '세포생물학', date: '', time: '', studyHours: 3 },
@@ -39,8 +45,9 @@ export function InputPage() {
     { label: '아이스 아메리카노', mg: 150, time: '09:00' },
   ]);
   const [sensitivity, setSensitivity] = useState<'둔감' | '보통' | '예민'>('보통');
-  const [age, setAge] = useState(23);
-  const [weightKg, setWeightKg] = useState(65);
+  // 숫자를 다 지웠을 때 0이 남지 않도록 빈 문자열도 허용한다(2026-07-22). 계산 직전에 검증한다.
+  const [age, setAge] = useState<number | ''>(23);
+  const [weightKg, setWeightKg] = useState<number | ''>(65);
   const [gender, setGender] = useState<'여성' | '남성'>('여성');
   const [pregnant, setPregnant] = useState(false);
   const [oralContraceptive, setOralContraceptive] = useState(false);
@@ -71,6 +78,7 @@ export function InputPage() {
   function openAddExam() {
     setEditingExamIndex(null);
     setNewExam({ subject: '', date: '', time: '', studyHours: 4 });
+    setExamSheetError(null);
     setExamSheetOpen(true);
   }
 
@@ -78,11 +86,23 @@ export function InputPage() {
     setEditingExamIndex(index);
     setNewExam(exams[index]);
     setExamActionIndex(null);
+    setExamSheetError(null);
     setExamSheetOpen(true);
   }
 
+  // 시험을 저장하는 시점에 막는다(2026-07-22) — 계산하기에서 막으면 어느 시험이 문제인지
+  // 확인하러 다시 시트를 열어야 해서, 값을 넣는 자리에서 바로 알려주는 게 낫다.
   function saveExam() {
-    if (!newExam.subject) return;
+    if (!newExam.subject) {
+      setExamSheetError('과목명을 입력해주세요.');
+      return;
+    }
+    if (!newExam.date || !newExam.time) {
+      setExamSheetError('시험 날짜와 시각을 모두 입력해주세요.');
+      return;
+    }
+    setExamSheetError(null);
+
     if (editingExamIndex !== null) {
       setExams((prev) => prev.map((exam, i) => (i === editingExamIndex ? newExam : exam)));
     } else {
@@ -204,10 +224,11 @@ export function InputPage() {
         </div>
         <Card style={{ display: 'flex', gap: 12 }}>
           <Field label="평소 취침" style={{ margin: 0, flex: 1 }}>
-            <input type="time" value={bedtime} onChange={(e) => setBedtime(e.target.value)} />
+            {/* step=600초(10분) — 1분 단위면 스크롤이 너무 길어진다(2026-07-22) */}
+            <input type="time" step={600} value={bedtime} onChange={(e) => setBedtime(e.target.value)} />
           </Field>
           <Field label="평소 기상" style={{ margin: 0, flex: 1 }}>
-            <input type="time" value={wakeTime} onChange={(e) => setWakeTime(e.target.value)} />
+            <input type="time" step={600} value={wakeTime} onChange={(e) => setWakeTime(e.target.value)} />
           </Field>
         </Card>
       </div>
@@ -255,13 +276,19 @@ export function InputPage() {
         </div>
         <Card>
           <Field label="나이" style={{ marginBottom: 14 }}>
-            <input type="number" value={age} onChange={(e) => setAge(Number(e.target.value))} placeholder="나이" />
+            {/* 다 지우면 0이 아니라 빈칸이 되어야 한다 — 0이 남으면 "021"처럼 입력됨(2026-07-22) */}
+            <input
+              type="number"
+              value={age}
+              onChange={(e) => setAge(e.target.value === '' ? '' : Number(e.target.value))}
+              placeholder="나이"
+            />
           </Field>
           <Field label="체중 (kg)" style={{ marginBottom: 14 }}>
             <input
               type="number"
               value={weightKg}
-              onChange={(e) => setWeightKg(Number(e.target.value))}
+              onChange={(e) => setWeightKg(e.target.value === '' ? '' : Number(e.target.value))}
               placeholder="체중"
             />
           </Field>
@@ -308,7 +335,7 @@ export function InputPage() {
       <div className={text.sectionBlock}>
         <Card>
           <Slider
-            name="최소 수면시간"
+            name="원하는 최소 수면시간"
             value={minSleepHours}
             min={2}
             max={8}
@@ -345,11 +372,13 @@ export function InputPage() {
           <Field label="시각" style={{ flex: 1 }}>
             <input
               type="time"
+              step={600}
               value={newExam.time}
               onChange={(e) => setNewExam((prev) => ({ ...prev, time: e.target.value }))}
             />
           </Field>
         </div>
+        {examSheetError !== null && <WarningBanner>{examSheetError}</WarningBanner>}
         <div style={{ marginBottom: 18 }}>
           <Slider
             name="남은 공부 시간"
@@ -369,7 +398,7 @@ export function InputPage() {
 
       <BottomSheet open={drinkSheetOpen} onClose={() => setDrinkSheetOpen(false)} title="마신 음료 선택">
         <Field label="마신 시각 (오늘)" style={{ marginBottom: 14 }}>
-          <input type="time" value={newDrinkTime} onChange={(e) => setNewDrinkTime(e.target.value)} />
+          <input type="time" step={600} value={newDrinkTime} onChange={(e) => setNewDrinkTime(e.target.value)} />
         </Field>
         {DRINK_PRESETS.map((drink) => (
           <Row
