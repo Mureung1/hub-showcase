@@ -35,6 +35,38 @@
 → 호출 또는 취소 시 링크 즉시 무효화
 ```
 
+## 데이터 흐름과 아키텍처
+
+```mermaid
+flowchart LR
+  subgraph users["사용자 화면"]
+    patient["환자 React<br/>:5173"]
+    staff["병원 관리자 React<br/>:5174"]
+    platform["플랫폼 관리자 React<br/>:5175"]
+  end
+
+  auth["Supabase Auth<br/>로그인·세션"]
+  api["Express API :3000<br/>인증·검증·비즈니스 규칙"]
+  repository["Repository<br/>pg + SQL"]
+  db[("Supabase PostgreSQL")]
+  worker["1분 자동 만료 작업"]
+  brevo["Brevo SMTP<br/>인증 메일"]
+  mock["Mock 알림톡"]
+
+  users -->|"회원가입·로그인"| auth
+  auth --> brevo
+  users -->|"JSON + Bearer token<br/>10초 Polling"| api
+  api -. "토큰 확인" .-> auth
+  api --> repository --> db
+  db --> repository --> api -->|"JSON 응답"| users
+  worker -->|"만료·마지막 이동"| api
+  worker -. "advisory lock" .-> db
+  api --> mock
+  api -->|"알림 이력"| db
+```
+
+React는 Supabase를 인증에만 직접 사용하고, 병원과 대기열 데이터는 반드시 Express와 Repository를 거쳐 PostgreSQL에 저장합니다. 상세한 요청 흐름, 주요 테이블과 현재 발견한 보완 지점은 [데이터 흐름과 아키텍처 문서](./docs/architecture.md)에서 확인할 수 있습니다.
+
 ## 핵심 기능
 
 ### 환자
@@ -65,6 +97,7 @@
 - [기획서](./docs/plan.md)
 - [시스템 기능 명세](./docs/feature-spec.md)
 - [ERD](./docs/erd.md)
+- [데이터 흐름과 아키텍처](./docs/architecture.md)
 - [화면 흐름·IA·와이어프레임](./docs/ux-structure.md)
 - [디자인 시스템](./docs/design-system.md)
 - [개발 Task 및 백로그](./docs/tasks.md)
