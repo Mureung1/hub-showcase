@@ -2,7 +2,7 @@ const express = require('express');
 const requireAuth = require('../middleware/auth');
 const { validateCreateMeeting } = require('../utils/validators');
 const ApiError = require('../utils/apiError');
-const { createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation } = require('../services/meetingService');
+const { createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation, listParticipants } = require('../services/meetingService');
 
 const router = express.Router();
 
@@ -98,6 +98,17 @@ router.delete('/:id/apply', requireAuth, async (req, res, next) => {
   try {
     const id = parseIdParam(req.params.id);
     const result = await cancelParticipation(id, req.session.userId);
+    res.json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/meetings/:id/participants — 신청자 목록(F3, 모임장만)
+router.get('/:id/participants', requireAuth, async (req, res, next) => {
+  try {
+    const id = parseIdParam(req.params.id);
+    const result = await listParticipants(id, req.session.userId);
     res.json({ data: result });
   } catch (err) {
     next(err);

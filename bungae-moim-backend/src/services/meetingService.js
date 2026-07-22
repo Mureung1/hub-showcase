@@ -365,6 +365,48 @@ async function cancelParticipation(meetingId, userId) {
   });
 }
 
+// GET /api/meetings/:id/participants — 신청자 목록(F3). 모임장만 볼 수 있다.
+// 타입 제한은 없다 — 조회는 부작용이 없고 flash 모임장도 참여자를 알아야 하기 때문이다.
+// 모든 상태(pending/approved/rejected/cancelled)를 그대로 준다. 승인·거절 결과가 목록에
+// 남아야 모임장이 자기 행동의 결과를 확인할 수 있다.
+async function listParticipants(meetingId, viewerId) {
+  const meetingRes = await pool.query('SELECT host_id FROM meetings WHERE id = $1', [meetingId]);
+  if (meetingRes.rows.length === 0) {
+    throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
+  }
+
+  // host_id는 bigint라 pg가 문자열("5")로 준다. 세션의 userId는 숫자다(userService가
+  // Number로 정규화해 넣는다). 양쪽을 Number로 맞추지 않으면 "5" !== 5가 항상 참이 되어
+  // 모임장 본인까지 전원 FORBIDDEN이 된다.
+  if (Number(meetingRes.rows[0].host_id) !== Number(viewerId)) {
+    throw new ApiError('FORBIDDEN', '모임장만 신청자 목록을 볼 수 있습니다');
+  }
+
+  // applied_at 동률에서 Postgres는 순서를 보장하지 않는다. user_id tiebreak가 없으면
+  // 같은 요청이 매번 다른 순서를 줄 수 있고, 나중에 페이징을 붙이면 경계에서 행이 새거나 겹친다.
+  const { rows } = await pool.query(
+    `SELECT p.user_id, u.nickname, u.trust_score, p.status, p.applied_at, p.responded_at
+       FROM meeting_participants p
+       JOIN users u ON u.id = p.user_id
+      WHERE p.meeting_id = $1
+      ORDER BY p.applied_at ASC, p.user_id ASC`,
+    [meetingId]
+  );
+
+  return {
+    items: rows.map((row) => ({
+      // user_id는 bigint, trust_score는 numeric — 둘 다 문자열로 오므로 여기서 숫자로 되돌린다.
+      userId: Number(row.user_id),
+      nickname: row.nickname,
+      trustScore: Number(row.trust_score),
+      status: row.status,
+      appliedAt: row.applied_at,
+      respondedAt: row.responded_at,
+    })),
+  };
+}
+
 module.exports = {
-  createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation, normalizeMeeting, PAGE_SIZE,
+  createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation,
+  listParticipants, normalizeMeeting, PAGE_SIZE,
 };
