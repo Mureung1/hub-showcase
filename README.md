@@ -20,6 +20,151 @@
 
 **B. 오늘의 브리핑 대시보드** — 앱을 열면 오늘의 일정(시간순), 루틴(시간이 아니라 "상체 day · 벤치프레스, 러닝 3km"라는 내용까지), 식단, 마감 임박 과제(D-day), 메모가 한 화면에 표시됩니다. 루틴을 완료하면 다음 운동일에 순환의 다음 단계(하체 day)가 자동으로 표시됩니다.
 
+## 아키텍처
+
+브라우저는 Supabase에 직접 접근하지 않고 모든 데이터는 Express API를 거칩니다. 점선은 아직 코드가 없는 부분(`/api/parse`, Claude 연동)입니다.
+
+```mermaid
+flowchart TD
+  subgraph CLIENT["Client — React 19 + Vite (:5173)"]
+    BP["BriefingPage.tsx"]
+    CI["ChatInput.tsx"]
+    CARDS["RoutineCard / DeadlineItem / ScheduleCard / MealCard / MemoCard"]
+  end
+
+  subgraph API["Express API — :3001"]
+    R_BRIEF["GET /api/briefing"]
+    R_ITEMS["/api/items/:type\nGET · POST · PATCH · DELETE"]
+    R_COMPLETE["POST /api/items/routines/:id/complete"]
+    R_PARSE["POST /api/parse\n[미구현]"]
+  end
+
+  subgraph SERVICES["server/services/"]
+    S_BRIEF["briefingService\nresolveTodayRoutines()"]
+    S_ITEMS["schedule · task · routine\nmeal · memo · reminder Service"]
+    S_LOG["routineLogService\nupsertRoutineLog()"]
+    S_PARSE["parseService\n[미구현]"]
+  end
+
+  DB[("Supabase Postgres\n7 tables")]
+  CLAUDE["Claude API\n[ANTHROPIC_API_KEY 대기]"]
+
+  BP -->|"fetch"| R_BRIEF
+  BP -->|"fetch"| R_ITEMS
+  CARDS -->|"체크박스 토글"| R_ITEMS
+  CARDS -->|"체크박스 토글"| R_COMPLETE
+  CI -.->|"전송 (현재 no-op)"| R_PARSE
+
+  R_BRIEF --> S_BRIEF
+  R_ITEMS --> S_ITEMS
+  R_COMPLETE --> S_LOG
+  R_PARSE -.-> S_PARSE
+
+  S_BRIEF --> DB
+  S_ITEMS --> DB
+  S_LOG --> DB
+  S_PARSE -.-> CLAUDE
+  S_PARSE -.-> DB
+
+  classDef pending stroke-dasharray: 4 3
+  class R_PARSE,S_PARSE,CLAUDE pending
+```
+
+<details>
+<summary>데이터 흐름 — 브리핑 조회 (구현·검증됨)</summary>
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as 사용자
+  participant FE as BriefingPage
+  participant EX as Express :3001
+  participant BS as briefingService
+  participant DB as Supabase
+
+  U->>FE: 페이지 진입
+  FE->>EX: GET /api/briefing
+  EX->>BS: getBriefing(date)
+  par 6개 테이블 병렬 조회
+    BS->>DB: schedules (date=오늘)
+  and
+    BS->>DB: tasks (전체)
+  and
+    BS->>DB: routines (전체)
+  and
+    BS->>DB: routine_logs (전체)
+  and
+    BS->>DB: meals (date=오늘)
+  and
+    BS->>DB: memos (전체)
+  end
+  DB-->>BS: 결과 6종
+  BS->>BS: resolveTodayRoutines()
+  BS-->>EX: Briefing 객체
+  EX-->>FE: 200 JSON (BriefingSchema.parse)
+  FE-->>U: 카드 렌더링
+```
+
+</details>
+
+<details>
+<summary>데이터 흐름 — 완료 체크 (구현·검증됨)</summary>
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as 사용자
+  participant FE as RoutineCard / DeadlineItem
+  participant EX as Express
+  participant SV as Service
+  participant DB as Supabase
+
+  U->>FE: 체크박스 클릭
+  FE->>FE: 낙관적 업데이트
+  alt 과제 완료
+    FE->>EX: PATCH /api/items/tasks/:id { completed }
+    EX->>SV: taskService.updateTask()
+  else 루틴 완료
+    FE->>EX: POST /api/items/routines/:id/complete
+    EX->>SV: routineLogService.upsertRoutineLog()
+  end
+  SV->>DB: update / upsert (unique(routine_id,date))
+  DB-->>SV: 반영된 row
+  SV-->>EX: 도메인 객체
+  EX-->>FE: 200 JSON
+```
+
+</details>
+
+<details>
+<summary>데이터 흐름 — 자연어 저장 (설계, 미구현)</summary>
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as 사용자
+  participant FE as ChatInput
+  participant EX as POST /api/parse
+  participant PS as parseService
+  participant AI as Claude API
+  participant DB as Supabase
+
+  U-->>FE: "금요일까지 DB 과제 제출"
+  FE-->>EX: 전송
+  EX-->>PS: 파싱 요청
+  PS-->>AI: 자연어 → JSON 파싱
+  AI-->>PS: intent + type + 속성
+  PS-->>PS: ParseResultSchema.parse()
+  alt zod 검증 성공
+    PS-->>DB: 해당 엔티티 저장 (raw_input 포함)
+  else zod 검증 실패
+    PS-->>DB: memos에 원문 그대로 보존
+  end
+  PS-->>FE: 확인 카드 / 되묻기 응답
+```
+
+</details>
+
 ## 기술 스택
 
 - **Frontend**: React + TypeScript (Vite, Tailwind CSS) — 모바일(390px) 기준 반응형
