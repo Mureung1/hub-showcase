@@ -43,7 +43,7 @@ async function main() {
       pickupLatitude: 37.5665,
       pickupLongitude: 126.978,
       pickupTimeSlot: '평일 저녁 7~9시',
-      deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3),
       status: 'RECRUITING',
     });
   }

@@ -5,6 +5,8 @@ const {
   createGroupPurchase,
   joinGroupPurchase,
   cancelGroupPurchaseJoin,
+  updateGroupPurchaseStatus,
+  markGroupPurchaseReceipt,
 } = require('../services/groupPurchase.service');
 const AppError = require('../utils/appError');
 
@@ -24,7 +26,34 @@ async function get(req, res, next) {
     if (!Number.isSafeInteger(id) || id < 1) {
       throw new AppError(400, '올바른 공동구매 ID가 필요합니다.', 'VALIDATION_ERROR');
     }
-    const data = await getGroupPurchaseById(id);
+    const data = await getGroupPurchaseById(id, req.user?.id);
+    return res.status(200).json({ success: true, data, error: null });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function updateStatus(req, res, next) {
+  try {
+    const groupPurchaseId = Number(req.params.id);
+    const { status } = req.body;
+    if (!Number.isSafeInteger(groupPurchaseId) || groupPurchaseId < 1 || !status) {
+      throw new AppError(400, '올바른 공동구매 ID와 상태가 필요합니다.', 'VALIDATION_ERROR');
+    }
+    const data = await updateGroupPurchaseStatus(groupPurchaseId, req.user.id, status);
+    return res.status(200).json({ success: true, data, error: null });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function receive(req, res, next) {
+  try {
+    const groupPurchaseId = Number(req.params.id);
+    if (!Number.isSafeInteger(groupPurchaseId) || groupPurchaseId < 1) {
+      throw new AppError(400, '올바른 공동구매 ID가 필요합니다.', 'VALIDATION_ERROR');
+    }
+    const data = await markGroupPurchaseReceipt(groupPurchaseId, req.user.id);
     return res.status(200).json({ success: true, data, error: null });
   } catch (err) {
     return next(err);
@@ -123,4 +152,6 @@ module.exports = {
   create,
   join,
   cancelJoin,
+  updateStatus,
+  receive,
 };

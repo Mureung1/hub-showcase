@@ -119,8 +119,8 @@ export default function Header({ currentPage, onNavigate }) {
                 ) : (
                   <>
                     <div className="td-header__dev-title">개발자 로그인</div>
-                    <button className="td-header__dev-item-btn" onClick={() => handleDevLogin(1, '호스트 (공구장)')}>
-                      <span className="material-symbols-outlined">admin_panel_settings</span>호스트 (공구장)
+                    <button className="td-header__dev-item-btn" onClick={() => handleDevLogin(1, '호스트 (방장)')}>
+                      <span className="material-symbols-outlined">admin_panel_settings</span>호스트 (방장)
                     </button>
                     <button className="td-header__dev-item-btn" onClick={() => handleDevLogin(2, '참여자 (이웃)')}>
                       <span className="material-symbols-outlined">person</span>참여자 (이웃)

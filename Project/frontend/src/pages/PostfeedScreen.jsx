@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getGroupPurchases, joinGroupPurchase } from '../api/groupPurchase';
+import { getGroupPurchases, getMyGroupPurchaseActivities, joinGroupPurchase } from '../api/groupPurchase';
 import './PostfeedScreen.css';
 
 const categories = [
@@ -23,6 +23,7 @@ export default function PostfeedScreen({ onNavigate }) {
   const [availableOnly, setAvailableOnly] = useState(false);
   const [locationName, setLocationName] = useState('경북 칠곡군 석적읍');
   const [joiningId, setJoiningId] = useState(null);
+  const hasToken = Boolean(localStorage.getItem('accessToken'));
 
   // Fetch group purchases from database
   const { data: apiResponse } = useQuery({
@@ -39,6 +40,13 @@ export default function PostfeedScreen({ onNavigate }) {
       return getGroupPurchases(categoryEnum ? { category: categoryEnum } : {});
     }
   });
+  const { data: myActivityResponse } = useQuery({
+    queryKey: ['myGroupPurchaseActivities'],
+    queryFn: getMyGroupPurchaseActivities,
+    enabled: hasToken,
+  });
+  const joinedPurchaseIds = new Set((myActivityResponse?.data?.joined || []).map((purchase) => purchase.id));
+  const hostedPurchaseIds = new Set((myActivityResponse?.data?.hosted || []).map((purchase) => purchase.id));
 
   const rawPosts = apiResponse?.data || [];
 
@@ -94,6 +102,7 @@ export default function PostfeedScreen({ onNavigate }) {
         setJoinedPosts(prev => ({ ...prev, [id]: true }));
         alert('참여 신청이 완료되었습니다!');
         queryClient.invalidateQueries({ queryKey: ['groupPurchases'] });
+        queryClient.invalidateQueries({ queryKey: ['myGroupPurchaseActivities'] });
       } else {
         alert(result.error?.message || '참여 신청에 실패했습니다.');
       }
@@ -188,7 +197,7 @@ export default function PostfeedScreen({ onNavigate }) {
               <span className="material-symbols-outlined text-3xl td-postfeed-page__near-icon">near_me</span>
               <div>
                 <h2 className="td-headline-md">{locationName}</h2>
-                <p className="td-postfeed-page__header-subtitle text-body-md">내 주변 인기 공구</p>
+                <p className="td-postfeed-page__header-subtitle text-body-md">내 주변 인기 공동구매</p>
               </div>
             </div>
             {/* Sorting Pills */}
@@ -208,7 +217,8 @@ export default function PostfeedScreen({ onNavigate }) {
           {/* Bento-style Cards Grid */}
           <div className="td-postfeed-page__grid">
             {filteredPosts.map((post) => {
-              const isJoined = joinedPosts[post.id];
+              const isJoined = joinedPosts[post.id] || joinedPurchaseIds.has(post.id);
+              const isHosted = hostedPurchaseIds.has(post.id);
               const isFull = post.currentParticipants >= post.targetParticipants;
               return (
                 <article 
@@ -248,11 +258,11 @@ export default function PostfeedScreen({ onNavigate }) {
                       </div>
                     </div>
                     <button 
-                      className={`td-postfeed-page__card-btn ${isJoined ? 'td-postfeed-page__card-btn--joined' : ''}`}
+                      className={`td-postfeed-page__card-btn ${isJoined || isHosted ? 'td-postfeed-page__card-btn--joined' : ''}`}
                       onClick={(e) => handleJoin(post.id, e)}
-                      disabled={isJoined || isFull || joiningId === post.id}
+                      disabled={isHosted || isJoined || isFull || joiningId === post.id}
                     >
-                      {joiningId === post.id ? '처리중...' : isJoined ? '신청 완료' : isFull ? '마감 완료' : '참여하기'}
+                      {isHosted ? '내가 쓴 글' : joiningId === post.id ? '처리중...' : isJoined ? '참여 중' : isFull ? '마감 완료' : '참여하기'}
                     </button>
                   </div>
                 </article>

@@ -41,3 +41,13 @@ export const cancelGroupPurchaseJoin = (id) => {
 export const getMyGroupPurchaseActivities = () => {
   return apiClient.get('/group-purchases/mine');
 };
+
+/** Advance a hosted group purchase to its next workflow status. */
+export const updateGroupPurchaseStatus = (id, status) => {
+  return apiClient.patch(`/group-purchases/${id}/status`, { status });
+};
+
+/** Mark the current participant's pickup as received. */
+export const markGroupPurchaseReceipt = (id) => {
+  return apiClient.patch(`/group-purchases/${id}/receipt`);
+};

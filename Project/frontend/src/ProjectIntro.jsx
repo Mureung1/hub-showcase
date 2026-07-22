@@ -489,7 +489,7 @@ export default function ProjectIntro() {
             {/* 하단: 실시간 진행 스텝 트래커 시각화 */}
             <div style={styles.card}>
               <h3 style={styles.cardTitle}>
-                🔄 핵심 흐름: 실시간 공구 상태 트래커 (Status Tracking)
+                🔄 핵심 흐름: 실시간 공동구매 상태 트래커 (Status Tracking)
               </h3>
               <p
                 style={{
@@ -515,7 +515,7 @@ export default function ProjectIntro() {
                     title: "픽업 대기",
                     desc: "지정 핀에서 소분 분할",
                   },
-                  { id: "5", title: "공구 종료", desc: "정산 및 상호 피드백" },
+                  { id: "5", title: "공동구매 종료", desc: "정산 및 상호 피드백" },
                 ].map((step, idx) => (
                   <div key={idx} style={styles.stepNode}>
                     <div style={styles.stepCircle(idx === 0 || idx === 1)}>
@@ -630,7 +630,7 @@ export default function ProjectIntro() {
                   </td>
                   <td style={styles.td}>
                     참여 관계 매핑 교차 테이블. 유저의 참여 목록 조회 및 특정
-                    공구방의 실시간 참여 인원 집계 카운트 최적화용 테이블 구조.
+                    공동구매방의 실시간 참여 인원 집계 카운트 최적화용 테이블 구조.
                   </td>
                 </tr>
               </tbody>
