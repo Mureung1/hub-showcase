@@ -5,7 +5,7 @@ import { dayLabels, resolvePrice, resolvePackSize } from './data/mealPrices.js';
 import {
   ingHave, ingName, recipeHasImminentBadge, imminentIds, parseAmt, formatAmtText, extractUnit,
   getMissingInfo, generateImminentRescueSet, generateIngredientShareSet, estimateBuyCost, mergeMissingMaps,
-  selectImminentGreedy, shortlistCandidates, searchMinPurchaseCombo3,
+  selectImminentGreedy, shortlistCandidates, searchMinPurchaseCombo3, lowStockIdsOf, selectPantryCleanupRecipe,
   isPantryOrVague, normalizeIngredientKey, calculateRecipeDifficulty, isMeal, isSideDish
 } from './logic/fridgeLogic.js';
 import { supabase } from './supabaseClient.js';
@@ -24,12 +24,12 @@ function formatMD(dateStr) {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
-function formatDday(dateStr) {
+export function formatDday(dateStr) {
   const diff = Math.round((new Date(dateStr) - today()) / 86_400_000);
   return diff >= 0 ? `D-${diff}` : `D+${-diff}`;
 }
 
-function ddayValue(label) {
+export function ddayValue(label) {
   const n = parseInt(label.slice(2), 10);
   return label.startsWith('D-') ? n : -n;
 }
@@ -460,6 +460,7 @@ export async function listRecipes({ filter = 'all', level = 'all', category = 'a
       id,
       name:          r.name,
       emoji:         r.emoji,
+      image_url:     r.image_url,
       level:         r.level,
       levelLabel:    r.levelLabel,
       time:          r.time,
@@ -532,6 +533,39 @@ export async function getRecipeDetail(id, multiplier = 1.0) {
   };
 }
 
+// Supabase 클라이언트는 여러 문 트랜잭션을 지원하지 않아 진짜 원자성을 보장할 수 없다(docs/api.md §8).
+// 대신 1패스에서 모든 deductions에 대해 어떤 fridge_items 행을 얼마나 update/delete할지 읽기 전용으로
+// 전부 계산해두고(계산 오류가 이미 다른 항목을 쓴 *이후*에 터지는 상황 방지), 2패스에서만 실제로 쓴다.
+function planDeduction(currentFridge, id, use) {
+  const ops = [];
+  if (!(use > 0) || !currentFridge[id]?.items) return ops;
+
+  const items = [...currentFridge[id].items].sort((a, b) => {
+    const da = a.expiry ? ddayValue(a.expiry) : 999;
+    const db = b.expiry ? ddayValue(b.expiry) : 999;
+    return da - db;
+  });
+
+  let remainingToDeduct = use;
+  for (let i = 0; i < items.length && remainingToDeduct > 0; i++) {
+    const item = items[i];
+    if (!item.dbId) continue;
+    if (item.qtyAmount) {
+      if (item.qtyAmount <= remainingToDeduct) {
+        remainingToDeduct -= item.qtyAmount;
+        ops.push({ action: 'delete', dbId: item.dbId });
+      } else {
+        ops.push({ action: 'update', dbId: item.dbId, qtyAmount: item.qtyAmount - remainingToDeduct });
+        remainingToDeduct = 0;
+      }
+    } else {
+      ops.push({ action: 'delete', dbId: item.dbId });
+      remainingToDeduct = 0;
+    }
+  }
+  return ops;
+}
+
 export async function cookDone(recipeId, deductions) {
   const { recipes } = await getRecipesFromDB();
   if (!recipes[recipeId]) {
@@ -540,52 +574,53 @@ export async function cookDone(recipeId, deductions) {
 
   const view = await buildFridgeView();
   const currentFridge = await fetchFridge();
-  
-  const results = [];
-  for (const { id, use } of deductions) {
-    const current = view[id];
-    const before = current?.qtyLabel || '소진';
-    
-    if (use > 0 && currentFridge[id] && currentFridge[id].items) {
-      currentFridge[id].items.sort((a, b) => {
-        const da = a.expiry ? ddayValue(a.expiry) : 999;
-        const db = b.expiry ? ddayValue(b.expiry) : 999;
-        return da - db;
-      });
-      
-      let remainingToDeduct = use;
-      for (let i = 0; i < currentFridge[id].items.length && remainingToDeduct > 0; i++) {
-        const item = currentFridge[id].items[i];
-        if (item.qtyAmount) {
-          if (item.qtyAmount <= remainingToDeduct) {
-            remainingToDeduct -= item.qtyAmount;
-            if (supabase && item.dbId) await supabase.from('fridge_items').delete().eq('id', item.dbId);
+
+  // 1패스: 계산만, DB 쓰기 없음.
+  const plans = deductions.map(({ id, use }) => ({
+    id,
+    name: view[id]?.name || '',
+    emoji: view[id]?.emoji || '',
+    before: view[id]?.qtyLabel || '소진',
+    ops: planDeduction(currentFridge, id, use),
+  }));
+
+  // 2패스: 실제 쓰기. 중간에 실패하면 그때까지 성공/실패한 항목을 구분해 에러에 담아 던진다 —
+  // 완전한 롤백은 아니지만 최소한 어디까지 반영됐는지는 응답에서 알 수 있게 한다.
+  const appliedIds = [];
+  if (supabase) {
+    for (let i = 0; i < plans.length; i++) {
+      const plan = plans[i];
+      try {
+        for (const op of plan.ops) {
+          if (op.action === 'delete') {
+            await supabase.from('fridge_items').delete().eq('id', op.dbId);
           } else {
-            const newQty = item.qtyAmount - remainingToDeduct;
-            remainingToDeduct = 0;
-            if (supabase && item.dbId) await supabase.from('fridge_items').update({ qty_amount: newQty }).eq('id', item.dbId);
+            await supabase.from('fridge_items').update({ qty_amount: op.qtyAmount }).eq('id', op.dbId);
           }
-        } else {
-           remainingToDeduct = 0;
-           if (supabase && item.dbId) await supabase.from('fridge_items').delete().eq('id', item.dbId);
         }
+        appliedIds.push(plan.id);
+      } catch (writeErr) {
+        const err = new Error(`cook-done: 재고 차감 중 일부만 반영됐어요(${writeErr.message})`);
+        err.status = 500;
+        err.partiallyApplied = appliedIds;
+        err.failed = plan.id;
+        err.notAttempted = plans.slice(i + 1).map((p) => p.id);
+        throw err;
       }
     }
-    
-    const afterView = await buildFridgeView();
-    const afterCurrent = afterView[id];
-    
-    results.push({
-      id,
-      name: current?.name || '',
-      emoji: current?.emoji || '',
-      before,
-      after: afterCurrent?.qtyLabel || '소진',
-    });
   }
 
   _dynamicSetsCache = null; // 요리 완료 시 냉장고 재고 변경 안해 캐시 무효화
-  return { results, fridge: clone(await buildFridgeView()) };
+  const afterView = await buildFridgeView();
+  const results = plans.map((plan) => ({
+    id: plan.id,
+    name: plan.name,
+    emoji: plan.emoji,
+    before: plan.before,
+    after: afterView[plan.id]?.qtyLabel || '소진',
+  }));
+
+  return { results, fridge: clone(afterView) };
 }
 
 export async function getExpiryAlerts() {
@@ -597,14 +632,7 @@ export async function getExpiryAlerts() {
     recipes[rid].ingredients.some((ing) => ing.id && ids.includes(ing.id)),
   );
 
-  const lowStockIds = Object.keys(view).filter(id => {
-    const f = view[id];
-    if (!f.items || f.items.length === 0) return false;
-    const unit = f.items[0].qtyUnit || '';
-    const totalAmount = f.items.reduce((sum, it) => sum + (Number(it.qtyAmount) || 1), 0);
-    if (['g', 'ml', 'g 직접입력'].includes(unit)) return totalAmount <= 150;
-    return totalAmount <= 1;
-  });
+  const lowStockIds = lowStockIdsOf(view);
 
   return {
     items: ids.map((id) => ({ id, ...clone(view[id]) })),
@@ -617,6 +645,14 @@ export async function getExpiryAlerts() {
         .map((ing) => view[ing.id].name),
     })),
   };
+}
+
+// 같은 재료라도 레시피마다 계량 단위가 다르다("대파 1/2뿌리" vs "즉석밥 2공기" vs "800g") —
+// 숫자만 보고 그대로 더하면 서로 다른 단위가 섞여 수량·가격이 전부 틀어진다(예: 뿌리+컵+공기를
+// 그대로 합쳐 "1047컵" 같은 결과가 나옴). key만이 아니라 단위까지 묶어서 단위가 같은 것끼리만
+// 누적하고, 가격은 단위 그룹별로 따로 계산한 뒤 합산한다.
+function unitTokenOf(isGram, amt) {
+  return isGram ? 'g' : (extractUnit(amt) || '단위');
 }
 
 async function calculateCumulativeNeeds(recipeIds, multiplier = 1.0, view, recipesData) {
@@ -632,7 +668,7 @@ async function calculateCumulativeNeeds(recipeIds, multiplier = 1.0, view, recip
     }
   });
 
-  const buyList = {};
+  const buyList = {}; // `${key}::${단위}` -> 단위가 같은 것끼리만 누적된 그룹
   const alreadyHaveList = {};
 
   recipeIds.forEach(id => {
@@ -643,51 +679,62 @@ async function calculateCumulativeNeeds(recipeIds, multiplier = 1.0, view, recip
       const parsed = parseAmt(ing.amt);
       const isGram = parsed.isGram;
       const requiredQty = parsed.val * multiplier;
+      const groupKey = `${key}::${unitTokenOf(isGram, ing.amt)}`;
 
       if (ing.id && view[ing.id]) {
         if (haveMap[ing.id] >= requiredQty) {
           haveMap[ing.id] -= requiredQty;
-          
-          if (!alreadyHaveList[key]) alreadyHaveList[key] = { label: ingName(view, ing), uses: [], qty: 0 };
-          if (!alreadyHaveList[key].uses.includes(recipes[id].name)) alreadyHaveList[key].uses.push(recipes[id].name);
-          alreadyHaveList[key].qty += requiredQty;
+
+          if (!alreadyHaveList[groupKey]) alreadyHaveList[groupKey] = { label: ingName(view, ing), uses: [], qty: 0 };
+          if (!alreadyHaveList[groupKey].uses.includes(recipes[id].name)) alreadyHaveList[groupKey].uses.push(recipes[id].name);
+          alreadyHaveList[groupKey].qty += requiredQty;
         } else {
           const shortfall = requiredQty - (haveMap[ing.id] || 0);
-          
+
           if (haveMap[ing.id] > 0) {
-            if (!alreadyHaveList[key]) alreadyHaveList[key] = { label: ingName(view, ing), uses: [], qty: 0 };
-            if (!alreadyHaveList[key].uses.includes(recipes[id].name)) alreadyHaveList[key].uses.push(recipes[id].name);
-            alreadyHaveList[key].qty += haveMap[ing.id];
+            if (!alreadyHaveList[groupKey]) alreadyHaveList[groupKey] = { label: ingName(view, ing), uses: [], qty: 0 };
+            if (!alreadyHaveList[groupKey].uses.includes(recipes[id].name)) alreadyHaveList[groupKey].uses.push(recipes[id].name);
+            alreadyHaveList[groupKey].qty += haveMap[ing.id];
           }
 
-          haveMap[ing.id] = 0; 
+          haveMap[ing.id] = 0;
 
-          if (!buyList[key]) buyList[key] = { label: ingName(view, ing), price: resolvePrice(key), uses: [], qty: 0, isGram, originalAmt: ing.amt };
-          if (!buyList[key].uses.includes(recipes[id].name)) buyList[key].uses.push(recipes[id].name);
-          buyList[key].qty += shortfall;
+          if (!buyList[groupKey]) buyList[groupKey] = { key, label: ingName(view, ing), price: resolvePrice(key), uses: [], qty: 0, isGram, originalAmt: ing.amt };
+          if (!buyList[groupKey].uses.includes(recipes[id].name)) buyList[groupKey].uses.push(recipes[id].name);
+          buyList[groupKey].qty += shortfall;
         }
       } else {
-        if (!buyList[key]) buyList[key] = { label: ingName(view, ing), price: resolvePrice(key), uses: [], qty: 0, isGram, originalAmt: ing.amt };
-        if (!buyList[key].uses.includes(recipes[id].name)) buyList[key].uses.push(recipes[id].name);
-        buyList[key].qty += requiredQty;
+        if (!buyList[groupKey]) buyList[groupKey] = { key, label: ingName(view, ing), price: resolvePrice(key), uses: [], qty: 0, isGram, originalAmt: ing.amt };
+        if (!buyList[groupKey].uses.includes(recipes[id].name)) buyList[groupKey].uses.push(recipes[id].name);
+        buyList[groupKey].qty += requiredQty;
       }
     });
   });
 
-  const needs = Object.entries(buyList).map(([key, n]) => {
+  // 단위 그룹별로 가격을 계산한 뒤, 화면엔 재료 하나당 한 줄로 합쳐서 보여준다 — 가격은 그룹별로
+  // 계산해 합산(단위를 안 섞으니 정확함), 수량은 단위별로 나눠 적는다("800g + 7컵"처럼).
+  const byKey = new Map();
+  Object.values(buyList).forEach((n) => {
     const buyMultiplier = n.isGram
       ? Math.ceil(n.qty / 600)
-      : Math.ceil(n.qty / resolvePackSize(key, extractUnit(n.originalAmt)));
-    return {
-      label: n.label,
-      price: n.price * buyMultiplier,
-      uses: n.uses,
-      qty: n.qty,
-      isGram: n.isGram,
-      originalAmt: n.originalAmt
-    };
+      : Math.ceil(n.qty / resolvePackSize(n.key, extractUnit(n.originalAmt)));
+    if (!byKey.has(n.key)) byKey.set(n.key, { label: n.label, uses: new Set(), price: 0, parts: [] });
+    const agg = byKey.get(n.key);
+    n.uses.forEach((u) => agg.uses.add(u));
+    agg.price += n.price * buyMultiplier;
+    agg.parts.push({ qty: n.qty, isGram: n.isGram, originalAmt: n.originalAmt });
   });
-  
+
+  const needs = [...byKey.values()].map((agg) => ({
+    label: agg.label,
+    price: agg.price,
+    uses: [...agg.uses],
+    qty: agg.parts[0].qty,
+    isGram: agg.parts[0].isGram,
+    originalAmt: agg.parts[0].originalAmt,
+    parts: agg.parts.length > 1 ? agg.parts : undefined,
+  }));
+
   const have = Object.values(alreadyHaveList).map(n => ({
     name: n.label,
     note: `냉장고 누적 소진 (${Math.round(n.qty * 10) / 10}단위)`,
@@ -906,6 +953,9 @@ function greedyFillSlots(recipes, poolIds, missingMap, alreadySelected, count) {
 }
 
 export async function buildWeeklyPlan(pickedIds = [], view, recipesData, difficulty = 'any', type = 'meal') {
+  // 프론트(AppContext 기본값·ShoppingSets 난이도 선택 시트)는 "전체 난이도"를 'all'로 보낸다 —
+  // 'any'와 동일하게 취급하지 않으면 어떤 레시피도 level === 'all'일 수 없어 후보군이 항상 0개가 된다.
+  if (difficulty === 'all') difficulty = 'any';
   recipesData = recipesData ?? await getRecipesFromDB();
   const { recipeOrder, recipes } = recipesData;
   view = view ?? await buildFridgeView();
@@ -942,11 +992,21 @@ export async function buildWeeklyPlan(pickedIds = [], view, recipesData, difficu
   const slotCount = 7 - actualPicks.length;
   let remaining;
 
+  // 일요일 "냉장고 털이" 슬롯 — 자투리(lowStockIds)를 가장 많이 소진하는 레시피를 먼저 예약해두고,
+  // 나머지 슬롯은 그 레시피를 뺀 풀로 기존 임박/쉐어링 로직을 그대로 돌린다. 슬롯이 하나뿐인
+  // side(반찬) 플랜에는 적용하지 않는다.
+  let cleanupId = null;
+
   if (type === 'meal') {
+    const lowStockIds = lowStockIdsOf(view);
+    cleanupId = slotCount >= 1 ? selectPantryCleanupRecipe(view, recipes, pool, lowStockIds) : null;
+    const mealPool = cleanupId ? pool.filter((id) => id !== cleanupId) : pool;
+    const mealSlotCount = cleanupId ? slotCount - 1 : slotCount;
+
     // algorithms.md §6 Step 1 — 임박 재료 한계 이득 탐욕 선정으로 월·수 2슬롯을 먼저 채운다.
-    const immSelected = selectImminentGreedy(view, recipes, pool, immIds, 2, missingMap);
-    const afterImm = pool.filter((id) => !immSelected.includes(id));
-    const comboSlotCount = slotCount - immSelected.length;
+    const immSelected = selectImminentGreedy(view, recipes, mealPool, immIds, 2, missingMap);
+    const afterImm = mealPool.filter((id) => !immSelected.includes(id));
+    const comboSlotCount = mealSlotCount - immSelected.length;
 
     if (comboSlotCount === 3) {
       // §6 Step 2~3 — 후보 K=25로 축소한 뒤 (부족 품목 종류 수, 예상 비용) 사전식 최소가 되는
@@ -974,6 +1034,10 @@ export async function buildWeeklyPlan(pickedIds = [], view, recipesData, difficu
     return bImm - aImm; // 임박 재료 사용하는 요리를 앞으로
   });
 
+  // remaining의 마지막 원소가 항상 일요일 슬롯에 배치되므로(week 배열 채우는 순서 참고),
+  // 냉장고 털이 레시피를 맨 뒤에 붙여 일요일에 고정한다.
+  if (cleanupId) remaining.push(cleanupId);
+
   // 픽이 1개(반찬형)인데 화/금 슬롯을 둘 다 예약해두면 actualPicks[1]이 항상 undefined라 금요일이
   // 비는 버그가 있었다 — 예약 슬롯 개수는 actualPicks.length가 아니라 targetPickCount로 결정한다
   // (이 시점엔 이미 위쪽 guard로 둘이 항상 같은 값이지만, targetPickCount가 의도를 드러내는 쪽).
@@ -995,6 +1059,7 @@ export async function buildWeeklyPlan(pickedIds = [], view, recipesData, difficu
   // 추천 이유 태그
   const reasonOf = (id) => {
     if (actualPicks.includes(id)) return null; // picked 배지가 이미 있음
+    if (id === cleanupId) return '🧹 냉장고 털이';
     if (usesImminent(id)) return '⏰ 임박 재료 소진';
     return '🌱 식자재 쉐어링';
   };
@@ -1016,10 +1081,17 @@ export async function buildWeeklyPlan(pickedIds = [], view, recipesData, difficu
 
 export async function getMealShoppingList(weekPlanIds, multiplier = 1.0) {
   const { needs, totalCost } = await calculateCumulativeNeeds(weekPlanIds, multiplier);
-  const items = needs.map(n => ({
-    label: `${n.label} (부족: ${formatAmtText(n.qty, n.isGram, n.originalAmt)})`,
-    uses: n.uses,
-    price: n.price
-  }));
+  const items = needs.map(n => {
+    // 단위가 여러 개 섞인 재료(예: 즉석밥이 어떤 레시피는 g, 어떤 레시피는 컵/공기)는
+    // 하나의 숫자로 억지로 합치지 않고 "800g + 7컵"처럼 단위별로 나눠서 보여준다.
+    const amountText = n.parts
+      ? n.parts.map((p) => formatAmtText(p.qty, p.isGram, p.originalAmt)).join(' + ')
+      : formatAmtText(n.qty, n.isGram, n.originalAmt);
+    return {
+      label: `${n.label} (부족: ${amountText})`,
+      uses: n.uses,
+      price: n.price
+    };
+  });
   return { items, total: totalCost };
 }

@@ -22,6 +22,17 @@ function getInitialMultiplier() {
   return saved ? parseFloat(saved) : 1.0;
 }
 
+// 이 앱은 로그인이 없는 단일 사용자 기준이라(api.md 참고), 찜은 서버 DB가 아니라 기기 로컬에만
+// 저장한다 — 새 테이블 없이 바로 되고, 애초에 사용자가 한 명이라 서버 동기화도 필요 없다.
+function getInitialBookmarks() {
+  try {
+    const saved = localStorage.getItem('bookmarkedRecipeIds');
+    return saved ? JSON.parse(saved) : [];
+  } catch {
+    return [];
+  }
+}
+
 export function AppProvider({ children }) {
   // ── 네비게이션 스택 (go/back/tab) ──
   const [screen, setScreen] = useState(TAB_HOME.screen);
@@ -49,6 +60,16 @@ export function AppProvider({ children }) {
   const setServingMultiplier = useCallback((val) => {
     setServingMultiplierState(val);
     localStorage.setItem('servingMultiplier', val.toString());
+  }, []);
+
+  // ── 찜한 레시피 ──
+  const [bookmarkedIds, setBookmarkedIds] = useState(getInitialBookmarks());
+  const toggleBookmark = useCallback((id) => {
+    setBookmarkedIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      localStorage.setItem('bookmarkedRecipeIds', JSON.stringify(next));
+      return next;
+    });
   }, []);
 
   // ── 냉장고 상태 ──
@@ -248,6 +269,7 @@ export function AppProvider({ children }) {
     shareMealCount, setShareMealCount,
     selectedSetId, openShoppingList,
     servingMultiplier, setServingMultiplier,
+    bookmarkedIds, toggleBookmark,
   }), [
     screen, go, back, tab, activeTab,
     fridge, refreshFridge, addFridgeItem, updateFridgeItem, deleteFridgeItem,
@@ -265,6 +287,7 @@ export function AppProvider({ children }) {
     shareMealCount, setShareMealCount,
     selectedSetId, openShoppingList,
     servingMultiplier, setServingMultiplier,
+    bookmarkedIds, toggleBookmark,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -1,23 +1,26 @@
-import { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../api';
 import { fridgeAvailable, imminentIds } from '../logic/fridgeLogic';
+import { useAsyncData } from '../hooks/useAsyncData';
 import Row from '../components/Row';
 import RecipeCard from '../components/RecipeCard';
 
 export default function Home() {
   const { fridge, go, tab, openRecipeDetail } = useApp();
-  const [ready, setReady] = useState(0);
-  const [topRecipes, setTopRecipes] = useState([]);
 
   // "지금 가능한 요리" 개수와 "오늘의 추천 레시피" 2개는 전체 레시피(6만+)를 다 받아와서 화면에서
   // 세고 정렬하던 걸, 서버가 계산한 total(정확한 개수)과 sort=ratio(매칭률 상위 정렬)로 대체 —
   // 필요한 숫자 하나와 카드 2개만 오가면 되니 응답이 훨씬 가벼워진다.
-  useEffect(() => {
-    if (!Object.keys(fridge).length) return;
-    api.getRecipes({ filter: 'full', pageSize: 1 }).then((r) => setReady(r.total));
-    api.getRecipes({ filter: 'all', sort: 'ratio', pageSize: 2 }).then((r) => setTopRecipes(r.items));
+  const { status, data, refetch } = useAsyncData(async () => {
+    if (!Object.keys(fridge).length) return null; // fridge 초기 로딩 전엔 아직 조회할 게 없음
+    const [readyRes, topRes] = await Promise.all([
+      api.getRecipes({ filter: 'full', pageSize: 1 }),
+      api.getRecipes({ filter: 'all', sort: 'ratio', pageSize: 2 }),
+    ]);
+    return { ready: readyRes.total, topRecipes: topRes.items };
   }, [fridge]);
+  const ready = data?.ready ?? 0;
+  const topRecipes = data?.topRecipes ?? [];
 
   const total = Object.keys(fridge).filter((id) => fridgeAvailable(fridge, id)).length;
   const imminent = imminentIds(fridge);
@@ -62,6 +65,12 @@ export default function Home() {
         </div>
 
         <div className="section-title">오늘의 추천 레시피 <a onClick={() => tab('recipe-list')}>전체보기 ›</a></div>
+        {status === 'error' ? (
+          <div className="notice">
+            레시피를 불러오지 못했어요 ·{' '}
+            <a style={{ color: 'var(--green-dark)', fontWeight: 700, cursor: 'pointer' }} onClick={refetch}>다시 시도</a>
+          </div>
+        ) : (
         <div>
           {topRecipes.map((r) => (
             <RecipeCard key={r.id} recipe={r} matchPct={Math.round((r.have / r.total) * 100)}
@@ -71,6 +80,7 @@ export default function Home() {
               onClick={() => openRecipeDetail(r.id)} />
           ))}
         </div>
+        )}
       </div>
     </section>
   );

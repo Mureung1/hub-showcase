@@ -50,6 +50,10 @@ export default function RecipeList() {
   const [page, setPage] = useState(1);
   const [recipes, setRecipes] = useState({ items: [], total: 0, totalPages: 1 });
   const [loadingMore, setLoadingMore] = useState(false);
+  const [status, setStatus] = useState('loading'); // 1페이지(필터 변경) 요청의 loading/ready/error
+  const [error, setError] = useState(null);
+  const [loadMoreError, setLoadMoreError] = useState(false);
+  const [retryTick, setRetryTick] = useState(0);
   const sentinelRef = useRef(null);
 
   // 뷰 모드가 변경될 때 필터 상태 동기화
@@ -76,12 +80,20 @@ export default function RecipeList() {
 
   useEffect(() => {
     if (!Object.keys(fridge).length) return;
-    if (page > 1) setLoadingMore(true);
-    api.getRecipes({ filter: match, level, category, search, sort, page }).then((r) => {
-      setRecipes((prev) => (page === 1 ? r : { ...r, items: [...prev.items, ...r.items] }));
-      setLoadingMore(false);
-    });
-  }, [fridge, match, level, category, search, sort, page]);
+    if (page === 1) { setStatus('loading'); setError(null); }
+    else { setLoadingMore(true); setLoadMoreError(false); }
+    api.getRecipes({ filter: match, level, category, search, sort, page })
+      .then((r) => {
+        setRecipes((prev) => (page === 1 ? r : { ...r, items: [...prev.items, ...r.items] }));
+        if (page === 1) setStatus('ready');
+        setLoadingMore(false);
+      })
+      .catch((err) => {
+        if (page === 1) { setStatus('error'); setError(err?.message || '레시피를 불러오지 못했어요'); }
+        else { setLoadMoreError(true); }
+        setLoadingMore(false);
+      });
+  }, [fridge, match, level, category, search, sort, page, retryTick]);
 
   // 무한 스크롤 — 목록 맨 아래 sentinel이 화면에 들어오면 다음 페이지를 이어붙인다.
   // loadingMore로 막아두지 않으면 응답이 늦게 오는 동안 sentinel이 계속 보여서 page가 중복 증가한다.
@@ -154,6 +166,15 @@ export default function RecipeList() {
           </>
         )}
 
+        {status === 'error' && (
+          <div className="card" style={{ textAlign: 'center', padding: '30px 16px' }}>
+            <p style={{ fontSize: 13, color: '#e5484d' }}>{error}</p>
+            <button className="btn ghost" style={{ marginTop: 10 }} onClick={() => setRetryTick((t) => t + 1)}>다시 시도</button>
+          </div>
+        )}
+
+        {status !== 'error' && (
+          <>
         {viewMode === 'can-make' && (
           <div className="notice" style={{ marginTop: 0 }}>🔥 임박 재료를 쓰는 요리 우선 · <b>{recipes.total}</b>개 레시피</div>
         )}
@@ -176,7 +197,12 @@ export default function RecipeList() {
           // 이 기기/브라우저에서 IntersectionObserver가 어떤 이유로든 안 붙는 경우의 안전망으로
           // 버튼도 항상 같이 둔다 — 로딩 중엔 버튼 대신 로딩 문구만 보여준다.
           <div ref={sentinelRef} style={{ padding: '16px 0' }}>
-            {loadingMore ? (
+            {loadMoreError ? (
+              <div style={{ textAlign: 'center' }}>
+                <span style={{ fontSize: 13, color: '#e5484d' }}>더 불러오지 못했어요 · </span>
+                <a style={{ fontSize: 13, color: 'var(--green-dark)', fontWeight: 700, cursor: 'pointer' }} onClick={() => setRetryTick((t) => t + 1)}>다시 시도</a>
+              </div>
+            ) : loadingMore ? (
               <div style={{ textAlign: 'center' }}>
                 <span style={{ fontSize: 13, color: 'var(--sub)' }}>불러오는 중… ({recipes.items.length}/{recipes.total})</span>
               </div>
@@ -195,13 +221,15 @@ export default function RecipeList() {
           </div>
         )}
 
-        {recipes.total === 0 && (
+        {status === 'ready' && recipes.total === 0 && (
           <div className="card" style={{ textAlign: 'center', padding: '30px 16px' }}>
             <div style={{ fontSize: 40 }}>🤔</div>
             <p style={{ fontSize: 14.5, fontWeight: 800, marginTop: 10 }}>조건에 맞는 레시피가 없어요</p>
             <p style={{ fontSize: 13, color: 'var(--sub)', marginTop: 6 }}>필터를 바꾸거나, 한 주 식단을 통째로 받아보세요</p>
             <button className="btn ghost" style={{ marginTop: 14 }} onClick={() => go('meal-plan-picker')}>📅 일주일 식단 루틴 보기</button>
           </div>
+        )}
+          </>
         )}
       </div>
     </section>

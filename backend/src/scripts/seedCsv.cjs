@@ -1,5 +1,4 @@
 const fs = require('fs');
-const iconv = require('iconv-lite');
 const csv = require('csv-parser');
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
@@ -184,11 +183,55 @@ function isSimpleRecipe(ingredientNames) {
 // 2026-07-16 분석 결과 하드코딩: 만개의 레시피 CSV 4개 연도 스냅샷 중 "간단+재료 흔함" 기준을
 // 만족하는 레시피가 가장 많은 게 2023-11-30 스냅샷이었다(66,444개, 2위 2022는 44,735개,
 // 2024/2025는 각각 2,800개대로 급감 — 최신 스냅샷일수록 오히려 재료 가짓수가 늘고 복잡해짐).
-// 스냅샷이 다시 갱신되면 이 선택도 재검토해야 한다 — backend/src/scripts/_analyzeCsvSimplicity.cjs로
-// 재분석 가능.
-const TARGET_CSV = 'TB_RECIPE_SEARCH-231130.csv';
+// 스냅샷이 다시 갱신되면 이 선택도 재검토해야 한다.
+//
+// 2026-07-21: 같은 요리명이 여러 번 중복 등록되는 문제(만개의 레시피가 사용자 제출 데이터라
+// 같은 요리를 여러 명이 각자 다른 RCP_SNO로 올림)를 dedupeCsv.cjs로 정리한 결과물을 원본 대신 씀.
+// dedupeCsv.cjs는 원본과 동일한 스키마를 UTF-8로 저장하므로 EUC-KR 디코딩 단계가 필요 없다.
+const TARGET_CSV = 'TB_RECIPE_SEARCH-231130-clean.csv';
+
+// upsert(onConflict: api_rcp_seq)는 새 CSV에서 빠진(정리 과정에서 버려진 중복) 행을 자동으로
+// 지워주지 않는다 — 재시딩 전에 CSV 출처 레시피(steps_json이 항상 빈 배열)를 먼저 전부 지워야
+// 새 CSV 기준으로 깨끗하게 맞춰진다. MAFRA 출처(steps_json 있음)는 건드리지 않는다.
+async function clearCsvSourcedRecipes() {
+  const toDelete = new Set();
+  const pageSize = 1000;
+  for (let from = 0; ; from += pageSize) {
+    // .order() 필수 — 없으면 대량 변경 직후 range() 페이지네이션이 페이지 간 행을 중복/누락
+    // 조회할 수 있다(실제로 겪음: 삭제 대상 목록이 부정확해서 예전 행이 안 지워지고 남았었다).
+    const { data, error } = await supabase
+      .from('recipes')
+      .select('api_rcp_seq, steps_json')
+      .order('api_rcp_seq', { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    data
+      .filter((r) => !Array.isArray(r.steps_json) || r.steps_json.length === 0)
+      .forEach((r) => toDelete.add(r.api_rcp_seq));
+    if (data.length < pageSize) break;
+  }
+
+  console.log(`CSV 출처 기존 레시피 ${toDelete.size}건 삭제 시작...`);
+  const chunk = [];
+  const chunkSize = 500;
+  for (const id of toDelete) {
+    chunk.push(id);
+    if (chunk.length === chunkSize) {
+      const { error } = await supabase.from('recipes').delete().in('api_rcp_seq', chunk.splice(0));
+      if (error) throw error;
+    }
+  }
+  if (chunk.length > 0) {
+    const { error } = await supabase.from('recipes').delete().in('api_rcp_seq', chunk);
+    if (error) throw error;
+  }
+  console.log(`삭제 완료: ${toDelete.size}건`);
+}
 
 async function seed() {
+  await clearCsvSourcedRecipes();
+
   const dirPath = path.join(__dirname, '../../../만개의 레시피 CSV');
   const files = [TARGET_CSV];
 
@@ -196,13 +239,12 @@ async function seed() {
     const filePath = path.join(dirPath, file);
     console.log(`\n======================================`);
     console.log(`Reading CSV: ${file}`);
-    
+
     const results = [];
     let count = 0;
-    
+
     await new Promise((resolve, reject) => {
       fs.createReadStream(filePath)
-        .pipe(iconv.decodeStream('euc-kr'))
         .pipe(csv())
         .on('data', (data) => {
           if (!data.RCP_SNO || !data.RCP_TTL || !data.CKG_MTRL_CN) return;

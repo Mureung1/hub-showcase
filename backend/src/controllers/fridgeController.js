@@ -12,6 +12,9 @@ export async function createFridgeItem(req, res) {
   if (!ingredientId && !name) {
     return res.status(400).json({ error: 'ingredientId 또는 name 중 하나는 필요해요.' });
   }
+  if (Number.isNaN(Date.parse(purchasedAt))) {
+    return res.status(400).json({ error: 'purchasedAt은 올바른 날짜 형식이어야 해요.' });
+  }
   try {
     res.status(201).json(await store.addFridgeItem(req.body));
   } catch (err) {
@@ -20,6 +23,10 @@ export async function createFridgeItem(req, res) {
 }
 
 export async function updateFridgeItem(req, res) {
+  const { expiryDate } = req.body;
+  if (expiryDate && Number.isNaN(Date.parse(expiryDate))) {
+    return res.status(400).json({ error: 'expiryDate는 올바른 날짜 형식이어야 해요.' });
+  }
   const updated = await store.updateFridgeItem(req.params.id, req.body);
   if (!updated) return res.status(404).json({ error: `item ${req.params.id} not found` });
   res.json(updated);

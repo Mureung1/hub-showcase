@@ -1,7 +1,7 @@
 # 백로그
 
 > 기준 문서: [product.md](./product.md)(제품 요구사항), [api.md](./api.md)(API 계약), [algorithms.md](./algorithms.md)(알고리즘 설계)
-> 마지막 업데이트: 2026-07-20 (13일차)
+> 마지막 업데이트: 2026-07-21 (12일차)
 
 ## 우선순위 기준
 
@@ -23,13 +23,38 @@
 | `buildWeeklyPlan(type='side')`에서 픽 1개인데 화/금 슬롯 고정 로직이 그대로라 금요일이 항상 비고 요리 하나가 조용히 버려짐 | ✅ 수정 완료(11일차) — 픽 개수(`actualPicks.length`)에 따라 예약 슬롯을 `[1,4]`/`[1]`로 분기. `backend/src/store.js`·`frontend/src/api/mockServer.js` 양쪽 반영, curl로 월~일 전부 채워지는 것 확인 | `backend/src/store.js:947` |
 | `getRecipesFromDB()` 청크 조회 중 하나라도 실패하면 조용히 건너뛰어 레시피가 최대 15,000개까지 무작위로 누락 | ✅ 수정 완료 (실패 시 3회 재시도 + 로그) | `backend/src/store.js` |
 
+**12일차에 새로 발견된 것**:
+
+| 항목 | 상태 | 관련 코드 |
+|---|---|---|
+| 만개의 레시피 CSV가 사용자 제출 데이터라 같은 요리가 수백 건씩 중복 등록됨("소고기미역국" 361건 등) — 화면에 같은 요리가 여러 장 뜸 | ✅ 수정 완료 — `RCP_TTL`(제목 문장)이 아니라 `CKG_NM`(요리명 전용 컬럼)을 그룹 키로 재정의해 66,447건→20,692건으로 정리, MAFRA↔CSV 교차 중복까지 처리. 대표 레시피는 재료 가짓수 최소 기준으로 선정. `dedupeCsv.cjs`(신규) | `backend/src/scripts/dedupeCsv.cjs`, `backend/src/scripts/seedCsv.cjs` |
+| CSV 출처 레시피에 애초에 조리순서가 없음(`TB_RECIPE_SEARCH` 데이터셋 자체에 단계별 설명 컬럼이 없음, `steps_json:[]` 고정) | ✅ 사용자 결정으로 CSV 출처 20,430건 전량 삭제, MAFRA 출처(조리순서 있음) 533건만 유지 | — |
+| `buildWeeklyPlan`에 프론트가 "전체 난이도"를 `'all'`로 보내는데 백엔드는 `'any'`만 필터 없음으로 인식 — 기본 경로로 식단을 만들면 항상 `{days:[]}` 반환, 장보기 리스트도 조용히 아무 반응 없음 | ✅ 수정 완료 — `difficulty==='all'`이면 `'any'`로 정규화 | `backend/src/store.js:944`, `frontend/src/api/mockServer.js` |
+| `calculateCumulativeNeeds`가 재료 수량을 합칠 때 원문 계량 단위(뿌리/컵/공기/g 등)를 무시하고 숫자만 그대로 더함 — "즉석밥 1047컵" 같은 결과 발생. 대파는 팩 사이즈 오버라이드(`pa:1`)가 "1뿌리=1팩"으로 잘못 고정돼 있어 7뿌리 필요 시 22,800원(8팩) 청구 | ✅ 수정 완료 — 재료+단위 조합별로 나눠 누적하고 가격도 단위별로 계산 후 합산(화면엔 "800g + 4공기 + 5컵"처럼 표기). `pa` 오버라이드 제거. 이후 533개 레시피 전수 감사로 같은 유형의 팩 사이즈 오류 27건 추가 발견·수정(새우·멸치·쪽파 등) | `backend/src/store.js`(`calculateCumulativeNeeds`), `backend/src/data/mealPrices.js`, `frontend/src/api/mockServer.js`, `frontend/src/data/mealPrices.js` |
+| `AddItem.jsx`가 `calcExpiryDate(master, purchasedAt)`을 호출 — 함수는 `ingredientId`(문자열)를 받게 돼 있는데 재료 객체 전체를 넘김. 9일차에 백엔드(`store.js`)에서 발견·수정됐던 것과 똑같은 버그 패턴이 프론트 호출부엔 안 고쳐진 채 남아있었음. 화면엔 "신선식품은 구매일 기준 평균 유통기한이 자동 입력돼요" 안내가 뜨지만 실제로는 항상 빈 값 | ✅ 수정 완료(12일차) — `calcExpiryDate(master.id, purchasedAt)`으로 교체. 브라우저에서 당근 선택 시 구매일(7/22)+여름철 평균 유통기한(10일)=8/1로 정상 자동 계산되는 것 확인 | `frontend/src/pages/AddItem.jsx:107,114` |
+
+---
+
+## 편의성 개선점 (12일차 정리)
+
+실제 코드를 다시 훑으며 찾은 것(1, 5)과 기존에 이미 알려져 있던 것(2, 3, 6)을 합쳐 진행 순서를 정했다. **순서 기준**: 약속한 기능이 실제로 안 되는 버그 → 이미 있는 재료/컴포넌트로 바로 되는 것 → 새 로직·데이터 모델이 필요한 것.
+
+| 순서 | 항목 | 왜 이 순서인가 | 근거/난이도 |
+|---|---|---|---|
+| 1 | **`AddItem` 유통기한 자동계산 버그 수정** | 편의 기능이 아니라 이미 "된다"고 안내 문구까지 띄워놓고 실제로 안 되는 상태 — 가장 먼저. 원인 파악 끝났고 한 줄 수정(`master` → `master.id`)으로 끝남 | `frontend/src/pages/AddItem.jsx:107,114`. `calcExpiryDate` 시그니처는 `frontend/src/data/ingredients.js:125` 참고 |
+| 2 | **재료 직접 추가 화면에 검색/필터 추가** | ✅ 완료(12일차) — 검색어 입력 시 카테고리 무관하게 전체 재료에서 이름으로 필터링(예: "채소류" 선택 중에도 "두부" 검색 가능), 결과 없음 안내 문구도 추가. 브라우저에서 대파/두부/존재하지 않는 이름 3가지 케이스 확인 | `frontend/src/pages/AddItem.jsx` |
+| 3 | **레시피 썸네일 이미지 노출** | ✅ 완료(12일차) — 실제로는 목록 API(`listRecipes`)가 `image_url`을 아예 안 내려주고 있었음(상세 조회용 캐시엔 있었지만 목록 응답 매핑에서 빠짐, `mockServer.js`도 동일). 목록 응답에 `image_url` 추가 + `RecipeCard.jsx`에 `<img loading="lazy">` 렌더링(없으면 이모지 폴백) 추가. **검증 한계**: 이 세션 Browser pane은 `loading="lazy"`가 있으면 이미지 요청 자체가 안 나가는 걸 확인(`loading="eager"`로 바꾸면 즉시 정상 로드, naturalWidth=600) — 무한스크롤 때와 같은 이 환경의 IntersectionObserver 미작동 이슈로 추정, 실제 사용자 브라우저에서 재확인 필요 | `backend/src/store.js`(`listRecipes`), `frontend/src/api/mockServer.js`, `frontend/src/components/RecipeCard.jsx`, `frontend/src/styles.css` |
+| 4 | **`RecipeList`/`Home` 로딩·에러 상태 통일** | ✅ 완료(12일차) — `Home.jsx`는 두 fetch에 에러 처리가 전혀 없었던 걸(`.then()`만 있고 `.catch()` 없음, 실패해도 조용히 빈 상태로 남음) `useAsyncData`로 통합해 에러 시 "다시 시도" 노출. `RecipeList.jsx`는 무한스크롤 누적 로직이 있어 `useAsyncData`(매 요청마다 데이터 전체 교체)를 그대로 못 씀 — 같은 `status`(loading/ready/error) 패턴을 직접 구현해 "로딩 중인데 결과 없음 카드가 잠깐 뜨는" 문제와 에러 무처리를 해결(1페이지 에러는 카드로, 추가 페이지 에러는 "더보기" 자리에 인라인 재시도로 구분). 브라우저에서 "전체 둘러보기" 탭 전환·필터 변경 정상 동작 확인 | `frontend/src/pages/Home.jsx`, `frontend/src/pages/RecipeList.jsx` |
+| 5 | **북마크(찜) 기능** | ✅ 완료(12일차) — DB 스키마 변경 없이 `localStorage`에 저장(이 앱은 로그인 없는 단일 사용자 기준이라 서버 동기화가 애초에 필요 없음, `servingMultiplier`와 같은 기존 패턴 재사용). `RecipeDetail.jsx`에 하트 토글 버튼 추가, "기타" 탭에 "찜한 레시피" 진입점 + 전용 화면(`BookmarkedRecipes.jsx`) 신규. 브라우저에서 찜하기→목록 반영→상세 재진입→해제까지 전체 흐름 확인 | `frontend/src/context/AppContext.jsx`, `frontend/src/pages/RecipeDetail.jsx`, `frontend/src/pages/BookmarkedRecipes.jsx`(신규), `frontend/src/pages/EtcMenu.jsx`, `frontend/src/App.jsx` |
+| 6 | **일주일 식단 일요일 "냉장고 털이" 특수 슬롯** | `algorithms.md` 설계 범위 밖이라 알고리즘을 새로 설계해야 함 — 가장 큰 작업이라 마지막 | `backend/src/store.js`(`buildWeeklyPlan`), 설계는 `algorithms.md` §6 확장 필요 |
+
 ---
 
 ## P1 — 기획서에 있는데 비어있거나 가짜인 기능 (모두 완료됨)
 
 | 항목 | 현재 상태 | 관련 코드 |
 |---|---|---|
-| 영수증 OCR 실연동 | ✅ 13일차 — 기기 기본 카메라 앱 호출 + Naver Clova OCR 실연동. `CLOVA_OCR_INVOKE_URL`/`CLOVA_OCR_SECRET_KEY` 미설정 시에만 기존 랜덤 3가지 Mock으로 폴백(자격증명 있는데 호출 실패 시엔 에러를 그대로 보여줌) | `backend/src/ocr/`, `backend/src/store.js`, `frontend/src/pages/ReceiptCamera.jsx` |
+| 영수증 OCR 실연동 | ✅ 11일차 — 기기 기본 카메라 앱 호출 + Naver Clova OCR 실연동. `CLOVA_OCR_INVOKE_URL`/`CLOVA_OCR_SECRET_KEY` 미설정 시에만 기존 랜덤 3가지 Mock으로 폴백(자격증명 있는데 호출 실패 시엔 에러를 그대로 보여줌) | `backend/src/ocr/`, `backend/src/store.js`, `frontend/src/pages/ReceiptCamera.jsx` |
 | `GET /api/ingredients` 부재 | 백엔드에 라우트 신설, 프론트(`AddItem`, `ExpiryCheck`)에서 API로 비동기 로드하도록 수정 완료 | `backend/src/routes/ingredients.js`, `frontend/src/api/httpClient.js` |
 | 재고 부족(수량) 알림 | `qtyAmount` 1 이하(또는 150g 이하)일 때 "수량 부족" 판별 로직 추가, 알림 화면에 렌더링 완료 | `backend/src/store.js`, `frontend/src/pages/ExpiryAlerts.jsx` |
 | 유통기한 임박 "푸시 알림" | 웹 브라우저 Notification API 연동 (권한 요청 및 알림 팝업 전송 기능) 구현 완료 | `frontend/src/pages/ExpiryAlerts.jsx` |
@@ -50,11 +75,11 @@ AppContext의 `shootReceipt`·`openRecipeDetail`·`buildMealPlan`·`openMealShop
 
 ### 3. 9일차 코드 리뷰 발견 사항 — 전부 수정 완료
 
-- ~~`AppContext.jsx`의 context `value` 객체가 매 렌더마다 새로 생성돼, 앱 어디서든 상태가 바뀌면 현재 화면 전체가 리렌더됨~~ ✅ 수정 완료(12일차) — `value`를 `useMemo`로 감쌈. (`frontend/src/context/AppContext.jsx:232`)
-- ~~`Fridge.jsx`: 가공식품은 아무리 유통기한이 임박해도 "임박" 섹션에 안 뜨고 배지도 항상 초록색~~ ✅ 수정 완료(12일차) — `imminentIds` 필터에서 `isFresh` 조건 제거(임박이면 가공식품도 포함), `processedIds`에서는 반대로 `imminent`인 것을 제외해 중복 표시 방지. 브라우저에서 유통기한 D-1짜리 가공식품(어묵)을 추가해 실제로 "임박 🔥" 섹션에 빨간 배지로 뜨는 것 확인 후 테스트 데이터 삭제. (`frontend/src/pages/Fridge.jsx:8`)
-- ~~`weekPlanType`이 전역 상태라 반찬 쉐어링 플로우와 일주일 식단 플로우 사이에 새어나감~~ ✅ 수정 완료(12일차) — `ShoppingSets.jsx`의 `fullWeek` 카드 클릭 시 `setWeekPlanType('meal')` 호출 추가. 브라우저에서 밑반찬 세트 클릭(→`side`) 후 취소하고 바로 일주일 전체 식단 클릭 시 `MealPlanPicker`가 "이번 주 뭐 먹지?"(2가지 픽)로 정상 표시되는 것 확인 — 수정 전이었다면 "무슨 반찬을 할까요?"(1가지 픽)로 새어나갔을 상황. (`frontend/src/pages/ShoppingSets.jsx:66`)
-- ~~`MealPlanPicker.jsx` 확인 버튼이 `candidates` 로딩 전에는 `"undefined · undefined 중심으로..."` 텍스트를 그대로 노출~~ ✅ 수정 완료(12일차) — `candidatesLoaded` 상태를 추가해 로딩 완료 전에는 "레시피를 불러오는 중..."을 보여주고 버튼도 비활성화. 브라우저에서 실제로 2개 선택 시 정상적으로 레시피 이름이 채워지는 것 확인. (`frontend/src/pages/MealPlanPicker.jsx:32`)
-- ~~`generateDynamicSets`의 `recipeCosts` 계산이 이미 계산된 `missingMap`을 재사용하지 않고 로직을 중복 구현~~ ✅ 수정 완료(12일차) — `estimateBuyCost([missingMap.get(id)])`로 교체(`backend/src/logic/fridgeLogic.js`의 기존 헬퍼 재사용). curl로 `/api/shopping/sets` 응답이 리팩터 전과 동일한 값(예상 비용) 나오는 것 확인. (`backend/src/store.js:709`)
+- ~~`AppContext.jsx`의 context `value` 객체가 매 렌더마다 새로 생성돼, 앱 어디서든 상태가 바뀌면 현재 화면 전체가 리렌더됨~~ ✅ 수정 완료(11일차) — `value`를 `useMemo`로 감쌈. (`frontend/src/context/AppContext.jsx:232`)
+- ~~`Fridge.jsx`: 가공식품은 아무리 유통기한이 임박해도 "임박" 섹션에 안 뜨고 배지도 항상 초록색~~ ✅ 수정 완료(11일차) — `imminentIds` 필터에서 `isFresh` 조건 제거(임박이면 가공식품도 포함), `processedIds`에서는 반대로 `imminent`인 것을 제외해 중복 표시 방지. 브라우저에서 유통기한 D-1짜리 가공식품(어묵)을 추가해 실제로 "임박 🔥" 섹션에 빨간 배지로 뜨는 것 확인 후 테스트 데이터 삭제. (`frontend/src/pages/Fridge.jsx:8`)
+- ~~`weekPlanType`이 전역 상태라 반찬 쉐어링 플로우와 일주일 식단 플로우 사이에 새어나감~~ ✅ 수정 완료(11일차) — `ShoppingSets.jsx`의 `fullWeek` 카드 클릭 시 `setWeekPlanType('meal')` 호출 추가. 브라우저에서 밑반찬 세트 클릭(→`side`) 후 취소하고 바로 일주일 전체 식단 클릭 시 `MealPlanPicker`가 "이번 주 뭐 먹지?"(2가지 픽)로 정상 표시되는 것 확인 — 수정 전이었다면 "무슨 반찬을 할까요?"(1가지 픽)로 새어나갔을 상황. (`frontend/src/pages/ShoppingSets.jsx:66`)
+- ~~`MealPlanPicker.jsx` 확인 버튼이 `candidates` 로딩 전에는 `"undefined · undefined 중심으로..."` 텍스트를 그대로 노출~~ ✅ 수정 완료(11일차) — `candidatesLoaded` 상태를 추가해 로딩 완료 전에는 "레시피를 불러오는 중..."을 보여주고 버튼도 비활성화. 브라우저에서 실제로 2개 선택 시 정상적으로 레시피 이름이 채워지는 것 확인. (`frontend/src/pages/MealPlanPicker.jsx:32`)
+- ~~`generateDynamicSets`의 `recipeCosts` 계산이 이미 계산된 `missingMap`을 재사용하지 않고 로직을 중복 구현~~ ✅ 수정 완료(11일차) — `estimateBuyCost([missingMap.get(id)])`로 교체(`backend/src/logic/fridgeLogic.js`의 기존 헬퍼 재사용). curl로 `/api/shopping/sets` 응답이 리팩터 전과 동일한 값(예상 비용) 나오는 것 확인. (`backend/src/store.js:709`)
 - ~~`store.js`의 `TODAY` 상수가 서버 프로세스 시작 시점에 한 번만 계산되어...~~ ✅ 수정 완료(11일차) — `today()` 함수로 전환해 호출 시점마다 재계산하도록 변경 (`backend/src/store.js:15`, `frontend/src/api/mockServer.js:15`)
 - 위 항목 중 프론트엔드 로직(`recipeCosts`)은 `frontend/src/api/mockServer.js`에도 동일 반영, 그 외 순수 화면 버그 4건은 화면 컴포넌트 자체 수정이라 mockServer.js와는 무관.
 
@@ -69,9 +94,9 @@ AppContext의 `shootReceipt`·`openRecipeDetail`·`buildMealPlan`·`openMealShop
 
 ---
 
-## 13일차 추가 — 기획서(product.md)·API 계약(api.md) 대비 코드 정합성 감사 ✅ 문서 갱신 완료
+## 11일차 추가 — 기획서(product.md)·API 계약(api.md) 대비 코드 정합성 감사 ✅ 문서 갱신 완료
 
-11~13일차 작업이 원래 기획에서 벗어난 게 없는지 점검하다가, **대부분 이 세션 이전부터 있던** 문서-코드 괴리를 다수 발견. 오늘 작업(P0/FE 안정성/영수증 OCR/식단 v2)은 이 감사에서 새로운 이탈을 만들지 않았음(영수증 촬영 UI 변경은 사용자와 상의 후 `product.md` 9.4에 이미 반영). 아래 발견 항목 중 **문서 쪽은 전부 `product.md`·`api.md`를 코드에 맞춰 재작성해 해소**, **미구현 기능은 새 백로그로 남김**(다음 순서로 구현 예정).
+11일차 작업이 원래 기획에서 벗어난 게 없는지 점검하다가, **대부분 이 세션 이전부터 있던** 문서-코드 괴리를 다수 발견. 오늘 작업(P0/FE 안정성/영수증 OCR/식단 v2)은 이 감사에서 새로운 이탈을 만들지 않았음(영수증 촬영 UI 변경은 사용자와 상의 후 `product.md` 9.4에 이미 반영). 아래 발견 항목 중 **문서 쪽은 전부 `product.md`·`api.md`를 코드에 맞춰 재작성해 해소**, **미구현 기능은 새 백로그로 남김**(다음 순서로 구현 예정).
 
 ### API 계약 불일치 → `api.md` 전면 재작성으로 해소 (§3~§8)
 
@@ -85,9 +110,9 @@ AppContext의 `shootReceipt`·`openRecipeDetail`·`buildMealPlan`·`openMealShop
 
 ### 기획서엔 있는데 실제로 없음 (미구현 — 순차 구현 진행 중, `product.md` §11에도 반영)
 
-- ~~레시피 검색바(디바운스) + `GET /api/recipes?search=`~~ ✅ 완료(13일차)
-- ~~정렬 드롭다운 UI(추천순/조리시간순/난이도순)~~ ✅ 완료(13일차) — `sort=default|ratio|time|level`. 겸사겸사 "🔴 상급자" 필터가 `level=high`로 보내서 실제 계산값(`expert`)과 안 맞아 항상 0건이던 버그도 발견해 수정(`RecipeList.jsx`, `data/recipes.js` 양쪽)
-- ~~무한 스크롤(`IntersectionObserver`)~~ ✅ 완료(13일차) — sentinel div를 관찰해 자동 로드 + "더보기" 버튼을 안전망으로 병행. **검증 한계**: 이 세션의 Browser pane에서 `IntersectionObserver`가 아예 콜백을 발생시키지 않는 현상을 발견(화면에 확실히 보이는 `<h1>`에 직접 옵저버를 붙여도 재현) — 스크린샷 도구가 이 세션 내내 타임아웃 나던 것과 같은 원인(렌더러 컴포지터 문제)으로 추정, 코드 자체의 버그는 아닌 것으로 판단. 자동 트리거는 실제 브라우저에서 사용자가 직접 확인 필요. 안전망 버튼으로 30→60개 증가는 확인 완료
+- ~~레시피 검색바(디바운스) + `GET /api/recipes?search=`~~ ✅ 완료(11일차)
+- ~~정렬 드롭다운 UI(추천순/조리시간순/난이도순)~~ ✅ 완료(11일차) — `sort=default|ratio|time|level`. 겸사겸사 "🔴 상급자" 필터가 `level=high`로 보내서 실제 계산값(`expert`)과 안 맞아 항상 0건이던 버그도 발견해 수정(`RecipeList.jsx`, `data/recipes.js` 양쪽)
+- ~~무한 스크롤(`IntersectionObserver`)~~ ✅ 완료(11일차) — sentinel div를 관찰해 자동 로드 + "더보기" 버튼을 안전망으로 병행. **검증 한계**: 이 세션의 Browser pane에서 `IntersectionObserver`가 아예 콜백을 발생시키지 않는 현상을 발견(화면에 확실히 보이는 `<h1>`에 직접 옵저버를 붙여도 재현) — 스크린샷 도구가 이 세션 내내 타임아웃 나던 것과 같은 원인(렌더러 컴포지터 문제)으로 추정, 코드 자체의 버그는 아닌 것으로 판단. 자동 트리거는 실제 브라우저에서 사용자가 직접 확인 필요. 안전망 버튼으로 30→60개 증가는 확인 완료
 - 레시피 썸네일 이미지 표시(`image_url` 필드는 API가 내려주는데 프론트 어디서도 안 씀) + 레이지 로딩
 - 북마크(찜) 기능
 - 일주일 식단의 일요일 "냉장고 털이 요리 🧹" 특수 슬롯 — 문서에만 있고 코드엔 대응 로직 자체가 없음
@@ -112,11 +137,14 @@ AppContext의 `shootReceipt`·`openRecipeDetail`·`buildMealPlan`·`openMealShop
 
 | 항목 | 현재 상태 | 비고 |
 |---|---|---|
-| 일주일 식단 루틴 알고리즘 v2 | ✅ 13일차 완료 — `selectImminentGreedy`·`shortlistCandidates`·`searchMinPurchaseCombo3`을 `buildWeeklyPlan(type='meal')`에 연결(임박 재료가 적어 3슬롯이 안 나오면 기존 탐욕으로 폴백). v2 알고리즘 설계는 [algorithms.md](./algorithms.md) 참고 | `type='side'`는 설계 문서 범위 밖이라 기존 탐욕 유지 |
+| 일주일 식단 루틴 알고리즘 v2 | ✅ 11일차 완료 — `selectImminentGreedy`·`shortlistCandidates`·`searchMinPurchaseCombo3`을 `buildWeeklyPlan(type='meal')`에 연결(임박 재료가 적어 3슬롯이 안 나오면 기존 탐욕으로 폴백). v2 알고리즘 설계는 [algorithms.md](./algorithms.md) 참고 | `type='side'`는 설계 문서 범위 밖이라 기존 탐욕 유지 |
 | 식자재 가격 실시간 연동 | `GET /api/prices`가 정적 하드코딩, 매일 갱신되는 외부 소스 없음 | — |
-| 테스트 코드 | 프론트·백엔드 둘 다 없음. 우선 테스트 대상: `store.js`의 `formatDday`·`calcExpiryDate`·`listRecipes`·`cookDone`·`confirmReceipt` | — |
-| 백엔드 린터 | 프론트는 `oxlint`가 있는데 백엔드는 없음 | — |
+| 테스트 코드 | ✅ 12일차 일부 완료 — `node:test`로 순수 함수(`store.js`의 `formatDday`/`ddayValue`, `data/ingredients.js`의 `calcExpiryDate`, `logic/fridgeLogic.js`의 `parseAmt`/`formatAmtText`/`extractUnit`/`ingHave`/`getMissingInfo`) 20건 커버. `backend/package.json`의 `test` 스크립트를 `node --test`로 교체 | `listRecipes`/`cookDone`/`confirmReceipt`는 Supabase 의존이라 아직 미커버(다음 순서) |
+| 백엔드 린터 | ✅ 12일차 완료 — `backend/.oxlintrc.json` 신설(`oxc` 플러그인), `npm run lint` 추가. 기존 코드에서 걸린 미사용 파라미터(`app.js` 에러 핸들러의 `next`→`_next`) 1건 수정 | — |
+| cook-done 원자성 한계 | ✅ 12일차 코드 레벨 완화 — 계산(1패스)/쓰기(2패스) 분리로 계산 오류가 이미 쓴 항목 *이후*에 터지는 상황 방지, 쓰기 실패 시 `partiallyApplied`/`failed`/`notAttempted`를 에러 응답에 포함해 반영 범위를 추적 가능하게 함(api.md §8) | 완전한 트랜잭션은 아님 — Postgres RPC 도입은 여전히 미착수 |
+| 컨트롤러 입력 검증 강화 | ✅ 12일차 완료 — `purchasedAt`/`expiryDate`/`expiryOverrides` 날짜 형식, `deductions` 원소 형태, `multiplier` 범위(0 초과) 검증 추가(fridge/recipes/mealPlan/receipts 컨트롤러) | — |
 | `fridge-recipe-app` ↔ `hub` 저장소 동기화 | `baejh3333-del/hub`는 2026-07-09 17:53 커밋 이후 미반영 | 공유·배포 전에 동기화 필요 |
+| 레시피 커버리지 대폭 축소(20,963 → 533개) | 12일차에 조리순서 없는 레시피를 전량 삭제하기로 결정하면서, "지금 가능한 요리" 매칭 풀이 CSV 66,447건 없이 MAFRA 533건으로만 좁아짐 | 매칭률 체감 저하 가능성 — 필요시 CSV를 조리순서 있는 것만 선별 재도입하거나 별도 소스로 조리순서를 보강하는 방안 검토 |
 | 레시피 목록 정렬 + 더보기 | ✅ 완료(9일차) — `GET /api/recipes`에 `page`/`pageSize`/`sort=ratio` 추가, `RecipeList.jsx` "더보기" 버튼, `Home.jsx` 총계/추천 분리 조회로 22MB→1KB 미만 응답 | — |
 | 런처 실행 흐름 검증 | `FridgeRecipeApp.exe` — Node.js 미설치·포트 3001 사용 중·빌드 실패·서버 시작 실패 안내 | — |
 | 배포 패키지 구성 | `backend`, `frontend/dist`, `node_modules` 포함 여부 정책, 실행 파일, 사용 안내 | — |
@@ -220,7 +248,7 @@ AppContext의 `shootReceipt`·`openRecipeDetail`·`buildMealPlan`·`openMealShop
 
 ---
 
-## 11일차 (2026-07-20) 작업 기록
+## 11일차 (2026-07-20) 작업 기록 — P0 버그 수정 & 코드 리뷰
 
 [3주차 계획수립.md](./3주차%20계획수립.md) Day 11 항목 진행.
 
@@ -243,7 +271,7 @@ AppContext의 `shootReceipt`·`openRecipeDetail`·`buildMealPlan`·`openMealShop
 
 ---
 
-## 12일차 (2026-07-20) 작업 기록
+## 11일차 (2026-07-20) 작업 기록 — FE 안정성
 
 [3주차 계획수립.md](./3주차%20계획수립.md) Day 12 항목(FE 안정성) 진행. 9일차 코드 리뷰에서 남아있던 5건을 전부 처리.
 
@@ -256,7 +284,7 @@ AppContext의 `shootReceipt`·`openRecipeDetail`·`buildMealPlan`·`openMealShop
 
 ---
 
-## 13일차 (2026-07-20) 작업 기록 — 영수증 촬영/OCR 실연동
+## 11일차 (2026-07-20) 작업 기록 — 영수증 촬영/OCR 실연동
 
 원래 3주차 계획엔 없던 항목(Day 13은 원래 "일주일 식단 v2 알고리즘 연결" 예정이었으나, 우선순위가 바뀌어 영수증 촬영 실기능을 먼저 진행). 사용자가 OCR 제공자로 **Naver Clova OCR**, 촬영 UI로 **기기 기본 카메라 앱 호출**(`<input type="file" capture>`)을 직접 선택.
 
@@ -287,7 +315,7 @@ AppContext의 `shootReceipt`·`openRecipeDetail`·`buildMealPlan`·`openMealShop
 - 크레덴셜을 넣은 뒤 실제 영수증으로 한 번 테스트해 매칭 정확도(`matchReceiptLines.js`의 잡음 필터·이름 대조 규칙)를 다듬어야 할 가능성이 높음 — 실제 Clova 응답 형태(특히 `lineBreak` 필드 존재 여부)를 이 세션에선 본 적이 없어 방어적으로만 작성함.
 - (추가) Naver Cloud Platform 콘솔 가입 절차가 번거롭다는 사용자 피드백으로 OCR 제공자를 재검토 중 — OCR.space/Upstage Document AI/Google Cloud Vision/Tesseract.js 후보 제시, 아직 미결정. 제공자를 바꾸더라도 `backend/src/ocr/clovaOcr.js`의 `recognizeReceiptText(buffer, mimeType) → string[] | null` 계약만 유지한 새 모듈로 교체하면 `store.js`·`matchReceiptLines.js`는 그대로 재사용 가능.
 
-## 13일차 (2026-07-20) 작업 기록 — 일주일 식단 v2 알고리즘 연결
+## 11일차 (2026-07-20) 작업 기록 — 일주일 식단 v2 알고리즘 연결
 
 [3주차 계획수립.md](./3주차%20계획수립.md) Day 13 원래 항목. 영수증 OCR 작업 다음으로 이어서 진행.
 
@@ -299,3 +327,51 @@ AppContext의 `shootReceipt`·`openRecipeDetail`·`buildMealPlan`·`openMealShop
 - **`type='side'`** — 그대로 기존 탐욕 배치 유지. v2 설계 문서(`algorithms.md`)가 "픽 2개·7일 식단" 케이스만 다루고 있어 반찬형(픽 1개)은 범위 밖.
 - **검증**: curl로 `type=meal`(전체/`beginner` 난이도 필터), `type=side`, 유효하지 않은 `pickedIds` 케이스까지 확인 — 전부 7일 채워짐, 크래시 없음, "추가 구매 품목 N개로 압축" 요약 정상 출력. frontend 전체 `oxlint` 통과, 양쪽 `fridgeLogic.js` diff로 동일함 재확인.
 - **한계**: `selectImminentGreedy`가 실제로 몇 개 슬롯을 채우는지(즉 어느 분기를 타는지)는 현재 fridge 데이터(임박 재료 2개: 돼지고기·두부)로는 로그 없이 curl 응답만으론 명확히 구분 못 함 — 두 재료를 한 레시피가 동시에 커버하면 1개만 채우고 조기 종료해 폴백 분기를 탈 가능성이 있음. 필요하면 다음 세션에서 임박 재료 개수를 조정해 두 분기를 각각 강제로 재현/확인할 수 있음.
+
+---
+
+## 12일차 (2026-07-21) 작업 기록
+
+### 1. 백엔드 검증 기준 정리 & 품질 개선
+
+"백엔드 API의 필수/권장 검증 기준이 뭔지" 질문에서 출발해, 계획을 먼저 세우고(plan mode) 순차적으로 진행.
+
+- **`backend/.oxlintrc.json` 신설** — 프론트(`oxc`+`react` 플러그인)와 달리 JSX가 없으므로 `oxc`만. `npm run lint` 스크립트 추가. 기존 코드에서 걸린 미사용 파라미터 1건(`app.js` 에러 핸들러 `next`→`_next`) 수정.
+- **`node:test` 도입** — `store.js`의 `formatDday`/`ddayValue`를 `export`로 전환, `data/ingredients.js`의 `calcExpiryDate`, `logic/fridgeLogic.js`의 `parseAmt`/`formatAmtText`/`extractUnit`/`ingHave`/`getMissingInfo`까지 순수 함수 20건 테스트 작성. `backend/package.json`의 `test` 스크립트를 `node --test`로 교체(기존엔 `npm init` placeholder뿐이었음).
+- **컨트롤러 입력 검증 강화** — `purchasedAt`/`expiryDate`/`expiryOverrides` 날짜 형식, `deductions` 원소 형태(`{id:string, use:0이상 숫자}`), `multiplier` 범위(0 초과)를 fridge/recipes/mealPlan/receipts 컨트롤러에 추가. curl로 정상/실패 케이스 각각 확인.
+- **`cook-done` 부분 실패 완화** — Supabase 클라이언트가 다건 트랜잭션을 지원하지 않아 완전한 원자성은 불가능하지만, 계산(1패스)/쓰기(2패스)로 분리해 계산 오류가 이미 쓴 항목 *이후*에 터지는 상황을 방지하고, 쓰기 실패 시 `partiallyApplied`/`failed`/`notAttempted`를 에러 응답에 담아 최소한 반영 범위는 추적 가능하게 함. 실제 Supabase에 테스트용 재료를 만들어 부분 차감·완전 소진 케이스 둘 다 검증 후 정리.
+- 4건 모두 `npm run lint`+`npm test` 통과 확인하며 진행.
+
+### 2. 레시피 데이터 대규모 정리 — CSV 중복 제거 (66,984 → 20,963개)
+
+사용자가 "레시피 리스트에 같은 요리가 여러 개 뜬다"고 보고. 원인 조사 → 전략 논의(그룹핑 드릴다운 vs 단순 dedup vs CSV 사전 정리) → 실행까지 여러 라운드로 진행.
+
+- **1차 진단**: `RCP_TTL`(제목) 기준으로 실제 DB를 조회해 정규화 중복(문장부호·공백 차이) 1,412~1,991그룹, 최대 2,955~4,574건 발견("오이지무침" 25건 등).
+- **전략 확정**: 사용자가 "대표 1건만 남기고, 재료 가짓수 적은 레시피로 남겨라"로 결정. `backend/src/scripts/dedupeCsv.cjs`(신규) 작성 — 원본 CSV를 읽어 `isSimpleRecipe` 통과분(66,447건) 중 정규화된 제목으로 그룹핑, 재료 가짓수(조미료 제외) 최소인 레시피를 내용으로, 그룹 내 최빈/최단 표기를 제목으로 선정해 새 CSV(`TB_RECIPE_SEARCH-231130-clean.csv`) 생성.
+- **더 큰 문제 발견**: 원본 CSV에 `RCP_TTL`(제목 문장, 홍보 문구 섞임) 말고 `CKG_NM`(요리명 전용 컬럼)이 따로 있다는 걸 발견 — 이 필드로 재검수하니 진짜 중복이 66,447건 중 52,330건(79%)에 달함("소고기미역국" 361건, "콩나물무침" 343건 등). `dedupeCsv.cjs`를 `CKG_NM` 기준 그룹핑으로 재작성 → 66,447건 → **20,692건**으로 정리.
+- **재시딩 & 버그 수정**: `seedCsv.cjs`에 재시딩 전 기존 CSV 출처 레시피 선삭제 로직 추가(원래 upsert만 해서 정리 전 중복이 안 지워지던 구조적 문제). 이 삭제 로직도 대량 변경 직후 `.order()` 없는 `range()` 페이지네이션이 불안정해서 일부(16,328건) 못 지우고 남는 버그를 발견해 `.order('api_rcp_seq')` 추가로 수정 — 검증 스크립트 자체도 같은 버그로 한 번 잘못된 결과를 낸 걸 재확인 과정에서 발견.
+- **교차 중복 정리**: MAFRA(537건, 조리순서 있음)와 CSV 사이에도 같은 요리명 263그룹 존재 — 조리순서 있는 쪽을 우선 남기는 기준으로 정리(그중 4그룹은 MAFRA끼리도 중복이어서 같이 정리됨). 최종 **20,963건**, 중복 그룹 0건.
+
+### 3. 조리순서 없는 레시피 전량 삭제 (20,963 → 533개)
+
+사용자가 "레시피들에 조리순서가 없다"고 지적. 원본 CSV(`TB_RECIPE_SEARCH`) 18개 컬럼을 전부 확인했으나 단계별 설명 컬럼 자체가 없음(4개 연도 스냅샷 전부 동일 스키마) — `CKG_IPDC`(요리소개)는 홍보 문구라 대체 불가. 즉 CSV 출처 레시피는 애초에 조리순서를 만들 수 없는 데이터. 사용자가 "조리순서 없는 거 다 지워"로 결정 → CSV 출처 20,430건 전량 삭제, MAFRA 출처(실제 조리순서 있음) **533건**만 남김. 브라우저로 실제 앱 확인(백엔드·프론트 dev 서버 기동) — 홈/레시피 리스트(`total:533`)/상세 화면의 조리 순서까지 정상 표시 확인.
+
+### 4. 버그 — 일주일 식단 루틴에서 장보기 리스트가 항상 비어있음
+
+사용자 보고: "식단 루틴에서 구매해야할 재료들 안뜨는 버그". 브라우저로 재현 — 식단 화면엔 일자별 목록이 아예 안 뜨고, "장보기 리스트 만들기" 버튼도 무반응.
+
+- **원인**: `AppContext.jsx`의 `weekPlanDifficulty` 기본값이 `'all'`인데(난이도 선택 시트 옵션 id도 `'all'`), `backend/src/store.js`의 `buildWeeklyPlan`은 `'any'`만 "필터 없음"으로 인식(`difficulty !== 'any' && r.level !== difficulty`) — `'all'`을 넘기면 모든 레시피가 걸러져 후보 풀이 0개가 되고 `{days:[]}`를 반환. 특정 난이도를 직접 고르지 않는 한(기본 경로 포함) 항상 재현되던 버그.
+- **수정**: `buildWeeklyPlan` 진입 시 `difficulty === 'all'`이면 `'any'`로 정규화 — `backend/src/store.js`, `frontend/src/api/mockServer.js` 양쪽.
+- **검증**: 브라우저에서 냉이된장찌개·나물비빔밥 선택 → 7일 전부 채워짐 → 장보기 리스트(부족 재료 23개, 예상 합계 118,940원)까지 정상 표시 확인.
+
+### 5. 버그 — 식단 장보기 리스트 재료 가격/수량 오류
+
+사용자가 스크린샷으로 지적: "대파 부족 7뿌리 1/8 → 22,800원", "즉석밥 부족 1047컵 3/4 → 393,000원"이 말이 안 된다고("대파도 한단 가격을 한개로 착각하는듯").
+
+- **원인 1(대파)**: `mealPrices.js`의 `INGREDIENT_PACK_OVERRIDES`에 `pa: 1`이 있어 "1뿌리=1팩"으로 고정 — 몇 뿌리를 사든 매번 한 단(2,850원) 전체 가격이 매겨짐. 오버라이드 제거, 단위별 기본표(`'뿌리': 5`)로 폴백하도록 수정.
+- **원인 2(즉석밥, 더 근본적)**: `calculateCumulativeNeeds`(`store.js`)가 재료 수량을 합칠 때 원문 단위(뿌리/컵/공기/g)를 무시하고 숫자만 그대로 더함 — "800g"+"2공기"+"4컵"+"1컵"을 전부 같은 단위처럼 합산해 "1047컵" 같은 결과가 나옴. `${key}::${단위}`로 나눠 단위가 같은 것끼리만 누적하고, 가격도 단위 그룹별로 계산 후 합산, 화면엔 "800g + 4공기 + 5컵"처럼 단위별로 표기하도록 재작성. `backend/src/store.js`(`calculateCumulativeNeeds`/`getMealShoppingList`), `frontend/src/api/mockServer.js` 양쪽 반영.
+- **추가 감사**: "다른 재료도 이런 문제가 있는지" 요청으로 533개 레시피의 재료 단위를 전수 스캔해 팩 크기가 레시피 1개의 일반적인 필요량보다도 작은 조합을 찾아냄 — 27개 재료(멸치·새우·대하·홍합·쪽파·밤·미나리·상추 등, "여러 개를 봉지째 사는" 재료들이 "낱개=1팩"으로 잘못 잡혀 있었음)에 실제 판매 단위 기준 오버라이드 추가, 반대로 과소 청구되던 라면사리·브로콜리("1개=정찰가"인데 4개 단위 팩으로 잡혀 있던 것)도 수정. `mealPrices.js` 양쪽(`backend`/`frontend`) 반영, 재감사 스크립트로 잔여 문제 0건(설명 가능한 예외 4건 제외) 확인.
+
+### 검증 방식
+
+이번 세션 전체에 걸쳐 라이브 DB(Supabase)를 직접 수정하는 작업이 많아, 매 단계 진단 스크립트(임시 `.cjs`, 작업 후 삭제)로 실제 수치를 먼저 확인한 뒤에만 실행하는 방식으로 진행 — 특히 대량 삭제/재시딩처럼 되돌리기 어려운 단계는 사용자에게 영향 범위를 먼저 보고하고 명시적 승인을 받은 뒤 진행함.

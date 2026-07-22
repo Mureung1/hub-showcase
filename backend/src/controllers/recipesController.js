@@ -8,7 +8,10 @@ export async function listRecipes(req, res) {
 }
 
 export async function getRecipeDetail(req, res) {
-  const multiplier = parseFloat(req.query.multiplier) || 1.0;
+  const multiplier = req.query.multiplier === undefined ? 1.0 : parseFloat(req.query.multiplier);
+  if (!Number.isFinite(multiplier) || multiplier <= 0) {
+    return res.status(400).json({ error: 'multiplier는 0보다 큰 숫자여야 해요.' });
+  }
   const detail = await store.getRecipeDetail(req.params.id, multiplier);
   if (!detail) return res.status(404).json({ error: `recipe ${req.params.id} not found` });
   res.json(detail);
@@ -17,9 +20,19 @@ export async function getRecipeDetail(req, res) {
 export async function cookDone(req, res) {
   const { deductions } = req.body;
   if (!Array.isArray(deductions)) return res.status(400).json({ error: 'deductions 배열이 필요해요.' });
+  const invalid = deductions.some(
+    (d) => !d || typeof d.id !== 'string' || !d.id || !Number.isFinite(d.use) || d.use < 0,
+  );
+  if (invalid) {
+    return res.status(400).json({ error: 'deductions의 각 항목은 { id: string, use: 0 이상 숫자 } 형태여야 해요.' });
+  }
   try {
     res.json(await store.cookDone(req.params.id, deductions));
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    const body = { error: err.message };
+    if (err.partiallyApplied) body.partiallyApplied = err.partiallyApplied;
+    if (err.failed) body.failed = err.failed;
+    if (err.notAttempted) body.notAttempted = err.notAttempted;
+    res.status(err.status || 500).json(body);
   }
 }

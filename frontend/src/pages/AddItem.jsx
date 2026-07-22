@@ -73,6 +73,7 @@ export default function AddItem() {
   const { back, tab, addFridgeItem } = useApp();
   const [selectedId, setSelectedId] = useState(null); // null(미선택) | 'other' | 마스터 재료 id
   const [activeSubCat, setActiveSubCat] = useState(SUB_CATEGORIES[0].name);
+  const [search, setSearch] = useState('');
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
   const [quantityAmount, setQuantityAmount] = useState('1');
@@ -83,6 +84,13 @@ export default function AddItem() {
 
   const { status, data, error, refetch } = useAsyncData(() => api.getIngredients(), []);
   const ingredients = data?.ingredients || [];
+
+  // 검색어가 있으면 카테고리 무시하고 전체 재료에서 이름으로 찾는다 — 카테고리당 최대 25개인
+  // 재료 칩을 눈으로 스크롤해서 찾아야 하는 마찰을 없애기 위함.
+  const searchTrim = search.trim();
+  const visibleIngredients = searchTrim
+    ? ingredients.filter((ing) => ing.name.includes(searchTrim))
+    : ingredients.filter((ing) => SUB_CATEGORIES.find((c) => c.name === activeSubCat)?.ids.includes(ing.id));
 
   const isOther = selectedId === 'other';
   const master = isOther ? null : ingredients.find((i) => i.id === selectedId) ?? null;
@@ -104,14 +112,14 @@ export default function AddItem() {
       const units = getQuantityUnits(master.id);
       setQuantityAmount('1');
       setQuantityUnit(units[0] ?? '');
-      setExpiryDate(calcExpiryDate(master, purchasedAt) || '');
+      setExpiryDate(calcExpiryDate(master.id, purchasedAt) || '');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
   useEffect(() => {
     if (!master || isProcessed) return;
-    setExpiryDate(calcExpiryDate(master, purchasedAt) || '');
+    setExpiryDate(calcExpiryDate(master.id, purchasedAt) || '');
   }, [purchasedAt, master, isProcessed]);
 
   useEffect(() => {
@@ -176,18 +184,30 @@ export default function AddItem() {
           </div>
         </div>
 
-        {activeSubCat && (
+        <div className="field">
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="🔍 재료 이름으로 검색 (예: 대파)"
+          />
+        </div>
+
+        {(activeSubCat || searchTrim) && (
           <div className="field">
             <label>재료 선택</label>
+            {visibleIngredients.length === 0 && searchTrim ? (
+              <div className="notice">"{searchTrim}"과 일치하는 재료가 없어요 — 다른 이름으로 찾거나 "기타(직접 입력)"을 써보세요.</div>
+            ) : (
             <div className="unit-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {ingredients
-                .filter((ing) => SUB_CATEGORIES.find(c => c.name === activeSubCat)?.ids.includes(ing.id))
+              {visibleIngredients
                 .map((ing) => (
                   <span key={ing.id} className={`chip${selectedId === ing.id ? ' on' : ''}`} onClick={() => setSelectedId(ing.id)}>
                     {ing.emoji} {ing.name}
                   </span>
                 ))}
             </div>
+            )}
           </div>
         )}
 

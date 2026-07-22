@@ -16,5 +16,9 @@ export async function buildWeekly(req, res) {
 export async function getMealShoppingList(req, res) {
   const { weekPlanIds, multiplier = 1.0 } = req.body;
   if (!Array.isArray(weekPlanIds)) return res.status(400).json({ error: 'weekPlanIds 배열이 필요해요.' });
-  res.json(await store.getMealShoppingList(weekPlanIds, parseFloat(multiplier)));
+  const parsedMultiplier = parseFloat(multiplier);
+  if (!Number.isFinite(parsedMultiplier) || parsedMultiplier <= 0) {
+    return res.status(400).json({ error: 'multiplier는 0보다 큰 숫자여야 해요.' });
+  }
+  res.json(await store.getMealShoppingList(weekPlanIds, parsedMultiplier));
 }
