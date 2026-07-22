@@ -300,6 +300,28 @@ a {
   animation: tds-sheet-in 0.26s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* 카드 전환(홈 탭 분석 영역: 촬영 → 분석 중 → 결과):
+   같은 자리에서 카드가 바뀌므로, 크로스페이드 + 살짝 떠오르는 정도로만 알린다.
+   transform/opacity만 쓰고 250ms를 넘기지 않는다. */
+@keyframes tds-card-swap-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+.tds-card-swap {
+  animation: tds-card-swap-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tds-card-swap {
+    animation: none;
+  }
+}
+
 /* 가로 스크롤 캐러셀: 스크롤바를 숨겨도 스크롤은 그대로 동작한다 */
 .tds-no-scrollbar {
   scrollbar-width: none;

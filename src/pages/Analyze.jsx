@@ -1,15 +1,15 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import AnalysisResultCard from '../components/AnalysisResultCard.jsx'
 import PhotoUpload from '../components/PhotoUpload.jsx'
 import LabelScan from '../components/LabelScan.jsx'
-import MealTypePicker from '../components/MealTypePicker.jsx'
-import NutritionCard from '../components/NutritionCard.jsx'
 import Spinner from '../components/Spinner.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import TextField from '../components/TextField.jsx'
+import { useToast } from '../context/ToastContext.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { pickBestFoodMatch, searchFoodDB } from '../lib/fooddb.js'
 import { normalizeFoodSearchName } from '../lib/foodNameMap.js'
@@ -409,7 +409,9 @@ const ANALYZE_MODES = [
 
 // 사진/텍스트(둘은 이미 하나로 합쳐진 "음식 분석")와 라벨 스캔을 탭으로 명확히 구분한다.
 // Profile.jsx의 SegmentedControl과 같은 톤(선택된 탭만 채운 배경)을 재사용한다.
-function ModeTabs({ mode, onChange }) {
+// disabled: 분석 중이거나 결과를 띄워둔 동안에는 탭을 잠근다 — 탭을 바꿔도 결과 카드는 같은 자리를
+// 지키므로, 잠그지 않으면 "라벨 스캔 탭인데 사진 분석 결과가 떠 있는" 어긋난 상태가 보인다.
+function ModeTabs({ mode, onChange, disabled = false }) {
   return (
     <div style={{ display: 'flex', gap: spacing.sm, marginBottom: spacing.md }}>
       {ANALYZE_MODES.map((m) => {
@@ -420,6 +422,7 @@ function ModeTabs({ mode, onChange }) {
             type="button"
             className="tds-press"
             onClick={() => onChange(m.key)}
+            disabled={disabled}
             style={{
               flex: 1,
               padding: `${spacing.md}px 0`,
@@ -429,7 +432,8 @@ function ModeTabs({ mode, onChange }) {
               color: active ? '#fff' : colors.textStrong,
               fontWeight: 700,
               fontSize: font.size.md,
-              cursor: 'pointer',
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              opacity: disabled && !active ? 0.5 : 1,
             }}
           >
             {m.label}
@@ -440,42 +444,111 @@ function ModeTabs({ mode, onChange }) {
   )
 }
 
-function AnalyzingSkeleton() {
+// ANALYZING 상태에서 촬영 카드 자리를 그대로 차지한다. 사진이 있으면 그 사진 위에 로딩 오버레이를
+// 얹어 "지금 이 사진을 보고 있다"를 그대로 보여주고, 사진 없이 메뉴 이름만으로 분석하는 경우엔
+// 스켈레톤 몇 줄로 대신한다.
+function AnalyzingPreview({ photoUrl }) {
   return (
-    <div style={styles.card}>
-      <Skeleton height={96} radius={radius.sm} style={{ marginBottom: spacing.lg }} />
-      <Skeleton height={20} width="55%" style={{ marginBottom: spacing.lg }} />
-      {[0, 1, 2, 3, 4].map((i) => (
-        <Skeleton key={i} height={14} style={{ marginBottom: spacing.sm }} />
-      ))}
+    <div>
+      {photoUrl ? (
+        <div style={{ position: 'relative', borderRadius: radius.md, overflow: 'hidden' }}>
+          <img src={photoUrl} alt="분석 중인 사진" style={{ width: '100%', display: 'block' }} />
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(25, 31, 40, 0.45)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.md,
+            }}
+          >
+            <Spinner size={32} />
+            <span style={{ color: '#fff', fontSize: font.size.md, fontWeight: 700 }}>분석 중이에요...</span>
+          </div>
+        </div>
+      ) : (
+        <div
+          style={{
+            minHeight: 160,
+            borderRadius: radius.md,
+            background: colors.bg,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: spacing.md,
+          }}
+        >
+          <Spinner size={32} />
+          <span style={{ color: colors.textSub, fontSize: font.size.md, fontWeight: 700 }}>분석 중이에요...</span>
+        </div>
+      )}
+
+      <div style={{ marginTop: spacing.lg }} aria-hidden="true">
+        <Skeleton height={20} width="55%" style={{ marginBottom: spacing.md }} />
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} height={14} style={{ marginBottom: spacing.sm }} />
+        ))}
+      </div>
     </div>
   )
 }
 
+// 홈 탭 분석 영역의 3가지 상태. 불리언 여러 개(loading && result 같은)를 조합하면 "로딩 중인데 결과도
+// 있는" 불가능한 조합이 표현돼버려서, 어느 카드를 그릴지 판단이 화면 곳곳으로 흩어진다. 명시적 상태값
+// 하나로 두면 한 자리에서 카드가 전환되는 이 UI의 규칙이 그대로 코드에 드러난다.
+const STATUS = {
+  IDLE: 'idle', // 촬영 카드 + 입력 + [분석하기]
+  ANALYZING: 'analyzing', // 같은 자리에 로딩 오버레이
+  RESULT: 'result', // 같은 자리에 결과 카드
+}
+
 export default function Analyze() {
   const { authUser, profile, tempSex, setTodayMeal, addTodayMeal, setTempSex } = useUser()
+  const { showToast } = useToast()
+  const navigate = useNavigate()
   // 닉네임 > 아이디 순으로 고른 표시 이름(authUser.displayName). 인증용 합성 이메일은 화면에 쓰지 않는다.
   const greetingName = authUser?.displayName ?? '게스트'
   const showSexPrompt = !profile && !tempSex
   const [mode, setMode] = useState('food') // 'food'(사진+텍스트, 이미 하나로 합쳐진 경로) | 'label'(영양성분표 스캔)
+  const [status, setStatus] = useState(STATUS.IDLE)
   const [photo, setPhoto] = useState(null) // { base64, mimeType, dataUrl, width, height }
   const [menuName, setMenuName] = useState('')
   const [brand, setBrand] = useState('')
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  // 분석은 끝났지만 아직 저장 전인 결과(식사 시간대 확정 대기). 저장하면 lastAnalysis로 넘어간다.
+  // 분석은 끝났지만 아직 저장 전인 결과(식사 시간대 확정 대기).
   const [pendingAnalysis, setPendingAnalysis] = useState(null)
   const [mealType, setMealType] = useState(() => getRecommendedMealType())
-  // 방금 이 화면에서 저장까지 마친 결과(로컬 상태). 홈을 떠나면 사라져서, 다시 돌아와도 카드가 재표시되지 않는다.
-  const [lastAnalysis, setLastAnalysis] = useState(null)
   const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState('')
+  // PhotoUpload는 미리보기를 내부 state로 들고 있어서 부모가 직접 지울 수 없다. "다시 찍기"에서 이 값을
+  // 올려 컴포넌트를 새로 마운트시키는 방식으로 초기화한다.
+  const [photoResetKey, setPhotoResetKey] = useState(0)
+
+  // 결과 카드 썸네일용. 사진 경로면 분석에 쓴 사진, 라벨 스캔이면 스캔한 사진, 텍스트 경로면 null이다.
+  // PhotoUpload가 canvas.toDataURL로 만든 **data URL**이라 URL.revokeObjectURL 대상이 아니다
+  // (objectURL이 아니라 문자열이라 참조가 끊기면 그대로 회수된다). 상태를 비우는 것으로 충분하다.
+  const [resultPhotoUrl, setResultPhotoUrl] = useState(null)
+
+  // IDLE로 되돌리며 입력까지 전부 비운다. 저장 완료와 "다시 찍기"가 공유한다.
+  function resetToIdle() {
+    setStatus(STATUS.IDLE)
+    setPendingAnalysis(null)
+    setResultPhotoUrl(null)
+    setPhoto(null)
+    setMenuName('')
+    setBrand('')
+    setError('')
+    setMealType(getRecommendedMealType())
+    setPhotoResetKey((k) => k + 1)
+  }
 
   // 사진이 있으면 기존 식별→식약처DB조회 경로, 없으면 메뉴 이름만으로 바로 추정하는 텍스트 경로를 탄다.
   // 최소한 사진 또는 메뉴 이름 중 하나는 있어야 한다.
   async function handleAnalyze() {
     setError('')
-    setPendingAnalysis(null)
 
     const trimmedMenuName = menuName.trim()
     if (!photo && !trimmedMenuName) {
@@ -483,8 +556,9 @@ export default function Analyze() {
       return
     }
 
-    setLoading(true)
+    setStatus(STATUS.ANALYZING)
     try {
+      let parsed
       if (photo) {
         const prompt = buildIdentificationPrompt(menuName, brand)
         const text = await geminiComplete({
@@ -500,32 +574,43 @@ export default function Analyze() {
         }
 
         const items = await Promise.all(identified.items.map(resolveFoodItem))
-        const total = sumNutrients(items)
-        const parsed = { items, total }
+        parsed = { items, total: sumNutrients(items) }
 
         if (!isMealAnalysis(parsed)) {
           throw new Error('영양 계산 결과 형식이 올바르지 않습니다.')
         }
-
-        setPendingAnalysis(parsed)
       } else {
-        const parsed = await resolveTextAnalysis(trimmedMenuName, brand.trim())
-        setPendingAnalysis(parsed)
+        parsed = await resolveTextAnalysis(trimmedMenuName, brand.trim())
       }
+
+      setPendingAnalysis(parsed)
+      setResultPhotoUrl(photo?.dataUrl ?? null)
+      // 결과를 보여주는 시점에 시간대 추천을 다시 계산한다(카드를 띄워둔 채 시간이 흐른 경우 대비).
+      setMealType(getRecommendedMealType())
+      setStatus(STATUS.RESULT)
     } catch (err) {
       console.error('meal analysis failed:', err)
-      setError(err.message || '분석에 실패했습니다. 잠시 후 다시 시도해주세요.')
-    } finally {
-      setLoading(false)
+      // 실패하면 입력값은 그대로 둔 채 IDLE로 되돌린다 — 사진/메뉴 이름을 다시 넣게 하지 않는다.
+      setStatus(STATUS.IDLE)
+      showToast(err.message || '분석에 실패했습니다. 잠시 후 다시 시도해주세요.', { tone: 'error' })
     }
   }
 
-  // 사진/텍스트 경로와 별개로 pendingAnalysis를 공유한다 — 어느 탭에서 만든 결과든 이후 mealType
-  // 선택→저장(handleConfirmSave)까지 동일한 흐름을 그대로 탄다.
-  async function handleLabelScan(photo) {
-    setPendingAnalysis(null)
-    const parsed = await resolveLabelScan(photo)
-    setPendingAnalysis(parsed)
+  // 영양성분표 스캔도 같은 상태 머신을 공유한다 — 어느 탭에서 만든 결과든 같은 자리에서 결과 카드로
+  // 전환되고, 이후 시간대 선택→저장까지 동일한 흐름을 탄다.
+  // (LabelScan은 자체 버튼/에러 표시를 갖고 있어 여기서는 실패를 다시 던져 그쪽이 보여주게 둔다.)
+  async function handleLabelScan(scanPhoto) {
+    setStatus(STATUS.ANALYZING)
+    try {
+      const parsed = await resolveLabelScan(scanPhoto)
+      setPendingAnalysis(parsed)
+      setResultPhotoUrl(scanPhoto?.dataUrl ?? null)
+      setMealType(getRecommendedMealType())
+      setStatus(STATUS.RESULT)
+    } catch (err) {
+      setStatus(STATUS.IDLE)
+      throw err
+    }
   }
 
   async function handleConfirmSave() {
@@ -536,16 +621,19 @@ export default function Analyze() {
     const parsed = { items, total: pendingAnalysis.total }
 
     setSaving(true)
-    setSaveError('')
     try {
-      // 이번 분석에서 나온 음식 전체를 하나의 끼니 기록으로 Supabase meals 테이블에 저장
+      // 이번 분석에서 나온 음식 전체를 하나의 끼니 기록으로 저장
       // (음식이 1개면 단일 메뉴, 2개 이상이면 한 끼 세트로 식단 탭에서 구분해 보여준다)
       await addTodayMeal(parsed.items, mealType)
       setTodayMeal(parsed)
-      setLastAnalysis(parsed)
-      setPendingAnalysis(null)
+      resetToIdle()
+      // 결과 카드가 사라지므로 "오늘의 영양 진단 보기" 진입점을 토스트 액션으로 남긴다.
+      showToast('식단이 저장되었습니다', {
+        tone: 'success',
+        action: { label: '영양 진단 보기', onClick: () => navigate('/result') },
+      })
     } catch (err) {
-      setSaveError(err.message || '저장에 실패했어요. 잠시 후 다시 시도해주세요.')
+      showToast(err.message || '저장에 실패했어요. 잠시 후 다시 시도해주세요.', { tone: 'error' })
     } finally {
       setSaving(false)
     }
@@ -555,46 +643,53 @@ export default function Analyze() {
     <div style={styles.page}>
       <ScreenHeader title={`안녕하세요, ${greetingName}님 👋`} subtitle="오늘 점심을 찍어볼까요?" />
 
-      <ModeTabs mode={mode} onChange={setMode} />
+      {/* 분석 중에는 탭을 바꿔 결과가 뒤섞이지 않게 잠근다. */}
+      <ModeTabs mode={mode} onChange={setMode} disabled={status !== STATUS.IDLE} />
 
-      {mode === 'food' ? (
-        <Card style={pendingAnalysis ? { background: colors.infoSurface, boxShadow: 'none' } : undefined}>
-          <PhotoUpload onChange={setPhoto} />
+      {/* ── 분석 영역: 이 한 자리가 상태에 따라 촬영 카드 / 로딩 / 결과 카드로 바뀐다 ── */}
+      {status === STATUS.RESULT ? (
+        <AnalysisResultCard
+          analysis={pendingAnalysis}
+          photoUrl={resultPhotoUrl}
+          mealType={mealType}
+          recommendedMealType={getRecommendedMealType()}
+          onMealTypeChange={setMealType}
+          onSave={handleConfirmSave}
+          onRetake={resetToIdle}
+          saving={saving}
+        />
+      ) : mode === 'food' ? (
+        // key={status}: IDLE과 ANALYZING이 같은 <Card>라 React가 DOM 노드를 재사용하는데, 그러면
+        // 전환 애니메이션(.tds-card-swap)이 처음 한 번만 재생되고 상태가 바뀔 때는 다시 돌지 않는다.
+        // key를 상태로 두면 노드가 새로 만들어져 매 전환마다 정확히 한 번 재생된다.
+        <Card key={status} className="tds-card-swap">
+          {status === STATUS.ANALYZING ? (
+            <AnalyzingPreview photoUrl={photo?.dataUrl ?? null} />
+          ) : (
+            <>
+              <PhotoUpload key={photoResetKey} onChange={setPhoto} />
 
-          <div style={{ marginTop: spacing.lg }}>
-            <TextField
-              label="메뉴 이름(사진 없이 분석 가능)"
-              id="menuName"
-              value={menuName}
-              onChange={(e) => setMenuName(e.target.value)}
-            />
-            <TextField label="브랜드 (선택)" id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} />
-          </div>
+              <div style={{ marginTop: spacing.lg }}>
+                <TextField
+                  label="메뉴 이름(사진 없이 분석 가능)"
+                  id="menuName"
+                  value={menuName}
+                  onChange={(e) => setMenuName(e.target.value)}
+                />
+                <TextField label="브랜드 (선택)" id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} />
+              </div>
+            </>
+          )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm }}>
-            <AppButton
-              variant={pendingAnalysis ? 'secondary' : 'primary'}
-              onClick={handleAnalyze}
-              disabled={loading}
-            >
-              {loading && <Spinner size={16} />}
-              {loading
-                ? '분석 중...'
-                : pendingAnalysis
-                  ? '다시 분석하기'
-                  : error
-                    ? '다시 시도'
-                    : '분석하기'}
-            </AppButton>
-            {!loading && pendingAnalysis && (
-              <span style={{ color: colors.info, fontSize: font.size.sm, fontWeight: 700 }}>분석 완료</span>
-            )}
-          </div>
+          <AppButton onClick={handleAnalyze} disabled={status === STATUS.ANALYZING} style={{ marginTop: spacing.lg }}>
+            {status === STATUS.ANALYZING && <Spinner size={16} />}
+            {status === STATUS.ANALYZING ? '분석 중...' : error ? '다시 시도' : '분석하기'}
+          </AppButton>
 
           {error && <p style={styles.errorText}>{error}</p>}
         </Card>
       ) : (
-        <Card style={pendingAnalysis ? { background: colors.infoSurface, boxShadow: 'none' } : undefined}>
+        <Card className="tds-card-swap">
           <h3 style={{ fontSize: font.size.md, fontWeight: 600, margin: `0 0 ${spacing.xs}px`, color: colors.textStrong }}>
             영양성분표 스캔
           </h3>
@@ -603,47 +698,14 @@ export default function Analyze() {
             표에 없는 값은 '-'로 남아요. "1회 제공량"과 "총 내용량"이 함께 보이면 포장 전체를 먹는
             기준으로 자동 환산해요.
           </p>
-          <LabelScan onScan={handleLabelScan} />
+          {/* key: LabelScan은 사진/에러를 자체 state로 들고 있어 부모가 직접 비울 수 없다.
+              저장·다시 찍기로 resetToIdle이 돌면 이 값이 올라가 컴포넌트가 새로 마운트되면서
+              직전에 스캔한 사진이 남아있지 않게 된다(사진 분석 탭의 PhotoUpload와 같은 방식). */}
+          <LabelScan key={photoResetKey} onScan={handleLabelScan} />
         </Card>
       )}
 
       {showSexPrompt && <SexPromptCard onPick={setTempSex} />}
-
-      <Card>
-        <h3 style={{ fontSize: font.size.md, fontWeight: 600, margin: `0 0 ${spacing.xs}px`, color: colors.textStrong }}>
-          언제 드셨어요?
-        </h3>
-        <p style={{ margin: `0 0 ${spacing.md}px`, color: colors.textSub, fontSize: font.size.sm }}>
-          시간대를 선택하면 식단 기록에 함께 표시돼요.
-        </p>
-        <MealTypePicker value={mealType} recommended={getRecommendedMealType()} onChange={setMealType} />
-      </Card>
-
-      {!loading && pendingAnalysis && (
-        <>
-          {saveError && <p style={{ ...styles.errorText, marginTop: spacing.md }}>{saveError}</p>}
-          <AppButton onClick={handleConfirmSave} disabled={saving} style={{ marginTop: spacing.md }}>
-            {saving ? '저장 중...' : '저장하기'}
-          </AppButton>
-        </>
-      )}
-
-      {loading && <AnalyzingSkeleton />}
-
-      {!loading && pendingAnalysis && <NutritionCard analysis={pendingAnalysis} />}
-
-      {!loading && !pendingAnalysis && lastAnalysis && (
-        <>
-          <NutritionCard analysis={lastAnalysis} />
-          <Link
-            to="/result"
-            className="tds-press"
-            style={{ ...styles.linkButton, display: 'block', textAlign: 'center', marginTop: spacing.md }}
-          >
-            오늘의 영양 진단 보기
-          </Link>
-        </>
-      )}
     </div>
   )
 }
