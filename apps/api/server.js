@@ -1,5 +1,6 @@
 import express from 'express'
 import { supabase } from './db.js'
+import sessionsRouter from './routes/sessions.js'
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -66,6 +67,11 @@ app.get('/api/spaces', async (req, res) => {
 
   res.json(data)
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// sessions 라우터 마운트
+// ─────────────────────────────────────────────────────────────────────────────
+app.use('/api/sessions', sessionsRouter)
 
 app.listen(PORT, () => {
   console.log(`API server running on http://localhost:${PORT}`)
