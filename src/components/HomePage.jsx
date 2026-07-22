@@ -5,7 +5,7 @@ import EmptyState from "./EmptyState";
 import FocusMode from "./FocusMode";
 import NudgeModal from "./NudgeModal";
 import { apiFetch, ApiError } from "../lib/api";
-import { NUDGE_TICK_MS, ACTIVATION_POLL_MS } from "../lib/nudgeConfig";
+import { ACTIVATION_POLL_MS, getDemoNudgeDelayMs } from "../lib/nudgeConfig";
 import { pickCheckpointLevel } from "../lib/reasonCheckpoint";
 import "./HomePage.css";
 
@@ -59,7 +59,7 @@ function HomePage() {
   const stateRef = useRef({ tasks: [], selectedTaskId: null });
   stateRef.current = { tasks, selectedTaskId };
 
-  const timersRef = useRef(new Map()); // taskId -> intervalId (active task별 20초 무응답 tick)
+  const timersRef = useRef(new Map()); // taskId -> timeoutId (active task별 무응답 tick, 레벨/긴급도별 가변 간격 #44)
   const activatingRef = useRef(new Set()); // 활성화 요청 in-flight 중복 방지
   const tickingRef = useRef(new Set()); // tick 요청 in-flight 중복 방지
   const modalOpenRef = useRef(null); // 자동 팝업 경합 방지용 동기 소스(다른 task가 덮어쓰지 못하게)
@@ -90,12 +90,15 @@ function HomePage() {
     setModalCheckpointLevel(null);
   }, []);
 
-  // 무응답 1회(20초 경과) 처리: 서버에 반영하고, 레벨이 올랐으면 자동으로 모달을 띄운다.
+  // 무응답 1회 처리: 서버에 반영하고, 레벨이 올랐으면 자동으로 모달을 띄운다.
+  // 성공하면 최신 레벨/마감으로 다음 지연을 계산해 스스로 재예약한다(#44) — 고정
+  // setInterval로는 레벨마다 다른 간격을 줄 수 없어(이미 붙은 interval은 주기를
+  // 바꿀 수 없음) 자기재귀 setTimeout으로 바꿨다.
   const runTick = useCallback(
     async (id) => {
       const { tasks: cur, selectedTaskId: sel } = stateRef.current;
       const before = cur.find((t) => t.id === id);
-      // 완료/삭제/포커스 진입 등으로 더 이상 대상이 아니면 skip
+      // 완료/삭제/포커스 진입 등으로 더 이상 대상이 아니면 skip(재예약도 하지 않음)
       if (!before || before.status !== "active" || id === sel) return;
       if (tickingRef.current.has(id)) return;
       tickingRef.current.add(id);
@@ -129,9 +132,12 @@ function HomePage() {
           }
           openModal(id, checkpointLevel);
         }
+
+        const delayMs = getDemoNudgeDelayMs(updated.level, updated.deadline);
+        timersRef.current.set(id, setTimeout(() => runTick(id), delayMs));
       } catch (err) {
-        // 삭제와 경합해 이미 지워진 task에 보낸 tick은 404가 정상 — 조용히 무시.
-        // (타이머 자체는 다음 tasks 갱신 때 cleanup effect가 정리한다)
+        // 삭제와 경합해 이미 지워진 task에 보낸 tick은 404가 정상 — 조용히 무시하고
+        // 재예약하지 않는다(체인이 여기서 자연스럽게 멈춘다).
         if (!(err instanceof ApiError && err.code === "not_found")) {
           console.error(err);
         }
@@ -142,24 +148,28 @@ function HomePage() {
     [openModal],
   );
 
-  // 폴링 대상(active + 포커스 중 아님) 목록에 맞춰 task별 20초 타이머를 붙였다 뗐다 한다.
+  // 폴링 대상(active + 포커스 중 아님) 목록에 맞춰 task별 타이머를 붙였다 뗐다 한다.
+  // 이미 붙어있는 타이머는 runTick이 스스로 재예약하므로 여기서는 "새로 대상이 된
+  // task"의 최초 1회 예약과, "대상에서 빠진 task"의 정리만 담당한다.
   useEffect(() => {
     const pollable = new Set(
       tasks
         .filter((t) => t.status === "active" && t.id !== selectedTaskId)
         .map((t) => t.id),
     );
-    // 새 대상: 타이머 부착
+    // 새 대상: 최초 1회 예약(레벨 0 → Lv1은 대기 없이 즉시, #44)
     for (const id of pollable) {
       if (!timersRef.current.has(id)) {
-        const intervalId = setInterval(() => runTick(id), NUDGE_TICK_MS);
-        timersRef.current.set(id, intervalId);
+        const task = tasks.find((t) => t.id === id);
+        const delayMs = getDemoNudgeDelayMs(task.level, task.deadline);
+        const timeoutId = setTimeout(() => runTick(id), delayMs);
+        timersRef.current.set(id, timeoutId);
       }
     }
     // 대상에서 빠진 task(완료/삭제/포커스 진입): 타이머 정리
-    for (const [id, intervalId] of timersRef.current) {
+    for (const [id, timeoutId] of timersRef.current) {
       if (!pollable.has(id)) {
-        clearInterval(intervalId);
+        clearTimeout(timeoutId);
         timersRef.current.delete(id);
       }
     }
@@ -169,7 +179,7 @@ function HomePage() {
   useEffect(() => {
     const timers = timersRef.current;
     return () => {
-      for (const intervalId of timers.values()) clearInterval(intervalId);
+      for (const timeoutId of timers.values()) clearTimeout(timeoutId);
       timers.clear();
     };
   }, []);
