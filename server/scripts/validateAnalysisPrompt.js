@@ -76,7 +76,15 @@ async function runSample(sample) {
 
   const prompt = buildAnalysisPrompt(sample.paragraphs, sample.title)
   const { response, ttftMs, totalMs } = await callClaudeWithMetrics(prompt, { maxTokens: 3072 })
-  const analysis = parseAnalysisResponse(response, sample.paragraphs)
+
+  let analysis
+  try {
+    analysis = parseAnalysisResponse(response, sample.paragraphs)
+  } catch (err) {
+    console.error(`\n[PARSE FAILED] ${err.message}`)
+    console.error(`[raw response text]\n${response.content?.[0]?.text ?? "(no text)"}`)
+    throw err
+  }
 
   console.log(`\n[sentences] 선별 ${analysis.sentences.length}개 (verbatim 매칭 결과)`)
   console.log(formatSentenceCheck(analysis.sentences, sample.paragraphs))
