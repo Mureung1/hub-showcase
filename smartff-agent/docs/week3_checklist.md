@@ -275,7 +275,8 @@
 - ✅ **Upload → ETL 자동 연결 없음 (해결됨, 2026-07-22)**: `multer` 실제 파일 업로드 + `uploadAutomationService`(파일저장→ETL 실행→`financialService.reloadData()`) 추가로 서버 재시작 없이 업로드가 바로 반영되도록 완료 (sales/waste만; orders/inventory는 파서 없음, hourly/weekday는 다음 스프린트)
 - ✅ **Analysis 요일별/시간대별 패턴 미연동 (해결됨, 2026-07-22)**: `data/scripts/pattern_parser.py` 신규 작성, `GET /api/patterns/weekday|hourly` 신설로 mock 제거 완료
 - **환경 재현성 이슈 (2026-07-22 발견)**: `data/scripts/requirements.txt`는 있었지만 실제 설치 안내가 어디에도 없어, 새 환경(오늘 WSL 백엔드 프로세스)에서 `ModuleNotFoundError: No module named 'pandas'`로 ETL이 실패한 적 있음. README에 설치 안내 추가로 완화(커밋 `7417572`), 근본적으로는 CI/배포 스크립트에 `pip install -r data/scripts/requirements.txt` 자동 실행 필요
+- ✅ **월 범위 확장 회귀 + productCategory 경로 조작 가능성 (해결됨, 2026-07-22, validation-agent 지적)**: "12개월 지원" 커밋(`86f902d`)이 프론트/파서/master_dataset_builder는 다 고쳤지만 `uploadController.ts`의 월 검증(1~6)만 빠뜨려 실제로는 7~12월 업로드가 400으로 막혀있었음. 또한 `productCategory`가 서버에서 검증 없이 파일 경로 조합에 쓰여 `../`로 `data/raw` 바깥에 쓰기가 가능한 경로 조작 여지가 있었음. 둘 다 커밋 `41b91981`에서 수정, 실제 업로드 요청으로 재검증 완료
 
 ---
 
-*Last Updated: 2026-07-22 (Upload→ETL 자동화, Analysis AI 인사이트/탭 배지 실데이터 연동 세션 반영)*
+*Last Updated: 2026-07-22 (Upload→ETL 자동화 + validation-agent 지적사항 수정 세션 반영)*
