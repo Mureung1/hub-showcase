@@ -28,3 +28,4 @@ export const supabase = createClient(url, serviceRoleKey, {
 })
 
 export const SUBSIDIES_TABLE = 'subsidies'
+export const MATCH_REQUESTS_TABLE = 'match_requests'

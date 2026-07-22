@@ -78,6 +78,12 @@
   color: var(--navy);
 }
 
+.submit-warning {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-top: 8px;
+}
+
 .btn-go-home {
   width: 100%;
   max-width: 300px;
@@ -96,4 +102,10 @@
 
 .btn-go-home:active {
   transform: scale(0.97);
+}
+
+.btn-go-home:disabled {
+  background: var(--border);
+  color: var(--text-muted);
+  cursor: not-allowed;
 }
