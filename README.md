@@ -40,6 +40,55 @@
 - 백엔드: Express (`server/`) — 할일/회피이유/이벤트/Push 구독 라우트 구현 중(그룹3까지 진행, Push 구독 스키마+등록 API 포함)
 - DB: Supabase(Postgres) + Prisma
 
+## 아키텍처
+
+화면 → 서버 → DB로 이어지는 주요 데이터 흐름 3가지
+
+```mermaid
+flowchart LR
+    subgraph FE["화면 (src/)"]
+        Register["RegisterPage.jsx<br/>할일 등록 폼"]
+        Home["HomePage.jsx<br/>20초 setInterval 폴링 tick"]
+        Navbar["Navbar.jsx<br/>알림 켜기 버튼 → handleRequestPermission()"]
+        PushLib["lib/pushSubscribe.ts<br/>subscribeToPush()"]
+        ApiJs["lib/api.js<br/>apiFetch()"]
+    end
+
+    subgraph SRV["서버 (server/src/routes/)"]
+        R1["POST /api/tasks"]
+        R2["POST /api/tasks/:id/events<br/>eventType: notification_sent"]
+        R3["POST /api/push-subscriptions"]
+    end
+
+    subgraph DB["DB (Supabase · Prisma)"]
+        Task[("Task")]
+        Reason[("AvoidanceReason")]
+        Event[("TaskEvent")]
+        AppState[("AppState")]
+        Push[("PushSubscription")]
+    end
+
+    %% 흐름 1: 할일 등록
+    Register -->|apiFetch| ApiJs
+    ApiJs -->|"fetch POST"| R1
+    R1 -->|"$transaction: create"| Task
+    R1 -->|"$transaction: create"| Reason
+
+    %% 흐름 2: 레벨 상승 감지
+    Home -->|apiFetch| ApiJs
+    ApiJs -->|"fetch POST"| R2
+    R2 -->|"create"| Event
+    R2 -->|"update skipCount/level"| Task
+    R2 -.->|"level 실제 상승 시\ncreate eventType: level_up"| Event
+
+    %% 흐름 3: Push 구독 저장
+    Navbar -->|"권한 granted 시 호출"| PushLib
+    PushLib -->|"navigator.serviceWorker.ready →\npushManager.subscribe()"| PushLib
+    PushLib -->|apiFetch| ApiJs
+    ApiJs -->|"fetch POST"| R3
+    R3 -->|"upsert (endpoint 기준)"| Push
+```
+
 ## 개발 환경 실행
 
 ### 프론트
