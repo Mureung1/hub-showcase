@@ -98,3 +98,4 @@ docs(web): record WEB-015 public smoke
 - [x] 오류 메시지에 DB 정보와 stack trace가 없는가?
 - [x] 기존 search·nearby 오류 상태를 덮어쓰지 않는가?
 - [x] 공개 배포가 최신 commit을 사용한다고 확인했는가?
+- [ ] Render가 15분 이상 idle인 실제 cold-start 상황을 공개 환경에서 별도로 관찰했는가? (후속 운영 관찰)
