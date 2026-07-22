@@ -47,23 +47,23 @@
 ```mermaid
 flowchart LR
     App["React<br/>(화면)"]
-
     subgraph SRV["Express (서버)"]
         R1["POST /api/tasks"]
         R2["POST /:id/events"]
     end
-
     subgraph DB["Supabase (DB)"]
         Task[("Task")]
         Event[("TaskEvent")]
     end
-
+    subgraph SW["브라우저 (서비스워커)"]
+        Notif["시스템 알림"]
+    end
     App -->|"fetch 등록"| R1
     App -->|"fetch 폴링"| R2
     R1 -->|"insert"| Task
     R2 -->|"update"| Task
     R2 -->|"insert"| Event
-    R2 -->|"발송"| App
+    R2 -->|"발송"| Notif
 ```
 
 ## 개발 환경 실행
