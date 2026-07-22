@@ -117,22 +117,22 @@ export default function MyPage({ onNavigate }) {
             </section>
             <section className="td-mypage__card td-mypage__activity-filter-card">
               <div className="td-mypage__activity-filter-header">
-                <span className="td-label-md">공구 상태</span>
-                <span className="td-label-sm">{allPurchases.length}개</span>
+                <span className="td-label-md">공동구매 상태</span>
+                <span className="td-label-sm">{purchases.length}개</span>
               </div>
               <div className="td-mypage__activity-filter-bar" role="group" aria-label="공동구매 상태 필터">
                 <button className={activityFilter === 'all' ? 'td-mypage__activity-filter-btn td-mypage__activity-filter-btn--active' : 'td-mypage__activity-filter-btn'} onClick={() => setActivityFilter('all')}>전체</button>
                 <button className={activityFilter === 'recruiting' ? 'td-mypage__activity-filter-btn td-mypage__activity-filter-btn--active' : 'td-mypage__activity-filter-btn'} onClick={() => setActivityFilter('recruiting')}>진행 중</button>
                 <button className={activityFilter === 'closed' ? 'td-mypage__activity-filter-btn td-mypage__activity-filter-btn--active' : 'td-mypage__activity-filter-btn'} onClick={() => setActivityFilter('closed')}>마감</button>
               </div>
-              <p className="td-mypage__activity-filter-help">{activityFilter === 'closed' ? '모집이 끝난 공구를 보고 있어요.' : activityFilter === 'recruiting' ? '현재 참여할 수 있는 공구를 보고 있어요.' : '모든 공구 상태를 보고 있어요.'}</p>
+              <p className="td-mypage__activity-filter-help">{activityFilter === 'closed' ? '모집이 끝난 공동구매를 보고 있어요.' : activityFilter === 'recruiting' ? '현재 참여할 수 있는 공동구매를 보고 있어요.' : '모든 공동구매 상태를 보고 있어요.'}</p>
             </section>
           </aside>
 
           <section className="td-mypage__right-column">
             <div className="td-mypage__tabs-container">
-              <button className={`td-mypage__tab-btn ${activeTab === 'hosted' ? 'td-mypage__tab-btn--active' : ''}`} onClick={() => setActiveTab('hosted')}>내가 만든 공구</button>
-              <button className={`td-mypage__tab-btn ${activeTab === 'joined' ? 'td-mypage__tab-btn--active' : ''}`} onClick={() => setActiveTab('joined')}>내가 참여한 공구</button>
+              <button className={`td-mypage__tab-btn ${activeTab === 'hosted' ? 'td-mypage__tab-btn--active' : ''}`} onClick={() => setActiveTab('hosted')}>내가 만든 공동구매</button>
+              <button className={`td-mypage__tab-btn ${activeTab === 'joined' ? 'td-mypage__tab-btn--active' : ''}`} onClick={() => setActiveTab('joined')}>내가 참여한 공동구매</button>
             </div>
             <div className="td-mypage__tab-content-grid">
               {purchases.map((purchase) => <PurchaseCard key={purchase.id} purchase={purchase} onNavigate={onNavigate} onCancel={handleCancel} cancellingId={cancellingId} isJoined={activeTab === 'joined'} />)}

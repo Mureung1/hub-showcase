@@ -41,7 +41,7 @@ const initialPosts = [
     id: 3,
     category: '생활용품',
     categoryIcon: 'shopping_bag',
-    title: '크리넥스 3겹 화장지 30롤 공구',
+    title: '크리넥스 3겹 화장지 30롤 공동구매',
     price: 7500,
     currentParticipants: 2,
     targetParticipants: 3,
