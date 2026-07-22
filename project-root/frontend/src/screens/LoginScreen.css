@@ -57,3 +57,34 @@
   padding: 0;
   font-family: inherit;
 }
+
+.login-screen__error {
+  margin: -12px 0 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.login-screen__notice {
+  margin: -12px 0 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--chip-bg);
+  color: var(--primary-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.login-screen__link {
+  border: none;
+  background: transparent;
+  color: var(--primary-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  padding: 4px;
+  font-family: inherit;
+}

@@ -25,13 +25,24 @@ function summarizeByCategory(lectures) {
   }));
 }
 
-export default function HomeScreen({ userName = "학생", onNavigate }) {
+export default function HomeScreen({ userName = "학생", onNavigate, onLogout }) {
   return (
     <div className="home-screen">
       <div className="topbar">
         <span className="topbar__back" aria-hidden="true" />
         <h1 className="topbar__title">홈</h1>
-        <span className="topbar__back" aria-hidden="true" />
+        <button
+          type="button"
+          className="topbar__logout"
+          onClick={() => onLogout?.()}
+          aria-label="로그아웃"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="M16 17l5-5-5-5" />
+            <path d="M21 12H9" />
+          </svg>
+        </button>
       </div>
 
       <div className="home-screen__intro">

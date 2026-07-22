@@ -25,6 +25,25 @@
   visibility: hidden;
 }
 
+.home-screen .topbar__logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 9px;
+  background: var(--chip-bg);
+  color: var(--primary-ink);
+  cursor: pointer;
+}
+
+.home-screen .topbar__logout svg {
+  width: 16px;
+  height: 16px;
+}
+
 .home-screen__intro {
   display: flex;
   flex-direction: column;
