@@ -1,4 +1,4 @@
-import type { Subsidy } from '@hub/shared'
+import type { OnboardingProfile, SortOption, Subsidy } from '@hub/shared'
 
 /** subsidies 테이블 row (snake_case, 예약어 회피 컬럼) */
 export interface SubsidyRow {
@@ -56,5 +56,34 @@ export function subsidyToRow(subsidy: Subsidy): Omit<SubsidyRow, 'created_at'> {
     apply_where: subsidy.where,
     where_url: subsidy.whereUrl ?? null,
     contact: subsidy.contact,
+  }
+}
+
+/** match_requests 테이블 row (snake_case) */
+export interface MatchRequestRow {
+  industry: string
+  region: string
+  district: string
+  employees: string
+  revenue: string
+  credit_score: string | null
+  business_years: string | null
+  sort: string | null
+}
+
+/** OnboardingProfile + sort → DB row (insert용) */
+export function profileToMatchRequestRow(
+  profile: OnboardingProfile,
+  sort: SortOption,
+): MatchRequestRow {
+  return {
+    industry: profile.industry,
+    region: profile.region,
+    district: profile.district,
+    employees: profile.employees,
+    revenue: profile.revenue,
+    credit_score: profile.creditScore ?? null,
+    business_years: profile.businessYears ?? null,
+    sort,
   }
 }

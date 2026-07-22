@@ -23,3 +23,21 @@ create table if not exists public.subsidies (
 
 -- 서버는 service_role 키로 접근하므로 RLS를 켜두되 anon 정책은 두지 않는다.
 alter table public.subsidies enable row level security;
+
+-- 이슈 #7: 사용자가 제출한 매칭 조건(OnboardingProfile) 저장
+-- 컬럼은 server/src/routes/match.ts 의 profileSchema 와 1:1 매핑한다.
+create table if not exists public.match_requests (
+  id              uuid        primary key default gen_random_uuid(),
+  industry        text        not null,
+  region          text        not null,
+  district        text        not null,
+  employees       text        not null,
+  revenue         text        not null,
+  credit_score    text,
+  business_years  text,
+  sort            text,
+  created_at      timestamptz not null default now()
+);
+
+-- 서버는 service_role 키로 접근하므로 RLS를 켜두되 anon 정책은 두지 않는다.
+alter table public.match_requests enable row level security;

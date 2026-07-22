@@ -1,6 +1,7 @@
 import type { OnboardingProfile, SortOption } from '@hub/shared'
 import { Router } from 'express'
 import { z } from 'zod'
+import { insertMatchRequest } from '../db/match-requests-repo.js'
 import { match } from '../db/subsidies-repo.js'
 
 export const matchRouter = Router()
@@ -32,6 +33,14 @@ matchRouter.post('/', async (req, res) => {
   const sort: SortOption = parsed.data.sort ?? 'match'
   try {
     const items = await match(profile, sort)
+
+    try {
+      await insertMatchRequest(profile, sort)
+    } catch (err) {
+      // 매칭 요청 저장은 best-effort — 여기서 실패해도 조회 응답은 정상 반환한다.
+      console.error('[POST /api/match] 매칭 요청 저장 실패:', err)
+    }
+
     res.json({ items, total: items.length, sort })
   } catch (err) {
     console.error('[POST /api/match] 실패:', err)

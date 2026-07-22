@@ -8,10 +8,16 @@ vi.mock('../db/subsidies-repo.js', () => ({
   match: vi.fn(),
 }))
 
+vi.mock('../db/match-requests-repo.js', () => ({
+  insertMatchRequest: vi.fn(),
+}))
+
 import { app } from '../app.js'
+import { insertMatchRequest } from '../db/match-requests-repo.js'
 import { match } from '../db/subsidies-repo.js'
 
 const mockMatch = vi.mocked(match)
+const mockInsertMatchRequest = vi.mocked(insertMatchRequest)
 
 const sample: Subsidy = {
   id: '1',
@@ -49,6 +55,7 @@ describe('POST /api/match', () => {
     expect(res.body.total).toBe(1)
     expect(res.body.sort).toBe('match')
     expect(mockMatch).toHaveBeenCalledWith(validProfile, 'match')
+    expect(mockInsertMatchRequest).toHaveBeenCalledWith(validProfile, 'match')
   })
 
   it('sort 값을 함께 넘기면 repo에 전달된다', async () => {
@@ -86,5 +93,13 @@ describe('POST /api/match', () => {
     mockMatch.mockRejectedValue(new Error('boom'))
     const res = await request(app).post('/api/match').send({ profile: validProfile })
     expect(res.status).toBe(500)
+  })
+
+  it('매칭 요청 저장이 실패해도 조회 응답은 200을 유지한다', async () => {
+    mockMatch.mockResolvedValue([sample])
+    mockInsertMatchRequest.mockRejectedValue(new Error('insert boom'))
+    const res = await request(app).post('/api/match').send({ profile: validProfile })
+    expect(res.status).toBe(200)
+    expect(res.body.total).toBe(1)
   })
 })
