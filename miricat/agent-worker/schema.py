@@ -7,21 +7,13 @@ Gemini의 구조화 출력(response_schema)에 이 Pydantic 모델을 넘기면,
 from pydantic import BaseModel, Field
 
 
+class Event(BaseModel):
+    """공지 안의 사건 하나.(한 공지에 여러 개일 수 있음)"""
+    event_name: str = Field(description="사건/조치 이름 (예: B1노선 전면 통제)")
+    location: str = Field(description="통제/변경 위치, 없으면 빈 문자열")
+    period: str = Field(description='기간 "YYYY-MM-DD ~ YYYY-MM-DD" 형식, 없으면 빈 문자열')
+    affected_lines: list[str] = Field(description="영향 받는 노선 번호들")
+    affected_stops: list[str] = Field(description="영향 받는(미정차/이설) 정류장 이름들")
+    
 class Extraction(BaseModel):
-    event_name: str = Field(
-        description="공지의 핵심 사건/조치 이름 (예: 갑천도시고속도로 원촌육교 전면 통제)"
-    )
-    location: str = Field(
-        description="통제/변경이 일어나는 위치 (예: 갑천도시고속도로 원촌육교). 없으면 빈 문자열"
-    )
-    period: str = Field(
-        description='기간. "YYYY-MM-DD ~ YYYY-MM-DD" 형식. 종료일이 없으면 "YYYY-MM-DD". 없으면 빈 문자열'
-    )
-    affected_lines: list[str] = Field(
-        default_factory=list,
-        description='영향받는 버스/지하철 노선 번호 목록 (예: ["B1"]). 없으면 빈 배열',
-    )
-    affected_stops: list[str] = Field(
-        default_factory=list,
-        description="미정차/이설되는 정류장 이름 목록. 없으면 빈 배열",
-    )
+    events: list[Event] = Field(default_factory=list, description="공지에서 찾은 사건들. 없으면 빈 배열")
