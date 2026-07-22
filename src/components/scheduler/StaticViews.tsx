@@ -33,10 +33,13 @@ type MyHomeViewProps = {
 
 export function MyHomeView({ message, onInteract, homeManager, dodoManager, points }: MyHomeViewProps) {
   const { visits, visitsLoading, markVisitsRead } = homeManager
+  const { refreshDodoState } = dodoManager
   const mood = dodoManager.state?.mood ?? 3
 
   useEffect(() => {
     markVisitsRead()
+    // 탭을 나갔다 다시 들어올 때마다 마운트되므로, 그 사이 시간이 지나 바뀐 mood·behavior(마감 임박 등)를 여기서 다시 받아온다.
+    refreshDodoState()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
