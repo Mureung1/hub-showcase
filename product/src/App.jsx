@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import SelectScreen from './screens/SelectScreen'
 import StatsScreen from './screens/StatsScreen'
 import ReverseScreen from './screens/ReverseScreen'
@@ -10,11 +10,19 @@ import RoadmapScreen from './screens/RoadmapScreen'
 function App() {
   const [screen, setScreen] = useState('select')
 
-  // 합격 조건·로드맵이 공유하는 상태.
-  // checks: item_id → 보유 여부 (로그인 없는 MVP에서는 이 상태가 저장의 전부)
-  // scope: 마지막으로 선택한 범위 — 로드맵이 합격 조건의 선택을 이어받는다
-  const [checks, setChecks] = useState(null)
+  // 채용공고 해설·합격 전략·준비 로드맵이 공유하는 분석 범위.
   const [scope, setScope] = useState({ level: 'cluster', cluster_tag: '핀테크·금융', posting_id: null })
+  // 체크 상태는 직무·기업군·공고 범위마다 분리한다.
+  const [checksByScope, setChecksByScope] = useState({})
+  const scopeKey = `backend:${scope.level}:${scope.cluster_tag || ''}:${scope.posting_id || ''}`
+  const checks = checksByScope[scopeKey] ?? null
+  const setChecks = useCallback((next) => {
+    setChecksByScope((prev) => {
+      const current = prev[scopeKey] ?? null
+      const value = typeof next === 'function' ? next(current) : next
+      return { ...prev, [scopeKey]: value }
+    })
+  }, [scopeKey])
 
   const go = (next) => {
     setScreen(next)
@@ -27,7 +35,7 @@ function App() {
     case 'stats':
       return <StatsScreen go={go} />
     case 'reverse':
-      return <ReverseScreen go={go} />
+      return <ReverseScreen go={go} scope={scope} setScope={setScope} />
     case 'checklist':
       return <ChecklistScreen go={go} {...shared} />
     case 'roadmap':

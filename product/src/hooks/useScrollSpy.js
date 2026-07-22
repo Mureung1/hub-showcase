@@ -16,7 +16,7 @@ export default function useScrollSpy(ids) {
     window.addEventListener('scroll', onScroll, { passive: true })
     onScroll()
     return () => window.removeEventListener('scroll', onScroll)
-  }, [ids.join(',')])
+  }, [ids])
 
   return active
 }

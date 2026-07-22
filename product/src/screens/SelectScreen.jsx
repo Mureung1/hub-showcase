@@ -15,9 +15,9 @@ function SelectScreen({ go }) {
           <section className="job-select-card">
             <div className="card-header">
               <span className="badge">STEP 1 · 직무 선택</span>
-              <h1>어떤 직무의 채용 신호를 역산할까요?</h1>
+              <h1>어떤 직무의 채용공고를 살펴볼까요?</h1>
               <p>
-                관심 직무의 채용공고를 역산해, 이 직무·기업군이 실제로 원하는
+                관심 직무의 채용공고를 깊이 해설해, 이 직무·기업군이 실제로 원하는
                 수준과 그에 맞춰 무엇을 준비할지를 정리합니다.
               </p>
             </div>

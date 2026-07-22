@@ -10,12 +10,17 @@ import { SUPPORTED_JOB } from '../data/mock'
 const CLUSTERS = ['핀테크·금융', '빅테크·플랫폼', '스타트업', 'B2B SaaS', 'SI·대기업', '게임사']
 const PRIO = { vhigh: ['우선순위 매우 높음', 'prio--vhigh'], high: ['우선순위 높음', 'prio--high'], mid: ['우선순위 중간', 'prio--mid'], track: ['전형 대비 · 별도 트랙', 'prio--mid'] }
 const KIND_LABEL = { project: '프로젝트', story: '서사', study: '학습 · 면접' }
+const NAV_IDS = ['overview', 'project', 'study', 'sync']
+const EMPTY_CHECKS = Object.freeze({})
 
-async function fetchRoadmap(scope, checks) {
+const scopeToKey = (scope) => `${scope.level}:${scope.cluster_tag || ''}:${scope.posting_id || ''}`
+
+async function fetchRoadmap(scope, checks, signal) {
   const res = await fetch('/api/roadmap', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ job: 'backend', scope, checks: checks || {} }),
+    signal,
   })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.json()
@@ -26,37 +31,49 @@ function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
   const cluster = scope.cluster_tag || '핀테크·금융'
   const postingId = scope.posting_id
   const ck = checks || {}
+  const scopeKey = scopeToKey(scope)
   const [data, setData] = useState(null)
-  const [applied, setApplied] = useState(checks || {}) // 로드맵에 반영된 체크 스냅샷
+  const [appliedByScope, setAppliedByScope] = useState(() => ({ [scopeKey]: checks || {} }))
+  const applied = appliedByScope[scopeKey] || EMPTY_CHECKS
   const [status, setStatus] = useState('loading')
-  const activeSection = useScrollSpy(['overview', 'project', 'study', 'sync'])
+  const activeSection = useScrollSpy(NAV_IDS)
 
-  const load = (appliedChecks) => {
-    setStatus((prev) => (prev === 'ready' ? 'ready' : 'loading'))
+  useEffect(() => {
+    const controller = new AbortController()
     fetchRoadmap(
       { level, cluster_tag: level === 'overall' ? null : cluster, posting_id: level === 'posting' ? postingId : null },
-      appliedChecks
+      applied,
+      controller.signal
     )
-      .then((json) => { setData(json); setStatus('ready') })
-      .catch(() => setStatus('error'))
-  }
-
-  useEffect(() => { load(applied) }, [level, cluster, postingId])
+      .then((json) => {
+        setData(json)
+        setChecks((prev) => prev ?? Object.fromEntries(json.check_rows.map((row) => [row.item_id, row.source_step === '보유'])))
+        setStatus('ready')
+      })
+      .catch((error) => { if (error.name !== 'AbortError') setStatus('error') })
+    return () => controller.abort()
+  }, [level, cluster, postingId, applied, setChecks])
 
   const pendingCount = data
     ? data.check_rows.filter((r) => !!ck[r.item_id] !== !!applied[r.item_id]).length
     : 0
 
   const applyChecks = () => {
-    const snapshot = { ...ck }
-    setApplied(snapshot)
-    load(snapshot)
+    setStatus('loading')
+    setAppliedByScope((prev) => ({ ...prev, [scopeKey]: { ...ck } }))
+  }
+
+  const changeScope = (nextScope) => {
+    const nextKey = scopeToKey(nextScope)
+    setStatus('loading')
+    setAppliedByScope((prev) => (prev[nextKey] ? prev : { ...prev, [nextKey]: {} }))
+    setScope(nextScope)
   }
 
   if (status === 'error') {
     return (
       <>
-        <TopBar step={5} label="준비 로드맵" job={SUPPORTED_JOB} backTo="checklist" backLabel="합격 조건" go={go} />
+        <TopBar step={5} label="준비 로드맵" job={SUPPORTED_JOB} backTo="checklist" backLabel="합격 전략" go={go} />
         <main className="app-shell reader-layout">
           <p className="status-panel status-panel--error">로드맵 서버에 연결하지 못했습니다. server(4000)와 agent(8000)를 확인해 주세요.</p>
         </main>
@@ -74,19 +91,19 @@ function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
 
   return (
     <>
-      <TopBar step={5} label="준비 로드맵" job={SUPPORTED_JOB} backTo="checklist" backLabel="합격 조건" go={go} />
+      <TopBar step={5} label="준비 로드맵" job={SUPPORTED_JOB} backTo="checklist" backLabel="합격 전략" go={go} />
       <main className="app-shell reader-layout">
         <article className="page page--wide">
           <header className="report-header" id="top">
             <span className="eyebrow">미보유 항목 → 우선순위 로드맵</span>
             <h1>막연한 공부 목록이 아니라, 필수부터 채우는 순서표를 드립니다.</h1>
-            <p>체크리스트의 미보유 항목을 채우는 프로젝트·학습을 배치했습니다. 각 단계가 끝나면 어떤 합격 조건이 채워지는지 함께 표시합니다.</p>
+            <p>체크리스트의 미보유 항목을 채우는 프로젝트·학습을 배치했습니다. 각 단계가 끝나면 어떤 합격 전략 항목이 채워지는지 함께 표시합니다.</p>
             <div className="cluster-chips">
-              <button type="button" className={`scope-chip${level === 'overall' ? ' scope-chip--on' : ''}`} onClick={() => setScope({ level: 'overall', cluster_tag: null, posting_id: null })}>{SUPPORTED_JOB} 전체 기준</button>
+              <button type="button" className={`scope-chip${level === 'overall' ? ' scope-chip--on' : ''}`} onClick={() => changeScope({ level: 'overall', cluster_tag: null, posting_id: null })}>{SUPPORTED_JOB} 전체 기준</button>
               {CLUSTERS.map((c) => (
                 <button key={c} type="button"
                   className={`scope-chip${level !== 'overall' && c === cluster ? ' scope-chip--on' : ''}`}
-                  onClick={() => setScope({ level: 'cluster', cluster_tag: c, posting_id: null })}>
+                  onClick={() => changeScope({ level: 'cluster', cluster_tag: c, posting_id: null })}>
                   {c}
                 </button>
               ))}
@@ -97,8 +114,8 @@ function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
                   <button key={p.posting_id} type="button"
                     className={`posting-row${level === 'posting' && p.posting_id === postingId ? ' posting-row--on' : ''}`}
                     onClick={() => {
-                      if (level === 'posting' && p.posting_id === postingId) setScope({ level: 'cluster', cluster_tag: cluster, posting_id: null })
-                      else setScope({ level: 'posting', cluster_tag: cluster, posting_id: p.posting_id })
+                      if (level === 'posting' && p.posting_id === postingId) changeScope({ level: 'cluster', cluster_tag: cluster, posting_id: null })
+                      else changeScope({ level: 'posting', cluster_tag: cluster, posting_id: p.posting_id })
                     }}>
                     <span className="co">{p.company}</span>
                     <span className="ti">{p.title}</span>
@@ -186,7 +203,7 @@ function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
               <section className="section-block" id="sync">
                 <div className="section-title">
                   <h2>이 로드맵이 채우는 체크리스트</h2>
-                  <span className="hint">합격 조건 화면과 같은 체크 상태를 공유합니다</span>
+                  <span className="hint">합격 전략 화면과 같은 체크 상태를 공유합니다</span>
                 </div>
                 <div className="mini-check">
                   {rows.map((r) => {
@@ -219,7 +236,7 @@ function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
               </section>
 
               <div className="nav-actions">
-                <button className="btn btn-secondary" onClick={() => go('checklist')}>← 합격 조건으로</button>
+                <button className="btn btn-secondary" onClick={() => go('checklist')}>← 합격 전략으로</button>
                 <button className="btn btn-primary" onClick={() => go('select')}>처음부터 다시 →</button>
               </div>
             </>
