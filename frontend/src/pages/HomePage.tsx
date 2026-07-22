@@ -1,18 +1,10 @@
 import { useRef, useState, type ChangeEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
-
-const WEEK_SCHEDULE = [
-  { name: '월', icon: '♻️', type: '플라스틱' },
-  { name: '화', icon: '🗑️', type: '일반' },
-  { name: '수', icon: '🍚', type: '음식물' },
-  { name: '목', icon: '📦', type: '종이' },
-  { name: '금', icon: '🥫', type: '캔/유리' },
-  { name: '토', icon: '🚫', type: '없음' },
-  { name: '일', icon: '🌙', type: '휴무' },
-]
-
-const TODAY_INDEX = 6
+import RegionSelectSheet from '../features/region/RegionSelectSheet'
+import { useRegionRule } from '../features/region/useRegionOptions'
+import { useSelectedRegion } from '../features/region/useSelectedRegion'
+import { buildWeeklySchedule, getTodayIndex } from '../features/region/weeklySchedule'
 
 const QUICK_LINKS = [
   { to: '/bulky', icon: '🚛', label: '대형폐기물' },
@@ -23,8 +15,14 @@ const QUICK_LINKS = [
 export default function HomePage() {
   const navigate = useNavigate()
   const [isUploadSheetOpen, setUploadSheetOpen] = useState(false)
+  const [isRegionSheetOpen, setRegionSheetOpen] = useState(false)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
+  const { region, setRegion } = useSelectedRegion()
+  const { data: regionRule, isLoading: isRegionRuleLoading } = useRegionRule(region)
+
+  const weeklySchedule = regionRule ? buildWeeklySchedule(regionRule.categories) : null
+  const today = weeklySchedule?.[getTodayIndex()]
 
   function handleFileSelected(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
@@ -51,9 +49,14 @@ export default function HomePage() {
       />
 
       <div className="px-5 pt-[18px] pb-[90px]">
-        <div className="flex items-center gap-[6px] rounded-pill border border-green-100 bg-green-50 px-[14px] py-[11px] text-[13.5px] font-bold text-green-900">
-          📍 부산 / 해운대구 <span className="ml-auto">▾</span>
-        </div>
+        <button
+          type="button"
+          onClick={() => setRegionSheetOpen(true)}
+          className="flex w-full items-center gap-[6px] rounded-pill border border-green-100 bg-green-50 px-[14px] py-[11px] text-left text-[13.5px] font-bold text-green-900"
+        >
+          📍 {region ? `${region.ctpvNm} / ${region.sggNm}` : '지역을 선택해 주세요'}
+          <span className="ml-auto">▾</span>
+        </button>
 
         <Link
           to="/search"
@@ -62,33 +65,50 @@ export default function HomePage() {
           🔍 버릴 물건 검색하기
         </Link>
 
-        <div className="mt-4 overflow-hidden rounded-[20px] bg-[radial-gradient(120%_140%_at_0%_0%,var(--green-700),var(--green-900))] p-5 text-white">
-          <div className="text-[11px] font-bold uppercase tracking-wider opacity-80">오늘 · 일요일</div>
-          <h2 className="mt-[6px] font-display text-[23px]">오늘은 수거 없음</h2>
-          <p className="mt-[6px] text-[13px] leading-relaxed opacity-90">
-            오늘은 쉬는 날이에요. 내일부터 플라스틱/비닐 수거가 재개됩니다.
-          </p>
-        </div>
+        {!region ? (
+          <div className="mt-4 rounded-[20px] border border-line bg-card p-5">
+            <h2 className="font-display text-[17px] text-ink">지역을 선택해 주세요</h2>
+            <p className="mt-[6px] text-[13px] leading-relaxed text-sub">
+              지역을 선택하면 오늘/이번 주 배출 일정을 알려드려요.
+            </p>
+          </div>
+        ) : isRegionRuleLoading ? (
+          <div className="mt-4 rounded-[20px] border border-line bg-card p-5 text-sm text-sub">불러오는 중...</div>
+        ) : today ? (
+          <>
+            <div className="mt-4 overflow-hidden rounded-[20px] bg-[radial-gradient(120%_140%_at_0%_0%,var(--green-700),var(--green-900))] p-5 text-white">
+              <div className="text-[11px] font-bold uppercase tracking-wider opacity-80">오늘 · {today.name}요일</div>
+              <h2 className="mt-[6px] font-display text-[23px]">
+                {today.rules.length === 0 ? '오늘은 수거 없음' : `오늘은 ${today.label} 배출 가능`}
+              </h2>
+              <p className="mt-[6px] text-[13px] leading-relaxed opacity-90">
+                {today.rules.length === 0
+                  ? '오늘은 쉬는 날이에요.'
+                  : `${today.rules[0].rule.beginTime}~${today.rules[0].rule.endTime} 사이에 배출해 주세요.`}
+              </p>
+            </div>
 
-        <div className="mt-4 grid grid-cols-7 gap-[6px]">
-          {WEEK_SCHEDULE.map((day, index) => {
-            const isToday = index === TODAY_INDEX
-            return (
-              <div
-                key={day.name}
-                className={`rounded-md border px-[3px] py-[9px] text-center text-[10.5px] ${
-                  isToday ? 'border-green-600 bg-green-900 text-white' : 'border-line bg-card'
-                }`}
-              >
-                <div className={`font-bold ${isToday ? 'text-[#cfe8db]' : 'text-sub'}`}>{day.name}</div>
-                <div className="my-1 text-base">{day.icon}</div>
-                <div className={`text-[9.5px] font-bold ${isToday ? 'text-white' : 'text-green-900'}`}>
-                  {day.type}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+            <div className="mt-4 grid grid-cols-7 gap-[6px]">
+              {weeklySchedule?.map((day, index) => {
+                const isToday = index === getTodayIndex()
+                return (
+                  <div
+                    key={day.name}
+                    className={`rounded-md border px-[3px] py-[9px] text-center text-[10.5px] ${
+                      isToday ? 'border-green-600 bg-green-900 text-white' : 'border-line bg-card'
+                    }`}
+                  >
+                    <div className={`font-bold ${isToday ? 'text-[#cfe8db]' : 'text-sub'}`}>{day.name}</div>
+                    <div className="my-1 text-base">{day.icon}</div>
+                    <div className={`text-[9.5px] font-bold ${isToday ? 'text-white' : 'text-green-900'}`}>
+                      {day.label}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        ) : null}
 
         <div className="mt-6 text-xs font-extrabold tracking-wider text-green-700 uppercase">빠른 안내</div>
         <div className="mt-[10px] grid grid-cols-3 gap-[10px]">
@@ -141,6 +161,17 @@ export default function HomePage() {
             </button>
           </div>
         </div>
+      ) : null}
+
+      {isRegionSheetOpen ? (
+        <RegionSelectSheet
+          initialRegion={region}
+          onSave={(next) => {
+            setRegion(next)
+            setRegionSheetOpen(false)
+          }}
+          onClose={() => setRegionSheetOpen(false)}
+        />
       ) : null}
 
       <input
