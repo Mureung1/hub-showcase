@@ -43,9 +43,17 @@ git diff --check: passed
 - Nearby-store requests do not start before that signal, then use the active
   selection once it is ready.
 
-## Public verification pending
+## Public verification
 
-- Deploy the exact commit to the Vercel production project.
-- Open the clean product root URL directly.
-- Confirm Render readiness and the subsequent real analysis, nearby-store, and
-  search requests without a static analysis fallback.
+2026-07-22 KST에 `develop`의 `1425de6`까지 포함한 Vercel production 배포를
+수동으로 수행했다. Alias는 `https://localtwin-product.vercel.app`이다.
+
+- root URL HTTP 200, 브라우저 주소는 query 없이 `/`로 유지
+- Render `/ready` HTTP 200, catalog HTTP 200
+- 두 API 응답의 CORS origin은 Vercel production URL로 제한됨
+- 브라우저에서 `서울 상권분석 2025년 1분기 API 결과입니다.` 문구 확인
+- 초기 실제 분석 요청 뒤 주변 점포가 `33개`로 갱신되고 오류 문구 없음
+
+Render가 실제로 sleep한 cold-start 상황은 이번 공개 검증 시점에 재현하지
+않았다. 그 대기 상태와 retry 전환은 unit test로 검증했으며, 실제 sleep 뒤
+동작은 다음 장시간 idle 검증에서 별도로 확인한다.

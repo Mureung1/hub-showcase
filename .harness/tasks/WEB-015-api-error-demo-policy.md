@@ -80,8 +80,8 @@ git diff --check
 
 - [x] WEB-015 Task Packet 작성
 - [x] local Run Report 작성
-- [ ] 공개 배포 smoke 결과 기록
-- [ ] GitHub #51 완료 상태 동기화
+- [x] 공개 배포 smoke 결과 기록
+- [x] GitHub #51 완료 상태 동기화
 
 ## 9. Commit Plan
 
@@ -97,4 +97,4 @@ docs(web): record WEB-015 public smoke
 - [x] retry가 같은 API 요청을 다시 실행하는가?
 - [x] 오류 메시지에 DB 정보와 stack trace가 없는가?
 - [x] 기존 search·nearby 오류 상태를 덮어쓰지 않는가?
-- [ ] 공개 배포가 최신 commit을 사용한다고 확인했는가?
+- [x] 공개 배포가 최신 commit을 사용한다고 확인했는가?
