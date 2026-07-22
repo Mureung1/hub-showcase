@@ -3,6 +3,7 @@ import type { Task } from "@prisma/client";
 import { prisma } from "../db/client.js";
 import { calculateLevel } from "../lib/scoring.js";
 import { getCurrentReason } from "../db/avoidanceReasons.js";
+import { broadcastLevelUpPush } from "../lib/broadcastPush.js";
 
 const router = Router();
 
@@ -94,6 +95,11 @@ router.post("/:id/events", async (req, res) => {
       return;
     }
 
+    // 트랜잭션 콜백 안에서 계산되지만, 실제 발송(send-push, 외부 네트워크 I/O)은
+    // 커밋 이후에 한다 — 트랜잭션 안에서 네트워크 왕복을 기다리면 pooled DB 커넥션을
+    // 그만큼 붙잡아두게 된다(#35).
+    let leveledUp = false;
+
     const task = await prisma.$transaction(async (tx) => {
       const currentTask = await tx.task.findUniqueOrThrow({ where: { id } });
 
@@ -140,6 +146,7 @@ router.post("/:id/events", async (req, res) => {
 
         // 레벨이 실제로 오른 순간만 level_up 이벤트를 추가로 남긴다(스키마 문서화 어휘).
         if (nextLevel > currentTask.level) {
+          leveledUp = true;
           await tx.taskEvent.create({
             data: { taskId: id, eventType: "level_up", occurredAt: new Date() },
           });
@@ -163,6 +170,16 @@ router.post("/:id/events", async (req, res) => {
 
       return currentTask;
     });
+
+    // 레벨 상승은 "지금 이 순간" 이벤트라 배치 스캔을 거치지 않고 바로 발송한다(#35).
+    // 실패해도 이벤트 API 응답 자체는 정상적으로 나가야 하므로 await하되 catch로 삼킨다 —
+    // Vercel 서버리스 환경에서 fire-and-forget하면 응답 직후 함수가 얼어붙어 발송이
+    // 끝나기 전에 중단될 수 있다.
+    if (leveledUp) {
+      await broadcastLevelUpPush(task).catch((err) => {
+        console.error("[POST /:id/events] broadcastLevelUpPush 실패:", err);
+      });
+    }
 
     const reason = await getCurrentReason(id);
     res.json({ data: withReason(task, reason) });

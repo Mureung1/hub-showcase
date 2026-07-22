@@ -1,7 +1,15 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import request from "supertest";
 import app from "../app.js";
 import { prisma } from "../db/client.js";
+import { broadcastLevelUpPush } from "../lib/broadcastPush.js";
+
+// #35: 실제 발송(webpush → FCM)까지 통합 테스트에서 태우지 않도록 모킹한다.
+// broadcastLevelUpPush 자체의 동작(구독 조회, 병렬 발송, 실패 무시)은 sendPush.test.ts에서
+// 이미 검증됐으므로, 여기서는 "레벨 상승 시 호출되는지" / "실패해도 API 응답에 영향 없는지"만 본다.
+vi.mock("../lib/broadcastPush.js", () => ({
+  broadcastLevelUpPush: vi.fn().mockResolvedValue(undefined),
+}));
 
 // test-writer Skill의 통합 테스트 안전장치: DB 가드 + prefix + teardown.
 // 자세한 근거는 .claude/skills/test-writer/SKILL.md 5절 참고.
@@ -86,6 +94,10 @@ describe.skipIf(!isTestDb)("GET /api/tasks", () => {
 });
 
 describe.skipIf(!isTestDb)("POST /api/tasks/:id/events", () => {
+  beforeEach(() => {
+    vi.mocked(broadcastLevelUpPush).mockClear();
+  });
+
   afterEach(async () => {
     const testTasks = await prisma.task.findMany({
       where: { title: { startsWith: TEST_PREFIX } },
@@ -115,6 +127,54 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events", () => {
     expect(res.status).toBe(200);
     expect(res.body.data.reason).toBe("overwhelm");
     expect(res.body.data.skipCount).toBe(1);
+  });
+
+  it("레벨이 실제로 오르면 broadcastLevelUpPush를 호출한다 (happy path)", async () => {
+    const created = await createTestTask();
+    await request(app)
+      .post(`/api/tasks/${created.id}/events`)
+      .send({ eventType: "activated" });
+
+    // calculateLevel(skipCount)은 skipCount를 그대로 레벨로 쓰므로(scoring.ts), 첫 tick에서
+    // 바로 0 → 1로 오른다.
+    const res = await request(app)
+      .post(`/api/tasks/${created.id}/events`)
+      .send({ eventType: "notification_sent" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.level).toBe(1);
+    expect(broadcastLevelUpPush).toHaveBeenCalledTimes(1);
+    expect(broadcastLevelUpPush).toHaveBeenCalledWith(
+      expect.objectContaining({ id: created.id, level: 1 }),
+    );
+  });
+
+  it("레벨이 오르지 않으면(비활성 task에 tick) broadcastLevelUpPush를 호출하지 않는다 (경계)", async () => {
+    // activated를 보내지 않아 status가 waiting인 채로 notification_sent를 보내면
+    // "active 아니면 무시" 분기(tasks.ts)로 빠져 레벨 자체가 안 오른다.
+    const created = await createTestTask();
+
+    const res = await request(app)
+      .post(`/api/tasks/${created.id}/events`)
+      .send({ eventType: "notification_sent" });
+
+    expect(res.status).toBe(200);
+    expect(broadcastLevelUpPush).not.toHaveBeenCalled();
+  });
+
+  it("broadcastLevelUpPush가 실패해도 이벤트 API 응답은 200을 유지한다 (실패 격리)", async () => {
+    vi.mocked(broadcastLevelUpPush).mockRejectedValueOnce(new Error("발송 실패"));
+    const created = await createTestTask();
+    await request(app)
+      .post(`/api/tasks/${created.id}/events`)
+      .send({ eventType: "activated" });
+
+    const res = await request(app)
+      .post(`/api/tasks/${created.id}/events`)
+      .send({ eventType: "notification_sent" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.level).toBe(1);
   });
 });
 
