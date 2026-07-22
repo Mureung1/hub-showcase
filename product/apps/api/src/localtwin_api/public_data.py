@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -108,6 +110,31 @@ def fetch_json(url: str) -> dict[str, Any]:
     return payload
 
 
+def fetch_pages(
+    source: PublicDataSource,
+    key: str,
+    *,
+    rows: int,
+    longitude: float,
+    latitude: float,
+    radius: int,
+    address: str,
+    max_pages: int | None,
+    fetcher: Callable[[str], dict[str, Any]] = fetch_json,
+) -> tuple[int, list[dict[str, Any]]]:
+    """Fetch every declared provider page, unless the caller explicitly caps it."""
+    first_params = request_params(source, 1, rows, longitude, latitude, radius, address)
+    total, first_rows = extract_rows(fetcher(build_request_url(source, key, first_params)))
+    page_count = math.ceil(total / rows) if total else 0
+    requested_pages = page_count if max_pages is None else min(page_count, max_pages)
+    collected = list(first_rows)
+    for page in range(2, requested_pages + 1):
+        params = request_params(source, page, rows, longitude, latitude, radius, address)
+        _, items = extract_rows(fetcher(build_request_url(source, key, params)))
+        collected.extend(items)
+    return total, collected
+
+
 def extract_rows(payload: dict[str, Any]) -> tuple[int, list[dict[str, Any]]]:
     response = payload.get("response", payload)
     if not isinstance(response, dict):
@@ -179,7 +206,17 @@ def main() -> int:
     parser.add_argument("--radius", type=int, default=500)
     parser.add_argument("--address", default="마포구")
     parser.add_argument("--rows", type=int, default=100)
-    parser.add_argument("--page", type=int, default=1)
+    parser.add_argument(
+        "--all-pages",
+        action="store_true",
+        help="Fetch every declared provider page instead of the default one-page safety sample.",
+    )
+    parser.add_argument(
+        "--max-pages",
+        type=int,
+        default=1,
+        help="Explicit page cap; ignored when --all-pages is set.",
+    )
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -190,8 +227,8 @@ def main() -> int:
     unknown = sorted(set(slugs) - SOURCES.keys())
     if unknown:
         parser.error(f"Unknown source name(s): {', '.join(unknown)}")
-    if args.page < 1 or args.radius < 1:
-        parser.error("--page and --radius must be positive.")
+    if args.max_pages < 1 or args.radius < 1:
+        parser.error("--max-pages and --radius must be positive.")
 
     secret = get_settings().public_data_service_key
     key = secret.get_secret_value().strip() if secret else ""
@@ -207,16 +244,19 @@ def main() -> int:
             source = SOURCES[slug]
             rows = min(args.rows, source.page_size_limit)
             params = request_params(
-                source,
-                args.page,
-                rows,
-                args.longitude,
-                args.latitude,
-                args.radius,
-                args.address,
+                source, 1, rows, args.longitude, args.latitude, args.radius, args.address
             )
             print(f"Fetching {source.slug} from allowlisted official API...")
-            total, items = extract_rows(fetch_json(build_request_url(source, key, params)))
+            total, items = fetch_pages(
+                source,
+                key,
+                rows=rows,
+                longitude=args.longitude,
+                latitude=args.latitude,
+                radius=args.radius,
+                address=args.address,
+                max_pages=None if args.all_pages else args.max_pages,
+            )
             manifest_sources.append(
                 write_source_snapshot(run_dir, source, collected_at, params, total, items)
             )

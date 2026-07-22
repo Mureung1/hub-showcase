@@ -769,6 +769,11 @@ raw snapshot 보존 기간과 rollback 기준은 `DATA-007`에서 나중에 승�
 이 절과 `DATA-008`, `DATA-009`를 기준으로 완료한 polygon 공간 결합을 검증하고 전체 인허가
 확장과 공식 집계 비교를 계속한다.
 
+전체 인허가 snapshot은 실수로 대량 호출하지 않도록 기본 1페이지 sample과 분리한다.
+`localtwin_api.public_data --all-pages --sources restaurants,cafes --address 서울특별시`는
+provider가 선언한 전체 page를 수집한다. 실행 전 API key quota와 저장 공간을 확인하고,
+생성된 raw snapshot의 row count·SHA-256·적재 결과를 Run Report에 기록한다.
+
 ### 13.1 확정한 원칙
 
 ```text
