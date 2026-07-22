@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -55,12 +55,12 @@ Exact Python SDK/native bundle, Node Runtime와 Server product seam이 determini
 | Exact SDK, production Runtime, Node Runtime | `validate:exact-sdk`, `validate:production-runtime`, `validate:node-runtime` green. Exact SDK official suite `162 passed, 38 skipped`, production bridge `20` tests, Node actual/unit `68` tests와 local provider actual이 통과했다. |
 | Server actual | `test:codex-chat-actual`과 `test:first-assignment-product-actual` green. Product actual은 첫 proposal의 Review 수정 요청, fresh replacement request key, 두 번째 MCP→Plan→Review 수락과 same-Turn terminal을 실제 verified Runtime/local provider로 통과했다. |
 | Repository | `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs link check와 fixed-point diff check green. |
-| Review | Fixed point `4d9674d7b4fc670a3fbddaedc15e9742ae46f114`의 Standards·Spec 병렬 리뷰를 완료하고 signal cleanup, cleanup ordering, independent actual cleanup, Recipe revision loop와 Recipe v2 compatibility findings를 모두 수정했다. |
+| Review | Fixed point `4d9674d7b4fc670a3fbddaedc15e9742ae46f114`의 최초 Standards·Spec 병렬 리뷰 findings를 모두 수정했다. Corrective는 fixed point `a6b9e9aff8612d9284c8b2df8b19cec7d68e1ed6` 기준 독립 Standards·Spec 리뷰에서 각각 actionable finding `0`건으로 종료했다. |
 | Live provider | Final Recipe v2 코드에서 isolated live command가 exit code `0`, `{"status":"passed","gate":"first_assignment_product"}`로 complete Assignment action·첫 Review 수락·confirmed outcome과 clean shutdown을 통과했다. 수정 요청→fresh replacement proposal→두 번째 Review 수락은 위 Server actual/local-provider gate가 증명하며 live trace의 assertion이 아니다. 이전 provider 사용량 소진 때에는 exit code `3`, `{"status":"blocked","prerequisite":"provider_account"}`로 prerequisite를 정확히 분류했다. |
 
 ## Result
 
-Implementation commits `db9976a6`, `0cfa1d35`, `d800e4bb`에서 exact advertised-default model policy, managed Recipe v2 revision loop, actual product harness, live-provider harness, bounded cleanup과 native provider failure normalization을 완성했다. Deterministic·actual repository gates와 Standards·Spec 병렬 review findings를 모두 닫았고, 최종 Recipe v2 코드의 isolated live-provider vertical도 complete success로 확인했다. Parent spec에는 아직 `009a-product-cutover-and-durable-baseline.md`가 남아 있으므로 이 ticket만 완료한다.
+Implementation commits `db9976a6`, `0cfa1d35`, `d800e4bb`에서 exact advertised-default model policy, managed Recipe v2 revision loop, actual product harness, live-provider harness, bounded cleanup과 native provider failure normalization을 완성했다. Corrective commits `fcd76094`, `b34a19c6`에서 두 local-provider oracle의 process support를 package-private helper로 중복 제거하고, actual과 live evidence 범위·ordered patch `0001`–`0008`·architecture current fact를 정렬했다. External live-provider는 corrective에서 재실행하지 않았으며, exact·production·Node Runtime, Server product actual, repository gates와 fixed-point Standards·Spec 리뷰를 모두 다시 통과했다. Parent spec에는 아직 `009a-product-cutover-and-durable-baseline.md`가 남아 있으므로 이 ticket만 완료한다.
 
 ## Blocked By
 
