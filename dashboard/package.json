@@ -1,0 +1,28 @@
+{
+  "name": "ai-agent-challenge-showcase",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "collect:local": "node scripts/collect-local-showcases.mjs dashboard-showcase-test",
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "test": "vitest run && node --test scripts/*.test.mjs"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "jsdom": "^29.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10"
+  }
+}
