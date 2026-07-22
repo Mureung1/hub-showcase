@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import {
   lstat,
   mkdir,
@@ -91,6 +92,15 @@ test('a chosen SemesterWorkspace reopens the same Course and confirmed revision 
     assert.match(created.course?.id ?? '', /^course_[0-9a-f]{32}$/)
     assert.equal(controller.nativeCwd(), await realpath(workspaceRoot))
     assert.equal(JSON.stringify(created).includes(await realpath(testRoot)), false)
+    const changedMaterialPath = path.join(
+      workspaceRoot,
+      'lms-outline-notice.txt',
+    )
+    const changedMaterialBytes = Buffer.from(
+      '학생이 앱을 닫은 동안 수정한 공지',
+      'utf8',
+    )
+    await writeFile(changedMaterialPath, changedMaterialBytes)
 
     await rm(appDataRoot, { recursive: true })
     await mkdir(appDataRoot)
@@ -106,6 +116,15 @@ test('a chosen SemesterWorkspace reopens the same Course and confirmed revision 
     assert.deepEqual(
       await reopenedController.selectCourse(created.course?.id ?? ''),
       created,
+    )
+    const refreshed = await reopenedController.refreshMaterials()
+    assert.equal(refreshed.outcome, 'refreshed')
+    assert.equal(refreshed.workspace.recovery, null)
+    assert.equal(
+      refreshed.workspace.materials.find(
+        (material) => material.relativePath === 'lms-outline-notice.txt',
+      )?.digest,
+      createHash('sha256').update(changedMaterialBytes).digest('hex'),
     )
   } finally {
     await rm(testRoot, { force: true, recursive: true })
@@ -173,6 +192,187 @@ test('cancelled and invalid chooser results preserve the existing activation', a
   }
 })
 
+test('active store drift blocks every replacement and explicit reactivation adopts valid current bytes', async () => {
+  const testRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-semester-store-authority-test-'),
+  )
+  const packageRoot = path.join(testRoot, 'package')
+  const appDataRoot = path.join(testRoot, 'app-data')
+  const workspaceRoot = path.join(testRoot, 'semester')
+  const storePath = path.join(workspaceRoot, '.ay-ple', 'workspace-state.json')
+
+  try {
+    await Promise.all(
+      [packageRoot, appDataRoot, workspaceRoot].map((directory) =>
+        mkdir(directory),
+      ),
+    )
+    await writeFile(path.join(workspaceRoot, 'notice.txt'), '원본 공지', 'utf8')
+    const controller = createSemesterWorkspaceController({
+      packageRoot,
+      appDataRoot,
+      chooseDirectory: async () => workspaceRoot,
+    })
+    await controller.activate()
+    await controller.createCourse('기존 과목')
+
+    const externallyEdited = JSON.parse(
+      await readFile(storePath, 'utf8'),
+    ) as Record<string, unknown>
+    externallyEdited.course = {
+      ...(externallyEdited.course as Record<string, unknown>),
+      displayName: '외부에서 바꾼 과목',
+    }
+    const externalBytes = Buffer.from(
+      `${JSON.stringify(externallyEdited, null, 2)}\n`,
+      'utf8',
+    )
+    await writeFile(storePath, externalBytes)
+
+    await assert.rejects(
+      controller.refreshMaterials(),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'execution_guard_conflict',
+    )
+    assert.deepEqual(await readFile(storePath), externalBytes)
+    const conflicted = controller.snapshot()
+    assert.equal(conflicted?.state, 'ready')
+    if (conflicted?.state !== 'ready') assert.fail('workspace must be ready')
+    assert.equal(conflicted.recovery?.state, 'store_conflict')
+
+    const reactivated = await controller.activate()
+    assert.equal(reactivated.status, 'activated')
+    assert.equal(reactivated.workspace.state, 'ready')
+    assert.equal(reactivated.workspace.course?.displayName, '외부에서 바꾼 과목')
+    assert.equal(reactivated.workspace.recovery, null)
+    assert.deepEqual(await readFile(storePath), externalBytes)
+
+    const nonCanonicalBytes = Buffer.from(JSON.stringify(externallyEdited), 'utf8')
+    await writeFile(storePath, nonCanonicalBytes)
+    const coldController = createSemesterWorkspaceController({
+      packageRoot,
+      appDataRoot,
+      chooseDirectory: async () => workspaceRoot,
+    })
+    const coldActivation = await coldController.activate()
+    assert.equal(coldActivation.status, 'activated')
+    assert.equal(
+      coldActivation.workspace.course?.displayName,
+      '외부에서 바꾼 과목',
+    )
+    assert.deepEqual(await readFile(storePath), nonCanonicalBytes)
+    assert.equal((await coldController.refreshMaterials()).outcome, 'refreshed')
+  } finally {
+    await rm(testRoot, { force: true, recursive: true })
+  }
+})
+
+test('same-root invalid store recovery becomes read-only without changing the store entry or source bytes', async () => {
+  for (const kind of ['invalid-json', 'directory'] as const) {
+    const testRoot = await mkdtemp(
+      path.join(tmpdir(), `ay-ple-semester-same-root-${kind}-test-`),
+    )
+    const packageRoot = path.join(testRoot, 'package')
+    const appDataRoot = path.join(testRoot, 'app-data')
+    const workspaceRoot = path.join(testRoot, 'semester')
+    const sourcePath = path.join(workspaceRoot, 'notice.txt')
+    const storePath = path.join(
+      workspaceRoot,
+      '.ay-ple',
+      'workspace-state.json',
+    )
+    const sourceBytes = Buffer.from('사용자 소유 원본 자료', 'utf8')
+    const invalidBytes = Buffer.from('{"formatVersion":2,\n', 'utf8')
+    const sentinelBytes = Buffer.from('directory entry must remain', 'utf8')
+    const sentinelPath = path.join(storePath, 'sentinel.txt')
+
+    try {
+      await Promise.all(
+        [packageRoot, appDataRoot, workspaceRoot].map((directory) =>
+          mkdir(directory),
+        ),
+      )
+      await writeFile(sourcePath, sourceBytes)
+      const controller = createSemesterWorkspaceController({
+        packageRoot,
+        appDataRoot,
+        chooseDirectory: async () => workspaceRoot,
+      })
+      await controller.activate()
+      const ready = await controller.createCourse('문제해결글쓰기')
+      assert.ok(ready.course)
+      const operationId =
+        kind === 'invalid-json'
+          ? `chat_${'8'.repeat(32)}`
+          : `chat_${'9'.repeat(32)}`
+      await controller.prepareProductChatExecution({
+        operationId,
+        courseId: ready.course.id,
+        selectedMaterials: [],
+      })
+
+      if (kind === 'invalid-json') {
+        await writeFile(storePath, invalidBytes)
+      } else {
+        await rm(storePath)
+        await mkdir(storePath)
+        await writeFile(sentinelPath, sentinelBytes)
+      }
+
+      await assert.rejects(
+        controller.settleProductChatExecution({ operationId }),
+        (error: unknown) =>
+          error instanceof SemesterWorkspaceError &&
+          error.code === 'execution_guard_conflict',
+        kind,
+      )
+      const conflicted = controller.snapshot()
+      assert.equal(conflicted?.state, 'ready', kind)
+      if (conflicted?.state !== 'ready') assert.fail('workspace must be ready')
+      assert.equal(conflicted.recovery?.state, 'store_conflict', kind)
+      await assert.rejects(
+        controller.activate(),
+        (error: unknown) =>
+          error instanceof SemesterWorkspaceError &&
+          error.code === 'execution_guard_conflict',
+        kind,
+      )
+      controller.noteProductOperationReleased(operationId)
+
+      assert.deepEqual(
+        await controller.activate(),
+        expectedIncompatibleActivation(null),
+        kind,
+      )
+      assert.equal(controller.snapshot()?.state, 'incompatible', kind)
+      assert.throws(
+        () => controller.nativeCwd(),
+        (error: unknown) =>
+          error instanceof SemesterWorkspaceError &&
+          error.code === 'workspace_incompatible',
+        kind,
+      )
+      await assert.rejects(
+        controller.createCourse('덮어쓰면 안 되는 과목'),
+        (error: unknown) =>
+          error instanceof SemesterWorkspaceError &&
+          error.code === 'workspace_incompatible',
+        kind,
+      )
+      assert.deepEqual(await readFile(sourcePath), sourceBytes, kind)
+      if (kind === 'invalid-json') {
+        assert.deepEqual(await readFile(storePath), invalidBytes, kind)
+      } else {
+        assert.equal((await lstat(storePath)).isDirectory(), true, kind)
+        assert.deepEqual(await readFile(sentinelPath), sentinelBytes, kind)
+      }
+    } finally {
+      await rm(testRoot, { force: true, recursive: true })
+    }
+  }
+})
+
 test('activation keeps the current workspace authoritative when the candidate initial scan fails', async () => {
   const testRoot = await mkdtemp(
     path.join(tmpdir(), 'ay-ple-semester-activation-transaction-test-'),
@@ -236,6 +436,27 @@ test('non-current workspace stores open through one read-only boundary without c
   const courseId = `course_${'a'.repeat(32)}`
   const workspaceId = `workspace_${'b'.repeat(32)}`
   const sourceBytes = Buffer.from('호환되지 않는 store의 원본 학기 자료', 'utf8')
+  const materialId = `material_${'c'.repeat(32)}`
+  const materialDigest = 'd'.repeat(64)
+  const sourceRecoveryOperationId = `chat_${'e'.repeat(32)}`
+  const recoveryMaterial = {
+    id: materialId,
+    relativePath: 'original-source.txt',
+    digest: materialDigest,
+    mediaType: 'text/plain; charset=utf-8',
+    size: sourceBytes.byteLength,
+  }
+  const sourceRecovery = {
+    operationId: sourceRecoveryOperationId,
+    kind: 'product_chat',
+    confirmedRevision: 0,
+    materials: [recoveryMaterial],
+    selectedMaterials: [{ rawMaterialId: materialId, digest: materialDigest }],
+    scratchRelativePath:
+      `.ay-ple/runtime-scratch/${sourceRecoveryOperationId}`,
+    state: 'recovery_required',
+    createdAt: '2026-07-21T00:00:00.000Z',
+  }
   const fixtures = [
     {
       name: 'version 1',
@@ -281,6 +502,7 @@ test('non-current workspace stores open through one read-only boundary without c
           statePatches: [],
           userConfirmations: [],
           executionGuard: null,
+          sourceRecovery: null,
         })}\n`,
         'utf8',
       ),
@@ -299,6 +521,71 @@ test('non-current workspace stores open through one read-only boundary without c
           statePatches: [],
           userConfirmations: [],
           modelingRuns: [],
+          sourceRecovery: null,
+        })}\n`,
+        'utf8',
+      ),
+    },
+    {
+      name: 'current version 2 without required sourceRecovery',
+      foundStoreFormatVersion: 2,
+      bytes: Buffer.from(
+        `${JSON.stringify({
+          formatVersion: 2,
+          workspaceId,
+          confirmedRevision: 0,
+          course: null,
+          materials: [],
+          assignments: [],
+          statePatches: [],
+          userConfirmations: [],
+          modelingRuns: [],
+          executionGuard: null,
+        })}\n`,
+        'utf8',
+      ),
+    },
+    {
+      name: 'current version 2 with non-recovery sourceRecovery marker',
+      foundStoreFormatVersion: 2,
+      bytes: Buffer.from(
+        `${JSON.stringify({
+          formatVersion: 2,
+          workspaceId,
+          confirmedRevision: 0,
+          course: { id: courseId, displayName: '문제해결글쓰기' },
+          materials: [recoveryMaterial],
+          assignments: [],
+          statePatches: [],
+          userConfirmations: [],
+          modelingRuns: [],
+          executionGuard: null,
+          sourceRecovery: { ...sourceRecovery, state: 'active' },
+        })}\n`,
+        'utf8',
+      ),
+    },
+    {
+      name: 'current version 2 with mismatched sourceRecovery baseline',
+      foundStoreFormatVersion: 2,
+      bytes: Buffer.from(
+        `${JSON.stringify({
+          formatVersion: 2,
+          workspaceId,
+          confirmedRevision: 0,
+          course: { id: courseId, displayName: '문제해결글쓰기' },
+          materials: [recoveryMaterial],
+          assignments: [],
+          statePatches: [],
+          userConfirmations: [],
+          modelingRuns: [],
+          executionGuard: null,
+          sourceRecovery: {
+            ...sourceRecovery,
+            selectedMaterials: [
+              { rawMaterialId: materialId, digest: 'f'.repeat(64) },
+            ],
+          },
         })}\n`,
         'utf8',
       ),

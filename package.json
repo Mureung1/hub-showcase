@@ -8,7 +8,6 @@
   ],
   "scripts": {
     "dev": "tsx scripts/product-development-bootstrap.mts",
-    "dev:chat-only": "concurrently -n server,chat-shell -c blue,magenta \"CODEX_CHAT_ORIGIN=http://127.0.0.1:4173 npm run dev -w @ay-ple/server\" \"npm run dev -w @ay-ple/chat-shell\"",
     "demo": "npm run serve:camp-demo",
     "serve:camp-demo": "vite . --host 127.0.0.1 --port 4174 --strictPort --open /artifacts/camp-demo/",
     "export:camp-demo": "tsx artifacts/camp-demo/export-pdf.mts",
@@ -17,12 +16,12 @@
     "typecheck:camp-demo": "tsc -p artifacts/camp-demo/tsconfig.json",
     "materialize:dev-workspace": "tsx scripts/semester-workspace-materializer.mts",
     "test:workspace-materializer": "tsx --test scripts/semester-workspace-materializer.test.mts",
-    "test:dev-entrypoint": "tsx scripts/test-dev-entrypoint.mts",
+    "test:product-entrypoint": "tsx scripts/test-product-entrypoint.mts",
     "check:docs-links": "tsx scripts/check-docs-links.mts",
-    "test": "npm run test:workspace-materializer && npm run test -w @ay-ple/codex-chat-runtime && npm run test -w @ay-ple/server && npm run test -w @ay-ple/chat-shell && npm run test:camp-demo",
+    "test": "npm run test:workspace-materializer && npm run test -w @ay-ple/product-contract && npm run test -w @ay-ple/codex-chat-runtime && npm run test -w @ay-ple/server && npm run test -w @ay-ple/chat-shell && npm run test:camp-demo",
     "test:e2e": "npm run test:e2e -w @ay-ple/chat-shell && npm run test:camp-demo:e2e",
-    "build": "/bin/rm -Rfx -- ./packages/codex-chat-runtime/dist ./apps/server/dist ./apps/chat-shell/dist && npm run build -w @ay-ple/codex-chat-runtime && npm run build -w @ay-ple/server && npm run build -w @ay-ple/chat-shell",
-    "typecheck": "npm run typecheck -w @ay-ple/codex-chat-runtime && npm run typecheck -w @ay-ple/server && npm run typecheck -w @ay-ple/chat-shell && tsc -p scripts/tsconfig.json && npm run typecheck:camp-demo"
+    "build": "/bin/rm -Rfx -- ./packages/product-contract/dist ./packages/codex-chat-runtime/dist ./apps/server/dist ./apps/chat-shell/dist && npm run build -w @ay-ple/product-contract && npm run build -w @ay-ple/codex-chat-runtime && npm run build -w @ay-ple/server && npm run build -w @ay-ple/chat-shell",
+    "typecheck": "npm run typecheck -w @ay-ple/product-contract && npm run typecheck -w @ay-ple/codex-chat-runtime && npm run typecheck -w @ay-ple/server && npm run typecheck -w @ay-ple/chat-shell && tsc -p scripts/tsconfig.json && npm run typecheck:camp-demo"
   },
   "devDependencies": {
     "@types/node": "^24.13.2",

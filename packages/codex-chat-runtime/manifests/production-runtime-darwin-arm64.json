@@ -4,8 +4,8 @@
     "installed": {
       "file_count": 5,
       "path": "bundle/bridge",
-      "regular_file_bytes": 62410,
-      "roster_sha256": "0cb3fcb486edfdb9c3b508241f7a3943bae1c2dc5a3e6cde872481d37e7ae4bc",
+      "regular_file_bytes": 63110,
+      "roster_sha256": "1d8eefe643a176c0589047d94a81fe4fa4336be868499786511c856abfdc8a4f",
       "symlink_count": 0
     },
     "python_args": [
@@ -23,14 +23,14 @@
         "sha256": "5d72a377bcad2cf0922cb8f1db08340c8b93d887dc385e47a4935c57baae03d8"
       },
       "ay_ple_codex_bridge/protocol.py": {
-        "bytes": 15338,
+        "bytes": 15456,
         "git_mode": "100644",
-        "sha256": "bd0d4fddef2e556daddf1b6538df71c9a35de49eb778f23a9d1b55a9158e852b"
+        "sha256": "0da9522bd9d9d8ee569161961ca5b6f77836e5816cc45baac2570e799e21957d"
       },
       "ay_ple_codex_bridge/runtime.py": {
-        "bytes": 39270,
+        "bytes": 39852,
         "git_mode": "100644",
-        "sha256": "a3c773d5e18ebf477331d49a8718e39eae253b36ad8681ae82442c1b875af015"
+        "sha256": "5bef13fdcebd0d1f7d87f93c6c97daeea54d3285a35b4307d231970d2d9254fa"
       },
       "worker.py": {
         "bytes": 546,
@@ -56,8 +56,8 @@
   "bundle": {
     "file_count": 2539,
     "path": "bundle",
-    "regular_file_bytes": 366689661,
-    "roster_sha256": "78a401152a70f3fb5bd0eb37380daa5170692242c629cdb06ff903c6c72af816",
+    "regular_file_bytes": 366692788,
+    "roster_sha256": "4b72a60735d6b6d1489bab9fa937889f296ba2268c3fc0c433ba84ca10b36b7a",
     "symlink_count": 9
   },
   "installed": {
@@ -80,8 +80,8 @@
     "site_packages": {
       "file_count": 196,
       "path": "bundle/site-packages",
-      "regular_file_bytes": 318702559,
-      "roster_sha256": "e823d43b6156c6f7b09530124044cd4ee9997a7dddf39eff4bdb9193ea5424fe",
+      "regular_file_bytes": 318704986,
+      "roster_sha256": "bbd4ef8a261b1f4e34e01b1a312fed0262d4d4f55f3a9cd7338e420aad50b9d8",
       "symlink_count": 0
     }
   },
@@ -136,12 +136,12 @@
         "sha256": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915"
       }
     },
-    "patch_stack_sha256": "d0669c64b524f53879e355db46ea0b4fbe67526e1ec4c7bccb9f11d9e253a9a0",
+    "patch_stack_sha256": "ffc43da6e5e7a146016404db54968d37d849b778e5e9b04db680cac4124fc1c9",
     "patched_source_manifest": {
-      "bytes": 27422,
+      "bytes": 31979,
       "git_mode": "100644",
       "path": "manifests/patched-source.json",
-      "sha256": "7f543df27f6bfa096dd3c667405c0ae1669d9e65009e4f3b4f8922eb97a518bf"
+      "sha256": "db9f0644155f9ab8f396b5263e3539a778e5ca7a49e3b8e49b14be7c32a71f98"
     },
     "patches": [
       {
@@ -191,6 +191,22 @@
         "order": 6,
         "path": "upstream/patches/0006-plan-user-input-seam.patch",
         "sha256": "3f60afde4ebbbb8db5cfbcef31a28e7210719a94dbb7e041ac13995d9902151c"
+      },
+      {
+        "bytes": 3378,
+        "git_mode": "100644",
+        "id": "0007-thread-start-settings",
+        "order": 7,
+        "path": "upstream/patches/0007-thread-start-settings.patch",
+        "sha256": "d3c99630255d7938fe691c609fe672b255ff5ec9f8f3bc52dc8ad96e8323736f"
+      },
+      {
+        "bytes": 8201,
+        "git_mode": "100644",
+        "id": "0008-standalone-skill-extra-roots",
+        "order": 8,
+        "path": "upstream/patches/0008-standalone-skill-extra-roots.patch",
+        "sha256": "60eb7ec0fede4b97b1bd041e92bf49f93dca0ec0beadb1e3e4de9cb9637074a4"
       }
     ],
     "repository": "https://github.com/openai/codex",
@@ -219,11 +235,11 @@
       "version": "0.7.0"
     },
     {
-      "bytes": 83767,
+      "bytes": 84251,
       "distribution": "openai-codex",
       "git_mode": "100644",
       "path": "wheels/openai_codex-0.0.0.dev0-py3-none-any.whl",
-      "sha256": "0acc9d545a8df8ec445e9ec3bd267d526af99b96da4a3e5c6ad6981b1dd58ff4",
+      "sha256": "9259319c79132ffa16e1ba46d3e20a88be3b5851501f8ab7812bfb42ce6427aa",
       "source": "ordered_patches",
       "version": "0.0.0.dev0"
     },

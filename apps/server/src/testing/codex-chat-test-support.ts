@@ -30,34 +30,6 @@ export function configuredBootstrap(
   }
 }
 
-export function nominalEvents(
-  threadId: string,
-  turnId: string,
-): readonly CodexChatEvent[] {
-  return [
-    {
-      type: 'agent_message.delta',
-      threadId,
-      turnId,
-      itemId: 'item-A1',
-      delta: '안녕',
-    },
-    {
-      type: 'agent_message.completed',
-      threadId,
-      turnId,
-      itemId: 'item-A1',
-      text: '안녕하세요',
-    },
-    {
-      type: 'turn.completed',
-      threadId,
-      turnId,
-      status: 'completed',
-    },
-  ]
-}
-
 export async function postJson(
   url: string,
   body: unknown,
@@ -70,9 +42,9 @@ export async function postJson(
   })
 }
 
-export async function connectWithoutReuse(baseUrl: string): Promise<void> {
+export async function connectProductWithoutReuse(baseUrl: string): Promise<void> {
   await new Promise<void>((resolve, reject) => {
-    const request = httpRequest(`${baseUrl}/api/codex-chat/status`, {
+    const request = httpRequest(`${baseUrl}/api/product/bootstrap`, {
       agent: false,
     })
     request.once('response', (response) => {

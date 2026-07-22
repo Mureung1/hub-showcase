@@ -13,12 +13,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@ay-ple/codex-chat-runtime": "0.0.0",
+    "@ay-ple/product-contract": "0.0.0",
     "lucide-react": "^1.24.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
+    "@ay-ple/codex-chat-runtime": "0.0.0",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

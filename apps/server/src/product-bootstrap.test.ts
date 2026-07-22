@@ -4,8 +4,10 @@ import type { AddressInfo } from 'node:net'
 import test from 'node:test'
 
 import express from 'express'
+import { decodeProductBootstrap } from '@ay-ple/product-contract'
 
 import { createProductRouter } from './product-http.js'
+import type { ProductOperationCoordinator } from './product-operation-coordinator.js'
 import type { SemesterWorkspaceController } from './semester-workspace.js'
 
 const courseId = `course_${'a'.repeat(32)}`
@@ -31,7 +33,7 @@ test('bootstrap returns safe readiness and settled-only product history', async 
       const encoded = await response.text()
       const body = JSON.parse(encoded) as Record<string, unknown>
 
-      assert.deepEqual(body, expectedSafeBootstrap())
+      assert.deepEqual(decodeProductBootstrap(body), expectedSafeBootstrap())
       for (const privateValue of [
         '/private/workspace',
         '/private/skill/SKILL.md',
@@ -64,6 +66,7 @@ test('bootstrap keeps the workspace readable when Codex readiness is unavailable
       const encoded = await response.text()
       const body = JSON.parse(encoded) as {
         readonly accountReadiness: unknown
+        readonly operationStatus: unknown
         readonly workspace: unknown
         readonly history: unknown
       }
@@ -73,9 +76,71 @@ test('bootstrap keeps the workspace readable when Codex readiness is unavailable
         displayMessage:
           'Codex 상태를 확인할 수 없습니다. 자료 작업공간은 계속 사용할 수 있습니다.',
       })
+      assert.equal(body.operationStatus, 'idle')
       assert.deepEqual(body.workspace, expectedSafeBootstrap().workspace)
       assert.deepEqual(body.history, expectedSafeBootstrap().history)
       assert.equal(encoded.includes('/private/runtime'), false)
+    },
+  )
+})
+
+test('bootstrap does not probe Runtime readiness for an incompatible workspace', async () => {
+  let readinessReads = 0
+  const controller = {
+    snapshot: () => ({
+      state: 'incompatible',
+      readOnly: true,
+      supportedStoreFormatVersion: 2,
+      foundStoreFormatVersion: 3,
+      displayMessage: '지원되지 않는 SemesterWorkspace입니다.',
+    }),
+  } as unknown as SemesterWorkspaceController
+
+  await withProductRouter(
+    controller,
+    async () => {
+      readinessReads += 1
+      return { state: 'ready' }
+    },
+    async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/product/bootstrap`)
+      assert.equal(response.status, 200)
+      const bootstrap = decodeProductBootstrap(await response.json())
+
+      assert.equal(bootstrap.workspace?.state, 'incompatible')
+      assert.deepEqual(bootstrap.accountReadiness, {
+        state: 'unavailable',
+        displayMessage:
+          'Codex 상태를 확인할 수 없습니다. 자료 작업공간은 계속 사용할 수 있습니다.',
+      })
+      assert.equal(readinessReads, 0)
+    },
+  )
+})
+
+test('bootstrap reads coarse operation status before projecting settled-only state', async () => {
+  let statusRead = false
+  const source = productSnapshotController()
+  const controller = {
+    ...source,
+    snapshot: () => {
+      assert.equal(statusRead, true)
+      return source.snapshot()
+    },
+  } as SemesterWorkspaceController
+  await withProductRouter(
+    controller,
+    async () => ({ state: 'ready' }),
+    async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/product/bootstrap`)
+      const body = decodeProductBootstrap(await response.json())
+
+      assert.equal(body.operationStatus, 'active')
+      assert.deepEqual(body.history, expectedSafeBootstrap().history)
+    },
+    () => {
+      statusRead = true
+      return 'active'
     },
   )
 })
@@ -96,6 +161,7 @@ function productSnapshotController(): SemesterWorkspaceController {
           size: 12,
         },
       ],
+      recovery: null,
       storePath: '/private/workspace/.ay-ple/workspace-state.json',
     }),
     assignmentState: () => ({
@@ -227,6 +293,7 @@ function modelingRun(input: {
 function expectedSafeBootstrap() {
   return {
     accountReadiness: { state: 'ready' },
+    operationStatus: 'idle',
     workspace: {
       state: 'ready',
       confirmedRevision: 1,
@@ -240,6 +307,7 @@ function expectedSafeBootstrap() {
           size: 12,
         },
       ],
+      recovery: null,
     },
     history: {
       assignments: [
@@ -295,6 +363,8 @@ function expectedSafeBootstrap() {
             requestedSkillName: 'ay-ple-first-assignment',
           },
           sources: [{ materialId, digest: '3'.repeat(64) }],
+          retryOfRunId: null,
+          recovery: null,
           status: 'completed',
           validationOutcome: 'passed',
           createdAt: now,
@@ -312,6 +382,7 @@ async function withProductRouter(
     { readonly state: 'ready' } | { readonly state: 'not_ready' }
   >,
   run: (baseUrl: string) => Promise<void>,
+  readOperationStatus: () => 'active' | 'idle' = () => 'idle',
 ): Promise<void> {
   const app = express()
   app.use(
@@ -319,7 +390,9 @@ async function withProductRouter(
     createProductRouter(
       controller,
       undefined,
-      undefined,
+      {
+        operationStatus: readOperationStatus,
+      } as ProductOperationCoordinator,
       undefined,
       readAccountReadiness,
     ),

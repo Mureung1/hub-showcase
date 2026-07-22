@@ -12,10 +12,18 @@ import {
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { delimiter, dirname, join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
+import {
+  controlledPythonEnvironment,
+  delay,
+  terminateDetachedProcessGroup,
+  waitForJsonFile,
+  waitForProcessGroupExit,
+  withinDuration,
+} from './local-provider-test-support.js'
 import { verifyProductionBundle } from './production-bundle.js'
 import {
   startVerifiedCodexChatRuntime,
@@ -34,15 +42,6 @@ const LOCAL_PROVIDER = join(
   'scripts',
   'official_local_provider.py',
 )
-const OFFICIAL_SDK_TESTS = join(
-  PACKAGE_ROOT,
-  'python',
-  'openai-codex',
-  'sdk',
-  'python',
-  'tests',
-)
-
 test('runs the production bridge against exact Codex and the official local provider', async () => {
   const bundle = await verifyProductionBundle(ARTIFACT_ROOT)
   const root = await mkdtemp(join(tmpdir(), 'ay-ple-exact-local-provider-'))
@@ -267,7 +266,14 @@ async function startLocalProvider(
   })
   let ready: { readonly url: string }
   try {
-    ready = await waitForJson<{ readonly url: string }>(readyPath, child)
+    ready = await waitForJsonFile<{ readonly url: string }>({
+      child,
+      exitedMessage: 'Local provider exited before publishing readiness',
+      filePath: readyPath,
+      retryReadError: () => true,
+      timeoutMessage: 'Timed out waiting for local provider readiness',
+      timeoutMs: 10_000,
+    })
   } catch (error) {
     await terminateAndReap(child).catch(() => undefined)
     throw error
@@ -289,31 +295,6 @@ async function startLocalProvider(
       })()
       return closePromise
     },
-  }
-}
-
-function controlledPythonEnvironment(
-  bundle: VerifiedBundle,
-  root: string,
-): NodeJS.ProcessEnv {
-  return {
-    HOME: root,
-    LANG: 'en_US.UTF-8',
-    LC_ALL: 'en_US.UTF-8',
-    PATH: [
-      bundle.codexPathDirectory,
-      dirname(bundle.pythonExecutable),
-      '/usr/bin',
-      '/bin',
-      '/usr/sbin',
-      '/sbin',
-    ].join(delimiter),
-    PYTHONDONTWRITEBYTECODE: '1',
-    PYTHONNOUSERSITE: '1',
-    PYTHONPATH: [OFFICIAL_SDK_TESTS, bundle.sitePackages].join(delimiter),
-    PYTHONUNBUFFERED: '1',
-    PYTHONUTF8: '1',
-    TMPDIR: root,
   }
 }
 
@@ -427,20 +408,11 @@ async function collect<T>(values: AsyncIterable<T>): Promise<T[]> {
 }
 
 async function within<T>(value: Promise<T>): Promise<T> {
-  let timer: NodeJS.Timeout | undefined
-  try {
-    return await Promise.race([
-      value,
-      new Promise<never>((_resolve, reject) => {
-        timer = setTimeout(
-          () => reject(new Error('Exact local-provider operation timed out')),
-          30_000,
-        )
-      }),
-    ])
-  } finally {
-    if (timer) clearTimeout(timer)
-  }
+  return withinDuration(
+    value,
+    30_000,
+    'Exact local-provider operation timed out',
+  )
 }
 
 async function waitForProviderRequestCount(
@@ -460,24 +432,6 @@ async function waitForProviderRequestCount(
     await delay(10)
   }
   throw new Error(`Timed out waiting for provider request ${count}`)
-}
-
-async function waitForJson<T>(
-  path: string,
-  child: ChildProcessWithoutNullStreams,
-): Promise<T> {
-  const deadline = Date.now() + 10_000
-  while (Date.now() < deadline) {
-    try {
-      return JSON.parse(await readFile(path, 'utf8')) as T
-    } catch {
-      if (child.exitCode !== null || child.signalCode !== null) {
-        throw new Error('Local provider exited before publishing readiness')
-      }
-      await delay(10)
-    }
-  }
-  throw new Error('Timed out waiting for local provider readiness')
 }
 
 async function waitForChild(
@@ -549,73 +503,14 @@ async function ensureAuxiliaryGroupExit(
 async function terminateAndReap(
   child: ChildProcessWithoutNullStreams,
 ): Promise<void> {
-  const processGroupId = requirePid(child)
-  child.stdin.destroy()
-  const childClosed =
-    child.exitCode !== null || child.signalCode !== null
-      ? Promise.resolve()
-      : new Promise<void>((resolvePromise) => {
-          child.once('error', () => resolvePromise())
-          child.once('close', () => resolvePromise())
-        })
-  for (const signal of ['SIGTERM', 'SIGKILL'] as const) {
-    try {
-      process.kill(-processGroupId, signal)
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error
-    }
-    try {
-      await Promise.all([
-        withinDuration(childClosed, 2_000, 'Auxiliary child did not close'),
-        waitForProcessGroupExit(processGroupId, 2_000),
-      ])
-      return
-    } catch (error) {
-      if (signal === 'SIGKILL') throw error
-    }
-  }
-}
-
-async function withinDuration<T>(
-  value: Promise<T>,
-  milliseconds: number,
-  message: string,
-): Promise<T> {
-  let timer: NodeJS.Timeout | undefined
-  try {
-    return await Promise.race([
-      value,
-      new Promise<never>((_resolve, reject) => {
-        timer = setTimeout(() => reject(new Error(message)), milliseconds)
-      }),
-    ])
-  } finally {
-    if (timer) clearTimeout(timer)
-  }
+  await terminateDetachedProcessGroup({
+    child,
+    childCloseTimeoutMessage: 'Auxiliary child did not close',
+    processGroupId: requirePid(child),
+  })
 }
 
 function requirePid(child: ChildProcessWithoutNullStreams): number {
   if (child.pid === undefined) throw new Error('Runtime child has no pid')
   return child.pid
-}
-
-async function waitForProcessGroupExit(
-  processGroupId: number,
-  timeoutMs = 5_000,
-): Promise<void> {
-  const deadline = Date.now() + timeoutMs
-  while (Date.now() < deadline) {
-    try {
-      process.kill(-processGroupId, 0)
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ESRCH') return
-      throw error
-    }
-    await delay(10)
-  }
-  throw new Error(`Process group ${processGroupId} did not disappear`)
-}
-
-function delay(milliseconds: number): Promise<void> {
-  return new Promise((resolvePromise) => setTimeout(resolvePromise, milliseconds))
 }

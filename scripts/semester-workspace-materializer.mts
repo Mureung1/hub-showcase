@@ -24,18 +24,14 @@ const ownershipMarkerName = '.ay-ple-materialized-workspace.json'
 const ownershipMarkerKind = 'ay-ple-development-semester-workspace'
 const e2eRunMarkerName = '.ay-ple-owned-e2e-run.json'
 const e2eRunMarkerKind = 'ay-ple-e2e-semester-workspace-run'
-const managedEnvironmentRootKeys = [
-  'CODEX_CHAT_RUNTIME_HOME',
-  'CODEX_CHAT_CODEX_HOME',
-  'CODEX_CHAT_SQLITE_HOME',
-  'CODEX_CHAT_TEMP_DIR',
-] as const
 
 export const canonicalSemesterWorkspaceSeed = path.join(
   repositoryRoot,
   'apps/chat-shell/e2e/fixtures',
   workspaceLeaf,
 )
+export const canonicalSemesterWorkspaceSeedDigest =
+  'ffbe1d713e1f6cbaefd12b650e597a068dd88259dc675447633640b8a3b24f55'
 
 export type DevelopmentSemesterWorkspace = {
   readonly ownership: 'managed'
@@ -47,6 +43,7 @@ export type DevelopmentSemesterWorkspace = {
 }
 
 export type E2eSemesterWorkspace = {
+  readonly runId: string
   readonly runRoot: string
   readonly seedDigest: string
   readonly workspaceRoot: string
@@ -54,6 +51,7 @@ export type E2eSemesterWorkspace = {
 }
 
 export async function materializeDevelopmentSemesterWorkspace(options: {
+  readonly appDataRoot?: string
   readonly environment?: NodeJS.ProcessEnv
   readonly packageRoot?: string
   readonly seedRoot?: string
@@ -67,19 +65,23 @@ export async function materializeDevelopmentSemesterWorkspace(options: {
     'canonical seed',
   )
   const environment = options.environment ?? process.env
-  const configuredManagedRoots = await Promise.all(
-    managedEnvironmentRootKeys
-      .filter((key) => environment[key] !== undefined)
-      .map((key) => canonicalDirectory(environment[key] as string, key)),
-  )
+  const managedRoots = [packageRoot]
+  if (options.appDataRoot !== undefined) {
+    const appDataRoot = await canonicalDirectory(
+      options.appDataRoot,
+      'product app data root',
+    )
+    assertProductRootsDoNotOverlap(packageRoot, appDataRoot)
+    managedRoots.push(appDataRoot)
+  }
   const configuredWorkspace = environment.CODEX_CHAT_WORKSPACE
   if (configuredWorkspace !== undefined) {
     const workspaceRoot = await canonicalDirectory(
       configuredWorkspace,
       'CODEX_CHAT_WORKSPACE',
     )
-    for (const managedRoot of [packageRoot, ...configuredManagedRoots]) {
-      assertRootsDoNotOverlap(managedRoot, workspaceRoot)
+    for (const managedRoot of managedRoots) {
+      assertProductRootsDoNotOverlap(managedRoot, workspaceRoot)
     }
     return { ownership: 'caller', workspaceRoot }
   }
@@ -88,8 +90,8 @@ export async function materializeDevelopmentSemesterWorkspace(options: {
     managedParentLeaf,
     workspaceLeaf,
   )
-  for (const managedRoot of [packageRoot, ...configuredManagedRoots]) {
-    assertRootsDoNotOverlap(managedRoot, workspaceRootCandidate)
+  for (const managedRoot of managedRoots) {
+    assertProductRootsDoNotOverlap(managedRoot, workspaceRootCandidate)
   }
   const managedParentRoot = await ensureManagedParent(packageRoot)
   const workspaceRoot = path.join(managedParentRoot, workspaceLeaf)
@@ -107,15 +109,15 @@ export async function materializeDevelopmentSemesterWorkspace(options: {
   }
 }
 
-function assertRootsDoNotOverlap(
-  packageRoot: string,
-  workspaceRoot: string,
+export function assertProductRootsDoNotOverlap(
+  firstRoot: string,
+  secondRoot: string,
 ): void {
   if (
-    isSameOrAncestor(packageRoot, workspaceRoot) ||
-    isSameOrAncestor(workspaceRoot, packageRoot)
+    isSameOrAncestor(firstRoot, secondRoot) ||
+    isSameOrAncestor(secondRoot, firstRoot)
   ) {
-    throw new Error('SemesterWorkspace cannot overlap a managed root')
+    throw new Error('Product roots cannot overlap')
   }
 }
 
@@ -189,6 +191,7 @@ export async function materializeE2eSemesterWorkspace(options: {
 
   let cleaned = false
   return {
+    runId,
     runRoot,
     seedDigest,
     workspaceRoot: await realpath(workspaceRoot),

@@ -2,10 +2,7 @@ import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
 import test from 'node:test'
 
-import {
-  type NdjsonWritable,
-  writeNdjsonLine,
-} from './codex-chat.js'
+import { type NdjsonWritable, writeNdjsonLine } from './http-ndjson.js'
 
 class BackpressuredWritable extends EventEmitter implements NdjsonWritable {
   destroyed = false
@@ -35,7 +32,7 @@ class BackpressuredWritable extends EventEmitter implements NdjsonWritable {
   }
 }
 
-test('Codex Chat NDJSON writer waits for drain and serializes acceptance frames', async () => {
+test('NDJSON writer waits for drain and serializes acceptance frames', async () => {
   const response = new BackpressuredWritable()
   const writePromise = writeNdjsonLine(
     response,
@@ -68,7 +65,7 @@ test('Codex Chat NDJSON writer waits for drain and serializes acceptance frames'
   assert.equal(response.listenerCount('close'), 0)
 })
 
-test('Codex Chat NDJSON writer destroys a stalled response at its deadline', async () => {
+test('NDJSON writer destroys a stalled response at its deadline', async () => {
   const response = new BackpressuredWritable()
 
   assert.equal(
@@ -94,7 +91,7 @@ test('Codex Chat NDJSON writer destroys a stalled response at its deadline', asy
   ])
 })
 
-test('Codex Chat NDJSON writer cancels its deadline when close wins the race', async () => {
+test('NDJSON writer cancels its deadline when close wins the race', async () => {
   const response = new BackpressuredWritable()
   const writePromise = writeNdjsonLine(
     response,
@@ -116,7 +113,7 @@ test('Codex Chat NDJSON writer cancels its deadline when close wins the race', a
   assert.equal(response.listenerCount('close'), 0)
 })
 
-test('Codex Chat NDJSON writer settles once when timeout-triggered destroy emits close', async () => {
+test('NDJSON writer settles once when timeout-triggered destroy emits close', async () => {
   const response = new BackpressuredWritable()
   let settlements = 0
   const writePromise = writeNdjsonLine(
@@ -139,7 +136,7 @@ test('Codex Chat NDJSON writer settles once when timeout-triggered destroy emits
   assert.equal(response.cleanupCalls, 2)
 })
 
-test('Codex Chat NDJSON writer returns false when the socket write throws', async () => {
+test('NDJSON writer returns false when the socket write throws', async () => {
   const response = new BackpressuredWritable()
   response.write = () => {
     throw new Error('socket write failed')

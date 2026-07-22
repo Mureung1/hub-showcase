@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from enum import Enum
@@ -88,7 +89,7 @@ class TurnKind(str, Enum):
     PRODUCT = "product"
 
 
-class DefaultModelResolutionError(RuntimeError):
+class EffectiveModelResolutionError(RuntimeError):
     pass
 
 
@@ -125,6 +126,12 @@ def _error_code(error: Any) -> str:
             if isinstance(key, str) and key:
                 return key
     return "turn_error"
+
+
+def _skill_extra_roots(skill_path: str | None) -> tuple[str, ...]:
+    if skill_path is None:
+        return ()
+    return (os.path.dirname(skill_path),)
 
 
 def project_notification(
@@ -296,6 +303,7 @@ class BridgeWorker:
         self._operations: dict[asyncio.Task[None], str] = {}
         self._user_input_collector: asyncio.Task[None] | None = None
         self._thread_start_lock = asyncio.Lock()
+        self._turn_start_lock = asyncio.Lock()
         self._request_leases = RequestLeaseTable(
             total_limit=pending_operation_limit,
             control_reserve=control_operation_reserve,
@@ -474,7 +482,7 @@ class BridgeWorker:
     def _sdk_failure(self, request_id: str, exc: BaseException) -> None:
         if getattr(exc, "code", None) == "buffer_overflow":
             self.trigger_fatal("buffer_overflow")
-        elif isinstance(exc, DefaultModelResolutionError):
+        elif isinstance(exc, EffectiveModelResolutionError):
             self._operation_error(request_id, "sdk_request_failed")
         elif isinstance(exc, TransportClosedError):
             self.trigger_fatal("sdk_transport_failed")
@@ -526,6 +534,7 @@ class BridgeWorker:
                                     "X-AY-PLE-MCP-Token": command.private_mcp.token,
                                 },
                                 "enabled_tools": ["propose_state_patch"],
+                                "default_tools_approval_mode": "approve",
                                 "required": True,
                             }
                         }
@@ -626,16 +635,21 @@ class BridgeWorker:
         return turn if accepted else None
 
     async def _start_turn(self, command: StartTurnCommand) -> None:
-        turn = await self._accept_turn(
-            command,
-            kind=TurnKind.CHAT,
-            start=lambda record: record.handle.turn(
+        async def start_chat_turn(record: ThreadRecord) -> AsyncTurnHandle:
+            await self._codex.set_skill_extra_roots(())
+            return await record.handle.turn(
                 command.text,
                 cwd=record.cwd,
                 approval_mode=ApprovalMode.deny_all,
                 sandbox=Sandbox.read_only,
-            ),
-        )
+            )
+
+        async with self._turn_start_lock:
+            turn = await self._accept_turn(
+                command,
+                kind=TurnKind.CHAT,
+                start=start_chat_turn,
+            )
         if turn is not None:
             turn.stream_task = asyncio.create_task(self._consume_turn(turn))
 
@@ -648,11 +662,12 @@ class BridgeWorker:
             )
 
         async def start_product_turn(record: ThreadRecord) -> AsyncTurnHandle:
-            models = await self._codex.models(include_hidden=True)
-            defaults = [model for model in models.data if model.is_default]
-            if len(defaults) != 1:
-                raise DefaultModelResolutionError
-            default = defaults[0]
+            await self._codex.set_skill_extra_roots(
+                _skill_extra_roots(command.skill_path)
+            )
+            initial_model = record.handle.initial_model
+            if not initial_model:
+                raise EffectiveModelResolutionError
             return await record.handle.turn(
                 turn_input,
                 cwd=record.cwd,
@@ -662,17 +677,18 @@ class BridgeWorker:
                     mode=ModeKind.plan,
                     settings=CollaborationModeSettings(
                         developer_instructions=None,
-                        model=default.model,
-                        reasoning_effort=default.default_reasoning_effort,
+                        model=initial_model,
+                        reasoning_effort=record.handle.initial_reasoning_effort,
                     ),
                 ),
             )
 
-        turn = await self._accept_turn(
-            command,
-            kind=TurnKind.PRODUCT,
-            start=start_product_turn,
-        )
+        async with self._turn_start_lock:
+            turn = await self._accept_turn(
+                command,
+                kind=TurnKind.PRODUCT,
+                start=start_product_turn,
+            )
         if turn is None:
             return
         if command.skill_name is not None:
