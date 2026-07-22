@@ -190,20 +190,27 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
     halfLifeHours,
     minSleepHours,
     fixedDoses,
+    // #3 — 한도를 채점에 반영해야 "많이 마셔라"와 "한도 초과 경고"가 동시에 나오지 않는다
+    dailyLimitMg,
   });
 
   // 기획서.md 6.3 "추천/조정된 스케줄의 총 카페인이 개인별 한도를 넘으면 경고 문구를 표시한다"
-  // — 날짜별로 그날 이미 마신 것(0일차만 해당) + 그날 추천된 양을 합쳐서 한도와 비교한다.
-  const totalTodayMg = todayCaffeineIntakes.reduce((sum, intake) => sum + intake.mg, 0);
+  // — 실제 날짜(연속 좌표를 24로 나눈 몫, 0 = 오늘)로 묶어서 그날 마신 전부를 합산한다.
+  // 예전에는 밤 번호로 묶었는데, 카페인은 그 밤의 "다음날 아침"에 마시므로 오늘 이미 마신
+  // 양이 내일 추천분과 합산되어 없는 초과를 경고했다(2026-07-22 수정).
+  const dailyTotals = new Map<number, number>();
+  for (const dose of [...fixedDoses, ...best.doses]) {
+    const day = Math.floor(dose.time / 24);
+    dailyTotals.set(day, (dailyTotals.get(day) ?? 0) + dose.amountMg);
+  }
+
   const warnings: string[] = [];
-  nights.forEach((_, i) => {
-    const consumedTodayMg = i === 0 ? totalTodayMg : 0;
-    const recommendedMg = best.doses[i]?.amountMg ?? 0;
-    const totalMg = consumedTodayMg + recommendedMg;
+  for (const [day, totalMg] of [...dailyTotals.entries()].sort((a, b) => a[0] - b[0])) {
     if (totalMg > dailyLimitMg) {
-      warnings.push(`${i + 1}일차 카페인 섭취량(${totalMg}mg)이 안전 한도(${dailyLimitMg}mg)를 초과합니다.`);
+      const 라벨 = day === 0 ? '오늘' : `${day}일 뒤`;
+      warnings.push(`${라벨} 카페인 섭취량(${totalMg}mg)이 안전 한도(${dailyLimitMg}mg)를 초과합니다.`);
     }
-  });
+  }
 
   const timelinePoints = buildAlertnessTimeline({
     habitualBedTime: timeline.habitualBedTime,
