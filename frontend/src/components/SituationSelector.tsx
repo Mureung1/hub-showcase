@@ -9,6 +9,7 @@ type SituationSelectorProps = {
   selectedSituation: RecommendationSituation | null
   onClose: () => void
   onSelect: (situation: RecommendationSituation) => void
+  onSave: () => void
 }
 
 function CloseIcon() {
@@ -23,6 +24,7 @@ function SituationSelector({
   selectedSituation,
   onClose,
   onSelect,
+  onSave,
 }: SituationSelectorProps) {
   return (
     <section className="situation-selector" aria-labelledby="situation-selector-title">
@@ -62,6 +64,17 @@ function SituationSelector({
             </button>
           )
         })}
+      </div>
+
+      <div className="situation-selector__footer">
+        <button
+          className="situation-selector__save"
+          type="button"
+          disabled={!selectedSituation}
+          onClick={onSave}
+        >
+          저장
+        </button>
       </div>
     </section>
   )

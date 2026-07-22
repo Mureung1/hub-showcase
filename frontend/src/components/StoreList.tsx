@@ -11,6 +11,15 @@ type StoreListProps = {
   onLoadMore: () => void
   onStoreSelect: (storeId: string) => void
   onViewDetail: (store: Store) => void
+  onClose: () => void
+}
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="m5 5 14 14M19 5 5 19" />
+    </svg>
+  )
 }
 
 function formatDistance(distance: number) {
@@ -27,6 +36,7 @@ function StoreList({
   onLoadMore,
   onStoreSelect,
   onViewDetail,
+  onClose,
 }: StoreListProps) {
   const loadMoreRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef(new Map<string, HTMLElement>())
@@ -58,7 +68,17 @@ function StoreList({
     <div className="store-list">
       <div className="store-list__header">
         <h2>검색 결과</h2>
-        <span>{stores.length}개</span>
+        <div className="store-list__header-actions">
+          <span>{stores.length}개</span>
+          <button
+            className="store-list__close"
+            type="button"
+            aria-label="검색 결과 닫기"
+            onClick={onClose}
+          >
+            <CloseIcon />
+          </button>
+        </div>
       </div>
 
       {stores.length === 0 && !isLoading && !error && (

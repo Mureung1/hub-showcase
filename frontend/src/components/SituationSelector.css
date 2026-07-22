@@ -14,5 +14,9 @@
 .situation-selector__card strong { font-size: 17px; }
 .situation-selector__card small { color: #81796f; font-size: 12px; line-height: 1.5; }
 .situation-selector__selected { position: absolute; top: 14px; right: 14px; color: #77650d; font-size: 11px; font-weight: 800; }
+.situation-selector__footer { display: flex; justify-content: center; margin-top: 28px; }
+.situation-selector__save { min-width: 160px; min-height: 48px; padding: 0 28px; border: 1px solid #c47f65; border-radius: 999px; background: #c47f65; color: #fff; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; transition: border-color 160ms ease, background-color 160ms ease; }
+.situation-selector__save:hover:not(:disabled) { border-color: #b56f57; background: #b56f57; }
+.situation-selector__save:disabled { border-color: #eadfd8; background: #f1e8e2; color: #b9aaa2; cursor: not-allowed; }
 .situation-selector button:focus-visible { outline: 3px solid rgba(255, 216, 77, .38); outline-offset: 2px; }
 @media (max-width: 700px) { .situation-selector { padding: 62px 18px 26px; border-radius: 18px; } .situation-selector__cards { grid-template-columns: 1fr; } .situation-selector__card { min-height: 130px; } }

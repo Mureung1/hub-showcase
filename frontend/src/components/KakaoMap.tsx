@@ -9,23 +9,31 @@ const CHUNGBUK_NATIONAL_UNIVERSITY = {
 }
 
 type KakaoMapProps = {
+  center?: { latitude: number; longitude: number }
   stores?: Store[]
   selectedStoreId?: string | null
   onStoreSelect?: (storeId: string) => void
 }
 
 function KakaoMap({
+  center = CHUNGBUK_NATIONAL_UNIVERSITY,
   stores = [],
   selectedStoreId = null,
   onStoreSelect,
 }: KakaoMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<KakaoMapInstance | null>(null)
+  const centerRef = useRef(center)
   const markersRef = useRef(new Map<string, KakaoMarker>())
   const infoWindowRef = useRef<ReturnType<typeof createInfoWindow> | null>(null)
+  const [isMapReady, setIsMapReady] = useState(false)
   const [error, setError] = useState<string | null>(() =>
     hasKakaoMapKey ? null : 'Kakao Maps 키가 설정되지 않았습니다.',
   )
+
+  useEffect(() => {
+    centerRef.current = center
+  }, [center])
 
   useEffect(() => {
     const container = mapContainerRef.current
@@ -38,15 +46,16 @@ function KakaoMap({
       .then(() => {
         if (!isActive || !mapContainerRef.current) return
 
-        const center = new window.kakao.maps.LatLng(
-          CHUNGBUK_NATIONAL_UNIVERSITY.latitude,
-          CHUNGBUK_NATIONAL_UNIVERSITY.longitude,
+        const initialCenter = new window.kakao.maps.LatLng(
+          centerRef.current.latitude,
+          centerRef.current.longitude,
         )
 
         mapRef.current = new window.kakao.maps.Map(mapContainerRef.current, {
-          center,
+          center: initialCenter,
           level: 4,
         })
+        setIsMapReady(true)
       })
       .catch((reason: unknown) => {
         if (!isActive) return
@@ -94,7 +103,14 @@ function KakaoMap({
     })
 
     map.setBounds(bounds)
-  }, [onStoreSelect, stores])
+  }, [isMapReady, onStoreSelect, stores])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !window.kakao?.maps) return
+
+    map.panTo(new window.kakao.maps.LatLng(center.latitude, center.longitude))
+  }, [center.latitude, center.longitude, isMapReady])
 
   useEffect(() => {
     const map = mapRef.current
@@ -118,7 +134,7 @@ function KakaoMap({
       `<div style="padding:8px 12px;white-space:nowrap;font-size:13px;font-weight:700;color:#28251f">${escapeHtml(store.name)}</div>`,
     )
     infoWindowRef.current.open(map, marker)
-  }, [selectedStoreId, stores])
+  }, [isMapReady, selectedStoreId, stores])
 
   return (
     <div className="kakao-map">

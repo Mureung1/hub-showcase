@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import KakaoMap from '../components/KakaoMap'
-import LocationControls from '../components/LocationControls'
 import SituationSelector from '../components/SituationSelector'
-import SearchBar from '../components/SearchBar'
+import SearchBar, { type SearchSuggestion } from '../components/SearchBar'
 import Sidebar from '../components/Sidebar'
 import StoreList from '../components/StoreList'
 import { getReviewSummaries } from '../api/reviews'
@@ -32,9 +31,11 @@ function MainPage() {
   const [activeView, setActiveView] = useState<'map' | 'situation'>('map')
   const [selectedSituation, setSelectedSituation] =
     useState<RecommendationSituation | null>(null)
+  const [draftSituation, setDraftSituation] =
+    useState<RecommendationSituation | null>(null)
   const [stores, setStores] = useState<Store[]>([])
   const [searchCenter, setSearchCenter] = useState(SEARCH_CENTER)
-  const [locationLabel, setLocationLabel] = useState('청주대학교')
+  const [locationLabel, setLocationLabel] = useState('충북대학교')
   const [radiusKm, setRadiusKm] = useState(3)
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null)
   const [hasSearched, setHasSearched] = useState(false)
@@ -98,9 +99,35 @@ function MainPage() {
     }
   }, [storeIdsKey])
 
-  const handleSituationSelect = (situation: RecommendationSituation) => {
-    setSelectedSituation(situation)
+  const handleSituationButtonClick = () => {
+    if (selectedSituation) {
+      setSelectedSituation(null)
+      setDraftSituation(null)
+      setActiveView('map')
+      return
+    }
+
+    setDraftSituation(null)
+    setActiveView('situation')
+  }
+
+  const handleSituationSave = () => {
+    if (!draftSituation) return
+    setSelectedSituation(draftSituation)
     setActiveView('map')
+  }
+
+  const handleSearchResultsClose = () => {
+    requestIdRef.current += 1
+    searchSessionRef.current = null
+    isSearchingRef.current = false
+    setStores([])
+    setReviewSummaries({})
+    setSelectedStoreId(null)
+    setHasSearched(false)
+    setHasMoreResults(false)
+    setIsSearching(false)
+    setSearchError(null)
   }
 
   const loadNextPage = useCallback(async () => {
@@ -159,11 +186,14 @@ function MainPage() {
     }
   }, [])
 
-  const startSearch = (keyword: string) => {
+  const startSearch = (
+    keyword: string,
+    center: { latitude: number; longitude: number } = searchCenter,
+  ) => {
     requestIdRef.current += 1
     searchSessionRef.current = {
       keyword,
-      center: searchCenter,
+      center,
       radiusMeters: radiusKm * 1000,
       nextPage: { FD6: 1, CE7: 1 },
       hasMore: { FD6: true, CE7: true },
@@ -180,14 +210,20 @@ function MainPage() {
     queueMicrotask(() => void loadNextPage())
   }
 
-  const handleLocationSearch = async (query: string) => {
+  const requestSearchSuggestions = useCallback(async (query: string) => {
     await loadKakaoMaps()
-    const place = await findLocation(query)
-    setSearchCenter({
-      latitude: Number(place.y),
-      longitude: Number(place.x),
-    })
-    setLocationLabel(place.place_name || place.road_address_name || place.address_name)
+    const results = await findLocations(query)
+    return results.map(toSearchSuggestion)
+  }, [])
+
+  const handleLocationSelect = (suggestion: SearchSuggestion) => {
+    const center = {
+      latitude: suggestion.latitude,
+      longitude: suggestion.longitude,
+    }
+    setSearchCenter(center)
+    setLocationLabel(suggestion.name)
+    startSearch('', center)
   }
 
   const handleCurrentLocation = () =>
@@ -198,8 +234,14 @@ function MainPage() {
       }
       navigator.geolocation.getCurrentPosition(
         ({ coords }) => {
-          setSearchCenter({ latitude: coords.latitude, longitude: coords.longitude })
+          const center = {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+          }
+          setSearchCenter(center)
           setLocationLabel('내 현재 위치')
+          setActiveView('map')
+          startSearch('', center)
           resolve()
         },
         () => reject(new Error('위치 권한을 허용하거나 직접 위치를 검색해 주세요.')),
@@ -217,24 +259,24 @@ function MainPage() {
       <main className="main-page__content">
         <div className="main-page__primary">
           <header className="main-page__search">
-            <LocationControls
+            <SearchBar
               locationLabel={locationLabel}
               radiusKm={radiusKm}
               isSearching={isSearching}
-              onLocationSearch={handleLocationSearch}
+              onSearch={startSearch}
+              onRequestSuggestions={requestSearchSuggestions}
+              onLocationSelect={handleLocationSelect}
               onCurrentLocation={handleCurrentLocation}
               onRadiusChange={setRadiusKm}
-              onNearbySearch={() => startSearch('')}
-            />
-            <SearchBar
-              onSearch={startSearch}
-              onSituationClick={() => setActiveView('situation')}
+              onSituationClick={handleSituationButtonClick}
+              isSituationActive={selectedSituation !== null}
             />
           </header>
 
           {activeView === 'map' ? (
             <section className="main-page__map" aria-label="지도 영역">
               <KakaoMap
+                center={searchCenter}
                 stores={storesWithReviews}
                 selectedStoreId={selectedStoreId}
                 onStoreSelect={setSelectedStoreId}
@@ -243,9 +285,13 @@ function MainPage() {
           ) : (
             <div className="main-page__situation">
               <SituationSelector
-                selectedSituation={selectedSituation}
-                onClose={() => setActiveView('map')}
-                onSelect={handleSituationSelect}
+                selectedSituation={draftSituation}
+                onClose={() => {
+                  setDraftSituation(null)
+                  setActiveView('map')
+                }}
+                onSelect={setDraftSituation}
+                onSave={handleSituationSave}
               />
             </div>
           )}
@@ -264,6 +310,7 @@ function MainPage() {
               error={searchError}
               onLoadMore={() => void loadNextPage()}
               onStoreSelect={setSelectedStoreId}
+              onClose={handleSearchResultsClose}
               onViewDetail={(store) =>
                 navigate(`/stores/${store.id}`, { state: { store } })
               }
@@ -334,21 +381,34 @@ function searchCategoryPage(
   })
 }
 
-function findLocation(query: string) {
-  return new Promise<KakaoPlaceResult>((resolve, reject) => {
+function findLocations(query: string) {
+  return new Promise<KakaoPlaceResult[]>((resolve, reject) => {
     const places = new window.kakao.maps.services.Places()
     places.keywordSearch(
       query,
       (results, status) => {
-        if (status === window.kakao.maps.services.Status.OK && results[0]) {
-          resolve(results[0])
+        if (status === window.kakao.maps.services.Status.OK && results.length > 0) {
+          resolve(results.slice(0, 6))
           return
         }
         reject(new Error('입력한 위치를 찾지 못했습니다.'))
       },
-      { size: 1 },
+      { size: 6 },
     )
   })
+}
+
+function toSearchSuggestion(result: KakaoPlaceResult): SearchSuggestion {
+  const isStore = result.category_group_code === 'FD6' || result.category_group_code === 'CE7'
+  return {
+    id: result.id,
+    name: result.place_name,
+    address: result.road_address_name || result.address_name,
+    category: result.category_name,
+    kind: isStore ? 'store' : 'location',
+    latitude: Number(result.y),
+    longitude: Number(result.x),
+  }
 }
 
 function toStore(
