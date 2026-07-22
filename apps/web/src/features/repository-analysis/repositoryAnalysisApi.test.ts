@@ -80,7 +80,7 @@ test("requestRepositoryAnalysis posts the Repository URL and returns the result"
   };
 
   const response = await requestRepositoryAnalysis(
-    { repositoryUrl: "https://github.com/SubJeeLee/hub" },
+    { repositoryUrl: "https://github.com/SubJeeLee/hub", githubLogin: "SubJeeLee" },
     fetchImpl,
     "http://localhost:3000",
   );
@@ -88,9 +88,12 @@ test("requestRepositoryAnalysis posts the Repository URL and returns the result"
   assert.deepEqual(response, result);
   assert.equal(fetchCalls[0].input, "http://localhost:3000/api/v1/repository-analyses");
   assert.deepEqual(fetchCalls[0].init, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ repositoryUrl: "https://github.com/SubJeeLee/hub" }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        repositoryUrl: "https://github.com/SubJeeLee/hub",
+        githubLogin: "SubJeeLee",
+      }),
   });
 });
 

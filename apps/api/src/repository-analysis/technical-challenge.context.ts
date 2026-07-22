@@ -31,10 +31,26 @@ const NORMAL_PATHS = [
 export function buildTechnicalChallengeContext(
   source: GitHubRepositoryAnalysisSource,
   analysis: RepositoryAnalysisDetails,
+  targetGithubLogin: string | null = null,
 ): TechnicalChallengeContext {
+  const normalizedTargetLogin = targetGithubLogin?.trim().toLowerCase() || null;
+  const targetCommits = normalizedTargetLogin
+    ? source.commits.filter((commit) => matchesLogin(commit.authorLogin, normalizedTargetLogin))
+    : source.commits;
+  const targetPullRequests = normalizedTargetLogin
+    ? (source.pullRequests ?? []).filter((pullRequest) =>
+        matchesLogin(pullRequest.authorLogin, normalizedTargetLogin),
+      )
+    : source.pullRequests ?? [];
+  const targetIssues = normalizedTargetLogin
+    ? (source.issues ?? []).filter((issue) => matchesLogin(issue.authorLogin, normalizedTargetLogin))
+    : source.issues ?? [];
+  const changedPaths = uniquePaths(targetCommits.flatMap((commit) => commit.changedFiles ?? []));
+
   const candidates = (source.files ?? [])
     .filter((file) => file.type === "blob" && file.contentAvailable !== false && file.content)
     .filter((file) => isTextFile(file.path))
+    .filter((file) => !normalizedTargetLogin || changedPaths.includes(file.path))
     .map((file) => ({
       path: file.path,
       content: file.content ?? "",
@@ -75,17 +91,38 @@ export function buildTechnicalChallengeContext(
   }
 
   const totalCharacters = files.reduce((total, file) => total + file.content.length, 0);
+  const evidence = normalizedTargetLogin
+    ? analysis.evidence.filter((item) =>
+        matchesLogin(item.contributorLogin, normalizedTargetLogin) ||
+        (item.filePath !== null && changedPaths.includes(item.filePath)),
+      )
+    : analysis.evidence;
 
   return {
     repository: source.repository,
-    analysis,
+    targetGithubLogin,
+    targetActivity: {
+      commits: targetCommits,
+      pullRequests: targetPullRequests,
+      issues: targetIssues,
+      changedPaths,
+    },
+    analysis: normalizedTargetLogin ? { ...analysis, evidence } : analysis,
     files,
-    evidence: analysis.evidence,
+    evidence,
     estimatedTokens: Math.ceil(
       totalCharacters / TECHNICAL_CHALLENGE_CONTEXT_LIMITS.charactersPerEstimatedToken,
     ),
     truncated,
   };
+}
+
+function matchesLogin(login: string | null, targetLogin: string): boolean {
+  return login?.trim().toLowerCase() === targetLogin;
+}
+
+function uniquePaths(paths: string[]): string[] {
+  return [...new Set(paths)];
 }
 
 function getPriority(path: string): RepositoryContextFile["priority"] {

@@ -57,6 +57,13 @@ const context = {
     lastPushedAt: "2026-07-20T00:00:00.000Z",
     languages: { TypeScript: 100 },
   },
+  targetGithubLogin: null,
+  targetActivity: {
+    commits: [],
+    pullRequests: [],
+    issues: [],
+    changedPaths: [],
+  },
   analysis: {} as RepositoryAnalysisDetails,
   files: [
     {

@@ -8,6 +8,8 @@ const SYSTEM_PROMPT = [
   "제공된 Repository와 근거에 없는 사실을 만들지 마세요.",
   "commit 수나 변경 줄 수만으로 사용자의 실제 기여도, 난이도, 역할을 판단하지 마세요.",
   "사용자의 역할, 의도, 문제 해결 여부는 확정하지 말고 근거가 부족하면 사용자 확인이 필요하다고 표시하세요.",
+  "targetGithubLogin이 있으면 해당 사용자의 활동과 해당 활동에서 변경된 파일만 기술적 도전 후보의 근거로 사용하세요.",
+  "targetGithubLogin이 있는 경우 다른 contributor의 commit, PR, issue를 사용자의 경험으로 해석하지 마세요.",
   "각 후보에는 반드시 하나 이상의 evidence를 연결하세요.",
   "필드 이름을 바꾸거나 축약하지 마세요. 아래 계약에 없는 필드는 추가하지 마세요.",
   "근거가 부족한 필드는 추측으로 채우지 말고 null을 사용하세요.",
@@ -26,6 +28,8 @@ export function createTechnicalChallengePrompt(
     userPrompt: JSON.stringify(
       {
         task: "근거 기반 기술적 도전 후보를 1~5개 제안하세요.",
+        targetGithubLogin: context.targetGithubLogin,
+        targetActivity: context.targetActivity,
         repository: context.repository,
         structuredAnalysis: context.analysis,
         files: context.files,
