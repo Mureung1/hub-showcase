@@ -193,12 +193,6 @@ export const listings = [
   { id: "int-30", categoryId: "internship", title: "국회 의정지원 인턴십", desc: "서류·면접 전형", dDay: 45, interest: "공공/행정" },
 ];
 
-export const univOptions = [
-  { value: "all", label: "전체" },
-  { value: "national", label: "국립대" },
-  { value: "private", label: "사립대" },
-];
-
 export const regionOptions = [
   { value: "all", label: "전체" },
   { value: "seoul", label: "서울" },
@@ -228,7 +222,7 @@ export const gradeOptions = [
   { value: "4", label: "4학년" },
 ];
 
-// 관심분야는 국립/사립·지역·학년과 달리 카테고리마다 항목이 달라서 카테고리 목록 화면에서만 쓴다.
+// 관심분야는 지역·학년과 달리 카테고리마다 항목이 달라서 카테고리 목록 화면에서만 쓴다.
 // (기획서 6번 원칙은 "관심분야는 필터가 아닌 우선 정렬"이었지만, 2026-07-15 사용자 요청으로
 // 공모전·지자체 혜택·대외활동·인턴십 4개 카테고리에 한해 실제 필터로 반영하기로 결정을 뒤집었다.
 // 장학금은 관심분야보다 자격조건(소득분위·학년 등) 중심이라 제외했다.)

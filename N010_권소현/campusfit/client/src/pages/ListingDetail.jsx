@@ -33,8 +33,17 @@ export default function ListingDetail() {
         dDay={listing.dDay}
       />
       <p className="body-txt">
-        {listing.desc} 조건에 해당하는 분들을 위한 {category.label} 정보예요. 지원 자격을 다시
-        확인하고, 마감 전에 공식 페이지에서 신청을 완료해주세요.
+        {listing.eligibleRegions || listing.eligibleGrades ? (
+          <>
+            {listing.desc} 조건에 해당하는 분들을 위한 {category.label} 정보예요. 지원 자격을 다시
+            확인하고, 마감 전에 공식 페이지에서 신청을 완료해주세요.
+          </>
+        ) : (
+          <>
+            {category.label} 정보예요. 아래 내용을 보고 지원 자격에 해당하는지 직접 확인한 뒤,
+            마감 전에 공식 페이지에서 신청을 완료해주세요.
+          </>
+        )}
       </p>
       <div className="info-box">
         <p className="info-title">한눈에 정리</p>
@@ -57,9 +66,15 @@ export default function ListingDetail() {
           <span className="v">공식 페이지에서 온라인 접수</span>
         </div>
       </div>
-      <a className="btn-outline" href="#" onClick={(e) => e.preventDefault()}>
-        공식 페이지에서 지원하기 ↗
-      </a>
+      {listing.sourceUrl ? (
+        <a className="btn-outline" href={listing.sourceUrl} target="_blank" rel="noopener noreferrer">
+          공식 페이지에서 지원하기 ↗
+        </a>
+      ) : (
+        <a className="btn-outline" href="#" onClick={(e) => e.preventDefault()}>
+          공식 페이지에서 지원하기 ↗
+        </a>
+      )}
       {listing.teamBoardCount > 0 && (
         <Link className="btn-team" to={`/board/listing/${listing.id}`}>
           팀원 모집하기

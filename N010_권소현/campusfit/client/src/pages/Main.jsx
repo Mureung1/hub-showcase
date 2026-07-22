@@ -31,7 +31,7 @@ export default function Main() {
           </h1>
           <p>
             장학금·공모전·지자체 혜택·대외활동·인턴십. 학과 네트워크가 없어도 괜찮아요 —
-            국립/사립과 지역만 알려주시면, 지원 자격이 되는 것만 걸러서 보여드려요.
+            지역과 학년만 알려주시면, 지원 자격이 되는 것만 걸러서 보여드려요.
           </p>
           <button className="btn-primary" onClick={openFilter}>
             필터 설정하고 보기

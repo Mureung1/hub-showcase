@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { univOptions, regionOptions, gradeOptions } from "../data/mockListings";
+import { regionOptions, gradeOptions } from "../data/mockListings";
 import { api } from "../api/client";
 
 const BOOKMARKS_KEY = "campusfit-bookmarks";
@@ -16,7 +16,6 @@ function loadBookmarks() {
 
 export default function Layout() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [univ, setUniv] = useState("all");
   const [region, setRegion] = useState("all");
   const [grade, setGrade] = useState("all");
   const [categories, setCategories] = useState([]);
@@ -59,7 +58,6 @@ export default function Layout() {
       prev.includes(listingId) ? prev.filter((id) => id !== listingId) : [...prev, listingId]
     );
 
-  const univLabel = univOptions.find((o) => o.value === univ).label;
   const regionLabel = regionOptions.find((o) => o.value === region).label;
   const gradeLabel = gradeOptions.find((o) => o.value === grade).label;
 
@@ -90,7 +88,7 @@ export default function Layout() {
           </nav>
           <div className="filter-wrap">
             <button className="filter-btn" onClick={() => setIsFilterOpen(!isFilterOpen)}>
-              {univLabel} · {regionLabel} · {gradeLabel}
+              {regionLabel} · {gradeLabel}
               <span className="chev">▾</span>
             </button>
             {isFilterOpen && (
@@ -101,18 +99,6 @@ export default function Layout() {
                   aria-label="필터 닫기"
                 />
                 <div className="filter-dd">
-                  <p className="filter-label">설립 유형</p>
-                  <div className="chip-row">
-                    {univOptions.map((o) => (
-                      <button
-                        key={o.value}
-                        className={`chip ${univ === o.value ? "active" : ""}`}
-                        onClick={() => setUniv(o.value)}
-                      >
-                        {o.label}
-                      </button>
-                    ))}
-                  </div>
                   <p className="filter-label">
                     지역 <span className="filter-note">— 재학 학교 소재지 기준</span>
                   </p>
@@ -162,7 +148,6 @@ export default function Layout() {
       ) : (
         <Outlet
           context={{
-            univLabel,
             regionLabel,
             gradeLabel,
             region,

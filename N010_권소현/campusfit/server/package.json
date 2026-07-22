@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "db:seed": "node src/db/seed.js"
+    "db:seed": "node src/db/seed.js",
+    "db:sync-kosaf": "node src/db/sync-kosaf.js"
   },
   "keywords": [],
   "author": "",
