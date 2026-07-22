@@ -107,7 +107,7 @@ function Analysis() {
           </p>
           <button
             type="button"
-            style={styles.primaryButton}
+            className="cm-button cm-button-primary cm-button-start"
             onClick={() => navigate(routes.login)}
           >
             로그인으로 이동
@@ -143,7 +143,7 @@ function Analysis() {
             </div>
             <button
               type="button"
-              style={styles.primaryButton}
+              className="cm-button cm-button-primary cm-button-start"
               onClick={() => navigate(routes.specs)}
             >
               스펙 등록하러 가기
@@ -160,7 +160,7 @@ function Analysis() {
             </span>
             <button
               type="button"
-              style={styles.primaryButton}
+              className="cm-button cm-button-primary cm-button-start"
               onClick={handleAnalyze}
               disabled={isAnalyzing}
             >
@@ -170,7 +170,7 @@ function Analysis() {
         )}
 
         {!isLoading && analysis && (
-          <div style={styles.resultGrid}>
+          <div className="analysis-result-grid" style={styles.resultGrid}>
             <section style={styles.scoreCard}>
               <span style={styles.scoreLabel}>확정 준비도</span>
               <strong style={styles.score}>{analysis.readiness}%</strong>
@@ -184,7 +184,7 @@ function Analysis() {
               </div>
               <button
                 type="button"
-                style={styles.secondaryButton}
+                className="cm-button cm-button-dark cm-button-start"
                 onClick={handleAnalyze}
                 disabled={isAnalyzing}
               >
@@ -192,7 +192,7 @@ function Analysis() {
               </button>
               <button
                 type="button"
-                style={styles.secondaryButton}
+                className="cm-button cm-button-dark cm-button-start"
                 onClick={() => navigate(routes.mission)}
               >
                 추천 미션 보기
@@ -222,7 +222,7 @@ function Analysis() {
                 </div>
               </section>
 
-              <div style={styles.insightGrid}>
+              <div className="analysis-insight-grid" style={styles.insightGrid}>
                 <section style={{ ...styles.card, ...styles.compactCard }}>
                   <strong style={styles.cardTitle}>강점</strong>
                   {analysis.strengths.map((item) => (
@@ -457,29 +457,6 @@ const styles = {
     color: "#334155",
     fontSize: "15px",
     lineHeight: 1.65,
-  },
-  primaryButton: {
-    justifySelf: "start",
-    minHeight: "44px",
-    padding: "0 18px",
-    border: 0,
-    borderRadius: "999px",
-    background: "linear-gradient(135deg, #2563eb, #06b6d4)",
-    color: "#ffffff",
-    fontWeight: 800,
-    cursor: "pointer",
-    boxShadow: "0 14px 26px rgba(37, 99, 235, 0.28)",
-  },
-  secondaryButton: {
-    justifySelf: "start",
-    minHeight: "40px",
-    padding: "0 16px",
-    border: "1px solid rgba(255, 255, 255, 0.18)",
-    borderRadius: "999px",
-    background: "rgba(255, 255, 255, 0.08)",
-    color: "#ffffff",
-    fontWeight: 800,
-    cursor: "pointer",
   },
 };
 

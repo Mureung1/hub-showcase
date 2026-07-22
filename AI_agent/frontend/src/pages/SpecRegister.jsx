@@ -197,7 +197,7 @@ function SpecRegister() {
           </p>
           <button
             type="button"
-            style={styles.primaryButton}
+            className="cm-button cm-button-primary"
             onClick={() => navigate(routes.login)}
           >
             로그인으로 이동
@@ -225,20 +225,21 @@ function SpecRegister() {
             <p style={styles.info}>저장된 스펙을 불러오는 중입니다.</p>
           )}
 
-          <div style={styles.fieldGrid}>
+          <div className="spec-field-grid" style={styles.fieldGrid}>
             {specFields.map((field) => (
               <label
                 key={field.name}
+                className="cm-field"
                 style={
                   ["targetRole", "certificates"].includes(field.name)
-                    ? { ...styles.field, ...styles.lookupField }
-                    : styles.field
+                    ? styles.lookupField
+                    : undefined
                 }
               >
-                <span style={styles.label}>{field.label}</span>
+                <span className="cm-label">{field.label}</span>
                 {field.name === "targetRole" ? (
                   <>
-                    <div style={styles.lookupSearch}>
+                    <div className="cm-lookup-row">
                       <input
                         name={field.name}
                         value={form[field.name]}
@@ -253,12 +254,12 @@ function SpecRegister() {
                             handleJobSearch();
                           }
                         }}
-                        style={styles.input}
+                        className="cm-input"
                         placeholder={placeholderByField[field.name]}
                       />
                       <button
                         type="button"
-                        style={styles.lookupButton}
+                        className="cm-button cm-button-secondary cm-button-square cm-button-compact"
                         onClick={handleJobSearch}
                         disabled={isSearchingJobs}
                       >
@@ -276,7 +277,7 @@ function SpecRegister() {
                           <button
                             key={job.id}
                             type="button"
-                            style={styles.lookupResultItem}
+                            className="cm-select-button"
                             onClick={() => handleJobSelect(job)}
                           >
                             <strong>{job.name}</strong>
@@ -295,7 +296,7 @@ function SpecRegister() {
                   </>
                 ) : field.name === "certificates" ? (
                   <>
-                    <div style={styles.lookupSearch}>
+                    <div className="cm-lookup-row">
                       <input
                         value={certificateKeyword}
                         onChange={(event) => {
@@ -309,12 +310,12 @@ function SpecRegister() {
                             handleCertificateSearch();
                           }
                         }}
-                        style={styles.input}
+                        className="cm-input"
                         placeholder="자격증명을 검색하세요"
                       />
                       <button
                         type="button"
-                        style={styles.lookupButton}
+                        className="cm-button cm-button-secondary cm-button-square cm-button-compact"
                         onClick={handleCertificateSearch}
                         disabled={isSearchingCertificates}
                       >
@@ -325,7 +326,7 @@ function SpecRegister() {
                       name={field.name}
                       value={form[field.name]}
                       onChange={handleChange}
-                      style={styles.textarea}
+                      className="cm-textarea"
                       placeholder={placeholderByField[field.name]}
                     />
                     {certificateSearchMessage && (
@@ -339,7 +340,7 @@ function SpecRegister() {
                           <button
                             key={certificate.id}
                             type="button"
-                            style={styles.lookupResultItem}
+                            className="cm-select-button"
                             onClick={() => handleCertificateSelect(certificate)}
                           >
                             <strong>{certificate.name}</strong>
@@ -363,7 +364,7 @@ function SpecRegister() {
                     name={field.name}
                     value={form[field.name]}
                     onChange={handleChange}
-                    style={styles.textarea}
+                    className="cm-textarea"
                     placeholder={placeholderByField[field.name]}
                   />
                 ) : (
@@ -371,7 +372,7 @@ function SpecRegister() {
                     name={field.name}
                     value={form[field.name]}
                     onChange={handleChange}
-                    style={styles.input}
+                    className="cm-input"
                     placeholder={placeholderByField[field.name]}
                   />
                 )}
@@ -382,12 +383,12 @@ function SpecRegister() {
           {message && <p style={styles.success}>{message}</p>}
 
           <div style={styles.actions}>
-            <button type="submit" style={styles.secondaryButton} disabled={isSavingSpec}>
+            <button type="submit" className="cm-button cm-button-ghost" disabled={isSavingSpec}>
               {isSavingSpec ? "저장 중" : "저장"}
             </button>
             <button
               type="button"
-              style={styles.primaryButton}
+              className="cm-button cm-button-primary"
               onClick={() => navigate(routes.analysis)}
             >
               분석 화면으로 이동
@@ -470,51 +471,9 @@ const styles = {
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
     gap: "16px",
   },
-  field: {
-    position: "relative",
-    display: "grid",
-    gap: "8px",
-  },
   lookupField: {
+    position: "relative",
     zIndex: 2,
-  },
-  label: {
-    color: "#334155",
-    fontSize: "14px",
-    fontWeight: 800,
-  },
-  input: {
-    minHeight: "46px",
-    padding: "0 14px",
-    borderRadius: "12px",
-    border: "1px solid #dbe3ef",
-    fontSize: "15px",
-  },
-  textarea: {
-    minHeight: "92px",
-    padding: "13px 14px",
-    borderRadius: "12px",
-    border: "1px solid #dbe3ef",
-    fontSize: "15px",
-    resize: "vertical",
-    fontFamily: "inherit",
-  },
-  lookupSearch: {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
-    gap: "8px",
-  },
-  lookupButton: {
-    minHeight: "46px",
-    padding: "0 12px",
-    border: "1px solid #bfdbfe",
-    borderRadius: "12px",
-    background: "#eff6ff",
-    color: "#1d4ed8",
-    fontSize: "13px",
-    fontWeight: 800,
-    whiteSpace: "nowrap",
-    cursor: "pointer",
   },
   lookupMessage: {
     color: "#64748b",
@@ -536,19 +495,6 @@ const styles = {
     background: "#f8fafc",
     border: "1px solid #e2e8f0",
     boxShadow: "0 18px 34px rgba(15, 23, 42, 0.14)",
-  },
-  lookupResultItem: {
-    display: "grid",
-    gap: "3px",
-    width: "100%",
-    minHeight: "40px",
-    padding: "7px 10px",
-    border: 0,
-    borderRadius: "10px",
-    background: "#ffffff",
-    color: "#0f172a",
-    textAlign: "left",
-    cursor: "pointer",
   },
   aliasText: {
     color: "#1d4ed8",
@@ -579,27 +525,6 @@ const styles = {
     flexWrap: "wrap",
     gap: "10px",
     marginTop: "24px",
-  },
-  primaryButton: {
-    minHeight: "44px",
-    padding: "0 18px",
-    border: 0,
-    borderRadius: "999px",
-    background: "linear-gradient(135deg, #2563eb, #06b6d4)",
-    color: "#ffffff",
-    fontWeight: 800,
-    cursor: "pointer",
-    boxShadow: "0 14px 26px rgba(37, 99, 235, 0.28)",
-  },
-  secondaryButton: {
-    minHeight: "44px",
-    padding: "0 18px",
-    border: "1px solid #dbe3ef",
-    borderRadius: "999px",
-    background: "#ffffff",
-    color: "#334155",
-    fontWeight: 800,
-    cursor: "pointer",
   },
 };
 

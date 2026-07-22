@@ -84,10 +84,10 @@ function Feedback() {
             <FeedbackList title="수정 제안" items={feedback.revisions} />
             <FeedbackList title="포트폴리오 반영 포인트" items={feedback.portfolioPoints} wide />
             <div className="feedback-actions">
-              <button type="button" className="feedback-secondary" onClick={() => navigate(routes.upload)}>
+              <button type="button" className="cm-button cm-button-secondary" onClick={() => navigate(routes.upload)}>
                 다시 제출
               </button>
-              <button type="button" className="feedback-primary" onClick={() => navigate(routes.portfolio)}>
+              <button type="button" className="cm-button cm-button-primary" onClick={() => navigate(routes.portfolio)}>
                 포트폴리오로 이동
               </button>
             </div>
@@ -113,11 +113,11 @@ function FeedbackList({ title, items, wide = false }) {
 
 function EmptyState({ title, text, actionLabel, onAction }) {
   return (
-    <div className="feedback-empty">
+    <div className="cm-empty-state feedback-empty">
       <strong>{title}</strong>
       <p>{text}</p>
       {actionLabel && (
-        <button type="button" className="feedback-primary" onClick={onAction}>
+        <button type="button" className="cm-button cm-button-primary cm-button-start" onClick={onAction}>
           {actionLabel}
         </button>
       )}
@@ -181,8 +181,7 @@ const styles = `
 }
 
 .feedback-card,
-.feedback-summary,
-.feedback-empty {
+.feedback-summary {
   min-width: 0;
   padding: 22px;
   border-radius: 18px;
@@ -207,8 +206,7 @@ const styles = `
   font-weight: 900;
 }
 
-.feedback-card p,
-.feedback-empty p {
+.feedback-card p {
   margin: 10px 0 0;
   color: #475569;
   line-height: 1.7;
@@ -230,8 +228,6 @@ const styles = `
 }
 
 .feedback-empty {
-  display: grid;
-  gap: 12px;
   max-width: 680px;
 }
 
@@ -241,29 +237,6 @@ const styles = `
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 10px;
-}
-
-.feedback-primary,
-.feedback-secondary {
-  min-height: 42px;
-  padding: 0 18px;
-  border-radius: 999px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.feedback-primary {
-  justify-self: start;
-  border: 0;
-  background: linear-gradient(135deg, #2563eb, #06b6d4);
-  color: #ffffff;
-  box-shadow: 0 14px 26px rgba(37, 99, 235, 0.28);
-}
-
-.feedback-secondary {
-  border: 1px solid #bfdbfe;
-  background: #ffffff;
-  color: #1d4ed8;
 }
 
 @media (max-width: 860px) {

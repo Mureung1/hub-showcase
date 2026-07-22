@@ -322,14 +322,14 @@ function MyPage() {
         <section style={styles.content}>
           <p style={styles.badge}>Career Mission</p>
           <h1 style={styles.title}>내 정보</h1>
-          <div style={styles.emptyState}>
+          <div className="cm-empty-state" style={styles.emptyState}>
             <strong>로그인이 필요한 화면입니다.</strong>
             <p>
               회원 정보, 등록한 스펙, AI 분석 결과를 확인하려면 먼저 로그인해 주세요.
             </p>
             <button
               type="button"
-              style={styles.primaryButton}
+              className="cm-button cm-button-primary"
               onClick={() => navigate(routes.login)}
             >
               로그인으로 이동
@@ -362,7 +362,7 @@ function MyPage() {
     <main style={styles.container}>
       <Header />
       <section style={styles.content}>
-        <div style={styles.hero}>
+        <div className="mypage-hero" style={styles.hero}>
           <div>
             <p style={styles.badge}>My Career Profile</p>
             <h1 style={styles.title}>{currentUser.name}님의 커리어 현황</h1>
@@ -374,14 +374,14 @@ function MyPage() {
           <div style={styles.heroActions}>
             <button
               type="button"
-              style={styles.secondaryButton}
+              className="cm-button cm-button-ghost"
               onClick={() => navigate(routes.specs)}
             >
               스펙 수정
             </button>
             <button
               type="button"
-              style={styles.primaryButton}
+              className="cm-button cm-button-primary"
               onClick={() => navigate(routes.analysis)}
             >
               AI 분석 보기
@@ -389,7 +389,7 @@ function MyPage() {
           </div>
         </div>
 
-        <div style={styles.summaryGrid}>
+        <div className="mypage-summary-grid" style={styles.summaryGrid}>
           {summaryCards.map((card) => (
             <section key={card.label} style={styles.summaryCard}>
               <span style={styles.summaryLabel}>{card.label}</span>
@@ -412,13 +412,13 @@ function MyPage() {
 
         {pageMessage && <p style={styles.pageMessage}>{pageMessage}</p>}
 
-        <div style={styles.mainGrid}>
+        <div className="mypage-main-grid" style={styles.mainGrid}>
           <section style={styles.card}>
             <div style={styles.cardHeader}>
               <strong style={styles.cardTitle}>회원 기본 정보</strong>
               <button
                 type="button"
-                style={styles.textButton}
+                className="cm-button cm-button-secondary cm-button-compact"
                 onClick={() => {
                   setProfileMessage("");
                   setSchoolResults([]);
@@ -445,29 +445,29 @@ function MyPage() {
               </button>
             </div>
             {isEditingProfile ? (
-              <form style={styles.profileForm} onSubmit={handleProfileSubmit}>
-                <label style={styles.formField}>
+              <form className="mypage-profile-form" style={styles.profileForm} onSubmit={handleProfileSubmit}>
+                <label className="cm-field">
                   <span>이름</span>
                   <input
                     name="name"
                     value={profileForm.name}
                     onChange={handleProfileChange}
-                    style={styles.input}
+                    className="cm-input"
                   />
                 </label>
-                <label style={styles.formField}>
+                <label className="cm-field">
                   <span>이메일</span>
                   <input
                     type="email"
                     name="email"
                     value={profileForm.email}
                     onChange={handleProfileChange}
-                    style={styles.input}
+                    className="cm-input"
                   />
                 </label>
-                <label style={{ ...styles.formField, ...styles.lookupField }}>
+                <label className="cm-field" style={styles.lookupField}>
                   <span>학교</span>
-                  <div style={styles.lookupSearch}>
+                  <div className="cm-lookup-row">
                     <input
                       name="school"
                       value={profileForm.school}
@@ -478,12 +478,12 @@ function MyPage() {
                           handleSchoolSearch();
                         }
                       }}
-                      style={styles.input}
+                      className="cm-input"
                       placeholder="학교명을 검색하세요"
                     />
                     <button
                       type="button"
-                      style={styles.lookupButton}
+                      className="cm-button cm-button-secondary cm-button-square cm-button-compact"
                       onClick={handleSchoolSearch}
                       disabled={isSearchingSchool}
                     >
@@ -505,7 +505,7 @@ function MyPage() {
                         <button
                           key={school.id}
                           type="button"
-                          style={styles.lookupResultItem}
+                          className="cm-select-button"
                           onClick={() => handleSchoolSelect(school)}
                         >
                           <strong>{school.name}</strong>
@@ -519,9 +519,9 @@ function MyPage() {
                     </div>
                   )}
                 </label>
-                <label style={{ ...styles.formField, ...styles.lookupField }}>
+                <label className="cm-field" style={styles.lookupField}>
                   <span>전공</span>
-                  <div style={styles.lookupSearch}>
+                  <div className="cm-lookup-row">
                     <input
                       name="major"
                       value={profileForm.major}
@@ -532,13 +532,13 @@ function MyPage() {
                           handleMajorSearch();
                         }
                       }}
-                      style={styles.input}
+                      className="cm-input"
                       placeholder={selectedSchool ? "학과명을 검색하세요" : "학교를 먼저 선택하세요"}
                       disabled={!selectedSchool}
                     />
                     <button
                       type="button"
-                      style={styles.lookupButton}
+                      className="cm-button cm-button-secondary cm-button-square cm-button-compact"
                       onClick={handleMajorSearch}
                       disabled={!selectedSchool || isSearchingMajor}
                     >
@@ -560,7 +560,7 @@ function MyPage() {
                         <button
                           key={major.id}
                           type="button"
-                          style={styles.lookupResultItem}
+                          className="cm-select-button"
                           onClick={() => handleMajorSelect(major)}
                         >
                           <strong>{major.name}</strong>
@@ -587,10 +587,10 @@ function MyPage() {
                   </p>
                 )}
                 <div style={styles.formActions}>
-                  <button type="button" style={styles.secondaryButton} onClick={handleProfileCancel}>
+                  <button type="button" className="cm-button cm-button-ghost" onClick={handleProfileCancel}>
                     취소
                   </button>
-                  <button type="submit" style={styles.primaryButton} disabled={isSavingProfile}>
+                  <button type="submit" className="cm-button cm-button-primary" disabled={isSavingProfile}>
                     {isSavingProfile ? "저장 중" : "저장하기"}
                   </button>
                 </div>
@@ -623,7 +623,7 @@ function MyPage() {
             </div>
 
             {hasAnalysis ? (
-              <div style={styles.analysisPanel}>
+              <div className="mypage-analysis-panel" style={styles.analysisPanel}>
                 <div style={styles.scoreBox}>
                   <span style={styles.scoreLabel}>준비도</span>
                   <strong style={styles.score}>{analysis.readiness}%</strong>
@@ -664,7 +664,7 @@ function MyPage() {
               </span>
               <button
                 type="button"
-                style={styles.textButton}
+                className="cm-button cm-button-secondary cm-button-compact"
                 onClick={() => navigate(routes.specs)}
               >
                 수정하기
@@ -673,7 +673,7 @@ function MyPage() {
           </div>
 
           {hasSpec ? (
-            <div style={styles.specGrid}>
+            <div className="mypage-spec-grid" style={styles.specGrid}>
               {specDisplayFields.map((field) => (
                 <article
                   key={field.name}
@@ -715,10 +715,10 @@ function InfoItem({ label, value }) {
 
 function EmptyBlock({ title, text, actionLabel, onAction }) {
   return (
-    <div style={styles.emptyBlock}>
+    <div className="cm-empty-state" style={styles.emptyBlock}>
       <strong>{title}</strong>
       <p>{text}</p>
-      <button type="button" style={styles.primaryButton} onClick={onAction}>
+      <button type="button" className="cm-button cm-button-primary cm-button-start" onClick={onAction}>
         {actionLabel}
       </button>
     </div>
@@ -846,18 +846,6 @@ const styles = {
     fontSize: "13px",
     fontWeight: 800,
   },
-  textButton: {
-    minHeight: "34px",
-    padding: "0 12px",
-    border: "1px solid #bfdbfe",
-    borderRadius: "999px",
-    background: "#eff6ff",
-    color: "#1d4ed8",
-    fontSize: "13px",
-    fontWeight: 800,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-  },
   infoList: {
     display: "grid",
     gap: "10px",
@@ -867,45 +855,8 @@ const styles = {
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
     gap: "12px",
   },
-  formField: {
-    minWidth: 0,
-    display: "grid",
-    gap: "7px",
-    color: "#334155",
-    fontSize: "13px",
-    fontWeight: 800,
-    alignContent: "start",
-  },
   lookupField: {
     minHeight: "196px",
-  },
-  input: {
-    width: "100%",
-    minHeight: "42px",
-    padding: "0 12px",
-    border: "1px solid #dbe3ef",
-    borderRadius: "12px",
-    background: "#ffffff",
-    color: "#0f172a",
-    fontSize: "14px",
-    boxSizing: "border-box",
-  },
-  lookupSearch: {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
-    gap: "8px",
-  },
-  lookupButton: {
-    minHeight: "42px",
-    padding: "0 10px",
-    border: "1px solid #bfdbfe",
-    borderRadius: "12px",
-    background: "#eff6ff",
-    color: "#1d4ed8",
-    fontSize: "13px",
-    fontWeight: 800,
-    whiteSpace: "nowrap",
-    cursor: "pointer",
   },
   lookupMessage: {
     color: "#64748b",
@@ -928,19 +879,6 @@ const styles = {
     background: "#f8fafc",
     border: "1px solid #e2e8f0",
     boxShadow: "0 18px 34px rgba(15, 23, 42, 0.12)",
-  },
-  lookupResultItem: {
-    display: "grid",
-    gap: "3px",
-    width: "100%",
-    minHeight: "40px",
-    padding: "7px 10px",
-    border: 0,
-    borderRadius: "10px",
-    background: "#ffffff",
-    color: "#0f172a",
-    textAlign: "left",
-    cursor: "pointer",
   },
   profileMessage: {
     gridColumn: "1 / -1",
@@ -1057,27 +995,6 @@ const styles = {
     background: "#f8fafc",
     border: "1px solid #e2e8f0",
     color: "#475569",
-  },
-  primaryButton: {
-    minHeight: "42px",
-    padding: "0 17px",
-    border: 0,
-    borderRadius: "999px",
-    background: "linear-gradient(135deg, #2563eb, #06b6d4)",
-    color: "#ffffff",
-    fontWeight: 800,
-    cursor: "pointer",
-    boxShadow: "0 14px 26px rgba(37, 99, 235, 0.28)",
-  },
-  secondaryButton: {
-    minHeight: "42px",
-    padding: "0 17px",
-    border: "1px solid #dbe3ef",
-    borderRadius: "999px",
-    background: "#ffffff",
-    color: "#334155",
-    fontWeight: 800,
-    cursor: "pointer",
   },
 };
 

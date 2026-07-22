@@ -5,7 +5,6 @@ export const routes = {
   login: "/login",
   myPage: "/me",
   specs: "/specs",
-  jobGoal: "/job-goal",
   analysis: "/analysis",
   mission: "/mission",
   missionDetail: "/mission/1",
@@ -17,7 +16,6 @@ export const routes = {
 export const protectedRoutes = [
   routes.myPage,
   routes.specs,
-  routes.jobGoal,
   routes.analysis,
   routes.mission,
   routes.upload,

@@ -179,12 +179,12 @@ function Home() {
   }, [displayReadiness, targetReadiness]);
 
   return (
-    <main style={styles.container}>
+    <main className="home-page" style={styles.container}>
       <style>{animations}</style>
       <Header />
 
-      <section style={styles.hero}>
-        <div style={styles.copyStack}>
+      <section className="home-hero" style={styles.hero}>
+        <div className="home-copy-stack" style={styles.copyStack}>
           <div style={styles.backPlate}></div>
           <div style={styles.copyArea}>
             <p style={styles.badge}>AI Career Manager</p>
@@ -215,7 +215,7 @@ function Home() {
           </div>
         </div>
 
-        <div style={styles.panelStack}>
+        <div className="home-panel-stack" style={styles.panelStack}>
           <div style={styles.panelPlate}></div>
           <aside style={styles.aiPanel}>
             <div style={styles.panelHeader}>
@@ -247,7 +247,7 @@ function Home() {
           </aside>
         </div>
 
-        <section style={styles.workflowPanel} aria-label="서비스 사용 흐름">
+        <section className="home-workflow-panel" style={styles.workflowPanel} aria-label="서비스 사용 흐름">
           <p style={styles.workflowLabel}>서비스 이용 흐름</p>
           {workflowSteps.map((step, index) => (
             <div key={step.title} style={styles.workflowStep}>
@@ -263,7 +263,7 @@ function Home() {
           ))}
         </section>
 
-        <section style={styles.featureSlider}>
+        <section className="home-feature-slider" style={styles.featureSlider}>
         <div style={styles.sliderWindow}>
           <div
             style={{
@@ -335,17 +335,8 @@ function Home() {
             <button
               key={feature.title}
               type="button"
-              className={
-                index === activeFeatureIndex
-                  ? "feature-indicator active"
-                  : "feature-indicator"
-              }
+              className={index === activeFeatureIndex ? "cm-indicator active" : "cm-indicator"}
               aria-label={`${feature.title} 보기`}
-              style={
-                index === activeFeatureIndex
-                  ? { ...styles.indicator, ...styles.activeIndicator }
-                  : styles.indicator
-              }
               onClick={() => setActiveFeatureIndex(index)}
             />
           ))}
@@ -358,28 +349,6 @@ function Home() {
 }
 
 const animations = `
-.feature-indicator {
-  transition:
-    background 180ms ease,
-    box-shadow 180ms ease,
-    transform 180ms ease,
-    width 180ms ease;
-}
-
-.feature-indicator:hover {
-  background: rgba(37, 99, 235, 0.42) !important;
-  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.22) !important;
-}
-
-.feature-indicator.active:hover {
-  background: linear-gradient(90deg, #1d4ed8, #0891b2) !important;
-}
-
-.feature-indicator:active {
-  background: #1d4ed8 !important;
-  transform: scale(0.9);
-}
-
 @keyframes radarSweep {
   0% {
     transform: rotate(0deg);
@@ -880,20 +849,6 @@ const styles = {
     justifyContent: "center",
     flexWrap: "wrap",
     gap: "9px",
-  },
-  indicator: {
-    width: "10px",
-    height: "10px",
-    padding: 0,
-    border: "none",
-    borderRadius: "999px",
-    backgroundColor: "rgba(37, 99, 235, 0.18)",
-    cursor: "pointer",
-    boxShadow: "0 6px 14px rgba(37, 99, 235, 0.12)",
-  },
-  activeIndicator: {
-    width: "32px",
-    background: "linear-gradient(90deg, #2563eb, #06b6d4)",
   },
 };
 

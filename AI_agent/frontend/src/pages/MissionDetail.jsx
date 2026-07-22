@@ -95,11 +95,11 @@ function MissionDetail() {
         <style>{styles}</style>
         <Header />
         <section className="mission-detail-content">
-          <div className="mission-detail-empty">
+          <div className="cm-empty-state mission-detail-empty">
             <span className="mission-detail-badge">Mission Detail</span>
             <h1>로그인이 필요합니다</h1>
             <p>미션을 수행하고 진행 상태를 저장하려면 먼저 로그인해 주세요.</p>
-            <button type="button" className="mission-detail-primary" onClick={() => navigate(routes.login)}>
+            <button type="button" className="cm-button cm-button-primary cm-button-start" onClick={() => navigate(routes.login)}>
               로그인으로 이동
             </button>
           </div>
@@ -114,11 +114,11 @@ function MissionDetail() {
         <style>{styles}</style>
         <Header />
         <section className="mission-detail-content">
-          <div className="mission-detail-empty">
+          <div className="cm-empty-state mission-detail-empty">
             <span className="mission-detail-badge">Mission Detail</span>
             <h1>미션을 찾을 수 없습니다</h1>
             <p>추천 목록에서 다시 미션을 선택해 주세요.</p>
-            <button type="button" className="mission-detail-primary" onClick={() => navigate(routes.mission)}>
+            <button type="button" className="cm-button cm-button-primary cm-button-start" onClick={() => navigate(routes.mission)}>
               미션 추천으로 이동
             </button>
           </div>
@@ -200,12 +200,12 @@ function MissionDetail() {
         </div>
 
         <div className="mission-detail-actions">
-          <button type="button" className="mission-detail-secondary" onClick={() => navigate(routes.mission)}>
+          <button type="button" className="cm-button cm-button-secondary" onClick={() => navigate(routes.mission)}>
             목록으로 돌아가기
           </button>
           <button
             type="button"
-            className={isSubmitted ? "mission-detail-complete" : "mission-detail-primary"}
+            className={isSubmitted ? "cm-button cm-button-success" : "cm-button cm-button-primary"}
             onClick={() =>
               navigate(isSubmitted ? routes.feedback : `${routes.upload}?missionId=${mission.id}`)
             }
@@ -413,41 +413,8 @@ const styles = `
   margin-top: 18px;
 }
 
-.mission-detail-primary,
-.mission-detail-secondary,
-.mission-detail-complete {
-  min-height: 42px;
-  padding: 0 18px;
-  border-radius: 999px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.mission-detail-primary {
-  border: 0;
-  background: linear-gradient(135deg, #2563eb, #06b6d4);
-  color: #ffffff;
-  box-shadow: 0 14px 26px rgba(37, 99, 235, 0.28);
-}
-
-.mission-detail-complete {
-  border: 1px solid #86efac;
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.mission-detail-secondary {
-  border: 1px solid #bfdbfe;
-  background: #ffffff;
-  color: #1d4ed8;
-}
-
 .mission-detail-empty {
   max-width: 720px;
-  display: grid;
-  gap: 16px;
-  padding: 24px;
-  border-radius: 18px;
 }
 
 @media (max-width: 860px) {

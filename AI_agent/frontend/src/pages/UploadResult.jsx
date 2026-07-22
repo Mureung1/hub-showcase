@@ -125,11 +125,12 @@ function UploadResult() {
 
         <form className="upload-form" onSubmit={handleSubmit}>
           <section className="upload-card">
-            <label>
+            <label className="cm-field">
               <span>제출할 미션</span>
               <select
                 value={selectedMissionId}
                 onChange={(event) => setSelectedMissionId(event.target.value)}
+                className="cm-select"
               >
                 {mockMissions.map((mission) => (
                   <option key={mission.id} value={mission.id}>
@@ -139,22 +140,24 @@ function UploadResult() {
               </select>
             </label>
 
-            <label>
+            <label className="cm-field">
               <span>결과물 링크</span>
               <input
                 name="submittedUrl"
                 value={form.submittedUrl}
                 onChange={handleChange}
+                className="cm-input"
                 placeholder="https://github.com/... 또는 https://notion.so/..."
               />
             </label>
 
-            <label>
+            <label className="cm-field">
               <span>결과물 설명</span>
               <textarea
                 name="submittedDescription"
                 value={form.submittedDescription}
                 onChange={handleChange}
+                className="cm-textarea"
                 placeholder="무엇을 만들었고, 어떤 역할을 했고, 어떤 점을 배웠는지 적어 주세요."
                 rows={7}
               />
@@ -166,16 +169,16 @@ function UploadResult() {
               <span>파일 제출</span>
               <strong>{form.submittedFileName || "선택된 파일 없음"}</strong>
               <p>PDF, 이미지, 문서 파일을 선택할 수 있습니다. 2MB 이하 파일은 제출 데이터와 함께 저장됩니다.</p>
-              <input type="file" onChange={handleFileChange} />
+              <input type="file" className="cm-file-input" onChange={handleFileChange} />
             </div>
 
             {message && <p className="upload-message">{message}</p>}
 
             <div className="upload-actions">
-              <button type="button" className="upload-secondary" onClick={() => navigate(routes.mission)}>
+              <button type="button" className="cm-button cm-button-secondary" onClick={() => navigate(routes.mission)}>
                 미션 목록
               </button>
-              <button type="submit" className="upload-primary" disabled={isSubmitting}>
+              <button type="submit" className="cm-button cm-button-primary" disabled={isSubmitting}>
                 {isSubmitting ? "제출 중" : "제출하고 피드백 보기"}
               </button>
             </div>
@@ -280,34 +283,8 @@ const styles = `
   align-content: start;
 }
 
-.upload-card label {
-  display: grid;
-  gap: 8px;
-}
-
-.upload-card input,
-.upload-card select,
-.upload-card textarea {
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid #dbe3ef;
-  border-radius: 12px;
-  background: #ffffff;
-  color: #0f172a;
-  font: inherit;
-}
-
-.upload-card input,
-.upload-card select {
-  min-height: 44px;
-  padding: 0 12px;
-}
-
 .upload-card textarea {
   min-height: 180px;
-  padding: 12px;
-  resize: vertical;
-  line-height: 1.6;
 }
 
 .file-drop {
@@ -345,33 +322,6 @@ const styles = `
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 10px;
-}
-
-.upload-primary,
-.upload-secondary {
-  min-height: 42px;
-  padding: 0 18px;
-  border-radius: 999px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.upload-primary {
-  border: 0;
-  background: linear-gradient(135deg, #2563eb, #06b6d4);
-  color: #ffffff;
-  box-shadow: 0 14px 26px rgba(37, 99, 235, 0.28);
-}
-
-.upload-primary:disabled {
-  cursor: not-allowed;
-  opacity: 0.64;
-}
-
-.upload-secondary {
-  border: 1px solid #bfdbfe;
-  background: #ffffff;
-  color: #1d4ed8;
 }
 
 @media (max-width: 860px) {
