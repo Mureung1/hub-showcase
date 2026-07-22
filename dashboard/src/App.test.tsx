@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import App from './App';
 
@@ -67,5 +67,27 @@ describe('프로젝트 목록', () => {
     );
 
     expect(screen.getByText('더미')).toBeInTheDocument();
+  });
+
+  it('상세 정보가 없으면 빈 구역과 링크를 만들지 않는다', () => {
+    render(
+      <App
+        projects={[{
+          id: 'partial',
+          title: '정보가 적은 프로젝트',
+          summary: '기본 정보만 있습니다.',
+          category: '대학 생활',
+          featureTags: [],
+          techStack: [],
+          githubUser: 'student',
+          thumbnailUrl: '/thumbnail.webp',
+        }]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '정보가 적은 프로젝트 상세 보기' }));
+
+    expect(screen.queryByRole('heading', { name: '해결하려는 문제' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });

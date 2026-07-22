@@ -34,6 +34,14 @@ type AppProps = {
 
 export default function App({ projects }: AppProps) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const selectedAgentTags = selectedProject
+    ? [
+      ...(selectedProject.agent?.agents ?? []),
+      ...(selectedProject.agent?.skills ?? []),
+      ...(selectedProject.agent?.workflows ?? []),
+    ].slice(0, 8)
+    : [];
+  const selectedScreenshots = selectedProject?.screenshotUrls ?? selectedProject?.screenshots ?? [];
 
   const openProject = (project: Project) => setSelectedProject(project);
 
@@ -90,17 +98,21 @@ export default function App({ projects }: AppProps) {
                 <h2>{project.title}</h2>
                 <p className="summary">{project.summary}</p>
 
-                <div className="tags" aria-label="기능 태그">
-                  {project.featureTags.map((tag) => (
-                    <span className="tag" key={tag}>{tag}</span>
-                  ))}
-                </div>
+                {project.featureTags.length > 0 && (
+                  <div className="tags" aria-label="기능 태그">
+                    {project.featureTags.map((tag) => (
+                      <span className="tag" key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                )}
 
-                <div className="tech-stack" aria-label="기술">
-                  {project.techStack.map((tech) => (
-                    <span className="tech" key={tech}>{tech}</span>
-                  ))}
-                </div>
+                {project.techStack.length > 0 && (
+                  <div className="tech-stack" aria-label="기술">
+                    {project.techStack.map((tech) => (
+                      <span className="tech" key={tech}>{tech}</span>
+                    ))}
+                  </div>
+                )}
 
                 <footer>@{project.githubUser}</footer>
                 <span className="card-action">상세 보기 <span aria-hidden="true">↗</span></span>
@@ -166,33 +178,33 @@ export default function App({ projects }: AppProps) {
                 </section>
               )}
 
-              {selectedProject.agent?.summary && (
+              {selectedProject.agent && (selectedProject.agent.summary || selectedAgentTags.length > 0) && (
                 <section className="detail-section">
                   <h3>Agent 활용</h3>
-                  <p>{selectedProject.agent.summary}</p>
-                  <div className="tags detail-tags">
-                    {[...(selectedProject.agent.agents ?? []), ...(selectedProject.agent.skills ?? []), ...(selectedProject.agent.workflows ?? [])]
-                      .slice(0, 8)
-                      .map((tag) => <span className="tag" key={tag}>{tag}</span>)}
-                  </div>
+                  {selectedProject.agent.summary && <p>{selectedProject.agent.summary}</p>}
+                  {selectedAgentTags.length > 0 && (
+                    <div className="tags detail-tags">
+                      {selectedAgentTags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}
+                    </div>
+                  )}
                 </section>
               )}
 
-              {(selectedProject.screenshotUrls ?? selectedProject.screenshots ?? []).length > 0 && (
+              {selectedScreenshots.length > 0 && (
                 <section className="detail-section">
                   <h3>추가 화면</h3>
                   <div className="detail-screenshots">
-                    {(selectedProject.screenshotUrls ?? selectedProject.screenshots ?? []).map((screenshot, index) => (
+                    {selectedScreenshots.map((screenshot, index) => (
                       <img key={screenshot} src={screenshot} alt={`${selectedProject.title} 화면 ${index + 1}`} />
                     ))}
                   </div>
                 </section>
               )}
 
-              <div className="detail-links">
+              {(selectedProject.demoUrl || selectedProject.sourceBranch) && <div className="detail-links">
                 {selectedProject.demoUrl && <a href={selectedProject.demoUrl} target="_blank" rel="noreferrer">서비스 열기 ↗</a>}
-                <a href={`https://github.com/connect-AIAgentChallenge-26-1/hub/tree/${selectedProject.sourceBranch ?? ''}`} target="_blank" rel="noreferrer">소스 보기 ↗</a>
-              </div>
+                {selectedProject.sourceBranch && <a href={`https://github.com/connect-AIAgentChallenge-26-1/hub/tree/${selectedProject.sourceBranch}`} target="_blank" rel="noreferrer">소스 보기 ↗</a>}
+              </div>}
             </div>
           </aside>
         </div>
