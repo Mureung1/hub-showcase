@@ -14,7 +14,7 @@
 | 로그 | Pino + pino-http | 검색 가능한 JSON 로그와 요청 로그 제공 |
 | 정적 분석 | oxlint | 기존 설정을 유지하면서 빠르게 검사 |
 | 패키지 관리 | npm | 기존 `package-lock.json`과 일치 |
-| 데이터 저장 | 초기 메모리/JSON, 이후 SQLite 검토 | 요구 확정 전에 DB 복잡도를 추가하지 않기 위해 |
+| 데이터 저장 | Supabase PostgreSQL | 브라우저에 비밀키를 노출하지 않고 Express API를 통해 재료 데이터를 영속 저장 |
 
 ## 2. 사전 준비
 
@@ -54,6 +54,7 @@ npm.cmd run dev
 | `npm run dev:api` | Express API만 watch 모드로 실행 |
 | `npm run start` | Express API 일반 실행 |
 | `npm run lint` | JavaScript/React 정적 분석 |
+| `npm test` | 추천·소비기한·기본 양념 등 핵심 규칙 단위 테스트 |
 | `npm run build` | 배포용 프런트엔드 빌드 |
 | `npm run preview` | 빌드 결과 로컬 확인 |
 
@@ -146,10 +147,10 @@ chore: update dependencies
 - [x] API 오류 형식
 - [x] 서버 로그와 민감 정보 기준
 - [x] 커밋 형식
-- [ ] 재료 데이터 영속 저장 시점과 DB
+- [x] 재료 데이터 영속 저장 시점과 DB: Supabase PostgreSQL
 - [ ] 로그인 및 사용자 구분 필요 여부
 - [ ] 레시피 추천 알고리즘 또는 외부 AI API
 - [ ] 배포 플랫폼과 운영 환경변수
-- [ ] 자동 테스트 범위와 CI
+- [ ] API 통합 테스트와 CI 범위
 
 미결정 항목은 기능 요구가 확정되는 순서대로 결정하고 이 문서를 갱신합니다.

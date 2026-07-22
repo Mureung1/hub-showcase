@@ -1,5 +1,3 @@
-export const PANTRY_STORAGE_KEY = "todaysFridge:pantry:v1";
-
 export const PANTRY_ITEMS = [
   { id: "salt", name: "소금", aliases: ["소금"] },
   { id: "pepper", name: "후추", aliases: ["후추"] },
@@ -22,33 +20,4 @@ export function getPantryItemByName(name) {
 
 export function isPantryIngredientName(name) {
   return Boolean(getPantryItemByName(name));
-}
-
-export function getDefaultPantryAvailability() {
-  return Object.fromEntries(PANTRY_ITEMS.map(({ id }) => [id, true]));
-}
-
-export function readPantryAvailability(storage = globalThis.localStorage) {
-  const defaults = getDefaultPantryAvailability();
-  if (!storage) return defaults;
-
-  try {
-    const parsed = JSON.parse(storage.getItem(PANTRY_STORAGE_KEY));
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return defaults;
-    return Object.fromEntries(PANTRY_ITEMS.map(({ id }) => [id, typeof parsed[id] === "boolean" ? parsed[id] : true]));
-  } catch {
-    return defaults;
-  }
-}
-
-export function writePantryAvailability(availability, storage = globalThis.localStorage) {
-  const sanitized = Object.fromEntries(PANTRY_ITEMS.map(({ id }) => [id, availability[id] !== false]));
-  storage?.setItem(PANTRY_STORAGE_KEY, JSON.stringify(sanitized));
-  return sanitized;
-}
-
-export function getRecipePantryItems(recipe) {
-  const ingredientNames = [...(recipe.requiredIngredients ?? []), ...(recipe.optionalIngredients ?? [])];
-  const items = ingredientNames.map(getPantryItemByName).filter(Boolean);
-  return [...new Map(items.map((item) => [item.id, item])).values()];
 }

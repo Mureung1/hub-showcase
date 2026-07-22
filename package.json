@@ -11,6 +11,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "test": "node --test",
+    "verify:recommendations": "node scripts/verifyRecommendations.js",
     "preview": "vite preview"
   },
   "dependencies": {

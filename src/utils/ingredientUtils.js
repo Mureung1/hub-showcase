@@ -1,4 +1,4 @@
-import { CATEGORY_ICONS, INGREDIENT_CATEGORIES } from "../data/ingredientDefaults";
+import { CATEGORY_ICONS } from "../data/ingredientDefaults";
 import { isCheckDateCategory } from "../data/shelfLifeRules";
 import { sanitizeIngredientTags } from "../../shared/ingredientTags";
 import {
@@ -14,10 +14,6 @@ import {
 export function formatIngredientQuantity(ingredient) {
   if (ingredient.quantityMode === "notTracked" || ingredient.quantity === null) return "보유 중";
   return `${ingredient.quantity}${ingredient.unit ?? ""}`;
-}
-
-export function getIngredientCategoryLabel(category) {
-  return INGREDIENT_CATEGORIES[category] ?? INGREDIENT_CATEGORIES.other;
 }
 
 export function parseQuantityInput(input) {
