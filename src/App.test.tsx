@@ -46,21 +46,21 @@ describe("music record API flow", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("shows today without a date input", () => {
-    render(<App initialRecords={[]} />);
+    render(<App initialRecords={[]} initialView="diary" />);
     expect(screen.getByText("Today")).toBeInTheDocument();
     expect(document.querySelector('input[type="date"]')).not.toBeInTheDocument();
   });
 
   it("loads persisted records with GET on first render", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(response({ data: [apiRecord] }));
-    render(<App />);
+    render(<App initialView="diary" />);
     expect(await screen.findByRole("heading", { name: "Ditto" })).toBeInTheDocument();
     expect(fetch).toHaveBeenCalledWith("http://localhost:3000/api/music-records");
   });
 
   it("searches Spotify through the Express API and selects a track", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(response([spotifyTrack]));
-    render(<App initialRecords={[]} />);
+    render(<App initialRecords={[]} initialView="diary" />);
 
     await searchAndSelectTrack();
 
@@ -74,7 +74,7 @@ describe("music record API flow", () => {
       .mockResolvedValueOnce(response([spotifyTrack]))
       .mockResolvedValueOnce(response({ data: apiRecord }, true, 201))
       .mockResolvedValueOnce(response({ data: [apiRecord] }));
-    render(<App initialRecords={[]} />);
+    render(<App initialRecords={[]} initialView="diary" />);
 
     await searchAndSelectTrack();
     fireEvent.change(screen.getByLabelText("한 줄로 남기기"), {
@@ -105,7 +105,7 @@ describe("music record API flow", () => {
       .mockResolvedValueOnce(response({
         error: { code: "INTERNAL_SERVER_ERROR", message: "음악 기록 저장 중 오류가 발생했습니다." },
       }, false, 500));
-    render(<App initialRecords={[]} />);
+    render(<App initialRecords={[]} initialView="diary" />);
 
     await searchAndSelectTrack();
     fireEvent.change(screen.getByLabelText("한 줄로 남기기"), {

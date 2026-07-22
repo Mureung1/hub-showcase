@@ -29,8 +29,8 @@ SWIM은 **음악을 중심으로 하루를 기록하는 새로운 방식의 SNS*
 - 저장된 기록 조회
 - 새로고침 후에도 데이터 유지
 
-※ 현재 버전은 핵심 기능을 검증하기 위한 **Demo Version**이며,
-사용자 인증(Login)은 제외하고 개발을 진행하고 있습니다.
+※ 현재 버전은 핵심 기능을 검증하기 위한 **Demo Version**입니다.
+이메일·비밀번호·닉네임 회원가입과 기본 프로필 생성까지 구현되어 있으며, 로그인과 세션 유지는 다음 작업 범위입니다.
 
 ---
 
@@ -63,8 +63,12 @@ npm run dev
 Frontend
 
 ```env
-VITE_API_URL=http://localhost:3000
+VITE_API_BASE_URL=http://localhost:3000
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-public-anon-key
 ```
+
+`VITE_SUPABASE_ANON_KEY`는 공개 anon key만 사용합니다. `SUPABASE_SERVICE_ROLE_KEY`는 브라우저 환경변수에 넣지 않습니다.
 
 Backend
 
@@ -75,6 +79,8 @@ SUPABASE_ANON_KEY=
 SPOTIFY_CLIENT_ID=
 SPOTIFY_CLIENT_SECRET=
 ```
+
+회원가입 전에 Supabase SQL Editor에서 `server/supabase/profiles.sql`을 실행해 `profiles` 테이블과 Auth 사용자 생성 트리거를 적용합니다. 새 사용자의 닉네임은 Auth 메타데이터에서 전달되며, 트리거가 Auth 사용자와 동일한 ID의 프로필을 한 건 생성합니다.
 
 ---
 
@@ -95,6 +101,7 @@ SPOTIFY_CLIENT_SECRET=
 ## Database
 
 - Supabase
+- Supabase Auth
 
 ## External API
 
