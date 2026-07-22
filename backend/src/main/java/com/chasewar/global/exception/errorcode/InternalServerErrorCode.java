@@ -8,7 +8,8 @@ public enum InternalServerErrorCode implements ErrorCode {
     INVALID_COORDINATES("좌표 데이터가 올바르지 않습니다."),
     MISSING_PARKING_LOT_CODE("주차장 코드가 없습니다."),
     INVALID_FEE("요금 데이터가 올바르지 않습니다."),
-    INVALID_TOTAL_SLOTS("총 주차면수가 올바르지 않습니다.");
+    INVALID_TOTAL_SLOTS("총 주차면수가 올바르지 않습니다."),
+    INVALID_AVAILABLE_SLOTS("실시간 가용 면수가 올바르지 않습니다.");
 
     private static final HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
 
