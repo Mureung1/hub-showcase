@@ -310,5 +310,12 @@
   - **테스트 데이터 정리**: `9fbcef07…`·`5c2b7eba…`·`9ab9a345…` 삭제 — Chat 3 + Question 3 + SourceAnswer 9
   - **남은 문제**: 이번 실측으로 Chat 2건(`be976957…` heartbeat check, `4ef7b654…` deploy hardening regression)이 새로 남음 — **데모 전 삭제 필요**. `render.yaml`은 만들지 않음(서비스 1개·env 전부 시크릿이라 과설계)
   - **다음**: SPEC-AI-002(Manager 실제 비교)
+- **T-018 완료 (2026-07-22)** — 로그인 화면 테스트 계정 표시(프론트 전용, 데모용). 백엔드·계약·패키지·env 변경 없음
+  - `LoginPage.tsx` 상단에 `TEST_EMAIL`·`TEST_PASSWORD` 상수(둘 다 `"REPLACE_ME"` 자리표시자). **실제 값은 커밋하지 않으며 운영자가 로컬에서 교체**한다
+  - 로그인 폼 위에 Astryx `Banner`(info, `defaultIsExpanded`)로 "테스트 계정" 박스 — 이메일·비밀번호를 **마스킹 없이** 그대로 보여주고 "이 계정으로 로그인" 버튼 제공
+  - 버튼은 필드를 채운 뒤 **기존 `signIn` 흐름으로 제출**한다(인증 우회 없음). 폼 제출과 버튼이 `submitCredentials()` 하나를 공유
+  - 두 상수 중 하나라도 자리표시자면 박스를 렌더하지 않는다(방어)
+  - **검증**: 루트 typecheck·lint·build 통과. 임시 더미값(`demo@example.com`/`dummy-password-1234`)으로 박스 표시·필드 자동입력·제출까지 확인 — Supabase가 `Invalid login credentials`를 반환해 **인증이 실제로 수행됨**(우회 없음)을 확인한 뒤 `REPLACE_ME`로 원복. 자리표시자 상태에서 박스 숨김 확인. 소스·커밋에 실제 계정값 없음
+  - **남은 문제**: 배포 시 운영자가 두 상수를 교체해야 박스가 보인다. 교체하면 **비밀번호가 번들에 그대로 들어가 공개되므로**, 반드시 데모 전용 저권한 계정만 사용해야 한다
 - 이후: SPEC-AI-002~003(Manager·FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정
