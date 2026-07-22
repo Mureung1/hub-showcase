@@ -1,9 +1,11 @@
-import { createServer } from "node:http";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import express from "express";
+import cors from "cors";
+import { createClient } from "@supabase/supabase-js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 4000);
@@ -12,6 +14,17 @@ const USERS_FILE = path.join(DATA_DIR, "users.json");
 const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 const ALLOWED_ORIGINS = new Set(["http://localhost:3000", "http://127.0.0.1:3000"]);
+
+function isAllowedOrigin(origin) {
+  if (!origin || ALLOWED_ORIGINS.has(origin)) return true;
+  try {
+    const url = new URL(origin);
+    const isPrivateIpv4 = /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(url.hostname);
+    return url.protocol === "http:" && url.port === "3000" && isPrivateIpv4;
+  } catch {
+    return false;
+  }
+}
 
 function parseEnvFile(contents) {
   contents.split(/\r?\n/).map((line) => line.trim()).filter((line) => line && !line.startsWith("#") && line.includes("=")).forEach((line) => {
@@ -29,22 +42,9 @@ async function loadLocalEnv() {
   }
 }
 
-function corsHeaders(request) {
-  const origin = request.headers.origin;
-  return {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(origin) ? origin : "http://localhost:3000",
-    "Access-Control-Allow-Credentials": "true",
-    Vary: "Origin",
-  };
-}
-
 function sendJson(request, response, statusCode, payload, extraHeaders = {}) {
-  response.writeHead(statusCode, {
-    "Content-Type": "application/json; charset=utf-8",
-    ...corsHeaders(request),
-    ...extraHeaders,
-  });
-  response.end(JSON.stringify(payload));
+  Object.entries(extraHeaders).forEach(([name, value]) => response.setHeader(name, value));
+  return response.status(statusCode).json(payload);
 }
 
 async function readJsonFile(filePath) {
@@ -62,15 +62,7 @@ async function writeJsonFile(filePath, value) {
 }
 
 async function readRequestJson(request) {
-  const chunks = [];
-  let total = 0;
-  for await (const chunk of request) {
-    total += chunk.length;
-    if (total > 1024 * 1024) throw new Error("요청 본문이 너무 큽니다.");
-    chunks.push(chunk);
-  }
-  if (!chunks.length) return {};
-  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  return request.body || {};
 }
 
 function normalizeEmail(value) {
@@ -235,47 +227,79 @@ async function handleKakaoLocalSearch(request, response, url) {
   }
 }
 
-async function handleStatic(response, url) {
-  const buildDir = path.join(__dirname, "build");
-  const requestedPath = url.pathname === "/" ? "/index.html" : url.pathname;
-  const safePath = path.normalize(requestedPath).replace(/^(\.\.[/\\])+/, "").replace(/^[/\\]/, "");
-  const filePath = path.join(buildDir, safePath);
-  try {
-    const bytes = await readFile(filePath);
-    const contentType = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8", ".png": "image/png", ".ico": "image/x-icon", ".svg": "image/svg+xml" }[path.extname(filePath)] || "application/octet-stream";
-    response.writeHead(200, { "Content-Type": contentType });
-    response.end(bytes);
-  } catch {
-    const indexPath = path.join(buildDir, "index.html");
-    if (existsSync(indexPath)) {
-      response.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      response.end(await readFile(indexPath));
-      return;
-    }
-    response.writeHead(404);
-    response.end("Build not found");
-  }
-}
-
 await loadLocalEnv();
 await mkdir(DATA_DIR, { recursive: true });
 
-createServer(async (request, response) => {
-  const url = new URL(request.url, `http://${request.headers.host}`);
-  if (request.method === "OPTIONS") {
-    response.writeHead(204, { ...corsHeaders(request), "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS" });
-    return response.end();
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
+const supabase = supabaseUrl && supabaseSecretKey
+  ? createClient(supabaseUrl, supabaseSecretKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+  : null;
+
+const app = express();
+app.disable("x-powered-by");
+app.use(cors({
+  credentials: true,
+  methods: ["GET", "POST", "PATCH", "OPTIONS"],
+  origin(origin, callback) {
+    callback(null, isAllowedOrigin(origin));
+  },
+}));
+app.use(express.json({ limit: "1mb" }));
+
+app.get("/api/health", async (request, response) => {
+  if (!supabase) {
+    return sendJson(request, response, 503, {
+      ok: false,
+      database: "disconnected",
+      message: "Supabase 환경변수가 설정되지 않았습니다.",
+    });
   }
-  try {
-    if (url.pathname === "/api/health" && request.method === "GET") return sendJson(request, response, 200, { ok: true });
-    if (url.pathname === "/api/auth/signup" && request.method === "POST") return await handleSignup(request, response);
-    if (url.pathname === "/api/auth/login" && request.method === "POST") return await handleLogin(request, response);
-    if (url.pathname === "/api/auth/logout" && request.method === "POST") return await handleLogout(request, response);
-    if (url.pathname === "/api/auth/me" && request.method === "GET") return await handleMe(request, response);
-    if (url.pathname === "/api/users/me" && request.method === "PATCH") return await handleProfileUpdate(request, response);
-    if (url.pathname === "/api/kakao/local" && request.method === "GET") return await handleKakaoLocalSearch(request, response, url);
-    return await handleStatic(response, url);
-  } catch (error) {
-    return sendJson(request, response, 500, { message: "요청을 처리하지 못했습니다.", detail: error.message });
+
+  const { error } = await supabase
+    .from("places")
+    .select("id", { count: "exact", head: true });
+
+  if (error) {
+    return sendJson(request, response, 503, {
+      ok: false,
+      database: "disconnected",
+      message: "Supabase 데이터베이스에 연결하지 못했습니다.",
+      code: error.code,
+    });
   }
-}).listen(PORT, () => console.log(`지금리뷰 API server listening on http://localhost:${PORT}`));
+
+  return sendJson(request, response, 200, { ok: true, database: "connected" });
+});
+
+app.post("/api/auth/signup", handleSignup);
+app.post("/api/auth/login", handleLogin);
+app.post("/api/auth/logout", handleLogout);
+app.get("/api/auth/me", handleMe);
+app.patch("/api/users/me", handleProfileUpdate);
+app.get("/api/kakao/local", (request, response) => {
+  const url = new URL(request.originalUrl, `${request.protocol}://${request.get("host")}`);
+  return handleKakaoLocalSearch(request, response, url);
+});
+
+const buildDir = path.join(__dirname, "build");
+app.use(express.static(buildDir));
+app.use((request, response, next) => {
+  if (request.path.startsWith("/api/")) return sendJson(request, response, 404, { message: "API 경로를 찾을 수 없습니다." });
+  const indexPath = path.join(buildDir, "index.html");
+  if (!existsSync(indexPath)) return response.status(404).send("Build not found");
+  return response.sendFile(indexPath);
+});
+
+app.use((error, request, response, next) => {
+  if (response.headersSent) return next(error);
+  const statusCode = error.type === "entity.too.large" ? 413 : 500;
+  return sendJson(request, response, statusCode, {
+    message: statusCode === 413 ? "요청 본문이 너무 큽니다." : "요청을 처리하지 못했습니다.",
+    detail: error.message,
+  });
+});
+
+app.listen(PORT, "0.0.0.0", () => console.log(`지금리뷰 Express API server listening on http://0.0.0.0:${PORT}`));
