@@ -27,7 +27,7 @@ function chipStyle(selected) {
   };
 }
 
-function RegisterScreen({ onBack, onSubmit }) {
+function RegisterScreen({ userId, onBack, onSubmit }) {
   const saved = loadSavedRoute();
   const [direction, setDirection] = useState(saved?.direction ?? "from_school");
   const [departureHub, setDepartureHub] = useState(saved?.departureHub ?? "정문");
@@ -48,7 +48,7 @@ function RegisterScreen({ onBack, onSubmit }) {
   }
 
   async function handleSubmit() {
-    const data = { direction, departureHub, destHub, time, arrival, genderOnly };
+    const data = { direction, departureHub, destHub, time, arrival, genderOnly, userId };
     setSaving(true); // 버튼을 누르면 상태가 바뀌고 리렌더링
     setError(null);
 

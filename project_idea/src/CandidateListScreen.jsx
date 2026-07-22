@@ -11,6 +11,7 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [joinedId, setJoinedId] = useState(null);
+  const [joinError, setJoinError] = useState(null);
 
   useEffect(() => {
     if (!myRequest) return;
@@ -27,16 +28,51 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
         return res.json();
       })
       .then((rows) => {
-        setCandidates(rows.filter((r) => r.id !== myRequest.id));
+        setCandidates(rows.filter((r) => !r.memberIds.includes(myRequest.id)));
       })
       .catch(() => setError("후보를 불러오지 못했어요. 서버가 켜져 있는지 확인해주세요."))
       .finally(() => setLoading(false));
   }, [myRequest]);
 
-  function handleClick(c) {
+  function handleStartNew() {
     if (joinedId !== null) return;
-    setJoinedId(c.id);
-    onJoin(c);
+    setJoinedId(myRequest.id);
+    onJoin({
+      groupId: null,
+      groupCount: 1,
+      myRequestId: myRequest.id,
+      pending: false,
+    });
+  }
+
+  async function handleClick(c) {
+    if (joinedId !== null) return;
+    setJoinError(null);
+
+    try {
+      const res = await fetch(`http://localhost:4000/api/requests/${c.id}/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ myRequestId: myRequest.id }),
+      });
+      const body = await res.json();
+
+      if (!res.ok) {
+        setJoinError(body.error ?? "신청에 실패했어요.");
+        return;
+      }
+
+      setJoinedId(c.id);
+      onJoin({
+        ...c,
+        groupId: body.groupId,
+        groupCount: body.groupCount,
+        myRequestId: myRequest.id,
+        pending: body.pending,
+      });
+    } catch {
+      setJoinError("신청에 실패했어요. 서버가 켜져 있는지 확인해주세요.");
+    }
   }
 
   return (
@@ -55,6 +91,8 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
       {loading && <p style={{ fontSize: 13, color: "#8A7A76", textAlign: "center", margin: "40px 0" }}>불러오는 중...</p>}
 
       {error && <p style={{ fontSize: 13, color: "#C8102E", textAlign: "center", margin: "40px 0" }}>{error}</p>}
+
+      {joinError && <p style={{ fontSize: 12, color: "#C8102E", margin: "0 0 10px" }}>{joinError}</p>}
 
       {!loading && !error && candidates.length === 0 && (
         <p style={{ fontSize: 13, color: "#8A7A76", textAlign: "center", margin: "40px 0" }}>
@@ -99,25 +137,62 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
               </div>
               <div style={{ fontSize: 12, color: "#8A7A76" }}>도착 소요시간 {c.arrival_estimate}</div>
             </div>
-            <button
-              className="btn-primary"
-              onClick={() => handleClick(c)}
-              disabled={joinedId !== null}
-              style={{
-                padding: "6px 12px",
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 700,
-                border: joinedId === c.id ? "none" : "1px solid #C8102E",
-                background: joinedId === c.id ? "#2F8F5B" : "transparent",
-                color: joinedId === c.id ? "#fff" : joinedId !== null ? "#8A7A76" : "#C8102E",
-                cursor: joinedId !== null ? "default" : "pointer",
-              }}
-            >
-              {joinedId === c.id ? "채팅방 보기" : joinedId !== null ? "참여 불가" : "신청"}
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: "2px 8px",
+                  borderRadius: 999,
+                  background: c.groupCount >= 2 ? "#FCE4E2" : "rgba(36,21,18,0.06)",
+                  color: c.groupCount >= 2 ? "#8C0E22" : "#8A7A76",
+                }}
+              >
+                {c.groupCount}/4
+              </span>
+              <button
+                className="btn-primary"
+                onClick={() => handleClick(c)}
+                disabled={joinedId !== null}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  border: joinedId === c.id ? "none" : "1px solid #C8102E",
+                  background: joinedId === c.id ? "#2F8F5B" : "transparent",
+                  color: joinedId === c.id ? "#fff" : joinedId !== null ? "#8A7A76" : "#C8102E",
+                  cursor: joinedId !== null ? "default" : "pointer",
+                }}
+              >
+                {joinedId === c.id ? "채팅방 보기" : joinedId !== null ? "참여 불가" : "신청"}
+              </button>
+            </div>
           </div>
         ))}
+      </div>
+
+      <div style={{ marginTop: 20, textAlign: "center" }}>
+        <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 10px" }}>
+          마음에 드는 방이 없다면, 직접 새로 만들어서 다른 사람을 기다릴 수 있어요
+        </p>
+        <button
+          onClick={handleStartNew}
+          disabled={joinedId !== null}
+          style={{
+            width: "100%",
+            padding: 14,
+            borderRadius: 999,
+            fontSize: 14,
+            fontWeight: 700,
+            border: "1px solid #C8102E",
+            background: joinedId === myRequest.id ? "#2F8F5B" : "transparent",
+            color: joinedId === myRequest.id ? "#fff" : joinedId !== null ? "#8A7A76" : "#C8102E",
+            cursor: joinedId !== null ? "default" : "pointer",
+          }}
+        >
+          {joinedId === myRequest.id ? "채팅방 보기" : "새로 방 만들기"}
+        </button>
       </div>
     </div>
   );
