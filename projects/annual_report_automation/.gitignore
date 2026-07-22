@@ -4,3 +4,6 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 *.egg-info/
+
+# taxengine API — 로컬 SQLite DB는 실행할 때마다 생기는 산출물이라 커밋 대상이 아님
+taxengine/db/*.db

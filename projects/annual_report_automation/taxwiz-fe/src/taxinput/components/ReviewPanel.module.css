@@ -1,0 +1,205 @@
+.statGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.statCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statNum {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.checkList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 11px 13px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.ic {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+}
+
+.ok .ic {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--color-success);
+}
+
+.bad .ic {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--color-danger);
+}
+
+.checkTxt {
+  flex: 1;
+  font-size: var(--font-size-sm);
+}
+
+.checkTxt small {
+  display: block;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  margin-top: 1px;
+}
+
+.calcCard {
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  margin-top: var(--space-4);
+}
+
+.calcHead b {
+  display: block;
+  font-size: var(--font-size-sm);
+  margin-bottom: 2px;
+}
+
+.calcHead span {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.calcBtn {
+  width: 100%;
+  margin-top: var(--space-4);
+  padding: 13px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: #fff;
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+.calcBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.resultGrid {
+  margin-top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resultRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 13px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.resultHighlight {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.resultNum {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.calcError {
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.calcError ul {
+  margin-top: var(--space-2);
+  padding-left: 18px;
+}
+
+.exportLabel {
+  margin-top: var(--space-5);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.exportGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.exportItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 11px 13px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.fname {
+  flex: 1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--font-size-xs);
+}
+
+.exportItem button {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  padding: 6px 11px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.exportItem button:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}

@@ -643,6 +643,123 @@ class 사업연도생성요청(BaseModel):
 
 ---
 
+## Step 16 — taxwiz-fe: taxengine 입력 위저드 (2026-07-20)
+
+**무엇을 했는지 (한 줄)**
+`taxwiz-fe/`(React)에 taxengine이 읽는 7종 CSV(회사·재무상태표·손익계산서·자산·차량·조정)를 웹 화면으로 입력받는 "질문 하나씩 답하는" 위저드를 새로 만들었어요(`src/taxinput/`). 입력 중인 질문은 화면 상단에 고정돼 있고, 답할 때마다 그 카드가 바로 아래 이력 목록 맨 위로 내려가 쌓입니다. 기존에 있던 부가세 퀴즈 화면(`pages/`, `scenarios/`, `components/progressive-form/`)은 이 세션에서 방향이 확정되며 완전히 안 쓰는 코드가 돼서 지웠고, 재사용 가능한 조각(`Button`, `NumberInput`, `SelectCard`, `Tooltip`)만 남겼어요.
+
+**핵심 코드 1** — "질문 목록"은 매번 현재 데이터로 새로 계산한다 (`taxinput/engine.ts`)
+
+```typescript
+export function cellsForTopic(topicKey: string, io: EngineIO): Cell[] {
+  if (topicKey === "company") return COMPANY_FIELDS.map((f) => wrapBoundField(f, io));
+  if (topicKey.startsWith("bs:")) {
+    const g = BS_GROUPS.find((x) => x.key === topicKey.slice(3))!;
+    return genGroupCells(topicKey, g, "bsExtra", "bs", io);
+    // ↑ "재무상태표에 추가할 과목이 더 있나요?"에 "네"라고 답하면 이 함수가
+    //   다음 렌더에서 이름/금액 질문 두 개를 자동으로 더 만들어냄
+  }
+  ...
+}
+```
+
+고정된 질문 목록을 만들어두는 게 아니라, **지금까지 입력한 값을 보고 다음 질문 목록을 매번 다시 계산**해요. 그래서 "과목을 몇 개 더 추가할지"처럼 사용자가 답하기 전엔 모르는 질문 개수도 자연스럽게 처리됩니다.
+
+**핵심 코드 2** — 다음 질문으로 넘어가는 시점을 렌더 이후로 미룬 이유 (`taxinput/useEngine.ts`)
+
+```typescript
+// commit() 안에서 cell.set(value)를 부르면 리액트는 그 변경을 "나중에" 반영해요.
+// 그래서 commit() 함수 안에서 바로 "질문이 몇 개 남았지?"를 확인하면 방금 한
+// 답이 아직 반영 안 된 옛날 값을 보게 됩니다. 그 대신 데이터가 실제로 바뀐
+// "다음" 렌더에서 실행되는 useEffect가 이 판단을 하게 미뤘어요.
+useEffect(() => {
+  if (cursor.frontier < cells.length) return;       // 아직 이 주제(topic) 안에 질문이 남음
+  const idx = TOPIC_ORDER.indexOf(cursor.topicKey);
+  setCursor((prev) => ({ topicKey: TOPIC_ORDER[idx + 1], frontier: 0, ... }));
+}, [cursor.frontier, cursor.topicKey, cursor.editingId, cells.length]);
+```
+
+리액트 데모를 만들며 실제로 겪은 함정이에요 — 처음엔 `commit()` 안에서 바로 판단하게 짰다가, "추가 과목이 있나요?"에 "네"라고 답하면 새로 생겨야 할 "과목명이 뭔가요?" 질문을 건너뛰고 곧장 다음 주제로 넘어가버리는 버그가 났어요. 원인은 **아직 반영되지 않은 옛날 데이터**를 보고 "질문이 다 끝났다"고 잘못 판단한 것. `useEffect`로 판단 시점을 늦춰서 해결했습니다.
+
+**핵심 코드 3** — 카드가 "내려가는" 애니메이션은 직접 계산하지 않는다 (`taxinput/components/AnsweredRow.tsx`)
+
+```tsx
+<motion.button layout layoutId={cell.id} ...>
+```
+
+같은 `layoutId`를 답변 전 카드(`ActiveCell`)와 답변 후 카드(`AnsweredRow`)에 똑같이 붙여주면, 프레이머모션(framer-motion) 라이브러리가 "이 둘은 같은 것의 두 모습"이라 판단하고 위치·크기 변화를 알아서 부드럽게 이어줘요. 원래 목업(순수 HTML/JS 버전)에서는 이 효과를 직접 좌표를 계산해서 흉내 냈었는데(FLIP 기법), 리액트에서는 라이브러리가 대신 해주니 코드가 훨씬 짧아졌습니다.
+
+**QA 과정에서 실제로 잡은 버그**: 브라우저로 직접 눌러보다가, 숫자 입력창에서 Enter를 눌러도 다음 질문으로 안 넘어가는 걸 발견했어요. 원인은 금액 입력 컴포넌트(`NumberInput`)가 자기 내부의 키보드 입력을 바깥으로 안 알려주고 있었던 것 — 감싸는 태그에 `onKeyDown`을 달아서 이벤트가 위로 "버블링"되는 걸 잡는 방식으로 고쳤어요.
+
+**새로 나온 용어**
+- 위저드(wizard): 여러 단계를 하나씩 밟아가며 입력을 완성하는 화면 흐름
+- 클로저(closure): 함수가 자신이 만들어질 때의 주변 변수를 "기억"해서 나중에도 쓸 수 있는 것 (`get`/`set` 함수가 어떤 계정과목인지 기억하는 방식)
+- 이벤트 버블링(bubbling): 자식 요소에서 일어난 이벤트(클릭, 키보드 입력 등)가 부모 요소까지 타고 올라가며 전달되는 것
+- layoutId(프레이머모션): 서로 다른 두 컴포넌트에 같은 값을 붙이면 "같은 것의 전후 모습"으로 인식해 위치·크기 변화를 자동으로 애니메이션해주는 속성
+
+**확인 질문**
+`commit()` 함수 안에서 바로 "다음 주제로 넘어갈지" 판단하면 안 됐던 이유를, "리액트는 상태 변경을 나중에 반영한다"는 말을 써서 한 문장으로 설명해보시겠어요?
+
+---
+
+## Step 17 — FE를 taxengine API에 실제로 연결 (2026-07-20)
+
+**무엇을 했는지 (한 줄)**
+Step 15에서 "연결 지점만" 만들어두고 FE가 안 쓰던 API(`taxengine/api/main.py`)를, 검토 화면(`ReviewPanel.tsx`)의 "세액 계산하기" 버튼에서 실제로 호출하게 만들었어요(`taxinput/api.ts`). 입력을 다 마치면 회사 생성 → 사업연도 생성(입력 전체 제출) → 계산 실행, 세 번의 요청을 순서대로 보내고 결과(각사업연도소득·과세표준·산출세액·차감납부세액·총납부세액)를 화면에 그대로 보여줘요.
+
+**핵심 코드 1** — 요청 바디는 API의 pydantic 스키마와 필드명을 그대로 맞춘다 (`taxinput/api.ts`)
+
+```typescript
+회사: {
+  사업연도개시일: data.fy.start,
+  중소기업: c.중소기업 === true,        // null일 수도 있는 값을 boolean으로 확정
+  지배주주지분율: c.지배주주목록.length ? 지분합계 : undefined,
+  // ↑ FE는 "누구는 몇%"로 여러 명 나눠 입력받지만, API는 합계 한 숫자만 받음 —
+  //   여기서 합쳐서 보냄. 아무도 안 입력했으면 undefined(안 보냄)
+  ...
+}
+```
+
+`taxengine/api/schemas.py`가 CSV·DB와 필드명을 1:1로 맞춘다고 문서에 적어놓은 원칙을, FE도 그대로 따라갔어요 — 새 이름 체계를 만들지 않고 백엔드가 이미 정한 한글 키를 그대로 씁니다.
+
+**핵심 코드 2** — 서버 응답의 두 가지 오류 모양을 하나로 통일 (`taxinput/api.ts`)
+
+```typescript
+const detail = body?.detail;
+if (detail && typeof detail === "object" && Array.isArray(detail.checks)) {
+  throw new ApiError(detail.message || "요청이 거부됐어요", detail.checks);
+  // ↑ POST .../calculate가 실패하면 {message, checks: [...]} 형태로 옴
+}
+throw new ApiError(typeof detail === "string" ? detail : `요청이 실패했어요 (HTTP ${res.status})`);
+// ↑ POST .../fiscal-years가 실패하면 detail이 그냥 문자열 하나로 옴 (FastAPI의 기본 에러 모양)
+```
+
+같은 서버인데 실패하는 위치에 따라 에러 응답 모양이 달라요(하나는 구조화된 객체, 하나는 그냥 문자열). curl로 직접 두 실패 경로를 재현해보고서야 이 차이를 알았고, 두 모양 다 처리하도록 분기했습니다.
+
+**QA 방법 — 브라우저 대신 curl로 API 계약을 먼저 검증**
+
+위저드는 질문이 90개가 넘어서 브라우저로 처음부터 끝까지 눌러보며 테스트하기엔 비효율적이었어요. 대신 실제 API 서버를 띄우고(`python -m taxengine.api.main`) FE가 보낼 것과 똑같은 모양의 JSON을 curl로 직접 쏴봤습니다.
+
+```bash
+curl -X POST http://127.0.0.1:8000/companies/1/fiscal-years -d @fy_req.json
+curl -X POST http://127.0.0.1:8000/fiscal-years/1/calculate
+# → {"차감납부세액":6300000, ...}  (매출 1억 − 급여 3천만 = 소득 7천만, 중소기업 9%)
+```
+
+계산 결과가 손으로 검산한 값과 정확히 맞아떨어지는 걸 확인한 뒤, 이 테스트가 만든 로컬 DB 파일(`taxengine/db/taxwiz.db`)은 지우고 `.gitignore`에 추가했어요 — 실행할 때마다 새로 생기는 산출물이라 커밋 대상이 아니거든요.
+
+**의도적으로 안 만든 것**: "기존 사업연도 수정" 기능. API에 그 엔드포인트가 없어서, 재계산할 때마다 회사·사업연도를 새로 만들어요(DB에 이력이 계속 쌓임) — 지금 단계에선 그게 "옛날 데이터가 남아서 계산이 꼬이는" 상황보다 안전하다고 판단했습니다.
+
+**새로 나온 용어**
+- fetch: 브라우저가 서버에 HTTP 요청을 보내는 표준 자바스크립트 함수
+- 페이로드(payload): 요청에 실어 보내는 실제 데이터 본문
+- 스모크 테스트(smoke test): 전체를 꼼꼼히 검사하기 전에 "일단 기본적으로 돌아가긴 하는지"만 빠르게 확인하는 테스트
+
+**확인 질문**
+같은 API 서버인데도 오류 응답이 두 가지 다른 모양으로 올 수 있었던 이유가 뭘까요?
+
+---
+
 ## 용어집
 
 - `.gitignore`: git이 "이 파일들은 추적하지 마"라고 알려주는 목록 파일
@@ -669,3 +786,9 @@ class 사업연도생성요청(BaseModel):
 - 자동이월(carryover): 작년 신고서 기말 값이 올해 기초 값이 되는 것을 자동 반영
 - 유보: 회계·세무 차이가 회사 안에 남아 다음 해로 넘어가는 것 (해마다 쌓이고 풀림)
 - 이월결손금: 작년에 손해(결손)가 났으면 올해 소득에서 빼주는 것
+- 위저드(wizard): 여러 단계를 하나씩 밟아가며 입력을 완성하는 화면 흐름
+- 클로저(closure): 함수가 만들어질 때의 주변 변수를 기억해서 나중에도 쓸 수 있는 것
+- 이벤트 버블링(bubbling): 자식 요소의 이벤트가 부모 요소까지 타고 올라가며 전달되는 것
+- fetch: 브라우저가 서버에 HTTP 요청을 보내는 표준 자바스크립트 함수
+- 페이로드(payload): 요청에 실어 보내는 실제 데이터 본문
+- 스모크 테스트(smoke test): 전체를 꼼꼼히 검사하기 전에 기본 동작만 빠르게 확인하는 테스트

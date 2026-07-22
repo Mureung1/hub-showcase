@@ -1,0 +1,214 @@
+.card {
+  padding: 17px var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.card.editing {
+  border-color: var(--color-warning);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+/* pinned right below the topbar — the question you're currently answering
+   never scrolls away; once answered it becomes an ordinary row that drops
+   into the history list underneath (see CellList). */
+.card.primary {
+  position: sticky;
+  top: 58px;
+  z-index: 4;
+  box-shadow: 0 0 0 3px var(--color-primary-light), var(--shadow-md);
+}
+
+@media (max-width: 560px) {
+  .card.primary { top: 54px; }
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.sub {
+  margin-top: 4px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.body {
+  margin-top: var(--space-3);
+}
+
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.inputRow > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.goBtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: transform var(--transition-fast), opacity var(--transition-fast);
+}
+
+.goBtn:hover:not(:disabled) {
+  transform: scale(1.06);
+}
+
+.goBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.textBox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 11px 14px;
+  background: var(--color-surface-2);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast);
+}
+
+.textBox:focus-within {
+  border-color: var(--color-primary);
+}
+
+.textBox input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  min-width: 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ynRow {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.ynBtn {
+  flex: 1;
+  padding: 14px;
+  text-align: center;
+  background: var(--color-surface-2);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--color-text-primary);
+}
+
+.ynBtn:hover {
+  border-color: var(--color-border-hover);
+}
+
+.ynYes.selected {
+  border-color: var(--color-success);
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--color-success);
+}
+
+.ynNo.selected {
+  border-color: var(--color-danger);
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--color-danger);
+}
+
+.skipRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-2);
+}
+
+.skipLink {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  font-weight: 600;
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.skipLink:hover {
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+}
+
+.helperNote {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: 1.5;
+}
+
+.infoCard {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.infoCard b {
+  color: var(--color-text-primary);
+}
+
+.badge {
+  display: inline-block;
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-2);
+}
+
+.badgeAmber {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--color-warning);
+}
+
+.badgeGreen {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--color-success);
+}
