@@ -11,6 +11,63 @@
 - [KIS_openapi](https://github.com/gyuwonlee1/KIS_openapi) — 감시하는 눈 · 자연어 입력
 - [investment_journal](https://github.com/gyuwonlee1/investment_journal) — 복기하는 코치 · 차트 기록
 
+## 아키텍처
+
+화면(웹앱·Discord) · 백엔드(Supabase) · 외부 API(KIS·Gemini)가 **감시 → 기록 → 복기** 루프로 이어집니다. 번호(①~⑥)가 데이터가 흐르는 순서입니다.
+
+```mermaid
+flowchart LR
+  subgraph U["🧑 사용자 접점"]
+    W["웹앱<br/>(React SPA)"]
+    DC(["Discord"])
+  end
+
+  subgraph SB["⚙️ Supabase 백엔드"]
+    CRON["Cron<br/>5분 주기"]
+    DI["discord-interactions"]
+    MON["monitor"]
+    RV["review-agent"]
+    MD["market-data"]
+    DB[("Postgres<br/>조건·기록·복기·관심")]
+  end
+
+  subgraph EX["🌐 외부 API"]
+    KIS["KIS<br/>시세"]
+    GEM["Gemini<br/>파싱·복기"]
+  end
+
+  DC -->|"① 자연어 조건 /알림"| DI
+  DI -.->|파싱| GEM
+  DI -->|"② 조건 저장"| DB
+  CRON -->|"③ 5분마다 감시"| MON
+  MON -.->|시세 조회| KIS
+  MON -->|"④ 조건 충족 알림<br/>(+지난 복기 한 줄)"| DC
+  DC -->|"⑤ 버튼 원클릭 기록"| DI
+  DI -->|기록 저장| DB
+  W -->|"⑥ AI 복기 요청"| RV
+  RV -.->|"과거 기록·시세·지난 복기 조회"| DB
+  RV -.-> KIS
+  RV -.-> GEM
+  RV -->|복기 저장| DB
+  W ---|"조회·기록 (RLS)"| DB
+  W -.->|차트 시세| MD
+  MD -.-> KIS
+
+  classDef user fill:#eef2ff,stroke:#635bff,color:#111
+  classDef backend fill:#ffffff,stroke:#c7ced9,color:#111
+  classDef ext fill:#fff7ed,stroke:#e0a86f,color:#111
+  class W,DC user
+  class CRON,DI,MON,RV,MD,DB backend
+  class KIS,GEM ext
+```
+
+1. **감시 조건 등록** — Discord에 "삼성전자가 8만 원이 되면 알려줘"처럼 말하면 `discord-interactions`가 Gemini로 파싱해 `conditions`에 저장합니다.
+2. **감시** — `Cron`이 5분마다 `monitor`를 깨우고, `monitor`가 KIS 시세로 조건을 평가합니다.
+3. **알림** — 조건이 충족되면 그 사용자의 Discord 채널로 알림을 보냅니다(같은 종목의 지난 복기 한 줄을 함께).
+4. **원클릭 기록** — 알림의 매수/매도/관망 버튼을 누르면 `discord-interactions`가 `trades`에 바로 기록합니다.
+5. **웹앱** — 대시보드·차트·히스토리는 Supabase DB를 직접 읽고 쓰며(RLS로 사용자별 격리), 차트 시세는 `market-data`가 KIS에서 가져옵니다.
+6. **AI 복기(거울 프레임)** — "AI 복기"를 누르면 `review-agent`가 과거 기록·시세·지난 복기를 도구로 조회해, 매매를 *추천*하지 않고 **내 행동을 되비추는** 복기를 만들어 `reviews`에 저장합니다.
+
 ## 문서
 
 - [기획서 (docs/plan.md)](docs/plan.md) — 문제·페르소나·차별점·에이전트다움·핵심 기능·아키텍처·KPI·일정

@@ -51,6 +51,9 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
+  /* grid/flex 트랙 안에서 number input의 min-content 폭이 트랙을 넓히지 않도록(가로 넘침 방지).
+     ConditionForm .cf__field 관례와 동일. */
+  min-width: 0;
 }
 .trade-form__field input,
 .trade-form__field textarea {
@@ -139,6 +142,12 @@
   max-width: 420px;
   max-height: calc(100vh - 48px);
   overflow-y: auto;
+  overflow-x: hidden;
+  /* 우측 세로 스크롤바 숨김 (스크롤 기능은 유지) */
+  scrollbar-width: none;
+}
+.trade-form-overlay__inner::-webkit-scrollbar {
+  display: none;
 }
 .trade-form--modal {
   box-shadow: var(--shadow);

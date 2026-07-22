@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { searchSymbols } from '../lib/symbols.js'
+import { formatPrice } from '../lib/format.js'
 import './ConditionForm.css'
 
 const PRICE_OPERATORS = [
@@ -23,7 +24,8 @@ function preview({ symbol, type, operator, target, smaWindow }) {
   if (!symbol) return '종목을 선택하면 미리보기가 표시됩니다.'
   if (type === 'price') {
     const op = PRICE_OPERATORS.find((o) => o.value === operator)?.label ?? operator
-    return `${symbol.name} 현재가 ${target ? Number(target).toLocaleString('ko-KR') : '?'} ${op}면 알림`
+    const amount = target ? formatPrice(target, symbol.market) : '?'
+    return `${symbol.name} 현재가 ${amount} ${op}면 알림`
   }
   const op = SMA_OPERATORS.find((o) => o.value === operator)?.label ?? operator
   return `${symbol.name} ${smaWindow}일선 ${op} 시 알림`
@@ -210,7 +212,7 @@ export default function ConditionForm({ onCreated, fixedSymbol, editCondition, o
     <form className="card cf" onSubmit={handleSubmit}>
       <div className="cf__title">{isEdit ? '조건 수정' : '조건 추가'}</div>
 
-      {lockedSymbol ? (
+      {fixedSymbol ? null : lockedSymbol ? (
         <div className="cf__field cf__symbol">
           <label>종목</label>
           <div className="cf__fixed-symbol mono">

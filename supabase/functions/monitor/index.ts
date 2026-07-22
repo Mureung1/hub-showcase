@@ -115,6 +115,10 @@ function buildAlertPayload(c: ConditionRow, price: number, memory: string | null
   if (memory) {
     embed.description = `💡 지난 복기: ${memory}`;
   }
+  // 면책 고지(거울 프레임, plan.md 원칙 5): 매매 버튼이 달린 접점이라 상시 노출한다.
+  embed.footer = {
+    text: "Beacon은 투자자문·매매 권유 서비스가 아니며, 투자 판단과 책임은 본인에게 있습니다.",
+  };
 
   const buttons: Array<Record<string, unknown>> = [
     { type: 2, style: 3, label: "📥 매수 기록", custom_id: `bcn|trade|buy|${c.id}|${price}` },

@@ -9,6 +9,7 @@ import {
 } from 'lightweight-charts'
 import { supabase } from '../lib/supabase.js'
 import { resolveSymbol } from '../lib/symbols.js'
+import { formatPrice } from '../lib/format.js'
 import ConditionForm from '../components/ConditionForm.jsx'
 import TradeForm from '../components/TradeForm.jsx'
 import Icon from '../components/Icon.jsx'
@@ -29,12 +30,6 @@ const STATUS_LABEL = { active: '감시 중', done: '완료', disabled: '대기' 
 function readToken(name, fallback) {
   const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
   return value || fallback
-}
-
-function formatPrice(price, market) {
-  const value = Number(price)
-  if (!Number.isFinite(value)) return '-'
-  return market === 'US' ? `$${value.toLocaleString('en-US')}` : `${value.toLocaleString('ko-KR')}원`
 }
 
 function formatDateTime(iso) {
@@ -87,7 +82,7 @@ function todayYmd() {
 function describeCondition(condition) {
   if (condition.type === 'price') {
     const opText = OPERATOR_LABEL[condition.operator] ?? condition.operator
-    return `현재가 ${Number(condition.target).toLocaleString('ko-KR')} ${opText}`
+    return `현재가 ${formatPrice(condition.target, condition.market)} ${opText}`
   }
   if (condition.type === 'sma_cross') {
     const opText = SMA_OPERATOR_LABEL[condition.operator] ?? condition.operator
@@ -647,15 +642,12 @@ export default function StockPage() {
               조건 충족
             </span>
           </div>
+          <p className="stock-chart-hint">
+            💡 차트에서 원하는 지점을 클릭하면 그 시점의 매매를 기록할 수 있어요.
+          </p>
         </div>
 
         <div className="stock-side">
-          <TradeForm
-            symbolMeta={{ ticker: meta.ticker, market: meta.market, exchange: meta.exchange, name: meta.name }}
-            defaultPrice={latestClose}
-            onSaved={loadRecords}
-          />
-
           <ConditionForm
             fixedSymbol={{ ticker: meta.ticker, market: meta.market, exchange: meta.exchange, name: meta.name }}
             onCreated={(c) => setConditions((prev) => [c, ...prev])}

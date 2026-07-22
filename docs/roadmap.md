@@ -136,7 +136,7 @@ WP-A(A1) ─→ WP-G(Discord 연동, 독립 병행 가능)
 1. **관망 = 1급 개념.** "진입 안 함"도 기록·복기 대상 — 구현 완료(`0005`, 3-way).
 2. **관심종목 저장 = 신규 `watchlists` 테이블** — 구현 완료(`0003`).
 3. **알림 메모리 에이전트화 = 연기.** 현행(저장된 복기 조회) 유지.
-4. **디자인 = 라이트 온리.** Stripe/Linear풍 + Geist 폰트 + 1152px 중앙 레이아웃. accent 인디고 `#635bff`, 국내 관례색(상승 빨강/하락 파랑) 유지. 원천 [design.md](design.md).
+4. **디자인 = 라이트 온리.** Stripe/Linear풍 + 1152px 중앙 레이아웃. 폰트: 본문·제목 Pretendard(한국어 UI 표준) + 숫자·티커 Geist Mono. accent 인디고 `#635bff`, 국내 관례색(상승 빨강/하락 파랑) 유지. 원천 [design.md](design.md).
 5. **홈 = 인증 인지형 `/`.** 진입점은 `APP_HOME` 상수 1곳.
 6. **웹 조건 추가 = 구조화 폼.** 자연어 파싱(Gemini)은 Discord 전용.
 7. **매매 기록 필드.** WP-B: 기존 + 셋업 태그(다중)·감정 상태(단일). **`0007`에서 진입 계획 필드(thesis·target_price·stop_price·horizon·confidence, 전부 선택) 추가** — 거울 프레임의 `plan_adherence` 축 전제. (초기 "확신도·목표가/손절가 미채택"은 번복.) *(WP-B·WP-I)*

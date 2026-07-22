@@ -1,21 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
+import { formatPrice } from '../lib/format.js'
 import './ConditionsPage.css'
 
 const OPERATOR_LABEL = { '>=': '이상', '<=': '이하', '>': '초과', '<': '미만' }
 const SMA_OPERATOR_LABEL = { '>=': '상향 돌파', '<=': '하향 이탈' }
 const STATUS_LABEL = { active: '감시 중', done: '완료', disabled: '대기' }
 
-function formatNumber(value) {
-  const n = Number(value)
-  return Number.isFinite(n) ? n.toLocaleString('ko-KR') : '-'
-}
-
 function describeCondition(condition) {
   if (condition.type === 'price') {
     const opText = OPERATOR_LABEL[condition.operator] ?? condition.operator
-    return `현재가 ${formatNumber(condition.target)} ${opText}`
+    return `현재가 ${formatPrice(condition.target, condition.market)} ${opText}`
   }
   if (condition.type === 'sma_cross') {
     const opText = SMA_OPERATOR_LABEL[condition.operator] ?? condition.operator
@@ -95,7 +91,13 @@ function ConditionsPage() {
     for (const condition of conditions) {
       const key = `${condition.ticker}|${condition.market}`
       if (!map.has(key)) {
-        map.set(key, { key, ticker: condition.ticker, market: condition.market, items: [] })
+        map.set(key, {
+          key,
+          ticker: condition.ticker,
+          market: condition.market,
+          name: condition.name || condition.ticker,
+          items: [],
+        })
       }
       map.get(key).items.push(condition)
     }
@@ -124,7 +126,7 @@ function ConditionsPage() {
             <div key={group.key} className="conditions-group">
               <div className="conditions-group__head">
                 <span className="conditions-group__name">
-                  {group.ticker} <span className="conditions-row__ticker">{group.market}</span>
+                  {group.name} <span className="conditions-row__ticker mono">{group.ticker} · {group.market}</span>
                   <span className="conditions-group__count"> · {group.items.length}건</span>
                 </span>
                 <Link to={`/stock/${group.ticker}`} className="conditions-group__link">

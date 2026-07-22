@@ -69,11 +69,11 @@
 
 | 토큰 | 값 |
 |------|-----|
-| `--sans` / `--heading` | `'Geist Variable', system-ui, 'Segoe UI', Roboto, sans-serif` |
+| `--sans` / `--heading` | `'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif` |
 | `--mono` | `'Geist Mono Variable', ui-monospace, Consolas, monospace` — 가격·티커·날짜 (`tabular-nums`) |
 
-> **폰트: Geist**(investment_journal 차용). `@fontsource-variable/geist`·`@fontsource-variable/geist-mono`를
-> npm으로 번들해 `main.jsx`에서 import(오프라인·CSP 안전, CDN 아님). 미로드 시 system-ui로 폴백.
+> **폰트: 본문·제목 = Pretendard**(한국어 UI 표준, 라틴 자형 우수 — 한국어 UI 카피 정합), **숫자·티커 = Geist Mono**(고정폭, 가격 표 정렬).
+> `pretendard`(variable, `dist/web/variable/pretendardvariable.css`)·`@fontsource-variable/geist-mono`를 npm으로 번들해 `main.jsx`에서 import(오프라인·CSP 안전, CDN 아님). 미로드 시 system-ui/한국어 시스템 폰트로 폴백.
 
 ### 스케일
 
