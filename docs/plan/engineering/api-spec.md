@@ -383,7 +383,7 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 
 ## GET /api/mission-records/calendar
 
-나의 깸 캘린더에 표시할 월별 기록 날짜와 날짜별 기록 개수를 반환한다.
+나의 깸 캘린더에 표시할 월별 기록 날짜와 날짜별 기록 개수, 최초 미션 유형을 반환한다.
 
 **쿼리**
 
@@ -395,8 +395,8 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 {
   "month": "2026-07",
   "days": [
-    { "date": "2026-07-03", "recordCount": 1 },
-    { "date": "2026-07-21", "recordCount": 3 }
+    { "date": "2026-07-03", "recordCount": 1, "firstMissionType": "connection" },
+    { "date": "2026-07-21", "recordCount": 3, "firstMissionType": "question" }
   ]
 }
 ```
@@ -404,6 +404,7 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 - 기록이 있는 날짜만 `date asc`로 반환한다.
 - 해당 월에 기록이 없으면 `days`는 빈 배열이다.
 - 날짜와 월 경계는 `Asia/Seoul`을 기준으로 계산한다.
+- `firstMissionType`은 해당 `Asia/Seoul` 날짜에 생성된 기록 중 `createdAt asc`, 같은 시각이면 `id asc`인 첫 기록의 미션 유형이다. 값은 `mission_records.mission_type`과 같은 `question`/`rebuttal`/`connection`/`expression` 중 하나다.
 
 **에러**: `401`, 잘못된 `month` 형식 `422`.
 

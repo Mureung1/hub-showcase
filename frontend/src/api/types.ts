@@ -102,6 +102,31 @@ export type MissionRecord = {
   createdAt: string
 }
 
+export type MissionRecordListItem = {
+  id: string
+  articleId: string
+  articleTitle: string
+  sourceName: string
+  interestTags: InterestTag[]
+  missionType: MissionType
+  missionPrompt: string
+  userAnswer: string
+  createdAt: string
+  originalUrl: string
+  urlStatus: UrlStatus
+}
+
+export type MissionRecordCalendarDay = {
+  date: string
+  recordCount: number
+  firstMissionType: MissionType
+}
+
+export type MissionRecordCalendarResponse = {
+  month: string
+  days: MissionRecordCalendarDay[]
+}
+
 export type ErrorDetail = {
   field: string
   reason: string

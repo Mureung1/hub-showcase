@@ -24,8 +24,19 @@ OTHER_USER_ID = "10000000-0000-0000-0000-000000000002"
 AUTH_HEADER = {"Authorization": "Bearer test-token"}
 
 
-def make_record_row(user_id: str, created_at: str) -> dict:
-    return {"user_id": user_id, "created_at": created_at}
+def make_record_row(
+    user_id: str,
+    created_at: str,
+    *,
+    record_id: str = "50000000-0000-0000-0000-000000000001",
+    mission_type: str = "connection",
+) -> dict:
+    return {
+        "id": record_id,
+        "user_id": user_id,
+        "created_at": created_at,
+        "mission_type": mission_type,
+    }
 
 
 class _FakeResult:
@@ -34,12 +45,19 @@ class _FakeResult:
 
 
 class _FakeMissionRecordsCalendarQuery:
-    def __init__(self, rows: list[dict], recorded_calls: list[tuple[str, str, str]]):
+    def __init__(
+        self,
+        rows: list[dict],
+        recorded_calls: list[tuple[str, str, str]],
+        selected_columns: list[str],
+    ):
         self._rows = rows
         self._user_id: str | None = None
         self._recorded_calls = recorded_calls
+        self._selected_columns = selected_columns
 
-    def select(self, *_args, **_kwargs):
+    def select(self, columns: str, *_args, **_kwargs):
+        self._selected_columns.append(columns)
         return self
 
     def eq(self, field: str, value: str):
@@ -77,10 +95,13 @@ class FakeMissionRecordsCalendarClient:
     def __init__(self, rows: list[dict] | None = None):
         self.rows = rows or []
         self.recorded_calls: list[tuple[str, str, str]] = []
+        self.selected_columns: list[str] = []
 
     def table(self, name: str):
         if name == "mission_records":
-            return _FakeMissionRecordsCalendarQuery(self.rows, self.recorded_calls)
+            return _FakeMissionRecordsCalendarQuery(
+                self.rows, self.recorded_calls, self.selected_columns
+            )
         raise AssertionError(f"unexpected table: {name}")
 
 
@@ -162,7 +183,141 @@ class MissionRecordsCalendarApiTest(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["days"], [{"date": "2026-07-01", "recordCount": 1}])
+        self.assertEqual(
+            response.json()["days"],
+            [{"date": "2026-07-01", "recordCount": 1, "firstMissionType": "connection"}],
+        )
+
+    def test_single_record_day_returns_its_mission_type(self):
+        row = make_record_row(TEST_USER_ID, "2026-07-21T03:00:00Z", mission_type="connection")
+        fake = FakeMissionRecordsCalendarClient(rows=[row])
+        override_user(fake)
+
+        response = self.client.get(
+            "/api/mission-records/calendar", headers=AUTH_HEADER, params={"month": "2026-07"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["days"],
+            [{"date": "2026-07-21", "recordCount": 1, "firstMissionType": "connection"}],
+        )
+
+    def test_first_mission_type_is_from_earliest_created_at_not_a_later_record(self):
+        earlier = make_record_row(
+            TEST_USER_ID,
+            "2026-07-21T01:00:00Z",
+            record_id="50000000-0000-0000-0000-000000000001",
+            mission_type="question",
+        )
+        later = make_record_row(
+            TEST_USER_ID,
+            "2026-07-21T10:00:00Z",
+            record_id="50000000-0000-0000-0000-000000000002",
+            mission_type="expression",
+        )
+        # 입력 행 순서를 뒤집어도(더 늦은 기록을 먼저 넣어도) 결과가 같아야 한다.
+        fake = FakeMissionRecordsCalendarClient(rows=[later, earlier])
+        override_user(fake)
+
+        response = self.client.get(
+            "/api/mission-records/calendar", headers=AUTH_HEADER, params={"month": "2026-07"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["days"],
+            [{"date": "2026-07-21", "recordCount": 2, "firstMissionType": "question"}],
+        )
+
+    def test_same_created_at_uses_the_smallest_id(self):
+        high_id = make_record_row(
+            TEST_USER_ID,
+            "2026-07-21T01:00:00Z",
+            record_id="50000000-0000-0000-0000-000000000009",
+            mission_type="rebuttal",
+        )
+        low_id = make_record_row(
+            TEST_USER_ID,
+            "2026-07-21T01:00:00Z",
+            record_id="50000000-0000-0000-0000-000000000001",
+            mission_type="expression",
+        )
+        fake = FakeMissionRecordsCalendarClient(rows=[high_id, low_id])
+        override_user(fake)
+
+        response = self.client.get(
+            "/api/mission-records/calendar", headers=AUTH_HEADER, params={"month": "2026-07"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["days"],
+            [{"date": "2026-07-21", "recordCount": 2, "firstMissionType": "expression"}],
+        )
+
+    def test_different_dates_each_compute_their_own_first_mission_type(self):
+        rows = [
+            make_record_row(
+                TEST_USER_ID,
+                "2026-07-03T03:00:00Z",
+                record_id="50000000-0000-0000-0000-000000000001",
+                mission_type="question",
+            ),
+            make_record_row(
+                TEST_USER_ID,
+                "2026-07-21T03:00:00Z",
+                record_id="50000000-0000-0000-0000-000000000002",
+                mission_type="rebuttal",
+            ),
+        ]
+        fake = FakeMissionRecordsCalendarClient(rows=rows)
+        override_user(fake)
+
+        response = self.client.get(
+            "/api/mission-records/calendar", headers=AUTH_HEADER, params={"month": "2026-07"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["days"],
+            [
+                {"date": "2026-07-03", "recordCount": 1, "firstMissionType": "question"},
+                {"date": "2026-07-21", "recordCount": 1, "firstMissionType": "rebuttal"},
+            ],
+        )
+
+    def test_all_four_mission_types_are_serializable(self):
+        for mission_type in ("question", "rebuttal", "connection", "expression"):
+            with self.subTest(mission_type=mission_type):
+                row = make_record_row(
+                    TEST_USER_ID, "2026-07-21T03:00:00Z", mission_type=mission_type
+                )
+                fake = FakeMissionRecordsCalendarClient(rows=[row])
+                override_user(fake)
+
+                response = self.client.get(
+                    "/api/mission-records/calendar",
+                    headers=AUTH_HEADER,
+                    params={"month": "2026-07"},
+                )
+
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(
+                    response.json()["days"][0]["firstMissionType"], mission_type
+                )
+                app.dependency_overrides.clear()
+
+    def test_calendar_select_is_limited_to_id_created_at_mission_type(self):
+        fake = FakeMissionRecordsCalendarClient(rows=[])
+        override_user(fake)
+
+        response = self.client.get(
+            "/api/mission-records/calendar", headers=AUTH_HEADER, params={"month": "2026-07"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(fake.selected_columns, ["id,created_at,mission_type"])
 
     def test_next_kst_month_start_instant_is_excluded(self):
         row = make_record_row(TEST_USER_ID, "2026-07-31T15:00:00Z")
@@ -202,7 +357,10 @@ class MissionRecordsCalendarApiTest(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["days"], [{"date": "2026-07-21", "recordCount": 3}])
+        self.assertEqual(
+            response.json()["days"],
+            [{"date": "2026-07-21", "recordCount": 3, "firstMissionType": "connection"}],
+        )
 
     def test_different_dates_are_each_returned_and_sorted_ascending(self):
         rows = [
@@ -220,8 +378,8 @@ class MissionRecordsCalendarApiTest(unittest.TestCase):
         self.assertEqual(
             response.json()["days"],
             [
-                {"date": "2026-07-03", "recordCount": 1},
-                {"date": "2026-07-21", "recordCount": 1},
+                {"date": "2026-07-03", "recordCount": 1, "firstMissionType": "connection"},
+                {"date": "2026-07-21", "recordCount": 1, "firstMissionType": "connection"},
             ],
         )
 
@@ -247,7 +405,10 @@ class MissionRecordsCalendarApiTest(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["days"], [{"date": "2026-07-21", "recordCount": 1}])
+        self.assertEqual(
+            response.json()["days"],
+            [{"date": "2026-07-21", "recordCount": 1, "firstMissionType": "connection"}],
+        )
 
     def test_missing_token_returns_401(self):
         response = self.client.get(

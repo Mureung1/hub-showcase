@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import type { ArticleDetail, TodayArticle } from './api/types'
 
@@ -27,6 +27,8 @@ vi.mock('./api/client', () => {
       getTodayArticles: vi.fn().mockResolvedValue({ items: [], emptyStateMessage: null }),
       getArticleDetail: vi.fn(),
       createMissionRecord: vi.fn(),
+      getMissionRecords: vi.fn().mockResolvedValue([]),
+      getMissionRecordsCalendar: vi.fn().mockResolvedValue({ month: '2026-07', days: [] }),
     },
   }
 })
@@ -269,5 +271,269 @@ describe('Today article intro flow', () => {
     expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
     expect(screen.getAllByRole('article')[0]).toHaveTextContent(ARTICLE_B.title)
     expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('Today and MyGgaem tab navigation', () => {
+  beforeEach(() => {
+    vi.mocked(api.getUserInterests).mockReset()
+    vi.mocked(api.getTodayArticles).mockReset()
+    vi.mocked(api.getMissionRecords).mockReset()
+    vi.mocked(api.getMissionRecordsCalendar).mockReset()
+    vi.mocked(api.getUserInterests).mockResolvedValue({
+      hasCompletedOnboarding: true,
+      interests: [],
+    })
+    vi.mocked(api.getTodayArticles).mockResolvedValue({ items: [], emptyStateMessage: null })
+    vi.mocked(api.getMissionRecords).mockResolvedValue([])
+    vi.mocked(api.getMissionRecordsCalendar).mockResolvedValue({ month: '2026-07', days: [] })
+  })
+
+  it('enables the 나의 깸 tab on Today (not disabled)', async () => {
+    render(<App />)
+
+    expect(await screen.findByRole('button', { name: /나의 깸/ })).not.toBeDisabled()
+  })
+
+  it('shows the MyGgaem screen when the 나의 깸 tab is clicked', async () => {
+    render(<App />)
+
+    await userEvent.click(await screen.findByRole('button', { name: /나의 깸/ }))
+
+    expect(await screen.findByRole('heading', { name: '나의 깸' })).toBeInTheDocument()
+  })
+
+  describe('with system time fixed at 2026-07-21T16:00:00Z (KST 2026-07-22)', () => {
+    beforeEach(() => {
+      vi.setSystemTime(new Date('2026-07-21T16:00:00Z'))
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    async function openMyGgaem() {
+      render(<App />)
+      await userEvent.click(await screen.findByRole('button', { name: /나의 깸/ }))
+    }
+
+    it('selects KST today (not the UTC or local calendar date) and requests the calendar and records for it', async () => {
+      await openMyGgaem()
+
+      await screen.findByRole('heading', { name: '나의 깸' })
+      expect(api.getMissionRecordsCalendar).toHaveBeenCalledExactlyOnceWith('2026-07')
+      expect(api.getMissionRecords).toHaveBeenCalledExactlyOnceWith('2026-07-22')
+    })
+
+    it('shows calendar and records success data once both requests resolve', async () => {
+      vi.mocked(api.getMissionRecordsCalendar).mockResolvedValue({
+        month: '2026-07',
+        days: [{ date: '2026-07-22', recordCount: 2, firstMissionType: 'connection' }],
+      })
+      vi.mocked(api.getMissionRecords).mockResolvedValue([
+        {
+          id: '50000000-0000-0000-0000-000000000001',
+          articleId: '40000000-0000-0000-0000-000000000001',
+          articleTitle: 'A 글',
+          sourceName: '요즘IT',
+          interestTags: [{ id: 'interest-1', name: 'IT·개발' }],
+          missionType: 'connection',
+          missionPrompt: '내 상황이나 프로젝트와 연결해보면?',
+          userAnswer: '생각',
+          createdAt: '2026-07-22T01:00:00Z',
+          originalUrl: 'https://example.com/a',
+          urlStatus: 'active',
+        },
+      ])
+
+      await openMyGgaem()
+
+      expect(await screen.findByRole('button', { name: /22일.*연결.*2개/ })).toBeInTheDocument()
+      expect(await screen.findByRole('article')).toHaveTextContent('A 글')
+    })
+
+    it('refetches only the records API when a different date in the same month is selected', async () => {
+      await openMyGgaem()
+      await screen.findByRole('heading', { name: '나의 깸' })
+      vi.mocked(api.getMissionRecordsCalendar).mockClear()
+      vi.mocked(api.getMissionRecords).mockClear()
+
+      await userEvent.click(screen.getByRole('button', { name: /^5일/ }))
+
+      await vi.waitFor(() => {
+        expect(api.getMissionRecords).toHaveBeenCalledExactlyOnceWith('2026-07-05')
+      })
+      expect(api.getMissionRecordsCalendar).not.toHaveBeenCalled()
+    })
+
+    it('keeps the same day of month when moving to the previous or next month', async () => {
+      await openMyGgaem()
+      await screen.findByRole('heading', { name: '나의 깸' })
+      vi.mocked(api.getMissionRecordsCalendar).mockClear()
+      vi.mocked(api.getMissionRecords).mockClear()
+
+      await userEvent.click(screen.getByRole('button', { name: '다음 달' }))
+
+      await vi.waitFor(() => {
+        expect(api.getMissionRecordsCalendar).toHaveBeenCalledExactlyOnceWith('2026-08')
+      })
+      expect(api.getMissionRecords).toHaveBeenCalledExactlyOnceWith('2026-08-22')
+    })
+
+    it('clamps to the last day of the target month when the current day does not exist there', async () => {
+      vi.setSystemTime(new Date('2026-03-30T15:00:00Z')) // KST 2026-03-31
+      await openMyGgaem()
+      await screen.findByRole('heading', { name: '나의 깸' })
+      vi.mocked(api.getMissionRecordsCalendar).mockClear()
+      vi.mocked(api.getMissionRecords).mockClear()
+
+      await userEvent.click(screen.getByRole('button', { name: '이전 달' }))
+
+      await vi.waitFor(() => {
+        expect(api.getMissionRecords).toHaveBeenCalledExactlyOnceWith('2026-02-28')
+      })
+      expect(api.getMissionRecordsCalendar).toHaveBeenCalledExactlyOnceWith('2026-02')
+    })
+
+    it('clamps to February 29 in a leap year', async () => {
+      vi.setSystemTime(new Date('2024-03-30T15:00:00Z')) // KST 2024-03-31
+      await openMyGgaem()
+      await screen.findByRole('heading', { name: '나의 깸' })
+      vi.mocked(api.getMissionRecords).mockClear()
+
+      await userEvent.click(screen.getByRole('button', { name: '이전 달' }))
+
+      await vi.waitFor(() => {
+        expect(api.getMissionRecords).toHaveBeenCalledExactlyOnceWith('2024-02-29')
+      })
+    })
+
+    it('crosses a year boundary when moving from January to December of the previous year', async () => {
+      vi.setSystemTime(new Date('2026-01-14T15:00:00Z')) // KST 2026-01-15
+      await openMyGgaem()
+      await screen.findByRole('heading', { name: '나의 깸' })
+      vi.mocked(api.getMissionRecordsCalendar).mockClear()
+      vi.mocked(api.getMissionRecords).mockClear()
+
+      await userEvent.click(screen.getByRole('button', { name: '이전 달' }))
+
+      await vi.waitFor(() => {
+        expect(api.getMissionRecordsCalendar).toHaveBeenCalledExactlyOnceWith('2025-12')
+      })
+      expect(api.getMissionRecords).toHaveBeenCalledExactlyOnceWith('2025-12-15')
+    })
+
+    it('shows a calendar error alongside successful records data', async () => {
+      vi.mocked(api.getMissionRecordsCalendar).mockRejectedValue(new Error('boom'))
+      vi.mocked(api.getMissionRecords).mockResolvedValue([
+        {
+          id: '50000000-0000-0000-0000-000000000001',
+          articleId: '40000000-0000-0000-0000-000000000001',
+          articleTitle: 'A 글',
+          sourceName: '요즘IT',
+          interestTags: [],
+          missionType: 'connection',
+          missionPrompt: '내 상황이나 프로젝트와 연결해보면?',
+          userAnswer: '생각',
+          createdAt: '2026-07-22T01:00:00Z',
+          originalUrl: 'https://example.com/a',
+          urlStatus: 'active',
+        },
+      ])
+
+      await openMyGgaem()
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('달력을 불러오지 못했어요.')
+      expect(await screen.findByRole('article')).toHaveTextContent('A 글')
+    })
+
+    it('shows a records error alongside successful calendar data', async () => {
+      vi.mocked(api.getMissionRecordsCalendar).mockResolvedValue({
+        month: '2026-07',
+        days: [{ date: '2026-07-22', recordCount: 1, firstMissionType: 'question' }],
+      })
+      vi.mocked(api.getMissionRecords).mockRejectedValue(new Error('boom'))
+
+      await openMyGgaem()
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('기록을 불러오지 못했어요.')
+      expect(await screen.findByRole('button', { name: /22일.*질문.*1개/ })).toBeInTheDocument()
+    })
+
+    it('retries only the calendar request from the calendar retry button', async () => {
+      vi.mocked(api.getMissionRecordsCalendar).mockRejectedValueOnce(new Error('boom'))
+      vi.mocked(api.getMissionRecordsCalendar).mockResolvedValueOnce({ month: '2026-07', days: [] })
+      await openMyGgaem()
+      await screen.findByRole('alert')
+      vi.mocked(api.getMissionRecords).mockClear()
+
+      await userEvent.click(screen.getByRole('button', { name: /다시 시도/ }))
+
+      await vi.waitFor(() => {
+        expect(api.getMissionRecordsCalendar).toHaveBeenCalledTimes(2)
+      })
+      expect(api.getMissionRecords).not.toHaveBeenCalled()
+    })
+
+    it('retries only the records request from the records retry button', async () => {
+      vi.mocked(api.getMissionRecords).mockRejectedValueOnce(new Error('boom'))
+      vi.mocked(api.getMissionRecords).mockResolvedValueOnce([])
+      await openMyGgaem()
+      await screen.findByRole('alert')
+      vi.mocked(api.getMissionRecordsCalendar).mockClear()
+
+      await userEvent.click(screen.getByRole('button', { name: /다시 시도/ }))
+
+      await vi.waitFor(() => {
+        expect(api.getMissionRecords).toHaveBeenCalledTimes(2)
+      })
+      expect(api.getMissionRecordsCalendar).not.toHaveBeenCalled()
+    })
+
+    it('does not let a stale late response overwrite the state for a newly selected date', async () => {
+      let resolveFirst: ((items: never[]) => void) | undefined
+      vi.mocked(api.getMissionRecords).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveFirst = resolve
+          }),
+      )
+      await openMyGgaem()
+      await screen.findByRole('heading', { name: '나의 깸' })
+
+      vi.mocked(api.getMissionRecords).mockResolvedValueOnce([
+        {
+          id: '50000000-0000-0000-0000-000000000009',
+          articleId: '40000000-0000-0000-0000-000000000001',
+          articleTitle: 'B 글',
+          sourceName: '요즘IT',
+          interestTags: [],
+          missionType: 'expression',
+          missionPrompt: '이 글이 놓친 관점은 뭐지?',
+          userAnswer: '새 날짜의 기록',
+          createdAt: '2026-07-05T01:00:00Z',
+          originalUrl: 'https://example.com/b',
+          urlStatus: 'active',
+        },
+      ])
+      await userEvent.click(screen.getByRole('button', { name: /^5일/ }))
+      expect(await screen.findByRole('article')).toHaveTextContent('새 날짜의 기록')
+
+      // 이전(22일) 요청이 뒤늦게 응답해도 지금 선택된 5일의 데이터를 덮으면 안 된다.
+      resolveFirst?.([])
+      await Promise.resolve()
+      expect(screen.getByRole('article')).toHaveTextContent('새 날짜의 기록')
+    })
+
+    it('returns to Today from the 오늘의 글 tab without refetching getTodayArticles', async () => {
+      await openMyGgaem()
+      await screen.findByRole('heading', { name: '나의 깸' })
+      expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
+
+      await userEvent.click(screen.getByRole('button', { name: /오늘의 글/ }))
+
+      expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+      expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
+    })
   })
 })

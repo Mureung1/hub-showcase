@@ -139,15 +139,28 @@ def kst_month_bounds_utc(year: int, month: int) -> tuple[datetime, datetime]:
 
 
 def aggregate_calendar_days(rows: list[dict]) -> list[MissionRecordCalendarDay]:
-    """월 범위로 이미 필터링된 행을 KST 날짜별로 집계한다."""
+    """월 범위로 이미 필터링된 행을 KST 날짜별로 집계한다.
+
+    각 날짜의 최초 기록은 (created_at, id) 오름차순으로 정한다.
+    """
     counts: dict[Date, int] = {}
+    first_keys: dict[Date, tuple[datetime, str]] = {}
+    first_mission_types: dict[Date, str] = {}
     for row in rows:
         created_at = datetime.fromisoformat(row["created_at"])
         kst_date = created_at.astimezone(KST).date()
         counts[kst_date] = counts.get(kst_date, 0) + 1
+        key = (created_at, row["id"])
+        if kst_date not in first_keys or key < first_keys[kst_date]:
+            first_keys[kst_date] = key
+            first_mission_types[kst_date] = row["mission_type"]
     return [
-        MissionRecordCalendarDay(date=day, record_count=count)
-        for day, count in sorted(counts.items())
+        MissionRecordCalendarDay(
+            date=day,
+            record_count=counts[day],
+            first_mission_type=first_mission_types[day],
+        )
+        for day in sorted(counts)
     ]
 
 
@@ -161,7 +174,7 @@ def get_mission_records_calendar(
     start_utc, end_utc = kst_month_bounds_utc(year, month_num)
     result = (
         client.table("mission_records")
-        .select("created_at")
+        .select("id,created_at,mission_type")
         .eq("user_id", user_id)
         .gte("created_at", start_utc.isoformat())
         .lt("created_at", end_utc.isoformat())
