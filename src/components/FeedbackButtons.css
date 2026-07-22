@@ -1,0 +1,21 @@
+.feedback-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-feedback {
+  flex: 1;
+  background: transparent;
+  color: #e9ecf5;
+  border: 1px solid #3b4470;
+  border-radius: 9px;
+  padding: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-feedback-selected {
+  background: #e8694f;
+  border-color: #e8694f;
+  color: #fff;
+}

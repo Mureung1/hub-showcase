@@ -1,6 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { apiFetch } from "../lib/api";
+import CompletionMessage from "./CompletionMessage";
+import FeedbackButtons from "./FeedbackButtons";
 import "./FocusMode.css";
+
+// 피드백 선택 스타일이 화면에 보인 뒤 닫히도록 짧게 지연한다(#39).
+const FEEDBACK_CLOSE_DELAY_MS = 500;
 
 function formatElapsed(totalSeconds) {
   const mm = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
@@ -11,6 +16,8 @@ function formatElapsed(totalSeconds) {
 function FocusMode({ taskId, title, onComplete, onStop }) {
   const [elapsed, setElapsed] = useState(0);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [phase, setPhase] = useState("focus"); // "focus" | "completed"
+  const feedbackTimeoutRef = useRef(null);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -19,6 +26,11 @@ function FocusMode({ taskId, title, onComplete, onStop }) {
 
     // cleanup: 컴포넌트가 사라질 때 타이머를 반드시 해제
     return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    // 언마운트 시 대기 중인 피드백 닫기 타이머도 정리
+    return () => clearTimeout(feedbackTimeoutRef.current);
   }, []);
 
   async function recordEvent(eventType) {
@@ -43,11 +55,27 @@ function FocusMode({ taskId, title, onComplete, onStop }) {
     try {
       setErrorMessage(null);
       await recordEvent("done");
-      onComplete?.();
+      setPhase("completed");
     } catch (err) {
       console.error(err);
       setErrorMessage("완료 기록에 실패했어요. 다시 시도해주세요.");
     }
+  }
+
+  // #40에서 이 자리에 피드백 저장 API 호출이 들어갈 예정 — 지금은 로컬 처리만 하고 닫는다.
+  function handleFeedbackSelect() {
+    feedbackTimeoutRef.current = setTimeout(() => {
+      onComplete?.();
+    }, FEEDBACK_CLOSE_DELAY_MS);
+  }
+
+  if (phase === "completed") {
+    return (
+      <div className="focus-mode">
+        <CompletionMessage />
+        <FeedbackButtons onSelect={handleFeedbackSelect} />
+      </div>
+    );
   }
 
   return (
