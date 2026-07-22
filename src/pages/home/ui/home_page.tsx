@@ -79,7 +79,7 @@ export function HomePage({
         <div className="home-page__no-results">
           <EmptyState
             actionLabel="링크 저장"
-            description="첫 링크를 저장하면 현재 상황과 연결된 인사이트를 다시 꺼낼 수 있어요."
+            description="첫 링크를 저장하면 지금 상황에 맞는 인사이트를 다시 꺼낼 수 있어요."
             onAction={onOpenSave}
             title="아직 저장한 인사이트가 없어요"
           />

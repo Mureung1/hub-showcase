@@ -23,7 +23,7 @@ export function RetrieveResults({
     >
       <div className="home-page__results-heading">
         <div>
-          <h2 id="home-results-title">현재 상황과 연결된 인사이트</h2>
+          <h2 id="home-results-title">지금 상황에 맞는 인사이트</h2>
         </div>
         <p
           aria-live="polite"

@@ -294,6 +294,9 @@ describe('HomePage', () => {
     expect(screen.getByRole('status').textContent).toContain('온보딩 작업');
     expect(screen.getByRole('status').textContent).toContain('1개');
     expect(screen.getByRole('status').textContent).toContain('결과');
+    expect(
+      screen.getByRole('heading', { name: '지금 상황에 맞는 인사이트' })
+    ).not.toBeNull();
     expect(screen.queryByText('작업팩')).toBeNull();
     expect(screen.queryByText(/단서가 겹쳐요/)).toBeNull();
     const sourceLink = screen.getByRole('link', { name: '원문 열기' });
