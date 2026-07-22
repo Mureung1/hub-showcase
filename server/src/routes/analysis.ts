@@ -2,15 +2,20 @@ import { Router } from "express";
 import path from "path";
 import { writeJson } from "../utils/jsonStore";
 import { dataPath, ANALYZER_DIR } from "../utils/paths";
-import { runAnalyzer, type AnalyzedClass } from "../utils/analyzer";
+import { runAnalyzer } from "../utils/analyzer";
+import { runJscpd } from "../utils/jscpd";
+import { findRefactorTargets } from "../utils/refactorTargets";
+import { generateAnalysisReport } from "../utils/geminiReport";
+import { saveDocument } from "../utils/documents";
 
 const router = Router();
 
 const PROJECT_FILE = dataPath("project.json");
 // We don't clone the target GitHub repo locally yet (that's still ahead of us), so
-// there's no real checkout to point the analyzer at — the bundled sample fixtures
-// stand in for it until repo cloning exists.
-const ANALYZER_TEST_TARGET = path.join(ANALYZER_DIR, "samples");
+// there's no real checkout to point the analyzer/jscpd at — the bundled sample
+// fixtures stand in for it until repo cloning exists.
+const ANALYSIS_TARGET = path.join(ANALYZER_DIR, "samples");
+const ANALYSIS_STEP_ID = 0; // 00_Analysis_Report.md sits ahead of the 9-step workflow proper.
 
 interface StartAnalysisRequest {
   repoId?: string;
@@ -40,18 +45,23 @@ router.post("/start", async (req, res) => {
     connected_at: new Date().toISOString(),
     status: "queued",
   };
-
   await writeJson(PROJECT_FILE, project);
 
-  let analyzerCheck: { ok: true; classes: AnalyzedClass[] } | { ok: false; error: string };
   try {
-    const result = await runAnalyzer(ANALYZER_TEST_TARGET);
-    analyzerCheck = { ok: true, classes: result.classes };
-  } catch (err) {
-    analyzerCheck = { ok: false, error: err instanceof Error ? err.message : String(err) };
-  }
+    const { classes } = await runAnalyzer(ANALYSIS_TARGET);
+    const { duplicates } = await runJscpd(ANALYSIS_TARGET);
+    const refactorTargets = findRefactorTargets(classes);
+    const report = await generateAnalysisReport({ classes, duplicates, refactorTargets });
 
-  res.json({ ...project, analyzerCheck });
+    await saveDocument(ANALYSIS_STEP_ID, "docs/00_Analysis_Report.md", report);
+
+    res.json({ ...project, classes, duplicates, refactorTargets, report });
+  } catch (err) {
+    res.status(500).json({
+      ...project,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 });
 
 export default router;
