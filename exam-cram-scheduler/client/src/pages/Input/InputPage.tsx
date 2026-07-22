@@ -40,6 +40,7 @@ export function InputPage() {
   const [weightKg, setWeightKg] = useState(65);
   const [gender, setGender] = useState<'여성' | '남성'>('여성');
   const [pregnant, setPregnant] = useState(false);
+  const [oralContraceptive, setOralContraceptive] = useState(false);
   const [heartCondition, setHeartCondition] = useState(false);
   const [anxiety, setAnxiety] = useState(false);
   const [minSleepHours, setMinSleepHours] = useState(4);
@@ -52,6 +53,16 @@ export function InputPage() {
   const [caffeineActionIndex, setCaffeineActionIndex] = useState<number | null>(null);
 
   const totalCaffeineMg = caffeineIntakes.reduce((sum, intake) => sum + intake.mg, 0);
+
+  // 남성으로 바꾸면 임신·경구피임약 토글이 화면에서 사라지는데, 값까지 같이 꺼주지 않으면
+  // 안 보이는 채로 켜진 값이 그대로 서버에 실려간다(2026-07-22 #16).
+  function handleGenderChange(next: '여성' | '남성') {
+    setGender(next);
+    if (next === '남성') {
+      setPregnant(false);
+      setOralContraceptive(false);
+    }
+  }
 
   function openAddExam() {
     setEditingExamIndex(null);
@@ -214,11 +225,28 @@ export function InputPage() {
                 { label: '남성', value: '남성' },
               ]}
               value={gender}
-              onChange={setGender}
+              onChange={handleGenderChange}
             />
           </Field>
           <div className={text.hairline} />
-          <Row title="임신 중이에요" right={<Switch checked={pregnant} onChange={setPregnant} label="임신 중이에요" />} />
+          {gender === '여성' && (
+            <>
+              <Row
+                title="임신 중이에요"
+                right={<Switch checked={pregnant} onChange={setPregnant} label="임신 중이에요" />}
+              />
+              <Row
+                title="경구피임약을 복용 중이에요"
+                right={
+                  <Switch
+                    checked={oralContraceptive}
+                    onChange={setOralContraceptive}
+                    label="경구피임약을 복용 중이에요"
+                  />
+                }
+              />
+            </>
+          )}
           <Row
             title="심장질환이 있어요"
             right={<Switch checked={heartCondition} onChange={setHeartCondition} label="심장질환이 있어요" />}
