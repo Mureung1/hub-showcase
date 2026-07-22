@@ -5,7 +5,14 @@ import Header from './components/Header'
 import ProgressCard from './components/ProgressCard'
 import TaskList from './components/TaskList'
 import Toast from './components/Toast'
-import { getTasks, updateTaskStatus, archiveTask } from './api/tasks'
+import {
+  getTasks,
+  updateTaskStatus,
+  updateTaskTitle,
+  updateTaskAssignee,
+  updateTaskDueDate,
+  archiveTask,
+} from './api/tasks'
 import { getMembers } from './api/members'
 import { safeGetStoredMemberId, safeSetStoredMemberId } from './utils/storage'
 
@@ -102,6 +109,29 @@ function App() {
     })
   }
 
+  // 인라인 편집(제목/담당자/마감일)은 저장이 끝나야 입력창이 표시로 돌아가므로
+  // runTaskAction의 Promise를 그대로 반환해서 호출한 쪽에서 await 할 수 있게 함
+  function handleUpdateTitle(taskId, title) {
+    return runTaskAction(taskId, async () => {
+      const updated = await updateTaskTitle(taskId, title, currentMemberId)
+      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+    })
+  }
+
+  function handleUpdateAssignee(taskId, assigneeId) {
+    return runTaskAction(taskId, async () => {
+      const updated = await updateTaskAssignee(taskId, assigneeId, currentMemberId)
+      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+    })
+  }
+
+  function handleUpdateDueDate(taskId, dueDate) {
+    return runTaskAction(taskId, async () => {
+      const updated = await updateTaskDueDate(taskId, dueDate, currentMemberId)
+      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+    })
+  }
+
   return (
     <>
       <div className="page">
@@ -119,6 +149,9 @@ function App() {
           onToggleStatus={handleToggleStatus}
           onCycleStatus={handleCycleStatus}
           onDelete={handleDeleteTask}
+          onUpdateTitle={handleUpdateTitle}
+          onUpdateAssignee={handleUpdateAssignee}
+          onUpdateDueDate={handleUpdateDueDate}
           showToast={showToast}
         />
         <AddTaskForm members={members} onTaskAdded={handleTaskAdded} />

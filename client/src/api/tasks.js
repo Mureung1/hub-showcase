@@ -27,6 +27,19 @@ export async function updateTaskDueDate(taskId, dueDate, memberId) {
   return res.data;
 }
 
+export async function updateTaskTitle(taskId, title, memberId) {
+  const res = await apiClient.patch(`/tasks/${taskId}/title`, { title, memberId });
+  return res.data;
+}
+
+export async function updateTaskAssignee(taskId, assigneeId, memberId) {
+  const res = await apiClient.patch(`/tasks/${taskId}/assignee`, {
+    assigneeId,
+    memberId,
+  });
+  return res.data;
+}
+
 export async function archiveTask(taskId, memberId) {
   const res = await apiClient.delete(`/tasks/${taskId}`, {
     data: { memberId },

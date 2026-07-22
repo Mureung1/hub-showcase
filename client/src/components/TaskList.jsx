@@ -10,6 +10,9 @@ function TaskList({
   onToggleStatus,
   onCycleStatus,
   onDelete,
+  onUpdateTitle,
+  onUpdateAssignee,
+  onUpdateDueDate,
   showToast,
 }) {
   if (tasks.length === 0) {
@@ -26,11 +29,15 @@ function TaskList({
             key={task.id}
             task={task}
             assigneeName={memberName(members, task.assignee_id)}
+            members={members}
             canChange={canChange}
             isPending={pendingTaskIds.has(task.id)}
             onToggleStatus={onToggleStatus}
             onCycleStatus={onCycleStatus}
             onDelete={onDelete}
+            onUpdateTitle={onUpdateTitle}
+            onUpdateAssignee={onUpdateAssignee}
+            onUpdateDueDate={onUpdateDueDate}
             showToast={showToast}
           />
         );
