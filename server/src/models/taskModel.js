@@ -45,4 +45,29 @@ async function updateDueDate(id, dueDate) {
   return result.rows[0];
 }
 
-module.exports = { getActiveTasks, createTask, getTaskById, updateStatus, archiveTask, updateDueDate };
+async function updateTitle(id, title) {
+  const result = await pool.query(
+    'UPDATE tasks SET title = $1 WHERE id = $2 RETURNING *',
+    [title, id]
+  );
+  return result.rows[0];
+}
+
+async function updateAssignee(id, assigneeId) {
+  const result = await pool.query(
+    'UPDATE tasks SET assignee_id = $1 WHERE id = $2 RETURNING *',
+    [assigneeId, id]
+  );
+  return result.rows[0];
+}
+
+module.exports = {
+  getActiveTasks,
+  createTask,
+  getTaskById,
+  updateStatus,
+  archiveTask,
+  updateDueDate,
+  updateTitle,
+  updateAssignee,
+};
