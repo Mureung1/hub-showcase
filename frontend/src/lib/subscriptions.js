@@ -31,7 +31,9 @@ export async function getSubscriptions() {
   const data = await res.json()
 
   if (!res.ok) {
-    throw new Error(data.error || '구독 서비스 목록을 불러오지 못했습니다.')
+    const error = new Error(data.error || '구독 서비스 목록을 불러오지 못했습니다.')
+    error.status = res.status
+    throw error
   }
 
   return data.items
@@ -48,7 +50,9 @@ export async function getSubscription(id) {
   const data = await res.json()
 
   if (!res.ok) {
-    throw new Error(data.error || '구독 서비스 정보를 불러오지 못했습니다.')
+    const error = new Error(data.error || '구독 서비스 정보를 불러오지 못했습니다.')
+    error.status = res.status
+    throw error
   }
 
   return data

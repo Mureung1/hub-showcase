@@ -1,12 +1,12 @@
 const SERVICE_COLOR_PALETTE = [
-  '#6FA8DC', // 하늘
-  '#B8A6E0', // 라벤더
-  '#F2A488', // 코럴
-  '#E8C468', // 머스터드
-  '#E896B0', // 로즈
-  '#5FC7C0', // 틸
-  '#A97CA5', // 플럼
-  '#C9B38C', // 샌드
+  'var(--service-sky)',
+  'var(--service-lavender)',
+  'var(--service-coral)',
+  'var(--service-mustard)',
+  'var(--service-rose)',
+  'var(--service-teal)',
+  'var(--service-plum)',
+  'var(--service-sand)',
 ]
 
 export function getServiceColor(serviceName) {
