@@ -50,8 +50,8 @@
 - [x] **프로필 분석 결과 화면** — mock analysis로 언어/실력/활동요약 렌더
       - DoD: mock 데이터가 화면에 정확히 표시
       - 참고: prototype `screen--profile`
-- [ ] **선호 조건 선택 화면** — 언어/난이도/주제 선택(useState)
-      - DoD: 조건 선택 후 "이 조건으로 이슈 찾기" → 추천목록 이동
+- [x] **선호 조건 선택 화면** — 언어/난이도/주제 선택(useState)
+      - DoD: 조건 선택 후 "이 조건으로 이슈 찾기" → 추천목록 이동 ✅ 2026-07-22 (프로필 화면 내 칩 인터랙션으로 구현, #9)
       - 참고: plan 화면 3, prototype `screen--search`
 - [x] **추천 결과 목록 화면** — mock recommendations 리스트 카드 렌더
       - DoD: 카드 클릭 → 상세 화면 이동
@@ -78,8 +78,8 @@
       - 참고: [conventions](conventions.md) 에러 처리
 
 ## Week 3 — 연동 · 배포 · 테스트/디버깅 (공통)
-- [ ] **[FE] mock → 실제 API 교체** — `axios` + `@tanstack/react-query`, 로딩/에러 상태 연결
-      - DoD: 전 화면이 실제 백엔드 응답으로 동작
+- [x] **[FE] mock → 실제 API 교체** — `axios` + `@tanstack/react-query`, 로딩/에러 상태 연결
+      - DoD: 전 화면이 실제 백엔드 응답으로 동작 ✅ 2026-07-22 (추천 API mock 제거, Analyze/IssueSearch를 useMutation으로 전환, #9)
       - 참고: [decisions](decisions.md) TanStack Query
 - [ ] **[FE/BE] E2E 통합 테스트** — 랜딩→상세 7화면 흐름 전체 검증
       - DoD: 실제 GitHub ID로 끝까지 흐름 성공

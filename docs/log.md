@@ -10,6 +10,21 @@
 
 ---
 
+### 2026-07-22
+- 진행한 작업:
+  - #9 착수: 프로필 화면의 언어/난이도/관심분야 칩을 정적 표시에서 실제 `useState` 토글로 전환 (`AppFlowLayout`에 `preferences` 공유 상태 추가, 백엔드 languages 최소 1개 제약에 맞춰 마지막 언어는 해제 불가하게 가드)
+  - #9 이어서: 추천 API mock 제거 — `axios` + `@tanstack/react-query` 도입, `createRecommendation`/`getRecommendation`을 실제 `POST /api/recommendations`/`GET /api/recommendations/:id` 호출로 교체, `Analyze`/`IssueSearch`를 수동 `useEffect`+`cancelled` 패턴에서 `useMutation`으로 정리, 안 쓰는 `src/mocks/*.json` 4개 삭제
+  - 코드리뷰 성격 후속조치: `IssueSearch`에서 `preferences` 미선택 시 `buildDefaultPreferences`가 매 렌더 새 객체를 반환해 `useEffect` 의존성이 매번 바뀌던 잠재 버그를 `useMemo`로 수정
+  - 아키텍처 다이어그램 작성: `docs/architecture.md` 전체 구조·데이터 흐름 섹션에 화면 7개·API 경로 4개·서비스·GitHub·DB 연결 mermaid 다이어그램 기록
+- 이슈/막힌 점:
+  - Chrome 브라우저 자동화 도구가 스크린샷/페이지 읽기에서 계속 타임아웃 나서 실제 클릭 테스트는 사용자가 직접 확인 (`api-smoke-test`/lint/build로 대체 검증)
+- 다음 할 일:
+  - origin **N034_김선호**로 push (main 아님 — 대회 운영 브랜치라 직접 push 금지)
+  - W2 잔여: 프로토타입 스타일 → design.md 토큰 이식
+  - (목) #6: LLM 이슈 분석 + 추천 재순위
+
+---
+
 ### 2026-07-21
 - 진행한 작업:
   - #8 마감(화 파트): `GET /api/recommendations/:id` 상세 조회 구현 — uuid 형식 검증(400) → 조회(200) → 없으면 404 RECOMMENDATION_NOT_FOUND, analysisService의 404 패턴 재사용
