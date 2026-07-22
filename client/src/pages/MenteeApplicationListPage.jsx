@@ -90,6 +90,13 @@ function MenteeApplicationListPage() {
         </div>
 
         <section className="mentee-application-list" aria-live="polite">
+          <div className="mentee-list-heading">
+            <div>
+              <p className="eyebrow">{statusTabs.find((status) => status.value === activeStatus)?.label}</p>
+              <h2>면담 신청 {filteredApplications.length}건</h2>
+            </div>
+          </div>
+
           {errorMessage && (
             <div className="mentee-applications-message mentee-applications-error" role="alert">
               {errorMessage}
