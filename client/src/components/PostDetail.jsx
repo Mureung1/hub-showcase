@@ -14,7 +14,7 @@ const PostDetail = ({ post, onBack, onStartChat }) => {
   };
 
   return (
-    <div className="post-detail-column" style={{
+    <div className="feed-column" style={{
       background: '#fff',
       borderRadius: 'var(--radius-lg)',
       border: '1px solid var(--color-divider)',

@@ -36,10 +36,9 @@ function App() {
       lastMessage: initialMessage,
       lastTime: timeStr
     };
-    
+
     const initialMsgs = [
-      { id: Date.now(), sender: 'helper', text: initialMessage, time: timeStr },
-      { id: Date.now() + 1, sender: 'host', text: '안녕하세요! 남겨주신 인사말 잘 보았습니다.', time: timeStr }
+      { id: Date.now(), sender: 'helper', text: initialMessage, time: timeStr }
     ];
 
     try {

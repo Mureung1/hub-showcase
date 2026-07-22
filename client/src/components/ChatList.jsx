@@ -10,17 +10,21 @@ const ChatList = ({ onSelectChat }) => {
         const res = await fetch(`${API_URL}/api/chats`);
         const data = await res.json();
         
-        const mappedRooms = data.map(r => ({
-          id: r.id,
-          postId: r.post_id,
-          postTitle: r.post_title,
-          partnerName: r.partner_name,
-          partnerGrade: r.partner_grade,
-          lastMessage: r.last_message,
-          lastTime: r.last_time
-        }));
-        
-        setRooms(mappedRooms);
+        if (Array.isArray(data)) {
+          const mappedRooms = data.map(r => ({
+            id: r.id,
+            postId: r.post_id,
+            postTitle: r.post_title,
+            partnerName: r.partner_name,
+            partnerGrade: r.partner_grade,
+            lastMessage: r.last_message,
+            lastTime: r.last_time
+          }));
+          setRooms(mappedRooms);
+        } else {
+          console.error("Failed to load chats, API returned:", data);
+          setRooms([]);
+        }
       } catch (e) {
         console.error("Failed to fetch chat rooms", e);
       }
@@ -29,7 +33,7 @@ const ChatList = ({ onSelectChat }) => {
   }, []);
 
   return (
-    <div style={{ background: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-divider)', minHeight: '600px', padding: '24px' }}>
+    <div className="feed-column" style={{ background: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-divider)', minHeight: '600px', padding: '24px' }}>
       <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '24px' }}>1:1 대화</h2>
       
       {rooms.length === 0 ? (

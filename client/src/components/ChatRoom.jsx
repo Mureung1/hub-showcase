@@ -17,7 +17,12 @@ const ChatRoom = ({ room, onBack }) => {
           const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
           const res = await fetch(`${API_URL}/api/chats/${room.id}/messages`);
           const data = await res.json();
-          setMessages(data);
+          if (Array.isArray(data)) {
+            setMessages(data);
+          } else {
+            console.error("Failed to load messages, API returned:", data);
+            setMessages([]);
+          }
         } catch (e) {
           console.error("Failed to fetch chat messages", e);
         }
@@ -78,7 +83,7 @@ const ChatRoom = ({ room, onBack }) => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)', background: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-divider)', overflow: 'hidden' }}>
+    <div className="feed-column" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)', background: '#fff', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-divider)', overflow: 'hidden' }}>
       
       {/* 1. 상단 헤더 영역 */}
       <div style={{ display: 'flex', alignItems: 'center', padding: '16px', borderBottom: '1px solid var(--color-divider)', background: '#fff', zIndex: 10 }}>
