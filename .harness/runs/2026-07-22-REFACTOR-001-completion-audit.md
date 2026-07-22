@@ -10,11 +10,11 @@ and the manual product entry and search flow.
 
 ```text
 powershell -ExecutionPolicy Bypass -File scripts/check.ps1: passed
-Web Vitest: 29 files, 86 tests passed
+Web Vitest: 32 files, 98 tests passed
 API pytest: 119 passed
 Web typecheck, lint, production build: passed
 Web/API formatting: passed
-Task Packet check: 69 packets passed
+Task Packet check: 71 packets passed
 Code structure: passed (0 temporary Web budgets)
 git diff --check: passed
 ```
@@ -46,7 +46,8 @@ selection as a neutral-entry failure. The actual product requirement is that
 ordinary interaction must not serialize the full analysis state into the browser
 address bar. The deployed root URL was clean. Local regression tests now cover
 search-result and radius changes while keeping `window.location.search` empty.
-Public verification after deployment is still required.
+Public verification completed after deployment: the root URL stayed clean through
+search-result selection and the 300 m radius state remained in memory.
 
 ## Completion checklist
 
@@ -56,6 +57,20 @@ Public verification after deployment is still required.
 - [x] Automated checks and deployed endpoint smoke pass.
 - [x] Default product state can render while the root URL remains clean.
 - [x] Search-result and radius changes keep the product URL clean in regression tests.
-- [ ] Search, selection, map, analysis, and evidence pass as one manual flow on the deployed candidate.
-- [ ] Mobile panels and keyboard dialogs are manually verified.
-- [ ] GitHub #63 acceptance checklist and REFACTOR-001 status are reconciled after the open manual items pass.
+- [x] Search, selection, map, analysis, and evidence pass as one manual flow on the deployed candidate.
+- [x] Mobile panels and keyboard dialogs are manually verified.
+- [x] GitHub #63 acceptance checklist and REFACTOR-001 status are reconciled after the open manual items pass.
+
+## Public manual verification (2026-07-23)
+
+```text
+Desktop root: https://localtwin-product.vercel.app/
+Search: "홍대" -> select "홍대입구역(홍대)" -> map and analysis updated
+Evidence: dialog opened and Escape closed it; browser console errors: 0
+Mobile (390 x 844): analysis conditions and analysis results each opened and closed;
+browser console errors: 0
+```
+
+The Scene-dialog test now waits for its close button to receive focus before
+pressing Escape. This removes a test-only timing race while continuing to verify
+the same keyboard focus-return contract.
