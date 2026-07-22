@@ -14,6 +14,9 @@ dist/
 *.db-journal
 *.sqlite
 
+# 개인·비공개 (실력 평가 등 — GitHub 유출 금지)
+docs/_실력평가_개인.md
+
 # logs
 *.log
 npm-debug.log*
