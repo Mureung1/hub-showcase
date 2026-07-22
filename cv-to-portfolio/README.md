@@ -5,8 +5,65 @@
 프론트(React/Vite)와 백엔드(Express)를 **npm workspaces 모노레포**로 관리합니다.
 완성한 결과는 Express API를 통해 Supabase에 저장하고 최근 기록에서 다시 불러올 수 있습니다.
 
+## 아키텍처와 데이터 흐름
+
+```mermaid
+flowchart LR
+  U["사용자"]
+
+  subgraph B["브라우저 · React/Vite"]
+    UI["CV 입력 · 테마 선택<br/>App state"]
+    GEN["생성 흐름<br/>generateWithFallback"]
+    LOCAL["로컬 HTML 생성기<br/>generatePortfolio"]
+    VIEW["결과 화면<br/>iframe 미리보기 · 코드 · 다운로드"]
+    LIB["최근 포트폴리오<br/>저장 · 목록 · 상세 조회"]
+    MOCK["선택적 메모리 Mock<br/>VITE_USE_MOCK_PORTFOLIOS=true"]
+  end
+
+  subgraph S["Express API · :4000"]
+    AI_API["POST /api/generate<br/>입력 검증"]
+    PORT_API["POST · GET /api/portfolios<br/>입력 검증 · DTO 매핑"]
+  end
+
+  ANTHROPIC["Anthropic Messages API"]
+
+  subgraph D["Supabase"]
+    REST["PostgREST /rest/v1"]
+    TABLE[("public.portfolios<br/>메타데이터 · HTML · 생성 시각")]
+  end
+
+  U -->|"CV Markdown · 테마"| UI
+  UI --> GEN
+  GEN -->|"cvMarkdown + designMarkdown"| AI_API
+  AI_API -->|"서버 전용 API key"| ANTHROPIC
+  ANTHROPIC -->|"생성 HTML"| AI_API
+  AI_API -->|"{ html }"| GEN
+  GEN -. "AI 요청 실패" .-> LOCAL
+  LOCAL -->|"로컬 생성 HTML"| VIEW
+  GEN -->|"AI 생성 HTML"| VIEW
+
+  VIEW --> LIB
+  LIB -->|"POST: 메타데이터 + HTML<br/>GET: 목록 · UUID 상세"| PORT_API
+  PORT_API -->|"INSERT · SELECT<br/>서버 전용 secret key"| REST
+  REST --> TABLE
+  TABLE -->|"저장 행 · 목록 · HTML 상세"| REST
+  REST --> PORT_API
+  PORT_API -->|"camelCase JSON"| LIB
+  LIB -->|"선택한 HTML로 미리보기 교체"| VIEW
+  LIB -. "환경 변수로 실제 API 우회" .-> MOCK
+```
+
+사용자는 React 화면에서 CV와 디자인을 고릅니다. React는 Express에 생성을 요청하고,
+Express만 보관하는 API 키로 Anthropic에서 HTML을 받아옵니다. AI 요청이 실패하면 브라우저의
+로컬 생성기가 대신 HTML을 만듭니다. 저장 버튼을 누르면 Express가 결과와 메타데이터를
+Supabase에 저장합니다. 목록에서는 가벼운 메타데이터만 받고, 항목을 열 때 UUID로 HTML을
+조회해 미리보기를 바꿉니다.
+
+자세한 코드 근거와 구조 점검 결과는 [데이터 흐름·아키텍처 설명 자료](docs/architecture-and-data-flow-2026-07-22.md)에 정리했습니다.
+
 ## 문서
 
+- 🗺️ [데이터 흐름·아키텍처 설명 자료](docs/architecture-and-data-flow-2026-07-22.md)
 - 🗓️ **[3주차 주간 계획](docs/WEEK3_PLAN.md)** · [GitHub Project 보드](https://github.com/users/dolphin1404/projects/2)
 - 🗄️ [Supabase 서버 재시작 영속성 검증](docs/supabase-persistence-verification-2026-07-21.md)
 - ⭐ [다음 기능 설계 — 저장 포트폴리오 즐겨찾기](docs/favorite-portfolio-design-2026-07-21.md)
