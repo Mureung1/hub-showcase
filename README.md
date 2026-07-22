@@ -68,7 +68,6 @@ flowchart TD
         Sim["SimulationPage.jsx<br/>(currentSemester, result,<br/>scenarios, activeIndex)"]
         ScenarioCard["ScenarioCard.jsx"]
         Placeholder["PlaceholderPage.jsx<br/>(홈 / 챗봇 탭)"]
-        RecordForm["RecordForm.jsx"]
 
         MajorData["data/majorData.js<br/>(단과대/학부/전공/트랙 목데이터)"]
         GradReqUtil["utils/gradRequirements.js<br/>evaluateTrackRequirements()"]
@@ -88,8 +87,6 @@ flowchart TD
     subgraph SERVER["Server (Express) — server/src"]
         direction TB
         RootRoute["GET /"]
-        PostRecords["POST /api/records"]
-        GetRecords["GET /api/records/:userId"]
         PostBasket["POST /api/basket"]
         GetBasket["GET /api/basket"]
         ServerGradReq["utils/gradRequirements.js<br/>evaluateTrackRequirements()<br/>(어떤 라우트/컨트롤러도 호출하지 않음,<br/>테스트에서만 사용됨)"]
@@ -98,7 +95,6 @@ flowchart TD
     %% ================= SUPABASE =================
     subgraph SUPABASE["Supabase"]
         direction TB
-        T_records[("user_records")]
         T_basket[("basket_items")]
     end
 
@@ -139,27 +135,22 @@ flowchart TD
     LS_activeIndex -.->|"새로고침 시 초기값 복원"| Sim
 
     %% ---------- 아직 연결 안 됨 / 죽은 코드 ----------
-    AppJsx -.->|"RecordForm은 App.jsx에서 렌더링되지 않음 (미사용 컴포넌트)"| RecordForm
-    RecordForm --> PostRecords
-    RecordForm --> GetRecords
-    PostRecords --> T_records
-    GetRecords --> T_records
-
     AppJsx -.->|"구현되어 있지만 클라이언트가 호출하지 않음<br/>(담은 과목을 서버에서 다시 불러오는 흐름 없음)"| GetBasket
     GetBasket --> T_basket
 
     %% ---------- 스타일 ----------
     classDef notConnected stroke-dasharray: 4 3,opacity:0.55;
-    class RecordForm,GetBasket,ServerGradReq,PostRecords,GetRecords,T_records notConnected;
+    class GetBasket,ServerGradReq notConnected;
 
     classDef storage fill:#FFF7E6,stroke:#FF9800,color:#7A4A00;
     class LS_gradInfo,LS_progress,LS_scenarios,LS_activeIndex,Submitted storage;
 
     classDef db fill:#E8F3FF,stroke:#3182F6,color:#1B3A66;
-    class T_records,T_basket db;
+    class T_basket db;
 ```
 
 **아직 실제로 연결되지 않은 부분 (옅게 표시된 노드 + 점선 화살표)**
-- `RecordForm.jsx` — `POST/GET /api/records`를 호출하는 코드는 완성돼 있지만, `App.jsx`가 이 컴포넌트를 import/렌더링하지 않아 화면에 노출되지 않는다. 따라서 `/api/records`와 `user_records` 테이블 전체가 지금 UI에서는 도달 불가능한 상태다.
 - `GET /api/basket` — 컨트롤러 구현은 있지만 클라이언트 어디서도 호출하지 않는다. `POST /api/basket`으로 담은 과목이 Supabase에는 저장되지만, 새로고침해도 다시 불러오지 않아 `selectedIds`는 매번 초기화된다.
 - `server/src/utils/gradRequirements.js` — `client/src/utils/gradRequirements.js`와 동일한 로직의 서버 사본이지만, 어떤 라우트/컨트롤러에서도 import되지 않는다(자체 Jest 테스트에서만 실행됨). 실제 요건 판정은 전부 클라이언트에서 `completedCourses`를 계산해 클라이언트 로직으로만 처리된다 — 서버 왕복이 없다.
+
+> `RecordForm.jsx`(로그인 없는 localStorage 방식으로 대체되어 미사용)와 서버의 `POST/GET /api/records`, `recordController.js`, `recordRoutes.js`는 삭제했다. Supabase의 `user_records` 테이블 자체는 남아있지만 더 이상 어떤 코드에서도 쓰지 않는다.

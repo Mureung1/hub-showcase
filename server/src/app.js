@@ -1,6 +1,7 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+const supabase = require('./config/supabaseClient');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -13,9 +14,6 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.send('서버 정상 동작 중');
 });
-
-const recordRoutes = require('./routes/recordRoutes');
-app.use('/api', recordRoutes);
 
 const basketRoutes = require('./routes/basketRoutes');
 app.use('/api', basketRoutes);
