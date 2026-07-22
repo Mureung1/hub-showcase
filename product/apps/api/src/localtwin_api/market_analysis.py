@@ -26,6 +26,11 @@ SOURCE_LABELS = {
     "sales": "서울시 상권분석서비스 추정매출",
     "flow": "서울시 상권분석서비스 길단위인구",
 }
+EVIDENCE_SOURCE_TYPES = {
+    "점포·개폐업": "official",
+    "추정매출": "official_estimate",
+    "길단위인구": "official_estimate",
+}
 
 FLOW_TIME_BUCKETS = (
     ("00:00-06:00", "flow_00_06"),
@@ -42,7 +47,7 @@ class MarketEvidence(BaseModel):
     source_name: str
     source_url: str
     period: str
-    source_type: Literal["official", "derived"]
+    source_type: Literal["official", "official_estimate", "derived"]
 
 
 class FlowTimeBucket(BaseModel):
@@ -423,7 +428,7 @@ def _evidence(
             source_name=(source := sources.get(str(target[source_key]), fallback_source))[0],
             source_url=source[1],
             period=period,
-            source_type="official",
+            source_type=EVIDENCE_SOURCE_TYPES[metric],
         )
         for metric, source_key in source_rows
     ]

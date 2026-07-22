@@ -177,6 +177,11 @@ def test_market_analysis_returns_raw_values_score_and_sources(tmp_path: Path) ->
         "추정매출",
         "길단위인구",
     }
+    assert {evidence.metric: evidence.source_type for evidence in result.evidence} == {
+        "점포·개폐업": "official",
+        "추정매출": "official_estimate",
+        "길단위인구": "official_estimate",
+    }
     same_type = next(group for group in result.rankings if group.id == "same_type")
     store_rank = next(
         metric for metric in same_type.metrics if metric.key == "category_store_count"
