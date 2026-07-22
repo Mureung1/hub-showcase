@@ -1,0 +1,95 @@
+.team-size-select-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-cream);
+  padding: 40px;
+}
+
+.team-size-select-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-brown-dark);
+  margin: 20px 0 40px;
+}
+
+.team-size-select-card-row {
+  display: flex;
+  flex-direction: row;
+  gap: 32px;
+  width: 100%;
+  max-width: 900px;
+  flex: 1;
+  align-items: stretch;
+}
+
+.team-size-select-card {
+  flex: 1;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-radius: 24px;
+  border: 1.5px solid var(--dating-pink);
+  padding: 36px 20px;
+  cursor: pointer;
+  font-family: inherit;
+  background: var(--dating-coral-bg);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.team-size-select-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(74, 46, 34, 0.1);
+}
+
+.team-size-select-icon-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.team-size-select-icon {
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+
+.team-size-select-icon-heart {
+  width: 26px;
+  height: 26px;
+}
+
+.team-size-select-ratio {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--coral-primary);
+  margin-bottom: 8px;
+}
+
+.team-size-select-desc {
+  font-size: 14px;
+  color: var(--text-warm-gray);
+}
+
+@media (max-width: 720px) {
+  .team-size-select-page {
+    padding: 24px 16px;
+  }
+
+  .team-size-select-card-row {
+    flex-direction: column;
+  }
+
+  .team-size-select-card {
+    min-height: 200px;
+    padding: 28px 20px;
+  }
+}

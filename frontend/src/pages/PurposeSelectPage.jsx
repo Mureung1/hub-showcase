@@ -46,6 +46,16 @@ export default function PurposeSelectPage() {
     }
   }
 
+  const handleDatingClick = () => {
+    if (isStatusLoading) return
+
+    if (testStatus?.hasCompletedDatingTest) {
+      navigate('/select-team-size')
+    } else {
+      navigate('/test/dating')
+    }
+  }
+
   return (
     <div className="purpose-select-page">
       <div className="purpose-select-top-row">
@@ -60,7 +70,8 @@ export default function PurposeSelectPage() {
         <button
           type="button"
           className="purpose-select-card purpose-select-card-dating"
-          onClick={() => navigate('/test/dating')}
+          onClick={handleDatingClick}
+          disabled={isStatusLoading}
         >
           <img src={datingIllustration} alt="과팅" className="purpose-select-card-image" />
           <div className="purpose-select-card-title">과팅</div>

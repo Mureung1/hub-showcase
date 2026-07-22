@@ -1,15 +1,16 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/client'
 import { datingQuestions } from '../data/datingQuestions'
 import './DatingTestPage.css'
 
 export default function DatingTestPage() {
+  const navigate = useNavigate()
   const [currentIndex, setCurrentIndex] = useState(0)
   // 전체 답변을 { 문항id: 선택지id } 형태의 객체로 관리 (예: { 1: '1-A', 3: '3-A' })
   const [answers, setAnswers] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
-  const [isDone, setIsDone] = useState(false)
 
   const totalQuestions = datingQuestions.length
   const currentQuestion = datingQuestions[currentIndex]
@@ -34,7 +35,7 @@ export default function DatingTestPage() {
       setSubmitError('')
       try {
         await apiClient.post('/tests/dating', { answers })
-        setIsDone(true)
+        navigate('/select-team-size')
       } catch (err) {
         setSubmitError(
           err.response?.data?.message ?? '테스트 결과 저장 중 오류가 발생했습니다. 다시 시도해주세요.',
@@ -45,19 +46,6 @@ export default function DatingTestPage() {
       return
     }
     setCurrentIndex((prev) => prev + 1)
-  }
-
-  if (isDone) {
-    return (
-      <div className="dating-test-page">
-        <div className="dating-test-card">
-          <div className="dating-test-done">
-            <span className="dating-test-q-badge">✓</span>
-            <p className="dating-test-done-text">테스트가 완료되었습니다!</p>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (

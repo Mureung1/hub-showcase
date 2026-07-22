@@ -32,6 +32,11 @@ export default function MatchResultsPage() {
   const [applyHobbyFilter, setApplyHobbyFilter] = useState(
     location.state?.roommateType === 'friend',
   )
+  // 현재 조회 중인 roommateType(조회용 오버라이드). applyHobbyFilter와 항상 세트로 함께 바뀐다.
+  // friend + true, business + false 두 조합만 존재해야 한다.
+  const [currentRoommateType, setCurrentRoommateType] = useState(
+    location.state?.roommateType === 'friend' ? 'friend' : 'business',
+  )
   const [matches, setMatches] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
@@ -45,7 +50,10 @@ export default function MatchResultsPage() {
       setErrorMessage('')
 
       try {
-        const response = await apiClient.post('/matching/roommate', { applyHobbyFilter })
+        const response = await apiClient.post('/matching/roommate', {
+          applyHobbyFilter,
+          roommateTypeOverride: currentRoommateType,
+        })
         if (isMounted) {
           setMatches(response.data.matches ?? [])
         }
@@ -66,7 +74,7 @@ export default function MatchResultsPage() {
     return () => {
       isMounted = false
     }
-  }, [applyHobbyFilter])
+  }, [applyHobbyFilter, currentRoommateType])
 
   // 매칭 리스트가 생기면, 각 후보의 닉네임/소프트필터를 프로필 API로 병렬 조회한다
   // 한 명이 실패(404 등)해도 나머지 결과와 화면 전체에는 영향을 주지 않는다
@@ -112,10 +120,12 @@ export default function MatchResultsPage() {
     console.log('채팅 이동 예정')
   }
 
-  // 취미 필터 on/off를 반전시킨다. applyHobbyFilter가 바뀌면 위 useEffect가 다시 실행되어
-  // 새 조건으로 매칭 API를 재호출하고, 그동안 기존 로딩 상태 UI가 그대로 재사용된다.
+  // 취미 필터와 roommateType을 항상 세트로 함께 반전시킨다.
+  // (friend, true) <-> (business, false) 두 조합만 존재해야 하므로 따로 바꾸지 않는다.
+  // 둘 중 하나라도 바뀌면 위 useEffect가 다시 실행되어 새 조건으로 매칭 API를 재호출한다.
   const handleToggleHobbyFilter = () => {
     setApplyHobbyFilter((prev) => !prev)
+    setCurrentRoommateType((prev) => (prev === 'friend' ? 'business' : 'friend'))
   }
 
   return (
