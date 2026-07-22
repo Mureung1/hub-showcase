@@ -1,0 +1,20 @@
+{
+  "name": "@hub/crawler",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "fetch:sample": "tsx src/index.ts",
+    "build": "tsc",
+    "lint": "oxlint src"
+  },
+  "dependencies": {
+    "@hub/shared": "*",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "tsx": "^4.19.3",
+    "typescript": "~6.0.2"
+  }
+}

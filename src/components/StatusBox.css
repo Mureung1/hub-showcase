@@ -1,0 +1,36 @@
+.status-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.status-box-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.status-box-message {
+  color: var(--text-sub);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.status-box-error .status-box-message {
+  color: var(--danger);
+}
+
+.status-box-action {
+  padding: 12px 20px;
+  background: var(--blue);
+  color: var(--white);
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}

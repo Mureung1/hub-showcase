@@ -16,7 +16,7 @@
 
 ## 1주차 — 데이터 소스 + 크롤러
 
-- [ ] Supabase 프로젝트 생성 및 `subsidies` 테이블 스키마 확정
+- [x] Supabase 프로젝트 생성 및 `subsidies` 테이블 스키마 확정 (#3, `supabase/schema.sql`)
 - [ ] 기업마당 수집 방식 결정 (공식 API vs Cheerio)
 - [ ] `crawler/` 디렉토리 + `npm run crawl` 스크립트
 - [ ] GitHub Actions cron 스케줄 설정
@@ -28,13 +28,15 @@
 
 ## 2주차 — 필터링 + UI
 
-- [ ] React Router 도입 및 온보딩·홈·상세 페이지
-- [ ] 와이어프레임 기준 UI 구현 (`gov-subsidy-design` Skill)
-- [ ] TanStack Query + API 연동
-- [ ] 조건 매칭 API (query 또는 POST `/api/match`)
-- [ ] 정렬: 매칭도순(기본) · 마감임박순 · 지원금액순
+- [x] React Router 도입 및 온보딩·홈·상세 페이지
+- [x] 와이어프레임 기준 UI 구현 (`gov-subsidy-design` Skill)
+- [x] TanStack Query + API 연동 (`src/api/client.ts`, `src/hooks/`, mock fallback 포함)
+- [x] 조건 매칭 API (`POST /api/match`) — Supabase 조회 기반으로 구현 완료 (#4), FE는 실패 시에만 fallback
+- [x] 정렬: 매칭도순(기본) · 마감임박순 · 지원금액순 (서버 Supabase 조회 기준)
 - [ ] AI 요약 파이프라인 범위 결정 및 연동 (선택)
 - [ ] plan.md **업력(연차)** UI 추가 여부 결정
+- [x] GitHub Actions Pages 배포 (`syd348.github.io/hub/`)
+- [x] PR CI + commitlint (husky + `pr-checks.yml`)
 
 ---
 

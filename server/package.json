@@ -7,10 +7,13 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "lint": "oxlint src"
+    "lint": "oxlint src",
+    "db:seed": "tsx src/db/seed.ts",
+    "db:check": "tsx src/db/check.ts"
   },
   "dependencies": {
     "@hub/shared": "*",
+    "@supabase/supabase-js": "^2.110.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

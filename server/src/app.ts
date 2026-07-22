@@ -3,6 +3,7 @@ import cors from 'cors'
 import express from 'express'
 import helmet from 'helmet'
 import { healthRouter } from './routes/health.js'
+import { matchRouter } from './routes/match.js'
 import { subsidiesRouter } from './routes/subsidies.js'
 
 export const app = express()
@@ -13,3 +14,4 @@ app.use(express.json())
 
 app.use('/api/health', healthRouter)
 app.use('/api/subsidies', subsidiesRouter)
+app.use('/api/match', matchRouter)
