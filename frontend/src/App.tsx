@@ -10,7 +10,7 @@ import ToastAlert from './components/ToastAlert';
 import Footer from './components/Footer';
 
 // 1. Core Interfaces
-interface Drop {
+export interface Drop {
   id: string;
   title: string;
   category: string;
@@ -26,6 +26,17 @@ interface Drop {
   releaseDateText?: string;
   priceChangeRate?: number;
   volume?: number;
+  polymarket: {
+    upPrice: number;
+    downPrice: number;
+    upPriceCent: string;
+    downPriceCent: string;
+    upOdds: string;
+    downOdds: string;
+    totalUpStaked: number;
+    totalDownStaked: number;
+    totalPot: number;
+  };
 }
 
 interface ToastMessage {
@@ -34,24 +45,23 @@ interface ToastMessage {
 }
 
 export default function App() {
-  // 3. States
   const [activeTab, setActiveTab] = useState<'upcoming' | 'released' | 'ranking'>('upcoming');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [drops, setDrops] = useState<Drop[]>([]);
   const [selectedDropId, setSelectedDropId] = useState<string | null>(null);
   const [rankingPeriod, setRankingPeriod] = useState<'current' | 'last'>('current');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [userPoints, setUserPoints] = useState<number>(1000);
 
   const API_BASE = 'http://localhost:5000/api';
   const TEST_USER_ID = '64700eed-4e7e-4a57-b75b-7e81f999caaa';
 
-  // Fetch Drops from Backend
+  // Fetch Drops & Polymarket Pricing from Backend
   const fetchDrops = async () => {
     try {
       const res = await fetch(`${API_BASE}/drops`);
       const result = await res.json();
       if (result.success) {
-        // Map backend Drop schema to frontend Drop interface
         const mapped: Drop[] = result.data.map((d: any) => {
           const catLabels: Record<string, string> = {
             sneakers: 'sneakers 👟',
@@ -61,11 +71,19 @@ export default function App() {
             collectibles: 'collectibles 🧱'
           };
 
-          // Use the actual image URL crawled from KREAM and stored in DB.
-          // proxyImageUrl() in DropsGrid/DetailOverlay will route it through the backend proxy
-          // to bypass CDN hotlink protection.
-          const image = d.imageUrl || '';
+          const upStaked = d.totalUpStaked || 0;
+          const downStaked = d.totalDownStaked || 0;
+          const totalPot = upStaked + downStaked;
 
+          let upPrice = 0.50;
+          if (totalPot > 0) {
+            upPrice = Math.max(0.05, Math.min(0.95, upStaked / totalPot));
+          }
+          const downPrice = Math.round((1.0 - upPrice) * 100) / 100;
+          upPrice = Math.round(upPrice * 100) / 100;
+
+          const upOdds = (1.0 / upPrice).toFixed(2);
+          const downOdds = (1.0 / downPrice).toFixed(2);
 
           return {
             id: d.id,
@@ -76,16 +94,26 @@ export default function App() {
             retail: `${d.retailPrice.toLocaleString()} KRW`,
             consensus: d.consensusPrice || Math.round(d.retailPrice * 1.15),
             marketPrice: d.marketPrice ? `${d.marketPrice.toLocaleString()} KRW` : undefined,
-            // Derive a mockup bullish percentage based on title characters for visual styling
-            bullish: Math.abs(d.title.charCodeAt(0) % 30) + 65,
-            image,
+            bullish: Math.round(upPrice * 100),
+            image: d.imageUrl || '',
             sparkline: d.category === 'sneakers'
               ? 'M 0 85 C 50 60, 100 40, 150 25 C 200 20, 250 15, 300 10'
               : 'M 0 50 C 50 50, 100 60, 150 55 C 200 45, 250 52, 300 48',
             releaseDate: d.releaseDate,
             releaseDateText: d.releaseDateText,
             priceChangeRate: d.priceChangeRate,
-            volume: d.volume
+            volume: d.volume,
+            polymarket: {
+              upPrice,
+              downPrice,
+              upPriceCent: `${Math.round(upPrice * 100)}¢`,
+              downPriceCent: `${Math.round(downPrice * 100)}¢`,
+              upOdds: `${upOdds}x`,
+              downOdds: `${downOdds}x`,
+              totalUpStaked: upStaked,
+              totalDownStaked: downStaked,
+              totalPot
+            }
           };
         });
         setDrops(mapped);
@@ -112,7 +140,6 @@ export default function App() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Update body class for editorial visibility toggling
   useEffect(() => {
     if (activeTab === 'upcoming' && activeCategory === 'all') {
       document.body.classList.remove('hide-editorial');
@@ -127,10 +154,10 @@ export default function App() {
 
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3000);
+    }, 3500);
   };
 
-  const castVote = async (id: string, isUp: boolean) => {
+  const castVote = async (id: string, isUp: boolean, stakedPoints: number = 100) => {
     const item = drops.find((d) => d.id === id);
     if (!item) return;
 
@@ -143,20 +170,23 @@ export default function App() {
         body: JSON.stringify({
           userId: TEST_USER_ID,
           dropId: id,
-          direction: isUp ? 'UP' : 'DOWN'
+          direction: isUp ? 'UP' : 'DOWN',
+          stakedPoints
         })
       });
 
       const result = await res.json();
       if (res.ok && result.success) {
+        const { boughtSharePrice, sharesCount, remainingPoints, odds } = result.data;
+        if (remainingPoints !== undefined) setUserPoints(remainingPoints);
+
+        const priceCent = Math.round(boughtSharePrice * 100);
         showToast(
-          isUp
-            ? `[▲ 오를까] 투표완료 // 예상 리셀가가 상승했습니다.`
-            : `[▼ 내릴까] 투표완료 // 예상 리셀가가 하락했습니다.`
+          `[Polymarket] ${isUp ? '▲ UP' : '▼ DOWN'} 지분 ${sharesCount}주 매수 완료! (가격: ${priceCent}¢, 배당: ${odds}x)`
         );
         await fetchDrops();
       } else {
-        showToast(`[오류] ${result.message || '투표 제출에 실패했습니다.'}`);
+        showToast(`[오류] ${result.message || '매수에 실패했습니다.'}`);
       }
     } catch (error) {
       console.error('Error casting vote:', error);
@@ -166,7 +196,6 @@ export default function App() {
 
   const currentSelectedDrop = drops.find((d) => d.id === selectedDropId);
 
-  // Filter items by tab status and sub category
   const filteredDrops = drops.filter((d) => {
     if (activeTab === 'upcoming' && d.status !== 'upcoming') return false;
     if (activeTab === 'released' && d.status !== 'released') return false;
@@ -182,7 +211,6 @@ export default function App() {
         setActiveCategory={setActiveCategory}
       />
 
-      {/* Hero & Intro Statement: Only visible on upcoming and 'all' categories */}
       {activeTab === 'upcoming' && activeCategory === 'all' && (
         <>
           <HeroSection />
@@ -191,7 +219,6 @@ export default function App() {
         </>
       )}
 
-      {/* Main product items list grid */}
       <DropsGrid
         activeTab={activeTab}
         activeCategory={activeCategory}
@@ -201,7 +228,6 @@ export default function App() {
         castVote={castVote}
       />
 
-      {/* Leaderboard weekly rankings panel */}
       <Leaderboard
         activeTab={activeTab}
         rankingPeriod={rankingPeriod}
@@ -209,15 +235,14 @@ export default function App() {
         showToast={showToast}
       />
 
-      {/* Right details sidebar slider overlay */}
       <DetailOverlay
         selectedDropId={selectedDropId}
         setSelectedDropId={setSelectedDropId}
         currentSelectedDrop={currentSelectedDrop}
         castVote={castVote}
+        userPoints={userPoints}
       />
 
-      {/* Floated toast alerts */}
       <ToastAlert toasts={toasts} />
 
       <Footer />

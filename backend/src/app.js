@@ -20,10 +20,12 @@ app.get('/', (req, res) => {
 });
 
 const { initCrawlerCron } = require('./cron/crawlerJob');
+const { initSettlementCron } = require('./cron/settlementJob');
 
 // Start Server
 app.listen(PORT, () => {
   console.log(`[server] running on http://localhost:${PORT}`);
-  // Initialize KREAM sync scheduler
+  // Initialize KREAM sync & settlement schedulers
   initCrawlerCron();
+  initSettlementCron();
 });

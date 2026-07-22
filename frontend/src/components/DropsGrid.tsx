@@ -1,20 +1,4 @@
-interface Drop {
-  id: string;
-  title: string;
-  category: string;
-  catLabel: string;
-  status: 'upcoming' | 'released';
-  retail: string;
-  consensus: number;
-  marketPrice?: string;
-  bullish: number;
-  image: string;
-  sparkline: string;
-  releaseDate?: string;
-  releaseDateText?: string;
-  priceChangeRate?: number;
-  volume?: number;
-}
+import { Drop } from '../App';
 
 interface DropsGridProps {
   activeTab: 'upcoming' | 'released' | 'ranking';
@@ -22,10 +6,9 @@ interface DropsGridProps {
   setActiveCategory: (cat: string) => void;
   filteredDrops: Drop[];
   setSelectedDropId: (id: string | null) => void;
-  castVote: (id: string, isUp: boolean) => void;
+  castVote: (id: string, isUp: boolean, stakedPoints?: number) => void;
 }
 
-// Helper to calculate D-Day countdown inside the component scope
 const getDDay = (dateStr?: string) => {
   if (!dateStr) return null;
   const release = new Date(dateStr);
@@ -53,12 +36,12 @@ export default function DropsGrid({
     <section className="drops-section" id="active-drops">
       <div className="drops-header">
         <h2 className="section-title">
-          {activeTab === 'upcoming' ? 'upcoming drops' : 'hot & released'}
+          {activeTab === 'upcoming' ? 'upcoming prediction markets' : 'hot & released markets'}
         </h2>
         <p className="section-subtitle">
           {activeTab === 'upcoming'
-            ? '출시 전 한정판 라인업입니다. 가격 상승/하락 예측 투표에 참여해 집단지성을 형성해보세요.'
-            : '발매 완료되어 실시간으로 거래 시세를 추적 중인 상품군입니다.'}
+            ? '발매 당일 23:59 KREAM 종가 기준 지분 매수 및 예측 마켓'
+            : '주간 일요일 23:59 KREAM 종가 기준 Polymarket 스타일 지분 트레이딩 마켓'}
         </p>
       </div>
 
@@ -100,6 +83,13 @@ export default function DropsGrid({
       <div className="drops-grid">
         {filteredDrops.map((drop) => {
           const isUpcoming = drop.status === 'upcoming';
+          const poly = drop.polymarket || {
+            upPriceCent: '50¢',
+            downPriceCent: '50¢',
+            upOdds: '2.00x',
+            downOdds: '2.00x',
+          };
+
           return (
             <div
               key={drop.id}
@@ -172,25 +162,32 @@ export default function DropsGrid({
                 )}
               </div>
 
-              <div className="card-sparkline">
-                <svg viewBox="0 0 300 50">
-                  <path d={drop.sparkline} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="2" />
-                  <path
-                    d={drop.sparkline}
-                    fill="none"
-                    stroke={isUpcoming ? '#d4ff00' : '#888888'}
-                    strokeWidth="2"
-                    className="sparkline-fill"
-                  />
-                </svg>
+              {/* Polymarket Live Share Pricing Bar */}
+              <div style={{
+                background: '#111111',
+                border: '1px solid #333333',
+                padding: '8px 10px',
+                marginTop: '12px',
+                marginBottom: '8px',
+                fontSize: '0.75rem',
+                fontFamily: 'monospace'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span style={{ color: '#d4ff00', fontWeight: 'bold' }}>▲ UP {poly.upPriceCent} ({poly.upOdds})</span>
+                  <span style={{ color: '#ff3333', fontWeight: 'bold' }}>▼ DOWN {poly.downPriceCent} ({poly.downOdds})</span>
+                </div>
+                <div style={{ width: '100%', height: '6px', background: '#333333', display: 'flex' }}>
+                  <div style={{ width: `${drop.bullish}%`, background: '#d4ff00', transition: 'all 0.3s ease' }}></div>
+                  <div style={{ width: `${100 - drop.bullish}%`, background: '#ff3333', transition: 'all 0.3s ease' }}></div>
+                </div>
               </div>
 
               <div className="card-actions">
-                <button className="btn-vote-mini up" onClick={() => castVote(drop.id, true)}>
-                  ▲ up
+                <button className="btn-vote-mini up" onClick={() => castVote(drop.id, true, 100)}>
+                  ▲ buy UP ({poly.upPriceCent})
                 </button>
-                <button className="btn-vote-mini down" onClick={() => castVote(drop.id, false)}>
-                  ▼ down
+                <button className="btn-vote-mini down" onClick={() => castVote(drop.id, false, 100)}>
+                  ▼ buy DOWN ({poly.downPriceCent})
                 </button>
               </div>
             </div>
