@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
 import { generateDraft, saveDraft, submitProfile } from './api';
 import InfoInput from './screens/InfoInput';
@@ -6,19 +6,43 @@ import RecommendList from './screens/RecommendList';
 import JobDetail from './screens/JobDetail';
 import DraftEditor from './screens/DraftEditor';
 
+const SESSION_STORAGE_KEY = 'career-agent-session';
+
+function loadSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+const initialSession = loadSession();
+
 function App() {
-  const [step, setStep] = useState('input');
-  const [profile, setProfile] = useState(null);
-  const [profileId, setProfileId] = useState(null);
-  const [jobs, setJobs] = useState([]);
-  const [selectedJob, setSelectedJob] = useState(null);
+  const [step, setStep] = useState(initialSession.step ?? 'input');
+  const [profile, setProfile] = useState(initialSession.profile ?? null);
+  const [profileId, setProfileId] = useState(initialSession.profileId ?? null);
+  const [jobs, setJobs] = useState(initialSession.jobs ?? []);
+  const [selectedJob, setSelectedJob] = useState(initialSession.selectedJob ?? null);
+  const [isDraftSaved, setIsDraftSaved] = useState(initialSession.isDraftSaved ?? false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const [draftError, setDraftError] = useState('');
-  const [isDraftSaved, setIsDraftSaved] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [saveDraftError, setSaveDraftError] = useState('');
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SESSION_STORAGE_KEY,
+        JSON.stringify({ step, profile, profileId, jobs, selectedJob, isDraftSaved }),
+      );
+    } catch {
+      // 세션 저장 실패(프라이빗 모드 용량 제한 등)는 새로고침 복원만 못 하는 것이라 무시한다
+    }
+  }, [step, profile, profileId, jobs, selectedJob, isDraftSaved]);
 
   async function handleProfileSubmit(submittedProfile) {
     setIsSubmitting(true);
