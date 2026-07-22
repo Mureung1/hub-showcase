@@ -1,0 +1,1 @@
+ALTER TABLE lecture ALTER COLUMN tier TYPE REAL;

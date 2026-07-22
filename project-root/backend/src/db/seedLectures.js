@@ -3,6 +3,7 @@
 // 실행: node src/db/seedLectures.js
 const supabase = require('./db');
 const { requiredCoursesByDepartment } = require('../data/requiredCourses');
+const { courseTiersByDepartment } = require('../data/courseTiers');
 
 const API_URL =
   'https://knuin.knu.ac.kr/public/web/stddm/lsspr/syllabus/lectPlnInqr/selectListLectPlnInqr';
@@ -109,6 +110,12 @@ function isRequired(department, name) {
   return true;
 }
 
+// courseTiers.js에 수기로 채워둔 값을 그대로 반영. 같은 과목이라도 교수마다 평가가 다르므로
+// 과목명 + 교수명 조합으로 찾는다. 아직 평가 안 했거나 목록에 없는 조합은 null.
+function getTier(department, name, professor) {
+  return courseTiersByDepartment[department]?.[name]?.[professor] ?? null;
+}
+
 async function upsertLecture(row) {
   const semester = toSemester(row.estblYear, row.estblSmstrSctnm);
   // 일부 교양 과목은 estblDprtnNm(개설학과)이 비어있고 estblUnivNm(단과대학)만 채워져 있음
@@ -123,6 +130,8 @@ async function upsertLecture(row) {
     category: row.sbjetSctnm,
     department,
     required: isRequired(department, row.sbjetNm),
+    grade: row.estblGrade, // "1"~"4" 또는 학년 무관("*")
+    tier: getTier(department, row.sbjetNm, row.totalPrfssNm),
   };
 
   const { data: lecture, error } = await supabase

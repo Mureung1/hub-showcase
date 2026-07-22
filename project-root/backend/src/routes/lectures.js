@@ -38,6 +38,7 @@ router.get('/', async (req, res) => {
     prerequisite: row.prerequisite,
     pair_group: row.pair_group,
     tier: row.tier,
+    grade: row.grade,
     times: row.lecture_time.map((t) => ({
       day: t.day,
       start: t.start_time,
