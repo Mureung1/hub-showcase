@@ -53,16 +53,12 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
 export const ClearableTextField = forwardRef<
   HTMLInputElement,
   ClearableTextFieldProps
->(function ClearableTextField({
-  className,
-  clearLabel,
-  onClear,
-  value,
-  ...props
-}, ref) {
+>(function ClearableTextField(
+  { className, clearLabel, onClear, value, ...props },
+  ref
+) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const canClear =
-    value.length > 0 && !props.disabled && !props.readOnly;
+  const canClear = value.length > 0 && !props.disabled && !props.readOnly;
 
   useImperativeHandle(ref, () => inputRef.current as HTMLInputElement);
 
