@@ -24,14 +24,14 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
   const handleSavePaper = async (paper: Paper): Promise<void> => {
     try {
       // 이미 저장된 논문인지 중복 검사
-      if (savedPapers.some(item => item.paperId === paper.id)) {
+      if (savedPapers.some(item => item.paperId === paper.paperId)) {
         alert('이미 서재에 보관된 논문입니다.');
         return;
       }
 
       // DB 인서트 에러 방지를 위해 insights 필드를 제외하고 스키마에 필요한 필드만 Payload 구성 (userId 병합)
-      const { id, title, authors, channel, year, matchScore } = paper;
-      const paperPayload = { id, title, authors, channel, year, matchScore, userId };
+      const { paperId, title, authors, channel, year, matchScore } = paper;
+      const paperPayload = { paperId, title, authors, channel, year, matchScore, userId };
 
       const response = await fetch('http://localhost:5000/api/library', {
         method: 'POST',
@@ -86,8 +86,8 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
           ) : (
             curationData.papers.map((paper) => (
               <div 
-                key={paper.id} 
-                className={`paper-card ${paper.matchScore >= 90 ? 'high-match' : 'medium-match'} ${selectedPaper?.id === paper.id ? 'active' : ''}`}
+                key={paper.paperId} 
+                className={`paper-card ${paper.matchScore >= 90 ? 'high-match' : 'medium-match'} ${selectedPaper?.paperId === paper.paperId ? 'active' : ''}`}
                 onClick={() => setSelectedPaper(paper)}
                 style={{ cursor: 'pointer' }}
               >

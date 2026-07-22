@@ -3,7 +3,7 @@
   "data": {
     "papers": [
       {
-        "id": "paper-001",
+        "paperId": "paper-001",
         "title": "Lost in the Middle: How Language Models Use Long Contexts",
         "authors": "Nelson F. Liu, Kevin Lin, John Hewitt, Percy Liang, Christopher D. Manning",
         "channel": "arXiv",
@@ -16,7 +16,7 @@
         }
       },
       {
-        "id": "paper-002",
+        "paperId": "paper-002",
         "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
         "authors": "Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin, Naman Goyal, Heinrich Küttler, Mike Lewis, Wen-tau Yih, Tim Rocktäschel, Sebastian Riedel, Douwe Kiela",
         "channel": "NeurIPS",

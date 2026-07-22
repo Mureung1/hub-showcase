@@ -36,7 +36,7 @@ export interface DbPaper {
 }
 
 export interface PaperPayload {
-  id: string;
+  paperId: string;
   title: string;
   authors: string;
   channel: string;
@@ -119,7 +119,7 @@ app.post('/api/library', async (req: Request, res: Response) => {
       .from('saved_papers')
       .insert([
         {
-          paper_id: paper.id,
+          paper_id: paper.paperId,
           title: paper.title,
           authors: paper.authors,
           channel: paper.channel,
