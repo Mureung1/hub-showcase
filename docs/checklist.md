@@ -82,6 +82,7 @@
 - [ ] Claude API tool use 연동 (WebClient 직접 호출로 확정 — 이유는 CLAUDE.md 참고) (#37)
 - [ ] `get_expense_summary` Tool 구현 (F5 `/api/expenses/summary` 재사용, 외부 API 없음) (#38)
 - [ ] `get_subscriptions` Tool 구현 (F13 API 재사용, F13 완료 후 진행) (#39)
+- [ ] `get_budget` Tool 구현 (예산 API 재사용, "예산 얼마야?" 질문 대응 — 수요일 다이어그램 점검 중 발견한 설계 구멍, amount=null 시 안내 처리 포함) (#55)
 - [ ] 챗봇 질의응답 플로우 구현 (사용자 질문 → 필요 시 Tool 호출 → 답변) (#40)
 - [ ] 지출 추가 시 1회 자동 판단 플로우 구현 (Context 보고 먼저 말 걸지 여부 결정) (#41)
 - [ ] Tool 미호출("개입/응답 불필요") 시에도 안내 메시지가 함께 나오는지 확인 (#42)
