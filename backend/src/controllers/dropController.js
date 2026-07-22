@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 async function getAllDrops(req, res) {
   try {
     const { category, brand, status } = req.query;
-    
+
     // Build query conditions
     const where = {};
     if (category) where.category = category;
@@ -34,13 +34,13 @@ async function getAllDrops(req, res) {
       const upVotes = votes.filter(v => v.direction === 'UP').length;
       const downVotes = votes.filter(v => v.direction === 'DOWN').length;
       const totalVotes = votes.length;
-      
+
       const upRatio = totalVotes > 0 ? Math.round((upVotes / totalVotes) * 100) : 0;
       const downRatio = totalVotes > 0 ? Math.round((downVotes / totalVotes) * 100) : 0;
 
       const basePrice = drop.marketPrice || drop.retailPrice;
       const votesWithPrices = votes.filter(v => v.predictedPrice !== null);
-      
+
       const offsets = [3, 7];
       const predictions = {};
 
@@ -132,13 +132,13 @@ async function getDropById(req, res) {
     const upVotes = votes.filter(v => v.direction === 'UP').length;
     const downVotes = votes.filter(v => v.direction === 'DOWN').length;
     const totalVotes = votes.length;
-    
+
     const upRatio = totalVotes > 0 ? Math.round((upVotes / totalVotes) * 100) : 0;
     const downRatio = totalVotes > 0 ? Math.round((downVotes / totalVotes) * 100) : 0;
 
     const basePrice = drop.marketPrice || drop.retailPrice;
     const votesWithPrices = votes.filter(v => v.predictedPrice !== null);
-    
+
     const offsets = [3, 7];
     const predictions = {};
 

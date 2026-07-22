@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const { scrapeKreamSneakers } = require('../crawler/kreamCrawler');
+const { processSettlements } = require('../cron/settlementJob');
 const prisma = new PrismaClient();
 
 /**
@@ -29,7 +30,6 @@ async function dumpKreamPrices(req, res) {
         continue;
       }
 
-      // Upsert into Drop database table
       const synced = await prisma.drop.upsert({
         where: { kreamProductId: String(kreamProductId) },
         update: {
@@ -43,7 +43,7 @@ async function dumpKreamPrices(req, res) {
           kreamProductId: String(kreamProductId),
           title,
           brand: brand || null,
-          category: 'sneakers', // Default category is sneakers
+          category: 'sneakers',
           retailPrice: retailPrice ? parseInt(retailPrice, 10) : 0,
           marketPrice: marketPrice ? parseInt(marketPrice, 10) : null,
           status: 'RELEASED',
@@ -77,7 +77,6 @@ async function dumpKreamPrices(req, res) {
 async function triggerKreamCrawler(req, res) {
   try {
     console.log('[admin] Manual KREAM crawling triggered.');
-    // Run async scraper
     const results = await scrapeKreamSneakers();
     return res.status(200).json({
       success: true,
@@ -95,7 +94,64 @@ async function triggerKreamCrawler(req, res) {
   }
 }
 
+/**
+ * Updates image URLs for one or more products manually
+ * Route: POST /api/admin/update-images
+ */
+async function updateProductImages(req, res) {
+  try {
+    const { updates } = req.body;
+    if (!updates || !Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({ success: false, message: '"updates" array is required.' });
+    }
+
+    const results = [];
+    for (const { kreamProductId, imageUrl } of updates) {
+      if (!kreamProductId || !imageUrl) continue;
+      const updated = await prisma.drop.updateMany({
+        where: { kreamProductId: String(kreamProductId) },
+        data: { imageUrl },
+      });
+      results.push({ kreamProductId, updated: updated.count });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Updated images for ${results.length} products.`,
+      data: results,
+    });
+  } catch (error) {
+    console.error('[admin] Error updating product images:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+}
+
+/**
+ * Triggers Polymarket Settlement manually
+ * Route: POST /api/admin/settlement-trigger
+ */
+async function triggerSettlement(req, res) {
+  try {
+    console.log('[admin] Manual Polymarket settlement triggered.');
+    const result = await processSettlements();
+    return res.status(200).json({
+      success: true,
+      message: 'Polymarket settlement executed successfully.',
+      data: result
+    });
+  } catch (error) {
+    console.error('[admin] Failed to run manual settlement trigger:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Settlement trigger failed.',
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   dumpKreamPrices,
-  triggerKreamCrawler
+  triggerKreamCrawler,
+  updateProductImages,
+  triggerSettlement
 };

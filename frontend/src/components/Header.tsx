@@ -1,10 +1,22 @@
+import { UserSession } from './AuthModal';
+
 interface HeaderProps {
   activeTab: 'upcoming' | 'released' | 'ranking';
   setActiveTab: (tab: 'upcoming' | 'released' | 'ranking') => void;
   setActiveCategory: (cat: string) => void;
+  userSession: UserSession | null;
+  onOpenAuthModal: () => void;
+  onLogout: () => void;
 }
 
-export default function Header({ activeTab, setActiveTab, setActiveCategory }: HeaderProps) {
+export default function Header({
+  activeTab,
+  setActiveTab,
+  setActiveCategory,
+  userSession,
+  onOpenAuthModal,
+  onLogout,
+}: HeaderProps) {
   return (
     <>
       {/* Top Bar */}
@@ -50,17 +62,48 @@ export default function Header({ activeTab, setActiveTab, setActiveCategory }: H
           })}
         </nav>
 
-        <a
-          href="#active-drops"
-          className="btn-touch"
-          onClick={(e) => {
-            e.preventDefault();
-            const el = document.getElementById('active-drops');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}
-        >
-          predict drops
-        </a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {userSession ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontFamily: 'monospace' }}>
+              <span style={{ color: '#ffffff', fontWeight: 'bold' }}>👤 {userSession.username}</span>
+              <span style={{ color: '#d4ff00', background: '#1a1a1a', border: '1px solid #d4ff00', padding: '2px 8px' }}>
+                💰 {userSession.points.toLocaleString()} pts
+              </span>
+              <button
+                onClick={onLogout}
+                style={{
+                  background: 'transparent',
+                  color: '#888888',
+                  border: '1px solid #444444',
+                  padding: '4px 8px',
+                  cursor: 'pointer',
+                  fontSize: '0.75rem',
+                  borderRadius: '0px',
+                  textTransform: 'lowercase'
+                }}
+              >
+                logout
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onOpenAuthModal}
+              style={{
+                background: '#d4ff00',
+                color: '#000000',
+                border: 'none',
+                padding: '8px 16px',
+                fontWeight: 'bold',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                borderRadius: '0px',
+                textTransform: 'lowercase'
+              }}
+            >
+              login / register
+            </button>
+          )}
+        </div>
       </header>
     </>
   );

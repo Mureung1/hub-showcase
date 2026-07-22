@@ -7,10 +7,11 @@ import DropsGrid from './components/DropsGrid';
 import Leaderboard from './components/Leaderboard';
 import DetailOverlay from './components/DetailOverlay';
 import ToastAlert from './components/ToastAlert';
+import AuthModal, { UserSession } from './components/AuthModal';
 import Footer from './components/Footer';
 
 // 1. Core Interfaces
-interface Drop {
+export interface Drop {
   id: string;
   title: string;
   category: string;
@@ -26,6 +27,17 @@ interface Drop {
   releaseDateText?: string;
   priceChangeRate?: number;
   volume?: number;
+  polymarket: {
+    upPrice: number;
+    downPrice: number;
+    upPriceCent: string;
+    downPriceCent: string;
+    upOdds: string;
+    downOdds: string;
+    totalUpStaked: number;
+    totalDownStaked: number;
+    totalPot: number;
+  };
 }
 
 interface ToastMessage {
@@ -34,7 +46,6 @@ interface ToastMessage {
 }
 
 export default function App() {
-  // 3. States
   const [activeTab, setActiveTab] = useState<'upcoming' | 'released' | 'ranking'>('upcoming');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [drops, setDrops] = useState<Drop[]>([]);
@@ -42,16 +53,33 @@ export default function App() {
   const [rankingPeriod, setRankingPeriod] = useState<'current' | 'last'>('current');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  const API_BASE = 'http://localhost:5000/api';
-  const TEST_USER_ID = '64700eed-4e7e-4a57-b75b-7e81f999caaa';
+  // Auth User Session State
+  const [userSession, setUserSession] = useState<UserSession | null>(() => {
+    const saved = localStorage.getItem('dropcast_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
-  // Fetch Drops from Backend
+  const API_BASE = 'http://localhost:5000/api';
+
+  const handleLoginSuccess = (user: UserSession) => {
+    setUserSession(user);
+    localStorage.setItem('dropcast_user', JSON.stringify(user));
+    showToast(`🎉 환영합니다, ${user.username}님! (포인트: ${user.points.toLocaleString()} pts)`);
+  };
+
+  const handleLogout = () => {
+    setUserSession(null);
+    localStorage.removeItem('dropcast_user');
+    showToast('로그아웃 되었습니다.');
+  };
+
+  // Fetch Drops & Polymarket Pricing from Backend
   const fetchDrops = async () => {
     try {
       const res = await fetch(`${API_BASE}/drops`);
       const result = await res.json();
       if (result.success) {
-        // Map backend Drop schema to frontend Drop interface
         const mapped: Drop[] = result.data.map((d: any) => {
           const catLabels: Record<string, string> = {
             sneakers: 'sneakers 👟',
@@ -61,47 +89,19 @@ export default function App() {
             collectibles: 'collectibles 🧱'
           };
 
-          // Real high-fidelity product photos directly linked to KREAM's actual CDN (pstatic.net)
-          let image = d.imageUrl || '';
-          const lowerTitle = d.title.toLowerCase();
+          const upStaked = d.totalUpStaked || 0;
+          const downStaked = d.totalDownStaked || 0;
+          const totalPot = upStaked + downStaked;
 
-          if (lowerTitle.includes('adizero') || lowerTitle.includes('evo sl')) {
-            if (lowerTitle.includes('black')) {
-              image = 'https://kream-phinf.pstatic.net/MjAyNDA3MTlfMjc2/MDAxNzIxMzczODUzNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_f8f74a2ea2bb468cbbf056e43ee6bd17.png'; // Adidas Adizero EVO SL Black
-            } else {
-              image = 'https://kream-phinf.pstatic.net/MjAyNDA3MTlfMjc2/MDAxNzIxMzczODUzNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_fd54a2ea6bb468cbbf056e43ee6bd17.png'; // Adidas Adizero EVO SL White
-            }
-          } else if (lowerTitle.includes('force 1') || lowerTitle.includes('air force')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMTA2MTRfMTM1/MDAxNjIzNjM5MDc4MzU3.E-PZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/p_31556_0_a4c7e6c5188f4b1fa7a7b8e5c26b801a.png'; // Nike Air Force 1
-          } else if (lowerTitle.includes('992')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMTA4MTNfMjQ0/MDAxNjI4ODM4MjExMDQw.4wS4h8P7o6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/p_31267_0_f3a74a2ea6bb468cbbf056e43ee6bd17.png'; // NB 992 Grey
-          } else if (lowerTitle.includes('samba')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMjA2MTdfMTYz/MDAxNjU1NDQxODA1Mzc0.7h-L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_fd54a2ea6bb468cbbf056e43ee6bd17.png'; // Adidas Samba
-          } else if (lowerTitle.includes('kayano') || lowerTitle.includes('asics')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMzEwMTJfMjY0/MDAxNjk3MTExMjE1Mzc0.7h-L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_fd54a2ea6bb468cbbf056e43ee6bd17.png'; // Asics Kayano
-          } else if (lowerTitle.includes('xt-6') || lowerTitle.includes('salomon')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMzA3MTdfMjc2/MDAxNjg5NTcxMzczNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_f7a627ea0fbb468cbbf056e43ee6bd17.png'; // Salomon XT-6
-          } else if (lowerTitle.includes('mind 001') || lowerTitle.includes('mind')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyNDA3MTlfMjc2/MDAxNzIxMzczODUzNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_f8f74a2ea2bb468cbbf056e43ee6bd17.png'; // Nike Mind 001 Black Chrome
-          } else if (lowerTitle.includes('oofos')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMDA2MTBfNTgg/MDAxNTkxNzYzMzUxMjk1.cZg3mB2lhq4B8R6d6x98n88d893o.png/a_f1f74a2ea5bb468cbbf056e43ee6bd17.png'; // Oofos Slide
-          } else if (lowerTitle.includes('keyring') || lowerTitle.includes('plush') || lowerTitle.includes('purin') || lowerTitle.includes('hanroro') || lowerTitle.includes('remini')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyNDA3MjNfMTQw/MDAxNzIxNzE1NDQ3MDAx.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f8f74a2ea2bb468cbbf056e43ee6bd17.png'; // Plush Keyring
-          } else if (lowerTitle.includes('card') || lowerTitle.includes('pokemon') || lowerTitle.includes('spinner') || lowerTitle.includes('inferno') || lowerTitle.includes('tcg')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMjExMDlfMjI3/MDAxNjY3OTYwMzU2NDc2.j-9o2W15d2gX0h65_f4dY1_91k56s9N6dF20GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f7a627ea0fbb468cbbf056e43ee6bd17.png'; // Pokemon TCG
-          } else if (lowerTitle.includes('bag') || lowerTitle.includes('tote')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMTA2MTVfMTY1/MDAxNjIzNzQ5NDQ3MDAx.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f0f74a2ea5bb468cbbf056e43ee6bd17.png'; // Tote Bag
-          } else if (lowerTitle.includes('casio') || lowerTitle.includes('ltp') || lowerTitle.includes('watch')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMzA1MjRfMTAy/MDAxNjg0OTA0OTk0NzQw.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f8f74a2ea2bb468cbbf056e43ee6bd17.png'; // Casio Watch
-          } else if (lowerTitle.includes('t-shirt') || lowerTitle.includes('tee') || lowerTitle.includes('shirts') || lowerTitle.includes('jersey') || lowerTitle.includes('jacket') || lowerTitle.includes('fruits')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMzA3MTdfMjc2/MDAxNjg5NTcxMzczNzg2.9v1L2ZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/a_f7a627ea0fbb468cbbf056e43ee6bd17.png'; // T-Shirt/Apparel
-          } else if (lowerTitle.includes('pants') || lowerTitle.includes('shorts')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMDA2MTBfNTgg/MDAxNTkxNzYzMzUxMjk1.cZg3mB2lhq4B8R6d6x98n88d893o.png/a_f1f74a2ea5bb468cbbf056e43ee6bd17.png'; // Pants/Shorts
-          } else if (lowerTitle.includes('popcorn') || lowerTitle.includes('lalasweet')) {
-            image = 'https://kream-phinf.pstatic.net/MjAyMTA2MTVfMTY1/MDAxNjIzNzQ5NDQ3MDAx.P5h_iQO6XW3_V-P1x9L3K-R34rT4j8iN6D22GkX7y1Qg.S87T0a_k8rF15v0R2P9_pLd1e56U9uR12D55J7Oq8m0g.PNG/a_f0f74a2ea5bb468cbbf056e43ee6bd17.png'; // Popcorn
-          } else {
-            image = d.imageUrl || 'https://kream-phinf.pstatic.net/MjAyMTA2MTRfMTM1/MDAxNjIzNjM5MDc4MzU3.E-PZgP4b2f-Tq29hLwVl-v95hS4rT5q4c1g9O6L_0g.PNG/p_31556_0_a4c7e6c5188f4b1fa7a7b8e5c26b801a.png'; // Default Nike Force 1
+          let upPrice = 0.50;
+          if (totalPot > 0) {
+            upPrice = Math.max(0.05, Math.min(0.95, upStaked / totalPot));
           }
+          const downPrice = Math.round((1.0 - upPrice) * 100) / 100;
+          upPrice = Math.round(upPrice * 100) / 100;
+
+          const upOdds = (1.0 / upPrice).toFixed(2);
+          const downOdds = (1.0 / downPrice).toFixed(2);
 
           return {
             id: d.id,
@@ -112,16 +112,26 @@ export default function App() {
             retail: `${d.retailPrice.toLocaleString()} KRW`,
             consensus: d.consensusPrice || Math.round(d.retailPrice * 1.15),
             marketPrice: d.marketPrice ? `${d.marketPrice.toLocaleString()} KRW` : undefined,
-            // Derive a mockup bullish percentage based on title characters for visual styling
-            bullish: Math.abs(d.title.charCodeAt(0) % 30) + 65,
-            image,
+            bullish: Math.round(upPrice * 100),
+            image: d.imageUrl || '',
             sparkline: d.category === 'sneakers'
               ? 'M 0 85 C 50 60, 100 40, 150 25 C 200 20, 250 15, 300 10'
               : 'M 0 50 C 50 50, 100 60, 150 55 C 200 45, 250 52, 300 48',
             releaseDate: d.releaseDate,
             releaseDateText: d.releaseDateText,
             priceChangeRate: d.priceChangeRate,
-            volume: d.volume
+            volume: d.volume,
+            polymarket: {
+              upPrice,
+              downPrice,
+              upPriceCent: `${Math.round(upPrice * 100)}¢`,
+              downPriceCent: `${Math.round(downPrice * 100)}¢`,
+              upOdds: `${upOdds}x`,
+              downOdds: `${downOdds}x`,
+              totalUpStaked: upStaked,
+              totalDownStaked: downStaked,
+              totalPot
+            }
           };
         });
         setDrops(mapped);
@@ -148,7 +158,6 @@ export default function App() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Update body class for editorial visibility toggling
   useEffect(() => {
     if (activeTab === 'upcoming' && activeCategory === 'all') {
       document.body.classList.remove('hide-editorial');
@@ -163,10 +172,16 @@ export default function App() {
 
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3000);
+    }, 3500);
   };
 
-  const castVote = async (id: string, isUp: boolean) => {
+  const castVote = async (id: string, isUp: boolean, stakedPoints: number = 100) => {
+    if (!userSession) {
+      showToast('[안내] 투표 및 지분 매수를 위해 먼저 로그인해 주세요.');
+      setIsAuthModalOpen(true);
+      return;
+    }
+
     const item = drops.find((d) => d.id === id);
     if (!item) return;
 
@@ -177,22 +192,29 @@ export default function App() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          userId: TEST_USER_ID,
+          userId: userSession.id,
           dropId: id,
-          direction: isUp ? 'UP' : 'DOWN'
+          direction: isUp ? 'UP' : 'DOWN',
+          stakedPoints
         })
       });
 
       const result = await res.json();
       if (res.ok && result.success) {
+        const { boughtSharePrice, sharesCount, remainingPoints, odds } = result.data;
+        if (remainingPoints !== undefined) {
+          const updated = { ...userSession, points: remainingPoints };
+          setUserSession(updated);
+          localStorage.setItem('dropcast_user', JSON.stringify(updated));
+        }
+
+        const priceCent = Math.round(boughtSharePrice * 100);
         showToast(
-          isUp
-            ? `[▲ 오를까] 투표완료 // 예상 리셀가가 상승했습니다.`
-            : `[▼ 내릴까] 투표완료 // 예상 리셀가가 하락했습니다.`
+          `[Polymarket] ${isUp ? '▲ UP' : '▼ DOWN'} 지분 ${sharesCount}주 매수 완료! (가격: ${priceCent}¢, 배당: ${odds}x)`
         );
         await fetchDrops();
       } else {
-        showToast(`[오류] ${result.message || '투표 제출에 실패했습니다.'}`);
+        showToast(`[오류] ${result.message || '매수에 실패했습니다.'}`);
       }
     } catch (error) {
       console.error('Error casting vote:', error);
@@ -202,7 +224,6 @@ export default function App() {
 
   const currentSelectedDrop = drops.find((d) => d.id === selectedDropId);
 
-  // Filter items by tab status and sub category
   const filteredDrops = drops.filter((d) => {
     if (activeTab === 'upcoming' && d.status !== 'upcoming') return false;
     if (activeTab === 'released' && d.status !== 'released') return false;
@@ -216,9 +237,11 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         setActiveCategory={setActiveCategory}
+        userSession={userSession}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onLogout={handleLogout}
       />
 
-      {/* Hero & Intro Statement: Only visible on upcoming and 'all' categories */}
       {activeTab === 'upcoming' && activeCategory === 'all' && (
         <>
           <HeroSection />
@@ -227,7 +250,6 @@ export default function App() {
         </>
       )}
 
-      {/* Main product items list grid */}
       <DropsGrid
         activeTab={activeTab}
         activeCategory={activeCategory}
@@ -237,7 +259,6 @@ export default function App() {
         castVote={castVote}
       />
 
-      {/* Leaderboard weekly rankings panel */}
       <Leaderboard
         activeTab={activeTab}
         rankingPeriod={rankingPeriod}
@@ -245,15 +266,20 @@ export default function App() {
         showToast={showToast}
       />
 
-      {/* Right details sidebar slider overlay */}
       <DetailOverlay
         selectedDropId={selectedDropId}
         setSelectedDropId={setSelectedDropId}
         currentSelectedDrop={currentSelectedDrop}
         castVote={castVote}
+        userPoints={userSession?.points || 0}
       />
 
-      {/* Floated toast alerts */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
+
       <ToastAlert toasts={toasts} />
 
       <Footer />
