@@ -57,7 +57,7 @@ export function Detail({ product, onBuy, onRestart }: DetailProps) {
       </div>
 
       <button className="btn" type="button" onClick={onBuy} disabled={!product.smartstoreUrl}>
-        스마트스토어로 이동
+        판매처로 이동
       </button>
       <button className="btn-outline" type="button" onClick={onRestart}>
         처음으로
