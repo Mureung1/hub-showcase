@@ -56,6 +56,14 @@ export interface RecommendedNight {
 export interface RecommendedDose {
   time: string;
   amountMg: number;
+  /** 기준 음료(caffeineReference) 몇 잔에 해당하는지. 화면에는 이 값을 보여준다(#3) */
+  cups: number;
+}
+
+/** 잔 수의 기준이 되는 음료 */
+export interface CaffeineReference {
+  cupMg: number;
+  label: string;
 }
 
 /** 서버가 돌려주는 응답 전체 */
@@ -64,6 +72,7 @@ export interface ScheduleCalculateResponse {
   recommendedSchedule: {
     nights: RecommendedNight[];
     caffeineDoses: RecommendedDose[];
+    caffeineReference: CaffeineReference;
   };
   warnings: string[];
 }
