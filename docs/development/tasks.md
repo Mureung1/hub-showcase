@@ -223,16 +223,16 @@ Outcome: 기존 사용자 동작을 유지하면서 Web·API·Data·Scene의 변
 
 | ID | 세부 Task | Priority | Status | Week | Depends on | Acceptance |
 | --- | --- | --- | --- | --- | --- | --- |
-| REFACTOR-001 | 전체 코드 리팩터링 Epic 관리 | P0 | In Progress | Phase 2 | WEB-015, DEPLOY-002 | GitHub #63 하위 Task와 최종 release 검증이 모두 완료된다 |
+| REFACTOR-001 | 전체 코드 리팩터링 Epic 관리 | P0 | Done | Phase 2 | WEB-015, DEPLOY-002 | GitHub #63 하위 Task와 최종 release 검증을 완료했다 |
 | ARCH-003 | runtime hardcoding·config·fixture 경계 분리 | P0 | Done | Phase 2 | ARCH-004 | 실제 데이터·제품 정책·환경값·fixture의 authoritative source가 분리된다 |
 | ARCH-004 | 리팩터링 기준선·구조 규칙 자동 검사 | P0 | Done | Phase 2 | - | AST budget ratchet, runtime literal·FastAPI boundary 검사와 pre-commit/harness 강제를 완료했다 |
-| WEB-018 | App orchestration·state·URL·map 책임 분리 | P0 | Ready | Phase 2 | ARCH-003 | App은 page 조립만 담당하고 각 state 흐름을 독립 테스트한다 |
-| WEB-019 | MarketFilters·MarketInspector UI 책임 분리 | P1 | Ready | Phase 2 | WEB-018 | 분석 UI section을 독립 렌더링·테스트한다 |
-| API-004 | FastAPI router·dependency·Scene gate 분리 | P0 | Ready | Phase 2 | ARCH-004 | app factory는 middleware·exception·router 조립만 수행한다 |
-| API-005 | 분석 query·계산·response 조립 분리 | P0 | Ready | Phase 2 | API-004 | repository와 순수 domain 계산을 독립 테스트한다 |
-| DATA-013 | importer·spatial pipeline 단계 분리·manifest화 | P1 | Ready | Phase 2 | ARCH-003, API-005 | read·validate·normalize·persist·verify 단계와 실행 입력을 재현한다 |
-| SCENE-008 | Scene job UI·polling·pipeline 책임 분리 | P1 | Ready | Phase 2 | API-004 | UI API client와 server job 단계를 분리하고 기존 gate를 유지한다 |
-| TEST-001 | 전체 회귀·architecture boundary·release 검증 | P0 | Ready | Phase 2 | ARCH-003~SCENE-008 | full check와 공개 핵심 흐름 smoke가 통과한다 |
+| WEB-018 | App orchestration·state·URL·map 책임 분리 | P0 | Done | Phase 2 | ARCH-003 | App은 page 조립만 담당하고 각 state 흐름을 독립 테스트한다 |
+| WEB-019 | MarketFilters·MarketInspector UI 책임 분리 | P1 | Done | Phase 2 | WEB-018 | 분석 UI section을 독립 렌더링·테스트한다 |
+| API-004 | FastAPI router·dependency·Scene gate 분리 | P0 | Done | Phase 2 | ARCH-004 | app factory는 middleware·exception·router 조립만 수행한다 |
+| API-005 | 분석 query·계산·response 조립 분리 | P0 | Done | Phase 2 | API-004 | repository와 순수 domain 계산을 독립 테스트한다 |
+| DATA-013 | importer·spatial pipeline 단계 분리·manifest화 | P1 | Done | Phase 2 | ARCH-003, API-005 | read·validate·normalize·persist·verify 단계와 실행 입력을 재현한다 |
+| SCENE-008 | Scene job UI·polling·pipeline 책임 분리 | P1 | Done | Phase 2 | API-004 | UI API client와 server job 단계를 분리하고 기존 gate를 유지한다 |
+| TEST-001 | 전체 회귀·architecture boundary·release 검증 | P0 | Done | Phase 2 | ARCH-003~SCENE-008 | full check와 공개 핵심 흐름 smoke가 통과한다 |
 
 ## 7. Phase 2 Ready Queue
 
