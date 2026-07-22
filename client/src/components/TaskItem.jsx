@@ -1,5 +1,7 @@
 import './TaskItem.css';
-import { formatDue } from '../utils/date';
+import EditableAssignee from './EditableAssignee';
+import EditableDueDate from './EditableDueDate';
+import EditableTitle from './EditableTitle';
 
 const STATUS_LABEL = { pending: '대기', in_progress: '진행', done: '완료' };
 const STATUS_CLASS = { pending: 'wait', in_progress: 'progress', done: 'done' };
@@ -7,11 +9,15 @@ const STATUS_CLASS = { pending: 'wait', in_progress: 'progress', done: 'done' };
 function TaskItem({
   task,
   assigneeName,
+  members,
   canChange,
   isPending,
   onToggleStatus,
   onCycleStatus,
   onDelete,
+  onUpdateTitle,
+  onUpdateAssignee,
+  onUpdateDueDate,
   showToast,
 }) {
   const isDone = task.status === 'done';
@@ -37,9 +43,28 @@ function TaskItem({
       </button>
 
       <div className="task-info">
-        <div className="task-title">{task.title}</div>
+        <EditableTitle
+          title={task.title}
+          canChange={canChange}
+          showToast={showToast}
+          onSave={(title) => onUpdateTitle(task.id, title)}
+        />
         <div className="task-meta">
-          {assigneeName} · {formatDue(task.due_date)}
+          <EditableAssignee
+            assigneeId={task.assignee_id}
+            assigneeName={assigneeName}
+            members={members}
+            canChange={canChange}
+            showToast={showToast}
+            onSave={(assigneeId) => onUpdateAssignee(task.id, assigneeId)}
+          />
+          {' · '}
+          <EditableDueDate
+            dueDate={task.due_date}
+            canChange={canChange}
+            showToast={showToast}
+            onSave={(dueDate) => onUpdateDueDate(task.id, dueDate)}
+          />
         </div>
       </div>
 

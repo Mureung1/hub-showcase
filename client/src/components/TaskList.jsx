@@ -1,6 +1,7 @@
 import './TaskList.css';
 import TaskItem from './TaskItem';
 import { memberName } from '../utils/members';
+import { canMemberChange } from '../utils/permission';
 
 function TaskList({
   tasks,
@@ -10,6 +11,9 @@ function TaskList({
   onToggleStatus,
   onCycleStatus,
   onDelete,
+  onUpdateTitle,
+  onUpdateAssignee,
+  onUpdateDueDate,
   showToast,
 }) {
   if (tasks.length === 0) {
@@ -19,18 +23,22 @@ function TaskList({
   return (
     <div className="task-list">
       {tasks.map((task) => {
-        const canChange = task.assignee_id === null || task.assignee_id === currentMemberId;
+        const canChange = canMemberChange(task, currentMemberId);
 
         return (
           <TaskItem
             key={task.id}
             task={task}
             assigneeName={memberName(members, task.assignee_id)}
+            members={members}
             canChange={canChange}
             isPending={pendingTaskIds.has(task.id)}
             onToggleStatus={onToggleStatus}
             onCycleStatus={onCycleStatus}
             onDelete={onDelete}
+            onUpdateTitle={onUpdateTitle}
+            onUpdateAssignee={onUpdateAssignee}
+            onUpdateDueDate={onUpdateDueDate}
             showToast={showToast}
           />
         );

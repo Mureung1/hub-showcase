@@ -352,7 +352,7 @@ better-sqlite3 설치 실패 시 대응
 포트: 프론트 5173 (Vite 기본, `client/` 생기면), 백엔드 3000
 API 주소: 앞에 /api 붙이기
 
-/api/tasks — 태스크. GET(목록) · POST(추가) · PATCH /:id(상태 변경) · PATCH /:id/due-date(마감일만 수정) · DELETE /:id(soft delete)
+/api/tasks — 태스크. GET(목록) · GET /archived(삭제된 태스크 목록) · POST(추가) · PATCH /:id(상태 변경) · PATCH /:id/due-date(마감일만 수정) · PATCH /:id/title(제목 수정) · PATCH /:id/assignee(담당자 수정) · PATCH /:id/restore(복원) · DELETE /:id(soft delete)
 /api/teams — 팀 (아직 미구현)
 /api/members — 팀원 이름 목록 (이름 선택용, 로그인 아님)
 /api/activity-logs — 활동 로그 조회 (태스크 제목·담당자 이름까지 JOIN해서 반환)
