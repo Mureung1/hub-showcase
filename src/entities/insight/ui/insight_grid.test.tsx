@@ -76,6 +76,8 @@ describe('InsightGrid', () => {
     );
     expect(sourceLink.getAttribute('target')).toBe('_blank');
     expect(sourceLink.getAttribute('rel')).toBe('noreferrer');
+    expect(document.querySelector('.insight-card__thumbnail')).toBeNull();
+    expect(document.querySelector('.insight-card__connection-clue')).toBeNull();
   });
 
   it('does not render empty memo or category regions', () => {
@@ -102,6 +104,8 @@ describe('InsightGrid', () => {
 
     expect(screen.queryByRole('list', { name: '카테고리 목록' })).toBeNull();
     expect(document.querySelector('.insight-card__memo')).toBeNull();
+    expect(screen.queryByText('미분류')).toBeNull();
+    expect(screen.queryByText('카테고리 없음')).toBeNull();
   });
 
   it('edits title, memo, and category without offering URL editing', async () => {
