@@ -38,16 +38,24 @@ function Analyze() {
         createAnalysis(githubId),
         new Promise((resolve) => setTimeout(resolve, MIN_DISPLAY_MS)),
       ]).then(([analysis]) => analysis),
-    onSuccess: (analysis) => {
-      setAnalysis(analysis)
-      navigate('/profile')
-    },
   })
 
   useEffect(() => {
     if (!githubId) return
-    mutate()
-  }, [githubId, mutate])
+    let cancelled = false
+    // githubId가 바뀌어 이 effect가 다시 실행되기 전에 응답이 오면 무시 — 늦게 도착한 이전 요청이
+    // 최신 상태를 덮어쓰고 엉뚱한 화면으로 넘기는 걸 막는다
+    mutate(undefined, {
+      onSuccess: (analysis) => {
+        if (cancelled) return
+        setAnalysis(analysis)
+        navigate('/profile')
+      },
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [githubId, mutate, setAnalysis, navigate])
 
   if (!githubId) {
     return <Navigate to="/input" replace />

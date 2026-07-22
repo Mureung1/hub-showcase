@@ -43,16 +43,24 @@ function IssueSearch() {
 
   const { mutate, error } = useMutation({
     mutationFn: () => createRecommendation(analysis.githubId, effectivePreferences),
-    onSuccess: (recommendation) => {
-      setRecommendation(recommendation)
-      navigate('/result')
-    },
   })
 
   useEffect(() => {
     if (!analysis || !effectivePreferences) return
-    mutate()
-  }, [analysis, effectivePreferences, mutate])
+    let cancelled = false
+    // analysis/preferences가 바뀌어 이 effect가 다시 실행되기 전에 응답이 오면 무시 — 늦게 도착한
+    // 이전 요청이 최신 상태를 덮어쓰고 엉뚱한 화면으로 넘기는 걸 막는다
+    mutate(undefined, {
+      onSuccess: (recommendation) => {
+        if (cancelled) return
+        setRecommendation(recommendation)
+        navigate('/result')
+      },
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [analysis, effectivePreferences, mutate, setRecommendation, navigate])
 
   if (!analysis) {
     return <Navigate to="/input" replace />
