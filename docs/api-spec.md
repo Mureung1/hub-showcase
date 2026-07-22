@@ -186,13 +186,12 @@
   "myAmount": 4250,
   "ownerId": "user_1",
   "role": "owner",
-  "joinUrl": "https://subzip.app/join/sub_1",
   "createdAt": "2026-07-13T00:00:00.000Z"
 }
 ```
 
 - `role`은 `ownerId`와 요청자 `id` 비교로 결정 (`"owner"` | `"member"`). FE는 이 값으로 수정/삭제/정산 등 버튼 노출 여부를 판단.
-- 요청자가 파티장인 경우에만 `bankAccount` 필드를 응답에 추가로 포함.
+- 요청자가 파티장인 경우에만 `joinUrl`, `bankAccount` 필드를 응답에 추가로 포함.
 
 **Error `403`**: 파티장도 아니고 파티원도 아닌 사용자의 접근
 

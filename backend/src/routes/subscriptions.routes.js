@@ -90,4 +90,63 @@ router.get('/', requireAuth, async (req, res, next) => {
   }
 })
 
+router.get('/:id', requireAuth, async (req, res, next) => {
+  try {
+    const subscription = await prisma.subscription.findUnique({
+      where: { id: req.params.id },
+    })
+
+    if (!subscription) {
+      const err = new Error('존재하지 않는 파티입니다.')
+      err.status = 404
+      return next(err)
+    }
+
+    let role
+    if (subscription.ownerId === req.user.id) {
+      role = 'owner'
+    } else {
+      const membership = await prisma.partyMember.findUnique({
+        where: {
+          subscriptionId_userId: {
+            subscriptionId: subscription.id,
+            userId: req.user.id,
+          },
+        },
+      })
+      if (!membership) {
+        const err = new Error('파티장 또는 파티원만 조회할 수 있습니다.')
+        err.status = 403
+        return next(err)
+      }
+      role = 'member'
+    }
+
+    const response = {
+      id: subscription.id,
+      serviceName: subscription.serviceName,
+      subAmount: subscription.subAmount,
+      billingDay: subscription.billingDay,
+      memberCount: subscription.memberCount,
+      myAmount: Math.round(subscription.subAmount / subscription.memberCount),
+      ownerId: subscription.ownerId,
+      role,
+      createdAt: subscription.createdAt,
+    }
+
+    if (role === 'owner') {
+      response.joinUrl = `${process.env.FRONTEND_URL}/join/${subscription.id}`
+      response.bankAccount = {
+        bankName: subscription.bankName,
+        accountNumber: subscription.accountNumber,
+        accountHolderName: subscription.accountHolderName,
+      }
+    }
+
+    res.status(200).json(response)
+  } catch (e) {
+    next(e)
+  }
+})
+
 export default router
