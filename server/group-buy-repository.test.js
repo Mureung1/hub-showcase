@@ -79,3 +79,31 @@ test("Given participant rows, when a group buy is mapped, then participation sur
     userId: "demo-user",
   }]);
 });
+
+test("Given vote rows, when a group buy is mapped, then vote totals and choices survive refresh", () => {
+  const dto = groupBuyRowToDto({
+    category: "간식",
+    created_at: "2026-07-22T00:00:00.000Z",
+    current_people: 2,
+    deadline: "모집 완료",
+    final_pickup: "중앙도서관 앞",
+    group_buy_votes: [
+      { candidate: "중앙도서관 앞", user_id: "user-a" },
+      { candidate: "중앙도서관 앞", user_id: "user-b" },
+    ],
+    host_name: "개설자",
+    id: "11111111-1111-4111-8111-111111111111",
+    name: "투표 테스트",
+    owner_id: "owner-user",
+    pickup_location: "중앙도서관 앞",
+    shipping_fee: 0,
+    stage: "모집 중",
+    status: "closed",
+    target_people: 2,
+    unit_price: 3000,
+  });
+
+  assert.deepEqual(dto.votes, { "중앙도서관 앞": 2 });
+  assert.deepEqual(dto.voterChoices, { "user-a": "중앙도서관 앞", "user-b": "중앙도서관 앞" });
+  assert.equal(dto.finalPickup, "중앙도서관 앞");
+});

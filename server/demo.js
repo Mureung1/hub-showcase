@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import cors from "cors";
 import express from "express";
 import { z } from "zod";
@@ -11,7 +10,6 @@ const groupBuyRepository = createGroupBuyRepository(supabase);
 const stages = ["모집 중", "결제 대기", "주문 완료", "배송 중", "수령 가능", "정산 완료"];
 const origins = { "생활관 1동": [12, 72], "생활관 3동": [22, 82], "공학관": [72, 34], "인문관": [36, 28], "경영관": [57, 20], "중앙도서관": [48, 48], "학생회관": [38, 60], "정문": [78, 74] };
 const meetingSpots = [{ name: "중앙도서관 앞", x: 48, y: 50 }, { name: "학생회관 1층", x: 39, y: 59 }, { name: "중앙광장 편의점 앞", x: 55, y: 57 }, { name: "공학관 1층 로비", x: 70, y: 36 }, { name: "생활관 커뮤니티 라운지", x: 20, y: 76 }, { name: "인문관 카페 앞", x: 37, y: 31 }];
-const participant = (number, startLocation) => ({ id: randomUUID(), userId: `seed-${number}`, nickname: `참여자 ${number}`, quantity: 1, startLocation });
 
 function candidatesFor(participants) {
   const points = participants.map((person) => origins[person.startLocation]).filter(Boolean);
@@ -19,21 +17,17 @@ function candidatesFor(participants) {
   return meetingSpots.map((spot) => ({ ...spot, score: points.reduce((sum, [x, y]) => sum + Math.hypot(x - spot.x, y - spot.y), 0) / points.length })).sort((a, b) => a.score - b.score).slice(0, 3).map((spot) => spot.name);
 }
 
-const groupBuys = [
-  { id: randomUUID(), name: "생수 2L 12병", category: "식품", targetPeople: 8, currentPeople: 7, deadline: "내일 오후 6시", pickupLocation: "장소 투표 예정", status: "open", ownerId: "host-water", hostName: "기숙사 공동구매장", unitPrice: 1450, shippingFee: 3000, stage: "모집 중", participants: [participant(1, "생활관 1동"), participant(2, "생활관 3동"), participant(3, "공학관"), participant(4, "중앙도서관"), participant(5, "학생회관"), participant(6, "정문")], votes: {}, voterChoices: {}, createdAt: new Date().toISOString() },
-  { id: randomUUID(), name: "세탁세제 리필 4개", category: "생활", targetPeople: 6, currentPeople: 4, deadline: "금요일 오후 8시", pickupLocation: "장소 협의 중", status: "open", ownerId: "host-living", hostName: "생활관 2동 민지", unitPrice: 6200, shippingFee: 2500, stage: "모집 중", participants: [participant(7, "생활관 1동"), participant(8, "인문관"), participant(9, "학생회관")], votes: {}, voterChoices: {}, createdAt: new Date().toISOString() },
-  { id: randomUUID(), name: "A4 복사용지 5묶음", category: "문구", targetPeople: 10, currentPeople: 7, deadline: "토요일 오후 2시", pickupLocation: "장소 협의 중", status: "open", ownerId: "host-paper", hostName: "경영학과 공구방", unitPrice: 4800, shippingFee: 0, stage: "모집 중", participants: [participant(10, "경영관"), participant(11, "공학관"), participant(12, "인문관")], votes: {}, voterChoices: {}, createdAt: new Date().toISOString() },
-];
-groupBuys.forEach((item) => { item.pickupCandidates = candidatesFor(item.participants); });
-
 const createSchema = z.object({ name: z.string().trim().min(1).max(80), category: z.enum(["생활", "식품", "간식", "문구", "기타"]), targetPeople: z.coerce.number().int().min(2).max(50), deadline: z.string().trim().min(1).max(60), pickupLocation: z.string().trim().min(1).max(80), unitPrice: z.coerce.number().int().min(100).max(1000000), shippingFee: z.coerce.number().int().min(0).max(100000) });
 const updateSchema = createSchema.partial().refine((value) => Object.keys(value).length > 0);
 const joinSchema = z.object({ quantity: z.coerce.number().int().min(1).max(10), startLocation: z.enum(Object.keys(origins)) });
 const authSchema = z.object({ email: z.string().email(), password: z.string().min(6) });
 const registerSchema = authSchema.extend({ nickname: z.string().trim().min(2).max(12) });
 const userId = (request) => request.user?.id || "";
-const present = (item, request) => ({ ...item, isOwner: item.ownerId === userId(request), userJoined: item.participants.some((person) => person.userId === userId(request)), userVote: item.voterChoices[userId(request)] || null });
-const withRuntimeFields = (item) => ({ ...item, participants: item.participants ?? [], votes: {}, voterChoices: {}, pickupCandidates: candidatesFor(item.participants ?? []) });
+const present = (item, request) => {
+  const { voterChoices, ...publicItem } = item;
+  return { ...publicItem, isOwner: item.ownerId === userId(request), userJoined: item.participants.some((person) => person.userId === userId(request)), userVote: voterChoices[userId(request)] || null };
+};
+const withRuntimeFields = (item) => ({ ...item, participants: item.participants ?? [], votes: item.votes ?? {}, voterChoices: item.voterChoices ?? {}, pickupCandidates: candidatesFor(item.participants ?? []) });
 const databaseFailure = (response, error) => { console.error("Supabase request failed:", error.message); return response.status(500).json({ error: "데이터베이스 요청을 처리하지 못했습니다." }); };
 
 app.use(cors({ origin: ["http://localhost:5173", "http://127.0.0.1:5173"], allowedHeaders: ["Authorization", "Content-Type"] }));
@@ -77,8 +71,42 @@ app.get("/api/group-buys/:id", async (request, response) => { try { const item =
 app.post("/api/group-buys", requireUser, async (request, response) => { const parsed = createSchema.safeParse(request.body); if (!parsed.success) return response.status(400).json({ error: "입력값을 확인해 주세요." }); try { const item = await groupBuyRepository.create(parsed.data, userId(request), request.user.nickname); return response.status(201).json({ groupBuy: present(withRuntimeFields(item), request) }); } catch (error) { return databaseFailure(response, error); } });
 app.patch("/api/group-buys/:id", requireUser, async (request, response) => { const parsed = updateSchema.safeParse(request.body); if (!parsed.success) return response.status(400).json({ error: "수정할 값을 확인해 주세요." }); try { const existing = await groupBuyRepository.findById(request.params.id); if (!existing) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." }); if (existing.ownerId !== userId(request)) return response.status(403).json({ error: "개설자만 수정할 수 있습니다." }); if (parsed.data.targetPeople && parsed.data.targetPeople < existing.currentPeople) return response.status(400).json({ error: "현재 참여 인원보다 목표 인원을 낮출 수 없습니다." }); const updated = await groupBuyRepository.update(existing.id, parsed.data); return response.json({ groupBuy: present(withRuntimeFields(updated), request) }); } catch (error) { return databaseFailure(response, error); } });
 app.post("/api/group-buys/:id/join", requireUser, async (request, response) => { const parsed = joinSchema.safeParse(request.body); if (!parsed.success) return response.status(400).json({ error: "수량과 출발 위치를 확인해 주세요." }); try { const item = await groupBuyRepository.findById(request.params.id); if (!item) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." }); const uid = userId(request); if (item.ownerId === uid) return response.status(409).json({ error: "내가 개설한 공동구매입니다." }); if (item.participants.some((person) => person.userId === uid)) return response.status(409).json({ error: "이미 참여한 공동구매입니다." }); if (item.status === "closed") return response.status(409).json({ error: "모집이 이미 마감되었습니다." }); const updated = await groupBuyRepository.join(item.id, uid, request.user.nickname, parsed.data); return response.json({ groupBuy: present(withRuntimeFields(updated), request) }); } catch (error) { if (error.code === "23505" || error.message === "DUPLICATE_PARTICIPANT") return response.status(409).json({ error: "이미 참여한 공동구매입니다." }); return databaseFailure(response, error); } });
-app.post("/api/group-buys/:id/vote", (request, response) => { const item = groupBuys.find((entry) => entry.id === request.params.id); if (!item) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." }); const uid = userId(request); if (!item.participants.some((person) => person.userId === uid)) return response.status(403).json({ error: "참여자만 투표할 수 있습니다." }); if (item.status !== "closed") return response.status(409).json({ error: "모집 완료 후 투표할 수 있습니다." }); const candidate = String(request.body?.candidate || ""); if (!item.pickupCandidates.includes(candidate)) return response.status(400).json({ error: "올바른 후보를 선택해 주세요." }); const previous = item.voterChoices[uid]; if (previous) item.votes[previous] = Math.max(0, (item.votes[previous] || 0) - 1); item.voterChoices[uid] = candidate; item.votes[candidate] = (item.votes[candidate] || 0) + 1; return response.json({ groupBuy: present(item, request) }); });
-app.patch("/api/group-buys/:id/finalize-pickup", (request, response) => { const item = groupBuys.find((entry) => entry.id === request.params.id); if (!item) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." }); if (item.ownerId !== userId(request)) return response.status(403).json({ error: "개설자만 수령 장소를 확정할 수 있습니다." }); const ranked = item.pickupCandidates.map((candidate) => ({ candidate, count: item.votes[candidate] || 0 })).sort((a, b) => b.count - a.count); if (!ranked[0]?.count) return response.status(409).json({ error: "한 표 이상 모인 뒤 확정할 수 있습니다." }); item.finalPickup = ranked[0].candidate; item.pickupLocation = ranked[0].candidate; return response.json({ groupBuy: present(item, request) }); });
-app.patch("/api/group-buys/:id/stage", (request, response) => { const item = groupBuys.find((entry) => entry.id === request.params.id); if (!item) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." }); if (item.ownerId !== userId(request)) return response.status(403).json({ error: "개설자만 진행 단계를 변경할 수 있습니다." }); if (item.status !== "closed" || !item.finalPickup) return response.status(409).json({ error: "모집과 수령 장소 확정 후 진행할 수 있습니다." }); item.stage = stages[Math.min(stages.length - 1, stages.indexOf(item.stage) + 1)]; return response.json({ groupBuy: present(item, request) }); });
+app.post("/api/group-buys/:id/vote", requireUser, async (request, response) => {
+  try {
+    const item = await groupBuyRepository.findById(request.params.id);
+    if (!item) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." });
+    const uid = userId(request);
+    if (!item.participants.some((person) => person.userId === uid)) return response.status(403).json({ error: "참여자만 투표할 수 있습니다." });
+    if (item.status !== "closed") return response.status(409).json({ error: "모집 완료 후 투표할 수 있습니다." });
+    if (item.finalPickup) return response.status(409).json({ error: "수령 장소가 확정되어 투표가 마감되었습니다." });
+    const candidate = String(request.body?.candidate || "");
+    const candidates = candidatesFor(item.participants);
+    if (!candidates.includes(candidate)) return response.status(400).json({ error: "올바른 후보를 선택해 주세요." });
+    const updated = await groupBuyRepository.vote(item.id, uid, candidate);
+    return response.json({ groupBuy: present(withRuntimeFields(updated), request) });
+  } catch (error) { return databaseFailure(response, error); }
+});
+app.patch("/api/group-buys/:id/finalize-pickup", requireUser, async (request, response) => {
+  try {
+    const item = await groupBuyRepository.findById(request.params.id);
+    if (!item) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." });
+    if (item.ownerId !== userId(request)) return response.status(403).json({ error: "개설자만 수령 장소를 확정할 수 있습니다." });
+    if (item.finalPickup) return response.status(409).json({ error: "수령 장소가 이미 확정되었습니다." });
+    if (!Object.values(item.votes).some((count) => count > 0)) return response.status(409).json({ error: "한 표 이상 모인 뒤 확정할 수 있습니다." });
+    const updated = await groupBuyRepository.finalizePickup(item.id, userId(request));
+    return response.json({ groupBuy: present(withRuntimeFields(updated), request) });
+  } catch (error) { return databaseFailure(response, error); }
+});
+app.patch("/api/group-buys/:id/stage", requireUser, async (request, response) => {
+  try {
+    const item = await groupBuyRepository.findById(request.params.id);
+    if (!item) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." });
+    if (item.ownerId !== userId(request)) return response.status(403).json({ error: "개설자만 진행 단계를 변경할 수 있습니다." });
+    if (item.status !== "closed" || !item.finalPickup) return response.status(409).json({ error: "모집과 수령 장소 확정 후 진행할 수 있습니다." });
+    const nextStage = stages[Math.min(stages.length - 1, stages.indexOf(item.stage) + 1)];
+    const updated = await groupBuyRepository.advanceStage(item.id, nextStage);
+    return response.json({ groupBuy: present(withRuntimeFields(updated), request) });
+  } catch (error) { return databaseFailure(response, error); }
+});
 app.delete("/api/group-buys/:id", requireUser, async (request, response) => { try { const existing = await groupBuyRepository.findById(request.params.id); if (!existing) return response.status(404).json({ error: "공동구매를 찾을 수 없습니다." }); if (existing.ownerId !== userId(request)) return response.status(403).json({ error: "개설자만 삭제할 수 있습니다." }); await groupBuyRepository.remove(existing.id); return response.status(204).end(); } catch (error) { return databaseFailure(response, error); } });
 app.listen(3001, () => console.log("CampusCart API: http://localhost:3001 (Supabase storage)"));
