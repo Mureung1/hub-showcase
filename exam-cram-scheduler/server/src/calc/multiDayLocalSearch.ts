@@ -21,6 +21,8 @@ export interface LocalSearchInput {
   warmupDays?: number;
   minSleepHours?: number;
   fixedDoses?: CaffeineDose[];
+  /** 하루 안전 섭취 한도(mg). 넘기면 초과분에 패널티가 붙는다(#3) */
+  dailyLimitMg?: number;
   /** 담금질 1회당 반복 횟수 */
   iterations?: number;
   /** 무작위 초기값에서 담금질을 몇 번 다시 시작해 그중 최고를 취할지(#23) */
@@ -75,6 +77,7 @@ export function searchMultiDaySchedule(input: LocalSearchInput): LocalSearchResu
     warmupDays,
     minSleepHours,
     fixedDoses,
+    dailyLimitMg,
     iterations = DEFAULT_ITERATIONS,
     restarts = DEFAULT_RESTARTS,
     initialTemperature = DEFAULT_INITIAL_TEMPERATURE,
@@ -128,6 +131,7 @@ export function searchMultiDaySchedule(input: LocalSearchInput): LocalSearchResu
       warmupDays,
       minSleepHours,
       fixedDoses,
+      dailyLimitMg,
     }).score;
 
   const coolingRatio = Math.pow(finalTemperature / initialTemperature, 1 / iterations);
