@@ -80,7 +80,11 @@ export function MarketInspector({
         topic={topic}
         onEvidenceOpen={onEvidenceOpen}
       />
-      <InspectorTurnoverAndSales categorySelection={categorySelection} analysis={analysis} topic={topic} />
+      <InspectorTurnoverAndSales
+        categorySelection={categorySelection}
+        analysis={analysis}
+        topic={topic}
+      />
       <InspectorRankings categorySelection={categorySelection} analysis={analysis} topic={topic} />
       <InspectorFlow
         market={market}
@@ -97,8 +101,18 @@ export function MarketInspector({
         backgroundState={backgroundState}
         topic={topic}
       />
-      <InspectorFootfall market={market} categorySelection={categorySelection} analysis={analysis} topic={topic} />
-      <InspectorSummary market={market} categorySelection={categorySelection} analysis={analysis} topic={topic} />
+      <InspectorFootfall
+        market={market}
+        categorySelection={categorySelection}
+        analysis={analysis}
+        topic={topic}
+      />
+      <InspectorSummary
+        market={market}
+        categorySelection={categorySelection}
+        analysis={analysis}
+        topic={topic}
+      />
     </aside>
   );
 }

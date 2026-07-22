@@ -15,6 +15,10 @@ Scene pipeline and feature-gate API tests: 18 passed
 Ruff: passed
 ```
 
+## Follow-up verification
+
+The completed Scene UI and job-boundary modules were formatted with the repository Prettier gate as part of TEST-001 release verification. No Scene API contract or UI behavior changed.
+
 ## Safety boundary
 
 `SCENE_API_ENABLED=false` still produces 404 responses for Scene routes in the product configuration. This refactor does not make Scene upload or assets public.

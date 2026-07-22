@@ -19,7 +19,9 @@ export function useSceneJob() {
         .then(setJob)
         .catch((pollError: unknown) => {
           if (!controller.signal.aborted) {
-            setError(pollError instanceof Error ? pollError.message : "작업 상태를 확인할 수 없습니다.");
+            setError(
+              pollError instanceof Error ? pollError.message : "작업 상태를 확인할 수 없습니다.",
+            );
           }
         });
     const timer = window.setInterval(poll, 2_000);
@@ -47,7 +49,9 @@ export function useSceneJob() {
     try {
       setJob(await retrySceneJob(job.id));
     } catch (retryError) {
-      setError(retryError instanceof Error ? retryError.message : "작업을 다시 시작할 수 없습니다.");
+      setError(
+        retryError instanceof Error ? retryError.message : "작업을 다시 시작할 수 없습니다.",
+      );
     }
   }
 

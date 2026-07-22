@@ -6,9 +6,10 @@ import { useMarketSearch } from "./useMarketSearch";
 
 type MarketSearchProps = {
   onSelect: (result: MarketSearchResult) => void;
+  apiReady?: boolean;
 };
 
-export function MarketSearch({ onSelect }: MarketSearchProps) {
+export function MarketSearch({ onSelect, apiReady = true }: MarketSearchProps) {
   const [query, setQuery] = useState("");
   const { state, results, search, retry, clear } = useMarketSearch();
 
@@ -19,16 +20,18 @@ export function MarketSearch({ onSelect }: MarketSearchProps) {
         role="search"
         onSubmit={(event) => {
           event.preventDefault();
+          if (!apiReady) return;
           void search(query);
         }}
       >
-        <button type="submit" aria-label="검색">
+        <button type="submit" aria-label="검색" disabled={!apiReady}>
           <Search size={17} />
         </button>
         <input
           aria-label="상권 또는 점포 검색"
           value={query}
           maxLength={80}
+          disabled={!apiReady}
           placeholder="상권명, 점포명, 주소, 업종 검색"
           onChange={(event) => {
             setQuery(event.target.value);
@@ -36,6 +39,7 @@ export function MarketSearch({ onSelect }: MarketSearchProps) {
           }}
         />
       </form>
+      {!apiReady && <p className="market-search-status">분석 서버를 준비하고 있습니다.</p>}
       {state !== "idle" && (
         <div className="market-search-results">
           {state === "input-error" && <p>검색어를 입력해 주세요.</p>}

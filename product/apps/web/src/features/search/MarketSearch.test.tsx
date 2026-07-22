@@ -20,6 +20,16 @@ describe("MarketSearch", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("does not start a search while the API is waking up", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    render(<MarketSearch apiReady={false} onSelect={vi.fn()} />);
+
+    expect(screen.getByLabelText("상권 또는 점포 검색")).toBeDisabled();
+    expect(screen.getByText("분석 서버를 준비하고 있습니다.")).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("renders an API result and returns its identifier and coordinates", async () => {
     const result = {
       result_type: "store" as const,

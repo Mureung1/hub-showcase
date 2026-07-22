@@ -8,7 +8,7 @@ Backlog ID: TEST-001 / GitHub #71
 Parent Epic: GitHub #63
 Type: verification
 Owner: HyunKN
-Status: in_progress
+Status: done
 ```
 
 ## 2. Goal
@@ -41,7 +41,7 @@ verification evidence only
 - [x] Clean release candidate passes full automated checks.
 - [x] Product and API public endpoints respond successfully.
 - [x] Scene routes remain 404 in the product configuration.
-- [ ] Run Report and issue evidence are recorded.
+- [x] Run Report and issue evidence are recorded.
 
 ## 7. Verification Plan
 
@@ -70,4 +70,5 @@ test: record refactor release verification
 
 - [x] Do not claim validation for uncommitted work.
 - [x] Keep product Scene gate disabled.
-- [ ] Keep #71 open until WEB-018 removes the remaining ProductWorkspace temporary budget.
+- [x] WEB-018 removed the remaining ProductWorkspace temporary budget before closing #71.
+- [ ] Follow-up: monitor the next intentional public deployment; this is an operations check, not a TEST-001 completion condition.

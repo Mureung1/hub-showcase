@@ -243,11 +243,19 @@ def persist_market_rows(
             INSERT OR REPLACE INTO markets VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                row["TRDAR_CD"], row["TRDAR_CD_NM"], row.get("TRDAR_SE_CD"),
-                row.get("TRDAR_SE_CD_NM"), row.get("SIGNGU_CD"), row.get("SIGNGU_CD_NM"),
-                row.get("ADSTRD_CD"), row.get("ADSTRD_CD_NM"), number(row.get("XCNTS_VALUE")),
-                number(row.get("YDNTS_VALUE")), "Seoul source coordinate (not WGS84)",
-                number(row.get("RELM_AR")), snapshot_id,
+                row["TRDAR_CD"],
+                row["TRDAR_CD_NM"],
+                row.get("TRDAR_SE_CD"),
+                row.get("TRDAR_SE_CD_NM"),
+                row.get("SIGNGU_CD"),
+                row.get("SIGNGU_CD_NM"),
+                row.get("ADSTRD_CD"),
+                row.get("ADSTRD_CD_NM"),
+                number(row.get("XCNTS_VALUE")),
+                number(row.get("YDNTS_VALUE")),
+                "Seoul source coordinate (not WGS84)",
+                number(row.get("RELM_AR")),
+                snapshot_id,
             ),
         )
     return {market_code for (market_code,) in connection.execute("SELECT market_code FROM markets")}

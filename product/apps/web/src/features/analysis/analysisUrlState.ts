@@ -94,27 +94,3 @@ export function readAnalysisUrlState(
     center: hasSupportedCenter ? parsedCenter : defaults.center,
   };
 }
-
-export function writeAnalysisUrlState(state: AnalysisUrlState) {
-  const parameters = new URLSearchParams(window.location.search);
-  parameters.set("market", state.marketKey);
-  parameters.set("category", state.category);
-  parameters.set("selectedCategory", state.selectedCategoryName);
-  if (state.selectedCategoryCode) parameters.set("categoryCode", state.selectedCategoryCode);
-  else parameters.delete("categoryCode");
-  parameters.set("radius", String(state.radius));
-  parameters.set("layer", state.layer);
-  parameters.set("scope", state.scope);
-  parameters.set("topic", state.topic);
-  parameters.set("boundary", state.boundaryVisible ? "1" : "0");
-  parameters.set("stores", state.storesVisible ? "1" : "0");
-  if (state.period) parameters.set("period", state.period);
-  else parameters.delete("period");
-  parameters.set("lng", state.center[0].toFixed(6));
-  parameters.set("lat", state.center[1].toFixed(6));
-  window.history.replaceState(
-    window.history.state,
-    "",
-    `${window.location.pathname}?${parameters}`,
-  );
-}

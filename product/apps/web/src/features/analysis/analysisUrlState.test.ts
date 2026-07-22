@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { readAnalysisUrlState, writeAnalysisUrlState } from "./analysisUrlState";
+import { readAnalysisUrlState } from "./analysisUrlState";
 
 const defaults = {
   marketKey: "연남" as const,
@@ -62,38 +62,5 @@ describe("analysis URL state", () => {
     window.history.replaceState({}, "", "/?radius=1000");
 
     expect(readAnalysisUrlState(defaults, policy).radius).toBe(300);
-  });
-
-  it("writes one shared state to the URL", () => {
-    writeAnalysisUrlState({
-      marketKey: "합정",
-      category: "편의점",
-      selectedCategoryName: "꽃집",
-      selectedCategoryCode: "G21501",
-      radius: 500,
-      layer: "density",
-      scope: "radius",
-      topic: "competition",
-      boundaryVisible: true,
-      storesVisible: false,
-      period: "20251",
-      center: [126.914, 37.5505],
-    });
-
-    expect(Object.fromEntries(new URLSearchParams(window.location.search))).toEqual({
-      market: "합정",
-      category: "편의점",
-      selectedCategory: "꽃집",
-      categoryCode: "G21501",
-      radius: "500",
-      layer: "density",
-      scope: "radius",
-      topic: "competition",
-      boundary: "1",
-      stores: "0",
-      period: "20251",
-      lng: "126.914000",
-      lat: "37.550500",
-    });
   });
 });

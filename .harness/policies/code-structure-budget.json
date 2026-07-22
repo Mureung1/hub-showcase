@@ -3,12 +3,7 @@
     "webFunctionLines": 200,
     "pythonFunctionLines": 80
   },
-  "webFunctionBudgets": {
-    "product/apps/web/src/App.tsx#ProductWorkspace": {
-      "maxLines": 809,
-      "reason": "WEB-018에서 URL, 지도, 선택과 화면 조립 책임을 분리한다."
-    }
-  },
+  "webFunctionBudgets": {},
   "pythonFunctionBudgets": {
     "product/apps/api/src/localtwin_api/market_score.py#_cluster_result": {
       "maxLines": 127,
@@ -43,6 +38,7 @@
     "20251": {
       "product/apps/web/src/App.tsx": 0,
       "product/apps/web/src/services/marketAnalysis.ts": 0,
+      "product/apps/web/src/services/productCatalog.ts": 1,
       "product/apps/api/src/localtwin_api/admin_area_analysis.py": 1,
       "product/apps/api/src/localtwin_api/kosis_population.py": 1,
       "product/apps/api/src/localtwin_api/main.py": 0,
@@ -56,6 +52,7 @@
     "3110562": {
       "product/apps/api/src/localtwin_api/product_catalog.py": 1,
       "product/apps/web/src/App.tsx": 0,
+      "product/apps/web/src/services/productCatalog.ts": 1,
       "product/apps/web/src/services/adminAreaBackground.ts": 0,
       "product/apps/web/src/services/marketAnalysis.ts": 0,
       "product/apps/api/src/localtwin_api/kosis_population.py": 0,
@@ -68,6 +65,7 @@
     "3120103": {
       "product/apps/api/src/localtwin_api/product_catalog.py": 1,
       "product/apps/web/src/App.tsx": 0,
+      "product/apps/web/src/services/productCatalog.ts": 1,
       "product/apps/web/src/services/adminAreaBackground.ts": 0,
       "product/apps/web/src/services/marketAnalysis.ts": 0,
       "product/apps/api/src/localtwin_api/kosis_population.py": 0,
@@ -80,6 +78,7 @@
     "3120101": {
       "product/apps/api/src/localtwin_api/product_catalog.py": 1,
       "product/apps/web/src/App.tsx": 0,
+      "product/apps/web/src/services/productCatalog.ts": 1,
       "product/apps/web/src/services/adminAreaBackground.ts": 0,
       "product/apps/web/src/services/marketAnalysis.ts": 0,
       "product/apps/api/src/localtwin_api/kosis_population.py": 0,

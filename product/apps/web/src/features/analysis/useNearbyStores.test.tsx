@@ -68,6 +68,22 @@ describe("useNearbyStores", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("waits for API readiness before requesting nearby stores", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okResponse(payload([126.9228, 37.5635], 2)));
+    vi.stubGlobal("fetch", fetchMock);
+    const { result, rerender } = renderHook(
+      ({ enabled }) =>
+        useNearbyStores({ center: [126.9228, 37.5635], radius: 300, category: "카페" }, enabled),
+      { initialProps: { enabled: false } },
+    );
+
+    expect(result.current.state).toBe("loading");
+    expect(fetchMock).not.toHaveBeenCalled();
+    rerender({ enabled: true });
+    await waitFor(() => expect(result.current.state).toBe("ready"));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("does not let a stale request overwrite the latest center", async () => {
     let resolveFirst: ((value: ReturnType<typeof okResponse>) => void) | undefined;
     const firstResponse = new Promise<ReturnType<typeof okResponse>>((resolve) => {
