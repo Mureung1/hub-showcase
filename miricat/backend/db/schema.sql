@@ -48,3 +48,22 @@ create unique index if not exists uniq_selected_per_route
 
 -- RLS: routes와 동일하게 켜고 정책 없음 = 백엔드(service_role)만 접근, 공개 anon 차단
 alter table route_candidates enable row level security;
+
+-- ─────────────────────────────────────────────────────────────
+-- 3) notices — Scout가 게시판에서 수집한 공지 (MIRI-13)
+--    source_url 을 unique 로 잡아 같은 글 재수집 시 중복 저장 방지.
+-- ─────────────────────────────────────────────────────────────
+create table if not exists notices (
+  id uuid primary key default gen_random_uuid(),
+  source      text not null,              -- 소스 id (예: 'daejeon_bus')
+  source_url  text not null unique,       -- 글 주소 = 중복 방지 키
+  title       text,
+  raw_text    text,                       -- 본문 전문
+  extraction  jsonb,                      -- 추출 결과 {events: [...]}
+  collected_at timestamptz default now()
+);
+
+create index if not exists idx_notices_source on notices(source);
+
+-- RLS: routes와 동일 — 켜고 정책 없음 = 백엔드(service_role)만 접근
+alter table notices enable row level security;
