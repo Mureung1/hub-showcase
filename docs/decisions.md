@@ -103,6 +103,15 @@ TODO: 고려한 대안(예: Express, Fastify 단독 사용)과의 트레이드�
 
 TODO: 고려한 대안(예: 저장소 분리)과의 트레이드오프 미기록.
 
+### Supabase
+
+관리형 Postgres에 Auth·Storage·실시간 구독까지 함께 제공해, 별도 인프라 구축 없이 데이터베이스를
+빠르게 도입한다. 백엔드에서는 ORM 없이 `@supabase/supabase-js` 클라이언트로 직접 접근한다.
+
+TODO: 고려한 대안(예: 직접 관리하는 Postgres + Prisma/TypeORM)과의 트레이드오프 미기록. 현재는 백엔드가
+`service_role` 키로 RLS를 우회해 접근하며, 사용자별 인증·RLS 정책 도입 시점에 anon key + 사용자 JWT 기반
+접근으로 전환할지 재검토가 필요하다.
+
 ### LLM을 직접 호스팅하지 않고 API로 호출
 
 TODO: AI 연동 코드 자체가 아직 없어 근거가 문서화되어 있지 않다. 관련 설계는
