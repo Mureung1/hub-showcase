@@ -80,7 +80,7 @@ REPORT_PROMPT = """당신은 소상공인 컨설턴트입니다. 경쟁업체 '{
 '강점 벤치마킹 포인트'와 '공략 가능한 약점' 중심으로 5문장 이내의 컨설팅 리포트로 작성하세요."""
 
 # ── FastAPI 앱 ───────────────────────────────────────────────
-app = FastAPI(title="AI 미스터리 쇼퍼")
+app = FastAPI(title="상권 스캐너")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
