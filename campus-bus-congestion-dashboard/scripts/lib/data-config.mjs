@@ -30,10 +30,10 @@ export const DIRECTIONAL_CAMPUS_CONFIGS = Object.freeze({
     },
   },
   'gnu-gajwa': {
-    route: ['osm-node-9355291206', 'osm-node-9355291204', 'osm-node-9355290533'],
+    route: ['osm-node-9355291289', 'osm-node-9355291206', 'osm-node-9355291204'],
     directions: {
-      a: { endpointStopId: 'osm-node-9355291206', label: '가좌캠퍼스정문 방향' },
-      c: { endpointStopId: 'osm-node-9355290533', label: '사대부설중고교 방향' },
+      a: { endpointStopId: 'osm-node-9355291289', label: '가좌주공그린빌 방향' },
+      c: { endpointStopId: 'osm-node-9355291204', label: '가좌캠퍼스후문 방향' },
     },
   },
   'pnu-jangjeon': {

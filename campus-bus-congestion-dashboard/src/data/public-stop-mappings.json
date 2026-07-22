@@ -27,13 +27,13 @@
     },
     "gnu-gajwa": {
       "route": [
+        "osm-node-9355291289",
         "osm-node-9355291206",
-        "osm-node-9355291204",
-        "osm-node-9355290533"
+        "osm-node-9355291204"
       ],
       "directions": {
-        "a": { "endpointStopId": "osm-node-9355291206", "label": "가좌캠퍼스정문 방향" },
-        "c": { "endpointStopId": "osm-node-9355290533", "label": "사대부설중고교 방향" }
+        "a": { "endpointStopId": "osm-node-9355291289", "label": "가좌주공그린빌 방향" },
+        "c": { "endpointStopId": "osm-node-9355291204", "label": "가좌캠퍼스후문 방향" }
       }
     },
     "pnu-jangjeon": {
@@ -538,6 +538,29 @@
           "sourceName": "강원대중앙도서관",
           "matchedBy": "manual",
           "verifiedAt": "2026-07-22T14:00:00.000Z"
+        }
+      }
+    },
+    "osm-node-9355291289": {
+      "campusId": "gnu-gajwa",
+      "ctpvCd": "48",
+      "sggCd": "48170",
+      "sttnId": "4810969",
+      "sourceName": "가좌주공그린빌",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-23T00:00:00.000Z",
+      "directions": {
+        "a": {
+          "sttnId": "4810969",
+          "sourceName": "가좌주공그린빌",
+          "matchedBy": "manual",
+          "verifiedAt": "2026-07-23T00:00:00.000Z"
+        },
+        "c": {
+          "sttnId": "4810968",
+          "sourceName": "가좌주공그린빌",
+          "matchedBy": "manual",
+          "verifiedAt": "2026-07-23T00:00:00.000Z"
         }
       }
     },

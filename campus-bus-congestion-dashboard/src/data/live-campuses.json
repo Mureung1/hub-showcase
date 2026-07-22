@@ -30,9 +30,9 @@
     "sourceFile": "/campuses/gnu-gajwa/SOURCE.txt",
     "boundary": { "osmType": "way", "osmId": 555195681, "query": "경상국립대학교 가좌캠퍼스, 진주시", "bounds": [35.1489384, 35.1602615, 128.0919782, 128.1065573] },
     "stops": [
+      { "id": "osm-node-9355291289", "name": "가좌주공그린빌", "lat": 35.1496595, "lon": 128.1006046, "osmType": "node", "osmId": 9355291289 },
       { "id": "osm-node-9355291206", "name": "경상국립대학교가좌캠퍼스정문", "lat": 35.1517514, "lon": 128.1044682, "osmType": "node", "osmId": 9355291206 },
-      { "id": "osm-node-9355291204", "name": "경상국립대학교가좌캠퍼스후문", "lat": 35.1554201, "lon": 128.1073876, "osmType": "node", "osmId": 9355291204 },
-      { "id": "osm-node-9355290533", "name": "사대부설중고교", "lat": 35.1592273, "lon": 128.0980553, "osmType": "node", "osmId": 9355290533 }
+      { "id": "osm-node-9355291204", "name": "경상국립대학교가좌캠퍼스후문", "lat": 35.1554201, "lon": 128.1073876, "osmType": "node", "osmId": 9355291204 }
     ]
   },
   {
