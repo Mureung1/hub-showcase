@@ -62,7 +62,7 @@ export function generateSlots(dateStart: string, dateEnd: string, timeStart: str
   const slots: ScheduleSlot[] = []
   for (const day of eachDayOfInterval({ start, end })) {
     const dateStr = format(day, 'yyyy-MM-dd')
-    for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {
+    for (let minutes = startMinutes; minutes <= endMinutes; minutes += 30) {
       slots.push({ date: dateStr, time: formatMinutesToTime(minutes) })
     }
   }

@@ -83,7 +83,7 @@ function ScheduleEditor({ appointmentId, candidateSlots, initialAvailable, initi
 
     return (
       <div className="page-stack transition-slide-up">
-        <h2>가능한 시간 중 특히 더 선호하는 시간대가 있으신가요?</h2>
+        <h2>만날 시간 중 특히 더 선호하는 시간대가 있으신가요?</h2>
         <div className="schedule-legend">
           <span className="schedule-legend__item">
             <span className="schedule-legend__swatch schedule-legend__swatch--preferred" />
@@ -91,7 +91,7 @@ function ScheduleEditor({ appointmentId, candidateSlots, initialAvailable, initi
           </span>
           <span className="schedule-legend__item">
             <span className="schedule-legend__swatch schedule-legend__swatch--available" />
-            가능(선택)
+            만날 시간(선택)
           </span>
         </div>
         <DatePaginationArrows canGoPrev={canGoPrev} canGoNext={canGoNext} onPrev={goPrev} onNext={goNext} />
@@ -138,7 +138,7 @@ function ScheduleEditor({ appointmentId, candidateSlots, initialAvailable, initi
             <p className="confirm-header__desc">아래와 같이 제출됩니다.</p>
           </div>
           <p className="confirm-summary">
-            가능한 시간 {availableOnlyCount}건 · 선호 시간 {preferredCount}건
+            만날 시간 {availableOnlyCount}건 · 선호 시간 {preferredCount}건
           </p>
           <p className="confirm-notice">제출 후에도 투표 마감 전까지는 수정할 수 있어요.</p>
           {submitError && <p className="field-error">{submitError}</p>}
@@ -160,13 +160,13 @@ function ScheduleEditor({ appointmentId, candidateSlots, initialAvailable, initi
 
   return (
     <div className="page-stack transition-slide-up">
-      <h2>가능한 시간을 먼저 선택해주세요</h2>
+      <h2>만날 시간을 먼저 선택해주세요</h2>
       <DatePaginationArrows canGoPrev={canGoPrev} canGoNext={canGoNext} onPrev={goPrev} onNext={goNext} />
       <ScheduleGrid slots={pageSlots} selectedKeys={availableKeys} variant="available" onToggle={toggleAvailable} />
       <button type="button" disabled={availableKeys.size === 0} onClick={() => setStep('preferred')}>
         다음
       </button>
-      {availableKeys.size === 0 && <p className="field-error">가능한 시간을 최소 1개 선택해주세요</p>}
+      {availableKeys.size === 0 && <p className="field-error">만날 시간을 최소 1개 선택해주세요</p>}
     </div>
   )
 }

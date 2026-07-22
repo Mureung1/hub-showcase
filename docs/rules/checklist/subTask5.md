@@ -1,64 +1,95 @@
 ## 작업 내용
 
-`docs/rules/subTasks.md`의 "추가 개선 제안" 중 "최종결과 화면의 히트맵 클릭 시 근거 표시" 기능을 구현한다. subTask4에서 결과 화면에 이미 "칸을 클릭하면 상세 근거를 볼 수 있어요"라는 `ScreenHint` 문구를 미리 넣어뒀지만(문구만, 실제 클릭 동작은 없음), 이번 묶음에서 실제 클릭 인터랙션을 구현한다.
+`docs/rules/subTasks.md`의 "추가 개선 제안" 중 "최종결과 화면의 히트맵 클릭 시 근거 표시" 기능을 구현한다. subTask4에서 결과 화면에 이미 "칸을 클릭하면 상세 근거를 볼 수 있어요"라는 `ScreenHint` 문구를 미리 넣어뒀지만(문구만, 실제 클릭 동작은 없음), 이번 묶음에서 실제 클릭 인터랙션을 구현한다. **상세 근거는 이름 목록이 아니라 그 시간대의 가능인원/선호인원 "숫자"만 보여준다.**
 
 ## 확정된 설계 결정
 
-- `SlotResult`(shared)에 `availableNames: string[]`, `preferredNames: string[]`을 **추가**한다(기존 `availableCount`/`preferredCount`는 그대로 유지) — `resultRanking.ts`(순위 계산)와 그 테스트가 이미 `availableCount`/`preferredCount`에 의존하고 있어 안 건드리는 쪽이 안전. 개수와 이름 배열 길이가 항상 같아 약간의 중복이 생기지만, 기존 로직 무변경을 우선한다.
-- `ResponseRow`(server) 타입에 `name: string`을 추가하고, `getAppointmentResponseRows`의 참여자 조회 쿼리를 `select('id')` → `select('id, name')`로 바꿔서 응답 행마다 이름을 붙여 반환한다. `aggregateSlotCounts`는 시그니처 변경 없이 이미 받는 `rows`에서 `row.name`을 그대로 쓰면 된다 — 별도의 이름-맵 조회를 라우트에 새로 추가할 필요가 없다.
+- 이름 목록이 아니라 숫자만 보여주므로 **서버 데이터 확장이 필요 없다** — `SlotResult`(shared)에 이미 `availableCount`/`preferredCount`가 있고, `GET /:id/results`가 이미 이 값을 반환하고 있다. 새 필드 추가나 `participants`↔`responses` 조인 같은 서버 작업 없이, 클라이언트에서 이미 계산돼 있는 값을 화면에 연결만 하면 된다.
 - 상세 근거는 기존 `Modal` 컴포넌트로 표시한다(신규 트랜지션·라이브러리 불필요 - `Modal.tsx`가 이미 fade-in/slide-up을 모든 모달에 공통 적용 중).
 - `result-cell`을 `<div>`에서 `<button>`으로 바꾼다(`ScheduleGrid.tsx`의 클릭 가능 셀과 동일 패턴) — 키보드 접근성/`aria-label`을 자연스럽게 확보.
 - 클릭 가능 여부는 `resultMap.has(key)`(= `levelMap`에 값이 있음 = 응답 1건 이상)로 판단한다 — 응답이 아예 없는 칸(회색, heat-0)은 클릭 비활성화.
 - `client/src/lib/useScheduleResult.ts`가 이미 계산해두고 `ResultPage.tsx`가 안 쓰고 버리던 `resultMap`(slotKey → SlotResult)을 그대로 연결해서 쓴다 — 새로 계산할 필요 없음.
+- `Modal.tsx`에 `role="dialog"`, `aria-modal="true"`, Escape 키로 닫기, 열릴 때 모달 내부로 포커스 이동 + 닫힐 때 트리거로 포커스 복원을 추가한다(코드리뷰 반영 — 현재 이 컴포넌트를 쓰는 모든 모달에 공통 적용되던 fade-in/slide-up 트랜지션과 같은 방식으로, 이번에도 한 곳만 고치면 기존 확정모달/마감모달 등 모든 사용처에 자동 적용됨). 새 상세근거 모달에는 명시적 "닫기" 버튼도 추가한다(오버레이 클릭에만 의존하지 않도록 — 기존 다른 모달들도 전부 명시적 버튼을 갖고 있는 것과 일관되게).
+- 그리드 셀 선택은 꾹 누름(300ms) 후 드래그로 다중 선택 가능하게 한다. 드래그 시작 칸의 반대 상태를 목표로 삼아 지나가는 칸을 그 상태로 통일한다(개별 토글이 아님 — 같은 칸을 왔다갔다 지나갈 때 깜빡이는 문제 방지). `ScheduleGrid.tsx` 한 곳에 구현해 1·2단계 모두에 자동 적용.
+  - **보완(코드리뷰 반영)**: 드래그가 끝난 직후 브라우저가 `onClick`을 한 번 더 발생시켜(포인터를 뗀 지점이 버튼이면) 마지막 셀이 한 번 더 토글되는 "고스트 클릭" 문제가 생길 수 있다 — 드래그가 실제로 발생했으면 그 뒤에 오는 `click` 이벤트 1회를 무시하는 플래그가 필요하다. 또한 `onToggle`은 "반전" 함수라 같은 칸을 제스처 중 두 번 처리하면 목표 상태가 도로 뒤집히므로, 제스처 시작 시 초기화하는 "이미 처리한 셀 키" 집합(ref)을 두고 각 칸을 제스처당 정확히 한 번만 처리한다 — 이렇게 하면 새 상태-설정 API 없이도 기존 `onToggle`을 그대로 안전하게 재사용할 수 있다. 드래그 모드 진입 후에는 `touch-action: none` 등으로 스크롤·텍스트 선택을 막고(롱프레스 대기 중에는 걸지 않아 일반 스크롤은 그대로 동작), `pointermove`/`pointerup`은 개별 셀이 아니라 `document`에 붙여서 손가락이 셀 바깥으로 나가도 드래그가 끊기지 않게 한다.
+- `generateSlots`의 종료 시각 비교를 `<`에서 `<=`로 바꿔 종료 시각 슬롯도 포함시킨다(9~18시를 고르면 지금은 17:30에서 멈추는 버그). FE 그리드·결과 히트맵·서버 검증이 모두 이 함수를 공유하므로 한 곳만 수정하면 셋 다 일관되게 반영된다.
+- 참여자에게 보이는 문구에서 "가능한 시간"을 "만날 시간" 계열로 바꾼다. 내부 변수/타입명(`availableSlots`/`availableCount` 등)은 유지한다(대규모 리네임은 이번 요청의 취지가 아니고 위험 대비 이득이 낮음). `HomePage.tsx`의 마케팅 카피, `NewAppointmentPage.tsx`의 "후보 시간대"(방장이 회의 범위를 설정하는 다른 화면 라벨)는 다른 개념이라 대상에서 제외한다.
 
 ## 완료 기준
 
-- [ ] 1. `SlotResult`/`ResponseRow`에 이름 필드 추가 + `GET /:id/results` 응답에 실제로 채워서 반환
-- [ ] 2. `ResultPage.tsx` → `ResultHeatmap.tsx`로 `resultMap` prop 연결
-- [ ] 3. 셀 클릭 시 상세 근거 모달(가능자 이름·선호자 이름) 표시, 응답 없는 칸은 클릭 비활성
+- [ ] 1. `ResultPage.tsx` → `ResultHeatmap.tsx`로 `resultMap` prop 연결
+- [ ] 2. `Modal.tsx`가 `role="dialog"`/`aria-modal`/Escape 닫기/포커스 관리를 지원하고, 기존 모든 모달(확정모달·마감모달 등)이 여전히 정상 동작한다
+- [ ] 3. 셀 클릭 시 그 시간대의 가능인원/선호인원 숫자를 모달로 표시, 응답 없는 칸은 클릭 비활성
 - [ ] 4. 통합 확인
+- [ ] 5. 9~18시처럼 범위를 고르면 마지막 칸(18:00)까지 슬롯이 생성된다
+- [ ] 6. 참여자 화면의 "가능한 시간" 문구가 "만날 시간" 계열로 바뀐다(내부 코드 식별자는 변경 없음)
+- [ ] 7. 그리드에서 롱프레스 후 드래그로 여러 칸을 한 번에 선택/해제할 수 있다(짧은 클릭은 기존처럼 한 칸만 토글)
 
 ## 우선순위
 
-- 1번(서버 데이터)이 2·3번의 전제이므로 반드시 먼저 끝낸다
-- 2번은 이미 계산돼 있는 값을 연결만 하는 작업이라 매우 가볍다
+- 1번(FE 데이터 연결)이 3번의 전제이므로 먼저 끝낸다. 서버 데이터 확장이 필요 없어졌기 때문에 이 묶음이 사실상 전체 작업의 출발점이다.
+- 1번은 이미 계산돼 있는 값을 연결만 하는 작업이라 매우 가볍다.
+- 2번(Modal 접근성)은 앱 전체의 모든 모달 사용처에 영향을 주므로, 3번(클릭 모달) 구현 전에 먼저 끝내두면 새 모달도 처음부터 접근성을 갖춘 채로 만들 수 있다(다만 3번의 필수 전제조건은 아니라 순서를 바꿔도 무방).
+- 5·6·7번은 나머지 묶음과 서로 독립적이라 순서 무관하게 진행 가능하다.
 
 ## 작업 순서
 
 아래 순서대로 진행한다. 각 묶음이 끝날 때마다 수동으로 확인한 뒤 다음 묶음으로 넘어간다.
 
-### 1. 서버 데이터 확장
-1. `shared/src/results.ts`: `SlotResult`에 `availableNames: string[]`, `preferredNames: string[]` 추가
-2. `server/src/lib/results.ts`: `ResponseRow`에 `name: string` 추가, `getAppointmentResponseRows`가 참여자 조회 시 `id, name`을 select해서 각 응답 행에 이름을 붙여 반환하도록 수정. `aggregateSlotCounts`가 `row.name`을 각 슬롯의 `availableNames`/(선호면)`preferredNames`에 채우도록 수정.
-3. `server/src/routes/results.test.ts`의 `/:id/results` 관련 테스트 갱신(참여자 mock에 `name` 추가, 기대값에 이름 배열 추가)
-
-이 묶음이 끝나면: `GET /:id/results` 응답에 각 슬롯의 `availableNames`/`preferredNames`가 정확히 포함되는지 확인한다.
-
-### 2. FE 데이터 연결
-4. `ResultPage.tsx`가 `useScheduleResult`의 `resultMap`을 받아 `ResultHeatmap`에 새 prop으로 전달
+### 1. FE 데이터 연결
+1. `ResultPage.tsx`가 `useScheduleResult`의 `resultMap`을 받아 `ResultHeatmap`에 새 prop으로 전달
 
 이 묶음이 끝나면: 결과 화면에서 `resultMap`이 실제로 내려가는지 확인한다.
 
-### 3. 클릭 → 상세 근거 모달
-5. `ResultHeatmap.tsx`: `result-cell`을 `<button>`으로 변경, `resultMap`에 있는(응답 1건 이상) 칸만 클릭 가능하도록(나머지는 `disabled`), 클릭 시 그 슬롯의 `date`/`time`을 state로 저장
-6. 클릭된 슬롯이 있으면 `Modal`을 열어 `formatDateLabel(date)` + `time`을 제목으로, "가능 (N명): 이름, 이름..." / "선호 (N명): 이름..."(0명이면 "선호로 표시한 사람이 없어요") 형태로 표시
-7. 클릭 가능한 셀에 `aria-label`(예: "7/21(화) 09:00 상세보기") 추가
+### 2. Modal 접근성 개선
+2. `Modal.tsx`에 `role="dialog"`, `aria-modal="true"` 추가
+3. `keydown`(Escape) 리스너를 추가해 기존 오버레이 클릭과 동일하게 `onClose`를 호출(단, `isSubmitting`류 가드가 걸린 모달은 오버레이 클릭과 마찬가지로 Escape도 무시하도록 기존 가드 로직을 그대로 재사용)
+4. 열릴 때 모달 카드(또는 내부 첫 포커스 가능 요소)로 포커스를 이동시키고, 닫힐 때 원래 트리거 요소로 포커스를 복원
 
-이 묶음이 끝나면: 응답 있는 칸을 클릭하면 모달에 정확한 이름 목록이 뜨고, 응답 없는 칸은 클릭해도 반응 없는지 확인한다.
+이 묶음이 끝나면: 기존에 이 컴포넌트를 쓰던 모든 화면(1·2단계 확정모달, 관리자 대시보드 마감모달 등)에서 Escape로 닫히는지, Tab으로 모달 내부에 포커스가 잡히는지, 닫은 뒤 포커스가 트리거로 돌아오는지, 기존 동작(오버레이 클릭 닫기, 제출 중 가드)이 회귀 없이 그대로인지 전체 워크스루로 확인한다.
+
+### 3. 클릭 → 인원수 모달
+5. `ResultHeatmap.tsx`: `result-cell`을 `<button>`으로 변경, `resultMap`에 있는(응답 1건 이상) 칸만 클릭 가능하도록(나머지는 `disabled`), 클릭 시 그 슬롯의 `date`/`time`을 state로 저장
+6. `ResultHeatmap.css`의 `.result-cell`에 버튼 기본 스타일 리셋(`border: 0`, `padding: 0`, `cursor: pointer`) 및 `:disabled`(기본 커서), `:focus-visible`(키보드 포커스 아웃라인) 스타일 추가 — `<div>`에서 `<button>`으로 바꾸면 브라우저 기본 버튼 스타일이 셀 크기/배경과 충돌하기 때문에 필요
+7. 클릭된 슬롯이 있으면 `Modal`을 열어 `formatDateLabel(date)` + `time`을 제목으로, "가능 {N}명 · 선호 {M}명" 형태로 표시하고, 명시적 "닫기" 버튼을 추가(기존 다른 모달들도 전부 명시적 버튼으로 닫는 것과 일관되게 — 오버레이 클릭/Escape에만 의존하지 않음)
+8. 클릭 가능한 셀에 `aria-label`(예: "7/21(화) 09:00 상세보기") 추가
+9. `ResultHeatmap.test.tsx` 신설: 응답 있는 칸 클릭 시 모달에 정확한 인원수가 뜨는지, 응답 없는 칸은 `disabled`라 클릭해도 반응 없는지 검증하는 RTL 테스트 추가
+
+이 묶음이 끝나면: 응답 있는 칸을 클릭하면 모달에 정확한 가능/선호 인원수가 뜨고, 응답 없는 칸은 클릭해도 반응 없는지, 버튼 전환 후 셀 크기/스타일이 깨지지 않는지 확인한다.
 
 ### 4. 통합 확인
-8. 참여자 여러 명이 서로 다른 조합으로 응답 제출 → 마감 → 결과 화면에서 여러 칸을 클릭해보며 이름 목록이 실제 제출 내용과 일치하는지, 페이지 이동 후에도 클릭이 정상 동작하는지 전체 워크스루
+10. 참여자 여러 명이 서로 다른 조합으로 응답 제출 → 마감 → 결과 화면에서 여러 칸을 클릭해보며 인원수가 실제 제출 내용과 일치하는지, 페이지 이동 후에도 클릭이 정상 동작하는지 전체 워크스루
+
+### 5. 시간대 끝 슬롯 포함
+11. `shared/src/schedule.ts`: `generateSlots`의 `minutes < endMinutes`를 `minutes <= endMinutes`로 수정
+12. `server/src/lib/schedule.test.ts`: exclusive를 검증하던 테스트의 설명 문구와 기대 슬롯 배열을 종료 시각 포함 기준으로 수정
+
+이 묶음이 끝나면: 9~18시 범위로 약속을 만들어 1단계 그리드와 결과 히트맵 양쪽에 18:00 칸이 생기는지 확인한다.
+
+### 6. 용어 변경
+13. `ScheduleEditor.tsx`의 5곳(1단계 제목, 에러문구, 2단계 제목, 범례, 확정모달 요약)을 "만날 시간" 계열 문구로 교체(내부 변수명은 유지)
+
+이 묶음이 끝나면: 1·2단계 화면과 확정모달에서 문구가 자연스럽게 읽히는지 확인한다.
+
+### 7. 드래그 선택
+14. `ScheduleGrid.tsx`의 각 셀 버튼에 `data-slot-key` 부여
+15. `pointerdown`에서 300ms 타이머 시작 → 타이머 전에 `pointerup`/`pointercancel`/임계 거리 이상 이동 시 취소(일반 클릭 또는 스크롤로 처리), 타이머가 끝나면 드래그 모드 진입(진입 시점에 `touch-action: none` 등으로 스크롤·텍스트 선택 방지 시작)
+16. 드래그 모드 진입 시 첫 칸의 현재 상태 반대를 목표 상태로 저장하고, "이 제스처에서 이미 처리한 셀 키" 집합(ref)을 새로 초기화. `document`에 붙인 `pointermove`마다 `document.elementFromPoint`로 실제 셀을 찾아, 아직 처리하지 않은 셀이고 목표 상태와 다르면 `onToggle` 호출 후 처리 완료로 표시(같은 셀 재방문 시 건너뜀)
+17. `document`의 `pointerup`으로 드래그 모드 종료 + `touch-action` 원복. 드래그가 실제로 발생했으면 그 뒤에 오는 `click` 이벤트 1회를 무시하는 플래그를 두어, 포인터를 뗀 지점의 셀이 고스트 클릭으로 한 번 더 토글되지 않도록 처리
+
+이 묶음이 끝나면: 모바일 뷰(또는 브라우저 터치 에뮬레이션)에서 꾹 누른 뒤 드래그로 여러 칸이 한 번에 선택/해제되고, 드래그를 끝낸 셀이 한 번 더 토글되지 않으며, 짧은 클릭은 기존처럼 한 칸만 토글되는지, 세로 스크롤은 여전히 잘 되는지 확인한다(이 부분은 jsdom으로 재현이 어려워 Playwright 등 실제 브라우저 확인으로 검증).
 
 ## 이슈/커밋 전략
 
-- 이슈: "결과 화면 히트맵 클릭 시 상세 근거 표시"
+- 이슈: "결과 화면 히트맵 클릭 시 인원수 표시"
 - 브랜치: `feat/result-heatmap-detail`
-- 커밋: 서버 데이터 확장 → FE 데이터 연결 → 클릭 모달 → 통합 확인 — 묶음별로
+- 커밋: FE 데이터 연결 → Modal 접근성 → 클릭 모달 → 통합 확인 → (시간대/용어/드래그) — 묶음별로
 - PR: 범위에서 제외 — 사용자가 직접 진행
 
 ## 참고 사항
 
 - `docs/rules/subTasks.md` "추가 개선 제안" — 이 기능의 원본 출처
 - `client/src/lib/useScheduleResult.ts` — 이미 계산해두고 안 쓰던 `resultMap` 활용
-- `client/src/lib/resultRanking.ts` — 순위 계산 로직(안 건드림)
 - `client/src/components/Modal.tsx`, `client/src/components/ScheduleGrid.tsx`(버튼 클릭 셀 패턴) — 재사용 대상
+- `shared/src/schedule.ts`의 `generateSlots` — `useScheduleResponse.ts`/`useScheduleResult.ts`/`server/src/routes/responses.ts` 3곳에서 공유하므로 5번 묶음 수정이 자동으로 셋 다에 반영됨
+- `Modal.tsx`의 기존 사용처(2번 묶음에서 회귀 확인 대상): `ScheduleEditor.tsx`의 확정모달, `AdminDashboard.tsx`의 마감확인모달, `AppointmentPage.tsx`, `DateRangeField.tsx`(달력 선택 모달)
