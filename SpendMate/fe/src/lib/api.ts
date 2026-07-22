@@ -165,3 +165,19 @@ export async function setBudget(amount: number): Promise<Budget> {
   }
   return res.json()
 }
+
+export interface Prediction {
+  depletionDate: string | null
+  dailyAverage: number
+  remainingBudget: number | null
+  dataQualityNotice: string | null
+  survivalMode: boolean
+}
+
+export async function getPrediction(): Promise<Prediction> {
+  const res = await fetch('/api/expenses/prediction')
+  if (!res.ok) {
+    throw new Error('소비 예측을 불러오지 못했어요.')
+  }
+  return res.json()
+}

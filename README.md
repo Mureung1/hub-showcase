@@ -20,7 +20,7 @@
 
 ## 아키텍처
 
-화면(React) → 서버(Spring Boot) → DB(PostgreSQL)로 이어지는 데이터 흐름. 점선 박스는 3주차에 새로 붙는 부분(구독/예산/예측/Agent), 실선 박스는 이미 동작 중인 부분이다.
+화면(React) → 서버(Spring Boot) → DB(PostgreSQL)로 이어지는 데이터 흐름. 점선 박스는 아직 손 안 댄 부분(예측/생존모드/Agent), 실선 박스는 이미 동작 중인 부분이다.
 
 ```mermaid
 graph TD
@@ -35,14 +35,14 @@ graph TD
     subgraph BE["Spring Boot 서버 (SpendMate/be)"]
         ReceiptC[ReceiptController]
         ExpenseC[ExpenseController]
-        SubC[SubscriptionController]:::planned
-        BudgetC[BudgetController]:::planned
+        SubC[SubscriptionController]
+        BudgetC[BudgetController]
         AgentC[AgentController]:::planned
 
         ReceiptS[ReceiptService]
         ExpenseS[ExpenseService]
-        SubS[SubscriptionService]:::planned
-        BudgetS[BudgetService]:::planned
+        SubS[SubscriptionService]
+        BudgetS[BudgetService]
         ContextS[ContextService]:::planned
         AgentS[AgentService]:::planned
 
@@ -53,14 +53,15 @@ graph TD
     subgraph DB["PostgreSQL"]
         ReceiptT[(receipts)]
         ExpenseT[(expenses)]
-        SubT[(subscriptions)]:::planned
-        BudgetT[(budgets)]:::planned
+        SubT[(subscriptions)]
+        BudgetT[(budgets)]
     end
 
     AddExpense -->|영수증 업로드/confirm| ReceiptC --> ReceiptS
     AddExpense -->|수동 지출 입력| ExpenseC
     Stats -->|카테고리/일별 요약 조회| ExpenseC --> ExpenseS
     MyPage -->|구독 CRUD| SubC --> SubS
+    MyPage -->|예산 조회/설정| BudgetC --> BudgetS
     Survival -->|소진 예측 조회| ExpenseC
     AICoach -->|챗봇 질문| AgentC --> AgentS
 
@@ -78,6 +79,7 @@ graph TD
     AgentS --> ClaudeApi
     AgentS -->|get_expense_summary Tool| ExpenseS
     AgentS -->|get_subscriptions Tool| SubS
+    AgentS -->|get_budget Tool| BudgetS
 
     classDef planned stroke-dasharray: 5 5
 ```
@@ -85,7 +87,7 @@ graph TD
 **말로 설명할 때 핵심 흐름 3개**:
 1. **영수증 흐름**: `AddExpenseScreen` → `ReceiptController` → `ReceiptService`가 `ClovaOcrClient`로 OCR 호출 → 파싱해서 `receipts`에 원본, `expenses`에 확정 지출을 저장
 2. **통계 흐름**: `StatsScreen`이 `ExpenseController`의 요약 API를 호출하면 `ExpenseService`가 `expenses` 테이블을 집계해서 반환 (저장 시점이 아니라 조회 시점에 계산)
-3. **Agent 흐름(3주차 신규)**: `ExpenseService`/`SubscriptionService`/`BudgetService`가 각자 계산한 신호를 `ContextService`가 하나로 합치고, `AgentService`가 그 Context를 Claude API에 넘겨 판단시킨 뒤, 필요하면 `get_expense_summary`/`get_subscriptions` Tool로 다시 내부 API를 호출해 근거 숫자를 가져온다 — 외부 API는 전혀 안 씀
+3. **Agent 흐름(3주차 신규)**: `ExpenseService`/`SubscriptionService`/`BudgetService`가 각자 계산한 신호를 `ContextService`가 하나로 합치고, `AgentService`가 그 Context를 Claude API에 넘겨 판단시킨 뒤, 필요하면 `get_expense_summary`/`get_subscriptions`/`get_budget` Tool로 다시 내부 API를 호출해 근거 숫자를 가져온다 — 외부 API는 전혀 안 씀
 
 ## 문서
 프로젝트 기획·설계 문서는 `docs` 폴더 및 위키에서 확인할 수 있다.
