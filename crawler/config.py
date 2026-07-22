@@ -7,7 +7,7 @@ load_dotenv()
 BASE_URL = "https://www.wevity.com"
 USER_AGENT = "naver-challenge-crawler (contact: khy05300@gmail.com)"
 CRAWL_DELAY = 1.5  # 요청 간 딜레이 (초)
-MAX_PAGES = 10  # 최대 페이지 수
+MAX_PAGES = 20  # 최대 페이지 수 (공모전 226개 + 대외활동 400+ 목표)
 
 # 크롤링 대상 섹션
 SECTIONS = [

@@ -33,7 +33,12 @@ def main():
     total_collected = 0
     total_errors = 0
 
+    # 대외활동만 크롤링 (공모전은 이미 226개 수집됨)
     for section in SECTIONS:
+        if "active" not in section["path"]:
+            print(f"\n⏭️  섹션 스킵: {section['name']} (이미 충분함)")
+            continue
+
         print(f"\n📌 섹션: {section['name']}")
         print("-" * 60)
 
