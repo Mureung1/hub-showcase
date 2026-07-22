@@ -1,4 +1,4 @@
--- Post: 홍보글/공지사항 공용 (docs/api-spec.md Post 모델 기준).
+-- Post: 홍보글/공지사항 공용 (../../docs/api-spec.md Post 모델 기준).
 -- purpose(신메뉴/이벤트/일반) 분기별 인터뷰 답변은 별도 상세 테이블 대신
 -- flat nullable 컬럼으로 구조화해서 저장한다 (사용자와 상의해 결정).
 CREATE TABLE IF NOT EXISTS posts (

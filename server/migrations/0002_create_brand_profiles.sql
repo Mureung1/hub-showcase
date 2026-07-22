@@ -1,4 +1,4 @@
--- BrandProfile: 단일 브랜드 가정(docs/api-spec.md, PROJECT.md 2-1 참고) — 여러 행이
+-- BrandProfile: 단일 브랜드 가정(../../docs/api-spec.md, PROJECT.md 2-1 참고) — 여러 행이
 -- 쌓여도 서버는 가장 최근 1건만 현재 프로필로 취급한다.
 CREATE TABLE IF NOT EXISTS brand_profiles (
   id TEXT PRIMARY KEY,

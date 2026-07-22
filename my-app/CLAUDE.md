@@ -5,7 +5,7 @@
 ## 스택
 
 - 프론트: Vite + React 19, Tailwind CSS v4 (`@tailwindcss/vite`)
-- 백엔드: Node.js + Express 예정 (아직 미구현, [docs/api-spec.md](docs/api-spec.md)가 계약)
+- 백엔드: Node.js + Express 예정 (아직 미구현, [docs/api-spec.md](../docs/api-spec.md)가 계약)
 - 라우팅: `react-router-dom` (`/` 대시보드, `/posts/promotion/new` 홍보글 작성 인터뷰)
 - 상태: 화면은 목데이터로 하나씩 구현 중 (대시보드, 홍보글 작성 인터뷰 완료). 백엔드는 아직 미구현.
 
@@ -22,7 +22,7 @@ npm run dev
 
 ```
 design-reference/   프로토타입 정적 HTML (참고 전용, 수정하지 않음)
-docs/api-spec.md    API 명세서
+../docs/api-spec.md API 명세서 (hub 루트, server와 공용)
 src/
   pages/            라우트 단위 화면
   components/       여러 페이지에서 재사용하는 UI 조각

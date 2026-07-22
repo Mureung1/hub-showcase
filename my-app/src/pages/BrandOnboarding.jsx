@@ -9,7 +9,7 @@ import { markOnboardingComplete } from "../lib/onboarding";
 
 const TOTAL_STEPS = 3;
 
-// 온보딩 화면 필드 -> BrandProfile API 필드(docs/api-spec.md) 매핑.
+// 온보딩 화면 필드 -> BrandProfile API 필드(../../../docs/api-spec.md) 매핑.
 // oneLineIntro는 UI에서만 쓰는 소개 문구라 brandMood로 그대로 보낸다.
 function toBrandProfileAnswers(brandInfo) {
   const category = CATEGORIES.find((c) => c.id === brandInfo.category);
