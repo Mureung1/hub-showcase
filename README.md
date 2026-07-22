@@ -47,26 +47,36 @@
 ```mermaid
 flowchart LR
     subgraph FE["React (화면)"]
-        Register["RegisterPage.jsx"]
-        Home["HomePage.jsx"]
+        Register["RegisterPage.jsx<br/>할 일 등록"]
+        Home["HomePage.jsx<br/>20초 폴링"]
     end
+
     subgraph SRV["Express (서버)"]
         R1["POST /api/tasks"]
-        R2["POST /:id/events"]
+        R2["POST /api/tasks/:id/events"]
+        Push["Push 알림 발송"]
     end
+
     subgraph DB["Supabase (DB)"]
         Task[("Task")]
         Event[("TaskEvent")]
     end
-    subgraph SW["브라우저 (서비스워커)"]
+
+    subgraph Browser["브라우저"]
+        SW["Service Worker"]
         Notif["시스템 알림"]
     end
-    Register -->|"fetch 등록"| R1
-    Home -->|"fetch 폴링"| R2
-    R1 -->|"insert"| Task
-    R2 -->|"update"| Task
-    R2 -->|"insert"| Event
-    R2 -->|"발송"| Notif
+
+    Register -->|"등록 요청"| R1
+    Home -->|"이벤트 요청"| R2
+
+    R1 -->|"생성"| Task
+    R2 -->|"레벨·횟수 수정"| Task
+    R2 -->|"이벤트 기록"| Event
+
+    R2 -.->|"레벨 상승 시"| Push
+    Push -->|"Web Push 전달"| SW
+    SW -->|"showNotification()"| Notif
 ```
 
 ## 개발 환경 실행
