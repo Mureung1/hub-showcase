@@ -3,14 +3,26 @@ import { useApp } from '../context/AppContext';
 const LEVEL_BADGE = { beginner: 'green', mid: 'amber', high: 'red' };
 
 export default function RecipeDetail() {
-  const { back, recipeDetail, checkedAddonIds, toggleAddon, cookSteps, startCooking, openCookDone } = useApp();
+  const { back, currentRecipeId, recipeDetail, checkedAddonIds, toggleAddon, cookSteps, startCooking, openCookDone, bookmarkedIds, toggleBookmark } = useApp();
   if (!recipeDetail) return null;
   const r = recipeDetail;
   const have = r.ingredients.filter((ing) => ing.have).length;
+  const bookmarked = bookmarkedIds.includes(currentRecipeId);
 
   return (
     <section className="screen active">
-      <div className="appbar"><button className="btn-back" onClick={back}>‹</button><h1>레시피 상세</h1></div>
+      <div className="appbar">
+        <button className="btn-back" onClick={back}>‹</button>
+        <h1>레시피 상세</h1>
+        <button
+          className="btn-back"
+          style={{ marginLeft: 'auto' }}
+          aria-label={bookmarked ? '찜 해제' : '찜하기'}
+          onClick={() => toggleBookmark(currentRecipeId)}
+        >
+          {bookmarked ? '❤️' : '🤍'}
+        </button>
+      </div>
       <div className="content">
         <div className="detail-hero">{r.emoji}</div>
         <h2 style={{ fontSize: 22 }}>

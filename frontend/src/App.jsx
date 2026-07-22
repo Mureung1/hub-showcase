@@ -24,6 +24,7 @@ import MealPlan from './pages/MealPlan';
 import MealShoppingList from './pages/MealShoppingList';
 import Prices from './pages/Prices';
 import ServingSizeSetting from './pages/ServingSizeSetting';
+import BookmarkedRecipes from './pages/BookmarkedRecipes';
 
 const SCREENS = {
   home: Home,
@@ -45,6 +46,7 @@ const SCREENS = {
   'meal-shopping-list': MealShoppingList,
   prices: Prices,
   'serving-size-setting': ServingSizeSetting,
+  'bookmarked-recipes': BookmarkedRecipes,
 };
 
 function Screen() {

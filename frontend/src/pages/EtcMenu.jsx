@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { api } from '../api';
 
 export default function EtcMenu() {
-  const { go, fridge, servingMultiplier } = useApp();
+  const { go, fridge, servingMultiplier, bookmarkedIds } = useApp();
   const [imminentCount, setImminentCount] = useState(0);
 
   useEffect(() => { api.getExpiryAlerts().then((r) => setImminentCount(r.items.length)); }, [fridge]);
@@ -12,6 +12,13 @@ export default function EtcMenu() {
     <section className="screen active">
       <div className="appbar"><h1>기타</h1></div>
       <div className="content">
+        <div className="card tap" onClick={() => go('bookmarked-recipes')}>
+          <div className="menu-row">
+            <span className="m-ico">❤️</span>
+            <div className="m-info"><div className="t">찜한 레시피</div><div className="d">{bookmarkedIds.length}개 저장됨</div></div>
+            <span className="arrow">›</span>
+          </div>
+        </div>
         <div className="card tap" onClick={() => go('expiry-alerts')}>
           <div className="menu-row">
             <span className="m-ico">⏰</span>

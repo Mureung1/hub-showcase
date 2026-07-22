@@ -215,6 +215,34 @@ export function getMissingInfo(view, recipe, multiplier = 1) {
   return map;
 }
 
+// 재고가 거의 다 떨어진(자투리만 남은) 재료 id 목록 — g/ml류는 150 이하, 개수류는 1 이하.
+// getExpiryAlerts(수량 부족 알림)와 buildWeeklyPlan(일요일 냉장고 털이 슬롯)이 같은 기준을
+// 공유해야 "알림에서 부족하다고 뜬 재료"와 "냉장고 털이가 노리는 재료"가 서로 어긋나지 않는다.
+export function lowStockIdsOf(view) {
+  return Object.keys(view).filter((id) => {
+    const f = view[id];
+    if (!f.items || f.items.length === 0) return false;
+    const unit = f.items[0].qtyUnit || '';
+    const totalAmount = f.items.reduce((sum, it) => sum + (Number(it.qtyAmount) || 1), 0);
+    if (['g', 'ml', 'g 직접입력'].includes(unit)) return totalAmount <= 150;
+    return totalAmount <= 1;
+  });
+}
+
+// 냉장고 털이용 레시피 선정 — 단순히 재료를 보유했는지(ingHave)가 아니라, 자투리(lowStockIds)로
+// 남은 재료를 몇 개나 실제로 쓰는지로 채점한다. "이미 넉넉한 재료만 쓰는 요리"보다 "다 떨어져가는
+// 자투리를 소진하는 요리"를 우선해야 "냉장고 털이"라는 이름에 맞기 때문. 자투리를 하나도 못 쓰면
+// null을 반환해 호출부가 이 슬롯도 기존 로직(임박 탐욕/조합 탐색)에 그대로 맡기게 한다.
+export function selectPantryCleanupRecipe(view, recipes, poolIds, lowStockIds) {
+  let bestId = null;
+  let bestScore = 0;
+  for (const id of poolIds) {
+    const score = recipes[id].ingredients.filter((ing) => ing.id && lowStockIds.includes(ing.id) && ingHave(view, ing)).length;
+    if (score > bestScore) { bestScore = score; bestId = id; }
+  }
+  return bestId;
+}
+
 // 여러 레시피의 부족 품목 Map을 하나로 합친다(같은 키는 qty를 더함) — estimateBuyCost와
 // buildWeeklyPlan의 조합 탐색(searchMinPurchaseCombo3에 넘길 P_fixed)이 이 병합 규칙을 공유해야
 // "이미 사기로 한 재료"와 "새로 사야 하는 재료"가 이중으로 잡히지 않는다.
