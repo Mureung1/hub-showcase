@@ -24,7 +24,8 @@ const APPLICATION_MENTOR_SELECT = `
       grade,
       enrollment_status,
       profiles ( name )
-    )
+    ),
+    meetings ( id, scheduled_at, place )
   )
 `;
 
@@ -39,8 +40,11 @@ const APPLICATION_SELECT = `
       academic_status,
       profiles ( name )
     )
-  )
+  ),
+  meetings ( id, scheduled_at, place )
 `;
+
+const MEETING_VISIBLE_STATUSES = ['confirmed', 'completed'];
 
 const toQuestionnaire = (row) => ({
   introduction: row.introduction,
@@ -48,6 +52,19 @@ const toQuestionnaire = (row) => ({
   goal: row.goal,
   preferredTime: row.preferred_time,
 });
+
+const toMeeting = (status, meetings) => {
+  if (!MEETING_VISIBLE_STATUSES.includes(status)) return undefined;
+
+  const meeting = Array.isArray(meetings) ? meetings[0] : meetings;
+  if (!meeting) return undefined;
+
+  return {
+    id: meeting.id,
+    scheduledAt: meeting.scheduled_at,
+    place: meeting.place,
+  };
+};
 
 const toMenteeApplicationResponse = (row) => ({
   id: row.id,
@@ -61,6 +78,7 @@ const toMenteeApplicationResponse = (row) => ({
     academicStatus: link.mentor_profiles.academic_status,
   })),
   questionnaire: toQuestionnaire(row),
+  meeting: toMeeting(row.status, row.meetings),
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -82,6 +100,7 @@ const toMentorApplicationResponse = (link) => {
       enrollmentStatus: application.mentee_profiles.enrollment_status,
     },
     questionnaire: toQuestionnaire(application),
+    meeting: toMeeting(application.status, application.meetings),
     createdAt: application.created_at,
     updatedAt: application.updated_at,
   };
@@ -280,6 +299,12 @@ const acceptApplication = async (mentorId, applicationId) => {
     .eq('status', 'pending');
 
   if (rejectOthersError) throw rejectOthersError;
+
+  const { error: meetingError } = await supabase
+    .from('meetings')
+    .insert({ application_id: applicationId, mentor_id: mentorId });
+
+  if (meetingError) throw meetingError;
 
   return {
     id: updatedApplication.id,

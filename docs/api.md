@@ -103,7 +103,6 @@ Authorization: Bearer <access-token>
 | `GET` | `/api/applications/:applicationId` | 관계 사용자 | 신청 상세 조회 |
 | `PATCH` | `/api/applications/:applicationId/accept` | 대상 멘토 | 신청 수락 |
 | `PATCH` | `/api/applications/:applicationId/reject` | 대상 멘토 | 신청 거절 |
-| `POST` | `/api/applications/:applicationId/meetings` | 확정 멘토 | 확정 면담 정보 생성 |
 | `PATCH` | `/api/meetings/:meetingId` | 확정 멘토 | 면담 시간·장소 수정 |
 | `PATCH` | `/api/applications/:applicationId/complete` | 확정 멘토 | 면담 완료 처리 |
 
@@ -543,18 +542,9 @@ Query parameters:
 
 멘토 응답에는 위 신청 정보와 함께 신청자의 `name`, `school`, `major`, `grade`, `enrollmentStatus`를 포함한다.
 
-### 6.3 신청 상세 조회
 
-`GET /api/applications/:applicationId`
 
-접근 가능한 사용자:
-
-- 신청을 생성한 멘티
-- 신청 대상으로 연결된 멘토
-
-응답은 신청 목록 항목의 전체 데이터와 대상 멘토별 `status`, `respondedAt`을 포함한다.
-
-### 6.4 신청 수락
+### 6.3 신청 수락
 
 `PATCH /api/applications/:applicationId/accept`
 
@@ -565,7 +555,8 @@ Query parameters:
 - 현재 로그인 멘토가 신청 대상이어야 한다.
 - 신청 전체 상태와 해당 멘토 상태가 `pending`이어야 한다.
 - 먼저 수락한 멘토 한 명만 성공한다.
-- 신청 전체와 대상 멘토 상태 변경은 하나의 트랜잭션으로 처리한다.
+- 신청 전체와 대상 멘토 상태 변경, `meetings` 행 생성은 하나의 트랜잭션으로 처리한다.
+- 수락과 동시에 `meetings` 행을 생성한다. `scheduled_at`, `place`는 비어 있는 상태로 시작하며, 이후 프론트엔드에서 [7.1 면담 정보 수정](#71-면담-정보-수정)으로 채운다.
 
 응답 `200`:
 
@@ -582,7 +573,7 @@ Query parameters:
 
 이미 다른 멘토가 수락한 경우 `409 APPLICATION_ALREADY_CONFIRMED`를 반환한다.
 
-### 6.5 신청 거절
+### 6.4 신청 거절
 
 `PATCH /api/applications/:applicationId/reject`
 
@@ -608,42 +599,9 @@ Query parameters:
 
 ## 7. 면담 API
 
-### 7.1 면담 정보 생성
+`meetings` 행은 별도의 생성 API 없이, [6.3 신청 수락](#63-신청-수락) 시점에 `scheduled_at`, `place`가 빈 값인 상태로 자동 생성된다. 프론트엔드는 아래 수정 API로 값을 채우거나 변경한다.
 
-`POST /api/applications/:applicationId/meetings`
-
-요청:
-
-```json
-{
-  "scheduledAt": "2026-07-22T17:00:00+09:00",
-  "place": "Google Meet · 링크는 면담 전 공개"
-}
-```
-
-검증:
-
-- 신청 상태가 `confirmed`여야 한다.
-- 로그인 사용자가 `acceptedMentorId`와 같아야 한다.
-- 신청 하나에 면담 정보는 하나만 생성할 수 있다.
-- `method` 필드는 받지 않는다.
-
-응답 `201`:
-
-```json
-{
-  "data": {
-    "id": "meeting-uuid",
-    "applicationId": "application-uuid",
-    "mentorId": "mentor-uuid",
-    "scheduledAt": "2026-07-22T17:00:00+09:00",
-    "place": "Google Meet · 링크는 면담 전 공개",
-    "createdAt": "2026-07-16T13:20:00+09:00"
-  }
-}
-```
-
-### 7.2 면담 정보 수정
+### 7.1 면담 정보 수정
 
 `PATCH /api/meetings/:meetingId`
 
@@ -656,9 +614,28 @@ Query parameters:
 }
 ```
 
-확정 멘토만 수정할 수 있다.
+검증:
 
-### 7.3 면담 완료 처리
+- 로그인 사용자가 해당 신청의 `acceptedMentorId`와 같아야 한다(확정 멘토만 수정 가능).
+- `scheduledAt`, `place`는 각각 선택적으로 전달할 수 있으며, 전달한 필드만 갱신한다.
+- `method` 필드는 받지 않는다.
+
+응답 `200`:
+
+```json
+{
+  "data": {
+    "id": "meeting-uuid",
+    "applicationId": "application-uuid",
+    "mentorId": "mentor-uuid",
+    "scheduledAt": "2026-07-23T18:00:00+09:00",
+    "place": "교내 라운지",
+    "updatedAt": "2026-07-16T13:20:00+09:00"
+  }
+}
+```
+
+### 7.2 면담 완료 처리
 
 `PATCH /api/applications/:applicationId/complete`
 
@@ -692,7 +669,7 @@ Query parameters:
 | 신청 생성 | 가능 | 불가 |
 | 자신의 신청 조회 | 가능 | 대상 신청만 가능 |
 | 신청 수락·거절 | 불가 | 대상 멘토만 가능 |
-| 면담 정보 생성·수정 | 불가 | 확정 멘토만 가능 |
+| 면담 정보 수정 | 불가 | 확정 멘토만 가능 |
 | 신청 완료 처리 | 불가 | 확정 멘토만 가능 |
 
 ## 9. MVP 이후 API
