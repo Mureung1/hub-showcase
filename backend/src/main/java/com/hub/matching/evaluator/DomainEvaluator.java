@@ -34,7 +34,7 @@ public class DomainEvaluator implements FulfillmentEvaluator {
             if (c.getType() != CredentialType.CAREER && c.getType() != CredentialType.COMPANY) continue;
             BigDecimal score = embedding
                     .similarity(req.getName(), c.getTitle() + " " + c.getDetail())
-                    .multiply(Recency.decay(c.getEndedAt()));
+                    .multiply(Recency.decay(c.getEndedOn()));
             if (score.compareTo(bestScore) > 0) {
                 bestScore = score;
                 best = c;

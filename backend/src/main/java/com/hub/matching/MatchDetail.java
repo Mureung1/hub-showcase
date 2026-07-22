@@ -16,7 +16,7 @@ import java.math.BigDecimal;
  * requirementText 를 복사해 두는 이유: 공고가 마감·수정돼도 상세 화면이 깨지지 않는다.
  */
 @Entity
-@Table(name = "match_detail")
+@Table(name = "match_details")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)

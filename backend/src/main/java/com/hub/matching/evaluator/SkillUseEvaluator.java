@@ -41,7 +41,7 @@ public class SkillUseEvaluator implements FulfillmentEvaluator {
 
             BigDecimal score = sim
                     .multiply(c.getDepth().factor())
-                    .multiply(Recency.decay(c.getEndedAt()));
+                    .multiply(Recency.decay(c.getEndedOn()));
 
             if (score.compareTo(bestScore) > 0) {
                 bestScore = score;
@@ -55,7 +55,7 @@ public class SkillUseEvaluator implements FulfillmentEvaluator {
         String note = String.format("유사도 %.2f × 깊이 %.1f × 최신성 %.2f",
                 bestSim.doubleValue(),
                 best.getDepth().factor().doubleValue(),
-                Recency.decay(best.getEndedAt()).doubleValue());
+                Recency.decay(best.getEndedOn()).doubleValue());
         return Result.of(bestScore, best.getTitle(), note);
     }
 }

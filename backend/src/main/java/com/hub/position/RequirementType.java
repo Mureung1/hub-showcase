@@ -8,7 +8,6 @@ public enum RequirementType {
     EXPERIENCE_YEARS,
     SKILL_USE,
     CERTIFICATION,
-    EDUCATION,
     DOMAIN,
     SOFT,
     /** 타입 추출 실패. KeywordFulfillmentEvaluator 폴백 */
