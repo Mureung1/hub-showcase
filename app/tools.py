@@ -4,9 +4,12 @@
 """
 
 import io
+import json
+import re
 import urllib.request
 
 import arxiv
+import google.generativeai as genai
 from pypdf import PdfReader
 
 from app import config
@@ -66,11 +69,46 @@ def fetch_fulltext(pdf_url: str) -> str | None:
         return None
 
 
+def ask_llm(prompt: str) -> str:
+    """LLM 호출 추상화. 현재는 Gemini Flash.
+
+    한도 초과 시 Claude Haiku / Ollama로 교체할 때 이 함수만 바꾸면 된다.
+    """
+    genai.configure(api_key=config.GEMINI_API_KEY)
+    model = genai.GenerativeModel(config.GEMINI_MODEL)
+    response = model.generate_content(prompt)
+    return response.text
+
+
+def ask_llm_json(prompt: str, fallback: dict | None, attempts: int = 1) -> dict | None:
+    """LLM 응답을 JSON으로 파싱한다. 실패 시 fallback으로 넘어가고 에이전트는 죽지 않는다.
+
+    attempts > 1이면 파싱 실패 시 같은 프롬프트로 재호출한다 (summarize 3회 재시도용).
+    """
+    for _ in range(attempts):
+        try:
+            raw = ask_llm(prompt)
+        except Exception:
+            continue
+
+        text = raw.strip()
+        match = re.search(r"```(?:json)?\s*(.*?)\s*```", text, re.DOTALL)
+        if match:
+            text = match.group(1)
+
+        try:
+            return json.loads(text)
+        except (json.JSONDecodeError, ValueError):
+            continue
+
+    return fallback
+
+
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="tools.py 개별 함수 검증")
-    parser.add_argument("--check", choices=["arxiv"], required=True)
+    parser.add_argument("--check", choices=["arxiv", "llm"], required=True)
     parser.add_argument("--topic", default="LLM agent planning")
     args = parser.parse_args()
 
@@ -79,3 +117,5 @@ if __name__ == "__main__":
         print(f"'{args.topic}' 검색 결과 {len(found)}편")
         for paper in found:
             print(f"- [{paper['id']}] {paper['title']} ({paper['published']})")
+    elif args.check == "llm":
+        print(ask_llm("한 단어로만 답하라: 1+1=?"))
