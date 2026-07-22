@@ -7,9 +7,11 @@ import json
 import uuid
 from datetime import datetime
 
-from doc_generator import DocumentGenerator
+# 우리가 만든 모듈들 임포트
+from doc_generator import DocumentGenerator 
 from agent import LegalAIAgent
 from retriever import Retriever 
+from scheduler import start_scheduler
 
 app = FastAPI(
     title="Civil Litigation AI Agent API",
@@ -19,7 +21,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"], # 개발 환경
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -27,33 +29,58 @@ app.add_middleware(
 
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
+CASES_FILE = os.path.join(LOG_DIR, "cases_log.json")
+
 doc_gen = DocumentGenerator()
 ai_agent = LegalAIAgent()
 ai_agent.retriever = Retriever() 
 
-# 🚀 [핵심 수정 1] 프론트엔드에서 넘어오는 case_type을 받을 수 있도록 스키마 수정
+# 🚀 서버 시작 시 스케줄러 자동 가동 (주간 법령 업데이트)
+import threading
+
+@app.on_event("startup")
+def startup_event():
+    print("\n🚀 [System] FastAPI 서버가 성공적으로 가동되었습니다!")
+    
+    # 스케줄러 시작을 별도의 백그라운드 스레드로 분리하여 메인 서버 블로킹 방지
+    def run_scheduler_in_background():
+        try:
+            start_scheduler()
+            print("✅ [System] 스케줄러가 백그라운드에 안전하게 등록되었습니다.")
+        except Exception as e:
+            print(f"⚠️ [System] 스케줄러 등록 중 오류 발생 (무시하고 서버 구동): {e}")
+
+    # 데몬 스레드로 실행 (메인 서버가 꺼지면 같이 꺼짐)
+    scheduler_thread = threading.Thread(target=run_scheduler_in_background, daemon=True)
+    scheduler_thread.start()
+
 class ChatRequest(BaseModel):
     query: str
-    case_type: str = "" # 기본값을 빈 문자열로 두어 에러 방지
+    case_type: str = ""
 
 class DocumentRequest(BaseModel):
     doc_type: str
-    sender_name: str
-    sender_address: str
-    sender_phone: str
-    receiver_name: str
-    receiver_address: str
-    title: str
-    facts: str
-    legal_basis: str
-    demands: str
-    deadline: str
+    sender_name: str = ""
+    sender_address: str = ""
+    sender_phone: str = ""
+    receiver_name: str = ""
+    receiver_address: str = ""
+    title: str = ""
+    facts: str = ""
+    legal_basis: str = ""
+    demands: str = ""
+    deadline: str = ""
 
-class FeedbackRequest(BaseModel):
+class CaseLog(BaseModel):
     query: str
     extracted_data: dict
+    doc_type: str
+    document_content: str
+
+class FeedbackData(BaseModel):
+    case_id: str
     rating: int
-    user_comment: str
+    comment: str
 
 @app.post("/api/analyze")
 async def analyze_live(request: ChatRequest):
@@ -70,29 +97,29 @@ async def ask_agent(request: ChatRequest):
         case_type = request.case_type
         searched_context = []
         
-        # 🚀 [핵심 수정 2] 프론트에서 받은 사건유형을 쿼리 앞에 붙여서 '강화된 쿼리'를 만듭니다.
-        # 예: "대여금 반환 청구 김철수에게 50만원을 작년에 빌려줬는데 안갚아요"
         enhanced_search_query = f"{case_type} {query}" if case_type else query
         
         print(f"\n{'-'*50}")
-        print(f"🚀 [{datetime.now().strftime('%H:%M:%S')}] 새로운 요청 도착: '{query}'")
-        print(f"💡 [강화된 검색 쿼리]: '{enhanced_search_query}'")
+        print(f"🚀 [{datetime.now().strftime('%H:%M:%S')}] 새로운 요청: '{query}'")
+        print(f"💡 [강화된 쿼리]: '{enhanced_search_query}'")
         print(f"{'-'*50}")
         
-        print("🔍 1. 로컬 벡터 DB(법령/판례) 검색 시작...")
         if ai_agent.retriever:
-            # 벡터 DB 검색에는 반드시 '강화된 쿼리'를 던져줍니다.
             searched_context = ai_agent.retriever.search(enhanced_search_query)
-            print(f"✅ 검색 완료: 총 {len(searched_context)}건의 관련 레퍼런스를 찾았습니다.")
             
-        print("🧠 2. AI 에이전트 추론 및 데이터 추출 시작...")
-        # LLM(에이전트)에게 대답을 시킬 때는 사용자의 원래 자연스러운 'query'만 넘겨줍니다.
+        # 에이전트 추론 실행
         agent_result = ai_agent.ask(query, searched_context)
-        print("✅ AI 추론 완료! 프론트엔드로 응답을 반환합니다.\n")
+        
+        # 🚀 [핵심] LLM이 뽑아준 win_probability와 strategy_guide를 프론트엔드 호환용 텍스트로 결합
+        final_response_text = ""
+        if "win_probability" in agent_result:
+            final_response_text = f"⚖️ **[승소 리스크 분석]**\n{agent_result.get('win_probability', '')}\n\n💡 **[변호사 상담 전략]**\n{agent_result.get('strategy_guide', '')}"
+        else:
+            final_response_text = agent_result.get("response", "전략을 분석할 수 없습니다.")
 
         return {
             "status": "success",
-            "response": agent_result.get("response"),
+            "response": final_response_text,
             "extracted_data": agent_result.get("extracted_data"),
             "related_laws": searched_context 
         }
@@ -100,52 +127,27 @@ async def ask_agent(request: ChatRequest):
         print(f"❌ API Ask Error 발생: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# ... 하단 문서 생성(generate-document) 및 피드백 로직은 기존과 완전히 동일하게 유지 ...
-
 @app.post("/api/generate-document")
 async def generate_document(request: DocumentRequest):
     try:
-        doc_data = request.model_dump()
-        template_file = "cert_of_contents.txt" if doc_data["doc_type"] == "content_proof" else "complaint.txt"
+        doc_data = request.dict()
+        doc_data['date'] = datetime.now().strftime("%Y년 %m월 %d일")
         
-        try:
-            template = doc_gen.env.get_template(template_file)
-            doc_data['date'] = datetime.now().strftime("%Y년 %m월 %d일")
-            rendered_document = template.render(doc_data)
+        # 🚀 [핵심] LLM 호출 없이 Jinja2 템플릿 엔진으로 0.1초 만에 텍스트 생성
+        rendered_document = doc_gen.generate(doc_data["doc_type"], doc_data)
+        
+        # (선택 사항) 서버에 파일로도 남기고 싶다면 아래 주석을 푸세요
+        # filename = f"{'내용증명' if doc_data['doc_type'] == 'content_proof' else '소장'}_{doc_data['receiver_name']}_{datetime.now().strftime('%Y%m%d%H%M')}.txt"
+        # with open(os.path.join(LOG_DIR, filename), "w", encoding="utf-8") as f:
+        #     f.write(rendered_document)
             
-            filename = f"{'내용증명' if doc_data['doc_type'] == 'content_proof' else '소장'}_{doc_data['receiver_name']}_{datetime.now().strftime('%Y%m%d%H%M')}.txt"
-            filepath = os.path.join(doc_gen.output_dir, filename)
-            
-            with open(filepath, "w", encoding="utf-8") as f:
-                f.write(rendered_document)
-                
-            print(f"📄 문서 생성 성공: {filename}")
-            return {"status": "success", "document_content": rendered_document}
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"템플릿 렌더링 실패: {e}")
-            
+        return {"status": "success", "document_content": rendered_document}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# ... 하단 피드백 로직 기존과 동일 ...
-LOG_DIR = "logs"
-os.makedirs(LOG_DIR, exist_ok=True)
-CASES_FILE = os.path.join(LOG_DIR, "cases_log.json")
-
-class CaseLog(BaseModel):
-    query: str
-    extracted_data: dict
-    doc_type: str
-    document_content: str
-
-class FeedbackData(BaseModel):
-    case_id: str
-    rating: int
-    comment: str
+        raise HTTPException(status_code=500, detail=f"문서 렌더링 실패: {e}")
 
 @app.post("/api/cases")
 async def save_case(case: CaseLog):
-    case_data = case.model_dump() 
+    case_data = case.dict() 
     case_data["id"] = str(uuid.uuid4())
     case_data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     case_data["rating"] = 0
