@@ -63,10 +63,12 @@ class ExpenseServiceTest {
         budgetRepository.deleteAll();
         subscriptionRepository.deleteAll();
 
-        expenseService.createManual(400000, Category.SHOPPING, "소진테스트", LocalDateTime.now());
+        int before = expenseService.getSummary("month").total();
+        expenseService.createManual(50000, Category.SHOPPING, "소진테스트", LocalDateTime.now());
+        int totalSpend = before + 50000;
 
         User user = userRepository.findById(SEED_USER_ID).orElseThrow();
-        budgetRepository.save(new Budget(user, null, 400000));
+        budgetRepository.save(new Budget(user, null, totalSpend)); // 예산을 누적지출과 정확히 같게 설정 → 남은 예산 0
 
         LocalDate actual = expenseService.predictDepletionDate();
 
