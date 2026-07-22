@@ -116,10 +116,48 @@
   font-size: 13px;
 }
 
+.sidebar-profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-profile strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .sidebar-profile span {
   display: block;
   font-size: 11px;
   color: var(--color-text-muted);
+}
+
+.sidebar-logout {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font-size: 16px;
+}
+
+.sidebar-logout:hover {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+/* 로그인 확인 중 로딩 화면 */
+.app-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  color: var(--color-text-muted);
+  font-size: 14px;
 }
 
 /* 메인 영역 */

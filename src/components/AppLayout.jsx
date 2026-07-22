@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Link, NavLink, Outlet } from 'react-router'
+import { Link, NavLink, Navigate, Outlet, useNavigate } from 'react-router'
 import logo from '../assets/logo.png'
+import { useApi, apiPost } from '../api/client'
 import './AppLayout.css'
 
 const MENU = [
@@ -10,7 +11,25 @@ const MENU = [
 ]
 
 export default function AppLayout() {
+  const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // 로그인 확인 — /app/* 전체가 이 레이아웃 아래라 여기서 한 번에 가드된다
+  const { loading, error, data } = useApi('/api/auth/me')
+
+  if (loading) return <div className="app-loading">불러오는 중…</div>
+  if (error) return <Navigate to="/login" replace />
+
+  const user = data.user
+
+  async function handleLogout() {
+    try {
+      await apiPost('/api/auth/logout')
+    } catch {
+      // 로그아웃 실패해도 화면은 로그인으로 되돌린다
+    }
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div className="app-shell">
@@ -53,10 +72,19 @@ export default function AppLayout() {
 
           <div className="sidebar-profile">
             <span className="avatar" aria-hidden="true">👤</span>
-            <div>
-              <strong>게스트</strong>
-              <span>로그인 연동 예정</span>
+            <div className="sidebar-profile-info">
+              <strong>{user.name}</strong>
+              <span>@{user.username}</span>
             </div>
+            <button
+              type="button"
+              className="sidebar-logout"
+              onClick={handleLogout}
+              aria-label="로그아웃"
+              title="로그아웃"
+            >
+              ⏻
+            </button>
           </div>
         </div>
       </aside>
