@@ -64,14 +64,20 @@ function ScheduleGrid({ slots, selectedKeys, variant, onToggle, eligibleKeys }: 
         window.clearTimeout(g.pressTimer)
         g.pressTimer = null
       }
-      if (g.dragging) {
-        document.body.style.touchAction = ''
-        document.body.style.userSelect = ''
-      }
       g.dragging = false
       document.removeEventListener('pointermove', handlers.current.onDocumentPointerMove)
       document.removeEventListener('pointerup', handlers.current.onDocumentPointerUp)
       document.removeEventListener('pointercancel', handlers.current.onDocumentPointerUp)
+      document.removeEventListener('touchmove', handlers.current.onDocumentTouchMove)
+    },
+    // claude: touch-action: pan-y라 롱프레스 확정 전(dragging=false)엔 손대지 않고 그대로 두면 브라우저가
+    // 스크롤을 100% 네이티브로 처리한다. 롱프레스가 확정된 순간엔 아직 손가락이 안 움직인 상태(가만히 있었으니
+    // 롱프레스가 됨)라 브라우저가 스크롤을 시작도 안 했고, 그래서 그 다음 첫 touchmove에서 preventDefault를
+    // 부르면 스크롤 자체가 시작되지 못하게 막을 수 있다 - scrollBy 등으로 우리가 스크롤 값을 직접 계산하는
+    // 코드가 전혀 없으므로 네이티브 스크롤과 값을 두고 다툴 일이 없다(Pointer Events의 preventDefault는 터치
+    // 기본 동작 취소에 신뢰도가 낮다고 알려져 있어, 원조 Touch Events에 별도로 등록).
+    onDocumentTouchMove(event: TouchEvent) {
+      if (gesture.current.dragging) event.preventDefault()
     },
     onDocumentPointerMove(event: PointerEvent) {
       const g = gesture.current
@@ -114,12 +120,12 @@ function ScheduleGrid({ slots, selectedKeys, variant, onToggle, eligibleKeys }: 
     document.addEventListener('pointermove', handlers.current.onDocumentPointerMove)
     document.addEventListener('pointerup', handlers.current.onDocumentPointerUp)
     document.addEventListener('pointercancel', handlers.current.onDocumentPointerUp)
+    // claude: passive: false로 등록해야 preventDefault()가 실제로 먹는다(기본값 passive면 무시됨).
+    document.addEventListener('touchmove', handlers.current.onDocumentTouchMove, { passive: false })
 
     g.pressTimer = window.setTimeout(() => {
       g.pressTimer = null
       g.dragging = true
-      document.body.style.touchAction = 'none'
-      document.body.style.userSelect = 'none'
       const eligible = !g.eligibleKeys || g.eligibleKeys.has(key)
       g.targetSelected = eligible ? !g.selectedKeys.has(key) : false
       handlers.current.applyToCell(key)
@@ -177,6 +183,10 @@ function ScheduleGrid({ slots, selectedKeys, variant, onToggle, eligibleKeys }: 
                       className={`schedule-cell${modifier ? ` schedule-cell--${modifier}` : ''}`}
                       onPointerDown={(event) => handlePointerDown(event, key)}
                       onClick={() => handleClick(slot)}
+                      // claude: CSS(user-select/-webkit-touch-callout)만으론 최신 iOS Safari 일부 버전에서
+                      // 롱프레스 콜아웃(복사/선택 팝업)이 여전히 뜨는 사례가 보고돼 있어, contextmenu 이벤트
+                      // 자체를 막는 방어선을 하나 더 둔다.
+                      onContextMenu={(event) => event.preventDefault()}
                     />
                   </td>
                 )

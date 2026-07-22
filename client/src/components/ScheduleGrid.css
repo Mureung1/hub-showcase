@@ -63,6 +63,17 @@
   background: var(--color-bg-muted);
   cursor: pointer;
   padding: 0;
+  /* claude: 롱프레스 드래그 선택과 브라우저 자체 텍스트 선택/콜아웃이 충돌하는 문제 - user-select/-webkit-touch-callout은
+     처음부터 CSS로 고정해야 한다(JS로 나중에 바꿔도 이미 시작된 터치엔 적용 안 됨).
+     claude: touch-action은 pan-y로 둔다(세로 스크롤은 항상 브라우저가 100% 네이티브로 처리 - "짧게 터치+이동=스크롤"
+     요구사항 그대로 유지). 롱프레스가 확정된 뒤(ScheduleGrid.tsx의 dragging=true)에만 네이티브 touchmove의
+     preventDefault로 그 순간의 스크롤 시도를 막는다 - JS가 scrollBy 등으로 스크롤 값을 직접 계산/흉내내지는
+     않으므로, 예전에 iOS에서 네이티브 스크롤과 우리 JS가 서로 밀고 당기며 화면이 진동하던 부작용은 재발하지 않는다
+     (코드리뷰 문서 참고 - 그 부작용은 항상 JS가 scrollBy를 부를 때만 생겼음). */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: pan-y;
 }
 
 .schedule-cell--available {

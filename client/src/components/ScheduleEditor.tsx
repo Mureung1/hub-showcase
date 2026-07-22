@@ -6,6 +6,7 @@ import { usePagedDateRange } from '../lib/usePagedDateRange.ts'
 import ScheduleGrid from './ScheduleGrid.tsx'
 import Modal from './Modal.tsx'
 import DatePaginationArrows from './DatePaginationArrows.tsx'
+import ScreenHint from './ScreenHint.tsx'
 import { useToast } from './ToastProvider.tsx'
 import './ScheduleEditor.css'
 
@@ -84,6 +85,7 @@ function ScheduleEditor({ appointmentId, candidateSlots, initialAvailable, initi
     return (
       <div className="page-stack transition-slide-up">
         <h2>만날 시간 중 특히 더 선호하는 시간대가 있으신가요?</h2>
+        <ScreenHint text="칸을 꾹 눌러서 드래그하면 여러 칸을 한 번에 선택할 수 있어요." />
         <div className="schedule-legend">
           <span className="schedule-legend__item">
             <span className="schedule-legend__swatch schedule-legend__swatch--preferred" />
@@ -161,6 +163,7 @@ function ScheduleEditor({ appointmentId, candidateSlots, initialAvailable, initi
   return (
     <div className="page-stack transition-slide-up">
       <h2>만날 시간을 먼저 선택해주세요</h2>
+      <ScreenHint text="칸을 꾹 눌러서 드래그하면 여러 칸을 한 번에 선택할 수 있어요." />
       <DatePaginationArrows canGoPrev={canGoPrev} canGoNext={canGoNext} onPrev={goPrev} onNext={goNext} />
       <ScheduleGrid slots={pageSlots} selectedKeys={availableKeys} variant="available" onToggle={toggleAvailable} />
       <button type="button" disabled={availableKeys.size === 0} onClick={() => setStep('preferred')}>
