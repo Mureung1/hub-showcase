@@ -527,16 +527,38 @@
   color: #f8fafc;
 }
 
+.editorTabs {
+  min-width: 0;
+  display: flex;
+  align-items: end;
+  gap: 4px;
+  overflow-x: auto;
+}
+
 .editorTab {
   min-height: 36px;
   display: inline-flex;
   align-items: center;
+  border: 0;
   border-radius: 8px 8px 0 0;
   padding: 0 14px;
-  background: #151a24;
-  color: #e5edf7;
+  background: #182233;
+  color: #b8c4d6;
+  cursor: pointer;
   font-size: 13px;
   font-weight: 900;
+  white-space: nowrap;
+}
+
+.editorTab[data-active='true'] {
+  background: #151a24;
+  color: #e5edf7;
+  box-shadow: inset 0 2px 0 #35c8f4;
+}
+
+.editorTab:hover,
+.editorTab:focus-visible {
+  color: #ffffff;
 }
 
 .editorActions {

@@ -77,6 +77,13 @@ type RenderPreviewModel = {
   componentName: string
 }
 
+type WorkspaceEditorFile = {
+  path: string
+  name: string
+  language: string
+  value: string
+}
+
 const defaultCareerGoal = 'DevOps 엔지니어가 되고 싶어'
 
 const reactCodeLines = [
@@ -228,6 +235,26 @@ function createQueueMission(item: TodayQueueItem): WorkspaceMission {
   }
 }
 
+function getEditorLanguage(fileName: string) {
+  const ext = fileName.toLowerCase()
+  if (ext.endsWith('.py')) return 'python'
+  if (ext.endsWith('.jsx') || ext.endsWith('.tsx')) return 'javascript'
+  if (ext.endsWith('.css')) return 'css'
+  if (ext.endsWith('.md')) return 'markdown'
+  if (ext.endsWith('.sh')) return 'shell'
+  if (ext.includes('dockerfile')) return 'dockerfile'
+  return 'javascript'
+}
+
+function getExecutionLanguage(fileName: string) {
+  const ext = fileName.toLowerCase()
+  if (ext.endsWith('.py')) return 'python'
+  if (ext.endsWith('.jsx') || ext.endsWith('.tsx')) return 'jsx'
+  if (ext.endsWith('.sh')) return 'shell'
+  if (ext.includes('dockerfile')) return 'dockerfile'
+  return 'javascript'
+}
+
 function pickCodeLines(fileName: string) {
   const normalizedFileName = fileName.toLowerCase()
 
@@ -244,6 +271,46 @@ function pickCodeLines(fileName: string) {
   }
 
   return reactCodeLines
+}
+
+function createWorkspaceEditorFiles(mission: WorkspaceMission): WorkspaceEditorFile[] {
+  const fileName = mission.fileName
+  const appCode = mission.codeLines.join('\n')
+  const files: WorkspaceEditorFile[] = [
+    {
+      path: `file:///${mission.id}/${fileName}`,
+      name: fileName,
+      language: getEditorLanguage(fileName),
+      value: appCode,
+    },
+  ]
+
+  if (/\.(jsx?|tsx?)$/i.test(fileName)) {
+    files.push({
+      path: `file:///${mission.id}/styles.css`,
+      name: 'styles.css',
+      language: 'css',
+      value: [
+        '.preview-root {',
+        '  display: grid;',
+        '  gap: 16px;',
+        '}',
+        '',
+        'button {',
+        '  font: inherit;',
+        '}',
+      ].join('\n'),
+    })
+  }
+
+  files.push({
+    path: `file:///${mission.id}/mission-notes.md`,
+    name: 'mission-notes.md',
+    language: 'markdown',
+    value: `# ${mission.title}\n\n- 실행 결과를 확인합니다.\n- 막힌 지점과 다음 질문을 기록합니다.`,
+  })
+
+  return files
 }
 
 function createTestCases(mission: WorkspaceMission, runState: RunState): TestCase[] {
@@ -430,8 +497,14 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
   )
   const finalStep = isFinalStep(activeStepOffset, totalSteps)
   const progressPercent = missionCompleted ? 100 : Math.round((currentStepIndex / totalSteps) * 100)
-  const activeGeneratedStep = resolveActiveGeneratedStep(generatedPlan, activeStepOffset)
-  const activeMission = createActiveMissionPresentation(mission, activeGeneratedStep)
+  const activeGeneratedStep = useMemo(
+    () => resolveActiveGeneratedStep(generatedPlan, activeStepOffset),
+    [activeStepOffset, generatedPlan],
+  )
+  const activeMission = useMemo(
+    () => createActiveMissionPresentation(mission, activeGeneratedStep),
+    [activeGeneratedStep, mission],
+  )
   const testCases = useMemo(() => createTestCases(mission, runState), [mission, runState])
   const passedCount = testCases.filter((item) => item.state === 'passed').length
   const failedCount = testCases.filter((item) => item.state === 'failed').length
@@ -447,17 +520,52 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
     { label: '예상 기간', value: generatedPlan.estimatedDuration },
   ]
 
-  const [code, setCode] = useState(() => activeMission.codeLines.join('\\n'))
+  const [editorFiles, setEditorFiles] = useState<WorkspaceEditorFile[]>(() => createWorkspaceEditorFiles(activeMission))
+  const [activeFilePath, setActiveFilePath] = useState(() => createWorkspaceEditorFiles(activeMission)[0]?.path ?? '')
   const [runPreview, setRunPreview] = useState<CodeRunPreviewState>(() => createInitialRunPreviewState())
 
   useEffect(() => {
-    setCode(activeMission.codeLines.join('\\n'))
+    const nextFiles = createWorkspaceEditorFiles(activeMission)
+    setEditorFiles(nextFiles)
+    setActiveFilePath(nextFiles[0]?.path ?? '')
     setRunPreview(createInitialRunPreviewState())
-  }, [activeMission.id, activeMission.codeLines])
+    setPreviewCode(nextFiles.find((file) => /\.(jsx?|tsx?)$/i.test(file.name))?.value ?? nextFiles[0]?.value ?? '')
+  }, [activeMission])
+
+  const activeFile = editorFiles.find((file) => file.path === activeFilePath) ?? editorFiles[0]
+  const runnableFile = editorFiles.find((file) => /\.(jsx?|tsx?)$/i.test(file.name)) ?? activeFile
+  const code = activeFile?.value ?? ''
+  const runnableCode = runnableFile?.value ?? code
+  const [previewCode, setPreviewCode] = useState(runnableCode)
+
+  function updateActiveFile(value: string) {
+    if (!activeFile) {
+      return
+    }
+
+    setEditorFiles((currentFiles) =>
+      currentFiles.map((file) => (file.path === activeFile.path ? { ...file, value } : file)),
+    )
+  }
+
+  function resetActiveFile() {
+    if (!activeFile) {
+      return
+    }
+
+    const initialFile = createWorkspaceEditorFiles(activeMission).find((file) => file.path === activeFile.path)
+    if (!initialFile) {
+      return
+    }
+
+    setEditorFiles((currentFiles) =>
+      currentFiles.map((file) => (file.path === activeFile.path ? { ...file, value: initialFile.value } : file)),
+    )
+  }
 
   const renderPreview = useMemo(
-    () => createRenderPreviewModel(code, activeMission.fileName),
-    [activeMission.fileName, code],
+    () => createRenderPreviewModel(previewCode, runnableFile?.name ?? activeMission.fileName),
+    [activeMission.fileName, previewCode, runnableFile?.name],
   )
 
   const consoleLines = runPreview.logs.length > 0
@@ -466,14 +574,6 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
       ? ['실행하면 console.log 출력이 여기에 표시됩니다.']
       : ['출력 없이 실행이 끝났습니다.']
 
-  function getLanguage(fileName: string) {
-    const ext = fileName.toLowerCase()
-    if (ext.endsWith('.py')) return 'python'
-    if (ext.endsWith('.jsx') || ext.endsWith('.tsx')) return 'jsx'
-    if (ext.endsWith('.sh')) return 'shell'
-    if (ext.includes('dockerfile')) return 'dockerfile'
-    return 'javascript'
-  }
 
   useEffect(() => {
     return () => {
@@ -548,14 +648,15 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
     }
 
     setRunState('running')
+    setPreviewCode(runnableCode)
     setRunPreview({ status: 'running', logs: ['코드를 실행하고 있습니다...'] })
     setMissionCompleted(false)
     setReviewVisible(false)
     const runLog = addActivity('테스트 실행', `${activeMission.fileName} 기준으로 백엔드에 코드를 전송하여 실행합니다.`)
 
     try {
-      const language = getLanguage(activeMission.fileName)
-      const res = await executeCode(code, language)
+      const language = getExecutionLanguage(runnableFile?.name ?? activeMission.fileName)
+      const res = await executeCode(runnableCode, language)
       const nextState = res.success ? 'passed' : 'failed'
       const detailMsg = res.success
         ? `실행이 성공했습니다. (출력: ${res.logs.length}줄)`
@@ -858,7 +959,21 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
 
         <section className={styles.editorPanel} aria-label="코드 에디터와 실행 결과">
           <div className={styles.editorToolbar}>
-            <div className={styles.editorTab}>{activeMission.fileName}</div>
+            <div className={styles.editorTabs} role="tablist" aria-label="열린 파일">
+              {editorFiles.map((file) => (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={file.path === activeFile?.path}
+                  className={styles.editorTab}
+                  data-active={file.path === activeFile?.path}
+                  key={file.path}
+                  onClick={() => setActiveFilePath(file.path)}
+                >
+                  {file.name}
+                </button>
+              ))}
+            </div>
             <div className={styles.editorActions}>
               <span className={styles.languageBadge}>{activeMission.stepLabel}</span>
               <button
@@ -875,11 +990,15 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
             <div className={styles.codeBlock} aria-label={`${activeMission.fileName} 코드`}>
               <Editor
                 height="100%"
-                path={activeMission.fileName}
-                defaultLanguage={getLanguage(activeMission.fileName)}
-                defaultValue={activeMission.codeLines.join('\n')}
+                path={activeFile?.path}
+                defaultPath={activeFile?.path}
+                defaultLanguage={activeFile?.language}
+                defaultValue={activeFile?.value}
+                language={activeFile?.language}
+                value={activeFile?.value ?? ''}
+                saveViewState
                 theme="vs-dark"
-                onChange={(value) => setCode(value || '')}
+                onChange={(value) => updateActiveFile(value || '')}
                 options={{
                   minimap: { enabled: false },
                   fontSize: 13,
@@ -893,11 +1012,11 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
               <div className={styles.previewToolbar}>
                 <div>
                   <span>Preview</span>
-                  <strong>{renderPreview.componentName}</strong>
+                  <strong>{runnableFile?.name ?? renderPreview.componentName}</strong>
                 </div>
                 <div className={styles.previewActions} aria-label="미리보기 동작">
                   <button type="button" onClick={handleRun} disabled={runState === 'running'}>새로고침</button>
-                  <button type="button" onClick={() => setCode(activeMission.codeLines.join('\n'))}>초기화</button>
+                  <button type="button" onClick={resetActiveFile}>초기화</button>
                 </div>
               </div>
               <div className={styles.previewViewport} data-state={runPreview.status}>
@@ -905,7 +1024,7 @@ function LearningWorkspaceView({ generatedPlan, hasSavedGeneratedPlan, mission }
                   <iframe
                     className={styles.previewIframe}
                     sandbox="allow-scripts"
-                    srcDoc={getIframeSrcDoc(code, renderPreview.componentName)}
+                    srcDoc={getIframeSrcDoc(previewCode, renderPreview.componentName)}
                     title="React Preview"
                   />
                 ) : (
