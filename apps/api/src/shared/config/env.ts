@@ -59,10 +59,14 @@ const envSchema = z.object({
   /** 활성 정규화기 버전 (초기엔 v1 하나) */
   ANSWER_NORMALIZER_VERSION: z.string().min(1).default("v1"),
 
-  /** Provider별 모델 (교체·재현성을 위해 설정으로 뺀다. 저장 레코드에 스탬프) */
-  CLAUDE_MODEL: z.string().min(1).default("claude-opus-4-8"),
-  OPENAI_MODEL: z.string().min(1).default("gpt-5"),
-  GEMINI_MODEL: z.string().min(1).default("gemini-3.5-flash"),
+  /**
+   * Provider별 모델 (교체·재현성을 위해 설정으로 뺀다. 저장 레코드에 스탬프).
+   * 기본값은 각 provider의 **최소(최저가) 티어** — 비용을 억제하고 45초 예산 안에 들어온다.
+   * 더 큰 모델이 필요하면 env로 override 한다.
+   */
+  CLAUDE_MODEL: z.string().min(1).default("claude-haiku-4-5"),
+  OPENAI_MODEL: z.string().min(1).default("gpt-5-nano"),
+  GEMINI_MODEL: z.string().min(1).default("gemini-3.5-flash-lite"),
 })
   .superRefine((value, ctx) => {
     // 7.2: 플래그 ON이면 앱 기본 키 3종이 있어야 한다. 키 "값"은 메시지에 넣지 않는다.

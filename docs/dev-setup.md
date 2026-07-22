@@ -518,6 +518,55 @@ supabase db push --db-url "$SUPABASE_DB_URL" --yes   # apps/api/.env 의 값 사
 - [x] Express는 검증 JWT의 userId만 사용, 클라이언트 전달 userId 무시
 - [x] 2명 교차 차단 실측(본인 것만 조회, 타인 0건 — chats·questions·user_provider_keys 양방향)
 
+### AI Provider 실호출 (SPEC-AI-001)
+
+**추가 API 서버 env (apps/api/.env — 커밋 금지):**
+
+```env
+# 앱 기본 AI 키 (7.4). 아래 플래그가 ON이면 서버 시작 시 3개 모두 필수.
+ANTHROPIC_API_KEY=<anthropic-api-key>
+OPENAI_API_KEY=<openai-api-key>
+GEMINI_API_KEY=<gemini-api-key>
+
+# 사용자 키가 없을 때 앱 기본 키를 쓸지 (7.2). "true" | "false", 미지정 시 true
+APP_DEFAULT_AI_KEYS_ENABLED=true
+
+# 활성 구현·버전 선택 (2.3). 아래 3개는 모두 선택값이며 기본값이 있다.
+ANSWER_PROMPT_VERSION=v1                 # /prompts/answer/<provider>/<버전>.md 를 고른다
+ANSWER_NORMALIZER_VERSION=v1             # 활성 정규화기 버전(초기엔 v1 하나)
+ANSWER_PROMPTS_DIR=/abs/path/to/prompts  # 기본값 = 저장소 루트 /prompts (dev·dist 모두 해석)
+
+# Provider별 모델 (선택). 기본값은 각 provider 최소(최저가) 티어
+CLAUDE_MODEL=claude-haiku-4-5
+OPENAI_MODEL=gpt-5-nano
+GEMINI_MODEL=gemini-3.5-flash-lite
+```
+
+> 위 값은 **형식 예시**다. 실제 키는 각 provider 콘솔에서 발급해 로컬 `.env`에만 두고 커밋하지 않는다.
+
+- **BYOK 해석 순서(7.1)**: `user_provider_keys`의 사용자 키 → 없으면 앱 기본 키(플래그 ON) → 둘 다 없으면 "사용 가능한 키 없음".
+- **사전 점검(7.3)**: 생성 시작 요청 초입에서 3사 키를 확인하고, 하나라도 없으면 **아무것도 저장하지 않고** `400 NO_AVAILABLE_KEYS`(없는 provider를 안내)로 거절한다.
+- **플래그 OFF로 두면** 앱 기본 키를 쓰지 않으므로 3개 키 env는 필수가 아니다(사용자 키가 있는 provider만 동작).
+- **프롬프트는 코드가 아니라 텍스트**다. `/prompts/answer/{claude,openai,gemini}/v1.md`를 런타임에 읽으므로 문구만 고치면 **재빌드 없이** 반영된다(서버 재기동은 필요 — 프로세스 내 캐시).
+- 사용한 프롬프트 버전·모델은 `source_answers.prompt_version`·`model`에 스탬프되어 재현성을 남긴다.
+- Provider 호출 타임아웃은 45초 고정(Spec 3-①)이므로, 큰 모델로 override 하면 타임아웃이 늘어날 수 있다.
+
+**엔드포인트 (SPEC-AI-001 4장):**
+
+```bash
+# 생성 시작 — 응답 자체가 SSE 스트림(EventSource 대신 fetch ReadableStream으로 소비)
+curl -N -X POST "$API/api/chats/<chatId>/questions/<questionId>/source-answers" \
+  -H "Authorization: Bearer <access-token>" -H "Content-Type: application/json" \
+  -d '{"context": null}'
+
+# 새로고침 복원 스냅샷
+curl "$API/api/chats/<chatId>/questions/<questionId>/source-answers" \
+  -H "Authorization: Bearer <access-token>"
+```
+
+- SSE 이벤트는 `{"type":"source_answer.updated", provider, status, errorCode}`와 종료 `{"type":"done", sourceAnswers}` 두 가지다(`packages/shared`의 `SourceAnswerEventSchema`).
+- 사전 점검 실패·소유권 실패는 **스트림을 열기 전에** 일반 에러 봉투로 응답한다.
+
 ---
 
 ## 10. Git 제외 대상

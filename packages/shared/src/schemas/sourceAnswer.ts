@@ -90,3 +90,28 @@ export const SourceAnswerSchema = z
     }
   });
 export type SourceAnswer = z.infer<typeof SourceAnswerSchema>;
+
+/**
+ * SPEC-AI-001 4장 — SourceAnswer 생성 진행 SSE 이벤트.
+ * POST .../source-answers 응답 자체를 스트림으로 열고 web은 fetch ReadableStream으로
+ * 소비한다(EventSource는 커스텀 헤더 불가·GET 전용이라 토큰을 URL에 실어야 하므로 쓰지 않는다).
+ * api가 생성하고 web(T-016.3)이 같은 스키마로 파싱하는 공유 계약이다.
+ */
+export const SourceAnswerUpdatedEventSchema = z.object({
+  type: z.literal("source_answer.updated"),
+  provider: AiProviderSchema,
+  status: SourceAnswerStatusSchema,
+  errorCode: ErrorCodeSchema.nullable(),
+});
+
+/** 종료 이벤트. 최종 스냅샷을 함께 실어 web이 별도 GET 없이 카드를 렌더한다. */
+export const SourceAnswerDoneEventSchema = z.object({
+  type: z.literal("done"),
+  sourceAnswers: z.array(SourceAnswerSchema),
+});
+
+export const SourceAnswerEventSchema = z.discriminatedUnion("type", [
+  SourceAnswerUpdatedEventSchema,
+  SourceAnswerDoneEventSchema,
+]);
+export type SourceAnswerEvent = z.infer<typeof SourceAnswerEventSchema>;

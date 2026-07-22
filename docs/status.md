@@ -275,5 +275,16 @@
   - **모델 기본값**: `CLAUDE_MODEL=claude-opus-4-8`, `OPENAI_MODEL=gpt-5`, `GEMINI_MODEL=gemini-3.5-flash`(2.5-flash는 신규 사용자 지원 종료). Claude가 45초 예산에 근접(39초)해 프롬프트에 분량 제약(섹션 3~5개)을 넣어 23초로 낮춤
   - **남은 문제**: 새 env 6종(`ANTHROPIC_API_KEY`·`OPENAI_API_KEY`·`GEMINI_API_KEY`·`APP_DEFAULT_AI_KEYS_ENABLED`·프롬프트/모델 선택키)이 `docs/dev-setup.md`에 아직 없음. 실측용 테스트 Chat 2건이 DB에 남아 있음(미완료 Question 포함 → 해당 Chat에서만 새 질문 차단)
   - **다음**: T-016.2b — SSE 전환 + `GET .../source-answers` 복원 엔드포인트
+- **T-016.2b 완료 (2026-07-22)** — SPEC-AI-001 source-answers SSE 전환 + GET 복원. web 재배선은 T-016.3
+  - **이벤트 계약**: `packages/shared`에 `SourceAnswerEventSchema`(discriminated union) — `{type:"source_answer.updated", provider, status, errorCode}` / `{type:"done", sourceAnswers}`. status·errorCode는 기존 enum 재사용. done에 최종 스냅샷을 실어 web이 별도 GET 없이 렌더한다
+  - **POST → SSE**: 응답 자체를 `text/event-stream`으로 열고(EventSource 대신 fetch ReadableStream 전제, §4 구현 노트) 시작 직후 3사 `pending`을 1회씩, 이후 `processing`→`succeeded`/`failed` 전이를 push, 종료 시 `done`. 프록시 버퍼링 방지 헤더 포함
+  - **게이트 분리**: Service를 `prepareGeneration`(소유권·사전 키 점검, 저장 0건)과 `runGeneration`(호출·저장)으로 나눠, 사전 점검 실패(`NO_AVAILABLE_KEYS`)·소유권 실패(404)는 **스트림을 열기 전에** 일반 에러 봉투로 응답한다
+  - **GET 복원**: `GET .../source-answers`(requireAuth, userClient/RLS) — 새로고침 복원 전용 스냅샷
+  - **최소 티어 모델로 교체**: `claude-haiku-4-5` · `gpt-5-nano` · `gemini-3.5-flash-lite`. 각 provider API로 유효성 실호출 확인 후 확정(env override 유지). 프롬프트 분량 제약은 유지
+  - **검증**: 루트 `typecheck`·`lint`·`build` 통과. `curl -N` SSE 실측 — pending×3 → processing×3 → gemini 5.9s / claude 15.6s / openai 27.6s succeeded → done(n=3). **3사 전원 성공**(2a에서 막혔던 OpenAI 포함). psql로 model·prompt_version·sections·summary·response_meta 확인. GET 복원 3건 일치, 미소유 404(POST/GET 모두, 스트림 미개시), 무토큰 401, 플래그 OFF에서 `NO_AVAILABLE_KEYS` 400
+  - **테스트 데이터 정리**: 2a 실측 Chat 2건 삭제(`931e07fa…`=3사 전멸·미완료 Question 포함, `86a5e2aa…`=부분 실패). CASCADE로 Question 2건·SourceAnswer 6건 함께 제거. 2b 실측 Chat 1건(`83a6263d…`, 미완료 Question 1)은 지시 범위 밖이라 유지
+  - **문서**: `docs/dev-setup.md`에 AI Provider 실호출 절 추가(env 7종 형식 예시·BYOK 해석·프롬프트 텍스트 교체·엔드포인트 curl). 실제 키는 미기재
+  - **남은 문제**: 스트림 도중 치명 오류 전용 이벤트는 MVP 생략(좌초 복구 범위) — 현재는 서버 로그만 남기고 스트림을 닫는다. SSE heartbeat 없음(45초×재시도로 최대 ~90초 무음 구간 가능)
+  - **다음**: T-016.3 — web 재배선(Mock SourceAnswer 생성 중단 → fetch ReadableStream 구독·복원)
 - 이후: SPEC-AI-001~003(Provider·Manager·FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

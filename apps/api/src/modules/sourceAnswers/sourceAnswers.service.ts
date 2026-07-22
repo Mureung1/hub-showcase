@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { AiProvider, SourceAnswer } from "@decision-log/shared";
+import type { AiProvider, ErrorCode, SourceAnswer } from "@decision-log/shared";
 
 import { AppError } from "../../shared/http/appError.js";
 import { getAdminClient } from "../../shared/supabase/adminClient.js";
@@ -26,25 +26,30 @@ import * as repo from "./sourceAnswers.repository.js";
 /** 재시도 상한 — 첫 실패 시 1회만(domain-policy 2.3, CHECK(retry_count BETWEEN 0 AND 1)). */
 const MAX_RETRY_COUNT = 1;
 
-export interface StartGenerationInput {
+/** provider별 상태 변화 알림. 전달 방식(SSE·동기)과 무관하게 콜백으로만 노출한다. */
+export type OnUpdate = (event: {
+  provider: AiProvider;
+  status: "processing" | "succeeded" | "failed";
+  errorCode: ErrorCode | null;
+}) => void;
+
+export interface PreparedGeneration {
+  question: { id: string; message: string };
+  keys: Map<AiProvider, string>;
+}
+
+/**
+ * 생성 시작 전 게이트 (§3 2·3단계).
+ * 소유권 검증과 사전 키 점검만 수행하고 **어떤 저장도 하지 않는다**.
+ * 실패는 AppError로 던져 호출부가 스트림을 열기 전에 에러 봉투로 응답할 수 있게 한다(§4).
+ */
+export async function prepareGeneration(input: {
   userClient: SupabaseClient;
   userId: string;
   chatId: string;
   questionId: string;
-  /** 9장: 이번 슬라이스에서는 web이 실어 보낸다. 프롬프트 재료로만 쓰고 인가에 쓰지 않는다. */
-  context: string | null;
-  /** provider별 상태 변화 알림(선택). 2b에서 SSE 푸시로 연결한다. */
-  onUpdate?: (event: {
-    provider: AiProvider;
-    status: "processing" | "succeeded" | "failed";
-    errorCode?: string;
-  }) => void;
-}
-
-export async function startGeneration(
-  input: StartGenerationInput,
-): Promise<SourceAnswer[]> {
-  const { userClient, userId, chatId, questionId, context, onUpdate } = input;
+}): Promise<PreparedGeneration> {
+  const { userClient, userId, chatId, questionId } = input;
 
   // 1) 소유권 검증 — RLS로 안 보이면 남의 것이거나 없는 것. 정보는 은닉한다.
   const question = await repo.findOwnedQuestion(userClient, chatId, questionId);
@@ -65,6 +70,26 @@ export async function startGeneration(
       `사용 가능한 AI 키가 없습니다: ${missing.join(", ")}`,
     );
   }
+
+  return { question, keys };
+}
+
+export interface RunGenerationInput extends PreparedGeneration {
+  userClient: SupabaseClient;
+  questionId: string;
+  /** 9장: 이번 슬라이스에서는 web이 실어 보낸다. 프롬프트 재료로만 쓰고 인가에 쓰지 않는다. */
+  context: string | null;
+  onUpdate?: OnUpdate;
+}
+
+/**
+ * 3사 호출·정규화·저장 (§3 4~6단계).
+ * prepareGeneration을 이미 통과한 요청만 들어온다.
+ */
+export async function runGeneration(
+  input: RunGenerationInput,
+): Promise<SourceAnswer[]> {
+  const { userClient, questionId, question, keys, context, onUpdate } = input;
 
   const promptTemplate = createFilePromptTemplate();
   const normalizer = createJsonNormalizer();
@@ -132,7 +157,7 @@ interface RunProviderInput {
   context: string | null;
   promptTemplate: ReturnType<typeof createFilePromptTemplate>;
   normalizer: ReturnType<typeof createJsonNormalizer>;
-  onUpdate: StartGenerationInput["onUpdate"];
+  onUpdate: OnUpdate | undefined;
 }
 
 /**
@@ -162,7 +187,7 @@ async function runProvider(input: RunProviderInput): Promise<void> {
 
   for (let attempt = 0; attempt <= MAX_RETRY_COUNT; attempt += 1) {
     await repo.markProcessing(adminClient, rowId, { retryCount: attempt });
-    onUpdate?.({ provider, status: "processing" });
+    onUpdate?.({ provider, status: "processing", errorCode: null });
 
     const startedAt = Date.now();
     try {
@@ -181,7 +206,7 @@ async function runProvider(input: RunProviderInput): Promise<void> {
           latencyMs: Date.now() - startedAt,
         },
       });
-      onUpdate?.({ provider, status: "succeeded" });
+      onUpdate?.({ provider, status: "succeeded", errorCode: null });
       return;
     } catch (error) {
       const failure =

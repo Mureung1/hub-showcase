@@ -8,7 +8,10 @@ import {
   getChats,
   getQuestions,
 } from "./chats.controller.js";
-import { postSourceAnswers } from "../sourceAnswers/sourceAnswers.controller.js";
+import {
+  getSourceAnswers,
+  postSourceAnswers,
+} from "../sourceAnswers/sourceAnswers.controller.js";
 
 /**
  * Chat·Question 라우트 (SPEC-DB-001 5장). 전부 requireAuth(JWT 검증) 뒤에 둔다.
@@ -23,8 +26,12 @@ chatsRouter.get("/:chatId/questions", getQuestions);
 chatsRouter.post("/:chatId/questions", postQuestion);
 chatsRouter.patch("/:chatId/questions/:questionId", patchQuestion);
 
-// SPEC-AI-001 4장 — SourceAnswer 생성 시작(동기 실증. 2b에서 SSE로 전환)
+// SPEC-AI-001 4장 — 생성 시작(SSE 스트림) / 새로고침 복원 스냅샷
 chatsRouter.post(
   "/:chatId/questions/:questionId/source-answers",
   postSourceAnswers,
+);
+chatsRouter.get(
+  "/:chatId/questions/:questionId/source-answers",
+  getSourceAnswers,
 );
