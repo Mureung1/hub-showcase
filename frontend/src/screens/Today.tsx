@@ -13,6 +13,7 @@ type TodayProps = {
   selectedArticleId?: string | null
   onSelectArticle?: (articleId: string) => void
   onOpenArticle?: (articleId: string) => void
+  onGoToMyGgaem?: () => void
 }
 
 function formatToday(date: Date): string {
@@ -27,6 +28,7 @@ export default function Today({
   selectedArticleId = null,
   onSelectArticle = () => {},
   onOpenArticle = () => {},
+  onGoToMyGgaem = () => {},
 }: TodayProps) {
   const today = formatToday(new Date())
 
@@ -97,8 +99,7 @@ export default function Today({
             <BookIcon />
             오늘의 글
           </button>
-          {/* 나의 깸 화면은 아직 없다. 만들면 disabled를 뺀다. */}
-          <button type="button" className="bottom-tab" disabled>
+          <button type="button" className="bottom-tab" onClick={() => onGoToMyGgaem()}>
             <LogIcon />
             나의 깸
           </button>
