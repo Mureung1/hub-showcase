@@ -1,19 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, test } from 'vitest'
 
-import App from '../../App.jsx'
-import { TeamFlowProvider } from '../../state/TeamFlowProvider.jsx'
+import { renderAuthenticatedApp as renderApp } from '../../test/renderTeamFlowApp.jsx'
 import { ProjectCard } from './components/ProjectCard.jsx'
-
-function renderApp(initialEntry = '/projects') {
-  return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <TeamFlowProvider><App /></TeamFlowProvider>
-    </MemoryRouter>,
-  )
-}
 
 describe('project overview', () => {
   test('redirects the root route and derives every project summary', async () => {

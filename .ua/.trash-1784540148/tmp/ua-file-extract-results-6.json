@@ -1,0 +1,57 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 1,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 1,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 0,
+      "failed": 0,
+      "skipped": 1
+    }
+  },
+  "results": [
+    {
+      "path": "supabase/migrations/20260720030115_create_tasks.sql",
+      "language": "sql",
+      "fileCategory": "data",
+      "totalLines": 25,
+      "nonEmptyLines": 22,
+      "definitions": [
+        {
+          "name": "public",
+          "kind": "table",
+          "fields": [
+            "id",
+            "project_id",
+            "title",
+            "assignee_id",
+            "due_date",
+            "status",
+            "description",
+            "created_at"
+          ],
+          "startLine": 1,
+          "endLine": 16
+        },
+        {
+          "name": "tasks_project_created_at_idx",
+          "kind": "index",
+          "fields": [],
+          "startLine": 18,
+          "endLine": 18
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 2
+      }
+    }
+  ]
+}

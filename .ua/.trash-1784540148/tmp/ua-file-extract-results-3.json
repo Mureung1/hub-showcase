@@ -1,0 +1,1412 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 10,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 10,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 10,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "apps/web/src/components/ui/Avatar.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 15,
+      "nonEmptyLines": 13,
+      "functions": [
+        {
+          "name": "Avatar",
+          "startLine": 5,
+          "endLine": 15,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "Avatar",
+          "line": 5,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 94,
+      "nonEmptyLines": 86,
+      "functions": [
+        {
+          "name": "ProjectDashboardPage",
+          "startLine": 22,
+          "endLine": 90,
+          "params": []
+        },
+        {
+          "name": "DashboardPanel",
+          "startLine": 92,
+          "endLine": 94,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ProjectDashboardPage",
+          "line": 22,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "useOutletContext",
+          "lineNumber": 23
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "useTeamFlow",
+          "lineNumber": 24
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "useNavigate",
+          "lineNumber": 25
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "useState",
+          "lineNumber": 26
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "useState",
+          "lineNumber": 27
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "useState",
+          "lineNumber": 28
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "selectProjectTasks",
+          "lineNumber": 29
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "selectProjectMembers",
+          "lineNumber": 30
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "state.notes.filter",
+          "lineNumber": 31
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "state.resources.filter",
+          "lineNumber": 32
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "useMemo",
+          "lineNumber": 33
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "[...tasks].sort",
+          "lineNumber": 33
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "useMemo",
+          "lineNumber": 34
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "tasks\n    .filter((task) => task.status !== TASK_STATUS.COMPLETED)\n    .sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.title.localeCompare(b.title, 'ko'))\n    .slice",
+          "lineNumber": 34
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "tasks\n    .filter((task) => task.status !== TASK_STATUS.COMPLETED)\n    .sort",
+          "lineNumber": 34
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "tasks\n    .filter",
+          "lineNumber": 34
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "a.dueDate.localeCompare",
+          "lineNumber": 36
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "a.title.localeCompare",
+          "lineNumber": 36
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "useMemo",
+          "lineNumber": 38
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "[...notes]\n    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))\n    .slice",
+          "lineNumber": 38
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "[...notes]\n    .sort",
+          "lineNumber": 38
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "b.updatedAt.localeCompare",
+          "lineNumber": 39
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "tasks.filter",
+          "lineNumber": 41
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "calculateProgress",
+          "lineNumber": 42
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "tasks.filter",
+          "lineNumber": 44
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "tasks.filter",
+          "lineNumber": 45
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "tasks.filter",
+          "lineNumber": 46
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "state.members.map",
+          "lineNumber": 48
+        },
+        {
+          "caller": "toggle",
+          "callee": "setPanels",
+          "lineNumber": 49
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "setPeriodOpen",
+          "lineNumber": 55
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "formatPeriod",
+          "lineNumber": 55
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "setExpandedTasks",
+          "lineNumber": 60
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "orderedTasks.map",
+          "lineNumber": 61
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "openTaskDetail",
+          "lineNumber": 61
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "formatShortDate",
+          "lineNumber": 61
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "navigate",
+          "lineNumber": 66
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "dashboardTasks.map",
+          "lineNumber": 70
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "memberById.get",
+          "lineNumber": 70
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "openTaskDetail",
+          "lineNumber": 70
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "event.preventDefault",
+          "lineNumber": 70
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "openTaskDetail",
+          "lineNumber": 70
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "formatShortDate",
+          "lineNumber": 70
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "navigate",
+          "lineNumber": 74
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "toggle",
+          "lineNumber": 79
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "members.map",
+          "lineNumber": 80
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "navigate",
+          "lineNumber": 80
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "toggle",
+          "lineNumber": 82
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "recentNotes.map",
+          "lineNumber": 82
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "navigate",
+          "lineNumber": 82
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "encodeURIComponent",
+          "lineNumber": 82
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "formatShortDate",
+          "lineNumber": 82
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "navigate",
+          "lineNumber": 82
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "toggle",
+          "lineNumber": 83
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "resources.slice(0, 3).map",
+          "lineNumber": 83
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "resources.slice",
+          "lineNumber": 83
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "formatShortDate",
+          "lineNumber": 83
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "navigate",
+          "lineNumber": 83
+        },
+        {
+          "caller": "ProjectDashboardPage",
+          "callee": "setPeriodOpen",
+          "lineNumber": 87
+        }
+      ],
+      "metrics": {
+        "importCount": 9,
+        "exportCount": 1,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 66,
+      "nonEmptyLines": 60,
+      "functions": [
+        {
+          "name": "ProjectPeriodModal",
+          "startLine": 7,
+          "endLine": 66,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ProjectPeriodModal",
+          "line": 7,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "ProjectPeriodModal",
+          "callee": "useTeamFlow",
+          "lineNumber": 8
+        },
+        {
+          "caller": "ProjectPeriodModal",
+          "callee": "useState",
+          "lineNumber": 9
+        },
+        {
+          "caller": "ProjectPeriodModal",
+          "callee": "useState",
+          "lineNumber": 10
+        },
+        {
+          "caller": "ProjectPeriodModal",
+          "callee": "useState",
+          "lineNumber": 11
+        },
+        {
+          "caller": "change",
+          "callee": "setValues",
+          "lineNumber": 14
+        },
+        {
+          "caller": "change",
+          "callee": "setError",
+          "lineNumber": 15
+        },
+        {
+          "caller": "submit",
+          "callee": "event.preventDefault",
+          "lineNumber": 19
+        },
+        {
+          "caller": "submit",
+          "callee": "setError",
+          "lineNumber": 21
+        },
+        {
+          "caller": "submit",
+          "callee": "setError",
+          "lineNumber": 25
+        },
+        {
+          "caller": "submit",
+          "callee": "setSaving",
+          "lineNumber": 29
+        },
+        {
+          "caller": "submit",
+          "callee": "actions.updateProject",
+          "lineNumber": 31
+        },
+        {
+          "caller": "submit",
+          "callee": "onClose",
+          "lineNumber": 32
+        },
+        {
+          "caller": "submit",
+          "callee": "setSaving",
+          "lineNumber": 34
+        },
+        {
+          "caller": "submit",
+          "callee": "setError",
+          "lineNumber": 35
+        },
+        {
+          "caller": "ProjectPeriodModal",
+          "callee": "change",
+          "lineNumber": 54
+        },
+        {
+          "caller": "ProjectPeriodModal",
+          "callee": "Boolean",
+          "lineNumber": 54
+        },
+        {
+          "caller": "ProjectPeriodModal",
+          "callee": "change",
+          "lineNumber": 58
+        },
+        {
+          "caller": "ProjectPeriodModal",
+          "callee": "Boolean",
+          "lineNumber": 58
+        }
+      ],
+      "metrics": {
+        "importCount": 3,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/members/AddMemberModal.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 36,
+      "nonEmptyLines": 31,
+      "functions": [
+        {
+          "name": "AddMemberModal",
+          "startLine": 9,
+          "endLine": 36,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "AddMemberModal",
+          "line": 9,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "AddMemberModal",
+          "callee": "useTeamFlow",
+          "lineNumber": 10
+        },
+        {
+          "caller": "AddMemberModal",
+          "callee": "useState",
+          "lineNumber": 11
+        },
+        {
+          "caller": "AddMemberModal",
+          "callee": "useState",
+          "lineNumber": 12
+        },
+        {
+          "caller": "set",
+          "callee": "setValues",
+          "lineNumber": 13
+        },
+        {
+          "caller": "set",
+          "callee": "setErrors",
+          "lineNumber": 13
+        },
+        {
+          "caller": "submit",
+          "callee": "event.preventDefault",
+          "lineNumber": 16
+        },
+        {
+          "caller": "submit",
+          "callee": "values.name.trim",
+          "lineNumber": 18
+        },
+        {
+          "caller": "submit",
+          "callee": "values.role.trim",
+          "lineNumber": 19
+        },
+        {
+          "caller": "submit",
+          "callee": "Object.keys",
+          "lineNumber": 20
+        },
+        {
+          "caller": "submit",
+          "callee": "setErrors",
+          "lineNumber": 20
+        },
+        {
+          "caller": "submit",
+          "callee": "actions.addMember",
+          "lineNumber": 21
+        },
+        {
+          "caller": "submit",
+          "callee": "values.name.trim",
+          "lineNumber": 22
+        },
+        {
+          "caller": "submit",
+          "callee": "values.name.trim().slice",
+          "lineNumber": 22
+        },
+        {
+          "caller": "submit",
+          "callee": "values.name.trim",
+          "lineNumber": 22
+        },
+        {
+          "caller": "submit",
+          "callee": "values.role.trim",
+          "lineNumber": 22
+        },
+        {
+          "caller": "submit",
+          "callee": "values.description.trim",
+          "lineNumber": 22
+        },
+        {
+          "caller": "submit",
+          "callee": "state.members.filter",
+          "lineNumber": 22
+        },
+        {
+          "caller": "submit",
+          "callee": "onClose",
+          "lineNumber": 24
+        },
+        {
+          "caller": "AddMemberModal",
+          "callee": "values.name.trim",
+          "lineNumber": 28
+        },
+        {
+          "caller": "AddMemberModal",
+          "callee": "values.role.trim",
+          "lineNumber": 28
+        },
+        {
+          "caller": "AddMemberModal",
+          "callee": "set",
+          "lineNumber": 30
+        },
+        {
+          "caller": "AddMemberModal",
+          "callee": "Boolean",
+          "lineNumber": 30
+        },
+        {
+          "caller": "AddMemberModal",
+          "callee": "set",
+          "lineNumber": 31
+        },
+        {
+          "caller": "AddMemberModal",
+          "callee": "Boolean",
+          "lineNumber": 31
+        },
+        {
+          "caller": "AddMemberModal",
+          "callee": "set",
+          "lineNumber": 32
+        }
+      ],
+      "metrics": {
+        "importCount": 3,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/members/MembersPage.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 48,
+      "nonEmptyLines": 44,
+      "functions": [
+        {
+          "name": "MembersPage",
+          "startLine": 13,
+          "endLine": 48,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "MembersPage",
+          "line": 13,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "MembersPage",
+          "callee": "useParams",
+          "lineNumber": 14
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "useTeamFlow",
+          "lineNumber": 15
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "useState",
+          "lineNumber": 16
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "selectProject",
+          "lineNumber": 17
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "state.members.filter",
+          "lineNumber": 18
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "project.memberIds.includes",
+          "lineNumber": 18
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "state.tasks.filter",
+          "lineNumber": 19
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "useMemo",
+          "lineNumber": 21
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "state.members.map",
+          "lineNumber": 21
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "state.projects.filter",
+          "lineNumber": 21
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "candidate.memberIds.includes",
+          "lineNumber": 21
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "setShowAdd",
+          "lineNumber": 28
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "members.map",
+          "lineNumber": 31
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "projectTasks.filter",
+          "lineNumber": 32
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "projectByMember.get",
+          "lineNumber": 33
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "projects.map",
+          "lineNumber": 38
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "tasks.slice(0, 2).map",
+          "lineNumber": 39
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "tasks.slice",
+          "lineNumber": 39
+        },
+        {
+          "caller": "MembersPage",
+          "callee": "setShowAdd",
+          "lineNumber": 45
+        }
+      ],
+      "metrics": {
+        "importCount": 7,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/projects/ProjectListPage.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 58,
+      "nonEmptyLines": 52,
+      "functions": [
+        {
+          "name": "ProjectListPage",
+          "startLine": 13,
+          "endLine": 58,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ProjectListPage",
+          "line": 13,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "ProjectListPage",
+          "callee": "useState",
+          "lineNumber": 14
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "useTeamFlow",
+          "lineNumber": 15
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "useNavigate",
+          "lineNumber": 16
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "useMemo",
+          "lineNumber": 17
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "query.trim().toLocaleLowerCase",
+          "lineNumber": 18
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "query.trim",
+          "lineNumber": 18
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "selectProjectSummaries(state).filter",
+          "lineNumber": 19
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "selectProjectSummaries",
+          "lineNumber": 19
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "project.name.toLocaleLowerCase('ko-KR').includes",
+          "lineNumber": 20
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "project.name.toLocaleLowerCase",
+          "lineNumber": 20
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "project.description.toLocaleLowerCase('ko-KR').includes",
+          "lineNumber": 20
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "project.description.toLocaleLowerCase",
+          "lineNumber": 20
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "setQuery",
+          "lineNumber": 37
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "projects.map",
+          "lineNumber": 50
+        },
+        {
+          "caller": "ProjectListPage",
+          "callee": "navigate",
+          "lineNumber": 51
+        }
+      ],
+      "metrics": {
+        "importCount": 4,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 83,
+      "nonEmptyLines": 76,
+      "functions": [
+        {
+          "name": "ProjectCard",
+          "startLine": 23,
+          "endLine": 83,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ProjectCard",
+          "line": 23,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "ProjectCard",
+          "callee": "normalizeProgress",
+          "lineNumber": 24
+        },
+        {
+          "caller": "ProjectCard",
+          "callee": "project.members.map((member) => member.name).join",
+          "lineNumber": 26
+        },
+        {
+          "caller": "ProjectCard",
+          "callee": "project.members.map",
+          "lineNumber": 26
+        },
+        {
+          "caller": "ProjectCard",
+          "callee": "project.members.map",
+          "lineNumber": 65
+        },
+        {
+          "caller": "ProjectCard",
+          "callee": "formatPeriod",
+          "lineNumber": 77
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 108,
+      "nonEmptyLines": 98,
+      "functions": [
+        {
+          "name": "ProjectTasksPage",
+          "startLine": 27,
+          "endLine": 93,
+          "params": []
+        },
+        {
+          "name": "SortHeader",
+          "startLine": 95,
+          "endLine": 108,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ProjectTasksPage",
+          "line": 27,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "useOutletContext",
+          "lineNumber": 28
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "useTeamFlow",
+          "lineNumber": 29
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "useState",
+          "lineNumber": 30
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "useState",
+          "lineNumber": 31
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "useState",
+          "lineNumber": 32
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "useState",
+          "lineNumber": 33
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "useMemo",
+          "lineNumber": 34
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "selectProjectTasks",
+          "lineNumber": 34
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "useMemo",
+          "lineNumber": 35
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "selectProjectMembers",
+          "lineNumber": 35
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "useMemo",
+          "lineNumber": 36
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "members.map",
+          "lineNumber": 36
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "useMemo",
+          "lineNumber": 38
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "query.trim().toLocaleLowerCase",
+          "lineNumber": 39
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "query.trim",
+          "lineNumber": 39
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "tasks.filter((task) => filter === 'all' || task.status === filter).filter",
+          "lineNumber": 40
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "tasks.filter",
+          "lineNumber": 40
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "memberById.get",
+          "lineNumber": 41
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "[task.title, task.description ?? '', member?.name ?? ''].some",
+          "lineNumber": 42
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "value.toLocaleLowerCase('ko-KR').includes",
+          "lineNumber": 42
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "value.toLocaleLowerCase",
+          "lineNumber": 42
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "useMemo",
+          "lineNumber": 46
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "TASK_STATUS_ORDER.map",
+          "lineNumber": 48
+        },
+        {
+          "caller": "valueFor",
+          "callee": "memberById.get",
+          "lineNumber": 51
+        },
+        {
+          "caller": "valueFor",
+          "callee": "statusRank.get",
+          "lineNumber": 53
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "filtered.map((task, index) => ({ task, index })).sort((left, right) => {\n      const leftValue = valueFor(left.task)\n      const rightValue = valueFor(right.task)\n      const comparison = typeof leftValue === 'number'\n        ? leftValue - rightValue\n        : leftValue.localeCompare(rightValue, 'ko-KR')\n      return (sort.direction === 'asc' ? comparison : -comparison) || left.index - right.index\n    }).map",
+          "lineNumber": 55
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "filtered.map((task, index) => ({ task, index })).sort",
+          "lineNumber": 55
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "filtered.map",
+          "lineNumber": 55
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "valueFor",
+          "lineNumber": 56
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "valueFor",
+          "lineNumber": 57
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "leftValue.localeCompare",
+          "lineNumber": 60
+        },
+        {
+          "caller": "changeSort",
+          "callee": "setSort",
+          "lineNumber": 66
+        },
+        {
+          "caller": "count",
+          "callee": "tasks.filter",
+          "lineNumber": 71
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "filters.map",
+          "lineNumber": 77
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "setFilter",
+          "lineNumber": 77
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "count",
+          "lineNumber": 77
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "setView",
+          "lineNumber": 79
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "setView",
+          "lineNumber": 79
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "setFilter",
+          "lineNumber": 80
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "setQuery",
+          "lineNumber": 80
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "sorted.map",
+          "lineNumber": 85
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "memberById.get",
+          "lineNumber": 85
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "openTaskDetail",
+          "lineNumber": 85
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "event.preventDefault",
+          "lineNumber": 85
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "openTaskDetail",
+          "lineNumber": 85
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "formatShortDate",
+          "lineNumber": 85
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "event.stopPropagation",
+          "lineNumber": 85
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "event.stopPropagation",
+          "lineNumber": 85
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "actions.updateTask",
+          "lineNumber": 85
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "TASK_STATUS_ORDER.map",
+          "lineNumber": 85
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "TASK_STATUS_ORDER.map",
+          "lineNumber": 88
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "filtered.filter",
+          "lineNumber": 88
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "group.map",
+          "lineNumber": 88
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "memberById.get",
+          "lineNumber": 88
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "openTaskDetail",
+          "lineNumber": 88
+        },
+        {
+          "caller": "ProjectTasksPage",
+          "callee": "formatShortDate",
+          "lineNumber": 88
+        },
+        {
+          "caller": "SortHeader",
+          "callee": "onSort",
+          "lineNumber": 100
+        }
+      ],
+      "metrics": {
+        "importCount": 7,
+        "exportCount": 1,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/state/selectors.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 25,
+      "nonEmptyLines": 21,
+      "functions": [
+        {
+          "name": "selectProject",
+          "startLine": 3,
+          "endLine": 5,
+          "params": [
+            "state",
+            "projectId"
+          ]
+        },
+        {
+          "name": "selectProjectTasks",
+          "startLine": 7,
+          "endLine": 9,
+          "params": [
+            "state",
+            "projectId"
+          ]
+        },
+        {
+          "name": "selectProjectMembers",
+          "startLine": 11,
+          "endLine": 14,
+          "params": [
+            "state",
+            "projectId"
+          ]
+        },
+        {
+          "name": "selectProjectSummaries",
+          "startLine": 16,
+          "endLine": 25,
+          "params": [
+            "state"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "selectProject",
+          "line": 3,
+          "isDefault": false
+        },
+        {
+          "name": "selectProjectTasks",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "selectProjectMembers",
+          "line": 11,
+          "isDefault": false
+        },
+        {
+          "name": "selectProjectSummaries",
+          "line": 16,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "selectProject",
+          "callee": "state.projects.find",
+          "lineNumber": 4
+        },
+        {
+          "caller": "selectProjectTasks",
+          "callee": "state.tasks.filter",
+          "lineNumber": 8
+        },
+        {
+          "caller": "selectProjectMembers",
+          "callee": "selectProject",
+          "lineNumber": 12
+        },
+        {
+          "caller": "selectProjectMembers",
+          "callee": "state.members.filter",
+          "lineNumber": 13
+        },
+        {
+          "caller": "selectProjectMembers",
+          "callee": "project.memberIds.includes",
+          "lineNumber": 13
+        },
+        {
+          "caller": "selectProjectSummaries",
+          "callee": "state.projects.map",
+          "lineNumber": 17
+        },
+        {
+          "caller": "selectProjectSummaries",
+          "callee": "selectProjectTasks",
+          "lineNumber": 18
+        },
+        {
+          "caller": "selectProjectSummaries",
+          "callee": "calculateProgress",
+          "lineNumber": 21
+        },
+        {
+          "caller": "selectProjectSummaries",
+          "callee": "state.members.filter",
+          "lineNumber": 22
+        },
+        {
+          "caller": "selectProjectSummaries",
+          "callee": "project.memberIds.includes",
+          "lineNumber": 22
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 4,
+        "functionCount": 4,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/state/useTeamFlow.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 9,
+      "nonEmptyLines": 7,
+      "functions": [
+        {
+          "name": "useTeamFlow",
+          "startLine": 5,
+          "endLine": 9,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "useTeamFlow",
+          "line": 5,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "useTeamFlow",
+          "callee": "useContext",
+          "lineNumber": 6
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    }
+  ]
+}

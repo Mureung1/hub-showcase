@@ -1,0 +1,15 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": ".github/workflows/auto-merge.yml",
+      "language": "yaml",
+      "sizeLines": 119,
+      "fileCategory": "infra"
+    }
+  ],
+  "batchImportData": {
+    ".github/workflows/auto-merge.yml": []
+  },
+  "neighborMap": {}
+}

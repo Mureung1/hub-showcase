@@ -7,7 +7,6 @@ import Sparkles from 'lucide-react/dist/esm/icons/sparkles.mjs'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 
-import { aiHistory } from '../../data/mockData.js'
 import { addLocalDaysIso, formatShortDate } from '../../lib/format.js'
 import { useTeamFlow } from '../../state/useTeamFlow.js'
 import workspace from '../../styles/workspace.module.css'
@@ -29,7 +28,9 @@ const historyStatus = {
 
 export function AiPage() {
   const { project } = useOutletContext()
-  const { state, actions } = useTeamFlow()
+  const { state, actions, capabilities } = useTeamFlow()
+  const readOnly = !capabilities.ai
+  const aiHistory = state.aiHistory ?? []
   const settings = state.aiSettings[project.id] ?? { instructions: '', context: { project: true, notes: true, resources: true, tasks: true, team: false } }
   const [instructions, setInstructions] = useState(settings.instructions ?? '')
   const [brief, setBrief] = useState({ title: '', description: '' })
@@ -42,6 +43,17 @@ export function AiPage() {
   const aiTasks = useMemo(() => state.tasks.filter((task) => task.projectId === project.id && task.assigneeId === state.aiMemberId), [state.tasks, state.aiMemberId, project.id])
   const completed = aiTasks.filter((task) => task.status === TASK_STATUS.COMPLETED).length
   const active = aiTasks.filter((task) => task.status === TASK_STATUS.IN_PROGRESS || task.status === TASK_STATUS.IN_REVIEW).length
+
+  if (state.accessMode !== 'guest' && !capabilities.ai) {
+    return (
+      <section className={workspace.scrollPage} aria-labelledby="ai-title">
+        <div className={`${workspace.container} ${workspace.containerNarrow}`}>
+          <header className={workspace.pageHeader}><div><p>{project.name} · AI 팀원</p><h1 id="ai-title">AI 팀원 관리</h1></div></header>
+          <div className={workspace.empty}>AI 팀원 설정과 실제 실행은 다음 영속화 단계에서 제공됩니다.</div>
+        </div>
+      </section>
+    )
+  }
 
   function showFeedback(message) {
     clearTimeout(feedbackTimer.current)
@@ -89,13 +101,13 @@ export function AiPage() {
         <div className={styles.layout}>
           <div className={styles.leftColumn}>
             <article className={`${workspace.card} ${styles.settingsCard}`}>
-              <header><div><Sparkles size={16} /><h2>역할 지시사항</h2></div><button type="button" onClick={saveInstructions}>저장</button></header>
-              <textarea value={instructions} onChange={(event) => setInstructions(event.target.value)} aria-label="AI 역할 지시사항" placeholder="AI 팀원이 따라야 할 역할과 작업 원칙을 입력하세요" />
+              <header><div><Sparkles size={16} /><h2>역할 지시사항</h2></div><button type="button" disabled={readOnly} onClick={saveInstructions}>저장</button></header>
+              <textarea disabled={readOnly} value={instructions} onChange={(event) => setInstructions(event.target.value)} aria-label="AI 역할 지시사항" placeholder="AI 팀원이 따라야 할 역할과 작업 원칙을 입력하세요" />
             </article>
 
             <article className={`${workspace.card} ${styles.contextCard}`}>
               <header><h2>참고할 컨텍스트</h2><p>AI가 작업할 때 참고할 프로젝트 정보를 선택하세요.</p></header>
-              <div>{contextOptions.map(([key, label, description]) => <label key={key}><span><strong>{label}</strong><small>{description}</small></span><input type="checkbox" checked={Boolean(settings.context?.[key])} onChange={() => toggleContext(key)} /><i aria-hidden="true" /></label>)}</div>
+              <div>{contextOptions.map(([key, label, description]) => <label key={key}><span><strong>{label}</strong><small>{description}</small></span><input disabled={readOnly} type="checkbox" checked={Boolean(settings.context?.[key])} onChange={() => toggleContext(key)} /><i aria-hidden="true" /></label>)}</div>
             </article>
           </div>
 
@@ -103,10 +115,10 @@ export function AiPage() {
             <article className={`${workspace.card} ${styles.briefCard}`}>
               <header><div><ClipboardList size={16} /><h2>새 작업 브리핑</h2></div><p>브리핑을 제출하면 AI 담당 할 일이 생성됩니다.</p></header>
               <form onSubmit={submitBrief}>
-                <label><span>작업 제목 <em>*</em></span><input value={brief.title} onChange={(event) => { setBrief((current) => ({ ...current, title: event.target.value })); setError('') }} placeholder="예: 경쟁 서비스 기능 비교" aria-invalid={Boolean(error)} aria-describedby={error ? 'ai-brief-title-error' : undefined} /></label>
-                <label><span>요청 내용 <small>(선택)</small></span><textarea value={brief.description} onChange={(event) => setBrief((current) => ({ ...current, description: event.target.value }))} placeholder="조사 범위, 결과물 형식 등 필요한 내용을 입력하세요" /></label>
+                <label><span>작업 제목 <em>*</em></span><input disabled={readOnly} value={brief.title} onChange={(event) => { setBrief((current) => ({ ...current, title: event.target.value })); setError('') }} placeholder="예: 경쟁 서비스 기능 비교" aria-invalid={Boolean(error)} aria-describedby={error ? 'ai-brief-title-error' : undefined} /></label>
+                <label><span>요청 내용 <small>(선택)</small></span><textarea disabled={readOnly} value={brief.description} onChange={(event) => setBrief((current) => ({ ...current, description: event.target.value }))} placeholder="조사 범위, 결과물 형식 등 필요한 내용을 입력하세요" /></label>
                 {error ? <p id="ai-brief-title-error" className={styles.error}>{error}</p> : null}
-                <button type="submit" disabled={!brief.title.trim()}><Send size={14} />브리핑 제출</button>
+                <button type="submit" disabled={readOnly || !brief.title.trim()}><Send size={14} />브리핑 제출</button>
               </form>
             </article>
 

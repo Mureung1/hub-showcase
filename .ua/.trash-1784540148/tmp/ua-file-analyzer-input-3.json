@@ -1,0 +1,123 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "apps/web/src/components/ui/Avatar.jsx",
+      "language": "javascript",
+      "sizeLines": 15,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "language": "javascript",
+      "sizeLines": 94,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "language": "javascript",
+      "sizeLines": 66,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/members/AddMemberModal.jsx",
+      "language": "javascript",
+      "sizeLines": 36,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/members/MembersPage.jsx",
+      "language": "javascript",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/projects/ProjectListPage.jsx",
+      "language": "javascript",
+      "sizeLines": 58,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "language": "javascript",
+      "sizeLines": 83,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "language": "javascript",
+      "sizeLines": 108,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/state/selectors.js",
+      "language": "javascript",
+      "sizeLines": 25,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/state/useTeamFlow.js",
+      "language": "javascript",
+      "sizeLines": 9,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "apps/web/src/components/ui/Avatar.jsx": [
+      "apps/web/src/components/ui/ui.module.css"
+    ],
+    "apps/web/src/features/dashboard/ProjectDashboardPage.jsx": [
+      "apps/web/src/components/ui/Avatar.jsx",
+      "apps/web/src/components/ui/ResourceIcon.jsx",
+      "apps/web/src/components/ui/StatusBadge.jsx",
+      "apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/features/dashboard/ProjectPeriodModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/members/AddMemberModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/members/MembersPage.jsx": [
+      "apps/web/src/components/ui/Avatar.jsx",
+      "apps/web/src/components/ui/StatusBadge.jsx",
+      "apps/web/src/features/members/AddMemberModal.jsx",
+      "apps/web/src/features/members/MembersPage.module.css",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/features/projects/ProjectListPage.jsx": [
+      "apps/web/src/features/projects/ProjectListPage.module.css",
+      "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/projects/components/ProjectCard.jsx": [
+      "apps/web/src/features/projects/components/ProjectCard.module.css",
+      "apps/web/src/lib/format.js"
+    ],
+    "apps/web/src/features/tasks/ProjectTasksPage.jsx": [
+      "apps/web/src/components/ui/Avatar.jsx",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/selectors.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/state/selectors.js": [],
+    "apps/web/src/state/useTeamFlow.js": [
+      "apps/web/src/state/TeamFlowContext.js"
+    ]
+  }
+}

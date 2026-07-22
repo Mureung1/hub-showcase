@@ -1,0 +1,3331 @@
+{
+  "version": "1.0.0",
+  "gitCommitHash": "dde3150e7d9c73346ac9b1edfdc35a159f10fd93",
+  "generatedAt": "2026-07-20T09:35:18.402Z",
+  "files": {
+    ".claude/skills/teamflow-design/SKILL.md": {
+      "filePath": ".claude/skills/teamflow-design/SKILL.md",
+      "contentHash": "7974b9f8527d512d7334fa0e64ca263e8cb3424c231deac54e7b069948ced88d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 81,
+      "hasStructuralAnalysis": true
+    },
+    ".claude/skills/teamflow-design/tokens.css": {
+      "filePath": ".claude/skills/teamflow-design/tokens.css",
+      "contentHash": "25f7280983cc4b008e95092d224061266488a804a1573766a58a73db6b6457e9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 73,
+      "hasStructuralAnalysis": false
+    },
+    ".codex/agents/planning_agent.toml": {
+      "filePath": ".codex/agents/planning_agent.toml",
+      "contentHash": "68d5a06017da9e907e6634745068d0fe8b7b400f45e6ddf0786a8ea45dacdb35",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 135,
+      "hasStructuralAnalysis": true
+    },
+    ".codex/agents/verification_agent.toml": {
+      "filePath": ".codex/agents/verification_agent.toml",
+      "contentHash": "0cc70932e242f773c1437f3100965129fc89338608cfefd0c8a82a665b267664",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 142,
+      "hasStructuralAnalysis": true
+    },
+    ".github/pull_request_template.md": {
+      "filePath": ".github/pull_request_template.md",
+      "contentHash": "c512571b49f7f736542577becb48b11d62deaebe53638575899370a9a226e0ab",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 29,
+      "hasStructuralAnalysis": true
+    },
+    ".github/workflows/auto-merge.yml": {
+      "filePath": ".github/workflows/auto-merge.yml",
+      "contentHash": "a6966721f424490feae377f8df2e6188ebfb5b0a4a4ddc27e24224e98a8ac8bc",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 120,
+      "hasStructuralAnalysis": true
+    },
+    ".nvmrc": {
+      "filePath": ".nvmrc",
+      "contentHash": "72b1a596c169544b37b413d0889fc8a495ba427c8f463c4e0d2bda97cf230318",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": false
+    },
+    ".oxlintrc.json": {
+      "filePath": ".oxlintrc.json",
+      "contentHash": "1be899e45c49b2a2edc715bc3bfb31d8ed8e866ed7ebab2065ff6e55e88c2396",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 9,
+      "hasStructuralAnalysis": true
+    },
+    "CLAUDE.md": {
+      "filePath": "CLAUDE.md",
+      "contentHash": "032af8e249e70f5848f17f9b73738e8d7d624bc786f1e36796437e0abe081d9d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 40,
+      "hasStructuralAnalysis": true
+    },
+    "README.md": {
+      "filePath": "README.md",
+      "contentHash": "d683658128f5956e20f135179b21d8af8bd4b29cd5d98d39fe0e2b3d4dba0bea",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 81,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/.env.example": {
+      "filePath": "apps/api/.env.example",
+      "contentHash": "b883041a70672eba7ee0d549f1392e6969982327fdb5cb86e237dbff957ab8eb",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 4,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/package.json": {
+      "filePath": "apps/api/package.json",
+      "contentHash": "2f64fd27e5903cddd7d1214f6f4b32fb86ab552e34d684b99b9a6bbac345d77a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 17,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/src/app.js": {
+      "filePath": "apps/api/src/app.js",
+      "contentHash": "4f9dd40cc593b0ff137f3892996ddd93730f3fa84f4e9a5c879cb519cc62b177",
+      "functions": [
+        {
+          "name": "createApp",
+          "params": [],
+          "exported": true,
+          "lineCount": 19
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "express",
+          "specifiers": [
+            "express"
+          ]
+        },
+        {
+          "source": "./tasks/taskRoutes.js",
+          "specifiers": [
+            "createTaskRouter"
+          ]
+        }
+      ],
+      "exports": [
+        "createApp"
+      ],
+      "totalLines": 28,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/src/lib/supabaseClient.js": {
+      "filePath": "apps/api/src/lib/supabaseClient.js",
+      "contentHash": "f93952fa43ce75f683a6c9005c0fa9272e98bde5525b31e12b526457f96cd0e0",
+      "functions": [
+        {
+          "name": "requireEnvironmentValue",
+          "params": [
+            "environment",
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "readTeamFlowSupabaseConfig",
+          "params": [],
+          "exported": true,
+          "lineCount": 25
+        },
+        {
+          "name": "createTeamFlowSupabaseClient",
+          "params": [],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@supabase/supabase-js",
+          "specifiers": [
+            "createClient"
+          ]
+        }
+      ],
+      "exports": [
+        "readTeamFlowSupabaseConfig",
+        "createTeamFlowSupabaseClient"
+      ],
+      "totalLines": 53,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/src/server.js": {
+      "filePath": "apps/api/src/server.js",
+      "contentHash": "a96726f06d3fc900411bcb1428a64830f88086bc21544b33c494c3eb37ecc203",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./app.js",
+          "specifiers": [
+            "createApp"
+          ]
+        },
+        {
+          "source": "./lib/supabaseClient.js",
+          "specifiers": [
+            "createTeamFlowSupabaseClient"
+          ]
+        },
+        {
+          "source": "./tasks/taskRepository.js",
+          "specifiers": [
+            "createSupabaseTaskRepository"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 13,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/src/tasks/taskRepository.js": {
+      "filePath": "apps/api/src/tasks/taskRepository.js",
+      "contentHash": "6985a02aef823c0b71b433aec8dbe7650885fe5932fd28e5288938fe8a151b75",
+      "functions": [
+        {
+          "name": "mapTaskRow",
+          "params": [
+            "row"
+          ],
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "mapTaskInput",
+          "params": [
+            "input"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "throwTaskStoreError",
+          "params": [
+            "operation",
+            "error"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "createSupabaseTaskRepository",
+          "params": [
+            "supabase"
+          ],
+          "exported": true,
+          "lineCount": 30
+        }
+      ],
+      "classes": [
+        {
+          "name": "TaskStoreError",
+          "methods": [
+            "constructor"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [],
+      "exports": [
+        "TaskStoreError",
+        "mapTaskRow",
+        "mapTaskInput",
+        "createSupabaseTaskRepository"
+      ],
+      "totalLines": 76,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/src/tasks/taskRoutes.js": {
+      "filePath": "apps/api/src/tasks/taskRoutes.js",
+      "contentHash": "8258d25a50d4e84b98441e1bd2ac26f0405c2036ead13de2fe92f2036c26413c",
+      "functions": [
+        {
+          "name": "isValidCalendarDate",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "validateTaskCreateInput",
+          "params": [
+            "body"
+          ],
+          "exported": true,
+          "lineCount": 48
+        },
+        {
+          "name": "unavailableResponse",
+          "params": [
+            "response"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "createTaskRouter",
+          "params": [],
+          "exported": true,
+          "lineCount": 36
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "express",
+          "specifiers": [
+            "Router"
+          ]
+        },
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "isTaskStatus"
+          ]
+        }
+      ],
+      "exports": [
+        "validateTaskCreateInput",
+        "createTaskRouter"
+      ],
+      "totalLines": 110,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/test/health.test.js": {
+      "filePath": "apps/api/test/health.test.js",
+      "contentHash": "8c523ec7d05df5854b464b72cf0b19cc33e3f8634e87f8c5ab5a3738f8cf3ef8",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:assert/strict",
+          "specifiers": [
+            "assert"
+          ]
+        },
+        {
+          "source": "node:test",
+          "specifiers": [
+            "after",
+            "before",
+            "test"
+          ]
+        },
+        {
+          "source": "../src/app.js",
+          "specifiers": [
+            "createApp"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 31,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/test/supabaseClient.test.js": {
+      "filePath": "apps/api/test/supabaseClient.test.js",
+      "contentHash": "ed0b123937d5b9393df5ae1a2a54e3b9ee1c334ba8dc2bc57c5466407b021d52",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:assert/strict",
+          "specifiers": [
+            "assert"
+          ]
+        },
+        {
+          "source": "node:test",
+          "specifiers": [
+            "test"
+          ]
+        },
+        {
+          "source": "../src/lib/supabaseClient.js",
+          "specifiers": [
+            "readTeamFlowSupabaseConfig"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 29,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/test/taskRepository.test.js": {
+      "filePath": "apps/api/test/taskRepository.test.js",
+      "contentHash": "22c2165d240e756f650a28b94ef0b3fe5261c61c724a606718f45e853f80bab2",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:assert/strict",
+          "specifiers": [
+            "assert"
+          ]
+        },
+        {
+          "source": "node:test",
+          "specifiers": [
+            "test"
+          ]
+        },
+        {
+          "source": "../src/tasks/taskRepository.js",
+          "specifiers": [
+            "createSupabaseTaskRepository",
+            "mapTaskInput",
+            "mapTaskRow",
+            "TaskStoreError"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 130,
+      "hasStructuralAnalysis": true
+    },
+    "apps/api/test/tasks.test.js": {
+      "filePath": "apps/api/test/tasks.test.js",
+      "contentHash": "48eb5a8ca02360d2f40f604f64a45711d54c80d1fa83ef43b7abc5039be8c02f",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:assert/strict",
+          "specifiers": [
+            "assert"
+          ]
+        },
+        {
+          "source": "node:test",
+          "specifiers": [
+            "after",
+            "before",
+            "test"
+          ]
+        },
+        {
+          "source": "../src/app.js",
+          "specifiers": [
+            "createApp"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 134,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/index.html": {
+      "filePath": "apps/web/index.html",
+      "contentHash": "4a88ab762b08247a19b77b77a15422e51fa8de5a332f36c8896aad3454e5d32c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 16,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/package.json": {
+      "filePath": "apps/web/package.json",
+      "contentHash": "e9b0a41de39c333b767f99649257ac8b67435279d3baade84ce06080e4d98f2e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/App.jsx": {
+      "filePath": "apps/web/src/App.jsx",
+      "contentHash": "09c38c26319594739d338edb599d0f912479cfb359cb2d5983986aaca22cb368",
+      "functions": [
+        {
+          "name": "App",
+          "params": [],
+          "exported": true,
+          "lineCount": 21
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react-router-dom",
+          "specifiers": [
+            "Navigate",
+            "Route",
+            "Routes"
+          ]
+        },
+        {
+          "source": "./components/layout/AppShell.jsx",
+          "specifiers": [
+            "AppShell"
+          ]
+        },
+        {
+          "source": "./components/layout/ProjectShell.jsx",
+          "specifiers": [
+            "ProjectShell"
+          ]
+        },
+        {
+          "source": "./features/ai/AiPage.jsx",
+          "specifiers": [
+            "AiPage"
+          ]
+        },
+        {
+          "source": "./features/dashboard/ProjectDashboardPage.jsx",
+          "specifiers": [
+            "ProjectDashboardPage"
+          ]
+        },
+        {
+          "source": "./features/members/MembersPage.jsx",
+          "specifiers": [
+            "MembersPage"
+          ]
+        },
+        {
+          "source": "./features/notes/NotesPage.jsx",
+          "specifiers": [
+            "NotesPage"
+          ]
+        },
+        {
+          "source": "./features/projects/ProjectListPage.jsx",
+          "specifiers": [
+            "ProjectListPage"
+          ]
+        },
+        {
+          "source": "./features/resources/ResourcesPage.jsx",
+          "specifiers": [
+            "ResourcesPage"
+          ]
+        },
+        {
+          "source": "./features/tasks/MyTasksPage.jsx",
+          "specifiers": [
+            "MyTasksPage"
+          ]
+        },
+        {
+          "source": "./features/tasks/ProjectTasksPage.jsx",
+          "specifiers": [
+            "ProjectTasksPage"
+          ]
+        }
+      ],
+      "exports": [
+        "App"
+      ],
+      "totalLines": 38,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/components/layout/AppShell.jsx": {
+      "filePath": "apps/web/src/components/layout/AppShell.jsx",
+      "contentHash": "a4ebf3a30b9a0af121015ace13f79f25e757873ea858c8922c8e5e46d319f552",
+      "functions": [
+        {
+          "name": "AppShell",
+          "params": [],
+          "exported": true,
+          "lineCount": 24
+        },
+        {
+          "name": "Brand",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "Account",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react/dist/esm/icons/square-check-big.mjs",
+          "specifiers": [
+            "CheckSquare"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/layers-3.mjs",
+          "specifiers": [
+            "Layers3"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/plus.mjs",
+          "specifiers": [
+            "Plus"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/users.mjs",
+          "specifiers": [
+            "Users"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "react-router-dom",
+          "specifiers": [
+            "NavLink",
+            "Outlet"
+          ]
+        },
+        {
+          "source": "../../features/projects/components/NewProjectModal.jsx",
+          "specifiers": [
+            "NewProjectModal"
+          ]
+        },
+        {
+          "source": "./AppShell.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "AppShell",
+        "Brand",
+        "Account"
+      ],
+      "totalLines": 49,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/components/layout/AppShell.module.css": {
+      "filePath": "apps/web/src/components/layout/AppShell.module.css",
+      "contentHash": "7dcf3856b4cf7dee982b5849bfaf3cbc055e405f22dbaaaaf872a8f38b1b7e4d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 174,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/src/components/layout/ProjectShell.jsx": {
+      "filePath": "apps/web/src/components/layout/ProjectShell.jsx",
+      "contentHash": "2fecfc81dce9dd2256e12b88597c9681d41739466073fc15472d439e94ed55ca",
+      "functions": [
+        {
+          "name": "ProjectShell",
+          "params": [],
+          "exported": true,
+          "lineCount": 45
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react/dist/esm/icons/bot.mjs",
+          "specifiers": [
+            "Bot"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/square-check-big.mjs",
+          "specifiers": [
+            "CheckSquare"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/chevron-left.mjs",
+          "specifiers": [
+            "ChevronLeft"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/file-text.mjs",
+          "specifiers": [
+            "FileText"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/folder.mjs",
+          "specifiers": [
+            "Folder"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/layout-dashboard.mjs",
+          "specifiers": [
+            "LayoutDashboard"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/layers-3.mjs",
+          "specifiers": [
+            "Layers3"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/users.mjs",
+          "specifiers": [
+            "Users"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "react-router-dom",
+          "specifiers": [
+            "Navigate",
+            "NavLink",
+            "Outlet",
+            "useParams"
+          ]
+        },
+        {
+          "source": "./AppShell.jsx",
+          "specifiers": [
+            "Account"
+          ]
+        },
+        {
+          "source": "../../features/tasks/components/TaskCreateModal.jsx",
+          "specifiers": [
+            "TaskCreateModal"
+          ]
+        },
+        {
+          "source": "../../features/tasks/components/TaskDetailModal.jsx",
+          "specifiers": [
+            "TaskDetailModal"
+          ]
+        },
+        {
+          "source": "../../state/useTeamFlow.js",
+          "specifiers": [
+            "useTeamFlow"
+          ]
+        },
+        {
+          "source": "../../state/selectors.js",
+          "specifiers": [
+            "selectProject",
+            "selectProjectMembers"
+          ]
+        },
+        {
+          "source": "./AppShell.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "ProjectShell"
+      ],
+      "totalLines": 73,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/components/ui/Avatar.jsx": {
+      "filePath": "apps/web/src/components/ui/Avatar.jsx",
+      "contentHash": "1c04cf86049cd274ff20f03dd02551e1078425b47d564e8eeda842291641e590",
+      "functions": [
+        {
+          "name": "Avatar",
+          "params": [],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react/dist/esm/icons/sparkles.mjs",
+          "specifiers": [
+            "Sparkles"
+          ]
+        },
+        {
+          "source": "./ui.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "Avatar"
+      ],
+      "totalLines": 16,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/components/ui/Modal.jsx": {
+      "filePath": "apps/web/src/components/ui/Modal.jsx",
+      "contentHash": "6e97912f6ceda5a5228a8882655a0395c860a90243e75d0b11895a2540da4955",
+      "functions": [
+        {
+          "name": "Modal",
+          "params": [],
+          "exported": true,
+          "lineCount": 58
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react/dist/esm/icons/x.mjs",
+          "specifiers": [
+            "X"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useEffect",
+            "useId",
+            "useRef"
+          ]
+        },
+        {
+          "source": "react-dom",
+          "specifiers": [
+            "createPortal"
+          ]
+        },
+        {
+          "source": "./ui.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "Modal"
+      ],
+      "totalLines": 67,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/components/ui/ResourceIcon.jsx": {
+      "filePath": "apps/web/src/components/ui/ResourceIcon.jsx",
+      "contentHash": "ba5f327c739dac874b7607e7215ee93db5944333e2cffdd82120248e0faac3c3",
+      "functions": [
+        {
+          "name": "ResourceIcon",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react/dist/esm/icons/file-text.mjs",
+          "specifiers": [
+            "FileText"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/folder.mjs",
+          "specifiers": [
+            "Folder"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/image.mjs",
+          "specifiers": [
+            "Image"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/link-2.mjs",
+          "specifiers": [
+            "Link2"
+          ]
+        },
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "RESOURCE_TYPE"
+          ]
+        },
+        {
+          "source": "./ui.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "ResourceIcon"
+      ],
+      "totalLines": 20,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/components/ui/StatusBadge.jsx": {
+      "filePath": "apps/web/src/components/ui/StatusBadge.jsx",
+      "contentHash": "50df98a306a3d14e8c7128c2a8d15ddcb86f8b96b9ad949c841ed7ef39f3b599",
+      "functions": [
+        {
+          "name": "StatusBadge",
+          "params": [],
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "TASK_STATUS"
+          ]
+        },
+        {
+          "source": "../../constants/labels.js",
+          "specifiers": [
+            "TASK_STATUS_LABEL"
+          ]
+        },
+        {
+          "source": "./ui.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "StatusBadge"
+      ],
+      "totalLines": 21,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/components/ui/forms.module.css": {
+      "filePath": "apps/web/src/components/ui/forms.module.css",
+      "contentHash": "6511b83ac5457a9be7d50778923458233dfaea74956f6ebe99a801b5ea855e8b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 30,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/src/components/ui/ui.module.css": {
+      "filePath": "apps/web/src/components/ui/ui.module.css",
+      "contentHash": "f4f2279d7da5faceff1b80d60ec091e7805112767b64dc228cfdb4172c441aad",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 29,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/src/constants/labels.js": {
+      "filePath": "apps/web/src/constants/labels.js",
+      "contentHash": "745e4eebc7728b1016ae0c383a061438ad6dd2714f954829615d15eccce59181",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "PROJECT_STATUS",
+            "RESOURCE_TYPE",
+            "TASK_STATUS"
+          ]
+        }
+      ],
+      "exports": [
+        "PROJECT_STATUS_LABEL",
+        "TASK_STATUS_LABEL",
+        "RESOURCE_TYPE_LABEL",
+        "TASK_STATUS_ORDER"
+      ],
+      "totalLines": 29,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/data/apiTeamFlowRepository.js": {
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.js",
+      "contentHash": "d0d089d257cc12912e8d0280ec678feb7c0a6f20e66f21a9305b942b8565ed52",
+      "functions": [
+        {
+          "name": "readJson",
+          "params": [
+            "response",
+            "fallbackMessage"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "requestJson",
+          "params": [
+            "fetchImpl",
+            "url",
+            "options",
+            "fallbackMessage"
+          ],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "createApiTeamFlowRepository",
+          "params": [],
+          "exported": true,
+          "lineCount": 43
+        }
+      ],
+      "classes": [
+        {
+          "name": "TeamFlowApiError",
+          "methods": [
+            "constructor"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "./mockTeamFlowRepository.js",
+          "specifiers": [
+            "mockTeamFlowRepository"
+          ]
+        }
+      ],
+      "exports": [
+        "TeamFlowApiError",
+        "createApiTeamFlowRepository",
+        "apiTeamFlowRepository"
+      ],
+      "totalLines": 81,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/data/apiTeamFlowRepository.test.js": {
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.test.js",
+      "contentHash": "48694a1d3c2ebbe636e6da931d02685570ae1cbc5292698af4036139d6722f9c",
+      "functions": [
+        {
+          "name": "jsonResponse",
+          "params": [
+            "body"
+          ],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "expect",
+            "test",
+            "vi"
+          ]
+        },
+        {
+          "source": "./apiTeamFlowRepository.js",
+          "specifiers": [
+            "createApiTeamFlowRepository",
+            "TeamFlowApiError"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 94,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/data/mockData.js": {
+      "filePath": "apps/web/src/data/mockData.js",
+      "contentHash": "a06bac9a5cdb93a88ba95615c42217fcd0032522516ea067a710a89b17ffa2ff",
+      "functions": [
+        {
+          "name": "task",
+          "params": [
+            "id",
+            "projectId",
+            "title",
+            "assigneeId",
+            "dueDate",
+            "status",
+            "description"
+          ],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "PROJECT_STATUS",
+            "RESOURCE_TYPE",
+            "TASK_STATUS"
+          ]
+        }
+      ],
+      "exports": [
+        "CURRENT_USER_ID",
+        "AI_MEMBER_ID",
+        "initialProjects",
+        "initialMembers",
+        "initialTasks",
+        "initialNotes",
+        "initialResources",
+        "initialAiSettings",
+        "aiHistory"
+      ],
+      "totalLines": 89,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/data/mockTeamFlowRepository.js": {
+      "filePath": "apps/web/src/data/mockTeamFlowRepository.js",
+      "contentHash": "fffc7401147f56874980231727bfb5ed900bdde6ddb883902e2ac84646ddfe68",
+      "functions": [
+        {
+          "name": "nextId",
+          "params": [
+            "prefix"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "clone",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 1
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./mockData.js",
+          "specifiers": [
+            "AI_MEMBER_ID",
+            "CURRENT_USER_ID",
+            "initialAiSettings",
+            "initialMembers",
+            "initialNotes",
+            "initialProjects",
+            "initialResources",
+            "initialTasks"
+          ]
+        }
+      ],
+      "exports": [
+        "mockTeamFlowRepository"
+      ],
+      "totalLines": 71,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/AppFlows.test.jsx": {
+      "filePath": "apps/web/src/features/AppFlows.test.jsx",
+      "contentHash": "5f7c06bfc8215620f462ecc270632f40de6afa1e1e4b35f95a4474db2e041092",
+      "functions": [
+        {
+          "name": "renderApp",
+          "params": [
+            "initialEntry",
+            "repository"
+          ],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@testing-library/react",
+          "specifiers": [
+            "fireEvent",
+            "render",
+            "screen",
+            "within"
+          ]
+        },
+        {
+          "source": "@testing-library/user-event",
+          "specifiers": [
+            "userEvent"
+          ]
+        },
+        {
+          "source": "react-router-dom",
+          "specifiers": [
+            "MemoryRouter"
+          ]
+        },
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "expect",
+            "test"
+          ]
+        },
+        {
+          "source": "../App.jsx",
+          "specifiers": [
+            "App"
+          ]
+        },
+        {
+          "source": "../data/mockTeamFlowRepository.js",
+          "specifiers": [
+            "mockTeamFlowRepository"
+          ]
+        },
+        {
+          "source": "./notes/MarkdownPreview.jsx",
+          "specifiers": [
+            "MarkdownPreview"
+          ]
+        },
+        {
+          "source": "../state/TeamFlowProvider.jsx",
+          "specifiers": [
+            "TeamFlowProvider"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 238,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/ai/AiPage.jsx": {
+      "filePath": "apps/web/src/features/ai/AiPage.jsx",
+      "contentHash": "c7c700fcdb608908cd044dacc435cc02647b273927aa3b321132523f99b039e8",
+      "functions": [
+        {
+          "name": "AiPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 103
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "TASK_STATUS"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/bot.mjs",
+          "specifiers": [
+            "Bot"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/check.mjs",
+          "specifiers": [
+            "Check"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/clipboard-list.mjs",
+          "specifiers": [
+            "ClipboardList"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/send.mjs",
+          "specifiers": [
+            "Send"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/sparkles.mjs",
+          "specifiers": [
+            "Sparkles"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useEffect",
+            "useMemo",
+            "useRef",
+            "useState"
+          ]
+        },
+        {
+          "source": "react-router-dom",
+          "specifiers": [
+            "useOutletContext"
+          ]
+        },
+        {
+          "source": "../../data/mockData.js",
+          "specifiers": [
+            "aiHistory"
+          ]
+        },
+        {
+          "source": "../../lib/format.js",
+          "specifiers": [
+            "addLocalDaysIso",
+            "formatShortDate"
+          ]
+        },
+        {
+          "source": "../../state/useTeamFlow.js",
+          "specifiers": [
+            "useTeamFlow"
+          ]
+        },
+        {
+          "source": "../../styles/workspace.module.css",
+          "specifiers": [
+            "workspace"
+          ]
+        },
+        {
+          "source": "./AiPage.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "AiPage"
+      ],
+      "totalLines": 133,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/ai/AiPage.module.css": {
+      "filePath": "apps/web/src/features/ai/AiPage.module.css",
+      "contentHash": "3966cea894e960f845baca2d7159d1c2ae7bc12b4183b93f1c61b43362a9f4fb",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 68,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/src/features/dashboard/ProjectDashboardPage.jsx": {
+      "filePath": "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "contentHash": "4ead0d045d42d195e101df612f789b620c968c029c20d4e3d4424c2c58ece151",
+      "functions": [
+        {
+          "name": "ProjectDashboardPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 69
+        },
+        {
+          "name": "DashboardPanel",
+          "params": [],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "TASK_STATUS",
+            "calculateProgress"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/calendar-days.mjs",
+          "specifiers": [
+            "Calendar"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/chevron-down.mjs",
+          "specifiers": [
+            "ChevronDown"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/chevron-right.mjs",
+          "specifiers": [
+            "ChevronRight"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/plus.mjs",
+          "specifiers": [
+            "Plus"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
+          "source": "react-router-dom",
+          "specifiers": [
+            "useNavigate",
+            "useOutletContext"
+          ]
+        },
+        {
+          "source": "../../components/ui/Avatar.jsx",
+          "specifiers": [
+            "Avatar"
+          ]
+        },
+        {
+          "source": "../../components/ui/ResourceIcon.jsx",
+          "specifiers": [
+            "ResourceIcon"
+          ]
+        },
+        {
+          "source": "../../components/ui/StatusBadge.jsx",
+          "specifiers": [
+            "StatusBadge"
+          ]
+        },
+        {
+          "source": "../../lib/format.js",
+          "specifiers": [
+            "formatPeriod",
+            "formatShortDate"
+          ]
+        },
+        {
+          "source": "../../state/useTeamFlow.js",
+          "specifiers": [
+            "useTeamFlow"
+          ]
+        },
+        {
+          "source": "../../state/selectors.js",
+          "specifiers": [
+            "selectProjectMembers",
+            "selectProjectTasks"
+          ]
+        },
+        {
+          "source": "../../styles/workspace.module.css",
+          "specifiers": [
+            "workspace"
+          ]
+        },
+        {
+          "source": "./ProjectDashboardPage.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        },
+        {
+          "source": "./ProjectPeriodModal.jsx",
+          "specifiers": [
+            "ProjectPeriodModal"
+          ]
+        }
+      ],
+      "exports": [
+        "ProjectDashboardPage"
+      ],
+      "totalLines": 95,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/dashboard/ProjectDashboardPage.module.css": {
+      "filePath": "apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "contentHash": "fb0905a9b64808f487d616f0864861408ab635824cf2656eac141796909b2743",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 49,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/src/features/dashboard/ProjectPeriodModal.jsx": {
+      "filePath": "apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "contentHash": "09683b8918809fd56e2b79d3ba60756d0890b2fe0c341cdc4e272c10f777b15a",
+      "functions": [
+        {
+          "name": "ProjectPeriodModal",
+          "params": [],
+          "exported": true,
+          "lineCount": 60
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "../../components/ui/forms.module.css",
+          "specifiers": [
+            "forms"
+          ]
+        },
+        {
+          "source": "../../components/ui/Modal.jsx",
+          "specifiers": [
+            "Modal"
+          ]
+        },
+        {
+          "source": "../../state/useTeamFlow.js",
+          "specifiers": [
+            "useTeamFlow"
+          ]
+        }
+      ],
+      "exports": [
+        "ProjectPeriodModal"
+      ],
+      "totalLines": 67,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/members/AddMemberModal.jsx": {
+      "filePath": "apps/web/src/features/members/AddMemberModal.jsx",
+      "contentHash": "719e670bc7fcd2bd1fc09d32070fac90e3fbd51ff2d3feb3b14dbe26d9bbebd6",
+      "functions": [
+        {
+          "name": "AddMemberModal",
+          "params": [],
+          "exported": true,
+          "lineCount": 28
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "../../components/ui/forms.module.css",
+          "specifiers": [
+            "forms"
+          ]
+        },
+        {
+          "source": "../../components/ui/Modal.jsx",
+          "specifiers": [
+            "Modal"
+          ]
+        },
+        {
+          "source": "../../state/useTeamFlow.js",
+          "specifiers": [
+            "useTeamFlow"
+          ]
+        }
+      ],
+      "exports": [
+        "AddMemberModal"
+      ],
+      "totalLines": 37,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/members/MembersPage.jsx": {
+      "filePath": "apps/web/src/features/members/MembersPage.jsx",
+      "contentHash": "1f3fb09fb39cfe0f619cc16ce810a039688c2ce8c4dd7093e852ea15c6928039",
+      "functions": [
+        {
+          "name": "MembersPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 36
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react/dist/esm/icons/plus.mjs",
+          "specifiers": [
+            "Plus"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
+          "source": "react-router-dom",
+          "specifiers": [
+            "useParams"
+          ]
+        },
+        {
+          "source": "../../components/ui/Avatar.jsx",
+          "specifiers": [
+            "Avatar"
+          ]
+        },
+        {
+          "source": "../../components/ui/StatusBadge.jsx",
+          "specifiers": [
+            "StatusBadge"
+          ]
+        },
+        {
+          "source": "../../state/useTeamFlow.js",
+          "specifiers": [
+            "useTeamFlow"
+          ]
+        },
+        {
+          "source": "../../state/selectors.js",
+          "specifiers": [
+            "selectProject"
+          ]
+        },
+        {
+          "source": "../../styles/workspace.module.css",
+          "specifiers": [
+            "workspace"
+          ]
+        },
+        {
+          "source": "./AddMemberModal.jsx",
+          "specifiers": [
+            "AddMemberModal"
+          ]
+        },
+        {
+          "source": "./MembersPage.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "MembersPage"
+      ],
+      "totalLines": 49,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/members/MembersPage.module.css": {
+      "filePath": "apps/web/src/features/members/MembersPage.module.css",
+      "contentHash": "6d4882aa3325f253d21f497f532e368296752935d0f8e92d3e5455c7ebb300f9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 21,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/src/features/notes/MarkdownPreview.jsx": {
+      "filePath": "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "contentHash": "5358a35f8cb807df50847a3967cbac35ac618c30ba3e58c32a8c14591b8f284d",
+      "functions": [
+        {
+          "name": "inline",
+          "params": [
+            "text",
+            "keyPrefix"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "MarkdownPreview",
+          "params": [],
+          "exported": true,
+          "lineCount": 36
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "Fragment"
+          ]
+        }
+      ],
+      "exports": [
+        "MarkdownPreview"
+      ],
+      "totalLines": 50,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/notes/NoteTemplateModal.jsx": {
+      "filePath": "apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "contentHash": "25777b52645e54e515b8e076641e8a442e1aa64e72e6e995debaf3432a8e75b5",
+      "functions": [
+        {
+          "name": "NoteTemplateModal",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react/dist/esm/icons/square-check-big.mjs",
+          "specifiers": [
+            "CheckSquare"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/file-text.mjs",
+          "specifiers": [
+            "FileText"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/layers-3.mjs",
+          "specifiers": [
+            "Layers3"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/search.mjs",
+          "specifiers": [
+            "Search"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/users.mjs",
+          "specifiers": [
+            "Users"
+          ]
+        },
+        {
+          "source": "../../components/ui/Modal.jsx",
+          "specifiers": [
+            "Modal"
+          ]
+        },
+        {
+          "source": "./NotesPage.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "NoteTemplateModal"
+      ],
+      "totalLines": 21,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/notes/NotesPage.jsx": {
+      "filePath": "apps/web/src/features/notes/NotesPage.jsx",
+      "contentHash": "92efd09767e3bba9948794c7634921037b83048a7f75e3acd8ebcb4aeb508454",
+      "functions": [
+        {
+          "name": "NotesPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 66
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react/dist/esm/icons/bold.mjs",
+          "specifiers": [
+            "Bold"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/code.mjs",
+          "specifiers": [
+            "Code"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/eye.mjs",
+          "specifiers": [
+            "Eye"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/heading-1.mjs",
+          "specifiers": [
+            "Heading1"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/heading-2.mjs",
+          "specifiers": [
+            "Heading2"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/italic.mjs",
+          "specifiers": [
+            "Italic"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/list.mjs",
+          "specifiers": [
+            "List"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/pen-line.mjs",
+          "specifiers": [
+            "PenLine"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/plus.mjs",
+          "specifiers": [
+            "Plus"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/search.mjs",
+          "specifiers": [
+            "Search"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useEffect",
+            "useMemo",
+            "useRef",
+            "useState"
+          ]
+        },
+        {
+          "source": "react-router-dom",
+          "specifiers": [
+            "useOutletContext",
+            "useSearchParams"
+          ]
+        },
+        {
+          "source": "../../components/ui/Avatar.jsx",
+          "specifiers": [
+            "Avatar"
+          ]
+        },
+        {
+          "source": "../../lib/format.js",
+          "specifiers": [
+            "formatShortDate",
+            "todayIso"
+          ]
+        },
+        {
+          "source": "../../state/useTeamFlow.js",
+          "specifiers": [
+            "useTeamFlow"
+          ]
+        },
+        {
+          "source": "./MarkdownPreview.jsx",
+          "specifiers": [
+            "MarkdownPreview"
+          ]
+        },
+        {
+          "source": "./NoteTemplateModal.jsx",
+          "specifiers": [
+            "NoteTemplateModal"
+          ]
+        },
+        {
+          "source": "./NotesPage.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "NotesPage"
+      ],
+      "totalLines": 96,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/notes/NotesPage.module.css": {
+      "filePath": "apps/web/src/features/notes/NotesPage.module.css",
+      "contentHash": "26fe3d59bc6d9c1b05b01341bfc1e06be3483acccab9d531bb52f232810fcdbd",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 56,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/src/features/projects/ProjectListPage.jsx": {
+      "filePath": "apps/web/src/features/projects/ProjectListPage.jsx",
+      "contentHash": "c44cfe440ed89f845994fdddec43d7594860e67a3004d7a3f904de4f8d23fca1",
+      "functions": [
+        {
+          "name": "ProjectListPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 46
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react/dist/esm/icons/search.mjs",
+          "specifiers": [
+            "Search"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
+          "source": "react-router-dom",
+          "specifiers": [
+            "useNavigate"
+          ]
+        },
+        {
+          "source": "./components/ProjectCard.jsx",
+          "specifiers": [
+            "ProjectCard"
+          ]
+        },
+        {
+          "source": "../../state/useTeamFlow.js",
+          "specifiers": [
+            "useTeamFlow"
+          ]
+        },
+        {
+          "source": "../../state/selectors.js",
+          "specifiers": [
+            "selectProjectSummaries"
+          ]
+        },
+        {
+          "source": "./ProjectListPage.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "ProjectListPage"
+      ],
+      "totalLines": 59,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/projects/ProjectListPage.module.css": {
+      "filePath": "apps/web/src/features/projects/ProjectListPage.module.css",
+      "contentHash": "4525f181adf8be5d372f23488d9e0d98bd8b375bf3495de3f74815fbf1256789",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 113,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/src/features/projects/ProjectListPage.test.jsx": {
+      "filePath": "apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "contentHash": "b88df0e53239ad5cf1a06c03cb6bdb6162b97fcb0e1dc4526ea8e8caf7b8113b",
+      "functions": [
+        {
+          "name": "renderApp",
+          "params": [],
+          "exported": false,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@testing-library/react",
+          "specifiers": [
+            "render",
+            "screen",
+            "waitFor"
+          ]
+        },
+        {
+          "source": "@testing-library/user-event",
+          "specifiers": [
+            "userEvent"
+          ]
+        },
+        {
+          "source": "react-router-dom",
+          "specifiers": [
+            "MemoryRouter"
+          ]
+        },
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "expect",
+            "test"
+          ]
+        },
+        {
+          "source": "../../App.jsx",
+          "specifiers": [
+            "App"
+          ]
+        },
+        {
+          "source": "../../state/TeamFlowProvider.jsx",
+          "specifiers": [
+            "TeamFlowProvider"
+          ]
+        },
+        {
+          "source": "./components/ProjectCard.jsx",
+          "specifiers": [
+            "ProjectCard"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 69,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/projects/components/NewProjectModal.jsx": {
+      "filePath": "apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "contentHash": "7ccc72129341eba59653e5003d2640ebd7b6250dd1615634f8fc43a0f7efcf53",
+      "functions": [
+        {
+          "name": "NewProjectModal",
+          "params": [],
+          "exported": true,
+          "lineCount": 61
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "PROJECT_STATUS"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "../../../constants/labels.js",
+          "specifiers": [
+            "PROJECT_STATUS_LABEL"
+          ]
+        },
+        {
+          "source": "../../../state/useTeamFlow.js",
+          "specifiers": [
+            "useTeamFlow"
+          ]
+        },
+        {
+          "source": "../../../components/ui/forms.module.css",
+          "specifiers": [
+            "forms"
+          ]
+        },
+        {
+          "source": "../../../components/ui/Modal.jsx",
+          "specifiers": [
+            "Modal"
+          ]
+        }
+      ],
+      "exports": [
+        "NewProjectModal"
+      ],
+      "totalLines": 77,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/projects/components/ProjectCard.jsx": {
+      "filePath": "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "contentHash": "109ca4288e1ec0ecd93918a96f9353afcad671ea0b89e990b843c0d39d685442",
+      "functions": [
+        {
+          "name": "ProjectCard",
+          "params": [],
+          "exported": true,
+          "lineCount": 61
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "normalizeProgress",
+            "PROJECT_STATUS"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/layers-3.mjs",
+          "specifiers": [
+            "Layers3"
+          ]
+        },
+        {
+          "source": "../../../lib/format.js",
+          "specifiers": [
+            "formatPeriod"
+          ]
+        },
+        {
+          "source": "./ProjectCard.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "ProjectCard"
+      ],
+      "totalLines": 84,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/projects/components/ProjectCard.module.css": {
+      "filePath": "apps/web/src/features/projects/components/ProjectCard.module.css",
+      "contentHash": "c603856fee00edced59b5b68f8eec8cf22c805a699b547c8aa68cd3773a41972",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 184,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/src/features/resources/AddResourceModal.jsx": {
+      "filePath": "apps/web/src/features/resources/AddResourceModal.jsx",
+      "contentHash": "c579360ca1af46451cd7a24c4c6936946bb3359e8e6297c04c3e947c4a4aa1e7",
+      "functions": [
+        {
+          "name": "AddResourceModal",
+          "params": [],
+          "exported": true,
+          "lineCount": 61
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "RESOURCE_TYPE"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "../../components/ui/forms.module.css",
+          "specifiers": [
+            "forms"
+          ]
+        },
+        {
+          "source": "../../components/ui/Modal.jsx",
+          "specifiers": [
+            "Modal"
+          ]
+        },
+        {
+          "source": "../../constants/labels.js",
+          "specifiers": [
+            "RESOURCE_TYPE_LABEL"
+          ]
+        },
+        {
+          "source": "../../lib/format.js",
+          "specifiers": [
+            "todayIso"
+          ]
+        },
+        {
+          "source": "../../state/useTeamFlow.js",
+          "specifiers": [
+            "useTeamFlow"
+          ]
+        }
+      ],
+      "exports": [
+        "AddResourceModal"
+      ],
+      "totalLines": 73,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/resources/CreateFolderModal.jsx": {
+      "filePath": "apps/web/src/features/resources/CreateFolderModal.jsx",
+      "contentHash": "7a16e558678d9d174c0a90acc1be33f4d2c9a6273727c4a448ec7e6b1850dd17",
+      "functions": [
+        {
+          "name": "CreateFolderModal",
+          "params": [],
+          "exported": true,
+          "lineCount": 45
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "RESOURCE_TYPE"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "../../components/ui/forms.module.css",
+          "specifiers": [
+            "forms"
+          ]
+        },
+        {
+          "source": "../../components/ui/Modal.jsx",
+          "specifiers": [
+            "Modal"
+          ]
+        },
+        {
+          "source": "../../lib/format.js",
+          "specifiers": [
+            "todayIso"
+          ]
+        },
+        {
+          "source": "../../state/useTeamFlow.js",
+          "specifiers": [
+            "useTeamFlow"
+          ]
+        }
+      ],
+      "exports": [
+        "CreateFolderModal"
+      ],
+      "totalLines": 54,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/resources/ResourceDetailModal.jsx": {
+      "filePath": "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "contentHash": "dcc8e61838b03847369ae4ba50695c39748584cff5d6806465f440e87cba412d",
+      "functions": [
+        {
+          "name": "ResourceDetailModal",
+          "params": [],
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../../components/ui/Modal.jsx",
+          "specifiers": [
+            "Modal"
+          ]
+        },
+        {
+          "source": "../../components/ui/ResourceIcon.jsx",
+          "specifiers": [
+            "ResourceIcon"
+          ]
+        },
+        {
+          "source": "../../constants/labels.js",
+          "specifiers": [
+            "RESOURCE_TYPE_LABEL"
+          ]
+        },
+        {
+          "source": "../../lib/format.js",
+          "specifiers": [
+            "formatShortDate"
+          ]
+        },
+        {
+          "source": "./ResourcesPage.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "ResourceDetailModal"
+      ],
+      "totalLines": 22,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/resources/ResourcesPage.jsx": {
+      "filePath": "apps/web/src/features/resources/ResourcesPage.jsx",
+      "contentHash": "78681c31949211eaea52167797e2c26ac65a6a4cadeedb88c88ed0f9c3255908",
+      "functions": [
+        {
+          "name": "ResourcesPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 89
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "RESOURCE_TYPE"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/arrow-down-up.mjs",
+          "specifiers": [
+            "ArrowDownUp"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/chevron-right.mjs",
+          "specifiers": [
+            "ChevronRight"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/folder-plus.mjs",
+          "specifiers": [
+            "FolderPlus"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/plus.mjs",
+          "specifiers": [
+            "Plus"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/search.mjs",
+          "specifiers": [
+            "Search"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
+          "source": "react-router-dom",
+          "specifiers": [
+            "useOutletContext"
+          ]
+        },
+        {
+          "source": "../../components/ui/ResourceIcon.jsx",
+          "specifiers": [
+            "ResourceIcon"
+          ]
+        },
+        {
+          "source": "../../constants/labels.js",
+          "specifiers": [
+            "RESOURCE_TYPE_LABEL"
+          ]
+        },
+        {
+          "source": "../../lib/format.js",
+          "specifiers": [
+            "formatShortDate"
+          ]
+        },
+        {
+          "source": "../../state/useTeamFlow.js",
+          "specifiers": [
+            "useTeamFlow"
+          ]
+        },
+        {
+          "source": "../../styles/workspace.module.css",
+          "specifiers": [
+            "workspace"
+          ]
+        },
+        {
+          "source": "./AddResourceModal.jsx",
+          "specifiers": [
+            "AddResourceModal"
+          ]
+        },
+        {
+          "source": "./CreateFolderModal.jsx",
+          "specifiers": [
+            "CreateFolderModal"
+          ]
+        },
+        {
+          "source": "./ResourceDetailModal.jsx",
+          "specifiers": [
+            "ResourceDetailModal"
+          ]
+        },
+        {
+          "source": "./ResourcesPage.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "ResourcesPage"
+      ],
+      "totalLines": 109,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/resources/ResourcesPage.module.css": {
+      "filePath": "apps/web/src/features/resources/ResourcesPage.module.css",
+      "contentHash": "a63a559fe38fbb429e019dc3e811edf5604118dca1e4411be32c6ef6602d4026",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 39,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/src/features/tasks/MyTasksPage.jsx": {
+      "filePath": "apps/web/src/features/tasks/MyTasksPage.jsx",
+      "contentHash": "543664719ba24b05b89a4bde93d40cccad9630dc4c2228b08d63652591db0da6",
+      "functions": [
+        {
+          "name": "MyTasksPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 35
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "lucide-react/dist/esm/icons/layers-3.mjs",
+          "specifiers": [
+            "Layers3"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
+          "source": "../../components/ui/StatusBadge.jsx",
+          "specifiers": [
+            "StatusBadge"
+          ]
+        },
+        {
+          "source": "../../lib/format.js",
+          "specifiers": [
+            "formatShortDate"
+          ]
+        },
+        {
+          "source": "../../state/useTeamFlow.js",
+          "specifiers": [
+            "useTeamFlow"
+          ]
+        },
+        {
+          "source": "../../styles/workspace.module.css",
+          "specifiers": [
+            "workspace"
+          ]
+        },
+        {
+          "source": "./components/TaskDetailModal.jsx",
+          "specifiers": [
+            "TaskDetailModal"
+          ]
+        }
+      ],
+      "exports": [
+        "MyTasksPage"
+      ],
+      "totalLines": 45,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/tasks/ProjectTasksPage.jsx": {
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "contentHash": "525b9658a28cdc065750b1eae8c40fbf6ed6e970a29fe6565a6304809733aede",
+      "functions": [
+        {
+          "name": "ProjectTasksPage",
+          "params": [],
+          "exported": true,
+          "lineCount": 67
+        },
+        {
+          "name": "SortHeader",
+          "params": [],
+          "exported": false,
+          "lineCount": 14
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "TASK_STATUS"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/arrow-down.mjs",
+          "specifiers": [
+            "ArrowDown"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/arrow-up.mjs",
+          "specifiers": [
+            "ArrowUp"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/search.mjs",
+          "specifiers": [
+            "Search"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/plus.mjs",
+          "specifiers": [
+            "Plus"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/x.mjs",
+          "specifiers": [
+            "X"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useMemo",
+            "useState"
+          ]
+        },
+        {
+          "source": "react-router-dom",
+          "specifiers": [
+            "useOutletContext"
+          ]
+        },
+        {
+          "source": "../../components/ui/Avatar.jsx",
+          "specifiers": [
+            "Avatar"
+          ]
+        },
+        {
+          "source": "../../constants/labels.js",
+          "specifiers": [
+            "TASK_STATUS_LABEL",
+            "TASK_STATUS_ORDER"
+          ]
+        },
+        {
+          "source": "../../lib/format.js",
+          "specifiers": [
+            "formatShortDate"
+          ]
+        },
+        {
+          "source": "../../state/useTeamFlow.js",
+          "specifiers": [
+            "useTeamFlow"
+          ]
+        },
+        {
+          "source": "../../state/selectors.js",
+          "specifiers": [
+            "selectProjectMembers",
+            "selectProjectTasks"
+          ]
+        },
+        {
+          "source": "../../styles/workspace.module.css",
+          "specifiers": [
+            "workspace"
+          ]
+        },
+        {
+          "source": "./ProjectTasksPage.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "ProjectTasksPage"
+      ],
+      "totalLines": 109,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/tasks/ProjectTasksPage.module.css": {
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "contentHash": "451d7ad252fc51d01f59ffa385bd225ff7250f62d7ab432c1fc9e18a04d9354e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 35,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/src/features/tasks/components/TaskCreateModal.jsx": {
+      "filePath": "apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "contentHash": "da6a6d680c50340a4d1b75bdce271c0b1d9a65d705ac6f3eb324fe72a465d390",
+      "functions": [
+        {
+          "name": "TaskCreateModal",
+          "params": [],
+          "exported": true,
+          "lineCount": 45
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "TASK_STATUS"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "../../../components/ui/forms.module.css",
+          "specifiers": [
+            "forms"
+          ]
+        },
+        {
+          "source": "../../../components/ui/Modal.jsx",
+          "specifiers": [
+            "Modal"
+          ]
+        },
+        {
+          "source": "../../../constants/labels.js",
+          "specifiers": [
+            "TASK_STATUS_LABEL",
+            "TASK_STATUS_ORDER"
+          ]
+        },
+        {
+          "source": "../../../state/useTeamFlow.js",
+          "specifiers": [
+            "useTeamFlow"
+          ]
+        }
+      ],
+      "exports": [
+        "TaskCreateModal"
+      ],
+      "totalLines": 61,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/tasks/components/TaskDetailModal.jsx": {
+      "filePath": "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "contentHash": "b949db2fe044c5e0cf64af4114df68e19cbec78533d396a556ef81f4032e314d",
+      "functions": [
+        {
+          "name": "TaskDetailModal",
+          "params": [],
+          "exported": true,
+          "lineCount": 60
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "TASK_STATUS"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/calendar-days.mjs",
+          "specifiers": [
+            "Calendar"
+          ]
+        },
+        {
+          "source": "lucide-react/dist/esm/icons/trash-2.mjs",
+          "specifiers": [
+            "Trash2"
+          ]
+        },
+        {
+          "source": "react",
+          "specifiers": [
+            "useState"
+          ]
+        },
+        {
+          "source": "../../../components/ui/Avatar.jsx",
+          "specifiers": [
+            "Avatar"
+          ]
+        },
+        {
+          "source": "../../../components/ui/Modal.jsx",
+          "specifiers": [
+            "Modal"
+          ]
+        },
+        {
+          "source": "../../../components/ui/StatusBadge.jsx",
+          "specifiers": [
+            "StatusBadge"
+          ]
+        },
+        {
+          "source": "../../../constants/labels.js",
+          "specifiers": [
+            "TASK_STATUS_LABEL",
+            "TASK_STATUS_ORDER"
+          ]
+        },
+        {
+          "source": "../../../lib/format.js",
+          "specifiers": [
+            "formatShortDate"
+          ]
+        },
+        {
+          "source": "../../../styles/workspace.module.css",
+          "specifiers": [
+            "workspace"
+          ]
+        },
+        {
+          "source": "./TaskModal.module.css",
+          "specifiers": [
+            "styles"
+          ]
+        }
+      ],
+      "exports": [
+        "TaskDetailModal"
+      ],
+      "totalLines": 81,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/features/tasks/components/TaskModal.module.css": {
+      "filePath": "apps/web/src/features/tasks/components/TaskModal.module.css",
+      "contentHash": "e183e1f8b0ef89c4b205e4e266309406462dcd3d3793d5aea413918dc22a3eb7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 23,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/src/lib/format.js": {
+      "filePath": "apps/web/src/lib/format.js",
+      "contentHash": "c7e0d766c37788fa16cacf488f905eec1282deb97fce13560b6d070b24dee662",
+      "functions": [
+        {
+          "name": "formatShortDate",
+          "params": [
+            "date"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "formatPeriod",
+          "params": [
+            "startDate",
+            "endDate"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "todayIso",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "addLocalDaysIso",
+          "params": [
+            "days"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "localDateIso",
+          "params": [
+            "date"
+          ],
+          "exported": false,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "formatShortDate",
+        "formatPeriod",
+        "todayIso",
+        "addLocalDaysIso"
+      ],
+      "totalLines": 26,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/lib/format.test.js": {
+      "filePath": "apps/web/src/lib/format.test.js",
+      "contentHash": "a27ba2f694e82f87acd4fedaf2225c9f34fcfa02b33899b976aa44bf6d71f2f7",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "expect",
+            "test"
+          ]
+        },
+        {
+          "source": "./format.js",
+          "specifiers": [
+            "addLocalDaysIso",
+            "todayIso"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 16,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/main.jsx": {
+      "filePath": "apps/web/src/main.jsx",
+      "contentHash": "718c4840dde0e8c7c5c0a2871fb3f41736c749932250a5686a1a04ac154e79da",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "StrictMode"
+          ]
+        },
+        {
+          "source": "react-dom/client",
+          "specifiers": [
+            "createRoot"
+          ]
+        },
+        {
+          "source": "react-router-dom",
+          "specifiers": [
+            "BrowserRouter"
+          ]
+        },
+        {
+          "source": "./App.jsx",
+          "specifiers": [
+            "App"
+          ]
+        },
+        {
+          "source": "./data/apiTeamFlowRepository.js",
+          "specifiers": [
+            "apiTeamFlowRepository"
+          ]
+        },
+        {
+          "source": "./state/TeamFlowProvider.jsx",
+          "specifiers": [
+            "TeamFlowProvider"
+          ]
+        },
+        {
+          "source": "./styles/tokens.css",
+          "specifiers": []
+        },
+        {
+          "source": "./styles/global.css",
+          "specifiers": []
+        }
+      ],
+      "exports": [],
+      "totalLines": 20,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/state/TeamFlowContext.js": {
+      "filePath": "apps/web/src/state/TeamFlowContext.js",
+      "contentHash": "520fc22d7acdcb36e6cb0549c9d17fa4887509d878312de4a5d25f58ee88a535",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "createContext"
+          ]
+        }
+      ],
+      "exports": [
+        "TeamFlowContext"
+      ],
+      "totalLines": 4,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/state/TeamFlowProvider.jsx": {
+      "filePath": "apps/web/src/state/TeamFlowProvider.jsx",
+      "contentHash": "eede69f29bf7cfd0116c02df57fda3212861cefb8162985173306650e75b5e7a",
+      "functions": [
+        {
+          "name": "reducer",
+          "params": [
+            "state",
+            "action"
+          ],
+          "exported": false,
+          "lineCount": 63
+        },
+        {
+          "name": "TeamFlowProvider",
+          "params": [],
+          "exported": true,
+          "lineCount": 109
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useCallback",
+            "useEffect",
+            "useMemo",
+            "useReducer",
+            "useRef"
+          ]
+        },
+        {
+          "source": "../data/mockTeamFlowRepository.js",
+          "specifiers": [
+            "mockTeamFlowRepository"
+          ]
+        },
+        {
+          "source": "./TeamFlowContext.js",
+          "specifiers": [
+            "TeamFlowContext"
+          ]
+        }
+      ],
+      "exports": [
+        "TeamFlowProvider"
+      ],
+      "totalLines": 195,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/state/selectors.js": {
+      "filePath": "apps/web/src/state/selectors.js",
+      "contentHash": "88df616d398fe3b58fdd6f6bbf14ae1f3b3c5d5c93cfac11642556cd71d1b16a",
+      "functions": [
+        {
+          "name": "selectProject",
+          "params": [
+            "state",
+            "projectId"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "selectProjectTasks",
+          "params": [
+            "state",
+            "projectId"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "selectProjectMembers",
+          "params": [
+            "state",
+            "projectId"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "selectProjectSummaries",
+          "params": [
+            "state"
+          ],
+          "exported": true,
+          "lineCount": 10
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@teamflow/shared",
+          "specifiers": [
+            "calculateProgress"
+          ]
+        }
+      ],
+      "exports": [
+        "selectProject",
+        "selectProjectTasks",
+        "selectProjectMembers",
+        "selectProjectSummaries"
+      ],
+      "totalLines": 26,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/state/useTeamFlow.js": {
+      "filePath": "apps/web/src/state/useTeamFlow.js",
+      "contentHash": "e6811bff183ba5a1cdbcd0d8dd81149de2c152e4228a265a815495339acefd82",
+      "functions": [
+        {
+          "name": "useTeamFlow",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "react",
+          "specifiers": [
+            "useContext"
+          ]
+        },
+        {
+          "source": "./TeamFlowContext.js",
+          "specifiers": [
+            "TeamFlowContext"
+          ]
+        }
+      ],
+      "exports": [
+        "useTeamFlow"
+      ],
+      "totalLines": 10,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/src/styles/global.css": {
+      "filePath": "apps/web/src/styles/global.css",
+      "contentHash": "22566405c0b019dfd5e66af1369e5bb676a0cb51f24f3b40d2569456a9be49f0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 65,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/src/styles/tokens.css": {
+      "filePath": "apps/web/src/styles/tokens.css",
+      "contentHash": "2dfb4821c9ffd3ae2157d0ef2bb568e0603314a04e058999e1b69652ddef00eb",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 37,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/src/styles/workspace.module.css": {
+      "filePath": "apps/web/src/styles/workspace.module.css",
+      "contentHash": "380eea459ef33a1c850e96d398925591394dd029feb0663273ff68977080d6a8",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 36,
+      "hasStructuralAnalysis": false
+    },
+    "apps/web/src/test/setup.js": {
+      "filePath": "apps/web/src/test/setup.js",
+      "contentHash": "0d733b5b2b19295110f00aeae85d74355ad43aad363bf8090158a9bbde788712",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@testing-library/jest-dom/vitest",
+          "specifiers": []
+        },
+        {
+          "source": "@testing-library/react",
+          "specifiers": [
+            "cleanup"
+          ]
+        },
+        {
+          "source": "vitest",
+          "specifiers": [
+            "afterEach"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 6,
+      "hasStructuralAnalysis": true
+    },
+    "apps/web/vite.config.js": {
+      "filePath": "apps/web/vite.config.js",
+      "contentHash": "b51b352efe2de54e1a537433156c130edb0b99a56f12b89ca83b9d41a426df7a",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vite",
+          "specifiers": [
+            "defineConfig"
+          ]
+        },
+        {
+          "source": "@vitejs/plugin-react",
+          "specifiers": [
+            "react"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 21,
+      "hasStructuralAnalysis": true
+    },
+    "docs/plan.md": {
+      "filePath": "docs/plan.md",
+      "contentHash": "3989b2e147adc1018f73ce69fc0b1d880b6a82725252c1fb6c76494d58e784d4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 216,
+      "hasStructuralAnalysis": true
+    },
+    "package.json": {
+      "filePath": "package.json",
+      "contentHash": "235a6c5b6d3c69c3a9d0b064174ccd81c0c0fc3fe876157cd0676b82abacda5f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 27,
+      "hasStructuralAnalysis": true
+    },
+    "packages/shared/package.json": {
+      "filePath": "packages/shared/package.json",
+      "contentHash": "4c2258c998461251aeeed381154c8b75138b42eb889710845dd60ecd1b9f5fbc",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 14,
+      "hasStructuralAnalysis": true
+    },
+    "packages/shared/src/index.js": {
+      "filePath": "packages/shared/src/index.js",
+      "contentHash": "e01e893c7369996a94ef0f6f79daad93c6b54b90db0669ab07cb74eee3e3e32f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "PROJECT_STATUS",
+        "RESOURCE_TYPE",
+        "TASK_STATUS",
+        "calculateProgress",
+        "isTaskStatus",
+        "normalizeProgress"
+      ],
+      "totalLines": 9,
+      "hasStructuralAnalysis": true
+    },
+    "packages/shared/src/project.js": {
+      "filePath": "packages/shared/src/project.js",
+      "contentHash": "af815443d945328e71c209ef359efb07dfedaa674579909c05c5d6343e8b80f6",
+      "functions": [
+        {
+          "name": "normalizeProgress",
+          "params": [
+            "progress"
+          ],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "calculateProgress",
+          "params": [
+            "tasks"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "isTaskStatus",
+          "params": [
+            "value"
+          ],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "PROJECT_STATUS",
+        "TASK_STATUS",
+        "RESOURCE_TYPE",
+        "normalizeProgress",
+        "calculateProgress",
+        "isTaskStatus"
+      ],
+      "totalLines": 149,
+      "hasStructuralAnalysis": true
+    },
+    "packages/shared/test/project.test.js": {
+      "filePath": "packages/shared/test/project.test.js",
+      "contentHash": "a21b03180aee0e5c28b24eb125ce7fee167c6cc9f1d6543e7a49f532b27c4acf",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:assert/strict",
+          "specifiers": [
+            "assert"
+          ]
+        },
+        {
+          "source": "node:test",
+          "specifiers": [
+            "test"
+          ]
+        },
+        {
+          "source": "../src/project.js",
+          "specifiers": [
+            "calculateProgress",
+            "isTaskStatus",
+            "normalizeProgress",
+            "TASK_STATUS"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 37,
+      "hasStructuralAnalysis": true
+    },
+    "supabase/migrations/20260720030115_create_tasks.sql": {
+      "filePath": "supabase/migrations/20260720030115_create_tasks.sql",
+      "contentHash": "2aa59831f645b397fa646e4bd2b2ae89783d57706c09c4952c2dfc48156db92d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 26,
+      "hasStructuralAnalysis": true
+    }
+  }
+}

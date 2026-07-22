@@ -1,0 +1,2028 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 17,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 17,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 17,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "apps/web/src/App.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 37,
+      "nonEmptyLines": 35,
+      "functions": [
+        {
+          "name": "App",
+          "startLine": 17,
+          "endLine": 37,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "App",
+          "line": 17,
+          "isDefault": true
+        }
+      ],
+      "metrics": {
+        "importCount": 10,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/components/layout/AppShell.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 48,
+      "nonEmptyLines": 43,
+      "functions": [
+        {
+          "name": "AppShell",
+          "startLine": 17,
+          "endLine": 40,
+          "params": []
+        },
+        {
+          "name": "Brand",
+          "startLine": 42,
+          "endLine": 44,
+          "params": []
+        },
+        {
+          "name": "Account",
+          "startLine": 46,
+          "endLine": 48,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "AppShell",
+          "line": 17,
+          "isDefault": false
+        },
+        {
+          "name": "Brand",
+          "line": 42,
+          "isDefault": false
+        },
+        {
+          "name": "Account",
+          "line": 46,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "AppShell",
+          "callee": "useState",
+          "lineNumber": 18
+        },
+        {
+          "caller": "AppShell",
+          "callee": "setShowNewProject",
+          "lineNumber": 24
+        },
+        {
+          "caller": "AppShell",
+          "callee": "navItems.map",
+          "lineNumber": 28
+        },
+        {
+          "caller": "AppShell",
+          "callee": "setShowNewProject",
+          "lineNumber": 37
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 3,
+        "functionCount": 3,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/components/layout/ProjectShell.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 72,
+      "nonEmptyLines": 67,
+      "functions": [
+        {
+          "name": "ProjectShell",
+          "startLine": 28,
+          "endLine": 72,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ProjectShell",
+          "line": 28,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "ProjectShell",
+          "callee": "useParams",
+          "lineNumber": 29
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "useTeamFlow",
+          "lineNumber": 30
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "useState",
+          "lineNumber": 31
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "useState",
+          "lineNumber": 32
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "useState",
+          "lineNumber": 33
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "selectProject",
+          "lineNumber": 34
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "state.tasks.find",
+          "lineNumber": 35
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "projectNav.map",
+          "lineNumber": 53
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "setCollapsed",
+          "lineNumber": 63
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "setShowTaskCreate",
+          "lineNumber": 67
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "setSelectedTaskId",
+          "lineNumber": 67
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "selectProjectMembers",
+          "lineNumber": 68
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "setShowTaskCreate",
+          "lineNumber": 68
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "setSelectedTaskId",
+          "lineNumber": 69
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "actions.updateTask",
+          "lineNumber": 69
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "actions.deleteTask",
+          "lineNumber": 69
+        },
+        {
+          "caller": "ProjectShell",
+          "callee": "setSelectedTaskId",
+          "lineNumber": 69
+        }
+      ],
+      "metrics": {
+        "importCount": 6,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/data/apiTeamFlowRepository.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 80,
+      "nonEmptyLines": 65,
+      "functions": [
+        {
+          "name": "readJson",
+          "startLine": 10,
+          "endLine": 20,
+          "params": [
+            "response",
+            "fallbackMessage"
+          ]
+        },
+        {
+          "name": "requestJson",
+          "startLine": 22,
+          "endLine": 34,
+          "params": [
+            "fetchImpl",
+            "url",
+            "options",
+            "fallbackMessage"
+          ]
+        },
+        {
+          "name": "createApiTeamFlowRepository",
+          "startLine": 36,
+          "endLine": 78,
+          "params": []
+        }
+      ],
+      "classes": [
+        {
+          "name": "TeamFlowApiError",
+          "startLine": 3,
+          "endLine": 8,
+          "methods": [
+            "constructor"
+          ],
+          "properties": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "TeamFlowApiError",
+          "line": 3,
+          "isDefault": false
+        },
+        {
+          "name": "createApiTeamFlowRepository",
+          "line": 36,
+          "isDefault": false
+        },
+        {
+          "name": "apiTeamFlowRepository",
+          "line": 80,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "constructor",
+          "callee": "super",
+          "lineNumber": 5
+        },
+        {
+          "caller": "readJson",
+          "callee": "response.json",
+          "lineNumber": 16
+        },
+        {
+          "caller": "requestJson",
+          "callee": "fetchImpl",
+          "lineNumber": 27
+        },
+        {
+          "caller": "requestJson",
+          "callee": "fetchImpl",
+          "lineNumber": 28
+        },
+        {
+          "caller": "requestJson",
+          "callee": "readJson",
+          "lineNumber": 33
+        },
+        {
+          "caller": "load",
+          "callee": "Promise.all",
+          "lineNumber": 44
+        },
+        {
+          "caller": "load",
+          "callee": "mockRepository.load",
+          "lineNumber": 45
+        },
+        {
+          "caller": "load",
+          "callee": "requestJson",
+          "lineNumber": 46
+        },
+        {
+          "caller": "load",
+          "callee": "Array.isArray",
+          "lineNumber": 49
+        },
+        {
+          "caller": "load",
+          "callee": "payload.tasks.map",
+          "lineNumber": 53
+        },
+        {
+          "caller": "load",
+          "callee": "mockPayload.tasks.filter",
+          "lineNumber": 59
+        },
+        {
+          "caller": "load",
+          "callee": "persistedTaskIds.has",
+          "lineNumber": 59
+        },
+        {
+          "caller": "createTask",
+          "callee": "requestJson",
+          "lineNumber": 65
+        },
+        {
+          "caller": "createTask",
+          "callee": "JSON.stringify",
+          "lineNumber": 68
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 3,
+        "functionCount": 3,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "apps/web/src/data/apiTeamFlowRepository.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 93,
+      "nonEmptyLines": 79,
+      "functions": [
+        {
+          "name": "jsonResponse",
+          "startLine": 32,
+          "endLine": 34,
+          "params": [
+            "body"
+          ]
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/data/mockData.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 88,
+      "nonEmptyLines": 79,
+      "functions": [
+        {
+          "name": "task",
+          "startLine": 22,
+          "endLine": 24,
+          "params": [
+            "id",
+            "projectId",
+            "title",
+            "assigneeId",
+            "dueDate",
+            "status",
+            "description"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "CURRENT_USER_ID",
+          "line": 3,
+          "isDefault": false
+        },
+        {
+          "name": "AI_MEMBER_ID",
+          "line": 4,
+          "isDefault": false
+        },
+        {
+          "name": "initialProjects",
+          "line": 6,
+          "isDefault": false
+        },
+        {
+          "name": "initialMembers",
+          "line": 13,
+          "isDefault": false
+        },
+        {
+          "name": "initialTasks",
+          "line": 26,
+          "isDefault": false
+        },
+        {
+          "name": "initialNotes",
+          "line": 56,
+          "isDefault": false
+        },
+        {
+          "name": "initialResources",
+          "line": 64,
+          "isDefault": false
+        },
+        {
+          "name": "initialAiSettings",
+          "line": 77,
+          "isDefault": false
+        },
+        {
+          "name": "aiHistory",
+          "line": 84,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 9,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/data/mockTeamFlowRepository.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 70,
+      "nonEmptyLines": 57,
+      "functions": [
+        {
+          "name": "nextId",
+          "startLine": 5,
+          "endLine": 5,
+          "params": [
+            "prefix"
+          ]
+        },
+        {
+          "name": "clone",
+          "startLine": 6,
+          "endLine": 6,
+          "params": [
+            "value"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "mockTeamFlowRepository",
+          "line": 12,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "nextId",
+          "callee": "Date.now",
+          "lineNumber": 5
+        },
+        {
+          "caller": "clone",
+          "callee": "structuredClone",
+          "lineNumber": 6
+        },
+        {
+          "caller": "load",
+          "callee": "Promise.resolve",
+          "lineNumber": 14
+        },
+        {
+          "caller": "load",
+          "callee": "clone",
+          "lineNumber": 14
+        },
+        {
+          "caller": "createProject",
+          "callee": "Promise.resolve",
+          "lineNumber": 27
+        },
+        {
+          "caller": "createProject",
+          "callee": "nextId",
+          "lineNumber": 28
+        },
+        {
+          "caller": "updateProject",
+          "callee": "Promise.resolve",
+          "lineNumber": 36
+        },
+        {
+          "caller": "createTask",
+          "callee": "Promise.resolve",
+          "lineNumber": 40
+        },
+        {
+          "caller": "createTask",
+          "callee": "nextId",
+          "lineNumber": 40
+        },
+        {
+          "caller": "updateTask",
+          "callee": "Promise.resolve",
+          "lineNumber": 44
+        },
+        {
+          "caller": "deleteTask",
+          "callee": "Promise.resolve",
+          "lineNumber": 48
+        },
+        {
+          "caller": "createMember",
+          "callee": "Promise.resolve",
+          "lineNumber": 52
+        },
+        {
+          "caller": "createMember",
+          "callee": "nextId",
+          "lineNumber": 52
+        },
+        {
+          "caller": "createNote",
+          "callee": "Promise.resolve",
+          "lineNumber": 56
+        },
+        {
+          "caller": "createNote",
+          "callee": "nextId",
+          "lineNumber": 56
+        },
+        {
+          "caller": "updateNote",
+          "callee": "Promise.resolve",
+          "lineNumber": 60
+        },
+        {
+          "caller": "createResource",
+          "callee": "Promise.resolve",
+          "lineNumber": 64
+        },
+        {
+          "caller": "createResource",
+          "callee": "nextId",
+          "lineNumber": 64
+        },
+        {
+          "caller": "updateAiSettings",
+          "callee": "Promise.resolve",
+          "lineNumber": 68
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/AppFlows.test.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 237,
+      "nonEmptyLines": 205,
+      "functions": [
+        {
+          "name": "renderApp",
+          "startLine": 11,
+          "endLine": 13,
+          "params": [
+            "initialEntry",
+            "repository"
+          ]
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "renderApp",
+          "callee": "render",
+          "lineNumber": 12
+        }
+      ],
+      "metrics": {
+        "importCount": 4,
+        "exportCount": 0,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/ai/AiPage.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 132,
+      "nonEmptyLines": 115,
+      "functions": [
+        {
+          "name": "AiPage",
+          "startLine": 30,
+          "endLine": 132,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "AiPage",
+          "line": 30,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "AiPage",
+          "callee": "useOutletContext",
+          "lineNumber": 31
+        },
+        {
+          "caller": "AiPage",
+          "callee": "useTeamFlow",
+          "lineNumber": 32
+        },
+        {
+          "caller": "AiPage",
+          "callee": "useState",
+          "lineNumber": 34
+        },
+        {
+          "caller": "AiPage",
+          "callee": "useState",
+          "lineNumber": 35
+        },
+        {
+          "caller": "AiPage",
+          "callee": "useState",
+          "lineNumber": 36
+        },
+        {
+          "caller": "AiPage",
+          "callee": "useState",
+          "lineNumber": 37
+        },
+        {
+          "caller": "AiPage",
+          "callee": "useRef",
+          "lineNumber": 38
+        },
+        {
+          "caller": "AiPage",
+          "callee": "useEffect",
+          "lineNumber": 40
+        },
+        {
+          "caller": "AiPage",
+          "callee": "clearTimeout",
+          "lineNumber": 40
+        },
+        {
+          "caller": "AiPage",
+          "callee": "useMemo",
+          "lineNumber": 42
+        },
+        {
+          "caller": "AiPage",
+          "callee": "state.tasks.filter",
+          "lineNumber": 42
+        },
+        {
+          "caller": "AiPage",
+          "callee": "aiTasks.filter",
+          "lineNumber": 43
+        },
+        {
+          "caller": "AiPage",
+          "callee": "aiTasks.filter",
+          "lineNumber": 44
+        },
+        {
+          "caller": "showFeedback",
+          "callee": "clearTimeout",
+          "lineNumber": 47
+        },
+        {
+          "caller": "showFeedback",
+          "callee": "setFeedback",
+          "lineNumber": 48
+        },
+        {
+          "caller": "showFeedback",
+          "callee": "setTimeout",
+          "lineNumber": 49
+        },
+        {
+          "caller": "showFeedback",
+          "callee": "setFeedback",
+          "lineNumber": 49
+        },
+        {
+          "caller": "saveInstructions",
+          "callee": "actions.updateAiSettings",
+          "lineNumber": 53
+        },
+        {
+          "caller": "saveInstructions",
+          "callee": "showFeedback",
+          "lineNumber": 54
+        },
+        {
+          "caller": "toggleContext",
+          "callee": "actions.updateAiSettings",
+          "lineNumber": 58
+        },
+        {
+          "caller": "submitBrief",
+          "callee": "event.preventDefault",
+          "lineNumber": 62
+        },
+        {
+          "caller": "submitBrief",
+          "callee": "brief.title.trim",
+          "lineNumber": 63
+        },
+        {
+          "caller": "submitBrief",
+          "callee": "setError",
+          "lineNumber": 64
+        },
+        {
+          "caller": "submitBrief",
+          "callee": "actions.createTask",
+          "lineNumber": 67
+        },
+        {
+          "caller": "submitBrief",
+          "callee": "brief.title.trim",
+          "lineNumber": 68
+        },
+        {
+          "caller": "submitBrief",
+          "callee": "brief.description.trim",
+          "lineNumber": 69
+        },
+        {
+          "caller": "submitBrief",
+          "callee": "addLocalDaysIso",
+          "lineNumber": 71
+        },
+        {
+          "caller": "submitBrief",
+          "callee": "setBrief",
+          "lineNumber": 74
+        },
+        {
+          "caller": "submitBrief",
+          "callee": "setError",
+          "lineNumber": 75
+        },
+        {
+          "caller": "submitBrief",
+          "callee": "showFeedback",
+          "lineNumber": 76
+        },
+        {
+          "caller": "AiPage",
+          "callee": "setInstructions",
+          "lineNumber": 93
+        },
+        {
+          "caller": "AiPage",
+          "callee": "contextOptions.map",
+          "lineNumber": 98
+        },
+        {
+          "caller": "AiPage",
+          "callee": "Boolean",
+          "lineNumber": 98
+        },
+        {
+          "caller": "AiPage",
+          "callee": "toggleContext",
+          "lineNumber": 98
+        },
+        {
+          "caller": "AiPage",
+          "callee": "setBrief",
+          "lineNumber": 106
+        },
+        {
+          "caller": "AiPage",
+          "callee": "setError",
+          "lineNumber": 106
+        },
+        {
+          "caller": "AiPage",
+          "callee": "Boolean",
+          "lineNumber": 106
+        },
+        {
+          "caller": "AiPage",
+          "callee": "setBrief",
+          "lineNumber": 107
+        },
+        {
+          "caller": "AiPage",
+          "callee": "brief.title.trim",
+          "lineNumber": 109
+        },
+        {
+          "caller": "AiPage",
+          "callee": "aiHistory.map",
+          "lineNumber": 125
+        },
+        {
+          "caller": "AiPage",
+          "callee": "formatShortDate",
+          "lineNumber": 125
+        }
+      ],
+      "metrics": {
+        "importCount": 5,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 49,
+      "nonEmptyLines": 44,
+      "functions": [
+        {
+          "name": "inline",
+          "startLine": 3,
+          "endLine": 12,
+          "params": [
+            "text",
+            "keyPrefix"
+          ]
+        },
+        {
+          "name": "MarkdownPreview",
+          "startLine": 14,
+          "endLine": 49,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "MarkdownPreview",
+          "line": 14,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "inline",
+          "callee": "text.split(/(\\*\\*.+?\\*\\*|\\*.+?\\*|`.+?`)/g).filter",
+          "lineNumber": 4
+        },
+        {
+          "caller": "inline",
+          "callee": "text.split",
+          "lineNumber": 4
+        },
+        {
+          "caller": "inline",
+          "callee": "tokens.map",
+          "lineNumber": 5
+        },
+        {
+          "caller": "inline",
+          "callee": "token.startsWith",
+          "lineNumber": 7
+        },
+        {
+          "caller": "inline",
+          "callee": "token.endsWith",
+          "lineNumber": 7
+        },
+        {
+          "caller": "inline",
+          "callee": "token.slice",
+          "lineNumber": 7
+        },
+        {
+          "caller": "inline",
+          "callee": "token.startsWith",
+          "lineNumber": 8
+        },
+        {
+          "caller": "inline",
+          "callee": "token.endsWith",
+          "lineNumber": 8
+        },
+        {
+          "caller": "inline",
+          "callee": "token.slice",
+          "lineNumber": 8
+        },
+        {
+          "caller": "inline",
+          "callee": "token.startsWith",
+          "lineNumber": 9
+        },
+        {
+          "caller": "inline",
+          "callee": "token.endsWith",
+          "lineNumber": 9
+        },
+        {
+          "caller": "inline",
+          "callee": "token.slice",
+          "lineNumber": 9
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "content.split",
+          "lineNumber": 15
+        },
+        {
+          "caller": "flushList",
+          "callee": "elements.push",
+          "lineNumber": 23
+        },
+        {
+          "caller": "flushList",
+          "callee": "list.map",
+          "lineNumber": 23
+        },
+        {
+          "caller": "flushList",
+          "callee": "inline",
+          "lineNumber": 23
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "lines.forEach",
+          "lineNumber": 28
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.match",
+          "lineNumber": 29
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.match",
+          "lineNumber": 30
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "flushList",
+          "lineNumber": 33
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "list.push",
+          "lineNumber": 35
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "flushList",
+          "lineNumber": 39
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.trim",
+          "lineNumber": 40
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "elements.push",
+          "lineNumber": 40
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.startsWith",
+          "lineNumber": 41
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "elements.push",
+          "lineNumber": 41
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "inline",
+          "lineNumber": 41
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.slice",
+          "lineNumber": 41
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.startsWith",
+          "lineNumber": 42
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "elements.push",
+          "lineNumber": 42
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "inline",
+          "lineNumber": 42
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.slice",
+          "lineNumber": 42
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.startsWith",
+          "lineNumber": 43
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "elements.push",
+          "lineNumber": 43
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "inline",
+          "lineNumber": 43
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.slice",
+          "lineNumber": 43
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.startsWith",
+          "lineNumber": 44
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "elements.push",
+          "lineNumber": 44
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "inline",
+          "lineNumber": 44
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "line.slice",
+          "lineNumber": 44
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "elements.push",
+          "lineNumber": 45
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "inline",
+          "lineNumber": 45
+        },
+        {
+          "caller": "MarkdownPreview",
+          "callee": "flushList",
+          "lineNumber": 47
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 1,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 20,
+      "nonEmptyLines": 17,
+      "functions": [
+        {
+          "name": "NoteTemplateModal",
+          "startLine": 18,
+          "endLine": 20,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "NoteTemplateModal",
+          "line": 18,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "NoteTemplateModal",
+          "callee": "noteTemplates.map",
+          "lineNumber": 19
+        },
+        {
+          "caller": "NoteTemplateModal",
+          "callee": "onSelect",
+          "lineNumber": 19
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/notes/NotesPage.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 95,
+      "nonEmptyLines": 85,
+      "functions": [
+        {
+          "name": "NotesPage",
+          "startLine": 30,
+          "endLine": 95,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "NotesPage",
+          "line": 30,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "NotesPage",
+          "callee": "useOutletContext",
+          "lineNumber": 31
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "useTeamFlow",
+          "lineNumber": 32
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "useSearchParams",
+          "lineNumber": 33
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "useMemo",
+          "lineNumber": 34
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "state.notes.filter",
+          "lineNumber": 34
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "searchParams.get",
+          "lineNumber": 35
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "useState",
+          "lineNumber": 36
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "projectNotes.some",
+          "lineNumber": 36
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "useState",
+          "lineNumber": 37
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "useState",
+          "lineNumber": 38
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "useState",
+          "lineNumber": 39
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "useState",
+          "lineNumber": 40
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "useRef",
+          "lineNumber": 41
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "useRef",
+          "lineNumber": 42
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "state.notes.find",
+          "lineNumber": 43
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "useEffect",
+          "lineNumber": 45
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "projectNotes.some",
+          "lineNumber": 46
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "setActiveId",
+          "lineNumber": 47
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "projectNotes.some",
+          "lineNumber": 50
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "setActiveId",
+          "lineNumber": 50
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "useEffect",
+          "lineNumber": 53
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "clearTimeout",
+          "lineNumber": 53
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "projectNotes.filter",
+          "lineNumber": 55
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "`${note.title} ${note.content}`.toLocaleLowerCase('ko-KR').includes",
+          "lineNumber": 55
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "`${note.title} ${note.content}`.toLocaleLowerCase",
+          "lineNumber": 55
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "query.toLocaleLowerCase",
+          "lineNumber": 55
+        },
+        {
+          "caller": "update",
+          "callee": "clearTimeout",
+          "lineNumber": 59
+        },
+        {
+          "caller": "update",
+          "callee": "setSaveStatus",
+          "lineNumber": 60
+        },
+        {
+          "caller": "update",
+          "callee": "actions.updateNote",
+          "lineNumber": 61
+        },
+        {
+          "caller": "update",
+          "callee": "todayIso",
+          "lineNumber": 61
+        },
+        {
+          "caller": "update",
+          "callee": "setTimeout",
+          "lineNumber": 62
+        },
+        {
+          "caller": "update",
+          "callee": "setSaveStatus",
+          "lineNumber": 62
+        },
+        {
+          "caller": "addTemplate",
+          "callee": "actions.createNote",
+          "lineNumber": 66
+        },
+        {
+          "caller": "addTemplate",
+          "callee": "todayIso",
+          "lineNumber": 66
+        },
+        {
+          "caller": "addTemplate",
+          "callee": "setActiveId",
+          "lineNumber": 67
+        },
+        {
+          "caller": "addTemplate",
+          "callee": "setSearchParams",
+          "lineNumber": 68
+        },
+        {
+          "caller": "addTemplate",
+          "callee": "setPreview",
+          "lineNumber": 69
+        },
+        {
+          "caller": "addTemplate",
+          "callee": "setShowTemplates",
+          "lineNumber": 70
+        },
+        {
+          "caller": "insert",
+          "callee": "activeNote.content.slice",
+          "lineNumber": 78
+        },
+        {
+          "caller": "insert",
+          "callee": "update",
+          "lineNumber": 79
+        },
+        {
+          "caller": "insert",
+          "callee": "activeNote.content.slice",
+          "lineNumber": 79
+        },
+        {
+          "caller": "insert",
+          "callee": "activeNote.content.slice",
+          "lineNumber": 79
+        },
+        {
+          "caller": "insert",
+          "callee": "requestAnimationFrame",
+          "lineNumber": 80
+        },
+        {
+          "caller": "insert",
+          "callee": "textarea.focus",
+          "lineNumber": 80
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "setShowTemplates",
+          "lineNumber": 86
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "setQuery",
+          "lineNumber": 86
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "filtered.map",
+          "lineNumber": 87
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "state.members.find",
+          "lineNumber": 87
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "note.content.split('\\n').find((line) => line.trim() && !/^[#>*-]/.test(line))?.replace",
+          "lineNumber": 87
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "note.content.split('\\n').find",
+          "lineNumber": 87
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "note.content.split",
+          "lineNumber": 87
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "line.trim",
+          "lineNumber": 87
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "/^[#>*-]/.test",
+          "lineNumber": 87
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "setActiveId",
+          "lineNumber": 87
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "setSearchParams",
+          "lineNumber": 87
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "setPreview",
+          "lineNumber": 87
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "formatShortDate",
+          "lineNumber": 87
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "toolbar.map",
+          "lineNumber": 90
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "insert",
+          "lineNumber": 90
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "setPreview",
+          "lineNumber": 90
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "update",
+          "lineNumber": 90
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "(() => { const author = state.members.find((member) => member.id === activeNote.authorId); return author ? <Avatar member={author} /> : null })",
+          "lineNumber": 90
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "state.members.find",
+          "lineNumber": 90
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "formatShortDate",
+          "lineNumber": 90
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "update",
+          "lineNumber": 90
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "setShowTemplates",
+          "lineNumber": 90
+        },
+        {
+          "caller": "NotesPage",
+          "callee": "setShowTemplates",
+          "lineNumber": 92
+        }
+      ],
+      "metrics": {
+        "importCount": 6,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 68,
+      "nonEmptyLines": 57,
+      "functions": [
+        {
+          "name": "renderApp",
+          "startLine": 10,
+          "endLine": 16,
+          "params": []
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "renderApp",
+          "callee": "render",
+          "lineNumber": 11
+        }
+      ],
+      "metrics": {
+        "importCount": 3,
+        "exportCount": 0,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 76,
+      "nonEmptyLines": 70,
+      "functions": [
+        {
+          "name": "NewProjectModal",
+          "startLine": 16,
+          "endLine": 76,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "NewProjectModal",
+          "line": 16,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "NewProjectModal",
+          "callee": "useTeamFlow",
+          "lineNumber": 17
+        },
+        {
+          "caller": "NewProjectModal",
+          "callee": "useState",
+          "lineNumber": 18
+        },
+        {
+          "caller": "NewProjectModal",
+          "callee": "useState",
+          "lineNumber": 19
+        },
+        {
+          "caller": "change",
+          "callee": "setValues",
+          "lineNumber": 22
+        },
+        {
+          "caller": "change",
+          "callee": "setErrors",
+          "lineNumber": 23
+        },
+        {
+          "caller": "submit",
+          "callee": "event.preventDefault",
+          "lineNumber": 27
+        },
+        {
+          "caller": "submit",
+          "callee": "values.name.trim",
+          "lineNumber": 29
+        },
+        {
+          "caller": "submit",
+          "callee": "Object.keys",
+          "lineNumber": 31
+        },
+        {
+          "caller": "submit",
+          "callee": "setErrors",
+          "lineNumber": 32
+        },
+        {
+          "caller": "submit",
+          "callee": "actions.createProject",
+          "lineNumber": 35
+        },
+        {
+          "caller": "submit",
+          "callee": "values.name.trim",
+          "lineNumber": 35
+        },
+        {
+          "caller": "submit",
+          "callee": "values.description.trim",
+          "lineNumber": 35
+        },
+        {
+          "caller": "submit",
+          "callee": "onClose",
+          "lineNumber": 36
+        },
+        {
+          "caller": "NewProjectModal",
+          "callee": "values.name.trim",
+          "lineNumber": 46
+        },
+        {
+          "caller": "NewProjectModal",
+          "callee": "change",
+          "lineNumber": 53
+        },
+        {
+          "caller": "NewProjectModal",
+          "callee": "Boolean",
+          "lineNumber": 53
+        },
+        {
+          "caller": "NewProjectModal",
+          "callee": "change",
+          "lineNumber": 58
+        },
+        {
+          "caller": "NewProjectModal",
+          "callee": "change",
+          "lineNumber": 61
+        },
+        {
+          "caller": "NewProjectModal",
+          "callee": "change",
+          "lineNumber": 62
+        },
+        {
+          "caller": "NewProjectModal",
+          "callee": "Boolean",
+          "lineNumber": 62
+        },
+        {
+          "caller": "NewProjectModal",
+          "callee": "statuses.map",
+          "lineNumber": 67
+        },
+        {
+          "caller": "NewProjectModal",
+          "callee": "change",
+          "lineNumber": 69
+        }
+      ],
+      "metrics": {
+        "importCount": 4,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/main.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 19,
+      "nonEmptyLines": 17,
+      "metrics": {
+        "importCount": 5,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/state/TeamFlowContext.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 3,
+      "nonEmptyLines": 2,
+      "exports": [
+        {
+          "name": "TeamFlowContext",
+          "line": 3,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 1,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/state/TeamFlowProvider.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 194,
+      "nonEmptyLines": 175,
+      "functions": [
+        {
+          "name": "reducer",
+          "startLine": 6,
+          "endLine": 68,
+          "params": [
+            "state",
+            "action"
+          ]
+        },
+        {
+          "name": "TeamFlowProvider",
+          "startLine": 86,
+          "endLine": 194,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "TeamFlowProvider",
+          "line": 86,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "reducer",
+          "callee": "state.projects.map",
+          "lineNumber": 17
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.tasks.map",
+          "lineNumber": 26
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.tasks.filter",
+          "lineNumber": 31
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.tasks.map",
+          "lineNumber": 35
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.projects.map",
+          "lineNumber": 41
+        },
+        {
+          "caller": "reducer",
+          "callee": "state.notes.map",
+          "lineNumber": 50
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useReducer",
+          "lineNumber": 87
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useRef",
+          "lineNumber": 88
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useEffect",
+          "lineNumber": 90
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.load()\n      .then((payload) => {\n        if (active) dispatch({ type: 'hydrate', payload })\n      })\n      .catch",
+          "lineNumber": 93
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.load()\n      .then",
+          "lineNumber": 93
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.load",
+          "lineNumber": 93
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 95
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 99
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "activeTimers.forEach",
+          "lineNumber": 107
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "activeTimers.clear",
+          "lineNumber": 108
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 112
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.createProject",
+          "lineNumber": 113
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 114
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 118
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.updateProject",
+          "lineNumber": 119
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 120
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 124
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.createTask",
+          "lineNumber": 125
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 126
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "setTimeout",
+          "lineNumber": 127
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 128
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "timers.current.delete",
+          "lineNumber": 129
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "timers.current.add",
+          "lineNumber": 131
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 135
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.updateTask",
+          "lineNumber": 136
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 137
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 141
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.deleteTask",
+          "lineNumber": 142
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 143
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 147
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.createMember",
+          "lineNumber": 148
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 149
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 153
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.createNote",
+          "lineNumber": 154
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 155
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 159
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.updateNote",
+          "lineNumber": 160
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 161
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 164
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.createResource",
+          "lineNumber": 165
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 166
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useCallback",
+          "lineNumber": 170
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "repository.updateAiSettings",
+          "lineNumber": 171
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "dispatch",
+          "lineNumber": 172
+        },
+        {
+          "caller": "TeamFlowProvider",
+          "callee": "useMemo",
+          "lineNumber": 175
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 1,
+        "functionCount": 2,
+        "classCount": 0
+      }
+    }
+  ]
+}

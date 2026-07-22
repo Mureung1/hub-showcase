@@ -1,0 +1,468 @@
+{
+  "nodes": [
+    {
+      "id": "document:.claude/skills/teamflow-design/SKILL.md",
+      "type": "document",
+      "name": "SKILL.md",
+      "filePath": ".claude/skills/teamflow-design/SKILL.md",
+      "summary": "TeamFlow UI를 차분한 대시보드 스타일로 일관되게 구현하기 위한 디자인 지침이다. 색상·간격·타이포그래피 토큰, 화면별 레이아웃 패턴, 완료 전 검증 체크리스트를 규정한다.",
+      "tags": ["documentation", "design-system", "ui-guidelines"],
+      "complexity": "moderate",
+      "languageNotes": "Markdown 표와 체크리스트를 사용해 디자인 제약과 검증 기준을 실행 가능한 형태로 정리한다."
+    },
+    {
+      "id": "file:.claude/skills/teamflow-design/tokens.css",
+      "type": "file",
+      "name": "tokens.css",
+      "filePath": ".claude/skills/teamflow-design/tokens.css",
+      "summary": "TeamFlow UI의 색상, 상태 표현, radius, spacing, shadow, font를 CSS custom properties로 정의하는 디자인 토큰 원본이다. 숫자 전용 mono 서체 적용을 위한 보조 클래스도 제공한다.",
+      "tags": ["design-tokens", "css", "theme"],
+      "complexity": "moderate",
+      "languageNotes": ":root의 CSS custom properties를 단일 소스로 사용하며, 한국어 단위와 숫자의 혼합 폰트 문제를 피하도록 mono 클래스를 제한한다."
+    },
+    {
+      "id": "config:.codex/agents/planning_agent.toml",
+      "type": "config",
+      "name": "planning_agent.toml",
+      "filePath": ".codex/agents/planning_agent.toml",
+      "summary": "요구사항과 현재 구현을 조사해 P0·P1·P2 개발 작업으로 분해하는 read-only 계획 Agent의 역할과 출력 형식을 정의한다. 계획의 중복·누락·선행 관계·검증 방법을 근거 중심으로 점검하도록 제한한다.",
+      "tags": ["configuration", "agent", "planning"],
+      "complexity": "moderate",
+      "languageNotes": "TOML 멀티라인 문자열에 Agent의 전체 운영 규칙과 한국어 출력 템플릿을 내장한다."
+    },
+    {
+      "id": "config:.codex/agents/verification_agent.toml",
+      "type": "config",
+      "name": "verification_agent.toml",
+      "filePath": ".codex/agents/verification_agent.toml",
+      "summary": "요구사항을 코드·빌드·테스트 증거와 대조해 통과, 실패, 확인 불가, 범위 제외로 판정하는 검증 Agent 설정이다. 자동 수정과 외부 데이터 쓰기를 금지하고 증거의 강도와 한계를 명시하도록 한다.",
+      "tags": ["configuration", "agent", "verification"],
+      "complexity": "moderate",
+      "languageNotes": "TOML 멀티라인 문자열로 검증 절차, 영역별 기준, 명령 실행 안전 규칙과 보고 템플릿을 선언한다."
+    },
+    {
+      "id": "document:.github/pull_request_template.md",
+      "type": "document",
+      "name": "pull_request_template.md",
+      "filePath": ".github/pull_request_template.md",
+      "summary": "PR 제목 규칙과 작업 목록, 설명 가능한 코드, 미이해 부분, 새 학습 내용을 작성하게 하는 한국어 pull request 템플릿이다. 주석 영역에 제출 전 체크리스트와 라벨·스크린샷 지침을 함께 제공한다.",
+      "tags": ["documentation", "pull-request", "collaboration"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.nvmrc",
+      "type": "file",
+      "name": ".nvmrc",
+      "filePath": ".nvmrc",
+      "summary": "TeamFlow 모노레포의 로컬 Node.js 런타임을 24.14.0으로 고정하는 버전 선택 파일이다.",
+      "tags": ["runtime", "nodejs", "version"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:apps/api/.env.example",
+      "type": "config",
+      "name": ".env.example",
+      "filePath": "apps/api/.env.example",
+      "summary": "API 서버 실행에 필요한 Supabase URL, secret key 자리표시자, HTTP port를 안내하는 환경변수 예시다. 실제 비밀값을 저장하지 않고 로컬 설정 키의 계약을 제시한다.",
+      "tags": ["configuration", "environment", "supabase"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:apps/api/package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "apps/api/package.json",
+      "summary": "Express 5와 Supabase client, 공유 패키지를 사용하는 TeamFlow API workspace의 실행·watch·Node test 명령과 의존성을 정의한다.",
+      "tags": ["configuration", "api", "package-management"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/index.html",
+      "type": "file",
+      "name": "index.html",
+      "filePath": "apps/web/index.html",
+      "summary": "한국어 TeamFlow 웹 앱의 Vite HTML 진입 문서로, favicon·viewport·theme metadata를 설정하고 root mount 지점에서 main.jsx 모듈을 로드한다.",
+      "tags": ["entry-point", "html", "web"],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:apps/web/package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "apps/web/package.json",
+      "summary": "React 19, React Router, Vite, Vitest, Testing Library를 사용하는 TeamFlow 웹 workspace의 개발·빌드·테스트·preview 명령과 의존성을 정의한다.",
+      "tags": ["configuration", "frontend", "package-management"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/components/layout/AppShell.module.css",
+      "type": "file",
+      "name": "AppShell.module.css",
+      "filePath": "apps/web/src/components/layout/AppShell.module.css",
+      "summary": "일반 및 프로젝트 전용 AppShell의 고정 sidebar, 접힘 상태, navigation, brand, account 영역을 구성하는 CSS Module이다. grid 기반 두 열 shell과 sticky full-height sidebar를 제공한다.",
+      "tags": ["css-module", "layout", "sidebar"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "file",
+      "name": "forms.module.css",
+      "filePath": "apps/web/src/components/ui/forms.module.css",
+      "summary": "여러 modal과 입력 화면에서 재사용하는 field, input, select, textarea, choice, 오류, footer button 스타일을 정의한다. 작은 화면에서 2열 field row를 1열로 바꾸는 반응형 규칙을 포함한다.",
+      "tags": ["css-module", "forms", "responsive"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/ui.module.css",
+      "type": "file",
+      "name": "ui.module.css",
+      "filePath": "apps/web/src/components/ui/ui.module.css",
+      "summary": "Avatar, status badge, resource icon, Modal 등 공용 UI primitive의 시각 상태와 크기 변형을 한 CSS Module에 모은다.",
+      "tags": ["css-module", "component-library", "ui"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/ai/AiPage.module.css",
+      "type": "file",
+      "name": "AiPage.module.css",
+      "filePath": "apps/web/src/features/ai/AiPage.module.css",
+      "summary": "AI 팀원 설정, 참조 context toggle, 작업 brief form, 통계, 적용 이력과 live feedback을 배치하는 페이지 전용 CSS Module이다. 넓은 화면의 2열 구성을 1100px 이하에서 1열로 전환한다.",
+      "tags": ["css-module", "ai-feature", "responsive"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "type": "file",
+      "name": "ProjectDashboardPage.module.css",
+      "filePath": "apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "summary": "프로젝트 기간과 진행률 strip, task table, team·resource·note side panel을 구성하는 대시보드 전용 CSS Module이다. 화면 폭이 좁아지면 주 콘텐츠와 side panel을 단일 열 또는 3열 보조 영역으로 재배치한다.",
+      "tags": ["css-module", "dashboard", "responsive"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/members/MembersPage.module.css",
+      "type": "file",
+      "name": "MembersPage.module.css",
+      "filePath": "apps/web/src/features/members/MembersPage.module.css",
+      "summary": "사람 및 AI 팀원 card를 2열 grid로 표시하고 역할 chip과 담당 task 요약을 시각화하는 CSS Module이다. 1000px 이하에서는 card 목록을 단일 열로 전환한다.",
+      "tags": ["css-module", "members", "responsive"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/notes/NotesPage.module.css",
+      "type": "file",
+      "name": "NotesPage.module.css",
+      "filePath": "apps/web/src/features/notes/NotesPage.module.css",
+      "summary": "회의록 목록 sidebar와 편집·preview pane을 full-height workspace로 구성하는 CSS Module이다. 검색, 저장 상태, Markdown preview, 빈 상태, template 선택 UI를 함께 스타일링한다.",
+      "tags": ["css-module", "notes", "editor"],
+      "complexity": "moderate",
+      "languageNotes": "CSS Modules의 :global 선택자를 사용해 렌더링된 Markdown 요소의 typography를 범위 내에서 조정한다."
+    },
+    {
+      "id": "file:apps/web/src/features/projects/ProjectListPage.module.css",
+      "type": "file",
+      "name": "ProjectListPage.module.css",
+      "filePath": "apps/web/src/features/projects/ProjectListPage.module.css",
+      "summary": "프로젝트 목록 페이지의 header, 검색 입력, card grid, 빈 결과와 접근성용 visually-hidden 텍스트를 정의하는 CSS Module이다. 1100px 이하에서 2열 card grid를 1열로 바꾼다.",
+      "tags": ["css-module", "project-list", "accessibility"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/components/ProjectCard.module.css",
+      "type": "file",
+      "name": "ProjectCard.module.css",
+      "filePath": "apps/web/src/features/projects/components/ProjectCard.module.css",
+      "summary": "프로젝트 card의 정체성, 상태 badge, 진행률 bar, 겹친 member avatar, 기간 표시와 hover interaction을 구성하는 CSS Module이다.",
+      "tags": ["css-module", "project-card", "component"],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "type": "file",
+      "name": "ResourcesPage.module.css",
+      "filePath": "apps/web/src/features/resources/ResourcesPage.module.css",
+      "summary": "자료실의 breadcrumb, 생성·filter toolbar, folder grid, file card, resource 상세 modal 내용을 스타일링하는 CSS Module이다. 좁은 화면에서는 folder grid 열 수를 줄인다.",
+      "tags": ["css-module", "resources", "responsive"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "type": "file",
+      "name": "ProjectTasksPage.module.css",
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "summary": "task 상태 통계, list·board view switch, 정렬·상태 filter, 4열 Kanban board와 신규 task 강조를 구성하는 CSS Module이다. 1100px 이하에서는 board를 2열로 줄인다.",
+      "tags": ["css-module", "task-management", "kanban"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/components/TaskModal.module.css",
+      "type": "file",
+      "name": "TaskModal.module.css",
+      "filePath": "apps/web/src/features/tasks/components/TaskModal.module.css",
+      "summary": "task 상세 modal의 제목, metadata, 상태 변경 선택지, 설명과 삭제 확인 흐름을 스타일링하는 CSS Module이다.",
+      "tags": ["css-module", "task-modal", "component"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/test/setup.js",
+      "type": "file",
+      "name": "setup.js",
+      "filePath": "apps/web/src/test/setup.js",
+      "summary": "Vitest에 jest-dom matcher를 등록하고 각 test 후 React Testing Library cleanup을 실행하는 웹 test 환경 초기화 파일이다.",
+      "tags": ["test", "test-setup", "cleanup"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/vite.config.js",
+      "type": "file",
+      "name": "vite.config.js",
+      "filePath": "apps/web/vite.config.js",
+      "summary": "React plugin, 개발 서버의 /api proxy, jsdom 기반 Vitest 환경, 공통 setup 파일과 CSS 처리를 설정하는 Vite 구성 모듈이다.",
+      "tags": ["configuration", "vite", "test"],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:docs/plan.md",
+      "type": "document",
+      "name": "plan.md",
+      "filePath": "docs/plan.md",
+      "summary": "대학생 팀 프로젝트 정보 분산 문제를 해결하는 TeamFlow의 사용자 시나리오, 핵심 기능, 화면 구조, 사용자 flow와 prototype 범위를 정의한 기획서다. task·dashboard·meeting note·resource·member·AI 팀원 경험을 제품 관점에서 연결한다.",
+      "tags": ["documentation", "product-plan", "user-flow"],
+      "complexity": "complex",
+      "languageNotes": "Markdown heading과 Mermaid flowchart 두 개로 기능 구조와 화면 전환을 함께 표현한다."
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:.claude/skills/teamflow-design/SKILL.md",
+      "target": "file:.claude/skills/teamflow-design/tokens.css",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:apps/web/package.json",
+      "target": "file:apps/web/vite.config.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:apps/web/src/components/layout/AppShell.module.css",
+      "target": "file:apps/web/src/components/layout/AppShell.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/layout/AppShell.module.css",
+      "target": "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ui.module.css",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ui.module.css",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ui.module.css",
+      "target": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ui.module.css",
+      "target": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.module.css",
+      "target": "file:apps/web/src/features/ai/AiPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "target": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.module.css",
+      "target": "file:apps/web/src/features/members/MembersPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NotesPage.module.css",
+      "target": "file:apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NotesPage.module.css",
+      "target": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.module.css",
+      "target": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.module.css",
+      "target": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "target": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "target": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskModal.module.css",
+      "target": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/vite.config.js",
+      "target": "file:apps/web/src/test/setup.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "document:docs/plan.md",
+      "target": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/plan.md",
+      "target": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/plan.md",
+      "target": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/plan.md",
+      "target": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/plan.md",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/plan.md",
+      "target": "file:apps/web/src/features/members/MembersPage.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/plan.md",
+      "target": "file:apps/web/src/features/ai/AiPage.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

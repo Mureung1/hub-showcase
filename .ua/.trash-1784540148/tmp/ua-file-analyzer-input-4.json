@@ -1,0 +1,84 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "apps/api/src/app.js",
+      "language": "javascript",
+      "sizeLines": 27,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/src/lib/supabaseClient.js",
+      "language": "javascript",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/src/server.js",
+      "language": "javascript",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/src/tasks/taskRepository.js",
+      "language": "javascript",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/src/tasks/taskRoutes.js",
+      "language": "javascript",
+      "sizeLines": 109,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/test/health.test.js",
+      "language": "javascript",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/test/supabaseClient.test.js",
+      "language": "javascript",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/test/taskRepository.test.js",
+      "language": "javascript",
+      "sizeLines": 129,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/api/test/tasks.test.js",
+      "language": "javascript",
+      "sizeLines": 133,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "apps/api/src/app.js": [
+      "apps/api/src/tasks/taskRoutes.js"
+    ],
+    "apps/api/src/lib/supabaseClient.js": [],
+    "apps/api/src/server.js": [
+      "apps/api/src/app.js",
+      "apps/api/src/lib/supabaseClient.js",
+      "apps/api/src/tasks/taskRepository.js"
+    ],
+    "apps/api/src/tasks/taskRepository.js": [],
+    "apps/api/src/tasks/taskRoutes.js": [],
+    "apps/api/test/health.test.js": [
+      "apps/api/src/app.js"
+    ],
+    "apps/api/test/supabaseClient.test.js": [
+      "apps/api/src/lib/supabaseClient.js"
+    ],
+    "apps/api/test/taskRepository.test.js": [
+      "apps/api/src/tasks/taskRepository.js"
+    ],
+    "apps/api/test/tasks.test.js": [
+      "apps/api/src/app.js"
+    ]
+  }
+}

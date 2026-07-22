@@ -1,15 +1,10 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, test } from 'vitest'
 
-import App from '../App.jsx'
 import { MarkdownPreview } from './notes/MarkdownPreview.jsx'
-import { TeamFlowProvider } from '../state/TeamFlowProvider.jsx'
-
-function renderApp(initialEntry) {
-  return render(<MemoryRouter initialEntries={[initialEntry]}><TeamFlowProvider><App /></TeamFlowProvider></MemoryRouter>)
-}
+import { testTeamFlowRepository } from '../test/createTestTeamFlowRepository.js'
+import { renderAuthenticatedApp as renderApp } from '../test/renderTeamFlowApp.jsx'
 
 describe('connected prototype flows', () => {
   test('validates and updates the project period across dashboard and project list', async () => {
@@ -102,6 +97,26 @@ describe('connected prototype flows', () => {
     expect(screen.getByRole('heading', { name: '요약' })).toBeInTheDocument()
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
     expect(screen.getAllByText(/<img src=x/).length).toBeGreaterThan(0)
+  })
+
+  test('keeps the task modal open when persistent creation fails', async () => {
+    const user = userEvent.setup()
+    const failingRepository = {
+      ...testTeamFlowRepository,
+      createTask: async () => {
+        throw new Error('할 일을 저장하지 못했습니다.')
+      },
+    }
+    renderApp('/projects/1/tasks', failingRepository)
+    expect(await screen.findByRole('heading', { name: '할 일 관리' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /새 할 일/ }))
+    await user.type(screen.getByLabelText(/할 일 제목/), '실패 테스트')
+    fireEvent.change(screen.getByLabelText(/마감일/), { target: { value: '2026-07-30' } })
+    await user.click(screen.getByRole('button', { name: '할 일 추가' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('할 일을 저장하지 못했습니다.')
+    expect(screen.getByRole('dialog', { name: '새 할 일 추가' })).toBeInTheDocument()
   })
 
   test('changes task status from list and details, and sorts every list column', async () => {

@@ -21,7 +21,7 @@ const DASHBOARD_TASK_LIMIT = 10
 
 export function ProjectDashboardPage() {
   const { project, openTaskCreate, openTaskDetail } = useOutletContext()
-  const { state } = useTeamFlow()
+  const { state, capabilities } = useTeamFlow()
   const navigate = useNavigate()
   const [expandedTasks, setExpandedTasks] = useState(false)
   const [periodOpen, setPeriodOpen] = useState(false)
@@ -52,8 +52,8 @@ export function ProjectDashboardPage() {
     <section className={workspace.scrollPage} aria-labelledby="dashboard-title">
       <div className={workspace.container}>
         <header className={workspace.pageHeader}>
-          <div><p>내 프로젝트</p><h1 id="dashboard-title">{project.name}</h1><button type="button" className={styles.period} aria-label="프로젝트 기간 수정" onClick={() => setPeriodOpen(true)}><Calendar size={12} /><span className={workspace.mono}>{formatPeriod(project.startDate, project.endDate)}</span></button></div>
-          <button className={workspace.primaryButton} type="button" onClick={openTaskCreate}><Plus size={15} />새 할 일</button>
+          <div><p>내 프로젝트</p><h1 id="dashboard-title">{project.name}</h1>{capabilities.projects ? <button type="button" className={styles.period} aria-label="프로젝트 기간 수정" onClick={() => setPeriodOpen(true)}><Calendar size={12} /><span className={workspace.mono}>{formatPeriod(project.startDate, project.endDate)}</span></button> : <span className={styles.period}><Calendar size={12} /><span className={workspace.mono}>{formatPeriod(project.startDate, project.endDate)}</span></span>}</div>
+          {capabilities.tasks ? <button className={workspace.primaryButton} type="button" onClick={openTaskCreate}><Plus size={15} />새 할 일</button> : null}
         </header>
 
         <section className={`${workspace.card} ${styles.progressStrip}`}>
@@ -84,7 +84,7 @@ export function ProjectDashboardPage() {
           </aside>
         </div>
       </div>
-      {periodOpen ? <ProjectPeriodModal project={project} onClose={() => setPeriodOpen(false)} /> : null}
+      {periodOpen && capabilities.projects ? <ProjectPeriodModal project={project} onClose={() => setPeriodOpen(false)} /> : null}
     </section>
   )
 }

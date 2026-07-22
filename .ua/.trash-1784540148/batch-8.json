@@ -1,0 +1,112 @@
+{
+  "nodes": [
+    {
+      "id": "file:apps/web/src/styles/global.css",
+      "type": "file",
+      "name": "global.css",
+      "filePath": "apps/web/src/styles/global.css",
+      "summary": "전역 box model, root 크기, 기본 typography, focus-visible, selection, loading 및 screen-reader-only 규칙을 설정한다.",
+      "tags": [
+        "css",
+        "global-style",
+        "accessibility",
+        "layout"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/styles/tokens.css",
+      "type": "file",
+      "name": "tokens.css",
+      "filePath": "apps/web/src/styles/tokens.css",
+      "summary": "Pretendard와 JetBrains Mono font를 불러오고 색상, 폭, radius 등 TeamFlow light theme의 전역 design token을 정의한다.",
+      "tags": [
+        "css",
+        "design-tokens",
+        "theme",
+        "typography"
+      ],
+      "complexity": "simple",
+      "languageNotes": "CSS custom properties로 상태별 색상과 공통 layout token을 중앙화한다."
+    },
+    {
+      "id": "file:apps/web/src/styles/workspace.module.css",
+      "type": "file",
+      "name": "workspace.module.css",
+      "filePath": "apps/web/src/styles/workspace.module.css",
+      "summary": "프로젝트 작업공간 페이지가 공유하는 container, header, button, card, table, 검색창, 빈 상태와 반응형 layout을 CSS Module로 제공한다.",
+      "tags": [
+        "css-module",
+        "workspace",
+        "layout",
+        "design-system"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:apps/web/src/styles/global.css",
+      "target": "file:apps/web/src/main.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/tokens.css",
+      "target": "file:apps/web/src/main.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/ai/AiPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/members/MembersPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

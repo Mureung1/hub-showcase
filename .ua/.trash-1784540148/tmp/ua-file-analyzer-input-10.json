@@ -1,0 +1,17 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {"path": "packages/shared/package.json", "language": "json", "sizeLines": 13, "fileCategory": "config"},
+    {"path": "packages/shared/src/index.js", "language": "javascript", "sizeLines": 8, "fileCategory": "code"},
+    {"path": "packages/shared/src/project.js", "language": "javascript", "sizeLines": 148, "fileCategory": "code"},
+    {"path": "packages/shared/test/project.test.js", "language": "javascript", "sizeLines": 36, "fileCategory": "code"}
+  ],
+  "batchImportData": {
+    "packages/shared/package.json": [],
+    "packages/shared/src/index.js": [],
+    "packages/shared/src/project.js": [],
+    "packages/shared/test/project.test.js": [
+      "packages/shared/src/project.js"
+    ]
+  }
+}

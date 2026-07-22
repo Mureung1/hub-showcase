@@ -1,0 +1,947 @@
+{
+  "nodes": [
+    {
+      "id": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "file",
+      "name": "Avatar.jsx",
+      "filePath": "apps/web/src/components/ui/Avatar.jsx",
+      "summary": "사용자 이름의 이니셜과 선택 가능한 크기·색상을 원형 프로필 표식으로 표시하는 공용 Avatar 컴포넌트다.",
+      "tags": [
+        "react-component",
+        "avatar",
+        "member",
+        "presentation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/components/ui/Avatar.jsx:Avatar",
+      "type": "function",
+      "name": "Avatar",
+      "filePath": "apps/web/src/components/ui/Avatar.jsx",
+      "lineRange": [
+        5,
+        15
+      ],
+      "summary": "이름 이니셜을 size와 color option이 적용된 원형 avatar로 렌더링한다.",
+      "tags": [
+        "react-component",
+        "avatar",
+        "member"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "type": "file",
+      "name": "ProjectDashboardPage.jsx",
+      "filePath": "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "summary": "프로젝트의 진행률, 상태별 할 일, 멤버, 최근 노트, 자료를 집계해 각 작업 영역으로 이동시키는 대시보드 페이지다.",
+      "tags": [
+        "react-component",
+        "dashboard",
+        "project-overview",
+        "aggregation"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "여러 selector와 useMemo를 조합해 정렬·요약된 dashboard view model을 만든다."
+    },
+    {
+      "id": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "type": "function",
+      "name": "ProjectDashboardPage",
+      "filePath": "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "lineRange": [
+        22,
+        90
+      ],
+      "summary": "project 전역 상태를 dashboard 지표와 최근 항목으로 파생하고 세부 화면 navigation을 연결한다.",
+      "tags": [
+        "react-component",
+        "dashboard",
+        "aggregation",
+        "navigation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "type": "file",
+      "name": "ProjectPeriodModal.jsx",
+      "filePath": "apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "summary": "프로젝트 시작일과 종료일의 순서를 검증하고 전역 상태의 프로젝트 기간을 갱신하는 Modal이다.",
+      "tags": [
+        "react-component",
+        "project-period",
+        "form",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/dashboard/ProjectPeriodModal.jsx:ProjectPeriodModal",
+      "type": "function",
+      "name": "ProjectPeriodModal",
+      "filePath": "apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "lineRange": [
+        7,
+        66
+      ],
+      "summary": "프로젝트 기간 form을 검증하고 updateProject action으로 저장한다.",
+      "tags": [
+        "react-component",
+        "project-period",
+        "form",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "type": "file",
+      "name": "AddMemberModal.jsx",
+      "filePath": "apps/web/src/features/members/AddMemberModal.jsx",
+      "summary": "이름과 역할을 검증하고 설명·초기값을 포함한 새 멤버를 TeamFlow 상태에 추가하는 Modal이다.",
+      "tags": [
+        "react-component",
+        "member-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/members/AddMemberModal.jsx:AddMemberModal",
+      "type": "function",
+      "name": "AddMemberModal",
+      "filePath": "apps/web/src/features/members/AddMemberModal.jsx",
+      "lineRange": [
+        9,
+        36
+      ],
+      "summary": "멤버 입력값을 검증하고 새 member record를 전역 상태에 추가한다.",
+      "tags": [
+        "react-component",
+        "member-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/members/MembersPage.jsx",
+      "type": "file",
+      "name": "MembersPage.jsx",
+      "filePath": "apps/web/src/features/members/MembersPage.jsx",
+      "summary": "프로젝트 멤버와 각 멤버의 할 일 및 참여 프로젝트를 계산해 보여주고 멤버 추가 흐름을 제공하는 페이지다.",
+      "tags": [
+        "react-component",
+        "member-management",
+        "task-summary",
+        "project-scope"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/members/MembersPage.jsx:MembersPage",
+      "type": "function",
+      "name": "MembersPage",
+      "filePath": "apps/web/src/features/members/MembersPage.jsx",
+      "lineRange": [
+        13,
+        48
+      ],
+      "summary": "현재 프로젝트 멤버별 할 일과 참여 프로젝트를 파생해 표시한다.",
+      "tags": [
+        "react-component",
+        "member-management",
+        "task-summary",
+        "project-scope"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "type": "file",
+      "name": "ProjectListPage.jsx",
+      "filePath": "apps/web/src/features/projects/ProjectListPage.jsx",
+      "summary": "프로젝트 요약을 이름과 설명으로 검색하고 카드 목록으로 표시하며 선택한 프로젝트로 이동시키는 페이지다.",
+      "tags": [
+        "react-component",
+        "project-list",
+        "search-filter",
+        "navigation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "type": "function",
+      "name": "ProjectListPage",
+      "filePath": "apps/web/src/features/projects/ProjectListPage.jsx",
+      "lineRange": [
+        13,
+        58
+      ],
+      "summary": "project summary를 검색어로 필터링하고 선택 navigation을 제공한다.",
+      "tags": [
+        "react-component",
+        "project-list",
+        "search-filter",
+        "navigation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "type": "file",
+      "name": "ProjectCard.jsx",
+      "filePath": "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "summary": "프로젝트 상태, 진행률, 멤버, 기간과 설명을 하나의 탐색 가능한 카드로 표현하는 컴포넌트다.",
+      "tags": [
+        "react-component",
+        "project-card",
+        "progress",
+        "presentation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard",
+      "type": "function",
+      "name": "ProjectCard",
+      "filePath": "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "lineRange": [
+        23,
+        83
+      ],
+      "summary": "project 핵심 지표와 멤버·기간을 재사용 가능한 card로 렌더링한다.",
+      "tags": [
+        "react-component",
+        "project-card",
+        "progress",
+        "presentation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "type": "file",
+      "name": "ProjectTasksPage.jsx",
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "summary": "프로젝트 할 일을 상태·검색어로 필터링하고 여러 기준으로 안정 정렬해 table 또는 board 형태로 표시하는 페이지다.",
+      "tags": [
+        "react-component",
+        "task-management",
+        "sorting",
+        "search-filter"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "원래 index를 보조 기준으로 유지해 동일한 정렬 값에서도 안정적인 표시 순서를 보장한다."
+    },
+    {
+      "id": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage",
+      "type": "function",
+      "name": "ProjectTasksPage",
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "lineRange": [
+        27,
+        93
+      ],
+      "summary": "project task를 검색·상태 필터·정렬한 뒤 table 또는 board view로 렌더링한다.",
+      "tags": [
+        "react-component",
+        "task-management",
+        "sorting",
+        "search-filter"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:SortHeader",
+      "type": "function",
+      "name": "SortHeader",
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "lineRange": [
+        95,
+        108
+      ],
+      "summary": "현재 정렬 상태를 표시하고 column별 정렬 변경 callback을 호출하는 table header다.",
+      "tags": [
+        "react-component",
+        "sorting",
+        "table-header"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/state/selectors.js",
+      "type": "file",
+      "name": "selectors.js",
+      "filePath": "apps/web/src/state/selectors.js",
+      "summary": "정규화되지 않은 TeamFlow 상태에서 프로젝트, 할 일, 멤버와 카드용 프로젝트 요약을 파생하는 순수 selector 모음이다.",
+      "tags": [
+        "state-selector",
+        "derived-state",
+        "utility",
+        "aggregation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectProject",
+      "type": "function",
+      "name": "selectProject",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        3,
+        5
+      ],
+      "summary": "ID로 project를 조회한다.",
+      "tags": [
+        "state-selector",
+        "project",
+        "lookup"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectProjectTasks",
+      "type": "function",
+      "name": "selectProjectTasks",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        7,
+        9
+      ],
+      "summary": "project ID에 속한 task 목록을 필터링한다.",
+      "tags": [
+        "state-selector",
+        "task-management",
+        "filtering"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "type": "function",
+      "name": "selectProjectMembers",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        11,
+        14
+      ],
+      "summary": "project member ID 목록을 실제 member record로 변환한다.",
+      "tags": [
+        "state-selector",
+        "member-management",
+        "derived-state"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectProjectSummaries",
+      "type": "function",
+      "name": "selectProjectSummaries",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        16,
+        25
+      ],
+      "summary": "각 project의 task 진행률과 member 정보를 결합한 card용 summary를 만든다.",
+      "tags": [
+        "state-selector",
+        "aggregation",
+        "project-summary"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "file",
+      "name": "useTeamFlow.js",
+      "filePath": "apps/web/src/state/useTeamFlow.js",
+      "summary": "TeamFlowContext를 읽고 Provider 바깥에서 사용될 경우 오류를 내는 전역 상태 접근용 custom React hook이다.",
+      "tags": [
+        "react-hook",
+        "context",
+        "state-management",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "function",
+      "name": "useTeamFlow",
+      "filePath": "apps/web/src/state/useTeamFlow.js",
+      "lineRange": [
+        5,
+        9
+      ],
+      "summary": "TeamFlowContext 값을 반환하고 Provider 누락을 즉시 오류로 알린다.",
+      "tags": [
+        "react-hook",
+        "context",
+        "state-management",
+        "validation"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:apps/web/src/components/ui/Avatar.jsx",
+      "target": "function:apps/web/src/components/ui/Avatar.jsx:Avatar",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/components/ui/Avatar.jsx",
+      "target": "function:apps/web/src/components/ui/Avatar.jsx:Avatar",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "target": "function:apps/web/src/features/dashboard/ProjectPeriodModal.jsx:ProjectPeriodModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "target": "function:apps/web/src/features/dashboard/ProjectPeriodModal.jsx:ProjectPeriodModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "target": "function:apps/web/src/features/members/AddMemberModal.jsx:AddMemberModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "target": "function:apps/web/src/features/members/AddMemberModal.jsx:AddMemberModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "function:apps/web/src/features/members/MembersPage.jsx:MembersPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "function:apps/web/src/features/members/MembersPage.jsx:MembersPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "target": "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "target": "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:SortHeader",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProject",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProject",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectTasks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectTasks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectSummaries",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectSummaries",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/useTeamFlow.js",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/useTeamFlow.js",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/ui/Avatar.jsx",
+      "target": "file:apps/web/src/components/ui/ui.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/state/selectors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "target": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "target": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "file:apps/web/src/features/members/MembersPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "file:apps/web/src/state/selectors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "file:apps/web/src/features/projects/ProjectListPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "file:apps/web/src/state/selectors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "target": "file:apps/web/src/features/projects/components/ProjectCard.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/state/selectors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/state/useTeamFlow.js",
+      "target": "file:apps/web/src/state/TeamFlowContext.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectTasks",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "target": "function:apps/web/src/lib/format.js:formatPeriod",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/dashboard/ProjectPeriodModal.jsx:ProjectPeriodModal",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/members/AddMemberModal.jsx:AddMemberModal",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/members/MembersPage.jsx:MembersPage",
+      "target": "function:apps/web/src/state/selectors.js:selectProject",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/members/MembersPage.jsx:MembersPage",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectSummaries",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard",
+      "target": "function:apps/web/src/lib/format.js:formatPeriod",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectTasks",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "target": "function:apps/web/src/state/selectors.js:selectProject",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/state/selectors.js:selectProjectSummaries",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectTasks",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

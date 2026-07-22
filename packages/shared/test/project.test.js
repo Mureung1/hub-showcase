@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { calculateProgress, normalizeProgress, TASK_STATUS } from '../src/project.js'
+import {
+  calculateProgress,
+  isProjectStatus,
+  isTaskStatus,
+  normalizeProgress,
+  PROJECT_STATUS,
+  TASK_STATUS,
+} from '../src/project.js'
 
 test('normalizeProgress rounds and clamps values', () => {
   assert.equal(normalizeProgress(40.4), 40)
@@ -19,4 +26,18 @@ test('calculateProgress derives completion from tasks', () => {
 
   assert.equal(calculateProgress(tasks), 67)
   assert.equal(calculateProgress([]), 0)
+})
+
+test('isTaskStatus accepts only shared task status values', () => {
+  assert.equal(isTaskStatus(TASK_STATUS.NOT_STARTED), true)
+  assert.equal(isTaskStatus(TASK_STATUS.IN_PROGRESS), true)
+  assert.equal(isTaskStatus(TASK_STATUS.IN_REVIEW), true)
+  assert.equal(isTaskStatus(TASK_STATUS.COMPLETED), true)
+  assert.equal(isTaskStatus('deleted'), false)
+  assert.equal(isTaskStatus(null), false)
+})
+
+test('isProjectStatus accepts only shared project status values', () => {
+  assert.equal(isProjectStatus(PROJECT_STATUS.IN_PROGRESS), true)
+  assert.equal(isProjectStatus('archived'), false)
 })

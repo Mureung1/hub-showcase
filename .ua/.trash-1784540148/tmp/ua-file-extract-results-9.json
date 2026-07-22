@@ -1,0 +1,540 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 10,
+  "filesSkipped": [
+    ".claude/skills/teamflow-design/tokens.css",
+    ".nvmrc",
+    "apps/web/index.html",
+    "apps/web/src/components/layout/AppShell.module.css",
+    "apps/web/src/components/ui/forms.module.css",
+    "apps/web/src/components/ui/ui.module.css",
+    "apps/web/src/features/ai/AiPage.module.css",
+    "apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+    "apps/web/src/features/members/MembersPage.module.css",
+    "apps/web/src/features/notes/NotesPage.module.css",
+    "apps/web/src/features/projects/ProjectListPage.module.css",
+    "apps/web/src/features/projects/components/ProjectCard.module.css",
+    "apps/web/src/features/resources/ResourcesPage.module.css",
+    "apps/web/src/features/tasks/ProjectTasksPage.module.css",
+    "apps/web/src/features/tasks/components/TaskModal.module.css"
+  ],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 10,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 2,
+      "failed": 0,
+      "skipped": 8
+    }
+  },
+  "results": [
+    {
+      "path": ".claude/skills/teamflow-design/SKILL.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 80,
+      "nonEmptyLines": 61,
+      "sections": [
+        {
+          "heading": "TeamFlow Design",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "Overview",
+          "level": 2,
+          "line": 8
+        },
+        {
+          "heading": "Tokens (use these — do not invent new colors)",
+          "level": 2,
+          "line": 14
+        },
+        {
+          "heading": "Typography",
+          "level": 2,
+          "line": 44
+        },
+        {
+          "heading": "Layout patterns",
+          "level": 2,
+          "line": 56
+        },
+        {
+          "heading": "Screens",
+          "level": 2,
+          "line": 68
+        },
+        {
+          "heading": "Verify before calling a screen done",
+          "level": 2,
+          "line": 73
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 7
+      }
+    },
+    {
+      "path": ".codex/agents/planning_agent.toml",
+      "language": "toml",
+      "fileCategory": "config",
+      "totalLines": 134,
+      "nonEmptyLines": 90,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 0
+      }
+    },
+    {
+      "path": ".codex/agents/verification_agent.toml",
+      "language": "toml",
+      "fileCategory": "config",
+      "totalLines": 141,
+      "nonEmptyLines": 100,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 0
+      }
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 28,
+      "nonEmptyLines": 20,
+      "sections": [
+        {
+          "heading": "PR 작성 전 체크 리스트",
+          "level": 2,
+          "line": 2
+        },
+        {
+          "heading": "주요 작업 리스트",
+          "level": 2,
+          "line": 22
+        },
+        {
+          "heading": "내가 설명할 수 있는 부분",
+          "level": 2,
+          "line": 24
+        },
+        {
+          "heading": "아직 이해 못 한 부분",
+          "level": 2,
+          "line": 26
+        },
+        {
+          "heading": "새로 알게 된 것",
+          "level": 2,
+          "line": 28
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 5
+      }
+    },
+    {
+      "path": "apps/api/.env.example",
+      "language": "config",
+      "fileCategory": "config",
+      "totalLines": 3,
+      "nonEmptyLines": 3,
+      "definitions": [
+        {
+          "name": "TEAMFLOW_SUPABASE_URL",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 1,
+          "endLine": 1
+        },
+        {
+          "name": "TEAMFLOW_SUPABASE_SECRET_KEY",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 2,
+          "endLine": 2
+        },
+        {
+          "name": "PORT",
+          "kind": "variable",
+          "fields": [],
+          "startLine": 3,
+          "endLine": 3
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "definitionCount": 3
+      }
+    },
+    {
+      "path": "apps/api/package.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 16,
+      "nonEmptyLines": 16,
+      "sections": [
+        {
+          "heading": "name",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "private",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "version",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "type",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "scripts",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "dependencies",
+          "level": 1,
+          "line": 11
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "apps/web/package.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 32,
+      "nonEmptyLines": 32,
+      "sections": [
+        {
+          "heading": "name",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "private",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "version",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "type",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "scripts",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "dependencies",
+          "level": 1,
+          "line": 12
+        },
+        {
+          "heading": "devDependencies",
+          "level": 1,
+          "line": 19
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 7
+      }
+    },
+    {
+      "path": "apps/web/src/test/setup.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 5,
+      "nonEmptyLines": 4,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/vite.config.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 20,
+      "nonEmptyLines": 19,
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "docs/plan.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "totalLines": 215,
+      "nonEmptyLines": 214,
+      "sections": [
+        {
+          "heading": "팀플 관리 웹서비스 기획서",
+          "level": 1,
+          "line": 1
+        },
+        {
+          "heading": "1. 프로젝트 주제",
+          "level": 2,
+          "line": 2
+        },
+        {
+          "heading": "2. 문제 정의",
+          "level": 2,
+          "line": 4
+        },
+        {
+          "heading": "3. 문제 배경",
+          "level": 2,
+          "line": 6
+        },
+        {
+          "heading": "4. 사용자 관점 동작 시나리오",
+          "level": 2,
+          "line": 15
+        },
+        {
+          "heading": "시나리오 1. 프로젝트를 처음 생성하는 경우",
+          "level": 3,
+          "line": 16
+        },
+        {
+          "heading": "시나리오 2. 팀플 진행 중 할 일을 관리하는 경우",
+          "level": 3,
+          "line": 23
+        },
+        {
+          "heading": "시나리오 3. 회의록과 자료를 정리하는 경우",
+          "level": 3,
+          "line": 30
+        },
+        {
+          "heading": "시나리오 4. AI 팀원을 활용하는 경우",
+          "level": 3,
+          "line": 36
+        },
+        {
+          "heading": "5. 핵심 기능",
+          "level": 2,
+          "line": 42
+        },
+        {
+          "heading": "기능 1. 할 일 및 역할 관리",
+          "level": 3,
+          "line": 45
+        },
+        {
+          "heading": "주요 기능",
+          "level": 4,
+          "line": 47
+        },
+        {
+          "heading": "할 일 상태",
+          "level": 4,
+          "line": 55
+        },
+        {
+          "heading": "이 기능이 중요한 이유",
+          "level": 4,
+          "line": 61
+        },
+        {
+          "heading": "기능 2. 프로젝트 대시보드",
+          "level": 3,
+          "line": 66
+        },
+        {
+          "heading": "주요 기능",
+          "level": 4,
+          "line": 68
+        },
+        {
+          "heading": "이 기능이 중요한 이유",
+          "level": 4,
+          "line": 77
+        },
+        {
+          "heading": "확장 핵심 기능. AI 팀원",
+          "level": 3,
+          "line": 82
+        },
+        {
+          "heading": "AI 팀원이 사용하는 기본 구조",
+          "level": 4,
+          "line": 86
+        },
+        {
+          "heading": "이 기능이 중요한 이유",
+          "level": 4,
+          "line": 93
+        },
+        {
+          "heading": "6. 화면 구조 UI",
+          "level": 2,
+          "line": 99
+        },
+        {
+          "heading": "1) 프로젝트 목록 화면",
+          "level": 3,
+          "line": 101
+        },
+        {
+          "heading": "주요 요소",
+          "level": 4,
+          "line": 103
+        },
+        {
+          "heading": "주요 동작",
+          "level": 4,
+          "line": 108
+        },
+        {
+          "heading": "2) 프로젝트 생성 화면",
+          "level": 3,
+          "line": 111
+        },
+        {
+          "heading": "주요 요소",
+          "level": 4,
+          "line": 113
+        },
+        {
+          "heading": "주요 동작",
+          "level": 4,
+          "line": 120
+        },
+        {
+          "heading": "3) 프로젝트 대시보드 화면",
+          "level": 3,
+          "line": 123
+        },
+        {
+          "heading": "주요 요소",
+          "level": 4,
+          "line": 125
+        },
+        {
+          "heading": "주요 동작",
+          "level": 4,
+          "line": 133
+        },
+        {
+          "heading": "4) 할 일 및 역할 관리 영역",
+          "level": 3,
+          "line": 137
+        },
+        {
+          "heading": "주요 요소",
+          "level": 4,
+          "line": 139
+        },
+        {
+          "heading": "주요 동작",
+          "level": 4,
+          "line": 146
+        },
+        {
+          "heading": "5) 자료 관리 영역",
+          "level": 3,
+          "line": 150
+        },
+        {
+          "heading": "주요 요소",
+          "level": 4,
+          "line": 152
+        },
+        {
+          "heading": "주요 동작",
+          "level": 4,
+          "line": 157
+        },
+        {
+          "heading": "6) AI 팀원 관리 영역",
+          "level": 3,
+          "line": 159
+        },
+        {
+          "heading": "주요 요소",
+          "level": 4,
+          "line": 161
+        },
+        {
+          "heading": "주요 동작",
+          "level": 4,
+          "line": 168
+        },
+        {
+          "heading": "7. 사용자 흐름",
+          "level": 2,
+          "line": 172
+        },
+        {
+          "heading": "8. 화면 단위 동작 흐름",
+          "level": 2,
+          "line": 186
+        },
+        {
+          "heading": "9. 프로토타입 계획",
+          "level": 2,
+          "line": 203
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 42
+      }
+    }
+  ]
+}

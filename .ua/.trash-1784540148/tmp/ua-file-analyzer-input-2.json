@@ -1,0 +1,153 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "apps/web/src/components/ui/Modal.jsx",
+      "language": "javascript",
+      "sizeLines": 66,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/components/ui/ResourceIcon.jsx",
+      "language": "javascript",
+      "sizeLines": 19,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/components/ui/StatusBadge.jsx",
+      "language": "javascript",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/constants/labels.js",
+      "language": "javascript",
+      "sizeLines": 28,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/AddResourceModal.jsx",
+      "language": "javascript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/CreateFolderModal.jsx",
+      "language": "javascript",
+      "sizeLines": 53,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "language": "javascript",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/resources/ResourcesPage.jsx",
+      "language": "javascript",
+      "sizeLines": 108,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/tasks/MyTasksPage.jsx",
+      "language": "javascript",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "language": "javascript",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "language": "javascript",
+      "sizeLines": 80,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/lib/format.js",
+      "language": "javascript",
+      "sizeLines": 25,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/web/src/lib/format.test.js",
+      "language": "javascript",
+      "sizeLines": 15,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "apps/web/src/components/ui/Modal.jsx": [
+      "apps/web/src/components/ui/ui.module.css"
+    ],
+    "apps/web/src/components/ui/ResourceIcon.jsx": [
+      "apps/web/src/components/ui/ui.module.css"
+    ],
+    "apps/web/src/components/ui/StatusBadge.jsx": [
+      "apps/web/src/components/ui/ui.module.css",
+      "apps/web/src/constants/labels.js"
+    ],
+    "apps/web/src/constants/labels.js": [],
+    "apps/web/src/features/resources/AddResourceModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/resources/CreateFolderModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/resources/ResourceDetailModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/ResourceIcon.jsx",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/features/resources/ResourcesPage.module.css",
+      "apps/web/src/lib/format.js"
+    ],
+    "apps/web/src/features/resources/ResourcesPage.jsx": [
+      "apps/web/src/components/ui/ResourceIcon.jsx",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/features/resources/AddResourceModal.jsx",
+      "apps/web/src/features/resources/CreateFolderModal.jsx",
+      "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "apps/web/src/features/resources/ResourcesPage.module.css",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/features/tasks/MyTasksPage.jsx": [
+      "apps/web/src/components/ui/StatusBadge.jsx",
+      "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/state/useTeamFlow.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/features/tasks/components/TaskCreateModal.jsx": [
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/forms.module.css",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/state/useTeamFlow.js"
+    ],
+    "apps/web/src/features/tasks/components/TaskDetailModal.jsx": [
+      "apps/web/src/components/ui/Avatar.jsx",
+      "apps/web/src/components/ui/Modal.jsx",
+      "apps/web/src/components/ui/StatusBadge.jsx",
+      "apps/web/src/constants/labels.js",
+      "apps/web/src/features/tasks/components/TaskModal.module.css",
+      "apps/web/src/lib/format.js",
+      "apps/web/src/styles/workspace.module.css"
+    ],
+    "apps/web/src/lib/format.js": [],
+    "apps/web/src/lib/format.test.js": [
+      "apps/web/src/lib/format.js"
+    ]
+  }
+}

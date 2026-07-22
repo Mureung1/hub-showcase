@@ -1,0 +1,84 @@
+{
+  "nodes": [
+    {
+      "id": "config:.oxlintrc.json",
+      "type": "config",
+      "name": ".oxlintrc.json",
+      "filePath": ".oxlintrc.json",
+      "summary": "React hook 규칙을 error로 강제하고 component 외 상수 export를 허용하도록 oxlint의 React·OXC 규칙을 설정합니다.",
+      "tags": [
+        "configuration",
+        "linting",
+        "react",
+        "code-quality"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:CLAUDE.md",
+      "type": "document",
+      "name": "CLAUDE.md",
+      "filePath": "CLAUDE.md",
+      "summary": "TeamFlow의 기술 스택, 개발 명령, 코드·commit convention, 디자인 제약과 참고 문서를 정리한 개발 Agent 지침입니다.",
+      "tags": [
+        "documentation",
+        "development",
+        "conventions",
+        "agent-guidance"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "TeamFlow의 현재 구현 범위, monorepo 구성, Node·Supabase 설정, 로컬 실행과 검증 명령을 안내하는 프로젝트 시작 문서입니다.",
+      "tags": [
+        "documentation",
+        "entry-point",
+        "setup",
+        "overview"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "package.json",
+      "summary": "apps와 packages workspace, Node·npm version 범위, web/API 개발·build·lint·test script를 정의하는 monorepo root manifest입니다.",
+      "tags": [
+        "configuration",
+        "monorepo",
+        "build-system",
+        "npm-workspaces"
+      ],
+      "complexity": "simple",
+      "languageNotes": "npm workspace script를 통해 web과 API package의 명령을 root에서 위임 실행합니다."
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:README.md",
+      "target": "config:package.json",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "config:package.json",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:package.json",
+      "target": "config:.oxlintrc.json",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    }
+  ]
+}

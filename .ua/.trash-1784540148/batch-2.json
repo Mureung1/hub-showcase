@@ -1,0 +1,1024 @@
+{
+  "nodes": [
+    {
+      "id": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "file",
+      "name": "Modal.jsx",
+      "filePath": "apps/web/src/components/ui/Modal.jsx",
+      "summary": "React portal로 대화상자를 렌더링하고 Escape 닫기, 키보드 focus trap, 이전 focus 복원을 처리하는 공용 Modal 컴포넌트다.",
+      "tags": [
+        "react-component",
+        "modal",
+        "accessibility",
+        "focus-management"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "useEffect와 DOM API를 함께 사용해 대화상자의 focus 생명주기를 관리한다."
+    },
+    {
+      "id": "function:apps/web/src/components/ui/Modal.jsx:Modal",
+      "type": "function",
+      "name": "Modal",
+      "filePath": "apps/web/src/components/ui/Modal.jsx",
+      "lineRange": [
+        9,
+        66
+      ],
+      "summary": "대화상자를 portal에 렌더링하고 열림 상태 동안 focus 이동·순환·복원을 관리한다.",
+      "tags": [
+        "react-component",
+        "modal",
+        "accessibility",
+        "focus-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "file",
+      "name": "ResourceIcon.jsx",
+      "filePath": "apps/web/src/components/ui/ResourceIcon.jsx",
+      "summary": "자료 유형에 맞는 아이콘을 선택해 일관된 크기와 접근성 속성으로 표시하는 공용 UI 컴포넌트다.",
+      "tags": [
+        "react-component",
+        "icon",
+        "resource-type",
+        "presentation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/components/ui/ResourceIcon.jsx:ResourceIcon",
+      "type": "function",
+      "name": "ResourceIcon",
+      "filePath": "apps/web/src/components/ui/ResourceIcon.jsx",
+      "lineRange": [
+        16,
+        19
+      ],
+      "summary": "자료 유형에 대응하는 아이콘을 공통 규격으로 렌더링한다.",
+      "tags": [
+        "react-component",
+        "icon",
+        "resource-type"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "file",
+      "name": "StatusBadge.jsx",
+      "filePath": "apps/web/src/components/ui/StatusBadge.jsx",
+      "summary": "프로젝트 또는 할 일 상태를 사용자용 라벨과 시각적 변형으로 변환해 보여주는 공용 badge 컴포넌트다.",
+      "tags": [
+        "react-component",
+        "status",
+        "badge",
+        "presentation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/components/ui/StatusBadge.jsx:StatusBadge",
+      "type": "function",
+      "name": "StatusBadge",
+      "filePath": "apps/web/src/components/ui/StatusBadge.jsx",
+      "lineRange": [
+        13,
+        20
+      ],
+      "summary": "상태값을 label과 CSS variant가 적용된 badge로 렌더링한다.",
+      "tags": [
+        "react-component",
+        "status",
+        "badge"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/constants/labels.js",
+      "type": "file",
+      "name": "labels.js",
+      "filePath": "apps/web/src/constants/labels.js",
+      "summary": "프로젝트·할 일·자료 상태의 한국어 표시명과 할 일 상태 정렬 순서를 중앙에서 정의한다.",
+      "tags": [
+        "constants",
+        "localization",
+        "status",
+        "configuration"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "type": "file",
+      "name": "AddResourceModal.jsx",
+      "filePath": "apps/web/src/features/resources/AddResourceModal.jsx",
+      "summary": "자료 이름을 검증하고 유형, 설명, 담당자, 상위 폴더를 수집해 현재 프로젝트에 새 자료를 생성하는 Modal이다.",
+      "tags": [
+        "react-component",
+        "resource-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/resources/AddResourceModal.jsx:AddResourceModal",
+      "type": "function",
+      "name": "AddResourceModal",
+      "filePath": "apps/web/src/features/resources/AddResourceModal.jsx",
+      "lineRange": [
+        12,
+        72
+      ],
+      "summary": "자료 생성 form 상태를 관리하고 필수값 검증 후 TeamFlow action을 호출한다.",
+      "tags": [
+        "react-component",
+        "resource-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "type": "file",
+      "name": "CreateFolderModal.jsx",
+      "filePath": "apps/web/src/features/resources/CreateFolderModal.jsx",
+      "summary": "폴더 이름을 검증한 뒤 현재 프로젝트와 상위 폴더 문맥에 새 폴더 자료를 생성하는 Modal이다.",
+      "tags": [
+        "react-component",
+        "folder-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/resources/CreateFolderModal.jsx:CreateFolderModal",
+      "type": "function",
+      "name": "CreateFolderModal",
+      "filePath": "apps/web/src/features/resources/CreateFolderModal.jsx",
+      "lineRange": [
+        9,
+        53
+      ],
+      "summary": "폴더 이름을 검증하고 현재 project·parent 문맥에 폴더 resource를 생성한다.",
+      "tags": [
+        "react-component",
+        "folder-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "type": "file",
+      "name": "ResourceDetailModal.jsx",
+      "filePath": "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "summary": "선택한 자료의 유형, 설명, 담당자, 수정일을 읽기 전용으로 표시하는 상세 Modal이다.",
+      "tags": [
+        "react-component",
+        "resource-detail",
+        "modal",
+        "presentation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/resources/ResourceDetailModal.jsx:ResourceDetailModal",
+      "type": "function",
+      "name": "ResourceDetailModal",
+      "filePath": "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "lineRange": [
+        7,
+        21
+      ],
+      "summary": "선택한 자료와 담당자 정보를 읽기 전용 상세 화면으로 렌더링한다.",
+      "tags": [
+        "react-component",
+        "resource-detail",
+        "modal"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "type": "file",
+      "name": "ResourcesPage.jsx",
+      "filePath": "apps/web/src/features/resources/ResourcesPage.jsx",
+      "summary": "프로젝트 자료를 폴더 계층으로 탐색하고 검색·유형 필터·수정일 정렬을 제공하며 생성 및 상세 Modal을 조정하는 페이지다.",
+      "tags": [
+        "react-component",
+        "resource-management",
+        "folder-navigation",
+        "search-filter"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "여러 useMemo 파생값으로 현재 폴더, 검색어, 자료 유형, 정렬 기준에 따른 목록을 계산한다."
+    },
+    {
+      "id": "function:apps/web/src/features/resources/ResourcesPage.jsx:ResourcesPage",
+      "type": "function",
+      "name": "ResourcesPage",
+      "filePath": "apps/web/src/features/resources/ResourcesPage.jsx",
+      "lineRange": [
+        20,
+        108
+      ],
+      "summary": "project resource를 폴더·검색·유형·정렬 상태에 따라 파생하고 관련 Modal을 조정한다.",
+      "tags": [
+        "react-component",
+        "resource-management",
+        "folder-navigation",
+        "search-filter"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "type": "file",
+      "name": "MyTasksPage.jsx",
+      "filePath": "apps/web/src/features/tasks/MyTasksPage.jsx",
+      "summary": "현재 사용자에게 배정된 할 일을 프로젝트별로 묶어 보여주고 선택한 항목의 상세 수정·삭제 흐름을 여는 페이지다.",
+      "tags": [
+        "react-component",
+        "task-management",
+        "grouping",
+        "user-scope"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/tasks/MyTasksPage.jsx:MyTasksPage",
+      "type": "function",
+      "name": "MyTasksPage",
+      "filePath": "apps/web/src/features/tasks/MyTasksPage.jsx",
+      "lineRange": [
+        10,
+        44
+      ],
+      "summary": "현재 사용자의 할 일을 project별로 그룹화하고 상세 Modal 상태를 관리한다.",
+      "tags": [
+        "react-component",
+        "task-management",
+        "grouping",
+        "user-scope"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "type": "file",
+      "name": "TaskCreateModal.jsx",
+      "filePath": "apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "summary": "제목, 담당자, 마감일, 상태, 설명을 검증해 프로젝트 할 일을 생성하고 제출 상태와 오류를 관리하는 Modal이다.",
+      "tags": [
+        "react-component",
+        "task-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/tasks/components/TaskCreateModal.jsx:TaskCreateModal",
+      "type": "function",
+      "name": "TaskCreateModal",
+      "filePath": "apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "lineRange": [
+        16,
+        60
+      ],
+      "summary": "할 일 입력을 검증하고 비동기 생성 action의 제출·오류 상태를 처리한다.",
+      "tags": [
+        "react-component",
+        "task-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "file",
+      "name": "TaskDetailModal.jsx",
+      "filePath": "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "summary": "할 일 상세 정보와 담당자를 표시하고 비동기 상태 변경 및 삭제 확인 흐름을 제공하는 Modal이다.",
+      "tags": [
+        "react-component",
+        "task-detail",
+        "status-update",
+        "deletion"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/tasks/components/TaskDetailModal.jsx:TaskDetailModal",
+      "type": "function",
+      "name": "TaskDetailModal",
+      "filePath": "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "lineRange": [
+        21,
+        80
+      ],
+      "summary": "할 일 정보를 표시하고 상태 갱신과 삭제 확인의 비동기 흐름을 관리한다.",
+      "tags": [
+        "react-component",
+        "task-detail",
+        "status-update",
+        "deletion"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/lib/format.js",
+      "type": "file",
+      "name": "format.js",
+      "filePath": "apps/web/src/lib/format.js",
+      "summary": "로컬 시간대를 보존하면서 날짜를 ISO 형식으로 만들고 화면용 짧은 날짜와 프로젝트 기간 문자열을 생성하는 유틸리티 모음이다.",
+      "tags": [
+        "utility",
+        "date-formatting",
+        "local-time",
+        "serialization"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "timezone offset을 보정한 뒤 ISO 문자열을 잘라 로컬 날짜가 UTC 변환으로 달라지는 문제를 피한다."
+    },
+    {
+      "id": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "function",
+      "name": "formatShortDate",
+      "filePath": "apps/web/src/lib/format.js",
+      "lineRange": [
+        1,
+        5
+      ],
+      "summary": "ISO date 문자열을 월·일 중심의 짧은 화면 표시로 바꾼다.",
+      "tags": [
+        "utility",
+        "date-formatting",
+        "presentation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/lib/format.js:formatPeriod",
+      "type": "function",
+      "name": "formatPeriod",
+      "filePath": "apps/web/src/lib/format.js",
+      "lineRange": [
+        7,
+        10
+      ],
+      "summary": "시작일과 종료일을 짧은 project 기간 문자열로 조합한다.",
+      "tags": [
+        "utility",
+        "date-formatting",
+        "project-period"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/lib/format.js:todayIso",
+      "type": "function",
+      "name": "todayIso",
+      "filePath": "apps/web/src/lib/format.js",
+      "lineRange": [
+        12,
+        14
+      ],
+      "summary": "현재 로컬 날짜를 YYYY-MM-DD 형식으로 반환한다.",
+      "tags": [
+        "utility",
+        "local-time",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/lib/format.js:addLocalDaysIso",
+      "type": "function",
+      "name": "addLocalDaysIso",
+      "filePath": "apps/web/src/lib/format.js",
+      "lineRange": [
+        16,
+        20
+      ],
+      "summary": "현재 로컬 날짜에 지정한 일수를 더해 YYYY-MM-DD 형식으로 반환한다.",
+      "tags": [
+        "utility",
+        "date-arithmetic",
+        "local-time"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/lib/format.test.js",
+      "type": "file",
+      "name": "format.test.js",
+      "filePath": "apps/web/src/lib/format.test.js",
+      "summary": "날짜 단축 표시, 기간 조합, 오늘 날짜, 로컬 날짜 가산 동작을 검증하는 단위 테스트다.",
+      "tags": [
+        "test",
+        "unit-test",
+        "date-formatting",
+        "regression"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:apps/web/src/components/ui/Modal.jsx",
+      "target": "function:apps/web/src/components/ui/Modal.jsx:Modal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/components/ui/Modal.jsx",
+      "target": "function:apps/web/src/components/ui/Modal.jsx:Modal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "target": "function:apps/web/src/components/ui/ResourceIcon.jsx:ResourceIcon",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "target": "function:apps/web/src/components/ui/ResourceIcon.jsx:ResourceIcon",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "target": "function:apps/web/src/components/ui/StatusBadge.jsx:StatusBadge",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "target": "function:apps/web/src/components/ui/StatusBadge.jsx:StatusBadge",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "function:apps/web/src/features/resources/AddResourceModal.jsx:AddResourceModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "function:apps/web/src/features/resources/AddResourceModal.jsx:AddResourceModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "target": "function:apps/web/src/features/resources/CreateFolderModal.jsx:CreateFolderModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "target": "function:apps/web/src/features/resources/CreateFolderModal.jsx:CreateFolderModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "function:apps/web/src/features/resources/ResourceDetailModal.jsx:ResourceDetailModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "function:apps/web/src/features/resources/ResourceDetailModal.jsx:ResourceDetailModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "function:apps/web/src/features/resources/ResourcesPage.jsx:ResourcesPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "function:apps/web/src/features/resources/ResourcesPage.jsx:ResourcesPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/MyTasksPage.jsx:MyTasksPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/MyTasksPage.jsx:MyTasksPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "target": "function:apps/web/src/features/tasks/components/TaskCreateModal.jsx:TaskCreateModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "target": "function:apps/web/src/features/tasks/components/TaskCreateModal.jsx:TaskCreateModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "function:apps/web/src/features/tasks/components/TaskDetailModal.jsx:TaskDetailModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "function:apps/web/src/features/tasks/components/TaskDetailModal.jsx:TaskDetailModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:formatPeriod",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:formatPeriod",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:todayIso",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:todayIso",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:addLocalDaysIso",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:addLocalDaysIso",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/ui/Modal.jsx",
+      "target": "file:apps/web/src/components/ui/ui.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "target": "file:apps/web/src/components/ui/ui.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "target": "file:apps/web/src/components/ui/ui.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "target": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "target": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/features/tasks/components/TaskModal.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/lib/format.test.js",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:apps/web/src/features/resources/AddResourceModal.jsx:AddResourceModal",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/resources/AddResourceModal.jsx:AddResourceModal",
+      "target": "function:apps/web/src/lib/format.js:todayIso",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/resources/CreateFolderModal.jsx:CreateFolderModal",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/resources/CreateFolderModal.jsx:CreateFolderModal",
+      "target": "function:apps/web/src/lib/format.js:todayIso",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/resources/ResourceDetailModal.jsx:ResourceDetailModal",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/resources/ResourcesPage.jsx:ResourcesPage",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/resources/ResourcesPage.jsx:ResourcesPage",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/tasks/MyTasksPage.jsx:MyTasksPage",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/tasks/MyTasksPage.jsx:MyTasksPage",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/tasks/components/TaskCreateModal.jsx:TaskCreateModal",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/tasks/components/TaskDetailModal.jsx:TaskDetailModal",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/lib/format.js:formatPeriod",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    }
+  ]
+}

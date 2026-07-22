@@ -8,7 +8,7 @@ import workspace from '../../styles/workspace.module.css'
 import { TaskDetailModal } from './components/TaskDetailModal.jsx'
 
 export function MyTasksPage() {
-  const { state, actions } = useTeamFlow()
+  const { state, actions, readOnly } = useTeamFlow()
   const [selectedTaskId, setSelectedTaskId] = useState(null)
   const selectedTask = state.tasks.find((task) => task.id === selectedTaskId) ?? null
   const groups = useMemo(() => state.projects.map((project) => ({
@@ -38,7 +38,7 @@ export function MyTasksPage() {
           {groups.length === 0 ? <p className={workspace.empty}>배정된 내 할 일이 없습니다.</p> : null}
         </div>
       </div>
-      {selectedTask ? <TaskDetailModal task={selectedTask} members={state.members} onClose={() => setSelectedTaskId(null)} onStatusChange={(status) => actions.updateTask(selectedTask.id, { status })} onDelete={async (taskId) => { await actions.deleteTask(taskId); setSelectedTaskId(null) }} /> : null}
+      {selectedTask ? <TaskDetailModal readOnly={readOnly} task={selectedTask} members={state.members} onClose={() => setSelectedTaskId(null)} onStatusChange={(status) => actions.updateTask(selectedTask.id, { status })} onDelete={async (taskId) => { await actions.deleteTask(taskId); setSelectedTaskId(null) }} /> : null}
     </section>
   )
 }

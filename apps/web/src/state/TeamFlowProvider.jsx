@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 
-import { mockTeamFlowRepository } from '../data/mockTeamFlowRepository.js'
 import { TeamFlowContext } from './TeamFlowContext.js'
 
 function reducer(state, action) {
   switch (action.type) {
     case 'hydrate':
-      return { ...action.payload, ready: true }
+      return { ...action.payload, ready: true, loadError: '' }
+    case 'loadFailed':
+      return { ...state, ready: false, loadError: action.message }
     case 'projectCreated':
       return { ...state, projects: [...state.projects, action.project] }
     case 'projectUpdated':
@@ -67,29 +68,42 @@ function reducer(state, action) {
 
 const emptyState = {
   ready: false,
+  loadError: '',
   projects: [],
   members: [],
   tasks: [],
   notes: [],
   resources: [],
   aiSettings: {},
+  aiHistory: [],
   currentUserId: '',
   aiMemberId: '',
+  accessMode: 'authenticated',
+  capabilities: { projects: false, members: false, tasks: false, notes: false, resources: false, ai: false },
 }
 
 /**
- * Provides one session-scoped source of truth for every mock-backed screen.
+ * Provides one source of truth for either authenticated API data or the read-only demo.
  */
-export function TeamFlowProvider({ children, repository = mockTeamFlowRepository }) {
+export function TeamFlowProvider({ children, repository }) {
   const [state, dispatch] = useReducer(reducer, emptyState)
   const timers = useRef(new Set())
 
   useEffect(() => {
     let active = true
     const activeTimers = timers.current
-    repository.load().then((payload) => {
-      if (active) dispatch({ type: 'hydrate', payload })
-    })
+    repository.load()
+      .then((payload) => {
+        if (active) dispatch({ type: 'hydrate', payload })
+      })
+      .catch((error) => {
+        if (active) {
+          dispatch({
+            type: 'loadFailed',
+            message: error instanceof Error ? error.message : 'TeamFlow를 불러오지 못했습니다.',
+          })
+        }
+      })
     return () => {
       active = false
       activeTimers.forEach(clearTimeout)
@@ -162,8 +176,19 @@ export function TeamFlowProvider({ children, repository = mockTeamFlowRepository
 
   const value = useMemo(() => ({
     state,
+    capabilities: state.capabilities,
+    readOnly: state.accessMode === 'guest',
     actions: { createProject, updateProject, createTask, updateTask, deleteTask, addMember, createNote, updateNote, createResource, updateAiSettings },
   }), [state, createProject, updateProject, createTask, updateTask, deleteTask, addMember, createNote, updateNote, createResource, updateAiSettings])
+
+  if (state.loadError) {
+    return (
+      <div role="alert" className="app-loading">
+        <span>{state.loadError}</span>
+        <small>API 서버를 확인한 뒤 페이지를 새로고침해 주세요.</small>
+      </div>
+    )
+  }
 
   if (!state.ready) {
     return <div role="status" className="app-loading">TeamFlow를 불러오는 중입니다.</div>

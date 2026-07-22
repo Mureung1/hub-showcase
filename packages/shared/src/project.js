@@ -70,6 +70,16 @@ export const RESOURCE_TYPE = Object.freeze({
  */
 
 /**
+ * @typedef {object} TaskCreateInput
+ * @property {string} projectId
+ * @property {string} title
+ * @property {string} assigneeId
+ * @property {string} dueDate ISO 8601 calendar date
+ * @property {TaskStatus} status
+ * @property {string} [description]
+ */
+
+/**
  * @typedef {object} Note
  * @property {string} id
  * @property {string} projectId
@@ -126,4 +136,22 @@ export function calculateProgress(tasks) {
   return normalizeProgress(
     (tasks.filter((task) => task.status === TASK_STATUS.COMPLETED).length / tasks.length) * 100,
   )
+}
+
+/**
+ * Checks whether a value is part of the shared task status contract.
+ * @param {unknown} value
+ * @returns {value is TaskStatus}
+ */
+export function isTaskStatus(value) {
+  return Object.values(TASK_STATUS).includes(value)
+}
+
+/**
+ * Checks whether a value is part of the shared project status contract.
+ * @param {unknown} value
+ * @returns {value is ProjectStatus}
+ */
+export function isProjectStatus(value) {
+  return Object.values(PROJECT_STATUS).includes(value)
 }
