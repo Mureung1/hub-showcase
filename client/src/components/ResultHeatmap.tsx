@@ -95,6 +95,11 @@ function ResultHeatmap({ slots, levelMap, resultMap }: ResultHeatmapProps) { // 
               가능 {selectedResult.availableCount - selectedResult.preferredCount}명 · 선호{' '}
               {selectedResult.preferredCount}명
             </p>
+            {/* claude: "선호는 가능에 포함된다"는 걸 추상적인 문장 대신, 바로 위에 보이는 실제 숫자로 다시 풀어서
+                설명한다 - 방금 본 숫자와 바로 연결되니 더 직관적이다. */}
+            <ScreenHint
+              text={`총 ${selectedResult.availableCount}명이 가능하다고 했고, 그중 ${selectedResult.preferredCount}명은 선호까지 표시했어요.`}
+            />
             <button type="button" onClick={() => setSelectedSlot(null)}>
               닫기
             </button>

@@ -19,6 +19,27 @@ function HomePage() {
       <div className="home-hero__image">
         <img src={heroImage} alt="달력과 시계로 표현한 약속 시간 조율 이미지" />
       </div>
+      <div className="home-guide">
+        <span className="home-guide__label">이렇게 진행돼요</span>
+        <ol className="home-guide__list">
+          <li>
+            <span className="home-guide__step">1</span>
+            링크에 접속해요
+          </li>
+          <li>
+            <span className="home-guide__step">2</span>
+            만날 수 있는 시간을 선택해요
+          </li>
+          <li>
+            <span className="home-guide__step">3</span>
+            그 중 더 선호하는 시간을 추가로 표시해요
+          </li>
+          <li>
+            <span className="home-guide__step">4</span>
+            결과를 확인해요
+          </li>
+        </ol>
+      </div>
       <ScreenHint text="새 약속을 만들거나, 공유받은 약속에 참여해보세요." className="screen-hint--center" />
       <div className="home-actions">
         <Link to="/new" className="button">
