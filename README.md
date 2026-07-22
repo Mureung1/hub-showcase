@@ -11,6 +11,12 @@
 - Gemini API 실제 분석 연결
 - 기본 mock 분석 모드와 실패 시 mock fallback
 
+## 화면·서버·DB 데이터 흐름
+
+![UniRadar 화면·서버·DB 데이터 흐름도](./docs/images/uniradar-data-flow.png)
+
+브라우저의 React 화면은 `src/api.js`를 통해 Express `/api/*`에 요청합니다. 로그인된 프로필·개인 설정·저장 출처는 Supabase의 사용자별 테이블에 저장되며, 분석 공고 저장소는 기본값으로 로컬 SQLite를 사용하고 설정에 따라 Supabase로 전환할 수 있습니다. 자세한 읽기 순서는 `App.jsx → src/api.js → server/index.js → Repository`입니다.
+
 ## 실행
 
 ```bash
