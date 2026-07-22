@@ -5,6 +5,9 @@ import { processSalesWasteUpload } from '../services/uploadAutomationService';
 const AUTOMATED_CATEGORIES = ['sales', 'waste'] as const;
 type AutomatedCategory = (typeof AUTOMATED_CATEGORIES)[number];
 
+// data/scripts/*.py의 CATEGORIES와 동일 — ETL 파서가 인식하는 상품 카테고리만 허용
+const PRODUCT_CATEGORIES = ['김밥', '도시락', '주먹밥', '햄버거샌드위치'];
+
 function isAutomatedCategory(category: string): category is AutomatedCategory {
   return (AUTOMATED_CATEGORIES as readonly string[]).includes(category);
 }
@@ -22,10 +25,10 @@ export async function createUploadHandler(req: Request, res: Response): Promise<
       const { productCategory, month } = req.body;
       const monthNum = parseInt(month, 10);
 
-      if (!productCategory || isNaN(monthNum) || monthNum < 1 || monthNum > 6) {
+      if (!PRODUCT_CATEGORIES.includes(productCategory) || isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
         res.status(400).json({
           success: false,
-          error: 'productCategory and month(1-6) are required for sales/waste upload',
+          error: `productCategory (${PRODUCT_CATEGORIES.join('/')}) and month(1-12) are required for sales/waste upload`,
         });
         return;
       }
