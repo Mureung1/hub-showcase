@@ -1,4 +1,4 @@
--- postings 테이블: 정형 공고 저장소 (데이터 계약: 설계 문서 11장)
+-- postings 테이블: 정형 공고 저장소 (계약: docs/architecture.md의 저장소 구조)
 -- Supabase 대시보드 > SQL Editor 에 붙여넣고 Run.
 
 create table if not exists postings (
