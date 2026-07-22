@@ -8,6 +8,14 @@ async function getActiveTasks(teamId) {
   return result.rows;
 }
 
+async function getArchivedTasks(teamId) {
+  const result = await pool.query(
+    'SELECT * FROM tasks WHERE team_id = $1 AND archived = true ORDER BY created_at DESC',
+    [teamId]
+  );
+  return result.rows;
+}
+
 async function createTask({ teamId, title, assigneeId, dueDate }) {
   const result = await pool.query(
     'INSERT INTO tasks (team_id, title, assignee_id, due_date) VALUES ($1, $2, $3, $4) RETURNING *',
@@ -61,8 +69,17 @@ async function updateAssignee(id, assigneeId) {
   return result.rows[0];
 }
 
+async function restoreTask(id) {
+  const result = await pool.query(
+    'UPDATE tasks SET archived = false WHERE id = $1 RETURNING *',
+    [id]
+  );
+  return result.rows[0];
+}
+
 module.exports = {
   getActiveTasks,
+  getArchivedTasks,
   createTask,
   getTaskById,
   updateStatus,
@@ -70,4 +87,5 @@ module.exports = {
   updateDueDate,
   updateTitle,
   updateAssignee,
+  restoreTask,
 };

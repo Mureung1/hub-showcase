@@ -25,6 +25,15 @@ async function listTasks(req, res) {
   }
 }
 
+async function listArchivedTasks(req, res) {
+  try {
+    const tasks = await taskModel.getArchivedTasks(CURRENT_TEAM_ID);
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
 async function addTask(req, res) {
   const { title, assigneeId, dueDate } = req.body;
 
@@ -187,12 +196,35 @@ async function updateAssignee(req, res) {
   }
 }
 
+async function restoreTask(req, res) {
+  const taskId = Number(req.params.id);
+  const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
+
+  try {
+    const task = await taskModel.getTaskById(taskId);
+    if (!task) {
+      return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
+    }
+
+    if (!canMemberChange(task, memberId)) {
+      return res.status(403).json({ error: '담당자만 복원할 수 있습니다.' });
+    }
+
+    const restored = await taskModel.restoreTask(taskId);
+    res.json(restored);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
 module.exports = {
   listTasks,
+  listArchivedTasks,
   addTask,
   updateStatus,
   archiveTask,
   updateDueDate,
   updateTitle,
   updateAssignee,
+  restoreTask,
 };
