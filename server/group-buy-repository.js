@@ -7,6 +7,12 @@ export function groupBuyRowToDto(row) {
     startLocation: participant.start_location,
     userId: participant.user_id,
   }));
+  const voteRows = row.group_buy_votes ?? [];
+  const votes = voteRows.reduce((counts, vote) => ({
+    ...counts,
+    [vote.candidate]: (counts[vote.candidate] ?? 0) + 1,
+  }), {});
+  const voterChoices = Object.fromEntries(voteRows.map((vote) => [vote.user_id, vote.candidate]));
 
   return {
     id: row.id,
@@ -15,6 +21,7 @@ export function groupBuyRowToDto(row) {
     targetPeople: row.target_people,
     currentPeople: row.current_people,
     deadline: row.deadline,
+    finalPickup: row.final_pickup,
     pickupLocation: row.pickup_location,
     status: row.status,
     ownerId: row.owner_id,
@@ -24,6 +31,8 @@ export function groupBuyRowToDto(row) {
     stage: row.stage,
     createdAt: row.created_at,
     participants,
+    voterChoices,
+    votes,
   };
 }
 
@@ -78,7 +87,7 @@ export function createGroupBuyRepository(supabase) {
     async findById(id) {
       const { data, error } = await supabase
         .from("group_buys")
-        .select("*, group_buy_participants(*)")
+        .select("*, group_buy_participants(*), group_buy_votes(*)")
         .eq("id", id)
         .maybeSingle();
 
@@ -89,7 +98,7 @@ export function createGroupBuyRepository(supabase) {
     async list() {
       const { data, error } = await supabase
         .from("group_buys")
-        .select("*, group_buy_participants(*)")
+        .select("*, group_buy_participants(*), group_buy_votes(*)")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -104,6 +113,37 @@ export function createGroupBuyRepository(supabase) {
         participant_user_id: userId,
         target_group_buy_id: id,
       });
+
+      if (error) throw error;
+      return this.findById(id);
+    },
+
+    async vote(id, userId, candidate) {
+      const { error } = await supabase.rpc("vote_group_buy", {
+        selected_candidate: candidate,
+        target_group_buy_id: id,
+        voter_user_id: userId,
+      });
+
+      if (error) throw error;
+      return this.findById(id);
+    },
+
+    async finalizePickup(id, userId) {
+      const { error } = await supabase.rpc("finalize_group_buy_pickup", {
+        requester_user_id: userId,
+        target_group_buy_id: id,
+      });
+
+      if (error) throw error;
+      return this.findById(id);
+    },
+
+    async advanceStage(id, stage) {
+      const { error } = await supabase
+        .from("group_buys")
+        .update({ stage })
+        .eq("id", id);
 
       if (error) throw error;
       return this.findById(id);
@@ -126,7 +166,7 @@ export function createGroupBuyRepository(supabase) {
         .from("group_buys")
         .update(groupBuyPatchToRow(input))
         .eq("id", id)
-        .select("*")
+        .select("*, group_buy_participants(*), group_buy_votes(*)")
         .maybeSingle();
 
       if (error) throw error;

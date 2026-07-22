@@ -13,7 +13,7 @@ function GroupBuyDetailPage({ groupBuyId, onNavigate, user }) {
   const total = useMemo(() => item ? item.unitPrice * quantity + Math.ceil(item.shippingFee / Math.max(item.targetPeople, item.currentPeople)) : 0, [item, quantity]);
   if (!item) return <main className="workspace"><div className="detail-loading">{message || "공동구매 정보를 불러오는 중…"}</div></main>;
   const percent = Math.min(100, Math.round(item.currentPeople / item.targetPeople * 100));
-  const canVote = item.userJoined && item.status === "closed";
+  const canVote = item.userJoined && item.status === "closed" && !item.finalPickup;
 
   async function participate() {
     if (!user) { onNavigate("/login"); return; }
