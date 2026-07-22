@@ -257,49 +257,49 @@ Frontend
 
 ## Day 1 (월) — Data Pipeline 기초 구축
 
-- [ ] sales Parser 작성 (3단 헤더 → 단일 헤더)
-- [ ] waste 상품코드 dtype 정리 (float → 정수/문자열)
-- [ ] inventory / orders Parser
-- [ ] Financial 계산식 최종 확정
-- [ ] `docs/specs/MASTER_DATASET_SPEC.md` 작성
+- [x] sales Parser 작성 (3단 헤더 → 단일 헤더)
+- [x] waste 상품코드 dtype 정리 (float → 정수/문자열)
+- [ ] inventory / orders Parser — 설계 변경으로 불필요 (카테고리+월 집계 방식, 미사용 결정)
+- [x] Financial 계산식 최종 확정
+- [x] `docs/specs/MASTER_DATASET_SPEC.md` 작성
 
 ## Day 2 (화) — Product Master + Master Dataset
 
-- [ ] `data/master/product_master.csv` 생성
-- [ ] `data/master/merged_dataset.csv` 생성
-- [ ] 카테고리별 row 수 및 결측치 확인
+- [ ] `data/master/product_master.csv` 생성 — 상품 단위 매칭률 낮아 P1 이월, 카테고리+월 집계로 대체
+- [x] `data/master/merged_dataset.csv` 생성
+- [x] 카테고리별 row 수 및 결측치 확인
 
 ## Day 3 (수) — Financial Backend + Rule Engine V1
 
 ### Financial Backend
-- [ ] 카테고리 평균 원가율 계산
-- [ ] 마진액 / 마진율 계산
-- [ ] 폐기손실 / 폐기율 계산
-- [ ] 순이익 / 순이익기여도 계산
-- [ ] `GET /api/financial` API 구현
+- [x] 카테고리 평균 원가율 계산
+- [x] 마진액 / 마진율 계산
+- [x] 폐기손실 / 폐기율 계산
+- [x] 순이익 / 순이익기여도 계산
+- [x] `GET /api/financial` API 구현
 
 ### Rule Engine V1
-- [ ] Rule 1: 판매증가 + 폐기율 < 5% → 발주 확대 검토
-- [ ] Rule 2: 판매감소 + 폐기율 증가 → 발주 축소 검토
-- [ ] Rule 3: 마진율 낮음 → 수익성 검토 필요
-- [ ] RecommendationService 구현
-- [ ] `GET /api/recommendations` API 구현
+- [x] Rule 1: 판매증가 + 폐기율 < 카테고리 평균 → 발주 확대 검토 (절대 임계값 대신 데이터셋 평균 기준으로 설계 변경)
+- [x] Rule 2: 판매감소 + 폐기율 증가 → 발주 축소 검토
+- [x] Rule 3: 마진율 낮음(전체 평균 이하) → 수익성 검토 필요
+- [x] RecommendationService 구현
+- [x] `GET /api/recommendations` API 구현
 
 ## Day 4 (목) — Financial Frontend + Dashboard 연결
 
-- [ ] Financial: mock 제거, API 연결
-- [ ] Dashboard KPI: 총매출/평균 마진율/폐기손실/추정 순이익 실데이터 연결
-- [ ] Dashboard Category Margin 실데이터 연결
-- [ ] Dashboard Recommendation Card (선택사항)
+- [x] Financial: mock 제거, API 연결
+- [x] Dashboard KPI: 총매출/평균 마진율/폐기손실/추정 순이익 실데이터 연결
+- [x] Dashboard Category Margin 실데이터 연결
+- [x] Dashboard Recommendation Card
 
 ## Day 5 (금) — 통합 및 안정화
 
-- [ ] Upload → Dashboard 전체 흐름 확인
-- [ ] Analysis 최소 1개 카테고리 실데이터 연동 (P1, 여유 시)
-- [ ] 예외 처리 및 버그 수정
-- [ ] `npx tsc --noEmit` 통과
-- [ ] `npm run build` 통과
-- [ ] 브라우저 실행 확인 (콘솔 에러·흰 화면 없음)
+- [x] Upload → Dashboard 전체 흐름 확인 — 2026-07-22 Upload→ETL 자동화 완료로 실제 업로드부터 끝까지 End-to-End 검증 완료 (정상/실패 케이스 모두 curl로 직접 테스트)
+- [x] Analysis 실데이터 연동 — 판매/폐기 추세 + 요일/시간대 패턴 + AI 인사이트 + 탭 배지까지 전부 실데이터 (2026-07-22, 애초 목표였던 "최소 1개 카테고리"를 초과 달성)
+- [x] 예외 처리 및 버그 수정 — ETL 실패 시 캐시 미반영·업로드 이력 '오류' 기록 확인, financial/pattern/recommendation fetch 전부 에러 상태 처리
+- [x] `npx tsc --noEmit` 통과 (backend, frontend)
+- [x] `npm run build` 통과 (backend, frontend)
+- [ ] 브라우저 실행 확인 (콘솔 에러·흰 화면 없음) — Analysis는 사용자 확인 완료, Dashboard/Upload는 미확인 (Chrome 확장 미설치로 자동 확인 불가)
 
 ---
 
@@ -318,6 +318,8 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
 - Day2: 별도 조사 작업 없이 진행
 - Day3: 카테고리 원가율 산출 시 이상치 확인 → 있으면 원인 파악, 없으면 스킵
 - 최종 결정: `docs/tasks.md`의 이 Risk 항목에 "3주차 기준 정상" 또는 "구간 제외 처리" 메모 남김
+
+**최종 결정 (2026-07-22, 구간 제외 처리)**: 상품 단위 waste↔inventory 매칭 자체를 설계에서 제외했다 (Day2에서 카테고리+월 집계 방식으로 전환, `MASTER_DATASET_SPEC.md` 참고). 따라서 이 매칭률 리스크는 더 이상 계산 경로에 존재하지 않는다. 대신 카테고리 원가율(`avg_cost_rate`)로 데이터 품질을 검증했고, 실측 62.1~75.7% 범위로 예상 범위(40~80%) 내 정상 확인됨 (`master_dataset_builder.py` 검증 로그, 2026-07-22 재확인).
 
 ---
 
