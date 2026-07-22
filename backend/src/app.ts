@@ -7,6 +7,7 @@ import express, {
 import recipesRouter from "./routes/recipes.routes.js";
 import { requireFirebaseAuth } from "./middlewares/requireFirebaseAuth.js";
 import authRouter from "./routes/auth.routes.js";
+import aiRouter from "./routes/ai.routes.js";
 
 const app = express();
 const allowedOrigin = process.env.CORS_ALLOWED_ORIGIN;
@@ -43,6 +44,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/ai", requireFirebaseAuth, aiRouter);
 app.use("/api/recipes", requireFirebaseAuth, recipesRouter);
 
 app.use((_req: Request, res: Response) => {
