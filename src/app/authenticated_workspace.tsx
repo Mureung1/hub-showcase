@@ -187,6 +187,12 @@ export function AuthenticatedWorkspace({
     }
   }
 
+  function handleRetrieveClear() {
+    setRetrieveQuery('');
+    setSubmittedRetrieveQuery('');
+    setSelectedSituation('');
+  }
+
   function handleRetrieve(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -364,6 +370,7 @@ export function AuthenticatedWorkspace({
                   ? 'unavailable'
                   : 'ready'
             }
+            onClearQuery={handleRetrieveClear}
             onOpenLibrary={() => setActiveTab('library')}
             onOpenSave={() => setActiveTab('save')}
             onQueryChange={handleRetrieveQueryChange}

@@ -42,6 +42,7 @@ const defaultProps: HomePageProps = {
   libraryState: 'ready',
   onOpenLibrary: vi.fn(),
   onOpenSave: vi.fn(),
+  onClearQuery: vi.fn(),
   onQueryChange: vi.fn(),
   onRetrieve: vi.fn(),
   onRetryLoad: vi.fn(),
@@ -62,6 +63,34 @@ function renderHomePage(props: Partial<HomePageProps> = {}) {
 }
 
 describe('HomePage', () => {
+  it('defines a centered retrieval axis with responsive suggestion columns', () => {
+    const styles = readFileSync(
+      join(process.cwd(), 'src/pages/home/ui/home_page.css'),
+      'utf8'
+    );
+    const heroRule = getCssRule(styles, '.home-page__hero');
+    const suggestionsRule = getCssRule(styles, '.home-page__suggestions');
+    const tabletStyles = styles.slice(
+      styles.indexOf('@media (max-width: 1199px)')
+    );
+    const mobileStyles = styles.slice(
+      styles.indexOf('@media (max-width: 767px)')
+    );
+
+    expect(heroRule).toContain('width: min(820px, 100%);');
+    expect(heroRule).toContain('margin-inline: auto;');
+    expect(heroRule).toContain('text-align: center;');
+    expect(suggestionsRule).toContain(
+      'grid-template-columns: repeat(3, minmax(0, 1fr));'
+    );
+    expect(getCssRule(tabletStyles, '.home-page__suggestions')).toContain(
+      'grid-template-columns: repeat(2, minmax(0, 1fr));'
+    );
+    expect(getCssRule(mobileStyles, '.home-page__suggestions')).toContain(
+      'grid-template-columns: minmax(0, 1fr);'
+    );
+  });
+
   it('shows loading before treating the remote library as empty', () => {
     renderHomePage({ insightCount: 0, libraryState: 'loading' });
 
@@ -126,33 +155,72 @@ describe('HomePage', () => {
     expect(onRetryLoad).toHaveBeenCalledOnce();
   });
 
-  it('shows situation examples without pretending a workpack exists before submission', () => {
-    render(
-      <DesignSystemProvider>
-        <HomePage
-          insightCount={1}
-          libraryState="ready"
-          onOpenLibrary={vi.fn()}
-          onOpenSave={vi.fn()}
-          onQueryChange={vi.fn()}
-          onRetrieve={vi.fn()}
-          onRetryLoad={vi.fn()}
-          onSituationClick={vi.fn()}
-          query=""
-          results={[]}
-          selectedSituation=""
-          situations={situations}
-          submittedQuery=""
-        />
-      </DesignSystemProvider>
-    );
+  it('keeps survey situations and helper without legacy fallback before submission', () => {
+    renderHomePage({
+      situations: [
+        { label: '과제 참고자료 다시 찾기', query: '과제 참고자료 다시 찾기' },
+        {
+          label: '프로젝트에 쓸 자료 꺼내기',
+          query: '프로젝트에 쓸 자료 꺼내기',
+        },
+        {
+          label: '공모전 아이디어 발전시키기',
+          query: '공모전 아이디어 발전시키기',
+        },
+        {
+          label: '여행·취미 계획 다시 이어가기',
+          query: '여행 취미 계획 다시 이어가기',
+        },
+        {
+          label: '디자인·개발 레퍼런스 찾기',
+          query: '디자인 개발 레퍼런스 찾기',
+        },
+        { label: '저장해둔 영상 골라보기', query: '저장한 영상 골라보기' },
+      ],
+    });
 
     expect(
-      screen.getByRole('heading', { name: '이런 상황에서 시작해보세요' })
+      screen.queryByText(
+        '아맞다는 저장해둔 링크와 메모를 현재 상황에 맞춰 다시 찾게 해주는 개인 인사이트 저장소입니다.'
+      )
+    ).toBeNull();
+    expect(
+      screen.queryByRole('heading', { name: '이런 상황에서 시작해보세요' })
+    ).toBeNull();
+    expect(
+      screen.getByText('떠오르는 단어나 지금 하고 있는 일을 짧게 적어보세요.')
     ).not.toBeNull();
-    expect(screen.getByRole('button', { name: '개발 공부' })).not.toBeNull();
-    expect(screen.queryByText('추천 결과')).toBeNull();
+    expect(screen.queryByText('작업팩')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: '과제 참고자료 다시 찾기' })
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '프로젝트에 쓸 자료 꺼내기' })
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '공모전 아이디어 발전시키기' })
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '여행·취미 계획 다시 이어가기' })
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '디자인·개발 레퍼런스 찾기' })
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '저장해둔 영상 골라보기' })
+    ).not.toBeNull();
     expect(screen.queryByRole('article')).toBeNull();
+  });
+
+  it('connects the clear control only while a draft query exists', async () => {
+    const user = userEvent.setup();
+    const onClearQuery = vi.fn();
+
+    renderHomePage({ onClearQuery, query: '과제 참고자료 다시 찾기' });
+
+    await user.click(screen.getByRole('button', { name: '입력 지우기' }));
+
+    expect(onClearQuery).toHaveBeenCalledOnce();
   });
 
   it('reports situation selection and retrieve submission', async () => {
@@ -167,6 +235,7 @@ describe('HomePage', () => {
           libraryState="ready"
           onOpenLibrary={vi.fn()}
           onOpenSave={vi.fn()}
+          onClearQuery={vi.fn()}
           onQueryChange={vi.fn()}
           onRetrieve={onRetrieve}
           onRetryLoad={vi.fn()}
@@ -189,7 +258,7 @@ describe('HomePage', () => {
     expect(onRetrieve).toHaveBeenCalledOnce();
   });
 
-  it('renders a submitted workpack with its exact query, truthful clue, and safe source link', () => {
+  it('renders submitted results with the exact query and safe source link', () => {
     const result: RetrievedInsight = {
       insight: createInsight({
         memo: '온보딩 흐름 참고',
@@ -199,7 +268,6 @@ describe('HomePage', () => {
       score: 12,
       matchedFields: ['memo'],
       matchedTokens: ['온보딩'],
-      connectionClue: '메모의 “온보딩” 단서가 겹쳐요.',
     };
 
     render(
@@ -209,6 +277,7 @@ describe('HomePage', () => {
           libraryState="ready"
           onOpenLibrary={vi.fn()}
           onOpenSave={vi.fn()}
+          onClearQuery={vi.fn()}
           onQueryChange={vi.fn()}
           onRetrieve={vi.fn()}
           onRetryLoad={vi.fn()}
@@ -224,7 +293,12 @@ describe('HomePage', () => {
 
     expect(screen.getByRole('status').textContent).toContain('온보딩 작업');
     expect(screen.getByRole('status').textContent).toContain('1개');
-    expect(screen.getByText(result.connectionClue)).not.toBeNull();
+    expect(screen.getByRole('status').textContent).toContain('결과');
+    expect(
+      screen.getByRole('heading', { name: '지금 상황에 맞는 인사이트' })
+    ).not.toBeNull();
+    expect(screen.queryByText('작업팩')).toBeNull();
+    expect(screen.queryByText(/단서가 겹쳐요/)).toBeNull();
     const sourceLink = screen.getByRole('link', { name: '원문 열기' });
     expect(sourceLink.getAttribute('href')).toBe(
       'https://example.com/onboarding'
@@ -244,6 +318,7 @@ describe('HomePage', () => {
           libraryState="ready"
           onOpenLibrary={onOpenLibrary}
           onOpenSave={vi.fn()}
+          onClearQuery={vi.fn()}
           onQueryChange={vi.fn()}
           onRetrieve={vi.fn()}
           onRetryLoad={vi.fn()}
@@ -259,10 +334,9 @@ describe('HomePage', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: '“없는 상황”과 연결된 인사이트가 없어요',
+        name: '“없는 상황” 결과가 없어요',
       })
     ).not.toBeNull();
-    expect(screen.getByText(/다른 상황 예시/)).not.toBeNull();
     expect(screen.getByRole('button', { name: '개발 공부' })).not.toBeNull();
     expect(
       (
@@ -287,6 +361,7 @@ describe('HomePage', () => {
           libraryState="ready"
           onOpenLibrary={vi.fn()}
           onOpenSave={vi.fn()}
+          onClearQuery={vi.fn()}
           onQueryChange={vi.fn()}
           onRetrieve={vi.fn()}
           onRetryLoad={vi.fn()}
@@ -306,7 +381,7 @@ describe('HomePage', () => {
     expect(
       screen
         .getByRole('heading', {
-          name: `“${longQuery}”과 연결된 인사이트가 없어요`,
+          name: `“${longQuery}” 결과가 없어요`,
         })
         .closest('.home-page__no-results')
     ).not.toBeNull();
