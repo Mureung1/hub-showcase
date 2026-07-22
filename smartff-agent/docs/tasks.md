@@ -48,6 +48,7 @@
 - [x] Rule Engine V1 (최소 3개 규칙) — 2026-07-21 완료 (`RecommendationService`, 카테고리 평균 폐기율/전체 평균 마진율 기반)
 - [x] Analysis 판매/폐기 추세 차트 실데이터 연동 (P1) — 2026-07-22 완료 (전 카테고리, `/api/financial/summary` 기반)
 - [x] Analysis 요일별/시간대별 판매 패턴 실데이터 연동 — 2026-07-22 완료. `data/scripts/pattern_parser.py` 신규(6월 4주 평균), `data/master/weekday_sales.csv`/`hourly_sales.csv`, `GET /api/patterns/weekday|hourly?category=` 신설, `AnalysisPage.tsx` mock 제거. 이로써 Analysis 페이지 4개 차트 전부 실데이터 기반
+- [x] Analysis AI 인사이트(InsightStrip) 실데이터 연동 — 2026-07-22 완료. 기존 `/api/recommendations`(Rule Engine V1)를 카테고리별로 필터링해 상태(opportunity/neutral/risk) 판정(Dashboard의 risk 기준과 동일)과 사유 문구 생성, 요일/시간대 패턴과 결합. `ANALYSIS_MOCK_DATA`의 `type`/`reasons` 사용 중단(다른 필드는 트렌드 폴백용으로 유지)
 
 ---
 
