@@ -30,17 +30,19 @@ flowchart LR
     Adapter["questLogApi.ts"]
   end
 
-  subgraph HonoApi["Vite and Hono"]
+  subgraph LocalApi["Local API Runtime"]
     Vite["Vite middleware"]
+    Server["createServer"]
     Hono["Hono app"]
     Routes["questEvents routes"]
     Contract["questEvents contract"]
   end
 
-  subgraph StoreLayer["Storage"]
-    Store["QuestEventStore"]
+  subgraph StoreLayer["Selected Store"]
+    Selector["createQuestEventStore"]
     Memory["Memory store"]
     SupabaseStore["Supabase store"]
+    Store["QuestEventStore interface"]
   end
 
   subgraph Database["Supabase"]
@@ -56,16 +58,19 @@ flowchart LR
   Pet --> Canvas
   App --> Adapter
   Adapter --> Vite
-  Vite --> Hono
+  Vite --> Server
+  Server --> Selector
+  Selector -->|"missing env"| Memory
+  Selector -->|"SUPABASE env"| SupabaseStore
+  Memory --> Store
+  SupabaseStore --> Store
+  Server --> Hono
   Hono --> Routes
   Routes --> Contract
-  Contract --> Store
-  Store --> Memory
-  Store --> SupabaseStore
+  Contract -->|"valid request"| Store
+  Contract -.->|"invalid request"| Routes
   SupabaseStore --> QuestLogs
   QuestLogs --> SupabaseStore
-  SupabaseStore --> Store
-  Memory --> Store
   Store --> Routes
   Routes --> Adapter
   Adapter --> App
@@ -88,20 +93,37 @@ sequenceDiagram
   User->>App: Click complete fail or recovery
   App->>App: Build CreateQuestEventRequest
   App->>Api: createQuestEventViaApi
-  Api->>Vite: POST api quest-events
+  Api->>Vite: POST api quest-events with JSON
+  Vite->>Vite: Read body and create Request
   Vite->>Route: Hono Request
-  Route->>Contract: Parse JSON body
-  Contract-->>Route: Valid request
-  Route->>Store: insertQuestEvent
-  Store->>DB: Insert quest_logs row
-  DB-->>Store: QuestEventRecord
-  Route->>Store: getManagerContext
-  Store->>DB: Select recent rows
-  DB-->>Store: Recent records
-  Store-->>Route: ManagerContext
-  Route-->>Api: JSON response
-  Api-->>App: Event log and manager context
-  App->>App: setLogs and applyManagerContext
+  Route->>Route: request.json
+  Route->>Contract: parseCreateQuestEventRequest
+  alt invalid body
+    Contract-->>Route: ApiErrorResponse
+    Route-->>Api: 400 JSON error
+    Api-->>App: throw error
+    App->>App: setLogSync error
+  else valid body
+    Contract-->>Route: CreateQuestEventRequest
+    Route->>Store: insertQuestEvent
+    alt Supabase store
+      Store->>DB: Insert quest_logs row
+      DB-->>Store: QuestEventRecord
+    else Memory store
+      Store->>Store: Insert memory record
+    end
+    Route->>Store: getManagerContext
+    alt Supabase store
+      Store->>DB: Select recent rows
+      DB-->>Store: Recent records
+    else Memory store
+      Store->>Store: Read memory records
+    end
+    Store-->>Route: ManagerContext
+    Route-->>Api: 201 JSON response
+    Api-->>App: Event log and manager context
+    App->>App: setLogs and applyManagerContext
+  end
 ```
 
 ## Refresh And Journal Read Flow
@@ -109,22 +131,35 @@ sequenceDiagram
 ```mermaid
 flowchart LR
   Desktop["Desktop screen mounted"]
-  FetchEvents["GET api quest-events"]
-  FetchContext["GET api manager-context"]
+  AppEffect["App useEffect"]
+  Adapter["questLogApi.ts"]
+  Vite["Vite middleware"]
+  EventsRoute["GET quest-events route"]
+  ContextRoute["GET manager-context route"]
+  QueryContract["parse query"]
   Store["QuestEventStore"]
-  Logs["QuestLog array"]
+  EventItems["QuestEventResponseItem array"]
+  Logs["toQuestLog array"]
   Context["ManagerContext"]
+  AppState["setLogs and applyManagerContext"]
   Journal["JournalWindow"]
   Manager["ManagerWindow"]
 
-  Desktop --> FetchEvents
-  Desktop --> FetchContext
-  FetchEvents --> Store
-  FetchContext --> Store
-  Store --> Logs
+  Desktop --> AppEffect
+  AppEffect --> Adapter
+  Adapter --> Vite
+  Vite --> EventsRoute
+  Vite --> ContextRoute
+  EventsRoute --> QueryContract
+  QueryContract --> Store
+  ContextRoute --> Store
+  Store --> EventItems
   Store --> Context
-  Logs --> Journal
-  Context --> Manager
+  EventItems --> Logs
+  Logs --> AppState
+  Context --> AppState
+  AppState --> Journal
+  AppState --> Manager
 ```
 
 ## Character Asset Runtime
@@ -136,6 +171,7 @@ flowchart LR
   subgraph ManagerState["ManagerState"]
     PetId["petId"]
     Level["level"]
+    UnlockedStages["unlockedStages"]
     SelectedStage["selectedStage"]
     Mood["mood"]
   end
@@ -143,6 +179,7 @@ flowchart LR
   subgraph Resolver["Stage Resolver"]
     Unlocks["getUnlockedPetStages"]
     Resolve["resolvePetStageFromLevel"]
+    Display["getManagerDisplayStage"]
     Renderable["getRenderablePetStage"]
   end
 
@@ -160,9 +197,11 @@ flowchart LR
 
   PetId --> GetAsset
   Level --> Unlocks
+  Unlocks --> UnlockedStages
   Level --> Resolve
-  SelectedStage --> Renderable
-  Resolve --> Renderable
+  SelectedStage --> Display
+  Resolve --> Display
+  Display --> Renderable
   Renderable --> GetAsset
   Mood --> GetAsset
   Catalog --> GetAsset
@@ -182,17 +221,24 @@ flowchart LR
   ReviewTool["SpriteSheetReviewTool"]
   ReviewSetId["reviewSetId"]
   ReviewSets["spriteReviewSets"]
+  SelectedSet["selected review set"]
   GetReview["getSpriteReviewAnimations"]
   Candidate["production candidates"]
   Canonical["canonical runtime folder"]
+  AnimationData["SpriteAnimationAsset array"]
   Canvas["CanvasSpriteAnimator"]
+  SheetImg["sheet image preview"]
 
   ReviewTool --> ReviewSetId
   ReviewSetId --> ReviewSets
-  ReviewSets --> GetReview
-  GetReview --> Candidate
-  GetReview --> Canonical
-  GetReview --> Canvas
+  ReviewSets --> SelectedSet
+  SelectedSet --> GetReview
+  GetReview -->|"if candidates selected"| Candidate
+  GetReview -->|"if canonical selected"| Canonical
+  Candidate --> AnimationData
+  Canonical --> AnimationData
+  AnimationData --> Canvas
+  AnimationData --> SheetImg
 ```
 
 ## Representative Code Schema

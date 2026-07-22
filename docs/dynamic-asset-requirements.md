@@ -241,7 +241,7 @@ Needed objects:
 ```ts
 interface BlinkFocusEffectAsset {
   id: string;
-  mode: "start_day" | "end_day" | "focus_manager" | "defocus_manager";
+  mode: "start_day" | "end_day";
   overlaySrc?: string;
   durationMs: number;
   blurFrom: number;

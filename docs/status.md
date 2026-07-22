@@ -57,6 +57,8 @@
 - 2026-07-21 Supabase 실제 DB 수직 슬라이스 검증 완료: `/api/health`가 `storageMode: "supabase"`와 `supabaseConfigured: true`를 반환했고, `POST /api/quest-events`, `GET /api/quest-events`, `GET /api/manager-context`가 실제 Supabase 경로에서 통과
 - 2026-07-21 GitHub Issues/Project 정리 완료: 기존 P0 이슈 상태를 최신화하고 3주차 P1, 4주차 P2 확장 이슈를 Project #1에 `Priority`, `Week`, `Type`, `Status` 필드와 함께 등록
 - 2026-07-22 동적 asset/data manifest를 코드에서 확장: `soundAssets`, `interactionObjectAssets`, `projectionModeAssets`, projection/interaction future slot을 추가하고 main Lumi runtime animation을 `pink-manager-stage-1` canonical sheets로 전환
+- 2026-07-22 T-710 blink focus scene prototype을 React/CSS overlay로 조정: 온보딩 후 서비스 진입과 시작 메뉴 서비스 종료 직전에만 blink가 재생되고, 저장된 프로필로 새로고침해 desktop에 바로 들어올 때는 재생하지 않음
+- 2026-07-22 T-724 Single-plane Pepper projection mode prototype을 Pixel TV 우클릭 속성 flow에 연결: 속성 창의 변환/원복으로 TV 아이콘 sprite가 바뀌고, 변환된 아이콘 실행 시 hidden route `?projection=pepper`의 검은 배경 Lumi glow 출력으로 이동
 - 2026-07-22 Canvas 기반 sprite animation을 메인 매니저 창, hover, window interaction layer에 적용하고 `?review=sprites` 전용 검수 화면과 sprite sheet verifier를 유지
 
 ## 검증

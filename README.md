@@ -57,39 +57,53 @@ Profile Setup Wizard
 flowchart LR
   User["User"]
 
-  subgraph Browser["React Browser App"]
-    UI["XP Desktop UI<br/>src/App.tsx"]
-    State["React state<br/>questStatus, manager, logs"]
-    Assets["Asset manifest<br/>src/data/assetManifest.ts"]
-    Lumi["Canvas sprite<br/>CanvasSpriteAnimator"]
+  subgraph Browser["React Browser"]
+    App["App.tsx"]
+    State["React state"]
+    Manifest["assetManifest.ts"]
+    Pet["DesktopPet"]
+    Canvas["CanvasSpriteAnimator"]
   end
 
-  subgraph Api["Local API Boundary"]
+  subgraph Api["Local API"]
     Adapter["questLogApi.ts"]
-    Vite["Vite /api middleware"]
-    Hono["Hono routes<br/>/api/quest-events"]
+    Vite["Vite middleware"]
+    Server["createServer"]
+    Hono["Hono route"]
+    Contract["Contract parser"]
   end
 
-  subgraph Store["Server Store"]
-    Memory["Memory fallback"]
+  subgraph Store["Selected Store"]
+    Selector["createQuestEventStore"]
+    Memory["Memory store"]
     SupabaseStore["Supabase store"]
+    StoreApi["QuestEventStore"]
   end
 
-  DB[("Supabase<br/>quest_logs")]
+  DB[("quest_logs")]
 
-  User -->|"complete / fail / recovery"| UI
-  UI -->|"setState"| State
-  State -->|"mood"| Lumi
-  Assets -->|"sprite/icon path"| Lumi
-  UI -->|"CreateQuestEventRequest"| Adapter
-  Adapter -->|"fetch /api/*"| Vite
-  Vite --> Hono
-  Hono -->|"valid event"| SupabaseStore
-  Hono -.->|"no env"| Memory
-  SupabaseStore -->|"insert/select"| DB
-  DB -->|"QuestEventRecord[]"| SupabaseStore
-  SupabaseStore -->|"QuestLog[] + ManagerContext"| Adapter
-  Adapter -->|"logs + manager context"| UI
+  User --> App
+  App --> State
+  State --> Pet
+  Manifest --> Pet
+  Pet --> Canvas
+  App --> Adapter
+  Adapter --> Vite
+  Vite --> Server
+  Server --> Selector
+  Server --> Hono
+  Hono --> Contract
+  Contract -->|"valid"| StoreApi
+  Contract -.->|"invalid"| Hono
+  Selector -->|"missing env"| Memory
+  Selector -->|"SUPABASE env"| SupabaseStore
+  Memory --> StoreApi
+  SupabaseStore --> StoreApi
+  SupabaseStore --> DB
+  DB --> SupabaseStore
+  StoreApi --> Hono
+  Hono --> Adapter
+  Adapter --> App
 ```
 
 자세한 구조도와 대표 코드 스키마는 [Architecture Data Flow](docs/architecture-data-flow.md)에 정리했습니다.

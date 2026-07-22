@@ -7,6 +7,7 @@ interface CanvasSpriteAnimatorProps {
   className?: string;
   ariaLabel: string;
   forceMotion?: boolean;
+  mirrorX?: boolean;
 }
 
 function getReducedMotionPreference() {
@@ -24,7 +25,13 @@ function getPlaybackSequence(animation: SpriteAnimationAsset): SpritePlaybackFra
   });
 }
 
-export function CanvasSpriteAnimator({ animation, className = "", ariaLabel, forceMotion = false }: CanvasSpriteAnimatorProps) {
+export function CanvasSpriteAnimator({
+  animation,
+  className = "",
+  ariaLabel,
+  forceMotion = false,
+  mirrorX = false,
+}: CanvasSpriteAnimatorProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [isReducedMotion, setIsReducedMotion] = useState(getReducedMotionPreference);
@@ -70,7 +77,7 @@ export function CanvasSpriteAnimator({ animation, className = "", ariaLabel, for
 
       renderingContext.clearRect(0, 0, animation.frameWidth, animation.frameHeight);
 
-      if (step.mirrorX) {
+      if (step.mirrorX !== mirrorX) {
         renderingContext.save();
         renderingContext.translate(animation.frameWidth, 0);
         renderingContext.scale(-1, 1);
@@ -142,7 +149,7 @@ export function CanvasSpriteAnimator({ animation, className = "", ariaLabel, for
       window.cancelAnimationFrame(animationFrameId);
       image.removeEventListener("load", startDrawing);
     };
-  }, [animation, forceMotion, isReducedMotion]);
+  }, [animation, forceMotion, isReducedMotion, mirrorX]);
 
   const canvasStyle = {
     "--sprite-frame-width": `${animation.frameWidth}px`,

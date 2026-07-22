@@ -141,6 +141,7 @@ export interface ProjectionModeAsset {
   mode: "single_plane_pepper";
   iconId: DesktopIconId;
   connectedIconSrc: string;
+  connectedIconHoverSrc: string;
   projectionRoot: string;
   defaultSpriteId: string;
   background: "#000000";
@@ -584,7 +585,8 @@ export const projectionModeAssets: ProjectionModeAsset[] = [
     id: "pixel-tv-single-plane-pepper",
     mode: "single_plane_pepper",
     iconId: "pixel-tv",
-    connectedIconSrc: "/assets/icons/pixel-tv-hover-pixel-v2.png",
+    connectedIconSrc: "/assets/icons/pixel-tv-projection-connected-pixel-v1.png",
+    connectedIconHoverSrc: "/assets/icons/pixel-tv-projection-connected-hover-pixel-v1.png",
     projectionRoot: "/assets/projection",
     defaultSpriteId: `${defaultLumiPetId}-${fallbackLumiStage}-idle`,
     background: "#000000",

@@ -1,4 +1,11 @@
-import type { PetId, PetMotionState, PetStageId, SpriteAnimationAsset, SpriteAnchor, SpritePlaybackFrame } from "./assetManifest";
+import type {
+  PetId,
+  PetMotionState,
+  PetStageId,
+  SpriteAnimationAsset,
+  SpriteAnchor,
+  SpritePlaybackFrame,
+} from "./assetManifest";
 
 interface SpriteReviewSpec {
   state: PetMotionState;
@@ -22,6 +29,8 @@ export interface SpriteReviewSet {
 
 const pinkManagerCanonicalPath = "/assets/lumi/pink-manager-stage-1";
 const pinkManagerCandidatePath = "/assets/lumi/pink-manager-stage-1-production-candidates";
+const glassFrogCandidatePath = "/assets/lumi/glass-frog-stage-1-production-candidates";
+
 const floatAnchor: SpriteAnchor = { type: "float", x: 32, y: 58 };
 const topGripAnchor: SpriteAnchor = { type: "top-grip", x: 32, y: 5 };
 const peekEdgeAnchor: SpriteAnchor = { type: "peek-edge", x: 4, y: 32 };
@@ -33,7 +42,7 @@ const specs: readonly SpriteReviewSpec[] = [
     fps: 4,
     loop: true,
     anchor: floatAnchor,
-    notes: "대기 호흡과 blink가 안정적으로 보이는지 확인",
+    notes: "Check stable breathing/blink rhythm and whether frame 0 reads well as a reduced-motion fallback.",
   },
   {
     state: "focused",
@@ -41,7 +50,7 @@ const specs: readonly SpriteReviewSpec[] = [
     fps: 6,
     loop: true,
     anchor: floatAnchor,
-    notes: "집중으로 읽히되 화난 표정처럼 과하지 않은지 확인",
+    notes: "Check that focus reads through posture or eye detail without adding inconsistent accessories.",
   },
   {
     state: "happy",
@@ -49,7 +58,7 @@ const specs: readonly SpriteReviewSpec[] = [
     fps: 8,
     loop: true,
     anchor: floatAnchor,
-    notes: "frame 0부터 행복한지, 효과선 없이도 표정이 충분한지 확인",
+    notes: "Check that the motion feels happy from frame 0 and still stays on-model across the loop.",
   },
   {
     state: "recovering",
@@ -57,7 +66,7 @@ const specs: readonly SpriteReviewSpec[] = [
     fps: 4,
     loop: true,
     anchor: floatAnchor,
-    notes: "실패 처벌처럼 보이지 않고 부드러운 회복으로 읽히는지 확인",
+    notes: "Check that recovery reads as soft tired/rebalancing motion, not as damage or injury.",
   },
   {
     state: "hanging",
@@ -65,7 +74,7 @@ const specs: readonly SpriteReviewSpec[] = [
     fps: 6,
     loop: true,
     anchor: topGripAnchor,
-    notes: "현재 보류 후보. 양손 들기보다 창에 매달린 느낌인지 확인",
+    notes: "Check top-grip stability and whether the body feels attached to a UI edge instead of floating.",
   },
   {
     state: "hiding",
@@ -73,7 +82,7 @@ const specs: readonly SpriteReviewSpec[] = [
     fps: 5,
     loop: true,
     anchor: peekEdgeAnchor,
-    notes: "왼쪽 peek edge가 흔들리지 않고 창 뒤 숨기처럼 보이는지 확인",
+    notes: "Check that the left peek edge is stable and reads as hiding beside a window.",
   },
   {
     state: "run",
@@ -82,7 +91,7 @@ const specs: readonly SpriteReviewSpec[] = [
     loop: true,
     anchor: floatAnchor,
     playbackFrames: [{ frame: 0 }, { frame: 1 }, { frame: 2 }, { frame: 3 }, { frame: 4 }, { frame: 5 }, { frame: 2 }, { frame: 1 }],
-    notes: "오른쪽 방향이 끝까지 유지되고 빠른 종종걸음으로 보이는지 확인",
+    notes: "Check one consistent right-facing direction and a faster gait than walk.",
   },
   {
     state: "jump",
@@ -91,7 +100,7 @@ const specs: readonly SpriteReviewSpec[] = [
     loop: false,
     anchor: floatAnchor,
     playbackFrames: [{ frame: 0 }, { frame: 1 }, { frame: 2, hold: 2 }, { frame: 3 }, { frame: 4 }, { frame: 5, hold: 2 }],
-    notes: "v4 후보. 오른쪽 3/4 방향 유지와 착지 baseline을 확인",
+    notes: "Check right-facing or three-quarter-right continuity, baseline landing, and no squash distortion.",
   },
   {
     state: "walk",
@@ -111,7 +120,7 @@ const specs: readonly SpriteReviewSpec[] = [
       { frame: 0 },
       { frame: 5 },
     ],
-    notes: "느린 이동 리듬에서 대칭 재생이 어색하지 않은지 확인",
+    notes: "Check slow movement rhythm and whether mirrored/held frames feel natural.",
   },
   {
     state: "climbing",
@@ -120,7 +129,7 @@ const specs: readonly SpriteReviewSpec[] = [
     loop: true,
     anchor: topGripAnchor,
     playbackFrames: [{ frame: 0 }, { frame: 1 }, { frame: 2 }, { frame: 3 }, { frame: 4 }, { frame: 5 }, { frame: 4 }, { frame: 3 }],
-    notes: "뒷모습 유지, 사다리 없이도 등반으로 읽히는지 확인",
+    notes: "Check rear-view readability, alternating grip rhythm, and ladder-free UI compatibility.",
   },
 ];
 
@@ -132,19 +141,29 @@ export const spriteReviewSets = [
     petId: "pink-manager",
     stage: "stage-1",
     path: pinkManagerCanonicalPath,
-    fileForState: (state) => `pink-manager-stage-1-${state}-sheet.png`,
+    fileForState: (state: PetMotionState) => `pink-manager-stage-1-${state}-sheet.png`,
   },
   {
     id: "pink-manager-stage-1-production-candidates",
     label: "Pink Manager Stage 1 - Production Candidates",
-    description: "Final candidate sheets for promotion into the canonical runtime folder.",
+    description: "Final candidate sheets kept for comparison with the promoted canonical folder.",
     petId: "pink-manager",
     stage: "stage-1",
     path: pinkManagerCandidatePath,
-    fileForState: (state) => {
+    fileForState: (state: PetMotionState) => {
       if (state === "focused" || state === "jump") return `pink-manager-stage-1-${state}-sheet-v4.png`;
       return `pink-manager-stage-1-${state}-sheet-v3.png`;
     },
+  },
+  {
+    id: "glass-frog-stage-1-production-candidates",
+    label: "Glass Frog Stage 1 - Production Candidates",
+    description:
+      "Glass frog sheets generated from candidate-glass-frog-stage-1-4-v1-chromakey, using the small frog form as the motion base.",
+    petId: "glass-frog",
+    stage: "stage-1",
+    path: glassFrogCandidatePath,
+    fileForState: (state: PetMotionState) => `glass-frog-stage-1-${state}-sheet-v1.png`,
   },
 ] as const satisfies readonly SpriteReviewSet[];
 

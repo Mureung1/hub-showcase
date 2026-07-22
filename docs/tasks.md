@@ -90,7 +90,7 @@
 | T-707 | P1 | Backlog | 사운드 feedback 구현 | 완료/복구/레벨업 사운드가 muted 기본값과 함께 동작한다 | future-expansion-plan.md |
 | T-708 | P1 | Backlog | 하루의 흐름 web theme 구현 | 시간대와 퀘스트 상태가 배경/루미 idle/theme state에 반영된다 | future-expansion-plan.md |
 | T-709 | P1 | Backlog | 개인화 AI 매니저 adapter 구현 | ManagerContext 기반 대사/추천 adapter와 rule fallback이 분리된다 | agent-design.md |
-| T-710 | P1 | Backlog | blink focus scene 구현 | 하루 시작/종료 또는 매니저 focus 전환에서 눈 깜빡임/blur/fade 효과가 동작하고 reduced-motion fallback이 있다 | dynamic-asset-requirements.md |
+| T-710 | P1 | Review | blink focus scene 구현 | 데스크톱 진입/매니저 focus 전환에서 눈 깜빡임/blur/fade overlay가 동작하고 reduced-motion fallback이 있다. 브라우저 시각 확인이 남았다 | dynamic-asset-requirements.md |
 | T-711 | P1 | Backlog | 전자 매니저 Persona와 제한 선택지 설계 | 직접 선택과 간접 선택이 구분되고, LLM은 Persona 경계 안에서 대사/추천을 생성한다 | future-expansion-plan.md |
 | T-712 | P1 | Backlog | 퀘스트 능력치 growth 설계 | Quest Event metadata가 성실성, 끈기, 창의성, 지식, 힘, 민첩함, 체력, 매력 등 stat delta로 매핑된다 | db-schema.md |
 | T-713 | P1 | Backlog | cyber-purr 사운드 탐색 및 적용 후보 정리 | 전자/사이버틱한 기본 고롱고롱 사운드 후보와 mute/fallback 기준이 정리된다 | dynamic-asset-requirements.md |
@@ -106,7 +106,7 @@
 | T-721 | P2 | Backlog | 현실 픽셀화 TV prototype | 로컬 이미지 또는 권한 허용 웹캠 프레임이 canvas에서 픽셀화되어 TV 안에 표시된다 | future-expansion-plan.md |
 | T-722 | P2 | Backlog | 공개 퀘스트 탐색 read-only prototype | `anonymous_public` Quest Event를 공개 탐색 오브젝트로 표시하고 기본 비공개를 유지한다 | future-expansion-plan.md |
 | T-723 | P2 | Backlog | 웹캠 손 제스처 탐색 prototype | 손 제스처가 공개 탐색 화면의 보조 입력으로 동작하고 마우스/터치 fallback이 유지된다 | future-expansion-plan.md |
-| T-724 | P2 | Backlog | Single-plane Pepper projection mode 설계 | Pixel TV 아이콘 우클릭 -> 속성 -> 변환 흐름과 projection-connected 아이콘 상태, 검은 배경 Lumi projection 출력 기준이 정의된다 | dynamic-asset-requirements.md |
+| T-724 | P2 | Review | Single-plane Pepper projection mode 설계 | Pixel TV 우클릭 속성 창에서 projection 연결 변환/원복이 가능하고, 변환된 TV 아이콘 실행 시 hidden route `?projection=pepper`로 연결된다 | dynamic-asset-requirements.md |
 
 ## 3~4주차 P2: 문서·발표·운영
 
