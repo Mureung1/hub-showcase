@@ -22,8 +22,10 @@ type SubmitStatus = "idle" | "loading" | "error";
  * 테스트 계정으로 바꿔 배포한다. 하나라도 자리표시자면 안내 박스를 숨긴다.
  * 인증 자체는 우회하지 않으며, 값을 폼에 채워 기존 로그인 흐름으로 제출할 뿐이다.
  */
-const TEST_EMAIL = "REPLACE_ME";
-const TEST_PASSWORD = "REPLACE_ME";
+// `: string`을 지우지 말 것 — 없으면 리터럴 타입으로 좁혀져, 아래 자리표시자 비교가
+// "교집합 없는 비교"(TS2367)로 실패한다. 값을 실제 계정으로 바꾸는 순간 빌드가 깨진다.
+const TEST_EMAIL: string = "lymsla0117@gmail.com";
+const TEST_PASSWORD: string = "TestPass-zqnpMYKc!27";
 
 const TEST_ACCOUNT_PLACEHOLDER = "REPLACE_ME";
 const hasTestAccount =
