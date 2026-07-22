@@ -46,7 +46,7 @@ iOS 공유는 구현되지 않았으므로 포함하지 않는다.
 가운데 열은 React/Vite 웹 애플리케이션과 Vercel Express API의 경계를 구분한다. 세 진입점은 다음 두 공통 API로 모인다.
 
 - `POST /api/insights/capture`: 새 인사이트 저장
-- `PATCH /api/insights/:id/memo`: 저장 직후 또는 보관함에서 메모 갱신
+- `PATCH /api/insights/:insightId/memo`: 저장 직후 또는 보관함에서 메모 갱신
 
 캡처 처리 과정은 현재 서버 코드에 맞춰 다음 순서로 설명한다.
 

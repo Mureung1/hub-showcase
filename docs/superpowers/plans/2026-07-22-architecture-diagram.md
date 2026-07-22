@@ -29,7 +29,7 @@
 - Reference: server/supabase_insight_memo.ts
 - Reference: src/entities/insight/model/retrieve_insights.ts
 
-- [ ] **Step 1: 산출물 부재를 확인한다**
+- [x] **Step 1: 산출물 부재를 확인한다**
 
 Run:
 
@@ -37,7 +37,7 @@ Run:
 
 Expected: 종료 코드 1. 아직 HTML 원본이 없다.
 
-- [ ] **Step 2: 의미 구조와 시각 토큰을 포함한 HTML을 작성한다**
+- [x] **Step 2: 의미 구조와 시각 토큰을 포함한 HTML을 작성한다**
 
 문서는 다음 정확한 의미 구조를 사용한다.
 
@@ -99,7 +99,7 @@ Expected: 종료 코드 1. 아직 HTML 원본이 없다.
                 <li>사용자별 동일 URL 중복 확인</li>
                 <li>인사이트 우선 저장</li>
               </ol>
-              <article class="card">PATCH /api/insights/:id/memo</article>
+              <article class="card">PATCH /api/insights/:insightId/memo</article>
             </section>
             <section aria-labelledby="storage-title">
               <h2 id="storage-title">Supabase</h2>
@@ -121,15 +121,19 @@ Expected: 종료 코드 1. 아직 HTML 원본이 없다.
 
 위 뼈대에 승인된 A형 시안의 헤더, 구획 라벨, 인라인 SVG 화살표, 카드 내부 설명, 저장 경로와 읽기 경로 범례를 완성한다. 화살표에는 저장, 메모 갱신, 본인 데이터 조회 라벨을 붙이고 색상만으로 경로를 구분하지 않는다. iOS, AI 추천, 메타데이터 수집은 추가하지 않는다.
 
-- [ ] **Step 3: 필수 계약을 정적으로 검사한다**
+- [x] **Step 3: 필수 계약을 정적으로 검사한다**
 
 Run:
 
-    node -e "const fs=require('fs'); const h=fs.readFileSync('docs/architecture.html','utf8'); const required=['lang=\"ko\"','POST /api/insights/capture','PATCH /api/insights/:id/memo','public.insights','RLS','메모 4','제목 3','카테고리 2','도메인 1','상위 6개']; for(const value of required){if(!h.includes(value)) throw new Error('누락: '+value)} for(const forbidden of ['iOS','AI 추천','메타데이터 수집']){if(h.includes(forbidden)) throw new Error('금지 문구: '+forbidden)}"
+    $html = Get-Content -Raw -Encoding utf8 'docs/architecture.html'
+    $required = @('lang="ko"','POST /api/insights/capture','PATCH /api/insights/:insightId/memo','public.insights','RLS','메모 4','제목 3','카테고리 2','도메인 1','상위 6개')
+    $forbidden = @('iOS','AI 추천','메타데이터 수집')
+    foreach ($value in $required) { if (-not $html.Contains($value)) { throw "필수 문구 누락: $value" } }
+    foreach ($value in $forbidden) { if ($html.Contains($value)) { throw "금지 문구 포함: $value" } }
 
 Expected: 종료 코드 0, 출력 없음.
 
-- [ ] **Step 4: 문서 포맷과 Git 공백 검사를 실행한다**
+- [x] **Step 4: 문서 포맷과 Git 공백 검사를 실행한다**
 
 Run:
 
@@ -138,7 +142,7 @@ Run:
 
 Expected: Prettier 통과, 공백 오류 없음.
 
-- [ ] **Step 5: HTML 원본을 커밋한다**
+- [x] **Step 5: HTML 원본을 커밋한다**
 
   git add docs/architecture.html
   git commit -m "docs: 서비스 아키텍처 다이어그램 추가"
@@ -150,7 +154,7 @@ Expected: Prettier 통과, 공백 오류 없음.
 - Create: docs/assets/amadda-architecture.png
 - Verify: docs/architecture.html
 
-- [ ] **Step 1: Edge headless로 HTML 원본을 PNG로 렌더링한다**
+- [x] **Step 1: Edge headless로 HTML 원본을 PNG로 렌더링한다**
 
 Run:
 
@@ -161,7 +165,7 @@ Run:
 
 Expected: docs/assets/amadda-architecture.png 생성, Edge 종료 코드 0.
 
-- [ ] **Step 2: PNG 형식과 실제 크기를 검사한다**
+- [x] **Step 2: PNG 형식과 실제 크기를 검사한다**
 
 Run:
 
@@ -177,7 +181,7 @@ Run:
 
 Expected: 종료 코드 0, 이미지 크기 1600×1100.
 
-- [ ] **Step 3: 원본 크기로 PNG를 열어 시각 검수한다**
+- [x] **Step 3: 원본 크기로 PNG를 열어 시각 검수한다**
 
 검수 항목:
 
@@ -188,11 +192,11 @@ Expected: 종료 코드 0, 이미지 크기 1600×1100.
 - 하단 콘텐츠가 1100px 캔버스 안에서 잘리지 않는다.
 - iOS, AI 추천, 미구현 메타데이터가 표시되지 않는다.
 
-- [ ] **Step 4: 좁은 화면의 DOM 순서와 넘침을 검사한다**
+- [x] **Step 4: 좁은 화면의 DOM 순서와 넘침을 검사한다**
 
 브라우저 너비 390px에서 저장 진입점 → 애플리케이션/API → Supabase → 보관함/꺼내보기 순서로 세로 배치되는지 확인한다. 가로 스크롤과 겹침이 없어야 한다.
 
-- [ ] **Step 5: PNG를 커밋한다**
+- [x] **Step 5: PNG를 커밋한다**
 
   git add docs/assets/amadda-architecture.png
   git commit -m "docs: PR용 아키텍처 이미지 추가"
@@ -205,7 +209,7 @@ Expected: 종료 코드 0, 이미지 크기 1600×1100.
 - Verify: docs/assets/amadda-architecture.png
 - Modify: docs/superpowers/plans/2026-07-22-architecture-diagram.md
 
-- [ ] **Step 1: 현재 구현과 다이어그램 문구를 대조한다**
+- [x] **Step 1: 현재 구현과 다이어그램 문구를 대조한다**
 
 Run:
 
@@ -215,7 +219,7 @@ Run:
 
 Expected: HTML의 API 경로, 검색 가중치, 최대 결과 수, 저장 테이블과 RLS 설명이 실제 소스와 일치한다.
 
-- [ ] **Step 2: 변경 범위를 확인한다**
+- [x] **Step 2: 변경 범위를 확인한다**
 
 Run:
 
@@ -225,11 +229,20 @@ Run:
 
 Expected: 설계·계획 문서, docs/architecture.html, docs/assets/amadda-architecture.png만 변경된다.
 
-- [ ] **Step 3: 계획 체크 상태와 검증 결과를 갱신한다**
+- [x] **Step 3: 계획 체크 상태와 검증 결과를 갱신한다**
 
 완료한 모든 체크박스를 완료 상태로 바꾸고 실제 PNG 크기, 시각 검수 결과, 전체 테스트 기준선의 CRLF 실패 1건을 마지막에 기록한다. 미완료 항목을 완료로 바꾸지 않는다.
 
-- [ ] **Step 4: 최종 문서 변경을 커밋한다**
+- [x] **Step 4: 최종 문서 변경을 커밋한다**
 
   git add docs/superpowers/plans/2026-07-22-architecture-diagram.md
   git commit -m "docs: 아키텍처 다이어그램 검증 결과 기록"
+
+## 실행 결과
+
+- 독립 HTML 계약: 필수 문구, 금지 문구, 외부 자산·스크립트 부재 확인
+- 소스 정합성: 메모 API의 실제 경로인 `PATCH /api/insights/:insightId/memo`로 문서 정정
+- PNG: `1600×1100`, 185,287바이트, 한글·카드·화살표·하단 콘텐츠 잘림 없음
+- 390px 반응형: 문서 가로 넘침 0건, 저장·꺼내보기 1열 전환, DOM 순서 정상
+- 포맷과 공백: Prettier 및 `git diff --check` 통과
+- 전체 테스트 기준선: 520개 중 519개 통과, Windows CRLF로 기존 검사 1건 실패
