@@ -18,6 +18,203 @@ AI가 생성한 변경안과 신규 문서 초안을 검토하기 위한 공간�
 
 ## Applied
 
+### APPR-20260721-001: 요괴 후보 목록 문서 생성
+
+#### Metadata
+
+- ID: APPR-20260721-001
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 상태: applied
+- 생성일: 2026-07-21
+- 요청자: 사용자
+- 대상 문서 경로: 아래 Target Operations 전체
+- 기준 Git 커밋: `1fd1e057ec45da51bbb5c41d8dc3464685af1ecf`
+- 비교 대상: 대상 작업 목록 전체
+- 변경 타입: restructure
+- 관련 workflow: `docs/workflows/document_change.md`의 `draft_design_from_materials`, `docs/workflows/write_design_doc.md`, `docs/workflows/document_structure.md`
+
+##### Target Operations
+
+| 작업 | 대상 경로 | 비교 대상 | 작성 당시 SHA-256 | 적용 후 역할 |
+|---|---|---|---|---|
+| create | `workspace/projects/chronicles-of-the-twelve-bonds/design/content/yokai_candidates.md` | 신규 문서 제목·주제 | 없음 | content |
+| update | `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md` | 전체 문서 | `978ad8ba9f4d2ae5072eeed5fd47e92ce92a73f9ced28ad9a7960fa983afcee2` | game_overview |
+| update | `workspace/projects/chronicles-of-the-twelve-bonds/design/README.md` | 전체 문서 | `2b8b4016fd30dad9a666ff05d09626b340d21076b2abb9ad49d6a342219f2c32` | document_index |
+
+#### Proposal
+
+탐험에서 사흉 대신 조우할 수 있는 요괴를 계속 축적할 독립 콘텐츠 문서를
+생성한다. 최초 후보는 사용자가 제공한 표기 그대로 `백귀야행`,
+`불가살(중국 설화의 맥)`, `두억시니+이매망량`, `그슨대`로 등록한다.
+아직 제공되지 않은 요괴 설명, 권역·노드, 십이지신 연결, 조우 방식과 결과는
+임의로 만들지 않고 `TBD`로 둔다. 승인 후에는 게임 개요와 확정 문서 색인에서
+새 문서를 찾을 수 있도록 링크를 함께 추가한다.
+
+#### Review Notes
+
+- 위험도: low
+- 충돌 가능성: 현재 `design/content/`에 같은 역할의 문서가 없고 기존 확정 문서에는 일반 요괴의 구체 명단이 없다. 향후 각 후보의 정사 설정이 확정되면 `world_setting`, 실제 조우 배치·보상은 이 문서가 소유하도록 역할을 구분해야 한다.
+- 누락 정보: 각 후보의 설명, 원전·모티프 해석 범위, 외형·행동·능력, 배치 권역·탐험 노드, 관련 십이지신, 판정·전투 여부, 성공·실패 결과와 보상
+- 작성 당시 원본 요약: `core_gameplay_systems.md`는 대부분의 탐험이 특정 십이지신과 관련된 요괴 사건이라고 정하지만 개별 요괴 이름은 정하지 않는다. `world_setting.md`는 요괴 시각 자료가 필요하다고만 정한다. `IDEA-20260721-001`은 비사흉 요괴 후보 네 표기만 제공한다.
+- 원자적 적용: 예. 신규 문서와 두 링크 대상을 일부만 적용하지 않는다.
+- 적용 전 재확인: 2026-07-21에 두 기존 대상의 SHA-256 일치와 동일 제목·역할 문서 부재를 확인했다.
+
+#### Draft
+
+##### `design/content/yokai_candidates.md` 생성 초안
+
+```markdown
+# 요괴 후보 목록
+
+## Metadata
+
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 문서 타입: content
+- 상태: confirmed
+- 관련 문서: [세계관 설정](../world/world_setting.md), [핵심 게임 시스템](../systems/core_gameplay_systems.md)
+- 상위 문서: [전체 게임 기획서](../game/game_design_overview.md)
+- 마지막 변경: 2026-07-21
+
+## Summary
+
+- 탐험 중 사흉 대신 조우할 수 있는 요괴 후보와 향후 추가될 설명을 관리한다.
+- 이 문서에 등록된 항목은 검토 대상 후보이며, 등록만으로 게임 내 등장·배치나 세부 설정이 확정되지는 않는다.
+- 실제 조우 콘텐츠로 채택할 때 권역·노드, 관련 십이지신, 판정·전투, 결과와 보상을 구체화한다.
+
+## Candidate List
+
+| 후보 표기 | 후보 상태 | 설명 | 탐험 활용 |
+|---|---|---|---|
+| 백귀야행 | candidate | TBD | TBD |
+| 불가살(중국 설화의 맥) | candidate | TBD | TBD |
+| 두억시니+이매망량 | candidate | TBD | TBD |
+| 그슨대 | candidate | TBD | TBD |
+
+## Candidate Details
+
+### 백귀야행
+
+- 후보 상태: candidate
+- 설명: TBD
+- 원전·모티프 참고: TBD
+- 외형·행동·능력: TBD
+- 배치 권역·탐험 노드: TBD
+- 관련 십이지신: TBD
+- 조우·판정·전투: TBD
+- 성공·실패 결과와 보상: TBD
+
+### 불가살(중국 설화의 맥)
+
+- 후보 상태: candidate
+- 설명: TBD
+- 원전·모티프 참고: TBD
+- 외형·행동·능력: TBD
+- 배치 권역·탐험 노드: TBD
+- 관련 십이지신: TBD
+- 조우·판정·전투: TBD
+- 성공·실패 결과와 보상: TBD
+- 표기 의도: TBD
+
+### 두억시니+이매망량
+
+- 후보 상태: candidate
+- 설명: TBD
+- 원전·모티프 참고: TBD
+- 외형·행동·능력: TBD
+- 배치 권역·탐험 노드: TBD
+- 관련 십이지신: TBD
+- 조우·판정·전투: TBD
+- 성공·실패 결과와 보상: TBD
+- 조합 방식: TBD
+
+### 그슨대
+
+- 후보 상태: candidate
+- 설명: TBD
+- 원전·모티프 참고: TBD
+- 외형·행동·능력: TBD
+- 배치 권역·탐험 노드: TBD
+- 관련 십이지신: TBD
+- 조우·판정·전투: TBD
+- 성공·실패 결과와 보상: TBD
+
+## Entry Guide
+
+새 요괴 후보나 설명을 추가할 때 다음 항목을 사용한다.
+
+- 후보 표기
+- 후보 상태
+- 설명
+- 원전·모티프 참고
+- 외형·행동·능력
+- 배치 권역·탐험 노드
+- 관련 십이지신
+- 조우·판정·전투
+- 성공·실패 결과와 보상
+
+## Gameplay / Production Notes
+
+- 플레이 영향: 채택된 후보는 탐험의 요괴 사건, 십이지신 해금·강화와 정보·아이템 보상의 실제 콘텐츠가 될 수 있다.
+- 리소스 영향: 채택된 후보별 외형, 배경, 상황과 전투 여부에 맞는 시각·음향 자료가 필요하다.
+- 구현 고려: 실제 배치가 확정되면 지도 노드와 씬 데이터의 관련 콘텐츠 ID에 연결한다.
+- QA 고려: 사흉 노드와 일반 요괴 탐험 노드의 처리, 일회성 완료, 보상 정산이 확정 시스템 규칙과 일치해야 한다.
+
+## Open Questions
+
+- TBD: 각 후보의 설명과 프로젝트 세계관에 맞춘 재해석
+- TBD: 후보 상태의 세부 전환 기준과 실제 채택 대상
+- TBD: 각 후보의 권역·탐험 노드와 관련 십이지신
+- TBD: 각 조우의 판정·전투 여부, 결과와 보상
+- TBD: `불가살(중국 설화의 맥)`의 정확한 표기·설정 의도
+- TBD: `두억시니+이매망량`을 하나의 복합 사건으로 사용할지 개별 요괴로 분리할지
+
+## Sources
+
+- `workspace/projects/chronicles-of-the-twelve-bonds/ideas/temporary_ideas.md`의 `IDEA-20260721-001`
+- `workspace/projects/chronicles-of-the-twelve-bonds/design/systems/core_gameplay_systems.md`: 탐험과 요괴 사건 구조
+- `workspace/projects/chronicles-of-the-twelve-bonds/design/world/world_setting.md`: 세계 배경과 요괴 리소스 범위
+```
+
+##### 승인 후 링크 갱신 초안
+
+- `design/game/game_design_overview.md`
+  - Metadata의 `관련 문서`에 `[요괴 후보 목록](../content/yokai_candidates.md)`을 추가한다.
+  - Document Map에 `[요괴 후보 목록](../content/yokai_candidates.md): 탐험 중 조우할 비사흉 요괴 후보와 후보별 설명·활용 검토`를 추가한다.
+  - `마지막 변경`을 실제 적용일로 갱신한다.
+- `design/README.md`
+  - Document Map에 `[요괴 후보 목록](content/yokai_candidates.md)`을 추가한다.
+
+#### Decision History
+
+##### Decision Entry
+
+- 결정: 승인 및 적용
+- 결정자: 사용자
+- 결정일: 2026-07-21
+- 이유: 사용자가 승인했고 적용 전 원본 재확인이 일치했다.
+- 결정 당시 Draft 요약: 비사흉 요괴 후보 네 표기와 향후 설명·조우 정보를 축적할 콘텐츠 문서 및 문서 지도 링크 생성안
+
+#### Reconfirmation
+
+- 진입 사유: 승인 적용 전 원본 및 신규 문서 중복 재확인
+- 감지일: 2026-07-21
+- 현재 원본 요약: 게임 개요와 문서 색인은 승인안 작성 당시 내용과 같고 요괴 후보 목록 문서는 존재하지 않았다.
+- 비교 결과: 두 기존 대상의 SHA-256이 Target Operations와 모두 일치하며 동일 제목·역할 문서가 없다.
+- 후속 상태: applied
+- 재확인 결정자: 사용자
+- 재확인 결정일: 2026-07-21
+- 재확인 이유: 현재 원본과 승인 초안이 일치해 승인 내용을 적용했다.
+
+#### Links
+
+- 관련 결정 로그: `DEC-20260721-002`
+- 관련 버전 기록: `VER-20260721-002`
+- 근거 파일: `workspace/projects/chronicles-of-the-twelve-bonds/ideas/temporary_ideas.md`의 `IDEA-20260721-001`, `workspace/projects/chronicles-of-the-twelve-bonds/design/systems/core_gameplay_systems.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/world/world_setting.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/README.md`
+- 상위/대체 승인 항목:
+- 선행/의존 승인 항목:
+
+---
+
 ### APPR-20260720-001: 프롤로그 Phase 1 인게임 스크립트 작성
 
 #### Metadata

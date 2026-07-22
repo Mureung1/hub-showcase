@@ -25,6 +25,7 @@
 
 ```text
 workspace/projects/<project_slug>/
+  README.md
   project_brief.md
   design/
     README.md
@@ -39,15 +40,31 @@ workspace/projects/<project_slug>/
     version_history.md
 ```
 
-6. `docs/templates/project_brief.md`와 기존 문서 템플릿을 사용해 초기 파일을 만든다.
-   `design/README.md`에는 `docs/workflows/document_structure.md`의 표준 역할과
-   경로를 안내하되 아직 승인되지 않은 빈 확정 문서는 만들지 않는다.
+6. `docs/templates/project_readme.md`, `docs/templates/project_brief.md`와 기존
+   문서 템플릿을 사용해 초기 파일을 만든다. 프로젝트 루트 `README.md`에는
+   간단한 프로젝트 설명, 현재 초점, `아직 생성된 확정 세부 문서 없음`과 작업
+   문서 링크를 기록한다. `design/README.md`에는
+   `docs/workflows/document_structure.md`의 표준 역할과 경로를 안내하되 아직
+   승인되지 않은 빈 확정 문서는 만들지 않는다.
 7. 모든 초기 문서에 프로젝트 ID를 기록한다.
 8. `workspace/project_registry.md`에 프로젝트 ID, 한국어명, 영어명, 상태와 루트를 등록한다.
 9. 다른 프로젝트의 아이디어, 승인 항목, 결정, 버전 번호나 디자인 문서를 복사해 초기값으로 사용하지 않는다.
 10. 공용 규칙과 템플릿은 `docs/`에서 공유하되 게임 고유 정보는 프로젝트 루트 밖에 저장하지 않는다.
 11. 실제 상세 문서와 `design/` 하위 경로는 해당 문서가 승인될 때 생성하며,
-    생성된 문서는 `design/README.md`와 `game_overview`의 Document Map에 연결한다.
+    생성된 문서는 프로젝트 루트 `README.md`, `design/README.md`와
+    `game_overview`의 Document Map에 연결한다.
+
+## Project README Role
+
+- `workspace/projects/<project_slug>/README.md`는 프로젝트 랜딩 페이지다.
+- Project Brief와 확정 게임 개요에서 1~3문장 소개와 현재 초점을 요약한다.
+- 실제로 존재하고 `confirmed`인 상세 문서만 역할, 링크와 한 문장 담당 범위로
+  기록한다. 승인 전 문서, 예정 경로나 임시 아이디어는 확정 문서 목록에 넣지 않는다.
+- Project Brief, Design Index, Temporary Ideas, Approval Queue, Decision Log와
+  Version History로 이동하는 작업 문서 링크를 제공한다.
+- 프로젝트 README는 canonical detail owner가 아니며 상세 설정을 복제하지 않는다.
+- 확정 문서 생성·삭제·이동 또는 담당 범위 변경이 승인 적용되면 같은 승인
+  범위에서 README의 목록·설명과 `마지막 동기화`를 갱신한다.
 
 ## Asset Directory Roles
 
@@ -76,3 +93,4 @@ workspace/projects/<project_slug>/
 - 선택한 프로젝트 ID와 프로젝트 루트
 - 선택 근거 또는 사용자에게 필요한 확인 질문
 - 새 프로젝트라면 생성한 구조와 레지스트리 항목
+- 프로젝트 README 경로와 현재 확정 문서 목록

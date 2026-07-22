@@ -40,6 +40,20 @@
 
 - TBD:
 
+## Creative Completion Review
+
+누락이 없으면 생략한다. 창작 허가 전에는 모든 GAP을 `TBD`로 유지한다.
+
+| GAP ID | 대상 문서·필드 | 유형 | 위험도 | 필요한 조치 |
+|---|---|---|---|---|
+|  |  | creative_fillable \| user_fact \| dependency | low \| medium \| high |  |
+
+## Creative Proposal Log
+
+창작이 명시적으로 허가된 GAP이 없으면 생략한다. 대안, 추천안, 선택 결과,
+근거, 영향과 수치 검증 계획은 승인 항목의 같은 이름 섹션에 기록한다.
+`incorporated`된 내용만 `After`에 `CP-*` 각주와 함께 포함한다.
+
 ## Scenario Improvement Review
 
 대상에 `scenario` 작성·변경이 없으면 생략한다. 이 영역은 `After`와 분리된

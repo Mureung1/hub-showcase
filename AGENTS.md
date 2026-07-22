@@ -24,8 +24,10 @@ changes, but actual project changes must go through approval-oriented flows.
 - Workflow rules: `docs/workflows/`
 - Document ownership and standard paths: `docs/workflows/document_structure.md`
 - Reusable task skills: `docs/skills/`
+- Design creative completion: `docs/skills/design_creative_completion.md`
 - Main-agent scenario review: `docs/skills/scenario_review.md`
 - Output templates: `docs/templates/`
+- Project landing page template: `docs/templates/project_readme.md`
 - Scenario writer agent: `.codex/agents/scenario_writer.toml`
 - In-game script workflow: `docs/workflows/write_ingame_script.md`
 
@@ -47,6 +49,10 @@ changes, but actual project changes must go through approval-oriented flows.
   changing documents. Follow `docs/workflows/document_structure.md`.
 - Keep each game's brief, designs, ideas, approvals, decisions, versions, and
   assets inside `workspace/projects/<project_slug>/`.
+- Keep a project landing page at `workspace/projects/<project_slug>/README.md`
+  with a short source-grounded description, current focus, existing confirmed
+  design documents, and links to project working records. It is an index, not a
+  canonical detail owner.
 - Never reuse another project's approval queue, decision log, version history,
   temporary idea file, or design directory for a new project.
 - When the user creates a new project, create a new project root and its full
@@ -72,6 +78,27 @@ changes, but actual project changes must go through approval-oriented flows.
   and use concise summaries plus relative links from the overview.
 - When one request spans multiple document roles, prepare a coordinated
   multi-document approval proposal instead of forcing the content into one file.
+- When an approved design document is created, deleted, moved, changes role, or
+  changes its one-line responsibility, update the project README, design index,
+  and affected game-overview links in the same approval scope.
+- For new, updated, or restructured design Drafts, classify missing information
+  with `docs/skills/document_completion.md`. Always show the resulting GAP list,
+  but do not generate creative alternatives until the user explicitly authorizes
+  all or selected `creative_fillable` GAPs.
+- Apply `docs/skills/design_creative_completion.md` to authorized design gaps.
+  Provide two alternatives for low/medium risk and three for high risk, recommend
+  one, and keep `user_fact` or unresolved `dependency` gaps as `TBD`.
+- Mark every selected, unsupported design decision with a `CP-*` footnote and
+  preserve its alternatives, rationale, impacts, selection and validation needs
+  in the approval item's Creative Proposal Log. Keep proposed or declined options
+  out of the Draft.
+- Treat balance numbers as `provisional` creative hypotheses with validation and
+  retuning conditions. Do not invent actual platform, engine, budget, schedule,
+  asset/data IDs, external contracts, or legal facts.
+- Creative authorization or option selection is not approval. Reconfirm sources,
+  revise the Draft, and return it to `pending` for explicit approval. If the
+  canonical owner or core scope changes, create a linked or atomic `restructure`
+  approval item.
 - When receiving scenario material for review or drafting or changing a
   `scenario` document, the main agent must read the relevant project sources and
   apply `docs/skills/scenario_review.md`. Preserve a source-faithful Draft and, when a
@@ -102,12 +129,17 @@ changes, but actual project changes must go through approval-oriented flows.
   link updates in one atomic `restructure` approval item. World-canon or
   system-rule changes require a separate linked high-risk proposal; keep dependent
   script fields `TBD` until that proposal is applied and the script is reconfirmed.
+- Do not duplicate creative provenance systems. General scenario structure uses
+  Scenario Improvement Review, in-game scripts use `CW-*` and `NR-*`, and other
+  authorized design completion uses `CP-*`.
 - Keep changes scoped to the requested behavior and avoid unrelated refactors.
 - Do not hardcode API keys, tokens, or other secrets.
 
 ## File Roles
 
 - `workspace/project_registry.md`: registered projects and the current default project.
+- `workspace/projects/<project_slug>/README.md`: project description, current focus,
+  confirmed-document map, and working-record links; never a canonical detail owner.
 - `workspace/projects/<project_slug>/project_brief.md`: project identity, focus, and constraints.
 - `workspace/projects/<project_slug>/design/`: confirmed project design documents.
 - `workspace/projects/<project_slug>/design/assets/`: canonical approved image assets.

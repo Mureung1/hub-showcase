@@ -31,13 +31,13 @@
 
 ### Dependency Operations
 
-선행 승인이 없으면 생략한다. 세계관 정사·시스템 규칙 변경에 의존하는
-일반 시나리오나 인게임 스크립트는 선행 항목 적용 후 원본 재확인과 재승인을
-거친다.
+선행 승인이 없으면 생략한다. 다른 canonical owner의 기획 창작, 세계관 정사
+또는 시스템 규칙 변경에 의존하는 Draft는 선행 항목 적용 후 원본 재확인과
+재승인을 거친다.
 
 | 선행 승인 항목 | 변경 역할 | 영향받는 대상·ID | 현재 상태 | 해소 조건 |
 |---|---|---|---|---|
-|  | world_setting \| system |  |  | `applied` 후 본 항목 재확인 |
+|  | game_overview \| world_setting \| scenario \| system \| content \| ui \| technical |  |  | `applied` 후 본 항목 재확인 |
 
 ## Proposal
 
@@ -50,6 +50,44 @@
 - 누락 정보:
 - 작성 당시 원본 요약: 신규 문서라면 `없음`
 - 원자적 적용: restructure이면 `예`. 일부 대상만 적용하지 않는다.
+
+## Creative Completion Review
+
+신규·수정·재구성 Draft에 누락이 없으면 생략한다. GAP 유형은
+`creative_fillable | user_fact | dependency`를 사용한다. 창작 허가 전에는
+`creative_fillable`도 Draft에서 `TBD`로 유지한다.
+
+| GAP ID | 대상 문서·필드 | 유형 | 위험도 | 현재 처리 | 필요한 조치 |
+|---|---|---|---|---|---|
+| GAP-<document_slug>-001 |  |  | low \| medium \| high | `TBD` | 창작 허가 \| 사용자 답변 \| 선행 항목 |
+
+## Creative Proposal Log
+
+사용자가 하나 이상의 `creative_fillable` GAP에 창작을 명시적으로 허가한
+경우에만 작성한다. 저·중위험은 대안 2개, 고위험은 대안 3개를 유지한다.
+상태는 `proposed | incorporated | declined` 중 하나를 사용한다.
+
+| CP ID | 원본 GAP | 위험도 | 상태 | 추천안 | 선택 결과 |
+|---|---|---|---|---|---|
+| CP-<document_slug>-001 | GAP-<document_slug>-001 |  | proposed |  | 선택 전 |
+
+### CP-<document_slug>-001
+
+- 대상 문서·필드:
+- 원본 공백:
+- 대안 A:
+- 대안 B:
+- 대안 C: 고위험이 아니면 생략
+- 추천안:
+- 추천 이유:
+- 프로젝트 근거:
+- 플레이 영향:
+- 제작 영향:
+- 후속 문서 영향:
+- 수치 상태: 해당 없으면 `해당 없음`, 수치 제안이면 `provisional`
+- 검증 지표·재조정 조건:
+- 선택안:
+- 선택자·선택일:
 
 ## Scenario Improvement Review
 
@@ -65,7 +103,9 @@ declined` 중 하나를 사용하며, `incorporated` 내용만 갱신된 Draft�
 
 ## Draft
 
-승인 후 반영될 내용.
+승인 후 반영될 내용. `Creative Proposal Log`에서 `incorporated`된 내용만
+`[^CP-<document_slug>-<number>]` 각주와 함께 포함한다. `proposed` 또는
+`declined` 내용은 포함하지 않는다.
 
 ## Decision History
 

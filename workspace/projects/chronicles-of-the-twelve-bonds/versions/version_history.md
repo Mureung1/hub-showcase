@@ -6,6 +6,39 @@
 
 ## Entries
 
+### Version Entry: 요괴 후보 목록 문서 생성
+
+#### Metadata
+
+- ID: VER-20260721-002
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-21 23:40 KST
+- 적용자: Codex
+- 변경 타입: restructure
+- 대상 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/content/yokai_candidates.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/README.md`
+- 관련 승인 큐: `APPR-20260721-001`
+- 관련 결정 로그: `DEC-20260721-002`
+
+#### Before
+
+탐험 요괴 사건의 시스템 구조와 요괴 리소스 필요성만 확정되어 있었다. 개별
+요괴 후보 네 종은 임시 아이디어에만 있었고 새 후보와 설명을 누적할 확정
+콘텐츠 문서는 존재하지 않았다.
+
+#### After
+
+`yokai_candidates.md`를 생성해 비사흉 요괴 후보 네 종, 후보별 상세 항목,
+향후 추가 형식과 제작·QA 고려 사항을 확정했다. 제공되지 않은 설명과 조우
+정보는 `TBD`로 보존하고 게임 개요와 문서 색인에 새 canonical 경로를 연결했다.
+
+#### Notes
+
+- 주의 사항: 문서 등록은 후보 상태를 관리하는 것이며 게임 내 등장·배치나
+  세부 설정의 자동 확정을 뜻하지 않는다. 실제 채택과 조우 설계는 후속 승인
+  절차를 따른다.
+
+---
+
 ### Version Entry: 프롤로그 Phase 1 인게임 스크립트 적용
 
 #### Metadata

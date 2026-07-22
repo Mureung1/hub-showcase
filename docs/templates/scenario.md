@@ -50,6 +50,13 @@
 
 - TBD:
 
+## Creative Provenance
+
+일반 시나리오 구조 개선은 `Scenario Improvement Review`를 사용한다. 다른
+역할의 선택된 `CP-*`를 참조할 때만 아래 각주를 사용하고, 없으면 생략한다.
+
+[^CP-<document_slug>-001]: AI 기획 창작 제안. 선택 근거: TBD. 영향: TBD. 관련 승인 항목: TBD.
+
 ## Sources
 
 - 경로:

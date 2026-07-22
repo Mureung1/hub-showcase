@@ -621,4 +621,35 @@
 - 2026-07-15 / 다음 기획 재개 지점 기록: 혼돈 튜토리얼 이후 남부 권역과 궁기 여정 설계부터 재개하도록 우선순위 저장
 - 2026-07-15 / 전체 기획 확정 문서 전환: 남아 있던 시나리오·플레이 루프·탐험·성장·전투 1차안·엔딩과 TBD를 APPR-20260715-003으로 승인·반영
 
+### IDEA-20260721-001: 탐험 중 조우하는 비사흉 요괴 후보
+
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 상태: converted
+- 생성일: 2026-07-21
+- 수정일: 2026-07-21
+- 사용자 입력: 탐험같은걸 할 때 만나는 사흉이 아닌 요괴 후보를 알려줄게 백귀야행, 불가살(중국 설화의 맥), 두억시니+이매망량, 그슨대
+- 관련 확정 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/systems/core_gameplay_systems.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/world/world_setting.md`
+- 관련 승인 항목: APPR-20260721-001
+
+#### Idea
+
+탐험 중 사흉 대신 조우할 수 있는 요괴 후보는 다음과 같다.
+
+- 백귀야행
+- 불가살(중국 설화의 맥)
+- 두억시니+이매망량
+- 그슨대
+
+#### Missing Information
+
+- TBD: 각 후보를 배치할 권역과 탐험 노드
+- TBD: 각 후보와 연결할 십이지신 및 해금·강화 보상
+- TBD: 조우 상황, 판정, 성공·실패 결과와 전투 여부
+- TBD: `불가살(중국 설화의 맥)`과 `두억시니+이매망량` 표기의 구체적인 설정 의도
+
+#### Revision History
+
+- 2026-07-21 / 최초 등록: 탐험 중 조우하는 비사흉 요괴 후보 4종 기록
+- 2026-07-21 / 정식 콘텐츠 문서 전환: 요괴 후보 목록 신규 생성과 문서 지도 연결을 APPR-20260721-001로 제안
+
 새 아이디어는 `docs/workflows/temporary_idea.md`의 `Item Format`을 사용한다.

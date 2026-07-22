@@ -11,6 +11,11 @@
 `docs/workflows/write_ingame_script.md`와 `docs/skills/scenario_writing.md`를
 따른다.
 
+일반 기획 공백의 `CP-*` 규칙도 사건 순서, 공개 시점, 동기, 선택, 분기와
+Outcome 개선을 대신하지 않는다. 이 범위는 `Scenario Improvement Review`만
+사용한다. 세계관 정사나 시스템 규칙의 창작 보완은 해당 canonical owner의
+`docs/skills/design_creative_completion.md` 제안으로 분리한다.
+
 ## When To Use
 
 - 사용자가 시나리오 자료나 초안을 제공해 검토를 요청할 때

@@ -2,7 +2,8 @@
 
 ## Purpose
 
-기획서 초안에서 승인이나 구현 전에 필요한 누락 정보를 찾는다.
+기획서 초안에서 승인이나 구현 전에 필요한 누락 정보를 찾고, 사용자 확인이
+필요한 사실과 창작으로 보완할 수 있는 설계 공백을 구분한다.
 
 ## Common Required Fields
 
@@ -28,3 +29,30 @@
 - 질문마다 왜 필요한지 짧게 설명한다.
 - 다른 문서가 소유할 정보는 현재 문서의 누락으로 보지 않고 관련 문서 링크
   또는 별도 변경 대상으로 표시한다.
+
+## Gap Classification
+
+신규·수정·재구성 Draft의 누락마다 `GAP-<document_slug>-<number>` ID를
+부여하고 다음 중 하나로 분류한다.
+
+- `creative_fillable`: 프로젝트 근거 안에서 설계 대안을 만들 수 있다.
+- `user_fact`: 실제 프로젝트 결정이나 외부 사실이 필요해 창작할 수 없다.
+- `dependency`: 다른 canonical owner 또는 선행 승인 결과가 필요하다.
+
+실제 플랫폼·엔진·예산·일정·인력, 확인되지 않은 에셋·데이터 ID, 외부 계약과
+법적 조건은 `user_fact`다. 다른 문서가 소유할 정사·규칙·계약은 `dependency`다.
+
+## Creative Completion Routing
+
+- 누락 분류와 `TBD` 표시는 항상 수행한다.
+- `creative_fillable`이 있으면 항목을 한 번에 보여주고 창작으로 채울지 묻는다.
+- 명시적 허가 전에는 대안을 만들거나 Draft에 창작 내용을 넣지 않는다.
+- 사용자가 허가하면 `docs/skills/design_creative_completion.md`를 따른다.
+- 일반 시나리오 구조와 인게임 스크립트는 각각 기존 Scenario Improvement,
+  `CW-*`·`NR-*` 규칙을 우선한다.
+
+## Output
+
+| GAP ID | 대상 문서·필드 | 유형 | 위험도 | 현재 처리 | 필요한 조치 |
+|---|---|---|---|---|---|
+|  |  | creative_fillable \| user_fact \| dependency | low \| medium \| high | `TBD` | 창작 허가 \| 사용자 답변 \| 선행 항목 |

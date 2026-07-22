@@ -27,14 +27,21 @@
    - `world_setting`: `docs/templates/world_setting.md`
    - `scenario`: `docs/templates/scenario.md`
    - `system`: `docs/templates/system.md`
-4. 출처가 없는 세부 설정은 확정하지 말고 `TBD`로 표시한다.
-5. 누락 정보는 `docs/skills/document_completion.md` 기준으로 질문한다.
-6. 다른 역할의 상세 내용을 발견하면 현재 문서에 복제하지 않고 원본 소유
+4. 출처가 없는 세부 설정은 확정 사실로 쓰지 않는다.
+5. `docs/skills/document_completion.md`로 누락을 `creative_fillable`,
+   `user_fact`, `dependency` GAP으로 분류하고 `Creative Completion Review`에
+   기록한다.
+6. `creative_fillable` GAP은 사용자에게 한 번에 보여주고 창작 보완 여부를
+   묻는다. 명시적 허가를 받으면 `docs/skills/design_creative_completion.md`에
+   따라 복수 대안을 만들며, 허가받지 않은 공백은 `TBD`로 둔다.
+7. 다른 역할의 상세 내용을 발견하면 현재 문서에 복제하지 않고 원본 소유
    문서와 필요한 링크를 표시한다.
-7. 문서 타입이 `scenario`이면 `docs/skills/scenario_review.md`에 따라 원안
+8. 문서 타입이 `scenario`이면 `docs/skills/scenario_review.md`에 따라 원안
    기반 초안을 검토한다. 더 나은 구조는 본문에 자동 반영하지 않고 승인 항목의
    `Scenario Improvement Review`에 별도 권고로 기록한다.
-8. 초안은 같은 프로젝트의 승인 큐에 `docs/templates/approval_item.md` 형식으로 만든다.
+9. 사용자가 창작 대안을 선택하면 원본을 재확인하고 선택안만 `CP-*` 각주와
+   함께 Draft에 넣는다. 선택은 승인이 아니며 갱신된 항목은 `pending`으로 둔다.
+10. 초안은 같은 프로젝트의 승인 큐에 `docs/templates/approval_item.md` 형식으로 만든다.
 
 ## Approval Rule
 
@@ -48,5 +55,5 @@
 - 표준 대상 경로와 관련 문서 링크
 - 초안 전문
 - 시나리오인 경우 분리된 개선 검토 결과
-- 누락 정보 질문
+- Creative Completion Review, 허가된 경우 Creative Proposal Log와 누락 정보 질문
 - 근거 파일 목록

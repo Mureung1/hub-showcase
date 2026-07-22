@@ -27,13 +27,23 @@
    변경을 검토한다. 더 나은 구조는 변경 후 Draft와 분리된
    `Scenario Improvement Review`에 기록한다.
 7. 변경 후 문서 초안 또는 변경 섹션을 작성한다.
-8. 프로젝트 ID를 포함해 `docs/templates/change_proposal.md`와 `docs/templates/approval_item.md` 형식으로 같은 프로젝트의 승인 큐 항목을 만든다.
+8. `docs/skills/document_completion.md`로 Draft의 누락을 GAP으로 분류하고
+   `Creative Completion Review`를 작성한다.
+9. `creative_fillable` GAP은 한 번에 보여주고 창작 보완 여부를 묻는다.
+   명시적 허가를 받으면 `docs/skills/design_creative_completion.md`에 따라
+   복수 대안과 추천안을 만든다.
+10. 사용자가 대안을 선택하면 원본을 재확인하고 선택안만 `CP-*` 각주와 함께
+    Draft에 넣는다. 선택은 승인이 아니며 갱신된 항목은 `pending`으로 둔다.
+11. 프로젝트 ID를 포함해 `docs/templates/change_proposal.md`와
+    `docs/templates/approval_item.md` 형식으로 같은 프로젝트의 승인 큐 항목을 만든다.
 
 ## Approval Rule
 
 변경안 생성은 허용된다. 확정 문서 수정은 사용자 승인 이후에만 허용된다.
 분리된 시나리오 개선 권고는 승인 대상 Draft가 아니며, 사용자가 선택하면
 원본을 재확인해 Draft를 개정한 뒤 다시 `pending`으로 검토받는다.
+기획 창작 대안도 사용자의 명시적 허가 전에는 만들지 않으며, 대안 선택은
+갱신된 Draft의 승인이 아니다.
 
 ## Output
 
@@ -43,5 +53,6 @@
 - 변경 후 초안
 - 충돌/영향 분석
 - 누락 정보
+- Creative Completion Review와, 허가된 경우 Creative Proposal Log
 - 승인 큐 항목 초안
 - 시나리오인 경우 분리된 개선 검토 결과

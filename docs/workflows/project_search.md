@@ -8,13 +8,14 @@
 
 먼저 `workspace/project_registry.md`와 `docs/workflows/project_workspace.md`를 사용해 대상 프로젝트를 결정한다. 이후 선택한 프로젝트 안에서 다음 순서로 검색한다.
 
-1. `workspace/projects/<project_slug>/design/README.md`와 `design/game/`의
+1. `workspace/projects/<project_slug>/README.md`의 프로젝트 요약과 문서 지도
+2. `workspace/projects/<project_slug>/design/README.md`와 `design/game/`의
    `game_overview` 문서 지도
-2. 질문의 canonical document role에 해당하는 `design/` 하위 경로
-3. `workspace/projects/<project_slug>/decisions/decision_log.md`
-4. `workspace/projects/<project_slug>/versions/version_history.md`
-5. `workspace/projects/<project_slug>/approvals/approval_queue.md`
-6. `workspace/projects/<project_slug>/ideas/temporary_ideas.md`
+3. 질문의 canonical document role에 해당하는 `design/` 하위 경로
+4. `workspace/projects/<project_slug>/decisions/decision_log.md`
+5. `workspace/projects/<project_slug>/versions/version_history.md`
+6. `workspace/projects/<project_slug>/approvals/approval_queue.md`
+7. `workspace/projects/<project_slug>/ideas/temporary_ideas.md`
 
 ## Steps
 
@@ -28,6 +29,8 @@
 8. 근거가 부족하면 추정하지 말고 부족한 점을 말한다.
 9. 같은 사실이 여러 문서에 있으면 `docs/workflows/document_structure.md`의
    canonical owner를 우선하고 중복·충돌을 함께 알린다.
+10. 프로젝트 README의 설명은 탐색용 요약으로만 사용하고, 상세 답변은 연결된
+    canonical design document를 다시 확인한다.
 
 ## Safety Rule
 

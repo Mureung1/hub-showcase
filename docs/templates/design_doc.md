@@ -34,6 +34,12 @@
 
 - TBD:
 
+## Creative Provenance
+
+선택되어 Draft에 반영된 `CP-*`가 없으면 생략한다.
+
+[^CP-<document_slug>-001]: AI 기획 창작 제안. 선택 근거: TBD. 영향: TBD. 관련 승인 항목: TBD.
+
 ## Sources
 
 - 경로:
