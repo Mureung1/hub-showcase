@@ -39,21 +39,21 @@
 
 ## 아키텍처
 
-mermaid
+```mermaid
 flowchart LR
-    subgraph FE["React (화면)"]
-        A["내 가게 등록<br/>입력·목록"]
-        B["경쟁업체 목록<br/>카드·상세"]
+    subgraph FE["React 화면"]
+        A["내 가게 등록"]
+        B["경쟁업체 목록"]
     end
 
-    subgraph BE["FastAPI (서버)"]
-        C["POST /api/my-store"]
-        D["GET /api/my-stores"]
-        E["POST /api/analyze"]
+    subgraph BE["FastAPI 서버"]
+        C["POST my-store"]
+        D["GET my-stores"]
+        E["POST analyze"]
     end
 
-    subgraph DB["SQLite / MySQL"]
-        F[("my_stores<br/>competitors · reviews")]
+    subgraph DB["SQLite 또는 MySQL"]
+        F[("my_stores, competitors, reviews")]
     end
 
     subgraph EXT["외부 API"]
@@ -61,15 +61,15 @@ flowchart LR
         H["Gemini"]
     end
 
-    A -->|저장 요청| C
-    A -->|목록 조회| D
-    B -->|분석 요청| E
-    C -->|insert| F
-    D -->|select| F
-    E -->|리뷰 수집| G
-    E -->|AI 분석| H
-    E -->|결과 저장| F
-
+    A --> C
+    A --> D
+    B --> E
+    C --> F
+    D --> F
+    E --> G
+    E --> H
+    E --> F
+```
 
 - 프론트엔드는 내 가게를 등록하면 `POST /api/my-store`로, 목록 조회는 `GET /api/my-stores`로 서버와 통신
 - 리뷰 분석은 `POST /api/analyze`로 가게 이름을 전송
@@ -95,16 +95,6 @@ flowchart LR
 
 내 가게 이름을 받아 DB에 저장합니다.
 
-요청:
-```json
-{ "name": "스타벅스 강남점" }
-```
-
-응답:
-```json
-{ "id": 1, "name": "스타벅스 강남점", "category": null, "address": null }
-```
-
 ### GET /api/my-stores
 
 저장된 내 가게 목록을 DB에서 조회합니다. 새로고침·서버 재시작 후에도 유지됩니다.
@@ -112,32 +102,6 @@ flowchart LR
 ### POST /api/analyze
 
 가게 이름을 받아 리뷰를 수집·분석하고 DB에 저장한 뒤 결과를 반환합니다.
-
-요청:
-```json
-{
-  "store_name": "보노베리",
-  "force_refresh": false
-}
-```
-
-응답(주요 필드):
-```json
-{
-  "competitor_id": 1,
-  "store_name": "보노베리",
-  "source": "naver_blog",
-  "cached": false,
-  "total_reviews": 5,
-  "positive": 2,
-  "negative": 3,
-  "positive_ratio": 40.0,
-  "negative_ratio": 60.0,
-  "keyword_ranking": [{ "keyword": "불친절", "count": 2 }],
-  "consulting_report": "...",
-  "reviews": [{ "content": "...", "sentiment": "부정", "keywords": ["불친절"], "summary": "..." }]
-}
-```
 
 `source` 필드로 데이터 출처를 구분합니다: `naver_blog`(실시간 수집) / `database`(캐시) / `fallback_dummy`(네이버 API 미설정) / `mock`(개발용 목 데이터).
 
@@ -155,7 +119,7 @@ flowchart LR
 
 **1. 환경 변수 파일 생성**
 
-프로젝트 루트에 `.env` 파일을 생성합니다 (파일명: `.env`, 확장자 없음):
+프로젝트 루트에 `.env` 파일을 생성합니다:
 
 ```
 GOOGLE_API_KEY=발급받은_Gemini_API_키
@@ -164,35 +128,24 @@ NAVER_CLIENT_SECRET=발급받은_네이버_Client_Secret
 USE_MOCK=false
 ```
 
-**주의**: `.env` 파일은 GitHub에 올리지 마세요. `.gitignore` 파일에 `.env`를 추가했습니다.
-
-**목(Mock) 모드**: `USE_MOCK=true`로 설정하면 LLM을 호출하지 않고 고정 데이터를 즉시 반환합니다. Gemini API 할당량과 무관하게 화면·기능 개발을 진행할 때 사용합니다. 실제 분석 결과를 확인하려면 `false`로 되돌리세요.
-
 **2. Python 패키지 설치**
 
-```bash
+```
 pip install fastapi uvicorn langchain langchain-google-genai pydantic sqlalchemy python-dotenv requests pytest
 ```
-
-**3. API 키 발급**
-
-- [Google AI Studio](https://aistudio.google.com) → API 키 생성 (무료)
-- [네이버 개발자센터](https://developers.naver.com) → Application 등록 → 검색 API 활성화
 
 ### 실행 — 로컬 개발
 
 **터미널 1 - 백엔드:**
 
-```bash
+```
 cd C:\AI_Agent\hub
 uvicorn main:app --reload --port 8000
 ```
 
-서버 시작 시 SQLite 테이블이 자동 생성됩니다.
-
 **터미널 2 - 프론트엔드:**
 
-```bash
+```
 cd C:\AI_Agent\hub
 npm run dev -- --host 127.0.0.1 --port 3000
 ```
@@ -201,16 +154,14 @@ npm run dev -- --host 127.0.0.1 --port 3000
 
 ### 실행 — Docker (MySQL 포함 전체 스택)
 
-```bash
+```
 cd C:\AI_Agent\hub
 docker compose up --build
 ```
 
-`http://localhost`에서 확인. MySQL, FastAPI, React(Nginx)가 컨테이너 3개로 함께 실행됩니다.
-
 ### 테스트 실행
 
-```bash
+```
 python -m pytest test_distance.py -v
 ```
 
@@ -220,7 +171,7 @@ python -m pytest test_distance.py -v
 
 - `my_stores`: 내 가게 정보 (id, name, latitude, longitude, category, address, created_at)
 - `competitors`: 경쟁업체 정보 (id, name, category, address, created_at)
-- `reviews`: 리뷰 원문 및 분석 결과 (id, competitor_id[FK], content, sentiment, keywords[JSON], summary, analyzed_at, created_at)
+- `reviews`: 리뷰 원문 및 분석 결과 (id, competitor_id, content, sentiment, keywords, summary, analyzed_at, created_at)
 
 ## 주요 의사결정
 
@@ -235,9 +186,9 @@ python -m pytest test_distance.py -v
 
 ## 개발 워크플로우 (AI Agent 활용)
 
-- **계획 수립 Agent** ([`feature-slice.md`](./feature-slice.md)): 새 기능 요구사항을 받아 작업 단위로 나누고 우선순위를 매기는 Agent. 주간 계획을 세울 때마다 이 Agent로 계획을 한 번 검증합니다.
-- **디자인 Skill** ([`design-skill.md`](./design-skill.md)): 화면 톤(색상·간격·컴포넌트 규칙)을 문서화해, 새 화면도 일관된 스타일로 제작합니다.
-- 매 기능 개발 전, Plan mode로 먼저 계획을 세우고 단계를 나눠 진행합니다.
+- **계획 수립 Agent** ([`feature-slice.md`](./feature-slice.md)): 새 기능 요구사항을 받아 작업 단위로 나누고 우선순위를 매기는 Agent
+- **디자인 Skill** ([`design-skill.md`](./design-skill.md)): 화면 톤(색상·간격·컴포넌트 규칙)을 문서화해, 새 화면도 일관된 스타일로 제작
+- 매 기능 개발 전, Plan mode로 먼저 계획을 세우고 단계를 나눠 진행
 
 ## 개발 Task
 
@@ -247,13 +198,13 @@ python -m pytest test_distance.py -v
 
 - [x] 분석 파이프라인 및 대시보드 MVP
 - [x] 네이버 블로그 검색 API 연동
-- [x] 환경변수 `.env` 자동 로드
+- [x] 환경변수 .env 자동 로드
 - [x] Docker 컨테이너화 (MySQL, FastAPI, React+Nginx)
 - [x] 다크 대시보드 디자인 적용 (design-skill.md)
 - [x] 주제 전환: 특정 업체 검색 → 내 가게 주변 경쟁업체 분석
 - [x] 거리 계산 함수 TDD 구현 (distance.py, test_distance.py)
 - [x] 내 가게 저장/조회 DB 연동 (my_stores 테이블)
-- [x] 아키텍처 다이어그램 작성 (mermaid)
+- [x] 아키텍처 다이어그램 작성
 - [ ] 주변 경쟁업체 검색을 실제 DB·API와 연결 (현재 목 데이터)
 - [ ] 동일 매장 재조회 시 완전 캐싱 (컨설팅 리포트 DB 저장)
 - [ ] GitHub Actions CI/CD
@@ -264,21 +215,19 @@ python -m pytest test_distance.py -v
 
 **Gemini API 429 에러 (할당량 초과)**
 - 무료 등급: 일일 20회, 분당 5회 요청 제한
-- 해결: 1) 리셋 대기 2) Google Cloud 결제 연결 3) `.env`에서 `USE_MOCK=true`로 개발 계속 진행
+- 해결: 리셋 대기, Google Cloud 결제 연결, 또는 USE_MOCK=true로 개발 계속 진행
 
 **네이버 API 401 에러**
-- 원인: `.env` 파일이 없거나 `python-dotenv`가 설치되지 않음
-- 해결: 위 "사전 설정" 섹션 참고
+- 원인: .env 파일이 없거나 python-dotenv가 설치되지 않음
 
 **SQLite에서 자동 증가(autoincrement) id가 저장되지 않는 에러**
-- 증상: `NOT NULL constraint failed: 테이블명.id`
-- 원인: `BigInteger` 타입은 SQLite에서 자동 증가가 보장되지 않음
-- 해결: 기본키 컬럼을 `Integer` + `autoincrement=True`로 설정하고, 기존 `.db` 파일을 삭제 후 재생성
+- 증상: NOT NULL constraint failed
+- 원인: BigInteger 타입은 SQLite에서 자동 증가가 보장되지 않음
+- 해결: 기본키 컬럼을 Integer + autoincrement=True로 설정하고, 기존 db 파일을 삭제 후 재생성
 
 **Windows 포트 권한 에러 (EACCES)**
-- 증상: `listen EACCES: permission denied`
-- 원인: Windows가 특정 포트 범위를 예약해 둠 (`netsh interface ipv4 show excludedportrange protocol=tcp`로 확인 가능)
-- 해결: 예약 범위 밖의 포트(예: 3000)로 변경, `--host 127.0.0.1` 옵션 추가
+- 원인: Windows가 특정 포트 범위를 예약해 둠
+- 해결: 예약 범위 밖의 포트로 변경, --host 127.0.0.1 옵션 추가
 
 ## 기여 및 문의
 
