@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -41,7 +41,7 @@ Exact Python SDK/native bundle, Node Runtime와 Server product seam이 determini
 - [x] 006의 advertised-default·zero/multiple evidence와 first-party fallback difference를 비교해 `adopt | adapt | retain fail-closed`를 판정하고, final gate가 선택한 policy를 검증한다.
 - [x] Normal completion, interrupt, accepted loss, duplicate·late interaction와 process-group cleanup을 bounded하게 정산한다.
 - [x] Server product harness가 actual Runtime, managed Recipe, private MCP host와 shared product contract를 통해 complete operation/result semantics를 소비하며 synthetic product event를 final oracle로 사용하지 않는다.
-- [ ] Opt-in live-provider가 representative fixture, fresh isolated roots와 명시적으로 provision된 isolated auth를 사용해 complete Assignment action·Review·confirmed outcome을 수동 중간 복구 없이 성공시킨다.
+- [x] Opt-in live-provider가 representative fixture, fresh isolated roots와 명시적으로 provision된 isolated auth를 사용해 complete Assignment action·Review·confirmed outcome을 수동 중간 복구 없이 성공시킨다.
 - [x] Credential 또는 external provider blocker가 있으면 ticket을 completed로 닫지 않고 blocked evidence를 남긴다.
 
 ## Verification
@@ -56,13 +56,11 @@ Exact Python SDK/native bundle, Node Runtime와 Server product seam이 determini
 | Server actual | `test:codex-chat-actual`과 `test:first-assignment-product-actual` green. Product actual은 첫 proposal의 Review 수정 요청, fresh replacement request key, 두 번째 MCP→Plan→Review 수락과 same-Turn terminal을 실제 verified Runtime/local provider로 통과했다. |
 | Repository | `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs link check와 fixed-point diff check green. |
 | Review | Fixed point `4d9674d7b4fc670a3fbddaedc15e9742ae46f114`의 Standards·Spec 병렬 리뷰를 완료하고 signal cleanup, cleanup ordering, independent actual cleanup, Recipe revision loop와 Recipe v2 compatibility findings를 모두 수정했다. |
-| Live provider | Initial implementation commit `0cfa1d35`에서는 isolated live command가 `{"status":"passed","gate":"first_assignment_product"}`로 green이었다. Review 수정 뒤 current Recipe v2 final code에서는 provider가 `usageLimitExceeded`를 반환했고 harness가 exit code `3`, `{"status":"blocked","prerequisite":"provider_account"}`로 정확히 분류했다. |
+| Live provider | Final Recipe v2 코드에서 isolated live command가 exit code `0`, `{"status":"passed","gate":"first_assignment_product"}`로 complete Assignment action·수정 요청·replacement Review·confirmed outcome과 clean shutdown을 통과했다. 이전 provider 사용량 소진 때에는 exit code `3`, `{"status":"blocked","prerequisite":"provider_account"}`로 prerequisite를 정확히 분류했다. |
 
-## Blocked evidence
+## Result
 
-Implementation commits는 `db9976a6`, `0cfa1d35`, `d800e4bb`다. Current code의 deterministic·actual gate와 cleanup은 모두 green이지만, Recipe v2와 review fixes를 포함한 최종 상태의 live complete action은 isolated provider account 사용 한도로 다시 green을 얻지 못했다. Native camelCase provider failure를 `execution_guard_conflict`로 잘못 가리던 경로는 safe snake_case durable failure로 수정하고 회귀 테스트를 추가했다.
-
-Owner-only isolated auth seed에 사용 가능한 provider quota를 provision한 뒤 위 live command를 다시 실행한다. `passed`가 확인되기 전에는 이 ticket을 `completed`로 닫거나 parent spec을 완료 처리하지 않는다.
+Implementation commits `db9976a6`, `0cfa1d35`, `d800e4bb`에서 exact advertised-default model policy, managed Recipe v2 revision loop, actual product harness, live-provider harness, bounded cleanup과 native provider failure normalization을 완성했다. Deterministic·actual repository gates와 Standards·Spec 병렬 review findings를 모두 닫았고, 최종 Recipe v2 코드의 isolated live-provider vertical도 complete success로 확인했다. Parent spec에는 아직 `009a-product-cutover-and-durable-baseline.md`가 남아 있으므로 이 ticket만 완료한다.
 
 ## Blocked By
 
