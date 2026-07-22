@@ -7,5 +7,8 @@ export interface Product {
   name: string;
   companyName: string | null;
   price: number | null;
+  haccpCertified: boolean;
+  smartstoreUrl: string | null;
+  testReportUrl: string | null;
   matchCount: number;
 }

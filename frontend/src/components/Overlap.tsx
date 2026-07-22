@@ -45,6 +45,9 @@ export function Overlap({ supplements, onNext }: OverlapProps) {
       {!loading && !error && supplements.length === 0 && (
         <p className="sub">입력하신 영양제가 없어서 중복 체크를 건너뛸게요.</p>
       )}
+      {!loading && !error && supplements.length > 0 && results.length === 0 && (
+        <p className="sub">입력하신 영양제에서 확인된 성분이 없어요. 중복되는 성분이 없어요.</p>
+      )}
 
       {!loading && !error && results.length > 0 && (
         <div className="card stat-row">
