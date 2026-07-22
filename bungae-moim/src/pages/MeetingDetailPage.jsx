@@ -37,6 +37,9 @@ export default function MeetingDetailPage() {
   const [reloadKey, setReloadKey] = useState(0)
 
   const [actionError, setActionError] = useState(null)
+  // 승인/거절 실패 전용 에러. actionError는 신청/취소 카드(모임장이 아닐 때)에서만 렌더되므로,
+  // 모임장 카드(승인/거절)의 실패는 별도 상태로 들고 그 카드 안에서 보여준다.
+  const [respondError, setRespondError] = useState(null)
   const [participants, setParticipants] = useState([])
   const [participantsError, setParticipantsError] = useState(null)
   const [participantsReloadKey, setParticipantsReloadKey] = useState(0)
@@ -74,14 +77,18 @@ export default function MeetingDetailPage() {
   // 승인/거절(F4). 성공하면 신청자 목록과 상세를 모두 재조회한다 — 상세의 confirmedCount가
   // approved를 세므로 승인하면 값이 달라진다.
   async function handleRespond(userId, status) {
-    setActionError(null)
+    setRespondError(null)
     setRespondingUserId(userId)
     try {
       await respondToApplicant(id, userId, status)
       setParticipantsReloadKey((k) => k + 1)
       setReloadKey((k) => k + 1)
     } catch (err) {
-      setActionError(err.message)
+      setRespondError(err.message)
+      // 실패 원인이 대부분 "그 사이 신청자 상태가 바뀜"(예: 신청자가 방금 취소)이라,
+      // 신청자 목록을 서버 진실로 다시 맞춰야 모임장이 낡은 화면을 보고 같은 버튼을
+      // 반복해서 누르는 걸 막는다.
+      setParticipantsReloadKey((k) => k + 1)
     } finally {
       setRespondingUserId(null)
     }
@@ -306,6 +313,10 @@ export default function MeetingDetailPage() {
                   </div>
                 )
               })}
+
+              {respondError && (
+                <p style={{ fontSize: 13, color: 'var(--cream-mute)' }}>{respondError}</p>
+              )}
             </div>
           )}
 

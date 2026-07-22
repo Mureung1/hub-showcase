@@ -319,3 +319,41 @@ describe('승인/거절이 다른 화면에 미치는 영향', () => {
     expect(detail.body.data.blockReason).toBe('REJECTED');
   });
 });
+
+describe('PATCH의 meeting_id 스코프 격리', () => {
+  it('한 모임만 승인해도 같은 사용자의 다른 모임 pending은 그대로 남는다(+ 동률 tiebreak user_id 오름차순)', async () => {
+    // 돌연변이 검사 목적: respondToApplicant의 UPDATE에서 `AND meeting_id = $1`이 빠지면
+    // "그 user_id의 모든 모임 pending"이 한꺼번에 승인돼 버린다. 같은 모임장이 모임을 두 개
+    // 만들고 같은 신청자가 양쪽에 pending으로 있는 상황을 만들어, 한쪽만 승인했을 때
+    // 다른 쪽이 정말 영향받지 않는지를 확인한다.
+    const { agent, userId: hostId } = await loginAgent('scope-h1', '모임장');
+    const meeting1 = await insertMeeting(hostId, { title: '모임1' });
+    const meeting2 = await insertMeeting(hostId, { title: '모임2' });
+    const a = await createUser('scope-a1', '가'); // 먼저 생성 → id가 더 작다
+    const b = await createUser('scope-b1', '나'); // 나중에 생성 → id가 더 크다
+
+    // 모임1에 a, b를 같은 시각(appliedAt 동률)으로 넣어 정렬 테스트가 실행하지 않는
+    // user_id 오름차순 tiebreak 분기를 여기서 함께 검증한다.
+    await insertParticipant(meeting1, a, 'pending', '2026-07-20 10:00:00');
+    await insertParticipant(meeting1, b, 'pending', '2026-07-20 10:00:00');
+    // 모임2에도 같은 사용자 a가 pending으로 있다 — meeting_id 스코프가 없으면 모임1만
+    // 승인해도 이 행까지 approved로 바뀐다.
+    await insertParticipant(meeting2, a, 'pending');
+
+    const res = await agent
+      .patch(`/api/meetings/${meeting1}/participants/${a}`)
+      .send({ status: 'approved' });
+    expect(res.status).toBe(200);
+
+    // 모임1: a는 approved, b는 여전히 pending. appliedAt 동률이므로 user_id 오름차순(a < b)으로 온다.
+    const list1 = await agent.get(`/api/meetings/${meeting1}/participants`);
+    expect(list1.body.data.items.map((p) => p.userId)).toEqual([a, b]);
+    expect(list1.body.data.items.map((p) => p.status)).toEqual(['approved', 'pending']);
+
+    // 모임2: a는 그대로 pending이어야 한다 — 이게 이 테스트의 핵심 단언이다.
+    const list2 = await agent.get(`/api/meetings/${meeting2}/participants`);
+    expect(list2.body.data.items).toHaveLength(1);
+    expect(list2.body.data.items[0].userId).toBe(a);
+    expect(list2.body.data.items[0].status).toBe('pending');
+  });
+});
