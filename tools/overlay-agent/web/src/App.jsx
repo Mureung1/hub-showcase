@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { analyzePhotoLayout, LayoutAnalysisError, withAdjustments } from "./features/vision-overlay";
+import { MAX_BACKGROUND_LINES, createBackgroundLine, removeMostRecentLine } from "./lib/backgroundGuides";
 
 const emptyMessage = "사진을 선택한 뒤 AI 레이아웃 생성을 시작하세요.";
 const browserAnalysisMode = import.meta.env.VITE_ANALYSIS_MODE === "browser";
@@ -26,7 +27,7 @@ function drawOverlay(context, guide, width, height, opacity) {
   });
   context.clip("evenodd");
 
-  context.strokeStyle = "#d9fff3";
+  context.strokeStyle = "#ffe94a";
   context.lineWidth = strokeWidth;
   guide.backgroundLines.forEach((line) => {
     context.beginPath();
@@ -63,7 +64,37 @@ function drawOverlay(context, guide, width, height, opacity) {
   context.restore();
 }
 
-function GuideCanvas({ image, guide, opacity, previewCanvasRef, overlayCanvasRef }) {
+function drawRegistrationPreview(context, width, height, draftStart, hoverPoint) {
+  if (!draftStart) return;
+  const startX = draftStart.x * width;
+  const startY = draftStart.y * height;
+  context.save();
+  context.strokeStyle = "#ff2da6";
+  context.fillStyle = "#ff2da6";
+  context.lineWidth = Math.max(3, Math.round(Math.min(width, height) * 0.006));
+  context.shadowColor = "rgba(0, 0, 0, .75)";
+  context.shadowBlur = 8;
+  context.beginPath();
+  context.arc(startX, startY, Math.max(6, Math.round(Math.min(width, height) * 0.013)), 0, Math.PI * 2);
+  context.fill();
+  context.strokeStyle = "#ffffff";
+  context.lineWidth = Math.max(2, Math.round(Math.min(width, height) * 0.003));
+  context.stroke();
+  if (hoverPoint) {
+    context.shadowBlur = 0;
+    context.strokeStyle = "#ff2da6";
+    context.lineWidth = Math.max(2, Math.round(Math.min(width, height) * 0.004));
+    context.setLineDash([10, 8]);
+    context.beginPath();
+    context.moveTo(startX, startY);
+    context.lineTo(hoverPoint.x * width, hoverPoint.y * height);
+    context.stroke();
+    context.setLineDash([]);
+  }
+  context.restore();
+}
+
+function GuideCanvas({ image, guide, opacity, previewCanvasRef, overlayCanvasRef, lineRegistration, draftStart, hoverPoint, onCanvasPoint, onHoverPoint }) {
   useEffect(() => {
     if (!image || !guide) return;
     const preview = previewCanvasRef.current;
@@ -80,12 +111,21 @@ function GuideCanvas({ image, guide, opacity, previewCanvasRef, overlayCanvasRef
     previewContext.fillStyle = "rgba(16, 29, 21, 0.2)";
     previewContext.fillRect(0, 0, preview.width, preview.height);
     drawOverlay(previewContext, guide, preview.width, preview.height, opacity);
+    drawRegistrationPreview(previewContext, preview.width, preview.height, draftStart, hoverPoint);
 
     overlayContext.clearRect(0, 0, overlay.width, overlay.height);
     drawOverlay(overlayContext, guide, overlay.width, overlay.height, opacity);
-  }, [guide, image, opacity, overlayCanvasRef, previewCanvasRef]);
+  }, [guide, image, opacity, overlayCanvasRef, previewCanvasRef, draftStart, hoverPoint]);
 
-  return <canvas className="guide-canvas" ref={previewCanvasRef} aria-label="자동 생성된 레이아웃 가이드" />;
+  function pointFromEvent(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return {
+      x: Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)),
+      y: Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height)),
+    };
+  }
+
+  return <canvas className={`guide-canvas ${lineRegistration ? "line-registration-active" : ""}`} ref={previewCanvasRef} aria-label="자동 생성된 레이아웃 가이드" onClick={(event) => lineRegistration && onCanvasPoint(pointFromEvent(event))} onPointerMove={(event) => lineRegistration && onHoverPoint(pointFromEvent(event))} onPointerLeave={() => lineRegistration && onHoverPoint(null)} />;
 }
 
 function AnalysisProgress({ phase, progressStep, message }) {
@@ -112,6 +152,10 @@ function App() {
   const [fileName, setFileName] = useState("photo-overlay");
   const [mode, setMode] = useState("couple");
   const [baseGuide, setBaseGuide] = useState(null);
+  const [backgroundLines, setBackgroundLines] = useState([]);
+  const [lineRegistration, setLineRegistration] = useState(false);
+  const [draftStart, setDraftStart] = useState(null);
+  const [hoverPoint, setHoverPoint] = useState(null);
   const [horizon, setHorizon] = useState(62);
   const [opacity, setOpacity] = useState(88);
   const [phase, setPhase] = useState("idle");
@@ -120,8 +164,8 @@ function App() {
 
   const guide = useMemo(() => {
     if (!baseGuide) return null;
-    return withAdjustments(baseGuide, { frameScale: 100, horizonPercent: horizon });
-  }, [baseGuide, horizon]);
+    return withAdjustments({ ...baseGuide, backgroundLines }, { frameScale: 100, horizonPercent: horizon });
+  }, [baseGuide, backgroundLines, horizon]);
 
   useEffect(() => () => {
     if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
@@ -129,8 +173,15 @@ function App() {
 
   function chooseMode(nextMode) {
     setMode(nextMode);
+    setLineRegistration(false);
+    setDraftStart(null);
+    setHoverPoint(null);
     if (baseGuide) {
       setBaseGuide(null);
+      setBackgroundLines([]);
+      setLineRegistration(false);
+      setDraftStart(null);
+      setHoverPoint(null);
       setPhase("idle");
       setProgressStep(0);
       setMessage(`${nextMode === "solo" ? "1인" : "커플"} 모드로 변경했습니다. AI 레이아웃을 다시 생성하세요.`);
@@ -203,6 +254,56 @@ function App() {
     }
   }
 
+  function startLineRegistration() {
+    if (!baseGuide) return;
+    if (backgroundLines.length >= MAX_BACKGROUND_LINES) {
+      setMessage("배경선은 최대 5개까지 등록할 수 있습니다.");
+      return;
+    }
+    setLineRegistration(true);
+    setDraftStart(null);
+    setHoverPoint(null);
+    setMessage("배경선의 시작점을 선택하세요.");
+  }
+
+  function registerCanvasPoint(point) {
+    if (!draftStart) {
+      setDraftStart(point);
+      setHoverPoint(point);
+      setMessage("시작점을 등록했습니다. 끝점을 선택하세요.");
+      return;
+    }
+    const line = createBackgroundLine(backgroundLines, draftStart, point);
+    if (!line) {
+      setMessage("시작점과 충분히 떨어진 위치를 끝점으로 선택하세요.");
+      return;
+    }
+    const nextLines = [...backgroundLines, line];
+    setBackgroundLines(nextLines);
+    setDraftStart(null);
+    setHoverPoint(null);
+    if (nextLines.length >= MAX_BACKGROUND_LINES) {
+      setLineRegistration(false);
+      setMessage("배경선 5개를 등록했습니다.");
+    } else {
+      setMessage(`배경선 ${nextLines.length}개를 등록했습니다. 다음 시작점을 선택하세요.`);
+    }
+  }
+
+  function undoBackgroundLine() {
+    if (draftStart) {
+      setDraftStart(null);
+      setHoverPoint(null);
+      setMessage("시작점 선택을 취소했습니다. 시작점을 다시 선택하세요.");
+      return;
+    }
+    if (!backgroundLines.length) return;
+    const nextLines = removeMostRecentLine(backgroundLines);
+    setBackgroundLines(nextLines);
+    setLineRegistration(true);
+    setMessage("가장 최근 배경선을 삭제했습니다. 시작점을 선택하세요.");
+  }
+
   function downloadOverlay() {
     const canvas = overlayCanvasRef.current;
     if (!canvas || !guide) return;
@@ -235,7 +336,7 @@ function App() {
             <h1>사진 레이아웃 Agent</h1>
           </div>
         </div>
-        <p className="status"><strong>{browserAnalysisMode ? "브라우저 Vision" : "로컬 YOLO + SAM2"}</strong> · 사진은 외부 Vision API로 전송되지 않습니다.</p>
+        <div className="header-actions"><p className="status"><strong>{browserAnalysisMode ? "브라우저 Vision" : "로컬 YOLO + SAM2"}</strong> · 사진은 외부 Vision API로 전송되지 않습니다.</p><a className="top-link" href={`${import.meta.env.BASE_URL}compare/`}>촬영 구도 비교</a></div>
       </header>
 
       <section className="workspace" aria-label="사진 레이아웃 작업 공간">
@@ -259,6 +360,7 @@ function App() {
             <RangeControl title="Overlay 투명도" displayValue={`${opacity}%`} min="0" max="100" inputValue={opacity} onChange={setOpacity} disabled={!baseGuide} />
             <div className="workflow"><div><b>1</b>사진 선택</div><i>→</i><div><b>2</b>AI 분석</div><i>→</i><div><b>3</b>Overlay</div></div>
             <button className="action-button" onClick={analyze} type="button" disabled={phase === "loading"}>{phase === "loading" ? "AI 분석 중..." : baseGuide ? "AI 레이아웃 재분석" : "AI 레이아웃 생성"}</button>
+            <div className="line-registration-controls"><div className="control-label">배경선 등록<span>{backgroundLines.length} / {MAX_BACKGROUND_LINES}</span></div><div className="line-registration-actions"><button className="line-button" type="button" disabled={!baseGuide || backgroundLines.length >= MAX_BACKGROUND_LINES} onClick={startLineRegistration}>{lineRegistration ? "선 등록 중" : "선 등록"}</button><button className="undo-button" type="button" disabled={!draftStart && !backgroundLines.length} onClick={undoBackgroundLine}>되돌리기</button></div><p>건물 지붕·무대 외곽처럼 고정된 구조를 최대 5개까지 등록하세요.</p></div>
             <button className="download-button" onClick={downloadOverlay} type="button" disabled={!canDownload}>Overlay PNG 다운로드</button>
             <button className="json-button" onClick={downloadGuide} type="button" disabled={!canDownload}>guide.json 다운로드</button>
             <AnalysisProgress phase={phase} progressStep={progressStep} message={message} />
@@ -268,7 +370,7 @@ function App() {
         <article className="panel after">
           <div className="panel-head"><h2 className="panel-title">After · AI 레이아웃 가이드</h2><span className="panel-kicker">{guide ? `${mode === "solo" ? "1인" : "커플"} · ${image.naturalWidth} × ${image.naturalHeight}` : "생성 전"}</span></div>
           <div className="image-stage">
-            {image && guide ? <GuideCanvas image={image} guide={guide} opacity={opacity} previewCanvasRef={previewCanvasRef} overlayCanvasRef={overlayCanvasRef} /> : <EmptyStage title="촬영 가이드를 준비합니다" text="사진을 선택한 뒤 AI 레이아웃을 생성하면 인물 윤곽과 수평 가이드가 표시됩니다." icon="✦" />}
+            {image && guide ? <GuideCanvas image={image} guide={guide} opacity={opacity} previewCanvasRef={previewCanvasRef} overlayCanvasRef={overlayCanvasRef} lineRegistration={lineRegistration} draftStart={draftStart} hoverPoint={hoverPoint} onCanvasPoint={registerCanvasPoint} onHoverPoint={setHoverPoint} /> : <EmptyStage title="촬영 가이드를 준비합니다" text="사진을 선택한 뒤 AI 레이아웃을 생성하면 인물 윤곽과 수평 가이드가 표시됩니다." icon="✦" />}
           </div>
           <div className="result-note"><strong>PNG 결과물</strong>은 원본 사진 위에 보이는 안내선만 포함하는 투명 이미지입니다.</div>
         </article>

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import threading
 import time
 from pathlib import Path
@@ -13,6 +14,7 @@ from fastapi.concurrency import run_in_threadpool
 from PIL import Image, ImageOps, UnidentifiedImageError
 from ultralytics import SAM, YOLO
 
+from .composition_compare import compare_composition
 from .pipeline import detect_people_with_pose, extract_masks
 
 
@@ -20,6 +22,7 @@ TOOL_ROOT = Path(__file__).resolve().parents[1]
 YOLO_MODEL_PATH = TOOL_ROOT / "models" / "yolo11s-pose.pt"
 SAM_MODEL_PATH = TOOL_ROOT / "models" / "sam2.1_t.pt"
 MAX_UPLOAD_BYTES = 12 * 1024 * 1024
+MAX_GUIDE_BYTES = 512 * 1024
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 app = FastAPI(title="Photo Navigation YOLO + SAM2 API", version="0.1.0")
@@ -141,6 +144,63 @@ def analyze_image(image_path: Path, max_people: int) -> dict[str, Any]:
     }
 
 
+async def normalize_upload(file: UploadFile, temp_dir: Path, name: str) -> Path:
+    if file.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(status_code=415, detail="JPG, PNG, WebP 사진만 분석할 수 있습니다.")
+
+    payload = await file.read(MAX_UPLOAD_BYTES + 1)
+    if len(payload) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="12MB 이하의 사진을 선택하세요.")
+
+    raw_path = temp_dir / f"{name}-upload"
+    image_path = temp_dir / f"{name}.png"
+    raw_path.write_bytes(payload)
+    try:
+        with Image.open(raw_path) as image:
+            normalized = ImageOps.exif_transpose(image).convert("RGB")
+            if normalized.width * normalized.height > 40_000_000:
+                raise HTTPException(status_code=413, detail="사진 해상도는 4천만 화소 이하여야 합니다.")
+            normalized.save(image_path, format="PNG")
+    except (UnidentifiedImageError, OSError) as error:
+        raise HTTPException(status_code=422, detail="손상되었거나 지원하지 않는 사진입니다.") from error
+    return image_path
+
+
+def _is_unit_number(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and 0 <= value <= 1
+
+
+def _is_unit_point(value: Any) -> bool:
+    return isinstance(value, list) and len(value) == 2 and all(_is_unit_number(coordinate) for coordinate in value)
+
+
+async def read_guide(file: UploadFile) -> dict[str, Any]:
+    payload = await file.read(MAX_GUIDE_BYTES + 1)
+    if len(payload) > MAX_GUIDE_BYTES:
+        raise HTTPException(status_code=413, detail="guide.json은 512KB 이하만 사용할 수 있습니다.")
+    try:
+        guide = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise HTTPException(status_code=422, detail="올바른 guide.json 파일이 아닙니다.") from error
+
+    frames = guide.get("personFrames")
+    if not isinstance(frames, list) or len(frames) not in (1, 2):
+        raise HTTPException(status_code=422, detail="guide.json에는 인물 프레임이 1개 또는 2개 필요합니다.")
+    for frame in frames:
+        if not isinstance(frame, dict) or not all(_is_unit_number(frame.get(key)) for key in ("x", "y", "width", "height")):
+            raise HTTPException(status_code=422, detail="guide.json의 인물 프레임 좌표가 올바르지 않습니다.")
+        if frame["x"] + frame["width"] > 1 or frame["y"] + frame["height"] > 1:
+            raise HTTPException(status_code=422, detail="guide.json의 인물 프레임이 이미지 범위를 벗어났습니다.")
+
+    lines = guide.get("backgroundLines", [])
+    if not isinstance(lines, list) or len(lines) > 5:
+        raise HTTPException(status_code=422, detail="guide.json의 배경선은 최대 5개여야 합니다.")
+    for line in lines:
+        if not isinstance(line, dict) or not _is_unit_point(line.get("start")) or not _is_unit_point(line.get("end")):
+            raise HTTPException(status_code=422, detail="guide.json의 배경선 좌표가 올바르지 않습니다.")
+    return guide
+
+
 @app.get("/api/health")
 def health() -> dict[str, Any]:
     return {
@@ -186,4 +246,34 @@ async def analyze(
         raise HTTPException(status_code=422, detail=message)
     if result["status"] != "ok":
         raise HTTPException(status_code=500, detail="인물 마스크 생성에 실패했습니다.")
+    return result
+
+
+@app.post("/api/compare")
+async def compare(
+    reference_file: Annotated[UploadFile, File(...)],
+    guide_file: Annotated[UploadFile, File(...)],
+    captured_file: Annotated[UploadFile, File(...)],
+) -> dict[str, Any]:
+    guide = await read_guide(guide_file)
+    expected_people = len(guide["personFrames"])
+
+    with TemporaryDirectory(prefix="photo-navigation-compare-") as temp_dir:
+        directory = Path(temp_dir)
+        reference_path = await normalize_upload(reference_file, directory, "reference")
+        captured_path = await normalize_upload(captured_file, directory, "captured")
+        reference_layout = await run_in_threadpool(analyze_image, reference_path, expected_people)
+        if reference_layout["status"] != "ok":
+            raise HTTPException(status_code=422, detail="예시 사진에서 guide.json과 같은 인물 수를 찾지 못했습니다.")
+        captured_layout = await run_in_threadpool(analyze_image, captured_path, expected_people)
+        if captured_layout["status"] != "ok":
+            raise HTTPException(status_code=422, detail="촬영 사진에서 guide.json과 같은 인물 수를 찾지 못했습니다.")
+        result = await run_in_threadpool(
+            compare_composition,
+            reference_path,
+            captured_path,
+            guide,
+            reference_layout,
+            captured_layout,
+        )
     return result

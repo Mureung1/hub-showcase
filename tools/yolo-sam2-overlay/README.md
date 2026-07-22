@@ -14,6 +14,16 @@ It is for preparing reference-frame data, not real-time user coaching. A person 
 - `result.json`: boxes normalized to `0..1`, model settings, and per-stage timings
 - `result.json` also includes normalized pose keypoints and missing-keypoint warnings
 
+## Composition comparison module
+
+`src/composition_compare.py` is a reusable, model-independent comparison module. The FastAPI `POST /api/compare` route accepts a reference image, an approved `guide.json`, and a captured image.
+
+- Person layout: count, normalized center position, and height
+- Background layout: ORB feature matching outside person masks, RANSAC homography, and manually registered line endpoint and angle differences
+- If the background match is weak, the API returns `limited` without a final composition score.
+
+All uploaded images are normalized and processed inside a temporary directory, then removed before the response is returned.
+
 ## Setup on Windows
 
 Use Python 3.11 or 3.12. The machine's current Python 3.14 environment is not recommended for this model stack.
