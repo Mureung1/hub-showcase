@@ -271,3 +271,51 @@ describe('PATCH /api/meetings/:id/participants/:userId', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('승인/거절이 다른 화면에 미치는 영향', () => {
+  it('승인받은 신청자에게 오픈채팅 링크가 열리고 confirmedCount가 1 오른다', async () => {
+    const hostLogin = await loginAgent('i-h1', '모임장');
+    const meetingId = await insertMeeting(hostLogin.userId);
+    const applicant = await loginAgent('i-a1', '신청자');
+    await pool.query('UPDATE users SET birth_date = $1 WHERE id = $2', ['1990-01-01', applicant.userId]);
+
+    // 신청 → 소모임이므로 pending. 아직 오픈채팅은 안 보인다.
+    await applicant.agent.post(`/api/meetings/${meetingId}/apply`);
+    const before = await applicant.agent.get(`/api/meetings/${meetingId}`);
+    expect(before.body.data.myParticipation.status).toBe('pending');
+    expect(before.body.data.openChatUrl).toBeUndefined();
+    expect(before.body.data.confirmedCount).toBe(0);
+
+    // 모임장이 승인.
+    const patched = await hostLogin.agent
+      .patch(`/api/meetings/${meetingId}/participants/${applicant.userId}`)
+      .send({ status: 'approved' });
+    expect(patched.status).toBe(200);
+
+    // 이제 링크가 보이고 확정 인원이 1이다.
+    const after = await applicant.agent.get(`/api/meetings/${meetingId}`);
+    expect(after.body.data.myParticipation.status).toBe('approved');
+    expect(after.body.data.openChatUrl).toBe('https://open.kakao.com/o/test');
+    expect(after.body.data.confirmedCount).toBe(1);
+  });
+
+  it('F4로 거절당하면 재신청할 수 없다', async () => {
+    const hostLogin = await loginAgent('i-h2', '모임장');
+    const meetingId = await insertMeeting(hostLogin.userId);
+    const applicant = await loginAgent('i-a2', '신청자');
+    await pool.query('UPDATE users SET birth_date = $1 WHERE id = $2', ['1990-01-01', applicant.userId]);
+
+    await applicant.agent.post(`/api/meetings/${meetingId}/apply`);
+    await hostLogin.agent
+      .patch(`/api/meetings/${meetingId}/participants/${applicant.userId}`)
+      .send({ status: 'rejected' });
+
+    // 거절은 재신청 불가(F1 규칙). 거절 경로가 실제로 rejected 상태를 쓰는지 확인하는 것이 목적이다.
+    const retry = await applicant.agent.post(`/api/meetings/${meetingId}/apply`);
+    expect(retry.status).toBe(400);
+
+    const detail = await applicant.agent.get(`/api/meetings/${meetingId}`);
+    expect(detail.body.data.canApply).toBe(false);
+    expect(detail.body.data.blockReason).toBe('REJECTED');
+  });
+});
