@@ -70,7 +70,7 @@ btn-gray           #E4E6EC   (버튼/네비/아바타 등 UI 크롬 전용 — 2
 
 **뉴스 카드(리스트형)** (`article`): 이미지 없이 텍스트 위주로 나열하는 곳(마이페이지 읽은 기사 목록, 관련 기사 리스트 등)에서 사용. 흰 배경, `border border-outline-variant`, hover 시 `border-primary`. 상단에 출처 배지(mono, `bg-surface-container-low` 필박스) + 시간(캡션), 헤드라인(headline-md, hover 시 primary), 본문 3줄 요약(`line-clamp-3`), 하단 "상세 리포트 읽기" 링크(mono, 화살표 아이콘). 각진 배지 유지.
 
-**홈 피드 그리드 카드** (2026-07 결정, MAGZIN 감성이 실제로 적용되는 지점): 사진 배경 + 하단 오버레이 텍스트 패널로 구성.
+**홈 피드 그리드 카드** (2026-07 결정, MAGZIN 감성이 실제로 적용되는 지점): 사진 배경 + 하단 오버레이 텍스트 패널로 구성. ⚠️ 네이버 뉴스 검색 API가 썸네일을 안 줘서, 실제 이미지 소스가 붙기 전까지는 `utils/placeholderImage.js`(picsum.photos, article id 시드)로 대체 중 — 실제 기사 사진이 아니라 그냥 랜덤 사진이니 디자인 검수 시 "사진과 기사 내용이 안 맞는 것"은 이 임시 처리 때문이지 버그가 아님.
 - 배지(카테고리): 사진 좌상단, `bg-white/40 backdrop-blur-md border border-white/50 text-on-surface` 둥근 필 — 사진 위에서만 이 정도로 투명한 글래스 처리를 쓴다.
 - 하단 텍스트 패널: **흰색 불투명 그라데이션**(`bg-gradient-to-t from-white/55 via-white/25 to-transparent` + `backdrop-blur-sm`)만 쓴다. 블루/그레이 톤으로 물들이지 않음(사진 원본 색感 유지가 목적). 패널은 **카드 높이의 40%를 넘지 않도록** `h-[40%]` + `flex flex-col justify-end` + `overflow-hidden`으로 캡을 건다. 헤드라인은 2줄 캡(`line-clamp-2`)의 작은 폰트, 톱 이슈 칸만 살짝 크게 — 긴 요약 문단은 넣지 않는다.
 - 톱 이슈(그리드 좌측 1열, 2행 병합) 칸은 같은 레시피를 크기만 키워서 쓴다.
