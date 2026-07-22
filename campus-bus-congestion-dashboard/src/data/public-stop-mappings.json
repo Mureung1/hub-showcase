@@ -1,0 +1,476 @@
+{
+  "schemaVersion": 2,
+  "operationDate": "20250801",
+  "generatedAt": "2026-07-22T08:15:36.147Z",
+  "campuses": {
+    "knu-daegu": {
+      "route": [
+        "osm-node-8246940160",
+        "osm-node-8251323189",
+        "osm-node-8251323187"
+      ],
+      "directions": {
+        "a": { "endpointStopId": "osm-node-8246940160", "label": "북문 방향" },
+        "c": { "endpointStopId": "osm-node-8251323187", "label": "정문 방향" }
+      }
+    },
+    "cnu-daejeon": {
+      "route": [
+        "osm-node-12141510069",
+        "osm-node-12778500235",
+        "osm-node-5674035548"
+      ],
+      "directions": {
+        "a": { "endpointStopId": "osm-node-12141510069", "label": "충남대학교 방향" },
+        "c": { "endpointStopId": "osm-node-5674035548", "label": "도서관 방향" }
+      }
+    }
+  },
+  "mappings": {
+    "osm-node-8246940160": {
+      "campusId": "knu-daegu",
+      "ctpvCd": "27",
+      "sggCd": "27230",
+      "sttnId": "7021025800",
+      "sourceName": "경북대학교북문앞",
+      "matchedBy": "exact-normalized",
+      "verifiedAt": "2026-07-22T08:15:41.782Z",
+      "directions": {
+        "a": {
+          "sttnId": "7021025900",
+          "sourceName": "경북대학교북문건너",
+          "matchedBy": "manual",
+          "verifiedAt": "2026-07-22T10:00:00.000Z"
+        },
+        "c": {
+          "sttnId": "7021025800",
+          "sourceName": "경북대학교북문앞",
+          "matchedBy": "manual",
+          "verifiedAt": "2026-07-22T10:00:00.000Z"
+        }
+      }
+    },
+    "osm-node-8251323187": {
+      "campusId": "knu-daegu",
+      "ctpvCd": "27",
+      "sggCd": "27230",
+      "sttnId": "7011010300",
+      "sourceName": "경북대학교정문건너",
+      "matchedBy": "exact-normalized",
+      "verifiedAt": "2026-07-22T08:15:41.791Z",
+      "directions": {
+        "a": {
+          "sttnId": "7011010300",
+          "sourceName": "경북대학교정문건너",
+          "matchedBy": "manual",
+          "verifiedAt": "2026-07-22T10:00:00.000Z"
+        },
+        "c": {
+          "sttnId": "7011010400",
+          "sourceName": "경북대학교정문앞",
+          "matchedBy": "manual",
+          "verifiedAt": "2026-07-22T10:00:00.000Z"
+        }
+      }
+    },
+    "osm-node-8251323189": {
+      "campusId": "knu-daegu",
+      "ctpvCd": "27",
+      "sggCd": "27230",
+      "sttnId": "7011010200",
+      "sourceName": "경북대학교경상대학건너",
+      "matchedBy": "exact-normalized",
+      "verifiedAt": "2026-07-22T08:15:41.803Z",
+      "directions": {
+        "a": {
+          "sttnId": "7011010200",
+          "sourceName": "경북대학교경상대학건너",
+          "matchedBy": "manual",
+          "verifiedAt": "2026-07-22T10:00:00.000Z"
+        },
+        "c": {
+          "sttnId": "7011010100",
+          "sourceName": "경북대학교경상대학앞",
+          "matchedBy": "manual",
+          "verifiedAt": "2026-07-22T10:00:00.000Z"
+        }
+      }
+    },
+    "osm-node-12141510069": {
+      "campusId": "cnu-daejeon",
+      "ctpvCd": "30",
+      "sggCd": "30200",
+      "sttnId": "8002722",
+      "sourceName": "충남대학교",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T08:12:00.000Z",
+      "verification": {
+        "osmRef": "42590",
+        "publicArsNo": "42590"
+      },
+      "directions": {
+        "a": {
+          "sttnId": "8002721",
+          "sourceName": "충남대학교",
+          "matchedBy": "manual",
+          "verifiedAt": "2026-07-22T10:20:00.000Z"
+        },
+        "c": {
+          "sttnId": "8005516",
+          "sourceName": "충남대학교",
+          "matchedBy": "manual",
+          "verifiedAt": "2026-07-22T10:20:00.000Z"
+        }
+      }
+    },
+    "osm-node-12778500235": {
+      "campusId": "cnu-daejeon",
+      "ctpvCd": "30",
+      "sggCd": "30200",
+      "sttnId": "8005589",
+      "sourceName": "충남대산학연",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T08:12:00.000Z",
+      "verification": {
+        "osmRef": "42630",
+        "publicArsNo": "42630"
+      },
+      "directions": {
+        "a": {
+          "sttnId": "8005589",
+          "sourceName": "충남대산학연",
+          "matchedBy": "manual",
+          "verifiedAt": "2026-07-22T10:20:00.000Z"
+        },
+        "c": {
+          "sttnId": "8005590",
+          "sourceName": "충남대산학연",
+          "matchedBy": "manual",
+          "verifiedAt": "2026-07-22T10:20:00.000Z"
+        }
+      }
+    },
+    "osm-node-5674035548": {
+      "campusId": "cnu-daejeon",
+      "ctpvCd": "30",
+      "sggCd": "30200",
+      "sttnId": "8005587",
+      "sourceName": "충남대도서관",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T08:12:00.000Z",
+      "verification": {
+        "osmRef": "42660",
+        "publicArsNo": "42660"
+      },
+      "directions": {
+        "a": {
+          "sttnId": "8005587",
+          "sourceName": "충남대도서관",
+          "matchedBy": "manual",
+          "verifiedAt": "2026-07-22T10:20:00.000Z"
+        },
+        "c": {
+          "sttnId": "8005588",
+          "sourceName": "충남대도서관",
+          "matchedBy": "manual",
+          "verifiedAt": "2026-07-22T10:20:00.000Z"
+        }
+      }
+    },
+    "osm-node-5033898890": {
+      "campusId": "pnu-jangjeon",
+      "ctpvCd": "26",
+      "sggCd": "26410",
+      "sttnId": "2642179",
+      "sourceName": "부산대정문",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T11:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "2642179", "sourceName": "부산대정문" },
+        { "sttnId": "2642180", "sourceName": "부산대정문" }
+      ]
+    },
+    "pnu-shuttle-busan-university-station": {
+      "campusId": "pnu-jangjeon",
+      "ctpvCd": "26",
+      "sggCd": "26410",
+      "sttnId": "2601237",
+      "sourceName": "부산대역",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T11:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "2601237", "sourceName": "부산대역" },
+        { "sttnId": "2642176", "sourceName": "부산대역" },
+        { "sttnId": "2642178", "sourceName": "부산대역" }
+      ]
+    },
+    "pnu-shuttle-dawn-field-library": {
+      "campusId": "pnu-jangjeon",
+      "ctpvCd": "26",
+      "sggCd": "26410",
+      "sttnId": "2643879",
+      "sourceName": "새벽벌도서관.상남국제회관",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T11:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "2643879", "sourceName": "새벽벌도서관.상남국제회관" },
+        { "sttnId": "2643880", "sourceName": "새벽벌도서관.상남국제회관" }
+      ]
+    },
+    "osm-node-13199974255": {
+      "campusId": "jnu-yongbong",
+      "ctpvCd": "29",
+      "sggCd": "29170",
+      "sttnId": "00001204",
+      "sourceName": "전남대사거리(서)",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T11:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "00001204", "sourceName": "전남대사거리(서)" },
+        { "sttnId": "00001205", "sourceName": "전남대사거리(서)" }
+      ]
+    },
+    "osm-node-9352302501": {
+      "campusId": "jnu-yongbong",
+      "ctpvCd": "29",
+      "sggCd": "29170",
+      "sttnId": "00001199",
+      "sourceName": "전남대스포츠센터",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T11:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "00001199", "sourceName": "전남대스포츠센터" },
+        { "sttnId": "00001200", "sourceName": "전남대스포츠센터" }
+      ]
+    },
+    "osm-node-9352302461": {
+      "campusId": "jnu-yongbong",
+      "ctpvCd": "29",
+      "sggCd": "29170",
+      "sttnId": "00000289",
+      "sourceName": "도로교통공단대신파크",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T11:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "00000289", "sourceName": "도로교통공단대신파크" },
+        { "sttnId": "00000290", "sourceName": "도로교통공단대신파크" }
+      ]
+    },
+    "osm-node-11338570540": {
+      "campusId": "jejunu-ara",
+      "ctpvCd": "50",
+      "sggCd": "50110",
+      "sttnId": "0000200",
+      "sourceName": "제주대학교",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T11:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "0000200", "sourceName": "제주대학교" },
+        { "sttnId": "0000201", "sourceName": "제주대학교" },
+        { "sttnId": "0004824", "sourceName": "제주대학교" }
+      ]
+    },
+    "osm-node-11338570532": {
+      "campusId": "jejunu-ara",
+      "ctpvCd": "50",
+      "sggCd": "50110",
+      "sttnId": "0000206",
+      "sourceName": "제주대학교입구",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T11:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "0000206", "sourceName": "제주대학교입구" },
+        { "sttnId": "0000207", "sourceName": "제주대학교입구" },
+        { "sttnId": "0000696", "sourceName": "제주대학교입구" }
+      ]
+    },
+    "osm-node-11338570535": {
+      "campusId": "jejunu-ara",
+      "ctpvCd": "50",
+      "sggCd": "50110",
+      "sttnId": "0000120",
+      "sourceName": "제주대학교병원",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T11:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "0000120", "sourceName": "제주대학교병원" },
+        { "sttnId": "0000121", "sourceName": "제주대학교병원" }
+      ]
+    },
+    "osm-node-8446123910": {
+      "campusId": "kangwon-chuncheon",
+      "ctpvCd": "51",
+      "sggCd": "51110",
+      "sttnId": "4242433",
+      "sourceName": "강원대정문",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T12:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "4242433", "sourceName": "강원대정문" },
+        { "sttnId": "4242436", "sourceName": "강원대정문" }
+      ]
+    },
+    "osm-node-8446123642": {
+      "campusId": "kangwon-chuncheon",
+      "ctpvCd": "51",
+      "sggCd": "51110",
+      "sttnId": "4242807",
+      "sourceName": "강원대백록관",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T12:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "4242807", "sourceName": "강원대백록관" },
+        { "sttnId": "4242808", "sourceName": "강원대백록관" }
+      ]
+    },
+    "osm-node-8446123644": {
+      "campusId": "kangwon-chuncheon",
+      "ctpvCd": "51",
+      "sggCd": "51110",
+      "sttnId": "4242805",
+      "sourceName": "강원대중앙도서관",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T12:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "4242805", "sourceName": "강원대중앙도서관" },
+        { "sttnId": "4242806", "sourceName": "강원대중앙도서관" }
+      ]
+    },
+    "osm-node-9355291206": {
+      "campusId": "gnu-gajwa",
+      "ctpvCd": "48",
+      "sggCd": "48170",
+      "sttnId": "4810001",
+      "sourceName": "경상국립대학교가좌캠퍼스정문",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T12:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "4810001", "sourceName": "경상국립대학교가좌캠퍼스정문" },
+        { "sttnId": "4810078", "sourceName": "경상국립대학교가좌캠퍼스정문" }
+      ]
+    },
+    "osm-node-9355291204": {
+      "campusId": "gnu-gajwa",
+      "ctpvCd": "48",
+      "sggCd": "48170",
+      "sttnId": "4810002",
+      "sourceName": "경상국립대학교가좌캠퍼스후문",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T12:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "4810002", "sourceName": "경상국립대학교가좌캠퍼스후문" },
+        { "sttnId": "4810077", "sourceName": "경상국립대학교가좌캠퍼스후문" }
+      ]
+    },
+    "osm-node-357899513": {
+      "campusId": "snu-gwanak",
+      "ctpvCd": "11",
+      "sggCd": "11620",
+      "sttnId": "0070641",
+      "sourceName": "서울대입구역",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T12:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "0070641", "sourceName": "서울대입구역" },
+        { "sttnId": "0070665", "sourceName": "서울대입구역" }
+      ]
+    },
+    "osm-node-357899388": {
+      "campusId": "snu-gwanak",
+      "ctpvCd": "11",
+      "sggCd": "11620",
+      "sttnId": "0060065",
+      "sourceName": "서울대정문",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T12:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "0060065", "sourceName": "서울대정문" },
+        { "sttnId": "0070637", "sourceName": "서울대정문" }
+      ]
+    },
+    "osm-node-11560054597": {
+      "campusId": "snu-gwanak",
+      "ctpvCd": "11",
+      "sggCd": "11620",
+      "sttnId": "9010560",
+      "sourceName": "기숙사삼거리",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T12:00:00.000Z",
+      "aggregation": "single-stop",
+      "sources": [
+        { "sttnId": "9010560", "sourceName": "기숙사삼거리" }
+      ]
+    },
+    "osm-node-4247734748": {
+      "campusId": "jbnu-jeonju",
+      "ctpvCd": "52",
+      "sggCd": "52113",
+      "sttnId": "2550080",
+      "sourceName": "전북대학교.소나무한의원앞",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T12:00:00.000Z",
+      "aggregation": "single-stop",
+      "sources": [
+        { "sttnId": "2550080", "sourceName": "전북대학교.소나무한의원앞" }
+      ]
+    },
+    "osm-node-6403450088": {
+      "campusId": "cbnu-gaesin",
+      "ctpvCd": "43",
+      "sggCd": "43112",
+      "sttnId": "4300811",
+      "sourceName": "충북대학교",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T12:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "4300811", "sourceName": "충북대학교" },
+        { "sttnId": "4300891", "sourceName": "충북대학교" }
+      ]
+    },
+    "osm-node-12324240641": {
+      "campusId": "cbnu-gaesin",
+      "ctpvCd": "43",
+      "sggCd": "43112",
+      "sttnId": "4359641",
+      "sourceName": "충북대학교후문",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T12:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "4359641", "sourceName": "충북대학교후문" },
+        { "sttnId": "4360011", "sourceName": "충북대학교후문" }
+      ]
+    },
+    "osm-node-12324240640": {
+      "campusId": "cbnu-gaesin",
+      "ctpvCd": "43",
+      "sggCd": "43112",
+      "sttnId": "4359631",
+      "sourceName": "충북대학교중문",
+      "matchedBy": "manual",
+      "verifiedAt": "2026-07-22T12:00:00.000Z",
+      "aggregation": "sum-exact-name-platforms",
+      "sources": [
+        { "sttnId": "4359631", "sourceName": "충북대학교중문" },
+        { "sttnId": "4362661", "sourceName": "충북대학교중문" }
+      ]
+    }
+  }
+}

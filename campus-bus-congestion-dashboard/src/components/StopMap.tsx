@@ -1,14 +1,14 @@
 import type { KeyboardEvent } from 'react';
 import { levelFor } from '../lib/congestion';
-import type { Campus, Stop } from '../types';
+import { directionHours, directionUsageStatusLabel, isDirectionUsageReady, isUsageReady, usageStatusLabel } from '../lib/usage';
+import type { Campus, DirectionKey, Stop } from '../types';
 import styles from './StopMap.module.css';
 
 interface StopMapProps {
   campus: Campus;
   selectedId: string;
   hour: number;
-  pending?: boolean;
-  sample?: boolean;
+  direction?: DirectionKey;
   onSelect: (id: string) => void;
 }
 
@@ -43,10 +43,12 @@ function collisionIndex(position: { cx: number; cy: number }, previous: { cx: nu
   return previous.filter((item) => Math.abs(item.cx - position.cx) < 84 && Math.abs(item.cy - position.cy) < 48).length;
 }
 
-function Pin({ stop, campus, hour, selected, pending, sample, labelOffset, onSelect }: { stop: Stop; campus: Campus; hour: number; selected: boolean; pending: boolean; sample: boolean; labelOffset: LabelOffset; onSelect: (id: string) => void }) {
-  const value = stop.hours?.[hour];
+function Pin({ stop, campus, hour, direction, selected, labelOffset, onSelect }: { stop: Stop; campus: Campus; hour: number; direction?: DirectionKey; selected: boolean; labelOffset: LabelOffset; onSelect: (id: string) => void }) {
+  const available = direction ? isDirectionUsageReady(stop, direction) : isUsageReady(stop);
+  const hours = direction ? directionHours(stop, direction) : stop.hours;
+  const value = available ? hours?.[hour] : undefined;
   const level = value === undefined ? undefined : levelFor(value);
-  const color = pending ? '#3182F6' : level?.color ?? '#3182F6';
+  const color = level?.color ?? '#94a3b8';
   const width = Math.min(196, Math.max(58, stop.name.length * 11 + 18));
   const { cx, cy } = mapPosition(stop, campus);
   const safeCx = Math.min(376, Math.max(24, cx));
@@ -56,7 +58,9 @@ function Pin({ stop, campus, hour, selected, pending, sample, labelOffset, onSel
   const onKeyDown = (event: KeyboardEvent<SVGGElement>) => {
     if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(stop.id); }
   };
-  const ariaLabel = pending ? `${stop.name}, 실제 버스정류장` : `${stop.name}, ${sample ? '샘플 ' : ''}혼잡도 ${value}, ${level?.label}`;
+  const status = direction ? directionUsageStatusLabel(stop, direction) : usageStatusLabel(stop);
+  const directionLabel = direction ? campus.directionConfig?.directions[direction].label : undefined;
+  const ariaLabel = available ? `${stop.name}, ${directionLabel ? `${directionLabel}, ` : ''}${hour}시 이용 집중도 ${value}점, ${level?.label}` : `${stop.name}, ${status}`;
 
   return (
     <g onClick={() => onSelect(stop.id)} onKeyDown={onKeyDown} className={styles.pin} role="button" tabIndex={0} aria-label={ariaLabel}>
@@ -74,18 +78,18 @@ function Pin({ stop, campus, hour, selected, pending, sample, labelOffset, onSel
   );
 }
 
-export function StopMap({ campus, selectedId, hour, pending = false, sample = false, onSelect }: StopMapProps) {
+export function StopMap({ campus, selectedId, hour, direction, onSelect }: StopMapProps) {
   const positions = campus.stops.map((stop) => mapPosition(stop, campus));
   const pinData = campus.stops.map((stop, index) => {
     const selected = stop.id === selectedId;
-    return { stop, selected, labelOffset: labelOffsetFor(collisionIndex(positions[index], positions.slice(0, index))) };
+    return { stop, selected, labelOffset: stop.labelOffset ?? labelOffsetFor(collisionIndex(positions[index], positions.slice(0, index))) };
   });
   const orderedPins = [...pinData].sort((a, b) => Number(a.selected) - Number(b.selected));
 
   return (
     <section className={styles.card} aria-labelledby="map-title">
       <div className={styles.header}>
-        <div><div className={styles.eyebrow}>CAMPUS MAP</div><h2 id="map-title" className={styles.title}>{pending ? '실제 접근 정류장을 선택하세요' : '정류장을 눌러 선택하세요'}</h2></div>
+        <div><div className={styles.eyebrow}>CAMPUS MAP</div><h2 id="map-title" className={styles.title}>정류장을 눌러 이용 흐름을 확인하세요</h2></div>
         <div className={styles.countBadge}>정류장 {campus.stops.length}곳</div>
       </div>
       <div className={styles.mapArea}>
@@ -95,10 +99,11 @@ export function StopMap({ campus, selectedId, hour, pending = false, sample = fa
             <rect x="30" y="196" width="150" height="80" rx="16" fill="#D8ECDA" /><rect x="60" y="86" width="72" height="52" rx="7" fill="#D3DEE8" /><rect x="152" y="66" width="60" height="70" rx="7" fill="#D3DEE8" /><rect x="250" y="104" width="86" height="60" rx="7" fill="#D3DEE8" /><rect x="126" y="150" width="92" height="48" rx="7" fill="#CBD8E4" />
             <path d="M20 250 H360" stroke="#FBFDFC" strokeWidth="16" strokeLinecap="round" /><path d="M340 44 V270" stroke="#FBFDFC" strokeWidth="16" strokeLinecap="round" /><path d="M250 44 V250" stroke="#FBFDFC" strokeWidth="13" strokeLinecap="round" />
           </>}
-          {orderedPins.map(({ stop, selected, labelOffset }) => <Pin key={stop.id} stop={stop} campus={campus} hour={hour} pending={pending} sample={sample} selected={selected} labelOffset={labelOffset} onSelect={onSelect} />)}
+          {orderedPins.map(({ stop, selected, labelOffset }) => <Pin key={stop.id} stop={stop} campus={campus} hour={hour} direction={direction} selected={selected} labelOffset={labelOffset} onSelect={onSelect} />)}
         </svg>
       </div>
-      {pending ? <div className={styles.sourceRow}><span>데이터 © OpenStreetMap contributors</span>{campus.sourceFile && <a href={campus.sourceFile} target="_blank" rel="noreferrer">출처·라이선스</a>}</div> : <div className={styles.legend} aria-label="혼잡도 범례"><span className={styles.legendItem}><i className={styles.dot} style={{ background: '#22C55E' }} />여유</span><span className={styles.legendItem}><i className={styles.dot} style={{ background: '#F5A524' }} />보통</span><span className={styles.legendItem}><i className={styles.dot} style={{ background: '#F0453A' }} />혼잡</span></div>}
+      <div className={styles.legend} aria-label="이용 집중도 범례"><span className={styles.legendItem}><i className={styles.dot} style={{ background: '#22C55E' }} />여유</span><span className={styles.legendItem}><i className={styles.dot} style={{ background: '#F5A524' }} />보통</span><span className={styles.legendItem}><i className={styles.dot} style={{ background: '#F0453A' }} />혼잡</span><span className={styles.legendItem}><i className={styles.dot} style={{ background: '#94A3B8' }} />자료 없음</span></div>
+      <div className={styles.sourceRow}><span>지도 © OpenStreetMap contributors</span>{campus.sourceFile && <a href={campus.sourceFile} target="_blank" rel="noreferrer">출처·라이선스</a>}</div>
     </section>
   );
 }

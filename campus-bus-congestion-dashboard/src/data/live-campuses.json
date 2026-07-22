@@ -42,8 +42,8 @@
     "sourceFile": "/campuses/pnu-jangjeon/SOURCE.txt",
     "boundary": { "osmType": "way", "osmId": 472067907, "query": "Pusan National University Jangjeon Busan South Korea", "bounds": [35.2299494, 35.2385362, 129.0738519, 129.0846867] },
     "stops": [
-      { "id": "osm-node-5033898890", "name": "부산대정문", "lat": 35.2316112, "lon": 129.0847203, "osmType": "node", "osmId": 5033898890 },
-      { "id": "pnu-shuttle-busan-university-station", "name": "부산대역", "lat": 35.2303226, "lon": 129.0891451, "osmType": "node", "osmId": 1772360724, "verification": { "kind": "official-route", "label": "부산대학교 금정7번 순환버스 공식 안내", "url": "https://www.pusan.ac.kr/kor/CMS/Contents/Contents.do?mCode=MN176" } },
+      { "id": "pnu-shuttle-busan-university-station", "name": "부산대역", "lat": 35.2303226, "lon": 129.0891451, "osmType": "node", "osmId": 1772360724, "labelOffset": { "x": -80, "y": -68 }, "verification": { "kind": "official-route", "label": "부산대학교 금정7번 순환버스 공식 안내", "url": "https://www.pusan.ac.kr/kor/CMS/Contents/Contents.do?mCode=MN176" } },
+      { "id": "osm-node-5033898890", "name": "부산대정문", "lat": 35.2316112, "lon": 129.0847203, "osmType": "node", "osmId": 5033898890, "labelOffset": { "x": -72, "y": -12 } },
       { "id": "pnu-shuttle-dawn-field-library", "name": "새벽벌도서관", "lat": 35.2357512, "lon": 129.0813733, "osmType": "way", "osmId": 108067566, "verification": { "kind": "official-route", "label": "부산대학교 금정7번 순환버스 공식 안내", "url": "https://www.pusan.ac.kr/kor/CMS/Contents/Contents.do?mCode=MN176" } }
     ]
   },
@@ -54,7 +54,7 @@
     "sourceFile": "/campuses/snu-gwanak/SOURCE.txt",
     "boundary": { "osmType": "relation", "osmId": 11917142, "query": "서울대학교 관악캠퍼스, 관악구", "bounds": [37.4470628, 37.4692598, 126.9474475, 126.9612239] },
     "stops": [
-      { "id": "osm-node-357899513", "name": "서울대입구역3번출구", "lat": 37.4806596, "lon": 126.9525244, "cx": 205, "cy": 36, "osmType": "node", "osmId": 357899513 },
+      { "id": "osm-node-357899513", "name": "서울대입구역", "lat": 37.4806596, "lon": 126.9525244, "cx": 205, "cy": 36, "osmType": "node", "osmId": 357899513 },
       { "id": "osm-node-357899388", "name": "서울대정문", "lat": 37.4656789, "lon": 126.9483062, "osmType": "node", "osmId": 357899388 },
       { "id": "osm-node-11560054597", "name": "기숙사삼거리", "lat": 37.4606454, "lon": 126.956646, "osmType": "node", "osmId": 11560054597 }
     ]
@@ -104,7 +104,7 @@
     "stops": [
       { "id": "osm-node-12141510069", "name": "충남대학교", "lat": 36.3626422, "lon": 127.3438002, "osmType": "node", "osmId": 12141510069 },
       { "id": "osm-node-12778500235", "name": "충남대산학연", "lat": 36.36524, "lon": 127.345181, "osmType": "node", "osmId": 12778500235 },
-      { "id": "osm-node-5674035548", "name": "충남대도서관", "lat": 36.3689155, "lon": 127.3457175, "osmType": "node", "osmId": 5674035548 }
+      { "id": "osm-node-5674035548", "name": "충남대도서관", "lat": 36.3689155, "lon": 127.3457175, "osmType": "node", "osmId": 5674035548, "labelOffset": { "x": 0, "y": -48 } }
     ]
   },
   {
@@ -114,9 +114,9 @@
     "sourceFile": "/campuses/cbnu-gaesin/SOURCE.txt",
     "boundary": { "osmType": "relation", "osmId": 6705106, "query": "충북대학교, 청주시", "bounds": [36.6225972, 36.6337319, 127.4499818, 127.4634806] },
     "stops": [
-      { "id": "osm-node-6403450088", "name": "충북대정문", "lat": 36.6322957, "lon": 127.4528169, "osmType": "node", "osmId": 6403450088 },
-      { "id": "osm-node-12324240641", "name": "충북대학교후문", "lat": 36.6300382, "lon": 127.4617554, "osmType": "node", "osmId": 12324240641 },
-      { "id": "osm-node-12324240640", "name": "충북대학교중문", "lat": 36.6336022, "lon": 127.4605061, "osmType": "node", "osmId": 12324240640 }
+      { "id": "osm-node-6403450088", "name": "충북대학교", "lat": 36.6322957, "lon": 127.4528169, "osmType": "node", "osmId": 6403450088 },
+      { "id": "osm-node-12324240640", "name": "충북대학교중문", "lat": 36.6336022, "lon": 127.4605061, "osmType": "node", "osmId": 12324240640 },
+      { "id": "osm-node-12324240641", "name": "충북대학교후문", "lat": 36.6300382, "lon": 127.4617554, "osmType": "node", "osmId": 12324240641 }
     ]
   }
 ]

@@ -1,0 +1,290 @@
+{
+  "schemaVersion": 1,
+  "period": "202509",
+  "operationDate": "20250801",
+  "generatedAt": "2026-07-22T09:00:01.035Z",
+  "campuses": {
+    "knu-daegu": {
+      "campusName": "경북대학교 대구캠퍼스",
+      "route": [
+        {
+          "stopId": "osm-node-8246940160",
+          "name": "경북대학교북문앞"
+        },
+        {
+          "stopId": "osm-node-8251323189",
+          "name": "경북대학교 경상대학건너"
+        },
+        {
+          "stopId": "osm-node-8251323187",
+          "name": "경북대학교정문건너"
+        }
+      ],
+      "directions": {
+        "a": {
+          "endpointStopId": "osm-node-8246940160",
+          "label": "북문 방향"
+        },
+        "c": {
+          "endpointStopId": "osm-node-8251323187",
+          "label": "정문 방향"
+        }
+      },
+      "stops": {
+        "osm-node-8246940160": {
+          "appName": "경북대학교북문앞",
+          "approved": {},
+          "legacyCandidateId": "7021025800",
+          "candidates": [
+            {
+              "sttnId": "7021025800",
+              "sourceName": "경북대학교북문앞",
+              "arsNo": "~",
+              "neighborhood": "산격동",
+              "approved": false,
+              "usage": {
+                "itemCount": 96,
+                "monthlyTotal": 39752,
+                "peakHour": 16,
+                "peakTotal": 4186
+              }
+            },
+            {
+              "sttnId": "7021025900",
+              "sourceName": "경북대학교북문건너",
+              "arsNo": "~",
+              "neighborhood": "산격동",
+              "approved": false,
+              "usage": {
+                "itemCount": 97,
+                "monthlyTotal": 64020,
+                "peakHour": 17,
+                "peakTotal": 8184
+              }
+            }
+          ]
+        },
+        "osm-node-8251323189": {
+          "appName": "경북대학교 경상대학건너",
+          "approved": {},
+          "legacyCandidateId": "7011010200",
+          "candidates": [
+            {
+              "sttnId": "7011010100",
+              "sourceName": "경북대학교경상대학앞",
+              "arsNo": "~",
+              "neighborhood": "복현동",
+              "approved": false,
+              "usage": {
+                "itemCount": 79,
+                "monthlyTotal": 36199,
+                "peakHour": 17,
+                "peakTotal": 4763
+              }
+            },
+            {
+              "sttnId": "7011010200",
+              "sourceName": "경북대학교경상대학건너",
+              "arsNo": "~",
+              "neighborhood": "대현동",
+              "approved": false,
+              "usage": {
+                "itemCount": 86,
+                "monthlyTotal": 13375,
+                "peakHour": 17,
+                "peakTotal": 1316
+              }
+            }
+          ]
+        },
+        "osm-node-8251323187": {
+          "appName": "경북대학교정문건너",
+          "approved": {},
+          "legacyCandidateId": "7011010300",
+          "candidates": [
+            {
+              "sttnId": "7011010300",
+              "sourceName": "경북대학교정문건너",
+              "arsNo": "~",
+              "neighborhood": "대현동",
+              "approved": false,
+              "usage": {
+                "itemCount": 84,
+                "monthlyTotal": 16170,
+                "peakHour": 17,
+                "peakTotal": 1437
+              }
+            },
+            {
+              "sttnId": "7011010400",
+              "sourceName": "경북대학교정문앞",
+              "arsNo": "~",
+              "neighborhood": "대현동",
+              "approved": false,
+              "usage": {
+                "itemCount": 91,
+                "monthlyTotal": 36877,
+                "peakHour": 17,
+                "peakTotal": 4066
+              }
+            }
+          ]
+        }
+      }
+    },
+    "cnu-daejeon": {
+      "campusName": "충남대학교 대전캠퍼스",
+      "route": [
+        {
+          "stopId": "osm-node-12141510069",
+          "name": "충남대학교"
+        },
+        {
+          "stopId": "osm-node-5674035548",
+          "name": "충남대도서관"
+        },
+        {
+          "stopId": "osm-node-12778500235",
+          "name": "충남대산학연"
+        }
+      ],
+      "directions": {
+        "a": {
+          "endpointStopId": "osm-node-12141510069",
+          "label": "충남대학교 방향"
+        },
+        "c": {
+          "endpointStopId": "osm-node-12778500235",
+          "label": "산학연 방향"
+        }
+      },
+      "stops": {
+        "osm-node-12141510069": {
+          "appName": "충남대학교",
+          "approved": {},
+          "legacyCandidateId": "8002722",
+          "candidates": [
+            {
+              "sttnId": "8002720",
+              "sourceName": "충남대학교",
+              "arsNo": "42620",
+              "neighborhood": "궁동",
+              "approved": false,
+              "usage": {
+                "itemCount": 94,
+                "monthlyTotal": 46172,
+                "peakHour": 18,
+                "peakTotal": 4840
+              }
+            },
+            {
+              "sttnId": "8002721",
+              "sourceName": "충남대학교",
+              "arsNo": "42600",
+              "neighborhood": "궁동",
+              "approved": false,
+              "usage": {
+                "itemCount": 171,
+                "monthlyTotal": 160971,
+                "peakHour": 18,
+                "peakTotal": 14680
+              }
+            },
+            {
+              "sttnId": "8002722",
+              "sourceName": "충남대학교",
+              "arsNo": "42590",
+              "neighborhood": "궁동",
+              "approved": false,
+              "usage": {
+                "itemCount": 99,
+                "monthlyTotal": 43905,
+                "peakHour": 16,
+                "peakTotal": 4112
+              }
+            },
+            {
+              "sttnId": "8005516",
+              "sourceName": "충남대학교",
+              "arsNo": "42610",
+              "neighborhood": "궁동",
+              "approved": false,
+              "usage": {
+                "itemCount": 124,
+                "monthlyTotal": 22441,
+                "peakHour": 8,
+                "peakTotal": 2173
+              }
+            }
+          ]
+        },
+        "osm-node-5674035548": {
+          "appName": "충남대도서관",
+          "approved": {},
+          "legacyCandidateId": "8005587",
+          "candidates": [
+            {
+              "sttnId": "8005587",
+              "sourceName": "충남대도서관",
+              "arsNo": "42660",
+              "neighborhood": "궁동",
+              "approved": false,
+              "usage": {
+                "itemCount": 118,
+                "monthlyTotal": 22202,
+                "peakHour": 17,
+                "peakTotal": 3368
+              }
+            },
+            {
+              "sttnId": "8005588",
+              "sourceName": "충남대도서관",
+              "arsNo": "42670",
+              "neighborhood": "궁동",
+              "approved": false,
+              "usage": {
+                "itemCount": 104,
+                "monthlyTotal": 15280,
+                "peakHour": 9,
+                "peakTotal": 1729
+              }
+            }
+          ]
+        },
+        "osm-node-12778500235": {
+          "appName": "충남대산학연",
+          "approved": {},
+          "legacyCandidateId": "8005589",
+          "candidates": [
+            {
+              "sttnId": "8005589",
+              "sourceName": "충남대산학연",
+              "arsNo": "42630",
+              "neighborhood": "궁동",
+              "approved": false,
+              "usage": {
+                "itemCount": 86,
+                "monthlyTotal": 8056,
+                "peakHour": 16,
+                "peakTotal": 1250
+              }
+            },
+            {
+              "sttnId": "8005590",
+              "sourceName": "충남대산학연",
+              "arsNo": "42640",
+              "neighborhood": "궁동",
+              "approved": false,
+              "usage": {
+                "itemCount": 101,
+                "monthlyTotal": 9752,
+                "peakHour": 9,
+                "peakTotal": 1755
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

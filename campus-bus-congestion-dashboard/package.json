@@ -9,6 +9,13 @@
     "build": "vinext build",
     "start": "vinext start",
     "lint": "oxlint",
+    "data:check": "node scripts/check-public-data.mjs",
+    "data:map": "node scripts/map-public-stops.mjs",
+    "data:directions": "node scripts/report-direction-candidates.mjs",
+    "data:regions": "node scripts/check-remaining-regions.mjs",
+    "data:refresh": "node scripts/fetch-stop-usage.mjs",
+    "data:validate": "node scripts/validate-stop-usage.mjs",
+    "test:data": "node --test scripts/lib/stop-usage.test.mjs",
     "assets:generate": "node scripts/generate-campus-assets.mjs",
     "assets:validate": "node scripts/validate-campus-assets.mjs"
   },

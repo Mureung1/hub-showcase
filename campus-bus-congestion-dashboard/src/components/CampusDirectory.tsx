@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Campus } from '../types';
 import { campusPresentation, fallbackCampusPresentation } from '../data/campus-presentation';
+import { campusHasUsage, formatUsagePeriod } from '../lib/usage';
 import styles from './CampusDirectory.module.css';
 
 interface CampusDirectoryProps {
@@ -17,6 +18,8 @@ type MarkStyle = CSSProperties & {
 
 export function CampusDirectory({ campuses, onSelect }: CampusDirectoryProps) {
   const stopCount = campuses.reduce((total, campus) => total + campus.stops.length, 0);
+  const period = formatUsagePeriod(campuses.flatMap((campus) => campus.stops).find((stop) => stop.usage)?.usage?.period);
+  const readyCampusCount = campuses.filter(campusHasUsage).length;
 
   return (
     <main className={styles.shell}>
@@ -25,7 +28,7 @@ export function CampusDirectory({ campuses, onSelect }: CampusDirectoryProps) {
           <span className={styles.brandMark} aria-hidden="true">CF</span>
           <span><strong>Campus Flow</strong><small>전국 거점대 정류장 지도</small></span>
         </a>
-        <span className={styles.status}><i aria-hidden="true" /> 실시간 혼잡도 연동 준비 중</span>
+        <span className={styles.status} data-ready={readyCampusCount > 0 || undefined}><i aria-hidden="true" /> {readyCampusCount > 0 ? `${period} 공공데이터 기준` : '공공데이터 정류장 매핑 준비'}</span>
       </header>
 
       <section className={styles.hero} id="top">
@@ -36,6 +39,7 @@ export function CampusDirectory({ campuses, onSelect }: CampusDirectoryProps) {
           <div className={styles.heroFacts} aria-label="서비스 제공 범위">
             <span><strong>{campuses.length}</strong>개 대학</span>
             <span><strong>{stopCount}</strong>개 정류장</span>
+            <span><strong>{readyCampusCount}</strong>개 지역 통계 대상</span>
             <span><strong>OSM</strong> 실제 지도</span>
           </div>
         </div>
@@ -77,6 +81,9 @@ export function CampusDirectory({ campuses, onSelect }: CampusDirectoryProps) {
               '--mark-y': presentation.markOffset?.y ?? '0px',
               '--mark-scale': presentation.markOffset?.scale ?? 1,
             };
+            const hasUsage = campusHasUsage(campus);
+            const supported = campus.stops.some((stop) => stop.usage?.status !== 'unsupported-region');
+            const availability = hasUsage ? '통계 제공' : supported ? '매핑 필요' : '지도만 제공';
             return (
               <button key={campus.id} type="button" className={styles.campusCard} style={themeStyle} onClick={() => onSelect(campus.id)} aria-label={`${campus.name} 정류장 지도 보기`}>
                 <span className={styles.cardNumber}>{String(index + 1).padStart(2, '0')}</span>
@@ -95,7 +102,8 @@ export function CampusDirectory({ campuses, onSelect }: CampusDirectoryProps) {
                 <span className={styles.cardBody}>
                   <small>{presentation.location}</small>
                   <strong>{presentation.shortName}</strong>
-                  <span>{campus.stops.length}개 정류장 <i aria-hidden="true">→</i></span>
+                  <span className={styles.availability} data-ready={hasUsage || undefined} data-supported={supported || undefined}>{availability}</span>
+                  <span className={styles.cardMeta}>{campus.stops.length}개 정류장 <i aria-hidden="true">→</i></span>
                 </span>
               </button>
             );
@@ -105,7 +113,7 @@ export function CampusDirectory({ campuses, onSelect }: CampusDirectoryProps) {
 
       <footer className={styles.footer}>
         <div><strong>Campus Flow</strong><span>캠퍼스 이동을 더 쉽고 가볍게</span></div>
-        <p>지도·정류장 데이터 © OpenStreetMap contributors · 혼잡도는 기능 미리보기용 샘플입니다.</p>
+        <p>지도·정류장 © OpenStreetMap contributors · 이용 집중도는 국토교통부 AI 합성 교통카드 통계 기반입니다.</p>
       </footer>
     </main>
   );

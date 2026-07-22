@@ -9,11 +9,11 @@ export async function generateMetadata(): Promise<Metadata> {
   const metadataBase = new URL(`${protocol}://${host}`);
   return {
     metadataBase,
-    title: '우리 학교 가는 길, 정류장부터 한눈에 | Campus Flow',
-    description: '전국 10개 거점국립대의 실제 캠퍼스 경계와 주요 접근 정류장 30곳을 학교별로 둘러보세요.',
+    title: '정류장 이용 집중도 | Campus Flow',
+    description: '전국 10개 거점국립대의 실제 정류장 지도와 공공데이터 기반 시간대별 이용 집중도를 확인하세요.',
     openGraph: {
-      title: '우리 학교 가는 길, 정류장부터 한눈에 | Campus Flow',
-      description: '전국 10개 거점국립대의 실제 캠퍼스 경계와 주요 접근 정류장을 한곳에서 둘러보세요.',
+      title: '정류장 이용 집중도 | Campus Flow',
+      description: '월별 승·하차 통계로 캠퍼스 정류장의 시간대별 이용 흐름을 살펴보세요.',
       images: [new URL('/og.png', metadataBase)],
     },
     twitter: { card: 'summary_large_image', images: [new URL('/og.png', metadataBase)] },

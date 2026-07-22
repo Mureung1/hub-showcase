@@ -7,6 +7,7 @@
 .brand small { color: var(--gray-400); font-size: 10px; font-weight: 700; }
 .status { display: inline-flex; align-items: center; gap: 7px; padding: 9px 13px; border: 1px solid #e3e7ef; border-radius: 999px; background: rgba(255,255,255,.78); color: var(--gray-600); font-size: 11px; font-weight: 800; backdrop-filter: blur(12px); }
 .status i { width: 8px; height: 8px; border-radius: 50%; background: #ffae35; box-shadow: 0 0 0 4px rgba(255,174,53,.15); }
+.status[data-ready] i { background: #22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,.14); }
 .hero { position: relative; min-height: 390px; display: grid; grid-template-columns: minmax(0,1.25fr) minmax(320px,.75fr); align-items: center; gap: 52px; overflow: hidden; margin-top: 22px; padding: 56px 64px; border-radius: 36px; color: #172033; background: linear-gradient(135deg,#eef2ff 0%,#f8f5ff 54%,#fff5ed 100%); box-shadow: 0 30px 90px -58px rgba(38,51,98,.48); }
 .hero::before { content: ''; position: absolute; width: 220px; height: 220px; left: -80px; bottom: -110px; border-radius: 50%; background: #cfff69; opacity: .7; }
 .heroCopy { position: relative; z-index: 2; }
@@ -53,10 +54,13 @@
 .cardBody { display: flex; flex: 1; flex-direction: column; padding: 16px 17px 17px; }
 .cardBody small { color: var(--campus-color); font-size: 10px; font-weight: 850; }
 .cardBody strong { margin-top: 5px; font-size: 20px; letter-spacing: -.045em; }
-.cardBody > span { display: flex; align-items: center; justify-content: space-between; margin-top: auto; color: var(--gray-400); font-size: 11px; font-weight: 750; }
+.availability { align-self: flex-start; margin-top: 9px; padding: 4px 7px; border-radius: 7px; background: #f1f3f6; color: #7b8494; font-size: 9px; font-weight: 850; }
+.availability[data-supported] { background: #fff2d8; color: #9a5b00; }
+.availability[data-ready] { background: #e8f8ef; color: #197048; }
+.cardMeta { display: flex; align-items: center; justify-content: space-between; margin-top: auto; color: var(--gray-400); font-size: 11px; font-weight: 750; }
 .cardBody i { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; background: color-mix(in srgb,var(--campus-color) 10%,#fff); color: var(--campus-color); font-size: 14px; font-style: normal; }
 .footer { display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; margin-top: 44px; padding: 30px 5px 12px; border-top: 1px solid #e5e8ef; color: var(--gray-400); }
 .footer div { display: grid; gap: 4px; }.footer strong { color: var(--ink); font-size: 15px; }.footer span,.footer p { font-size: 10px; font-weight: 650; }.footer p { margin: 0; text-align: right; }
 @media (max-width: 1050px) { .hero { grid-template-columns: 1fr .65fr; padding: 48px; }.grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 @media (max-width: 760px) { .siteHeader { min-height: 62px; }.brand small { display: none; }.hero { min-height: 0; grid-template-columns: 1fr; margin-top: 12px; padding: 42px 30px 32px; border-radius: 28px; }.heroArt { display: none; }.hero p { font-size: 14px; }.directory { padding-top: 56px; }.sectionHeading { align-items: flex-start; flex-direction: column; gap: 8px; }.grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 11px; }.campusCard { min-height: 216px; border-radius: 20px; }.markPreview { height: 110px; padding: 18px; }.markPreview::before { width: 92px; height: 92px; }.markPreview img { max-height: 72px; }.markPreview .markCropRound { width: 76px; height: 76px; max-height: none; }.markPreview .markCropWide { width: 112px; height: 61px; max-height: none; }.markPreview .markCropCompact { width: 60px; height: 60px; max-height: none; }.footer { align-items: flex-start; flex-direction: column; }.footer p { text-align: left; } }
-@media (max-width: 430px) { .status { padding: 8px 10px; font-size: 9px; }.hero { padding: 36px 22px 26px; }.heroFacts { gap: 6px; }.heroFacts span { padding: 8px 9px; }.directory { padding-top: 46px; }.cardBody { padding: 13px; }.cardBody strong { font-size: 17px; }.cardBody > span { font-size: 10px; } }
+@media (max-width: 430px) { .status { padding: 8px 10px; font-size: 9px; }.hero { padding: 36px 22px 26px; }.heroFacts { gap: 6px; }.heroFacts span { padding: 8px 9px; }.directory { padding-top: 46px; }.cardBody { padding: 13px; }.cardBody strong { font-size: 17px; }.cardMeta { font-size: 10px; } }

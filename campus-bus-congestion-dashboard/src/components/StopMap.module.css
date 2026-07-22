@@ -8,9 +8,9 @@
 .pin { cursor: pointer; outline: none; }
 .pin:focus circle:nth-of-type(2) { stroke: var(--blue); stroke-width: 5px; }
 .selectionHalo { pointer-events: none; }
-.legend { display: flex; gap: 14px; margin-top: 12px; align-items: center; justify-content: center; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 14px; margin-top: 12px; align-items: center; justify-content: center; }
 .legendItem { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--gray-600); font-weight: 700; }
 .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-.sourceRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 11px; color: var(--gray-400); font-size: 10.5px; font-weight: 650; }
+.sourceRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; color: var(--gray-400); font-size: 9.5px; font-weight: 650; }
 .sourceRow a { color: var(--campus-color, var(--blue)); font-weight: 800; text-decoration: none; }
 .sourceRow a:hover { text-decoration: underline; }
