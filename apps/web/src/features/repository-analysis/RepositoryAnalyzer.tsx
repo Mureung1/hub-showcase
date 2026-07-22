@@ -2,21 +2,26 @@ import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
 import type { RepositoryAnalysisResult } from "@ptop/contracts";
 import { BrandSpinner } from "../../components/BrandSpinner";
+import { ReflectionDraftEditor } from "../reflection/ReflectionDraftEditor";
+import { createEmptyReflectionDraft, type ReflectionDraft } from "../reflection/reflection";
 import {
   ANALYSIS_STATUS,
   getRepositoryUrlError,
+  isAnalysisReady,
   type AnalysisStatus,
 } from "./repositoryAnalysis";
 import { requestRepositoryAnalysis } from "./repositoryAnalysisApi";
 
 type RepositoryAnalyzerProps = {
-  onAnalysisComplete: (result: RepositoryAnalysisResult) => void;
+  onAnalysisComplete: (result: RepositoryAnalysisResult, reflectionDraft: ReflectionDraft) => void;
 };
 
 export function RepositoryAnalyzer({ onAnalysisComplete }: RepositoryAnalyzerProps) {
   const [repoUrl, setRepoUrl] = useState("");
   const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>(ANALYSIS_STATUS.idle);
   const [analysisError, setAnalysisError] = useState("");
+  const [reflectionDraft, setReflectionDraft] = useState<ReflectionDraft | null>(null);
+  const [pendingAnalysisResult, setPendingAnalysisResult] = useState<RepositoryAnalysisResult | null>(null);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -29,11 +34,12 @@ export function RepositoryAnalyzer({ onAnalysisComplete }: RepositoryAnalyzerPro
 
     setAnalysisStatus(ANALYSIS_STATUS.loading);
     setAnalysisError("");
+    setPendingAnalysisResult(null);
 
     try {
       const result = await requestRepositoryAnalysis({ repositoryUrl: repoUrl.trim() });
       setAnalysisStatus(ANALYSIS_STATUS.success);
-      onAnalysisComplete(result);
+      setPendingAnalysisResult(result);
     } catch (requestError) {
       setAnalysisError(
         requestError instanceof Error
@@ -48,6 +54,19 @@ export function RepositoryAnalyzer({ onAnalysisComplete }: RepositoryAnalyzerPro
     setRepoUrl(event.target.value);
     setAnalysisStatus(ANALYSIS_STATUS.idle);
     setAnalysisError("");
+    setPendingAnalysisResult(null);
+    setReflectionDraft(null);
+  };
+
+  const handleViewResults = () => {
+    if (!pendingAnalysisResult || !isAnalysisReady(analysisStatus, true)) {
+      return;
+    }
+
+    onAnalysisComplete(
+      pendingAnalysisResult,
+      reflectionDraft ?? createEmptyReflectionDraft(),
+    );
   };
 
   return (
@@ -82,6 +101,30 @@ export function RepositoryAnalyzer({ onAnalysisComplete }: RepositoryAnalyzerPro
               <strong>Repository를 분석하고 있어요</strong>
               <span>참여자, 기여도, 최근 커밋 흐름을 확인하는 중입니다.</span>
             </div>
+          </div>
+        )}
+
+        {(analysisStatus === ANALYSIS_STATUS.loading ||
+          analysisStatus === ANALYSIS_STATUS.success ||
+          analysisStatus === ANALYSIS_STATUS.error) &&
+          repoUrl.trim() && (
+            <ReflectionDraftEditor
+              repositoryUrl={repoUrl}
+              onChange={setReflectionDraft}
+            />
+          )}
+
+        {isAnalysisReady(analysisStatus, pendingAnalysisResult !== null) && (
+          <div className="analysis-complete-panel" role="status" aria-live="polite">
+            <div className="analysis-status analysis-ready">
+              <div>
+                <strong>분석이 완료되었습니다</strong>
+                <span>회고를 마무리한 뒤 결과 확인하기를 눌러주세요.</span>
+              </div>
+            </div>
+            <button className="analysis-result-button" type="button" onClick={handleViewResults}>
+              결과 확인하기
+            </button>
           </div>
         )}
 

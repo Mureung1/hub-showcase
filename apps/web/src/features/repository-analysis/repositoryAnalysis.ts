@@ -9,6 +9,10 @@ export const ANALYSIS_STATUS = {
 
 export type AnalysisStatus = (typeof ANALYSIS_STATUS)[keyof typeof ANALYSIS_STATUS];
 
+export function isAnalysisReady(status: AnalysisStatus, hasResult: boolean): boolean {
+  return status === ANALYSIS_STATUS.success && hasResult;
+}
+
 export type ParsedRepositoryUrl = {
   owner: string;
   repo: string;

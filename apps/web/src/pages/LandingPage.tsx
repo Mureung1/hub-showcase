@@ -8,9 +8,10 @@ import { SectionHeading } from "../components/SectionHeading";
 import { WorkflowSection } from "../components/WorkflowSection";
 import { coreFeatures, futureFeatures } from "../data/landingContent";
 import { RepositoryAnalyzer } from "../features/repository-analysis/RepositoryAnalyzer";
+import type { ReflectionDraft } from "../features/reflection/reflection";
 
 type LandingPageProps = {
-  onAnalysisComplete: (result: RepositoryAnalysisResult) => void;
+  onAnalysisComplete: (result: RepositoryAnalysisResult, reflectionDraft: ReflectionDraft) => void;
 };
 
 export function LandingPage({ onAnalysisComplete }: LandingPageProps) {

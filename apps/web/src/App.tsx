@@ -3,21 +3,25 @@ import { useState } from "react";
 import { AnalysisPage } from "./pages/AnalysisPage";
 import { LandingPage } from "./pages/LandingPage";
 import { SiteHeader } from "./components/SiteHeader";
+import type { ReflectionDraft } from "./features/reflection/reflection";
 
 type AppView = "landing" | "analysis";
 
 export function App() {
   const [view, setView] = useState<AppView>("landing");
   const [analysisResult, setAnalysisResult] = useState<RepositoryAnalysisResult | null>(null);
+  const [reflectionDraft, setReflectionDraft] = useState<ReflectionDraft | null>(null);
 
   const showLanding = () => {
     setView("landing");
     setAnalysisResult(null);
+    setReflectionDraft(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const showAnalysis = (result: RepositoryAnalysisResult) => {
+  const showAnalysis = (result: RepositoryAnalysisResult, draft: ReflectionDraft) => {
     setAnalysisResult(result);
+    setReflectionDraft(draft);
     setView("analysis");
     window.scrollTo({ top: 0, behavior: "auto" });
   };
@@ -26,6 +30,7 @@ export function App() {
     if (view !== "landing") {
       setView("landing");
       setAnalysisResult(null);
+      setReflectionDraft(null);
     }
 
     window.requestAnimationFrame(() => {
@@ -39,8 +44,12 @@ export function App() {
       <main className="page ptop-container" id={view === "landing" ? "top" : "analysis"}>
         {view === "landing" ? (
           <LandingPage onAnalysisComplete={showAnalysis} />
-        ) : analysisResult ? (
-          <AnalysisPage result={analysisResult} onBackToLanding={showLanding} />
+        ) : analysisResult && reflectionDraft ? (
+          <AnalysisPage
+            result={analysisResult}
+            reflectionDraft={reflectionDraft}
+            onBackToLanding={showLanding}
+          />
         ) : null}
       </main>
     </>
