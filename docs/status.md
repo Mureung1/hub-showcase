@@ -255,6 +255,7 @@
 - **SPEC-DB-001 완료 (2026-07-22)** — T-015 AC1~AC6 실측 PASS로 완료 처리. Cowork가 Spec 상태 헤더·개정 기록·index.md 갱신. 인증·영속성 토대(스키마·RLS·2-클라이언트·Chat/Question 실저장·BYOK 암호화 경로)까지 실제 Supabase로 섬. **다음: SPEC-AI-001**(실제 3사 AI 파이프라인 — 서버 SourceAnswer 생성·정규화·저장 + web 실호출로 Mock 교체)
 - **SPEC-AI-001 뼈대 작성 (2026-07-22, Ready)** — AI Provider 실호출·SourceAnswer 생성 Spec. Step 1~7 확정: 비동기+SSE·명시적 생성, 타임아웃 45초·재시도 구분(일시적+스키마실패만), 전멸=고정문구+완료, 좌초=미룸(안정화), BYOK 하이브리드(플래그 기본 ON·사전 키 점검·키 없으면 시작 차단), 관측 메타 JSONB, StructuredContent 확장(summary·order·kind 자유), provider별 프롬프트, Context=web 전달(임시→서버화 후 DB 기반). 어젠다 분류·충돌 판단 기준은 SPEC-AI-002로 명시(사용자 제기). 키 입력 UI는 SPEC-SETTINGS-001 분리. 다음: 사용자 컨펌 → T-016 구현
 - **ADR-005 작성 + SPEC-AI-001 §2.3 반영 (2026-07-22)** — AI 파이프라인 모듈 경계(포트 & 어댑터). 5개 포트(ProviderClient·AnswerPromptTemplate·AnswerNormalizer·AgendaClassifier·ConflictComparator) 인터페이스 확정, **설정 선택 + 버전 스탬프**로 교체·재현. 구현은 provider/prompt/정규화=AI-001, 분류/비교=AI-002(빈 코드 없음). '프레임워크가 아니라 이음새' 원칙
+- **SPEC-AI-001 완료 (2026-07-22)** — T-016.1(계약·마이그레이션·Mock)·2a(provider 포트·어댑터·정규화·프롬프트·BYOK·저장, 3사 실호출)·2b(SSE 전환·GET 복원·최소모델 고정)·3(web 재배선·SSE 구독·복원·Context·전멸) 전부 구현·실측 PASS. **실제 Claude·OpenAI·Gemini가 SSE로 스트리밍되어 브라우저에서 3사 파이프라인이 관통**(최소 모델 claude-haiku-4-5·gpt-5-nano·gemini-3.5-flash-lite). Cowork가 상태 헤더·AC·index.md 갱신. 알려진 한계(후속): Agenda 비교는 여전히 브라우저 Mock(실제 Manager=SPEC-AI-002) / 새로고침 시 Agenda·FinalAnswer·DecisionNote 미복원(서버 비영속 0.4 — AI-003·EXPORT) / SSE heartbeat·탭 이탈 취소·좌초 복구 미구현(배포·안정화) / 스트림 '재시도 중' 라벨 미표시. **다음: 배포(T-017) 또는 SPEC-AI-002(Manager)**
 - **T-016.1 완료 (2026-07-22)** — SPEC-AI-001 계약·마이그레이션·Mock 반영(3단계 중 1단계, 외부 AI 호출 없음)
   - **공통 계약(§8.1)**: `packages/shared` `SectionSchema`에 `order`(정수·0 이상)·`kind`(자유 문자열, 부재 시 `null`), `StructuredContentSchema`에 `summary`(부재 시 `null`) 추가. 기존 `sectionId`/`title`/`content`와 `SourceAnswerSchema` superRefine 3종은 무변경
   - **마이그레이션(§8.3)**: `20260722120000_source_answers_response_meta.sql` — `source_answers.response_meta jsonb NOT NULL DEFAULT '{}'`. `model`·`prompt_version`·`started_at`·`completed_at`은 기존 칸 유지(추가 컬럼 없음). RLS(행 단위)·GRANT(테이블 단위 + default privileges)는 컬럼 추가 영향 없어 변경 불필요 — psql로 확인만
@@ -300,5 +301,14 @@
   - **테스트 데이터 정리**: `83a6263d…`(2b 실측, 미완료 Question 1) · `bbf9ecc9…`(T-016.1 회귀) 삭제 — Chat 2 + Question 2 + SourceAnswer 3. 이번 실측으로 생긴 3건(`9fbcef07…`·`5c2b7eba…`·`9ab9a345…`)은 지시 범위 밖이라 유지
   - **남은 문제**: 새로고침 후 Agenda·FinalAnswer·DecisionNote는 사라진다(서버 저장 대상이 아님 — 0.4 알려진 한계). 스트리밍 중에는 재시도 라벨("재시도 중…")이 뜨지 않는다(이벤트에 retryCount가 없음). SSE heartbeat·탭 이탈 시 취소·좌초 복구는 범위 밖
   - **다음**: SPEC-AI-002(Manager 실제 비교) — 어젠다 분류·충돌 판단 기준 확정
+- **T-017 완료 (2026-07-22)** — 데모 배포 준비(하드닝). 새 기능 없음. 실제 배포·시크릿 입력은 운영자(Brett)
+  - **SSE heartbeat**: 스트림을 연 뒤 15초마다 주석 프레임(`:hb`)을 흘려 배포 환경의 중간 프록시가 유휴 연결을 끊지 않게 함. `finally`에서 `clearInterval` → `end()` 순으로 정리(타이머 누수·EPIPE 방지). 주석 프레임은 `data:`로 시작하지 않아 클라이언트 파서가 무시 → **이벤트 계약 무영향**
+  - **CORS 제한**: `app.use(cors())`(전체 허용) → `cors({ origin: CLIENT_ORIGIN })`. `CLIENT_ORIGIN`은 기존 env(기본 `http://localhost:5173`)라 로컬 dev는 무설정으로 동작. 쿠키를 안 쓰므로 `credentials` 미사용
+  - **`docs/demodeploy.md` 신설**: Render(api) Root=저장소 루트·`npm ci && npm run build`·`node apps/api/dist/server.js`·env 필수 8종/선택 7종 표, Netlify(web) **base=저장소 루트**·`npm run build`·publish `apps/web/dist`, Supabase Auth URL, 교차 의존 배포 순서, cold start 안내, 문제 해결 표. 실제 키는 미기재
+  - **문서에 박은 주의 2건**: ① Render Root를 `apps/api`로 잡으면 `/prompts`가 배포에서 빠져 생성이 전부 실패 ② Netlify base를 `apps/web`으로 잡으면 workspaces prepare가 루트에서 안 돌아 shared dist가 없어 web 빌드가 깨질 수 있음
+  - **검증**: 루트 typecheck·lint·build 통과. `node apps/api/dist/server.js` 기동·health 200. `curl -N` raw 스트림에서 **heartbeat 2회(16.5s·31.5s, 15초 간격)** 관측 + 같은 스트림을 파서에 통과시켜 이벤트 10건·done 정상 파싱 확인. CORS 허용 출처엔 `Access-Control-Allow-Origin: http://localhost:5173`, 다른 출처엔 불일치 값이라 브라우저가 차단(정적 origin 방식). 브라우저 로컬 dev 회귀 — 3사 succeeded. **클린 체크아웃 → 루트 `npm ci` → `npm run build`** 로 `apps/web/dist`·`apps/api/dist`·`/prompts` 모두 정상 생성 확인
+  - **테스트 데이터 정리**: `9fbcef07…`·`5c2b7eba…`·`9ab9a345…` 삭제 — Chat 3 + Question 3 + SourceAnswer 9
+  - **남은 문제**: 이번 실측으로 Chat 2건(`be976957…` heartbeat check, `4ef7b654…` deploy hardening regression)이 새로 남음 — **데모 전 삭제 필요**. `render.yaml`은 만들지 않음(서비스 1개·env 전부 시크릿이라 과설계)
+  - **다음**: SPEC-AI-002(Manager 실제 비교)
 - 이후: SPEC-AI-002~003(Manager·FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

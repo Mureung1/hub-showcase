@@ -29,6 +29,11 @@ const paramsSchema = z.object({
   questionId: z.string().uuid(),
 });
 
+/** SSE 주석 프레임 — 데이터가 아니라 연결 유지용 신호다(파서가 무시한다). */
+const HEARTBEAT_FRAME = ":hb\n\n";
+/** 프록시 유휴 타임아웃(통상 30~60초)보다 넉넉히 짧게 둔다. */
+const HEARTBEAT_INTERVAL_MS = 15_000;
+
 /** 9장: 이전 Context는 web이 실어 보낸다(임시). 프롬프트 재료로만 쓴다. */
 const bodySchema = z.object({
   context: z.string().max(20_000).nullish(),
@@ -109,6 +114,14 @@ export async function postSourceAnswers(
     });
   }
 
+  // 유휴 연결 차단 방지(T-017): Provider 호출은 45초×재시도라 이벤트 없이 오래 조용할 수 있고,
+  // 배포 환경의 중간 프록시가 그 사이 연결을 끊을 수 있다. SSE 주석 프레임을 주기적으로 흘린다.
+  // 주석 프레임은 `data:`로 시작하지 않아 클라이언트 파서가 무시하므로 이벤트 계약에 영향이 없다.
+  const heartbeat = setInterval(() => {
+    if (response.writableEnded) return;
+    response.write(HEARTBEAT_FRAME);
+  }, HEARTBEAT_INTERVAL_MS);
+
   try {
     const sourceAnswers = await service.runGeneration({
       ...prepared,
@@ -153,6 +166,8 @@ export async function postSourceAnswers(
       );
     }
   } finally {
+    // 타이머를 먼저 정리해야 응답 종료 후 write가 남지 않는다(누수·EPIPE 방지).
+    clearInterval(heartbeat);
     response.end();
   }
 }
