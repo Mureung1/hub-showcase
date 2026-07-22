@@ -11,6 +11,7 @@ const CHAINABLE = [
   'update',
   'delete',
   'eq',
+  'gte',
   'order',
   'limit',
   'range',
@@ -20,6 +21,9 @@ const CHAINABLE = [
 export function createSupabaseMock() {
   const query = {
     result: { data: [], error: null },
+    // 한 요청이 여러 번 질의할 때(예: 한도 조회 → 문서 조회) 순서대로 꺼내 쓴다.
+    // 비면 result 로 돌아간다.
+    results: [],
     calls: [],
   }
 
@@ -30,7 +34,10 @@ export function createSupabaseMock() {
     }
   }
 
-  query.then = (resolve, reject) => Promise.resolve(query.result).then(resolve, reject)
+  query.then = (resolve, reject) => {
+    const next = query.results.length > 0 ? query.results.shift() : query.result
+    return Promise.resolve(next).then(resolve, reject)
+  }
 
   return {
     from: (table) => {

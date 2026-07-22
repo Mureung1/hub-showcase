@@ -85,3 +85,44 @@ create table if not exists public.ai_feedback_logs (
 
 create index if not exists ai_feedback_logs_user_called_idx
   on public.ai_feedback_logs (user_id, called_at desc);
+
+-- AI가 미리 작성해둔 예시 역기획서 표시용. 생성 스크립트만 true 로 넣는다(API 쓰기 경로는 건드리지 않음).
+alter table public.documents
+  add column if not exists is_example boolean not null default false;
+
+create index if not exists documents_is_example_idx
+  on public.documents (is_example);
+
+-- 좋아요/북마크 — 유저당 문서당 1회(중복 방지). documents.likes/bookmarks 는 표시용 캐시 카운트.
+create table if not exists public.reactions (
+  id          uuid primary key default gen_random_uuid(),
+  document_id uuid not null references public.documents(id) on delete cascade,
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  type        text not null check (type in ('like', 'bookmark')),
+  created_at  timestamptz not null default now(),
+  unique (document_id, user_id, type)
+);
+
+create index if not exists reactions_document_type_idx
+  on public.reactions (document_id, type);
+
+-- 문서 분류(둘러보기 필터용 고정 어휘). systemTag 는 "스타포스 강화"처럼 구체적인 이름이라
+-- 문서 수만큼 값이 늘어난다 → 필터는 category 라는 통제 어휘로 건다.
+-- 값 목록은 frontend/src/data/gameSystems.js 의 categories.
+-- (장르는 게임의 성질이라 game_tag 로부터 계산한다 — 컬럼을 두지 않는다.)
+alter table public.documents
+  add column if not exists category text;
+
+create index if not exists documents_category_idx
+  on public.documents (category);
+
+-- ─────────────────────────────────────────────────────────────
+-- RLS — anon 키는 프론트 번들에 그대로 실려 공개된다.
+-- 모든 데이터 접근은 backend(service_role, RLS 우회)를 통해서만 이뤄지므로,
+-- 정책을 하나도 두지 않고 RLS만 켜서 anon/authenticated 의 직접 접근을 전부 막는다.
+-- (켜지 않으면 anon 키만으로 PostgREST에서 테이블 전체를 읽고 쓸 수 있다.)
+-- ─────────────────────────────────────────────────────────────
+alter table public.documents        enable row level security;
+alter table public.profiles         enable row level security;
+alter table public.ai_feedback_logs enable row level security;
+alter table public.reactions        enable row level security;

@@ -26,7 +26,7 @@ respec/ (폴더명은 respec, 저장소는 geulcho/hub)
 ## 아키텍처 규칙
 
 - **LLM 키는 backend에서만 다룬다.** `ANTHROPIC_API_KEY`는 `backend/.env`에만 두고, frontend 번들에는 절대 노출하지 않는다. frontend는 항상 backend의 REST 엔드포인트를 통해서만 AI 결과를 받는다.
-- **LLM 피드백(기획서 §3.4, 3주차 개정)**: **회원 전용**. 발행(제출) 직후 자동 호출로 섹션별 코멘트 + 전체 총평을 생성한다(작성 중 미리보기 버튼도 회원에 한해 유지). 비회원은 AI 없이 사람 코멘트만. 유저당 일일 호출 제한(`ai_feedback_logs`, 기본 5회). LLM 호출은 backend에서만(`backend/src/lib/aiFeedback.js`, Google Gemini, 기본 모델 `gemini-2.5-flash`, 무료 티어). 응답은 구조적 출력(JSON schema)으로 **섹션별 코멘트 + overall**을 강제하고, frontend는 이를 사람 코멘트와 동일한 UI(`is_ai` 라벨만 다름)로 렌더링한다(전체 총평은 `section_id='__overall__'`인 특수 코멘트로 상세 상단 "AI 총평" 패널에 노출). 피드백 관점은 4가지로 한정: 구조 완결성 / 구체성 / 예외 처리 질문 생성 / 역기획 관점(요약 vs 의도 분석). 게임 사실관계 평가는 시키지 않는다.
+- **LLM 피드백(기획서 §3.4, 3주차 개정)**: **회원 전용**. 발행(제출) 직후 자동 호출로 섹션별 코멘트 + 전체 총평을 생성한다(작성 중 미리보기 버튼도 회원에 한해 유지). 비회원은 AI 없이 사람 코멘트만. 유저당 일일 호출 제한(`ai_feedback_logs`, `AI_DAILY_LIMIT = 10`. 발행 피드백과 에디터 미리보기를 합산해 센다 — 비용이 드는 건 저장이 아니라 호출이므로). LLM 호출은 backend에서만(`backend/src/lib/aiFeedback.js`, Google Gemini, 기본 모델 `gemini-2.5-flash`, 무료 티어). 응답은 구조적 출력(JSON schema)으로 **섹션별 코멘트 + overall**을 강제하고, frontend는 이를 사람 코멘트와 동일한 UI(`is_ai` 라벨만 다름)로 렌더링한다(전체 총평은 `section_id='__overall__'`인 특수 코멘트로 상세 상단 "AI 총평" 패널에 노출). 피드백 관점은 4가지로 한정: 구조 완결성 / 구체성 / 예외 처리 질문 생성 / 역기획 관점(요약 vs 의도 분석). 게임 사실관계 평가는 시키지 않는다.
   - 참고: 기획서 §3.4 원문은 "온디맨드 호출만"이었으나, 사용자 요청으로 "제출 직후 자동(회원 전용)"으로 변경했다. 비용 방어는 회원 전용 + 일일 제한으로 한다.
 - **목데이터 스키마는 기획서 §5의 DB 초안(documents/sections/comments)과 맞춘다.** 백엔드 연동이 "데이터 출처 교체"로 끝나게 하기 위함이다. `frontend/src/data/`가 그 위치다.
 

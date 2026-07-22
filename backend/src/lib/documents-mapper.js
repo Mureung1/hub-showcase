@@ -13,17 +13,8 @@ function mapSectionToApi(row) {
   return section
 }
 
-function mapCommentToDb(c) {
-  return {
-    id: c.id,
-    section_id: c.sectionId,
-    author: c.author ?? null,
-    is_ai: c.isAi ?? false,
-    content: c.content,
-    created_at: c.createdAt ?? null,
-  }
-}
-
+// 코멘트는 클라이언트가 통째로 쓰지 못한다(buildDbComment로 서버가 한 건씩 만든다).
+// 그래서 comment의 → DB 방향 매퍼는 두지 않는다.
 function mapCommentToApi(row) {
   return {
     id: row.id,
@@ -37,6 +28,9 @@ function mapCommentToApi(row) {
 
 // 쓰기용: 클라이언트가 보낸 값 중 신뢰할 필드만 골라 snake_case 로우로.
 // publishedAt·created_at·updated_at·author_id 는 클라이언트를 신뢰하지 않고 서버/트리거가 채운다.
+// likes/bookmarks/comments 도 여기서 받지 않는다 — 카운트는 syncReactionCounts가,
+// 코멘트는 comments/ai-feedback 엔드포인트가 서버에서 관리한다. 받아주면 문서를 수정해
+// 재발행할 때 클라이언트가 보낸 빈 배열·0이 기존 코멘트와 좋아요를 덮어써 지워버린다.
 export function toDbRow(apiDoc) {
   const row = {}
   if (apiDoc.author !== undefined) row.author_name = apiDoc.author
@@ -47,12 +41,10 @@ export function toDbRow(apiDoc) {
   if (apiDoc.gameTag !== undefined) row.game_tag = apiDoc.gameTag
   if (apiDoc.jobTag !== undefined) row.job_tag = apiDoc.jobTag
   if (apiDoc.systemTag !== undefined) row.system_tag = apiDoc.systemTag
+  if (apiDoc.category !== undefined) row.category = apiDoc.category
   if (apiDoc.challengeId !== undefined) row.challenge_id = apiDoc.challengeId
   if (apiDoc.feedbackWanted !== undefined) row.feedback_wanted = apiDoc.feedbackWanted
-  if (apiDoc.likes !== undefined) row.likes = apiDoc.likes
-  if (apiDoc.bookmarks !== undefined) row.bookmarks = apiDoc.bookmarks
   if (apiDoc.sections !== undefined) row.sections = apiDoc.sections.map(mapSectionToDb)
-  if (apiDoc.comments !== undefined) row.comments = apiDoc.comments.map(mapCommentToDb)
   return row
 }
 
@@ -69,6 +61,8 @@ export function toApiDoc(row) {
     author: row.author_name ?? null,
     // 비회원 문서인지 + 수정 비밀번호가 걸려 있는지 힌트(해시 자체는 절대 노출하지 않는다).
     hasEditPassword: Boolean(row.edit_password_hash),
+    // AI가 미리 작성한 예시 문서인지(프론트 배지·필터용).
+    isExample: Boolean(row.is_example),
     type: row.type,
     templateId: row.template_id,
     status: row.status,
@@ -76,6 +70,8 @@ export function toApiDoc(row) {
     gameTag: row.game_tag,
     jobTag: row.job_tag,
     systemTag: row.system_tag,
+    // 둘러보기 필터용 고정 분류(고르지 않았으면 null — "전체"에서만 보인다).
+    category: row.category ?? null,
     challengeId: row.challenge_id ?? null,
     feedbackWanted: row.feedback_wanted,
     likes: row.likes,
