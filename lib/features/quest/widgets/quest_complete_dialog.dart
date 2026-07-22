@@ -26,12 +26,23 @@ class QuestCompleteDialog extends StatelessWidget {
     required this.questTitle,
     required this.reward,
     this.verified = false,
+    this.cutCoin = 0,
   });
 
   final String questTitle;
 
-  /// 이번 완료로 **실제 지급된** 보상. 인증 보너스가 있으면 **합산된 값**이다.
+  /// 이번 완료로 **실제 지급된** 보상. 인증 보너스가 있으면 **합산된 값**이고,
+  /// 하루 코인 상한에 걸렸으면 **절삭된 뒤의 값**이다.
+  ///
+  /// 지급한 쪽(`completeQuest`)이 돌려준 값을 그대로 표시한다 — 화면이 난이도로
+  /// 다시 계산하면 절삭이 일어난 순간 표시와 실지급이 어긋난다.
   final Reward reward;
+
+  /// 하루 코인 상한 때문에 **깎인 코인**. 0이면 절삭이 없었다.
+  ///
+  /// 깎였다는 사실을 밝히지 않으면 사용자는 "어려움 퀘스트인데 왜 2코인이지?"를
+  /// 알 수 없고, 보상 규칙 자체를 못 믿게 된다.
+  final int cutCoin;
 
   /// 인증(메모 또는 사진)이 성립해 [kVerificationBonus]가 포함됐는가.
   ///
@@ -121,6 +132,33 @@ class QuestCompleteDialog extends StatelessWidget {
                 ],
               ),
             ],
+            // 하루 상한으로 코인이 깎였다면 그 사실과 이유를 알린다.
+            // XP는 깎이지 않았다는 점도 함께 말해 준다 — "오늘은 더 해도 소용없다"는
+            // 오해를 막는 것이 상한 안내의 핵심이다.
+            if (cutCoin > 0) ...[
+              AppSpacing.gapSm,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Symbols.info,
+                    size: 16,
+                    fill: 1,
+                    color: scheme.secondary,
+                  ),
+                  AppSpacing.gapWXs,
+                  Flexible(
+                    child: Text(
+                      '오늘 코인 상한($kDailyCoinCap)에 걸려 '
+                      '$cutCoin코인은 지급되지 않았어요. XP는 그대로예요.',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: scheme.secondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             AppSpacing.gapLg,
             SizedBox(
               width: double.infinity,
@@ -145,6 +183,7 @@ Future<void> showQuestCompleteDialog(
   required String questTitle,
   required Reward reward,
   bool verified = false,
+  int cutCoin = 0,
 }) {
   return showDialog<void>(
     context: context,
@@ -152,6 +191,7 @@ Future<void> showQuestCompleteDialog(
       questTitle: questTitle,
       reward: reward,
       verified: verified,
+      cutCoin: cutCoin,
     ),
   );
 }

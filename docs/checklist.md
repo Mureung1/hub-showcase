@@ -312,8 +312,8 @@
 - [x] `계산(easy)=코인3·XP5`, `계산(normal)=코인5·XP10`, `계산(hard)=코인10·XP20` 단위 테스트가 통과한다.
 - [x] 알 수 없는 난이도 입력 시 안전한 기본값 또는 예외 처리가 된다.
       → `rewardFor`(`lib/core/constants/reward_rules.dart`). 테스트: `test/core/reward_rules_test.dart`, `test/models/quest_test.dart`. `Difficulty`가 enum이라 알 수 없는 값 자체가 타입 수준에서 불가능하다.
-- [ ] 보너스·상한·점감 적용 순서가 명확히 정의되어 있다.
-      → **보류**: 인증 보너스(`kVerificationBonus`)만 구현됐고 **하루 코인 상한·반복 보상 점감이 미구현**이라 셋의 적용 순서를 정의할 대상이 없다. 상한·점감(chunk C) 구현 시 함께 판정한다.
+- [x] 보너스·상한·점감 적용 순서가 명확히 정의되어 있다.
+      → **점감이 N/A로 빠지면서 순서가 확정됐다.** 정본 순서: ① 난이도별 기본 보상(`kBaseRewards`) → ② + 인증 보너스(`kVerificationBonus`, 메모 또는 사진 시 1회) → ③ 위 합산 **코인**에 하루 상한 절삭 적용(`applyDailyCoinCap`, **XP는 절삭하지 않는다**), 이 결과가 `dailyCoinEarned` 카운터에 누적 → ④ 스트릭 보너스(`kStreakBonus`)는 ③의 **밖에서** 별도 지급(상한 미적용·카운터 미반영). 상수·순수 함수 정의는 `lib/core/constants/reward_rules.dart` 한 곳이고, 같은 순서가 `docs/firestore-schema.md`에도 기록되어 있다.
 
 ### Firestore 트랜잭션 기반 코인·XP 지급
 - [x] 코인·XP 지급이 **트랜잭션으로 원자적**으로 처리되어 부분 반영이 없다.
@@ -362,22 +362,28 @@
       → `quest_list_screen.dart`가 `done && reward == null`(이미 보상받은 퀘스트 재완료)일 때 스낵바 '이미 완료한 퀘스트예요'를 노출한다. 완료 해제(done=false)에는 스낵바가 뜨지 않아 오탐을 막는다. 재지급이 없을 때 `completeQuest`가 `null`을 반환하고 축하 연출은 생략된다. 테스트: `test/features/quest_list_screen_test.dart`(재완료→스낵바+연출없음, 완료해제→스낵바 안 뜸).
 
 ### 출석/스트릭 체크 및 연속 출석 보너스(7일) 지급
-- [ ] 일자별 출석이 기록되고 연속 일수가 정확히 계산된다.
-- [ ] 7일 연속 달성 시 보너스가 1회만 지급된다.
-- [ ] 하루 걸러 접속 시 스트릭이 올바르게 초기화된다.
-      → **미착수**: chunk C 예정.
+- [x] 일자별 출석이 기록되고 연속 일수가 정확히 계산된다.
+      → `recordAttendance`(`lib/repositories/user_repository.dart` + Firestore/InMemory 2구현)와 순수 함수 `applyAttendance`(`lib/core/constants/reward_rules.dart`). 상한과 **같은 KST 날짜 키**를 공유한다. `ensureUser`에 합치지 않고 별도 트랜잭션으로 둔 이유는 `ensureUser`의 계약이 "없으면 만든다"는 멱등인데 출석은 날짜마다 문서를 바꾸는 쓰기라 합치면 멱등성이 깨지기 때문이다. 호출도 `sessionProvider`가 아니라 별도 `attendanceProvider`(`lib/providers/providers.dart`)다 — 출석 쓰기 실패가 세션 실패가 되면 홈·퀘스트가 통째로 오류 화면이 된다. 테스트: `test/repositories/attendance_streak_test.dart`, `test/core/reward_economy_test.dart`.
+- [x] 7일 연속 달성 시 보너스가 1회만 지급된다.
+      → `kStreakBonus`(코인 15 · XP 25)를 1회만. **이중 가드** — 날짜 키가 같으면 write 자체가 없고(`isNewDay`), 추가로 `lastBonusKey != todayKey`를 본다. 같은 날 재접속·앱 재실행에도 중복되지 않는다. **이 보너스는 하루 코인 상한과 무관하다**: 카운터에 더하지도, 상한에 걸려 깎이지도 않는다(7일을 버틴 보상이 "오늘 이미 70 채웠다"는 이유로 사라지면 스트릭 자체가 무의미해진다). 테스트: `test/repositories/attendance_streak_test.dart`(`dailyCoinEarned`=70인 상태에서 15코인 전액 지급 · 7일 루프에서 보너스 정확히 1회), `test/features/streak_ui_test.dart`. 뮤테이션 검증 — 보너스를 상한에 태우면 테스트가 실패한다.
+- [x] 하루 걸러 접속 시 스트릭이 올바르게 초기화된다.
+      → 연속이 끊기면 0이 아니라 **1**로 초기화된다(오늘은 출석했으니 오늘이 1일째다). 테스트: `test/core/reward_economy_test.dart`, `test/repositories/attendance_streak_test.dart`.
 
 ### 하루 코인 획득 상한 처리
-- [ ] 하루 누적 코인이 상한에 도달하면 초과분이 지급되지 않는다.
-- [ ] 상한 도달 상태가 사용자에게 안내된다.
-- [ ] 날짜가 바뀌면 상한 카운터가 초기화된다(시간대 기준 명확).
-      → **미착수**: chunk C 예정. 「난이도별 보상 계산 로직」의 적용 순서 항목이 이것과 아래 점감에 물려 있다.
+- [x] 하루 누적 코인이 상한에 도달하면 초과분이 지급되지 않는다.
+      → 순수 함수 `applyDailyCoinCap`(`lib/core/constants/reward_rules.dart`, `kDailyCoinCap = 70`)이 `paidCoin = min(wanted, room)`으로 **부분 지급**한다 — 68코인이 쌓인 상태에서 어려움(10코인)을 완료하면 2코인이 지급된다(0이 아니다). **코인만 절삭하고 XP는 온전히 지급한다**: XP까지 막으면 성장이 멈춰 "오늘은 더 해도 소용없다"가 되기 때문이다. 테스트: `test/core/reward_economy_test.dart`, `test/repositories/daily_coin_cap_test.dart`(경계 2코인 지급 · XP 20 정상 지급 + 레벨 상승).
+- [x] 상한 도달 상태가 사용자에게 안내된다.
+      → **이중 안내**. 목록 상단 `_DailyCapNotice`(`lib/features/quest/quest_list_screen.dart`)와 완료 다이얼로그의 절삭 사유 표시(`quest_complete_dialog.dart`). 다이얼로그는 저장소가 반환한 **실지급액**을 그대로 보여주므로 절삭이 일어나도 표시와 실지급이 어긋나지 않는다. 테스트: `test/features/daily_coin_cap_ui_test.dart`(도달 시 노출 · 69코인이면 미노출 · 어제 70이면 미노출).
+- [x] 날짜가 바뀌면 상한 카운터가 초기화된다(시간대 기준 명확).
+      → **KST 자정 기준.** `lib/core/utils/kst_date.dart`가 `toLocal()`이 아니라 고정 `+9h` 오프셋(`kKstOffset`)을 쓴다 — `toLocal()`은 기기·CI 타임존에 따라 경계가 흔들린다. `dailyCoinEarned`는 `FieldValue.increment`가 아니라 **계산값으로 set**한다(increment로는 날짜 리셋을 표현할 수 없다). 자정 배치가 없으므로 만료 판정은 읽는 쪽이 날짜 키 비교로 한다(`app_user.dart`의 `dailyCoinDate == kstDateKey(now)`). 테스트: `test/core/kst_date_test.dart`, `test/repositories/daily_coin_cap_test.dart` — **UTC와 결과가 갈리는 시각을 명시적으로 찍고 입력이 전부 `DateTime.utc(...)`라 실행 머신 타임존과 무관하다.** 뮤테이션 검증 — 오프셋을 0(UTC)으로 되돌리면 5개 테스트가 실패한다.
+      → **검증 결과(2026-07-22)**: `flutter analyze` No issues found · `flutter test` **455건 전부 통과** · verification-agent **12/12 PASS** · `test/theme/color_role_test.dart` 무수정 통과.
+      → **알려진 제약(정직하게)**: ① **Firestore 트랜잭션 경로는 자동 테스트 N/A**다(`fake_cloud_firestore` 미도입). 판정 로직이 InMemory와 같은 순수 함수 하나(`applyDailyCoinCap`/`applyAttendance`)로 수렴하도록 구조를 맞췄고 read-before-write 규칙을 지켰지만, 실제 확인은 에뮬레이터 몫으로 남는다. ② `_DailyCapNotice`는 앱을 켜 둔 채 자정을 넘기면 rebuild 전까지 안내가 남는다(의도된 선택). 실제 지급은 저장소가 매번 날짜를 다시 계산하므로 **안내만 낡을 뿐 코인은 정상 지급**된다.
 
 ### 동일·유사 퀘스트 반복 보상 점감(diminishing) 처리
 - [ ] 동일/유사 퀘스트 반복 완료 시 보상이 정의된 규칙대로 점감한다.
 - [ ] 점감 후에도 음수 보상이 발생하지 않는다(하한 0 또는 최소값).
 - [ ] 점감 계산에 대한 단위 테스트가 통과한다.
-      → **미착수**: chunk C 예정.
+      → **N/A (사용자 결정, 2026-07-22)**: 점감을 구현하지 않기로 했다. 반복 완료로 인한 보상 남용은 **하루 코인 상한(70) 하나로 막는다.** 같은 퀘스트의 재완료는 이미 `rewardedAt` 가드가 영구 차단하므로(위 「중복 완료 방지 처리」), 점감이 실제로 대상으로 삼는 것은 "비슷한 퀘스트를 새로 만들어 반복 등록하는" 경우뿐이다. 이를 제목 유사도로 판정하면 오탐 시 사용자가 이유를 모른 채 보상을 잃는다. 데모 단계에서는 상한만으로 충분하다고 판단했다. **코드에 점감 구현은 존재하지 않는다**(검증에서 grep으로 확인 — `lib/`에서 '점감'은 `reward_rules.dart`의 "구현하지 않는다" 주석 1건뿐). 위 3항목은 구현 대상이 아니므로 체크하지 않고 미체크로 남긴다.
 
 ---
 

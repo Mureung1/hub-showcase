@@ -34,6 +34,34 @@ items/{itemId}                              # 공개 아이템 카탈로그 (4�
 | `rebirth` | int | 0 | 환생 횟수 |
 | `equipped` | map<string,string> | `{}` | 슬롯 → 아이템 ID (예: `{"background": "arcane_library"}`) |
 | `createdAt` | timestamp | 서버 시각 | 최초 접속 시각 |
+| `dailyCoinDate` | string? | null | 하루 코인 카운터가 가리키는 **KST 날짜 키**(`yyyy-MM-dd`) |
+| `dailyCoinEarned` | int | 0 | 그 날짜에 **퀘스트로** 받은 코인 누적. 상한 판정의 근거 |
+| `attendanceDate` | string? | null | 마지막 출석일 (KST 날짜 키) |
+| `streak` | int | 0 | 연속 출석 일수. 끊기면 0이 아니라 **1**부터 다시 센다 |
+| `streakBonusDate` | string? | null | 마지막으로 연속 출석 보너스를 지급한 날. 하루 1회 가드 |
+
+#### 보상 경제 — 하루 코인 상한과 출석 스트릭 (3주차)
+
+**적용 순서가 정본이다.**
+
+1. 난이도별 기본 보상 (`kBaseRewards`)
+2. \+ 인증 보너스 (`kVerificationBonus`, 메모 **또는** 사진이면 1회) — 여기까지가 `questReward()`
+3. 위 합산 **코인**에 하루 상한(`kDailyCoinCap` = 70) 절삭 (`applyDailyCoinCap()`) → 이 결과가 `dailyCoinEarned`에 누적
+4. 연속 출석 보너스(`streakBonusFor(streak)`)는 **3의 밖에서** 별도 지급 — 상한 미적용, 카운터 미반영
+   - 주차별 점증: 7일 15/25 · 14일 30/50 · 21일 45/75 · 28일 이후 60/100 (`kMaxStreakBonusWeeks` = 4에서 상한)
+   - 상한을 두는 이유: 상한 **밖에서** 나가는 보너스가 무한히 자라면 하루 코인 상한이 무력해진다
+
+- **부분 지급한다.** 68코인 쌓인 상태에서 어려움(10코인)을 완료하면 **2코인**을 준다(0이 아니다).
+- **코인만 절삭한다. XP는 상한이 없다.** XP까지 막으면 성장이 멈춰 "오늘은 더 해도 소용없다"가 된다.
+- **반복 보상 점감은 구현하지 않는다.** 반복 문제는 상한 하나로 막는다(사용자 결정, 2026-07-22).
+
+**왜 날짜 키가 문자열이고, 왜 KST인가**: Firestore는 시각을 UTC로 저장한다. UTC 자정을 하루 경계로 쓰면 한국 사용자에게 하루가 **오전 9시에 리셋**된다. 그래서 `lib/core/utils/kst_date.dart`의 `kstDateKey()`가 고정 오프셋(+9)으로 `yyyy-MM-dd` 문자열을 만들고, 이 값을 그대로 저장한다. 문자열이라 콘솔에서 읽히고, 읽는 쪽 타임존 해석이 끼어들 여지가 없다.
+
+**자정에 카운터를 미는 배치는 없다**(서버가 없다). 대신 **읽는 쪽**이 `dailyCoinDate`를 오늘과 비교해 만료를 판정한다(`AppUser.coinEarnedToday()`). `dailyCoinEarned`가 `FieldValue.increment`가 아니라 **계산값 set**인 것도 같은 이유다 — increment로는 날짜가 바뀔 때의 리셋을 표현할 수 없다.
+
+**출석은 `recordAttendance()`가 별도 트랜잭션으로 기록한다.** 기준은 "퀘스트를 완료했다"가 아니라 **"앱을 열었다"**이므로 세션 준비 직후(`attendanceProvider`)에 1회 호출된다. `ensureUser()`에 합치지 않은 이유는 그 메서드의 계약이 **멱등한 생성**이기 때문이다 — 날짜마다 문서를 바꾸는 쓰기를 합치면 그 멱등성이 깨진다. 같은 날 다시 불리면 날짜 키가 같아 아무것도 쓰지 않으므로 앱 재실행으로 보너스가 두 번 나가지 않는다.
+
+계산(날짜 키·상한 절삭·스트릭 판정)은 전부 **순수 함수**(`kst_date.dart`, `reward_rules.dart`)에 있고 두 저장소 구현이 그것만 호출한다. `applyXpGain`·`normalizeMemo`와 같은 이유 — 각자 계산하면 갈라지고, 그 차이는 InMemory만 보는 테스트에서 안 잡힌다.
 
 **문서가 없어도 앱은 정상 동작한다.** `UserRepository.watchUser`가 문서 부재 시 `AppUser.initial(uid)`(Lv.1 / XP 0 / 코인 0)을 흘리기 때문에, 신규 사용자도 특수 분기 없이 홈 화면이 렌더된다.
 문서 자체는 `ensureUser(uid)`가 최초 접속 시 `set(merge: true)`로 만든다(멱등 — 여러 번 불려도 기존 값을 밀어내지 않는다).

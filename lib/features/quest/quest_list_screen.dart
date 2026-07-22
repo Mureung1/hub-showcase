@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
+import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/quest_card.dart';
 import '../../core/widgets/state_views.dart';
@@ -150,12 +151,21 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
       }
       return;
     }
+    // 하루 코인 상한에 걸려 깎였는지는 **절삭 전 금액과 실지급액의 차이**로 안다.
+    // 절삭 전 금액은 저장소와 같은 식(questReward)으로 구하므로 두 값이 갈라지지
+    // 않는다. 표시하는 금액 자체는 저장소가 돌려준 reward 그대로다.
+    final expected = questReward(
+      quest.difficulty,
+      verified: memoResult?.isVerified ?? false,
+    );
+
     await showQuestCompleteDialog(
       context,
       questTitle: quest.title,
       reward: reward,
       // 보너스 포함 여부는 지급한 쪽이 안다. reward 총액에서 역산하지 않는다.
       verified: memoResult?.isVerified ?? false,
+      cutCoin: expected.coin - reward.coin,
     );
   }
 
@@ -206,6 +216,7 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
                 label: const Text('AI로 목표 나누기'),
               ),
             ),
+            const _DailyCapNotice(),
             Expanded(
               child: groupsAsync.when(
                 // 로딩: 스켈레톤 카드 3장.
@@ -263,6 +274,76 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
                     },
                   );
                 },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 오늘 코인 상한에 도달했을 때만 뜨는 안내 줄.
+///
+/// **왜 상시가 아니라 도달했을 때만 뜨는가**: 평소에 "70/70까지 받을 수 있어요"를
+/// 붙여 두면 상한이 목표처럼 읽혀 퀘스트가 숙제가 된다. 안내가 필요한 순간은
+/// "코인이 왜 안 들어오지?"가 생기는 순간뿐이다.
+///
+/// 색은 🔵 블루(정보)다. 코인 이야기지만 **노랑은 코인 수치 자체를 표시할 때만**
+/// 쓴다 — 안내문까지 노랑으로 칠하면 색 역할이 "코인 관련 아무거나"로 넓어진다.
+///
+/// 로딩·오류에는 아무것도 그리지 않는다. 부가 안내라 사용자 문서를 못 읽었다고
+/// 퀘스트 목록 위에 오류를 띄우면 손해가 더 크다(questGroupsProvider가 goal 스트림
+/// 실패를 삼키는 것과 같은 판단).
+///
+/// ⚠️ **알려진 한계(의도된 선택)**: 시각을 build 시점에 한 번 읽으므로, 앱을 켜 둔 채
+/// KST 자정을 넘기면 rebuild 전까지 이 안내가 남는다. 자동으로 지우려면 자정까지
+/// 세는 타이머를 위젯 수명에 매달아야 하는데, 그 비용(타이머 생존 관리 · 테스트의
+/// 시간 의존성)이 얻는 것보다 크다. 실제 지급은 저장소가 매번 날짜를 다시 계산하므로
+/// **안내만 낡을 뿐 코인은 정상 지급되고**, 그 완료 시점에 사용자 문서 스트림이
+/// 갱신되며 안내도 사라진다. 버그가 아니라 감수한 지연이다.
+class _DailyCapNotice extends ConsumerWidget {
+  const _DailyCapNotice();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider).valueOrNull;
+    if (user == null) return const SizedBox.shrink();
+
+    final now = ref.watch(clockProvider)();
+    if (!user.isDailyCoinCapped(now)) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenH,
+        0,
+        AppSpacing.screenH,
+        AppSpacing.sm,
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainer,
+          borderRadius: AppRadius.mdAll,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Symbols.info,
+              size: 18,
+              fill: 1,
+              color: theme.colorScheme.secondary,
+            ),
+            AppSpacing.gapWSm,
+            Expanded(
+              child: Text(
+                '오늘 코인은 $kDailyCoinCap개까지 받았어요. '
+                '내일 다시 쌓여요 — XP는 계속 올라갑니다.',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.secondary,
+                ),
               ),
             ),
           ],
