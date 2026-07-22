@@ -1,4 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
+import { CATEGORIES } from '../../constants/analysisMockData';
+
+const AUTOMATED_MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 type UploadRecord = {
   id: string;
@@ -20,7 +23,13 @@ type UIState = {
   isUploading: boolean;
   error: string | null;
   isDragging?: boolean;
+  productCategory?: string;
+  month?: number;
 };
+
+function isAutomatedType(category: UploadType['category']): boolean {
+  return category === 'sales' || category === 'waste';
+}
 
 const ALLOWED_EXTENSIONS = ['.xlsx', '.csv'];
 
@@ -108,6 +117,7 @@ export default function UploadPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const fileObjectsRef = useRef<Record<string, File | null>>({});
 
   useEffect(() => {
     const loadUploads = async () => {
@@ -147,6 +157,8 @@ export default function UploadPage() {
       return;
     }
 
+    fileObjectsRef.current[id] = file;
+
     setUiState((prev) => ({
       ...prev,
       [id]: {
@@ -164,6 +176,7 @@ export default function UploadPage() {
   };
 
   const handleClearFile = (id: string) => {
+    fileObjectsRef.current[id] = null;
     setUiState((prev) => ({
       ...prev,
       [id]: {
@@ -176,12 +189,37 @@ export default function UploadPage() {
     }
   };
 
+  const handleProductCategoryChange = (id: string, productCategory: string) => {
+    setUiState((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], productCategory },
+    }));
+  };
+
+  const handleMonthChange = (id: string, month: number) => {
+    setUiState((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], month },
+    }));
+  };
+
   const handleUploadClick = async (id: string) => {
     const uploadType = UPLOAD_TYPES.find((t) => t.id === id);
     if (!uploadType) return;
 
     const fileName = uiState[id]?.selectedFileName;
     if (!fileName) return;
+
+    const automated = isAutomatedType(uploadType.category);
+    const { productCategory, month } = uiState[id] || {};
+
+    if (automated && (!productCategory || !month)) {
+      setUiState((prev) => ({
+        ...prev,
+        [id]: { ...prev[id], error: '카테고리와 월을 선택해주세요.' },
+      }));
+      return;
+    }
 
     try {
       setUiState((prev) => ({
@@ -194,13 +232,29 @@ export default function UploadPage() {
       }));
 
       const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      const response = await fetch(`${BASE_URL}/api/uploads`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ category: uploadType.category, filename: fileName }),
-      });
+
+      let response: Response;
+      if (automated) {
+        const file = fileObjectsRef.current[id];
+        const formData = new FormData();
+        formData.append('file', file as File);
+        formData.append('category', uploadType.category);
+        formData.append('productCategory', productCategory as string);
+        formData.append('month', String(month));
+
+        response = await fetch(`${BASE_URL}/api/uploads`, {
+          method: 'POST',
+          body: formData,
+        });
+      } else {
+        response = await fetch(`${BASE_URL}/api/uploads`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ category: uploadType.category, filename: fileName }),
+        });
+      }
 
       const json = (await response.json()) as { success: boolean; data?: UploadRecord; error?: string };
 
@@ -212,6 +266,7 @@ export default function UploadPage() {
         setUploads((prev) => [json.data!, ...prev]);
       }
 
+      fileObjectsRef.current[id] = null;
       setUiState((prev) => ({
         ...prev,
         [id]: {
@@ -507,15 +562,64 @@ export default function UploadPage() {
                       ✕ 취소
                     </button>
                   </div>
+
+                  {isAutomatedType(type.category) && (
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                      <select
+                        value={state.productCategory || ''}
+                        onChange={(e) => handleProductCategoryChange(type.id, e.target.value)}
+                        style={{
+                          flex: 1,
+                          padding: '6px 8px',
+                          fontSize: '11px',
+                          border: `1px solid ${colors.borderColor}`,
+                          borderRadius: '6px',
+                          color: colors.textPrimary,
+                          background: colors.bgCard,
+                        }}
+                      >
+                        <option value="">카테고리 선택</option>
+                        {CATEGORIES.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={state.month ?? ''}
+                        onChange={(e) => handleMonthChange(type.id, Number(e.target.value))}
+                        style={{
+                          flex: 1,
+                          padding: '6px 8px',
+                          fontSize: '11px',
+                          border: `1px solid ${colors.borderColor}`,
+                          borderRadius: '6px',
+                          color: colors.textPrimary,
+                          background: colors.bgCard,
+                        }}
+                      >
+                        <option value="">월 선택</option>
+                        {AUTOMATED_MONTHS.map((m) => (
+                          <option key={m} value={m}>
+                            {m}월
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => handleUploadClick(type.id)}
-                    disabled={state.isUploading}
+                    disabled={state.isUploading || (isAutomatedType(type.category) && (!state.productCategory || !state.month))}
                     style={{
                       width: '100%',
                       padding: '8px 12px',
                       border: 'none',
-                      background: state.isUploading ? colors.textTertiary : colors.primary,
+                      background:
+                        state.isUploading || (isAutomatedType(type.category) && (!state.productCategory || !state.month))
+                          ? colors.textTertiary
+                          : colors.primary,
                       color: colors.bgCard,
                       fontWeight: '600',
                       borderRadius: '6px',

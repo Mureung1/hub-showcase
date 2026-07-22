@@ -45,6 +45,12 @@ function buildMonthlyTrend(data: FinancialRecord[]): { points: WeeklyTrendPoint[
   };
 }
 
+function riskLabelForRule(rule: Recommendation['rule'] | undefined): string | undefined {
+  if (rule === 'SALES_DOWN_WASTE_UP') return '⚠ 판매·폐기 주의';
+  if (rule === 'LOW_MARGIN') return '⚠ 마진 낮음';
+  return undefined;
+}
+
 function buildMarginBars(
   currentRecords: FinancialRecord[],
   prevRecords: FinancialRecord[],
@@ -58,6 +64,7 @@ function buildMarginBars(
       const prev = prevRecords.find((p) => p.category === r.category);
       const delta = prev ? r.margin_rate - prev.margin_rate : null;
       const rec = recommendations.find((rec) => rec.category === r.category);
+      const isRisk = rec?.rule === 'SALES_DOWN_WASTE_UP' || rec?.rule === 'LOW_MARGIN';
 
       return {
         name: r.category,
@@ -66,7 +73,8 @@ function buildMarginBars(
         deltaGood: delta === null ? true : delta >= 0,
         isTop: r.margin_rate === maxRate,
         isAiPick: rec?.rule === 'SALES_UP_WASTE_LOW',
-        isRisk: rec?.rule === 'SALES_DOWN_WASTE_UP' || rec?.rule === 'LOW_MARGIN',
+        isRisk,
+        riskLabel: isRisk ? riskLabelForRule(rec?.rule) : undefined,
       };
     });
 }

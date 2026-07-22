@@ -20,3 +20,26 @@ SmartFF Agent는
 
 판매 데이터와 폐기 데이터를 분석하여
 점주의 의사결정을 지원하는 AI Agent입니다.
+
+---
+
+## Development Setup
+
+### Backend / Frontend
+
+```bash
+cd backend && npm install
+cd frontend && npm install
+```
+
+### Data Pipeline (Python)
+
+`data/scripts/*.py`는 백엔드가 업로드 시 자동으로 실행하는 ETL 스크립트입니다.
+아래 명령으로 필요한 패키지를 먼저 설치해야 합니다.
+
+```bash
+pip install -r data/scripts/requirements.txt
+```
+
+`python3`가 백엔드 프로세스와 같은 환경(PATH)에서 실행 가능해야 업로드 시
+ETL 자동 실행이 정상 동작합니다.

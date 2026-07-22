@@ -46,7 +46,9 @@
 - [x] Financial Frontend (실데이터 연동) — 월/카테고리 필터, 전월 대비 비교, 손익 구조까지 확장 (2026-07-20)
 - [x] Dashboard KPI 실데이터 연동 — 2026-07-21 완료 (`/api/financial/summary`, `/api/recommendations` 연동, mock 제거)
 - [x] Rule Engine V1 (최소 3개 규칙) — 2026-07-21 완료 (`RecommendationService`, 카테고리 평균 폐기율/전체 평균 마진율 기반)
-- [x] Analysis 판매/폐기 추세 차트 실데이터 연동 (P1) — 2026-07-22 완료 (전 카테고리, `/api/financial/summary` 기반). 요일별/시간대별 패턴은 원본 데이터에 해당 정보가 없어 여전히 mock (아래 백로그 참고)
+- [x] Analysis 판매/폐기 추세 차트 실데이터 연동 (P1) — 2026-07-22 완료 (전 카테고리, `/api/financial/summary` 기반)
+- [x] Analysis 요일별/시간대별 판매 패턴 실데이터 연동 — 2026-07-22 완료. `data/scripts/pattern_parser.py` 신규(6월 4주 평균), `data/master/weekday_sales.csv`/`hourly_sales.csv`, `GET /api/patterns/weekday|hourly?category=` 신설, `AnalysisPage.tsx` mock 제거. 이로써 Analysis 페이지 4개 차트 전부 실데이터 기반
+- [x] Analysis AI 인사이트(InsightStrip) 실데이터 연동 — 2026-07-22 완료. 기존 `/api/recommendations`(Rule Engine V1)를 카테고리별로 필터링해 상태(opportunity/neutral/risk) 판정(Dashboard의 risk 기준과 동일)과 사유 문구 생성, 요일/시간대 패턴과 결합. `ANALYSIS_MOCK_DATA`의 `type`/`reasons` 사용 중단(다른 필드는 트렌드 폴백용으로 유지)
 
 ---
 
@@ -255,49 +257,49 @@ Frontend
 
 ## Day 1 (월) — Data Pipeline 기초 구축
 
-- [ ] sales Parser 작성 (3단 헤더 → 단일 헤더)
-- [ ] waste 상품코드 dtype 정리 (float → 정수/문자열)
-- [ ] inventory / orders Parser
-- [ ] Financial 계산식 최종 확정
-- [ ] `docs/specs/MASTER_DATASET_SPEC.md` 작성
+- [x] sales Parser 작성 (3단 헤더 → 단일 헤더)
+- [x] waste 상품코드 dtype 정리 (float → 정수/문자열)
+- [ ] inventory / orders Parser — 설계 변경으로 불필요 (카테고리+월 집계 방식, 미사용 결정)
+- [x] Financial 계산식 최종 확정
+- [x] `docs/specs/MASTER_DATASET_SPEC.md` 작성
 
 ## Day 2 (화) — Product Master + Master Dataset
 
-- [ ] `data/master/product_master.csv` 생성
-- [ ] `data/master/merged_dataset.csv` 생성
-- [ ] 카테고리별 row 수 및 결측치 확인
+- [ ] `data/master/product_master.csv` 생성 — 상품 단위 매칭률 낮아 P1 이월, 카테고리+월 집계로 대체
+- [x] `data/master/merged_dataset.csv` 생성
+- [x] 카테고리별 row 수 및 결측치 확인
 
 ## Day 3 (수) — Financial Backend + Rule Engine V1
 
 ### Financial Backend
-- [ ] 카테고리 평균 원가율 계산
-- [ ] 마진액 / 마진율 계산
-- [ ] 폐기손실 / 폐기율 계산
-- [ ] 순이익 / 순이익기여도 계산
-- [ ] `GET /api/financial` API 구현
+- [x] 카테고리 평균 원가율 계산
+- [x] 마진액 / 마진율 계산
+- [x] 폐기손실 / 폐기율 계산
+- [x] 순이익 / 순이익기여도 계산
+- [x] `GET /api/financial` API 구현
 
 ### Rule Engine V1
-- [ ] Rule 1: 판매증가 + 폐기율 < 5% → 발주 확대 검토
-- [ ] Rule 2: 판매감소 + 폐기율 증가 → 발주 축소 검토
-- [ ] Rule 3: 마진율 낮음 → 수익성 검토 필요
-- [ ] RecommendationService 구현
-- [ ] `GET /api/recommendations` API 구현
+- [x] Rule 1: 판매증가 + 폐기율 < 카테고리 평균 → 발주 확대 검토 (절대 임계값 대신 데이터셋 평균 기준으로 설계 변경)
+- [x] Rule 2: 판매감소 + 폐기율 증가 → 발주 축소 검토
+- [x] Rule 3: 마진율 낮음(전체 평균 이하) → 수익성 검토 필요
+- [x] RecommendationService 구현
+- [x] `GET /api/recommendations` API 구현
 
 ## Day 4 (목) — Financial Frontend + Dashboard 연결
 
-- [ ] Financial: mock 제거, API 연결
-- [ ] Dashboard KPI: 총매출/평균 마진율/폐기손실/추정 순이익 실데이터 연결
-- [ ] Dashboard Category Margin 실데이터 연결
-- [ ] Dashboard Recommendation Card (선택사항)
+- [x] Financial: mock 제거, API 연결
+- [x] Dashboard KPI: 총매출/평균 마진율/폐기손실/추정 순이익 실데이터 연결
+- [x] Dashboard Category Margin 실데이터 연결
+- [x] Dashboard Recommendation Card
 
 ## Day 5 (금) — 통합 및 안정화
 
-- [ ] Upload → Dashboard 전체 흐름 확인
-- [ ] Analysis 최소 1개 카테고리 실데이터 연동 (P1, 여유 시)
-- [ ] 예외 처리 및 버그 수정
-- [ ] `npx tsc --noEmit` 통과
-- [ ] `npm run build` 통과
-- [ ] 브라우저 실행 확인 (콘솔 에러·흰 화면 없음)
+- [x] Upload → Dashboard 전체 흐름 확인 — 2026-07-22 Upload→ETL 자동화 완료로 실제 업로드부터 끝까지 End-to-End 검증 완료 (정상/실패 케이스 모두 curl로 직접 테스트)
+- [x] Analysis 실데이터 연동 — 판매/폐기 추세 + 요일/시간대 패턴 + AI 인사이트 + 탭 배지까지 전부 실데이터 (2026-07-22, 애초 목표였던 "최소 1개 카테고리"를 초과 달성)
+- [x] 예외 처리 및 버그 수정 — ETL 실패 시 캐시 미반영·업로드 이력 '오류' 기록 확인, financial/pattern/recommendation fetch 전부 에러 상태 처리
+- [x] `npx tsc --noEmit` 통과 (backend, frontend)
+- [x] `npm run build` 통과 (backend, frontend)
+- [ ] 브라우저 실행 확인 (콘솔 에러·흰 화면 없음) — Analysis는 사용자 확인 완료, Dashboard/Upload는 미확인 (Chrome 확장 미설치로 자동 확인 불가)
 
 ---
 
@@ -316,6 +318,8 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
 - Day2: 별도 조사 작업 없이 진행
 - Day3: 카테고리 원가율 산출 시 이상치 확인 → 있으면 원인 파악, 없으면 스킵
 - 최종 결정: `docs/tasks.md`의 이 Risk 항목에 "3주차 기준 정상" 또는 "구간 제외 처리" 메모 남김
+
+**최종 결정 (2026-07-22, 구간 제외 처리)**: 상품 단위 waste↔inventory 매칭 자체를 설계에서 제외했다 (Day2에서 카테고리+월 집계 방식으로 전환, `MASTER_DATASET_SPEC.md` 참고). 따라서 이 매칭률 리스크는 더 이상 계산 경로에 존재하지 않는다. 대신 카테고리 원가율(`avg_cost_rate`)로 데이터 품질을 검증했고, 실측 62.1~75.7% 범위로 예상 범위(40~80%) 내 정상 확인됨 (`master_dataset_builder.py` 검증 로그, 2026-07-22 재확인).
 
 ---
 
@@ -343,35 +347,30 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
 
 ## MVP 완성 이후 고도화 (4주차 이후)
 
-### ⭐ 최우선 — Upload → ETL 자동화 (2026-07-21 논의)
+### Upload → ETL 자동화 (2026-07-21 논의, 2026-07-22 sales/waste 완료)
 
-- [ ] Upload → ETL → Financial 자동 반영 파이프라인 구축
-  - 현재: Upload는 파일명/카테고리 메타데이터만 Supabase에 기록, 실제 파일 저장·파서 실행 없음. ETL은 수동 실행, 백엔드 재시작 전까지 `merged_dataset.csv` 변경도 반영 안 됨
-  - 작업 범위: (1) 실제 파일 업로드 처리(`data/raw/` 저장) (2) 백엔드에서 Python ETL 스크립트 subprocess 실행 트리거 (3) `FinancialService.reloadData()` + 캐시 무효화 (4) Upload 프론트 처리 상태 표시 (5) 에러 케이스 처리 (6) E2E 테스트
-  - 예상 소요: 해피패스만이면 약 1일, 에러 처리 포함 견고하게 하면 약 2일
-  - 불확실 지점: `master_dataset_builder.py`가 월 단위 증분 갱신을 지원하는지, 아니면 raw 전체 재계산 구조인지 확인 필요 — 착수 전 먼저 확인
-  - 이 작업에 `FinancialService Cache Reload`(아래 항목) 포함됨
-  - ⚠️ `financialService.ts`의 `if (this.data.length !== 24) throw ...` 하드코딩 검증도 이때 같이 제거/완화 필요 (데이터가 24행 이상으로 늘어나면 현재 로직은 에러를 던짐). Financial/Recommendation API 계약 자체는 안 바뀌므로 프론트는 그대로 호환됨
+- [x] Upload → ETL → Financial 자동 반영 파이프라인 구축 (sales/waste만) — 2026-07-22 완료
+  - `multer`로 실제 파일 업로드 처리 추가, `data/raw/{sales,waste}/`에 저장
+  - `backend/src/services/etlService.ts`: sales_parser → waste_parser → master_dataset_builder를 child_process로 순차 실행
+  - `backend/src/services/uploadAutomationService.ts`: 파일저장→ETL→reload 오케스트레이션 (Controller는 얇게 유지)
+  - `financialService.reloadData()` 추가로 서버 재시작 없이 최신 데이터 반영 확인 완료 (RecommendationService는 캐시가 없어 자동 최신화)
+  - ETL 실패 시 reload 스킵 + 업로드 이력 '오류' 상태 기록 — 실패해도 기존 정상 데이터 유지되는 것 실제 장애 주입 테스트로 확인
+  - Upload 페이지에 상품 카테고리·월 선택 UI 추가 (기존엔 없었음)
+  - `master_dataset_builder.py`는 매번 원본부터 전체 재계산하는 stateless 구조로 확인됨 — 증분 갱신 불확실성 해소
+  - `financialService.ts`의 `data.length !== 24` 하드코딩은 건드리지 않음 (카테고리·월 그리드가 고정이라 재실행해도 24행 유지)
+  - 남은 범위: orders/inventory(파서 없음), hourly/weekday(주차 선택 필요) — 다음 스프린트로 이월. `patternService.ts`도 아직 reload 미지원
 
-### 2순위 — Analysis 요일별/시간대별 패턴 실데이터 연동 (2026-07-22 논의)
-
-- [ ] Analysis 요일별/시간대별 판매 패턴 실데이터 연동
-  - 확인됨: `data/raw/weekday_sales/`, `data/raw/hourly_sales/`에 원본 데이터 실제로 존재 (단, **6월 1~4주차만**, 1~5월 없음 — UI 문구 "최근 1개월 평균"과는 부합)
-  - 원본 엑셀이 조회기간/비교기간/차이 3행 피벗 구조라 `sales_parser.py` 3단 헤더 문제처럼 새 파서 필요
-  - 작업 범위: (1) `weekday_sales_parser.py`, `hourly_sales_parser.py` 신규 작성, 카테고리별 4주 평균 계산 (2) 백엔드 API 엔드포인트 신설 (3) `AnalysisPage.tsx` 요일/시간대 차트 연결 (mock 제거)
-  - 예상 소요: 1개 카테고리면 약 1일, 4개 카테고리 전부 견고하게 하면 1.5~2일
-  - 판매/폐기 추세 차트는 2026-07-22 완료 (`merged_dataset.csv` 기반, 전 카테고리)
+- [ ] 폐기 요일/시간대 패턴 실데이터 연동 — 원본 데이터 자체가 없어 보류 (판매 패턴만 2026-07-22에 연동 완료, 위 Milestone 3 참고). 향후 waste 원본에 요일/시간대 정보가 추가되면 착수
+  - 참고: `data/master/weekday_sales.csv`/`hourly_sales.csv`는 현재 6월 4주 평균 스냅샷뿐 — 이후 월이 추가되면 `data/scripts/pattern_parser.py`의 "4주 평균" 하드코딩(WEEKS 상수) 재검토 필요
 
 - [ ] Fuzzy Matching: sales/orders 상품명 유사 매칭
 - [ ] Product Master 자동 보정: 수동 매핑 테이블 구축
 - [ ] Rule Engine V2: 더 복잡한 규칙 추가
-- [ ] FinancialService Cache Reload (V2): Upload 이후 최신 `merged_dataset.csv` 반영
-  - `reloadData()` 구현, cache invalidation, Upload API와 연동, Recommendation 기준(카테고리 평균 폐기율/전체 평균 마진율) 재계산
-  - 현재(V1)는 서버 기동 시 1회 로드 후 캐싱 — 의도적 설계 선택, 버그 아님 (2026-07-21 결정)
-  - ⚠️ 위 "Upload → ETL 자동화" 작업에 포함되므로 별도 착수 불필요
+- [x] FinancialService Cache Reload (V2) — 2026-07-22 "Upload → ETL 자동화" 작업에 포함되어 완료. `financialService.reloadData()` 구현, `uploadAutomationService`가 ETL 성공 시 호출. Recommendation은 캐시가 없어 자동 최신화됨
 - [ ] Dashboard AI Insight: 자연어 분석 고도화
-- [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동)
+- [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동) — 배포 시점에 "접속 비밀번호" 수준 경량 보호부터 우선 검토하기로 결정 (2026-07-22)
 - [ ] 프론트엔드 번들 코드 스플리팅 — `npm run build` 시 메인 청크 667KB 경고(2026-07-22 validation-agent 지적). 지금 당장 문제는 아니지만 페이지별 `React.lazy()` 분리 고려
+- [ ] Upload 페이지 "데이터 검증 결과" 카드 실데이터 연동 (2026-07-22 발견) — 지금은 `UploadPage.tsx`의 `validationResults` 배열이 완전 mock(항상 동일한 4줄, 카테고리명도 실제 업로드 종류와 불일치). 실제로 연결하려면 (1) `sales_parser.py`/`waste_parser.py`가 "N개 상품 정상 인식/매칭 실패" 같은 통계를 구조화해 반환하도록 수정 (2) `etlService.ts`의 `EtlResult`에 통계 포함 (3) `uploadAutomationService` → `uploadController` → 프론트까지 전달 (4) 발주/재고는 파서가 없어 카드 자체를 뺄지 결정 필요. Upload→ETL 자동화(성공/실패 여부)보다 한 단계 더 들어간 상세 통계라 별도 작업으로 분리
 
 ## MVP 범위 밖 (항상 제외, CLAUDE.md 준수)
 

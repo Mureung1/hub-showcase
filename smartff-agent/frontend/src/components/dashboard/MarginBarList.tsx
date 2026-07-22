@@ -65,6 +65,27 @@ export default function MarginBarList({ items, onViewAllClick }: MarginBarListPr
                     ★ AI 추천
                   </span>
                 )}
+                {item.riskLabel && (
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '3px',
+                      color: '#fff',
+                      background: colors.danger,
+                      fontWeight: '800',
+                      fontSize: '10px',
+                      letterSpacing: '0.03em',
+                      padding: '3px 9px',
+                      borderRadius: '20px',
+                      verticalAlign: 'middle',
+                      whiteSpace: 'nowrap',
+                      marginLeft: '4px',
+                    }}
+                  >
+                    {item.riskLabel}
+                  </span>
+                )}
               </span>
               <span style={{ color: rateColor(item), fontWeight: '800', fontSize: '16px', whiteSpace: 'nowrap' }}>{item.rate}%</span>
             </div>

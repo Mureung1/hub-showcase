@@ -63,14 +63,17 @@ class FinancialService {
       this.data.push(record);
     }
 
-    if (this.data.length !== 24) {
-      throw new Error(
-        `Invalid dataset: expected 24 records, got ${this.data.length}`
-      );
+    if (this.data.length === 0) {
+      throw new Error('Invalid dataset: no records found');
     }
 
     this.loaded = true;
     console.log(`[Financial] Loaded ${this.data.length} records`);
+  }
+
+  async reloadData(): Promise<void> {
+    this.loaded = false;
+    await this.loadData();
   }
 
   getSummary(filter?: FinancialFilter): FinancialSummary {

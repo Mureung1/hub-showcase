@@ -7,7 +7,7 @@ export async function createUpload(input: CreateUploadInput): Promise<UploadReco
     .insert({
       category: input.category,
       filename: input.filename,
-      status: '정상',
+      status: input.status ?? '정상',
     })
     .select()
     .single();
