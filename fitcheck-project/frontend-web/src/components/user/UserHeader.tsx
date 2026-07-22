@@ -1,4 +1,6 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 import './UserHeader.css';
 
 const TABS = [
@@ -8,7 +10,23 @@ const TABS = [
   { to: '/user/map', label: '지도', end: false },
 ] as const;
 
+function displayName(name: string | null | undefined, email: string | undefined): string {
+  if (name?.trim()) return name.trim();
+  if (email) return email.split('@')[0] ?? '회원';
+  return '회원';
+}
+
+function avatarInitial(name: string | null | undefined, email: string | undefined): string {
+  const base = displayName(name, email);
+  return base.slice(0, 1).toUpperCase();
+}
+
 export default function UserHeader() {
+  const navigate = useNavigate();
+  const { profile, session, signOut } = useAuth();
+  const label = displayName(profile?.name, session?.user.email);
+  const initial = avatarInitial(profile?.name, session?.user.email);
+
   return (
     <header className="user-header">
       <div className="user-header-inner">
@@ -36,8 +54,19 @@ export default function UserHeader() {
         </nav>
 
         <div className="user-header-profile">
-          <span className="avatar avatar-sm avatar-accent">나</span>
-          <span className="user-header-name">김회원</span>
+          <span className="avatar avatar-sm avatar-accent">{initial}</span>
+          <span className="user-header-name">{label}</span>
+          <button
+            type="button"
+            className="user-header-logout"
+            onClick={() => {
+              void signOut().then(() => navigate('/login', { replace: true }));
+            }}
+            aria-label="로그아웃"
+            title="로그아웃"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </div>
     </header>

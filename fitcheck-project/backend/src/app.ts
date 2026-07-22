@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import consultRequestsRoutes from './routes/consultRequests.routes.js';
 import coursesRoutes from './routes/courses.routes.js';
 import gymsRoutes from './routes/gyms.routes.js';
+import meRoutes from './routes/me.routes.js';
+import mealsRoutes from './routes/meals.routes.js';
 
 dotenv.config();
 
@@ -27,6 +29,8 @@ app.get('/api/test', (_req: Request, res: Response) => {
 app.use('/api/v1/courses', coursesRoutes);
 app.use('/api/v1/gyms', gymsRoutes);
 app.use('/api/v1/consult-requests', consultRequestsRoutes);
+app.use('/api/v1/me', meRoutes);
+app.use('/api/v1/meals', mealsRoutes);
 
 app.listen(PORT, () => {
   console.log(`✅ 서버가 실행되었습니다: http://localhost:${PORT}`);
