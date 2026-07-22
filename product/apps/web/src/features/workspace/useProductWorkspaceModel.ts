@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 
 import type { AnalysisRadius } from "../analysis/types";
-import { useAnalysisUrlSync } from "../analysis/useAnalysisUrlSync";
+import { useAnalysisUrlCleanup } from "../analysis/useAnalysisUrlCleanup";
 import { useNearbyStores } from "../analysis/useNearbyStores";
 import { categoryMatchesSelection, storeCategorySelection } from "../market/categorySelection";
 import { circleFeature, demandFromFlow } from "../market/model";
@@ -23,6 +23,7 @@ import { selectMapStores } from "../map/storefronts/storefrontSelection";
 import { useCompactMap } from "../map/useCompactMap";
 import { useMapViewport } from "../map/useMapViewport";
 import { useWorkspacePanels } from "./useWorkspacePanels";
+import type { ApiReadinessState } from "../system/useApiReadiness";
 import type { MarketSearchResult } from "../search/searchApi";
 import type { ProductCatalog, SupportedMarket } from "../../services/productCatalog";
 import { readAnalysisUrlState } from "../analysis/analysisUrlState";
@@ -120,6 +121,7 @@ function useWorkspaceMarketData(
   selection: SelectionState,
   viewport: ViewportState,
   useDemoData: boolean,
+  apiReady: boolean,
 ) {
   const { setMarketKey, syncCategoryCoverage } = selection;
   const selectedMarket =
@@ -133,28 +135,19 @@ function useWorkspaceMarketData(
       : null,
     selection.period,
     useDemoData,
+    apiReady,
   );
-  const nearby = useNearbyStores({
-    center: viewport.committedCenter,
-    radius: selection.radius,
-    category: selection.categorySelection.name,
-  });
-  const urlSync = useAnalysisUrlSync({
-    initialEnabled: catalogState.hasInitialUrlState,
-    state: {
-      marketKey: selection.marketKey,
-      category: selection.category,
-      selectedCategoryName: selection.categorySelection.name,
-      selectedCategoryCode: selection.categorySelection.code,
-      radius: selection.radius,
-      layer: selection.layer,
-      scope: selection.analysisScope,
-      topic: selection.analysisTopic,
-      boundaryVisible: selection.boundaryVisible,
-      storesVisible: selection.storesVisible,
-      period: selection.period,
+  const nearby = useNearbyStores(
+    {
       center: viewport.committedCenter,
+      radius: selection.radius,
+      category: selection.categorySelection.name,
     },
+    apiReady,
+  );
+  useAnalysisUrlCleanup({
+    hasInitialUrlState: catalogState.hasInitialUrlState,
+    period: selection.period,
     availablePeriods: marketAnalysis.availablePeriods,
     defaultPeriod: marketAnalysis.defaultPeriod,
     onPeriodChange: selection.setPeriod,
@@ -217,7 +210,7 @@ function useWorkspaceMarketData(
     selection.marketKey,
   ]);
 
-  return { marketAnalysis, nearby, urlSync, market };
+  return { marketAnalysis, nearby, market };
 }
 
 function useWorkspaceStorefronts(
@@ -392,19 +385,16 @@ function useWorkspaceActions(
   storefronts: ReturnType<typeof useWorkspaceStorefronts>,
 ) {
   function chooseMarket(nextMarket: MarketKey) {
-    marketData.urlSync.enableUrlSync();
     storefronts.storeSelection.clearSelection();
     selection.setMarketKey(nextMarket);
     viewport.focusCenter(catalogState.markets[nextMarket].center, false);
   }
   function chooseCategory(nextCategory: Category) {
-    marketData.urlSync.enableUrlSync();
     storefronts.storeSelection.clearSelection();
     selection.chooseCategory(nextCategory);
   }
   function chooseListedStore(storeName: string) {
     const store = storefronts.visibleStores.find((candidate) => candidate.name === storeName);
-    marketData.urlSync.enableUrlSync();
     storefronts.storeSelection.selectListedStore(storeName);
     panels.setInspectorOpen(true);
     if (store)
@@ -413,7 +403,6 @@ function useWorkspaceActions(
   function chooseSearchResult(result: MarketSearchResult) {
     const nextMarket = catalogState.marketKeyById[result.market_id];
     if (!nextMarket) return;
-    marketData.urlSync.enableUrlSync();
     selection.setMarketKey(nextMarket);
     storefronts.storeSelection.selectSearchResult(result);
     panels.setInspectorOpen(true);
@@ -427,13 +416,11 @@ function useWorkspaceActions(
   }
   function resetAnalysis() {
     storefronts.storeSelection.clearSelection();
-    marketData.urlSync.resetUrl();
     selection.resetSelection();
     viewport.resetViewport(marketData.market.center);
   }
   function confirmAnalysisMove() {
     if (!viewport.commitDraftCenter()) return;
-    marketData.urlSync.enableUrlSync();
     storefronts.storeSelection.clearSelection();
   }
   function togglePrefabMode() {
@@ -449,16 +436,13 @@ function useWorkspaceActions(
     });
   }
   function chooseRadius(nextRadius: AnalysisRadius) {
-    marketData.urlSync.enableUrlSync();
     storefronts.storeSelection.clearSelection();
     selection.setRadius(nextRadius);
   }
   function chooseLayer(nextLayer: LayerMode) {
-    marketData.urlSync.enableUrlSync();
     selection.setLayer(nextLayer);
   }
   function chooseScope(nextScope: AnalysisScope) {
-    marketData.urlSync.enableUrlSync();
     storefronts.storeSelection.clearSelection();
     selection.setAnalysisScope(nextScope);
   }
@@ -477,7 +461,11 @@ function useWorkspaceActions(
   };
 }
 
-export function useProductWorkspaceModel(catalog: ProductCatalog, useDemoData: boolean) {
+export function useProductWorkspaceModel(
+  catalog: ProductCatalog,
+  useDemoData: boolean,
+  apiReadiness: { state: ApiReadinessState; retry: () => void },
+) {
   const compactMap = useCompactMap();
   const catalogState = useWorkspaceCatalog(catalog);
   const selection = useAnalysisSelection(catalogState.initialUrlState);
@@ -489,6 +477,7 @@ export function useProductWorkspaceModel(catalog: ProductCatalog, useDemoData: b
     selection,
     viewport,
     useDemoData,
+    useDemoData || apiReadiness.state === "ready",
   );
   const storefronts = useWorkspaceStorefronts(
     compactMap,
@@ -508,6 +497,7 @@ export function useProductWorkspaceModel(catalog: ProductCatalog, useDemoData: b
 
   return {
     catalog,
+    apiReadiness,
     compactMap,
     catalogState,
     selection,

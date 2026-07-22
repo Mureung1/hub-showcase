@@ -43,6 +43,7 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
     model.marketData.marketAnalysis;
   const { categorySelection } = model.selection;
   const { setCompareOpen, setEvidenceOpen, setFiltersOpen } = model.panels;
+  const { state: apiState, retry: retryApiReadiness } = model.apiReadiness;
 
   return (
     <>
@@ -83,14 +84,7 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
           <button className="header-control" type="button" onClick={() => setFiltersOpen(true)}>
             <MapPinned size={16} /> 상권 선택: {marketKey}
           </button>
-          <PeriodSelect
-            periods={availablePeriods}
-            value={period}
-            onChange={(nextPeriod) => {
-              setPeriod(nextPeriod);
-              model.marketData.urlSync.enableUrlSync();
-            }}
-          />
+          <PeriodSelect periods={availablePeriods} value={period} onChange={setPeriod} />
           <button
             className="icon-button"
             type="button"
@@ -103,17 +97,26 @@ export function WorkspaceHeader({ model }: { model: ProductWorkspaceModel }) {
       </header>
       <section className="demo-note" aria-label="데모 데이터 안내">
         <span className="pulse-dot" />
-        {analysisState === "loading"
-          ? "서울 상권분석 공식 데이터를 불러오는 중입니다."
-          : analysisState === "error"
-            ? "상권 분석 API에 연결하지 못했습니다. 예시 값으로 대체하지 않았습니다."
-            : analysisState === "unavailable"
-              ? `${categorySelection.name}은 점포 위치와 반경 경쟁 지표만 제공합니다.`
-              : analysisSource === "demo"
-                ? "Demo mode · 검증 snapshot 예시이며 실제 조회 결과가 아닙니다."
-                : `서울 상권분석 ${period.slice(0, 4)}년 ${period.slice(4)}분기 API 결과입니다.`}{" "}
-        {analysisState === "error" && (
-          <button type="button" onClick={retryAnalysis}>
+        {apiState === "checking"
+          ? "분석 서버 연결을 확인하는 중입니다."
+          : apiState === "waking"
+            ? "분석 서버를 준비하고 있습니다. 준비되면 현재 조건의 최신 데이터를 자동으로 불러옵니다."
+            : apiState === "unavailable"
+              ? "분석 서버에 연결하지 못했습니다. 예시 데이터로 대체하지 않았습니다."
+              : analysisState === "loading"
+                ? "서울 상권분석 공식 데이터를 불러오는 중입니다."
+                : analysisState === "error"
+                  ? "상권 분석 API에 연결하지 못했습니다. 예시 값으로 대체하지 않았습니다."
+                  : analysisState === "unavailable"
+                    ? `${categorySelection.name}은 점포 위치와 반경 경쟁 지표만 제공합니다.`
+                    : analysisSource === "demo"
+                      ? "Demo mode · 검증 snapshot 예시이며 실제 조회 결과가 아닙니다."
+                      : `서울 상권분석 ${period.slice(0, 4)}년 ${period.slice(4)}분기 API 결과입니다.`}{" "}
+        {(apiState === "unavailable" || analysisState === "error") && (
+          <button
+            type="button"
+            onClick={apiState === "unavailable" ? retryApiReadiness : retryAnalysis}
+          >
             다시 시도
           </button>
         )}

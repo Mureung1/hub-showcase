@@ -6,8 +6,17 @@ import { MarketSearch } from "../search/MarketSearch";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
 
 export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
-  const { catalog, catalogState, selection, panels, viewport, marketData, storefronts, actions } =
-    model;
+  const {
+    catalog,
+    catalogState,
+    selection,
+    panels,
+    viewport,
+    marketData,
+    storefronts,
+    actions,
+    apiReadiness,
+  } = model;
   const { market, nearby, marketAnalysis } = marketData;
 
   return (
@@ -50,22 +59,24 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
           onLayerChange={actions.chooseLayer}
           onScopeChange={actions.chooseScope}
           onTopicChange={(topic) => {
-            marketData.urlSync.enableUrlSync();
             selection.chooseTopic(topic);
           }}
           onBoundaryVisibleChange={(visible) => {
-            marketData.urlSync.enableUrlSync();
             selection.setBoundaryVisible(visible);
           }}
           onStoresVisibleChange={(visible) => {
-            marketData.urlSync.enableUrlSync();
             selection.setStoresVisible(visible);
           }}
           onStoreChange={actions.chooseListedStore}
         />
       )}
       <MarketMapPanel
-        toolbarStart={<MarketSearch onSelect={actions.chooseSearchResult} />}
+        toolbarStart={
+          <MarketSearch
+            apiReady={apiReadiness.state === "ready"}
+            onSelect={actions.chooseSearchResult}
+          />
+        }
         mapBody={
           <MarketMapCanvas
             market={market}
