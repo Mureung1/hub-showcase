@@ -24,7 +24,7 @@ function createMemoryStorage(initial: Record<string, string> = {}): ReflectionSt
   };
 }
 
-test("creates an empty reflection draft with five common prompts", () => {
+test("creates an empty reflection draft with the common prompt fields", () => {
   const draft = createEmptyReflectionDraft();
 
   assert.deepEqual(draft, {
@@ -33,6 +33,8 @@ test("creates an empty reflection draft with five common prompts", () => {
     memorableProblem: "",
     attempts: "",
     improvement: "",
+    customChallengeTitle: "",
+    customChallengeNote: "",
     selectedChallengeTitles: [],
     challengeAnswers: {},
   });

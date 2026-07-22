@@ -1,29 +1,14 @@
-export type ReflectionChallengeAnswers = {
-  context: string;
-  decision: string;
-  contribution: string;
-};
-
-export type ReflectionDraft = {
-  motivation: string;
-  role: string;
-  memorableProblem: string;
-  attempts: string;
-  improvement: string;
-  selectedChallengeTitles: string[];
-  challengeAnswers: Record<string, ReflectionChallengeAnswers>;
-};
+export type { ReflectionChallengeAnswers, ReflectionDraft } from "@ptop/contracts";
+import type { ReflectionChallengeAnswers, ReflectionDraft } from "@ptop/contracts";
 
 export type ReflectionStorage = Pick<Storage, "getItem" | "setItem">;
 
 const REFLECTION_STORAGE_PREFIX = "ptop:reflection-draft:";
 
 export const REFLECTION_PROMPTS = [
-  { key: "motivation", label: "프로젝트를 시작한 이유는 무엇인가요?" },
-  { key: "role", label: "본인이 맡은 역할은 무엇인가요?" },
-  { key: "memorableProblem", label: "가장 기억에 남는 문제는 무엇인가요?" },
-  { key: "attempts", label: "문제를 해결하기 위해 어떤 시도를 했나요?" },
-  { key: "improvement", label: "프로젝트를 다시 한다면 무엇을 개선하고 싶나요?" },
+  { key: "motivation", label: "이 프로젝트를 시작한 이유를 한 줄로 적어볼까요?" },
+  { key: "role", label: "내가 맡았던 일을 한 줄로 적어볼까요?" },
+  { key: "memorableProblem", label: "가장 기억에 남는 문제를 한 줄로 적어볼까요?" },
 ] as const;
 
 export const CHALLENGE_FOLLOW_UP_PROMPTS = [
@@ -39,6 +24,8 @@ export function createEmptyReflectionDraft(): ReflectionDraft {
     memorableProblem: "",
     attempts: "",
     improvement: "",
+    customChallengeTitle: "",
+    customChallengeNote: "",
     selectedChallengeTitles: [],
     challengeAnswers: {},
   };
@@ -105,6 +92,8 @@ function normalizeReflectionDraft(value: unknown): ReflectionDraft {
     memorableProblem: getString(value.memorableProblem),
     attempts: getString(value.attempts),
     improvement: getString(value.improvement),
+    customChallengeTitle: getString(value.customChallengeTitle),
+    customChallengeNote: getString(value.customChallengeNote),
     selectedChallengeTitles,
     challengeAnswers: normalizeChallengeAnswers(value.challengeAnswers),
   };
