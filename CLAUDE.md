@@ -7,6 +7,7 @@
 - **[docs/plan.md](./docs/plan.md)**: 기획서 — 문제 정의, 핵심 타겟, 핵심 기능, 서브 기능, 사용자 시나리오
 - **[docs/checklist.md](./docs/checklist.md)**: 개발 Task — 주차별 체크리스트. 새 기능 작업 전 해당 주차 항목의 체크 여부를 먼저 확인할 것.
 - **[docs/design.md](./docs/design.md)**: 디자인 가이드 — 색상, 타이포, 컴포넌트 패턴의 단일 소스(design token 문서). UI 작업 시 반드시 이 기준을 따를 것 (`design` skill이 참조함).
+- **[docs/api-spec.md](./docs/api-spec.md)**: API 명세서 — 도메인별 엔드포인트/요청/응답 형태의 단일 소스. 섹션마다 `[확정]`/`[초안]` 상태 마커가 있음. 신규 기능 구현 시(`feature-workflow` skill) 및 API/DB 설계 시(`api-db-designer` agent) 참조함.
 
 ## Commands
 
@@ -32,7 +33,7 @@ npm workspaces 모노레포. 루트에서 `npm install` 1회 실행 후:
 hub/
 ├── frontend/     React 19 + Vite
 ├── backend/      Express 4 + nodemon (ESM)
-└── docs/         기획/디자인 산출물 (plan.md, checklist.md, design.md)
+└── docs/         기획/디자인 산출물 (plan.md, checklist.md, design.md, api-spec.md)
 ```
 
 - `frontend/src/`: `npm run dev` → 5173 포트(Vite 기본값)에서 서빙.
