@@ -15,7 +15,15 @@ import { fetchDailyCaffeineLimitMg, fetchHalfLifeHours, type HealthProfile } fro
 // ±1시간(multiDayCandidates.ts 그리드) 범위에서 탐색한다. 기본 용량은 검증 스크립트들과
 // 동일하게 200mg(근거 없는 근사치)로 둔다.
 const CAFFEINE_ANCHOR_OFFSET_HOURS = 1;
-const DEFAULT_CANDIDATE_DOSE_MG = 200;
+
+// #3(2026-07-22 결정) — 예전엔 200mg 고정이라 추천이 늘 "200mg"으로만 나왔고, 그 숫자에
+// 근거도 없었다. 이제 용량도 탐색 대상으로 두되, 사용자가 실행할 수 있게 "잔" 단위로
+// 고르게 한다. 기준 한 잔은 아이스 아메리카노 1잔 = 150mg(DRINK_PRESETS와 맞춤).
+const CUP_MG = 150;
+const CUP_OPTIONS = [0.5, 1, 1.5, 2];
+const CANDIDATE_DOSE_MG_OPTIONS = CUP_OPTIONS.map((cups) => Math.round(cups * CUP_MG));
+/** 탐색이 amountOptionsMg를 쓰므로 기준값은 후보 중 가운데(1잔)로 둔다 */
+const DEFAULT_CANDIDATE_DOSE_MG = CUP_MG;
 
 interface ExamInput {
   subject: string;
@@ -162,7 +170,11 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
     earliestTime: night.habitualWakeTime,
   }));
 
-  const candidates = buildMultiDayCandidates({ nights, plannedDoses });
+  const candidates = buildMultiDayCandidates({
+    nights,
+    plannedDoses,
+    amountOptionsMg: CANDIDATE_DOSE_MG_OPTIONS,
+  });
 
   const fixedDoses: CaffeineDose[] = todayCaffeineIntakes.map((intake) => ({
     time: toContinuousCoordinate(nowIso, intake.consumedAt),
@@ -217,7 +229,13 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
       caffeineDoses: best.doses.map((dose) => ({
         time: fromContinuousCoordinate(nowIso, dose.time),
         amountMg: dose.amountMg,
+        // 화면은 mg 대신 잔 수로 보여준다(#3) — mg는 안전 한도 경고에서 계속 쓰이므로 함께 내려준다
+        cups: Math.round((dose.amountMg / CUP_MG) * 10) / 10,
       })),
+    caffeineReference: {
+      cupMg: CUP_MG,
+      label: '아이스 아메리카노 1잔',
+    },
     },
     warnings,
   });
