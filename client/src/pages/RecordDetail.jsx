@@ -6,7 +6,13 @@ const DETAIL_FIELDS = [
   { key: 'action', icon: '🌱', title: '내일의 작은 행동' },
 ]
 
-function RecordDetail({ checkin, onBack }) {
+function RecordDetail({ checkin, onBack, onDelete }) {
+  function handleDelete() {
+    if (window.confirm('이 기록을 삭제할까요? 삭제하면 되돌릴 수 없어요.')) {
+      onDelete(checkin.id)
+    }
+  }
+
   return (
     <section className="result-panel">
       <div className="result-meta">
@@ -30,6 +36,7 @@ function RecordDetail({ checkin, onBack }) {
       </div>
       <div className="result-actions">
         <button className="button button-secondary" type="button" onClick={onBack}>목록으로</button>
+        <button className="button button-danger" type="button" onClick={handleDelete}>삭제</button>
       </div>
     </section>
   )
