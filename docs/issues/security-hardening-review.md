@@ -4,7 +4,7 @@
 최초 점검: 2026-07-13
 적용 범위: LocalTwin web, API, scene worker, Vercel 정적 배포
 
-이 문서는 발견된 보안 문제를 재현하고, 조치 방향을 검토한 뒤 실제 수정과 재검증까지 추적한다. SEC-001 A단계의 제품 Scene route 기본 차단과 SEC-002 privacy asset gate는 검증을 마쳤다. SEC-001 B단계 인증·객체 단위 인가와 SEC-003~008은 아직 계획 상태다.
+이 문서는 발견된 보안 문제를 재현하고, 조치 방향을 검토한 뒤 실제 수정과 재검증까지 추적한다. SEC-001 A단계의 제품 Scene route 기본 차단, SEC-002 privacy asset gate, SEC-003 resource limit, SEC-004 media validation은 검증을 마쳤다. SEC-001 B단계 인증·객체 단위 인가와 SEC-005~008은 아직 계획 상태다.
 
 ## 1. 안전 원칙
 
@@ -23,7 +23,7 @@
 | SEC-001 | High | Scene API 인증·객체 단위 인가 없음 | A Verified / B Planned | 기본 제품 route는 비노출이며, 활성 환경에서도 무인증과 다른 사용자 job 접근이 차단된다 |
 | SEC-002 | High | Privacy gate가 서버에서 강제되지 않음 | Fixed | 미승인 asset 다운로드가 서버에서 거부된다 |
 | SEC-003 | High | 업로드·GPU quota와 실행 제한 없음 | Fixed | API 크기·빈도·저장소·실행·재시도 한도를 검증했다 |
-| SEC-004 | Medium | 업로드 검증이 확장자 중심 | Planned | 위장 파일과 처리 한도 초과 media를 거부한다 |
+| SEC-004 | Medium | 업로드 검증이 확장자 중심 | Fixed | signature·PLY 선언·bounded video probe를 worker 전에 검증한다 |
 | SEC-005 | Medium | 공개 API가 worker 내부정보를 반환 | Planned | 공개 응답에서 경로·command·상세 진단을 제거한다 |
 | SEC-006 | Medium | Seoul API key가 평문 HTTP URL 경로로 전송 | Planned | HTTPS 또는 승인된 격리 대안을 적용한다 |
 | SEC-007 | Medium/Low | 공급망 고정과 container 격리 부족 | Planned | frozen install과 digest·runtime 제한을 적용한다 |
@@ -199,21 +199,22 @@ $result.status
 Remove-Item "$env:TEMP/fake.jpg"
 ```
 
-현재 예상은 실제 JPEG가 아니어도 `uploaded`다. 검증 후 `product/data/scenes/jobs/<result.id>` 테스트 폴더만 수동 삭제한다.
+수정 전에는 실제 JPEG가 아니어도 `uploaded`였다. 이제 위장 JPEG는 `422`이며 부분 job 폴더도 자동 삭제된다.
 
 ### 조치와 선택 이유
 
-- magic bytes, MIME, decoder probe를 단계적으로 검사한다.
-- video duration, resolution, frame 수와 codec을 제한한다.
-- PLY vertex 수, property type, 선언 크기를 검사한다.
-- 외부 parser를 timeout이 있는 낮은 권한의 격리 worker에서 실행한다.
+- image/video signature를 먼저 검사한다.
+- video는 `ffprobe`를 shell 없이 제한 시간으로 실행해 decoder가 거부하거나 멈춘 입력을 차단한다.
+- PLY는 binary format, vertex 수, Gaussian property와 선언된 최소 payload 크기를 검사한다.
+- API는 검사 실패 시 `422`와 함께 부분 job 폴더를 삭제한다.
 
 parser 하나만 신뢰하지 않고 입구 검증, 처리 한도, 격리를 함께 사용한다.
 
-- [ ] 위장 `.jpg`가 `422`
-- [ ] 정상 fixture는 계속 수락
-- [ ] 비정상 video·PLY 회귀 test
-- [ ] parser timeout과 sandbox 검증
+- [x] 위장 `.jpg`가 `422`
+- [x] 정상 fixture는 계속 수락
+- [x] 비정상 video·PLY 회귀 test
+- [x] parser timeout 회귀 test
+- [ ] OS 수준 low-privilege sandbox는 SEC-007 container runtime에서 검증
 
 ## 8. SEC-005 — 내부 worker 정보 노출
 
