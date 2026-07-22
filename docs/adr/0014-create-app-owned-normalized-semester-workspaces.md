@@ -8,6 +8,8 @@
 
 보존하는 결정: ADR 0006의 `packageRoot`·`appDataRoot`·`workspaceRoot` 분리, [ADR 0013 — Product-only public surface와 durable v2 store baseline을 채택한다](0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)의 current v2 bytes 보존·explicit migration 원칙
 
+관련 account 결정: [ADR 0017 — 제품 account lifecycle에 Codex-managed Browser OAuth를 사용한다](0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md). 이 ADR은 `Semester Ready`의 workspace scaffold·identity 조건을, ADR 0017은 account 연결과 pre-workspace Runtime 조건을 소유한다.
+
 ## 맥락
 
 현재 pre-public 구현은 chooser나 development materializer가 넘긴 기존 디렉터리를 열고 `.ay-ple/workspace-state.json`을 만들면 active ready workspace로 취급한다. 이 방식은 이미 있는 자료 폴더를 바로 쓰는 데는 간단하지만, 첫 public setup에서 workspace identity, Course 관계, schema version, validation, 중단 복구와 재실행을 앱이 일관되게 보장할 authority가 없다. Skill이나 폴더명이 구조를 암묵적으로 정하게 두면 앱 버전과 Agent 행동에 따라 같은 학기가 다른 의미로 열릴 수도 있다.

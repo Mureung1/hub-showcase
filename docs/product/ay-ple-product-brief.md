@@ -8,7 +8,7 @@
 
 성숙도: 초안
 
-관련 문서: [CONTEXT.md](../../CONTEXT.md), [Review Workspace Scenario](ay-ple-review-workspace-scenario.md), [Native Codex composition ADR](../adr/0007-use-native-codex-composition-for-product-actions.md), [Official Codex Python SDK Chat Shell ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [Codex Chat-only cutover ADR](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [app-owned SemesterWorkspace ADR](../adr/0014-create-app-owned-normalized-semester-workspaces.md), [public repository authority ADR](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md), [public npx distribution ADR](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md), [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), [개발 백로그](ay-ple-development-backlog.md)
+관련 문서: [CONTEXT.md](../../CONTEXT.md), [Review Workspace Scenario](ay-ple-review-workspace-scenario.md), [Native Codex composition ADR](../adr/0007-use-native-codex-composition-for-product-actions.md), [Official Codex Python SDK Chat Shell ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [Codex Chat-only cutover ADR](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [app-owned SemesterWorkspace ADR](../adr/0014-create-app-owned-normalized-semester-workspaces.md), [public repository authority ADR](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md), [public npx distribution ADR](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md), [Codex-managed product account ADR](../adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md), [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), [개발 백로그](ay-ple-development-backlog.md)
 
 ## 한 줄 요약
 
@@ -53,9 +53,9 @@ AY-PLE의 역할은 Codex를 대체하는 것이 아니라 Codex의 일반적인
 | 층 | 책임 | 책임이 아닌 것 |
 | --- | --- | --- |
 | 사용자 | 학년·학기와 workspace 생성 위치를 고르고, 자료 반입·학업 작업·변경 제안을 검토한다. | Codex protocol, workspace schema나 프롬프트 조합을 직접 관리할 필요가 없다. |
-| AY-PLE App | `SemesterWorkspace` scaffold·`WorkspaceManifest`·validation, 자료 반입 경계, action UI, 자료 선택, 실행 조합, `StatePatch`, 검토와 저장을 소유한다. | 외부 `ImportSource`를 임의로 workspace로 채택하거나 모든 학업 작업을 별도 workflow engine으로 소유하지 않는다. |
+| AY-PLE App | Codex 연결 UX와 transient Browser-safe account projection, `SemesterWorkspace` scaffold·`WorkspaceManifest`·validation, 자료 반입 경계, action UI, 자료 선택, 실행 조합, `StatePatch`, 검토와 저장을 소유한다. | OAuth·token lifecycle을 직접 구현하거나 외부 `ImportSource`를 임의로 workspace로 채택하고 모든 학업 작업을 별도 workflow engine으로 소유하지 않는다. |
 | AY | 학생과 소통하고 Codex의 작업을 학업 맥락에서 설명하며 변경을 제안한다. | 사용자 대신 학업 사실을 확정하지 않는다. |
-| Codex | 대화·작업 실행, Skills, 파일·도구 사용과 선택적인 native context를 제공하는 실행 엔진이다. | `SemesterModel`이나 학업 검토 정책의 source of truth가 아니다. |
+| Codex | Managed ChatGPT login·credential과 대화·작업 실행, Skills, 파일·도구 사용과 선택적인 native context를 제공하는 실행 엔진이다. | `SemesterModel`이나 학업 검토 정책의 source of truth가 아니다. |
 
 다음 항목은 의도적으로 만들지 않는다.
 
@@ -70,6 +70,8 @@ AY-PLE의 역할은 Codex를 대체하는 것이 아니라 Codex의 일반적인
 첫 public 제품 진입점은 공식 product homepage인 Landing에서 exact-version public `npx` 명령을 복사해 실행하고, local companion과 browser UI를 여는 **macOS-first local web app**이다. Landing은 AY-PLE의 장기 제품 가치와 현재 preview capability를 구분해 보여주며 Docs, public repository와 license·trust 정보로 이어진다. Public source는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)의 clean snapshot·Apache-2.0·trust authority를 따르며, Packaged Desktop App은 이 경로를 검증한 뒤의 후속 로드맵이다.
 
 [Official SDK 기반 Codex Chat Shell](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)과 First Assignment vertical은 native 실행과 학업 product boundary를 검증한 현재 kernel이다. Public `npx` 배포, Browser OAuth와 first-run setup은 이 kernel 앞에 추가하는 채택 목표이며 구현 완료로 서술하지 않는다. macOS-first local web app의 제품 형태·OS 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md), exact public command·application host·Runtime delivery·offline과 rollback 경계는 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)이 소유한다.
+
+첫 preview의 `Codex 연결`은 AY-PLE이 중재하는 official Codex-managed ChatGPT Browser login이다. 학생은 official OpenAI/Codex tab에서 인증을 마친 뒤 AY-PLE tab으로 돌아오고, 앱이 fresh managed account state를 확인해 setup을 이어간다. Credential bytes는 AY-PLE product surface·API에 전달되지 않고 제품 코드가 parse하지 않으며 별도 인증 완료 receipt도 만들지 않는다. 연결 만료·logout·reauth에도 `SemesterWorkspace`와 학업 상태를 보존한다. 정확한 account·credential authority는 [ADR 0017](../adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md)이 소유한다.
 
 ## 학기 작업공간과 Codex 사용 모델
 
@@ -98,6 +100,8 @@ Codex의 실행과 보조 맥락은 Course, ModelingRun 또는 확인된 학업 
 | 실행 지원 | `ModelingRecipe`, `ModelingInvocation`, `ModelingRun`, `SourceSelection` | 반복 작업의 정의, 일회성 요청과 한 시도의 receipt를 학업 상태와 분리한다. |
 
 `TrustedState`는 별도 저장 container가 아니라 UserConfirmation을 거쳐 SemesterModel에 반영된 정보의 권한 상태다.
+
+Codex account와 credential은 이 제품 상태 표의 durable 학업 authority가 아니다. Official Runtime이 app-managed `CODEX_HOME`의 credential을 소유하고, AY-PLE App은 transient login attempt와 Browser-safe projection만 중재한다. 둘 다 workspace·Course·`ModelingRun` identity와 분리한다.
 
 ## 상태와 검토 경계
 
@@ -175,7 +179,7 @@ First Assignment vertical은 다음 kernel을 이미 증명했다.
 | 분류 | 항목 |
 | --- | --- |
 | 구현된 kernel | TXT `RawMaterial`, Course와 `Assignment`, `ModelingRecipe → ModelingInvocation → ModelingRun` 실행 receipt, 독립된 `StatePatch → Review → UserConfirmation → 확인된 SemesterModel`, `EvidenceRef` |
-| 첫 public preview | 공식 Landing, public `npx`, verified Runtime과 Browser OAuth, app-owned `SemesterWorkspace` scaffold·validation, `Semester Ready`, `ready-relaunch` |
+| 첫 public preview | 공식 Landing, public `npx`, verified Runtime과 official Codex-managed ChatGPT Browser login, app-owned `SemesterWorkspace` scaffold·validation, `Semester Ready`, `ready-relaunch` |
 | release claim 밖 | 자료 archive/import, Course 구성과 자료 기반 학업 action. 구현된 kernel이 있어도 새 scaffold와 잇는 public journey가 없으면 현재 capability로 광고하지 않는다. |
 | 제공 형태 | macOS에서 local companion과 browser UI를 함께 사용하는 local web app. Packaged Desktop App은 후속 |
 | runtime 전제 | First Assignment vertical에서 검증한 observable execution contract, 격리된 제품 layout과 native Codex mapping. 일반 Chat completeness를 전제로 하지 않는다. |
@@ -206,6 +210,7 @@ PDF text extraction, OCR, HWP/HWPX parsing처럼 결정적으로 처리할 수 �
 - `RawMaterial`과 `SemesterModel`은 사용자의 로컬 환경에 둔다.
 - `local-first`는 `offline`을 뜻하지 않는다. Codex 실행 중 대화·Agent가 읽은 workspace content·tool result는 provider로 전송될 수 있으며, 정확한 공개 privacy 경계는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)가 소유한다.
 - app-managed runtime 상태와 secret은 Git에 포함하지 않는다.
+- OAuth credential bytes는 AY-PLE product API·Browser storage·`SemesterWorkspace`·product receipt와 public log에 넣지 않고 official Codex Runtime이 소유한다.
 - 브라우저가 Codex App Server나 파일시스템에 직접 접근하지 않고 local companion server가 중재한다.
 - RawMaterial 원본은 자동 수정하거나 삭제하지 않는다.
 - Codex command/file approval과 학업 정보에 대한 `UserConfirmation`은 별개의 권한 경계다.
@@ -216,6 +221,7 @@ PDF text extraction, OCR, HWP/HWPX parsing처럼 결정적으로 처리할 수 �
 | 기준 | 확인할 질문 |
 | --- | --- |
 | public 진입 가능성 | 학생이 공식 Landing의 명령으로 local AY-PLE을 시작하고 현재 prerequisite와 preview 범위를 이해할 수 있는가? |
+| Codex 연결 lifecycle | Fresh login·취소·재시도·relaunch·만료 뒤 reauth·logout이 Browser-safe 상태로 수렴하고 workspace나 학업 상태를 손상하지 않는가? |
 | setup 완료성 | App이 새 `SemesterWorkspace`를 생성·검증하고, Course나 자료가 없어도 정확한 `Semester Ready`를 표시하는가? |
 | 재실행 지속성 | 같은 public 명령으로 다시 실행했을 때 중복 scaffold 없이 준비된 workspace를 다시 여는가? |
 | release claim의 진실성 | post-Ready import와 학업 action을 현재 public capability로 과장하지 않는가? |

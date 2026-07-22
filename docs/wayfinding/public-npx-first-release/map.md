@@ -42,6 +42,7 @@ Node와 npm이 설치된 supported macOS arm64에서 repository·system Python·
 - [Runtime release delivery·integrity·versioning을 정한다](tickets/007-runtime-release-delivery-integrity.md) — Exact npm package의 embedded descriptor가 deterministic GitHub Runtime asset 하나를 pin하고, 단일 `RuntimeResolver`가 complete-tree verification·content-addressed cache·resume·retained-archive offline repair를 fail closed하게 소유하며 rollback 단위를 still-supported 이전 exact app release로 제한했다.
 - [Public npx distribution 결정을 formal owner에 채택한다](tickets/007a-record-public-distribution-decision.md) — ADR 0016을 별도 장기 정본으로 채택하고 ADR 0006 root ownership, Product Brief, Runtime 격리, 구현 지도와 Development Backlog에 current·target을 분리해 반영했다.
 - [Browser-launched Codex OAuth lifecycle을 설계한다](tickets/008-browser-oauth-lifecycle.md) — Official Codex-managed browser login과 app-data `CODEX_HOME`만 credential authority로 두고, transient single-attempt lease·matching completion+fresh ChatGPT account read, auth-only bootstrap Runtime과 pre-Ready close→workspace Runtime 재생성을 고정했다.
+- [Product OAuth lifecycle 결정을 formal owner에 채택한다](tickets/008a-record-product-auth-decision.md) — ADR 0017을 단일 account lifecycle 정본으로 채택하고 Product Brief·Runtime 격리·구현 지도·Development Backlog에 current와 adopted target을 분리해 전파했다.
 
 ## Not yet specified
 

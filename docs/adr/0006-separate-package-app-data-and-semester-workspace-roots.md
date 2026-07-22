@@ -4,7 +4,7 @@
 
 성숙도: 채택
 
-부분 대체·보완됨: [ADR 0014 — SemesterWorkspace를 app-owned normalized scaffold로 생성한다](0014-create-app-owned-normalized-semester-workspaces.md)가 사용자가 고른 기존 폴더를 `workspaceRoot`로 직접 채택하는 admission·identity 의미를 대체한다. [ADR 0016 — Exact npx application과 verified Runtime release를 분리한다](0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)는 public release에서 `packageRoot`가 Runtime binding을, `appDataRoot`가 verified Runtime generation을 소유하도록 구체화한다. 이 ADR의 세 root 분리와 수명·복구 책임은 유지한다.
+부분 대체·보완됨: [ADR 0014 — SemesterWorkspace를 app-owned normalized scaffold로 생성한다](0014-create-app-owned-normalized-semester-workspaces.md)가 사용자가 고른 기존 폴더를 `workspaceRoot`로 직접 채택하는 admission·identity 의미를 대체한다. [ADR 0016 — Exact npx application과 verified Runtime release를 분리한다](0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)는 public release에서 `packageRoot`가 Runtime binding을, `appDataRoot`가 verified Runtime generation을 소유하도록 구체화한다. [ADR 0017 — Codex-managed Browser OAuth를 사용한다](0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md)는 `appDataRoot`의 account·credential 수명과 pre-workspace Runtime transition을 구체화한다. 이 ADR의 세 root 분리와 수명·복구 책임은 유지한다.
 
 Codex runtime 상태와 제품 실행 상태는 수명과 복구 책임이 다르다. 설치 artifact, 기기별 native state, 사용자 소유 학기 자료의 수명과 백업 정책도 서로 다르므로 하나의 root나 호출 당시의 `process.cwd()`에 묶지 않는다.
 
