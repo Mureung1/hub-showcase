@@ -10,11 +10,12 @@ import { SplatViewer } from "./SplatViewer";
 
 type SceneWorkspaceProps = {
   onClose: () => void;
+  restoreFocusExternally: boolean;
 };
 
 const sceneHours = ["10:00", "13:00", "15:00", "18:00"] as const;
 
-export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
+export function SceneWorkspace({ onClose, restoreFocusExternally }: SceneWorkspaceProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const [captureType, setCaptureType] = useState<CaptureType>("equirectangular_video");
@@ -25,8 +26,10 @@ export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    returnFocusRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!restoreFocusExternally) {
+      returnFocusRef.current =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
     closeButtonRef.current?.focus();
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
@@ -36,9 +39,9 @@ export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      window.setTimeout(() => returnFocusRef.current?.focus());
+      if (!restoreFocusExternally) window.setTimeout(() => returnFocusRef.current?.focus());
     };
-  }, [onClose]);
+  }, [onClose, restoreFocusExternally]);
 
   const accept = useMemo(
     () => (captureType.endsWith("video") ? ".mp4,.mov,.mkv" : ".jpg,.jpeg,.png,.heic"),

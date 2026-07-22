@@ -132,6 +132,7 @@ export function WorkspaceLayout({ model }: { model: ProductWorkspaceModel }) {
         inspectorOpen={panels.inspectorOpen}
         filterOpenButtonRef={panels.filterOpenButtonRef}
         inspectorOpenButtonRef={panels.inspectorOpenButtonRef}
+        sceneOpenButtonRef={panels.sceneOpenButtonRef}
         onFiltersOpen={() => panels.setFiltersOpen(true)}
         onInspectorOpen={() => panels.setInspectorOpen(true)}
         onSceneOpen={() => panels.setSceneOpen(true)}

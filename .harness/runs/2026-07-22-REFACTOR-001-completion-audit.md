@@ -71,6 +71,8 @@ Mobile (390 x 844): analysis conditions and analysis results each opened and clo
 browser console errors: 0
 ```
 
-The Scene-dialog test now waits for its close button to receive focus before
-pressing Escape. This removes a test-only timing race while continuing to verify
-the same keyboard focus-return contract.
+The Korean product route now captures the Scene trigger through the workspace
+panel ref before the lazy dialog mounts, then restores focus after the dialog
+unmounts. The `/en` demo keeps its previous Scene focus behavior. The regression
+test waits for the dialog close button before pressing Escape and verifies that
+the trigger regains focus.

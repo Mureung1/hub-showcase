@@ -469,7 +469,7 @@ export function useProductWorkspaceModel(
   const compactMap = useCompactMap();
   const catalogState = useWorkspaceCatalog(catalog);
   const selection = useAnalysisSelection(catalogState.initialUrlState);
-  const panels = useWorkspacePanels(compactMap);
+  const panels = useWorkspacePanels(compactMap, !useDemoData);
   const viewport = useMapViewport(catalogState.initialUrlState.center, !useDemoData);
   const marketData = useWorkspaceMarketData(
     catalog,

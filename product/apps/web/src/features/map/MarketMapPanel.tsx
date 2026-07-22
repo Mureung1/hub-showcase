@@ -38,6 +38,7 @@ type MarketMapPanelProps = {
   inspectorOpen: boolean;
   filterOpenButtonRef: RefObject<HTMLButtonElement | null>;
   inspectorOpenButtonRef: RefObject<HTMLButtonElement | null>;
+  sceneOpenButtonRef: RefObject<HTMLButtonElement | null>;
   onFiltersOpen: () => void;
   onInspectorOpen: () => void;
   onSceneOpen: () => void;
@@ -65,6 +66,7 @@ export function MarketMapPanel({
   inspectorOpen,
   filterOpenButtonRef,
   inspectorOpenButtonRef,
+  sceneOpenButtonRef,
   onFiltersOpen,
   onInspectorOpen,
   onSceneOpen,
@@ -121,7 +123,12 @@ export function MarketMapPanel({
           </button>
         </div>
       </div>
-      <button type="button" className="scene-entry-button" onClick={onSceneOpen}>
+      <button
+        ref={sceneOpenButtonRef}
+        type="button"
+        className="scene-entry-button"
+        onClick={onSceneOpen}
+      >
         <ScanLine size={16} />
         <span>관평동 3D 장소</span>
         <small>촬영 전</small>
