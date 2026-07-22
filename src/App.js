@@ -4,7 +4,8 @@ import { Badge, Button, SearchField } from "./components/ui";
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 const KAKAO_MAP_KEY = process.env.REACT_APP_KAKAO_MAP_JAVASCRIPT_KEY;
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:4000";
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL
+  || `${window.location.protocol}//${window.location.hostname}:4000`;
 const PLACE_STORAGE_KEY = "jigeum-review:selected-place";
 const MAP_SCREEN_STORAGE_KEY = "jigeum-review:map-screen";
 const AUTH_RETURN_STORAGE_KEY = "jigeum-review:auth-return";
@@ -259,7 +260,8 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
       <header className="top-nav"><strong className="top-nav__brand">지금리뷰</strong><span>영수증 인증 리뷰 지도</span><AccountControl {...accountProps} /></header>
       <aside className="place-sidebar">
         <div className="sidebar-search"><h1>어디를 찾으세요?</h1><p>현재 보고 있는 지도 주변의 식당과 카페를 검색합니다.</p><SearchField value={searchInput} onChange={(event) => setSearchInput(event.target.value)} onClear={() => setSearchInput("")} onSubmit={handleSearchSubmit} /><div className="search-scope"><span>지도 중심에서 약 {(searchRadius / 1000).toFixed(searchRadius < 1000 ? 1 : 0)}km 이내</span><button onClick={moveToCurrentLocation} type="button">{locationStatus === "loading" ? "위치 확인 중..." : "◎ 내 위치"}</button></div></div>
-        <div className="place-results" aria-live="polite" ref={resultsRef}>
+        <div className={`place-results place-results--${placeStatus} ${places.length ? "has-results" : ""}`} aria-live="polite" ref={resultsRef}>
+          {placeStatus === "ready" && places.length > 0 && <div className="place-results__header"><strong>검색 결과</strong><span>{places.length}곳</span></div>}
           {placeStatus === "idle" && <div className="empty-search"><strong>검색 결과가 여기에 표시됩니다</strong><span>식당이나 카페 이름을 입력해 주세요.</span></div>}
           {placeStatus === "loading" && <p className="sidebar-state">카카오맵에서 검색 중...</p>}
           {placeStatus === "error" && <p className="sidebar-state sidebar-state--error">{placeError}</p>}
