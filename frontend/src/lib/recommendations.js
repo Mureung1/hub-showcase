@@ -82,11 +82,13 @@ function buildMethodEvidence(method, scores, affinity) {
     .slice(0, 2)
     .map(([key]) => key);
   const labels = basedOn.map((key) => SCORE_LABELS[key]).join("·");
-  const directSignal = affinity > 0 ? "과 선택한 공부습관" : "";
+  const directSignal = affinity > 0 ? "과 직접 고른 공부습관" : "";
 
   return {
     basedOn,
-    reason: `현재 응답의 ${labels} 신호${directSignal}를 함께 반영한 후보입니다. 실제 효과는 과업과 실행 후 결과로 다시 확인해야 합니다.`,
+    reason:
+      `당신의 응답에서 ${labels} 신호${directSignal}가 두드러져 먼저 시도해볼 후보로 골랐습니다. ` +
+      "'맞는 방법'이라 단정하는 게 아니라 '오늘 먼저 해보기 좋은 방법'이라는 뜻이며, 실제 효과는 과업과 실행 후 결과로 다시 확인해야 합니다.",
   };
 }
 
@@ -190,7 +192,7 @@ export function createRecommendations(scores, methodAffinities = {}, matchAdjust
   return {
     algorithmVersion: ALGORITHM_VERSION,
     summary:
-      "응답을 보면 학습 선호와 피로 신호를 함께 보며 루틴을 작게 설계하는 방식이 더 편할 수 있습니다.",
+      "당신의 학습 선호와 피로 신호를 함께 정리해 보니, 큰 계획을 한 번에 세우기보다 작은 루틴으로 시작해 실제로 맞는지 스스로 확인해가는 방식이 더 편할 수 있습니다. 아래에서 오늘 먼저 시도할 방법과 그 근거를 볼 수 있습니다.",
     recommendations,
     avoidList: buildAvoidList(scores),
     stressSignals: buildStressSignals(scores),

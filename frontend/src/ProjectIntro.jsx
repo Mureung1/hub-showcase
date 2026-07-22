@@ -3,6 +3,7 @@ import { SCORE_LABELS, STUDY_QUESTIONS, STRESS_QUESTIONS } from "./data/question
 import { buildDayPlan, buildWeeklyTimetable } from "./lib/schedule";
 import { loadEssentialHours, saveEssentialHours } from "./lib/storage";
 import AnalysisReport from "./components/AnalysisReport";
+import RetrospectiveReport from "./components/RetrospectiveReport";
 import { ConsentNotice } from "./components/ConsentNotice";
 import { OptionCard, Progress, ScoreBar } from "./components/ui";
 import { StepIntro } from "./components/steps/StepIntro";
@@ -28,6 +29,7 @@ export default function ProjectIntro() {
     setMbtiSource,
     mbtiKnown,
     mbtiEstimated,
+    estimatedMeta,
     studyAnswers,
     setStudyAnswers,
     stressAnswers,
@@ -63,15 +65,21 @@ export default function ProjectIntro() {
     hasCompleteResult,
     continueWithoutOfficialMbti,
     applyEstimatedMbti,
+    applySupplementMeta,
+    flowNotice,
+    setFlowNotice,
     handleRecordSave,
     handleFeedbackSave,
     resetFlowState,
     clearLocalState,
   } = useAssessmentFlow();
 
-  // AI 간이 추정 채팅(ADR-008): step 1 안에서 여닫는 하위 화면 + 추정 근거 메타(결과 라벨용).
+  // AI 간이 추정 채팅(ADR-008): step 1 안에서 여닫는 하위 화면. 추정 근거 메타는 useAssessmentFlow가 소유·저장한다.
   const [mbtiChatOpen, setMbtiChatOpen] = useState(false);
-  const [estimatedMeta, setEstimatedMeta] = useState(null);
+  // 보충 대화(③): 유형 확정(공식·추정) 후 study 설문 전에 여는 옵셔널 AI 대화 화면.
+  const [supplementOpen, setSupplementOpen] = useState(false);
+  // 개인 회고 리포트(항목 3): 결과·루틴 화면에서 여는 로컬 전용 표면.
+  const [showRetro, setShowRetro] = useState(false);
 
   const {
     recallPhase,
@@ -174,11 +182,33 @@ export default function ProjectIntro() {
 
         {showAnalysis ? (
           <AnalysisReport onClose={() => setShowAnalysis(false)} />
+        ) : showRetro ? (
+          <RetrospectiveReport
+            onClose={() => setShowRetro(false)}
+            result={result}
+            mbti={mbti}
+            mbtiKnown={mbtiKnown}
+            mbtiEstimated={mbtiEstimated}
+            estimatedMeta={estimatedMeta}
+          />
         ) : (
         <>
         <Progress step={step} />
 
-        {step === 1 && !mbtiChatOpen && (
+        {flowNotice && (
+          <div className="notice" role="status" style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+            <span>{flowNotice}</span>
+            <button
+              onClick={() => setFlowNotice("")}
+              type="button"
+              style={{ background: "transparent", border: 0, color: "var(--on-tint-green)", fontWeight: 700, fontSize: 13, cursor: "pointer", flexShrink: 0, textDecoration: "underline", textUnderlineOffset: 3 }}
+            >
+              닫기
+            </button>
+          </div>
+        )}
+
+        {step === 1 && !mbtiChatOpen && !supplementOpen && (
           <StepMbtiSource
             mbti={mbti}
             setMbti={setMbti}
@@ -190,19 +220,18 @@ export default function ProjectIntro() {
               setMbtiChatOpen(true);
             }}
             onHome={() => setStep(0)}
-            onNext={() => setStep(2)}
+            onNext={() => setSupplementOpen(true)}
           />
         )}
 
         {step === 1 && mbtiChatOpen && (
           <StepMbtiChat
             onEstimated={(estimatedMbti, meta) => {
-              setEstimatedMeta(meta);
-              applyEstimatedMbti(estimatedMbti);
+              applyEstimatedMbti(estimatedMbti, meta);
               setMbtiChatOpen(false);
             }}
-            onFallback={() => {
-              setEstimatedMeta(null);
+            onFallback={(msg) => {
+              setFlowNotice(msg || "AI 추정을 쓸 수 없어 규칙 설문으로 진행했어요. (백엔드가 꺼져 있으면 켜고 다시 시도하세요.)");
               continueWithoutOfficialMbti();
               setMbtiChatOpen(false);
             }}
@@ -212,6 +241,26 @@ export default function ProjectIntro() {
             }}
             onHome={() => {
               setMbtiChatOpen(false);
+              setStep(0);
+            }}
+          />
+        )}
+
+        {step === 1 && supplementOpen && (
+          <StepMbtiChat
+            mode="supplement"
+            knownMbti={mbti}
+            onSupplemented={(meta) => {
+              applySupplementMeta(meta);
+              setSupplementOpen(false);
+            }}
+            onSkip={() => {
+              setSupplementOpen(false);
+              setStep(2);
+            }}
+            onBack={() => setSupplementOpen(false)}
+            onHome={() => {
+              setSupplementOpen(false);
               setStep(0);
             }}
           />
@@ -254,6 +303,30 @@ export default function ProjectIntro() {
             <p className="eyebrow">Result</p>
             <h2>나의 공부 성향 요약</h2>
             <p>{result.summary}</p>
+
+            <div className="flowmap" aria-label="결과 화면 흐름 안내">
+              {["성향 요약", "행동지표·4축 신호", "추천 공부법·루틴", "근거·한계", "회고 리포트"].flatMap((label, i, arr) => {
+                const node = (
+                  <span className="flowmap-node" key={label}>
+                    <span className="fm-num">{i + 1}</span>{label}
+                  </span>
+                );
+                return i < arr.length - 1
+                  ? [node, <span className="flowmap-arrow" key={`${label}-a`} aria-hidden="true">→</span>]
+                  : [node];
+              })}
+            </div>
+
+            <div className="meaning-frame">
+              <p className="eyebrow">이 결과로 당신이 얻는 것</p>
+              <p>
+                이건 성격을 단정하는 진단이 아니라 <strong>오늘 바로 써볼 수 있는 자기조절 회고 자료</strong>입니다.
+                아래에서 ① 내 학습·피로 신호가 어떤 행동지표로 정리됐는지, ② 오늘 먼저 시도할 공부법과 회복 루틴,
+                ③ 그 추천이 나온 근거와 한계를 볼 수 있습니다. 실제로 해본 뒤에는 <strong>예측과 결과를 대조</strong>해
+                나에게 맞는 방식을 스스로 검증하고, 그 과정을 <strong>회고 리포트</strong>로 정리해 남길 수 있습니다.
+              </p>
+            </div>
+
             <div className="answers">
               {[...getSelectedOptionLabels(STUDY_QUESTIONS, studyAnswers), ...getSelectedOptionLabels(STRESS_QUESTIONS, stressAnswers)].map((item) => (
                 <span className="answer-chip" key={`${item.question}-${item.answer}`}>
@@ -419,6 +492,28 @@ export default function ProjectIntro() {
               <p className="hint" style={{ marginTop: 6 }}>
                 MBTI는 고정된 진단이 아니라 탐색 시작점입니다. 같은 유형이라도 상황·과업에 따라 잘 맞는 방식이 달라질 수 있어, 아래 자기 점검 기록이 더 믿을 만한 신호가 됩니다.
               </p>
+              {(mbtiEstimated || mbtiKnown) && (estimatedMeta?.observedSignals?.length > 0 || estimatedMeta?.rationale) && (
+                <div className="trust-observed">
+                  <span className="trust-step-tag">
+                    AI 대화에서 관찰된 근거 · {mbtiEstimated ? "간이 추정(공식 아님)" : "공식 유형 보충"}
+                  </span>
+                  {estimatedMeta?.rationale && (
+                    <p className="hint" style={{ marginTop: 8 }}>{estimatedMeta.rationale}</p>
+                  )}
+                  {estimatedMeta?.observedSignals?.length > 0 && (
+                    <div className="trust-chips" style={{ marginTop: 8 }}>
+                      {estimatedMeta.observedSignals.map((sig, idx) => (
+                        <span className="basis-chip" key={`${sig.signal ?? idx}`}>
+                          {sig.signal}{sig.indicator ? ` · ${SCORE_LABELS[sig.indicator] ?? sig.indicator}` : ""}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <p className="hint" style={{ marginTop: 8 }}>
+                    이 근거는 판정을 대체하지 않고, 왜 이 유형을 매칭 시작점으로 삼았는지 보완 설명합니다. 개인 응답이 여전히 추천의 중심입니다.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="two-col">
@@ -497,6 +592,9 @@ export default function ProjectIntro() {
               </button>
               <button className="secondary" onClick={() => setStep(0)} type="button">
                 처음 화면
+              </button>
+              <button className="secondary" onClick={() => setShowRetro(true)} type="button">
+                내 회고 리포트 보기
               </button>
               <button className="primary" onClick={() => setStep(5)} type="button">
                 오늘 계획 입력하기
@@ -745,6 +843,9 @@ export default function ProjectIntro() {
             <div className="actions">
               <button className="secondary" onClick={() => setStep(5)} type="button">
                 오늘 계획으로 돌아가기
+              </button>
+              <button className="primary" onClick={() => setShowRetro(true)} type="button">
+                내 회고 리포트 보기
               </button>
               <button className="secondary" onClick={() => setStep(0)} type="button">
                 처음 화면
