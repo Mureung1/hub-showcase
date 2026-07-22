@@ -3,11 +3,31 @@ const ApiError = require('./apiError');
 // 카카오 오픈채팅 링크 패턴만 검증한다 (기획서 11번 — 그 이상 유효성은 확인하지 않음).
 const OPEN_CHAT_URL_PATTERN = /^https?:\/\/open\.kakao\.com\//;
 
+// 마이그레이션의 varchar 한도와 같은 값을 앱에서도 강제한다. 앱이 먼저 막지 않으면
+// Postgres가 거절하면서 500 + DB 에러 원문("character varying(100) 자료형에 너무 긴
+// 자료를...")이 그대로 클라이언트까지 나간다. 컬럼 길이를 바꾸면 여기도 같이 바꿔야 한다.
+// (open_chat_url·description은 text라 한도가 없으므로 목록에 없다.)
+const MAX_LENGTHS = {
+  title: 100,
+  category: 30,
+  regionSido: 20,
+  regionSigungu: 20,
+  regionEupmyeondong: 20,
+};
+
+function checkMaxLength(value, field) {
+  const max = MAX_LENGTHS[field];
+  if (max !== undefined && value.length > max) {
+    throw new ApiError('VALIDATION_ERROR', `${field}는(은) ${max}자를 넘을 수 없습니다`);
+  }
+  return value;
+}
+
 function requireString(value, field) {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new ApiError('VALIDATION_ERROR', `${field}는(은) 필수입니다`);
   }
-  return value.trim();
+  return checkMaxLength(value.trim(), field);
 }
 
 // POST /api/meetings 요청 본문을 검증하고, DB에 넣을 정규화된 값으로 변환한다.
@@ -62,7 +82,7 @@ function validateCreateMeeting(body = {}) {
     regionSigungu,
     regionEupmyeondong:
       typeof body.regionEupmyeondong === 'string' && body.regionEupmyeondong.trim() !== ''
-        ? body.regionEupmyeondong.trim()
+        ? checkMaxLength(body.regionEupmyeondong.trim(), 'regionEupmyeondong')
         : null,
     startAt,
     endAt,
