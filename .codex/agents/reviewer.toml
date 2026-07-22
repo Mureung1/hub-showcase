@@ -4,7 +4,7 @@ description = """
 테스트 관점에서 검토하는 읽기 전용 에이전트.
 """
 
-model = "gpt-5.6"
+model = "gpt-5.6-sol"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 

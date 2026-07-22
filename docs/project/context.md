@@ -19,7 +19,8 @@
 | `CTX-016` | 활성 | `BE-RECIPE-002`의 목록 범위는 공유 데이터가 없는 현재 `OWNED`, `EXTERNAL` 활성 레시피까지다. `DB-SHARE-002`와 `BE-SHARE-003`에서 `RECEIVED`, `receivedInfo`와 상세 조회를 통합한다. | `BE-RECIPE-002`, `DB-SHARE-002`, `BE-SHARE-003` |
 | `CTX-017` | 활성 | `/recipes/new`은 데스크톱에서 목록을 왼쪽에 유지하고 추가 폼을 오른쪽 종이에 표시하며, 1100px 이하에서는 폼을 단일 종이 화면으로 표시한다. 목록 카드와 저장 후 상세 이동은 `FE-RECIPE-004`에서 연결한다. | `FE-RECIPE-001`, `FE-RECIPE-002`, `FE-RECIPE-004` |
 | `CTX-018` | 활성 | MVP AI 구조화는 OpenAI Responses API와 `gpt-5.6-luna`를 사용한다. 구조화 출력은 서버에서 다시 검증하고, AI 결과는 자동 저장하지 않으며 사용자가 수정한 저장 요청을 별도로 검증한다. | `COMMON-AI-001` |
-| `CTX-019` | 활성 | 직접 입력 AI 구조화는 `rawText`만 처리하고 `source`를 `null`로 반환한다. `sourceUrl` 수집은 `BE-AI-002`까지 거부하며, `warnings[].field`는 `draft` 기준 상대 경로로 제한하고 재료·조리 단계 인덱스가 실제 배열 범위 안인지 서버에서 검증한다. | `BE-AI-001`, `BE-AI-002`, `FE-AI-001` |
+| `CTX-019` | 대체됨 | 직접 입력 전용 AI 구조화와 `sourceUrl` 거부 정책은 `BE-AI-002` 완료로 종료됐다. 대체 결정은 `CTX-020`이다. | `BE-AI-001`, `BE-AI-002` |
+| `CTX-020` | 활성 | AI 구조화는 직접 입력, 안전하게 수집한 URL과 두 입력의 조합을 지원한다. URL 출처는 AI가 아닌 서버가 검증된 제출 URL과 수집한 제목·작성자로 설정하며, 직접 입력만 사용하면 `source`는 `null`이다. `warnings[].field` 검증 규칙은 계속 유지한다. | `BE-AI-001`, `BE-AI-002`, `FE-AI-001` |
 ## 알려진 문제
 
 | ID | 상태 | 내용 | 해결 티켓 |

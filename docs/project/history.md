@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-23 · BE-AI-002 · 완료
+
+- 결과: 인증된 사용자의 URL 단독 및 URL·직접 입력 혼합 요청을 안전하게 수집해 AI 구조화에 연결하고, 검증된 제출 URL과 수집한 제목·작성자를 편집용 초안의 출처로 반환한다. 수집 실패는 직접 입력을 안내하는 `URL_FETCH_FAILED`로 반환하며 결과는 자동 저장하지 않는다.
+- 결정: `http`와 `https`만 허용하고 DNS 결과를 실제 연결 주소로 고정해 localhost, 사설·링크 로컬·예약 IP를 차단한다. DNS 조회와 각 HTTP 요청은 10초, Redirect는 3회, 응답은 1,048,576바이트, 추출 본문은 20,000자로 제한하며 Redirect 목적지를 매번 재검증한다. HTML은 Schema.org `Recipe`, `article`, `main` 순서로 범위를 제한하고 실행 콘텐츠를 제거한다.
+- 시행착오: 최초 구현은 HTTP 연결 전에 수행하는 DNS 조회에 Timeout이 적용되지 않았고 전체 `body`를 추출하는 폴백이 남아 있어 각각 DNS Timeout과 레시피 본문 영역 필수화로 보완했다. 반복 공개 URL 검증 중 IANA가 일시적으로 2xx가 아닌 응답을 반환해 URL 수집과 AI 혼합 구조화를 분리해 확인했다.
+- 검증: `backend npm test`의 5개 테스트, `backend npm run type-check`, `backend npm run build`, `git diff --check`를 통과했다. IANA 공개 URL과 HTTP→HTTPS Redirect 수집, 100바이트 응답 제한, 1ms Timeout, 차단 주소와 20,000자 본문 제한을 확인했고 실제 OpenAI 요청으로 URL 단독 및 혼합 입력의 제목·재료·단계와 서버 출처 주입을 확인했다.
+- 후속: `FE-AI-001`
+- 반복 패턴: 없음
+
 ## 2026-07-22 · BE-AI-001 · 완료
 
 - 결과: 인증된 사용자의 직접 입력을 `POST /api/ai/recipes/structure`에서 OpenAI Responses API로 구조화해 편집용 `RecipeDraft`와 `RecipeWarning`을 반환한다. URL 입력은 후속 티켓까지 거부하고 성공 결과는 데이터베이스에 저장하지 않는다.

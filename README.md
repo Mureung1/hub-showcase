@@ -83,6 +83,10 @@ VITE_API_BASE_URL=
 백엔드에는 `backend/.env`를 만들고 Firebase Admin Application Default Credentials 경로를 설정한다.
 
 ```dotenv
+URL_FETCH_TIMEOUT_MS=10000
+URL_FETCH_MAX_REDIRECTS=3
+URL_FETCH_MAX_RESPONSE_BYTES=1048576
+URL_FETCH_MAX_TEXT_LENGTH=20000
 FIREBASE_PROJECT_ID=your-project-id
 GOOGLE_APPLICATION_CREDENTIALS=C:/absolute/path/to/firebase-admin-service-account.json
 OPENAI_API_KEY=your_openai_api_key
@@ -95,6 +99,7 @@ CORS_ALLOWED_ORIGIN=http://localhost:5173
 `GOOGLE_APPLICATION_CREDENTIALS`가 가리키는 서비스 계정 JSON은 저장소 밖에 보관하고 Commit하지 않는다.
 `CORS_ALLOWED_ORIGIN`을 설정하면 해당 Origin의 브라우저 요청만 교차 출처로 허용한다. 로컬 Vite proxy만 사용할 때는 생략할 수 있으며, 배포 환경에서는 실제 프론트엔드 Origin으로 설정한다.
 `OPENAI_API_KEY`는 백엔드에서만 사용하고 프론트엔드 환경 변수나 로그에 노출하지 않는다.
+URL 수집은 DNS 조회와 각 HTTP 요청에 각각 10초 Timeout을 적용하고 Redirect는 최대 3회까지 허용한다. 각 Redirect 목적지는 동일한 URL·IP 규칙으로 다시 검증한다. 응답은 최대 1,048,576바이트, AI에 전달하는 추출 본문은 최대 20,000자로 제한하며 이 값들은 `URL_FETCH_*` 환경 변수로 조정할 수 있다.
 
 ### AI 운영 기준
 
@@ -130,6 +135,7 @@ npm run lint
 npm run build
 
 cd ../backend
+npm test
 npm run type-check
 npm run build
 ```

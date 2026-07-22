@@ -10,12 +10,18 @@ export interface RecipeStep {
   description: string;
 }
 
+export interface RecipeSource {
+  url: string;
+  title: string | null;
+  author: string | null;
+}
+
 export interface RecipeDraft {
   title: string;
   description: string | null;
   servings: string | null;
   cookingTimeMinutes: number | null;
-  source: null;
+  source: RecipeSource | null;
   ingredients: Ingredient[];
   steps: RecipeStep[];
 }
