@@ -497,7 +497,7 @@ describe('AuthenticatedWorkspace', () => {
     expect(capture).toHaveBeenCalledOnce();
   });
 
-  it('starts with examples and immediately retrieves when a suggested situation is selected', async () => {
+  it('immediately retrieves the exact survey query when a suggested situation is selected', async () => {
     const user = userEvent.setup();
     const repository: InsightRepository = {
       load: () => ({
@@ -505,7 +505,7 @@ describe('AuthenticatedWorkspace', () => {
           createInsight({
             id: 'project-design',
             title: '앱 화면 설계',
-            memo: '팀 프로젝트 앱 디자인 참고',
+            memo: '프로젝트에 쓸 자료',
           }),
           createInsight({ id: 'unrelated', title: '여행 준비' }),
         ],
@@ -520,14 +520,11 @@ describe('AuthenticatedWorkspace', () => {
       </DesignSystemProvider>
     );
 
-    expect(
-      await screen.findByRole('heading', {
-        name: '이런 상황에서 시작해보세요',
-      })
-    ).not.toBeNull();
     expect(screen.queryByRole('article')).toBeNull();
 
-    const suggestion = screen.getByRole('button', { name: '팀 프로젝트' });
+    const suggestion = screen.getByRole('button', {
+      name: '프로젝트에 쓸 자료 꺼내기',
+    });
     await user.click(suggestion);
 
     expect(suggestion.getAttribute('aria-pressed')).toBe('true');
@@ -537,17 +534,17 @@ describe('AuthenticatedWorkspace', () => {
           name: '지금 꺼내보고 싶은 상황',
         }) as HTMLInputElement
       ).value
-    ).toBe('팀 프로젝트 앱 디자인 참고');
+    ).toBe('프로젝트에 쓸 자료 꺼내기');
     expect(screen.getByRole('status').textContent).toContain(
-      '“팀 프로젝트 앱 디자인 참고” 작업팩 1개'
+      '“프로젝트에 쓸 자료 꺼내기” 결과 1개'
     );
     expect(
       screen.getByRole('heading', { name: '앱 화면 설계' })
     ).not.toBeNull();
-    expect(screen.getByText(/메모의 “팀” 단서/)).not.toBeNull();
+    expect(screen.queryByText(/단서/)).toBeNull();
   });
 
-  it('keeps the submitted workpack while a blank draft is unsubmitted, then returns to examples on submit', async () => {
+  it('waits for submission and clears the entire retrieve state from the clear control', async () => {
     const user = userEvent.setup();
     const repository: InsightRepository = {
       load: () => ({
@@ -568,44 +565,51 @@ describe('AuthenticatedWorkspace', () => {
       </DesignSystemProvider>
     );
 
-    const suggestion = screen.getByRole('button', { name: '팀 프로젝트' });
-    await user.click(suggestion);
     const input = screen.getByRole('textbox', {
       name: '지금 꺼내보고 싶은 상황',
     });
 
-    await user.type(input, ' 수정');
+    await user.type(input, '팀 프로젝트');
 
-    expect(suggestion.getAttribute('aria-pressed')).toBe('false');
-    expect(screen.getByRole('status').textContent).toContain(
-      '“팀 프로젝트 앱 디자인 참고” 작업팩'
-    );
-    expect(screen.getByRole('status').textContent).not.toContain('참고 수정”');
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.queryByRole('article')).toBeNull();
 
     await user.keyboard('{Enter}');
 
     expect(screen.getByRole('status').textContent).toContain(
-      '“팀 프로젝트 앱 디자인 참고 수정” 작업팩'
-    );
-
-    await user.clear(input);
-
-    expect((input as HTMLInputElement).value).toBe('');
-    expect(suggestion.getAttribute('aria-pressed')).toBe('false');
-    expect(screen.getByRole('status').textContent).toContain(
-      '“팀 프로젝트 앱 디자인 참고 수정” 작업팩 1개'
+      '“팀 프로젝트” 결과 1개'
     );
     expect(screen.getByRole('article')).not.toBeNull();
 
-    await user.keyboard('{Enter}');
+    await user.click(screen.getByRole('button', { name: '입력 지우기' }));
 
-    expect(
-      screen.getByRole('heading', { name: '이런 상황에서 시작해보세요' })
-    ).not.toBeNull();
+    expect((input as HTMLInputElement).value).toBe('');
     expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.queryByRole('article')).toBeNull();
+    expect(
+      screen.getByText('떠오르는 단어나 지금 하고 있는 일을 짧게 적어보세요.')
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '과제 참고자료 다시 찾기' })
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '프로젝트에 쓸 자료 꺼내기' })
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '공모전 아이디어 발전시키기' })
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '여행·취미 계획 다시 이어가기' })
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '디자인·개발 레퍼런스 찾기' })
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '저장해둔 영상 골라보기' })
+    ).not.toBeNull();
   });
 
-  it('waits for free-input submission before presenting a workpack', async () => {
+  it('waits for free-input submission before presenting results', async () => {
     const user = userEvent.setup();
     const repository: InsightRepository = {
       load: () => ({
@@ -629,7 +633,7 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     expect(
-      screen.getByRole('heading', { name: '이런 상황에서 시작해보세요' })
+      screen.getByText('떠오르는 단어나 지금 하고 있는 일을 짧게 적어보세요.')
     ).not.toBeNull();
     expect(screen.queryByRole('status')).toBeNull();
     expect(screen.queryByRole('article')).toBeNull();
@@ -637,7 +641,7 @@ describe('AuthenticatedWorkspace', () => {
     await user.keyboard('{Enter}');
 
     expect(screen.getByRole('status').textContent).toContain(
-      '“React” 작업팩 1개'
+      '“React” 결과 1개'
     );
     expect(
       screen.getByRole('heading', { name: 'React 폼 검증' })
@@ -668,7 +672,7 @@ describe('AuthenticatedWorkspace', () => {
 
     expect((input as HTMLInputElement).value).toBe('  React  ');
     expect(screen.getByRole('status').textContent).toContain(
-      '“React” 작업팩 1개'
+      '“React” 결과 1개'
     );
     expect(screen.getByRole('status').textContent).not.toContain('“  React  ”');
     expect(
@@ -698,7 +702,7 @@ describe('AuthenticatedWorkspace', () => {
     await user.type(retrieveInput, 'signal');
     await user.keyboard('{Enter}');
     expect(screen.getByRole('status').textContent).toContain(
-      '“signal” 작업팩 1개'
+      '“signal” 결과 1개'
     );
 
     await user.click(screen.getByRole('button', { name: '보관함' }));
@@ -710,7 +714,7 @@ describe('AuthenticatedWorkspace', () => {
     await user.click(screen.getByRole('button', { name: '홈' }));
 
     expect(screen.getByRole('status').textContent).toContain(
-      '“signal” 작업팩 0개'
+      '“signal” 결과 0개'
     );
 
     await user.click(screen.getByRole('button', { name: '저장' }));
@@ -723,7 +727,7 @@ describe('AuthenticatedWorkspace', () => {
     await user.click(screen.getByRole('button', { name: '홈' }));
 
     expect(screen.getByRole('status').textContent).toContain(
-      '“signal” 작업팩 1개'
+      '“signal” 결과 1개'
     );
 
     await user.click(screen.getByRole('button', { name: '보관함' }));
@@ -739,7 +743,7 @@ describe('AuthenticatedWorkspace', () => {
     await user.click(screen.getByRole('button', { name: '홈' }));
 
     expect(screen.getByRole('status').textContent).toContain(
-      '“signal” 작업팩 0개'
+      '“signal” 결과 0개'
     );
   }, 10_000);
 
