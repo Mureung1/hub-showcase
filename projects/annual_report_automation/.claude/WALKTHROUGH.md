@@ -787,6 +787,317 @@ curl -X POST http://127.0.0.1:8000/fiscal-years/1/calculate
 
 ---
 
+## Step 18 — DB 레이어 이중 백엔드화: SQLite ↔ Supabase(Postgres) (2026-07-22)
+
+**무엇을 했는지 (한 줄)**
+지금까지 로컬 SQLite 파일에만 붙던 DB 코드(migrate/reader/snapshot/api)를, 환경변수 `TAXWIZ_DATABASE_URL`만 설정하면 Supabase(Postgres)에도 그대로 붙게 만들었어요. ORM을 도입하지 않고(기존 과설계 회피 방침 유지), 두 DB의 차이 딱 3가지만 흡수하는 얇은 래퍼 파일 하나(`taxengine/db/conn.py`)를 새로 만들어 해결했습니다. 기존 테스트 120개는 전부 SQLite로 그대로 통과하고, CSV CLI 재현도 5/5 유지예요.
+
+**핵심 코드 1** — 두 DB의 차이는 딱 3가지뿐이다 (`taxengine/db/conn.py`)
+
+```python
+class PG연결:
+    """psycopg(3) Connection을 sqlite3.Connection과 같은 얼굴로 감싼다."""
+    def execute(self, sql: str, params=()):
+        # 차이 ①: 물음표 자리표시자 — SQLite는 "WHERE id = ?", Postgres는 "WHERE id = %s".
+        # 기존 코드의 SQL 문자열 수십 개를 전부 고치는 대신, 실행 직전에 여기서 한 번에 바꿔치기.
+        return self.raw.execute(sql.replace("?", "%s"), params)
+
+def 삽입후id(conn: 연결, sql: str, params=()) -> int:
+    # 차이 ②: "방금 INSERT한 행의 id" 얻는 법 — SQLite는 커서에 lastrowid로 남고,
+    # Postgres는 SQL 끝에 "RETURNING id"를 붙여 SELECT처럼 결과로 돌려받아야 함.
+    if PG인가(conn):   # 차이 ③: 백엔드 판별 — 문법이 갈리는 곳에서 호출부가 분기할 수 있게
+        return conn.execute(sql + " RETURNING id", params).fetchone()[0]
+    return conn.execute(sql, params).lastrowid
+```
+
+핵심 아이디어: psycopg3의 `conn.execute(sql, params)`는 sqlite3와 **거의 같은 API**라서, 위 3가지만 감싸면 migrate.py의 `INSERT` 함수들, reader.py의 `SELECT` 함수들이 한 글자도 안 바뀌고 양쪽에서 돌아요. `cur = conn.execute(...); return cur.lastrowid` 하던 곳들만 `return 삽입후id(conn, ...)`로 바꿨습니다.
+
+**핵심 코드 2** — 스키마는 번역본을 한 벌 더 둔다 (`taxengine/db/schema.postgres.sql`)
+
+```sql
+-- SQLite:    id INTEGER PRIMARY KEY AUTOINCREMENT
+-- Postgres:  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY
+--            (bigint인 이유: 금액 컬럼도 bigint로 올렸는데, int4 최대가 21억이라
+--             억 단위 원화 금액이 넘칠 수 있어서예요)
+
+-- 일부러 "안 바꾼" 것들 — 최소 diff 원칙:
+-- 날짜는 text 유지 (DATE로 바꾸면 파이썬이 datetime.date를 돌려줘 엔진의 문자열 파싱이 깨짐)
+-- 0/1 플래그도 integer 유지 (boolean으로 바꾸면 넣는 쪽·읽는 쪽 코드를 다 고쳐야 함)
+```
+
+번역하면서 배운 것: Postgres는 따옴표 없는 식별자를 소문자로 접는데(`MyTable` → `mytable`), 우리 스키마는 식별자가 전부 한글이라 대소문자 개념이 없어서 **기존 SQL 문자열이 전부 무수정으로 통과**해요. 한글 테이블명이 뜻밖의 이식성 이점이 됐습니다.
+
+**핵심 코드 3** — 접속 대상은 환경변수 하나로 정한다 (`taxengine/db/conn.py`)
+
+```python
+def 기본_대상() -> str | Path:
+    url = os.environ.get("TAXWIZ_DATABASE_URL")   # postgresql://... 있으면 Supabase
+    if url:
+        return url
+    return Path(os.environ.get("TAXWIZ_DB", 기본_DB경로))  # 없으면 기존 SQLite 파일
+```
+
+테스트가 SQLite를 계속 쓰는 이유: 테스트 120개를 원격 Supabase에 대고 돌리면 느리고, 로컬에 Postgres를 새로 세우는 건 데모 주간에 비용이 커요. 대신 **같은 입력, 같은 정답(차감납부세액 8,575,599원)을 Supabase에 대고 딱 한 바퀴 돌려보는 스모크 테스트**(`tests/test_supabase_smoke.py`)를 따로 만들었어요 — URL 환경변수가 없으면 자동으로 건너뛰니(skip) 평소 테스트는 방해받지 않고, 두 스키마가 어긋나면(드리프트) 이 정답 대조에서 잡힙니다.
+
+**주의한 것** — CLI가 DB 접속 URL을 콘솔에 그대로 찍지 않게 했어요. URL 안에 DB 비밀번호가 들어 있어서(`postgresql://사용자:비밀번호@호스트/...`), 출력 시엔 "Postgres(접속 URL은 표시 생략)"으로 가립니다.
+
+**새로 나온 용어**
+- 플레이스홀더(placeholder): SQL에 값이 들어갈 자리를 표시하는 기호(`?` 또는 `%s`). 값을 문자열로 이어붙이지 않고 분리해 전달해야 SQL 주입 공격을 막을 수 있어요
+- RETURNING: Postgres에서 INSERT/UPDATE가 끝난 행의 컬럼값을 그 자리에서 돌려받는 SQL 문법
+- 방언(dialect): 표준 SQL은 같지만 DB마다 조금씩 다른 문법 (`INSERT OR IGNORE` vs `ON CONFLICT DO NOTHING` 같은 것)
+- 커넥션 풀러(connection pooler): DB 앞에서 접속을 모아 중계해주는 서버. Supabase 무료 티어는 직접 접속이 IPv6 전용이라, IPv4를 지원하는 풀러 주소(Session Pooler)로 붙어야 해요
+- IDENTITY: Postgres에서 id를 1씩 자동 증가시키는 표준 문법 (SQLite의 AUTOINCREMENT에 대응)
+- 드리프트(drift): 같아야 할 두 벌(여기선 SQLite/Postgres 스키마)이 수정을 거치며 조금씩 어긋나는 것
+
+**확인 질문**
+`schema.postgres.sql`에서 날짜 컬럼을 Postgres의 진짜 DATE 타입으로 바꾸지 않고 일부러 text로 남긴 이유를, "엔진 코드는 입력이 어디서 왔는지 몰라야 한다"는 이 프로젝트의 원칙과 연결해서 설명해보시겠어요?
+### 답변 : 과코딩 금지 
+---
+
+## Step 19 — 인증 도입: Supabase Auth JWT 검증 + 내 회사만 보이게 (2026-07-22)
+
+**무엇을 했는지 (한 줄)**
+지금까지 완전히 열려 있던 API에 인증을 붙였어요. FE가 Supabase Auth로 로그인해 받은 JWT(토큰)를 모든 요청에 실어 보내면, FastAPI가 서명을 검증하고(`taxengine/api/auth.py` 신설) 그 사용자를 DB의 `사용자` 행과 연결한 뒤, **모든 데이터 엔드포인트가 `회사_사용자` 관계로 "내 회사"만 보여주게** 바꿨습니다. 스키마에만 있고 아무도 안 쓰던 `사용자`/`회사_사용자` 테이블이 드디어 제 역할을 시작했어요.
+
+**핵심 코드 1** — 토큰 검증은 "공개키 우선, 비밀키 폴백" (`taxengine/api/auth.py`)
+
+```python
+마지막오류 = None
+if supabase_url:  # 1순위: 비대칭키(JWKS) — 2026년 신규 Supabase 프로젝트의 기본
+    try:
+        # Supabase가 공개해둔 "검증용 열쇠 목록"(JWKS)에서 이 토큰에 맞는 열쇠를 찾아옴
+        key = _jwks_클라이언트(supabase_url).get_signing_key_from_jwt(token).key
+        return jwt.decode(token, key, algorithms=["ES256", "RS256"], **공통)
+    except Exception as e:      # 열쇠 목록 접속 실패·안 맞음 → 폴백으로
+        마지막오류 = e
+if secret:        # 폴백: 옛날 방식(HS256) 프로젝트는 비밀 문자열 하나로 검증
+    try:
+        return jwt.decode(token, secret, algorithms=["HS256"], **공통)
+    except Exception as e:
+        마지막오류 = e
+raise HTTPException(401, f"토큰 검증 실패: {마지막오류}")
+```
+
+비대칭키 방식은 "잠그는 열쇠(Supabase만 가짐)"와 "확인하는 열쇠(누구나 받아감)"가 달라서, 우리 서버는 **비밀을 하나도 안 갖고도** 토큰이 진짜인지 확인할 수 있어요. 프로젝트가 어느 방식인지 대시보드에서 확인하기 전이라 양쪽 다 대응하게 짰습니다. 둘 다 설정이 없으면 문을 열어두는 게 아니라 **503으로 시끄럽게 실패**해요 — 설정을 깜빡했는데 API가 조용히 다 열려 있는 사고를 막기 위해서예요.
+
+**핵심 코드 2** — "내 회사"인지 확인하는 관문 하나로 전부 지킨다 (`taxengine/api/main.py`)
+
+```python
+def _회사_접근확인(conn, 회사id, 사용자id):
+    row = conn.execute(
+        "SELECT 1 FROM 회사_사용자 WHERE 회사id = ? AND 사용자id = ?", (회사id, 사용자id)
+    ).fetchone()
+    if row is None:
+        # 남의 회사여도 403("있는데 권한 없음")이 아니라 404("없음")로 답한다 —
+        # "그 id의 회사가 존재한다"는 사실 자체를 흘리지 않기 위해서
+        raise HTTPException(404, f"회사id {회사id}를 찾을 수 없음")
+```
+
+회사를 만들 때 만든 사람을 owner로 `회사_사용자`에 기록하고, 이후 모든 엔드포인트(목록·상세·계산·스냅샷)가 이 관문을 통과해야 해요. 사업연도 쪽 엔드포인트는 사업연도 → 회사 → 회사_사용자로 두 단계를 타고 올라가 확인합니다.
+
+**핵심 코드 3** — 순환 import를 파일 분리로 풀었다 (`taxengine/api/deps.py` 신설)
+
+```python
+# 문제: auth.py(현재사용자)는 DB 연결(get_conn)이 필요한데, get_conn이 main.py에 있으면
+#   main.py → auth.py(현재사용자 가져옴) → main.py(get_conn 가져옴) → 서로 무한 대기(순환 import)
+# 해결: get_conn을 제3의 파일 deps.py로 빼고, 둘 다 거기서 가져온다.
+#   main.py는 deps에서 re-export하므로 기존 테스트의 `from taxengine.api.main import get_conn`도 그대로 동작
+```
+
+**테스트에서 주의한 것** — 인증을 엔드포인트에 붙이는 순간 기존 테스트 6개가 전부 401로 죽어요. 그래서 같은 커밋에서 `tests/test_api.py`가 `현재사용자` dependency를 가짜 사용자로 override하게 바꿨습니다(JWT 검증 자체는 auth.py 몫이고, 테스트는 "스코핑이 되는가"만 봄). 추가로 두 가지를 새로 검증해요: ① 다른 사용자로 전환하면 남의 회사가 목록에도 안 보이고 어느 엔드포인트로도 404 ② override를 걷어내면 토큰 없는 요청이 실제로 401. 결과: 122개 전부 통과.
+
+**새로 나온 용어**
+- JWT(JSON Web Token): "누구인지"를 적고 서명한 토큰. 서버가 세션을 기억하는 대신 토큰 자체를 검증함
+- 클레임(claim): JWT 안에 담긴 항목들 (sub=사용자 id, email, aud, iss 등)
+- JWKS: 토큰 검증용 공개키 목록을 서버가 URL로 공개해두는 표준 방식
+- 비대칭키/대칭키: 잠그는 열쇠와 확인하는 열쇠가 다름/같음. 대칭(HS256)은 비밀이 새면 위조 가능, 비대칭(ES256 등)은 확인용 열쇠가 새도 위조 불가
+- dependency override: FastAPI 테스트 기법 — 실제 인증·DB 연결 함수를 테스트용 가짜로 갈아끼우는 것
+- 스코핑(scoping): 로그인한 사용자가 볼 수 있는 데이터의 범위를 좁히는 것
+
+**확인 질문**
+남의 회사 id로 접근했을 때 403(권한 없음)이 아니라 404(없음)를 돌려주기로 한 이유가 뭘까요?
+
+---
+
+## Step 20 — 회사 "거의 고정" 프로필 + 사업연도 재제출 API (2026-07-22)
+
+**무엇을 했는지 (한 줄)**
+"매번 다 다시 입력"을 없애는 백엔드 기반을 만들었어요. ① 회사 테이블에 잘 안 바뀌는 프로필(설립연도·중소기업·부동산임대업주업·상시근로자수)과 `지배주주` 명단 테이블을 추가하고, 저장(`POST /companies` 확장)·조회(`GET /companies/{id}`)·부분수정(`PATCH /companies/{id}`) 엔드포인트를 만들었습니다. ② "계산할 때마다 회사가 복제되던" 기존 FE 문제의 근본 원인(수정 API 부재)을 `PUT .../fiscal-years/{id}`(재제출)로 해결했어요.
+
+**핵심 코드 1** — 같은 이름의 컬럼이 두 테이블에 있는 건 중복이 아니라 의도 (`taxengine/db/schema.sql`)
+
+```sql
+-- 회사 테이블 (원본): "거의 고정" 프로필 — 온보딩에서 1회 입력
+설립연도 INTEGER, 중소기업 INTEGER ..., 부동산임대업주업 ..., 상시근로자수 ...
+
+-- 사업연도 테이블 (스냅샷): 같은 이름 컬럼이 그대로 남아 있음 — "그 해 신고에
+-- 실제로 쓴 확정값"의 기록. 매년 위저드의 "작년과 같나요?" 확인 단계가
+-- 회사(원본) → 사업연도(스냅샷)로 복사한다.
+```
+
+중소기업 여부 같은 건 "거의" 고정이지 "절대" 고정이 아니라서(내년에 바뀔 수 있음), 원본만 두고 사업연도가 그걸 참조하게 하면 **과거 신고의 기록이 미래의 수정에 오염**돼요. 그래서 감사 추적 원칙(이 프로젝트의 "정답지 원칙")에 따라 연도별 스냅샷 컬럼을 일부러 유지했습니다.
+
+**핵심 코드 2** — 재제출은 "부모는 UPDATE, 자식은 갈아엎기" (`taxengine/db/migrate.py`)
+
+```python
+def 데이터_재이관(conn, 사업연도id, data, *, 라벨="입력"):
+    _검증_통과확인(data, 라벨)          # 아무것도 지우기 전에 검증 — 실패하면 기존 입력이 그대로 산다
+    사업연도_갱신(conn, 사업연도id, data["회사"])   # 부모 행은 UPDATE — id가 유지된다
+    for 테이블 in ("재무상태표항목", ..., "정답지"):
+        conn.execute(f"DELETE FROM {테이블} WHERE 사업연도id = ?", ...)  # 자식은 삭제 후
+    return _자식들_삽입(conn, 사업연도id, data, 전기자산_매핑)             # 재삽입
+    # 계산스냅샷은 안 지운다 — "수정 전 입력으로 계산했던 기록"도 감사 이력의 일부
+```
+
+id를 유지하는 게 핵심이에요 — 스냅샷 이력·전기(前期) 체인이 전부 이 id를 가리키고 있어서, DELETE 후 INSERT(새 id)로 하면 이력이 끊깁니다. 검증을 **삭제보다 먼저** 하는 순서도 중요해요: 새 입력이 불량이면 기존 입력이 하나도 안 지워진 채 422로 거절됩니다(테스트로 확인).
+
+**핵심 코드 3** — 중복 제출은 500 대신 "409 + 어디로 가야 하는지" (`taxengine/api/main.py`)
+
+```python
+중복 = conn.execute("SELECT id FROM 사업연도 WHERE 회사id = ? AND 사업연도종료일 = ?", ...).fetchone()
+if 중복:
+    raise HTTPException(409, f"같은 종료일의 사업연도가 이미 있음(id={중복[0]}) — PUT으로 재제출하세요")
+```
+
+이대로 두면 DB의 UNIQUE 제약이 터져 의미 없는 500 오류가 나요. 미리 확인해서 **FE가 다음 행동(그 id로 PUT)을 알 수 있는 응답**으로 바꿨습니다.
+
+**새로 나온 용어**
+- PATCH vs PUT: 둘 다 수정이지만 PATCH는 "보낸 필드만 부분 수정", PUT은 "전체를 이걸로 교체"
+- 409 Conflict: "요청 자체는 멀쩡한데 서버의 현재 상태와 충돌한다"는 HTTP 상태코드
+- delete-and-insert: 목록(지배주주 명단)을 수정할 때 행별로 비교하지 않고 전체를 지우고 다시 넣는 단순한 교체 전략
+- exclude_unset: pydantic에서 "클라이언트가 실제로 보낸 필드만" 골라내는 옵션 — PATCH 부분 수정의 핵심
+
+**확인 질문**
+`데이터_재이관`에서 입력 검증을 자식 행 삭제보다 먼저 하는 순서가 왜 중요한지, 검증이 삭제 뒤에 있었다면 어떤 사고가 날 수 있는지 설명해보시겠어요?
+
+---
+
+## Step 21 — FE 재구성: 로그인 · 온보딩 · 입력 흐름 분리 (2026-07-22)
+
+**무엇을 했는지 (한 줄)**
+단일 화면이던 taxwiz-fe를 4개 라우트로 재구성했어요: `/login`(Supabase Auth) → `/onboarding`(고정 프로필 최초 1회 입력) → `/`(홈: 회사·신고 이력) → `/wizard`(연간 입력). 위저드 질문도 두 갈래로 나눴습니다 — 잘 안 바뀌는 프로필(회사명·설립연도·중소기업 등)은 온보딩에서 한 번만 묻고, 연간 위저드는 "회사 프로필이 그대로인가요?" 확인 게이트 하나로 대체해요. 계산할 때마다 회사가 복제되던 문제도 FE 쪽 마무리: 같은 종료일 사업연도가 있으면 PUT(재제출)으로 교체합니다.
+
+**핵심 코드 1** — 위저드 엔진은 하나, 토픽 순서만 두 벌 (`taxinput/useEngine.ts`, `catalog.ts`)
+
+```typescript
+// catalog.ts — 온보딩과 연간 입력이 같은 셀 엔진을 "다른 질문 순서"로 공유
+export const ONBOARDING_TOPIC_ORDER = ['profile'];               // 고정 프로필만
+export const ANNUAL_TOPIC_ORDER = ['fy', 'profile-confirm', 'company', 'q1', ...];
+
+// useEngine.ts — 하드코딩돼 있던 TOPIC_ORDER를 파라미터로
+export function useTaxInputEngine(
+  topicOrder: string[] = ANNUAL_TOPIC_ORDER,
+  init?: (base: TaxInputState) => TaxInputState,  // 저장된 프로필을 미리 채우는 훅
+)
+```
+
+새 위저드를 통째로 복사해 만들지 않고, 기존 스테이트머신(frontier/게이트/뒤로가기)을 그대로 재사용했어요 — 온보딩 페이지는 토픽 순서 배열 하나 바꿔 낀 것뿐입니다.
+
+**핵심 코드 2** — "작년과 같나요?" 게이트: 아니오면 그 자리에서 재질문 (`taxinput/engine.ts`)
+
+```typescript
+function genProfileConfirm(io: EngineIO): Cell[] {
+  const cells = [{ id: 'profile_confirm', kind: 'yesno', isGate: true,
+    title: '회사 프로필이 그대로인가요?',
+    sub: `저장된 프로필: 중소기업 O · 상시근로자 1명 · ...`, ... }];
+  if (io.gateAnswers['profile_confirm'] === false) {
+    // "아니오" → 프로필 질문들이 이 토픽 안에 즉시 이어붙는다 —
+    // 기존 "더 있나요?" 게이트와 똑같은 동적 셀 패턴이라 새 메커니즘이 없다
+    cells.push(...PROFILE_FIELDS.filter((f) => f.id !== 'pf_name').map(...));
+  }
+  return cells;
+}
+```
+
+수정된 프로필은 제출 시점에 `PATCH /companies/{id}`로 서버와 동기화돼요(api.ts의 submitAndCalculate ① 단계).
+
+**핵심 코드 3** — 모든 API 요청에 로그인 토큰을 자동으로 싣는다 (`taxinput/api.ts`)
+
+```typescript
+async function authFetch(path: string, init?: RequestInit) {
+  const { data: { session } } = await supabase.auth.getSession();  // localStorage의 세션
+  return fetch(`${API_BASE}${path}`, { ...init, headers: {
+    'Content-Type': 'application/json',
+    ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+  }});
+}
+```
+
+supabase-js는 **인증에만** 써요(로그인·세션 보관) — 데이터 요청은 전부 이 authFetch로 FastAPI를 거칩니다(아키텍처 결정). 재계산 흐름도 여기서 바뀌었어요: `submitAndCalculate(companyId, data)`가 ① 프로필 PATCH → ② 같은 종료일 사업연도가 있으면 PUT, 없으면 POST → ③ 계산 순서로 요청합니다.
+
+**QA에서 실제로 잡은 버그 (검정 화면)** — 로그인·온보딩 후 홈이 새까맣게 나오는 크래시가 났어요. 브라우저 콘솔을 읽어보니 `TypeError: Cannot read properties of undefined (reading 'length')` — 원인은 **목록 API와 상세 API의 응답 모양 차이**였습니다. `GET /companies`(목록)는 `{id, 회사명}` 요약만 주는데, 홈 화면이 그걸 전체 프로필로 착각하고 `회사.지배주주목록.length`를 읽다 터진 거예요. TypeScript 타입을 `CompanySummary`(목록용)와 `CompanyDto`(상세용)로 분리하고, 목록에서 고른 뒤 `getCompany(id)`로 상세를 다시 받아오게 고쳤습니다. 교훈: **API 응답 타입을 실제 서버 응답보다 넉넉하게 선언하면 타입 검사가 오히려 거짓 안심을 준다** — 컴파일은 통과했지만 런타임에 터졌어요.
+
+**사용자 피드백으로 다듬은 것** — 위저드에 들어오면 홈으로 나갈 방법이 없었어요. 처음엔 우상단 ✕ 버튼을 따로 달았는데, "이전 버튼이 첫 질문에서는 홈으로 가면 되지 않냐"는 피드백을 받고 그렇게 바꿨습니다: TopBar의 이전 버튼이 더 갈 곳이 없으면(첫 질문) 라벨이 "홈으로"로 바뀌고 `onExit`(→ `navigate('/')`)을 호출해요. 버튼 하나가 문맥에 따라 두 역할을 하는 쪽이 UI 요소를 늘리는 것보다 깔끔했습니다.
+
+**의도적으로 단순화한 것** — 계획의 `/result/:snapshotId` 별도 결과 페이지는 만들지 않았어요. 계산 결과는 기존 ReviewPanel이 이미 잘 보여주고 있고, 홈 화면이 사업연도별 최근 차감납부세액·계산 횟수를 요약해줘서 데모 주간에는 이걸로 충분하다고 판단했습니다.
+
+**새로 나온 용어**
+- 라우트(route): URL 경로별로 다른 화면을 보여주는 것 (`/login`, `/wizard` 등) — react-router-dom이 담당
+- ProtectedRoute: 로그인 안 한 사용자를 /login으로 돌려보내는 라우트 감싸개 패턴
+- 컨텍스트(React Context): props로 일일이 내려주지 않고 트리 전체에서 꺼내 쓰는 공유 상태 (세션 정보에 사용)
+- .env.local: Vite가 읽는 로컬 전용 환경변수 파일 — `VITE_` 접두사가 붙은 값만 브라우저 코드에 노출돼요
+- anon key: Supabase의 공개용 키. 브라우저에 노출돼도 되도록 설계된 키라 .env.local에 넣어도 안전(반면 DB 비밀번호·JWT Secret은 절대 FE로 가면 안 됨)
+
+**확인 질문**
+Supabase의 anon key는 브라우저 코드에 노출돼도 괜찮은데 SUPABASE_JWT_SECRET은 절대 FE에 넣으면 안 되는 이유가 뭘까요? (힌트: HS256은 대칭키)
+
+---
+
+## Step 22 — 입력 UX 개선: 준비물 카드 · 잔여 문항 · 임시저장 (2026-07-22)
+
+**무엇을 했는지 (한 줄)**
+토스식 "한 번에 한 질문" 포맷의 3가지 한계(노트 7-22의 문제의식)를 해결했어요: ① 장부·서류에서 찾아와야 하는 값을 미리 준비할 수 없다 → **섹션 시작마다 "미리 준비하면 좋아요" 카드** + 홈 화면 "시작 전 준비물 전체 보기" 아코디언 ② 얼마나 남았는지 모른다 → 제목 옆에 **"약 N문항 남음"** ③ 새로고침하면 다 날아간다 → **localStorage 자동 임시저장·복원**.
+
+**핵심 코드 1** — 준비물 카드는 "가짜 질문"으로 끼워 넣는다 (`engine.ts`, `useEngine.ts`)
+
+```typescript
+// useEngine.ts — 토픽의 셀 목록을 만들 때, 섹션의 첫 토픽이면 준비물 카드 셀을 맨 앞에 붙인다
+const cellsFor = (topicKey) => {
+  const base = cellsForTopic(topicKey, io);
+  const intro = sectionIntroCellFor(topicKey, topicOrder, io);  // 준비물 카드 (없으면 null)
+  return intro ? [intro, ...base] : base;
+};
+```
+
+준비물 카드를 별도 화면/모달로 만들지 않고 **kind: 'section-intro'인 셀 하나**로 만든 게 핵심이에요. 기존 스테이트머신(frontier 전진, 뒤로가기, 답변 목록)에 그대로 편입되니까 "뒤로 가서 준비물 다시 보기"가 공짜로 됩니다. 함정 하나: goBack()이 이전 토픽의 셀 개수를 계산할 때도 반드시 이 cellsFor()를 써야 해요 — 안 그러면 준비물 카드 하나만큼 frontier가 어긋납니다.
+
+**핵심 코드 2** — 총 문항 수를 모르는데 "남은 문항"을 어떻게 보여줄까 (`useEngine.ts`)
+
+```typescript
+// 셀이 답변에 따라 동적 생성되므로("자산이 더 있나요?" → 질문 10개 증가) 정확한 총수는
+// 원리적으로 알 수 없다. 대신 이미 있던 진행률 가중치(TOPIC_WEIGHT ≈ 토픽별 예상 문항 수)를
+// 재활용해 추정하고, UI에는 "약 N문항"으로 표기해 오차를 면책한다.
+const remainingEst = Math.max(0, Math.round(weightTotal - consumedWeight));
+```
+
+"정확한 숫자를 못 주니까 아예 안 보여준다"보다 "추정치임을 명시하고 보여준다"가 낫다고 판단했어요 — 사용자가 필요한 건 정밀도가 아니라 '아직 한참 남았나, 거의 다 왔나'라는 감각이라서요.
+
+**핵심 코드 3** — 임시저장은 "물어보지 않고" 복원한다 (`useEngine.ts`)
+
+```typescript
+const [draft] = useState(() => loadDraft(storageKey, topicOrder));  // lazy initializer — StrictMode 이중 렌더 안전
+const [data, dispatch] = useReducer(dataReducer, undefined,
+  () => draft?.data ?? (init ? init(createInitialState()) : createInitialState()));
+// 매 변경마다 자동 저장 → 계산(서버 저장) 성공 시 clearDraft()로 정리
+```
+
+"이어서 할까요?" 팝업 대신 **자동 복원 + 토스트 안내**를 골랐어요: 팝업은 confirm() 브라우저 대화상자가 필요한데 이건 흐름을 끊고, React StrictMode에서 두 번 뜨는 함정도 있거든요. 서버에 저장(계산)이 성공하는 순간 초안을 지워서 "다음에 새로 시작"이 자연스럽게 됩니다. 이 기능 덕에 이전 스텝에서 넣었던 "나가면 입력이 사라져요" 경고도 필요 없어졌어요.
+
+**같이 다듬은 것** — yesno 버튼 라벨이 "네, 있어요"로 고정이라 "프로필이 그대로인가요?"라는 질문에 어색했어요. 셀에 `yesLabel`/`noLabel` 선택 필드를 추가해 "네, 그대로예요 / 아니요, 바뀌었어요"로 바꿨습니다.
+
+**브라우저로 확인한 것**: 준비물 카드 렌더 → "준비됐어요" → 프로필 확인 게이트(저장된 프로필 요약 표시) → 새로고침 → 같은 위치 복원(답변 이력 유지)까지 실제 클릭으로 검증. "약 104문항 남음"이 답할 때마다 줄어드는 것도 확인.
+
+**새로 나온 용어**
+- 의사 셀(pseudo-cell): 실제 입력이 아니라 안내·확인용인데 질문 목록에 셀처럼 끼워 넣은 것
+- lazy initializer: useState/useReducer에 값 대신 함수를 줘서 "첫 렌더에 딱 한 번" 계산하게 하는 패턴
+- StrictMode: React 개발 모드에서 컴포넌트를 일부러 두 번 렌더해 부수효과 버그를 드러내는 장치
+- 토스트(toast): 화면 구석에 잠깐 떴다 사라지는 알림
+
+**확인 질문**
+준비물 카드를 모달(팝업)이 아니라 "셀"로 만든 덕분에 공짜로 얻은 동작이 뭐였나요?
+
+---
+
 ## 용어집
 
 - `.gitignore`: git이 "이 파일들은 추적하지 마"라고 알려주는 목록 파일
