@@ -30,6 +30,15 @@ export function kstDateKey(iso: string): string {
   return new Intl.DateTimeFormat('sv-SE', { timeZone: KST }).format(new Date(iso));
 }
 
+/**
+ * 잔 수를 사람이 읽는 말로. 1 -> "1잔", 1.5 -> "1.5잔", 0.5 -> "반 잔"(#3)
+ * 실행하기 쉬운 잔 수를 앞에 두고, 실제 양이 궁금한 사람을 위해 mg를 괄호로 함께 적는다.
+ */
+export function formatCups(cups: number, amountMg?: number): string {
+  const 잔 = cups === 0.5 ? '반 잔' : `${cups % 1 === 0 ? cups : cups.toFixed(1)}잔`;
+  return amountMg === undefined ? 잔 : `${잔}(${amountMg}mg)`;
+}
+
 /** 화면에 한 줄로 그릴 하루치 스케줄 */
 export interface DayPlan {
   /** 예) "월 05:30 기상" */
@@ -59,7 +68,7 @@ export function buildDayPlans(
     const 조각: string[] = [`${formatKstTime(night.bedTime)} 취침`];
 
     for (const dose of 카페인) {
-      조각.push(`${formatKstTime(dose.time)} 카페인 ${dose.amountMg}mg`);
+      조각.push(`${formatKstTime(dose.time)} 커피 ${formatCups(dose.cups, dose.amountMg)}`);
     }
 
     const 앞부분 = 조각.join(' · ');
@@ -102,7 +111,7 @@ export function buildSummary(
   }
 
   const 카페인문구 = 첫카페인
-    ? ` · ${formatKstTime(첫카페인.time)} 카페인 ${첫카페인.amountMg}mg 섭취`
+    ? ` · ${formatKstTime(첫카페인.time)} 커피 ${formatCups(첫카페인.cups, 첫카페인.amountMg)}`
     : '';
   const 시험수문구 = 시험들.length > 1 ? `${시험들.length}개 시험 모두` : '시험';
 

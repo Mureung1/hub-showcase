@@ -1,7 +1,7 @@
 // #25 — 응답의 alertnessTimeline(15분 간격 점 배열)을 결과 화면 SVG 좌표로 바꾼다.
 // 그리기(JSX)와 좌표 계산을 나눠서, 계산만 따로 확인할 수 있게 했다.
 import type { ScheduleCalculateRequest, ScheduleCalculateResponse } from '../../api/calculateSchedule';
-import { formatKstTime, formatKstWeekday, kstDateKey } from './formatSchedule';
+import { formatCups, formatKstTime, formatKstWeekday, kstDateKey } from './formatSchedule';
 
 // 기존 자리표시용 SVG와 같은 화면 크기를 유지한다(ResultPage.module.css가 이 비율에 맞춰져 있음)
 export const VIEW_WIDTH = 320;
@@ -82,9 +82,12 @@ export function buildChartGeometry(
     .filter((band) => band.width > 0);
 
   const caffeineMarkers = (response?.recommendedSchedule.caffeineDoses ?? [])
-    .map((dose) => ({ ms: new Date(dose.time).getTime(), amountMg: dose.amountMg }))
+    .map((dose) => ({ ms: new Date(dose.time).getTime(), cups: dose.cups }))
     .filter((dose) => dose.ms >= 시작 && dose.ms <= 끝)
-    .map((dose) => ({ x: toX(dose.ms), label: `${formatKstTime(new Date(dose.ms).toISOString())} ${dose.amountMg}mg` }));
+    .map((dose) => ({
+      x: toX(dose.ms),
+      label: `${formatKstTime(new Date(dose.ms).toISOString())} ${formatCups(dose.cups)}`,
+    }));
 
   // 시험 시각의 곡선 높이를 알아야 점을 찍을 수 있다 — 가장 가까운 점의 y를 쓴다
   const yAt = (ms: number) => {
