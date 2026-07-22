@@ -25,6 +25,7 @@
 
 디자인 시스템은 확정됐고([docs/design-system.md](docs/design-system.md)), React 구현이 시작됐다.
 - `src/App.jsx`는 정보입력→추천목록→공고상세→자소서초안 4개 화면을 전환하는 스위처다([docs/checklist.md](docs/checklist.md) T4/T7/T8). 4개 화면 전부 실제 백엔드에 연결됐다: 정보입력~공고상세는 `POST /api/profiles`(T6/T7/T8), 자소서 초안은 `POST /api/postings/:id/draft`(T9~T11) — 문항 분석·초안 생성 모두 실제 데이터로 동작한다.
+- 이 4개 화면 앞에 로그인 게이트(`LoginScreen.jsx`)가 있다. 회원가입은 없고, 서버 환경변수(`APP_LOGIN_ID`/`APP_LOGIN_PASSWORD`)로 정한 단일 계정만 통과하는 HTTP Basic Auth 방식이다 — 배포 시 아무나 백엔드를 호출해 Claude API 비용이 나가는 걸 막기 위함(아직 배포는 안 함).
 - 새 화면을 만들 때는 반드시 [docs/design-skill.md](docs/design-skill.md)의 원칙과 [docs/variables.css](docs/variables.css)의 토큰을 따른다. 임의로 색상·폰트 크기·간격 값을 새로 만들지 않는다. 이 판단 기준은 Claude Code 스킬([.claude/skills/design-review](.claude/skills/design-review/SKILL.md))로도 등록되어 있어, 화면/스타일 작업 시 자동으로 참고된다. 테스트 작성 시에는 [.claude/skills/test-writer](.claude/skills/test-writer/SKILL.md) 스킬을 따른다(백엔드 vitest 단위테스트 + 프론트 Playwright E2E 패턴).
 - 백엔드/AI 연동 스택 방향은 정해졌다(아래 `백엔드 방향` 참고). 실제 `backend/` 스캐폴딩과 구현은 2주차([docs/checklist.md](docs/checklist.md) T1~T2)에 진행.
 - 공고 데이터는 실제 크롤링이 아니라 샘플/목업 데이터로 시작하며, `backend/data/postings.json` 파일로 관리한다(T3). 2주차 미션의 "crud/supabase" 요구사항은 **사용자 입력(프로필)**을 Supabase `profiles` 테이블에 저장·조회하는 것으로 충족한다(T2-b, T6) — 공고 데이터 자체는 Supabase로 옮기지 않는다.
@@ -57,9 +58,9 @@ Conventional Commits(`type: 영어 요약`, 예: `feat: add job recommendation f
 ## 코드 구조
 
 - `src/main.jsx` — 엔트리 포인트.
-- `src/App.jsx` — `step` state(`'input'|'list'|'detail'|'draft'`)로 4개 화면을 전환하는 스위처. 라우터 라이브러리는 쓰지 않는다.
-- `src/screens/` — 화면별 컴포넌트. `InfoInput.jsx`(T4, 9개 필드+검증), `RecommendList.jsx`/`JobDetail.jsx`(T7/T8, 실제 API 연동), `DraftEditor.jsx`(T11/T12, 실제 API 연동 + 세션 로컬 저장/잠금).
-- `src/api.js` — `submitProfile(profile)`, `generateDraft(postingId, profile)` fetch 래퍼(`postJson` 공통 헬퍼로 네트워크 실패 메시지 통일). `VITE_API_BASE_URL`(기본 `http://localhost:4000`)로 백엔드 호출.
+- `src/App.jsx` — `step` state(`'input'|'list'|'detail'|'draft'`)로 4개 화면을 전환하는 스위처. 라우터 라이브러리는 쓰지 않는다. `authHeader`가 없으면 `step`과 무관하게 `LoginScreen`만 렌더(로그인 게이트, 배포 대비 어뷰징 방지용). `step`/`profile`/`profileId`/`jobs`/`selectedJob`/`isDraftSaved`/`authHeader`는 sessionStorage에 저장돼 새로고침해도 복원된다.
+- `src/screens/` — 화면별 컴포넌트. `LoginScreen.jsx`(단일 계정 로그인 게이트), `InfoInput.jsx`(T4, 9개 필드+검증), `RecommendList.jsx`/`JobDetail.jsx`(T7/T8, 실제 API 연동), `DraftEditor.jsx`(T11/T12, 실제 API 연동 + Supabase `drafts` 테이블 영속 저장/잠금).
+- `src/api.js` — `checkLogin(id, password)`, `submitProfile(profile)`, `generateDraft(postingId, profileId, profile)`, `saveDraft(postingId, profileId, answers)` fetch 래퍼(`postJson` 공통 헬퍼로 네트워크 실패 메시지 통일, 로그인 성공 시 받은 Basic Auth 헤더를 이후 요청에 자동 첨부). `VITE_API_BASE_URL`(기본 `http://localhost:4000`)로 백엔드 호출.
 - `src/App.css`, `src/index.css` — 스타일. 별도 CSS 프레임워크는 쓰지 않는다.
 
 ## docs/ 구조

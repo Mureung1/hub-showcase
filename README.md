@@ -6,7 +6,7 @@
 
 ## 아키텍처
 
-화면(4개) → Express 라우트 → 서비스 로직 → 데이터(Supabase/목업 JSON)로 이어지는 전체 구조. 추천 흐름(정보입력→추천)과 자소서 흐름(공고상세→초안) 두 개의 수직 슬라이스가 있다:
+화면(4개) → Express 라우트 → 서비스 로직 → 데이터(Supabase/목업 JSON)로 이어지는 전체 구조. 추천 흐름(정보입력→추천)과 자소서 흐름(공고상세→초안) 두 개의 수직 슬라이스가 있다. 이 4개 화면 앞에는 로그인 게이트(`LoginScreen.jsx`)가 있고, 아래 다이어그램에 나오는 `/api/profiles`·`/api/postings` 라우트는 전부 `requireAuth` 미들웨어(HTTP Basic Auth)를 거친다 — 다이어그램 단순화를 위해 인증 화살표는 생략했다:
 
 ```mermaid
 flowchart LR
@@ -122,6 +122,10 @@ sequenceDiagram
     E-->>F: 200 { saved: true }
     F-->>U: textarea 잠금 + "저장됨" 배지 표시
 ```
+
+### 인증
+
+회원가입 없이 서버 환경변수(`backend/.env`의 `APP_LOGIN_ID`/`APP_LOGIN_PASSWORD`)로 정한 단일 계정만 통과하는 로그인 게이트가 있다. 아직 배포는 안 했지만, 나중에 배포했을 때 아무나 백엔드를 호출해 Claude API 비용이 나가는 걸 막기 위해 미리 만들어뒀다. 로컬에서 처음 띄울 때도 이 두 값을 채워야 로그인할 수 있다.
 
 ### 알려진 제약
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import { generateDraft, saveDraft, submitProfile } from './api';
+import { checkLogin, generateDraft, saveDraft, setAuthHeader as setApiAuthHeader, submitProfile } from './api';
+import LoginScreen from './screens/LoginScreen';
 import InfoInput from './screens/InfoInput';
 import RecommendList from './screens/RecommendList';
 import JobDetail from './screens/JobDetail';
@@ -20,6 +21,9 @@ function loadSession() {
 const initialSession = loadSession();
 
 function App() {
+  const [authHeader, setAuthHeader] = useState(initialSession.authHeader ?? null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState('');
   const [step, setStep] = useState(initialSession.step ?? 'input');
   const [profile, setProfile] = useState(initialSession.profile ?? null);
   const [profileId, setProfileId] = useState(initialSession.profileId ?? null);
@@ -34,15 +38,33 @@ function App() {
   const [saveDraftError, setSaveDraftError] = useState('');
 
   useEffect(() => {
+    setApiAuthHeader(authHeader);
+  }, [authHeader]);
+
+  useEffect(() => {
     try {
       sessionStorage.setItem(
         SESSION_STORAGE_KEY,
-        JSON.stringify({ step, profile, profileId, jobs, selectedJob, isDraftSaved }),
+        JSON.stringify({ authHeader, step, profile, profileId, jobs, selectedJob, isDraftSaved }),
       );
     } catch {
       // 세션 저장 실패(프라이빗 모드 용량 제한 등)는 새로고침 복원만 못 하는 것이라 무시한다
     }
-  }, [step, profile, profileId, jobs, selectedJob, isDraftSaved]);
+  }, [authHeader, step, profile, profileId, jobs, selectedJob, isDraftSaved]);
+
+  async function handleLogin(id, password) {
+    setIsLoggingIn(true);
+    setLoginError('');
+
+    try {
+      const header = await checkLogin(id, password);
+      setAuthHeader(header);
+    } catch (error) {
+      setLoginError(error.message);
+    } finally {
+      setIsLoggingIn(false);
+    }
+  }
 
   async function handleProfileSubmit(submittedProfile) {
     setIsSubmitting(true);
@@ -100,6 +122,14 @@ function App() {
 
   function handleUnlockDraft() {
     setIsDraftSaved(false);
+  }
+
+  if (!authHeader) {
+    return (
+      <main className="page">
+        <LoginScreen onLogin={handleLogin} isLoggingIn={isLoggingIn} loginError={loginError} />
+      </main>
+    );
   }
 
   return (
