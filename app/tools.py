@@ -3,7 +3,11 @@
 이 모듈은 에이전트를 모른다 (역방향 import 금지). agent.py가 이 모듈을 호출한다.
 """
 
+import io
+import urllib.request
+
 import arxiv
+from pypdf import PdfReader
 
 from app import config
 
@@ -48,6 +52,18 @@ def search_arxiv(
             }
         )
     return papers
+
+
+def fetch_fulltext(pdf_url: str) -> str | None:
+    """PDF 본문을 텍스트로 추출한다. 실패해도 예외 대신 None을 반환한다."""
+    try:
+        with urllib.request.urlopen(pdf_url, timeout=20) as response:
+            data = response.read()
+        reader = PdfReader(io.BytesIO(data))
+        text = "\n".join(page.extract_text() or "" for page in reader.pages)
+        return text.strip() or None
+    except Exception:
+        return None
 
 
 if __name__ == "__main__":
