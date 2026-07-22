@@ -23,13 +23,13 @@
 ## 기술 스택
 
 - 프런트엔드: Vite + React (구현됨)
-- 백엔드: Express — **아직 미착수**. 관련 코드를 이미 있는 것처럼 작성하지 말 것.
+- 백엔드: Express (구현됨). `server/src/app.ts`에 라우트가 등록돼 있고(`/api/tasks`, `/api/push-subscriptions`), `server/src/routes/`에 실제 라우트 파일이 있다.
 - 라우팅: `react-router-dom`
 - DB: Supabase(Postgres) 확정. Prisma로 연결하며, 서버리스 환경 대응을 위해 pooled(`DATABASE_URL`)/non-pooled(`DIRECT_URL`) 커넥션을 분리해 사용한다. 로컬 SQLite/Postgres 파일을 직접 쓰지 않는다 — 서버리스 배포 시 디스크가 인스턴스 간 공유/영속되지 않아 데이터가 유실되기 때문.
 - Web Push: `web-push`(VAPID)
 - PWA/서비스워커: 별도 라이브러리 없이 수기 `manifest.json` + 최소 `service-worker.js` (기본 캐싱만). `vite-plugin-pwa` 등은 지금 필요 이상의 기능이라 쓰지 않는다.
 - 타입 검사: tsconfig(`allowJs` + `checkJs` + `strict`)로 "any 금지"를 강제한다. 기존 `.jsx`는 그대로 두고 `// @ts-check`로 점진 적용하며, 새로 만지는 파일부터 `.ts`/`.tsx`로 전환한다. `@types/react`는 이미 devDependency로 있음. `npm run typecheck`(`tsc --noEmit`)로 확인.
-- 테스트: 아직 도입하지 않음. checklist.md에 테스트 작성 항목이 없고 4주 일정상 우선순위가 낮기 때문. 나중에 필요해지면 Vite와 궁합이 좋은 Vitest를 쓴다.
+- 테스트: Vitest 도입 완료(총 50개 테스트 통과 — 프론트 `src/lib/**` 4개 파일 38개, `server/src/routes/**` 2개 파일 12개). `lib/**`(순수 함수)는 단위 테스트, `routes/**`(Express 라우트)는 supertest 기반 통합 테스트로 구분해서 작성한다 — 자세한 규칙은 `test-writer` Skill 참고.
 - 날짜/시간: DB에는 UTC ISO 8601 문자열로 저장한다. 프론트의 D-day 계산/포맷팅에는 `date-fns`를 쓴다(tree-shakeable, 불필요한 로케일 번들 없음).
 
 ## 명령어
@@ -46,9 +46,7 @@ npm run preview      # 로컬에서 프로덕션 빌드 미리보기
 
 Express 앱은 `server/`에 있다(`npm install`을 루트에서 실행하면 `workspaces`로 함께 설치됨). `api/index.js`는 Vercel 서버리스 진입점으로 `server/dist/app.js`를 그대로 감싸서 노출하며, `vercel.json`의 rewrite로 `/api/*` 요청이 전부 이 함수로 간다. 로컬 개발 중에는 `vite.config.js`의 `server.proxy`가 `/api`를 `http://localhost:3001`(Express dev 서버)로 넘겨주므로, 프론트 코드는 로컬/배포 구분 없이 항상 `/api`로만 호출하면 된다.
 
-DB 연결은 Prisma + Supabase(Postgres)로 설정돼 있다(`server/prisma/schema.prisma`, `server/.env.example` 참고). 서버리스 커넥션 고갈을 막기 위해 `DATABASE_URL`은 pooled(pgbouncer, 포트 6543), `DIRECT_URL`은 마이그레이션 전용 non-pooled(포트 5432) 커넥션을 사용한다. 아직 `tasks`/`avoidance_reasons`/`task_events`/`feedbacks` 모델은 정의하지 않았다 — 다음 단계에서 추가.
-
-이 저장소에는 아직 구성된 테스트 스위트가 없다.
+DB 연결은 Prisma + Supabase(Postgres)로 설정돼 있다(`server/prisma/schema.prisma`, `server/.env.example` 참고). 서버리스 커넥션 고갈을 막기 위해 `DATABASE_URL`은 pooled(pgbouncer, 포트 6543), `DIRECT_URL`은 마이그레이션 전용 non-pooled(포트 5432) 커넥션을 사용한다. 현재 정의된 모델: `Task`, `AvoidanceReason`, `TaskEvent`, `AppState`, `PushSubscription`(`feedbacks`는 아직 미정의).
 
 ## 디렉토리 구조
 
@@ -62,11 +60,11 @@ DB 연결은 Prisma + Supabase(Postgres)로 설정돼 있다(`server/prisma/sche
 │   ├── src/
 │   │   ├── app.ts             # Express 앱 정의(라우트 등록)
 │   │   ├── index.ts           # 로컬 dev 리스너 (PORT=3001)
-│   │   ├── routes/            # 필요해지면 추가
+│   │   ├── routes/            # tasks.ts, pushSubscriptions.ts (+ 각 .test.ts)
 │   │   └── db/
 │   │       └── client.ts      # Prisma Client 싱글톤
 │   ├── prisma/
-│   │   └── schema.prisma      # datasource/generator만 정의됨, 모델은 다음 단계
+│   │   └── schema.prisma      # Task/AvoidanceReason/TaskEvent/AppState/PushSubscription 모델 정의됨
 │   ├── .env.example
 │   └── package.json          # 루트 npm workspace로 연결
 ├── api/

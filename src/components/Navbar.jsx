@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
+import { subscribeToPush } from "../lib/pushSubscribe";
 import "./Navbar.css";
 
 // 홈/할일 등록만 실제 라우트로 연결한다 — 히스토리는 화면 자체가 아직 없어 탭만 두고 비활성 표시.
@@ -36,6 +37,15 @@ function Navbar() {
     // prototype.html의 Notification.requestPermission() 패턴 재사용 — Promise 형태로 받아 상태 반영.
     const result = await Notification.requestPermission();
     setPermission(result);
+
+    if (result === "granted") {
+      // 구독 생성/전송 실패가 알림 권한 버튼 자체를 깨뜨리지 않도록 방어(#42).
+      try {
+        await subscribeToPush();
+      } catch (err) {
+        console.error(err);
+      }
+    }
   }
 
   const ui = PERMISSION_UI[permission] ?? PERMISSION_UI.unsupported;

@@ -1,5 +1,4 @@
 // Supabase(Postgres) 연결 설정.
-// 모델(tasks/avoidance_reasons/task_events/feedbacks)은 다음 단계에서 추가한다 — 여기서는 연결 설정만.
 
 generator client {
   provider = "prisma-client-js"
@@ -25,6 +24,7 @@ model Task {
 
   events           TaskEvent[]
   avoidanceReasons AvoidanceReason[]
+  feedbacks        Feedback[]
 
   @@map("tasks")
 }
@@ -75,4 +75,17 @@ model PushSubscription {
   updatedAt DateTime @updatedAt
 
   @@map("push_subscriptions")
+}
+
+// 완료 직후 개입(넛지)이 도움됐는지에 대한 사용자 응답(#39/#40). 향후 에스컬레이션
+// 속도 조정 로직(checklist.md 피드백 루프 P1)의 데이터 소스로 쓰인다.
+model Feedback {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id])
+  response  String   // helpful | annoying
+  createdAt DateTime @default(now())
+
+  @@index([taskId, createdAt])
+  @@map("feedbacks")
 }
