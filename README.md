@@ -21,7 +21,7 @@
 
 AY-PLE(에이플)는 학생이 한 학기 작업공간에서 공지, 강의계획서, 수업 자료를 고르면 AY가 필요한 정보를 찾고, 원본 근거가 연결된 변경안을 제시하는 local-first 학업 Agent 앱입니다. 학생이 확인한 내용만 학기 상태에 반영합니다.
 
-현재 코드베이스의 maintained runtime graph는 official Python SDK 기반 `@ay-ple/codex-chat-runtime`, Chat-only Server와 Codex-native Chat Shell로 구성됩니다. Chat Shell은 native AgentMessage streaming, interrupt, 같은 thread의 후속 turn과 provider-free exact local conformance를 통과했고, 명시적으로 승인한 격리 auth/runtime state를 사용한 manual live-provider T0도 같은 production path에서 확인했습니다. 전용 disposable-auth 자동화는 아직 후속입니다. 학생용 Review Workspace는 prototype 단계이며, 선택한 자료부터 AY의 제안, 사용자의 결정까지 이어지는 학업 제품 실행 경로는 아직 구현되지 않았습니다. 세부 우선순위와 완료 조건은 [개발 백로그](docs/product/ay-ple-development-backlog.md)를 따릅니다.
+현재 코드베이스는 official Python SDK 기반 `@ay-ple/codex-chat-runtime`을 하나의 supervised Runtime graph로 유지하고, Express Server의 `/api/product/*`와 desktop Chat Shell을 유일한 public 제품 경로로 사용합니다. 학생은 두 TXT 자료를 선택해 First Assignment action을 실행하고, 근거가 연결된 제안을 수락·수정 요청·거절한 뒤 confirmed 학기 상태를 Server restart 후에도 다시 열 수 있습니다. Deterministic Browser, exact local-provider와 isolated live-provider 경로가 같은 product seam과 bounded shutdown을 검증했으며, conversation catalog·generic transcript persistence·packaged Desktop은 [개발 백로그](docs/product/ay-ple-development-backlog.md)의 후속 경계입니다.
 
 | 둘러볼 곳 | 무엇을 볼 수 있나 |
 | --- | --- |
@@ -34,10 +34,10 @@ AY-PLE(에이플)는 학생이 한 학기 작업공간에서 공지, 강의계�
 
 ```bash
 npm install
-npm run dev
+npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
 ```
 
-`npm run dev`는 exact `CODEX_CHAT_ORIGIN`과 함께 Express Server와 Vite 기반 Chat Shell만 실행합니다. 실제 대화에는 [Server README](apps/server/README.md)의 explicit runtime path 설정과 [runtime package README](packages/codex-chat-runtime/README.md)의 ignored bundle materialization이 필요합니다. 여섯 path가 준비되지 않은 기본 실행은 안전한 `unavailable/invalid_configuration` 상태를 표시합니다. 화면의 현재 기능과 후속 경계는 [Chat Shell README](apps/chat-shell/README.md)를 따릅니다.
+Canonical command는 explicit `appDataRoot`와 선택한 development `SemesterWorkspace`를 검증하고, `packageRoot`의 verified Runtime artifact와 app-managed runtime directory를 계산해 Express Server와 Vite Chat Shell을 함께 시작합니다. Fresh clone에서는 먼저 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 materialize해야 합니다. 시작·workspace·Runtime 제약은 [Server README](apps/server/README.md), 화면 동작과 후속 경계는 [Chat Shell README](apps/chat-shell/README.md)를 따릅니다.
 
 ## 캠프 데모
 
@@ -74,7 +74,8 @@ npm run demo
 | ADR | [0007. Native Codex composition으로 제품 작업 실행](docs/adr/0007-use-native-codex-composition-for-product-actions.md) | Recipe·Invocation·Run의 제품 실행 경계를 나누는 결정 |
 | ADR | [0009. macOS-first local web app 제품 경로](docs/adr/0009-use-a-macos-first-local-web-app-product-path.md) | 첫 제품 실행·지원 환경과 후속 Desktop App 경계 결정 |
 | ADR | [0011. Official Codex Python SDK를 Chat Shell baseline으로 재사용](docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) | Official SDK direct reuse와 supervised Node bridge 결정 |
-| ADR | [0012. Codex Chat-only runtime graph 채택](docs/adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md) | Maintained runtime 단일화, legacy executable 제거와 후속 local cleanup 경계 |
+| ADR | [0012. Codex Chat-only runtime graph 채택](docs/adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md) | Maintained Runtime 단일화와 legacy executable·alias 제거. Chat-only public surface 결과는 ADR 0013이 대체 |
+| ADR | [0013. Product-only public surface와 durable v2 baseline](docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md) | Canonical product cutover와 workspace-local current v2의 장기 compatibility 정책 |
 
 ### 기술 참고 문서
 
@@ -114,24 +115,24 @@ npm run demo
 | 영역 | 위치 | 설명 |
 | --- | --- | --- |
 | Brand assets | `assets/brand/` | AY-PLE 로고, 마크, AY 프로필 이미지의 프로젝트 공용 원본 |
-| Server app | `apps/server/` | Chat configuration, browser-safe HTTP/NDJSON와 listener/runtime shutdown을 소유하는 Express local companion |
-| Chat Shell app | `apps/chat-shell/` | Native thread·turn·item identity, AgentMessage stream, interrupt와 same-thread follow-up을 제공하는 Vite React desktop UI |
+| Server app | `apps/server/` | Product bootstrap·workspace·operation HTTP/NDJSON, Runtime lifecycle와 durable workspace store를 소유하는 Express local companion |
+| Chat Shell app | `apps/chat-shell/` | Source workbench, cumulative AY Chat, evidence-linked Review와 recovery를 제공하는 Vite React desktop UI |
 | Product contract | `packages/product-contract/` | `/api/product/*` JSON·NDJSON의 dependency-free exact type·decoder |
 | Codex Chat runtime | `packages/codex-chat-runtime/` | Official Python SDK, supervised Node bridge, native conversation contract와 deterministic fake |
-| Codex Chat API | `/api/codex-chat/*` | Native thread 생성, acceptance-first turn NDJSON, interrupt와 closed runtime status endpoint |
+| Product API | `/api/product/*` | Workspace·material, Assignment·Chat operation, Review·interaction·interrupt와 settled bootstrap |
 | Camp artifact | `artifacts/camp-demo/` | Live runtime과 분리된 정적 발표 deck, product prototype와 artifact-local 검증 도구 |
 
 ## 개발 명령어
 
 ```bash
-npm run dev
+npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
 npm run demo
 npm test
 npm run test:e2e
 npm run typecheck
 npm run build
 npm run lint -w @ay-ple/chat-shell
-npm run test:dev-entrypoint
+npm run test:product-entrypoint
 npm run check:docs-links
 ```
 
@@ -140,7 +141,7 @@ Materialized exact runtime이 필요한 provider-free native·process gate는 �
 ```bash
 npm run verify:production-runtime -w @ay-ple/codex-chat-runtime
 npm run test:local-provider -w @ay-ple/codex-chat-runtime
-npm run test:codex-chat-actual -w @ay-ple/server
+npm run test:first-assignment-product-actual -w @ay-ple/server
 ```
 
 아직 DB, 제품 인증, 상태관리 선택지는 고정하지 않습니다. 제품 경로는 Codex Chat의 native conversation contract를 사용하고 [`ModelingRecipe → ModelingInvocation → ModelingRun`](docs/architecture/codex-native-product-composition.md)으로 재사용 정의, 일회성 요청과 실행 receipt를 구분합니다. AY-PLE는 `RawMaterial`, `EvidenceRef`, `StatePatch`, `UserConfirmation`, `SemesterModel` 같은 학업 상태와 Review 경험을 소유합니다. 현재 구현 gap은 [Codex Chat 구현 지도](docs/architecture/codex-chat-implementation-map.md)를 따릅니다.

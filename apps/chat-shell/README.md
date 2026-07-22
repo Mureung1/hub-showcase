@@ -18,7 +18,7 @@
 | Failure boundary | Invalid JSON·UTF-8·contract shape, operation/run/activity 또는 Review replacement binding mismatch, invalid evidence, missing terminal과 post-terminal frame은 raw payload 없이 safe stream failure로 닫는다. Wrong·late·stale Review response는 confirmed state를 성공처럼 갱신하지 않으며 request failure와 active stream control failure는 별도 사용자 상태로 유지한다. Authoritative terminal 뒤 bootstrap hydration 실패는 workspace failure로만 표시하고 operation terminal을 stream failure로 덮어쓰지 않는다. |
 | Workbench | 1440–1920px에서 세 primary pane을 동시에 사용하며 source selection, evidence navigation, Review·clarification control과 keyboard focus를 desktop 기준으로 제공한다. |
 
-App production source는 `@ay-ple/product-contract`와 `@ay-ple/codex-chat-runtime/contract`만 shared package contract로 import한다. Product contract는 dependency-free이고 Node Runtime, Express, Server domain module과 private Python bridge는 browser bundle에 들어오지 않는다.
+App production source는 `@ay-ple/product-contract`만 shared package contract로 import한다. Product contract는 dependency-free이고 Node Runtime, Express, Server domain module과 private Python bridge는 browser bundle에 들어오지 않는다. Native text tracer contract, `/api/codex-chat/*` adapter와 legacy full-screen Chat owner는 product-only cutover에서 제거됐다.
 
 ## 실행
 
@@ -28,7 +28,7 @@ Repository root에서 다음 명령을 사용한다.
 npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
 ```
 
-이 canonical 명령은 explicit app data와 materialized/override workspace를 product controller에 주입하고 Server와 Chat Shell을 `127.0.0.1:3000`, `127.0.0.1:4173`에서 함께 시작한다. 실제 runtime을 사용하려면 [Server README](../server/README.md)의 bundle materialization과 여섯 absolute `CODEX_CHAT_*` path도 준비해야 한다. 준비되지 않은 경우 source workbench는 계속 동작하고 AY Chat만 `unavailable` 상태를 안전하게 표시한다.
+이 canonical 명령은 explicit app data와 materialized/override workspace를 product composition에 주입하고 Server와 Chat Shell을 `127.0.0.1:3000`, `127.0.0.1:4173`에서 함께 시작한다. `packageRoot`의 verified Runtime artifact와 `appDataRoot` 아래 controlled directory는 composition이 계산하며 caller가 여섯 Runtime path를 조립하지 않는다. Fresh clone에서는 [Runtime README](../../packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 먼저 materialize한다. 정확한 startup·workspace 제약은 [Server README](../server/README.md)가 소유한다.
 
 ## 검증
 
@@ -44,8 +44,10 @@ npm run lint -w @ay-ple/chat-shell
 
 Unit suite는 shared product contract decoder, one-shot active read와 status-aware final bootstrap read, cross-frame operation reducer, exact Review·replacement·operation recovery binding, workspace recovery, 일반 clarification 분리, evidence guard와 browser NDJSON parser를 검증한다. Playwright는 `1440x900`과 1920px-class desktop에서 실제 Vite·Express Server·product store·private hosted MCP와 deterministic product-capable runtime fake를 통과한다. 대표 검증은 source selection·preview·pane geometry, Assignment activity·Review·evidence focus·accept·authoritative reload, revise→replacement→accept, reject→reload, Review decision 뒤 one-shot hydration pending·failure 중 same-Turn 일반 clarification answer/cancel·nonterminal interrupt ACK·no-reapply, terminal settled hydration 뒤 늦게 도착한 이전 `active` snapshot의 무시, answer 전 stream loss→interrupted/no-apply→한 번의 explicit retry, 기본 disconnect drain 뒤 final recovery read, pending Review 중 실제 reload→settled recovery, apply commit 뒤 Review response loss→confirmed revision/no-reapply, source drift 중 native interrupt→원본 보존→explicit rebaseline→fresh action, active guard store drift→operation release→same-session explicit reactivation→guard·scratch reconciliation→fresh action, invalid store의 exact-byte read-only open, authoritative terminal 뒤 bootstrap failure 격리, 일반 clarification answer/cancel, readiness별 mutation guard와 running/pending Review 중 sidebar hide/show다. Product transcript가 legacy `/api/codex-chat/*` traffic을 만들지 않는 것도 함께 확인한다. 각 harness 실행은 ambient 개발 workspace를 무시하고 Git이 추적하는 first Assignment seed의 새 임시 복사본과 run-scoped native identity를 사용한다. 연속 두 fresh harness가 서로 다른 run/workspace/app-data/product scratch와 native session을 갖고 같은 seed digest에서 시작하며, 각 harness는 자신이 소유한 정확한 실행 root만 정리한다. Provider credential이나 live Codex conversation은 사용하지 않는다.
 
-Runtime package의 `npm run test:local-provider -w @ay-ple/codex-chat-runtime`은 별도로 production Node→bundled Python bridge→official SDK→exact native `0.144.4`를 official local Responses harness에 연결해 같은 conversation contract를 확인한다. 이 exact-local gate와 cutover 전에 명시적으로 승인한 격리 인증 상태로 같은 Server API를 통과한 manual live-provider T0는 green이었다. 이 point-in-time 증거는 현재 setup 지침이나 전용 disposable auth 자동화 gate를 대체하지 않는다.
+Existing Playwright harness의 same-root durability trace는 실제 Express `ServerApplication`과 deterministic Runtime generation을 닫고 같은 `appDataRoot`·`SemesterWorkspace`·API port로 다시 만든 뒤 Browser를 reload한다. Confirmed Assignment·revision·settled history는 다시 열고 transient transcript·unanswered Review는 복원하지 않는 durable boundary를 별도 workflow 없이 검증한다. Root `test:product-entrypoint`의 canonical OS process graph·SIGINT gate와 Server product shutdown actual은 startup·listener·process-tree cleanup을 독립적으로 보완한다.
+
+Runtime package의 `npm run test:local-provider -w @ay-ple/codex-chat-runtime`은 별도로 production Node→bundled Python bridge→official SDK→exact native `0.144.4`를 official local Responses harness에 연결해 internal conversation contract를 확인한다. Current product live evidence는 [Server README](../server/README.md)가 소유하며, isolated auth·fresh roots로 complete Assignment→Review→confirmed outcome과 clean shutdown을 통과했다. 이 point-in-time 증거는 현재 setup 지침이나 전용 disposable auth 자동화 gate를 대체하지 않는다.
 
 ## 후속 경계
 
-Browser/client별 session isolation, thread persistence/read/resume, multi-thread sidebar, interactive approval과 disposable-auth live 자동화는 이 app의 현재 지원 범위가 아니다. 작업 상태와 순서는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다. Legacy `/api/codex-chat/*` reducer와 adapter는 Chat-only conformance 표면으로 남아 있지만 product workbench transcript에는 mount하거나 혼합하지 않는다.
+Browser/client별 session isolation, thread persistence/read/resume, multi-thread sidebar, interactive approval과 disposable-auth live 자동화는 이 app의 현재 지원 범위가 아니다. 작업 상태와 순서는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다.

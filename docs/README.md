@@ -88,7 +88,8 @@ Root companion docs:
 | Native Codex composition ADR | [adr/0007-use-native-codex-composition-for-product-actions.md](adr/0007-use-native-codex-composition-for-product-actions.md) | Recipe·Invocation·Run의 제품 실행 경계를 나누는 결정 |
 | macOS-first local web app ADR | [adr/0009-use-a-macos-first-local-web-app-product-path.md](adr/0009-use-a-macos-first-local-web-app-product-path.md) | 첫 제품 실행·지원 환경과 후속 Desktop App 경계 결정 |
 | Codex Chat Shell runtime ADR | [adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md](adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) | Official Python SDK direct reuse와 supervised Node bridge 결정 |
-| Codex Chat-only cutover ADR | [adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md](adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md) | maintained runtime을 Codex Chat으로 단일화하고 legacy executable surface를 제거한 결정 |
+| Codex Chat-only cutover ADR | [adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md](adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md) | maintained Runtime을 단일화하고 legacy executable surface와 compatibility alias를 제거한 결정. Chat-only public surface 결과는 ADR 0013이 대체함 |
+| Product-only cutover·durable v2 ADR | [adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md](adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md) | public caller를 product path로 단일화하고 current v2 store를 첫 durable compatibility baseline으로 채택한 결정 |
 
 ### 기술 참고
 

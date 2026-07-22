@@ -1,6 +1,6 @@
 # @ay-ple/product-contract
 
-Server가 만드는 `/api/product/*` JSON·NDJSON과 Browser가 읽고 보내는 같은 wire contract를 소유하는 dependency-free TypeScript package다. `apps/server`와 `apps/chat-shell`은 서로의 source를 import하지 않고 이 package의 public module만 공유한다.
+Canonical product Server가 만드는 `/api/product/*` JSON·NDJSON과 Browser가 읽고 보내는 같은 wire contract를 소유하는 dependency-free TypeScript package다. `apps/server`와 `apps/chat-shell`은 서로의 source를 import하지 않고 이 package의 public module만 공유한다. Product-only cutover 후 Browser production source가 사용하는 shared public contract는 이 package 하나다.
 
 ## 책임
 
@@ -20,7 +20,7 @@ Decoder는 missing·extra·unknown field와 Review decision/outcome·continuatio
 | `apps/server` | HTTP admission에서 request decoder를 사용하고 domain object를 shared response·frame type으로 projection한다. |
 | `apps/chat-shell` | JSON response와 NDJSON line마다 shared decoder를 사용한다. Fetch, byte framing과 React state는 app이 소유한다. |
 
-`@ay-ple/codex-chat-runtime`의 browser-safe `./contract`는 native Chat tracer contract를 계속 소유한다. 이 package는 product wire contract만 소유하며 Runtime protocol이나 Server domain module을 재노출하지 않는다.
+이 package는 product wire contract만 소유하며 Runtime protocol, native identity, Server domain module을 재노출하지 않는다. Native Runtime contract와 private Node↔Python transport는 `@ay-ple/codex-chat-runtime`과 Server 내부에 남고 Browser bundle의 compatibility surface가 아니다.
 
 ## 검증
 
