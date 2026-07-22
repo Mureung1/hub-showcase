@@ -6,6 +6,8 @@ import storesRouter from './routes/stores.js'
 import dealsRouter from './routes/deals.js'
 import reservationsRouter from './routes/reservations.js'
 import notificationsRouter from './routes/notifications.js'
+import usersRouter from './routes/users.js'
+import favoritesRouter from './routes/favorites.js'
 
 const app = express()
 
@@ -18,6 +20,8 @@ app.use('/api/stores', storesRouter)
 app.use('/api/deals', dealsRouter)
 app.use('/api/reservations', reservationsRouter)
 app.use('/api/notifications', notificationsRouter)
+app.use('/api/users', usersRouter)
+app.use('/api/favorites', favoritesRouter)
 
 // 공통 에러 응답: { message }
 app.use((err, req, res, next) => {

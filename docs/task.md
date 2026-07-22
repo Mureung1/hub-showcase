@@ -55,7 +55,7 @@
 
 ## 3주차 — 알림 발송 + 증명 + 시연 준비
 
-- [ ] **T-12 관심 설정 (M1 + M5)** `server` `client`
+- [x] **T-12 관심 설정 (M1 + M5)** `server` `client` — [#13](https://github.com/HappyGogildong/hub/issues/13)
   - M1: 가게 검색·즐겨찾기 등록(초기 진입). M5: 관심 카테고리·위치 조건(N km 슬라이더/항상)
   - DoD: 설정 값이 T-11 판정에 반영됨
 - [ ] **T-13 FCM 푸시 + 인앱 알림** `server` `client`

@@ -1,0 +1,124 @@
+.settings {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.settings__back {
+  padding: 6px 0;
+  font-size: 14px;
+  color: var(--color-ink-2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.settings__title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 12px 0 4px;
+}
+
+.settings__sub {
+  font-size: 13px;
+  color: var(--color-muted);
+  margin: 0 0 24px;
+}
+
+.settings__msg {
+  padding: 24px 0;
+  font-size: 14px;
+  color: var(--color-ink-2);
+}
+
+.settings__msg--error {
+  color: var(--color-error);
+}
+
+.settings__section {
+  margin-bottom: 28px;
+}
+
+.settings__label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-ink-2);
+  margin: 0 0 10px;
+}
+
+.settings__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings__chip {
+  padding: 9px 16px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-ink-2);
+  background: var(--color-canvas);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.settings__chip--on {
+  color: #fff;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.settings__radio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  font-size: 14px;
+  color: var(--color-ink-2);
+  cursor: pointer;
+}
+
+.settings__radio input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+}
+
+.settings__radio b {
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.settings__slider {
+  width: 100%;
+  margin: 4px 0 8px;
+  accent-color: var(--color-primary);
+}
+
+.settings__slider:disabled {
+  opacity: 0.4;
+}
+
+.settings__hint {
+  font-size: 12px;
+  color: var(--color-muted);
+  margin: 10px 0 0;
+}
+
+.settings__save {
+  width: 100%;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.settings__save:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
