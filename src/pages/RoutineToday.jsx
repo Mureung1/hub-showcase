@@ -10,9 +10,9 @@ function RoutineToday() {
   const { data, loading, error, refetch } = useRoutineToday()
   const [actionError, setActionError] = useState(null)
 
-  const handleComplete = async () => {
+  const postSessionAction = async (action) => {
     setActionError(null)
-    const res = await fetch(`/api/sessions/${data.routineDayId}/complete`, {
+    const res = await fetch(`/api/sessions/${data.routineDayId}/${action}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
@@ -24,19 +24,8 @@ function RoutineToday() {
     refetch()
   }
 
-  const handleSkip = async () => {
-    setActionError(null)
-    const res = await fetch(`/api/sessions/${data.routineDayId}/skip`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    })
-    if (!res.ok) {
-      setActionError((await res.json()).error)
-      return
-    }
-    refetch()
-  }
+  const handleComplete = () => postSessionAction('complete')
+  const handleSkip = () => postSessionAction('skip')
 
   if (loading) {
     return <p className="p-8 text-text-secondary">로딩 중...</p>
