@@ -62,7 +62,6 @@ function QuestionnairePage() {
       const response = await createApplication({
         mentorIds: selectedMentorIds,
         questionnaire,
-        mockUserId: "mentee-1",
       });
       const application = response.data;
       const completePath = routePaths.menteeApplicationComplete.replace(

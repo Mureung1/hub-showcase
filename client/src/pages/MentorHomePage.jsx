@@ -9,8 +9,6 @@ import MentorApplicationCard from "../components/MentorApplicationCard";
 import { useAuth } from "../context/AuthContext";
 import { routePaths } from "../routes/routePaths";
 
-const MOCK_MENTOR_ID = "mentor-1";
-
 const statusTabs = [
   { value: "pending", label: "대기" },
   { value: "confirmed", label: "확정" },
@@ -33,7 +31,7 @@ function MentorHomePage() {
     setErrorMessage("");
 
     try {
-      const response = await getApplications({ mockUserId: MOCK_MENTOR_ID });
+      const response = await getApplications();
       setApplications(response.data);
       return true;
     } catch (error) {
@@ -60,10 +58,7 @@ function MentorHomePage() {
     setErrorMessage("");
 
     try {
-      await acceptApplication({
-        applicationId,
-        mockUserId: MOCK_MENTOR_ID,
-      });
+      await acceptApplication({ applicationId });
       const hasReloaded = await loadApplications();
       if (hasReloaded) setActiveStatus("confirmed");
     } catch (error) {
@@ -78,10 +73,7 @@ function MentorHomePage() {
     setErrorMessage("");
 
     try {
-      await rejectApplication({
-        applicationId,
-        mockUserId: MOCK_MENTOR_ID,
-      });
+      await rejectApplication({ applicationId });
       const hasReloaded = await loadApplications();
       if (hasReloaded) setActiveStatus("rejected");
     } catch (error) {

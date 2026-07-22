@@ -4,8 +4,6 @@ import { getApplications } from "../api/applications";
 import ApplicationCard from "../components/ApplicationCard";
 import { routePaths } from "../routes/routePaths";
 
-const MOCK_MENTEE_ID = "mentee-1";
-
 function MenteeApplicationListPage() {
   const location = useLocation();
   const statusTabs = [
@@ -29,7 +27,7 @@ function MenteeApplicationListPage() {
       setErrorMessage("");
 
       try {
-        const response = await getApplications({ mockUserId: MOCK_MENTEE_ID });
+        const response = await getApplications();
         if (isCurrent) setApplications(response.data);
       } catch (error) {
         if (isCurrent) setErrorMessage(error.message);
