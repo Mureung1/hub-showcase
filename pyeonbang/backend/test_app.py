@@ -176,5 +176,29 @@ class PyeonbangTestCase(unittest.TestCase):
         conn.close()
         self.assertEqual(count, 0)
 
+    def test_delete_specific_history(self):
+        """DELETE /api/history/<id> 또는 /api/history?id=<id> 특정 항목 삭제 API 테스트"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO analysis_history (product_name, brand, price, calories, carbs, protein, fat, score, grade, grade_type, comment, saved_price, saved_calories)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, ('아이템1', 'CU', 1000, 100, 10, 10, 10, 10.0, '1등급', 'green', '설명', 1000, 100))
+        item_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+
+        # 특정 ID 삭제 호출
+        response = self.app.delete(f'/api/history/{item_id}')
+        self.assertEqual(response.status_code, 200)
+
+        # DB에서 해당 ID 조회해서 삭제되었는지 확인
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM analysis_history WHERE id = ?", (item_id,))
+        count = cursor.fetchone()[0]
+        conn.close()
+        self.assertEqual(count, 0)
+
 if __name__ == '__main__':
     unittest.main()
