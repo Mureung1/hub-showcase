@@ -2,24 +2,37 @@ import { AppShell } from '../../layouts/AppShell/AppShell';
 import { Card, Row, Button, WarningBanner } from '../../components';
 import text from '../../styles/text.module.css';
 import styles from './ResultPage.module.css';
-
-// TODO(동적 데이터, docs/디자인.md 9번): 아래는 전부 계산 엔진(POST /api/schedule/calculate) 응답으로 채워야 하는
-// alertnessTimeline / recommendedSchedule / warnings 예시 값이다. 계산 엔진 연동 전까지의 자리표시용 데이터.
-const summary = {
-  eyebrow: '오늘부터 금요일 시험까지',
-  headline: '오늘 23:30 취침',
-  subtext: '→ 월 05:30 기상 · 06:00 카페인 100mg 섭취 시, 세 시험 모두 시작 시각 예측 각성도가 가장 높아요.',
-};
-
-const warning = '오늘 카페인 총 섭취량이 안전 권장량(400mg)의 92%에 도달해요. 늦은 시간 추가 섭취는 피해주세요.';
-
-const dailySchedule = [
-  { title: '월 05:30 기상', subtitle: '06:00 카페인 100mg → 09:00 세포생물학' },
-  { title: '수 06:00 기상', subtitle: '06:30 카페인 80mg → 14:00 유전학' },
-  { title: '금 05:00 기상', subtitle: '05:30 카페인 100mg → 10:00 생화학' },
-];
+import { useSchedule } from '../../context/ScheduleContext';
+import { buildDayPlans, buildSummary } from './formatSchedule';
 
 export function ResultPage() {
+  const { request, response } = useSchedule();
+
+  // 계산 없이 주소로 직접 들어왔거나 새로고침한 경우 — 보관함이 비어 있으므로
+  // 그리려다 크래시하지 않도록 안내만 띄운다(#18).
+  if (response === null) {
+    return (
+      <AppShell
+        title="추천 스케줄"
+        step={4}
+        backTo="/"
+        footer={
+          <Button to="/input" variant="primary">
+            새 스케줄 만들기
+          </Button>
+        }
+      >
+        <h1 className={text.headline}>보여드릴 결과가 없어요</h1>
+        <p className={text.subtext}>
+          계산 결과는 새로고침하면 사라져요. 정보를 입력하고 다시 계산해주세요.
+        </p>
+      </AppShell>
+    );
+  }
+
+  const summary = buildSummary(response, request);
+  const dailySchedule = buildDayPlans(response, request);
+
   return (
     <AppShell
       title="추천 스케줄"
@@ -60,7 +73,10 @@ export function ResultPage() {
         </div>
       </div>
 
-      <WarningBanner>{warning}</WarningBanner>
+      {/* 경고는 있을 때만 — 없는데 빈 배너가 뜨면 안 된다 */}
+      {response.warnings.map((warning) => (
+        <WarningBanner key={warning}>{warning}</WarningBanner>
+      ))}
 
       <div className={`${text.sectionBlock} ${text.sectionBlockTight}`}>
         <div className={text.sectionHead}>
