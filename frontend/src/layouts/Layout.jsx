@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { fetchMe } from '../lib/auth'
+import { fetchMe, clearToken } from '../lib/auth'
 import './Layout.css'
 
 const Layout = () => {
@@ -11,6 +11,11 @@ const Layout = () => {
   useEffect(() => {
     fetchMe().then(setUser)
   }, [])
+
+  const handleLogout = () => {
+    clearToken()
+    window.location.href = '/'
+  }
 
   return (
     <div className="app-layout">
@@ -25,9 +30,9 @@ const Layout = () => {
             </Link>
           )}
           {user ? (
-            <Link to="/mypage" className="gnb-login">
-              마이페이지
-            </Link>
+            <button type="button" className="gnb-login" onClick={handleLogout}>
+              로그아웃
+            </button>
           ) : (
             <a href="/api/auth/google" className="gnb-login">
               로그인

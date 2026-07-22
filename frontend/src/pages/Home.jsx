@@ -1,9 +1,10 @@
+import SubscriptionList from '../components/SubscriptionList'
 import './Home.css'
 
 const Home = () => (
-    <div className="home-page">
-      <p>메인 페이지입니다.</p>
-    </div>
+  <div className="home-page">
+    <SubscriptionList />
+  </div>
 )
 
 export default Home
