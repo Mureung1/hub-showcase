@@ -8,8 +8,9 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
 from uuid import UUID, uuid4
@@ -37,6 +38,19 @@ VIDEO_SUFFIXES = {".mp4", ".mov", ".mkv"}
 CHUNK_SIZE = 1024 * 1024
 MAX_TOTAL_BYTES = 8 * 1024 * 1024 * 1024
 MIN_GPU_MEMORY_MB = 6_000
+TERMINAL_JOB_STATUSES = {"blocked", "failed", "ready"}
+_execution_lock = threading.Lock()
+_active_scene_jobs: set[str] = set()
+
+
+class SceneResourceLimitError(ValueError):
+    """A public Scene request exceeded an intentionally small service limit."""
+
+    status_code: int = 429
+
+
+class SceneUploadTooLargeError(SceneResourceLimitError):
+    status_code = 413
 
 
 class SceneInputFile(BaseModel):
@@ -299,6 +313,19 @@ class SceneJobStore:
         (self.job_dir(job_id) / "input").mkdir(parents=True, exist_ok=False)
         return self.save(job)
 
+    def list_jobs(self) -> list[SceneJob]:
+        if not self.root.exists():
+            return []
+        jobs: list[SceneJob] = []
+        for directory in self.root.iterdir():
+            if not directory.is_dir():
+                continue
+            try:
+                jobs.append(self.load(directory.name))
+            except (FileNotFoundError, ValueError):
+                continue
+        return jobs
+
     def set_stage(
         self, job: SceneJob, name: str, status: StageStatus, message: str | None = None
     ) -> SceneJob:
@@ -317,10 +344,14 @@ async def save_uploads(
     store: SceneJobStore,
     job: SceneJob,
     uploads: list[UploadFile],
+    *,
+    max_total_bytes: int = MAX_TOTAL_BYTES,
+    max_storage_bytes: int | None = None,
 ) -> SceneJob:
     names = [safe_name(upload.filename, index) for index, upload in enumerate(uploads, start=1)]
     validate_file_set(job.capture_type, names)
     total_size = 0
+    existing_storage = scene_storage_bytes(store)
     destination = store.job_dir(job.id) / "input"
     saved: list[SceneInputFile] = []
     try:
@@ -332,8 +363,15 @@ async def save_uploads(
                 while chunk := await upload.read(CHUNK_SIZE):
                     size += len(chunk)
                     total_size += len(chunk)
-                    if total_size > MAX_TOTAL_BYTES:
-                        raise ValueError("Capture files exceed the 8GB job limit.")
+                    if total_size > max_total_bytes:
+                        raise SceneUploadTooLargeError(
+                            "Capture files exceed the configured job limit."
+                        )
+                    if (
+                        max_storage_bytes is not None
+                        and existing_storage + total_size > max_storage_bytes
+                    ):
+                        raise SceneResourceLimitError("Scene storage quota reached. Retry later.")
                     digest.update(chunk)
                     stream.write(chunk)
             if size == 0:
@@ -353,6 +391,89 @@ async def save_uploads(
     job.files = saved
     store.set_stage(job, "validate", "passed", f"Validated {len(saved)} input file(s).")
     return store.save(job)
+
+
+def parse_job_time(value: str) -> datetime:
+    return datetime.fromisoformat(value).astimezone(UTC)
+
+
+def scene_storage_bytes(store: SceneJobStore) -> int:
+    if not store.root.exists():
+        return 0
+    return sum(path.stat().st_size for path in store.root.rglob("*") if path.is_file())
+
+
+def enforce_scene_creation_limits(
+    store: SceneJobStore,
+    *,
+    max_storage_bytes: int,
+    rate_window_seconds: int,
+    max_jobs_per_window: int,
+    max_active_jobs: int,
+    now: datetime | None = None,
+) -> None:
+    """Apply anonymous service limits until owner-based quotas can be enforced."""
+    current = now or datetime.now(UTC)
+    jobs = store.list_jobs()
+    window_start = current - timedelta(seconds=rate_window_seconds)
+    recent_count = sum(parse_job_time(job.created_at) >= window_start for job in jobs)
+    if recent_count >= max_jobs_per_window:
+        raise SceneResourceLimitError("Scene job rate limit reached. Retry later.")
+    active_count = sum(job.status in {"queued", "running"} for job in jobs)
+    if active_count >= max_active_jobs:
+        raise SceneResourceLimitError("Scene job capacity reached. Retry later.")
+    if scene_storage_bytes(store) >= max_storage_bytes:
+        raise SceneResourceLimitError("Scene storage quota reached. Retry later.")
+
+
+def retry_scene_job(
+    store: SceneJobStore,
+    job_id: str,
+    *,
+    cooldown_seconds: int,
+    now: datetime | None = None,
+) -> SceneJob:
+    job = store.load(job_id)
+    if job.status in {"queued", "running"}:
+        raise SceneResourceLimitError("Scene job is already queued or running.")
+    if job.status not in {"blocked", "failed"}:
+        raise ValueError("Only blocked or failed Scene jobs can be retried.")
+    current = now or datetime.now(UTC)
+    if current < parse_job_time(job.updated_at) + timedelta(seconds=cooldown_seconds):
+        raise SceneResourceLimitError("Scene job retry cooldown is active. Retry later.")
+    job.status = "queued"
+    job.blocked_reason = None
+    job.next_action = None
+    return store.save(job)
+
+
+def cleanup_expired_scene_jobs(
+    store: SceneJobStore,
+    *,
+    retention_hours: int,
+    now: datetime | None = None,
+) -> list[str]:
+    current = now or datetime.now(UTC)
+    cutoff = current - timedelta(hours=retention_hours)
+    removed: list[str] = []
+    for job in store.list_jobs():
+        if job.status in TERMINAL_JOB_STATUSES and parse_job_time(job.updated_at) < cutoff:
+            shutil.rmtree(store.job_dir(job.id), ignore_errors=True)
+            removed.append(job.id)
+    return removed
+
+
+def claim_scene_execution(job_id: str, *, max_workers: int) -> bool:
+    with _execution_lock:
+        if job_id in _active_scene_jobs or len(_active_scene_jobs) >= max_workers:
+            return False
+        _active_scene_jobs.add(job_id)
+        return True
+
+
+def release_scene_execution(job_id: str) -> None:
+    with _execution_lock:
+        _active_scene_jobs.discard(job_id)
 
 
 def toolchain_status(
@@ -548,8 +669,24 @@ def export_scene_asset(
         shutil.copy2(ply_files[0], final_asset)
 
 
-def run_scene_job(job_id: str, root: Path | None = None) -> SceneJob:
+def run_scene_job(
+    job_id: str, root: Path | None = None, *, max_workers: int | None = None
+) -> SceneJob:
     store = SceneJobStore(root)
+    worker_limit = max_workers or get_settings().scene_worker_concurrency
+    if not claim_scene_execution(job_id, max_workers=worker_limit):
+        job = store.load(job_id)
+        job.status = "blocked"
+        job.blocked_reason = "scene_worker_capacity_reached"
+        job.next_action = "Retry after another Scene job completes."
+        return store.save(job)
+    try:
+        return _run_scene_job(store, job_id)
+    finally:
+        release_scene_execution(job_id)
+
+
+def _run_scene_job(store: SceneJobStore, job_id: str) -> SceneJob:
     job = store.load(job_id)
     capability = toolchain_status()
     if not capability.ready:
