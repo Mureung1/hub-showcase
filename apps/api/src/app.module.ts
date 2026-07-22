@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { HealthModule } from "./health/health.module";
+import { ReflectionModule } from "./reflection/reflection.module";
 import { RepositoryAnalysisModule } from "./repository-analysis/repository-analysis.module";
 
 @Module({
@@ -10,6 +11,7 @@ import { RepositoryAnalysisModule } from "./repository-analysis/repository-analy
       envFilePath: [".env.local", ".env"],
     }),
     HealthModule,
+    ReflectionModule,
     RepositoryAnalysisModule,
   ],
 })
