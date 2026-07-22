@@ -65,6 +65,14 @@ export const allRejectedFinalAnswerContent =
   "모든 Agenda가 충돌하였습니다. 다시 질문 부탁드립니다.";
 
 /**
+ * 3사 전멸 고정 문구 (SPEC-AI-001 6.2).
+ * 모든 Provider가 재시도 후에도 실패해 비교할 답변이 하나도 없을 때 이 문구로 마무리하고
+ * Question을 완료 처리한다(FinalAnswer + DecisionNote 모두 저장 후 completed).
+ */
+export const allProvidersFailedContent =
+  "모든 AI 응답을 받지 못했습니다. 잠시 후 다시 질문해 주세요.";
+
+/**
  * Mock FinalAnswer 본문 — 요약이 아니라 상세한 완전 답변 (Step 7-1).
  * Consensus와 해결된 Conflict의 selectedContent를 근거로 원 질문에 다시 답한 전문.
  */

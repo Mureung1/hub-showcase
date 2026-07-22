@@ -1,6 +1,6 @@
 import { Spinner } from "@astryxdesign/core/Spinner";
 import { Text } from "@astryxdesign/core/Text";
-import type { SourceAnswer, SourceAnswerStatus } from "./types";
+import type { Provider, SourceAnswer, SourceAnswerStatus } from "./types";
 import { providerMeta } from "./mockData";
 import "./chat.css";
 
@@ -28,6 +28,12 @@ function StatusIndicator({ status }: { status: SourceAnswerStatus }) {
 
 interface SourceAnswerLoadingBubbleProps {
   sourceAnswers: SourceAnswer[];
+  /**
+   * live SSE 진행 상태(provider → status). 서버 실호출 경로에서만 넘어온다.
+   * 실제 SourceAnswer 배열은 done 시점에 한 번에 반영되므로(succeeded는 structuredContent가
+   * 있어야 계약을 만족), 스트리밍 중 점등은 이 값을 우선한다.
+   */
+  liveStatuses?: Partial<Record<Provider, SourceAnswerStatus>>;
 }
 
 /**
@@ -40,6 +46,7 @@ interface SourceAnswerLoadingBubbleProps {
  */
 export function SourceAnswerLoadingBubble({
   sourceAnswers,
+  liveStatuses,
 }: SourceAnswerLoadingBubbleProps) {
   return (
     <div className="sa-loading-list">
@@ -48,11 +55,12 @@ export function SourceAnswerLoadingBubble({
         if (!answer) {
           return null;
         }
+        const status = liveStatuses?.[id] ?? answer.status;
         // 자동 재시도 중: 첫 실패 후 retryCount가 1로 오른 processing (Step 10-1 자동 재시도)
-        const isRetrying =
-          answer.status === "processing" && answer.retryCount === 1;
+        const isRetrying = status === "processing" && answer.retryCount === 1;
         const isExcluded =
-          answer.status === "failed" && answer.excludedFromComparison;
+          status === "failed" &&
+          (liveStatuses?.[id] !== undefined || answer.excludedFromComparison);
         return (
           <div
             className={
@@ -77,7 +85,7 @@ export function SourceAnswerLoadingBubble({
                       재시도 중…
                     </Text>
                   )}
-                  <StatusIndicator status={answer.status} />
+                  <StatusIndicator status={status} />
                 </>
               )}
             </span>

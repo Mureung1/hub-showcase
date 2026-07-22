@@ -8,6 +8,7 @@ import type {
   Provider,
   Question,
   SourceAnswer,
+  SourceAnswerStatus,
 } from "./types";
 import { hasIncompleteQuestion, isSourceAnswerSettled } from "./types";
 import { validateWorkspaceEntities } from "./mockValidation";
@@ -19,10 +20,13 @@ import {
   markQuestionCompleted,
   ApiStorageError,
   type StoredChat,
+  loadSourceAnswers,
+  startSourceAnswers,
 } from "../../lib/apiStorageAdapter";
 import type { SourceAnswerEvent } from "./scenarios";
 import type { MockAgendaTemplate } from "./mockData";
 import {
+  allProvidersFailedContent,
   allRejectedFinalAnswerContent,
   mockAgendaTemplates,
   mockFinalAnswerContent,
@@ -61,6 +65,27 @@ interface ChatWorkspaceState {
  * Consensus는 draft → passed(auto_consensus)로 즉시 전이하며 selectedContent를 가진다 (고정 정책).
  * draft는 UI에 노출하지 않는다.
  */
+/**
+ * 템플릿이 참조하는 Mock sectionId(`"claude-s2"`)를 **실제 답변에 존재하는 sectionId**로 옮긴다.
+ * 실제 Provider가 붙이는 sectionId는 임의(`"s1"`·`"rec-basic"` 등)라 그대로 쓰면 없는 Section을
+ * 가리키게 된다. 템플릿의 `-s<N>` 순번을 order 인덱스로 보고, 실제 섹션 수가 적으면 마지막으로
+ * 클램프해 **참조 무결성만** 맞춘다(Agenda 비교 "내용"이 canned인 것은 의도된 상태 — 실제 비교는
+ * SPEC-AI-002). 근거는 succeeded 답변의 실제 섹션에서만 가져온다.
+ */
+function resolveSectionId(
+  answer: SourceAnswer,
+  templateSectionId: string,
+): string | null {
+  const sections = answer.structuredContent?.sections ?? [];
+  if (sections.length === 0) return null;
+
+  const ordered = [...sections].sort((a, b) => a.order - b.order);
+  const match = /-s(\d+)$/.exec(templateSectionId);
+  const index = match ? Number(match[1]) - 1 : 0;
+  const clamped = Math.min(Math.max(index, 0), ordered.length - 1);
+  return ordered[clamped]?.sectionId ?? null;
+}
+
 function buildMockAgendas(
   sourceAnswers: SourceAnswer[],
   templates: readonly MockAgendaTemplate[],
@@ -75,14 +100,20 @@ function buildMockAgendas(
   return templates.map((template) => {
     const stances = template.stances
       .filter((stance) => succeededByProvider.has(stance.provider))
-      .map((stance) => ({
-        provider: stance.provider,
-        text: stance.text,
-        sourceRefs: stance.sectionIds.map((sectionId) => ({
-          sourceAnswerId: succeededByProvider.get(stance.provider)!.id,
-          sectionId,
-        })),
-      }));
+      .map((stance) => {
+        const answer = succeededByProvider.get(stance.provider)!;
+        return {
+          provider: stance.provider,
+          text: stance.text,
+          sourceRefs: stance.sectionIds
+            .map((sectionId) => resolveSectionId(answer, sectionId))
+            .filter((sectionId): sectionId is string => sectionId !== null)
+            .map((sectionId) => ({
+              sourceAnswerId: answer.id,
+              sectionId,
+            })),
+        };
+      });
 
     const now = nowIso();
     const draft: Agenda = {
@@ -373,6 +404,15 @@ export function useChatWorkspace() {
       : { chats: [], activeChatId: null, decisionNotes: [] },
   );
 
+  /**
+   * live SSE 진행 상태(questionId → provider → status). 로딩 말풍선 점등 전용이다.
+   * 실제 SourceAnswer 배열은 succeeded일 때 structuredContent가 있어야 계약을 만족하므로,
+   * 스트리밍 중에는 이 파생 상태만 갱신하고 배열은 done 시점에 한 번에 반영한다.
+   */
+  const [liveStatuses, setLiveStatuses] = useState<
+    Record<string, Partial<Record<Provider, SourceAnswerStatus>>>
+  >({});
+
   // 서버 저장 모드: 마운트 시 Chat·Question을 복원한다(재로그인 복원, AC4).
   // per-run `cancelled`만 쓴다(ref 가드를 두면 StrictMode 이중 마운트에서 첫 fetch가
   // cleanup으로 취소되고 두 번째가 건너뛰어져 복원이 사라진다). 재fetch는 idempotent.
@@ -380,9 +420,43 @@ export function useChatWorkspace() {
     if (!serverBacked) return;
     let cancelled = false;
     void loadChatsWithQuestions()
-      .then((stored) => {
+      .then(async (stored) => {
         if (cancelled) return;
-        setState((prev) => ({ ...prev, chats: stored.map(toViewChat) }));
+        // SourceAnswer 스냅샷도 함께 복원한다(새로고침·재진입, SPEC-AI-001 4장).
+        // 조회 실패한 Question은 빈 배열로 두고 나머지 복원을 막지 않는다.
+        const answersByQuestion = new Map<string, SourceAnswer[]>();
+        await Promise.all(
+          stored.flatMap(({ chat, questions }) =>
+            questions.map(async (question) => {
+              try {
+                answersByQuestion.set(
+                  question.id,
+                  await loadSourceAnswers(chat.id, question.id),
+                );
+              } catch (error) {
+                console.error(
+                  "[apiStorage] SourceAnswer 복원 실패:",
+                  error instanceof Error ? error.message : error,
+                );
+              }
+            }),
+          ),
+        );
+        if (cancelled) return;
+        setState((prev) => ({
+          ...prev,
+          chats: stored.map((item) => {
+            const view = toViewChat(item);
+            return {
+              ...view,
+              questions: view.questions.map((question) => ({
+                ...question,
+                sourceAnswers:
+                  answersByQuestion.get(question.id) ?? question.sourceAnswers,
+              })),
+            };
+          }),
+        }));
       })
       .catch((error) => {
         console.error(
@@ -644,6 +718,221 @@ export function useChatWorkspace() {
     });
   }
 
+  /**
+   * 서버가 돌려준 SourceAnswer 스냅샷을 반영하고, 3사가 모두 최종이면 다음 단계로 넘긴다.
+   * - 하나라도 성공 → Mock Manager 비교(Agenda) 생성 + review_required (§1-② 브라우저 Mock 유지)
+   * - 3사 전멸 → 고정 문구로 FinalAnswer + DecisionNote 저장 후 completed (§6.2)
+   */
+  function applyServerSnapshot(
+    chatId: string,
+    questionId: string,
+    sourceAnswers: SourceAnswer[],
+  ) {
+    const allSettled =
+      sourceAnswers.length > 0 && sourceAnswers.every(isSourceAnswerSettled);
+    const allFailed =
+      allSettled && sourceAnswers.every((answer) => answer.status === "failed");
+
+    // 전멸이면 여기서 Question이 완료되므로 서버에도 완료를 영속화한다(미완료 1개 해제).
+    if (serverBacked && allFailed) {
+      void markQuestionCompleted(chatId, questionId).catch((error) =>
+        console.error(
+          "[apiStorage] Question 완료 영속화 실패:",
+          error instanceof Error ? error.message : error,
+        ),
+      );
+    }
+
+    setState((prev) => {
+      let createdNote: DecisionNote | null = null;
+
+      const chats = prev.chats.map((chat) => {
+        if (chat.id !== chatId) return chat;
+        return {
+          ...chat,
+          questions: chat.questions.map((question) => {
+            if (question.id !== questionId) return question;
+            const startsReview =
+              allSettled && !allFailed && question.status === "processing";
+
+            // 3사 전멸(6.2): 고정 문구를 FinalAnswer로 만들고 같은 문구를 노트로도 저장한다.
+            // 완료 조건은 FinalAnswer + DecisionNote 둘 다이므로 노트 없이 completed로 가지 않는다.
+            if (allFailed && question.finalAnswer === null) {
+              const now = nowIso();
+              const finalAnswer: FinalAnswer = {
+                id: crypto.randomUUID(),
+                questionId,
+                content: allProvidersFailedContent,
+                // 전 Provider 실패 전용 값은 아직 enum에 없다(AI-003에서 재검토).
+                // 비교할 답변이 하나도 없으므로 all_agendas_rejected로 표기한다.
+                generationMode: "all_agendas_rejected",
+                createdAt: now,
+              };
+              createdNote = {
+                id: crypto.randomUUID(),
+                questionId,
+                content: allProvidersFailedContent,
+                createdAt: now,
+                updatedAt: now,
+                chatId: chat.id,
+                title: chat.title,
+                bullets: [allProvidersFailedContent],
+              };
+              return {
+                ...question,
+                sourceAnswers,
+                agendas: [],
+                finalAnswer,
+                status: "completed" as const,
+                completedAt: now,
+                updatedAt: now,
+              };
+            }
+
+            return {
+              ...question,
+              sourceAnswers,
+              agendas: startsReview
+                ? buildMockAgendas(
+                    sourceAnswers,
+                    getActiveScenario().agendaTemplates,
+                    questionId,
+                  )
+                : question.agendas,
+              status: startsReview ? "review_required" : question.status,
+              updatedAt: nowIso(),
+            };
+          }),
+        };
+      });
+
+      return {
+        ...prev,
+        chats,
+        decisionNotes: createdNote
+          ? [...prev.decisionNotes, createdNote]
+          : prev.decisionNotes,
+      };
+    });
+  }
+
+  /**
+   * 이전 결정 Context 구성 (SPEC-AI-001 9장 — 이번 슬라이스는 web이 실어 보낸다).
+   * 직전 completed Question의 FinalAnswer + 그 이전 Question들의 DecisionNote를 문자열로 묶는다.
+   * 서버는 이 값을 프롬프트 재료로만 쓰며 소유권 판단에는 쓰지 않는다(신뢰 경계).
+   */
+  function buildContext(chatId: string): string | null {
+    const chat = state.chats.find((c) => c.id === chatId);
+    if (!chat) return null;
+
+    const completed = chat.questions.filter(
+      (question) => question.status === "completed",
+    );
+    if (completed.length === 0) return null;
+
+    const last = completed[completed.length - 1];
+    const parts: string[] = [];
+
+    if (last?.finalAnswer) {
+      parts.push(`[직전 확정 답변]\n${last.finalAnswer.content}`);
+    }
+    const earlierNotes = state.decisionNotes
+      .filter(
+        (note) =>
+          note.chatId === chatId &&
+          completed.some(
+            (question) =>
+              question.id === note.questionId && question.id !== last?.id,
+          ),
+      )
+      .map((note) => note.content);
+    if (earlierNotes.length > 0) {
+      parts.push(`[이전 결정 노트]\n${earlierNotes.join("\n")}`);
+    }
+
+    return parts.length > 0 ? parts.join("\n\n") : null;
+  }
+
+  /**
+   * live 경로: 서버가 3사를 실호출하고 진행을 SSE로 푸시한다(§3·§4).
+   * - source_answer.updated → 로딩 말풍선 점등용 진행 상태만 갱신한다.
+   *   (succeeded는 structuredContent가 있어야 계약을 만족하므로, 실제 답변 배열은 done에서 한 번에 반영)
+   * - done → 최종 스냅샷을 반영하고 다음 단계로 넘긴다.
+   * - done 없이 스트림이 닫히면 GET 스냅샷으로 화해한다.
+   */
+  async function runLiveSourceAnswers(chatId: string, questionId: string) {
+    const context = buildContext(chatId);
+    let applied = false;
+
+    try {
+      const { done } = await startSourceAnswers(
+        chatId,
+        questionId,
+        context,
+        (event) => {
+          if (event.type === "source_answer.updated") {
+            setLiveStatuses((prev) => ({
+              ...prev,
+              [questionId]: {
+                ...prev[questionId],
+                [event.provider]: event.status,
+              },
+            }));
+            return;
+          }
+          applyServerSnapshot(chatId, questionId, event.sourceAnswers);
+          applied = true;
+        },
+      );
+
+      // 서버 크래시·프록시 절단 등으로 done을 못 받은 경우 — 현재 스냅샷으로 화해한다.
+      if (!done && !applied) {
+        const snapshot = await loadSourceAnswers(chatId, questionId);
+        applyServerSnapshot(chatId, questionId, snapshot);
+      }
+    } catch (error) {
+      console.error(
+        "[sourceAnswers] 생성 실패:",
+        error instanceof ApiStorageError
+          ? `${error.code}: ${error.message}`
+          : error,
+      );
+      // 스트림을 열지 못했거나(사전 점검 실패 등) 화해도 실패한 경우:
+      // 3사를 실패로 표시해 흐름이 pending에 멈추지 않게 한다.
+      if (!applied) {
+        markAllFailedLocally(chatId, questionId);
+      }
+    } finally {
+      setLiveStatuses((prev) => {
+        const next = { ...prev };
+        delete next[questionId];
+        return next;
+      });
+    }
+  }
+
+  /** 서버 응답을 전혀 얻지 못했을 때의 마지막 화해 — 3사를 실패·제외로 표시한다. */
+  function markAllFailedLocally(chatId: string, questionId: string) {
+    const chat = state.chats.find((c) => c.id === chatId);
+    const question = chat?.questions.find((q) => q.id === questionId);
+    if (!question) return;
+    const now = nowIso();
+    applyServerSnapshot(
+      chatId,
+      questionId,
+      question.sourceAnswers.map((answer) => ({
+        ...answer,
+        status: "failed" as const,
+        errorCode: "UNKNOWN_ERROR" as const,
+        errorMessage: "생성 결과를 확인하지 못했습니다.",
+        excludedFromComparison: true,
+        excludedAt: now,
+        completedAt: now,
+        updatedAt: now,
+      })),
+    );
+  }
+
   /** 활성 시나리오의 Provider별 타임라인대로 상태 전이를 예약한다 */
   function scheduleSourceAnswerFlow(chatId: string, questionId: string) {
     const scenario = getActiveScenario();
@@ -674,7 +963,12 @@ export function useChatWorkspace() {
         ),
       }));
     }
-    scheduleSourceAnswerFlow(question.chatId, question.id);
+    // live 경로는 서버 실호출(SSE), dev 시나리오는 기존 메모리 Mock 타임라인을 유지한다.
+    if (serverBacked) {
+      void runLiveSourceAnswers(question.chatId, question.id);
+    } else {
+      scheduleSourceAnswerFlow(question.chatId, question.id);
+    }
   }
 
   /**
@@ -835,6 +1129,8 @@ export function useChatWorkspace() {
     isActiveChatBusy,
     /** Mock 계약 검증 실패 정보 (없으면 null) — 기존 error UI로 노출한다 (AC6) */
     mockValidationError,
+    /** live SSE 진행 상태(questionId → provider → status) — 로딩 말풍선 점등용 */
+    liveStatuses,
     submitQuestion,
     resolveAgenda,
     requestRecheck,

@@ -286,5 +286,19 @@
   - **문서**: `docs/dev-setup.md`에 AI Provider 실호출 절 추가(env 7종 형식 예시·BYOK 해석·프롬프트 텍스트 교체·엔드포인트 curl). 실제 키는 미기재
   - **남은 문제**: 스트림 도중 치명 오류 전용 이벤트는 MVP 생략(좌초 복구 범위) — 현재는 서버 로그만 남기고 스트림을 닫는다. SSE heartbeat 없음(45초×재시도로 최대 ~90초 무음 구간 가능)
   - **다음**: T-016.3 — web 재배선(Mock SourceAnswer 생성 중단 → fetch ReadableStream 구독·복원)
-- 이후: SPEC-AI-001~003(Provider·Manager·FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
+- **T-016.3 완료 (2026-07-22)** — SPEC-AI-001 web 재배선 + SSE 에러 종료 보강. **T-016 3단계 완료 = SourceAnswer 수직 슬라이스 관통**
+  - **서버 보강**: 스트림 도중 오류 시 미종결(pending·processing) 행을 `failed`(UNKNOWN_ERROR)+excluded로 마감(`failUnfinished`) → 최신 스냅샷 재조회 → **정상과 동일 스키마의 `done`** 전송. 마감·재조회까지 실패하면 done 없이 종료(무한루프 방지) → 클라이언트가 GET으로 화해
+  - **web SSE 구독**: `apiClient.streamSourceAnswers()` — fetch + Bearer로 열고 `ReadableStream`으로 `data:` 프레임을 shared `SourceAnswerEventSchema`로 파싱(EventSource 미사용). 컴포넌트는 fetch 직접 호출 없음(apiClient→adapter→Hook)
+  - **live 경로 대체**: `serverBacked`(기본 경로)에서 Mock 생성 대신 `runLiveSourceAnswers()`. `?scenario=` dev 경로는 기존 메모리 Mock 타임라인 그대로
+  - **점등 방식**: 스트리밍 중에는 `liveStatuses`(questionId→provider→status) 파생 상태만 갱신하고, SourceAnswer 배열은 `done`에서 한 번에 반영한다 — succeeded는 structuredContent가 있어야 계약을 만족하므로 **계약을 어기는 중간 상태를 만들지 않기 위함**
+  - **끊김 화해**: `done` 없이 닫히면 `GET .../source-answers`로 재조회. 그것도 실패하면 3사를 로컬에서 failed 처리해 pending에 멈추지 않게 함
+  - **Context(§9)**: 직전 completed Question의 FinalAnswer + 그 이전 DecisionNote를 문자열로 조립해 POST body `context`로 전달(소유권 판단엔 미사용)
+  - **복원**: 마운트 하이드레이트에서 Question별 `GET .../source-answers` 병렬 조회로 SourceAnswer까지 복원
+  - **Agenda 접속부**: `resolveSectionId()` — 템플릿의 `-s<N>` 순번을 실제 답변의 order 인덱스로 매핑(부족하면 마지막으로 클램프), **succeeded provider의 실제 섹션만** 참조. Agenda 비교 "내용"이 canned인 것은 의도된 상태(실제 비교는 AI-002)
+  - **3사 전멸(§6.2)**: 고정 문구 `"모든 AI 응답을 받지 못했습니다. 잠시 후 다시 질문해 주세요."`로 FinalAnswer + **DecisionNote까지 저장한 뒤** completed 전이(완료 조건 = 둘 다, domain-policy §6·§5.4) + 서버에 완료 영속화
+  - **검증**: 루트 typecheck·lint·build 통과. 브라우저 실측 — 질문→3사 실시간 SSE 점등(Gemini ✓ 먼저, 나머지 순차)→답변 카드·3열 모달에 **실제 답변 내용**→Mock Agenda 2건 해소→FinalAnswer·DecisionNote→completed·컴포저 재활성. 새로고침 후 GET 복원으로 3열 모달 실제 내용 유지. 잘못된 모델 ID로 **3사 전멸 경로 실측**(3줄 제외 배너 + 고정 문구 + 노트 + 완료). 서버 catch 경로는 **강제 에러 주입**으로 확인 — pending 3건이 `UNKNOWN_ERROR`+excluded로 마감되고 `done(n=3)` 수신, 확인 후 즉시 원복. `?scenario=provider-excluded` 회귀 정상
+  - **테스트 데이터 정리**: `83a6263d…`(2b 실측, 미완료 Question 1) · `bbf9ecc9…`(T-016.1 회귀) 삭제 — Chat 2 + Question 2 + SourceAnswer 3. 이번 실측으로 생긴 3건(`9fbcef07…`·`5c2b7eba…`·`9ab9a345…`)은 지시 범위 밖이라 유지
+  - **남은 문제**: 새로고침 후 Agenda·FinalAnswer·DecisionNote는 사라진다(서버 저장 대상이 아님 — 0.4 알려진 한계). 스트리밍 중에는 재시도 라벨("재시도 중…")이 뜨지 않는다(이벤트에 retryCount가 없음). SSE heartbeat·탭 이탈 시 취소·좌초 복구는 범위 밖
+  - **다음**: SPEC-AI-002(Manager 실제 비교) — 어젠다 분류·충돌 판단 기준 확정
+- 이후: SPEC-AI-002~003(Manager·FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

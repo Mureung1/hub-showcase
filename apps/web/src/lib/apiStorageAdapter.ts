@@ -1,4 +1,9 @@
-import type { Chat, Question } from "@decision-log/shared";
+import type {
+  Chat,
+  Question,
+  SourceAnswer,
+  SourceAnswerEvent,
+} from "@decision-log/shared";
 
 import {
   createChat,
@@ -6,6 +11,8 @@ import {
   completeQuestion,
   fetchChats,
   fetchQuestions,
+  fetchSourceAnswers,
+  streamSourceAnswers,
   type ApiResult,
 } from "./apiClient";
 
@@ -74,4 +81,41 @@ export async function markQuestionCompleted(
   questionId: string,
 ): Promise<Question> {
   return unwrap(await completeQuestion(chatId, questionId)).question;
+}
+
+// --- SourceAnswer 실호출 (SPEC-AI-001) ---
+
+/** 새로고침·재진입 시 현재 SourceAnswer 스냅샷 복원. */
+export async function loadSourceAnswers(
+  chatId: string,
+  questionId: string,
+): Promise<SourceAnswer[]> {
+  return unwrap(await fetchSourceAnswers(chatId, questionId));
+}
+
+/**
+ * 생성 시작 — 서버가 3사를 실호출하고 진행을 SSE로 푸시한다.
+ * 이벤트는 그대로 호출부(Hook)에 전달하고, done을 못 받은 채 끝나면 done:false로 알린다.
+ * 스트림이 열리기 전 실패(NO_AVAILABLE_KEYS·404 등)는 ApiStorageError로 던진다.
+ */
+export async function startSourceAnswers(
+  chatId: string,
+  questionId: string,
+  context: string | null,
+  onEvent: (event: SourceAnswerEvent) => void,
+): Promise<{ done: boolean }> {
+  const result = await streamSourceAnswers(
+    chatId,
+    questionId,
+    { context },
+    onEvent,
+  );
+  if (!result.ok) {
+    throw new ApiStorageError(
+      result.error.code,
+      result.error.message,
+      result.status,
+    );
+  }
+  return { done: result.done };
 }

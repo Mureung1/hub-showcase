@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import type { AuthenticatedRequest } from "../auth/auth.types.js";
 import { createUserClient } from "../../shared/supabase/userClient.js";
+import { getAdminClient } from "../../shared/supabase/adminClient.js";
 import { sendError } from "../../shared/http/errorEnvelope.js";
 import { AppError } from "../../shared/http/appError.js";
 import { ALL_PROVIDERS } from "./providers/registry.js";
@@ -126,11 +127,31 @@ export async function postSourceAnswers(
 
     writeEvent(response, { type: "done", sourceAnswers });
   } catch (error) {
-    // 스트림 도중 치명 오류 전용 이벤트는 MVP 범위 밖(좌초 복구). 서버에만 남기고 스트림을 닫는다.
+    // 에러 전용 이벤트는 두지 않는다(이벤트 계약 2종 유지). 대신 **항상 터미널 신호(done)** 를
+    // 보내 클라이언트가 매달리지 않게 한다. 남은 미종결 행은 실패로 마감해 상태를 정합하게 만든다.
     console.error(
       "[sourceAnswers] 스트림 처리 실패:",
       error instanceof Error ? error.message : error,
     );
+    try {
+      await repo.failUnfinished(
+        getAdminClient(),
+        params.data.questionId,
+        "생성 처리 중 오류로 중단되었습니다.",
+      );
+      const sourceAnswers = await repo.listByQuestion(
+        userClient,
+        params.data.questionId,
+      );
+      writeEvent(response, { type: "done", sourceAnswers });
+    } catch (recoveryError) {
+      // 마감·재조회까지 실패하면 done 없이 닫는다(무한 루프 방지).
+      // 클라이언트는 done 없는 종료를 GET 스냅샷 재조회로 화해한다.
+      console.error(
+        "[sourceAnswers] 종료 신호 전송 실패:",
+        recoveryError instanceof Error ? recoveryError.message : recoveryError,
+      );
+    }
   } finally {
     response.end();
   }

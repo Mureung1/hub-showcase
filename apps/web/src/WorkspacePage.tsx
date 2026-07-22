@@ -22,6 +22,7 @@ function WorkspacePage() {
     decisionNotes,
     isActiveChatBusy,
     mockValidationError,
+    liveStatuses,
     submitQuestion,
     resolveAgenda,
     requestRecheck,
@@ -115,6 +116,7 @@ function WorkspacePage() {
           <ChatCenter
             activeChat={activeChat}
             isBusy={isActiveChatBusy}
+            liveStatuses={liveStatuses}
             composerValue={composerValue}
             onComposerChange={setComposerValue}
             onSubmitQuestion={handleSubmitQuestion}

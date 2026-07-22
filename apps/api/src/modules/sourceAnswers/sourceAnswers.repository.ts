@@ -159,6 +159,33 @@ export async function markFailed(
   if (error) throw new Error(`SourceAnswer 저장 실패: ${error.message}`);
 }
 
+/**
+ * 아직 종결되지 않은(pending·processing) 행을 실패로 마감한다.
+ * 스트림 처리 중 예기치 못한 오류로 오케스트레이션이 끊겼을 때, 행이 중간 상태에 갇히지
+ * 않도록 정리하는 용도다(좌초 복구 자체는 이번 범위 밖 — 여기서는 이번 요청분만 마감).
+ */
+export async function failUnfinished(
+  adminClient: SupabaseClient,
+  questionId: string,
+  errorMessage: string,
+): Promise<void> {
+  const now = new Date().toISOString();
+  const { error } = await adminClient
+    .from("source_answers")
+    .update({
+      status: "failed",
+      error_code: "UNKNOWN_ERROR",
+      error_message: errorMessage,
+      excluded_from_comparison: true,
+      excluded_at: now,
+      completed_at: now,
+      updated_at: now,
+    })
+    .eq("question_id", questionId)
+    .in("status", ["pending", "processing"]);
+  if (error) throw new Error(`미종결 SourceAnswer 마감 실패: ${error.message}`);
+}
+
 /** Question의 SourceAnswer 스냅샷. 사용자 클라이언트(RLS)로 조회하면 본인 것만 보인다. */
 export async function listByQuestion(
   client: SupabaseClient,
