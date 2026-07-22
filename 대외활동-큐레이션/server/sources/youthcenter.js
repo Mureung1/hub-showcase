@@ -28,12 +28,13 @@ function deriveRegions(zipCd) {
 }
 
 // ptcpPrpTrgtCn(참여제외대상)에 "재학생"이 있으면(이 필드 자체가 제외 목록이라 언급=제외란 뜻) 재학생은
-// 못 들어간다. "졸업예정" 예외 문구가 흔히 같이 오길래(실측: K-뉴딜아카데미·청년미래플러스) 그 경우만
-// 졸업예정으로 좁힌다. 재학생 언급 자체가 없으면 무관([]).
+// 못 들어간다. 재학상태는 {재학, 휴학, 졸업예정} 셋인데, 재학만 빠지면 남는 허용집합은 {휴학, 졸업예정}이다.
+// 졸업예정만 주면 휴학생이 모든 "재학생 제외" 공고에서 잘못 걸러진다(false negative, 안 놓치기 원칙 위반).
+// 재학생 언급 자체가 없으면 무관([]).
 export function deriveEnrollment(ptcpPrpTrgtCn) {
   const text = ptcpPrpTrgtCn || "";
   if (!text.includes("재학생")) return [];
-  return ["졸업예정"];
+  return ["휴학", "졸업예정"];
 }
 
 // "20260101 ~ 20261231" -> 끝 날짜를 YYYY-MM-DD로. 비어있으면(상시) null.

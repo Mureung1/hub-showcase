@@ -46,17 +46,36 @@ flowchart TD
   I --> C
 ```
 
-데이터는 무거운 수집·정제를 사용자 접속과 분리해서 미리 끝내둔다. 지금은 `node batch/collect.js`를
-온디맨드(수동)로 돌리고 있고, GitHub Actions로 하루 2회 자동 실행하는 워크플로(`.github/workflows/collect.yml`)는
-설계·작성까지 끝났지만 시크릿 미등록으로 아직 활성화 전이다(#23).
+## 아키텍처 (화면·수집기·DB, 데이터가 흐르는 방향)
+
+이 서비스엔 흔한 "화면 -> 서버 -> DB" 구조가 아니라, **화면과 완전히 분리된 두 갈래 길**이 있다. 화면(React)은
+Supabase에서 읽기만 하고, 쓰기(수집)는 화면과 무관하게 별도 Node 스크립트가 온디맨드로 돈다. 그래서 서버 박스가
+없다 - 사용자 액션이 DB에 쓰는 경로 자체가 아예 없다는 게 이 구조를 그려보고 나서 알게 된 점이다.
 
 ```mermaid
 flowchart LR
-  Run["node batch/collect.js (지금은 온디맨드 수동 실행,<br/>GitHub Actions 하루 2회는 설계됨·미활성화)"] --> Scraper[5개 소스 수집]
-  Scraper --> Dedup[중복·노이즈 제거]
-  Dedup --> DB[(Supabase: postings)]
-  DB --> App[React가 직접 조회 + match.js 판정]
+  subgraph React["React (화면)"]
+    Pages["HomePage · DetailPage · FavoritesPage"]
+    Match["match.js (자격 판정)"]
+    Pages --> Match
+  end
+
+  subgraph Collector["Node 스크립트 (화면과 분리, 온디맨드)"]
+    Sources["sources/*.js (5개 소스)"]
+    Collect["batch/collect.js"]
+    Sources --> Collect
+  end
+
+  subgraph DB["Supabase (DB)"]
+    Postings[("postings 테이블")]
+  end
+
+  Pages -- "select (supabase-js, anon key)" --> Postings
+  Collect -- "upsert (service key)" --> Postings
 ```
+
+지금은 `node batch/collect.js`를 손으로 실행하고 있고, GitHub Actions로 하루 2회 자동 실행하는 워크플로
+(`.github/workflows/collect.yml`)는 설계·작성까지 끝났지만 시크릿 미등록으로 아직 활성화 전이다(#23).
 
 ## 실행
 

@@ -131,8 +131,9 @@
       "enrollment": "?",
       "ageMin": "?",
       "ageMax": "?",
-      "forUniv": "?"
-    }
+      "forUniv": true
+    },
+    "라벨링_메모": "링커리어 API는 대상(targets)만 주고 나이·지역·전공·학년을 안 줘서 forUniv만 확정 가능. 나머지는 원문 상세 없이는 판단 불가라 ?로 둠 (수집기 한계)"
   },
   {
     "id": "41fa9698-e5d6-4968-8853-b9e68b1cdc6b",
@@ -158,8 +159,9 @@
       "enrollment": "?",
       "ageMin": "?",
       "ageMax": "?",
-      "forUniv": "?"
-    }
+      "forUniv": true
+    },
+    "라벨링_메모": "링커리어 API는 대상(targets)만 주고 나이·지역·전공·학년을 안 줘서 forUniv만 확정 가능. 나머지는 원문 상세 없이는 판단 불가라 ?로 둠 (수집기 한계)"
   },
   {
     "id": "2c294ea1-045f-480d-bd29-6dc0e6a2a9cd",
@@ -185,8 +187,9 @@
       "enrollment": "?",
       "ageMin": "?",
       "ageMax": "?",
-      "forUniv": "?"
-    }
+      "forUniv": true
+    },
+    "라벨링_메모": "링커리어 API는 대상(targets)만 주고 나이·지역·전공·학년을 안 줘서 forUniv만 확정 가능. 나머지는 원문 상세 없이는 판단 불가라 ?로 둠 (수집기 한계)"
   },
   {
     "id": "e4bdc68e-089e-4112-ab7f-438639396d6e",
@@ -212,8 +215,9 @@
       "enrollment": "?",
       "ageMin": "?",
       "ageMax": "?",
-      "forUniv": "?"
-    }
+      "forUniv": true
+    },
+    "라벨링_메모": "링커리어 API는 대상(targets)만 주고 나이·지역·전공·학년을 안 줘서 forUniv만 확정 가능. 나머지는 원문 상세 없이는 판단 불가라 ?로 둠 (수집기 한계)"
   },
   {
     "id": "8cc389e9-024b-4950-9dcc-cdf54c22d00c",

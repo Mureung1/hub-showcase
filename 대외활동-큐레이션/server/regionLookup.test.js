@@ -20,6 +20,11 @@ test("구·군 이름이 아예 없으면 빈 배열(무관)", () => {
   assert.deepEqual(deriveRegionFromDistrict("전국 대학생 누구나 지원 가능"), []);
 });
 
+test("빈 값·null이면 안 터지고 빈 배열(무관)", () => {
+  assert.deepEqual(deriveRegionFromDistrict(""), []);
+  assert.deepEqual(deriveRegionFromDistrict(null), []);
+});
+
 test("서로 다른 시도의 구가 둘 다 있으면(드물지만) 둘 다 반환한다", () => {
   const result = deriveRegionFromDistrict("영등포구 또는 해운대구 거주자");
   assert.equal(result.includes("서울"), true);

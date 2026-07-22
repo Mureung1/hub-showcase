@@ -29,9 +29,10 @@ export const DISTRICT_TO_REGION = {
 // 원문에서 유일하게 식별 가능한 구·군 이름을 찾아 매핑되는 시·도 배열을 반환한다(중복 제거).
 // 못 찾으면(구·군 언급이 없거나, 여러 도시에 겹치는 이름뿐이면) 빈 배열 - "모른다"는 뜻이라 확인 필요로 남는다.
 export function deriveRegionFromDistrict(text) {
+  const t = text || "";
   const found = new Set();
   for (const [district, region] of Object.entries(DISTRICT_TO_REGION)) {
-    if (text.includes(district)) found.add(region);
+    if (t.includes(district)) found.add(region);
   }
   return [...found];
 }
