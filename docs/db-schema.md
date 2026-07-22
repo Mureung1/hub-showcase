@@ -176,8 +176,8 @@ MVP에서는 반복 항목을 PostgreSQL 배열로 저장한다. `career_highlig
 | `id` | `uuid` | 불가 | PK, `gen_random_uuid()` | 면담 ID |
 | `application_id` | `uuid` | 불가 | UNIQUE, FK → `applications.id` | 신청 ID |
 | `mentor_id` | `uuid` | 불가 | FK → `mentor_profiles.user_id` | 확정 멘토 ID |
-| `scheduled_at` | `timestamptz` | 불가 |  | 확정 면담 일시 |
-| `place` | `text` | 불가 |  | 장소 또는 온라인 링크 |
+| `scheduled_at` | `timestamptz` | 가능 |  | 확정 면담 일시 |
+| `place` | `text` | 가능 |  | 장소 또는 온라인 링크 |
 | `completed_at` | `timestamptz` | 가능 |  | 완료 처리 시각 |
 | `created_at` | `timestamptz` | 불가 | `now()` | 생성 시각 |
 | `updated_at` | `timestamptz` | 불가 | `now()` | 수정 시각 |
@@ -188,6 +188,7 @@ MVP에서는 반복 항목을 PostgreSQL 배열로 저장한다. `career_highlig
 - `mentor_id`는 해당 신청의 `accepted_mentor_id`와 같아야 한다.
 - 면담 방식은 별도로 관리하지 않으므로 `method` 칼럼을 두지 않는다.
 - 온라인 면담은 `place`에 Google Meet 또는 Zoom 링크를 저장한다.
+- 신청 수락 시점에 `scheduled_at`, `place`가 빈 값(`NULL`)인 상태로 행이 자동 생성되며, 이후 확정 멘토가 값을 채운다.
 
 ## 5. 관계와 삭제 정책
 

@@ -1,3 +1,5 @@
+import MeetingScheduleEditor from "./MeetingScheduleEditor";
+
 const statusLabels = {
   pending: "대기",
   confirmed: "확정",
@@ -20,7 +22,14 @@ function formatCreatedAt(createdAt) {
   }).format(new Date(createdAt));
 }
 
-function MentorApplicationCard({ application, isAccepting, onAccept }) {
+function MentorApplicationCard({
+  application,
+  isAccepting,
+  isRejecting,
+  onAccept,
+  onMeetingUpdated,
+  onReject,
+}) {
   const { applicationStatus, mentee, mentorStatus, questionnaire } = application;
   const visibleStatus = mentorStatus ?? applicationStatus;
   const showsMeetingFields = visibleStatus === "confirmed" || visibleStatus === "completed";
@@ -87,8 +96,16 @@ function MentorApplicationCard({ application, isAccepting, onAccept }) {
       {visibleStatus === "pending" && (
         <div className="mentor-application-actions">
           <button
+            className="button button-neutral mentor-reject-button"
+            disabled={isAccepting || isRejecting}
+            onClick={() => onReject(application.id)}
+            type="button"
+          >
+            {isRejecting ? "거부 처리 중..." : "거부"}
+          </button>
+          <button
             className="button button-primary"
-            disabled={isAccepting}
+            disabled={isAccepting || isRejecting}
             onClick={() => onAccept(application.id)}
             type="button"
           >
@@ -97,29 +114,13 @@ function MentorApplicationCard({ application, isAccepting, onAccept }) {
         </div>
       )}
 
-      {showsMeetingFields && (
+      {showsMeetingFields && application.meeting && (
         <section className="mentor-meeting-fields" aria-labelledby={`meeting-${application.id}`}>
           <h3 id={`meeting-${application.id}`}>면담 약속 정보</h3>
-          <div className="mentor-meeting-grid">
-            <label>
-              <span>약속 시간</span>
-              <input
-                className="field"
-                defaultValue={application.meeting?.time ?? ""}
-                placeholder="예: 2026년 7월 20일 19:00"
-                type="text"
-              />
-            </label>
-            <label>
-              <span>장소</span>
-              <input
-                className="field"
-                defaultValue={application.meeting?.place ?? ""}
-                placeholder="예: 온라인 또는 교내 라운지"
-                type="text"
-              />
-            </label>
-          </div>
+          <MeetingScheduleEditor
+            meeting={application.meeting}
+            onUpdated={(updatedMeeting) => onMeetingUpdated(application.id, updatedMeeting)}
+          />
         </section>
       )}
     </article>

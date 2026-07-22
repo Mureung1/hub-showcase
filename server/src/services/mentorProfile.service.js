@@ -1,3 +1,4 @@
+const { updateAccountCredentials } = require('./account.service');
 const { supabase } = require('../db/supabase');
 const { ValidationError, requireString, requireStringArray } = require('../utils/validators');
 
@@ -52,9 +53,18 @@ const updateMyProfile = async (user, payload = {}) => {
   const profileUpdate = {};
   const mentorProfileUpdate = {};
 
+  if (payload.name !== undefined) {
+    profileUpdate.name = requireString(payload.name, 'name');
+  }
+
   if (payload.nickname !== undefined) {
     profileUpdate.nickname = requireString(payload.nickname, 'nickname');
   }
+
+  const updatedEmail = await updateAccountCredentials(user.id, {
+    email: payload.email,
+    password: payload.password,
+  });
 
   ['school', 'major', 'academicStatus', 'program', 'lab', 'detailedIntroduction'].forEach(
     (field) => {
@@ -123,7 +133,12 @@ const updateMyProfile = async (user, payload = {}) => {
 
   const mentorProfile = await fetchMentorProfileRow(user.id);
   return toApiProfile(
-    { ...user, nickname: profileUpdate.nickname ?? user.nickname },
+    {
+      ...user,
+      email: updatedEmail ?? user.email,
+      name: profileUpdate.name ?? user.name,
+      nickname: profileUpdate.nickname ?? user.nickname,
+    },
     mentorProfile,
   );
 };

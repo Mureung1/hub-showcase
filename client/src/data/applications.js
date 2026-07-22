@@ -18,7 +18,6 @@ export const applications = [
     status: "confirmed",
     createdAt: "2026-07-08T15:10:00+09:00",
     meeting: {
-      method: "온라인",
       time: "2026년 7월 22일 17:00",
       place: "Google Meet · 링크는 면담 전 공개",
     },
@@ -36,7 +35,6 @@ export const applications = [
     status: "completed",
     createdAt: "2026-07-02T09:20:00+09:00",
     meeting: {
-      method: "오프라인",
       time: "2026년 7월 10일 13:00",
       place: "서울대학교 39동 2층 라운지",
     },

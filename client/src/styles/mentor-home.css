@@ -218,6 +218,10 @@
   margin-top: var(--space-md);
 }
 
+.mentor-reject-button {
+  color: var(--color-danger, #a53b3b);
+}
+
 .mentor-meeting-fields {
   margin-top: var(--space-lg);
   padding-top: var(--space-lg);
@@ -228,17 +232,6 @@
   margin: 0 0 var(--space-sm);
   color: var(--color-text-strong);
   font-size: 17px;
-}
-
-.mentor-meeting-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-sm);
-}
-
-.mentor-meeting-grid label {
-  display: grid;
-  gap: var(--space-xs);
 }
 
 @media (max-width: 760px) {
@@ -257,12 +250,12 @@
     flex-direction: column;
   }
 
-  .mentor-applicant-info,
-  .mentor-meeting-grid {
+  .mentor-applicant-info {
     grid-template-columns: 1fr;
   }
 
   .mentor-application-actions {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

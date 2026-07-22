@@ -5,6 +5,7 @@ import { routePaths } from "../routes/routePaths";
 
 function MenteeProfileEditPage() {
   const [profile, setProfile] = useState(null);
+  const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -34,17 +35,27 @@ function MenteeProfileEditPage() {
     setMessage("");
   };
 
+  const handlePasswordChange = (event) => {
+    setPassword(event.target.value);
+    setMessage("");
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     const payload = {
       name: profile.name,
       nickname: profile.nickname,
+      email: profile.email,
       school: profile.school,
       major: profile.major,
       grade: profile.grade,
       enrollmentStatus: profile.enrollmentStatus,
     };
+
+    if (password) {
+      payload.password = password;
+    }
 
     setIsSaving(true);
     setMessage("");
@@ -52,6 +63,7 @@ function MenteeProfileEditPage() {
     try {
       const response = await updateMyMenteeProfile(payload);
       setProfile(response.data);
+      setPassword("");
       setMessage("개인 정보가 저장되었습니다.");
     } catch (error) {
       setMessage(error.message);
@@ -63,7 +75,7 @@ function MenteeProfileEditPage() {
   if (isLoading) {
     return (
       <div className="mentee-profile-page">
-        <main className="page-container mentee-profile-container">
+        <main className="page-container mentee-signup-container">
           <p role="status">프로필을 불러오는 중입니다.</p>
         </main>
       </div>
@@ -73,7 +85,7 @@ function MenteeProfileEditPage() {
   if (!profile) {
     return (
       <div className="mentee-profile-page">
-        <main className="page-container mentee-profile-container">
+        <main className="page-container mentee-signup-container">
           <p role="alert">{message || "프로필을 불러오지 못했습니다."}</p>
         </main>
       </div>
@@ -92,73 +104,80 @@ function MenteeProfileEditPage() {
         </Link>
       </header>
 
-      <main className="page-container mentee-profile-container">
-        <form className="card mentee-profile-form" onSubmit={handleSubmit}>
+      <main className="page-container mentee-signup-container">
+        <form className="card mentee-signup-form" onSubmit={handleSubmit}>
           <div className="form-section-heading">
-            <div>
-              <h2 className="card-title">기본 정보</h2>
-              <p className="muted-text">멘토에게 전달되는 기본 정보를 관리합니다.</p>
-            </div>
+            <h2 className="card-title">개인정보 수정</h2>
           </div>
 
-          <div className="mentee-profile-field-grid">
-            <label className="mentee-profile-field">
-              <span>이름</span>
+          <div className="signup-field-list">
+            <label className="signup-field-group">
+              <span className="signup-field-label">이름</span>
               <input className="field" name="name" onChange={handleChange} required value={profile.name} />
             </label>
 
-            <label className="mentee-profile-field">
-              <span>닉네임</span>
+            <label className="signup-field-group">
+              <span className="signup-field-label">닉네임</span>
               <input className="field" name="nickname" onChange={handleChange} required value={profile.nickname} />
             </label>
 
-            <label className="mentee-profile-field mentee-profile-field-wide">
-              <span>이메일 주소</span>
-              <input className="field" disabled name="email" type="email" value={profile.email} />
-              <small>이메일은 별도 절차로 변경합니다.</small>
+            <label className="signup-field-group">
+              <span className="signup-field-label">비밀번호</span>
+              <input autoComplete="new-password" className="field" minLength="8" name="password" onChange={handlePasswordChange} placeholder="변경하려면 8자 이상 입력해 주세요" type="password" value={password} />
             </label>
 
-            <label className="mentee-profile-field">
-              <span>소속 학교</span>
+            <div className="signup-field-group">
+              <label className="signup-field-label" htmlFor="mentee-profile-email">이메일 주소</label>
+              <input className="field" id="mentee-profile-email" name="email" onChange={handleChange} required type="email" value={profile.email} />
+            </div>
+
+            <label className="signup-field-group">
+              <span className="signup-field-label">소속 학교</span>
               <input className="field" name="school" onChange={handleChange} required value={profile.school} />
             </label>
 
-            <label className="mentee-profile-field">
-              <span>전공</span>
+            <label className="signup-field-group">
+              <span className="signup-field-label">전공</span>
               <input className="field" name="major" onChange={handleChange} required value={profile.major} />
             </label>
 
-            <label className="mentee-profile-field">
-              <span>학년</span>
-              <select className="field" name="grade" onChange={handleChange} required value={profile.grade}>
-                <option value="1">1학년</option>
-                <option value="2">2학년</option>
-                <option value="3">3학년</option>
-                <option value="4">4학년</option>
-                <option value="5+">5학년 이상</option>
-              </select>
-            </label>
-
-            <label className="mentee-profile-field">
-              <span>재학 상태</span>
-              <select
-                className="field"
-                name="enrollmentStatus"
-                onChange={handleChange}
-                required
-                value={profile.enrollmentStatus}
-              >
-                <option value="enrolled">재학</option>
-                <option value="leave">휴학</option>
-                <option value="graduated">졸업</option>
-                <option value="other">기타</option>
-              </select>
-            </label>
+            <fieldset className="signup-field-group student-status-fieldset">
+              <legend className="signup-field-label">학년 · 재학 상태</legend>
+              <div className="student-status-row">
+                <label>
+                  <span className="sr-only">학년</span>
+                  <select className="field" name="grade" onChange={handleChange} required value={profile.grade}>
+                    <option value="1">1학년</option>
+                    <option value="2">2학년</option>
+                    <option value="3">3학년</option>
+                    <option value="4">4학년</option>
+                    <option value="5+">5학년 이상</option>
+                  </select>
+                </label>
+                <label>
+                  <span className="sr-only">재학 상태</span>
+                  <select
+                    className="field"
+                    name="enrollmentStatus"
+                    onChange={handleChange}
+                    required
+                    value={profile.enrollmentStatus}
+                  >
+                    <option value="enrolled">재학</option>
+                    <option value="leave">휴학</option>
+                    <option value="graduated">졸업</option>
+                    <option value="other">기타</option>
+                  </select>
+                </label>
+              </div>
+            </fieldset>
           </div>
 
-          <p className="mentee-profile-message" role="status" aria-live="polite">{message}</p>
+          {message && (
+            <p className="mentee-profile-message" role="status" aria-live="polite">{message}</p>
+          )}
 
-          <div className="mentee-profile-actions">
+          <div className="mentee-signup-actions">
             <Link className="button button-neutral" to={routePaths.menteeMentors}>취소</Link>
             <button className="button button-primary" disabled={isSaving} type="submit">
               {isSaving ? "저장 중..." : "변경 내용 저장"}

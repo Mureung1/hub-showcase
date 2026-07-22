@@ -1,0 +1,63 @@
+.meeting-schedule-view {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.meeting-schedule-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+  margin: 0;
+  flex: 1;
+}
+
+.meeting-schedule-summary dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.meeting-schedule-summary dd {
+  margin: var(--space-2xs) 0 0;
+  color: var(--color-text-strong);
+  font-weight: var(--font-weight-bold);
+}
+
+.meeting-edit-button {
+  flex-shrink: 0;
+}
+
+.meeting-schedule-form {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.meeting-schedule-form label {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.meeting-schedule-error {
+  margin: 0;
+  color: var(--color-danger, #a53b3b);
+  font-size: var(--font-size-xs);
+}
+
+.meeting-schedule-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+}
+
+@media (max-width: 620px) {
+  .meeting-schedule-view {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .meeting-schedule-summary {
+    grid-template-columns: 1fr;
+  }
+}

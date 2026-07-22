@@ -1,19 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { getApplications } from "../api/applications";
 import ApplicationCard from "../components/ApplicationCard";
 import { routePaths } from "../routes/routePaths";
 
-const MOCK_MENTEE_ID = "mentee-1";
-
 function MenteeApplicationListPage() {
+  const location = useLocation();
   const statusTabs = [
     { value: "pending", label: "대기" },
     { value: "confirmed", label: "확정" },
     { value: "completed", label: "완료" },
     { value: "rejected", label: "거부" },
   ];
-  const [activeStatus, setActiveStatus] = useState("pending");
+  const [activeStatus, setActiveStatus] = useState(
+    () => location.state?.activeStatus ?? "pending",
+  );
   const [applications, setApplications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -26,7 +27,7 @@ function MenteeApplicationListPage() {
       setErrorMessage("");
 
       try {
-        const response = await getApplications({ mockUserId: MOCK_MENTEE_ID });
+        const response = await getApplications();
         if (isCurrent) setApplications(response.data);
       } catch (error) {
         if (isCurrent) setErrorMessage(error.message);
@@ -46,6 +47,14 @@ function MenteeApplicationListPage() {
     () => applications.filter((application) => application.status === activeStatus),
     [activeStatus, applications],
   );
+
+  const handleMeetingUpdated = (applicationId, updatedMeeting) => {
+    setApplications((currentApplications) =>
+      currentApplications.map((application) =>
+        application.id === applicationId
+          ? { ...application, meeting: updatedMeeting }
+          : application));
+  };
 
   return (
     <div className="mentee-applications-page">
@@ -81,6 +90,13 @@ function MenteeApplicationListPage() {
         </div>
 
         <section className="mentee-application-list" aria-live="polite">
+          <div className="mentee-list-heading">
+            <div>
+              <p className="eyebrow">{statusTabs.find((status) => status.value === activeStatus)?.label}</p>
+              <h2>면담 신청 {filteredApplications.length}건</h2>
+            </div>
+          </div>
+
           {errorMessage && (
             <div className="mentee-applications-message mentee-applications-error" role="alert">
               {errorMessage}
@@ -94,7 +110,11 @@ function MenteeApplicationListPage() {
           ) : filteredApplications.length > 0 ? (
             <div className="stack">
               {filteredApplications.map((application) => (
-                <ApplicationCard application={application} key={application.id} />
+                <ApplicationCard
+                  application={application}
+                  key={application.id}
+                  onMeetingUpdated={handleMeetingUpdated}
+                />
               ))}
             </div>
           ) : (

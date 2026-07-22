@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getCurrentUser, login as loginRequest, logout as logoutRequest } from "../api/auth";
 import { SESSION_EXPIRED_EVENT } from "../api/httpClient";
 import { routePaths } from "../routes/routePaths";
-import { clearAccessToken, clearCurrentUserRole, getAccessToken, setCurrentUserRole } from "../utils/authStorage";
+import { clearAccessToken, getAccessToken } from "../utils/authStorage";
 
 const AuthContext = createContext(undefined);
 
@@ -21,11 +21,9 @@ export function AuthProvider({ children }) {
     getCurrentUser()
       .then((response) => {
         setCurrentUser(response.data);
-        setCurrentUserRole(response.data.role);
       })
       .catch(() => {
         clearAccessToken();
-        clearCurrentUserRole();
         setCurrentUser(null);
       })
       .finally(() => {
@@ -51,7 +49,6 @@ export function AuthProvider({ children }) {
     const user = response.data.user;
 
     setCurrentUser(user);
-    setCurrentUserRole(user.role);
 
     return user;
   }, []);
@@ -62,7 +59,6 @@ export function AuthProvider({ children }) {
     } catch {
       // 로그아웃 API 호출이 실패해도 로컬 인증 상태는 항상 정리한다.
     } finally {
-      clearCurrentUserRole();
       setCurrentUser(null);
     }
   }, []);

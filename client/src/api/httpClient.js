@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { clearAccessToken, clearCurrentUserRole, getAccessToken } from '../utils/authStorage';
+import { clearAccessToken, getAccessToken } from '../utils/authStorage';
 
 export const SESSION_EXPIRED_EVENT = 'auth:session-expired';
 
@@ -36,7 +36,6 @@ httpClient.interceptors.response.use(
     const isLoginRequest = error.config?.url?.includes('/auth/login');
     if (error.response.status === 401 && !isLoginRequest) {
       clearAccessToken();
-      clearCurrentUserRole();
       window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
     }
 

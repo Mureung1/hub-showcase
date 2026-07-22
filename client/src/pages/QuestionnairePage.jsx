@@ -1,19 +1,47 @@
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { mentors } from "../data/mentors";
+import { getMentorById } from "../api/mentors";
+import { createApplication } from "../api/applications";
 import { routePaths } from "../routes/routePaths";
 
 function QuestionnairePage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const mentorIds = location.state?.mentorIds ?? [];
+  const mentorIds = Array.isArray(location.state?.mentorIds)
+    ? location.state.mentorIds
+    : [];
+  const [selectedMentors, setSelectedMentors] = useState([]);
+  const [isLoadingMentors, setIsLoadingMentors] = useState(mentorIds.length > 0);
+  const [submissionError, setSubmissionError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const selectedMentors = useMemo(
-    () => mentorIds
-      .map((mentorId) => mentors.find((mentor) => mentor.id === mentorId))
-      .filter(Boolean),
-    [mentorIds],
-  );
+  useEffect(() => {
+    if (mentorIds.length === 0) {
+      setSelectedMentors([]);
+      setIsLoadingMentors(false);
+      return undefined;
+    }
+
+    let isCancelled = false;
+    setIsLoadingMentors(true);
+
+    Promise.all(
+      mentorIds.map((mentorId) =>
+        getMentorById(mentorId)
+          .then((response) => response.data)
+          .catch(() => null)),
+    ).then((mentors) => {
+      if (isCancelled) return;
+      setSelectedMentors(mentors.filter(Boolean));
+    }).finally(() => {
+      if (!isCancelled) setIsLoadingMentors(false);
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mentorIds.join(",")]);
 
   const handleBack = () => {
     navigate(routePaths.menteeMentors, {
@@ -22,20 +50,56 @@ function QuestionnairePage() {
     });
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    if (selectedMentors.length === 0) return;
+    setSubmissionError("");
 
-    const questionnaire = Object.fromEntries(new FormData(event.currentTarget).entries());
-    const applicationId = `mock-${Date.now()}`;
+    if (mentorIds.length === 0) {
+      setSubmissionError("면담을 신청할 멘토를 1명 이상 선택해 주세요.");
+      return;
+    }
 
-    navigate(`/mentee/applications/${applicationId}/complete`, {
-      replace: true,
-      state: {
+    if (mentorIds.length > 3) {
+      setSubmissionError("멘토는 최대 3명까지만 선택할 수 있습니다.");
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const questionnaire = {
+      introduction: formData.get("introduction")?.trim() ?? "",
+      concern: formData.get("concern")?.trim() ?? "",
+      goal: formData.get("goal")?.trim() ?? "",
+      preferredTime: formData.get("preferredTime")?.trim() ?? "",
+    };
+    const missingQuestion = Object.values(questionnaire).some((answer) => !answer);
+
+    if (missingQuestion) {
+      setSubmissionError("사전 질문지의 모든 필수 항목을 입력해 주세요.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await createApplication({
         mentorIds,
         questionnaire,
-      },
-    });
+      });
+      const application = response.data;
+      const completePath = routePaths.menteeApplicationComplete.replace(
+        ":applicationId",
+        application.id,
+      );
+
+      navigate(completePath, {
+        replace: true,
+        state: { application, selectedMentors },
+      });
+    } catch (error) {
+      setSubmissionError(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -49,7 +113,11 @@ function QuestionnairePage() {
 
         <section className="questionnaire-mentors" aria-labelledby="selected-mentors-title">
           <h2 id="selected-mentors-title">선택한 멘토</h2>
-          {selectedMentors.length > 0 ? (
+          {isLoadingMentors ? (
+            <div className="card-muted-box questionnaire-empty-mentors" role="status">
+              <p>멘토 정보를 불러오는 중입니다.</p>
+            </div>
+          ) : selectedMentors.length > 0 ? (
             <div className="tag-list">
               {selectedMentors.map((mentor) => (
                 <span className="tag" key={mentor.id}>{mentor.name} 멘토</span>
@@ -65,7 +133,7 @@ function QuestionnairePage() {
           )}
         </section>
 
-        <form className="questionnaire-form" onSubmit={handleSubmit}>
+        <form className="questionnaire-form" noValidate onSubmit={handleSubmit}>
           <label className="questionnaire-field">
             <span><strong>1. 자기소개</strong><em>필수</em></span>
             <textarea
@@ -107,16 +175,26 @@ function QuestionnairePage() {
             />
           </label>
 
+          {submissionError && (
+            <div className="questionnaire-error" role="alert">
+              {submissionError}
+            </div>
+          )}
+
           <div className="questionnaire-actions">
             <button className="button button-neutral" onClick={handleBack} type="button">
               이전 화면으로
             </button>
             <button
               className="button button-primary"
-              disabled={selectedMentors.length === 0}
+              disabled={
+                mentorIds.length === 0
+                || mentorIds.length > 3
+                || isSubmitting
+              }
               type="submit"
             >
-              면담 신청 제출
+              {isSubmitting ? "신청 중..." : "면담 신청 제출"}
             </button>
           </div>
         </form>

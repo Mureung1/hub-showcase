@@ -1,6 +1,3 @@
-import { Link } from "react-router-dom";
-import { routePaths } from "../routes/routePaths";
-
 function SuccessIcon() {
   return (
     <div className="application-complete-icon" aria-hidden="true">
@@ -24,10 +21,6 @@ function ApplicationCompletePage() {
           <p className="body-text">선택한 멘토에게 신청 내용이 전달되었습니다.</p>
           <p className="muted-text">마이페이지에서 면담 신청의 진행 상태를 확인할 수 있습니다.</p>
         </div>
-
-        <Link className="button button-primary application-complete-button" to={routePaths.menteeMentors}>
-          멘토 프로필 목록으로
-        </Link>
       </section>
     </main>
   );
