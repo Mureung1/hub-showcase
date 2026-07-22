@@ -1,6 +1,6 @@
 # SPEC-DB-001. 사용자 소유권·RLS·Migration (DB 영속화)
 
-- 상태: **Ready (Step 1~4 확정, 구현 대기)**
+- 상태: **완료 (2026-07-22 — T-015 구현 + AC1~AC6 실측 PASS)**
 - 기준 문서: `CLAUDE.md` 2·5·6·8장, `docs/data-model.md`(전체), `docs/decisions/ADR-002-data-access-clients.md`, `docs/decisions/ADR-001-supabase-auth.md`, `docs/architecture.md` 4·6·7장, `docs/dev-setup.md`, `docs/specs/SPEC-AUTH-003-api-auth-middleware.md`
 - 작성 방식:
   - 0장 "고정 사항"은 확정된 정책·데이터 모델에서 온 것이며, 이 Spec에서 임의로 바꾸지 않는다.
@@ -136,3 +136,4 @@ Chat·Question은 실제 저장·복원되지만, AI 생성물은 아직 브라�
 | 일자 | 내용 |
 |---|---|
 | 2026-07-20 | 최초 작성. Step 1~4 사용자 결정 반영 (1장 표). 범위=토대 전체+Chat·Question 실저장, AI 생성물 저장은 AI Spec, BYOK 키 테이블·AES-256-GCM 암호화 포함, 계정 삭제=RESTRICT 유지 |
+| 2026-07-22 | **완료 처리** (Cowork). T-015 구현 + AC1~AC6 실측 PASS(마이그레이션·RLS 양방향 교차 차단·2-클라이언트·web Chat/Question 실저장·복원·BYOK 암호화 round-trip·빌드/기동). 상태 헤더·index.md·status.md 갱신. AI 생성물 저장은 SPEC-AI-001~003에서 이어받음 |

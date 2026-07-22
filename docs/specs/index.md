@@ -30,7 +30,7 @@
 | AI Provider API | `SPEC-AI-001-providers.md` | 미작성 |
 | Manager AI 비교·재검토 Prompt | `SPEC-AI-002-manager.md` | 미작성 |
 | FinalAnswer 생성 | `SPEC-AI-003-final-answer.md` | 미작성 |
-| 사용자 소유권·RLS·Migration | `SPEC-DB-001-user-ownership-and-rls.md` | Ready (2026-07-20 — Step 1~4 + 스키마 상세 검토 확정, 구현 대기) |
+| 사용자 소유권·RLS·Migration | `SPEC-DB-001-user-ownership-and-rls.md` | 완료 (2026-07-22, T-015 — AC1~AC6 실측 PASS) |
 | DecisionNote 저장·Export | `SPEC-EXPORT-001-notes-and-zip.md` | 미작성 |
 | 비밀번호 재설정 (Should) | `SPEC-AUTH-004-password-reset.md` | 보류 |
 

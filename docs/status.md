@@ -252,6 +252,6 @@
   - **AC5**(암호화): admin 기반 round-trip — 암호문 저장(평문 0)·복호 원문 복원·GCM 위변조 감지·anon 0행·임시 행 정리. 평문 미출력
   - **AC6**: 루트 `typecheck`·`build` 통과, `node apps/api/dist/server.js` 정상(health 200·보호 401), `lint` web만(api script 없음). 인증·happy-path 회귀 없음(브라우저), 콘솔 오류 없음
   - StrictMode 이중 마운트 하이드레이트 버그 수정(ref 가드 제거, per-run cancelled). 실측 로그인은 기존 계정(비밀번호 채팅 전용·미기록), 비밀·DB URL·키를 로그·커밋에 미노출
-- **SPEC-DB-001 완료 처리 대기** — T-015 AC1~AC6 실측 PASS. Spec 상태 헤더·개정 기록·index.md는 Cowork
+- **SPEC-DB-001 완료 (2026-07-22)** — T-015 AC1~AC6 실측 PASS로 완료 처리. Cowork가 Spec 상태 헤더·개정 기록·index.md 갱신. 인증·영속성 토대(스키마·RLS·2-클라이언트·Chat/Question 실저장·BYOK 암호화 경로)까지 실제 Supabase로 섬. **다음: SPEC-AI-001**(실제 3사 AI 파이프라인 — 서버 SourceAnswer 생성·정규화·저장 + web 실호출로 Mock 교체)
 - 이후: SPEC-AI-001~003(Provider·Manager·FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정
