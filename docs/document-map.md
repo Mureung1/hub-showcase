@@ -17,6 +17,7 @@ Agent가 항상 읽어야 하는 내용은 AGENTS.md에 최소한으로 남기�
 | 구조 설계 | `docs/superpowers/specs/2026-07-15-nest-monorepo-design.md` | React·Nest·공통 계약 패키지와 Supabase 저장 구조 설계 |
 | 구현 계획 | `docs/superpowers/plans/2026-07-15-nest-monorepo-implementation.md` | 모노레포 전환 작업 순서와 검증 기준 |
 | 전체 개발 일정 | `docs/plans/development-tasks.md` | 2주차 이후 개발 Task와 4주 백로그 |
+| 회고 흐름 설계 | `docs/plans/reflection-flow.md` | 최소 입력, GitHub ID 기준 분석, 포피 대화형 회고와 결과 병합 방향 |
 | 주간 계획 | `docs/plans/week2-plan.md` | 2주차 요일별 계획과 GitHub Issue 등록 목록 |
 | 계획 Agent | `docs/agents/week-planning-agent.md` | 요구사항을 주간 작업과 Issue 후보로 쪼개는 Agent 문서 |
 | 기능 검증 Agent | `docs/agents/feature-verification-agent.md` | 수직 슬라이스가 요구사항대로 동작하는지 점검하는 Agent 문서 |

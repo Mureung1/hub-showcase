@@ -119,6 +119,7 @@ http://127.0.0.1:4177/prototype/index.html
 - [Supabase 데이터 모델 설계](./docs/development/supabase-data-model.md)
 - [Day4 작업 계획](./docs/plans/day4-plan.md)
 - [전체 개발 일정 및 백로그 계획](./docs/plans/development-tasks.md)
+- [최소 입력 회고 흐름 설계](./docs/plans/reflection-flow.md)
 - [Week2 주간 계획](./docs/plans/week2-plan.md)
 - [Week Planning Agent](./docs/agents/week-planning-agent.md)
 - [Feature Verification Agent](./docs/agents/feature-verification-agent.md)
