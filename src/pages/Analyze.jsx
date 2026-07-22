@@ -454,7 +454,8 @@ function AnalyzingSkeleton() {
 
 export default function Analyze() {
   const { authUser, profile, tempSex, setTodayMeal, addTodayMeal, setTempSex } = useUser()
-  const greetingName = authUser?.email ?? '게스트'
+  // 닉네임 > 아이디 순으로 고른 표시 이름(authUser.displayName). 인증용 합성 이메일은 화면에 쓰지 않는다.
+  const greetingName = authUser?.displayName ?? '게스트'
   const showSexPrompt = !profile && !tempSex
   const [mode, setMode] = useState('food') // 'food'(사진+텍스트, 이미 하나로 합쳐진 경로) | 'label'(영양성분표 스캔)
   const [photo, setPhoto] = useState(null) // { base64, mimeType, dataUrl, width, height }

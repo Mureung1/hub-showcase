@@ -7,6 +7,7 @@ import Card from './components/Card.jsx'
 import GuestMigrationPrompt from './components/GuestMigrationPrompt.jsx'
 import Spinner from './components/Spinner.jsx'
 import Login from './pages/Login.jsx'
+import Signup from './pages/Signup.jsx'
 import Profile from './pages/Profile.jsx'
 import Analyze from './pages/Analyze.jsx'
 import Result from './pages/Result.jsx'
@@ -82,6 +83,14 @@ export default function AppRouter() {
           element={
             <AppShell hideTabBar>
               <Login />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <AppShell hideTabBar>
+              <Signup />
             </AppShell>
           }
         />

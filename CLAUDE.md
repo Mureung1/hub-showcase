@@ -161,11 +161,24 @@ When touching this flow, prefer extending the keyword tables in `nutrition.js`
 Login is never required. Opening the app always lands directly on `/analyze` regardless of body-info
 profile or login state (`RootRedirect` in `src/router.jsx`) — a missing profile is handled in-place on
 that screen (`Analyze.jsx`'s `SexPromptCard`) rather than by redirecting elsewhere, and every screen
-fully works signed out. Real login (Google OAuth or email/password via Supabase Auth,
-`src/lib/supabase.js`) is an opt-in entry point surfaced in the header and the MY tab
+fully works signed out. Real login is an opt-in entry point surfaced in the header and the MY tab
 (`src/components/Header.jsx`, `src/pages/Profile.jsx`) — not a gate. `src/router.jsx` has no
 login-based redirect at all; its only guard (`LoadGate`) waits for session/profile loading to settle
 and shows a retry card on fetch failure, regardless of login state.
+
+**Auth is ID + password only** (`/login`, `/signup`; Google OAuth was removed in week 3 because
+embedded-WebView OAuth is blocked in the APK). It still runs entirely on Supabase Auth — nothing about
+sessions, JWTs, `auth.uid()`, or RLS changed. `src/lib/authId.js` is the whole seam: it maps a user's
+login id to a synthetic internal email `<id>@mealyze.app` before handing it to
+`supabase.auth.signUp`/`signInWithPassword`, so GoTrue keeps doing the bcrypt hashing and the email
+column's UNIQUE constraint doubles as login-id uniqueness. That domain never receives mail — the
+Supabase project **must have "Confirm email" off**, or signup stalls waiting for a confirmation that
+can't arrive (`supabase/migrations/2026-07-22_id-password-auth.sql` documents the dashboard settings,
+plus the backup/delete/verify SQL for purging the old Google-linked accounts). Nickname and the raw
+login id live in `user_metadata` (`authId.js`'s `displayNameOf` picks nickname > id > email local
+part); the synthetic email is never shown in the UI. `authId.js` also holds the pure validation rules
+and the per-id "5 failures → 1 min" local lockout (a UX-level deterrent in front of Supabase's own
+server-side rate limiting, not a replacement for it).
 
 `src/lib/dataStore.js` is the storage abstraction that makes this possible: `getProfile`/
 `saveProfile`/`getMeals`/`addMeal`/`deleteMeal`/`getMealsByDateRange` each call

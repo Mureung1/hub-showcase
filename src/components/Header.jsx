@@ -17,10 +17,11 @@ function HeaderLogo() {
   return <img src="/logo-symbol.png" alt="Mealyze" onError={() => setFailed(true)} style={{ height: 36, display: 'block' }} />
 }
 
-// 게스트도 항상 헤더를 본다 — 로그인 계정이면 이메일+로그아웃, 게스트면 로그인/회원가입 진입 버튼을
-// 보여준다(로그인 화면 자체에서는 중복이라 버튼을 숨긴다). authLoading 중(세션 복원 전)에는 오른쪽을
-// 비워둔다 — authMode는 세션이 없을 때도 'guest'이므로, 이 체크가 없으면 실제로는 로그인된 사용자에게
-// 새로고침마다 잠깐 "게스트로 이용 중"이 잘못 보였다가 이메일로 바뀌는 깜빡임이 생긴다.
+// 게스트도 항상 헤더를 본다 — 로그인 계정이면 닉네임+로그아웃, 게스트면 로그인/회원가입 진입 버튼을
+// 보여준다(로그인/회원가입 화면 자체에서는 중복이라 버튼을 숨긴다). authLoading 중(세션 복원 전)에는
+// 오른쪽을 비워둔다 — authMode는 세션이 없을 때도 'guest'이므로, 이 체크가 없으면 실제로는 로그인된
+// 사용자에게 새로고침마다 잠깐 "게스트로 이용 중"이 잘못 보였다가 닉네임으로 바뀌는 깜빡임이 생긴다.
+const AUTH_PATHS = ['/login', '/signup']
 export default function Header() {
   const { authUser, authMode, authLoading, logout } = useUser()
   const navigate = useNavigate()
@@ -45,13 +46,13 @@ export default function Header() {
       <HeaderLogo />
       {authLoading ? null : authMode === 'user' ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
-          <span style={{ fontSize: font.size.sm, color: colors.muted }}>{authUser.email}님</span>
+          <span style={{ fontSize: font.size.sm, color: colors.muted }}>{authUser.displayName}님</span>
           <button type="button" className="tds-press" onClick={handleLogout} style={styles.buttonSecondary}>
             로그아웃
           </button>
         </div>
       ) : (
-        location.pathname !== '/login' && (
+        !AUTH_PATHS.includes(location.pathname) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
             <span style={{ fontSize: font.size.sm, color: colors.muted }}>게스트로 이용 중</span>
             <button type="button" className="tds-press" onClick={() => navigate('/login')} style={styles.buttonSecondary}>
