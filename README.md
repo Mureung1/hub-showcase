@@ -6,6 +6,74 @@
 
 ---
 
+## 아키텍처 · 데이터 흐름
+
+화면 → 인증/서버 → DB 기준. 실선/기본색은 구현 완료, **점선/주황색은 아직 구상 단계(미구현)**.
+
+```mermaid
+graph LR
+    subgraph React["React (화면)"]
+        Start["StartPage : 로그인/회원가입"]
+        Main["MainPage : 편지 작성"]
+        Storage["StoragePage : 저장소 목록"]
+        Detail["LetterDetailPage : 상세"]
+        Recommend["RecommendPage : 추천 열람/답장"]:::planned
+    end
+
+    subgraph SupaAuth["Supabase Auth"]
+        AuthAPI["이메일/비밀번호 인증"]
+    end
+
+    subgraph Express["Express (서버)"]
+        Mid["requireAuth : JWT 서명 검증"]
+        Post["POST /api/letters"]
+        Get["GET /api/letters"]
+        GetOne["GET /api/letters/:id"]
+        MatchEP["POST /api/letters/:id/match (T6~T8)"]:::planned
+        ReplyEP["POST /api/letters/:id/reply (T9)"]:::planned
+    end
+
+    subgraph Claude["Claude API"]
+        ClassifyFn["카테고리 분류 + 추천 이유 생성"]:::planned
+    end
+
+    subgraph Supabase["Supabase (PostgreSQL)"]
+        Letter[("Letter 테이블")]
+        Match[("Match 테이블")]:::planned
+    end
+
+    Start -- "signUp / signIn" --> AuthAPI
+    AuthAPI -- "세션(JWT) 발급" --> Start
+
+    Main -- "fetch + JWT" --> Post
+    Storage -- "fetch + JWT" --> Get
+    Detail -- "fetch + JWT" --> GetOne
+    Recommend -. "fetch + JWT" .-> MatchEP
+    Recommend -. "fetch + JWT" .-> ReplyEP
+
+    Post --> Mid
+    Get --> Mid
+    GetOne --> Mid
+    MatchEP -.-> Mid
+    ReplyEP -.-> Mid
+
+    Post -- "insert" --> Letter
+    Get -- "select (내 authorId)" --> Letter
+    GetOne -- "select (내 authorId+id)" --> Letter
+
+    MatchEP -. "편지 내용 분류 요청" .-> ClassifyFn
+    ClassifyFn -. "카테고리 + 추천 이유" .-> MatchEP
+    MatchEP -. "같은 category 후보 조회 (1회 소진 + 재매칭 제외)" .-> Letter
+    MatchEP -. "insert" .-> Match
+
+    ReplyEP -. "recipientId=본인 && 중복 답장 없음 검증" .-> Letter
+    ReplyEP -. "insert (threadId/replyToId/recipientId)" .-> Letter
+
+    classDef planned stroke-dasharray: 5 5,fill:#fef3e2,stroke:#c9822a,color:#7a5a1a
+```
+
+> 점선(주황) 부분은 설계만 확정되고 아직 구현 전입니다. 상세는 `docs/backlog.md`의 D(AI 매칭)·C4(답장 API) 항목과 GitHub 이슈 [T6](https://github.com/bovoZhang/hub/issues/7)·[T7](https://github.com/bovoZhang/hub/issues/8)·[T8](https://github.com/bovoZhang/hub/issues/9)·[T9](https://github.com/bovoZhang/hub/issues/10) 참고.
+
 ## 기획 문서
 
 - docs/plan.md
