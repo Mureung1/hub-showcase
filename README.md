@@ -1,80 +1,141 @@
-# 🎰 대안 자산 가격 예측 및 트렌드 시각화 플랫폼
+# 🎰 DropCast: 대안 자산 가격 예측 및 Polymarket 트레이딩 플랫폼
 
-이 프로젝트는 리스크 없이 가상 포인트로 한정판 스니커즈, 스트릿 의류, TCG 카드, 레고 등 대안 자산(Alternative Assets) 리셀 시장의 미래 가격을 예측하고, 집단지성 데이터로 구축된 대중 예상가를 시각적으로 확인할 수 있는 웹 애플리케이션입니다.
-
-* **상세 기획서**: 세부 비즈니스 모델 및 개발 사양은 **[wiki](https://github.com/Qkdgodchl/hub/wiki/%EA%B8%B0%ED%9A%8D%EC%84%9C-%EC%9E%91%EC%84%B1)**에서 확인하실 수 있습니다.
-* **개발 백로그**: 개발 Task 백로그는 **[Link](https://app.notion.com/p/3993418fe9db807486ccff21696eabb8?source=copy_link)**에서 확인하실 수 있습니다.
-* **2주차 주간 계획 및 GitHub Issues**: 이번 주 요일별 계획 및 상세 이슈 리스트는 **[git_issues_list.md](file:///Users/tatata/Desktop/Ai_agent/hub/git_issues_list.md)**에서 확인하실 수 있습니다.
+> **한정판 스니커즈, 스트릿웨어, TCG, 콜렉터블 등 대안 자산(Alternative Assets)의 미래 리셀가를 리스크 없이 가상 포인트로 예측하고, Polymarket 스타일의 실시간 주가(95¢/5¢) 트레이딩 및 집단지성을 시각화하는 웹 애플리케이션입니다.**
 
 ---
 
-## 📂 프로젝트 구조
+## 📐 1. 시스템 데이터 흐름 및 아키텍처 (Architecture Diagram)
 
-프로젝트는 유지보수성과 확장성을 위해 프론트엔드와 백엔드로 분리(Separated)되어 있으며, 다음과 같은 폴더 구조로 구성됩니다.
+프로젝트는 프론트엔드(React + Vite)와 백엔드(Express + Prisma ORM + MySQL)로 분리(Separated)되어 있으며, 다음과 같은 데이터 흐름을 가집니다.
+
+```mermaid
+graph LR
+    %% 1. React (화면 영역)
+    subgraph React ["React (화면)"]
+        App["App : drops & userSession state"]
+        DropsGrid["DropsGrid : 95¢/5¢ 주가 목록"]
+        DetailOverlay["DetailOverlay : 지분 매수 폼"]
+        Leaderboard["Leaderboard : 주간 랭킹"]
+        AuthModal["AuthModal : 이메일/닉네임 로그인"]
+        
+        App --- DropsGrid
+        App --- DetailOverlay
+        App --- Leaderboard
+        App --- AuthModal
+    end
+
+    %% 2. Express (서버 영역)
+    subgraph Express ["Express (서버)"]
+        GetDrops["GET /api/drops"]
+        PostVotes["POST /api/votes"]
+        AuthApi["POST /api/auth/login"]
+        CronJob["Cron Engine (KREAM 수집 & 정산)"]
+    end
+
+    %% 3. DB 영역
+    subgraph DB ["MySQL / Prisma (DB)"]
+        DropTable[("Drop 테이블")]
+        VoteTable[("Vote 테이블")]
+        UserTable[("User 테이블")]
+    end
+
+    %% 데이터 흐름
+    DropsGrid -- "fetch 조회" --> GetDrops
+    DetailOverlay -- "fetch 지분매수" --> PostVotes
+    AuthModal -- "fetch 로그인" --> AuthApi
+
+    GetDrops -- "select (Self-Healing 시딩)" --> DropTable
+    PostVotes -- "update (포인트차감)" --> UserTable
+    PostVotes -- "update (팟누적)" --> DropTable
+    PostVotes -- "insert/upsert" --> VoteTable
+    AuthApi -- "upsert (유저생성)" --> UserTable
+
+    CronJob -- "update (정산회수/승률)" --> UserTable
+    CronJob -- "upsert (시세동기화)" --> DropTable
+```
+
+---
+
+## ⚡ 2. 핵심 기능 및 구현 특징 (Key Highlights)
+
+### 📈 1) Polymarket 스타일 실시간 지분 트레이딩 마켓
+- **주가(Share Price) = 확률(Probability)**: 유저들의 배팅액 비율(`totalUpStaked` vs `totalDownStaked`)에 따라 **$0.05 ~ $0.95 (5¢ ~ 95¢)** 범위에서 실시간 주가가 변동합니다.
+- **Dynamic Odds**: 주가에 연동하여 배당률(예: `1.05x`, `20.0x`)이 자동 계산됩니다.
+- **포인트 배팅 선택기**: 100, 200, 500, 1,000 pts 중 배팅액을 선택하여 지분을 매수합니다.
+
+### ⏰ 2) 명확한 종가 기준 정산 엔진 (`settlementJob.js`)
+- **발매 완료 상품 (RELEASED)**: 매주 일요일 23:59 KREAM 종가 기준 정산
+- **발매 예정 상품 (UPCOMING)**: 발매 당일 23:59 KREAM 종가 기준 정산
+- **정산 방식**: `종가 > 발매가` 시 UP 승리 / `종가 <= 발매가` 시 DOWN 승리. 승자에게 체결 배당률 기준 환급 포인트(`stakedPoints * odds`) 자동 지급 및 승률(`accuracyRate`) 업데이트.
+
+### 🛡️ 3) 이미지 보안 정책 차단 완전 해결 (`referrerPolicy="no-referrer"`)
+- 네이버/KREAM CDN(`kream-phinf.pstatic.net`)의 핫링크 방지(HTTP 403 Forbidden)를 백엔드 부하 없이 HTML `<img referrerPolicy="no-referrer" />` 속성을 통해 100% 우회하여 원본 고화질 이미지를 정상 출력합니다.
+
+### 🔄 4) DB Self-Healing (자동 복구 시스템)
+- DB 초기화 또는 비어 있는 상태 발생 시, API 호출 시 자동으로 30개의 정제된 KREAM 랭킹 데이터를 시딩하여 0초 무장애 안정성을 보장합니다.
+
+---
+
+## 🛠️ 3. 기술 스택 (Tech Stack)
+
+| 구분 | 사용 기술 및 라이브러리 |
+| :--- | :--- |
+| **Frontend** | React, TypeScript, Vite, Vanilla CSS (Brutalist Dark Design) |
+| **Backend** | Node.js, Express.js, Prisma ORM, Node-Cron, Puppeteer |
+| **Database** | MySQL (dropcast) |
+
+---
+
+## 🔌 4. 주요 REST API 명세 (API Endpoints)
+
+| Method | Endpoint | 설명 |
+| :--- | :--- | :--- |
+| `GET` | `/api/drops` | 30개 실시간 랭킹 상품 및 Polymarket 주가/배당률 데이터 조회 |
+| `POST` | `/api/votes` | Polymarket 지분 매수 및 포인트 차감 (`stakedPoints`, `direction`) |
+| `POST` | `/api/auth/login` | 이메일/닉네임 입력 기반 간편 회원가입 및 로그인 |
+| `GET` | `/api/auth/me/:userId` | 유저 잔여 포인트 및 승률 조회 |
+| `POST` | `/api/admin/settlement-trigger` | [어드민] 수동 정산 및 포인트 환급 강제 실행 |
+| `POST` | `/api/admin/kream-trigger` | [어드민] KREAM 랭킹 크롤러 수동 실행 |
+
+---
+
+## 📂 5. 프로젝트 디렉토리 구조
 
 ```text
 /hub (Root)
 ├── backend/                  # 백엔드 (Express + Prisma ORM)
 │   ├── src/
-│   │   ├── controllers/      # API 비즈니스 로직
-│   │   ├── models/           # Prisma DB 쿼리 인터페이스
-│   │   ├── cron/             # 주간 정산 배치 스케줄러
+│   │   ├── controllers/      # API 컨트롤러 (auth, drop, vote, admin)
+│   │   ├── cron/             # 주간/일일 정산 및 크롤링 배치 스케줄러
 │   │   ├── crawler/          # Puppeteer 실시간 가격 크롤러
 │   │   └── app.js            # Express 진입점
 │   ├── prisma/
-│   │   └── schema.prisma     # PostgreSQL 데이터베이스 모델 스키마
-│   ├── package.json
-│   └── .env
+│   │   ├── schema.prisma     # MySQL DB 모델 스키마
+│   │   └── seed.js           # 안정화 데이터 시드 스크립트
 │
-└── frontend/                 # 프론트엔드 (React + TypeScript + Vite)
-    ├── src/
-    │   ├── assets/           # 정적 이미지 파일들
-    │   ├── components/       # 재사용 가능한 UI 컴포넌트
-    │   ├── views/            # 랭킹, 예측 목록 등 메인 페이지 뷰
-    │   ├── styles/           # August* 스타일 가이드라인 CSS (style.css)
-    │   ├── App.tsx           # 메인 애플리케이션 컴포넌트
-    │   └── main.tsx          # 리액트 엔트리 포인트
-    ├── index.html            # Vite HTML 템플릿
-    ├── tsconfig.json         # TypeScript 컴파일러 구성
-    └── vite.config.ts        # Vite 서버 및 API 프록시 구성
+├── frontend/                 # 프론트엔드 (React + TypeScript + Vite)
+│   ├── src/
+│   │   ├── components/       # UI 컴포넌트 (DropsGrid, DetailOverlay, AuthModal 등)
+│   │   ├── styles/           # Brutalist Dark CSS 디자인 시스템
+│   │   ├── App.tsx           # 메인 애플리케이션 & 세션 상태
+│   │   └── main.tsx          # TypeScript 진입점
 ```
 
 ---
 
-## 🚀 실행 방법
+## 🚀 6. 실행 방법 (Quick Start)
 
-### 1. 프론트엔드 (React + TypeScript) 실행
-의존성 패키지를 설치한 후 개발 서버를 구동합니다. (포트: `3000`으로 자동 연동)
+### Backend
+```bash
+cd backend
+npm install
+npx prisma db push
+npm run dev
+```
 
+### Frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-
-### 2. 백엔드 (Express.js) 실행
-환경 변수 설정 후 Express API 서버를 실행합니다. (포트: `5000`으로 자동 연동, 프론트엔드에서 `/api` 프록시 전달)
-
-```bash
-cd backend
-npm install
-npm run dev
-```
-
----
-
-## ✨ 핵심 기능
-
-
-1. **🔮 Zero-Risk 방향성 예측 투표 (Up/Down)**
-   - 복잡한 가격 계산 장벽을 없애고, 카드의 **[▲ up]** / **[▼ down]** 단 2개의 버튼으로 가볍게 시장 심리 예측에 참여합니다. (출시 전 `upcoming` 상태 제품 전용)
-
-2. **📊 출시 전/출시 완료 상태 분리 및 가격 표시**
-   - **출시 전 (upcoming)**: 대중 합의 예상 시세(est.)와 함께 투표 가능 상태로 노출됩니다.
-   - **출시 완료 (released)**: 실제 거래 시세(market)를 보여주며, 투표는 `🔒 voting locked` 상태로 안전하게 공식 비활성화됩니다.
-
-3. **🏆 주간 랭킹 대시보드 (Weekly Leaderboard)**
-   - **포디움 연출**: 매주 높은 점수를 달성한 탑 3 유저의 순위(🥇🥈🥉)와 주간 우승 보상(네이버페이 5만원 권 등)을 시각화합니다.
-   - **Contenders 리스트**: 4위부터 10위까지의 실시간 순위 정보와 예측 정확도, 포인트 변동 지표를 직관적으로 표시합니다.
-   - **My standing 정보**: 자신의 현재 순위와 함께 탑 10 진입을 위해 추가로 획득해야 하는 점수 등의 개인 동기부여 대시보드를 제공합니다.
-   - **주간 토글**: `this week` / `last week` 토글 버튼을 통해 진행 중인 정보와 마감된 이전 주간 랭킹 정보로 화면 데이터를 쉽게 스위칭할 수 있습니다.
