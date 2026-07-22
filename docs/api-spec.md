@@ -163,9 +163,9 @@
 ```json
 {
   "items": [
-    { "id": "sub_1", "serviceName": "넷플릭스", "subAmount": 17000, "myAmount": 4250, "billingDay": 15, "role": "owner" }, 
-    { "id": "sub_2", "serviceName": "왓챠", "subAmount": 12900, "myAmount": 3225, "billingDay": 18, "role": "owner" },
-    { "id": "sub_3", "serviceName": "디즈니플러스", "subAmount": 12900, "myAmount": 3225, "billingDay": 3, "role": "member" }
+    { "id": "sub_1", "serviceName": "넷플릭스", "billingDay": 15, "memberCount": 4, "myAmount": 4250, "role": "owner" },
+    { "id": "sub_2", "serviceName": "왓챠", "billingDay": 18, "memberCount": 4, "myAmount": 3225, "role": "owner" },
+    { "id": "sub_3", "serviceName": "디즈니플러스", "billingDay": 3, "memberCount": 4, "myAmount": 3225, "role": "member" }
   ]
 }
 ```

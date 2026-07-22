@@ -64,4 +64,30 @@ router.post('/', requireAuth, async (req, res, next) => {
   }
 })
 
+router.get('/', requireAuth, async (req, res, next) => {
+  try {
+    const subscriptions = await prisma.subscription.findMany({
+      where: {
+        OR: [
+          { ownerId: req.user.id },
+          { members: { some: { userId: req.user.id } } },
+        ],
+      },
+    })
+
+    res.status(200).json({
+      items: subscriptions.map((subscription) => ({
+        id: subscription.id,
+        serviceName: subscription.serviceName,
+        billingDay: subscription.billingDay,
+        memberCount: subscription.memberCount,
+        myAmount: Math.round(subscription.subAmount / subscription.memberCount),
+        role: subscription.ownerId === req.user.id ? 'owner' : 'member',
+      })),
+    })
+  } catch (e) {
+    next(e)
+  }
+})
+
 export default router
