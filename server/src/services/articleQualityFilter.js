@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio"
 import { BROWSER_USER_AGENT } from "../constants/httpHeaders.js"
+import { CNBC_BODY_SELECTOR } from "../constants/scraping.js"
 
 // 2단계 필터(비용 $0): 카드뉴스 3~4장 분량의 호흡에 맞는 기사만 남긴다.
 // 300단어 미만은 속보 요약/데이터 나열이라 독해 학습용으로 부적합하고,
@@ -8,10 +9,9 @@ import { BROWSER_USER_AGENT } from "../constants/httpHeaders.js"
 const MIN_WORD_COUNT = 300
 const MAX_WORD_COUNT = 1200
 
-// CNBC 본문은 이 클래스 하나로 감싸여 있다. 스펙상 이 태그로 추출이
-// 안 되면(마크업 변경, A/B 테스트 등) 일반 셀렉터로 우회하지 않고 즉시
-// 탈락시킨다 — 애매하게 잘린 본문으로 3단계 LLM 평가를 왜곡시키지 않기 위함.
-const CNBC_BODY_SELECTOR = ".ArticleBody-articleBody"
+// 스펙상 CNBC_BODY_SELECTOR로 추출이 안 되면(마크업 변경, A/B 테스트 등)
+// 일반 셀렉터로 우회하지 않고 즉시 탈락시킨다 — 애매하게 잘린 본문으로
+// 3단계 LLM 평가를 왜곡시키지 않기 위함.
 
 function extractParagraphs(html) {
   const $ = cheerio.load(html)

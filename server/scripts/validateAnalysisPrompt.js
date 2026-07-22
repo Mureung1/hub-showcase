@@ -1,10 +1,12 @@
 import "dotenv/config"
 import { FALLBACK_ARTICLE } from "../src/services/articleParser.js"
-import { buildAnalysisPrompt, callClaude, parseAnalysisResponse } from "../src/services/llmService.js"
+import { buildAnalysisPrompt, callClaudeWithMetrics, parseAnalysisResponse } from "../src/services/llmService.js"
 
-// analyzeArticle 배선(#14) 전, buildAnalysisPrompt가 실제 Claude 응답에서도
-// 기대한 JSON 형식(문장 verbatim 매칭/summaryBullets 3개/marketSentiment enum)을
-// 안정적으로 만족하는지 여러 샘플 기사로 반복 확인하기 위한 일회성 스크립트.
+// analyzeArticle 배선(#14) 완료 후에도, buildAnalysisPrompt가 실제 Claude
+// 응답에서 기대한 JSON 형식(문장 verbatim 매칭/summaryBullets 3개/
+// marketSentiment enum)을 안정적으로 만족하는지 여러 샘플 기사로 반복
+// 확인할 때 재사용하는 회귀 검증 스크립트.
+// 응답 지연시간(TTFT/총 생성시간)과 토큰 사용량도 함께 기록한다.
 // 실행: MOCK_LLM=false node scripts/validateAnalysisPrompt.js (server/ 안에서)
 
 if (process.env.MOCK_LLM === "true") {
@@ -47,6 +49,15 @@ const samples = [
       "The results stand in contrast to a sluggish quarter for several of Streamly's peers, several of which have flagged slowing growth in mature markets, and analysts at multiple banks moved quickly to raise price targets, with one calling the quarter \"a decisive rebuttal\" to bearish theses on the sector.",
     ],
   },
+  {
+    label: "특수기호 엣지케이스형",
+    title: "Central Bank Chief Warns of “Persistent” Price Pressures — Markets Wobble",
+    paragraphs: [
+      "The central bank governor said Tuesday that inflation remains “stubbornly persistent”—a phrase traders immediately flagged as more hawkish than last month's ‘transitory’ framing—and warned that rates could stay elevated ‘for longer than markets currently expect.’",
+      "Equity futures dropped as much as 1.4%  in the minutes following the remarks, before paring losses to close roughly flat—an outcome several strategists attributed to thin holiday-week liquidity rather than genuine conviction either way.",
+      "\"We are not done fighting this,\" the governor added, according to a transcript released by the bank—language that echoed, almost word for word, comments made nine months earlier that preceded a sharp — if short-lived — selloff in growth stocks.",
+    ],
+  },
 ]
 
 function formatSentenceCheck(sentences, paragraphs) {
@@ -65,8 +76,16 @@ async function runSample(sample) {
   console.log("=".repeat(70))
 
   const prompt = buildAnalysisPrompt(sample.paragraphs, sample.title)
-  const response = await callClaude(prompt, { maxTokens: 3072 })
-  const analysis = parseAnalysisResponse(response, sample.paragraphs)
+  const { response, ttftMs, totalMs } = await callClaudeWithMetrics(prompt, { maxTokens: 3072 })
+
+  let analysis
+  try {
+    analysis = parseAnalysisResponse(response, sample.paragraphs)
+  } catch (err) {
+    console.error(`\n[PARSE FAILED] ${err.message}`)
+    console.error(`[raw response text]\n${response.content?.[0]?.text ?? "(no text)"}`)
+    throw err
+  }
 
   console.log(`\n[sentences] 선별 ${analysis.sentences.length}개 (verbatim 매칭 결과)`)
   console.log(formatSentenceCheck(analysis.sentences, sample.paragraphs))
@@ -80,7 +99,10 @@ async function runSample(sample) {
   console.log(`\n[insight] ${analysis.insight}`)
   console.log(`[marketSentiment] ${analysis.marketSentiment}`)
 
-  return { label: sample.label, ok: true, analysis }
+  console.log(`\n[latency] TTFT: ${ttftMs}ms / 총 생성시간: ${totalMs}ms`)
+  console.log(`[tokens] 입력: ${response.usage.input_tokens} / 출력: ${response.usage.output_tokens}`)
+
+  return { label: sample.label, ok: true, analysis, ttftMs, totalMs, usage: response.usage }
 }
 
 async function main() {
@@ -101,7 +123,16 @@ async function main() {
   console.log("=".repeat(70))
   const succeeded = results.filter((r) => r.ok)
   console.log(`성공: ${succeeded.length}/${results.length}`)
-  results.forEach((r) => console.log(`  - [${r.ok ? "OK" : "FAIL"}] ${r.label}${r.ok ? "" : `: ${r.error}`}`))
+  results.forEach((r) => {
+    if (!r.ok) {
+      console.log(`  - [FAIL] ${r.label}: ${r.error}`)
+      return
+    }
+    console.log(
+      `  - [OK] ${r.label} | TTFT ${r.ttftMs}ms, 총 ${r.totalMs}ms, ` +
+        `입력 ${r.usage.input_tokens}tok, 출력 ${r.usage.output_tokens}tok`,
+    )
+  })
 
   const failed = results.some((r) => !r.ok)
   process.exit(failed ? 1 : 0)

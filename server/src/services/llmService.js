@@ -138,15 +138,16 @@ ${xmlParagraphs}
 1. sentences — 영어 문장 구조상 초보 학습자가 읽기 어려운 문장을 2~4개 선별합니다. 예: 길게 이어진 주어+동격구/분사구문, 'A rather than B' 같은 비교 구문, 삽입절 등 구조가 복잡한 문장.
    - "text" 필드는 반드시 위 원문에서 글자 하나, 공백 하나, 문장부호 하나까지 정확히 그대로 복사한 값이어야 합니다. 절대로 다시 타이핑하거나, 의역하거나, 요약하거나, 일부 단어만 잘라내거나, 여러 문장을 이어붙이지 마세요.
    - 곧은따옴표(", ')를 스마트따옴표(", ", ', ')로 바꾸지 마세요. 원문에 있는 그대로 유지하세요.
+   - 문장 안에 큰따옴표(")가 포함되어 있다면, 그 앞에 반드시 백슬래시를 붙여 \" 로 이스케이프하세요(JSON 문자열 규칙을 지키기 위한 이스케이프이며, 문장 내용을 바꾸는 것이 아닙니다). 이스케이프를 빠뜨리면 JSON 파싱이 깨집니다.
    - 연속된 공백이나 줄바꿈을 하나로 합치거나 다듬지 마세요. 원문의 공백을 그대로 복사하세요.
    - 선택한 문장은 반드시 하나의 <paragraph> 태그 안에만 온전히 포함되어야 하며, 두 문단에 걸쳐 있으면 안 됩니다.
-   - "translation"은 자연스러운 한국어 번역, "reason"은 이 문장이 왜 구조적으로 어려운지 한국어로 한 줄 설명입니다.
+   - "translation"은 자연스러운 한국어 번역, "reason"은 이 문장이 왜 구조적으로 어려운지 한국어로 한 줄 설명입니다(40자 이내).
 
-2. terms — 기사 전체에서 초보 투자자가 알아야 할 핵심 금융/투자 용어를 3~5개 선별하세요. "term"은 원문에 등장한 영어 표현 그대로, "definition"은 초보자를 위한 한국어 설명입니다.
+2. terms — 기사 전체에서 초보 투자자가 알아야 할 핵심 금융/투자 용어를 3~5개 선별하세요. "term"은 원문에 등장한 영어 표현 그대로, "definition"은 초보자를 위한 한국어 설명입니다(50자 이내).
 
-3. summaryBullets — 기사 내용을 객관적 사실 위주로 정확히 3개의 한국어 문장으로 요약하세요(의견이나 추측이 아닌 기사에 실제로 나온 사실 기준). 반드시 3개의 문자열을 담은 배열이어야 하며, 객체나 번호를 매긴 하나의 문자열로 합쳐서 반환하지 마세요.
+3. summaryBullets — 기사 내용을 객관적 사실 위주로 정확히 3개의 한국어 문장으로 요약하세요(의견이나 추측이 아닌 기사에 실제로 나온 사실 기준, 각 문장 60자 이내). 반드시 3개의 문자열을 담은 배열이어야 하며, 객체나 번호를 매긴 하나의 문자열로 합쳐서 반환하지 마세요.
 
-4. insight — 이 뉴스가 관련 종목 또는 섹터의 주가에 어떤 영향을 미칠 수 있는지 한국어 한 문장으로 해설하세요.
+4. insight — 이 뉴스가 관련 종목 또는 섹터의 주가에 어떤 영향을 미칠 수 있는지 한국어 한 문장으로 해설하세요(80자 이내).
 
 5. marketSentiment — 기사 본문의 객관적인 톤을 판별해 "bullish", "bearish", "neutral" 중 정확히 하나만 소문자 영문으로 답하세요(다른 표현이나 대문자 사용 금지).
 
@@ -239,13 +240,6 @@ export function parseAnalysisResponse(response, paragraphs) {
   }
 }
 
-// NOTE: buildAnalysisPrompt/parseAnalysisResponse는 완성되어 export돼 있지만
-// analyzeArticle의 else 분기는 아직 이 함수들을 호출하지 않는다(unwired).
-// 샘플 기사로 프롬프트를 반복 검증한 뒤, else 분기 교체는 별도 작업으로
-// 진행한다 — 교체 시 이 함수 두 개를 그대로 쓰면 된다:
-//   const prompt = buildAnalysisPrompt(paragraphs, title)
-//   const response = await callClaude(prompt, { maxTokens: 3072 })
-//   analysis = parseAnalysisResponse(response, paragraphs)
 export async function analyzeArticle(paragraphs, { title, url, userId } = {}) {
   const text = paragraphs.join(" ")
 
@@ -256,7 +250,15 @@ export async function analyzeArticle(paragraphs, { title, url, userId } = {}) {
     }
     analysis = mockAnalyzeSuccess(text)
   } else {
-    analysis = mockAnalyzeSuccess(text)
+    const prompt = buildAnalysisPrompt(paragraphs, title)
+    const response = await callClaude(prompt, { maxTokens: 3072 })
+    try {
+      analysis = parseAnalysisResponse(response, paragraphs)
+    } catch (err) {
+      console.error(`[llmService] analyzeArticle parse failed: ${err.message}`)
+      console.error(`[llmService] raw response text:\n${response.content?.[0]?.text ?? "(no text)"}`)
+      throw err
+    }
   }
 
   await saveTermsToVocabulary(analysis.terms, title, url, userId)
@@ -291,6 +293,29 @@ export async function callClaude(prompt, options = {}) {
     max_tokens: options.maxTokens ?? 1024,
     messages: [{ role: "user", content: prompt }],
   })
+}
+
+// 검증 스크립트(validateAnalysisPrompt.js) 전용 — TTFT/총 생성시간을 재려면
+// 스트리밍이 필요하다(비스트리밍 callClaude는 첫 토큰 도착 시점을 관측할
+// 수 없음). finalMessage()가 비스트리밍 응답과 동일한 모양(content/usage)을
+// 반환하므로 parseAnalysisResponse를 그대로 재사용할 수 있다.
+export async function callClaudeWithMetrics(prompt, options = {}) {
+  const startedAt = Date.now()
+  let ttftMs = null
+
+  const stream = client.messages.stream({
+    model: MODEL,
+    max_tokens: options.maxTokens ?? 1024,
+    messages: [{ role: "user", content: prompt }],
+  })
+  stream.on("text", () => {
+    if (ttftMs === null) ttftMs = Date.now() - startedAt
+  })
+
+  const response = await stream.finalMessage()
+  const totalMs = Date.now() - startedAt
+
+  return { response, ttftMs, totalMs }
 }
 
 // 3단계 통과 기준. 투자가치는 "시장에 영향을 주는 정보인가"를, 독해적합성은
