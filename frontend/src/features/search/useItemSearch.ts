@@ -4,6 +4,7 @@ import { apiClient } from '../../lib/apiClient'
 export interface Item {
   id: string
   name: string
+  nameEn: string | null
 }
 
 interface SearchItemsResponse {
