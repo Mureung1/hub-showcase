@@ -178,6 +178,124 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events", () => {
   });
 });
 
+describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷(#STEP2)", () => {
+  afterEach(async () => {
+    const testTasks = await prisma.task.findMany({
+      where: { title: { startsWith: TEST_PREFIX } },
+    });
+    const ids = testTasks.map((t) => t.id);
+    if (ids.length === 0) return;
+
+    await prisma.$transaction([
+      prisma.avoidanceReason.deleteMany({ where: { taskId: { in: ids } } }),
+      prisma.taskEvent.deleteMany({ where: { taskId: { in: ids } } }),
+      prisma.task.deleteMany({ where: { id: { in: ids } } }),
+    ]);
+  });
+
+  it("durationSeconds/entryLevel/microTask를 함께 보내면 done TaskEvent에 스냅샷으로 저장된다 (happy path)", async () => {
+    const task = await createTestTask();
+
+    const res = await request(app)
+      .post(`/api/tasks/${task.id}/events`)
+      .send({
+        eventType: "done",
+        durationSeconds: 125,
+        entryLevel: 2,
+        microTask: "할 일 목록에 첫 항목 하나만 적어보기",
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe("done");
+
+    const event = await prisma.taskEvent.findFirst({
+      where: { taskId: task.id, eventType: "done" },
+    });
+    expect(event?.durationSeconds).toBe(125);
+    expect(event?.entryLevel).toBe(2);
+    expect(event?.microTask).toBe("할 일 목록에 첫 항목 하나만 적어보기");
+  });
+
+  it("세 값 없이 보내도(카드 직접 클릭 경로) 기존처럼 완료 처리되고 세 필드는 null로 저장된다 (회귀)", async () => {
+    const task = await createTestTask();
+
+    const res = await request(app)
+      .post(`/api/tasks/${task.id}/events`)
+      .send({ eventType: "done" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe("done");
+
+    const event = await prisma.taskEvent.findFirst({
+      where: { taskId: task.id, eventType: "done" },
+    });
+    expect(event?.durationSeconds).toBeNull();
+    expect(event?.entryLevel).toBeNull();
+    expect(event?.microTask).toBeNull();
+  });
+
+  it("microTask가 빈 문자열이면 null로 저장된다 (경계)", async () => {
+    const task = await createTestTask();
+
+    await request(app)
+      .post(`/api/tasks/${task.id}/events`)
+      .send({ eventType: "done", microTask: "" });
+
+    const event = await prisma.taskEvent.findFirst({
+      where: { taskId: task.id, eventType: "done" },
+    });
+    expect(event?.microTask).toBeNull();
+  });
+
+  it("durationSeconds가 음수면 400 invalid_duration을 반환한다 (경계)", async () => {
+    const task = await createTestTask();
+
+    const res = await request(app)
+      .post(`/api/tasks/${task.id}/events`)
+      .send({ eventType: "done", durationSeconds: -1 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("invalid_duration");
+  });
+
+  it("entryLevel이 0~4 범위를 벗어나면 400 invalid_entry_level을 반환한다 (경계)", async () => {
+    const task = await createTestTask();
+
+    const res = await request(app)
+      .post(`/api/tasks/${task.id}/events`)
+      .send({ eventType: "done", entryLevel: 5 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("invalid_entry_level");
+  });
+
+  it(
+    "Task.level/skipCount가 아니라 요청으로 받은 entryLevel을 그대로 스냅샷에 남긴다 (경계 — 완료 시 리셋과 독립적)",
+    async () => {
+      const task = await createTestTask();
+      await request(app)
+        .post(`/api/tasks/${task.id}/events`)
+        .send({ eventType: "activated" });
+      // tick 한 번으로 task.level을 1로 올려둔 채 완료 — 완료 시 Task는 0으로
+      // 리셋되지만, 스냅샷은 요청으로 받은 entryLevel(여기선 2, task.level=1과
+      // 다른 값)을 그대로 저장해야 한다.
+      await request(app)
+        .post(`/api/tasks/${task.id}/events`)
+        .send({ eventType: "notification_sent" });
+
+      await request(app)
+        .post(`/api/tasks/${task.id}/events`)
+        .send({ eventType: "done", entryLevel: 2 });
+
+      const event = await prisma.taskEvent.findFirst({
+        where: { taskId: task.id, eventType: "done" },
+      });
+      expect(event?.entryLevel).toBe(2);
+    },
+    15000,
+  );
+});
+
 describe.skipIf(!isTestDb)("POST /api/tasks/:id/avoidance-reasons", () => {
   afterEach(async () => {
     const testTasks = await prisma.task.findMany({

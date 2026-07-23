@@ -49,6 +49,12 @@ model TaskEvent {
   eventType  String   // notification_sent | level_up | done | stopped
   occurredAt DateTime @default(now())
 
+  // eventType === "done"일 때만 채워지는 완료 스냅샷(History 화면용). Task.level/
+  // skipCount는 완료 시 0으로 리셋되므로 별도로 이 시점 값을 보존해야 한다.
+  durationSeconds Int?
+  entryLevel      Int?
+  microTask       String?
+
   @@index([taskId, occurredAt])
   @@map("task_events")
 }

@@ -81,7 +81,40 @@ router.post("/", async (req, res) => {
 
 router.post("/:id/events", async (req, res) => {
   const { id } = req.params;
-  const { eventType } = req.body;
+  const { eventType, durationSeconds, entryLevel, microTask } = req.body;
+
+  // done 완료 스냅샷(#STEP2 Completion→History) 검증 — 세 값 모두 선택값이라 안
+  // 보내도 되지만, 보냈다면 형식은 맞아야 한다. Task.level/skipCount는 완료 시
+  // 0으로 리셋되므로 이 시점에 받은 값을 그대로 스냅샷으로 남겨야 한다.
+  if (eventType === "done") {
+    if (
+      durationSeconds !== undefined &&
+      durationSeconds !== null &&
+      (!Number.isInteger(durationSeconds) || durationSeconds < 0)
+    ) {
+      res.status(400).json({
+        error: {
+          code: "invalid_duration",
+          message: "durationSeconds는 0 이상의 정수여야 합니다.",
+        },
+      });
+      return;
+    }
+
+    if (
+      entryLevel !== undefined &&
+      entryLevel !== null &&
+      (!Number.isInteger(entryLevel) || entryLevel < 0 || entryLevel > 4)
+    ) {
+      res.status(400).json({
+        error: {
+          code: "invalid_entry_level",
+          message: "entryLevel은 0~4 범위의 정수여야 합니다.",
+        },
+      });
+      return;
+    }
+  }
 
   try {
     // 클라이언트의 폴링 tick이 삭제와 경합할 수 있다(삭제 직전에 이미 전송된 요청).
@@ -108,6 +141,13 @@ router.post("/:id/events", async (req, res) => {
           taskId: id,
           eventType,
           occurredAt: new Date(),
+          ...(eventType === "done"
+            ? {
+                durationSeconds: durationSeconds ?? null,
+                entryLevel: entryLevel ?? null,
+                microTask: microTask ? microTask : null,
+              }
+            : {}),
         },
       });
 

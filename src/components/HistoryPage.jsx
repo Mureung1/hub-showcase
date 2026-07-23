@@ -19,6 +19,7 @@ function HistoryPage() {
   const navigatedDate = location.state?.selectedDate ?? null;
 
   const [tasks, setTasks] = useState([]);
+  const [history, setHistory] = useState([]); // done 이벤트 기준 완료 스냅샷(완료시각/집중시간/진입레벨/microTask) — 최근순 정렬된 채로 옴
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState(navigatedDate ? "calendar" : "list");
   const [selectedDate, setSelectedDate] = useState(
@@ -26,10 +27,15 @@ function HistoryPage() {
   );
 
   useEffect(() => {
-    apiFetch("/api/tasks").then(({ data }) => {
-      setTasks(data);
-      setIsLoading(false);
-    });
+    // 캘린더 뷰(등록일 기준 그룹핑)는 기존처럼 /api/tasks를 그대로 쓰고,
+    // 리스트 뷰의 완료 스냅샷 표시는 /api/history를 새로 쓴다(#STEP2).
+    Promise.all([apiFetch("/api/tasks"), apiFetch("/api/history")]).then(
+      ([tasksRes, historyRes]) => {
+        setTasks(tasksRes.data);
+        setHistory(historyRes.data);
+        setIsLoading(false);
+      },
+    );
   }, []);
 
   if (isLoading) {
@@ -44,6 +50,7 @@ function HistoryPage() {
   }
 
   const doneTasks = tasks.filter((t) => t.status === "done");
+  const doneTasksById = new Map(doneTasks.map((t) => [t.id, t]));
   const maxSkip = Math.max(...doneTasks.map((t) => t.skipCount), 1);
   const tasksByDate = groupTasksByDate(tasks);
 
@@ -51,7 +58,7 @@ function HistoryPage() {
     <div className="page">
       <div className="page-header">
         <h1 className="page-title">히스토리</h1>
-        <p className="page-sub">완료 {doneTasks.length}개</p>
+        <p className="page-sub">완료 {history.length}개</p>
       </div>
 
       <div className="view-tabs">
@@ -68,12 +75,17 @@ function HistoryPage() {
       </div>
 
       {viewMode === "list" ? (
-        doneTasks.length === 0 ? (
+        history.length === 0 ? (
           <EmptyState message="아직 완료한 할일이 없어요." actionLabel="할일 등록하러 가기" />
         ) : (
           <div className="history-list">
-            {doneTasks.map((task) => (
-              <HistoryRow key={task.id} task={task} maxSkip={maxSkip} />
+            {history.map((entry) => (
+              <HistoryRow
+                key={entry.taskId}
+                entry={entry}
+                task={doneTasksById.get(entry.taskId)}
+                maxSkip={maxSkip}
+              />
             ))}
           </div>
         )
