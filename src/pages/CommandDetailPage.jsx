@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { commands, CATEGORY_LABELS } from '../data/commands';
+import { CATEGORY_LABELS } from '../data/commands';
+import { fetchCommandById } from '../services/commandsService';
 
 function ClipboardIcon() {
     return (
@@ -21,8 +22,24 @@ function CheckIcon() {
 
 function CommandDetailPage() {
     const { id } = useParams();
-    const command = commands.find((item) => item.id === id);
+    const [command, setCommand] = useState(null); // BE(/api/commands/:id)가 내려준 명령어 하나, 없으면(404) null
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null); // 네트워크/서버 오류 메시지 — "존재하지 않는 id"(404)와는 다른 경우
     const [copiedCommand, setCopiedCommand] = useState(null);
+
+    useEffect(() => {
+        // id가 바뀔 때마다(다른 명령어 상세로 이동) 이전 요청의 결과(command/error)가 남아있으면
+        // 안 되니 로딩 상태로 되돌리고 에러를 지운 뒤 새로 요청한다. CommandListPage.jsx와 동일한
+        // 이유로 이 줄만 lint 규칙(react-hooks/set-state-in-effect)을 꺼둔다.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsLoading(true);
+        setError(null);
+
+        fetchCommandById(id)
+            .then((data) => setCommand(data))
+            .catch((err) => setError(err.message))
+            .finally(() => setIsLoading(false));
+    }, [id]);
 
     const handleCopy = async (text) => {
         try {
@@ -34,14 +51,29 @@ function CommandDetailPage() {
         }
     };
 
-    if (!command) {
+    if (isLoading) {
+        return (
+            <div className="app-shell">
+                <Link to="/" className="back-link">
+                    ← 카테고리 선택으로
+                </Link>
+                <p className="terminal-hint">불러오는 중입니다...</p>
+            </div>
+        );
+    }
+
+    // error(네트워크/서버 오류)와 command === null(존재하지 않는 id, 404)은 서로 다른 원인이지만,
+    // 사용자에게 보여줄 화면은 둘 다 "이 명령어를 볼 수 없다"는 같은 형태라 메시지만 갈라서 재사용한다.
+    if (error || !command) {
         return (
             <div className="app-shell">
                 <Link to="/" className="back-link">
                     ← 카테고리 선택으로
                 </Link>
                 <div className="detail-container not-found">
-                    <p className="terminal-error">-bash: {id}: 에러: 찾을 수 없는 명령어입니다</p>
+                    <p className="terminal-error">
+                        {error ?? `-bash: ${id}: 에러: 찾을 수 없는 명령어입니다`}
+                    </p>
                 </div>
             </div>
         );
