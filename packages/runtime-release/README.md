@@ -10,7 +10,7 @@
 | `src/canonical-runtime-manifest.ts` | Canonical manifest의 exact shape, Runtime identity, launch path, complete roster evidence와 path graph를 strict decode한다. |
 | `src/runtime-release-authority.ts` | Descriptor, application/target/contract, canonical manifest resource·bytes·digest·identity를 effect 전에 admission하고 caller-safe failure와 private diagnostic evidence를 분리한다. |
 | `src/runtime-cache-authority.ts` | `appDataRoot/runtime-cache/v1` 아래 content-addressed archive, partial, generation, staging, quarantine, lease와 receipt identity를 계산한다. Cache root를 read-only로 검사하고 owner UID, exact `0700`, no-symlink ancestor, same-device `(dev, ino)` snapshot을 mutation authority 발급 전에 재검증한다. |
-| `src/runtime-archive-extraction.ts` | Descriptor-bound canonical archive를 두 번 pre-scan한 뒤 owned empty staging의 `runtime/`에 추출한다. TAR path/type/mode·size bound, manifest/legal roster, complete-tree digest와 final staging authority를 검증하고 안전하게 정산할 수 없는 cleanup은 `runtime_recovery_required`로 닫는다. |
+| `src/runtime-archive-extraction.ts` | Descriptor-bound canonical archive를 전체 pre-scan한 뒤 materialization pass에서 다시 검증하며 owned empty staging의 `runtime/`에 추출한다. TAR path/type/mode·size bound, manifest/legal roster, complete-tree digest와 final staging authority를 검증하고 안전하게 정산할 수 없는 cleanup은 `runtime_recovery_required`로 닫는다. |
 | `src/runtime-archive-directory-capability.ts` | Dedicated child의 kernel-held cwd를 directory capability로 유지한다. Exact `(dev, ino, uid, mode)` handshake와 direct-leaf operation만 허용해 ancestor replacement·symlink·hardlink·rename race에서 no-follow/no-clobber 경계를 보존한다. |
 
 ## 내부 경계
