@@ -1,10 +1,10 @@
 // 우선순위 성향 프리셋. 클라이언트의 priorityCalculator.js와 값을 맞춘다.
 // 각 가중치의 합은 1.0 이다.
 export const WEIGHT_PRESETS = {
-  balanced: { understanding: 0.25, difficulty: 0.15, urgency: 0.2, gradeWeight: 0.2, grading: 0.1, studyAmount: 0.1 },
-  difficulty: { understanding: 0.2, difficulty: 0.3, urgency: 0.1, gradeWeight: 0.15, grading: 0.1, studyAmount: 0.15 },
-  urgency: { understanding: 0.15, difficulty: 0.1, urgency: 0.4, gradeWeight: 0.15, grading: 0.1, studyAmount: 0.1 },
-  grade: { understanding: 0.15, difficulty: 0.1, urgency: 0.15, gradeWeight: 0.3, grading: 0.2, studyAmount: 0.1 },
+  balanced: { understanding: 0.2, difficulty: 0.15, urgency: 0.2, gradeWeight: 0.15, grading: 0.1, studyAmount: 0.1, availableTime: 0.1 },
+  difficulty: { understanding: 0.2, difficulty: 0.25, urgency: 0.1, gradeWeight: 0.15, grading: 0.1, studyAmount: 0.1, availableTime: 0.1 },
+  urgency: { understanding: 0.15, difficulty: 0.1, urgency: 0.35, gradeWeight: 0.15, grading: 0.05, studyAmount: 0.1, availableTime: 0.1 },
+  grade: { understanding: 0.1, difficulty: 0.1, urgency: 0.15, gradeWeight: 0.3, grading: 0.15, studyAmount: 0.1, availableTime: 0.1 },
 };
 
 export const DEFAULT_WEIGHT_KEY = "balanced";
@@ -18,6 +18,11 @@ const URGENCY_HORIZON = 30;
 // 1~5 값을 "클수록 높은 점수(0~100)"로 바꾼다.
 function ascendingScore(value) {
   return ((value - 1) / 4) * 100;
+}
+
+// 1~5 범위를 벗어난 값(0="모르겠다", null, 미설정)은 중립값으로 본다.
+function toScale(value) {
+  return value >= 1 && value <= 5 ? value : NEUTRAL;
 }
 
 export function getDaysUntil(examDate, today = new Date()) {
@@ -52,16 +57,19 @@ export function calculatePriorityScore(
     gradeWeight = 40,
     grading = NEUTRAL,
     studyAmount = NEUTRAL,
+    availableTime = NEUTRAL,
   },
   weights
 ) {
-  const understandingScore = ((5 - understanding) / 4) * 100;
-  const difficultyScore = ascendingScore(difficulty);
+  const understandingScore = ((5 - toScale(understanding)) / 4) * 100;
+  const difficultyScore = ascendingScore(toScale(difficulty));
   const urgencyScore = calculateUrgencyScore(daysUntil);
   // 학점 반영 비율은 이미 0~100 이므로 그 값을 그대로 점수로 쓴다.
   const gradeWeightScore = Math.max(0, Math.min(100, gradeWeight));
-  const gradingScore = ascendingScore(grading);
-  const studyAmountScore = ascendingScore(studyAmount);
+  const gradingScore = ascendingScore(toScale(grading));
+  const studyAmountScore = ascendingScore(toScale(studyAmount));
+  // 확보 가능한 공부 시간이 적을수록(빠듯할수록) 점수를 높인다. (1 -> 100, 5 -> 0)
+  const availableTimeScore = ((5 - toScale(availableTime)) / 4) * 100;
 
   const score =
     understandingScore * weights.understanding +
@@ -69,7 +77,8 @@ export function calculatePriorityScore(
     urgencyScore * weights.urgency +
     gradeWeightScore * weights.gradeWeight +
     gradingScore * weights.grading +
-    studyAmountScore * weights.studyAmount;
+    studyAmountScore * weights.studyAmount +
+    availableTimeScore * weights.availableTime;
 
   return Math.round(score);
 }
@@ -88,6 +97,7 @@ export function scoreSubjects(subjects, weightKey) {
         gradeWeight: subject.gradeWeight,
         grading: subject.grading,
         studyAmount: subject.studyAmount,
+        availableTime: subject.availableTime,
       },
       weights
     ),

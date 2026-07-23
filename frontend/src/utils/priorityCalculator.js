@@ -4,42 +4,46 @@ export const WEIGHT_PRESETS = {
   balanced: {
     key: "balanced",
     label: "균형",
-    understanding: 0.25,
+    understanding: 0.2,
     difficulty: 0.15,
     urgency: 0.2,
-    gradeWeight: 0.2,
+    gradeWeight: 0.15,
     grading: 0.1,
     studyAmount: 0.1,
+    availableTime: 0.1,
   },
   difficulty: {
     key: "difficulty",
     label: "난이도 중시",
     understanding: 0.2,
-    difficulty: 0.3,
+    difficulty: 0.25,
     urgency: 0.1,
     gradeWeight: 0.15,
     grading: 0.1,
-    studyAmount: 0.15,
+    studyAmount: 0.1,
+    availableTime: 0.1,
   },
   urgency: {
     key: "urgency",
     label: "임박도 중시",
     understanding: 0.15,
     difficulty: 0.1,
-    urgency: 0.4,
+    urgency: 0.35,
     gradeWeight: 0.15,
-    grading: 0.1,
+    grading: 0.05,
     studyAmount: 0.1,
+    availableTime: 0.1,
   },
   grade: {
     key: "grade",
     label: "학점 전략",
-    understanding: 0.15,
+    understanding: 0.1,
     difficulty: 0.1,
     urgency: 0.15,
     gradeWeight: 0.3,
-    grading: 0.2,
+    grading: 0.15,
     studyAmount: 0.1,
+    availableTime: 0.1,
   },
 };
 
@@ -56,6 +60,11 @@ function ascendingScore(value) {
   return ((value - 1) / 4) * 100;
 }
 
+// 1~5 범위를 벗어난 값(0="모르겠다", null, 미설정)은 중립값으로 본다.
+function toScale(value) {
+  return value >= 1 && value <= 5 ? value : NEUTRAL;
+}
+
 // 각 요인을 0~100 점수로 분해한다.
 export function getScoreBreakdown({
   understanding = NEUTRAL,
@@ -64,20 +73,23 @@ export function getScoreBreakdown({
   gradeWeight = 40,
   grading = NEUTRAL,
   studyAmount = NEUTRAL,
+  availableTime = NEUTRAL,
 }) {
   return {
     // 이해도가 낮을수록 먼저 공부해야 하므로 점수를 높인다. (1 -> 100, 5 -> 0)
-    understanding: ((5 - understanding) / 4) * 100,
+    understanding: ((5 - toScale(understanding)) / 4) * 100,
     // 난이도가 높을수록 우선순위를 높인다.
-    difficulty: ascendingScore(difficulty),
+    difficulty: ascendingScore(toScale(difficulty)),
     // 시험이 가까울수록 높인다.
     urgency: calculateUrgencyScore(daysUntil),
     // 학점 반영 비율은 이미 0~100 이므로 그 값을 그대로 점수로 쓴다.
     gradeWeight: Math.max(0, Math.min(100, gradeWeight)),
     // 교수님이 학점을 짜게 줄수록(받기 어려울수록) 더 신경 쓰도록 높인다.
-    grading: ascendingScore(grading),
+    grading: ascendingScore(toScale(grading)),
     // 공부 분량(시험 범위)이 많을수록 미리 시작하도록 높인다.
-    studyAmount: ascendingScore(studyAmount),
+    studyAmount: ascendingScore(toScale(studyAmount)),
+    // 확보 가능한 공부 시간이 적을수록(빠듯할수록) 미리 시작하도록 높인다. (1 -> 100, 5 -> 0)
+    availableTime: ((5 - toScale(availableTime)) / 4) * 100,
   };
 }
 
@@ -90,7 +102,8 @@ export function calculatePriorityScore(input, weights = WEIGHT_PRESETS.balanced)
     breakdown.urgency * weights.urgency +
     breakdown.gradeWeight * weights.gradeWeight +
     breakdown.grading * weights.grading +
-    breakdown.studyAmount * weights.studyAmount;
+    breakdown.studyAmount * weights.studyAmount +
+    breakdown.availableTime * weights.availableTime;
 
   return Math.round(score);
 }

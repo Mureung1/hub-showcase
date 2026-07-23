@@ -34,6 +34,7 @@ export function scoreSubjectsLocally(subjects, weightKey) {
         gradeWeight: subject.gradeWeight,
         grading: subject.grading,
         studyAmount: subject.studyAmount,
+        availableTime: subject.availableTime,
       },
       weights
     ),

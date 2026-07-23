@@ -10,6 +10,7 @@ const INITIAL_FORM = {
   gradeWeight: 40,
   grading: 3,
   studyAmount: 3,
+  availableTime: 3,
 };
 
 // 각 1~5 단계가 무슨 뜻인지 알려주는 라벨. "3"이 사람마다 다른 문제를 줄인다.
@@ -17,6 +18,12 @@ const UNDERSTANDING_LEVELS = ["안 봤음", "개념만", "절반쯤", "거의 �
 const DIFFICULTY_LEVELS = ["매우 쉬움", "쉬움", "보통", "어려움", "매우 어려움"];
 const GRADING_LEVELS = ["매우 후하게", "후한 편", "보통", "짠 편", "매우 짜게"];
 const STUDY_AMOUNT_LEVELS = ["아주 적음", "적음", "보통", "많음", "아주 많음"];
+const AVAILABLE_TIME_LEVELS = ["매우 부족", "부족", "보통", "넉넉", "충분"];
+
+// 목록에서 1~5 값을 보여줄 때, 0("모르겠다")은 "?"로 표시한다.
+function formatScale(value) {
+  return value >= 1 && value <= 5 ? value : "?";
+}
 
 function SubjectInputPage({
   subjects,
@@ -92,6 +99,7 @@ function SubjectInputPage({
       gradeWeight,
       grading: form.grading,
       studyAmount: form.studyAmount,
+      availableTime: form.availableTime,
     };
 
     if (isEditing) {
@@ -112,6 +120,7 @@ function SubjectInputPage({
       gradeWeight: subject.gradeWeight ?? 40,
       grading: subject.grading ?? 3,
       studyAmount: subject.studyAmount ?? 3,
+      availableTime: subject.availableTime ?? 3,
     });
     setEditingId(subject.id);
     setErrorMessage("");
@@ -222,6 +231,13 @@ function SubjectInputPage({
             levelLabels={STUDY_AMOUNT_LEVELS}
           />
 
+          <ScoreSelector
+            label="확보 가능한 공부 시간"
+            value={form.availableTime}
+            onChange={(value) => updateField("availableTime", value)}
+            levelLabels={AVAILABLE_TIME_LEVELS}
+          />
+
           <p className="form-error">{errorMessage}</p>
 
           <div className="form-actions">
@@ -261,7 +277,8 @@ function SubjectInputPage({
                   <span className="entry-name">{subject.name}</span>
                   <span className="entry-meta">
                     {formatDday(getDaysUntil(subject.examDate))} · 이해도{" "}
-                    {subject.understanding} · 난이도 {subject.difficulty} · 학점{" "}
+                    {formatScale(subject.understanding)} · 난이도{" "}
+                    {formatScale(subject.difficulty)} · 학점{" "}
                     {subject.gradeWeight ?? 40}%
                   </span>
                 </div>

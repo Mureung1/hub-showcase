@@ -12,6 +12,7 @@ const SCORE_FIELDS = [
   { key: "difficulty", label: "난이도", optional: false },
   { key: "grading", label: "교수님 학점 성향", optional: true },
   { key: "studyAmount", label: "공부 분량", optional: true },
+  { key: "availableTime", label: "확보 가능한 공부 시간", optional: true },
 ];
 
 // 학점 반영 비율은 0~100(%) 범위이고, 값이 없으면 기본값 40 으로 채운다.
@@ -37,8 +38,9 @@ function validateSubjectInput(body) {
     if (value === undefined && field.optional) {
       continue;
     }
-    if (!Number.isInteger(value) || value < 1 || value > 5) {
-      return `${field.label}(${field.key})는 1~5 사이 정수여야 합니다.`;
+    // 0 은 "모르겠다"(중립)를 뜻하므로 0~5 를 허용한다.
+    if (!Number.isInteger(value) || value < 0 || value > 5) {
+      return `${field.label}(${field.key})는 0(모르겠다)~5 사이 정수여야 합니다.`;
     }
   }
 
