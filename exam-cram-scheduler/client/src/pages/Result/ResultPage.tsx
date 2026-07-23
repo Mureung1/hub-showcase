@@ -6,7 +6,7 @@ import text from '../../styles/text.module.css';
 import styles from './ResultPage.module.css';
 import { useSchedule } from '../../context/ScheduleContext';
 import { buildDayPlans, buildSummary } from './formatSchedule';
-import { buildChartGeometry, VIEW_HEIGHT, VIEW_WIDTH, type ChartGeometry } from './buildChart';
+import { buildChartGeometry, VIEW_HEIGHT, type ChartGeometry } from './buildChart';
 import { saveSchedule } from '../../storage/savedSchedules';
 
 export function ResultPage() {
@@ -117,20 +117,23 @@ export function ResultPage() {
  * 좌표 계산은 buildChart.ts가 하고 여기서는 그리기만 한다.
  */
 function AlertnessChart({ geometry }: { geometry: ChartGeometry }) {
-  const { linePath, areaPath, sleepBands, caffeineMarkers, examMarkers, dayTicks } = geometry;
+  const { width, linePath, areaPath, sleepBands, caffeineMarkers, examMarkers, dayTicks } = geometry;
 
   if (!linePath) {
     return (
-      <svg viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`} xmlns="http://www.w3.org/2000/svg">
-        <text x={VIEW_WIDTH / 2} y={VIEW_HEIGHT / 2} fontSize="11" textAnchor="middle" fill="#ab9d8c">
+      <svg viewBox={`0 0 ${width} ${VIEW_HEIGHT}`} width={width} height={VIEW_HEIGHT} xmlns="http://www.w3.org/2000/svg">
+        <text x={width / 2} y={VIEW_HEIGHT / 2} fontSize="11" textAnchor="middle" fill="#ab9d8c">
           그래프를 그릴 데이터가 없어요
         </text>
       </svg>
     );
   }
 
+  // #26 — 곡선 폭이 기간에 비례해 커지므로 SVG를 실제 폭(px)으로 그리고, 가로로 넘치면
+  // 스크롤 컨테이너 안에서 밀어 본다. viewBox와 실제 width를 같은 값으로 맞춰 1:1로 그린다.
   return (
-    <svg viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`} xmlns="http://www.w3.org/2000/svg">
+    <div className={styles.chartScroll}>
+    <svg viewBox={`0 0 ${width} ${VIEW_HEIGHT}`} width={width} height={VIEW_HEIGHT} xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="alertFill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#9a5b28" stopOpacity="0.38" />
@@ -151,13 +154,14 @@ function AlertnessChart({ geometry }: { geometry: ChartGeometry }) {
         />
       ))}
 
-      {/* 시험 시각 세로 점선 + 위쪽 라벨 */}
-      {examMarkers.map((exam) => (
-        <g key={`exam-${exam.x}`}>
+      {/* 시험 시각 세로 점선 + 위쪽 라벨. 같은 시각의 시험이 둘 이상이면 x가 겹치므로
+          key에 인덱스를 함께 써서 유일하게 만든다(다른 과목이 같은 시각에 시험일 수 있음). */}
+      {examMarkers.map((exam, i) => (
+        <g key={`exam-${i}-${exam.x}`}>
           <line x1={exam.x} y1={18} x2={exam.x} y2={138} stroke="#d8c9b4" strokeWidth="1" strokeDasharray="3,3" />
           {/* 마지막 시험은 오른쪽 끝에 붙어서 라벨이 잘리므로 안쪽으로 당긴다 */}
           <text
-            x={Math.min(VIEW_WIDTH - 22, Math.max(22, exam.x))}
+            x={Math.min(width - 22, Math.max(22, exam.x))}
             y={12}
             fontSize="9"
             textAnchor="middle"
@@ -172,8 +176,8 @@ function AlertnessChart({ geometry }: { geometry: ChartGeometry }) {
       <path d={linePath} fill="none" stroke="#7a4720" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
 
       {/* 곡선 위 시험 지점 */}
-      {examMarkers.map((exam) => (
-        <circle key={`dot-${exam.x}`} cx={exam.x} cy={exam.y} r="3.5" fill="#7a4720" stroke="#fff" strokeWidth="1.5" />
+      {examMarkers.map((exam, i) => (
+        <circle key={`dot-${i}-${exam.x}`} cx={exam.x} cy={exam.y} r="3.5" fill="#7a4720" stroke="#fff" strokeWidth="1.5" />
       ))}
 
       {/* 카페인 섭취 지점 */}
@@ -193,7 +197,7 @@ function AlertnessChart({ geometry }: { geometry: ChartGeometry }) {
       {dayTicks.map((tick) => (
         <text
           key={`tick-${tick.x}`}
-          x={Math.min(VIEW_WIDTH - 8, Math.max(8, tick.x))}
+          x={Math.min(width - 8, Math.max(8, tick.x))}
           y={158}
           fontSize="9"
           textAnchor="middle"
@@ -203,5 +207,6 @@ function AlertnessChart({ geometry }: { geometry: ChartGeometry }) {
         </text>
       ))}
     </svg>
+    </div>
   );
 }
