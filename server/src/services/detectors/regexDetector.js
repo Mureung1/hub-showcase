@@ -10,10 +10,25 @@ const PHONE_RE = new RegExp(
   'g'
 );
 
+// RFC1918 사설 대역만 잡는다. 공인 IP까지 가리면 일반적인 네트워크 질문이 깨진다.
+const PRIVATE_IP_RE =
+  /(?<!\d)(?:10(?:\.\d{1,3}){3}|172\.(?:1[6-9]|2\d|3[01])(?:\.\d{1,3}){2}|192\.168(?:\.\d{1,3}){2})(?!\d)/g;
+
+// 내부용 TLD로 끝나는 호스트만. 뒤에 다시 확장자가 붙으면(settings.local.json) 파일명이므로 제외한다.
+const INTERNAL_HOST_RE = /[\w-]+(?:\.[\w-]+)*\.(internal|local|corp|lan|intranet)(?!\.?\w)/g;
+
+// 제공자별 고정 접두사가 있는 키만 잡는다. 접두사 없이 길이만 보면 해시·UUID가 전부 걸린다.
+const API_KEY_RE = /\b(sk-|gh[pousr]_|AKIA|AIza|xox[baprs]-)[A-Za-z0-9_-]{16,}/g;
+
 // 패턴 하나당 { type, pattern, mask }. 패턴 확장은 이 배열에 항목만 추가한다.
+// 이메일을 내부 호스트보다 먼저 둔다. 순서가 반대면 admin@db.internal에서 도메인이 먼저
+// 가려져 이메일 정규식이 매치에 실패하고 로컬 파트(admin)가 그대로 남는다.
 const PATTERNS = [
   { type: '전화번호', pattern: PHONE_RE, mask: maskPhone },
   { type: '이메일', pattern: /[\w.-]+@[\w.-]+\.\w+/g, mask: maskEmail },
+  { type: 'API 키', pattern: API_KEY_RE, mask: maskApiKey },
+  { type: '사설 IP', pattern: PRIVATE_IP_RE, mask: maskPrivateIp },
+  { type: '내부 도메인', pattern: INTERNAL_HOST_RE, mask: maskInternalHost },
 ];
 
 // 국번은 자릿수가 2~3자리로 달라서(02 vs 031) 앞에서 잘라내면 안 되고,
@@ -25,6 +40,23 @@ function maskPhone(match, prefix, sep1, mid, sep2, last) {
 function maskEmail(match) {
   const [local, domain] = match.split('@');
   return `${local[0]}***@${domain}`;
+}
+
+// 접두사는 어느 제공자 키인지 알려줄 뿐 비밀이 아니므로 남기고, 뒤의 값만 통째로 가린다.
+function maskApiKey(match, prefix) {
+  return `${prefix}****`;
+}
+
+// 대역(10/8, 172.16/12, 192.168/16)은 남기고 호스트 부분만 가린다.
+// LLM은 "사설 IP"라는 것만 알면 되고 실제 호스트는 알 필요가 없다.
+function maskPrivateIp(match) {
+  const octets = match.split('.');
+  const keep = octets[0] === '10' ? 1 : 2;
+  return octets.map((octet, i) => (i < keep ? octet : '*')).join('.');
+}
+
+function maskInternalHost(match, tld) {
+  return `***.${tld}`;
 }
 
 export function detectWithRegex(text) {
