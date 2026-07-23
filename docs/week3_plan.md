@@ -121,29 +121,52 @@ isProject: false
 ### [31/P1/목] Supabase upsert 파이프라인
 - **목표**: 변환된 데이터를 `subsidies` 테이블에 실제로 채워 넣는다.
 - **작업**
-  - [ ] `supabase/schema.sql` 확장 검토 — 원본 공고 id, 원문 URL, 수집 시각 등 실데이터 특성상
-        필요한 컬럼이 있는지 (기존 `subsidies` 스키마는 샘플 데이터 기준으로 설계됨)
-  - [ ] `crawler/src/upsert.ts` — 매핑 결과를 Supabase에 upsert (`onConflict` 키 = 원본 공고 id)
-  - [ ] 기존 샘플 8건과의 공존 방식 결정 (병행 유지 vs 실데이터로 교체)
+  - [x] `supabase/schema.sql` 확장 검토 — **불필요로 판명**. `Subsidy` 타입 필드가 기존 컬럼과
+        1:1 대응해서(매핑은 #28~#30에서 이미 확정) 새 컬럼 없이 그대로 upsert 가능
+  - [x] `crawler/src/supabase.ts` — 크롤러 전용 Supabase 클라이언트 (server와 별도 워크스페이스라
+        각자 둠, 로직은 `server/src/db/supabase.ts`와 동일 패턴)
+  - [x] `crawler/src/upsert.ts` — `upsertSubsidies()`, `onConflict: 'id'`(원본 공고 `pblancId`)로
+        재수집 시 중복 방지
+  - [x] `crawler/src/index.ts` — 전체 파이프라인(fetch → map → 마감 지난 공고 제외 → upsert)으로
+        재작성, 이미 마감된(`dday < 0`) 공고는 upsert 전 필터링 (#30에서 남겨둔 미해결 질문 해소)
+  - [x] 기존 샘플 8건과의 공존 방식 — **병행 유지로 결정**. 크롤러 id(`PBLN_...`)와 샘플 id(`1`~`8`)가
+        체계가 달라 충돌 없이 자연스럽게 공존
 - **완료 기준**: 실제 API에서 가져온 데이터가 Supabase에 upsert되고 `GET /api/subsidies`로 확인된다.
+  **완료 (2026-07-23)** — `npm run run -w @hub/crawler` 실행 → 5건 upsert → `GET /api/subsidies`
+  total 8(샘플) + 5(실데이터) = 13건 확인. 재실행해도 13건 유지(중복 없음, upsert 정상 동작)
 
 ### [32/P1/금] GitHub Actions cron + 검증 문서화
 - **목표**: 크롤러가 주기적으로 자동 실행되고, 결과가 검증 문서로 남는다.
 - **작업**
-  - [ ] `.github/workflows/crawler.yml` — cron 표현식으로 주기 실행 (빈도는 결정 필요, 아래 표 참고)
-  - [ ] 실행 실패 시 로그/알림 정책 (최소: Actions 로그로 확인 가능하게)
-  - [ ] `docs/week3/verification.md` — day2/day6 검증 문서와 동일한 형식(`[코드]`/`[API]`/`[DB]`)으로
-        전체 파이프라인 검증 결과 기록
+  - [x] `.github/workflows/crawler.yml` — 매일 00:00 UTC(09:00 KST) 스케줄 + `workflow_dispatch`
+        수동 실행
+  - [x] 실행 실패 시 로그 확인 — 기본 Actions 로그로 충분 (별도 알림 없음)
+  - [x] `docs/week3/verification.md` — day2/day6 검증 문서와 동일한 형식(`[코드]`/`[API]`/`[DB]`/
+        `[CI]`)으로 전체 파이프라인(#28~#32) 검증 결과 기록
+  - [x] `.gitignore`에서 `.github/` 제거 — 그동안 워크플로우 파일이 커밋된 적 없었던 원인이었음
+        (CLAUDE.md가 설명하던 존재하지 않는 `pr-checks.yml`과 같은 원인)
+  - [x] GitHub repo secrets 등록 (`SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`/`BIZINFO_API_KEY`)
+  - [x] 캠퍼스 레포(`N106_신서연` 브랜치) PR에는 `.github/`를 포함하지 않도록 동기화 절차를
+        `.cursor/skills/issue-workflow/SKILL.md`에 문서화 (로컬 전용)
 - **완료 기준**: cron 워크플로우가 최소 1회 성공 실행되고, 결과가 문서화된다.
+  **완료 (2026-07-23)** — 머지 후 `gh workflow run crawler.yml --ref main`으로 트리거,
+  [실행 성공](https://github.com/syd348/hub/actions/runs/29983403708) 확인 (`5건 upsert 완료`)
 
 ---
 
 ## 완료 기준 (Week 3 전체)
 
-- [ ] bizinfo API 인증키가 발급되고 크롤러가 실제 데이터를 가져온다
-- [ ] API 응답이 `Subsidy` 타입으로 정규화되어 Supabase에 upsert된다
-- [ ] GitHub Actions cron으로 주기 실행이 최소 1회 성공한다
-- [ ] 매핑 정책·검증 결과가 문서로 남는다
+- [x] bizinfo API 인증키가 발급되고 크롤러가 실제 데이터를 가져온다
+- [x] API 응답이 `Subsidy` 타입으로 정규화되어 Supabase에 upsert된다
+- [x] GitHub Actions cron으로 주기 실행이 최소 1회 성공한다
+- [x] 매핑 정책·검증 결과가 문서로 남는다
+
+**Week 3 (#28~#32) 전체 완료 (2026-07-23)**
+
+> **후속 작업 (2026-07-23)**: 실제 실행해보니 `index.ts`가 5건만 가져오도록 하드코딩돼 있어
+> 지원 중인 공고를 다 반영하지 못하는 걸 발견. 전체 백필(backfill) + 일일 배치 크기 조정 계획을
+> [`docs/week3/full-coverage-plan.md`](week3/full-coverage-plan.md)에 정리하고
+> [이슈 #40](https://github.com/syd348/hub/issues/40)으로 등록함 (아직 미구현).
 
 ## 리스크 / 결정 필요
 
