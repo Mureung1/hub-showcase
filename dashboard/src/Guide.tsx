@@ -138,7 +138,7 @@ export default function Guide() {
       <section className="guide-section guide-validator">
         <div className="section-heading">
           <div>
-            <h2>JSON 형식 확인하기</h2>
+            <h2>showcase.json 형식 검사</h2>
             <p>형식이 맞는지 검사해보세요.</p>
           </div>
           <button type="button" onClick={() => { setJsonText(''); setResult(null); }}>지우기</button>
