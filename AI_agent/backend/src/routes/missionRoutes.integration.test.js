@@ -13,6 +13,7 @@ let server;
 let user;
 const missionId = `integration-mission-${Date.now()}`;
 const feedbackMissionId = `integration-feedback-mission-${Date.now()}`;
+const portfolioMissionId = `integration-portfolio-mission-${Date.now()}`;
 
 before(
   async () => {
@@ -51,6 +52,7 @@ after(
 
     await prisma.mission.delete({ where: { id: missionId } }).catch(() => {});
     await prisma.mission.delete({ where: { id: feedbackMissionId } }).catch(() => {});
+    await prisma.mission.delete({ where: { id: portfolioMissionId } }).catch(() => {});
     await prisma.$disconnect().catch(() => {});
 
     if (server) {
@@ -100,6 +102,101 @@ test(
     assert.equal(getData.progress.missionId, missionId);
     assert.equal(getData.progress.status, "completed");
     assert.deepEqual(getData.progress.checkedItems, ["문제 정의", "입력 폼"]);
+  }
+);
+
+test(
+  "portfolio API saves and reads a draft for the latest submitted mission",
+  { skip: !runIntegrationTests },
+  async () => {
+    const token = createAuthToken(user);
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
+
+    const submissionResponse = await fetch(`${baseUrl}/api/submissions`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        missionId: portfolioMissionId,
+        missionTitle: "Portfolio Integration Mission",
+        submittedUrl: "https://example.com/portfolio-integration",
+        submittedDescription:
+          "문제 정의를 정리했습니다. 수행 과정을 문서화했습니다. 결과를 링크로 제출했습니다. 배운 점을 포트폴리오 문장으로 정리했습니다.",
+      }),
+    });
+    const submissionData = await submissionResponse.json();
+
+    assert.equal(submissionResponse.status, 201);
+    assert.equal(submissionData.ok, true);
+    assert.equal(submissionData.submission.missionId, portfolioMissionId);
+
+    const firstGetResponse = await fetch(`${baseUrl}/api/portfolio/latest`, {
+      headers,
+    });
+    const firstGetData = await firstGetResponse.json();
+
+    assert.equal(firstGetResponse.status, 200);
+    assert.equal(firstGetData.ok, true);
+    assert.equal(firstGetData.submission.missionId, portfolioMissionId);
+    assert.equal(firstGetData.portfolioDraft, null);
+
+    const saveDraftResponse = await fetch(`${baseUrl}/api/portfolio/latest`, {
+      method: "POST",
+      headers,
+    });
+    const saveDraftData = await saveDraftResponse.json();
+
+    assert.equal(saveDraftResponse.status, 200);
+    assert.equal(saveDraftData.ok, true);
+    assert.equal(saveDraftData.submission.missionId, portfolioMissionId);
+    assert.equal(saveDraftData.portfolioDraft.title, "Portfolio Integration Mission");
+    assert.equal(
+      saveDraftData.portfolioDraft.artifact,
+      "https://example.com/portfolio-integration"
+    );
+    assert.match(
+      saveDraftData.portfolioDraft.interviewPitch,
+      /Portfolio Integration Mission/
+    );
+
+    const secondGetResponse = await fetch(`${baseUrl}/api/portfolio/latest`, {
+      headers,
+    });
+    const secondGetData = await secondGetResponse.json();
+
+    assert.equal(secondGetResponse.status, 200);
+    assert.equal(secondGetData.ok, true);
+    assert.deepEqual(secondGetData.portfolioDraft, saveDraftData.portfolioDraft);
+
+    const resubmissionResponse = await fetch(`${baseUrl}/api/submissions`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        missionId: portfolioMissionId,
+        missionTitle: "Portfolio Integration Mission Updated",
+        submittedUrl: "https://example.com/portfolio-integration-updated",
+        submittedDescription:
+          "새로 제출한 결과물입니다. 기존 피드백과 포트폴리오 초안은 다시 생성되어야 합니다.",
+      }),
+    });
+    const resubmissionData = await resubmissionResponse.json();
+
+    assert.equal(resubmissionResponse.status, 201);
+    assert.equal(resubmissionData.ok, true);
+    assert.equal(resubmissionData.submission.feedback, null);
+    assert.equal(resubmissionData.submission.portfolioDraft, null);
+
+    const afterResubmissionResponse = await fetch(`${baseUrl}/api/portfolio/latest`, {
+      headers,
+    });
+    const afterResubmissionData = await afterResubmissionResponse.json();
+
+    assert.equal(afterResubmissionResponse.status, 200);
+    assert.equal(afterResubmissionData.ok, true);
+    assert.equal(afterResubmissionData.submission.missionId, portfolioMissionId);
+    assert.equal(afterResubmissionData.portfolioDraft, null);
   }
 );
 

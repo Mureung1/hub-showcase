@@ -679,6 +679,82 @@ Request body:
 - `401`: 토큰 없음 또는 유효하지 않은 토큰
 - `404`: 피드백을 생성할 제출 결과물이 없음
 
+## 포트폴리오 API
+
+### 최신 제출 포트폴리오 초안 조회
+
+- Method: `GET`
+- Path: `/api/portfolio/latest`
+- 인증: 필요
+- 사용 화면: 포트폴리오
+
+성공 응답 `200`:
+
+```json
+{
+  "ok": true,
+  "submission": {
+    "id": "clx...",
+    "missionId": "it-service-mvp",
+    "missionTitle": "작은 문제를 해결하는 서비스 MVP 구현",
+    "status": "submitted",
+    "submittedUrl": "https://example.com/project",
+    "submittedAt": "2026-07-23T00:00:00.000Z"
+  },
+  "portfolioDraft": {
+    "title": "작은 문제를 해결하는 서비스 MVP 구현",
+    "subtitle": "제출 결과물을 바탕으로 구성한 포트폴리오 프로젝트입니다.",
+    "problem": "문제 정의를 먼저 정리했습니다.",
+    "approach": ["문제 정의를 먼저 정리했습니다."],
+    "skills": ["문제 정의", "자료 조사", "결과 정리"],
+    "artifact": "https://example.com/project",
+    "outcome": "미션 결과물이 제출 형식에 맞게 정리되었습니다.",
+    "interviewPitch": "이번 프로젝트에서는 문제를 먼저 정의하고...",
+    "portfolioPoints": ["프로젝트 제목으로 정리할 수 있습니다."],
+    "learningItems": ["문제를 먼저 정의해야 결과물의 방향과 평가 기준이 명확해진다는 점을 확인했습니다."]
+  }
+}
+```
+
+특이사항:
+
+- 제출 결과물이 없으면 `submission`과 `portfolioDraft`는 `null`이다.
+- 제출 결과물은 있지만 아직 저장된 포트폴리오 초안이 없으면 `portfolioDraft`는 `null`이다.
+
+### 최신 제출 포트폴리오 초안 저장
+
+- Method: `POST`
+- Path: `/api/portfolio/latest`
+- 인증: 필요
+- 사용 화면: 포트폴리오
+
+성공 응답 `200`:
+
+```json
+{
+  "ok": true,
+  "submission": {
+    "id": "clx...",
+    "missionId": "it-service-mvp",
+    "missionTitle": "작은 문제를 해결하는 서비스 MVP 구현",
+    "status": "submitted"
+  },
+  "portfolioDraft": {
+    "title": "작은 문제를 해결하는 서비스 MVP 구현",
+    "subtitle": "제출 결과물을 바탕으로 구성한 포트폴리오 프로젝트입니다.",
+    "approach": [],
+    "skills": [],
+    "portfolioPoints": [],
+    "learningItems": []
+  }
+}
+```
+
+주요 실패:
+
+- `401`: 토큰 없음 또는 유효하지 않은 토큰
+- `404`: 포트폴리오로 만들 제출 결과물이 없음
+
 ## 헬스체크 API
 
 ### 서버 상태 확인
@@ -702,7 +778,6 @@ Request body:
 다음 기능은 Prisma 모델 또는 화면 초안은 있으나 백엔드 라우트가 아직 없다.
 
 - 미션 추천 목록 조회
-- 포트폴리오 자동 생성
 
 구현 전 별도 API 초안을 작성하고, 프론트엔드 화면과 응답 형식을 맞춘 뒤 라우트를 추가한다.
 

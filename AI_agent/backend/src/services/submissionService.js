@@ -42,6 +42,7 @@ const publicSubmissionFields = (submission) => {
     submittedFileData: submission.submittedFileData,
     submittedAt: submission.submittedAt,
     feedback: submission.feedback,
+    portfolioDraft: submission.portfolioDraft,
     createdAt: submission.createdAt,
     updatedAt: submission.updatedAt,
   };
@@ -97,6 +98,8 @@ export const saveSubmission = async ({ userId, submission }) => {
       submittedFileType: data.submittedFileType || null,
       submittedFileData: data.submittedFileData || null,
       submittedAt: new Date(),
+      feedback: null,
+      portfolioDraft: null,
     },
     create: {
       userId,
@@ -109,6 +112,8 @@ export const saveSubmission = async ({ userId, submission }) => {
       submittedFileType: data.submittedFileType || null,
       submittedFileData: data.submittedFileData || null,
       submittedAt: new Date(),
+      feedback: null,
+      portfolioDraft: null,
     },
     include: {
       mission: true,
