@@ -591,6 +591,12 @@ button:disabled {
   gap: var(--bj-space-2);
 }
 
+.clinic-meta a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .clinic-waiting-band {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

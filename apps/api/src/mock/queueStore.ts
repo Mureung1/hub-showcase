@@ -187,6 +187,7 @@ export function getPatientConfig() {
       department: MOCK_HOSPITAL.specialty,
       district: "서울특별시 마포구",
       address: MOCK_HOSPITAL.address,
+      phoneNumber: MOCK_HOSPITAL.phoneNumber,
       operatingHoursText: "평일 09:00-18:00",
     },
     inputMode: todayInputMode,

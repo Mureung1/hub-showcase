@@ -88,6 +88,7 @@ export interface MockPatientConfig {
     department: string;
     district: string;
     address: string;
+    phoneNumber: string;
     operatingHoursText: string;
   };
   inputMode: PatientInputMode;

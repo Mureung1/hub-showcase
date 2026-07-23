@@ -36,6 +36,7 @@ function createService(): PatientWaitingOperations {
         department: "이비인후과",
         district: "서울특별시 마포구",
         address: "서울특별시 마포구 월드컵로 12, 2층",
+        phoneNumber: "+82212345678",
         operatingHoursText: "평일 09:00-18:00",
       },
       inputMode: "total_only" as const,
@@ -71,7 +72,11 @@ describe("patient waiting routes", () => {
       .expect(200);
 
     expect(response.body).toMatchObject({
-      hospital: { id: hospitalId, name: "서울이비인후과" },
+      hospital: {
+        id: hospitalId,
+        name: "서울이비인후과",
+        phoneNumber: "+82212345678",
+      },
       queueStatus: "open",
       waitingPatients: 0,
       estimatedMinutes: 0,

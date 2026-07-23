@@ -6,9 +6,10 @@ import type {
 import {
   calculatePatientCount,
   createEmptyPatientCounts,
+  formatKoreanPhoneNumber,
   patientCountsSchema,
 } from "@baro-jinryo/shared";
-import { ArrowLeft, Clock3, Info, MapPin, Stethoscope } from "lucide-react";
+import { ArrowLeft, Clock3, Info, MapPin, Phone, Stethoscope } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AppHeader } from "../components/AppHeader";
@@ -65,6 +66,12 @@ export function PatientRegistrationPage({ config, onRegister }: PatientRegistrat
                 </li>
                 <li>
                   <MapPin size={18} /> {hospital.address}
+                </li>
+                <li>
+                  <Phone size={18} />
+                  <a href={`tel:${hospital.phoneNumber}`}>
+                    {formatKoreanPhoneNumber(hospital.phoneNumber)}
+                  </a>
                 </li>
               </ul>
               <div className="clinic-waiting-band">

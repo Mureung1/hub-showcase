@@ -79,6 +79,7 @@ export class PatientWaitingService implements PatientWaitingOperations {
           department: hospital.primaryDepartment,
           district: `${hospital.regionSido} ${hospital.regionSigungu}`,
           address: hospital.address,
+          phoneNumber: hospital.phoneNumber,
           operatingHoursText: hospital.operatingHoursText,
         },
         inputMode: configuration.inputMode,
