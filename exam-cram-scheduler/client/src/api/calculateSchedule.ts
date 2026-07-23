@@ -29,6 +29,17 @@ export interface HealthProfile {
   oralContraceptive?: boolean;
 }
 
+// #20 — 조정 화면에서 특정 밤(night)의 취침/기상/카페인을 사용자가 정한 값으로 고정하고
+// 나머지는 다시 최적화해달라는 요청. nightIndex는 응답 recommendedSchedule.nights[]/
+// caffeineDoses[]와 같은 인덱스(서버 server/src/routes/scheduleCalculate.ts와 이름 맞춤).
+export interface NightOverrideInput {
+  nightIndex: number;
+  bedTime?: string;
+  wakeTime?: string;
+  caffeineTime?: string;
+  caffeineAmountMg?: number;
+}
+
 /** 서버로 보내는 요청 바디 전체 */
 export interface ScheduleCalculateRequest {
   exams: ExamInput[];
@@ -40,6 +51,7 @@ export interface ScheduleCalculateRequest {
   caffeineSensitivity: CaffeineSensitivity;
   healthProfile: HealthProfile;
   minSleepHours?: number;
+  nightOverrides?: NightOverrideInput[];
 }
 
 /** 각성도 그래프의 점 하나. time은 ISO 날짜 문자열 */
