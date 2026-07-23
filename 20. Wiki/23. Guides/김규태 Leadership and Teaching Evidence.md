@@ -7,7 +7,7 @@ description: "Reusable evidence page for Kim Gyutae's leadership, teaching, club
 author:
   - Codex
 date created: 2026-07-12
-date modified: 2026-07-12
+date modified: 2026-07-23
 tags:
   - leadership
   - teaching
@@ -16,6 +16,7 @@ tags:
 source:
   - "[[2026-07-12-Kim-Gyutae-Leadership-Product-Context-v2]]"
   - "[[2026-07-12-Velog-Leadership-Product-Hackathon-Bundle]]"
+  - "[[2026-07-23-Kim-Gyutae-Self-Understanding-Interview-v1]]"
   - https://velog.io/@gyutaetae/what-is-leadership
   - https://velog.io/@gyutaetae/week2.-silicon-valley
   - https://velog.io/@gyutaetae/%EC%8B%A4%EB%A6%AC%EC%BD%98%EB%B0%B8%EB%A6%AC-1%EC%A3%BC%EC%B0%A8
@@ -24,6 +25,7 @@ source:
 related:
   - "[[김규태]]"
   - "[[MOC-Portfolio]]"
+  - "[[김규태 Leadership Pattern]]"
   - "[[cuee]]"
   - "[[AI-Augmented Developer Positioning]]"
 confidence: medium
@@ -39,7 +41,22 @@ status: active
 
 ## Summary
 
-김규태의 리더십 증거는 "앞에서 지시하는 리더"보다 팀원이 실행과 학습에 집중할 수 있도록 환경을 정리하는 운영형/지원형 리더십에 가깝다. 실리콘밸리 취업동아리 대표, 경상국립대학교 멋쟁이사자처럼 14기 부대표, 해커톤 백엔드 템플릿 준비 경험이 이 축을 구성한다.
+김규태의 리더십은 아이디어·비전·최종 결정을 주도하고 팀이 실행에 집중할 환경을 만드는 방향이 강하다. 실리콘밸리 취업동아리 대표, 경상국립대학교 멋쟁이사자처럼 14기 부대표, 해커톤 백엔드 템플릿 준비 경험이 이 축을 구성한다. 다만 일정·행정·다른 구성원의 결과를 지속적으로 관리하는 역할에는 동기가 낮다고 직접 확인했으므로, 운영형 리더라는 표현만으로 단순화하지 않는다.
+
+---
+
+## Failure And Recovery Evidence
+
+사용자 자기보고에 따르면 `모두의 창업` 1차 탈락 뒤 실패를 숨기지 않고 팀원들에게 부족한 점과 아쉬움을 공유했다. 다음 학기 재도전, U300, 경남권 창업동아리라는 다음 목표를 제시했고 이후 경남권 창업동아리에서 대상을 받았다.
+
+이 사례는 다음 리더십 신호를 보여준다.
+
+- 실패 뒤 방향을 다시 제시함
+- 완벽한 모습만 보이기보다 약점과 아쉬움을 공개함
+- 솔직한 의사소통이 팀원의 발언 장벽을 낮춘다고 판단함
+- 최종 결정은 선호하지만 일정·행정·구성원 결과 관리는 보완 과제로 인식함
+
+상세 해석은 [[김규태 Leadership Pattern]]에서 관리한다.
 
 ---
 
@@ -162,5 +179,6 @@ Velog 기록 기준으로 실리콘밸리 활동에서는 영어 인터뷰 질�
 
 - [[김규태]]
 - [[MOC-Portfolio]]
+- [[김규태 Leadership Pattern]]
 - [[cuee]]
 - [[AI-Augmented Developer Positioning]]

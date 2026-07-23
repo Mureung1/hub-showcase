@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-VAULT="C:\Users\kym70\OneDrive\Desktop\cmds-llm-wiki-work\cmds-llm-wiki"
+VAULT="C:/Users/user/Desktop/cmds-llm-wiki"
 LOCK="/tmp/qmd-reindex-cmds-llm-wiki.lock"
 LOG="/tmp/qmd-reindex-cmds-llm-wiki.log"
 DEBOUNCE_SEC=8
@@ -14,7 +14,25 @@ DEBOUNCE_SEC=8
 # Read agent hook payload from stdin. Supports Claude Code-style PostToolUse
 # payloads and simple Codex-style file path payloads.
 payload=$(cat 2>/dev/null || echo "{}")
-file_path=$(echo "$payload" | /usr/bin/jq -r '.tool_input.file_path // .tool_input.path // .file_path // .path // empty' 2>/dev/null || echo "")
+file_path=$(printf '%s' "$payload" | /usr/bin/python3 -c '
+import json
+import sys
+
+try:
+    data = json.load(sys.stdin)
+    tool_input = data.get("tool_input", {}) if isinstance(data, dict) else {}
+    print(
+        tool_input.get("file_path")
+        or tool_input.get("path")
+        or data.get("file_path")
+        or data.get("path")
+        or ""
+    )
+except Exception:
+    print("")
+' 2>/dev/null)
+# Codex on Windows may emit backslash paths; normalize before scope checks.
+file_path="${file_path//\\//}"
 
 # Only reindex when a markdown file inside the vault was touched
 case "$file_path" in
@@ -56,7 +74,7 @@ fi
 	done
 
 	export QMD_EMBED_MODEL="hf:Qwen/Qwen3-Embedding-0.6B-GGUF/Qwen3-Embedding-0.6B-Q8_0.gguf"
-	export PATH="$HOME/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin"
+	export PATH="/c/Users/user/AppData/Roaming/npm:$HOME/.bun/bin:/opt/homebrew/bin:/usr/bin:/bin:$PATH"
 
 	{
 		echo "=== $(date -u +%FT%TZ) qmd auto-reindex ==="
