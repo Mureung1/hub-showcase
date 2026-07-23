@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import GroupBuyEditor from "../components/GroupBuyEditor";
 import { createGroupBuy, deleteGroupBuy, getGroupBuys, updateGroupBuy } from "../services/groupBuysApi";
+import { matchesGroupBuyFilter } from "../services/groupBuyFilters";
 
 const filters = [["all", "전체"], ["open", "모집 중"], ["mine", "내 참여"], ["saved", "찜"]];
 
@@ -15,7 +16,6 @@ function GroupBuysPage({ onNavigate, user }) {
   const [sort, setSort] = useState("recent");
   const [editingItem, setEditingItem] = useState(null);
   const [savedIds, setSavedIds] = useState(() => storedIds("campus-cart-saved"));
-  const [joinedIds] = useState(() => storedIds("campus-cart-joined"));
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [formVersion, setFormVersion] = useState(0);
@@ -39,9 +39,9 @@ function GroupBuysPage({ onNavigate, user }) {
 
   const visibleItems = useMemo(() => items
     .filter((item) => item.name.toLowerCase().includes(query.trim().toLowerCase()))
-    .filter((item) => filter === "all" || (filter === "open" && item.status === "open") || (filter === "mine" && joinedIds.includes(item.id)) || (filter === "saved" && savedIds.includes(item.id)))
+    .filter((item) => matchesGroupBuyFilter(item, filter, savedIds))
     .sort((a, b) => sort === "popular" ? (b.currentPeople / b.targetPeople) - (a.currentPeople / a.targetPeople) : new Date(b.createdAt) - new Date(a.createdAt)),
-  [filter, items, joinedIds, query, savedIds, sort]);
+  [filter, items, query, savedIds, sort]);
 
   async function save(input) {
     if (!user) { onNavigate("/login"); return; }

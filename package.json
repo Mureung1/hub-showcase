@@ -7,7 +7,7 @@
     "dev": "vite",
     "server:demo": "node --env-file=.env server/demo.js",
     "db:check": "node --env-file=.env server/check-supabase.js",
-    "test": "node --test server/config.test.js server/group-buy-repository.test.js",
+    "test": "node --test server/config.test.js server/group-buy-repository.test.js src/services/groupBuyFilters.test.js",
     "test:db": "node --env-file=.env --test server/*.integration.test.js",
     "build": "vite build",
     "lint": "eslint .",
