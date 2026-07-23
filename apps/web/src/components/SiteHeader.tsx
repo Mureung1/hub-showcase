@@ -3,10 +3,10 @@ import { BrandLogo } from "./BrandLogo";
 
 type SiteHeaderProps = {
   onHome: () => void;
-  onOpenAnalyzer: () => void;
+  onOpenWorkspace: () => void;
 };
 
-export function SiteHeader({ onHome, onOpenAnalyzer }: SiteHeaderProps) {
+export function SiteHeader({ onHome, onOpenWorkspace }: SiteHeaderProps) {
   return (
     <header className="site-header ptop-container">
       <a
@@ -31,13 +31,13 @@ export function SiteHeader({ onHome, onOpenAnalyzer }: SiteHeaderProps) {
           서비스 소개
         </a>
         <a
-          href="#analyzer"
+          href="#workspace"
           onClick={(event) => {
             event.preventDefault();
-            onOpenAnalyzer();
+            onOpenWorkspace();
           }}
         >
-          분석 시작
+          작업실
         </a>
       </nav>
       <AuthButton />

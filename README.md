@@ -8,17 +8,16 @@ PtoP는 GitHub Repository를 분석해 대학생 개발자가 프로젝트 경�
 
 ## 서비스 목표
 
-PtoP는 Repository를 입력하면 참여자, 커밋 기준 활동 비중, 주요 커밋 흐름을 확인하고, 사용자가 “내가 어떤 작업을 했는지” 설명할 수 있는 단서를 제공하는 것을 목표로 합니다.
+PtoP는 Repository의 객관적인 작업 근거와 사용자의 짧은 회고를 결합해, 사용자가 “내가 어떤 문제를 해결했고 왜 그렇게 판단했는지” 설명할 수 있는 단서를 제공하는 것을 목표로 합니다.
 
-현재 MVP는 기능을 넓히기보다 다음 흐름을 탄탄하게 만드는 데 집중했습니다.
+현재 MVP는 다음 흐름을 탄탄하게 만드는 데 집중합니다.
 
-- GitHub Repository URL 입력
-- Repository URL 입력과 형식 검증
-- 분석 대기, 성공, 실패 상태를 구분한 화면 흐름
-- commit 수 기준 활동 비중과 주요 작업을 보여주는 mock 결과
-- React와 Nest가 공유할 분석 결과 타입
-
-현재 React 화면은 Nest API 연동 전 흐름을 확인하기 위한 mock 결과를 사용합니다. 실제 GitHub API 호출과 Supabase 저장은 다음 수직 슬라이스에서 연결합니다.
+- GitHub OAuth 로그인
+- Repository URL과 사용자 GitHub ID 기반 분석
+- Repository 근거와 AI 해석을 구분한 기술적 도전 후보
+- 분석 중 Poppy와 진행하는 최소 입력 회고
+- Supabase에 저장한 회고를 분석 결과에 반영
+- 분석 기록을 컴퓨터로 표현하는 2D 작업실
 
 ## 핵심 기능
 
@@ -26,27 +25,24 @@ PtoP는 Repository를 입력하면 참여자, 커밋 기준 활동 비중, 주�
 
 GitHub Repository URL을 입력하면 URL을 검증하고, 이후 Nest API가 Repository 기본 정보, 참여자, commit 수, 최근 commit message를 분석할 수 있도록 요청 형태를 구성합니다.
 
-### 2. 작업 내용 정리 기능
+### 2. 최소 입력 회고와 결과 보완
 
-사용자가 선택한 GitHub 계정의 활동 근거를 바탕으로 자신이 주로 어떤 작업을 했는지 빠르게 복기할 수 있게 합니다. Repository owner를 사용자 본인으로 단정하지 않습니다.
+분석 중 Poppy가 한 번에 하나의 짧은 질문을 제시하고, 저장된 답변을 Repository 근거와 함께 결과에 반영합니다. Repository owner나 팀 전체 작업을 사용자 본인의 경험으로 단정하지 않습니다.
 
 ## 화면 흐름
 
 ```mermaid
 flowchart TD
-    A[메인 입력 화면] --> B[Repository URL 입력]
-    B --> C[분석 시작 클릭]
-    C --> D{URL 형식 확인}
-    D -->|잘못된 형식| E[오류 안내]
-    E --> B
-    D -->|올바른 형식| F[분석 로딩]
-    F --> G[GitHub API 요청]
-    G --> H{응답 확인}
-    H -->|실패| I[오류 안내]
-    I --> B
-    H -->|성공| J[분석 결과 카드]
-    J --> K[참여자와 기여도 확인]
-    J --> L[주요 작업 확인]
+    A[랜딩 페이지] --> B{GitHub 로그인}
+    B -->|성공| C[2D 작업실]
+    C --> D[새 분석 컴퓨터 상호작용]
+    D --> E[Repository 입력 모달]
+    E --> F[Repository 분석 + Poppy 회고]
+    F --> G{분석 완료}
+    G -->|회고 작성 중| F
+    G -->|사용자가 결과 확인| H[통합 분석 결과]
+    H --> I[작업실 복귀]
+    I --> J[Repository 컴퓨터 추가]
 ```
 
 ## 실행 방법
@@ -126,6 +122,8 @@ http://127.0.0.1:4177/prototype/index.html
 - [Agent RULES 학습 노트](./docs/agents/agent-rules-study.md)
 - [PtoP 디자인 시스템](./docs/design/design-system.md)
 - [PtoP 디자인 Skill](./docs/design/ptop-design-skill.md)
+- [게임형 작업실 설계](./docs/design/game-workspace-design.md)
+- [게임 에셋 라이선스 기록](./docs/research/game-asset-license.md)
 - [1주차 작업 체크리스트](./docs/plans/checklist.md)
 - [Git Repository 분석 학습 노트](./docs/research/repo-analysis-study.md)
 - [OpenAI 모델 비교 테스트 계획](./docs/research/openai-model-evaluation-plan.md)
@@ -136,11 +134,14 @@ http://127.0.0.1:4177/prototype/index.html
 - [PR 작성 템플릿](./docs/templates/pr-template.md)
 - [Nest 모노레포 전환 설계](./docs/superpowers/specs/2026-07-15-nest-monorepo-design.md)
 - [Nest 모노레포 구현 계획](./docs/superpowers/plans/2026-07-15-nest-monorepo-implementation.md)
+- [게임형 작업실 기술 스파이크 구현 계획](./docs/superpowers/plans/2026-07-23-game-workspace-spike-implementation.md)
 
 ## 기술 스택
 
 - React
 - Vite
+- Phaser
+- Tiled
 - NestJS
 - npm workspaces
 - TypeScript
@@ -148,14 +149,15 @@ http://127.0.0.1:4177/prototype/index.html
 - CSS
 - Vanilla JavaScript
 - GitHub REST API
-- Supabase 예정
+- Supabase
 
 ## 현재 MVP에서 제외한 것
 
 - 프로젝트 폴더 업로드
-- README 전체 분석
-- 코드 파일 내용 분석
-- PR/Issue 분석
-- AI 기반 회고 문장 자동 생성
+- 멀티플레이와 실시간 위치 동기화
+- 캐릭터 생성과 커스터마이징
+- 사용자가 직접 가구를 배치하는 맵 편집
+- Repository 전체 코드를 무제한으로 AI에 전송하는 분석
+- 자동으로 완성본이라 단정하는 최종 포트폴리오 생성
 - Notion, GitHub Pages 내보내기
 - 여러 프로젝트 비교

@@ -16,6 +16,7 @@ Agent가 항상 읽어야 하는 내용은 AGENTS.md에 최소한으로 남기�
 | 데이터 설계 | `docs/development/supabase-data-model.md` | Repository 분석 결과를 저장할 Supabase 테이블, 관계, 중복 처리 기준 |
 | 구조 설계 | `docs/superpowers/specs/2026-07-15-nest-monorepo-design.md` | React·Nest·공통 계약 패키지와 Supabase 저장 구조 설계 |
 | 구현 계획 | `docs/superpowers/plans/2026-07-15-nest-monorepo-implementation.md` | 모노레포 전환 작업 순서와 검증 기준 |
+| 게임 작업실 구현 계획 | `docs/superpowers/plans/2026-07-23-game-workspace-spike-implementation.md` | React·Phaser 수직 슬라이스의 범위, 파일 책임과 검증 순서 |
 | 전체 개발 일정 | `docs/plans/development-tasks.md` | 2주차 이후 개발 Task와 4주 백로그 |
 | 회고 흐름 설계 | `docs/plans/reflection-flow.md` | 최소 입력, GitHub ID 기준 분석, 포피 대화형 회고와 결과 병합 방향 |
 | 주간 계획 | `docs/plans/week2-plan.md` | 2주차 요일별 계획과 GitHub Issue 등록 목록 |
@@ -24,7 +25,9 @@ Agent가 항상 읽어야 하는 내용은 AGENTS.md에 최소한으로 남기�
 | Agent 학습 | `docs/agents/agent-rules-study.md` | AGENTS.md 간소화와 Skill 문서화 기준 학습 기록 |
 | 디자인용 | `docs/design/design-system.md` | 색상, 레이아웃, 상태 화면, 마스코트 사용 기준 |
 | 디자인 Skill | `docs/design/ptop-design-skill.md` | 화면 제작 시 반복 적용할 디자인 판단 기준 |
+| 게임형 작업실 설계 | `docs/design/game-workspace-design.md` | 게임형 UI 사용자 흐름, 와이어프레임, React·Phaser 경계와 기술 스파이크 범위 |
 | 학습용 | `docs/research/repo-analysis-study.md` | Git Repository 분석 방법 학습 기록 |
+| 에셋 라이선스 | `docs/research/game-asset-license.md` | 게임 runtime 에셋의 출처, 라이선스, 수정과 공개 범위 |
 | AI 분석 전략 | `docs/research/issue14-ai-analysis-strategy.md` | 기술적 도전 후보의 입력 컨텍스트, prompt, RAG 도입 기준 |
 | AI 모델 평가 | `docs/research/openai-model-evaluation-plan.md` | OpenAI 모델별 품질, 비용, 일관성 비교 테스트 계획 |
 | AI 모델 평가 결과 | `docs/research/model-evaluation-results.md` | 모델별 실제 실행 결과와 임시 선택 기준 |
@@ -39,6 +42,8 @@ Agent가 항상 읽어야 하는 내용은 AGENTS.md에 최소한으로 남기�
 - AGENTS.md에는 장기 기록, 회고, 상세 설계 내용을 길게 넣지 않는다.
 - Agent 관련 반복 절차와 학습 기록은 `docs/agents/` 아래에 둔다.
 - 디자인 관련 판단은 `design-system.md`와 `ptop-design-skill.md`에서 관리한다.
+- 게임형 화면의 흐름과 코드 경계는 `game-workspace-design.md`에서 관리한다.
+- 외부 에셋을 추가하거나 변경하면 `game-asset-license.md`를 함께 갱신한다.
 - 개발 구조와 컨벤션은 `development-guide.md`에서 관리한다.
 - 프로젝트 방향성, 선택 이유, 회고성 기록은 `agent-record.md`에 남긴다.
 - 새 문서를 추가하면 README와 이 문서의 목록을 함께 갱신한다.

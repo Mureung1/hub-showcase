@@ -1,4 +1,8 @@
-export function LandingHero() {
+type LandingHeroProps = {
+  onEnterWorkspace: () => void;
+};
+
+export function LandingHero({ onEnterWorkspace }: LandingHeroProps) {
   return (
     <section className="landing-hero" id="service" aria-labelledby="landing-title">
       <div className="landing-copy">
@@ -9,7 +13,9 @@ export function LandingHero() {
           포트폴리오와 회고로 이어질 단서를 정리해주는 서비스입니다.
         </p>
         <div className="landing-actions">
-          <a className="primary-button" href="#analyzer">Repository 분석 시작</a>
+          <button className="primary-button" type="button" onClick={onEnterWorkspace}>
+            내 작업실 입장
+          </button>
           <a className="quiet-link" href="#workflow">어떻게 정리하나요?</a>
         </div>
       </div>
