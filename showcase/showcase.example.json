@@ -2,6 +2,13 @@
   "schemaVersion": 1,
   "title": "동네 가게 운영 도우미",
   "summary": "소상공인이 매장 운영 정보를 한곳에서 확인하고 정리하는 서비스입니다.",
+  "githubUser": "crong(윤지수)",
+  "demoUrl": "https://example.com/store-helper",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/dashboard.webp",
+    "screenshots/inventory.webp"
+  ],
   "problem": "매출, 재고, 공지 정보를 여러 도구에서 따로 확인해야 해서 매장 운영 현황을 한눈에 파악하기 어렵습니다.",
   "targetUsers": [
     "매장을 운영하는 소상공인",
@@ -28,14 +35,7 @@
     "Express API와 SQLite를 연결해 매장별 운영 데이터를 조회합니다.",
     "Agent 1개와 Skill 5개를 Workflow로 연결해 질문 분석부터 결과 요약까지 처리합니다."
   ],
-  "githubUser": "crong(윤지수)",
   "developmentWithAI": "저는 문제와 핵심 기능을 정했습니다. AI는 요구사항을 작업으로 나누고 코드 초안을 만들었습니다. 저는 결과를 실행하고 테스트하면서 수정했습니다.",
-  "demoUrl": "https://example.com/store-helper",
-  "thumbnail": "thumbnail.webp",
-  "screenshots": [
-    "screenshots/dashboard.webp",
-    "screenshots/inventory.webp"
-  ],
   "agent": {
     "summary": "기획부터 구현, 테스트, PR 작성까지 Agent와 Skill을 함께 사용했습니다.",
     "agentTools": [
