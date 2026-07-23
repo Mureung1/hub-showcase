@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { createGroupPurchase } from '../api/groupPurchase';
+import { calculatePerPersonPrice } from '../utils/calculatePerPersonPrice';
+import KakaoMap from '../components/KakaoMap';
 import './CreatePostScreen.css';
 
 export default function CreatePostScreen({ onNavigate }) {
@@ -12,17 +14,15 @@ export default function CreatePostScreen({ onNavigate }) {
   const [totalPrice, setTotalPrice] = useState('');
   const [perPersonPrice, setPerPersonPrice] = useState(0);
   const [pickupPlace, setPickupPlace] = useState('센트럴파크 아파트, 메인 로비 (A동)');
+  const [pickupLocation, setPickupLocation] = useState({ latitude: 37.5665, longitude: 126.978 });
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [pickupTime, setPickupTime] = useState('');
   const [description, setDescription] = useState('');
 
   // Automatically calculate per-person price
   useEffect(() => {
     const total = parseFloat(totalPrice) || 0;
-    if (targetCount > 0) {
-      setPerPersonPrice(Math.round(total / targetCount));
-    } else {
-      setPerPersonPrice(0);
-    }
+    setPerPersonPrice(calculatePerPersonPrice(total, targetCount));
   }, [totalPrice, targetCount]);
 
   const handleDecrement = () => {
@@ -86,9 +86,10 @@ export default function CreatePostScreen({ onNavigate }) {
       productUrl: url.trim() || 'http://example.com/product',
       totalPrice: Number(totalPrice),
       targetParticipants: Number(targetCount),
-      pickupLatitude: 37.5665,
-      pickupLongitude: 126.978,
-      pickupTimeSlot: `${pickupPlace} (${pickupTime})`,
+      pickupLatitude: pickupLocation.latitude,
+      pickupLongitude: pickupLocation.longitude,
+      pickupPlace,
+      pickupTimeSlot: pickupTime,
       category: categoryEnum,
       deadlineAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3), // default 3 days
     };
@@ -109,11 +110,11 @@ export default function CreatePostScreen({ onNavigate }) {
     }
   };
 
-  const selectPlace = () => {
-    const place = prompt('픽업 위치를 지정해주세요:', pickupPlace);
-    if (place && place.trim() !== '') {
-      setPickupPlace(place);
-    }
+  const selectPlace = () => setIsMapModalOpen(true);
+
+  const handleLocationChange = ({ latitude, longitude, address }) => {
+    setPickupLocation({ latitude, longitude });
+    if (address) setPickupPlace(address);
   };
 
   return (
@@ -277,6 +278,26 @@ export default function CreatePostScreen({ onNavigate }) {
           </form>
         </div>
       </main>
+
+      {isMapModalOpen && (
+        <div className="td-createpost-page__map-modal-backdrop" role="dialog" aria-modal="true" aria-label="픽업 위치 설정">
+          <section className="td-createpost-page__map-modal">
+            <h2 className="td-headline-md">지도에서 픽업 위치 선택</h2>
+            <p className="td-body-md">지도를 클릭하거나 핀을 드래그하면 좌표와 주소가 저장됩니다.</p>
+            <KakaoMap
+              latitude={pickupLocation.latitude}
+              longitude={pickupLocation.longitude}
+              onLocationChange={handleLocationChange}
+              height={360}
+            />
+            <p className="td-body-md">선택 위치: {pickupPlace}</p>
+            <div className="td-createpost-page__actions">
+              <button type="button" className="td-createpost-page__cancel-btn" onClick={() => setIsMapModalOpen(false)}>닫기</button>
+              <button type="button" className="td-createpost-page__submit-btn" onClick={() => setIsMapModalOpen(false)}>이 위치로 저장</button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="td-createpost-page__footer">
