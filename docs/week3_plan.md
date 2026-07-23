@@ -168,7 +168,7 @@ isProject: false
 > [`docs/week3/full-coverage-plan.md`](week3/full-coverage-plan.md)에 정리하고
 > [이슈 #40](https://github.com/syd348/hub/issues/40)으로 등록함 (아직 미구현).
 
-## 후속 이슈 (#43·#44) — 3~4주차 범위, 마일스톤 없이 등록 (2026-07-23)
+## 후속 이슈 (#43·#44) — 3~4주차 범위 작업, `Week 3 Crawler Pipeline` 마일스톤에 등록 (2026-07-23)
 
 리스크 표 검토 중 완료 기준이 있는 미착수 작업 2건을 이슈로 등록했다. 아직 시작 전.
 
@@ -212,3 +212,4 @@ Week 2와 동일하게 `issue-workflow` 스킬 흐름을 따른다: 계획 문�
 - **라벨**: `week-3`(기존 라벨 설명 오류 수정), `area:crawler`(신규 추가)
 - **이슈**: [#28](https://github.com/syd348/hub/issues/28) [#29](https://github.com/syd348/hub/issues/29) [#30](https://github.com/syd348/hub/issues/30) [#31](https://github.com/syd348/hub/issues/31) [#32](https://github.com/syd348/hub/issues/32) 생성 완료 (2026-07-22)
   — 순번은 GitHub 실제 이슈 번호(#28~#32)를 그대로 사용 (PR이 번호를 함께 소비해 #13~#17과 어긋나므로 실제 번호로 통일)
+  + 후속 발견 이슈 [#40](https://github.com/syd348/hub/issues/40) [#43](https://github.com/syd348/hub/issues/43) [#44](https://github.com/syd348/hub/issues/44)도 같은 마일스톤에 편입 (2026-07-23)
