@@ -43,10 +43,12 @@ export function buildRecommendationPrompt({ request, ingredientContext, policyFe
     `서로 다른 이름과 dishType을 가진 레시피를 정확히 ${request.batchSize}개 생성하세요.`,
     "동일한 재료와 주재료가 여러 레시피에 반복되는 것은 허용합니다.",
     `각 레시피의 부족한 필수 재료는 최대 ${request.maxMissingIngredients}개입니다.`,
+    "description에는 음식의 맛과 특징, 이 메뉴가 어울리는 상황을 2~3문장으로 자연스럽게 설명하세요.",
     "보유 재료와 assumedPantryIngredients에 없는 필수 재료만 부족 재료로 계산하세요.",
     "priorityScore가 높은 재료를 우선 고려하되 모든 레시피에 강제로 포함하지 마세요.",
     getModeInstruction(request.mode),
     "영양 정보는 허용된 nutritionTags와 정성적인 nutritionSummary만 작성하고 열량이나 영양소 수치를 추정하지 마세요.",
+    "substitutions에는 맛과 조리법을 크게 해치지 않는 재료 대체만 안내하고, 대체가 적절하지 않으면 빈 배열을 반환하세요. 알레르기·식품 안전과 관련된 대체를 단정하지 마세요.",
     "모든 재료 사용량은 1인분 기준의 양수와 명확한 단위로 작성하세요.",
     "육류·해산물·계란은 충분히 익히는 등 레시피에 필요한 안전 안내만 safetyNotes에 작성하세요.",
     request.allergens.length || request.excludedIngredients.length || request.dietaryPreferences.length

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { createRecommendationService } from "../server/services/recommendationService.js";
 
@@ -34,6 +34,7 @@ const ingredientRows = [{
 function generatedRecipe(index) {
   return {
     name: `삼겹살 메뉴 ${index}`,
+    description: "삼겹살을 간단하게 조리해 즐기는 든든한 한 끼예요.",
     servings: 1,
     requiredIngredients: [{ name: "삼겹살", amount: 200, unit: "g" }],
     optionalIngredients: [],
@@ -45,6 +46,7 @@ function generatedRecipe(index) {
     recommendationReasons: ["보유 재료 활용"],
     nutritionTags: ["nutrition:protein"],
     nutritionSummary: "단백질 중심 메뉴",
+    substitutions: [],
     steps: ["재료를 손질해요.", "충분히 익혀요."],
     safetyNotes: ["고기를 충분히 익혀요."],
   };
@@ -129,5 +131,32 @@ test("추천 가능한 재료가 없으면 Gemini를 호출하지 않고 422 오
   await assert.rejects(
     () => service.recommend(request),
     (error) => error.code === "NO_AVAILABLE_INGREDIENTS" && error.status === 422,
+  );
+});
+
+test("Supabase 재료 조회 실패를 503 서비스 오류로 변환한다", async () => {
+  const service = createRecommendationService({
+    supabaseClient: {
+      from(table) {
+        assert.equal(table, "ingredients");
+        return {
+          select() {
+            return Promise.resolve({
+              data: null,
+              error: new Error("mock database failure"),
+            });
+          },
+        };
+      },
+    },
+    geminiClient: { generate() { throw new Error("호출되면 안 됩니다"); } },
+    cacheStore: { get: async () => null },
+  });
+
+  await assert.rejects(
+    () => service.recommend(request),
+    (error) => error.code === "INGREDIENTS_UNAVAILABLE"
+      && error.status === 503
+      && error.cause instanceof Error,
   );
 });

@@ -1,4 +1,6 @@
-const RECOMMENDATIONS_API_URL = "/api/recommendations";
+import { createApiUrl } from "../config/api";
+
+const RECOMMENDATIONS_API_URL = createApiUrl("/api/recommendations");
 
 export class RecommendationRequestError extends Error {
   constructor(message, { code = "RECOMMENDATION_REQUEST_FAILED", status = 500 } = {}) {

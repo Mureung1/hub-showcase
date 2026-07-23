@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { afterEach, test } from "vitest";
 import { fetchRecommendations, RecommendationRequestError } from "../src/services/recommendations.js";
 
-test("fetchRecommendations sends the fixed API contract", async (context) => {
-  const originalFetch = globalThis.fetch;
-  context.after(() => { globalThis.fetch = originalFetch; });
+const originalFetch = globalThis.fetch;
+
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+});
+
+test("fetchRecommendations sends the fixed API contract", async () => {
 
   globalThis.fetch = async (url, options) => {
     assert.equal(url, "/api/recommendations");
@@ -30,9 +34,7 @@ test("fetchRecommendations sends the fixed API contract", async (context) => {
   assert.equal(result.meta.source, "cache");
 });
 
-test("fetchRecommendations exposes server errors to the UI", async (context) => {
-  const originalFetch = globalThis.fetch;
-  context.after(() => { globalThis.fetch = originalFetch; });
+test("fetchRecommendations exposes server errors to the UI", async () => {
 
   globalThis.fetch = async () => new Response(JSON.stringify({
     error: { code: "GEMINI_RATE_LIMITED", message: "무료 사용 한도를 초과했습니다." },
