@@ -9,3 +9,13 @@ export function updateMe(birthDate) {
     body: JSON.stringify({ birthDate }),
   })
 }
+
+// GET /api/users/me/hosted-meetings — 내가 등록한 모임(G1). { items } 반환.
+export function fetchHostedMeetings() {
+  return request('/api/users/me/hosted-meetings')
+}
+
+// GET /api/users/me/joined-meetings — 내가 참여한 모임(G2). { items } 반환.
+export function fetchJoinedMeetings() {
+  return request('/api/users/me/joined-meetings')
+}
