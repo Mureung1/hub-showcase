@@ -1,143 +1,77 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp } from "@/lib/client/store";
-import type { Situation, NewsPassage } from "@/lib/domain/types";
+import { fetchMe } from "@/lib/client/api";
+import Login from "./screens/Login";
 import Onboarding from "./screens/Onboarding";
 import Home from "./screens/Home";
-import Picker from "./screens/Picker";
-import Train from "./screens/Train";
-import Trajectory from "./screens/Trajectory";
-import NewSituation from "./screens/NewSituation";
+import TrainingModes from "./screens/TrainingModes";
+import Chat from "./screens/Chat";
+import Mail from "./screens/Mail";
+import News from "./screens/News";
+import History from "./screens/History";
+import Stats from "./screens/Stats";
 import Settings from "./screens/Settings";
-import ContextReading from "./screens/ContextReading";
 
-export type Screen = "home" | "picker" | "train" | "trajectory" | "newsit" | "context" | "settings";
-
-const NAV: { key: Screen; label: string; dot: string }[] = [
-  { key: "home", label: "홈", dot: "🏠" },
-  { key: "picker", label: "훈련", dot: "✍️" },
-  { key: "trajectory", label: "궤적", dot: "📈" },
-  { key: "settings", label: "설정", dot: "⚙️" },
-];
+export type ScreenKey = "home" | "history" | "stats" | "mail" | "news" | "chat" | "training" | "settings";
 
 export default function AppShell() {
   const app = useApp();
-  const [screen, setScreen] = useState<Screen>("home");
-  const [activeSit, setActiveSit] = useState<Situation | null>(null);
-  const [activePassage, setActivePassage] = useState<NewsPassage | null>(null);
-  const [reprofile, setReprofile] = useState(false);
+  const [screen, setScreen] = useState<ScreenKey>("home");
+  const [auth, setAuth] = useState({ checked: false, authed: false, available: false, guest: false });
 
-  if (!app.ready) {
+  useEffect(() => {
+    let alive = true;
+    fetchMe().then((m) => {
+      if (alive) setAuth((a) => ({ ...a, checked: true, authed: !!m.user, available: m.authAvailable }));
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (!app.ready || !auth.checked) {
     return (
-      <div className="flex min-h-screen items-center justify-center" style={{ color: "var(--sub)" }}>
-        불러오는 중…
-      </div>
+      <div className="flex min-h-screen items-center justify-center text-on-surface-variant">불러오는 중…</div>
     );
   }
-  if (!app.profile || reprofile) {
+
+  if (auth.available && !auth.authed && !auth.guest) {
     return (
-      <Onboarding
-        onDone={() => {
-          setReprofile(false);
-          setScreen("home");
+      <Login
+        onAuthed={async () => {
+          setAuth((a) => ({ ...a, authed: true }));
+          await app.reload();
         }}
+        onGuest={() => setAuth((a) => ({ ...a, guest: true }))}
       />
     );
   }
 
-  const startSit = (s: Situation) => {
-    setActiveSit(s);
-    setScreen("train");
-  };
+  if (!app.profile) {
+    return <Onboarding onDone={() => setScreen("training")} />;
+  }
 
-  const navActive = (key: Screen) =>
-    screen === key || (key === "picker" && (screen === "train" || screen === "newsit" || screen === "context"));
+  const nav = (k: ScreenKey) => setScreen(k);
 
-  return (
-    <div className="min-h-screen md:flex" style={{ background: "var(--bg)" }}>
-      {/* 데스크톱 사이드바 */}
-      <aside
-        className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col md:flex"
-        style={{ background: "var(--side)" }}
-      >
-        <div className="px-5 pb-6 pt-7">
-          <div className="text-xl font-extrabold text-white">언코</div>
-          <div className="mt-1 text-[11px] leading-relaxed" style={{ color: "var(--side-dim)" }}>
-            화용 능력 코칭 에이전트
-          </div>
-        </div>
-        <nav className="flex flex-col gap-1 px-3">
-          {NAV.map((n) => {
-            const on = navActive(n.key);
-            return (
-              <button
-                key={n.key}
-                onClick={() => setScreen(n.key)}
-                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[13.5px] font-semibold transition"
-                style={{ background: on ? "rgba(255,255,255,0.1)" : "transparent", color: on ? "#fff" : "var(--side-dim)" }}
-              >
-                <span className="text-base">{n.dot}</span>
-                {n.label}
-              </button>
-            );
-          })}
-        </nav>
-        <div className="mt-auto px-5 pb-6 text-[11px] leading-relaxed" style={{ color: "var(--side-dim)" }}>
-          {app.profile.role}
-          {app.profile.age ? ` · ${app.profile.age}` : ""}
-        </div>
-      </aside>
-
-      {/* 메인 */}
-      <div className="flex-1 pb-20 md:pb-0">
-        <div className="mx-auto w-full max-w-3xl px-4 pb-12 pt-6 sm:px-6">
-          {screen === "home" && <Home onPick={() => setScreen("picker")} startSit={startSit} />}
-          {screen === "picker" && (
-            <Picker
-              onPick={startSit}
-              onNewSit={() => setScreen("newsit")}
-              onNewsPassage={(p) => {
-                setActivePassage(p);
-                setScreen("context");
-              }}
-            />
-          )}
-          {screen === "train" && activeSit && (
-            <Train situation={activeSit} onExit={() => setScreen("picker")} onFinish={() => setScreen("home")} />
-          )}
-          {screen === "newsit" && <NewSituation onStart={startSit} onCancel={() => setScreen("picker")} />}
-          {screen === "context" && activePassage && (
-            <ContextReading passage={activePassage} onExit={() => setScreen("picker")} />
-          )}
-          {screen === "trajectory" && <Trajectory />}
-          {screen === "settings" && <Settings onReprofile={() => setReprofile(true)} />}
-        </div>
-      </div>
-
-      {/* 모바일 하단 탭바 */}
-      <nav
-        className="fixed inset-x-0 bottom-0 z-50 flex md:hidden"
-        style={{
-          background: "var(--side)",
-          boxShadow: "0 -2px 14px rgba(0,0,0,0.28)",
-          paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        }}
-      >
-        {NAV.map((n) => {
-          const on = navActive(n.key);
-          return (
-            <button
-              key={n.key}
-              onClick={() => setScreen(n.key)}
-              className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-semibold"
-              style={{ color: on ? "#fff" : "var(--side-dim)" }}
-            >
-              <span className="text-base">{n.dot}</span>
-              {n.label}
-            </button>
-          );
-        })}
-      </nav>
-    </div>
-  );
+  switch (screen) {
+    case "home":
+      return <Home nav={nav} />;
+    case "history":
+      return <History nav={nav} />;
+    case "stats":
+      return <Stats nav={nav} />;
+    case "training":
+      return <TrainingModes nav={nav} />;
+    case "chat":
+      return <Chat onExit={() => setScreen("home")} nav={nav} />;
+    case "mail":
+      return <Mail onExit={() => setScreen("home")} nav={nav} />;
+    case "news":
+      return <News onExit={() => setScreen("home")} nav={nav} />;
+    case "settings":
+      return <Settings nav={nav} />;
+    default:
+      return <Home nav={nav} />;
+  }
 }
