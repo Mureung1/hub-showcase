@@ -530,8 +530,8 @@ npx tsc --noEmit -p tsconfig.node.json
 - [x] Paid Tier, Free Tier 또는 비교 보류 중 사용자 결정을 받는다.
 - [x] 승인받은 projection과 실행 범위를 강제하는 Gemini adapter를 구현한다.
 - [x] API key와 명시적 CLI 확인값이 없으면 네트워크 전에 중단한다.
-- [ ] `GEMINI_API_KEY`를 준비하고 승인받은 합성 범위만 실행한다.
-- [ ] Gemini 수치·query별 오류·실제 token 영수증을 보고한다.
+- [x] `GEMINI_API_KEY`를 준비하고 승인받은 합성 범위만 실행한다.
+- [x] Gemini 수치·query별 오류·실제 token 영수증을 보고한다.
 
 승인 요청서는
 `scripts/retrieve_experiment/gemini_approval_request.md`에 보존한다.
@@ -643,5 +643,6 @@ catch-all로 오류를 삼키고 다음 입력으로 넘어가지 않는다.
 | 2026-07-23 | 공개 벤치마크 유료 실행, 120개 합성 평가, 부트스트랩을 필수 범위에서 제거 |
 | 2026-07-23 | 모든 유료 외부 API와 민감 데이터 작업은 사용자 명시 승인 후 실행          |
 | 2026-07-23 | 합성 탐색 뒤 로컬 E5 하이브리드를 개인 데이터 파일럿 후보로 유지          |
+| 2026-07-23 | Gemini Free Tier로 승인된 합성 문서 72개·query 45개 실행 완료             |
 
-**현재 상태:** Task 0부터 Task 3까지 완료했다. 하이브리드는 semantic check에서 현행 대비 3승·2무·0패였고 critical miss가 없었지만, 현행 어휘 검색의 negative 오탐을 그대로 유지했다. 이 결과는 개인 데이터 파일럿 후보 판정일 뿐 운영 도입 근거가 아니다. 사용자는 Task 4의 Free Tier 합성 실행과 입력의 Google 제품 개선 사용 가능성에 동의했다. 승인 범위를 강제하는 Gemini adapter와 runner를 TDD로 구현했으며 현재 `GEMINI_API_KEY` 준비를 기다린다. 외부 호출과 개인 데이터 사용은 아직 발생하지 않았다.
+**현재 상태:** Task 0부터 Task 4까지 완료했다. 승인된 합성 문서 72개와 query 45개만 Gemini Free Tier로 실행했으며 117회 요청에서 실제 prompt token은 4,365개, 비용은 0달러였다. Semantic check에서 Gemini 의미 검색 단독은 Recall@5 1.000000, nDCG@6 0.942903으로 현행과 로컬 E5 하이브리드보다 높았지만, Gemini RRF 하이브리드는 nDCG@6 0.763331(`k=60`), 0.770573(`k=10`)으로 의미 검색 단독보다 낮았다. Negative check의 query당 평균 반환 수는 Gemini 의미 검색 0.6, 하이브리드 0.8로 현행과 로컬 E5 하이브리드의 0.2보다 많았다. 따라서 관리형 의미 모델은 후속 검토 가치가 있지만 단순 RRF 추가는 지지되지 않는다. 합성 결과는 운영 도입 근거가 아니며 개인 데이터 사용은 아직 발생하지 않았다.

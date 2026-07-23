@@ -1,13 +1,13 @@
 # Gemini 합성 탐색 비교 승인 요청
 
-**상태:** Free Tier 실행 승인, API key 대기
+**상태:** Free Tier 합성 실행 완료
 
 **작성일:** 2026-07-23
 
-이 문서는 Task 4의 승인 범위와 예상 비용을 고정한다. 사용자는 2026-07-23
-Free Tier 실행과 입력의 Google 제품 개선 사용 가능성에 동의했다. Adapter와
-runner는 이 범위 안에서만 구현하며 API key가 준비되기 전에는 외부 API를
-호출하지 않는다.
+이 문서는 Task 4의 승인 범위와 예상 비용, 실제 실행 결과를 고정한다. 사용자는
+2026-07-23 Free Tier 실행과 입력의 Google 제품 개선 사용 가능성에 동의했다.
+Adapter와 runner는 이 범위 안에서만 구현·실행했으며, 같은 승인을 개인 데이터나
+더 큰 범위에 재사용하지 않는다.
 
 ## 비교 가치
 
@@ -152,6 +152,41 @@ Tier 실행을 기본 제안으로 삼는다.
   `codex-user-message-2026-07-23-free-tier-product-improvement-consent`
 
 개인 데이터나 더 큰 실행 범위에는 이 승인을 재사용하지 않는다.
+
+## 실행 기록
+
+2026-07-23 15:28 KST에 승인된 고정 projection을 Free Tier로 실행했다.
+
+| 항목 | 실제 값 |
+| --- | ---: |
+| 문서 | 72개 |
+| query | 45개 |
+| API 요청 | 117회 |
+| prompt token | 4,365 |
+| 비용 | $0 |
+| semantic threshold | 0.588108 |
+
+실제 token은 승인 시 보수적으로 잡은 2,100~8,600 token 범위 안이었다. 실행
+영수증의 projection SHA-256은 승인값과 일치하며 API key와 환경 변수 이름은
+결과 파일에 기록되지 않았다.
+
+Semantic check에서 Gemini 의미 검색 단독의 Recall@5는 1.000000,
+nDCG@6은 0.942903이었다. 현행 어휘 검색의 0.600000, 0.334704와 로컬 E5
+하이브리드의 0.800000, 0.555389보다 높았다. 반면 Gemini RRF 하이브리드는
+`k=60`에서 nDCG@6 0.763331, `k=10`에서 0.770573으로 의미 검색 단독보다
+낮았다.
+
+Negative check의 query당 평균 반환 수는 현행 0.2, 로컬 E5 하이브리드 0.2,
+Gemini 의미 검색 0.6, Gemini 하이브리드 0.8이었다. Gemini 후보에는 critical
+miss가 없었고 `k=60`과 `k=10` 사이에서 결론 방향은 바뀌지 않았다.
+
+따라서 이 합성 데이터에서는 관리형 의미 모델의 비교 가치가 확인됐지만, RRF를
+추가하는 것 자체가 개선이라는 근거는 얻지 못했다. 부정 질의 오탐과 실제 개인
+보관함 성능은 별도 파일럿 전까지 미확인 상태다.
+
+세부 수치와 query별 결과는 `results/gemini_exploration_report.md`, 기계 판독
+결과는 `results/gemini_exploration_result.json`, 실제 실행 범위와 token은
+`results/gemini_execution_receipt.json`에 보존한다.
 
 ## 공식 근거
 

@@ -139,8 +139,22 @@ Task 3 결과만으로 Gemini 비교는 필수가 아니지만, 로컬 모델과
 
 승인된 projection과 범위를 강제하는 Gemini adapter·runner를 구현했으며,
 명시적 CLI 확인값과 `GEMINI_API_KEY`가 모두 없으면 네트워크 전에 중단한다.
-현재 API key가 준비되지 않아 실제 외부 호출과 Gemini 결과 생성은 대기
-상태다.
+승인된 합성 문서 72개와 query 45개를 Free Tier로 실행했다. 총 117회 요청에서
+실제 prompt token은 4,365개, 비용은 0달러였으며 projection hash는 승인값과
+일치했다.
+
+Semantic check에서 Gemini 의미 검색 단독은 Recall@5 1.000000, nDCG@6
+0.942903으로 현행 어휘 검색의 0.600000, 0.334704와 로컬 E5 하이브리드의
+0.800000, 0.555389보다 높았다. Gemini 하이브리드는 `k=60`에서 nDCG@6
+0.763331, `k=10`에서 0.770573으로 의미 검색 단독보다 낮았다. Negative
+check의 query당 평균 반환 수도 Gemini 의미 검색 0.6, 하이브리드 0.8로 현행과
+로컬 E5 하이브리드의 0.2보다 많았다.
+
+이 결과는 관리형 의미 모델의 비교 가치는 보여 주지만 단순 RRF 추가를 지지하지
+않는다. 합성 평가만으로 운영 도입을 승인하지 않으며 개인 데이터 파일럿은 별도
+승인을 받아야 한다. 세부 결과는 `results/gemini_exploration_report.md`, 기계
+판독 결과는 `results/gemini_exploration_result.json`, 실제 요청 수·token·비용은
+`results/gemini_execution_receipt.json`에 있다.
 
 ## 지표와 랭킹 계약
 
