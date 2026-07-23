@@ -23,9 +23,7 @@
   "featureTags": [
     "동네 공동구매",
     "상태 관리",
-    "픽업 지도",
-    "이메일 알림",
-    "자동 마감"
+    "픽업 지도"
   ],
   "techStack": [
     "React",
@@ -41,8 +39,7 @@
   "techHighlights": [
     "React Query로 내 공동구매 활동을 조회하고 상태 필터 결과를 화면에 즉시 반영합니다.",
     "Express와 Sequelize를 Docker MySQL에 연결해 공동구매·참여·알림 데이터를 저장합니다.",
-    "node-cron이 마감 시간이 지난 모집 중 공동구매를 FAILED 상태로 자동 변경합니다.",
-    "Vitest 단위 테스트와 Jest·Supertest 통합 테스트로 금액 계산, 상태 전환, 알림, 마감 처리를 검증합니다."
+    "node-cron과 Jest·Supertest 통합 테스트로 마감 자동 처리와 상태 전환을 검증합니다."
   ],
   "developmentWithAI": "저는 공동구매의 사용자 흐름과 우선순위를 정했습니다. AI와 함께 기능을 작은 단위로 나누고, TDD 시나리오와 테스트를 먼저 검토한 뒤 구현·실행 결과를 확인하며 수정했습니다.",
   "agent": {
