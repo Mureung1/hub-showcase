@@ -178,6 +178,34 @@ function ExerciseReplacementRow({ routineDayId, painBodyPart, result }) {
         </p>
       )}
 
+      {selectedCandidate?.imagePath && (
+        <div className="mb-3 overflow-hidden rounded-xl border border-border bg-panel">
+          <img
+            src={selectedCandidate.imagePath}
+            alt={`${selectedCandidate.name} 수행 동작`}
+            className="max-h-[280px] w-full object-contain bg-bg"
+          />
+          <div className="px-3 py-2 text-[11px] text-text-secondary">
+            출처: wger.de
+            {selectedCandidate.imageLicenseAuthor &&
+              ` · ${selectedCandidate.imageLicenseAuthor}`}
+            {selectedCandidate.imageSourceUrl && (
+              <>
+                {' · '}
+                <a
+                  href={selectedCandidate.imageSourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-accent hover:text-link-hover"
+                >
+                  원본 보기
+                </a>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {confirmedName ? (
         <span className="text-[13px] font-semibold text-success">
           ✓ {withInstrumentalParticle(confirmedName)} 반영 완료
