@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "operationDate": "20250801",
+  "generatedAt": "2026-07-22T18:32:52.717Z",
+  "campuses": {
+    "jbnu-jeonju": {
+      "campusName": "전북대학교 전주캠퍼스",
+      "region": {
+        "ctpvCd": "52",
+        "sggCd": "52113",
+        "label": "전북특별자치도 전주시 덕진구"
+      },
+      "publicStopCount": 339,
+      "geocodedStopCount": 0,
+      "sampleKeys": [
+        "opr_ymd",
+        "sttn_id",
+        "sttn_nm",
+        "sttn_ars_no",
+        "ctpv_cd",
+        "sgg_cd",
+        "emd_cd",
+        "ctpv_nm",
+        "sgg_nm",
+        "emd_nm"
+      ],
+      "stops": {
+        "osm-node-4247734744": {
+          "appName": "전북은행본점",
+          "appLat": 35.8401601,
+          "appLon": 127.1315336,
+          "candidates": []
+        },
+        "osm-node-4247734748": {
+          "appName": "전북대학교.소나무한의원앞",
+          "appLat": 35.8414663,
+          "appLon": 127.1272116,
+          "candidates": []
+        },
+        "osm-node-4247734753": {
+          "appName": "전북대학교.덕진성당앞",
+          "appLat": 35.8429285,
+          "appLon": 127.1252173,
+          "candidates": []
+        }
+      }
+    }
+  }
+}

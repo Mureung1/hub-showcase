@@ -6,11 +6,11 @@
 검색어: 충북대학교, 청주시
 
 표시 정류장:
-- 충북대정문 | OSM node 6403450088 | 36.6322957, 127.4528169 | https://www.openstreetmap.org/node/6403450088
-- 충북대학교후문 | OSM node 12324240641 | 36.6300382, 127.4617554 | https://www.openstreetmap.org/node/12324240641
+- 충북대학교 | OSM node 6403450088 | 36.627685, 127.4572942 | https://www.openstreetmap.org/node/6403450088
 - 충북대학교중문 | OSM node 12324240640 | 36.6336022, 127.4605061 | https://www.openstreetmap.org/node/12324240640
+- 충북대학교후문 | OSM node 12324240641 | 36.6300382, 127.4617554 | https://www.openstreetmap.org/node/12324240641
 
 데이터: OpenStreetMap contributors
 라이선스: Open Database License (ODbL) 1.0
 저작권 안내: https://www.openstreetmap.org/copyright
-자산 생성일: 2026-07-15
+자산 생성일: 2026-07-22

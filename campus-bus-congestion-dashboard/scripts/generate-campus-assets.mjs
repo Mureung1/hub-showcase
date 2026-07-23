@@ -14,7 +14,7 @@ function escapeXml(value) {
 }
 
 function viewportFor(campus) {
-  const [south, north, west, east] = campus.boundary.bounds;
+  const [south, north, west, east] = campus.mapViewport?.bounds ?? campus.boundary.bounds;
   return { south, north, west, east };
 }
 

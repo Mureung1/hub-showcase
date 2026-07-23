@@ -17,14 +17,31 @@ interface LabelOffset {
   y: number;
 }
 
-function mapPosition(stop: Stop, campus: Campus): { cx: number; cy: number } {
-  if (stop.cx !== undefined && stop.cy !== undefined) return { cx: stop.cx, cy: stop.cy };
-  if (stop.lat === undefined || stop.lon === undefined || !campus.boundary) return { cx: stop.cx ?? 200, cy: stop.cy ?? 150 };
-  const [south, north, west, east] = campus.boundary.bounds;
+function viewportFor(campus: Campus): [number, number, number, number] | undefined {
+  return campus.mapViewport?.bounds ?? campus.boundary?.bounds;
+}
+
+function clampMapPoint({ cx, cy }: { cx: number; cy: number }): { cx: number; cy: number } {
   return {
-    cx: 24 + ((stop.lon - west) / (east - west || 1)) * 352,
-    cy: 24 + ((north - stop.lat) / (north - south || 1)) * 252,
+    cx: Math.min(376, Math.max(24, cx)),
+    cy: Math.min(264, Math.max(24, cy)),
   };
+}
+
+function projectPoint(lon: number, lat: number, campus: Campus): { cx: number; cy: number } {
+  const bounds = viewportFor(campus);
+  if (!bounds) return { cx: 200, cy: 150 };
+  const [south, north, west, east] = bounds;
+  return {
+    cx: 24 + ((lon - west) / (east - west || 1)) * 352,
+    cy: 24 + ((north - lat) / (north - south || 1)) * 252,
+  };
+}
+
+function mapPosition(stop: Stop, campus: Campus): { cx: number; cy: number } {
+  if (stop.lat !== undefined && stop.lon !== undefined && viewportFor(campus)) return projectPoint(stop.lon, stop.lat, campus);
+  if (stop.cx !== undefined && stop.cy !== undefined) return { cx: stop.cx, cy: stop.cy };
+  return { cx: stop.cx ?? 200, cy: stop.cy ?? 150 };
 }
 
 function labelOffsetFor(index: number): LabelOffset {
@@ -80,6 +97,15 @@ function Pin({ stop, campus, hour, direction, selected, labelOffset, onSelect }:
 
 export function StopMap({ campus, selectedId, hour, direction, onSelect }: StopMapProps) {
   const positions = campus.stops.map((stop) => mapPosition(stop, campus));
+  const routePositions = campus.roadRoute?.status === 'ready'
+    ? campus.roadRoute.coordinates.map(([lon, lat]) => projectPoint(lon, lat, campus))
+    : positions;
+  const routePoints = routePositions
+    .map((position) => {
+      const { cx, cy } = clampMapPoint(position);
+      return `${cx},${cy}`;
+    })
+    .join(' ');
   const pinData = campus.stops.map((stop, index) => {
     const selected = stop.id === selectedId;
     return { stop, selected, labelOffset: stop.labelOffset ?? labelOffsetFor(collisionIndex(positions[index], positions.slice(0, index))) };
@@ -99,6 +125,13 @@ export function StopMap({ campus, selectedId, hour, direction, onSelect }: StopM
             <rect x="30" y="196" width="150" height="80" rx="16" fill="#D8ECDA" /><rect x="60" y="86" width="72" height="52" rx="7" fill="#D3DEE8" /><rect x="152" y="66" width="60" height="70" rx="7" fill="#D3DEE8" /><rect x="250" y="104" width="86" height="60" rx="7" fill="#D3DEE8" /><rect x="126" y="150" width="92" height="48" rx="7" fill="#CBD8E4" />
             <path d="M20 250 H360" stroke="#FBFDFC" strokeWidth="16" strokeLinecap="round" /><path d="M340 44 V270" stroke="#FBFDFC" strokeWidth="16" strokeLinecap="round" /><path d="M250 44 V250" stroke="#FBFDFC" strokeWidth="13" strokeLinecap="round" />
           </>}
+          {positions.length > 1 && (
+            <g className={styles.routeLayer} aria-hidden="true">
+              <polyline points={routePoints} className={styles.routeShadow} />
+              <polyline points={routePoints} className={styles.routeBase} />
+              <polyline points={routePoints} className={styles.routeAccent} />
+            </g>
+          )}
           {orderedPins.map(({ stop, selected, labelOffset }) => <Pin key={stop.id} stop={stop} campus={campus} hour={hour} direction={direction} selected={selected} labelOffset={labelOffset} onSelect={onSelect} />)}
         </svg>
       </div>

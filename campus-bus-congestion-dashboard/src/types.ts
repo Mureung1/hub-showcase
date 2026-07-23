@@ -32,6 +32,18 @@ export interface CampusDirections {
   }>;
 }
 
+export interface RoadRoute {
+  status: 'ready' | 'no-route' | 'error';
+  source: 'osrm' | 'manual-osm';
+  profile: 'driving';
+  fetchedAt: string;
+  stopIds: string[];
+  coordinates: [number, number][];
+  distanceMeters: number;
+  waypointDistancesMeters?: number[];
+  message?: string;
+}
+
 export interface Stop {
   id: string;
   name: string;
@@ -70,12 +82,16 @@ export interface Campus {
   stops: Stop[];
   mapImage?: string;
   sourceFile?: string;
+  mapViewport?: {
+    bounds: [number, number, number, number];
+  };
   boundary?: {
     osmType: 'way' | 'relation';
     osmId: number;
     query: string;
     bounds: [number, number, number, number];
   };
+  roadRoute?: RoadRoute;
   directionConfig?: CampusDirections;
 }
 

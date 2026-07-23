@@ -13,4 +13,4 @@
 데이터: OpenStreetMap contributors
 라이선스: Open Database License (ODbL) 1.0
 저작권 안내: https://www.openstreetmap.org/copyright
-자산 생성일: 2026-07-16
+자산 생성일: 2026-07-22

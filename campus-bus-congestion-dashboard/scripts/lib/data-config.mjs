@@ -58,10 +58,10 @@ export const DIRECTIONAL_CAMPUS_CONFIGS = Object.freeze({
     },
   },
   'jbnu-jeonju': {
-    route: ['osm-node-4247734744', 'osm-node-4247734748', 'osm-node-4247734753'],
+    route: ['osm-node-4247734759', 'osm-node-6960111761', 'osm-node-4247734755'],
     directions: {
-      a: { endpointStopId: 'osm-node-4247734744', label: '전북은행본점 방향' },
-      c: { endpointStopId: 'osm-node-4247734753', label: '덕진성당 방향' },
+      a: { endpointStopId: 'osm-node-4247734759', label: '사대부고사거리 방향' },
+      c: { endpointStopId: 'osm-node-4247734755', label: '한나·소나무 방향' },
     },
   },
   'jejunu-ara': {

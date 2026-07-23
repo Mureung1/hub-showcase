@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "month": "202509",
   "operationDate": "20250801",
-  "generatedAt": "2026-07-22T10:33:27.617Z",
+  "generatedAt": "2026-07-22T18:36:54.137Z",
   "campuses": {
     "kangwon-chuncheon": {
       "campusName": "강원대학교 춘천캠퍼스",
@@ -276,8 +276,7 @@
         "sggCd": "48170",
         "label": "경상남도 진주시",
         "terms": [
-          "사대",
-          "부설",
+          "가좌주공그린빌",
           "경상국립대학교"
         ]
       },
@@ -332,6 +331,18 @@
           "neighborhood": "주약동"
         },
         {
+          "sttnId": "4810968",
+          "sourceName": "가좌주공그린빌",
+          "arsNo": "~",
+          "neighborhood": "가좌동"
+        },
+        {
+          "sttnId": "4810969",
+          "sourceName": "가좌주공그린빌",
+          "arsNo": "~",
+          "neighborhood": "가좌동"
+        },
+        {
           "sttnId": "4812295",
           "sourceName": "경상국립대학교내동캠퍼스",
           "arsNo": "~",
@@ -345,6 +356,63 @@
         }
       ],
       "stops": {
+        "osm-node-9355291289": {
+          "appName": "가좌주공그린빌",
+          "exactCount": 2,
+          "usageChecks": [
+            {
+              "sttnId": "4810968",
+              "sourceName": "가좌주공그린빌",
+              "arsNo": "~",
+              "itemCount": 57,
+              "monthlyTotal": 16119
+            },
+            {
+              "sttnId": "4810969",
+              "sourceName": "가좌주공그린빌",
+              "arsNo": "~",
+              "itemCount": 48,
+              "monthlyTotal": 2837
+            }
+          ],
+          "candidates": [
+            {
+              "sttnId": "4810968",
+              "sourceName": "가좌주공그린빌",
+              "arsNo": "~",
+              "neighborhood": "가좌동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "4810969",
+              "sourceName": "가좌주공그린빌",
+              "arsNo": "~",
+              "neighborhood": "가좌동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "4811713",
+              "sourceName": "가좌주공3단지",
+              "arsNo": "~",
+              "neighborhood": "가좌동",
+              "similarity": 0.5
+            },
+            {
+              "sttnId": "4811714",
+              "sourceName": "가좌주공3단지",
+              "arsNo": "~",
+              "neighborhood": "가좌동",
+              "similarity": 0.5
+            },
+            {
+              "sttnId": "4810249",
+              "sourceName": "가좌주공아파트",
+              "arsNo": "~",
+              "neighborhood": "가좌동",
+              "similarity": 0.5
+            }
+          ]
+        },
         "osm-node-9355291206": {
           "appName": "경상국립대학교가좌캠퍼스정문",
           "exactCount": 2,
@@ -458,48 +526,6 @@
               "similarity": 0.667
             }
           ]
-        },
-        "osm-node-9355290533": {
-          "appName": "사대부설중고교",
-          "exactCount": 0,
-          "usageChecks": [],
-          "candidates": [
-            {
-              "sttnId": "4810314",
-              "sourceName": "대아중고등학교",
-              "arsNo": "~",
-              "neighborhood": "이현동",
-              "similarity": 0.167
-            },
-            {
-              "sttnId": "4810330",
-              "sourceName": "대아중고등학교",
-              "arsNo": "~",
-              "neighborhood": "이현동",
-              "similarity": 0.167
-            },
-            {
-              "sttnId": "4811399",
-              "sourceName": "진서중고등학교.사방",
-              "arsNo": "~",
-              "neighborhood": "수곡면",
-              "similarity": 0.143
-            },
-            {
-              "sttnId": "4810081",
-              "sourceName": "진주동명중고등학교",
-              "arsNo": "~",
-              "neighborhood": "초전동",
-              "similarity": 0.143
-            },
-            {
-              "sttnId": "4810128",
-              "sourceName": "진주동명중고등학교",
-              "arsNo": "~",
-              "neighborhood": "초전동",
-              "similarity": 0.143
-            }
-          ]
         }
       }
     },
@@ -512,7 +538,7 @@
         "terms": [
           "서울대입구역",
           "서울대정문",
-          "기숙사삼거리"
+          "관악사삼거리"
         ]
       },
       "publicStopCount": 684,
@@ -540,6 +566,18 @@
           "sourceName": "서울대입구역",
           "arsNo": "21330",
           "neighborhood": "봉천동"
+        },
+        {
+          "sttnId": "0070672",
+          "sourceName": "관악사삼거리",
+          "arsNo": "21286",
+          "neighborhood": "신림동"
+        },
+        {
+          "sttnId": "0071957",
+          "sourceName": "관악사삼거리",
+          "arsNo": "21279",
+          "neighborhood": "신림동"
         },
         {
           "sttnId": "0170637",
@@ -578,52 +616,81 @@
           "neighborhood": "봉천동"
         },
         {
-          "sttnId": "9010560",
-          "sourceName": "기숙사삼거리",
-          "arsNo": "21899",
+          "sttnId": "9010455",
+          "sourceName": "관악사삼거리",
+          "arsNo": "21279",
           "neighborhood": "신림동"
         }
       ],
       "stops": {
         "osm-node-357899513": {
-          "appName": "서울대입구역3번출구",
-          "exactCount": 0,
-          "usageChecks": [],
+          "appName": "서울대입구역",
+          "exactCount": 4,
+          "usageChecks": [
+            {
+              "sttnId": "0070641",
+              "sourceName": "서울대입구역",
+              "arsNo": "21252",
+              "itemCount": 116,
+              "monthlyTotal": 300813
+            },
+            {
+              "sttnId": "0070665",
+              "sourceName": "서울대입구역",
+              "arsNo": "21330",
+              "itemCount": 111,
+              "monthlyTotal": 238738
+            },
+            {
+              "sttnId": "4103295",
+              "sourceName": "서울대입구역",
+              "arsNo": "~",
+              "itemCount": 89,
+              "monthlyTotal": 18699
+            },
+            {
+              "sttnId": "4109827",
+              "sourceName": "서울대입구역",
+              "arsNo": "~",
+              "itemCount": 100,
+              "monthlyTotal": 45897
+            }
+          ],
           "candidates": [
-            {
-              "sttnId": "4103291",
-              "sourceName": "서울대입구역5번출구",
-              "arsNo": "89019",
-              "neighborhood": "봉천동",
-              "similarity": 0.778
-            },
-            {
-              "sttnId": "8001011",
-              "sourceName": "서울대입구역5번출구",
-              "arsNo": "21104",
-              "neighborhood": "봉천동",
-              "similarity": 0.778
-            },
             {
               "sttnId": "0070641",
               "sourceName": "서울대입구역",
               "arsNo": "21252",
               "neighborhood": "봉천동",
-              "similarity": 0.714
+              "similarity": 1
             },
             {
               "sttnId": "0070665",
               "sourceName": "서울대입구역",
               "arsNo": "21330",
               "neighborhood": "봉천동",
-              "similarity": 0.714
+              "similarity": 1
             },
             {
               "sttnId": "4103295",
               "sourceName": "서울대입구역",
               "arsNo": "~",
               "neighborhood": "봉천동",
-              "similarity": 0.714
+              "similarity": 1
+            },
+            {
+              "sttnId": "4109827",
+              "sourceName": "서울대입구역",
+              "arsNo": "~",
+              "neighborhood": "봉천동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "9010157",
+              "sourceName": "서울대입구역2호선",
+              "arsNo": "21540",
+              "neighborhood": "봉천동",
+              "similarity": 0.769
             }
           ]
         },
@@ -692,52 +759,66 @@
           ]
         },
         "osm-node-11560054597": {
-          "appName": "기숙사삼거리",
-          "exactCount": 1,
+          "appName": "관악사삼거리",
+          "exactCount": 3,
           "usageChecks": [
             {
-              "sttnId": "9010560",
-              "sourceName": "기숙사삼거리",
-              "arsNo": "21899",
-              "itemCount": 72,
-              "monthlyTotal": 17618
+              "sttnId": "0070672",
+              "sourceName": "관악사삼거리",
+              "arsNo": "21286",
+              "itemCount": 86,
+              "monthlyTotal": 39165
+            },
+            {
+              "sttnId": "0071957",
+              "sourceName": "관악사삼거리",
+              "arsNo": "21279",
+              "itemCount": 83,
+              "monthlyTotal": 30247
+            },
+            {
+              "sttnId": "9010455",
+              "sourceName": "관악사삼거리",
+              "arsNo": "21279",
+              "itemCount": 62,
+              "monthlyTotal": 10535
             }
           ],
           "candidates": [
-            {
-              "sttnId": "9010560",
-              "sourceName": "기숙사삼거리",
-              "arsNo": "21899",
-              "neighborhood": "신림동",
-              "similarity": 1
-            },
             {
               "sttnId": "0070672",
               "sourceName": "관악사삼거리",
               "arsNo": "21286",
               "neighborhood": "신림동",
-              "similarity": 0.6
+              "similarity": 1
             },
             {
               "sttnId": "0071957",
               "sourceName": "관악사삼거리",
               "arsNo": "21279",
               "neighborhood": "신림동",
-              "similarity": 0.6
+              "similarity": 1
             },
             {
               "sttnId": "9010455",
               "sourceName": "관악사삼거리",
               "arsNo": "21279",
               "neighborhood": "신림동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "9010560",
+              "sourceName": "기숙사삼거리",
+              "arsNo": "21899",
+              "neighborhood": "신림동",
               "similarity": 0.6
             },
             {
-              "sttnId": "4123281",
-              "sourceName": "난곡사거리",
-              "arsNo": "~",
-              "neighborhood": "신림동",
-              "similarity": 0.222
+              "sttnId": "0010072",
+              "sourceName": "관악구청",
+              "arsNo": "21185",
+              "neighborhood": "봉천동",
+              "similarity": 0.25
             }
           ]
         }
@@ -754,11 +835,23 @@
           "전북대학교",
           "덕진성당",
           "소나무",
-          "한나"
+          "한나",
+          "KT북전주",
+          "덕진광장",
+          "덕진공원",
+          "금암광장",
+          "국민은행금암",
+          "고속터미널"
         ]
       },
       "publicStopCount": 339,
       "keywordMatches": [
+        {
+          "sttnId": "2506010",
+          "sourceName": "금암광장",
+          "arsNo": "~",
+          "neighborhood": "금암동"
+        },
         {
           "sttnId": "2506830",
           "sourceName": "여의동우체국.전북은행",
@@ -1026,101 +1119,59 @@
       ],
       "stops": {
         "osm-node-6403450088": {
-          "appName": "충북대정문",
-          "exactCount": 0,
-          "usageChecks": [],
+          "appName": "충북대학교",
+          "exactCount": 2,
+          "usageChecks": [
+            {
+              "sttnId": "4300811",
+              "sourceName": "충북대학교",
+              "arsNo": "~",
+              "itemCount": 40,
+              "monthlyTotal": 6121
+            },
+            {
+              "sttnId": "4300891",
+              "sourceName": "충북대학교",
+              "arsNo": "~",
+              "itemCount": 37,
+              "monthlyTotal": 4445
+            }
+          ],
           "candidates": [
             {
               "sttnId": "4300811",
               "sourceName": "충북대학교",
               "arsNo": "~",
               "neighborhood": "개신동",
-              "similarity": 0.5
+              "similarity": 1
             },
             {
               "sttnId": "4300891",
               "sourceName": "충북대학교",
               "arsNo": "~",
               "neighborhood": "개신동",
-              "similarity": 0.5
+              "similarity": 1
             },
             {
               "sttnId": "4359661",
               "sourceName": "충북대학교병원",
               "arsNo": "~",
               "neighborhood": "개신동",
-              "similarity": 0.4
+              "similarity": 0.8
             },
             {
               "sttnId": "4359991",
               "sourceName": "충북대학교병원",
               "arsNo": "~",
               "neighborhood": "개신동",
-              "similarity": 0.4
+              "similarity": 0.8
             },
             {
               "sttnId": "4375631",
               "sourceName": "충북대학교병원",
               "arsNo": "~",
               "neighborhood": "개신동",
-              "similarity": 0.4
-            }
-          ]
-        },
-        "osm-node-12324240641": {
-          "appName": "충북대학교후문",
-          "exactCount": 2,
-          "usageChecks": [
-            {
-              "sttnId": "4359641",
-              "sourceName": "충북대학교후문",
-              "arsNo": "~",
-              "itemCount": 63,
-              "monthlyTotal": 12603
-            },
-            {
-              "sttnId": "4360011",
-              "sourceName": "충북대학교후문",
-              "arsNo": "~",
-              "itemCount": 58,
-              "monthlyTotal": 13953
-            }
-          ],
-          "candidates": [
-            {
-              "sttnId": "4359641",
-              "sourceName": "충북대학교후문",
-              "arsNo": "~",
-              "neighborhood": "사창동",
-              "similarity": 1
-            },
-            {
-              "sttnId": "4360011",
-              "sourceName": "충북대학교후문",
-              "arsNo": "~",
-              "neighborhood": "사창동",
-              "similarity": 1
-            },
-            {
-              "sttnId": "4300811",
-              "sourceName": "충북대학교",
-              "arsNo": "~",
-              "neighborhood": "개신동",
               "similarity": 0.8
-            },
-            {
-              "sttnId": "4300891",
-              "sourceName": "충북대학교",
-              "arsNo": "~",
-              "neighborhood": "개신동",
-              "similarity": 0.8
-            },
-            {
-              "sttnId": "4359661",
-              "sourceName": "충북대학교병원",
-              "arsNo": "~",
-              "neighborhood": "개신동",
-              "similarity": 0.667
             }
           ]
         },
@@ -1154,6 +1205,63 @@
             {
               "sttnId": "4362661",
               "sourceName": "충북대학교중문",
+              "arsNo": "~",
+              "neighborhood": "사창동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "4300811",
+              "sourceName": "충북대학교",
+              "arsNo": "~",
+              "neighborhood": "개신동",
+              "similarity": 0.8
+            },
+            {
+              "sttnId": "4300891",
+              "sourceName": "충북대학교",
+              "arsNo": "~",
+              "neighborhood": "개신동",
+              "similarity": 0.8
+            },
+            {
+              "sttnId": "4359661",
+              "sourceName": "충북대학교병원",
+              "arsNo": "~",
+              "neighborhood": "개신동",
+              "similarity": 0.667
+            }
+          ]
+        },
+        "osm-node-12324240641": {
+          "appName": "충북대학교후문",
+          "exactCount": 2,
+          "usageChecks": [
+            {
+              "sttnId": "4359641",
+              "sourceName": "충북대학교후문",
+              "arsNo": "~",
+              "itemCount": 63,
+              "monthlyTotal": 12603
+            },
+            {
+              "sttnId": "4360011",
+              "sourceName": "충북대학교후문",
+              "arsNo": "~",
+              "itemCount": 58,
+              "monthlyTotal": 13953
+            }
+          ],
+          "candidates": [
+            {
+              "sttnId": "4359641",
+              "sourceName": "충북대학교후문",
+              "arsNo": "~",
+              "neighborhood": "사창동",
+              "similarity": 1
+            },
+            {
+              "sttnId": "4360011",
+              "sourceName": "충북대학교후문",
               "arsNo": "~",
               "neighborhood": "사창동",
               "similarity": 1

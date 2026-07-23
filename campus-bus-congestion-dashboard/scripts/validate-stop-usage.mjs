@@ -53,7 +53,8 @@ for (const [stopId, mapping] of Object.entries(mappingsFile.value.mappings ?? {}
       if (!directionKeys.includes(direction)) throw new Error(`${stopId}에 알 수 없는 방향이 있습니다: ${direction}`);
       for (const key of ['sttnId', 'sourceName', 'matchedBy', 'verifiedAt']) if (!publicStop[key]) throw new Error(`${stopId}/${direction} 매핑에 ${key}가 없습니다.`);
       const publicId = `${mapping.ctpvCd}:${mapping.sggCd}:${publicStop.sttnId}`;
-      if (publicIds.has(publicId)) throw new Error(`공공 정류장 ID가 중복 연결되었습니다: ${publicId}`);
+      const existingPublicIdOwner = publicIds.get(publicId);
+      if (existingPublicIdOwner && !existingPublicIdOwner.startsWith(`${stopId}/`)) throw new Error(`공공 정류장 ID가 중복 연결되었습니다: ${publicId}`);
       publicIds.set(publicId, `${stopId}/${direction}`);
     }
   } else {

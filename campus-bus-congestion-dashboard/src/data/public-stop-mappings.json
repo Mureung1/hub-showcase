@@ -71,13 +71,13 @@
     },
     "jbnu-jeonju": {
       "route": [
-        "osm-node-4247734744",
-        "osm-node-4247734748",
-        "osm-node-4247734753"
+        "osm-node-4247734759",
+        "osm-node-6960111761",
+        "osm-node-4247734755"
       ],
       "directions": {
-        "a": { "endpointStopId": "osm-node-4247734744", "label": "전북은행본점 방향" },
-        "c": { "endpointStopId": "osm-node-4247734753", "label": "덕진성당 방향" }
+        "a": { "endpointStopId": "osm-node-4247734759", "label": "사대부고사거리 방향" },
+        "c": { "endpointStopId": "osm-node-4247734755", "label": "한나·소나무 방향" }
       }
     },
     "jejunu-ara": {
@@ -679,20 +679,72 @@
         }
       }
     },
-    "osm-node-4247734748": {
+    "osm-node-4247734759": {
       "campusId": "jbnu-jeonju",
       "ctpvCd": "52",
       "sggCd": "52113",
-      "sttnId": "2550080",
-      "sourceName": "전북대학교.소나무한의원앞",
-      "matchedBy": "manual",
-      "verifiedAt": "2026-07-22T12:00:00.000Z",
+      "sttnId": "2507690",
+      "sourceName": "사대부고사거리",
+      "matchedBy": "manual-merged",
+      "verifiedAt": "2026-07-23T04:00:00.000Z",
       "directions": {
+        "a": {
+          "sttnId": "2507690",
+          "sourceName": "사대부고사거리",
+          "matchedBy": "manual-merged",
+          "verifiedAt": "2026-07-23T04:00:00.000Z"
+        },
+        "c": {
+          "sttnId": "2507690",
+          "sourceName": "사대부고사거리",
+          "matchedBy": "manual-merged",
+          "verifiedAt": "2026-07-23T04:00:00.000Z"
+        }
+      }
+    },
+    "osm-node-6960111761": {
+      "campusId": "jbnu-jeonju",
+      "ctpvCd": "52",
+      "sggCd": "52113",
+      "sttnId": "2509860",
+      "sourceName": "전북대종점",
+      "matchedBy": "manual-terminal",
+      "verifiedAt": "2026-07-23T04:00:00.000Z",
+      "directions": {
+        "a": {
+          "sttnId": "2509860",
+          "sourceName": "전북대종점",
+          "matchedBy": "manual-terminal",
+          "verifiedAt": "2026-07-23T04:00:00.000Z"
+        },
+        "c": {
+          "sttnId": "2509860",
+          "sourceName": "전북대종점",
+          "matchedBy": "manual-terminal",
+          "verifiedAt": "2026-07-23T04:00:00.000Z"
+        }
+      }
+    },
+    "osm-node-4247734755": {
+      "campusId": "jbnu-jeonju",
+      "ctpvCd": "52",
+      "sggCd": "52113",
+      "sttnId": "2550260",
+      "sourceName": "전북대학교.한나여성병원앞",
+      "matchedBy": "manual-paired-platform",
+      "verifiedAt": "2026-07-23T04:00:00.000Z",
+      "directions": {
+        "a": {
+          "sttnId": "2550260",
+          "sourceName": "전북대학교.한나여성병원앞",
+          "matchedBy": "manual-paired-platform",
+          "verifiedAt": "2026-07-23T04:00:00.000Z"
+        },
         "c": {
           "sttnId": "2550080",
           "sourceName": "전북대학교.소나무한의원앞",
-          "matchedBy": "manual",
-          "verifiedAt": "2026-07-22T14:00:00.000Z"
+          "matchedBy": "manual-paired-platform",
+          "verifiedAt": "2026-07-23T04:00:00.000Z"
         }
       }
     },

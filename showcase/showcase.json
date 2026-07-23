@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "title": "Campus Flow",
+  "summary": "전국 거점국립대 정류장의 방향별·시간대별 이용 집중도를 지도와 그래프로 비교하는 대시보드입니다.",
+  "githubUser": "busandangam(김진영)",
+  "demoUrl": "https://campus-flow-bus-dashboard-kr.kjh62879078.chatgpt.site",
+  "thumbnail": "thumbnail.png",
+  "screenshots": [
+    "screenshots/home.png",
+    "screenshots/directions.png",
+    "screenshots/mobile.png"
+  ],
+  "problem": "대학생은 등교 전 어느 정류장이 덜 붐비는지, 어느 방향의 이용량이 높은지 한눈에 알기 어렵습니다. 일반 지도는 위치만 보여주고, 공공데이터는 API 형태라 실제 이동 판단에 바로 쓰기 어렵습니다.",
+  "targetUsers": [
+    "거점국립대 캠퍼스로 통학하는 학생",
+    "캠퍼스 주변 버스 정류장을 비교하려는 이용자",
+    "공공 교통 데이터를 시각화하려는 기획자"
+  ],
+  "features": [
+    "10개 거점국립대의 캠퍼스 경계와 주요 정류장 30곳을 지도에 표시합니다.",
+    "A/C 방향 전환으로 지도 핀, 비교 막대, 24시간 그래프를 함께 갱신합니다.",
+    "월별 승·하차 통계를 캠퍼스별 P95 기준의 이용 집중도 점수로 환산합니다.",
+    "첫 화면에서 현재 시간대 기준 방향별 추천 정류장을 제공합니다.",
+    "OSRM 기반 실제 도로 경로와 OSM 출처 정보를 정적 자산으로 제공합니다."
+  ],
+  "featureTags": [
+    "정류장 추천",
+    "방향별 혼잡도",
+    "공공데이터"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "vinext",
+    "CSS Modules",
+    "OpenStreetMap",
+    "OSRM",
+    "공공데이터포털"
+  ],
+  "techHighlights": [
+    "API 키는 로컬 환경변수에서만 읽고, 프런트엔드에는 생성된 정적 JSON만 배포합니다.",
+    "정류장별 이용량을 방향별로 분리하고 캠퍼스 공통 P95 기준으로 0~100점에 정규화합니다.",
+    "OSRM 경로를 사전 생성해 런타임 외부 라우팅 호출 없이 실제 도로선을 렌더링합니다."
+  ],
+  "developmentWithAI": "저는 대학별 정류장 후보와 방향 배정 기준을 검토하고, 데이터가 부족한 경우 대체 기준을 결정했습니다. AI Agent는 공공데이터 API 검증, 매핑 JSON 설계, UI 구현, 실제 도로 경로 생성, PR 문서 정리를 함께 수행했습니다. 결과는 lint, build, 데이터 검증 스크립트로 반복 확인했습니다.",
+  "agent": {
+    "summary": "Codex와 함께 데이터 조사, 정류장 매핑, 방향별 혼잡도 계산, 지도 UI, PR 문서화를 반복적으로 구현했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "Codex",
+        "purpose": "요구사항을 코드 변경 단위로 나누고 React, 데이터 파이프라인, 검증 스크립트를 구현합니다."
+      },
+      {
+        "type": "skill",
+        "name": "공공데이터 검증",
+        "purpose": "정류장별 이용량 API 응답, 누락, 0건, 방향 매핑 가능성을 확인합니다."
+      },
+      {
+        "type": "skill",
+        "name": "UI 검증",
+        "purpose": "지도, 카드, 그래프, 모바일 화면에서 텍스트와 상태가 일관되게 보이는지 점검합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "데이터 매핑 Workflow",
+        "steps": [
+          "공공데이터 후보 검색",
+          "정류장명과 위치 비교",
+          "A/C 방향 수동 승인",
+          "월별 이용량 생성",
+          "검증 스크립트 실행"
+        ]
+      },
+      {
+        "name": "UI 개선 Workflow",
+        "steps": [
+          "사용자 요구 정리",
+          "컴포넌트 구조 확인",
+          "React와 CSS 수정",
+          "lint와 build 실행",
+          "화면 피드백 반영"
+        ]
+      }
+    ]
+  }
+}

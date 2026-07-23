@@ -1,7 +1,8 @@
 import campusManifest from './live-campuses.json';
 import generatedUsage from './generated-stop-usage.json';
+import generatedRoadRoutes from './generated-road-routes.json';
 import publicStopMappings from './public-stop-mappings.json';
-import type { Campus, CampusDirections, DirectionKey, DirectionUsage, Stop } from '../types';
+import type { Campus, CampusDirections, DirectionKey, DirectionUsage, RoadRoute, Stop } from '../types';
 import type { BusDataProvider } from './provider';
 import { formatUsagePeriod } from '../lib/usage';
 
@@ -45,14 +46,20 @@ interface UsageManifest {
   fetchedAt: string | null;
   stops: Record<string, GeneratedStopUsage | DirectionalGeneratedStopUsage>;
 }
+interface RoadRouteManifest {
+  schemaVersion?: number;
+  routes: Record<string, RoadRoute>;
+}
 
 const supportedCampusIds = new Set((campusManifest as Campus[]).map((campus) => campus.id));
 const mappingManifest = publicStopMappings as MappingManifest;
 const usageManifest = generatedUsage as UsageManifest;
+const roadRouteManifest = generatedRoadRoutes as RoadRouteManifest;
 const zeroHours = () => new Array<number>(24).fill(0);
 
 const campuses = (campusManifest as Campus[]).map((campus) => ({
   ...campus,
+  roadRoute: roadRouteManifest.routes[campus.id],
   directionConfig: usageManifest.schemaVersion === 2 ? mappingManifest.campuses?.[campus.id] : undefined,
   stops: campus.stops.map((stop) => {
     const mapping = mappingManifest.mappings[stop.id];

@@ -12,7 +12,7 @@ const regions = {
   'kangwon-chuncheon': { ctpvCd: '51', sggCd: '51110', label: '강원특별자치도 춘천시', terms: ['강원대'] },
   'gnu-gajwa': { ctpvCd: '48', sggCd: '48170', label: '경상남도 진주시', terms: ['가좌주공그린빌', '경상국립대학교'] },
   'snu-gwanak': { ctpvCd: '11', sggCd: '11620', label: '서울특별시 관악구', terms: ['서울대입구역', '서울대정문', '관악사삼거리'] },
-  'jbnu-jeonju': { ctpvCd: '52', sggCd: '52113', label: '전북특별자치도 전주시 덕진구', terms: ['전북은행', '전북대학교', '덕진성당', '소나무', '한나'] },
+  'jbnu-jeonju': { ctpvCd: '52', sggCd: '52113', label: '전북특별자치도 전주시 덕진구', terms: ['전북은행', '전북대학교', '덕진성당', '소나무', '한나', 'KT북전주', '덕진광장', '덕진공원', '금암광장', '국민은행금암', '고속터미널'] },
   'cbnu-gaesin': { ctpvCd: '43', sggCd: '43112', label: '충청북도 청주시 서원구', terms: ['충북대학교'] },
 };
 

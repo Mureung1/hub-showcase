@@ -10,14 +10,19 @@
     "start": "vinext start",
     "lint": "oxlint",
     "data:check": "node scripts/check-public-data.mjs",
+    "data:check-usage": "node scripts/check-stop-usage.mjs",
     "data:map": "node scripts/map-public-stops.mjs",
     "data:directions": "node scripts/report-direction-candidates.mjs",
+    "data:nearby": "node scripts/report-nearby-stop-candidates.mjs",
     "data:regions": "node scripts/check-remaining-regions.mjs",
+    "data:search-stops": "node scripts/search-public-stops.mjs",
     "data:refresh": "node scripts/fetch-stop-usage.mjs",
     "data:validate": "node scripts/validate-stop-usage.mjs",
     "test:data": "node --test scripts/lib/stop-usage.test.mjs",
     "assets:generate": "node scripts/generate-campus-assets.mjs",
-    "assets:validate": "node scripts/validate-campus-assets.mjs"
+    "assets:validate": "node scripts/validate-campus-assets.mjs",
+    "routes:refresh": "node scripts/fetch-road-routes.mjs",
+    "routes:validate": "node scripts/validate-road-routes.mjs"
   },
   "dependencies": {
     "next": "16.2.6",
