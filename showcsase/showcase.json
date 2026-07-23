@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "title": "오늘 모여",
+  "summary": "온라인 단기 소모임 매칭 서비스",
+  "githubUser": "seun112(김소은)",
+  "demoUrl": "",
+  "thumbnail": "",
+  "screenshots": [],
+  "problem": "시간적 여유, 관계에 부담을 느껴 모임 가입을 어려워하거나, 취미를 즐기고싶지만 혼자서는 꾸준히 진행하기 힘들다",
+  "targetUsers": ["시간 여유가 부족한 직장인", "혼자서는 공부에 집중하기 어려운 학생"],
+  "features": [""],
+  "featureTags": ["모임 생성", "모임 활동"],
+  "techStack": [],
+  "techHighlights": [],
+  "developmentWithAI": "저는 문제, 핵심 기능 정의와 서비스의 ui 디자인을 기획하였습니다. AI는 구체적인 계획을 수립하고 계획과 추가적인 요구사항을 기반으로 코드를 작성하였습니다.",
+  "agent": {
+    "summary": "",
+    "agentTools": [
+      {
+        "type": "skill",
+        "name": "디자인 skill",
+        "purpose": "."
+      }
+    ],
+    "workflows": []
+  }
+}
