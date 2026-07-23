@@ -6,7 +6,9 @@ import type { Gender } from '../types';
 
 interface OnboardingProps {
   token: string;
+  initialUser?: AuthUser;
   onComplete: (user: AuthUser) => void;
+  onCancel?: () => void;
 }
 
 const GENDER_OPTIONS: { value: Gender; label: string }[] = [
@@ -15,12 +17,15 @@ const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: 'other', label: '기타' },
 ];
 
-export function Onboarding({ token, onComplete }: OnboardingProps) {
-  const [gender, setGender] = useState<Gender | ''>('');
-  const [birthYear, setBirthYear] = useState('');
-  const [isPregnantOrLactating, setIsPregnantOrLactating] = useState(false);
-  const [heightCm, setHeightCm] = useState('');
-  const [weightKg, setWeightKg] = useState('');
+export function Onboarding({ token, initialUser, onComplete, onCancel }: OnboardingProps) {
+  const isEditMode = initialUser != null;
+  const [gender, setGender] = useState<Gender | ''>(initialUser?.gender ?? '');
+  const [birthYear, setBirthYear] = useState(initialUser?.birthYear?.toString() ?? '');
+  const [isPregnantOrLactating, setIsPregnantOrLactating] = useState(
+    initialUser?.isPregnantOrLactating ?? false
+  );
+  const [heightCm, setHeightCm] = useState(initialUser?.heightCm?.toString() ?? '');
+  const [weightKg, setWeightKg] = useState(initialUser?.weightKg?.toString() ?? '');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -56,7 +61,7 @@ export function Onboarding({ token, onComplete }: OnboardingProps) {
       >
         <div>
           <h1 className="heading" style={{ fontSize: 19, marginBottom: 4 }}>
-            내 정보 입력
+            {isEditMode ? '내 정보 수정' : '내 정보 입력'}
           </h1>
           <p className="sub">성별과 나이에 맞는 정확한 성분을 추천해드릴게요</p>
         </div>
@@ -79,14 +84,17 @@ export function Onboarding({ token, onComplete }: OnboardingProps) {
             ))}
           </div>
 
-          <input
-            className="text-input"
-            type="number"
-            placeholder="출생연도 (예: 1995)"
-            value={birthYear}
-            onChange={(e) => setBirthYear(e.target.value)}
-            required
-          />
+          <div style={{ textAlign: 'left' }}>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>출생연도</label>
+            <input
+              className="text-input"
+              type="number"
+              placeholder="예: 1995"
+              value={birthYear}
+              onChange={(e) => setBirthYear(e.target.value)}
+              required
+            />
+          </div>
 
           {gender === 'female' && (
             <label
@@ -108,28 +116,39 @@ export function Onboarding({ token, onComplete }: OnboardingProps) {
             </label>
           )}
 
-          <input
-            className="text-input"
-            type="number"
-            placeholder="키 (cm)"
-            value={heightCm}
-            onChange={(e) => setHeightCm(e.target.value)}
-            required
-          />
-          <input
-            className="text-input"
-            type="number"
-            placeholder="몸무게 (kg)"
-            value={weightKg}
-            onChange={(e) => setWeightKg(e.target.value)}
-            required
-          />
+          <div style={{ textAlign: 'left' }}>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>키 (cm)</label>
+            <input
+              className="text-input"
+              type="number"
+              placeholder="예: 165"
+              value={heightCm}
+              onChange={(e) => setHeightCm(e.target.value)}
+              required
+            />
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)' }}>몸무게 (kg)</label>
+            <input
+              className="text-input"
+              type="number"
+              placeholder="예: 55"
+              value={weightKg}
+              onChange={(e) => setWeightKg(e.target.value)}
+              required
+            />
+          </div>
 
           {error && <div className="warn-box">{error}</div>}
 
           <button className="btn" type="submit" disabled={loading || !isValid}>
-            {loading ? '저장 중...' : '시작하기'}
+            {loading ? '저장 중...' : isEditMode ? '저장하기' : '시작하기'}
           </button>
+          {onCancel && (
+            <button className="btn-outline" type="button" onClick={onCancel} disabled={loading}>
+              취소
+            </button>
+          )}
         </form>
       </div>
     </div>

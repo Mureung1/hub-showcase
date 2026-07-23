@@ -56,6 +56,7 @@ function loadStoredFlow(): StoredFlow {
 
 function App() {
   const [auth, setAuth] = useState<StoredAuth | null>(loadStoredAuth);
+  const [editingProfile, setEditingProfile] = useState(false);
   const [screen, setScreen] = useState<Screen>(() => loadStoredFlow().screen);
   const [symptoms, setSymptoms] = useState<string[]>(() => loadStoredFlow().symptoms);
   const [recommendedIngredientIds, setRecommendedIngredientIds] = useState<number[]>(
@@ -81,6 +82,11 @@ function App() {
     const next: StoredAuth = { ...auth, user: updatedUser };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     setAuth(next);
+  }
+
+  function handleProfileEditComplete(updatedUser: AuthUser) {
+    handleProfileComplete(updatedUser);
+    setEditingProfile(false);
   }
 
   function handleLogout() {
@@ -130,20 +136,36 @@ function App() {
         <Onboarding token={auth.token} onComplete={handleProfileComplete} />
       ) : auth ? (
         <>
-          <Header screen={screen} userEmail={auth.user.email} onLogout={handleLogout} />
+          <Header
+            screen={screen}
+            userEmail={auth.user.email}
+            onLogout={handleLogout}
+            onEditProfile={() => setEditingProfile(true)}
+          />
           <div className="phone-content">
-            {screen === 'home' && <Home onStart={handleStart} />}
-            {screen === 'analysis' && (
-              <Analysis symptoms={symptoms} onNext={handleAnalysisNext} />
-            )}
-            {screen === 'overlap' && (
-              <Overlap supplements={supplements} onNext={() => setScreen('recommend')} />
-            )}
-            {screen === 'recommend' && (
-              <Recommend ingredientIds={recommendedIngredientIds} onSelect={handleSelectProduct} />
-            )}
-            {screen === 'detail' && (
-              <Detail product={selectedProduct} onBuy={handleBuy} onRestart={handleRestart} />
+            {editingProfile ? (
+              <Onboarding
+                token={auth.token}
+                initialUser={auth.user}
+                onComplete={handleProfileEditComplete}
+                onCancel={() => setEditingProfile(false)}
+              />
+            ) : (
+              <>
+                {screen === 'home' && <Home onStart={handleStart} />}
+                {screen === 'analysis' && (
+                  <Analysis symptoms={symptoms} onNext={handleAnalysisNext} />
+                )}
+                {screen === 'overlap' && (
+                  <Overlap supplements={supplements} onNext={() => setScreen('recommend')} />
+                )}
+                {screen === 'recommend' && (
+                  <Recommend ingredientIds={recommendedIngredientIds} onSelect={handleSelectProduct} />
+                )}
+                {screen === 'detail' && (
+                  <Detail product={selectedProduct} onBuy={handleBuy} onRestart={handleRestart} />
+                )}
+              </>
             )}
           </div>
         </>
