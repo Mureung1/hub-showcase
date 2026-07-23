@@ -2559,10 +2559,11 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     "optOutNotificationMethods"
                 )
                 self.assertIsInstance(opt_out, list)
-                self.assertEqual(len(opt_out), 61)
+                self.assertEqual(len(opt_out), 60)
                 self.assertEqual(opt_out, sorted(opt_out))
                 self.assertIn("thread/started", opt_out)
                 self.assertIn("thread/status/changed", opt_out)
+                self.assertNotIn("account/login/completed", opt_out)
                 self.assertNotIn("item/agentMessage/delta", opt_out)
                 self.assertNotIn("item/completed", opt_out)
                 self.assertNotIn("item/plan/delta", opt_out)

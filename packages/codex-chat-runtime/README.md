@@ -28,7 +28,7 @@ Node supervisor는 explicit environment root, item·UTF-8 byte bound, operation�
 | --- | --- |
 | `src/index.ts` | Node-only `CodexChatRuntime`·`CodexProductCapableRuntime`, production factory, path-free verified bundle evidence와 stable lifecycle error export boundary |
 | `src/contract.ts` | Native ID, allowlisted event와 acceptance-first conversation lifecycle을 Runtime 내부에서 표현한다. `./contract` subpath와 package root의 type export는 Server·Runtime regression seam으로 유지되지만 Browser production consumer·HTTP compatibility contract가 아니며 private workspace·URL·credential을 노출하지 않는다. |
-| `src/account-contract.ts` | Spine S1의 private `CodexAccountLifecycle`과 managed Browser login native context·timeout을 고정하는 contract-only seam. Account App Server 호출, polling, 취소와 Runtime 재생성 동작은 후속 auth lane이 구현한다. |
+| `src/account-contract.ts` | Spine S1의 private `CodexAccountLifecycle`과 managed Browser login native context·timeout을 고정하는 contract-only seam. Python bridge는 official App Server account read·login attempt·logout을 구현했고, Node Runtime lifecycle과 Runtime role 연결은 후속 R1c가 구현한다. |
 | `src/runtime-contract.ts` | Node product caller가 쓰는 private product-thread input, structured Skill·Text input, Account Readiness와 opaque user-input answer/cancel operation boundary. Managed absolute Skill path와 workspace·loopback MCP credential은 이 Node-only boundary에만 있고 browser-safe contract에는 포함되지 않는다. |
 | `src/testing.ts` | Product-capable interface, pending interaction과 sticky terminal 계약을 구현하는 deterministic fake, opt-in Server actual-child process-tree fixture와 exact product local-provider fixture boundary |
 | `src/exact-product-local-provider-fixture.ts` | Verified production bundle·exact native·official local Responses provider를 fresh product layout root에서 시작하고 active `SemesterWorkspace`의 exact `cwd`, sanitized product evidence와 process-group cleanup을 제공하는 test-only fixture |
@@ -57,14 +57,14 @@ Tracked unpatched snapshot, 세 manifest와 patch series는 review 대상이다.
 Canonical manifest는 다음을 서로 연결한다.
 
 - exact source commit, immutable unpatched manifest와 아홉 단계 complete ordered patch stack `2cb3dcc9bdf7f81136b21ac16cb1afe161e5676e3800e85265653c2795fbbcbd`
-- source-only `manifests/patched-source.json` SHA-256 `9ef9d9111fbe4383104ec34069911dde0e9f7ef7a8a06fa5a16851a584388d5c`와 production `manifests/production-runtime-darwin-arm64.json` SHA-256 `8ccb628dac6df49cb8efc237e3f424b2baa64b76b9f6c516a59a55684d5a555c`
+- source-only `manifests/patched-source.json` SHA-256 `9ef9d9111fbe4383104ec34069911dde0e9f7ef7a8a06fa5a16851a584388d5c`와 production `manifests/production-runtime-darwin-arm64.json` SHA-256 `075e2e707d421367ed3d291b12161b575c586a6c5697fcb4145452b0ad9529ab`
 - reviewed macOS arm64 `uv_build==0.11.19` build-backend wheel과 offline wheel build
 - patched SDK wheel `a4590fe5dff6a58e9042b37aad682bf8f50f413a111cc6b42ed64a30019a7a94`
 - standalone CPython `3.10.18` build `20250818`와 exact archive digest
 - `openai-codex-cli-bin==0.144.4` 및 Pydantic dependency closure의 complete wheel roster
 - installed `_message_router.py`와 final patched-source digest
 - tracked `python/bridge` 5-file roster와 installed `bundle/bridge` roster·entrypoint
-- bundle-local import path, native executable, `codex-cli 0.144.4`와 complete tree-roster digest `6d59fdf23ab5da1402407549268ae93f0607d6b559237f9c6f859187b960a176`
+- bundle-local import path, native executable, `codex-cli 0.144.4`와 complete tree-roster digest `495dd066dff61aadc87479e17b27246b16818aa36bcb20e15253debbb69f2ac8`
 
 `verify:production-runtime`은 download, build, submodule access 또는 artifact repair를 하지 않는다. Canonical manifest와 이미 materialize된 ignored tree가 없거나 한 파일이라도 missing, extra, renamed, truncated 또는 digest-mismatched 상태면 fail closed한다. Production factory도 absolute artifact root를 요구하고, tracked canonical manifest와 local manifest의 byte equality, exact source·runtime·Python·ordered patch identity, complete bundle tree roster와 symlink containment을 검증한 뒤 그 tree의 absolute Python·bridge·site-packages·native executable만 사용한다. System Python, ambient `PATH` 또는 source submodule로 fallback하지 않는다. Worker actual-child gate는 verified bundled Python, `-B`, site-packages와 entrypoint만 사용해 tree에 bytecode를 쓰지 않는다. Windows, Linux와 macOS x86_64는 지원하지 않는다.
 
@@ -80,7 +80,12 @@ Product Turn의 model과 reasoning effort는 app input이 아니다. Policy disp
 
 | `command` | Required fields | 결과 |
 | --- | --- | --- |
-| `read_account` | `bridgeRequestId` | native work를 시작하지 않는 `ready | not_ready(authentication_required)` result |
+| `read_account` | `bridgeRequestId` | fresh `account/read(refreshToken: true)`에서 projection한 `account.state = signed_out | chatgpt | unsupported` |
+| `start_browser_login` | `bridgeRequestId`, product `attemptId` | official managed Browser login을 시작하고 allowlisted HTTPS `authUrl`과 같은 `attemptId`의 `pending`을 반환 |
+| `read_browser_login_attempt` | `bridgeRequestId`, `attemptId` | non-consuming `pending | completed | cancelled | expired | failed` status와 failed일 때 safe retry error |
+| `cancel_browser_login` | `bridgeRequestId`, `attemptId` | matching completion·fresh account read와 one-settlement로 수렴한 `cancelled | already_settled` |
+| `release_browser_login_attempt` | `bridgeRequestId`, `attemptId` | terminal slot을 제거하는 idempotent `released | already_released` |
+| `logout` | `bridgeRequestId` | official logout 뒤 fresh null account readback을 확인한 `signed_out` |
 | `start_thread` | Internal text regression은 `bridgeRequestId`; product thread는 `workspace`, private `mcp.url`·`mcp.token` 추가 | response-native `{ threadId }` result와 thread-scoped cwd/private MCP configuration |
 | `start_turn` | `bridgeRequestId`, `threadId`, `text` | `{ threadId, turnId }` acceptance 뒤 같은 bridge request에 FIFO event |
 | `start_product_turn` | `bridgeRequestId`, `threadId`, bounded `text`와 optional exact Skill pair | managed Skill root와 native effective model setting을 적용한 `{ threadId, turnId }` acceptance 뒤 curated product activity |
@@ -89,6 +94,8 @@ Product Turn의 model과 reasoning effort는 app input이 아니다. Policy disp
 | `interrupt` | `bridgeRequestId`, `threadId`, `turnId` | native interrupt RPC acknowledgement; stream terminal은 별도 authoritative event |
 | `release_thread` | `bridgeRequestId`, `threadId` | idle local handle만 제거 |
 | `close` | `bridgeRequestId` | accepted work와 SDK close를 정산한 뒤 마지막 `close_ack` |
+
+Browser login은 process당 하나의 `starting | pending` slot만 가진다. Native `loginId`, SDK handle, account email·token과 raw provider error는 bridge 내부에만 남고 private frame에는 나타나지 않는다. Duplicate start/status/cancel/release와 cancel·completion·expiry race는 하나의 bounded settlement를 join하며 native cancel은 settlement당 한 번만 호출된다. Deadline에 cancel이 거절되면 matching completion을 bounded하게 기다려 SDK waiter가 정상 unregister된 뒤 그 watcher의 fresh account read 하나로 terminalize한다. Matching completion이 오지 않거나 transport가 사라지면 Runtime-fatal 또는 normal close가 SDK transport와 waiter를 bounded하게 정리한다. R1b는 이 strict frame family까지만 소유하며 Node `CodexAccountLifecycle` projection과 `auth-only | workspace` role은 R1c 범위다.
 
 SDK initialize가 끝나면 worker가 첫 private `ready` frame을 한 번 보낸다. 그 뒤 출력은 `result`, `event`, correlated `error`, uncorrelated process-wide `fatal`, `close_ack` 중 하나다. `bridgeRequestId`는 이 private transport correlation에만 존재하며 projected event 내부나 browser contract로 이동하지 않는다.
 
@@ -100,7 +107,7 @@ SDK initialize가 끝나면 worker가 첫 private `ready` frame을 한 번 보�
 | `turn.completed` | `threadId`, `turnId`, native `status`, failed일 때 safe `failure` |
 | Product activity | requested Skill name, Plan delta/completed, allowlisted `propose_state_patch` MCP lifecycle, opaque user-input requested/resolved와 interrupt acknowledgement |
 
-Raw JSON-RPC envelope, generated Pydantic payload, `RequestId`, raw MCP arguments/result/server, source path, secret, error detail과 다른 notification/item은 stdout에 쓰지 않는다. `turn.error`는 nonterminal이고 첫 matching `turn.completed`만 semantic terminal이다. Turn acceptance를 stdout queue에 먼저 넣은 뒤 stream consumer를 시작하므로 response-last staged event와 request-before-acceptance interaction도 public acceptance 뒤에 나온다. Exact generated notification roster는 request-local acknowledgement를 포함한 adopted 일곱 method와 sorted 61-method initialize opt-out complement로 나뉜다. SDK patch는 내부 처리한 approval·user-input acknowledgement를 global route 전에 소비하고 정상 `thread/started`·`thread/status/changed`는 native opt-out하므로 persistent bridge의 undrained global route에 누적하지 않는다. Cross-thread total order는 정의하지 않는다.
+Raw JSON-RPC envelope, generated Pydantic payload, `RequestId`, raw MCP arguments/result/server, source path, secret, error detail과 다른 notification/item은 stdout에 쓰지 않는다. `turn.error`는 nonterminal이고 첫 matching `turn.completed`만 semantic terminal이다. Turn acceptance를 stdout queue에 먼저 넣은 뒤 stream consumer를 시작하므로 response-last staged event와 request-before-acceptance interaction도 public acceptance 뒤에 나온다. Exact generated notification roster는 request-local acknowledgement와 managed `account/login/completed`를 포함한 adopted 여덟 method와 sorted 60-method initialize opt-out complement로 나뉜다. SDK patch는 내부 처리한 approval·user-input acknowledgement를 global route 전에 소비하고 정상 `thread/started`·`thread/status/changed`는 native opt-out하므로 persistent bridge의 undrained global route에 누적하지 않는다. Cross-thread total order는 정의하지 않는다.
 
 `user_input.resolved`는 local response write나 ambiguous native cleanup notification을 success로 바꾼 synthetic acknowledgement가 아니다. SDK는 matching `serverRequest/resolved` 뒤 nonterminal same-Turn continuation까지 관찰한 경우에만 opaque request-local barrier를 해제한다. Worker는 그 뒤 resolved activity를 한 번 projection하고 이미 queue에 들어온 continuation이 이를 추월하지 못하게 한다. Resolution 뒤 terminal이 오거나 native interrupt·close·transport loss가 먼저 이기면 pending operation을 stable error로 정산하고 resolved event를 만들지 않는다.
 
