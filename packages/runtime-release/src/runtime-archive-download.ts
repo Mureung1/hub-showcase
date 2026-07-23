@@ -1772,17 +1772,11 @@ async function loadPartialWriter(
     })
     const handle = opened.handle
     try {
-      const stats = await handle.stat({ bigint: true })
-      if (
-        stats.size >
-        BigInt(input.admission.descriptor.archive.bytes)
-      ) {
-        throw runtimeAuthorityError('runtime_cache_unsafe', {
-          kind: 'runtime_archive_partial_identity_invalid',
-        })
-      }
-      await handle.truncate(0)
-      await handle.sync()
+      await resetNonAuthorizingPartial(
+        input,
+        handle,
+        'runtime_archive_unjournaled_partial_reset_failed',
+      )
       return {
         handle,
         identity: opened.identity,
@@ -1845,17 +1839,11 @@ async function loadPartialWriter(
   const handle = openedArchive.handle
   try {
     if (journal.writtenBytes === 0) {
-      const stats = await handle.stat({ bigint: true })
-      if (
-        stats.size >
-        BigInt(input.admission.descriptor.archive.bytes)
-      ) {
-        throw runtimeAuthorityError('runtime_cache_unsafe', {
-          kind: 'runtime_archive_partial_identity_invalid',
-        })
-      }
-      await handle.truncate(0)
-      await handle.sync()
+      await resetNonAuthorizingPartial(
+        input,
+        handle,
+        'runtime_archive_zero_journal_partial_reset_failed',
+      )
     }
     return {
       handle,
@@ -1873,6 +1861,41 @@ async function loadPartialWriter(
     await handle.close().catch(() => undefined)
     await openedJournal.handle.close().catch(() => undefined)
     throw error
+  }
+}
+
+async function resetNonAuthorizingPartial(
+  input: RuntimeArchiveDownloadInput,
+  handle: FileHandle,
+  failureKind:
+    | 'runtime_archive_unjournaled_partial_reset_failed'
+    | 'runtime_archive_zero_journal_partial_reset_failed',
+): Promise<void> {
+  let stats: BigIntStats
+  try {
+    stats = await handle.stat({ bigint: true })
+  } catch (error) {
+    throw runtimeAuthorityError('runtime_storage_unavailable', {
+      kind: failureKind,
+      cause: error,
+    })
+  }
+  if (
+    stats.size >
+    BigInt(input.admission.descriptor.archive.bytes)
+  ) {
+    throw runtimeAuthorityError('runtime_cache_unsafe', {
+      kind: 'runtime_archive_partial_identity_invalid',
+    })
+  }
+  try {
+    await handle.truncate(0)
+    await handle.sync()
+  } catch (error) {
+    throw runtimeAuthorityError('runtime_storage_unavailable', {
+      kind: failureKind,
+      cause: error,
+    })
   }
 }
 

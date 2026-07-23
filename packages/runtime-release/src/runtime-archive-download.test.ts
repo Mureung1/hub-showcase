@@ -678,6 +678,38 @@ test('a missing final turns a full weak alias into a fresh nlink-one restart', a
     assert.equal(unlinkedPartial.nlink, 1)
     assert.equal(unlinkedPartial.size, archiveBytes.byteLength)
 
+    const probeHandle = await open(
+      fixture.layout.partial.archivePath,
+      'r+',
+    )
+    const fileHandlePrototype = Object.getPrototypeOf(
+      probeHandle,
+    ) as {
+      truncate: (length?: number) => Promise<void>
+    }
+    const originalTruncate = fileHandlePrototype.truncate
+    await probeHandle.close()
+    fileHandlePrototype.truncate = async () => {
+      throw Object.assign(new Error('injected truncate failure'), {
+        code: 'EIO',
+      })
+    }
+    try {
+      await assertRuntimeFailure(
+        downloadVerifiedRuntimeArchive({
+          admission: fixture.admission,
+          layout: fixture.layout,
+          mutationAuthority: fixture.mutationAuthority,
+          signal: new AbortController().signal,
+          transport,
+        }),
+        'runtime_storage_unavailable',
+      )
+      assert.equal(transport.requests.length, 2)
+    } finally {
+      fileHandlePrototype.truncate = originalTruncate
+    }
+
     const result = await downloadVerifiedRuntimeArchive({
       admission: fixture.admission,
       layout: fixture.layout,
