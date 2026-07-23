@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: research
-- State: open
+- State: claimed
 - Blocked by: [첫 public preview의 성공 여정을 고정한다](004-first-public-preview-success-journey.md), [npx production composition을 고른다](006-npx-production-composition.md), [Runtime release delivery·integrity·versioning을 정한다](007-runtime-release-delivery-integrity.md), [Browser-launched Codex OAuth lifecycle을 설계한다](008-browser-oauth-lifecycle.md), [첫 public release의 SemesterWorkspace schema·scaffold 경계를 정한다](009-semester-workspace-admission.md), [재개 가능한 setup과 workspace instruction/Skill bundle의 authority를 정한다](010-resumable-setup-authority.md), [Bootstrap과 setup의 durability·recovery contract를 확정한다](011-bootstrap-and-setup-recovery.md), [Semester Ready 완료와 후속 여정 진입 표면을 검증한다](012-semester-ready-first-action.md), [Landing의 product promise와 install truth를 검증한다](013-landing-install-truth.md), [Public source·npm·Runtime publication gate를 확정한다](015-publication-release-gates.md)
 
 ## Question
