@@ -18,12 +18,9 @@ import {
   materializeWorkspaceBundle,
   type AdmittedSemesterWorkspace,
 } from '@ay-ple/semester-workspace'
+import type { CodexNativeContextPort } from '@ay-ple/codex-chat-runtime'
 
-import {
-  createWorkspaceNativeContextPort,
-  createWorkspaceNativeProjectBoundary,
-  type WorkspaceNativeContextQueryPort,
-} from './native-project-boundary.js'
+import { createWorkspaceNativeProjectBoundary } from './native-project-boundary.js'
 import {
   createWorkspaceActionAdmission,
   type WorkspaceActionReadinessPort,
@@ -44,10 +41,10 @@ test('action admission fresh-validates v3, Ready, bundle, static and native cont
     assert.equal(result.status, 'admitted')
     assert.equal(fixture.readinessReads, 2)
     assert.deepEqual(fixture.nativeJournal, [
-      'config/read',
-      'skills/list',
-      'config/read',
-      'skills/list',
+      'readEffectiveConfig',
+      'listEffectiveSkills',
+      'readEffectiveConfig',
+      'listEffectiveSkills',
     ])
   } finally {
     await fixture.cleanup()
@@ -310,10 +307,10 @@ test('bundle drift during final readiness is caught by the final fresh pass', as
     })
     assert.equal(fixture.readinessReads, 2)
     assert.deepEqual(fixture.nativeJournal, [
-      'config/read',
-      'skills/list',
-      'config/read',
-      'skills/list',
+      'readEffectiveConfig',
+      'listEffectiveSkills',
+      'readEffectiveConfig',
+      'listEffectiveSkills',
     ])
     assert.deepEqual(await readFile(agentsPath), racedBytes)
   } finally {
@@ -371,10 +368,7 @@ function createNativeBoundary(
     workspace: fixture.workspace,
     controlledHome: fixture.controlledHome,
     controlledCodexHome: fixture.controlledCodexHome,
-    nativeContext: createWorkspaceNativeContextPort({
-      workspaceRoot: fixture.workspace.canonicalRoot,
-      queryPort: fixture.queryPort,
-    }),
+    nativeContext: fixture.nativeContext,
   })
 }
 
@@ -447,17 +441,17 @@ async function createFixture() {
       return readinessSequence?.shift() ?? readinessState
     },
   }
-  const queryPort: WorkspaceNativeContextQueryPort = {
-    async readConfig() {
-      nativeJournal.push('config/read')
+  const nativeContext: CodexNativeContextPort = {
+    async readEffectiveConfig() {
+      nativeJournal.push('readEffectiveConfig')
       return {
         projectRootMarkers: [],
         globalInstructionsFile: null,
       }
     },
-    async listSkills() {
+    async listEffectiveSkills() {
       await beforeSkillsList?.()
-      nativeJournal.push('skills/list')
+      nativeJournal.push('listEffectiveSkills')
       const exact = {
         name: 'ay-ple-first-assignment',
         enabled: true,
@@ -483,7 +477,7 @@ async function createFixture() {
     controlledHome: await realpath(controlledHome),
     controlledCodexHome: await realpath(controlledCodexHome),
     nativeJournal,
-    queryPort,
+    nativeContext,
     readiness,
     get readinessReads() {
       return readinessReads

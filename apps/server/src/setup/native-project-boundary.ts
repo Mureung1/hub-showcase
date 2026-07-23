@@ -14,21 +14,6 @@ import {
   type WorkspaceNativeContextSnapshot,
 } from '@ay-ple/semester-workspace'
 
-export interface WorkspaceNativeContextQueryPort {
-  readConfig(input: {
-    readonly method: 'config/read'
-    readonly cwd: string
-    readonly includeLayers: true
-    readonly signal: AbortSignal
-  }): Promise<CodexEffectiveConfig>
-  listSkills(input: {
-    readonly method: 'skills/list'
-    readonly cwds: readonly [string]
-    readonly forceReload: true
-    readonly signal: AbortSignal
-  }): Promise<readonly CodexEffectiveSkill[]>
-}
-
 export type WorkspaceNativeLaunch = {
   readonly cwd: string
   readonly environment: {
@@ -46,31 +31,6 @@ export interface WorkspaceNativeProjectBoundary {
   readonly workspace: AdmittedSemesterWorkspace
   readonly launch: WorkspaceNativeLaunch
   verify(): Promise<WorkspaceNativeBoundaryVerification>
-}
-
-export function createWorkspaceNativeContextPort(input: {
-  readonly workspaceRoot: string
-  readonly queryPort: WorkspaceNativeContextQueryPort
-}): CodexNativeContextPort {
-  const workspaceRoot = input.workspaceRoot
-  return {
-    readEffectiveConfig({ signal }) {
-      return input.queryPort.readConfig({
-        method: 'config/read',
-        cwd: workspaceRoot,
-        includeLayers: true,
-        signal,
-      })
-    },
-    listEffectiveSkills({ signal }) {
-      return input.queryPort.listSkills({
-        method: 'skills/list',
-        cwds: [workspaceRoot],
-        forceReload: true,
-        signal,
-      })
-    },
-  }
 }
 
 export function createWorkspaceNativeProjectBoundary(input: {
@@ -313,15 +273,20 @@ function cloneEffectiveConfig(
   }
   const config = value as Record<string, unknown>
   if (
+    !hasExactKeys(config, [
+      'projectRootMarkers',
+      'globalInstructionsFile',
+    ]) ||
     !Array.isArray(config.projectRootMarkers) ||
+    config.projectRootMarkers.length > 1024 ||
     (config.globalInstructionsFile !== null &&
-      typeof config.globalInstructionsFile !== 'string')
+      !isBoundedString(config.globalInstructionsFile, 16 * 1024))
   ) {
     throw new Error('invalid native config')
   }
   const projectRootMarkers: string[] = []
   for (const marker of config.projectRootMarkers) {
-    if (typeof marker !== 'string') {
+    if (!isBoundedString(marker, 1024)) {
       throw new Error('invalid native config')
     }
     projectRootMarkers.push(marker)
@@ -335,7 +300,7 @@ function cloneEffectiveConfig(
 function cloneEffectiveSkills(
   value: unknown,
 ): readonly CodexEffectiveSkill[] {
-  if (!Array.isArray(value)) {
+  if (!Array.isArray(value) || value.length > 1024) {
     throw new Error('invalid native Skill roster')
   }
   const skills: CodexEffectiveSkill[] = []
@@ -345,9 +310,10 @@ function cloneEffectiveSkills(
     }
     const skill = candidate as Record<string, unknown>
     if (
-      typeof skill.name !== 'string' ||
+      !hasExactKeys(skill, ['name', 'enabled', 'sourceRoot']) ||
+      !isBoundedString(skill.name, 256) ||
       typeof skill.enabled !== 'boolean' ||
-      typeof skill.sourceRoot !== 'string'
+      !isBoundedString(skill.sourceRoot, 16 * 1024)
     ) {
       throw new Error('invalid native Skill roster')
     }
@@ -360,6 +326,29 @@ function cloneEffectiveSkills(
     )
   }
   return Object.freeze(skills)
+}
+
+function hasExactKeys(
+  value: Record<string, unknown>,
+  expected: readonly string[],
+): boolean {
+  const actual = Object.keys(value).sort()
+  const wanted = [...expected].sort()
+  return (
+    actual.length === wanted.length &&
+    actual.every((key, index) => key === wanted[index])
+  )
+}
+
+function isBoundedString(
+  value: unknown,
+  maxBytes: number,
+): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    Buffer.byteLength(value, 'utf8') <= maxBytes
+  )
 }
 
 function deepFreezeLaunch(
