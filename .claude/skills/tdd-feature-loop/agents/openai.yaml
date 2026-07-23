@@ -1,0 +1,4 @@
+interface:
+  display_name: "TDD 기능 루프"
+  short_description: "작은 기능을 Red-Green-Refactor로 완주합니다"
+  default_prompt: "Use $tdd-feature-loop to implement one small feature with tests first."
