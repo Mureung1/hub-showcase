@@ -32,7 +32,7 @@ button {
 .camp-banner {
   position: relative;
   display: flex;
-  height: 68px;
+  height: 112px;
   align-items: center;
   overflow: hidden;
   border-bottom: 1px solid #d9dfdc;
@@ -41,18 +41,23 @@ button {
 
 .camp-banner span {
   position: absolute;
-  z-index: 1;
-  left: max(24px, calc((100vw - 1320px) / 2 + 24px));
+  z-index: 2;
+  left: 50%;
+  transform: translateX(-50%);
   color: #182536;
-  font-size: 13px;
+  font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
 .camp-banner img {
-  width: 100%;
+  position: absolute;
+  right: max(24px, calc((100vw - 1320px) / 2 + 24px));
+  width: 360px;
   height: 100%;
   object-fit: cover;
+  object-position: center;
 }
 
 .page {
@@ -508,11 +513,16 @@ button {
 
 @media (max-width: 760px) {
   .camp-banner {
-    height: 56px;
+    height: 84px;
   }
 
   .camp-banner span {
-    font-size: 12px;
+    font-size: 19px;
+  }
+
+  .camp-banner img {
+    right: 12px;
+    width: 210px;
   }
 
   .page {
