@@ -9,6 +9,8 @@ interface DashboardProps {
   progress: Record<string, boolean>
   taskIds: string[] | null
   loadingTaskId: string | null
+  isLoading: boolean
+  apiError: boolean
   onToggle: (taskId: string) => void
   onEditProfile: () => void
   onResetProgress: () => void
@@ -23,7 +25,7 @@ const filterOptions: { value: FilterOption; label: string }[] = [
   { value: 'subsidy', label: groupLabels.subsidy },
 ]
 
-function Dashboard({ profile, progress, taskIds, loadingTaskId, onToggle, onEditProfile, onResetProgress }: DashboardProps) {
+function Dashboard({ profile, progress, taskIds, loadingTaskId, isLoading, apiError, onToggle, onEditProfile, onResetProgress }: DashboardProps) {
   const [selected, setSelected] = useState<FilterOption | null>('all')
 
   const applicableTasks = useMemo(
@@ -98,15 +100,29 @@ function Dashboard({ profile, progress, taskIds, loadingTaskId, onToggle, onEdit
         </nav>
 
         <main className="dashboard__content">
+          {apiError && (
+            <div className="dashboard__error-banner" role="alert">
+              서버에 연결할 수 없습니다. 일부 정보가 표시되지 않을 수 있어요.
+            </div>
+          )}
+
           {!selected && (
             <p className="dashboard__placeholder">왼쪽에서 카테고리를 선택해 체크리스트를 확인하세요.</p>
           )}
 
-          {selected && visibleTasks.length === 0 && (
+          {selected && isLoading && (
+            <div className="dashboard__checklist">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="task-card task-card--skeleton" />
+              ))}
+            </div>
+          )}
+
+          {selected && !isLoading && visibleTasks.length === 0 && (
             <p className="dashboard__placeholder">해당하는 항목이 없어요.</p>
           )}
 
-          {selected && (
+          {selected && !isLoading && (
             <div className="dashboard__checklist">
               {visibleTasks.map((task) => (
                 <TaskCard

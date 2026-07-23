@@ -197,3 +197,33 @@
     padding: 1.5rem 1.25rem 2.5rem;
   }
 }
+
+/* 에러 배너 */
+.dashboard__error-banner {
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: #fff3f3;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+  font-size: 0.9rem;
+}
+
+/* 스켈레톤 */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.task-card--skeleton {
+  height: 96px;
+  border-radius: 12px;
+  background: linear-gradient(
+    90deg,
+    var(--border-soft) 25%,
+    var(--bg-card, #f9fafb) 50%,
+    var(--border-soft) 75%
+  );
+  background-size: 800px 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}

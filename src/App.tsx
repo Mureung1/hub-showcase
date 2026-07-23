@@ -21,22 +21,26 @@ function App() {
   // 첫 방문자에게만 랜딩 페이지를 보여주기 위한 플래그
   const [showLanding, setShowLanding] = useState(true)
 
+  const [isLoading, setIsLoading] = useState(true)
+  const [apiError, setApiError] = useState(false)
+
   // 마운트 시 서버에서 profile + progress + tasks 동시 복원
+  // allSettled: 하나가 실패해도 나머지 fetch는 계속 진행
   useEffect(() => {
-    fetch('http://localhost:4000/api/profile', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((data) => { if (data?.industry) setProfile(data) })
-      .catch(() => {})
-
-    fetch('http://localhost:4000/api/progress', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((data) => setProgress(data))
-      .catch(() => {})
-
-    fetch('http://localhost:4000/api/tasks', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((data) => { if (data?.taskIds) setTaskIds(data.taskIds) })
-      .catch(() => {})
+    Promise.allSettled([
+      fetch('http://localhost:4000/api/profile', { credentials: 'include' })
+        .then((r) => r.json())
+        .then((data) => { if (data?.industry) setProfile(data) }),
+      fetch('http://localhost:4000/api/progress', { credentials: 'include' })
+        .then((r) => r.json())
+        .then((data) => setProgress(data)),
+      fetch('http://localhost:4000/api/tasks', { credentials: 'include' })
+        .then((r) => r.json())
+        .then((data) => { if (data?.taskIds) setTaskIds(data.taskIds) }),
+    ]).then((results) => {
+      if (results.some((r) => r.status === 'rejected')) setApiError(true)
+      setIsLoading(false)
+    })
   }, [])
 
   async function handleToggle(taskId: string) {
@@ -102,6 +106,8 @@ function App() {
       progress={progress}
       taskIds={taskIds}
       loadingTaskId={loadingTaskId}
+      isLoading={isLoading}
+      apiError={apiError}
       onToggle={handleToggle}
       onEditProfile={() => setIsEditingProfile(true)}
       onResetProgress={handleResetProgress}

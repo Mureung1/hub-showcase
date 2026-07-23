@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "title": "소상공인 폐업 도우미",
+  "summary": "폐업을 앞둔 소상공인이 자신의 상황을 한 번 입력하면, 맞춤 절차·세무 일정·지원금 항목을 한곳에서 확인하고 진행 상태를 추적할 수 있는 셀프가이드 서비스입니다.",
+  "githubUser": "maeumum",
+  "demoUrl": "",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/home.webp"
+  ],
+  "problem": "폐업 시 챙겨야 할 정보(폐업신고, 세무 신고, 지원금)가 홈택스·정부24·소상공인시장진흥공단 등 여러 기관에 흩어져 있습니다. 업종·직원 유무·임대 여부에 따라 필요한 절차가 다른데 이를 구분해주는 곳이 없고, 세무 신고처럼 마감이 있는 항목의 우선순위를 알려주는 도구도 없습니다.",
+  "targetUsers": [
+    "폐업을 준비 중인 소상공인(개인사업자·법인)",
+    "업종·직원 유무·임대 여부에 따라 어떤 절차가 필요한지 모르는 사람"
+  ],
+  "features": [
+    "5문항 온보딩(업종/법인여부/직원유무/임대여부/폐업예정일)으로 개인 상황에 맞는 항목만 필터링합니다.",
+    "각 항목에 '왜 나에게 해당하는지' 근거와 D-day(마감기한)를 함께 표시합니다.",
+    "체크리스트 진행률을 대시보드 상단에서 한눈에 확인할 수 있습니다.",
+    "'조건 다시 입력'으로 직원 유무 등 조건을 바꿔가며 체크리스트 변화를 비교할 수 있습니다.",
+    "쿠키 기반 익명 세션으로 로그인 없이 새로고침 후에도 체크 상태가 유지됩니다."
+  ],
+  "featureTags": [
+    "맞춤 필터링",
+    "D-day 배지",
+    "진행률 대시보드",
+    "조건 재입력",
+    "익명 세션"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Vite",
+    "Express",
+    "Prisma",
+    "Supabase PostgreSQL"
+  ],
+  "techHighlights": [
+    "라우터 없이 App.tsx 상태 3개(profile·showLanding·isEditingProfile)만으로 Landing → OnboardingForm → Dashboard 전환을 관리합니다.",
+    "마운트 시 profile·progress·tasks를 Promise.allSettled로 병렬 요청해 초기 로딩 시간을 줄이고, 일부 실패 시에도 나머지 데이터는 정상 표시합니다.",
+    "체크 토글은 낙관적 업데이트로 즉각 반응하고, 서버 응답으로 보정하거나 실패 시 롤백합니다.",
+    "httpOnly 쿠키(sid)로 익명 세션을 발급해 JS에서 삭제 불가능하므로 localStorage.clear() 후에도 서버에서 상태를 복원합니다.",
+    "프로필 조건(업종·직원유무 등)을 서버 사이드에서 평가해 해당 taskId 목록만 반환하고, 클라이언트는 그 목록을 기준으로 렌더링합니다."
+  ],
+  "developmentWithAI": "기획 방향과 완료 조건은 제가 직접 결정했고, AI는 이슈 단위 작업 분해, TDD 순서 설계, 코드 초안 작성을 담당했습니다. 저는 서버와 브라우저에서 직접 실행하고 수동 QA를 진행하며 결과를 검증했습니다.",
+  "agent": {
+    "summary": "기능 분해부터 구현, 디자인 일관성 검토, 기능 검증까지 Agent와 Skill을 단계별로 활용했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "feature-slice Agent",
+        "purpose": "기능 요구사항을 FE·BE·DB를 가로지르는 작은 이슈 단위로 나누고, 의존 관계와 구현 순서를 결정합니다."
+      },
+      {
+        "type": "agent",
+        "name": "verification-toggle-cycle Agent",
+        "purpose": "체크 토글 전체 사이클(쓰기→DB 반영→새로고침 복원→세션 격리)을 curl 자동화와 브라우저 수동 검증으로 검증하고 결과를 기록합니다."
+      },
+      {
+        "type": "skill",
+        "name": "ui-design Skill",
+        "purpose": "청록 포인트 컬러 디자인 시스템(필 선택자·토글·D-day 배지·스켈레톤 등)을 새 화면·컴포넌트에 일관되게 적용합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "feature-slice Agent에게 기능 요구사항 전달 → 이슈 목록·우선순위·의존관계 도출",
+          "이슈별 완료 조건 확인 후 TDD 순서(테스트 작성 → 실패 확인 → 구현)로 진행",
+          "서버(curl) 또는 브라우저에서 직접 실행해 완료 조건 충족 여부 검증",
+          "커밋 메시지 '[태그] 요약' 형식으로 작성 후 커밋"
+        ]
+      },
+      {
+        "name": "기능 검증 Workflow",
+        "steps": [
+          "verification-toggle-cycle Agent로 핵심 데이터 흐름(토글→DB→새로고침→세션 격리) curl 자동 검증",
+          "6개 수동 QA 시나리오(신규방문·재방문·조건재입력·체크초기화·오프라인·URL링크) 브라우저에서 직접 확인",
+          "검증 결과를 Agent 파일에 체크리스트로 기록"
+        ]
+      }
+    ]
+  }
+}
