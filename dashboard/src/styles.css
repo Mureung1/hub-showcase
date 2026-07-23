@@ -46,15 +46,35 @@ a,
   background: #f4f4f4;
 }
 
-.camp-banner span {
+.camp-banner > .camp-title {
   position: absolute;
   z-index: 2;
   left: max(24px, calc((100vw - 1320px) / 2 + 24px));
   color: #182536;
-  font-size: 28px;
+  font-size: 29px;
   font-weight: 800;
   letter-spacing: -0.02em;
   white-space: nowrap;
+}
+
+.camp-title strong,
+.camp-title em {
+  font-style: normal;
+}
+
+.camp-title strong {
+  margin-right: 8px;
+  background: linear-gradient(120deg, #0aaa68 12%, #1976d2 92%);
+  background-clip: text;
+  color: transparent;
+  -webkit-background-clip: text;
+}
+
+.camp-title em {
+  margin-left: 8px;
+  color: #c58b16;
+  font-size: 0.8em;
+  letter-spacing: -0.04em;
 }
 
 .camp-banner img {
@@ -523,7 +543,7 @@ a,
     height: 84px;
   }
 
-  .camp-banner span {
+  .camp-banner > .camp-title {
     left: 16px;
     font-size: 19px;
   }

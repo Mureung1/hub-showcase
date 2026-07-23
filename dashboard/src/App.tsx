@@ -130,7 +130,11 @@ export default function App({ projects }: AppProps) {
   return (
     <>
       <header className="camp-banner">
-        <span>AI Agent Challenge 2026</span>
+        <span className="camp-title" aria-label="AI Agent Challenge 2026">
+          <strong>AI</strong>
+          <span>Agent Challenge</span>
+          <em>2026</em>
+        </span>
         <img
           src="./camp-banner.webp"
           alt="네이버 커넥트재단, 서울대학교, 대학연대 지역인재양성 사업단"
