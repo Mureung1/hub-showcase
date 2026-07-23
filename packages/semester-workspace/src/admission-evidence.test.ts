@@ -34,6 +34,22 @@ test('the preplanned root marker privately binds authority to a digest-free opaq
   const inspection = await admission.inspect(fixture.intent)
   assert.equal(inspection.outcome, 'new_target')
   if (inspection.outcome !== 'new_target') assert.fail('plan required')
+  const descriptionBeforeApply = admission.describe(inspection.plan)
+  assert.ok(descriptionBeforeApply)
+  assert.equal(
+    admission.describe({
+      ...inspection.plan,
+      authorityDigest: 'f'.repeat(64),
+    }),
+    null,
+  )
+  assert.equal(
+    admission.describe({
+      ...inspection.plan,
+      planId: `workspace_plan_${'f'.repeat(32)}`,
+    }),
+    null,
+  )
 
   try {
     await assert.rejects(
@@ -101,11 +117,23 @@ test('the preplanned root marker privately binds authority to a digest-free opaq
     assert.equal('rootIdentity' in marker, false)
     assert.equal('rootIdentity' in marker.authority, false)
 
-    assert.deepEqual(
-      {
-        setupPlanId: inspection.plan.planId,
-        privateAuthority: {
-          canonicalBytesSha256: marker.authorityDigest,
+    const canonicalReceiptPlan = {
+      semester: fixture.intent.semester,
+      target: {
+        canonicalParent: fixture.intent.parent.canonicalParent,
+        parentDevice: fixture.intent.parent.parentDevice,
+        parentInode: fixture.intent.parent.parentInode,
+        leafName: fixture.intent.leafName,
+        canonicalTarget: inspection.plan.canonicalRoot,
+      },
+    }
+    const expectedDescription = {
+      setupPlanId: inspection.plan.planId,
+      privateBinding: {
+        plan: {
+          canonicalBytesSha256: sha256(
+            Buffer.from(JSON.stringify(canonicalReceiptPlan), 'utf8'),
+          ),
           semester: aggregate.manifest.semester,
           target: {
             canonicalParent:
@@ -126,29 +154,33 @@ test('the preplanned root marker privately binds authority to a digest-free opaq
             marker.authority.aggregateSha256,
         },
       },
-      {
-        setupPlanId: inspection.plan.planId,
-        privateAuthority: {
-          canonicalBytesSha256: inspection.plan.authorityDigest,
-          semester: fixture.intent.semester,
-          target: {
-            canonicalParent: fixture.intent.parent.canonicalParent,
-            parentDevice: fixture.intent.parent.parentDevice,
-            parentInode: fixture.intent.parent.parentInode,
-            leafName: fixture.intent.leafName,
-            canonicalTarget: inspection.plan.canonicalRoot,
-          },
-        },
-        workspace: {
-          workspaceId: aggregate.manifest.workspaceId,
-          formatVersion: 3,
-          rootMarkerSha256: sha256(markerBytes),
-          ownedScaffoldPlanSha256:
-            marker.authority.ownedScaffoldPlanSha256,
-          expectedInitialAggregateSha256: sha256(aggregateBytes),
-        },
-      },
+    } as const
+    assert.deepEqual(descriptionBeforeApply, expectedDescription)
+    assert.notEqual(
+      descriptionBeforeApply.privateBinding.plan.canonicalBytesSha256,
+      inspection.plan.authorityDigest,
     )
+    assert.equal('setupId' in descriptionBeforeApply, false)
+    assert.equal('authorityDigest' in descriptionBeforeApply, false)
+    assert.equal('setupPlanBinding' in descriptionBeforeApply, false)
+
+    const mutableDescription = descriptionBeforeApply as {
+      privateBinding: { plan: { target: { leafName: string } } }
+    }
+    mutableDescription.privateBinding.plan.target.leafName = 'tampered-clone'
+    assert.deepEqual(admission.describe(inspection.plan), expectedDescription)
+
+    const resumedAdmission = createSemesterWorkspaceAdmission()
+    const resumed = await resumedAdmission.inspect({
+      kind: 'resume_owned',
+      setupId: inspection.plan.planId,
+      canonicalRoot: inspection.plan.canonicalRoot,
+    })
+    assert.equal(resumed.outcome, 'owned_incomplete')
+    if (resumed.outcome !== 'owned_incomplete') {
+      assert.fail('owned resume plan required')
+    }
+    assert.equal(resumedAdmission.describe(resumed.plan), null)
     assert.deepEqual(
       await createSemesterWorkspaceAdmission().inspect({
         kind: 'resume_owned',

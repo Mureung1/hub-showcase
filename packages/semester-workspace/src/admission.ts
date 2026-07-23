@@ -21,6 +21,7 @@ import type {
   SemesterWorkspaceAdmission,
   SemesterWorkspaceV3,
   WorkspaceApplyResult,
+  WorkspaceAdmissionPlanDescription,
   WorkspaceInspection,
   WorkspaceIntent,
   WorkspaceManifest,
@@ -193,6 +194,20 @@ function createSemesterWorkspaceAdmissionModule(
       }
     },
 
+    describe(
+      plan: AuthorityBoundWorkspacePlan,
+    ): WorkspaceAdmissionPlanDescription | null {
+      const context = plans.get(plan.planId)
+      if (
+        !context ||
+        context.kind !== 'create' ||
+        !samePlan(context.plan, plan)
+      ) {
+        return null
+      }
+      return describeCreatePlan(context)
+    },
+
     async apply(plan): Promise<WorkspaceApplyResult> {
       const context = plans.get(plan.planId)
       if (!context || !samePlan(context.plan, plan)) {
@@ -210,6 +225,42 @@ function createSemesterWorkspaceAdmissionModule(
         }
         return { outcome: 'unavailable' }
       }
+    },
+  }
+}
+
+function describeCreatePlan(
+  context: CreatePlanContext,
+): WorkspaceAdmissionPlanDescription {
+  const { authority } = context.planned.evidence
+  const semester = cloneSemesterIdentity(
+    context.planned.aggregate.manifest.semester,
+  )
+  const target = {
+    canonicalParent: authority.parent.canonicalParent,
+    parentDevice: authority.parent.parentDevice,
+    parentInode: authority.parent.parentInode,
+    leafName: authority.leafName,
+    canonicalTarget: authority.canonicalRoot,
+  }
+  return {
+    setupPlanId: context.plan.planId,
+    privateBinding: {
+      plan: {
+        canonicalBytesSha256: sha256Canonical({
+          semester,
+          target,
+        }),
+        semester,
+        target: { ...target },
+      },
+      workspace: {
+        workspaceId: authority.workspaceId,
+        formatVersion: 3,
+        rootMarkerSha256: context.planned.markerSha256,
+        ownedScaffoldPlanSha256: authority.ownedScaffoldPlanSha256,
+        expectedInitialAggregateSha256: authority.aggregateSha256,
+      },
     },
   }
 }
@@ -1962,6 +2013,18 @@ function isExactRecord(
 
 function productRootPath(root: string): string {
   return path.join(root, productDirectoryName)
+}
+
+function cloneSemesterIdentity(
+  semester: SemesterIdentity,
+): SemesterIdentity {
+  return {
+    yearLevel: semester.yearLevel,
+    term: {
+      key: semester.term.key,
+      displayName: semester.term.displayName,
+    },
+  }
 }
 
 async function inject(

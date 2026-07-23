@@ -112,6 +112,30 @@ export type AuthorityBoundWorkspacePlan = {
   readonly authorityDigest: string
 }
 
+export type WorkspaceAdmissionPlanDescription = {
+  readonly setupPlanId: string
+  readonly privateBinding: {
+    readonly plan: {
+      readonly canonicalBytesSha256: string
+      readonly semester: SemesterIdentity
+      readonly target: {
+        readonly canonicalParent: string
+        readonly parentDevice: string
+        readonly parentInode: string
+        readonly leafName: string
+        readonly canonicalTarget: string
+      }
+    }
+    readonly workspace: {
+      readonly workspaceId: string
+      readonly formatVersion: 3
+      readonly rootMarkerSha256: string
+      readonly ownedScaffoldPlanSha256: string
+      readonly expectedInitialAggregateSha256: string
+    }
+  }
+}
+
 export type AdmittedSemesterWorkspace = {
   readonly canonicalRoot: string
   readonly workspaceId: string
@@ -165,6 +189,9 @@ export type WorkspaceApplyResult =
 
 export interface SemesterWorkspaceAdmission {
   inspect(intent: WorkspaceIntent): Promise<WorkspaceInspection>
+  describe(
+    plan: AuthorityBoundWorkspacePlan,
+  ): WorkspaceAdmissionPlanDescription | null
   apply(plan: AuthorityBoundWorkspacePlan): Promise<WorkspaceApplyResult>
 }
 
