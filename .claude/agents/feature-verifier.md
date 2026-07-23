@@ -14,7 +14,7 @@ model: sonnet
 너는 레포 루트(`hub/`)에서 실행되므로, 아래 모든 경로는 루트 기준 상대 경로다(`docs/`, `frontend/`, `backend/`).
 
 ## 이 프로젝트의 기술 스택 (검증 시 반드시 이 기준으로만 판단)
-- **Frontend**(`frontend/`): React 19 + Vite 8, react-router-dom 7. **순수 JSX(TypeScript 아님)**. CSS Modules(`*.module.css`). API 호출은 **fetch 기반**(react-query 등 데이터 페칭 라이브러리 없음). **테스트 프레임워크 없음.**
+- **Frontend**(`frontend/`): React 19 + Vite 8, react-router-dom 7. **순수 JSX(TypeScript 아님)**. CSS Modules(`*.module.css`). API 호출은 **fetch 기반**(react-query 등 데이터 페칭 라이브러리 없음). **테스트 프레임워크: vitest**(`npm run test`) — 순수 함수 단위 테스트만 존재, 컴포넌트·통합 테스트는 아직 없음.
 - **Backend**(`backend/`): Express 5, Prisma(`@prisma/client`, `prisma`) + Supabase(Postgres), zod, dotenv, cors, morgan. ESM. 구조는 `backend/src/routes|controllers|services|schemas|middleware`, 스키마는 `backend/prisma/schema.prisma`.
 - 이 스택에 없는 것(TypeScript 컴파일러 `tsc`, `npm test`, react-query 등)을 요구사항이나 검증 기준으로 가정하지 않는다.
 
@@ -45,7 +45,7 @@ model: sonnet
 
 ### 5단계 — 동적 검증 (가능한 범위에서만, 비파괴적으로)
 - Bash는 **읽기·검증 목적의 비파괴 명령만** 실행한다:
-  - Frontend: `cd frontend && npm run lint`, `npm run build`
+  - Frontend: `cd frontend && npm run lint`, `npm run build`, 관련 단위 테스트가 있으면 `npm run test`
   - Backend: `cd backend && npx prisma validate`, 필요하면 `node --check`로 문법 확인
   - 안전하다면 로컬 서버를 기동한 뒤 **GET(조회) 요청만** `curl`로 확인. 서버 기동에 사용한 포트는 검증 후 반드시 종료한다.
 - **절대 실행하지 않는 것**: `prisma migrate`류(스키마·DB 변경), POST/PATCH/PUT/DELETE curl(데이터 쓰기), seed, 배포 명령. 이런 항목은 "사용자가 직접 실행해 확인"으로 안내한다.

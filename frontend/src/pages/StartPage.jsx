@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAppState } from '../state/useAppState'
+import { validateEmail, validatePassword } from '../lib/validateAuth'
 import styles from './StartPage.module.css'
 
 export default function StartPage() {
@@ -21,8 +22,18 @@ export default function StartPage() {
     e.preventDefault()
     setError('')
     setInfo('')
-    setSubmitting(true)
 
+    // Supabase 호출 전에 형식부터 검사해 네트워크 왕복 없이 바로 피드백을 준다
+    if (!validateEmail(email)) {
+      setError('올바른 이메일 형식을 입력해주세요.')
+      return
+    }
+    if (!validatePassword(password)) {
+      setError('비밀번호는 6자 이상이어야 해요.')
+      return
+    }
+
+    setSubmitting(true)
     const result = mode === 'login' ? await actions.signIn(email, password) : await actions.signUp(email, password)
 
     setSubmitting(false)

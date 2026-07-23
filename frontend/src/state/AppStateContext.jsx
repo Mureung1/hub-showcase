@@ -2,6 +2,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createLetter } from '../lib/api'
 import { supabase } from '../lib/supabaseClient'
+import { validateLetterContent } from '../lib/validateLetter'
 import { AppStateContext, TOAST_DURATION_MS, initialState, reducer } from './appStateStore'
 
 export function AppStateProvider({ children }) {
@@ -69,10 +70,12 @@ export function AppStateProvider({ children }) {
     setTitle: (value) => dispatch({ type: 'SET_TITLE', value }),
     setLetter: (value) => dispatch({ type: 'SET_LETTER', value }),
 
-    // main → send : 편지가 비어 있으면 토스트 경고만 띄우고 이동하지 않는다
+    // main → send : 편지가 비어 있거나 너무 길면 토스트 경고만 띄우고 이동하지 않는다
     toSend: () => {
-      if (!state.letter.trim()) {
-        showToast('편지 내용을 먼저 적어주세요.')
+      if (!validateLetterContent(state.letter)) {
+        showToast(
+          state.letter.trim() ? '편지가 너무 길어요.' : '편지 내용을 먼저 적어주세요.',
+        )
         return
       }
       navigate('/send')
