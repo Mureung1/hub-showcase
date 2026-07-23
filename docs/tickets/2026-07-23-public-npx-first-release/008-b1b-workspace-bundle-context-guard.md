@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -51,6 +51,16 @@ Admitted v3 workspace에 package-owned `AGENTS.md`와 declared built-in Skill tr
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `git diff --check`
 - Manual or live smoke: Temporary hostile parent/user context에서 one-workspace static/native guard를 provider-free로 실행하고 user bytes preservation을 확인한다.
 
+## Claim Evidence
+
+| Evidence | Result |
+| --- | --- |
+| Exact integration handoff | `7d38c8f3b4ce7944e21d1813bbb979ed1da85c70` |
+| Integration ancestry | B1a closeout `4e1088a5fb0406717259227de9ce72976813a9bb`를 integration parent `1bacf08625a7df70b12fa1cee7ecff9f09907b49`에 `--no-ff` merge한 clean integration commit이다. |
+| Reviewed predecessor | Ticket 007 fixed combined reviewed tip `13c4b30a67a96c9dff111ecfda51fff0fe579e70`; Standards·Spec review `GREEN`, remaining finding `0` |
+| Predecessor conformance | V3 admission `37/37`, Server `124/124`, current-v2 fixed roster 426개와 no-write/no-clobber/original-byte preservation, package·Server compile와 root test/typecheck/build/Chat Shell lint/docs-link/diff gates가 Ticket 007 closeout에서 green으로 고정됐다. |
+| Claim scope | Frozen `src/contract.ts`, shared manifest·lockfile, Browser/UI와 sibling lane을 변경하지 않고 이 ticket의 `writablePaths`만 사용한다. |
+
 ## Blocked By
 
 - [007-b1a-v3-semester-workspace-admission.md](007-b1a-v3-semester-workspace-admission.md) — B1a — v3 SemesterWorkspace admission을 구현한다
@@ -74,7 +84,7 @@ Admitted v3 workspace에 package-owned `AGENTS.md`와 declared built-in Skill tr
 | owner | `B` — Semester setup |
 | branch | `codex/public-preview-b1b-bundle-context` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/b1b-bundle-context` |
-| handoffSha | Claim 시 coordinator가 007의 fixed reviewed SHA를 integration branch에 `--no-ff` merge하고 predecessor 및 integration package/root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `7d38c8f3b4ce7944e21d1813bbb979ed1da85c70` — reviewed Ticket 007 closeout을 `--no-ff` merge한 clean integration HEAD이며 위 Claim Evidence의 predecessor·gate receipt를 소비한다. |
 | writablePaths | `packages/semester-workspace/resources/workspace/**`; `packages/semester-workspace/src/**` 중 bundle/context implementation·tests (`src/contract.ts`와 S1 frozen files 제외); `apps/server/src/setup/native-project-boundary.ts`; `apps/server/src/setup/workspace-action-admission.ts`; focused adapter tests; `docs/tickets/2026-07-23-public-npx-first-release/008-b1b-workspace-bundle-context-guard.md` |
 | consumedContracts | S1 frozen `WorkspaceBundleDescriptor`, private native config/Skill port와 `WorkspaceActionAdmission`; B1a admitted workspace/ownership evidence |
 | predecessorEvidence | 007 fixed reviewed SHA, v3 admission conformance와 no-write/no-clobber/v2-byte-preservation receipt |
