@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signup } from '../api/client.ts'
+import Layout from '../components/Layout.tsx'
 
 const TERMS_TEXT =
   '본 서비스(챌린지로그)는 개인 사이드 프로젝트입니다. 가입 시 입력한 이메일·이름·별명은 서비스 제공(로그인, 친구 방 표시) 목적으로만 사용되며, 제3자에게 제공되지 않습니다. 작성한 사진과 기록은 본인과 소속된 친구 방 멤버만 볼 수 있습니다.'
@@ -60,78 +61,88 @@ function SignupPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-sm px-6 py-16">
-      <h1 className="text-center text-2xl">회원가입</h1>
-      <form className="mt-8 flex flex-col gap-4" onSubmit={handleSubmit}>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>이름 <span className="text-accent">*</span></span>
+    <Layout hideNav title="회원가입">
+      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+        <div>
+          <label className="mb-1.5 block text-[13px] font-semibold text-heading" htmlFor="name">
+            이름 <span className="text-accent">*</span>
+          </label>
           <input
-            className="rounded-lg border border-border bg-card px-3 py-2"
+            className="w-full rounded-xl border border-border bg-card px-3.5 py-3 text-sm text-heading"
+            id="name"
             onChange={(e) => setName(e.target.value)}
             required
             type="text"
             value={name}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>
+        </div>
+        <div>
+          <label className="mb-1.5 block text-[13px] font-semibold text-heading" htmlFor="nickname">
             별명 <span className="text-accent">*</span>{' '}
-            <span className="text-xs text-muted">(친구 방에서 다른 멤버에게 보이는 이름이에요)</span>
-          </span>
+            <span className="text-xs font-normal text-muted">(친구 방에서 다른 멤버에게 보이는 이름이에요)</span>
+          </label>
           <input
-            className="rounded-lg border border-border bg-card px-3 py-2"
+            className="w-full rounded-xl border border-border bg-card px-3.5 py-3 text-sm text-heading"
+            id="nickname"
             onChange={(e) => setNickname(e.target.value)}
             required
             type="text"
             value={nickname}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>이메일 <span className="text-accent">*</span></span>
+        </div>
+        <div>
+          <label className="mb-1.5 block text-[13px] font-semibold text-heading" htmlFor="email">
+            이메일 <span className="text-accent">*</span>
+          </label>
           <input
-            className="rounded-lg border border-border bg-card px-3 py-2"
+            className="w-full rounded-xl border border-border bg-card px-3.5 py-3 text-sm text-heading"
+            id="email"
             onChange={(e) => setEmail(e.target.value)}
             required
             type="email"
             value={email}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>
+        </div>
+        <div>
+          <label className="mb-1.5 block text-[13px] font-semibold text-heading" htmlFor="password">
             비밀번호 <span className="text-accent">*</span>{' '}
-            <span className="text-xs text-muted">(8자 이상, 영문+숫자 포함)</span>
-          </span>
+            <span className="text-xs font-normal text-muted">(8자 이상, 영문+숫자 포함)</span>
+          </label>
           <input
-            className="rounded-lg border border-border bg-card px-3 py-2"
+            className="w-full rounded-xl border border-border bg-card px-3.5 py-3 text-sm text-heading"
+            id="password"
             minLength={8}
             onChange={(e) => setPassword(e.target.value)}
             required
             type="password"
             value={password}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="flex items-center justify-between">
-            <span>비밀번호 확인 <span className="text-accent">*</span></span>
+        </div>
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className="text-[13px] font-semibold text-heading" htmlFor="passwordConfirm">
+              비밀번호 확인 <span className="text-accent">*</span>
+            </label>
             {showMatchHint &&
               (passwordsMatch ? (
                 <span className="text-xs text-done">✓ 일치합니다</span>
               ) : (
                 <span className="text-xs text-accent">✗ 일치하지 않습니다</span>
               ))}
-          </span>
+          </div>
           <input
-            className="rounded-lg border border-border bg-card px-3 py-2"
+            className="w-full rounded-xl border border-border bg-card px-3.5 py-3 text-sm text-heading"
+            id="passwordConfirm"
             minLength={8}
             onChange={(e) => setPasswordConfirm(e.target.value)}
             required
             type="password"
             value={passwordConfirm}
           />
-        </label>
+        </div>
         {error && !showTermsModal && <p className="text-sm text-accent">{error}</p>}
         <button
-          className="rounded-lg bg-accent px-4 py-2 text-white disabled:opacity-50"
+          className="w-full rounded-full bg-accent px-5 py-[13px] text-[15px] font-semibold text-white disabled:opacity-50"
           disabled={isSubmitting}
           type="submit"
         >
@@ -144,12 +155,12 @@ function SignupPage() {
 
       {showTermsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-sm rounded-xl bg-card p-6">
-            <h2 className="text-lg font-semibold text-heading">이용약관 동의</h2>
-            <div className="mt-3 max-h-40 overflow-y-auto rounded-lg border border-border p-3 text-sm text-muted">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-[18px] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <h2 className="text-[17px] text-heading">이용약관 동의</h2>
+            <div className="mt-3 max-h-40 overflow-y-auto rounded-xl border border-border p-3 text-sm text-muted">
               {TERMS_TEXT}
             </div>
-            <label className="mt-4 flex items-center gap-2 text-sm">
+            <label className="mt-4 flex items-center gap-2 text-sm text-heading">
               <input
                 checked={agreedToTerms}
                 onChange={(e) => setAgreedToTerms(e.target.checked)}
@@ -160,14 +171,14 @@ function SignupPage() {
             {error && <p className="mt-2 text-sm text-accent">{error}</p>}
             <div className="mt-4 flex gap-2">
               <button
-                className="flex-1 rounded-lg border border-border px-4 py-2"
+                className="flex-1 rounded-full border border-border px-4 py-3 text-[15px] font-semibold text-heading"
                 onClick={handleCancelTerms}
                 type="button"
               >
                 취소
               </button>
               <button
-                className="flex-1 rounded-lg bg-accent px-4 py-2 text-white disabled:opacity-50"
+                className="flex-1 rounded-full bg-accent px-4 py-3 text-[15px] font-semibold text-white disabled:opacity-50"
                 disabled={!agreedToTerms || isSubmitting}
                 onClick={handleConfirmSignup}
                 type="button"
@@ -178,7 +189,7 @@ function SignupPage() {
           </div>
         </div>
       )}
-    </main>
+    </Layout>
   )
 }
 
