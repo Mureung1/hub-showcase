@@ -56,8 +56,8 @@
   "bundle": {
     "file_count": 2539,
     "path": "bundle",
-    "regular_file_bytes": 366692788,
-    "roster_sha256": "4b72a60735d6b6d1489bab9fa937889f296ba2268c3fc0c433ba84ca10b36b7a",
+    "regular_file_bytes": 366693872,
+    "roster_sha256": "6d59fdf23ab5da1402407549268ae93f0607d6b559237f9c6f859187b960a176",
     "symlink_count": 9
   },
   "installed": {
@@ -80,8 +80,8 @@
     "site_packages": {
       "file_count": 196,
       "path": "bundle/site-packages",
-      "regular_file_bytes": 318704986,
-      "roster_sha256": "bbd4ef8a261b1f4e34e01b1a312fed0262d4d4f55f3a9cd7338e420aad50b9d8",
+      "regular_file_bytes": 318706070,
+      "roster_sha256": "f13407bacae6cd41dc36a2101139fdbbfcbeab094570730a9669f6c334e5f4e3",
       "symlink_count": 0
     }
   },
@@ -136,12 +136,12 @@
         "sha256": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915"
       }
     },
-    "patch_stack_sha256": "ffc43da6e5e7a146016404db54968d37d849b778e5e9b04db680cac4124fc1c9",
+    "patch_stack_sha256": "2cb3dcc9bdf7f81136b21ac16cb1afe161e5676e3800e85265653c2795fbbcbd",
     "patched_source_manifest": {
-      "bytes": 31979,
+      "bytes": 34032,
       "git_mode": "100644",
       "path": "manifests/patched-source.json",
-      "sha256": "db9f0644155f9ab8f396b5263e3539a778e5ca7a49e3b8e49b14be7c32a71f98"
+      "sha256": "9ef9d9111fbe4383104ec34069911dde0e9f7ef7a8a06fa5a16851a584388d5c"
     },
     "patches": [
       {
@@ -207,6 +207,14 @@
         "order": 8,
         "path": "upstream/patches/0008-standalone-skill-extra-roots.patch",
         "sha256": "60eb7ec0fede4b97b1bd041e92bf49f93dca0ec0beadb1e3e4de9cb9637074a4"
+      },
+      {
+        "bytes": 13298,
+        "git_mode": "100644",
+        "id": "0009-managed-chatgpt-login",
+        "order": 9,
+        "path": "upstream/patches/0009-managed-chatgpt-login.patch",
+        "sha256": "0b7e567644ec25d0ab57f9639319fcecce591af8e4f4e57596c11be8174402fa"
       }
     ],
     "repository": "https://github.com/openai/codex",
@@ -235,11 +243,11 @@
       "version": "0.7.0"
     },
     {
-      "bytes": 84251,
+      "bytes": 84598,
       "distribution": "openai-codex",
       "git_mode": "100644",
       "path": "wheels/openai_codex-0.0.0.dev0-py3-none-any.whl",
-      "sha256": "9259319c79132ffa16e1ba46d3e20a88be3b5851501f8ab7812bfb42ce6427aa",
+      "sha256": "a4590fe5dff6a58e9042b37aad682bf8f50f413a111cc6b42ed64a30019a7a94",
       "source": "ordered_patches",
       "version": "0.0.0.dev0"
     },

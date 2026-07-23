@@ -8,7 +8,7 @@ import { verifyProductionBundle } from './production-bundle.js'
 
 const SOURCE_COMMIT = '8c68d4c87dc54d38861f5114e920c3de2efa5876'
 const PATCH_STACK_SHA256 =
-  'ffc43da6e5e7a146016404db54968d37d849b778e5e9b04db680cac4124fc1c9'
+  '2cb3dcc9bdf7f81136b21ac16cb1afe161e5676e3800e85265653c2795fbbcbd'
 const PATCH_IDS = [
   '0001-response-last-router',
   '0002-bounded-notification-routing',
@@ -18,6 +18,7 @@ const PATCH_IDS = [
   '0006-plan-user-input-seam',
   '0007-thread-start-settings',
   '0008-standalone-skill-extra-roots',
+  '0009-managed-chatgpt-login',
 ] as const
 const BUNDLE_ROSTER_SHA256 =
   '72f3c18b81c3441ca8ddea2d2bef3ef844fc4270edde878edf183d4361a53e78'
