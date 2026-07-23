@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:4000'
+export const BASE_URL = 'http://localhost:4000'
 const TOKEN_KEY = 'challengelog_token'
 
 export function getToken(): string | null {
