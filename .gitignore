@@ -34,3 +34,8 @@ dist-ssr
 
 # Temporary uploads
 backend/uploads/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
