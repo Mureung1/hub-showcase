@@ -74,7 +74,8 @@ When designing, redesigning, auditing, or implementing any user-facing screen, a
 - Design and generated code must be user-friendly and easy to learn, especially for beginner developers using the app repeatedly.
 ## Commit Convention
 
-Use Korean Conventional Commit messages:
+- **Pre-Commit Report Rule**: `git commit`을 실행하기 전에 **반드시 사용자에게 무엇이 어떻게 변경되었는지(수정된 파일 및 변경 핵심 내역) 사전 보고**합니다.
+- Use Korean Conventional Commit messages:
 
 - `feat: ...` for product features.
 - `docs: ...` for documentation and planning.

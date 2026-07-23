@@ -127,6 +127,6 @@ git diff --check
 
 - Added optional SQLite repository mode for backend persistence.
 - Enable with `ICU_REPOSITORY_MODE=sqlite` and optional `ICU_SQLITE_PATH`.
-- Current persisted data: learning progress, mistake notes, Git Lab attempts.
-- Prepared schema for generated curriculum snapshots; API wiring remains next.
+- Current persisted data: learning progress, mistake notes, Git Lab attempts, and generated curriculums.
+- Connected `generated_curriculums` table and `/api/curriculum/generated` endpoints to Today Hub and Workspace stores.
 - In-memory repositories remain the default for mock mode and tests.

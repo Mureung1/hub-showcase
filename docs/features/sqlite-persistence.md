@@ -1,4 +1,4 @@
-﻿# SQLite Persistence Plan
+# SQLite Persistence Plan
 
 ## Purpose
 
@@ -22,7 +22,7 @@ If `ICU_REPOSITORY_MODE` is not `sqlite`, the backend keeps using in-memory repo
 - `learning_progress`: Workspace mission state, run state, attempt count, active step, completion time, activity log JSON.
 - `mistake_notes`: open/resolved mistake note records across Git Lab, Workspace, algorithm, and API practice flows.
 - `git_lab_attempts`: command, result, reason, lesson id, created time.
-- `generated_curriculums`: reserved table for generated curriculum snapshots. The schema exists, but the API adapter is not connected yet.
+- `generated_curriculums`: generated curriculum plan snapshots (`id`, `goal`, `plan_json`, `created_at`, `updated_at`). Connected to API routes and Today Hub.
 
 ## Files
 
@@ -30,11 +30,11 @@ If `ICU_REPOSITORY_MODE` is not `sqlite`, the backend keeps using in-memory repo
 - `backend/modules/learning-progress/adapters/sqliteLearningProgressRepository.mjs`
 - `backend/modules/mistake-notes/adapters/sqliteMistakeNoteRepository.mjs`
 - `backend/modules/git-lab/adapters/sqliteGitLabAttemptRepository.mjs`
+- `backend/modules/curriculum/adapters/sqliteGeneratedCurriculumRepository.mjs`
 - `backend/http/server.mjs`: chooses in-memory or SQLite repositories at runtime.
 
 ## Next Steps
 
-1. Add a generated curriculum repository and API so Today Hub can save generated plans on the backend.
-2. Add a simple migration version table before schema changes become frequent.
-3. Decide user identity strategy before adding multi-user sync.
-4. Keep Supabase/Postgres as the later sync/backend deployment option, not the first local persistence layer.
+1. Add a simple migration version table before schema changes become frequent.
+2. Decide user identity strategy before adding multi-user sync.
+3. Keep Supabase/Postgres as the later sync/backend deployment option, not the first local persistence layer.

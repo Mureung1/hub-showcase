@@ -295,6 +295,9 @@ Implemented now:
 
 ```txt
 POST   /api/curriculum/recommend
+GET    /api/curriculum/generated
+POST   /api/curriculum/generated
+DELETE /api/curriculum/generated
 GET    /api/progress/today
 POST   /api/progress/missions/:missionId
 DELETE /api/progress/missions/:missionId
@@ -307,12 +310,12 @@ DELETE /api/mistake-notes
 GET    /api/git-lab/attempts
 POST   /api/git-lab/attempts
 DELETE /api/git-lab/attempts
+POST   /api/code/run
 ```
 
 Planned later:
 
 ```txt
-POST /api/code/run
 POST /api/code/review
 GET  /api/git-lab/levels
 ```

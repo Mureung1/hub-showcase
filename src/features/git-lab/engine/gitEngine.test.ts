@@ -89,6 +89,42 @@ describe('gitEngine', () => {
     expect(parseGitCommand('git log --oneline')).toEqual({ type: 'log', oneline: true })
   })
 
+  it('handles boundary cases and normalizes input', () => {
+    // CLI 프롬프트 접두어($) 무시
+    expect(parseGitCommand('$ git status')).toEqual({ type: 'status' })
+    expect(parseGitCommand('  $   git status ')).toEqual({ type: 'status' })
+
+    // 불필요한 공백 무시
+    expect(parseGitCommand('  git    init  ')).toEqual({ type: 'init' })
+
+    // reset 옵션 생략 시 mixed 적용
+    expect(parseGitCommand('git reset HEAD')).toEqual({
+      type: 'reset',
+      mode: 'mixed',
+      target: 'HEAD',
+    })
+  })
+
+  it('throws an error for non-git or missing commands', () => {
+    expect(() => parseGitCommand('')).toThrow('Command must start with git.')
+    expect(() => parseGitCommand('   ')).toThrow('Command must start with git.')
+    expect(() => parseGitCommand('npm install')).toThrow('Command must start with git.')
+    expect(() => parseGitCommand('ls -al')).toThrow('Command must start with git.')
+  })
+
+  it('throws an error for unsupported git commands or missing arguments', () => {
+    // 지원하지 않는 명령어
+    expect(() => parseGitCommand('git push')).toThrow('Unsupported git command')
+    expect(() => parseGitCommand('git clone https://example.com')).toThrow('Unsupported git command')
+
+    // 필수 인자 누락 (구조상 길이 부족으로 unsupported 예외 발생)
+    expect(() => parseGitCommand('git add')).toThrow('Unsupported git command')
+    expect(() => parseGitCommand('git commit -m')).toThrow('Unsupported git command')
+
+    // 설정값 누락 (명시적인 커스텀 에러)
+    expect(() => parseGitCommand('git config --global user.name')).toThrow('Missing value for user.name.')
+  })
+
   it('sets global config values and lists configured keys', () => {
     let state = createInitialGitState()
 
