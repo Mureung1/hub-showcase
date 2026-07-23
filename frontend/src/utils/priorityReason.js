@@ -29,7 +29,7 @@ export function buildPriorityReason(subject) {
   }
 
   if (breakdown.gradeWeight >= 75) {
-    parts.push("학점에서 비중이 크고");
+    parts.push("성적에서 비중이 크고");
   }
 
   if (breakdown.grading >= 75) {

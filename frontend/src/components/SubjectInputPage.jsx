@@ -209,7 +209,7 @@ function SubjectInputPage({
 
           <div className="form-group">
             <label className="form-label" htmlFor="credits">
-              중요도 (학점)
+              중요도 (학점 수)
             </label>
             <input
               id="credits"
@@ -228,7 +228,7 @@ function SubjectInputPage({
 
           <div className="form-group">
             <label className="form-label" htmlFor="gradeWeight">
-              학점 반영 비율 (%)
+              성적 반영 비율 (%)
             </label>
             <input
               id="gradeWeight"
@@ -307,7 +307,7 @@ function SubjectInputPage({
                     {formatDday(getDaysUntil(subject.examDate))} · 이해도{" "}
                     {formatScale(subject.understanding)} · 난이도{" "}
                     {formatScale(subject.difficulty)} · {subject.credits ?? 3}학점
-                    · 학점반영 {subject.gradeWeight ?? 40}%
+                    · 성적반영 {subject.gradeWeight ?? 40}%
                   </span>
                 </div>
                 <div className="entry-actions">
