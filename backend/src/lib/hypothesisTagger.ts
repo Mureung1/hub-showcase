@@ -1,6 +1,7 @@
 import { Type } from '@google/genai';
 import { generateStructuredJson } from './geminiClient';
 import { supabase } from './supabaseClient';
+import { filterVerifiedEvidenceItems } from './responseValidation';
 
 // README/AI_Pipeline_Design.md의 1단계(분류) 설계를 그대로 옮긴 구현체.
 // AI는 분류만 수행하며 해석·판단은 하지 않는다.
@@ -81,12 +82,8 @@ export async function tagHypothesesFromTranscript(params: {
     temperature: 0.1,
   });
 
-  // 환각 방어(1차): AI가 지어낸 hypothesis_id나 전사문에 없는 quote는 저장 전에 폐기한다.
-  // 참조 번호([n] ↔ citations) 등 2단계 이후의 정밀 검증은 Task 16의 책임 범위로 남긴다.
-  const validHypothesisIds = new Set(hypotheses.map((h) => h.hypothesis_id));
-  const verifiedItems = rawItems.filter(
-    (item) => validHypothesisIds.has(item.hypothesis_id) && transcript.includes(item.quote),
-  );
+  // 환각 방어(Task 16): AI가 지어낸 hypothesis_id나 전사문에 없는 quote는 저장 전에 폐기한다.
+  const verifiedItems = filterVerifiedEvidenceItems(rawItems, hypotheses, transcript);
 
   if (verifiedItems.length === 0) {
     return [];
