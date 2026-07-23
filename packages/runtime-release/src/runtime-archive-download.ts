@@ -1775,6 +1775,7 @@ async function loadPartialWriter(
       await resetNonAuthorizingPartial(
         input,
         handle,
+        opened.identity,
         'runtime_archive_unjournaled_partial_reset_failed',
       )
       return {
@@ -1842,6 +1843,7 @@ async function loadPartialWriter(
       await resetNonAuthorizingPartial(
         input,
         handle,
+        openedArchive.identity,
         'runtime_archive_zero_journal_partial_reset_failed',
       )
     }
@@ -1867,6 +1869,7 @@ async function loadPartialWriter(
 async function resetNonAuthorizingPartial(
   input: RuntimeArchiveDownloadInput,
   handle: FileHandle,
+  expectedIdentity: RuntimeFileSystemIdentity,
   failureKind:
     | 'runtime_archive_unjournaled_partial_reset_failed'
     | 'runtime_archive_zero_journal_partial_reset_failed',
@@ -1878,6 +1881,21 @@ async function resetNonAuthorizingPartial(
     throw runtimeAuthorityError('runtime_storage_unavailable', {
       kind: failureKind,
       cause: error,
+    })
+  }
+  if (
+    !stats.isFile() ||
+    stats.isSymbolicLink() ||
+    stats.nlink !== 1n ||
+    Number(stats.mode & 0o7777n) !== 0o600 ||
+    Number(stats.uid) !==
+      input.mutationAuthority.snapshot.expectedOwnerUid ||
+    String(stats.dev) !== expectedIdentity.device ||
+    String(stats.ino) !== expectedIdentity.inode ||
+    Number(stats.uid) !== expectedIdentity.ownerUid
+  ) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_archive_partial_reset_identity_changed',
     })
   }
   if (

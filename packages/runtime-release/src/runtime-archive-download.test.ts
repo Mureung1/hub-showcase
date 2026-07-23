@@ -705,7 +705,7 @@ test('a missing final turns a full weak alias into a fresh nlink-one restart', a
         }),
         'runtime_storage_unavailable',
       )
-      assert.equal(transport.requests.length, 2)
+      assert.equal(transport.requests.length, 1)
     } finally {
       fileHandlePrototype.truncate = originalTruncate
     }
@@ -815,6 +815,119 @@ test('a zero-journal alias restarts fresh after its final link is lost', async (
         },
         undefined,
       ],
+    )
+    transport.assertExhausted()
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('a new partial alias blocks zero reset before either link is truncated', async () => {
+  const archiveBytes = Buffer.from('partial alias reset race')
+  const fixture = await createDownloadFixture(archiveBytes)
+  const transport = new ScriptedArchiveTransport([
+    {
+      statusCode: 200,
+      headers: {
+        'content-length': [String(archiveBytes.byteLength)],
+      },
+      chunks: [archiveBytes],
+    },
+    {
+      statusCode: 200,
+      headers: {
+        'content-length': [String(archiveBytes.byteLength)],
+      },
+      chunks: [archiveBytes],
+    },
+  ])
+
+  try {
+    await downloadVerifiedRuntimeArchive({
+      admission: fixture.admission,
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      signal: new AbortController().signal,
+      transport,
+    })
+    await unlink(fixture.layout.archive.path)
+    const unlinkedPartial = await lstat(
+      fixture.layout.partial.archivePath,
+    )
+    assert.equal(unlinkedPartial.nlink, 1)
+
+    const probeHandle = await open(
+      fixture.layout.partial.archivePath,
+      'r+',
+    )
+    const fileHandlePrototype = Object.getPrototypeOf(
+      probeHandle,
+    ) as {
+      stat: (...arguments_: unknown[]) => Promise<unknown>
+    }
+    const originalStat = fileHandlePrototype.stat
+    const targetInode = String(unlinkedPartial.ino)
+    let targetStatCount = 0
+    await probeHandle.close()
+    fileHandlePrototype.stat = async function (
+      this: unknown,
+      ...arguments_: unknown[]
+    ): Promise<unknown> {
+      const observed = (await originalStat.apply(
+        this,
+        arguments_,
+      )) as { readonly ino: bigint | number }
+      if (String(observed.ino) !== targetInode) return observed
+      targetStatCount += 1
+      if (targetStatCount !== 2) return observed
+      await link(
+        fixture.layout.partial.archivePath,
+        fixture.layout.archive.path,
+      )
+      return await originalStat.apply(this, arguments_)
+    }
+    try {
+      await assertRuntimeFailure(
+        downloadVerifiedRuntimeArchive({
+          admission: fixture.admission,
+          layout: fixture.layout,
+          mutationAuthority: fixture.mutationAuthority,
+          signal: new AbortController().signal,
+          transport,
+        }),
+        'runtime_recovery_required',
+      )
+    } finally {
+      fileHandlePrototype.stat = originalStat
+    }
+
+    assert.equal(targetStatCount, 2)
+    assert.equal(transport.requests.length, 1)
+    assert.deepEqual(
+      await readFile(fixture.layout.partial.archivePath),
+      archiveBytes,
+    )
+    assert.deepEqual(
+      await readFile(fixture.layout.archive.path),
+      archiveBytes,
+    )
+    assert.equal(
+      (await lstat(fixture.layout.partial.archivePath)).nlink,
+      2,
+    )
+    await unlink(fixture.layout.archive.path)
+
+    const result = await downloadVerifiedRuntimeArchive({
+      admission: fixture.admission,
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      signal: new AbortController().signal,
+      transport,
+    })
+    assert.deepEqual(await readFile(result.archivePath), archiveBytes)
+    assert.deepEqual(
+      transport.requests.map(({ range }) => range),
+      [undefined, undefined],
     )
     transport.assertExhausted()
   } finally {
