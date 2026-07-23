@@ -118,7 +118,13 @@ export function decodeRuntimeReleaseDescriptor(
     distribution.applicationReleaseTag !== expectedApplicationTag ||
     distribution.runtimeAssetReleaseTag !== expectedRuntimeTag ||
     archive.assetName !== expectedAssetName ||
-    archive.url !== expectedArchiveUrl
+    archive.url !== expectedArchiveUrl ||
+    !isCanonicalGitHubReleaseUrl(
+      archive.url,
+      distribution.repository,
+      expectedRuntimeTag,
+      expectedAssetName,
+    )
   ) {
     throw invalidDescriptor()
   }
@@ -265,9 +271,80 @@ function isExactSemver(value: unknown): value is string {
 }
 
 function isGitHubRepositoryUrl(value: unknown): value is string {
+  return parseCanonicalGitHubRepositoryUrl(value) !== undefined
+}
+
+function parseCanonicalGitHubRepositoryUrl(
+  value: unknown,
+): { readonly owner: string; readonly repository: string } | undefined {
+  if (typeof value !== 'string') return undefined
+  const match =
+    /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/u.exec(
+      value,
+    )
+  if (
+    match === null ||
+    match[1] === '.' ||
+    match[1] === '..' ||
+    match[2] === '.' ||
+    match[2] === '..'
+  ) {
+    return undefined
+  }
+
+  let parsed: URL
+  try {
+    parsed = new URL(value)
+  } catch {
+    return undefined
+  }
+  if (
+    parsed.protocol !== 'https:' ||
+    parsed.hostname !== 'github.com' ||
+    parsed.port !== '' ||
+    parsed.username !== '' ||
+    parsed.password !== '' ||
+    parsed.pathname !== `/${match[1]}/${match[2]}` ||
+    parsed.search !== '' ||
+    parsed.hash !== '' ||
+    parsed.href !== value
+  ) {
+    return undefined
+  }
+  return { owner: match[1], repository: match[2] }
+}
+
+function isCanonicalGitHubReleaseUrl(
+  value: string,
+  repositoryUrl: string,
+  releaseTag: string,
+  assetName: string,
+): boolean {
+  const repository =
+    parseCanonicalGitHubRepositoryUrl(repositoryUrl)
+  if (repository === undefined) return false
+  const expectedPath =
+    `/${repository.owner}/${repository.repository}/releases/download/` +
+    `${releaseTag}/${assetName}`
+  const expectedUrl = `https://github.com${expectedPath}`
+  if (value !== expectedUrl) return false
+
+  let parsed: URL
+  try {
+    parsed = new URL(value)
+  } catch {
+    return false
+  }
   return (
-    typeof value === 'string' &&
-    /^https:\/\/github\.com\/[^/]+\/[^/]+$/.test(value)
+    parsed.protocol === 'https:' &&
+    parsed.hostname === 'github.com' &&
+    parsed.port === '' &&
+    parsed.username === '' &&
+    parsed.password === '' &&
+    parsed.pathname === expectedPath &&
+    parsed.search === '' &&
+    parsed.hash === '' &&
+    parsed.href === value
   )
 }
 
