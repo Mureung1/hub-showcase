@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { randomUUID } from 'crypto'
 import { supabase } from '../supabaseClient.js'
+import { passesGenderFilter, sortByArrivalPriority, describeActivity } from '../matching.js'
 
 const router = Router()
 
@@ -125,7 +126,44 @@ router.get('/', async (req, res) => {
     }))
     .filter((room) => room.groupCount < 4)
 
-  res.json(rooms)
+  const { myRequestId } = req.query
+  const me = myRequestId ? data.find((r) => r.id === myRequestId) : null
+
+  if (!me) {
+    return res.json(rooms.map((room) => ({ ...room, activity: describeActivity(room.last_seen_at) })))
+  }
+
+  // 성별 필터 적용: 나와 각 방 대표자의 gender를 users 테이블에서 한 번에 조회
+  const userIds = [...new Set([me.user_id, ...rooms.map((r) => r.user_id)].filter(Boolean))]
+  const { data: userRows } = await supabase
+    .from('users')
+    .select('id, gender')
+    .in('id', userIds.length ? userIds : [''])
+  const genderById = Object.fromEntries((userRows ?? []).map((u) => [u.id, u.gender]))
+
+  const myGenderInfo = { gender: genderById[me.user_id] ?? 'unknown', genderOnly: me.gender_only }
+
+  const filteredRooms = rooms.filter((room) => {
+    const candidateGenderInfo = { gender: genderById[room.user_id] ?? 'unknown', genderOnly: room.gender_only }
+    return passesGenderFilter(myGenderInfo, candidateGenderInfo)
+  })
+
+  res.json(filteredRooms.map((room) => ({ ...room, activity: describeActivity(room.last_seen_at) })))
+})
+
+router.post('/:id/heartbeat', async (req, res) => {
+  const { id } = req.params
+
+  const { error } = await supabase
+    .from('matching_requests')
+    .update({ last_seen_at: new Date().toISOString() })
+    .eq('id', id)
+
+  if (error) {
+    return res.status(500).json({ error: error.message })
+  }
+
+  res.json({ ok: true })
 })
 
 router.get('/:id', async (req, res) => {
@@ -142,6 +180,22 @@ router.get('/:id', async (req, res) => {
   }
 
   res.json(data)
+})
+
+router.post('/:id/create-room', async (req, res) => {
+  const { id } = req.params
+  const groupId = randomUUID()
+
+  const { error } = await supabase
+    .from('matching_requests')
+    .update({ group_id: groupId })
+    .eq('id', id)
+
+  if (error) {
+    return res.status(500).json({ error: error.message })
+  }
+
+  res.json({ groupId })
 })
 
 router.post('/:id/join', async (req, res) => {
@@ -172,8 +226,6 @@ router.post('/:id/join', async (req, res) => {
     return res.status(400).json({ error: '이미 다른 그룹에 참여했어요' })
   }
 
-  // 방이 아직 비어있으면(첫 매칭) 즉시 성사, 이미 사람이 있는 방이면 대기(pending) 상태로 넣는다.
-  const isFirstJoin = !target.group_id
   const groupId = target.group_id ?? randomUUID()
 
   const { data: existingMembers, error: countError } = await supabase
@@ -191,6 +243,8 @@ router.post('/:id/join', async (req, res) => {
     return res.status(400).json({ error: '정원이 다 찼어요' })
   }
 
+  // 아직 matched된 사람이 아무도 없으면(방장이 혼자 만들어둔 방 포함) 첫 매칭으로 간주해 즉시 성사, 그 외엔 대기(pending)
+  const isFirstJoin = matchedCount === 0
   const myStatus = isFirstJoin ? 'matched' : 'pending'
 
   const { error: updateMineError } = await supabase
@@ -250,7 +304,46 @@ router.get('/group/:groupId', async (req, res) => {
     return res.status(500).json({ error: error.message })
   }
 
+  // 대기(pending) 인원이 여러 명일 때, 도착 소요시간이 짧은 사람부터 보이도록 우선순위 정렬
+  const sorted = sortByArrivalPriority(data)
+  res.json(sorted.map((row) => ({ ...row, activity: describeActivity(row.last_seen_at) })))
+})
+
+router.get('/group/:groupId/messages', async (req, res) => {
+  const { groupId } = req.params
+
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    return res.status(500).json({ error: error.message })
+  }
+
   res.json(data)
+})
+
+router.post('/group/:groupId/messages', async (req, res) => {
+  const { groupId } = req.params
+  const { requestId, text } = req.body
+
+  if (!text || !text.trim()) {
+    return res.status(400).json({ error: '메시지를 입력해주세요' })
+  }
+
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({ group_id: groupId, request_id: requestId, text: text.trim() })
+    .select()
+    .single()
+
+  if (error) {
+    return res.status(500).json({ error: error.message })
+  }
+
+  res.status(201).json(data)
 })
 
 router.post('/:id/respond', async (req, res) => {

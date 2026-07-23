@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import TaxiLoader from "./TaxiLoader";
 
 const AVATAR_COLORS = ["#C8102E", "#2F8F5B", "#C98A1F", "#5B6472"];
 
@@ -20,6 +21,7 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
       departureHub: myRequest.departureHub,
       destHub: myRequest.destHub,
       time: myRequest.time,
+      myRequestId: myRequest.id,
     });
 
     fetch(`http://localhost:4000/api/requests?${params}`)
@@ -34,15 +36,43 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
       .finally(() => setLoading(false));
   }, [myRequest]);
 
-  function handleStartNew() {
+  useEffect(() => {
+    if (!myRequest) return;
+
+    function sendHeartbeat() {
+      fetch(`http://localhost:4000/api/requests/${myRequest.id}/heartbeat`, { method: "POST" }).catch(() => {});
+    }
+
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 30000);
+    return () => clearInterval(interval);
+  }, [myRequest]);
+
+  async function handleStartNew() {
     if (joinedId !== null) return;
-    setJoinedId(myRequest.id);
-    onJoin({
-      groupId: null,
-      groupCount: 1,
-      myRequestId: myRequest.id,
-      pending: false,
-    });
+    setJoinError(null);
+
+    try {
+      const res = await fetch(`http://localhost:4000/api/requests/${myRequest.id}/create-room`, {
+        method: "POST",
+      });
+      const body = await res.json();
+
+      if (!res.ok) {
+        setJoinError(body.error ?? "방 만들기에 실패했어요.");
+        return;
+      }
+
+      setJoinedId(myRequest.id);
+      onJoin({
+        groupId: body.groupId,
+        groupCount: 1,
+        myRequestId: myRequest.id,
+        pending: false,
+      });
+    } catch {
+      setJoinError("방 만들기에 실패했어요. 서버가 켜져 있는지 확인해주세요.");
+    }
   }
 
   async function handleClick(c) {
@@ -76,32 +106,35 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
   }
 
   return (
-    <div style={{ padding: "0 20px 28px", display: "flex", flexDirection: "column", flex: 1 }}>
-      <button
-        onClick={onBack}
-        style={{ alignSelf: "flex-start", border: "none", background: "none", color: "#8A7A76", fontSize: 13, padding: "14px 0", cursor: "pointer" }}
-      >
-        ‹ 이전
-      </button>
-      <h1 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 4px" }}>매칭 후보</h1>
-      <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 16px" }}>
-        같은 방향 · 희망 시간 ±15분 이내로 조회된 실제 등록 데이터예요
-      </p>
-
-      {loading && <p style={{ fontSize: 13, color: "#8A7A76", textAlign: "center", margin: "40px 0" }}>불러오는 중...</p>}
-
-      {error && <p style={{ fontSize: 13, color: "#C8102E", textAlign: "center", margin: "40px 0" }}>{error}</p>}
-
-      {joinError && <p style={{ fontSize: 12, color: "#C8102E", margin: "0 0 10px" }}>{joinError}</p>}
-
-      {!loading && !error && candidates.length === 0 && (
-        <p style={{ fontSize: 13, color: "#8A7A76", textAlign: "center", margin: "40px 0" }}>
-          아직 같은 방향·시간대에 등록한 학생이 없어요
+    <div className="scroll-viewport">
+      <div style={{ padding: "0 20px", flexShrink: 0 }}>
+        <button
+          onClick={onBack}
+          style={{ alignSelf: "flex-start", border: "none", background: "none", color: "#8A7A76", fontSize: 13, padding: "14px 0", cursor: "pointer" }}
+        >
+          ‹ 이전
+        </button>
+        <h1 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 4px" }}>매칭 후보</h1>
+        <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 16px" }}>
+          같은 방향 · 희망 시간 ±15분 이내로 조회된 실제 등록 데이터예요
         </p>
-      )}
+      </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {candidates.map((c, i) => (
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 20px" }}>
+        {loading && <TaxiLoader label="후보를 찾는 중..." />}
+
+        {error && <p style={{ fontSize: 13, color: "#C8102E", textAlign: "center", margin: "40px 0" }}>{error}</p>}
+
+        {joinError && <p style={{ fontSize: 12, color: "#C8102E", margin: "0 0 10px" }}>{joinError}</p>}
+
+        {!loading && !error && candidates.length === 0 && (
+          <p style={{ fontSize: 13, color: "#8A7A76", textAlign: "center", margin: "40px 0" }}>
+            아직 같은 방향·시간대에 등록한 학생이 없어요
+          </p>
+        )}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {candidates.map((c, i) => (
           <div
             key={c.id}
             style={{
@@ -131,11 +164,19 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
               ?
             </div>
             <div style={{ flex: 1, textAlign: "left" }}>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>동행 대기 중인 학생</div>
+              <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                동행 대기 중인 학생
+                {c.activity?.isActive && (
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2F8F5B", display: "inline-block" }} />
+                )}
+              </div>
               <div style={{ fontSize: 12, color: "#8A7A76" }}>
                 {c.destination_hub_name} · {formatTime(c.desired_time)} 출발
               </div>
               <div style={{ fontSize: 12, color: "#8A7A76" }}>도착 소요시간 {c.arrival_estimate}</div>
+              {c.activity && (
+                <div style={{ fontSize: 11, color: c.activity.isActive ? "#2F8F5B" : "#8A7A76" }}>{c.activity.label}</div>
+              )}
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
               <span
@@ -169,10 +210,11 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
               </button>
             </div>
           </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      <div style={{ marginTop: 20, textAlign: "center" }}>
+      <div style={{ padding: "16px 20px 28px", textAlign: "center", flexShrink: 0 }}>
         <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 10px" }}>
           마음에 드는 방이 없다면, 직접 새로 만들어서 다른 사람을 기다릴 수 있어요
         </p>

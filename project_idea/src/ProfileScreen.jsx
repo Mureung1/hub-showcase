@@ -2,21 +2,25 @@ import { useState } from "react";
 import { supabase } from "./supabaseClient";
 
 const GENDER_OPTIONS = [
-  { value: "female", label: "여" },
   { value: "male", label: "남" },
-  { value: "unknown", label: "선택 안 함" },
+  { value: "female", label: "여" },
 ];
 
 function ProfileScreen({ userId, email, onSaved }) {
   const [name, setName] = useState("");
   const [college, setCollege] = useState("");
-  const [gender, setGender] = useState("unknown");
+  const [gender, setGender] = useState(null);
+  const [hideGender, setHideGender] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
   async function handleSubmit() {
     if (!name.trim()) {
       setError("이름을 입력해주세요.");
+      return;
+    }
+    if (!gender) {
+      setError("성별을 선택해주세요.");
       return;
     }
     setSaving(true);
@@ -28,6 +32,7 @@ function ProfileScreen({ userId, email, onSaved }) {
       name,
       college,
       gender,
+      hide_gender: hideGender,
     });
 
     if (insertError) {
@@ -88,6 +93,45 @@ function ProfileScreen({ userId, email, onSaved }) {
             </button>
           ))}
         </div>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          background: "#fff",
+          border: "1px solid rgba(36,21,18,0.08)",
+          borderRadius: 14,
+          padding: "12px 16px",
+          marginBottom: 20,
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 600 }}>다른 사람에게 성별 비공개</span>
+        <button
+          onClick={() => setHideGender(!hideGender)}
+          style={{
+            width: 40,
+            height: 24,
+            borderRadius: 999,
+            border: "none",
+            background: hideGender ? "#C8102E" : "rgba(36,21,18,0.15)",
+            position: "relative",
+            cursor: "pointer",
+          }}
+        >
+          <span
+            style={{
+              position: "absolute",
+              top: 3,
+              left: hideGender ? 19 : 3,
+              width: 18,
+              height: 18,
+              borderRadius: "50%",
+              background: "#fff",
+            }}
+          />
+        </button>
       </div>
 
       {error && <p style={{ fontSize: 12, color: "#C8102E", margin: "0 0 8px" }}>{error}</p>}

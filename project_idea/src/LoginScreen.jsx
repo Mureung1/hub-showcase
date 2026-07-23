@@ -22,6 +22,7 @@ function LoginScreen() {
     });
 
     if (error) {
+      console.error("signInWithOtp error:", error);
       setSendError("인증 메일을 보내지 못했어요. 이메일을 다시 확인해주세요.");
     } else {
       setSent(true);
