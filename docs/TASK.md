@@ -63,10 +63,10 @@ Week 1 초반(Day 1~2)은 학습 가이드라인의 취지를 반영해, 가장 
 
 ## Week 2 (7/20 월 ~ 7/24 금) — 다국어 + 보강 기능 + 테스트 준비
 
-### Day 8 (7/20 월) — P1: 다국어 지원 (한/영, Translate 토글)
-- [ ] **BE** LLM 번역 파이프라인 — 응답에 한국어+영어 텍스트를 함께 반환 (토글 클릭 시 재요청 없이 즉시 전환 가능하도록)
-- [ ] **FE** ResultPage/SearchPage에 "Translate" 버튼 추가 — 클릭 시 한국어 ↔ 영어 전환 (README 갱신: 상시 병기가 아니라 토글 방식)
-- [ ] **FE/BE** 토글 동작 검증: 버튼 클릭 시 한→영, 영→한 정상 전환되는지 확인
+### Day 8 (7/20 월) — P1: 다국어 지원 (한/영, Translate 토글) — 7/23 실제 구현
+- [x] **BE** LLM 번역 파이프라인 — `geminiExplanationClient`가 steps/parts/commonMistakes/reason을 ko/en 한 번의 호출로 함께 생성, `DisposalRule`에 `stepsEn`/`partsEn`/`commonMistakesEn`/`reasonEn`/`explainedAtEn` 컬럼 추가해 캐시(토글 클릭 시 재요청 없음)
+- [x] **FE** ResultPage에 "Translate" 버튼 추가 — 클릭 시 한국어 ↔ 영어 전환. **SearchPage는 제외** — 품목명(`Item.name`)만 보여줄 뿐 번역할 설명 텍스트가 없어 토글이 적용될 대상이 없음(영어 검색 자체는 `backlog.md`의 별개 항목 `nameEn`)
+- [x] **FE/BE** 토글 동작 검증: 실제 Gemini로 이미 캐시돼 있던 기존 품목("건전지", 한국어만 캐시된 상태)에 대해 curl로 재조회 → `en` 필드가 정상 백필되고 `explainedAt`은 그대로 유지됨을 확인. 두 번째 조회에서 `explainedAtEn` 타임스탬프가 그대로임을 확인해 재생성 없이 캐시되는 것도 검증. 백엔드 유닛 테스트(`itemService.test.ts`) 3건 추가(신규 생성/기존 항목 백필/이미 캐시된 경우 재생성 안 함). **브라우저에서 버튼 클릭 확인은 브라우저 자동화 도구가 없어 아직 못 함**
 
 ### Day 9 (7/21 화) — P2: 대형폐기물 신고 가이드
 - [ ] **BE** 품목 → 지역 → 수수료 조회 API, 공식 신고 사이트 링크 데이터
@@ -124,3 +124,10 @@ Day 10에서 만든 수거 장소 리스트 데이터에 지도를 얹는 후속
 - **Day 4~5 실제 완료 상태 재확인(7/19~20)**: TASK.md 체크박스가 실제 코드 상태와 안 맞아 있었음(Day 4/5 항목이 모두 미체크였지만 코드는 부분적으로 이미 존재) — Vision AI는 API 키 미설정으로 mock만 동작 중이었고, `ConfirmPage`는 3줄 스텁이라 사진 업로드 후 결과까지 이어지는 경로 자체가 끊겨 있었으며, Day 5의 핵심인 LLM 설명 생성 서비스는 아예 없었음. 오늘 세 가지 모두 실제로 구현하고 실 API로 검증 완료. **앞으로는 코드 작업 완료 시 TASK.md 체크박스를 그때그때 갱신할 것** — 밀린 상태로 두면 실제 진행 상황을 파악하기 어려워짐.
 - **사진 인식 로딩 무한 대기 버그(7/20)**: 실제 사진 업로드 테스트 중 응답은 정상 도착(200)하는데도 `ConfirmPage`가 "분석 중" 상태에 멈추는 버그 발견. 원인은 `useMutation`을 `useEffect`에서 호출하는 패턴이 React StrictMode의 effect 이중 호출과 충돌해 완료 알림을 놓치는 것 — `useQuery(enabled)`로 전환해 수정. [[feedback_strictmode_mutation_in_effect]] 메모 참고, 향후 "데이터 준비되면 한 번 실행" 패턴은 이 방식을 따를 것.
 - **Object Normalizer를 정적 사전 → 카탈로그 매칭으로 교체(7/20)**: 실제 사진(바나나 껍질) 테스트 중 인식 실패 발견 — 원인은 `objectNormalizer.ts`의 하드코딩 사전이 병/건전지/종이팩류 ~12개만 커버했기 때문(정작 "바나나 껍질"은 동기화된 카탈로그에 이미 있어서 검색으로는 찾아짐). Vision AI 프롬프트를 영어 라벨 대신 한국어 품목명 추측으로 바꾸고, 731개 전체 카탈로그에 대해 `contains` 매칭(`itemService.findBestMatchingItem`)하도록 변경 — 새 품목 추가할 때마다 사전에 손으로 추가할 필요 없어짐.
+- **Day 8 다국어 지원(7/23, Issue #9) 구현 범위 조정**: 이슈 설명은 "ResultPage/SearchPage에 Translate 버튼 추가"였지만, SearchPage는 품목명(`Item.name`)만 표시할 뿐 LLM이 가공한 설명 텍스트가 없어 번역할 대상 자체가 없었음 — SearchPage 토글은 스코프에서 제외하고 ResultPage에만 구현. 또한 Gemini 호출을 한/영 두 번이 아니라 한 번의 JSON 응답으로 묶어 `{ko: {...}, en: {...}}` 구조로 받도록 설계 — 토큰/호출 비용을 줄이고 "재요청 없이 즉시 전환"을 자연스럽게 만족시킴. `DisposalRule.explainedAt`(한국어 생성 시각)과 `explainedAtEn`(영어 생성 시각)을 분리해 이 기능 이전에 캐시된 기존 항목(한국어만 있음)도 다음 조회 시 영어만 자동 백필되도록 함 — 실제로 기존에 캐시돼 있던 "건전지" 데이터로 검증 완료.
+- **다국어 지원을 앱 전체로 확장(7/23)**: 사용자가 "한국어를 전혀 모르는 사람도 앱을 쓸 수 있게" 해달라고 요청 — Plan 서브에이전트로 아키텍처를 먼저 설계한 뒤(정적 UI 문구는 LLM이 아니라 타입 안전한 사전으로, 정부 원본 데이터는 모델별로 다른 캐싱 전략으로, 영어 검색은 nameEn 사전 매칭 우선 + LLM 폴백은 후순위) 사용자 확인을 받고 Phase 0만 이번에 구현:
+  - `frontend/src/i18n/{ko,en}.ts` + `LanguageContext`(localStorage에 저장돼 페이지 이동해도 유지됨 — 기존 ResultPage 로컬 `useState`는 이동 시 초기화되던 버그였음) + `PageHeader`에 토글 내장(Home/Search/Result/Confirm/Rules 전 페이지 자동 적용) + `RegionSelectSheet` 번역
+  - `Item.nameEn` 컬럼 + `backend/scripts/syncItemNamesEn.ts`(731개 전체 배치 번역, `DisposalRule.method`를 모호한 품목명 구분용 힌트로 함께 전달) 실행 완료 + `searchItems`가 `name OR nameEn`으로 매칭하도록 변경 — "battery"→건전지류, "Plastic"→비닐/플라스틱류 등 실제 영어 검색으로 검증 완료
+  - **이번에 안 한 것(다음으로 미룸, 사용자 승인됨)**: `RegionRule.categories[category].method`(지역별 배출방법 원문) 영어 번역 — RulesPage/HomePage에서 영어 모드에도 이 부분만 한국어로 남음. 영어 검색 0건 시 LLM이 한국어 후보를 추론해 재검색하는 폴백도 다음으로 미룸. `BulkyPage`/`PointsPage`(아직 빈 스텁)와 시/도·구/군·동 실제 지명 자체의 번역도 범위 밖.
+  - 부수적으로 발견/수정: `RegionSelectSheet.test.tsx`가 `LanguageProvider` 없이 렌더링해 새로 실패했던 것을 프로바이더로 감싸 수정(회귀).
+- **테스트 환경 참고**: `frontend/src/features/region/weeklySchedule.test.ts`에 dow가 "매일"인 경우를 다루는 실패 테스트가 있음(2026-07-23 확인, 이번 다국어 작업과는 무관) — `buildWeeklySchedule`이 "매일"을 요일 목록(`DAY_ORDER`)의 일부로 인식하지 못해서 발생하는 기존 버그로 추정, 별도 픽스 필요.
