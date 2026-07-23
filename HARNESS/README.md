@@ -1,6 +1,6 @@
 # HARNESS
 
-이 폴더는 PRD에서 출발해 설계, 구현, 품질 검증, 스테이징, 프로덕션 관찰까지 이어지는 작업을 재현 가능하게 실행하는 로컬 하네스다. 제품 코드가 아니라 Provider-independent Controller, Phase 계약, 실행 기록과 운영 규칙을 담는다.
+이 폴더는 PRD에서 출발해 기능 단위 Phase(00 공통 기반 + 01~05 MVP 기능 5개 + 06 통합 검증)를 재현 가능하게 실행하는 로컬 하네스다. 제품 코드가 아니라 Provider-independent Controller, Phase 계약, 실행 기록과 운영 규칙을 담는다. Phase 구성의 단일 기준은 `phases/PHASE_PLAN.md`다.
 
 Worker Agent의 “완료했습니다”라는 응답은 참고 정보일 뿐이다. 최종 상태, 검증, Git 체크포인트와 재시도 여부는 `HARNESS/engine/controller.py`가 결정한다.
 
@@ -12,12 +12,8 @@ Worker Agent의 “완료했습니다”라는 응답은 참고 정보일 뿐이
 2. `docs/PRD.md` — 제품 목표, MVP, 제외 범위, 완료 조건
 3. `docs/ARCHITECTURE.md` — 도메인 구조와 데이터 흐름
 4. `docs/CODE_MAP.md` — 현재 코드와 향후 코드 책임
-5. 작업 성격에 맞는 세부 문서
-   - UI: `docs/UI_GUIDE.md`
-   - 검증: `docs/TEST_PLAN.md`
-   - 리스크: `docs/GOTCHAS.md`
-   - 용어: `docs/GLOSSARY.md`
-6. 이 폴더의 하네스 문서와 해당 Phase의 `phase.json`, `prompt.md`
+5. 작업 성격에 맞는 세부 문서 — `context.md`의 작업별 Context 표를 따른다
+6. 이 폴더의 하네스 문서, `phases/PHASE_PLAN.md`와 해당 Phase의 `phase.json`, `prompt.md`
 
 ## 폴더 구조
 
@@ -33,7 +29,8 @@ HARNESS/
 │  └─ io.py                  # 원자적 기록, 잠금, redaction, HMAC 이벤트 체인
 ├─ contracts/                # Phase, Run state, Attempt, Failure, Event JSON 계약
 ├─ phases/
-│  ├─ index.json             # 00~08 Phase 실행 순서
+│  ├─ PHASE_PLAN.md          # 기능 단위 Phase 계획(단일 기준)
+│  ├─ index.json             # Phase 실행 순서(00 기반 + 01~05 기능 + 06 검증)
 │  └─ {phase-id}/
 │     ├─ phase.json          # Step, 권한, 허용 경로, AC, retry, approval
 │     └─ prompt.md           # Worker에게 전달할 작업 지시
@@ -42,7 +39,9 @@ HARNESS/
 └─ FAILURE_RECORDS.md        # 실패 관측·진단·처분 기록 원칙
 ```
 
-각 실행은 `HARNESS/runs/{run-id}/` 아래에 `plan.json`, `state.json`, `events.jsonl`, `approvals.json`, `attempts/{phase}/{step}/attempt-NNN/`, `failures/failure-*.json`을 남긴다. `state.json`은 현재 투영본이고 Attempt와 Failure는 완료 후 덮어쓰지 않는다.
+`run.py` 진입점과 `tests/` 소스는 현재 md 워크트리에 없다(엔진 소스만 있음). 이 문서의 명령은 하네스 코드가 있는 로컬 실행 브랜치 기준이다.
+
+각 실행이 `HARNESS/runs/{run-id}/`에 남기는 기록 구조와 파일별 의미는 `runs/README.md`를 따른다. `state.json`은 현재 투영본이고 Attempt와 Failure는 완료 후 덮어쓰지 않는다.
 
 ## 1. Provider 설정
 
@@ -124,9 +123,9 @@ python HARNESS/run.py verify-journal --run <run-id>
 
 | target | 포함 범위 | 성공 상태 |
 |---|---|---|
-| `passed` | 00~06: 탐색, 계약, 구현, 안전·UX·production readiness | `passed` |
-| `deployed` | `passed` + 07 스테이징 배포·검증 | `deployed` |
-| `observed` | `deployed` + 08 프로덕션 배포·관찰 인계 | `observed` |
+| `passed` | 00 공통 기반 + 01~05 MVP 기능 5개 + 06 통합 검증 (현재 계획의 전체 범위) | `passed` |
+| `deployed` | 스테이징 배포 Phase — 현재 계획에 없음(제품 Phase 2 이후 추가) | `deployed` |
+| `observed` | 프로덕션 배포·관찰 Phase — 현재 계획에 없음(제품 Phase 2 이후 추가) | `observed` |
 
 `validate`는 Phase·설정 계약을 확인하고, `unittest discover`는 Controller 회귀와 `prototype/index.html`·`prototype/styles.css`의 정적 MVP 계약을 확인한다. 프로토타입 자동 검사는 실제 브라우저의 시각·클릭·반응형 검증을 대체하지 않는다.
 
@@ -134,7 +133,7 @@ python HARNESS/run.py verify-journal --run <run-id>
 
 ## 4. 프로덕션 승인
 
-`observed` 실행은 `08-production-handoff` 직전에 `production-release` 승인을 요구한다. 먼저 challenge의 run, commit, artifact digest를 확인한 뒤 승인한다.
+현재 기능 단위 Phase 계획에는 프로덕션 Phase가 없으므로 이 절은 배포 Phase를 다시 추가할 때 적용된다. `observed` 실행은 프로덕션 인계 Phase 직전에 `production-release` 승인을 요구한다. 먼저 challenge의 run, commit, artifact digest를 확인한 뒤 승인한다.
 
 ```bash
 python HARNESS/run.py approval-challenge --run <run-id> --approval-id production-release
@@ -142,7 +141,7 @@ python HARNESS/run.py approve --run <run-id> --approval-id production-release --
 python HARNESS/run.py resume --run <run-id>
 ```
 
-승인은 기본 120분 동안 유효하며 현재 commit, 고정된 plan snapshot, source tree, immutable artifact digest, target/domain/monitoring, production adapter ID·실행 파일 digest와 receipt 검증 키·저장소에 묶인다. Production adapter가 남긴 receipt의 동일 필드와 `approval_scope_digest`가 다르면 Controller가 배포 성공을 거부한다. 승인 없이 프로덕션 capability만 켜도 Phase 08은 진행되지 않는다.
+승인은 기본 120분 동안 유효하며 현재 commit, 고정된 plan snapshot, source tree, immutable artifact digest, target/domain/monitoring, production adapter ID·실행 파일 digest와 receipt 검증 키·저장소에 묶인다. Production adapter가 남긴 receipt의 동일 필드와 `approval_scope_digest`가 다르면 Controller가 배포 성공을 거부한다. 승인 없이 프로덕션 capability만 켜도 프로덕션 Phase는 진행되지 않는다.
 
 ## 실행 원칙
 

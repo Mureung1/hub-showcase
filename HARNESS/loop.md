@@ -66,4 +66,4 @@ Controller는 남은 변경을 stash, reset, 삭제하지 않는다. `safe_to_re
 
 ## 7. Production approval과 완료
 
-Phase 08 직전에는 commit·plan·artifact·target·adapter digest에 묶인 `production-release` approval이 필요하다. challenge 확인, approve, resume 순서를 지킨다(명령은 `README.md` 4장). Production adapter receipt도 같은 scope를 증명해야 한다. 마지막 Phase까지 통과하면 Controller가 current pointer를 비우고 target stage를 Run 최종 상태로 기록한다.
+프로덕션 배포 Phase(현재 기능 단위 계획에는 없음)를 도입하면 그 직전에 commit·plan·artifact·target·adapter digest에 묶인 `production-release` approval이 필요하다. challenge 확인, approve, resume 순서를 지킨다(명령은 `README.md` 4장). Production adapter receipt도 같은 scope를 증명해야 한다. 마지막 Phase까지 통과하면 Controller가 current pointer를 비우고 target stage를 Run 최종 상태로 기록한다.

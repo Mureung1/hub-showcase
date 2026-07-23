@@ -4,13 +4,7 @@ Context는 Worker가 임의로 저장소 전체를 읽게 하는 목록이 아�
 
 ## 사람이 먼저 읽을 기준 문서
 
-모든 제품 관련 작업은 다음부터 확인한다.
-
-- `AGENTS.md`
-- `docs/PRD.md`
-- `HARNESS/README.md`
-
-작업별 추가 문서는 다음과 같다.
+기본 읽기 순서는 `README.md`의 문서 우선순위를 따른다. 작업별 추가 문서는 다음과 같다.
 
 | 작업 | 추가 Context |
 |---|---|
@@ -19,9 +13,7 @@ Context는 Worker가 임의로 저장소 전체를 읽게 하는 목록이 아�
 | 테스트·검증 | `docs/TEST_PLAN.md`, `docs/CODE_MAP.md`, 관련 테스트 |
 | ADR | `docs/adr/README.md`, 관련 기존 ADR |
 | 블랙컨슈머 대응 | `docs/PRD.md` 2.5, `docs/GOTCHAS.md`, `docs/UI_GUIDE.md` |
-| 배포·운영 | Phase 06~08 계약, 배포·rollback·관찰 문서 |
-
-`docs/stitch_design_PRD.md`는 초기 디자인 프롬프트 기록이다. 현재 기준과 다르면 `docs/PRD.md`를 따른다.
+| 배포·운영(제품 Phase 2 이후) | 현재 Phase 계획 범위 밖. 배포 Phase를 다시 추가할 때 별도 계약과 함께 정의 |
 
 ## Controller가 고정하는 Context
 

@@ -29,7 +29,7 @@
 |---|---:|---|
 | `network` | `false` | 의존성 설치, LLM 평가, 원격 health check |
 | `external_side_effects` | `false` | 스테이징·프로덕션 배포 변경 |
-| `production` | `false` | Phase 08 프로덕션 작업 |
+| `production` | `false` | 프로덕션 배포 Phase 작업(현재 계획에 없음) |
 
 Step이 요구한 capability를 `config.local.json`에서 명시적으로 열지 않으면 Controller가 Failure를 남기고 차단한다. network 또는 외부 작업은 실제 Provider·OS sandbox profile 증명도 요구한다. capability는 승인과 다르다. 프로덕션은 capability, 전용 adapter와 사용자 approval을 모두 요구한다.
 
@@ -74,9 +74,9 @@ required check가 하나라도 실패하면 통과하지 않는다. Worker JSON�
 
 ## 8. Release·Production 게이트
 
-- `deployed`는 Phase 07의 배포와 스테이징 검증이 모두 통과해야 한다.
+- `deployed`는 스테이징 배포 Phase의 배포와 검증이 모두 통과해야 한다. 현재 기능 단위 계획에는 배포 Phase가 없다.
 - 외부 부작용 Step은 1회만 실행하며 자동 retry category를 갖지 않는다.
-- Phase 08은 `production` capability, SHA-256으로 고정한 production adapter와 commit·plan·source tree·artifact·target·adapter에 묶인 `production-release` approval을 모두 요구한다.
+- 프로덕션 배포 Phase는 `production` capability, SHA-256으로 고정한 production adapter와 commit·plan·source tree·artifact·target·adapter에 묶인 `production-release` approval을 모두 요구한다.
 - production receipt의 revision·artifact·target/domain/monitoring·adapter·`approval_scope_digest`가 승인 challenge와 같아야 한다.
 - 승인은 유효 시간 안에서만 사용하며 commit이 바뀌면 다시 받는다.
 - `observed`는 프로덕션 배포뿐 아니라 health, smoke, 관찰·rollback 인계 check까지 통과해야 한다.

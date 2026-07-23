@@ -1,6 +1,6 @@
 # router
 
-요청을 받으면 제품 작업 유형과 하네스 target을 함께 분류한다. HARNESS의 `00~08`은 개발 실행 순서이며 PRD의 “제품 Phase 2”와는 다른 번호 체계다.
+요청을 받으면 제품 작업 유형과 하네스 target을 함께 분류한다. HARNESS의 `00~06`은 기능 단위 개발 실행 순서(00 공통 기반, 01~05 MVP 기능, 06 통합 검증)이며 PRD의 “제품 Phase 2”와는 다른 번호 체계다. 기준은 `phases/PHASE_PLAN.md`다.
 
 ## 요청 유형
 
@@ -11,28 +11,21 @@
 | 문서·ADR | PRD, README, 설계, 의사결정 기록 변경 | 관련 문서와 검증 |
 | UI | 화면, 문구, 레이아웃, 접근성 변경 | UI Context와 브라우저 검증 |
 | 기능 구현 | 입력, 분류, 답글, 분석 등 실제 동작 | `passed` 계획과 코드·테스트 |
-| 품질·리스크 | 테스트, 보안, 개인정보, AI 안전 진단 | Phase 04·06 수준의 독립 검증 |
-| 스테이징 릴리스 | 배포 가능한 환경과 E2E 확인 | `deployed` target |
-| 서비스 완성 | 처음부터 프로덕션 배포·관찰까지 요청 | `observed` target + 명시 승인 |
+| 품질·리스크 | 테스트, 보안, 개인정보, AI 안전 진단 | 해당 기능 Phase의 acceptance check와 독립 검증 |
+| 스테이징 릴리스 | 배포 가능한 환경과 E2E 확인 | 현재 계획 범위 밖 — 배포 Phase 추가 후 `deployed` |
+| 서비스 완성 | 처음부터 프로덕션 배포·관찰까지 요청 | 현재 계획 범위 밖 — 배포 Phase 추가 + 명시 승인 후 `observed` |
 
 작은 읽기 전용 답변은 전체 Run을 만들 필요가 없다. 여러 Phase에 걸친 구현, 자동 재개, 릴리스 증거가 필요한 요청은 하네스를 사용한다.
 
 ## Target 라우팅
 
-| 사용자 의도 | target | 실행 범위 |
-|---|---|---|
-| “구현과 production readiness까지” | `passed` | Phase 00~06 |
-| “스테이징에 배포하고 검증” | `deployed` | Phase 00~07 |
-| “처음부터 서비스 완성·운영 확인” | `observed` | Phase 00~08 |
+| 사용자 의도 | target |
+|---|---|
+| “MVP 기능 구현·검증까지” (현재 기본) | `passed` |
+| “스테이징에 배포하고 검증” (배포 Phase 추가 후) | `deployed` |
+| “처음부터 서비스 완성·운영 확인” (배포 Phase 추가 후) | `observed` |
 
-시작 전 항상 다음을 먼저 실행한다.
-
-```bash
-python HARNESS/run.py validate
-python HARNESS/run.py plan --target <target>
-```
-
-`plan`의 missing input, worker 설정, capability와 approval을 검토한 뒤 clean worktree에서 `start`한다.
+각 target의 실행 범위·성공 상태와 기본 명령은 `README.md` 3장의 표를 따른다. 시작 전 항상 `validate`와 `plan`을 먼저 실행하고, `plan`의 missing input, worker 설정, capability와 approval을 검토한 뒤 clean worktree에서 `start`한다.
 
 ## 제품 범위 라우팅
 
@@ -74,10 +67,4 @@ Controller는 blocker를 해결하기 위해 사용자 변경을 삭제, stash, 
 
 프로덕션은 capability와 approval을 구분한다. `production: true`는 SHA-256으로 고정된 production adapter 종류를 로컬에서 허용한다는 뜻일 뿐 배포 승인이 아니다. 일반 Worker에는 production credential이나 배포 권한을 주지 않는다.
 
-```bash
-python HARNESS/run.py approval-challenge --run <run-id> --approval-id production-release
-python HARNESS/run.py approve --run <run-id> --approval-id production-release --approved-by <name>
-python HARNESS/run.py resume --run <run-id>
-```
-
-승인은 특정 Run, approval id, Phase, commit, plan, artifact, target과 adapter digest에만 유효하며 signed receipt가 같은 scope를 증명해야 한다. v1 Controller는 성공 후 자동 push, PR 또는 merge를 하지 않으므로 필요한 Git 전달 작업은 별도 승인된 절차로 라우팅한다.
+challenge 확인 → approve → resume 절차와 승인이 묶이는 scope는 `README.md` 4장을 따른다. v1 Controller는 성공 후 자동 push, PR 또는 merge를 하지 않으므로 필요한 Git 전달 작업은 별도 승인된 절차로 라우팅한다.

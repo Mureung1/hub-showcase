@@ -12,7 +12,7 @@
 
 ## `stack-scaffold`
 
-빌드 가능한 골격을 만든다: Vite + React + TS 프론트엔드(`frontend/`), `supabase init` 결과(`supabase/config.toml`), 루트 `.env.example`(VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, LLM_API_KEY 등 이름만), 루트 통합 테스트 러너(Vitest) 골격과 `test:integration` 스크립트, CI 워크플로 골격. 비밀값은 이름만 남기고 실제 값은 어디에도 쓰지 않는다.
+빌드 가능한 골격을 만든다: Vite + React + TS 프론트엔드(`frontend/`), `supabase init` 결과(`supabase/config.toml`), 루트 `.env.example`(VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, LLM_API_KEY 등 이름만), 루트 통합 테스트 러너(Vitest) 골격과 `test:integration` 스크립트, CI 워크플로 골격. 공통 앱 셸(좌측 사이드바 6메뉴 — 홈·리뷰함·리뷰 입력·분석 리포트·블랙컨슈머 대응·매장 설정 — 과 상단바 매장명, 화면 라우팅)을 `App.tsx` 기본형으로 두어 이후 각 Phase가 화면을 라우트에 연결하게 한다. 아직 없는 화면(홈 등)은 자리표시자로 둔다. 비밀값은 이름만 남기고 실제 값은 어디에도 쓰지 않는다.
 
 ## `auth-review-input-inbox`
 

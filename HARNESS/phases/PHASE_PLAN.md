@@ -10,11 +10,11 @@
 
 | Phase | 폴더 | 기능 (PRD) | 완료 시 사장님이 할 수 있는 일 |
 |---|---|---|---|
-| 0 | `00-foundation` | 공통 기반: 앱 골격·로그인·리뷰 수동 입력·리뷰함 | 가입·로그인 후 리뷰를 입력하고 목록에서 확인 |
+| 0 | `00-foundation` | 공통 기반: 앱 골격(공통 사이드바 셸)·로그인·리뷰 수동 입력·리뷰함 | 가입·로그인 후 리뷰를 입력하고 목록에서 확인 |
 | 1 | `01-review-classification` | 리뷰 유형 분류 (2.1) | 유형·카테고리·분류 근거 확인, 확인 필요 처리 |
 | 2 | `02-tone-and-manner` | 톤앤매너·매장 프로필 (2.2) | 매장 정보·말투·운영 정보·금지 표현 설정, 샘플 미리보기 |
 | 3 | `03-reply-draft` | 답글 초안 생성 (2.3) | 초안 확인·수정·복사 → 직접 게시 → 완료 표시 |
-| 4 | `04-review-analysis` | 리뷰 분석 (2.4) | 리포트·AI 인사이트 확인 |
+| 4 | `04-review-analysis` | 리뷰 분석 (2.4) + ① 홈 대시보드 | 리포트·AI 인사이트 확인, 홈에서 오늘 현황·처리 큐 확인 |
 | 5 | `05-blackconsumer-manual` | 블랙컨슈머 대응 (2.5) | 위험도 확인, 매뉴얼 4단계 수행 |
 | 6 | `06-mvp-verification` | 검증: MVP 통합 검증 (기능 아님) | S1~S4 전체 흐름 완주 확인 |
 
@@ -39,8 +39,8 @@
 required_inputs: 없음
 
 ### Step 1 `stack-scaffold`
-- 목표: ADR-0002 스택(React+TS+Vite / 로컬 Supabase) 골격을 빌드 가능하게 만든다. 스택은 이미 채택됐으므로 새로 결정하지 않는다.
-- context_files: `docs/PRD.md`, `docs/ARCHITECTURE.md`, `docs/CODE_MAP.md`, `docs/adr/ADR-0002-생산-스택.md`
+- 목표: ADR-0002 스택(React+TS+Vite / 로컬 Supabase) 골격을 빌드 가능하게 만들고, 공통 앱 셸(좌측 사이드바 6메뉴 — 홈·리뷰함·리뷰 입력·분석 리포트·블랙컨슈머 대응·매장 설정 — 과 상단바 매장명, 화면 라우팅) 기본형을 둔다. 아직 없는 화면(홈 등)은 자리표시자로 두고 각 Phase가 라우트에 연결한다. 스택은 이미 채택됐으므로 새로 결정하지 않는다.
+- context_files: `docs/PRD.md`, `docs/UI_GUIDE.md`, `docs/ARCHITECTURE.md`, `docs/CODE_MAP.md`, `docs/adr/ADR-0002-생산-스택.md`
 - allowed_paths: `.env.example`, `.gitignore`, `.github/workflows/ci.yml`, `frontend`, `supabase`, `package.json`, `vitest.config.ts`, `tests`
 - required_artifacts: `frontend/package.json`, `frontend/vite.config.ts`, `frontend/src/App.tsx`, `supabase/config.toml`, `.env.example`
 - acceptance: content_contains(ADR-0002, ["상태: 채택됨"]) · json_valid(`frontend/package.json`) · command(npm build) · path_exists(`supabase/config.toml`)
@@ -114,9 +114,11 @@ required_inputs: `llm-provider`, `llm-api-key`(secret)
 - acceptance: content_contains(safety.ts, ["답글 복사하기", "배민 사장님 페이지에 붙여넣어 주세요", "완료로 표시"]) · npm test · npm build
 - permissions: network true
 
-## Phase 4 — `04-review-analysis` (리뷰 분석, PRD 2.4)
+## Phase 4 — `04-review-analysis` (리뷰 분석, PRD 2.4 + ① 홈 대시보드)
 
 required_inputs: 없음 (인사이트 감지는 결정적 규칙, 문구는 템플릿 우선)
+
+① 홈은 새 도메인 기능이 아니라 리뷰(P0)·분류(P1)·분석의 데이터를 모으는 종합 대시보드다. 홈에 필요한 반응 추이·인사이트가 이 Phase에서 완성되므로 여기에서 조립한다.
 
 ### Step 1 `analysis-engine`
 - 목표: 집계 4종(SQL 뷰/함수 마이그레이션)·인사이트 감지(순수 TS)·기간 필터·콜드 스타트(10건 미만)
@@ -132,6 +134,14 @@ required_inputs: 없음 (인사이트 감지는 결정적 규칙, 문구는 템�
 - allowed_paths: `frontend`, `tests`
 - required_artifacts: `frontend/src/features/review-analysis`
 - acceptance: npm test · npm build
+- permissions: network true
+
+### Step 3 `home-dashboard`
+- 목표: ① 홈 대시보드 — 통계 카드 4종(신규 리뷰·답글 대기·평균 별점·악성 의심 레드 강조), "지금 처리가 필요한 리뷰" 큐(악성 우선 정렬), 손님 반응 추이, AI 인사이트 카드. 카드에서 ③ 리뷰 상세로, 악성 의심 카드에서 ⑥ 대응 센터로 이동. 접속 시 기본 진입 화면. 새 도메인 로직 없이 앞 기능들의 조회 결과를 조합한다.
+- context_files: `docs/PRD.md`, `docs/UI_GUIDE.md`, `prototype/index.html`
+- allowed_paths: `frontend`, `tests`
+- required_artifacts: `frontend/src/features/home`
+- acceptance: path_exists(`frontend/src/features/home`) · npm test · npm build
 - permissions: network true
 
 ## Phase 5 — `05-blackconsumer-manual` (블랙컨슈머 대응, PRD 2.5)

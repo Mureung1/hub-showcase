@@ -57,7 +57,7 @@ Verifier는 Controller 내부의 독립 판정 역할이다.
 
 ## 배포 Adapter·외부 시스템
 
-Phase 07의 외부 변경 Step은 `staging` adapter, Phase 08의 production 권한 Step은 `production` adapter로만 실행한다. 일반 Worker 명령이나 credential을 재사용하지 않는다. Adapter는 전용 실행 파일, 불변 ID와 실제 SHA-256으로 고정하고 Provider·OS sandbox profile을 실제 적용한 뒤에만 capability를 연다.
+배포 Phase를 도입하면 외부 변경 Step은 `staging` adapter, production 권한 Step은 `production` adapter로만 실행한다(현재 기능 단위 계획에는 배포 Phase가 없다). 일반 Worker 명령이나 credential을 재사용하지 않는다. Adapter는 전용 실행 파일, 불변 ID와 실제 SHA-256으로 고정하고 Provider·OS sandbox profile을 실제 적용한 뒤에만 capability를 연다.
 
 배포 결과는 승인 scope와 일치하는 signed receipt, 독립 health/E2E/관찰 check가 통과해야 인정된다. 외부 시스템 응답이나 Agent 설명만으로 `deployed` 또는 `observed`를 선언하지 않는다.
 
