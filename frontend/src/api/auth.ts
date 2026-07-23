@@ -1,7 +1,14 @@
+import type { Gender } from '../types';
+
 export interface AuthUser {
   id: number;
   email: string;
   name: string | null;
+  gender: Gender | null;
+  birthYear: number | null;
+  isPregnantOrLactating: boolean | null;
+  heightCm: number | null;
+  weightKg: number | null;
 }
 
 export interface LoginResponse {

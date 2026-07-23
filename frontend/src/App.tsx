@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AuthForm } from './components/AuthForm';
+import { Onboarding } from './components/Onboarding';
 import { Home } from './components/Home';
 import { Header } from './components/Header';
 import { Analysis } from './components/Analysis';
@@ -55,6 +56,7 @@ function loadStoredFlow(): StoredFlow {
 
 function App() {
   const [auth, setAuth] = useState<StoredAuth | null>(loadStoredAuth);
+  const [editingProfile, setEditingProfile] = useState(false);
   const [screen, setScreen] = useState<Screen>(() => loadStoredFlow().screen);
   const [symptoms, setSymptoms] = useState<string[]>(() => loadStoredFlow().symptoms);
   const [recommendedIngredientIds, setRecommendedIngredientIds] = useState<number[]>(
@@ -73,6 +75,18 @@ function App() {
   function handleLoggedIn(result: LoginResponse) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
     setAuth(result);
+  }
+
+  function handleProfileComplete(updatedUser: AuthUser) {
+    if (!auth) return;
+    const next: StoredAuth = { ...auth, user: updatedUser };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    setAuth(next);
+  }
+
+  function handleProfileEditComplete(updatedUser: AuthUser) {
+    handleProfileComplete(updatedUser);
+    setEditingProfile(false);
   }
 
   function handleLogout() {
@@ -117,23 +131,43 @@ function App() {
   }
 
   return (
-    <div className={auth ? 'phone' : 'phone center-screen'}>
-      {auth ? (
+    <div className={auth && auth.user.gender != null ? 'phone' : 'phone center-screen'}>
+      {auth && auth.user.gender == null ? (
+        <Onboarding token={auth.token} onComplete={handleProfileComplete} />
+      ) : auth ? (
         <>
-          <Header screen={screen} userEmail={auth.user.email} onLogout={handleLogout} />
-          {screen === 'home' && <Home onStart={handleStart} />}
-          {screen === 'analysis' && (
-            <Analysis symptoms={symptoms} onNext={handleAnalysisNext} />
-          )}
-          {screen === 'overlap' && (
-            <Overlap supplements={supplements} onNext={() => setScreen('recommend')} />
-          )}
-          {screen === 'recommend' && (
-            <Recommend ingredientIds={recommendedIngredientIds} onSelect={handleSelectProduct} />
-          )}
-          {screen === 'detail' && (
-            <Detail product={selectedProduct} onBuy={handleBuy} onRestart={handleRestart} />
-          )}
+          <Header
+            screen={screen}
+            userEmail={auth.user.email}
+            onLogout={handleLogout}
+            onEditProfile={() => setEditingProfile(true)}
+          />
+          <div className="phone-content">
+            {editingProfile ? (
+              <Onboarding
+                token={auth.token}
+                initialUser={auth.user}
+                onComplete={handleProfileEditComplete}
+                onCancel={() => setEditingProfile(false)}
+              />
+            ) : (
+              <>
+                {screen === 'home' && <Home onStart={handleStart} />}
+                {screen === 'analysis' && (
+                  <Analysis symptoms={symptoms} onNext={handleAnalysisNext} />
+                )}
+                {screen === 'overlap' && (
+                  <Overlap supplements={supplements} token={auth.token} onNext={() => setScreen('recommend')} />
+                )}
+                {screen === 'recommend' && (
+                  <Recommend ingredientIds={recommendedIngredientIds} token={auth.token} onSelect={handleSelectProduct} />
+                )}
+                {screen === 'detail' && (
+                  <Detail product={selectedProduct} onBuy={handleBuy} onRestart={handleRestart} />
+                )}
+              </>
+            )}
+          </div>
         </>
       ) : (
         <AuthForm onLoggedIn={handleLoggedIn} />

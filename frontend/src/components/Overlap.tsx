@@ -5,10 +5,11 @@ import type { OverlapResult } from '../api/overlap';
 
 interface OverlapProps {
   supplements: string[];
+  token: string;
   onNext: () => void;
 }
 
-export function Overlap({ supplements, onNext }: OverlapProps) {
+export function Overlap({ supplements, token, onNext }: OverlapProps) {
   const [results, setResults] = useState<OverlapResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,11 +21,11 @@ export function Overlap({ supplements, onNext }: OverlapProps) {
       return;
     }
     setLoading(true);
-    checkOverlap(supplements)
+    checkOverlap(supplements, token)
       .then(setResults)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [supplements]);
+  }, [supplements, token]);
 
   const exceededResults = results.filter((r) => r.isExceeded);
   const okResults = results.filter((r) => !r.isExceeded);
@@ -83,9 +84,14 @@ export function Overlap({ supplements, onNext }: OverlapProps) {
           >
             <ChipIcon name={result.isExceeded ? 'warning' : 'check'} />
           </span>
-          <p className="sub" style={{ margin: 0 }}>
-            {result.message}
-          </p>
+          <div>
+            <p className="chip-label" style={{ margin: 0 }}>
+              {result.ingredientName}
+            </p>
+            <p className="sub" style={{ margin: '2px 0 0' }}>
+              {result.message}
+            </p>
+          </div>
         </div>
       ))}
 

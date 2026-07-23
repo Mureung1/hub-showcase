@@ -23,4 +23,8 @@ export const INGREDIENT_ICONS: Record<string, ChipIconName> = {
   '비타민 D': 'shield',
   아연: 'shield',
   콜라겐: 'droplet',
+  '비타민 C': 'shield',
+  철분: 'battery',
+  칼슘: 'joint',
+  '비타민 A': 'eye',
 };

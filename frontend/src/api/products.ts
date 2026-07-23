@@ -7,10 +7,15 @@ export interface MatchedProduct {
   smartstoreUrl: string | null;
   testReportUrl: string | null;
   matchCount: number;
+  matchedIngredientNames: string[];
+  exceedsPersonalLimit: boolean;
+  pregnancyCaution: boolean;
 }
 
-export async function getMatchedProducts(ingredientIds: number[]): Promise<MatchedProduct[]> {
-  const res = await fetch(`/products/match?ingredientIds=${ingredientIds.join(',')}`);
+export async function getMatchedProducts(ingredientIds: number[], token: string): Promise<MatchedProduct[]> {
+  const res = await fetch(`/products/match?ingredientIds=${ingredientIds.join(',')}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   const data = await res.json();
   if (!res.ok) {
     throw new Error(data.error ?? '추천 제품을 불러오지 못했습니다.');
