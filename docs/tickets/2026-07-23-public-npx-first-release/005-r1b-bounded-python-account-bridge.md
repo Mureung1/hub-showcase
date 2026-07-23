@@ -89,22 +89,25 @@ Persistent Python bridge가 한 개의 managed ChatGPT login attempt를 즉시 �
 | claim | `143cc416d` |
 | strict protocol checkpoint | `94ca0b946` |
 | Python lifecycle implementation | `909810ebb` |
+| start-reservation race fix | `aa7ce6463` |
 | bridge frame roster | `read_account`; `start_browser_login`; `read_browser_login_attempt`; `cancel_browser_login`; `release_browser_login_attempt`; `logout` |
 | account result | `account.state = signed_out \| chatgpt \| unsupported` |
 | attempt result | start는 allowlisted HTTPS `authUrl`과 product `attemptId`의 `pending`; status는 non-consuming `pending \| completed \| cancelled \| expired \| failed`; failed만 safe `{ code: login_failed, retryable: true }`를 포함 |
 | settlement result | cancel은 `cancelled \| already_settled`, release는 `released \| already_released`, logout은 official logout 뒤 fresh null readback을 확인한 `signed_out` |
-| bound | account RPC 30초, process-local attempt deadline monotonic 10분, active attempt와 native completion waiter 각 1개 |
+| bound | account RPC 30초, process-local attempt deadline monotonic 10분, `starting \| pending` reservation 1개와 native completion waiter 최대 1개 |
 
 Native `loginId`와 SDK handle은 `BrowserLoginAttempt` 안에만 남는다. Fake App Server는 의도적으로 `native-login-secret-*`, private email과 raw provider error sentinel을 생성하지만 strict frame, captured journal과 terminal output의 forbidden-value scan은 0건이다. Account read는 coarse typed state만 반환하고, completion·cancel·expiry는 matching waiter 뒤 fresh `account/read(refreshToken: true)`로 수렴한다. Issuer가 `auth.openai.com | chatgpt.com`이 아니거나 userinfo·port·fragment·control character·16 KiB 초과가 있는 start URL은 projection하지 않고 Runtime-fatal로 닫는다.
 
 Cancel RPC의 well-formed rejection은 correlated `login_cancel_failed`를 한 번 반환해 request lease를 해제하고 현재 attempt를 `pending`으로 보존한다. Cancel/completion race에서는 fresh ChatGPT account가 이기며, expiry와 explicit cancel 사이에는 transient failure를 노출하지 않는다. Release response retry, repeated status, duplicate same-attempt start와 다른 attempt rejection도 deterministic하다. EOF와 native forced exit는 Python waiter를 버리고 App Server process까지 bounded하게 reap한다.
+
+Independent review에서 native `login_chatgpt()` 응답 전에는 `_login_attempt`가 비어 있어 back-to-back cancel/release가 `login_attempt_not_found`를 반환하고 logout이 뒤늦게 생긴 attempt를 남기는 High race가 재현됐다. Fix는 `dispatch()`에서 native RPC보다 먼저 process-local `starting` reservation을 만든다. 같은 command batch 또는 native start가 이미 관찰된 뒤 들어온 duplicate start, status, cancel, release와 logout은 dispatch-time에 그 exact reservation을 잡고 bounded `start_settled` barrier를 공유한다. `starting`은 frame에 나타나지 않으며 success, well-formed start rejection, timeout, unsafe URL, transport loss, stdin EOF와 normal close 모두 terminal 또는 process cleanup으로 수렴한다.
 
 ### Candidate verification
 
 | Command | Result |
 | --- | --- |
 | `npm run test:bridge-unit -w @ay-ple/codex-chat-runtime` | green, 8 tests |
-| `npm run test:bridge -w @ay-ple/codex-chat-runtime` | green, 27 tests; delayed completion, duplicate start/status/release, cancel race/rejection, expiry, logout readback, unsafe URL, EOF와 forced native exit 포함 |
+| `npm run test:bridge -w @ay-ple/codex-chat-runtime` | green, 31 tests; delayed completion, duplicate start/status/release, cancel race/rejection, expiry, logout readback, unsafe URL, EOF와 forced native exit에 더해 start→cancel/release/logout coalesced·observed scheduling, joined failure/timeout/fatal/EOF/close 포함 |
 | `npm run check:bridge -w @ay-ple/codex-chat-runtime` | green, Ruff check와 format 13 files |
 | `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime` | green; 9 ordered patches deterministic verify, router actual-child matrix, official suite 166 passed/38 skipped, provenance 17 tests |
 | `npm run test:production-runtime -w @ay-ple/codex-chat-runtime` | green, 23 tests |
