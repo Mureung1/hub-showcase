@@ -1,0 +1,44 @@
+{
+  "status": "ok",
+  "score": 76.21,
+  "classification": "similar",
+  "calibration": "conservative-v1",
+  "components": {
+    "position": {
+      "score": 86.11,
+      "weight": 0.45,
+      "available": true
+    },
+    "size": {
+      "score": 78.89,
+      "weight": 0.25,
+      "available": true
+    },
+    "pose": {
+      "score": 59.14,
+      "weight": 0.3,
+      "available": true
+    }
+  },
+  "people": [
+    {
+      "label": "Subject",
+      "positionDistance": 0.027789,
+      "positionScore": 86.11,
+      "sizeDistance": 0.052786,
+      "sizeScore": 78.89,
+      "sharedPoseKeypoints": [
+        "left_elbow",
+        "left_shoulder",
+        "left_wrist",
+        "nose",
+        "right_shoulder"
+      ],
+      "poseScore": 59.14
+    }
+  ],
+  "warnings": [],
+  "frameId": "daegu-sparkland-wheel/solo/1",
+  "referencePhotoId": "daegu-sparkland-wheel/solo/1/photo",
+  "comparisonPhotoId": "daegu-sparkland-wheel/solo/1/comparison/photo"
+}

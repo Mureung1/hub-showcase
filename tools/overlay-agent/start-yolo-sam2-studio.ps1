@@ -3,6 +3,8 @@ $OverlayRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $InferenceRoot = Join-Path (Split-Path -Parent $OverlayRoot) "yolo-sam2-overlay"
 $Python = Join-Path $InferenceRoot ".venv\Scripts\python.exe"
 $WebRoot = Join-Path $OverlayRoot "web"
+$ApiPort = 8002
+$ApiRoot = "http://127.0.0.1:$ApiPort"
 
 if (-not (Test-Path $Python)) {
     throw "YOLO/SAM2 environment is missing. Follow tools/yolo-sam2-overlay/README.md first."
@@ -10,13 +12,16 @@ if (-not (Test-Path $Python)) {
 
 $Backend = $null
 try {
-    $null = Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/health" -TimeoutSec 1
-    Write-Host "Reusing the YOLO/SAM2 API already running on port 8000."
+    $assets = Invoke-RestMethod -Uri "$ApiRoot/api/layout-assets" -TimeoutSec 1
+    if (-not $assets -or @($assets).Count -lt 30) {
+        throw "The API is running but is not serving the canonical photo-guide dataset."
+    }
+    Write-Host "Reusing the canonical Photo Navigation API already running on port $ApiPort."
 }
 catch {
     $Backend = Start-Process `
         -FilePath $Python `
-        -ArgumentList "-m", "uvicorn", "src.server:app", "--host", "127.0.0.1", "--port", "8000" `
+        -ArgumentList "-m", "uvicorn", "src.server:app", "--host", "127.0.0.1", "--port", $ApiPort `
         -WorkingDirectory $InferenceRoot `
         -WindowStyle Hidden `
         -PassThru
@@ -24,7 +29,8 @@ catch {
 
 try {
     Push-Location $WebRoot
-    Write-Host "YOLO/SAM2 API: http://127.0.0.1:8000"
+    $env:VITE_API_TARGET = $ApiRoot
+    Write-Host "YOLO/SAM2 API: $ApiRoot"
     Write-Host "Overlay Studio will open at the Vite URL below. Press Ctrl+C to stop both servers."
     & npm.cmd run dev
 }

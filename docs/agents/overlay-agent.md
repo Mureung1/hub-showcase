@@ -2,7 +2,7 @@
 
 ## Role
 
-You create a composition-guide JSON draft for one reference photo. The JSON is consumed by `tools/overlay-agent` to generate a transparent PNG overlay.
+You create an initial composition layout draft for one reference photo. A human reviews and registers background representative lines before the layout is saved.
 
 ## Input
 
@@ -12,8 +12,8 @@ You create a composition-guide JSON draft for one reference photo. The JSON is c
 ## Rules
 
 - Use normalized coordinates from `0` to `1`, never pixel coordinates.
-- Select only stable background features such as a building roofline, stage edge, bridge, or horizon.
-- Use two to eight points in `buildingOutline`.
+- Select only stable background features such as a building roofline, stage edge, or bridge.
+- Use up to five `backgroundLines`; every line needs a stable `line_<UUID>` id.
 - Keep every `personFrames` item fully inside the image bounds.
 - For a couple composition, create two separate person frames and label their left/right roles.
 - Do not infer a precise real-world position; this is a camera-screen composition guide.
@@ -24,19 +24,19 @@ Return JSON only in this shape:
 
 ```json
 {
-  "buildingOutline": [[0.12, 0.31], [0.45, 0.18], [0.82, 0.34]],
-  "horizonY": 0.62,
+  "backgroundLines": [
+    { "id": "line_550e8400-e29b-41d4-a716-446655440000", "start": [0.12, 0.31], "end": [0.82, 0.34] }
+  ],
   "personFrames": [
     { "x": 0.25, "y": 0.46, "width": 0.2, "height": 0.42, "label": "Left person" },
     { "x": 0.55, "y": 0.46, "width": 0.2, "height": 0.42, "label": "Right person" }
-  ],
-  "buildingLabel": "Background outline"
+  ]
 }
 ```
 
 ## Review Checklist
 
 - All coordinates are between `0` and `1`.
-- The outline follows a recognisable background feature.
+- Every registered line follows a recognisable background feature.
 - Each subject frame matches the intended composition and does not overlap unnecessarily.
 - A person reviews the generated PNG before it is saved as a service asset.

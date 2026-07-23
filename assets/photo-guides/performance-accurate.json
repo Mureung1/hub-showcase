@@ -1,0 +1,329 @@
+{
+  "version": 1,
+  "analysisMode": "accurate",
+  "sampleCount": 30,
+  "summary": {
+    "total": {
+      "averageMs": 6274.69,
+      "maxMs": 23127.62,
+      "minMs": 2953.54
+    },
+    "wall": {
+      "averageMs": 6275.15,
+      "maxMs": 23127.86,
+      "minMs": 2953.99
+    },
+    "yolo": {
+      "averageMs": 849.35,
+      "maxMs": 3021.24,
+      "minMs": 344.61
+    },
+    "sam2": {
+      "averageMs": 5417.11,
+      "maxMs": 20117.25,
+      "minMs": 2602.98
+    }
+  },
+  "records": [
+    {
+      "photoId": "daegu-modern-history-museum/couple/0/photo",
+      "mode": "accurate",
+      "wallMs": 4424.17,
+      "timingsMs": {
+        "yolo_inference": 1384.6,
+        "sam2_inference": 3006.64,
+        "total": 4424.13
+      }
+    },
+    {
+      "photoId": "daegu-modern-history-museum/couple/0/comparison/photo",
+      "mode": "accurate",
+      "wallMs": 3399.84,
+      "timingsMs": {
+        "yolo_inference": 345.04,
+        "sam2_inference": 3051.06,
+        "total": 3399.53
+      }
+    },
+    {
+      "photoId": "daegu-modern-history-museum/couple/1/photo",
+      "mode": "accurate",
+      "wallMs": 3369.31,
+      "timingsMs": {
+        "yolo_inference": 471.41,
+        "sam2_inference": 2879.96,
+        "total": 3368.8
+      }
+    },
+    {
+      "photoId": "daegu-modern-history-museum/couple/1/comparison/photo",
+      "mode": "accurate",
+      "wallMs": 3169.76,
+      "timingsMs": {
+        "yolo_inference": 431.84,
+        "sam2_inference": 2724.67,
+        "total": 3169.42
+      }
+    },
+    {
+      "photoId": "daegu-modern-history-museum/couple/2/photo",
+      "mode": "accurate",
+      "wallMs": 2953.99,
+      "timingsMs": {
+        "yolo_inference": 344.61,
+        "sam2_inference": 2602.98,
+        "total": 2953.54
+      }
+    },
+    {
+      "photoId": "daegu-modern-history-museum/couple/2/comparison/photo",
+      "mode": "accurate",
+      "wallMs": 3130.88,
+      "timingsMs": {
+        "yolo_inference": 389.29,
+        "sam2_inference": 2736.74,
+        "total": 3130.5
+      }
+    },
+    {
+      "photoId": "daegu-modern-history-museum/solo/0/photo",
+      "mode": "accurate",
+      "wallMs": 3207.22,
+      "timingsMs": {
+        "yolo_inference": 388.8,
+        "sam2_inference": 2805.09,
+        "total": 3206.73
+      }
+    },
+    {
+      "photoId": "daegu-modern-history-museum/solo/0/comparison/photo",
+      "mode": "accurate",
+      "wallMs": 3784.43,
+      "timingsMs": {
+        "yolo_inference": 434.03,
+        "sam2_inference": 3346.71,
+        "total": 3784.25
+      }
+    },
+    {
+      "photoId": "daegu-modern-history-museum/solo/1/photo",
+      "mode": "accurate",
+      "wallMs": 3989.33,
+      "timingsMs": {
+        "yolo_inference": 479.38,
+        "sam2_inference": 3506.53,
+        "total": 3989.12
+      }
+    },
+    {
+      "photoId": "daegu-modern-history-museum/solo/1/comparison/photo",
+      "mode": "accurate",
+      "wallMs": 5099.13,
+      "timingsMs": {
+        "yolo_inference": 600.12,
+        "sam2_inference": 4481.02,
+        "total": 5098.38
+      }
+    },
+    {
+      "photoId": "daegu-sparkland-wheel/couple/0/photo",
+      "mode": "accurate",
+      "wallMs": 7097.63,
+      "timingsMs": {
+        "yolo_inference": 695.26,
+        "sam2_inference": 6396.6,
+        "total": 7097.2
+      }
+    },
+    {
+      "photoId": "daegu-sparkland-wheel/couple/0/comparison/photo",
+      "mode": "accurate",
+      "wallMs": 7303.75,
+      "timingsMs": {
+        "yolo_inference": 816.36,
+        "sam2_inference": 6482.76,
+        "total": 7303.41
+      }
+    },
+    {
+      "photoId": "daegu-sparkland-wheel/couple/1/photo",
+      "mode": "accurate",
+      "wallMs": 3580.04,
+      "timingsMs": {
+        "yolo_inference": 439.86,
+        "sam2_inference": 3135.0,
+        "total": 3579.7
+      }
+    },
+    {
+      "photoId": "daegu-sparkland-wheel/couple/1/comparison/photo",
+      "mode": "accurate",
+      "wallMs": 5689.65,
+      "timingsMs": {
+        "yolo_inference": 464.65,
+        "sam2_inference": 5213.72,
+        "total": 5689.11
+      }
+    },
+    {
+      "photoId": "daegu-sparkland-wheel/couple/2/photo",
+      "mode": "accurate",
+      "wallMs": 9093.4,
+      "timingsMs": {
+        "yolo_inference": 1050.77,
+        "sam2_inference": 8025.8,
+        "total": 9092.97
+      }
+    },
+    {
+      "photoId": "daegu-sparkland-wheel/couple/2/comparison/photo",
+      "mode": "accurate",
+      "wallMs": 13754.91,
+      "timingsMs": {
+        "yolo_inference": 3021.24,
+        "sam2_inference": 10717.28,
+        "total": 13751.68
+      }
+    },
+    {
+      "photoId": "daegu-sparkland-wheel/solo/0/photo",
+      "mode": "accurate",
+      "wallMs": 19681.54,
+      "timingsMs": {
+        "yolo_inference": 1657.41,
+        "sam2_inference": 18017.91,
+        "total": 19681.15
+      }
+    },
+    {
+      "photoId": "daegu-sparkland-wheel/solo/0/comparison/photo",
+      "mode": "accurate",
+      "wallMs": 23127.86,
+      "timingsMs": {
+        "yolo_inference": 3005.33,
+        "sam2_inference": 20117.25,
+        "total": 23127.62
+      }
+    },
+    {
+      "photoId": "daegu-sparkland-wheel/solo/1/photo",
+      "mode": "accurate",
+      "wallMs": 13908.89,
+      "timingsMs": {
+        "yolo_inference": 2239.8,
+        "sam2_inference": 11665.29,
+        "total": 13908.66
+      }
+    },
+    {
+      "photoId": "daegu-sparkland-wheel/solo/1/comparison/photo",
+      "mode": "accurate",
+      "wallMs": 5164.35,
+      "timingsMs": {
+        "yolo_inference": 1075.66,
+        "sam2_inference": 4086.18,
+        "total": 5164.16
+      }
+    },
+    {
+      "photoId": "naver-1784-stairs/couple/0/photo",
+      "mode": "accurate",
+      "wallMs": 4178.88,
+      "timingsMs": {
+        "yolo_inference": 540.31,
+        "sam2_inference": 3630.51,
+        "total": 4177.92
+      }
+    },
+    {
+      "photoId": "naver-1784-stairs/couple/0/comparison/photo",
+      "mode": "accurate",
+      "wallMs": 4617.94,
+      "timingsMs": {
+        "yolo_inference": 700.97,
+        "sam2_inference": 3900.48,
+        "total": 4617.56
+      }
+    },
+    {
+      "photoId": "naver-1784-stairs/couple/1/photo",
+      "mode": "accurate",
+      "wallMs": 4019.74,
+      "timingsMs": {
+        "yolo_inference": 632.13,
+        "sam2_inference": 3382.3,
+        "total": 4019.47
+      }
+    },
+    {
+      "photoId": "naver-1784-stairs/couple/1/comparison/photo",
+      "mode": "accurate",
+      "wallMs": 4895.04,
+      "timingsMs": {
+        "yolo_inference": 598.46,
+        "sam2_inference": 4290.72,
+        "total": 4894.71
+      }
+    },
+    {
+      "photoId": "naver-1784-stairs/couple/2/photo",
+      "mode": "accurate",
+      "wallMs": 4834.78,
+      "timingsMs": {
+        "yolo_inference": 570.46,
+        "sam2_inference": 4257.07,
+        "total": 4834.32
+      }
+    },
+    {
+      "photoId": "naver-1784-stairs/couple/2/comparison/photo",
+      "mode": "accurate",
+      "wallMs": 4474.75,
+      "timingsMs": {
+        "yolo_inference": 763.91,
+        "sam2_inference": 3705.4,
+        "total": 4474.36
+      }
+    },
+    {
+      "photoId": "naver-1784-stairs/solo/0/photo",
+      "mode": "accurate",
+      "wallMs": 4210.16,
+      "timingsMs": {
+        "yolo_inference": 521.05,
+        "sam2_inference": 3686.85,
+        "total": 4209.88
+      }
+    },
+    {
+      "photoId": "naver-1784-stairs/solo/0/comparison/photo",
+      "mode": "accurate",
+      "wallMs": 3754.71,
+      "timingsMs": {
+        "yolo_inference": 505.25,
+        "sam2_inference": 3245.52,
+        "total": 3754.51
+      }
+    },
+    {
+      "photoId": "naver-1784-stairs/solo/1/photo",
+      "mode": "accurate",
+      "wallMs": 4228.54,
+      "timingsMs": {
+        "yolo_inference": 471.73,
+        "sam2_inference": 3751.01,
+        "total": 4228.15
+      }
+    },
+    {
+      "photoId": "naver-1784-stairs/solo/1/comparison/photo",
+      "mode": "accurate",
+      "wallMs": 4109.87,
+      "timingsMs": {
+        "yolo_inference": 440.79,
+        "sam2_inference": 3664.37,
+        "total": 4109.69
+      }
+    }
+  ]
+}

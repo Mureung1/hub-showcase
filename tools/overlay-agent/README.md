@@ -1,6 +1,6 @@
 # Overlay Agent CLI
 
-This tool creates a transparent photo-composition overlay from a reference image and a coordinate guide JSON file.
+This tool creates a transparent photo-composition overlay from a reference image and a layout JSON file.
 
 ## Install
 
@@ -12,23 +12,21 @@ npm install
 
 ```bash
 npm run generate -- \
-  --image ../../assets/photo-guides/reference/my-photo.jpg \
-  --guide ./guides/example-guide.json \
-  --output ../../assets/photo-guides/overlays/my-photo-overlay.png
+  --image ../../assets/photo-guides/reference/{placeId}_{mode}_{poseId}_photo.png \
+  --layout ./guides/example-layout.json \
+  --output ../../assets/photo-guides/overlays/{placeId}_{mode}_{poseId}_overlay.png
 ```
 
-The output PNG has the same dimensions as the source image and contains a building outline, a horizon guide, and one or more subject-position frames.
+The output PNG has the same dimensions as the source image and contains only administrator-registered background representative lines.
 
 ## Guide Schema
 
-- `buildingOutline`: at least two `[x, y]` points, each from `0` to `1`
-- `backgroundLines`: optional `{ start: [x, y], end: [x, y] }` line segments from the local Vision web app
-- `horizonY`: horizontal guide position from `0` to `1`
+- `backgroundLines`: one to five `{ id, start: [x, y], end: [x, y] }` segments from the local Vision web app
 - `personFrames`: one or more `{ x, y, width, height, label? }` objects, all coordinates from `0` to `1`
 - `personFrame`: a legacy single-person form. New guides should use `personFrames`.
 
 For a couple composition, add two frames: one for each person. Each frame is drawn with its own center line and label.
 
-`buildingOutline` and `backgroundLines` are both supported. The Vision web app uses `backgroundLines` because OpenCV detects separate long line segments rather than one continuous building contour.
+Automatic building outlines and horizon guides are intentionally excluded. The Vision web app stores only manually approved background lines.
 
 Run `npm test` to validate image dimensions, alpha output, and invalid-coordinate handling.

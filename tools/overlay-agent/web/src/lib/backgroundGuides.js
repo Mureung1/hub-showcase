@@ -18,7 +18,7 @@ export function createBackgroundLine(lines, start, end) {
   if (distance < 0.006) return null;
 
   return {
-    id: `line-${lines.length + 1}`,
+    id: `line_${crypto.randomUUID()}`,
     start: [startX, startY],
     end: [endX, endY],
   };
