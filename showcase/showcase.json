@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "title": "역기획소 (respec)",
+  "summary": "게임 기획자 지망생이 역기획서를 틀부터 배우고 쓰고, 사람과 AI 양쪽에게 섹션별 피드백을 받는 웹 플랫폼입니다.",
+  "githubUser": "geulcho(권혁준)",
+  "demoUrl": "",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": ["screenshots/home.webp"],
+  "problem": "역기획서는 게임 기획 지망생에게 사실상 필수 포트폴리오지만, 처음 쓰는 사람은 무엇을 어떤 순서로 써야 하는지 몰라 백지 앞에서 멈춥니다. 겨우 다 쓰고 나서도 봐줄 사람이 없어, 게임 내용을 '요약'만 한 문서인지 설계 '의도까지 분석'한 문서인지 스스로 판단하기 어렵습니다.",
+  "targetUsers": ["게임 기획자 지망생", "역기획서를 처음 써 보는 사람", "포트폴리오를 준비하는 취업 준비생"],
+  "features": [
+    "직군별 템플릿과 섹션별 작성 가이드가 내장된 에디터로, 백지가 아니라 틀부터 시작합니다.",
+    "발행하면 즉시 Gemini가 섹션별 강점·개선점과 전체 총평을 답니다(회원 전용, 일일 횟수 제한).",
+    "아카이브에서 같은 게임·같은 시스템을 다룬 역기획서를 찾아 비교하며 배웁니다.",
+    "섹션 단위로 코멘트를 주고받아 '어디가 왜 부족한지'를 구체적으로 남깁니다.",
+    "격주 공통 주제 챌린지로 '일단 완성'을 만들고, 같은 주제 제출작을 나란히 비교합니다."
+  ],
+  "featureTags": ["가이드형 에디터", "AI 자동 피드백", "섹션별 코멘트"],
+  "techStack": [
+    "React 19",
+    "Vite",
+    "React Router",
+    "Framer Motion",
+    "Node.js",
+    "Express",
+    "Supabase Postgres",
+    "Supabase Auth",
+    "Google Gemini API",
+    "Vitest"
+  ],
+  "techHighlights": [
+    "모든 화면이 storage.js → api.js 한 창구만 통과해 백엔드 REST API를 타고, LLM 키는 백엔드에만 둬 프론트 번들에 노출되지 않습니다.",
+    "전 테이블 RLS를 켜 공개된 anon 키로는 DB에 직접 접근할 수 없고, 코멘트 작성자·초안 열람·AI 일일 한도를 서버가 다시 검증합니다.",
+    "Agent 2개와 Skill 1개를 계획 → 구현 → 검증 → 디자인 점검 Workflow로 연결해 개발했습니다."
+  ],
+  "developmentWithAI": "저는 문제 정의와 기능 우선순위, 디자인 방향을 정하고 AI에게는 그 안에서 실행을 맡겼습니다. 주차 목표를 하루 크기 작업으로 쪼개는 일, 코드 초안, 테스트 작성, 완성 주장을 검증하는 일이 AI 몫이었습니다. 대신 '됐다'는 말은 믿지 않고, 프론트에서 백엔드를 거쳐 DB까지 왕복이 실제로 관찰될 때만 완료로 인정하는 규칙을 만들어 Agent에게 그 검사를 시켰습니다. 아키텍처 다이어그램을 AI와 함께 그리는 과정에서, 클라이언트를 그대로 믿고 있던 권한 구멍 7가지를 발견해 고친 것이 가장 큰 수확이었습니다. 프로젝트 규칙(LLM 키는 백엔드에만, 목데이터 스키마는 기획서 §5와 일치 등)은 CLAUDE.md에 적어 두고 매 작업에서 그 규칙을 지키게 했습니다.",
+  "agent": {
+    "summary": "Agent 2개와 Skill 1개를 각각 계획·검증·디자인 점검에 나눠 썼습니다. 계획 수립 Agent는 주차 목표를 하루 크기 작업으로 분해하고, 기능 검증 Agent는 완성했다고 주장하는 기능을 엔드포인트로 직접 두드려 PASS/FAIL로 판정합니다. 디자인 가이드 Skill은 새 화면이 디자인 시스템에서 벗어나지 않았는지 자체 점검합니다. 세 가지 모두 프로젝트 문서(BACKLOG.md·project-plan.md·DESIGN_SYSTEM.md)를 먼저 읽고 그 기준으로 판단하게 해서, 판단 근거가 매번 달라지지 않도록 했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "계획 수립 Agent (plan-breakdown)",
+        "purpose": "주차 목표를 하루 크기 작업으로 나누고 우선순위(P0/P1/P2)·순서·완료 기준·의존을 붙여 표로 돌려줍니다."
+      },
+      {
+        "type": "agent",
+        "name": "기능 검증 Agent (feature-verify)",
+        "purpose": "다 됐다고 한 기능이 프론트→백엔드→DB 왕복으로 실제 도는지 엔드포인트를 직접 두드려 요구사항별 PASS/FAIL로 보고합니다."
+      },
+      {
+        "type": "skill",
+        "name": "디자인 가이드 Skill (design-guide)",
+        "purpose": "새 화면이 디자인 토큰·글래스 패널 레시피·game-feel 규칙과 맞는지 체크리스트로 자체 점검합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "BACKLOG.md에서 이번 주 Task와 완료 기준 확정",
+          "계획 수립 Agent로 하루 크기 작업 분해",
+          "GitHub Issue 등록",
+          "feature/* 브랜치 생성",
+          "테스트 먼저 작성",
+          "구현",
+          "기능 검증 Agent로 프론트→백엔드→DB 왕복 검증",
+          "PR 생성"
+        ]
+      },
+      {
+        "name": "화면 디자인 Workflow",
+        "steps": [
+          "design-tokens.css에서 색·radius·shadow 값 고르기",
+          "화면 구현",
+          "디자인 가이드 Skill로 자체 점검",
+          "어긋난 토큰·패턴 수정"
+        ]
+      }
+    ]
+  }
+}

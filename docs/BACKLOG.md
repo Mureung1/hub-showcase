@@ -83,6 +83,16 @@ Task는 보통 "함수 하나 짜기"처럼 잘게 쪼개지 않고, "화면 하
 - [x] **P1** 남의 문서에 AI 코멘트 붙이기 차단 — `POST /:id/ai-feedback`에 소유자 검사 403 *(회귀 테스트 1건)*
 - (참고) 이미지 업로드(Supabase Storage) 도입 시 **프론트에서 Supabase를 직접 부르지 않는다** — 백엔드가 서명 URL을 발급하는 방식으로 간다. 프론트의 Supabase 직접 호출은 인증 하나로 유지
 
+## showcase 대시보드 등록 (2026-07-23 추가)
+
+챌린지 공개 대시보드(`connect-AIAgentChallenge-26-1/hub`)가 **참가자 브랜치 루트의 `showcase/showcase.json`** 을 매일 23시(KST)에 수집한다. 규격은 공용 저장소 `dashboard-page` 브랜치의 `dashboard/schemas/showcase.schema.json`(Ajv, `additionalProperties: false`)과 `dashboard/scripts/collect-local-showcases.mjs`가 정한다. **`thumbnail`은 필수이고 파일이 실제로 없으면 수집기가 예외를 던져 브랜치 전체가 대시보드에서 빠지므로**, 항목을 비울 때도 이미지는 반드시 넣어둔다. 남은 항목은 다음 주까지 하나씩 채워 PR에 같이 올린다.
+
+- [x] **P0** `showcase/showcase.json` + `thumbnail.webp` + `screenshots/home.webp` 추가 *(2026-07-23. Ajv 검증 통과. 카드가 16:9 `object-fit:cover`로 잘라내므로 썸네일은 홈 화면 상단 크롭본)*
+- [ ] **P0** `demoUrl` 채우기 — 4주차 "Vercel 배포" Task가 끝나야 값이 생긴다. 현재는 `""`
+- [ ] **P1** `screenshots` 2장 추가(최대 3장) — 가이드형 에디터, AI 섹션별 피드백 화면
+- [ ] **P1** 기능이 늘면 `features`(최대 5개)·`featureTags`(최대 3개)·`techHighlights`(최대 3개) 갱신
+- [ ] **P1** Agent/Skill을 새로 만들면 `agent.agentTools`·`agent.workflows`에 반영 — 2주차 P0인 test-writer Skill·code-review Agent가 생기면 추가
+
 ## 1주차 Task — 기반 구축
 
 기준 문서: `project-plan.md` §5(데이터 구조), §6(기술 스택)
