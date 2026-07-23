@@ -41,6 +41,7 @@ describe("artifact content helpers", () => {
     assert.equal(evidence.status, "attached");
     assert.equal(evidence.modality, "pdf");
     assert.equal(evidence.fileData, "JVBERi0x");
+    assert.equal(evidence.fileDataUrl, "data:application/pdf;base64,JVBERi0x");
   });
 
   it("attaches image submitted file data for OpenAI vision evaluation", () => {

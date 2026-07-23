@@ -220,10 +220,10 @@ const createSubmissionFeedbackContent = ({ submission, artifactEvidence = [] }) 
       });
     }
 
-    if (evidence.modality === "pdf" && evidence.fileData) {
+    if (evidence.modality === "pdf" && (evidence.fileDataUrl || evidence.fileData)) {
       content.push({
         type: "input_file",
-        file_data: evidence.fileData,
+        file_data: evidence.fileDataUrl || evidence.fileData,
         filename: evidence.fileName || "submitted-result.pdf",
         detail: "auto",
       });

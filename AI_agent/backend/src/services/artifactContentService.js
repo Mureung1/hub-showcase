@@ -332,6 +332,7 @@ export const extractSubmittedFileText = (submission) => {
       fileName: submission?.submittedFileName || "submitted-result.pdf",
       contentType,
       fileData: encodedPayload,
+      fileDataUrl: fileData,
       text: "",
     };
   }
