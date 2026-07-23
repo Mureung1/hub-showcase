@@ -47,6 +47,7 @@ Node와 npm이 설치된 supported macOS arm64에서 repository·system Python·
 - [재개 가능한 setup과 workspace instruction/Skill bundle의 authority를 정한다](tickets/010-resumable-setup-authority.md) — Browser `SetupJourney` + deep admission Module, 최종 확인·approved-only transaction, exact-match resume·safe recovery, declared built-in Skill root별 complete-tree bundle·effective-native-context·native project boundary gate를 채택하고 setup Skill을 제외했다.
 - [Bootstrap과 setup의 durability·recovery contract를 확정한다](tickets/011-bootstrap-and-setup-recovery.md) — `SetupJourney.reconcile/observe`, owner-only single state envelope, `approved → prepared → active_ready` commit과 durable `discard_requested`, evidence-based cross-root resume·same-version ready-relaunch를 채택했다.
 - [Semester Ready 완료와 후속 여정 진입 표면을 검증한다](tickets/012-semester-ready-first-action.md) — 생성 승인 전 A Guided checkpoint에서 Ready·relaunch·recovery의 C Compact status center로 전환하고, Course·RawMaterial-independent Ready truth, capability-gated `첫 자료 가져오기`와 projection-allowlisted recovery action을 채택했다.
+- [Landing의 product promise와 install truth를 검증한다](tickets/013-landing-install-truth.md) — C Open field guide의 제품 서사를 골격으로 B의 exact release card·execution path·trust adjacency를 결합하고, release-generated command·size·link와 bounded failure·rollback 표시 경계를 채택했다.
 
 ## Not yet specified
 

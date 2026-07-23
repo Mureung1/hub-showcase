@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: prototype
-- State: claimed
+- State: resolved
 - Blocked by: [첫 public preview의 성공 여정을 고정한다](004-first-public-preview-success-journey.md), [Public repository authority와 license를 확정한다](005-public-repository-authority-and-license.md), [npx production composition을 고른다](006-npx-production-composition.md), [Runtime release delivery·integrity·versioning을 정한다](007-runtime-release-delivery-integrity.md), [Browser-launched Codex OAuth lifecycle을 설계한다](008-browser-oauth-lifecycle.md), [Semester Ready 완료와 후속 여정 진입 표면을 검증한다](012-semester-ready-first-action.md)
 
 ## Question
@@ -12,4 +12,12 @@
 
 ## Answer
 
-아직 검증하지 않음.
+Evidence branch `prototype/public-landing-entry`의 immutable commit `2790a7f1402469c0030dc2e9b5d1fd2e924ee7a9`에서 A Semester story, B Command doorway, C Open field guide와 prerequisite·download·integrity·storage·auth failure를 비교했다. `node --check`, `git diff --check`, 1440 × 900 visual·overflow·copy interaction과 세 variant × 다섯 failure state gate를 통과했고, 2026-07-23 사용자가 **C의 editorial field guide를 골격으로 B의 exact release card·execution path·trust adjacency를 결합**하는 방향을 선택했다. Prototype source·CSS·fixture release 값은 production branch로 merge하거나 그대로 port하지 않는다.
+
+채택안은 `한 학기를 함께 관리하는 AY`의 editorial Hero 바로 아래에 B의 `PublicReleaseCard`를 둔다. Card는 publication input에서 생성한 actual exact `npx ay-ple@<release-version>`, copy action, npm project 밖 Terminal·conditional install prompt·foreground lifetime·dynamic local Browser 안내와 current preview 범위를 first fold 안에서 함께 보여 준다. C의 field guide는 `Landing → exact npx → preflight·verified Runtime → ChatGPT browser OAuth → A guided setup → C compact status center`를 설명하고, `AVAILABLE`을 setup·ready-relaunch로 제한하며 자료 import·Course·학업 action은 `COMING NEXT`로 분리한다.
+
+Version·first Runtime download·installed regular bytes·retained archive와 staging을 포함한 conservative free-space bound·Browser minimum·public link·rollback은 Landing에 독립 hard-code하지 않는다. [npx production composition을 고른다](006-npx-production-composition.md)의 compatibility descriptor, [Runtime release delivery·integrity·versioning을 정한다](007-runtime-release-delivery-integrity.md)의 descriptor·manifest, [ADR 0015](../../../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)의 public snapshot·trust surface와 [Public source·npm·Runtime publication gate를 확정한다](015-publication-release-gates.md)의 release ledger가 가진 기존 authority를 유지하며, publication gate가 이들을 대조해 만든 read-only display artifact를 Landing과 public README가 함께 소비한다. 값이나 published artifact mapping이 없으면 publication을 fail closed한다. Prototype의 `0.0.1-preview.1`과 size는 시각 검증 fixture일 뿐 release 결정이 아니다. 첫 release에는 rollback을 표시하지 않고 실제 older whole pair가 `still-supported`일 때만 exact older application command를 생성한다.
+
+Compatibility·trust는 local workspace/app state, Codex-managed OAuth credential, npm·GitHub·OpenAI network와 provider 전송 가능성을 분리한다. `local-first`를 offline·외부 전송 없음으로 표현하지 않는다. Existing ChatGPT account prerequisite와 API key·device code·global `~/.codex` import 제외를 command 주변에 표시하고, linked Privacy는 organization setup에서 Codex-owned token-bearing local success URL이 나타날 수 있는 제한을 숨기지 않는다. Failure는 unsupported prerequisite, Browser open, download, integrity·unsafe archive, storage·unsafe cache, first-run OAuth cancel·timeout, workspace-preserved reauth, unsupported account, account unavailable과 release unavailable을 구분하고 current exact command·safe guidance를 제공하되 automatic downgrade, `@latest`, generic cache deletion과 raw private diagnostic을 금지한다.
+
+상세 section hierarchy, comparison, copy·failure matrix, typography·interaction guardrail과 downstream acceptance는 [Public Landing product promise·install truth prototype 판정](../assets/public-landing-prototype.md)에 기록했다.
