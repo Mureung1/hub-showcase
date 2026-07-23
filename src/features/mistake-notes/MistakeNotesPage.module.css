@@ -270,6 +270,16 @@
   background: #f8fbff;
 }
 
+.clickableRow {
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.clickableRow:hover {
+  background: #edf5ff !important;
+}
+
+
 .table td:first-child,
 .table th:first-child {
   padding-left: 24px;
