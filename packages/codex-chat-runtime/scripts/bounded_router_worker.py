@@ -65,12 +65,19 @@ async def _run(
 
     codex = AsyncCodex(
         config=CodexConfig(
+            client_name="ay-ple",
+            client_title="AY-PLE",
+            client_version="0.1.0-preview.1",
             launch_args_override=(
                 sys.executable,
                 str(fake_server),
                 str(child_pid_path),
                 str(trace_path),
-            )
+            ),
+            opt_out_notification_methods=(
+                "account/login/completed",
+                "thread/status/changed",
+            ),
         )
     )
     child = None

@@ -163,6 +163,20 @@ def main() -> None:
     steps: list[str] = []
 
     initialize = _require_request("initialize")
+    expected_initialize_params = {
+        "capabilities": {
+            "experimentalApi": True,
+            "optOutNotificationMethods": ["thread/status/changed"],
+        },
+        "clientInfo": {
+            "name": "ay-ple",
+            "title": "AY-PLE",
+            "version": "0.1.0-preview.1",
+        },
+    }
+    if initialize.get("params") != expected_initialize_params:
+        raise RuntimeError(f"initialize contract mismatch: {initialize!r}")
+    steps.append("initialize-contract-verified")
     _write_message(
         {
             "id": initialize["id"],
@@ -186,6 +200,12 @@ def main() -> None:
     steps.append("thread-b-started")
 
     login_start = _require_request("account/login/start")
+    if login_start.get("params") != {
+        "appBrand": "codex",
+        "type": "chatgpt",
+        "useHostedLoginSuccessPage": True,
+    }:
+        raise RuntimeError(f"managed login contract mismatch: {login_start!r}")
     _write_message(
         {
             "id": login_start["id"],
@@ -196,7 +216,18 @@ def main() -> None:
             },
         }
     )
+    _write_message(
+        {
+            "method": "account/login/completed",
+            "params": {
+                "error": None,
+                "loginId": "login-unrelated",
+                "success": True,
+            },
+        }
+    )
     steps.append("login-started")
+    steps.append("unrelated-login-completion-preserved")
 
     turn_b = _require_request("turn/start")
     if turn_b.get("params", {}).get("threadId") != THREAD_B_ID:

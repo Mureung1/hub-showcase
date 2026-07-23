@@ -44,10 +44,12 @@ BUDGET_CASES = {
     "pending_login_routes": ("pending_login", "routes"),
 }
 EXPECTED_STEPS = [
+    "initialize-contract-verified",
     "initialized",
     "thread-a-started",
     "thread-b-started",
     "login-started",
+    "unrelated-login-completion-preserved",
     "turn-b-response",
     "turn-a-exact-boundary",
     "turn-b-completed",
