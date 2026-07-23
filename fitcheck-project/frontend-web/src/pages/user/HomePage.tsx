@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PlayCircle, UtensilsCrossed, MapPinned, Flame } from 'lucide-react';
 import type { Course } from '../../data/userMock';
-import { MOCK_USER_LOCATION } from '../../data/userMock';
+import { useUserLocation } from '../../features/map/useUserLocation';
 import { useAuth } from '../../hooks/useAuth';
 import { fetchCourses } from '../../services/coursesApi';
-import { fetchGyms } from '../../services/gymsApi';
+import { fetchRecommendedGyms } from '../../services/gymsApi';
 import { fetchMeals } from '../../services/mealsApi';
 import { todayString } from '../../utils/date';
 import './user.css';
@@ -33,9 +33,11 @@ const QUICK_LINKS = [
 
 export default function HomePage() {
   const { isAuthenticated } = useAuth();
+  const { location } = useUserLocation();
   const [todayMealCount, setTodayMealCount] = useState(0);
   const [latestMealFeedback, setLatestMealFeedback] = useState<string | null>(null);
   const [nearbyGyms, setNearbyGyms] = useState(0);
+  const [topMatchScore, setTopMatchScore] = useState<number | null>(null);
   const [recommended, setRecommended] = useState<Course | null>(null);
   const [loadingRecommended, setLoadingRecommended] = useState(true);
 
@@ -48,19 +50,20 @@ export default function HomePage() {
           ? fetchMeals({ date: todayString(), limit: 10 }).catch(() => null)
           : Promise.resolve(null);
 
-        const [{ courses }, { meta }, mealsResult] = await Promise.all([
+        const [{ courses }, recommendedGyms, mealsResult] = await Promise.all([
           fetchCourses({ limit: 1 }),
-          fetchGyms({
-            lat: MOCK_USER_LOCATION.lat,
-            lng: MOCK_USER_LOCATION.lng,
+          fetchRecommendedGyms({
+            lat: location.lat,
+            lng: location.lng,
             radiusKm: 3,
             limit: 50,
-          }),
+          }).catch(() => null),
           mealPromise,
         ]);
         if (!cancelled) {
           setRecommended(courses[0] ?? null);
-          setNearbyGyms(meta.total);
+          setNearbyGyms(recommendedGyms?.meta.total ?? 0);
+          setTopMatchScore(recommendedGyms?.gyms[0]?.matchScore ?? null);
           if (mealsResult) {
             setTodayMealCount(mealsResult.meals.length);
             setLatestMealFeedback(mealsResult.meals[0]?.aiFeedback ?? null);
@@ -70,6 +73,7 @@ export default function HomePage() {
         if (!cancelled) {
           setRecommended(null);
           setNearbyGyms(0);
+          setTopMatchScore(null);
         }
       } finally {
         if (!cancelled) setLoadingRecommended(false);
@@ -80,7 +84,7 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, location.lat, location.lng]);
 
   return (
     <div className="user-page">
@@ -108,7 +112,12 @@ export default function HomePage() {
           <span className="stat-dot stat-dot-yellow" />
           <div>
             <strong>{nearbyGyms}</strong>
-            <span>근처 매칭</span>
+            <span>
+              근처 매칭
+              {topMatchScore !== null && topMatchScore > 0
+                ? ` · 최고 ${topMatchScore}점`
+                : ''}
+            </span>
           </div>
         </article>
         <article className="stat-card">

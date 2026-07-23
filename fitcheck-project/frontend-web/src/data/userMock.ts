@@ -59,6 +59,10 @@ export interface GymPlace {
   source?: 'seed' | 'naver' | 'manual';
   externalLink?: string;
   category?: string;
+  /** PT 강좌 시청 기반 매칭 점수 (0~100) */
+  matchScore?: number;
+  /** 매칭 이유 문구 */
+  matchReasons?: string[];
 }
 
 /** 가상 사용자 위치 (부산 부산진구 서면 인근) */

@@ -4,7 +4,7 @@ import {
   type Course,
   type Goal,
 } from '../data/userMock';
-import { apiGet } from './api';
+import { apiGet, apiPost } from './api';
 
 interface ApiCourse {
   id: string;
@@ -128,4 +128,68 @@ export function getRelatedCourses(course: Course, allCourses: Course[], limit = 
         (item.bodyPart === course.bodyPart || item.goal === course.goal),
     )
     .slice(0, limit);
+}
+
+export interface InterestWeight {
+  label: string;
+  count: number;
+  weight: number;
+}
+
+export interface InterestProfile {
+  totalViews: number;
+  topBodyParts: InterestWeight[];
+  topGoals: InterestWeight[];
+  primaryLevel: string | null;
+}
+
+export interface CourseActivity {
+  watchHistory: Array<{
+    id: string;
+    courseId: string;
+    watchedAt: string;
+    progressPct: number;
+  }>;
+  interestProfile: InterestProfile;
+}
+
+interface CourseWatchResponse {
+  success: boolean;
+  data: {
+    id: string;
+    courseId: string;
+    watchedAt: string;
+    progressPct: number;
+  };
+}
+
+interface CourseActivityResponse {
+  success: boolean;
+  data: CourseActivity;
+}
+
+export async function recordCourseWatchOnServer(
+  courseId: string,
+  progressPct?: number,
+): Promise<void> {
+  await apiPost<CourseWatchResponse>(`/api/v1/courses/${courseId}/watch`, {
+    progressPct,
+  });
+}
+
+export async function fetchCourseActivity(): Promise<CourseActivity> {
+  const res = await apiGet<CourseActivityResponse>('/api/v1/me/course-activity');
+  return res.data;
+}
+
+export async function syncLocalCourseViews(
+  watchHistory: Array<{ courseId: string; watchedAt: string }>,
+): Promise<void> {
+  for (const item of watchHistory) {
+    try {
+      await recordCourseWatchOnServer(item.courseId);
+    } catch {
+      // 개별 동기화 실패는 무시하고 다음 항목 진행
+    }
+  }
 }
