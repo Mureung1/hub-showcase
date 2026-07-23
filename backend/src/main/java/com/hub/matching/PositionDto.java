@@ -28,6 +28,7 @@ public class PositionDto {
             int fitScore,
             String sourceUrl,
             String collectedAt,
+            double fulfillmentSum,        // ← 추가. Σ(가중치 × 충족도), 0~1
             List<RequirementView> requirements,
             List<String> advice
     ) {}

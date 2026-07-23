@@ -1,5 +1,6 @@
 package com.hub.matching;
 
+import java.util.Comparator;
 import com.hub.common.ApiException;
 import com.hub.credential.Credential;
 import com.hub.credential.CredentialRepository;
@@ -48,7 +49,9 @@ public class MatchingService {
         matchScoreRepository.saveAll(scores);
     }
 
-    /** F4 — 적합도 순 목록 */
+    /**
+     * F4 — 적합도 순 목록
+     */
     @Transactional(readOnly = true)
     public List<PositionDto.Summary> listRanked(Long userId) {
         List<MatchScore> scores = matchScoreRepository.findByUserIdOrderByScoreDesc(userId);
@@ -81,7 +84,9 @@ public class MatchingService {
                 .toList();
     }
 
-    /** F5 — 상세 + 근거 */
+    /**
+     * F5 — 상세 + 근거
+     */
     @Transactional(readOnly = true)
     public PositionDto.Detail detail(Long userId, Long postingId) {
         JobPosting posting = postingRepository.findWithRequirements(postingId)
@@ -94,21 +99,27 @@ public class MatchingService {
                 .collect(Collectors.toMap(MatchDetail::getRequirementId, Function.identity()));
 
         List<PositionDto.RequirementView> requirements = posting.getRequirements().stream()
-                .sorted((a, b) -> b.getWeight().compareTo(a.getWeight()))   // 가중치 큰 것부터
+                .sorted(Comparator.comparingDouble(
+                        r -> -(r.getWeight() == null ? 0 : r.getWeight().doubleValue())))
                 .map(req -> toView(req, byRequirement.get(req.getId())))
                 .toList();
+
+        double fulfillmentSum = requirements.stream()
+                .mapToDouble(r -> r.weight() * r.fulfillment())
+                .sum();
 
         return new PositionDto.Detail(
                 posting.getId(), posting.getCompany(), posting.getTitle(), posting.getLocation(),
                 posting.getExperience(), score.getScore(), posting.getSourceUrl(),
-                DATE.format(posting.getCreatedAt()), requirements,
+                DATE.format(posting.getCreatedAt()), fulfillmentSum, requirements,
                 AdviceGenerator.generate(requirements));
     }
 
     private PositionDto.RequirementView toView(JobRequirement req, MatchDetail detail) {
         double fulfillment = detail == null ? 0 : detail.getFulfillment().doubleValue();
         String evidence = detail == null ? "해당 이력 없음" : detail.getEvidence();
+        double weight = req.getWeight() == null ? 0 : req.getWeight().doubleValue();   // ← 변경
         return new PositionDto.RequirementView(
-                req.getName(), req.isRequired(), req.getWeight().doubleValue(), fulfillment, evidence);
+                req.getName(), req.isRequired(), weight, fulfillment, evidence);
     }
 }

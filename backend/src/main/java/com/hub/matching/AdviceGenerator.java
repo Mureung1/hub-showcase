@@ -36,6 +36,7 @@ final class AdviceGenerator {
         // 3. 완전 공백
         requirements.stream()
                 .filter(r -> r.fulfillment() == 0.0)
+                .filter(r -> advice.stream().noneMatch(a -> a.contains("\"" + r.name() + "\"")))   // ← 추가
                 .min(Comparator.comparingDouble(PositionDto.RequirementView::weight))
                 .ifPresent(r -> advice.add(
                         "\"%s\"은(는) 공백입니다. 직접 경험이 없다면 인접 경험을 근거로 배치해 감점 폭을 줄이세요."

@@ -36,6 +36,8 @@ export interface Position {
 }
 
 export interface PositionDetail extends Position {
+  /** Σ(가중치 × 충족도), 0~1. 게이트 보정 전 값 */
+  fulfillmentSum: number;
   requirements: Requirement[];
   /** "내 이력으로 맞추는 방향" */
   advice: string[];

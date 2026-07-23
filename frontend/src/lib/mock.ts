@@ -69,6 +69,13 @@ const REQUIREMENTS: PositionDetail["requirements"] = [
   },
 ];
 
+/**
+ * 위 REQUIREMENTS 의 Σ(가중치 × 충족도).
+ * 목업 포지션이 모두 같은 요구조건을 공유하므로 값도 하나다.
+ * fitScore 와의 차이가 상세 화면의 "보정" 행으로 표시된다.
+ */
+const FULFILLMENT_SUM = 0.895;
+
 const POSITIONS: PositionDetail[] = [
   {
     id: "toss-backend-platform",
@@ -78,6 +85,7 @@ const POSITIONS: PositionDetail[] = [
     experience: "3~7년",
     tags: ["Python", "AWS", "대용량"],
     fitScore: 92,
+    fulfillmentSum: FULFILLMENT_SUM,
     collectedAt: "2026.07.12",
     sourceUrl: "https://example.com/toss/backend",
     requirements: REQUIREMENTS,
@@ -95,6 +103,7 @@ const POSITIONS: PositionDetail[] = [
     experience: "3년+",
     tags: ["Go", "Elasticsearch"],
     fitScore: 78,
+    fulfillmentSum: FULFILLMENT_SUM,
     collectedAt: "2026.07.11",
     sourceUrl: "https://example.com/daangn/search",
     requirements: REQUIREMENTS,
@@ -112,6 +121,7 @@ const POSITIONS: PositionDetail[] = [
     experience: "4~8년",
     tags: ["Java", "MSA", "결제"],
     fitScore: 64,
+    fulfillmentSum: FULFILLMENT_SUM,
     collectedAt: "2026.07.10",
     sourceUrl: "https://example.com/musinsa/payment",
     requirements: REQUIREMENTS,
@@ -129,6 +139,7 @@ const POSITIONS: PositionDetail[] = [
     experience: "5년+",
     tags: ["Kubernetes", "Go"],
     fitScore: 51,
+    fulfillmentSum: FULFILLMENT_SUM,
     collectedAt: "2026.07.09",
     sourceUrl: "https://example.com/banksalad/platform",
     requirements: REQUIREMENTS,
@@ -146,6 +157,7 @@ const POSITIONS: PositionDetail[] = [
     experience: "2~5년",
     tags: ["Kotlin", "Spring"],
     fitScore: 37,
+    fulfillmentSum: FULFILLMENT_SUM,
     collectedAt: "2026.07.08",
     sourceUrl: "https://example.com/kurly/logistics",
     requirements: REQUIREMENTS,
@@ -194,8 +206,8 @@ export const CREDENTIALS: Credential[] = [
   },
 ];
 
-/* ── 데이터 접근 함수 (실제 API로 교체할 지점) ── */
-// ── 변경 후 ──
+/* ── 데이터 접근 함수 (lib/data.ts 가 api.ts 와 교체하는 지점) ── */
+
 export async function listPositions(): Promise<Position[]> {
   return [...POSITIONS].sort((a, b) => b.fitScore - a.fitScore);
 }
@@ -206,10 +218,10 @@ export async function getPosition(id: string): Promise<PositionDetail | undefine
 
 /** 목업에선 계산할 게 없다. data.ts 의 시그니처를 맞추기 위한 no-op. */
 export async function recalculate(): Promise<void> {}
-export const GENERATED_DOCS: Record<string, { resume: string; letter: string }> =
-  {
-    "toss-backend-platform": {
-      resume: `김서준 — 백엔드 엔지니어 (4년)
+
+export const GENERATED_DOCS: Record<string, { resume: string; letter: string }> = {
+  "toss-backend-platform": {
+    resume: `김서준 — 백엔드 엔지니어 (4년)
 
 요약
 대용량 결제 트랜잭션을 다뤄온 백엔드 개발자입니다. 카카오페이에서 일 300만 건 규모의 정산 배치를 설계·운영하며 처리 시간을 6시간에서 40분으로 줄였습니다.
@@ -230,7 +242,7 @@ Python(4년) · Go · PostgreSQL · Redis · AWS(EKS, SQS) · Kafka
 자격 / 활동
 정보처리기사 (2021) · AWS SAA (2024)
 오픈소스 실시간 알림 서버 notify-hub 운영 (스타 340)`,
-      letter: `지원 동기
+    letter: `지원 동기
 토스가 이번 공고에서 반복해 말한 것은 “장애 없이 흐르는 돈”이었습니다. 저는 지난 3년간 그 문제만 붙잡고 있었습니다. 카카오페이에서 일 300만 건의 정산 배치를 맡으며, 실패한 한 건이 다음 날 아침 CS 창구로 돌아온다는 사실을 몸으로 배웠습니다.
 
 가장 잘한 일
@@ -241,14 +253,14 @@ Python(4년) · Go · PostgreSQL · Redis · AWS(EKS, SQS) · Kafka
 
 앞으로
 토스의 플랫폼 조직에서 하고 싶은 일은 단순합니다. 결제가 조용히 성공하는 상태를 오래 유지하는 것. 그 지루함을 좋아합니다.`,
-    },
-  };
+  },
+};
 
 export function getDocs(positionId: string) {
   return (
-    GENERATED_DOCS[positionId] ?? {
-      resume: "아직 생성된 이력서가 없습니다.",
-      letter: "아직 생성된 자기소개서가 없습니다.",
-    }
+      GENERATED_DOCS[positionId] ?? {
+        resume: "아직 생성된 이력서가 없습니다.",
+        letter: "아직 생성된 자기소개서가 없습니다.",
+      }
   );
 }
