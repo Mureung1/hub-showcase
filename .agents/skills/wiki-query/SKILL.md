@@ -9,6 +9,13 @@ description: Use when answering questions from the project Wiki while tracing im
 
 Answer project knowledge questions from the Wiki without treating generated synthesis as source material.
 
+## Do Not Use When
+
+- The question cannot be answered from Wiki pages or their `source_paths`.
+- The user wants to add new source material to the Wiki; use `wiki-ingest` instead.
+- The task requires implementation, verification, or file edits outside the Wiki.
+- The answer depends on external systems that are not configured or approved.
+
 ## Input
 
 - User question

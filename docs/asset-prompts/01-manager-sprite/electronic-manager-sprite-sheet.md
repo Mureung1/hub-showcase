@@ -29,9 +29,9 @@ Preserve these traits:
 - Keep movement subtle: 1 to 2 pixels for breathing, antenna glow, tiny facial shifts, or small base/device glow.
 - Do not bake dialogue, UI text, labels, fake buttons, shadows, or background scenery into the sprite.
 - Window interaction states use the same 4-frame `64x64` sheet rule, but they anchor to a window edge instead of a standing baseline.
-- For `hanging` and `hiding`, do not bake a full XP window into the sprite. The React/CSS window layer should provide the edge, mask, or clipping surface.
+- For `hanging` and `hiding`, do not bake a full XP window into the sprite. The React/CSS window layer should provide the edge, z-index occlusion, or optional clipping surface.
 - For `hanging`, keep the same grip point or top anchor across all frames.
-- For `hiding`, keep the same peek edge and visible portion alignment across all frames.
+- For `hiding`, keep Lumi fully inside every frame. The app places the complete sprite behind the XP window layer, so the window hides part of the character at runtime.
 
 ## State Prompts
 
@@ -80,7 +80,7 @@ Using public/assets/lumi-manager.png as the exact character reference, create a 
 ### `lumi-hiding-sheet.png`
 
 ```text
-Using public/assets/lumi-manager.png as the exact character reference, create a production-quality 4-frame horizontal pixel art sprite sheet of Lumi hiding behind an app window and peeking out. Preserve the same electronic lifeform design, pink and cream body, side modules, antenna light, and small glowing lower device panel. One row, four equal 64x64 frame cells. Transparent background or flat removable chroma-key background. Lumi should be posed so React/CSS can place it behind a window edge or clipping mask; do not draw the full XP window into the sprite. Show a cute partial peek, cautious but playful, with tiny eye/antenna/device glow movement. Keep the same scale, same center x, same peek edge alignment, same visible bbox, and same frame padding across all frames. No text, no UI frame, no speech bubble, no shadow.
+Using public/assets/lumi-manager.png as the exact character reference, create a production-quality 4-frame horizontal pixel art sprite sheet of Lumi doing a full-body shy hiding motion for placement behind an app window. Preserve the same electronic lifeform design, pink and cream body, side modules, antenna light, and small glowing lower device panel. One row, four equal 64x64 frame cells. Transparent background or flat removable chroma-key background. The full Lumi character must remain visible inside each frame; do not crop the body and do not draw the window edge. React/CSS will place this complete sprite behind the XP window by z-index so the window occludes part of it at runtime. Show a cautious but playful tuck, lean, blink, antenna wiggle, or tiny device glow movement. Keep the same scale, same center x, same visible bbox, and same frame padding across all frames. No text, no UI frame, no speech bubble, no shadow.
 ```
 
 ## Growth Images

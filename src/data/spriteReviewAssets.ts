@@ -27,9 +27,11 @@ export interface SpriteReviewSet {
   fileForState: (state: PetMotionState) => string;
 }
 
-const pinkManagerCanonicalPath = "/assets/lumi/pink-manager-stage-1";
-const pinkManagerCandidatePath = "/assets/lumi/pink-manager-stage-1-production-candidates";
-const glassFrogCandidatePath = "/assets/lumi/glass-frog-stage-1-production-candidates";
+const pinkManagerCanonicalPath = "/assets/lumi/pink-manager-stage-2";
+const pinkManagerCandidatePath = "/assets/lumi/pink-manager-stage-2-production-candidates";
+const glassFrogCanonicalPath = "/assets/lumi/glass-frog-stage-2";
+const glassFrogCandidatePath = "/assets/lumi/glass-frog-stage-2-production-candidates";
+const seaBunnySlugCandidatePath = "/assets/lumi/sea-bunny-slug-stage-2-production-candidates";
 
 const floatAnchor: SpriteAnchor = { type: "float", x: 32, y: 58 };
 const topGripAnchor: SpriteAnchor = { type: "top-grip", x: 32, y: 5 };
@@ -135,35 +137,57 @@ const specs: readonly SpriteReviewSpec[] = [
 
 export const spriteReviewSets = [
   {
-    id: "pink-manager-stage-1-canonical",
-    label: "Pink Manager Stage 1 - Canonical",
+    id: "pink-manager-stage-2-canonical",
+    label: "Pink Manager Stage 2 - Canonical",
     description: "Main app runtime sheets in the stable canonical folder.",
     petId: "pink-manager",
-    stage: "stage-1",
+    stage: "stage-2",
     path: pinkManagerCanonicalPath,
-    fileForState: (state: PetMotionState) => `pink-manager-stage-1-${state}-sheet.png`,
+    fileForState: (state: PetMotionState) => `pink-manager-stage-2-${state}-sheet.png`,
   },
   {
-    id: "pink-manager-stage-1-production-candidates",
-    label: "Pink Manager Stage 1 - Production Candidates",
+    id: "pink-manager-stage-2-production-candidates",
+    label: "Pink Manager Stage 2 - Production Candidates",
     description: "Final candidate sheets kept for comparison with the promoted canonical folder.",
     petId: "pink-manager",
-    stage: "stage-1",
+    stage: "stage-2",
     path: pinkManagerCandidatePath,
     fileForState: (state: PetMotionState) => {
-      if (state === "focused" || state === "jump") return `pink-manager-stage-1-${state}-sheet-v4.png`;
-      return `pink-manager-stage-1-${state}-sheet-v3.png`;
+      if (state === "focused" || state === "jump") return `pink-manager-stage-2-${state}-sheet-v4.png`;
+      return `pink-manager-stage-2-${state}-sheet-v3.png`;
     },
   },
   {
-    id: "glass-frog-stage-1-production-candidates",
-    label: "Glass Frog Stage 1 - Production Candidates",
-    description:
-      "Glass frog sheets generated from candidate-glass-frog-stage-1-4-v1-chromakey, using the small frog form as the motion base.",
+    id: "glass-frog-stage-2-canonical",
+    label: "Glass Frog Stage 2 - Canonical",
+    description: "Main app runtime sheets promoted from the accepted glass frog v1 candidate set.",
     petId: "glass-frog",
-    stage: "stage-1",
+    stage: "stage-2",
+    path: glassFrogCanonicalPath,
+    fileForState: (state: PetMotionState) => `glass-frog-stage-2-${state}-sheet.png`,
+  },
+  {
+    id: "glass-frog-stage-2-production-candidates",
+    label: "Glass Frog Stage 2 - Production Candidates",
+    description:
+      "Glass frog sheets generated from the accepted Stage 2 frog candidate set.",
+    petId: "glass-frog",
+    stage: "stage-2",
     path: glassFrogCandidatePath,
-    fileForState: (state: PetMotionState) => `glass-frog-stage-1-${state}-sheet-v1.png`,
+    fileForState: (state: PetMotionState) => `glass-frog-stage-2-${state}-sheet-v1.png`,
+  },
+  {
+    id: "sea-bunny-slug-stage-2-production-candidates",
+    label: "Sea Bunny Slug Stage 2 - Production Candidates",
+    description:
+      "Sea bunny slug sheets generated from the Stage 2 base reference with smoother cute-back markings.",
+    petId: "sea-bunny-slug",
+    stage: "stage-2",
+    path: seaBunnySlugCandidatePath,
+    fileForState: (state: PetMotionState) => {
+      if (state === "hanging" || state === "climbing") return `sea-bunny-slug-stage-2-${state}-sheet-v2.png`;
+      return `sea-bunny-slug-stage-2-${state}-sheet-v1.png`;
+    },
   },
 ] as const satisfies readonly SpriteReviewSet[];
 
@@ -195,4 +219,4 @@ export function getSpriteReviewAnimations(setId: SpriteReviewSetId) {
   }));
 }
 
-export const pinkManagerStage1ReviewAnimations = getSpriteReviewAnimations("pink-manager-stage-1-canonical");
+export const pinkManagerStage2ReviewAnimations = getSpriteReviewAnimations("pink-manager-stage-2-canonical");

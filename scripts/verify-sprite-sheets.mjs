@@ -13,16 +13,9 @@ const planariaSheets = [
   { petId: "planaria", state: "hiding", frameCount: 4, fps: 5, anchor: "peek-edge x=53 y=32" },
 ];
 
-const stage1PetIds = [
+const canonicalStage2PetIds = [
   "pink-manager",
-  "white-headed-long-tailed-tit",
-  "costasiella-kuroshimae",
-  "sea-bunny-slug",
-  "platypus",
-  "axolotl",
   "glass-frog",
-  "fried-egg-jellyfish",
-  "yeti-crab",
 ];
 
 const motionSpecs = [
@@ -61,8 +54,9 @@ function readPngSize(path) {
 let failures = 0;
 
 function verifySheet(sheet) {
-  const filename = `${sheet.petId}-stage-1-${sheet.state}-sheet.png`;
-  const path = join(root, "public", "assets", "lumi", `${sheet.petId}-stage-1`, filename);
+  const stage = sheet.stage ?? "stage-2";
+  const filename = `${sheet.petId}-${stage}-${sheet.state}-sheet.png`;
+  const path = join(root, "public", "assets", "lumi", `${sheet.petId}-${stage}`, filename);
 
   try {
     const png = readPngSize(path);
@@ -86,15 +80,15 @@ function verifySheet(sheet) {
 }
 
 for (const sheet of planariaSheets) {
-  verifySheet({ ...sheet, loop: true, playbackFrames: Array.from({ length: sheet.frameCount }, (_, frame) => frame) });
+  verifySheet({ ...sheet, stage: "stage-1", loop: true, playbackFrames: Array.from({ length: sheet.frameCount }, (_, frame) => frame) });
 }
 
-for (const petId of stage1PetIds) {
+for (const petId of canonicalStage2PetIds) {
   for (const motion of motionSpecs) {
     verifySheet({
       petId,
       ...motion,
-      anchor: motion.state === "hanging" || motion.state === "climbing" ? "top-grip x=32 y=5" : motion.state === "hiding" ? "peek-edge x=53 y=32" : "float x=32 y=58",
+      anchor: motion.state === "hanging" || motion.state === "climbing" ? "top-grip x=32 y=5" : motion.state === "hiding" ? "peek-edge x=4 y=32" : "float x=32 y=58",
     });
   }
 }

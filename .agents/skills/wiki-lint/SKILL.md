@@ -9,6 +9,13 @@ description: Use to check project Wiki structure, frontmatter, index coverage, m
 
 Check Wiki hygiene before considering Wiki work complete.
 
+## Do Not Use When
+
+- The task is not related to `docs/wiki/`.
+- The user is asking a knowledge question from the Wiki; use `wiki-query` instead.
+- The user is adding approved source material; use `wiki-ingest` first, then lint.
+- The expected fix would require deleting or rewriting Wiki history without approval.
+
 ## Input
 
 - `docs/wiki/`

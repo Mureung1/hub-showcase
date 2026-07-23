@@ -9,6 +9,13 @@ description: Use after implementation to independently check diffs, project acce
 
 Verify that implementation satisfies the approved scope without weakening the acceptance criteria.
 
+## Do Not Use When
+
+- No implementation or document change has been completed yet.
+- The user is asking for a plan before implementation; use `create-plan` instead.
+- The task is adding or reorganizing Wiki content; use `wiki-ingest` or `wiki-lint` as appropriate.
+- The verification requires credentials, external systems, or destructive actions that are not approved.
+
 ## Input
 
 - Approved plan

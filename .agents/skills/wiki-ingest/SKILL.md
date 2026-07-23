@@ -9,6 +9,13 @@ description: Use when approved source material should be added to the project Wi
 
 Turn approved source material into traceable project Wiki pages.
 
+## Do Not Use When
+
+- The source material has not been approved for Wiki inclusion.
+- The task is only answering from existing Wiki knowledge; use `wiki-query` instead.
+- The task is app, server, test, or harness implementation.
+- The source contains secrets, private data, credentials, or personal information.
+
 ## Input
 
 - Source path

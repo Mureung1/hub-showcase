@@ -1,18 +1,21 @@
-# Stage 1 Pet Interaction Motion Contract
+# Pet Interaction Motion Contract
 
 ## Scope
 
-This contract covers the first generated interaction animation pass for 9 Stage 1 pets.
+This contract defines the interaction animation rules for accepted managers and future manager generation.
 
-Included pets:
+Accepted canonical Stage 2 pets:
 
 - `pink-manager`
+- `glass-frog`
+
+Future Stage 2 generation targets:
+
 - `white-headed-long-tailed-tit`
 - `costasiella-kuroshimae`
 - `sea-bunny-slug`
 - `platypus`
 - `axolotl`
-- `glass-frog`
 - `fried-egg-jellyfish`
 - `yeti-crab`
 
@@ -20,12 +23,14 @@ Excluded from this batch:
 
 - `planaria`: keep the existing Stage 1 sample set.
 - `satanic-leaf-tailed-gecko`: needs a separate simplified silhouette pass.
-- `hover`: excluded for these 9 pets. Existing Planaria hover remains active.
+- `hover`: excluded for this motion set unless explicitly requested. Existing Planaria hover remains active.
 
 ## Output Layout
 
-- Output directory: `public/assets/lumi/<pet-id>-stage-1/`
-- File pattern: `<pet-id>-stage-1-<motion>-sheet.png`
+Canonical/candidate/review naming must follow `manager-asset-naming-convention.md`.
+
+- Output directory: `public/assets/lumi/<pet-id>-<stage-id>/`
+- File pattern: `<pet-id>-<stage-id>-<motion>-sheet.png`
 - Frame cell: `64x64`
 - Sheet height: `64`
 - Sheet width: `sourceFrameCount * 64`
@@ -34,13 +39,17 @@ Excluded from this batch:
 
 Production review target:
 
-- Review the actual production sprite sheets in `public/assets/lumi/<pet-id>-stage-1/`.
+- Review the actual production sprite sheets in `public/assets/lumi/<pet-id>-<stage-id>/`.
+- Treat `public/assets/lumi/pink-manager-stage-2/` and `public/assets/lumi/glass-frog-stage-2/` as the current accepted Stage 2 canonical folders.
+- New generation outputs should first go to `public/assets/lumi/<pet-id>-stage-2-production-candidates/` with a version suffix, then be promoted into the canonical folder only after review.
 - Do not generate a separate direction/contact board as the source for later crop.
 - Optional review pages or contact previews may display existing production sheets together, but they are not source assets and must not be cropped into runtime sheets.
 
-Stage 1 extracted base references:
+Base references:
 
-- `public/assets/lumi/animation-bases/<pet-id>-stage-1-base-reference.png`
+- Accepted `pink-manager` and `glass-frog` assets are effectively Stage 2, so their canonical folders and candidate folders must use `stage-2`.
+- `planaria` remains the existing Stage 1 sample.
+- Future creatures should use the stage that the selected base image actually represents, rather than forcing everything into `stage-1`.
 
 ## Motion Set
 
@@ -53,7 +62,7 @@ Each included pet has these 10 motions:
 | `happy` | 6 | Completion bounce loop |
 | `recovering` | 4 | Gentle rebalancing loop |
 | `hanging` | 6 | Window-edge interaction loop |
-| `hiding` | 6 | Window-behind peek loop |
+| `hiding` | 6 | Full-body window-behind hiding loop; app window occludes the sprite |
 | `run` | 6 | Fast pet movement loop; actual x/y movement is React/Canvas state |
 | `jump` | 6 | One-shot hop arc; actual y movement can be layered in React/Canvas |
 | `walk` | 6 | Slow pet movement loop with runtime neutral-frame repeats |
@@ -116,12 +125,12 @@ jump: {
 
 - Default floating states: anchor around `x=32, y=58`.
 - `hanging`: stable top grip anchor around `x=32, y=5`.
-- `hiding`: stable peek edge around `x=53, y=32`.
+- `hiding`: keep the full creature inside every `64x64` frame. Use a stable side/center reference for placement; the React/CSS window layer creates the visible occlusion.
 - `climbing`: stable grip anchor; the ladder or window edge belongs to the UI layer.
 - Keep the creature center, apparent scale, and lower baseline stable unless the state intentionally bounces or jumps.
 - Within one PNG sheet, the character's visible body size must remain consistent across all source frames.
 - For bounce, jump, hiding, or hanging, motion may change pose and position, but it must not change the character's scale. Use empty canvas space and anchor metadata for movement instead of making the pet larger or smaller.
-- No frame may crop antennae, ears, glow, feet, tail, gills, claws, or other identity-defining parts unless the motion is intentionally a peek/hiding partial-visibility state.
+- No frame may crop antennae, ears, glow, feet, tail, gills, claws, or other identity-defining parts. `hiding` must remain a complete character animation; the app renders it behind the XP window by z-index.
 
 ## Creature Motion Direction
 
@@ -131,14 +140,14 @@ jump: {
   - `happy`: front view, clear joy through crescent/closed happy eyes, stronger blush, ears perk up, small celebratory bounce. It must read happy even as frame `0`.
   - `recovering`: front view, gentle rebalancing, softened tired eyes, slight wobble or one paw/device-panel check. Do not make it punished, sick, or identical to idle.
   - `hanging`: front or slight top angle, tiny paws/ears gripping an implied top window edge. Do not draw the window.
-  - `hiding`: partial side peek from behind an implied vertical edge, one eye and ear visible, playful/cautious.
+  - `hiding`: full-body shy hiding motion, compact and playful/cautious. The creature may lean or tuck inward as if hiding behind a nearby window, but do not crop the body and do not draw the edge or window.
   - `walk`: right-facing or right 3/4 view only, same direction in all frames, short-foot toddle cycle with alternating rounded feet.
   - `run`: right-facing or right 3/4 view only, same direction as `walk`, lower body lean and faster foot cycle. Do not mirror between left/right inside the source sheet.
   - `jump`: front or right 3/4 view, squash anticipation, airborne frame, soft landing.
   - `climbing`: rear or rear 3/4 view; the back of the head/body and rear ears must be visible, with small paws gripping an implied ladder/window edge. Do not face the camera, and do not draw a ladder.
 - `white-headed-long-tailed-tit`: cotton-ball hop-walk, tiny feather flick, perch-like climb.
 - `costasiella-kuroshimae`: leaf cerata wiggle, slow glide, sticky leaf-body climb.
-- `sea-bunny-slug`: soft glide, rhinophore response, jelly-like bounce.
+- `sea-bunny-slug`: soft glide, rhinophore response, jelly-like bounce. Avoid creepy dorsal bumps; use sparse flat peach-gold star freckles or soft pearl markings integrated into the smooth body surface.
 - `platypus`: awkward waddling, low fast run, bill/front-foot climbing.
 - `axolotl`: slow water-walk, gill flick, soft floating jump.
 - `glass-frog`: tiny crawl, toe-pad climbing, compact frog hop.
@@ -167,22 +176,22 @@ Visual review checklist:
 - Open the production sheet itself, for example `public/assets/lumi/<pet-id>-stage-1/<pet-id>-stage-1-<motion>-sheet.png`.
 - Check 32/48/64px readability.
 - Check that motion reads as pet behavior, not just a static icon.
-- Check center, baseline, grip anchor, peek edge, and visible body-size drift.
+- Check center, baseline, grip anchor, full-body hiding readability, and visible body-size drift.
 - Confirm frame `0` still communicates the state for reduced motion.
 
 ## Pink Manager Regeneration Prompt V2
 
-Use this when regenerating `pink-manager` motion art from the Stage 1 base reference.
+Use this when regenerating `pink-manager` motion art from the accepted Stage 2 base reference.
 
 Current selected review direction:
 
 - Preferred board: `public/assets/_review/pink-manager-motion-board-v3-refined-from-call-pj.png`
 - Jump replacement candidate: `public/assets/_review/pink-manager-jump-v2-right-facing.png`
 - Combined review image: `public/assets/_review/pink-manager-motion-board-v3-jump-fixed-review.png`
-- Extracted selected sheets: `public/assets/lumi/pink-manager-stage-1-v2/pink-manager-stage-1-*-sheet.png`
-- Extracted selected contact: `public/assets/_review/pink-manager-stage-1-v2-contact.png`
+- Extracted selected sheets: `public/assets/lumi/pink-manager-stage-2-v2/pink-manager-stage-2-*-sheet.png`
+- Extracted selected contact: `public/assets/_review/pink-manager-stage-2-v2-contact.png`
 
-These are review candidates, not canonical production sheets. The selected V3 board rows and right-facing jump replacement were extracted into `pink-manager-stage-1-v2/` for investigation, but that crop result should not be promoted. Use those files only as style/acting references while regenerating each motion as a direct production sprite sheet. See `animation-sheet-production-retrospective.md` for the production workflow correction.
+These are review candidates, not canonical production sheets. The selected V3 board rows and right-facing jump replacement were extracted into `pink-manager-stage-2-v2/` for investigation, but that crop result should not be promoted. Use those files only as style/acting references while regenerating each motion as a direct production sprite sheet. See `animation-sheet-production-retrospective.md` for the production workflow correction.
 
 Updated production decision:
 
@@ -195,7 +204,7 @@ Updated production decision:
 ```text
 Use case: stylized-concept
 Asset type: production pixel art sprite sheet for one desktop pet motion
-Input image role: Image 1 is the exact character identity reference for pink-manager Stage 1.
+Input image role: Image 1 is the exact character identity reference for pink-manager Stage 2.
 
 Create one clean production pixel art sprite sheet for the same character and one specified motion. Preserve the egg-like pink and cream body, warm brown cradle/base, tiny rounded feet, pointed cute ears, blush, small dot face, and antenna bead. The character must remain a cute animal-like desktop pet, not robotic, not humanoid, not older, and not larger.
 
@@ -209,7 +218,7 @@ Sheet layout:
 - Keep generous transparent or flat #00ff00 chroma-key padding around each frame.
 - Character scale must stay identical across all frames in this PNG.
 - The visible body bounding box should remain the same size across frames; pose may change, scale may not.
-- Keep the same center, anchor, baseline, and frame padding unless the motion intentionally uses a documented top grip or peek edge anchor.
+- Keep the same center, anchor, baseline, and frame padding unless the motion intentionally uses a documented top grip anchor. Hiding remains full-body and is occluded by the app window layer at runtime.
 
 Motion acting:
 - idle: front view, relaxed dot eyes, tiny breathing, antenna light pulse.
@@ -217,7 +226,7 @@ Motion acting:
 - happy: front view, clearly happy crescent/closed eyes, stronger blush, ears perked, small bounce. Frame 0 must already read happy.
 - recovering: front view, gentle rebalancing, softened tired eyes, tiny wobble or one paw checking the lower panel. Calm, not punished or sick.
 - hanging: front or slight top angle, small paws gripping an implied top edge. Do not draw the edge or window.
-- hiding: partial side peek from behind an implied vertical edge, one eye and one ear visible, playful/cautious. Do not draw the edge or window.
+- hiding: full-body shy hiding motion, compact and playful/cautious. The full creature must remain visible inside the frame. Do not crop the body, do not draw the edge or window, and leave the app to place this sprite behind the XP window using z-index.
 - run: right-facing or right 3/4 view only, all frames face the same direction, low fast toddle, body leans forward, tiny feet alternate. Do not mirror left/right inside the source row.
 - jump: squash anticipation, airborne frame, soft landing, same character identity.
 - walk: right-facing or right 3/4 view only, same direction as run, slower short-foot toddle, alternating tiny rounded feet. Do not mirror left/right inside the source row.

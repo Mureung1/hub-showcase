@@ -24,8 +24,8 @@ Shared rule:
 - For 8 non-gecko candidates, Stage 3 and Stage 4 need a visibly stronger detail upgrade without getting bigger.
 - For the leaf-tailed gecko, V2 needs a much simpler silhouette.
 - Choose silhouettes that can later support the shared dynamic MVP states and pet interaction motions: `idle`, `focused`, `happy`, `recovering`, `hover`, `hanging`, `hiding`, `run`, `jump`, `walk`, and `climbing`.
-- `hanging` needs a stable top/grip anchor; `hiding` needs a stable peek edge. Do not add loose accessories that would jitter or be hard to mask behind a window.
-- Planaria sample sheets stay `256x64` with four `64x64` frames. The 9-pet Stage 1 interaction batch uses variable source frame counts: every cell is `64x64`, sheet height is `64`, and sheet width is `sourceFrameCount * 64`. Default states align by center x and lower float anchor; `hanging` and `climbing` align by top grip anchor; `hiding` aligns by peek edge. Keep anchor drift within about 1px after normalization.
+- `hanging` needs a stable top/grip anchor. `hiding` must stay full-body inside the frame; the app window will occlude the complete sprite with z-index. Do not add loose accessories that would jitter or be hard to place behind a window.
+- Planaria sample sheets stay `256x64` with four `64x64` frames. The 9-pet Stage 1 interaction batch uses variable source frame counts: every cell is `64x64`, sheet height is `64`, and sheet width is `sourceFrameCount * 64`. Default states align by center x and lower float anchor; `hanging` and `climbing` align by top grip anchor; `hiding` keeps a stable full-body bbox for behind-window placement. Keep anchor drift within about 1px after normalization.
 
 Use a flat `#00ff00` chroma-key background and save raw plus `-chromakey.png` variants under `public/assets/lumi/`.
 
@@ -70,7 +70,7 @@ Revise the V1 leaf-sheep sea slug evolution sheet into V2. Keep Stage 1 and Stag
 ### Sea Bunny Slug V2
 
 ```text
-Revise the V1 sea bunny slug evolution sheet into V2. Keep Stage 1 and Stage 2 direction. Stage 2, Stage 3, and Stage 4 must stay the same size and footprint. Strengthen Stage 3 and Stage 4 detail without growth: clearer ear-like rhinophores, refined soft surface dots, tiny tail nub polish, more visible warm speckles and peach glow freckles integrated into the body, cleaner belly edge, better shading. Keep it soft and simple, not a mammal rabbit.
+Revise the V1 sea bunny slug evolution sheet into V2. Keep Stage 1 and Stage 2 direction. Stage 2, Stage 3, and Stage 4 must stay the same size and footprint. Strengthen Stage 3 and Stage 4 detail without growth: clearer ear-like rhinophores, tiny tail nub polish, sparse peach-gold star freckles or soft pearl-like flat markings integrated into the body surface, cleaner belly edge, better shading. Keep the back smooth and plush. Avoid creepy raised dorsal bumps, wart texture, clustered eggs, spikes, or bead piles. Keep it soft and simple, not a mammal rabbit.
 ```
 
 ### Platypus V2

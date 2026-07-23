@@ -78,7 +78,7 @@ The character should still read as the same small mascot at the same age and siz
 - The final selected form must later support `idle`, `focused`, `happy`, `recovering`, `hover`, `hanging`, and `hiding` sprite sheets.
 - Keep the body compact enough for a stable 64x64 frame and readable at desktop-icon scale.
 - `hanging` should have an obvious small paw, ear, or body edge that can act as a stable grip point.
-- `hiding` should have a cute partial-peek pose with a stable vertical or horizontal peek edge.
+- `hiding` should support a cute full-body shy pose that can be placed behind an XP window layer; do not depend on cropped partial-peek art.
 - Do not add loose accessories, dangling ribbons, oversized tails, or detached props that would jitter during window-edge animation.
 
 ## Prompt Template

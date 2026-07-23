@@ -90,7 +90,7 @@
 | T-707 | P1 | Backlog | 사운드 feedback 구현 | 완료/복구/레벨업 사운드가 muted 기본값과 함께 동작한다 | future-expansion-plan.md |
 | T-708 | P1 | Backlog | 하루의 흐름 web theme 구현 | 시간대와 퀘스트 상태가 배경/루미 idle/theme state에 반영된다 | future-expansion-plan.md |
 | T-709 | P1 | Backlog | 개인화 AI 매니저 adapter 구현 | ManagerContext 기반 대사/추천 adapter와 rule fallback이 분리된다 | agent-design.md |
-| T-710 | P1 | Review | blink focus scene 구현 | 데스크톱 진입/매니저 focus 전환에서 눈 깜빡임/blur/fade overlay가 동작하고 reduced-motion fallback이 있다. 브라우저 시각 확인이 남았다 | dynamic-asset-requirements.md |
+| T-710 | P1 | Review | blink focus scene 구현 | 서비스 진입과 서비스 나가기 직전에 눈 깜빡임/blur/fade overlay가 동작하고, 새로고침 시에는 재생되지 않으며 reduced-motion fallback이 있다. 브라우저 시각 확인이 남았다 | dynamic-asset-requirements.md |
 | T-711 | P1 | Backlog | 전자 매니저 Persona와 제한 선택지 설계 | 직접 선택과 간접 선택이 구분되고, LLM은 Persona 경계 안에서 대사/추천을 생성한다 | future-expansion-plan.md |
 | T-712 | P1 | Backlog | 퀘스트 능력치 growth 설계 | Quest Event metadata가 성실성, 끈기, 창의성, 지식, 힘, 민첩함, 체력, 매력 등 stat delta로 매핑된다 | db-schema.md |
 | T-713 | P1 | Backlog | cyber-purr 사운드 탐색 및 적용 후보 정리 | 전자/사이버틱한 기본 고롱고롱 사운드 후보와 mute/fallback 기준이 정리된다 | dynamic-asset-requirements.md |
@@ -144,6 +144,17 @@
 - `[P2] 웹캠 손 제스처 탐색 prototype`
 - `[P1] API 로딩/빈 상태 polish`
 - `[P1] 정적 HTML 대비 남은 UI 차이 점검`
+
+## 추천 진행 순서
+
+1. `T-307` Supabase 수직 슬라이스 UI 검증: 브라우저에서 완료/실패/복구 클릭, Network `POST`/`GET` 확인, 기록 노트 확인 후 Project 상태를 `Done`으로 이동한다.
+2. `T-701` 확장 기능 asset/data manifest 설계: 캐릭터 animation, icon hover, theme, reward, sound, projection mode, interaction object가 manifest와 문서에서 같은 naming 규칙을 쓰는지 정리한다.
+3. `T-702`, `T-710`, `T-713` 캐릭터 생동감: Lumi Canvas animation, 서비스 진입/종료 blink focus, cyber-purr 사운드 후보를 묶어 "살아 있는 매니저" 느낌을 만든다.
+4. `T-724` Projection Mode: Pixel TV 우클릭 속성, 변환/원복, projection-connected icon, `?projection=pepper` 검은 배경 Lumi glow 화면을 확인한다. 4면/멀티뷰는 보류하고 v1.5에서 front/back 자동 회전을 검토한다.
+5. `T-703`, `T-717`, `T-712` 성장/보상 구조: Stage 1~4 해금, 원하는 외형으로 회귀, Quest Event metadata 기반 능력치 증가를 연결한다.
+6. `T-709`, `T-711` Persona/LLM 매니저: ManagerContext 기반 adapter, Persona 경계, 직접 선택/간접 선택, rule fallback을 분리한다.
+7. `T-714`, `T-715`, `T-716` 상호작용 오브젝트: 물리엔진보다 object rect, anchor point, state machine으로 사다리/평지/창탈출 prototype을 시작한다.
+8. `T-708`, `T-721`, `T-722`, `T-723` 월드/실험 기능: 하루 흐름 Web theme, 현실 픽셀화 TV, 공개 퀘스트 탐색, 웹캠 손 제스처 탐색을 별도 prototype으로 검증한다.
 
 ## Roadmap 연결
 

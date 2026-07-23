@@ -56,13 +56,13 @@ State notes:
 - `recovering`: calm repair or rebalance pulse, not sick or punished.
 - `hover`: attention response through antenna wiggle and eye/core glow.
 - `hanging`: stable top grip anchor; do not bake a full XP window into the sprite.
-- `hiding`: stable peek edge alignment for React/CSS clipping.
+- `hiding`: complete shy hiding animation; React/CSS places the full sprite behind the window layer so the window occludes it.
 
 ## Verification Notes
 
 - After generation, the source images were sliced into four frames, chroma-key removed, and normalized to `256x64`.
 - Frame centers were post-aligned to reduce animation jitter.
-- `hiding` uses a stable right-side peek edge instead of center alignment.
+- `hiding` is now treated as a complete sprite that the app can place behind a window layer; older sample art may still look peek-like, but new generation should not crop the creature.
 - This is a sample set for visual review, not yet registered as the runtime canonical Lumi manifest.
 
 ## Runtime Playback Contract
@@ -120,7 +120,7 @@ Use subtle looping. These are implementation defaults, not art-generation requir
 | `recovering` | 4 | yes | center x + lower float anchor |
 | `hover` | 7 | yes | center x + lower float anchor |
 | `hanging` | 6 | yes | top grip anchor |
-| `hiding` | 5 | yes | right peek edge |
+| `hiding` | 5 | yes | full sprite behind window layer |
 
 ### Placement Rules
 
@@ -140,10 +140,11 @@ window edge y == sprite element top + 5px approximate grip line
 window edge x == sprite element center x
 ```
 
-`hiding` is a peek interaction state. Place the `64x64` sprite behind a window layer or clipping mask. For this sample, the visible right peek edge is stable around `x=53` in frame 0.
+`hiding` is a behind-window interaction state. Place the full `64x64` sprite behind the XP window layer, then use z-index and offset to decide how much of the creature peeks out. Do not crop the sprite sheet itself and do not rely on a baked window edge.
 
 ```text
-window mask edge x == sprite element left + 53px approximate peek edge
+window z-index > hiding sprite z-index
+placement offset decides how much of the full sprite remains visible outside the window
 ```
 
 ### Reduced Motion
@@ -179,5 +180,5 @@ const planariaStage1Animations = {
 - Default states should keep center x within about `1px` after normalization.
 - Default states should keep the lower float anchor within about `1px`.
 - `hanging` should keep its top grip anchor within about `1px`.
-- `hiding` should keep its peek edge within about `1px`.
+- `hiding` should remain a complete full-body animation; verify the full body does not crop inside the `64x64` frame and that it can be convincingly occluded by a window layer.
 - If generation creates a large ring, sparkle, or window-edge mark that changes the bbox too much, either regenerate that state or post-align it before accepting.

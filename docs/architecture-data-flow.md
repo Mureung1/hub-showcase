@@ -214,7 +214,7 @@ flowchart LR
 
 ## Sprite Review Tool
 
-The review tool is separate from the main runtime. Runtime assets use canonical folders, while review sets can point to candidate folders such as `pink-manager-stage-1-production-candidates`.
+The review tool is separate from the main runtime. Runtime assets use canonical folders, while review sets can point to candidate folders such as `pink-manager-stage-2-production-candidates`.
 
 ```mermaid
 flowchart LR
@@ -429,5 +429,5 @@ create table if not exists public.quest_logs (
 - Browser UI verification for Supabase save/read still needs a manual Network pass before closing the Project review card.
 - The API currently has no user auth; `user_id` and RLS user policies are future work.
 - `metadata` is intentionally flexible, but new fields should graduate into typed columns only when repeated features need querying.
-- Stage 2 to Stage 4 are structurally supported but currently fall back to Stage 1 until real sheets are added.
+- Unavailable requested stages fall back to the manifest's renderable stage. The current default accepted manager stage is `stage-2`; Planaria remains a separate `stage-1` sample set.
 - Projection, sound, and interaction object slots are planned in the manifest but should not appear in visible UI until implemented.

@@ -41,21 +41,15 @@ type _ThemeSettingsIconExists = Assert<"theme-settings" extends keyof typeof des
 type _PixelTvIconExists = Assert<"pixel-tv" extends keyof typeof desktopIconAssets ? true : false>;
 type _PlanariaPetExists = Assert<"planaria" extends keyof typeof petAnimationCatalog ? true : false>;
 type _PinkManagerPetExists = Assert<"pink-manager" extends keyof typeof petAnimationCatalog ? true : false>;
+type _GlassFrogPetExists = Assert<"glass-frog" extends keyof typeof petAnimationCatalog ? true : false>;
 
 const activePetId = "pink-manager" as const satisfies PetId;
-const activeStageId = "stage-1" as const satisfies PetStageId;
-const stage1PetIds = [
+const activeStageId = "stage-2" as const satisfies PetStageId;
+const stage2PetIds = [
   "pink-manager",
-  "white-headed-long-tailed-tit",
-  "costasiella-kuroshimae",
-  "sea-bunny-slug",
-  "platypus",
-  "axolotl",
   "glass-frog",
-  "fried-egg-jellyfish",
-  "yeti-crab",
 ] as const satisfies readonly PetId[];
-const stage1MotionStates = [
+const stage2MotionStates = [
   "idle",
   "focused",
   "happy",
@@ -91,20 +85,28 @@ if (resolvePetStageFromLevel(3) !== "stage-2" || !getUnlockedPetStages(6).includ
   throw new Error("Pet stage unlock rules must follow level thresholds");
 }
 
-if (getRenderablePetStage(defaultLumiPetId, "stage-2") !== "stage-1") {
-  throw new Error("Stage-2 must fall back to renderable stage-1 until stage-2 sheets are added");
+if (getRenderablePetStage(defaultLumiPetId, "stage-1") !== "stage-2") {
+  throw new Error("Stage-1 must fall back to renderable stage-2 for accepted managers");
+}
+
+if (getRenderablePetStage("planaria", "stage-4") !== "stage-1") {
+  throw new Error("Pets without Stage 2 assets must fall back to their own renderable stage");
+}
+
+if (getLumiAnimationAsset("idle", "planaria", "stage-4").stage !== "stage-1") {
+  throw new Error("Planaria Lumi animation fallback must stay on available Stage 1 assets");
 }
 
 for (const state of ["idle", "focused", "happy", "recovering", "hanging", "hiding"] as const) {
   const animation = getPetAnimationAsset(activePetId, activeStageId, state);
   const expectedWidth = animation.frameCount * animation.frameWidth;
   if (animation.sheetWidth !== expectedWidth || animation.sheetHeight !== 64 || animation.frameHeight !== 64) {
-    throw new Error(`Invalid active Lumi stage-1 animation metadata for ${state}`);
+    throw new Error(`Invalid active Lumi stage-2 animation metadata for ${state}`);
   }
 }
 
-for (const petId of stage1PetIds) {
-  for (const state of stage1MotionStates) {
+for (const petId of stage2PetIds) {
+  for (const state of stage2MotionStates) {
     const animation = getPetAnimationAsset(petId, activeStageId, state);
     const expectedWidth = animation.frameCount * animation.frameWidth;
 

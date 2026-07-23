@@ -19,13 +19,21 @@ interface PlacementDraft {
   scale: number;
   edge: AttachSide;
   mirrorX: boolean;
+  layer: "front" | "behind-window";
 }
 
 type PlacementDraftsByMotion = Record<PlacementMotion, Record<AttachSide, PlacementDraft>>;
 type PlacementDraftsBySet = Partial<Record<SpriteReviewSetId, PlacementDraftsByMotion>>;
 
-function placement(edge: AttachSide, offsetX = 0, offsetY = 0, scale = 1, mirrorX = false): PlacementDraft {
-  return { edge, offsetX, offsetY, scale, mirrorX };
+function placement(
+  edge: AttachSide,
+  offsetX = 0,
+  offsetY = 0,
+  scale = 1,
+  mirrorX = false,
+  layer: PlacementDraft["layer"] = "front",
+): PlacementDraft {
+  return { edge, offsetX, offsetY, scale, mirrorX, layer };
 }
 
 const defaultPlacementDrafts: PlacementDraftsByMotion = {
@@ -36,10 +44,10 @@ const defaultPlacementDrafts: PlacementDraftsByMotion = {
     top: placement("top", 0, 8),
   },
   hiding: {
-    bottom: placement("bottom", 0, 8),
-    left: placement("left", -6, 0),
-    right: placement("right", 6, 0, 1, true),
-    top: placement("top", 0, -8),
+    bottom: placement("bottom", 0, 8, 1, false, "behind-window"),
+    left: placement("left", -6, 0, 1, false, "behind-window"),
+    right: placement("right", 6, 0, 1, true, "behind-window"),
+    top: placement("top", 0, -8, 1, false, "behind-window"),
   },
   climbing: {
     bottom: placement("bottom", 0, -8),
@@ -67,7 +75,7 @@ function withSpeed(animation: SpriteAnimationAsset, speed: number): SpriteAnimat
 export function SpriteSheetReviewTool() {
   const [scale, setScale] = useState<(typeof scaleOptions)[number]>(3);
   const [speed, setSpeed] = useState<(typeof speedOptions)[number]>(1);
-  const [reviewSetId, setReviewSetId] = useState<SpriteReviewSetId>("pink-manager-stage-1-production-candidates");
+  const [reviewSetId, setReviewSetId] = useState<SpriteReviewSetId>("pink-manager-stage-2-production-candidates");
   const [placementMotion, setPlacementMotion] = useState<PlacementMotion>("hanging");
   const [attachSide, setAttachSide] = useState<AttachSide>("bottom");
   const [placementDrafts, setPlacementDrafts] = useState<PlacementDraftsBySet>({});
@@ -88,12 +96,14 @@ export function SpriteSheetReviewTool() {
   const edgePoint = getMockEdgePoint(currentPlacement.edge);
   const spriteLeft = edgePoint.x + currentPlacement.offsetX - anchorX;
   const spriteTop = edgePoint.y + currentPlacement.offsetY - anchorY;
+  const finalAnchorX = edgePoint.x + currentPlacement.offsetX;
+  const finalAnchorY = edgePoint.y + currentPlacement.offsetY;
   const placementSnippet = `placement: {\n${placementMotionOptions
     .map((motion) => {
       const sides = attachSideOptions
         .map((side) => {
           const sidePlacement = currentSetPlacements[motion][side];
-          return `    ${side}: { offsetX: ${sidePlacement.offsetX}, offsetY: ${sidePlacement.offsetY}, scale: ${sidePlacement.scale.toFixed(2)}, edge: "${sidePlacement.edge}", mirrorX: ${sidePlacement.mirrorX} },`;
+          return `    ${side}: { offsetX: ${sidePlacement.offsetX}, offsetY: ${sidePlacement.offsetY}, scale: ${sidePlacement.scale.toFixed(2)}, edge: "${sidePlacement.edge}", mirrorX: ${sidePlacement.mirrorX}, layer: "${sidePlacement.layer}" },`;
         })
         .join("\n");
       return `  ${motion}: {\n${sides}\n  },`;
@@ -225,7 +235,7 @@ export function SpriteSheetReviewTool() {
         </label>
         <label className="sprite-review-check">
           <input type="checkbox" checked={showAnchor} onChange={(event) => setShowAnchor(event.target.checked)} />
-          anchor
+          fixed anchor
         </label>
         <label className="sprite-review-check">
           <input
@@ -235,7 +245,22 @@ export function SpriteSheetReviewTool() {
           />
           mirrorX
         </label>
+        <label className="sprite-review-check">
+          <input
+            type="checkbox"
+            checked={currentPlacement.layer === "behind-window"}
+            onChange={(event) => updatePlacement({ layer: event.target.checked ? "behind-window" : "front" })}
+          />
+          behind window
+        </label>
         <pre>{placementSnippet}</pre>
+        <div className="sprite-placement-anchor-readout">
+          <strong>Anchor is locked by motion</strong>
+          <span>
+            {selectedAnimation.anchor.type}: {selectedAnimation.anchor.x}, {selectedAnimation.anchor.y}
+            {currentPlacement.mirrorX ? ` -> mirrored ${selectedAnimation.frameWidth - selectedAnimation.anchor.x}, ${selectedAnimation.anchor.y}` : ""}
+          </span>
+        </div>
       </section>
 
       <section
@@ -268,8 +293,31 @@ export function SpriteSheetReviewTool() {
             </div>
           </section>
 
+          {showAnchor ? (
+            <>
+              <span
+                className="sprite-placement-edge-target"
+                style={
+                  {
+                    "--edge-target-x": `${edgePoint.x}px`,
+                    "--edge-target-y": `${edgePoint.y}px`,
+                  } as CSSProperties & Record<"--edge-target-x" | "--edge-target-y", string>
+                }
+              />
+              <span
+                className="sprite-placement-final-anchor"
+                style={
+                  {
+                    "--final-anchor-x": `${finalAnchorX}px`,
+                    "--final-anchor-y": `${finalAnchorY}px`,
+                  } as CSSProperties & Record<"--final-anchor-x" | "--final-anchor-y", string>
+                }
+              />
+            </>
+          ) : null}
+
           <div
-            className="sprite-placement-window-pet"
+            className={`sprite-placement-window-pet ${currentPlacement.layer === "behind-window" ? "behind-window" : "front-layer"}`}
             style={
               {
                 "--placement-sprite-left": `${spriteLeft}px`,
@@ -299,8 +347,8 @@ export function SpriteSheetReviewTool() {
           </div>
         </div>
         <p>
-          The anchor point is aligned to the selected window side first, then offsetX/offsetY are applied per manager,
-          motion, and side.
+          The pink cross is the fixed sprite anchor after offset. The cyan cross is the raw window side target before
+          offset.
         </p>
       </section>
 

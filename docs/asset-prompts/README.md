@@ -37,7 +37,9 @@ docs/design-references/concept.png
 | `01-manager-sprite/real-creature-cyber-pet-evolution.md` | 실제 신기한 생물 모티브 후보: Stage 1 작게, Stage 2~4 동일 크기형 사이버 펫 진화 |
 | `01-manager-sprite/real-creature-cyber-pet-v2-prompts.md` | 실제 생물 모티브 후보 v2 재생성 프롬프트: 8종 Stage 3/4 강화, 도마뱀붙이 단순화 |
 | `01-manager-sprite/planaria-stage-1-animation-sample.md` | 11종 캐릭터 애니메이션 확장을 위한 기준 샘플: 64x64 frame, anchor, playback, reduced-motion 기준 |
-| `01-manager-sprite/stage-1-pet-interaction-motion-contract.md` | 플라나리아/도마뱀붙이/hover를 제외한 9종 Stage 1 펫 상호작용 motion sheet 계약: variable frame count, playbackFrames, walk/run/jump/climbing 기준 |
+| `01-manager-sprite/stage-1-pet-interaction-motion-contract.md` | 펫 상호작용 motion sheet 계약: accepted Stage 2 canonical, variable frame count, playbackFrames, walk/run/jump/climbing 기준 |
+| `01-manager-sprite/sea-bunny-slug-stage-2-motion-plan.md` | 꼬마비로드갯민숭달팽이 Stage 2 모션 상세 기획과 등 무늬 수정 기준 |
+| `01-manager-sprite/manager-asset-naming-convention.md` | 확정 manager runtime 폴더, candidate 폴더, review asset 명명 규칙 |
 
 ## 기간 내 승격 확장 에셋
 
@@ -67,9 +69,11 @@ docs/design-references/concept.png
 
 동적 구현이 필요한 에셋은 `docs/dynamic-asset-requirements.md`의 manifest, naming, frame 규격을 먼저 맞춘다.
 
-플라나리아 샘플 sprite sheet를 새로 생성할 때는 `01-manager-sprite/planaria-stage-1-animation-sample.md`의 runtime playback contract를 함께 확인한다. 이 문서는 `256x64` sheet, `64x64 x 4 frames`, frame `0` reduced-motion fallback, `background-position`, 상태별 fps, 그리고 `center x`, `lower float anchor`, `top grip anchor`, `peek edge` 기준을 정의한다.
+플라나리아 샘플 sprite sheet를 새로 생성할 때는 `01-manager-sprite/planaria-stage-1-animation-sample.md`의 runtime playback contract를 함께 확인한다. 이 문서는 `256x64` sheet, `64x64 x 4 frames`, frame `0` reduced-motion fallback, `background-position`, 상태별 fps, 그리고 `center x`, `lower float anchor`, `top grip anchor`, full-body behind-window hiding 기준을 정의한다.
 
-플라나리아와 도마뱀붙이를 제외한 9종 Stage 1 펫의 상호작용 애니메이션은 `01-manager-sprite/stage-1-pet-interaction-motion-contract.md`를 기준으로 한다. 이 batch는 `hover`를 제외하고, `idle/focused/happy/recovering/hanging/hiding/run/jump/walk/climbing`을 생성한다. 모든 frame cell은 `64x64`이지만 sheet width는 motion별 `sourceFrameCount * 64`로 달라질 수 있으며, 실제 재생 리듬은 manifest의 `playbackFrames`로 만든다.
+펫의 상호작용 애니메이션은 `01-manager-sprite/stage-1-pet-interaction-motion-contract.md`를 기준으로 한다. 현재 canonical 확정본은 `pink-manager`, `glass-frog`이며 둘 다 실제 기준 이미지는 Stage 2로 본다. 나머지 실제 생물 매니저는 같은 규칙으로 후보 생성 후 승격한다. 이 motion set은 `hover`를 제외하고, `idle/focused/happy/recovering/hanging/hiding/run/jump/walk/climbing`을 사용한다. 모든 frame cell은 `64x64`이지만 sheet width는 motion별 `sourceFrameCount * 64`로 달라질 수 있으며, 실제 재생 리듬은 manifest의 `playbackFrames`로 만든다.
+
+확정 manager asset은 `01-manager-sprite/manager-asset-naming-convention.md`의 규칙을 따른다. `pink-manager`와 `glass-frog`는 현재 canonical 폴더인 `public/assets/lumi/pink-manager-stage-2/`, `public/assets/lumi/glass-frog-stage-2/`를 확정본으로 보고, 이후 다른 매니저 생성도 선택한 기준 이미지의 실제 stage를 폴더명에 반영한다.
 
 ## 캐릭터 방향 후보
 
@@ -93,9 +97,9 @@ docs/design-references/concept.png
 | 2 | `public/assets/lumi/lumi-focused-sheet.png` | focused 상태 의미, 프레임 간 bbox drift 없음 |
 | 3 | `public/assets/icons/quest-idle.png`, `quest-hover.png`, `quest-active.png`, `quest-disabled.png` | 48x48 상태 차이, 같은 실루엣과 위치 |
 | 4 | `public/assets/fx/quest-complete-sheet.png` | 투명 FX, 텍스트 없음, Lumi와 별도 레이어 |
-| 5 | `public/assets/lumi/lumi-hanging-sheet.png`, `lumi-hiding-sheet.png` | 창 상호작용 모션, 동일 anchor/peek edge, 창 UI를 이미지에 굽지 않음 |
+| 5 | `public/assets/lumi/lumi-hanging-sheet.png`, `lumi-hiding-sheet.png` | 창 상호작용 모션, hanging top anchor, hiding full-body behind-window placement, 창 UI를 이미지에 굽지 않음 |
 | 6 | `public/assets/lumi/planaria-stage-1/planaria-stage-1-*-sheet.png` | 11종 확장 전 샘플: 256x64 sheet, frame 0 fallback, 배치 anchor, 상태별 fps |
-| 7 | `public/assets/lumi/<pet-id>-stage-1/<pet-id>-stage-1-*-sheet.png` | 9종 Stage 1 상호작용 batch: variable frame sheet, playbackFrames, walk/run/jump/climbing motion |
+| 7 | `public/assets/lumi/<pet-id>-<stage-id>/<pet-id>-<stage-id>-*-sheet.png` | 펫 상호작용 motion: selected base stage 기준, variable frame sheet, playbackFrames, walk/run/jump/climbing motion |
 
 검수 skill 위치:
 
