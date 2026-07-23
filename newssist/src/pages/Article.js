@@ -3,6 +3,30 @@ import { useParams, Link } from 'react-router-dom';
 import { getArticle, markArticleRead, getArticleSummary, getArticleSimplified } from '../api/articles';
 import { getBookmarks, addBookmark, removeBookmark } from '../api/bookmarks';
 import ArticleAiPanel from '../components/ArticleAiPanel';
+import TermHighlight from '../components/TermHighlight';
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// content를 terms 목록 기준으로 쪼개서, 매칭되는 부분마다 TermHighlight로 감싼 배열을 만든다
+function renderWithTermHighlights(content, terms) {
+  if (!terms || terms.length === 0) return content;
+
+  const termByName = new Map(terms.map((t) => [t.term, t]));
+  const longestFirst = [...terms].sort((a, b) => b.term.length - a.term.length); // 짧은 용어가 긴 용어의 일부를 먼저 먹지 않도록
+  const pattern = new RegExp(`(${longestFirst.map((t) => escapeRegExp(t.term)).join('|')})`, 'g');
+
+  return content.split(pattern).map((part, i) => {
+    const matched = termByName.get(part);
+    if (!matched) return part;
+    return (
+      <TermHighlight key={i} term={matched.term} explanation={matched.explanation}>
+        {part}
+      </TermHighlight>
+    );
+  });
+}
 
 export default function Article() {
   const { id } = useParams();
@@ -135,7 +159,7 @@ export default function Article() {
 
         {article.content ? (
           <p className="font-body-lg text-body-lg text-on-surface whitespace-pre-line">
-            {article.content}
+            {renderWithTermHighlights(article.content, article.terms)}
           </p>
         ) : (
           <p className="font-body-md text-body-md text-on-surface-variant">

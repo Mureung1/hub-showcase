@@ -71,4 +71,24 @@ async function simplifyArticle(content, level) {
   return response.choices[0].message.content;
 }
 
-module.exports = { createEmbedding, describeCluster, summarizeArticle, simplifyArticle };
+async function extractTerms(content) {
+  const response = await client.chat.completions.create({
+    model: CHAT_MODEL,
+    messages: [
+      {
+        role: 'system',
+        content:
+          '너는 뉴스 기사에서 전문용어를 뽑아 설명해주는 어시스턴트야. 아래 기사 본문에서 일반 독자가 모를 만한 전문용어나 줄임말을 3~5개 골라서, ' +
+          '각각 1~2문장으로 쉽게 설명해줘. 본문에 없는 용어를 지어내지 마. ' +
+          '응답은 반드시 {"terms": [{"term": "...", "explanation": "..."}]} 형태의 JSON만 출력해.',
+      },
+      { role: 'user', content: content.slice(0, 8000) }, // 토큰 한도 방어용 대략적인 길이 제한
+    ],
+    response_format: { type: 'json_object' },
+  });
+
+  const parsed = JSON.parse(response.choices[0].message.content);
+  return parsed.terms || [];
+}
+
+module.exports = { createEmbedding, describeCluster, summarizeArticle, simplifyArticle, extractTerms };

@@ -4,7 +4,7 @@ const supabase = require('../services/supabase');
 const auth = require('../middleware/auth');
 const { searchNews } = require('../services/naver');
 const { fetchArticleBody } = require('../services/scraper');
-const { summarizeArticle, simplifyArticle } = require('../services/openai');
+const { summarizeArticle, simplifyArticle, extractTerms } = require('../services/openai');
 
 const router = express.Router();
 
@@ -37,6 +37,48 @@ async function getArticleWithContent(id) {
   }
 
   return article;
+}
+
+// article_terms에 이미 뽑아둔 용어가 있으면 그걸 쓰고, 없으면(이 기사를 처음 여는 거라면) GPT로 추출해서 저장해둔다
+async function ensureArticleTerms(article) {
+  const { data: existing, error: existingError } = await supabase
+    .from('article_terms')
+    .select('explanation, terms(term)')
+    .eq('article_id', article.id);
+
+  if (existingError) return [];
+  if (existing.length > 0) {
+    return existing.map((row) => ({ term: row.terms.term, explanation: row.explanation }));
+  }
+
+  if (!article.content) return [];
+
+  const extracted = await extractTerms(article.content);
+  if (extracted.length === 0) return [];
+
+  const { data: termRows, error: termsError } = await supabase
+    .from('terms')
+    .upsert(
+      extracted.map((t) => ({ term: t.term })),
+      { onConflict: 'term' }
+    )
+    .select('id, term');
+
+  if (termsError || !termRows) return [];
+
+  const termIdByName = new Map(termRows.map((t) => [t.term, t.id]));
+
+  const articleTermRows = extracted
+    .filter((t) => termIdByName.has(t.term))
+    .map((t) => ({
+      article_id: article.id,
+      term_id: termIdByName.get(t.term),
+      explanation: t.explanation,
+    }));
+
+  await supabase.from('article_terms').insert(articleTermRows);
+
+  return extracted;
 }
 
 function hostnameOf(url) {
@@ -147,13 +189,15 @@ router.get('/:id', auth, async (req, res) => {
     return res.status(404).json({ error: 'not_found' });
   }
 
+  const terms = await ensureArticleTerms(article);
+
   res.json({
     id: article.id,
     title: article.title,
     content: article.content || null,
     source: article.source,
     publishedAt: article.published_at,
-    terms: [], // 용어 해설(article_terms)은 다음 커밋에서
+    terms,
   });
 });
 
