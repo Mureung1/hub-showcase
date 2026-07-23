@@ -62,9 +62,22 @@ model RegionRule {
 // 구/군에 데이터가 없을 때 "같은 시/도 내 데이터가 있는 구/군" 목록을 즉시 보여주기 위해 한 번 전체 동기화해서 캐시.
 // scripts/syncRegionDistricts.ts로 동기화 (공공데이터 API에 매 요청마다 라이브로 조회하면 레이트리밋 위험).
 model RegionDistrict {
-  id     String @id @default(cuid())
-  ctpvNm String
-  sggNm  String
+  id       String  @id @default(cuid())
+  ctpvNm   String
+  sggNm    String
+  ctpvNmEn String? // scripts/syncRegionNamesEn.ts로 일괄 로마자 표기(영문) 채움
+  sggNmEn  String?
 
   @@unique([ctpvNm, sggNm])
+}
+
+// 동/읍/면 등 세부 구역명의 한국어→영어(로마자 표기) 캐시. RegionDistrict와 달리 전량 동기화된 목록이
+// 없어(구/군별로 라이브 조회) 사용자가 실제로 접한 동 이름이 나올 때마다 지연 캐시한다. 지역과 무관하게
+// 텍스트 자체에 대한 번역이라 시/도·구/군 구분 없이 이름 하나로 전국에서 재사용 가능하다.
+model RegionZoneName {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  nameEn    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
