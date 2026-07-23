@@ -1064,3 +1064,11 @@ h1 {
 .checklist-detail-fail {
   color: var(--red-text);
 }
+.checklist-row-reference {
+  background: var(--gray-50);
+  border-style: dashed;
+}
+.checklist-reference-value {
+  font-size: 13px;
+  color: var(--gray-500);
+}

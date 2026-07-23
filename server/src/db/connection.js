@@ -16,3 +16,26 @@ db.exec(`
     job_list_json TEXT NOT NULL
   )
 `)
+
+// jobs 테이블 스키마는 여기서 항상 보장한다 — 실제 시드(CSV 삽입)는 db/seed.js가 담당하지만,
+// 자동 시드(index.js의 seedJobsIfEmpty)가 COUNT 쿼리를 하려면 테이블이 먼저 존재해야 한다.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS jobs (
+    job_id INTEGER PRIMARY KEY,
+    company TEXT NOT NULL,
+    title TEXT NOT NULL,
+    posted_at TEXT,
+    deadline TEXT,
+    status TEXT,
+    job_category TEXT,
+    is_intern INTEGER NOT NULL DEFAULT 0,
+    education TEXT,
+    career_min_months INTEGER,
+    career_max_months INTEGER,
+    certificates TEXT,
+    major TEXT,
+    foreign_lang_test TEXT,
+    foreign_lang_score INTEGER,
+    computer_skill TEXT
+  )
+`)

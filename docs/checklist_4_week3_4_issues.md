@@ -29,11 +29,19 @@
 **설명**: 랜딩→필터→스펙→로딩→팝업→결과→상세 전체 플로우와 "홈"(상태 보존) vs "초기화"(완전 리셋) 차이를 자동화 테스트로 검증한다. 지금까지는 매 기능마다 사용자가 직접 브라우저에서 수동 확인해왔음(이 개발 환경엔 headless 브라우저가 없어 Claude 쪽에서 직접 구동/검증 불가 — 이번에도 실제 실행 확인은 사용자 쪽에서 필요).
 
 **완료 기준**
-- [ ] 테스트 도구: **Playwright로 확정** (지금까지 개발 과정에서 매 이터레이션 검증에 이미 써온 도구라 연속성 있음). `e2e/` 폴더에 별도로 두고 `npm run test:e2e` 스크립트로 분리 — 기존 `npm run test`(vitest)는 유닛/컴포넌트 테스트 전용으로 그대로 둠
-- [ ] 전체 플로우(랜딩→필터→스펙→로딩→팝업→결과→상세) 최소 1개 시나리오 통과
-- [ ] ⚠️ **`#21` 완료 후 진행**: "홈" 버튼(상태 보존 + 이어하기 배너) vs "초기화" 버튼(완전 리셋) 차이가 배너 노출 여부로 검증됨 — "초기화" 버튼 자체가 `#21`에서 처음 만들어지므로, `#21`이 끝나기 전엔 이 기준을 검증할 대상이 아직 없음. `#21`보다 먼저 착수하더라도 이 항목만 마지막에 처리
-- [ ] 스펙 케이스별 테스트 — 매우 낮음/매우 높음/일부만 입력/외국어 미입력, 각각 결과 화면까지 정상 도달
-- [ ] CI 연동 여부는 이번 스코프 아웃 (로컬 실행만 우선)
+- [x] 테스트 도구: **Playwright로 확정** (지금까지 개발 과정에서 매 이터레이션 검증에 이미 써온 도구라 연속성 있음). `e2e/` 폴더에 별도로 두고 `npm run test:e2e` 스크립트로 분리 — 기존 `npm run test`(vitest)는 유닛/컴포넌트 테스트 전용으로 그대로 둠
+- [x] 전체 플로우(랜딩→필터→스펙→로딩→팝업→결과→상세) 최소 1개 시나리오 통과
+- [x] "홈" 버튼(상태 보존) vs "초기화" 버튼(완전 리셋) 차이 검증 — `#21` 완료 후 진행. (배너 UI는 `#21` 스코프 정정으로 없어졌으므로 "지난 분석 이어하기" 버튼 노출 여부로 검증)
+- [x] 스펙 케이스별 테스트 — 매우 낮음/매우 높음/일부만 입력/외국어 미입력, 각각 결과 화면까지 정상 도달
+- [x] CI 연동 여부는 이번 스코프 아웃 (로컬 실행만)
+
+**완료 (2026-07-23, 커밋 `84584c4`)**. 구현 메모:
+- `playwright.config.js`: `webServer`를 배열로 설정해 백엔드(`cd server && npm start`, `/api/health`로 준비 확인)+프론트(`npm run dev`, `:5173`)를 테스트 실행 시 자동 기동. 로컬에 이미 시드된 `server/data/specfit.db`를 그대로 사용(별도 시드 단계 없음).
+- `vite.config.js`의 `test.exclude`에 `e2e/**` 추가 — 안 하면 vitest 기본 include 패턴이 Playwright 테스트 파일도 주워서 실행하려다 깨짐.
+- `e2e/helpers.js`: `fillSpec()`/`submitSpecAndWaitForResult()` 공통 헬퍼. 경력/외국어 필드는 select+input이 한 `<label>` 안에 같이 있어 `getByLabel`이 여러 요소에 매칭되는 문제가 있어, `.field` 클래스를 라벨 텍스트로 스코핑하는 방식으로 우회.
+- `e2e/full-flow.spec.js`(1개), `e2e/spec-cases.spec.js`(4케이스: 매우낮음=기본값 그대로/매우높음=박사·경력240개월·TOEIC 990·자격증 2개·컴활보유/일부만입력=학력만 변경/외국어미입력=나머지는 채우되 외국어만 비움), `e2e/home-vs-reset.spec.js`(1개) — 총 6개 테스트.
+- 실행 결과: `npm run test:e2e` 6/6 통과(20.0s). 기존 `npm run test`(vitest, 3파일/15개)·`npm run lint` 회귀 없음 확인.
+- 로그인/북마크 플로우, CI 연동은 사용자 지시대로 이번 범위에서 제외.
 
 ---
 
@@ -42,12 +50,14 @@
 **설명**: `checklist_2.md` 4단계의 배포 항목. 로컬 개발 환경에서만 검증된 것을 실제 배포 환경으로 옮긴다.
 
 **완료 기준**
-- [ ] 프론트 Vercel 배포, 프로덕션 URL 확보
-- [ ] 백엔드 Render 또는 Railway 배포, 프로덕션 URL 확보
-- [ ] 프로덕션에서 프론트→백엔드 API 호출 정상 동작 (CORS 설정 포함 — dev 프록시가 없는 환경이므로 origin 명시 필요)
-- [ ] SQLite 파일 영속성 확인 — 재배포 시 DB가 초기화되는 플랫폼인지 먼저 확인, 초기화된다면 배포 파이프라인에 시드 스크립트 실행 단계 추가
-- [ ] 프로덕션 환경변수 정리, `server/.env.example` 갱신
-- [ ] (낮은 우선순위) 쿼리 성능/인덱스 점검 — 862건 규모라 실익 낮을 가능성 높음, 배포 후 실측해서 필요할 때만
+- [x] 프론트 Vercel 배포, 프로덕션 URL 확보 (`https://specfit-six.vercel.app`)
+- [x] 백엔드 Render 배포, 프로덕션 URL 확보 (`https://specfit-62w2.onrender.com`)
+- [x] 프로덕션에서 프론트→백엔드 API 호출 정상 동작 (CORS 설정 포함) — `ALLOWED_ORIGIN`에 Vercel URL 추가 후 실제 preflight(`OPTIONS`) 요청으로 `access-control-allow-origin` 헤더 확인, 갭 분석/로그인/북마크 전부 프로덕션에서 정상 동작 확인
+- [x] SQLite 파일 영속성 확인 — Render 무료 인스턴스는 재배포/재시작 시 파일시스템이 초기화될 수 있음. `jobs` 테이블은 서버 시작 시 자동 시드(코드 준비 단계에서 구현, `seedJobsIfEmpty()`)로 복구되므로 문제 없음. `analysis_results`(재조회용 저장 이력)는 초기화되면 유실될 수 있으나, 게스트 플로우의 "새로고침 시 결과 복원"에만 영향(로그인/북마크는 Supabase Postgres라 무관) — 필요해지면 Render 유료 플랜의 Persistent Disk로 해결 가능, 지금은 스코프 아웃
+- [x] 프로덕션 환경변수 정리 — Render: `PORT`/`DB_PATH`/`SUPABASE_URL`/`SUPABASE_ANON_KEY`/`SUPABASE_SERVICE_ROLE_KEY`/`ALLOWED_ORIGIN`, Vercel: `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`/`VITE_API_BASE_URL`. `.env.example`/`server/.env.example`는 코드 준비 단계에서 이미 갱신됨(커밋 `868e06c`)
+- [ ] (낮은 우선순위, 스코프 아웃 유지) 쿼리 성능/인덱스 점검 — 862건 규모라 실익 낮다고 판단, 실제 지연 문제가 보고되면 그때 진행
+
+**완료 (2026-07-23)**. 코드 준비(커밋 `868e06c`: API base URL 환경변수화, CORS 환경변수화, 서버 시작 시 자동 시드)는 별도 세션에서 먼저 끝냈고, 이번엔 사용자가 직접 Render/Vercel 계정 생성부터 실제 배포까지 진행 — Render(백엔드) 배포 → Vercel(프론트) 배포 시 `VITE_API_BASE_URL`에 Render URL 연결 → Render의 `ALLOWED_ORIGIN`에 Vercel URL 추가, 순서로 진행. 첫 시도에서 브라우저 콘솔에 CORS 에러가 떴는데, 이는 `ALLOWED_ORIGIN` 저장 직후 Render가 재배포되기 전 타이밍이었던 것으로 확인 — 잠시 후 재확인하니 실제 preflight 응답에 올바른 `Access-Control-Allow-Origin` 헤더가 붙어 있었고 갭 분석/로그인/북마크 전부 정상 동작.
 
 ---
 
@@ -154,8 +164,10 @@
 **설명**: 스펙 입력 폼에서는 이미 "판정에 미반영" 문구와 함께 입력받고 있지만(`#7`), 결과 화면 어디에도 이 값이 다시 보이지 않는다. 우대 항목이라는 취지를 살리려면 공고 상세 모달에서라도 참고 정보로 노출하는 게 자연스럽다.
 
 **완료 기준**
-- [ ] `JobDetailModal`에 사용자가 입력한 컴퓨터활용능력 보유 여부 표시 (다른 5개 항목과 구분되는 "참고용" 스타일 — 충족/미충족 판정 색상 사용 금지)
-- [ ] "판정에 포함되지 않는 참고 정보"라는 문구 함께 표시
+- [x] `JobDetailModal`에 사용자가 입력한 컴퓨터활용능력 보유 여부 표시 (다른 5개 항목과 구분되는 "참고용" 스타일 — 충족/미충족 판정 색상 사용 금지)
+- [x] "판정에 포함되지 않는 참고 정보"라는 문구 함께 표시
+
+**완료 (2026-07-23, 커밋 `bbc6a48`)**. TDD로 진행: `describeComputerSkill(hasComputerSkill)` 순수 함수를 `src/lib/gapAnalysis.js`에 추가하기 전에 `src/lib/gapAnalysis.test.js`로 red 테스트부터 작성(`true`→`'보유'`/`false`→`'미보유'` 2케이스만 — `has_computer_skill`은 Context 기본값이 `false`인 체크박스 제어값이라 undefined/null 방어 케이스는 프로젝트 컨벤션대로 스코프 아웃), 구현 후 green 확인. `buildJobDisplay`에 `has_computer_skill: spec.has_computer_skill` 필드를 추가해 `JobDetailModal`이 `job` prop 하나로 계속 동작하게 함(기존 checklist/statusLabel과 동일 패턴). `.checklist-row-reference`(점선 테두리+회색 배경)로 시각적으로 분리, ok/no 색상 미사용. `ResultPage`/`BookmarksPage` 둘 다 `buildJobDisplay`를 거치므로 두 화면 모두 코드 수정 없이 자동 적용됨.
 
 ---
 

@@ -1,4 +1,5 @@
 import { JOB_CATEGORY_STYLE, DEFAULT_CATEGORY_STYLE, STATUS_STYLE } from '../../constants/resultDisplay'
+import { describeComputerSkill } from '../../lib/gapAnalysis'
 
 function JobDetailModal({ job, onClose, bookmarked, onToggleBookmark }) {
   if (!job) return null
@@ -56,6 +57,15 @@ function JobDetailModal({ job, onClose, bookmarked, onToggleBookmark }) {
               </div>
             ))}
           </>
+        )}
+        {job.has_computer_skill !== undefined && (
+          <div className="checklist-row checklist-row-reference">
+            <div className="checklist-main">
+              <span className="checklist-label">컴퓨터활용능력</span>
+              <span className="checklist-reference-value">{describeComputerSkill(job.has_computer_skill)}</span>
+            </div>
+            <p className="checklist-detail">판정에 포함되지 않는 참고 정보예요.</p>
+          </div>
         )}
         <button className="btn-secondary" style={{ width: '100%', marginTop: 8 }} onClick={onClose}>
           닫기
