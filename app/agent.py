@@ -74,6 +74,19 @@ def _iterate_picked(papers: list[dict], picked: list[dict]):
         yield i, papers[item["index"]]
 
 
+def _select_tool(paper: dict) -> dict:
+    """도구 선택(select_tool) LLM 호출. 실패해도 예외 없이 fallback을 반환한다.
+
+    fallback은 need_fulltext=False — 판단이 안 될 때 본문을 받으면 비용이 샌다.
+    """
+    prompt = prompt_loader.fill(
+        prompt_loader.load("select_tool"),
+        title=paper["title"],
+        abstract=paper["abstract"],
+    )
+    return tools.ask_llm_json(prompt, fallback={"need_fulltext": False, "reason": ""})
+
+
 if __name__ == "__main__":
     import argparse
 
