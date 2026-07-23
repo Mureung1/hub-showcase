@@ -61,6 +61,7 @@ export function buildProposalPrompt(ctx: ProposalContext): string {
 작성 규칙:
 - 목표: 손님이 "지금 가고 싶다 / 주문하고 싶다"고 느끼게 하는 행동 유도 카피. 감성 에세이가 아닙니다.
 - copy 흐름: (1) 오늘 날씨를 손님 입장에서 가볍게 언급 → (2) 우리 메뉴·혜택 제시 → (3) 명확한 행동 유도(주문·방문·픽업).
+- 상호는 "${store.name}" 그대로만 쓰세요. 다른 가게 이름을 지어내지 마세요(없는 상호 창작 금지).
 - 밝고 친근한 톤. 부정적·우울한 표현("매출이 걱정", "안타까운", "마음이 아파요" 등) 금지.
 - 매장 내부 사정(매출 하락·진단 수치 등)을 문구에 노출 금지.
 - 모든 문구(title·copy·promo)는 오직 한국어로만. 한자·중국어·일본어·영어 단어 금지 (이모지 허용).
@@ -148,11 +149,12 @@ async function tryGenerate(
   caller: LLMCaller,
   prompt: string,
   apiKey: string,
+  storeName: string,
 ): Promise<Proposal | null> {
   try {
     const proposal = parseAndValidate(await caller(prompt, apiKey));
     if (!proposal) return null; // 파싱·스키마 실패
-    if (!checkGuardrails(proposal).ok) return null; // 가드레일 위반 → 재생성 대상
+    if (!checkGuardrails(proposal, storeName).ok) return null; // 가드레일 위반 → 재생성 대상
     return proposal;
   } catch {
     return null; // 네트워크 등 호출 실패
@@ -173,10 +175,10 @@ export async function generateProposal(
   const caller = deps.caller ?? callGroq;
   const prompt = buildProposalPrompt(ctx);
 
-  const first = await tryGenerate(caller, prompt, apiKey);
+  const first = await tryGenerate(caller, prompt, apiKey, ctx.store.name);
   if (first) return first;
 
-  const retry = await tryGenerate(caller, prompt, apiKey); // 1회 재생성
+  const retry = await tryGenerate(caller, prompt, apiKey, ctx.store.name); // 1회 재생성
   if (retry) return retry;
 
   return buildFallbackProposal(ctx); // 템플릿 폴백

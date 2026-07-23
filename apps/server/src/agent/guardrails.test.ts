@@ -36,6 +36,20 @@ describe("checkGuardrails", () => {
     expect(checkGuardrails(proposal({ copy: "오늘만 30% 할인!" })).ok).toBe(false);
   });
 
+  it("제목의 창작 상호를 검출한다 (실사고: 그레이스카페)", () => {
+    const bad = checkGuardrails(proposal({ title: "그레이스카페 오늘의 혜택" }), "김사장 카페");
+    expect(bad.ok).toBe(false);
+    expect(bad.violations[0]).toMatch(/창작 상호: 그레이스카페/);
+  });
+
+  it("붙여 쓴 자기 상호는 허용한다", () => {
+    expect(checkGuardrails(proposal({ title: "김사장카페 오늘의 혜택" }), "김사장 카페").ok).toBe(true);
+  });
+
+  it("storeName이 없으면 상호 검사를 건너뛴다", () => {
+    expect(checkGuardrails(proposal({ title: "그레이스카페 오늘의 혜택" })).ok).toBe(true);
+  });
+
   it("금칙어(의료·과장)를 검출한다", () => {
     expect(checkGuardrails(proposal({ copy: "피로 완치 효과!" })).ok).toBe(false);
     expect(checkGuardrails(proposal({ title: "동네 최고 카페" })).ok).toBe(false);

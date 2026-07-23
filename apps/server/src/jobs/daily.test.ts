@@ -6,8 +6,13 @@ import type { StoreRow, CampaignRow } from "../db/queries";
 
 const store = { id: "s1", name: "김사장 카페", category: "카페" } as StoreRow;
 
-function ctxWith(condition: EnsembleWeather["condition"], isPrecipitating: boolean, deltaPct: number): StoreContext {
-  const weather = { condition, isPrecipitating } as EnsembleWeather;
+function ctxWith(
+  condition: EnsembleWeather["condition"],
+  isPrecipitating: boolean,
+  deltaPct: number,
+  sourceCount = 2,
+): StoreContext {
+  const weather = { condition, isPrecipitating, sourceCount } as EnsembleWeather;
   const diagnosis: Diagnosis = {
     baselineRevenue: 840000,
     rainImpactPct: -0.22,
@@ -62,29 +67,73 @@ describe("runDailyProposalJob", () => {
 });
 
 describe("runBootProposalJob (서버 기동 잡)", () => {
-  it("오늘 캠페인이 이미 있으면 스킵한다 (승인·수정본 덮어쓰기 방지)", async () => {
-    const build = vi.fn(async () => ({ ...ctxWith("rain", true, -0.22), proposal }));
-    const r = await runBootProposalJob(undefined, {
-      findStore: async () => store,
-      findToday: async () => ({ id: "camp1" }) as CampaignRow,
-      build,
-    });
-    expect(r).toEqual({ ran: false, reason: "already-exists" });
-    expect(build).not.toHaveBeenCalled();
-  });
+  // 저장된 캠페인 mock — 상태와 생성 시점 날씨만 지정
+  const saved = (
+    status: string,
+    condition: EnsembleWeather["condition"],
+    isPrecipitating: boolean,
+    sourceCount = 2,
+  ) => ({ id: "camp1", status, weather: { condition, isPrecipitating, sourceCount } }) as CampaignRow;
 
   it("오늘 캠페인이 없으면 임계와 무관하게 항상 생성·저장한다", async () => {
     // -6%짜리 평범한 날 — 크론 잡이라면 임계 미달 스킵이지만 기동 잡은 생성한다
-    const build = vi.fn(async () => ({ ...ctxWith("overcast", false, -0.06), proposal }));
     const save = vi.fn(async () => ({ id: "camp1" }) as CampaignRow);
     const r = await runBootProposalJob(undefined, {
       findStore: async () => store,
       findToday: async () => null,
-      build,
+      collect: async () => ctxWith("overcast", false, -0.06),
+      generate: async () => proposal,
       save,
     });
-    expect(r).toEqual({ ran: true, campaignId: "camp1" });
-    expect(build).toHaveBeenCalledWith("s1");
+    expect(r).toEqual({ ran: true, campaignId: "camp1", refreshed: false });
     expect(save).toHaveBeenCalledOnce();
+  });
+
+  it("draft인데 날씨 조건이 달라졌으면 재생성한다 (흐림 → 비)", async () => {
+    const save = vi.fn(async () => ({ id: "camp1" }) as CampaignRow);
+    const r = await runBootProposalJob(undefined, {
+      findStore: async () => store,
+      findToday: async () => saved("draft", "overcast", false),
+      collect: async () => ctxWith("rain", true, -0.22),
+      generate: async () => proposal,
+      save,
+    });
+    expect(r).toEqual({ ran: true, campaignId: "camp1", refreshed: true });
+    expect(save).toHaveBeenCalledOnce();
+  });
+
+  it("draft이고 날씨도 그대로면 유지한다 (재시작마다 LLM 재호출 방지)", async () => {
+    const generate = vi.fn(async () => proposal);
+    const r = await runBootProposalJob(undefined, {
+      findStore: async () => store,
+      findToday: async () => saved("draft", "overcast", false),
+      collect: async () => ctxWith("overcast", false, -0.06),
+      generate,
+    });
+    expect(r).toEqual({ ran: false, reason: "weather-unchanged" });
+    expect(generate).not.toHaveBeenCalled();
+  });
+
+  it("날씨 소스가 줄었으면 달라 보여도 덮지 않는다 (KMA 실패 오판 방지)", async () => {
+    const generate = vi.fn(async () => proposal);
+    const r = await runBootProposalJob(undefined, {
+      findStore: async () => store,
+      findToday: async () => saved("draft", "rain", true, 2), // 2소스로 만든 비 제안
+      collect: async () => ctxWith("overcast", false, -0.06, 1), // OWM 단독이 "흐림" 주장
+      generate,
+    });
+    expect(r).toEqual({ ran: false, reason: "fewer-sources" });
+    expect(generate).not.toHaveBeenCalled();
+  });
+
+  it("승인·발송된 캠페인은 날씨가 바뀌어도 덮지 않는다", async () => {
+    const collect = vi.fn(async () => ctxWith("rain", true, -0.22));
+    const r = await runBootProposalJob(undefined, {
+      findStore: async () => store,
+      findToday: async () => saved("approved", "overcast", false),
+      collect,
+    });
+    expect(r).toEqual({ ran: false, reason: "owner-touched" });
+    expect(collect).not.toHaveBeenCalled();
   });
 });

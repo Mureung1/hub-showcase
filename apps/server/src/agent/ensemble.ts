@@ -113,6 +113,17 @@ export async function getEnsembleWeather(
     getOwm(loc.lat, loc.lng),
   ]);
 
+  // 부분 실패는 진행하되 로그는 남긴다 — 소스 축소(sourceCount 감소)의 원인 추적용
+  results.forEach((r, i) => {
+    if (r.status === "rejected") {
+      const src = i === 0 ? "kma" : "owm";
+      console.warn(
+        `[weather] ${src} 실패:`,
+        r.reason instanceof Error ? r.reason.message : r.reason,
+      );
+    }
+  });
+
   const ok = results
     .filter((r): r is PromiseFulfilledResult<NormalizedWeather> => r.status === "fulfilled")
     .map((r) => r.value);

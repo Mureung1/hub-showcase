@@ -1,10 +1,8 @@
-import type { Proposal } from "shared";
+import type { EnsembleWeather, Proposal } from "shared";
 import { expectedImpactPct } from "../agent/diagnose";
 import {
-  buildTodayProposal,
   collectStoreContext,
   proposalFromContext,
-  type ProposalResult,
   type StoreContext,
 } from "../agent/pipeline";
 import {
@@ -72,7 +70,8 @@ export const JOB_TIME_KST = { hour: 6, minute: 30 };
 export interface BootJobDeps {
   findStore?: (storeId?: string) => Promise<StoreRow>;
   findToday?: (storeId: string, date: string) => Promise<CampaignRow | null>;
-  build?: (storeId: string) => Promise<ProposalResult>;
+  collect?: (storeId?: string) => Promise<StoreContext>;
+  generate?: (ctx: StoreContext) => Promise<Proposal>;
   save?: (
     storeId: string,
     date: string,
@@ -82,14 +81,26 @@ export interface BootJobDeps {
 }
 
 export type BootJobResult =
-  | { ran: false; reason: "already-exists" }
-  | { ran: true; campaignId: string };
+  | { ran: false; reason: "owner-touched" | "weather-unchanged" | "fewer-sources" }
+  | { ran: true; campaignId: string; refreshed: boolean };
+
+/** 저장된 캠페인 날씨와 지금 날씨의 '체감 조건'이 같은지 (상태·강수 여부만 비교, 기온 변화는 무시). */
+function sameWeatherKind(saved: EnsembleWeather | null, now: EnsembleWeather): boolean {
+  return (
+    saved !== null &&
+    saved.condition === now.condition &&
+    saved.isPrecipitating === now.isPrecipitating
+  );
+}
 
 /**
  * 서버 기동 잡 — 켤 때마다 그 시점에 오늘 제안을 만든다 (무료 플랜 실운영 경로).
- * - 오늘 캠페인이 이미 있으면 스킵 — saveTodayCampaign은 upsert라 가드 없이 다시 만들면
- *   사장님이 승인·수정한 캠페인이 draft로 리셋된다. tsx watch 재시작마다 LLM 재호출 방지도 겸함.
- * - 임계(−20%) 판정 없이 항상 생성(POST /proposal/generate와 동일 파이프라인), 문자 알림 없음.
+ * - 오늘 캠페인이 없으면 임계(−20%) 판정 없이 항상 생성, 문자 알림 없음.
+ * - draft인데 날씨 조건(condition·강수)이 생성 시점과 달라졌으면 재생성 —
+ *   아침 "흐림" 문구가 오후에 비 와도 그대로 남는 문제 방지.
+ * - 사장님이 손댄 캠페인(approved/sent 등)은 절대 덮지 않는다 —
+ *   saveTodayCampaign은 upsert라 다시 만들면 draft로 리셋되기 때문.
+ * - 날씨가 그대로면 스킵 — tsx watch 재시작마다 LLM 재호출 방지.
  */
 export async function runBootProposalJob(
   storeId?: string,
@@ -97,16 +108,29 @@ export async function runBootProposalJob(
 ): Promise<BootJobResult> {
   const findStore = deps.findStore ?? ((id?: string) => (id ? getStoreById(id) : getFirstStore()));
   const findToday = deps.findToday ?? getTodayCampaign;
-  const build = deps.build ?? buildTodayProposal;
+  const collect = deps.collect ?? collectStoreContext;
+  const generate = deps.generate ?? proposalFromContext;
   const save = deps.save ?? saveTodayCampaign;
 
   const store = await findStore(storeId);
   const existing = await findToday(store.id, todayYmdKst());
-  if (existing) return { ran: false, reason: "already-exists" };
+  if (existing && existing.status !== "draft") return { ran: false, reason: "owner-touched" };
 
-  const result = await build(store.id);
-  const campaign = await save(store.id, todayYmdKst(), result.weather, result.proposal);
-  return { ran: true, campaignId: campaign.id };
+  const ctx = await collect(store.id);
+  if (existing) {
+    if (sameWeatherKind(existing.weather, ctx.weather)) {
+      return { ran: false, reason: "weather-unchanged" };
+    }
+    // 날씨가 달라 보여도 소스가 줄었으면(예: KMA 실패로 OWM 단독) 오판일 수 있다 —
+    // 2소스로 만든 제안을 1소스 값으로 덮지 않는다. 소스가 복구되면 다음 기동에 갱신된다.
+    if (ctx.weather.sourceCount < (existing.weather?.sourceCount ?? 0)) {
+      return { ran: false, reason: "fewer-sources" };
+    }
+  }
+
+  const proposal = await generate(ctx);
+  const campaign = await save(store.id, todayYmdKst(), ctx.weather, proposal);
+  return { ran: true, campaignId: campaign.id, refreshed: existing !== null };
 }
 
 export async function runDailyProposalJob(

@@ -55,11 +55,22 @@ cron.schedule(
 
 app.listen(PORT, () => {
   console.log(`server on http://localhost:${PORT}`);
-  // 기동 잡 — 켠 시점에 오늘 제안을 자동 생성한다 (이미 있으면 스킵, 실패해도 서버는 계속)
+  // 기동 잡 — 켠 시점에 오늘 제안을 자동 생성한다 (날씨 바뀐 draft는 재생성, 실패해도 서버는 계속)
   runBootProposalJob()
     .then((r) => {
-      if (r.ran) console.log(`[boot] 오늘 제안 생성 — campaign ${r.campaignId}`);
-      else console.log("[boot] 오늘 캠페인 이미 있음 — 스킵");
+      if (r.ran) {
+        console.log(
+          `[boot] 오늘 제안 ${r.refreshed ? "재생성(날씨 변경)" : "생성"} — campaign ${r.campaignId}`,
+        );
+      } else {
+        const why =
+          r.reason === "owner-touched"
+            ? "승인·발송된 캠페인 보호"
+            : r.reason === "fewer-sources"
+              ? "날씨 소스 줄어듦(신뢰도 낮음)"
+              : "날씨 변화 없음";
+        console.log(`[boot] 오늘 제안 유지 — ${why}`);
+      }
     })
     .catch((e) =>
       console.error("[boot] 기동 잡 실패:", e instanceof Error ? e.message : e),
