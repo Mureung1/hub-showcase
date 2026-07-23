@@ -15,16 +15,17 @@ export function passesHardFilter(userA, userB) {
 
 /**
  * 취미 성향 하드필터 통과 여부를 계산한다.
- * 요청한 유저의 취미 주유형이 후보의 주유형 또는 보조유형과 같으면 통과.
+ * 요청한 유저의 (주유형 또는 보조유형) 중 하나라도 후보의 (주유형 또는 보조유형)과 겹치면 통과.
+ * 대칭적 비교이므로 어느 쪽에서 조회해도 결과가 같다.
  * @param {{ primary: string, secondary: string }} selfHobbyTags
  * @param {{ primary: string, secondary: string }} candidateHobbyTags
  * @returns {boolean}
  */
 export function passesHobbyFilter(selfHobbyTags, candidateHobbyTags) {
-  return (
-    selfHobbyTags.primary === candidateHobbyTags.primary ||
-    selfHobbyTags.primary === candidateHobbyTags.secondary
-  )
+  const selfTags = [selfHobbyTags.primary, selfHobbyTags.secondary]
+  const candidateTags = [candidateHobbyTags.primary, candidateHobbyTags.secondary]
+
+  return selfTags.some((tag) => candidateTags.includes(tag))
 }
 
 /**

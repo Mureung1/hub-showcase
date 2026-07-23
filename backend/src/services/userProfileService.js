@@ -40,3 +40,21 @@ export async function getUserProfileById(userId) {
     },
   }
 }
+
+// userId로 본인의 초대 코드 조회 (이미 발급된 값을 조회만 함, 생성 로직은 다루지 않음)
+export async function getInviteCodeByUserId(userId) {
+  const targetId = BigInt(userId)
+
+  const user = await prisma.user.findUnique({
+    where: { userId: targetId },
+    select: { inviteCode: true },
+  })
+
+  if (!user) {
+    const err = new Error('존재하지 않는 유저입니다.')
+    err.status = 404
+    throw err
+  }
+
+  return user.inviteCode
+}
