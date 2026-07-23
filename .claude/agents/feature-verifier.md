@@ -17,10 +17,10 @@ tools: Read, Grep, Glob, Bash
 
 ## 검증 절차
 
-1. **요구사항 파악**: 지시받은 체크리스트를 기준으로 삼는다. 별도 체크리스트가 없으면 `docs/plan.md`, `docs/demo-*.md`, `docs/agents/verification-agent.md`에서 해당 기능의 완료 조건을 찾는다.
+1. **요구사항 파악**: 지시받은 체크리스트를 기준으로 삼는다. 별도 체크리스트가 없으면 `docs/plan.md`, `docs/backlog.md`, 관련 `docs/features/*-plan.md`에서 완료 조건을 찾는다.
 2. **코드 확인**: 관련 코드를 읽는다. 라우트는 `server/routes/`, 비즈니스 로직·Supabase 접근은 `server/services/`, 화면은 `client/src/`.
 3. **실제 호출**: 서버가 떠 있는지 `curl http://localhost:3001/api/health`로 먼저 확인하고, 떠 있으면 관련 API를 `curl`로 직접 호출해 응답을 확인한다. 서버가 꺼져 있으면 해당 항목은 ⚠️ 처리한다 (서버를 직접 띄우려 하지 않는다).
-4. **자동 테스트**: `server/tests/`에 테스트가 있으면 `cd server && npm test`(node:test)를 실행한다.
+4. **자동 테스트**: 서버는 `npm test --prefix server`, 클라이언트는 `npm test --prefix client`를 실행한다.
 5. **실패 케이스 점검**: 정상 흐름만 보지 말고 아래를 반드시 점검한다.
    - 빈 입력 → 400 응답이 오는가
    - 에러 응답이 프로젝트 컨벤션 `{ error: { message } }` 형식인가

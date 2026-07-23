@@ -16,7 +16,7 @@ tools: Read, Grep, Glob, Bash
 
 ## 계획 절차
 
-1. **목표 파악**: 지시받은 요구사항·주차 목표를 기준으로 삼는다. 배경이 필요하면 기획서 `docs/plan.md`, 백로그 `docs/backlog.md`, 주차 계획 `docs/week*-plan.md`를 읽는다.
+1. **목표 파악**: 지시받은 요구사항·주차 목표를 기준으로 삼는다. 배경이 필요하면 `docs/plan.md`, `docs/backlog.md`, `docs/progress.md`를 읽는다.
 2. **현재 상태 확인**: `git log --oneline -15`와 `docs/progress.md`로 어디까지 됐는지 확인하고, 관련 코드(`server/`, `client/src/`)를 훑어 이미 구현된 범위를 파악한다.
 3. **작업 분해**: 남은 일을 작은 단위로 나눈다. 각 작업은 "혼자서 검증 가능한 크기"여야 한다 (커밋 1~3개 분량).
 4. **우선순위 판정**: 아래 5기준으로 순서를 정한다.
