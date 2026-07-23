@@ -1830,7 +1830,10 @@ async function loadPartialWriter(
     openedArchive = await openAnchoredPartialFile({
       absolutePath: input.layout.partial.archivePath,
       evidenceKind: 'runtime_archive_partial_identity_invalid',
-      expectedBytes: journal.writtenBytes,
+      expectedBytes:
+        journal.writtenBytes === 0
+          ? undefined
+          : journal.writtenBytes,
       leaf: 'archive.part',
       mutationAuthority,
       rootAuthority,
@@ -1841,6 +1844,19 @@ async function loadPartialWriter(
   }
   const handle = openedArchive.handle
   try {
+    if (journal.writtenBytes === 0) {
+      const stats = await handle.stat({ bigint: true })
+      if (
+        stats.size >
+        BigInt(input.admission.descriptor.archive.bytes)
+      ) {
+        throw runtimeAuthorityError('runtime_cache_unsafe', {
+          kind: 'runtime_archive_partial_identity_invalid',
+        })
+      }
+      await handle.truncate(0)
+      await handle.sync()
+    }
     return {
       handle,
       identity: openedArchive.identity,

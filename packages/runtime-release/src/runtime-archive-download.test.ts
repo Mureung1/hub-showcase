@@ -703,6 +703,93 @@ test('a missing final turns a full weak alias into a fresh nlink-one restart', a
   }
 })
 
+test('a zero-journal alias restarts fresh after its final link is lost', async () => {
+  const archiveBytes = Buffer.from(
+    'strong checkpoint replaced by a complete weak archive',
+  )
+  const strongPrefix = archiveBytes.subarray(0, 9)
+  const fixture = await createDownloadFixture(archiveBytes)
+  const transport = new ScriptedArchiveTransport([
+    {
+      statusCode: 200,
+      headers: {
+        'content-length': [String(archiveBytes.byteLength)],
+        etag: ['"runtime-v1"'],
+      },
+      chunks: [strongPrefix],
+      bodyError: new ArchiveTransportNetworkError(false),
+    },
+    {
+      statusCode: 200,
+      headers: {
+        'content-length': [String(archiveBytes.byteLength)],
+        etag: ['W/"runtime-v2"'],
+      },
+      chunks: [archiveBytes],
+    },
+    {
+      statusCode: 200,
+      headers: {
+        'content-length': [String(archiveBytes.byteLength)],
+      },
+      chunks: [archiveBytes],
+    },
+  ])
+
+  try {
+    await assertRuntimeFailure(
+      downloadVerifiedRuntimeArchive({
+        admission: fixture.admission,
+        layout: fixture.layout,
+        mutationAuthority: fixture.mutationAuthority,
+        signal: new AbortController().signal,
+        transport,
+      }),
+      'runtime_network_unavailable',
+    )
+    await downloadVerifiedRuntimeArchive({
+      admission: fixture.admission,
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      signal: new AbortController().signal,
+      transport,
+    })
+    const resetJournal = JSON.parse(
+      await readFile(fixture.layout.partial.journalPath, 'utf8'),
+    ) as { readonly writtenBytes: number }
+    assert.equal(resetJournal.writtenBytes, 0)
+    await unlink(fixture.layout.archive.path)
+    const unlinkedPartial = await lstat(
+      fixture.layout.partial.archivePath,
+    )
+    assert.equal(unlinkedPartial.nlink, 1)
+    assert.equal(unlinkedPartial.size, archiveBytes.byteLength)
+
+    const result = await downloadVerifiedRuntimeArchive({
+      admission: fixture.admission,
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      signal: new AbortController().signal,
+      transport,
+    })
+    assert.deepEqual(await readFile(result.archivePath), archiveBytes)
+    assert.deepEqual(
+      transport.requests.map(({ range }) => range),
+      [
+        undefined,
+        {
+          start: strongPrefix.byteLength,
+          ifRange: '"runtime-v1"',
+        },
+        undefined,
+      ],
+    )
+    transport.assertExhausted()
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('range-ignored 200 truncates the retained prefix before writing', async () => {
   const archiveBytes = Buffer.from('range ignored full representation')
   const prefixBytes = archiveBytes.subarray(0, 8)
