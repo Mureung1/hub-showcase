@@ -49,7 +49,11 @@ function ProfileBoard({ lang, setCurationData }: ProfileBoardProps) {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ query })
+      body: JSON.stringify({ 
+        major: 'computer science AI', // 명시적 전달
+        keywords: keywords,           // UI의 뱃지 상태 배열을 Payload에 탑재
+        query: query 
+      })
     })
       .then(response => {
         if (!response.ok) {
