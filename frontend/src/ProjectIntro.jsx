@@ -5,7 +5,8 @@ import { loadEssentialHours, saveEssentialHours } from "./lib/storage";
 import AnalysisReport from "./components/AnalysisReport";
 import RetrospectiveReport from "./components/RetrospectiveReport";
 import { ConsentNotice } from "./components/ConsentNotice";
-import { OptionCard, Progress, ScoreBar } from "./components/ui";
+import { OptionCard, ScoreBar } from "./components/ui";
+import { StepShell } from "./components/StepShell";
 import { StepIntro } from "./components/steps/StepIntro";
 import { StepMbtiSource } from "./components/steps/StepMbtiSource";
 import { StepMbtiChat } from "./components/steps/StepMbtiChat";
@@ -173,16 +174,12 @@ export default function ProjectIntro() {
           onClearData={handleStoredDataClear}
           onShowAnalysis={() => setShowAnalysis(true)}
         />
-      ) : (
-      <div className="shell">
-        <div className="topbar">
-          <div className="brand">MBTI 기반 공부법 및 스트레스 관리 웹앱</div>
-          <div className="pill">Vite + React · 규칙 기반 추천 · localStorage</div>
-        </div>
-
-        {showAnalysis ? (
+      ) : showAnalysis ? (
+        <div className="shell">
           <AnalysisReport onClose={() => setShowAnalysis(false)} />
-        ) : showRetro ? (
+        </div>
+      ) : showRetro ? (
+        <div className="shell">
           <RetrospectiveReport
             onClose={() => setShowRetro(false)}
             result={result}
@@ -191,9 +188,9 @@ export default function ProjectIntro() {
             mbtiEstimated={mbtiEstimated}
             estimatedMeta={estimatedMeta}
           />
-        ) : (
-        <>
-        <Progress step={step} />
+        </div>
+      ) : (
+        <StepShell step={step} onHome={() => setStep(0)} onShowAnalysis={() => setShowAnalysis(true)}>
 
         {flowNotice && (
           <div className="notice" role="status" style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
@@ -856,12 +853,10 @@ export default function ProjectIntro() {
             </div>
           </section>
         )}
-        </>
-        )}
         <p className="hint" style={{ marginTop: 18 }}>
           이 프로젝트는 공식 MBTI 평가를 제공·복제하지 않으며 The Myers-Briggs Company 또는 Myers &amp; Briggs Foundation과 제휴하지 않습니다. MBTI와 Myers-Briggs Type Indicator는 해당 권리자의 상표 또는 등록상표입니다.
         </p>
-      </div>
+        </StepShell>
       )}
     </main>
   );

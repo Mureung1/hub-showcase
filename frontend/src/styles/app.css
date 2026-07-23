@@ -190,6 +190,16 @@ textarea:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
 .intro-principle-tag{color:var(--primary);font-size:12px;font-weight:700;margin-bottom:5px;}
 .intro-principle p{font-size:14px;line-height:1.5;color:var(--text-strong);font-weight:600;word-break:keep-all;}
 .intro-note{margin-top:40px;padding-top:20px;border-top:1px solid var(--border-soft);color:var(--text-muted);font-size:12.5px;line-height:1.6;max-width:74ch;}
+/* 진행 화면 공통 셸(StepShell): 랜딩 사이드바 재사용 + 현재 단계 강조 */
+.intro-nav-item.active{background:var(--surface);color:var(--text-strong);font-weight:700;}
+.intro-nav-item.active .intro-nav-num{background:var(--primary);color:var(--on-primary);}
+.step-main-inner{max-width:1000px;margin:0 auto;padding:34px 40px 56px;box-sizing:border-box;}
+@media (max-width:820px){
+  .intro-layout.has-steps .intro-nav-label{display:block;margin-top:12px;}
+  .intro-layout.has-steps .intro-nav{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;}
+  .intro-layout.has-steps .intro-nav-item{padding:7px 10px;font-size:13px;}
+  .step-main-inner{padding:24px 18px 40px;}
+}
 
 @media (max-width:820px){
   .intro-layout{flex-direction:column;}
