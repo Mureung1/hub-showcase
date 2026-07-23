@@ -57,3 +57,16 @@ test("accepts two person frames for a couple composition", () => {
 
   assert.doesNotThrow(() => validateGuide(coupleGuide));
 });
+
+test("accepts OpenCV-style background line segments", () => {
+  const visionGuide = {
+    horizonY: 0.6,
+    backgroundLines: [
+      { start: [0.1, 0.3], end: [0.7, 0.24] },
+      { start: [0.15, 0.42], end: [0.85, 0.38] },
+    ],
+    personFrames: [{ x: 0.35, y: 0.4, width: 0.26, height: 0.45 }],
+  };
+
+  assert.doesNotThrow(() => validateGuide(visionGuide));
+});

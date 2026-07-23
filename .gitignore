@@ -4,3 +4,6 @@ gh-pages-worktree/
 outputs/
 photo-navigation-public-m2/
 vite-*.log
+tools/overlay-agent/web/public/models/
+tools/overlay-agent/web/public/wasm/
+tools/overlay-agent/web/test-*.png

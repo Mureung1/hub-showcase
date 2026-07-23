@@ -44,16 +44,31 @@ function validatePersonFrame(frame, fieldName) {
   }
 }
 
+function validateBackgroundLine(line, fieldName) {
+  if (!line || typeof line !== "object" || Array.isArray(line)) {
+    fail(`${fieldName} must be an object with start and end points.`);
+  }
+  validatePoint(line.start, `${fieldName}.start`);
+  validatePoint(line.end, `${fieldName}.end`);
+}
+
 export function validateGuide(guide) {
   if (!guide || typeof guide !== "object" || Array.isArray(guide)) {
     fail("guide must be a JSON object.");
   }
 
-  if (!Array.isArray(guide.buildingOutline) || guide.buildingOutline.length < 2) {
-    fail("buildingOutline must contain at least two points.");
+  const hasOutline = Array.isArray(guide.buildingOutline) && guide.buildingOutline.length >= 2;
+  const hasBackgroundLines = Array.isArray(guide.backgroundLines) && guide.backgroundLines.length > 0;
+  if (!hasOutline && !hasBackgroundLines) {
+    fail("buildingOutline or backgroundLines is required.");
   }
 
-  guide.buildingOutline.forEach((point, index) => validatePoint(point, `buildingOutline[${index}]`));
+  if (hasOutline) {
+    guide.buildingOutline.forEach((point, index) => validatePoint(point, `buildingOutline[${index}]`));
+  }
+  if (hasBackgroundLines) {
+    guide.backgroundLines.forEach((line, index) => validateBackgroundLine(line, `backgroundLines[${index}]`));
+  }
 
   if (!isUnitNumber(guide.horizonY)) {
     fail("horizonY must be a number between 0 and 1.");
@@ -86,14 +101,18 @@ function escapeXml(value) {
 export function createOverlaySvg({ width, height, guide }) {
   validateGuide(guide);
 
-  const outline = guide.buildingOutline
-    .map(([x, y]) => `${toPixels(x, width)},${toPixels(y, height)}`)
-    .join(" ");
+  const outline = guide.buildingOutline?.map(([x, y]) => `${toPixels(x, width)},${toPixels(y, height)}`).join(" ");
+  const backgroundLines = guide.backgroundLines?.map((line) => {
+    const [startX, startY] = line.start;
+    const [endX, endY] = line.end;
+    return `<line x1="${toPixels(startX, width)}" y1="${toPixels(startY, height)}" x2="${toPixels(endX, width)}" y2="${toPixels(endY, height)}" fill="none" stroke="${COLORS.building}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.92" />`;
+  }).join("") ?? "";
   const horizonY = toPixels(guide.horizonY, height);
   const personFrames = guide.personFrames ?? [guide.personFrame];
   const fontSize = Math.max(14, Math.round(Math.min(width, height) * 0.035));
   const strokeWidth = Math.max(2, Math.round(Math.min(width, height) * 0.006));
   const buildingLabel = escapeXml(guide.buildingLabel ?? "Background outline");
+  const labelPoint = guide.backgroundLines?.[0]?.start ?? guide.buildingOutline?.[0] ?? [0.1, 0.3];
   const personElements = personFrames.map((frame, index) => {
     const frameX = toPixels(frame.x, width);
     const frameY = toPixels(frame.y, height);
@@ -109,9 +128,10 @@ export function createOverlaySvg({ width, height, guide }) {
   }).join("");
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-  <polyline points="${outline}" fill="none" stroke="${COLORS.building}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />
+  ${outline ? `<polyline points="${outline}" fill="none" stroke="${COLORS.building}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" opacity="0.92" />` : ""}
+  ${backgroundLines}
   <line x1="0" y1="${horizonY}" x2="${width}" y2="${horizonY}" stroke="${COLORS.horizon}" stroke-width="${Math.max(1, strokeWidth - 1)}" stroke-dasharray="${strokeWidth * 3} ${strokeWidth * 2}" opacity="0.78" />
-  <text x="${toPixels(guide.buildingOutline[0][0], width)}" y="${Math.max(fontSize, toPixels(guide.buildingOutline[0][1], height) - fontSize)}" fill="${COLORS.label}" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="600">${buildingLabel}</text>
+  <text x="${toPixels(labelPoint[0], width)}" y="${Math.max(fontSize, toPixels(labelPoint[1], height) - fontSize)}" fill="${COLORS.label}" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="600">${buildingLabel}</text>
   ${personElements}
 </svg>`;
 }
