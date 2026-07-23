@@ -8,6 +8,10 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "moduleDetection": "force",
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
@@ -18,5 +22,11 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["vite.config.ts", "extension/vite.config.ts", "api", "server"]
+  "include": [
+    "vite.config.ts",
+    "extension/vite.config.ts",
+    "api",
+    "server",
+    "scripts/retrieve_experiment"
+  ]
 }

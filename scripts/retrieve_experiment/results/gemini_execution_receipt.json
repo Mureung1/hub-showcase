@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "approvalReference": "codex-user-message-2026-07-23-free-tier-product-improvement-consent",
+  "tier": "free",
+  "modelId": "gemini-embedding-2",
+  "modelRevision": "stable-alias-observed-2026-07-23",
+  "projectionHash": "8308faf17802dcba4d599c8ac138c9bea156b1ef82640a99b4c9b0ec836785b2",
+  "documentCount": 72,
+  "queryCount": 45,
+  "apiRequestCount": 117,
+  "promptTokenCount": 4365,
+  "estimatedCostUsd": 0,
+  "contentMayBeUsedToImproveProducts": true,
+  "completedAt": "2026-07-23T06:28:01.556Z"
+}

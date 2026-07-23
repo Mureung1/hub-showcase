@@ -213,7 +213,7 @@ Expected: 종료 코드 0, 이미지 크기 1600×1100.
 
 Run:
 
-    rg -n "api/insights/capture|api/insights/:id/memo" server src
+    rg -n "api/insights/capture|api/insights/:insightId/memo" server src
     rg -n "memo: 4|title: 3|category: 2|domain: 1|slice\(0, 6\)" src/entities/insight
     rg -n "public\.insights|row level security|RLS" supabase server docs
 
