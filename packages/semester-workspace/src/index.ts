@@ -9,6 +9,23 @@ export type {
   CurrentSemesterWorkspaceV2,
 } from './legacy-v2-codec.js'
 export * from './v3-codec.js'
+export {
+  WorkspaceBundleSourceError,
+  captureCanonicalWorkspaceBundleSource,
+  materializeWorkspaceBundle,
+  recoverMissingWorkspaceBundle,
+  verifyWorkspaceBundle,
+} from './workspace-bundle.js'
+export type {
+  WorkspaceBundleConflict,
+  WorkspaceBundleConflictReason,
+  WorkspaceBundleMutationResult,
+  WorkspaceBundleVerification,
+} from './workspace-bundle.js'
+export {
+  createWorkspaceContextGuard,
+  verifyWorkspaceStaticContext,
+} from './workspace-context.js'
 
 export type SemesterWorkspaceScaffold = {
   readonly workspace: '@ay-ple/semester-workspace'
