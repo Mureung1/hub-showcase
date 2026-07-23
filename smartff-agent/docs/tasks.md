@@ -329,7 +329,7 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
 
 ## 개발 (월/수/목만, 화/금 개발 제약)
 
-- [ ] Analysis 전체 카테고리 실데이터 연동 (3주차 미완료 시)
+- [x] Analysis 전체 카테고리 실데이터 연동 — 3주차(2026-07-22)에 이미 완료됨(위 Milestone 3 참고), 이 항목은 "미완료 시" 조건부라 중복 표기였음
 - [ ] Dashboard AI Insight 고도화 (필요 시)
 - [x] 전체 통합 테스트 및 버그 수정 — 2026-07-23 진행. Upload/Dashboard/Analysis/Financial 전 페이지 브라우저 실행 확인(콘솔 에러·흰 화면 없음, API 200), backend/frontend `tsc`/`build` 매 변경마다 통과 확인
 - [ ] 반응형 UI 점검
