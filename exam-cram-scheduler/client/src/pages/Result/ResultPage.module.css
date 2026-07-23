@@ -4,9 +4,24 @@
   padding: 16px 14px 10px;
 }
 
-.chartWrap svg {
+/* #26 — 곡선이 기간에 비례해 넓어지므로 가로 스크롤 박스에 담는다. overflow-y는 hidden으로
+   막아 세로(페이지) 스크롤을 이 박스가 가로채지 않게 한다. */
+.chartScroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* 모바일에서 관성 스크롤을 자연스럽게 */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 데이터 없을 때의 자리표시 SVG는 카드 폭을 그대로 채운다 */
+.chartWrap > svg {
   width: 100%;
   height: auto;
+  display: block;
+}
+
+/* 실제 곡선 SVG는 자기 폭(px)대로 그려서 넘치면 스크롤되게 한다 */
+.chartScroll svg {
   display: block;
 }
 
