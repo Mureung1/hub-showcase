@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "title": "Later",
+  "summary": "나중에 볼 URL, 텍스트, 이미지를 저장하면 Gemini가 내용을 분석해 한국어 제목과 요약, 카테고리를 만들어주는 콘텐츠 보관 서비스입니다.",
+  "githubUser": "jennienn(김예진)",
+  "demoUrl": "https://github.com/jennienn/hub",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/home.webp",
+    "screenshots/categories.webp"
+  ],
+  "problem": "다시 보고 싶은 링크와 이미지를 여러 곳에 저장하면 내용과 저장 이유를 잊기 쉽고, 항목이 쌓일수록 원하는 자료를 다시 찾기 어렵습니다.",
+  "targetUsers": [
+    "웹 콘텐츠와 이미지를 나중에 다시 보고 싶은 사용자",
+    "학습 자료와 관심사별 링크를 한곳에서 정리하고 싶은 사용자"
+  ],
+  "features": [
+    "URL, 일반 텍스트, JPEG·PNG·WebP 이미지를 한곳에 저장합니다.",
+    "Gemini가 웹 메타데이터와 이미지 내용을 함께 분석해 한국어 제목과 요약을 생성합니다.",
+    "저장한 콘텐츠를 넓은 대분류와 소분류로 자동 분류하고 탭으로 필터링합니다.",
+    "카드를 펼쳐 AI 요약을 확인하고 원본 링크를 새 탭에서 열 수 있습니다.",
+    "Gemini가 실패하거나 설정되지 않아도 규칙 기반 분류와 안전한 기본값으로 저장을 계속합니다."
+  ],
+  "featureTags": [
+    "콘텐츠 저장",
+    "AI 요약",
+    "이미지 분석",
+    "자동 분류",
+    "관심사 탐색"
+  ],
+  "techStack": [
+    "Next.js",
+    "React",
+    "TypeScript",
+    "Express",
+    "Supabase",
+    "Gemini API"
+  ],
+  "techHighlights": [
+    "Express가 URL 메타데이터와 이미지 inline data를 Gemini Structured Output 요청으로 전달하고 별도의 런타임 검증을 수행합니다.",
+    "메타데이터 요청에 사설 IP 차단, redirect 재검증, timeout, 응답 크기 및 Content-Type 제한을 적용합니다.",
+    "Supabase Database와 Storage에 콘텐츠와 이미지를 분리 저장하고 Gemini 실패 시 rule-based classifier로 fallback합니다."
+  ],
+  "developmentWithAI": "저는 저장 경험, 분류 체계, 카드 상세 동작을 결정하고 실제 결과를 확인했습니다. Codex는 기존 코드를 분석해 변경 범위를 정하고, Gemini 멀티모달 분류와 요약, 테스트, 문서 및 Git 작업을 구현했습니다. 저는 브라우저에서 URL과 이미지를 직접 저장하며 결과를 검증하고 개선 방향을 반복해서 전달했습니다.",
+  "agent": {
+    "summary": "Codex와 함께 요구사항 분석부터 구현, 실제 API 진단, 자동 테스트와 PR 준비까지 반복적으로 진행했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "Codex 개발 Agent",
+        "purpose": "코드베이스를 분석하고 Gemini·Express·Supabase·Next.js 변경을 구현하며 테스트와 빌드를 검증합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "AI 콘텐츠 기능 개발 Workflow",
+        "steps": [
+          "기존 URL 저장 및 분류 흐름 분석",
+          "기능 브랜치 생성과 기존 작업 보존",
+          "Gemini 이미지·텍스트 Structured Output 구현",
+          "한국어 제목·요약과 카테고리 UI 개선",
+          "실제 브라우저와 Gemini API로 결과 확인",
+          "Vitest·TypeScript·Next.js 빌드 검증"
+        ]
+      },
+      {
+        "name": "오류 진단 및 개선 Workflow",
+        "steps": [
+          "브라우저 오류와 서버 로그 확인",
+          "메타데이터와 Gemini 원본 응답 분리 진단",
+          "fallback 및 런타임 검증 개선",
+          "회귀 테스트 추가",
+          "커밋과 PR 변경 범위 확인"
+        ]
+      }
+    ]
+  }
+}
