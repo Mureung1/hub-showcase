@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { useAuthState } from '@/hooks/useAuth'
 import { getCustomer, refreshCustomerRiskStats } from '@/services/customers'
-import { listIncidents, createIncident } from '@/services/incidents'
+import { createIncident, listIncidents } from '@/services/incidents'
 import { listReservations, transitionReservationStatus } from '@/services/reservations'
+import { useAuthState } from '@/hooks/useAuth'
 import type { Incident, CustomerSearchResult, FirestoreTimestamp } from '@/types/schema'
 import RiskBadge from '@/components/RiskBadge'
 import RiskAlertBanner from '@/components/RiskAlertBanner'
@@ -103,24 +103,21 @@ const CustomerDetail = () => {
     if (!user || !id) return
 
     const incidentId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    await createIncident(user.uid, id, incidentId, {
+    await createIncidentAndRefresh(user.uid, id, incidentId, {
       type: data.type,
       memo: data.memo,
       occurredAt: new Date(data.occurredAt),
     })
-
-    // riskStats 갱신
-    const [incidentsData, reservationsData] = await Promise.all([
-      listIncidents(user.uid, id),
-      listReservations(user.uid, id),
-    ])
-    await refreshCustomerRiskStats(user.uid, id, reservationsData, incidentsData)
 
     // 데이터 새로고침
     const updatedCustomer = await getCustomer(user.uid, id)
     setCustomer(updatedCustomer)
     
     // 타임라인 업데이트
+    const [incidentsData, reservationsData] = await Promise.all([
+      listIncidents(user.uid, id),
+      listReservations(user.uid, id),
+    ])
     const events: TimelineEvent[] = [
       ...reservationsData.map((res) => ({
         id: res.customerId,
@@ -145,14 +142,7 @@ const CustomerDetail = () => {
     if (!user || !id) return
 
     try {
-      await transitionReservationStatus(user.uid, id, nextStatus)
-      
-      // riskStats 갱신
-      const [incidentsData, reservationsData] = await Promise.all([
-        listIncidents(user.uid, id),
-        listReservations(user.uid, id),
-      ])
-      await refreshCustomerRiskStats(user.uid, id, reservationsData, incidentsData)
+      await transitionReservationStatusAndRefresh(user.uid, id, id, nextStatus)
 
       // 고객 정보 새로고침
       const updatedCustomer = await getCustomer(user.uid, id)
