@@ -28,6 +28,11 @@ class PatternService {
     );
   }
 
+  async reloadData(): Promise<void> {
+    this.loaded = false;
+    await this.loadData();
+  }
+
   private loadWeekdayCsv(): WeekdayPatternRecord[] {
     const csvPath = this.getCsvPath('weekday_sales.csv');
 
@@ -45,9 +50,10 @@ class PatternService {
       if (values.length !== headers.length) continue;
 
       records.push({
-        category: values[0],
-        weekday: values[1],
-        avg_sales_amount: parseInt(values[2], 10),
+        month: values[0],
+        category: values[1],
+        weekday: values[2],
+        avg_sales_amount: parseInt(values[3], 10),
       });
     }
 
@@ -71,29 +77,43 @@ class PatternService {
       if (values.length !== headers.length) continue;
 
       records.push({
-        category: values[0],
-        hour: parseInt(values[1], 10),
-        avg_sales_amount: parseInt(values[2], 10),
+        month: values[0],
+        category: values[1],
+        hour: parseInt(values[2], 10),
+        avg_sales_amount: parseInt(values[3], 10),
       });
     }
 
     return records;
   }
 
-  getWeekdayPattern(category: string): WeekdayPatternRecord[] {
-    if (!this.loaded) {
-      throw new Error('Data not loaded. Call loadData() first.');
-    }
-
-    return this.weekdayData.filter((r) => r.category === category);
+  // 카테고리별로 실제 존재하는 가장 최신 월을 고른다 (여러 달이 쌓여도 프론트는 최신월 스냅샷만 봄)
+  private latestMonthFor(records: { month: string; category: string }[], category: string): string | undefined {
+    const months = records.filter((r) => r.category === category).map((r) => r.month);
+    if (months.length === 0) return undefined;
+    return months.reduce((a, b) => (b > a ? b : a));
   }
 
-  getHourlyPattern(category: string): HourlyPatternRecord[] {
+  getWeekdayPattern(category: string): { month: string | null; data: WeekdayPatternRecord[] } {
     if (!this.loaded) {
       throw new Error('Data not loaded. Call loadData() first.');
     }
 
-    return this.hourlyData.filter((r) => r.category === category);
+    const month = this.latestMonthFor(this.weekdayData, category);
+    if (!month) return { month: null, data: [] };
+
+    return { month, data: this.weekdayData.filter((r) => r.category === category && r.month === month) };
+  }
+
+  getHourlyPattern(category: string): { month: string | null; data: HourlyPatternRecord[] } {
+    if (!this.loaded) {
+      throw new Error('Data not loaded. Call loadData() first.');
+    }
+
+    const month = this.latestMonthFor(this.hourlyData, category);
+    if (!month) return { month: null, data: [] };
+
+    return { month, data: this.hourlyData.filter((r) => r.category === category && r.month === month) };
   }
 }
 
