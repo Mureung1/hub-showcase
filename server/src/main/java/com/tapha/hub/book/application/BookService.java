@@ -1,8 +1,11 @@
 package com.tapha.hub.book.application;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +15,8 @@ import com.tapha.hub.book.domain.BookStatus;
 import com.tapha.hub.book.presentation.BookResponse;
 import com.tapha.hub.book.presentation.BookDetailResponse;
 import com.tapha.hub.book.presentation.BookshelfResponse;
+import com.tapha.hub.book.presentation.BookSearchResponse;
+import com.tapha.hub.book.presentation.BookSearchResult;
 import com.tapha.hub.book.presentation.CreateBookRequest;
 import com.tapha.hub.book.presentation.UpdateBookStatusRequest;
 import com.tapha.hub.common.application.InvalidRequestException;
@@ -26,11 +31,18 @@ public class BookService {
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
     private final ReadingRecordRepository readingRecordRepository;
+    private final BookMetadataClient bookMetadataClient;
 
-    public BookService(BookRepository bookRepository, UserRepository userRepository, ReadingRecordRepository readingRecordRepository) {
+    public BookService(
+            BookRepository bookRepository,
+            UserRepository userRepository,
+            ReadingRecordRepository readingRecordRepository,
+            BookMetadataClient bookMetadataClient
+    ) {
         this.bookRepository = bookRepository;
         this.userRepository = userRepository;
         this.readingRecordRepository = readingRecordRepository;
+        this.bookMetadataClient = bookMetadataClient;
     }
 
     @Transactional
@@ -39,15 +51,47 @@ public class BookService {
             throw new ResourceNotFoundException("사용자를 찾을 수 없어요.");
         }
 
+        BookMetadata metadata = bookMetadataClient.get(request.providerId());
+        if (metadata.providerId().isBlank() || metadata.title().isBlank()) {
+            throw new BookProviderException("선택한 책 정보를 확인할 수 없어요.");
+        }
+        String editionKey = metadata.editionKey();
+        if (bookRepository.findByUserIdAndEditionKey(request.userId(), editionKey).isPresent()) {
+            throw new DuplicateBookException();
+        }
+
         Book book = new Book(
                 request.userId(),
-                request.title().trim(),
-                normalizeAuthor(request.author()),
+                metadata.title().trim(),
+                normalizeAuthor(metadata.author()),
                 request.initialPage() == null ? 1 : request.initialPage(),
-                Instant.now()
+                Instant.now(),
+                metadata.provider(),
+                metadata.providerId(),
+                metadata.normalizedIsbn10(),
+                metadata.normalizedIsbn13(),
+                editionKey
         );
 
-        return BookResponse.from(bookRepository.save(book));
+        try {
+            return BookResponse.from(bookRepository.save(book));
+        } catch (DataIntegrityViolationException exception) {
+            throw new DuplicateBookException();
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public BookSearchResponse search(String query) {
+        String normalizedQuery = query == null ? "" : query.trim();
+        if (normalizedQuery.isBlank() || normalizedQuery.length() > 100) {
+            throw new InvalidRequestException("INVALID_BOOK_QUERY", "책 이름을 확인해 주세요.");
+        }
+
+        Map<String, BookSearchResult> uniqueBooks = new LinkedHashMap<>();
+        for (BookMetadata book : bookMetadataClient.search(normalizedQuery)) {
+            uniqueBooks.putIfAbsent(book.editionKey(), BookSearchResult.from(book));
+        }
+        return new BookSearchResponse(uniqueBooks.values().stream().toList());
     }
 
     @Transactional(readOnly = true)

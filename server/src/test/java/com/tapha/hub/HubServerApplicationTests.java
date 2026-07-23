@@ -9,6 +9,12 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+import org.springframework.boot.test.context.TestConfiguration;
+
+import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -20,12 +26,15 @@ import com.tapha.hub.user.domain.User;
 import com.tapha.hub.user.domain.UserRepository;
 import com.tapha.hub.book.domain.Book;
 import com.tapha.hub.book.domain.BookRepository;
+import com.tapha.hub.book.application.BookMetadata;
+import com.tapha.hub.book.application.BookMetadataClient;
 import com.tapha.hub.reading.domain.ReadingRecord;
 import com.tapha.hub.reading.domain.ReadingRecordRepository;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(HubServerApplicationTests.TestBookMetadataConfig.class)
 class HubServerApplicationTests {
 
     @Autowired
@@ -39,6 +48,35 @@ class HubServerApplicationTests {
 
     @Autowired
     private ReadingRecordRepository readingRecordRepository;
+
+    @TestConfiguration
+    static class TestBookMetadataConfig {
+
+        @Bean
+        @Primary
+        BookMetadataClient bookMetadataClient() {
+            return new BookMetadataClient() {
+                @Override
+                public List<BookMetadata> search(String query) {
+                    return List.of(get("test-volume"), get("another-volume"));
+                }
+
+                @Override
+                public BookMetadata get(String providerId) {
+                    return new BookMetadata(
+                            "GOOGLE_BOOKS",
+                            providerId,
+                            "아주 작은 습관의 힘",
+                            null,
+                            null,
+                            "9780306406157",
+                            "2018",
+                            320
+                    );
+                }
+            };
+        }
+    }
 
 	@Test
 	void contextLoads() {
@@ -76,8 +114,7 @@ class HubServerApplicationTests {
                         .content("""
                                 {
                                   "userId": %d,
-                                  "title": " 아주 작은 습관의 힘 ",
-                                  "author": "   "
+                                  "providerId": "test-volume"
                                 }
                                 """.formatted(userId)))
                 .andExpect(status().isCreated())
@@ -89,11 +126,42 @@ class HubServerApplicationTests {
     }
 
     @Test
+    void searchesBooksByTitleAndReturnsEditionMetadata() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/books/search")
+                        .param("q", "아주 작은 습관의 힘"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.books.length()").value(1))
+                .andExpect(jsonPath("$.books[0].providerId").value("test-volume"))
+                .andExpect(jsonPath("$.books[0].isbn13").value("9780306406157"));
+    }
+
+    @Test
+    void preventsRegisteringSameEditionForSameUser() throws Exception {
+        Long userId = userRepository.save(new User("다정", Instant.now())).getId();
+
+        mockMvc.perform(post("/api/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "userId": %d, "providerId": "test-volume" }
+                                """.formatted(userId)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "userId": %d, "providerId": "another-volume" }
+                                """.formatted(userId)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DUPLICATE_BOOK"));
+    }
+
+    @Test
     void rejectsUnknownBookOwner() throws Exception {
         mockMvc.perform(post("/api/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "userId": 999999, "title": "독서 기록" }
+                                { "userId": 999999, "providerId": "test-volume" }
                                 """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
@@ -165,6 +233,28 @@ class HubServerApplicationTests {
                                 """.formatted(userId)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PAGE_RANGE"));
+    }
+
+    @Test
+    void savesOptionalReadingDurationAndRejectsNegativeDuration() throws Exception {
+        Long userId = userRepository.save(new User("다정", Instant.now())).getId();
+        Long bookId = bookRepository.save(new Book(userId, "시간 기록", null, 1, Instant.now())).getId();
+
+        mockMvc.perform(post("/api/books/{bookId}/records", bookId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "userId": %d, "endPage": 12, "readingDurationSeconds": 930 }
+                                """.formatted(userId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.record.readingDurationSeconds").value(930));
+
+        mockMvc.perform(post("/api/books/{bookId}/records", bookId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "userId": %d, "endPage": 13, "readingDurationSeconds": -1 }
+                                """.formatted(userId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
     }
 
     @Test
@@ -285,10 +375,10 @@ class HubServerApplicationTests {
         Long userId = userRepository.save(new User("다정", Instant.now())).getId();
         Long bookId = bookRepository.save(new Book(userId, "기록을 고치는 책", null, 10, Instant.now())).getId();
         readingRecordRepository.save(new ReadingRecord(
-                bookId, userId, 10, 20, "처음 감상", Instant.parse("2026-07-01T00:00:00Z")
+                bookId, userId, 10, 20, "처음 감상", null, Instant.parse("2026-07-01T00:00:00Z")
         ));
         ReadingRecord latest = readingRecordRepository.save(new ReadingRecord(
-                bookId, userId, 21, 30, "두 번째 감상", Instant.parse("2026-07-02T00:00:00Z")
+                bookId, userId, 21, 30, "두 번째 감상", null, Instant.parse("2026-07-02T00:00:00Z")
         ));
 
         mockMvc.perform(patch("/api/books/{bookId}/records/{recordId}", bookId, latest.getId())
@@ -321,10 +411,10 @@ class HubServerApplicationTests {
         Long userId = userRepository.save(new User("다정", Instant.now())).getId();
         Long bookId = bookRepository.save(new Book(userId, "기록을 지우는 책", null, 10, Instant.now())).getId();
         ReadingRecord previous = readingRecordRepository.save(new ReadingRecord(
-                bookId, userId, 10, 20, "남는 감상", Instant.parse("2026-07-01T00:00:00Z")
+                bookId, userId, 10, 20, "남는 감상", null, Instant.parse("2026-07-01T00:00:00Z")
         ));
         ReadingRecord latest = readingRecordRepository.save(new ReadingRecord(
-                bookId, userId, 21, 30, "지울 감상", Instant.parse("2026-07-02T00:00:00Z")
+                bookId, userId, 21, 30, "지울 감상", null, Instant.parse("2026-07-02T00:00:00Z")
         ));
 
         mockMvc.perform(delete("/api/books/{bookId}/records/{recordId}", bookId, latest.getId())
@@ -347,10 +437,10 @@ class HubServerApplicationTests {
         Long otherUserId = userRepository.save(new User("서연", Instant.now())).getId();
         Long bookId = bookRepository.save(new Book(ownerId, "기록 권한", null, 1, Instant.now())).getId();
         ReadingRecord older = readingRecordRepository.save(new ReadingRecord(
-                bookId, ownerId, 1, 10, null, Instant.parse("2026-07-01T00:00:00Z")
+                bookId, ownerId, 1, 10, null, null, Instant.parse("2026-07-01T00:00:00Z")
         ));
         ReadingRecord latest = readingRecordRepository.save(new ReadingRecord(
-                bookId, ownerId, 11, 20, null, Instant.parse("2026-07-02T00:00:00Z")
+                bookId, ownerId, 11, 20, null, null, Instant.parse("2026-07-02T00:00:00Z")
         ));
 
         mockMvc.perform(patch("/api/books/{bookId}/records/{recordId}", bookId, older.getId())

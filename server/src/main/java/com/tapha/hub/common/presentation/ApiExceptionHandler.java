@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.tapha.hub.common.application.ResourceNotFoundException;
 import com.tapha.hub.common.application.InvalidRequestException;
+import com.tapha.hub.book.application.BookProviderException;
+import com.tapha.hub.book.application.DuplicateBookException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -31,5 +33,17 @@ public class ApiExceptionHandler {
     @ExceptionHandler(InvalidRequestException.class)
     public ResponseEntity<ApiError> handleInvalidRequest(InvalidRequestException exception) {
         return ResponseEntity.badRequest().body(new ApiError(exception.getCode(), exception.getMessage()));
+    }
+
+    @ExceptionHandler(DuplicateBookException.class)
+    public ResponseEntity<ApiError> handleDuplicateBook(DuplicateBookException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ApiError("DUPLICATE_BOOK", exception.getMessage()));
+    }
+
+    @ExceptionHandler(BookProviderException.class)
+    public ResponseEntity<ApiError> handleBookProvider(BookProviderException exception) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ApiError("BOOK_PROVIDER_UNAVAILABLE", exception.getMessage()));
     }
 }

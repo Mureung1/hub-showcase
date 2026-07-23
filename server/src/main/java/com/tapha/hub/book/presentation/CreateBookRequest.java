@@ -9,12 +9,9 @@ public record CreateBookRequest(
         @NotNull(message = "사용자 정보가 필요해요.")
         Long userId,
 
-        @NotBlank(message = "책 제목을 입력해 주세요.")
-        @Size(max = 255, message = "책 제목은 255자 이하여야 해요.")
-        String title,
-
-        @Size(max = 255, message = "저자는 255자 이하여야 해요.")
-        String author,
+        @NotBlank(message = "검색한 책을 선택해 주세요.")
+        @Size(max = 255, message = "검색한 책 정보가 너무 길어요.")
+        String providerId,
 
         @Min(value = 1, message = "시작 페이지는 1 이상이어야 해요.")
         Integer initialPage

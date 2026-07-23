@@ -28,6 +28,21 @@ public class Book {
     @Column(length = 255)
     private String author;
 
+    @Column(name = "metadata_provider", length = 30)
+    private String metadataProvider;
+
+    @Column(name = "metadata_provider_id", length = 255)
+    private String metadataProviderId;
+
+    @Column(name = "isbn10", length = 10)
+    private String isbn10;
+
+    @Column(name = "isbn13", length = 13)
+    private String isbn13;
+
+    @Column(name = "edition_key", length = 255)
+    private String editionKey;
+
     @Column(name = "initial_page", nullable = false)
     private int initialPage;
 
@@ -48,9 +63,29 @@ public class Book {
     }
 
     public Book(Long userId, String title, String author, int initialPage, Instant createdAt) {
+        this(userId, title, author, initialPage, createdAt, null, null, null, null, null);
+    }
+
+    public Book(
+            Long userId,
+            String title,
+            String author,
+            int initialPage,
+            Instant createdAt,
+            String metadataProvider,
+            String metadataProviderId,
+            String isbn10,
+            String isbn13,
+            String editionKey
+    ) {
         this.userId = userId;
         this.title = title;
         this.author = author;
+        this.metadataProvider = metadataProvider;
+        this.metadataProviderId = metadataProviderId;
+        this.isbn10 = isbn10;
+        this.isbn13 = isbn13;
+        this.editionKey = editionKey;
         this.initialPage = initialPage;
         this.status = BookStatus.READING;
         this.createdAt = createdAt;
@@ -70,6 +105,26 @@ public class Book {
 
     public String getAuthor() {
         return author;
+    }
+
+    public String getMetadataProvider() {
+        return metadataProvider;
+    }
+
+    public String getMetadataProviderId() {
+        return metadataProviderId;
+    }
+
+    public String getIsbn10() {
+        return isbn10;
+    }
+
+    public String getIsbn13() {
+        return isbn13;
+    }
+
+    public String getEditionKey() {
+        return editionKey;
     }
 
     public int getInitialPage() {

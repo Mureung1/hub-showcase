@@ -24,23 +24,27 @@ public class ReadingRecord {
     private int endPage;
     @Column
     private String impression;
+    @Column(name = "reading_duration_seconds")
+    private Integer readingDurationSeconds;
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     protected ReadingRecord() { }
 
-    public ReadingRecord(Long bookId, Long userId, int startPage, int endPage, String impression, Instant createdAt) {
+    public ReadingRecord(Long bookId, Long userId, int startPage, int endPage, String impression, Integer readingDurationSeconds, Instant createdAt) {
         this.bookId = bookId;
         this.userId = userId;
         this.startPage = startPage;
         this.endPage = endPage;
         this.impression = impression;
+        this.readingDurationSeconds = readingDurationSeconds;
         this.createdAt = createdAt;
     }
     public Long getId() { return id; }
     public int getStartPage() { return startPage; }
     public int getEndPage() { return endPage; }
     public String getImpression() { return impression; }
+    public Integer getReadingDurationSeconds() { return readingDurationSeconds; }
     public Instant getCreatedAt() { return createdAt; }
 
     public void update(int endPage, String impression) {

@@ -10,4 +10,6 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     List<Book> findByUserIdAndStatusOrderByCreatedAtDescIdDesc(Long userId, BookStatus status);
 
     Optional<Book> findByIdAndUserId(Long id, Long userId);
+
+    Optional<Book> findByUserIdAndEditionKey(Long userId, String editionKey);
 }

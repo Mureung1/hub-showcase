@@ -281,30 +281,31 @@ isEmptyBookshelf
 
 #### 책임
 
-- 새 책을 최소 입력으로 등록하고 책 상세로 이동한다.
+- 책 이름으로 검색한 결과에서 판본을 선택해 새 책을 등록하고 책 상세로 이동한다.
 
 #### 주요 상태
 
-- `bookDraft.title`
-- `bookDraft.author`
+- `bookDraft.query`
+- `bookDraft.providerId`
+- `searchResults`
 - `bookDraft.initialPage`
 - `validationErrors`
 - `isSubmitting`
 
 #### 주요 핸들러
 
-- `onChangeTitle`
-- `onChangeAuthor`
+- `onSearchBooks`
+- `onSelectBook`
 - `onChangeInitialPage`
 - `onSubmit`
 - `onCancel`
 
 #### 검증과 사용자 안내
 
-- 제목은 공백 제거 후 1자 이상이다.
-- 저자는 비워 둘 수 있다.
+- 책 이름은 공백 제거 후 1자 이상이다.
+- 검색 결과에서 판본을 하나 선택해야 한다.
 - 시작 페이지 기본값은 1이며, 이미 읽던 책을 등록하는 경우 변경할 수 있다.
-- 저장 실패 시 입력값을 유지한다.
+- 검색·저장 실패 시 입력값을 유지한다.
 
 ## 책 상세와 세션 기록
 
@@ -472,8 +473,10 @@ isEmptyBookshelf
 ### TimerPanel
 
 - 타이머는 `StartReadingPanel`의 보조 기능이다.
-- 상태는 `durationMinutes`, `startedAt`, `remainingSeconds` 같은 일시 UI 상태로만 둔다.
-- 타이머 종료나 중단은 기록 저장 가능 여부를 바꾸지 않는다.
+- 활성 상태는 같은 탭의 새로고침 복구를 위해 `sessionStorage`에만 둔다.
+- 일시정지하면 실제 경과 시간과 목표 시간 모두 멈추고, 재개하면 같은 세션에서 이어서 측정한다.
+- 선택 시간 뒤에는 알림이나 자동 종료 없이 경과 시간을 계속 보여 준다.
+- 사용자가 세션을 종료하면 실제 경과 초를 새 세션 기록에 선택적으로 저장한다.
 
 ### CompletionReviewDialog / FinalReviewPage
 
@@ -520,6 +523,7 @@ isEmptyBookshelf
 P0의 API client는 화면 컴포넌트에서 분리한다.
 
 ```text
+searchBooks(query)
 createUser(input)
 createBook(userId, input)
 getBooks(userId, status)

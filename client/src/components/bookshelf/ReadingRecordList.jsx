@@ -1,6 +1,11 @@
 import { formatRecordDate } from '@/lib/reading';
 import { Button } from '@/components/ui/button';
 
+function formatReadingDuration(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  return minutes ? `${minutes}분 ${seconds % 60}초 함께 읽음` : `${seconds}초 함께 읽음`;
+}
+
 export function ReadingRecordList({ records, latestRecord, onEditRecord, onDeleteRecord }) {
   return (
     <section className="record-list" aria-labelledby="record-list-title">
@@ -12,6 +17,7 @@ export function ReadingRecordList({ records, latestRecord, onEditRecord, onDelet
             <li key={record.id} className="record-page">
               <time dateTime={record.createdAt}>{formatRecordDate(record.createdAt)}</time>
               <strong>{record.startPage}–{record.endPage}쪽 · {record.endPage - record.startPage + 1}쪽 읽음</strong>
+              {record.readingDurationSeconds != null && <small className="record-page__duration">{formatReadingDuration(record.readingDurationSeconds)}</small>}
               {record.impression && <p>{record.impression}</p>}
               <div className="record-page__actions" aria-label="기록 작업">
                 <Button type="button" variant="ghost" size="sm" onClick={() => onEditRecord(record)}>

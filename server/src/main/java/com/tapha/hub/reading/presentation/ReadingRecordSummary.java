@@ -9,9 +9,10 @@ public record ReadingRecordSummary(
         int startPage,
         int endPage,
         String impression,
+        Integer readingDurationSeconds,
         Instant createdAt
 ) {
     public static ReadingRecordSummary from(ReadingRecord record) {
-        return new ReadingRecordSummary(record.getId(), record.getStartPage(), record.getEndPage(), record.getImpression(), record.getCreatedAt());
+        return new ReadingRecordSummary(record.getId(), record.getStartPage(), record.getEndPage(), record.getImpression(), record.getReadingDurationSeconds(), record.getCreatedAt());
     }
 }

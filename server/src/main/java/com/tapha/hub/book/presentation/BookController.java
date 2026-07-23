@@ -32,6 +32,11 @@ public class BookController {
         return ResponseEntity.created(URI.create("/api/books/" + response.id())).body(response);
     }
 
+    @GetMapping("/search")
+    public BookSearchResponse search(@RequestParam String q) {
+        return bookService.search(q);
+    }
+
     @GetMapping("/{bookId}")
     public BookDetailResponse getBook(@PathVariable Long bookId, @RequestParam Long userId) {
         return bookService.getBook(bookId, userId);

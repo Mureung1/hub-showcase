@@ -38,7 +38,7 @@ public class ReadingRecordService {
         }
 
         ReadingRecord saved = recordRepository.save(new ReadingRecord(
-                bookId, request.userId(), startPage, request.endPage(), normalizeImpression(request.impression()), Instant.now()
+                bookId, request.userId(), startPage, request.endPage(), normalizeImpression(request.impression()), request.readingDurationSeconds(), Instant.now()
         ));
         return new CreateReadingRecordResponse(ReadingRecordSummary.from(saved), saved.getEndPage() + 1);
     }

@@ -43,10 +43,14 @@ export function getBooks(userId, status = 'READING') {
   return request(`/api/users/${userId}/books?status=${encodeURIComponent(status)}`);
 }
 
-export function createBook({ userId, title, author, initialPage }) {
+export function searchBooks(query) {
+  return request(`/api/books/search?q=${encodeURIComponent(query.trim())}`);
+}
+
+export function createBook({ userId, providerId, initialPage }) {
   return request('/api/books', {
     method: 'POST',
-    body: JSON.stringify({ userId, title, author: author || null, initialPage }),
+    body: JSON.stringify({ userId, providerId, initialPage }),
   });
 }
 
@@ -54,10 +58,10 @@ export function getBook(bookId, userId) {
   return request(`/api/books/${bookId}?userId=${encodeURIComponent(userId)}`);
 }
 
-export function createReadingRecord({ bookId, userId, endPage, startPageOverride, impression }) {
+export function createReadingRecord({ bookId, userId, endPage, startPageOverride, impression, readingDurationSeconds }) {
   return request(`/api/books/${bookId}/records`, {
     method: 'POST',
-    body: JSON.stringify({ userId, endPage, startPageOverride: startPageOverride || null, impression: impression || null }),
+    body: JSON.stringify({ userId, endPage, startPageOverride: startPageOverride || null, impression: impression || null, readingDurationSeconds: readingDurationSeconds ?? null }),
   });
 }
 
