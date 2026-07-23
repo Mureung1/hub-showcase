@@ -26,16 +26,20 @@ function MyLibrary({ savedPapers, handleRemovePaper }: MyLibraryProps) {
       ) : (
         <div className="library-grid">
           {savedPapers.map((item) => (
-            <div key={item.paperId} className="paper-card library-card-content">
+            <div key={item.paperId} className="paper-card library-card-content" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div 
+                className="ribbon-badge"
+                style={{ position: 'relative', top: 'auto', left: 'auto', right: 'auto', display: 'inline-block', marginBottom: '12px', alignSelf: 'flex-start', borderRadius: '4px' }}
+              >
+                {item.matchScore}% Match
+              </div>
+
               <div className="library-card-top">
-                <div className="ribbon-badge">
-                  {item.matchScore}% Match
-                </div>
                 <h3 className="paper-title library-card-title">{item.title}</h3>
                 <p className="paper-authors">{item.authors}</p>
               </div>
 
-              <div className="library-card-bottom">
+              <div className="library-card-bottom" style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column' }}>
                 <div className="paper-meta library-card-meta">
                   <span className="paper-channel">{item.channel}</span> • <span className="paper-year">{item.year}</span>
                 </div>

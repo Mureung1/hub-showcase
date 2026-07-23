@@ -97,14 +97,17 @@ function CurationWorkspace({ lang, curationData, userId, savedPapers, setSavedPa
                 key={paper.paperId} 
                 className={`paper-card ${paper.matchScore >= 90 ? 'high-match' : 'medium-match'} ${selectedPaper?.paperId === paper.paperId ? 'active' : ''}`}
                 onClick={() => setSelectedPaper(paper)}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
               >
-                <div className={`ribbon-badge ${paper.matchScore >= 90 ? '' : 'yellow'}`}>
+                <div 
+                  className={`ribbon-badge ${paper.matchScore >= 90 ? '' : 'yellow'}`}
+                  style={{ position: 'relative', top: 'auto', left: 'auto', right: 'auto', display: 'inline-block', marginBottom: '12px', alignSelf: 'flex-start', borderRadius: '4px' }}
+                >
                   {paper.matchScore}% Match
                 </div>
                 <h3 className="paper-title">{paper.title}</h3>
                 <p className="paper-authors">{Array.isArray(paper.authors) ? paper.authors.join(', ') : paper.authors}</p>
-                <div className="paper-meta">
+                <div className="paper-meta" style={{ marginTop: 'auto' }}>
                   <span className="paper-channel">{paper.channel}</span> • <span className="paper-year">{paper.year}</span>
                 </div>
                 
