@@ -89,3 +89,20 @@ Node Runtime이 frozen `CodexAccountLifecycle`을 구현하고 생성 시 `auth-
 | requiredChecks | Runtime Node unit/actual; bridge full; exact SDK and production Runtime before/after verification; browser-contract typecheck; root test/typecheck/build/Chat Shell lint; `git diff --check` |
 | reviewOwner | Independent Node Runtime/lifecycle reviewer와 downstream A consumer reviewer |
 | handoffArtifact | Reviewed fixed R1c commit SHA, R1 completion contract/evidence bundle와 auth-only denial·process-tree cleanup receipt |
+
+## Candidate Receipt
+
+이 receipt는 coordinator의 combined review 전 writer candidate evidence다. Ticket state는 `claimed`로 유지하고 Acceptance Criteria checkbox는 의도적으로 닫지 않는다.
+
+| Evidence | Result |
+| --- | --- |
+| Reviewed implementation tip | `095b58bd1b894e29623e52ddb3f26c3262f40d63` |
+| Downstream Runtime contract | Explicit factory input은 immutable `CodexRuntimeRole`, exact AY-PLE application identity와 controlled environment를 받고 root-only `CodexManagedRuntime = CodexProductCapableRuntime & CodexAccountLifecycle`을 반환한다. Existing workspace factory overload와 `readAccountReadiness()` behavior는 유지한다. |
+| Auth-only boundary | Owner-only empty bootstrap cwd와 owner-only disjoint roots를 spawn 전에 검증한다. Account family와 close만 허용하고 thread, Turn, Skill, private MCP와 workspace family는 native write 0건으로 `runtime_role_denied`에 수렴한다. |
+| Account settlement | `expiresAt`은 canonical future ISO이며 frozen 10분 bound를 넘을 수 없다. Delayed operation의 `AbortSignal`은 stable `runtime_closing` result와 auth-only Runtime 전체 shutdown을 소유하고, close는 internal rejection을 consume한 뒤 process-tree disappearance로 `closed | ambiguous`를 판정한다. |
+| Privacy and decoder | Account result는 exact-key strict decoder와 exact allowlisted HTTPS authority를 통과한다. Email, token, native login/request identity, raw provider payload와 noncanonical/ported auth URL은 private projection을 통과하지 않는다. |
+| Runtime verification | Node unit `77/77`; actual child `84/84`; official local provider `1/1`; `validate:node-runtime`의 before/after production Runtime verification green. |
+| Production Runtime verification | Production bundle `23/23`; full Python bridge `39/39`; Ruff와 format check; materialized complete-tree verification green. |
+| Repository gates | Sequential `npm test`, root `npm run typecheck`, root `npm run build`, Chat Shell lint와 `git diff --check` green. |
+| Independent review | Exact reviewed tip에서 P0–P3 finding 0건. Review 중 발견한 account-close unhandled rejection, auth URL canonicalization, root-negative coverage와 delayed fake mid-flight abort parity를 수정하고 재검증했다. |
+| Scope guard | Frozen `account-contract.ts`, browser `contract.ts`, shared manifest·lockfile, Server/Browser implementation과 sibling lane은 변경하지 않았다. |
