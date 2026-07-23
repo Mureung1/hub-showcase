@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLanguage } from '../../i18n/LanguageContext'
 import { useDistricts, useProvinces, useZoneOptions } from './useRegionOptions'
 import type { SelectedRegion } from './useSelectedRegion'
 
@@ -12,6 +13,7 @@ const selectClassName =
   'mb-[10px] w-full rounded-md border border-line bg-card px-[14px] py-[13px] text-sm text-ink disabled:opacity-50'
 
 export default function RegionSelectSheet({ initialRegion, onSave, onClose }: RegionSelectSheetProps) {
+  const { t } = useLanguage()
   const [ctpvNm, setCtpvNm] = useState(initialRegion?.ctpvNm ?? '')
   const [sggNm, setSggNm] = useState(initialRegion?.sggNm ?? '')
   const [dongNm, setDongNm] = useState(initialRegion?.dongNm ?? '')
@@ -43,10 +45,10 @@ export default function RegionSelectSheet({ initialRegion, onSave, onClose }: Re
   return (
     <div className="fixed inset-0 z-20 mx-auto flex max-w-[420px] items-end bg-[rgba(14,58,44,0.45)]">
       <div className="w-full rounded-t-[22px] bg-card px-5 pt-[22px] pb-[30px]">
-        <h3 className="mb-[14px] font-display text-[17px]">지역 선택</h3>
+        <h3 className="mb-[14px] font-display text-[17px]">{t('region.sheetTitle')}</h3>
 
         <select value={ctpvNm} onChange={(event) => setCtpvNm(event.target.value)} className={selectClassName}>
-          <option value="">시/도 선택</option>
+          <option value="">{t('region.provincePlaceholder')}</option>
           {provinces.map((province) => (
             <option key={province} value={province}>
               {province}
@@ -60,7 +62,7 @@ export default function RegionSelectSheet({ initialRegion, onSave, onClose }: Re
           disabled={!ctpvNm}
           className={selectClassName}
         >
-          <option value="">구/군 선택</option>
+          <option value="">{t('region.districtPlaceholder')}</option>
           {districts.map((district) => (
             <option key={district} value={district}>
               {district}
@@ -69,14 +71,12 @@ export default function RegionSelectSheet({ initialRegion, onSave, onClose }: Re
         </select>
 
         {sggNm && zoneOptions && !zoneOptions.covered ? (
-          <p className="mb-[10px] text-[13px] text-sub">
-            이 지역은 아직 등록된 배출 정보가 없어요. 같은 시/도의 다른 구/군을 선택해 주세요.
-          </p>
+          <p className="mb-[10px] text-[13px] text-sub">{t('region.notCovered')}</p>
         ) : null}
 
         {needsDong ? (
           <select value={dongNm} onChange={(event) => setDongNm(event.target.value)} className={selectClassName}>
-            <option value="">세부 지역/구역 선택</option>
+            <option value="">{t('region.zonePlaceholder')}</option>
             {zoneOptions?.dongOptions.map((dong) => (
               <option key={dong} value={dong}>
                 {dong}
@@ -91,10 +91,10 @@ export default function RegionSelectSheet({ initialRegion, onSave, onClose }: Re
           disabled={!canSave}
           className="w-full rounded-md bg-green-600 py-3 text-sm font-bold text-white disabled:opacity-50"
         >
-          지역 저장
+          {t('region.save')}
         </button>
         <button type="button" onClick={onClose} className="mt-2 w-full py-3 text-center text-sm text-sub">
-          취소
+          {t('common.cancel')}
         </button>
       </div>
     </div>

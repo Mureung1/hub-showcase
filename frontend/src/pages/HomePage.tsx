@@ -5,12 +5,8 @@ import RegionSelectSheet from '../features/region/RegionSelectSheet'
 import { useRegionRule } from '../features/region/useRegionOptions'
 import { useSelectedRegion } from '../features/region/useSelectedRegion'
 import { buildWeeklySchedule, getTodayIndex } from '../features/region/weeklySchedule'
-
-const QUICK_LINKS = [
-  { to: '/bulky', icon: '🚛', label: '대형폐기물' },
-  { to: '/points', icon: '📍', label: '주변 수거함' },
-  { to: '/rules', icon: '📄', label: '배출 규정' },
-]
+import { translateCategoryCombo, translateDayName } from '../i18n/helpers'
+import { useLanguage } from '../i18n/LanguageContext'
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -20,6 +16,13 @@ export default function HomePage() {
   const galleryInputRef = useRef<HTMLInputElement>(null)
   const { region, setRegion } = useSelectedRegion()
   const { data: regionRule, isLoading: isRegionRuleLoading } = useRegionRule(region)
+  const { lang, t } = useLanguage()
+
+  const quickLinks = [
+    { to: '/bulky', icon: '🚛', label: t('quickLink.bulky') },
+    { to: '/points', icon: '📍', label: t('quickLink.points') },
+    { to: '/rules', icon: '📄', label: t('quickLink.rules') },
+  ]
 
   const weeklySchedule = regionRule ? buildWeeklySchedule(regionRule.categories) : null
   const today = weeklySchedule?.[getTodayIndex()]
@@ -42,7 +45,10 @@ export default function HomePage() {
           </span>
         }
         action={
-          <span className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-card text-sm">
+          <span
+            aria-label={t('home.profileAlt')}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-card text-sm"
+          >
             👤
           </span>
         }
@@ -54,7 +60,7 @@ export default function HomePage() {
           onClick={() => setRegionSheetOpen(true)}
           className="flex w-full items-center gap-[6px] rounded-pill border border-green-100 bg-green-50 px-[14px] py-[11px] text-left text-[13.5px] font-bold text-green-900"
         >
-          📍 {region ? `${region.ctpvNm} / ${region.sggNm}` : '지역을 선택해 주세요'}
+          📍 {region ? `${region.ctpvNm} / ${region.sggNm}` : t('home.selectRegionPlaceholder')}
           <span className="ml-auto">▾</span>
         </button>
 
@@ -62,29 +68,33 @@ export default function HomePage() {
           to="/search"
           className="mt-3 flex items-center gap-2 rounded-md border border-line bg-card px-[14px] py-[13px] text-sm text-sub"
         >
-          🔍 버릴 물건 검색하기
+          🔍 {t('home.searchCta')}
         </Link>
 
         {!region ? (
           <div className="mt-4 rounded-[20px] border border-line bg-card p-5">
-            <h2 className="font-display text-[17px] text-ink">지역을 선택해 주세요</h2>
-            <p className="mt-[6px] text-[13px] leading-relaxed text-sub">
-              지역을 선택하면 오늘/이번 주 배출 일정을 알려드려요.
-            </p>
+            <h2 className="font-display text-[17px] text-ink">{t('home.selectRegionPlaceholder')}</h2>
+            <p className="mt-[6px] text-[13px] leading-relaxed text-sub">{t('home.noRegionBody')}</p>
           </div>
         ) : isRegionRuleLoading ? (
-          <div className="mt-4 rounded-[20px] border border-line bg-card p-5 text-sm text-sub">불러오는 중...</div>
+          <div className="mt-4 rounded-[20px] border border-line bg-card p-5 text-sm text-sub">
+            {t('common.loading')}
+          </div>
         ) : today ? (
           <>
             <div className="mt-4 overflow-hidden rounded-[20px] bg-[radial-gradient(120%_140%_at_0%_0%,var(--green-700),var(--green-900))] p-5 text-white">
-              <div className="text-[11px] font-bold uppercase tracking-wider opacity-80">오늘 · {today.name}요일</div>
+              <div className="text-[11px] font-bold uppercase tracking-wider opacity-80">
+                {t('home.today')} · {translateDayName(today.name, t)}
+              </div>
               <h2 className="mt-[6px] font-display text-[23px]">
-                {today.rules.length === 0 ? '오늘은 수거 없음' : `오늘은 ${today.label} 배출 가능`}
+                {today.rules.length === 0
+                  ? t('home.noPickupToday')
+                  : `${t('home.pickupAvailablePrefix')}${translateCategoryCombo(today.label, lang, t)}${t('home.pickupAvailableSuffix')}`}
               </h2>
               <p className="mt-[6px] text-[13px] leading-relaxed opacity-90">
                 {today.rules.length === 0
-                  ? '오늘은 쉬는 날이에요.'
-                  : `${today.rules[0].rule.beginTime}~${today.rules[0].rule.endTime} 사이에 배출해 주세요.`}
+                  ? t('home.noPickupTodayBody')
+                  : `${today.rules[0].rule.beginTime}~${today.rules[0].rule.endTime} ${t('home.disposeBetween')}`}
               </p>
             </div>
 
@@ -98,10 +108,12 @@ export default function HomePage() {
                       isToday ? 'border-green-600 bg-green-900 text-white' : 'border-line bg-card'
                     }`}
                   >
-                    <div className={`font-bold ${isToday ? 'text-[#cfe8db]' : 'text-sub'}`}>{day.name}</div>
+                    <div className={`font-bold ${isToday ? 'text-[#cfe8db]' : 'text-sub'}`}>
+                      {translateDayName(day.name, t)}
+                    </div>
                     <div className="my-1 text-base">{day.icon}</div>
                     <div className={`text-[9.5px] font-bold ${isToday ? 'text-white' : 'text-green-900'}`}>
-                      {day.label}
+                      {translateCategoryCombo(day.label, lang, t)}
                     </div>
                   </div>
                 )
@@ -110,9 +122,11 @@ export default function HomePage() {
           </>
         ) : null}
 
-        <div className="mt-6 text-xs font-extrabold tracking-wider text-green-700 uppercase">빠른 안내</div>
+        <div className="mt-6 text-xs font-extrabold tracking-wider text-green-700 uppercase">
+          {t('home.quickGuide')}
+        </div>
         <div className="mt-[10px] grid grid-cols-3 gap-[10px]">
-          {QUICK_LINKS.map((link) => (
+          {quickLinks.map((link) => (
             <Link
               key={link.to}
               to={link.to}
@@ -128,7 +142,7 @@ export default function HomePage() {
       <button
         type="button"
         onClick={() => setUploadSheetOpen(true)}
-        aria-label="물건 확인하기"
+        aria-label={t('home.uploadSheetTitle')}
         className="absolute right-5 bottom-6 flex h-[58px] w-[58px] items-center justify-center rounded-full bg-green-600 text-[28px] text-white shadow-[0_10px_24px_rgba(39,145,96,0.45)]"
       >
         +
@@ -137,27 +151,27 @@ export default function HomePage() {
       {isUploadSheetOpen ? (
         <div className="fixed inset-0 z-20 mx-auto flex max-w-[420px] items-end bg-[rgba(14,58,44,0.45)]">
           <div className="w-full rounded-t-[22px] bg-card px-5 pt-[22px] pb-[30px]">
-            <h3 className="mb-[14px] font-display text-[17px]">물건 확인하기</h3>
+            <h3 className="mb-[14px] font-display text-[17px]">{t('home.uploadSheetTitle')}</h3>
             <button
               type="button"
               onClick={() => cameraInputRef.current?.click()}
               className="mb-[10px] flex w-full items-center gap-3 rounded-md bg-green-50 px-[14px] py-[15px] text-left text-sm font-bold"
             >
-              📷 사진 촬영
+              📷 {t('home.takePhoto')}
             </button>
             <button
               type="button"
               onClick={() => galleryInputRef.current?.click()}
               className="mb-[10px] flex w-full items-center gap-3 rounded-md bg-green-50 px-[14px] py-[15px] text-left text-sm font-bold"
             >
-              🖼️ 갤러리에서 업로드
+              🖼️ {t('home.uploadFromGallery')}
             </button>
             <button
               type="button"
               onClick={() => setUploadSheetOpen(false)}
               className="w-full py-3 text-center text-sm text-sub"
             >
-              취소
+              {t('common.cancel')}
             </button>
           </div>
         </div>

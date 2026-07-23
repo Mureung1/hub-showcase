@@ -6,7 +6,9 @@ import { getExplanationClient } from './explanationClient'
 
 export function searchItems(query: string) {
   return prisma.item.findMany({
-    where: { name: { contains: query, mode: 'insensitive' } },
+    where: {
+      OR: [{ name: { contains: query, mode: 'insensitive' } }, { nameEn: { contains: query, mode: 'insensitive' } }],
+    },
     orderBy: { name: 'asc' },
   })
 }
@@ -64,19 +66,26 @@ export async function getItemDisposalRule(itemId: string) {
     })
   }
 
-  if (!disposalRule.explainedAt) {
+  // explainedAtEn만 비어 있는 경우는 이 기능 이전에 캐시된(한국어만 있는) 기존 항목의 백필 케이스.
+  if (!disposalRule.explainedAt || !disposalRule.explainedAtEn) {
     const explanation = await getExplanationClient().generateExplanation(
       disposalRule.govItemName,
       disposalRule.method,
     )
+    const now = new Date()
     disposalRule = await prisma.disposalRule.update({
       where: { itemId },
       data: {
-        steps: explanation.steps,
-        parts: explanation.parts as unknown as Prisma.InputJsonValue,
-        commonMistakes: explanation.commonMistakes,
-        reason: explanation.reason,
-        explainedAt: new Date(),
+        steps: explanation.ko.steps,
+        parts: explanation.ko.parts as unknown as Prisma.InputJsonValue,
+        commonMistakes: explanation.ko.commonMistakes,
+        reason: explanation.ko.reason,
+        explainedAt: disposalRule.explainedAt ?? now,
+        stepsEn: explanation.en.steps,
+        partsEn: explanation.en.parts as unknown as Prisma.InputJsonValue,
+        commonMistakesEn: explanation.en.commonMistakes,
+        reasonEn: explanation.en.reason,
+        explainedAtEn: now,
       },
     })
   }

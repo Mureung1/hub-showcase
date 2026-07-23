@@ -10,6 +10,7 @@ export interface DisposalRuleResponse {
   item: {
     id: string
     name: string
+    nameEn: string | null
   }
   disposalRule: {
     govItemName: string
@@ -19,6 +20,10 @@ export interface DisposalRuleResponse {
     parts: DisposalRulePart[]
     commonMistakes: string[]
     reason: string | null
+    stepsEn: string[]
+    partsEn: DisposalRulePart[]
+    commonMistakesEn: string[]
+    reasonEn: string | null
     fetchedAt: string
   }
 }
