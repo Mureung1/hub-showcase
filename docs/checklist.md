@@ -55,6 +55,21 @@
 - [x] 복사 성공 시 체크 아이콘(`CheckIcon`)으로 1.5초간 전환
 - [x] `src/index.css`에 `.example-command-row`, `.copy-button` 스타일 추가 (아이콘 버튼)
 
+## 기능 C: Supabase 연동 (정적 데이터 → DB 이전) — 커밋 예정 (GitHub #22, #23, #24)
+
+원래 3주차로 미뤄뒀던 Supabase 이전을 앞당겨 진행. `commands`/`categories` 테이블로 정적 데이터를 옮기고, 대문/상세 페이지를 API로 연결했다. 검색 랭킹 우선순위도 Meilisearch 설정으로 명시화.
+
+- [x] Supabase 테이블 설정, `server/.env` 연결 정보 구성 (`SUPABASE__KEY` → `SUPABASE_KEY` 오타 수정)
+- [x] `migrateCommandsToSupabase.js`로 categories 2개 / commands 49개 업로드 확인
+- [x] `commandsRouter.js` → `controllers` → `services` → Supabase 조회 경로 구축, `GET /api/commands`, `GET /api/commands/:id` 성공/404/네트워크 실패 3경로 검증
+- [x] `src/services/commandsService.js`(FE) 작성, `CategoryHomePage.jsx`/`CommandDetailPage.jsx`가 `src/data/commands.js` 직접 import 대신 API 사용하도록 교체
+- [x] BE 다운 시에도 대문 화면 카드/링크는 유지되고 개수만 실패 표시되도록 처리 (graceful degradation)
+- [x] `indexCommands.js`에 `updateRankingRules` 추가 — "이름 일치 우선" 랭킹을 searchableAttributes 순서 암묵 의존 대신 명시적으로 설정
+- [x] 더 이상 안 쓰는 `commandSort.js`(compareByRelevance/getMatchRank)와 관련 테스트를 삭제 대신 주석 처리, `eslint.config.js`에 `server/**` 전용 Node 환경 블록 추가해 기존 lint 에러 14건 해소
+- [x] `npm run lint`, `npm run test` 저장소 전체 기준 통과 확인
+
+> 위 항목은 로컬 작업/검증까지 끝난 상태이고 아직 커밋 전이라, 커밋되면 이 절 제목의 "커밋 예정"을 실제 커밋 해시로 교체할 것.
+
 ## 동료 피드백 반영 (실행 후보)
 
 - [ ] 상세설명 내 "관련 명령어 링크" 기능 설계/구현 — 데이터 구조에 관련 명령어 id 필드 추가 + 상세 페이지에 링크 렌더링 (동료 피드백 1번, 실행 후보)
@@ -73,7 +88,9 @@
 
 ## 향후 확장 (README 확장 아이디어)
 
+- [ ] 카테고리 라벨 출처 일원화 — Supabase 이전(`commands`/`categories` 테이블) 이후에도 `CommandListPage.jsx`/`CommandDetailPage.jsx`가 여전히 `src/data/commands.js`의 `CATEGORY_LABELS`(정적 파일)를 직접 import해서 라벨을 표시 중 — DB의 `categories.label`은 지금 FK 무결성 체크에만 쓰이고 실제 화면엔 반영 안 됨(라벨 출처가 DB/정적파일 두 곳으로 이중 관리되는 상태 그대로 남음). 완전히 해결하려면 검색 페이지(`CommandListPage.jsx`, 이번 Supabase 이전 스코프 밖)까지 같이 고쳐야 해서, 검색 페이지를 다시 손댈 때 한 번에 정리하는 게 맞다고 판단해 지금은 보류 (미확정 아이디어)
 - [ ] 명령어별 중요도 표시 기능 — 가로 막대 형태, 우선순위 낮음 (미확정 아이디어)
+- [ ] 상세 페이지 "보충 설명" 접기/펴기 섹션 — chmod처럼 옵션 표 안에 개념 설명(권한 표기법 등)까지 욱여넣은 명령어를 위해, 실제 플래그 목록과 개념 설명을 분리해 접기/펴기로 보여주는 안. 스키마 변경(nullable 컬럼 추가) + 새 UI 컴포넌트(아코디언)가 필요해 스코프가 있음, 지금 49개 중 chmod 1건만 해당돼 우선순위 낮음 (미확정 아이디어)
 - [ ] "과제 제출하기" 상황별 명령어 묶음 기능 — 관련 명령어 링크 기능과 연계 가능 (미확정 아이디어)
 - [ ] 알파벳 두문자 인덱스 탐색 (A, B, C… 점프) — 목록 화면에 사전식 알파벳 인덱스를 두고 클릭하면 해당 글자로 시작하는 명령어로 스크롤/필터. 백엔드/DB 불필요, 기존 49개 명령어 데이터를 프론트에서 정렬·그룹핑만 하면 됨. 사전 컨셉과 잘 맞는 기능이나 구현 시 유의할 점 두 가지: (1) 표본이 49개뿐이라 알파벳별 항목 수가 매우 불균등할 수 있음(스크롤 부담이 원래 크지 않을 수도), (2) Git 명령어는 전부 `git ` 접두사라 단순 첫 글자 인덱싱 시 21개가 전부 "G"로 몰림 — `src/utils/commandSort.js`가 검색 정렬에서 이미 처리한 "git 접두사 떼고 비교" 로직을 인덱스에도 재사용해야 함(예: `git commit`은 "C"로 인덱싱) (미확정 아이디어)
 - [ ] 셸 연동 CLI `kman` (브라우저 오픈형, 방향 확정) — 유닉스 터미널(가상머신/SSH 등)에 패키지로 설치해두고 `kman <command>` 입력 시 배포된 상세 페이지 URL을 브라우저로 열어줌. `gh repo view --web`, `npm docs <package>`, `heroku open` 등과 같은 흔한 CLI 패턴. 명령어 이름만으로 URL 패턴(`/commands/unix-grep`)을 계산해서 여는 방식이라, 데이터를 CLI 안에 복제하거나 별도 조회 API를 만들 필요가 없어 구현·유지보수 부담이 적음(터미널에 내용을 직접 렌더링하는 방식은 데이터 동기화/API 의존이 생겨서 기각함). 직접 URL 접속 방식을 대체하는 게 아니라 그 위에 얹는 편의 계층 — 기본 접근은 URL 직접 접속, CLI는 터미널 사용자를 위한 단축 경로.
