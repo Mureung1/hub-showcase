@@ -5,6 +5,7 @@ Sales 파일 파서
 - 조회기간의 수량과 판매액만 추출
 """
 
+import json
 import pandas as pd
 from pathlib import Path
 
@@ -21,7 +22,7 @@ def is_summary_row(product_name: str) -> bool:
     return any(kw in name_lower for kw in summary_keywords)
 
 
-def parse_sales_file(file_path: str, category: str, month: str) -> pd.DataFrame:
+def parse_sales_file(file_path: str, category: str, month: str) -> tuple[pd.DataFrame, dict]:
     """
     단일 sales 파일 파싱
 
@@ -29,7 +30,11 @@ def parse_sales_file(file_path: str, category: str, month: str) -> pd.DataFrame:
     - 0: 상품명
     - 4: 조회기간 수량
     - 5: 조회기간 판매액
+
+    반환값: (파싱된 DataFrame, {"total_rows": 상품명이 있는 행 수, "valid_rows": 정상 인식된 행 수, "skipped_rows": 값 변환 실패로 제외된 행 수})
     """
+    stats = {"total_rows": 0, "valid_rows": 0, "skipped_rows": 0}
+
     try:
         # MultiIndex 헤더로 읽기
         df = pd.read_excel(file_path, sheet_name=0, header=[0, 1])
@@ -46,6 +51,7 @@ def parse_sales_file(file_path: str, category: str, month: str) -> pd.DataFrame:
             # 상품명이 있는 행만 처리 (합계/소계 제외)
             product_name_str = str(product_name).strip() if pd.notna(product_name) else ""
             if product_name_str and not is_summary_row(product_name_str):
+                stats["total_rows"] += 1
                 try:
                     qty = int(float(sales_qty) if pd.notna(sales_qty) else 0)
                     # 금액은 쉼표를 제거해야 함 (예: "80,460" → 80460)
@@ -57,25 +63,28 @@ def parse_sales_file(file_path: str, category: str, month: str) -> pd.DataFrame:
                         "sales_qty": qty,
                         "sales_amount": amount,
                     })
+                    stats["valid_rows"] += 1
                 except (ValueError, TypeError):
+                    stats["skipped_rows"] += 1
                     continue
 
         if data:
             df_result = pd.DataFrame(data)
             df_result["category"] = category
             df_result["month"] = month
-            return df_result[["month", "category", "product_name", "sales_qty", "sales_amount"]]
+            return df_result[["month", "category", "product_name", "sales_qty", "sales_amount"]], stats
 
-        return pd.DataFrame()
+        return pd.DataFrame(), stats
 
     except Exception as e:
         print(f"  Error: {str(e)[:50]}")
-        return pd.DataFrame()
+        return pd.DataFrame(), stats
 
 
-def parse_all_sales() -> pd.DataFrame:
-    """모든 sales 파일 통합 파싱"""
+def parse_all_sales() -> tuple[pd.DataFrame, list[dict]]:
+    """모든 sales 파일 통합 파싱. 반환값: (통합 DataFrame, 파일별 파싱 통계 리스트)"""
     data_frames = []
+    file_stats = []
     base_path = Path("data/raw/sales")
 
     for month in MONTHS:
@@ -85,14 +94,15 @@ def parse_all_sales() -> pd.DataFrame:
 
             if file_path.exists():
                 print(f"Processing: {file_name}")
-                df = parse_sales_file(str(file_path), category, month)
+                df, stats = parse_sales_file(str(file_path), category, month)
+                file_stats.append({"filename": file_name, **stats})
                 if not df.empty:
                     data_frames.append(df)
                     print(f"  OK: {len(df)} rows")
 
     if data_frames:
-        return pd.concat(data_frames, ignore_index=True)
-    return pd.DataFrame()
+        return pd.concat(data_frames, ignore_index=True), file_stats
+    return pd.DataFrame(), file_stats
 
 
 def save_sales_csv(df: pd.DataFrame, output_path: str = "data/master/sales.csv"):
@@ -107,7 +117,7 @@ def save_sales_csv(df: pd.DataFrame, output_path: str = "data/master/sales.csv")
 
 if __name__ == "__main__":
     print("=== Sales Parser ===\n")
-    df_sales = parse_all_sales()
+    df_sales, file_stats = parse_all_sales()
 
     if not df_sales.empty:
         print("\n=== Sample ===")
@@ -115,3 +125,6 @@ if __name__ == "__main__":
         save_sales_csv(df_sales)
     else:
         print("No data parsed")
+
+    # Node(etlService.ts)가 stdout에서 이 줄만 골라 파일별 파싱 통계를 읽는다
+    print("STATS_JSON:" + json.dumps(file_stats, ensure_ascii=False))

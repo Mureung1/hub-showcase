@@ -19,6 +19,21 @@ export async function createUpload(input: CreateUploadInput): Promise<UploadReco
   return data as UploadRecord;
 }
 
+export async function updateUploadStatus(id: string, status: string): Promise<UploadRecord> {
+  const { data, error } = await supabase
+    .from('uploads')
+    .update({ status })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to update upload: ${error.message}`);
+  }
+
+  return data as UploadRecord;
+}
+
 export async function listUploads(): Promise<UploadRecord[]> {
   const { data, error } = await supabase
     .from('uploads')

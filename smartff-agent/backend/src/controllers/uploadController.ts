@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
-import { createUpload, listUploads, deleteUpload } from '../services/uploadService';
-import { processSalesWasteUpload } from '../services/uploadAutomationService';
+import { createUpload, listUploads, deleteUpload, updateUploadStatus } from '../services/uploadService';
+import { processSalesWasteUpload, buildSalesWasteFilename } from '../services/uploadAutomationService';
+import { PRODUCT_CATEGORIES } from '../constants/productCategories';
+
+// UploadRecord.status에 쓰이는 값 — DB 컬럼은 자유 문자열이라 타입 강제는 없음
+const STATUS_BY_RESULT = { complete: '정상', waiting: '대기중', error: '오류' } as const;
 
 const AUTOMATED_CATEGORIES = ['sales', 'waste'] as const;
 type AutomatedCategory = (typeof AUTOMATED_CATEGORIES)[number];
-
-// data/scripts/*.py의 CATEGORIES와 동일 — ETL 파서가 인식하는 상품 카테고리만 허용
-const PRODUCT_CATEGORIES = ['김밥', '도시락', '주먹밥', '햄버거샌드위치'];
 
 function isAutomatedCategory(category: string): category is AutomatedCategory {
   return (AUTOMATED_CATEGORIES as readonly string[]).includes(category);
@@ -33,20 +34,23 @@ export async function createUploadHandler(req: Request, res: Response): Promise<
         return;
       }
 
-      const result = await processSalesWasteUpload(req.file.buffer, category, productCategory, monthNum);
+      const filename = buildSalesWasteFilename(category, productCategory, monthNum);
+      const pendingRecord = await createUpload({ category, filename, status: '처리중' });
 
-      const record = await createUpload({
-        category,
-        filename: result.filename,
-        status: result.success ? '정상' : '오류',
-      });
+      const result = await processSalesWasteUpload(req.file.buffer, category, productCategory, monthNum);
+      const record = await updateUploadStatus(pendingRecord.id, STATUS_BY_RESULT[result.status]);
+
+      if (result.status === 'waiting') {
+        res.status(202).json({ success: true, data: record, missingFiles: result.missingFiles, parseStats: result.parseStats });
+        return;
+      }
 
       if (!result.success) {
         res.status(500).json({ success: false, error: result.error, data: record });
         return;
       }
 
-      res.status(201).json({ success: true, data: record });
+      res.status(201).json({ success: true, data: record, parseStats: result.parseStats });
       return;
     }
 

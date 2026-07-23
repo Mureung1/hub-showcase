@@ -4,6 +4,7 @@ Waste 파일 파서
 - 폐기 정보 추출 (원가, 폐기수량, 폐기금액)
 """
 
+import json
 import pandas as pd
 from pathlib import Path
 
@@ -20,7 +21,7 @@ def is_summary_row(product_name: str) -> bool:
     return any(kw in name_lower for kw in summary_keywords)
 
 
-def parse_waste_file(file_path: str, category: str, month: str) -> pd.DataFrame:
+def parse_waste_file(file_path: str, category: str, month: str) -> tuple[pd.DataFrame, dict]:
     """
     단일 waste 파일 파싱
 
@@ -31,7 +32,11 @@ def parse_waste_file(file_path: str, category: str, month: str) -> pd.DataFrame:
     - 3: 원가
     - 4: 폐기수량
     - 5: 폐기금액
+
+    반환값: (파싱된 DataFrame, {"total_rows": 상품코드+상품명이 있는 행 수, "valid_rows": 정상 인식된 행 수, "skipped_rows": 값 변환 실패로 제외된 행 수})
     """
+    stats = {"total_rows": 0, "valid_rows": 0, "skipped_rows": 0}
+
     try:
         # 1줄 헤더로 읽기
         df = pd.read_excel(file_path, sheet_name=0, header=0)
@@ -49,6 +54,7 @@ def parse_waste_file(file_path: str, category: str, month: str) -> pd.DataFrame:
             # 상품코드가 있고 합계가 아닌 행만 처리
             product_name_str = str(product_name).strip() if pd.notna(product_name) else ""
             if pd.notna(product_code) and product_name_str and not is_summary_row(product_name_str):
+                stats["total_rows"] += 1
                 try:
                     # 상품코드: 정수→문자열 (앞의 0 보존)
                     code_str = str(int(float(product_code)))
@@ -64,25 +70,28 @@ def parse_waste_file(file_path: str, category: str, month: str) -> pd.DataFrame:
                         "waste_qty": qty,
                         "waste_amount": amount,
                     })
+                    stats["valid_rows"] += 1
                 except (ValueError, TypeError):
+                    stats["skipped_rows"] += 1
                     continue
 
         if data:
             df_result = pd.DataFrame(data)
             df_result["category"] = category
             df_result["month"] = month
-            return df_result[["month", "category", "product_code", "product_name", "unit_cost", "waste_qty", "waste_amount"]]
+            return df_result[["month", "category", "product_code", "product_name", "unit_cost", "waste_qty", "waste_amount"]], stats
 
-        return pd.DataFrame()
+        return pd.DataFrame(), stats
 
     except Exception as e:
         print(f"  Error: {str(e)[:50]}")
-        return pd.DataFrame()
+        return pd.DataFrame(), stats
 
 
-def parse_all_waste() -> pd.DataFrame:
-    """모든 waste 파일 통합 파싱"""
+def parse_all_waste() -> tuple[pd.DataFrame, list[dict]]:
+    """모든 waste 파일 통합 파싱. 반환값: (통합 DataFrame, 파일별 파싱 통계 리스트)"""
     data_frames = []
+    file_stats = []
     base_path = Path("data/raw/waste")
 
     for month in MONTHS:
@@ -92,14 +101,15 @@ def parse_all_waste() -> pd.DataFrame:
 
             if file_path.exists():
                 print(f"Processing: {file_name}")
-                df = parse_waste_file(str(file_path), category, month)
+                df, stats = parse_waste_file(str(file_path), category, month)
+                file_stats.append({"filename": file_name, **stats})
                 if not df.empty:
                     data_frames.append(df)
                     print(f"  OK: {len(df)} rows")
 
     if data_frames:
-        return pd.concat(data_frames, ignore_index=True)
-    return pd.DataFrame()
+        return pd.concat(data_frames, ignore_index=True), file_stats
+    return pd.DataFrame(), file_stats
 
 
 def save_waste_csv(df: pd.DataFrame, output_path: str = "data/master/waste.csv"):
@@ -114,7 +124,7 @@ def save_waste_csv(df: pd.DataFrame, output_path: str = "data/master/waste.csv")
 
 if __name__ == "__main__":
     print("=== Waste Parser ===\n")
-    df_waste = parse_all_waste()
+    df_waste, file_stats = parse_all_waste()
 
     if not df_waste.empty:
         print("\n=== Sample ===")
@@ -122,3 +132,6 @@ if __name__ == "__main__":
         save_waste_csv(df_waste)
     else:
         print("No data parsed")
+
+    # Node(etlService.ts)가 stdout에서 이 줄만 골라 파일별 파싱 통계를 읽는다
+    print("STATS_JSON:" + json.dumps(file_stats, ensure_ascii=False))
