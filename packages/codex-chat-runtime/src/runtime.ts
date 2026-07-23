@@ -146,7 +146,6 @@ const RUNTIME_ROLE_DENIED_MESSAGE =
   'The auth-only Codex runtime does not allow workspace operations.'
 const WORKSPACE_ROOT_MISMATCH_MESSAGE =
   'The requested workspace does not match this Codex runtime.'
-const WORKSPACE_PROJECT_ROOT_OVERRIDE = 'project_root_markers=[]'
 
 interface PendingOperation<T> {
   readonly command: CommandName
@@ -314,24 +313,14 @@ export async function startVerifiedCodexChatRuntime(
     `--client-title=${application.title}`,
     `--client-version=${application.version}`,
   ]
-  const appServerLaunchArgs = options.launchArgsOverride
-    ? [
-        ...options.launchArgsOverride,
-        '--config',
-        WORKSPACE_PROJECT_ROOT_OVERRIDE,
-      ]
-    : [
-        options.bundle.nativeExecutable,
-        '--config',
-        WORKSPACE_PROJECT_ROOT_OVERRIDE,
-        'app-server',
-        '--listen',
-        'stdio://',
-      ]
-  for (const value of appServerLaunchArgs) {
-    // Keep option-looking child arguments (for example `-B`) opaque to the
-    // bridge CLI's argparse layer.
-    args.push(`--launch-arg=${value}`)
+  if (options.launchArgsOverride) {
+    for (const value of options.launchArgsOverride) {
+      // Keep option-looking child arguments (for example `-B`) opaque to the
+      // bridge CLI's argparse layer.
+      args.push(`--launch-arg=${value}`)
+    }
+  } else {
+    args.push('--codex-bin', options.bundle.nativeExecutable)
   }
   if (options.bridgeArgsOverride) args.push(...options.bridgeArgsOverride)
   const spawnOptions: SpawnOptionsWithoutStdio = {
