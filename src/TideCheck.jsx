@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import TideSlider from './TideSlider';
+import { hasCheckedInToday } from './hasCheckedInToday';
 import './TideCheck.css';
 
 const API_BASE = 'http://localhost:4000';
@@ -24,7 +25,14 @@ function TideCheck({ onDone }) {
         return res.json();
       })
       .then((data) => {
-        if (data) setLastCheck(data);
+        if (!data) return;
+        setLastCheck(data);
+        // 오늘 이미 체크인했으면 폼 대신 완료 화면부터 보여준다
+        if (hasCheckedInToday(data)) {
+          setValence(data.valence);
+          setArousal(data.arousal);
+          setSubmitted(true);
+        }
       })
       .catch(() => {
         setLoadError('지난 기록을 불러오지 못했어요. 서버 연결을 확인해주세요.');

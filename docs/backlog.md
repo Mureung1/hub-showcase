@@ -41,12 +41,12 @@ Express(`server/`) → Supabase(`tide_checks`)까지 실제 데이터가 저장�
 
 | # | Task | 설명 | 우선순위 | 요일 | 상태 | 이슈 |
 |---|---|---|:---:|:---:|:---:|:---:|
-| 1 | 테스트 프레임워크 세팅 | Vitest 설치·설정 (React 컴포넌트 + 순수 함수 테스트 가능하게) | P0 | 화 | 대기 | [#6](https://github.com/snael0510-coder/hub/issues/6) |
-| 2 | TDD로 "오늘 체크인 여부" 로직 구현 | 테스트 먼저 작성 → `hasCheckedInToday(lastCheck)` 순수 함수 구현 → TideCheck에 연결(이미 체크인했으면 폼 대신 완료 화면) | P0 | 화 | 대기 | [#7](https://github.com/snael0510-coder/hub/issues/7) |
+| 1 | 테스트 프레임워크 세팅 | Vitest 설치·설정 (React 컴포넌트 + 순수 함수 테스트 가능하게) | P0 | 목 | 완료 | [#6](https://github.com/snael0510-coder/hub/issues/6) |
+| 2 | TDD로 "오늘 체크인 여부" 로직 구현 | 테스트 먼저 작성 → `hasCheckedInToday(lastCheck)` 순수 함수 구현 → TideCheck에 연결(이미 체크인했으면 폼 대신 완료 화면) | P0 | 목 | 완료 | [#7](https://github.com/snael0510-coder/hub/issues/7) |
 | 3 | 에러 처리 강화 | GET 실패 시 화면에 표시, POST 실패 시 재시도 버튼, 네트워크 끊김 케이스 | P0 | 화 | 완료 | [#8](https://github.com/snael0510-coder/hub/issues/8) |
 | 4 | 아키텍처 다이어그램 | mermaid로 화면-서버-DB 흐름 그려서 README에 삽입 + 내 말로 설명 준비 | P0 | 수 | 완료 | [#9](https://github.com/snael0510-coder/hub/issues/9) |
-| 5 | 테스트코드 생성 Skill | 컴포넌트/함수 주면 테스트 코드를 만들어주는 Skill 문서 작성 | P0 | 목 | 대기 | [#10](https://github.com/snael0510-coder/hub/issues/10) |
-| 6 | 코드 검증 Agent | 지난주 만든 "기능 검증 Agent"(요구사항 대비 동작 점검)와 별도로, 코드 자체(테스트 존재 여부, 명백한 버그, 스타일 일관성)를 점검하는 Agent | P0 | 목 | 대기 | [#11](https://github.com/snael0510-coder/hub/issues/11) |
+| 5 | 테스트코드 생성 Skill | 컴포넌트/함수 주면 테스트 코드를 만들어주는 Skill 문서 작성 | P0 | 목 | 완료 | [#10](https://github.com/snael0510-coder/hub/issues/10) |
+| 6 | 코드 검증 Agent | 지난주 만든 "기능 검증 Agent"(요구사항 대비 동작 점검)와 별도로, 코드 자체(테스트 존재 여부, 명백한 버그, 스타일 일관성)를 점검하는 Agent | P0 | 목 | 완료 | [#11](https://github.com/snael0510-coder/hub/issues/11) |
 | 7 | 워크플로우 문서화 | Plan → Agent 활용 → 검증까지, 나만의 개발 워크플로우를 문서로 정리 | P1 | 금 | 대기 | [#12](https://github.com/snael0510-coder/hub/issues/12) |
 | 8 | History DB 연동 | mock episodes를 실제 테이블로 교체 (다음 주로 이월 가능성 높음) | P2 | — | 대기 | — |
 

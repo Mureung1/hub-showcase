@@ -108,9 +108,12 @@ Claude Design, Google Stitch 등 AI 디자인 도구로 먼저 시도했으나 �
 | 중 | 스타일링 폴리싱 | 색감/트랜지션 다듬기 |
 | 하 | 배포 (선택) | Vercel/Netlify 간단 배포 |
 
-## 2주차 문서
+## 문서 · Agent · Skill
 - [백로그 (우선순위·일정)](./docs/backlog.md)
 - [작업 체크리스트](./docs/checklist.md)
 - [계획 수립 Agent](./docs/agents/planning-agent.md)
-- [기능 검증 Agent](./docs/agents/verification-agent.md)
-- [GitHub 이슈 (Task 1~5)](https://github.com/snael0510-coder/hub/issues)
+- [기능 검증 Agent](./docs/agents/verification-agent.md) — 요구사항대로 동작하는지 확인
+- [코드 검증 Agent](./docs/agents/code-verification-agent.md) — 테스트 존재 여부·버그·스타일 점검
+- [테스트코드 생성 Skill](./.claude/skills/tidenote-test-writer/SKILL.md)
+- [비주얼 디자인 Skill](./.claude/skills/tidenote-visual-language/SKILL.md)
+- [GitHub 이슈](https://github.com/snael0510-coder/hub/issues)
