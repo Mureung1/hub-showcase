@@ -6,6 +6,7 @@ import os
 import json
 import uuid
 from datetime import datetime
+import threading
 
 # 우리가 만든 모듈들 임포트
 from doc_generator import DocumentGenerator 
@@ -35,14 +36,17 @@ doc_gen = DocumentGenerator()
 ai_agent = LegalAIAgent()
 ai_agent.retriever = Retriever() 
 
-# 🚀 서버 시작 시 스케줄러 자동 가동 (주간 법령 업데이트)
-import threading
-
 @app.on_event("startup")
 def startup_event():
-    print("\n🚀 [System] FastAPI 서버가 성공적으로 가동되었습니다!")
+    print("\n" + "="*60)
+    print("🚀 [System] FastAPI 서버가 성공적으로 가동되었습니다!")
     
-    # 스케줄러 시작을 별도의 백그라운드 스레드로 분리하여 메인 서버 블로킹 방지
+    if hasattr(ai_agent, 'is_llm_active') and ai_agent.is_llm_active:
+        print("🟢 [Status] OpenAI API 키 적용 완료 (GPT-4o 추론 모드 가동)")
+    else:
+        print("⚪ [Status] OpenAI API 키 미적용 (토큰 0원 오프라인 하이브리드 모드 가동)")
+    print("="*60 + "\n")
+    
     def run_scheduler_in_background():
         try:
             start_scheduler()
@@ -50,7 +54,6 @@ def startup_event():
         except Exception as e:
             print(f"⚠️ [System] 스케줄러 등록 중 오류 발생 (무시하고 서버 구동): {e}")
 
-    # 데몬 스레드로 실행 (메인 서버가 꺼지면 같이 꺼짐)
     scheduler_thread = threading.Thread(target=run_scheduler_in_background, daemon=True)
     scheduler_thread.start()
 
@@ -70,6 +73,8 @@ class DocumentRequest(BaseModel):
     legal_basis: str = ""
     demands: str = ""
     deadline: str = ""
+    related_laws: list = []
+    strategy_guide: str = ""
 
 class CaseLog(BaseModel):
     query: str
@@ -107,10 +112,8 @@ async def ask_agent(request: ChatRequest):
         if ai_agent.retriever:
             searched_context = ai_agent.retriever.search(enhanced_search_query)
             
-        # 에이전트 추론 실행
         agent_result = ai_agent.ask(query, searched_context)
         
-        # 🚀 [핵심] LLM이 뽑아준 win_probability와 strategy_guide를 프론트엔드 호환용 텍스트로 결합
         final_response_text = ""
         if "win_probability" in agent_result:
             final_response_text = f"⚖️ **[승소 리스크 분석]**\n{agent_result.get('win_probability', '')}\n\n💡 **[변호사 상담 전략]**\n{agent_result.get('strategy_guide', '')}"
@@ -133,13 +136,7 @@ async def generate_document(request: DocumentRequest):
         doc_data = request.dict()
         doc_data['date'] = datetime.now().strftime("%Y년 %m월 %d일")
         
-        # 🚀 [핵심] LLM 호출 없이 Jinja2 템플릿 엔진으로 0.1초 만에 텍스트 생성
         rendered_document = doc_gen.generate(doc_data["doc_type"], doc_data)
-        
-        # (선택 사항) 서버에 파일로도 남기고 싶다면 아래 주석을 푸세요
-        # filename = f"{'내용증명' if doc_data['doc_type'] == 'content_proof' else '소장'}_{doc_data['receiver_name']}_{datetime.now().strftime('%Y%m%d%H%M')}.txt"
-        # with open(os.path.join(LOG_DIR, filename), "w", encoding="utf-8") as f:
-        #     f.write(rendered_document)
             
         return {"status": "success", "document_content": rendered_document}
     except Exception as e:
@@ -171,6 +168,23 @@ async def get_cases():
         with open(CASES_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
+
+# 🚀 [신규 추가] 사건 삭제 API
+@app.delete("/api/cases/{case_id}")
+async def delete_case(case_id: str):
+    if not os.path.exists(CASES_FILE):
+        return {"status": "error", "message": "파일이 없습니다."}
+        
+    with open(CASES_FILE, "r", encoding="utf-8") as f:
+        cases = json.load(f)
+        
+    # 해당 ID를 제외하고 리스트 재구성
+    cases = [c for c in cases if c.get("id") != case_id]
+            
+    with open(CASES_FILE, "w", encoding="utf-8") as f:
+        json.dump(cases, f, ensure_ascii=False, indent=2)
+        
+    return {"status": "success"}
 
 @app.post("/api/feedback")
 async def update_feedback(feedback: FeedbackData):
