@@ -110,6 +110,7 @@ export default function Guide() {
           <div>
             <h2>showcase.json 예시</h2>
             <p>아래에서 편집하고, 복사해서 사용하세요.</p>
+            <p><code>githubUser</code>는 <code>github_id(이름)</code> 형식으로 작성합니다. 예: <code>crong(윤지수)</code></p>
           </div>
           <div className="guide-example-actions">
             <button type="button" onClick={() => setSampleOpen((open) => !open)}>

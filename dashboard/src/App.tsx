@@ -183,7 +183,7 @@ export default function App({ projects }: AppProps) {
                   </div>
                 )}
 
-                <footer>@{project.githubUser}</footer>
+                <footer>{project.githubUser}</footer>
                 <span className="card-action">상세 보기 <span aria-hidden="true">↗</span></span>
               </div>
             </article>
