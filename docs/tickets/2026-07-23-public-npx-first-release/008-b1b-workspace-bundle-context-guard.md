@@ -121,3 +121,13 @@ Admitted v3 workspace에 package-owned `AGENTS.md`와 declared built-in Skill tr
 | requiredChecks | Bundle descriptor/complete-tree/materializer tests; hostile context/native port matrix; thread/Turn zero assertion; admission regression; root test/typecheck/build/Chat Shell lint; `git diff --check` |
 | reviewOwner | Independent workspace security/context reviewer와 downstream A/B2 consumer reviewer |
 | handoffArtifact | Reviewed fixed B1b commit SHA, canonical bundle digest/roster, native-context/action-admission receipt와 B1 completion evidence |
+
+## Corrective Review Handoff
+
+| Evidence | Result |
+| --- | --- |
+| Exact corrective handoff | `9b4507f52113549f61dc156c028a460f11b9210c` |
+| Review finding | Path-based `mkdir → lstat → open(O_NOFOLLOW)` 사이 ancestor `.agents` replacement race가 final leaf 밖의 containment를 보존하지 못해 외부 directory에 declared Skill byte를 생성할 수 있다. |
+| Required correction | Retained directory capability 또는 동등한 ancestor-bound direct-leaf create로 external byte creation을 0으로 만들고 deterministic race regression을 추가한다. Existing missing-only recovery, modified/extra/symlink byte preservation과 native/action guard behavior는 보존한다. |
+| Corrective branch | `codex/public-preview-b1b-containment-fix` |
+| Corrective worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/b1b-containment-fix` |
