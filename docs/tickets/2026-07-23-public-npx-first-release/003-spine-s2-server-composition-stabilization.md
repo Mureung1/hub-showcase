@@ -48,18 +48,21 @@ Public host와 후속 feature router가 개발 entrypoint나 TCP listener를 재
 
 ## Candidate Verification Receipt
 
-Independent Server architecture review와 current First Assignment Browser regression review 전 candidate 상태다. Acceptance Criteria와 ticket state는 reviewer 판정 전까지 변경하지 않는다.
+1차 independent Server architecture review와 current First Assignment Browser regression review의 지적을 반영했고 재검토 전 candidate 상태다. Acceptance Criteria와 ticket state는 reviewer 판정 전까지 변경하지 않는다.
 
 | Evidence | Result |
 | --- | --- |
 | Fixed base | `27d399d56e58331e3f37215b8deabfcbc14971bd` |
-| Implementation candidate | `8bf12743b5f866f61049f910160380a17c743ad4` |
-| Server composition | Server workspace `119/119`; listener-independent factory, import side-effect, TCP lifecycle와 signal lifecycle focused tests green |
+| Initial implementation candidate | `8bf12743b5f866f61049f910160380a17c743ad4` |
+| Review corrective fixed point | `6f23235b2e39e278dfe8bdb554d292047ca32ffc` |
+| Review corrective candidate | `cb77ca843529004d2df9c1b7b5e40960ce91c30c` |
+| Review corrections | Factory-created `ServerApplication` 하나가 listener lifecycle을 정확히 한 번만 claim하고 double bind와 bind-after-close를 fail closed한다. Public `application.close()`는 listener intake refusal을 먼저 시작한 뒤 app/Runtime close와 listener completion을 함께 기다린다. Post-bind `log()` failure도 claimed listener를 닫고, `product-development.ts`는 Server barrel이 아니라 `server-application.ts`의 type을 직접 소비한다. Browser negative control은 private store JSON을 parse하지 않고 typed `SemesterWorkspaceController.snapshot()` authority로 runtime script를 주입한다. |
+| Server composition | Server workspace `123/123`; listener-independent factory, import side-effect, once-only TCP lifecycle, listener-first shutdown, post-bind failure cleanup과 signal lifecycle focused tests green (`12/12`) |
 | Current-workbench oracle | Targeted Browser trace `1/1`; unselected evidence, quote mismatch, stale base 후 confirmed revision·Assignment·StatePatch·UserConfirmation이 모두 0이며, 한 번의 UI Reject 이후 active duplicate와 terminal late Review가 durable snapshot과 native answer count를 바꾸지 않음 |
 | Browser regression | `npm run test:e2e -w @ay-ple/chat-shell` — Chromium desktop 1440×900 `32/32` |
 | Entrypoint and shutdown | `npm run test:product-entrypoint` green; verified ignored production Runtime artifact로 `npm run test:product-shutdown-actual -w @ay-ple/server` `2/2` |
 | Runtime artifact precondition | 최초 actual shutdown 실행은 이 worktree에 ignored production Runtime artifact가 없어 Runtime readiness 단계에서 fail closed함. Main clone의 기존 materialized tree를 clone-local로 복제한 뒤 `verify:production-runtime`이 roster SHA-256 `4b72a60735d6b6d1489bab9fa937889f296ba2268c3fc0c433ba84ca10b36b7a`로 green이고 actual shutdown 재실행이 green |
-| Root gates | `npm test` green (Server `119/119`, Chat Shell unit `40/40` 포함); `npm run typecheck`; `npm run build`; Chat Shell lint; docs links active `28`·historical `2`; `git diff --check` 모두 green |
+| Root gates | Review corrective candidate에서 `npm test` green (Server `123/123`, Chat Shell unit `40/40` 포함); `npm run typecheck`; `npm run build`; Chat Shell lint; docs links active `28`·historical `2`; `git diff --check` 모두 green |
 
 ## Blocked By
 
