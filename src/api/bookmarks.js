@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabaseClient'
 import { throwWithServerMessage } from './gapAnalysis'
+import { apiUrl } from './config'
 
 // 북마크 API는 로그인이 필요하므로 매 호출 시 현재 세션의 액세스 토큰을 읽어
 // Authorization 헤더에 실어 보낸다 — Express의 requireSupabaseAuth가 이를 검증한다.
@@ -10,7 +11,7 @@ async function authHeaders() {
 }
 
 export async function getBookmarks() {
-  const res = await fetch('/api/bookmarks', { headers: await authHeaders() })
+  const res = await fetch(apiUrl('/api/bookmarks'), { headers: await authHeaders() })
   if (!res.ok) {
     await throwWithServerMessage(res, `북마크 목록을 불러오지 못했습니다 (${res.status})`)
   }
@@ -18,7 +19,7 @@ export async function getBookmarks() {
 }
 
 export async function addBookmark(jobId) {
-  const res = await fetch('/api/bookmarks', {
+  const res = await fetch(apiUrl('/api/bookmarks'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify({ job_id: jobId }),
@@ -33,7 +34,7 @@ export async function addBookmark(jobId) {
 // 재평가해서 받아온다 — 응답 모양이 POST /api/gap-analysis의 jobList 원소와 동일( { job, checks, overallMatch } )해서
 // 기존 buildJobDisplay를 그대로 재사용할 수 있다.
 export async function evaluateBookmarks(spec) {
-  const res = await fetch('/api/bookmarks/evaluate', {
+  const res = await fetch(apiUrl('/api/bookmarks/evaluate'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify({ spec }),
@@ -45,7 +46,7 @@ export async function evaluateBookmarks(spec) {
 }
 
 export async function removeBookmark(jobId) {
-  const res = await fetch(`/api/bookmarks/${jobId}`, {
+  const res = await fetch(apiUrl(`/api/bookmarks/${jobId}`), {
     method: 'DELETE',
     headers: await authHeaders(),
   })
