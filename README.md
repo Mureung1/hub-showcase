@@ -49,14 +49,58 @@ cd ../backend && npm run check && npm test
 
 ```mermaid
 flowchart LR
-  U[사용자 브라우저] --> F[React + Vite 화면]
-  F -->|Axios 요청| A[Express API]
-  A --> S[공동구매 Service]
-  S -->|Sequelize| D[(Docker MySQL)]
-  D --> S --> A --> F
+  subgraph Browser[사용자 브라우저]
+    Home[홈·게시글 목록]
+    Detail[공동구매 상세]
+    Create[공동구매 등록]
+    MyPage[마이페이지]
+  end
+
+  subgraph Frontend[React + Vite]
+    Query[TanStack Query]
+    API[Axios API 모듈]
+  end
+
+  subgraph Backend[Express 서버]
+    Routes[공동구매 Routes]
+    Controller[Controller]
+    Service[GroupPurchase Service<br/>권한·상태 규칙]
+    Auth[JWT 인증 미들웨어]
+  end
+
+  subgraph Database[Docker MySQL]
+    Users[(users)]
+    Purchases[(group_purchases)]
+    Applications[(user_group_purchases)]
+  end
+
+  Home --> Query
+  Detail --> Query
+  Create --> API
+  MyPage --> Query
+  Query --> API
+  API -->|GET 목록·내 활동<br/>POST·PATCH·DELETE 요청| Routes
+  Routes --> Auth
+  Routes --> Controller
+  Controller --> Service
+  Service --> Purchases
+  Service --> Users
+  Service --> Applications
+  Purchases --> Service
+  Users --> Service
+  Applications --> Service
+  Service --> Controller --> API --> Query
 ```
 
-사용자가 화면에서 참여하거나 상태 버튼을 누르면 React가 Express API를 호출한다. 서버는 권한과 상태 규칙을 확인한 뒤 MySQL에 저장하고, 저장된 결과를 다시 화면으로 돌려준다. 그래서 새로고침해도 공동구매와 참여 기록이 남는다.
+### 내 말로 설명하기
+
+ThingDong은 여러 사람이 하나의 상품을 함께 구매하고 픽업하는 서비스다. 사용자가 홈, 상세, 등록, 마이페이지에서 버튼을 누르면 React가 API 요청을 보낸다. Express 서버는 로그인한 사용자인지, 방장인지, 지금 바꿔도 되는 상태인지 먼저 확인한다. 통과한 요청만 Docker 안의 MySQL에 저장하고, 저장된 결과를 화면에 다시 보여 준다. 그래서 공동구매 글과 참여 기록은 브라우저를 새로고침해도 남는다.
+
+### 구조를 보고 발견한 다음 작업
+
+- 현재 결제 완료 여부는 기록만 하며 실제 결제 수단과 연결되어 있지 않다.
+- 픽업 시간·장소가 바뀌어도 참여자에게 알려 주는 알림 기능이 없다.
+- 위 두 항목 중 다음 우선순위 기능은 `픽업 정보 변경 알림`이다. 방장이 정보를 수정하면 참여자 화면에서 바로 확인할 수 있게 한다.
 
 ## 공동구매 상태 흐름
 
