@@ -259,6 +259,24 @@ p {
   font-size: 12px;
 }
 
+.month-status {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+  min-width: 150px;
+}
+
+.month-status span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.month-status strong {
+  font-size: 18px;
+  line-height: 1.2;
+}
+
 .metric-grid,
 .content-grid,
 .calendar-grid {
@@ -358,8 +376,7 @@ p {
   gap: 7px;
 }
 
-.month-pills span,
-.month-pills strong,
+.month-pills a,
 .badge {
   display: inline-flex;
   align-items: center;
@@ -370,8 +387,7 @@ p {
   white-space: nowrap;
 }
 
-.month-pills span,
-.month-pills strong {
+.month-pills a {
   height: 36px;
   min-width: 60px;
   padding: 0 14px;
@@ -379,7 +395,7 @@ p {
   background: var(--color-surface);
 }
 
-.month-pills strong {
+.month-pills a.current {
   border-color: var(--color-primary-deep);
   background: var(--color-primary-soft);
 }
@@ -456,6 +472,119 @@ p {
 .request-list {
   display: grid;
   gap: 16px;
+}
+
+.daily-content-grid {
+  align-items: stretch;
+}
+
+.daily-card {
+  min-height: 540px;
+}
+
+.daily-summary {
+  margin: 0;
+  color: var(--color-text-sub);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.daily-timeline {
+  display: grid;
+  gap: 0;
+  position: relative;
+  padding-left: 10px;
+}
+
+.daily-timeline::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: 18px;
+  width: 1px;
+  background: var(--color-green-border);
+}
+
+.daily-shift {
+  display: grid;
+  grid-template-columns: 18px minmax(120px, 170px) minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  position: relative;
+  padding: 14px 0 14px 6px;
+}
+
+.daily-shift + .daily-shift {
+  border-top: 1px solid var(--color-border);
+}
+
+.daily-shift.mine {
+  margin-right: -10px;
+  padding-right: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-green-surface);
+}
+
+.timeline-marker {
+  z-index: 1;
+  width: 13px;
+  height: 13px;
+  border: 3px solid var(--color-primary-deep);
+  border-radius: 50%;
+  background: var(--color-surface);
+}
+
+.shift-time strong,
+.shift-main strong {
+  display: block;
+  font-size: 15px;
+}
+
+.shift-time span,
+.shift-main span,
+.shift-main p {
+  display: block;
+  margin: 5px 0 0;
+  color: var(--color-text-sub);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.shift-main p {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.daily-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.daily-summary-grid div {
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-soft);
+}
+
+.daily-summary-grid span {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.daily-summary-grid strong {
+  display: block;
+  margin-top: 7px;
+  font-size: 18px;
+}
+
+.daily-navigation {
+  display: grid;
+  gap: 10px;
 }
 
 .today-card h2 {
@@ -674,6 +803,10 @@ p {
   font-size: 13px;
 }
 
+.schedule-message {
+  margin-bottom: 16px;
+}
+
 .auth-actions-row {
   display: flex;
   gap: 10px;
@@ -856,6 +989,29 @@ p {
 }
 
 @media (max-width: 880px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .month-status {
+    justify-items: start;
+  }
+
+  .daily-shift {
+    grid-template-columns: 18px 1fr;
+    align-items: flex-start;
+  }
+
+  .daily-shift .badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+
   .worker-invite-form,
   .worker-settings-form {
     grid-template-columns: 1fr;
