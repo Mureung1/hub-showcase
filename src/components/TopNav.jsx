@@ -3,8 +3,7 @@ import mascotKkini from '../assets/마스코트-끼니.png'
 
 const NAV_LINKS = [
   { label: '냉장고', to: '/', activeOn: ['/'] },
-  { label: '홈', to: '/home', activeOn: ['/home'] },
-  { label: '레시피', to: '/home', activeOn: [] },
+  { label: '레시피', to: '/home', activeOn: ['/home'] },
 ]
 
 // 상단 고정 네비게이션 — prototype-v2에서 검증한 레이아웃(마스코트 로고 + 링크 + 검색창)을 그대로 포팅
