@@ -107,10 +107,26 @@ describe('PATCH /api/meetings/:id', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.title).toBe('새 제목');
     expect(res.body.data.regionSigungu).toBe('서초구');
+    expect(res.body.data.category).toBe('스터디');
+    expect(res.body.data.description).toBe('수정 설명');
+    expect(res.body.data.regionEupmyeondong).toBe('서초동');
+    expect(res.body.data.openChatUrl).toBe('https://open.kakao.com/o/edited');
+    expect(res.body.data.adultOnly).toBe(false);
 
     const db = await pool.query('SELECT title, region_sigungu FROM meetings WHERE id = $1', [meetingId]);
     expect(db.rows[0].title).toBe('새 제목');
     expect(db.rows[0].region_sigungu).toBe('서초구');
+  });
+
+  it('regionEupmyeondong을 null로 보내면 전체교체로 값이 지워진다', async () => {
+    const { agent, userId } = await loginAgent('u-h17');
+    const meetingId = await insertMeeting(userId, { type: 'small', regionEupmyeondong: '역삼동' });
+    const res = await agent.patch(`/api/meetings/${meetingId}`).send(smallBody({ regionEupmyeondong: null }));
+    expect(res.status).toBe(200);
+    expect(res.body.data.regionEupmyeondong).toBeNull();
+
+    const db = await pool.query('SELECT region_eupmyeondong FROM meetings WHERE id = $1', [meetingId]);
+    expect(db.rows[0].region_eupmyeondong).toBeNull();
   });
 
   it('제목 길이 초과는 400 (validateCreateMeeting 재사용 확인)', async () => {
