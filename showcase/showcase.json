@@ -4,7 +4,7 @@
   "summary": "천천히 글을 쓰고 기다리는 경험을 제공하는, 편지 기반 익명 연결 플랫폼입니다. 직접 쓴 편지가 24시간 뒤 AI가 골라준 낯선 이의 편지와 이어집니다.",
   "githubUser": "bovoZhang(장성현)",
   "demoUrl": "",
-  "thumbnail": "",
+  "thumbnail": "thumbnail.webp",
   "screenshots": [],
   "problem": "짧고 즉각적인 소통에 익숙해지며 생각을 하나의 완성된 글로 표현해본 경험이 줄고 있습니다. 완전 공개(SNS)와 완전 사적(메신저) 사이의 중간 공간이 없어, 같은 고민을 가진 낯선 사람과 천천히 글로 연결될 기회가 부족합니다.",
   "targetUsers": [
