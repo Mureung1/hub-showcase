@@ -10,6 +10,7 @@ export const env = {
   openaiModel: process.env.OPENAI_MODEL || "gpt-5.4-nano",
   careerNetApiKey: process.env.CAREER_NET_API_KEY || "",
   publicDataApiKey: process.env.PUBLIC_DATA_API_KEY || "",
+  searchCacheTtlMs: Number(process.env.SEARCH_CACHE_TTL_MS || 10 * 60 * 1000),
   smtpHost: process.env.SMTP_HOST || "",
   smtpPort: Number(process.env.SMTP_PORT || 587),
   smtpSecure: process.env.SMTP_SECURE === "true",

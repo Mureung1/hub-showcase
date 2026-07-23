@@ -1,10 +1,13 @@
 import { env } from "../config/env.js";
+import { createTtlCache } from "./cacheService.js";
 import { normalizeText } from "./text.js";
 
 const CAREER_NET_API_URL = "https://www.career.go.kr/cnet/openapi/getOpenApi";
 const UNIVERSITY_GUBUN = "univ_list";
 const MAJOR_PAGE_SIZE = 100;
 const MAX_MAJOR_PAGES = 10;
+const universitySearchCache = createTtlCache({ ttlMs: env.searchCacheTtlMs });
+const majorSearchCache = createTtlCache({ ttlMs: env.searchCacheTtlMs });
 
 const fallbackUniversities = [
   {
@@ -81,35 +84,38 @@ const createBaseParams = (svcCode) =>
 
 export const searchUniversities = async (keyword = "") => {
   const normalizedKeyword = keyword.trim();
+  const cacheKey = normalizeText(normalizedKeyword);
 
-  if (!env.careerNetApiKey) {
-    return fallbackUniversities
-      .filter((school) => school.name.includes(normalizedKeyword))
-      .slice(0, 8);
-  }
+  return universitySearchCache.getOrSet(cacheKey, async () => {
+    if (!env.careerNetApiKey) {
+      return fallbackUniversities
+        .filter((school) => school.name.includes(normalizedKeyword))
+        .slice(0, 8);
+    }
 
-  const params = createBaseParams("SCHOOL");
-  params.set("searchSchulNm", normalizedKeyword);
-  params.set("perPage", "8");
-  params.set("thisPage", "1");
+    const params = createBaseParams("SCHOOL");
+    params.set("searchSchulNm", normalizedKeyword);
+    params.set("perPage", "8");
+    params.set("thisPage", "1");
 
-  const response = await fetch(`${CAREER_NET_API_URL}?${params}`);
+    const response = await fetch(`${CAREER_NET_API_URL}?${params}`);
 
-  if (!response.ok) {
-    throw new Error("학교 정보를 불러오지 못했습니다.");
-  }
+    if (!response.ok) {
+      throw new Error("학교 정보를 불러오지 못했습니다.");
+    }
 
-  const data = await response.json();
-  const contents = normalizeContent(data?.dataSearch?.content);
+    const data = await response.json();
+    const contents = normalizeContent(data?.dataSearch?.content);
 
-  return contents.map((school) => ({
-    id: `${school.seq || school.schoolName}-${school.campusName || "main"}`,
-    name: school.schoolName,
-    type: school.schoolType || school.schoolGubun,
-    region: school.region,
-    address: school.adres,
-    campus: school.campusName,
-  }));
+    return contents.map((school) => ({
+      id: `${school.seq || school.schoolName}-${school.campusName || "main"}`,
+      name: school.schoolName,
+      type: school.schoolType || school.schoolGubun,
+      region: school.region,
+      address: school.adres,
+      campus: school.campusName,
+    }));
+  });
 };
 
 const fetchCareerNetMajorPage = async (page) => {
@@ -158,32 +164,36 @@ export const searchMajorsBySchool = async ({ keyword = "", schoolName = "" }) =>
     return [];
   }
 
-  if (!env.careerNetApiKey) {
-    return fallbackMajors
-      .filter((majorName) => includesNormalized(majorName, normalizedKeyword))
-      .map((majorName) =>
-        createMajorResult({
-          name: majorName,
-          schoolName,
-          category: "개발용 예시",
-          source: "fallback-major",
-        })
-      );
-  }
+  const cacheKey = `${normalizeText(schoolName)}:${normalizeText(normalizedKeyword)}`;
 
-  const majorList = await fetchCareerNetMajors();
-  const results = majorList.flatMap((major) =>
-    getMajorNameCandidates(major)
-      .filter((majorName) => includesNormalized(majorName, normalizedKeyword))
-      .map((majorName) =>
-        createMajorResult({
-          name: majorName,
-          schoolName,
-          category: major.lClass || major.mClass,
-          source: "career-net-major",
-        })
-      )
-  );
+  return majorSearchCache.getOrSet(cacheKey, async () => {
+    if (!env.careerNetApiKey) {
+      return fallbackMajors
+        .filter((majorName) => includesNormalized(majorName, normalizedKeyword))
+        .map((majorName) =>
+          createMajorResult({
+            name: majorName,
+            schoolName,
+            category: "개발용 예시",
+            source: "fallback-major",
+          })
+        );
+    }
 
-  return getUniqueMajors(results).slice(0, 20);
+    const majorList = await fetchCareerNetMajors();
+    const results = majorList.flatMap((major) =>
+      getMajorNameCandidates(major)
+        .filter((majorName) => includesNormalized(majorName, normalizedKeyword))
+        .map((majorName) =>
+          createMajorResult({
+            name: majorName,
+            schoolName,
+            category: major.lClass || major.mClass,
+            source: "career-net-major",
+          })
+        )
+    );
+
+    return getUniqueMajors(results).slice(0, 20);
+  });
 };

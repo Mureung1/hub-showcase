@@ -392,6 +392,12 @@ Request body: 없음
 
 ## 검색 API
 
+특이사항:
+
+- `/api/jobs`, `/api/qualifications`, `/api/schools`, `/api/majors`는 서버 메모리 TTL 캐시를 사용한다.
+- 기본 캐시 시간은 10분이며 `SEARCH_CACHE_TTL_MS` 환경 변수로 조정할 수 있다.
+- 서버 재시작 시 캐시는 비워진다.
+
 ### 직업 검색
 
 - Method: `GET`
