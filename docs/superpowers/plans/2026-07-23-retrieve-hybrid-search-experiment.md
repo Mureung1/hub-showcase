@@ -470,12 +470,12 @@ npx tsc --noEmit -p tsconfig.node.json
 
 **Steps:**
 
-- [ ] extractor 주입 방식의 실패 테스트를 작성한다.
-- [ ] `query:`와 `passage:` prefix를 구분한다.
-- [ ] 벡터 차원과 finite number를 검증한다.
-- [ ] cache key와 cache hit를 테스트한다.
-- [ ] 정확한 `@huggingface/transformers` 버전을 고정한다.
-- [ ] q8 모델을 다운로드해 합성 평가 벡터를 한 번 생성한다.
+- [x] extractor 주입 방식의 실패 테스트를 작성한다.
+- [x] `query:`와 `passage:` prefix를 구분한다.
+- [x] 벡터 차원과 finite number를 검증한다.
+- [x] cache key와 cache hit를 테스트한다.
+- [x] 정확한 `@huggingface/transformers` 버전을 고정한다.
+- [x] q8 모델을 다운로드해 합성 평가 벡터를 한 번 생성한다.
 
 **외부 API token:** 없음
 
@@ -628,4 +628,4 @@ catch-all로 오류를 삼키고 다음 입력으로 넘어가지 않는다.
 | 2026-07-23 | 공개 벤치마크 유료 실행, 120개 합성 평가, 부트스트랩을 필수 범위에서 제거 |
 | 2026-07-23 | 모든 유료 외부 API와 민감 데이터 작업은 사용자 명시 승인 후 실행          |
 
-**현재 상태:** Task 0을 시작할 수 있다. Task 0은 외부 API token, 모델 다운로드, 개인 데이터 사용이 없는 로컬 계약 작업이다.
+**현재 상태:** Task 0부터 Task 2까지 완료했다. 다음은 합성 corpus와 query를 모델 실행 전에 고정하는 Task 3이다. 외부 API token과 개인 데이터는 아직 사용하지 않았다.

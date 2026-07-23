@@ -10,7 +10,7 @@ RRF 하이브리드 검색의 실패 유형을 비교하기 위한 로컬 실험
 
 ## 현재 구현 범위
 
-Task 0과 Task 1은 다음 계약을 제공한다.
+Task 0부터 Task 2까지 다음 계약을 제공한다.
 
 - `contracts.ts`: corpus·query·관련도 타입과 45개 query 분할 검증
 - `experiment_manifest.ts`: 데이터·모델·cache·랭킹 설정 검증
@@ -18,9 +18,44 @@ Task 0과 Task 1은 다음 계약을 제공한다.
 - 외부 API의 사용자 승인, projection과 최대 실행 개수 검증
 - `metrics.ts`: Recall@5, MRR@6, graded nDCG@6와 wins/ties/losses
 - `ranking.ts`: 현행 어휘 검색 adapter, cosine ranking과 RRF
+- `embedding_provider.ts`: 입력 정규화, 결정적 cache key, 파일 cache와 벡터 검증
+- `local_e5_embedding_provider.ts`: 고정 리비전의 로컬 multilingual-e5 추출기
 
-모델 패키지 설치, 모델 다운로드, 외부 API 호출과 개인 데이터 사용은 아직
-포함되지 않는다.
+Gemini 등 외부 API 호출과 개인 데이터 사용은 아직 포함되지 않는다.
+
+## 로컬 E5 계약
+
+로컬 공급자는 다음 설정을 코드에 고정한다.
+
+| 항목             | 값                                           |
+| ---------------- | -------------------------------------------- |
+| 공급자           | `transformers-js@4.2.0:cpu:q8`               |
+| 모델             | `Xenova/multilingual-e5-small`               |
+| 모델 리비전      | `761b726dd34fb83930e26aab4e9ac3899aa1fa78` |
+| 가중치 형식      | q8                                           |
+| 벡터 차원        | 384                                          |
+| Node 실행 장치   | CPU                                          |
+| query 입력       | `query: {정규화된 입력}`                     |
+| passage 입력     | `passage: {정규화된 입력}`                   |
+
+Node용 Transformers.js 4.2.0은 `wasm` 실행 장치를 지원하지 않아 CPU ONNX
+런타임을 사용한다. 이 결과는 브라우저 WebAssembly·WebGPU 성능을 의미하지
+않으며, 브라우저 검증은 합성 평가에서 후보가 남을 때만 별도로 진행한다.
+
+모델과 tokenizer는 `.cache/models/`에 저장하고, 공급자·모델·리비전·task
+type·정규화 입력으로 만든 SHA-256을 파일명으로 사용해 결과 벡터를
+`.cache/embeddings/`에 저장한다. cache에서 읽은 벡터도 차원과 유한한 숫자
+여부를 다시 검증한다.
+
+2026-07-23 로컬 확인에서는 고정 q8 가중치 118,308,185바이트와 tokenizer
+17,082,730바이트를 받아 합성 문장 1건을 384차원 단위 벡터로 생성했다. 최초
+실행 약 17초와 cache 적중 약 13ms는 현재 개발 환경의 안전 점검 값일 뿐
+benchmark나 제품 성능 수치로 사용하지 않는다.
+
+`@huggingface/transformers`는 실험 전용 `devDependency`다. 설치 시 전이
+의존성의 보안 권고를 피하기 위해 `sharp@0.35.3`과 `adm-zip@0.6.0`을
+override하며, 고정 모델 리비전 외의 임의 원격 모델은 이 실험에서 실행하지
+않는다.
 
 ## 평가 query 계약
 
