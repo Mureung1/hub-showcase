@@ -44,17 +44,22 @@
   ],
   "developmentWithAI": "저는 문제 정의, 우선순위, 배포 범위 같은 의사결정을 맡았습니다. Claude Code(AI)는 코드베이스를 직접 탐색해 실제 동작을 확인하고, 계획을 세워 구현·테스트·문서화까지 수행했습니다. 저는 매 단계마다 방향을 조정하고, 실제 브라우저에서 업로드→분석→대시보드 반영까지 결과를 확인하며 다음 작업을 정했습니다.",
   "agent": {
-    "summary": "Claude Code의 Plan 모드와 브라우저 자동화 스킬을 함께 사용해 기획부터 구현, 실제 브라우저 검증까지 진행했습니다.",
+    "summary": "프로젝트 전용 Planning/Validation Agent와 Claude Code의 탐색·브라우저 자동화 기능을 함께 사용해 기획부터 구현, 검증까지 진행했습니다.",
     "agentTools": [
+      {
+        "type": "agent",
+        "name": "Planning Agent",
+        "purpose": "기능 요청을 작업 단위로 분해하고 우선순위·Acceptance Criteria·리스크를 정리합니다 (구현 코드는 작성하지 않음, .claude/agents/planning-agent.md)."
+      },
+      {
+        "type": "agent",
+        "name": "Validation Agent",
+        "purpose": "구현이 끝난 기능을 요구사항·Acceptance Criteria·디자인 시스템 기준으로 검증하고 Critical/Major/Minor/Info로 분류한 리포트를 제공합니다 (코드는 수정하지 않음, .claude/agents/validation-agent.md)."
+      },
       {
         "type": "agent",
         "name": "Explore Agent",
         "purpose": "코드베이스에서 관련 파일과 기존 구현 패턴을 탐색합니다."
-      },
-      {
-        "type": "agent",
-        "name": "Plan Agent",
-        "purpose": "탐색 결과를 바탕으로 구현 계획을 설계하고 검토받습니다."
       },
       {
         "type": "skill",
@@ -66,11 +71,13 @@
       {
         "name": "기능 개발 Workflow",
         "steps": [
-          "Plan 모드로 코드 탐색 및 구현 계획 수립",
+          "Planning Agent로 요구사항을 작업 단위·Acceptance Criteria로 분해",
+          "Explore Agent/Plan 모드로 코드 탐색 및 구현 계획 수립",
           "우선순위·범위를 사용자와 확인",
           "코드 구현",
           "tsc/build로 회귀 확인",
           "claude-in-chrome으로 실제 업로드·화면 반영 검증",
+          "Validation Agent로 Acceptance Criteria·스코프·디자인 일관성 최종 검증",
           "main 브랜치에 직접 커밋"
         ]
       },
