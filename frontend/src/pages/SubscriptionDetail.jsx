@@ -11,6 +11,17 @@ const SubscriptionDetail = () => {
   const [status, setStatus] = useState('loading')
   const [subscription, setSubscription] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyLink = async (joinUrl) => {
+    try {
+      await navigator.clipboard.writeText(joinUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // 클립보드 접근이 막힌 환경 — 화면에 보이는 링크 텍스트로 수동 복사 가능
+    }
+  }
 
   useEffect(() => {
     getSubscription(id)
@@ -92,6 +103,12 @@ const SubscriptionDetail = () => {
 
             <p className="detail-section-title">파티원 초대 링크</p>
             <p className="detail-join-url">{joinUrl}</p>
+            <div className="link-action-row">
+              <button type="button" className="copy-link-btn" onClick={() => handleCopyLink(joinUrl)}>
+                {copied ? '복사됨' : '링크 복사'}
+              </button>
+            </div>
+
           </div>
         )}
       </>

@@ -80,6 +80,22 @@
   margin: 0;
 }
 
+.link-action-row {
+  display: flex;
+  gap: var(--space-inline-gap);
+}
+
+.copy-link-btn {
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--color-card-suggest);
+  color: var(--color-text);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .subscription-detail-message {
   padding: var(--space-section-gap) 4px;
   color: var(--color-text-muted);
