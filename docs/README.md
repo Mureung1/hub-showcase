@@ -99,6 +99,7 @@ Root companion docs:
 
 | 문서 | 위치 | 현재 쓰임 |
 | --- | --- | --- |
+| Codex Python SDK patch stack 축소 연구 | [spikes/codex-sdk-patch-reduction/research.md](spikes/codex-sdk-patch-reduction/research.md) | 새 patch 금지선, patch-free App Server adapter와 기존 patch 제거 조건 |
 | Codex App Server context delivery capability 조사 | [spikes/codex-app-server-context-delivery/research.md](spikes/codex-app-server-context-delivery/research.md) | case별 전달 capability를 고를 때의 protocol 근거 |
 | Codex session topology 조사 | [spikes/codex-session-topology/research.md](spikes/codex-session-topology/research.md) | 고정 topology를 피하면서 lifecycle 특성을 확인하는 근거 |
 | Codex local Memories 아키텍처 조사 | [spikes/codex-memory-architecture/research.md](spikes/codex-memory-architecture/research.md) | built-in Memories의 scope·privacy·수명 근거 |

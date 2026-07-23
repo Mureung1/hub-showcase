@@ -13,7 +13,7 @@
 
 1. **`0010`을 만들지 않는다.** `config/read`와 `skills/list`는 supported public Python SDK surface에 없으며, import 가능한 `CodexClient`·`AsyncCodexClient`와 `.request()`는 official public API가 아니다.
 2. **`@ay-ple/codex-chat-runtime` 소유의 좁고 bounded한 App Server stdio context probe를 쓴다.** Exact native executable을 별도 one-shot process로 띄워 `initialize → initialized → config/read → skills/list`만 수행하고, frozen `CodexNativeContextPort` 결과로 매핑한 뒤 process tree를 완전히 reap한다.
-3. **patch budget을 즉시 9개에서 동결한다.** 다음 public-preview release gate는 최대 7개, durable architecture gate는 최대 3개, 최종 목표는 0개다. Patch file을 합치는 것은 개수 축소로 세지 않는다.
+3. **patch ceiling을 현재 9개에서 즉시 동결한다.** 중간 숫자를 release deadline으로 먼저 고정하지 않고, replacement capability가 기존 acceptance를 통과해 production 의존이 실제로 사라질 때마다 ceiling을 낮춘다. 최종 목표는 0개다. Patch file을 합치는 것은 개수 축소로 세지 않는다.
 4. **Replacement 이후의 축소 우선순위는 `0009 → 0008 → 0007 → 0004 → 0006 → (0001, 0003, 0005) → 0002`다.** Control-plane login adapter로 `0009`, workspace-local Skill action migration으로 `0008`을 먼저 줄인다. `0001`–`0007`은 product seam 변경이나 full conversation adapter 없이는 현재 graph에서 제거할 수 없다.
 5. **새 SDK patch의 기본값을 금지한다.** Demonstrated upstream defect, 최소 failing oracle, upstream issue/PR 또는 제출 불가 사유, 제거 조건, patch-budget 예외 승인이 모두 있을 때만 허용한다.
 
@@ -125,7 +125,7 @@ Official App Server는 rich client를 위한 JSON-RPC interface이며 stdio JSON
 ```text
 workspace transition lease 취득
   → exact manifest-attested native executable spawn
-  → initialize / initialized
+  → initialize(capabilities.experimentalApi=true) / initialized
   → config/read(cwd, includeLayers=true)
   → skills/list(cwds=[cwd], forceReload=true)
   → narrow strict decode
@@ -134,7 +134,7 @@ workspace transition lease 취득
   → 동일 launch attestation으로 action Runtime admission
 ```
 
-`config/read`의 `config` response field는 pinned protocol에서 experimental로 표시되어 있으므로, “documented protocol”이라고 해서 moving-version compatibility를 가정해서는 안 된다. Exact native pin과 schema fixture가 필요하다. `skills/list` 등록은 pinned [`common.rs`](https://github.com/openai/codex/blob/8c68d4c87dc54d38861f5114e920c3de2efa5876/codex-rs/app-server-protocol/src/protocol/common.rs#L663-L667), `config/read` 등록은 같은 파일의 [method registration](https://github.com/openai/codex/blob/8c68d4c87dc54d38861f5114e920c3de2efa5876/codex-rs/app-server-protocol/src/protocol/common.rs#L1110-L1114)에 있다.
+`config/read` method는 문서화돼 있지만 필요한 `config` response field는 pinned protocol에서 experimental로 표시된다. Probe는 initialize에서 `capabilities.experimentalApi=true`를 명시해야 하며, “documented protocol”이라고 해서 moving-version compatibility를 가정해서는 안 된다. Exact native pin과 schema fixture가 필요하다. `skills/list` 등록은 pinned [`common.rs`](https://github.com/openai/codex/blob/8c68d4c87dc54d38861f5114e920c3de2efa5876/codex-rs/app-server-protocol/src/protocol/common.rs#L663-L667), `config/read` 등록은 같은 파일의 [method registration](https://github.com/openai/codex/blob/8c68d4c87dc54d38861f5114e920c3de2efa5876/codex-rs/app-server-protocol/src/protocol/common.rs#L1110-L1114)에 있다.
 
 Probe는 다음 acceptance를 모두 가져야 한다.
 
@@ -204,13 +204,14 @@ Probe는 다음 acceptance를 모두 가져야 한다.
 
 ## 4. 단계별 축소 계획
 
-### 4.1 Patch budget
+### 4.1 Patch ceiling
 
-| Gate | 최대 behavioral patch 수 | 통과 조건 |
+| Checkpoint | Behavioral patch ceiling | 통과 조건 |
 | --- | ---: | --- |
-| 즉시 | **9** | `0010` 금지, 새 patch는 budget exception 필요 |
-| 다음 public-preview release | **7** | Control-plane login adapter로 `0009`, workspace-local Skill action migration으로 `0008` 제거. 실패하면 release/budget을 명시적으로 재결정하고 10번째 patch를 추가하지 않음 |
-| Durable Runtime boundary | **3** | AY policy/convenience patch를 Runtime-owned adapter로 이전하고 upstream-bound router defects만 남김 |
+| 즉시 | **9** | `0010` 금지, 새 patch는 예외 승인 필요 |
+| 첫 capability replacement | 실제 제거 수만큼 감소 | Control-plane login adapter의 `0009` 또는 workspace-local Skill action migration의 `0008`이 해당 exact gate를 통과하고 production bundle에서 제거됨 |
+| 두 capability replacement 완료 | **최대 7** | `0009`와 `0008`이 모두 production bundle에서 제거됨. 이 수치는 release deadline이 아니라 두 replacement가 완료됐다는 결과값임 |
+| Conversation boundary 전환 | 고정 중간 숫자 없음 | Patch별 removal oracle을 통과할 때마다 ceiling을 낮춤. 일정 때문에 acceptance를 낮춰 숫자를 맞추지 않음 |
 | 최종 | **0** | Upstream released fixes 또는 complete primary App Server adapter로 exact gates 통과 |
 
 Behavioral capability가 그대로인데 patch file만 squash한 경우 수치는 줄이지 않는다. Generated baseline adaptation도 behavioral patch로 재분류해 숨기지 않는다.
@@ -279,4 +280,4 @@ Behavioral capability가 그대로인데 patch file만 squash한 경우 수치�
 
 제안된 `0010`은 두 native read를 편하게 노출하지만, supported public SDK 부재를 local ordered patch 하나로 더 덮는 선택이다. 현재 stack의 가장 큰 문제는 patch 적용 기술이 아니라 **upstream correctness defect, SDK convenience gap, AY-PLE operational policy가 같은 fork layer에 계속 축적되는 소유권**이다.
 
-즉시 가장 작은 안전한 조치는 patch 9개를 동결하고 official documented App Server stdio 위에 context-only one-shot probe를 두는 것이다. 이 seam은 raw protocol을 Runtime 내부에 가두면서 required native evidence를 만들고, `0010`을 피하며, 이후 primary adapter로 가는 실제 학습도 남긴다. 첫 patch 감소는 workspace-local Skill cutover 뒤 `0008`, 다음은 `0007` disposition이다. Router correctness와 global bounds는 replacement evidence가 가장 강해질 때까지 유지하고 `0002`를 마지막에 제거한다.
+즉시 가장 작은 안전한 조치는 patch 9개를 동결하고 official documented App Server stdio 위에 context-only one-shot probe를 두는 것이다. 이 seam은 raw protocol을 Runtime 내부에 가두면서 required native evidence를 만들고, `0010`을 피하며, 이후 primary adapter로 가는 실제 학습도 남긴다. 첫 감소 후보는 control-plane login adapter 뒤의 `0009`와 workspace-local Skill cutover 뒤의 `0008`이며, 그다음 `0007` disposition을 결정한다. Router correctness와 global bounds는 replacement evidence가 가장 강해질 때까지 유지하고 `0002`를 마지막에 제거한다.
