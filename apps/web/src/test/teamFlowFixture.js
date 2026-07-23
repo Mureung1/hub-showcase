@@ -4,10 +4,10 @@ export const CURRENT_USER_ID = 'member-1'
 export const AI_MEMBER_ID = 'member-ai'
 
 export const initialProjects = [
-  { id: '1', name: '팀플 관리 웹서비스 (TeamFlow)', description: '부트캠프 4주 개인 프로젝트 · 팀플 정보를 한 공간에서 관리', status: PROJECT_STATUS.IN_PROGRESS, startDate: '2026-07-01', endDate: '2026-07-31', memberIds: ['member-1', 'member-2', 'member-5', 'member-6', AI_MEMBER_ID], creatorId: CURRENT_USER_ID },
-  { id: '2', name: '교내 창업 공모전 기획안', description: '플랫폼 비즈니스 아이디어 스케치와 팀원 역할 배분', status: PROJECT_STATUS.IN_PROGRESS, startDate: '2026-07-15', endDate: '2026-08-15', memberIds: ['member-1', 'member-2', 'member-3', AI_MEMBER_ID], creatorId: CURRENT_USER_ID },
-  { id: '3', name: '캡스톤 디자인 (졸업작품)', description: 'AI 기반 개인화 일정 추천 시스템 개발', status: PROJECT_STATUS.IN_PROGRESS, startDate: '2026-03-02', endDate: '2026-11-30', memberIds: ['member-1', 'member-5', 'member-6'], creatorId: CURRENT_USER_ID },
-  { id: '4', name: '오픈소스 컨트리뷰톤 2024', description: '프론트엔드 오픈소스 이슈 해결 및 PR 제출', status: PROJECT_STATUS.NOT_STARTED, startDate: '2026-08-01', endDate: '2026-08-31', memberIds: ['member-1'], creatorId: CURRENT_USER_ID },
+  { id: '1', name: '팀플 관리 웹서비스 (TeamFlow)', description: '부트캠프 4주 개인 프로젝트 · 팀플 정보를 한 공간에서 관리', status: PROJECT_STATUS.IN_PROGRESS, iconKey: 'layers', startDate: '2026-07-01', endDate: '2026-07-31', memberIds: ['member-1', 'member-2', 'member-5', 'member-6', AI_MEMBER_ID], creatorId: CURRENT_USER_ID },
+  { id: '2', name: '교내 창업 공모전 기획안', description: '플랫폼 비즈니스 아이디어 스케치와 팀원 역할 배분', status: PROJECT_STATUS.IN_PROGRESS, iconKey: 'megaphone', startDate: '2026-07-15', endDate: '2026-08-15', memberIds: ['member-1', 'member-2', 'member-3', AI_MEMBER_ID], creatorId: CURRENT_USER_ID },
+  { id: '3', name: '캡스톤 디자인 (졸업작품)', description: 'AI 기반 개인화 일정 추천 시스템 개발', status: PROJECT_STATUS.IN_PROGRESS, iconKey: 'code', startDate: '2026-03-02', endDate: '2026-11-30', memberIds: ['member-1', 'member-5', 'member-6'], creatorId: CURRENT_USER_ID },
+  { id: '4', name: '오픈소스 컨트리뷰톤 2024', description: '프론트엔드 오픈소스 이슈 해결 및 PR 제출', status: PROJECT_STATUS.NOT_STARTED, iconKey: 'rocket', startDate: '2026-08-01', endDate: '2026-08-31', memberIds: ['member-1'], creatorId: CURRENT_USER_ID },
 ]
 
 export const initialMembers = [

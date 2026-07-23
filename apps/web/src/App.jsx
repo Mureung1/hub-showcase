@@ -18,6 +18,8 @@ import { MyTasksPage } from './features/tasks/MyTasksPage.jsx'
 import { ProjectTasksPage } from './features/tasks/ProjectTasksPage.jsx'
 import { TeamFlowProvider } from './state/TeamFlowProvider.jsx'
 
+const TEAMFLOW_API_BASE_URL = import.meta.env.VITE_TEAMFLOW_API_URL ?? ''
+
 /**
  * Defines the public route surface for the TeamFlow web application.
  */
@@ -51,8 +53,15 @@ export default function App({ authenticatedRepository, guestRepository }) {
 function TeamFlowBoundary({ authenticatedRepository, guestRepository }) {
   const auth = useAuth()
   const repository = useMemo(() => {
-    if (auth.status === 'guest') return guestRepository ?? createDemoTeamFlowRepository()
-    return authenticatedRepository ?? createApiTeamFlowRepository({ getAccessToken: auth.getAccessToken })
+    if (auth.status === 'guest') {
+      return guestRepository ?? createDemoTeamFlowRepository({
+        apiBaseUrl: TEAMFLOW_API_BASE_URL,
+      })
+    }
+    return authenticatedRepository ?? createApiTeamFlowRepository({
+      getAccessToken: auth.getAccessToken,
+      apiBaseUrl: TEAMFLOW_API_BASE_URL,
+    })
   }, [auth.status, auth.getAccessToken, authenticatedRepository, guestRepository])
 
   return <TeamFlowProvider key={`${auth.status}:${auth.user?.id ?? 'guest'}`} repository={repository}><Outlet /></TeamFlowProvider>

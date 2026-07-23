@@ -9,13 +9,29 @@ function reducer(state, action) {
     case 'loadFailed':
       return { ...state, ready: false, loadError: action.message }
     case 'projectCreated':
-      return { ...state, projects: [...state.projects, action.project] }
+      return {
+        ...state,
+        projects: [...state.projects.filter((project) => project.id !== action.project.id), action.project],
+        currentMemberIdsByProject: action.project.creatorId
+          ? { ...state.currentMemberIdsByProject, [action.project.id]: action.project.creatorId }
+          : state.currentMemberIdsByProject,
+      }
     case 'projectUpdated':
       return {
         ...state,
         projects: state.projects.map((project) => project.id === action.projectId
           ? { ...project, ...action.patch }
           : project),
+      }
+    case 'projectDeleted':
+      return {
+        ...state,
+        projects: state.projects.filter((project) => project.id !== action.projectId),
+        members: state.members.filter((member) => member.projectId !== action.projectId),
+        tasks: state.tasks.filter((task) => task.projectId !== action.projectId),
+        notes: state.notes.filter((note) => note.projectId !== action.projectId),
+        resources: state.resources.filter((resource) => resource.projectId !== action.projectId),
+        invitations: state.invitations.filter((invitation) => invitation.projectId !== action.projectId),
       }
     case 'taskCreated':
       return { ...state, tasks: [action.task, ...state.tasks] }
@@ -41,6 +57,23 @@ function reducer(state, action) {
           ? { ...project, memberIds: [...project.memberIds, action.member.id] }
           : project),
       }
+    case 'memberUpdated':
+      return {
+        ...state,
+        members: state.members.map((member) => member.id === action.memberId
+          ? { ...member, ...action.patch }
+          : member),
+      }
+    case 'memberDeleted':
+      return {
+        ...state,
+        members: state.members.filter((member) => member.id !== action.memberId),
+        projects: state.projects.map((project) => project.id === action.projectId
+          ? { ...project, memberIds: project.memberIds.filter((memberId) => memberId !== action.memberId) }
+          : project),
+        notes: state.notes.map((note) => note.authorId === action.memberId ? { ...note, authorId: null } : note),
+        resources: state.resources.map((resource) => resource.ownerId === action.memberId ? { ...resource, ownerId: null } : resource),
+      }
     case 'noteCreated':
       return { ...state, notes: [action.note, ...state.notes] }
     case 'noteUpdated':
@@ -48,8 +81,23 @@ function reducer(state, action) {
         ...state,
         notes: state.notes.map((note) => note.id === action.noteId ? { ...note, ...action.patch } : note),
       }
+    case 'noteDeleted':
+      return { ...state, notes: state.notes.filter((note) => note.id !== action.noteId) }
     case 'resourceCreated':
       return { ...state, resources: [action.resource, ...state.resources] }
+    case 'resourceUpdated':
+      return {
+        ...state,
+        resources: state.resources.map((resource) => resource.id === action.resourceId
+          ? { ...resource, ...action.patch }
+          : resource),
+      }
+    case 'resourceDeleted':
+      return { ...state, resources: state.resources.filter((resource) => resource.id !== action.resourceId) }
+    case 'invitationCreated':
+      return { ...state, invitations: [action.invitation, ...state.invitations] }
+    case 'invitationRemoved':
+      return { ...state, invitations: state.invitations.filter((invitation) => invitation.id !== action.invitationId) }
     case 'aiSettingsUpdated':
       return {
         ...state,
@@ -74,6 +122,8 @@ const emptyState = {
   tasks: [],
   notes: [],
   resources: [],
+  invitations: [],
+  currentMemberIdsByProject: {},
   aiSettings: {},
   aiHistory: [],
   currentUserId: '',
@@ -88,6 +138,17 @@ const emptyState = {
 export function TeamFlowProvider({ children, repository }) {
   const [state, dispatch] = useReducer(reducer, emptyState)
   const timers = useRef(new Set())
+  const beforeLeaveHandlers = useRef(new Set())
+
+  const reload = useCallback(async () => {
+    const payload = await repository.load()
+    dispatch({ type: 'hydrate', payload })
+    return payload
+  }, [repository])
+
+  const reloadOnEntry = useCallback(() => (
+    repository.refreshOnEntry === false ? Promise.resolve(null) : reload()
+  ), [repository, reload])
 
   useEffect(() => {
     let active = true
@@ -114,13 +175,30 @@ export function TeamFlowProvider({ children, repository }) {
   const createProject = useCallback(async (input) => {
     const project = await repository.createProject(input)
     dispatch({ type: 'projectCreated', project })
+    // Project creation also creates the signed-in user's project member in the DB.
+    // Rehydrate so task/member UIs work without requiring a refresh. A failed
+    // follow-up read must not turn a successful POST into a retryable create.
+    try {
+      const payload = await reload()
+      if (!payload.projects.some((candidate) => candidate.id === project.id)) {
+        dispatch({ type: 'projectCreated', project })
+      }
+    } catch {
+      // Keep the optimistic project. Screen-entry refreshes will retry hydration.
+    }
     return project
-  }, [repository])
+  }, [repository, reload])
 
   const updateProject = useCallback(async (projectId, patch) => {
     const result = await repository.updateProject(projectId, patch)
     dispatch({ type: 'projectUpdated', ...result })
     return result
+  }, [repository])
+
+  const deleteProject = useCallback(async (projectId) => {
+    const result = await repository.deleteProject(projectId)
+    dispatch({ type: 'projectDeleted', projectId: result.projectId })
+    return result.projectId
   }, [repository])
 
   const createTask = useCallback(async (projectId, input) => {
@@ -152,6 +230,71 @@ export function TeamFlowProvider({ children, repository }) {
     return result.member
   }, [repository])
 
+  const updateMember = useCallback(async (memberId, patch) => {
+    const result = await repository.updateMember(memberId, patch)
+    dispatch({ type: 'memberUpdated', ...result })
+    return result
+  }, [repository])
+
+  const deleteMember = useCallback(async (memberId) => {
+    const result = await repository.deleteMember(memberId)
+    const currentMemberId = result.projectId
+      ? state.currentMemberIdsByProject?.[result.projectId]
+      : null
+    if (result.wasCollaborator && currentMemberId === result.memberId) {
+      try {
+        await reload()
+      } catch {
+        dispatch({ type: 'projectDeleted', projectId: result.projectId })
+      }
+      return { ...result, leftProject: true }
+    }
+    dispatch({ type: 'memberDeleted', ...result })
+    return result
+  }, [repository, reload, state.currentMemberIdsByProject])
+
+  const registerBeforeLeave = useCallback((handler) => {
+    beforeLeaveHandlers.current.add(handler)
+    return () => beforeLeaveHandlers.current.delete(handler)
+  }, [])
+
+  const flushPending = useCallback(async () => {
+    for (const handler of beforeLeaveHandlers.current) {
+      if (!(await handler())) return false
+    }
+    return true
+  }, [])
+
+  const createInvitation = useCallback(async (projectId, input) => {
+    const invitation = await repository.createInvitation(projectId, input)
+    dispatch({ type: 'invitationCreated', invitation })
+    return invitation
+  }, [repository])
+
+  const acceptInvitation = useCallback(async (invitationId) => {
+    const result = await repository.acceptInvitation(invitationId)
+    dispatch({ type: 'invitationRemoved', invitationId })
+    try {
+      await reload()
+    } catch {
+      // The invitation was already accepted. A later screen-entry refresh will
+      // load the shared project without asking the user to accept it twice.
+    }
+    return result
+  }, [repository, reload])
+
+  const rejectInvitation = useCallback(async (invitationId) => {
+    const result = await repository.rejectInvitation(invitationId)
+    dispatch({ type: 'invitationRemoved', invitationId: result.invitationId })
+    return result
+  }, [repository])
+
+  const cancelInvitation = useCallback(async (invitationId) => {
+    const result = await repository.cancelInvitation(invitationId)
+    dispatch({ type: 'invitationRemoved', invitationId: result.invitationId })
+    return result
+  }, [repository])
+
   const createNote = useCallback(async (projectId, input) => {
     const note = await repository.createNote(projectId, input)
     dispatch({ type: 'noteCreated', note })
@@ -161,12 +304,31 @@ export function TeamFlowProvider({ children, repository }) {
   const updateNote = useCallback(async (noteId, patch) => {
     const result = await repository.updateNote(noteId, patch)
     dispatch({ type: 'noteUpdated', ...result })
+    return result
+  }, [repository])
+
+  const deleteNote = useCallback(async (noteId) => {
+    const result = await repository.deleteNote(noteId)
+    dispatch({ type: 'noteDeleted', noteId: result.noteId })
+    return result
   }, [repository])
 
   const createResource = useCallback(async (projectId, input) => {
     const resource = await repository.createResource(projectId, input)
     dispatch({ type: 'resourceCreated', resource })
     return resource
+  }, [repository])
+
+  const updateResource = useCallback(async (resourceId, patch) => {
+    const result = await repository.updateResource(resourceId, patch)
+    dispatch({ type: 'resourceUpdated', ...result })
+    return result
+  }, [repository])
+
+  const deleteResource = useCallback(async (resourceId) => {
+    const result = await repository.deleteResource(resourceId)
+    dispatch({ type: 'resourceDeleted', resourceId: result.resourceId })
+    return result
   }, [repository])
 
   const updateAiSettings = useCallback(async (projectId, patch) => {
@@ -178,8 +340,33 @@ export function TeamFlowProvider({ children, repository }) {
     state,
     capabilities: state.capabilities,
     readOnly: state.accessMode === 'guest',
-    actions: { createProject, updateProject, createTask, updateTask, deleteTask, addMember, createNote, updateNote, createResource, updateAiSettings },
-  }), [state, createProject, updateProject, createTask, updateTask, deleteTask, addMember, createNote, updateNote, createResource, updateAiSettings])
+    actions: {
+      reload,
+      reloadOnEntry,
+      createProject,
+      updateProject,
+      deleteProject,
+      createTask,
+      updateTask,
+      deleteTask,
+      addMember,
+      updateMember,
+      deleteMember,
+      createInvitation,
+      acceptInvitation,
+      rejectInvitation,
+      cancelInvitation,
+      createNote,
+      updateNote,
+      deleteNote,
+      createResource,
+      updateResource,
+      deleteResource,
+      updateAiSettings,
+      registerBeforeLeave,
+      flushPending,
+    },
+  }), [state, reload, reloadOnEntry, createProject, updateProject, deleteProject, createTask, updateTask, deleteTask, addMember, updateMember, deleteMember, createInvitation, acceptInvitation, rejectInvitation, cancelInvitation, createNote, updateNote, deleteNote, createResource, updateResource, deleteResource, updateAiSettings, registerBeforeLeave, flushPending])
 
   if (state.loadError) {
     return (

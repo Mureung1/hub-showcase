@@ -1,6 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { describe, expect, test, vi } from 'vitest'
 
 import App from '../App.jsx'
@@ -9,13 +9,15 @@ import { authenticatedSession, createTestAuthClient } from '../test/renderTeamFl
 import { AuthProvider } from './AuthProvider.jsx'
 
 function renderWithAuth({ initialEntry = '/', client = createTestAuthClient(null), guestRepository = testTeamFlowRepository } = {}) {
-  return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
+  const router = createMemoryRouter([{
+    path: '*',
+    element: (
       <AuthProvider client={client}>
         <App authenticatedRepository={testTeamFlowRepository} guestRepository={guestRepository} />
       </AuthProvider>
-    </MemoryRouter>,
-  )
+    ),
+  }], { initialEntries: [initialEntry] })
+  return { ...render(<RouterProvider router={router} />), router }
 }
 
 describe('TeamFlow authentication flows', () => {
@@ -58,6 +60,13 @@ describe('TeamFlow authentication flows', () => {
     expect(screen.queryByRole('button', { name: /새 프로젝트/ })).not.toBeInTheDocument()
     expect(screen.getAllByText('읽기 전용 데모').length).toBeGreaterThan(0)
     expect(globalThis.sessionStorage.getItem('teamflow:guest')).toBe('1')
+
+    await user.click(screen.getByRole('button', { name: '게스트 계정 메뉴' }))
+    const accountDialog = screen.getByRole('dialog', { name: '계정 및 설정' })
+    expect(within(accountDialog).getByText('계정 없이 데모를 둘러보는 중입니다.')).toBeInTheDocument()
+    expect(within(accountDialog).getByText('읽기 전용')).toBeInTheDocument()
+    expect(within(accountDialog).queryByText('받은 프로젝트 초대')).not.toBeInTheDocument()
+    await user.keyboard('{Escape}')
 
     await user.click(screen.getByRole('button', { name: '게스트 모드 종료' }))
     expect(await screen.findByRole('button', { name: 'Google로 계속하기' })).toBeInTheDocument()

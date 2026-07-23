@@ -3,7 +3,8 @@ import Calendar from 'lucide-react/dist/esm/icons/calendar-days.mjs'
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down.mjs'
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right.mjs'
 import Plus from 'lucide-react/dist/esm/icons/plus.mjs'
-import { useMemo, useState } from 'react'
+import Settings from 'lucide-react/dist/esm/icons/settings.mjs'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 
 import { Avatar } from '../../components/ui/Avatar.jsx'
@@ -14,6 +15,7 @@ import { useTeamFlow } from '../../state/useTeamFlow.js'
 import { selectProjectMembers, selectProjectTasks } from '../../state/selectors.js'
 import workspace from '../../styles/workspace.module.css'
 import styles from './ProjectDashboardPage.module.css'
+import { ProjectSettingsModal } from '../projects/components/ProjectSettingsModal.jsx'
 import { ProjectPeriodModal } from './ProjectPeriodModal.jsx'
 
 const priority = { [TASK_STATUS.IN_PROGRESS]: 0, [TASK_STATUS.IN_REVIEW]: 1, [TASK_STATUS.NOT_STARTED]: 2, [TASK_STATUS.COMPLETED]: 3 }
@@ -21,11 +23,39 @@ const DASHBOARD_TASK_LIMIT = 10
 
 export function ProjectDashboardPage() {
   const { project, openTaskCreate, openTaskDetail } = useOutletContext()
-  const { state, capabilities } = useTeamFlow()
+  const { state, actions, capabilities, readOnly } = useTeamFlow()
+  const { reloadOnEntry } = actions
   const navigate = useNavigate()
   const [expandedTasks, setExpandedTasks] = useState(false)
   const [periodOpen, setPeriodOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [panels, setPanels] = useState({ team: true, notes: true, resources: true })
+  const [expandedSideHeight, setExpandedSideHeight] = useState(null)
+  const sidePanelsRef = useRef(null)
+  const allPanelsOpen = panels.team && panels.notes && panels.resources
+
+  useEffect(() => {
+    if (!readOnly) void reloadOnEntry().catch(() => {})
+  }, [project.id, readOnly, reloadOnEntry])
+  useEffect(() => {
+    setPanels({ team: true, notes: true, resources: true })
+  }, [project.id])
+  useLayoutEffect(() => {
+    if (!allPanelsOpen || !sidePanelsRef.current) return undefined
+
+    const panelsElement = sidePanelsRef.current
+    const measureExpandedPanels = () => {
+      const measuredHeight = Math.ceil(panelsElement.getBoundingClientRect().height)
+      if (measuredHeight > 0) setExpandedSideHeight(measuredHeight)
+    }
+
+    measureExpandedPanels()
+    if (typeof ResizeObserver === 'undefined') return undefined
+
+    const observer = new ResizeObserver(measureExpandedPanels)
+    observer.observe(panelsElement)
+    return () => observer.disconnect()
+  }, [allPanelsOpen, project.id])
   const tasks = selectProjectTasks(state, project.id)
   const members = selectProjectMembers(state, project.id)
   const notes = state.notes.filter((note) => note.projectId === project.id)
@@ -52,8 +82,8 @@ export function ProjectDashboardPage() {
     <section className={workspace.scrollPage} aria-labelledby="dashboard-title">
       <div className={workspace.container}>
         <header className={workspace.pageHeader}>
-          <div><p>내 프로젝트</p><h1 id="dashboard-title">{project.name}</h1>{capabilities.projects ? <button type="button" className={styles.period} aria-label="프로젝트 기간 수정" onClick={() => setPeriodOpen(true)}><Calendar size={12} /><span className={workspace.mono}>{formatPeriod(project.startDate, project.endDate)}</span></button> : <span className={styles.period}><Calendar size={12} /><span className={workspace.mono}>{formatPeriod(project.startDate, project.endDate)}</span></span>}</div>
-          {capabilities.tasks ? <button className={workspace.primaryButton} type="button" onClick={openTaskCreate}><Plus size={15} />새 할 일</button> : null}
+          <div><p>내 프로젝트</p><h1 id="dashboard-title">{project.name}</h1>{capabilities.projects ? <button type="button" className={styles.period} aria-label="프로젝트 기간 수정" onClick={() => setPeriodOpen(true)}><Calendar size={12} /><span className={project.startDate && project.endDate ? workspace.mono : undefined}>{formatPeriod(project.startDate, project.endDate)}</span></button> : <span className={styles.period}><Calendar size={12} /><span className={project.startDate && project.endDate ? workspace.mono : undefined}>{formatPeriod(project.startDate, project.endDate)}</span></span>}</div>
+          <div className={styles.headerActions}>{capabilities.projects ? <button className={workspace.secondaryButton} type="button" onClick={() => setSettingsOpen(true)}><Settings size={14} />프로젝트 설정</button> : null}{capabilities.tasks ? <button className={workspace.primaryButton} type="button" onClick={openTaskCreate}><Plus size={15} />새 할 일</button> : null}</div>
         </header>
 
         <section className={`${workspace.card} ${styles.progressStrip}`}>
@@ -62,7 +92,7 @@ export function ProjectDashboardPage() {
         </section>
 
         <div className={styles.dashboardGrid}>
-          <section className={`${workspace.card} ${styles.tasksCard}`}>
+          <section className={`${workspace.card} ${styles.tasksCard}`} style={expandedSideHeight ? { '--dashboard-expanded-side-height': `${expandedSideHeight}px` } : undefined}>
             <header className={workspace.sectionHeader}><h2>우선 할 일</h2><button type="button" onClick={() => navigate(`/projects/${project.id}/tasks`)}>전체 보기 <ChevronRight size={13} /></button></header>
             <div className={styles.taskTableViewport}>
               <table className={`${workspace.table} ${styles.tasksTable}`}>
@@ -75,16 +105,23 @@ export function ProjectDashboardPage() {
             </div>
           </section>
 
-          <aside className={styles.sidePanels}>
+          <aside className={styles.sidePanels} ref={sidePanelsRef}>
             <DashboardPanel title="팀원" meta={`${members.length}명`} open={panels.team} onToggle={() => toggle('team')}>
               <div className={styles.memberList}>{members.map((member) => <div key={member.id}><Avatar member={member} /><span className={styles.memberInfo}><strong>{member.name}</strong><small>{member.role}</small></span>{member.isAi ? <em>AI</em> : null}</div>)}</div><button className={styles.panelLink} type="button" onClick={() => navigate(`/projects/${project.id}/members`)}>전체 보기</button>
             </DashboardPanel>
-            {notes.length > 0 ? <DashboardPanel title="공유 노트" meta={`${notes.length}개`} open={panels.notes} onToggle={() => toggle('notes')}><div className={styles.noteList}>{recentNotes.map((note) => <button className={styles.noteItem} type="button" key={note.id} aria-label={`${note.title} 노트 열기`} onClick={() => navigate(`/projects/${project.id}/notes?note=${encodeURIComponent(note.id)}`)}><strong>{note.title}</strong><span className={workspace.mono}>{formatShortDate(note.updatedAt)}</span></button>)}</div><button className={styles.panelLink} type="button" onClick={() => navigate(`/projects/${project.id}/notes`)}>전체 보기</button></DashboardPanel> : null}
-            <DashboardPanel title="자료" meta={`${resources.length}개`} open={panels.resources} onToggle={() => toggle('resources')}><div className={styles.resourceList}>{resources.slice(0, 3).map((resource) => <div key={resource.id}><ResourceIcon type={resource.type} /><span className={styles.resourceInfo}><strong>{resource.name}</strong><small className={workspace.mono}>{formatShortDate(resource.updatedAt)}</small></span></div>)}</div><button className={styles.panelLink} type="button" onClick={() => navigate(`/projects/${project.id}/resources`)}>전체 보기</button></DashboardPanel>
+            <DashboardPanel title="공유 노트" meta={`${notes.length}개`} open={panels.notes} onToggle={() => toggle('notes')}>
+              {recentNotes.length > 0 ? <div className={styles.noteList}>{recentNotes.map((note) => <button className={styles.noteItem} type="button" key={note.id} aria-label={`${note.title} 노트 열기`} onClick={() => navigate(`/projects/${project.id}/notes?note=${encodeURIComponent(note.id)}`)}><strong>{note.title}</strong><span className={workspace.mono}>{formatShortDate(note.updatedAt)}</span></button>)}</div> : <p className={styles.panelEmpty}>공유 노트가 없습니다.</p>}
+              <button className={styles.panelLink} type="button" onClick={() => navigate(`/projects/${project.id}/notes`)}>전체 보기</button>
+            </DashboardPanel>
+            <DashboardPanel title="자료" meta={`${resources.length}개`} open={panels.resources} onToggle={() => toggle('resources')}>
+              {resources.length > 0 ? <div className={styles.resourceList}>{resources.slice(0, 3).map((resource) => <div key={resource.id}><ResourceIcon type={resource.type} /><span className={styles.resourceInfo}><strong>{resource.name}</strong><small className={workspace.mono}>{formatShortDate(resource.updatedAt)}</small></span></div>)}</div> : <p className={styles.panelEmpty}>등록된 자료가 없습니다.</p>}
+              <button className={styles.panelLink} type="button" onClick={() => navigate(`/projects/${project.id}/resources`)}>전체 보기</button>
+            </DashboardPanel>
           </aside>
         </div>
       </div>
       {periodOpen && capabilities.projects ? <ProjectPeriodModal project={project} onClose={() => setPeriodOpen(false)} /> : null}
+      {settingsOpen && capabilities.projects ? <ProjectSettingsModal project={project} onClose={() => setSettingsOpen(false)} onDeleted={() => navigate('/projects', { replace: true })} /> : null}
     </section>
   )
 }

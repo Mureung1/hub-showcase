@@ -11,9 +11,9 @@
 .expandedTaskGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--color-border); }
 .expandedTaskGrid button { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 10px 20px; border: 0; border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); background: #fff; color: var(--color-text-secondary); font-size: 12px; text-align: left; }
 .expandedTaskGrid button > span:first-child { overflow: hidden; color: var(--color-text); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.dashboardGrid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); align-items: stretch; gap: 16px; }
-.tasksCard { display: flex; min-width: 0; min-height: 695px; flex-direction: column; overflow: hidden; }
-.taskTableViewport { min-height: 0; flex: 1; overflow: hidden; }
+.dashboardGrid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); align-items: start; gap: 16px; }
+.tasksCard { display: flex; width: 100%; min-width: 0; height: var(--dashboard-expanded-side-height, auto); flex-direction: column; overflow: hidden; }
+.taskTableViewport { min-height: 0; flex: 1; overflow-x: hidden; overflow-y: auto; }
 .tasksTable td { padding-top: 12px; padding-bottom: 12px; }
 .tasksFooter { margin-top: auto; border-top: 1px solid var(--color-border); }
 .tasksFooter button { width: 100%; min-height: 36px; border: 0; background: #fff; color: var(--color-text-secondary); font-size: 12px; font-weight: 600; transition: background .15s ease; }
@@ -44,5 +44,7 @@
 .noteItem { display: flex; min-width: 0; align-items: center; gap: 10px; padding: 0; border: 0; background: transparent; text-align: left; }
 .noteItem strong { overflow: hidden; flex: 1; color: var(--color-text); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .noteItem span { flex: 0 0 auto; color: var(--color-text-secondary); font-size: 10px; }
+.panelEmpty { margin: 2px 0; padding: 8px 0; color: var(--color-text-secondary); font-size: 11px; text-align: center; }
 
-@media (max-width: 1100px) { .dashboardGrid { grid-template-columns: minmax(0, 1fr); } .tasksCard { min-height: auto; } .sidePanels { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 1100px) { .dashboardGrid { grid-template-columns: minmax(0, 1fr); } .tasksCard { height: auto; } .sidePanels { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.headerActions { display: flex; align-items: center; gap: 8px; }

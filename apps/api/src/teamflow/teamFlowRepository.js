@@ -1,5 +1,11 @@
+import { PROJECT_ICON } from '@teamflow/shared'
+
 const MEMBER_COLUMNS = [
   'id',
+  'project_id',
+  'auth_user_id',
+  'email',
+  'kind',
   'name',
   'initial',
   'role',
@@ -11,9 +17,11 @@ const MEMBER_COLUMNS = [
 
 const PROJECT_COLUMNS = [
   'id',
+  'owner_id',
   'name',
   'description',
   'status',
+  'icon_key',
   'start_date',
   'end_date',
 ].join(',')
@@ -26,6 +34,29 @@ const TASK_COLUMNS = [
   'due_date',
   'status',
   'description',
+].join(',')
+
+const NOTE_COLUMNS = [
+  'id',
+  'project_id',
+  'title',
+  'content',
+  'author_id',
+  'created_at',
+  'updated_at',
+].join(',')
+
+const RESOURCE_COLUMNS = [
+  'id',
+  'project_id',
+  'parent_id',
+  'type',
+  'name',
+  'description',
+  'url',
+  'owner_id',
+  'created_at',
+  'updated_at',
 ].join(',')
 
 export class TeamFlowStoreError extends Error {
@@ -42,17 +73,60 @@ export class TeamFlowNotFoundError extends Error {
   }
 }
 
+export class TeamFlowConflictError extends Error {
+  constructor(message = '현재 상태에서는 요청을 처리할 수 없습니다.') {
+    super(message)
+    this.name = 'TeamFlowConflictError'
+  }
+}
+
+export class TeamFlowValidationError extends Error {
+  constructor(message = '입력값을 확인해 주세요.', fields = {}) {
+    super(message)
+    this.name = 'TeamFlowValidationError'
+    this.fields = fields
+  }
+}
+
 function storeError(operation, error) {
   throw new TeamFlowStoreError(`${operation}에 실패했습니다.`, { cause: error })
 }
 
-function initialFor(name) {
-  return Array.from(name.trim()).slice(0, 1).join('') || 'T'
+function databaseErrorMessage(error) {
+  return typeof error?.message === 'string' ? error.message : ''
+}
+
+function throwDatabaseError(operation, error) {
+  const message = databaseErrorMessage(error)
+  if (message.includes('TEAMFLOW_NOT_FOUND') || /(?:PROJECT|MEMBER|INVITATION)_NOT_FOUND/.test(message)) {
+    throw new TeamFlowNotFoundError()
+  }
+  if (/(?:INVALID_RESOURCE_URL|RESOURCE_URL_REQUIRED|FOLDER_URL_NOT_ALLOWED|FOLDER_MUST_BE_ROOT|INVALID_RESOURCE_PARENT|INVALID_RESOURCE_TYPE_CHANGE)/.test(message)) {
+    const field = /URL/.test(message) ? 'url' : (/TYPE/.test(message) ? 'type' : 'parentId')
+    throw new TeamFlowValidationError(undefined, { [field]: '자료 정보를 확인해 주세요.' })
+  }
+  if (error?.code === '23514') {
+    throw new TeamFlowValidationError(undefined, { body: '입력값이 데이터 제약조건을 충족하지 않습니다.' })
+  }
+  if (
+    error?.code === '23503'
+    || error?.code === '23505'
+    || error?.code === '23P01'
+    || message.includes('TEAMFLOW_CONFLICT')
+  ) {
+    const detail = message.split('TEAMFLOW_CONFLICT:')[1]?.trim()
+    throw new TeamFlowConflictError(detail || undefined)
+  }
+  storeError(operation, error)
 }
 
 function mapMember(row) {
   return {
     id: row.id,
+    projectId: row.project_id,
+    authUserId: row.auth_user_id ?? null,
+    email: row.email ?? null,
+    kind: row.kind,
     name: row.name,
     initial: row.initial,
     role: row.role,
@@ -69,6 +143,7 @@ function mapProject(row, memberIds) {
     name: row.name,
     description: row.description ?? '',
     status: row.status,
+    iconKey: row.icon_key ?? PROJECT_ICON.LAYERS,
     startDate: row.start_date ?? '',
     endDate: row.end_date ?? '',
     ...(memberIds ? { memberIds } : {}),
@@ -88,8 +163,59 @@ function mapTask(row, isNew = false) {
   }
 }
 
+function mapNote(row) {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    title: row.title,
+    content: row.content,
+    authorId: row.author_id ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+function mapResource(row) {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    parentId: row.parent_id ?? null,
+    type: row.type,
+    name: row.name,
+    description: row.description ?? '',
+    url: row.url ?? null,
+    ownerId: row.owner_id ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+function mapInvitation(row) {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    projectName: row.project_name ?? '',
+    inviteeEmail: row.invitee_email,
+    invitedBy: row.invited_by,
+    inviterName: row.inviter_name ?? row.invited_by_name ?? '',
+    status: row.status,
+    direction: row.direction === 'incoming' ? 'received' : (row.direction === 'outgoing' ? 'sent' : row.direction),
+    createdAt: row.created_at,
+    respondedAt: row.responded_at ?? null,
+  }
+}
+
 function unwrapRpcRow(data) {
   return Array.isArray(data) ? data[0] : data
+}
+
+function rpcRows(data) {
+  if (!data) return []
+  return Array.isArray(data) ? data : [data]
+}
+
+function hasOwn(value, key) {
+  return Object.prototype.hasOwnProperty.call(value, key)
 }
 
 export function createSupabaseDemoRepository(supabase) {
@@ -121,88 +247,136 @@ export function createSupabaseDemoRepository(supabase) {
 }
 
 export function createSupabaseTeamFlowRepository(supabase, user) {
-  async function ensureOwnerMember() {
-    const member = {
-      workspace_owner_id: user.id,
-      auth_user_id: user.id,
-      name: user.displayName,
-      initial: initialFor(user.displayName),
-      role: '프로젝트 생성자',
-      description: '',
-      avatar_url: user.avatarUrl,
-      color: '#3a6898',
-      is_ai: false,
-      updated_at: new Date().toISOString(),
-    }
+  async function currentProjectMemberId(projectId) {
     const { data, error } = await supabase
-      .from('members')
-      .upsert(member, { onConflict: 'workspace_owner_id,auth_user_id' })
-      .select(MEMBER_COLUMNS)
-      .single()
+      .from('project_access')
+      .select('member_id')
+      .eq('project_id', projectId)
+      .eq('user_id', user.id)
+      .maybeSingle()
 
-    if (error || !data) storeError('사용자 초기화', error)
-    return mapMember(data)
+    if (error) throwDatabaseError('현재 프로젝트 담당자 조회', error)
+    if (!data?.member_id) throw new TeamFlowNotFoundError()
+    return data.member_id
   }
 
-  async function currentMember() {
-    const { data, error } = await supabase
-      .from('members')
-      .select(MEMBER_COLUMNS)
-      .eq('auth_user_id', user.id)
-      .single()
+  async function listInvitations() {
+    const { data, error } = await supabase.rpc('list_project_invitations')
+    if (error) throwDatabaseError('프로젝트 초대 조회', error)
+    return rpcRows(data).map(mapInvitation)
+  }
 
-    if (error || !data) storeError('현재 사용자 조회', error)
-    return mapMember(data)
+  async function respondToInvitation(operation, rpcName, invitationId) {
+    const { data, error } = await supabase.rpc(rpcName, { p_invitation_id: invitationId })
+    if (error) throwDatabaseError(operation, error)
+    const row = unwrapRpcRow(data)
+    if (!row) throw new TeamFlowNotFoundError()
+    if (typeof row === 'string') return { invitationId: row }
+    if (row.projectId && row.memberId) return row
+    if (row.project_id && row.member_id && !row.invitee_email) {
+      return { projectId: row.project_id, memberId: row.member_id }
+    }
+    return mapInvitation(row)
   }
 
   return {
     async load() {
-      const ownerMember = await ensureOwnerMember()
-      const [projectsResult, membersResult, projectMembersResult, tasksResult] = await Promise.all([
+      const [
+        projectsResult,
+        membersResult,
+        tasksResult,
+        notesResult,
+        resourcesResult,
+        invitations,
+      ] = await Promise.all([
         supabase.from('projects').select(PROJECT_COLUMNS).order('created_at', { ascending: false }),
         supabase.from('members').select(MEMBER_COLUMNS).order('created_at', { ascending: true }),
-        supabase.from('project_members').select('project_id,member_id'),
         supabase.from('tasks').select(TASK_COLUMNS).order('created_at', { ascending: false }),
+        supabase.from('notes').select(NOTE_COLUMNS).order('updated_at', { ascending: false }),
+        supabase.from('resources').select(RESOURCE_COLUMNS).order('created_at', { ascending: true }),
+        listInvitations(),
       ])
 
-      const failed = [projectsResult, membersResult, projectMembersResult, tasksResult]
+      const failed = [projectsResult, membersResult, tasksResult, notesResult, resourcesResult]
         .find((result) => result.error)
-      if (failed) storeError('워크스페이스 조회', failed.error)
+      if (failed) throwDatabaseError('워크스페이스 조회', failed.error)
 
+      const members = membersResult.data.map(mapMember)
       const memberIdsByProject = new Map()
-      for (const relation of projectMembersResult.data) {
-        const memberIds = memberIdsByProject.get(relation.project_id) ?? []
-        memberIds.push(relation.member_id)
-        memberIdsByProject.set(relation.project_id, memberIds)
+      const currentMemberIdsByProject = {}
+      for (const member of members) {
+        const memberIds = memberIdsByProject.get(member.projectId) ?? []
+        memberIds.push(member.id)
+        memberIdsByProject.set(member.projectId, memberIds)
+        if (member.authUserId === user.id) currentMemberIdsByProject[member.projectId] = member.id
       }
 
+      const projects = projectsResult.data.map((project) => {
+        const memberIds = memberIdsByProject.get(project.id) ?? []
+        const creator = members.find((member) => (
+          member.projectId === project.id && member.authUserId === project.owner_id
+        ))
+        return {
+          ...mapProject(project, memberIds),
+          creatorId: creator?.id ?? memberIds[0] ?? '',
+        }
+      })
+
       return {
-        projects: projectsResult.data.map((project) => ({
-          ...mapProject(project, memberIdsByProject.get(project.id) ?? []),
-          creatorId: ownerMember.id,
-        })),
-        members: membersResult.data.map(mapMember),
+        projects,
+        members,
         tasks: tasksResult.data.map((task) => mapTask(task)),
-        notes: [],
-        resources: [],
+        notes: notesResult.data.map(mapNote),
+        resources: resourcesResult.data.map(mapResource),
+        invitations,
+        currentMemberIdsByProject,
         aiSettings: {},
         aiHistory: [],
-        currentUserId: ownerMember.id,
+        currentUserId: Object.values(currentMemberIdsByProject)[0] ?? '',
         aiMemberId: '',
         accessMode: 'authenticated',
         capabilities: {
           projects: true,
           members: true,
           tasks: true,
-          notes: false,
-          resources: false,
+          notes: true,
+          resources: true,
           ai: false,
         },
       }
     },
 
+    listInvitations,
+
+    async createInvitation(projectId, input) {
+      const { data, error } = await supabase.rpc('create_project_invitation', {
+        p_project_id: projectId,
+        p_invitee_email: input.email,
+      })
+      if (error) throwDatabaseError('프로젝트 초대 생성', error)
+      const row = unwrapRpcRow(data)
+      if (!row) storeError('프로젝트 초대 생성')
+      try {
+        const invitations = await listInvitations()
+        return invitations.find((invitation) => invitation.id === row.id) ?? mapInvitation(row)
+      } catch {
+        return { ...mapInvitation(row), inviterName: user.displayName, direction: 'sent' }
+      }
+    },
+
+    acceptInvitation(invitationId) {
+      return respondToInvitation('프로젝트 초대 수락', 'accept_project_invitation', invitationId)
+    },
+
+    rejectInvitation(invitationId) {
+      return respondToInvitation('프로젝트 초대 거절', 'reject_project_invitation', invitationId)
+    },
+
+    cancelInvitation(invitationId) {
+      return respondToInvitation('프로젝트 초대 취소', 'cancel_project_invitation', invitationId)
+    },
+
     async createProject(input) {
-      const ownerMember = await currentMember()
       const { data, error } = await supabase.rpc('create_project_with_owner', {
         p_name: input.name,
         p_description: input.description,
@@ -210,21 +384,26 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
         p_start_date: input.startDate || null,
         p_end_date: input.endDate || null,
       })
+      if (error) throwDatabaseError('프로젝트 생성', error)
       const row = unwrapRpcRow(data)
-      if (error || !row) storeError('프로젝트 생성', error)
+      if (!row) storeError('프로젝트 생성')
+      const memberId = await currentProjectMemberId(row.id)
 
       return {
-        ...mapProject(row, [ownerMember.id]),
-        creatorId: ownerMember.id,
+        ...mapProject(row, [memberId]),
+        creatorId: memberId,
       }
     },
 
     async updateProject(projectId, patch) {
-      const databasePatch = {
-        start_date: patch.startDate || null,
-        end_date: patch.endDate || null,
-        updated_at: new Date().toISOString(),
-      }
+      const databasePatch = { updated_at: new Date().toISOString() }
+      if (hasOwn(patch, 'name')) databasePatch.name = patch.name
+      if (hasOwn(patch, 'description')) databasePatch.description = patch.description || ''
+      if (hasOwn(patch, 'status')) databasePatch.status = patch.status
+      if (hasOwn(patch, 'iconKey')) databasePatch.icon_key = patch.iconKey
+      if (hasOwn(patch, 'startDate')) databasePatch.start_date = patch.startDate || null
+      if (hasOwn(patch, 'endDate')) databasePatch.end_date = patch.endDate || null
+
       const { data, error } = await supabase
         .from('projects')
         .update(databasePatch)
@@ -232,9 +411,22 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
         .select(PROJECT_COLUMNS)
         .maybeSingle()
 
-      if (error) storeError('프로젝트 수정', error)
+      if (error) throwDatabaseError('프로젝트 수정', error)
       if (!data) throw new TeamFlowNotFoundError()
       return mapProject(data)
+    },
+
+    async deleteProject(projectId) {
+      const { data, error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId)
+        .select('id')
+        .maybeSingle()
+
+      if (error) throwDatabaseError('프로젝트 삭제', error)
+      if (!data) throw new TeamFlowNotFoundError()
+      return data.id
     },
 
     async createMember(projectId, input) {
@@ -246,9 +438,40 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
         p_description: input.description,
         p_color: input.color,
       })
+      if (error) throwDatabaseError('담당자 생성', error)
       const row = unwrapRpcRow(data)
-      if (error || !row) storeError('팀원 생성', error)
+      if (!row) storeError('담당자 생성')
       return mapMember(row)
+    },
+
+    async updateMember(memberId, patch) {
+      const { data, error } = await supabase.rpc('update_project_member', {
+        p_member_id: memberId,
+        p_name: patch.name ?? null,
+        p_initial: patch.initial ?? null,
+        p_role: patch.role,
+        p_description: patch.description,
+        p_color: patch.color,
+      })
+      if (error) throwDatabaseError('담당자 수정', error)
+      const row = unwrapRpcRow(data)
+      if (!row) throw new TeamFlowNotFoundError()
+      return mapMember(row)
+    },
+
+    async deleteMember(memberId) {
+      const { data, error } = await supabase.rpc('remove_project_member', {
+        p_member_id: memberId,
+      })
+      if (error) throwDatabaseError('담당자 삭제', error)
+      const row = unwrapRpcRow(data)
+      if (typeof row === 'string') return { memberId: row }
+      if (row?.memberId) return row
+      return {
+        memberId: row?.id ?? row?.member_id ?? memberId,
+        projectId: row?.project_id,
+        wasCollaborator: row?.was_collaborator,
+      }
     },
 
     async createTask(input) {
@@ -260,24 +483,32 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
           assignee_id: input.assigneeId,
           due_date: input.dueDate,
           status: input.status,
-          description: input.description || null,
+          description: input.description || '',
         })
         .select(TASK_COLUMNS)
         .single()
 
-      if (error || !data) storeError('할 일 생성', error)
+      if (error) throwDatabaseError('할 일 생성', error)
+      if (!data) storeError('할 일 생성')
       return mapTask(data, true)
     },
 
     async updateTask(taskId, patch) {
+      const databasePatch = { updated_at: new Date().toISOString() }
+      if (hasOwn(patch, 'title')) databasePatch.title = patch.title
+      if (hasOwn(patch, 'assigneeId')) databasePatch.assignee_id = patch.assigneeId
+      if (hasOwn(patch, 'dueDate')) databasePatch.due_date = patch.dueDate
+      if (hasOwn(patch, 'status')) databasePatch.status = patch.status
+      if (hasOwn(patch, 'description')) databasePatch.description = patch.description || ''
+
       const { data, error } = await supabase
         .from('tasks')
-        .update({ status: patch.status, updated_at: new Date().toISOString() })
+        .update(databasePatch)
         .eq('id', taskId)
         .select(TASK_COLUMNS)
         .maybeSingle()
 
-      if (error) storeError('할 일 수정', error)
+      if (error) throwDatabaseError('할 일 수정', error)
       if (!data) throw new TeamFlowNotFoundError()
       return mapTask(data)
     },
@@ -290,7 +521,109 @@ export function createSupabaseTeamFlowRepository(supabase, user) {
         .select('id')
         .maybeSingle()
 
-      if (error) storeError('할 일 삭제', error)
+      if (error) throwDatabaseError('할 일 삭제', error)
+      if (!data) throw new TeamFlowNotFoundError()
+      return data.id
+    },
+
+    async createNote(projectId, input) {
+      const authorId = await currentProjectMemberId(projectId)
+      const { data, error } = await supabase
+        .from('notes')
+        .insert({
+          project_id: projectId,
+          title: input.title,
+          content: input.content,
+          author_id: authorId,
+        })
+        .select(NOTE_COLUMNS)
+        .single()
+
+      if (error) throwDatabaseError('공유 노트 생성', error)
+      if (!data) storeError('공유 노트 생성')
+      return mapNote(data)
+    },
+
+    async updateNote(noteId, patch) {
+      const databasePatch = { updated_at: new Date().toISOString() }
+      if (hasOwn(patch, 'title')) databasePatch.title = patch.title
+      if (hasOwn(patch, 'content')) databasePatch.content = patch.content
+
+      const { data, error } = await supabase
+        .from('notes')
+        .update(databasePatch)
+        .eq('id', noteId)
+        .select(NOTE_COLUMNS)
+        .maybeSingle()
+
+      if (error) throwDatabaseError('공유 노트 수정', error)
+      if (!data) throw new TeamFlowNotFoundError()
+      return mapNote(data)
+    },
+
+    async deleteNote(noteId) {
+      const { data, error } = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', noteId)
+        .select('id')
+        .maybeSingle()
+
+      if (error) throwDatabaseError('공유 노트 삭제', error)
+      if (!data) throw new TeamFlowNotFoundError()
+      return data.id
+    },
+
+    async createResource(projectId, input) {
+      const ownerId = await currentProjectMemberId(projectId)
+      const { data, error } = await supabase
+        .from('resources')
+        .insert({
+          project_id: projectId,
+          parent_id: input.parentId || null,
+          type: input.type,
+          name: input.name,
+          description: input.description || '',
+          url: input.url || null,
+          owner_id: ownerId,
+        })
+        .select(RESOURCE_COLUMNS)
+        .single()
+
+      if (error) throwDatabaseError('자료 생성', error)
+      if (!data) storeError('자료 생성')
+      return mapResource(data)
+    },
+
+    async updateResource(resourceId, patch) {
+      const databasePatch = { updated_at: new Date().toISOString() }
+      if (hasOwn(patch, 'parentId')) databasePatch.parent_id = patch.parentId || null
+      if (hasOwn(patch, 'type')) databasePatch.type = patch.type
+      if (hasOwn(patch, 'name')) databasePatch.name = patch.name
+      if (hasOwn(patch, 'description')) databasePatch.description = patch.description || ''
+      if (hasOwn(patch, 'url')) databasePatch.url = patch.url || null
+
+      const { data, error } = await supabase
+        .from('resources')
+        .update(databasePatch)
+        .eq('id', resourceId)
+        .select(RESOURCE_COLUMNS)
+        .maybeSingle()
+
+      if (error) throwDatabaseError('자료 수정', error)
+      if (!data) throw new TeamFlowNotFoundError()
+      return mapResource(data)
+    },
+
+    async deleteResource(resourceId) {
+      const { data, error } = await supabase
+        .from('resources')
+        .delete()
+        .eq('id', resourceId)
+        .select('id')
+        .maybeSingle()
+
+      if (error) throwDatabaseError('자료 삭제', error)
       if (!data) throw new TeamFlowNotFoundError()
       return data.id
     },

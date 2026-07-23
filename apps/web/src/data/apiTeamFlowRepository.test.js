@@ -39,6 +39,20 @@ describe('authenticated TeamFlow repository', () => {
     }))
   })
 
+  test('uses the configured Render API origin in production', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse(bootstrap))
+    const repository = createApiTeamFlowRepository({
+      fetchImpl,
+      getAccessToken: async () => 'access-token',
+      apiBaseUrl: 'https://teamflow-api.onrender.com/',
+    })
+
+    await repository.load()
+    expect(fetchImpl).toHaveBeenCalledWith('https://teamflow-api.onrender.com/api/bootstrap', {
+      headers: { authorization: 'Bearer access-token' },
+    })
+  })
+
   test('does not call the API when the session has no token', async () => {
     const fetchImpl = vi.fn()
     const repository = createApiTeamFlowRepository({ fetchImpl, getAccessToken: async () => null })
@@ -72,5 +86,17 @@ describe('guest TeamFlow repository', () => {
     await expect(repository.load()).resolves.toEqual(demo)
     expect(fetchImpl).toHaveBeenCalledWith('/api/demo', undefined)
     await expect(repository.createProject({ name: '금지' })).rejects.toMatchObject({ code: 'READ_ONLY' })
+  })
+
+  test('loads the demo from the configured Render API origin', async () => {
+    const demo = { ...bootstrap, accessMode: 'guest' }
+    const fetchImpl = vi.fn(async () => jsonResponse(demo))
+    const repository = createDemoTeamFlowRepository({
+      fetchImpl,
+      apiBaseUrl: 'https://teamflow-api.onrender.com/',
+    })
+
+    await repository.load()
+    expect(fetchImpl).toHaveBeenCalledWith('https://teamflow-api.onrender.com/api/demo', undefined)
   })
 })

@@ -4,7 +4,6 @@ import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left.mjs'
 import FileText from 'lucide-react/dist/esm/icons/file-text.mjs'
 import Folder from 'lucide-react/dist/esm/icons/folder.mjs'
 import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard.mjs'
-import Layers3 from 'lucide-react/dist/esm/icons/layers-3.mjs'
 import Users from 'lucide-react/dist/esm/icons/users.mjs'
 import { useState } from 'react'
 import { Navigate, NavLink, Outlet, useParams } from 'react-router-dom'
@@ -12,6 +11,7 @@ import { Navigate, NavLink, Outlet, useParams } from 'react-router-dom'
 import { Account } from './AppShell.jsx'
 import { TaskCreateModal } from '../../features/tasks/components/TaskCreateModal.jsx'
 import { TaskDetailModal } from '../../features/tasks/components/TaskDetailModal.jsx'
+import { ProjectIcon } from '../../features/projects/components/ProjectIcon.jsx'
 import { useTeamFlow } from '../../state/useTeamFlow.js'
 import { selectProject, selectProjectMembers } from '../../state/selectors.js'
 import styles from './AppShell.module.css'
@@ -41,11 +41,11 @@ export function ProjectShell() {
       <aside className={`${styles.sidebar} ${styles.projectSidebar}`}>
         <header className={styles.projectHeader}>
           {collapsed ? (
-            <NavLink className={styles.collapsedProjectIcon} to="/projects" aria-label="내 프로젝트로 돌아가기"><Layers3 size={15} /></NavLink>
+            <NavLink className={styles.collapsedProjectIcon} to="/projects" aria-label="내 프로젝트로 돌아가기"><ProjectIcon iconKey={project.iconKey} size={15} /></NavLink>
           ) : (
             <>
               <NavLink className={styles.backLink} to="/projects"><ChevronLeft size={13} />내 프로젝트</NavLink>
-              <div className={styles.projectIdentity}><span><Layers3 size={15} /></span><strong>{project.name}</strong></div>
+              <div className={styles.projectIdentity}><span><ProjectIcon iconKey={project.iconKey} size={15} /></span><strong>{project.name}</strong></div>
             </>
           )}
         </header>
@@ -61,7 +61,7 @@ export function ProjectShell() {
         </nav>
         <div className={styles.projectFooter}>
           <button className={styles.collapseButton} type="button" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'} aria-expanded={!collapsed} aria-controls={`project-navigation-${project.id}`}><ChevronLeft size={15} className={collapsed ? styles.chevronFlipped : ''} /></button>
-          {collapsed ? <span className={styles.accountAvatar}>이</span> : <Account label="프로젝트 생성자" />}
+          <Account label="프로젝트 생성자" compact={collapsed} />
         </div>
       </aside>
       <main className={styles.main}><Outlet context={{ project, openTaskCreate: () => { if (capabilities.tasks) setShowTaskCreate(true) }, openTaskDetail: (task) => setSelectedTaskId(task.id) }} /></main>

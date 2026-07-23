@@ -1,16 +1,26 @@
+import cors from 'cors'
 import express from 'express'
 
+import { createCorsOptions } from './lib/cors.js'
 import { createTeamFlowRouter } from './teamflow/teamFlowRoutes.js'
 
 /**
  * Creates the TeamFlow API application without binding a network port.
  * Keeping construction separate makes the service straightforward to test.
  */
-export function createApp({ authVerifier, repositoryFactory, demoRepository } = {}) {
+export function createApp({
+  authVerifier,
+  repositoryFactory,
+  demoRepository,
+  allowedOrigins = [],
+} = {}) {
   const app = express()
 
   app.disable('x-powered-by')
-  app.use(express.json())
+  app.use(cors(createCorsOptions(allowedOrigins)))
+  // Notes allow up to 100,000 Unicode characters. Keep a finite request cap,
+  // but leave enough byte headroom for multibyte Korean text plus JSON fields.
+  app.use(express.json({ limit: '512kb' }))
 
   app.get('/health', (_request, response) => {
     response.status(200).json({

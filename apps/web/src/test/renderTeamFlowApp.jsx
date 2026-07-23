@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 
 import App from '../App.jsx'
 import { AuthProvider } from '../auth/AuthProvider.jsx'
@@ -26,11 +26,13 @@ export function createTestAuthClient(session = authenticatedSession) {
 }
 
 export function renderAuthenticatedApp(initialEntry = '/projects', repository = testTeamFlowRepository) {
-  return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
+  const router = createMemoryRouter([{
+    path: '*',
+    element: (
       <AuthProvider client={createTestAuthClient()}>
         <App authenticatedRepository={repository} />
       </AuthProvider>
-    </MemoryRouter>,
-  )
+    ),
+  }], { initialEntries: [initialEntry] })
+  return { ...render(<RouterProvider router={router} />), router }
 }

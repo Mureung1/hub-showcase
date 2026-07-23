@@ -15,6 +15,6 @@ const noteTemplates = [
   { id: 'meeting', label: '회의 정리', title: '회의 정리', content: '# 회의 정리\n\n## 일시 및 참석자\n\n## 논의 사항\n\n## 결정 사항\n\n## 다음 액션 아이템', icon: Users },
 ]
 
-export function NoteTemplateModal({ onSelect, onClose }) {
-  return <Modal title="템플릿 선택" width={380} onClose={onClose}><div className={styles.templateList}>{noteTemplates.map(({ icon: Icon, ...template }) => <button type="button" key={template.id} onClick={() => onSelect(template)}><span><Icon size={17} /></span>{template.label}</button>)}</div></Modal>
+export function NoteTemplateModal({ onSelect, onClose, busy = false, error = '' }) {
+  return <Modal title="템플릿 선택" width={380} onClose={onClose}><div className={styles.templateList}>{noteTemplates.map(({ icon: Icon, ...template }) => <button type="button" key={template.id} onClick={() => onSelect(template)} disabled={busy}><span><Icon size={17} /></span>{template.label}</button>)}{error ? <p className={styles.templateError} role="alert">{error}</p> : null}</div></Modal>
 }

@@ -23,3 +23,9 @@ export function selectProjectSummaries(state) {
     }
   })
 }
+
+export function selectReceivedInvitations(state) {
+  return (state.invitations ?? []).filter((invitation) => (
+    invitation.status === 'pending' && invitation.direction !== 'sent'
+  ))
+}
