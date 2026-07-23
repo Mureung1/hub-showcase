@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -34,28 +34,33 @@ Exact application이 어떤 Runtime byte만 선택할 수 있는지와 그 gener
 
 ## Acceptance Criteria
 
-- [ ] Descriptor와 canonical manifest decoder가 valid fixture를 accept하고 missing/extra/unknown/type/range/identity drift를 strict하게 거절한다.
-- [ ] Application, target, archive와 canonical manifest binding mismatch가 transport spy 0회·filesystem write 0회로 실패한다.
-- [ ] Content-addressed cache layout이 `appDataRoot` 안에서만 resolve되고 symlink, escape, unsafe owner/mode와 ambiguous residue를 fail closed한다.
-- [ ] Archive, staging, immutable generation, quarantine, lease와 verification receipt의 internal identity가 서로 충돌하지 않는다.
-- [ ] Parent Spec stable error family가 internal failure를 coarse하게 분류하고 secret-bearing diagnostics는 private structured evidence에만 남는다.
-- [ ] Extraction/download/orchestration behavior가 이 slice에 섞이지 않고 package Interface가 unit fixture로 독립 검증된다.
-- [ ] Safe TAR dependency exact pin과 lockfile evidence가 S0 또는 C-reviewed `contractTipSha`에 존재하며 010 claim prerequisite로 기록된다.
+- [x] Descriptor와 canonical manifest decoder가 valid fixture를 accept하고 missing/extra/unknown/type/range/identity drift를 strict하게 거절한다.
+- [x] Application, target, archive와 canonical manifest binding mismatch가 transport spy 0회·filesystem write 0회로 실패한다.
+- [x] Content-addressed cache layout이 `appDataRoot` 안에서만 resolve되고 symlink, escape, unsafe owner/mode와 ambiguous residue를 fail closed한다.
+- [x] Archive, staging, immutable generation, quarantine, lease와 verification receipt의 internal identity가 서로 충돌하지 않는다.
+- [x] Parent Spec stable error family가 internal failure를 coarse하게 분류하고 secret-bearing diagnostics는 private structured evidence에만 남는다.
+- [x] Extraction/download/orchestration behavior가 이 slice에 섞이지 않고 package Interface가 unit fixture로 독립 검증된다.
+- [x] Safe TAR dependency exact pin과 lockfile evidence가 S0 또는 C-reviewed `contractTipSha`에 존재하며 010 claim prerequisite로 기록된다.
 
 ## Verification
 
-- Targeted test or command: `packages/runtime-release` descriptor/manifest/cache-layout unit tests, mismatch no-network/no-write spies와 current production verifier donor comparison
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `git diff --check`
-- Manual or live smoke: 없음. Network·archive mutation은 이 slice에서 의도적으로 없다.
+| Gate | Result |
+| --- | --- |
+| Runtime-release package | `npm test -w @ay-ple/runtime-release` — 65/65 green; `npm run typecheck -w @ay-ple/runtime-release`; `npm run build -w @ay-ple/runtime-release` green |
+| Effect ordering | Targeted `application, target, archive, and manifest mismatch invoke no downstream effect` regression — 1/1 green, effect callback 0회·filesystem tree mutation 0 |
+| Repository | `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell` green on C implementation commit `675f2a9f0b850eb154739252f8d5145bdfbaeef4`; reviewed combined tip은 그 뒤 candidate receipt만 추가했다. |
+| Documentation closeout | `npm run check:docs-links`; `git diff --check` green |
+| Manual or live smoke | 없음. Network·archive mutation은 이 slice에서 의도적으로 없다. |
 
 ## Candidate Verification Receipt
 
-Independent Runtime-delivery/security review 전 candidate-only receipt다. Ticket state는 `claimed`, Acceptance Criteria는 unchecked로 유지한다.
+Exact combined tip에 대한 independent review와 최종 verification을 기록한 receipt다.
 
 | Evidence | Candidate result |
 | --- | --- |
 | Fixed base | `269a3555d3adf52bf520b3de0b99c7cb3fee3ae7` |
 | C delta fixed base | Reviewed D1a tip `3c93750d8c5cfe74a0de563cf78c8f3ab164b9cd` |
+| Exact reviewed combined tip | `5be60ccf4dc04b42898244cf5033e339c1f58e6f` |
 | Claim commit | `eafd0ea70d9a0387ca64e639ff0045acdbfcad8e` |
 | Implementation commit | `30f591fb434b585988eed1f5c5baf383fca2f439` |
 | Security-review correction commit | `64fc17b1ca1f3354fc9408aefaecac12459addae` — initial independent Runtime-delivery/security RED의 D-owned finding을 교정한다. |
@@ -73,7 +78,17 @@ Independent Runtime-delivery/security review 전 candidate-only receipt다. Tick
 | Safe TAR prerequisite | `tar-stream@3.2.0`, `@types/tar-stream@3.1.4` exact resolution green. `package-lock.json` SHA-256는 S0 evidence와 같은 `6dcc45c4d2aac146b925850f98a61a890e5f54360151598c3ccbf22040ba12ab`이다. Ticket 010을 위한 C-only manifest/lock delta는 필요 없다. |
 | C-only contract candidate | `675f2a9f0b850eb154739252f8d5145bdfbaeef4` — exact canonical GitHub repository와 same-authority release URL semantic decode를 frozen contract에 추가했다. Repository/archive hostile fixture와 exact release binding은 기존 `RuntimeReleaseContractError` family로 닫히며 D1a admission의 중복 defense도 유지한다. |
 | Documentation follow-up | `packages/runtime-release/README.md`를 D1a current descriptor/manifest/cache authority, package commands와 source-internal boundary로 갱신했다. HTTP/download, extraction, cache mutation과 resolver 구현은 현재 미구현으로 명시했다. |
-| Review state | Initial independent Runtime-delivery/security review RED, `site_packages` re-review P1, folded ancestor P1과 fixed-point fold P1을 교정했다. C-only contract candidate `675f2a9f0b850eb154739252f8d5145bdfbaeef4`와 결합한 fixed candidate의 Runtime-delivery/security 및 C authority review 대기 |
+| Independent Runtime-delivery/security review | `GREEN` — exact reviewed combined tip `5be60ccf4dc04b42898244cf5033e339c1f58e6f`, findings 0건 |
+| Independent C contract authority review | `GREEN` — exact reviewed combined tip `5be60ccf4dc04b42898244cf5033e339c1f58e6f`, findings 0건 |
+
+## Result
+
+| Evidence | Result |
+| --- | --- |
+| D1a implementation | `30f591fb434b585988eed1f5c5baf383fca2f439`, `64fc17b1ca1f3354fc9408aefaecac12459addae`, `8d5fd0dc9b1a46ccdb5c75ddf295f689b3bf4fc6`, `73ad4faa3978e018dba141817b6e02f9306d6c4a`, `42c4f354566ae8c389bf61fae0e9a47fdd76a4c6` |
+| C contract/documentation delta | `675f2a9f0b850eb154739252f8d5145bdfbaeef4`; candidate receipt `5be60ccf4dc04b42898244cf5033e339c1f58e6f` |
+| Reviewed outcome | Exact descriptor/canonical manifest admission, content-addressed cache authority, natural filesystem identity revalidation과 stable private-evidence error boundary가 두 independent review에서 모두 GREEN이다. Extraction, download, transport와 resolver orchestration은 구현 범위에 포함하지 않았다. |
+| Parent Spec | 후속 implementation ticket이 남아 있으므로 incomplete 상태를 유지한다. |
 
 ## Blocked By
 
