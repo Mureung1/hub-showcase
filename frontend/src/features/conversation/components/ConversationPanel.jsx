@@ -11,7 +11,14 @@ export default function ConversationPanel({ messages, children }) {
 
   return (
     <main className="main">
-      <div className="messages" ref={scrollRef} aria-label="대화 내용">
+      <div
+        className="messages"
+        ref={scrollRef}
+        role="log"
+        aria-label="대화 내용"
+        aria-live="polite"
+        aria-relevant="additions text"
+      >
         {messages.map((message) => (
           <div
             key={message.id}
