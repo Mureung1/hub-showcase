@@ -1,19 +1,33 @@
 import type { Proposal } from "shared";
 import { expectedImpactPct } from "../agent/diagnose";
 import {
+  buildTodayProposal,
   collectStoreContext,
   proposalFromContext,
+  type ProposalResult,
   type StoreContext,
 } from "../agent/pipeline";
-import { saveTodayCampaign, todayYmdKst, type CampaignRow } from "../db/queries";
+import {
+  getFirstStore,
+  getStoreById,
+  getTodayCampaign,
+  saveTodayCampaign,
+  todayYmdKst,
+  type CampaignRow,
+  type StoreRow,
+} from "../db/queries";
 import { sendSms } from "../sms/solapi";
 
 /**
- * 매일 아침 자동 제안 잡 (2-6).
+ * 자동 제안 잡 2종.
  *
- * 오늘 예상 매출 하락률이 임계(−20%) 이상일 때만 제안을 생성·저장한다.
- * 평범한 날엔 조용히 스킵한다 — 마케팅 남발 방지(카니발라이제이션 통제).
- * 실제 사장님 알림 문자는 3-8에서 이 잡에 붙인다.
+ * 1) 06:30 크론 잡 `runDailyProposalJob` (2-6) — 원설계(상시 서버 가정). 예상 하락이
+ *    임계(−20%) 이상인 날만 생성·저장하고 사장님 문자 알림(3-8)까지 보낸다.
+ *    평범한 날엔 조용히 스킵 — 마케팅 남발 방지(카니발라이제이션 통제).
+ *    무료 플랜(로컬·Render free)에선 06:30에 서버가 꺼져 있어 사실상 안 돌지만,
+ *    상시 서버로 옮기면 그대로 쓸 수 있게 구현을 유지한다.
+ * 2) 기동 잡 `runBootProposalJob` — 무료 플랜 실운영 경로. 서버를 켤 때마다 그 시점에
+ *    날씨분석+매출진단 후 임계 없이 항상 제안을 생성한다(문자 없음, 화면 표시만).
  */
 
 export const IMPACT_THRESHOLD = -0.2;
@@ -50,6 +64,49 @@ export interface DailyJobResult {
   triggered: boolean;
   impactPct: number;
   campaignId?: string;
+}
+
+/** 아침 크론 잡 실행 시각 (KST). index.ts 크론 표현식도 이 값으로 만든다. */
+export const JOB_TIME_KST = { hour: 6, minute: 30 };
+
+export interface BootJobDeps {
+  findStore?: (storeId?: string) => Promise<StoreRow>;
+  findToday?: (storeId: string, date: string) => Promise<CampaignRow | null>;
+  build?: (storeId: string) => Promise<ProposalResult>;
+  save?: (
+    storeId: string,
+    date: string,
+    weather: StoreContext["weather"],
+    proposal: Proposal,
+  ) => Promise<CampaignRow>;
+}
+
+export type BootJobResult =
+  | { ran: false; reason: "already-exists" }
+  | { ran: true; campaignId: string };
+
+/**
+ * 서버 기동 잡 — 켤 때마다 그 시점에 오늘 제안을 만든다 (무료 플랜 실운영 경로).
+ * - 오늘 캠페인이 이미 있으면 스킵 — saveTodayCampaign은 upsert라 가드 없이 다시 만들면
+ *   사장님이 승인·수정한 캠페인이 draft로 리셋된다. tsx watch 재시작마다 LLM 재호출 방지도 겸함.
+ * - 임계(−20%) 판정 없이 항상 생성(POST /proposal/generate와 동일 파이프라인), 문자 알림 없음.
+ */
+export async function runBootProposalJob(
+  storeId?: string,
+  deps: BootJobDeps = {},
+): Promise<BootJobResult> {
+  const findStore = deps.findStore ?? ((id?: string) => (id ? getStoreById(id) : getFirstStore()));
+  const findToday = deps.findToday ?? getTodayCampaign;
+  const build = deps.build ?? buildTodayProposal;
+  const save = deps.save ?? saveTodayCampaign;
+
+  const store = await findStore(storeId);
+  const existing = await findToday(store.id, todayYmdKst());
+  if (existing) return { ran: false, reason: "already-exists" };
+
+  const result = await build(store.id);
+  const campaign = await save(store.id, todayYmdKst(), result.weather, result.proposal);
+  return { ran: true, campaignId: campaign.id };
 }
 
 export async function runDailyProposalJob(

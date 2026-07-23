@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import type { EnsembleWeather, Diagnosis, Proposal } from "shared";
-import { runDailyProposalJob } from "./daily";
+import { runDailyProposalJob, runBootProposalJob } from "./daily";
 import type { StoreContext } from "../agent/pipeline";
 import type { StoreRow, CampaignRow } from "../db/queries";
 
@@ -58,5 +58,33 @@ describe("runDailyProposalJob", () => {
       save: async () => ({ id: "c" }) as CampaignRow,
     });
     expect(r.triggered).toBe(true);
+  });
+});
+
+describe("runBootProposalJob (서버 기동 잡)", () => {
+  it("오늘 캠페인이 이미 있으면 스킵한다 (승인·수정본 덮어쓰기 방지)", async () => {
+    const build = vi.fn(async () => ({ ...ctxWith("rain", true, -0.22), proposal }));
+    const r = await runBootProposalJob(undefined, {
+      findStore: async () => store,
+      findToday: async () => ({ id: "camp1" }) as CampaignRow,
+      build,
+    });
+    expect(r).toEqual({ ran: false, reason: "already-exists" });
+    expect(build).not.toHaveBeenCalled();
+  });
+
+  it("오늘 캠페인이 없으면 임계와 무관하게 항상 생성·저장한다", async () => {
+    // -6%짜리 평범한 날 — 크론 잡이라면 임계 미달 스킵이지만 기동 잡은 생성한다
+    const build = vi.fn(async () => ({ ...ctxWith("overcast", false, -0.06), proposal }));
+    const save = vi.fn(async () => ({ id: "camp1" }) as CampaignRow);
+    const r = await runBootProposalJob(undefined, {
+      findStore: async () => store,
+      findToday: async () => null,
+      build,
+      save,
+    });
+    expect(r).toEqual({ ran: true, campaignId: "camp1" });
+    expect(build).toHaveBeenCalledWith("s1");
+    expect(save).toHaveBeenCalledOnce();
   });
 });
