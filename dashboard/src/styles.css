@@ -84,12 +84,10 @@ a,
   position: absolute;
   z-index: 1;
   right: max(24px, calc((100vw - 1320px) / 2 + 24px));
-  width: 520px;
+  width: 535px;
   height: 100%;
-  object-fit: cover;
-  object-position: center;
-  transform: scale(2.1);
-  transform-origin: right center;
+  object-fit: contain;
+  object-position: right center;
 }
 
 .page {
@@ -554,8 +552,7 @@ a,
   }
 
   .camp-banner img {
-    width: 260px;
-    transform: scale(1.8);
+    width: min(360px, 52vw);
   }
 
   .page {
