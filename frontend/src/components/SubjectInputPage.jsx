@@ -7,9 +7,11 @@ const INITIAL_FORM = {
   examDate: "",
   understanding: 3,
   difficulty: 3,
+  credits: 3,
   gradeWeight: 40,
   grading: 3,
   studyAmount: 3,
+  availableTime: 3,
 };
 
 // 각 1~5 단계가 무슨 뜻인지 알려주는 라벨. "3"이 사람마다 다른 문제를 줄인다.
@@ -17,6 +19,12 @@ const UNDERSTANDING_LEVELS = ["안 봤음", "개념만", "절반쯤", "거의 �
 const DIFFICULTY_LEVELS = ["매우 쉬움", "쉬움", "보통", "어려움", "매우 어려움"];
 const GRADING_LEVELS = ["매우 후하게", "후한 편", "보통", "짠 편", "매우 짜게"];
 const STUDY_AMOUNT_LEVELS = ["아주 적음", "적음", "보통", "많음", "아주 많음"];
+const AVAILABLE_TIME_LEVELS = ["매우 부족", "부족", "보통", "넉넉", "충분"];
+
+// 목록에서 1~5 값을 보여줄 때, 0("모르겠다")은 "?"로 표시한다.
+function formatScale(value) {
+  return value >= 1 && value <= 5 ? value : "?";
+}
 
 function SubjectInputPage({
   subjects,
@@ -84,14 +92,22 @@ function SubjectInputPage({
       return;
     }
 
+    const credits = Number(form.credits);
+    if (form.credits === "" || !Number.isFinite(credits) || credits <= 0) {
+      setErrorMessage("중요도(학점)는 0보다 큰 숫자로 입력해 주세요.");
+      return;
+    }
+
     const payload = {
       name,
       examDate: form.examDate,
       understanding: form.understanding,
       difficulty: form.difficulty,
+      credits,
       gradeWeight,
       grading: form.grading,
       studyAmount: form.studyAmount,
+      availableTime: form.availableTime,
     };
 
     if (isEditing) {
@@ -109,9 +125,11 @@ function SubjectInputPage({
       examDate: subject.examDate,
       understanding: subject.understanding,
       difficulty: subject.difficulty,
+      credits: subject.credits ?? 3,
       gradeWeight: subject.gradeWeight ?? 40,
       grading: subject.grading ?? 3,
       studyAmount: subject.studyAmount ?? 3,
+      availableTime: subject.availableTime ?? 3,
     });
     setEditingId(subject.id);
     setErrorMessage("");
@@ -190,8 +208,27 @@ function SubjectInputPage({
           />
 
           <div className="form-group">
+            <label className="form-label" htmlFor="credits">
+              중요도 (학점 수)
+            </label>
+            <input
+              id="credits"
+              className="form-input"
+              type="number"
+              min="0.5"
+              step="0.5"
+              inputMode="decimal"
+              value={form.credits}
+              onChange={(event) => updateField("credits", event.target.value)}
+            />
+            <p className="form-hint">
+              이 과목의 학점 수예요. 높을수록 최종 점수가 더 높게 반영돼요. 예: 3학점
+            </p>
+          </div>
+
+          <div className="form-group">
             <label className="form-label" htmlFor="gradeWeight">
-              학점 반영 비율 (%)
+              성적 반영 비율 (%)
             </label>
             <input
               id="gradeWeight"
@@ -220,6 +257,13 @@ function SubjectInputPage({
             value={form.studyAmount}
             onChange={(value) => updateField("studyAmount", value)}
             levelLabels={STUDY_AMOUNT_LEVELS}
+          />
+
+          <ScoreSelector
+            label="확보 가능한 공부 시간"
+            value={form.availableTime}
+            onChange={(value) => updateField("availableTime", value)}
+            levelLabels={AVAILABLE_TIME_LEVELS}
           />
 
           <p className="form-error">{errorMessage}</p>
@@ -261,8 +305,9 @@ function SubjectInputPage({
                   <span className="entry-name">{subject.name}</span>
                   <span className="entry-meta">
                     {formatDday(getDaysUntil(subject.examDate))} · 이해도{" "}
-                    {subject.understanding} · 난이도 {subject.difficulty} · 학점{" "}
-                    {subject.gradeWeight ?? 40}%
+                    {formatScale(subject.understanding)} · 난이도{" "}
+                    {formatScale(subject.difficulty)} · {subject.credits ?? 3}학점
+                    · 성적반영 {subject.gradeWeight ?? 40}%
                   </span>
                 </div>
                 <div className="entry-actions">

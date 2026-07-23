@@ -11,6 +11,7 @@ export function buildPriorityReason(subject) {
     gradeWeight: subject.gradeWeight,
     grading: subject.grading,
     studyAmount: subject.studyAmount,
+    availableTime: subject.availableTime,
   });
 
   const parts = [];
@@ -28,7 +29,7 @@ export function buildPriorityReason(subject) {
   }
 
   if (breakdown.gradeWeight >= 75) {
-    parts.push("학점에서 비중이 크고");
+    parts.push("성적에서 비중이 크고");
   }
 
   if (breakdown.grading >= 75) {
@@ -37,6 +38,10 @@ export function buildPriorityReason(subject) {
 
   if (breakdown.studyAmount >= 75) {
     parts.push("공부할 분량이 많고");
+  }
+
+  if (breakdown.availableTime >= 75) {
+    parts.push("쓸 수 있는 공부 시간이 빠듯하고");
   }
 
   if (daysUntil !== null) {

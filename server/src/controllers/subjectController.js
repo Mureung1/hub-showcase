@@ -12,10 +12,14 @@ const SCORE_FIELDS = [
   { key: "difficulty", label: "난이도", optional: false },
   { key: "grading", label: "교수님 학점 성향", optional: true },
   { key: "studyAmount", label: "공부 분량", optional: true },
+  { key: "availableTime", label: "확보 가능한 공부 시간", optional: true },
 ];
 
 // 학점 반영 비율은 0~100(%) 범위이고, 값이 없으면 기본값 40 으로 채운다.
 const GRADE_WEIGHT_DEFAULT = 40;
+
+// 중요도(과목 학점 수)는 양의 실수(예: 3, 5, 7.5)이고, 값이 없으면 기본값 3 으로 채운다.
+const CREDITS_DEFAULT = 3;
 
 // 저장 전에 입력값을 검사한다. 잘못된 값이면 이유 문자열을, 문제없으면 null 을 돌려준다.
 function validateSubjectInput(body) {
@@ -23,7 +27,7 @@ function validateSubjectInput(body) {
     return "요청 본문이 필요합니다.";
   }
 
-  const { name, examDate, gradeWeight } = body;
+  const { name, examDate, gradeWeight, credits } = body;
 
   if (typeof name !== "string" || name.trim() === "") {
     return "과목명(name)이 필요합니다.";
@@ -37,14 +41,21 @@ function validateSubjectInput(body) {
     if (value === undefined && field.optional) {
       continue;
     }
-    if (!Number.isInteger(value) || value < 1 || value > 5) {
-      return `${field.label}(${field.key})는 1~5 사이 정수여야 합니다.`;
+    // 0 은 "모르겠다"(중립)를 뜻하므로 0~5 를 허용한다.
+    if (!Number.isInteger(value) || value < 0 || value > 5) {
+      return `${field.label}(${field.key})는 0(모르겠다)~5 사이 정수여야 합니다.`;
     }
   }
 
   if (gradeWeight !== undefined) {
     if (!Number.isInteger(gradeWeight) || gradeWeight < 0 || gradeWeight > 100) {
       return "학점 반영 비율(gradeWeight)은 0~100 사이 정수여야 합니다.";
+    }
+  }
+
+  if (credits !== undefined) {
+    if (typeof credits !== "number" || !Number.isFinite(credits) || credits <= 0 || credits > 30) {
+      return "중요도(credits)는 0보다 큰 학점 수여야 합니다.";
     }
   }
 
@@ -56,6 +67,7 @@ function normalize(body) {
     name: body.name.trim(),
     examDate: body.examDate,
     gradeWeight: body.gradeWeight === undefined ? GRADE_WEIGHT_DEFAULT : body.gradeWeight,
+    credits: body.credits === undefined ? CREDITS_DEFAULT : body.credits,
   };
 
   for (const field of SCORE_FIELDS) {

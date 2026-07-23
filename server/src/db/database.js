@@ -26,6 +26,8 @@ db.exec(`
     grade_weight INTEGER NOT NULL DEFAULT 40,
     grading INTEGER NOT NULL DEFAULT 3,
     study_amount INTEGER NOT NULL DEFAULT 3,
+    available_time INTEGER NOT NULL DEFAULT 3,
+    credits REAL NOT NULL DEFAULT 3,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )
 `);
@@ -43,6 +45,8 @@ let columns = tableColumns();
 for (const [name, ddl] of [
   ["grading", "grading INTEGER NOT NULL DEFAULT 3"],
   ["study_amount", "study_amount INTEGER NOT NULL DEFAULT 3"],
+  ["available_time", "available_time INTEGER NOT NULL DEFAULT 3"],
+  ["credits", "credits REAL NOT NULL DEFAULT 3"],
 ]) {
   if (!columns.has(name)) {
     db.exec(`ALTER TABLE subjects ADD COLUMN ${ddl}`);

@@ -150,7 +150,7 @@ function App() {
   return (
     <main className="app-container">
       <header className="app-header">
-        <h1 className="app-title">시험 우선순위 계산기</h1>
+        <h1 className="app-title">오늘 뭐부터 공부하지?</h1>
         <p className="app-description">
           과목 정보를 입력하면 오늘 먼저 공부할 과목을 알려드려요.
         </p>

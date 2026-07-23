@@ -5,9 +5,10 @@ const FACTORS = [
   { key: "understanding", label: "이해도", modifier: "understanding" },
   { key: "difficulty", label: "난이도", modifier: "difficulty" },
   { key: "urgency", label: "급함", modifier: "urgency" },
-  { key: "gradeWeight", label: "학점", modifier: "gradeWeight" },
+  { key: "gradeWeight", label: "성적", modifier: "gradeWeight" },
   { key: "grading", label: "교수", modifier: "grading" },
   { key: "studyAmount", label: "분량", modifier: "studyAmount" },
+  { key: "availableTime", label: "시간", modifier: "availableTime" },
 ];
 
 function ScoreBreakdown({ subject }) {
@@ -18,6 +19,7 @@ function ScoreBreakdown({ subject }) {
     gradeWeight: subject.gradeWeight,
     grading: subject.grading,
     studyAmount: subject.studyAmount,
+    availableTime: subject.availableTime,
   });
 
   return (

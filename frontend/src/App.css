@@ -137,6 +137,13 @@
   color: #ffffff;
 }
 
+/* "모르겠다"는 숫자 버튼과 달리 내용 너비만 차지한다. */
+.score-option-unknown {
+  flex: 0 0 auto;
+  padding: 0 var(--space-md);
+  font-size: var(--font-caption);
+}
+
 .score-scale {
   display: flex;
   justify-content: space-between;
@@ -453,6 +460,10 @@
 
 .breakdown-fill-studyAmount {
   background-color: #0ea5e9;
+}
+
+.breakdown-fill-availableTime {
+  background-color: #f59e0b;
 }
 
 /* 우선순위 성향 선택기 */
