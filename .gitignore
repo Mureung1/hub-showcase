@@ -51,3 +51,6 @@ apps/showup/security/**/*.mjs
 
 # CodeGraph
 .codegraph
+
+# Cloud Functions build output
+apps/showup/functions/lib/

@@ -20,7 +20,7 @@
 
 | # | 세션 | 항목 | 문제 | 상태 |
 |---|---|---|---|---|
-| 5 | BE | Cloud Functions 배포 | onWrite 트리거가 프로덕션에서 동작하는지 미확인 | 미확인 |
+| 5 | BE | Cloud Functions 배포 | Spark 요금제 불가 — 클라이언트 riskRefresh.ts로 대체, functions/ 디렉토리 유지 (향후 이관용) | 해결 |
 | 6 | BE | Firestore 인덱스 배포 | 복합 인덱스가 프로덕션에 배포되었는지 미확인 | 미확인 |
 | 7 | 보안 | 프로덕션 규칙 배포 | firestore.rules가 프로덕션에 배포되었는지 미확인 | 미확인 |
 | 8 | FE | Lighthouse 실측 | 코드 스플리팅 적용했으나 실제 Lighthouse 점수 미측정 | 미측정 |
