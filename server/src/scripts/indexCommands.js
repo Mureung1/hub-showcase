@@ -38,6 +38,12 @@ async function main() {
     // filterableAttributes에 category를 넣어야 search.js의 `filter: 'category = "unix"'`가 동작함
     await index.updateFilterableAttributes(['category']);
 
+    // searchableAttributes 순서(위 3번)만으로는 attribute 랭킹 규칙이 기본 순서(words > typo >
+    // proximity > attribute > sort > exactness)에서 4번째라 words/typo/proximity가 먼저 갈리면
+    // "이름 일치 우선"이 흐려질 수 있다. attribute를 맨 앞으로 명시적으로 올려서 이름 일치가
+    // 요약 일치보다 항상 우선한다는 의도를 인덱스 설정에 직접 드러낸다.
+    await index.updateRankingRules(['attribute', 'exactness', 'words', 'typo', 'proximity', 'sort']);
+
     // 4단계: 실제 문서 업로드. Meilisearch는 이걸 비동기 작업(task)으로 처리하므로,
     // addDocuments가 끝났다고 바로 검색 가능한 게 아니라 taskUid로 진행 상황을 추적할 수 있다는 것만 확인.
     const task = await index.addDocuments(documents);
