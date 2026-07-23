@@ -2,8 +2,8 @@
     "schemaVersion": 1,
     "title": "meetry - 대학생 대면 소통 플랫폼",
     "summary": "대학생들이 학내에서 1:1 대면 도움 요청과 실시간 채팅으로 소통하는 서비스입니다.",
-    "githubUser": "",
-    "demoUrl": "",
+    "githubUser": "daehee11(안대희)",
+    "demoUrl": "https://daehee11.github.io/hub/",
     "thumbnail": "thumbnail.webp",
     "screenshots": [
         "screenshots/feed.webp",
