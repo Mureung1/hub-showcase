@@ -49,8 +49,7 @@ a,
 .camp-banner span {
   position: absolute;
   z-index: 2;
-  left: 50%;
-  transform: translateX(-50%);
+  left: max(24px, calc((100vw - 1320px) / 2 + 24px));
   color: #182536;
   font-size: 28px;
   font-weight: 800;
@@ -60,12 +59,12 @@ a,
 
 .camp-banner img {
   position: absolute;
-  right: max(24px, calc((100vw - 1320px) / 2 + 24px));
+  left: 50%;
   width: 520px;
   height: 100%;
   object-fit: cover;
   object-position: center;
-  transform: scale(1.35);
+  transform: translateX(-50%) scale(1.35);
 }
 
 .page {
@@ -525,13 +524,13 @@ a,
   }
 
   .camp-banner span {
+    left: 16px;
     font-size: 19px;
   }
 
   .camp-banner img {
-    right: 12px;
     width: 260px;
-    transform: scale(1.25);
+    transform: translateX(-50%) scale(1.25);
   }
 
   .page {
