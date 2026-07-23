@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { patchJson } from '@/lib/api'
 
 const KOREAN_DAY_LABEL = { MON: '월', TUE: '화', WED: '수', THU: '목', FRI: '금', SAT: '토', SUN: '일' }
 
@@ -50,14 +51,9 @@ function OnboardingReview() {
 
   const handleChange = async (routineDayId, targetArea) => {
     setError(null)
-    const res = await fetch(`/api/routine/days/${routineDayId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetArea }),
-    })
-    const json = await res.json()
-    if (!res.ok) {
-      setError(json.error)
+    const result = await patchJson(`/api/routine/days/${routineDayId}`, { targetArea })
+    if (!result.ok) {
+      setError(result.error)
       return
     }
     setData(await fetchToday())
