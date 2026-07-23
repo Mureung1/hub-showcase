@@ -1,6 +1,13 @@
+jest.mock('../utils/mailer', () => ({
+  sendMail: jest.fn().mockResolvedValue({ sent: true, messageId: 'test-message' }),
+  isMailerConfigured: jest.fn().mockReturnValue(true),
+}));
+
 const request = require('supertest');
 const app = require('../app');
-const { sequelize, User, GroupPurchase, UserGroupPurchase } = require('../models');
+const { sequelize, User, GroupPurchase, UserGroupPurchase, Notification } = require('../models');
+const { sendMail } = require('../utils/mailer');
+const { processExpiredGroupPurchases } = require('../schedulers/deadlineScheduler');
 const jwt = require('jsonwebtoken');
 const env = require('../config/env');
 
@@ -486,6 +493,48 @@ describe('ThingDong Concurrency and State Transition Tests', () => {
       const dbRecord = await GroupPurchase.findByPk(res.body.data.id);
       expect(dbRecord).not.toBeNull();
       expect(dbRecord.title).toBe(newPostData.title);
+    });
+  });
+
+  describe('알림과 마감 자동 처리', () => {
+    test('픽업 대기 전환 시 참여자 이메일 알림을 기록하고 메일 유틸을 호출한다', async () => {
+      await Notification.destroy({ where: {} });
+      sendMail.mockClear();
+      const purchase = await GroupPurchase.create({
+        hostId: hostUser.id, title: '알림 테스트', productUrl: 'https://example.com/notice',
+        totalPrice: 10000, targetParticipants: 2, currentParticipants: 2, perPersonPrice: 5000,
+        pickupLatitude: 37.5, pickupLongitude: 127, category: 'FOOD', status: 'ORDERED',
+        deadlineAt: new Date(Date.now() + 86400000),
+      });
+      await UserGroupPurchase.create({ userId: participants[0].id, groupPurchaseId: purchase.id });
+
+      const response = await request(app).patch(`/group-purchases/${purchase.id}/status`)
+        .set('Authorization', getAuthHeader(hostUser.id)).send({ status: 'WAITING_PICKUP' });
+
+      expect(response.status).toBe(200);
+      expect(sendMail).toHaveBeenCalledWith(expect.objectContaining({ to: participants[0].email }));
+      expect(await Notification.count({ where: { groupPurchaseId: purchase.id } })).toBe(1);
+    });
+
+    test('마감 시간이 지난 모집 중 공동구매를 FAILED로 바꾸고 참여 기록을 정리한다', async () => {
+      await Notification.destroy({ where: {} });
+      const purchase = await GroupPurchase.create({
+        hostId: hostUser.id, title: '마감 자동 처리 테스트', productUrl: 'https://example.com/expired',
+        totalPrice: 10000, targetParticipants: 3, currentParticipants: 1, perPersonPrice: 3333,
+        pickupLatitude: 37.5, pickupLongitude: 127, category: 'FOOD', status: 'RECRUITING',
+        deadlineAt: new Date(Date.now() - 1000),
+      });
+      await UserGroupPurchase.create({ userId: participants[0].id, groupPurchaseId: purchase.id, isApproved: true, isPaid: true });
+
+      const ids = await processExpiredGroupPurchases(new Date());
+      const updated = await GroupPurchase.findByPk(purchase.id);
+      const application = await UserGroupPurchase.findOne({ where: { groupPurchaseId: purchase.id } });
+
+      expect(ids).toContain(purchase.id);
+      expect(updated.status).toBe('FAILED');
+      expect(application.isApproved).toBe(false);
+      expect(application.isPaid).toBe(false);
+      expect(await Notification.count({ where: { groupPurchaseId: purchase.id } })).toBe(1);
     });
   });
 });
