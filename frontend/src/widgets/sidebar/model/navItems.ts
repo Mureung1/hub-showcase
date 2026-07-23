@@ -23,7 +23,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { id: 'home', label: '홈 (AI 분석)', icon: Home, to: ROUTES.HOME },
       { id: 'stock-analysis', label: '종목 분석', icon: BarChart3, to: '/stocks/nvda' },
-      { id: 'recent-analysis', label: '최근 분석', icon: History },
+      { id: 'recent-analysis', label: '최근 분석', icon: History, to: ROUTES.RECENT_ANALYSIS },
     ],
   },
   {
