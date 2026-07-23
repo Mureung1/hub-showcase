@@ -635,6 +635,49 @@ test('rejects unsafe auth-only bootstrap and overlapping controlled roots before
   }
 })
 
+test('rejects overlapping workspace and controlled roots before spawn', async () => {
+  const root = await mkdtemp(
+    join(tmpdir(), 'ay-ple-node-workspace-overlap-'),
+  )
+  roots.push(root)
+  const environment = await createOwnerOnlyEnvironmentRoots(root)
+  const workspace = join(environment.home, 'workspace')
+  await mkdir(workspace)
+  const processJournalPath = join(root, 'process-journal.json')
+  let spawned: SpawnedCodexChatRuntime | undefined
+  try {
+    await assert.rejects(
+      async () => {
+        spawned = await startVerifiedCodexChatRuntime({
+          bundle,
+          role: { role: 'workspace', workspaceRoot: workspace },
+          application: {
+            name: 'ay-ple',
+            title: 'AY-PLE',
+            version: '0.1.0-preview.1',
+          },
+          environment,
+          bridgeEntrypointOverride: FAKE_NODE_WORKER,
+          bridgeArgsOverride: [
+            '--scenario=response-hang',
+            `--process-journal=${processJournalPath}`,
+          ],
+        })
+      },
+      (error: unknown) =>
+        error instanceof TypeError &&
+        error.message === 'Codex Runtime roots must be disjoint',
+    )
+  } finally {
+    await spawned?.runtime.close().catch(() => undefined)
+  }
+  await assert.rejects(
+    readFile(processJournalPath),
+    (error: unknown) =>
+      (error as NodeJS.ErrnoException).code === 'ENOENT',
+  )
+})
+
 test('rejects noncanonical application SemVer before spawning auth-only Runtime', async () => {
   const root = await mkdtemp(join(tmpdir(), 'ay-ple-node-app-version-'))
   roots.push(root)
@@ -3195,12 +3238,16 @@ function bridgeEventFrame(bridgeRequestId: string, delta: string): Buffer {
   )
 }
 
-async function createEnvironmentRoots(workspace: string) {
+async function createEnvironmentRoots(_root: string) {
+  const environmentRoot = await mkdtemp(
+    join(tmpdir(), 'ay-ple-node-runtime-environment-'),
+  )
+  roots.push(environmentRoot)
   const environment = {
-    home: join(workspace, 'runtime-home'),
-    codexHome: join(workspace, 'codex-home'),
-    codexSqliteHome: join(workspace, 'codex-sqlite-home'),
-    tempDirectory: join(workspace, 'runtime-temp'),
+    home: join(environmentRoot, 'runtime-home'),
+    codexHome: join(environmentRoot, 'codex-home'),
+    codexSqliteHome: join(environmentRoot, 'codex-sqlite-home'),
+    tempDirectory: join(environmentRoot, 'runtime-temp'),
   }
   await Promise.all(
     Object.values(environment).map((directory) =>

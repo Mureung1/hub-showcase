@@ -299,11 +299,9 @@ export async function startVerifiedCodexChatRuntime(
     options.environment,
     role.role === 'auth-only',
   )
-  if (role.role === 'auth-only') {
-    requireDisjointRuntimeRoots(role.bootstrapCwd, environment)
-  }
   const workspace =
     role.role === 'auth-only' ? role.bootstrapCwd : role.workspaceRoot
+  requireDisjointRuntimeRoots(workspace, environment)
   const application = validateApplicationIdentity(
     options.application ?? {
       name: 'ay-ple',
@@ -1924,7 +1922,7 @@ function requireDisjointRuntimeRoots(
       rightIndex += 1
     ) {
       if (pathsOverlap(roots[leftIndex], roots[rightIndex])) {
-        throw new TypeError('Auth-only Runtime roots must be disjoint')
+        throw new TypeError('Codex Runtime roots must be disjoint')
       }
     }
   }
