@@ -10,12 +10,12 @@ export interface BizinfoAnnouncement {
   pblancId: string
   pblancNm: string
   jrsdInsttNm: string
-  excInsttNm: string
+  excInsttNm?: string
   reqstBeginEndDe: string
   bsnsSumryCn: string
-  trgetNm: string
-  refrncNm: string
-  reqstMthPapersCn: string
+  trgetNm?: string
+  refrncNm?: string
+  reqstMthPapersCn?: string
   pblancUrl: string
   pldirSportRealmLclasCodeNm: string
   pldirSportRealmMlsfcCodeNm?: string
