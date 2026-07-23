@@ -10,7 +10,7 @@ import {
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import { after, before, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
@@ -90,11 +90,16 @@ test('streams one nominal native turn to its authoritative terminal', async () =
       ],
     )
     const journal = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
+      launchArgs?: readonly string[]
       messages: readonly {
         readonly method?: string
         readonly params?: Record<string, unknown>
       }[]
     }
+    assert.deepEqual(journal.launchArgs, [
+      '--config',
+      'project_root_markers=[]',
+    ])
     const threadStart = journal.messages.find(
       ({ method }) => method === 'thread/start',
     )
@@ -695,11 +700,68 @@ test('validates isolated product thread inputs before native mutation', async ()
   }
 })
 
-test('forwards isolated cwd and private MCP config and supports a text-only product turn', async () => {
+test('binds isolated thread cwd to the exact workspace role before native mutation', async () => {
+  const harness = await startHarness('isolated-thread-workspace-binding')
+  try {
+    assert.equal(harness.runtime.role.role, 'workspace')
+    if (harness.runtime.role.role !== 'workspace') {
+      assert.fail('expected a workspace Runtime')
+    }
+    const workspace = harness.runtime.role.workspaceRoot
+    const mcp = {
+      url: 'http://127.0.0.1:43127/mcp',
+      token: 'private-mcp-token',
+    } as const
+
+    for (const deniedWorkspace of [
+      join(dirname(workspace), 'sibling-workspace'),
+      `${workspace}/../${basename(workspace)}`,
+      '/wrong/workspace',
+    ]) {
+      await assert.rejects(
+        () =>
+          harness.runtime.startThread({
+            workspace: deniedWorkspace,
+            mcp,
+          }),
+        (error: unknown) => {
+          assert.ok(error instanceof CodexChatRuntimeError)
+          assert.equal(error.code, 'runtime_role_denied')
+          assert.equal(
+            error.displayMessage,
+            'The requested workspace does not match this Codex runtime.',
+          )
+          assert.equal(error.displayMessage.includes(deniedWorkspace), false)
+          assert.equal(error.unknownOutcome, false)
+          return true
+        },
+      )
+    }
+
+    const before = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
+      messages: readonly { readonly method?: string }[]
+    }
+    assert.equal(
+      before.messages.some(({ method }) => method === 'thread/start'),
+      false,
+    )
+    assert.deepEqual(
+      await harness.runtime.startThread({ workspace, mcp }),
+      { threadId: 'thread-1' },
+    )
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('forwards fixed workspace cwd and private MCP config and supports a text-only product turn', async () => {
   const harness = await startHarness('isolated-product-thread')
   try {
-    const workspace = join(dirname(harness.journalPath), 'semester-workspace')
-    await mkdir(workspace)
+    assert.equal(harness.runtime.role.role, 'workspace')
+    if (harness.runtime.role.role !== 'workspace') {
+      assert.fail('expected a workspace Runtime')
+    }
+    const workspace = harness.runtime.role.workspaceRoot
     const mcp = {
       url: 'http://127.0.0.1:43127/mcp',
       token: 'private-mcp-token',

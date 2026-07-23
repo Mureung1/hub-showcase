@@ -344,6 +344,13 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
     })
     this.requireOpen()
     this.requireWorkspaceRole()
+    if (
+      input !== undefined &&
+      this.role.role === 'workspace' &&
+      input.workspace !== this.role.workspaceRoot
+    ) {
+      throw workspaceRootMismatchError()
+    }
     const threadId = this.threadIds.shift()
     if (threadId === undefined) {
       throw new Error('No deterministic thread identity remains')
@@ -790,6 +797,15 @@ function runtimeRoleDeniedError(): CodexChatRuntimeError {
     code: 'runtime_role_denied',
     displayMessage:
       'The auth-only Codex runtime does not allow workspace operations.',
+    unknownOutcome: false,
+  })
+}
+
+function workspaceRootMismatchError(): CodexChatRuntimeError {
+  return new CodexChatRuntimeError({
+    code: 'runtime_role_denied',
+    displayMessage:
+      'The requested workspace does not match this Codex runtime.',
     unknownOutcome: false,
   })
 }

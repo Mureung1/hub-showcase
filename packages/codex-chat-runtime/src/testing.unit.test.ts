@@ -32,12 +32,14 @@ test('deterministic runtime returns caller-supplied native thread identities', a
   ])
 })
 
-test('deterministic runtime records an isolated workspace and private MCP thread input', async () => {
+test('deterministic runtime binds an isolated thread to its workspace role root', async () => {
+  const workspaceRoot = '/workspace/semester-a'
   const runtime = new DeterministicCodexChatRuntime({
+    role: { role: 'workspace', workspaceRoot },
     threadIds: ['thread-product'],
   })
   const input = {
-    workspace: '/workspace/semester-a',
+    workspace: workspaceRoot,
     mcp: {
       url: 'http://127.0.0.1:43127/mcp',
       token: 'private-mcp-token',
@@ -50,6 +52,42 @@ test('deterministic runtime records an isolated workspace and private MCP thread
   assert.deepEqual(runtime.calls, [
     { operation: 'startThread', input },
   ])
+})
+
+test('deterministic runtime rejects a different workspace role root before consuming a thread identity', async () => {
+  const workspaceRoot = '/workspace/semester-a'
+  const runtime = new DeterministicCodexChatRuntime({
+    role: { role: 'workspace', workspaceRoot },
+    threadIds: ['thread-must-remain-unused'],
+  })
+  const mcp = {
+    url: 'http://127.0.0.1:43127/mcp',
+    token: 'private-mcp-token',
+  } as const
+
+  for (const workspace of [
+    '/workspace/semester-b',
+    '/workspace/semester-a/../semester-a',
+  ]) {
+    await assert.rejects(
+      () => runtime.startThread({ workspace, mcp }),
+      (error: unknown) => {
+        assert.ok(error instanceof CodexChatRuntimeError)
+        assert.equal(error.code, 'runtime_role_denied')
+        assert.equal(
+          error.displayMessage,
+          'The requested workspace does not match this Codex runtime.',
+        )
+        assert.equal(error.displayMessage.includes(workspace), false)
+        assert.equal(error.unknownOutcome, false)
+        return true
+      },
+    )
+  }
+
+  assert.deepEqual(await runtime.startThread({ workspace: workspaceRoot, mcp }), {
+    threadId: 'thread-must-remain-unused',
+  })
 })
 
 test('deterministic runtime reports account not-ready without starting native work', async () => {

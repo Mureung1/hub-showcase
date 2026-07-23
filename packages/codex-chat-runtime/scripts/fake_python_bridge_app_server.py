@@ -84,8 +84,9 @@ def _input_text(params: dict[str, Any]) -> str:
 
 
 class FakeAppServer:
-    def __init__(self, journal_path: Path) -> None:
+    def __init__(self, journal_path: Path, launch_args: list[str]) -> None:
         self._journal_path = journal_path
+        self._launch_args = launch_args
         self._messages: list[dict[str, Any]] = []
         self._thread_count = 0
         self._turn_count = 0
@@ -116,6 +117,7 @@ class FakeAppServer:
         staged.write_text(
             json.dumps(
                 {
+                    "launchArgs": self._launch_args,
                     "environment": {
                         "CODEX_HOME": os.environ.get("CODEX_HOME"),
                         "CODEX_SQLITE_HOME": os.environ.get("CODEX_SQLITE_HOME"),
@@ -997,13 +999,18 @@ class FakeAppServer:
 
 
 def main() -> None:
-    if len(sys.argv) != 3:
+    launch_args = sys.argv[3:]
+    if len(sys.argv) not in {3, 5} or launch_args not in (
+        [],
+        ["--config", "project_root_markers=[]"],
+    ):
         raise SystemExit(
-            "usage: fake_python_bridge_app_server.py JOURNAL_PATH CHILD_PID_PATH"
+            "usage: fake_python_bridge_app_server.py "
+            "JOURNAL_PATH CHILD_PID_PATH [--config project_root_markers=[]]"
         )
     journal_path = Path(sys.argv[1])
     Path(sys.argv[2]).write_text(str(os.getpid()), encoding="utf-8")
-    server = FakeAppServer(journal_path)
+    server = FakeAppServer(journal_path, launch_args)
     for line in sys.stdin:
         message = json.loads(line)
         if not isinstance(message, dict):
