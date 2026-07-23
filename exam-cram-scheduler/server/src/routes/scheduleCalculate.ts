@@ -16,6 +16,11 @@ import { fetchDailyCaffeineLimitMg, fetchHalfLifeHours, type HealthProfile } fro
 // 동일하게 200mg(근거 없는 근사치)로 둔다.
 const CAFFEINE_ANCHOR_OFFSET_HOURS = 1;
 
+// 그래프를 마지막 시험 시각에서 딱 끊으면 시험 직후 각성도가 내려가는 꼬리가 안 보여서
+// 부자연스럽고, 마지막 시험 마커도 오른쪽 끝에 붙어 잘려 보인다. 표시용으로만 이만큼
+// 뒤까지 더 그린다(최적화에는 영향 없음 — endTime은 buildAlertnessTimeline에만 쓰임).
+const POST_EXAM_TAIL_HOURS = 3;
+
 // #3(2026-07-22 결정) — 예전엔 200mg 고정이라 추천이 늘 "200mg"으로만 나왔고, 그 숫자에
 // 근거도 없었다. 이제 용량도 탐색 대상으로 두되, 사용자가 실행할 수 있게 "잔" 단위로
 // 고르게 한다. 기준 한 잔은 아이스 아메리카노 1잔 = 150mg(DRINK_PRESETS와 맞춤).
@@ -278,7 +283,8 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
     bodyWeightKg: healthProfile.weightKg,
     halfLifeHours,
     startTime: 0,
-    endTime: Math.max(...timeline.examTimes),
+    // 마지막 시험 뒤로 꼬리를 조금 더 그려, 시험 직후 각성도가 내려가는 흐름까지 보이게 한다
+    endTime: Math.max(...timeline.examTimes) + POST_EXAM_TAIL_HOURS,
   });
 
   res.status(200).json({
