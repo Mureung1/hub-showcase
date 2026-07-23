@@ -69,54 +69,34 @@ isProject: false
 - `순서/우선순위`: 예: `01 / P0 / 월요일`
 - `검증`: 필요한 확인 방법
 
-## 월요일/화요일 상세 TODO (모바일 우선)
+## 월~금 상세 진행 기록
 
-### 월요일 TODO (모바일 FE 골격 + 계획 산출물)
-- [x] 라우트 골격 구성: `/`, `/onboarding/:step`, `/onboarding/complete`, `/home`, `/subsidies/:id`
-- [x] `AppShell` 적용: 모바일 full, PC에서는 390x844 프레임(center + radius + shadow)
-- [x] 와이어프레임 스타일 포팅: `src/styles/tokens.css` 기준으로 `app.css` 구조 정리, Pretendard 로드
-- [x] 온보딩 상태 저장 구조 설계: Context 또는 sessionStorage 스키마 정의 (업종/지역/구군/직원수/연매출)
-- [x] 온보딩 화면 구현(1~4): 각 step의 선택/입력 완료 전 `다음` 비활성 처리
-- [x] 완료 화면 구현: 입력 요약(업종/지역/직원수/연매출) + 홈 이동 CTA
-- [x] 홈 화면 mock 구현: 헤더, 정렬 칩(전체/마감임박/지원금액/신규), 리스트 라벨, 카드, 하단 탭 placeholder
-- [x] 계획 수립 Agent 산출물 정리: 작업 분해/우선순위/완료 기준 템플릿 문서화 (`docs/week2/day1-mon.md`)
+구현 세부(어떤 파일을 만들었는지, 어떤 버그를 어떻게 고쳤는지)는 아래 day-N 문서에만 있다.
+여기는 이슈별 한 줄 요약 + 링크만 남긴다 (중복 방지 — 자세한 건 항상 링크를 따라갈 것).
 
-월요일 완료 기준:
-- [x] mock 데이터만으로 `Welcome -> 온보딩 4스텝 -> 완료 -> 홈` 흐름이 끊기지 않고 동작한다.
-- [x] 모바일 화면 기준(390px)에서 UI가 와이어프레임 톤과 구조를 유지한다.
+- **월 (#1·#2·#11)** — 라우트/AppShell/온보딩/홈 mock 골격. 완료 기준: mock만으로
+  Welcome→온보딩→완료→홈 흐름 동작. 상세: [`day1-mon.md`](week2/day1-mon.md)
+- **화 (#12)** — 상세 화면, 공용 컴포넌트, TanStack Query + API client 계층. 완료 기준:
+  홈→상세→외부신청 흐름 동작, FE 데이터 계층 준비. 검증 중 `getSubsidy` 404 처리 버그 발견·수정.
+  상세: [`day2-verification-checklist.md`](week2/day2-verification-checklist.md)
+- **화~수 (#3·#4·#6)** — Supabase 스키마 연결, 매칭 API 전환, FE-Express 실연결. 시드 데이터
+  2건→8건 확장. 상세: [`day3-supabase-setup.md`](week2/day3-supabase-setup.md),
+  [`day4-match-api-plan.md`](week2/day4-match-api-plan.md),
+  [`day5-fe-api-connect-plan.md`](week2/day5-fe-api-connect-plan.md)
+- **목~금 (#7·#8·#9·#10)** — DB 쓰기 사이클, 검증 문서화, 통합 검증, 회고. 상세:
+  [`day6-remaining-work-plan.md`](week2/day6-remaining-work-plan.md),
+  [`day6-verification-agent.md`](week2/day6-verification-agent.md),
+  [`retrospective.md`](week2/retrospective.md)
 
-### 화요일 TODO (모바일 상세 + 데이터 계층/API 계약)
-- [x] 상세 화면 구현(모바일): 상단 정보, 요약 카드(금액/매칭/마감/방식), 자격/서류/신청방법 섹션
-- [x] 외부 신청 CTA 연결(mock): 하단 고정 버튼 + 접수처 링크 동작
-- [x] 공용 컴포넌트 분리: `SubsidyCard`, D-day 뱃지 유틸 (`dday.ts`)
-- [x] 상태 박스(로딩/에러/빈결과) 공용 컴포넌트 (`StatusBox`, `HomeScreen`/`SubsidyDetailScreen` 연결)
-- [x] TanStack Query 세팅: `queryClient`, `main.tsx` Provider, `useSubsidies`/`useSubsidy`/`useSubmitProfile` 훅
-- [x] API client 래퍼 추가: mock fallback 가능한 `getSubsidies`, `getSubsidy`, `submitProfile` 인터페이스 (`src/api/client.ts`)
-- [x] 공유 타입 보강: `MatchRequest`/`MatchResponse` 정의 (`shared/src/types/match.ts`)
-- [x] 홈 정렬 동작 구현(mock 기준): 매칭도/마감임박/지원금액 정렬 토글 확인
-- [x] 기능 검증 Agent 산출물 초안: [`docs/week2/day2-verification-checklist.md`](week2/day2-verification-checklist.md)
-
-화요일 완료 기준:
-- [x] 모바일에서 `홈 리스트 -> 상세 -> 외부 신청 링크` 흐름이 동작한다.
-- [x] FE 데이터 계층(Query + API client + shared contract)이 준비되어 수/목 DB 연동으로 자연스럽게 전환 가능하다.
-
-### 화요일 잔여 작업 완료 (2026-07-20)
-
-- 위 5개 미완 항목 전부 완료. 상세 내용은 [`day2-verification-checklist.md`](week2/day2-verification-checklist.md) 참고.
-- 검증 중 `getSubsidy`의 404 처리 버그 발견·수정: 서버 샘플 데이터(2건)가 mock(8건)보다 적어 상세 화면 진입 시 6건이 "찾을 수 없음"으로 깨지는 회귀였음. 모든 실패를 mock fallback으로 통일해 해결.
-- 남은 리스크(당시): 서버·mock 데이터 불일치는 Supabase 연동(#3) 시 정리 필요, `getSubsidies()`는 현재 미사용 상태. → 아래 #3·#4·#6에서 해소.
-
-### #3·#4·#6 완료 (2026-07-21)
-
-- **#3 Supabase 스키마·연결** (PR #20): `subsidies` 테이블 스키마, 서버 전용 클라이언트, 시드/검증 스크립트 구성.
-- **#4 매칭 API → Supabase 전환** (PR #21): `subsidies-repo.ts` 신규(조회+정렬+fallback), `GET /api/subsidies`·`GET /api/subsidies/:id`·신규 `POST /api/match`가 Supabase 조회 기반으로 전환. 시드 데이터 2건 → **8건 확장**해 mock과 개수 일치, DB 재시드 완료.
-- **#6 FE ↔ Express API 연결**: `#4`로 실제 API 경로가 이미 연결돼 있던 것을 확인. `src/api/client.ts`의 낡은 주석("#4 예정" 등) 정리, fallback 발생 시 `console.warn` 추가, 미사용 `getSubsidies()` 제거. Vite proxy(`/api/*`)를 통해 실제 Supabase 데이터가 응답되는 것을 curl로 검증(목록/상세/매칭 모두 200, 서버 중지 시 502 확인). 상세 내용은 [`day5-fe-api-connect-plan.md`](week2/day5-fe-api-connect-plan.md) 참고.
-- 남은 리스크: 매칭 조건 필터(업종/지역)는 스키마에 구조화 컬럼이 없어 정렬 위주로만 동작 — 3주차 매칭 알고리즘 범위.
+남은 리스크(공통): 매칭 조건 필터(업종/지역)는 스키마에 구조화 컬럼이 없어 정렬 위주로만
+동작 — 3주차 매칭 알고리즘 범위로 이관.
 
 ### 추가 완료 (플랜 외 · 인프라)
-- [x] PR CI + commitlint (`pr-checks.yml`, husky `commit-msg`)
 - [x] GitHub Actions Pages 자동 배포 (`deploy-pages.yml`, `build:client`, `/hub/` base)
-- [x] 데모 회고 문서 초안 (`docs/week2/day1-presentation.md`)
+- [x] 데모 회고 문서 (`docs/week2/day1-presentation.md`, `docs/week2/retrospective.md`)
+- [x] 로컬 husky `commit-msg` 훅(commitlint) — 단, PR 시점 자동 CI(`pr-checks.yml`)는 실제로는
+  존재한 적 없었음(`.github/`가 `.gitignore` 대상이었던 게 Week 3에서 밝혀짐). 상세:
+  [`day1-presentation.md`](week2/day1-presentation.md#3-pr-ci--commitlint)
 
 ## 월-금 이슈 목록
 1. `[01/P0/월] 이번 주 수직 슬라이스 범위 확정 및 이슈 대시보드 구성`
@@ -163,8 +143,7 @@ isProject: false
 1. GitHub 라벨과 마일스톤을 만든다.
 2. 위 10개 이슈를 순서대로 생성하고 각 이슈에 milestone/labels를 붙인다.
 3. README의 문서 섹션 또는 상단 소개 아래에 Week 2 개발 대시보드 링크를 추가한다.
-4. 필요하면 `docs/checklist.md`에 Week 2 계획 링크를 함께 보강한다.
-5. 이슈 생성 후 README 링크가 실제 GitHub 필터 결과로 열리는지 확인한다.
+4. 이슈 생성 후 README 링크가 실제 GitHub 필터 결과로 열리는지 확인한다.
 
 ## 구현 단계에서 참고할 주요 파일
 - [`CLAUDE.md`](CLAUDE.md): 확정 스택, MVP 범위, 라우트/API 기준
