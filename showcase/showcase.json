@@ -24,8 +24,6 @@
   "featureTags": [
     "퀘스트 관리",
     "회복형 목표 관리",
-    "전자 생물 매니저",
-    "Supabase 수직 슬라이스",
     "Agent Workflow"
   ],
   "techStack": [
@@ -39,10 +37,8 @@
   ],
   "techHighlights": [
     "React state와 컴포넌트 분리로 XP 데스크톱형 창, 퀘스트 실행, 기록 노트 흐름을 구현했습니다.",
-    "Vite middleware가 /api 요청을 Hono app으로 넘기고, Hono route가 contract parser로 검증한 뒤 Supabase에 저장합니다.",
-    "Quest Event를 중심으로 manager context, reward hints, 기록 노트 렌더링이 같은 데이터 흐름을 공유합니다.",
-    "LLM을 바로 UI에 연결하지 않고 ManagerBehaviorIntent와 behavior adapter 경계로 제한해 안전한 애니메이션 상태로 변환합니다.",
-    "analyze-request, create-plan, tdd_workflow, verifier, wiki-query 계열 Agent와 Skill을 사용해 요구사항 분석, 구현, 검증, 문서화를 분리했습니다."
+    "Vite middleware, Hono contract parser, Supabase quest_logs를 연결해 Quest Event 저장/조회 수직 슬라이스를 완성했습니다.",
+    "ManagerBehaviorIntent와 behavior adapter로 LLM 확장 경계를 제한하고, Agent/Skill workflow로 요구사항 분석, TDD, 검증, 문서화를 분리했습니다."
   ],
   "developmentWithAI": "저는 서비스 컨셉, 핵심 사용자 흐름, 확장 우선순위, 수동 검증 결과를 결정했습니다. AI Agent는 현재 저장소를 조사하고 계획을 만들고, 승인된 범위에서 코드와 문서를 수정했습니다. 구현 후에는 타입 검사, 빌드, 하네스, sprite verifier, 수동 Network 확인을 분리해 검증했습니다.",
   "agent": {

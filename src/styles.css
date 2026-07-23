@@ -1401,6 +1401,10 @@ label {
   top: calc(var(--window-y) + 352px);
 }
 
+.window-pet-interaction.below-quest.hanging {
+  top: calc(var(--window-y) + 43px);
+}
+
 .window-pet-interaction.beside-recovery {
   left: calc(var(--window-x) - 78px);
   top: calc(var(--window-y) + 48px);
