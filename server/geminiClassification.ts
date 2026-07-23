@@ -21,10 +21,12 @@ type GeminiClassification = {
   categoryMain: AllowedMainCategory;
   categorySub: string | null;
   displayTitle: string;
+  summary: string;
 };
 
 export type ContentAnalysis = Classification & {
   displayTitle: string;
+  summary: string;
 };
 
 export type ClassificationImage = {
@@ -42,6 +44,7 @@ export type GeminiRequest = (input: ClassificationInput) => Promise<unknown>;
 
 const MAX_SUBCATEGORY_LENGTH = 30;
 const MAX_DISPLAY_TITLE_LENGTH = 60;
+const MAX_SUMMARY_LENGTH = 500;
 const koreanSubcategoryPattern = /^[가-힣][가-힣0-9 ()·/&+-]*$/;
 const displayTitlePattern = /[가-힣A-Za-z0-9]/;
 
@@ -50,7 +53,11 @@ export function validateGeminiClassification(value: unknown): ContentAnalysis | 
   const candidate = value as Record<string, unknown>;
   if (
     Object.keys(candidate).some(
-      (key) => key !== "categoryMain" && key !== "categorySub" && key !== "displayTitle"
+      (key) =>
+        key !== "categoryMain" &&
+        key !== "categorySub" &&
+        key !== "displayTitle" &&
+        key !== "summary"
     )
   ) {
     return null;
@@ -70,11 +77,25 @@ export function validateGeminiClassification(value: unknown): ContentAnalysis | 
   ) {
     return null;
   }
+  if (typeof candidate.summary !== "string") return null;
+  const summary = candidate.summary.trim();
+  if (
+    summary.length < 2 ||
+    summary.length > MAX_SUMMARY_LENGTH ||
+    !displayTitlePattern.test(summary)
+  ) {
+    return null;
+  }
   if (candidate.categoryMain === "미분류") {
-    return { categoryMain: "미분류", categorySub: null, displayTitle };
+    return { categoryMain: "미분류", categorySub: null, displayTitle, summary };
   }
   if (candidate.categorySub === null) {
-    return { categoryMain: candidate.categoryMain, categorySub: null, displayTitle };
+    return {
+      categoryMain: candidate.categoryMain,
+      categorySub: null,
+      displayTitle,
+      summary,
+    };
   }
   if (typeof candidate.categorySub !== "string") return null;
   const categorySub = candidate.categorySub.trim();
@@ -85,6 +106,7 @@ export function validateGeminiClassification(value: unknown): ContentAnalysis | 
     categoryMain: candidate.categoryMain,
     categorySub,
     displayTitle,
+    summary,
   };
 }
 
@@ -107,6 +129,17 @@ function getFallbackTitle(input: ClassificationInput, classification: Classifica
   return "저장한 웹 콘텐츠";
 }
 
+function getFallbackSummary(input: ClassificationInput, displayTitle: string) {
+  const metadataDescription =
+    input.metadata?.ogDescription?.trim() || input.metadata?.description?.trim();
+  if (metadataDescription) return metadataDescription.slice(0, MAX_SUMMARY_LENGTH);
+  if (input.content && !/^https?:\/\//i.test(input.content)) {
+    return input.content.trim().slice(0, MAX_SUMMARY_LENGTH);
+  }
+  if (input.image) return `${displayTitle}로 분류된 이미지입니다.`;
+  return "원문에서 요약할 정보를 충분히 찾지 못했습니다.";
+}
+
 function normalizeRuleFallback(input: ClassificationInput): ContentAnalysis {
   const content = input.content;
   const fallback = classifyContent(content);
@@ -114,9 +147,11 @@ function normalizeRuleFallback(input: ClassificationInput): ContentAnalysis {
     fallback.categoryMain === "미분류"
     ? { categoryMain: "미분류", categorySub: null }
     : fallback;
+  const displayTitle = getFallbackTitle(input, classification);
   return {
     ...classification,
-    displayTitle: getFallbackTitle(input, classification),
+    displayTitle,
+    summary: getFallbackSummary(input, displayTitle),
   };
 }
 
@@ -127,6 +162,8 @@ When text and an image are both provided, consider both together.
 Prefer Later's existing broad category system and avoid overly specific categories.
 Select exactly one main category and a short Korean subcategory, or null when the subcategory is unclear.
 Create displayTitle as a concise, natural Korean card title that summarizes the subject and content type.
+Create summary as a useful Korean summary of the key content in 1 to 3 short sentences.
+Do not invent details that are not supported by the image, text, or metadata.
 Use broad main categories so similar learning topics stay grouped under "공부".
 Use a specific title such as "AWS SAA-C03 자격증 준비 가이드", not a vague title such as "공부 관련 글".
 Keep displayTitle between 8 and 30 Korean-readable characters when possible. Never use a raw URL as displayTitle.
@@ -140,8 +177,9 @@ const classificationSchema = {
     categoryMain: { type: "string", enum: [...allowedMainCategories] },
     categorySub: { type: ["string", "null"] },
     displayTitle: { type: "string" },
+    summary: { type: "string" },
   },
-  required: ["categoryMain", "categorySub", "displayTitle"],
+  required: ["categoryMain", "categorySub", "displayTitle", "summary"],
   additionalProperties: false,
 };
 

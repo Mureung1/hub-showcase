@@ -116,6 +116,7 @@ describe("items API", () => {
       image_url: null,
       category_main: "영상",
       category_sub: "유튜브",
+      summary: "원문에서 요약할 정보를 충분히 찾지 못했습니다.",
     });
   });
 
@@ -132,6 +133,7 @@ describe("items API", () => {
       image_url: null,
       category_main: "공부",
       category_sub: "프로그래밍",
+      summary: "React 개발 문서",
     });
   });
 
@@ -152,6 +154,7 @@ describe("items API", () => {
       source_platform: "manual",
       category_main: "미분류",
       category_sub: null,
+      summary: "저장한 이미지로 분류된 이미지입니다.",
     });
     expect(database.inserted?.image_url).toMatch(/^https:\/\/storage\.example\//);
   });

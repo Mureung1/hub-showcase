@@ -9,6 +9,7 @@ import Home from "./page";
 const savedItem = {
   id: 1,
   title: "이미지",
+  summary: "여행지 풍경을 담은 이미지입니다.",
   content: "여행 사진",
   original_url: null,
   image_url: "https://storage.example/photo.jpg",

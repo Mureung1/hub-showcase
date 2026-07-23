@@ -18,6 +18,7 @@ function getDisplayTitle(item: Item) {
 }
 
 export default function ItemCard({ item, onDelete }: ItemCardProps) {
+  const [expanded, setExpanded] = useState(false);
   const [pendingAction, setPendingAction] = useState<"delete" | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -35,10 +36,23 @@ export default function ItemCard({ item, onDelete }: ItemCardProps) {
   }
 
   const isPending = pendingAction !== null;
+  const summary = item.summary?.trim() || "아직 생성된 요약이 없습니다.";
 
   return (
-    <li className="bg-white/60 rounded-xl px-3 py-3">
-      <div>
+    <li className="bg-white/60 rounded-xl px-3 py-3 transition-colors hover:bg-white/80">
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
+        onClick={() => setExpanded((current) => !current)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            setExpanded((current) => !current);
+          }
+        }}
+        className="cursor-pointer outline-none"
+      >
         {item.image_url && (
           <img
             src={item.image_url}
@@ -51,11 +65,6 @@ export default function ItemCard({ item, onDelete }: ItemCardProps) {
             <p className="text-sm text-ink font-medium break-words">
               {getDisplayTitle(item)}
             </p>
-            {item.original_url && (
-              <p className="mt-1 truncate text-[11px] text-muted/80" title={item.original_url}>
-                {item.original_url}
-              </p>
-            )}
             <p className="text-xs text-muted">
               {item.source_platform ?? "manual"} ·{" "}
               {new Date(item.created_at).toLocaleDateString("ko-KR")}
@@ -65,7 +74,10 @@ export default function ItemCard({ item, onDelete }: ItemCardProps) {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={deleteItem}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void deleteItem();
+                }}
                 disabled={isPending}
                 className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
               >
@@ -74,6 +86,26 @@ export default function ItemCard({ item, onDelete }: ItemCardProps) {
             </div>
           </div>
         </div>
+        {expanded && (
+          <div className="mt-4 border-t border-creamDeep pt-3">
+            <h3 className="text-xs font-semibold text-muted">AI 요약</h3>
+            <p className="mt-2 whitespace-pre-line text-sm leading-6 text-ink">
+              {summary}
+            </p>
+            {item.original_url && (
+              <a
+                href={item.original_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(event) => event.stopPropagation()}
+                className="mt-4 block truncate border-t border-creamDeep pt-3 text-xs text-accentDark underline underline-offset-2"
+                title={item.original_url}
+              >
+                원본 링크 열기 ↗
+              </a>
+            )}
+          </div>
+        )}
       </div>
       {actionError && <p className="mt-2 text-xs text-red-600">{actionError}</p>}
     </li>

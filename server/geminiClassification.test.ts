@@ -13,11 +13,13 @@ describe("validateGeminiClassification", () => {
         categoryMain: "공부",
         categorySub: "프로그래밍",
         displayTitle: "React와 TypeScript 개발 가이드",
+        summary: "React와 TypeScript를 함께 학습하는 개발 자료입니다.",
       })
     ).toEqual({
       categoryMain: "공부",
       categorySub: "프로그래밍",
       displayTitle: "React와 TypeScript 개발 가이드",
+      summary: "React와 TypeScript를 함께 학습하는 개발 자료입니다.",
     });
   });
 
@@ -27,27 +29,36 @@ describe("validateGeminiClassification", () => {
         categoryMain: "미분류",
         categorySub: "기타",
         displayTitle: "저장한 웹 콘텐츠",
+        summary: "요약할 정보가 부족한 웹 콘텐츠입니다.",
       })
     ).toEqual({
       categoryMain: "미분류",
       categorySub: null,
       displayTitle: "저장한 웹 콘텐츠",
+      summary: "요약할 정보가 부족한 웹 콘텐츠입니다.",
     });
   });
 
   it.each([
     null,
     { categoryMain: "음식", categorySub: "한식" },
-    { categoryMain: "공부", categorySub: "programming", displayTitle: "프로그래밍 공부" },
+    {
+      categoryMain: "공부",
+      categorySub: "programming",
+      displayTitle: "프로그래밍 공부",
+      summary: "프로그래밍 공부 자료입니다.",
+    },
     {
       categoryMain: "공부",
       categorySub: "가".repeat(31),
       displayTitle: "프로그래밍 공부",
+      summary: "프로그래밍 공부 자료입니다.",
     },
     {
       categoryMain: "공부",
       categorySub: "프로그래밍",
       displayTitle: "프로그래밍 공부",
+      summary: "프로그래밍 공부 자료입니다.",
       explanation: "설명",
     },
   ])("유효하지 않은 응답을 거부한다: %o", (value) => {
@@ -62,6 +73,7 @@ describe("createGeminiClassifier", () => {
         categoryMain: "공부",
         categorySub: "프로그래밍",
         displayTitle: "React TypeScript 학습 가이드",
+        summary: "React와 TypeScript 핵심 내용을 다루는 학습 자료입니다.",
       }),
     });
     const classifier = createGeminiClassifier(
@@ -87,6 +99,7 @@ describe("createGeminiClassifier", () => {
       categoryMain: "공부",
       categorySub: "프로그래밍",
       displayTitle: "React TypeScript 학습 가이드",
+      summary: "React와 TypeScript 핵심 내용을 다루는 학습 자료입니다.",
     });
 
     expect(generateContent).toHaveBeenCalledWith({
@@ -110,6 +123,7 @@ describe("createGeminiClassifier", () => {
         categoryMain: "여행",
         categorySub: "관광지",
         displayTitle: "제주도 관광지 여행 사진",
+        summary: "제주도 관광지의 풍경을 담은 여행 사진입니다.",
       }),
     });
     const classifier = createGeminiClassifier(
@@ -147,11 +161,13 @@ describe("createGeminiClassifier", () => {
         categoryMain: "콘텐츠",
         categorySub: null,
         displayTitle: "오늘 읽을 주요 콘텐츠",
+        summary: "오늘 읽어볼 만한 주요 내용을 정리한 콘텐츠입니다.",
       })
     ).toEqual({
       categoryMain: "콘텐츠",
       categorySub: null,
       displayTitle: "오늘 읽을 주요 콘텐츠",
+      summary: "오늘 읽어볼 만한 주요 내용을 정리한 콘텐츠입니다.",
     });
   });
 
@@ -198,6 +214,7 @@ describe("classifyWithFallback", () => {
       categoryMain: "콘텐츠",
       categorySub: "기사",
       displayTitle: "React 개발 동향 정리",
+      summary: "React 개발 동향과 관련 자료를 간단히 정리합니다.",
     });
 
     await expect(
@@ -206,6 +223,7 @@ describe("classifyWithFallback", () => {
       categoryMain: "콘텐츠",
       categorySub: "기사",
       displayTitle: "React 개발 동향 정리",
+      summary: "React 개발 동향과 관련 자료를 간단히 정리합니다.",
     });
   });
 
@@ -219,6 +237,7 @@ describe("classifyWithFallback", () => {
       categoryMain: "공부",
       categorySub: "프로그래밍",
       displayTitle: "React TypeScript 공부 자료",
+      summary: "React TypeScript 공부 자료",
     });
   });
 
@@ -231,6 +250,7 @@ describe("classifyWithFallback", () => {
       categoryMain: "건강",
       categorySub: "운동",
       displayTitle: "다이어트 운동 루틴",
+      summary: "다이어트 운동 루틴",
     });
   });
 
@@ -241,6 +261,7 @@ describe("classifyWithFallback", () => {
       categoryMain: "영상",
       categorySub: "유튜브",
       displayTitle: "유튜브 관련 콘텐츠",
+      summary: "원문에서 요약할 정보를 충분히 찾지 못했습니다.",
     });
   });
 
@@ -256,6 +277,7 @@ describe("classifyWithFallback", () => {
       categoryMain: "미분류",
       categorySub: null,
       displayTitle: "분류 단서가 없는 문장",
+      summary: "분류 단서가 없는 문장",
     });
   });
 
@@ -274,6 +296,7 @@ describe("classifyWithFallback", () => {
       categoryMain: "미분류",
       categorySub: null,
       displayTitle: "저장한 이미지",
+      summary: "저장한 이미지로 분류된 이미지입니다.",
     });
   });
 
@@ -288,12 +311,14 @@ describe("classifyWithFallback", () => {
           categoryMain: "여행",
           categorySub: "풍경",
           displayTitle: "산책길 풍경 여행 사진",
+          summary: "산책길에서 촬영한 풍경을 담은 여행 사진입니다.",
         })
       )
     ).resolves.toEqual({
       categoryMain: "여행",
       categorySub: "풍경",
       displayTitle: "산책길 풍경 여행 사진",
+      summary: "산책길에서 촬영한 풍경을 담은 여행 사진입니다.",
     });
   });
 
@@ -310,6 +335,7 @@ describe("classifyWithFallback", () => {
       categoryMain: "건강",
       categorySub: "운동",
       displayTitle: "운동 루틴",
+      summary: "운동 루틴",
     });
   });
 });

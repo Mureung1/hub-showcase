@@ -1,6 +1,7 @@
 export type Item = {
   id: number;
   title: string | null;
+  summary: string | null;
   content: string | null;
   original_url: string | null;
   image_url: string | null;

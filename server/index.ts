@@ -20,7 +20,7 @@ dotenv.config({ path: "server/.env", quiet: true });
 const app = express();
 const port = Number(process.env.PORT) || 4000;
 const itemColumns =
-  "id, title, content, original_url, image_url, source_platform, category_main, category_sub, created_at";
+  "id, title, summary, content, original_url, image_url, source_platform, category_main, category_sub, created_at";
 const configuredOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:3000")
   .split(",")
   .map((origin) => origin.trim());
@@ -175,7 +175,7 @@ app.post("/api/items", handleImageUpload, async (request, response) => {
           mimeType: request.file.mimetype,
         }
       : null;
-  const { categoryMain, categorySub, displayTitle } = await classifyWithFallback(
+  const { categoryMain, categorySub, displayTitle, summary } = await classifyWithFallback(
     { content: trimmed, metadata, image: classificationImage },
     geminiClassifier
   );
@@ -201,6 +201,7 @@ app.post("/api/items", handleImageUpload, async (request, response) => {
         image_url: imageUrl,
         content: trimmed || null,
         title: displayTitle,
+        summary,
         source_platform: sourcePlatform,
         category_main: categoryMain,
         category_sub: categorySub,

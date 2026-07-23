@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ItemCard from "./ItemCard";
@@ -9,6 +9,7 @@ import ItemCard from "./ItemCard";
 const item = {
   id: 1,
   title: "AWS SAA-C03 자격증 준비 가이드",
+  summary: "AWS Solutions Architect 자격증의 핵심 학습 내용을 정리한 글입니다.",
   content: "https://velog.io/example",
   original_url: "https://velog.io/example",
   image_url: null,
@@ -21,7 +22,7 @@ const item = {
 describe("ItemCard", () => {
   afterEach(cleanup);
 
-  it("AI 제목을 크게, 원본 URL을 보조 정보로 표시하고 수정 버튼은 노출하지 않는다", () => {
+  it("카드를 누르면 AI 요약과 원본 링크를 표시하고 수정 버튼은 노출하지 않는다", () => {
     render(
       <ul>
         <ItemCard item={item} onDelete={vi.fn()} />
@@ -29,7 +30,17 @@ describe("ItemCard", () => {
     );
 
     expect(screen.getByText("AWS SAA-C03 자격증 준비 가이드")).toBeInTheDocument();
-    expect(screen.getByText("https://velog.io/example")).toHaveClass("text-[11px]");
+    expect(screen.queryByText(item.summary)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { expanded: false }));
+    expect(screen.getByText(item.summary)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /원본 링크 열기/ })).toHaveAttribute(
+      "href",
+      item.original_url
+    );
+    expect(screen.getByRole("link", { name: /원본 링크 열기/ })).toHaveAttribute(
+      "target",
+      "_blank"
+    );
     expect(screen.queryByText("공부 · 클라우드")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "수정" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "삭제" })).toBeInTheDocument();
