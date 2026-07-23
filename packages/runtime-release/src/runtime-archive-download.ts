@@ -427,10 +427,7 @@ async function finalizeCompletedPartial(
   archiveAuthority: RuntimeDirectoryMutationAuthority,
   partial: RuntimeArchivePartialWriter,
 ): Promise<RuntimeArchiveVerificationSnapshot> {
-  if (input.signal.aborted) {
-    await syncPartialAndJournal(input, partial)
-  }
-  assertNotCancelled(input.signal)
+  await rejectCancelledCompletedPartial(input, partial)
   if (
     partial.writtenBytes !==
     input.admission.descriptor.archive.bytes
@@ -454,6 +451,7 @@ async function finalizeCompletedPartial(
     await persistPartialJournal(input, partial)
   }
   await input.testOptions?.beforeArchiveHash?.()
+  await rejectCancelledCompletedPartial(input, partial)
   let digest: string
   try {
     digest = await hashRuntimeArchiveFile(
@@ -464,10 +462,9 @@ async function finalizeCompletedPartial(
   } catch (error) {
     if (
       error instanceof RuntimeReleaseAuthorityError &&
-      error.failure.code === 'runtime_cancelled' &&
-      partial.strongEtag === undefined
+      error.failure.code === 'runtime_cancelled'
     ) {
-      await resetRejectedPartial(input, partial)
+      await rejectCancelledCompletedPartial(input, partial)
     }
     throw error
   }
@@ -477,13 +474,7 @@ async function finalizeCompletedPartial(
       kind: 'runtime_archive_digest_mismatch',
     })
   }
-  if (
-    input.signal.aborted &&
-    partial.strongEtag === undefined
-  ) {
-    await resetRejectedPartial(input, partial)
-  }
-  assertNotCancelled(input.signal)
+  await rejectCancelledCompletedPartial(input, partial)
   const verified = await publishVerifiedArchive(
     input,
     mutationAuthority,
@@ -493,6 +484,17 @@ async function finalizeCompletedPartial(
   await preserveValidPartialResidue(partial)
   await assertPartialResidueReadback(input, partial)
   return verified
+}
+
+async function rejectCancelledCompletedPartial(
+  input: RuntimeArchiveDownloadInput,
+  partial: RuntimeArchivePartialWriter,
+): Promise<void> {
+  if (!input.signal.aborted) return
+  await syncPartialAndJournal(input, partial)
+  throw runtimeAuthorityError('runtime_cancelled', {
+    kind: 'runtime_archive_cancelled',
+  })
 }
 
 async function resetRejectedPartial(
