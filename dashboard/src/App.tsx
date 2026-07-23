@@ -4,9 +4,9 @@ import type { KeyboardEvent } from 'react';
 
 const categoryGroups = [
   { id: 'all', label: '전체' },
-  { id: 'small-business', label: '소상공인·지역' },
-  { id: 'university', label: '대학·학습' },
-  { id: 'daily-life', label: '생활·공공' },
+  { id: 'small-business', label: '소상공인' },
+  { id: 'university', label: '대학생' },
+  { id: 'daily-life', label: '지역·생활' },
 ] as const;
 
 type CategoryGroupId = typeof categoryGroups[number]['id'];
