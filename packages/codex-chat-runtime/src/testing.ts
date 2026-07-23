@@ -14,11 +14,22 @@ import type {
 import type {
   AnswerUserInput,
   CancelUserInput,
-  CodexProductCapableRuntime,
+  CodexManagedRuntime,
   CodexProductTurn,
   StartThreadInput,
   StartProductTurnInput,
 } from './runtime-contract.js'
+import type {
+  CodexAccountFailure,
+  CodexAccountReadResult,
+  CodexBrowserLoginAttempt,
+  CodexBrowserLoginCancellation,
+  CodexBrowserLoginRelease,
+  CodexBrowserLoginStartResult,
+  CodexLogoutResult,
+  CodexRuntimeCloseResult,
+  CodexRuntimeRole,
+} from './account-contract.js'
 import {
   CodexChatRuntimeError,
   INTERACTION_NOT_PENDING_MESSAGE,
@@ -38,6 +49,27 @@ export {
 
 export type DeterministicCodexChatRuntimeCall =
   | { readonly operation: 'readAccountReadiness' }
+  | { readonly operation: 'readAccount' }
+  | {
+      readonly operation: 'startBrowserLogin'
+      readonly input: {
+        readonly attemptId: string
+        readonly expiresAt: string
+      }
+    }
+  | {
+      readonly operation: 'readBrowserLoginAttempt'
+      readonly input: { readonly attemptId: string }
+    }
+  | {
+      readonly operation: 'cancelBrowserLogin'
+      readonly input: { readonly attemptId: string }
+    }
+  | {
+      readonly operation: 'releaseBrowserLoginAttempt'
+      readonly input: { readonly attemptId: string }
+    }
+  | { readonly operation: 'logout' }
   | { readonly operation: 'startThread'; readonly input?: StartThreadInput }
   | {
       readonly operation: 'startTurn'
@@ -64,6 +96,7 @@ export type DeterministicCodexChatRuntimeCall =
       readonly input: ReleaseThreadInput
     }
   | { readonly operation: 'close' }
+  | { readonly operation: 'closeAccount' }
 
 function interactionNotPendingError(): CodexChatRuntimeError {
   return new CodexChatRuntimeError({
@@ -86,11 +119,20 @@ export type DeterministicCodexProductTurn = {
 }
 
 export type DeterministicCodexChatRuntimeOptions = {
+  readonly role?: CodexRuntimeRole
   readonly accountReadiness?: readonly CodexAccountReadiness[]
+  readonly accountReads?: readonly DeterministicValue<CodexAccountReadResult>[]
+  readonly browserLoginStarts?: readonly DeterministicValue<CodexBrowserLoginStartResult>[]
+  readonly browserLoginAttempts?: readonly DeterministicValue<CodexBrowserLoginAttempt>[]
+  readonly browserLoginCancellations?: readonly DeterministicValue<CodexBrowserLoginCancellation>[]
+  readonly browserLoginReleases?: readonly DeterministicValue<CodexBrowserLoginRelease>[]
+  readonly logouts?: readonly DeterministicValue<CodexLogoutResult>[]
   readonly threadIds?: readonly CodexThreadId[]
   readonly productTurns?: readonly DeterministicCodexProductTurn[]
   readonly turns?: readonly DeterministicCodexChatTurn[]
 }
+
+type DeterministicValue<T> = T | PromiseLike<T>
 
 export type DeterministicCodexProductRuntimeCall =
   DeterministicCodexChatRuntimeCall
@@ -111,10 +153,17 @@ type DeterministicPendingInteraction = {
   settled: boolean
 }
 
-export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime {
+export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
   private readonly terminalDeferred = createDeferred<CodexChatRuntimeError>()
   readonly terminal = this.terminalDeferred.promise
+  readonly role: CodexRuntimeRole
   private readonly accountReadiness: CodexAccountReadiness[]
+  private readonly accountReads: DeterministicValue<CodexAccountReadResult>[]
+  private readonly browserLoginStarts: DeterministicValue<CodexBrowserLoginStartResult>[]
+  private readonly browserLoginAttempts: DeterministicValue<CodexBrowserLoginAttempt>[]
+  private readonly browserLoginCancellations: DeterministicValue<CodexBrowserLoginCancellation>[]
+  private readonly browserLoginReleases: DeterministicValue<CodexBrowserLoginRelease>[]
+  private readonly logouts: DeterministicValue<CodexLogoutResult>[]
   private readonly threadIds: CodexThreadId[]
   private readonly productTurns: DeterministicCodexProductTurn[]
   private readonly turns: DeterministicCodexChatTurn[]
@@ -129,7 +178,23 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
   private closed = false
 
   constructor(options: DeterministicCodexChatRuntimeOptions = {}) {
+    this.role = Object.freeze(
+      options.role === undefined
+        ? {
+            role: 'workspace',
+            workspaceRoot: '/deterministic/workspace',
+          }
+        : { ...options.role },
+    )
     this.accountReadiness = [...(options.accountReadiness ?? [])]
+    this.accountReads = [...(options.accountReads ?? [])]
+    this.browserLoginStarts = [...(options.browserLoginStarts ?? [])]
+    this.browserLoginAttempts = [...(options.browserLoginAttempts ?? [])]
+    this.browserLoginCancellations = [
+      ...(options.browserLoginCancellations ?? []),
+    ]
+    this.browserLoginReleases = [...(options.browserLoginReleases ?? [])]
+    this.logouts = [...(options.logouts ?? [])]
     this.threadIds = [...(options.threadIds ?? [])]
     this.productTurns = (options.productTurns ?? []).map((turn) => ({
       input: cloneProductTurnInput(turn.input),
@@ -151,10 +216,125 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
     this.callLog.push({ operation: 'readAccountReadiness' })
     this.requireOpen()
     const readiness = this.accountReadiness.shift()
-    if (readiness === undefined) {
-      throw new Error('No deterministic account readiness remains')
+    if (readiness !== undefined) {
+      return { ...readiness }
     }
-    return { ...readiness }
+    const result = await this.nextAccountValue(
+      this.accountReads,
+      'account read',
+    )
+    if (result.status === 'error') {
+      throw accountFailureError(result.error)
+    }
+    return result.account.state === 'chatgpt'
+      ? { state: 'ready' }
+      : { state: 'not_ready', reason: 'authentication_required' }
+  }
+
+  async readAccount(input: {
+    readonly refreshToken: true
+    readonly signal: AbortSignal
+  }): Promise<CodexAccountReadResult> {
+    this.callLog.push({ operation: 'readAccount' })
+    return this.runAccountValue(
+      this.accountReads,
+      'account read',
+      input.signal,
+      () => ({ status: 'error', error: runtimeClosingFailure() }),
+    )
+  }
+
+  async startBrowserLogin(input: {
+    readonly attemptId: string
+    readonly expiresAt: string
+    readonly signal: AbortSignal
+  }): Promise<CodexBrowserLoginStartResult> {
+    const recordedInput = {
+      attemptId: input.attemptId,
+      expiresAt: input.expiresAt,
+    }
+    this.callLog.push({ operation: 'startBrowserLogin', input: recordedInput })
+    return this.runAccountValue(
+      this.browserLoginStarts,
+      'browser login start',
+      input.signal,
+      () => ({ status: 'error', error: runtimeClosingFailure() }),
+    )
+  }
+
+  async readBrowserLoginAttempt(input: {
+    readonly attemptId: string
+    readonly signal: AbortSignal
+  }): Promise<CodexBrowserLoginAttempt> {
+    const recordedInput = { attemptId: input.attemptId }
+    this.callLog.push({
+      operation: 'readBrowserLoginAttempt',
+      input: recordedInput,
+    })
+    return this.runAccountValue(
+      this.browserLoginAttempts,
+      'browser login attempt',
+      input.signal,
+      () => ({
+        status: 'failed',
+        attemptId: input.attemptId,
+        error: runtimeClosingFailure(),
+      }),
+    )
+  }
+
+  async cancelBrowserLogin(input: {
+    readonly attemptId: string
+    readonly signal: AbortSignal
+  }): Promise<CodexBrowserLoginCancellation> {
+    const recordedInput = { attemptId: input.attemptId }
+    this.callLog.push({
+      operation: 'cancelBrowserLogin',
+      input: recordedInput,
+    })
+    return this.runAccountValue(
+      this.browserLoginCancellations,
+      'browser login cancellation',
+      input.signal,
+      () => ({
+        status: 'error',
+        attemptId: input.attemptId,
+        error: runtimeClosingFailure(),
+      }),
+    )
+  }
+
+  async releaseBrowserLoginAttempt(input: {
+    readonly attemptId: string
+    readonly signal: AbortSignal
+  }): Promise<CodexBrowserLoginRelease> {
+    const recordedInput = { attemptId: input.attemptId }
+    this.callLog.push({
+      operation: 'releaseBrowserLoginAttempt',
+      input: recordedInput,
+    })
+    return this.runAccountValue(
+      this.browserLoginReleases,
+      'browser login release',
+      input.signal,
+      () => ({
+        status: 'error',
+        attemptId: input.attemptId,
+        error: runtimeClosingFailure(),
+      }),
+    )
+  }
+
+  async logout(input: {
+    readonly signal: AbortSignal
+  }): Promise<CodexLogoutResult> {
+    this.callLog.push({ operation: 'logout' })
+    return this.runAccountValue(
+      this.logouts,
+      'logout',
+      input.signal,
+      () => ({ status: 'error', error: runtimeClosingFailure() }),
+    )
   }
 
   async startThread(input?: StartThreadInput): Promise<CodexChatThread> {
@@ -163,6 +343,7 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
       ...(input === undefined ? {} : { input: cloneStartThreadInput(input) }),
     })
     this.requireOpen()
+    this.requireWorkspaceRole()
     const threadId = this.threadIds.shift()
     if (threadId === undefined) {
       throw new Error('No deterministic thread identity remains')
@@ -175,6 +356,7 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
     const recordedInput = { ...input }
     this.callLog.push({ operation: 'startTurn', input: recordedInput })
     this.requireOpen()
+    this.requireWorkspaceRole()
     if (!this.liveThreads.has(input.threadId)) {
       throw new Error('Deterministic turn references an unknown thread')
     }
@@ -225,6 +407,7 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
     const recordedInput = cloneProductTurnInput(input)
     this.callLog.push({ operation: 'startProductTurn', input: recordedInput })
     this.requireOpen()
+    this.requireWorkspaceRole()
     this.requireTurnAdmission(input.threadId)
     const scripted = this.productTurns[0]
     if (
@@ -258,6 +441,7 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
     const recordedInput = cloneAnswerUserInput(input)
     this.callLog.push({ operation: 'answerUserInput', input: recordedInput })
     this.requireOpen()
+    this.requireWorkspaceRole()
     await this.settleInteraction(input.interactionId, 'answered')
   }
 
@@ -265,6 +449,7 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
     const recordedInput = { ...input }
     this.callLog.push({ operation: 'cancelUserInput', input: recordedInput })
     this.requireOpen()
+    this.requireWorkspaceRole()
     await this.settleInteraction(input.interactionId, 'cancelled')
   }
 
@@ -272,6 +457,7 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
     const recordedInput = { ...input }
     this.callLog.push({ operation: 'interrupt', input: recordedInput })
     this.requireOpen()
+    this.requireWorkspaceRole()
     if (this.activeTurns.get(input.threadId) !== input.turnId) {
       throw new Error('Deterministic interrupt references an inactive turn')
     }
@@ -282,6 +468,7 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
     const recordedInput = { ...input }
     this.callLog.push({ operation: 'releaseThread', input: recordedInput })
     this.requireOpen()
+    this.requireWorkspaceRole()
     if (!this.liveThreads.has(input.threadId)) {
       throw new Error('Deterministic release references an unknown thread')
     }
@@ -291,16 +478,90 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
     this.liveThreads.delete(input.threadId)
   }
 
-  async close(): Promise<void> {
-    this.callLog.push({ operation: 'close' })
+  close(): Promise<void>
+  close(input: {
+    readonly signal: AbortSignal
+  }): Promise<CodexRuntimeCloseResult>
+  async close(input?: {
+    readonly signal: AbortSignal
+  }): Promise<void | CodexRuntimeCloseResult> {
+    this.callLog.push({
+      operation: input === undefined ? 'close' : 'closeAccount',
+    })
     this.clearAllInteractions()
     this.activeTurns.clear()
     this.closed = true
+    if (input !== undefined) {
+      return { status: 'closed', processTreeGone: true }
+    }
   }
 
   private requireOpen(): void {
     if (this.failed) throw new Error('Deterministic Codex chat runtime failed')
     if (this.closed) throw new Error('Deterministic Codex chat runtime is closed')
+  }
+
+  private requireWorkspaceRole(): void {
+    if (this.role.role === 'workspace') return
+    throw runtimeRoleDeniedError()
+  }
+
+  private async nextAccountValue<T>(
+    values: DeterministicValue<T>[],
+    description: string,
+  ): Promise<T> {
+    const scripted = values.shift()
+    if (scripted === undefined) {
+      throw new Error(`No deterministic ${description} remains`)
+    }
+    return structuredClone(await scripted)
+  }
+
+  private async runAccountValue<T>(
+    values: DeterministicValue<T>[],
+    description: string,
+    signal: AbortSignal,
+    abortedValue: () => T,
+  ): Promise<T> {
+    if (signal.aborted) {
+      this.closeForAccountAbort()
+      return abortedValue()
+    }
+    this.requireOpen()
+    const scripted = values.shift()
+    if (scripted === undefined) {
+      throw new Error(`No deterministic ${description} remains`)
+    }
+    let resolveAbort!: () => void
+    const aborted = new Promise<{ readonly kind: 'aborted' }>((resolve) => {
+      resolveAbort = () => resolve({ kind: 'aborted' })
+    })
+    const onAbort = () => {
+      this.closeForAccountAbort()
+      resolveAbort()
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    if (signal.aborted) onAbort()
+    try {
+      const outcome = await Promise.race([
+        Promise.resolve(scripted).then((value) => ({
+          kind: 'value' as const,
+          value: structuredClone(value),
+        })),
+        aborted,
+      ])
+      return outcome.kind === 'aborted'
+        ? abortedValue()
+        : outcome.value
+    } finally {
+      signal.removeEventListener('abort', onAbort)
+    }
+  }
+
+  private closeForAccountAbort(): void {
+    this.clearAllInteractions()
+    this.activeTurns.clear()
+    this.closed = true
   }
 
   private requireTurnAdmission(threadId: CodexThreadId): void {
@@ -510,4 +771,25 @@ function cloneProductActivity(
   activity: CodexProductActivity,
 ): CodexProductActivity {
   return structuredClone(activity)
+}
+
+function runtimeClosingFailure(): CodexAccountFailure {
+  return { code: 'runtime_closing', retryable: true }
+}
+
+function accountFailureError(failure: CodexAccountFailure): CodexChatRuntimeError {
+  return new CodexChatRuntimeError({
+    code: failure.code,
+    displayMessage: 'The Codex account operation could not be completed.',
+    unknownOutcome: false,
+  })
+}
+
+function runtimeRoleDeniedError(): CodexChatRuntimeError {
+  return new CodexChatRuntimeError({
+    code: 'runtime_role_denied',
+    displayMessage:
+      'The auth-only Codex runtime does not allow workspace operations.',
+    unknownOutcome: false,
+  })
 }

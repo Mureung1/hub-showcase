@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
 import {
+  chmod,
   mkdir,
   mkdtemp,
   readFile,
   realpath,
   rm,
+  symlink,
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -12,11 +14,16 @@ import { dirname, join, resolve } from 'node:path'
 import { after, before, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import { CodexChatRuntimeError } from './index.js'
+import {
+  CODEX_BROWSER_LOGIN_ATTEMPT_TIMEOUT_MS,
+  CodexChatRuntimeError,
+} from './index.js'
+import type { CodexBrowserLoginAttempt } from './index.js'
 import type { CodexProductActivity } from './contract.js'
 import { verifyProductionBundle } from './production-bundle.js'
 import {
   startVerifiedCodexChatRuntime,
+  type NodeRuntimeDeadlines,
   type SpawnedCodexChatRuntime,
 } from './runtime.js'
 
@@ -122,6 +129,517 @@ test('projects native account readiness without starting a thread or turn', asyn
   } finally {
     await harness.runtime.close()
   }
+})
+
+test('starts an immutable auth-only Runtime with exact application identity and denies workspace families before native write', async () => {
+  const harness = await startAccountHarness('auth-only-role')
+  try {
+    const signal = new AbortController().signal
+    const root = dirname(harness.journalPath)
+    const observed = []
+
+    observed.push(
+      await harness.runtime.readAccount({ refreshToken: true, signal }),
+    )
+    await writeFile(join(root, 'account-state'), 'signed_out')
+    observed.push(
+      await harness.runtime.readAccount({ refreshToken: true, signal }),
+    )
+    await writeFile(join(root, 'account-state'), 'chatgpt')
+    observed.push(
+      await harness.runtime.readAccount({ refreshToken: true, signal }),
+    )
+
+    assert.deepEqual(observed, [
+      { status: 'ok', account: { state: 'unsupported' } },
+      { status: 'ok', account: { state: 'signed_out' } },
+      { status: 'ok', account: { state: 'chatgpt' } },
+    ])
+    assert.deepEqual(harness.runtime.role, {
+      role: 'auth-only',
+      bootstrapCwd: await realpath(join(root, 'bootstrap')),
+    })
+    assert.equal(Object.isFrozen(harness.runtime.role), true)
+
+    const deniedOperations: Array<() => Promise<unknown>> = [
+      () => harness.runtime.startThread(),
+      () =>
+        harness.runtime.startThread({
+          workspace: '/workspace',
+          mcp: {
+            url: 'http://127.0.0.1:43127/mcp',
+            token: 'private-mcp-token',
+          },
+        }),
+      () => harness.runtime.startTurn({ threadId: 'thread', text: 'hello' }),
+      () =>
+        harness.runtime.startProductTurn({
+          threadId: 'thread',
+          skill: { name: 'model', path: '/managed/model/SKILL.md' },
+          text: 'hello',
+        }),
+      () =>
+        harness.runtime.answerUserInput({
+          interactionId: 'interaction',
+          answers: { decision: ['yes'] },
+        }),
+      () => harness.runtime.cancelUserInput({ interactionId: 'interaction' }),
+      () => harness.runtime.interrupt({ threadId: 'thread', turnId: 'turn' }),
+      () => harness.runtime.releaseThread({ threadId: 'thread' }),
+    ]
+    for (const operation of deniedOperations) {
+      await assert.rejects(operation, (error: unknown) => {
+        assert.ok(error instanceof CodexChatRuntimeError)
+        assert.equal(error.code, 'runtime_role_denied')
+        assert.equal(error.unknownOutcome, false)
+        return true
+      })
+    }
+
+    for (const expiresAt of [
+      new Date(Date.now() - 1).toISOString(),
+      new Date(
+        Date.now() + CODEX_BROWSER_LOGIN_ATTEMPT_TIMEOUT_MS + 60_000,
+      ).toISOString(),
+    ]) {
+      assert.throws(
+        () =>
+          harness.runtime.startBrowserLogin({
+            attemptId: 'attempt-invalid-expiry',
+            expiresAt,
+            signal,
+          }),
+        TypeError,
+      )
+    }
+
+    const journal = await readAppServerJournal(harness.journalPath)
+    const initialize = journal.messages.find(
+      ({ method }) => method === 'initialize',
+    )
+    assert.deepEqual(initialize?.params?.clientInfo, {
+      name: 'ay-ple',
+      title: 'AY-PLE',
+      version: '0.1.0-preview.1',
+    })
+    assert.deepEqual(
+      journal.messages
+        .map(({ method }) => method)
+        .filter((method) =>
+          [
+            'account/login/start',
+            'model/list',
+            'skills/extraRoots/set',
+            'thread/start',
+            'turn/start',
+            'turn/interrupt',
+          ].includes(method ?? ''),
+        ),
+      [],
+    )
+  } finally {
+    const signal = new AbortController().signal
+    assert.deepEqual(await harness.runtime.close({ signal }), {
+      status: 'closed',
+      processTreeGone: true,
+    })
+    await harness.closed
+    await waitForPidExit(harness.nativeChildPidPath)
+    await waitForProcessGroupExit(harness.child.pid as number)
+  }
+})
+
+test('rejects unsafe auth-only bootstrap and overlapping controlled roots before spawn', async (t) => {
+  const cases = [
+    [
+      'nonempty bootstrap',
+      async (root: string) => {
+        const bootstrapCwd = join(root, 'bootstrap')
+        await mkdir(bootstrapCwd, { mode: 0o700 })
+        await writeFile(join(bootstrapCwd, 'unexpected'), '')
+        return {
+          bootstrapCwd,
+          environment: await createOwnerOnlyEnvironmentRoots(root),
+        }
+      },
+    ],
+    [
+      'permissive bootstrap mode',
+      async (root: string) => {
+        const bootstrapCwd = join(root, 'bootstrap')
+        await mkdir(bootstrapCwd, { mode: 0o700 })
+        await chmod(bootstrapCwd, 0o755)
+        return {
+          bootstrapCwd,
+          environment: await createOwnerOnlyEnvironmentRoots(root),
+        }
+      },
+    ],
+    [
+      'permissive controlled root mode',
+      async (root: string) => {
+        const bootstrapCwd = join(root, 'bootstrap')
+        await mkdir(bootstrapCwd, { mode: 0o700 })
+        const environment = await createOwnerOnlyEnvironmentRoots(root)
+        await chmod(environment.codexHome, 0o755)
+        return { bootstrapCwd, environment }
+      },
+    ],
+    [
+      'bootstrap symlink',
+      async (root: string) => {
+        const target = join(root, 'bootstrap-target')
+        const bootstrapCwd = join(root, 'bootstrap')
+        await mkdir(target, { mode: 0o700 })
+        await symlink(target, bootstrapCwd)
+        return {
+          bootstrapCwd,
+          environment: await createOwnerOnlyEnvironmentRoots(root),
+        }
+      },
+    ],
+    [
+      'overlapping roots',
+      async (root: string) => {
+        const environment = await createOwnerOnlyEnvironmentRoots(root)
+        const bootstrapCwd = join(environment.home, 'bootstrap')
+        await mkdir(bootstrapCwd, { mode: 0o700 })
+        return { bootstrapCwd, environment }
+      },
+    ],
+  ] as const
+
+  for (const [label, arrange] of cases) {
+    await t.test(label, async () => {
+      const root = await mkdtemp(join(tmpdir(), 'ay-ple-node-auth-invalid-'))
+      roots.push(root)
+      const { bootstrapCwd, environment } = await arrange(root)
+      const processJournalPath = join(root, 'process-journal.json')
+      let spawned: SpawnedCodexChatRuntime | undefined
+      try {
+        await assert.rejects(
+          async () => {
+            spawned = await startVerifiedCodexChatRuntime({
+              bundle,
+              role: { role: 'auth-only', bootstrapCwd },
+              application: {
+                name: 'ay-ple',
+                title: 'AY-PLE',
+                version: '0.1.0-preview.1',
+              },
+              environment,
+              bridgeEntrypointOverride: FAKE_NODE_WORKER,
+              bridgeArgsOverride: [
+                '--scenario=response-hang',
+                `--process-journal=${processJournalPath}`,
+              ],
+            })
+          },
+          TypeError,
+        )
+      } finally {
+        await spawned?.runtime.close().catch(() => undefined)
+      }
+      await assert.rejects(
+        readFile(processJournalPath),
+        (error: unknown) =>
+          (error as NodeJS.ErrnoException).code === 'ENOENT',
+      )
+    })
+  }
+})
+
+test('rejects noncanonical application SemVer before spawning auth-only Runtime', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'ay-ple-node-app-version-'))
+  roots.push(root)
+  const bootstrapCwd = join(root, 'bootstrap')
+  await mkdir(bootstrapCwd, { mode: 0o700 })
+  const processJournalPath = join(root, 'process-journal.json')
+
+  await assert.rejects(
+    startVerifiedCodexChatRuntime({
+      bundle,
+      role: { role: 'auth-only', bootstrapCwd },
+      application: {
+        name: 'ay-ple',
+        title: 'AY-PLE',
+        version: '1.0.0-01',
+      },
+      environment: await createOwnerOnlyEnvironmentRoots(root),
+      bridgeEntrypointOverride: FAKE_NODE_WORKER,
+      bridgeArgsOverride: [
+        '--scenario=response-hang',
+        `--process-journal=${processJournalPath}`,
+      ],
+    }),
+    TypeError,
+  )
+  await assert.rejects(
+    readFile(processJournalPath),
+    (error: unknown) =>
+      (error as NodeJS.ErrnoException).code === 'ENOENT',
+  )
+})
+
+test('projects delayed login completion, sticky status, release, logout, and fresh null readback without private identity', async () => {
+  const harness = await startAccountHarness('account-delayed')
+  try {
+    const root = dirname(harness.journalPath)
+    const signal = new AbortController().signal
+    await writeFile(join(root, 'account-state'), 'signed_out')
+    await writeFile(join(root, 'login-mode'), 'delayed-success')
+
+    assert.deepEqual(
+      await harness.runtime.readAccount({ refreshToken: true, signal }),
+      { status: 'ok', account: { state: 'signed_out' } },
+    )
+    const input = {
+      attemptId: 'attempt-delayed',
+      expiresAt: accountExpiry(),
+      signal,
+    }
+    const started = await harness.runtime.startBrowserLogin(input)
+    assert.deepEqual(await harness.runtime.startBrowserLogin(input), started)
+    assert.equal(started.status, 'pending')
+    assert.equal(
+      started.status === 'pending' &&
+        started.authUrl.startsWith('https://auth.openai.com/'),
+      true,
+    )
+    for (let index = 0; index < 2; index += 1) {
+      assert.deepEqual(
+        await harness.runtime.readBrowserLoginAttempt({
+          attemptId: input.attemptId,
+          signal,
+        }),
+        { status: 'pending', attemptId: input.attemptId },
+      )
+    }
+
+    await writeFile(join(root, 'complete-login'), '')
+    assert.deepEqual(
+      await pollAccountAttempt(
+        harness,
+        input.attemptId,
+        'completed',
+      ),
+      { status: 'completed', attemptId: input.attemptId },
+    )
+    assert.deepEqual(
+      await harness.runtime.readBrowserLoginAttempt({
+        attemptId: input.attemptId,
+        signal,
+      }),
+      { status: 'completed', attemptId: input.attemptId },
+    )
+    assert.deepEqual(
+      await harness.runtime.readAccount({ refreshToken: true, signal }),
+      { status: 'ok', account: { state: 'chatgpt' } },
+    )
+    assert.deepEqual(
+      await harness.runtime.releaseBrowserLoginAttempt({
+        attemptId: input.attemptId,
+        signal,
+      }),
+      { status: 'released', attemptId: input.attemptId },
+    )
+    assert.deepEqual(
+      await harness.runtime.releaseBrowserLoginAttempt({
+        attemptId: input.attemptId,
+        signal,
+      }),
+      { status: 'already_released', attemptId: input.attemptId },
+    )
+    assert.deepEqual(await harness.runtime.logout({ signal }), {
+      status: 'signed_out',
+    })
+    assert.deepEqual(
+      await harness.runtime.readAccount({ refreshToken: true, signal }),
+      { status: 'ok', account: { state: 'signed_out' } },
+    )
+
+    const journalText = await readFile(harness.journalPath, 'utf8')
+    const journal = JSON.parse(journalText) as {
+      messages: readonly { readonly method?: string }[]
+    }
+    assert.equal(
+      journal.messages.filter(
+        ({ method }) => method === 'account/login/start',
+      ).length,
+      1,
+    )
+    const projected = JSON.stringify({ started })
+    for (const privateValue of [
+      'native-login-secret',
+      'student-private@example.com',
+      'raw-provider-secret',
+      'private-refresh-token',
+      'auth.json',
+    ]) {
+      assert.equal(projected.includes(privateValue), false)
+      assert.equal(journalText.includes(privateValue), false)
+    }
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('converges cancel/completion race and expiry to sticky terminal attempts', async (t) => {
+  await t.test('cancel completion race', async () => {
+    const harness = await startAccountHarness('account-cancel-race')
+    try {
+      const root = dirname(harness.journalPath)
+      const signal = new AbortController().signal
+      await writeFile(join(root, 'account-state'), 'signed_out')
+      await writeFile(join(root, 'login-mode'), 'cancel-race-success')
+      const attemptId = 'attempt-race'
+
+      await harness.runtime.startBrowserLogin({
+        attemptId,
+        expiresAt: accountExpiry(),
+        signal,
+      })
+      assert.deepEqual(
+        await harness.runtime.cancelBrowserLogin({ attemptId, signal }),
+        { status: 'already_settled', attemptId },
+      )
+      assert.deepEqual(
+        await harness.runtime.readBrowserLoginAttempt({ attemptId, signal }),
+        { status: 'completed', attemptId },
+      )
+      assert.deepEqual(
+        await harness.runtime.readAccount({ refreshToken: true, signal }),
+        { status: 'ok', account: { state: 'chatgpt' } },
+      )
+      assert.deepEqual(
+        await harness.runtime.releaseBrowserLoginAttempt({
+          attemptId,
+          signal,
+        }),
+        { status: 'released', attemptId },
+      )
+    } finally {
+      await harness.runtime.close()
+    }
+  })
+
+  await t.test('attempt expiry', async () => {
+    const harness = await startAccountHarness(
+      'account-expiry',
+      ['--login-attempt-timeout-ms', '100'],
+    )
+    try {
+      const root = dirname(harness.journalPath)
+      const signal = new AbortController().signal
+      await writeFile(join(root, 'account-state'), 'signed_out')
+      await writeFile(join(root, 'login-mode'), 'cancelled')
+      const attemptId = 'attempt-expiry'
+
+      await harness.runtime.startBrowserLogin({
+        attemptId,
+        expiresAt: accountExpiry(),
+        signal,
+      })
+      assert.deepEqual(
+        await pollAccountAttempt(harness, attemptId, 'expired'),
+        { status: 'expired', attemptId },
+      )
+      assert.deepEqual(
+        await harness.runtime.readBrowserLoginAttempt({ attemptId, signal }),
+        { status: 'expired', attemptId },
+      )
+      assert.deepEqual(
+        await harness.runtime.releaseBrowserLoginAttempt({
+          attemptId,
+          signal,
+        }),
+        { status: 'released', attemptId },
+      )
+    } finally {
+      await harness.runtime.close()
+    }
+  })
+})
+
+test('maps Runtime loss and account AbortSignal to bounded private outcomes with complete process cleanup', async (t) => {
+  await t.test('native Runtime loss', async () => {
+    const harness = await startAccountHarness('account-runtime-loss')
+    const root = dirname(harness.journalPath)
+    const signal = new AbortController().signal
+    await writeFile(join(root, 'account-state'), 'signed_out')
+    await writeFile(join(root, 'login-mode'), 'forced-eof')
+    const attemptId = 'attempt-runtime-loss'
+
+    await harness.runtime.startBrowserLogin({
+      attemptId,
+      expiresAt: accountExpiry(),
+      signal,
+    })
+    assert.equal((await within(harness.terminal)).code, 'sdk_transport_failed')
+    assert.deepEqual(
+      await harness.runtime.readBrowserLoginAttempt({ attemptId, signal }),
+      {
+        status: 'failed',
+        attemptId,
+        error: { code: 'runtime_unavailable', retryable: true },
+      },
+    )
+    assert.deepEqual(await harness.runtime.close({ signal }), {
+      status: 'closed',
+      processTreeGone: true,
+    })
+    await harness.closed
+    await waitForPidExit(harness.nativeChildPidPath)
+    await waitForProcessGroupExit(harness.child.pid as number)
+  })
+
+  await t.test('status abort owns auth-only Runtime shutdown', async () => {
+    const harness = await startAccountHarness(
+      'account-status-abort',
+      [],
+      {
+        gracefulCloseMs: 50,
+        terminateMs: 50,
+        postKillMs: 250,
+      },
+    )
+    const root = dirname(harness.journalPath)
+    await writeFile(join(root, 'account-state'), 'signed_out')
+    await writeFile(join(root, 'login-mode'), 'delayed-success')
+    const signal = new AbortController().signal
+    const attemptId = 'attempt-status-abort'
+
+    await harness.runtime.startBrowserLogin({
+      attemptId,
+      expiresAt: accountExpiry(),
+      signal,
+    })
+    const abort = new AbortController()
+    harness.child.kill('SIGSTOP')
+    const pending = harness.runtime.readBrowserLoginAttempt({
+      attemptId,
+      signal: abort.signal,
+    })
+    await assertPending(pending)
+    abort.abort()
+    assert.deepEqual(
+      await pending,
+      {
+        status: 'failed',
+        attemptId,
+        error: { code: 'runtime_closing', retryable: true },
+      },
+    )
+    assert.deepEqual(
+      await harness.runtime.close({
+        signal: new AbortController().signal,
+      }),
+      { status: 'closed', processTreeGone: true },
+    )
+    await harness.closed
+    await waitForPidExit(harness.nativeChildPidPath)
+    await waitForProcessGroupExit(harness.child.pid as number)
+  })
 })
 
 test('validates isolated product thread inputs before native mutation', async () => {
@@ -1427,6 +1945,47 @@ test('escalates one close through SIGTERM and SIGKILL until the process group di
   await waitForProcessExit(processJournal.descendantPid)
 })
 
+test('account close overload consumes a stubborn close failure after complete process-tree reap', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'ay-ple-node-account-close-'))
+  roots.push(root)
+  const bootstrapCwd = join(root, 'bootstrap')
+  await mkdir(bootstrapCwd, { mode: 0o700 })
+  const processJournalPath = join(root, 'process-journal.json')
+  const harness = await startVerifiedCodexChatRuntime({
+    bundle,
+    role: { role: 'auth-only', bootstrapCwd },
+    application: {
+      name: 'ay-ple',
+      title: 'AY-PLE',
+      version: '0.1.0-preview.1',
+    },
+    environment: await createOwnerOnlyEnvironmentRoots(root),
+    bridgeEntrypointOverride: FAKE_NODE_WORKER,
+    bridgeArgsOverride: [
+      '--scenario=stubborn-close',
+      `--process-journal=${processJournalPath}`,
+    ],
+    deadlines: {
+      gracefulCloseMs: 50,
+      terminateMs: 50,
+      postKillMs: 250,
+    },
+  })
+  const processJournal = await readProcessJournal(processJournalPath)
+
+  assert.deepEqual(
+    await harness.runtime.close({
+      signal: new AbortController().signal,
+    }),
+    { status: 'closed', processTreeGone: true },
+  )
+  await new Promise<void>((resolvePromise) => setImmediate(resolvePromise))
+  assert.equal((await harness.terminal).code, 'runtime_close_timeout')
+  await harness.closed
+  await waitForProcessGroupExit(processJournal.processGroupId)
+  await waitForProcessExit(processJournal.descendantPid)
+})
+
 test('kills a pipe-inheriting descendant after the Python group leader exits first', async () => {
   const workspace = await mkdtemp(join(tmpdir(), 'ay-ple-node-leader-exit-'))
   roots.push(workspace)
@@ -2100,6 +2659,7 @@ async function startHarness(
 ): Promise<SpawnedCodexChatRuntime> {
   const workspace = await mkdtemp(join(tmpdir(), `ay-ple-node-bridge-${label}-`))
   roots.push(workspace)
+  await writeFile(join(workspace, 'account-state'), 'chatgpt')
   const environment = await createEnvironmentRoots(workspace)
   const journalPath = join(workspace, 'journal.json')
   const nativeChildPidPath = join(workspace, 'native-child.pid')
@@ -2108,6 +2668,41 @@ async function startHarness(
     workspace,
     environment,
     budgets,
+    launchArgsOverride: [
+      bundle.pythonExecutable,
+      '-B',
+      FAKE_APP_SERVER,
+      journalPath,
+      nativeChildPidPath,
+    ],
+    journalPath,
+    nativeChildPidPath,
+  })
+}
+
+async function startAccountHarness(
+  label: string,
+  bridgeArgsOverride: readonly string[] = [],
+  deadlines?: Partial<NodeRuntimeDeadlines>,
+): Promise<SpawnedCodexChatRuntime> {
+  const root = await mkdtemp(join(tmpdir(), `ay-ple-node-account-${label}-`))
+  roots.push(root)
+  const bootstrapCwd = join(root, 'bootstrap')
+  await mkdir(bootstrapCwd, { mode: 0o700 })
+  const environment = await createOwnerOnlyEnvironmentRoots(root)
+  const journalPath = join(root, 'journal.json')
+  const nativeChildPidPath = join(root, 'native-child.pid')
+  return startVerifiedCodexChatRuntime({
+    bundle,
+    role: { role: 'auth-only', bootstrapCwd },
+    application: {
+      name: 'ay-ple',
+      title: 'AY-PLE',
+      version: '0.1.0-preview.1',
+    },
+    environment,
+    bridgeArgsOverride,
+    deadlines,
     launchArgsOverride: [
       bundle.pythonExecutable,
       '-B',
@@ -2224,6 +2819,70 @@ async function createEnvironmentRoots(workspace: string) {
     realpath(environment.tempDirectory),
   ])
   return { home, codexHome, codexSqliteHome, tempDirectory }
+}
+
+async function createOwnerOnlyEnvironmentRoots(root: string) {
+  const environment = {
+    home: join(root, 'runtime-home'),
+    codexHome: join(root, 'codex-home'),
+    codexSqliteHome: join(root, 'codex-sqlite-home'),
+    tempDirectory: join(root, 'runtime-temp'),
+  }
+  await Promise.all(
+    Object.values(environment).map((directory) =>
+      mkdir(directory, { mode: 0o700 }),
+    ),
+  )
+  const [home, codexHome, codexSqliteHome, tempDirectory] = await Promise.all([
+    realpath(environment.home),
+    realpath(environment.codexHome),
+    realpath(environment.codexSqliteHome),
+    realpath(environment.tempDirectory),
+  ])
+  return { home, codexHome, codexSqliteHome, tempDirectory }
+}
+
+function accountExpiry(): string {
+  return new Date(
+    Date.now() + CODEX_BROWSER_LOGIN_ATTEMPT_TIMEOUT_MS - 1_000,
+  ).toISOString()
+}
+
+async function pollAccountAttempt(
+  harness: SpawnedCodexChatRuntime,
+  attemptId: string,
+  expected: 'completed' | 'expired',
+): Promise<CodexBrowserLoginAttempt> {
+  const deadline = Date.now() + 3_000
+  while (Date.now() < deadline) {
+    const result = await harness.runtime.readBrowserLoginAttempt({
+      attemptId,
+      signal: new AbortController().signal,
+    })
+    if (result.status === expected) return result
+    if (
+      result.status === 'failed' ||
+      result.status === 'cancelled'
+    ) {
+      throw new Error(`Account attempt settled as ${result.status}`)
+    }
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 10))
+  }
+  throw new Error(`Timed out waiting for account attempt ${expected}`)
+}
+
+async function readAppServerJournal(path: string): Promise<{
+  messages: readonly {
+    readonly method?: string
+    readonly params?: Readonly<Record<string, unknown>>
+  }[]
+}> {
+  return JSON.parse(await readFile(path, 'utf8')) as {
+    messages: readonly {
+      readonly method?: string
+      readonly params?: Readonly<Record<string, unknown>>
+    }[]
+  }
 }
 
 async function collect<T>(values: AsyncIterable<T>): Promise<T[]> {

@@ -8,6 +8,7 @@ import type {
   ReleaseThreadInput,
   StartTurnInput,
 } from './contract.js'
+import type { CodexRuntimeCloseResult } from './account-contract.js'
 import { verifyProductionBundle } from './production-bundle.js'
 import {
   startVerifiedCodexChatRuntime,
@@ -16,7 +17,7 @@ import {
 import type {
   AnswerUserInput,
   CancelUserInput,
-  CodexProductCapableRuntime,
+  CodexManagedRuntime,
   StartProductTurnInput,
   StartThreadInput,
 } from './runtime-contract.js'
@@ -38,7 +39,7 @@ export type CodexChatTestProcessTree = {
 }
 
 export interface CodexChatProcessTreeTestFixture {
-  readonly runtime: CodexProductCapableRuntime
+  readonly runtime: CodexManagedRuntime
   readProcessTree(): Promise<CodexChatTestProcessTree>
   waitForCloseRequest(): Promise<void>
   releaseClose(): Promise<void>
@@ -94,9 +95,34 @@ export async function startCodexChatProcessTreeTestFixture(options: {
     const processTree = await readProcessTree(spawned, nativeChildPidPath)
     const closeRequested = createDeferred()
     const closeReleased = createDeferred()
-    let closePromise: Promise<void> | undefined
-    const runtime: CodexProductCapableRuntime = {
+    function closeRuntime(): Promise<void>
+    function closeRuntime(input: {
+      readonly signal: AbortSignal
+    }): Promise<CodexRuntimeCloseResult>
+    async function closeRuntime(input?: {
+      readonly signal: AbortSignal
+    }): Promise<void | CodexRuntimeCloseResult> {
+      closeRequested.resolve()
+      await closeReleased.promise
+      if (input === undefined) {
+        await spawned!.runtime.close()
+        return
+      }
+      return spawned!.runtime.close(input)
+    }
+    const runtime: CodexManagedRuntime = {
       terminal: spawned.runtime.terminal,
+      role: spawned.runtime.role,
+      readAccount: (input) => spawned!.runtime.readAccount(input),
+      startBrowserLogin: (input) =>
+        spawned!.runtime.startBrowserLogin(input),
+      readBrowserLoginAttempt: (input) =>
+        spawned!.runtime.readBrowserLoginAttempt(input),
+      cancelBrowserLogin: (input) =>
+        spawned!.runtime.cancelBrowserLogin(input),
+      releaseBrowserLoginAttempt: (input) =>
+        spawned!.runtime.releaseBrowserLoginAttempt(input),
+      logout: (input) => spawned!.runtime.logout(input),
       startThread: (input?: StartThreadInput) =>
         input === undefined
           ? spawned!.runtime.startThread()
@@ -112,11 +138,7 @@ export async function startCodexChatProcessTreeTestFixture(options: {
       interrupt: (input: InterruptTurnInput) => spawned!.runtime.interrupt(input),
       releaseThread: (input: ReleaseThreadInput) =>
         spawned!.runtime.releaseThread(input),
-      close: () => {
-        closeRequested.resolve()
-        closePromise ??= closeReleased.promise.then(() => spawned!.runtime.close())
-        return closePromise
-      },
+      close: closeRuntime,
     }
     let disposed = false
     return {

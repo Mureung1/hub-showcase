@@ -1,14 +1,27 @@
-import type { CodexProductCapableRuntime } from './runtime-contract.js'
+import type { CodexManagedRuntime } from './runtime-contract.js'
 import {
   startVerifiedCodexChatRuntime,
   type CodexChatRuntimeEnvironment,
+  type CodexRuntimeApplicationIdentity,
 } from './runtime.js'
 import { verifyProductionBundle } from './production-bundle.js'
 
 export type {
+  CodexAccountFailure,
+  CodexAccountFailureCode,
+  CodexAccountLifecycle,
+  CodexAccountReadResult,
+  CodexBrowserLoginAttempt,
+  CodexBrowserLoginCancellation,
+  CodexBrowserLoginRelease,
+  CodexBrowserLoginStartResult,
   CodexEffectiveConfig,
   CodexEffectiveSkill,
+  CodexFreshAccount,
   CodexNativeContextPort,
+  CodexLogoutResult,
+  CodexRuntimeCloseResult,
+  CodexRuntimeRole,
 } from './account-contract.js'
 export type {
   CodexChatEvent,
@@ -34,6 +47,7 @@ export type {
 export type {
   AnswerUserInput,
   CancelUserInput,
+  CodexManagedRuntime,
   CodexPrivateMcpServerInput,
   CodexProductCapableRuntime,
   CodexProductSkillInput,
@@ -41,6 +55,10 @@ export type {
   StartThreadInput,
   StartProductTurnInput,
 } from './runtime-contract.js'
+export {
+  CODEX_BROWSER_LOGIN_ATTEMPT_TIMEOUT_MS,
+  CODEX_BROWSER_LOGIN_OPTIONS,
+} from './account-contract.js'
 export {
   CODEX_CHAT_APPROVAL_MODE,
   CODEX_CHAT_SANDBOX,
@@ -50,11 +68,21 @@ export { ProductionBundleVerificationError } from './production-bundle.js'
 
 export interface CreateCodexChatRuntimeOptions {
   readonly runtimeRoot: string
+  readonly role: import('./account-contract.js').CodexRuntimeRole
+  readonly application: CodexRuntimeApplicationIdentity
+  readonly environment: CodexChatRuntimeEnvironment
+}
+
+export interface LegacyCreateCodexChatRuntimeOptions {
+  readonly runtimeRoot: string
   readonly workspace: string
   readonly environment: CodexChatRuntimeEnvironment
 }
 
-export type { CodexChatRuntimeEnvironment } from './runtime.js'
+export type {
+  CodexChatRuntimeEnvironment,
+  CodexRuntimeApplicationIdentity,
+} from './runtime.js'
 
 export async function verifyCodexChatRuntimeBundle(
   runtimeRoot: string,
@@ -66,14 +94,31 @@ export async function verifyCodexChatRuntimeBundle(
   }
 }
 
-export async function createCodexChatRuntime(
+export function createCodexChatRuntime(
   options: CreateCodexChatRuntimeOptions,
-): Promise<CodexProductCapableRuntime> {
+): Promise<CodexManagedRuntime>
+/** Compatibility overload for the current workspace-only Server caller. */
+export function createCodexChatRuntime(
+  options: LegacyCreateCodexChatRuntimeOptions,
+): Promise<CodexManagedRuntime>
+export async function createCodexChatRuntime(
+  options:
+    | CreateCodexChatRuntimeOptions
+    | LegacyCreateCodexChatRuntimeOptions,
+): Promise<CodexManagedRuntime> {
   const bundle = await verifyProductionBundle(options.runtimeRoot)
-  const spawned = await startVerifiedCodexChatRuntime({
-    bundle,
-    workspace: options.workspace,
-    environment: options.environment,
-  })
+  const spawned =
+    'role' in options
+      ? await startVerifiedCodexChatRuntime({
+          bundle,
+          role: options.role,
+          application: options.application,
+          environment: options.environment,
+        })
+      : await startVerifiedCodexChatRuntime({
+          bundle,
+          workspace: options.workspace,
+          environment: options.environment,
+        })
   return spawned.runtime
 }
