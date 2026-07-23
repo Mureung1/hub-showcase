@@ -367,7 +367,7 @@ describe('Today article intro flow', () => {
     await userEvent.click(screen.getByRole('link', { name: /원문 읽으러 가기/ }))
     await userEvent.click(await screen.findByRole('button', { name: /깸 작성하기/ }))
 
-    await userEvent.selectOptions(screen.getByRole('combobox'), 'rebuttal')
+    await userEvent.click(screen.getByRole('button', { name: '반박' }))
     expect(screen.getByText('이 주장에 반대한다면?')).toBeInTheDocument()
 
     await userEvent.type(screen.getByRole('textbox'), '나는 동의하지 않는다.')

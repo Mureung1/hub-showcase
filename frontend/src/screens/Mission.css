@@ -1,33 +1,208 @@
-.mission-back {
-  display: inline-flex;
+.mission-header {
+  flex: none;
+  display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 12px;
+  padding: 20px 20px 10px;
+}
+
+.mission-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  margin-left: -6px;
   border: none;
   background: none;
-  padding: 0;
   color: var(--ink);
-  font-size: 14px;
-  font-weight: 700;
+  cursor: pointer;
 }
 
-.mission-select-label {
-  display: block;
+.mission-back svg {
+  width: 22px;
+  height: 22px;
+}
+
+.mission-header-label {
   font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.mission-main {
+  flex: 1;
+  padding: 0 20px 24px;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* 오늘 읽은 글 카드 */
+.mission-article-card {
+  position: relative;
+  display: flex;
+  background: var(--paper-raised);
+  border-radius: 16px;
+  padding: 16px 16px 16px 18px;
+  margin-bottom: 24px;
+  box-shadow: inset 0 0 0 1px var(--rule);
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.mission-article-accent {
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 4px;
+  border-radius: 4px;
+}
+
+.mission-article-accent--question {
+  background: var(--hl-question);
+}
+
+.mission-article-accent--rebuttal {
+  background: var(--hl-rebut);
+}
+
+.mission-article-accent--connection {
+  background: var(--hl-connect);
+}
+
+.mission-article-accent--expression {
+  background: var(--hl-express);
+}
+
+.mission-article-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.mission-article-label {
+  font-size: 12px;
   font-weight: 700;
   color: var(--ink-soft);
-  margin-bottom: 8px;
+  margin-bottom: 7px;
 }
 
-.mission-select {
-  width: 100%;
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  background: var(--paper-raised);
-  padding: 10px 14px;
-  font-size: 14px;
-  font-family: inherit;
+.mission-article-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-bottom: 7px;
+}
+
+.mission-article-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.5;
   color: var(--ink);
+  overflow-wrap: break-word;
+}
+
+.mission-hint {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin-bottom: 9px;
+}
+
+.mission-type-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 20px;
+}
+
+.mission-type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  background: var(--paper-raised);
+  color: var(--ink-soft);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+.mission-type-chip:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.mission-type-chip--selected {
+  background: var(--ink);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.mission-type-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.mission-type-chip--question .mission-type-dot {
+  background: var(--hl-question);
+}
+
+.mission-type-chip--rebuttal .mission-type-dot {
+  background: var(--hl-rebut);
+}
+
+.mission-type-chip--connection .mission-type-dot {
+  background: var(--hl-connect);
+}
+
+.mission-type-chip--expression .mission-type-dot {
+  background: var(--hl-express);
+}
+
+.mission-question {
+  margin: 0 0 18px;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+
+.mission-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 150px;
+  border: none;
+  outline: none;
+  border-radius: 16px;
+  background: var(--paper-raised);
+  box-shadow: inset 0 0 0 1px var(--rule);
+  padding: 16px;
+  font-size: 14.5px;
+  font-family: inherit;
+  line-height: 1.7;
+  color: var(--ink);
+  resize: none;
+}
+
+.mission-textarea:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+.mission-textarea-helper {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
 }
 
 .mission-complete-title {
@@ -42,29 +217,9 @@
   margin-bottom: 24px;
 }
 
-.mission-question {
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  line-height: 1.4;
-  margin-bottom: 16px;
-}
-
-.mission-textarea {
-  width: 100%;
-  min-height: 120px;
-  border: 1px solid var(--rule);
-  border-radius: var(--card-radius);
-  background: var(--paper-raised);
-  padding: 14px;
-  font-size: 15px;
-  font-family: inherit;
-  color: var(--ink);
-  resize: none;
-}
-
-.mission-textarea-helper {
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--ink-soft);
+/* 하단 고정 CTA */
+.mission-footer {
+  flex: none;
+  padding: 14px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--paper) 72%, transparent);
 }

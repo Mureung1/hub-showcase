@@ -1,6 +1,13 @@
 import { useRef, useState } from 'react'
+import { ChevronLeft } from 'lucide-react'
 import { ApiClientError } from '../api/client'
-import type { ArticleDetail, CreateMissionRecordRequest, MissionRecord, MissionType } from '../api/types'
+import type {
+  ArticleDetail,
+  ContentType,
+  CreateMissionRecordRequest,
+  MissionRecord,
+  MissionType,
+} from '../api/types'
 import './Mission.css'
 
 const MISSION_TYPE_LABEL: Record<MissionType, string> = {
@@ -8,6 +15,19 @@ const MISSION_TYPE_LABEL: Record<MissionType, string> = {
   rebuttal: '반박',
   connection: '연결',
   expression: '표현',
+}
+
+const CONTENT_TYPE_LABEL: Record<ContentType, string> = {
+  article: '아티클',
+  blog: '블로그',
+  video: '영상',
+}
+
+const MISSION_PLACEHOLDER: Record<MissionType, string> = {
+  question: '글을 읽고 떠오른 궁금증을 질문 형태로 적어보세요.',
+  rebuttal: '동의하기 어려운 지점을 한 문장으로 반박해보세요.',
+  connection: '이 내용과 이어지는 내 경험이나 사례를 적어보세요.',
+  expression: '지금 떠오른 생각이나 느낌을 솔직하게 표현해보세요.',
 }
 
 type MissionProps = {
@@ -29,6 +49,7 @@ export default function Mission({ article, onBack, onSubmit, onGoToToday }: Miss
 
   const selectedPrompt =
     article.missionOptions.find((option) => option.type === selectedMissionType)?.prompt ?? ''
+  const isRecommended = selectedMissionType === article.recommendedMission.type
 
   // DB 제약이 char_length(user_answer) > 0 이다. 공백만 있는 답변도 막는다.
   const trimmedAnswer = answer.trim()
@@ -68,44 +89,73 @@ export default function Mission({ article, onBack, onSubmit, onGoToToday }: Miss
 
   return (
     <div className="app-shell">
-      <header className="screen-header">
-        <button type="button" className="mission-back" onClick={onBack}>
-          뒤로가기
+      <header className="mission-header">
+        <button
+          type="button"
+          className="mission-back"
+          aria-label="뒤로가기"
+          onClick={onBack}
+        >
+          <ChevronLeft aria-hidden="true" />
         </button>
+        <span className="mission-header-label">오늘의 사고 미션</span>
       </header>
 
-      <main className="screen-main">
-        <h1>오늘의 미션</h1>
+      <main className="mission-main">
+        <section className="mission-article-card" aria-label="오늘 읽은 글">
+          <div
+            className={`mission-article-accent mission-article-accent--${selectedMissionType}`}
+            aria-hidden="true"
+          />
+          <div className="mission-article-content">
+            <p className="mission-article-label">오늘 읽은 글</p>
+            <p className="mission-article-meta">
+              <span>{article.sourceName}</span>
+              <span aria-hidden="true">·</span>
+              <span>{CONTENT_TYPE_LABEL[article.contentType]}</span>
+            </p>
+            <h2 className="mission-article-title">{article.title}</h2>
+          </div>
+        </section>
 
-        <label htmlFor="mission-type-select" className="mission-select-label">
-          미션 유형
-        </label>
-        <select
-          id="mission-type-select"
-          className="mission-select"
-          value={selectedMissionType}
-          onChange={(event) => setSelectedMissionType(event.target.value as MissionType)}
-        >
-          {article.missionOptions.map((option) => (
-            <option key={option.type} value={option.type}>
-              {MISSION_TYPE_LABEL[option.type]}
-            </option>
-          ))}
-        </select>
+        <p className="mission-hint">
+          {isRecommended ? '오늘의 추천 미션' : '미션을 바꿨어요'}
+        </p>
 
-        <h2 className="mission-question">{selectedPrompt}</h2>
+        <div className="mission-type-group" role="group" aria-label="미션 유형">
+          {article.missionOptions.map((option) => {
+            const isSelected = option.type === selectedMissionType
+            return (
+              <button
+                key={option.type}
+                type="button"
+                className={`mission-type-chip mission-type-chip--${option.type}${
+                  isSelected ? ' mission-type-chip--selected' : ''
+                }`}
+                aria-pressed={isSelected}
+                onClick={() => setSelectedMissionType(option.type)}
+              >
+                <span className="mission-type-dot" aria-hidden="true" />
+                {MISSION_TYPE_LABEL[option.type]}
+              </button>
+            )
+          })}
+        </div>
+
+        <h1 className="mission-question">{selectedPrompt}</h1>
 
         <textarea
           className="mission-textarea"
-          placeholder="한 줄이면 충분해요. 완벽하지 않아도 괜찮아요."
+          aria-label="답변"
+          placeholder={MISSION_PLACEHOLDER[selectedMissionType]}
           value={answer}
           onChange={(event) => setAnswer(event.target.value)}
         />
-        <p className="mission-textarea-helper">
-          {canSubmit
-            ? `${trimmedAnswer.length}자 기록 중`
-            : '조금 더 생각해봐요 — 한 문장으로 남겨보세요'}
-        </p>
+        {!canSubmit && (
+          <p className="mission-textarea-helper">
+            조금 더 생각해봐요 — 한 문장으로 남겨보세요.
+          </p>
+        )}
 
         {saveState === 'error-422' && (
           <p role="alert">조금 더 생각을 담아 작성해 주세요.</p>
@@ -115,7 +165,7 @@ export default function Mission({ article, onBack, onSubmit, onGoToToday }: Miss
         )}
       </main>
 
-      <footer className="screen-footer">
+      <footer className="mission-footer">
         <button
           type="button"
           className="btn-primary"
