@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import PageHeader from '../components/PageHeader'
 import RegionSelectSheet from '../features/region/RegionSelectSheet'
-import { useSelectedRegion } from '../features/region/useSelectedRegion'
+import { formatSelectedRegionLabel, useSelectedRegion } from '../features/region/useSelectedRegion'
 import { useRegionRule, type BulkWasteRule, type CategoryRule } from '../features/region/useRegionOptions'
 import { translateDayName } from '../i18n/helpers'
 import { useLanguage } from '../i18n/LanguageContext'
@@ -69,7 +69,7 @@ export default function RulesPage() {
   const { region, setRegion } = useSelectedRegion()
   const [isRegionSheetOpen, setRegionSheetOpen] = useState(false)
   const { data: regionRule, isLoading, isError } = useRegionRule(region)
-  const { t } = useLanguage()
+  const { lang, t } = useLanguage()
 
   const hasAnyCategory =
     regionRule && (regionRule.categories.생활쓰레기 || regionRule.categories.음식물쓰레기 || regionRule.categories.재활용품)
@@ -83,7 +83,7 @@ export default function RulesPage() {
           onClick={() => setRegionSheetOpen(true)}
           className="flex w-full items-center gap-[6px] rounded-pill border border-green-100 bg-green-50 px-[14px] py-[11px] text-left text-[13.5px] font-bold text-green-900"
         >
-          📍 {region ? `${region.ctpvNm} / ${region.sggNm}` : t('home.selectRegionPlaceholder')}
+          📍 {region ? formatSelectedRegionLabel(region, lang) : t('home.selectRegionPlaceholder')}
           <span className="ml-auto">▾</span>
         </button>
 

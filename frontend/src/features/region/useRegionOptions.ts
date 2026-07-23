@@ -2,11 +2,16 @@ import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '../../lib/apiClient'
 import type { SelectedRegion } from './useSelectedRegion'
 
+export interface RegionNameOption {
+  name: string
+  nameEn: string | null
+}
+
 export interface ZoneOptionsResponse {
   covered: boolean
-  dongOptions: string[]
+  dongOptions: RegionNameOption[]
   districtWide: boolean
-  alternativeDistricts: string[]
+  alternativeDistricts: RegionNameOption[]
 }
 
 export interface CategoryRule {
@@ -39,13 +44,13 @@ export interface RegionRuleResponse {
   unclltDay: string | null
 }
 
-async function fetchProvinces(): Promise<string[]> {
-  const { data } = await apiClient.get<{ provinces: string[] }>('/regions/provinces')
+async function fetchProvinces(): Promise<RegionNameOption[]> {
+  const { data } = await apiClient.get<{ provinces: RegionNameOption[] }>('/regions/provinces')
   return data.provinces
 }
 
-async function fetchDistricts(ctpvNm: string): Promise<string[]> {
-  const { data } = await apiClient.get<{ districts: string[] }>('/regions/districts', { params: { ctpvNm } })
+async function fetchDistricts(ctpvNm: string): Promise<RegionNameOption[]> {
+  const { data } = await apiClient.get<{ districts: RegionNameOption[] }>('/regions/districts', { params: { ctpvNm } })
   return data.districts
 }
 

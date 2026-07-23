@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import RegionSelectSheet from '../features/region/RegionSelectSheet'
 import { useRegionRule } from '../features/region/useRegionOptions'
-import { useSelectedRegion } from '../features/region/useSelectedRegion'
+import { formatSelectedRegionLabel, useSelectedRegion } from '../features/region/useSelectedRegion'
 import { buildWeeklySchedule, getTodayIndex } from '../features/region/weeklySchedule'
 import { translateCategoryCombo, translateDayName } from '../i18n/helpers'
 import { useLanguage } from '../i18n/LanguageContext'
@@ -60,7 +60,7 @@ export default function HomePage() {
           onClick={() => setRegionSheetOpen(true)}
           className="flex w-full items-center gap-[6px] rounded-pill border border-green-100 bg-green-50 px-[14px] py-[11px] text-left text-[13.5px] font-bold text-green-900"
         >
-          📍 {region ? `${region.ctpvNm} / ${region.sggNm}` : t('home.selectRegionPlaceholder')}
+          📍 {region ? formatSelectedRegionLabel(region, lang) : t('home.selectRegionPlaceholder')}
           <span className="ml-auto">▾</span>
         </button>
 
