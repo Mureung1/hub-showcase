@@ -32,7 +32,7 @@ const Login = () => {
     try {
       await signIn({ email: data.email, password: data.password })
       toast.success('로그인되었습니다')
-      navigate('/dashboard')
+      navigate('/app/dashboard')
     } catch (error) {
       toast.error('로그인 실패: ' + (error as Error).message)
     } finally {

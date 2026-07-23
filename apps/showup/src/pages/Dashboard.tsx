@@ -86,7 +86,7 @@ const Dashboard = () => {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold text-gray-900">주의 고객</h2>
           <Link
-            to="/customers"
+            to="/app/customers"
             className="text-sm text-blue-600 hover:underline font-medium"
           >
             전체 보기 →
@@ -129,7 +129,7 @@ const Dashboard = () => {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold text-gray-900">오늘의 예약</h2>
           <Link
-            to="/reservations"
+            to="/app/reservations"
             className="text-sm text-blue-600 hover:underline font-medium"
           >
             전체 보기 →

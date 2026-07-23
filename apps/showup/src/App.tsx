@@ -18,6 +18,7 @@ const Privacy = lazy(() => import('./pages/Privacy'))
 const Terms = lazy(() => import('./pages/Terms'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 const ServerError = lazy(() => import('./pages/ServerError'))
+const Landing = lazy(() => import('./pages/Landing'))
 
 const PageFallback = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -55,6 +56,7 @@ function App() {
         <Suspense fallback={<PageFallback />}>
           <Routes>
             {/* Public routes */}
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/privacy" element={<Privacy />} />
@@ -62,14 +64,14 @@ function App() {
 
             {/* Protected routes */}
             <Route
-              path="/"
+              path="/app"
               element={
                 <ProtectedRoute>
                   <AppLayout />
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route index element={<Navigate to="/app/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="customers" element={<Customers />} />
               <Route path="customers/new" element={<NewCustomer />} />

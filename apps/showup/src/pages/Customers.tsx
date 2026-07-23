@@ -115,7 +115,7 @@ const Customers = () => {
       {/* Add new customer */}
       <div className="mt-6">
         <Link
-          to="/customers/new"
+          to="/app/customers/new"
           className="block w-full bg-blue-600 text-white text-center py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
         >
           + 신규 고객 등록

@@ -77,7 +77,7 @@ const NewCustomer = () => {
         phone: data.phone,
       })
       toast.success('고객이 등록되었습니다')
-      navigate('/customers')
+      navigate('/app/customers')
     } catch (error) {
       toast.error('고객 등록 실패: ' + (error as Error).message)
     } finally {
@@ -91,7 +91,7 @@ const NewCustomer = () => {
 
   const handleGoToDetail = () => {
     if (existingCustomer) {
-      navigate(`/customers/${existingCustomer.id}`)
+      navigate(`/app/customers/${existingCustomer.id}`)
     }
   }
 
@@ -120,7 +120,7 @@ const NewCustomer = () => {
         />
 
         <div className="flex gap-2 pt-4">
-          <Button type="button" variant="secondary" onClick={() => navigate('/customers')}>
+          <Button type="button" variant="secondary" onClick={() => navigate('/app/customers')}>
             취소
           </Button>
           <Button type="submit" variant="primary" disabled={isLoading}>
