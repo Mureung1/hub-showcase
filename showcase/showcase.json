@@ -4,10 +4,10 @@
   "summary": "대학생이 같은 방향·시간대로 이동하는 동행자를 찾아 택시를 나눠 타도록 매칭해주는 서비스입니다.",
   "githubUser": "gyu-young-04(장규영)",
   "demoUrl": "https://gyu-young-04.github.io/hub/prototype/",
-  "thumbnail": "thumbnail.webp",
+  "thumbnail": "thumbnail.png",
   "screenshots": [
-    "screenshots/candidates.webp",
-    "screenshots/chat.webp"
+    "screenshots/candidates.png",
+    "screenshots/chat.png"
   ],
   "problem": "대학생은 이동이 필요한 순간 주변에 방향이 겹치는 동행자가 있어도 이를 알 방법이 없어서, 비용을 절감할 수 있는 택시 동승 기회를 놓치고 있습니다.",
   "targetUsers": [

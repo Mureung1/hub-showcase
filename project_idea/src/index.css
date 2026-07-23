@@ -35,6 +35,20 @@ body {
   }
 }
 
+/* 후보 리스트 화면 전용: 이 화면만 뷰포트 높이로 고정하고 내부 목록만 스크롤되게 함 */
+.scroll-viewport {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@media (min-width: 431px) {
+  .scroll-viewport {
+    height: calc(100vh - 80px);
+  }
+}
+
 @media (min-width: 431px) {
   body {
     background:
