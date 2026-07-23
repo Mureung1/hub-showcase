@@ -2030,7 +2030,7 @@ async function cleanupCreatedEntries(
 ): Promise<void> {
   for (const entry of [...created].reverse()) {
     await entry.directoryCapability?.close()
-    await entry.parent.removeEntry(
+    const removed = await entry.parent.removeEntry(
       entry.leaf,
       entry.type,
       entry.identity,
@@ -2041,6 +2041,11 @@ async function cleanupCreatedEntries(
           type: entry.type,
         }) ?? Promise.resolve(),
     )
+    if (!removed) {
+      throw new Error(
+        'Recorded runtime staging entry disappeared during cleanup',
+      )
+    }
   }
   const stats = await stagingCapability.statDirectory()
   if (

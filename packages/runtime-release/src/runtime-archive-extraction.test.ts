@@ -1416,6 +1416,50 @@ test('retains directory capabilities across exact check-use ancestor races', asy
       assert.equal(await readFile(notice, 'utf8'), 'cleanup leaf canary\n')
     })
   })
+
+  await t.test('cleanup requires a recorded file to still exist', async () => {
+    await withFixture(async (fixture) => {
+      const runtimeRoot = path.join(fixture.staging.path, 'runtime')
+      const notice = path.join(runtimeRoot, 'NOTICE')
+      const movedNotice = path.join(fixture.root, 'NOTICE-moved')
+
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            beforeFinalVerification: async () => {
+              await rename(notice, movedNotice)
+              throw new Error('force cleanup after file rename')
+            },
+          }),
+        'runtime_recovery_required',
+      )
+
+      assert.equal(await readFile(movedNotice, 'utf8'), 'AY-PLE notice\n')
+    })
+  })
+
+  await t.test('cleanup requires the recorded runtime root to still exist', async () => {
+    await withFixture(async (fixture) => {
+      const runtimeRoot = path.join(fixture.staging.path, 'runtime')
+      const movedRuntimeRoot = path.join(
+        fixture.root,
+        'runtime-cleanup-moved',
+      )
+
+      await assertArchiveError(
+        () =>
+          extractFixture(fixture, {
+            beforeFinalVerification: async () => {
+              await rename(runtimeRoot, movedRuntimeRoot)
+              throw new Error('force cleanup after runtime root rename')
+            },
+          }),
+        'runtime_recovery_required',
+      )
+
+      assert.deepEqual(await readdir(movedRuntimeRoot), [])
+    })
+  })
 })
 
 test('post-extraction verifier rejects tree, mode, manifest, and legal roster drift', async (t) => {
@@ -1456,7 +1500,7 @@ test('post-extraction verifier rejects tree, mode, manifest, and legal roster dr
     },
     {
       name: 'missing NOTICE legal roster',
-      expectedCode: 'runtime_integrity_failed',
+      expectedCode: 'runtime_recovery_required',
       mutate: (runtimeRoot) =>
         unlink(path.join(runtimeRoot, 'NOTICE')),
     },
