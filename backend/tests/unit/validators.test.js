@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { isValidGithubId, isValidUuid } from '../../src/utils/validators.js';
+import { isValidGithubId, isValidUuid, isValidPreferences } from '../../src/utils/validators.js';
 
 describe('isValidGithubId', () => {
     it('영숫자·하이픈으로 된 정상 GitHub 아이디를 허용한다', () => {
@@ -38,5 +38,39 @@ describe('isValidUuid', () => {
         expect(isValidUuid('not-a-uuid')).toBe(false);
         expect(isValidUuid('7f9c3b2a-1d4e-4f6a-9b8c')).toBe(false);
         expect(isValidUuid(undefined)).toBe(false);
+    });
+});
+
+describe('isValidPreferences', () => {
+    it('languages와 difficulty만 있어도 통과한다 (topics는 선택)', () => {
+        expect(isValidPreferences({ languages: ['javascript'], difficulty: 'easy' })).toBe(true);
+    });
+
+    it('languages가 없거나 비어있거나 10개를 넘으면 거부한다', () => {
+        expect(isValidPreferences({ difficulty: 'easy' })).toBe(false);
+        expect(isValidPreferences({ languages: [], difficulty: 'easy' })).toBe(false);
+        expect(isValidPreferences({ languages: Array(11).fill('javascript'), difficulty: 'easy' })).toBe(false);
+    });
+
+    it('language 문자열이 패턴을 벗어나면 거부한다 (qualifier 조작 방지)', () => {
+        expect(isValidPreferences({ languages: ['javascript" OR "1'], difficulty: 'easy' })).toBe(false);
+        expect(isValidPreferences({ languages: [123], difficulty: 'easy' })).toBe(false);
+    });
+
+    it('difficulty가 easy/medium/hard가 아니면 거부한다', () => {
+        expect(isValidPreferences({ languages: ['javascript'], difficulty: 'expert' })).toBe(false);
+        expect(isValidPreferences({ languages: ['javascript'] })).toBe(false);
+    });
+
+    it('topics는 10개를 넘거나 패턴을 벗어나면 거부하고, 유니코드는 허용한다', () => {
+        expect(isValidPreferences({ languages: ['javascript'], difficulty: 'easy', topics: Array(11).fill('web') })).toBe(false);
+        expect(isValidPreferences({ languages: ['javascript'], difficulty: 'easy', topics: ['<script>'] })).toBe(false);
+        expect(isValidPreferences({ languages: ['javascript'], difficulty: 'easy', topics: ['머신러닝'] })).toBe(true);
+    });
+
+    it('preferences가 객체가 아니면 거부한다', () => {
+        expect(isValidPreferences(null)).toBe(false);
+        expect(isValidPreferences(undefined)).toBe(false);
+        expect(isValidPreferences('easy')).toBe(false);
     });
 });
