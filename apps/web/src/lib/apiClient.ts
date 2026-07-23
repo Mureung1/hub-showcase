@@ -5,12 +5,16 @@ import {
   ErrorEnvelopeSchema,
   QuestionListResponseSchema,
   QuestionResponseSchema,
+  SourceAnswerEventSchema,
+  SourceAnswerSchema,
   type AuthMeResponse,
   type ChatListResponse,
   type CreateChatResponse,
   type ErrorEnvelope,
   type QuestionListResponse,
   type QuestionResponse,
+  type SourceAnswer,
+  type SourceAnswerEvent,
 } from "@decision-log/shared";
 import { z } from "zod";
 
@@ -159,4 +163,134 @@ export function completeQuestion(
     QuestionResponseSchema,
     { status: "completed" },
   );
+}
+
+// --- SourceAnswer 실호출 (SPEC-AI-001 4장) ---
+
+/** GET .../source-answers — 새로고침·재진입 복원용 현재 스냅샷. */
+export function fetchSourceAnswers(
+  chatId: string,
+  questionId: string,
+): Promise<ApiResult<SourceAnswer[]>> {
+  return requestAuthed(
+    "GET",
+    `/api/chats/${chatId}/questions/${questionId}/source-answers`,
+    z.array(SourceAnswerSchema),
+  );
+}
+
+/** SSE 스트림 소비 결과 — done을 받았는지까지 호출부가 알아야 화해(reconcile)를 판단한다. */
+export type SourceAnswerStreamResult =
+  | { ok: true; done: boolean }
+  | { ok: false; status: number; error: ErrorEnvelope["error"] };
+
+/**
+ * POST .../source-answers — 생성 시작. 응답 본문 자체가 SSE 스트림이다.
+ *
+ * EventSource를 쓰지 않는 이유: 커스텀 헤더 불가·GET 전용이라 access token을 URL에 실어야
+ * 한다(§4 구현 노트). 그래서 fetch + Bearer로 열고 ReadableStream으로 직접 읽는다.
+ *
+ * 스트림이 열리기 전 실패(404·NO_AVAILABLE_KEYS 등)는 JSON 에러 봉투로 오므로 그대로 반환한다.
+ * done을 받지 못한 채 스트림이 닫히면 `done: false`로 알려 호출부가 GET으로 화해하게 한다.
+ */
+export async function streamSourceAnswers(
+  chatId: string,
+  questionId: string,
+  body: { context: string | null },
+  onEvent: (event: SourceAnswerEvent) => void,
+): Promise<SourceAnswerStreamResult> {
+  const token = await getAccessToken();
+
+  let response: Response;
+  try {
+    response = await fetch(
+      `${VITE_API_BASE_URL}/api/chats/${chatId}/questions/${questionId}/source-answers`,
+      {
+        method: "POST",
+        headers: {
+          Accept: "text/event-stream",
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body),
+      },
+    );
+  } catch (error) {
+    return {
+      ok: false,
+      status: 0,
+      error: fallbackError(
+        error instanceof Error ? error.message : "생성 요청에 실패했습니다.",
+      ),
+    };
+  }
+
+  if (!response.ok) {
+    const raw: unknown = await response.json().catch(() => null);
+    const parsed = ErrorEnvelopeSchema.safeParse(raw);
+    return {
+      ok: false,
+      status: response.status,
+      error: parsed.success
+        ? parsed.data.error
+        : fallbackError(`생성 요청이 실패했습니다 (HTTP ${response.status}).`),
+    };
+  }
+
+  if (!response.body) {
+    return { ok: true, done: false };
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let sawDone = false;
+
+  /** `data: {...}` 한 프레임을 계약으로 파싱해 전달한다. 계약 위반 프레임은 무시하고 로그만. */
+  const dispatch = (frame: string): void => {
+    for (const line of frame.split("\n")) {
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice(5).trim();
+      if (payload.length === 0) continue;
+      let raw: unknown;
+      try {
+        raw = JSON.parse(payload);
+      } catch {
+        console.error("[sourceAnswers] SSE 프레임 파싱 실패");
+        continue;
+      }
+      const parsed = SourceAnswerEventSchema.safeParse(raw);
+      if (!parsed.success) {
+        console.error("[sourceAnswers] SSE 이벤트가 계약을 만족하지 않습니다.");
+        continue;
+      }
+      if (parsed.data.type === "done") sawDone = true;
+      onEvent(parsed.data);
+    }
+  };
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      // SSE 프레임 구분자는 빈 줄
+      let boundary = buffer.indexOf("\n\n");
+      while (boundary !== -1) {
+        dispatch(buffer.slice(0, boundary));
+        buffer = buffer.slice(boundary + 2);
+        boundary = buffer.indexOf("\n\n");
+      }
+    }
+    if (buffer.trim().length > 0) dispatch(buffer);
+  } catch (error) {
+    // 끊김 — done을 못 받았으므로 호출부가 GET으로 화해한다.
+    console.error(
+      "[sourceAnswers] SSE 스트림이 끊겼습니다:",
+      error instanceof Error ? error.message : error,
+    );
+    return { ok: true, done: sawDone };
+  }
+
+  return { ok: true, done: sawDone };
 }

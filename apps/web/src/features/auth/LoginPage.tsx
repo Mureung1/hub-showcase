@@ -14,6 +14,28 @@ import type { AuthErrorInfo } from "./types";
 
 type SubmitStatus = "idle" | "loading" | "error";
 
+/**
+ * 데모용 테스트 계정 (T-018, 프론트 전용).
+ * 심사·시연에서 계정을 새로 만들지 않고 바로 들어올 수 있게 로그인 화면에 노출한다.
+ *
+ * 데모 배포를 위해 **일회용 테스트 계정 값을 저장소에 커밋했다.** 이 값은 프론트 번들과
+ * git 히스토리에 모두 포함되므로 비밀이 아니다 — 반드시 버려도 되는 계정만 넣는다.
+ * 하나라도 자리표시자(REPLACE_ME)면 안내 박스를 숨긴다.
+ * 인증 자체는 우회하지 않으며, 값을 폼에 채워 기존 로그인 흐름으로 제출할 뿐이다.
+ *
+ * 실서비스 전환 전 필수: 이 박스를 제거하고, 해당 계정의 비밀번호를 교체하거나
+ * 히스토리에서 값을 스크럽한다.
+ */
+// `: string`을 지우지 말 것 — 없으면 리터럴 타입으로 좁혀져, 아래 자리표시자 비교가
+// "교집합 없는 비교"(TS2367)로 실패한다. 값을 실제 계정으로 바꾸는 순간 빌드가 깨진다.
+const TEST_EMAIL: string = "lymsla0117@gmail.com";
+const TEST_PASSWORD: string = "TestPass-zqnpMYKc!27";
+
+const TEST_ACCOUNT_PLACEHOLDER = "REPLACE_ME";
+const hasTestAccount =
+  TEST_EMAIL !== TEST_ACCOUNT_PLACEHOLDER &&
+  TEST_PASSWORD !== TEST_ACCOUNT_PLACEHOLDER;
+
 /** 로그인 페이지 (SPEC-AUTH-001 4장). */
 export function LoginPage() {
   const navigate = useNavigate();
@@ -35,15 +57,15 @@ export function LoginPage() {
     }
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    const errors = validateLogin(values);
+  /** 검증 → signIn → 세션 반영. 폼 제출과 테스트 계정 버튼이 같은 흐름을 쓴다. */
+  async function submitCredentials(credentials: LoginFormValues) {
+    const errors = validateLogin(credentials);
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
     setStatus("loading");
     setSubmitError(null);
-    const result = await signIn(values.email.trim(), values.password);
+    const result = await signIn(credentials.email.trim(), credentials.password);
     if (result.ok) {
       setSession(result.value);
       navigate("/", { replace: true });
@@ -51,6 +73,21 @@ export function LoginPage() {
     }
     setStatus("error");
     setSubmitError(result.error);
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    await submitCredentials(values);
+  }
+
+  /** 테스트 계정으로 로그인 — 입력 필드를 채워 보여주고 같은 제출 흐름을 탄다. */
+  async function handleTestAccountLogin() {
+    const credentials: LoginFormValues = {
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
+    };
+    setValues(credentials);
+    await submitCredentials(credentials);
   }
 
   const isLoading = status === "loading";
@@ -69,6 +106,32 @@ export function LoginPage() {
         <VStack gap={3}>
           {sessionExpired && (
             <Banner status="warning" title="세션이 만료되었습니다. 다시 로그인해주세요." />
+          )}
+
+          {/* 데모에서 바로 눈에 띄어야 하므로 접힘 없이 펼친 상태로 시작한다. */}
+          {hasTestAccount && (
+            <Banner status="info" title="테스트 계정" defaultIsExpanded>
+              <VStack gap={2}>
+                <Text as="p" type="supporting" color="secondary">
+                  둘러보기용 계정입니다. 아래 버튼을 누르면 바로 로그인합니다.
+                </Text>
+                {/* 데모 목적이라 비밀번호를 가리지 않고 그대로 보여준다. */}
+                <Text as="p" type="supporting">
+                  이메일 {TEST_EMAIL}
+                </Text>
+                <Text as="p" type="supporting">
+                  비밀번호 {TEST_PASSWORD}
+                </Text>
+                <Button
+                  label="이 계정으로 로그인"
+                  variant="secondary"
+                  size="sm"
+                  isLoading={isLoading}
+                  isDisabled={isLoading}
+                  onClick={() => void handleTestAccountLogin()}
+                />
+              </VStack>
+            </Banner>
           )}
           <TextInput
             type="email"

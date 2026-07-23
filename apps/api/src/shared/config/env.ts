@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
 
 /**
@@ -8,8 +9,19 @@ import { z } from "zod";
  * - SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY (SPEC-AUTH-003)
  * - SUPABASE_SECRET_KEY (SPEC-DB-001 — 시스템 쓰기 클라이언트)
  * - AI_KEY_ENCRYPTION_KEY (SPEC-DB-001 — BYOK 키 암호화 마스터 키, base64 32바이트)
- * AI Provider 키는 각 AI Spec에서 필수화한다.
+ * - AI Provider 앱 기본 키 3종 (SPEC-AI-001 7.4 — 단, 플래그가 ON일 때만 필수)
  */
+
+/**
+ * 답변 프롬프트 템플릿(.md) 기본 경로 — 저장소 루트의 /prompts (SPEC-AI-001 10장).
+ * 이 파일 기준 상대 경로라 cwd와 무관하고, dist가 src 구조를 그대로 미러링하므로
+ * dev(src/shared/config)와 build(dist/shared/config) 모두 같은 깊이로 해석된다.
+ * 프롬프트는 런타임에 읽는 텍스트라 교체 시 재빌드가 필요 없다.
+ */
+const defaultPromptsDir = fileURLToPath(
+  new URL("../../../../../prompts", import.meta.url),
+);
+
 const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   CLIENT_ORIGIN: z.string().min(1).default("http://localhost:5173"),
@@ -27,7 +39,53 @@ const envSchema = z.object({
       (value) => Buffer.from(value, "base64").length === 32,
       "AI_KEY_ENCRYPTION_KEY는 base64로 인코딩된 32바이트(AES-256) 키여야 합니다.",
     ),
-});
+
+  // --- SPEC-AI-001 7장 BYOK 하이브리드 ---
+  /** 사용자 키가 없을 때 앱 기본 키를 쓸지. 기본 ON (7.2) */
+  APP_DEFAULT_AI_KEYS_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true"),
+  /** 앱 기본 키 (7.4). 플래그가 ON이면 아래 superRefine에서 필수화한다. */
+  ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  OPENAI_API_KEY: z.string().min(1).optional(),
+  GEMINI_API_KEY: z.string().min(1).optional(),
+
+  // --- SPEC-AI-001 2.3 활성 구현·버전 선택 ---
+  /** 답변 프롬프트 템플릿 루트. 파일만 교체하면 되도록 런타임에 읽는다. */
+  ANSWER_PROMPTS_DIR: z.string().min(1).default(defaultPromptsDir),
+  /** 사용할 프롬프트 버전. source_answers.prompt_version에 스탬프된다. */
+  ANSWER_PROMPT_VERSION: z.string().min(1).default("v1"),
+  /** 활성 정규화기 버전 (초기엔 v1 하나) */
+  ANSWER_NORMALIZER_VERSION: z.string().min(1).default("v1"),
+
+  /**
+   * Provider별 모델 (교체·재현성을 위해 설정으로 뺀다. 저장 레코드에 스탬프).
+   * 기본값은 각 provider의 **최소(최저가) 티어** — 비용을 억제하고 45초 예산 안에 들어온다.
+   * 더 큰 모델이 필요하면 env로 override 한다.
+   */
+  CLAUDE_MODEL: z.string().min(1).default("claude-haiku-4-5"),
+  OPENAI_MODEL: z.string().min(1).default("gpt-5-nano"),
+  GEMINI_MODEL: z.string().min(1).default("gemini-3.5-flash-lite"),
+})
+  .superRefine((value, ctx) => {
+    // 7.2: 플래그 ON이면 앱 기본 키 3종이 있어야 한다. 키 "값"은 메시지에 넣지 않는다.
+    if (!value.APP_DEFAULT_AI_KEYS_ENABLED) return;
+    const required = [
+      "ANTHROPIC_API_KEY",
+      "OPENAI_API_KEY",
+      "GEMINI_API_KEY",
+    ] as const;
+    for (const key of required) {
+      if (!value[key]) {
+        ctx.addIssue({
+          code: "custom",
+          path: [key],
+          message: `APP_DEFAULT_AI_KEYS_ENABLED가 ON이면 ${key}가 필요합니다.`,
+        });
+      }
+    }
+  });
 
 export type ServerEnv = z.infer<typeof envSchema>;
 

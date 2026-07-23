@@ -8,7 +8,14 @@ import {
 } from "@astryxdesign/core/Chat";
 import { Text } from "@astryxdesign/core/Text";
 import { useToast } from "@astryxdesign/core/Toast";
-import type { Agenda, AgendaResolutionReason, Chat, Question } from "./types";
+import type {
+  Agenda,
+  AgendaResolutionReason,
+  Chat,
+  Provider,
+  Question,
+  SourceAnswerStatus,
+} from "./types";
 import { agendaRecheckText } from "./types";
 import { AnswerCard } from "./AnswerCard";
 import { AnswersModal } from "./AnswersModal";
@@ -33,6 +40,8 @@ interface ChatCenterProps {
   /** null이면 첫 진입(새 채팅) 빈 화면을 표시한다 */
   activeChat: Chat | null;
   isBusy: boolean;
+  /** live SSE 진행 상태(questionId → provider → status). 서버 실호출 경로에서만 채워진다. */
+  liveStatuses?: Record<string, Partial<Record<Provider, SourceAnswerStatus>>>;
   composerValue: string;
   onComposerChange: (value: string) => void;
   onSubmitQuestion: (value: string) => void;
@@ -58,6 +67,7 @@ interface ChatCenterProps {
 export function ChatCenter({
   activeChat,
   isBusy,
+  liveStatuses,
   composerValue,
   onComposerChange,
   onSubmitQuestion,
@@ -212,6 +222,7 @@ export function ChatCenter({
                 <ChatMessageBubble>
                   <SourceAnswerLoadingBubble
                     sourceAnswers={question.sourceAnswers}
+                    liveStatuses={liveStatuses?.[question.id]}
                   />
                 </ChatMessageBubble>
               </ChatMessage>,

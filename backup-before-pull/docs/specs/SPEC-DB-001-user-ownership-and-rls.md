@@ -1,6 +1,6 @@
 # SPEC-DB-001. 사용자 소유권·RLS·Migration (DB 영속화)
 
-- 상태: **완료 (2026-07-22 — T-015 구현 + AC1~AC6 실측 PASS)**
+- 상태: **완료 (2026-07-20, T-015 — AC1~AC6 실측 PASS)**
 - 기준 문서: `CLAUDE.md` 2·5·6·8장, `docs/data-model.md`(전체), `docs/decisions/ADR-002-data-access-clients.md`, `docs/decisions/ADR-001-supabase-auth.md`, `docs/architecture.md` 4·6·7장, `docs/dev-setup.md`, `docs/specs/SPEC-AUTH-003-api-auth-middleware.md`
 - 작성 방식:
   - 0장 "고정 사항"은 확정된 정책·데이터 모델에서 온 것이며, 이 Spec에서 임의로 바꾸지 않는다.
@@ -97,7 +97,9 @@ Chat·Question은 실제 저장·복원되지만, AI 생성물은 아직 브라�
   - 새 Chat + 첫 Question 생성은 **같은 트랜잭션**, `chats.title`은 첫 message 앞 100자.
   - 같은 Chat의 다음 Question 생성, Chat 목록·특정 Chat의 Question 조회.
   - 미완료 Question 1개 제약을 서버(Partial Unique + Service 검증)에서 강제한다.
+  - Question 상태 전이 영속화(`PATCH /api/chats/.../questions/:id` 등, T-015 추가) — Mock 파이프라인이 브라우저에서 처리하는 Question 상태(processing→review_required→completed)를 DB에 반영해 재로그인 복원과 "미완료 1개" 제약이 일관되게 동작하게 한다. AI 생성물 저장이 아니라 Question 생명주기 엔드포인트다.
 - 요청 Body는 Controller 경계에서 Zod 검증. 응답은 shared 계약(+SPEC-AUTH-003 에러 봉투)으로 반환한다.
+- 마이그레이션에 역할별 DML GRANT(authenticated·service_role)를 별도로 부여한다 — RLS만으로는 권한이 없어 `permission denied`가 나므로(T-015 확인).
 - AI 파이프라인(SourceAnswer·Agenda·FinalAnswer·DecisionNote 생성·상태 전이)은 이 Spec에서 **브라우저 Mock 유지**(0.4 한계). 웹은 Chat·Question만 실서버, 나머지는 기존 Mock 흐름과 연결한다(각 AI Spec에서 서버 이전).
 
 ## 6. 환경변수·문서
@@ -109,12 +111,12 @@ Chat·Question은 실제 저장·복원되지만, AI 생성물은 아직 브라�
 
 ## 7. Acceptance Criteria
 
-- [ ] AC1. 마이그레이션 적용으로 테이블 6종 + `user_provider_keys` + Enum 6종 + 제약(FK·UNIQUE·CHECK·미완료 Question Partial Unique)·Index·`moddatetime` 트리거가 생성된다(적용 후 스키마 확인).
-- [ ] AC2. RLS 활성화 + join(EXISTS) 소유권 정책으로 사용자는 자신의 Chat과 하위만 조회·쓰기하고 타인 데이터에 접근할 수 없다(2번째 계정으로 실측; 런타임 실측 불가 시 정책 존재 확인 + NOT VERIFIED 사유).
-- [ ] AC3. 2-클라이언트가 구성된다 — 조회·사용자 쓰기는 사용자 JWT 클라이언트(RLS), 시스템 쓰기용 Secret Key 클라이언트는 도입·설정(실제 시스템 쓰기 사용은 AI Spec). Express는 검증 JWT의 userId만 사용하고 클라이언트 전달 userId를 무시한다.
-- [ ] AC4. 웹 Chat·Question이 apiStorageAdapter→Express→Supabase로 실제 저장·조회된다 — 로그인→새 질문→Chat·Question 생성(트랜잭션·title 100자)→로그아웃 후 재로그인 시 Chat 목록·Question 복원. 미완료 Question 1개 제약이 서버에서 강제된다.
-- [ ] AC5. `user_provider_keys` 저장·복호 경로가 동작한다 — AES-256-GCM(마스터 키 env)으로 암호화 저장하고 서버에서 복호하며, 키 원문이 프론트·로그·에러·응답에 평문으로 노출되지 않는다(입력 UI·AI 사용은 후속). RLS로 본인 키만 접근.
-- [ ] AC6. `npm run typecheck` / `build` 통과. `npm run lint`는 web만 검사(apps/api lint script 없음 — 명시). 인증(SPEC-AUTH-001~003)과 기존 happy-path가 회귀 없이 동작한다. `docs/dev-setup.md`(마이그레이션·Secret Key·마스터 키·RLS 체크리스트)와 `.env.example`이 갱신되고 실제 `.env`는 커밋되지 않는다.
+- [x] AC1. 마이그레이션 적용으로 테이블 6종 + `user_provider_keys` + Enum 6종 + 제약(FK·UNIQUE·CHECK·미완료 Question Partial Unique)·Index·`moddatetime` 트리거가 생성된다(적용 후 스키마 확인).
+- [x] AC2. RLS 활성화 + join(EXISTS) 소유권 정책으로 사용자는 자신의 Chat과 하위만 조회·쓰기하고 타인 데이터에 접근할 수 없다(2번째 계정으로 실측; 런타임 실측 불가 시 정책 존재 확인 + NOT VERIFIED 사유).
+- [x] AC3. 2-클라이언트가 구성된다 — 조회·사용자 쓰기는 사용자 JWT 클라이언트(RLS), 시스템 쓰기용 Secret Key 클라이언트는 도입·설정(실제 시스템 쓰기 사용은 AI Spec). Express는 검증 JWT의 userId만 사용하고 클라이언트 전달 userId를 무시한다.
+- [x] AC4. 웹 Chat·Question이 apiStorageAdapter→Express→Supabase로 실제 저장·조회된다 — 로그인→새 질문→Chat·Question 생성(트랜잭션·title 100자)→로그아웃 후 재로그인 시 Chat 목록·Question 복원. 미완료 Question 1개 제약이 서버에서 강제된다.
+- [x] AC5. `user_provider_keys` 저장·복호 경로가 동작한다 — AES-256-GCM(마스터 키 env)으로 암호화 저장하고 서버에서 복호하며, 키 원문이 프론트·로그·에러·응답에 평문으로 노출되지 않는다(입력 UI·AI 사용은 후속). RLS로 본인 키만 접근.
+- [x] AC6. `npm run typecheck` / `build` 통과. `npm run lint`는 web만 검사(apps/api lint script 없음 — 명시). 인증(SPEC-AUTH-001~003)과 기존 happy-path가 회귀 없이 동작한다. `docs/dev-setup.md`(마이그레이션·Secret Key·마스터 키·RLS 체크리스트)와 `.env.example`이 갱신되고 실제 `.env`는 커밋되지 않는다.
 
 ---
 
@@ -136,4 +138,4 @@ Chat·Question은 실제 저장·복원되지만, AI 생성물은 아직 브라�
 | 일자 | 내용 |
 |---|---|
 | 2026-07-20 | 최초 작성. Step 1~4 사용자 결정 반영 (1장 표). 범위=토대 전체+Chat·Question 실저장, AI 생성물 저장은 AI Spec, BYOK 키 테이블·AES-256-GCM 암호화 포함, 계정 삭제=RESTRICT 유지 |
-| 2026-07-22 | **완료 처리** (Cowork). T-015 구현 + AC1~AC6 실측 PASS(마이그레이션·RLS 양방향 교차 차단·2-클라이언트·web Chat/Question 실저장·복원·BYOK 암호화 round-trip·빌드/기동). 상태 헤더·index.md·status.md 갱신. AI 생성물 저장은 SPEC-AI-001~003에서 이어받음 |
+| 2026-07-20 | 완료 처리 (Cowork). T-015 구현·AC1~AC6 실측 PASS(상세는 docs/status.md). 구현 중 추가: Question 상태 전이 영속화 엔드포인트(5장)·역할별 DML GRANT 마이그레이션·StrictMode 하이드레이트 가드. RLS 교차 차단은 chats·questions·user_provider_keys 양방향 실측 |

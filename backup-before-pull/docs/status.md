@@ -16,8 +16,8 @@
 
 ## 미결정 사항
 
-- 모든 Provider(Claude·OpenAI·Gemini)가 최초 요청과 1회 재시도에 모두 실패한 경우의 FinalAnswer 고정 문구와 DecisionNote 처리 — AI Provider Spec 작성 전에 확정 → **SPEC-AI-001 §6.2에서 확정(2026-07-22): 3사 전멸 시 고정 안내 문구로 마무리+완료. 서버 generation_mode 확장은 AI-003 재검토**
-- 좌초 상태 복구 정책 — Manager AI 비교·재검토·FinalAnswer 생성 호출 실패 시 재시도 규칙, 버려진 `draft` Question 취소, 중단된 `processing` Question timeout 회수 → **SPEC-AI-001에서 이번 범위 밖으로 확정, 마지막 주 안정화로 이관(2026-07-22, 알려진 한계: 갇힌 질문이 새 질문 차단 가능)**
+- 모든 Provider(Claude·OpenAI·Gemini)가 최초 요청과 1회 재시도에 모두 실패한 경우의 FinalAnswer 고정 문구와 DecisionNote 처리 — AI Provider Spec 작성 전에 확정
+- 좌초 상태 복구 정책 — Manager AI 비교·재검토·FinalAnswer 생성 호출 실패 시 재시도 규칙, 버려진 `draft` Question 취소, 중단된 `processing` Question timeout 회수
 - 단일 SourceAnswer 기반 Agenda 처리 방식과 `resolution_reason` — Manager AI Spec에서 구체화
 - 사용자 계정 삭제 시 데이터 처리 정책
 
@@ -252,71 +252,10 @@
   - **AC5**(암호화): admin 기반 round-trip — 암호문 저장(평문 0)·복호 원문 복원·GCM 위변조 감지·anon 0행·임시 행 정리. 평문 미출력
   - **AC6**: 루트 `typecheck`·`build` 통과, `node apps/api/dist/server.js` 정상(health 200·보호 401), `lint` web만(api script 없음). 인증·happy-path 회귀 없음(브라우저), 콘솔 오류 없음
   - StrictMode 이중 마운트 하이드레이트 버그 수정(ref 가드 제거, per-run cancelled). 실측 로그인은 기존 계정(비밀번호 채팅 전용·미기록), 비밀·DB URL·키를 로그·커밋에 미노출
-- **SPEC-DB-001 완료 (2026-07-22)** — T-015 AC1~AC6 실측 PASS로 완료 처리. Cowork가 Spec 상태 헤더·개정 기록·index.md 갱신. 인증·영속성 토대(스키마·RLS·2-클라이언트·Chat/Question 실저장·BYOK 암호화 경로)까지 실제 Supabase로 섬. **다음: SPEC-AI-001**(실제 3사 AI 파이프라인 — 서버 SourceAnswer 생성·정규화·저장 + web 실호출로 Mock 교체)
-- **SPEC-AI-001 뼈대 작성 (2026-07-22, Ready)** — AI Provider 실호출·SourceAnswer 생성 Spec. Step 1~7 확정: 비동기+SSE·명시적 생성, 타임아웃 45초·재시도 구분(일시적+스키마실패만), 전멸=고정문구+완료, 좌초=미룸(안정화), BYOK 하이브리드(플래그 기본 ON·사전 키 점검·키 없으면 시작 차단), 관측 메타 JSONB, StructuredContent 확장(summary·order·kind 자유), provider별 프롬프트, Context=web 전달(임시→서버화 후 DB 기반). 어젠다 분류·충돌 판단 기준은 SPEC-AI-002로 명시(사용자 제기). 키 입력 UI는 SPEC-SETTINGS-001 분리. 다음: 사용자 컨펌 → T-016 구현
-- **ADR-005 작성 + SPEC-AI-001 §2.3 반영 (2026-07-22)** — AI 파이프라인 모듈 경계(포트 & 어댑터). 5개 포트(ProviderClient·AnswerPromptTemplate·AnswerNormalizer·AgendaClassifier·ConflictComparator) 인터페이스 확정, **설정 선택 + 버전 스탬프**로 교체·재현. 구현은 provider/prompt/정규화=AI-001, 분류/비교=AI-002(빈 코드 없음). '프레임워크가 아니라 이음새' 원칙
-- **SPEC-AI-001 완료 (2026-07-22)** — T-016.1(계약·마이그레이션·Mock)·2a(provider 포트·어댑터·정규화·프롬프트·BYOK·저장, 3사 실호출)·2b(SSE 전환·GET 복원·최소모델 고정)·3(web 재배선·SSE 구독·복원·Context·전멸) 전부 구현·실측 PASS. **실제 Claude·OpenAI·Gemini가 SSE로 스트리밍되어 브라우저에서 3사 파이프라인이 관통**(최소 모델 claude-haiku-4-5·gpt-5-nano·gemini-3.5-flash-lite). Cowork가 상태 헤더·AC·index.md 갱신. 알려진 한계(후속): Agenda 비교는 여전히 브라우저 Mock(실제 Manager=SPEC-AI-002) / 새로고침 시 Agenda·FinalAnswer·DecisionNote 미복원(서버 비영속 0.4 — AI-003·EXPORT) / SSE heartbeat·탭 이탈 취소·좌초 복구 미구현(배포·안정화) / 스트림 '재시도 중' 라벨 미표시. **다음: 배포(T-017) 또는 SPEC-AI-002(Manager)**
-- **T-016.1 완료 (2026-07-22)** — SPEC-AI-001 계약·마이그레이션·Mock 반영(3단계 중 1단계, 외부 AI 호출 없음)
-  - **공통 계약(§8.1)**: `packages/shared` `SectionSchema`에 `order`(정수·0 이상)·`kind`(자유 문자열, 부재 시 `null`), `StructuredContentSchema`에 `summary`(부재 시 `null`) 추가. 기존 `sectionId`/`title`/`content`와 `SourceAnswerSchema` superRefine 3종은 무변경
-  - **마이그레이션(§8.3)**: `20260722120000_source_answers_response_meta.sql` — `source_answers.response_meta jsonb NOT NULL DEFAULT '{}'`. `model`·`prompt_version`·`started_at`·`completed_at`은 기존 칸 유지(추가 컬럼 없음). RLS(행 단위)·GRANT(테이블 단위 + default privileges)는 컬럼 추가 영향 없어 변경 불필요 — psql로 확인만
-  - **Mock 반영**: 18개 Section(3사×6)에 `order`·`kind` 부여, `mockSummaryByProvider` 신설로 `useChatWorkspace` 2곳의 `structuredContent`에 `summary` 주입. **스키마를 느슨하게 풀지 않고 Mock을 계약에 맞춤**
-  - **검증**: 루트 `typecheck`·`lint`·`build`(shared→api→web 순서) 통과. psql로 `response_meta` 컬럼·마이그레이션 이력·RLS 정책 3개·GRANT 확인. 브라우저 회귀 happy-path(FinalAnswer·DecisionNote까지)·provider-excluded(제외 배너)·all-rejected(고정 문구+노트) 정상, 검증 배너 미표시·콘솔 오류 없음
-  - **미확인**: `supabase db push` CLI 프로세스가 적용·이력 기록 후 2분 타임아웃으로 잘려 CLI 완료 메시지는 못 봄(결과는 psql로 직접 확인). `recheck-path`·`context-next-question` 시나리오는 미실행
-  - **다음**: T-016.2 — 외부 AI SDK 설치, provider 계층·포트(ProviderClient·AnswerPromptTemplate·AnswerNormalizer), `response_meta` Zod 계약·실제 기록, 서버 저장. `SPEC-SCHEMA-001` 5.3.1·개정 기록 반영은 Cowork 담당
-- **T-016.2a 완료 (2026-07-22)** — SPEC-AI-001 서버 Provider 파이프라인 코어(실호출·정규화·저장, 동기 엔드포인트). SSE·GET 복원·web 재배선은 T-016.2b/.3
-  - **계약**: `packages/shared`에 `ResponseMetaSchema`(inputTokens·outputTokens nullable, latencyMs) + `SourceAnswerSchema.responseMeta` 추가. web Mock은 관측값이 없으므로 `null`
-  - **패키지**: `apps/api`에 `@anthropic-ai/sdk@0.112.5`·`openai@6.48.0`·`@google/genai@2.13.0` 설치. 루트 `package-lock.json` 단일 유지
-  - **포트·어댑터(ADR-005)**: `apps/api/src/modules/sourceAnswers/`에 `ProviderClient`+레지스트리(45초 타임아웃·에러 5종 매핑), claude·openai·gemini 어댑터, `AnswerNormalizer`(raw→StructuredContent, 실패=SCHEMA_VALIDATION_FAILED), `AnswerPromptTemplate`
-  - **프롬프트**: 루트 `/prompts/answer/{claude,openai,gemini}/v1.md` — **런타임에 읽는 텍스트 템플릿**(재빌드 없이 교체). 경로는 `ANSWER_PROMPTS_DIR`(기본값이 dev·dist 모두 루트 `/prompts`로 해석), 사용 버전은 `prompt_version`에 스탬프
-  - **BYOK(7장)**: 사용자 키 → 앱 키(`APP_DEFAULT_AI_KEYS_ENABLED`, 기본 ON) 순. 사전 점검에서 하나라도 없으면 저장 없이 `NO_AVAILABLE_KEYS` 거절
-  - **저장(ADR-002)**: Service가 검증 JWT userId로 소유권 확인 후 adminClient로 시스템 쓰기. pending→processing→succeeded/failed, raw·structured·response_meta·model·prompt_version·타임스탬프 기록. 오케스트레이션은 `req`/`res`를 모르고 `onUpdate` 콜백만 있어 2b에서 SSE로 감쌀 수 있음
-  - **엔드포인트**: `POST /api/chats/:chatId/questions/:questionId/source-answers`(requireAuth) — 저장 완료 후 `SourceAnswer[]` 반환. 2b에서 같은 URL을 SSE로 전환
-  - **검증**: 루트 `typecheck`·`lint`·`build`(shared→api→web) 통과. 실호출 실측 — claude `succeeded`(5 sections·summary·meta 22.8s), gemini `succeeded`(4 sections, **retry_count=1**로 재시도 정책 실증), openai `failed`+`excluded`(HTTP 429). psql로 `order`·`kind`(자유 문자열)·`summary`·`response_meta`·`prompt_version`·`model` 저장 확인. `NO_AVAILABLE_KEYS` 400(플래그 OFF), 미소유 Question 404, 무토큰 401, body `userId` 위조해도 소유권=JWT 확인
-  - **환경 이슈(코드 아님)**: `.env`의 **OpenAI 키가 크레딧 소진(insufficient_quota)** 상태라 OpenAI만 계속 실패한다. 덕분에 부분 실패 경로(6.1)는 실증됐지만, 3사 전원 성공은 결제 복구 후 재확인 필요
-  - **모델 기본값**: `CLAUDE_MODEL=claude-opus-4-8`, `OPENAI_MODEL=gpt-5`, `GEMINI_MODEL=gemini-3.5-flash`(2.5-flash는 신규 사용자 지원 종료). Claude가 45초 예산에 근접(39초)해 프롬프트에 분량 제약(섹션 3~5개)을 넣어 23초로 낮춤
-  - **남은 문제**: 새 env 6종(`ANTHROPIC_API_KEY`·`OPENAI_API_KEY`·`GEMINI_API_KEY`·`APP_DEFAULT_AI_KEYS_ENABLED`·프롬프트/모델 선택키)이 `docs/dev-setup.md`에 아직 없음. 실측용 테스트 Chat 2건이 DB에 남아 있음(미완료 Question 포함 → 해당 Chat에서만 새 질문 차단)
-  - **다음**: T-016.2b — SSE 전환 + `GET .../source-answers` 복원 엔드포인트
-- **T-016.2b 완료 (2026-07-22)** — SPEC-AI-001 source-answers SSE 전환 + GET 복원. web 재배선은 T-016.3
-  - **이벤트 계약**: `packages/shared`에 `SourceAnswerEventSchema`(discriminated union) — `{type:"source_answer.updated", provider, status, errorCode}` / `{type:"done", sourceAnswers}`. status·errorCode는 기존 enum 재사용. done에 최종 스냅샷을 실어 web이 별도 GET 없이 렌더한다
-  - **POST → SSE**: 응답 자체를 `text/event-stream`으로 열고(EventSource 대신 fetch ReadableStream 전제, §4 구현 노트) 시작 직후 3사 `pending`을 1회씩, 이후 `processing`→`succeeded`/`failed` 전이를 push, 종료 시 `done`. 프록시 버퍼링 방지 헤더 포함
-  - **게이트 분리**: Service를 `prepareGeneration`(소유권·사전 키 점검, 저장 0건)과 `runGeneration`(호출·저장)으로 나눠, 사전 점검 실패(`NO_AVAILABLE_KEYS`)·소유권 실패(404)는 **스트림을 열기 전에** 일반 에러 봉투로 응답한다
-  - **GET 복원**: `GET .../source-answers`(requireAuth, userClient/RLS) — 새로고침 복원 전용 스냅샷
-  - **최소 티어 모델로 교체**: `claude-haiku-4-5` · `gpt-5-nano` · `gemini-3.5-flash-lite`. 각 provider API로 유효성 실호출 확인 후 확정(env override 유지). 프롬프트 분량 제약은 유지
-  - **검증**: 루트 `typecheck`·`lint`·`build` 통과. `curl -N` SSE 실측 — pending×3 → processing×3 → gemini 5.9s / claude 15.6s / openai 27.6s succeeded → done(n=3). **3사 전원 성공**(2a에서 막혔던 OpenAI 포함). psql로 model·prompt_version·sections·summary·response_meta 확인. GET 복원 3건 일치, 미소유 404(POST/GET 모두, 스트림 미개시), 무토큰 401, 플래그 OFF에서 `NO_AVAILABLE_KEYS` 400
-  - **테스트 데이터 정리**: 2a 실측 Chat 2건 삭제(`931e07fa…`=3사 전멸·미완료 Question 포함, `86a5e2aa…`=부분 실패). CASCADE로 Question 2건·SourceAnswer 6건 함께 제거. 2b 실측 Chat 1건(`83a6263d…`, 미완료 Question 1)은 지시 범위 밖이라 유지
-  - **문서**: `docs/dev-setup.md`에 AI Provider 실호출 절 추가(env 7종 형식 예시·BYOK 해석·프롬프트 텍스트 교체·엔드포인트 curl). 실제 키는 미기재
-  - **남은 문제**: 스트림 도중 치명 오류 전용 이벤트는 MVP 생략(좌초 복구 범위) — 현재는 서버 로그만 남기고 스트림을 닫는다. SSE heartbeat 없음(45초×재시도로 최대 ~90초 무음 구간 가능)
-  - **다음**: T-016.3 — web 재배선(Mock SourceAnswer 생성 중단 → fetch ReadableStream 구독·복원)
-- **T-016.3 완료 (2026-07-22)** — SPEC-AI-001 web 재배선 + SSE 에러 종료 보강. **T-016 3단계 완료 = SourceAnswer 수직 슬라이스 관통**
-  - **서버 보강**: 스트림 도중 오류 시 미종결(pending·processing) 행을 `failed`(UNKNOWN_ERROR)+excluded로 마감(`failUnfinished`) → 최신 스냅샷 재조회 → **정상과 동일 스키마의 `done`** 전송. 마감·재조회까지 실패하면 done 없이 종료(무한루프 방지) → 클라이언트가 GET으로 화해
-  - **web SSE 구독**: `apiClient.streamSourceAnswers()` — fetch + Bearer로 열고 `ReadableStream`으로 `data:` 프레임을 shared `SourceAnswerEventSchema`로 파싱(EventSource 미사용). 컴포넌트는 fetch 직접 호출 없음(apiClient→adapter→Hook)
-  - **live 경로 대체**: `serverBacked`(기본 경로)에서 Mock 생성 대신 `runLiveSourceAnswers()`. `?scenario=` dev 경로는 기존 메모리 Mock 타임라인 그대로
-  - **점등 방식**: 스트리밍 중에는 `liveStatuses`(questionId→provider→status) 파생 상태만 갱신하고, SourceAnswer 배열은 `done`에서 한 번에 반영한다 — succeeded는 structuredContent가 있어야 계약을 만족하므로 **계약을 어기는 중간 상태를 만들지 않기 위함**
-  - **끊김 화해**: `done` 없이 닫히면 `GET .../source-answers`로 재조회. 그것도 실패하면 3사를 로컬에서 failed 처리해 pending에 멈추지 않게 함
-  - **Context(§9)**: 직전 completed Question의 FinalAnswer + 그 이전 DecisionNote를 문자열로 조립해 POST body `context`로 전달(소유권 판단엔 미사용)
-  - **복원**: 마운트 하이드레이트에서 Question별 `GET .../source-answers` 병렬 조회로 SourceAnswer까지 복원
-  - **Agenda 접속부**: `resolveSectionId()` — 템플릿의 `-s<N>` 순번을 실제 답변의 order 인덱스로 매핑(부족하면 마지막으로 클램프), **succeeded provider의 실제 섹션만** 참조. Agenda 비교 "내용"이 canned인 것은 의도된 상태(실제 비교는 AI-002)
-  - **3사 전멸(§6.2)**: 고정 문구 `"모든 AI 응답을 받지 못했습니다. 잠시 후 다시 질문해 주세요."`로 FinalAnswer + **DecisionNote까지 저장한 뒤** completed 전이(완료 조건 = 둘 다, domain-policy §6·§5.4) + 서버에 완료 영속화
-  - **검증**: 루트 typecheck·lint·build 통과. 브라우저 실측 — 질문→3사 실시간 SSE 점등(Gemini ✓ 먼저, 나머지 순차)→답변 카드·3열 모달에 **실제 답변 내용**→Mock Agenda 2건 해소→FinalAnswer·DecisionNote→completed·컴포저 재활성. 새로고침 후 GET 복원으로 3열 모달 실제 내용 유지. 잘못된 모델 ID로 **3사 전멸 경로 실측**(3줄 제외 배너 + 고정 문구 + 노트 + 완료). 서버 catch 경로는 **강제 에러 주입**으로 확인 — pending 3건이 `UNKNOWN_ERROR`+excluded로 마감되고 `done(n=3)` 수신, 확인 후 즉시 원복. `?scenario=provider-excluded` 회귀 정상
-  - **테스트 데이터 정리**: `83a6263d…`(2b 실측, 미완료 Question 1) · `bbf9ecc9…`(T-016.1 회귀) 삭제 — Chat 2 + Question 2 + SourceAnswer 3. 이번 실측으로 생긴 3건(`9fbcef07…`·`5c2b7eba…`·`9ab9a345…`)은 지시 범위 밖이라 유지
-  - **남은 문제**: 새로고침 후 Agenda·FinalAnswer·DecisionNote는 사라진다(서버 저장 대상이 아님 — 0.4 알려진 한계). 스트리밍 중에는 재시도 라벨("재시도 중…")이 뜨지 않는다(이벤트에 retryCount가 없음). SSE heartbeat·탭 이탈 시 취소·좌초 복구는 범위 밖
-  - **다음**: SPEC-AI-002(Manager 실제 비교) — 어젠다 분류·충돌 판단 기준 확정
-- **T-017 완료 (2026-07-22)** — 데모 배포 준비(하드닝). 새 기능 없음. 실제 배포·시크릿 입력은 운영자(Brett)
-  - **SSE heartbeat**: 스트림을 연 뒤 15초마다 주석 프레임(`:hb`)을 흘려 배포 환경의 중간 프록시가 유휴 연결을 끊지 않게 함. `finally`에서 `clearInterval` → `end()` 순으로 정리(타이머 누수·EPIPE 방지). 주석 프레임은 `data:`로 시작하지 않아 클라이언트 파서가 무시 → **이벤트 계약 무영향**
-  - **CORS 제한**: `app.use(cors())`(전체 허용) → `cors({ origin: CLIENT_ORIGIN })`. `CLIENT_ORIGIN`은 기존 env(기본 `http://localhost:5173`)라 로컬 dev는 무설정으로 동작. 쿠키를 안 쓰므로 `credentials` 미사용
-  - **`docs/demodeploy.md` 신설**: Render(api) Root=저장소 루트·`npm ci && npm run build`·`node apps/api/dist/server.js`·env 필수 8종/선택 7종 표, Netlify(web) **base=저장소 루트**·`npm run build`·publish `apps/web/dist`, Supabase Auth URL, 교차 의존 배포 순서, cold start 안내, 문제 해결 표. 실제 키는 미기재
-  - **문서에 박은 주의 2건**: ① Render Root를 `apps/api`로 잡으면 `/prompts`가 배포에서 빠져 생성이 전부 실패 ② Netlify base를 `apps/web`으로 잡으면 workspaces prepare가 루트에서 안 돌아 shared dist가 없어 web 빌드가 깨질 수 있음
-  - **검증**: 루트 typecheck·lint·build 통과. `node apps/api/dist/server.js` 기동·health 200. `curl -N` raw 스트림에서 **heartbeat 2회(16.5s·31.5s, 15초 간격)** 관측 + 같은 스트림을 파서에 통과시켜 이벤트 10건·done 정상 파싱 확인. CORS 허용 출처엔 `Access-Control-Allow-Origin: http://localhost:5173`, 다른 출처엔 불일치 값이라 브라우저가 차단(정적 origin 방식). 브라우저 로컬 dev 회귀 — 3사 succeeded. **클린 체크아웃 → 루트 `npm ci` → `npm run build`** 로 `apps/web/dist`·`apps/api/dist`·`/prompts` 모두 정상 생성 확인
-  - **테스트 데이터 정리**: `9fbcef07…`·`5c2b7eba…`·`9ab9a345…` 삭제 — Chat 3 + Question 3 + SourceAnswer 9
-  - **남은 문제**: 이번 실측으로 Chat 2건(`be976957…` heartbeat check, `4ef7b654…` deploy hardening regression)이 새로 남음 — **데모 전 삭제 필요**. `render.yaml`은 만들지 않음(서비스 1개·env 전부 시크릿이라 과설계)
-  - **다음**: SPEC-AI-002(Manager 실제 비교)
-- **T-018 완료 (2026-07-22)** — 로그인 화면 테스트 계정 표시(프론트 전용, 데모용). 백엔드·계약·패키지·env 변경 없음
-  - `LoginPage.tsx` 상단에 `TEST_EMAIL`·`TEST_PASSWORD` 상수. **데모 배포를 위해 일회용 테스트 계정 값을 커밋했다** — 이 값은 **프론트 번들과 git 히스토리에 모두 포함되므로 비밀이 아니다**(버려도 되는 계정만 사용). 자리표시자(`"REPLACE_ME"`) 가드가 있어 값이 없으면 박스를 숨긴다. **실서비스 전환 전 박스 제거 + 계정 비밀번호 교체/히스토리 스크럽 필요**
-  - 로그인 폼 위에 Astryx `Banner`(info, `defaultIsExpanded`)로 "테스트 계정" 박스 — 이메일·비밀번호를 **마스킹 없이** 그대로 보여주고 "이 계정으로 로그인" 버튼 제공
-  - 버튼은 필드를 채운 뒤 **기존 `signIn` 흐름으로 제출**한다(인증 우회 없음). 폼 제출과 버튼이 `submitCredentials()` 하나를 공유
-  - 두 상수 중 하나라도 자리표시자면 박스를 렌더하지 않는다(방어)
-  - **검증**: 루트 typecheck·lint·build 통과. 박스 표시·필드 자동입력·제출 확인. 자리표시자 상태에서 박스 숨김 확인
-  - **후속 수정 (2026-07-22)**: 상수를 실제 값으로 바꾸면 `TS2367`(리터럴 타입끼리 교집합 없는 비교)로 **빌드가 깨지는 결함**이 있었다 — 자리표시자 상태에서만 검증한 탓에 놓쳤다. 두 상수에 `: string` 주석을 붙여 자리표시자·실제값 **양쪽에서 타입이 통과**하도록 수정하고, 실제 계정으로 로그인까지 실측(커밋 `77a353d`)
-  - **남은 문제**: 커밋한 비밀번호는 **비공개 저장소 히스토리에 영구히 남는다**. 저장소를 공개로 전환하거나 협업자를 추가하면 그 시점부터 함께 노출된다. 데모 종료 후 계정 비밀번호 교체를 권한다
-- 이후: SPEC-AI-002~003(Manager·FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
+- **SPEC-DB-001 완료 (2026-07-20)** — T-015 구현 + AC1~AC6 실측 PASS로 완료 처리. Cowork가 Spec 상태 헤더·AC·개정 기록·index.md 갱신(구현 중 추가분 반영: Question 상태 전이 영속화 엔드포인트·GRANT 마이그레이션·StrictMode 가드). 영속화 토대(스키마·RLS·2-클라이언트·Chat/Question 실저장·BYOK 암호화 경로) 완성. 인증(001·002·003)+DB(001)로 뼈대 완료
+
+## 다음 작업
+
+- **SPEC-AI-001 (Provider API) 설계 착수** — 제품 핵심·최대 리스크. 실제 3사 호출·정규화(StructuredContent)·재시도 1회·excluded·전 Provider 실패 처리(미결정 해소) + BYOK 키 실사용(하이브리드·앱 키 on/off 플래그). Step 분할 진행 예정
+- 이후: SPEC-AI-002(Manager)·SPEC-AI-003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

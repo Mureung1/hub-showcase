@@ -152,6 +152,8 @@ Section
 - content: string
 ```
 
+> **확장 반영 (2026-07-22, SPEC-AI-001 T-016.1 구현)**: `SectionSchema`에 `order`(z.number().int().min(0))·`kind`(z.string().nullable()), `StructuredContentSchema`에 `summary`(z.string().nullable())를 추가했다. 계약 확장 근거는 SPEC-AI-001 §8.1이며 packages/shared에 반영(커밋 68ce226). `sectionId`·`title`·`content`와 SourceAnswer superRefine 3종은 무변경. `kind`는 자유 문자열이며 분류 기준은 SPEC-AI-002에서 확정한다.
+
 ### 5.4 `AgendaSchema`
 
 | 필드 | 타입 | 제약 |
@@ -280,3 +282,4 @@ Section
 | 2026-07-17 | 최초 작성. Step 1~3 사용자 결정 반영 (1장 표) |
 | 2026-07-18 | 9장 보강 — web 중첩 집합체 뷰는 shared 타입 조합으로 유지(A안), Mock 검증은 엔티티 개별 parse로 명확화 (T-011 계획 검토 시 확정) |
 | 2026-07-20 | shared 패키지 export 방식 개정 (T-014.1). 기존 "소스 전용 export(`exports: ./src/index.ts`)"에서 **조건부 exports**로 전환 — 타입검사는 소스(`types → ./src/index.ts`, 무빌드 유지), 런타임은 빌드 산출물(`import/default → ./dist/index.js`). `tsc` emit(dist) + `prepare` 스크립트 도입, 루트 build를 shared→api→web 순서로. 목적: api가 shared를 런타임에 소비하면서 `node dist` 프로덕션 실행 가능화(SPEC-AUTH-003 알려진 제한 해소). 계약 내용·소스 구조·zod 단일 의존은 불변 |
+| 2026-07-22 | StructuredContent 확장 반영 (SPEC-AI-001 T-016.1 구현) — `SectionSchema` `order`·`kind`, `StructuredContentSchema` `summary` 추가. 5.3.1이 예고한 'AI-001에서 확장'을 실현. packages/shared/src/schemas/sourceAnswer.ts, 커밋 68ce226 |
