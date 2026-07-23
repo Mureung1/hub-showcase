@@ -225,7 +225,7 @@ code {
 .eyebrow {
   margin: 0 0 18px;
   color: var(--mint-dark);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
   letter-spacing: 0.16em;
   line-height: 1.35;
@@ -236,9 +236,10 @@ code {
   margin: 0;
   font-size: clamp(72px, 6.15vw, 112px);
   font-weight: 850;
-  letter-spacing: -0.075em;
+  letter-spacing: -0.055em;
   line-height: 0.95;
   text-wrap: balance;
+  word-break: keep-all;
 }
 
 .hero-lede {
@@ -271,7 +272,7 @@ code {
   border-radius: 999px;
   background: var(--lime);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -311,7 +312,7 @@ code {
 .release-version,
 .mini-label {
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
   letter-spacing: 0.12em;
 }
@@ -536,7 +537,7 @@ code {
   margin-bottom: 34px;
   color: var(--coral-dark);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -607,7 +608,7 @@ code {
   border: 1px solid currentColor;
   border-radius: 999px;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 850;
   letter-spacing: 0.08em;
 }
@@ -686,7 +687,7 @@ code {
 .card-heading-row > span {
   color: var(--ink-soft);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 850;
   letter-spacing: 0.07em;
 }
@@ -759,13 +760,13 @@ code {
   margin-top: 3px;
   overflow-wrap: anywhere;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .metric small {
   margin-top: 17px;
   color: var(--ink-soft);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -779,7 +780,7 @@ code {
 .cache-location > span {
   display: block;
   color: var(--mint-dark);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 850;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -854,7 +855,7 @@ code {
 }
 
 .rollback-note span {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
 }
 
@@ -903,7 +904,7 @@ code {
   border: 1px solid var(--ink);
   border-radius: 50%;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
 }
 
