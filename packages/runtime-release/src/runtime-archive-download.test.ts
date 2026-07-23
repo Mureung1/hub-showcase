@@ -1664,6 +1664,67 @@ test('cancellation raised inside archive hashing keeps its stable code', async (
   }
 })
 
+test('weak archive hash cancellation leaves only a zero fresh checkpoint', async () => {
+  const archiveBytes = Buffer.from('weak hash cancellation')
+  const fixture = await createDownloadFixture(archiveBytes)
+  const cancellation = new AbortController()
+  const transport = new ScriptedArchiveTransport([
+    {
+      statusCode: 200,
+      headers: {
+        'content-length': [String(archiveBytes.byteLength)],
+      },
+      chunks: [archiveBytes],
+    },
+    {
+      statusCode: 200,
+      headers: {
+        'content-length': [String(archiveBytes.byteLength)],
+      },
+      chunks: [archiveBytes],
+    },
+  ])
+
+  try {
+    await assertRuntimeFailure(
+      downloadVerifiedRuntimeArchive({
+        admission: fixture.admission,
+        layout: fixture.layout,
+        mutationAuthority: fixture.mutationAuthority,
+        signal: cancellation.signal,
+        testOptions: {
+          beforeArchiveHash: () => cancellation.abort(),
+        },
+        transport,
+      }),
+      'runtime_cancelled',
+    )
+    assert.equal(
+      (await lstat(fixture.layout.partial.archivePath)).size,
+      0,
+    )
+    await assert.rejects(
+      readFile(fixture.layout.partial.journalPath),
+      { code: 'ENOENT' },
+    )
+
+    const result = await downloadVerifiedRuntimeArchive({
+      admission: fixture.admission,
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      signal: new AbortController().signal,
+      transport,
+    })
+    assert.deepEqual(await readFile(result.archivePath), archiveBytes)
+    assert.deepEqual(
+      transport.requests.map(({ range }) => range),
+      [undefined, undefined],
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('cancellation is deferred after no-clobber archive commit begins', async () => {
   const archiveBytes = Buffer.from('deferred publish cancellation')
   const fixture = await createDownloadFixture(archiveBytes)

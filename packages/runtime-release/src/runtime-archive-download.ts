@@ -60,6 +60,7 @@ export type RuntimeArchiveDownloadInput = {
 
 export type RuntimeArchiveDownloadTestOptions = {
   readonly afterArchivePublishStarted?: () => void | Promise<void>
+  readonly beforeArchiveHash?: () => void | Promise<void>
   readonly beforeArchivePathReadback?: () => void | Promise<void>
 }
 
@@ -452,16 +453,35 @@ async function finalizeCompletedPartial(
   if (partial.strongEtag !== undefined) {
     await persistPartialJournal(input, partial)
   }
-  const digest = await hashRuntimeArchiveFile(
-    partial.handle,
-    input.admission.descriptor.archive.bytes,
-    input.signal,
-  )
+  await input.testOptions?.beforeArchiveHash?.()
+  let digest: string
+  try {
+    digest = await hashRuntimeArchiveFile(
+      partial.handle,
+      input.admission.descriptor.archive.bytes,
+      input.signal,
+    )
+  } catch (error) {
+    if (
+      error instanceof RuntimeReleaseAuthorityError &&
+      error.failure.code === 'runtime_cancelled' &&
+      partial.strongEtag === undefined
+    ) {
+      await resetRejectedPartial(input, partial)
+    }
+    throw error
+  }
   if (digest !== input.admission.descriptor.archive.sha256) {
     await resetRejectedPartial(input, partial)
     throw runtimeAuthorityError('runtime_integrity_failed', {
       kind: 'runtime_archive_digest_mismatch',
     })
+  }
+  if (
+    input.signal.aborted &&
+    partial.strongEtag === undefined
+  ) {
+    await resetRejectedPartial(input, partial)
   }
   assertNotCancelled(input.signal)
   const verified = await publishVerifiedArchive(
