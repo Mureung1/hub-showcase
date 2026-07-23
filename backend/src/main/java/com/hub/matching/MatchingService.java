@@ -9,7 +9,8 @@ import com.hub.position.JobRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -51,18 +52,31 @@ public class MatchingService {
     @Transactional(readOnly = true)
     public List<PositionDto.Summary> listRanked(Long userId) {
         List<MatchScore> scores = matchScoreRepository.findByUserIdOrderByScoreDesc(userId);
+        if (scores.isEmpty()) return List.of();
 
-        Map<Long, JobPosting> postings = postingRepository
-                .findAllById(scores.stream().map(MatchScore::getPostingId).toList())
+        List<Long> postingIds = scores.stream().map(MatchScore::getPostingId).toList();
+
+        Map<Long, JobPosting> postings = postingRepository.findAllById(postingIds)
                 .stream()
                 .collect(Collectors.toMap(JobPosting::getId, Function.identity()));
+
+        // 공고별 태그 — 가중치 상위 3개 subject. 쿼리 한 번으로 N+1 회피.
+        Map<Long, List<String>> tagsByPosting = new HashMap<>();
+        for (Object[] row : postingRepository.findSubjectsByPostingIds(postingIds)) {
+            tagsByPosting
+                    .computeIfAbsent((Long) row[0], k -> new ArrayList<>())
+                    .add((String) row[1]);
+        }
 
         return scores.stream()
                 .map(s -> {
                     JobPosting p = postings.get(s.getPostingId());
+                    List<String> tags = tagsByPosting.getOrDefault(p.getId(), List.of())
+                            .stream().distinct().limit(3).toList();
                     return new PositionDto.Summary(
                             p.getId(), p.getCompany(), p.getTitle(), p.getLocation(),
-                            p.getExperience(), s.getScore(), DATE.format(p.getCreatedAt()));
+                            p.getExperience(), s.getScore(), DATE.format(p.getCreatedAt()),
+                            p.getSourceUrl(), tags);
                 })
                 .toList();
     }

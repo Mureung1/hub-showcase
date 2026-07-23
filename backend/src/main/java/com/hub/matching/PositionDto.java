@@ -13,7 +13,9 @@ public class PositionDto {
             String location,
             String experience,
             int fitScore,          // 0~100
-            String collectedAt
+            String collectedAt,
+            String sourceUrl,
+            List<String> tags
     ) {}
 
     /** 상세 — 요구조건 분해 + 방향 제시 */
