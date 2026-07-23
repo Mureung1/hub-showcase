@@ -8,7 +8,6 @@ LangGraph 뼈대(State/노드/엣지/compile/invoke)를 익히기 위한 최소 
 필요:  miricat/.env 에 GEMINI_API_KEY
 """
 
-import json
 import os
 import pathlib
 from typing import Optional, TypedDict
@@ -34,17 +33,21 @@ MODEL = "gemini-2.5-flash"  # 데모용 안정 flash 모델. (models.list 로 �
 class State(TypedDict):
     raw_text: str                 # 입력: 공지 원문
     extraction: Optional[dict]    # 출력: 추출된 구조화 정보
-    error: Optional[str]          # 실패 시 메시지
+    error: Optional[str]          # 실패 시 메시지  
+    source: dict
+    seq: str
     
     
 def scout_node(state: State) -> dict:
-    # 첫 번째 active 소스에서 최신 공지 1건의 본문을 가져온다. (지금은 1건만)
-    source = next(s for s in SOURCES if s["active"])   # active인 첫 소스
-    items = fetch_list(source)                          # [(글번호, 제목), ...]
-    first_seq = items[0][0]                             # 최신 글번호
-    body = fetch_body(source, first_seq)                      # ① 그 글의 본문
+    # 러너가 넘겨준 (source, seq)로 그 글 한 건의 본문만 긁는다.
+    source = state["source"]  # 받은 소스
+    seq = state["seq"]        # 받은 글번호
+    body = fetch_body(source, seq)  # 그 글의 본문
     return {"raw_text": body}
 
+def run(raw_text: str) -> dict:
+    """공지 원문 하나를 그래프에 넣고 결과 State를 돌려준다"""
+    return app.invoke({"raw_text": raw_text, "extraction": None, "error": None})
 
 # ── 노드: 그냥 파이썬 함수. State 읽고 -> State 업데이트(부분 dict) 반환 ──
 def extract_node(state: State) -> dict:
@@ -78,21 +81,7 @@ builder.add_edge("extract", END)
 app = builder.compile()
 
 
-def run(raw_text: str) -> dict:
+def run(source, seq) -> dict:
     """공지 원문 하나를 그래프에 넣고 결과 State를 돌려준다."""
-    return app.invoke({"raw_text": raw_text, "extraction": None, "error": None})
-
-
-if __name__ == "__main__":
-    # scout 노드가 raw_text를 채우므로, 시작할 때는 빈 값으로 넣는다.
-    result = app.invoke({"raw_text": "", "extraction": None, "error": None})
-
-    print("=== scout가 가져온 공지 ===")
-    print(result["raw_text"])
-
-    print("\n=== 그래프 출력: 추출 결과 ===")
-    if result.get("error"):
-        print("ERROR:", result["error"])
-    else:
-        print(json.dumps(result["extraction"], ensure_ascii=False, indent=2))
+    return app.invoke({"raw_text": "", "extraction": None, "error": None, "source": source, "seq": seq})
 
