@@ -90,9 +90,10 @@ Persistent Python bridge가 한 개의 managed ChatGPT login attempt를 즉시 �
 | strict protocol checkpoint | `94ca0b946` |
 | Python lifecycle implementation | `909810ebb` |
 | start-reservation race fix | `aa7ce6463` |
+| single-flight settlement fix | `bc09e6c48` |
 | bridge frame roster | `read_account`; `start_browser_login`; `read_browser_login_attempt`; `cancel_browser_login`; `release_browser_login_attempt`; `logout` |
 | account result | `account.state = signed_out \| chatgpt \| unsupported` |
-| attempt result | start는 allowlisted HTTPS `authUrl`과 product `attemptId`의 `pending`; status는 non-consuming `pending \| completed \| cancelled \| expired \| failed`; failed만 safe `{ code: login_failed, retryable: true }`를 포함 |
+| attempt result | start는 allowlisted HTTPS `authUrl`과 product `attemptId`의 `pending`; status는 non-consuming `pending \| completed \| cancelled \| expired \| failed`; failed만 safe `{ code: login_start_failed \| login_failed, retryable: true }`를 포함 |
 | settlement result | cancel은 `cancelled \| already_settled`, release는 `released \| already_released`, logout은 official logout 뒤 fresh null readback을 확인한 `signed_out` |
 | bound | account RPC 30초, process-local attempt deadline monotonic 10분, `starting \| pending` reservation 1개와 native completion waiter 최대 1개 |
 
@@ -102,12 +103,14 @@ Cancel RPC의 well-formed rejection은 correlated `login_cancel_failed`를 한 �
 
 Independent review에서 native `login_chatgpt()` 응답 전에는 `_login_attempt`가 비어 있어 back-to-back cancel/release가 `login_attempt_not_found`를 반환하고 logout이 뒤늦게 생긴 attempt를 남기는 High race가 재현됐다. Fix는 `dispatch()`에서 native RPC보다 먼저 process-local `starting` reservation을 만든다. 같은 command batch 또는 native start가 이미 관찰된 뒤 들어온 duplicate start, status, cancel, release와 logout은 dispatch-time에 그 exact reservation을 잡고 bounded `start_settled` barrier를 공유한다. `starting`은 frame에 나타나지 않으며 success, well-formed start rejection, timeout, unsafe URL, transport loss, stdin EOF와 normal close 모두 terminal 또는 process cleanup으로 수렴한다.
 
+후속 Spec review에서 첫 cancel caller가 native cancel RPC 뒤 `settlement_lock`을 놓은 시점과 completion/fresh account read 사이에 두 번째 caller가 들어와 native cancel을 다시 호출하는 Medium single-flight race가 재현됐다. Fix는 attempt 안의 한 `settlement_task`만 cancel RPC, matching completion과 fresh account read를 소유하게 하고, concurrent cancel·release·logout·expiry가 같은 shielded bounded result를 join하게 한다. Success는 모든 waiter가 같은 terminal을 관찰하고, well-formed rejection은 각 command의 safe correlated error를 반환한 뒤 slot을 `pending`으로 보존하며 후속 retry만 새 settlement를 시작한다. Timeout, transport loss, stdin EOF와 normal close는 shared task와 native child를 bounded하게 정리한다.
+
 ### Candidate verification
 
 | Command | Result |
 | --- | --- |
 | `npm run test:bridge-unit -w @ay-ple/codex-chat-runtime` | green, 8 tests |
-| `npm run test:bridge -w @ay-ple/codex-chat-runtime` | green, 31 tests; delayed completion, duplicate start/status/release, cancel race/rejection, expiry, logout readback, unsafe URL, EOF와 forced native exit에 더해 start→cancel/release/logout coalesced·observed scheduling, joined failure/timeout/fatal/EOF/close 포함 |
+| `npm run test:bridge -w @ay-ple/codex-chat-runtime` | green, 36 tests; 기존 31-test lifecycle matrix에 duplicate cancel, cancel↔release/logout/expiry single-flight, shared rejection→fresh retry, joined timeout/EOF/normal close를 추가했고 native cancel은 shared settlement당 정확히 1회 |
 | `npm run check:bridge -w @ay-ple/codex-chat-runtime` | green, Ruff check와 format 13 files |
 | `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime` | green; 9 ordered patches deterministic verify, router actual-child matrix, official suite 166 passed/38 skipped, provenance 17 tests |
 | `npm run test:production-runtime -w @ay-ple/codex-chat-runtime` | green, 23 tests |
