@@ -19,6 +19,35 @@ function validateSubscriptionInput(body) {
   return errors
 }
 
+function validatePartialSubscriptionInput(body) {
+  const errors = []
+  const { serviceName, subAmount, billingDay, memberCount, bankName, accountNumber, accountHolderName } = body
+
+  if (serviceName !== undefined && (!serviceName || typeof serviceName !== 'string')) {
+    errors.push('serviceName은 필수 문자열입니다.')
+  }
+  if (subAmount !== undefined && (!Number.isInteger(subAmount) || subAmount <= 0)) {
+    errors.push('subAmount는 양의 정수여야 합니다.')
+  }
+  if (billingDay !== undefined && (!Number.isInteger(billingDay) || billingDay < 1 || billingDay > 31)) {
+    errors.push('billingDay는 1~31 사이의 정수여야 합니다.')
+  }
+  if (memberCount !== undefined && (!Number.isInteger(memberCount) || memberCount <= 0)) {
+    errors.push('memberCount는 양의 정수여야 합니다.')
+  }
+  if (bankName !== undefined && (!bankName || typeof bankName !== 'string')) {
+    errors.push('bankName은 필수 문자열입니다.')
+  }
+  if (accountNumber !== undefined && (!accountNumber || typeof accountNumber !== 'string')) {
+    errors.push('accountNumber는 필수 문자열입니다.')
+  }
+  if (accountHolderName !== undefined && (!accountHolderName || typeof accountHolderName !== 'string')) {
+    errors.push('accountHolderName은 필수 문자열입니다.')
+  }
+
+  return errors
+}
+
 router.post('/', requireAuth, async (req, res, next) => {
   const errors = validateSubscriptionInput(req.body)
   if (errors.length > 0) {
@@ -207,6 +236,96 @@ router.post('/:id/join', requireAuth, async (req, res, next) => {
       subscriptionId: member.subscriptionId,
       userId: member.userId,
     })
+  } catch (e) {
+    next(e)
+  }
+})
+
+router.patch('/:id', requireAuth, async (req, res, next) => {
+  const errors = validatePartialSubscriptionInput(req.body)
+  if (errors.length > 0) {
+    const err = new Error(errors.join(' '))
+    err.status = 400
+    return next(err)
+  }
+
+  try {
+    const subscription = await prisma.subscription.findUnique({
+      where: { id: req.params.id },
+    })
+
+    if (!subscription) {
+      const err = new Error('존재하지 않는 파티입니다.')
+      err.status = 404
+      return next(err)
+    }
+
+    if (subscription.ownerId !== req.user.id) {
+      const err = new Error('파티장만 수정할 수 있습니다.')
+      err.status = 403
+      return next(err)
+    }
+
+    const { serviceName, subAmount, billingDay, memberCount, bankName, accountNumber, accountHolderName } = req.body
+    const data = {}
+    if (serviceName !== undefined) data.serviceName = serviceName
+    if (subAmount !== undefined) data.subAmount = subAmount
+    if (billingDay !== undefined) data.billingDay = billingDay
+    if (memberCount !== undefined) data.memberCount = memberCount
+    if (bankName !== undefined) data.bankName = bankName
+    if (accountNumber !== undefined) data.accountNumber = accountNumber
+    if (accountHolderName !== undefined) data.accountHolderName = accountHolderName
+
+    const updated = await prisma.subscription.update({
+      where: { id: subscription.id },
+      data,
+    })
+
+    res.status(200).json({
+      id: updated.id,
+      serviceName: updated.serviceName,
+      subAmount: updated.subAmount,
+      billingDay: updated.billingDay,
+      memberCount: updated.memberCount,
+      myAmount: Math.round(updated.subAmount / updated.memberCount),
+      ownerId: updated.ownerId,
+      joinUrl: `${process.env.FRONTEND_URL}/join/${updated.id}`,
+      bankAccount: {
+        bankName: updated.bankName,
+        accountNumber: updated.accountNumber,
+        accountHolderName: updated.accountHolderName,
+      },
+      createdAt: updated.createdAt,
+    })
+  } catch (e) {
+    next(e)
+  }
+})
+
+router.delete('/:id', requireAuth, async (req, res, next) => {
+  try {
+    const subscription = await prisma.subscription.findUnique({
+      where: { id: req.params.id },
+    })
+
+    if (!subscription) {
+      const err = new Error('존재하지 않는 파티입니다.')
+      err.status = 404
+      return next(err)
+    }
+
+    if (subscription.ownerId !== req.user.id) {
+      const err = new Error('파티장만 삭제할 수 있습니다.')
+      err.status = 403
+      return next(err)
+    }
+
+    await prisma.$transaction([
+      prisma.partyMember.deleteMany({ where: { subscriptionId: subscription.id } }),
+      prisma.subscription.delete({ where: { id: subscription.id } }),
+    ])
+
+    res.status(204).end()
   } catch (e) {
     next(e)
   }
