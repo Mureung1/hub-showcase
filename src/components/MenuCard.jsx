@@ -15,6 +15,8 @@ function MenuCard({
   missingCount = 0,
   timeLabel = '',
   width = '',
+  liked,
+  onToggleLike,
 }) {
   return (
     <li className={width}>
@@ -26,6 +28,20 @@ function MenuCard({
           <span className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-bg-surface/90 text-xs font-semibold text-primary-text shadow">
             {rank}
           </span>
+        )}
+        {onToggleLike && (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              onToggleLike()
+            }}
+            aria-label={liked ? '찜 해제' : '찜하기'}
+            className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-bg-surface/90 text-base shadow transition hover:scale-110"
+          >
+            <span className={liked ? 'text-accent-heart' : 'text-text-secondary'}>{liked ? '★' : '☆'}</span>
+          </button>
         )}
         <Thumbnail image={image} emoji={emoji} alt={name} className="aspect-video w-full text-4xl" />
         <div className="p-3">
