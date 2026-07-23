@@ -58,7 +58,7 @@ export default function Guide() {
         <h2>해야 할 것</h2>
         <ol>
           <li><strong>showcase.json을 PR에 포함하세요.</strong></li>
-          <li><strong>아래 규칙에 따라 파일을 작성하세요.</strong></li>
+          <li><strong>아래 예시를 참고해 파일을 작성하세요.</strong></li>
         </ol>
       </section>
 
@@ -72,21 +72,11 @@ export default function Guide() {
     └── home.webp`}</pre>
       </section>
 
-      <section className="guide-section guide-rules">
-        <h2>작성할 내용</h2>
-        <ul>
-          <li>아래 예시 JSON을 복사해 프로젝트 최상위의 `showcase/showcase.json`으로 저장합니다.</li>
-          <li>`agentTools`에는 Agent와 Skill을 함께 적습니다.</li>
-          <li>`workflows`에는 개발 순서를 적습니다.</li>
-          <li>`developmentWithAI`에는 AI와 함께 개발한 과정을 적습니다.</li>
-        </ul>
-      </section>
-
       <section className="guide-section guide-example">
         <div className="section-heading">
           <div>
-            <h2>예시 JSON</h2>
-            <p>샘플을 열어 필요한 부분을 바꿔서 사용합니다.</p>
+            <h2>작성할 내용 예시</h2>
+            <p>샘플을 열어 내용을 바꾸고 `showcase/showcase.json`으로 저장합니다.</p>
           </div>
           <button type="button" onClick={() => setSampleOpen((open) => !open)}>
             {sampleOpen ? '샘플 닫기' : '샘플 열어보기'}
