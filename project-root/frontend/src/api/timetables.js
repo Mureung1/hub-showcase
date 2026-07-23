@@ -24,6 +24,42 @@ export async function saveTimetable({ year, semester, label, lectureIds }) {
   return res.json();
 }
 
+export async function shareTimetable({ year, semester }) {
+  const res = await fetch(`${API_BASE_URL}/api/timetables/share`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+    body: JSON.stringify({ year, semester }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `시간표 공유 실패 (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function recommendTimetable({ timetableId }) {
+  const res = await fetch(`${API_BASE_URL}/api/timetables/${timetableId}/recommend`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `시간표 추천 실패 (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function fetchSharedTimetables() {
+  const res = await fetch(`${API_BASE_URL}/api/timetables/shared`, {
+    headers: await authHeaders(),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `선배 시간표 조회 실패 (${res.status})`);
+  }
+  return res.json();
+}
+
 export async function fetchCurrentTimetable({ year, semester }) {
   const params = new URLSearchParams({ year, semester });
   const res = await fetch(`${API_BASE_URL}/api/timetables/current?${params}`, {

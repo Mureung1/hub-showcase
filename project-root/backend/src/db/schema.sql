@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS timetable (
   year INTEGER NOT NULL,
   semester TEXT NOT NULL,
   label TEXT NOT NULL,
+  is_shared BOOLEAN DEFAULT FALSE,     -- 선배 시간표 공유 목록에 노출할지 여부
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -59,6 +60,17 @@ CREATE TABLE IF NOT EXISTS timetable_lecture (
 );
 
 -- ============================================
+-- timetable_recommend: 선배 시간표에 대한 "추천(좋아요)" 기록.
+-- (timetable_id, user_id) unique 제약으로 같은 사용자의 중복 추천을 막는다.
+-- ============================================
+CREATE TABLE IF NOT EXISTS timetable_recommend (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  timetable_id BIGINT NOT NULL REFERENCES timetable(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================
 -- 인덱스
 -- ============================================
 CREATE UNIQUE INDEX IF NOT EXISTS idx_lecture_crse_no_unique ON lecture(year, semester, crse_no);
@@ -68,3 +80,4 @@ CREATE INDEX IF NOT EXISTS idx_lecture_time_lookup ON lecture_time(day, start_ti
 CREATE INDEX IF NOT EXISTS idx_lecture_time_lecture_id ON lecture_time(lecture_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_timetable_user_semester ON timetable(user_id, year, semester);
 CREATE INDEX IF NOT EXISTS idx_timetable_lecture_timetable_id ON timetable_lecture(timetable_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_timetable_recommend_unique ON timetable_recommend(timetable_id, user_id);

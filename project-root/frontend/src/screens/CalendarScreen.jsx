@@ -4,7 +4,7 @@ import "./CalendarScreen.css";
 import PrimaryButton from "../components/PrimaryButton";
 import Badge from "../components/Badge";
 import TimeTableGrid from "../components/TimeTableGrid";
-import { fetchCurrentTimetable } from "../api/timetables";
+import { fetchCurrentTimetable, shareTimetable } from "../api/timetables";
 import { CURRENT_YEAR, CURRENT_SEMESTER } from "../config/semester";
 
 const CATEGORY_ORDER = ["전공필수", "전공선택", "교양"];
@@ -24,9 +24,17 @@ function formatTimes(times) {
   return times.map((t) => `${t.day} ${t.start}-${t.end}`).join(", ");
 }
 
+const SHARE_BUTTON_LABEL = {
+  idle: "이 시간표 공유하기",
+  sharing: "공유하는 중...",
+  shared: "공유 완료",
+  error: "이 시간표 공유하기",
+};
+
 export default function CalendarScreen({ onNavigate }) {
   const [status, setStatus] = useState("loading"); // loading | empty | done | error
   const [timetable, setTimetable] = useState(null);
+  const [shareState, setShareState] = useState("idle"); // idle | sharing | shared | error
 
   useEffect(() => {
     let cancelled = false;
@@ -93,6 +101,17 @@ export default function CalendarScreen({ onNavigate }) {
   const totalCredit = lectures.reduce((sum, l) => sum + l.credit, 0);
   const categorySummary = summarizeByCategory(lectures);
 
+  async function handleShare() {
+    setShareState("sharing");
+    try {
+      await shareTimetable({ year: CURRENT_YEAR, semester: CURRENT_SEMESTER });
+      setShareState("shared");
+    } catch (err) {
+      console.error("시간표 공유 실패:", err);
+      setShareState("error");
+    }
+  }
+
   return (
     <div className="calendar-screen">
       {topbar}
@@ -130,6 +149,17 @@ export default function CalendarScreen({ onNavigate }) {
           </div>
         ))}
       </div>
+
+      <PrimaryButton
+        type="button"
+        onClick={handleShare}
+        disabled={shareState === "sharing" || shareState === "shared"}
+      >
+        {SHARE_BUTTON_LABEL[shareState]}
+      </PrimaryButton>
+      {shareState === "error" && (
+        <p className="calendar-screen__status">시간표 공유에 실패했어요. 잠시 후 다시 시도해주세요.</p>
+      )}
     </div>
   );
 }
