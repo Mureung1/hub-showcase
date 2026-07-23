@@ -38,6 +38,8 @@
 
 - [기획서 전문](docs/plan.md)
 - [작업 체크리스트](docs/checklist.md)
+- [아키텍처 다이어그램](docs/architecture.md) — 전체 데이터 흐름 (화면 - 서비스 - Firestore)
+- [검증 Skill](docs/verify-skill.md) — lint + typecheck + build + 단위 테스트 자동화
 - [GitHub Issues — 작업 이슈 트래커](https://github.com/connect-AIAgentChallenge-26-1/hub/issues?q=is%3Aissue+author%3AMin0504)
 - [유저 플로우](docs/user-flow.md)
 - [발표 자료](docs/presentations/0710.md) — 1주차 발표 (7/10 금)
