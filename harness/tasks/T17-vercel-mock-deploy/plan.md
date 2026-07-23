@@ -1,30 +1,30 @@
 # 작업 계획: T17 — 실행 환경·Vercel 세팅 + 목 1차 배포
 
-> 상태: 보류
+> 상태: 종료
 >
 > 작성일: 2026-07-12
 >
-> 최종 갱신일: 2026-07-20
+> 최종 갱신일: 2026-07-23
 >
-> 현재 단계: ② CI 재설치 승인 + ④ 공개 Production·보호된 Preview의 S0 수동 확인
+> 현재 단계: Node·로컬 검증·Vercel Production/Preview와 S0 실물 확인 완료
 >
-> 다음 행동: 구조 변경 승인 뒤 `ci.yml` 재추적·원격 `verify` 확인, 로그인 가능한 브라우저에서 Production·Preview S0 확인
+> 다음 행동: 없음 — 공유 저장소 CI 제외는 사용자 결정으로 유지하고 후속 배포 검증은 T23·T31에서 수행
 >
 > CHECKLIST 항목: T17
 
 ## 1. 목표와 완료조건
 
 - 해결할 사용자/제품 문제: 목(mock) 상태의 앱을 실제 URL로 배포해 머지 전 실물 확인(프리뷰)과 이후 T20(실 provider 전환)·T22(외부 과업)·T23(최종 배포)의 기반을 만든다. push마다 깨끗한 환경에서 검증이 강제되도록 CI를 원격 규칙까지 연결한다.
-- 목표 결과: CI required status check(또는 플랜 제약 기록) + Vercel Git 연동으로 프로덕션(N166_진현지)·프리뷰 배포가 동작하는 상태.
+- 목표 결과: Node·로컬 전체 검증을 재현하고 Vercel Git 연동으로 프로덕션(N166_진현지)·프리뷰 배포가 동작하는 상태. GitHub Actions CI는 사용자 지시에 따라 로컬 전용 파일로 유지하고 공유 저장소 완료조건에서 제외한다.
 
 | ID | 검증 가능한 완료조건 | 검증 방법 | 필수 여부 |
 | --- | --- | --- | --- |
 | AC-1 | Node 버전 고정(.nvmrc 22.12.0) + 깨끗한 환경 `npm ci`·전체 검증 재현 | 완료 근거 링크(CI run 29193570731 — npm ci→lint→build→test 성공) | 필수 (기완료) |
-| AC-2 | CI 워크플로 설치·실제 성공 실행 | 현재 브랜치 커밋 트리의 `ci.yml` + 새 Preview SHA `verify` 성공 링크 | 필수 (재개) |
-| AC-3 | origin 대상 브랜치에 required status check 지정, 불가 시(플랜 제약) 제약 실증 기록 + CICD.md 정본 갱신 제안 | `gh api`로 설정 후 조회 재확인, 실패 시 응답 원문 기록 | 필수 |
+| AC-2 | 로컬 전용 `ci.yml`과 로컬 전체 검증 절차를 유지하고 공유 저장소에는 추적·업로드하지 않음 | `.gitignore`·CICD.md·사용자 결정 확인 | 필수 (2026-07-22 범위 변경) |
+| AC-3 | origin `verify` required check에는 현재 producer가 없음을 숨기지 않고 기록 | `gh api` 조회와 CICD.md 제약 기록 | 필수 |
 | AC-4 | auto-merge 워크플로와 required check 상호작용 확인 | auto-merge.yml 머지 경로가 보호 규칙을 우회하지 못함을 근거와 함께 기록 | 필수 |
-| AC-5 | Vercel GitHub 연동, Vite 자동 감지, Production Branch=N166_진현지, 프로덕션 URL에서 목 상태 1차 배포 확인 | 배포 URL 접속해 S0 렌더 확인, 스크린샷/URL 기록 | 필수 |
-| AC-6 | 프리뷰 배포 동작 확인(비프로덕션 브랜치 push 시 고유 URL) | 테스트 브랜치 push → 프리뷰 URL 접속 확인 | 필수 |
+| AC-5 | Vercel GitHub 연동, Vite 자동 감지, Production Branch=N166_진현지, 프로덕션 URL에서 S0 확인 | 배포 상태·공개 URL·사용자 실물 확인 | 필수 |
+| AC-6 | 프리뷰 배포 동작과 S0 확인 | 비프로덕션 브랜치 push → Preview success·사용자 실물 확인 | 필수 |
 | AC-7 | 현재 Vercel 플랜의 custom events 지원 여부 기록(T24 판단 근거, 새 유료 플랜 자동 도입 금지) | Vercel 문서·대시보드 근거와 함께 verification.md에 기록 | 필수 |
 | AC-8 | CICD.md 상태 갱신 + LOG.md 이력 + CHECKLIST T17 체크 | 문서 게이트: 로컬 링크·필수 항목 확인 + `git diff --check` | 필수 |
 
@@ -65,13 +65,15 @@
 | 2026-07-12 | 제안 | T17 착수 계획 제안(잔여 범위: required check·Vercel 연동·목 1차 배포·플랜 기록·문서 갱신) | 사용자 /task-start 요청 |
 | 2026-07-12 | 승인됨 → 진행 중 | 사용자 "진행" 승인 — 제안 범위 그대로 착수 | 대화 승인 |
 | 2026-07-20 | 제안 | 추적 제거된 `ci.yml` 재설치, `typecheck:api` 단계 추가, 새 Preview SHA 원격 실행 확인 | 커밋 트리·Actions run 감사 |
+| 2026-07-21 | 완료 확인 | 사용자가 공개 Production·Preview S0 실물 확인 완료를 보고해 T17 완료 처리 | 사용자 확인·CHECKLIST |
+| 2026-07-22 | 범위 정정 | `.github/workflows/ci.yml`은 공유 저장소에 push하지 않고 로컬 전용으로 유지 | 사용자 기존 지시 재확인 |
 
 ## 7. 진행·인계
 
-- 마지막으로 끝낸 단계: required status 설정·auto-merge 상호작용, Production Branch 배포, 공개 Production Domain HTTP 200·답냥이 HTML, 비프로덕션 Preview deployment success, custom events 플랜 근거 조사
-- 현재 작업 중인 단계: ② CI 재설치 승인, ④ Production·Preview S0 화면 수동 확인 대기
-- 다음 행동: 승인 뒤 `ci.yml`과 API 타입검사를 원격에 복원해 `verify` 성공을 확인하고, 로그인 가능한 브라우저에서 Production·Preview S0를 확인한다.
-- 보류 사유와 재개 조건: 현재 커밋 트리에 CI가 없고 Browser runtime도 `[]`다. CI 구조 변경 승인과 Production·Preview S0 사용자 확인이 모두 필요하다.
+- 마지막으로 끝낸 단계: Node·로컬 전체 검증, required check 제약·auto-merge 상호작용 기록, Production Branch·공개 Production·비프로덕션 Preview와 S0 실물 확인
+- 현재 작업 중인 단계: 없음
+- 다음 행동: T23·T31에서 최종 배포와 통합 실기기 검증
+- 보류 사유와 재개 조건: 없음
 
 | 날짜 | 진행·결정 | 근거·영향 |
 | --- | --- | --- |
@@ -91,3 +93,5 @@
 | 2026-07-20 | repository Actions는 enabled지만 SHA `5a2f408`의 workflow run 0건 | 과거 CI 성공·required check는 유지하되 현재 Preview SHA의 원격 CI 근거로 사용하지 않음 |
 | 2026-07-20 | 원인 감사에서 `0bb4e6e`의 `ci.yml` 추적 제거와 `.github/workflows/` ignore를 확인. 기본·Preview 커밋 트리에는 `auto-merge.yml`만 존재 | AC-2 재개. main의 required `verify`는 현재 check producer가 없어 CI 재설치 전 완료 근거가 아님 |
 | 2026-07-20 | 테스트 안정화 commit `86d5b9f` push 뒤 deployment `5516596997`이 Preview/success, Actions run은 0건 | Vercel 자동 배포는 재현, CI 부재도 재현 |
+| 2026-07-21 | 사용자가 공개 Production·Preview S0 실물 확인 완료를 보고 | AC-5·6 통과, CHECKLIST T17 완료 |
+| 2026-07-22 | 사용자 지시에 따라 `ci.yml` 추적을 제거하고 로컬 전용으로 복원 | AC-2 범위 정정, 원격 CI는 완료 근거에서 제외 |
