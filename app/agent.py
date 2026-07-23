@@ -68,6 +68,40 @@ def judge(topic: str, papers: list[dict]) -> dict:
     }
 
 
+def _iterate_picked(papers: list[dict], picked: list[dict]):
+    """도구 선택(select_tool) 대상 논문을 1부터 순서대로 하나씩 꺼낸다."""
+    for i, item in enumerate(picked, start=1):
+        yield i, papers[item["index"]]
+
+
+def _select_tool(paper: dict) -> dict:
+    """도구 선택(select_tool) LLM 호출. 실패해도 예외 없이 fallback을 반환한다.
+
+    fallback은 need_fulltext=False — 판단이 안 될 때 본문을 받으면 비용이 샌다.
+    """
+    prompt = prompt_loader.fill(
+        prompt_loader.load("select_tool"),
+        title=paper["title"],
+        abstract=paper["abstract"],
+    )
+    return tools.ask_llm_json(prompt, fallback={"need_fulltext": False, "reason": ""})
+
+
+def _read_source(paper: dict, need_fulltext: bool) -> tuple[str, bool]:
+    """실제로 요약에 쓸 텍스트와 본문 사용 여부를 정한다.
+
+    PDF 다운로드/추출이 실패하면(fetch_fulltext가 None 반환) 예외 대신
+    초록으로 자동 대체한다 — used_fulltext도 False로 되돌린다.
+    """
+    if not need_fulltext:
+        return paper["abstract"], False
+
+    fulltext = tools.fetch_fulltext(paper["pdf_url"])
+    if fulltext:
+        return fulltext, True
+    return paper["abstract"], False
+
+
 if __name__ == "__main__":
     import argparse
 
