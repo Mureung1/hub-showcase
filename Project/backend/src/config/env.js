@@ -32,6 +32,13 @@ const env = {
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: toNumber(process.env.SMTP_PORT, 587),
+    user: process.env.SMTP_USER || '',
+    password: process.env.SMTP_PASSWORD || '',
+    from: process.env.SMTP_FROM || '',
+  },
 };
 
 if (env.nodeEnv === 'production' && env.jwt.accessSecret === 'dev-access-secret-change-me') {

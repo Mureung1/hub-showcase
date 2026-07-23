@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "title": "띵동(ThingDong) - 동네 공동구매 서비스",
+  "summary": "이웃과 함께 상품을 공동구매하고, 모집부터 주문·픽업·수령까지의 과정을 관리하는 서비스입니다.",
+  "githubUser": "trudy-0(최서영)",
+  "demoUrl": "",
+  "thumbnail": "thumbnail.png",
+  "screenshots": [
+    "screenshots/mypage.png"
+  ],
+  "problem": "동네 공동구매는 모집 현황, 주문 진행, 픽업 정보가 채팅에 흩어져 참여자가 현재 상태를 파악하기 어렵고 방장의 관리 부담도 큽니다.",
+  "targetUsers": [
+    "동네 이웃과 함께 식료품·생활용품을 공동구매하고 싶은 사용자",
+    "공동구매 글을 올리고 주문과 픽업을 관리하는 방장"
+  ],
+  "features": [
+    "공동구매 글을 등록하고 모집 인원과 1인 금액을 확인합니다.",
+    "참여, 참여 취소, 주문 완료, 픽업 가능, 수령 완료를 상태별로 처리합니다.",
+    "마이페이지에서 내가 만든 공동구매와 참여한 공동구매를 진행 중·마감 상태로 나눠 봅니다.",
+    "카카오맵에서 픽업 위치를 선택하고 상세 화면에서 위치를 확인합니다.",
+    "모집 완료·주문 완료·픽업 가능·모집 실패 시 알림 기록을 남기고 SMTP 설정 시 이메일을 보냅니다."
+  ],
+  "featureTags": [
+    "동네 공동구매",
+    "상태 관리",
+    "픽업 지도"
+  ],
+  "techStack": [
+    "React",
+    "Vite",
+    "Express",
+    "MySQL",
+    "Sequelize",
+    "Docker",
+    "Vitest",
+    "Jest",
+    "Kakao Map SDK"
+  ],
+  "techHighlights": [
+    "React Query로 내 공동구매 활동을 조회하고 상태 필터 결과를 화면에 즉시 반영합니다.",
+    "Express와 Sequelize를 Docker MySQL에 연결해 공동구매·참여·알림 데이터를 저장합니다.",
+    "node-cron과 Jest·Supertest 통합 테스트로 마감 자동 처리와 상태 전환을 검증합니다."
+  ],
+  "developmentWithAI": "저는 공동구매의 사용자 흐름과 우선순위를 정했습니다. AI와 함께 기능을 작은 단위로 나누고, TDD 시나리오와 테스트를 먼저 검토한 뒤 구현·실행 결과를 확인하며 수정했습니다.",
+  "agent": {
+    "summary": "기능 분할, TDD, 수직 슬라이스 검증을 위한 Agent와 Skill을 만들어 개발 과정에 사용했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "TDD 코치 Agent",
+        "purpose": "테스트 대상 선정부터 Red-Green-Refactor 순서를 안내합니다."
+      },
+      {
+        "type": "agent",
+        "name": "수직 슬라이스 검증 Agent",
+        "purpose": "화면·API·DB·테스트가 하나의 흐름으로 연결됐는지 점검합니다."
+      },
+      {
+        "type": "skill",
+        "name": "테스트 우선 생성 Skill",
+        "purpose": "React/Vitest와 Express/Jest 테스트를 먼저 작성하는 절차를 제공합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "요구사항을 작은 기능으로 분리",
+          "테스트 시나리오 작성",
+          "실패하는 테스트 실행",
+          "최소 구현으로 테스트 통과",
+          "프론트·백엔드 통합 테스트 실행"
+        ]
+      },
+      {
+        "name": "기능 검증 Workflow",
+        "steps": [
+          "화면의 API 호출 확인",
+          "Route·Controller·Service·Model 연결 확인",
+          "Docker MySQL 저장 결과 확인",
+          "테스트와 빌드 결과 기록"
+        ]
+      }
+    ]
+  }
+}

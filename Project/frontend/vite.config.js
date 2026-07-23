@@ -10,4 +10,8 @@ export default defineConfig({
       '/auth': 'http://localhost:4000',
     },
   },
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.js',
+  },
 })

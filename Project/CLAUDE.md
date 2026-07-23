@@ -226,3 +226,32 @@ flowchart LR
 ## 백엔드 (Express) — 추가 컨벤션
 
 (개발 착수 후 API 에러 코드 체계, 트랜잭션 헬퍼 함수 패턴 등 확정되는 대로 이 섹션에 추가)
+
+## TDD 규칙
+
+규칙이 분명한 기능은 `스펙 → Red → Green → Refactor` 순서로 개발한다. 화면 디자인처럼 눈으로 보는 것이 빠른 작업은 자동 테스트보다 브라우저 확인을 우선한다.
+
+### 프론트엔드: Vitest 단위 테스트
+
+- 계산·필터·변환 로직은 `frontend/src/utils/`에 순수 함수로 분리한다.
+- 테스트 파일은 `함수이름.test.js`로 같은 폴더에 둔다.
+- 정상·빈 값·경계값·알 수 없는 입력을 먼저 케이스로 합의한다.
+- 실행 명령은 `cd frontend; npx.cmd vitest run`이다.
+- 현재 예시는 `filterPurchasesByActivity`이며, 마이페이지의 전체·진행 중·마감 필터를 7개 케이스로 검증한다.
+
+### 백엔드: Jest + Supertest 통합 테스트
+
+- API, 권한, 공동구매 상태 변화는 `backend/src/tests/groupPurchase.test.js`에서 실제 HTTP 요청으로 검증한다.
+- HTTP 상태 코드, 응답 형식, DB 결과를 함께 확인한다.
+- 테스트는 `thingdong_test` DB만 사용한다. 개발 DB `thingdong` 데이터는 테스트로 삭제하지 않는다.
+- 실행 전 Docker MySQL을 켜고 `cd backend; npm.cmd test -- --runInBand`를 실행한다.
+
+### AI 협업 순서
+
+1. AI가 테스트 대상 후보와 시나리오만 제안한다.
+2. 사용자가 시나리오를 확인한 뒤 테스트 코드를 작성한다.
+3. 테스트가 실패하는 Red 결과를 먼저 확인한다.
+4. 최소 구현으로 Green을 만든다.
+5. 리팩터링 뒤 테스트를 다시 실행한다.
+
+자세한 예시와 현재 테스트 목록은 `docs/tdd-guide.md`를 참고한다.

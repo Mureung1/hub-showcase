@@ -55,6 +55,10 @@ const GroupPurchase = sequelize.define(
       type: DataTypes.DOUBLE,
       allowNull: false,
     },
+    pickupPlace: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
     pickupTimeSlot: {
       type: DataTypes.STRING(100),
       allowNull: true,
@@ -69,7 +73,8 @@ const GroupPurchase = sequelize.define(
         'COMPLETED',
         'ORDERED',
         'WAITING_PICKUP',
-        'FINISHED'
+        'FINISHED',
+        'FAILED'
       ),
       allowNull: false,
       defaultValue: 'RECRUITING',

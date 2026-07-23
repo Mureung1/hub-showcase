@@ -412,6 +412,25 @@
   opacity: 1;
 }
 
+.td-createpost-page__map-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.td-createpost-page__map-modal {
+  width: min(680px, 100%);
+  padding: 24px;
+  border-radius: 20px;
+  background: #fff;
+  display: grid;
+  gap: 16px;
+}
+
 /* Breakpoints Responsive design */
 @media (max-width: 900px) {
   .td-createpost-page__content {

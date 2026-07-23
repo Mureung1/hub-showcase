@@ -7,6 +7,7 @@ import {
   updateGroupPurchaseStatus,
 } from '../api/groupPurchase';
 import './GroupPurchaseDetailPage.css';
+import KakaoMap from '../components/KakaoMap';
 
 const mockPurchase = {
   id: 1,
@@ -41,7 +42,7 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
   const [workflowState, setWorkflowState] = useState('idle');
   const [message, setMessage] = useState('');
   const [isLiked, setIsLiked] = useState(false);
-  const activeStepIndex = Math.max(statusSteps.indexOf(purchase.status), 0);
+  const activeStepIndex = purchase.status === 'FAILED' ? -1 : Math.max(statusSteps.indexOf(purchase.status), 0);
   const progress = (purchase.currentParticipants / purchase.targetParticipants) * 100;
 
   useEffect(() => {
@@ -60,7 +61,9 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
             perPersonPrice: data.perPersonPrice,
             targetParticipants: data.targetParticipants,
             currentParticipants: data.currentParticipants,
-            pickupPlace: data.pickupTimeSlot || '지정 위치',
+            pickupPlace: data.pickupPlace || data.pickupTimeSlot || '지정 위치',
+            pickupLatitude: data.pickupLatitude,
+            pickupLongitude: data.pickupLongitude,
             description: data.description,
             productUrl: data.productUrl,
             status: data.status,
@@ -311,12 +314,7 @@ export default function GroupPurchaseDetailPage({ onNavigate, id }) {
                   픽업 장소·시간
                 </h3>
                 <div className="td-detail-page__map-wrapper">
-                  <img 
-                    className="td-detail-page__map-img" 
-                    alt="Map Location" 
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8EE6_oqYIw3JEQBASBPT3xqM7EVX2QoAOBP11yh63g9rCbnyTj4wdZFg1n4Kqwx42i1zXk6CB1oBzYPjU0LyCFyMnluM-H98vKPzt6sxk_81yl2op5IzDw51g2_WR0bCHlYm7Z7YT7cadMZIBwDiR0wkgaEeyjUqayfk4JrTVhSZSLB62-ft_tGbAm5JQ0Ml3Qyr56jGsYjltMDqLMIre65aB7jpmaZzamNMl2UvMuEUh8cbsk3I"
-                  />
-                  <div className="td-detail-page__map-gradient"></div>
+                  <KakaoMap latitude={purchase.pickupLatitude} longitude={purchase.pickupLongitude} height={192} />
                 </div>
                 <p className="td-body-md td-detail-page__map-text">{purchase.pickupPlace}</p>
               </div>

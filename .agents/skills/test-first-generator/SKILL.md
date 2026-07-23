@@ -1,6 +1,6 @@
 ---
 name: test-first-generator
-description: ThingDong Express·Sequelize 기능을 Jest와 Supertest 테스트부터 작성하는 TDD 워크플로우. 공동구매 API 검증, 참여·취소, 상태 전환, DB 저장 기능의 테스트 우선 개발에 사용한다.
+description: ThingDong의 React/Vitest 단위 테스트와 Express/Jest/Supertest API 테스트를 Red-Green-Refactor 순서로 진행한다. 검증·계산·변환·상태 전환·공동구매 API처럼 규칙이 분명한 기능을 테스트 먼저 만들 때 사용한다.
 ---
 
 # 테스트 우선 생성기
@@ -40,3 +40,20 @@ description: ThingDong Express·Sequelize 기능을 Jest와 Supertest 테스트�
 - 테스트가 없는 상태에서 기능이 완성됐다고 말하지 않는다.
 - 개발용 `thingdong` DB의 데이터를 테스트 때문에 지우지 않는다.
 - 하나의 기능과 무관한 리팩터링·스타일 변경을 끼워 넣지 않는다.
+
+## 프론트엔드 Vitest 규칙
+
+- 계산·필터·변환 로직은 `frontend/src/utils/`의 이름 있는 export로 분리하고 `함수이름.test.js`를 같은 폴더에 둔다.
+- 먼저 정상·빈 값·경계값·알 수 없는 입력을 표로 제안하고, 사용자가 확인하기 전에는 코드를 쓰지 않는다.
+- 테스트가 import할 수 있도록 최소 스텁을 만들고 Red 결과를 먼저 확인한다.
+- Windows PowerShell에서는 `npx` 대신 `npx.cmd vitest run`을 사용한다.
+- `setupTests.js`에서는 Vitest의 `expect`에 `@testing-library/jest-dom/matchers`를 연결한다.
+- 예: `filterPurchasesByActivity(purchases, filter)`는 전체·진행 중·마감·빈 목록·알 수 없는 필터를 검증한다.
+
+## Red-Green-Refactor 보고
+
+1. 스펙과 테스트 케이스
+2. Red 결과와 실패 이유
+3. Green 단계의 최소 구현
+4. Refactor 여부와 이유
+5. 실행 명령과 최종 결과

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { cancelGroupPurchaseJoin, getMyGroupPurchaseActivities } from '../api/groupPurchase';
+import { filterPurchasesByActivity } from '../utils/filterPurchasesByActivity';
 import './MyPage.css';
 
 const statusLabels = {
@@ -9,6 +10,7 @@ const statusLabels = {
   ORDERED: '주문 완료',
   WAITING_PICKUP: '수령 대기',
   FINISHED: '종료',
+  FAILED: '모집 실패',
 };
 
 const won = (value) => `${new Intl.NumberFormat('ko-KR').format(value || 0)}원`;
@@ -67,11 +69,7 @@ export default function MyPage({ onNavigate }) {
   });
   const data = response?.data;
   const allPurchases = activeTab === 'hosted' ? data?.hosted || [] : data?.joined || [];
-  const purchases = allPurchases.filter((purchase) => {
-    if (activityFilter === 'recruiting') return purchase.status === 'RECRUITING';
-    if (activityFilter === 'closed') return purchase.status !== 'RECRUITING';
-    return true;
-  });
+  const purchases = filterPurchasesByActivity(allPurchases, activityFilter);
 
   async function handleCancel(id) {
     setCancellingId(id);
