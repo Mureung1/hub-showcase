@@ -38,6 +38,22 @@ describe('submitResponseRequestSchema', () => {
     return Array.from({ length: count }, (_, i) => ({ date: '2026-07-20', time: i % 2 === 0 ? '09:00' : '09:30' }))
   }
 
+  it('24:00 슬롯은 통과한다', () => {
+    const result = submitResponseRequestSchema.safeParse({
+      availableSlots: [{ date: '2026-07-20', time: '24:00' }],
+      preferredSlots: [],
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('24:30 슬롯은 통과하지 않는다', () => {
+    const result = submitResponseRequestSchema.safeParse({
+      availableSlots: [{ date: '2026-07-20', time: '24:30' }],
+      preferredSlots: [],
+    })
+    expect(result.success).toBe(false)
+  })
+
   it('슬롯 2000개는 통과한다', () => {
     const result = submitResponseRequestSchema.safeParse({ availableSlots: makeSlots(2000), preferredSlots: [] })
     expect(result.success).toBe(true)
