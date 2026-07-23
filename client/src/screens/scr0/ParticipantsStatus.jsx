@@ -7,6 +7,7 @@ import { InfoCard } from '../../components/cards/InfoCard.jsx'
 import { EmptyState } from '../../components/feedback/EmptyState.jsx'
 import { NAV_ITEMS } from '../../mocks/mockData.js'
 import { getLetterByToken, getResponses } from '../../lib/api.js'
+import { countResponded, getSelectedSlotIds, isResponded } from '../../lib/participantStatus.js'
 import bgVineWash from '../../assets/bg-vine-wash.jpg'
 import laceDoily from '../../assets/vintage-lace-doily.png'
 import laceTrimStrip from '../../assets/vintage-lace-trim-strip.png'
@@ -59,7 +60,7 @@ export function ParticipantsStatus() {
   }, [token])
 
   const total = participants.length
-  const respondedCount = participants.filter((p) => p.responses != null).length
+  const respondedCount = countResponded(participants)
   const pct = total ? Math.round((respondedCount / total) * 100) : 0
 
   return (
@@ -246,8 +247,8 @@ export function ParticipantsStatus() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {participants.map((p, i) => {
-                const responded = p.responses != null
-                const slotIds = p.responses?.selected_slot_ids ?? []
+                const responded = isResponded(p)
+                const slotIds = getSelectedSlotIds(p)
                 const slotLabels = slotIds.map((id) => slotLabelById[id]).filter(Boolean).join(', ')
                 return (
                   <InfoCard key={p.id}>

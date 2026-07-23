@@ -37,3 +37,28 @@ export function createResponse(token, payload) {
 export function getResponses(token) {
   return request(`/api/letters/${token}/responses`)
 }
+
+// GET /api/letters/:token/roles — 역할 목록 조회
+export function getRoles(token) {
+  return request(`/api/letters/${token}/roles`)
+}
+
+// POST /api/letters/:token/roles — 역할 생성
+export function createRole(token, payload) {
+  return request(`/api/letters/${token}/roles`, { method: 'POST', body: JSON.stringify(payload) })
+}
+
+// PATCH /api/letters/:token/roles/:roleId — 역할에 참여자 배정(또는 필드 수정)
+export function updateRole(token, roleId, payload) {
+  return request(`/api/letters/${token}/roles/${roleId}`, { method: 'PATCH', body: JSON.stringify(payload) })
+}
+
+// PATCH /api/letters/:token/confirm — 시간·장소 확정 저장
+export function confirmLetter(token, payload) {
+  return request(`/api/letters/${token}/confirm`, { method: 'PATCH', body: JSON.stringify(payload) })
+}
+
+// POST /api/letters/:token/suggest — 시간·장소·역할 추천
+export function getSuggestions(token) {
+  return request(`/api/letters/${token}/suggest`, { method: 'POST' })
+}

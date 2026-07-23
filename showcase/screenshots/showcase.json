@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "title": "Letter&Co",
+  "summary": "소모임 초대부터 시간대·장소 조율까지 한 곳에서 끝내는 모임 조율 서비스입니다.",
+  "githubUser": "angelnumb8r(김민솔)",
+  "demoUrl": "",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/home.webp",
+    "screenshots/invite-compose.webp",
+    "screenshots/invite-share.webp",
+    "screenshots/participants-status.webp"
+  ],
+  "problem": "모임 시간·장소를 잡을 때 카톡방·설문 앱·메모가 여기저기 흩어져서, 누가 언제 되는지 한눈에 파악하기 어렵습니다.",
+  "targetUsers": [
+    "소모임 일정을 조율해야 하는 호스트",
+    "초대받아 시간대·참여 의사를 전달해야 하는 참여자"
+  ],
+  "features": [
+    "모임을 만들고 참여 링크를 공유합니다.",
+    "참여자가 링크로 접속해 이름과 가능한 시간대를 입력합니다.",
+    "호스트가 참여자 응답 현황을 실시간으로 확인합니다.",
+    "역할·시간·장소를 AI가 추천하고, 호스트가 최종 확정합니다."
+  ],
+  "featureTags": [
+    "모임 조율",
+    "참여 응답 수집",
+    "AI 추천"
+  ],
+  "techStack": [
+    "React",
+    "Vite",
+    "Express",
+    "Supabase (Postgres)",
+    "Groq API"
+  ],
+  "techHighlights": [
+    "React 컴포넌트로 모임 생성부터 결과 조회까지 전체 흐름을 실제 API에 연결했습니다.",
+    "Express와 Supabase로 참여자 응답을 저장하고, 새로고침해도 유지되는 구조를 검증했습니다.",
+    "Groq LLM을 호출해 참여자 응답을 바탕으로 역할·시간·장소를 추천하고, 응답이 없거나 호출이 실패해도 화면이 깨지지 않도록 폴백을 구현했습니다."
+  ],
+  "developmentWithAI": "저는 문제 정의와 화면·데이터 흐름의 우선순위(수직슬라이스 완성 후 기능 확장)를 정했습니다. AI는 디자인 산출물을 실제 코드로 변환하고, API·DB 스키마 초안을 제안했습니다. 저는 매 단계마다 실제로 새로고침해보고 curl로 재현하며 검증했고, 자동 검증이 놓친 버그(새로고침 시 상태 유실, 응답 데이터 형태 불일치)를 여러 번 직접 잡아냈습니다.",
+  "agent": {
+    "summary": "설계-이슈 등록-구현-검증까지 단계마다 Plan mode와 서브에이전트를 함께 사용했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "feature-verifier",
+        "purpose": "코드 수정 권한 없이 구현된 기능이 API·DB에 실제로 반영됐는지만 검증합니다."
+      },
+      {
+        "type": "skill",
+        "name": "설계 문서화 Skill",
+        "purpose": "테이블 스키마 후보와 화면 데이터 요구사항을 문서로 정리해 구현 전 검토하게 합니다."
+      },
+      {
+        "type": "skill",
+        "name": "역할·시간·장소 추천 Skill",
+        "purpose": "참여자 응답을 바탕으로 구조화된 추천 결과를 생성합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "화면 실연결 Workflow",
+        "steps": [
+          "디자인 산출물(.dc.html) 구조 요약",
+          "정적 화면으로 우선 변환",
+          "실제 API 연동",
+          "직접 새로고침해서 데이터 유지 검증"
+        ]
+      },
+      {
+        "name": "기능 설계-구현 Workflow",
+        "steps": [
+          "스키마·화면 설계 문서 작성",
+          "GitHub Issue 등록",
+          "Plan mode로 구현 계획 검토 후 승인",
+          "curl로 API 검증",
+          "vitest 단위 테스트 작성"
+        ]
+      }
+    ]
+  }
+}
