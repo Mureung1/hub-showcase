@@ -23,6 +23,7 @@ import type { CodexProductActivity } from './contract.js'
 import { verifyProductionBundle } from './production-bundle.js'
 import {
   startVerifiedCodexChatRuntime,
+  type NodeRuntimeDeadlines,
   type SpawnedCodexChatRuntime,
 } from './runtime.js'
 
@@ -593,7 +594,15 @@ test('maps Runtime loss and account AbortSignal to bounded private outcomes with
   })
 
   await t.test('status abort owns auth-only Runtime shutdown', async () => {
-    const harness = await startAccountHarness('account-status-abort')
+    const harness = await startAccountHarness(
+      'account-status-abort',
+      [],
+      {
+        gracefulCloseMs: 50,
+        terminateMs: 50,
+        postKillMs: 250,
+      },
+    )
     const root = dirname(harness.journalPath)
     await writeFile(join(root, 'account-state'), 'signed_out')
     await writeFile(join(root, 'login-mode'), 'delayed-success')
@@ -606,12 +615,15 @@ test('maps Runtime loss and account AbortSignal to bounded private outcomes with
       signal,
     })
     const abort = new AbortController()
+    harness.child.kill('SIGSTOP')
+    const pending = harness.runtime.readBrowserLoginAttempt({
+      attemptId,
+      signal: abort.signal,
+    })
+    await assertPending(pending)
     abort.abort()
     assert.deepEqual(
-      await harness.runtime.readBrowserLoginAttempt({
-        attemptId,
-        signal: abort.signal,
-      }),
+      await pending,
       {
         status: 'failed',
         attemptId,
@@ -2671,6 +2683,7 @@ async function startHarness(
 async function startAccountHarness(
   label: string,
   bridgeArgsOverride: readonly string[] = [],
+  deadlines?: Partial<NodeRuntimeDeadlines>,
 ): Promise<SpawnedCodexChatRuntime> {
   const root = await mkdtemp(join(tmpdir(), `ay-ple-node-account-${label}-`))
   roots.push(root)
@@ -2689,6 +2702,7 @@ async function startAccountHarness(
     },
     environment,
     bridgeArgsOverride,
+    deadlines,
     launchArgsOverride: [
       bundle.pythonExecutable,
       '-B',

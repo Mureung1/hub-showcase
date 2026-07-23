@@ -170,6 +170,130 @@ test('deterministic account runtime preserves role, delayed status, duplicate te
   })
 })
 
+test('deterministic account operations abort delayed scripts and close the Runtime', async (t) => {
+  const delayed = new Promise<never>(() => undefined)
+  const scenarios = [
+    {
+      label: 'read',
+      runtime: new DeterministicCodexChatRuntime({
+        accountReads: [delayed],
+      }),
+      invoke: (
+        runtime: DeterministicCodexChatRuntime,
+        signal: AbortSignal,
+      ) => runtime.readAccount({ refreshToken: true, signal }),
+      expected: {
+        status: 'error',
+        error: { code: 'runtime_closing', retryable: true },
+      },
+    },
+    {
+      label: 'start',
+      runtime: new DeterministicCodexChatRuntime({
+        browserLoginStarts: [delayed],
+      }),
+      invoke: (
+        runtime: DeterministicCodexChatRuntime,
+        signal: AbortSignal,
+      ) =>
+        runtime.startBrowserLogin({
+          attemptId: 'attempt-abort',
+          expiresAt: '2026-07-23T01:00:00.000Z',
+          signal,
+        }),
+      expected: {
+        status: 'error',
+        error: { code: 'runtime_closing', retryable: true },
+      },
+    },
+    {
+      label: 'status',
+      runtime: new DeterministicCodexChatRuntime({
+        browserLoginAttempts: [delayed],
+      }),
+      invoke: (
+        runtime: DeterministicCodexChatRuntime,
+        signal: AbortSignal,
+      ) =>
+        runtime.readBrowserLoginAttempt({
+          attemptId: 'attempt-abort',
+          signal,
+        }),
+      expected: {
+        status: 'failed',
+        attemptId: 'attempt-abort',
+        error: { code: 'runtime_closing', retryable: true },
+      },
+    },
+    {
+      label: 'cancel',
+      runtime: new DeterministicCodexChatRuntime({
+        browserLoginCancellations: [delayed],
+      }),
+      invoke: (
+        runtime: DeterministicCodexChatRuntime,
+        signal: AbortSignal,
+      ) =>
+        runtime.cancelBrowserLogin({
+          attemptId: 'attempt-abort',
+          signal,
+        }),
+      expected: {
+        status: 'error',
+        attemptId: 'attempt-abort',
+        error: { code: 'runtime_closing', retryable: true },
+      },
+    },
+    {
+      label: 'release',
+      runtime: new DeterministicCodexChatRuntime({
+        browserLoginReleases: [delayed],
+      }),
+      invoke: (
+        runtime: DeterministicCodexChatRuntime,
+        signal: AbortSignal,
+      ) =>
+        runtime.releaseBrowserLoginAttempt({
+          attemptId: 'attempt-abort',
+          signal,
+        }),
+      expected: {
+        status: 'error',
+        attemptId: 'attempt-abort',
+        error: { code: 'runtime_closing', retryable: true },
+      },
+    },
+    {
+      label: 'logout',
+      runtime: new DeterministicCodexChatRuntime({
+        logouts: [delayed],
+      }),
+      invoke: (
+        runtime: DeterministicCodexChatRuntime,
+        signal: AbortSignal,
+      ) => runtime.logout({ signal }),
+      expected: {
+        status: 'error',
+        error: { code: 'runtime_closing', retryable: true },
+      },
+    },
+  ]
+
+  for (const { label, runtime, invoke, expected } of scenarios) {
+    await t.test(label, async () => {
+      const controller = new AbortController()
+      const pending = invoke(runtime, controller.signal)
+      assert.equal(await settlesBeforeImmediate(pending), false)
+      controller.abort()
+      assert.deepEqual(await pending, expected)
+      assert.deepEqual(
+        await runtime.close({ signal: new AbortController().signal }),
+        { status: 'closed', processTreeGone: true },
+      )
+    })
+  }
+})
+
 test('deterministic auth-only runtime denies every workspace family before consuming scripts', async () => {
   const runtime = new DeterministicCodexChatRuntime({
     role: {

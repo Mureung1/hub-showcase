@@ -236,12 +236,12 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
     readonly signal: AbortSignal
   }): Promise<CodexAccountReadResult> {
     this.callLog.push({ operation: 'readAccount' })
-    if (input.signal.aborted) {
-      this.closeForAccountAbort()
-      return { status: 'error', error: runtimeClosingFailure() }
-    }
-    this.requireOpen()
-    return this.nextAccountValue(this.accountReads, 'account read')
+    return this.runAccountValue(
+      this.accountReads,
+      'account read',
+      input.signal,
+      () => ({ status: 'error', error: runtimeClosingFailure() }),
+    )
   }
 
   async startBrowserLogin(input: {
@@ -254,14 +254,11 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
       expiresAt: input.expiresAt,
     }
     this.callLog.push({ operation: 'startBrowserLogin', input: recordedInput })
-    if (input.signal.aborted) {
-      this.closeForAccountAbort()
-      return { status: 'error', error: runtimeClosingFailure() }
-    }
-    this.requireOpen()
-    return this.nextAccountValue(
+    return this.runAccountValue(
       this.browserLoginStarts,
       'browser login start',
+      input.signal,
+      () => ({ status: 'error', error: runtimeClosingFailure() }),
     )
   }
 
@@ -274,18 +271,15 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
       operation: 'readBrowserLoginAttempt',
       input: recordedInput,
     })
-    if (input.signal.aborted) {
-      this.closeForAccountAbort()
-      return {
+    return this.runAccountValue(
+      this.browserLoginAttempts,
+      'browser login attempt',
+      input.signal,
+      () => ({
         status: 'failed',
         attemptId: input.attemptId,
         error: runtimeClosingFailure(),
-      }
-    }
-    this.requireOpen()
-    return this.nextAccountValue(
-      this.browserLoginAttempts,
-      'browser login attempt',
+      }),
     )
   }
 
@@ -298,18 +292,15 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
       operation: 'cancelBrowserLogin',
       input: recordedInput,
     })
-    if (input.signal.aborted) {
-      this.closeForAccountAbort()
-      return {
+    return this.runAccountValue(
+      this.browserLoginCancellations,
+      'browser login cancellation',
+      input.signal,
+      () => ({
         status: 'error',
         attemptId: input.attemptId,
         error: runtimeClosingFailure(),
-      }
-    }
-    this.requireOpen()
-    return this.nextAccountValue(
-      this.browserLoginCancellations,
-      'browser login cancellation',
+      }),
     )
   }
 
@@ -322,18 +313,15 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
       operation: 'releaseBrowserLoginAttempt',
       input: recordedInput,
     })
-    if (input.signal.aborted) {
-      this.closeForAccountAbort()
-      return {
+    return this.runAccountValue(
+      this.browserLoginReleases,
+      'browser login release',
+      input.signal,
+      () => ({
         status: 'error',
         attemptId: input.attemptId,
         error: runtimeClosingFailure(),
-      }
-    }
-    this.requireOpen()
-    return this.nextAccountValue(
-      this.browserLoginReleases,
-      'browser login release',
+      }),
     )
   }
 
@@ -341,12 +329,12 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
     readonly signal: AbortSignal
   }): Promise<CodexLogoutResult> {
     this.callLog.push({ operation: 'logout' })
-    if (input.signal.aborted) {
-      this.closeForAccountAbort()
-      return { status: 'error', error: runtimeClosingFailure() }
-    }
-    this.requireOpen()
-    return this.nextAccountValue(this.logouts, 'logout')
+    return this.runAccountValue(
+      this.logouts,
+      'logout',
+      input.signal,
+      () => ({ status: 'error', error: runtimeClosingFailure() }),
+    )
   }
 
   async startThread(input?: StartThreadInput): Promise<CodexChatThread> {
@@ -527,6 +515,47 @@ export class DeterministicCodexChatRuntime implements CodexManagedRuntime {
       throw new Error(`No deterministic ${description} remains`)
     }
     return structuredClone(await scripted)
+  }
+
+  private async runAccountValue<T>(
+    values: DeterministicValue<T>[],
+    description: string,
+    signal: AbortSignal,
+    abortedValue: () => T,
+  ): Promise<T> {
+    if (signal.aborted) {
+      this.closeForAccountAbort()
+      return abortedValue()
+    }
+    this.requireOpen()
+    const scripted = values.shift()
+    if (scripted === undefined) {
+      throw new Error(`No deterministic ${description} remains`)
+    }
+    let resolveAbort!: () => void
+    const aborted = new Promise<{ readonly kind: 'aborted' }>((resolve) => {
+      resolveAbort = () => resolve({ kind: 'aborted' })
+    })
+    const onAbort = () => {
+      this.closeForAccountAbort()
+      resolveAbort()
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    if (signal.aborted) onAbort()
+    try {
+      const outcome = await Promise.race([
+        Promise.resolve(scripted).then((value) => ({
+          kind: 'value' as const,
+          value: structuredClone(value),
+        })),
+        aborted,
+      ])
+      return outcome.kind === 'aborted'
+        ? abortedValue()
+        : outcome.value
+    } finally {
+      signal.removeEventListener('abort', onAbort)
+    }
   }
 
   private closeForAccountAbort(): void {
