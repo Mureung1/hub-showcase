@@ -9,6 +9,7 @@ datasource db {
 model Item {
   id           String        @id @default(cuid())
   name         String        @unique
+  nameEn       String? // syncItemNamesEn.ts로 일괄 번역해 채움 — 영어 검색(name OR nameEn contains)에도 사용
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   disposalRule DisposalRule?
@@ -18,35 +19,40 @@ model Item {
 // method/govItemName은 정부 API가 반환한 텍스트 그대로 저장 — steps/parts/commonMistakes/reason은
 // 이 원본 텍스트를 LLM이 가공한 결과(새 규정을 만들지 않고 설명만 함, CLAUDE.md 원칙).
 model DisposalRule {
-  id             String    @id @default(cuid())
-  itemId         String    @unique
-  item           Item      @relation(fields: [itemId], references: [id])
-  govItemName    String // 정부 API 원본 품목명 (itemNm)
-  method         String // 정부 API 원본 배출방법 텍스트 (dschgMthd)
-  sourceRegion   String    @default("서울") // getItem 데이터의 공간범위 — 서울시 기준 데이터임을 명시
-  steps          String[]  @default([]) // LLM이 가공한 단계별 배출 안내
-  parts          Json      @default("[]") // LLM이 가공한 부품별 분리 안내 [{part, category}]
-  commonMistakes String[]  @default([]) // LLM이 가공한 자주 하는 실수
-  reason         String? // LLM이 가공한 "왜 이렇게 버려야 하는지" 설명
-  explainedAt    DateTime? // steps 등 explanation 필드가 생성된 시각 — null이면 아직 미생성
-  fetchedAt      DateTime  @default(now())
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  itemId           String    @unique
+  item             Item      @relation(fields: [itemId], references: [id])
+  govItemName      String // 정부 API 원본 품목명 (itemNm)
+  method           String // 정부 API 원본 배출방법 텍스트 (dschgMthd)
+  sourceRegion     String    @default("서울") // getItem 데이터의 공간범위 — 서울시 기준 데이터임을 명시
+  steps            String[]  @default([]) // LLM이 가공한 단계별 배출 안내 (한국어)
+  parts            Json      @default("[]") // LLM이 가공한 부품별 분리 안내 (한국어) [{part, category}]
+  commonMistakes   String[]  @default([]) // LLM이 가공한 자주 하는 실수 (한국어)
+  reason           String? // LLM이 가공한 "왜 이렇게 버려야 하는지" 설명 (한국어)
+  explainedAt      DateTime? // steps 등 한국어 explanation 필드가 생성된 시각 — null이면 아직 미생성
+  stepsEn          String[]  @default([]) // 영어 번역 (Translate 토글용, 재요청 없이 즉시 전환)
+  partsEn          Json      @default("[]")
+  commonMistakesEn String[]  @default([])
+  reasonEn         String?
+  explainedAtEn    DateTime? // 영어 필드가 생성된 시각 — 한국어보다 나중에 채워질 수 있음(기존 한국어만 캐시된 항목 백필)
+  fetchedAt        DateTime  @default(now())
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 // 행정안전부_생활쓰레기배출정보 조회서비스(household_waste_info/info)에서 시/도+구/군+동으로 매칭한 결과를 캐시.
 // 원본 API는 구/군당 여러 행(생활쓰레기/음식물쓰레기/재활용품/대형폐기물 카테고리별로 동 범위가 다를 수 있음)을
 // 반환하므로, 사용자가 동을 선택한 시점에 카테고리별로 매칭되는 행을 찾아 categories에 병합해 저장한다.
 model RegionRule {
-  id         String    @id @default(cuid())
+  id         String   @id @default(cuid())
   ctpvNm     String // 시/도 (예: 대구광역시)
   sggNm      String // 구/군 (예: 북구)
   dongNm     String // 사용자가 선택한 동 (매칭 키, 예: 산격1동)
   categories Json // { 생활쓰레기: {dow, method, beginTime, endTime}, 음식물쓰레기: {...}, 재활용품: {...}, 대형폐기물: {...} }
   unclltDay  String? // 미수거일 (UNCLLT_DAY 원본 텍스트)
-  fetchedAt  DateTime  @default(now())
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  fetchedAt  DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([ctpvNm, sggNm, dongNm])
 }
