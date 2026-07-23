@@ -7,6 +7,7 @@ import PillButton from '../components/PillButton.jsx'
 import MeetingForm from '../components/MeetingForm.jsx'
 import { defaultFormValues } from '../utils/meetingFormDefaults.js'
 import { fetchMeeting, updateMeeting } from '../api/meetings.js'
+import { isMeetingEnded } from '../utils/status.js'
 
 // timestamp(타임존 없음) 컬럼은 서버가 KST로 해석해 UTC ISO로 직렬화한다(KST 19:00 → 10:00Z).
 // date+time 입력으로 분해할 때 UTC 기준(toISOString 등)으로 뽑으면 9시간 밀리고 소모임은
@@ -94,7 +95,7 @@ export default function MeetingEditPage() {
   }
 
   const isHost = meeting.host.id === currentUser.id
-  const isEnded = meeting.status === 'finished' || meeting.status === 'cancelled' || meeting.isPast
+  const isEnded = isMeetingEnded(meeting)
 
   if (!isHost || isEnded) {
     return (

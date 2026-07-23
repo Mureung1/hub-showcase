@@ -226,12 +226,7 @@ export default function MeetingForm({ initialValues, disabled = {}, submitLabel,
         </div>
 
         <label className="field-check">
-          <input
-            type="checkbox"
-            checked={adultOnly}
-            onChange={(e) => setAdultOnly(e.target.checked)}
-            disabled={disabled.adultOnly}
-          />
+          <input type="checkbox" checked={adultOnly} onChange={(e) => setAdultOnly(e.target.checked)} />
           성인만 참여 가능
         </label>
 

@@ -37,3 +37,10 @@ const BLOCK_REASON_LABEL = {
 export function blockReasonLabel(reason) {
   return BLOCK_REASON_LABEL[reason] ?? '지금은 신청할 수 없어요.'
 }
+
+// 모임이 종료(또는 취소)되어 더는 수정·참여할 수 없는 상태인지. 저장 status는 finished가
+// 되지 않지만(시간 경과는 서버가 isPast로 계산) 방어적으로 함께 본다.
+// 상세 페이지와 수정 페이지가 공유한다(종료 정의 단일화).
+export function isMeetingEnded(meeting) {
+  return meeting.status === 'finished' || meeting.status === 'cancelled' || meeting.isPast
+}

@@ -6,7 +6,7 @@ import Card from '../components/Card.jsx'
 import PillButton from '../components/PillButton.jsx'
 import StatusPill from '../components/StatusPill.jsx'
 import TrustBadge from '../components/TrustBadge.jsx'
-import { meetingStatusMeta, participationStatusMeta, blockReasonLabel } from '../utils/status.js'
+import { meetingStatusMeta, participationStatusMeta, blockReasonLabel, isMeetingEnded } from '../utils/status.js'
 import { formatMeetingSchedule } from '../utils/date.js'
 import { getPendingApplicants, countActiveApplicants } from '../utils/meetings.js'
 import {
@@ -201,7 +201,7 @@ export default function MeetingDetailPage() {
   const confirmedCount = meeting.confirmedCount
   const myParticipation = meeting.myParticipation
   const pendingApplicants = getPendingApplicants(participants)
-  const isEnded = meeting.status === 'finished' || meeting.status === 'cancelled' || meeting.isPast
+  const isEnded = isMeetingEnded(meeting)
   // 서버가 openChatUrl을 내려줬다는 것 자체가 "볼 자격이 있다"는 뜻이다(E3에서 판단).
   const canSeeOpenChat = Boolean(meeting.openChatUrl)
 
