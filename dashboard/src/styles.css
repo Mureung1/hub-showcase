@@ -19,6 +19,13 @@ button {
   font: inherit;
 }
 
+button:not(:disabled),
+a,
+[role="button"],
+[role="button"] * {
+  cursor: pointer !important;
+}
+
 .load-state {
   margin: 48px 24px;
   color: hsl(0 0% 42%);
