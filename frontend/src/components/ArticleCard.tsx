@@ -6,6 +6,12 @@ const SOURCE_TYPE_LABEL = {
   expert_article: '전문 아티클',
 } as const
 
+// custom-ident는 숫자로 시작할 수 없어 접두어를 붙인다. 같은 글은 항상 feature/compact 중
+// 하나로만 렌더링되므로 이름이 중복될 일이 없다.
+function toViewTransitionName(articleId: string): string {
+  return `today-card-${articleId}`
+}
+
 type ArticleCardProps = {
   article: TodayArticle
   // 오늘의 대표 글과 "이런 글도 있어요" 목록은 같은 카드의 다른 모양이다.
@@ -38,6 +44,7 @@ export default function ArticleCard({
         className={`today-recommendation-card${
           article.thumbnailUrl ? ' today-recommendation-card--with-thumbnail' : ''
         }`}
+        style={{ viewTransitionName: toViewTransitionName(article.id) }}
       >
         <button type="button" className="today-recommendation-select" onClick={onSelect}>
           <span className="today-recommendation-meta">
@@ -59,7 +66,10 @@ export default function ArticleCard({
   }
 
   return (
-    <article className="today-feature-card">
+    <article
+      className="today-feature-card"
+      style={{ viewTransitionName: toViewTransitionName(article.id) }}
+    >
       <p className="card-meta">{metaContent}</p>
       <h2 className="today-feature-title">{article.title}</h2>
 

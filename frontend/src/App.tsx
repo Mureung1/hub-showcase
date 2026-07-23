@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { flushSync } from 'react-dom'
 import InterestSelect from './screens/InterestSelect'
 import Today, { type TodayState } from './screens/Today'
 import ArticleIntro, { type ArticleIntroState } from './screens/ArticleIntro'
@@ -76,6 +77,18 @@ type TodayFlowState =
 // 유지하므로, todayState/flow/selectedArticleId가 나의 깸을 다녀와도 초기화되지 않는다.
 type MainTab = 'today' | 'myGgaem'
 
+// 대표 글 선택을 View Transitions API로 감싼다. 미지원 브라우저(jsdom 포함)에서는
+// document.startViewTransition이 없어 즉시 동기 갱신되므로 테스트나 폴백 동작이 기존과 같다.
+function selectArticleWithTransition(id: string, setSelectedArticleId: (id: string) => void) {
+  if (typeof document.startViewTransition !== 'function') {
+    setSelectedArticleId(id)
+    return
+  }
+  document.startViewTransition(() => {
+    flushSync(() => setSelectedArticleId(id))
+  })
+}
+
 function MainTabsContainer() {
   const [tab, setTab] = useState<MainTab>('today')
   const [todayState, setTodayState] = useState<TodayState>({ status: 'loading' })
@@ -142,7 +155,7 @@ function MainTabsContainer() {
     <Today
       state={todayState}
       selectedArticleId={selectedArticleId}
-      onSelectArticle={setSelectedArticleId}
+      onSelectArticle={(id) => selectArticleWithTransition(id, setSelectedArticleId)}
       onOpenArticle={(articleId) => setFlow({ screen: 'articleIntro', articleId })}
       onGoToMyGgaem={() => setTab('myGgaem')}
     />

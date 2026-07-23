@@ -220,3 +220,17 @@
   color: var(--ink);
   font-weight: 700;
 }
+
+/* 대표/추천 카드 교체 애니메이션(View Transitions API). 미지원 브라우저는
+   App.tsx의 기능 감지로 즉시 전환되므로 아래 규칙 자체가 적용되지 않는다. */
+::view-transition-group(*) {
+  animation-duration: 260ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
