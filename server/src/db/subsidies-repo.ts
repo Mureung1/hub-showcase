@@ -29,19 +29,51 @@ function parseAmountForSort(amount: string): number {
   return 0
 }
 
-/** 정렬 규칙: match(내림차순) · deadline(dday 오름차순) · amount(금액 내림차순) · new(원순서 유지) */
+/**
+ * 정렬 규칙: match(내림차순) · deadline(dday 오름차순) · amount(금액 내림차순) · new(원순서 유지).
+ * match/deadline/amount는 동점일 때 id로 2차 정렬한다 — 이슈 #48 페이지네이션 도입 후 같은
+ * 요청(같은 profile/sort)을 여러 페이지에 걸쳐 반복 호출해도 순서가 흔들리지 않게 하기 위함
+ * (동점 항목이 많은 region 가중치 특성상 결정적 정렬이 아니면 항목 중복/누락이 생길 수 있음).
+ */
 function applySort(items: Subsidy[], sort: SortOption): Subsidy[] {
   const copy = [...items]
   switch (sort) {
     case 'deadline':
-      return copy.sort((a, b) => a.dday - b.dday)
+      return copy.sort((a, b) => a.dday - b.dday || a.id.localeCompare(b.id))
     case 'amount':
-      return copy.sort((a, b) => parseAmountForSort(b.amount) - parseAmountForSort(a.amount))
+      return copy.sort(
+        (a, b) => parseAmountForSort(b.amount) - parseAmountForSort(a.amount) || a.id.localeCompare(b.id),
+      )
     case 'new':
       return copy
     case 'match':
     default:
-      return copy.sort((a, b) => b.match - a.match)
+      return copy.sort((a, b) => b.match - a.match || a.id.localeCompare(b.id))
+  }
+}
+
+export interface PagedResult {
+  items: Subsidy[]
+  /** 페이지네이션 이전 전체 건수 */
+  total: number
+  page: number
+  limit: number
+  hasMore: boolean
+}
+
+export const DEFAULT_PAGE = 1
+export const DEFAULT_LIMIT = 20
+
+/** 정렬된 배열을 page/limit 기준으로 자른다 (이슈 #48) */
+function paginate(items: Subsidy[], page: number, limit: number): PagedResult {
+  const total = items.length
+  const start = (page - 1) * limit
+  return {
+    items: items.slice(start, start + limit),
+    total,
+    page,
+    limit,
+    hasMore: start + limit < total,
   }
 }
 
@@ -73,9 +105,14 @@ async function loadAll(): Promise<Subsidy[]> {
   return rows.map(rowToSubsidy)
 }
 
-/** 전체 목록 (정렬 적용) */
-export async function findAll(sort: SortOption = 'match'): Promise<Subsidy[]> {
-  return applySort(await loadAll(), sort)
+/** 전체 목록 (정렬 + 페이지네이션 적용) */
+export async function findAll(
+  sort: SortOption = 'match',
+  page: number = DEFAULT_PAGE,
+  limit: number = DEFAULT_LIMIT,
+): Promise<PagedResult> {
+  const sorted = applySort(await loadAll(), sort)
+  return paginate(sorted, page, limit)
 }
 
 /** 단건 조회 — 없으면 null */
@@ -125,8 +162,11 @@ function scoreForProfile(subsidy: Subsidy, profile: OnboardingProfile): number {
 export async function match(
   profile: OnboardingProfile,
   sort: SortOption = 'match',
-): Promise<Subsidy[]> {
+  page: number = DEFAULT_PAGE,
+  limit: number = DEFAULT_LIMIT,
+): Promise<PagedResult> {
   const items = await loadAll()
   const scored = items.map((item) => ({ ...item, match: scoreForProfile(item, profile) }))
-  return applySort(scored, sort)
+  const sorted = applySort(scored, sort)
+  return paginate(sorted, page, limit)
 }

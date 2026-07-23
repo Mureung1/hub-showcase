@@ -19,8 +19,17 @@ export default function HomeScreen() {
   const { profile } = useOnboarding()
   const [sort, setSort] = useState<SortOption>('match')
 
-  const { data, isLoading, isError, refetch } = useSubsidies(profile, sort)
-  const subsidies = data?.items ?? []
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useSubsidies(profile, sort)
+  const subsidies = data?.pages.flatMap((page) => page.items) ?? []
+  const total = data?.pages[0]?.total ?? subsidies.length
 
   const profileText = [
     profile.district || '내 지역',
@@ -60,7 +69,7 @@ export default function HomeScreen() {
       </div>
 
       <div className="home-list-label">
-        내 조건에 맞는 지원금 <strong>{subsidies.length}건</strong>
+        내 조건에 맞는 지원금 <strong>{total}건</strong>
       </div>
 
       {isLoading && (
@@ -89,6 +98,16 @@ export default function HomeScreen() {
               onClick={() => navigate(`/subsidies/${subsidy.id}`)}
             />
           ))}
+          {hasNextPage && (
+            <button
+              type="button"
+              className="home-load-more"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
+              {isFetchingNextPage ? '불러오는 중...' : '더보기'}
+            </button>
+          )}
         </div>
       )}
 

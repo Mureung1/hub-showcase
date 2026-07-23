@@ -57,6 +57,7 @@ export async function submitProfile(req: MatchRequest): Promise<MatchResponse> {
   } catch (err) {
     console.warn('[api] submitProfile 실패, mock으로 대체:', err)
     const items = sortSubsidies(getDisplaySubsidies(req.profile), sort)
-    return { items, total: items.length, sort }
+    // mock은 8건뿐이라 페이지네이션(#48) 없이 한 페이지로 전부 반환
+    return { items, total: items.length, sort, page: 1, limit: items.length, hasMore: false }
   }
 }

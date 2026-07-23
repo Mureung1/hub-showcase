@@ -90,3 +90,29 @@
   overflow-y: auto;
   min-height: 0;
 }
+
+.home-load-more {
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--blue);
+  background: var(--white);
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.home-load-more:hover {
+  background: var(--blue-soft);
+}
+
+.home-load-more:active {
+  transform: scale(0.97);
+}
+
+.home-load-more:disabled {
+  border-color: var(--border);
+  background: var(--border);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
