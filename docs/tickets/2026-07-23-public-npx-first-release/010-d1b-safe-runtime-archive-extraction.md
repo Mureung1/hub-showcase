@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -36,13 +36,13 @@ Verified archive byte를 final cache generation과 격리된 staging root에만 
 
 ## Acceptance Criteria
 
-- [ ] Valid canonical archive가 owned empty staging에 deterministic tree로 추출되고 complete-tree/manifest/legal roster verification을 통과한다.
-- [ ] Path traversal, absolute/NUL path, Unicode/case duplicate, prefix conflict와 symlink escape fixture가 recipient write 0 또는 owned staging cleanup으로 fail closed한다.
-- [ ] Hardlink/sparse/special file, unsafe mode/xattr와 unsupported TAR extension fixture가 명확한 `runtime_archive_unsafe`로 끝난다.
-- [ ] Entry/file/expanded-byte bound와 truncated/corrupt gzip/TAR가 bounded 시간·space 안에 integrity/unsafe failure로 끝난다.
-- [ ] No-follow/no-clobber write와 symlink-last policy가 parent/staging race에서도 containment를 유지한다.
-- [ ] Missing/extra/modified tree, mode, manifest와 legal roster drift는 verified staging result가 되지 않는다.
-- [ ] Safe TAR exact dependency/lock와 license/SBOM input이 C-owned evidence로 확인되고 D-owned diff에 shared manifest/lock change가 없다.
+- [x] Valid canonical archive가 owned empty staging에 deterministic tree로 추출되고 complete-tree/manifest/legal roster verification을 통과한다.
+- [x] Path traversal, absolute/NUL path, Unicode/case duplicate, prefix conflict와 symlink escape fixture가 recipient write 0 또는 owned staging cleanup으로 fail closed한다.
+- [x] Hardlink/sparse/special file, unsafe mode/xattr와 unsupported TAR extension fixture가 명확한 `runtime_archive_unsafe`로 끝난다.
+- [x] Entry/file/expanded-byte bound와 truncated/corrupt gzip/TAR가 bounded 시간·space 안에 integrity/unsafe failure로 끝난다.
+- [x] No-follow/no-clobber write와 symlink-last policy가 parent/staging race에서도 containment를 유지한다.
+- [x] Missing/extra/modified tree, mode, manifest와 legal roster drift는 verified staging result가 되지 않는다.
+- [x] Safe TAR exact dependency/lock와 license/SBOM input이 C-owned evidence로 확인되고 D-owned diff에 shared manifest/lock change가 없다.
 
 ## Verification
 
@@ -105,3 +105,15 @@ Verified archive byte를 final cache generation과 격리된 staging root에만 
 - 성공 snapshot이 관찰한 `runtimeRoot`는 `<staging>/runtime`이지만 durable path authority가 아니다. D1d는 publish lease 아래 fsync/atomic generation publish와 fresh complete-tree readback을 수행해야 하며, 실패 residue의 quarantine·repair와 resolver orchestration도 계속 C 소유다.
 - Publisher archive는 manifest에서 유도한 directory entry를 모두 명시하고 regular file·directory·symlink만 사용한다. Directory `0755`, manifest/payload reviewed mode, symlink `0777`, canonical octal size와 TAR trailer 2 block을 사용하며 PAX/GNU extension·xattr·ACL·sparse·hardlink·special entry를 만들지 않는다.
 - Reviewed D1b를 integration한 뒤 C-owned `packages/runtime-release/README.md`의 “extraction 미구현” 현재 사실을 갱신한다. `extractVerifiedRuntimeArchive()`와 source-internal retained-cwd capability boundary가 구현됐지만 transport, publish, quarantine·repair와 resolver orchestration은 계속 미구현이라는 경계를 기록한다.
+
+## Coordinator Integration Closeout
+
+| Evidence | Result |
+| --- | --- |
+| Canonical integration tip | `3e3e578fbd8d5f427bde6c6c6087f3789756cdba` |
+| Reviewed correction | Rebased queue commits `9a2144cdb5a1d4962cfcec5a9aa88d8ed919f4cc`와 `2c207d6d1802edf649b455cc296a206f5e484659`; exact admission tip `d0fbad413601410c53f6305050752e7b84fbe6bb` |
+| Cleanup authority | Recipient mutation 뒤 pathname delete를 하지 않고 complete staging residue를 보존한 `runtime_recovery_required`로 닫는다. Missing/modified/replaced user byte를 자동 정리하지 않는다. |
+| Snapshot authority | Final file descriptor hash 뒤 pathname을 다시 열어 original identity와 bytes를 재검증한다. 성공값은 durable path authority가 아닌 `RuntimeStagingVerificationSnapshot`이다. |
+| Verification | Runtime-release `152/152`, package typecheck·build, exact queue root test, final combined root test·typecheck·build, Chat Shell lint, docs links와 diff check가 green이다. |
+| Review | Final rebased combined tip에서 Standards P0–P2와 Spec P0–P3 finding은 0건이다. `runtime-archive-extraction.ts`의 large-Module Divergent Change는 non-blocking P3 debt로 남는다. |
+| Downstream handoff | D1c는 exact archive transport만 추가한다. D1d가 cache lease 아래 publish/quarantine/fresh readback을 소유하고 spawn boundary가 다시 complete-tree를 검증한다. |

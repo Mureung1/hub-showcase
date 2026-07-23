@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -36,14 +36,14 @@ Admitted v3 workspace에 package-owned `AGENTS.md`와 declared built-in Skill tr
 
 ## Acceptance Criteria
 
-- [ ] Package resource에는 reviewed product `AGENTS.md`와 `ay-ple-first-assignment` complete Skill root만 있고 exact descriptor와 byte roster가 일치한다.
-- [ ] Package source verifier가 missing/extra/modified/symlink/mode drift를 workspace mutation 전에 fail closed한다.
-- [ ] Fresh admitted workspace에는 absent-only no-clobber 방식으로 exact bundle이 설치되고 complete-tree readback이 green이다.
-- [ ] Missing declared path만 explicit recovery되며 modified·extra·symlink와 descriptor-outside context의 bytes는 before/after 동일하다.
-- [ ] Hostile ancestor repository, user/global config, `AGENTS.override.md`, `.codex/`와 undeclared Skill canary가 native effective context에 섞이지 않고 eligibility를 fail closed한다.
-- [ ] Private config/Skill verification이 fixed project-root policy와 exact one-Skill roster를 확인하며 thread/start·turn/start·Skill input은 0이다.
-- [ ] `WorkspaceActionAdmission`이 Ready 및 모든 product Codex action 직전에 같은 guard를 fresh 적용한다.
-- [ ] B1 completion artifact가 downstream B2/A1에 admitted workspace, verified bundle snapshot과 native guard result의 opaque contract만 전달한다.
+- [x] Package resource에는 reviewed product `AGENTS.md`와 `ay-ple-first-assignment` complete Skill root만 있고 exact descriptor와 byte roster가 일치한다.
+- [x] Package source verifier가 missing/extra/modified/symlink/mode drift를 workspace mutation 전에 fail closed한다.
+- [x] Fresh admitted workspace에는 absent-only no-clobber 방식으로 exact bundle이 설치되고 complete-tree readback이 green이다.
+- [x] Missing declared path만 explicit recovery되며 modified·extra·symlink와 descriptor-outside context의 bytes는 before/after 동일하다.
+- [x] Hostile ancestor repository, user/global config, `AGENTS.override.md`, `.codex/`와 undeclared Skill canary가 native effective context에 섞이지 않고 eligibility를 fail closed한다.
+- [x] Private config/Skill verification이 fixed project-root policy와 exact one-Skill roster를 확인하며 thread/start·turn/start·Skill input은 0이다.
+- [x] `WorkspaceActionAdmission`이 Ready 및 모든 product Codex action 직전에 같은 guard를 fresh 적용한다.
+- [x] B1 completion artifact가 downstream B2/A1에 admitted workspace, verified bundle snapshot과 native guard result의 opaque contract만 전달한다.
 
 ## Verification
 
@@ -165,3 +165,13 @@ Admitted v3 workspace에 package-owned `AGENTS.md`와 declared built-in Skill tr
 | Patch disposition | `0010-native-context-read`는 폐기했다. [Patch stack 축소 연구](../../spikes/codex-sdk-patch-reduction/research.md)가 기존 아홉 patch의 필요성, replacement evidence, maintenance cost와 제거 조건을 소유한다. |
 | Independent review | Standards P0–P2 finding 0건, parent Spec P0–P3 finding 0건. 남은 P3 primitive duplication은 bounded debt이며 다음 관련 규칙 변경 전까지 actual-child parity oracle로 통제한다. |
 | Deferred composition | Setup envelope, Runtime transition lease와 `Semester Ready` commit은 구현하지 않았고 B2/A1/C1을 선점하지 않는다. |
+
+## Coordinator Integration Closeout
+
+| Evidence | Result |
+| --- | --- |
+| Canonical integration tip | `3e3e578fbd8d5f427bde6c6c6087f3789756cdba` |
+| B1 completion | v3 admission 위 canonical workspace instruction/Skill bundle, retained directory containment, effective native-context guard와 Server action-admission seam이 canonical integration history에 반영됐다. |
+| Verification | SemesterWorkspace·Server focused evidence와 Runtime native-context actual evidence에 더해 final combined root test·typecheck·build, Chat Shell lint, docs links와 diff check가 green이다. |
+| Review | Containment와 patch-free native-context correction의 independent Standards·Spec finding은 0건이다. |
+| Downstream handoff | B2는 admitted workspace와 point-in-time verified bundle/context evidence를 소비하되 A1-held lease 안에서만 Ready를 commit·readback한다. |

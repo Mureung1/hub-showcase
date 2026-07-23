@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -35,13 +35,13 @@ Persistent Python bridge가 한 개의 managed ChatGPT login attempt를 즉시 �
 
 ## Acceptance Criteria
 
-- [ ] Bridge protocol이 fresh account read, login start/status/cancel/release, logout을 strict command/result family로 제공한다.
-- [ ] Login start response는 bounded 시간 안에 돌아오고 한 active slot을 넘는 native attempt를 만들지 않는다.
-- [ ] Repeated status/release/cancel이 deterministic하며 delayed completion과 duplicate command에서 terminal result를 잃지 않는다.
-- [ ] Cancel/completion race와 expiry가 fresh account read를 통해 connected 또는 non-connected terminal로 수렴한다.
-- [ ] Logout은 fresh null account readback 없이는 success가 아니며 workspace 관련 state를 알거나 지우지 않는다.
-- [ ] Native login ID, raw notification/error, token, credential·account private field가 NDJSON journal과 test output에서 0건이다.
-- [ ] Bridge EOF/close와 forced error 뒤 waiter, queue와 Python child가 bounded하게 정리된다.
+- [x] Bridge protocol이 fresh account read, login start/status/cancel/release, logout을 strict command/result family로 제공한다.
+- [x] Login start response는 bounded 시간 안에 돌아오고 한 active slot을 넘는 native attempt를 만들지 않는다.
+- [x] Repeated status/release/cancel이 deterministic하며 delayed completion과 duplicate command에서 terminal result를 잃지 않는다.
+- [x] Cancel/completion race와 expiry가 fresh account read를 통해 connected 또는 non-connected terminal로 수렴한다.
+- [x] Logout은 fresh null account readback 없이는 success가 아니며 workspace 관련 state를 알거나 지우지 않는다.
+- [x] Native login ID, raw notification/error, token, credential·account private field가 NDJSON journal과 test output에서 0건이다.
+- [x] Bridge EOF/close와 forced error 뒤 waiter, queue와 Python child가 bounded하게 정리된다.
 
 ## Verification
 
@@ -142,3 +142,13 @@ Coordinator가 independent review로 fixed R1b SHA를 정한 뒤 C lane이 다�
 3. 현재 `ready | not_ready`만 설명하는 `packages/codex-chat-runtime/README.md`의 bridge table을 위 strict account frame roster와 private-value/timeout/cleanup semantics로 갱신한다. R1c가 exact application identity를 worker client args에 연결한 뒤 Node Runtime 설명도 함께 갱신한다.
 4. `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime`을 새 materialization에서 실행하고 시작·종료 후 `verify:production-runtime`이 모두 green인지 확인한다.
 5. 이 C-owned manifest/README delta와 fixed R1b를 다음 R1c `handoffSha`에 포함한다. R1c는 frame decoder, `auth-only | workspace` role, exact release client identity와 frozen `CodexAccountLifecycle`만 소비하고 Python native identity를 재노출하지 않는다.
+
+## Coordinator Integration Closeout
+
+| Evidence | Result |
+| --- | --- |
+| Canonical integration tip | `3e3e578fbd8d5f427bde6c6c6087f3789756cdba` |
+| Serialization handoff | C-owned production manifest·README serialization과 R1c Node consumer가 같은 staged first-parent queue에 반영됐다. Exact SDK patch stack은 `0001`–`0009`를 유지한다. |
+| Verification | Final combined tip에서 `npm test`, root typecheck·build, Chat Shell lint, docs links와 `git diff --check`가 green이다. 앞선 exact Runtime gate에서 bridge `39/39`, production bundle `23/23`, Node actual `91/91`과 before/after verifier가 green이었다. |
+| Review | Combined Standards P0–P2와 parent Spec P0–P3 finding은 0건이다. |
+| Queue recovery | 각 lane의 기존 `--no-ff` first-parent merge를 보존하기 위해 reviewed staging history를 canonical integration branch에 `--ff-only`로 승격했다. 새 wrapper merge나 cherry-pick 조합은 만들지 않았다. |
