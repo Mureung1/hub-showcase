@@ -13,6 +13,7 @@ import {
 } from '../data/selectors'
 import { fridgeIngredients, SEASONING_MATCH_NAMES } from '../data/fridgeIngredients'
 import { loadFridgeSelection } from '../data/fridgeStorage'
+import { loadLikedRecipes, saveLikedRecipes } from '../data/likedRecipesStorage'
 import TopNav from '../components/TopNav'
 import MenuCard from '../components/MenuCard'
 import PromoBanner from '../components/PromoBanner'
@@ -41,6 +42,16 @@ function Home() {
   const [selectedType, setSelectedType] = useState(null)
   const [selectedTimeFilterId, setSelectedTimeFilterId] = useState(null)
   const [selectedSort, setSelectedSort] = useState(null)
+  const [likedIds, setLikedIds] = useState(() => loadLikedRecipes())
+  const [showLikedOnly, setShowLikedOnly] = useState(false)
+
+  function handleToggleLike(recipeId) {
+    setLikedIds((prev) => {
+      const next = prev.includes(recipeId) ? prev.filter((id) => id !== recipeId) : [...prev, recipeId]
+      saveLikedRecipes(next)
+      return next
+    })
+  }
 
   useEffect(() => {
     const selectedIds = loadFridgeSelection()
@@ -79,7 +90,8 @@ function Home() {
   function applyFilters(recipes) {
     // 정렬 기준(가격순)만 다르고 나머지(음식종류/시간) 필터 로직은 selectors.js를 그대로 재사용 —
     // 레시피 목록은 원래 저렴한 순으로 들어오므로, 높은순을 고르면 그냥 뒤집기만 하면 됨.
-    const filtered = filterRecipesByTimeFilter(filterRecipesByType(recipes, categories, selectedType), selectedTimeFilterId)
+    const byTypeAndTime = filterRecipesByTimeFilter(filterRecipesByType(recipes, categories, selectedType), selectedTimeFilterId)
+    const filtered = showLikedOnly ? byTypeAndTime.filter((recipe) => likedIds.includes(recipe.id)) : byTypeAndTime
     return selectedSort === 'price-desc' ? [...filtered].reverse() : filtered
   }
 
@@ -115,6 +127,18 @@ function Home() {
             <span className="font-display text-base font-bold text-text-primary">정렬</span>
             <FilterChipGroup options={SORT_OPTIONS} selectedId={selectedSort} onSelect={setSelectedSort} />
           </div>
+          <div className="flex flex-col gap-2">
+            <span className="font-display text-base font-bold text-text-primary">찜</span>
+            <button
+              type="button"
+              onClick={() => setShowLikedOnly((prev) => !prev)}
+              className={`rounded-pill border px-4 py-1.5 font-display text-sm transition ${
+                showLikedOnly ? 'border-primary bg-primary text-text-primary' : 'border-border bg-bg-surface text-text-secondary'
+              }`}
+            >
+              즐겨찾기
+            </button>
+          </div>
         </div>
 
         {!hasAnyMatch && closestRecipes.length === 0 && (
@@ -149,6 +173,8 @@ function Home() {
                       price={recipe.totalCost}
                       priceSuffix="원"
                       timeLabel={`${recipe.cookTimeMinutes}분`}
+                      liked={likedIds.includes(recipe.id)}
+                      onToggleLike={() => handleToggleLike(recipe.id)}
                     />
                   ))}
                 </ol>
@@ -171,6 +197,8 @@ function Home() {
                   price={recipe.totalCost}
                   priceSuffix="원"
                   missingCount={recipe.missingCount}
+                  liked={likedIds.includes(recipe.id)}
+                  onToggleLike={() => handleToggleLike(recipe.id)}
                 />
               ))}
             </ol>
@@ -206,6 +234,8 @@ function Home() {
                     price={recipe.totalCost}
                     priceSuffix="원"
                     bestTag={recipe.id === cheapestId}
+                    liked={likedIds.includes(recipe.id)}
+                    onToggleLike={() => handleToggleLike(recipe.id)}
                   />
                 ))}
               </ol>
@@ -228,6 +258,8 @@ function Home() {
                   priceSuffix="원"
                   bestTag={recipe.id === cheapestId}
                   missingCount={recipe.missingCount}
+                  liked={likedIds.includes(recipe.id)}
+                  onToggleLike={() => handleToggleLike(recipe.id)}
                 />
               ))}
             </ol>
@@ -249,6 +281,8 @@ function Home() {
               price={recipe.totalCost}
               priceSuffix="원"
               bestTag={recipe.id === cheapestId}
+              liked={likedIds.includes(recipe.id)}
+              onToggleLike={() => handleToggleLike(recipe.id)}
             />
           ))}
         </ol>
