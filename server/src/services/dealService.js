@@ -83,6 +83,9 @@ export async function getDealDetail(userId, dealId) {
     lng: user.baseLng,
   })
   if (!deal) throw httpError(404, '존재하지 않는 딜입니다.')
-  if (deal.status !== 'active') throw httpError(404, '마감되었거나 판매 종료된 딜입니다.')
+  // 만료 잡(T-14)이 아직 돌지 않은 창에서도 마감된 딜이 열리지 않도록 시각도 함께 검사한다
+  if (deal.status !== 'active' || new Date(deal.pickupDeadlineAt) <= new Date()) {
+    throw httpError(404, '마감되었거나 판매 종료된 딜입니다.')
+  }
   return deal
 }

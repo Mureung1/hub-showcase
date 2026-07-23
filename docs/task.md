@@ -63,7 +63,7 @@
   - 푸시 권한 거부 시 인앱 폴링 폴백. Firebase 자격증명은 server/.env (커밋 금지)
   - 선행 작업: Firebase 프로젝트 생성 + 서비스 계정 키 발급
   - DoD: 딜 등록 → 조건에 맞는 기기에서 푸시 수신
-- [ ] **T-14 만료 처리** `server`
+- [x] **T-14 만료 처리** `server` — [#14](https://github.com/HappyGogildong/hub/issues/14)
   - 픽업 마감 경과 시: 딜 비활성화 + 미픽업 예약 만료 + 재고 복원(확정 정책)
   - DoD: 마감 지난 딜이 목록에서 사라지고 예약 상태가 `expired`로 전이
 - [ ] **T-15 k6 부하 테스트 — 오버셀 증명** `server` ★기술 셀링포인트
@@ -87,7 +87,7 @@
 - PostGIS 전환 (MVP는 Haversine 쿼리)
 - 노쇼 정책 고도화 (횟수 제한·페널티 — 현재는 단순 만료)
 - 대시보드 실시간화 (폴링 → SSE/WebSocket)
-- ESLint 도입, 서버 통합 테스트(supertest) 상시화
+- ESLint 도입, 서버 통합 테스트(supertest) 상시화 (클라이언트는 Vitest + RTL 도입됨 — RequireRole 테스트 작성)
 - 사장님 웹앱 알림(브라우저 알림) — 예약 발생 시
 - 이미지 업로드 (딜 사진 — MVP는 카테고리 아이콘/플레이스홀더로 대체)
 

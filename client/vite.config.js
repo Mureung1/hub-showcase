@@ -9,4 +9,10 @@ export default defineConfig({
       '/api': 'http://localhost:4000',
     },
   },
+  test: {
+    // 브라우저 API(document, localStorage)가 필요하므로 jsdom 환경에서 실행
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setup.js',
+  },
 })

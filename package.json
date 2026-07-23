@@ -17,6 +17,7 @@
     "dev:server": "npm run dev -w server",
     "dev:proto": "npm run dev -w prototype",
     "build": "npm run build -w client",
+    "test": "npm run test -w client",
     "format": "prettier --write \"client/src/**/*.{js,jsx,css}\" \"server/src/**/*.js\""
   },
   "devDependencies": {
