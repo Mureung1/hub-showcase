@@ -3,12 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { GetResultsResponse, ResponseStatusResponse, CloseAppointmentResponse, GetParticipantsResponse } from 'shared'
 import { requireSupabase } from '../lib/supabase.js'
 import { getAppointmentDetail } from '../lib/pgTime.js'
-import {
-  getAppointmentResponseRows,
-  aggregateSlotCounts,
-  countCompletedParticipants,
-  getParticipantsResponseStatus,
-} from '../lib/results.js'
+import { getSlotCounts, getCompletedCount, getParticipantsResponseStatus } from '../lib/results.js'
 
 export const resultsRouter = Router()
 // study: 관리자인지 확인하는 함수.
@@ -57,13 +52,13 @@ resultsRouter.get('/:id/results', async (req, res) => {
     return
   }
 
-  const rows = await getAppointmentResponseRows(db, appointmentId)
-  if (rows === null) {
+  const slots = await getSlotCounts(db, appointmentId)
+  if (slots === null) {
     res.status(500).json({ error: '서버 오류가 발생했어요' })
     return
   }
 
-  const response: GetResultsResponse = { slots: aggregateSlotCounts(rows) }
+  const response: GetResultsResponse = { slots }
   res.status(200).json(response)
 })
 // study: 관리자 대시보드의 "n명 중 m명 완료"용.
@@ -72,13 +67,13 @@ resultsRouter.get('/:id/response-status', async (req, res) => {
   const db = requireSupabase(res)
   if (!db) return
 
-  const rows = await getAppointmentResponseRows(db, req.params.id)
-  if (rows === null) {
+  const completedCount = await getCompletedCount(db, req.params.id)
+  if (completedCount === null) {
     res.status(500).json({ error: '서버 오류가 발생했어요' })
     return
   }
 
-  const response: ResponseStatusResponse = { completedCount: countCompletedParticipants(rows) }
+  const response: ResponseStatusResponse = { completedCount }
   res.status(200).json(response)
 })
 
@@ -97,7 +92,7 @@ resultsRouter.get('/:id/participants', async (req, res) => {
   res.status(200).json(response)
 })
 
-// study: 
+// study: 관리자- 마감요청.
 resultsRouter.put('/:id/participants/:participantId/close', async (req, res) => {
   const db = requireSupabase(res)
   if (!db) return

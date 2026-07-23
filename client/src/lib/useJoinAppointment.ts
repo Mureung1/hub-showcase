@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod' // study: React Hook Form 
 import axios from 'axios'
 import { joinAppointmentRequestSchema, type JoinAppointmentRequest, type JoinAppointmentResponse } from 'shared'
 import { parseAppointmentId } from './appointmentLink.ts'
-import { getSession } from './session.ts'
 
 export function useJoinAppointment(
   appointmentId: string | undefined,
@@ -29,13 +28,6 @@ export function useJoinAppointment(
     const targetId = appointmentId ?? parseAppointmentId(link)
     if (!targetId) {
       setLinkError('올바른 참여 링크가 아니에요') // study: 파싱 실패. 링크 형식조차 틀린 경우.
-      return
-    }
-
-    // claude: 이 브라우저에 이미 이 약속 세션이 저장돼 있으면(같은 링크로 전에 참여한 적 있음) API 호출 없이 바로 성공 처리
-    const existingSession = getSession(targetId)
-    if (existingSession) {
-      onSuccess(existingSession, targetId)
       return
     }
 

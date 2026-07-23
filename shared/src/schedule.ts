@@ -3,7 +3,7 @@ import { eachDayOfInterval, format, parseISO } from 'date-fns'
 
 export const scheduleSlotSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않아요'),
-  time: z.string().regex(/^([01]\d|2[0-3]):(00|30)$/, '시간은 30분 단위로만 선택할 수 있어요'), // study: FE에서는 30분 단위로 선택됨이 당연하나, 서버에서는 여러 잘못된 요청을 생각해서 의심하고 검사해야함
+  time: z.string().regex(/^(([01]\d|2[0-3]):(00|30)|24:00)$/, '시간은 30분 단위로만 선택할 수 있어요'), // study: FE에서는 30분 단위로 선택됨이 당연하나, 서버에서는 여러 잘못된 요청을 생각해서 의심하고 검사해야함
 })
 
 export type ScheduleSlot = z.infer<typeof scheduleSlotSchema>
