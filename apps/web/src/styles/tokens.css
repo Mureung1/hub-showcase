@@ -10,6 +10,8 @@
   --paper: #ffffff;
   --soft-paper: #fbfffd;
   --gray-soft: #f4f5f4;
+  --overlay: rgb(15 22 19 / 62%);
+  --success: #21875f;
 
   --content-width: 1080px;
   --page-gutter: 40px;
