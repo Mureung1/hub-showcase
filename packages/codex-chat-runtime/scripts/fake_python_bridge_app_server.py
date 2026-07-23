@@ -210,6 +210,72 @@ class FakeAppServer:
         time.sleep(0.2)
         os._exit(42)
 
+    def _emit_login_start_response(
+        self,
+        request_id: object,
+        login_id: str,
+    ) -> None:
+        root = self._journal_path.parent
+        release = root / "release-login-start"
+        if (root / "defer-login-start").is_file():
+            while not release.is_file():
+                time.sleep(0.005)
+            release.unlink()
+        outcome_path = root / "login-start-outcome"
+        outcome = (
+            outcome_path.read_text(encoding="utf-8").strip()
+            if outcome_path.is_file()
+            else "success"
+        )
+        if outcome == "forced-eof":
+            os._exit(42)
+        if outcome == "failure":
+            with self._login_lock:
+                if self._active_login_id == login_id:
+                    self._active_login_id = None
+            _write(
+                {
+                    "id": request_id,
+                    "error": {
+                        "code": -32602,
+                        "message": "raw-login-start-provider-secret",
+                    },
+                }
+            )
+            return
+        auth_url = (
+            "https://attacker.invalid/raw-auth-capability"
+            if outcome == "unsafe-url"
+            else "https://auth.openai.com/codex/test-login"
+        )
+        _write(
+            {
+                "id": request_id,
+                "result": {
+                    "authUrl": auth_url,
+                    "loginId": login_id,
+                    "type": "chatgpt",
+                },
+            }
+        )
+        mode_path = root / "login-mode"
+        mode = (
+            mode_path.read_text(encoding="utf-8").strip()
+            if mode_path.is_file()
+            else "cancelled"
+        )
+        if mode in {"delayed-success", "delayed-failure"}:
+            threading.Thread(
+                target=self._watch_login_completion,
+                args=(login_id, mode),
+                daemon=True,
+            ).start()
+        elif mode == "forced-eof":
+            threading.Thread(
+                target=self._force_exit_after_login_start,
+                daemon=True,
+            ).start()
+
     def _inject_response(self, request: dict[str, Any]) -> bool:
         injection_path = self._journal_path.parent / "injected-response.json"
         if not injection_path.is_file():
@@ -624,33 +690,14 @@ class FakeAppServer:
                 if self._active_login_id is not None:
                     raise RuntimeError("fake permits one native login at a time")
                 self._active_login_id = login_id
-            _write(
-                {
-                    "id": message["id"],
-                    "result": {
-                        "authUrl": "https://auth.openai.com/codex/test-login",
-                        "loginId": login_id,
-                        "type": "chatgpt",
-                    },
-                }
-            )
-            mode_path = self._journal_path.parent / "login-mode"
-            mode = (
-                mode_path.read_text(encoding="utf-8").strip()
-                if mode_path.is_file()
-                else "cancelled"
-            )
-            if mode in {"delayed-success", "delayed-failure"}:
+            if (self._journal_path.parent / "defer-login-start").is_file():
                 threading.Thread(
-                    target=self._watch_login_completion,
-                    args=(login_id, mode),
+                    target=self._emit_login_start_response,
+                    args=(message["id"], login_id),
                     daemon=True,
                 ).start()
-            elif mode == "forced-eof":
-                threading.Thread(
-                    target=self._force_exit_after_login_start,
-                    daemon=True,
-                ).start()
+            else:
+                self._emit_login_start_response(message["id"], login_id)
             return
         if method == "account/login/cancel":
             params = message.get("params")

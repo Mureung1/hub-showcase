@@ -132,11 +132,12 @@ class InteractionRecord:
 @dataclass(slots=True)
 class BrowserLoginAttempt:
     attempt_id: str
-    handle: AsyncChatgptLoginHandle = field(repr=False)
-    auth_url: str
-    status: str = "pending"
+    handle: AsyncChatgptLoginHandle | None = field(default=None, repr=False)
+    auth_url: str | None = field(default=None, repr=False)
+    status: str = "starting"
     error_code: str | None = None
     settlement_target: str | None = None
+    start_settled: asyncio.Event = field(default_factory=asyncio.Event, repr=False)
     completion_task: asyncio.Task[None] | None = field(default=None, repr=False)
     expiry_task: asyncio.Task[None] | None = field(default=None, repr=False)
     settlement_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
@@ -366,7 +367,6 @@ class BridgeWorker:
         self._user_input_collector: asyncio.Task[None] | None = None
         self._thread_start_lock = asyncio.Lock()
         self._turn_start_lock = asyncio.Lock()
-        self._login_start_lock = asyncio.Lock()
         self._account_operation_timeout = account_operation_timeout_ms / 1000
         self._login_attempt_timeout = login_attempt_timeout_ms / 1000
         self._request_leases = RequestLeaseTable(
@@ -392,7 +392,7 @@ class BridgeWorker:
             or self._interactions
             or (
                 self._login_attempt is not None
-                and self._login_attempt.status == "pending"
+                and self._login_attempt.status in {"starting", "pending"}
             )
         )
 
@@ -452,15 +452,29 @@ class BridgeWorker:
         if isinstance(command, ReadAccountCommand):
             coroutine = self._read_account(command)
         elif isinstance(command, StartBrowserLoginCommand):
-            coroutine = self._start_browser_login(command)
+            attempt, owns_start = self._reserve_browser_login_start(command.attempt_id)
+            coroutine = self._start_browser_login(
+                command,
+                attempt,
+                owns_start=owns_start,
+            )
         elif isinstance(command, ReadBrowserLoginAttemptCommand):
-            coroutine = self._read_browser_login_attempt(command)
+            coroutine = self._read_browser_login_attempt(
+                command,
+                self._login_attempt,
+            )
         elif isinstance(command, CancelBrowserLoginCommand):
-            coroutine = self._cancel_browser_login(command)
+            coroutine = self._cancel_browser_login(
+                command,
+                self._login_attempt,
+            )
         elif isinstance(command, ReleaseBrowserLoginAttemptCommand):
-            coroutine = self._release_browser_login_attempt(command)
+            coroutine = self._release_browser_login_attempt(
+                command,
+                self._login_attempt,
+            )
         elif isinstance(command, LogoutCommand):
-            coroutine = self._logout(command)
+            coroutine = self._logout(command, self._login_attempt)
         elif isinstance(command, StartThreadCommand):
             coroutine = self._start_thread(command)
         elif isinstance(command, StartTurnCommand):
@@ -694,57 +708,24 @@ class BridgeWorker:
     async def _start_browser_login(
         self,
         command: StartBrowserLoginCommand,
+        attempt: BrowserLoginAttempt,
+        *,
+        owns_start: bool,
     ) -> None:
-        async with self._login_start_lock:
-            current = self._login_attempt
-            if current is not None:
-                if (
-                    current.attempt_id == command.attempt_id
-                    and current.status == "pending"
-                ):
-                    self._result(
-                        command.bridge_request_id,
-                        command.command,
-                        status="pending",
-                        attemptId=current.attempt_id,
-                        authUrl=current.auth_url,
-                    )
-                else:
-                    self._operation_error(
-                        command.bridge_request_id,
-                        "login_start_failed",
-                    )
+        if owns_start:
+            await self._perform_browser_login_start(attempt)
+        elif attempt.attempt_id == command.attempt_id:
+            if not await self._join_browser_login_start(attempt):
                 return
-            try:
-                handle = await asyncio.wait_for(
-                    self._codex.login_chatgpt(),
-                    timeout=self._account_operation_timeout,
-                )
-            except Exception as exc:
-                self._account_request_failure(
-                    command.bridge_request_id,
-                    "login_start_failed",
-                    exc,
-                )
-                return
-            try:
-                auth_url = _safe_browser_auth_url(handle.auth_url)
-            except ValueError:
-                self.trigger_fatal("sdk_operation_failed")
-                return
-            attempt = BrowserLoginAttempt(
-                attempt_id=command.attempt_id,
-                handle=handle,
-                auth_url=auth_url,
+        else:
+            self._operation_error(
+                command.bridge_request_id,
+                "login_start_failed",
             )
-            self._login_attempt = attempt
-            self._last_released_login_attempt_id = None
-            attempt.completion_task = asyncio.create_task(
-                self._watch_browser_login_completion(attempt)
-            )
-            attempt.expiry_task = asyncio.create_task(
-                self._expire_browser_login(attempt)
-            )
+            return
+        if self._fatal_code is not None:
+            return
+        if attempt.status == "pending" and attempt.auth_url is not None:
             self._result(
                 command.bridge_request_id,
                 command.command,
@@ -752,13 +733,105 @@ class BridgeWorker:
                 attemptId=attempt.attempt_id,
                 authUrl=attempt.auth_url,
             )
+            return
+        self._operation_error(
+            command.bridge_request_id,
+            "login_start_failed",
+        )
+
+    def _reserve_browser_login_start(
+        self,
+        attempt_id: str,
+    ) -> tuple[BrowserLoginAttempt, bool]:
+        current = self._login_attempt
+        if current is not None:
+            return current, False
+        attempt = BrowserLoginAttempt(attempt_id=attempt_id)
+        self._login_attempt = attempt
+        self._last_released_login_attempt_id = None
+        return attempt, True
+
+    async def _perform_browser_login_start(
+        self,
+        attempt: BrowserLoginAttempt,
+    ) -> None:
+        try:
+            handle = await asyncio.wait_for(
+                self._codex.login_chatgpt(),
+                timeout=self._account_operation_timeout,
+            )
+        except asyncio.CancelledError:
+            self._fail_browser_login_start(attempt)
+            raise
+        except JsonRpcError:
+            self._fail_browser_login_start(attempt)
+            return
+        except Exception as exc:
+            self._fail_browser_login_start(attempt)
+            if isinstance(exc, (asyncio.TimeoutError, TransportClosedError)):
+                self.trigger_fatal(
+                    "sdk_transport_failed"
+                    if isinstance(exc, TransportClosedError)
+                    else "sdk_operation_timeout"
+                )
+            else:
+                self.trigger_fatal("sdk_operation_failed")
+            return
+
+        if (
+            self._fatal_code is not None
+            or self._login_attempt is not attempt
+            or attempt.start_settled.is_set()
+        ):
+            return
+        attempt.handle = handle
+        try:
+            attempt.auth_url = _safe_browser_auth_url(handle.auth_url)
+        except ValueError:
+            self._fail_browser_login_start(attempt)
+            self.trigger_fatal("sdk_operation_failed")
+            return
+        attempt.status = "pending"
+        attempt.completion_task = asyncio.create_task(
+            self._watch_browser_login_completion(attempt)
+        )
+        attempt.expiry_task = asyncio.create_task(self._expire_browser_login(attempt))
+        attempt.start_settled.set()
+
+    def _fail_browser_login_start(self, attempt: BrowserLoginAttempt) -> None:
+        if attempt.status == "starting":
+            attempt.status = "failed"
+            attempt.error_code = "login_start_failed"
+        attempt.start_settled.set()
+
+    async def _join_browser_login_start(
+        self,
+        attempt: BrowserLoginAttempt,
+    ) -> bool:
+        if not attempt.start_settled.is_set():
+            try:
+                await asyncio.wait_for(
+                    attempt.start_settled.wait(),
+                    timeout=self._account_operation_timeout,
+                )
+            except asyncio.TimeoutError:
+                self.trigger_fatal("sdk_operation_timeout")
+                return False
+        if attempt.status == "starting":
+            self.trigger_fatal("sdk_operation_failed")
+            return False
+        return self._fatal_code is None
 
     async def _watch_browser_login_completion(
         self,
         attempt: BrowserLoginAttempt,
     ) -> None:
+        handle = attempt.handle
+        if handle is None:
+            self.trigger_fatal("sdk_operation_failed")
+            return
         try:
-            completion = await attempt.handle.wait()
+            completion = await handle.wait()
         except asyncio.CancelledError:
             raise
         except TransportClosedError:
@@ -813,13 +886,15 @@ class BridgeWorker:
     async def _read_browser_login_attempt(
         self,
         command: ReadBrowserLoginAttemptCommand,
+        attempt: BrowserLoginAttempt | None,
     ) -> None:
-        attempt = self._login_attempt
         if attempt is None or attempt.attempt_id != command.attempt_id:
             self._operation_error(
                 command.bridge_request_id,
                 "login_attempt_not_found",
             )
+            return
+        if not await self._join_browser_login_start(attempt):
             return
         fields: dict[str, Any] = {
             "attemptId": attempt.attempt_id,
@@ -839,13 +914,15 @@ class BridgeWorker:
     async def _cancel_browser_login(
         self,
         command: CancelBrowserLoginCommand,
+        attempt: BrowserLoginAttempt | None,
     ) -> None:
-        attempt = self._login_attempt
         if attempt is None or attempt.attempt_id != command.attempt_id:
             self._operation_error(
                 command.bridge_request_id,
                 "login_attempt_not_found",
             )
+            return
+        if not await self._join_browser_login_start(attempt):
             return
         if attempt.status != "pending":
             self._result(
@@ -883,9 +960,13 @@ class BridgeWorker:
             if self._login_attempt is not attempt or attempt.status != "pending":
                 return True
             attempt.settlement_target = terminal_status
+            handle = attempt.handle
+            if handle is None:
+                self.trigger_fatal("sdk_operation_failed")
+                return False
             try:
                 await asyncio.wait_for(
-                    attempt.handle.cancel(),
+                    handle.cancel(),
                     timeout=self._account_operation_timeout,
                 )
             except Exception as exc:
@@ -946,8 +1027,8 @@ class BridgeWorker:
     async def _release_browser_login_attempt(
         self,
         command: ReleaseBrowserLoginAttemptCommand,
+        attempt: BrowserLoginAttempt | None,
     ) -> None:
-        attempt = self._login_attempt
         if attempt is None:
             if self._last_released_login_attempt_id == command.attempt_id:
                 self._result(
@@ -967,6 +1048,8 @@ class BridgeWorker:
                 command.bridge_request_id,
                 "login_attempt_not_found",
             )
+            return
+        if not await self._join_browser_login_start(attempt):
             return
         if not await self._release_login_attempt(
             attempt,
@@ -1009,14 +1092,20 @@ class BridgeWorker:
             self._last_released_login_attempt_id = attempt.attempt_id
         return True
 
-    async def _logout(self, command: LogoutCommand) -> None:
-        attempt = self._login_attempt
-        if attempt is not None and not await self._release_login_attempt(
-            attempt,
-            failure_request_id=command.bridge_request_id,
-            failure_code="logout_failed",
-        ):
-            return
+    async def _logout(
+        self,
+        command: LogoutCommand,
+        attempt: BrowserLoginAttempt | None,
+    ) -> None:
+        if attempt is not None:
+            if not await self._join_browser_login_start(attempt):
+                return
+            if not await self._release_login_attempt(
+                attempt,
+                failure_request_id=command.bridge_request_id,
+                failure_code="logout_failed",
+            ):
+                return
         try:
             await asyncio.wait_for(
                 self._codex.logout(),
@@ -1570,6 +1659,7 @@ class BridgeWorker:
         self._login_attempt = None
         if attempt is None:
             return
+        self._fail_browser_login_start(attempt)
         self._cancel_login_task(attempt.expiry_task)
         completion_task = attempt.completion_task
         self._cancel_login_task(completion_task)
