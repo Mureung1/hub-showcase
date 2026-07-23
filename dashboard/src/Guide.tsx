@@ -55,7 +55,7 @@ export default function Guide() {
       </header>
 
       <section className="guide-section guide-instructions">
-        <h2>먼저 확인하세요</h2>
+        <h2>해야 할 것</h2>
         <ol>
           <li><strong>showcase.json을 PR에 포함하세요.</strong></li>
           <li><strong>아래 규칙에 따라 파일을 작성하세요.</strong></li>
@@ -64,7 +64,7 @@ export default function Guide() {
 
       <section className="guide-section guide-folder">
         <h2>파일 구조</h2>
-        <p>`showcase` 폴더 안에 JSON과 이미지를 넣습니다.</p>
+        <p>여러분 프로젝트 최상위에 `showcase` 폴더를 생성하고 JSON과 썸네일, 기타 스크린샷 이미지를 넣습니다.</p>
         <pre>{`showcase/
 ├── showcase.json
 ├── thumbnail.webp
