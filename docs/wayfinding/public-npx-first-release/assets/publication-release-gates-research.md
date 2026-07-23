@@ -8,7 +8,7 @@
 
 첫 public preview는 여러 서비스에 걸친 atomic transaction으로 게시할 수 없다. 따라서 **fixed local RC 하나를 immutable identity로 잠그고, 각 외부 write 뒤 authoritative readback이 통과해야만 다음 surface를 여는 재개 가능한 state machine**으로 운영한다.
 
-권고 순서는 다음과 같다.
+성공 경로의 승격 순서는 다음과 같다.
 
 ```text
 LOCAL_RC_ACCEPTED
@@ -23,6 +23,8 @@ LOCAL_RC_ACCEPTED
   → PAGES_DEPLOYMENT_VERIFIED
   → CURRENT_PUBLIC_PREVIEW
 ```
+
+이 선형 표기는 success path의 promotion order다. `NPM_PUBLISH_CREDENTIAL_RETIRED`는 `NPM_VERSION_VERIFIED`의 성공 successor만이 아니라 GAT가 주입된 모든 terminal outcome이 거치는 orthogonal barrier다. 따라서 S7의 guard는 `S5 green ∧ 모든 injected GAT retired`이고, S5가 실패한 branch는 retirement 뒤 retry 또는 incident로만 수렴하며 S7로 승격하지 않는다.
 
 - `PUBLIC_SOURCE_VERIFIED` 전에는 npm provenance가 가리킬 public source commit이 없고 GitHub Release tag를 고정할 public commit도 없다.
 - Runtime asset과 application descriptor sidecar는 **draft에서 모든 asset을 검증한 뒤 immutable release로 publish**한다. GitHub도 이 순서를 권고한다. Published release는 `immutable=true`, release attestation, downloaded asset byte까지 검증한 뒤에만 다음 단계로 간다.
@@ -259,7 +261,7 @@ Token value·Authorization header·local credential path는 log/receipt에 남�
 
 ### `S6 NPM_PUBLISH_CREDENTIAL_RETIRED`
 
-S6은 S5 success의 단순 successor가 아니라 **GAT가 주입된 모든 terminal outcome의 unconditional finally barrier**다. Publish request 전 실패, request/response loss, registry·provenance mismatch, success 모두 `npm token delete <id>`와 retirement readback으로 합류한다. 조건부 deprecate/dist-tag 정산이 필요하면 승인된 incident branch에서 retirement 전에 끝내거나, fresh cleanup GAT를 쓰고 그 credential도 같은 retirement barrier를 통과한다. 모든 injected GAT의 retirement 전에는 same-token retry, incident closure, 새 release attempt, public smoke, application release, Pages로 가지 않으며 retry는 새 GAT를 사용한다.
+S6은 success phase 하나가 아니라 **GAT가 주입된 모든 terminal outcome의 unconditional finally barrier**다. Publish request 전 실패, request/response loss, registry·provenance mismatch, success 모두 `npm token delete <id>`와 retirement readback으로 합류한다. 조건부 deprecate/dist-tag 정산이 필요하면 승인된 incident branch에서 retirement 전에 끝내거나, fresh cleanup GAT를 쓰고 그 credential도 같은 retirement barrier를 통과한다. 모든 injected GAT의 retirement 전에는 same-token retry, incident closure, 새 release attempt, public smoke, application release, Pages로 가지 않으며 retry는 새 GAT를 사용한다. Retirement receipt 자체는 S5 success를 합성하지 않는다. S5가 green인 branch만 `S5 green ∧ all injected GAT retired` guard를 통과해 S7로 가고, S5 failure branch는 retirement 뒤 retry 또는 incident로만 간다.
 
 Delete response를 기록한 뒤 해당 exact GAT를 ephemeral memory에서만 사용해 `npm whoami`·registry `/-/whoami`를 bounded poll한다. Registry의 explicit invalid/unauthorized-token response만 retirement green이며 delete response loss도 이 rejection으로 success reconcile할 수 있다. Credential이 아직 성공하거나 network·5xx·timeout뿐이면 최대 1시간 deadline까지 poll하고, 그 뒤에도 explicit rejection이 없으면 `credential_retirement_reconciliation`이다. Token expiry 예정이나 delete exit code만으로 green을 합성하지 않는다.
 
@@ -335,7 +337,7 @@ Npm GAT가 한 번이라도 주입된 branch는 아래 결과와 관계없이 S6
 | Pages deploy ambiguous | Deployment ID, fixed S2 source SHA·assembled artifact digest·current sentinel, site API, HTTPS body | Same artifact/source deployment가 succeed면 success; failed면 같은 artifact의 새 deployment를 별도 attempt로 기록 | Moving `main`에서 rebuild해 candidate bytes 변경, presentation-only source commit 추가 |
 | Pages body mismatch | Deployment status + actual body | Bounded propagation readback 뒤에도 다르면 current를 합성하지 않음. 별도 withdrawal 승인으로 current deployment를 unpublish하고 exact same verified artifact를 redeploy할 수 있음 | GitHub/npm/Runtime artifact를 Pages 문제 때문에 삭제·변경 |
 
-Automatic retry budget은 create/upload/publish 자체가 아니라 **readback polling과 승인된 현 attempt의 proven-safe unpublished application·Runtime draft/`starter` cleanup**에 둔다. GitHub create의 secondary rate limit, npm propagation·token retirement, Pages deployment는 bounded backoff와 deadline을 기록한다. Deadline이 지나면 `blocked_reconciliation`이고 사람이 external state를 확인하기 전 새 candidate나 destructive action으로 넘어가지 않는다.
+Blind automatic retry는 금지한다. Retry budget은 **authoritative readback이 remote state를 확정한 뒤 matrix가 명시적으로 허용한 proven-safe retry**, readback polling, 승인된 현 attempt의 unpublished application·Runtime draft/`starter` cleanup에만 둔다. 여기에는 verified empty `starter` upload retry, exact draft의 bounded publish PATCH retry와 same Pages artifact redeploy가 포함되며, identity가 불명확한 create/upload/publish 재호출은 포함되지 않는다. GitHub create의 secondary rate limit, npm propagation·token retirement, Pages deployment는 bounded backoff와 deadline을 기록한다. Deadline이 지나면 `blocked_reconciliation`이고 사람이 external state를 확인하기 전 새 candidate나 destructive action으로 넘어가지 않는다.
 
 ## Retain·yank·withdraw 계약
 
@@ -363,7 +365,7 @@ Ticket 015를 소비하는 `G0/P1` 구현은 최소 다음을 자동 판정해�
 8. Published `package.json` dependency→`npm-shrinkwrap.json` registry `resolved`/`integrity`→isolated installed closure→SBOM이 exact set equality이고 bundler origin-input→`bundled_js` roster도 exact set equality이다.
 9. GitHub draft의 `starter`·duplicate·rename, Runtime/application post-publish failure, CI reference mismatch, npm ambiguous success·mismatch·credential retirement ambiguity, pre/post-binding journal loss, Pages pending/stale를 scripted fake에서 재현하고 blind retry·missing-chain append 없이 위 reconciliation/block state로 수렴한다.
 10. Publish credential 주입 전 protected application tag/ref의 `GITHUB_REPOSITORY`, `GITHUB_REF`, `GITHUB_SHA`, `GITHUB_WORKFLOW_SHA`가 expected repository·tag·S2 source/workflow commit과 exact match해야 한다.
-11. GitHub-hosted CI가 exact S2 source에서 만든 tarball이 G1/application draft reference와 byte/roster equality일 때만 그 CI output을 non-latest tag·provenance로 publish한다. GAT를 주입한 모든 success/failure branch는 delete 후 exact-token auth rejection을 확인하며, 그 전에 retry·incident closure·public smoke로 가지 않는다.
+11. GitHub-hosted CI가 exact S2 source에서 만든 tarball이 G1/application draft reference와 byte/roster equality일 때만 그 CI output을 non-latest tag·provenance로 publish한다. GAT를 주입한 모든 success/failure branch는 delete 후 exact-token auth rejection을 확인하며, 그 전에 retry·incident closure·public smoke로 가지 않는다. S7 guard는 `S5 green ∧ all injected GAT retired`이고 retirement-only failure branch는 S7로 승격하지 않는다.
 12. Fixed source README는 exact command·public current-sentinel link를 conditional-current로만 표시하고 후속 presentation commit을 만들지 않는다. Pages assembler는 G1 base와 S8 ledger에서 exact `release/current.json`을 deterministic하게 추가하며, deployment·HTTPS Landing·sentinel·ledger equality가 모두 확인되기 전 `current`가 아니다.
 13. Withdrawal path는 default retain, npm exact deprecate/dist-tag 제거, Pages unpublish를 분리하고 GitHub release delete·npm unpublish에는 별도 사용자 승인을 요구한다.
 

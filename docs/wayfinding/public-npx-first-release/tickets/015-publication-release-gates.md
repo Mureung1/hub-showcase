@@ -14,7 +14,7 @@
 
 GitHub·npm·Pages는 atomic transaction을 제공하지 않으므로, publication은 fixed local RC 하나를 입력으로 받는 **read-before-write → one write → authoritative readback** state machine으로 고정한다. `G1`·`I1`·prepublication live `I2`가 같은 candidate digest를 가리키고 두 번의 deterministic source/npm/Runtime 생성, `REDIST-01..12`, canonical component·package complete-tree, legal/SBOM/provenance와 Mach-O signature roster가 모두 green이어야 외부 write 승인을 요청할 수 있다. 현재 repository에는 public `AY-PLE` remote·package·release workflow·Landing과 release ledger가 없고 legal/provenance closure도 미완성이므로, 이 ticket의 `resolved`는 publication clearance가 아니라 구현할 release protocol의 확정이다.
 
-첫 publish 순서는 다음과 같다.
+성공 경로의 첫 publish 승격 순서는 다음과 같다.
 
 ```text
 LOCAL_RC_ACCEPTED
@@ -29,6 +29,8 @@ LOCAL_RC_ACCEPTED
   → PAGES_DEPLOYMENT_VERIFIED
   → CURRENT_PUBLIC_PREVIEW
 ```
+
+이 선형열은 success path만 나타낸다. `NPM_PUBLISH_CREDENTIAL_RETIRED`는 GAT가 주입된 모든 success·failure·ambiguous outcome의 orthogonal barrier이며, S7은 `S5 green ∧ 모든 injected GAT retired`일 때만 열린다. S5 failure branch는 retirement receipt만으로 success를 합성하지 않고 retry 또는 incident로 간다.
 
 사용자는 public repository/npm target, `v<applicationVersion>`·`runtime-v<runtimeReleaseId>` tag와 candidate digest를 보고 `P1`을 승인한다. G1 `release-intent.json`은 candidate·target·plan만 freeze하고, 실제 approver·time·scope는 그 digest를 참조하는 owner-only `publication-authorization.json`에 S1이 detached로 freeze한다. Immutable Releases와 protected tag ruleset을 첫 draft 전에 켜고 확인한 뒤 fixed clean source를 push한다. Application release는 이때 publish하지 않고 exact reference npm `.tgz`, `runtime-release.json`, `release-intent.json`을 보관하는 private draft staging surface로만 만든다. 새 Runtime은 draft asset roster·downloaded bytes·extracted legal tree·Mach-O signature를 읽어 본 뒤 immutable publish와 release attestation을 검증하고, reused Runtime은 earlier tag를 옮기지 않은 채 같은 public readback을 다시 통과한다.
 
