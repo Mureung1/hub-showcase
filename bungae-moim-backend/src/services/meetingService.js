@@ -467,7 +467,37 @@ async function respondToApplicant(meetingId, hostId, targetUserId, status) {
   return { userId: targetUserId, status: updated.rows[0].status };
 }
 
+// DELETE /api/meetings/:id — 모임 취소(E5). 모임장만.
+// 참여자 전원을 cancelled로 일괄 갱신하되, 이건 모임장이 판을 엎는 것이라 F2와 달리
+// 참여자 신뢰도는 건드리지 않는다(감점은 본인이 확정 후 취소했을 때만). 재취소는
+// 상태를 다시 cancelled로 쓸 뿐 신뢰도 변화가 없어 무해하므로 FOR UPDATE는 불필요하고,
+// 404/403/이미취소 3-way 구분을 위해 SELECT를 먼저 한다.
+async function cancelMeeting(meetingId, hostId) {
+  const meetingRes = await pool.query('SELECT host_id, status FROM meetings WHERE id = $1', [meetingId]);
+  if (meetingRes.rows.length === 0) {
+    throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
+  }
+  const row = meetingRes.rows[0];
+  // host_id는 bigint라 문자열("5")로 온다 — Number로 맞추지 않으면 모임장 본인도 막힌다.
+  if (Number(row.host_id) !== Number(hostId)) {
+    throw new ApiError('FORBIDDEN', '모임장만 모임을 취소할 수 있습니다');
+  }
+  if (row.status === 'cancelled') {
+    throw new ApiError('VALIDATION_ERROR', '이미 취소된 모임입니다');
+  }
+
+  await withTransaction(async (client) => {
+    await client.query("UPDATE meetings SET status = 'cancelled' WHERE id = $1", [meetingId]);
+    await client.query(
+      "UPDATE meeting_participants SET status = 'cancelled' WHERE meeting_id = $1",
+      [meetingId]
+    );
+  });
+
+  return { status: 'cancelled' };
+}
+
 module.exports = {
   createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation,
-  listParticipants, respondToApplicant, normalizeMeeting, PAGE_SIZE,
+  listParticipants, respondToApplicant, cancelMeeting, normalizeMeeting, PAGE_SIZE,
 };
