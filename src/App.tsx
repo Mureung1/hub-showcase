@@ -489,6 +489,60 @@ function createManagerContextLine(context: ManagerContext) {
   return "오늘 흐름을 조용히 정리하고 있어.";
 }
 
+function useWindowManager(initialOpenWindows: WindowId[], initialPositions: Record<WindowId, WindowPosition>) {
+  const [openWindows, setOpenWindows] = useState<WindowId[]>(initialOpenWindows);
+  const [windowPositions, setWindowPositions] = useState<Record<WindowId, WindowPosition>>(initialPositions);
+  const activeWindow = openWindows[openWindows.length - 1];
+
+  function openWindow(id: WindowId) {
+    setOpenWindows((current) => [...current.filter((windowId) => windowId !== id), id]);
+  }
+
+  function closeWindow(id: WindowId) {
+    setOpenWindows((current) => current.filter((windowId) => windowId !== id));
+  }
+
+  function moveWindow(id: WindowId, position: WindowPosition) {
+    setWindowPositions((current) => ({ ...current, [id]: position }));
+  }
+
+  function setWorkflowWindows(nextWindows: WindowId[]) {
+    setOpenWindows((current) => replaceWorkflowWindows(current, nextWindows));
+  }
+
+  function resetOpenWindows(nextWindows: WindowId[]) {
+    setOpenWindows(nextWindows);
+  }
+
+  function resetWindowPositions() {
+    setWindowPositions(initialPositions);
+  }
+
+  function windowChrome(id: WindowId) {
+    return {
+      id,
+      position: windowPositions[id],
+      zIndex: 10 + openWindows.indexOf(id),
+      isActive: activeWindow === id,
+      onFocus: () => openWindow(id),
+      onMove: (position: WindowPosition) => moveWindow(id, position),
+      onClose: () => closeWindow(id),
+    };
+  }
+
+  return {
+    activeWindow,
+    closeWindow,
+    openWindow,
+    openWindows,
+    resetOpenWindows,
+    resetWindowPositions,
+    setWorkflowWindows,
+    windowChrome,
+    windowPositions,
+  };
+}
+
 
 export default function App() {
   const storedProfile = useMemo(() => readStorage<UserProfile | null>(profileKey, null), []);
@@ -499,8 +553,16 @@ export default function App() {
   const [logs, setLogs] = useState<QuestLog[]>(() => questLogRepository.get());
   const [quest, setQuest] = useState<Quest>(() => createQuest(storedProfile ?? defaultProfile));
   const [questStatus, setQuestStatus] = useState<QuestStatus>("draft");
-  const [openWindows, setOpenWindows] = useState<WindowId[]>(["quest", "manager"]);
-  const [windowPositions, setWindowPositions] = useState<Record<WindowId, WindowPosition>>(initialWindowPositions);
+  const {
+    activeWindow,
+    openWindow,
+    openWindows,
+    resetOpenWindows,
+    resetWindowPositions,
+    setWorkflowWindows,
+    windowChrome,
+    windowPositions,
+  } = useWindowManager(["quest", "manager"], initialWindowPositions);
   const [now, setNow] = useState(() => new Date());
   const [needsClarify, setNeedsClarify] = useState(false);
   const [selectedFailureReason, setSelectedFailureReason] = useState(failureReasons[0]);
@@ -545,19 +607,12 @@ export default function App() {
     };
   }, [screen]);
 
-  const activeWindow = openWindows[openWindows.length - 1];
   const remainingTime = formatRemaining(now);
   const managerDisplayStage = getManagerDisplayStage(manager);
   const projectionModeAsset = projectionModeAssets.find((asset) => asset.mode === "single_plane_pepper");
   const pixelTvConnected = pixelTvMode === "projection";
 
   function triggerBlinkFocus(mode: BlinkFocusMode) { setBlinkFocus({ id: Date.now(), mode }); }
-  function openWindow(id: WindowId) {
-    setOpenWindows((current) => [...current.filter((windowId) => windowId !== id), id]);
-  }
-  function closeWindow(id: WindowId) {
-    setOpenWindows((current) => current.filter((windowId) => windowId !== id));
-  }
   function enterDesktop() {
     triggerBlinkFocus("start_day");
     setScreen("desktop");
@@ -571,7 +626,7 @@ export default function App() {
     setBlinkFocus(null);
     if (!exitAfterBlink) return;
     setExitAfterBlink(false);
-    setOpenWindows(["quest", "manager"]);
+    resetOpenWindows(["quest", "manager"]);
     setScreen("manager-created");
   }
   function togglePixelTvMode() {
@@ -595,7 +650,6 @@ export default function App() {
     nextUrl.searchParams.set("projection", "pepper");
     window.location.href = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
   }
-  function moveWindow(id: WindowId, position: WindowPosition) { setWindowPositions((current) => ({ ...current, [id]: position })); }
   function recordQuestLog(log: QuestLog) { setLogs((current) => prependQuestLog(current, log)); }
   function recordOutcomeStreak(result: "success" | "failed") {
     setQuestOutcomeStreak((current) => ({
@@ -627,22 +681,22 @@ export default function App() {
       setQuestStatus("draft");
       setPreviousQuestTitle("");
       setManager((current) => ({ ...current, mood: "waiting", line: "새 오늘의 퀘스트 초안을 준비했어. 이번에도 작은 분량부터 가보자." }));
-      setOpenWindows((current) => replaceWorkflowWindows(current, ["quest", "manager"]));
+      setWorkflowWindows(["quest", "manager"]);
       return;
     }
 
     if (questStatus === "active") {
-      setOpenWindows((current) => replaceWorkflowWindows(current, ["runner", "manager"]));
+      setWorkflowWindows(["runner", "manager"]);
       return;
     }
 
     if (questStatus === "failed") {
-      setOpenWindows((current) => replaceWorkflowWindows(current, ["failure", "manager"]));
+      setWorkflowWindows(["failure", "manager"]);
       return;
     }
 
     if (questStatus === "recovery") {
-      setOpenWindows((current) => replaceWorkflowWindows(current, ["recovery", "manager"]));
+      setWorkflowWindows(["recovery", "manager"]);
       return;
     }
 
@@ -658,8 +712,8 @@ export default function App() {
     setQuestStatus("draft");
     setManager({ ...defaultManager, line: toneLines[savedProfile.managerTone] });
     setLogs([]);
-    setOpenWindows(["quest", "manager"]);
-    setWindowPositions(initialWindowPositions);
+    resetOpenWindows(["quest", "manager"]);
+    resetWindowPositions();
     setNeedsClarify(false);
     setScreen("manager-created");
   }
@@ -676,7 +730,7 @@ export default function App() {
 
   function acceptQuest() {
     setQuestStatus("active");
-    setOpenWindows((current) => replaceWorkflowWindows(current, ["runner", "manager"]));
+    setWorkflowWindows(["runner", "manager"]);
     setManager((current) => ({ ...current, mood: "focused", line: "끝까지 기다릴게. 네 속도로 진행하면 돼." }));
   }
 
@@ -686,13 +740,13 @@ export default function App() {
     setManager((current) => addExp(current, quest.rewardExp));
     void saveQuestEvent(createQuestEventRequest(quest, result, quest.rewardExp, "happy", { managerLine: "완료 기록을 기억으로 정리했어." }));
     setQuestStatus("success");
-    setOpenWindows((current) => replaceWorkflowWindows(current, ["manager"]));
+    setWorkflowWindows(["manager"]);
   }
 
   function startFailureFlow() {
     setQuestStatus("failed");
     setManager((current) => ({ ...current, mood: "recovering", line: "이번 기록을 보고 다음 분량을 다시 맞춰볼게." }));
-    setOpenWindows((current) => replaceWorkflowWindows(current, ["failure", "manager"]));
+    setWorkflowWindows(["failure", "manager"]);
   }
 
   function createRecovery() {
@@ -701,22 +755,18 @@ export default function App() {
     void saveQuestEvent(createQuestEventRequest(quest, "failed", 0, "recovering", { failureReason: selectedFailureReason, managerLine: "실패 이유를 기억하고 복구 분량을 다시 맞췄어." }));
     setQuest(createRecoveryQuest(quest));
     setQuestStatus("recovery");
-    setOpenWindows((current) => replaceWorkflowWindows(current, ["recovery", "manager"]));
+    setWorkflowWindows(["recovery", "manager"]);
     setManager((current) => ({ ...current, mood: "recovering", line: "다시 시작할 수 있는 작은 분량으로 준비했어." }));
   }
 
   function editRecovery() {
-    setOpenWindows(["quest"]);
+    resetOpenWindows(["quest"]);
   }
 
   function saveProfile(nextProfile: UserProfile) {
     setProfile(nextProfile);
     setWizardDraft(nextProfile);
     if (questStatus === "draft") setQuest(createQuest(nextProfile));
-  }
-
-  function windowChrome(id: WindowId) {
-    return { id, position: windowPositions[id], zIndex: 10 + openWindows.indexOf(id), isActive: activeWindow === id, onFocus: () => openWindow(id), onMove: (position: WindowPosition) => moveWindow(id, position), onClose: () => closeWindow(id) };
   }
 
   const showRecoveryHidingPet = questStatus === "recovery" && openWindows.includes("recovery") && questOutcomeStreak.result === "failed" && questOutcomeStreak.count >= 2;
