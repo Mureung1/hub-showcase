@@ -7,6 +7,12 @@ export default defineConfig({
   build: {
     sourcemap: false,
     minify: 'oxc',
+    rollupOptions: {
+      input: {
+        main: new URL('./index.html', import.meta.url).pathname,
+        guide: new URL('./guide/index.html', import.meta.url).pathname,
+      },
+    },
   },
   test: {
     environment: 'jsdom',
