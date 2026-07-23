@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -66,7 +66,7 @@ None — can start immediately.
 | owner | `C` — Contract/integrator |
 | branch | `codex/public-preview-integration` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/integration` |
-| handoffSha | Claim 시 coordinator가 clean current integration baseline의 required root gates를 통과한 exact integration HEAD를 기록한다. Predecessor는 없으며 placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `4f758b3aa2da4492048a2093bcb9291bb42cde77` — coordinator가 clean integration worktree에서 `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`를 모두 green으로 확인한 baseline |
 | writablePaths | `package.json`; `package-lock.json`; 필요한 root TypeScript/build 설정; `packages/runtime-release/**`; `packages/semester-workspace/**`; `apps/ay-ple/**`; `apps/landing/**`; `docs/tickets/2026-07-23-public-npx-first-release/001-spine-s0-workspace-lock-scaffold.md` |
 | consumedContracts | Parent Spec의 workspace roster, package responsibility, root gate와 C-only shared-manifest authority |
 | predecessorEvidence | Clean current repository baseline의 test·typecheck·build·Chat Shell lint 결과 |
