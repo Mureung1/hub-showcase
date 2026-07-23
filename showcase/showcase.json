@@ -4,7 +4,7 @@
   "summary": "목적지 근처 주차장을 위치, 요금, 실시간 주차 가능 대수와 함께 찾아주는 웹앱입니다.",
   "githubUser": "geunnseung(백승근)",
   "demoUrl": "",
-  "thumbnail": "",
+  "thumbnail": "thumbnail.webp",
   "screenshots": [],
   "problem": "목적지 근처에 어디에 주차할지, 지금 자리가 있는지, 주차장의 정보를 한 번에 확인하기는 어렵습니다.",
   "targetUsers": [
@@ -32,7 +32,7 @@
     "목적지 근처의 주차장을 거리순으로 제공합니다.",
     "5분 주기 배치로 실시간 주차장 데이터를 적재합니다."
   ],
-  "developmentWithAI": "",
+  "developmentWithAI": "작성 예정",
   "agent": {
     "summary": "",
     "agentTools": [],
