@@ -4,10 +4,22 @@
 | --- | --- |
 | 작성일 | 2026-07-23 |
 | 분류 | 기술 참고 |
-| 성숙도 | 초안 |
+| 성숙도 | 채택 |
 | 감사 기준 | `d6c4b26af` |
 | 기준 commit | `d6c4b26afe2d51c117a994ae687026f5ed0a4e09` |
 | 조사 범위 | 제안된 `0010` native context read와 ordered patch `0001`–`0009` |
+
+## 구현 반영 현황
+
+| 항목 | 현재 결과 |
+| --- | --- |
+| Patch ceiling | Ordered patch는 `0001`–`0009` 아홉 개로 유지했고 `0010`은 만들지 않았다. Patched-source digest와 patch-stack digest는 감사 기준과 같다. |
+| Native context | Reviewed correction tip `93897411b`에서 verified native App Server one-shot probe, strict Runtime-private pinned-schema decoder, caller-signal별 atomic coordinator와 full process-group reap을 구현했다. |
+| Product boundary | `CodexManagedRuntime`이 frozen `CodexNativeContextPort`를 구현하고 Server boundary는 high-level config·Skill projection만 소비한다. Server production source에는 raw method·CLI config literal이 없다. |
+| Spawn integrity | Persistent Runtime과 sidecar는 workspace·controlled root overlap을 native spawn 전에 거절한다. Sidecar는 verifier-issued frozen bundle capability를 보존하고 매 spawn 직전 complete tree를 다시 검증하며, drift는 native spawn·protocol write 0건으로 닫는다. |
+| Evidence | Runtime unit 138개, native-context actual 23개, Node actual 91개와 Server native/action focused 28개가 green이다. 12회 반복 oracle은 fd·task·process group·route·temp retention 0을 확인하고, exact native provider-free smoke는 empty marker, workspace Skill, official system Skill 제외와 full reap을 확인한다. |
+| Independent review | Standards는 P0–P2 finding 0건, parent Spec은 P0–P3 finding 0건이다. Persistent bridge와 one-shot probe의 중복 launch primitive는 release blocker가 아닌 bounded P3 debt로 두고 다음 관련 규칙 변경 때 pure validation primitive부터 추출한다. |
+| 남은 integration | Account transition lease, first-run setup transaction과 `Semester Ready` commit은 구현되지 않았다. Probe 결과를 실제 action start까지 같은 lease로 bind하는 일은 후속 A1/C1 composition 책임이다. |
 
 ## Coordinator 실행 권고
 
@@ -79,7 +91,7 @@ Patch가 만지는 핵심 handwritten Python source의 Git blob은 pinned source
 - Probe와 action Runtime은 같은 manifest-attested native executable, version, environment policy, cwd, config override와 workspace transition lease를 사용한다.
 - Failure, timeout, malformed/oversize response 또는 early EOF는 Ready를 만들지 않고 fail closed한다.
 
-Owning local evidence는 `packages/codex-chat-runtime/src/account-contract.ts:149`, `apps/server/src/setup/native-project-boundary.ts:17`, `docs/specs/2026-07-23-public-npx-first-release.md:333`, `docs/tickets/2026-07-23-public-npx-first-release/008-b1b-workspace-bundle-context-guard.md:86`이다. Server의 현재 raw query adapter는 임시 seam이며, ticket의 target boundary는 Runtime이 raw App Server mapping을 소유하는 것이다.
+Owning local evidence는 `packages/codex-chat-runtime/src/account-contract.ts`, `apps/server/src/setup/native-project-boundary.ts`, `docs/specs/2026-07-23-public-npx-first-release.md`와 Ticket 008이다. 감사 기준 `d6c4b26af`의 Server raw query adapter는 임시 seam이었고, 위 구현 반영에서 Runtime-owned raw mapping과 high-level Server consumer로 교체됐다.
 
 ### 2.2 Public surface 판정
 

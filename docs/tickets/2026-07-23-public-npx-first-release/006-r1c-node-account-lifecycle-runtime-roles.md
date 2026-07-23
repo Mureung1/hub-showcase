@@ -117,3 +117,20 @@ Node Runtime이 frozen `CodexAccountLifecycle`을 구현하고 생성 시 `auth-
 | Documentation finding | Runtime README, implementation map과 ADR 0017의 current implementation 문구를 실제 R1 상태와 남은 product integration 경계에 맞춰 갱신해야 한다. |
 | Corrective branch | `codex/public-preview-c-native-context-bind` |
 | Corrective worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/c-native-context-bind` |
+
+## Patch-free Native Context Final Receipt
+
+이 receipt는 위 combined handoff를 실제 채택한 correction 결과다. Historical `c-native-context-bind` handoff를 덮어쓰지 않되, final implementation lane과 검증 결과는 아래 값이 authoritative하다. Ticket State는 combined integration 전까지 `claimed`, Acceptance Criteria는 unchecked로 유지한다.
+
+| Evidence | Result |
+| --- | --- |
+| Reviewed code tip | `93897411bd9d310d39c1a8d7e528ee892db2de99` |
+| Actual correction lane | Branch `codex/public-preview-c-native-context-probe`; worktree `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/c-native-context-probe`; fixed handoff `e165e9d856680665be841b133c7742e0c1e81674` |
+| Runtime role·root | Workspace role root는 persistent bridge, sidecar와 thread의 exact canonical root다. Workspace와 controlled environment root의 ancestor/descendant overlap을 bridge spawn 전에 거절하며, auth-only는 native-context family를 native write 0건으로 `runtime_role_denied` 처리한다. |
+| Native context port | `CodexManagedRuntime`이 frozen `CodexNativeContextPort`를 구현한다. 같은 caller `AbortSignal`의 config·Skill read는 한 atomic generation이고, Server·Browser에는 high-level projection만 전달된다. |
+| Spawn integrity | Verifier-issued frozen bundle identity를 coordinator가 보존하고 sidecar spawn 직전 complete-tree verifier를 다시 실행한다. Selected executable drift, malformed pinned schema와 wrong root는 native spawn·protocol write 전 fail closed한다. |
+| Cleanup·privacy | Main bridge와 모든 sidecar cleanup을 `Promise.allSettled`로 끝까지 join한다. 12회 반복 probe가 fd·task·process group·route·temp retention 0을 확인하며 raw response, path, request identity와 provider detail은 Runtime 경계를 넘지 않는다. |
+| SDK disposition | [Patch stack 축소 연구](../../spikes/codex-sdk-patch-reduction/research.md)에 따라 `0010`을 만들지 않았다. Ordered stack은 exact `0001`–`0009` 아홉 개이고 patch-stack digest `2cb3dcc9bdf7f81136b21ac16cb1afe161e5676e3800e85265653c2795fbbcbd`를 유지한다. |
+| Verification | Runtime unit `138/138`; native-context actual `23/23`; Node actual `91/91`; official local provider `1/1`; production bundle before/after verification green. Root test·typecheck·build, Chat Shell lint, docs links와 diff check가 green이다. |
+| Independent review | Standards P0–P2 finding 0건, parent Spec P0–P3 finding 0건. Persistent bridge와 one-shot probe의 중복 launch primitive는 bounded P3 debt이며 pre-release lifecycle refactor 대상이 아니다. |
+| Deferred composition | Account transition lease, first-run setup transaction, `Semester Ready` commit과 admission-to-action binding은 후속 A1/B2/C1 책임이다. 이 receipt가 해당 completion을 합성하지 않는다. |

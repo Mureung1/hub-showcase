@@ -148,3 +148,20 @@ Admitted v3 workspace에 package-owned `AGENTS.md`와 declared built-in Skill tr
 | Combined review finding | Required Integration Handoff의 R1c+C obligation이 미완료다. `NodeCodexChatRuntime`은 frozen `CodexNativeContextPort`를 구현하지 않고 Server가 temporary raw `config/read`·`skills/list` query adapter와 literal을 계속 소유한다. |
 | Required correction | Workspace Runtime이 exact role root로 native config/Skill을 query해 strict high-level projection만 반환한다. Server boundary는 Runtime port를 직접 consume하고 temporary query types/factory/raw literals를 제거한다. Auth-only와 wrong-root 요청은 native write 0건으로 닫고 Runtime actual-child가 exact arguments와 projection을 검증한다. |
 | Corrective branch | `codex/public-preview-c-native-context-bind` |
+
+## Patch-free Native Context Final Receipt
+
+이 receipt는 위 Native Context Integration Correction을 SDK patch 없이 완료한 reviewed candidate다. Ticket State는 combined integration 전까지 `claimed`, Acceptance Criteria는 unchecked로 유지한다.
+
+| Evidence | Result |
+| --- | --- |
+| Reviewed code tip | `93897411bd9d310d39c1a8d7e528ee892db2de99` |
+| Actual correction lane | Branch `codex/public-preview-c-native-context-probe`; worktree `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/c-native-context-probe` |
+| Ownership cutover | Raw `initialize`, `config/read`, `skills/list`, response correlation과 strict pinned mapping은 Runtime-private one-shot probe가 소유한다. Server production source는 frozen high-level port만 소비하고 raw method·CLI config literal·temporary query factory를 소유하지 않는다. |
+| Effective context | Config와 Skill은 같은 caller signal의 atomic generation에서 나온다. `repo | user | admin | system`을 모두 exact-decode한 뒤 official `system` Skill만 product effective roster에서 제외하므로 `.system` cache는 보존되고 undeclared effective Skill은 계속 admission을 막는다. |
+| Root·bundle safety | Workspace, controlled `HOME`, `CODEX_HOME`, `CODEX_SQLITE_HOME`, temp root는 native spawn 전에 disjoint하다. Sidecar는 매 spawn 직전 complete production tree를 재검증하고 executable drift나 schema drift를 native spawn·write 0건으로 닫는다. |
+| Admission seam | Existing `WorkspaceActionAdmission`은 Server high-level boundary를 통해 fresh native context를 읽는다. Point-in-time result를 actual Runtime action start까지 bind하는 transition lease는 여전히 A1/C1 책임이다. |
+| Verification | Server native/action focused `28/28`; Runtime unit `138/138`; native-context actual `23/23`; Node actual `91/91`; 12회 retained-resource oracle와 exact pinned provider-free smoke green. Root release gates와 production bundle before/after verification도 green이다. |
+| Patch disposition | `0010-native-context-read`는 폐기했다. [Patch stack 축소 연구](../../spikes/codex-sdk-patch-reduction/research.md)가 기존 아홉 patch의 필요성, replacement evidence, maintenance cost와 제거 조건을 소유한다. |
+| Independent review | Standards P0–P2 finding 0건, parent Spec P0–P3 finding 0건. 남은 P3 primitive duplication은 bounded debt이며 다음 관련 규칙 변경 전까지 actual-child parity oracle로 통제한다. |
+| Deferred composition | Setup envelope, Runtime transition lease와 `Semester Ready` commit은 구현하지 않았고 B2/A1/C1을 선점하지 않는다. |
