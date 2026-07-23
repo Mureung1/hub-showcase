@@ -2,7 +2,11 @@ import { createClient } from "@supabase/supabase-js";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import { classifyContent } from "./classification";
+import {
+  classifyWithFallback,
+  createConfiguredGeminiClassifier,
+} from "./geminiClassification";
+import { extractPageMetadata, type PageMetadata } from "./metadata";
 
 dotenv.config({ path: "server/.env", quiet: true });
 
@@ -13,6 +17,7 @@ const itemColumns =
 const configuredOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:3000")
   .split(",")
   .map((origin) => origin.trim());
+const geminiClassifier = createConfiguredGeminiClassifier();
 
 app.use(
   cors({
@@ -134,7 +139,18 @@ app.post("/api/items", async (request, response) => {
   const trimmed = content.trim();
   const urlDetected = isUrl(trimmed);
   const sourcePlatform = urlDetected ? getSourcePlatform(trimmed) : "manual";
-  const { categoryMain, categorySub } = classifyContent(trimmed);
+  let metadata: PageMetadata | null = null;
+  if (urlDetected && geminiClassifier) {
+    try {
+      metadata = await extractPageMetadata(trimmed);
+    } catch (error) {
+      console.warn("메타데이터 추출 실패, 원문으로 분류를 계속합니다:", error);
+    }
+  }
+  const { categoryMain, categorySub } = await classifyWithFallback(
+    { content: trimmed, metadata },
+    geminiClassifier
+  );
 
   try {
     const { data, error } = await getSupabase()
