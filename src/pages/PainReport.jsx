@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { postJson } from '@/lib/api'
 
 // 신체부위 8개 — value는 33개 운동의 involvedJoints 값과 정확히 일치해야 한다.
 // "고관절"은 임상 용어라 화면 라벨에만 괄호로 "엉덩이/골반"을 병기한다.
@@ -90,30 +91,22 @@ function ExerciseReplacementRow({ routineDayId, painBodyPart, result }) {
   const selectedCandidate = candidates.find((c) => c.id === selectedId)
   const isRecommendedSelected = selectedId === recommendedExerciseId
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     setSubmitting(true)
     setConfirmError(null)
-    fetch('/api/pain-reports/confirm', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        routineDayId,
-        originalExerciseId,
-        substitutedExerciseId: selectedId,
-        painBodyPart,
-        isManualOverride: !isRecommendedSelected,
-      }),
+    const result = await postJson('/api/pain-reports/confirm', {
+      routineDayId,
+      originalExerciseId,
+      substitutedExerciseId: selectedId,
+      painBodyPart,
+      isManualOverride: !isRecommendedSelected,
     })
-      .then((res) => res.json().then((json) => ({ ok: res.ok, json })))
-      .then(({ ok, json }) => {
-        setSubmitting(false)
-        if (!ok) {
-          setConfirmError(json.error)
-          return
-        }
-        setConfirmedName(selectedCandidate.name)
-      })
-      .catch(() => setSubmitting(false))
+    setSubmitting(false)
+    if (!result.ok) {
+      setConfirmError(result.error)
+      return
+    }
+    setConfirmedName(selectedCandidate.name)
   }
 
   return (
@@ -178,25 +171,23 @@ function PainReportPage() {
   const [selectedBodyPart, setSelectedBodyPart] = useState(null)
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState(null)
 
-  const handleSelectBodyPart = (value) => {
+  const handleSelectBodyPart = async (value) => {
     setSelectedBodyPart(value)
     setLoading(true)
     setReport(null)
-    fetch('/api/pain-reports', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        routineDayId: Number(routineDayId),
-        painBodyPart: value,
-      }),
+    setLoadError(null)
+    const result = await postJson('/api/pain-reports', {
+      routineDayId: Number(routineDayId),
+      painBodyPart: value,
     })
-      .then((res) => res.json())
-      .then((json) => {
-        setReport(json)
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
+    setLoading(false)
+    if (!result.ok) {
+      setLoadError(result.error)
+      return
+    }
+    setReport(result.data)
   }
 
   return (
@@ -227,6 +218,7 @@ function PainReportPage() {
         </div>
 
         {loading && <p className="text-text-secondary">확인 중...</p>}
+        {loadError && <p className="text-[13px] text-text-secondary">⚠ {loadError}</p>}
 
         {report && (
           <div className="overflow-hidden rounded-xl border border-border bg-surface">
