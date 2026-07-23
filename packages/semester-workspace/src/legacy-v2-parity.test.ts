@@ -465,7 +465,7 @@ async function packageInspection(bytes: Buffer) {
     const productRoot = path.join(root, '.ay-ple')
     await mkdir(productRoot)
     await writeFile(path.join(productRoot, 'workspace-state.json'), bytes)
-    return createSemesterWorkspaceAdmission().inspect({
+    return await createSemesterWorkspaceAdmission().inspect({
       kind: 'reopen',
       canonicalRoot: await import('node:fs/promises').then(({ realpath }) =>
         realpath(root),

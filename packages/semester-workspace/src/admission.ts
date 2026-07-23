@@ -708,7 +708,7 @@ async function finishOwnedScaffold(
     throw new ApplyFailure('conflict')
   }
   await assertOwnedRuntimeAuthority(root, runtimeAuthority)
-  const finalStateBytes = await readRegularFile(
+  const finalStateBytes = await readSingleLinkRegularFile(
     path.join(
       root,
       evidence.authority.ownedScaffoldPlan.state.relativePath,
@@ -720,7 +720,6 @@ async function finishOwnedScaffold(
   ) {
     throw new ApplyFailure('conflict')
   }
-  await assertOwnedRuntimeAuthority(root, runtimeAuthority)
   return admittedWorkspace(root, planned.aggregate)
 }
 
@@ -795,13 +794,19 @@ async function classifyRoot(
   if (!state.stats.isFile() || state.stats.isSymbolicLink()) {
     return { status: 'unsafe' }
   }
+  if (state.stats.nlink !== 1) {
+    return { status: 'collision' }
+  }
 
   let bytes: Buffer
   try {
-    bytes = await readRegularFile(statePath)
+    bytes = await readSingleLinkRegularFile(statePath)
   } catch (error) {
-    return error instanceof AdmissionFileTooLarge
-      ? { status: 'incompatible' }
+    if (error instanceof AdmissionFileTooLarge) {
+      return { status: 'incompatible' }
+    }
+    return error instanceof ApplyFailure
+      ? { status: 'collision' }
       : { status: 'unavailable' }
   }
   const stateClassification = classifySemesterWorkspaceStateBytes(bytes)
@@ -1538,6 +1543,45 @@ async function readRegularFile(
       throw new AdmissionFileTooLarge()
     }
     return await handle.readFile()
+  } finally {
+    await handle.close()
+  }
+}
+
+async function readSingleLinkRegularFile(
+  filePath: string,
+  maxBytes?: number,
+): Promise<Buffer> {
+  const handle = await open(
+    filePath,
+    fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
+  )
+  try {
+    const before = await handle.stat({ bigint: true })
+    if (!before.isFile() || before.nlink !== 1n) {
+      throw new ApplyFailure('conflict')
+    }
+    if (
+      (maxBytes !== undefined &&
+        before.size > BigInt(maxBytes)) ||
+      (maxBytes === undefined &&
+        before.size > 128n * 1024n * 1024n &&
+        before.blocks * 512n < before.size / 2n)
+    ) {
+      throw new AdmissionFileTooLarge()
+    }
+    const identity = fileIdentityFromStats(before)
+    const bytes = await handle.readFile()
+    const after = await handle.stat({ bigint: true })
+    if (
+      !after.isFile() ||
+      after.nlink !== 1n ||
+      !sameFileIdentity(fileIdentityFromStats(after), identity)
+    ) {
+      throw new ApplyFailure('conflict')
+    }
+    await assertPathMatchesFileIdentity(filePath, identity, 1)
+    return bytes
   } finally {
     await handle.close()
   }

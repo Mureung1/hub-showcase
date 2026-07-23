@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import {
   chmod,
+  link,
   lstat,
   mkdir,
   mkdtemp,
@@ -77,6 +78,57 @@ test('inspect is write-free and apply exclusively creates a fresh-decodable mini
       await readFile(path.join(root, 'student-note.txt')),
       studentBytes,
     )
+  } finally {
+    await rm(parent, { force: true, recursive: true })
+  }
+})
+
+test('cold reopen rejects a hard-linked current state and preserves both aliases', async () => {
+  const parent = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-v3-admission-hard-link-'),
+  )
+  try {
+    const authority = await parentAuthority(parent)
+    const admission = createSemesterWorkspaceAdmission()
+    const inspection = await admission.inspect({
+      kind: 'create',
+      parent: authority,
+      semester: {
+        yearLevel: 2,
+        term: { key: '1', displayName: '1학기' },
+      },
+      leafName: 'hard-linked-state',
+    })
+    assert.equal(inspection.outcome, 'new_target')
+    if (inspection.outcome !== 'new_target') {
+      assert.fail('a valid absent leaf must produce a create plan')
+    }
+    const applied = await admission.apply(inspection.plan)
+    assert.equal(applied.outcome, 'created')
+    if (applied.outcome !== 'created') {
+      assert.fail('the create plan must create a workspace')
+    }
+
+    const statePath = path.join(
+      applied.workspace.canonicalRoot,
+      '.ay-ple',
+      'workspace-state.json',
+    )
+    const aliasPath = path.join(parent, 'workspace-state-alias.json')
+    const expectedBytes = await readFile(statePath)
+    await link(statePath, aliasPath)
+
+    assert.deepEqual(
+      await createSemesterWorkspaceAdmission().inspect({
+        kind: 'reopen',
+        canonicalRoot: applied.workspace.canonicalRoot,
+      }),
+      { outcome: 'collision', readOnly: false },
+    )
+    assert.equal((await lstat(statePath)).nlink, 2)
+    assert.equal((await lstat(aliasPath)).nlink, 2)
+    assert.equal((await readFile(statePath)).equals(expectedBytes), true)
+    assert.equal((await readFile(aliasPath)).equals(expectedBytes), true)
   } finally {
     await rm(parent, { force: true, recursive: true })
   }

@@ -503,6 +503,97 @@ test('resumed apply also rejects a same-shape post-evidence-unlink rewrite', asy
   }
 })
 
+test('a state alias added after evidence unlink prevents both create and resume success', async () => {
+  for (const operation of ['create', 'resume'] as const) {
+    const fixture = await createPlanFixture(
+      `post-evidence-state-alias-${operation}`,
+    )
+    const statePath = path.join(
+      fixture.intent.parent.canonicalParent,
+      fixture.intent.leafName,
+      '.ay-ple',
+      'workspace-state.json',
+    )
+    const aliasPath = path.join(
+      fixture.intent.parent.canonicalParent,
+      `${operation}-state-alias.json`,
+    )
+    let expectedBytes = Buffer.alloc(0)
+
+    try {
+      let setupId = ''
+      if (operation === 'resume') {
+        const interrupted = createSemesterWorkspaceAdmissionForTesting({
+          fault(point) {
+            if (point === 'before_evidence_unlink') {
+              throw new Error(`fault:${point}`)
+            }
+          },
+        })
+        const initial = await interrupted.inspect(fixture.intent)
+        assert.equal(initial.outcome, 'new_target')
+        if (initial.outcome !== 'new_target') {
+          assert.fail('create plan required')
+        }
+        setupId = initial.plan.planId
+        await assert.rejects(
+          interrupted.apply(initial.plan),
+          /fault:before_evidence_unlink/,
+        )
+      }
+
+      const admission = createSemesterWorkspaceAdmissionForTesting({
+        async fault(point) {
+          if (point !== 'after_evidence_unlink') return
+          expectedBytes = await readFile(statePath)
+          await link(statePath, aliasPath)
+        },
+      })
+      const inspection =
+        operation === 'create'
+          ? await admission.inspect(fixture.intent)
+          : await admission.inspect({
+              kind: 'resume_owned',
+              setupId,
+              canonicalRoot: path.join(
+                fixture.intent.parent.canonicalParent,
+                fixture.intent.leafName,
+              ),
+            })
+      assert.equal(
+        inspection.outcome,
+        operation === 'create' ? 'new_target' : 'owned_incomplete',
+      )
+      if (
+        inspection.outcome !== 'new_target' &&
+        inspection.outcome !== 'owned_incomplete'
+      ) {
+        assert.fail('applicable plan required')
+      }
+
+      assert.deepEqual(await admission.apply(inspection.plan), {
+        outcome: 'conflict',
+      })
+      assert.equal((await lstat(statePath)).nlink, 2)
+      assert.equal((await lstat(aliasPath)).nlink, 2)
+      assert.equal((await readFile(statePath)).equals(expectedBytes), true)
+      assert.equal((await readFile(aliasPath)).equals(expectedBytes), true)
+      assert.deepEqual(
+        await createSemesterWorkspaceAdmission().inspect({
+          kind: 'reopen',
+          canonicalRoot: path.join(
+            fixture.intent.parent.canonicalParent,
+            fixture.intent.leafName,
+          ),
+        }),
+        { outcome: 'collision', readOnly: false },
+      )
+    } finally {
+      await fixture.cleanup()
+    }
+  }
+})
+
 test('atomic publish refuses a raced state file and preserves every unknown byte', async () => {
   const fixture = await createPlanFixture('no-clobber')
   const sentinel = Buffer.from('student-owned race bytes', 'utf8')
