@@ -537,11 +537,23 @@ async function finishOwnedScaffold(
   )
   const state = await lstatOutcome(statePath)
   if (state.status === 'unavailable') throw new ApplyFailure('unavailable')
+  let temporaryIdentity: FileIdentity | undefined
   if (state.status === 'present') {
-    if (
+    const temporary = await lstatOutcome(temporaryPath)
+    if (temporary.status === 'unavailable') {
+      throw new ApplyFailure('unavailable')
+    }
+    if (temporary.status === 'present') {
+      temporaryIdentity = await assertPublishedTemporaryPair(
+        statePath,
+        temporaryPath,
+        planned.aggregateBytes,
+      )
+    } else if (
       !(await regularFileHasExactBytes(
         statePath,
         planned.aggregateBytes,
+        1,
       ))
     ) {
       throw new ApplyFailure('conflict')
@@ -553,7 +565,7 @@ async function finishOwnedScaffold(
     }
     if (temporary.status === 'present') {
       if (!resuming) throw new ApplyFailure('conflict')
-      await prepareExistingTemporaryState(
+      temporaryIdentity = await prepareExistingTemporaryState(
         temporaryPath,
         planned,
         root,
@@ -565,12 +577,38 @@ async function finishOwnedScaffold(
       try {
         await inject(options, 'after_state_temp_create')
         await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+        temporaryIdentity = await assertSingleLinkTemporaryHandle(
+          handle,
+        )
+        await assertPathMatchesFileIdentity(
+          temporaryPath,
+          temporaryIdentity,
+          1,
+        )
         await handle.writeFile(planned.aggregateBytes)
         await inject(options, 'after_state_temp_write')
         await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+        await assertSingleLinkTemporaryHandle(
+          handle,
+          temporaryIdentity,
+        )
+        await assertPathMatchesFileIdentity(
+          temporaryPath,
+          temporaryIdentity,
+          1,
+        )
         await handle.sync()
         await inject(options, 'after_state_temp_file_sync')
         await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+        await assertSingleLinkTemporaryHandle(
+          handle,
+          temporaryIdentity,
+        )
+        await assertPathMatchesFileIdentity(
+          temporaryPath,
+          temporaryIdentity,
+          1,
+        )
       } finally {
         await handle.close()
       }
@@ -580,6 +618,15 @@ async function finishOwnedScaffold(
     await assertOwnedIncompleteTopology(planned, {
       requireDirectories: true,
     })
+    if (temporaryIdentity === undefined) {
+      throw new ApplyFailure('conflict')
+    }
+    await assertExactRegularFileIdentity(
+      temporaryPath,
+      planned.aggregateBytes,
+      1,
+      temporaryIdentity,
+    )
     try {
       await link(temporaryPath, statePath)
     } catch (error) {
@@ -590,6 +637,12 @@ async function finishOwnedScaffold(
     }
     await inject(options, 'after_state_publish')
     await assertOwnedRuntimeAuthority(root, runtimeAuthority)
+    await assertPublishedTemporaryPair(
+      statePath,
+      temporaryPath,
+      planned.aggregateBytes,
+      temporaryIdentity,
+    )
     await assertOwnedIncompleteTopology(planned, {
       requireDirectories: true,
     })
@@ -601,15 +654,17 @@ async function finishOwnedScaffold(
   await assertOwnedIncompleteTopology(planned, {
     requireDirectories: true,
   })
-  if (await pathExists(temporaryPath)) {
-    if (
-      !(await regularFileHasExactBytes(
-        temporaryPath,
-        planned.aggregateBytes,
-      ))
-    ) {
-      throw new ApplyFailure('conflict')
-    }
+  const temporaryBeforeUnlink = await lstatOutcome(temporaryPath)
+  if (temporaryBeforeUnlink.status === 'unavailable') {
+    throw new ApplyFailure('unavailable')
+  }
+  if (temporaryBeforeUnlink.status === 'present') {
+    temporaryIdentity = await assertPublishedTemporaryPair(
+      statePath,
+      temporaryPath,
+      planned.aggregateBytes,
+      temporaryIdentity,
+    )
     await unlink(temporaryPath)
     await inject(options, 'after_state_temp_unlink')
     await assertOwnedRuntimeAuthority(root, runtimeAuthority)
@@ -1154,16 +1209,46 @@ async function assertOwnedIncompleteTopology(
   ) {
     throw new ApplyFailure('conflict')
   }
-  for (const candidate of [stateFileName, temporaryName]) {
-    const candidatePath = path.join(productRoot, candidate)
-    const outcome = await lstatOutcome(candidatePath)
+  const candidates = await Promise.all(
+    [stateFileName, temporaryName].map(async (candidate) => ({
+      candidate,
+      candidatePath: path.join(productRoot, candidate),
+      outcome: await lstatOutcome(path.join(productRoot, candidate)),
+    })),
+  )
+  for (const { outcome } of candidates) {
     if (outcome.status === 'unavailable') {
       throw new ApplyFailure('unavailable')
     }
+  }
+  const state = candidates[0]!.outcome
+  const temporary = candidates[1]!.outcome
+  if (temporary.status === 'present') {
+    if (state.status === 'present') {
+      await assertPublishedTemporaryPair(
+        candidates[0]!.candidatePath,
+        candidates[1]!.candidatePath,
+        planned.aggregateBytes,
+      )
+    } else if (
+      !temporary.stats.isFile() ||
+      temporary.stats.nlink !== 1
+    ) {
+      throw new ApplyFailure('conflict')
+    }
+  }
+  for (const { candidate, candidatePath, outcome } of candidates) {
     if (outcome.status === 'present') {
       const exact = await regularFileHasExactBytes(
         candidatePath,
         planned.aggregateBytes,
+        candidate === temporaryName
+          ? state.status === 'present'
+            ? 2
+            : 1
+          : temporary.status === 'present'
+            ? 2
+            : 1,
       )
       const recognizedRepairableTemporary =
         options.allowRepairableTemporary === true &&
@@ -1355,7 +1440,7 @@ async function prepareExistingTemporaryState(
   root: string,
   runtimeAuthority: OwnedRuntimeAuthority,
   options: SemesterWorkspaceAdmissionTestOptions,
-): Promise<void> {
+): Promise<FileIdentity> {
   await assertOwnedRuntimeAuthority(root, runtimeAuthority)
   await assertStoredAdmissionMarker(planned)
   let handle
@@ -1374,15 +1459,15 @@ async function prepareExistingTemporaryState(
     throw error
   }
   try {
+    const identity = await assertSingleLinkTemporaryHandle(handle)
+    await assertPathMatchesFileIdentity(temporaryPath, identity, 1)
     const stats = await handle.stat()
-    if (
-      !stats.isFile() ||
-      stats.nlink !== 1 ||
-      stats.size > planned.aggregateBytes.byteLength
-    ) {
+    if (stats.size > planned.aggregateBytes.byteLength) {
       throw new ApplyFailure('conflict')
     }
     const currentBytes = await handle.readFile()
+    await assertSingleLinkTemporaryHandle(handle, identity)
+    await assertPathMatchesFileIdentity(temporaryPath, identity, 1)
     const exact = currentBytes.equals(planned.aggregateBytes)
     const repairable = isStrictBufferPrefix(
       currentBytes,
@@ -1397,11 +1482,17 @@ async function prepareExistingTemporaryState(
       await inject(options, 'after_state_temp_write')
       await assertOwnedRuntimeAuthority(root, runtimeAuthority)
       await assertStoredAdmissionMarker(planned)
+      await assertSingleLinkTemporaryHandle(handle, identity)
+      await assertPathMatchesFileIdentity(temporaryPath, identity, 1)
     }
+    await assertSingleLinkTemporaryHandle(handle, identity)
     await handle.sync()
     await inject(options, 'after_state_temp_file_sync')
     await assertOwnedRuntimeAuthority(root, runtimeAuthority)
     await assertStoredAdmissionMarker(planned)
+    await assertSingleLinkTemporaryHandle(handle, identity)
+    await assertPathMatchesFileIdentity(temporaryPath, identity, 1)
+    return identity
   } finally {
     await handle.close()
   }
@@ -1455,11 +1546,129 @@ async function readRegularFile(
 async function regularFileHasExactBytes(
   filePath: string,
   expectedBytes: Buffer,
+  requiredLinkCount?: number,
 ): Promise<boolean> {
   try {
-    return (await readRegularFile(filePath)).equals(expectedBytes)
+    await assertExactRegularFileIdentity(
+      filePath,
+      expectedBytes,
+      requiredLinkCount,
+    )
+    return true
   } catch {
     return false
+  }
+}
+
+async function assertExactRegularFileIdentity(
+  filePath: string,
+  expectedBytes: Buffer,
+  requiredLinkCount?: number,
+  expectedIdentity?: FileIdentity,
+): Promise<FileIdentity> {
+  let handle
+  try {
+    handle = await open(
+      filePath,
+      fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
+    )
+  } catch {
+    throw new ApplyFailure('conflict')
+  }
+  try {
+    const before = await handle.stat({ bigint: true })
+    const identity = fileIdentityFromStats(before)
+    if (
+      !before.isFile() ||
+      (requiredLinkCount !== undefined &&
+        before.nlink !== BigInt(requiredLinkCount)) ||
+      (expectedIdentity !== undefined &&
+        !sameFileIdentity(identity, expectedIdentity))
+    ) {
+      throw new ApplyFailure('conflict')
+    }
+    const bytes = await handle.readFile()
+    const after = await handle.stat({ bigint: true })
+    if (
+      !bytes.equals(expectedBytes) ||
+      !after.isFile() ||
+      (requiredLinkCount !== undefined &&
+        after.nlink !== BigInt(requiredLinkCount)) ||
+      !sameFileIdentity(fileIdentityFromStats(after), identity)
+    ) {
+      throw new ApplyFailure('conflict')
+    }
+    await assertPathMatchesFileIdentity(
+      filePath,
+      identity,
+      requiredLinkCount,
+    )
+    return identity
+  } finally {
+    await handle.close()
+  }
+}
+
+async function assertPublishedTemporaryPair(
+  statePath: string,
+  temporaryPath: string,
+  expectedBytes: Buffer,
+  expectedIdentity?: FileIdentity,
+): Promise<FileIdentity> {
+  const stateIdentity = await assertExactRegularFileIdentity(
+    statePath,
+    expectedBytes,
+    2,
+    expectedIdentity,
+  )
+  const temporaryIdentity = await assertExactRegularFileIdentity(
+    temporaryPath,
+    expectedBytes,
+    2,
+    stateIdentity,
+  )
+  if (!sameFileIdentity(stateIdentity, temporaryIdentity)) {
+    throw new ApplyFailure('conflict')
+  }
+  return temporaryIdentity
+}
+
+async function assertSingleLinkTemporaryHandle(
+  handle: Awaited<ReturnType<typeof open>>,
+  expectedIdentity?: FileIdentity,
+): Promise<FileIdentity> {
+  const stats = await handle.stat({ bigint: true })
+  const identity = fileIdentityFromStats(stats)
+  if (
+    !stats.isFile() ||
+    stats.nlink !== 1n ||
+    (expectedIdentity !== undefined &&
+      !sameFileIdentity(identity, expectedIdentity))
+  ) {
+    throw new ApplyFailure('conflict')
+  }
+  return identity
+}
+
+async function assertPathMatchesFileIdentity(
+  filePath: string,
+  expectedIdentity: FileIdentity,
+  requiredLinkCount?: number,
+): Promise<void> {
+  let stats
+  try {
+    stats = await lstat(filePath, { bigint: true })
+  } catch {
+    throw new ApplyFailure('conflict')
+  }
+  if (
+    !stats.isFile() ||
+    stats.isSymbolicLink() ||
+    (requiredLinkCount !== undefined &&
+      stats.nlink !== BigInt(requiredLinkCount)) ||
+    !sameFileIdentity(fileIdentityFromStats(stats), expectedIdentity)
+  ) {
+    throw new ApplyFailure('conflict')
   }
 }
 
@@ -1473,15 +1682,18 @@ async function regularFileIsStrictPrefix(
       filePath,
       fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
     )
+    const identity = await assertSingleLinkTemporaryHandle(handle)
+    await assertPathMatchesFileIdentity(filePath, identity, 1)
     const stats = await handle.stat()
     if (
-      !stats.isFile() ||
-      stats.nlink !== 1 ||
       stats.size >= expectedBytes.byteLength
     ) {
       return false
     }
-    return isStrictBufferPrefix(await handle.readFile(), expectedBytes)
+    const bytes = await handle.readFile()
+    await assertSingleLinkTemporaryHandle(handle, identity)
+    await assertPathMatchesFileIdentity(filePath, identity, 1)
+    return isStrictBufferPrefix(bytes, expectedBytes)
   } catch {
     return false
   } finally {
@@ -1527,11 +1739,30 @@ async function directoryIdentity(directory: string): Promise<FileIdentity> {
   if (!stats.isDirectory() || stats.isSymbolicLink()) {
     throw new ApplyFailure('authority_changed')
   }
+  return fileIdentityFromStats(stats)
+}
+
+function fileIdentityFromStats(stats: {
+  readonly dev: bigint
+  readonly ino: bigint
+  readonly birthtimeNs: bigint
+}): FileIdentity {
   return {
     device: stats.dev.toString(),
     inode: stats.ino.toString(),
     birthtimeNs: stats.birthtimeNs.toString(),
   }
+}
+
+function sameFileIdentity(
+  left: FileIdentity,
+  right: FileIdentity,
+): boolean {
+  return (
+    left.device === right.device &&
+    left.inode === right.inode &&
+    left.birthtimeNs === right.birthtimeNs
+  )
 }
 
 async function rootMatchesIdentity(
@@ -1541,9 +1772,7 @@ async function rootMatchesIdentity(
   try {
     const actual = await directoryIdentity(root)
     return (
-      actual.device === expected.device &&
-      actual.inode === expected.inode &&
-      actual.birthtimeNs === expected.birthtimeNs &&
+      sameFileIdentity(actual, expected) &&
       (await realpath(root)) === root
     )
   } catch {

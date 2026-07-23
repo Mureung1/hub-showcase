@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import {
+  link,
   lstat,
   mkdir,
   mkdtemp,
@@ -214,6 +215,61 @@ test('marker authorization never repairs non-prefix or symlink temporary bytes',
     } finally {
       await fixture.cleanup()
     }
+  }
+})
+
+test('owned-incomplete inspection rejects a stable multi-link temporary state and preserves both paths', async () => {
+  const fixture = await createPlanFixture('multi-link-owned-temp')
+  const admission = createSemesterWorkspaceAdmissionForTesting({
+    fault(point) {
+      if (point === 'after_state_temp_file_sync') {
+        throw new Error(`fault:${point}`)
+      }
+    },
+  })
+  const inspected = await admission.inspect(fixture.intent)
+  assert.equal(inspected.outcome, 'new_target')
+  if (inspected.outcome !== 'new_target') assert.fail('plan required')
+
+  try {
+    await assert.rejects(
+      admission.apply(inspected.plan),
+      /fault:after_state_temp_file_sync/,
+    )
+    const temporaryPath = await findTemporaryStatePath(
+      inspected.plan.canonicalRoot,
+    )
+    const linkedPath = path.join(
+      fixture.intent.parent.canonicalParent,
+      'linked-temporary-state.json',
+    )
+    const expectedBytes = await readFile(temporaryPath)
+    await link(temporaryPath, linkedPath)
+
+    assert.deepEqual(
+      await createSemesterWorkspaceAdmission().inspect({
+        kind: 'resume_owned',
+        setupId: inspected.plan.planId,
+        canonicalRoot: inspected.plan.canonicalRoot,
+      }),
+      { outcome: 'collision', readOnly: false },
+    )
+    assert.equal((await lstat(temporaryPath)).nlink, 2)
+    assert.equal((await lstat(linkedPath)).nlink, 2)
+    assert.equal((await readFile(temporaryPath)).equals(expectedBytes), true)
+    assert.equal((await readFile(linkedPath)).equals(expectedBytes), true)
+    await assert.rejects(
+      lstat(
+        path.join(
+          inspected.plan.canonicalRoot,
+          '.ay-ple',
+          'workspace-state.json',
+        ),
+      ),
+      { code: 'ENOENT' },
+    )
+  } finally {
+    await fixture.cleanup()
   }
 })
 
@@ -493,6 +549,58 @@ test('atomic publish refuses a raced state file and preserves every unknown byte
       { outcome: 'unsafe', readOnly: false },
     )
     assert.deepEqual(await readFile(statePath), sentinel)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('publish rejects a temporary state that gains another link after its earlier ownership checks', async () => {
+  const fixture = await createPlanFixture('publish-link-count-race')
+  const linkedPath = path.join(
+    fixture.intent.parent.canonicalParent,
+    'raced-temporary-state.json',
+  )
+  let temporaryPath = ''
+  let expectedBytes = Buffer.alloc(0)
+  const admission = createSemesterWorkspaceAdmissionForTesting({
+    async fault(point) {
+      if (point !== 'before_state_publish') return
+      temporaryPath = await findTemporaryStatePath(
+        path.join(
+          fixture.intent.parent.canonicalParent,
+          fixture.intent.leafName,
+        ),
+      )
+      expectedBytes = await readFile(temporaryPath)
+      await link(temporaryPath, linkedPath)
+    },
+  })
+  const inspected = await admission.inspect(fixture.intent)
+  assert.equal(inspected.outcome, 'new_target')
+  if (inspected.outcome !== 'new_target') assert.fail('plan required')
+  const statePath = path.join(
+    inspected.plan.canonicalRoot,
+    '.ay-ple',
+    'workspace-state.json',
+  )
+
+  try {
+    assert.deepEqual(await admission.apply(inspected.plan), {
+      outcome: 'conflict',
+    })
+    await assert.rejects(lstat(statePath), { code: 'ENOENT' })
+    assert.equal((await lstat(temporaryPath)).nlink, 2)
+    assert.equal((await lstat(linkedPath)).nlink, 2)
+    assert.equal((await readFile(temporaryPath)).equals(expectedBytes), true)
+    assert.equal((await readFile(linkedPath)).equals(expectedBytes), true)
+    assert.deepEqual(
+      await createSemesterWorkspaceAdmission().inspect({
+        kind: 'resume_owned',
+        setupId: inspected.plan.planId,
+        canonicalRoot: inspected.plan.canonicalRoot,
+      }),
+      { outcome: 'collision', readOnly: false },
+    )
   } finally {
     await fixture.cleanup()
   }
