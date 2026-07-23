@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -70,10 +70,75 @@ Persistent Python bridge가 한 개의 managed ChatGPT login attempt를 즉시 �
 | owner | `R` — Runtime |
 | branch | `codex/public-preview-r1b-python-account` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/r1b-python-account` |
-| handoffSha | Claim 시 coordinator가 004의 fixed reviewed SHA를 integration branch에 `--no-ff` merge하고 predecessor 및 integration root/Runtime gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `4d32ccc51f59b43b332b019fb13a5b3ae7a4e697` — 004의 fixed reviewed combined tip과 closeout이 반영된 clean integration HEAD. |
 | writablePaths | `packages/codex-chat-runtime/python/bridge/**`; `packages/codex-chat-runtime/scripts/test_python_bridge.py`; account lifecycle용 fake App Server scripts/fixtures; `docs/tickets/2026-07-23-public-npx-first-release/005-r1b-bounded-python-account-bridge.md` |
 | consumedContracts | S1 frozen Runtime account contract, R1a typed managed-login handle/completion/cancel seam와 official account read/logout types |
-| predecessorEvidence | 004 fixed reviewed SHA, exact SDK patch/provenance receipt와 matching-completion tests |
+| predecessorEvidence | 004 fixed reviewed combined tip `be3b0bcc2ff4c550ef0dbb035f1ca23b70f49297`, closeout `4d32ccc51f59b43b332b019fb13a5b3ae7a4e697`, exact SDK patch/provenance receipt와 matching-completion tests |
+| claimEvidence | Exact worktree·branch·HEAD를 확인했고 working tree가 clean이며 `be3b0bcc2ff4c550ef0dbb035f1ca23b70f49297`가 handoff HEAD의 ancestor임을 확인했다. |
 | requiredChecks | Bridge full tests; Ruff check/format; exact SDK verification; production Runtime before/after verification; root test/typecheck/build/Chat Shell lint; `git diff --check` |
 | reviewOwner | R1a author가 아닌 independent bridge/concurrency reviewer |
 | handoffArtifact | Reviewed fixed R1b commit SHA, strict bridge frame roster와 bounded attempt/race/cleanup test receipt |
+
+## Candidate Receipt
+
+이 receipt는 review 전 candidate를 기록한다. Ticket state와 acceptance checkbox는 coordinator의 independent review 및 C-owned serialization 전까지 닫지 않는다.
+
+| 항목 | Candidate evidence |
+| --- | --- |
+| fixed handoff | `4d32ccc51f59b43b332b019fb13a5b3ae7a4e697` |
+| claim | `143cc416d` |
+| strict protocol checkpoint | `94ca0b946` |
+| Python lifecycle implementation | `909810ebb` |
+| start-reservation race fix | `aa7ce6463` |
+| single-flight settlement fix | `bc09e6c48` |
+| expiry-rejection settlement fix | `90189f1b0` |
+| terminal waiter cleanup fix | `f224c8b8a` |
+| transport classification fix | `c0dd7290a` |
+| bounded matching-completion fix | `df029749b` |
+| bridge frame roster | `read_account`; `start_browser_login`; `read_browser_login_attempt`; `cancel_browser_login`; `release_browser_login_attempt`; `logout` |
+| account result | `account.state = signed_out \| chatgpt \| unsupported` |
+| attempt result | start는 allowlisted HTTPS `authUrl`과 product `attemptId`의 `pending`; status는 non-consuming `pending \| completed \| cancelled \| expired \| failed`; failed만 safe `{ code: login_start_failed \| login_failed, retryable: true }`를 포함 |
+| settlement result | cancel은 `cancelled \| already_settled`, release는 `released \| already_released`, logout은 official logout 뒤 fresh null readback을 확인한 `signed_out` |
+| bound | account RPC 30초, process-local attempt deadline monotonic 10분, `starting \| pending` reservation 1개와 native completion waiter 최대 1개 |
+
+Native `loginId`와 SDK handle은 `BrowserLoginAttempt` 안에만 남는다. Fake App Server는 의도적으로 `native-login-secret-*`, private email과 raw provider error sentinel을 생성하지만 strict frame, captured journal과 terminal output의 forbidden-value scan은 0건이다. Account read는 coarse typed state만 반환하고, completion·cancel·expiry는 matching waiter 뒤 fresh `account/read(refreshToken: true)`로 수렴한다. Issuer가 `auth.openai.com | chatgpt.com`이 아니거나 userinfo·port·fragment·control character·16 KiB 초과가 있는 start URL은 projection하지 않고 Runtime-fatal로 닫는다.
+
+Cancel RPC의 well-formed rejection은 correlated `login_cancel_failed`를 한 번 반환해 request lease를 해제하고 현재 attempt를 `pending`으로 보존한다. Cancel/completion race에서는 fresh ChatGPT account가 이기며, expiry와 explicit cancel 사이에는 transient failure를 노출하지 않는다. Release response retry, repeated status, duplicate same-attempt start와 다른 attempt rejection도 deterministic하다. EOF와 native forced exit는 Python waiter를 버리고 App Server process까지 bounded하게 reap한다.
+
+Independent review에서 native `login_chatgpt()` 응답 전에는 `_login_attempt`가 비어 있어 back-to-back cancel/release가 `login_attempt_not_found`를 반환하고 logout이 뒤늦게 생긴 attempt를 남기는 High race가 재현됐다. Fix는 `dispatch()`에서 native RPC보다 먼저 process-local `starting` reservation을 만든다. 같은 command batch 또는 native start가 이미 관찰된 뒤 들어온 duplicate start, status, cancel, release와 logout은 dispatch-time에 그 exact reservation을 잡고 bounded `start_settled` barrier를 공유한다. `starting`은 frame에 나타나지 않으며 success, well-formed start rejection, timeout, unsafe URL, transport loss, stdin EOF와 normal close 모두 terminal 또는 process cleanup으로 수렴한다.
+
+후속 Spec review에서 첫 cancel caller가 native cancel RPC 뒤 `settlement_lock`을 놓은 시점과 completion/fresh account read 사이에 두 번째 caller가 들어와 native cancel을 다시 호출하는 Medium single-flight race가 재현됐다. Fix는 attempt 안의 한 `settlement_task`만 cancel RPC, matching completion과 fresh account read를 소유하게 하고, concurrent cancel·release·logout·expiry가 같은 shielded bounded result를 join하게 한다. Success는 모든 waiter가 같은 terminal을 관찰하고, well-formed rejection은 각 command의 safe correlated error를 반환한 뒤 slot을 `pending`으로 보존하며 후속 retry만 새 settlement를 시작한다. Timeout, transport loss, stdin EOF와 normal close는 shared task와 native child를 bounded하게 정리한다.
+
+Final review에서는 explicit cancel settlement에 expiry가 join한 뒤 well-formed cancel rejection이 오면 expiry waiter가 조용히 끝나 deadline을 넘긴 `pending` slot이 남는 Medium race가 재현됐다. Attempt가 expiry 참여를 shared task에 기록하고, 이 deadline rejection에서는 같은 owner가 native cancel을 반복하지 않은 채 기존 matching completion을 bounded하게 기다린다. Completion watcher의 fresh account read가 ChatGPT이면 `completed`, 그렇지 않으면 `failed`로 terminalize한다. Matching completion이 bound 안에 오지 않으면 attempt를 `failed`로 고정하고 Runtime-fatal로 닫으며, 이미 요청된 normal close도 같은 bound 뒤 native child를 reap한다. 따라서 pre-deadline rejection만 기존 `pending`→retry를 유지하고, deadline·release join·normal close 교차는 native cancel 정확히 1회 뒤 permanent pending 없이 fail-closed 한다.
+
+Follow-on review에서는 outer asyncio completion task를 cancel해도 `asyncio.to_thread()`에서 실행 중인 SDK sync waiter의 captured queue는 깨어나지 않으며, unregister의 map pop만으로 그 thread를 회수할 수 없다는 Medium cleanup 결함이 확인됐다. 최종 fix는 정상 deadline-rejection settlement에서 completion task를 cancel하지 않고 shielded bounded await한다. 한 matching notification이 sync wait를 정상 반환시켜 SDK `finally` unregister를 통과하고, completion watcher만 fresh `account/read`를 정확히 한 번 수행한다. Matching completion 전에는 terminal result가 나오지 않으며, 완료 뒤 새 attempt와 normal close가 성공한다. Completion을 끝까지 보류한 timeout과 close oracle은 Runtime shutdown 또는 close가 SDK transport를 닫아 waiter와 child를 bounded하게 reap함을 확인한다.
+
+Coordinator full rerun에서는 fake App Server가 login start 응답 전에 `os._exit(42)`로 종료될 때 fatal code가 `sdk_operation_failed | sdk_transport_failed` 사이에서 흔들렸다. 같은 reader EOF가 login response waiter에는 `TransportClosedError`, user-input collector에는 `UserInputRequestError("interaction_transport_lost")`로 전달됐고 두 caller의 선착순이 code를 정했다. Collector의 stable transport-lost code도 `sdk_transport_failed`로 분류해 응답 없는 forced EOF를 한 terminal로 정규화했다.
+
+### Candidate verification
+
+| Command | Result |
+| --- | --- |
+| `npm run test:bridge-unit -w @ay-ple/codex-chat-runtime` | green, 8 tests |
+| `npm run test:bridge -w @ay-ple/codex-chat-runtime` | green, 39 tests; 기존 lifecycle matrix에 duplicate cancel, cancel↔release/logout/expiry single-flight, shared rejection→fresh retry, joined timeout/EOF/normal close, deadline rejection 뒤 matching ChatGPT/non-ChatGPT completion과 completion-withheld timeout/close를 포함한다. Native cancel은 shared settlement당 정확히 1회이고 completion watcher의 fresh account read도 matching completion당 1회다. |
+| `npm run check:bridge -w @ay-ple/codex-chat-runtime` | green, Ruff check와 format 13 files |
+| `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime` | green; 9 ordered patches deterministic verify, router actual-child matrix, official suite 166 passed/38 skipped, provenance 17 tests |
+| `npm run test:production-runtime -w @ay-ple/codex-chat-runtime` | green, 23 tests |
+| `npm run verify:production-runtime -w @ay-ple/codex-chat-runtime` | expected fail-closed: `production manifest bridge source evidence drift` |
+| `npm test` | green |
+| `npm run typecheck` | green |
+| `npm run build` | green |
+| `npm run lint -w @ay-ple/chat-shell` | green |
+| `git diff --check` | green |
+
+R1b는 shared canonical manifest를 수정할 권한이 없다. 따라서 direct bridge candidate gate는 tracked worker와 기존 ignored exact Python/native bundle을 사용했고, R1a의 official patch `0009` postimage만 ignored site-packages에 반영해 managed-login handle을 실행했다. 이는 canonical production artifact evidence가 아니다. Canonical verifier가 bridge source drift에서 멈춘 현재 상태가 의도한 serial boundary다.
+
+## C-only serialization handoff
+
+Coordinator가 independent review로 fixed R1b SHA를 정한 뒤 C lane이 다음 delta를 단독으로 소유한다.
+
+1. Fixed R1b를 integration branch에 병합한 상태에서 `npm run materialize:production-runtime -w @ay-ple/codex-chat-runtime -- --write-manifest`를 직렬 실행한다.
+2. 생성된 ignored bundle과 `packages/codex-chat-runtime/manifests/production-runtime-darwin-arm64.json`이 current bridge source, exact 9-patch SDK와 byte-for-byte 일치하는지 검토한다.
+3. 현재 `ready | not_ready`만 설명하는 `packages/codex-chat-runtime/README.md`의 bridge table을 위 strict account frame roster와 private-value/timeout/cleanup semantics로 갱신한다. R1c가 exact application identity를 worker client args에 연결한 뒤 Node Runtime 설명도 함께 갱신한다.
+4. `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime`을 새 materialization에서 실행하고 시작·종료 후 `verify:production-runtime`이 모두 green인지 확인한다.
+5. 이 C-owned manifest/README delta와 fixed R1b를 다음 R1c `handoffSha`에 포함한다. R1c는 frame decoder, `auth-only | workspace` role, exact release client identity와 frozen `CodexAccountLifecycle`만 소비하고 Python native identity를 재노출하지 않는다.
