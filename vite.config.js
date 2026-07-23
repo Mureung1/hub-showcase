@@ -9,4 +9,12 @@ export default defineConfig({
       '/api': 'http://localhost:4000',
     },
   },
+
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.js',
+    globals: true,
+    exclude: ['server/**/chunker.test.js', 'node_modules/**'],
+  },
 })
+
