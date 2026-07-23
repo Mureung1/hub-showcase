@@ -36,4 +36,5 @@ ADR은 다음 경우에 작성한다.
 
 | ADR | 상태 | 내용 |
 |---|---|---|
-| [ADR-0001-기술선택.md](ADR-0001-기술선택.md) | 채택됨 | 현재 단계는 정적 HTML·CSS 프로토타입을 기준으로 하며 생산용 앱 스택은 아직 만들지 않음 |
+| [ADR-0001-기술선택.md](ADR-0001-기술선택.md) | 대체됨 | 스택 결정 전까지 정적 프로토타입만 유지 — ADR-0002로 대체 |
+| [ADR-0002-생산-스택.md](ADR-0002-생산-스택.md) | 채택됨 | React+TypeScript+Vite / Supabase(로컬 CLI+Docker), LLM은 Edge Functions에서만, 이메일 로그인+RLS 포함 |

@@ -18,34 +18,30 @@
 
 현재 구현은 외부 라이브러리, JavaScript, 서버, DB, 실제 AI 호출을 사용하지 않는다.
 
-`HARNESS/`는 배포되는 제품 런타임이 아니다. PRD를 읽는 Worker, 외부 배포용 전용 Adapter, 독립 Verifier와 Controller를 분리해 `00` 탐색부터 `08` 운영 인계까지 실행하고, 각 Attempt·Failure·승인·checkpoint 증거를 서명해 남기는 개발 제어면이다. 하네스 준비 완료를 제품 구현 완료로 간주하지 않는다.
+`HARNESS/`는 배포되는 제품 런타임이 아니다. PRD를 읽는 Worker, 독립 Verifier와 Controller를 분리해 기능 단위 Phase(`00` 공통 기반부터 `06` MVP 통합 검증까지)를 실행하고, 각 Attempt·Failure·승인·checkpoint 증거를 서명해 남기는 개발 제어면이다. 하네스 준비 완료를 제품 구현 완료로 간주하지 않는다.
 
 ## 목표 MVP 구조
 
-실제 제품 구현 시에는 기술 스택과 무관하게 다음 경계를 유지한다.
+생산 스택은 `docs/adr/ADR-0002-생산-스택.md`로 확정됐다: React + TypeScript + Vite 프론트엔드 / Supabase 백엔드(로컬 CLI + Docker). 다음 계층 경계를 유지한다.
 
 ```text
-Presentation
+Presentation — React + TypeScript + Vite (frontend/src/features/<기능>)
   └─ 화면, 폼, 상태 배지, 사용자 흐름
 
-Application
-  ├─ 리뷰 입력 등록
-  ├─ 리뷰 분류 요청
-  ├─ 답글 초안 생성 요청
-  ├─ 분석 리포트 조회
-  └─ 블랙컨슈머 대응 사건 처리
+Application·AI — Supabase Edge Functions (supabase/functions/)
+  ├─ classify-review   # 리뷰 유형 분류
+  ├─ generate-reply    # 답글 초안 생성
+  ├─ assess-risk       # 블랙컨슈머 위험도 판정
+  └─ LLM 호출과 API 키는 여기에만 존재한다 (브라우저 금지)
 
-Domain
-  ├─ Review
-  ├─ ReplyDraft
-  ├─ StoreProfile
-  ├─ AnalysisReport
-  └─ ResponseCase
+Domain 규칙 — 순수 TypeScript 모듈 (LLM·DB 없이 Vitest로 검증)
+  ├─ 분류 엣지 케이스 규칙, 금칙 정책, 인사이트 감지, 만료 이벤트 제외
+  └─ Review, ReplyDraft, StoreProfile, AnalysisReport, ResponseCase 모델
 
-Infrastructure
-  ├─ LLM adapter
-  ├─ Storage adapter
-  └─ Platform adapter
+Data — Supabase (로컬 CLI + Docker)
+  ├─ Postgres + RLS(매장 소유권 강제, supabase/migrations의 SQL만으로 변경)
+  ├─ Auth (이메일 로그인)
+  └─ Storage (블랙컨슈머 증거 파일, RLS 적용)
 ```
 
 ## 핵심 도메인 기능
@@ -106,16 +102,21 @@ flowchart TD
 ## 의존 관계 원칙
 
 - 화면은 도메인 규칙을 직접 소유하지 않는다. 화면은 결과를 표시하고 사용자 선택을 받는다.
-- LLM 호출은 도메인 규칙 뒤에 둔다. 프롬프트가 제품 정책을 우회하지 못하게 금칙 검사를 별도 단계로 둔다.
+- LLM 호출은 Supabase Edge Functions에서만 수행하고 API 키를 브라우저에 두지 않는다. 프롬프트가 제품 정책을 우회하지 못하게 금칙 검사를 LLM과 분리된 순수 TS 정책 모듈로 둔다.
 - 플랫폼 연동은 어댑터로 분리한다. 배민 수동 입력으로 시작하더라도 네이버, 쿠팡이츠, 요기요, 구글 리뷰를 추가할 수 있어야 한다.
 - Phase 2 자동화는 MVP 흐름을 깨지 않아야 한다. 자동화가 들어와도 악성 리뷰는 항상 수동 승인이다.
 
-## 아직 결정하지 않은 것
+## 결정된 것과 남은 것
 
-- 생산용 프론트엔드 프레임워크
-- 백엔드 언어와 API 구조
-- DB 종류와 배포 방식
-- LLM 공급자와 프롬프트 실행 방식
-- 플랫폼 자동 수집·게시 방식
+결정됨 (ADR-0002, 2026-07-22):
 
-이 결정들은 별도 ADR로 남긴다.
+- 프론트엔드: React + TypeScript + Vite
+- 백엔드·DB·인증·스토리지: Supabase (로컬 CLI + Docker)
+- LLM 실행 위치: Supabase Edge Functions (프론트 직접 호출 금지)
+- MVP에 이메일 로그인과 RLS 매장 격리 포함
+
+남은 결정 (별도 ADR):
+
+- LLM 공급자 확정 (하네스 입력 `llm-provider`로 주입, `fake` 모드 지원)
+- 배포 방식 (제품 Phase 2 이후)
+- 플랫폼 자동 수집·게시 방식 (제품 Phase 2)

@@ -6,11 +6,11 @@
 
 | target | 완료 의미 |
 |---|---|
-| `passed` | Phase 00~06의 제품 계약, MVP 구현, 안전·AI·UX·production readiness 검증 완료 |
-| `deployed` | `passed` + Phase 07 스테이징 배포와 E2E·rollback 검증 완료 |
-| `observed` | `deployed` + 승인된 Phase 08 프로덕션 배포, smoke·health·관찰 인계 완료 |
+| `passed` | Phase 00(공통 기반)~05(MVP 기능 5개) 구현 + Phase 06(MVP 통합 검증) 완료. 현재 계획의 전체 범위 |
+| `deployed` | `passed` + 스테이징 배포 Phase 완료 — 현재 계획에 배포 Phase 없음(제품 Phase 2 이후) |
+| `observed` | `deployed` + 승인된 프로덕션 배포·관찰 인계 완료 — 현재 계획에 해당 Phase 없음 |
 
-제품을 처음부터 서비스 운영 확인까지 완성하라는 요청의 기본 target은 `observed`다. 프로덕션 side effect는 자동으로 추정하지 않으며 명시 capability, 입력과 사용자 approval이 필요하다.
+현재 계획의 기본 target은 `passed`다. 배포 Phase를 추가한 뒤 서비스 운영 확인까지 요청하면 `observed`를 쓴다. 프로덕션 side effect는 자동으로 추정하지 않으며 명시 capability, 입력과 사용자 approval이 필요하다.
 
 ## Step 완료 기준
 
@@ -49,10 +49,7 @@ Worker의 success claim이나 자체 검토만으로는 어느 항목도 생략�
 
 ## 최종 확인과 보고
 
-```bash
-python HARNESS/run.py status --run <run-id>
-python HARNESS/run.py verify-journal --run <run-id>
-```
+`status`와 `verify-journal` 명령(`README.md` 3장)으로 최종 상태와 journal 무결성을 확인한 뒤 보고한다.
 
 최종 보고에는 다음만 명확히 남긴다.
 

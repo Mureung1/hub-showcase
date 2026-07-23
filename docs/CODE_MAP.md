@@ -13,7 +13,7 @@
 
 ## `HARNESS/` 오케스트레이션 지도
 
-`HARNESS/`는 제품 기능 구현이 아니라 PRD부터 검증·배포 인계까지의 작업 순서와 증거를 관리하는 실행 계층이다. 따라서 하네스가 준비되었다고 해서 실제 앱, API, DB, AI 연동 또는 배포가 구현된 것은 아니다.
+`HARNESS/`는 제품 기능 구현이 아니라 기능 단위 Phase(00 공통 기반 + 01~05 기능 + 06 통합 검증)의 작업 순서와 증거를 관리하는 실행 계층이다. 따라서 하네스가 준비되었다고 해서 실제 앱, API, DB, AI 연동이 구현된 것은 아니다.
 
 | 경로 | 역할 |
 |---|---|
@@ -21,12 +21,14 @@
 | `HARNESS/engine/controller.py` | Phase 상태 전이, Worker·배포 Adapter 분리 실행, 독립 검증, 재시도, 정확한 경로의 Git 체크포인트 |
 | `HARNESS/engine/specs.py` | Phase·Step·경로·명령·입력 계약의 사전 검증 |
 | `HARNESS/engine/io.py` | 원자적 기록, 단일 실행 잠금, 비밀정보 정제, 서명된 이벤트 저널 관리 |
-| `HARNESS/phases/` | `00` 탐색부터 `08` 프로덕션 인계까지의 순서, 권한, 산출물, 인수 기준 |
+| `HARNESS/phases/` | 기능 단위 Phase(00 공통 기반 + 01~05 MVP 기능 + 06 통합 검증)의 순서, 권한, 산출물, 인수 기준. 계획은 `HARNESS/phases/PHASE_PLAN.md` |
 | `HARNESS/contracts/` | Run state, Event, Attempt, Failure 등 실행 기록의 JSON 계약 |
 | `HARNESS/tests/` | Controller 안전 장치와 정적 프로토타입 계약의 자동 회귀 테스트 |
 | `HARNESS/tests/test_prototype.py` | 필수 화면·fragment 링크, 수동 게시 경계, 악성 대응 고지, Phase 2 비활성, 접근성·반응형·인쇄 기본값 검증 |
 | `HARNESS/runs/` | Git에서 제외되는 실행별 상태, 로그, Attempt, 실패 증거 저장소 |
 | `HARNESS/FAILURE_RECORDS.md` | 실패 현상·원인 가설·증거·조치·재검증·처분을 분리해 기록하는 원칙 |
+
+참고: `HARNESS/run.py`와 `HARNESS/tests/` 소스는 현재 md 워크트리에 없다(엔진 소스만 있음). 위 표의 해당 항목은 하네스 코드가 있는 로컬 실행 브랜치 기준이다.
 
 실행 기록은 Controller가 소유한다. Worker의 완료 선언만으로 단계가 통과하지 않으며, 실패 재시도는 이전 Attempt를 덮어쓰지 않고 새 기록으로 남긴다.
 
@@ -55,17 +57,36 @@
 
 ## 향후 실제 제품 코드 경계
 
-기술 스택이 결정되면 다음 기능 단위로 코드를 나눈다.
+폴더·파일 트리는 기능 위주로 구성하며, 하네스 Phase와 기능 폴더가 1:1로 대응한다 (`HARNESS/phases/PHASE_PLAN.md`). 스택은 ADR-0002 기준(React+TS+Vite / Supabase 로컬)이다.
 
-| 기능 영역 | 넣을 예정인 기능 |
-|---|---|
-| `reviews` | 리뷰 등록, 일괄 붙여넣기 파싱, 리뷰 목록, 상태 변경 |
-| `classification` | 유형·카테고리·분류 근거 생성, 확신도 낮은 리뷰 확인 필요 처리 |
-| `reply` | 매장 프로필 기반 답글 초안 생성, 톤 변경, 금칙 검사, 복사/완료 처리 |
-| `analytics` | 반응 비율, 별점 추이, 카테고리 언급량, 메뉴별 키워드, 콜드 스타트 |
-| `response-case` | 위험도 분류, 악성 리뷰 대응 4단계, 증거 체크리스트, 사례 아카이브 |
-| `store-profile` | 매장 정보, 말투, 운영 정보, 이벤트, 금지 표현 관리 |
-| `platform-adapter` | 배민 수동 입력, Phase 2 자동 수집·게시 연동, 채널별 차이 흡수 |
+```text
+frontend/                          # React + TypeScript + Vite
+└─ src/
+   ├─ features/
+   │  ├─ auth/                     # Phase 0: 이메일 가입·로그인 (Supabase Auth)
+   │  ├─ reviews/                  # Phase 0: 리뷰 수동 입력·일괄 파싱·목록·상태
+   │  ├─ review-classification/    # Phase 1: 분류 결과 표시·필터·확인 필요 처리
+   │  ├─ store-profile/            # Phase 2: 톤앤매너·운영 정보·이벤트·금지 표현
+   │  ├─ reply-draft/              # Phase 3: 초안 에디터·복사 → 완료 흐름
+   │  ├─ review-analysis/          # Phase 4: 리포트·인사이트·콜드 스타트
+   │  ├─ home/                     # Phase 4: ① 홈 대시보드(통계·처리 큐·인사이트 조합)
+   │  └─ blackconsumer/            # Phase 5: 대응 센터·매뉴얼 4단계·아카이브
+   ├─ shared/                      # Supabase 클라이언트, 공통 앱 셸(사이드바 6메뉴)·UI (최소한만)
+   └─ content/safety.ts            # 수동 게시·법률 고지 등 안전 고정 문구
+supabase/                          # 로컬 Supabase (CLI + Docker)
+├─ migrations/                     # 기능별 SQL 스키마 + RLS 정책 (변경은 SQL로만)
+├─ functions/                      # Edge Functions (Deno/TS) — LLM 호출은 여기서만
+│  ├─ classify-review/             # Phase 1: 리뷰 유형 분류
+│  ├─ generate-reply/              # Phase 3: 답글 초안 생성
+│  ├─ assess-risk/                 # Phase 5: 위험도 판정
+│  └─ _shared/                     # LLM adapter(LLM_PROVIDER=fake 지원), 공통 모듈
+└─ config.toml
+tests/
+├─ integration/                    # Phase 6: S1~S4 통합 검증 (Vitest + 로컬 Supabase)
+└─ golden/                         # 금칙 골든 사례 (reply-safety-cases.json)
+```
+
+플랫폼 자동 수집·게시 어댑터(`platform-adapter`)는 제품 Phase 2 이후에 추가한다.
 
 ## 코드 변경 시 확인할 문서
 
