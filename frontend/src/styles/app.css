@@ -127,6 +127,10 @@ input[type="range"]{accent-color:var(--primary);}
 .meaning-frame .eyebrow{color:var(--on-tint-blue);opacity:.85;}
 .meaning-frame p{margin:6px 0 0;}
 .meaning-frame strong{color:var(--on-tint-blue);}
+/* 결과·실천 카드 2장 분할 페이저 */
+.result-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:22px;padding-top:18px;border-top:1px solid var(--border);}
+.result-pager.result-pager-top{margin-top:0;margin-bottom:6px;padding-top:0;border-top:0;}
+.result-pager-info{font-size:13px;font-weight:700;color:var(--text-muted);}
 /* 결과 흐름 그림지도 */
 .flowmap{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 4px;padding:14px 16px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--r-md);}
 .flowmap-node{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-pill);padding:7px 13px;font-size:13px;font-weight:600;color:var(--text-strong);}
