@@ -38,6 +38,7 @@ def build_prompt(
     platform,
     weather=None,
     holiday=None,
+    keyword=None,
     business_name=None,
     business_type=None,
     business_description=None,
@@ -55,8 +56,9 @@ def build_prompt(
 """
 
     context_block = ""
-    if weather or holiday:
-        context_block = f"\n오늘 맥락: {weather or ''} {holiday or ''}".strip()
+    context_parts = [p for p in [weather, holiday, keyword] if p]
+    if context_parts:
+        context_block = f"\n오늘 맥락: {' '.join(context_parts)}"
 
     return f"""아래 하소연을 {platform_guide['label']}로 재구성해줘.
 {platform_guide['guide']}
@@ -74,6 +76,7 @@ def generate_content(
     platform,
     weather=None,
     holiday=None,
+    keyword=None,
     business_name=None,
     business_type=None,
     business_description=None,
@@ -81,7 +84,7 @@ def generate_content(
     """GPT-4o를 호출해서 하소연을 SNS 콘텐츠로 재구성."""
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     prompt = build_prompt(
-        complaint, temperature, platform, weather, holiday,
+        complaint, temperature, platform, weather, holiday, keyword,
         business_name, business_type, business_description,
     )
 
