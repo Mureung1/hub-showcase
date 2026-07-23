@@ -1,8 +1,10 @@
 # @ay-ple/server
 
-Explicit `SemesterWorkspace`와 official SDK 기반 Codex Runtime을 하나의 product lifecycle로 조합하는 Express local companion server다. `createServerApplication()`이 product HTTP, workspace authority, listener와 bounded Runtime shutdown을 함께 소유하는 application factory다.
+Explicit current workspace directory와 official SDK 기반 Codex Runtime을 하나의 product lifecycle로 조합하는 Express local companion server다. `createServerApplication()`이 product HTTP, current workspace authority, listener와 bounded Runtime shutdown을 함께 소유하는 application factory다.
 
 `/api/product/*`의 public JSON request·response와 NDJSON frame은 dependency-free [`@ay-ple/product-contract`](../../packages/product-contract/README.md)가 소유한다. Server는 shared decoder로 mutation body를 admission하고 domain object를 public projection으로 변환한다. Express route, status·Origin guard, neutral NDJSON line writer, workspace store와 private Runtime/MCP binding은 Server에 남는다.
+
+현재 구현의 `SemesterWorkspaceController`는 chooser·development materializer가 넘긴 directory를 current v2 store로 열고 internal `ready`를 판정한다. App-owned scaffold, `WorkspaceManifest`, first-run setup, durable workspace registry와 `Semester Ready`는 아직 구현되지 않았다. 따라서 이 README의 current `ready workspace`는 [domain glossary](../../CONTEXT.md)의 `Semester Ready`와 같지 않으며, adopted target은 [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)가 소유한다.
 
 ## Canonical 시작과 root 소유권
 
@@ -18,7 +20,7 @@ Canonical product composition은 다음 세 root를 명시적으로 분리한다
 | --- | --- |
 | `packageRoot` | Repository-owned product code와 `packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64` verified artifact를 찾는 source root다. 사용자 상태를 쓰지 않는다. |
 | `appDataRoot` | Caller가 `--app-data-root` 또는 explicit `AY_PLE_APP_DATA_ROOT`로 제공한 absolute non-symlink directory다. Composition이 `runtime/home`, `runtime/codex-home`, `runtime/codex-sqlite-home`, `runtime/temp`를 isolated `HOME`, `CODEX_HOME`, `CODEX_SQLITE_HOME`, temporary state로 계산·준비한다. |
-| `workspaceRoot` | Materializer 또는 Server-owned chooser가 선택한 active ready `SemesterWorkspace`다. Product native thread의 exact `cwd`이며 confirmed product state와 user-owned TXT를 보존한다. |
+| `workspaceRoot` | Current materializer 또는 Server-owned chooser가 선택한 internal-ready directory다. Product native thread의 exact `cwd`이며 current v2 confirmed product state와 user-owned TXT를 보존한다. Public target에서는 app-created `SemesterWorkspace`와 `WorkspaceManifest` validation이 이 input을 대체한다. |
 
 Root는 서로 다르고 ancestor·descendant 관계가 없어야 한다. Ambient `HOME`, repository `.ay-ple`, legacy 여섯 `CODEX_CHAT_*` path, common parent와 `process.cwd()`를 fallback으로 사용하지 않는다. Fresh clone은 Runtime bundle이 tracked되지 않으므로 먼저 [runtime package README](../../packages/codex-chat-runtime/README.md#standalone-production-bundle)에 따라 materialize한다.
 
@@ -31,9 +33,9 @@ npm run build -w @ay-ple/server
 npm run start -w @ay-ple/server
 ```
 
-## Development `SemesterWorkspace`
+## Current development workspace input
 
-대표 First Assignment 자료는 Git이 추적하는 seed로만 유지하고 실제 native `cwd`로 사용하지 않는다. Root product command는 seed를 repository 밖의 `<dirname(packageRoot)>/.ay-ple-dev-workspaces/first-assignment-semester-workspace`로 materialize하고 정규 workspace path와 ownership을 보고한다.
+대표 First Assignment 자료는 Git이 추적하는 seed로만 유지하고 실제 native `cwd`로 사용하지 않는다. Root product command는 seed를 repository 밖의 `<dirname(packageRoot)>/.ay-ple-dev-workspaces/first-assignment-semester-workspace`로 materialize하고 정규 path와 development ownership을 보고한다. 이 fixture materialization은 public app-owned scaffold나 `WorkspaceManifest` admission이 아니다.
 
 ```bash
 npm run materialize:dev-workspace
@@ -41,18 +43,20 @@ npm run materialize:dev-workspace
 
 Materializer가 발급한 ownership marker가 있는 exact leaf만 재생성할 수 있다. Unmarked directory, broad parent, symlink와 caller-owned workspace는 reset·cleanup하지 않는다. `CODEX_CHAT_WORKSPACE`가 명시되면 manual-development materializer의 workspace selection을 caller-owned absolute directory로 override할 뿐 seed copy·reset·cleanup을 하지 않는다. 이 env는 Runtime artifact, controlled directory, native `cwd` owner 또는 장기 product identity를 대신하지 않는다.
 
-`SemesterWorkspaceController.nativeCwd()`는 active `ready` workspace의 canonical root만 반환한다. Ready snapshot에 recovery marker가 있으면 같은 `cwd` authority는 유지하되 product mutation admission이 복구 전까지 새 work를 닫는다. `incompatible/readOnly`, cancel·invalid selection은 Runtime start 전에 fail closed한다. Browser snapshot에 absolute root를 노출하지 않는다.
+`SemesterWorkspaceController.nativeCwd()`는 current active internal-`ready` directory의 canonical root만 반환한다. Ready snapshot에 recovery marker가 있으면 같은 `cwd` authority는 유지하되 product mutation admission이 복구 전까지 새 work를 닫는다. `incompatible/readOnly`, cancel·invalid selection은 Runtime start 전에 fail closed한다. Browser snapshot에 absolute root를 노출하지 않는다. Adopted target에서는 Server-owned admission이 app-created root와 `WorkspaceManifest`를 먼저 검증해야 한다.
 
 ## Workspace-local durable store
 
 Workspace의 app-owned store는 current canonical `formatVersion: 2` 하나를 지원한다. [ADR 0013](../../docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)이 이 format을 첫 durable compatibility baseline으로 채택한다.
+
+Current v2 aggregate는 stable workspace ID와 한 Course identity도 소유한다. 새 `WorkspaceManifest`를 곁에 추가해 같은 identity를 두 곳에서 authoritative하게 만들 수 없다. [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)의 adopted target은 같은 physical seam을 explicit v3 single aggregate로 전환해 logical `WorkspaceManifest`만 identity를 소유하게 한다. 아직 구현되지 않았으며 current v2 bytes를 자동 scaffold·adopt·reset하지 않는다.
 
 | 영역 | Current behavior |
 | --- | --- |
 | Product aggregate | Stable workspace ID, confirmed revision, one `Course`, `RawMaterial`, Assignment, `StatePatch`, `UserConfirmation`, `ModelingRun`, execution guard와 nullable source-recovery marker를 한 authority로 보존한다. |
 | Read | Exact decoder·aggregate invariant를 통과한 current v2는 original serialized bytes를 authority로 열고 startup에서 rewrite하지 않는다. |
 | Write | Internal `semester-workspace-store` module이 codec·physical I/O·temporary rename·exact opened-byte comparison을 소유한다. Controller는 serialized transaction ordering과 in-memory authority 교체를 소유한다. |
-| Incompatible | v1, pre-baseline/noncanonical v2, malformed·invalid current v2, future version, symlink·non-regular·unreadable store는 historical recognizer·migration·reset 없이 original bytes를 보존한 `incompatible/readOnly`로 연다. |
+| Incompatible | v1, decoder-invalid pre-baseline·malformed current v2, future version, symlink·non-regular·unreadable store는 historical recognizer·migration·reset 없이 original bytes를 보존한 `incompatible/readOnly`로 연다. Decoder-valid v2의 whitespace·key order 같은 serialization 차이는 original bytes 그대로 지원한다. |
 | Future schema | Physical shape를 바꾸려면 explicit version bump와 migration을 제공하거나 bytes-preserving fail-closed rejection을 사용한다. Silent reset과 same-version shape drift는 허용하지 않는다. |
 | Restart | Express `ServerApplication`을 같은 `appDataRoot`·workspace로 stop/start하면 confirmed Assignment·revision·settled history를 다시 연다. Transient transcript와 unanswered Review는 복원하지 않는다. |
 
@@ -77,8 +81,8 @@ Private `propose_state_patch` MCP는 selected source·base revision·exact quote
 | Endpoint | 동작 |
 | --- | --- |
 | `GET /api/product/bootstrap` | Account Readiness, coarse operation status, active workspace·Course·material, confirmed revision·settled history |
-| `POST /api/product/workspaces/activate` | Server-owned chooser activation, current-store adoption과 read-only incompatible boundary |
-| `POST /api/product/courses` | Empty ready workspace의 first-vertical Course 생성 |
+| `POST /api/product/workspaces/activate` | Current Server-owned chooser directory activation, current-store adoption과 read-only incompatible boundary. `WorkspaceManifest` scaffold endpoint가 아님 |
+| `POST /api/product/courses` | Empty internal-ready current workspace의 first-vertical Course 생성 |
 | `POST /api/product/materials/refresh` | Normal refresh 또는 explicit source rebaseline |
 | `GET /api/product/materials/:materialId/preview?digest=...` | Digest-bound bounded TXT preview |
 | `POST /api/product/actions/first-assignment` | Durable Run·guard·curated Assignment stream |
@@ -106,7 +110,7 @@ npm run test:first-assignment-product-actual -w @ay-ple/server
 npm run trace:first-assignment-live -w @ay-ple/server -- --codex-home /absolute/path/to/isolated-auth-seed
 ```
 
-Product actual은 verified production Runtime·exact local Responses provider·managed Recipe·real Server HTTP·private MCP host를 통과한다. Active ready workspace의 exact `cwd`, selected source, representative Python/command, `auto_review + workspace_write`, proposal→Plan→Review revision→replacement→accept→same-Turn terminal, durable outcome과 process-group disappearance를 검증한다.
+Product actual은 verified production Runtime·exact local Responses provider·managed Recipe·real Server HTTP·private MCP host를 통과한다. Active internal-ready fixture directory의 exact `cwd`, selected source, representative Python/command, `auto_review + workspace_write`, proposal→Plan→Review revision→replacement→accept→same-Turn terminal, durable outcome과 process-group disappearance를 검증한다.
 
 Live gate는 caller가 명시한 owner-only auth seed만 fresh `CODEX_HOME`으로 복사하고 disjoint `HOME`·SQLite·temp·appDataRoot·workspace를 사용한다. Credential content·token·digest를 출력하지 않는다. Prerequisite 부재는 `blocked`, product mismatch는 `failed`로 구분한다. Isolated live evidence는 complete Assignment action·Review·confirmed outcome과 clean shutdown을 통과했지만 external credential은 mandatory product cutover gate가 아니다.
 

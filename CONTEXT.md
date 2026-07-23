@@ -15,16 +15,29 @@ _Avoid_: Codex의 별칭, 앱 관리자, 상태 소유자, 챗봇
 ## 학기 작업공간과 학업 객체
 
 **SemesterWorkspace**:
-한 학년의 한 학기 자료와 AY-PLE 상태를 함께 두는 사용자 소유 작업공간이다. 기존 폴더 구조를 존중하며 특정 과목 트리나 파일 배치를 강제하지 않는다.
-_Avoid_: Codex thread, 고정 `sources/` 구조, 앱 전용 저장소
+AY-PLE이 학생이 선택한 학년 단계와 학기에 맞춰 자료와 학기 상태를 정규화해 관리하도록 생성하는 사용자 로컬 작업공간이다. 임의의 기존 자료 폴더나 Codex 작업 디렉터리를 SemesterWorkspace로 간주하지 않는다.
+_Avoid_: Codex thread, 임의의 기존 폴더, Agent가 구조를 정하는 저장소
+
+**WorkspaceManifest**:
+SemesterWorkspace의 학기 정체성, Course 정체성과 관계, 작업공간 형식을 기록하는 app-owned 정보다. 폴더명과 디렉터리 배치는 사람이 읽기 위한 표현이며 정체성의 기준이 아니다.
+_Avoid_: Course 폴더 트리, Skill 설정, Runtime state
+
+**ImportSource**:
+SemesterWorkspace 밖에 있으며 자료 반입 후보로 검토하는 기존 폴더나 자료 묶음이다. 그 자체는 SemesterWorkspace나 RawMaterial이 아니다.
+_Avoid_: 기존 SemesterWorkspace, 자동 스캔 범위, 이미 반입된 RawMaterial
+
+**Semester Ready**:
+Codex account 연결과 app-owned SemesterWorkspace의 생성·기본 설정·validation이 끝나 후속 자료 반입을 시작할 수 있는 setup 완료 상태다. Course나 RawMaterial이 존재하거나 AY가 학기 내용을 이해했다는 뜻은 아니다.
+_UI alias_: 학기 공간 준비 완료
+_Avoid_: 학기 이해 완료, 학업 action 준비 완료, 자료 분석 완료
 
 **Course**:
-SemesterWorkspace 안에서 한 과목을 나타내는 학업 객체다. 관련 폴더와 RawMaterial을 연결할 수 있지만 폴더 자체와 같지는 않다.
+SemesterWorkspace 안에서 한 과목을 나타내는 학업 객체다. 정체성과 관계는 WorkspaceManifest가 기준이며 관련 폴더와 RawMaterial을 연결할 수 있지만 폴더 자체와 같지는 않다.
 _Avoid_: 디렉터리, thread, 태그
 
 **RawMaterial**:
-AY-PLE가 해석하기 전의 원본 공지, 강의계획서, 수업 문서, 이미지, 녹음 또는 메모다. 원래 위치와 내용은 사용자의 명시적 결정 없이 바꾸지 않는다.
-_Avoid_: 정제된 데이터, 요약, 첨부파일 사본
+SemesterWorkspace에 반입되어 AY-PLE가 해석할 수 있는 원문 공지, 강의계획서, 수업 문서, 이미지, 녹음 또는 메모다. 내용은 사용자의 명시적 결정 없이 바꾸지 않고, 외부 ImportSource와는 구분한다.
+_Avoid_: 정제된 데이터, 요약, 검토 전 ImportSource
 
 **EvidenceRef**:
 StatePatch나 SemesterModel의 특정 값이 어느 RawMaterial의 어떤 부분에 근거하는지 가리키는 field-level 참조다.

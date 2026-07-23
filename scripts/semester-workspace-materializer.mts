@@ -1,7 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { constants } from 'node:fs'
 import {
-  access,
   cp,
   lstat,
   mkdir,
@@ -16,6 +14,11 @@ import {
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+
+import {
+  canonicalProductDirectory as canonicalDirectory,
+  productPathExists as pathExists,
+} from './product-path-utils.mjs'
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url))
 const workspaceLeaf = 'first-assignment-semester-workspace'
@@ -354,25 +357,6 @@ async function assertOwnedE2eRun(runRoot: string, runId: string): Promise<void> 
   }
 }
 
-async function canonicalDirectory(
-  directory: string,
-  label: string,
-): Promise<string> {
-  if (!path.isAbsolute(directory)) {
-    throw new Error(`${label} must be an absolute directory`)
-  }
-  const stats = await lstat(directory)
-  if (!stats.isDirectory() || stats.isSymbolicLink()) {
-    throw new Error(`${label} must be a non-symlink directory`)
-  }
-  try {
-    await access(directory, constants.R_OK | constants.X_OK)
-  } catch {
-    throw new Error(`${label} must be a readable directory`)
-  }
-  return realpath(directory)
-}
-
 async function ensureManagedParent(packageRoot: string): Promise<string> {
   const parentRoot = path.join(path.dirname(packageRoot), managedParentLeaf)
   if (!(await pathExists(parentRoot))) {
@@ -414,26 +398,8 @@ async function listRegularFiles(root: string): Promise<string[]> {
   return files
 }
 
-async function pathExists(filePath: string): Promise<boolean> {
-  try {
-    await lstat(filePath)
-    return true
-  } catch (error) {
-    if (hasErrnoCode(error, 'ENOENT')) return false
-    throw error
-  }
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function hasErrnoCode(error: unknown, code: string): boolean {
-  return (
-    error instanceof Error &&
-    'code' in error &&
-    (error as NodeJS.ErrnoException).code === code
-  )
 }
 
 async function main(): Promise<void> {

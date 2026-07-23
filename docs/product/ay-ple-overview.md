@@ -2,13 +2,15 @@
 
 작성일: 2026-07-10
 
-최종 업데이트: 2026-07-19
+최종 업데이트: 2026-07-22
 
 분류: 활성
 
 > **AY-PLE(에이플)는 일반적인 Codex 사용 경험 위에 학기 자료 정리와 사용자 검토를 얇게 더한 local-first 학업 앱이다.**
 
 AY-PLE는 대학생이 한 학기 동안 받는 공지, 강의계획서, 수업 자료를 AY(에이)와 함께 정리하도록 돕는다. 학생이 자료와 작업을 고르면 AY가 필요한 정보를 찾아 서로 연결하고, 어디에서 찾았는지 보여준다. 학생이 확인한 내용만 과제와 시험 같은 학기 정보로 반영된다.
+
+`local-first`는 workspace와 app state를 로컬에 두는 원칙이지 `offline`을 뜻하지 않는다. Codex 실행에는 provider 전송이 발생할 수 있으며 정확한 공개 privacy 경계는 [ADR 0015](../adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)가 소유한다.
 
 과제를 대신 풀거나 자동으로 제출하는 앱은 아니다. 학생이 자료를 다시 뒤지고 여러 앱에 옮겨 적는 일을 줄이되, 무엇을 믿고 반영할지는 학생이 결정하게 만드는 것이 목표다.
 
@@ -21,7 +23,7 @@ flowchart LR
     E --> F["조회·일정·정리 문서"]
 ```
 
-> 이 문서는 완성하려는 제품 경험을 설명한다. 현재는 학생용 검토 흐름을 prototype으로 만들었고, official SDK 기반 Codex Chat runtime·Server·Chat Shell을 하나의 maintained integration tracer로 구현했다. 일반 Chat application의 완성도는 제품 선행조건이 아니며, 자료 선택부터 변경 제안과 확인된 학기 정보까지 잇는 첫 product vertical에서 필요한 runtime contract를 먼저 증명해야 한다.
+> 이 문서는 완성하려는 제품 경험을 설명한다. 현재는 official SDK 기반 Runtime과 자료 선택부터 변경 제안·사용자 확인·재실행 뒤 확인된 학기 상태 조회까지의 First Assignment vertical을 구현했다. 다음 채택 목표는 이 kernel 앞에 public `npx`, Browser OAuth와 app-owned 학기 공간 setup을 연결하는 것이다. 구현된 kernel과 새 사용자가 현재 끝까지 도달할 수 있는 public capability는 구분한다.
 
 ## 학생이 지금 겪는 문제
 
@@ -29,13 +31,21 @@ flowchart LR
 
 학생은 이 자료를 하나씩 열어 서로 대조한 다음, 마감은 캘린더에, 해야 할 일은 할 일 앱에, 세부 조건은 메모에 다시 적는다. 자료가 바뀌거나 새 공지가 올라오면 같은 일을 반복한다. 파일을 저장하는 일보다 흩어진 내용을 읽고 연결해 지금 무엇을 해야 하는지 판단하는 일이 더 어렵다.
 
-AY-PLE는 이 과정을 학생이 이미 사용하는 한 학기 폴더에서 이어준다.
+AY-PLE는 이 과정을 앱이 생성하고 검증하는 한 학기 공간 안에서 이어준다. 학생이 이미 가진 자료 폴더는 그 자체가 학기 공간이 아니라, 필요한 자료를 검토해 가져오기 위한 `ImportSource`다.
 
-## 완성된 제품에서는 이렇게 작동한다
+## 처음 시작할 때
 
-`문제해결글쓰기` 과목에 새로운 과제 공지가 올라왔다고 가정해보자. 학생은 LMS 공지를 저장하고, 이미 가지고 있던 강의계획서와 함께 학기 폴더에 둔다. AY-PLE를 위해 파일을 별도 고정 구조로 옮길 필요는 없다.
+학생은 AY-PLE의 공식 Landing에서 제품이 하려는 일을 확인하고 public `npx` 명령을 실행한다. Local AY-PLE Browser UI가 열리면 Codex에 연결하고, 학년·학기와 생성 위치를 고른다. AY-PLE은 그 위치에 app-owned `SemesterWorkspace`를 scaffold하고 `WorkspaceManifest`와 기본 설정을 검증한다.
 
-학생이 이번에 정리할 두 자료를 고르고 **선택한 자료 정리하기**를 누르면 AY가 일을 시작한다. AY-PLE는 action에 맞는 반복 작업 정의와 이번 입력을 결합해 일회성 요청을 만들고 Codex에 전달한다. Codex는 학기 폴더에서 공지와 계획서를 읽고 필요한 도구를 쓴다.
+이 과정이 끝난 `Semester Ready`는 화면에서 **학기 공간 준비 완료**로 표현한다. 아직 Course나 자료가 있고 AY가 학기 내용을 이해했다는 뜻은 아니다. 다음 행동은 `첫 자료 가져오기`이며, 같은 public 명령으로 다시 실행하면 중복 생성 없이 준비된 workspace를 다시 열 수 있어야 한다.
+
+첫 public preview의 release claim은 이 setup과 `ready-relaunch`까지다. 자료 archive/import와 실제 학업 action은 그 이후의 별도 제품 여정이다. 이 제품 범위는 [Product Brief](ay-ple-product-brief.md), macOS-first 제품·OS 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md), exact public 명령과 application↔Runtime distribution 경계는 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md)을 따른다. 출시별 Node/npm·browser version matrix는 release-owned compatibility surface가 고정한다.
+
+## Semester Ready 이후에는 이렇게 작동한다
+
+`문제해결글쓰기` 과목에 새로운 과제 공지가 올라왔다고 가정해보자. 학생은 LMS 공지와 이미 가지고 있던 강의계획서가 있는 폴더를 `ImportSource`로 제시한다. AY가 자료 분석과 Course mapping을 돕고 App이 반입 제안을 검증한다. 학생이 검토한 자료만 app-owned workspace 안의 `RawMaterial`이 되며, 외부 원본 폴더를 workspace로 직접 열거나 임의로 바꾸지 않는다.
+
+학생이 반입된 자료 중 이번에 정리할 두 자료를 고르고 **선택한 자료 정리하기**를 누르면 AY가 일을 시작한다. AY-PLE는 action에 맞는 반복 작업 정의와 이번 입력을 결합해 일회성 요청을 만들고 Codex에 전달한다. Codex는 활성 `SemesterWorkspace`에서 공지와 계획서를 읽고 필요한 도구를 쓴다.
 
 AY는 한 문서에서 `개요 작성하기`라는 과제와 `7월 12일 23:59`라는 마감을 찾고, 다른 문서에서 LMS 제출 방식과 평가 기준을 찾을 수 있다. 찾은 내용을 바로 학기 정보로 저장하지 않고 다음과 같은 변경 제안으로 보여준다.
 
@@ -55,14 +65,14 @@ AY-PLE는 Codex 위에 별도의 Agent 운영체제를 만들지 않는다. 학�
 
 | 일반적인 Codex 개념 | AY-PLE에서의 사용 |
 | --- | --- |
-| 작업 범위 | 학생이 고른 N학년 N학기 폴더에서 작업한다. |
+| 작업 범위 | AY-PLE이 생성·검증한 활성 `SemesterWorkspace`에서 작업한다. |
 | `AGENTS.md` | Codex의 native 로딩 규칙을 그대로 사용한다. |
 | Skills | 반복할 학업 작업의 처리 전략과 결과 형식을 안내한다. |
 | built-in Memories | 제품 실행환경에서 명시적으로 켠 경우 비권위적 보조 맥락으로 사용한다. |
 | `Thread`, `Turn`, `Item` | Codex가 대화와 작업을 실행하는 native 단위로 사용한다. |
-| 파일과 도구 사용 | 학기 폴더의 자료를 읽고 필요한 local script를 실행한다. |
+| 파일과 도구 사용 | workspace에 반입된 자료를 읽고 필요한 local script를 실행한다. |
 
-학생이 평소 학기 폴더의 루트에서 Codex를 실행해 모든 과목 공지를 확인하고 시험표나 과제표를 만들던 경험이 출발점이다. AY-PLE는 그 경험에서 매번 파일과 긴 prompt를 준비하고, 결과를 검토하고, 확인된 사실을 따로 보존해야 했던 불편을 제품 UI로 줄인다.
+학생이 평소 학기 폴더의 루트에서 Codex를 실행해 모든 과목 공지를 확인하고 시험표나 과제표를 만들던 경험이 출발점이다. 이 경험은 후속 학업 capability와 import 방식을 찾는 근거이지 AY-PLE의 onboarding fixture나 workspace identity는 아니다. AY-PLE는 매번 파일과 긴 prompt를 준비하고, 결과를 검토하고, 확인된 사실을 따로 보존해야 했던 불편을 app-owned 공간과 제품 UI로 줄인다.
 
 ## 일반적인 AI 채팅과 무엇이 다른가
 
@@ -82,7 +92,8 @@ AY-PLE가 Codex 위에 소유하는 부분은 명확하다.
 
 | AY-PLE가 소유하는 것 | 이유 |
 | --- | --- |
-| 학기 작업공간 선택 | 어떤 N학년 N학기 폴더가 현재 작업 범위인지 정한다. |
+| 학기 작업공간 생성·활성화 | 학생이 고른 학년·학기와 위치에 normalized 공간을 만들고 `WorkspaceManifest`를 검증한다. |
+| 자료 반입 경계 | 외부 `ImportSource`와 workspace 안의 `RawMaterial`을 구분하고 검토된 반입만 허용한다. |
 | action과 `ModelingRecipe` | action은 실행할 versioned Recipe를 선택하고 이번 작업의 입력을 모은다. |
 | `ModelingInvocation` | Recipe와 이번 작업의 입력·학기 맥락을 결합한 일회성 요청이다. |
 | `ModelingRun` receipt | 한 Invocation의 한 실행 시도와 결과를 연결한다. |
@@ -102,7 +113,7 @@ AY-PLE는 이를 학생에게 그대로 노출하지 않지만, 학기나 과목
 - 과목마다 반드시 별도 `Thread`를 만들지 않는다.
 - `ModelingRun`마다 새 `Thread`를 강제하지 않는다.
 
-사용자는 필요할 때 새 작업을 시작하거나 이전 대화를 이어갈 수 있다. 정확한 thread UX는 첫 제품 vertical에서 검증한다. 과제명과 마감처럼 계속 보존해야 하는 사실은 사용자가 확인한 학기 상태가 소유한다.
+사용자는 필요할 때 새 작업을 시작하거나 이전 대화를 이어갈 수 있다. 여러 작업을 다시 찾고 이어가는 thread UX는 실제 사용자 필요가 확인될 때 별도로 검증한다. 과제명과 마감처럼 계속 보존해야 하는 사실은 사용자가 확인한 학기 상태가 소유한다.
 
 ## 하나의 행동이 앱과 AY에 미치는 효과
 
@@ -113,7 +124,7 @@ AY-PLE는 이를 학생에게 그대로 노출하지 않지만, 학기나 과목
 | 자료 선택 후 action 시작 | Recipe와 입력을 ModelingInvocation으로 준비한다. | AY가 선택한 자료를 읽는 작업을 시작한다. |
 | 진행 중 작업에 정정 전달 | 대상 작업과 사용자 의도를 기록한다. | 해당 작업에 정정을 전달한다. |
 | 중단 | 중단 중·중단 완료 상태를 보여준다. | 진행 중 작업을 중단한다. |
-| 새 문서 drag-and-drop | 파일 metadata와 인덱스를 갱신한다. | 진행 중 작업에는 자동 주입하지 않는다. |
+| 외부 자료 가져오기 요청 | `ImportSource`와 반입 대상을 식별하고 검토 가능한 admission을 준비한다. | 분석·mapping을 도울 수 있지만 진행 중 작업에는 자동 주입하지 않는다. |
 | 변경 제안 수락 | 확인된 학기 상태를 갱신한다. | 필요하면 다음 요청의 맥락으로 사용한다. |
 
 구체적인 전달 방식은 먼저 사용자 기능을 정한 뒤 [제품 작업 조합](../architecture/codex-native-product-composition.md)의 경계 안에서 case by case로 선택한다.
@@ -132,10 +143,8 @@ Codex approval은 과제 정보가 사실인지 보증하지 않는다. 반대�
 
 ## 지금 어디까지 만들어졌나
 
-현재 학생용 화면은 핵심 검토 경험과 상태 전환을 확인하기 위한 browser-native prototype이다. 자료 목록, 원본 미리보기, 근거가 연결된 변경 제안, 수락 전후의 흐름을 결정적으로 조작할 수 있지만 실제 파일과 Codex가 이 화면을 통해 끝까지 연결되는 완성 제품은 아니다.
+Official SDK와 exact native Runtime을 supervised bridge로 실행하는 product-only 경로가 구현됐다. 현재 First Assignment vertical은 explicit pre-public workspace root와 두 TXT 자료에서 `ModelingInvocation`을 실행하고, 근거가 연결된 `StatePatch`를 같은 native Turn에서 검토해 학생이 수락한 결과만 durable `SemesterModel`로 반영한다. 새로고침과 local process restart 뒤에도 settled confirmation과 확인된 상태를 다시 열 수 있으며 exact local·live-provider trace를 통과했다.
 
-그 아래에는 Codex-native Chat integration tracer가 구현됐다. Official SDK와 exact native runtime을 supervised bridge로 실행해 새 native 대화, AgentMessage streaming, interrupt와 같은 thread의 후속 turn을 desktop UI에서 사용할 수 있고, provider-free exact local conformance와 명시적으로 승인한 격리 state 기반 manual live-provider T0를 통과했다. Repository의 tracked runtime graph와 기본 `npm run dev`도 이 Chat 경로 하나로 전환됐다. 이 tracer는 first Assignment vertical의 representative trace에 대해 sufficiency를 검증할 후보이지 독립 general Chat product의 완성된 기반은 아니다.
+이 구현은 AY-PLE의 학업 kernel을 증명하지만 새 public setup 계약은 아직 구현하지 않는다. 현재 explicit local path activation은 app-owned scaffold나 `ImportSource` admission을 대신하지 않으며, public `npx`, in-app Browser OAuth, `Semester Ready`와 `ready-relaunch`는 채택한 다음 제품 목표다. 새 scaffold에서 post-Ready import와 First Assignment action이 연결되기 전에는 Landing에서 이를 현재 public capability로 제시하지 않는다.
 
-전용 disposable-auth 자동화, account/workspace chooser, thread 목록·복원, interactive approval과 AY-PLE 학업 adapter는 아직 제품 흐름이 아니다. Tracked Chat-only cutover와 current canonical clone의 local deletion handoff는 완료됐다. 실제 작업 순서와 완료 조건은 [개발 백로그](ay-ple-development-backlog.md)가 소유한다. 제품 vertical에서는 학생이 학기 폴더에서 자료와 action을 고르면 AY-PLE가 ModelingInvocation을 실행하고 검증된 `StatePatch`를 변경 제안으로 보여주며, 학생의 결정만 확인된 학기 정보에 반영해야 한다.
-
-작동 흐름과 Review Workspace의 화면 결정을 함께 보고 싶다면 [통합 제품 prototype](../../artifacts/camp-demo/product-flow/index.html?step=1&present=1)을 열어볼 수 있다. 제품 범위는 [Product Brief](ay-ple-product-brief.md), 정확한 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 실행 mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), 구현된 실행 기반은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)에서 확인할 수 있다.
+[통합 제품 prototype](../../artifacts/camp-demo/product-flow/index.html?step=1&present=1)은 Review Workspace의 초기 화면 결정을 보존하는 역사적 시각 근거다. 제품 범위는 [Product Brief](ay-ple-product-brief.md), 정확한 용어는 [CONTEXT.md](../../CONTEXT.md), workspace authority는 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), public distribution authority는 [ADR 0016](../adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md), 제품 실행 mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), 현재 구현은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 작업 순서는 [개발 백로그](ay-ple-development-backlog.md)에서 확인할 수 있다.
