@@ -9,6 +9,7 @@ import { authRouter, meRouter } from "./modules/auth/auth.routes";
 import { healthRouter } from "./modules/health/health.routes";
 import { invitationsRouter, storeInvitationsRouter } from "./modules/invitations/invitations.routes";
 import { storesRouter } from "./modules/stores/stores.routes";
+import { schedulesRouter } from "./modules/schedules/schedules.routes";
 import { workersRouter } from "./modules/workers/workers.routes";
 
 export function createApp() {
@@ -36,6 +37,7 @@ export function createApp() {
   app.use("/api/me", meRouter);
   app.use("/api/health", healthRouter);
   app.use("/api/stores/:storeId/invitations", storeInvitationsRouter);
+  app.use("/api/stores/:storeId/schedules", schedulesRouter);
   app.use("/api/stores/:storeId/workers", workersRouter);
   app.use("/api/invitations", invitationsRouter);
   app.use("/api/stores", storesRouter);
