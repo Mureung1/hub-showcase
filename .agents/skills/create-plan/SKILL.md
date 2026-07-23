@@ -9,6 +9,13 @@ description: Use when an approved or likely project change needs a small, file-l
 
 Create a small, reversible plan grounded in the current repository.
 
+## Do Not Use When
+
+- The request is still ambiguous or lacks acceptance criteria; use `analyze-request` first.
+- The user has already approved a specific file-level implementation step; use `execute-plan` instead.
+- The task is only checking completed work; use `verify-result` instead.
+- The work would require unapproved package installs, credentials, commits, pushes, merges, or deployments.
+
 ## Input
 
 - An analyzed request

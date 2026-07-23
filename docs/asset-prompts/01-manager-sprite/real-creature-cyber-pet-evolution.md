@@ -67,7 +67,7 @@ progressively larger stages after Stage 2, adult form, humanoid body, long legs,
 - Reject any candidate where creature identity is lost to a generic round mascot.
 - Reject any candidate where cyber details make animation difficult or look like separate accessories.
 - Prefer candidates that would animate cleanly with idle, hover, focused, happy, recovering, hanging, and hiding states.
-- Hanging and hiding motions should preserve each creature's silhouette and use stable window anchors or peek edges rather than changing size.
+- Hanging and hiding motions should preserve each creature's silhouette. Hanging uses stable grip anchors; hiding stays full-body so the app can place the sprite behind a window layer without changing size.
 - Stage 1 and Stage 2 may remain simple and cute, but Stage 3 and Stage 4 must show a clearly visible detail upgrade.
 - Stage 3 and Stage 4 detail upgrades should be creature-specific: better feather tufts, cerata, rhinophores, webbed feet, gills, belly pattern, tentacle tips, fuzzy claws, or leaf-tail read.
 - Detail upgrades must not rely on making the character bigger.

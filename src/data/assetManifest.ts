@@ -63,6 +63,8 @@ export interface SpriteAnimationAsset {
   anchor: SpriteAnchor;
 }
 
+type PetAnimationCatalog = Partial<Record<PetId, Partial<Record<PetStageId, Partial<Record<PetAnimationState, SpriteAnimationAsset>>>>>>;
+
 export type DesktopIconId =
   | "quest"
   | "runner"
@@ -159,11 +161,11 @@ export interface FutureAssetSlot {
 
 const planariaStage1Path = "/assets/lumi/planaria-stage-1";
 const planariaFloatAnchor: SpriteAnchor = { type: "float", x: 32, y: 60 };
-const stage1PetFloatAnchor: SpriteAnchor = { type: "float", x: 32, y: 58 };
-const stage1PetHangingAnchor: SpriteAnchor = { type: "top-grip", x: 32, y: 5 };
-const stage1PetHidingAnchor: SpriteAnchor = { type: "peek-edge", x: 53, y: 32 };
+const stage2PetFloatAnchor: SpriteAnchor = { type: "float", x: 32, y: 58 };
+const stage2PetHangingAnchor: SpriteAnchor = { type: "top-grip", x: 32, y: 5 };
+const stage2PetHidingAnchor: SpriteAnchor = { type: "peek-edge", x: 4, y: 32 };
 export const defaultLumiPetId = "pink-manager" as const satisfies PetId;
-export const fallbackLumiStage = "stage-1" as const satisfies PetStageId;
+export const fallbackLumiStage = "stage-2" as const satisfies PetStageId;
 export const petStageUnlockLevels: Record<PetStageId, number> = {
   "stage-1": 1,
   "stage-2": 3,
@@ -192,7 +194,7 @@ const planariaStage1Animation = (
   anchor,
 });
 
-interface Stage1MotionSpec {
+interface PetMotionSpec {
   state: PetMotionState;
   frameCount: number;
   fps: number;
@@ -201,19 +203,19 @@ interface Stage1MotionSpec {
   playbackFrames?: SpritePlaybackFrame[];
 }
 
-const stage1PetMotionSpecs = [
-  { state: "idle", frameCount: 4, fps: 4, loop: true, anchor: stage1PetFloatAnchor },
-  { state: "focused", frameCount: 4, fps: 6, loop: true, anchor: stage1PetFloatAnchor },
-  { state: "happy", frameCount: 6, fps: 8, loop: true, anchor: stage1PetFloatAnchor },
-  { state: "recovering", frameCount: 4, fps: 4, loop: true, anchor: stage1PetFloatAnchor },
-  { state: "hanging", frameCount: 6, fps: 6, loop: true, anchor: stage1PetHangingAnchor },
-  { state: "hiding", frameCount: 6, fps: 5, loop: true, anchor: stage1PetHidingAnchor },
+const stage2PetMotionSpecs = [
+  { state: "idle", frameCount: 4, fps: 4, loop: true, anchor: stage2PetFloatAnchor },
+  { state: "focused", frameCount: 4, fps: 6, loop: true, anchor: stage2PetFloatAnchor },
+  { state: "happy", frameCount: 6, fps: 8, loop: true, anchor: stage2PetFloatAnchor },
+  { state: "recovering", frameCount: 4, fps: 4, loop: true, anchor: stage2PetFloatAnchor },
+  { state: "hanging", frameCount: 6, fps: 6, loop: true, anchor: stage2PetHangingAnchor },
+  { state: "hiding", frameCount: 6, fps: 5, loop: true, anchor: stage2PetHidingAnchor },
   {
     state: "run",
     frameCount: 6,
     fps: 10,
     loop: true,
-    anchor: stage1PetFloatAnchor,
+    anchor: stage2PetFloatAnchor,
     playbackFrames: [{ frame: 0 }, { frame: 1 }, { frame: 2 }, { frame: 3 }, { frame: 4 }, { frame: 5 }, { frame: 2 }, { frame: 1 }],
   },
   {
@@ -221,7 +223,7 @@ const stage1PetMotionSpecs = [
     frameCount: 6,
     fps: 8,
     loop: false,
-    anchor: stage1PetFloatAnchor,
+    anchor: stage2PetFloatAnchor,
     playbackFrames: [{ frame: 0 }, { frame: 1 }, { frame: 2, hold: 2 }, { frame: 3 }, { frame: 4 }, { frame: 5, hold: 2 }],
   },
   {
@@ -229,7 +231,7 @@ const stage1PetMotionSpecs = [
     frameCount: 6,
     fps: 7,
     loop: true,
-    anchor: stage1PetFloatAnchor,
+    anchor: stage2PetFloatAnchor,
     playbackFrames: [
       { frame: 0 },
       { frame: 1 },
@@ -248,28 +250,21 @@ const stage1PetMotionSpecs = [
     frameCount: 6,
     fps: 8,
     loop: true,
-    anchor: stage1PetHangingAnchor,
+    anchor: stage2PetHangingAnchor,
     playbackFrames: [{ frame: 0 }, { frame: 1 }, { frame: 2 }, { frame: 3 }, { frame: 4 }, { frame: 5 }, { frame: 4 }, { frame: 3 }],
   },
-] as const satisfies readonly Stage1MotionSpec[];
+] as const satisfies readonly PetMotionSpec[];
 
-const stage1PetIds = [
+const canonicalStage2PetIds = [
   "pink-manager",
-  "white-headed-long-tailed-tit",
-  "costasiella-kuroshimae",
-  "sea-bunny-slug",
-  "platypus",
-  "axolotl",
   "glass-frog",
-  "fried-egg-jellyfish",
-  "yeti-crab",
 ] as const;
 
-const stage1PetAnimation = (petId: (typeof stage1PetIds)[number], spec: Stage1MotionSpec): SpriteAnimationAsset => ({
-  id: `${petId}-stage-1-${spec.state}`,
+const stage2PetAnimation = (petId: (typeof canonicalStage2PetIds)[number], spec: PetMotionSpec): SpriteAnimationAsset => ({
+  id: `${petId}-stage-2-${spec.state}`,
   petId,
-  stage: "stage-1",
-  src: `/assets/lumi/${petId}-stage-1/${petId}-stage-1-${spec.state}-sheet.png`,
+  stage: "stage-2",
+  src: `/assets/lumi/${petId}-stage-2/${petId}-stage-2-${spec.state}-sheet.png`,
   sheetWidth: spec.frameCount * 64,
   sheetHeight: 64,
   frameWidth: 64,
@@ -283,20 +278,20 @@ const stage1PetAnimation = (petId: (typeof stage1PetIds)[number], spec: Stage1Mo
   anchor: spec.anchor,
 });
 
-const stage1PetCatalog = Object.fromEntries(
-  stage1PetIds.map((petId) => [
+const stage2PetCatalog = Object.fromEntries(
+  canonicalStage2PetIds.map((petId) => [
     petId,
     {
-      "stage-1": Object.fromEntries(stage1PetMotionSpecs.map((spec) => [spec.state, stage1PetAnimation(petId, spec)])),
+      "stage-2": Object.fromEntries(stage2PetMotionSpecs.map((spec) => [spec.state, stage2PetAnimation(petId, spec)])),
     },
   ]),
 ) as {
-  [K in (typeof stage1PetIds)[number]]: {
-    "stage-1": Record<PetMotionState, SpriteAnimationAsset>;
+  [K in (typeof canonicalStage2PetIds)[number]]: {
+    "stage-2": Record<PetMotionState, SpriteAnimationAsset>;
   };
 };
 
-export const petAnimationCatalog = {
+export const petAnimationCatalog: PetAnimationCatalog = {
   planaria: {
     "stage-1": {
       idle: planariaStage1Animation("idle", 4),
@@ -308,12 +303,19 @@ export const petAnimationCatalog = {
       hiding: planariaStage1Animation("hiding", 5, { type: "peek-edge", x: 53, y: 32 }),
     },
   },
-  ...stage1PetCatalog,
-} as const satisfies Record<PetId, Partial<Record<PetStageId, Partial<Record<PetAnimationState, SpriteAnimationAsset>>>>>;
+  ...stage2PetCatalog,
+};
 
 function getAvailablePetStage(petId: PetId, stage: PetStageId): PetStageId {
-  const catalog = petAnimationCatalog[petId] as Partial<Record<PetStageId, Partial<Record<PetAnimationState, SpriteAnimationAsset>>>>;
-  return catalog[stage] ? stage : fallbackLumiStage;
+  const catalog = petAnimationCatalog[petId] as Partial<Record<PetStageId, Partial<Record<PetAnimationState, SpriteAnimationAsset>>>> | undefined;
+  if (catalog?.[stage]) return stage;
+  if (catalog?.[fallbackLumiStage]) return fallbackLumiStage;
+  const firstAvailableStage = (Object.keys(catalog ?? {}) as PetStageId[])[0];
+  return firstAvailableStage ?? fallbackLumiStage;
+}
+
+function getRenderablePetId(petId: PetId): PetId {
+  return petAnimationCatalog[petId] ? petId : defaultLumiPetId;
 }
 
 export function resolvePetStageFromLevel(level: number): PetStageId {
@@ -328,33 +330,34 @@ export function getUnlockedPetStages(level: number): PetStageId[] {
 }
 
 export function getRenderablePetStage(petId: PetId, stage: PetStageId): PetStageId {
-  return getAvailablePetStage(petId, stage);
+  return getAvailablePetStage(getRenderablePetId(petId), stage);
 }
 
 export function getLumiAnimationAsset(state: LumiSpriteState, petId: PetId = defaultLumiPetId, stage: PetStageId = fallbackLumiStage) {
-  const renderableStage = getAvailablePetStage(petId, stage);
+  const renderablePetId = getRenderablePetId(petId);
+  const renderableStage = getAvailablePetStage(renderablePetId, stage);
 
   if (state === "resting") {
-    const idle = getPetAnimationAsset(petId, renderableStage, "idle");
+    const idle = getPetAnimationAsset(renderablePetId, renderableStage, "idle");
     return {
       ...idle,
-      id: `${petId}-${stage}-resting-fallback`,
+      id: `${renderablePetId}-${stage}-resting-fallback`,
       fps: 3,
       states: ["resting"],
     } satisfies SpriteAnimationAsset;
   }
 
   if (state === "hover") {
-    const happy = getPetAnimationAsset(petId, renderableStage, "happy");
+    const happy = getPetAnimationAsset(renderablePetId, renderableStage, "happy");
     return {
       ...happy,
-      id: `${petId}-${stage}-hover-fallback`,
+      id: `${renderablePetId}-${stage}-hover-fallback`,
       fps: 7,
       states: ["hover"],
     } satisfies SpriteAnimationAsset;
   }
 
-  return getPetAnimationAsset(petId, renderableStage, state);
+  return getPetAnimationAsset(renderablePetId, renderableStage, state);
 }
 
 export const lumiAnimations: Record<LumiSpriteState, SpriteAnimationAsset> = {
@@ -637,8 +640,8 @@ export const futureAssetSlots: FutureAssetSlot[] = [
 ];
 
 export function getPetAnimationAsset(petId: PetId, stage: PetStageId, state: PetAnimationState) {
-  const petCatalog = petAnimationCatalog[petId] as Partial<Record<PetStageId, Partial<Record<PetAnimationState, SpriteAnimationAsset>>>>;
-  const stageCatalog = petCatalog[stage];
+  const petCatalog = petAnimationCatalog[petId] as Partial<Record<PetStageId, Partial<Record<PetAnimationState, SpriteAnimationAsset>>>> | undefined;
+  const stageCatalog = petCatalog?.[stage];
   const animation = stageCatalog?.[state];
   if (!animation) {
     throw new Error(`Missing pet animation asset: ${petId}/${stage}/${state}`);

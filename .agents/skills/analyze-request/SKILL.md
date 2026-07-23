@@ -9,6 +9,13 @@ description: Use when a new AIAgentChallenge hub request must be converted into 
 
 Turn a user request into a clear project-local brief before any file changes.
 
+## Do Not Use When
+
+- The request is a trivial answer-only question.
+- The user has already approved a clear file-level plan; use `execute-plan` instead.
+- The task is independent result verification after implementation; use `verify-result` instead.
+- The task is only adding approved material to the Wiki; use `wiki-ingest` instead.
+
 ## Input
 
 - User request

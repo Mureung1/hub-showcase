@@ -92,7 +92,7 @@ export async function createQuestEventViaApi(input: CreateQuestEventRequest) {
   const payload = (await response.json()) as QuestEventApiResponse<CreateQuestEventResponse>;
 
   if (!response.ok || !payload.ok) {
-    throw new Error(payload.ok ? "Quest event save failed." : payload.error.message);
+    throw new Error(getApiErrorMessage(payload, "Quest event save failed."));
   }
 
   return {
@@ -107,7 +107,7 @@ export async function fetchQuestEventsViaApi(limit = 20) {
   const payload = (await response.json()) as QuestEventApiResponse<GetQuestEventsResponse>;
 
   if (!response.ok || !payload.ok) {
-    throw new Error(payload.ok ? "Quest events load failed." : payload.error.message);
+    throw new Error(getApiErrorMessage(payload, "Quest events load failed."));
   }
 
   return payload.data.filter(hasJournalResult).map(toQuestLog);
@@ -118,7 +118,7 @@ export async function fetchManagerContextViaApi() {
   const payload = (await response.json()) as QuestEventApiResponse<ManagerContextResponse>;
 
   if (!response.ok || !payload.ok) {
-    throw new Error(payload.ok ? "Manager context load failed." : payload.error.message);
+    throw new Error(getApiErrorMessage(payload, "Manager context load failed."));
   }
 
   return payload.data;
@@ -137,4 +137,8 @@ function toQuestLog(item: QuestEventResponseItem & { result: QuestLogResult }): 
     reason: item.failureReason ?? undefined,
     createdAt: item.createdAt,
   };
+}
+
+function getApiErrorMessage<T extends { ok: true }>(payload: QuestEventApiResponse<T>, fallback: string) {
+  return payload.ok ? fallback : payload.error.message;
 }

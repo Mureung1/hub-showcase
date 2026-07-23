@@ -9,6 +9,13 @@ description: Use only after a file-level plan is approved for the AIAgentChallen
 
 Implement one approved plan step with minimal changes.
 
+## Do Not Use When
+
+- The implementation scope is not explicitly approved.
+- The task is only analysis, planning, or answering a question.
+- The requested change would touch files outside the approved file scope.
+- The next required action is independent verification; use `verify-result` instead.
+
 ## Input
 
 - Approved plan

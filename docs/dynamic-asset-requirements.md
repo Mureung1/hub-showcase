@@ -84,7 +84,7 @@ Needed assets:
 - `lumi-resting-sheet.png`
 - `lumi-hover-sheet.png`
 - `lumi-hanging-sheet.png`: window-edge hanging interaction
-- `lumi-hiding-sheet.png`: hiding behind or peeking from a window interaction
+- `lumi-hiding-sheet.png`: full-body hiding interaction rendered behind a window layer
 - `lumi-climbing-sheet.png`: ladder climbing interaction
 - `lumi-jumping-sheet.png`: platform jump interaction
 - `lumi-landing-sheet.png`: platform landing interaction
@@ -96,9 +96,9 @@ Window interaction notes:
 
 - `hanging` and `hiding` are interaction states, not manager mood states.
 - Do not bake full XP window chrome into the sprite sheet.
-- React/CSS should provide the window edge, z-index layer, and clipping mask.
+- React/CSS should provide the window edge, z-index layer, and optional clipping mask.
 - `hanging` keeps a stable grip or top-anchor point across frames.
-- `hiding` keeps a stable peek edge and visible bbox across frames.
+- `hiding` keeps the full character inside each frame; React/CSS places it behind the window by z-index so the window occludes the sprite.
 - `climbing` keeps stable hand/foot contact points so ladder resize can preserve progress ratio.
 - `jumping` and `landing` should keep a predictable floor anchor.
 - `walking_outside` uses the desktop overlay coordinate system, not the manager window coordinate system.

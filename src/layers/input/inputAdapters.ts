@@ -24,3 +24,13 @@ export const inputCapabilities = [
     note: "XP shell 테마의 데스크톱 조작감을 높이는 입력",
   },
 ];
+
+export type GestureState = "open_hand" | "pinch" | "fist" | "lost_tracking";
+export type GestureCommand = "hover_move" | "select" | "grab" | "no_op";
+
+export function resolveGestureCommand(gesture: GestureState): GestureCommand {
+  if (gesture === "open_hand") return "hover_move";
+  if (gesture === "pinch") return "select";
+  if (gesture === "fist") return "grab";
+  return "no_op";
+}

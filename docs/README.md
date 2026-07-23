@@ -40,6 +40,7 @@
 | [planning-agent.md](planning-agent.md) | 요구사항을 작업 단위로 쪼개는 계획 수립 Agent | Planning Agent |
 | [verification-agent.md](verification-agent.md) | 구현 결과를 시나리오와 데이터 흐름으로 점검하는 기능 검증 Agent | Verification Agent |
 | [document-management-agent.md](document-management-agent.md) | 문서 추가/수정/삭제 시 구조와 링크를 점검하는 문서 관리 Agent | Document Management Agent |
+| [tdd-workflow-agent.md](tdd-workflow-agent.md) | 작은 도메인 규칙을 RED/GREEN/REFACTOR로 고정하는 TDD workflow Agent | TDD Workflow Agent |
 | [agent-usage-guide.md](agent-usage-guide.md) | 다른 세션에서 Agent 문서를 사용하는 시작 프롬프트와 순서 | Agent 사용 가이드 |
 | [agent-design.md](agent-design.md) | AI Agent 역할과 MVP 규칙 기반 동작 | Agent Design |
 | [codex-skills/project-planning-agent/SKILL.md](codex-skills/project-planning-agent/SKILL.md) | 계획 수립 Agent를 Codex skill로 변환한 문서화 버전 | Planning Skill |
@@ -47,6 +48,7 @@
 | [codex-skills/project-document-manager/SKILL.md](codex-skills/project-document-manager/SKILL.md) | 문서 관리 Agent를 Codex skill로 변환한 문서화 버전 | Document Skill |
 | [codex-skills/project-learning-agent/SKILL.md](codex-skills/project-learning-agent/SKILL.md) | 학습 키워드와 참고 코드 정리를 위한 Codex skill 문서화 버전 | Learning Skill |
 | [codex-skills/asset-quality-verifier/SKILL.md](codex-skills/asset-quality-verifier/SKILL.md) | 생성 에셋과 sprite sheet 흔들림을 검수하기 위한 Codex skill 문서화 버전 | Asset Verification Skill |
+| [codex-skills/tdd-test-writing/SKILL.md](codex-skills/tdd-test-writing/SKILL.md) | 반복적인 테스트 우선 spec 작성 절차를 문서화한 Codex skill 버전 | TDD Test Writing Skill |
 | [codex-skills/xp-desktop-pet-ui/SKILL.md](codex-skills/xp-desktop-pet-ui/SKILL.md) | XP 데스크톱 전자 매니저 UI 작업을 반복하기 위한 Codex skill 문서화 버전 | Codex Skill |
 | [../.codex/agents](../.codex/agents) | 프로젝트 전용 Codex 서브에이전트 역할 설정 | Harness Agents |
 | [../.agents/skills](../.agents/skills) | 요청 분석, 계획, 실행, 검증, Wiki 작업용 프로젝트 workflow skills | Harness Skills |

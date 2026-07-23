@@ -20,12 +20,11 @@ import type { QuestLog } from "./data/questLogs";
 import { createQuestEventViaApi, fetchManagerContextViaApi, fetchQuestEventsViaApi } from "./layers/storage/questLogApi";
 import type { CreateQuestEventRequest, ManagerContext } from "./layers/storage/questLogApi";
 import { createQuestLogRepository } from "./layers/storage/questLogRepository";
+import { createRecoveryQuest, type Difficulty, type Quest, type QuestType } from "./domain/questLogic";
 import "./styles.css";
 
 type AppScreen = "wizard" | "manager-created" | "desktop";
 type QuestStatus = "draft" | "active" | "success" | "failed" | "recovery";
-type QuestType = "time" | "quantity" | "action";
-type Difficulty = "easy" | "normal" | "hard";
 type ManagerTone = "calm" | "friendly" | "firm";
 type QuestSize = "tiny" | "balanced" | "challenge";
 type WindowId = "quest" | "runner" | "failure" | "recovery" | "manager" | "profile" | "journal" | "trash" | "pixelTvProperties";
@@ -43,16 +42,6 @@ interface UserProfile {
   questSize: QuestSize;
   managerTone: ManagerTone;
   focusAnswer: string;
-}
-
-interface Quest {
-  title: string;
-  type: QuestType;
-  amount: number;
-  unit: string;
-  difficulty: Difficulty;
-  deadline: string;
-  rewardExp: number;
 }
 
 interface ManagerState {
@@ -90,6 +79,127 @@ interface BlinkFocusState {
 interface DesktopContextMenuState {
   x: number;
   y: number;
+}
+
+interface StartMenuProps {
+  questStatus: QuestStatus;
+  onOpenWindow: (id: WindowId) => void;
+  onOpenQuest: () => void;
+  onExitService: () => void;
+}
+
+interface DesktopContextMenuProps {
+  x: number;
+  y: number;
+  onOpenProperties: () => void;
+}
+
+interface PixelTvPropertiesWindowProps {
+  connected: boolean;
+  onToggle: () => void;
+}
+
+interface BlinkFocusOverlayProps {
+  effect: BlinkFocusState | null;
+  onDone: () => void;
+}
+
+interface ProfileSetupWizardProps {
+  draft: UserProfile;
+  needsClarify: boolean;
+  onChange: (profile: UserProfile) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}
+
+interface QuestWindowProps {
+  quest: Quest;
+  status: QuestStatus;
+  previousQuestTitle: string;
+  onQuestChange: (patch: Partial<Quest>) => void;
+  onAccept: () => void;
+  onOpenRunner: () => void;
+  onRecommendNext: () => void;
+}
+
+interface QuestRunnerWindowProps {
+  quest: Quest;
+  remainingTime: string;
+  onComplete: () => void;
+  onFail: () => void;
+}
+
+interface FailureWindowProps {
+  selectedFailureReason: string;
+  onReasonChange: (reason: string) => void;
+  onCreateRecovery: () => void;
+}
+
+interface RecoveryWindowProps {
+  quest: Quest;
+  onEdit: () => void;
+  onAccept: () => void;
+}
+
+interface ManagerWindowProps {
+  manager: ManagerState;
+  petAway?: boolean;
+}
+
+interface ProfileWindowProps {
+  profile: UserProfile;
+  onSave: (profile: UserProfile) => void;
+}
+
+interface JournalWindowProps {
+  logs: QuestLog[];
+  sync: QuestLogSyncState;
+}
+
+interface XpWindowProps {
+  id?: WindowId;
+  title: string;
+  titlebarIcon?: string;
+  className: string;
+  children: ReactNode;
+  position?: WindowPosition;
+  zIndex?: number;
+  isActive?: boolean;
+  onFocus?: () => void;
+  onMove?: (position: WindowPosition) => void;
+  onClose?: (() => void) | undefined;
+}
+
+interface WindowIconMarkProps {
+  id?: WindowId;
+  fallback?: string;
+  className: string;
+}
+
+interface DesktopIconProps {
+  label: string;
+  type: WindowId;
+  onClick: () => void;
+  onContextMenu?: (event: MouseEvent<HTMLButtonElement>) => void;
+  assetId?: DesktopIconId;
+  overrideIdleSrc?: string;
+  overrideHoverSrc?: string;
+  disabled?: boolean;
+}
+
+interface WindowPetInteractionProps {
+  state: Extract<LumiSpriteState, "hanging" | "hiding">;
+  petId: PetId;
+  stage: PetStageId;
+  placement: "below-quest" | "beside-recovery";
+  position: WindowPosition;
+  zIndex: number;
+}
+
+interface DesktopPetProps {
+  mood: ManagerState["mood"];
+  petId: PetId;
+  stage: PetStageId;
+  large?: boolean;
 }
 
 const profileKey = "manager-xp.profile.v1";
@@ -285,17 +395,6 @@ function createQuest(profile: UserProfile): Quest {
   return { title: `${target} ${focus}핵심 정리 ${amount}분`, type: "time", amount, unit: "분", difficulty, deadline: "오늘 23:59", rewardExp: calculateReward(difficulty, amount, "time") };
 }
 
-function createRecoveryQuest(previousQuest: Quest): Quest {
-  const recoveryAmount = Math.max(5, Math.floor(previousQuest.amount / 3));
-  return {
-    ...previousQuest,
-    title: previousQuest.title.replace(`${previousQuest.amount}${previousQuest.unit}`, `${recoveryAmount}${previousQuest.unit}`).replace("핵심 정리", "핵심 개념 읽기"),
-    amount: recoveryAmount,
-    difficulty: "easy",
-    rewardExp: 5,
-  };
-}
-
 function formatTime(date: Date) {
   return date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 }
@@ -390,6 +489,60 @@ function createManagerContextLine(context: ManagerContext) {
   return "오늘 흐름을 조용히 정리하고 있어.";
 }
 
+function useWindowManager(initialOpenWindows: WindowId[], initialPositions: Record<WindowId, WindowPosition>) {
+  const [openWindows, setOpenWindows] = useState<WindowId[]>(initialOpenWindows);
+  const [windowPositions, setWindowPositions] = useState<Record<WindowId, WindowPosition>>(initialPositions);
+  const activeWindow = openWindows[openWindows.length - 1];
+
+  function openWindow(id: WindowId) {
+    setOpenWindows((current) => [...current.filter((windowId) => windowId !== id), id]);
+  }
+
+  function closeWindow(id: WindowId) {
+    setOpenWindows((current) => current.filter((windowId) => windowId !== id));
+  }
+
+  function moveWindow(id: WindowId, position: WindowPosition) {
+    setWindowPositions((current) => ({ ...current, [id]: position }));
+  }
+
+  function setWorkflowWindows(nextWindows: WindowId[]) {
+    setOpenWindows((current) => replaceWorkflowWindows(current, nextWindows));
+  }
+
+  function resetOpenWindows(nextWindows: WindowId[]) {
+    setOpenWindows(nextWindows);
+  }
+
+  function resetWindowPositions() {
+    setWindowPositions(initialPositions);
+  }
+
+  function windowChrome(id: WindowId) {
+    return {
+      id,
+      position: windowPositions[id],
+      zIndex: 10 + openWindows.indexOf(id),
+      isActive: activeWindow === id,
+      onFocus: () => openWindow(id),
+      onMove: (position: WindowPosition) => moveWindow(id, position),
+      onClose: () => closeWindow(id),
+    };
+  }
+
+  return {
+    activeWindow,
+    closeWindow,
+    openWindow,
+    openWindows,
+    resetOpenWindows,
+    resetWindowPositions,
+    setWorkflowWindows,
+    windowChrome,
+    windowPositions,
+  };
+}
+
 
 export default function App() {
   const storedProfile = useMemo(() => readStorage<UserProfile | null>(profileKey, null), []);
@@ -400,8 +553,16 @@ export default function App() {
   const [logs, setLogs] = useState<QuestLog[]>(() => questLogRepository.get());
   const [quest, setQuest] = useState<Quest>(() => createQuest(storedProfile ?? defaultProfile));
   const [questStatus, setQuestStatus] = useState<QuestStatus>("draft");
-  const [openWindows, setOpenWindows] = useState<WindowId[]>(["quest", "manager"]);
-  const [windowPositions, setWindowPositions] = useState<Record<WindowId, WindowPosition>>(initialWindowPositions);
+  const {
+    activeWindow,
+    openWindow,
+    openWindows,
+    resetOpenWindows,
+    resetWindowPositions,
+    setWorkflowWindows,
+    windowChrome,
+    windowPositions,
+  } = useWindowManager(["quest", "manager"], initialWindowPositions);
   const [now, setNow] = useState(() => new Date());
   const [needsClarify, setNeedsClarify] = useState(false);
   const [selectedFailureReason, setSelectedFailureReason] = useState(failureReasons[0]);
@@ -446,19 +607,12 @@ export default function App() {
     };
   }, [screen]);
 
-  const activeWindow = openWindows[openWindows.length - 1];
   const remainingTime = formatRemaining(now);
   const managerDisplayStage = getManagerDisplayStage(manager);
   const projectionModeAsset = projectionModeAssets.find((asset) => asset.mode === "single_plane_pepper");
   const pixelTvConnected = pixelTvMode === "projection";
 
   function triggerBlinkFocus(mode: BlinkFocusMode) { setBlinkFocus({ id: Date.now(), mode }); }
-  function openWindow(id: WindowId) {
-    setOpenWindows((current) => [...current.filter((windowId) => windowId !== id), id]);
-  }
-  function closeWindow(id: WindowId) {
-    setOpenWindows((current) => current.filter((windowId) => windowId !== id));
-  }
   function enterDesktop() {
     triggerBlinkFocus("start_day");
     setScreen("desktop");
@@ -472,7 +626,7 @@ export default function App() {
     setBlinkFocus(null);
     if (!exitAfterBlink) return;
     setExitAfterBlink(false);
-    setOpenWindows(["quest", "manager"]);
+    resetOpenWindows(["quest", "manager"]);
     setScreen("manager-created");
   }
   function togglePixelTvMode() {
@@ -496,7 +650,6 @@ export default function App() {
     nextUrl.searchParams.set("projection", "pepper");
     window.location.href = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
   }
-  function moveWindow(id: WindowId, position: WindowPosition) { setWindowPositions((current) => ({ ...current, [id]: position })); }
   function recordQuestLog(log: QuestLog) { setLogs((current) => prependQuestLog(current, log)); }
   function recordOutcomeStreak(result: "success" | "failed") {
     setQuestOutcomeStreak((current) => ({
@@ -528,22 +681,22 @@ export default function App() {
       setQuestStatus("draft");
       setPreviousQuestTitle("");
       setManager((current) => ({ ...current, mood: "waiting", line: "새 오늘의 퀘스트 초안을 준비했어. 이번에도 작은 분량부터 가보자." }));
-      setOpenWindows((current) => replaceWorkflowWindows(current, ["quest", "manager"]));
+      setWorkflowWindows(["quest", "manager"]);
       return;
     }
 
     if (questStatus === "active") {
-      setOpenWindows((current) => replaceWorkflowWindows(current, ["runner", "manager"]));
+      setWorkflowWindows(["runner", "manager"]);
       return;
     }
 
     if (questStatus === "failed") {
-      setOpenWindows((current) => replaceWorkflowWindows(current, ["failure", "manager"]));
+      setWorkflowWindows(["failure", "manager"]);
       return;
     }
 
     if (questStatus === "recovery") {
-      setOpenWindows((current) => replaceWorkflowWindows(current, ["recovery", "manager"]));
+      setWorkflowWindows(["recovery", "manager"]);
       return;
     }
 
@@ -559,8 +712,8 @@ export default function App() {
     setQuestStatus("draft");
     setManager({ ...defaultManager, line: toneLines[savedProfile.managerTone] });
     setLogs([]);
-    setOpenWindows(["quest", "manager"]);
-    setWindowPositions(initialWindowPositions);
+    resetOpenWindows(["quest", "manager"]);
+    resetWindowPositions();
     setNeedsClarify(false);
     setScreen("manager-created");
   }
@@ -577,7 +730,7 @@ export default function App() {
 
   function acceptQuest() {
     setQuestStatus("active");
-    setOpenWindows((current) => replaceWorkflowWindows(current, ["runner", "manager"]));
+    setWorkflowWindows(["runner", "manager"]);
     setManager((current) => ({ ...current, mood: "focused", line: "끝까지 기다릴게. 네 속도로 진행하면 돼." }));
   }
 
@@ -587,13 +740,13 @@ export default function App() {
     setManager((current) => addExp(current, quest.rewardExp));
     void saveQuestEvent(createQuestEventRequest(quest, result, quest.rewardExp, "happy", { managerLine: "완료 기록을 기억으로 정리했어." }));
     setQuestStatus("success");
-    setOpenWindows((current) => replaceWorkflowWindows(current, ["manager"]));
+    setWorkflowWindows(["manager"]);
   }
 
   function startFailureFlow() {
     setQuestStatus("failed");
     setManager((current) => ({ ...current, mood: "recovering", line: "이번 기록을 보고 다음 분량을 다시 맞춰볼게." }));
-    setOpenWindows((current) => replaceWorkflowWindows(current, ["failure", "manager"]));
+    setWorkflowWindows(["failure", "manager"]);
   }
 
   function createRecovery() {
@@ -602,22 +755,18 @@ export default function App() {
     void saveQuestEvent(createQuestEventRequest(quest, "failed", 0, "recovering", { failureReason: selectedFailureReason, managerLine: "실패 이유를 기억하고 복구 분량을 다시 맞췄어." }));
     setQuest(createRecoveryQuest(quest));
     setQuestStatus("recovery");
-    setOpenWindows((current) => replaceWorkflowWindows(current, ["recovery", "manager"]));
+    setWorkflowWindows(["recovery", "manager"]);
     setManager((current) => ({ ...current, mood: "recovering", line: "다시 시작할 수 있는 작은 분량으로 준비했어." }));
   }
 
   function editRecovery() {
-    setOpenWindows(["quest"]);
+    resetOpenWindows(["quest"]);
   }
 
   function saveProfile(nextProfile: UserProfile) {
     setProfile(nextProfile);
     setWizardDraft(nextProfile);
     if (questStatus === "draft") setQuest(createQuest(nextProfile));
-  }
-
-  function windowChrome(id: WindowId) {
-    return { id, position: windowPositions[id], zIndex: 10 + openWindows.indexOf(id), isActive: activeWindow === id, onFocus: () => openWindow(id), onMove: (position: WindowPosition) => moveWindow(id, position), onClose: () => closeWindow(id) };
   }
 
   const showRecoveryHidingPet = questStatus === "recovery" && openWindows.includes("recovery") && questOutcomeStreak.result === "failed" && questOutcomeStreak.count >= 2;
@@ -654,7 +803,7 @@ export default function App() {
       {openWindows.includes("runner") && <XpWindow className="runner-window" title="QuestRunner.exe" {...windowChrome("runner")}><QuestRunnerWindow quest={quest} remainingTime={remainingTime} onComplete={completeQuest} onFail={startFailureFlow} /></XpWindow>}
       {openWindows.includes("failure") && <XpWindow className="failure-window" title="퀘스트가 소멸했어" {...windowChrome("failure")}><FailureWindow selectedFailureReason={selectedFailureReason} onReasonChange={setSelectedFailureReason} onCreateRecovery={createRecovery} /></XpWindow>}
       {openWindows.includes("recovery") && <XpWindow className="recovery-window" title="복구 퀘스트" {...windowChrome("recovery")}><RecoveryWindow quest={quest} onEdit={editRecovery} onAccept={acceptQuest} /></XpWindow>}
-      {showRecoveryHidingPet && <WindowPetInteraction state="hiding" petId={manager.petId} stage={managerDisplayStage} placement="beside-recovery" position={windowPositions.recovery} zIndex={11 + openWindows.indexOf("recovery")} />}
+      {showRecoveryHidingPet && <WindowPetInteraction state="hiding" petId={manager.petId} stage={managerDisplayStage} placement="beside-recovery" position={windowPositions.recovery} zIndex={9 + openWindows.indexOf("recovery")} />}
       {openWindows.includes("manager") && <XpWindow className="manager-window" title="매니저" {...windowChrome("manager")}><ManagerWindow manager={manager} petAway={showQuestHangingPet || showRecoveryHidingPet} /></XpWindow>}
       {openWindows.includes("profile") && <XpWindow className="profile-window" title="내 프로필" {...windowChrome("profile")}><ProfileWindow profile={profile} onSave={saveProfile} /></XpWindow>}
       {openWindows.includes("journal") && <XpWindow className="journal-window" title="기록 노트" {...windowChrome("journal")}><JournalWindow logs={logs} sync={logSync} /></XpWindow>}
@@ -683,11 +832,41 @@ export default function App() {
   );
 }
 
-function StartMenu({ questStatus, onOpenWindow, onOpenQuest, onExitService }: { questStatus: QuestStatus; onOpenWindow: (id: WindowId) => void; onOpenQuest: () => void; onExitService: () => void }) {
-  return <div className="start-menu"><strong>Manager.exe</strong><button type="button" onClick={onOpenQuest}><WindowIconMark id="quest" className="menu-icon" /><span>오늘의 퀘스트</span></button>{questStatus === "active" && <button type="button" onClick={() => onOpenWindow("runner")}><WindowIconMark id="runner" className="menu-icon" /><span>QuestRunner.exe</span></button>}<button type="button" onClick={() => onOpenWindow("manager")}><WindowIconMark id="manager" className="menu-icon" /><span>매니저</span></button><button type="button" onClick={() => onOpenWindow("profile")}><WindowIconMark id="profile" className="menu-icon" /><span>내 프로필</span></button><button type="button" onClick={() => onOpenWindow("journal")}><WindowIconMark id="journal" className="menu-icon" /><span>기록 노트</span></button><button type="button" onClick={onExitService}><span className="menu-icon text-icon" aria-hidden="true">IO</span><span>서비스 종료</span></button></div>;
+function StartMenu({ questStatus, onOpenWindow, onOpenQuest, onExitService }: StartMenuProps) {
+  return (
+    <div className="start-menu">
+      <strong>Manager.exe</strong>
+      <button type="button" onClick={onOpenQuest}>
+        <WindowIconMark id="quest" className="menu-icon" />
+        <span>오늘의 퀘스트</span>
+      </button>
+      {questStatus === "active" && (
+        <button type="button" onClick={() => onOpenWindow("runner")}>
+          <WindowIconMark id="runner" className="menu-icon" />
+          <span>QuestRunner.exe</span>
+        </button>
+      )}
+      <button type="button" onClick={() => onOpenWindow("manager")}>
+        <WindowIconMark id="manager" className="menu-icon" />
+        <span>매니저</span>
+      </button>
+      <button type="button" onClick={() => onOpenWindow("profile")}>
+        <WindowIconMark id="profile" className="menu-icon" />
+        <span>내 프로필</span>
+      </button>
+      <button type="button" onClick={() => onOpenWindow("journal")}>
+        <WindowIconMark id="journal" className="menu-icon" />
+        <span>기록 노트</span>
+      </button>
+      <button type="button" onClick={onExitService}>
+        <span className="menu-icon text-icon" aria-hidden="true">IO</span>
+        <span>서비스 종료</span>
+      </button>
+    </div>
+  );
 }
 
-function DesktopContextMenu({ x, y, onOpenProperties }: { x: number; y: number; onOpenProperties: () => void }) {
+function DesktopContextMenu({ x, y, onOpenProperties }: DesktopContextMenuProps) {
   const style = { "--menu-x": `${x}px`, "--menu-y": `${y}px` } as CSSProperties & Record<"--menu-x" | "--menu-y", string>;
   return (
     <div className="desktop-context-menu" style={style} role="menu" onClick={(event) => event.stopPropagation()}>
@@ -696,7 +875,7 @@ function DesktopContextMenu({ x, y, onOpenProperties }: { x: number; y: number; 
   );
 }
 
-function PixelTvPropertiesWindow({ connected, onToggle }: { connected: boolean; onToggle: () => void }) {
+function PixelTvPropertiesWindow({ connected, onToggle }: PixelTvPropertiesWindowProps) {
   return (
     <section className="pixel-tv-properties-panel">
       <div className="property-summary">
@@ -717,7 +896,7 @@ function PixelTvPropertiesWindow({ connected, onToggle }: { connected: boolean; 
   );
 }
 
-function BlinkFocusOverlay({ effect, onDone }: { effect: BlinkFocusState | null; onDone: () => void }) {
+function BlinkFocusOverlay({ effect, onDone }: BlinkFocusOverlayProps) {
   if (!effect) return null;
 
   function handleAnimationEnd(event: AnimationEvent<HTMLDivElement>) {
@@ -738,57 +917,220 @@ function BlinkFocusOverlay({ effect, onDone }: { effect: BlinkFocusState | null;
   );
 }
 
-function ProfileSetupWizard({ draft, needsClarify, onChange, onSubmit }: { draft: UserProfile; needsClarify: boolean; onChange: (profile: UserProfile) => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
+function ProfileSetupWizard({ draft, needsClarify, onChange, onSubmit }: ProfileSetupWizardProps) {
   return <XpWindow className="setup-window" title="Manager.exe 설치 마법사" onClose={undefined}><form className="setup-form" onSubmit={onSubmit}><p className="wizard-lead">전자 생물 매니저를 깨울 준비를 할게요</p><div className="wizard-grid"><label htmlFor="profile-name">이름</label><input id="profile-name" value={draft.name} onChange={(event) => onChange({ ...draft, name: event.target.value })} placeholder="김동민" /><label htmlFor="profile-nickname">닉네임</label><input id="profile-nickname" value={draft.nickname} onChange={(event) => onChange({ ...draft, nickname: event.target.value })} placeholder="루카스" /><label htmlFor="profile-goal">함께 키울 목표</label><textarea id="profile-goal" value={draft.goal} onChange={(event) => onChange({ ...draft, goal: event.target.value })} /><label htmlFor="daily-minutes">하루 가능 시간</label><select id="daily-minutes" value={draft.dailyMinutes} onChange={(event) => onChange({ ...draft, dailyMinutes: Number(event.target.value) })}><option value={15}>15분</option><option value={30}>30분</option><option value={45}>45분</option><option value={60}>60분</option></select><span>퀘스트 크기</span><div className="segmented-control">{(["tiny", "balanced", "challenge"] as QuestSize[]).map((size) => <button className={draft.questSize === size ? "selected" : ""} key={size} type="button" onClick={() => onChange({ ...draft, questSize: size })}>{size === "tiny" ? "아주 작게" : size === "balanced" ? "보통" : "도전적"}</button>)}</div><span>매니저 말투</span><div className="segmented-control">{(["calm", "friendly", "firm"] as ManagerTone[]).map((tone) => <button className={draft.managerTone === tone ? "selected" : ""} key={tone} type="button" onClick={() => onChange({ ...draft, managerTone: tone })}>{tone === "calm" ? "차분함" : tone === "friendly" ? "친구 같음" : "단호함"}</button>)}</div></div>{needsClarify && <div className="clarify-box"><strong>목표를 조금 더 구체화해볼게</strong><span>먼저 어떤 부분부터 시작할까?</span><div className="clarify-options">{["개념 읽기", "기출 문제", "오답 정리", "아직 모르겠음"].map((answer) => <label key={answer}><input type="radio" name="focus" checked={draft.focusAnswer === answer} onChange={() => onChange({ ...draft, focusAnswer: answer })} />{answer}</label>)}</div></div>}<div className="window-actions"><button className="xp-button" type="button" disabled>이전</button><button className="xp-button primary" type="submit">매니저 깨우기</button></div></form></XpWindow>;
 }
 
-function QuestWindow({ quest, status, previousQuestTitle, onQuestChange, onAccept, onOpenRunner, onRecommendNext }: { quest: Quest; status: QuestStatus; previousQuestTitle: string; onQuestChange: (patch: Partial<Quest>) => void; onAccept: () => void; onOpenRunner: () => void; onRecommendNext: () => void }) {
+function QuestWindow({ quest, status, previousQuestTitle, onQuestChange, onAccept, onOpenRunner, onRecommendNext }: QuestWindowProps) {
   if (status === "active") return <section className="quest-program-link"><div className="program-icon" aria-hidden="true">EXE</div><h2>퀘스트가 실행 중이야</h2><p>완료, 실패, 복구 흐름은 QuestRunner.exe 창에서 처리해.</p><strong>{quest.title}</strong><div className="window-actions"><button className="xp-button primary" type="button" onClick={onOpenRunner}>실행창 앞으로</button></div></section>;
   if (status === "success") return <section className="quest-program-link"><div className="program-icon" aria-hidden="true">OK</div><h2>오늘의 퀘스트를 완료했어</h2><p>기록은 저장됐고, 다음 오늘의 퀘스트를 추천할 수 있어.</p><strong>{quest.title}</strong><div className="window-actions"><button className="xp-button primary" type="button" onClick={onRecommendNext}>새 퀘스트 추천</button></div></section>;
   if (status === "failed") return <section className="quest-program-link"><div className="program-icon" aria-hidden="true">!</div><h2>복구가 필요한 퀘스트야</h2><p>실패 이유를 기록하고 더 작은 복구 퀘스트로 이어갈 수 있어.</p><strong>{quest.title}</strong></section>;
   return <section className="quest-draft">{status === "recovery" ? <div className="recovery-summary"><strong>다시 시작할 수 있는 작은 퀘스트로 줄였어</strong><span>기존: {previousQuestTitle}</span><span>복구: {quest.title}</span></div> : <div className="quest-summary"><span>오늘 수행할 퀘스트 초안</span><strong>3 / 4 완료</strong></div>}<form className="quest-form"><label htmlFor="quest-title">제목</label><input className="xp-input" id="quest-title" value={quest.title} onChange={(event) => onQuestChange({ title: event.target.value })} /><label htmlFor="quest-type">유형</label><select className="xp-select" id="quest-type" value={quest.type} onChange={(event) => onQuestChange({ type: event.target.value as QuestType })}><option value="time">시간형</option><option value="quantity">수량형</option><option value="action">행동형</option></select><label htmlFor="quest-amount">분량</label><div className="form-pair"><input className="xp-input" id="quest-amount" type="number" min={1} value={quest.amount} onChange={(event) => onQuestChange({ amount: Number(event.target.value) })} /><select className="xp-select" aria-label="분량 단위" value={quest.unit} onChange={(event) => onQuestChange({ unit: event.target.value })}><option>분</option><option>개</option><option>회</option><option>페이지</option></select></div><span>난이도</span><div className="difficulty" aria-label="난이도 선택">{(["easy", "normal", "hard"] as Difficulty[]).map((difficulty) => { const inputId = `difficulty-${difficulty}`; return <span className="choice-field" key={difficulty}><input id={inputId} name="difficulty" type="radio" checked={quest.difficulty === difficulty} onChange={() => onQuestChange({ difficulty })} /><label htmlFor={inputId}>{difficultyLabels[difficulty]}</label></span>; })}</div><label htmlFor="quest-deadline">제한 시간</label><select className="xp-select" id="quest-deadline" value={quest.deadline} onChange={(event) => onQuestChange({ deadline: event.target.value })}><option>오늘 23:59</option><option>오늘 18:00</option><option>오늘 21:00</option></select></form><div className="quest-footer"><span className="reward">예상 보상: EXP {quest.rewardExp}</span><button className="xp-button primary" type="button" onClick={onAccept}>수락</button></div></section>;
 }
 
-function QuestRunnerWindow({ quest, remainingTime, onComplete, onFail }: { quest: Quest; remainingTime: string; onComplete: () => void; onFail: () => void }) {
-  return <section className="runner-program"><div className="runner-menubar"><span>File</span><span>Quest</span><span>Help</span></div><div className="runner-banner"><span className="run-badge">[RUN]</span><span>{quest.title}</span></div><dl className="runner-grid"><div><dt>남은 시간</dt><dd>{remainingTime}</dd></div><div><dt>종료 조건</dt><dd>{quest.amount}{quest.unit} 달성</dd></div><div><dt>보상</dt><dd className="reward">EXP {quest.rewardExp}</dd></div></dl><div className="progress-pixels" aria-label="QuestRunner progress">{Array.from({ length: 12 }, (_, index) => <span key={index} />)}</div><div className="window-actions"><button className="xp-button primary" type="button" onClick={onComplete}>완료했어</button><button className="xp-button" type="button" onClick={onFail}>실패 처리</button></div></section>;
+function QuestRunnerWindow({ quest, remainingTime, onComplete, onFail }: QuestRunnerWindowProps) {
+  return (
+    <section className="runner-program">
+      <div className="runner-menubar">
+        <span>File</span>
+        <span>Quest</span>
+        <span>Help</span>
+      </div>
+      <div className="runner-banner">
+        <span className="run-badge">[RUN]</span>
+        <span>{quest.title}</span>
+      </div>
+      <dl className="runner-grid">
+        <div>
+          <dt>남은 시간</dt>
+          <dd>{remainingTime}</dd>
+        </div>
+        <div>
+          <dt>종료 조건</dt>
+          <dd>{quest.amount}{quest.unit} 달성</dd>
+        </div>
+        <div>
+          <dt>보상</dt>
+          <dd className="reward">EXP {quest.rewardExp}</dd>
+        </div>
+      </dl>
+      <div className="progress-pixels" aria-label="QuestRunner progress">
+        {Array.from({ length: 12 }, (_, index) => <span key={index} />)}
+      </div>
+      <div className="window-actions">
+        <button className="xp-button primary" type="button" onClick={onComplete}>완료했어</button>
+        <button className="xp-button" type="button" onClick={onFail}>실패 처리</button>
+      </div>
+    </section>
+  );
 }
 
-function FailureWindow({ selectedFailureReason, onReasonChange, onCreateRecovery }: { selectedFailureReason: string; onReasonChange: (reason: string) => void; onCreateRecovery: () => void }) {
-  return <section className="failure-panel"><div className="failure-list">{failureReasons.map((reason, index) => { const inputId = `failure-reason-${index}`; return <span className="choice-field" key={reason}><input id={inputId} type="radio" name="failureReason" checked={selectedFailureReason === reason} onChange={() => onReasonChange(reason)} /><label htmlFor={inputId}>{reason}</label></span>; })}</div><div className="window-actions"><button className="xp-button primary" type="button" onClick={onCreateRecovery}>복구 퀘스트 받기</button></div></section>;
+function FailureWindow({ selectedFailureReason, onReasonChange, onCreateRecovery }: FailureWindowProps) {
+  return (
+    <section className="failure-panel">
+      <div className="failure-list">
+        {failureReasons.map((reason, index) => {
+          const inputId = `failure-reason-${index}`;
+          return (
+            <span className="choice-field" key={reason}>
+              <input
+                id={inputId}
+                type="radio"
+                name="failureReason"
+                checked={selectedFailureReason === reason}
+                onChange={() => onReasonChange(reason)}
+              />
+              <label htmlFor={inputId}>{reason}</label>
+            </span>
+          );
+        })}
+      </div>
+      <div className="window-actions">
+        <button className="xp-button primary" type="button" onClick={onCreateRecovery}>복구 퀘스트 받기</button>
+      </div>
+    </section>
+  );
 }
 
-function RecoveryWindow({ quest, onEdit, onAccept }: { quest: Quest; onEdit: () => void; onAccept: () => void }) {
-  return <section className="recovery-panel"><p className="recovery-title">{quest.title}</p><dl className="runner-grid"><div><dt>유형</dt><dd>{questTypeLabels[quest.type]}</dd></div><div><dt>분량</dt><dd>{quest.amount}{quest.unit}</dd></div><div><dt>보상</dt><dd className="reward">EXP {quest.rewardExp}</dd></div></dl><div className="window-actions"><button className="xp-button" type="button" onClick={onEdit}>수정</button><button className="xp-button primary" type="button" onClick={onAccept}>수락하기</button></div></section>;
+function RecoveryWindow({ quest, onEdit, onAccept }: RecoveryWindowProps) {
+  return (
+    <section className="recovery-panel">
+      <p className="recovery-title">{quest.title}</p>
+      <dl className="runner-grid">
+        <div>
+          <dt>유형</dt>
+          <dd>{questTypeLabels[quest.type]}</dd>
+        </div>
+        <div>
+          <dt>분량</dt>
+          <dd>{quest.amount}{quest.unit}</dd>
+        </div>
+        <div>
+          <dt>보상</dt>
+          <dd className="reward">EXP {quest.rewardExp}</dd>
+        </div>
+      </dl>
+      <div className="window-actions">
+        <button className="xp-button" type="button" onClick={onEdit}>수정</button>
+        <button className="xp-button primary" type="button" onClick={onAccept}>수락하기</button>
+      </div>
+    </section>
+  );
 }
 
-function ManagerWindow({ manager, petAway }: { manager: ManagerState; petAway?: boolean }) {
+function ManagerWindow({ manager, petAway }: ManagerWindowProps) {
   const displayStage = getManagerDisplayStage(manager);
-  return <section className="manager-panel"><div className="manager-stage"><strong className="manager-name">◇ {manager.name} ◇</strong><div className={`manager-visual ${petAway ? "pet-away" : ""}`}><div className="reaction-bubble" aria-hidden="true" />{!petAway && <DesktopPet mood={manager.mood} petId={manager.petId} stage={displayStage} large />}</div><div className="manager-progress"><span className="level">Lv.{manager.level}</span><div className="exp-bar" role="progressbar" aria-label="루미 경험치" aria-valuemin={0} aria-valuemax={100} aria-valuenow={manager.exp}><i style={{ width: `${manager.exp}%` }} /></div><span className="exp-value">{manager.exp} / 100 EXP</span></div><div className="manager-status"><span className={`status-pixel ${manager.mood}`}>{managerStatusIcons[manager.mood]}</span><span>{managerStatusLabels[manager.mood]}</span></div></div><p className="dialogue-panel">{manager.line}</p></section>;
+  return (
+    <section className="manager-panel">
+      <div className="manager-stage">
+        <strong className="manager-name">◇ {manager.name} ◇</strong>
+        <div className={`manager-visual ${petAway ? "pet-away" : ""}`}>
+          <div className="reaction-bubble" aria-hidden="true" />
+          {!petAway && <DesktopPet mood={manager.mood} petId={manager.petId} stage={displayStage} large />}
+        </div>
+        <div className="manager-progress">
+          <span className="level">Lv.{manager.level}</span>
+          <div
+            className="exp-bar"
+            role="progressbar"
+            aria-label="루미 경험치"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={manager.exp}
+          >
+            <i style={{ width: `${manager.exp}%` }} />
+          </div>
+          <span className="exp-value">{manager.exp} / 100 EXP</span>
+        </div>
+        <div className="manager-status">
+          <span className={`status-pixel ${manager.mood}`}>{managerStatusIcons[manager.mood]}</span>
+          <span>{managerStatusLabels[manager.mood]}</span>
+        </div>
+      </div>
+      <p className="dialogue-panel">{manager.line}</p>
+    </section>
+  );
 }
 
-function ProfileWindow({ profile, onSave }: { profile: UserProfile; onSave: (profile: UserProfile) => void }) {
+function ProfileWindow({ profile, onSave }: ProfileWindowProps) {
   const [draft, setDraft] = useState(profile);
   return <form className="profile-edit" onSubmit={(event) => { event.preventDefault(); onSave(draft); }}><div className="profile-form"><label htmlFor="profile-edit-name">이름</label><input className="xp-input" id="profile-edit-name" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /><label htmlFor="profile-edit-nickname">닉네임</label><input className="xp-input" id="profile-edit-nickname" value={draft.nickname} onChange={(event) => setDraft({ ...draft, nickname: event.target.value })} /><label htmlFor="profile-edit-goal">주요 목표</label><textarea className="xp-textarea" id="profile-edit-goal" value={draft.goal} onChange={(event) => setDraft({ ...draft, goal: event.target.value })} /><label htmlFor="profile-edit-minutes">가능 시간</label><select className="xp-select" id="profile-edit-minutes" value={draft.dailyMinutes} onChange={(event) => setDraft({ ...draft, dailyMinutes: Number(event.target.value) })}><option value={15}>15분</option><option value={30}>30분</option><option value={45}>45분</option><option value={60}>60분</option></select></div><div className="window-actions"><button className="xp-button primary" type="submit">저장</button></div></form>;
 }
 
-function JournalWindow({ logs, sync }: { logs: QuestLog[]; sync: QuestLogSyncState }) {
+function JournalWindow({ logs, sync }: JournalWindowProps) {
   return <section className="journal-panel">{sync.message && <p className={`sync-notice ${sync.status}`}>{sync.message}</p>}{logs.length === 0 ? <div className="journal-empty"><strong>아직 기록이 없어.</strong><p>퀘스트를 완료하거나 복구하면 이곳에 기록돼.</p></div> : <div className="notes-list">{logs.map((log) => <div className="note-row" key={log.id}><span className={`log-mark ${log.result}`}>{questLogMarks[log.result]}</span><span>{log.title} <small>{log.reason ?? questLogResultLabels[log.result]}</small></span><strong>EXP +{log.exp}</strong></div>)}</div>}</section>;
 }
 
-function XpWindow({ id, title, titlebarIcon, className, children, position, zIndex, isActive, onFocus, onMove, onClose }: { id?: WindowId; title: string; titlebarIcon?: string; className: string; children: ReactNode; position?: WindowPosition; zIndex?: number; isActive?: boolean; onFocus?: () => void; onMove?: (position: WindowPosition) => void; onClose?: (() => void) | undefined }) {
+function XpWindow({ id, title, titlebarIcon, className, children, position, zIndex, isActive, onFocus, onMove, onClose }: XpWindowProps) {
   const [dragOffset, setDragOffset] = useState<WindowPosition | null>(null);
   const windowStyle = position ? ({ "--window-x": `${position.x}px`, "--window-y": `${position.y}px`, zIndex } as CSSProperties & Record<"--window-x" | "--window-y", string>) : undefined;
-  function startDrag(event: PointerEvent<HTMLDivElement>) { if (!id || !position || !onMove) return; if ((event.target as HTMLElement).closest("button")) return; const windowElement = event.currentTarget.closest(".xp-window"); if (!windowElement) return; const rect = windowElement.getBoundingClientRect(); setDragOffset({ x: event.clientX - rect.left, y: event.clientY - rect.top }); onFocus?.(); event.currentTarget.setPointerCapture(event.pointerId); }
-  function dragWindow(event: PointerEvent<HTMLDivElement>) { if (!dragOffset || !onMove) return; const maxX = Math.max(0, window.innerWidth - 180); const maxY = Math.max(0, window.innerHeight - 78); onMove({ x: Math.min(Math.max(event.clientX - dragOffset.x, 0), maxX), y: Math.min(Math.max(event.clientY - dragOffset.y, 0), maxY) }); }
-  function stopDrag(event: PointerEvent<HTMLDivElement>) { if (!dragOffset) return; setDragOffset(null); event.currentTarget.releasePointerCapture(event.pointerId); }
   const icon = titlebarIcon ?? (id ? windowTitleIcons[id] : "M");
-  return <section className={`xp-window ${position ? "positioned" : ""} ${isActive ? "active" : ""} ${className}`} onPointerDown={onFocus} style={windowStyle}><div className="xp-titlebar" onPointerDown={startDrag} onPointerMove={dragWindow} onPointerUp={stopDrag} onPointerCancel={stopDrag}><WindowIconMark id={id} fallback={icon} className="titlebar-icon" /><span className="titlebar-name">{title}</span><div className="window-buttons"><button type="button" aria-label="minimize" disabled /><button type="button" aria-label="maximize" disabled /><button type="button" aria-label="close" onClick={onClose} disabled={!onClose} /></div></div><div className="xp-window-body">{children}</div></section>;
+
+  function startDrag(event: PointerEvent<HTMLDivElement>) {
+    if (!id || !position || !onMove) return;
+    if ((event.target as HTMLElement).closest("button")) return;
+
+    const windowElement = event.currentTarget.closest(".xp-window");
+    if (!windowElement) return;
+
+    const rect = windowElement.getBoundingClientRect();
+    setDragOffset({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+    onFocus?.();
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function dragWindow(event: PointerEvent<HTMLDivElement>) {
+    if (!dragOffset || !onMove) return;
+
+    const maxX = Math.max(0, window.innerWidth - 180);
+    const maxY = Math.max(0, window.innerHeight - 78);
+    onMove({
+      x: Math.min(Math.max(event.clientX - dragOffset.x, 0), maxX),
+      y: Math.min(Math.max(event.clientY - dragOffset.y, 0), maxY),
+    });
+  }
+
+  function stopDrag(event: PointerEvent<HTMLDivElement>) {
+    if (!dragOffset) return;
+
+    setDragOffset(null);
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
+  return (
+    <section
+      className={`xp-window ${position ? "positioned" : ""} ${isActive ? "active" : ""} ${className}`}
+      onPointerDown={onFocus}
+      style={windowStyle}
+    >
+      <div
+        className="xp-titlebar"
+        onPointerDown={startDrag}
+        onPointerMove={dragWindow}
+        onPointerUp={stopDrag}
+        onPointerCancel={stopDrag}
+      >
+        <WindowIconMark id={id} fallback={icon} className="titlebar-icon" />
+        <span className="titlebar-name">{title}</span>
+        <div className="window-buttons">
+          <button type="button" aria-label="minimize" disabled />
+          <button type="button" aria-label="maximize" disabled />
+          <button type="button" aria-label="close" onClick={onClose} disabled={!onClose} />
+        </div>
+      </div>
+      <div className="xp-window-body">{children}</div>
+    </section>
+  );
 }
 
-function WindowIconMark({ id, fallback, className }: { id?: WindowId; fallback?: string; className: string }) {
+function WindowIconMark({ id, fallback, className }: WindowIconMarkProps) {
   const manifestId = id ? windowIconAssetIds[id] : undefined;
   const asset = manifestId ? getDesktopIconAsset(manifestId).idleSrc : id ? legacyWindowIconAssets[id] : undefined;
-  return <span className={className} aria-hidden="true">{asset ? <img src={asset} alt="" /> : fallback ?? (id ? windowTitleIcons[id] : "M")}</span>;
+  return (
+    <span className={className} aria-hidden="true">
+      {asset ? <img src={asset} alt="" /> : fallback ?? (id ? windowTitleIcons[id] : "M")}
+    </span>
+  );
 }
 
 function DesktopIcon({
@@ -800,16 +1142,7 @@ function DesktopIcon({
   overrideIdleSrc,
   overrideHoverSrc,
   disabled = false,
-}: {
-  label: string;
-  type: WindowId;
-  onClick: () => void;
-  onContextMenu?: (event: MouseEvent<HTMLButtonElement>) => void;
-  assetId?: DesktopIconId;
-  overrideIdleSrc?: string;
-  overrideHoverSrc?: string;
-  disabled?: boolean;
-}) {
+}: DesktopIconProps) {
   const [iconState, setIconState] = useState<"idle" | "hover" | "active">("idle");
   const manifestId = assetId ?? desktopIconAssetIds[type];
   const asset = manifestId ? getDesktopIconAsset(manifestId) : undefined;
@@ -837,7 +1170,7 @@ function DesktopIcon({
   );
 }
 
-function WindowPetInteraction({ state, petId, stage, placement, position, zIndex }: { state: Extract<LumiSpriteState, "hanging" | "hiding">; petId: PetId; stage: PetStageId; placement: "below-quest" | "beside-recovery"; position: WindowPosition; zIndex: number }) {
+function WindowPetInteraction({ state, petId, stage, placement, position, zIndex }: WindowPetInteractionProps) {
   const animation = getLumiAnimationAsset(state, petId, stage);
   const renderableStage = getRenderablePetStage(petId, stage);
   const interactionStyle = {
@@ -853,7 +1186,7 @@ function WindowPetInteraction({ state, petId, stage, placement, position, zIndex
   );
 }
 
-function DesktopPet({ mood, petId, stage, large = false }: { mood: ManagerState["mood"]; petId: PetId; stage: PetStageId; large?: boolean }) {
+function DesktopPet({ mood, petId, stage, large = false }: DesktopPetProps) {
   const [hovered, setHovered] = useState(false);
   const spriteState = hovered ? "hover" : lumiMoodToSpriteState[mood];
   const animation = getLumiAnimationAsset(spriteState, petId, stage);

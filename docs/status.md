@@ -1,6 +1,6 @@
 ﻿# 현재 진행 상황
 
-마지막 갱신: 2026-07-20
+마지막 갱신: 2026-07-23
 
 ## 완료
 
@@ -51,15 +51,29 @@
 - 2026-07-18 플라나리아 Stage 1 animation sample의 기준 프레임, CSS background-position, 상태별 fps, 배치 anchor, reduced-motion fallback 기준을 문서화
 - 2026-07-22 플라나리아와 도마뱀붙이, `hover`를 제외한 9종 Stage 1 펫 상호작용 motion sheet 90개를 생성: `idle/focused/happy/recovering/hanging/hiding/run/jump/walk/climbing`, variable source frame count, `playbackFrames`, `hold`, `mirrorX` 재생 기준을 manifest와 검수 문서에 반영
 - 2026-07-22 핑크 매니저 motion board는 `pink-manager-motion-board-v3-refined-from-call-pj.png`를 선호 방향으로 두고, `jump`는 오른쪽 3/4 시점이 유지되는 `pink-manager-jump-v2-right-facing.png`로 교체 후보를 확정. `pink-manager-motion-board-v3-jump-fixed-review.png`는 검수용 합성본이며 canonical sheet 승격 전 별도 crop-safe 추출이 필요
-- 2026-07-22 핑크 매니저 V3 board row와 오른쪽 3/4 `jump` 후보를 row별로 crop/정규화해 `public/assets/lumi/pink-manager-stage-1-v2/`에 10개 motion sheet로 추출하고, `public/assets/_review/pink-manager-stage-1-v2-contact.png` 검수본 생성
+- 2026-07-22 핑크 매니저 V3 board row와 오른쪽 3/4 `jump` 후보를 row별로 crop/정규화해 `public/assets/lumi/pink-manager-stage-2-v2/`에 10개 motion sheet로 추출하고, `public/assets/_review/pink-manager-stage-2-v2-contact.png` 검수본 생성
 - 2026-07-22 핑크 매니저 V3 crop 결과 검수 후, review/contact board를 production sheet 원본으로 쓰지 않기로 결정. 이후 생성은 motion별 production sprite sheet를 직접 만들고, 각 PNG 안에서 캐릭터 scale/bbox/anchor가 일치하는지 검수하는 방식으로 전환
 - 2026-07-20 동적 에셋 animation pipeline 내용을 `asset-prompts` 문서와 Wiki synthesis로 재배치하고, `docs/wiki/synthesis/dynamic-asset-animation-pipeline.md`를 추가
 - 2026-07-21 Supabase 실제 DB 수직 슬라이스 검증 완료: `/api/health`가 `storageMode: "supabase"`와 `supabaseConfigured: true`를 반환했고, `POST /api/quest-events`, `GET /api/quest-events`, `GET /api/manager-context`가 실제 Supabase 경로에서 통과
+- 2026-07-21 Supabase 수직 슬라이스 브라우저 UI 수동 확인 완료: 완료/실패/복구 이벤트 후 Network `POST`/`GET`와 기록 노트 표시를 확인
 - 2026-07-21 GitHub Issues/Project 정리 완료: 기존 P0 이슈 상태를 최신화하고 3주차 P1, 4주차 P2 확장 이슈를 Project #1에 `Priority`, `Week`, `Type`, `Status` 필드와 함께 등록
-- 2026-07-22 동적 asset/data manifest를 코드에서 확장: `soundAssets`, `interactionObjectAssets`, `projectionModeAssets`, projection/interaction future slot을 추가하고 main Lumi runtime animation을 `pink-manager-stage-1` canonical sheets로 전환
+- 2026-07-22 동적 asset/data manifest를 코드에서 확장하고 검증: `soundAssets`, `interactionObjectAssets`, `projectionModeAssets`, projection/interaction future slot을 추가하고 main Lumi runtime animation을 `pink-manager-stage-2` canonical sheets로 전환
 - 2026-07-22 T-710 blink focus scene prototype을 React/CSS overlay로 조정: 온보딩 후 서비스 진입과 시작 메뉴 서비스 종료 직전에만 blink가 재생되고, 저장된 프로필로 새로고침해 desktop에 바로 들어올 때는 재생하지 않음
 - 2026-07-22 T-724 Single-plane Pepper projection mode prototype을 Pixel TV 우클릭 속성 flow에 연결: 속성 창의 변환/원복으로 TV 아이콘 sprite가 바뀌고, 변환된 아이콘 실행 시 hidden route `?projection=pepper`의 검은 배경 Lumi glow 출력으로 이동
 - 2026-07-22 Canvas 기반 sprite animation을 메인 매니저 창, hover, window interaction layer에 적용하고 `?review=sprites` 전용 검수 화면과 sprite sheet verifier를 유지
+- 2026-07-23 manager asset 폴더 명명 규칙을 확정: canonical runtime은 `public/assets/lumi/<pet-id>-<stage-id>/`와 version suffix 없는 `<pet-id>-<stage-id>-<motion>-sheet.png`를 사용하고, 후보는 `*-production-candidates/`에 version suffix로 보관
+- 2026-07-23 `pink-manager`와 `glass-frog`는 사실상 Stage 2 기준 이미지로 확정하고 canonical 폴더를 `pink-manager-stage-2/`, `glass-frog-stage-2/`로 정리. 꼬마비로드갯민숭달팽이는 Stage 2 두 번째 후보를 기준으로 삼고, 등 돌기는 징그럽지 않은 납작한 별점/펄 무늬로 대체하는 motion plan을 추가
+
+- 2026-07-23 꼬마비로드갯민숭달팽이 Stage 2 production candidate motion sheet 10종을 생성하고 review set에 연결: `public/assets/lumi/sea-bunny-slug-stage-2-production-candidates/sea-bunny-slug-stage-2-*-sheet-v1.png`, contact sheet `public/assets/_review/sea-bunny-slug-stage-2-production-candidates-contact.png`. 1차 눈검수상 `focused`의 스캔 FX와 `hanging`의 흡착부는 사용자 검수 후 v2 후보 가능성 있음
+
+- 2026-07-23 꼬마비로드갯민숭달팽이 `hanging`은 한쪽 귀로 대롱대롱 매달리는 v2, `climbing`은 엉덩이만 보이는 정후면 대신 긴 등면이 보이는 rear 3/4 top-back v2로 재생성하고 review set을 v2 파일로 연결
+- 2026-07-23 TDD 우선 확장 도메인 규칙 추가: 성장/보상/능력치, stage 해금/회귀, interaction object rect/resize/progress, pet locomotion, pixelizer plan, blink/sound policy, public quest/gesture policy를 RED -> GREEN 흐름으로 테스트화
+- 2026-07-23 Pet Behavior State Machine 추가: 상황 기반 후보 생성, deterministic weighted behavior selection, persona별 weight 조정, behavior state -> animation state mapping을 테스트로 고정
+- 2026-07-23 ManagerBehaviorIntent 경계 추가: LLM이 줄 수 있는 `behaviorStyle`, `tone`, `line`, `suggestedBehaviorBias`를 정규화하고 unknown behavior, invalid style, 과도한 weightDelta를 fallback/clamp 처리
+- 2026-07-23 ManagerBehaviorAdapter 추가: raw manager intent를 정규화한 뒤 현재 BehaviorContext와 결합해 weighted behavior와 animation state를 결정하는 도메인 경계를 TDD로 고정
+- 2026-07-23 TDD 반복 workflow를 `.codex/agents/tdd_workflow.toml` Agent와 `.agents/skills/tdd-test-writing/SKILL.md` Skill로 분리
+- 2026-07-23 아키텍처 5장 구조도와 Supabase 확장 정규화 후보를 최신 기준으로 갱신
+- 2026-07-23 PR showcase 제출용 `showcase/showcase.json`, `thumbnail.webp`, `screenshots/home.webp` 추가
 
 ## 검증
 
@@ -93,17 +107,22 @@
 - 2026-07-20 Wiki index/source/log 갱신 후 하네스 구조 검증 통과: `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
 - 2026-07-21 Supabase 실제 DB 검증 통과: `GET /api/health` -> `supabase`, `POST /api/quest-events` -> `201 Created`, `GET /api/quest-events?limit=5` -> `200 OK`, `GET /api/manager-context` -> `200 OK`
 - 2026-07-22 asset/animation 검증 통과: `npm.cmd run typecheck`, `npm.cmd run verify:sprites`, `npm.cmd run build`
+- 2026-07-23 canonical manager asset 검증 통과: `npm.cmd run verify:sprites`, `npm.cmd run typecheck`
+- 2026-07-23 TDD 도메인 규칙 검증 통과: `npm.cmd test`, `npm.cmd run typecheck`, `npm.cmd run build`, `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
+- 2026-07-23 문서/하네스 최신화 검증 통과: `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
 - 로컬 skill 설치 확인: Superpowers, 하네스 workflow skills, `project-learning-agent`
 - React 화면은 정적 HTML 기준으로 큰 flow/state 차이는 줄였고, 남은 시각 차이는 사용자가 직접 화면을 보며 추가 점검 예정
 
 ## 다음 작업
 
-- 브라우저에서 #4 수직 슬라이스 UI 시나리오를 수동 확인하고 GitHub Project #1에서 #4를 Done으로 이동
-- React 화면을 `WindowFrame`, `ProfileWizard`, `DesktopShell`, `QuestWindow`, `ManagerWindow`, `JournalWindow` 파일 단위로 추가 분리
-- React 핵심 상태 전이 로직을 학습용 컴포넌트 분리 단위로 재정리
+- 1순위: 캐릭터 생동감 후속 작업. `T-713` cyber-purr 사운드 후보를 정리하고, TDD로 만든 `ManagerBehaviorIntent`, `ManagerBehaviorAdapter`, Pet Behavior State Machine을 React Lumi animation state와 연결
+- 2순위: 성장/보상 구조 연결. TDD로 만든 `T-703`, `T-717`, `T-712` 성장/보상 도메인 규칙을 Quest Event metadata, 기록 노트, 매니저 상태, 외형 선택 UI와 연결하고 `T-718` Supabase 정규화 기준을 확정
+- 3순위: 상호작용 오브젝트 prototype. TDD로 만든 interaction object, pet locomotion, behavior state machine을 실제 사다리/평지/창탈출 UI prototype에 연결
+- 4순위: 월드/실험 기능 prototype. `T-708`, `T-721`, `T-722`, `T-723` 하루 흐름 Web theme, 현실 픽셀화 TV, 공개 퀘스트 탐색, 웹캠 손 제스처 탐색을 별도 prototype으로 검증
+- 후속 검수: `T-724` Single-plane Pepper projection mode는 기본 flow가 연결되어 있으므로 브라우저에서 projection 화면 품질과 front/back 자동 회전 v1.5 필요 여부만 추가 판단
+- React 화면은 이미 `WindowFrame`, `ProfileWizard`, `DesktopShell`, `QuestWindow`, `ManagerWindow`, `JournalWindow` 중심으로 분리되어 있고, 다음 분리는 UI 파일 추가보다 `useQuestFlow`, `useQuestLogSync`, `usePixelTvMode` 같은 상태 hook 단위가 우선
 - 기록 노트 API 로딩/빈 상태/실패 상태 polish
 - 정적 HTML 기준으로 남은 UI 시각 차이 수동 점검 및 우선순위화
-- 승격된 확장 기능의 asset/data manifest 설계: 개인화 AI 매니저, 하루 흐름 web theme, 현실 픽셀화 TV, 공개 퀘스트 탐색, 웹캠 손 제스처, 캐릭터 애니메이션, 외적 성장, 배경/창 테마, 기억 조각, 사운드
 - 다음 에셋 제작 세션에서 `docs/dynamic-asset-requirements.md` 기준으로 sprite, icon, theme, reward, sound asset을 생성
 - `docs/notion-dashboard-guide.md`는 오래된 문서이므로 공식 흐름에서 제외 상태 유지
 - 오래된 계획 문서에 남아 있는 Notion 기준 표현은 역사 문맥인지 현재 기준인지 정리 필요

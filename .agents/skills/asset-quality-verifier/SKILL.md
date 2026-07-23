@@ -9,6 +9,13 @@ description: Use when reviewing generated pixel assets, sprite sheets, desktop i
 
 Verify that generated assets can be used in the React XP desktop app without visual drift, broken paths, baked text, or state mismatch.
 
+## Do Not Use When
+
+- The task is only React state, API, DB, or document planning work.
+- The task does not involve generated visual assets or asset manifest entries.
+- The user is asking to write prompts before any candidate asset exists; plan the asset request first.
+- The task is final feature verification after implementation; use `verify-result` instead.
+
 ## Inputs
 
 - Prompt document path

@@ -20,6 +20,7 @@
 | `project-document-manager` | `docs/document-management-agent.md` | 문서 추가/수정/삭제와 링크 갱신을 점검할 때 |
 | `project-learning-agent` | `docs/learning/README.md` | 구현 후 학습 키워드, 참고 코드, ChatGPT 질문 예시를 짧게 정리할 때 |
 | `xp-desktop-pet-ui` | `docs/codex-skills/xp-desktop-pet-ui/` | XP 데스크톱 UI, 매니저 창, 에셋, copy 규칙을 다룰 때 |
+| `tdd-test-writing` | `docs/tdd-workflow-agent.md` | 작은 도메인 규칙을 RED/GREEN/REFACTOR로 반복 구현할 때 |
 
 ## 하네스 역할
 
@@ -30,6 +31,7 @@
 | implementer | `.codex/agents/implementer.toml` | 승인된 계획만 최소 구현 |
 | verifier | `.codex/agents/verifier.toml` | 독립 검증과 실패 증거 보고 |
 | wiki_curator | `.codex/agents/wiki_curator.toml` | 승인된 Wiki 영역만 갱신 |
+| tdd_workflow | `.codex/agents/tdd_workflow.toml` | 작은 spec을 RED/GREEN/REFACTOR로 구현하고 verifier에 넘김 |
 
 ## 하네스 workflow skill
 
@@ -42,6 +44,7 @@
 | `wiki-ingest` | `.agents/skills/wiki-ingest/SKILL.md` | 승인된 원본을 Wiki에 반영할 때 |
 | `wiki-query` | `.agents/skills/wiki-query/SKILL.md` | Wiki에서 근거 기반으로 답할 때 |
 | `wiki-lint` | `.agents/skills/wiki-lint/SKILL.md` | Wiki 링크, 출처, index, log를 검사할 때 |
+| `tdd-test-writing` | `.agents/skills/tdd-test-writing/SKILL.md` | 반복적인 테스트 작성 절차를 spec, RED, GREEN, refactor로 정리할 때 |
 
 ## Codex `/` 호출 이름
 
@@ -78,6 +81,7 @@
 | `/writing-plans` | 구현 계획 작성 |
 | `/executing-plans` | 작성된 계획 실행 |
 | `/test-driven-development` | 동작 변경 전 테스트 우선 접근 |
+| `/tdd-test-writing` | 프로젝트 반복 TDD spec 작성 절차 |
 | `/systematic-debugging` | 원인 불명 실패의 체계적 디버깅 |
 | `/verification-before-completion` | 완료 선언 전 검증 강제 |
 | `/requesting-code-review` | 구현 후 코드 리뷰 요청 |
@@ -154,10 +158,11 @@ visible UI에 미구현 확장 기능이나 개발자용 레이어명은 노출�
 
 1. 큰 작업은 `project-planning-agent`로 Task와 우선순위를 정한다.
 2. UI/디자인 작업은 `xp-desktop-pet-ui`를 함께 사용한다.
-3. 구현 후 `project-verification-agent`로 기능과 데이터 흐름을 검증한다.
-4. 새로 공부할 개념이 생기면 `project-learning-agent`로 `docs/learning/`을 짧게 갱신한다.
-5. 문서 변경이 있으면 `project-document-manager`로 링크와 역할 중복을 점검한다.
-6. 결과를 `docs/status.md`, `docs/tasks.md`, GitHub Issues/Projects에 반영한다.
+3. 테스트 가능한 도메인 규칙은 `tdd-test-writing`과 `tdd_workflow`로 RED/GREEN을 먼저 만든다.
+4. 구현 후 `project-verification-agent`로 기능과 데이터 흐름을 검증한다.
+5. 새로 공부할 개념이 생기면 `project-learning-agent`로 `docs/learning/`을 짧게 갱신한다.
+6. 문서 변경이 있으면 `project-document-manager`로 링크와 역할 중복을 점검한다.
+7. 결과를 `docs/status.md`, `docs/tasks.md`, GitHub Issues/Projects에 반영한다.
 
 ## 주의
 
