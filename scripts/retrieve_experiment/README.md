@@ -10,7 +10,7 @@ RRF 하이브리드 검색의 실패 유형을 비교하기 위한 로컬 실험
 
 ## 현재 구현 범위
 
-Task 0부터 Task 2까지 다음 계약을 제공한다.
+Task 0부터 Task 3까지 다음 계약과 탐색 결과를 제공한다.
 
 - `contracts.ts`: corpus·query·관련도 타입과 45개 query 분할 검증
 - `experiment_manifest.ts`: 데이터·모델·cache·랭킹 설정 검증
@@ -20,6 +20,9 @@ Task 0부터 Task 2까지 다음 계약을 제공한다.
 - `ranking.ts`: 현행 어휘 검색 adapter, cosine ranking과 RRF
 - `embedding_provider.ts`: 입력 정규화, 결정적 cache key, 파일 cache와 벡터 검증
 - `local_e5_embedding_provider.ts`: 고정 리비전의 로컬 multilingual-e5 추출기
+- `fixtures/`: 모델 실행 전에 고정한 합성 insight 72개와 query 45개
+- `run_exploration.ts`: threshold calibration과 네 후보의 재현 가능한 실행
+- `report.ts`: 집계·query별 순위·critical miss·negative 반환 보고서
 
 Gemini 등 외부 API 호출과 개인 데이터 사용은 아직 포함되지 않는다.
 
@@ -75,6 +78,56 @@ override하며, 고정 모델 리비전 외의 임의 원격 모델은 이 실�
 - `1`: 보조적으로 유용한 자료
 - `0`: 관련 없음
 
+## Task 3 로컬 E5 탐색 결과
+
+2026-07-23에 fixture를 먼저 커밋한 뒤 고정 리비전의 로컬 E5를 실행했다.
+모델 실행에는 외부 API, 유료 token과 개인 데이터를 사용하지 않았다.
+
+| 항목 | 값 |
+| --- | --- |
+| corpus | 합성 insight 72개 |
+| query | lexical·semantic·negative 각 15개, 합계 45개 |
+| corpus SHA-256 | `91eb31bf622438b4a8319c7dd389761edaf006928c7ccca8c0da03f74c958c41` |
+| query SHA-256 | `3384643d0d6eef83330720be5c76dcc2a7f29378b6f7afc4207ee956a2bbd183` |
+| manifest SHA-256 | `4d08ca6eaee0e678460d902cc77076e2d0348e385eeb7e75453f4aa1642b12b5` |
+| 선택 semantic threshold | `0.8276954665016152` |
+
+선택 threshold는 외부의 임의 기본값이 아니다. Negative calibration 질의의
+상위 cosine 점수에서 50·90·100 분위 후보만 만들고, 그중 최대값을 선택해 같은
+점수도 반환하지 않게 했다. 이 선택은 calibration negative 평균 반환 수를
+0으로 만들었지만 positive Recall@5를 `0.9`에서 `0.8`로 낮춘 보수적인
+절충이다.
+
+| 점검 영역 | 현행 어휘 검색 | 로컬 E5 의미 검색 | 로컬 E5 하이브리드 k=60 |
+| --- | ---: | ---: | ---: |
+| semantic check Recall@5 | 0.600000 | 0.600000 | 0.800000 |
+| semantic check MRR@6 | 0.300000 | 0.600000 | 0.566667 |
+| semantic check nDCG@6 | 0.334704 | 0.511144 | 0.555389 |
+| negative check 평균 반환 수 | 0.200000 | 0.000000 | 0.200000 |
+
+판정 질문에 대한 관찰은 다음과 같다.
+
+1. 하이브리드는 semantic 전체에서 현행 대비 8승·5무·2패이고, 별도로 남겨 둔
+   semantic check에서는 3승·2무·0패다.
+2. Lexical check는 모두 동률이었다. 하이브리드에는 현행이 찾은 관련도 2
+   자료를 놓친 critical miss가 없었다.
+3. 하이브리드의 negative 반환 수는 현행과 같았다. 의미 검색의 새 오탐은
+   차단했지만 현행 어휘 검색의 오탐까지 해결하지는 않는다.
+4. 개선 query의 핵심 자료는 개발·계정·프로젝트·학습·미디어에 걸쳐 있어 한
+   주제에만 몰리지 않았다. 여행 표현 두 건은 여전히 취약했다.
+5. 로컬 E5 단독의 critical miss 두 건은 보수적 threshold의 영향이 있지만,
+   하이브리드가 현행 결과를 보존해 완화했다. 반면 negative 오탐은 어휘 검색
+   결합 방식의 후속 과제다.
+
+따라서 Task 3의 결론은 **로컬 E5 하이브리드를 개인 데이터 파일럿 후보로
+남긴다**이다. 합성 평가만으로 운영 도입을 승인하지 않으며, Gemini 비교도
+자동으로 실행하지 않는다. `k=60`과 `k=10`의 승·무·패 및 query별 결과가 같아
+이번 데이터에서 결론 방향은 뒤집히지 않았다.
+
+전체 수치와 45개 query별 상위 결과는
+`results/exploration_report.md`, 기계 판독 결과는
+`results/exploration_result.json`에 있다.
+
 ## 지표와 랭킹 계약
 
 `Recall@5`는 이 실험의 기존 제품 계약에 맞춰 상위 5개 안에 관련도 1 이상인
@@ -106,13 +159,14 @@ Negative query는 세 품질 점수와 반환 결과 수를 분리해 기록한�
 - `results/`: 합성 데이터의 익명 결과
 
 `.cache/`와 `private/`는 Git에서 제외한다. `results/`는 합성 데이터만 포함하는
-후속 Task에서 추가한다.
+Task 3의 재현 가능한 익명 결과만 Git에 포함한다.
 
 ## 검증
 
 ```powershell
 npx vitest run scripts/retrieve_experiment/tests
 npx tsc --noEmit -p tsconfig.node.json
+npx tsx scripts/retrieve_experiment/run_exploration.ts
 ```
 
 전체 실험 계획은
