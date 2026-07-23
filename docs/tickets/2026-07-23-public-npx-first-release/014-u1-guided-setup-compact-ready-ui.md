@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -50,6 +50,15 @@ S1의 frozen Browser fixture만으로 Account screen, A Guided Setup, working, r
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
 - Manual or live smoke: Frozen fixture로 actual built UI를 1440×900과 1920×1080에서 열어 Account, confirmation, working, recovery와 Ready의 typography·focus·button hierarchy·overflow를 visual review한다.
 
+## Claim Evidence
+
+| Evidence | Result |
+| --- | --- |
+| Fixed handoff | `27b8b77d8d4b4bd16a0c1589e7accb8550954eb3` |
+| Predecessor | Ticket 003은 `State: completed`이고 fixed reviewed `spineTipSha` `c2e95616d8ac2461844525c69a7e0d714da3e710`가 fixed handoff의 ancestor다. |
+| Handoff integrity | Claim 직전 branch `codex/public-preview-u1-guided-ready-ui`의 clean `HEAD`가 coordinator가 지정한 fixed handoff와 exact match했다. |
+| Claim scope | `apps/chat-shell/src/**`와 이 ticket만 수정한다. Shared contract·fixture, package/lock, E2E, mobile, sibling branch는 변경하지 않는다. |
+
 ## Blocked By
 
 - [003-spine-s2-server-composition-stabilization.md](003-spine-s2-server-composition-stabilization.md) — Spine S2 — Server composition을 분리하고 Browser fail-closed oracle을 닫는다
@@ -73,7 +82,7 @@ S1의 frozen Browser fixture만으로 Account screen, A Guided Setup, working, r
 | owner | `U` — Product UI |
 | branch | `codex/public-preview-u1-guided-ready-ui` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/u1-guided-ready-ui` |
-| handoffSha | Claim 시 coordinator가 003의 fixed reviewed `spineTipSha`와 required integration gates가 green임을 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·branch name·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `27b8b77d8d4b4bd16a0c1589e7accb8550954eb3` — Ticket 003 fixed reviewed `spineTipSha` `c2e95616d8ac2461844525c69a7e0d714da3e710`와 required integration gate receipt를 포함해 coordinator가 W2에 발행한 clean integration HEAD다. |
 | writablePaths | `apps/chat-shell/src/**`; `docs/tickets/2026-07-23-public-npx-first-release/014-u1-guided-setup-compact-ready-ui.md`. `apps/chat-shell/package.json`, root manifest/lock와 `apps/chat-shell/e2e/**`는 제외한다. |
 | consumedContracts | S1 Browser-safe Account/Setup/Ready decoders와 stable fixture scenario roster; A→C prototype verdict; existing Chat Shell product API adapter |
 | predecessorEvidence | 003 fixed reviewed SHA, `spineTipSha`, S1 producer-consumer fixture conformance와 private-field leak receipt, root four-gate receipt |
