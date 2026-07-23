@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { getCustomer, refreshCustomerRiskStats } from '@/services/customers'
-import { createIncident, listIncidents } from '@/services/incidents'
-import { listReservations, transitionReservationStatus } from '@/services/reservations'
+import { getCustomer } from '@/services/customers'
+import { createIncidentAndRefresh, transitionReservationStatusAndRefresh } from '@/services/riskRefresh'
+import { listIncidents } from '@/services/incidents'
+import { listReservations } from '@/services/reservations'
 import { useAuthState } from '@/hooks/useAuth'
 import type { Incident, CustomerSearchResult, FirestoreTimestamp } from '@/types/schema'
 import RiskBadge from '@/components/RiskBadge'
@@ -38,6 +39,43 @@ const CustomerDetail = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const getIncidentTypeLabel = (type: Incident['type']): string => {
+    const labels: Record<Incident['type'], string> = {
+      abuse: '폭언·무례',
+      dispute: '환불·결제 분쟁',
+      late: '상습 지각',
+      unreasonable: '무리한 요구',
+    }
+    return labels[type]
+  }
+
+  const loadTimeline = async (customerId: string) => {
+    if (!user) return
+    const [incidentsData, reservationsData] = await Promise.all([
+      listIncidents(user.uid, customerId),
+      listReservations(user.uid, customerId),
+    ])
+
+    const events: TimelineEvent[] = [
+      ...reservationsData.map((res) => ({
+        id: res.id,
+        date: res.date,
+        type: `예약 ${res.status}`,
+        icon: '📅',
+        memo: res.memo,
+      })),
+      ...incidentsData.map((inc) => ({
+        id: `${inc.type}-${toDateString(inc.occurredAt)}`,
+        date: toDateString(inc.occurredAt),
+        type: getIncidentTypeLabel(inc.type),
+        icon: '⚠️',
+        memo: inc.memo,
+      })),
+    ]
+    events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    setTimeline(events)
+  }
+
   useEffect(() => {
     const loadData = async () => {
       if (!user || !id) {
@@ -51,33 +89,7 @@ const CustomerDetail = () => {
       try {
         const customerData = await getCustomer(user.uid, id)
         setCustomer(customerData)
-
-        const [incidentsData, reservationsData] = await Promise.all([
-          listIncidents(user.uid, id),
-          listReservations(user.uid, id),
-        ])
-
-        // 타임라인 병합
-        const events: TimelineEvent[] = [
-          ...reservationsData.map((res) => ({
-            id: res.customerId,
-            date: res.date,
-            type: `예약 ${res.status}`,
-            icon: '📅',
-            memo: res.memo,
-          })),
-          ...incidentsData.map((inc) => ({
-            id: inc.memo,
-            date: toDateString(inc.occurredAt),
-            type: getIncidentTypeLabel(inc.type),
-            icon: '⚠️',
-            memo: inc.memo,
-          })),
-        ]
-
-        // 날짜순 정렬
-        events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        setTimeline(events)
+        await loadTimeline(id)
       } catch (err) {
         console.error('Failed to load customer data:', err)
         setError('고객 정보를 불러오는데 실패했습니다')
@@ -89,16 +101,6 @@ const CustomerDetail = () => {
     loadData()
   }, [user, id])
 
-  const getIncidentTypeLabel = (type: Incident['type']): string => {
-    const labels: Record<Incident['type'], string> = {
-      abuse: '폭언·무례',
-      dispute: '환불·결제 분쟁',
-      late: '상습 지각',
-      unreasonable: '무리한 요구',
-    }
-    return labels[type]
-  }
-
   const handleIncidentSubmit = async (data: { type: Incident['type']; memo: string; occurredAt: string }) => {
     if (!user || !id) return
 
@@ -109,45 +111,33 @@ const CustomerDetail = () => {
       occurredAt: new Date(data.occurredAt),
     })
 
-    // 데이터 새로고침
     const updatedCustomer = await getCustomer(user.uid, id)
     setCustomer(updatedCustomer)
-    
-    // 타임라인 업데이트
-    const [incidentsData, reservationsData] = await Promise.all([
-      listIncidents(user.uid, id),
-      listReservations(user.uid, id),
-    ])
-    const events: TimelineEvent[] = [
-      ...reservationsData.map((res) => ({
-        id: res.customerId,
-        date: res.date,
-        type: `예약 ${res.status}`,
-        icon: '📅',
-        memo: res.memo,
-      })),
-      ...incidentsData.map((inc) => ({
-        id: inc.memo,
-        date: toDateString(inc.occurredAt),
-        type: getIncidentTypeLabel(inc.type),
-        icon: '⚠️',
-        memo: inc.memo,
-      })),
-    ]
-    events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    setTimeline(events)
+    await loadTimeline(id)
+    toast.success('사건 기록이 저장되었습니다')
   }
 
   const handleStatusChange = async (nextStatus: 'visited' | 'noShow' | 'cancelled') => {
-    if (!user || !id) return
+    if (!user || !id || !customer) return
+
+    // 예약 ID 찾기: 오늘 예약 중 pending/confirmed 상태 우선
+    const today = new Date()
+    const todayStr = today.toISOString().split('T')[0]
+    const reservations = await listReservations(user.uid, id)
+    const target = reservations.find(
+      (r) => r.date === todayStr && (r.status === 'pending' || r.status === 'confirmed'),
+    ) ?? reservations.find((r) => r.status === 'pending' || r.status === 'confirmed')
+
+    if (!target) {
+      toast.error('상태를 변경할 예약이 없습니다')
+      return
+    }
 
     try {
-      await transitionReservationStatusAndRefresh(user.uid, id, id, nextStatus)
-
-      // 고객 정보 새로고침
+      await transitionReservationStatusAndRefresh(user.uid, id, target.id, nextStatus)
       const updatedCustomer = await getCustomer(user.uid, id)
       setCustomer(updatedCustomer)
-      
+      await loadTimeline(id)
       toast.success(`상태가 변경되었습니다: ${nextStatus}`)
     } catch (error) {
       toast.error('상태 변경 실패: ' + (error as Error).message)
