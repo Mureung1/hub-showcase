@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import type { MusicRecordDraft, SpotifyTrack } from "../types/music";
+import { validateMusicRecordInput } from "../validation/musicRecordValidation";
 
 interface MusicRecordFormProps {
   onSave: (draft: MusicRecordDraft) => Promise<void>;
@@ -7,32 +8,11 @@ interface MusicRecordFormProps {
   getToday?: () => Date;
 }
 
-interface FormErrors {
-  track?: string;
-  emotion?: string;
-}
-
 export function toLocalDateKey(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
-
-function validate(selectedTrack: SpotifyTrack | null, emotion: string): FormErrors {
-  const errors: FormErrors = {};
-
-  if (!selectedTrack) {
-    errors.track = "오늘을 대표하는 음악을 선택해주세요.";
-  }
-
-  if (!emotion.trim()) {
-    errors.emotion = "감정을 한 줄로 남겨주세요.";
-  } else if (emotion.trim().length > 160) {
-    errors.emotion = "감정은 160자 이하로 입력해주세요.";
-  }
-
-  return errors;
 }
 
 export function MusicRecordForm({
@@ -45,7 +25,7 @@ export function MusicRecordForm({
   const [searchResults, setSearchResults] = useState<SpotifyTrack[]>([]);
   const [selectedTrack, setSelectedTrack] = useState<SpotifyTrack | null>(null);
   const [emotion, setEmotion] = useState("");
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [errors, setErrors] = useState<ReturnType<typeof validateMusicRecordInput>>({});
   const [status, setStatus] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -146,7 +126,7 @@ export function MusicRecordForm({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const nextErrors = validate(selectedTrack, emotion);
+    const nextErrors = validateMusicRecordInput(selectedTrack, emotion);
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0 || !selectedTrack) return;

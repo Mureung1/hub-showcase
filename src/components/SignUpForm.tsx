@@ -1,37 +1,17 @@
 import { FormEvent, useState } from "react";
 import type { SignUpInput, SignUpResult } from "../services/authService";
+import { validateSignUpInput } from "../validation/signUpValidation";
 
 interface SignUpFormProps {
   onSignUp: (input: SignUpInput) => Promise<SignUpResult>;
   onMoveToLogin: (notice?: string) => void;
 }
 
-interface FieldErrors {
-  email?: string;
-  password?: string;
-  nickname?: string;
-}
-
-function validate(email: string, password: string, nickname: string) {
-  const errors: FieldErrors = {};
-
-  if (!email.trim()) errors.email = "이메일을 입력해 주세요.";
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "올바른 이메일 형식으로 입력해 주세요.";
-
-  if (!password) errors.password = "비밀번호를 입력해 주세요.";
-  else if (password.length < 8) errors.password = "비밀번호는 8자 이상이어야 해요.";
-
-  if (!nickname.trim()) errors.nickname = "닉네임을 입력해 주세요.";
-  else if (nickname.trim().length < 2 || nickname.trim().length > 20) errors.nickname = "닉네임은 2~20자로 입력해 주세요.";
-
-  return errors;
-}
-
 export function SignUpForm({ onSignUp, onMoveToLogin }: SignUpFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
-  const [errors, setErrors] = useState<FieldErrors>({});
+  const [errors, setErrors] = useState<ReturnType<typeof validateSignUpInput>>({});
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,7 +19,7 @@ export function SignUpForm({ onSignUp, onMoveToLogin }: SignUpFormProps) {
     event.preventDefault();
     if (isSubmitting) return;
 
-    const nextErrors = validate(email, password, nickname);
+    const nextErrors = validateSignUpInput(email, password, nickname);
     setErrors(nextErrors);
     setFormError("");
     if (Object.keys(nextErrors).length > 0) return;

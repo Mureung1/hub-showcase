@@ -30,7 +30,8 @@ SWIM은 **음악을 중심으로 하루를 기록하는 새로운 방식의 SNS*
 - 새로고침 후에도 데이터 유지
 
 ※ 현재 버전은 핵심 기능을 검증하기 위한 **Demo Version**입니다.
-이메일·비밀번호·닉네임 회원가입과 기본 프로필 생성까지 구현되어 있으며, 로그인과 세션 유지는 다음 작업 범위입니다.
+이메일·비밀번호·닉네임 회원가입, 로그인·로그아웃, 새로고침 후 세션 유지와 기본 프로필 조회가 구현되어 있습니다.
+음악 기록은 로그인한 사용자의 access token으로 생성·조회되며 Auth 사용자 ID와 연결됩니다.
 
 ---
 
@@ -82,6 +83,8 @@ SPOTIFY_CLIENT_SECRET=
 
 회원가입 전에 Supabase SQL Editor에서 `server/supabase/profiles.sql`을 실행해 `profiles` 테이블과 Auth 사용자 생성 트리거를 적용합니다. 새 사용자의 닉네임은 Auth 메타데이터에서 전달되며, 트리거가 Auth 사용자와 동일한 ID의 프로필을 한 건 생성합니다.
 
+이후 `server/supabase/music_records.sql`을 실행해 `music_records.user_id` 외래키와 인증 RLS 정책을 적용합니다. 기존 익명 기록은 삭제하지 않고 `user_id = null`로 보존되며 사용자별 앱 조회에서는 제외됩니다. 소유자를 확인할 수 있을 때만 별도 SQL로 백필해야 합니다.
+
 ---
 
 # 🛠️ 기술 스택
@@ -120,8 +123,14 @@ SPOTIFY_CLIENT_SECRET=
 
 | 기능 | Method | URL |
 |------|--------|-----|
-| 음악 기록 조회 | GET | `/api/music-records` |
-| 음악 기록 생성 | POST | `/api/music-records` |
+| 내 음악 기록 조회 | GET | `/api/music-records` |
+| 내 음악 기록 생성 | POST | `/api/music-records` |
+
+두 요청 모두 다음 인증 헤더가 필요합니다.
+
+```http
+Authorization: Bearer <supabase-access-token>
+```
 
 ### POST Request
 
@@ -132,6 +141,30 @@ SPOTIFY_CLIENT_SECRET=
   "emotionText": "오늘 하루를 위로받은 기분"
 }
 ```
+
+`userId`는 요청 본문으로 받지 않습니다. 서버가 검증한 access token의 사용자 ID만 `music_records.user_id`로 저장합니다.
+
+### Response
+
+```json
+{
+  "data": {
+    "id": 1,
+    "userId": "auth-user-id",
+    "songTitle": "Ditto",
+    "artistName": "NewJeans",
+    "emotionText": "오늘 하루를 위로받은 기분",
+    "recordDate": "2026-07-23",
+    "author": {
+      "id": "auth-user-id",
+      "nickname": "고요한수영",
+      "avatarUrl": null
+    }
+  }
+}
+```
+
+토큰이 없거나 유효하지 않으면 `401 UNAUTHORIZED`를 반환합니다.
 
 ---
 

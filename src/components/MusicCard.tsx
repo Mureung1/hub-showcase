@@ -1,24 +1,17 @@
 import type { MusicRecord } from "../types/music";
+import { formatRecordDate } from "../utils/formatRecordDate";
 
 interface MusicCardProps {
   record: MusicRecord;
   onToggleLike: (id: string | number) => void;
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(new Date(`${value}T00:00:00`));
-}
-
 export function MusicCard({ record, onToggleLike }: MusicCardProps) {
   return (
     <article className="music-card">
       <div className="card-date">
-        <span>Music Record</span>
-        <time dateTime={record.recordDate}>{formatDate(record.recordDate)}</time>
+        <span>{record.author?.nickname ?? "Music Record"}</span>
+        <time dateTime={record.recordDate}>{formatRecordDate(record.recordDate)}</time>
       </div>
 
       {record.albumImageUrl ? (

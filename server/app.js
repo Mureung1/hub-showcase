@@ -15,7 +15,11 @@ export function createApp(options = {}) {
 
   app.use(
     "/api/music-records",
-    createMusicRecordsRouter(options.getSupabase, options.getCurrentDate),
+    createMusicRecordsRouter({
+      getSupabase: options.getSupabase,
+      getAuthenticatedSupabase: options.getAuthenticatedSupabase,
+      getCurrentDate: options.getCurrentDate,
+    }),
   );
   app.use("/api/spotify", createSpotifyRouter(options.searchSpotifyTracks));
 

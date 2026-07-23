@@ -20,3 +20,23 @@ export function getSupabaseClient() {
 
   return supabaseClient;
 }
+
+export function getAuthenticatedSupabaseClient(accessToken) {
+  const { SUPABASE_URL, SUPABASE_ANON_KEY } = process.env;
+
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error("SUPABASE_URL과 SUPABASE_ANON_KEY 환경변수가 필요합니다.");
+  }
+
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}

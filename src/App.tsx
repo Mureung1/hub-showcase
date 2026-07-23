@@ -2,12 +2,16 @@ import { useCallback, useEffect, useState } from "react";
 import { MusicCard } from "./components/MusicCard";
 import { MusicRecordForm } from "./components/MusicRecordForm";
 import { AuthScreen } from "./components/AuthScreen";
+import type { Session } from "@supabase/supabase-js";
+import { getCurrentSession, getProfile, signOut, subscribeToAuthChanges } from "./services/authService";
+import type { AuthProfile } from "./services/authService";
 import type { MusicRecord, MusicRecordDraft, SpotifyTrack } from "./types/music";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 interface ApiMusicRecord {
   id: string | number;
+  userId: string;
   spotifyTrackId: string | null;
   songTitle: string;
   artistName: string;
@@ -17,6 +21,11 @@ interface ApiMusicRecord {
   emotionText: string;
   recordDate: string;
   createdAt: string;
+  author: {
+    id: string;
+    nickname: string;
+    avatarUrl: string | null;
+  } | null;
 }
 
 interface AppProps {
@@ -36,6 +45,7 @@ function toMusicRecord(record: ApiMusicRecord): MusicRecord {
     emotion: record.emotionText,
     recordDate: record.recordDate,
     liked: false,
+    author: record.author ?? null,
   };
 }
 
@@ -52,13 +62,59 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
   const [records, setRecords] = useState<MusicRecord[]>(initialRecords ?? []);
   const [isLoading, setIsLoading] = useState(initialRecords === undefined);
   const [loadError, setLoadError] = useState("");
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<AuthProfile | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(initialView === "auth");
+  const [authError, setAuthError] = useState("");
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const applySession = useCallback(async (nextSession: Session | null) => {
+    setSession(nextSession);
+    setAuthError("");
+
+    if (!nextSession) {
+      setProfile(null);
+      setIsAuthLoading(false);
+      return;
+    }
+
+    try {
+      setProfile(await getProfile(nextSession.user.id));
+    } catch (error) {
+      setProfile(null);
+      setAuthError(error instanceof Error ? error.message : "프로필을 불러오지 못했어요.");
+    } finally {
+      setIsAuthLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (initialView !== "auth") return;
+
+    const unsubscribe = subscribeToAuthChanges((nextSession) => {
+      applySession(nextSession).catch(() => undefined);
+    });
+
+    getCurrentSession()
+      .then(applySession)
+      .catch((error) => {
+        setAuthError(error instanceof Error ? error.message : "로그인 상태를 확인하지 못했어요.");
+        setIsAuthLoading(false);
+      });
+
+    return unsubscribe;
+  }, [applySession, initialView]);
 
   const loadRecords = useCallback(async () => {
     setIsLoading(true);
     setLoadError("");
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/music-records`);
+      const response = session?.access_token
+        ? await fetch(`${apiBaseUrl}/api/music-records`, {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          })
+        : await fetch(`${apiBaseUrl}/api/music-records`);
       if (!response.ok) {
         throw new Error(await getErrorMessage(response, "음악 기록을 불러오지 못했어요."));
       }
@@ -71,13 +127,14 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [session?.access_token]);
 
   useEffect(() => {
-    if (initialRecords === undefined) {
+    const canLoadRecords = initialView === "diary" || Boolean(session);
+    if (initialRecords === undefined && canLoadRecords) {
       loadRecords().catch(() => undefined);
     }
-  }, [initialRecords, loadRecords]);
+  }, [initialRecords, initialView, loadRecords, session]);
 
   const searchTracks = useCallback(async (keyword: string, signal: AbortSignal): Promise<SpotifyTrack[]> => {
     const response = await fetch(
@@ -95,7 +152,12 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
   const saveRecord = async (draft: MusicRecordDraft) => {
     const response = await fetch(`${apiBaseUrl}/api/music-records`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {}),
+      },
       body: JSON.stringify({
         spotifyTrackId: draft.spotifyTrackId,
         songTitle: draft.title,
@@ -122,8 +184,27 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
     );
   };
 
-  if (initialView === "auth") {
-    return <AuthScreen />;
+  const handleSignOut = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    setAuthError("");
+
+    try {
+      await signOut();
+      await applySession(null);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : "로그아웃하지 못했어요.");
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
+  if (initialView === "auth" && isAuthLoading) {
+    return <main className="auth-loading" role="status"><p className="eyebrow">SWIM</p><strong>당신의 음악 일기를 여는 중...</strong></main>;
+  }
+
+  if (initialView === "auth" && !session) {
+    return <AuthScreen initialNotice={authError} onAuthenticated={(nextSession) => applySession(nextSession).catch(() => undefined)} />;
   }
 
   return (
@@ -133,8 +214,13 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
           <p className="eyebrow">SWIM</p>
           <strong>One Day. One Song. One Memory.</strong>
         </div>
-        <span className="header-note">Music Diary</span>
+        <div className="header-account">
+          <span>{profile?.nickname ?? session?.user.email ?? "Music Diary"}</span>
+          <button type="button" onClick={() => handleSignOut().catch(() => undefined)} disabled={isSigningOut}>{isSigningOut ? "나가는 중..." : "로그아웃"}</button>
+        </div>
       </header>
+
+      {authError && <p className="app-auth-error" role="alert">{authError}</p>}
 
       <section className="intro" aria-labelledby="page-title">
         <p className="page-kicker">Record your day with music.</p>
