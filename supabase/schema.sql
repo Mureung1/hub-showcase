@@ -18,11 +18,20 @@ create table if not exists public.subsidies (
   apply_where    text        not null,          -- Subsidy.where (예약어 회피)
   where_url      text,
   contact        text        not null,
+  region         text[]      not null default '{}', -- 이슈 #43: hashtags 기반 시/도 배열.
+                                                      -- 전국 대상 공고는 전체 시/도가 다 담기므로
+                                                      -- match()에서 profile.region이 배열에
+                                                      -- 포함되는지만 확인하면 전국/광역권/단일
+                                                      -- 지역이 같은 방식으로 매칭된다. 빈 배열은
+                                                      -- "지역 정보 없음"(hashtags 미제공 등).
   created_at     timestamptz not null default now()
 );
 
 -- 서버는 service_role 키로 접근하므로 RLS를 켜두되 anon 정책은 두지 않는다.
 alter table public.subsidies enable row level security;
+
+-- 이슈 #43: 이미 배포된 테이블은 위 create table이 스킵되므로 별도로 컬럼을 추가한다.
+alter table public.subsidies add column if not exists region text[] not null default '{}';
 
 -- 이슈 #7: 사용자가 제출한 매칭 조건(OnboardingProfile) 저장
 -- 컬럼은 server/src/routes/match.ts 의 profileSchema 와 1:1 매핑한다.

@@ -173,6 +173,7 @@ isProject: false
 리스크 표 검토 중 완료 기준이 있는 미착수 작업 2건을 이슈로 등록했다. 아직 시작 전.
 
 ### [#43] 매칭 조건 필터 + 점수 알고리즘 구현
+- **계획 문서**: [`docs/week3/issue-43-match-plan.md`](week3/issue-43-match-plan.md) — **구현 완료 (2026-07-23)**, region 조건 가점/감점 반영(±20, cap 0~100), industry는 실크롤링 0.2% 매칭으로 반영 안 함. 남은 미구현은 커밋/PR
 - **목표**: 온보딩 프로필(업종/지역/직원수/연매출/업력) 기준 조건 필터링 + 매칭 점수 계산
 - **작업**
   - [ ] `subsidies` 스키마에 업종/지역 등 구조화 컬럼 추가 여부 결정
@@ -183,6 +184,7 @@ isProject: false
   실제로 계산되어 반환된다.
 
 ### [#44] bsnsSumryCn 구조화 추출 (amount/qualifications/documents)
+- **계획 문서**: [`docs/week3/issue-44-amount-extraction-plan.md`](week3/issue-44-amount-extraction-plan.md) — **구현 완료 (2026-07-23)**, amount fallback 100%→76.9%(346/1500건 채움), 남은 미구현은 커밋/PR
 - **목표**: 크롤러가 가져오는 사업개요(`bsnsSumryCn`)에서 지원금액·자격요건·서류를 추출해
   #28~#30에서 정한 fallback 문구를 실제 값으로 대체
 - **작업**
