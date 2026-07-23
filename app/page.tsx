@@ -1,56 +1,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-
-type Item = {
-  id: number;
-  title: string | null;
-  original_url: string | null;
-  source_platform: string | null;
-  category_main: string | null;
-  created_at: string;
-};
-
-function isUrl(text: string) {
-  try {
-    new URL(text.trim());
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function guessSourcePlatform(url: string) {
-  if (url.includes("youtube.com") || url.includes("youtu.be")) return "youtube";
-  if (url.includes("instagram.com")) return "instagram";
-  if (url.includes("twitter.com") || url.includes("x.com")) return "twitter";
-  if (url.includes("naver.com")) return "naver";
-  return "web";
-}
+import Link from "next/link";
+import ItemCard from "./ItemCard";
+import {
+  apiBaseUrl,
+  getRequestErrorMessage,
+  readApiError,
+  type DeleteItemResponse,
+  type Item,
+} from "../lib/items";
 
 export default function Home() {
   const [input, setInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   async function fetchItems() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("items")
-      .select(
-        "id, title, original_url, source_platform, category_main, created_at"
-      )
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    if (error) {
-      console.error(error);
-    } else {
-      setItems(data ?? []);
+    setError(null);
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/items`);
+      if (!response.ok) throw new Error(await readApiError(response));
+      setItems(await response.json());
+    } catch (requestError) {
+      setError(getRequestErrorMessage(requestError, "저장 목록을 불러오지 못했습니다."));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -60,26 +39,53 @@ export default function Home() {
   async function handleSave() {
     if (!input.trim()) return;
     setSaving(true);
+    setError(null);
 
-    const trimmed = input.trim();
-    const urlDetected = isUrl(trimmed);
-
-    const { error } = await supabase.from("items").insert({
-      type: urlDetected ? "link" : "text",
-      original_url: urlDetected ? trimmed : null,
-      title: urlDetected ? trimmed : trimmed.slice(0, 50),
-      source_platform: urlDetected ? guessSourcePlatform(trimmed) : "manual",
-      status: "unread",
-    });
-
-    if (error) {
-      console.error(error);
-      alert("저장에 실패했어요. 콘솔을 확인해주세요.");
-    } else {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: input.trim() }),
+      });
+      if (!response.ok) throw new Error(await readApiError(response));
+      const savedItem: Item = await response.json();
+      setItems((currentItems) => [savedItem, ...currentItems]);
       setInput("");
-      await fetchItems();
+    } catch (requestError) {
+      setError(getRequestErrorMessage(requestError, "항목을 저장하지 못했습니다."));
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
+  }
+
+  async function updateItem(id: number, title: string) {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/items/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      if (!response.ok) throw new Error(await readApiError(response));
+      const updatedItem: Item = await response.json();
+      setItems((currentItems) =>
+        currentItems.map((item) => (item.id === updatedItem.id ? updatedItem : item))
+      );
+    } catch (requestError) {
+      throw new Error(getRequestErrorMessage(requestError, "항목을 수정하지 못했습니다."));
+    }
+  }
+
+  async function deleteItem(id: number) {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/items/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error(await readApiError(response));
+      const result: DeleteItemResponse = await response.json();
+      setItems((currentItems) => currentItems.filter((item) => item.id !== result.id));
+    } catch (requestError) {
+      throw new Error(getRequestErrorMessage(requestError, "항목을 삭제하지 못했습니다."));
+    }
   }
 
   return (
@@ -104,6 +110,12 @@ export default function Home() {
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                e.preventDefault();
+                if (!saving && input.trim()) void handleSave();
+              }
+            }}
             placeholder="링크나 텍스트를 붙여넣으세요"
             rows={3}
             className="w-full resize-none outline-none text-sm text-ink placeholder:text-muted bg-transparent"
@@ -136,6 +148,8 @@ export default function Home() {
 
         {loading && <p className="text-sm text-muted">불러오는 중...</p>}
 
+        {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
+
         {!loading && items.length === 0 && (
           <p className="text-sm text-muted">
             아직 저장한 게 없어요. 위 입력창에 링크나 텍스트를 붙여넣어보세요.
@@ -144,23 +158,12 @@ export default function Home() {
 
         <ul className="space-y-3">
           {items.map((item) => (
-            <li
+            <ItemCard
               key={item.id}
-              className="flex items-center justify-between bg-white/60 rounded-xl px-3 py-3"
-            >
-              <div className="min-w-0">
-                <p className="text-sm text-ink font-medium truncate">
-                  {item.title || "(제목 없음)"}
-                </p>
-                <p className="text-xs text-muted">
-                  {item.source_platform ?? "manual"} ·{" "}
-                  {new Date(item.created_at).toLocaleDateString("ko-KR")}
-                </p>
-              </div>
-              <span className="text-xs text-accentDark bg-accent/10 rounded-full px-2 py-1 shrink-0 ml-2">
-                {item.category_main ?? "미분류"}
-              </span>
-            </li>
+              item={item}
+              onUpdate={updateItem}
+              onDelete={deleteItem}
+            />
           ))}
         </ul>
       </section>
@@ -168,8 +171,10 @@ export default function Home() {
       {/* 하단 네비게이션 */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-creamDeep">
         <div className="max-w-md mx-auto flex justify-around py-3 text-xs text-muted">
-          <span className="text-accentDark font-medium">홈</span>
-          <span>카테고리</span>
+          <Link href="/" className="text-accentDark font-medium">
+            홈
+          </Link>
+          <Link href="/categories">카테고리</Link>
           <span>아카이브</span>
           <span>설정</span>
         </div>
