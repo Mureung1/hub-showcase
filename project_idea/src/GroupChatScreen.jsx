@@ -1,41 +1,85 @@
 import { useState, useEffect } from "react";
-
-const MESSAGES = [
-  { fromMe: false, text: "안녕하세요! 같이 타요 :)", time: "오후 8:41" },
-  { fromMe: true, text: "네 반가워요! 정문 앞에서 만날까요?", time: "오후 8:42" },
-  { fromMe: false, text: "좋아요, 그 시간에 뵐게요", time: "오후 8:43" },
-];
+import TaxiLoader from "./TaxiLoader";
 
 const AVATAR_COLORS = ["#C8102E", "#2F8F5B", "#C98A1F", "#5B6472"];
 
+function formatMessageTime(iso) {
+  return new Date(iso).toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" });
+}
+
 function GroupChatScreen({ candidate, onComplete }) {
-  const [groupId, setGroupId] = useState(candidate?.groupId ?? null);
+  const groupId = candidate?.groupId ?? null;
   const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(!!candidate?.groupId);
+  const [loading, setLoading] = useState(!!groupId);
   const [confirmed, setConfirmed] = useState(false);
   const [respondError, setRespondError] = useState(null);
-  const [checkingSolo, setCheckingSolo] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [messageText, setMessageText] = useState("");
+  const [sending, setSending] = useState(false);
 
   const myRequestId = candidate?.myRequestId;
 
   useEffect(() => {
     if (!groupId) return;
-    setLoading(true);
-    fetch(`http://localhost:4000/api/requests/group/${groupId}`)
-      .then((res) => res.json())
-      .then(setMembers)
-      .finally(() => setLoading(false));
+
+    function loadMembers() {
+      fetch(`http://localhost:4000/api/requests/group/${groupId}`)
+        .then((res) => res.json())
+        .then(setMembers)
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+
+    loadMembers();
+    const interval = setInterval(loadMembers, 5000);
+    return () => clearInterval(interval);
   }, [groupId]);
 
-  async function refreshSolo() {
-    setCheckingSolo(true);
+  useEffect(() => {
+    if (!myRequestId) return;
+
+    function sendHeartbeat() {
+      fetch(`http://localhost:4000/api/requests/${myRequestId}/heartbeat`, { method: "POST" }).catch(() => {});
+    }
+
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 30000);
+    return () => clearInterval(interval);
+  }, [myRequestId]);
+
+  useEffect(() => {
+    if (!groupId) return;
+
+    function loadMessages() {
+      fetch(`http://localhost:4000/api/requests/group/${groupId}/messages`)
+        .then((res) => res.json())
+        .then(setMessages)
+        .catch(() => {});
+    }
+
+    loadMessages();
+    const interval = setInterval(loadMessages, 3000);
+    return () => clearInterval(interval);
+  }, [groupId]);
+
+  async function handleSend() {
+    const text = messageText.trim();
+    if (!text || sending) return;
+
+    setSending(true);
     try {
-      const row = await fetch(`http://localhost:4000/api/requests/${myRequestId}`).then((r) => r.json());
-      if (row.group_id) {
-        setGroupId(row.group_id);
+      const res = await fetch(`http://localhost:4000/api/requests/group/${groupId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId: myRequestId, text }),
+      });
+      const body = await res.json();
+      if (res.ok) {
+        setMessages((prev) => [...prev, body]);
+        setMessageText("");
       }
     } finally {
-      setCheckingSolo(false);
+      setSending(false);
     }
   }
 
@@ -75,35 +119,7 @@ function GroupChatScreen({ candidate, onComplete }) {
   if (loading) {
     return (
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <p style={{ fontSize: 13, color: "#8A7A76" }}>불러오는 중...</p>
-      </div>
-    );
-  }
-
-  if (!groupId) {
-    return (
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center", padding: "0 28px" }}>
-        <p style={{ fontSize: 15, fontWeight: 700 }}>1/4명 모임</p>
-        <p style={{ fontSize: 13, color: "#8A7A76", marginTop: 8 }}>
-          아직 아무도 신청하지 않았어요. 다른 학생이 신청하면 알려드릴게요.
-        </p>
-        <button
-          onClick={refreshSolo}
-          disabled={checkingSolo}
-          style={{
-            marginTop: 20,
-            padding: 12,
-            borderRadius: 999,
-            fontSize: 13,
-            fontWeight: 700,
-            border: "1px solid rgba(36,21,18,0.12)",
-            background: "#fff",
-            color: "#241512",
-            cursor: checkingSolo ? "default" : "pointer",
-          }}
-        >
-          {checkingSolo ? "확인 중..." : "새로고침"}
-        </button>
+        <TaxiLoader label="동행자 정보를 불러오는 중..." />
       </div>
     );
   }
@@ -161,7 +177,15 @@ function GroupChatScreen({ candidate, onComplete }) {
 
       {pendingOthers.map((p) => (
         <div key={p.id} style={{ background: "#fff", border: "1px solid rgba(36,21,18,0.08)", borderRadius: 14, padding: 14, marginBottom: 12 }}>
-          <p style={{ fontSize: 13, fontWeight: 700, margin: "0 0 10px" }}>새로운 동행 신청이 왔어요</p>
+          <p style={{ fontSize: 13, fontWeight: 700, margin: "0 0 4px", display: "flex", alignItems: "center", gap: 6 }}>
+            새로운 동행 신청이 왔어요
+            {p.activity?.isActive && (
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2F8F5B", display: "inline-block" }} />
+            )}
+          </p>
+          {p.activity && (
+            <p style={{ fontSize: 11, color: p.activity.isActive ? "#2F8F5B" : "#8A7A76", margin: "0 0 10px" }}>{p.activity.label}</p>
+          )}
           <div style={{ display: "flex", gap: 8 }}>
             <button
               onClick={() => respond(p.id, true)}
@@ -180,25 +204,69 @@ function GroupChatScreen({ candidate, onComplete }) {
         </div>
       ))}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-        {MESSAGES.map((m, i) => (
-          <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: m.fromMe ? "flex-end" : "flex-start" }}>
-            <div
-              style={{
-                background: m.fromMe ? "#C8102E" : "#EFE7E3",
-                color: m.fromMe ? "#fff" : "#241512",
-                padding: "8px 14px",
-                borderRadius: 16,
-                fontSize: 13,
-                maxWidth: "75%",
-                textAlign: "left",
-              }}
-            >
-              {m.text}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+        {messages.length === 0 && (
+          <p style={{ fontSize: 12, color: "#8A7A76", textAlign: "center", margin: "12px 0" }}>
+            아직 메시지가 없어요. 먼저 인사해보세요!
+          </p>
+        )}
+        {messages.map((m) => {
+          const fromMe = m.request_id === myRequestId;
+          return (
+            <div key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: fromMe ? "flex-end" : "flex-start" }}>
+              <div
+                style={{
+                  background: fromMe ? "#C8102E" : "#EFE7E3",
+                  color: fromMe ? "#fff" : "#241512",
+                  padding: "8px 14px",
+                  borderRadius: 16,
+                  fontSize: 13,
+                  maxWidth: "75%",
+                  textAlign: "left",
+                }}
+              >
+                {m.text}
+              </div>
+              <span style={{ fontSize: 10, color: "#8A7A76", margin: "2px 4px 0" }}>{formatMessageTime(m.created_at)}</span>
             </div>
-            <span style={{ fontSize: 10, color: "#8A7A76", margin: "2px 4px 0" }}>{m.time}</span>
-          </div>
-        ))}
+          );
+        })}
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <input
+          value={messageText}
+          onChange={(e) => setMessageText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSend();
+          }}
+          placeholder="메시지를 입력하세요"
+          style={{
+            flex: 1,
+            padding: 10,
+            borderRadius: 999,
+            border: "1px solid rgba(36,21,18,0.12)",
+            fontSize: 13,
+            boxSizing: "border-box",
+          }}
+        />
+        <button
+          onClick={handleSend}
+          disabled={sending || !messageText.trim()}
+          style={{
+            padding: "10px 16px",
+            borderRadius: 999,
+            border: "none",
+            background: "#C8102E",
+            color: "#fff",
+            fontWeight: 700,
+            fontSize: 13,
+            cursor: sending || !messageText.trim() ? "default" : "pointer",
+            opacity: sending || !messageText.trim() ? 0.6 : 1,
+          }}
+        >
+          전송
+        </button>
       </div>
 
       {!isFull && !confirmed && (

@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "title": "RideSplit",
+  "summary": "대학생이 같은 방향·시간대로 이동하는 동행자를 찾아 택시를 나눠 타도록 매칭해주는 서비스입니다.",
+  "githubUser": "gyu-young-04(장규영)",
+  "demoUrl": "https://gyu-young-04.github.io/hub/prototype/",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/candidates.webp",
+    "screenshots/chat.webp"
+  ],
+  "problem": "대학생은 이동이 필요한 순간 주변에 방향이 겹치는 동행자가 있어도 이를 알 방법이 없어서, 비용을 절감할 수 있는 택시 동승 기회를 놓치고 있습니다.",
+  "targetUsers": [
+    "같은 방향·시간대로 이동하는 대학생",
+    "통학·심야 시간대 택시비를 아끼고 싶은 학생"
+  ],
+  "features": [
+    "같은 거점 조합과 희망 시간(±15분) 기준으로 동행 후보를 자동으로 보여줍니다.",
+    "동행 신청과 상대방 수락 절차를 거쳐 그룹을 확정합니다.",
+    "그룹 채팅으로 만남 장소와 시간을 조율하고, 예상 택시비를 인원수로 나눠 미리 보여줍니다.",
+    "동성끼리만 매칭을 원하는 선호 필터와, 상대방의 최근 활동 여부를 함께 확인할 수 있습니다."
+  ],
+  "featureTags": [
+    "매칭 알고리즘",
+    "동행 신청/수락",
+    "그룹 채팅",
+    "비용 분담",
+    "선호 필터"
+  ],
+  "techStack": [
+    "React",
+    "Vite",
+    "Express",
+    "Supabase (PostgreSQL, Auth)",
+    "Vitest"
+  ],
+  "techHighlights": [
+    "핵심 매칭 로직(성별 필터, 도착 소요시간 기반 우선순위, 활동 상태 판정)을 순수 함수로 분리해 Vitest로 TDD(Red-Green) 방식으로 구현했습니다.",
+    "Express API와 Supabase(Postgres)를 연결해 매칭 요청·그룹·채팅 데이터를 관리하고, 하트비트·폴링으로 그룹 채팅과 참여 현황을 실시간에 가깝게 갱신합니다.",
+    "동시에 여러 명이 신청할 때 정원을 초과하지 않도록, 저장 직후 재검증 후 되돌리는 방식으로 동시성 문제를 완화했습니다."
+  ],
+  "developmentWithAI": "저는 핵심 문제(택시 동승 매칭)와 매칭 규칙(거점·시간대, 성별 필터, 우선순위 기준)을 정했습니다. AI는 요구사항을 작업 단위로 나누고 테스트 케이스를 먼저 제안한 뒤 구현 초안을 만들었습니다. 저는 실제 서버·DB로 결과를 검증하고, 화면에서 직접 확인하며 방향을 수정했습니다.",
+  "agent": {
+    "summary": "기능 구현은 TDD로, 배선 후 검증은 Agent로 진행했습니다.",
+    "agentTools": [
+      {
+        "type": "skill",
+        "name": "feature-slice",
+        "purpose": "기능 요구사항을 하루 안에 끝낼 작업 단위로 쪼개고 우선순위(P0/P1/P2)를 매깁니다."
+      },
+      {
+        "type": "agent",
+        "name": "vertical-slice-verifier",
+        "purpose": "구현한 API가 실제 서버·DB에서 요구사항대로 동작하는지 curl로 직접 검증합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "작은 기능 단위로 요구사항 정리",
+          "테스트 케이스 목록 계획 및 검토",
+          "Vitest로 Red(실패) 확인 후 Green(구현)",
+          "실제 API·화면에 배선",
+          "vertical-slice-verifier Agent로 서버·DB 검증"
+        ]
+      },
+      {
+        "name": "PR 협업 Workflow",
+        "steps": [
+          "PR 작성",
+          "변경 내용과 발견한 이슈 정리",
+          "리뷰 의견 반영",
+          "최종 결과 확인"
+        ]
+      }
+    ]
+  }
+}

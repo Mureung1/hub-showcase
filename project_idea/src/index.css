@@ -26,6 +26,15 @@ body {
   filter: brightness(0.85);
 }
 
+@keyframes taxi-drive {
+  0% {
+    transform: translateX(-10%);
+  }
+  100% {
+    transform: translateX(calc(100% + 10px));
+  }
+}
+
 @media (min-width: 431px) {
   body {
     background:

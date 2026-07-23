@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import TaxiLoader from "./TaxiLoader";
 
 const AVATAR_COLORS = ["#C8102E", "#2F8F5B", "#C98A1F", "#5B6472"];
 
@@ -20,6 +21,7 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
       departureHub: myRequest.departureHub,
       destHub: myRequest.destHub,
       time: myRequest.time,
+      myRequestId: myRequest.id,
     });
 
     fetch(`http://localhost:4000/api/requests?${params}`)
@@ -34,15 +36,43 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
       .finally(() => setLoading(false));
   }, [myRequest]);
 
-  function handleStartNew() {
+  useEffect(() => {
+    if (!myRequest) return;
+
+    function sendHeartbeat() {
+      fetch(`http://localhost:4000/api/requests/${myRequest.id}/heartbeat`, { method: "POST" }).catch(() => {});
+    }
+
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 30000);
+    return () => clearInterval(interval);
+  }, [myRequest]);
+
+  async function handleStartNew() {
     if (joinedId !== null) return;
-    setJoinedId(myRequest.id);
-    onJoin({
-      groupId: null,
-      groupCount: 1,
-      myRequestId: myRequest.id,
-      pending: false,
-    });
+    setJoinError(null);
+
+    try {
+      const res = await fetch(`http://localhost:4000/api/requests/${myRequest.id}/create-room`, {
+        method: "POST",
+      });
+      const body = await res.json();
+
+      if (!res.ok) {
+        setJoinError(body.error ?? "방 만들기에 실패했어요.");
+        return;
+      }
+
+      setJoinedId(myRequest.id);
+      onJoin({
+        groupId: body.groupId,
+        groupCount: 1,
+        myRequestId: myRequest.id,
+        pending: false,
+      });
+    } catch {
+      setJoinError("방 만들기에 실패했어요. 서버가 켜져 있는지 확인해주세요.");
+    }
   }
 
   async function handleClick(c) {
@@ -88,7 +118,7 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
         같은 방향 · 희망 시간 ±15분 이내로 조회된 실제 등록 데이터예요
       </p>
 
-      {loading && <p style={{ fontSize: 13, color: "#8A7A76", textAlign: "center", margin: "40px 0" }}>불러오는 중...</p>}
+      {loading && <TaxiLoader label="후보를 찾는 중..." />}
 
       {error && <p style={{ fontSize: 13, color: "#C8102E", textAlign: "center", margin: "40px 0" }}>{error}</p>}
 
@@ -131,11 +161,19 @@ function CandidateListScreen({ myRequest, onBack, onJoin }) {
               ?
             </div>
             <div style={{ flex: 1, textAlign: "left" }}>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>동행 대기 중인 학생</div>
+              <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                동행 대기 중인 학생
+                {c.activity?.isActive && (
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2F8F5B", display: "inline-block" }} />
+                )}
+              </div>
               <div style={{ fontSize: 12, color: "#8A7A76" }}>
                 {c.destination_hub_name} · {formatTime(c.desired_time)} 출발
               </div>
               <div style={{ fontSize: 12, color: "#8A7A76" }}>도착 소요시간 {c.arrival_estimate}</div>
+              {c.activity && (
+                <div style={{ fontSize: 11, color: c.activity.isActive ? "#2F8F5B" : "#8A7A76" }}>{c.activity.label}</div>
+              )}
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
               <span
