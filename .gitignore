@@ -8,3 +8,5 @@ release/
 supabase/.temp/
 npm-debug.log*
 .vercel
+scripts/retrieve_experiment/.cache/
+scripts/retrieve_experiment/private/
