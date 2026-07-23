@@ -4,6 +4,7 @@ const requireAuth = require('../middleware/auth');
 const ApiError = require('../utils/apiError');
 const { validateBirthDate } = require('../utils/validators');
 const { normalizeUser } = require('../services/userService');
+const { listHostedMeetings, listJoinedMeetings } = require('../services/meetingService');
 
 const router = express.Router();
 
@@ -50,6 +51,26 @@ router.patch('/me', requireAuth, async (req, res, next) => {
       throw new ApiError('NOT_FOUND', '사용자를 찾을 수 없습니다');
     }
     throw new ApiError('VALIDATION_ERROR', '생년월일은 수정할 수 없습니다');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/users/me/hosted-meetings — 내가 등록한 모임(G1)
+router.get('/me/hosted-meetings', requireAuth, async (req, res, next) => {
+  try {
+    const result = await listHostedMeetings(req.session.userId);
+    res.json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/users/me/joined-meetings — 내가 신청/참여한 모임(G2)
+router.get('/me/joined-meetings', requireAuth, async (req, res, next) => {
+  try {
+    const result = await listJoinedMeetings(req.session.userId);
+    res.json({ data: result });
   } catch (err) {
     next(err);
   }

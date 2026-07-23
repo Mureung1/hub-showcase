@@ -163,6 +163,17 @@
 
 모임 취소. 서버는 `meetings.status = 'cancelled'`로 갱신하고, 해당 모임의 `meeting_participants` 전원을 `cancelled`로 일괄 갱신합니다 (DB 설계서 4번).
 
+**실패**
+- 모임장 본인 아님 → `FORBIDDEN`(403)
+- 이미 취소된 모임 → `VALIDATION_ERROR`(400)
+- 없는 모임 → `NOT_FOUND`(404)
+- 비로그인 → `UNAUTHENTICATED`(401)
+
+**응답**
+```json
+{ "data": { "status": "cancelled" } }
+```
+
 ---
 
 ## 3. 참여 신청
@@ -259,17 +270,39 @@
 | GET | `/api/users/me/hosted-meetings` | 내가 등록한 모임 (신청자 수, 대기 중인 승인 건수 포함) | 필요 |
 | GET | `/api/users/me/joined-meetings` | 내가 신청/참여한 모임과 상태 | 필요 |
 
+### GET /api/users/me/hosted-meetings
+
+**응답**
+```json
+{
+  "data": {
+    "items": [
+      { "id": 4, "title": "...", "type": "small",
+        "startAt": "...", "endAt": "...", "status": "recruiting",
+        "applicantCount": 3, "pendingCount": 2 }
+    ]
+  }
+}
+```
+- `applicantCount`: 활성 신청자(pending+approved+confirmed). `pendingCount`: 승인 대기(pending).
+- 취소·종료된 내 모임도 포함. 정렬 `created_at DESC`.
+
 ### GET /api/users/me/joined-meetings
 
 **응답**
 ```json
 {
-  "data": [
-    { "meeting": { "id": 10, "title": "..." }, "status": "pending", "appliedAt": "..." },
-    { "meeting": { "id": 7, "title": "..." }, "status": "cancelled", "appliedAt": "..." }
-  ]
+  "data": {
+    "items": [
+      { "meeting": { "id": 10, "title": "...", "type": "small",
+                     "startAt": "...", "endAt": "...",
+                     "host": { "nickname": "홍길동" } },
+        "status": "pending", "appliedAt": "..." }
+    ]
+  }
 }
 ```
+- 모든 상태(pending/confirmed/approved/rejected/cancelled) 이력 포함. 정렬 `applied_at DESC`.
 
 ---
 

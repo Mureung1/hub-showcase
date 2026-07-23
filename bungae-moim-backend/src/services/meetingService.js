@@ -200,6 +200,7 @@ async function getMeetingDetail(meetingId, viewerId = null) {
     },
     confirmedCount: countResult.rows[0].confirmed_count,
     myParticipation,
+    isPast: row.is_past,
   };
 
   // 신청 가능 여부를 서버가 판정해 내려보낸다. FE는 이 값으로만 버튼을 결정한다(FE 독립 판정 제거).
@@ -467,7 +468,96 @@ async function respondToApplicant(meetingId, hostId, targetUserId, status) {
   return { userId: targetUserId, status: updated.rows[0].status };
 }
 
+// DELETE /api/meetings/:id — 모임 취소(E5). 모임장만.
+// 참여자 전원을 cancelled로 일괄 갱신하되, 이건 모임장이 판을 엎는 것이라 F2와 달리
+// 참여자 신뢰도는 건드리지 않는다(감점은 본인이 확정 후 취소했을 때만). 재취소는
+// 상태를 다시 cancelled로 쓸 뿐 신뢰도 변화가 없어 무해하므로 FOR UPDATE는 불필요하고,
+// 404/403/이미취소 3-way 구분을 위해 SELECT를 먼저 한다.
+async function cancelMeeting(meetingId, hostId) {
+  const meetingRes = await pool.query('SELECT host_id, status FROM meetings WHERE id = $1', [meetingId]);
+  if (meetingRes.rows.length === 0) {
+    throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
+  }
+  const row = meetingRes.rows[0];
+  // host_id는 bigint라 문자열("5")로 온다 — Number로 맞추지 않으면 모임장 본인도 막힌다.
+  if (Number(row.host_id) !== Number(hostId)) {
+    throw new ApiError('FORBIDDEN', '모임장만 모임을 취소할 수 있습니다');
+  }
+  if (row.status === 'cancelled') {
+    throw new ApiError('VALIDATION_ERROR', '이미 취소된 모임입니다');
+  }
+
+  await withTransaction(async (client) => {
+    await client.query("UPDATE meetings SET status = 'cancelled' WHERE id = $1", [meetingId]);
+    await client.query(
+      "UPDATE meeting_participants SET status = 'cancelled' WHERE meeting_id = $1",
+      [meetingId]
+    );
+  });
+
+  return { status: 'cancelled' };
+}
+
+// GET /api/users/me/hosted-meetings — 내가 등록한 모임(G1). 취소·종료 모임도 포함한다.
+// applicantCount는 활성 신청자 전부(pending+approved+confirmed), pendingCount는 승인 대기.
+// 둘 다 취소·거절은 제외한다. COUNT(*)::int라 값은 숫자로 온다.
+async function listHostedMeetings(hostId) {
+  const { rows } = await pool.query(
+    `SELECT m.id, m.title, m.type, m.start_at, m.end_at, m.status,
+       (SELECT COUNT(*)::int FROM meeting_participants mp
+          WHERE mp.meeting_id = m.id AND mp.status IN ('pending','approved','confirmed')) AS applicant_count,
+       (SELECT COUNT(*)::int FROM meeting_participants mp
+          WHERE mp.meeting_id = m.id AND mp.status = 'pending') AS pending_count
+       FROM meetings m
+      WHERE m.host_id = $1
+      ORDER BY m.created_at DESC, m.id DESC`,
+    [hostId]
+  );
+  return {
+    items: rows.map((row) => ({
+      id: Number(row.id),
+      title: row.title,
+      type: row.type,
+      startAt: row.start_at,
+      endAt: row.end_at,
+      status: row.status,
+      applicantCount: row.applicant_count,
+      pendingCount: row.pending_count,
+    })),
+  };
+}
+
+// GET /api/users/me/joined-meetings — 내가 신청/참여한 모임(G2). 거절·취소 이력도 포함한다.
+async function listJoinedMeetings(userId) {
+  const { rows } = await pool.query(
+    `SELECT p.status, p.applied_at,
+            m.id, m.title, m.type, m.start_at, m.end_at,
+            u.nickname AS host_nickname
+       FROM meeting_participants p
+       JOIN meetings m ON m.id = p.meeting_id
+       JOIN users u ON u.id = m.host_id
+      WHERE p.user_id = $1
+      ORDER BY p.applied_at DESC`,
+    [userId]
+  );
+  return {
+    items: rows.map((row) => ({
+      meeting: {
+        id: Number(row.id),
+        title: row.title,
+        type: row.type,
+        startAt: row.start_at,
+        endAt: row.end_at,
+        host: { nickname: row.host_nickname },
+      },
+      status: row.status,
+      appliedAt: row.applied_at,
+    })),
+  };
+}
+
 module.exports = {
   createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation,
-  listParticipants, respondToApplicant, normalizeMeeting, PAGE_SIZE,
+  listParticipants, respondToApplicant, cancelMeeting, listHostedMeetings, listJoinedMeetings,
+  normalizeMeeting, PAGE_SIZE,
 };
