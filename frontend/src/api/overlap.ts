@@ -7,10 +7,13 @@ export interface OverlapResult {
   message: string;
 }
 
-export async function checkOverlap(productNames: string[]): Promise<OverlapResult[]> {
+export async function checkOverlap(productNames: string[], token: string): Promise<OverlapResult[]> {
   const res = await fetch('/products/check-overlap', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify({ productNames }),
   });
   const data = await res.json();

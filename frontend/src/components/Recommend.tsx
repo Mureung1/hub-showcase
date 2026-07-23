@@ -5,10 +5,11 @@ import { ChipIcon, getChipColor } from '../chipIcons';
 
 interface RecommendProps {
   ingredientIds: number[];
+  token: string;
   onSelect: (product: Product) => void;
 }
 
-export function Recommend({ ingredientIds, onSelect }: RecommendProps) {
+export function Recommend({ ingredientIds, token, onSelect }: RecommendProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,11 +21,11 @@ export function Recommend({ ingredientIds, onSelect }: RecommendProps) {
       return;
     }
     setLoading(true);
-    getMatchedProducts(ingredientIds)
+    getMatchedProducts(ingredientIds, token)
       .then(setProducts)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [ingredientIds]);
+  }, [ingredientIds, token]);
 
   return (
     <>
@@ -72,9 +73,23 @@ export function Recommend({ ingredientIds, onSelect }: RecommendProps) {
               <p className="product-name">{product.name}</p>
               <span className="tag">{product.companyName}</span>
               <p className="product-price">{(product.price ?? 0).toLocaleString()}원</p>
-              <p className="sub" style={{ marginTop: 4 }}>
-                일치 성분 {product.matchCount}개
-              </p>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                {product.matchedIngredientNames.map((name) => (
+                  <span className="tag" key={name}>
+                    {name}
+                  </span>
+                ))}
+                {product.exceedsPersonalLimit && (
+                  <span className="tag" style={{ color: 'var(--color-accent-pink)' }}>
+                    상한 섭취량 주의
+                  </span>
+                )}
+                {product.pregnancyCaution && (
+                  <span className="tag" style={{ color: 'var(--color-accent-pink)' }}>
+                    임신·수유 중 주의
+                  </span>
+                )}
+              </div>
             </div>
           </button>
         );

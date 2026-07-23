@@ -157,10 +157,10 @@ function App() {
                   <Analysis symptoms={symptoms} onNext={handleAnalysisNext} />
                 )}
                 {screen === 'overlap' && (
-                  <Overlap supplements={supplements} onNext={() => setScreen('recommend')} />
+                  <Overlap supplements={supplements} token={auth.token} onNext={() => setScreen('recommend')} />
                 )}
                 {screen === 'recommend' && (
-                  <Recommend ingredientIds={recommendedIngredientIds} onSelect={handleSelectProduct} />
+                  <Recommend ingredientIds={recommendedIngredientIds} token={auth.token} onSelect={handleSelectProduct} />
                 )}
                 {screen === 'detail' && (
                   <Detail product={selectedProduct} onBuy={handleBuy} onRestart={handleRestart} />

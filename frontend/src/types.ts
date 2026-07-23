@@ -14,4 +14,6 @@ export interface Product {
   testReportUrl: string | null;
   matchCount: number;
   matchedIngredientNames: string[];
+  exceedsPersonalLimit: boolean;
+  pregnancyCaution: boolean;
 }
