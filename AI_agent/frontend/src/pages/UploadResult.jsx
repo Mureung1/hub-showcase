@@ -6,6 +6,8 @@ import { mockMissions, getMissionById } from "../data/mockMissions";
 import { saveSubmission } from "../features/career/submissionApi";
 import { navigate, routes } from "../router";
 
+const MAX_SUBMISSION_FILE_BYTES = 5 * 1024 * 1024;
+
 function UploadResult() {
   const [searchParams] = useSearchParams();
   const missionId = searchParams.get("missionId") || "";
@@ -48,8 +50,8 @@ function UploadResult() {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      setMessage("파일은 2MB 이하만 제출할 수 있습니다.");
+    if (file.size > MAX_SUBMISSION_FILE_BYTES) {
+      setMessage("파일은 5MB 이하만 제출할 수 있습니다.");
       event.target.value = "";
       return;
     }
@@ -168,8 +170,13 @@ function UploadResult() {
             <div className="file-drop">
               <span>파일 제출</span>
               <strong>{form.submittedFileName || "선택된 파일 없음"}</strong>
-              <p>PDF, 이미지, 문서 파일을 선택할 수 있습니다. 2MB 이하 파일은 제출 데이터와 함께 저장됩니다.</p>
-              <input type="file" className="cm-file-input" onChange={handleFileChange} />
+              <p>PDF, 이미지, 텍스트/코드 파일을 선택할 수 있습니다. 5MB 이하 파일은 제출 데이터와 함께 저장됩니다.</p>
+              <input
+                type="file"
+                className="cm-file-input"
+                accept=".txt,.md,.csv,.json,.html,.xml,.js,.jsx,.ts,.tsx,.py,.java,.c,.cpp,.cs,.sql,.css,.pdf,image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                onChange={handleFileChange}
+              />
             </div>
 
             {message && <p className="upload-message">{message}</p>}

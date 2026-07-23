@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 
 import Header from "../components/layout/Header";
 import { getSession, getUser } from "../features/auth/authStorage";
-import { getCareerAnalysis, getCareerSpec } from "../features/career/careerStorage";
+import { getMyAnalysis } from "../features/career/analysisApi";
+import { getRecommendedMissions } from "../features/career/missionApi";
+import { getMySpec } from "../features/career/specApi";
 import { getMySubmissions } from "../features/career/submissionApi";
-import { getRecommendedMissions, inferCareerTrack } from "../data/mockMissions";
 import { getMissionDetailPath, navigate, routes } from "../router";
 
 const trackLabels = {
@@ -24,16 +25,13 @@ const trackLabels = {
 function Mission() {
   const session = getSession();
   const user = getUser();
-  const spec = getCareerSpec(session?.id);
-  const analysis = getCareerAnalysis(session?.id);
-  const targetRole = analysis?.targetRole || spec?.targetRole || "";
-  const recommendationContext = {
-    major: user?.major,
-    targetRole,
-    skills: spec?.skills,
-  };
-  const inferredTrack = inferCareerTrack(recommendationContext);
-  const missions = getRecommendedMissions(recommendationContext);
+  const userId = session?.id || "";
+  const userMajor = user?.major || "";
+  const [targetRole, setTargetRole] = useState("");
+  const [inferredTrack, setInferredTrack] = useState("business");
+  const [missions, setMissions] = useState([]);
+  const [isLoading, setIsLoading] = useState(Boolean(session));
+  const [message, setMessage] = useState("");
   const [submittedMissionIds, setSubmittedMissionIds] = useState([]);
   const submittedMissionIdSet = useMemo(
     () => new Set(submittedMissionIds),
@@ -41,31 +39,52 @@ function Mission() {
   );
 
   useEffect(() => {
-    if (!session) {
+    if (!userId) {
       return;
     }
 
     let isMounted = true;
 
-    const loadSubmissions = async () => {
+    const loadMissionData = async () => {
       try {
-        const submissions = await getMySubmissions();
+        const [savedSpec, savedAnalysis, submissions] = await Promise.all([
+          getMySpec(),
+          getMyAnalysis(),
+          getMySubmissions(),
+        ]);
+
+        const nextTargetRole = savedAnalysis?.targetRole || savedSpec?.targetRole || "";
+        const recommendations = await getRecommendedMissions({
+          major: userMajor,
+          targetRole: nextTargetRole,
+          skills: savedSpec?.skills,
+        });
+
         if (isMounted) {
+          setTargetRole(nextTargetRole);
+          setInferredTrack(recommendations.inferredTrack);
+          setMissions(recommendations.missions);
           setSubmittedMissionIds(submissions.map((submission) => submission.missionId));
         }
-      } catch {
+      } catch (error) {
         if (isMounted) {
+          setMessage(error.message);
+          setMissions([]);
           setSubmittedMissionIds([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
         }
       }
     };
 
-    loadSubmissions();
+    loadMissionData();
 
     return () => {
       isMounted = false;
     };
-  }, [session]);
+  }, [userId, userMajor]);
 
   if (!session) {
     return (
@@ -118,15 +137,27 @@ function Mission() {
           </div>
         )}
 
-        <div className="mission-grid">
-          {missions.map((mission) => (
-            <MissionCard
-              key={mission.id}
-              mission={mission}
-              isSubmitted={submittedMissionIdSet.has(mission.id)}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="cm-empty-state mission-empty">
+            <strong>추천 미션을 불러오는 중입니다.</strong>
+            <p>등록된 스펙과 분석 결과를 기준으로 맞춤 미션을 계산하고 있습니다.</p>
+          </div>
+        ) : message ? (
+          <div className="cm-empty-state mission-empty">
+            <strong>추천 미션을 불러오지 못했습니다.</strong>
+            <p>{message}</p>
+          </div>
+        ) : (
+          <div className="mission-grid">
+            {missions.map((mission) => (
+              <MissionCard
+                key={mission.id}
+                mission={mission}
+                isSubmitted={submittedMissionIdSet.has(mission.id)}
+              />
+            ))}
+          </div>
+        )}
       </section>
     </main>
   );
@@ -135,36 +166,36 @@ function Mission() {
 function MissionCard({ mission, isSubmitted }) {
   return (
     <article className={isSubmitted ? "mission-card mission-card-complete" : "mission-card"}>
-              <div className="mission-card-top">
-                <span>{mission.difficulty}</span>
-                <span>{mission.duration}</span>
-                {isSubmitted && <span className="mission-complete-chip">제출 완료</span>}
-              </div>
-              <h2>{mission.title}</h2>
-              <p>{mission.summary}</p>
-              <div className="mission-chip-list" aria-label="필요 역량">
-                {mission.skills.map((skill) => (
-                  <span key={skill}>{skill}</span>
-                ))}
-              </div>
-              <div className="mission-deliverable">
-                <span>제출 결과물</span>
-                <strong>{mission.deliverable}</strong>
-              </div>
-              <button
-                type="button"
-                className={
-                  isSubmitted
-                    ? "cm-button cm-button-success cm-button-start"
-                    : "cm-button cm-button-primary cm-button-start"
-                }
-                onClick={() =>
-                  navigate(isSubmitted ? routes.feedback : getMissionDetailPath(mission.id))
-                }
-              >
-                {isSubmitted ? "미션 완료" : "미션 시작"}
-              </button>
-            </article>
+      <div className="mission-card-top">
+        <span>{mission.difficulty}</span>
+        <span>{mission.duration}</span>
+        {isSubmitted && <span className="mission-complete-chip">제출 완료</span>}
+      </div>
+      <h2>{mission.title}</h2>
+      <p>{mission.summary}</p>
+      <div className="mission-chip-list" aria-label="필요 역량">
+        {mission.skills.map((skill) => (
+          <span key={skill}>{skill}</span>
+        ))}
+      </div>
+      <div className="mission-deliverable">
+        <span>제출 결과물</span>
+        <strong>{mission.deliverable}</strong>
+      </div>
+      <button
+        type="button"
+        className={
+          isSubmitted
+            ? "cm-button cm-button-success cm-button-start"
+            : "cm-button cm-button-primary cm-button-start"
+        }
+        onClick={() =>
+          navigate(isSubmitted ? routes.feedback : getMissionDetailPath(mission.id))
+        }
+      >
+        {isSubmitted ? "미션 완료" : "미션 시작"}
+      </button>
+    </article>
   );
 }
 

@@ -170,6 +170,7 @@ select:focus-visible {
 
 .cm-select-button {
   width: 100%;
+  min-width: 0;
   display: grid;
   gap: 3px;
   min-height: 40px;
@@ -181,6 +182,8 @@ select:focus-visible {
   text-align: left;
   font: inherit;
   font-size: 13px;
+  line-height: 1.45;
+  white-space: normal;
   cursor: pointer;
   transition:
     background 180ms ease,
@@ -190,9 +193,34 @@ select:focus-visible {
     transform 180ms ease;
 }
 
+.cm-select-button strong,
+.cm-select-button span {
+  min-width: 0;
+  display: block;
+  line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.cm-select-button strong {
+  color: #0f172a;
+  font-weight: 900;
+  word-break: keep-all;
+}
+
+.cm-select-button span {
+  color: #64748b;
+  font-size: 12px;
+}
+
 .cm-select-button:hover {
   background: #eff6ff;
   border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.cm-select-button:hover strong,
+.cm-select-button:hover span {
   color: #1d4ed8;
 }
 

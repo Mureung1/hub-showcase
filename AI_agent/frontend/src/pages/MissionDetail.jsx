@@ -1,49 +1,38 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import Header from "../components/layout/Header";
 import { getSession } from "../features/auth/authStorage";
+import {
+  getMissionProgress,
+  saveMissionProgress,
+} from "../features/career/missionProgressApi";
 import { getMySubmissions } from "../features/career/submissionApi";
 import { getMissionById } from "../data/mockMissions";
 import { navigate, routes } from "../router";
-
-const getMissionProgressKey = (userId, missionId) =>
-  `careerMissionProgress:${userId}:${missionId}`;
-
-const readProgress = (userId, missionId) => {
-  if (!userId || !missionId) {
-    return [];
-  }
-
-  try {
-    return JSON.parse(localStorage.getItem(getMissionProgressKey(userId, missionId))) || [];
-  } catch {
-    return [];
-  }
-};
-
-const saveProgress = (userId, missionId, progress) => {
-  localStorage.setItem(getMissionProgressKey(userId, missionId), JSON.stringify(progress));
-};
 
 function MissionDetail() {
   const { missionId = "" } = useParams();
   const session = getSession();
   const userId = session?.id || "";
-  const mission = getMissionById(missionId);
-  const [checkedItems, setCheckedItems] = useState(() => readProgress(userId, missionId));
+  const mission = useMemo(() => getMissionById(missionId), [missionId]);
+  const [checkedItems, setCheckedItems] = useState([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
 
   useEffect(() => {
-    if (!session || !mission) {
+    if (!userId || !mission) {
       return;
     }
 
     let isMounted = true;
 
-    const loadSubmissionState = async () => {
+    const loadMissionState = async () => {
       try {
-        const submissions = await getMySubmissions();
+        const [progress, submissions] = await Promise.all([
+          getMissionProgress(mission.id),
+          getMySubmissions(),
+        ]);
         const hasSubmitted = submissions.some(
           (submission) => submission.missionId === mission.id
         );
@@ -56,27 +45,30 @@ function MissionDetail() {
 
         if (hasSubmitted) {
           setCheckedItems(mission.checklist);
-          saveProgress(session.id, mission.id, mission.checklist);
+        } else {
+          setCheckedItems(progress?.checkedItems || []);
         }
       } catch {
         if (isMounted) {
           setIsSubmitted(false);
+          setCheckedItems([]);
+          setSaveMessage("진행 상태를 불러오지 못했습니다.");
         }
       }
     };
 
-    loadSubmissionState();
+    loadMissionState();
 
     return () => {
       isMounted = false;
     };
-  }, [session, mission]);
+  }, [userId, mission]);
 
   const progressRate = mission
     ? Math.round((checkedItems.length / mission.checklist.length) * 100)
     : 0;
 
-  const toggleChecklist = (item) => {
+  const toggleChecklist = async (item) => {
     if (isSubmitted) {
       return;
     }
@@ -86,7 +78,21 @@ function MissionDetail() {
       : [...checkedItems, item];
 
     setCheckedItems(nextItems);
-    saveProgress(session.id, mission.id, nextItems);
+    setSaveMessage("");
+
+    try {
+      await saveMissionProgress({
+        missionId: mission.id,
+        missionTitle: mission.title,
+        missionSummary: mission.summary,
+        checkedItems: nextItems,
+        checklistItems: mission.checklist,
+      });
+      setSaveMessage("진행 상태가 저장되었습니다.");
+    } catch {
+      setCheckedItems(checkedItems);
+      setSaveMessage("진행 상태 저장에 실패했습니다.");
+    }
   };
 
   if (!session) {
@@ -178,6 +184,7 @@ function MissionDetail() {
                 </label>
               ))}
             </div>
+            {saveMessage && <p className="mission-detail-save-message">{saveMessage}</p>}
           </section>
 
           <section className="mission-detail-card">
@@ -394,6 +401,13 @@ const styles = `
 .mission-detail-checks input {
   margin-top: 3px;
   accent-color: #22c55e;
+}
+
+.mission-detail-save-message {
+  margin: 14px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .mission-detail-links {

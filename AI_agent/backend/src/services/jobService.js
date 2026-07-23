@@ -1,4 +1,5 @@
 import { env } from "../config/env.js";
+import { createTtlCache } from "./cacheService.js";
 import { normalizeList, normalizeText } from "./text.js";
 
 const CAREER_NET_API_URL = "https://www.career.go.kr/cnet/openapi/getOpenApi";
@@ -100,6 +101,7 @@ const practicalAliasRules = [
 ];
 
 let jobCache = null;
+const jobSearchCache = createTtlCache({ ttlMs: env.searchCacheTtlMs });
 
 const createBaseParams = () =>
   new URLSearchParams({
@@ -204,18 +206,22 @@ const getMatchedAlias = (job, keyword) => {
 
 export const searchJobs = async (keyword = "") => {
   const trimmedKeyword = keyword.trim();
-  const jobs = await fetchCareerNetJobs();
+  const cacheKey = normalizeText(trimmedKeyword);
 
-  if (!trimmedKeyword) {
-    return jobs;
-  }
+  return jobSearchCache.getOrSet(cacheKey, async () => {
+    const jobs = await fetchCareerNetJobs();
 
-  const normalizedSearch = normalizeText(trimmedKeyword);
+    if (!trimmedKeyword) {
+      return jobs;
+    }
 
-  return jobs
-    .filter((job) => getSearchText(job).includes(normalizedSearch))
-    .map((job) => ({
-      ...job,
-      matchedAlias: getMatchedAlias(job, trimmedKeyword),
-    }));
+    const normalizedSearch = normalizeText(trimmedKeyword);
+
+    return jobs
+      .filter((job) => getSearchText(job).includes(normalizedSearch))
+      .map((job) => ({
+        ...job,
+        matchedAlias: getMatchedAlias(job, trimmedKeyword),
+      }));
+  });
 };

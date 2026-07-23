@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import Header from "../components/layout/Header";
-import { mockMissions } from "../data/mockMissions";
-import { createMockFeedback } from "../data/mockFeedback";
-import { getLatestSubmission } from "../features/career/submissionApi";
+import {
+  getLatestPortfolioDraft,
+  saveLatestPortfolioDraft,
+} from "../features/career/portfolioApi";
 import { navigate, routes } from "../router";
 
 const formatDate = (dateValue) => {
@@ -24,62 +25,38 @@ const formatDate = (dateValue) => {
   }).format(date);
 };
 
-const splitSentences = (value) =>
-  String(value || "")
-    .split(/(?<=[.!?。])\s+|\n+/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-const getMission = (missionId) =>
-  mockMissions.find((mission) => mission.id === missionId) || null;
-
-const buildPortfolioDraft = (submission) => {
-  const mission = getMission(submission?.missionId);
-  const feedback = createMockFeedback(submission);
-  const descriptionSentences = splitSentences(submission?.submittedDescription);
-  const processItems = descriptionSentences.length
-    ? descriptionSentences.slice(0, 4)
-    : mission?.guide?.slice(0, 4) || [];
-  const learningItems = [
-    "문제를 먼저 정의해야 결과물의 방향과 평가 기준이 명확해진다는 점을 확인했습니다.",
-    mission?.skills?.length
-      ? `${mission.skills.slice(0, 2).join(", ")} 역량은 결과물로 보여줄 때 더 설득력 있게 전달됩니다.`
-      : "수행 과정과 의사결정 근거를 함께 기록해야 포트폴리오 설득력이 높아집니다.",
-    descriptionSentences.length
-      ? "제출 설명을 바탕으로 수행 과정, 결과, 개선점을 분리해 정리하는 연습이 필요합니다."
-      : "결과물만 제출하기보다 과정과 배운 점을 함께 남겨야 면접 답변으로 확장하기 쉽습니다.",
-  ];
-
-  return {
-    title: submission?.missionTitle || mission?.title || "미션 프로젝트",
-    subtitle: mission?.summary || "제출 결과물을 바탕으로 구성한 포트폴리오 프로젝트입니다.",
-    problem:
-      mission?.summary ||
-      "대상자의 상황을 분석하고, 실제로 활용 가능한 결과물로 정리하는 것을 목표로 했습니다.",
-    approach: processItems,
-    skills: mission?.skills || ["문제 정의", "자료 조사", "결과 정리"],
-    artifact: submission?.submittedUrl || submission?.submittedFileName || "제출 결과물",
-    outcome:
-      feedback.overall ||
-      "수행 결과를 포트폴리오에 넣을 수 있는 프로젝트 경험으로 정리했습니다.",
-    interviewPitch: `${submission?.missionTitle || "이번 프로젝트"}에서는 문제를 먼저 정의하고, 대상자에게 필요한 정보를 실행 가능한 결과물로 바꾸는 데 집중했습니다. 자료 조사와 결과 정리 과정을 통해 실무에서 필요한 문서화 역량과 사용자 관점의 사고를 보여줄 수 있습니다.`,
-    portfolioPoints: feedback.portfolioPoints,
-    learningItems,
-  };
-};
-
 function Portfolio() {
   const [submission, setSubmission] = useState(null);
+  const [draft, setDraft] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadSubmission = async () => {
+    const loadPortfolio = async () => {
       try {
-        const latestSubmission = await getLatestSubmission();
+        const latestResult = await getLatestPortfolioDraft();
+
+        if (!latestResult.submission) {
+          if (isMounted) {
+            setSubmission(null);
+            setDraft(null);
+          }
+          return;
+        }
+
+        const result = latestResult.portfolioDraft
+          ? latestResult
+          : await saveLatestPortfolioDraft();
+
         if (isMounted) {
-          setSubmission(latestSubmission);
+          setSubmission(result.submission);
+          setDraft(result.portfolioDraft);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setMessage(error.message);
         }
       } finally {
         if (isMounted) {
@@ -88,17 +65,12 @@ function Portfolio() {
       }
     };
 
-    loadSubmission();
+    loadPortfolio();
 
     return () => {
       isMounted = false;
     };
   }, []);
-
-  const draft = useMemo(
-    () => (submission ? buildPortfolioDraft(submission) : null),
-    [submission]
-  );
 
   return (
     <main className="portfolio-page">
@@ -127,7 +99,7 @@ function Portfolio() {
         ) : !submission ? (
           <EmptyState
             title="아직 포트폴리오로 만들 제출물이 없습니다."
-            text="미션을 수행하고 결과물을 제출하면 프로젝트 케이스 스터디가 자동으로 구성됩니다."
+            text={message || "미션을 수행하고 결과물을 제출하면 프로젝트 케이스 스터디가 자동으로 구성됩니다."}
             actionLabel="결과물 제출하기"
             onAction={() => navigate(routes.upload)}
           />
@@ -179,7 +151,7 @@ function Portfolio() {
             </section>
 
             <section className="portfolio-side-grid">
-              <div className="portfolio-card">
+              <div className="portfolio-card portfolio-skill-card">
                 <span>핵심 역량</span>
                 <div className="skill-list">
                   {draft.skills.map((skill) => (
@@ -457,18 +429,31 @@ const styles = `
   border-radius: 18px;
 }
 
+.portfolio-skill-card {
+  align-content: start;
+}
+
 .skill-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 10px;
+  width: 100%;
 }
 
 .skill-list strong {
-  padding: 8px 11px;
-  border-radius: 999px;
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 12px;
+  border-radius: 12px;
   background: #eff6ff;
+  border: 1px solid #bfdbfe;
   color: #1d4ed8;
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.35;
+  text-align: center;
+  word-break: keep-all;
 }
 
 .proof-grid {

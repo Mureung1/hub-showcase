@@ -1,4 +1,5 @@
 import { env } from "../config/env.js";
+import { createTtlCache } from "./cacheService.js";
 import { normalizeText } from "./text.js";
 
 const QUALIFICATION_API_URL =
@@ -120,6 +121,7 @@ const fallbackQualifications = [
 ];
 
 let qualificationCache = null;
+const qualificationSearchCache = createTtlCache({ ttlMs: env.searchCacheTtlMs });
 
 const createServiceKeyParam = (apiKey) => {
   const trimmedKey = apiKey.trim();
@@ -230,10 +232,13 @@ export const searchQualifications = async (keyword = "") => {
     return [];
   }
 
-  const qualifications = await fetchQualifications();
   const normalizedKeyword = normalizeText(trimmedKeyword);
 
-  return qualifications
-    .filter((qualification) => getSearchText(qualification).includes(normalizedKeyword))
-    .slice(0, 12);
+  return qualificationSearchCache.getOrSet(normalizedKeyword, async () => {
+    const qualifications = await fetchQualifications();
+
+    return qualifications
+      .filter((qualification) => getSearchText(qualification).includes(normalizedKeyword))
+      .slice(0, 12);
+  });
 };

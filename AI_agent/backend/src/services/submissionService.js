@@ -1,4 +1,5 @@
 import { prisma } from "../db/prisma.js";
+import { env } from "../config/env.js";
 
 const normalizeSubmissionInput = (input) => ({
   missionId: String(input?.missionId || "").trim(),
@@ -23,6 +24,19 @@ const isValidUrl = (value) => {
   }
 };
 
+const getSubmittedFileSizeBytes = (fileData) => {
+  const value = String(fileData || "");
+
+  if (!value) {
+    return 0;
+  }
+
+  const payload = value.includes(",") ? value.slice(value.indexOf(",") + 1) : value;
+  const padding = payload.endsWith("==") ? 2 : payload.endsWith("=") ? 1 : 0;
+
+  return Math.max(0, Math.floor((payload.length * 3) / 4) - padding);
+};
+
 const publicSubmissionFields = (submission) => {
   if (!submission) {
     return null;
@@ -34,6 +48,7 @@ const publicSubmissionFields = (submission) => {
     missionId: submission.missionId,
     missionTitle: submission.missionTitle || submission.mission?.title || "",
     status: submission.status,
+    checkedItems: submission.checkedItems || [],
     submittedUrl: submission.submittedUrl,
     submittedDescription: submission.submittedDescription,
     submittedFileName: submission.submittedFileName,
@@ -41,6 +56,7 @@ const publicSubmissionFields = (submission) => {
     submittedFileData: submission.submittedFileData,
     submittedAt: submission.submittedAt,
     feedback: submission.feedback,
+    portfolioDraft: submission.portfolioDraft,
     createdAt: submission.createdAt,
     updatedAt: submission.updatedAt,
   };
@@ -63,6 +79,14 @@ export const saveSubmission = async ({ userId, submission }) => {
 
   if (!isValidUrl(data.submittedUrl)) {
     const error = new Error("결과물 링크는 http 또는 https 주소로 입력해 주세요.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (getSubmittedFileSizeBytes(data.submittedFileData) > env.submissionFileMaxBytes) {
+    const error = new Error(
+      `파일은 ${Math.floor(env.submissionFileMaxBytes / 1024 / 1024)}MB 이하만 제출할 수 있습니다.`
+    );
     error.statusCode = 400;
     throw error;
   }
@@ -96,6 +120,8 @@ export const saveSubmission = async ({ userId, submission }) => {
       submittedFileType: data.submittedFileType || null,
       submittedFileData: data.submittedFileData || null,
       submittedAt: new Date(),
+      feedback: null,
+      portfolioDraft: null,
     },
     create: {
       userId,
@@ -108,6 +134,8 @@ export const saveSubmission = async ({ userId, submission }) => {
       submittedFileType: data.submittedFileType || null,
       submittedFileData: data.submittedFileData || null,
       submittedAt: new Date(),
+      feedback: null,
+      portfolioDraft: null,
     },
     include: {
       mission: true,

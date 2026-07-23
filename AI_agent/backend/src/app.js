@@ -5,7 +5,10 @@ import { env } from "./config/env.js";
 import { analysisRouter } from "./routes/analysisRoutes.js";
 import { authRouter } from "./routes/authRoutes.js";
 import { careerRouter } from "./routes/careerRoutes.js";
+import { feedbackRouter } from "./routes/feedbackRoutes.js";
 import { healthRouter } from "./routes/healthRoutes.js";
+import { missionRouter } from "./routes/missionRoutes.js";
+import { portfolioRouter } from "./routes/portfolioRoutes.js";
 import { specRouter } from "./routes/specRoutes.js";
 import { submissionRouter } from "./routes/submissionRoutes.js";
 
@@ -23,6 +26,9 @@ export const createApp = () => {
   app.use("/api/auth", authRouter);
   app.use("/api/specs", specRouter);
   app.use("/api/analysis", analysisRouter);
+  app.use("/api/feedback", feedbackRouter);
+  app.use("/api/missions", missionRouter);
+  app.use("/api/portfolio", portfolioRouter);
   app.use("/api/submissions", submissionRouter);
   app.use("/api", careerRouter);
 

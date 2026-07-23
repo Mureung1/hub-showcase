@@ -392,6 +392,12 @@ Request body: 없음
 
 ## 검색 API
 
+특이사항:
+
+- `/api/jobs`, `/api/qualifications`, `/api/schools`, `/api/majors`는 서버 메모리 TTL 캐시를 사용한다.
+- 기본 캐시 시간은 10분이며 `SEARCH_CACHE_TTL_MS` 환경 변수로 조정할 수 있다.
+- 서버 재시작 시 캐시는 비워진다.
+
 ### 직업 검색
 
 - Method: `GET`
@@ -528,6 +534,293 @@ Query:
 - `keyword`가 비어 있으면 빈 배열을 반환한다.
 - 커리어넷 API 키가 없으면 fallback 전공 목록에서 검색한다.
 
+## 미션 진행 API
+
+### 미션 추천 목록 조회
+
+- Method: `GET`
+- Path: `/api/missions/recommendations`
+- 인증: 필요
+- 사용 화면: 미션 추천
+
+Query:
+
+| 이름 | 필수 | 설명 |
+| --- | --- | --- |
+| `major` | 아니오 | 사용자 전공 |
+| `targetRole` | 아니오 | 목표 직무 |
+| `skills` | 아니오 | 보유 기술 / 활용 도구 |
+
+성공 응답 `200`:
+
+```json
+{
+  "ok": true,
+  "inferredTrack": "it",
+  "missions": [
+    {
+      "id": "it-service-mvp",
+      "tracks": ["it", "engineering", "data"],
+      "roles": ["개발", "프론트엔드", "백엔드", "AI", "데이터"],
+      "title": "작은 문제를 해결하는 서비스 MVP 구현",
+      "difficulty": "중간",
+      "duration": "5~7일",
+      "skills": ["React", "API 연동", "DB 저장", "배포"],
+      "deliverable": "GitHub 저장소, 실행 화면, 구현 과정 README",
+      "summary": "사용자 입력이 저장되고 다시 조회되는 작은 웹 기능을 끝까지 구현합니다.",
+      "guide": ["해결할 사용자 문제를 한 문장으로 정의합니다."],
+      "checklist": ["문제 정의", "입력 폼", "DB 저장"],
+      "references": ["React form", "Express API", "Prisma + PostgreSQL"]
+    }
+  ]
+}
+```
+
+특이사항:
+
+- `major`, `targetRole`, `skills`를 합쳐 커리어 트랙을 추론한다.
+- 목표 직무 또는 트랙과 매칭되는 미션을 우선 추천한다.
+- 매칭 결과가 없으면 범용 미션을 fallback으로 반환한다.
+
+### 미션 진행 상태 조회
+
+- Method: `GET`
+- Path: `/api/missions/:missionId/progress`
+- 인증: 필요
+- 사용 화면: 미션 상세 체크리스트
+
+성공 응답 `200`:
+
+```json
+{
+  "ok": true,
+  "progress": {
+    "id": "clx...",
+    "userId": "clx...",
+    "missionId": "it-service-mvp",
+    "missionTitle": "작은 문제를 해결하는 서비스 MVP 구현",
+    "status": "in_progress",
+    "checkedItems": ["문제 정의", "입력 폼"],
+    "submittedAt": null,
+    "createdAt": "2026-07-23T00:00:00.000Z",
+    "updatedAt": "2026-07-23T00:00:00.000Z"
+  }
+}
+```
+
+진행 상태가 없으면 `progress`는 `null`이다.
+
+### 미션 진행 상태 저장
+
+- Method: `PATCH`
+- Path: `/api/missions/:missionId/progress`
+- 인증: 필요
+- 사용 화면: 미션 상세 체크리스트
+
+Request body:
+
+```json
+{
+  "missionTitle": "작은 문제를 해결하는 서비스 MVP 구현",
+  "missionSummary": "작은 문제를 MVP로 정의하고 구현합니다.",
+  "checkedItems": ["문제 정의", "입력 폼"],
+  "checklistItems": ["문제 정의", "입력 폼", "DB 저장", "README 작성"]
+}
+```
+
+성공 응답 `200`:
+
+```json
+{
+  "ok": true,
+  "progress": {
+    "id": "clx...",
+    "userId": "clx...",
+    "missionId": "it-service-mvp",
+    "missionTitle": "작은 문제를 해결하는 서비스 MVP 구현",
+    "status": "in_progress",
+    "checkedItems": ["문제 정의", "입력 폼"],
+    "submittedAt": null,
+    "createdAt": "2026-07-23T00:00:00.000Z",
+    "updatedAt": "2026-07-23T00:00:00.000Z"
+  }
+}
+```
+
+특이사항:
+
+- 체크 항목이 없으면 `status`는 `pending`으로 저장한다.
+- 체크 항목이 있으면 `status`는 `in_progress`로 저장한다.
+- 전체 체크리스트 항목이 모두 체크되면 `status`는 `completed`로 저장한다.
+- 이미 제출된 미션은 진행 상태 저장 시에도 `submitted` 상태를 유지한다.
+
+## AI 피드백 API
+
+### 최신 제출 피드백 조회
+
+- Method: `GET`
+- Path: `/api/feedback/latest`
+- 인증: 필요
+- 사용 화면: AI 피드백
+
+성공 응답 `200`:
+
+```json
+{
+  "ok": true,
+  "submission": {
+    "id": "clx...",
+    "userId": "clx...",
+    "missionId": "it-service-mvp",
+    "missionTitle": "작은 문제를 해결하는 서비스 MVP 구현",
+    "status": "submitted",
+    "submittedUrl": "https://example.com/project",
+    "submittedDescription": "문제 정의, 수행 과정, 결과를 정리했습니다.",
+    "submittedFileName": null,
+    "submittedFileType": null,
+    "submittedFileData": null,
+    "submittedAt": "2026-07-23T00:00:00.000Z",
+    "createdAt": "2026-07-23T00:00:00.000Z",
+    "updatedAt": "2026-07-23T00:00:00.000Z"
+  },
+  "feedback": {
+    "overall": "실제 결과물 내용 1건을 읽고 평가했습니다. 미션 결과물이 제출 형식에 맞게 정리되었습니다.",
+    "strengths": ["외부에서 확인 가능한 링크를 제출해 결과물 접근성이 좋습니다."],
+    "improvements": ["문제를 왜 해결하려 했는지 한 문장으로 먼저 정리해 주세요."],
+    "revisions": ["결과물 설명을 문제 정의, 수행 과정, 결과, 배운 점 순서로 나눠 보완하세요."],
+    "portfolioPoints": ["수행 미션 경험을 프로젝트 제목으로 정리할 수 있습니다."],
+    "evidenceSummary": "실제 결과물 내용 1건을 읽고 평가했습니다."
+  }
+}
+```
+
+특이사항:
+
+- 제출 결과물이 없으면 `submission`과 `feedback`은 `null`이다.
+- 제출 결과물은 있지만 아직 저장된 피드백이 없으면 `feedback`은 `null`이다.
+- 저장된 피드백은 사용자별 최신 제출 결과물에 연결된다.
+
+### 최신 제출 피드백 저장
+
+- Method: `POST`
+- Path: `/api/feedback/latest`
+- 인증: 필요
+- 사용 화면: AI 피드백
+
+성공 응답 `200`:
+
+```json
+{
+  "ok": true,
+  "submission": {
+    "id": "clx...",
+    "missionId": "it-service-mvp",
+    "missionTitle": "작은 문제를 해결하는 서비스 MVP 구현",
+    "status": "submitted"
+  },
+  "feedback": {
+    "overall": "미션 결과물이 제출 형식에 맞게 정리되었습니다.",
+    "strengths": [],
+    "improvements": [],
+    "revisions": [],
+    "portfolioPoints": [],
+    "evidenceSummary": "실제 결과물 내용 1건을 읽고 평가했습니다."
+  }
+}
+```
+
+특이사항:
+
+- 서버는 제출 URL의 공개 `http/https` 텍스트/HTML 콘텐츠를 읽어 OpenAI 피드백 입력에 포함한다.
+- `localhost`, 사설 IP처럼 내부망으로 보이는 URL은 서버에서 열람하지 않는다.
+- 제출 파일은 텍스트/코드 파일(`txt`, `md`, `csv`, `json`, `html`, `xml`, `js`, `jsx`, `ts`, `tsx`, `py`, `java`, `c`, `cpp`, `cs`, `sql`, `css`)을 텍스트로 읽어 평가 입력에 포함한다.
+- `OPENAI_FILE_FEEDBACK_ENABLED=true`이면 직접 업로드한 이미지/PDF와 직접 이미지/PDF로 열리는 공개 링크도 OpenAI 평가 입력에 포함한다.
+- 비공개 Notion/GitHub 링크, 지원하지 않는 문서 파일, 접근할 수 없는 첨부 파일은 제출 설명과 미션 정보를 기준으로 보완 평가한다.
+- `OPENAI_API_KEY`가 없거나 OpenAI 호출이 실패하면 기존 제출 정보 기반 피드백으로 fallback한다.
+- `OPENAI_FEEDBACK_ENABLED=false`로 설정하면 직접 OpenAI 평가를 끄고 fallback 피드백만 생성한다.
+- 업로드 파일 기본 제한은 5MB이며 `SUBMISSION_FILE_MAX_BYTES`로 조정할 수 있다.
+
+주요 실패:
+
+- `401`: 토큰 없음 또는 유효하지 않은 토큰
+- `404`: 피드백을 생성할 제출 결과물이 없음
+
+## 포트폴리오 API
+
+### 최신 제출 포트폴리오 초안 조회
+
+- Method: `GET`
+- Path: `/api/portfolio/latest`
+- 인증: 필요
+- 사용 화면: 포트폴리오
+
+성공 응답 `200`:
+
+```json
+{
+  "ok": true,
+  "submission": {
+    "id": "clx...",
+    "missionId": "it-service-mvp",
+    "missionTitle": "작은 문제를 해결하는 서비스 MVP 구현",
+    "status": "submitted",
+    "submittedUrl": "https://example.com/project",
+    "submittedAt": "2026-07-23T00:00:00.000Z"
+  },
+  "portfolioDraft": {
+    "title": "작은 문제를 해결하는 서비스 MVP 구현",
+    "subtitle": "제출 결과물을 바탕으로 구성한 포트폴리오 프로젝트입니다.",
+    "problem": "문제 정의를 먼저 정리했습니다.",
+    "approach": ["문제 정의를 먼저 정리했습니다."],
+    "skills": ["문제 정의", "자료 조사", "결과 정리"],
+    "artifact": "https://example.com/project",
+    "outcome": "미션 결과물이 제출 형식에 맞게 정리되었습니다.",
+    "interviewPitch": "이번 프로젝트에서는 문제를 먼저 정의하고...",
+    "portfolioPoints": ["프로젝트 제목으로 정리할 수 있습니다."],
+    "learningItems": ["문제를 먼저 정의해야 결과물의 방향과 평가 기준이 명확해진다는 점을 확인했습니다."]
+  }
+}
+```
+
+특이사항:
+
+- 제출 결과물이 없으면 `submission`과 `portfolioDraft`는 `null`이다.
+- 제출 결과물은 있지만 아직 저장된 포트폴리오 초안이 없으면 `portfolioDraft`는 `null`이다.
+
+### 최신 제출 포트폴리오 초안 저장
+
+- Method: `POST`
+- Path: `/api/portfolio/latest`
+- 인증: 필요
+- 사용 화면: 포트폴리오
+
+성공 응답 `200`:
+
+```json
+{
+  "ok": true,
+  "submission": {
+    "id": "clx...",
+    "missionId": "it-service-mvp",
+    "missionTitle": "작은 문제를 해결하는 서비스 MVP 구현",
+    "status": "submitted"
+  },
+  "portfolioDraft": {
+    "title": "작은 문제를 해결하는 서비스 MVP 구현",
+    "subtitle": "제출 결과물을 바탕으로 구성한 포트폴리오 프로젝트입니다.",
+    "approach": [],
+    "skills": [],
+    "portfolioPoints": [],
+    "learningItems": []
+  }
+}
+```
+
+주요 실패:
+
+- `401`: 토큰 없음 또는 유효하지 않은 토큰
+- `404`: 포트폴리오로 만들 제출 결과물이 없음
+
 ## 헬스체크 API
 
 ### 서버 상태 확인
@@ -550,11 +843,6 @@ Query:
 
 다음 기능은 Prisma 모델 또는 화면 초안은 있으나 백엔드 라우트가 아직 없다.
 
-- 미션 추천 목록 조회
-- 사용자별 미션 시작/진행 상태 저장
-- 미션 결과물 URL 또는 파일 업로드
-- AI 피드백 저장/조회
-- 포트폴리오 자동 생성
 
 구현 전 별도 API 초안을 작성하고, 프론트엔드 화면과 응답 형식을 맞춘 뒤 라우트를 추가한다.
 

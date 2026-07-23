@@ -81,6 +81,7 @@ model UserMission {
   missionId            String
   status               String    @default("pending")
   missionTitle         String?
+  checkedItems         String[]  @default([])
   submittedUrl         String?
   submittedDescription String?
   submittedFileName    String?
@@ -88,6 +89,7 @@ model UserMission {
   submittedFileData    String?
   submittedAt          DateTime?
   feedback             String?
+  portfolioDraft       String?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
