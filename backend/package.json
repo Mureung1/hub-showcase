@@ -6,6 +6,7 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "test": "tsx --test src/services/urlContent.service.test.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "type-check": "tsc --noEmit",
@@ -16,6 +17,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "cheerio": "^1.2.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "firebase-admin": "^14.1.0",

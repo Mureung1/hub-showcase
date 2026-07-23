@@ -204,7 +204,7 @@ interface RecipeSource {
 
 - `url`은 유효한 `http` 또는 `https` URL이어야 한다.
 - URL은 localhost, 사설 IP 등 접근 제한 검증을 통과해야 한다.
-- YouTube 채널명과 웹페이지 작성자는 `author`로 통일한다.
+- 지원되는 웹페이지 작성자는 `author`로 통일한다. MVP에서는 YouTube 영상 제목·채널이나 자막을 별도로 수집하지 않는다.
 - 직접 입력만 사용한 `OWNED` 레시피는 `source`가 `null`이다.
 
 ---

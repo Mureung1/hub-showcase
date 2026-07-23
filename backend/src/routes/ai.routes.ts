@@ -5,6 +5,8 @@ import {
   structureRecipe,
 } from "../services/recipeStructure.service.js";
 
+import { collectUrlContent, UrlContentError } from "../services/urlContent.service.js";
+
 const router = Router();
 const MAX_RAW_TEXT_LENGTH = 20_000;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1_000;
@@ -60,28 +62,31 @@ router.post(
       });
     }
 
+    const sourceUrlValue = requestBody.sourceUrl;
+    const rawTextValue = requestBody.rawText;
+
     if (
-      requestBody.sourceUrl !== undefined &&
-      requestBody.sourceUrl !== null
+      (sourceUrlValue !== undefined &&
+        sourceUrlValue !== null &&
+        typeof sourceUrlValue !== "string") ||
+      (rawTextValue !== undefined &&
+        rawTextValue !== null &&
+        typeof rawTextValue !== "string")
     ) {
       return res.status(400).json({
         error: {
           code: "VALIDATION_ERROR",
           message: "입력값을 확인해 주세요.",
-          details: [
-            {
-              field: "sourceUrl",
-              message: "URL 입력은 아직 지원하지 않습니다.",
-            },
-          ],
         },
       });
     }
 
-    if (
-      typeof requestBody.rawText !== "string" ||
-      requestBody.rawText.trim().length === 0
-    ) {
+    const sourceUrl =
+      typeof sourceUrlValue === "string" ? sourceUrlValue.trim() : "";
+    const rawText =
+      typeof rawTextValue === "string" ? rawTextValue.trim() : "";
+
+    if (!sourceUrl && !rawText) {
       return res.status(400).json({
         error: {
           code: "VALIDATION_ERROR",
@@ -89,16 +94,14 @@ router.post(
           details: [
             {
               field: "rawText",
-              message: "레시피 원문을 입력해 주세요.",
+              message: "URL 또는 레시피 원문 중 하나를 입력해 주세요.",
             },
           ],
         },
       });
     }
 
-    const rawText = requestBody.rawText.trim();
-
-    if (rawText.length > MAX_RAW_TEXT_LENGTH) {
+    if (rawText.replace(/\s/g, "").length > MAX_RAW_TEXT_LENGTH) {
       return res.status(400).json({
         error: {
           code: "VALIDATION_ERROR",
@@ -134,12 +137,43 @@ router.post(
     }
 
     try {
-      const result = await structureRecipe(rawText);
+      const collectedContent = sourceUrl
+        ? await collectUrlContent(sourceUrl)
+        : null;
+
+      const structureInput = collectedContent
+        ? rawText
+          ? `URL에서 수집한 레시피 내용:\n${collectedContent.text}\n\n사용자 보완 정보:\n${rawText}`
+          : collectedContent.text
+        : rawText;
+
+      const result = await structureRecipe(
+        structureInput,
+        collectedContent?.source ?? null,
+      );
 
       return res.status(200).json({
         data: result,
       });
     } catch (error) {
+      if (error instanceof UrlContentError) {
+        const status = error.code === "URL_FETCH_FAILED" ? 422 : 400;
+
+        const message =
+          error.code === "INVALID_URL"
+            ? "URL 형식을 확인해 주세요."
+            : error.code === "URL_NOT_ALLOWED"
+              ? "접근할 수 없는 URL입니다."
+              : "URL 내용을 가져오지 못했습니다. 레시피 내용을 직접 입력해 주세요.";
+
+        return res.status(status).json({
+          error: {
+            code: error.code,
+            message,
+          },
+        });
+      }
+
       if (!(error instanceof RecipeStructureError)) {
         throw error;
       }

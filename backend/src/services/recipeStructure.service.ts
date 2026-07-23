@@ -1,6 +1,7 @@
 import {
   RECIPE_STRUCTURE_SCHEMA,
   isStructureRecipeResult,
+  type RecipeSource,
   type StructureRecipeResult,
 } from "./recipeStructureContract.js";
 
@@ -45,6 +46,7 @@ function extractOutputText(value: unknown): string | null {
 
 export async function structureRecipe(
   rawText: string,
+  recipeSource: RecipeSource | null = null,
 ): Promise<StructureRecipeResult> {
   const apiKey = process.env.OPENAI_API_KEY;
 
@@ -71,7 +73,7 @@ export async function structureRecipe(
             role: "system",
             content:
               "사용자의 레시피 원문을 편집 가능한 레시피 초안으로 구조화한다. " +
-              "직접 입력 요청이므로 source는 null로 변환한다. " +
+              "source는 서버가 설정하므로 항상 null로 반환한다. " +
               "모호한 값을 추정하면 해당 필드 경로와 이유를 warnings에 포함한다. " +
               "조리 팁과 서버 전용 필드는 추가하지 않는다." +
               "warnings의 field는 draft 내부를 기준으로 title, ingredients[0].amount, steps[0].description 형식을 사용하고 draft. 접두사를 붙이지 않는다. ",
@@ -127,7 +129,13 @@ export async function structureRecipe(
       throw new RecipeStructureError("AI_RESPONSE_INVALID");
     }
 
-    return parsedResult;
+    return {
+      ...parsedResult,
+      draft: {
+        ...parsedResult.draft,
+        source: recipeSource,
+      },
+    };
   } catch (error) {
     if (error instanceof RecipeStructureError) {
       throw error;
