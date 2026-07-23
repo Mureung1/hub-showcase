@@ -106,6 +106,15 @@ export type DodoState = {
   behavior: DodoBehavior
 }
 
+export type EquippedSlotItem = { itemId: string; iconKey: string; color: string | null }
+
+export type DodoAppearance = {
+  hat: EquippedSlotItem | null
+  glasses: EquippedSlotItem | null
+  outfit: EquippedSlotItem | null
+  accessory: EquippedSlotItem | null
+}
+
 export type DodoDiaryEntry = {
   id: string
   date: string
@@ -114,6 +123,56 @@ export type DodoDiaryEntry = {
   pointsEarned: number | null
   representativeVideoUrl: string
   createdAt: string
+}
+
+export type RoomItemType = 'FURNITURE' | 'WALLPAPER' | 'FLOOR' | 'LIGHTING' | 'WINDOW_VIEW' | 'SEASONAL_DECOR'
+
+// 상점 카탈로그 항목 — 전체 공용, 소유 여부/색은 포함하지 않는다(소유 정보는 RoomInventoryItem에서).
+export type RoomItem = {
+  id: string
+  name: string
+  cost: number
+  type: RoomItemType
+  iconKey: string
+  // 두두가 직접 착용하는 아이템(헤드폰 등)인지 여부.
+  equippable: boolean
+  // 장식용이지만 두두와 상호작용 가능한 아이템(게임기, 베개 등)인지 여부.
+  interactable: boolean
+  // 사용자가 본체 색을 직접 고를 수 있는 아이템인지 여부(게임기 등).
+  colorCustomizable: boolean
+  // 마이홈 방 안에 물리적으로 배치할 수 있는 아이템인지 여부(interactable과 별개 — 테이블은 상호작용은 없지만 배치는 된다).
+  placeable: boolean
+  // 벽 영역에만 놓을 수 있는 아이템인지 여부(창문·벽 장식 등). true면 배치 시 y좌표가 벽 영역으로 제한된다.
+  wallMounted: boolean
+  // 색 구분 없이도 같은 아이템을 여러 개 살 수 있는지 여부(간식류). false면 색이 같으면 1개만 소유 가능.
+  repeatable: boolean
+}
+
+// 내가 실제로 소유한 인스턴스 한 개 — 같은 itemId라도 색이 다르면 별도 인스턴스(별도 id)로 존재한다.
+export type RoomInventoryItem = {
+  id: string
+  itemId: string
+  name: string
+  cost: number
+  iconKey: string
+  equippable: boolean
+  interactable: boolean
+  colorCustomizable: boolean
+  placeable: boolean
+  wallMounted: boolean
+  repeatable: boolean
+  color: string | null
+}
+
+// x, y는 마이홈 방 영역 기준 0~100 퍼센트 좌표. inventoryId로 어떤 소유 인스턴스가 배치됐는지 식별한다.
+export type RoomLayoutEntry = {
+  inventoryId: string
+  itemId: string
+  color: string | null
+  x: number
+  y: number
+  // 배치된 시각(ISO) — 간식류는 이 시각으로부터 1시간이 지나면 자동으로 방에서 제거된다.
+  placedAt: string
 }
 
 export type FriendPost = {

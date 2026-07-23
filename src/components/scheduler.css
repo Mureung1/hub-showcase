@@ -221,6 +221,9 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 .tab-page-heading > div:first-child > span { color: var(--scheduler-green); font-size: 9px; font-weight: 800; letter-spacing: 2px; }
 .tab-page-heading h1 { margin: 6px 0 0; font-size: 34px; letter-spacing: -1.7px; }
 
+.myhome-points-row { display: flex; align-items: center; gap: 8px; }
+.myhome-points-test-add { width: 26px; height: 26px; border: 1px dashed var(--scheduler-muted); border-radius: 50%; background: transparent; color: var(--scheduler-muted); cursor: pointer; font-size: 14px; line-height: 1; }
+.myhome-points-test-add:hover { border-color: var(--scheduler-green); color: var(--scheduler-green); }
 .myhome-points { display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 6px; padding: 10px 13px; border: 1px solid var(--scheduler-line); border-radius: 15px; background: var(--scheduler-cream); }
 .myhome-points i { color: #e1b854; font-style: normal; }
 .myhome-points strong { font-size: 14px; }
@@ -228,17 +231,6 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 
 .myhome-room { height: 380px; position: relative; overflow: hidden; border: 2px solid var(--scheduler-ink); border-radius: 28px; background: linear-gradient(rgba(255,255,255,.3) 2px, transparent 2px), linear-gradient(90deg, rgba(255,255,255,.3) 2px, transparent 2px), #b7d4cc; background-size: 56px 56px; box-shadow: 10px 10px 0 rgba(52,75,70,.12); }
 .myhome-room::after { content: ''; position: absolute; z-index: 0; left: 0; right: 0; bottom: 0; height: 135px; background: #efdfbf; clip-path: polygon(0 28px, 25% 28px, 25% 20px, 50% 20px, 50% 12px, 75% 12px, 75% 4px, 100% 4px, 100% 100%, 0 100%); }
-.myhome-window { width: 110px; height: 105px; position: absolute; top: 38px; left: 39px; border: 8px solid var(--scheduler-ink); background: #dcecf4; box-shadow: 9px 9px 0 rgba(52,75,70,.14); }
-.myhome-window::before, .myhome-window::after { content: ''; position: absolute; background: var(--scheduler-ink); }
-.myhome-window::before { width: 8px; top: 0; bottom: 0; left: 43px; }
-.myhome-window::after { height: 8px; left: 0; right: 0; top: 41px; }
-.myhome-window i { position: absolute; width: 13px; height: 13px; right: 12px; top: 12px; background: #fff0ad; box-shadow: -9px 9px 0 #fff0ad, 9px 9px 0 #fff0ad; }
-.myhome-window i:nth-child(2) { width: 24px; height: 12px; left: 8px; top: 63px; background: #9fc8bb; box-shadow: 12px -10px 0 #9fc8bb; }
-.myhome-window i:nth-child(3) { display: none; }
-.myhome-wall-star { width: 10px; height: 10px; position: absolute; top: 176px; left: 80px; background: #fff0ad; box-shadow: 0 -20px 0 #fff0ad, 0 20px 0 #fff0ad, -20px 0 0 #fff0ad, 20px 0 0 #fff0ad, -10px -10px 0 #fff0ad, 10px -10px 0 #fff0ad, -10px 10px 0 #fff0ad, 10px 10px 0 #fff0ad; }
-.myhome-shelf { width: 102px; height: 10px; position: absolute; top: 186px; right: 38px; background: var(--scheduler-ink); box-shadow: 8px 8px 0 rgba(52,75,70,.15); }
-.myhome-shelf i { width: 25px; height: 43px; position: absolute; left: 11px; bottom: 10px; background: #f2a58d; }
-.myhome-shelf i + i { width: 37px; height: 29px; left: 48px; background: #b8a6de; }
 .myhome-rug { width: 240px; height: 55px; position: absolute; z-index: 1; left: 50%; bottom: 28px; transform: translateX(-50%); background: #d5c6e7; clip-path: polygon(24px 0, 216px 0, 216px 8px, 240px 8px, 240px 47px, 216px 47px, 216px 55px, 24px 55px, 24px 47px, 0 47px, 0 8px, 24px 8px); }
 .myhome-message { max-width: 196px; position: absolute; z-index: 5; top: 28px; right: 25px; padding: 12px 14px; border: 3px solid var(--scheduler-ink); background: #fffaf4; box-shadow: 7px 7px 0 rgba(52,75,70,.17); font-size: 10px; line-height: 1.5; }
 
@@ -251,10 +243,6 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 .home-dodo-mouth { width: 24px; height: 8px; position: absolute; left: 76px; top: 113px; background: var(--scheduler-ink); box-shadow: 8px 8px 0 var(--scheduler-ink), 16px 8px 0 var(--scheduler-ink), 24px 0 0 var(--scheduler-ink); }
 .home-dodo-leg { width: 43px; height: 38px; position: absolute; top: 179px; border-left: 13px solid #f2a58d; border-bottom: 13px solid #f2a58d; }
 .home-dodo-leg.left { left: 48px; }.home-dodo-leg.right { right: 48px; transform: scaleX(-1); }
-.myhome-plant { width: 64px; height: 70px; position: absolute; z-index: 2; right: 27px; bottom: 31px; border: 7px solid var(--scheduler-ink); background: #d9a08b; box-shadow: inset -13px 0 0 #c68a78; }
-.myhome-plant i { width: 27px; height: 62px; position: absolute; left: 11px; bottom: 63px; border: 7px solid var(--scheduler-ink); background: #8fb7a6; clip-path: polygon(0 0, 27px 0, 27px 48px, 19px 48px, 19px 62px, 8px 62px, 8px 48px, 0 48px); }
-.myhome-plant i:nth-child(2) { left: -10px; bottom: 47px; transform: rotate(-42deg); }.myhome-plant i:nth-child(3) { left: 32px; bottom: 47px; transform: rotate(42deg); }
-
 .dodo-status-card { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 10px; padding: 14px 19px; border-radius: 18px; background: var(--scheduler-cream); }
 .dodo-status-card > div:first-child { display: grid; }.dodo-status-card span { color: var(--scheduler-muted); font-size: 9px; }.dodo-status-card strong { margin-top: 3px; font-size: 14px; }
 .mood-pixels { display: flex; gap: 4px; }.mood-pixels i { width: 10px; height: 10px; background: #e6e4dd; }.mood-pixels i.filled { background: var(--scheduler-coral); }
@@ -265,6 +253,203 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 .action-pat { border: 4px solid var(--scheduler-green); border-radius: 50% 50% 45% 45%; }.action-pat::before { content: ''; position: absolute; width: 7px; height: 7px; top: -7px; left: 6px; border-radius: 50%; background: var(--scheduler-green); box-shadow: 10px 3px 0 var(--scheduler-green), -6px 5px 0 var(--scheduler-green); }
 .action-snack { background: var(--scheduler-coral); clip-path: polygon(0 8px, 8px 8px, 8px 0, 19px 0, 19px 8px, 27px 8px, 27px 27px, 0 27px); }.action-snack::after { content: ''; position: absolute; width: 5px; height: 5px; top: 13px; left: 7px; background: var(--scheduler-ink); box-shadow: 8px 0 0 var(--scheduler-ink); }
 .action-dress { border: 5px solid var(--scheduler-violet); border-top: 0; }.action-dress::before { content: ''; position: absolute; width: 13px; height: 8px; top: -7px; left: 2px; border: 4px solid var(--scheduler-violet); border-bottom: 0; }
+
+.room-shop-panel { margin-top: 20px; padding: 16px 15px; border: 1px solid var(--scheduler-line); border-radius: 20px; background: var(--scheduler-cream); }
+.room-shop-panel .tab-page-heading { padding-bottom: 14px; }
+.room-shop-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.room-shop-tabs button { flex: 1; padding: 9px; border: 1px solid var(--scheduler-line); border-radius: 12px; background: #fff; color: var(--scheduler-muted); cursor: pointer; font-size: 11px; font-weight: 800; }
+.room-shop-tabs button.active { border-color: var(--scheduler-ink); background: var(--scheduler-ink); color: #fff; }
+.room-shop-list { display: grid; gap: 10px; }
+.room-shop-item { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 13px; padding: 12px; border: 1px solid var(--scheduler-line); border-radius: 20px; background: #fff; }
+.room-shop-item > div { display: grid; }.room-shop-item strong { font-size: 14px; }.room-shop-item span { margin-top: 3px; color: var(--scheduler-muted); font-size: 9px; }
+/* :not(.avatar-color-swatch) — 이 규칙이 없으면 특이도가 더 높아서(class+type) 색상 스와치의
+   실제 색(background: var(--avatar))을 덮어써 모든 스와치가 같은 민트색으로 보이는 버그가 생긴다. */
+.room-shop-item button:not(.avatar-color-swatch) { padding: 8px 11px; border: 0; border-radius: 12px; background: var(--scheduler-mint); color: var(--scheduler-green); cursor: pointer; font-size: 9px; font-weight: 800; }
+.room-shop-item button.save { background: var(--scheduler-ink); color: #fff; }
+.room-shop-item button:disabled:not(.avatar-color-swatch) { opacity: .45; cursor: not-allowed; }
+.room-shop-item-actions { display: grid; gap: 6px; justify-items: end; }
+.room-shop-item-colors { margin-top: 5px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.room-shop-item-colors-label { color: var(--scheduler-green); font-size: 8px; font-weight: 800; letter-spacing: .3px; white-space: nowrap; }
+.room-shop-item-colors .avatar-color-picker { gap: 6px; }
+.room-shop-item-colors .avatar-color-swatch { width: 20px; height: 20px; }
+.room-shop-item-colors .avatar-color-swatch:disabled { opacity: .3; cursor: not-allowed; }
+
+.myhome-placed-item { position: absolute; z-index: 3; transform: translate(-50%, -50%) scale(.75); cursor: grab; touch-action: none; }
+.myhome-placed-item:active { cursor: grabbing; }
+/* 게임기는 마이홈에 놓였을 때만 다른 아이템의 1.5배 크기로 보이게(상점 아이콘 자체 크기는 그대로 둔다). */
+.myhome-placed-item:has(.shop-item-console) { transform: translate(-50%, -50%) scale(1.125); }
+/* 테이블은 가구 중에서도 크게 자리를 차지해야 해서 다른 아이템의 5배 크기로 보이게. */
+.myhome-placed-item:has(.shop-item-table) { transform: translate(-50%, -50%) scale(3.75); }
+/* 원래 방 붙박이였던 창문·화분·벽 장식들 — 원래 그래픽 그대로, 원래 비율(자연 크기)로 놓인다.
+   각 아이템의 실제 그림 크기에 맞춰 래퍼 크기를 지정해야 translate(-50%,-50%) 중심 정렬이 맞는다. */
+.myhome-placed-item:has(.myhome-window) { width: 126px; height: 121px; transform: translate(-50%, -50%); }
+.myhome-placed-item:has(.myhome-shelf) { width: 110px; height: 61px; transform: translate(-50%, -50%); }
+.myhome-placed-item:has(.myhome-plant) { width: 90px; height: 135px; transform: translate(-50%, -50%); }
+/* 별 장식만 요청에 따라 원래 크기의 1.5배로. */
+.myhome-placed-item:has(.myhome-wall-star) { width: 50px; height: 50px; transform: translate(-50%, -50%) scale(1.5); }
+/* 간식류는 테이블·다른 가구·두두·말풍선보다도 위(최우선)에 그려져야 한다.
+   방에 놓였을 때만 다른 아이템의 1.5배 크기로 보이게, 그리고 거기서 다시 1.5배(= 원래의 2.25배, scale(1.125 × 1.5))로 키운다.
+   filter는 이미 꺼져 있어(간식류만 filter:none) 외곽선이 ::before/::after 자체 box-shadow뿐이라,
+   scale을 더 키워도 아이콘과 외곽선이 같은 비율로 커질 뿐 외곽선만 두꺼워지는 문제는 재발하지 않는다(상점 아이콘 자체 크기는 그대로 둔다). */
+.myhome-placed-item:has(.shop-item-fried-egg),
+.myhome-placed-item:has(.shop-item-toast),
+.myhome-placed-item:has(.shop-item-pancake),
+.myhome-placed-item:has(.shop-item-rice) { z-index: 6; transform: translate(-50%, -50%) scale(1.6875); }
+
+.shop-item-console, .shop-item-pillow, .shop-item-headphones, .shop-item-table,
+.shop-item-fried-egg, .shop-item-toast, .shop-item-pancake, .shop-item-rice {
+  width: 48px; height: 48px; flex: 0 0 auto; position: relative; display: block;
+  clip-path: polygon(8px 0, 40px 0, 40px 8px, 48px 8px, 48px 40px, 40px 40px, 40px 48px, 8px 48px, 8px 40px, 0 40px, 0 8px, 8px 8px);
+  filter: drop-shadow(4px 0 0 var(--scheduler-ink)) drop-shadow(-4px 0 0 var(--scheduler-ink)) drop-shadow(0 4px 0 var(--scheduler-ink)) drop-shadow(0 -4px 0 var(--scheduler-ink));
+}
+.shop-item-console { background: var(--item-color, var(--scheduler-blue)); }
+.shop-item-console::before { content: ''; position: absolute; width: 22px; height: 14px; top: 7px; left: 13px; background: var(--scheduler-cream); box-shadow: inset 0 0 0 2px var(--scheduler-ink); }
+.shop-item-console::after {
+  content: ''; position: absolute; width: 3px; height: 3px; top: 27px; left: 15px; background: var(--scheduler-ink);
+  box-shadow:
+    0 -4px 0 var(--scheduler-ink),
+    0 4px 0 var(--scheduler-ink),
+    -4px 0 0 var(--scheduler-ink),
+    4px 0 0 var(--scheduler-ink),
+    16px -3px 0 var(--scheduler-ink),
+    20px 3px 0 var(--scheduler-ink);
+}
+.shop-item-pillow { background: var(--scheduler-coral); }
+.shop-item-pillow::before { content: ''; position: absolute; inset: 14px; border: 3px solid var(--scheduler-ink); }
+.shop-item-pillow::after { content: ''; position: absolute; width: 16px; height: 3px; top: 23px; left: 16px; background: var(--scheduler-ink); }
+.shop-item-headphones::before {
+  content: ''; position: absolute; width: 24px; height: 14px; top: 6px; left: 12px; background: var(--item-color, var(--scheduler-violet));
+  clip-path: polygon(4px 0, 20px 0, 20px 4px, 24px 4px, 24px 14px, 20px 14px, 20px 6px, 4px 6px, 4px 14px, 0 14px, 0 4px, 4px 4px);
+}
+.shop-item-headphones::after { content: ''; position: absolute; width: 6px; height: 12px; top: 19px; left: 11px; background: var(--item-color, var(--scheduler-violet)); box-shadow: 20px 0 0 var(--item-color, var(--scheduler-violet)); }
+/* 5배로 확대돼 보이는 아이템이라 공용 외곽선(4px)이 과하게 두꺼워 보여 테이블만 더 얇게 줄인다. */
+.shop-item-table { filter: drop-shadow(1.5px 0 0 var(--scheduler-ink)) drop-shadow(-1.5px 0 0 var(--scheduler-ink)) drop-shadow(0 1.5px 0 var(--scheduler-ink)) drop-shadow(0 -1.5px 0 var(--scheduler-ink)); }
+.shop-item-table::before { content: ''; position: absolute; width: 34px; height: 8px; top: 11px; left: 7px; background: var(--item-color, var(--scheduler-coral)); box-shadow: inset 0 0 0 1px var(--scheduler-ink); }
+.shop-item-table::after { content: ''; position: absolute; width: 4px; height: 20px; top: 19px; left: 10px; background: var(--scheduler-ink); box-shadow: 24px 0 0 var(--scheduler-ink); }
+
+/* 간식류 4종 — 계란후라이(흰자+노른자), 토스트(빵 조각+구운 자국), 핫케이크(층층이 쌓인 팬케이크+시럽), 밥(그릇+밥)
+   배경 없이 음식 모양 그래픽만 보이게 한다.
+   공용 filter:drop-shadow 외곽선(297번째 줄)은 배경(사각형)이 있을 때 그 사각형 실루엣을 따라 그려지도록 설계된 것이라,
+   배경을 지우면 대신 ::before/::after 모양의 실루엣을 따라 그려져 겹outline(뭉친 두꺼운 테두리)이 생긴다.
+   그래서 간식류는 공용 외곽선을 끄고, 각 ::before/::after 자체의 inset box-shadow 테두리만 쓴다. */
+.shop-item-fried-egg, .shop-item-toast, .shop-item-pancake, .shop-item-rice { filter: none; }
+.shop-item-fried-egg { background: transparent; }
+/* 흰자 외곽선은 가로로 긴 타원으로. */
+.shop-item-fried-egg::before {
+  content: ''; position: absolute; width: 34px; height: 26px; top: 11px; left: 7px; background: var(--scheduler-cream);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--scheduler-ink);
+}
+.shop-item-fried-egg::after {
+  content: ''; position: absolute; width: 12px; height: 12px; top: 18px; left: 18px; background: #fff0ad; border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--scheduler-ink);
+}
+/* 토스트: 레퍼런스(c59ae5f9145c839f004bdc737c79eaa8.jpg) 그대로 — 식빵(크러스트) 위에 계란후라이(흰자 타원 + 노른자)가
+   대부분을 덮고, 그 밑으로 토마토/허브 고명이 살짝 삐져나온 구성. 빵은 공용 노치 사각형(297번째 줄) 그대로 쓴다.
+   빵과 계란흰자가 같은 cream색이라 구분이 안 되고 통째로 빵덩어리처럼 보이던 것을, 빵은 노란끼 도는
+   크러스트색으로 바꾸고 계란흰자는 더 키워서 빵 테두리가 얇게 보이도록 수정. */
+.shop-item-toast {
+  background: #eec27a;
+  /* 계란(::before/::after)은 건드리지 않고 빵 모양만 작게 — 공용 clip-path(297번째 줄)를 축소된 버전으로 덮어쓴다. */
+  clip-path: polygon(14px 9px, 34px 9px, 34px 14px, 39px 14px, 39px 34px, 34px 34px, 34px 39px, 14px 39px, 14px 34px, 9px 34px, 9px 14px, 14px 14px);
+}
+.shop-item-toast::before {
+  content: ''; position: absolute; width: 25px; height: 19px; top: 14.5px; left: 11.5px; background: var(--scheduler-cream);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 2px var(--scheduler-ink),
+    6px -4px 0 -8px var(--scheduler-green),
+    -5px 5px 0 -8px var(--scheduler-green);
+}
+.shop-item-toast::after {
+  content: ''; position: absolute; width: 10px; height: 10px; top: 19px; left: 19px; background: #fff0ad; border-radius: 50%;
+  box-shadow:
+    0 0 0 2px var(--scheduler-ink),
+    -10px -8px 0 -3px var(--scheduler-coral),
+    -14px 2px 0 -3px var(--scheduler-green),
+    -11px 10px 0 -3px var(--scheduler-green),
+    10px 8px 0 -3px var(--scheduler-coral);
+}
+.shop-item-pancake { background: transparent; }
+.shop-item-pancake::before {
+  content: ''; position: absolute; width: 30px; height: 7px; bottom: 8px; left: 9px; background: var(--scheduler-coral); border-radius: 4px;
+  box-shadow:
+    0 0 0 2px var(--scheduler-ink),
+    0 -9px 0 var(--scheduler-coral), 0 -9px 0 2px var(--scheduler-ink),
+    0 -18px 0 var(--scheduler-coral), 0 -18px 0 2px var(--scheduler-ink);
+}
+.shop-item-pancake::after {
+  content: ''; position: absolute; width: 4px; height: 4px; top: 9px; left: 20px; background: #fff0ad;
+  box-shadow: 6px 3px 0 #fff0ad, -4px 4px 0 #fff0ad;
+}
+.shop-item-rice { background: transparent; }
+.shop-item-rice::before {
+  content: ''; position: absolute; width: 30px; height: 16px; bottom: 9px; left: 9px; background: var(--scheduler-ink);
+  clip-path: polygon(0 0, 30px 0, 26px 16px, 4px 16px);
+}
+.shop-item-rice::after {
+  content: ''; position: absolute; width: 26px; height: 14px; bottom: 20px; left: 11px; background: var(--scheduler-cream);
+  border-radius: 13px 13px 4px 4px; box-shadow: inset 0 0 0 2px var(--scheduler-ink);
+}
+
+/* 헤드폰 착용 오버레이 — 가로선(밴드)·세로선(strut) 모두 굵기 5px로 통일. 밴드는 두두 몸통의 두 번째 굴곡
+   (가장 넓은 지점, home-dodo-body clip-path의 176px 폭)까지 넓힌 곧은 막대, 다리 부분에 얇은 선(strut)을
+   두두 눈높이까지 늘어뜨리고, 그 끝에 타원 이어컵을 붙인다.
+   밴드·선·이어컵을 한 엘리먼트의 ::before/::after로 묶으면, 밴드에 건 clip-path가 그 영역 밖으로
+   튀어나온 나머지 부분까지 잘라버린다 — 그래서 셋을 별도 엘리먼트(.home-dodo-headphones의 자식)로 나눈다.
+   좌표는 전부 이 래퍼(left:26px, top:20px, 배경·clip-path 없음) 기준 상대값이다. */
+.home-dodo-headphones { position: absolute; z-index: 1; left: 26px; top: 20px; }
+.home-dodo-headphones-band { position: absolute; left: 0; top: 0; width: 176px; height: 5px; background: var(--item-color, var(--scheduler-ink)); }
+/* 밴드 다리 중심(x:1.5px/174.5px)에서 이어컵까지 이어지는 얇은 선 — 두두 눈높이(top:89px) 근처까지 늘어진다. */
+.home-dodo-headphones-strut { position: absolute; top: 3px; width: 5px; height: 52px; background: var(--item-color, var(--scheduler-ink)); }
+.home-dodo-headphones-strut.left { left: -1px; }
+.home-dodo-headphones-strut.right { left: 172px; }
+/* 이어컵은 원래 크기(14x26)의 1.5배(21x39)로 키웠다. */
+.home-dodo-headphones-cup {
+  position: absolute; top: 50px; width: 21px; height: 39px; background: var(--item-color, var(--scheduler-ink));
+  clip-path: polygon(6px 0, 15px 0, 21px 6px, 21px 33px, 15px 39px, 6px 39px, 0 33px, 0 6px);
+}
+.home-dodo-headphones-cup.left { left: -9px; }
+.home-dodo-headphones-cup.right { left: 164px; }
+
+/* 원래 마이홈 방에 고정 붙박이로 있던 창문·별 장식·선반 장식·화분 — 그래픽은 그대로 두고
+   이제 상점 목록(작은 프레임)과 마이홈 배치(원래 크기) 두 군데서 재사용한다. */
+.myhome-window { width: 110px; height: 105px; position: absolute; top: 0; left: 0; border: 8px solid var(--scheduler-ink); background: #dcecf4; box-shadow: 9px 9px 0 rgba(52,75,70,.14); }
+.myhome-window::before, .myhome-window::after { content: ''; position: absolute; background: var(--scheduler-ink); }
+.myhome-window::before { width: 8px; top: 0; bottom: 0; left: 43px; }
+.myhome-window::after { height: 8px; left: 0; right: 0; top: 41px; }
+.myhome-window i { position: absolute; width: 13px; height: 13px; right: 12px; top: 12px; background: #fff0ad; box-shadow: -9px 9px 0 #fff0ad, 9px 9px 0 #fff0ad; }
+.myhome-window i:nth-child(2) { width: 24px; height: 12px; left: 8px; top: 63px; background: #9fc8bb; box-shadow: 12px -10px 0 #9fc8bb; }
+.myhome-window i:nth-child(3) { display: none; }
+
+/* --item-color로 색을 바꿀 수 있고, 지정 안 하면 원래 색(#fff0ad, 골드) 그대로. */
+.myhome-wall-star {
+  width: 10px; height: 10px; position: absolute; top: 20px; left: 20px; background: var(--item-color, #fff0ad);
+  box-shadow:
+    0 -20px 0 var(--item-color, #fff0ad), 0 20px 0 var(--item-color, #fff0ad),
+    -20px 0 0 var(--item-color, #fff0ad), 20px 0 0 var(--item-color, #fff0ad),
+    -10px -10px 0 var(--item-color, #fff0ad), 10px -10px 0 var(--item-color, #fff0ad),
+    -10px 10px 0 var(--item-color, #fff0ad), 10px 10px 0 var(--item-color, #fff0ad);
+}
+
+.myhome-shelf { width: 102px; height: 10px; position: absolute; left: 4px; bottom: 8px; background: var(--scheduler-ink); box-shadow: 8px 8px 0 rgba(52,75,70,.15); }
+.myhome-shelf i { width: 25px; height: 43px; position: absolute; left: 11px; bottom: 10px; background: #f2a58d; }
+.myhome-shelf i + i { width: 37px; height: 29px; left: 48px; background: #b8a6de; }
+
+.myhome-plant { width: 64px; height: 70px; position: absolute; left: 6px; bottom: 0; border: 7px solid var(--scheduler-ink); background: #d9a08b; box-shadow: inset -13px 0 0 #c68a78; }
+.myhome-plant i { width: 27px; height: 62px; position: absolute; left: 11px; bottom: 63px; border: 7px solid var(--scheduler-ink); background: #8fb7a6; clip-path: polygon(0 0, 27px 0, 27px 48px, 19px 48px, 19px 62px, 8px 62px, 8px 48px, 0 48px); }
+.myhome-plant i:nth-child(2) { left: -10px; bottom: 47px; transform: rotate(-42deg); }.myhome-plant i:nth-child(3) { left: 32px; bottom: 47px; transform: rotate(42deg); }
+
+/* 상점/인벤토리 목록의 48px 슬롯에 위 그래픽들을 원래 비율 그대로 축소해서 보여주는 프레임.
+   슬롯(48px, 일반 레이아웃)은 다른 아이콘과 같은 자리를 차지하고, 그 안의 프레임은 position:absolute라
+   원본 크기(예: 화분 135px)가 그리드 행 높이에 영향을 안 준다 — absolute가 아니면 transform:scale은
+   시각적으로만 줄어들 뿐 레이아웃이 차지하는 크기는 원본 그대로라 상점 목록 행이 길어져 보인다. */
+.shop-fixture-slot { width: 48px; height: 48px; position: relative; flex: 0 0 auto; }
+.shop-fixture-frame { position: absolute; top: 0; left: 0; transform-origin: top left; }
+.shop-fixture-frame-window { width: 126px; height: 121px; transform: scale(.38); }
+.shop-fixture-frame-wall-star { width: 50px; height: 50px; transform: scale(.9); }
+.shop-fixture-frame-wall-shelf { width: 110px; height: 61px; transform: scale(.42); }
+.shop-fixture-frame-plant { width: 90px; height: 135px; transform: scale(.34); }
 
 .myhome-visitors { margin-top: 28px; }
 .myhome-visitors .friend-list article.unread { border-color: var(--scheduler-green); background: var(--scheduler-mint); }

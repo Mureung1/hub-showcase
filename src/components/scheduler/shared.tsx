@@ -10,7 +10,7 @@ export function PixelAvatar({ color, eyes }: { color: string; eyes: 1 | 2 }) {
   )
 }
 
-export const AVATAR_PALETTE = ['#a9c8ec', '#c7b7e7', '#a9cfbd', '#f2a58d', '#b8a6de', '#8fbdab']
+export const AVATAR_PALETTE = ['#a9c8ec', '#c7b7e7', '#a9cfbd', '#f2a58d', '#b8a6de', '#8fbdab', '#4a4a4a']
 
 // 실제 유저에는 아바타 색상/눈 모양 데이터가 없어서, id를 해시해 고정 팔레트에서 결정적으로 골라 쓴다.
 export function getAvatarProps(id: string): { color: string; eyes: 1 | 2 } {

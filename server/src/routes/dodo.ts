@@ -1,10 +1,13 @@
 import { Router } from 'express'
+import type { Response } from 'express'
 import type { DodoDiaryEntry, VideoPost } from '@prisma/client'
 import { prisma } from '../db.js'
 import { requireAuth } from '../auth/requireAuth.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 import { buildPublicUrl } from '../lib/storage.js'
 import { computeMood, computeTodayBehavior, upsertDailyDiary } from '../lib/dodo.js'
+import { equipRoomItem, getDodoAppearance, unequipRoomItem } from '../lib/dodoAppearance.js'
+import type { EquipRoomItemResult } from '../lib/dodoAppearance.js'
 
 export const dodoRouter = Router()
 dodoRouter.use(requireAuth)
@@ -20,6 +23,40 @@ function todayKey() {
 }
 
 type DiaryWithVideo = DodoDiaryEntry & { representativeVideoPost: VideoPost }
+type AppearanceWithItems = Awaited<ReturnType<typeof getDodoAppearance>>
+
+function toSlotResponse(item: AppearanceWithItems['hatItem'], color: string | null) {
+  return item ? { itemId: item.id, iconKey: item.iconKey, color } : null
+}
+
+function toAppearanceResponse(appearance: AppearanceWithItems) {
+  return {
+    hat: toSlotResponse(appearance.hatItem, appearance.hatColor),
+    glasses: toSlotResponse(appearance.glassesItem, appearance.glassesColor),
+    outfit: toSlotResponse(appearance.outfitItem, appearance.outfitColor),
+    accessory: toSlotResponse(appearance.accessoryItem, appearance.accessoryColor),
+  }
+}
+
+function readInventoryId(body: unknown): string | undefined {
+  if (typeof body !== 'object' || body === null) return undefined
+  const inventoryId = (body as Record<string, unknown>).inventoryId
+  return typeof inventoryId === 'string' ? inventoryId : undefined
+}
+
+function respondEquipResult(res: Response, result: EquipRoomItemResult) {
+  switch (result.status) {
+    case 'not_owned':
+      res.status(403).json({ error: '가지고 있지 않은 아이템이에요.' })
+      return
+    case 'not_equippable':
+      res.status(400).json({ error: '장착할 수 없는 아이템이에요.' })
+      return
+    case 'ok':
+      res.json(toAppearanceResponse(result.appearance))
+      return
+  }
+}
 
 function toDiaryResponse(entry: DiaryWithVideo) {
   return {
@@ -78,4 +115,29 @@ dodoRouter.get('/diary/:date', asyncHandler(async (req, res) => {
   }
 
   res.json(toDiaryResponse(entry as DiaryWithVideo))
+}))
+
+dodoRouter.get('/appearance', asyncHandler(async (req, res) => {
+  const appearance = await getDodoAppearance(req.userId!)
+  res.json(toAppearanceResponse(appearance))
+}))
+
+dodoRouter.post('/equip', asyncHandler(async (req, res) => {
+  const inventoryId = readInventoryId(req.body)
+  if (!inventoryId) {
+    res.status(400).json({ error: 'inventoryId가 필요합니다.' })
+    return
+  }
+
+  respondEquipResult(res, await equipRoomItem(req.userId!, inventoryId))
+}))
+
+dodoRouter.post('/unequip', asyncHandler(async (req, res) => {
+  const inventoryId = readInventoryId(req.body)
+  if (!inventoryId) {
+    res.status(400).json({ error: 'inventoryId가 필요합니다.' })
+    return
+  }
+
+  respondEquipResult(res, await unequipRoomItem(req.userId!, inventoryId))
 }))
