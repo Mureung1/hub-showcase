@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
-import { ChevronLeft } from 'lucide-react'
+import { ArrowUpRight, ChevronLeft } from 'lucide-react'
 import { ApiClientError } from '../api/client'
+import mascotComplete from '../assets/mascot/mascot-default&complete.png'
 import type {
   ArticleDetail,
   ContentType,
@@ -34,12 +35,12 @@ type MissionProps = {
   article: ArticleDetail
   onBack: () => void
   onSubmit: (request: CreateMissionRecordRequest) => Promise<MissionRecord>
-  onGoToToday: () => void
+  onGoToMyGgaem: () => void
 }
 
 type SaveState = 'idle' | 'saving' | 'error-422' | 'error-generic' | 'success'
 
-export default function Mission({ article, onBack, onSubmit, onGoToToday }: MissionProps) {
+export default function Mission({ article, onBack, onSubmit, onGoToMyGgaem }: MissionProps) {
   const [selectedMissionType, setSelectedMissionType] = useState<MissionType>(
     article.recommendedMission.type,
   )
@@ -75,14 +76,32 @@ export default function Mission({ article, onBack, onSubmit, onGoToToday }: Miss
 
   if (saveState === 'success') {
     return (
-      <div className="app-shell">
-        <main className="screen-main">
-          <p className="mission-complete-title">생각을 기록했어요.</p>
-          <p className="mission-complete-desc">나의 깸에서 다시 확인할 수 있어요.</p>
-          <button type="button" className="btn-primary" onClick={onGoToToday}>
-            오늘의 깸으로
+      <div className="mission-complete">
+        <div className="mission-complete-content">
+          <img
+            className="mission-complete-mascot"
+            src={mascotComplete}
+            alt=""
+            aria-hidden="true"
+          />
+
+          <h1 className="mission-complete-title">오늘의 깸 완료!</h1>
+
+          <p className="mission-complete-description">
+            내 생각 하나가 <strong>사고 log</strong>에 쌓였어요.
+            <br />
+            내일 또 한 편, 또 한 줄.
+          </p>
+
+          <button
+            type="button"
+            className="btn-primary mission-complete-action"
+            onClick={onGoToMyGgaem}
+          >
+            나의 깸에서 보기
+            <ArrowUpRight aria-hidden="true" />
           </button>
-        </main>
+        </div>
       </div>
     )
   }

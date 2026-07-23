@@ -342,7 +342,7 @@ describe('Today article intro flow', () => {
     expect(api.getArticleDetail).toHaveBeenNthCalledWith(2, ARTICLE_A.id)
   })
 
-  it('completes the full flow: select feature, open article, open original, start mission, change mission, save, and return to today', async () => {
+  it('completes the full flow: select feature, open article, open original, start mission, change mission, save, and go to MyGgaem', async () => {
     vi.mocked(api.getTodayArticles).mockResolvedValue({
       items: [ARTICLE_A, ARTICLE_B],
       emptyStateMessage: null,
@@ -373,16 +373,23 @@ describe('Today article intro flow', () => {
     await userEvent.type(screen.getByRole('textbox'), '나는 동의하지 않는다.')
     await userEvent.click(screen.getByRole('button', { name: /기록 남기기/ }))
 
-    expect(await screen.findByText('생각을 기록했어요.')).toBeInTheDocument()
+    expect(await screen.findByText('오늘의 깸 완료!')).toBeInTheDocument()
     expect(api.createMissionRecord).toHaveBeenCalledExactlyOnceWith({
       articleId: ARTICLE_A_DETAIL.id,
       missionType: 'rebuttal',
       userAnswer: '나는 동의하지 않는다.',
     })
 
-    await userEvent.click(screen.getByRole('button', { name: /오늘의 깸으로/ }))
+    await userEvent.click(screen.getByRole('button', { name: /나의 깸에서 보기/ }))
+
+    expect(await screen.findByRole('heading', { name: '나의 깸' })).toBeInTheDocument()
+    expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
+    expect(api.createMissionRecord).toHaveBeenCalledTimes(1)
+
+    await userEvent.click(screen.getByRole('button', { name: /오늘의 글/ }))
 
     expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
+    expect(screen.queryByText('글 소개')).not.toBeInTheDocument()
     expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
   })
 

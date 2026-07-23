@@ -25,12 +25,14 @@ type ArticleIntroProps = {
   state: ArticleIntroState
   onBack: () => void
   onSubmitMission?: (request: CreateMissionRecordRequest) => Promise<MissionRecord>
+  onGoToMyGgaem?: () => void
 }
 
 export default function ArticleIntro({
   state,
   onBack,
   onSubmitMission = () => Promise.reject(new Error('onSubmitMission not provided')),
+  onGoToMyGgaem = () => {},
 }: ArticleIntroProps) {
   const [hasOpenedOriginal, setHasOpenedOriginal] = useState(false)
   const [screen, setScreen] = useState<'intro' | 'mission'>('intro')
@@ -41,7 +43,7 @@ export default function ArticleIntro({
         article={state.article}
         onBack={() => setScreen('intro')}
         onSubmit={onSubmitMission}
-        onGoToToday={onBack}
+        onGoToMyGgaem={onGoToMyGgaem}
       />
     )
   }

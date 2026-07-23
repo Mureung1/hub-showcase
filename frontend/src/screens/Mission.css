@@ -205,16 +205,66 @@
   color: var(--ink-soft);
 }
 
-.mission-complete-title {
-  font-size: 20px;
-  font-weight: 800;
-  margin-bottom: 8px;
+/* 미션 완료 화면. 공용 .app-shell/.screen-main에 기대지 않는 전체 화면
+   중앙 정렬 레이아웃이라 여기서 자체 최상위 wrapper를 둔다. */
+.mission-complete {
+  width: 100%;
+  max-width: 375px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding:
+    max(24px, env(safe-area-inset-top))
+    24px
+    max(24px, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper);
 }
 
-.mission-complete-desc {
-  font-size: 14px;
+.mission-complete-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.mission-complete-mascot {
+  display: block;
+  width: 150px;
+  max-width: 48vw;
+  height: auto;
+  object-fit: contain;
+  margin-bottom: 14px;
+}
+
+.mission-complete-title {
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+
+.mission-complete-description {
+  font-size: 15px;
+  line-height: 1.7;
   color: var(--ink-soft);
-  margin-bottom: 24px;
+  max-width: 280px;
+  margin-bottom: 32px;
+}
+
+.mission-complete-action {
+  width: auto;
+  min-width: 0;
+  padding: 0 30px;
+  margin: 0 auto;
+}
+
+.mission-complete-action svg {
+  width: 17px;
+  height: 17px;
 }
 
 /* 하단 고정 CTA */

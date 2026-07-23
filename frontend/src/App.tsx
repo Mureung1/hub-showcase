@@ -130,6 +130,10 @@ function MainTabsContainer() {
       <ArticleIntroContainer
         articleId={flow.articleId}
         onBack={() => setFlow({ screen: 'today' })}
+        onGoToMyGgaem={() => {
+          setFlow({ screen: 'today' })
+          setTab('myGgaem')
+        }}
       />
     )
   }
@@ -149,9 +153,11 @@ function MainTabsContainer() {
 function ArticleIntroContainer({
   articleId,
   onBack,
+  onGoToMyGgaem,
 }: {
   articleId: string
   onBack: () => void
+  onGoToMyGgaem: () => void
 }) {
   const [state, setState] = useState<ArticleIntroState>({ status: 'loading' })
 
@@ -194,6 +200,7 @@ function ArticleIntroContainer({
       state={state}
       onBack={onBack}
       onSubmitMission={(request) => api.createMissionRecord(request)}
+      onGoToMyGgaem={onGoToMyGgaem}
     />
   )
 }

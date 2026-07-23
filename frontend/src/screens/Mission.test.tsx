@@ -41,7 +41,7 @@ function chipFor(name: string) {
 describe('Mission', () => {
   describe('initial state', () => {
     it('selects the recommended mission type chip and shows its prompt', () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       expect(chipFor('연결')).toHaveAttribute('aria-pressed', 'true')
       expect(chipFor('질문')).toHaveAttribute('aria-pressed', 'false')
@@ -51,13 +51,13 @@ describe('Mission', () => {
     })
 
     it('shows the recommended-mission hint', () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       expect(screen.getByText('오늘의 추천 미션')).toBeInTheDocument()
     })
 
     it('shows the article source, content type, and title in the article card, without an interest badge', () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       expect(screen.getByText(ARTICLE.sourceName)).toBeInTheDocument()
       expect(screen.getByText('아티클')).toBeInTheDocument()
@@ -68,7 +68,7 @@ describe('Mission', () => {
 
   describe('changing the mission type', () => {
     it('selects the clicked chip and deselects the previous one', async () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.click(chipFor('반박'))
 
@@ -77,7 +77,7 @@ describe('Mission', () => {
     })
 
     it('shows the actual API prompt for the newly selected type', async () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.click(chipFor('반박'))
 
@@ -86,7 +86,7 @@ describe('Mission', () => {
     })
 
     it('shows "미션을 바꿨어요" after selecting a non-recommended type', async () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.click(chipFor('반박'))
 
@@ -95,7 +95,7 @@ describe('Mission', () => {
     })
 
     it('restores "오늘의 추천 미션" when the recommended type is selected again', async () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.click(chipFor('반박'))
       await userEvent.click(chipFor('연결'))
@@ -105,7 +105,7 @@ describe('Mission', () => {
 
     it('updates the article card accent to match the selected mission type', async () => {
       const { container } = render(
-        <Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />,
+        <Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />,
       )
 
       expect(container.querySelector('.mission-article-accent--connection')).not.toBeNull()
@@ -117,7 +117,7 @@ describe('Mission', () => {
     })
 
     it('keeps the entered answer when the mission type is changed', async () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.type(screen.getByRole('textbox'), '생각을 남긴다.')
       await userEvent.click(chipFor('반박'))
@@ -128,7 +128,7 @@ describe('Mission', () => {
 
   describe('helper text', () => {
     it('shows the guidance message when the answer is empty', () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       expect(
         screen.getByText('조금 더 생각해봐요 — 한 문장으로 남겨보세요.'),
@@ -136,7 +136,7 @@ describe('Mission', () => {
     })
 
     it('shows the guidance message when the answer is only whitespace', async () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.type(screen.getByRole('textbox'), '   ')
 
@@ -146,7 +146,7 @@ describe('Mission', () => {
     })
 
     it('hides the guidance message and does not show a character count once a valid answer is entered', async () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.type(screen.getByRole('textbox'), '생각을 남긴다.')
 
@@ -157,7 +157,7 @@ describe('Mission', () => {
     })
 
     it('keeps the textarea and CTA present after the helper text disappears', async () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.type(screen.getByRole('textbox'), '생각을 남긴다.')
 
@@ -168,13 +168,13 @@ describe('Mission', () => {
 
   describe('submit', () => {
     it('disables the CTA when the answer is empty', () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       expect(screen.getByRole('button', { name: /기록 남기기/ })).toBeDisabled()
     })
 
     it('disables the CTA when the answer is only whitespace', async () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.type(screen.getByRole('textbox'), '   ')
 
@@ -182,7 +182,7 @@ describe('Mission', () => {
     })
 
     it('enables the CTA when the answer is valid', async () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.type(screen.getByRole('textbox'), '생각을 남긴다.')
 
@@ -200,7 +200,7 @@ describe('Mission', () => {
         anchorType: 'whole_content',
         createdAt: '2026-07-20T05:00:00Z',
       })
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.click(chipFor('반박'))
       await userEvent.type(screen.getByRole('textbox'), '  나는 동의하지 않는다.  ')
@@ -231,7 +231,7 @@ describe('Mission', () => {
               })
           }),
       )
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.type(screen.getByRole('textbox'), '생각을 남긴다.')
       const submitButton = screen.getByRole('button', { name: /기록 남기기|저장하고 있어요/ })
@@ -263,7 +263,7 @@ describe('Mission', () => {
               })
           }),
       )
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.type(screen.getByRole('textbox'), '생각을 남긴다.')
       await userEvent.click(screen.getByRole('button', { name: /기록 남기기/ }))
@@ -279,7 +279,7 @@ describe('Mission', () => {
       const onSubmit = vi
         .fn()
         .mockRejectedValue(new ApiClientError(422, { code: 'VALIDATION_ERROR', message: '요청값을 확인해 주세요.' }))
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.click(chipFor('반박'))
       await userEvent.type(screen.getByRole('textbox'), '네')
@@ -292,7 +292,7 @@ describe('Mission', () => {
 
     it('shows a generic error message for non-422 failures', async () => {
       const onSubmit = vi.fn().mockRejectedValue(new Error('network down'))
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.type(screen.getByRole('textbox'), '생각을 남긴다.')
       await userEvent.click(screen.getByRole('button', { name: /기록 남기기/ }))
@@ -303,7 +303,7 @@ describe('Mission', () => {
 
     it('shows errors with role="alert"', async () => {
       const onSubmit = vi.fn().mockRejectedValue(new Error('network down'))
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.type(screen.getByRole('textbox'), '생각을 남긴다.')
       await userEvent.click(screen.getByRole('button', { name: /기록 남기기/ }))
@@ -313,7 +313,7 @@ describe('Mission', () => {
 
     it('allows retrying after a failed submission', async () => {
       const onSubmit = vi.fn().mockRejectedValueOnce(new Error('network down'))
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.type(screen.getByRole('textbox'), '생각을 남긴다.')
       await userEvent.click(screen.getByRole('button', { name: /기록 남기기/ }))
@@ -324,62 +324,143 @@ describe('Mission', () => {
   })
 
   describe('completion', () => {
-    it('does not show the completion state before a successful submission', () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
-
-      expect(screen.queryByText('생각을 기록했어요.')).not.toBeInTheDocument()
-    })
-
-    it('shows the completion state and navigates to today after a successful submission', async () => {
-      const onGoToToday = vi.fn()
-      const onSubmit = vi.fn().mockResolvedValue({
+    function makeResolvedMissionRecord() {
+      return {
         id: '50000000-0000-0000-0000-000000000001',
         articleId: ARTICLE.id,
         missionType: ARTICLE.recommendedMission.type,
         missionPrompt: ARTICLE.recommendedMission.prompt,
         userAnswer: '생각을 남긴다.',
         selectedQuote: null,
-        anchorType: 'whole_content',
+        anchorType: 'whole_content' as const,
         createdAt: '2026-07-20T05:00:00Z',
-      })
-      render(
-        <Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToToday={onGoToToday} />,
-      )
+      }
+    }
+
+    it('does not show the completion state before a successful submission', () => {
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
+
+      expect(screen.queryByText('오늘의 깸 완료!')).not.toBeInTheDocument()
+    })
+
+    it('does not show the completion state while saving or after an error', async () => {
+      const onSubmit = vi.fn().mockRejectedValue(new Error('network down'))
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToMyGgaem={vi.fn()} />)
+
+      await userEvent.type(screen.getByRole('textbox'), '생각을 남긴다.')
+      await userEvent.click(screen.getByRole('button', { name: /기록 남기기/ }))
+      await screen.findByText('저장하지 못했어요. 다시 시도해 주세요.')
+
+      expect(screen.queryByText('오늘의 깸 완료!')).not.toBeInTheDocument()
+    })
+
+    it('shows the new completion copy after a successful submission', async () => {
+      const onSubmit = vi.fn().mockResolvedValue(makeResolvedMissionRecord())
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.type(screen.getByRole('textbox'), '생각을 남긴다.')
       await userEvent.click(screen.getByRole('button', { name: /기록 남기기/ }))
 
-      expect(await screen.findByText('생각을 기록했어요.')).toBeInTheDocument()
-      expect(screen.getByText('나의 깸에서 다시 확인할 수 있어요.')).toBeInTheDocument()
+      expect(await screen.findByText('오늘의 깸 완료!')).toBeInTheDocument()
+      expect(screen.getByText('사고 log')).toBeInTheDocument()
+      expect(screen.getByText(/내일 또 한 편, 또 한 줄\./)).toBeInTheDocument()
+      expect(screen.queryByText('생각을 기록했어요.')).not.toBeInTheDocument()
+      expect(screen.queryByText('나의 깸에서 다시 확인할 수 있어요.')).not.toBeInTheDocument()
+    })
 
-      await userEvent.click(screen.getByRole('button', { name: /오늘의 깸으로/ }))
-      expect(onGoToToday).toHaveBeenCalledTimes(1)
+    it('shows mascot-default&complete.png and no separate +1 badge or starburst', async () => {
+      const onSubmit = vi.fn().mockResolvedValue(makeResolvedMissionRecord())
+      const { container } = render(
+        <Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToMyGgaem={vi.fn()} />,
+      )
+
+      await userEvent.type(screen.getByRole('textbox'), '생각을 남긴다.')
+      await userEvent.click(screen.getByRole('button', { name: /기록 남기기/ }))
+      await screen.findByText('오늘의 깸 완료!')
+
+      const mascot = container.querySelector('.mission-complete-mascot') as HTMLImageElement | null
+      expect(mascot?.tagName).toBe('IMG')
+      expect(mascot?.getAttribute('src')).toContain('mascot-default')
+      expect(mascot).toHaveAttribute('alt', '')
+      expect(mascot).toHaveAttribute('aria-hidden', 'true')
+      expect(container.querySelectorAll('svg').length).toBe(1) // CTA 화살표 아이콘 하나만
+      expect(screen.queryByText('+1')).not.toBeInTheDocument()
+    })
+
+    it('replaces the writing screen (chip, textarea, header, footer nav) with the completion screen', async () => {
+      const onSubmit = vi.fn().mockResolvedValue(makeResolvedMissionRecord())
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToMyGgaem={vi.fn()} />)
+
+      await userEvent.type(screen.getByRole('textbox'), '생각을 남긴다.')
+      await userEvent.click(screen.getByRole('button', { name: /기록 남기기/ }))
+      await screen.findByText('오늘의 깸 완료!')
+
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+      expect(screen.queryByRole('group', { name: '미션 유형' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: '뒤로가기' })).not.toBeInTheDocument()
+    })
+
+    it('does not rely on the shared .screen-main wrapper for the completion screen', async () => {
+      const onSubmit = vi.fn().mockResolvedValue(makeResolvedMissionRecord())
+      const { container } = render(
+        <Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToMyGgaem={vi.fn()} />,
+      )
+
+      await userEvent.type(screen.getByRole('textbox'), '생각을 남긴다.')
+      await userEvent.click(screen.getByRole('button', { name: /기록 남기기/ }))
+      await screen.findByText('오늘의 깸 완료!')
+
+      expect(container.querySelector('.mission-complete')).not.toBeNull()
+      expect(container.querySelector('.screen-main')).toBeNull()
+      expect(container.querySelector('.app-shell')).toBeNull()
+    })
+
+    it('shows the 나의 깸에서 보기 CTA using .btn-primary with the completion modifier, and calls onGoToMyGgaem once without resubmitting', async () => {
+      const onGoToMyGgaem = vi.fn()
+      const onSubmit = vi.fn().mockResolvedValue(makeResolvedMissionRecord())
+      const { container } = render(
+        <Mission article={ARTICLE} onBack={vi.fn()} onSubmit={onSubmit} onGoToMyGgaem={onGoToMyGgaem} />,
+      )
+
+      await userEvent.type(screen.getByRole('textbox'), '생각을 남긴다.')
+      await userEvent.click(screen.getByRole('button', { name: /기록 남기기/ }))
+      await screen.findByText('오늘의 깸 완료!')
+
+      const cta = screen.getByRole('button', { name: /나의 깸에서 보기/ })
+      expect(cta).toHaveClass('btn-primary', 'mission-complete-action')
+      expect(screen.queryByRole('button', { name: /오늘의 깸으로/ })).not.toBeInTheDocument()
+
+      await userEvent.click(cta)
+
+      expect(onGoToMyGgaem).toHaveBeenCalledTimes(1)
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      expect(container).toBeInTheDocument()
     })
   })
 
   describe('accessibility', () => {
     it('provides an accessible name for the mission type group', () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       expect(screen.getByRole('group', { name: '미션 유형' })).toBeInTheDocument()
     })
 
     it('renders mission type chips as real buttons', () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       expect(chipFor('질문').tagName).toBe('BUTTON')
       expect(chipFor('질문')).toHaveAttribute('type', 'button')
     })
 
     it('has an accessible name of 뒤로가기 for the back button', () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       expect(screen.getByRole('button', { name: '뒤로가기' })).toBeInTheDocument()
     })
 
     it('goes back when the back button is clicked', async () => {
       const onBack = vi.fn()
-      render(<Mission article={ARTICLE} onBack={onBack} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={onBack} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       await userEvent.click(screen.getByRole('button', { name: '뒤로가기' }))
 
@@ -387,14 +468,14 @@ describe('Mission', () => {
     })
 
     it('provides an accessible label for the textarea', () => {
-      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />)
+      render(<Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />)
 
       expect(screen.getByRole('textbox', { name: '답변' })).toBeInTheDocument()
     })
 
     it('treats the mission-type function-color dots as decorative', () => {
       const { container } = render(
-        <Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToToday={vi.fn()} />,
+        <Mission article={ARTICLE} onBack={vi.fn()} onSubmit={vi.fn()} onGoToMyGgaem={vi.fn()} />,
       )
 
       const dots = container.querySelectorAll('.mission-type-dot')
