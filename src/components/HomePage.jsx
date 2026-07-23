@@ -63,6 +63,9 @@ function HomePage() {
   const timersRef = useRef(new Map()); // taskId -> timeoutId (active task별 무응답 tick, 레벨/긴급도별 가변 간격 #44)
   const activatingRef = useRef(new Set()); // 활성화 요청 in-flight 중복 방지
   const tickingRef = useRef(new Set()); // tick 요청 in-flight 중복 방지
+  const notificationInFlightRef = useRef(false);
+  const runTickRef = useRef(null);
+  const isMountedRef = useRef(true);
   const modalOpenRef = useRef(null); // 자동 팝업 경합 방지용 동기 소스(다른 task가 덮어쓰지 못하게)
   // taskId -> 이미 회피이유 재확인을 띄운 레벨 Set. 레벨 1·3 각각 1회만 노출(=최대 2회).
   // 멈추기로 레벨이 내려갔다가 같은 레벨을 재진입해도 다시 뜨지 않게 막는다.
@@ -80,34 +83,96 @@ function HomePage() {
   }, [loadTasks]);
 
   // 넛지 모달 열기/닫기 — 렌더용 state와 경합방지용 ref를 항상 함께 갱신한다.
-  const openModal = useCallback((id, checkpointLevel = null) => {
-    modalOpenRef.current = id;
-    setModalTaskId(id);
-    setModalCheckpointLevel(checkpointLevel);
+  const clearAllTaskTimers = useCallback(() => {
+    for (const timeoutId of timersRef.current.values()) {
+      clearTimeout(timeoutId);
+    }
+    timersRef.current.clear();
   }, []);
-  const closeModal = useCallback(() => {
+
+  const scheduleTaskTimer = useCallback((task) => {
+    if (
+      !isMountedRef.current ||
+      !task ||
+      task.status !== "active" ||
+      task.id === stateRef.current.selectedTaskId ||
+      modalOpenRef.current !== null ||
+      timersRef.current.has(task.id)
+    ) {
+      return;
+    }
+
+    const delayMs = getDemoNudgeDelayMs(task.level, task.deadline);
+    const timeoutId = setTimeout(() => {
+      timersRef.current.delete(task.id);
+      runTickRef.current?.(task.id);
+    }, delayMs);
+    timersRef.current.set(task.id, timeoutId);
+  }, []);
+
+  const scheduleActiveTaskTimers = useCallback(
+    (excludedTaskId = null) => {
+      if (modalOpenRef.current !== null) return;
+      const { tasks: currentTasks, selectedTaskId: focusedTaskId } =
+        stateRef.current;
+      currentTasks
+        .filter(
+          (task) =>
+            task.status === "active" &&
+            task.id !== focusedTaskId &&
+            task.id !== excludedTaskId,
+        )
+        .forEach(scheduleTaskTimer);
+    },
+    [scheduleTaskTimer],
+  );
+
+  const openModal = useCallback(
+    (id, checkpointLevel = null) => {
+      clearAllTaskTimers();
+      modalOpenRef.current = id;
+      setModalTaskId(id);
+      setModalCheckpointLevel(checkpointLevel);
+    },
+    [clearAllTaskTimers],
+  );
+
+  const closeModalWithoutReschedule = useCallback(() => {
+    clearAllTaskTimers();
     modalOpenRef.current = null;
     setModalTaskId(null);
     setModalCheckpointLevel(null);
-  }, []);
+  }, [clearAllTaskTimers]);
+
+  const closeModal = useCallback(() => {
+    closeModalWithoutReschedule();
+    scheduleActiveTaskTimers();
+  }, [closeModalWithoutReschedule, scheduleActiveTaskTimers]);
 
   // 무응답 1회 처리: 서버에 반영하고, 레벨이 올랐으면 자동으로 모달을 띄운다.
-  // 성공하면 최신 레벨/마감으로 다음 지연을 계산해 스스로 재예약한다(#44) — 고정
+  // 무응답 이벤트를 서버에 반영한다. 모달이 열리면 추가 타이머를 중단하고, 모달이 열리지 않은 경우에만 다음 타이머를 예약한다.
   // setInterval로는 레벨마다 다른 간격을 줄 수 없어(이미 붙은 interval은 주기를
   // 바꿀 수 없음) 자기재귀 setTimeout으로 바꿨다.
   const runTick = useCallback(
     async (id) => {
+      if (modalOpenRef.current !== null) return;
       const { tasks: cur, selectedTaskId: sel } = stateRef.current;
       const before = cur.find((t) => t.id === id);
       // 완료/삭제/포커스 진입 등으로 더 이상 대상이 아니면 skip(재예약도 하지 않음)
       if (!before || before.status !== "active" || id === sel) return;
       if (tickingRef.current.has(id)) return;
+      if (notificationInFlightRef.current) return;
       tickingRef.current.add(id);
+      notificationInFlightRef.current = true;
+      let taskForNextSchedule = before;
+      let shouldRescheduleTask = false;
       try {
         const { data: updated } = await apiFetch(`/api/tasks/${id}/events`, {
           method: "POST",
           body: JSON.stringify({ eventType: "notification_sent" }),
         });
+        taskForNextSchedule = updated;
+        shouldRescheduleTask = true;
         setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
 
         const leveledUp = updated.level > before.level;
@@ -133,9 +198,6 @@ function HomePage() {
           }
           openModal(id, checkpointLevel);
         }
-
-        const delayMs = getDemoNudgeDelayMs(updated.level, updated.deadline);
-        timersRef.current.set(id, setTimeout(() => runTick(id), delayMs));
       } catch (err) {
         // 삭제와 경합해 이미 지워진 task에 보낸 tick은 404가 정상 — 조용히 무시하고
         // 재예약하지 않는다(체인이 여기서 자연스럽게 멈춘다).
@@ -144,10 +206,18 @@ function HomePage() {
         }
       } finally {
         tickingRef.current.delete(id);
+        notificationInFlightRef.current = false;
+        if (modalOpenRef.current === null) {
+          if (shouldRescheduleTask) {
+            scheduleTaskTimer(taskForNextSchedule);
+          }
+          scheduleActiveTaskTimers(id);
+        }
       }
     },
-    [openModal],
+    [openModal, scheduleActiveTaskTimers, scheduleTaskTimer],
   );
+  runTickRef.current = runTick;
 
   // 폴링 대상(active + 포커스 중 아님) 목록에 맞춰 task별 타이머를 붙였다 뗐다 한다.
   // 이미 붙어있는 타이머는 runTick이 스스로 재예약하므로 여기서는 "새로 대상이 된
@@ -159,12 +229,10 @@ function HomePage() {
         .map((t) => t.id),
     );
     // 새 대상: 최초 1회 예약(레벨 0 → Lv1은 대기 없이 즉시, #44)
-    for (const id of pollable) {
-      if (!timersRef.current.has(id)) {
+    if (modalOpenRef.current === null) {
+      for (const id of pollable) {
         const task = tasks.find((t) => t.id === id);
-        const delayMs = getDemoNudgeDelayMs(task.level, task.deadline);
-        const timeoutId = setTimeout(() => runTick(id), delayMs);
-        timersRef.current.set(id, timeoutId);
+        scheduleTaskTimer(task);
       }
     }
     // 대상에서 빠진 task(완료/삭제/포커스 진입): 타이머 정리
@@ -174,12 +242,14 @@ function HomePage() {
         timersRef.current.delete(id);
       }
     }
-  }, [tasks, selectedTaskId, runTick]);
+  }, [tasks, selectedTaskId, scheduleTaskTimer]);
 
   // 언마운트 시 모든 tick 타이머 정리
   useEffect(() => {
     const timers = timersRef.current;
+    isMountedRef.current = true;
     return () => {
+      isMountedRef.current = false;
       for (const timeoutId of timers.values()) clearTimeout(timeoutId);
       timers.clear();
     };
@@ -232,7 +302,7 @@ function HomePage() {
   // Lv2 모달은 session(microTask/entryLevel 등)을 넘겨준다 — Lv1/3/4는 인자 없이 호출된다.
   function handleStartFromModal(session) {
     const id = modalTaskId;
-    closeModal();
+    closeModalWithoutReschedule();
     setFocusSession(session ?? null);
     setSelectedTaskId(id);
   }

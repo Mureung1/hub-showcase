@@ -234,6 +234,100 @@ describe.skipIf(!isTestDb)("POST /api/tasks/:id/events — done 완료 스냅샷
     expect(event?.microTask).toBeNull();
   });
 
+  it("이미 완료된 task에 done을 다시 보내도 성공 응답을 유지하고 이벤트를 추가하지 않는다 (멱등)", async () => {
+    const task = await createTestTask();
+
+    const first = await request(app)
+      .post(`/api/tasks/${task.id}/events`)
+      .send({
+        eventType: "done",
+        durationSeconds: 60,
+        entryLevel: 2,
+        microTask: "첫 문장 쓰기",
+      });
+    const duplicate = await request(app)
+      .post(`/api/tasks/${task.id}/events`)
+      .send({
+        eventType: "done",
+        durationSeconds: 999,
+        entryLevel: 4,
+        microTask: "덮어쓰면 안 되는 값",
+      });
+
+    expect(first.status).toBe(200);
+    expect(duplicate.status).toBe(200);
+    expect(duplicate.body.data).toEqual(
+      expect.objectContaining({
+        id: task.id,
+        status: "done",
+        reason: "overwhelm",
+      }),
+    );
+
+    const events = await prisma.taskEvent.findMany({
+      where: { taskId: task.id, eventType: "done" },
+    });
+    expect(events).toHaveLength(1);
+    expect(events[0].durationSeconds).toBe(60);
+    expect(events[0].entryLevel).toBe(2);
+    expect(events[0].microTask).toBe("첫 문장 쓰기");
+  });
+
+  it(
+    "동일 task의 동시 done 요청 두 개 중 하나만 이벤트와 streak를 기록한다 (동시성)",
+    async () => {
+      const task = await createTestTask();
+      const appStateBefore = await prisma.appState.findUnique({
+        where: { id: "singleton" },
+      });
+      const streakBefore = appStateBefore?.streak ?? 0;
+
+      const [first, second] = await Promise.all([
+        request(app)
+          .post(`/api/tasks/${task.id}/events`)
+          .send({
+            eventType: "done",
+            durationSeconds: 120,
+            entryLevel: 2,
+            microTask: "첫 번째 요청",
+          }),
+        request(app)
+          .post(`/api/tasks/${task.id}/events`)
+          .send({
+            eventType: "done",
+            durationSeconds: 121,
+            entryLevel: 3,
+            microTask: "두 번째 요청",
+          }),
+      ]);
+
+      expect(first.status).toBe(200);
+      expect(second.status).toBe(200);
+      for (const response of [first, second]) {
+        expect(response.body.data).toEqual(
+          expect.objectContaining({
+            id: task.id,
+            status: "done",
+            reason: "overwhelm",
+          }),
+        );
+      }
+
+      const [completedTask, doneEvents, appStateAfter] = await Promise.all([
+        prisma.task.findUniqueOrThrow({ where: { id: task.id } }),
+        prisma.taskEvent.findMany({
+          where: { taskId: task.id, eventType: "done" },
+        }),
+        prisma.appState.findUniqueOrThrow({ where: { id: "singleton" } }),
+      ]);
+
+      expect(completedTask.status).toBe("done");
+      expect(doneEvents).toHaveLength(1);
+      expect(appStateAfter.streak).toBe(streakBefore + 1);
+    },
+    30000,
+  );
+
   it("microTask가 빈 문자열이면 null로 저장된다 (경계)", async () => {
     const task = await createTestTask();
 

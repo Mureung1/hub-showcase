@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import CompletionMessage from "./CompletionMessage";
@@ -19,6 +19,8 @@ function FocusMode({ taskId, title, microTask = null, entryLevel = null, onCompl
   const [errorMessage, setErrorMessage] = useState(null);
   const [phase, setPhase] = useState("focus"); // "focus" | "completed"
   const [feedback, setFeedback] = useState(null); // { value, saved } — 선택/저장 상태 표시용
+  const [isCompleting, setIsCompleting] = useState(false);
+  const completionInFlightRef = useRef(false);
 
   useEffect(() => {
     // 완료 화면에서는 집중 시간이 더 이상 흐르지 않도록 멈춘다(Completion에 표시할
@@ -51,6 +53,9 @@ function FocusMode({ taskId, title, microTask = null, entryLevel = null, onCompl
   }
 
   async function handleComplete() {
+    if (completionInFlightRef.current) return;
+    completionInFlightRef.current = true;
+    setIsCompleting(true);
     try {
       setErrorMessage(null);
       // entryLevel/microTask는 STEP1에서 이미 넘겨받은 값 그대로 스냅샷으로
@@ -60,6 +65,9 @@ function FocusMode({ taskId, title, microTask = null, entryLevel = null, onCompl
     } catch (err) {
       console.error(err);
       setErrorMessage("완료 기록에 실패했어요. 다시 시도해주세요.");
+    } finally {
+      completionInFlightRef.current = false;
+      setIsCompleting(false);
     }
   }
 
@@ -131,7 +139,11 @@ function FocusMode({ taskId, title, microTask = null, entryLevel = null, onCompl
         <button className="btn btn-focus-secondary" onClick={handleStop}>
           멈추기
         </button>
-        <button className="btn btn-focus-primary" onClick={handleComplete}>
+        <button
+          className="btn btn-focus-primary"
+          onClick={handleComplete}
+          disabled={isCompleting}
+        >
           완료
         </button>
       </div>

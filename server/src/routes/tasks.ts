@@ -136,22 +136,31 @@ router.post("/:id/events", async (req, res) => {
     const task = await prisma.$transaction(async (tx) => {
       const currentTask = await tx.task.findUniqueOrThrow({ where: { id } });
 
-      await tx.taskEvent.create({
-        data: {
-          taskId: id,
-          eventType,
-          occurredAt: new Date(),
-          ...(eventType === "done"
-            ? {
-                durationSeconds: durationSeconds ?? null,
-                entryLevel: entryLevel ?? null,
-                microTask: microTask ? microTask : null,
-              }
-            : {}),
-        },
-      });
-
       if (eventType === "done") {
+        // status 전환을 먼저 선점한 요청만 완료 이벤트와 streak를 기록한다.
+        // 동시 요청은 행 잠금 뒤 조건을 다시 평가하므로 한 요청만 count=1을 얻는다.
+        const claimed = await tx.task.updateMany({
+          where: { id, status: { not: "done" } },
+          data: { status: "done", skipCount: 0, level: 0 },
+        });
+
+        // 이미 완료된 요청은 첫 완료 결과를 그대로 성공으로 반환한다.
+        // 새 이벤트를 만들거나 기존 완료 스냅샷/streak를 덮어쓰지 않는다.
+        if (claimed.count === 0) {
+          return tx.task.findUniqueOrThrow({ where: { id } });
+        }
+
+        await tx.taskEvent.create({
+          data: {
+            taskId: id,
+            eventType,
+            occurredAt: new Date(),
+            durationSeconds: durationSeconds ?? null,
+            entryLevel: entryLevel ?? null,
+            microTask: microTask ? microTask : null,
+          },
+        });
+
         const wasFirstTry = currentTask.skipCount === 0;
 
         await tx.appState.upsert({
@@ -160,11 +169,16 @@ router.post("/:id/events", async (req, res) => {
           update: { streak: wasFirstTry ? { increment: 1 } : 0 },
         });
 
-        return tx.task.update({
-          where: { id },
-          data: { status: "done", skipCount: 0, level: 0 },
-        });
+        return tx.task.findUniqueOrThrow({ where: { id } });
       }
+
+      await tx.taskEvent.create({
+        data: {
+          taskId: id,
+          eventType,
+          occurredAt: new Date(),
+        },
+      });
 
       if (eventType === "stopped") {
         const nextSkipCount = Math.max(0, Math.floor(currentTask.skipCount / 2));

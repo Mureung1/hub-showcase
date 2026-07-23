@@ -49,9 +49,6 @@ function HistoryPage() {
     );
   }
 
-  const doneTasks = tasks.filter((t) => t.status === "done");
-  const doneTasksById = new Map(doneTasks.map((t) => [t.id, t]));
-  const maxSkip = Math.max(...doneTasks.map((t) => t.skipCount), 1);
   const tasksByDate = groupTasksByDate(tasks);
 
   return (
@@ -80,12 +77,7 @@ function HistoryPage() {
         ) : (
           <div className="history-list">
             {history.map((entry) => (
-              <HistoryRow
-                key={entry.taskId}
-                entry={entry}
-                task={doneTasksById.get(entry.taskId)}
-                maxSkip={maxSkip}
-              />
+              <HistoryRow key={entry.taskId} entry={entry} />
             ))}
           </div>
         )
