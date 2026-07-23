@@ -12,6 +12,7 @@ let baseUrl = "";
 let server;
 let user;
 const missionId = `integration-mission-${Date.now()}`;
+const feedbackMissionId = `integration-feedback-mission-${Date.now()}`;
 
 before(
   async () => {
@@ -49,6 +50,7 @@ after(
     }
 
     await prisma.mission.delete({ where: { id: missionId } }).catch(() => {});
+    await prisma.mission.delete({ where: { id: feedbackMissionId } }).catch(() => {});
     await prisma.$disconnect().catch(() => {});
 
     if (server) {
@@ -98,5 +100,68 @@ test(
     assert.equal(getData.progress.missionId, missionId);
     assert.equal(getData.progress.status, "completed");
     assert.deepEqual(getData.progress.checkedItems, ["문제 정의", "입력 폼"]);
+  }
+);
+
+test(
+  "feedback API saves and reads feedback for the latest submitted mission",
+  { skip: !runIntegrationTests },
+  async () => {
+    const token = createAuthToken(user);
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
+
+    const submissionResponse = await fetch(`${baseUrl}/api/submissions`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        missionId: feedbackMissionId,
+        missionTitle: "Feedback Integration Mission",
+        submittedUrl: "https://example.com/feedback-integration",
+        submittedDescription:
+          "문제 정의, 수행 과정, 결과와 배운 점을 포함해 피드백 저장 및 조회 흐름을 검증하기 위한 충분한 설명입니다.",
+      }),
+    });
+    const submissionData = await submissionResponse.json();
+
+    assert.equal(submissionResponse.status, 201);
+    assert.equal(submissionData.ok, true);
+    assert.equal(submissionData.submission.missionId, feedbackMissionId);
+
+    const firstGetResponse = await fetch(`${baseUrl}/api/feedback/latest`, {
+      headers,
+    });
+    const firstGetData = await firstGetResponse.json();
+
+    assert.equal(firstGetResponse.status, 200);
+    assert.equal(firstGetData.ok, true);
+    assert.equal(firstGetData.submission.missionId, feedbackMissionId);
+    assert.equal(firstGetData.feedback, null);
+
+    const saveFeedbackResponse = await fetch(`${baseUrl}/api/feedback/latest`, {
+      method: "POST",
+      headers,
+    });
+    const saveFeedbackData = await saveFeedbackResponse.json();
+
+    assert.equal(saveFeedbackResponse.status, 200);
+    assert.equal(saveFeedbackData.ok, true);
+    assert.equal(saveFeedbackData.submission.missionId, feedbackMissionId);
+    assert.equal(typeof saveFeedbackData.feedback.overall, "string");
+    assert.match(
+      saveFeedbackData.feedback.portfolioPoints[0],
+      /Feedback Integration Mission/
+    );
+
+    const secondGetResponse = await fetch(`${baseUrl}/api/feedback/latest`, {
+      headers,
+    });
+    const secondGetData = await secondGetResponse.json();
+
+    assert.equal(secondGetResponse.status, 200);
+    assert.equal(secondGetData.ok, true);
+    assert.deepEqual(secondGetData.feedback, saveFeedbackData.feedback);
   }
 );

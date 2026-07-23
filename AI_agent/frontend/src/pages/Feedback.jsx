@@ -1,23 +1,40 @@
 import { useEffect, useState } from "react";
 
 import Header from "../components/layout/Header";
-import { createMockFeedback } from "../data/mockFeedback";
-import { getLatestSubmission } from "../features/career/submissionApi";
+import {
+  getLatestFeedback,
+  saveLatestFeedback,
+} from "../features/career/feedbackApi";
 import { navigate, routes } from "../router";
 
 function Feedback() {
   const [submission, setSubmission] = useState(null);
+  const [feedback, setFeedback] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadSubmission = async () => {
+    const loadFeedback = async () => {
       try {
-        const latestSubmission = await getLatestSubmission();
+        const latestResult = await getLatestFeedback();
+
+        if (!latestResult.submission) {
+          if (isMounted) {
+            setSubmission(null);
+            setFeedback(null);
+          }
+          return;
+        }
+
+        const result = latestResult.feedback
+          ? latestResult
+          : await saveLatestFeedback();
+
         if (isMounted) {
-          setSubmission(latestSubmission);
+          setSubmission(result.submission);
+          setFeedback(result.feedback);
         }
       } catch (error) {
         if (isMounted) {
@@ -30,14 +47,12 @@ function Feedback() {
       }
     };
 
-    loadSubmission();
+    loadFeedback();
 
     return () => {
       isMounted = false;
     };
   }, []);
-
-  const feedback = submission ? createMockFeedback(submission) : null;
 
   return (
     <main className="feedback-page">

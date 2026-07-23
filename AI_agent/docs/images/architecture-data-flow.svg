@@ -82,10 +82,11 @@
   <text x="685" y="358" class="box-text">/api/auth</text>
   <text x="685" y="379" class="box-text">/api/specs</text>
   <text x="685" y="400" class="box-text">/api/analysis</text>
-  <text x="685" y="421" class="box-text">/api/missions/:id/progress</text>
-  <text x="685" y="442" class="box-text">/api/submissions</text>
-  <text x="685" y="463" class="box-text">/api/jobs, qualifications</text>
-  <text x="685" y="484" class="box-text">/api/schools, majors</text>
+  <text x="685" y="421" class="box-text">/api/feedback/latest</text>
+  <text x="685" y="442" class="box-text">/api/missions/:id/progress</text>
+  <text x="685" y="463" class="box-text">/api/submissions</text>
+  <text x="685" y="484" class="box-text">/api/jobs, qualifications</text>
+  <text x="685" y="505" class="box-text">/api/schools, majors</text>
   <text x="685" y="512" class="small">보호 API는 requireAuth 사용</text>
 
   <rect x="665" y="580" width="240" height="82" class="server"/>
@@ -115,9 +116,9 @@
   <text x="1015" y="644" class="box-text">pending/in_progress/submitted</text>
 
   <rect x="995" y="685" width="210" height="86" class="service"/>
-  <text x="1015" y="713" class="box-title">submission service</text>
-  <text x="1015" y="738" class="box-text">결과물 URL/파일 저장</text>
-  <text x="1015" y="759" class="box-text">최신 제출 조회</text>
+  <text x="1015" y="713" class="box-title">submission/feedback</text>
+  <text x="1015" y="738" class="box-text">결과물 저장/최신 제출 조회</text>
+  <text x="1015" y="759" class="box-text">피드백 생성, 저장/조회</text>
 
   <rect x="995" y="800" width="210" height="86" class="service"/>
   <text x="1015" y="828" class="box-title">search services</text>

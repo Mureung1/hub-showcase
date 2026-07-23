@@ -21,6 +21,7 @@ flowchart LR
     authRoutes["/api/auth\nregister, login, me\nverify-email, verification-email"]
     specRoutes["/api/specs\nGET /me, POST /"]
     analysisRoutes["/api/analysis\nGET /me, POST /"]
+    feedbackRoutes["/api/feedback\nGET/POST /latest"]
     missionRoutes["/api/missions\nGET/PATCH /:missionId/progress"]
     submissionRoutes["/api/submissions\nGET /me, GET /latest, POST /"]
     careerRoutes["/api/jobs\n/api/qualifications\n/api/schools\n/api/majors"]
@@ -31,6 +32,7 @@ flowchart LR
     userService["userService\n회원, 로그인, 프로필"]
     specService["specService\n스펙 저장/조회"]
     analysisService["analysisService\n스펙 검증, 최신 분석 캐시"]
+    feedbackService["feedbackService\n피드백 생성, 저장/조회"]
     missionProgressService["missionProgressService\n체크리스트 진행 상태 upsert"]
     submissionService["submissionService\n결과물 제출/조회"]
     searchServices["job/school/qualification services\n외부 API + fallback 검색"]
@@ -62,12 +64,14 @@ flowchart LR
   cors --> authRoutes
   cors --> specRoutes
   cors --> analysisRoutes
+  cors --> feedbackRoutes
   cors --> missionRoutes
   cors --> submissionRoutes
   cors --> careerRoutes
 
   specRoutes --> requireAuth
   analysisRoutes --> requireAuth
+  feedbackRoutes --> requireAuth
   missionRoutes --> requireAuth
   submissionRoutes --> requireAuth
   authRoutes --> requireAuth
@@ -75,6 +79,7 @@ flowchart LR
   authRoutes --> userService
   specRoutes --> specService
   analysisRoutes --> analysisService
+  feedbackRoutes --> feedbackService
   missionRoutes --> missionProgressService
   submissionRoutes --> submissionService
   careerRoutes --> searchServices
@@ -83,6 +88,7 @@ flowchart LR
   specService --> dbSpec
   analysisService --> dbSpec
   analysisService --> dbAnalysis
+  feedbackService --> dbUserMission
   missionProgressService --> dbMission
   missionProgressService --> dbUserMission
   submissionService --> dbMission
@@ -108,8 +114,8 @@ flowchart LR
   classDef db fill:#f0fdf4,stroke:#22c55e,color:#0f172a;
   classDef external fill:#fff7ed,stroke:#f97316,color:#0f172a;
   class pages,protected,authStorage,apiClient,mockData client;
-  class cors,authRoutes,specRoutes,analysisRoutes,missionRoutes,submissionRoutes,careerRoutes,requireAuth server;
-  class userService,specService,analysisService,missionProgressService,submissionService,searchServices,openaiService,emailService service;
+  class cors,authRoutes,specRoutes,analysisRoutes,feedbackRoutes,missionRoutes,submissionRoutes,careerRoutes,requireAuth server;
+  class userService,specService,analysisService,feedbackService,missionProgressService,submissionService,searchServices,openaiService,emailService service;
   class dbUser,dbSpec,dbAnalysis,dbMission,dbUserMission db;
   class smtp,openai,careerNet,qnet external;
 ```

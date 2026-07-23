@@ -602,6 +602,83 @@ Request body:
 - 전체 체크리스트 항목이 모두 체크되면 `status`는 `completed`로 저장한다.
 - 이미 제출된 미션은 진행 상태 저장 시에도 `submitted` 상태를 유지한다.
 
+## AI 피드백 API
+
+### 최신 제출 피드백 조회
+
+- Method: `GET`
+- Path: `/api/feedback/latest`
+- 인증: 필요
+- 사용 화면: AI 피드백
+
+성공 응답 `200`:
+
+```json
+{
+  "ok": true,
+  "submission": {
+    "id": "clx...",
+    "userId": "clx...",
+    "missionId": "it-service-mvp",
+    "missionTitle": "작은 문제를 해결하는 서비스 MVP 구현",
+    "status": "submitted",
+    "submittedUrl": "https://example.com/project",
+    "submittedDescription": "문제 정의, 수행 과정, 결과를 정리했습니다.",
+    "submittedFileName": null,
+    "submittedFileType": null,
+    "submittedFileData": null,
+    "submittedAt": "2026-07-23T00:00:00.000Z",
+    "createdAt": "2026-07-23T00:00:00.000Z",
+    "updatedAt": "2026-07-23T00:00:00.000Z"
+  },
+  "feedback": {
+    "overall": "미션 결과물이 제출 형식에 맞게 정리되었습니다.",
+    "strengths": ["외부에서 확인 가능한 링크를 제출해 결과물 접근성이 좋습니다."],
+    "improvements": ["문제를 왜 해결하려 했는지 한 문장으로 먼저 정리해 주세요."],
+    "revisions": ["결과물 설명을 문제 정의, 수행 과정, 결과, 배운 점 순서로 나눠 보완하세요."],
+    "portfolioPoints": ["수행 미션 경험을 프로젝트 제목으로 정리할 수 있습니다."]
+  }
+}
+```
+
+특이사항:
+
+- 제출 결과물이 없으면 `submission`과 `feedback`은 `null`이다.
+- 제출 결과물은 있지만 아직 저장된 피드백이 없으면 `feedback`은 `null`이다.
+
+### 최신 제출 피드백 저장
+
+- Method: `POST`
+- Path: `/api/feedback/latest`
+- 인증: 필요
+- 사용 화면: AI 피드백
+
+성공 응답 `200`:
+
+```json
+{
+  "ok": true,
+  "submission": {
+    "id": "clx...",
+    "missionId": "it-service-mvp",
+    "missionTitle": "작은 문제를 해결하는 서비스 MVP 구현",
+    "status": "submitted"
+  },
+  "feedback": {
+    "overall": "미션 결과물이 제출 형식에 맞게 정리되었습니다.",
+    "strengths": [],
+    "improvements": [],
+    "revisions": [],
+    "portfolioPoints": []
+  }
+}
+```
+
+주요 실패:
+
+- `401`: 토큰 없음 또는 유효하지 않은 토큰
+- `404`: 피드백을 생성할 제출 결과물이 없음
+
 ## 헬스체크 API
 
 ### 서버 상태 확인
@@ -625,7 +702,6 @@ Request body:
 다음 기능은 Prisma 모델 또는 화면 초안은 있으나 백엔드 라우트가 아직 없다.
 
 - 미션 추천 목록 조회
-- AI 피드백 저장/조회
 - 포트폴리오 자동 생성
 
 구현 전 별도 API 초안을 작성하고, 프론트엔드 화면과 응답 형식을 맞춘 뒤 라우트를 추가한다.
