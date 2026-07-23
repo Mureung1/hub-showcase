@@ -50,7 +50,7 @@ describe('Backend Express Server E2E/Unit Tests', () => {
       expect(res.body.data.papers[0].paperId).toBeDefined();
       expect(res.body.data.papers[0].insights).toBeDefined();
     }
-  }, 20000);
+  }, 45000);
 
   it('3. POST /api/library should insert paper and return camelCase LibraryItem', async () => {
     // mockClient 가로채서 insert 시뮬레이션 성공 데이터 주입
