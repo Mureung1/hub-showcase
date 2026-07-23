@@ -1,6 +1,8 @@
 import type {
+  CodexAccountLifecycle,
   CodexChatRuntime,
   CodexProductCapableRuntime,
+  CodexRuntimeRole,
   StartThreadInput as ProductStartThreadInput,
 } from '../src/index.js'
 import type { CodexChatRuntime as BrowserCodexChatRuntime } from '../src/contract.js'
@@ -11,14 +13,26 @@ import type { StartThreadInput } from '../src/contract.js'
 // @ts-expect-error Browser callers must not receive private MCP credentials.
 import type { CodexPrivateMcpServerInput } from '../src/contract.js'
 
+// @ts-expect-error Browser callers must not receive the private account lifecycle.
+import type { CodexAccountLifecycle as BrowserAccountLifecycle } from '../src/contract.js'
+
+// @ts-expect-error Browser callers must not receive process-owned Runtime roles.
+import type { CodexRuntimeRole as BrowserRuntimeRole } from '../src/contract.js'
+
 declare const browserRuntime: BrowserCodexChatRuntime
+declare const accountLifecycle: CodexAccountLifecycle
 declare const productRuntime: CodexProductCapableRuntime
 declare const chatRuntime: CodexChatRuntime
+declare const runtimeRole: CodexRuntimeRole
 declare const privateThreadInput: ProductStartThreadInput
 
+void accountLifecycle
 void browserRuntime.startThread()
 void chatRuntime.startThread()
 void productRuntime.startThread(privateThreadInput)
+void runtimeRole
+void (null as unknown as BrowserAccountLifecycle)
+void (null as unknown as BrowserRuntimeRole)
 
 // @ts-expect-error Browser Chat runtime accepts no private thread configuration.
 void browserRuntime.startThread(privateThreadInput)
