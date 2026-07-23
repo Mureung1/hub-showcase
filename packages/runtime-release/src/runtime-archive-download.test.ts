@@ -1568,10 +1568,7 @@ test('resolver hooks receive exact Retry-After values and monotonic bytes', asyn
   try {
     await downloadVerifiedRuntimeArchive({
       admission: fixture.admission,
-      layout: fixture.layout,
-      mutationAuthority: fixture.mutationAuthority,
-      signal: new AbortController().signal,
-      testOptions: {
+      events: {
         beforeTransientRetry: ({ retryAfter }) => {
           retryAfterValues.push([...retryAfter])
         },
@@ -1579,6 +1576,9 @@ test('resolver hooks receive exact Retry-After values and monotonic bytes', asyn
           progress.push(receivedBytes)
         },
       },
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      signal: new AbortController().signal,
       transport,
     })
 

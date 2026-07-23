@@ -52,6 +52,7 @@ export type RuntimeArchiveVerificationSnapshot = {
 
 export type RuntimeArchiveDownloadInput = {
   readonly admission: RuntimeReleaseAdmission
+  readonly events?: RuntimeArchiveDownloadEvents
   readonly layout: RuntimeCacheLayout
   readonly mutationAuthority: RuntimeCacheMutationAuthority
   readonly signal: AbortSignal
@@ -59,11 +60,7 @@ export type RuntimeArchiveDownloadInput = {
   readonly transport: ArchiveTransport
 }
 
-export type RuntimeArchiveDownloadTestOptions = {
-  readonly afterArchivePublishStarted?: () => void | Promise<void>
-  readonly beforeArchiveHash?: () => void | Promise<void>
-  readonly beforeArchiveLink?: () => void | Promise<void>
-  readonly beforeArchivePathReadback?: () => void | Promise<void>
+export type RuntimeArchiveDownloadEvents = {
   readonly beforeTransientRetry?: (input: {
     readonly retryAfter: readonly string[]
   }) => void | Promise<void>
@@ -71,6 +68,13 @@ export type RuntimeArchiveDownloadTestOptions = {
     readonly receivedBytes: number
     readonly totalBytes: number
   }) => void | Promise<void>
+}
+
+export type RuntimeArchiveDownloadTestOptions = {
+  readonly afterArchivePublishStarted?: () => void | Promise<void>
+  readonly beforeArchiveHash?: () => void | Promise<void>
+  readonly beforeArchiveLink?: () => void | Promise<void>
+  readonly beforeArchivePathReadback?: () => void | Promise<void>
 }
 
 type RuntimeArchivePartialJournal = {
@@ -342,7 +346,7 @@ export async function downloadVerifiedRuntimeArchive(
         if (automaticTransient) {
           if (!transientRetryUsed) {
             transientRetryUsed = true
-            await input.testOptions?.beforeTransientRetry?.({
+            await input.events?.beforeTransientRetry?.({
               retryAfter:
                 error instanceof RuntimeArchiveTransientHttpFailure
                   ? error.retryAfter
@@ -419,7 +423,7 @@ async function retainResponse(
         partial.writtenBytes,
       )
       partial.writtenBytes += chunk.byteLength
-      await input.testOptions?.onReceivedBytes?.({
+      await input.events?.onReceivedBytes?.({
         receivedBytes: partial.writtenBytes,
         totalBytes: input.admission.descriptor.archive.bytes,
       })
