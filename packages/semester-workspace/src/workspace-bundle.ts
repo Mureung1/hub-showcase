@@ -716,7 +716,11 @@ async function readNoFollowRegularFile(target: string): Promise<Buffer> {
   )
   try {
     const before = await handle.stat({ bigint: true })
-    if (!before.isFile() || before.nlink !== 1n) {
+    if (
+      !before.isFile() ||
+      before.nlink !== 1n ||
+      (before.mode & 0o777n) !== BigInt(bundleFileMode)
+    ) {
       throw new Error('not an owned regular file')
     }
     const bytes = await handle.readFile()
@@ -724,6 +728,7 @@ async function readNoFollowRegularFile(target: string): Promise<Buffer> {
     if (
       !after.isFile() ||
       after.nlink !== 1n ||
+      (after.mode & 0o777n) !== BigInt(bundleFileMode) ||
       before.dev !== after.dev ||
       before.ino !== after.ino ||
       before.size !== after.size ||
