@@ -772,6 +772,58 @@ test('invalid 206 continuity consumes one fresh restart without stale bytes', as
   }
 })
 
+test('a reversed completed 206 range consumes one fresh restart', async () => {
+  const archiveBytes = Buffer.from('reversed completed range archive')
+  const fixture = await createDownloadFixture(archiveBytes)
+  await seedStrongPartial(fixture, archiveBytes, archiveBytes)
+  const transport = new ScriptedArchiveTransport([
+    {
+      statusCode: 206,
+      headers: {
+        'content-length': ['0'],
+        'content-range': [
+          `bytes ${archiveBytes.byteLength}-${archiveBytes.byteLength - 1}/${archiveBytes.byteLength}`,
+        ],
+        etag: ['"runtime-v1"'],
+      },
+      chunks: [],
+    },
+    {
+      statusCode: 200,
+      headers: {
+        'content-length': [String(archiveBytes.byteLength)],
+        etag: ['"runtime-v2"'],
+      },
+      chunks: [archiveBytes],
+    },
+  ])
+
+  try {
+    const result = await downloadVerifiedRuntimeArchive({
+      admission: fixture.admission,
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      signal: new AbortController().signal,
+      transport,
+    })
+
+    assert.deepEqual(await readFile(result.archivePath), archiveBytes)
+    assert.deepEqual(
+      transport.requests.map(({ range }) => range),
+      [
+        {
+          start: archiveBytes.byteLength,
+          ifRange: '"runtime-v1"',
+        },
+        undefined,
+      ],
+    )
+    transport.assertExhausted()
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('416 reuses a complete strong-validator partial only after full hash', async () => {
   const archiveBytes = Buffer.from('complete partial reconciled by 416')
   const fixture = await createDownloadFixture(archiveBytes)
@@ -2181,6 +2233,49 @@ test('journal descriptor and written-byte drift fail before network', async (t) 
         await fixture.cleanup()
       }
     })
+  }
+})
+
+test('journal binds a digest of the full canonical descriptor', async () => {
+  const archiveBytes = Buffer.from('full descriptor journal binding')
+  const prefixBytes = archiveBytes.subarray(0, 8)
+  const fixture = await createDownloadFixture(archiveBytes)
+  await seedStrongPartial(fixture, archiveBytes, prefixBytes)
+  const alternateRepository =
+    'https://github.com/ay-ple/alternate-runtime'
+  const changedAdmission: RuntimeReleaseAdmission = {
+    ...fixture.admission,
+    descriptor: {
+      ...fixture.admission.descriptor,
+      distribution: {
+        ...fixture.admission.descriptor.distribution,
+        repository: alternateRepository,
+      },
+      archive: {
+        ...fixture.admission.descriptor.archive,
+        url:
+          `${alternateRepository}/releases/download/` +
+          `${fixture.admission.descriptor.distribution.runtimeAssetReleaseTag}/` +
+          fixture.admission.descriptor.archive.assetName,
+      },
+    },
+  }
+  const transport = new ScriptedArchiveTransport([])
+
+  try {
+    await assertRuntimeFailure(
+      downloadVerifiedRuntimeArchive({
+        admission: changedAdmission,
+        layout: fixture.layout,
+        mutationAuthority: fixture.mutationAuthority,
+        signal: new AbortController().signal,
+        transport,
+      }),
+      'runtime_recovery_required',
+    )
+    assert.equal(transport.requests.length, 0)
+  } finally {
+    await fixture.cleanup()
   }
 })
 

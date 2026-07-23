@@ -71,6 +71,7 @@ type RuntimeArchivePartialJournal = {
     readonly archiveAssetName: string
     readonly archiveBytes: number
     readonly archiveSha256: string
+    readonly descriptorSha256: string
     readonly launcherPackageName: 'ay-ple'
     readonly launcherVersion: string
     readonly manifestSha256: string
@@ -1828,12 +1829,20 @@ function assertPartialResponse(
       : /^bytes (0|[1-9][0-9]*)-(0|[1-9][0-9]*)\/(0|[1-9][0-9]*)$/u.exec(
           contentRange,
         )
+  const rangeStart =
+    match === null ? undefined : decodeDecimalHeader(match[1])
+  const rangeEnd =
+    match === null ? undefined : decodeDecimalHeader(match[2])
+  const rangeTotal =
+    match === null ? undefined : decodeDecimalHeader(match[3])
   if (
-    match === null ||
-    decodeDecimalHeader(match[1]) !== partial.writtenBytes ||
-    decodeDecimalHeader(match[2]) !== expectedEnd ||
-    decodeDecimalHeader(match[3]) !==
-      admission.descriptor.archive.bytes
+    rangeStart === undefined ||
+    rangeEnd === undefined ||
+    rangeTotal === undefined ||
+    rangeStart > rangeEnd ||
+    rangeStart !== partial.writtenBytes ||
+    rangeEnd !== expectedEnd ||
+    rangeTotal !== admission.descriptor.archive.bytes
   ) {
     throw runtimeAuthorityError('runtime_integrity_failed', {
       kind: 'runtime_archive_content_range_mismatch',
@@ -1999,6 +2008,9 @@ function createPartialJournal(
         input.admission.descriptor.archive.assetName,
       archiveBytes: input.admission.descriptor.archive.bytes,
       archiveSha256: input.admission.descriptor.archive.sha256,
+      descriptorSha256: canonicalDescriptorSha256(
+        input.admission.descriptor,
+      ),
       launcherPackageName: 'ay-ple',
       launcherVersion:
         input.admission.descriptor.launcher.version,
@@ -2093,6 +2105,7 @@ function decodePartialJournal(
       'archiveAssetName',
       'archiveBytes',
       'archiveSha256',
+      'descriptorSha256',
       'launcherPackageName',
       'launcherVersion',
       'manifestSha256',
@@ -2106,6 +2119,8 @@ function decodePartialJournal(
     typeof value.descriptor.launcherVersion !== 'string' ||
     typeof value.descriptor.releaseId !== 'string' ||
     typeof value.descriptor.archiveSha256 !== 'string' ||
+    typeof value.descriptor.descriptorSha256 !== 'string' ||
+    !isSha256Digest(value.descriptor.descriptorSha256) ||
     typeof value.descriptor.manifestSha256 !== 'string' ||
     !Number.isSafeInteger(value.descriptor.archiveBytes) ||
     !Number.isSafeInteger(
@@ -2137,6 +2152,18 @@ function samePartialDescriptor(
     JSON.stringify(journal.descriptor) ===
     JSON.stringify(expected.descriptor)
   )
+}
+
+function canonicalDescriptorSha256(
+  descriptor: RuntimeReleaseAdmission['descriptor'],
+): string {
+  return createHash('sha256')
+    .update(JSON.stringify(descriptor), 'utf8')
+    .digest('hex')
+}
+
+function isSha256Digest(value: string): boolean {
+  return /^[0-9a-f]{64}$/u.test(value)
 }
 
 function isExactObject(
