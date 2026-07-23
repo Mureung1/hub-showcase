@@ -1,6 +1,6 @@
 # UX 설계 가설과 검증 기준
 
-> **상태: 2026-07-12 근거 검토 완료, 효과 검증 대기.** 동료심사 연구·공식 플랫폼 지침과 업계 사례를 구분해 기존 설계에 대조했다. 업계 블로그는 패턴 후보일 뿐 효과 근거가 아니며, 아래 선택의 실제 효과는 T22·T23 전까지 제품 가설이다. 구현 반영 시점은 CHECKLIST.md 해당 항목(T8, T10, T14, T20, T22, T23).
+> **상태: 2026-07-12 근거 검토 완료, 효과 검증 대기.** 동료심사 연구·공식 플랫폼 지침과 업계 사례를 구분해 기존 설계에 대조했다. 업계 블로그는 패턴 후보일 뿐 효과 근거가 아니며, 아래 선택의 실제 효과는 후속 외부 가치 검증 T22 전까지 제품 가설이다. T23은 효과가 아니라 기술 배포·실기기 호환성을 확인한다.
 
 ## 1. 이 서비스의 UX 문제 정의
 
@@ -70,7 +70,7 @@ UX가 승부를 보는 지점은 4곳이고, 이 문서는 각 지점의 근거 
 
 ## 7. 유사 AI 글쓰기 서비스의 결과 수정 흐름 대조 (2026-07-20)
 
-**근거 수준**: 아래는 공식 제품·도움말에서 확인한 현재 기능 패턴이며 사용자 효과 실험이 아니다. 답냥이 개선 효과는 T22~T23에서 별도로 검증한다.
+**근거 수준**: 아래는 공식 제품·도움말에서 확인한 현재 기능 패턴이며 사용자 효과 실험이 아니다. 답냥이 개선 효과는 후속 외부 가치 검증 T22에서만 별도로 확인한다.
 
 - [Apple Writing Tools](https://support.apple.com/guide/iphone/find-the-right-words-with-writing-tools-iph6f08da1d2/26/ios/26)는 rewrite 뒤 Original·Undo·Revert를 제공하고, [Outlook Copilot](https://support.microsoft.com/en-US/Outlook/copilot-pages/draft-an-email-message-with-copilot-in-outlook)은 Keep·Discard·Regenerate와 tone/length 조정을 결과 맥락 안에서 제공한다.
 - [Grammarly Paraphraser](https://support.grammarly.com/hc/en-us/articles/38552469933837-Paraphraser-agent-user-guide)는 제안을 Accept·Dismiss·Undo하게 하고, [Wordtune Rewrite](https://www.wordtune.com/rewrite)는 붙여넣은 문장에 여러 rewrite와 tone/length 선택을 제공한다.
