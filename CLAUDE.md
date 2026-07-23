@@ -13,30 +13,33 @@
 - **Server**: Express — `server/`
 - **DB**: Supabase `checkins` 테이블. React는 DB에 직접 접근하지 않고 Express를 거친다.
 
-## 디자인 시스템
+## 디자인 기준
 
-- 토큰 원본: [docs/toss-design.md](docs/toss-design.md) (토스 디자인 시스템 참고)
-- 화면 프로토타입: [docs/prototype.html](docs/prototype.html)
-- 컴포넌트별 프리뷰: `docs/design-system/`(tokens/screen-input/screen-result) — Claude Design 프로젝트로도 export 예정
-- 새 화면/컴포넌트를 만들 때는 값을 새로 정하지 말고 위 토큰을 그대로 재사용한다.
+- 현재 화면을 기준으로 삼고 스타일 원본은 `client/src/App.css`, 공통 스타일은 `client/src/index.css`에서 관리한다.
+- 화면 구조와 데이터 흐름은 [docs/screen-flow.md](docs/screen-flow.md), 현재 화면 예시는 `docs/app-preview.png`를 참고한다.
+- 새 화면을 만들 때 기존 CSS 변수·간격·색상·컴포넌트 패턴을 우선 재사용한다.
 
 ## 개발 실행
 
 ```
 npm run install:all   # client, server 의존성 설치
 npm run dev            # client(5173) + server(3001) 동시 실행 (concurrently)
+npm test --prefix client
+npm test --prefix server
+npm run build
 ```
 
 ## 테스트 컨벤션
 
-- 서버 로직(`server/services/*.js`)은 Node 내장 `node:test` + `assert`로 `server/tests/`에 작성 (새 의존성 추가 안 함).
-- 클라이언트는 이번 주(1주차)는 브라우저 수동 확인으로 검증. 자동 테스트 도입은 2주차 본격 개발 이후 재검토.
+- 서버 로직(`server/services/*.js`)은 Node 내장 `node:test` + `assert`로 `server/tests/`에 작성한다.
+- 클라이언트 순수 함수와 화면 로직은 Vitest로 검증한다.
+- 자동 테스트 뒤에 API·브라우저 스모크 테스트를 수행하되, 실행하지 않은 항목을 통과로 표시하지 않는다.
 
 ## 에러 처리 컨벤션
 
 - 모든 API 에러 응답은 `{ error: { message } }` 형식으로 통일한다.
-- 라우터에서 발생하는 예외는 `next(err)`로 넘기고, `server/index.js`에 중앙 에러 핸들링 미들웨어(`app.use((err, req, res, next) => ...)`)를 하나 두어 여기서만 상태코드/응답을 결정한다.
-- 현재 `server/routes/checkins.js`는 try/catch가 없어 파일 읽기 실패 시 서버가 처리되지 않은 예외로 죽는다 — AI 연동(체크리스트 3번) 작업 시작 전에 먼저 고칠 것.
+- 비동기 라우터 예외는 `asyncHandler`로 `next(err)`에 넘기고, `server/index.js`의 중앙 에러 처리 미들웨어에서 상태코드와 응답을 결정한다.
+- 서비스 계층 오류에는 필요한 경우 `status`를 붙이고, 라우터에서 같은 오류를 다시 포장하지 않는다.
 
 ## AI 연동
 

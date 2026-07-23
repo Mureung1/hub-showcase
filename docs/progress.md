@@ -1,39 +1,43 @@
-# 진행상황 일지
+# 진행 상황
 
-## Day 9 (7/16)
+마지막 갱신: 2026-07-23
 
-- 완료: 계획·검증 서브에이전트를 실행 가능한 형태로 전환(`.claude/agents/task-planner.md`, `feature-verifier.md` — docs/agents/의 산문 설계를 frontmatter+시스템 프롬프트로 변환, 검증용은 Edit/Write 제외로 읽기 전용), feature-verifier로 2주차 수직슬라이스 11개 체크리스트 실검증(curl 실호출 + npm test 4/4 — 전 항목 통과, 근거 포함 보고서), 수직슬라이스 재확인(health/checkins 조회 정상), 루트 handoff-context.md 구버전 표시
+## 현재 구현
 
-- 다음: 새 세션에서 feature-verifier가 에이전트 목록에 뜨는지 확인 후 직접 호출해보기. Supabase env 누락·연결 실패 케이스는 코드상 안전하지만 실동작 미검증(⚠️) — 시간 나면 재현. 검증 중 생긴 `[검증테스트]` 행 1건은 삭제 기능(Week 3) 만들 때 지우기
+- React 입력·결과 수정·기록 목록·상세·캘린더 화면
+- Express 체크인 미리보기·생성·조회·사진 업로드·삭제 API
+- Supabase Database·Storage 연동
+- LiteLLM을 통한 Vertex Gemini 호출과 실패 시 mock fallback
+- 무드 피커와 사진 첨부
+- 비밀키 없이 실행하는 메모리 기반 데모 모드
+- React 빌드 결과와 Express API를 함께 제공하는 Render 구성
 
-- 막힌 것/배울 것: 서브에이전트 = 직무기술서(md 파일)를 넘겨 spawn하는 워커 — 세션 시작 시 로드되므로 만든 직후엔 인식 안 됨(이번엔 general-purpose에 지침을 읽혀 대체 실행). 검증 에이전트에 도구를 읽기 전용으로만 주는 이유: 검증자가 코드를 고치기 시작하면 심판이 선수를 겸하게 됨
+## 검증
 
-## Day 8 (7/15)
+- 클라이언트 Vitest: 캘린더 날짜 계산 6개 케이스 통과
+- 서버 Node test runner: AI 응답·체크인 생성/조회/삭제·데모 모드 12개 케이스 통과
+- Vite 프로덕션 빌드 통과
+- 데모 모드 스모크 테스트: 화면, health API, 생성, 조회, 삭제, SPA 직접 접근 확인
 
-- 완료: 결과 카드·기록 카드 컴포넌트 분리(SummaryCard/RecordCard, formatDate는 utils로), 기록 상세 화면(pages/RecordDetail — screen state에 'detail' 추가, selectedCheckin으로 전달), 화면·데이터 흐름도(docs/screen-flow.md), 데이터 모델 초안(docs/data-model.md — 논의 후 확정), 백로그 Week 2 갱신
+## 이번 주 작업 흐름
 
-- 다음: 데이터 모델 논의 포인트 확정(태그 컬럼 vs 테이블, user_id not null 시점) 후 schema.sql 반영, 2주차 데모 준비. 미룬 것: 기록 삭제, 감정 태그 선택, 주간 모아보기 (Week 3)
+1. 요구사항과 완료 기준을 백로그로 정리했다.
+2. 삭제 기능의 정상·실패 조건을 구현 전에 문서화했다.
+3. 실패 테스트를 먼저 작성하고 최소 구현으로 통과시켰다.
+4. 화면·서버·DB·AI 흐름을 아키텍처 문서와 README에 반영했다.
+5. 공개 시연을 위해 실제 비밀키와 분리된 데모 모드를 준비했다.
 
-- 막힌 것/배울 것: 조건부 렌더링이 화면 2개(삼항)에서 3개가 되면서 `&&` 나열 방식으로 바꾼 이유, 클릭 이벤트를 자식(RecordCard)에서 부모(App)로 올리는 패턴(onSelect) 복습
+## 남은 일
 
-## Day 3 (7/8)
+- 사용자 인증과 `user_id` 기반 데이터 분리
+- Supabase RLS를 사용자 단위로 검증
+- Render 실제 배포와 공개 URL 접속 확인
+- 실제 배포 환경에서 DB·Storage·AI 통합 검증
+- 반복 감정 패턴과 지원 정보 연결
 
-- 완료: 사용자 시나리오 3개로 구체화(기본/수정/재정리 흐름), 화면구조 설계(S1 입력/S2 결과, 와이어프레임), 프로토타입 제작(docs/prototype.html — 입력→로딩→결과카드3장→저장), 벤치마킹(무디/마인디/Reflectly/Daylio), 프로토타입 비주얼 개선(저녁 그라데이션 배경, 카드 뒤집기 인터랙션), 문제정의 근거 보강(대교협 2025.9·통계청 2024 사망원인통계), 이론적 근거 절 추가(Lieberman 2007 affect labeling, Pennebaker 1986~ expressive writing), 위키(기획서/벤치마킹) 정리
+## 현재 한계
 
-- 다음: 동료 피드백 받기, 체크리스트 3~4번(AI 실제 연동, 결과 수정·저장) 착수, 루카스 폼 제출
-
-- 막힌 것/배울 것: 예전에 정리해둔 리서치 자료 중 존재하지 않는 학술 인용(fabricated citation)을 발견해서 웹서칭으로 재검증 — 로컬 자료를 그대로 믿지 말고 직접 검증하는 습관 필요. 위키가 로컬 레포와 별도 git 저장소라는 것도 이번에 알게 됨
-
-## Day 2 (7/7)
-
-- 완료: 주제 확정(하루 체크아웃), docs/plan.md 기획서, README 정비, docs/intro.html 소개 페이지, 환경 점검(.gitignore/node_modules/dev서버), Vite+React 학습 노트 정리
-
-- 다음: 프로토타입 첫 화면 (입력창 + 정리하기 버튼 + 카드 3장, 목데이터) — plan.md 체크리스트 1~2번
-
-- 막힌 것/배울 것: 입력창/버튼/결과 카드 컴포넌트 분리, React 상태 관리
-
-## Day 1 (7/6)
-
-- 완료: Fork/clone/브랜치(N114_유승혁), Vite+React 세팅, ProjectIntro 컴포넌트, 첫 PR
-
-- 시행착오: Agent 경로 오류로 중첩 폴더 스캐폴딩 → 복구
+- 공개 배포 URL이 아직 없다.
+- 데모 모드 기록은 서버 메모리를 공유하며 재시작하면 사라진다.
+- 실제 AI 게이트웨이는 현재 로컬 실행 환경에 의존한다.
+- 인증이 없으므로 현재 상태를 다중 사용자 서비스로 공개하면 안 된다.
