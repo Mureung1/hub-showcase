@@ -1,4 +1,4 @@
-# 잇다 (Itda) — 공강 기반 대학생 밥약 매칭 서비스
+# 잇다 (Eat-da) — 공강 기반 대학생 밥약 매칭 서비스
 
 > 공강 시간을 자동으로 찾아 대학생들의 밥약(밥 약속)을 쉽게 매칭하는 웹 서비스
 
@@ -93,7 +93,7 @@ cd backend
 # 환경 변수 설정
 cat > .env << EOF
 PORT=5050
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/itda
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/eatda
 NAVER_CLIENT_ID=your_naver_id
 NAVER_CLIENT_SECRET=your_naver_secret
 GEMINI_API_KEY=your_gemini_key
@@ -254,7 +254,7 @@ hub/
 ### 백엔드 (.env)
 ```env
 PORT=5050
-MONGODB_URI=mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/itda
+MONGODB_URI=mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/eatda
 NAVER_CLIENT_ID=your_naver_client_id
 NAVER_CLIENT_SECRET=your_naver_client_secret
 GEMINI_API_KEY=your_gemini_api_key
