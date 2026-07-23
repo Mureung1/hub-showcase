@@ -4,8 +4,27 @@ import test from 'node:test'
 
 import * as semesterWorkspace from './index.js'
 
-test('semester workspace package exposes no product behavior in Spine S0', () => {
-  assert.deepEqual(Object.keys(semesterWorkspace), [])
+test('semester workspace package exposes the B1a codec and admission Module', () => {
+  assert.equal(
+    typeof semesterWorkspace.createSemesterWorkspaceAdmission,
+    'function',
+  )
+  assert.equal(
+    typeof semesterWorkspace.createInitialSemesterWorkspaceV3,
+    'function',
+  )
+  assert.equal(
+    typeof semesterWorkspace.decodeSemesterWorkspaceV3Bytes,
+    'function',
+  )
+  assert.equal(
+    typeof semesterWorkspace.decodeCurrentSemesterWorkspaceV2,
+    'function',
+  )
+  assert.equal(
+    'createSemesterWorkspaceAdmissionForTesting' in semesterWorkspace,
+    false,
+  )
 })
 
 test('canonical workspace resource root contains only the S0 non-release marker', async () => {

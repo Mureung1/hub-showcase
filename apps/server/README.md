@@ -6,7 +6,7 @@ Explicit current workspace directory와 official SDK 기반 Codex Runtime을 하
 
 `src/account-runtime/contract.ts`는 Spine S1의 private `AccountRuntimeTransitionLease`와 coordinator Interface만 고정한다. Account 전환 중 app-wide admission을 닫고 Runtime을 교체하는 동작과 setup route composition은 아직 구현하지 않는다.
 
-현재 구현의 `SemesterWorkspaceController`는 chooser·development materializer가 넘긴 directory를 current v2 store로 열고 internal `ready`를 판정한다. App-owned scaffold, `WorkspaceManifest`, first-run setup, durable workspace registry와 `Semester Ready`는 아직 구현되지 않았다. 따라서 이 README의 current `ready workspace`는 [domain glossary](../../CONTEXT.md)의 `Semester Ready`와 같지 않으며, adopted target은 [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)가 소유한다.
+현재 구현의 `SemesterWorkspaceController`는 chooser·development materializer가 넘긴 directory를 current v2 store로 열고 internal `ready`를 판정한다. Server는 exact workspace dependency인 [`@ay-ple/semester-workspace`](../../packages/semester-workspace/README.md)의 shared current-v2 decoder를 사용하지만, B1a admission을 product controller·setup route에 아직 조합하지 않는다. First-run setup, durable workspace registry, Runtime transition과 `Semester Ready`도 구현되지 않았다. 따라서 이 README의 current `ready workspace`는 [domain glossary](../../CONTEXT.md)의 `Semester Ready`와 같지 않으며, adopted target은 [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)가 소유한다.
 
 ## Canonical 시작과 root 소유권
 
@@ -56,7 +56,7 @@ Current v2 aggregate는 stable workspace ID와 한 Course identity도 소유한�
 | 영역 | Current behavior |
 | --- | --- |
 | Product aggregate | Stable workspace ID, confirmed revision, one `Course`, `RawMaterial`, Assignment, `StatePatch`, `UserConfirmation`, `ModelingRun`, execution guard와 nullable source-recovery marker를 한 authority로 보존한다. |
-| Read | Exact decoder·aggregate invariant를 통과한 current v2는 original serialized bytes를 authority로 열고 startup에서 rewrite하지 않는다. |
+| Read | Server가 JSON parse와 physical no-follow/read-only I/O를 소유하고 package의 `decodeCurrentSemesterWorkspaceV2`로 current v2를 검증한다. Decoded value는 narrow clone adapter로 current `PersistedWorkspaceState`에 옮기며 original serialized bytes를 authority로 열고 startup에서 rewrite하지 않는다. |
 | Write | Internal `semester-workspace-store` module이 codec·physical I/O·temporary rename·exact opened-byte comparison을 소유한다. Controller는 serialized transaction ordering과 in-memory authority 교체를 소유한다. |
 | Incompatible | v1, decoder-invalid pre-baseline·malformed current v2, future version, symlink·non-regular·unreadable store는 historical recognizer·migration·reset 없이 original bytes를 보존한 `incompatible/readOnly`로 연다. Decoder-valid v2의 whitespace·key order 같은 serialization 차이는 original bytes 그대로 지원한다. |
 | Future schema | Physical shape를 바꾸려면 explicit version bump와 migration을 제공하거나 bytes-preserving fail-closed rejection을 사용한다. Silent reset과 same-version shape drift는 허용하지 않는다. |
