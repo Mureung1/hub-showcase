@@ -78,3 +78,28 @@ Verified archive byte를 final cache generation과 격리된 staging root에만 
 | requiredChecks | Full malicious archive matrix; staging containment/race tests; complete-tree/legal roster tests; runtime-release package test/typecheck/build; root test/typecheck/build/Chat Shell lint; `git diff --check` |
 | reviewOwner | D1a author가 아닌 independent archive-security reviewer |
 | handoffArtifact | Reviewed fixed D1b commit SHA, malicious archive corpus result와 verified-staging complete-tree receipt |
+
+## Candidate Receipt — author handoff
+
+이 receipt는 independent review 전 author candidate를 coordinator에게 전달한다. Ticket state는 `claimed`, acceptance checkbox는 모두 미완료 상태로 유지하며 review·closeout은 coordinator가 소유한다.
+
+| Evidence | Result |
+| --- | --- |
+| fixed handoff | `1bacf08625a7df70b12fa1cee7ecff9f09907b49` |
+| claim commit | `aea0750ce441102b57fd121b6a27a34228af1b25` — `docs: claim safe runtime archive extraction` |
+| candidate code commits | `1d5a9136d21d54c5f271aeef7c07373702312dee` — canonical pre-scan/extraction/verifier; `ec385e753b2cc0708ac699e5089b41993a3ea1e7` — hostile corpus·bound·fault/race hardening; `b2480fbeb41a3a3026ea37d7c660bbb7f8b2fd5c` — no-follow filesystem verification·entry-task join·precondition hardening |
+| candidate code tip | `b2480fbeb41a3a3026ea37d7c660bbb7f8b2fd5c` |
+| valid receipt | descriptor-bound archive를 owned empty staging의 `<staging>/runtime`에 추출하고 canonical `manifest.json`, exact 7-entry top-level roster, complete 8-file/1-symlink payload, `149` regular bytes, reviewed mode와 symlink target을 독립 disk walk로 재검증한 `runtime_verified_staging` |
+| synthetic corpus | D1b behavior case `63/63`: positive `2`, negative `61`; unsafe/corrupt archive pre-scan case `40/40`은 recipient write `0`; fault `2`, race/no-clobber `5`, post-tree/legal drift `7`, archive/staging precondition `7`은 cleanup 또는 `runtime_recovery_required` containment를 확인 |
+| package gates | `npm test -w @ay-ple/runtime-release` → `135/135`; `npm run typecheck -w @ay-ple/runtime-release` → green; `npm run build -w @ay-ple/runtime-release` → green |
+| repository gates | `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `git diff --check` → 모두 green |
+| dependency/lock | `tar-stream@3.2.0`, `@types/tar-stream@3.1.4`; `package-lock.json` SHA-256 `6dcc45c4d2aac146b925850f98a61a890e5f54360151598c3ccbf22040ba12ab` 유지 |
+| frozen/diff boundary | `src/contract.ts`, package manifest, lockfile, shared frozen contract, transport/resume/resolver orchestration 변경 없음; handoff 대비 diff는 Ticket 010과 `runtime-archive-extraction.ts`·`.test.ts`만 포함 |
+| review status | author self-review와 gates만 완료. Independent archive-security review와 acceptance/closeout은 미실행 |
+
+### C handoff
+
+- C는 D1a의 exact `RuntimeReleaseAdmission`, `RuntimeCacheLayout`, `RuntimeCacheMutationAuthority`, `RuntimeStagingIdentity`와 canonical manifest bytes를 `extractVerifiedRuntimeArchive()`에 함께 전달해야 한다.
+- 호출 전에 descriptor-bound archive를 cache archive path에 owner-only `0600` regular file로, staging root를 같은 filesystem의 owner-only `0700` empty directory로 준비한다.
+- 성공 결과의 `runtimeRoot`는 `<staging>/runtime`이다. Durable receipt, fsync/atomic generation publish, quarantine·repair와 resolver orchestration은 계속 C 소유다.
+- Publisher archive는 manifest에서 유도한 directory entry를 모두 명시하고 regular file·directory·symlink만 사용한다. Directory `0755`, manifest/payload reviewed mode, symlink `0777`, canonical octal size와 TAR trailer 2 block을 사용하며 PAX/GNU extension·xattr·ACL·sparse·hardlink·special entry를 만들지 않는다.
