@@ -19,6 +19,13 @@ const MACOS_FILENAME_COLLATOR = new Intl.Collator('und', {
 
 type JsonObject = Record<string, unknown>
 
+type RuntimeManifestPathGraphNode = {
+  readonly segment: string
+  readonly comparisonKey: string
+  readonly children: RuntimeManifestPathGraphNode[]
+  terminalType?: RuntimeManifestEntry['type']
+}
+
 export type RuntimeManifestFileEntry = {
   readonly bytes: number
   readonly mode: '100644' | '100755'
@@ -246,8 +253,7 @@ function decodeEntries(value: unknown): readonly RuntimeManifestEntry[] {
       throw invalidManifest()
     }
   }
-  assertNoCaseFoldCollision(entries)
-  assertNoFilePrefixConflict(entries)
+  assertSafeManifestPathGraph(entries)
   assertExactPayloadTopLevel(entries)
   assertSafeSymlinkTargets(entries)
   return entries
@@ -448,47 +454,54 @@ function assertExactPayloadTopLevel(
   }
 }
 
-function assertNoCaseFoldCollision(
+function assertSafeManifestPathGraph(
   entries: readonly RuntimeManifestEntry[],
 ): void {
-  const sorted = entries
-    .map((entry) => ({
-      key: macOSFilenameComparisonKey(entry.path),
-      path: entry.path,
-    }))
-    .sort(
-      (left, right) =>
-        MACOS_FILENAME_COLLATOR.compare(left.key, right.key) ||
-        compareUnicodeCodePoints(left.path, right.path),
-    )
-  for (let index = 1; index < sorted.length; index += 1) {
+  const root: RuntimeManifestPathGraphNode = {
+    segment: '',
+    comparisonKey: '',
+    children: [],
+  }
+  for (const entry of entries) {
+    let cursor: RuntimeManifestPathGraphNode = root
+    const segments = entry.path.split('/')
+    for (let index = 0; index < segments.length; index += 1) {
+      if (cursor.terminalType !== undefined) {
+        throw invalidManifest()
+      }
+      const segment = segments[index]
+      const comparisonKey = macOSFilenameComparisonKey(segment)
+      let child = cursor.children.find(
+        (candidate) =>
+          MACOS_FILENAME_COLLATOR.compare(
+            candidate.comparisonKey,
+            comparisonKey,
+          ) === 0,
+      )
+      if (child === undefined) {
+        child = {
+          segment,
+          comparisonKey,
+          children: [],
+        }
+        cursor.children.push(child)
+      } else if (child.segment !== segment) {
+        throw invalidManifest()
+      }
+      cursor = child
+    }
     if (
-      MACOS_FILENAME_COLLATOR.compare(
-        sorted[index - 1].key,
-        sorted[index].key,
-      ) === 0
+      cursor.terminalType !== undefined ||
+      cursor.children.length > 0
     ) {
       throw invalidManifest()
     }
+    cursor.terminalType = entry.type
   }
 }
 
 function macOSFilenameComparisonKey(value: string): string {
   return value.toUpperCase().toLowerCase()
-}
-
-function assertNoFilePrefixConflict(
-  entries: readonly RuntimeManifestEntry[],
-): void {
-  const paths = new Set(entries.map((entry) => entry.path))
-  for (const entry of entries) {
-    const parts = entry.path.split('/')
-    for (let index = 1; index < parts.length; index += 1) {
-      if (paths.has(parts.slice(0, index).join('/'))) {
-        throw invalidManifest()
-      }
-    }
-  }
 }
 
 function assertSafeSymlinkTargets(

@@ -530,6 +530,80 @@ test('macOS filename equivalence rejects fold collisions while preserving accent
   }
 })
 
+test('segment-wise macOS path graph rejects folded ancestor ambiguity', () => {
+  const fixture = createReleaseFixture()
+  const hostileCases: readonly {
+    readonly name: string
+    readonly entries: readonly FixtureEntry[]
+  }[] = [
+    {
+      name: 'folded file ancestor',
+      entries: withAdditionalFiles(fixture.entries, [
+        manifestFile('licenses/Case', '9'),
+        manifestFile('licenses/case/nested', 'a'),
+      ]),
+    },
+    {
+      name: 'conflicting folded directory identities',
+      entries: withAdditionalFiles(fixture.entries, [
+        manifestFile('licenses/Alpha/a', '9'),
+        manifestFile('licenses/alpha/b', 'a'),
+      ]),
+    },
+    {
+      name: 'deep folded file ancestor',
+      entries: withAdditionalFiles(fixture.entries, [
+        manifestFile('licenses/vendor/Leaf', '9'),
+        manifestFile('licenses/vendor/leaf/deeper/item', 'a'),
+      ]),
+    },
+    {
+      name: 'deep folded symlink ancestor',
+      entries: withAdditionalEntries(fixture.entries, [
+        {
+          path: 'licenses/vendor/Bridge',
+          target: '../openai/LICENSE',
+          type: 'symlink',
+        },
+        manifestFile('licenses/vendor/bridge/nested', '9'),
+      ]),
+    },
+  ]
+  for (const hostileCase of hostileCases) {
+    assert.throws(
+      () =>
+        admitRuntimeRelease(
+          admissionInput({
+            manifestBytes: manifestBytesWithEntries(
+              fixture,
+              hostileCase.entries,
+            ),
+          }),
+        ),
+      RuntimeReleaseAuthorityError,
+      `${hostileCase.name} must be rejected`,
+    )
+  }
+
+  const validEntries = withAdditionalFiles(fixture.entries, [
+    manifestFile('licenses/Alpha/a', '9'),
+    manifestFile('licenses/Alpha/b', 'a'),
+    manifestFile('licenses/cafe/readme', 'b'),
+    manifestFile('licenses/café/readme', 'c'),
+    manifestFile('licenses/cases/nested', 'd'),
+  ])
+  assert.doesNotThrow(() =>
+    admitRuntimeRelease(
+      admissionInput({
+        manifestBytes: manifestBytesWithEntries(
+          fixture,
+          validEntries,
+        ),
+      }),
+    ),
+  )
+})
+
 test('canonical topology requires exact root files, license subtree, and terminal symlinks', () => {
   const fixture = createReleaseFixture()
   const hostileEntries: readonly FixtureEntry[][] = [
