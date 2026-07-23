@@ -53,7 +53,8 @@
 이번 주(Week N) 범위의 리스크/결정은 `docs/weekN_plan.md`의 리스크 표에서 관리한다. 아래는
 아직 어느 주차 계획에도 안 들어간, 더 뒤(3~4주차) 미정 사항만 남긴다:
 
-- 매칭 점수 알고리즘 가중치 (지금은 mock 값 또는 크롤러 중립값 50)
 - API·프론트 배포 타겟 및 env 분리
 - E2E/수동 테스트 체크리스트
 - `districts`(전국 지역 데이터) 소스 — 정적 JSON vs API
+- industry(업종) 조건 정밀 매칭 — bizinfo API에 구조화 필드가 없어 이슈 #43에서 보류, 별도
+  조사/설계 필요 (`docs/week3/issue-43-match-plan.md` 참고)

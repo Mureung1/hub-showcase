@@ -166,33 +166,35 @@ isProject: false
 > **후속 작업 (2026-07-23)**: 실제 실행해보니 `index.ts`가 5건만 가져오도록 하드코딩돼 있어
 > 지원 중인 공고를 다 반영하지 못하는 걸 발견. 전체 백필(backfill) + 일일 배치 크기 조정 계획을
 > [`docs/week3/full-coverage-plan.md`](week3/full-coverage-plan.md)에 정리하고
-> [이슈 #40](https://github.com/syd348/hub/issues/40)으로 등록함 (아직 미구현).
+> [이슈 #40](https://github.com/syd348/hub/issues/40)으로 등록함. **완료 (2026-07-23, PR #45 머지)**.
 
 ## 후속 이슈 (#43·#44) — 3~4주차 범위 작업, `Week 3 Crawler Pipeline` 마일스톤에 등록 (2026-07-23)
 
-리스크 표 검토 중 완료 기준이 있는 미착수 작업 2건을 이슈로 등록했다. 아직 시작 전.
+리스크 표 검토 중 완료 기준이 있는 미착수 작업 2건을 이슈로 등록했다. **둘 다 완료 (2026-07-23,
+PR [#47](https://github.com/syd348/hub/pull/47) 머지)**.
 
 ### [#43] 매칭 조건 필터 + 점수 알고리즘 구현
-- **계획 문서**: [`docs/week3/issue-43-match-plan.md`](week3/issue-43-match-plan.md) — **구현 완료 (2026-07-23)**, region 조건 가점/감점 반영(±20, cap 0~100), industry는 실크롤링 0.2% 매칭으로 반영 안 함. 남은 미구현은 커밋/PR
+- **계획 문서**: [`docs/week3/issue-43-match-plan.md`](week3/issue-43-match-plan.md) — **구현 완료 (2026-07-23)**, region 조건 가점/감점 반영(±20, cap 0~100), industry는 실크롤링 0.2% 매칭으로 반영 안 함
 - **목표**: 온보딩 프로필(업종/지역/직원수/연매출/업력) 기준 조건 필터링 + 매칭 점수 계산
 - **작업**
-  - [ ] `subsidies` 스키마에 업종/지역 등 구조화 컬럼 추가 여부 결정
-  - [ ] 프로필-지원금 조건 비교 로직 구현 (필터 또는 가중치)
-  - [ ] `match` 점수를 조건 부합도 기반으로 계산 (현재 mock 고정값/크롤러 중립값 50 대체)
-  - [ ] 크롤러의 `trgetNm` 등 실데이터 필드 활용 여부 검토
+  - [x] `subsidies` 스키마에 업종/지역 등 구조화 컬럼 추가 여부 결정 — `region text[]` 추가
+  - [x] 프로필-지원금 조건 비교 로직 구현 (필터 또는 가중치) — 가중치 방식(±20) 채택
+  - [x] `match` 점수를 조건 부합도 기반으로 계산 (현재 mock 고정값/크롤러 중립값 50 대체)
+  - [x] 크롤러의 `trgetNm` 등 실데이터 필드 활용 여부 검토 — industry 매칭 시도했으나 0.2%로 기각
 - **완료 기준**: 업종/지역 조건에 맞는 지원금만 필터링되고, 조건 부합도에 따라 `match` 점수가
-  실제로 계산되어 반환된다.
+  실제로 계산되어 반환된다. **충족 — region만, industry는 한계 문서화**
 
 ### [#44] bsnsSumryCn 구조화 추출 (amount/qualifications/documents)
-- **계획 문서**: [`docs/week3/issue-44-amount-extraction-plan.md`](week3/issue-44-amount-extraction-plan.md) — **구현 완료 (2026-07-23)**, amount fallback 100%→76.9%(346/1500건 채움), 남은 미구현은 커밋/PR
+- **계획 문서**: [`docs/week3/issue-44-amount-extraction-plan.md`](week3/issue-44-amount-extraction-plan.md) — **구현 완료 (2026-07-23)**, amount fallback 100%→76.9%(346/1500건 채움)
 - **목표**: 크롤러가 가져오는 사업개요(`bsnsSumryCn`)에서 지원금액·자격요건·서류를 추출해
   #28~#30에서 정한 fallback 문구를 실제 값으로 대체
 - **작업**
-  - [ ] 정규식 규칙 파싱 vs Claude API 추출 방식 결정
-  - [ ] `amount` 추출 (실패 시 기존 fallback 유지)
-  - [ ] `qualifications[]`/`documents[]` 추출
-  - [ ] 추출 정확도 검증 방법 정하고 실제 수집 데이터로 확인
+  - [x] 정규식 규칙 파싱 vs Claude API 추출 방식 결정 — 정규식으로 결정(Claude API는 비용/속도 이유로 보류)
+  - [x] `amount` 추출 (실패 시 기존 fallback 유지)
+  - [x] `qualifications[]`/`documents[]` 추출 — 이미 #30에서 `trgetNm`/`printFileNm` 실값 사용 중이라 fallback 0%로 확인, 추가 작업 불필요
+  - [x] 추출 정확도 검증 방법 정하고 실제 수집 데이터로 확인 — 실API 샘플 수동 대조
 - **완료 기준**: 크롤러가 수집한 공고 중 일정 비율 이상에서 fallback 문구 대신 실제 값이 채워진다.
+  **충족 — 23.1%**
 
 ## 리스크 / 결정 필요
 
