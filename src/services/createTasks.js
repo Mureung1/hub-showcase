@@ -17,17 +17,29 @@ function parseDeadline(value) {
   }
 
   const [, year, month, day] = match;
-  const date = new Date(`${year}-${padDatePart(month)}-${padDatePart(day)}T00:00:00+09:00`);
-  return Number.isNaN(date.getTime()) ? null : date;
+  const numericYear = Number(year);
+  const numericMonth = Number(month);
+  const numericDay = Number(day);
+  const date = new Date(Date.UTC(numericYear, numericMonth - 1, numericDay));
+
+  const isExactCalendarDate = date.getUTCFullYear() === numericYear
+    && date.getUTCMonth() === numericMonth - 1
+    && date.getUTCDate() === numericDay;
+
+  return isExactCalendarDate ? date : null;
 }
 
 function formatDate(date) {
-  return date.toISOString().slice(0, 10);
+  return [
+    date.getUTCFullYear(),
+    padDatePart(date.getUTCMonth() + 1),
+    padDatePart(date.getUTCDate()),
+  ].join("-");
 }
 
 function addDays(date, days) {
   const nextDate = new Date(date);
-  nextDate.setDate(nextDate.getDate() + days);
+  nextDate.setUTCDate(nextDate.getUTCDate() + days);
   return nextDate;
 }
 

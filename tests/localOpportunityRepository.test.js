@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -72,6 +72,9 @@ test("로컬 SQLite 저장소는 분석 결과를 upsert하고 최신순으로 �
     assert.equal(items[0].id, first.id);
     assert.equal(items[0].opportunity.title, "수정된 로컬 DB 공모전");
     assert.equal(items[0].mode, "mock");
+
+    await repository.deleteAnalysis(saved.storageId);
+    assert.equal((await repository.listAnalyses()).length, 0);
   } finally {
     repository.close();
     rmSync(directory, { recursive: true, force: true });

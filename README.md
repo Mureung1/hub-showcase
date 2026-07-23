@@ -44,7 +44,7 @@ API 키나 AI API 크레딧이 없어도 빌드는 통과해야 합니다.
 npm run verify:requirements
 ```
 
-요구사항별 자동 테스트와 프로덕션 빌드를 차례로 실행하고, `RQ-01`부터 `RQ-11`까지 통과/실패 결과를 출력합니다. 실제 Gemini/OpenAI API는 호출하지 않아 비용 없이 PR 전에 반복 실행할 수 있습니다.
+요구사항별 Node 테스트와 Vitest, 프로덕션 빌드를 차례로 실행하고 `RQ-00`부터 `RQ-15`까지 통과/실패 결과를 출력합니다. 새 테스트 파일이 어떤 요구사항에도 연결되지 않은 경우에도 실패합니다. 실제 Gemini/OpenAI API는 호출하지 않아 비용 없이 PR 전에 반복 실행할 수 있습니다.
 
 빌드를 생략한 빠른 확인은 아래 명령을 사용합니다.
 
@@ -52,20 +52,13 @@ npm run verify:requirements
 npm run verify:requirements:fast
 ```
 
-## 로컬 데모 저장 공고
+## 저장한 공고
 
-기본값은 외부 키가 필요 없는 로컬 SQLite DB입니다. 분석 결과에서 **서버 저장**을 누르면 화면 → Express의 `POST /api/opportunities` → `data/uniradar-demo.sqlite`로 저장되고, 우측 **서버 저장 공고** 카드가 `GET /api/opportunities`로 다시 조회합니다. DB 파일은 Git에서 제외됩니다.
+사이드바의 **4. 저장한 공고**에서 저장 목록을 카테고리로 필터링하고, 최근 저장순·마감 임박순·추천 점수순으로 정렬할 수 있습니다. 공고 상세, 원문 열기, 삭제도 이 화면에서 처리합니다.
 
-로컬 데모에서는 별도 설정 없이 `npm run dev`만 실행하면 됩니다. 저장소 상태는 `GET /api/health`의 `storageProvider: "sqlite"`와 `storageConfigured: true`로 확인할 수 있습니다.
+로그인 기능이 꺼진 로컬 데모에서는 `POST /api/opportunities`와 `GET /api/opportunities`가 `data/uniradar-demo.sqlite`를 사용합니다. 로그인한 사용자는 Bearer access token을 포함한 `/api/saved-opportunities` API를 사용하며, Supabase `saved_opportunities` 테이블의 RLS로 계정별 데이터가 분리됩니다.
 
-Supabase를 사용하려면 [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)의 SQL과 환경변수 설정을 적용한 뒤 아래 값을 명시합니다.
-
-```env
-OPPORTUNITY_STORAGE_PROVIDER=supabase
-ALLOW_SUPABASE_PERSISTENCE=true
-```
-
-저장·조회는 어떤 경우에도 Express 서버에서만 수행하며, service role key는 프론트엔드로 전달하지 않습니다. 로그인 기능이 없으므로 Supabase 저장 API는 로컬 개발 또는 접근이 제한된 환경에서만 활성화하세요.
+사용자별 저장 공고를 사용하려면 [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)와 [AUTH_AND_USER_DATA.md](./AUTH_AND_USER_DATA.md)의 인증·SQL 설정을 완료해야 합니다. API 키나 service role key는 프론트엔드에 전달하지 않습니다.
 
 ## 정보 사이트 추천
 
@@ -164,7 +157,7 @@ mock과 Gemini 분석 결과는 모두 [`DATA_SCHEMA.md`](./DATA_SCHEMA.md)에 �
 
 ### 사용자 프로필과 재판정
 
-Supabase 환경변수를 설정하면 아이디·비밀번호 로그인 후 사용자별 프로필을 `profiles` 테이블에 저장합니다. 새로고침 후에도 세션과 프로필을 복원하며, 프로필을 수정하면 Gemini를 다시 호출하지 않고 기존 공고의 매칭 결과만 현재 프로필 기준으로 재계산합니다. 기존 브라우저 프로필은 사용자가 동의할 때만 계정으로 가져옵니다. 구조와 판정 기준은 [`PROFILE_SCHEMA.md`](./PROFILE_SCHEMA.md), 인증 설정은 [`AUTH_AND_USER_DATA.md`](./AUTH_AND_USER_DATA.md)를 참고하세요.
+Supabase 환경변수를 설정하면 아이디·비밀번호 로그인 후 사용자별 프로필을 `profiles` 테이블에 저장합니다. 인증 세션은 `sessionStorage`에 보관되어 새로고침에는 유지되지만 브라우저 창·탭을 닫으면 종료됩니다. 프로필을 수정하면 Gemini를 다시 호출하지 않고 기존 공고의 매칭 결과만 현재 프로필 기준으로 재계산합니다. 기존 브라우저 프로필은 사용자가 동의할 때만 계정으로 가져옵니다. 구조와 판정 기준은 [`PROFILE_SCHEMA.md`](./PROFILE_SCHEMA.md), 인증 설정은 [`AUTH_AND_USER_DATA.md`](./AUTH_AND_USER_DATA.md)를 참고하세요.
 
 ## Supabase 인증과 계정 프로필
 
@@ -217,7 +210,7 @@ https://github.com/clradtr/hub/wiki/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EA%B8%
 
 로그인한 사용자는 개인 설정에서 관심 공고 종류, 선호 지역, 온라인 포함 여부, 최소 추천 점수, 마감일 미확인 공고 표시, 추천 개수를 저장할 수 있습니다. Supabase SQL Editor에서 `supabase/20260721_user_settings.sql`을 실행한 뒤 사용합니다. 설정 API·RLS·추천 반영 기준은 [USER_SETTINGS.md](./USER_SETTINGS.md)를 참고하세요.
 
-현재 분석 공고 자동 저장 설정은 사용자별 저장 공고 API 연결 전의 준비 단계입니다.
+분석 공고 자동 저장 설정을 켜면 분석 성공 후 해당 사용자의 저장 공고로 자동 저장됩니다.
 ## 계정별 저장 출처
 
 Supabase 인증을 설정한 환경에서는 저장된 출처가 `notice_sources` 테이블에 사용자별로 저장됩니다. 로그인한 계정의 출처만 조회·추가·삭제할 수 있으며, 다른 계정의 출처는 RLS 정책으로 접근할 수 없습니다. 이 기능을 사용하려면 `supabase/20260721_notice_sources.sql`을 Supabase SQL Editor에서 실행하세요. 인증 환경변수가 없는 기존 로컬 데모 모드에서는 이전처럼 브라우저 localStorage를 사용합니다.

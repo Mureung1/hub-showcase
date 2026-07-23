@@ -111,11 +111,12 @@ function getDisabledAIState() {
   return null;
 }
 
-function finalizeAnalysisResult(result, profile) {
+function finalizeAnalysisResult(result, profile, rawText = "") {
   const normalizedResult = normalizeAnalysisResult(result);
   const match = matchOpportunity({
     profile,
     opportunity: normalizedResult.opportunity,
+    sourceText: rawText,
   });
   const tasks = createTasks(normalizedResult.opportunity, match);
 
@@ -168,26 +169,26 @@ export async function analyzeOpportunity(payload, serviceOverrides = {}) {
   if (config.liveGeminiEnabled) {
     try {
       const result = await services.geminiAnalyzeOpportunity(payload);
-      return finalizeAnalysisResult(result, payload.profile);
+      return finalizeAnalysisResult(result, payload.profile, payload.rawText);
     } catch (error) {
       const fallbackResult = await services.mockAnalyzeOpportunity(payload);
       return finalizeAnalysisResult(attachMockFallback(fallbackResult, {
         message: getFriendlyGeminiError(error),
         reason: "Gemini API 요청 실패",
-      }), payload.profile);
+      }), payload.profile, payload.rawText);
     }
   }
 
   if (config.liveOpenAIEnabled) {
     try {
       const result = await services.openaiAnalyzeOpportunity(payload);
-      return finalizeAnalysisResult(result, payload.profile);
+      return finalizeAnalysisResult(result, payload.profile, payload.rawText);
     } catch (error) {
       const fallbackResult = await services.mockAnalyzeOpportunity(payload);
       return finalizeAnalysisResult(attachMockFallback(fallbackResult, {
         message: getFriendlyOpenAIError(error),
         reason: "OpenAI API 요청 실패",
-      }), payload.profile);
+      }), payload.profile, payload.rawText);
     }
   }
 
@@ -195,5 +196,6 @@ export async function analyzeOpportunity(payload, serviceOverrides = {}) {
   return finalizeAnalysisResult(
     attachMockFallback(fallbackResult, getDisabledAIState()),
     payload.profile,
+    payload.rawText,
   );
 }

@@ -91,14 +91,14 @@ export default function AuthPanel() {
         </div>
       </div>
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
-        <label className="field">
+        <label className="field" htmlFor="auth-username">
           <span>아이디</span>
-          <input autoCapitalize="none" autoComplete="username" maxLength="30" value={form.username} onChange={(event) => updateForm("username", event.target.value)} />
+          <input id="auth-username" autoCapitalize="none" autoComplete="username" autoFocus maxLength="30" value={form.username} onChange={(event) => updateForm("username", event.target.value)} />
           <small>{USERNAME_HINT}</small>
         </label>
-        <label className="field">
+        <label className="field" htmlFor="auth-password">
           <span>비밀번호</span>
-          <input autoComplete={isSignUp ? "new-password" : "current-password"} minLength="6" type="password" value={form.password} onChange={(event) => updateForm("password", event.target.value)} />
+          <input id="auth-password" autoComplete={isSignUp ? "new-password" : "current-password"} minLength="6" type="password" value={form.password} onChange={(event) => updateForm("password", event.target.value)} />
         </label>
         {localError || authError ? <p className="form-message error-message" role="alert">{localError || authError}</p> : null}
         {message ? <p className="form-message success-message" role="status">{message}</p> : null}

@@ -53,27 +53,37 @@ export async function analyzeOpportunity(payload) {
   return readJsonResponse(response);
 }
 
-export async function getSavedOpportunities() {
-  const response = await fetch("/api/opportunities?limit=12", {
-    headers: {
-      Accept: "application/json",
-    },
+export async function getSavedOpportunities(accessToken) {
+  const endpoint = accessToken ? "/api/saved-opportunities?limit=100" : "/api/opportunities?limit=100";
+  const response = await fetch(endpoint, {
+    headers: accessToken ? createAuthorizationHeaders(accessToken) : { Accept: "application/json" },
   });
 
   return readJsonResponse(response);
 }
 
-export async function saveOpportunity(analysis) {
-  const response = await fetch("/api/opportunities", {
+export async function saveOpportunity(analysis, accessToken) {
+  const endpoint = accessToken ? "/api/saved-opportunities" : "/api/opportunities";
+  const response = await fetch(endpoint, {
     method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
+    headers: accessToken
+      ? createAuthorizationHeaders(accessToken, true)
+      : { Accept: "application/json", "Content-Type": "application/json" },
     body: JSON.stringify({ analysis }),
   });
 
   return readJsonResponse(response);
+}
+
+export async function deleteSavedOpportunity(storageId, accessToken) {
+  const endpoint = accessToken
+    ? `/api/saved-opportunities/${encodeURIComponent(storageId)}`
+    : `/api/opportunities/${encodeURIComponent(storageId)}`;
+  const response = await fetch(endpoint, {
+    method: "DELETE",
+    headers: accessToken ? createAuthorizationHeaders(accessToken) : { Accept: "application/json" },
+  });
+  if (!response.ok) await readJsonResponse(response);
 }
 
 export async function getRecommendationSites() {

@@ -225,7 +225,7 @@ export async function mockAnalyzeOpportunity({ profile, rawText, url }) {
     sourceUrl: url || null,
     uncertainFields,
   };
-  const match = matchOpportunity({ profile, opportunity });
+  const match = matchOpportunity({ profile, opportunity, sourceText: rawText });
 
   const result = {
     mode: "mock",

@@ -52,3 +52,25 @@ test("단일 청크가 제한보다 커도 정확히 제한까지만 보관한�
   assert.ok(new TextEncoder().encode(contentWithoutSuffix).byteLength <= 30);
   assert.ok(result.endsWith("</script></style></body></html>"));
 });
+
+test("긴 메뉴보다 게시글 상세 영역을 우선 추출한다", () => {
+  const html = `<html>
+    <head><title>경북대학교</title></head>
+    <body>
+      <nav>${"메뉴 ".repeat(20000)}</nav>
+      <div class="board_view">
+        <h2>대학-기업 협업 프로젝트 참여기업 모집</h2>
+        <div id="viewcontent" class="board_cont">
+          지원대상: 대구 지역 내 ABB 관련 기업
+          접수기간: 2026. 7. 22. ~ 2026. 8. 9.
+        </div>
+      </div>
+    </body>
+  </html>`;
+
+  const result = extractOpportunityTextFromHtml(html);
+
+  assert.match(result, /참여기업 모집/);
+  assert.match(result, /지원대상: 대구 지역 내 ABB 관련 기업/);
+  assert.equal(result.includes("메뉴 메뉴 메뉴"), false);
+});

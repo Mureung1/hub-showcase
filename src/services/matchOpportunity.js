@@ -83,6 +83,49 @@ function unique(values) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
+const STUDENT_APPLICANT_PATTERN = /대학생|재학생|학생|청년|개인|팀|졸업생|취업\s*준비생|예비\s*창업자/i;
+const BUSINESS_APPLICANT_PATTERN = /기업|중소기업|소상공인|사업자|법인|스타트업/i;
+const APPLICANT_LABEL_PATTERN = /지원\s*대상|신청\s*대상|참가\s*대상|모집\s*대상|지원\s*자격|신청\s*자격|참여\s*기업/i;
+
+function findBusinessOnlyAudience(opportunity, sourceText = "") {
+  const requiredAudienceText = [
+    opportunity.target,
+    ...(opportunity.eligibility || [])
+      .filter((item) => item?.required === true)
+      .flatMap((item) => [item.condition, item.evidence]),
+  ].filter(Boolean).join("\n");
+  const title = String(opportunity.title || "");
+
+  if (
+    BUSINESS_APPLICANT_PATTERN.test(requiredAudienceText) &&
+    !STUDENT_APPLICANT_PATTERN.test(requiredAudienceText)
+  ) {
+    return requiredAudienceText;
+  }
+
+  const applicantLines = String(sourceText || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => APPLICANT_LABEL_PATTERN.test(line));
+  const businessOnlyLine = applicantLines.find((line) => (
+    BUSINESS_APPLICANT_PATTERN.test(line) &&
+    !STUDENT_APPLICANT_PATTERN.test(line)
+  ));
+
+  if (businessOnlyLine) {
+    return businessOnlyLine;
+  }
+
+  if (
+    /참여\s*기업[^.\n]{0,40}(?:모집|공고)|기업[^.\n]{0,30}(?:모집|선정)\s*공고/i.test(title) &&
+    !STUDENT_APPLICANT_PATTERN.test(title)
+  ) {
+    return title;
+  }
+
+  return null;
+}
+
 function includesTerm(text, term) {
   const normalizedText = normalizeText(text);
   const normalizedTerm = normalizeText(term);
@@ -558,7 +601,7 @@ function createSummary(status, counts) {
   return "현재 프로필로 확인 가능한 필수 조건을 충족합니다.";
 }
 
-export function matchOpportunity({ profile, opportunity }) {
+export function matchOpportunity({ profile, opportunity, sourceText = "" }) {
   if (!profile) {
     return {
       status: "insufficient_info",
@@ -583,6 +626,22 @@ export function matchOpportunity({ profile, opportunity }) {
     uncertainFields: [],
     ...opportunity,
   };
+  const businessOnlyAudience = findBusinessOnlyAudience(safeOpportunity, sourceText);
+
+  if (businessOnlyAudience) {
+    return {
+      status: "not_eligible",
+      score: 0,
+      summary: "기업 또는 사업자만 신청할 수 있는 공고로, 대학생 개인 지원 대상이 아닙니다.",
+      matchedReasons: [],
+      missingInfo: [],
+      disqualifyingReasons: [
+        `신청 대상이 기업으로 제한되어 있습니다: ${businessOnlyAudience}`,
+      ],
+      nextActions: ["대학생 개인이 신청할 수 있는 별도 공고인지 원문에서 확인"],
+    };
+  }
+
   const explicitRequired = safeOpportunity.eligibility.filter((condition) => condition.required === true);
   const targetCondition = explicitRequired.length ? null : createTargetCondition(safeOpportunity);
   const requiredConditions = targetCondition ? [targetCondition] : explicitRequired;

@@ -1,4 +1,4 @@
-﻿import { mkdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
@@ -169,6 +169,11 @@ export function createLocalOpportunityRepository(options = {}) {
       ].join("\n")).get(row.analysisId);
 
       return fromDatabaseRow(record);
+    },
+
+    async deleteAnalysis(storageId) {
+      ensureConfigured();
+      database.prepare("DELETE FROM opportunity_analyses WHERE id = ?").run(storageId);
     },
 
     close() {

@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ProfileForm from "./components/ProfileForm.jsx";
 import AuthPanel from "./components/AuthPanel.jsx";
+import AuthGate from "./components/AuthGate.jsx";
 import ProfileAccessPanel from "./components/ProfileAccessPanel.jsx";
 import NoticeDiscovery from "./components/NoticeDiscovery.jsx";
 import SiteRecommendations from "./components/SiteRecommendations.jsx";
 import UserSettingsForm from "./components/UserSettingsForm.jsx";
+import SavedOpportunities from "./components/SavedOpportunities.jsx";
 import {
   deleteNoticeSource,
+  deleteSavedOpportunity,
   deleteProfile,
   getHealth,
   getProfile,
@@ -24,10 +27,15 @@ import {
   MATCH_STATUS_LABELS,
 } from "./constants/opportunity.js";
 import { analyzeOpportunity } from "./services/analyzeOpportunity.js";
+import { createTasks } from "./services/createTasks.js";
+import {
+  MAX_ALL_NOTICES_PER_SOURCE,
+  mergeSourceNoticeLinks,
+} from "./services/noticeOrdering.js";
 import { useAuth } from "./auth/useAuth.js";
 import { getUsernameFromUser } from "./auth/authIdentity.js";
 import { useUserSettings } from "./settings/useUserSettings.js";
-import { filterAnalysesBySettings } from "./services/filterAnalysesBySettings.js";
+import { UserSettingsProvider } from "./settings/UserSettingsProvider.jsx";
 import { analyzeNoticeLinks } from "./services/analyzeNoticeLinks.js";
 import { rematchAnalysisResult } from "./services/rematchAnalysisResult.js";
 import {
@@ -92,7 +100,23 @@ const providerLabels = {
   openai: "OpenAI",
 };
 
-const sidebarItems = ["대시보드", "프로필", "기회 추천", "저장한 공고", "마감 태스크", "설정"];
+const sidebarItems = [
+  { id: "dashboard", label: "대시보드" },
+  { id: "profile", label: "프로필" },
+  { id: "recommendations", label: "기회 추천" },
+  { id: "saved", label: "저장한 공고" },
+  { id: "tasks", label: "마감 태스크" },
+  { id: "settings", label: "설정" },
+];
+
+const pageDefinitions = {
+  dashboard: { eyebrow: "Opportunity Agent", title: "공지 링크 수집 워크벤치", description: "출처를 스캔하고 공고를 분석합니다." },
+  profile: { eyebrow: "Profile", title: "내 프로필", description: "맞춤 판정에 사용할 학교·전공·활동 조건을 관리합니다." },
+  recommendations: { eyebrow: "Discovery", title: "기회 추천", description: "프로필과 관심 설정을 바탕으로 새로운 정보 사이트와 공고를 찾습니다." },
+  saved: { eyebrow: "Saved", title: "저장한 공고", description: "관심 공고의 분석 결과와 마감 정보를 다시 확인합니다." },
+  tasks: { eyebrow: "Tasks", title: "마감 태스크", description: "저장 공고에서 준비할 작업을 관리합니다." },
+  settings: { eyebrow: "Settings", title: "개인 설정", description: "추천 범위와 자동 저장 동작을 설정합니다." },
+};
 
 const statusLabels = {
   analyzing: "분석 중",
@@ -180,13 +204,15 @@ function annotateLinks(links, source) {
 
 function createScanSummary(sourceResults, failedSources = []) {
   return {
-    allLinks: sourceResults.flatMap((result) => result.allLinks),
+    allLinks: mergeSourceNoticeLinks(sourceResults, "allLinks", {
+      perSourceLimit: MAX_ALL_NOTICES_PER_SOURCE,
+    }),
     failedSources,
     fetchedAt: new Date().toISOString(),
     isBatch: sourceResults.length > 1 || failedSources.length > 0,
     knownCount: sourceResults.reduce((sum, result) => sum + result.knownCount, 0),
-    latestLinks: sourceResults.flatMap((result) => result.latestLinks),
-    newLinks: sourceResults.flatMap((result) => result.newLinks),
+    latestLinks: mergeSourceNoticeLinks(sourceResults, "latestLinks"),
+    newLinks: mergeSourceNoticeLinks(sourceResults, "newLinks"),
     previousScanCount: sourceResults.reduce((sum, result) => sum + result.previousScanCount, 0),
     sourceCount: sourceResults.length,
     sourceResults,
@@ -212,7 +238,7 @@ function AnalysisListSection({ items, title }) {
   );
 }
 
-function AnalysisResultCard({ canSave, isSaving, onSave, result, saveError, saveMessage }) {
+function AnalysisResultCard({ canSave, isSaving, onSave, result, saveError, saveMessage, showSaveAction = true }) {
   const opportunity = result.opportunity;
   const match = result.match;
   const isProfilelessAnalysis = match.score === null &&
@@ -271,15 +297,17 @@ function AnalysisResultCard({ canSave, isSaving, onSave, result, saveError, save
           <span className={`analysis-mode mode-${result.mode}`}>
             {result.mode === "gemini" ? "Gemini API 분석" : ANALYSIS_MODE_LABELS[result.mode]}
           </span>
+          {showSaveAction ? (
           <button
             className="secondary-button analysis-save-button"
             disabled={isSaving || !canSave}
             onClick={() => onSave(result)}
-            title={canSave ? "분석 결과를 Supabase에 저장" : "Supabase 연결 설정 후 저장할 수 있습니다."}
+            title={canSave ? "분석 결과를 저장한 공고에 추가" : "로그인 또는 저장소 연결 후 저장할 수 있습니다."}
             type="button"
           >
-            {isSaving ? "저장 중" : "서버 저장"}
+            {isSaving ? "저장 중" : "공고 저장"}
           </button>
+          ) : null}
           {opportunity.sourceUrl ? (
             <a className="analysis-source-link" href={opportunity.sourceUrl} rel="noreferrer" target="_blank">
               원문 보기
@@ -702,13 +730,15 @@ function Metrics({ knownLinks, scan }) {
 }
 
 function ResultTable({
-  analysisPendingUrl,
   displayMode,
   failedSources = [],
   isAnalyzing,
   links,
+  pendingLinkAction,
   onAnalyzeLink,
   onChangeMode,
+  onSaveLink,
+  onTaskifyLink,
 }) {
   const heading = displayMode === "all" ? "전체 공지 링크" : "최신 공지 링크";
   const eyebrow = displayMode === "all" ? "All Notices" : "Latest Since Last Scan";
@@ -746,7 +776,12 @@ function ResultTable({
       <div className="link-list">
         {links.length ? (
           links.map((link, index) => {
-            const isCurrentAnalysis = isAnalyzing && analysisPendingUrl === link.url;
+            const currentAction = pendingLinkAction?.url === link.url
+              ? pendingLinkAction.action
+              : null;
+            const isCurrentAnalysis = currentAction === "analyze";
+            const isCurrentSave = currentAction === "save";
+            const isCurrentTaskify = currentAction === "taskify";
 
             return (
               <article className="link-row" key={`${link.sourceId || link.sourceName || "source"}:${link.id}`}>
@@ -757,9 +792,6 @@ function ResultTable({
                 </a>
                 <span className="link-host">{link.sourceName || link.hostname}</span>
                 <span className="link-actions">
-                  <a className="link-action-button is-open" href={link.url} rel="noreferrer" target="_blank">
-                    공지 열기
-                  </a>
                   <button
                     className={`link-action-button${isCurrentAnalysis ? " is-analyzing" : ""}`}
                     type="button"
@@ -769,6 +801,26 @@ function ResultTable({
                     aria-busy={isCurrentAnalysis}
                   >
                     {isCurrentAnalysis ? "분석 중" : "즉시 분석"}
+                  </button>
+                  <button
+                    className={`link-action-button is-primary${isCurrentSave ? " is-analyzing" : ""}`}
+                    type="button"
+                    disabled={isAnalyzing}
+                    onClick={() => onSaveLink(link)}
+                    aria-label={`${link.title} 공고 저장`}
+                    aria-busy={isCurrentSave}
+                  >
+                    {isCurrentSave ? "저장 중" : "공고 저장"}
+                  </button>
+                  <button
+                    className={`link-action-button${isCurrentTaskify ? " is-analyzing" : ""}`}
+                    type="button"
+                    disabled={isAnalyzing}
+                    onClick={() => onTaskifyLink(link)}
+                    aria-label={`${link.title} 태스크화`}
+                    aria-busy={isCurrentTaskify}
+                  >
+                    {isCurrentTaskify ? "생성 중" : "태스크화"}
                   </button>
                 </span>
               </article>
@@ -881,23 +933,21 @@ function Topbar({ health, user }) {
   );
 }
 
-function Sidebar({ status }) {
-  const [activeIndex, setActiveIndex] = useState(0);
-
+function Sidebar({ activeView, onNavigate, status }) {
   return (
     <aside className="sidebar" aria-label="주요 메뉴">
       <nav className="sidebar-nav">
         {sidebarItems.map((item, index) => (
-          <a
-            aria-current={index === activeIndex ? "page" : undefined}
-            className={index === activeIndex ? "is-active" : ""}
-            href={index === 1 ? "#profile-form" : index === 2 ? "#site-recommendation-title" : "#agent-title"}
-            key={item}
-            onClick={() => setActiveIndex(index)}
+          <button
+            aria-current={item.id === activeView ? "page" : undefined}
+            className={item.id === activeView ? "is-active" : ""}
+            key={item.id}
+            onClick={() => onNavigate(item.id)}
+            type="button"
           >
             <span aria-hidden="true">{index + 1}</span>
-            {item}
-          </a>
+            {item.label}
+          </button>
         ))}
       </nav>
       <div className="sidebar-card">
@@ -905,19 +955,18 @@ function Sidebar({ status }) {
         <p>{statusLabels[status]}</p>
       </div>
       <div className="sidebar-links">
-        <a href="#analysis-title">도움말</a>
-        <a href="#notice-brief-title">의견 보내기</a>
+        <button onClick={() => onNavigate("dashboard")} type="button">도움말</button>
+        <button onClick={() => onNavigate("settings")} type="button">의견 보내기</button>
       </div>
     </aside>
   );
 }
-
-function HeroSummary({ health, knownLinks, scan }) {
+function HeroSummary({ health, savedCount, scan }) {
   const provider = providerLabels[health?.aiProvider] ?? "mock";
   const metrics = [
     { label: "추출 링크", value: scan?.allLinks.length ?? 0, helper: "이번 스캔" },
     { label: "최신 링크", value: scan?.latestLinks.length ?? 0, helper: "마지막 스캔 이후" },
-    { label: "기존 기록", value: scan?.knownCount ?? knownLinks.length, helper: "로컬 저장" },
+    { label: "저장한 공고", value: savedCount, helper: "관심 목록" },
   ];
 
   return (
@@ -942,48 +991,6 @@ function HeroSummary({ health, knownLinks, scan }) {
     </section>
   );
 }
-
-function SavedAnalysisPanel({ errorMessage, filteredCount = 0, isConfigured, isLoading, items, onRefresh, onSelect, storageLabel }) {
-  return (
-    <section className="saved-analysis-panel" aria-labelledby="saved-analysis-title">
-      <div className="saved-analysis-heading">
-        <div>
-          <p className="eyebrow">{storageLabel || "서버 저장소"}</p>
-          <h2 id="saved-analysis-title">서버 저장 공고</h2>
-        </div>
-        <button
-          className="secondary-button compact-button"
-          disabled={!isConfigured || isLoading}
-          onClick={onRefresh}
-          type="button"
-        >
-          {isLoading ? "불러오는 중" : "새로고침"}
-        </button>
-      </div>
-
-      {!isConfigured ? (
-        <p className="saved-analysis-empty">저장소 연결을 확인하면 서버에 저장한 공고를 불러올 수 있습니다.</p>
-      ) : errorMessage ? (
-        <p className="notice-message is-error" role="alert">{errorMessage}</p>
-      ) : !items.length ? (
-        <p className="saved-analysis-empty">서버에 저장한 공고가 아직 없습니다.</p>
-      ) : (
-        <ul className="saved-analysis-list">
-          {items.map((item) => (
-            <li key={item.storageId || item.id}>
-              <button onClick={() => onSelect(item)} type="button">
-                <span>{CATEGORY_LABELS[item.opportunity.category]}</span>
-                <strong>{item.opportunity.title || "공고명 확인 필요"}</strong>
-                <small>{item.opportunity.deadline || "마감일 확인 필요"}</small>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
 
 function LegacyProfileMigrationPanel({ isImporting, onImport }) {
   return (
@@ -1062,7 +1069,7 @@ function CategoryStrip() {
   );
 }
 
-export default function OpportunityAgentWorkbench() {
+function OpportunityAgentWorkbench() {
   const { isAuthLoading, isConfigured: isAuthConfigured, session, user } = useAuth();
   const { settings: userSettings } = useUserSettings();
   const [customSources, setCustomSources] = useState([]);
@@ -1097,11 +1104,15 @@ export default function OpportunityAgentWorkbench() {
   const [analysisError, setAnalysisError] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisPendingUrl, setAnalysisPendingUrl] = useState(null);
+  const [pendingLinkAction, setPendingLinkAction] = useState(null);
   const [isSavingAnalysis, setIsSavingAnalysis] = useState(false);
   const [saveAnalysisError, setSaveAnalysisError] = useState("");
   const [saveAnalysisMessage, setSaveAnalysisMessage] = useState("");
   const [savedAnalyses, setSavedAnalyses] = useState([]);
   const [savedAnalysesError, setSavedAnalysesError] = useState("");
+  const [activeView, setActiveView] = useState("dashboard");
+  const [selectedSavedAnalysisId, setSelectedSavedAnalysisId] = useState(null);
+  const [deletingSavedAnalysisId, setDeletingSavedAnalysisId] = useState(null);
   const [isLoadingSavedAnalyses, setIsLoadingSavedAnalyses] = useState(false);
   const [activeOperation, setActiveOperation] = useState(null);
   const [noticeAnalysisByUrl, setNoticeAnalysisByUrl] = useState({});
@@ -1129,12 +1140,11 @@ export default function OpportunityAgentWorkbench() {
     () => createNoticeBriefsFromLinks(displayLinks, noticeAnalysisByUrl),
     [displayLinks, noticeAnalysisByUrl],
   );
-  const filteredSavedAnalyses = useMemo(
-    () => filterAnalysesBySettings(savedAnalyses, userSettings),
-    [savedAnalyses, userSettings],
-  );
+  const canUseSavedStorage = isAuthConfigured
+    ? Boolean(user && session?.access_token)
+    : Boolean(health?.storageConfigured);
   const loadSavedAnalyses = useCallback(async () => {
-    if (!health?.storageConfigured) {
+    if (!canUseSavedStorage) {
       setSavedAnalyses([]);
       setSavedAnalysesError("");
       return;
@@ -1144,14 +1154,14 @@ export default function OpportunityAgentWorkbench() {
     setSavedAnalysesError("");
 
     try {
-      const response = await getSavedOpportunities();
+      const response = await getSavedOpportunities(isAuthConfigured ? session?.access_token : undefined);
       setSavedAnalyses(response.items || []);
     } catch (error) {
       setSavedAnalysesError(getErrorMessage(error));
     } finally {
       setIsLoadingSavedAnalyses(false);
     }
-  }, [health?.storageConfigured]);
+  }, [canUseSavedStorage, isAuthConfigured, session?.access_token]);
 
 
   useEffect(() => {
@@ -1296,10 +1306,10 @@ export default function OpportunityAgentWorkbench() {
   }
 
   function handleBeginProfileEdit() {
+    setActiveView("profile");
     setIsProfileEditing(true);
     setProfileError("");
     setProfileSuccessMessage("");
-    globalThis.document?.getElementById("profile-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function handleCancelProfileEdit() {
@@ -1385,10 +1395,12 @@ export default function OpportunityAgentWorkbench() {
     }
   }
 
-  async function handleSaveAnalysis(result) {
-    if (!health?.storageConfigured) {
-      setSaveAnalysisError("서버 저장소가 준비되지 않았습니다. 서버 상태를 확인해주세요.");
-      return;
+  async function handleSaveAnalysis(result, { automatic = false } = {}) {
+    if (!canUseSavedStorage) {
+      setSaveAnalysisError(isAuthConfigured
+        ? "로그인 후 공고를 저장할 수 있습니다."
+        : "서버 저장소가 준비되지 않았습니다. 서버 상태를 확인해주세요.");
+      return null;
     }
 
     setIsSavingAnalysis(true);
@@ -1396,33 +1408,51 @@ export default function OpportunityAgentWorkbench() {
     setSaveAnalysisMessage("");
 
     try {
-      const response = await saveOpportunity(result);
+      const response = await saveOpportunity(result, isAuthConfigured ? session?.access_token : undefined);
       const savedItem = response.item;
       setSavedAnalyses((currentItems) => [
         savedItem,
-        ...currentItems.filter((item) => item.id !== savedItem.id),
-      ].slice(0, 12));
-      setSaveAnalysisMessage("분석 결과를 서버 저장 공고에 저장했습니다.");
+        ...currentItems.filter((item) => (item.storageId || item.id) !== (savedItem.storageId || savedItem.id)),
+      ].slice(0, 100));
+      setSaveAnalysisMessage(automatic
+        ? "자동 저장 설정에 따라 공고를 저장했습니다."
+        : "분석 결과를 저장한 공고에 추가했습니다.");
+      return savedItem;
     } catch (error) {
       setSaveAnalysisError(getErrorMessage(error));
+      return null;
     } finally {
       setIsSavingAnalysis(false);
     }
   }
 
-  function prepareAutoSaveAnalyzedOpportunity() {
+  async function saveAnalysisIfEnabled(result) {
     if (!userSettings?.autoSaveAnalyzedOpportunities) return;
-
-    // User-specific saved opportunity persistence is connected in the next task.
-    setSaveAnalysisMessage("자동 저장 설정이 켜져 있습니다. 사용자별 저장 공고 연결 후 자동 저장이 실행됩니다.");
+    await handleSaveAnalysis(result, { automatic: true });
   }
+
   function handleSelectSavedAnalysis(result) {
-    setAnalysisResult(result);
-    setAnalysisError("");
-    setSaveAnalysisError("");
-    globalThis.document?.getElementById("analysis-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setSelectedSavedAnalysisId(result.storageId || result.id);
+    setSavedAnalysesError("");
   }
 
+  async function handleDeleteSavedAnalysis(result) {
+    const storageId = result.storageId || result.id;
+    if (!storageId) return;
+    if (!globalThis.confirm?.(`"${result.opportunity.title || "선택한 공고"}"를 저장 목록에서 삭제할까요?`)) return;
+
+    setDeletingSavedAnalysisId(storageId);
+    setSavedAnalysesError("");
+    try {
+      await deleteSavedOpportunity(storageId, isAuthConfigured ? session?.access_token : undefined);
+      setSavedAnalyses((currentItems) => currentItems.filter((item) => (item.storageId || item.id) !== storageId));
+      setSelectedSavedAnalysisId((currentId) => currentId === storageId ? null : currentId);
+    } catch (error) {
+      setSavedAnalysesError(getErrorMessage(error));
+    } finally {
+      setDeletingSavedAnalysisId(null);
+    }
+  }
   function updateAnalysisUrl(value) {
     setAnalysisUrl(value);
     setAnalysisInputMessage("");
@@ -1448,6 +1478,7 @@ export default function OpportunityAgentWorkbench() {
       return;
     }
 
+    setActiveView("dashboard");
     setAnalysisUrl(url);
     setAnalysisRawText("");
     setAnalysisResult(null);
@@ -1457,7 +1488,7 @@ export default function OpportunityAgentWorkbench() {
     setAnalysisInputMessage(
       `"${candidate.title || "선택한 공지"}" 링크를 입력했습니다. 이 출처는 목록 정보만 제공하므로 원문 본문을 붙여넣은 뒤 분석하세요.`,
     );
-    globalThis.document?.getElementById("analysis-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    globalThis.setTimeout(() => globalThis.document?.getElementById("analysis-title")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   }
 
   async function handleAnalyzeOpportunity(event) {
@@ -1499,7 +1530,7 @@ export default function OpportunityAgentWorkbench() {
       });
 
       setAnalysisResult(result);
-      prepareAutoSaveAnalyzedOpportunity();
+      await saveAnalysisIfEnabled(result);
     } catch (error) {
       setAnalysisError(getErrorMessage(error));
     } finally {
@@ -1508,21 +1539,20 @@ export default function OpportunityAgentWorkbench() {
     }
   }
 
-  async function handleAnalyzeLink(link) {
+  async function analyzeNoticeLink(link, { autoSave = true, scrollToAnalysis = true } = {}) {
     if (isAnalyzing || isRunning) {
-      return;
+      return null;
     }
 
     const url = String(link?.url ?? "").trim();
     if (!url) {
       setAnalysisError("분석할 공지 링크가 없습니다.");
-      return;
+      return null;
     }
 
     setAnalysisUrl(url);
     setAnalysisRawText("");
     setAnalysisInputMessage("");
-
     setIsAnalyzing(true);
     setAnalysisPendingUrl(url);
     setAnalysisError("");
@@ -1532,10 +1562,13 @@ export default function OpportunityAgentWorkbench() {
       ...currentEntries,
       [url]: { link, status: "analyzing" },
     }));
-    globalThis.document?.getElementById("analysis-title")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
+
+    if (scrollToAnalysis) {
+      globalThis.document?.getElementById("analysis-title")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
 
     try {
       const result = await analyzeOpportunity({
@@ -1544,12 +1577,15 @@ export default function OpportunityAgentWorkbench() {
         sourceUrl: url,
       });
       setAnalysisResult(result);
-      prepareAutoSaveAnalyzedOpportunity();
+      if (autoSave) {
+        await saveAnalysisIfEnabled(result);
+      }
       setNoticeAnalysisProgress({ completed: 1, failedCount: 0, total: 1 });
       setNoticeAnalysisByUrl((currentEntries) => ({
         ...currentEntries,
         [url]: { link, result, status: "complete" },
       }));
+      return result;
     } catch (error) {
       const message = getErrorMessage(error);
       setAnalysisError(message);
@@ -1558,9 +1594,81 @@ export default function OpportunityAgentWorkbench() {
         ...currentEntries,
         [url]: { errorMessage: message, link, status: "error" },
       }));
+      return null;
     } finally {
       setIsAnalyzing(false);
       setAnalysisPendingUrl(null);
+    }
+  }
+
+  async function handleAnalyzeLink(link) {
+    setPendingLinkAction({ action: "analyze", url: link.url });
+    try {
+      return await analyzeNoticeLink(link);
+    } finally {
+      setPendingLinkAction(null);
+    }
+  }
+
+  async function getOrAnalyzeNoticeLink(link) {
+    const cachedResult = noticeAnalysisByUrl[link.url]?.result;
+    if (cachedResult) return cachedResult;
+
+    return analyzeNoticeLink(link, {
+      autoSave: false,
+      scrollToAnalysis: false,
+    });
+  }
+
+  async function handleSaveNoticeLink(link) {
+    if (!canUseSavedStorage) {
+      setErrorMessage(isAuthConfigured
+        ? "로그인 후 공고를 저장할 수 있습니다."
+        : "서버 저장소가 준비되지 않았습니다.");
+      return;
+    }
+
+    setPendingLinkAction({ action: "save", url: link.url });
+    try {
+      const result = await getOrAnalyzeNoticeLink(link);
+      if (!result) return;
+
+      const savedItem = await handleSaveAnalysis(result);
+      if (!savedItem) return;
+
+      setSelectedSavedAnalysisId(savedItem.storageId || savedItem.id);
+      handleNavigate("saved");
+    } finally {
+      setPendingLinkAction(null);
+    }
+  }
+
+  async function handleTaskifyNoticeLink(link) {
+    if (!canUseSavedStorage) {
+      setErrorMessage(isAuthConfigured
+        ? "로그인 후 공고를 태스크로 만들 수 있습니다."
+        : "서버 저장소가 준비되지 않았습니다.");
+      return;
+    }
+
+    setPendingLinkAction({ action: "taskify", url: link.url });
+    try {
+      const result = await getOrAnalyzeNoticeLink(link);
+      if (!result) return;
+
+      const taskReadyResult = result.tasks?.length
+        ? result
+        : {
+          ...result,
+          tasks: createTasks(result.opportunity, result.match),
+        };
+      const savedItem = await handleSaveAnalysis(taskReadyResult);
+      if (!savedItem) return;
+
+      setSelectedSavedAnalysisId(savedItem.storageId || savedItem.id);
+      handleNavigate("tasks");
+    } finally {
+      setPendingLinkAction(null);
     }
   }
 
@@ -2032,145 +2140,236 @@ export default function OpportunityAgentWorkbench() {
     setNoticeMessage("이 출처의 기존 기록과 마지막 스캔 기준을 초기화했습니다.");
   }
 
+  function handleNavigate(nextView) {
+    setActiveView(nextView);
+    globalThis.scrollTo?.({ top: 0, behavior: "smooth" });
+  }
+
+  const activePage = pageDefinitions[activeView] || pageDefinitions.dashboard;
+  const selectedSavedAnalysis = savedAnalyses.find(
+    (item) => (item.storageId || item.id) === selectedSavedAnalysisId,
+  ) || null;
+  const savedTasks = savedAnalyses.flatMap((item) => item.tasks.map((task) => ({
+    ...task,
+    opportunityId: item.storageId || item.id,
+    opportunityTitle: item.opportunity.title || "공고명 확인 필요",
+  })));
+
   return (
     <main className="app-shell">
       <Topbar health={health} user={user} />
       <div className="app-layout">
-        <Sidebar status={status} />
-        <section className="workspace" aria-labelledby="agent-title">
-        <header className="workspace-header">
-          <div>
-            <p className="eyebrow">Opportunity Agent</p>
-            <h1 id="agent-title">공지 링크 수집 워크벤치</h1>
-            <CategoryStrip />
-          </div>
-          <div className="header-status">
-            <span className="source-chip">{sourceSummary}</span>
-            <span className={`status-pill status-${status}`}>{statusLabels[status]}</span>
-          </div>
-        </header>
+        <Sidebar activeView={activeView} onNavigate={handleNavigate} status={status} />
+        <section className="workspace" aria-labelledby="page-title">
+          <header className="workspace-header">
+            <div>
+              <p className="eyebrow">{activePage.eyebrow}</p>
+              <h1 id="page-title">{activePage.title}</h1>
+              <p className="workspace-description">{activePage.description}</p>
+              {activeView === "dashboard" ? <CategoryStrip /> : null}
+            </div>
+            <div className="header-status">
+              {activeView === "dashboard" ? <span className="source-chip">{sourceSummary}</span> : null}
+              {activeView === "saved" ? <span className="source-chip">{savedAnalyses.length}개 저장</span> : null}
+              <span className={`status-pill status-${status}`}>{statusLabels[status]}</span>
+            </div>
+          </header>
 
-        <HeroSummary health={health} knownLinks={knownLinks} scan={scan} />
+          {activeView === "dashboard" ? (
+            <div className="view-page dashboard-view">
+              <HeroSummary health={health} savedCount={savedAnalyses.length} scan={scan} />
 
-        <AuthPanel />
-        {isAuthConfigured && user && !userProfile && legacyProfile ? (
-          <LegacyProfileMigrationPanel isImporting={isImportingLegacyProfile} onImport={handleImportLegacyProfile} />
-        ) : null}
+              <section className="tool-grid" aria-label="스캔 설정과 흐름">
+                <ConfigPanel
+                  activeOperation={activeOperation}
+                  config={config}
+                  errorMessage={errorMessage}
+                  isRunning={isRunning}
+                  isSavingSource={isSavingSource}
+                  noticeMessage={noticeMessage}
+                  onChangeConfig={updateConfig}
+                  onDeleteSource={handleDeleteSource}
+                  onLoadSource={loadSource}
+                  onResetHistory={handleResetHistory}
+                  onRunBatchScan={handleRunBatchScan}
+                  onRunScan={handleRunScan}
+                  onRunScanAndAnalyze={handleRunScanAndAnalyze}
+                  onSaveLinks={handleSaveLinks}
+                  onSaveSource={handleSaveSource}
+                  scan={scan}
+                  sourceOptions={sourceOptions}
+                />
+                <div className="side-stack">
+                  <ProfileSummaryPanel onEdit={handleBeginProfileEdit} profile={userProfile} />
+                  <PipelinePanel config={config} isRunning={isRunning} scan={scan} />
+                  <RoadmapPanel />
+                </div>
+              </section>
 
-        <section className="tool-grid" aria-label="스캔 설정과 흐름">
-          <ConfigPanel
-            activeOperation={activeOperation}
-            config={config}
-            errorMessage={errorMessage}
-            isRunning={isRunning}
-            isSavingSource={isSavingSource}
-            noticeMessage={noticeMessage}
-            onChangeConfig={updateConfig}
-            onDeleteSource={handleDeleteSource}
-            onLoadSource={loadSource}
-            onResetHistory={handleResetHistory}
-            onRunBatchScan={handleRunBatchScan}
-            onRunScan={handleRunScan}
-            onRunScanAndAnalyze={handleRunScanAndAnalyze}
-            onSaveLinks={handleSaveLinks}
-            onSaveSource={handleSaveSource}
-            scan={scan}
-            sourceOptions={sourceOptions}
-          />
-          <div className="side-stack">
-            <ProfileSummaryPanel onEdit={handleBeginProfileEdit} profile={userProfile} />
-            <SavedAnalysisPanel
-              errorMessage={savedAnalysesError}
-              isConfigured={Boolean(health?.storageConfigured)}
-              isLoading={isLoadingSavedAnalyses}
-              storageLabel={health?.storageLabel}
-              filteredCount={savedAnalyses.length - filteredSavedAnalyses.length}
-              items={filteredSavedAnalyses}
-              onRefresh={loadSavedAnalyses}
-              onSelect={handleSelectSavedAnalysis}
-            />
-            <PipelinePanel config={config} isRunning={isRunning} scan={scan} />
-            <RoadmapPanel />
-          </div>
-        </section>
+              <AnalysisDemoPanel
+                analysisError={analysisError}
+                analysisInputMessage={analysisInputMessage}
+                analysisRawText={analysisRawText}
+                analysisResult={analysisResult}
+                analysisUrl={analysisUrl}
+                hasProfile={Boolean(userProfile)}
+                health={health}
+                healthError={healthError}
+                isAnalyzing={isAnalyzing}
+                isSavingAnalysis={isSavingAnalysis}
+                onAnalyze={handleAnalyzeOpportunity}
+                onChangeRawText={updateAnalysisRawText}
+                onChangeUrl={updateAnalysisUrl}
+                onSaveAnalysis={handleSaveAnalysis}
+                saveAnalysisError={saveAnalysisError}
+                saveAnalysisMessage={saveAnalysisMessage}
+              />
 
-        {isAuthConfigured && !user ? (
-          <ProfileAccessPanel />
-        ) : isProfileLoading || isAuthLoading ? (
-          <section className="profile-access-panel" id="profile-form" aria-live="polite">프로필을 불러오는 중입니다.</section>
-        ) : (
-          <ProfileForm
-            draft={profileDraft}
-            errorMessage={profileError}
-            isEditing={isProfileEditing}
-            isSaved={Boolean(userProfile)}
-            isSaving={isProfileSaving}
-            onBeginEdit={handleBeginProfileEdit}
-            onCancelEdit={handleCancelProfileEdit}
-            onChange={updateProfileDraft}
-            onReset={handleResetProfile}
-            onSave={handleSaveProfile}
-            successMessage={profileSuccessMessage}
-          />
-        )}
+              <section className="result-section" aria-label="스캔 결과">
+                <Metrics knownLinks={knownLinks} scan={scan} />
+                <ResultTable
+                  displayMode={displayMode}
+                  failedSources={scan?.failedSources ?? []}
+                  isAnalyzing={isAnalyzing || isRunning || isSavingAnalysis || Boolean(pendingLinkAction)}
+                  links={displayLinks}
+                  pendingLinkAction={pendingLinkAction}
+                  onAnalyzeLink={handleAnalyzeLink}
+                  onChangeMode={setDisplayMode}
+                  onSaveLink={handleSaveNoticeLink}
+                  onTaskifyLink={handleTaskifyNoticeLink}
+                />
+                <NoticeBriefPanel analysisProgress={noticeAnalysisProgress} briefs={noticeBriefs} />
+              </section>
+            </div>
+          ) : null}
 
-        {isAuthConfigured && user ? <UserSettingsForm /> : null}
+          {activeView === "profile" ? (
+            <div className="view-page profile-view">
+              <AuthPanel />
+              {isAuthConfigured && user && !userProfile && legacyProfile ? (
+                <LegacyProfileMigrationPanel isImporting={isImportingLegacyProfile} onImport={handleImportLegacyProfile} />
+              ) : null}
+              {isAuthConfigured && !user ? (
+                <ProfileAccessPanel />
+              ) : isProfileLoading || isAuthLoading ? (
+                <section className="profile-access-panel" id="profile-form" aria-live="polite">프로필을 불러오는 중입니다.</section>
+              ) : (
+                <ProfileForm
+                  draft={profileDraft}
+                  errorMessage={profileError}
+                  isEditing={isProfileEditing}
+                  isSaved={Boolean(userProfile)}
+                  isSaving={isProfileSaving}
+                  onBeginEdit={handleBeginProfileEdit}
+                  onCancelEdit={handleCancelProfileEdit}
+                  onChange={updateProfileDraft}
+                  onReset={handleResetProfile}
+                  onSave={handleSaveProfile}
+                  successMessage={profileSuccessMessage}
+                />
+              )}
+            </div>
+          ) : null}
 
-        <SiteRecommendations onAddSource={addRecommendedSource} profile={userProfile} savedSources={sourceOptions} settings={userSettings} />
+          {activeView === "recommendations" ? (
+            <div className="view-page recommendations-view">
+              <SiteRecommendations onAddSource={addRecommendedSource} profile={userProfile} savedSources={sourceOptions} settings={userSettings} />
+              <NoticeDiscovery onSelectCandidate={handleSelectDiscoveredNotice} />
+            </div>
+          ) : null}
 
-        <NoticeDiscovery onSelectCandidate={handleSelectDiscoveredNotice} />
+          {activeView === "saved" ? (
+            <div className="view-page saved-view-grid">
+              {isAuthConfigured && !user ? (
+                <ProfileAccessPanel />
+              ) : (
+                <>
+                  <SavedOpportunities
+                    errorMessage={savedAnalysesError}
+                    isConfigured={canUseSavedStorage}
+                    isDeletingId={deletingSavedAnalysisId}
+                    isLoading={isLoadingSavedAnalyses}
+                    items={savedAnalyses}
+                    onDelete={handleDeleteSavedAnalysis}
+                    onRefresh={loadSavedAnalyses}
+                    onSelect={handleSelectSavedAnalysis}
+                    selectedId={selectedSavedAnalysisId}
+                    storageLabel={isAuthConfigured ? "내 계정 저장소" : health?.storageLabel}
+                  />
+                  <section className="saved-opportunity-detail" aria-label="저장 공고 상세">
+                    {selectedSavedAnalysis ? (
+                      <AnalysisResultCard
+                        canSave={false}
+                        isSaving={false}
+                        onSave={() => {}}
+                        result={selectedSavedAnalysis}
+                        saveError=""
+                        saveMessage=""
+                        showSaveAction={false}
+                      />
+                    ) : (
+                      <div className="saved-detail-empty">
+                        <strong>상세히 볼 공고를 선택해 주세요.</strong>
+                        <p>왼쪽 목록에서 상세 보기를 누르면 분석 결과와 준비 태스크가 표시됩니다.</p>
+                      </div>
+                    )}
+                  </section>
+                </>
+              )}
+            </div>
+          ) : null}
 
-        <AnalysisDemoPanel
-          analysisError={analysisError}
-          analysisInputMessage={analysisInputMessage}
-          analysisRawText={analysisRawText}
-          analysisResult={analysisResult}
-          analysisUrl={analysisUrl}
-          hasProfile={Boolean(userProfile)}
-          health={health}
-          healthError={healthError}
-          isAnalyzing={isAnalyzing}
-          isSavingAnalysis={isSavingAnalysis}
-          onAnalyze={handleAnalyzeOpportunity}
-          onChangeRawText={updateAnalysisRawText}
-          onChangeUrl={updateAnalysisUrl}
-          onSaveAnalysis={handleSaveAnalysis}
-          saveAnalysisError={saveAnalysisError}
-          saveAnalysisMessage={saveAnalysisMessage}
-        />
+          {activeView === "tasks" ? (
+            <div className="view-page task-page-panel">
+              <div className="page-panel-heading">
+                <div>
+                  <p className="eyebrow">Task summary</p>
+                  <h2>저장 공고의 준비 태스크</h2>
+                  <p>저장된 분석 결과에서 생성된 태스크를 공고별로 확인합니다.</p>
+                </div>
+              </div>
+              {savedTasks.length ? (
+                <ul className="saved-task-list">
+                  {savedTasks.map((task) => (
+                    <li key={`${task.opportunityId}-${task.id}`}>
+                      <div>
+                        <strong>{task.title}</strong>
+                        <span>{task.opportunityTitle}</span>
+                      </div>
+                      <small>{task.dueDate || "마감일 확인 필요"}</small>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="saved-opportunities-empty">
+                  <strong>표시할 태스크가 없습니다.</strong>
+                  <p>공고를 분석하고 저장하면 준비 태스크가 이곳에 표시됩니다.</p>
+                </div>
+              )}
+            </div>
+          ) : null}
 
-        <section className="result-section" aria-label="스캔 결과">
-          <Metrics knownLinks={knownLinks} scan={scan} />
-          <ResultTable
-            analysisPendingUrl={analysisPendingUrl}
-            displayMode={displayMode}
-            failedSources={scan?.failedSources ?? []}
-            isAnalyzing={isAnalyzing || isRunning}
-            links={displayLinks}
-            onAnalyzeLink={handleAnalyzeLink}
-            onChangeMode={setDisplayMode}
-          />
-          <NoticeBriefPanel analysisProgress={noticeAnalysisProgress} briefs={noticeBriefs} />
-        </section>
+          {activeView === "settings" ? (
+            <div className="view-page settings-view">
+              {isAuthConfigured && !user ? <ProfileAccessPanel /> : isAuthConfigured ? <UserSettingsForm /> : (
+                <div className="saved-opportunities-empty">
+                  <strong>개인 설정은 로그인 모드에서 사용할 수 있습니다.</strong>
+                  <p>Supabase 인증 설정을 완료한 뒤 로그인해 주세요.</p>
+                </div>
+              )}
+            </div>
+          ) : null}
         </section>
       </div>
     </main>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+export default function OpportunityAgentIntro() {
+  return (
+    <AuthGate>
+      <UserSettingsProvider>
+        <OpportunityAgentWorkbench />
+      </UserSettingsProvider>
+    </AuthGate>
+  );
+}

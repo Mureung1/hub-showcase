@@ -192,7 +192,11 @@ function createAnalyzeRequest({ model, profile, rawText, url }) {
 12. 모든 사용자-facing 문자열은 한국어로 작성한다.
 13. 공고에 사용자의 regions에 없는 오프라인 장소나 필수 방문 일정이 있으면 참여 가능 여부를 missingInfo와 nextActions에 기록한다.
 14. profile이 null이면 사용자 적합성을 추측하거나 판정하지 말고 opportunity의 핵심 정보와 원문 evidence 추출에 집중한다.
-15. profile이 null이면 match는 insufficient_info, score는 null, matchedReasons와 disqualifyingReasons는 빈 배열로 반환한다.`,
+15. profile이 null이면 match는 insufficient_info, score는 null, matchedReasons와 disqualifyingReasons는 빈 배열로 반환한다.
+16. 가장 먼저 실제 신청 주체를 판별한다. 공고 작성 기관, 사업 수혜자, 협력 기관과 실제 신청자를 혼동하지 않는다.
+17. 지원 대상이 기업, 사업자, 법인, 소상공인 등으로 제한되면 opportunity.target에 원문 대상을 정확히 기록하고 eligibility에 required=true인 필수 조건을 추가한다.
+18. 기업 전용 공고에 학생 프로필이 들어오면 match.status는 not_eligible, score는 0으로 반환하고 기업 대상이라는 원문 근거를 disqualifyingReasons에 기록한다.
+19. 제목이나 본문에 기업이 언급되어도 실제 모집 대상이 대학생, 재학생, 청년 또는 개인이면 기업 전용으로 판정하지 않는다.`,
       temperature: 0.2,
       responseMimeType: "application/json",
       responseSchema: geminiAnalyzeResponseSchema,
