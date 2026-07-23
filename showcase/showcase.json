@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "title": "Bridge",
+  "summary": "천천히 글을 쓰고 기다리는 경험을 제공하는, 편지 기반 익명 연결 플랫폼입니다. 직접 쓴 편지가 24시간 뒤 AI가 골라준 낯선 이의 편지와 이어집니다.",
+  "githubUser": "bovoZhang(장성현)",
+  "demoUrl": "",
+  "thumbnail": "",
+  "screenshots": [],
+  "problem": "짧고 즉각적인 소통에 익숙해지며 생각을 하나의 완성된 글로 표현해본 경험이 줄고 있습니다. 완전 공개(SNS)와 완전 사적(메신저) 사이의 중간 공간이 없어, 같은 고민을 가진 낯선 사람과 천천히 글로 연결될 기회가 부족합니다.",
+  "targetUsers": [
+    "글쓰기를 좋아하는 사람",
+    "익명으로 자신의 생각을 나누고 싶은 사람",
+    "SNS 피로감을 느끼는 사람"
+  ],
+  "features": [
+    "직접 타이핑으로 장문의 편지를 처음부터 끝까지 작성합니다. (붙여넣기 차단, 글자 수 표시)",
+    "편지를 보낸 지 24시간 후, AI가 추천한 편지를 추천 이유와 함께 전달합니다.",
+    "받은 편지에 답장하거나 '스쳐 가기'를 선택하며 쓰기→기다리기→읽기→다시 쓰기 흐름을 이어갑니다.",
+    "저장소에서 내가 쓴 편지 / 받은 편지 / 이어진 편지를 확인합니다."
+  ],
+  "featureTags": [
+    "장문 편지 작성",
+    "AI 추천 연결",
+    "익명 연결"
+  ],
+  "techStack": [
+    "React",
+    "Vite",
+    "Express",
+    "Prisma",
+    "Supabase (PostgreSQL)",
+    "vitest"
+  ],
+  "techHighlights": [
+    "useReducer 기반 상태 머신으로 편지 작성→발송→대기→도착 흐름과 24시간 카운트다운을 관리합니다.",
+    "Express + Prisma + Supabase(PostgreSQL)로 편지 저장·조회 API를 구성하고, zod로 요청 값을 검증합니다.",
+    "Supabase Auth(JWT)로 로그인/회원가입을 처리하고, 검증 로직을 순수 함수로 분리해 vitest로 TDD했습니다."
+  ],
+  "developmentWithAI": "저는 문제 정의와 핵심 기능, 화면 흐름을 정했습니다. AI(Claude Code)는 요구사항을 화면→API→DB가 닫히는 수직 슬라이스 단위 작업으로 나누고 코드 초안을 만들었습니다. 저는 결과를 직접 실행·테스트하고 검증 Agent로 점검하며 수정했습니다.",
+  "agent": {
+    "summary": "기획을 작업 단위로 쪼개고, TDD로 구현하고, 완료 기능을 검증하는 데 Claude Code의 Agent·Skill을 함께 사용했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "feature-verifier",
+        "purpose": "완료된 기능이 요구사항·기획대로 동작하는지 검증하고 리포트를 냅니다."
+      },
+      {
+        "type": "skill",
+        "name": "tdd-test-writing",
+        "purpose": "순수 함수를 vitest로 TDD(red→green→refactor)하는 절차를 정리한 스킬입니다."
+      },
+      {
+        "type": "skill",
+        "name": "bridge-design",
+        "purpose": "프로토타입에서 추출한 색상·타이포·컴포넌트 규칙을 담은 디자인 시스템 스킬입니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 슬라이스 개발 Workflow",
+        "steps": [
+          "feature-slice로 수직 슬라이스 Task 분해",
+          "GitHub 이슈 등록",
+          "work 브랜치에서 구현",
+          "TDD로 테스트 먼저 작성(red→green)",
+          "feature-verifier로 검증"
+        ]
+      },
+      {
+        "name": "검증·커밋 Workflow",
+        "steps": [
+          "기능 완료",
+          "feature-verifier 검증 리포트 확인",
+          "수정 후 재검증",
+          "커밋 메시지 확정 후 촘촘히 커밋",
+          "PR 직접 생성"
+        ]
+      }
+    ]
+  }
+}
