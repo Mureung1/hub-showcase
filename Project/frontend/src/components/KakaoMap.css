@@ -1,0 +1,6 @@
+.td-kakao-map, .td-kakao-map__notice { width: 100%; border-radius: 16px; overflow: hidden; }
+.td-kakao-map__notice { display: grid; place-content: center; padding: 16px; box-sizing: border-box; background: #f1f5f3; color: #48635a; text-align: center; font-size: 14px; }
+.td-kakao-map__container { display: grid; gap: 8px; }
+.td-kakao-map__search { display: flex; gap: 8px; }
+.td-kakao-map__search input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid #d8e1dd; border-radius: 8px; }
+.td-kakao-map__search button { padding: 10px 14px; border: 0; border-radius: 8px; background: #00875a; color: #fff; cursor: pointer; }
