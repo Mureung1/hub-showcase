@@ -6,8 +6,16 @@ import { validateShowcase } from './validate-showcase.mjs';
 
 const IMAGE_PATTERN = /\.(webp|png|jpg|jpeg)$/i;
 
-function safeBranchName(branch) {
-  if (!/^[A-Za-z0-9._/-]+$/.test(branch)) {
+export function safeBranchName(branch) {
+  if (
+    typeof branch !== 'string' ||
+    !/^[\p{L}\p{N}._/-]+$/u.test(branch) ||
+    branch.startsWith('/') ||
+    branch.endsWith('/') ||
+    branch.includes('//') ||
+    branch.includes('..') ||
+    branch.includes('@{')
+  ) {
     throw new Error(`허용하지 않은 브랜치 이름입니다: ${branch}`);
   }
   return branch;

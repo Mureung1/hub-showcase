@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { collectLocalShowcases } from './collect-local-showcases.mjs';
+import { collectLocalShowcases, safeBranchName } from './collect-local-showcases.mjs';
 
 const showcase = {
   schemaVersion: 1,
@@ -26,6 +26,10 @@ const showcase = {
   },
   developmentWithAI: 'AI와 함께 자료 수집과 화면 표시를 확인했습니다.',
 };
+
+test('한글이 포함된 학생 브랜치 이름을 허용한다', () => {
+  assert.equal(safeBranchName('N001_강민구'), 'N001_강민구');
+});
 
 test('유효한 브랜치의 JSON과 이미지만 공개 자료로 만든다', async (context) => {
   const outputDir = await mkdtemp(path.join(os.tmpdir(), 'showcase-collector-'));
