@@ -50,6 +50,7 @@ export type PublishedRuntimeGenerationSnapshot = {
   readonly generationIdentity: RuntimeFileSystemIdentity
   readonly receipt: RuntimeGenerationVerificationReceipt
   readonly runtime: VerifiedRuntime
+  readonly runtimeIdentity: RuntimeFileSystemIdentity
   readonly tree: RuntimeMaterializedTreeVerificationSnapshot['tree']
   /**
    * Once rename starts, publish finishes durable readback even when the
@@ -134,6 +135,13 @@ export async function publishVerifiedRuntimeGeneration(
       kind: 'runtime_generation_staging_snapshot_drift',
     })
   }
+  await syncVerifiedRuntimeDirectories({
+    admission: input.admission,
+    expectedDevice: stagingIdentity.device,
+    expectedOwnerUid: cache.expectedOwnerUid,
+    runtimeIdentity: stagingTree.runtimeIdentity,
+    runtimeRoot: input.staging.runtimeRoot,
+  })
   await assertPathAbsent(
     input.layout.generation.root,
     'runtime_generation_final_already_exists',
@@ -274,12 +282,14 @@ export async function verifyPublishedRuntimeGeneration(input: {
     generationIdentity,
     input,
     receipt,
+    runtimeIdentity: tree.runtimeIdentity,
   })
   return {
     kind: 'published_runtime_generation_snapshot',
     generationIdentity,
     receipt,
     runtime: verifiedRuntime(input.admission, input.layout),
+    runtimeIdentity: tree.runtimeIdentity,
     tree: tree.tree,
     cancelledAfterCommit: false,
   }
@@ -294,6 +304,7 @@ async function assertGenerationReadbackStable(input: {
     readonly mutationAuthority: RuntimeCacheMutationAuthority
   }
   readonly receipt: RuntimeGenerationVerificationReceipt
+  readonly runtimeIdentity: RuntimeFileSystemIdentity
 }): Promise<void> {
   await revalidateGenerationAuthority(input.input)
   await inspectOwnedDirectory({
@@ -303,6 +314,14 @@ async function assertGenerationReadbackStable(input: {
     expectedOwnerUid: input.cache.expectedOwnerUid,
     path: input.input.layout.generation.root,
     evidenceKind: 'runtime_generation_final_identity_changed',
+  })
+  await inspectOwnedDirectory({
+    expectedDevice: input.cache.generationNamespace.device,
+    expectedIdentity: input.runtimeIdentity,
+    expectedMode: 0o700,
+    expectedOwnerUid: input.cache.expectedOwnerUid,
+    path: input.input.layout.generation.runtimeRoot,
+    evidenceKind: 'runtime_generation_runtime_identity_changed',
   })
   await assertExactRoster(
     input.input.layout.generation.root,
@@ -371,6 +390,7 @@ function assertPublishBindings(
   input: RuntimeGenerationPublishInput,
 ): void {
   assertCommonBindings(input)
+  const stagingLeaf = path.basename(input.staging.stagingRoot)
   if (
     input.staging.kind !==
       'runtime_staging_verification_snapshot' ||
@@ -379,7 +399,11 @@ function assertPublishBindings(
       path.dirname(input.staging.runtimeRoot) ||
     path.basename(input.staging.runtimeRoot) !== 'runtime' ||
     path.dirname(input.staging.stagingRoot) !==
-      input.layout.namespaces.staging
+      input.layout.namespaces.staging ||
+    stagingLeaf !==
+      `${input.admission.identity.archiveSha256}-` +
+        stagingLeaf.slice(-32) ||
+    !/^[0-9a-f]{32}$/u.test(stagingLeaf.slice(-32))
   ) {
     throw runtimeAuthorityError('runtime_cache_unsafe', {
       kind: 'runtime_generation_staging_binding_invalid',
@@ -416,6 +440,11 @@ async function writeAndVerifyReceipt(input: {
   readonly receiptPath: string
 }): Promise<void> {
   const bytes = encodeReceipt(input.receipt)
+  if (bytes.byteLength > MAX_RECEIPT_BYTES) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_generation_receipt_too_large',
+    })
+  }
   let handle: FileHandle | undefined
   try {
     handle = await open(
@@ -682,6 +711,53 @@ async function lstatIfPresent(
       cause: error,
     })
   }
+}
+
+async function syncVerifiedRuntimeDirectories(input: {
+  readonly admission: RuntimeReleaseAdmission
+  readonly expectedDevice: string
+  readonly expectedOwnerUid: number
+  readonly runtimeIdentity: RuntimeFileSystemIdentity
+  readonly runtimeRoot: string
+}): Promise<void> {
+  const directories = new Set<string>()
+  for (const entry of input.admission.manifest.payload.entries) {
+    let directory = path.posix.dirname(entry.path)
+    while (directory !== '.') {
+      directories.add(directory)
+      directory = path.posix.dirname(directory)
+    }
+  }
+  const ordered = [...directories].sort((left, right) => {
+    const depth =
+      right.split('/').length - left.split('/').length
+    return depth === 0
+      ? compareUnicodeCodePoints(left, right)
+      : depth
+  })
+  for (const relativePath of ordered) {
+    const directory = path.join(
+      input.runtimeRoot,
+      ...relativePath.split('/'),
+    )
+    const identity = await inspectOwnedDirectory({
+      expectedDevice: input.expectedDevice,
+      expectedMode: 0o755,
+      expectedOwnerUid: input.expectedOwnerUid,
+      path: directory,
+      evidenceKind: 'runtime_generation_directory_sync_invalid',
+    })
+    await syncOwnedDirectory({
+      expectedIdentity: identity,
+      expectedMode: 0o755,
+      path: directory,
+    })
+  }
+  await syncOwnedDirectory({
+    expectedIdentity: input.runtimeIdentity,
+    expectedMode: 0o700,
+    path: input.runtimeRoot,
+  })
 }
 
 function verifiedRuntime(

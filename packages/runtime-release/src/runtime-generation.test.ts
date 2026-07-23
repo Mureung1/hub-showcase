@@ -6,6 +6,7 @@ import {
   mkdir,
   mkdtemp,
   realpath,
+  rename,
   rm,
   writeFile,
 } from 'node:fs/promises'
@@ -76,6 +77,36 @@ test('complete-tree verification rejects drift before a Runtime spawn', async ()
         error instanceof RuntimeReleaseAuthorityError &&
         error.failure.code === 'runtime_integrity_failed',
     )
+  } finally {
+    await rm(fixture.root, { recursive: true, force: true })
+  }
+})
+
+test('complete-tree verification rebinds the runtime pathname before return', async () => {
+  const fixture = await createGenerationFixture()
+  const preservedRuntime = `${fixture.runtimeRoot}.preserved`
+  try {
+    await assert.rejects(
+      verifyRuntimeGenerationTree({
+        admission: fixture.admission,
+        canonicalManifestBytes: fixture.canonicalManifestBytes,
+        expectedDevice: fixture.device,
+        expectedOwnerUid: process.getuid!(),
+        runtimeRoot: fixture.runtimeRoot,
+        signal: new AbortController().signal,
+        testOptions: {
+          beforeFinalPathRebind: async () => {
+            await rename(fixture.runtimeRoot, preservedRuntime)
+            await mkdir(fixture.runtimeRoot, { mode: 0o700 })
+          },
+        },
+      }),
+      (error: unknown) =>
+        error instanceof RuntimeReleaseAuthorityError &&
+        error.failure.code === 'runtime_integrity_failed',
+    )
+    assert.equal(await pathExists(preservedRuntime), true)
+    assert.equal(await pathExists(fixture.runtimeRoot), true)
   } finally {
     await rm(fixture.root, { recursive: true, force: true })
   }

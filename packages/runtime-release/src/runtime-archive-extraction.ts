@@ -138,6 +138,9 @@ export type RuntimeMaterializedTreeVerificationInput = {
   readonly expectedOwnerUid: number
   readonly runtimeRoot: string
   readonly signal: AbortSignal
+  readonly testOptions?: {
+    readonly beforeFinalPathRebind?: () => Promise<void>
+  }
 }
 
 export type RuntimeMaterializedTreeVerificationSnapshot = {
@@ -442,6 +445,47 @@ export async function verifyMaterializedRuntimeTree(
         kind: 'runtime_generation_identity_changed',
       })
     }
+    await input.testOptions?.beforeFinalPathRebind?.()
+    const reboundRuntime =
+      await parentCapability.inspectLeaf(RUNTIME_RECIPIENT_NAME)
+    if (
+      reboundRuntime === undefined ||
+      !matchesCapabilityEntry({
+        stats: reboundRuntime,
+        expectedType: 'directory',
+        expectedOwnerUid: input.expectedOwnerUid,
+        expectedDevice: input.expectedDevice,
+        expectedMode: 0o700,
+        expectedIdentity: runtimeIdentity,
+      })
+    ) {
+      throw runtimeAuthorityError('runtime_integrity_failed', {
+        kind: 'runtime_generation_runtime_path_rebind_failed',
+      })
+    }
+    const reboundParentIdentity = await inspectOwnedDirectory(
+      parentRoot,
+      input.expectedOwnerUid,
+      input.expectedDevice,
+      0o700,
+      'runtime_generation_parent_rebind',
+    )
+    const reboundRuntimeIdentity = await inspectOwnedDirectory(
+      input.runtimeRoot,
+      input.expectedOwnerUid,
+      input.expectedDevice,
+      0o700,
+      'runtime_generation_runtime_rebind',
+    )
+    if (
+      !sameIdentity(parentIdentity, reboundParentIdentity) ||
+      !sameIdentity(runtimeIdentity, reboundRuntimeIdentity)
+    ) {
+      throw runtimeAuthorityError('runtime_integrity_failed', {
+        kind: 'runtime_generation_path_identity_changed',
+      })
+    }
+    assertExtractionNotCancelled(input.signal)
     return {
       runtimeIdentity: verified.runtimeIdentity,
       tree: {
