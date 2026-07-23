@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import Card from "../../components/Card.jsx";
 import Badge from "../../components/Badge.jsx";
 import Button from "../../components/Button.jsx";
@@ -9,9 +10,17 @@ export default function ChatDemo() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const inputRef = useRef(null);
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  // 입력 줄 수에 맞춰 높이를 늘린다 (max-height는 CSS에서 제한)
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [input]);
+
+  async function submitPrompt() {
     const prompt = input.trim();
     if (!prompt || loading) return;
 
@@ -25,6 +34,19 @@ export default function ChatDemo() {
       setMessages((prev) => [...prev, { id: Date.now(), prompt, error: message }]);
     } finally {
       setLoading(false);
+    }
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    submitPrompt();
+  }
+
+  // Enter는 전송, Shift+Enter는 줄바꿈. 한글 조합 중(isComposing) Enter는 무시한다.
+  function handleKeyDown(e) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      submitPrompt();
     }
   }
 
@@ -45,11 +67,13 @@ export default function ChatDemo() {
       </div>
 
       <form className="chat-demo__input-bar" onSubmit={handleSubmit}>
-        <input
-          type="text"
+        <textarea
+          ref={inputRef}
+          rows={1}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="What's in your mind?..."
+          onKeyDown={handleKeyDown}
+          placeholder="What's in your mind?... (Shift+Enter로 줄바꿈)"
         />
         <Button type="submit" disabled={loading}>
           전송
@@ -76,13 +100,11 @@ function ChatExchange({ prompt, result }) {
         {result.status === "masked" && (
           <>
             <p className="chat-exchange__masked-text">{result.maskedPrompt}</p>
-            <p className="chat-exchange__response">{result.response}</p>
+            <ResponseBody text={result.response} />
           </>
         )}
 
-        {result.status === "pass" && (
-          <p className="chat-exchange__response">{result.response}</p>
-        )}
+        {result.status === "pass" && <ResponseBody text={result.response} />}
 
         {result.detections?.length > 0 && (
           <div className="chat-exchange__detections">
@@ -94,6 +116,14 @@ function ChatExchange({ prompt, result }) {
           </div>
         )}
       </Card>
+    </div>
+  );
+}
+
+function ResponseBody({ text }) {
+  return (
+    <div className="chat-exchange__response">
+      <ReactMarkdown>{text}</ReactMarkdown>
     </div>
   );
 }

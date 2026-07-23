@@ -48,6 +48,7 @@ hub/
 | 라이브러리 | 용도 |
 |---|---|
 | axios | 백엔드 API(`/v1/chat`, `/v1/logs`) 호출 |
+| react-markdown | LLM 응답의 마크다운(굵게·목록·제목·코드블록) 렌더링. 기본 설정이 raw HTML을 막아 별도 sanitize 불필요 |
 
 ### Backend (신규 설치)
 

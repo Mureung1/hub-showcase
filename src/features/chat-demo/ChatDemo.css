@@ -45,18 +45,88 @@
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-card);
   font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .chat-exchange__result-header {
   margin-bottom: var(--space-2);
 }
 
-.chat-exchange__response,
 .chat-exchange__masked-text,
 .chat-exchange__block-reason {
   font-size: 14px;
   line-height: 1.5;
   margin: 0 0 var(--space-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat-exchange__response {
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* 문단 안의 단일 줄바꿈만 살린다. 컨테이너에 걸면 블록 사이 개행까지 빈 줄로 나온다. */
+.chat-exchange__response p,
+.chat-exchange__response li {
+  white-space: pre-wrap;
+}
+
+.chat-exchange__response > *:first-child {
+  margin-top: 0;
+}
+
+.chat-exchange__response > *:last-child {
+  margin-bottom: 0;
+}
+
+.chat-exchange__response p,
+.chat-exchange__response ul,
+.chat-exchange__response ol,
+.chat-exchange__response pre {
+  margin: 0 0 var(--space-3);
+}
+
+.chat-exchange__response ul,
+.chat-exchange__response ol {
+  padding-left: var(--space-5);
+}
+
+.chat-exchange__response li {
+  margin-bottom: var(--space-1);
+}
+
+.chat-exchange__response h1,
+.chat-exchange__response h2,
+.chat-exchange__response h3 {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+.chat-exchange__response code {
+  font-size: 0.9em;
+  background: var(--color-bg);
+  padding: 2px 6px;
+  border-radius: var(--radius-input);
+}
+
+.chat-exchange__response pre {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  padding: var(--space-3) var(--space-4);
+  overflow-x: auto;
+}
+
+.chat-exchange__response pre code {
+  background: none;
+  padding: 0;
 }
 
 .chat-exchange__block-reason {
@@ -80,22 +150,28 @@
 
 .chat-demo__input-bar {
   display: flex;
+  align-items: flex-end;
   gap: var(--space-3);
   width: 100%;
   max-width: 900px;
   margin: 0 auto;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-card);
   padding: var(--space-2);
   box-shadow: var(--shadow-card);
 }
 
-.chat-demo__input-bar input {
+.chat-demo__input-bar textarea {
   flex: 1;
   border: none;
   outline: none;
   background: transparent;
   padding: var(--space-3) var(--space-4);
   font-size: 14px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: none;
+  overflow-y: auto;
+  max-height: 160px;
 }
