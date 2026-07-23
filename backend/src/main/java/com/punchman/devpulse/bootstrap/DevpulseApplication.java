@@ -7,7 +7,10 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication(scanBasePackages = "com.punchman.devpulse")
-@EnableJpaRepositories(basePackages = "com.punchman.devpulse.repository.jpa")
+@EnableJpaRepositories(basePackages = {
+        "com.punchman.devpulse.repository.jpa",
+        "com.punchman.devpulse.repository.querydsl"
+})
 @EntityScan(basePackages = "com.punchman.devpulse.domain")
 @MapperScan(basePackages = "com.punchman.devpulse.repository.mybatis")
 public class DevpulseApplication {
