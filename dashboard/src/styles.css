@@ -65,6 +65,7 @@ a,
   height: 100%;
   object-fit: cover;
   object-position: center;
+  transform: scale(1.35);
 }
 
 .page {
@@ -530,6 +531,7 @@ a,
   .camp-banner img {
     right: 12px;
     width: 260px;
+    transform: scale(1.25);
   }
 
   .page {
