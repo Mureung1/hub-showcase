@@ -2,6 +2,21 @@ import './styles.css';
 import { useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
+const categoryGroups = [
+  { id: 'all', label: '전체' },
+  { id: 'small-business', label: '소상공인·지역' },
+  { id: 'university', label: '대학·학습' },
+  { id: 'daily-life', label: '생활·공공' },
+] as const;
+
+type CategoryGroupId = typeof categoryGroups[number]['id'];
+
+function categoryGroupFor(category: string): CategoryGroupId {
+  if (category === '소상공인 운영' || category === '지역 상권과 홍보') return 'small-business';
+  if (category === '대학 생활' || category === '학습과 진로') return 'university';
+  return 'daily-life';
+}
+
 export type Project = {
   id: string;
   title: string;
@@ -34,6 +49,8 @@ type AppProps = {
 
 export default function App({ projects }: AppProps) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [query, setQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<CategoryGroupId>('all');
   const selectedScreenshots = selectedProject?.screenshotUrls ?? selectedProject?.screenshots ?? [];
 
   const openProject = (project: Project) => setSelectedProject(project);
@@ -47,6 +64,30 @@ export default function App({ projects }: AppProps) {
 
   const cardFeatureTags = (project: Project) => project.featureTags.slice(0, 3);
   const cardTechStack = (project: Project) => project.techStack.slice(0, 4);
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const filteredProjects = projects.filter((project) => {
+    const matchesCategory = activeCategory === 'all' || categoryGroupFor(project.category) === activeCategory;
+    if (!matchesCategory) return false;
+
+    if (!normalizedQuery) return true;
+    const searchableText = [
+      project.title,
+      project.summary,
+      project.category,
+      ...project.featureTags,
+      ...project.techStack,
+      project.githubUser,
+      project.problem,
+      ...(project.targetUsers ?? []),
+      ...(project.features ?? []),
+      ...(project.techHighlights ?? []),
+      project.agent?.summary,
+      ...(project.agent?.agents ?? []),
+      ...(project.agent?.skills ?? []),
+      ...(project.agent?.workflows ?? []),
+    ].filter(Boolean).join(' ').toLocaleLowerCase();
+    return searchableText.includes(normalizedQuery);
+  });
 
   return (
     <>
@@ -60,15 +101,45 @@ export default function App({ projects }: AppProps) {
 
       <main className="page">
         <nav className="categories" aria-label="프로젝트 분야">
-          <button className="category-tab active" type="button">
-            전체 <strong>{projects.length}</strong>
-          </button>
+          {categoryGroups.map((category) => {
+            const count = category.id === 'all'
+              ? projects.length
+              : projects.filter((project) => categoryGroupFor(project.category) === category.id).length;
+            return (
+              <button
+                className={`category-tab ${activeCategory === category.id ? 'active' : ''}`}
+                type="button"
+                key={category.id}
+                aria-selected={activeCategory === category.id}
+                onClick={() => setActiveCategory(category.id)}
+              >
+                {category.label} <strong>{count}</strong>
+              </button>
+            );
+          })}
         </nav>
 
-        <p className="result-count">{projects.length}개 프로젝트</p>
+        <div className="search-row">
+          <label className="search-box">
+            <span className="search-icon" aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="프로젝트, 기능, 기술, Agent 검색"
+              aria-label="프로젝트 검색"
+            />
+            {query && (
+              <button className="clear-search" type="button" onClick={() => setQuery('')} aria-label="검색어 지우기">
+                ×
+              </button>
+            )}
+          </label>
+          <p className="result-count">{filteredProjects.length}개 프로젝트</p>
+        </div>
 
         <section className="project-grid" aria-label="프로젝트 목록">
-          {projects.map((project) => (
+          {filteredProjects.map((project) => (
             <article
               className="project-card"
               key={project.id}
@@ -118,6 +189,9 @@ export default function App({ projects }: AppProps) {
             </article>
           ))}
         </section>
+        {filteredProjects.length === 0 && (
+          <p className="empty-results">검색 결과가 없습니다.<br />다른 단어로 검색해보세요.</p>
+        )}
       </main>
 
       {selectedProject && (
