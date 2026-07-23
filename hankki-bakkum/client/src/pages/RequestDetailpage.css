@@ -250,3 +250,109 @@
     background: var(--bg-section);
     color: var(--muted);
 }
+
+/* 파일 선택 버튼 — label을 버튼처럼 */
+.file-pick {
+    display: block;
+    text-align: center;
+    min-height: 48px;
+    line-height: 48px;
+    border-radius: var(--r-inner);
+    background: var(--bg-section);
+    color: var(--body);
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.file-pick:active {
+    background: #ebe5d9;
+}
+
+/* 완료 축하 카드 */
+.celebrate {
+    text-align: center;
+}
+
+.celebrate-emoji {
+    font-size: 2.4rem;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.celebrate-title {
+    margin: 0 0 10px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ok);
+}
+
+.celebrate-text {
+    margin: 0 0 18px;
+    font-size: 0.92rem;
+    line-height: 1.7;
+    color: var(--body);
+}
+
+.celebrate-text strong {
+    color: var(--primary);
+}
+
+.celebrate .btn-primary {
+    width: 100%;
+}
+
+/* 상호 평점 */
+.star-pick {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.star {
+    border: none;
+    background: none;
+    font-size: 2rem;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    color: var(--bg-section);
+}
+
+.star--on {
+    color: #F2B705;
+}
+
+.rate-input {
+    width: 100%;
+    min-height: 72px;
+    border: none;
+    border-radius: var(--r-inner);
+    background: var(--bg-section);
+    padding: 14px 16px;
+    font-size: 0.92rem;
+    font-family: inherit;
+    line-height: 1.7;
+    color: var(--ink);
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.rated {
+    text-align: center;
+}
+
+.rated-stars {
+    font-size: 1.6rem;
+    color: #F2B705;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+.rated-comment {
+    margin: 0 0 8px;
+    font-size: 0.92rem;
+    color: var(--body);
+    line-height: 1.7;
+}
