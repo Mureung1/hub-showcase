@@ -4,7 +4,11 @@
   "summary": "마감 임박 재고를 등록하면 조건에 맞는 근처 소비자에게 알려 선착순 예약·픽업으로 연결합니다.",
   "githubUser": "HappyGogildong(김규현)",
   "thumbnail": "thumbnail.webp",
-  "screenshots": ["screenshots/deal-list.webp", "screenshots/pickup.webp"],
+  "screenshots": [
+    "screenshots/user_main_page.png",
+    "screenshots/pickupcode.png",
+    "screenshots/owner_page.png"
+  ],
   "problem": "카페·베이커리는 당일 소진해야 하는 재고를 매일 떠안지만, 마감 시점에 남은 재고를 즉시 알릴 저비용 채널이 없어 그대로 폐기됩니다. 반대로 근처 소비자는 어느 가게가 지금 마감 할인을 하는지 알 방법이 없습니다. 버려질 재고와 그것을 싸게 살 근처 사람이 서로를 실시간으로 찾지 못하는 것이 핵심 문제입니다.",
   "targetUsers": [
     "마감 재고를 폐기하는 로컬 카페·베이커리 사장님",
@@ -14,17 +18,16 @@
     "사장님이 마감 상품의 수량·할인가·픽업 마감 시각을 30초 만에 등록합니다.",
     "관심 카테고리·즐겨찾기 가게와 위치 조건에 맞는 소비자에게만 알림을 보냅니다.",
     "기준 위치 반경 안의 마감 할인을 거리순으로 보여줍니다.",
-    "선착순 예약 시 재고를 원자적으로 차감하고 픽업코드를 발급합니다.",
+    "선착순 예약 시 재고를 차감하고 픽업코드를 발급합니다.",
     "픽업코드로 수령을 확인하고, 마감이 지나면 예약을 만료시켜 재고를 복원합니다."
   ],
   "featureTags": ["선착순 예약", "위치 기반 알림", "픽업 관리"],
   "techStack": ["React", "Vite", "Express", "PostgreSQL", "Docker", "Vitest"],
   "techHighlights": [
     "조건부 UPDATE 한 문장으로 재고를 차감해 동시 50요청에도 오버셀 0건을 실측했습니다.",
-    "Haversine 거리 계산을 SQL로 수행해 반경 조회와 알림 대상 판정에 함께 재사용합니다.",
-    "routes→services→repositories 단방향 레이어로 나누고 트랜잭션은 같은 커넥션을 전달합니다."
+    "Haversine 거리 계산을 SQL로 수행해 반경 조회와 알림 대상 판정에 함께 재사용합니다."
   ],
-  "developmentWithAI": "저는 문제 정의와 기술 방향을 정했습니다. ORM 없이 raw SQL로 동시성을 직접 다루겠다는 결정, PostgreSQL 선택, 알림 범위를 FCM까지 넓히는 판단이 그렇습니다. AI에게는 Task 분해와 이슈 등록, 구현, 검증을 맡기되 결과를 그대로 받지는 않았습니다. Service에 SQL이 섞인 구조를 Repository로 분리하도록 요구했고, 관심 설정이 목록까지 걸러야 하는지 같은 설계 판단은 근거를 들어 함께 검토했습니다. 매 작업마다 curl과 동시성 스크립트, 브라우저로 실제 동작을 확인한 뒤에만 완료 처리했습니다.",
+  "developmentWithAI": "저는 문제 정의와 기술 방향을 정했습니다. PostgreSQL 선택, 알림 범위를 FCM까지 넓히는 판단이 그렇습니다. AI에게는 Task 분해와 이슈 등록, 구현, 검증을 맡기되 결과를 그대로 받지는 않았습니다. Service에 SQL이 섞인 구조를 Repository로 분리하도록 요구했고, 관심 설정이 목록까지 걸러야 하는지 같은 설계 판단은 근거를 들어 함께 검토했습니다. 매 작업마다 curl과 동시성 스크립트, 브라우저로 실제 동작을 확인한 뒤에만 완료 처리했습니다.",
   "agent": {
     "summary": "계획·구현·검증·학습을 역할별 서브에이전트와 스킬로 나눠 진행했고, 매 Task를 이슈 등록부터 검증·커밋까지 같은 Workflow로 처리했습니다.",
     "agentTools": [
