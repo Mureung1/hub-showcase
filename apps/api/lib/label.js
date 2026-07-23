@@ -67,11 +67,21 @@ export function toResponse(sessionId, decision, state, kb) {
     };
   }
 
-  if (decision.move === 'PROPOSE' || decision.move === 'ASSUME_AND_PROPOSE') {
+  if (decision.move === 'PROPOSE') {
     return {
       ...base,
       needMoreInfo: null,
       hypotheses: toHypothesesResponse(state.posterior, kb),
+    };
+  }
+
+  if (decision.move === 'ASSUME_AND_PROPOSE') {
+    return {
+      ...base,
+      needMoreInfo: null,
+      hypotheses: toHypothesesResponse(state.posterior, kb),
+      assumed: true,
+      assumeReason: decision.why,
     };
   }
 

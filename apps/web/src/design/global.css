@@ -1,13 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   글로벌 스타일 — 토큰을 가져오고 전역 리셋/기본 스타일 적용
+   글로벌 스타일 — 앱 전체 기본 설정
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* 토큰 파일 가져오기 — 모든 CSS 변수는 여기서 온다 */
 @import './tokens.css';
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   CSS 리셋 — 브라우저 기본 스타일 제거
-   ───────────────────────────────────────────────────────────────────────────── */
 *,
 *::before,
 *::after {
@@ -16,34 +12,57 @@
   padding: 0;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   기본 요소 스타일
-   ───────────────────────────────────────────────────────────────────────────── */
-html,
+html, body, #root {
+  height: 100%;
+}
+
 body {
-  height: 100%;
-  font-family: var(--font-family);
-  font-size: var(--font-size-md);
-  color: var(--color-text-primary);
-  background-color: var(--color-bg-primary);
-  line-height: 1.5;
+  font: var(--font-body);
+  color: var(--color-ink);
+  background: var(--color-paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-#root {
-  height: 100%;
-}
-
-/* 버튼 기본 리셋 */
 button {
-  font-family: inherit;
-  font-size: inherit;
-  cursor: pointer;
+  font: inherit;
+  color: inherit;
   border: none;
   background: none;
+  cursor: pointer;
+  min-height: var(--height-touch);
 }
 
-/* 리스트 기본 리셋 */
-ul,
-ol {
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* 포커스 스타일 — 접근성 */
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--color-mint);
+  outline-offset: 2px;
+}
+
+ul, ol {
   list-style: none;
+}
+
+/* 스크롤바 스타일 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-muted);
 }
