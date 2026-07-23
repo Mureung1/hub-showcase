@@ -1783,7 +1783,9 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     bridge = self._account_bridge(
                         root,
                         "--login-attempt-timeout-ms",
-                        "200",
+                        "100",
+                        "--account-operation-timeout-ms",
+                        "400",
                     )
                     try:
                         bridge.send(
@@ -1821,7 +1823,7 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                             }
                         )
 
-                        expiry_deadline = time.monotonic() + 0.35
+                        expiry_deadline = time.monotonic() + 0.2
                         while time.monotonic() < expiry_deadline:
                             methods = [
                                 message.get("method")
@@ -1841,13 +1843,28 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                                 }
                             )
                         (root / "release-login-cancel").touch()
-                        fatal = bridge.receive()
-                        self.assertEqual(fatal["type"], "fatal")
-                        self.assertEqual(fatal["code"], "sdk_operation_failed")
-                        self.assertNotIn(
-                            "raw-login-cancel-provider-secret",
-                            json.dumps(fatal, sort_keys=True),
+                        response_deadline = time.monotonic() + 2
+                        while (
+                            not (root / "login-cancel-response-emitted").is_file()
+                            and time.monotonic() < response_deadline
+                        ):
+                            time.sleep(0.01)
+                        self.assertTrue(
+                            (root / "login-cancel-response-emitted").is_file()
                         )
+                        terminal = bridge.receive()
+                        if close_requested:
+                            self.assertEqual(terminal["type"], "close_ack")
+                        else:
+                            self.assertEqual(terminal["type"], "fatal")
+                            self.assertEqual(
+                                terminal["code"],
+                                "sdk_operation_timeout",
+                            )
+                            self.assertNotIn(
+                                "raw-login-cancel-provider-secret",
+                                json.dumps(terminal, sort_keys=True),
+                            )
                         methods = [
                             message.get("method")
                             for message in self._read_journal_messages(bridge)
@@ -1856,7 +1873,7 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                             methods.count("account/login/cancel"),
                             1,
                         )
-                        self.assertGreaterEqual(methods.count("account/read"), 1)
+                        self.assertEqual(methods.count("account/read"), 0)
                         bridge.wait()
                         self.assertTrue(bridge.child_pid_path.is_file())
                         wait_for_process_exit(
@@ -1912,8 +1929,24 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                 while time.monotonic() < expiry_deadline:
                     time.sleep(0.01)
 
-                (root / "account-state").write_text("chatgpt", encoding="utf-8")
                 (root / "release-login-cancel").touch()
+                response_deadline = time.monotonic() + 2
+                while (
+                    not (root / "login-cancel-response-emitted").is_file()
+                    and time.monotonic() < response_deadline
+                ):
+                    time.sleep(0.01)
+                self.assertTrue((root / "login-cancel-response-emitted").is_file())
+                bridge.send(
+                    {
+                        "bridgeRequestId": "status-before-completion",
+                        "command": "read_browser_login_attempt",
+                        "attemptId": "attempt-expiry-chatgpt",
+                    }
+                )
+                self.assertEqual(bridge.receive()["status"], "pending")
+
+                (root / "complete-login").touch()
                 cancel = bridge.receive()
                 self.assertEqual(cancel["status"], "already_settled")
                 terminal = self._poll_login_attempt(
@@ -1938,39 +1971,6 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     1,
                 )
 
-                (root / "complete-login").touch()
-                completion_deadline = time.monotonic() + 3
-                while (
-                    root / "complete-login"
-                ).is_file() and time.monotonic() < completion_deadline:
-                    time.sleep(0.01)
-                self.assertFalse((root / "complete-login").is_file())
-                status_request_ids = {
-                    f"status-after-late-{index}" for index in range(4)
-                }
-                self._send_frames(
-                    bridge,
-                    *(
-                        {
-                            "bridgeRequestId": request_id,
-                            "command": "read_browser_login_attempt",
-                            "attemptId": "attempt-expiry-chatgpt",
-                        }
-                        for request_id in sorted(status_request_ids)
-                    ),
-                )
-                frames = self._receive_until_requests(
-                    bridge,
-                    status_request_ids,
-                )
-                self.assertTrue(all(frame["status"] == "completed" for frame in frames))
-                time.sleep(0.1)
-                methods = self._read_journal_messages(bridge)
-                self.assertEqual(
-                    sum(message.get("method") == "account/read" for message in methods),
-                    1,
-                )
-
                 bridge.send(
                     {
                         "bridgeRequestId": "release",
@@ -1983,13 +1983,14 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     "defer-login-cancel",
                     "login-cancel-outcome",
                     "release-login-cancel",
+                    "login-cancel-response-emitted",
                 ):
                     (root / name).unlink()
                 bridge.send(
                     {
                         "bridgeRequestId": "next-start",
                         "command": "start_browser_login",
-                        "attemptId": "attempt-after-late",
+                        "attemptId": "attempt-after-completion",
                     }
                 )
                 self.assertEqual(bridge.receive()["status"], "pending")
@@ -1997,7 +1998,7 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     {
                         "bridgeRequestId": "next-release",
                         "command": "release_browser_login_attempt",
-                        "attemptId": "attempt-after-late",
+                        "attemptId": "attempt-after-completion",
                     }
                 )
                 self.assertEqual(bridge.receive()["status"], "released")
@@ -2009,6 +2010,110 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     int(bridge.child_pid_path.read_text(encoding="utf-8")),
                     time.monotonic() + 2,
                 )
+            finally:
+                bridge.cleanup()
+
+    def test_expiry_rejection_matching_non_chatgpt_completion_fails(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-python-bridge-account-expiry-failed-"
+        ) as temp:
+            root = Path(temp)
+            (root / "account-state").write_text("signed_out", encoding="utf-8")
+            (root / "login-mode").write_text(
+                "delayed-failure",
+                encoding="utf-8",
+            )
+            (root / "defer-login-cancel").touch()
+            (root / "login-cancel-outcome").write_text(
+                "failure",
+                encoding="utf-8",
+            )
+            bridge = self._account_bridge(
+                root,
+                "--login-attempt-timeout-ms",
+                "200",
+            )
+            try:
+                bridge.send(
+                    {
+                        "bridgeRequestId": "start",
+                        "command": "start_browser_login",
+                        "attemptId": "attempt-expiry-failed",
+                    }
+                )
+                self.assertEqual(bridge.receive()["status"], "pending")
+                bridge.send(
+                    {
+                        "bridgeRequestId": "cancel",
+                        "command": "cancel_browser_login",
+                        "attemptId": "attempt-expiry-failed",
+                    }
+                )
+                self._wait_for_journal_method(
+                    bridge,
+                    "account/login/cancel",
+                )
+                expiry_deadline = time.monotonic() + 0.35
+                while time.monotonic() < expiry_deadline:
+                    time.sleep(0.01)
+
+                (root / "release-login-cancel").touch()
+                response_deadline = time.monotonic() + 2
+                while (
+                    not (root / "login-cancel-response-emitted").is_file()
+                    and time.monotonic() < response_deadline
+                ):
+                    time.sleep(0.01)
+                self.assertTrue((root / "login-cancel-response-emitted").is_file())
+                bridge.send(
+                    {
+                        "bridgeRequestId": "status-before-completion",
+                        "command": "read_browser_login_attempt",
+                        "attemptId": "attempt-expiry-failed",
+                    }
+                )
+                self.assertEqual(bridge.receive()["status"], "pending")
+
+                (root / "complete-login").touch()
+                self.assertEqual(bridge.receive()["status"], "already_settled")
+                failed = self._poll_login_attempt(
+                    bridge,
+                    "attempt-expiry-failed",
+                    "failed",
+                )
+                self.assertEqual(
+                    failed["error"],
+                    {"code": "login_failed", "retryable": True},
+                )
+                methods = self._wait_for_journal_method(
+                    bridge,
+                    "account/read",
+                )
+                self.assertEqual(
+                    sum(
+                        message.get("method") == "account/login/cancel"
+                        for message in methods
+                    ),
+                    1,
+                )
+                self.assertEqual(
+                    sum(message.get("method") == "account/read" for message in methods),
+                    1,
+                )
+
+                bridge.send(
+                    {
+                        "bridgeRequestId": "release",
+                        "command": "release_browser_login_attempt",
+                        "attemptId": "attempt-expiry-failed",
+                    }
+                )
+                self.assertEqual(bridge.receive()["status"], "released")
+                bridge.send({"bridgeRequestId": "close", "command": "close"})
+                self.assertEqual(bridge.receive()["type"], "close_ack")
+                bridge.wait()
             finally:
                 bridge.cleanup()
 

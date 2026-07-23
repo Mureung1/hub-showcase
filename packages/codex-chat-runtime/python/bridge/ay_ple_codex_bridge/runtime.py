@@ -151,6 +151,8 @@ class BrowserLoginAttempt:
         repr=False,
     )
     expiry_settlement_requested: bool = False
+    expiry_cancel_rejected: bool = False
+    completion_account_state: str | None = field(default=None, repr=False)
     settlement_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
 
 
@@ -872,10 +874,13 @@ class BridgeWorker:
         async with attempt.settlement_lock:
             if self._login_attempt is not attempt:
                 return
+            if attempt.status != "pending":
+                return
+            attempt.completion_account_state = account_state
             if account_state == "chatgpt":
                 attempt.status = "completed"
                 attempt.error_code = None
-            elif attempt.status == "pending" and attempt.settlement_target is None:
+            elif attempt.settlement_target is None or attempt.expiry_cancel_rejected:
                 attempt.status = "failed"
                 attempt.error_code = "login_failed"
             elif completion.success and account_state == "unavailable":
@@ -1113,44 +1118,50 @@ class BridgeWorker:
         async with attempt.settlement_lock:
             if self._login_attempt is not attempt or attempt.status != "pending":
                 return LoginSettlementOutcome.SETTLED
+            attempt.expiry_cancel_rejected = True
             completion_task = attempt.completion_task
-        if (
-            completion_task is not None
-            and completion_task is not asyncio.current_task()
-        ):
-            self._cancel_login_task(completion_task)
-            await asyncio.gather(completion_task, return_exceptions=True)
+        if completion_task is None or completion_task is asyncio.current_task():
             async with attempt.settlement_lock:
-                if attempt.completion_task is completion_task:
-                    attempt.completion_task = None
+                if self._login_attempt is attempt and attempt.status == "pending":
+                    attempt.status = "failed"
+                    attempt.error_code = "login_failed"
+                    self._cancel_login_task(attempt.expiry_task)
+            if not self._closing:
+                self.trigger_fatal("sdk_operation_failed")
+            return LoginSettlementOutcome.FAILED
 
-        fatal_code: str | None = None
         try:
-            account_state = await self._fresh_account_state()
+            await asyncio.wait_for(
+                asyncio.shield(completion_task),
+                timeout=self._account_operation_timeout,
+            )
         except asyncio.TimeoutError:
-            account_state = "unavailable"
             fatal_code = "sdk_operation_timeout"
         except TransportClosedError:
-            account_state = "unavailable"
             fatal_code = "sdk_transport_failed"
+        except asyncio.CancelledError:
+            raise
         except Exception:
-            account_state = "unavailable"
             fatal_code = "sdk_operation_failed"
+        else:
+            fatal_code = None
 
         async with attempt.settlement_lock:
-            if self._login_attempt is not attempt or attempt.status != "pending":
+            if self._login_attempt is not attempt:
                 return LoginSettlementOutcome.SETTLED
-            if account_state == "chatgpt":
-                attempt.status = "completed"
-                attempt.error_code = None
-            else:
+            if attempt.status != "pending":
+                return LoginSettlementOutcome.SETTLED
+            if fatal_code is None and attempt.completion_account_state is not None:
                 attempt.status = "failed"
                 attempt.error_code = "login_failed"
+                self._cancel_login_task(attempt.expiry_task)
+                return LoginSettlementOutcome.SETTLED
+            attempt.status = "failed"
+            attempt.error_code = "login_failed"
             self._cancel_login_task(attempt.expiry_task)
 
-        if account_state == "chatgpt":
-            return LoginSettlementOutcome.SETTLED
-        self.trigger_fatal(fatal_code or "sdk_operation_failed")
+        if not self._closing:
+            self.trigger_fatal(fatal_code or "sdk_operation_failed")
         return LoginSettlementOutcome.FAILED
 
     async def _release_browser_login_attempt(

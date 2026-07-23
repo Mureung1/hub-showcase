@@ -317,6 +317,7 @@ class FakeAppServer:
                     },
                 }
             )
+            (root / "login-cancel-response-emitted").touch()
             return
         if outcome == "forced-eof":
             os._exit(42)
