@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -33,18 +33,39 @@ Pinned Official Codex Python SDK graph에서 AY-PLE이 official managed ChatGPT 
 
 ## Acceptance Criteria
 
-- [ ] Sync/async managed ChatGPT login entrypoint가 hosted-success와 `codex` brand option을 typed request에 전달한다.
-- [ ] AY-PLE application identity와 exact version이 initialize `clientInfo`로 전달되고 default SDK identity로 위장하지 않는다.
-- [ ] Matching login completion이 opt-out configuration 아래에서도 exact attempt queue에 도달하며 unrelated notification을 소비하지 않는다.
-- [ ] Start failure, unexpected response, completion, cancel과 close가 typed·bounded behavior로 SDK test에 고정된다.
-- [ ] Ordered patch roster, generated source와 source hash/provenance가 drift 없이 재생성·검증된다.
-- [ ] Device-code와 current Turn/Plan routing regression이 유지되고 production bridge/runtime behavior는 아직 바뀌지 않는다.
+- [x] Sync/async managed ChatGPT login entrypoint가 hosted-success와 `codex` brand option을 typed request에 전달한다.
+- [x] AY-PLE application identity와 exact version이 initialize `clientInfo`로 전달되고 default SDK identity로 위장하지 않는다.
+- [x] Matching login completion이 opt-out configuration 아래에서도 exact attempt queue에 도달하며 unrelated notification을 소비하지 않는다.
+- [x] Start failure, unexpected response, completion, cancel과 close가 typed·bounded behavior로 SDK test에 고정된다.
+- [x] Ordered patch roster, generated source와 source hash/provenance가 drift 없이 재생성·검증된다.
+- [x] Device-code와 current Turn/Plan routing regression이 유지되고 production bridge/runtime behavior는 아직 바뀌지 않는다.
 
 ## Verification
 
-- Targeted test or command: `npm run verify:exact-sdk -w @ay-ple/codex-chat-runtime`, `npm run test:router -w @ay-ple/codex-chat-runtime`, `npm run test:exact-sdk -w @ay-ple/codex-chat-runtime`, `npm run test:provenance -w @ay-ple/codex-chat-runtime`
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `git diff --check`
-- Manual or live smoke: 없음. Fake App Server request/notification trace가 이 slice의 authority다.
+| Gate | Result |
+| --- | --- |
+| Regeneration | `npm run generate:exact-sdk -w @ay-ple/codex-chat-runtime`; `npm run materialize:production-runtime -w @ay-ple/codex-chat-runtime -- --write-manifest` green |
+| Exact SDK | `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime` — deterministic two-run nine-patch verify, response-last·Plan·bounded-router actual-child, official suite 166 passed/38 skipped, Ruff와 provenance 17/17 green |
+| Production Runtime | `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime` — synthetic verifier 23/23, authoritative bridge 20/20, pre/post non-mutation verify와 Ruff green |
+| Node Runtime | `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime` — actual-child 68 tests, exact local-provider 1/1, pre/post non-mutation verify green |
+| Repository | `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell` green |
+| Docs와 diff | `npm run check:docs-links` active 28·historical 2, fixed-range `git diff --check` green |
+| Independent review | Fixed reviewed combined tip `be3b0bcc2ff4c550ef0dbb035f1ca23b70f49297`에서 Standards `GREEN` 0 findings, Spec `GREEN` 0 findings |
+| Manual or live smoke | 없음. Fake App Server request/notification trace가 이 slice의 authority다. |
+
+## Result
+
+| Evidence | Result |
+| --- | --- |
+| Reviewed R tip | `18287ebb5e8ff7325887018a99bd9e963364c2d2` |
+| C serialization implementation | `cc5c10d60e86c4d8f53b1182ebe0a7cecd21477f` |
+| Reviewed combined tip | `be3b0bcc2ff4c550ef0dbb035f1ca23b70f49297` |
+| Ordered patch | `0009-managed-chatgpt-login`, 13,298 bytes, SHA-256 `0b7e567644ec25d0ab57f9639319fcecce591af8e4f4e57596c11be8174402fa`; complete stack SHA-256 `2cb3dcc9bdf7f81136b21ac16cb1afe161e5676e3800e85265653c2795fbbcbd` |
+| Canonical manifests | `patched-source.json` SHA-256 `9ef9d9111fbe4383104ec34069911dde0e9f7ef7a8a06fa5a16851a584388d5c`; `production-runtime-darwin-arm64.json` SHA-256 `8ccb628dac6df49cb8efc237e3f424b2baa64b76b9f6c516a59a55684d5a555c` |
+| Production artifact | Patched wheel SHA-256 `a4590fe5dff6a58e9042b37aad682bf8f50f413a111cc6b42ed64a30019a7a94`; installed roster `f13407bacae6cd41dc36a2101139fdbbfcbeab094570730a9669f6c334e5f4e3`; bundle roster `6d59fdf23ab5da1402407549268ae93f0607d6b559237f9c6f859187b960a176` |
+| Review | Independent Standards와 Spec review 모두 `GREEN`, 각각 0 findings |
+
+Official typed managed ChatGPT login seam과 matching completion reservation을 ordered patch로 고정하고, C-owned five-file serialization delta가 exact source·production bundle authority를 같은 nine-patch identity로 닫았다. SDK patch/source/tooling, bridge·Node behavior와 lockfile의 unchanged complement를 유지했다. Parent Spec은 후속 implementation ticket이 남아 있으므로 incomplete 상태를 그대로 유지한다.
 
 ## Blocked By
 
@@ -80,7 +101,7 @@ Pinned Official Codex Python SDK graph에서 AY-PLE이 official managed ChatGPT 
 
 ## Candidate Receipt
 
-Ticket state와 acceptance checkbox는 independent review 전까지 `claimed`·unchecked로 유지한다.
+아래 candidate evidence는 fixed combined tip에서 independent Standards·Spec review가 모두 0 findings `GREEN`으로 끝났고 위 Result로 close됐다.
 
 | 항목 | Candidate evidence |
 | --- | --- |
@@ -91,13 +112,13 @@ Ticket state와 acceptance checkbox는 independent review 전까지 `claimed`·u
 | Exact temporary reconstruction | Nine-patch deterministic verify green; official suite 166 passed, 38 skipped; Ruff check/format green; response-last·Plan·bounded-router actual-child green; provenance 17 tests green |
 | Review correction oracle | Ordinary client는 configured completion opt-out을 그대로 보내고 managed client만 `reserve_chatgpt_login_completion=True`로 completion을 보존한다. Managed actual-child는 unrelated attempt 뒤 matching completion을 받고 별도 pending attempt를 overflow에서 정산했다. Regenerated production bundle의 authoritative bridge 20 tests가 green이며 unchanged complement 61개를 확인했다. |
 | Repository gates | `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs link check와 `git diff --check` green |
-| Pre-C serialized block | C-owned provenance delta 전의 tracked `verify:exact-sdk`는 `tracked patched-source manifest is stale`, `verify:production-runtime`은 `behavioral patch roster shape or length drift`로 fail closed했다. 아래 candidate가 이 block을 닫았고 independent C review는 아직 남아 있다. |
+| Pre-C serialized block | C-owned provenance delta 전의 tracked `verify:exact-sdk`는 `tracked patched-source manifest is stale`, `verify:production-runtime`은 `behavioral patch roster shape or length drift`로 fail closed했다. 아래 reviewed delta가 이 block을 닫았다. |
 
-### C-only provenance delta candidate
+### C-only provenance delta
 
-R1a writer는 shared manifest, package README, verifier와 lockfile을 수정하지 않았다. C candidate는 reviewed R1a tip `18287ebb5e8ff7325887018a99bd9e963364c2d2`에서 다음 다섯 tracked file만 serial하게 갱신했다.
+R1a writer는 shared manifest, package README, verifier와 lockfile을 수정하지 않았다. C serialization lane은 reviewed R1a tip `18287ebb5e8ff7325887018a99bd9e963364c2d2`에서 다음 다섯 tracked file만 serial하게 갱신했다.
 
-| Shared file | Candidate delta |
+| Shared file | Reviewed delta |
 | --- | --- |
 | `packages/codex-chat-runtime/manifests/patched-source.json` | Patch count 8 → 9, source file roster 88개 유지, manifest bytes 31,979 → 34,032, manifest SHA-256 `db9f0644155f9ab8f396b5263e3539a778e5ca7a49e3b8e49b14be7c32a71f98` → `9ef9d9111fbe4383104ec34069911dde0e9f7ef7a8a06fa5a16851a584388d5c`, patch stack `ffc43da6e5e7a146016404db54968d37d849b778e5e9b04db680cac4124fc1c9` → `2cb3dcc9bdf7f81136b21ac16cb1afe161e5676e3800e85265653c2795fbbcbd`, source tree `c0f19b682d4cf182448ebd1e47eaecb9fac3c478c3c7899fd2e10b913b30aa06` → `b3eb6e17d3a67066d1be01997ec9ce522bebba4fbd0119f8762fd32da854f999` |
 | `packages/codex-chat-runtime/manifests/production-runtime-darwin-arm64.json` | Manifest bytes 11,239 → 11,528, SHA-256 `a12fa91bc247b377273f242526bb8eb8d843c2ec9a1d613b70434a479b6804b7` → `8ccb628dac6df49cb8efc237e3f424b2baa64b76b9f6c516a59a55684d5a555c`; patched SDK wheel 84,251 bytes / `9259319c79132ffa16e1ba46d3e20a88be3b5851501f8ab7812bfb42ce6427aa` → 84,598 bytes / `a4590fe5dff6a58e9042b37aad682bf8f50f413a111cc6b42ed64a30019a7a94`; installed site-packages roster `bbd4ef8a261b1f4e34e01b1a312fed0262d4d4f55f3a9cd7338e420aad50b9d8` → `f13407bacae6cd41dc36a2101139fdbbfcbeab094570730a9669f6c334e5f4e3`; bundle roster `4b72a60735d6b6d1489bab9fa937889f296ba2268c3fc0c433ba84ca10b36b7a` → `6d59fdf23ab5da1402407549268ae93f0607d6b559237f9c6f859187b960a176` |
@@ -105,7 +126,7 @@ R1a writer는 shared manifest, package README, verifier와 lockfile을 수정하
 | `packages/codex-chat-runtime/src/production-bundle.ts` | Hard-coded production authority를 새 patch-stack digest와 ordered stage `0001`–`0009`에 맞춘다. |
 | `packages/codex-chat-runtime/src/production-bundle.unit.test.ts` | Synthetic canonical manifest fixture와 fail-closed order/digest regression을 같은 nine-stage authority에 맞춘다. |
 
-Candidate regeneration과 verification 순서는 다음과 같다.
+Reviewed regeneration과 verification 순서는 다음과 같다.
 
 1. `npm run generate:exact-sdk -w @ay-ple/codex-chat-runtime`
 2. `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime`
@@ -113,7 +134,7 @@ Candidate regeneration과 verification 순서는 다음과 같다.
 4. `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime`
 5. `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime`
 
-| 항목 | C candidate evidence |
+| 항목 | C reviewed evidence |
 | --- | --- |
 | Fixed serialized base | `18287ebb5e8ff7325887018a99bd9e963364c2d2` |
 | Five-file implementation | `cc5c10d60e86c4d8f53b1182ebe0a7cecd21477f` |
@@ -124,6 +145,6 @@ Candidate regeneration과 verification 순서는 다음과 같다.
 | Node Runtime gate | Actual-child 68 tests, exact local-provider 1/1, pre/post non-mutation verify green |
 | Repository gate | `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs link check와 fixed-range `git diff --check` green |
 | Unchanged complement | `manifests/unpatched.json`, immutable unpatched SDK snapshot, SDK patch/source/tooling, bridge·Node behavior와 lockfile은 바뀌지 않았다. Ignored local production artifact만 새 canonical manifest와 함께 rematerialize했다. |
-| Review state | Candidate-only receipt다. Ticket은 independent C review 전까지 `claimed`·unchecked를 유지한다. |
+| Review state | Fixed combined tip `be3b0bcc2ff4c550ef0dbb035f1ca23b70f49297`에서 Standards·Spec review 모두 0 findings `GREEN`이다. |
 
 이 serial delta는 exact SDK와 production verifier가 `BEHAVIORAL_PATCHES`의 complete roster를 canonical manifest·wheel·installed tree와 byte-for-byte 대조하도록 유지한다.
