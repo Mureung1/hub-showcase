@@ -46,6 +46,8 @@ test('action admission fresh-validates v3, Ready, bundle, static and native cont
     assert.deepEqual(fixture.nativeJournal, [
       'config/read',
       'skills/list',
+      'config/read',
+      'skills/list',
     ])
   } finally {
     await fixture.cleanup()
@@ -280,6 +282,45 @@ test('a Ready transition during verification blocks the final admission', async 
   }
 })
 
+test('bundle drift during final readiness is caught by the final fresh pass', async () => {
+  const fixture = await createFixture()
+  try {
+    const agentsPath = path.join(
+      fixture.workspace.canonicalRoot,
+      'AGENTS.md',
+    )
+    const racedBytes = Buffer.from(
+      'student mutation during final readiness\n',
+    )
+    fixture.beforeReadinessRead = async (readNumber) => {
+      if (readNumber === 2) {
+        await writeFile(agentsPath, racedBytes)
+      }
+    }
+    const gate = createGate(fixture)
+
+    const result = await gate.admit({
+      workspace: fixture.workspace,
+      action: 'academic',
+    })
+
+    assert.deepEqual(result, {
+      status: 'blocked',
+      reason: 'bundle_not_verified',
+    })
+    assert.equal(fixture.readinessReads, 2)
+    assert.deepEqual(fixture.nativeJournal, [
+      'config/read',
+      'skills/list',
+      'config/read',
+      'skills/list',
+    ])
+    assert.deepEqual(await readFile(agentsPath), racedBytes)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('fresh v3 revalidation blocks a stale admitted handle', async () => {
   const fixture = await createFixture()
   try {
@@ -394,11 +435,15 @@ async function createFixture() {
     | undefined
   let readinessReads = 0
   let nativeMode: 'exact' | 'extra' = 'exact'
+  let beforeReadinessRead:
+    | ((readNumber: number) => Promise<void>)
+    | undefined
   let beforeSkillsList: (() => Promise<void>) | undefined
   const nativeJournal: string[] = []
   const readiness: WorkspaceActionReadinessPort = {
     async read() {
       readinessReads += 1
+      await beforeReadinessRead?.(readinessReads)
       return readinessSequence?.shift() ?? readinessState
     },
   }
@@ -465,6 +510,11 @@ async function createFixture() {
     },
     set nativeMode(value: 'exact' | 'extra') {
       nativeMode = value
+    },
+    set beforeReadinessRead(
+      value: (readNumber: number) => Promise<void>,
+    ) {
+      beforeReadinessRead = value
     },
     set beforeSkillsList(value: () => Promise<void>) {
       beforeSkillsList = value

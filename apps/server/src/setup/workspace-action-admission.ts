@@ -43,21 +43,11 @@ export function createWorkspaceActionAdmission(input: {
       const readiness = await readReadiness(input.readiness, workspace)
       if (readiness !== 'ready') return blocked(readiness)
 
-      let freshWorkspace: AdmittedSemesterWorkspace
-      try {
-        const inspection = await workspaceAdmission.inspect({
-          kind: 'reopen',
-          canonicalRoot: workspace.canonicalRoot,
-        })
-        if (
-          (inspection.outcome !== 'admitted' &&
-            inspection.outcome !== 'already_ready') ||
-          !sameWorkspace(workspace, inspection.workspace)
-        ) {
-          return blocked('workspace_not_ready')
-        }
-        freshWorkspace = inspection.workspace
-      } catch {
+      const freshWorkspace = await reopenSameWorkspace(
+        workspaceAdmission,
+        workspace,
+      )
+      if (!freshWorkspace) {
         return blocked('workspace_not_ready')
       }
 
@@ -83,18 +73,6 @@ export function createWorkspaceActionAdmission(input: {
       if (nativeContext.status !== 'verified') {
         return blocked('context_not_verified')
       }
-      const finalBundle = await verifyWorkspaceBundle({
-        workspace: freshWorkspace,
-        source: input.source,
-      })
-      if (finalBundle.status !== 'verified') {
-        return blocked('bundle_not_verified')
-      }
-      const finalStaticContext =
-        await verifyWorkspaceStaticContext(freshWorkspace)
-      if (finalStaticContext.status !== 'verified') {
-        return blocked('context_not_verified')
-      }
 
       const finalReadiness = await readReadiness(
         input.readiness,
@@ -103,8 +81,59 @@ export function createWorkspaceActionAdmission(input: {
       if (finalReadiness !== 'ready') {
         return blocked(finalReadiness)
       }
-      return { status: 'admitted', workspace: freshWorkspace }
+
+      const finalWorkspace = await reopenSameWorkspace(
+        workspaceAdmission,
+        workspace,
+      )
+      if (!finalWorkspace) {
+        return blocked('workspace_not_ready')
+      }
+      let finalNativeContext
+      try {
+        finalNativeContext = await input.nativeBoundary.verify()
+      } catch {
+        return blocked('context_not_verified')
+      }
+      if (finalNativeContext.status !== 'verified') {
+        return blocked('context_not_verified')
+      }
+      const finalBundle = await verifyWorkspaceBundle({
+        workspace: finalWorkspace,
+        source: input.source,
+      })
+      if (finalBundle.status !== 'verified') {
+        return blocked('bundle_not_verified')
+      }
+      const finalStaticContext =
+        await verifyWorkspaceStaticContext(finalWorkspace)
+      if (finalStaticContext.status !== 'verified') {
+        return blocked('context_not_verified')
+      }
+      return { status: 'admitted', workspace: finalWorkspace }
     },
+  }
+}
+
+async function reopenSameWorkspace(
+  admission: SemesterWorkspaceAdmission,
+  workspace: AdmittedSemesterWorkspace,
+): Promise<AdmittedSemesterWorkspace | null> {
+  try {
+    const inspection = await admission.inspect({
+      kind: 'reopen',
+      canonicalRoot: workspace.canonicalRoot,
+    })
+    if (
+      (inspection.outcome !== 'admitted' &&
+        inspection.outcome !== 'already_ready') ||
+      !sameWorkspace(workspace, inspection.workspace)
+    ) {
+      return null
+    }
+    return inspection.workspace
+  } catch {
+    return null
   }
 }
 
