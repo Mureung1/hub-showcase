@@ -12,22 +12,30 @@ async function fetchRows(sessionId) {
   return data
 }
 
+// 리뷰 row 배열의 keywords 필드를 세는 로직 — getSummary(전체 top 5)와
+// history.service.js의 getRecurringIssues(임계값 필터)가 동일하게 재사용한다.
+export function countKeywords(rows) {
+  const counts = {}
+  for (const row of rows) {
+    for (const keyword of row.keywords) {
+      counts[keyword] = (counts[keyword] || 0) + 1
+    }
+  }
+  return counts
+}
+
 export async function getSummary(sessionId) {
   const rows = await fetchRows(sessionId)
 
   const sentimentBreakdown = { positive: 0, negative: 0, neutral: 0 }
-  const keywordCounts = {}
   let scoreSum = 0
 
   for (const row of rows) {
     sentimentBreakdown[row.sentiment] += 1
     scoreSum += row.score
-    for (const keyword of row.keywords) {
-      keywordCounts[keyword] = (keywordCounts[keyword] || 0) + 1
-    }
   }
 
-  const topKeywords = Object.entries(keywordCounts)
+  const topKeywords = Object.entries(countKeywords(rows))
     .sort((a, b) => b[1] - a[1])
     .slice(0, TOP_KEYWORDS_LIMIT)
     .map(([keyword, count]) => ({ keyword, count }))

@@ -1,5 +1,6 @@
 import { supabase } from '../db/supabaseClient.js'
 import { suggestionForKeyword } from './reviews.service.js'
+import { countKeywords } from './stats.service.js'
 
 const RECURRING_THRESHOLD = 2
 
@@ -47,14 +48,7 @@ export async function getRecurringIssues(sessionId) {
 
   if (error) throw new Error(`반복 문제 조회 실패: ${error.message}`)
 
-  const counts = {}
-  for (const row of data) {
-    for (const keyword of row.keywords) {
-      counts[keyword] = (counts[keyword] || 0) + 1
-    }
-  }
-
-  return Object.entries(counts)
+  return Object.entries(countKeywords(data))
     .filter(([, count]) => count >= RECURRING_THRESHOLD)
     .sort((a, b) => b[1] - a[1])
     .map(([keyword, occurrenceCount]) => ({
