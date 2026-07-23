@@ -149,17 +149,19 @@ isProject: false
   - [x] 캠퍼스 레포(`N106_신서연` 브랜치) PR에는 `.github/`를 포함하지 않도록 동기화 절차를
         `.cursor/skills/issue-workflow/SKILL.md`에 문서화 (로컬 전용)
 - **완료 기준**: cron 워크플로우가 최소 1회 성공 실행되고, 결과가 문서화된다.
-  **PR 머지 후 확인 예정** — `workflow_dispatch`는 default 브랜치에 워크플로우가 있어야 트리거
-  가능해서, 이 브랜치에서는 API로 미리 실행해볼 수 없었음
+  **완료 (2026-07-23)** — 머지 후 `gh workflow run crawler.yml --ref main`으로 트리거,
+  [실행 성공](https://github.com/syd348/hub/actions/runs/29983403708) 확인 (`5건 upsert 완료`)
 
 ---
 
 ## 완료 기준 (Week 3 전체)
 
-- [ ] bizinfo API 인증키가 발급되고 크롤러가 실제 데이터를 가져온다
-- [ ] API 응답이 `Subsidy` 타입으로 정규화되어 Supabase에 upsert된다
-- [ ] GitHub Actions cron으로 주기 실행이 최소 1회 성공한다
-- [ ] 매핑 정책·검증 결과가 문서로 남는다
+- [x] bizinfo API 인증키가 발급되고 크롤러가 실제 데이터를 가져온다
+- [x] API 응답이 `Subsidy` 타입으로 정규화되어 Supabase에 upsert된다
+- [x] GitHub Actions cron으로 주기 실행이 최소 1회 성공한다
+- [x] 매핑 정책·검증 결과가 문서로 남는다
+
+**Week 3 (#28~#32) 전체 완료 (2026-07-23)**
 
 ## 리스크 / 결정 필요
 
