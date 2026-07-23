@@ -50,17 +50,29 @@ export type RuntimeReleaseAuthorityEvidence = Readonly<
 >
 
 export class RuntimeReleaseAuthorityError extends Error {
-  readonly failure: RuntimeResolutionError
-  readonly evidence: RuntimeReleaseAuthorityEvidence
+  readonly #failure: RuntimeResolutionError
+  readonly #evidence: RuntimeReleaseAuthorityEvidence
 
   constructor(
     failure: RuntimeResolutionError,
     evidence: RuntimeReleaseAuthorityEvidence,
   ) {
     super(failure.remediation)
-    this.name = 'RuntimeReleaseAuthorityError'
-    this.failure = failure
-    this.evidence = evidence
+    Object.defineProperty(this, 'name', {
+      configurable: true,
+      value: 'RuntimeReleaseAuthorityError',
+      writable: true,
+    })
+    this.#failure = failure
+    this.#evidence = evidence
+  }
+
+  get failure(): RuntimeResolutionError {
+    return this.#failure
+  }
+
+  diagnosticEvidence(): RuntimeReleaseAuthorityEvidence {
+    return this.#evidence
   }
 }
 
@@ -79,6 +91,8 @@ export function admitRuntimeRelease(
     }
     throw error
   }
+
+  assertCanonicalRuntimeReleaseUrls(descriptor)
 
   if (
     input.application.packageName !== descriptor.launcher.packageName ||
@@ -185,6 +199,80 @@ export function admitRuntimeRelease(
         descriptor.runtime.runtimeContractVersion,
       target: descriptor.runtime.target,
     },
+  }
+}
+
+function assertCanonicalRuntimeReleaseUrls(
+  descriptor: RuntimeReleaseDescriptor,
+): void {
+  const repository = descriptor.distribution.repository
+  let parsedRepository: URL
+  try {
+    parsedRepository = new URL(repository)
+  } catch (error) {
+    throw runtimeAuthorityError('runtime_incompatible', {
+      kind: 'descriptor_repository_url_invalid',
+      cause: error,
+    })
+  }
+
+  const repositoryMatch =
+    /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/u.exec(
+      repository,
+    )
+  if (
+    repositoryMatch === null ||
+    repositoryMatch[1] === '.' ||
+    repositoryMatch[1] === '..' ||
+    repositoryMatch[2] === '.' ||
+    repositoryMatch[2] === '..' ||
+    parsedRepository.protocol !== 'https:' ||
+    parsedRepository.hostname !== 'github.com' ||
+    parsedRepository.port !== '' ||
+    parsedRepository.username !== '' ||
+    parsedRepository.password !== '' ||
+    parsedRepository.search !== '' ||
+    parsedRepository.hash !== '' ||
+    parsedRepository.pathname !==
+      `/${repositoryMatch[1]}/${repositoryMatch[2]}`
+  ) {
+    throw runtimeAuthorityError('runtime_incompatible', {
+      kind: 'descriptor_repository_url_noncanonical',
+      repository,
+    })
+  }
+
+  const expectedArchiveUrl =
+    `${repository}/releases/download/` +
+    `${descriptor.distribution.runtimeAssetReleaseTag}/` +
+    descriptor.archive.assetName
+  let parsedArchive: URL
+  try {
+    parsedArchive = new URL(descriptor.archive.url)
+  } catch (error) {
+    throw runtimeAuthorityError('runtime_incompatible', {
+      kind: 'descriptor_archive_url_invalid',
+      cause: error,
+    })
+  }
+  if (
+    descriptor.archive.url !== expectedArchiveUrl ||
+    parsedArchive.protocol !== 'https:' ||
+    parsedArchive.hostname !== 'github.com' ||
+    parsedArchive.port !== '' ||
+    parsedArchive.username !== '' ||
+    parsedArchive.password !== '' ||
+    parsedArchive.search !== '' ||
+    parsedArchive.hash !== '' ||
+    parsedArchive.pathname !==
+      `/${repositoryMatch[1]}/${repositoryMatch[2]}/releases/download/` +
+        `${descriptor.distribution.runtimeAssetReleaseTag}/` +
+        descriptor.archive.assetName
+  ) {
+    throw runtimeAuthorityError('runtime_incompatible', {
+      kind: 'descriptor_archive_url_noncanonical',
+      archiveUrl: descriptor.archive.url,
+    })
   }
 }
 

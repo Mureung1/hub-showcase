@@ -140,11 +140,20 @@ export type RuntimeCacheQuarantinePlan = {
 
 export type RuntimeCacheRootInspection = {
   readonly state: 'absent' | 'present'
+  readonly appDataRoot: string
+  readonly cacheRoot: string
+  readonly expectedOwnerUid: number
   readonly appDataRootIdentity: RuntimeFileSystemIdentity
+  readonly runtimeCacheParentIdentity?: RuntimeFileSystemIdentity
   readonly cacheRootIdentity?: RuntimeFileSystemIdentity
   readonly namespaceIdentities: Readonly<
     Partial<Record<RuntimeCacheNamespaceName, RuntimeFileSystemIdentity>>
   >
+}
+
+export type RuntimeCacheMutationAuthority = {
+  readonly kind: 'runtime_cache_mutation_authority'
+  readonly snapshot: RuntimeCacheRootInspection
 }
 
 export function createRuntimeCacheLayout(
@@ -308,7 +317,65 @@ export function createRuntimeQuarantineIdentity(
   }
 }
 
-export async function inspectRuntimeCacheRoot(input: {
+export async function inspectRuntimeCacheRoot(
+  input: {
+    readonly appDataRoot: string
+    readonly expectedOwnerUid?: number
+  },
+  testOptions: {
+    readonly afterInitialObservation?: () => Promise<void>
+  } = {},
+): Promise<RuntimeCacheRootInspection> {
+  const initial = await observeRuntimeCacheRoot(input)
+  await testOptions.afterInitialObservation?.()
+  let current: RuntimeCacheRootInspection
+  try {
+    current = await observeRuntimeCacheRoot(input)
+  } catch (error) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_cache_snapshot_revalidation_failed',
+      cause: error,
+    })
+  }
+  if (!sameRuntimeCacheInspection(initial, current)) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_cache_snapshot_identity_changed',
+      initial,
+      current,
+    })
+  }
+  return initial
+}
+
+export async function revalidateRuntimeCacheRootForMutation(
+  snapshot: RuntimeCacheRootInspection,
+): Promise<RuntimeCacheMutationAuthority> {
+  let current: RuntimeCacheRootInspection
+  try {
+    current = await inspectRuntimeCacheRoot({
+      appDataRoot: snapshot.appDataRoot,
+      expectedOwnerUid: snapshot.expectedOwnerUid,
+    })
+  } catch (error) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_cache_mutation_revalidation_failed',
+      cause: error,
+    })
+  }
+  if (!sameRuntimeCacheInspection(snapshot, current)) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_cache_mutation_identity_changed',
+      snapshot,
+      current,
+    })
+  }
+  return {
+    kind: 'runtime_cache_mutation_authority',
+    snapshot: current,
+  }
+}
+
+async function observeRuntimeCacheRoot(input: {
   readonly appDataRoot: string
   readonly expectedOwnerUid?: number
 }): Promise<RuntimeCacheRootInspection> {
@@ -347,11 +414,14 @@ export async function inspectRuntimeCacheRoot(input: {
   const cacheRoot = containedJoin(runtimeCacheParent, 'v1')
   const runtimeCacheParentStats = await lstatIfPresent(runtimeCacheParent)
   if (runtimeCacheParentStats === undefined) {
-    return {
+    return finishRuntimeCacheObservation({
       state: 'absent',
+      appDataRoot,
+      cacheRoot,
+      expectedOwnerUid,
       appDataRootIdentity,
       namespaceIdentities: {},
-    }
+    })
   }
   const runtimeCacheParentIdentity = assertOwnedDirectoryStats(
     runtimeCacheParentStats,
@@ -373,12 +443,26 @@ export async function inspectRuntimeCacheRoot(input: {
   }
 
   const cacheRootStats = await lstatIfPresent(cacheRoot)
+  if (
+    parentEntries.includes('v1') !==
+    (cacheRootStats !== undefined)
+  ) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_cache_root_observation_changed',
+      path: cacheRoot,
+      parentEntries,
+    })
+  }
   if (cacheRootStats === undefined) {
-    return {
+    return finishRuntimeCacheObservation({
       state: 'absent',
+      appDataRoot,
+      cacheRoot,
+      expectedOwnerUid,
       appDataRootIdentity,
+      runtimeCacheParentIdentity,
       namespaceIdentities: {},
-    }
+    })
   }
   const cacheRootIdentity = assertOwnedDirectoryStats(
     cacheRootStats,
@@ -416,12 +500,188 @@ export async function inspectRuntimeCacheRoot(input: {
       `runtime_cache_${namespace}`,
     )
   }
-  return {
+  return finishRuntimeCacheObservation({
     state: 'present',
+    appDataRoot,
+    cacheRoot,
+    expectedOwnerUid,
     appDataRootIdentity,
+    runtimeCacheParentIdentity,
     cacheRootIdentity,
     namespaceIdentities,
+  })
+}
+
+async function finishRuntimeCacheObservation(
+  snapshot: RuntimeCacheRootInspection,
+): Promise<RuntimeCacheRootInspection> {
+  try {
+    const appDataRootIdentity = await inspectOwnedDirectory(
+      snapshot.appDataRoot,
+      snapshot.expectedOwnerUid,
+      undefined,
+      'app_data_root',
+    )
+    if (
+      !sameFileSystemIdentity(
+        snapshot.appDataRootIdentity,
+        appDataRootIdentity,
+      )
+    ) {
+      throw new Error('app data root identity changed')
+    }
+
+    const runtimeCacheParent = path.dirname(snapshot.cacheRoot)
+    const parentStats = await lstatIfPresent(runtimeCacheParent)
+    if (snapshot.runtimeCacheParentIdentity === undefined) {
+      if (parentStats !== undefined) {
+        throw new Error('Runtime cache parent appeared')
+      }
+      return snapshot
+    }
+    if (parentStats === undefined) {
+      throw new Error('Runtime cache parent disappeared')
+    }
+    const parentIdentity = assertOwnedDirectoryStats(
+      parentStats,
+      runtimeCacheParent,
+      snapshot.expectedOwnerUid,
+      snapshot.appDataRootIdentity.device,
+      'runtime_cache_parent',
+    )
+    if (
+      !sameFileSystemIdentity(
+        snapshot.runtimeCacheParentIdentity,
+        parentIdentity,
+      )
+    ) {
+      throw new Error('Runtime cache parent identity changed')
+    }
+
+    const parentEntries = await readDirectoryNames(runtimeCacheParent)
+    const expectedParentEntries =
+      snapshot.cacheRootIdentity === undefined ? [] : ['v1']
+    if (!sameStringArray(parentEntries, expectedParentEntries)) {
+      throw new Error('Runtime cache parent entries changed')
+    }
+
+    const cacheRootStats = await lstatIfPresent(snapshot.cacheRoot)
+    if (snapshot.cacheRootIdentity === undefined) {
+      if (cacheRootStats !== undefined) {
+        throw new Error('Runtime cache root appeared')
+      }
+      return snapshot
+    }
+    if (cacheRootStats === undefined) {
+      throw new Error('Runtime cache root disappeared')
+    }
+    const cacheRootIdentity = assertOwnedDirectoryStats(
+      cacheRootStats,
+      snapshot.cacheRoot,
+      snapshot.expectedOwnerUid,
+      snapshot.appDataRootIdentity.device,
+      'runtime_cache_root',
+    )
+    if (
+      !sameFileSystemIdentity(
+        snapshot.cacheRootIdentity,
+        cacheRootIdentity,
+      )
+    ) {
+      throw new Error('Runtime cache root identity changed')
+    }
+
+    const cacheEntries = await readDirectoryNames(snapshot.cacheRoot)
+    const expectedCacheEntries = Object.keys(
+      snapshot.namespaceIdentities,
+    ).sort(compareUnicodeCodePoints)
+    if (!sameStringArray(cacheEntries, expectedCacheEntries)) {
+      throw new Error('Runtime cache namespace roster changed')
+    }
+    for (const namespace of CACHE_NAMESPACE_NAMES) {
+      const expectedIdentity =
+        snapshot.namespaceIdentities[namespace]
+      if (expectedIdentity === undefined) continue
+      const actualIdentity = await inspectOwnedDirectory(
+        containedJoin(snapshot.cacheRoot, namespace),
+        snapshot.expectedOwnerUid,
+        snapshot.appDataRootIdentity.device,
+        `runtime_cache_${namespace}`,
+      )
+      if (
+        !sameFileSystemIdentity(expectedIdentity, actualIdentity)
+      ) {
+        throw new Error('Runtime cache namespace identity changed')
+      }
+    }
+    return snapshot
+  } catch (error) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_cache_snapshot_changed_during_observation',
+      cause: error,
+    })
   }
+}
+
+function sameRuntimeCacheInspection(
+  left: RuntimeCacheRootInspection,
+  right: RuntimeCacheRootInspection,
+): boolean {
+  if (
+    left.state !== right.state ||
+    left.appDataRoot !== right.appDataRoot ||
+    left.cacheRoot !== right.cacheRoot ||
+    left.expectedOwnerUid !== right.expectedOwnerUid ||
+    !sameFileSystemIdentity(
+      left.appDataRootIdentity,
+      right.appDataRootIdentity,
+    ) ||
+    !sameOptionalFileSystemIdentity(
+      left.runtimeCacheParentIdentity,
+      right.runtimeCacheParentIdentity,
+    ) ||
+    !sameOptionalFileSystemIdentity(
+      left.cacheRootIdentity,
+      right.cacheRootIdentity,
+    )
+  ) {
+    return false
+  }
+  return CACHE_NAMESPACE_NAMES.every((namespace) =>
+    sameOptionalFileSystemIdentity(
+      left.namespaceIdentities[namespace],
+      right.namespaceIdentities[namespace],
+    ),
+  )
+}
+
+function sameOptionalFileSystemIdentity(
+  left: RuntimeFileSystemIdentity | undefined,
+  right: RuntimeFileSystemIdentity | undefined,
+): boolean {
+  if (left === undefined || right === undefined) return left === right
+  return sameFileSystemIdentity(left, right)
+}
+
+function sameFileSystemIdentity(
+  left: RuntimeFileSystemIdentity,
+  right: RuntimeFileSystemIdentity,
+): boolean {
+  return (
+    left.device === right.device &&
+    left.inode === right.inode &&
+    left.ownerUid === right.ownerUid
+  )
+}
+
+function sameStringArray(
+  left: readonly string[],
+  right: readonly string[],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((value, index) => value === right[index])
+  )
 }
 
 function normalizeAbsoluteRoot(value: string): string {
@@ -544,8 +804,8 @@ function assertOwnedDirectoryStats(
   }
   const mode =
     typeof stats.mode === 'bigint'
-      ? Number(stats.mode & 0o777n)
-      : stats.mode & 0o777
+      ? Number(stats.mode & 0o7777n)
+      : stats.mode & 0o7777
   const ownerUid =
     typeof stats.uid === 'bigint' ? Number(stats.uid) : stats.uid
   const device = String(stats.dev)

@@ -296,6 +296,46 @@ test('strictly rejects descriptor and canonical manifest shape, range, and ident
       }),
     },
     {
+      name: 'repository query',
+      expectedCode: 'runtime_incompatible',
+      input: admissionInput({
+        descriptor: descriptorWithRepository(
+          fixture,
+          'https://github.com/ay-ple/ay-ple?download=1',
+        ),
+      }),
+    },
+    {
+      name: 'repository fragment',
+      expectedCode: 'runtime_incompatible',
+      input: admissionInput({
+        descriptor: descriptorWithRepository(
+          fixture,
+          'https://github.com/ay-ple/ay-ple#runtime',
+        ),
+      }),
+    },
+    {
+      name: 'repository userinfo-like authority path',
+      expectedCode: 'runtime_incompatible',
+      input: admissionInput({
+        descriptor: descriptorWithRepository(
+          fixture,
+          'https://github.com/ay-ple@evil.test/ay-ple',
+        ),
+      }),
+    },
+    {
+      name: 'noncanonical repository path',
+      expectedCode: 'runtime_incompatible',
+      input: admissionInput({
+        descriptor: descriptorWithRepository(
+          fixture,
+          'https://github.com/ay-ple/..',
+        ),
+      }),
+    },
+    {
       name: 'application version drift',
       expectedCode: 'runtime_incompatible',
       input: admissionInput({ applicationVersion: '0.1.0-preview.2' }),
@@ -447,6 +487,122 @@ test('strictly rejects descriptor and canonical manifest shape, range, and ident
   }
 })
 
+test('macOS filename equivalence rejects fold collisions while preserving accents', () => {
+  const fixture = createReleaseFixture()
+  const acceptedEntries = withAdditionalFiles(fixture.entries, [
+    manifestFile('licenses/cafe', '9'),
+    manifestFile('licenses/café', 'a'),
+  ])
+  assert.doesNotThrow(() =>
+    admitRuntimeRelease(
+      admissionInput({
+        manifestBytes: manifestBytesWithEntries(
+          fixture,
+          acceptedEntries,
+        ),
+      }),
+    ),
+  )
+
+  for (const entries of [
+    withAdditionalFiles(fixture.entries, [
+      manifestFile('licenses/straße', '9'),
+      manifestFile('licenses/strasse', 'a'),
+    ]),
+    withAdditionalFiles(fixture.entries, [
+      manifestFile('licenses/Σ', '9'),
+      manifestFile('licenses/ς', 'a'),
+    ]),
+    withAdditionalFiles(fixture.entries, [
+      manifestFile('licenses/café-copy', '9'),
+      manifestFile('licenses/cafe\u0301-copy', 'a'),
+    ]),
+  ]) {
+    assert.throws(
+      () =>
+        admitRuntimeRelease(
+          admissionInput({
+            manifestBytes: manifestBytesWithEntries(fixture, entries),
+          }),
+        ),
+      RuntimeReleaseAuthorityError,
+    )
+  }
+})
+
+test('canonical topology requires exact root files, license subtree, and terminal symlinks', () => {
+  const fixture = createReleaseFixture()
+  const hostileEntries: readonly FixtureEntry[][] = [
+    fixture.entries.map((entry) =>
+      entry.path === 'NOTICE'
+        ? { ...entry, path: 'NOTICE/readme' }
+        : entry,
+    ),
+    fixture.entries.map((entry) =>
+      entry.path === 'licenses/openai/LICENSE'
+        ? { ...entry, path: 'licenses' }
+        : entry,
+    ),
+    withAdditionalEntries(fixture.entries, [
+      {
+        path: 'bundle/dangling',
+        target: 'missing',
+        type: 'symlink',
+      },
+    ]),
+    withAdditionalEntries(fixture.entries, [
+      {
+        path: 'bundle/self',
+        target: 'self',
+        type: 'symlink',
+      },
+    ]),
+    withAdditionalEntries(fixture.entries, [
+      {
+        path: 'bundle/cycle-a',
+        target: 'cycle-b',
+        type: 'symlink',
+      },
+      {
+        path: 'bundle/cycle-b',
+        target: 'cycle-a',
+        type: 'symlink',
+      },
+    ]),
+  ]
+  for (const entries of hostileEntries) {
+    assert.throws(
+      () =>
+        admitRuntimeRelease(
+          admissionInput({
+            manifestBytes: manifestBytesWithEntries(fixture, entries),
+          }),
+        ),
+      RuntimeReleaseAuthorityError,
+    )
+  }
+
+  const validChain = withAdditionalEntries(fixture.entries, [
+    {
+      path: 'bundle/link-a',
+      target: 'link-b',
+      type: 'symlink',
+    },
+    {
+      path: 'bundle/link-b',
+      target: 'bridge/worker.py',
+      type: 'symlink',
+    },
+  ])
+  assert.doesNotThrow(() =>
+    admitRuntimeRelease(
+      admissionInput({
+        manifestBytes: manifestBytesWithEntries(fixture, validChain),
+      }),
+    ),
+  )
+})
+
 test('application, target, archive, and manifest mismatch invoke no downstream effect', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'runtime-admission-red-'))
   let effectCalls = 0
@@ -523,7 +679,18 @@ test('caller-safe failure never contains descriptor URL, digest, path, or nested
         'remediation',
         'retryable',
       ])
-      assert.equal(authorityError.evidence.kind, 'manifest_bytes_invalid')
+      const serializedError = JSON.stringify(authorityError)
+      assert.equal(serializedError.includes(fixture.descriptor.archive.url), false)
+      assert.equal(
+        serializedError.includes(fixture.descriptor.archive.sha256),
+        false,
+      )
+      assert.equal(serializedError.includes('not-json'), false)
+      assert.deepEqual(Object.keys(authorityError), [])
+      assert.equal(
+        authorityError.diagnosticEvidence().kind,
+        'manifest_bytes_invalid',
+      )
       return true
     },
   )
@@ -531,6 +698,90 @@ test('caller-safe failure never contains descriptor URL, digest, path, or nested
 
 function encodeManifest(value: JsonObject): Buffer {
   return Buffer.from(`${JSON.stringify(value, null, 2)}\n`)
+}
+
+function descriptorWithRepository(
+  fixture: ReturnType<typeof createReleaseFixture>,
+  repository: string,
+) {
+  return {
+    ...fixture.descriptor,
+    distribution: {
+      ...fixture.descriptor.distribution,
+      repository,
+    },
+    archive: {
+      ...fixture.descriptor.archive,
+      url:
+        `${repository}/releases/download/` +
+        `${fixture.descriptor.distribution.runtimeAssetReleaseTag}/` +
+        fixture.descriptor.archive.assetName,
+    },
+  }
+}
+
+function manifestFile(pathname: string, digestCharacter: string): FixtureEntry {
+  return {
+    bytes: 1,
+    mode: '100644',
+    path: pathname,
+    sha256: digestCharacter.repeat(64),
+    type: 'file',
+  }
+}
+
+function withAdditionalFiles(
+  entries: readonly FixtureEntry[],
+  additions: readonly FixtureEntry[],
+): FixtureEntry[] {
+  return withAdditionalEntries(entries, additions)
+}
+
+function withAdditionalEntries(
+  entries: readonly FixtureEntry[],
+  additions: readonly FixtureEntry[],
+): FixtureEntry[] {
+  return [...entries, ...additions].sort((left, right) =>
+    compareCodePoints(left.path, right.path),
+  )
+}
+
+function manifestBytesWithEntries(
+  fixture: ReturnType<typeof createReleaseFixture>,
+  unsortedEntries: readonly FixtureEntry[],
+): Buffer {
+  const entries = [...unsortedEntries].sort((left, right) =>
+    compareCodePoints(left.path, right.path),
+  )
+  const bundleEntries = entries.filter((entry) =>
+    entry.path.startsWith('bundle/'),
+  )
+  return encodeManifest({
+    ...fixture.manifest,
+    payload: {
+      ...treeEvidence(entries),
+      entries,
+    },
+    bundle: {
+      path: 'bundle',
+      ...treeEvidence(bundleEntries),
+    },
+  })
+}
+
+function compareCodePoints(left: string, right: string): number {
+  const leftPoints = Array.from(left, (character) => character.codePointAt(0)!)
+  const rightPoints = Array.from(
+    right,
+    (character) => character.codePointAt(0)!,
+  )
+  const length = Math.min(leftPoints.length, rightPoints.length)
+  for (let index = 0; index < length; index += 1) {
+    if (leftPoints[index] !== rightPoints[index]) {
+      return leftPoints[index] - rightPoints[index]
+    }
+  }
+  return leftPoints.length - rightPoints.length
 }
 
 function withoutKey<

@@ -12,6 +12,11 @@ const REQUIRED_PAYLOAD_TOP_LEVEL = [
   'sbom.spdx.json',
 ] as const
 
+const MACOS_FILENAME_COLLATOR = new Intl.Collator('und', {
+  usage: 'search',
+  sensitivity: 'accent',
+})
+
 type JsonObject = Record<string, unknown>
 
 export type RuntimeManifestFileEntry = {
@@ -246,11 +251,7 @@ function decodeEntries(value: unknown): readonly RuntimeManifestEntry[] {
   assertNoCaseFoldCollision(entries)
   assertNoFilePrefixConflict(entries)
   assertExactPayloadTopLevel(entries)
-  for (const entry of entries) {
-    if (entry.type === 'symlink') {
-      assertSafeSymlinkTarget(entry, entries)
-    }
-  }
+  assertSafeSymlinkTargets(entries)
   return entries
 }
 
@@ -424,17 +425,58 @@ function assertExactPayloadTopLevel(
   ) {
     throw invalidManifest()
   }
+  for (const requiredFile of [
+    'NOTICE',
+    'THIRD_PARTY_NOTICES.md',
+    'sbom.spdx.json',
+  ]) {
+    const entry = entries.find(
+      (candidate) => candidate.path === requiredFile,
+    )
+    if (entry?.type !== 'file') throw invalidManifest()
+  }
+  for (const requiredSubtree of [
+    'bundle',
+    'licenses',
+    'provenance',
+  ]) {
+    if (
+      !entries.some((entry) =>
+        entry.path.startsWith(`${requiredSubtree}/`),
+      )
+    ) {
+      throw invalidManifest()
+    }
+  }
 }
 
 function assertNoCaseFoldCollision(
   entries: readonly RuntimeManifestEntry[],
 ): void {
-  const seen = new Set<string>()
-  for (const entry of entries) {
-    const folded = entry.path.normalize('NFD').toLowerCase()
-    if (seen.has(folded)) throw invalidManifest()
-    seen.add(folded)
+  const sorted = entries
+    .map((entry) => ({
+      key: macOSFilenameComparisonKey(entry.path),
+      path: entry.path,
+    }))
+    .sort(
+      (left, right) =>
+        MACOS_FILENAME_COLLATOR.compare(left.key, right.key) ||
+        compareUnicodeCodePoints(left.path, right.path),
+    )
+  for (let index = 1; index < sorted.length; index += 1) {
+    if (
+      MACOS_FILENAME_COLLATOR.compare(
+        sorted[index - 1].key,
+        sorted[index].key,
+      ) === 0
+    ) {
+      throw invalidManifest()
+    }
   }
+}
+
+function macOSFilenameComparisonKey(value: string): string {
+  return value.toUpperCase().toLowerCase()
 }
 
 function assertNoFilePrefixConflict(
@@ -451,10 +493,40 @@ function assertNoFilePrefixConflict(
   }
 }
 
-function assertSafeSymlinkTarget(
-  entry: RuntimeManifestSymlinkEntry,
+function assertSafeSymlinkTargets(
   entries: readonly RuntimeManifestEntry[],
 ): void {
+  const entriesByPath = new Map(
+    entries.map((entry) => [entry.path, entry] as const),
+  )
+  for (const entry of entries) {
+    if (entry.type !== 'symlink') continue
+    const visited = new Set([entry.path])
+    let resolved = resolveSymlinkTarget(entry)
+    while (true) {
+      const exactTarget = entriesByPath.get(resolved)
+      if (exactTarget?.type === 'file') break
+      if (exactTarget?.type === 'symlink') {
+        if (visited.has(exactTarget.path)) throw invalidManifest()
+        visited.add(exactTarget.path)
+        resolved = resolveSymlinkTarget(exactTarget)
+        continue
+      }
+      if (
+        entries.some((candidate) =>
+          candidate.path.startsWith(`${resolved}/`),
+        )
+      ) {
+        break
+      }
+      throw invalidManifest()
+    }
+  }
+}
+
+function resolveSymlinkTarget(
+  entry: RuntimeManifestSymlinkEntry,
+): string {
   const resolved = path.posix.normalize(
     path.posix.join(path.posix.dirname(entry.path), entry.target),
   )
@@ -465,12 +537,7 @@ function assertSafeSymlinkTarget(
   ) {
     throw invalidManifest()
   }
-  const pointsToKnownPath = entries.some(
-    (candidate) =>
-      candidate.path === resolved ||
-      candidate.path.startsWith(`${resolved}/`),
-  )
-  if (!pointsToKnownPath) throw invalidManifest()
+  return resolved
 }
 
 function isSafeManifestPath(value: unknown): value is string {

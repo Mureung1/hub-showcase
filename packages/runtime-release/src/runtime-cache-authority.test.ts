@@ -7,6 +7,7 @@ import {
   mkdtemp,
   readdir,
   realpath,
+  rename,
   rm,
   symlink,
   writeFile,
@@ -27,6 +28,7 @@ import {
   createRuntimeQuarantineIdentity,
   createRuntimeStagingIdentity,
   inspectRuntimeCacheRoot,
+  revalidateRuntimeCacheRootForMutation,
 } from './runtime-cache-authority.js'
 
 function fixtureAdmission(): RuntimeReleaseAdmission {
@@ -292,6 +294,10 @@ test('safe existing cache namespaces retain owner-only directory identities', as
 
     assert.equal(inspection.state, 'present')
     assert.equal(inspection.cacheRootIdentity?.ownerUid, currentUid())
+    assert.equal(
+      inspection.runtimeCacheParentIdentity?.ownerUid,
+      currentUid(),
+    )
     assert.deepEqual(
       Object.keys(inspection.namespaceIdentities).sort(),
       [
@@ -303,6 +309,104 @@ test('safe existing cache namespaces retain owner-only directory identities', as
         'staging',
       ],
     )
+    const mutationAuthority =
+      await revalidateRuntimeCacheRootForMutation(inspection)
+    assert.equal(
+      mutationAuthority.kind,
+      'runtime_cache_mutation_authority',
+    )
+    assert.deepEqual(mutationAuthority.snapshot, inspection)
+  })
+})
+
+test('cache inspection and mutation revalidation reject inode substitution', async (t) => {
+  await t.test('substitution during initial traversal', async () => {
+    await withAppDataRoot(async (appDataRoot) => {
+      const cacheRoot = await createEmptyCacheRoot(appDataRoot)
+      const displaced = path.join(appDataRoot, 'displaced-cache-v1')
+
+      await assert.rejects(
+        inspectRuntimeCacheRoot(
+          {
+            appDataRoot,
+            expectedOwnerUid: currentUid(),
+          },
+          {
+            afterInitialObservation: async () => {
+              await rename(cacheRoot, displaced)
+              await mkdir(cacheRoot, { mode: 0o700 })
+              await chmod(cacheRoot, 0o700)
+            },
+          },
+        ),
+        (error: unknown) => {
+          assert.equal(error instanceof RuntimeReleaseAuthorityError, true)
+          assert.equal(
+            (error as RuntimeReleaseAuthorityError).failure.code,
+            'runtime_recovery_required',
+          )
+          return true
+        },
+      )
+    })
+  })
+
+  await t.test('symlink substitution during initial traversal', async () => {
+    await withAppDataRoot(async (appDataRoot) => {
+      const cacheRoot = await createEmptyCacheRoot(appDataRoot)
+      const displaced = path.join(appDataRoot, 'displaced-cache-v1')
+
+      await assert.rejects(
+        inspectRuntimeCacheRoot(
+          {
+            appDataRoot,
+            expectedOwnerUid: currentUid(),
+          },
+          {
+            afterInitialObservation: async () => {
+              await rename(cacheRoot, displaced)
+              await symlink(displaced, cacheRoot)
+            },
+          },
+        ),
+        (error: unknown) => {
+          assert.equal(error instanceof RuntimeReleaseAuthorityError, true)
+          assert.equal(
+            (error as RuntimeReleaseAuthorityError).failure.code,
+            'runtime_recovery_required',
+          )
+          return true
+        },
+      )
+    })
+  })
+
+  await t.test('substitution before mutation', async () => {
+    await withAppDataRoot(async (appDataRoot) => {
+      const cacheRoot = await createEmptyCacheRoot(appDataRoot)
+      const inspection = await inspectRuntimeCacheRoot({
+        appDataRoot,
+        expectedOwnerUid: currentUid(),
+      })
+      await rename(
+        cacheRoot,
+        path.join(appDataRoot, 'displaced-cache-v1'),
+      )
+      await mkdir(cacheRoot, { mode: 0o700 })
+      await chmod(cacheRoot, 0o700)
+
+      await assert.rejects(
+        revalidateRuntimeCacheRootForMutation(inspection),
+        (error: unknown) => {
+          assert.equal(error instanceof RuntimeReleaseAuthorityError, true)
+          assert.equal(
+            (error as RuntimeReleaseAuthorityError).failure.code,
+            'runtime_recovery_required',
+          )
+          return true
+        },
+      )
+    })
   })
 })
 
@@ -339,6 +443,17 @@ test('symlink, unsafe owner/mode, and ambiguous residue fail closed without muta
         'runtime_cache_unsafe',
         currentUid() + 1,
       )
+    })
+  })
+
+  await t.test('sticky mode drift', async () => {
+    await withAppDataRoot(async (appDataRoot) => {
+      await chmod(appDataRoot, 0o1700)
+      try {
+        await assertCacheFailure(appDataRoot, 'runtime_cache_unsafe')
+      } finally {
+        await chmod(appDataRoot, 0o700)
+      }
     })
   })
 
@@ -447,6 +562,15 @@ function isContained(root: string, candidate: string): boolean {
 
 function createSha256(value: Uint8Array): string {
   return createHash('sha256').update(value).digest('hex')
+}
+
+async function createEmptyCacheRoot(appDataRoot: string): Promise<string> {
+  const runtimeCacheParent = path.join(appDataRoot, 'runtime-cache')
+  const cacheRoot = path.join(runtimeCacheParent, 'v1')
+  await mkdir(cacheRoot, { recursive: true, mode: 0o700 })
+  await chmod(runtimeCacheParent, 0o700)
+  await chmod(cacheRoot, 0o700)
+  return cacheRoot
 }
 
 function testTreeEvidence(
