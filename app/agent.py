@@ -5,7 +5,7 @@
 
 import json
 
-from app import prompt_loader, tools
+from app import config, prompt_loader, tools
 
 
 def build_candidates(papers: list[dict]) -> list[dict]:
@@ -46,3 +46,35 @@ def _validate_coverage(papers: list[dict], result: dict) -> dict:
     excluded += [{"index": idx, "reason": "판단 누락"} for idx in missing]
 
     return {"picked": picked, "excluded": excluded}
+
+
+def judge(topic: str, papers: list[dict]) -> dict:
+    """판단(judge) 5단계 진입점. sse-contract.md의 judge 이벤트 형태로 정리해 반환한다."""
+    raw = _call_judge(topic, papers)
+    result = _validate_coverage(papers, raw)
+
+    return {
+        "stage": "judge",
+        "total": len(papers),
+        "selected": len(result["picked"]),
+        "picked": [
+            {"title": papers[item["index"]]["title"], "reason": item.get("reason", "")}
+            for item in result["picked"]
+        ],
+        "excluded": [
+            {"title": papers[item["index"]]["title"], "reason": item.get("reason", "")}
+            for item in result["excluded"]
+        ],
+    }
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="agent.py 개별 단계 검증")
+    parser.add_argument("--topic", required=True)
+    parser.add_argument("--limit", type=int, default=config.DEFAULT_LIMIT)
+    args = parser.parse_args()
+
+    papers = tools.search_arxiv(args.topic, limit=args.limit)
+    print(judge(args.topic, papers))
