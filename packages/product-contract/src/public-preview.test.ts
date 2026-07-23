@@ -34,6 +34,7 @@ test('public preview fixtures cover every frozen Account and Setup state', () =>
     [
       'account_required',
       'account_required',
+      'account_required',
       'input_required',
       'confirmation_required',
       'working',
@@ -55,6 +56,8 @@ test('public preview fixtures cover every frozen Account and Setup state', () =>
       'login_pending',
       'auth_cancelled',
       'authenticated',
+      'workspace_reauth_awaiting_account',
+      'workspace_reauth_available',
       'confirmation_required',
       'working',
       'operation_blocked_during_transition',
@@ -198,20 +201,83 @@ test('managed login URL rejects embedded credentials and non-default ports', () 
   }
 })
 
-test('workspace reauth requires the exact transient resume binding', () => {
-  const account = PUBLIC_PREVIEW_ACCOUNT_FIXTURES.loginRequired
-  const reauth = PUBLIC_PREVIEW_SETUP_FIXTURES.workspaceReauth
+test('bootstrap relates Account readiness to Ready and workspace reauth authority', () => {
+  const loginRequired = PUBLIC_PREVIEW_ACCOUNT_FIXTURES.loginRequired
+  const connected = PUBLIC_PREVIEW_ACCOUNT_FIXTURES.connected
+  const unavailable = PUBLIC_PREVIEW_ACCOUNT_FIXTURES.unavailable
+  const awaitingAccount =
+    PUBLIC_PREVIEW_SETUP_FIXTURES.workspaceReauthAwaitingAccount
+  const available = PUBLIC_PREVIEW_SETUP_FIXTURES.workspaceReauthAvailable
 
   assert.deepEqual(
-    decodePublicPreviewBootstrap({ account, setup: reauth }),
-    { account, setup: reauth },
+    decodePublicPreviewBootstrap({
+      account: loginRequired,
+      setup: awaitingAccount,
+    }),
+    { account: loginRequired, setup: awaitingAccount },
   )
-  const { recoveryId: _recoveryId, ...missingBinding } = reauth
+  assert.deepEqual(
+    decodePublicPreviewBootstrap({ account: connected, setup: available }),
+    { account: connected, setup: available },
+  )
   assert.throws(
     () =>
       decodePublicPreviewBootstrap({
-        account,
-        setup: missingBinding,
+        account: unavailable,
+        setup: PUBLIC_PREVIEW_SETUP_FIXTURES.ready,
+      }),
+    ProductContractError,
+  )
+  assert.throws(
+    () =>
+      decodePublicPreviewBootstrap({
+        account: loginRequired,
+        setup: available,
+      }),
+    ProductContractError,
+  )
+  assert.throws(
+    () =>
+      decodePublicPreviewBootstrap({
+        account: connected,
+        setup: PUBLIC_PREVIEW_SETUP_FIXTURES.firstConnection,
+      }),
+    ProductContractError,
+  )
+  assert.throws(
+    () =>
+      decodePublicPreviewBootstrap({
+        account: loginRequired,
+        setup: {
+          ...awaitingAccount,
+          allowedCommands: ['setup.resume'],
+        },
+      }),
+    ProductContractError,
+  )
+  assert.throws(
+    () =>
+      decodePublicPreviewBootstrap({
+        account: connected,
+        setup: { ...available, allowedCommands: [] },
+      }),
+    ProductContractError,
+  )
+  const { resume: _resume, ...ambiguousReauth } = available
+  assert.throws(
+    () =>
+      decodePublicPreviewBootstrap({
+        account: connected,
+        setup: ambiguousReauth,
+      }),
+    ProductContractError,
+  )
+  const { recoveryId: _recoveryId, ...unboundReauth } = available
+  assert.throws(
+    () =>
+      decodePublicPreviewBootstrap({
+        account: connected,
+        setup: unboundReauth,
       }),
     ProductContractError,
   )

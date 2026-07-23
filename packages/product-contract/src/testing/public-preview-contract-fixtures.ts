@@ -34,6 +34,26 @@ export const PUBLIC_PREVIEW_INVALID_RESPONSE_FIXTURES = [
     },
   },
   {
+    name: 'unavailable Account with ready Setup',
+    value: {
+      status: 'ok',
+      projection: {
+        account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES.unavailable,
+        setup: ready,
+      },
+    },
+  },
+  {
+    name: 'login-required Account with resume-enabled workspace reauth',
+    value: {
+      status: 'ok',
+      projection: {
+        account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES.loginRequired,
+        setup: PUBLIC_PREVIEW_SETUP_FIXTURES.workspaceReauthAvailable,
+      },
+    },
+  },
+  {
     name: 'absolute path',
     value: responseWithSetupField('absolutePath', '/private/workspace'),
   },

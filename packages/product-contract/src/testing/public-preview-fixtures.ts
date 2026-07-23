@@ -59,11 +59,20 @@ export const PUBLIC_PREVIEW_SETUP_FIXTURES = {
     displayMessage: '학기 공간을 만들기 전에 ChatGPT를 연결해 주세요.',
     allowedCommands: [],
   },
-  workspaceReauth: {
+  workspaceReauthAwaitingAccount: {
     state: 'account_required',
     reason: 'workspace_reauth',
+    resume: 'awaiting_account',
     recoveryId: 'setup_workspace_reauth',
     displayMessage: '학기 공간을 다시 열려면 ChatGPT 연결을 확인해 주세요.',
+    allowedCommands: [],
+  },
+  workspaceReauthAvailable: {
+    state: 'account_required',
+    reason: 'workspace_reauth',
+    resume: 'available',
+    recoveryId: 'setup_workspace_reauth',
+    displayMessage: '학기 공간 연결을 다시 시작할 수 있습니다.',
     allowedCommands: ['setup.resume'],
   },
   inputRequired: {
@@ -254,6 +263,26 @@ export const PUBLIC_PREVIEW_SCENARIO_FIXTURES = [
       projection: {
         account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES.connected,
         setup: PUBLIC_PREVIEW_SETUP_FIXTURES.inputRequired,
+      },
+    },
+  },
+  {
+    name: 'workspace_reauth_awaiting_account',
+    response: {
+      status: 'ok',
+      projection: {
+        account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES.loginRequired,
+        setup: PUBLIC_PREVIEW_SETUP_FIXTURES.workspaceReauthAwaitingAccount,
+      },
+    },
+  },
+  {
+    name: 'workspace_reauth_available',
+    response: {
+      status: 'ok',
+      projection: {
+        account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES.connected,
+        setup: PUBLIC_PREVIEW_SETUP_FIXTURES.workspaceReauthAvailable,
       },
     },
   },

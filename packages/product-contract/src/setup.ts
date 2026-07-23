@@ -53,6 +53,15 @@ export type PublicPreviewSetupProjection =
   | {
       readonly state: 'account_required'
       readonly reason: 'workspace_reauth'
+      readonly resume: 'awaiting_account'
+      readonly recoveryId: string
+      readonly displayMessage: string
+      readonly allowedCommands: readonly []
+    }
+  | {
+      readonly state: 'account_required'
+      readonly reason: 'workspace_reauth'
+      readonly resume: 'available'
       readonly recoveryId: string
       readonly displayMessage: string
       readonly allowedCommands: readonly ['setup.resume']
@@ -383,11 +392,37 @@ function decodeAccountRequired(
   }
   if (
     value.reason === 'workspace_reauth' &&
+    value.resume === 'awaiting_account' &&
     isExactObject(value, [
       'allowedCommands',
       'displayMessage',
       'reason',
       'recoveryId',
+      'resume',
+      'state',
+    ]) &&
+    isNonEmptyString(value.recoveryId) &&
+    isNonEmptyString(value.displayMessage) &&
+    hasExactPublicPreviewCommands(value.allowedCommands, [])
+  ) {
+    return {
+      state: 'account_required',
+      reason: 'workspace_reauth',
+      resume: 'awaiting_account',
+      recoveryId: value.recoveryId,
+      displayMessage: value.displayMessage,
+      allowedCommands: [],
+    }
+  }
+  if (
+    value.reason === 'workspace_reauth' &&
+    value.resume === 'available' &&
+    isExactObject(value, [
+      'allowedCommands',
+      'displayMessage',
+      'reason',
+      'recoveryId',
+      'resume',
       'state',
     ]) &&
     isNonEmptyString(value.recoveryId) &&
@@ -397,6 +432,7 @@ function decodeAccountRequired(
     return {
       state: 'account_required',
       reason: 'workspace_reauth',
+      resume: 'available',
       recoveryId: value.recoveryId,
       displayMessage: value.displayMessage,
       allowedCommands: ['setup.resume'],

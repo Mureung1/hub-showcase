@@ -80,10 +80,10 @@ export function decodePublicPreviewBootstrap(
   value: unknown,
 ): PublicPreviewBootstrap {
   if (!isExactObject(value, ['account', 'setup'])) throw invalidContract()
-  return {
-    account: decodePublicPreviewAccountProjection(value.account),
-    setup: decodePublicPreviewSetupProjection(value.setup),
-  }
+  const account = decodePublicPreviewAccountProjection(value.account)
+  const setup = decodePublicPreviewSetupProjection(value.setup)
+  if (!isValidBootstrapRelationship(account, setup)) throw invalidContract()
+  return { account, setup }
 }
 
 export function decodePublicPreviewCommand(
@@ -205,4 +205,22 @@ function isPublicPreviewErrorCode(
     value === 'setup_release_mismatch' ||
     value === 'setup_unavailable'
   )
+}
+
+function isValidBootstrapRelationship(
+  account: PublicPreviewAccountProjection,
+  setup: PublicPreviewSetupProjection,
+): boolean {
+  if (setup.state === 'ready') {
+    return account.state === 'connected'
+  }
+  if (setup.state !== 'account_required') {
+    return true
+  }
+  if (setup.reason === 'first_connection') {
+    return account.state !== 'connected'
+  }
+  return setup.resume === 'available'
+    ? account.state === 'connected'
+    : account.state !== 'connected'
 }
