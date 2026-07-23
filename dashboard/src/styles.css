@@ -70,6 +70,7 @@ button {
 
 .category-tab {
   position: relative;
+  cursor: pointer;
   padding: 0 0 13px;
   border: 0;
   background: transparent;
@@ -77,6 +78,10 @@ button {
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.category-tab:hover {
+  color: #182536;
 }
 
 .category-tab strong {
