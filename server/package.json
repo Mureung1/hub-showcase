@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "index:commands": "node src/scripts/indexCommands.js"
+    "index:commands": "node src/scripts/indexCommands.js",
+    "migrate:commands": "node src/scripts/migrateCommandsToSupabase.js"
   },
 
   "dependencies": {
