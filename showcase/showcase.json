@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "title": "Newssist",
+  "summary": "여러 매체의 뉴스를 키워드로 모아 AI가 해설하고, 읽은 기사를 클러스터링해 개인화된 시사 흐름을 설명해주는 서비스입니다.",
+  "githubUser": "yeontteo(남연서)",
+  "demoUrl": "",
+  "thumbnail": "",
+  "screenshots": [],
+  "problem": "면접이나 프로젝트를 준비하며 시사 흐름을 알고 싶어도 어떤 뉴스를 찾아봐야 할지 막막하고, 어려운 용어 때문에 기사를 읽다가 포기하게 됩니다.",
+  "targetUsers": [
+    "면접 전 지원 분야 시사 이슈를 빠르게 훑고 싶은 취준생",
+    "출퇴근길에 업계 뉴스를 확인하고 싶은 직장인"
+  ],
+  "features": [
+    "관심 키워드 기반 뉴스 피드 수집 및 북마크",
+    "AI 기사 요약과, 입문/일반 난이도별로 원문을 다시 써주는 쉽게 설명 기능",
+    "기사 본문 내 전문용어 자동 추출 및 하이라이트, 클릭 시 정의 툴팁 표시",
+    "읽음 이력 기반 개인화 클러스터링으로 나만의 시사 흐름 카드 제공"
+  ],
+  "featureTags": [
+    "키워드 피드",
+    "AI 요약",
+    "쉽게 설명",
+    "용어 해설",
+    "개인화 인사이트"
+  ],
+  "techStack": [
+    "React",
+    "Express",
+    "Supabase (Postgres + pgvector)",
+    "OpenAI API",
+    "Tailwind CSS",
+    "GitHub Actions"
+  ],
+  "techHighlights": [
+    "네이버 뉴스 검색 API로 수집한 기사를 Supabase에 저장하고, OpenAI 임베딩 + K-Means로 사용자별 읽음 이력을 클러스터링해 개인화된 시사 흐름을 설명합니다.",
+    "GPT-4o-mini로 AI 요약/난이도별 원문 재작성/용어 해설을 생성하며, 결과를 DB에 캐싱해 동일 요청 시 재호출 없이 즉시 응답합니다.",
+    "GitHub Actions로 하루 1회 클러스터링 배치를 자동 실행합니다 (API 서버 경유 없이 스크립트가 Supabase에 직접 read/write)."
+  ],
+  "developmentWithAI": "저는 기능 우선순위와 범위, 세부 동작 방식을 정하고 매 기능마다 개념 설명을 받으며 진행했습니다. AI는 DB 스키마부터 API 명세, 백엔드, 프론트엔드까지 작은 단위로 나눠 구현하고 왜 그렇게 설계했는지 설명했습니다. 저는 REST Client와 브라우저로 직접 실행해 확인하고, 프로토타입과 다른 부분이나 마음에 안 드는 결과는 다시 요청해 수정했습니다.",
+  "agent": {
+    "summary": "Claude Code를 메인 코딩 어시스턴트로 사용해 기획-구현-디버깅-PR 준비까지 함께 진행했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "Claude Code",
+        "purpose": "요구사항 설명, DB/API/백엔드/프론트엔드 구현, 디버깅을 함께 진행하는 메인 코딩 어시스턴트"
+      },
+      {
+        "type": "skill",
+        "name": "newssist-design Skill",
+        "purpose": "React 컴포넌트·스타일링 작업 시 색상/타이포그래피/컴포넌트 레시피 등 디자인 시스템을 일관되게 적용"
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "기능 범위와 시간/우선순위 결정",
+          "DB 스키마 확인·설계",
+          "API 명세 정의",
+          "백엔드 구현",
+          "프론트엔드 구현",
+          "REST Client/브라우저로 스모크 테스트"
+        ]
+      },
+      {
+        "name": "디버깅 Workflow",
+        "steps": [
+          "에러 재현",
+          "직접 curl 요청 등으로 원인 좁히기",
+          "수정 후 재검증"
+        ]
+      }
+    ]
+  }
+}
