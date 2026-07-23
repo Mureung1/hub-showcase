@@ -3,6 +3,7 @@ import InterestSelect from './screens/InterestSelect'
 import Today, { type TodayState } from './screens/Today'
 import ArticleIntro, { type ArticleIntroState } from './screens/ArticleIntro'
 import MyGgaem, { type CalendarState, type RecordsState } from './screens/MyGgaem'
+import ContentLoadingScreen from './components/ContentLoadingScreen'
 import { api } from './api/client'
 import { ensureAnonymousSession } from './lib/supabase'
 import type { Interest } from './api/types'
@@ -45,7 +46,7 @@ function App() {
   }, [])
 
   if (appState.status === 'loading') {
-    return <p role="status">불러오고 있어요...</p>
+    return <ContentLoadingScreen message="깸을 준비하고 있어요" description="잠시만요, 곧 준비돼요" />
   }
 
   if (appState.status === 'error') {
@@ -113,6 +114,15 @@ function MainTabsContainer() {
 
   if (tab === 'myGgaem') {
     return <MyGgaemContainer onGoToToday={() => setTab('today')} />
+  }
+
+  if (todayState.status === 'loading') {
+    return (
+      <ContentLoadingScreen
+        message="관심사에 맞는 오늘의 글을 고르고 있어요"
+        description="잠시만요, 곧 준비돼요"
+      />
+    )
   }
 
   if (flow.screen === 'articleIntro') {

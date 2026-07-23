@@ -104,6 +104,21 @@ describe('App startup', () => {
     vi.mocked(api.getInterests).mockReset()
   })
 
+  it('shows the common loading screen while initializing', async () => {
+    let resolveUserInterests: ((value: { hasCompletedOnboarding: boolean; interests: [] }) => void) | undefined
+    vi.mocked(api.getUserInterests).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveUserInterests = resolve
+        }),
+    )
+    render(<App />)
+
+    expect(await screen.findByRole('status')).toHaveTextContent('깸을 준비하고 있어요')
+
+    resolveUserInterests?.({ hasCompletedOnboarding: true, interests: [] })
+  })
+
   it('shows onboarding when hasCompletedOnboarding is false', async () => {
     vi.mocked(api.getUserInterests).mockResolvedValue({
       hasCompletedOnboarding: false,
@@ -130,6 +145,107 @@ describe('App startup', () => {
     })
     render(<App />)
     expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+  })
+
+  it('shows an error without infinite loading when initialization fails', async () => {
+    vi.mocked(api.getUserInterests).mockRejectedValue(new Error('boom'))
+    render(<App />)
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+})
+
+describe('Onboarding to Today content loading flow', () => {
+  const INTEREST: import('./api/types').Interest = {
+    id: 'interest-1',
+    name: 'IT·개발',
+    displayOrder: 1,
+    launchStatus: 'active',
+    riskLevel: 'low',
+    emptyStateMessage: null,
+  }
+
+  beforeEach(() => {
+    vi.mocked(api.getUserInterests).mockReset()
+    vi.mocked(api.getInterests).mockReset()
+    vi.mocked(api.replaceUserInterests).mockReset()
+    vi.mocked(api.getTodayArticles).mockReset()
+    vi.mocked(api.getUserInterests).mockResolvedValue({
+      hasCompletedOnboarding: false,
+      interests: [],
+    })
+    vi.mocked(api.getInterests).mockResolvedValue([INTEREST])
+  })
+
+  it('shows the content loading screen while the today fetch for an existing user is in flight', async () => {
+    vi.mocked(api.getUserInterests).mockReset()
+    vi.mocked(api.getUserInterests).mockResolvedValue({
+      hasCompletedOnboarding: true,
+      interests: [],
+    })
+    let resolveToday: ((value: { items: []; emptyStateMessage: null }) => void) | undefined
+    vi.mocked(api.getTodayArticles).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveToday = resolve
+        }),
+    )
+    render(<App />)
+
+    expect(await screen.findByText('관심사에 맞는 오늘의 글을 고르고 있어요')).toBeInTheDocument()
+
+    resolveToday?.({ items: [], emptyStateMessage: null })
+    expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+  })
+
+  it('shows the content loading screen immediately on CTA click, before the save request resolves', async () => {
+    let resolveSave: ((value: { interestIds: string[] }) => void) | undefined
+    vi.mocked(api.replaceUserInterests).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve
+        }),
+    )
+    render(<App />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'IT·개발' }))
+    await userEvent.click(screen.getByRole('button', { name: /깸 시작하기/ }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('관심사에 맞는 오늘의 글을 고르고 있어요')
+
+    resolveSave?.({ interestIds: [INTEREST.id] })
+  })
+
+  it('keeps showing the same content loading screen through save success and the today fetch', async () => {
+    vi.mocked(api.replaceUserInterests).mockResolvedValue({ interestIds: [INTEREST.id] })
+    let resolveToday: ((value: { items: []; emptyStateMessage: null }) => void) | undefined
+    vi.mocked(api.getTodayArticles).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveToday = resolve
+        }),
+    )
+    render(<App />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'IT·개발' }))
+    await userEvent.click(screen.getByRole('button', { name: /깸 시작하기/ }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('관심사에 맞는 오늘의 글을 고르고 있어요')
+
+    resolveToday?.({ items: [], emptyStateMessage: null })
+    expect(await screen.findByText('오늘의 깸')).toBeInTheDocument()
+  })
+
+  it('returns to onboarding with the selection kept and does not fetch today content when saving fails', async () => {
+    vi.mocked(api.replaceUserInterests).mockRejectedValue(new Error('network'))
+    render(<App />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'IT·개발' }))
+    await userEvent.click(screen.getByRole('button', { name: /깸 시작하기/ }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/다시 시도/)
+    expect(screen.getByRole('button', { name: 'IT·개발' })).toHaveAttribute('aria-pressed', 'true')
+    expect(api.getTodayArticles).not.toHaveBeenCalled()
   })
 })
 
