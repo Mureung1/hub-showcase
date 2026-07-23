@@ -125,7 +125,6 @@ SPOTIFY_CLIENT_SECRET=
 |------|--------|-----|
 | 내 음악 기록 조회 | GET | `/api/music-records` |
 | 내 음악 기록 생성 | POST | `/api/music-records` |
-
 두 요청 모두 다음 인증 헤더가 필요합니다.
 
 ```http
