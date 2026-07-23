@@ -4,7 +4,7 @@ const requireAuth = require('../middleware/auth');
 const ApiError = require('../utils/apiError');
 const { validateBirthDate } = require('../utils/validators');
 const { normalizeUser } = require('../services/userService');
-const { listHostedMeetings } = require('../services/meetingService');
+const { listHostedMeetings, listJoinedMeetings } = require('../services/meetingService');
 
 const router = express.Router();
 
@@ -60,6 +60,16 @@ router.patch('/me', requireAuth, async (req, res, next) => {
 router.get('/me/hosted-meetings', requireAuth, async (req, res, next) => {
   try {
     const result = await listHostedMeetings(req.session.userId);
+    res.json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/users/me/joined-meetings — 내가 신청/참여한 모임(G2)
+router.get('/me/joined-meetings', requireAuth, async (req, res, next) => {
+  try {
+    const result = await listJoinedMeetings(req.session.userId);
     res.json({ data: result });
   } catch (err) {
     next(err);

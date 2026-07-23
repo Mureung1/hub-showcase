@@ -526,7 +526,37 @@ async function listHostedMeetings(hostId) {
   };
 }
 
+// GET /api/users/me/joined-meetings — 내가 신청/참여한 모임(G2). 거절·취소 이력도 포함한다.
+async function listJoinedMeetings(userId) {
+  const { rows } = await pool.query(
+    `SELECT p.status, p.applied_at,
+            m.id, m.title, m.type, m.start_at, m.end_at,
+            u.nickname AS host_nickname
+       FROM meeting_participants p
+       JOIN meetings m ON m.id = p.meeting_id
+       JOIN users u ON u.id = m.host_id
+      WHERE p.user_id = $1
+      ORDER BY p.applied_at DESC`,
+    [userId]
+  );
+  return {
+    items: rows.map((row) => ({
+      meeting: {
+        id: Number(row.id),
+        title: row.title,
+        type: row.type,
+        startAt: row.start_at,
+        endAt: row.end_at,
+        host: { nickname: row.host_nickname },
+      },
+      status: row.status,
+      appliedAt: row.applied_at,
+    })),
+  };
+}
+
 module.exports = {
   createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation,
-  listParticipants, respondToApplicant, cancelMeeting, listHostedMeetings, normalizeMeeting, PAGE_SIZE,
+  listParticipants, respondToApplicant, cancelMeeting, listHostedMeetings, listJoinedMeetings,
+  normalizeMeeting, PAGE_SIZE,
 };
