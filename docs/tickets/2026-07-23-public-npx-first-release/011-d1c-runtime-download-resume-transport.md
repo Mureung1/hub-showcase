@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -71,7 +71,7 @@ Exact descriptor가 지정한 HTTPS Runtime archive 한 개만 bounded하게 내
 | owner | `D` — Runtime delivery |
 | branch | `codex/public-preview-d1c-download-resume` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/d1c-download-resume` |
-| handoffSha | Claim 시 coordinator가 010의 fixed reviewed SHA를 integration branch에 `--no-ff` merge하고 predecessor 및 integration runtime-release/root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `bfb57e71a87a064bc6f9081c876bb5084effe4b5` — coordinator가 reviewed D1b closeout을 integration branch에 `--no-ff` 반영하고 predecessor 및 integration runtime-release/root gates를 green으로 확인한 exact handoff |
 | writablePaths | `packages/runtime-release/src/**` 중 transport/download/partial-journal implementation·tests (`src/contract.ts`, package manifest와 lockfile 제외); scripted transport fixtures; `docs/tickets/2026-07-23-public-npx-first-release/011-d1c-runtime-download-resume-transport.md` |
 | consumedContracts | D1a descriptor/archive/cache identity와 stable errors; D1b verified archive/staging contract |
 | predecessorEvidence | 010 fixed reviewed SHA, safe TAR dependency gate와 malicious archive/verified-staging receipt |
