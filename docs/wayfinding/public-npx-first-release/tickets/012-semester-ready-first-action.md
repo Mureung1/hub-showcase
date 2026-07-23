@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: prototype
-- State: open
+- State: claimed
 - Blocked by: [첫 public preview의 성공 여정을 고정한다](004-first-public-preview-success-journey.md), [Browser-launched Codex OAuth lifecycle을 설계한다](008-browser-oauth-lifecycle.md), [첫 public release의 SemesterWorkspace schema·scaffold 경계를 정한다](009-semester-workspace-admission.md), [재개 가능한 setup과 workspace instruction/Skill bundle의 authority를 정한다](010-resumable-setup-authority.md), [Bootstrap과 setup의 durability·recovery contract를 확정한다](011-bootstrap-and-setup-recovery.md)
 
 ## Question
