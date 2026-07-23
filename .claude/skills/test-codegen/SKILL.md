@@ -23,7 +23,7 @@ description: server/ 이하 소스 파일에 대한 테스트 코드를 vitest+s
 6. 아래 원칙을 모두 지킨다 (TESTING.md 기준).
    1. 구현이 아니라 행동을 테스트
    2. 테스트 하나 = 시나리오 하나
-   3. AAA 패턴 (Arrange-Act-Assert), 주석으로 구분
+   3. AAA 패턴 (Arrange-Act-Assert), 주석으로 구분 — 같은 `describe` 안 모든 `it`에 예외 없이 적용 (첫 번째 `it`만 주석 달고 나머지는 생략하지 않는다)
    4. 테스트 이름만 보고 뭘 검증하는지 알 수 있게
    5. 독립성 (순서 무관, cleanup으로 보장)
    6. happy path + edge case(누락값/잘못된 값) 모두 포함

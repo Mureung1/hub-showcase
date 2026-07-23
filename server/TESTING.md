@@ -25,7 +25,7 @@ npm test
 
 1. 구현이 아니라 행동(behavior)을 테스트 — 리팩토링해도 안 깨지게
 2. 테스트 하나 = 시나리오 하나 (여러 케이스를 한 테스트에 몰아넣지 않음)
-3. AAA 패턴 (Arrange-Act-Assert)
+3. AAA 패턴 (Arrange-Act-Assert) — 같은 `describe` 안 두 번째 이후 `it`이라도 예외 없이 `// Arrange` `// Act` `// Assert` 주석으로 구분
 4. 테스트 이름만 보고 뭘 검증하는지 알 수 있게 작성
 5. 독립성 — 테스트 순서와 무관하게 항상 같은 결과 (Supabase 정리 로직으로 보장)
 6. happy path + edge case(누락값, 잘못된 값) 둘 다 포함
