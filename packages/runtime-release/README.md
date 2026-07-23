@@ -10,22 +10,36 @@
 | `src/canonical-runtime-manifest.ts` | Canonical manifest의 exact shape, Runtime identity, launch path, complete roster evidence와 path graph를 strict decode한다. |
 | `src/runtime-release-authority.ts` | Descriptor, application/target/contract, canonical manifest resource·bytes·digest·identity를 effect 전에 admission하고 caller-safe failure와 private diagnostic evidence를 분리한다. |
 | `src/runtime-cache-authority.ts` | `appDataRoot/runtime-cache/v1` 아래 content-addressed archive, partial, generation, staging, quarantine, lease와 receipt identity를 계산한다. Cache root를 read-only로 검사하고 owner UID, exact `0700`, no-symlink ancestor, same-device `(dev, ino)` snapshot을 mutation authority 발급 전에 재검증한다. |
+| `src/runtime-cache-bootstrap.ts` | Canonical owner-only `appDataRoot` 아래 stable cache namespace와 exact generation parent를 direct-leaf 단위로 생성·fsync·재검증하고, exclusive owned staging root를 발급한다. |
+| `src/runtime-cache-lease.ts` | Archive digest별 cooperative lease를 no-clobber로 획득하고 same-owner caller만 bounded join시킨다. Durable lease readback, terminal `complete`/`fail` settlement와 unlink 전후 authority revalidation을 소유하며 ambiguous·different owner는 mutation 없이 닫는다. |
 | `src/runtime-archive-transport.ts` | Package-private Node HTTPS one-hop exchange를 수행한다. `Accept-Encoding: identity`, `Range`, `If-Range`의 closed header set, connect deadline, response disposal과 allowlisted stream fault normalization을 소유하며 redirect·retry policy는 caller에 남긴다. |
 | `src/runtime-archive-download.ts` | Exact descriptor archive 하나의 bounded redirect·retry, `200/206/416`, strong-validator resume journal, size/SHA-256 검증과 retained archive publication을 소유한다. Verified partial을 canonical archive direct leaf에 no-clobber hardlink하고 directory fsync와 full readback을 마친 뒤에만 retained archive evidence를 반환한다. |
-| `src/runtime-archive-extraction.ts` | Descriptor-bound canonical archive를 전체 pre-scan한 뒤 materialization pass에서 다시 검증하며 owned empty staging의 `runtime/`에 추출한다. TAR path/type/mode·size bound, manifest/legal roster, complete-tree digest와 final pathname re-open/readback을 검증하고 관찰 시점의 `RuntimeStagingVerificationSnapshot`을 반환한다. Recipient mutation 뒤 실패하면 pathname을 삭제하지 않고 complete staging residue를 보존한 `runtime_recovery_required`로 닫는다. |
+| `src/runtime-archive-extraction.ts` | Descriptor-bound canonical archive를 전체 pre-scan한 뒤 materialization pass에서 다시 검증하며 owned empty staging의 `runtime/`에 추출한다. TAR path/type/mode·size bound, manifest/legal roster, complete-tree digest와 final pathname re-open/readback을 검증하고 관찰 시점의 `RuntimeStagingVerificationSnapshot`을 반환한다. Recipient mutation 뒤 non-cancellation failure는 staging residue를 보존한 `runtime_recovery_required`, cancellation은 worker를 회수하고 retryable owned residue를 남긴 `runtime_cancelled`로 닫는다. |
 | `src/runtime-archive-directory-capability.ts` | Dedicated child의 kernel-held cwd를 directory capability로 유지한다. Exact `(dev, ino, uid, mode)` handshake와 direct-leaf create·open·hash·destination no-clobber link operation만 허용하고 link source identity도 고정해 ancestor replacement·symlink·hardlink·rename race에서 경계를 보존한다. |
+| `src/runtime-retained-archive.ts` | Retained archive의 absent·verified·evidence-backed owned corruption만 분류한다. Exact nlink-one 또는 canonical nlink-two pair를 검증하고, owned invalid pair를 nonce-scoped quarantine로 이동하며 unknown alias·ownership·identity drift는 추측하지 않는다. |
+| `src/runtime-generation.ts` | Published generation의 receipt와 complete tree를 함께 검증하고, owned corrupt generation만 quarantine한다. Verified staging을 content-addressed final path로 atomic publish한 뒤 independent strict readback을 통과한 `VerifiedRuntime`만 반환한다. |
+| `src/runtime-resolution-control.ts` | Monotonic resolution deadline, bounded `Retry-After` wait와 allowlisted progress ordering을 소유한다. Caller cancellation과 deadline exhaustion을 구분하고 presentation callback failure를 Runtime authority에서 격리한다. |
+| `src/runtime-resolver.ts` | Frozen admission부터 cache bootstrap, shared flight, lease, generation/archive reuse·repair, exact download, safe extraction, publish·settlement와 spawn-boundary 재검증까지 하나의 recoverable transaction으로 조율한다. |
 
 ## 내부 경계
 
-- Package root `src/index.ts`는 아직 `RuntimeReleaseScaffold`만 노출한다. D1 authority, transport/download와 archive extraction Module은 package entrypoint에서 re-export하지 않는 source-internal seam이다.
-- Lease coordinator, quarantine plan과 generation verification receipt는 type·identity contract다. 실제 lease 획득, quarantine 이동과 receipt persistence는 이 package에 없다.
-- `RuntimeResolver`는 frozen Interface이며 구현체가 없다. HTTP transport와 download/resume은 구현됐고 cache lease, quarantine, generation publish·repair, full resolver orchestration과 `VerifiedRuntime` 반환은 D1d에 남아 있다.
-- Retained archive는 exact standalone nlink-one final 또는 canonical final과 `archive.part`가 같은 inode인 exact nlink-two pair다. D1d는 cooperative per-digest lease 아래 invalid pair의 final·partial root를 함께 quarantine하고 valid alias partial을 truncate하지 않아야 한다.
-- `RuntimeStagingVerificationSnapshot`의 `stagingRoot`·`runtimeRoot`와 identity는 durable execution authority가 아니라 extraction 시점 evidence다. D1d가 cache lease 아래 publish·quarantine와 strict complete-tree readback을 수행하고 Runtime spawn 직전 다시 검증해야 한다.
-- Transient HTTP status는 현재 exact URL의 one-retry budget만 사용한다. `Retry-After`, bounded delay와 전체 startup deadline/clock은 D1d resolver가 소유한다.
+- Package root `src/index.ts`는 아직 `RuntimeReleaseScaffold`만 노출한다. D1의 production factory, authority, transport, cache와 verification Modules는 downstream host composition 전까지 package entrypoint에서 re-export하지 않는 source-internal seam이다.
+- Host는 admission·owner당 `createRuntimeResolverBundle()` 하나를 만들고 process lifetime 동안 재사용해야 한다. Shared flight registry와 exact-object `WeakMap` spawn authority는 bundle-local이며, cross-bundle same-owner lease join은 correctness evidence이지 다중 bundle을 권장하는 host contract가 아니다.
+- Same-identity caller는 한 transaction을 공유하되 각 caller는 독립적으로 detach한다. 마지막 subscriber가 사라지면 transaction을 cancel·settle하고, late caller는 draining flight가 끝난 뒤 fresh transaction을 시작한다.
+- Joined completion receipt는 wake hint일 뿐 Ready나 spawn authority가 아니다. Joiner와 cache hit은 exact generation receipt와 complete tree를 fresh inspect하고, 반환된 exact `VerifiedRuntime` object도 child spawn 직전에 다시 검증한다.
+- Retained archive는 exact standalone nlink-one final 또는 canonical final과 `archive.part`가 같은 inode인 exact nlink-two pair다. Evidence-backed owned corruption만 cooperative per-digest lease 아래 quarantine하며 valid alias partial은 truncate하지 않는다.
+- `RuntimeStagingVerificationSnapshot`은 extraction 시점 evidence일 뿐 durable execution authority가 아니다. Generation publish는 staging을 다시 검증하고 durable receipt, atomic rename과 independent strict readback을 완료한 뒤에만 authority를 발급한다.
+- Transient HTTP status는 exact URL의 one-retry budget만 사용한다. Resolver가 bounded `Retry-After`, 전체 startup deadline과 monotonic progress를 소유한다.
+- Owner가 lease `complete` 또는 `fail` 호출을 시작하면 그 intent가 terminal settlement를 claim한다. Port failure 뒤 반대 settlement나 같은 settlement를 다시 합성하지 않는다.
 - `tar-stream@3.2.0`과 `@types/tar-stream@3.1.4`는 exact pin으로 canonical TAR parser에 사용한다. Archive acceptance는 raw header audit과 planned entry graph를 함께 통과해야 한다.
 - Download와 extraction은 exact descriptor 외 URL, mirror, older/moving release fallback이나 자동 downgrade를 수행하지 않는다.
 - Stable caller failure는 S1 `runtime_*` allowlist만 사용한다. Raw URL, path, digest와 nested cause는 explicit `diagnosticEvidence()` 경계 밖으로 직렬화하지 않는다.
+- Current Node/Darwin 구현은 pathname `rename`·`unlink`와 verify→actual spawn을 pre-opened authority에 원자적으로 bind하지 못한다. Owner-only root, exact `(dev, ino, uid)` revalidation과 cooperative lease가 현재 경계이며, 동일 UID의 비협조 process race를 제거하려면 descriptor/dirfd/capability-bound rename·unlink·spawn native primitive가 필요하다.
+- `runtime-resolver-fixture.test.ts`는 deterministic source-only fixture이며 compiled `dist/`에 포함하지 않는다.
+
+## Resolver evidence
+
+`RuntimeResolver.resolve()` scripted matrix는 `200/206/416`, HTTPS redirect와 downgrade, content encoding drift, access denial, unsafe archive, corrupt retained archive reacquisition, lease ambiguity, cancellation resume와 no-downgrade를 검증한다. Real-filesystem cases는 valid cache reuse, retained archive offline repair, publish/readback fault 뒤 fresh-owner offline recovery와 spawn-boundary complete-tree drift 거절을 검증한다. 상세 candidate receipt는 [Ticket 012](../../docs/tickets/2026-07-23-public-npx-first-release/012-d1d-runtime-resolver-transaction-repair.md)에 있다.
 
 ## 검증 명령
 
