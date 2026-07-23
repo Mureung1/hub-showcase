@@ -2,19 +2,19 @@
 
 > MVP 완주 이후의 실행 문서. **§1 현재 상태(실측)** 를 보고 **§2 백로그(WP)** 순서로 작업한다.
 > 기획 원천은 [plan.md](plan.md), 구현 스펙은 [prd.md](prd.md), 디자인은 [design.md](design.md).
-> 마지막 갱신: **2026-07-21** (G2/G3 멀티유저 라우팅 코드 착지 + 문서 정합화).
+> 마지막 갱신: **2026-07-23** (원격 배포 상태 재확인 + Discord 버튼 소유자 검증 TDD 착지).
 
-> **2026-07-20~21 요약**: 단일 사용자 라이브 완주(G0·G1·H1) 검증 완료 → `0007` "거울 프레임" 피벗(투자 계획 필드 + review-agent 재설계 + `repeated_mistake`→`behavior_pattern`) → **G2/G3 멀티유저 라우팅 코드 착지**(`resolveUserByDiscordId` + `monitor` 사용자별 순회, `0008` 인덱스 초안). **원격 배포·멀티유저 라이브 E2E는 다음 배포 세션으로 이연.**
+> **2026-07-20~23 요약**: 단일 사용자 라이브 완주(G0·G1·H1) 검증 완료 → `0007` "거울 프레임" 피벗 → G2/G3 멀티유저 라우팅 코드 착지. **2026-07-23 CLI 실측으로 `0001`~`0008` 원격 적용과 4개 Edge Function ACTIVE를 확인**했고, Discord 버튼의 조건 소유자 검증을 단위 테스트와 함께 보강했다. 멀티유저 라이브 E2E는 아직 남아 있다.
 
 ## 1. 현재 상태 스냅샷 (실측)
 
 ### 1.1 배포·데이터 (원격)
 
-- **마이그레이션**: `0001`~`0006` 원격 적용 완료. **`0007_plan_fields_and_mirror_review`(계획 필드 + reviews 개편)·`0008_multiuser_indexes`(초안)는 원격 push 이연** — 다음 배포 세션.
+- **마이그레이션**: `0001`~`0008` 원격 적용 확인(2026-07-23 `supabase migration list`).
   - `0004`(handle_new_user 트리거 + discord_link_codes) 적용 — 신규 가입 FK 해소.
   - `0006`(trades.tags/emotion + ai_usage_events ledger) 적용.
-  - `0007`(trades.thesis/target_price/stop_price/horizon/confidence + reviews.plan_adherence + repeated_mistake→behavior_pattern) — **코드 커밋(2026-07-20), 원격 push·검증 이연**.
-- **Edge Functions**: `market-data` · `monitor` · `discord-interactions` · `review-agent` 배포·ACTIVE. **단, G2/G3 라우팅 + 0007 거울 프레임 반영본은 재배포 이연**(로컬 코드가 앞서 있음).
+  - `0007`(trades.thesis/target_price/stop_price/horizon/confidence + reviews.plan_adherence + repeated_mistake→behavior_pattern) 적용 확인.
+- **Edge Functions**: `market-data` · `monitor` · `discord-interactions` · `review-agent` 모두 ACTIVE 확인(2026-07-23 `supabase functions list`). 실제 2계정 Discord 경로의 라이브 E2E는 WP-H에서 수행한다.
 - **시크릿**: KIS 2종 + `GEMINI_API_KEY` 등록. Discord 3종(`DISCORD_BOT_TOKEN`/`DISCORD_PUBLIC_KEY`/`DISCORD_APPLICATION_ID`)은 G0 프로비저닝(3주차 Day1)으로 원격 설정 — 단일 사용자 라이브 완주 검증됨.
 
 ### 1.2 웹앱 (로컬 코드)
@@ -29,7 +29,8 @@
 
 ### 1.3 알려진 결함·부채
 
-- ⚠️ **로컬 코드가 원격보다 앞섬(배포 지연)**: G2/G3 라우팅 + `0007` 거울 프레임이 로컬에만 있음. `0007`·`0008` push + 함수 3종(`monitor`·`discord-interactions`·`review-agent`) 재배포 전까지 **원격은 여전히 단일 사용자·구 복기 스키마**로 동작. → 다음 배포 세션 최우선.
+- ⚠️ **멀티유저 라이브 E2E 미실시**: 계정 2개·채널 2개로 각자 알림 수신, 타인 버튼 거부, 자기 `user_id` 기록, RLS 비노출을 확인해야 한다. 자동 단위 검증은 완료했지만 외부 Discord 경로를 대체하지 않는다.
+- ✅ **Discord 버튼 소유자 검증**(2026-07-23): 확인·취소·후보선택 쿼리를 `id + user_id + disabled`로 제한하고, 매수·매도·관망은 조건 소유자와 클릭 사용자가 다르면 insert 전에 거부한다. Node 기본 테스트 3건 추가.
 - 알림의 "메모리 한 줄"은 저장된 복기 **조회** 방식(`monitor`의 `fetchMemoryLine`, 현재 `behavior_pattern` 우선) — 에이전트 생성은 보류(§2 연기 항목).
 - ~~Discord 함수 시크릿 원격 미설정~~ → **해소**(G0 프로비저닝, 3주차 Day1).
 - ~~신규 가입 계정에 `profiles` 행이 안 생김~~ → **해소**(`0004`, 2026-07-16).
@@ -105,10 +106,11 @@ WP-A(A1) ─→ WP-G(Discord 연동, 독립 병행 가능)
 |---|------|------|
 | G0 | Discord 시크릿 원격 프로비저닝 | ✅ 3주차 Day1 — `supabase secrets set` 3종 |
 | G1 | 셀프 연동 플로우 구현 | ✅ 2026-07-20 — `SettingsPage`+`DiscordLinkPanel`(코드 발급) + 로그인 온보딩 + `/연동` 봇 커맨드 + 벌크 커맨드 등록 스크립트 |
-| G2 | 인터랙션 사용자별 해석 | ✅ 코드(2026-07-21) — `resolveUserByDiscordId`(`discord_user_id` 역조회) 신설, `getSingleUser` 제거. `/알림`·매매버튼 미연동 시 `/연동` 안내. **재배포 이연** |
-| G3 | 알림 사용자별 채널 발송 | ✅ 코드(2026-07-21) — `monitor` 사용자별 `notify_channel_id` 맵 순회. 미연동은 평가·`alerts`만, 발송 스킵. **재배포 이연** |
+| G2 | 인터랙션 사용자별 해석 | ✅ `resolveUserByDiscordId`(`discord_user_id` 역조회) 신설, `getSingleUser` 제거. `/알림`·버튼 미연동 시 `/연동` 안내. 원격 함수 ACTIVE 확인(2026-07-23) |
+| G3 | 알림 사용자별 채널 발송 | ✅ `monitor` 사용자별 `notify_channel_id` 맵 순회. 미연동은 평가·`alerts`만, 발송 스킵. 원격 함수 ACTIVE 확인(2026-07-23) |
+| G4 | Discord 버튼 소유자 검증 | ✅ 2026-07-23 — 조건 변경 3경로를 `user_id`로 제한, 원클릭 기록은 조건 소유자 대조 후 insert. Node 단위 테스트 3건 통과 |
 
-**수용 기준**: 웹 발급 코드로 `/연동` → 알림이 내 채널로 도달. 계정 2개 이상이어도 각자 자기 조건·자기 채널로만 수신. → **원격 재배포 후 멀티유저 라이브 E2E로 검증 예정**(WP-H).
+**수용 기준**: 웹 발급 코드로 `/연동` → 알림이 내 채널로 도달. 계정 2개 이상이어도 각자 자기 조건·자기 채널로만 수신하고, 타인 버튼은 데이터를 바꾸지 않는다. → **멀티유저 라이브 E2E로 검증 예정**(WP-H).
 
 ### WP-I. 거울 프레임 피벗 (`0007`) — ✅ 코드 완료 (2026-07-20)
 
@@ -118,13 +120,12 @@ WP-A(A1) ─→ WP-G(Discord 연동, 독립 병행 가능)
 - **복기 스키마**: `reviews.plan_adherence` 신설 + `repeated_mistake`→`behavior_pattern` rename. `review-agent` 프롬프트에 미래지시·가치평가·결과론 금지 가드레일.
 - **이연**: 면책 고지 상시 노출(AppLayout/복기 카드/알림/랜딩)은 일부만 반영 — 배포 세션에서 점검.
 
-### WP-H. 배포 세션 — 원격 반영 + 라이브 E2E + 문서 마감 (다음 세션, supabase CLI 직접 실행)
+### WP-H. 라이브 E2E + 문서 마감 (다음 세션)
 
-1. **원격 배포**: `0007`·`0008` `db push` + 함수 3종(`monitor`·`discord-interactions`·`review-agent`) 재배포. `supabase migration list`로 `0007` 미적용 여부 먼저 확인.
-2. **거울 프레임 라이브 검증**: 복기 재생성 → 미래지시·종목평가·결과론 문구 없음 + `plan_adherence` 생성. 계획 미기록 trade면 "계획 미기록" 지적.
-3. **멀티유저 라이브 E2E**: 계정 2개 각자 Discord 연동 → 각자 조건 → `monitor` 트리거 → **각자 자기 채널로만** 알림 → 버튼 기록이 자기 `user_id`로 귀속 → 웹 상호 데이터 비노출(RLS).
-4. **단일 사용자 회귀**: 가입 → 검색 → 종목 페이지(차트·클릭 기록·관심·조건) → 알림·원클릭 기록 → 히스토리 → `/trade/:id` 수정·복기 → `ai_usage_events` 적재.
-5. 본 문서 §1 스냅샷 + Notion 3주차 보드 갱신.
+1. **거울 프레임 라이브 검증**: 복기 재생성 → 미래지시·종목평가·결과론 문구 없음 + `plan_adherence` 생성. 계획 미기록 trade면 "계획 미기록" 지적.
+2. **멀티유저 라이브 E2E**: 계정 2개 각자 Discord 연동 → 각자 조건 → `monitor` 트리거 → **각자 자기 채널로만** 알림 → 타인 계정의 버튼 클릭은 거부 → 자기 버튼 기록만 자기 `user_id`로 귀속 → 웹 상호 데이터 비노출(RLS).
+3. **단일 사용자 회귀**: 가입 → 검색 → 종목 페이지(차트·클릭 기록·관심·조건) → 알림·원클릭 기록 → 히스토리 → `/trade/:id` 수정·복기 → `ai_usage_events` 적재.
+4. 본 문서 §1 스냅샷 + Notion 3주차 보드 갱신.
 
 ### 연기·보류
 

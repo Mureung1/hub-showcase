@@ -18,6 +18,7 @@ import {
 } from "../_shared/discord.ts";
 import { generateStructured } from "../_shared/gemini.ts";
 import { getServiceClient, resolveUserByDiscordId } from "../_shared/db.ts";
+import { conditionActionAccess } from "../_shared/condition-ownership.js";
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClientLike = any;
@@ -26,6 +27,8 @@ type SupabaseClientLike = any;
 // 해석하지 못했을 때 공통 사용.
 const NOT_LINKED_MESSAGE =
   "이 Discord 계정이 아직 Beacon 계정과 연동되지 않았어요. 웹 설정 화면에서 코드를 발급받아 `/연동 코드:XXXXXX` 로 먼저 연결해주세요.";
+const CONDITION_ACCESS_DENIED_MESSAGE =
+  "이 버튼은 현재 Beacon 계정에서 사용할 수 없어요.";
 
 const DISCORD_PUBLIC_KEY = Deno.env.get("DISCORD_PUBLIC_KEY") ?? "";
 const DISCORD_APPLICATION_ID = Deno.env.get("DISCORD_APPLICATION_ID") ?? "";
@@ -605,18 +608,22 @@ function noopComponentAck(): Response {
 async function handleConfirm(
   client: SupabaseClientLike,
   conditionId: string,
+  userId: string,
 ): Promise<Response> {
-  const { error } = await client
+  const { data, error } = await client
     .from("conditions")
     .update({ status: "active" })
     .eq("id", conditionId)
-    .eq("status", "disabled");
+    .eq("user_id", userId)
+    .eq("status", "disabled")
+    .select("id")
+    .maybeSingle();
 
-  if (error) {
+  if (error || !data) {
     console.error("[discord-interactions] 조건 확인 처리 실패:", error);
-    return updateMessage({
-      content: "조건을 등록하는 중 오류가 발생했어요.",
-      components: [],
+    return messageResponse({
+      flags: 1 << 6,
+      content: CONDITION_ACCESS_DENIED_MESSAGE,
     });
   }
 
@@ -629,18 +636,22 @@ async function handleConfirm(
 async function handleCancel(
   client: SupabaseClientLike,
   conditionId: string,
+  userId: string,
 ): Promise<Response> {
-  const { error } = await client
+  const { data, error } = await client
     .from("conditions")
     .delete()
     .eq("id", conditionId)
-    .eq("status", "disabled");
+    .eq("user_id", userId)
+    .eq("status", "disabled")
+    .select("id")
+    .maybeSingle();
 
-  if (error) {
+  if (error || !data) {
     console.error("[discord-interactions] 조건 취소 처리 실패:", error);
-    return updateMessage({
-      content: "취소하는 중 오류가 발생했어요.",
-      components: [],
+    return messageResponse({
+      flags: 1 << 6,
+      content: CONDITION_ACCESS_DENIED_MESSAGE,
     });
   }
 
@@ -655,6 +666,7 @@ async function handlePick(
   client: SupabaseClientLike,
   conditionId: string,
   selected: string,
+  userId: string,
 ): Promise<Response> {
   const [ticker, market, exchange] = selected.split("|");
   if (!ticker || !market) {
@@ -689,15 +701,16 @@ async function handlePick(
       exchange: symbol.exchange,
     })
     .eq("id", conditionId)
+    .eq("user_id", userId)
     .eq("status", "disabled")
     .select("type, operator, target, sma_window")
-    .single();
+    .maybeSingle();
 
   if (conditionError || !condition) {
     console.error("[discord-interactions] 조건 업데이트 실패:", conditionError);
-    return updateMessage({
-      content: "조건을 업데이트하는 중 오류가 발생했어요.",
-      components: [],
+    return messageResponse({
+      flags: 1 << 6,
+      content: CONDITION_ACCESS_DENIED_MESSAGE,
     });
   }
 
@@ -724,7 +737,7 @@ async function handleTrade(
   side: string | undefined,
   conditionId: string | undefined,
   priceRaw: string | undefined,
-  discordUserId: string | undefined,
+  userId: string,
 ): Promise<Response> {
   const price = Number(priceRaw);
 
@@ -741,7 +754,7 @@ async function handleTrade(
 
   const { data: condition, error: conditionError } = await client
     .from("conditions")
-    .select("ticker, market")
+    .select("ticker, market, user_id")
     .eq("id", conditionId)
     .maybeSingle();
 
@@ -753,16 +766,20 @@ async function handleTrade(
     });
   }
 
-  const user = await resolveUserByDiscordId(client, discordUserId);
-  if (!user) {
+  if (
+    conditionActionAccess({
+      actingUserId: userId,
+      conditionUserId: condition.user_id as string | null,
+    }) !== "allowed"
+  ) {
     return messageResponse({
       flags: 1 << 6,
-      content: NOT_LINKED_MESSAGE,
+      content: CONDITION_ACCESS_DENIED_MESSAGE,
     });
   }
 
   const { error: insertError } = await client.from("trades").insert({
-    user_id: user.userId,
+    user_id: userId,
     ticker: condition.ticker,
     market: condition.market,
     side,
@@ -803,28 +820,39 @@ async function handleComponent(interaction: DiscordInteraction): Promise<Respons
     return noopComponentAck();
   }
 
+  if (action !== "trade" && action !== "confirm" && action !== "cancel" && action !== "pick") {
+    return noopComponentAck();
+  }
+
   const client = getServiceClient();
+  const discordUserId = interaction.member?.user?.id ?? interaction.user?.id;
+  const user = await resolveUserByDiscordId(client, discordUserId);
+  if (!user) {
+    return messageResponse({
+      flags: 1 << 6,
+      content: NOT_LINKED_MESSAGE,
+    });
+  }
 
   // bcn|trade|{side}|{condition_id}|{price} — 다른 두 자리 필드 개수와 달라 별도 분기
   if (action === "trade") {
     const [, , side, conditionId, price] = parts;
-    const discordUserId = interaction.member?.user?.id ?? interaction.user?.id;
-    return await handleTrade(client, side, conditionId, price, discordUserId);
+    return await handleTrade(client, side, conditionId, price, user.userId);
   }
 
   const conditionId = parts[2];
 
   if (action === "confirm" && conditionId) {
-    return await handleConfirm(client, conditionId);
+    return await handleConfirm(client, conditionId, user.userId);
   }
 
   if (action === "cancel" && conditionId) {
-    return await handleCancel(client, conditionId);
+    return await handleCancel(client, conditionId, user.userId);
   }
 
   if (action === "pick" && conditionId) {
     const selected = interaction.data?.values?.[0] ?? "";
-    return await handlePick(client, conditionId, selected);
+    return await handlePick(client, conditionId, selected, user.userId);
   }
 
   return noopComponentAck();
