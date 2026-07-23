@@ -161,6 +161,21 @@ class FirestoreQuestRepository implements QuestRepository {
   }
 
   @override
+  Future<void> deleteQuests(String uid, List<String> questIds) {
+    return guard(() async {
+      if (questIds.isEmpty) return;
+      // 원자성: batch는 전부 지워지거나 전부 실패한다(createQuests와 대칭).
+      // 부모만 지워져 자식이 고아로 남는 중간 상태가 없다.
+      // Firestore의 delete는 멱등이라 없는 문서 ID가 섞여 있어도 실패하지 않는다.
+      final batch = _db.batch();
+      for (final id in questIds) {
+        batch.delete(_db.doc(FirestorePaths.quest(uid, id)));
+      }
+      await batch.commit();
+    });
+  }
+
+  @override
   Future<void> setStatus(String uid, String questId, QuestStatus status) {
     return guard(
       () => _db.doc(FirestorePaths.quest(uid, questId)).update({

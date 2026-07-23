@@ -258,4 +258,73 @@ void main() {
       expect(group.isAllDone, isFalse);
     });
   });
+
+  // ===== 삭제 계보 (B-5b) =====
+  //
+  // 재분해 원본을 지울 때 함께 사라질 하위 퀘스트를 뽑는다. 이 계산이 틀리면
+  // 자식이 고아로 남거나 엉뚱한 퀘스트가 지워진다 — arrangeQuestTree와 같은
+  // 계보 근거·방어를 공유하므로 순수 함수로 검증한다.
+  group('descendantIds — 삭제 계보 계산', () {
+    Quest child(String id, String parentId) =>
+        Quest(id: id, title: '퀘스트 $id', parentQuestId: parentId);
+
+    test('자식이 없으면 빈 집합이다 (자신은 포함하지 않는다)', () {
+      final quests = [quest('a'), quest('b')];
+
+      expect(descendantIds(quests, 'a'), isEmpty);
+      // 자신은 결과에 들어가지 않는다 — 화면이 {root, ...descendants}로 합친다.
+      expect(descendantIds(quests, 'a'), isNot(contains('a')));
+    });
+
+    test('1단 자식들을 모두 모으고, 형제·무관 항목은 빼낸다', () {
+      final quests = [
+        quest('p'),
+        child('c1', 'p'),
+        child('c2', 'p'),
+        quest('other'),
+      ];
+
+      expect(descendantIds(quests, 'p'), {'c1', 'c2'});
+      expect(descendantIds(quests, 'p'), isNot(contains('other')));
+    });
+
+    test('자식의 자식(2단)까지 재귀로 모은다', () {
+      final quests = [quest('p'), child('c', 'p'), child('g', 'c')];
+
+      // 원본에서 시작하면 손자까지 전부.
+      expect(descendantIds(quests, 'p'), {'c', 'g'});
+      // 중간 노드에서 시작하면 그 아래만.
+      expect(descendantIds(quests, 'c'), {'g'});
+      // 잎에서 시작하면 없다.
+      expect(descendantIds(quests, 'g'), isEmpty);
+    });
+
+    test('없는 rootId면 빈 집합이다', () {
+      expect(descendantIds([quest('a')], 'ghost'), isEmpty);
+    });
+
+    test('고아 자식(부모가 목록에 없음)은 계보에 끼지 않는다', () {
+      // arrangeQuestTree와 같은 판정: 부모가 목록에 없는 자식은 뿌리 취급이라
+      // 다른 퀘스트의 계보로 잘못 딸려 가지 않는다.
+      final quests = [quest('p'), child('orphan', 'gone')];
+
+      expect(descendantIds(quests, 'p'), isEmpty);
+      expect(descendantIds(quests, 'gone'), isEmpty);
+    });
+
+    test('순환 참조(a→b→a)가 있어도 멈추고, root는 결과에 없다', () {
+      final quests = [child('a', 'b'), child('b', 'a')];
+
+      // visited가 a를 막아 무한 루프에 빠지지 않는다.
+      expect(descendantIds(quests, 'a'), {'b'});
+      // 순환이 a로 되돌아와도 자신은 결과에 섞이지 않는다(중복 삭제 대상 왜곡 방지).
+      expect(descendantIds(quests, 'a'), isNot(contains('a')));
+    });
+
+    test('자기 자신을 부모로 가리켜도 무한 루프에 빠지지 않는다', () {
+      final quests = [child('self', 'self')];
+
+      expect(descendantIds(quests, 'self'), isEmpty);
+    });
+  });
 }

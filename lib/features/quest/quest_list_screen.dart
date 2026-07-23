@@ -18,6 +18,8 @@ import '../shell/tab_scroll_registry.dart';
 import 'decompose_notifier.dart';
 import 'widgets/goal_group_section.dart';
 import 'widgets/quest_complete_dialog.dart';
+import 'widgets/quest_delete_dialog.dart';
+import 'widgets/quest_edit_dialog.dart';
 import 'widgets/quest_memo_sheet.dart';
 
 /// 퀘스트 목록 화면.
@@ -196,41 +198,148 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
     }
   }
 
-  /// 카드 `⋮` 메뉴 항목. **이번 범위는 멈춤 관련만**이다(제목 수정·삭제는 별개 기능).
+  /// 카드 `⋮` 메뉴 항목.
   ///
   /// 상태별로 노출이 갈린다:
-  /// - `todo` → 「여기서 막혔어요」 하나. 멈춤 표시가 「재분해 복귀율」의 분모를 만든다.
+  /// - `todo` → 「여기서 막혔어요」. 멈춤 표시가 「재분해 복귀율」의 분모를 만든다.
   /// - `stuck` → 「다시 진행할게요」 + (깊이가 남았으면)「더 작게 나누기」.
-  /// - `done` → 없음. 끝낸 퀘스트에 멈춤·재분해를 권할 이유가 없다(메뉴 자체가 안 뜬다).
+  /// - `done` → **없음.** 끝낸 퀘스트엔 메뉴 자체가 안 뜬다. 수정·삭제도 여기서
+  ///   자동 제외된다 — 완료(보상받음) 퀘스트를 수정해 난이도를 올려 추가 보상을
+  ///   노리는 유효화를 막는다.
+  ///
+  /// 미완료(todo·stuck) 카드에는 상태 항목 뒤에 **수정 → 삭제**를 공통으로 붙인다.
+  /// 파괴적 동작(삭제)이 언제나 맨 아래다.
   List<QuestMenuAction> _menuActionsFor(QuestNode node, QuestGroup group) {
     final quest = node.quest;
 
     if (quest.done) return const [];
 
+    final actions = <QuestMenuAction>[];
+
     if (!quest.isStuck) {
-      return [
+      actions.add(
         QuestMenuAction(
           label: '여기서 막혔어요',
           icon: Symbols.pause_circle,
           onSelected: () => _setStatus(quest, QuestStatus.stuck),
         ),
-      ];
+      );
+    } else {
+      actions.add(
+        QuestMenuAction(
+          label: '다시 진행할게요',
+          icon: Symbols.undo,
+          onSelected: () => _setStatus(quest, QuestStatus.todo),
+        ),
+      );
+      // 깊이가 남았을 때만 노출한다. 자식의 자식까지 또 나누면 목록이 감당 못 한다.
+      if (node.canRedecompose) {
+        actions.add(
+          QuestMenuAction(
+            label: '더 작게 나누기',
+            icon: Symbols.alt_route,
+            onSelected: () => _openRedecompose(quest, group),
+          ),
+        );
+      }
     }
 
-    return [
+    // 수정(제목·난이도) — 미완료 카드 공통.
+    actions.add(
       QuestMenuAction(
-        label: '다시 진행할게요',
-        icon: Symbols.undo,
-        onSelected: () => _setStatus(quest, QuestStatus.todo),
+        label: '제목·난이도 수정',
+        icon: Symbols.edit,
+        onSelected: () => _editQuest(quest),
       ),
-      // 깊이가 남았을 때만 노출한다. 자식의 자식까지 또 나누면 목록이 감당 못 한다.
-      if (node.canRedecompose)
-        QuestMenuAction(
-          label: '더 작게 나누기',
-          icon: Symbols.alt_route,
-          onSelected: () => _openRedecompose(quest, group),
-        ),
-    ];
+    );
+
+    // 삭제 — 파괴적 동작이라 맨 아래. 재분해 원본이면 계보까지 함께 지운다.
+    actions.add(
+      QuestMenuAction(
+        label: '삭제',
+        icon: Symbols.delete,
+        onSelected: () => _deleteQuest(quest, group),
+      ),
+    );
+
+    return actions;
+  }
+
+  /// 제목·난이도 수정 다이얼로그를 띄우고, 확정되면 `updateQuest`로 반영한다.
+  ///
+  /// 다이얼로그는 저장소를 모른다 — 입력만 받아 돌려주고([QuestEditResult]),
+  /// 실제 저장과 실패 처리는 여기서 한다(_setStatus와 같은 패턴). 중복 실행 방지는
+  /// 완료 흐름과 **같은 [_pending] 잠금**을 공유한다.
+  Future<void> _editQuest(Quest quest) async {
+    final result = await showQuestEditDialog(context, quest: quest);
+    // null = 취소(바깥 탭·뒤로가기). 아무것도 바꾸지 않는다.
+    if (result == null || !mounted) return;
+
+    if (_pending.contains(quest.id)) return;
+    _pending.add(quest.id);
+    setState(() => _completing.add(quest.id));
+
+    try {
+      final uid = await ref.read(sessionProvider.future);
+      // copyWith로 제목·난이도만 바꾼다. 상태·지급 이력·순서는 그대로 보존된다.
+      await ref
+          .read(questRepositoryProvider)
+          .updateQuest(
+            uid,
+            quest.copyWith(title: result.title, difficulty: result.difficulty),
+          );
+    } on AppFailure catch (failure) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(failure.message)));
+    } finally {
+      _pending.remove(quest.id);
+      if (mounted) setState(() => _completing.remove(quest.id));
+    }
+  }
+
+  /// 퀘스트를 삭제한다. 재분해 원본이면 **그 하위 계보까지 원자적으로** 지운다.
+  ///
+  /// 계보 계산은 화면 몫이다([descendantIds] — 저장소는 트리를 모른다). 대상은
+  /// 같은 목표 폴더([QuestGroup.quests]) 안에서 찾는다 — 재분해 자식은 원본의
+  /// `goalId`를 물려받아 같은 폴더에 남으므로 계보가 전부 여기 있다.
+  ///
+  /// ⚠️ **삭제는 지급된 코인·XP를 회수하지 않는다.** 계보에 완료된 자식이 섞여 있어
+  /// 함께 지워져도, 이미 사용자 문서에 반영된 잔액은 건드리지 않는다(회수는 완료
+  /// 트랜잭션의 역연산이라 별개 결정 — 이 범위 아님).
+  Future<void> _deleteQuest(Quest quest, QuestGroup group) async {
+    // 함께 사라질 하위 퀘스트. 경고 문구의 N이자 실제로 지울 계보다.
+    final childIds = descendantIds(group.quests, quest.id);
+
+    final confirmed = await showQuestDeleteDialog(
+      context,
+      questTitle: quest.title,
+      childCount: childIds.length,
+    );
+    // true만 삭제 진행 — false·null(dismiss)은 취소다.
+    if (confirmed != true || !mounted) return;
+
+    if (_pending.contains(quest.id)) return;
+    _pending.add(quest.id);
+    setState(() => _completing.add(quest.id));
+
+    try {
+      final uid = await ref.read(sessionProvider.future);
+      // 대상 + 계보를 한 번에. deleteQuests가 원자성·1회 방출을 보장한다.
+      await ref
+          .read(questRepositoryProvider)
+          .deleteQuests(uid, [quest.id, ...childIds]);
+    } on AppFailure catch (failure) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(failure.message)));
+    } finally {
+      _pending.remove(quest.id);
+      // 삭제 성공 시 카드가 사라지지만 화면은 남아 있다 — 잠금은 반드시 푼다.
+      if (mounted) setState(() => _completing.remove(quest.id));
+    }
   }
 
   /// 재분해 화면으로 이동한다. **여기서는 아무것도 저장하지 않는다** —

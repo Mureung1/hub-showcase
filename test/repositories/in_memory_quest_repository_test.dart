@@ -963,6 +963,102 @@ void main() {
     });
   });
 
+  // ===== 계보 원자 삭제 (B-5b) =====
+  //
+  // 재분해 원본을 지울 때 그 하위 계보를 함께 지운다. 계보 계산은 화면 몫이고,
+  // 저장소는 "이 ID들을 원자적으로 지운다"만 책임진다(createQuests와 대칭).
+  group('deleteQuests — 여러 퀘스트 원자 삭제', () {
+    test('여러 ID를 한 번에 지운다', () async {
+      final repo = InMemoryQuestRepository(
+        seed: const [
+          Quest(id: 'a', title: 'a', order: 0),
+          Quest(id: 'b', title: 'b', order: 1),
+          Quest(id: 'c', title: 'c', order: 2),
+        ],
+      );
+      addTearDown(repo.dispose);
+
+      await repo.deleteQuests('u', ['a', 'c']);
+
+      expect((await repo.fetchQuests('u')).map((q) => q.id), ['b']);
+    });
+
+    test('없는 ID가 섞여 있어도 실패하지 않고 나머지를 지운다', () async {
+      // 삭제는 멱등이다 — 이미 지워졌거나 존재하지 않는 ID가 섞여도 통과한다.
+      final repo = InMemoryQuestRepository(
+        seed: const [
+          Quest(id: 'a', title: 'a', order: 0),
+          Quest(id: 'b', title: 'b', order: 1),
+        ],
+      );
+      addTearDown(repo.dispose);
+
+      await repo.deleteQuests('u', ['a', 'ghost']);
+
+      expect((await repo.fetchQuests('u')).map((q) => q.id), ['b']);
+    });
+
+    test('★ 여러 개를 지워도 목록 스트림은 한 번만 갱신된다 (부분 삭제 없음)', () async {
+      // 원자성의 관찰 가능한 신호. 한 건씩 지우면 방출이 여러 번이 되고,
+      // 그 중간 프레임은 "부모는 지워졌는데 자식은 남은" 목록이다.
+      final repo = InMemoryQuestRepository(
+        seed: const [
+          Quest(id: 'a', title: 'a', order: 0),
+          Quest(id: 'b', title: 'b', order: 1),
+          Quest(id: 'c', title: 'c', order: 2),
+        ],
+      );
+      final emissions = <List<Quest>>[];
+      final sub = repo.watchQuests('u').listen(emissions.add);
+      addTearDown(() async {
+        repo.dispose();
+        await sub.cancel();
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(emissions, hasLength(1)); // 최초 목록(3개)
+
+      await repo.deleteQuests('u', ['a', 'b']);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emissions, hasLength(2));
+      expect(emissions.last.map((q) => q.id), ['c']);
+    });
+
+    test('빈 목록을 지우면 아무 일도 없고 스트림도 방출하지 않는다', () async {
+      final repo = InMemoryQuestRepository(
+        seed: const [Quest(id: 'a', title: 'a', order: 0)],
+      );
+      final emissions = <List<Quest>>[];
+      final sub = repo.watchQuests('u').listen(emissions.add);
+      addTearDown(() async {
+        repo.dispose();
+        await sub.cancel();
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(emissions, hasLength(1));
+
+      await repo.deleteQuests('u', const []);
+      await Future<void>.delayed(Duration.zero);
+
+      // 헛방출 없음 — 여전히 최초 1회 그대로.
+      expect(emissions, hasLength(1));
+      expect((await repo.fetchQuests('u')).map((q) => q.id), ['a']);
+    });
+
+    test('failWith가 있으면 AppFailure를 던진다', () async {
+      final repo = InMemoryQuestRepository(
+        seed: const [Quest(id: 'a', title: 'a')],
+        failWith: const NetworkFailure(),
+      );
+      addTearDown(repo.dispose);
+
+      await expectLater(
+        repo.deleteQuests('u', ['a']),
+        throwsA(isA<NetworkFailure>()),
+      );
+    });
+  });
+
   // ===== 멈춤 상태 전이 (B-5) =====
   //
   // 멈춤은 **보상과 완전히 무관한 경로**다. 여기가 흔들리면 재지급 가드가

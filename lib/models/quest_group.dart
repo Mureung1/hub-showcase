@@ -52,25 +52,44 @@ class QuestNode {
 ///   원칙 — 데이터를 잃은 것처럼 보이면 안 된다.
 /// - **순환 참조에도 멈추지 않는다.** 이미 낸 항목은 다시 내지 않고, 순환 때문에
 ///   한 번도 못 나온 항목은 마지막에 뿌리로 낸다(누락 0).
+/// 이 퀘스트가 계보의 **뿌리**인가 (= 유효한 부모가 목록에 없는가).
+///
+/// 자기 자신을 부모로 가리키거나(오염된 문서), 부모가 이 목록에 없으면(삭제·다른
+/// 목표로 이동) 뿌리로 취급한다 — 어느 쪽이든 숨기지 않는다.
+/// [arrangeQuestTree]와 [_childrenByParent]가 같은 판정을 공유한다.
+bool _isRoot(Quest quest, Map<String, Quest> byId) {
+  final parentId = quest.parentQuestId;
+  return parentId == null ||
+      parentId == quest.id ||
+      !byId.containsKey(parentId);
+}
+
+/// 부모 ID → 그 자식들(입력 순서 유지). LinkedHashMap이라 삽입 순서가 그대로다.
+///
+/// 계보의 유일한 근거는 `parentQuestId`다. [arrangeQuestTree]의 화면 정렬과
+/// [descendantIds]의 삭제 계보가 **같은 맵**을 쓰므로, 고아·순환 방어가 두 곳에서
+/// 갈라지지 않는다(한쪽만 고쳐 어긋나는 사고를 막는다).
+Map<String, List<Quest>> _childrenByParent(List<Quest> quests) {
+  final byId = {for (final quest in quests) quest.id: quest};
+  final childrenOf = <String, List<Quest>>{};
+  for (final quest in quests) {
+    if (_isRoot(quest, byId)) continue;
+    childrenOf.putIfAbsent(quest.parentQuestId!, () => []).add(quest);
+  }
+  return childrenOf;
+}
+
 List<QuestNode> arrangeQuestTree(List<Quest> quests) {
   if (quests.isEmpty) return const [];
 
   final byId = {for (final quest in quests) quest.id: quest};
 
-  // 부모 → 자식들(입력 순서 유지). LinkedHashMap이라 삽입 순서가 그대로다.
-  final childrenOf = <String, List<Quest>>{};
-  final roots = <Quest>[];
-
-  for (final quest in quests) {
-    final parentId = quest.parentQuestId;
-    // 자기 자신을 부모로 가리키거나(오염된 문서), 부모가 이 목록에 없으면(삭제·다른
-    // 목표로 이동) 뿌리로 취급한다 — 어느 쪽이든 숨기지 않는다.
-    if (parentId == null || parentId == quest.id || !byId.containsKey(parentId)) {
-      roots.add(quest);
-    } else {
-      childrenOf.putIfAbsent(parentId, () => []).add(quest);
-    }
-  }
+  // 부모 → 자식들, 그리고 뿌리들. 계보 판정은 [_isRoot] 한 곳에서 온다.
+  final childrenOf = _childrenByParent(quests);
+  final roots = [
+    for (final quest in quests)
+      if (_isRoot(quest, byId)) quest,
+  ];
 
   final result = <QuestNode>[];
   final emitted = <String>{};
@@ -95,6 +114,38 @@ List<QuestNode> arrangeQuestTree(List<Quest> quests) {
   }
 
   return List.unmodifiable(result);
+}
+
+/// [rootId]에서 재분해로 뻗어 나온 **하위 퀘스트 전체의 ID**(자식·자식의 자식…).
+/// **rootId 자신은 포함하지 않는다** — 삭제 대상 집합은 화면이
+/// `{rootId, ...descendantIds(...)}`로 합친다.
+///
+/// 왜 순수 함수인가: 재분해 원본을 지울 때 "함께 사라질 하위 퀘스트가 몇 개인가"는
+/// 삭제 경고 문구의 N이자 실제로 지울 문서 집합이다. 이 계산이 틀리면 자식이 고아로
+/// 남거나(부모만 지워짐) 엉뚱한 퀘스트가 지워진다 — UI 테스트로만 확인하게 두지
+/// 않는다([arrangeQuestTree]와 같은 이유).
+///
+/// 계보의 근거·방어는 [arrangeQuestTree]와 같은 [_childrenByParent]에서 물려받는다.
+/// 순환 참조(a→b→a)나 자기 참조가 있어도 [visited]가 같은 항목을 두 번 밟지 않아
+/// 멈춘다. 뿌리를 시작부터 [visited]에 넣어 두므로 순환이 rootId로 되돌아와도
+/// 결과에 rootId가 섞이지 않는다.
+Set<String> descendantIds(List<Quest> quests, String rootId) {
+  final childrenOf = _childrenByParent(quests);
+  final result = <String>{};
+  final visited = <String>{rootId};
+  final stack = <String>[rootId];
+
+  while (stack.isNotEmpty) {
+    final current = stack.removeLast();
+    for (final child in childrenOf[current] ?? const <Quest>[]) {
+      if (visited.add(child.id)) {
+        result.add(child.id);
+        stack.add(child.id);
+      }
+    }
+  }
+
+  return result;
 }
 
 /// 큰 목표(폴더) 하나와 거기서 나온 퀘스트들.

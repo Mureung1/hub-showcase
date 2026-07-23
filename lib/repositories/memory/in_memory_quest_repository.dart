@@ -183,6 +183,20 @@ class InMemoryQuestRepository implements QuestRepository {
   }
 
   @override
+  Future<void> deleteQuests(String uid, List<String> questIds) async {
+    _check();
+    // 빈 목록은 아무 일도 하지 않는다 — 헛방출을 만들지 않는다(createQuests와 대칭).
+    if (questIds.isEmpty) return;
+    // 원자성: 전부 지운 뒤 **한 번만** 방출한다. 한 건씩 지우면 방출이 여러 번이 되고
+    // 그 중간 프레임은 "부모는 지워졌는데 자식은 남은" 목록이다.
+    // 없는 ID는 remove가 조용히 통과한다(삭제는 멱등).
+    for (final id in questIds) {
+      _quests.remove(id);
+    }
+    _controller.add(null);
+  }
+
+  @override
   Future<void> setStatus(String uid, String questId, QuestStatus status) async {
     _check();
     final quest = _quests[questId];
