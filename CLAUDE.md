@@ -58,16 +58,32 @@ React 구현 메모:
 - 블라인드 처리 → `analysis`는 state에 항상 보관, `{pendingDecision && <BottomSheet/>}`로만 조건부 렌더링
 - `marketSentiment` 라벨/톤 매핑은 `constants/sentiment.js`의 `SENTIMENT_META`로 공용화
 
-### 구현 상태 (2주차 대부분 완료, 3주차 예정)
+### 구현 상태 (3주차 진행 중, 2026-07-23 기준)
 
 - **동작함:** 전체 라우팅/API 흐름, `articleParser.js` 스크래핑+fallback,
   `vocabularyStore.js`(Supabase 전환, 2026-07-17), `decisionStore.js`(Supabase
   전환, 2026-07-21), Supabase Auth 로그인/회원가입(`Login.jsx`,
   `AuthContext.jsx`), 단어장 자동 적재, 인사이트 노트 아코디언, 사이드바
   카운트 뱃지.
-- **더미:** `llmService.js`의 `analyzeArticle` — 고정 용어/문장 매칭 + 고정
-  요약·insight·marketSentiment 반환. 실제 Claude 프롬프트는 3주차 작업.
-- 대시보드 3개 기사도 고정 픽스처, 실제 수집 로직 없음.
+- **완료(07-22):** `llmService.js`의 `analyzeArticle` 실제 Claude 연결
+  (GitHub #14) — `buildAnalysisPrompt`/`parseAnalysisResponse`로 sentences
+  (verbatim 매칭 검증 포함)/terms/summaryBullets/insight/marketSentiment을
+  한 번의 호출로 받는다. `MOCK_LLM=true`(로컬 기본값)면 고정 더미 응답으로
+  대체되며, 이때만 `FAIL_TEST` 문자열로 의도적 실패를 트리거할 수 있다.
+- **완료(07-19~20):** 대시보드 "오늘의 핵심 외신 3개"도 고정 픽스처가 아니라
+  실제 RSS 자동 수집·선별 파이프라인(`dashboardCurationService.js`,
+  `rssFeedService.js`, `articleQualityFilter.js`) — CNBC RSS 메타데이터
+  필터→본문 분량 필터→`evaluateAndSelectArticles`(LLM 점수+섹터 다양화)
+  3단계 직렬 구조. KST 06:30 경계로 하루 1회만 돌고 프로세스 메모리에
+  캐시. 파이프라인 어느 단계든 실패하면 `FALLBACK_ARTICLES`(고정 3건,
+  캐시하지 않음)로 폴백 — 이 폴백은 `console.warn`만 남기고 별도
+  모니터링/알림은 없다(운영 전환 시 보강 필요).
+- **완료(07-23):** client(Vitest+Testing Library)/server(Vitest) 단위 테스트
+  환경 구성. 컨벤션은 `.claude/skills/testing/SKILL.md` 참고. 다만 CI에서
+  자동 실행되진 않는다 — `.github/workflows/`엔 리뷰 라벨/충돌 여부만 보고
+  병합하는 `auto-merge.yml`뿐이고 테스트/린트를 게이트로 걸지 않는다.
+  `server/package.json`에도 아직 `test` 스크립트가 없어 로컬에서는
+  `server/` 안에서 `npx vitest run`으로 직접 실행해야 한다.
 - **완료(07-21):** 완독/판단수행률 분리 집계 로깅(GitHub #16) —
   `article_reads` 테이블에 완독 이벤트를 기록하고 판단 시 `decision_id`로
   FK 연결(`server/src/services/articleReadStore.js`,
@@ -132,8 +148,10 @@ hub/
   `server/src/services/supabaseClient.js`)로 전환됨. `articles` 테이블
   upsert-by-url 로직은 `articleStore.js`의 `ensureArticle`로 공용화해 두
   스토어가 함께 쓴다 — 스키마는 `docs/data-model.md`/`supabase/migrations/` 참고
-- **환경변수**: `ANTHROPIC_API_KEY`는 `server/.env`(gitignore). 현재
-  `analyzeArticle`이 더미라 키 없이도 서버 동작. Supabase 연동에는
+- **환경변수**: `ANTHROPIC_API_KEY`는 `server/.env`(gitignore). `MOCK_LLM`이
+  기본값 `true`(`.env.example`)라 키 없이도 서버 동작 — `false`로 바꾸고 키를
+  채워야 `analyzeArticle`/`evaluateAndSelectArticles`가 실제 Claude를
+  호출한다. Supabase 연동에는
   `server/.env`의 `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`(서버 전용,
   절대 프론트 노출 금지)와 `client/.env`의 `VITE_SUPABASE_URL`/
   `VITE_SUPABASE_ANON_KEY`가 필요(각 `.env.example` 참고)
@@ -174,8 +192,9 @@ cd server && npm run dev   # :4000
 cd client && npm run dev   # :5173
 ```
 
-`server/.env`에 `.env.example` 복사 후 `ANTHROPIC_API_KEY` 채우면 `callClaude`
-실 호출 가능(현재 `analyzeArticle`은 더미 응답 상태).
+`server/.env`에 `.env.example` 복사 후 `ANTHROPIC_API_KEY` 채우고
+`MOCK_LLM=false`로 바꾸면 `analyzeArticle`/`evaluateAndSelectArticles`가
+실제 Claude를 호출한다(기본값 `MOCK_LLM=true`는 더미 응답).
 
 단어장(Supabase)을 쓰려면 추가로:
 1. Supabase 프로젝트 생성 후 SQL Editor에서 `supabase/migrations/20260717000000_init_schema.sql` 실행
