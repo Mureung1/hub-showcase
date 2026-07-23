@@ -149,6 +149,25 @@ router.get('/:id', requireAuth, async (req, res, next) => {
   }
 })
 
+router.get('/:id/preview', async (req, res, next) => {
+  try {
+    const subscription = await prisma.subscription.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, serviceName: true },
+    })
+
+    if (!subscription) {
+      const err = new Error('존재하지 않는 파티입니다.')
+      err.status = 404
+      return next(err)
+    }
+
+    res.status(200).json(subscription)
+  } catch (e) {
+    next(e)
+  }
+})
+
 router.post('/:id/join', requireAuth, async (req, res, next) => {
   try {
     const subscription = await prisma.subscription.findUnique({
