@@ -117,6 +117,26 @@ C-only follow-up은 다음 exact delta다. 이 lane에서는 C-owned Server sour
 3. 그 dependency가 고정된 뒤 `apps/server/src/semester-workspace-store.ts`의 duplicate current-v2 structural/invariant decoder를 package root의 `decodeCurrentSemesterWorkspaceV2`로 교체한다. JSON parse와 physical no-follow/read-only I/O는 Server에 남기고, package decoded value를 existing `PersistedWorkspaceState` clone으로 옮기는 narrow adapter만 유지한다. Current write path가 사용하는 canonical payload producer/clone은 삭제하지 않는다. Package parity test의 Server source import는 순환 oracle이 되므로 제거하고, 이번 16/408 matrix의 fixed expected outcomes를 package-owned oracle로 남긴다. Server open regression도 같은 vectors를 소비해 code removal 전후 accept/reject와 byte-preservation이 같음을 확인한 뒤에만 duplicate decode-only validator/invariant code를 제거한다.
 4. `packages/semester-workspace/README.md`에는 B1a admission/recovery, private marker/token boundary, shared current-v2 decoder와 package 명령을 반영한다. `apps/server/README.md`에는 shared decoder dependency와 narrow adapter를 current behavior로 기록하되 아직 조합되지 않은 B2 setup/Ready 상태를 구현된 것처럼 쓰지 않는다.
 
+### C-only serialization candidate receipt
+
+아래 증거는 reviewed serial base에서 C-only delta를 구현한 candidate receipt다. Ticket state와 acceptance checkbox는 Coordinator review와 close 전까지 변경하지 않는다.
+
+| Evidence | Result |
+| --- | --- |
+| Fixed serial base | `22c46d4ec229b1f8952f65e17a2e5c4d581c0d1a` |
+| C-only implementation commit | `b4ee7626cbb74fc49c80f1fe872b312499571f5e` |
+| Private plan description | `describe(plan)`은 같은 admission instance의 exact create plan에만 defensive `WorkspaceAdmissionPlanDescription` clone을 반환한다. `setupPlanId`는 random opaque `plan.planId`와 byte-for-byte 같고, `canonicalBytesSha256`는 canonical receipt plan `{ semester, target }` bytes의 SHA-256이다. Unknown·tampered·resume plan은 `null`이며 `setupId`, `authorityDigest`, `setupPlanBinding`은 description에 없다. |
+| Browser-private boundary | Chat Shell source, `@ay-ple/product-contract`, Server product HTTP와 public-preview contract test에서 description type과 private hash/binding field 검색 결과가 0건이다. |
+| Manifest·lock closure | Server exact dependency는 `"@ay-ple/semester-workspace": "0.0.0"`이다. Root `npm install` 뒤 lock readback은 `apps/server.dependencies` edge와 `node_modules/@ay-ple/semester-workspace → packages/semester-workspace` workspace link를 확인했다. |
+| Pre-removal behavior checkpoint | Duplicate validator 제거 전에 fixed package vectors와 새 Server open regression을 기존 Server donor에 실행해 `4/4` green을 확인했다. 그 뒤에만 duplicate decode-only structural/invariant code를 제거했다. |
+| Shared decoder cutover | Server가 JSON parse와 physical no-follow/read-only I/O를 계속 소유하고 package root의 `decodeCurrentSemesterWorkspaceV2`를 호출한다. Narrow clone adapter와 current write producer/CAS path는 남겼고 package parity test의 Server source import는 제거했다. |
+| Fixed current-v2 oracle | Package-owned roster는 총 426개(`ready` 414, `incompatible` 12)다. Decoder-valid `>1 MiB` 1개, retry source-order 1개, fixed guard-order 16개와 evidence-order 408개를 package decoder/classifier와 Server open regression이 함께 소비한다. Accepted/rejected state와 unknown entry의 before/after bytes가 동일하다. |
+| Package gates | `npm test -w @ay-ple/semester-workspace` — `36/36` green; `npm run typecheck -w @ay-ple/semester-workspace`; `npm run build -w @ay-ple/semester-workspace` — green |
+| Server gates | `npm test -w @ay-ple/server` — `124/124` green; fixed-vector Server open regression — `1/1` green; `npm run typecheck -w @ay-ple/server`; `npm run build -w @ay-ple/server` — green |
+| Root·docs gates | `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `npm run check:docs-links`; `git diff --check 22c46d4ec229b1f8952f65e17a2e5c4d581c0d1a...HEAD` — green. Docs link result는 active 28, historical 2다. |
+| Bounded smoke | Temporary parent에서 `create: created → reopen: admitted`, opaque `setupPlanId` equality, Server v2 `ready`, package v2 `legacy_migration_required`, v2 byte identity를 확인하고 fixture를 정리했다. |
+| Coordinator review | Pending — Coordinator가 candidate를 review하고 acceptance checkbox와 Ticket state를 닫는다. |
+
 ## Blocked By
 
 - [003-spine-s2-server-composition-stabilization.md](003-spine-s2-server-composition-stabilization.md) — Spine S2 — Server composition을 분리하고 Browser fail-closed oracle을 닫는다
