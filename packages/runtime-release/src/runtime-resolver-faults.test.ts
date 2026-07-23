@@ -5,6 +5,12 @@ import type {
   RuntimeResolveProgress,
 } from './contract.js'
 import {
+  downloadVerifiedRuntimeArchive,
+} from './runtime-archive-download.js'
+import {
+  ArchiveTransportNetworkError,
+} from './runtime-archive-transport.js'
+import {
   bootstrapRuntimeCache,
 } from './runtime-cache-bootstrap.js'
 import {
@@ -38,6 +44,10 @@ import type {
   RuntimeResolutionScheduler,
 } from './runtime-resolution-control.js'
 import {
+  inspectRetainedRuntimeArchive,
+  quarantineRetainedRuntimeArchive,
+} from './runtime-retained-archive.js'
+import {
   createRuntimeResolverBundleForTesting,
 } from './runtime-resolver.js'
 import type {
@@ -49,6 +59,8 @@ import {
   ScriptedArchiveTransport,
   createOwnerOnlyTempAppDataRoot,
   createRuntimeResolverReleaseFixture,
+  exactArchiveResponse,
+  seedRetainedRuntimeArchive,
 } from './runtime-resolver-fixture.test.js'
 
 type AcquiredLease = Extract<
@@ -851,6 +863,323 @@ test('resolver wires Retry-After through the deadline and isolates a throwing re
   }
 })
 
+test('resolver composes strong-validator 206 and 416 resume through the public resolve seam', async (t) => {
+  await t.test('206 resumes an interrupted prefix', async () => {
+    const fixture = await createRuntimeResolverReleaseFixture()
+    const prefix = fixture.archiveBytes.subarray(0, 128)
+    const suffix = fixture.archiveBytes.subarray(prefix.byteLength)
+    const transport = new ScriptedArchiveTransport([
+      {
+        ...exactArchiveResponse(fixture.archiveBytes, {
+          chunks: [prefix],
+          etag: '"resolver-206"',
+        }),
+        bodyError: new ArchiveTransportNetworkError(false),
+      },
+      {
+        statusCode: 206,
+        headers: {
+          'content-encoding': ['identity'],
+          'content-length': [String(suffix.byteLength)],
+          'content-range': [
+            `bytes ${prefix.byteLength}-${fixture.archiveBytes.byteLength - 1}/${fixture.archiveBytes.byteLength}`,
+          ],
+          etag: ['"resolver-206"'],
+        },
+        chunks: [suffix],
+      },
+    ])
+    const harness = await createScriptedDownloadHarness(
+      fixture.admissionInput,
+      transport,
+    )
+    const failedProgress: RuntimeResolveProgress[] = []
+    const resumedProgress: RuntimeResolveProgress[] = []
+    try {
+      await assert.rejects(
+        harness.bundle.resolver.resolve({
+          appDataRoot: harness.appDataRoot,
+          signal: new AbortController().signal,
+          report: (entry) => failedProgress.push(entry),
+        }),
+        hasFailureCode('runtime_network_unavailable'),
+      )
+      const runtime = await harness.bundle.resolver.resolve({
+        appDataRoot: harness.appDataRoot,
+        signal: new AbortController().signal,
+        report: (entry) => resumedProgress.push(entry),
+      })
+
+      assert.equal(
+        runtime.identity.releaseId,
+        fixture.admission.identity.releaseId,
+      )
+      assert.deepEqual(
+        transport.requests.map((request) => request.range),
+        [
+          undefined,
+          {
+            start: prefix.byteLength,
+            ifRange: '"resolver-206"',
+          },
+        ],
+      )
+      assert.deepEqual(uniquePhases(failedProgress), [
+        'checking_cache',
+        'downloading',
+      ])
+      assert.deepEqual(uniquePhases(resumedProgress), [
+        'checking_cache',
+        'downloading',
+        'verifying_archive',
+        'installing',
+        'verifying_runtime',
+        'ready',
+      ])
+      transport.assertExhausted()
+    } finally {
+      await harness.cleanup()
+    }
+  })
+
+  await t.test('416 reconciles a complete verified partial', async () => {
+    const fixture = await createRuntimeResolverReleaseFixture()
+    const transport = new ScriptedArchiveTransport([
+      {
+        ...exactArchiveResponse(fixture.archiveBytes, {
+          etag: '"resolver-416"',
+        }),
+        bodyError: new ArchiveTransportNetworkError(false),
+      },
+      {
+        statusCode: 416,
+        headers: {
+          'content-range': [
+            `bytes */${fixture.archiveBytes.byteLength}`,
+          ],
+        },
+      },
+    ])
+    const harness = await createScriptedDownloadHarness(
+      fixture.admissionInput,
+      transport,
+    )
+    const failedProgress: RuntimeResolveProgress[] = []
+    const resumedProgress: RuntimeResolveProgress[] = []
+    try {
+      await assert.rejects(
+        harness.bundle.resolver.resolve({
+          appDataRoot: harness.appDataRoot,
+          signal: new AbortController().signal,
+          report: (entry) => failedProgress.push(entry),
+        }),
+        hasFailureCode('runtime_network_unavailable'),
+      )
+      const runtime = await harness.bundle.resolver.resolve({
+        appDataRoot: harness.appDataRoot,
+        signal: new AbortController().signal,
+        report: (entry) => resumedProgress.push(entry),
+      })
+
+      assert.equal(
+        runtime.identity.releaseId,
+        fixture.admission.identity.releaseId,
+      )
+      assert.deepEqual(
+        transport.requests.map((request) => request.range),
+        [
+          undefined,
+          {
+            start: fixture.archiveBytes.byteLength,
+            ifRange: '"resolver-416"',
+          },
+        ],
+      )
+      assert.deepEqual(uniquePhases(failedProgress), [
+        'checking_cache',
+        'downloading',
+      ])
+      assert.deepEqual(uniquePhases(resumedProgress), [
+        'checking_cache',
+        'downloading',
+        'verifying_archive',
+        'installing',
+        'verifying_runtime',
+        'ready',
+      ])
+      transport.assertExhausted()
+    } finally {
+      await harness.cleanup()
+    }
+  })
+})
+
+test('resolver follows one HTTPS redirect and rejects redirect or encoding drift', async (t) => {
+  await t.test('cross-origin HTTPS redirect', async () => {
+    const fixture = await createRuntimeResolverReleaseFixture()
+    const redirectedUrl =
+      'https://objects.example.test/releases/runtime.tar.gz?signature=opaque'
+    const transport = new ScriptedArchiveTransport([
+      {
+        statusCode: 302,
+        headers: { location: [redirectedUrl] },
+      },
+      exactArchiveResponse(fixture.archiveBytes),
+    ])
+    const harness = await createScriptedDownloadHarness(
+      fixture.admissionInput,
+      transport,
+    )
+    const progress: RuntimeResolveProgress[] = []
+    try {
+      const runtime = await harness.bundle.resolver.resolve({
+        appDataRoot: harness.appDataRoot,
+        signal: new AbortController().signal,
+        report: (entry) => progress.push(entry),
+      })
+      assert.equal(
+        runtime.identity.releaseId,
+        fixture.admission.identity.releaseId,
+      )
+      assert.deepEqual(
+        transport.requests.map((request) => request.url),
+        [
+          fixture.admission.descriptor.archive.url,
+          redirectedUrl,
+        ],
+      )
+      assert.deepEqual(uniquePhases(progress), [
+        'checking_cache',
+        'downloading',
+        'verifying_archive',
+        'installing',
+        'verifying_runtime',
+        'ready',
+      ])
+      transport.assertExhausted()
+    } finally {
+      await harness.cleanup()
+    }
+  })
+
+  for (const scenario of [
+    'redirect downgrade',
+    'content encoding drift',
+  ] as const) {
+    await t.test(scenario, async () => {
+      const fixture = await createRuntimeResolverReleaseFixture()
+      const response =
+        scenario === 'content encoding drift'
+          ? {
+              ...exactArchiveResponse(fixture.archiveBytes),
+              headers: {
+                'content-encoding': ['gzip'],
+                'content-length': [
+                  String(fixture.archiveBytes.byteLength),
+                ],
+              },
+            }
+          : {
+              statusCode: 302,
+              headers: {
+                location: [
+                  'http://objects.example.test/runtime.tar.gz',
+                ],
+              },
+            }
+      const transport = new ScriptedArchiveTransport([response])
+      let publishes = 0
+      const harness = await createScriptedDownloadHarness(
+        fixture.admissionInput,
+        transport,
+        {
+          publish: async () => {
+            publishes += 1
+            return harness.generation
+          },
+        },
+      )
+      const progress: RuntimeResolveProgress[] = []
+      try {
+        await assert.rejects(
+          harness.bundle.resolver.resolve({
+            appDataRoot: harness.appDataRoot,
+            signal: new AbortController().signal,
+            report: (entry) => progress.push(entry),
+          }),
+          hasFailureCode('runtime_integrity_failed'),
+        )
+        assert.equal(publishes, 0)
+        assert.deepEqual(uniquePhases(progress), [
+          'checking_cache',
+          'downloading',
+        ])
+        assert.equal(transport.requests.length, 1)
+        transport.assertExhausted()
+      } finally {
+        await harness.cleanup()
+      }
+    })
+  }
+})
+
+test('resolver quarantines an owned corrupt retained archive and reacquires only the exact asset', async () => {
+  const fixture = await createRuntimeResolverReleaseFixture()
+  const transport = new ScriptedArchiveTransport([
+    exactArchiveResponse(fixture.archiveBytes),
+  ])
+  let quarantines = 0
+  const harness = await createScriptedDownloadHarness(
+    fixture.admissionInput,
+    transport,
+    {
+      inspectRetainedArchive: inspectRetainedRuntimeArchive,
+      quarantineRetainedArchive: async (input, testOptions) => {
+        quarantines += 1
+        return quarantineRetainedRuntimeArchive(
+          input,
+          testOptions,
+        )
+      },
+    },
+  )
+  const progress: RuntimeResolveProgress[] = []
+  try {
+    const corrupt = Buffer.alloc(
+      fixture.archiveBytes.byteLength,
+      0x78,
+    )
+    await seedRetainedRuntimeArchive({
+      archiveBytes: corrupt,
+      layout: harness.cache.layout,
+    })
+
+    const runtime = await harness.bundle.resolver.resolve({
+      appDataRoot: harness.appDataRoot,
+      signal: new AbortController().signal,
+      report: (entry) => progress.push(entry),
+    })
+
+    assert.equal(
+      runtime.identity.releaseId,
+      fixture.admission.identity.releaseId,
+    )
+    assert.equal(quarantines, 1)
+    assert.equal(transport.requests.length, 1)
+    assert.deepEqual(uniquePhases(progress), [
+      'checking_cache',
+      'downloading',
+      'verifying_archive',
+      'installing',
+      'verifying_runtime',
+      'ready',
+    ])
+    transport.assertExhausted()
+  } finally {
+    await harness.cleanup()
+  }
+})
+
 test('spawn verification observes cancellation that arrives after fresh inspection', async () => {
   const fixture = await createRuntimeResolverReleaseFixture()
   const spawnController = new AbortController()
@@ -894,6 +1223,35 @@ type FastHarness = Awaited<
   ReturnType<typeof createFastHarness>
 >
 
+async function createScriptedDownloadHarness(
+  admissionInput: RuntimeReleaseAdmissionInput,
+  transport: ScriptedArchiveTransport,
+  operationOverrides: RuntimeResolverOperationOverrides = {},
+): Promise<FastHarness> {
+  let published = false
+  let harness: FastHarness
+  harness = await createFastHarness(admissionInput, {
+    retainedArchive: 'absent',
+    transport,
+    operations: {
+      download: downloadVerifiedRuntimeArchive,
+      inspectGeneration: async () =>
+        published
+          ? {
+              kind: 'verified',
+              generation: harness.generation,
+            }
+          : { kind: 'absent' },
+      publish: async () => {
+        published = true
+        return harness.generation
+      },
+      ...operationOverrides,
+    },
+  })
+  return harness
+}
+
 async function createFastHarness(
   admissionInput: RuntimeReleaseAdmissionInput,
   options: {
@@ -908,6 +1266,7 @@ async function createFastHarness(
       | 'owned-invalid'
       | 'verified'
     readonly scheduler?: RuntimeResolutionScheduler
+    readonly transport?: ScriptedArchiveTransport
   } = {},
 ) {
   const fixture = await createRuntimeResolverReleaseFixture()
@@ -1075,7 +1434,8 @@ async function createFastHarness(
         options.scheduler ??
         createRuntimeResolutionScheduler(),
       timeoutMs: 10_000,
-      transport: new ScriptedArchiveTransport(),
+      transport:
+        options.transport ?? new ScriptedArchiveTransport(),
     },
   )
   return {
@@ -1164,6 +1524,17 @@ function hasFailureCode(code: string) {
   return (error: unknown) =>
     error instanceof RuntimeReleaseAuthorityError &&
     error.failure.code === code
+}
+
+function uniquePhases(
+  progress: readonly RuntimeResolveProgress[],
+): RuntimeResolveProgress['phase'][] {
+  return progress
+    .map((entry) => entry.phase)
+    .filter(
+      (phase, index, phases) =>
+        index === 0 || phase !== phases[index - 1],
+    )
 }
 
 function deferred<T>(): {
