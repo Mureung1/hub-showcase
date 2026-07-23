@@ -103,3 +103,13 @@ Coordinator가 exact code tip의 independent review와 package/root gate를 확�
 | deferred Retry-After | D1c는 transient status의 one-retry budget과 stable outcome만 고정한다. `Retry-After` 해석, bounded delay와 전체 startup deadline/clock 결합은 resolver deadline을 소유하는 D1d에서 구현한다. |
 | owner documentation | `packages/runtime-release/README.md`의 download/resume 미구현 문구와 capability 설명은 integration 시 owner-first로 갱신해야 한다. 이 lane의 frozen package README 경계를 지켜 candidate branch에서는 수정하지 않았다. |
 | closeout | Ticket state는 `completed`, acceptance checkbox는 모두 완료다. Integration branch 반영과 package README owner update는 coordinator의 다음 integration action이다. |
+
+## Coordinator Integration Closeout
+
+| Evidence | Result |
+| --- | --- |
+| integration merge | `d4bc34fb36358dfcab3bdd4c0c9ac91bc8866591` — reviewed D1c branch를 `codex/public-preview-integration`에 `--no-ff` 병합했다. |
+| reviewed implementation | Code tip `57cb79ffdabbed9030abe23483a334bb87423106`, candidate closeout `89b34603e681a6476019110b08194cc85c0b2fca`를 그대로 반영했다. |
+| integration gates | Merge 직후 clean 재실행한 root `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`가 green이다. 첫 `npm test`에서 D1c diff 밖 기존 Server cleanup-deadline test 한 건이 실패했고 100회 fresh-process 진단에서 2회 재현됐다. D1c가 Server source를 변경하지 않았고 과거 동일 stabilization precedent가 있음을 확인한 뒤 `2790d6fd47b05a964337693f92e1f51f436ad8ed`에서 해당 test-only deadline을 `5ms`에서 `250ms`로 조정했다. Exact pair와 Server suite가 green이다. |
+| owner documentation | 이 integration closeout에서 `packages/runtime-release/README.md`를 실제 transport/download/resume, retained archive representation과 D1d 잔여 책임에 맞춰 owner-first로 갱신했다. |
+| next handoff | D1d는 이 closeout commit을 exact `handoffSha`로 사용한다. Cooperative per-digest lease, invalid final·partial pair의 root-level quarantine, generation publish/readback, `Retry-After`와 overall startup deadline, spawn-boundary revalidation을 소유한다. |
