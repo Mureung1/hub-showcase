@@ -88,3 +88,27 @@ textarea {
     transform: translateY(0);
   }
 }
+
+/* Progress Bar */
+.progress-container {
+  width: 100%;
+  background-color: var(--color-border);
+  border-radius: var(--radius-pill);
+  height: 8px;
+  overflow: hidden;
+  margin-top: var(--space-md);
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: var(--color-primary);
+  border-radius: var(--radius-pill);
+  transition: width 0.3s ease-out;
+}
+
+.progress-label {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted);
+  text-align: center;
+}

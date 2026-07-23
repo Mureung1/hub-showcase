@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "title": "PM 가설 검증 인터뷰 분석 도구",
+  "summary": "PM이 수집한 사용자 인터뷰 전사문을 AI로 분석해 가설별 근거를 태깅하고 검증결과 초안을 생성하되, 판단의 근거가 원문까지 되짚어지는 '사슬'로 남아 재현 가능한 리서치 리포트를 만드는 서비스입니다.",
+  "githubUser": "naruv0134",
+  "demoUrl": "https://example.com",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/input_page.webp",
+    "screenshots/dashboard.webp",
+    "screenshots/detail_page.webp"
+  ],
+  "problem": "PM이 가설을 검증할 때 수많은 인터뷰 전사문을 일일이 읽어 가설에 해당하는 발언과 근거를 분류·요약하는 데 많은 시간이 듭니다. LLM 스킬로 분석하면, 대화가 끝나는 순간 '왜 그렇게 판단했는지'의 근거가 함께 휘발되어, 나중에 결론에 대한 질문을 받으면 처음부터 다시 훑어야 합니다.",
+  "targetUsers": [
+    "사용자 인터뷰로 가설을 검증하고 결론의 근거를 계속 되짚어야 하는 PM / PO",
+    "인터뷰 전사 데이터에서 인사이트와 근거를 빠르게 추출하고 팀에 공유하려는 기획자 / 리서처"
+  ],
+  "features": [
+    "인터뷰 전사문을 업로드하면, 발언별로 가설과 근거를 태깅하고, 근거를 종합해 가설별 검증결과 초안을 생성합니다.",
+    "검증결과, 근거 및 참조된 전사문은 사용자가 검토, AI와 논쟁하며 결과를 수정할 수 있습니다.",
+    "최종 결과는 팀원과 공유할 수 있도록 URL, MD, PDF 리포트로 내보낼 수 있습니다."
+  ],
+  "featureTags": [
+    "인터뷰 분석",
+    "가설 검증",
+    "리포트 공유"
+  ],
+  "techStack": [
+    "React 19",
+    "TypeScript",
+    "Vite",
+    "React Router",
+    "Express",
+    "Supabase (PostgreSQL)",
+    "Google Gemini API",
+    "Vitest",
+    "React Testing Library"
+  ],
+  "techHighlights": [
+   "Gemini API 2단계 파이프라인으로 발언별 가설·근거를 태깅하고 검증결과 초안을 생성하며, 전사문 원문 대조를 통과한 결과만 Supabase에 저장합니다.",
+   "React 상태 관리와 Express API를 연결해 근거 참조 드로어, AI 반박 대화, 수정 가안 미리보기·적용을 처리합니다.",
+   "Express 라우터와 공유 토큰으로 읽기 전용 URL과 MD 리포트를 제공하고, 인쇄용 CSS로 PDF 내보내기를 지원합니다."
+  ],
+  "developmentWithAI": "서비스의 문제 정의, 데이터 흐름, 그리고 '판단 근거가 사슬로 남는다'는 핵심 차별점은 제가 직접 정의했습니다. AI Agent는 이 방향 위에서 AI 파이프라인 설계 문서화, 주차별 구현 계획 수립, 태스크 단위 구현과 실제 DB·실제 Gemini 기반 라이브 검증, DB 마이그레이션 적용, TDD 유틸리티 작성을 협업 도구로 수행했습니다. 매 태스크마다 사양을 코드로 옮기기 전에 설계를 먼저 문서로 확정하고, 구현 후에는 브라우저에서 실제 데이터로 동작을 확인한 뒤에만 완료 처리하는 방식을 반복했습니다.",
+  "agent": {
+    "summary": "요구사항·데이터 흐름·차별점은 사람이 정의하고, Agent는 설계 문서화 → 태스크 구현 → 실제 DB/Gemini 라이브 검증 → TDD 유틸리티 작성의 반복 사이클을 담당했습니다. AI가 만든 초안은 항상 사람이 최종 판단하는 것을 원칙으로 삼았습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "설계·구현 계획 Agent",
+        "purpose": "요구사항을 분석해 2단계 AI 파이프라인의 프롬프트·입출력 스키마·폴백 전략을 문서로 확정하고, 주차별 태스크 분할(WBS)과 의존 순서를 설계합니다."
+      },
+      {
+        "type": "skill",
+        "name": "라이브 E2E 검증 Skill",
+        "purpose": "구현한 기능을 목이 아닌 실제 Supabase·실제 Gemini 호출로 시드한 뒤, 브라우저에서 입력→분석→대시보드→상세→리파인→공유 전체 동선을 확인하고 DB 적재 상태가 화면과 일치하는지 교차 검증합니다."
+      },
+      {
+        "type": "skill",
+        "name": "TDD 유틸리티 작성 Skill",
+        "purpose": "타임아웃/재시도(runWithTimeoutAndRetry)와 환각 방어(responseValidation) 같은 순수 로직을 Red-Green-Refactor 사이클과 Vitest 단위 테스트로 구현합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "설계 우선 태스크 구현 Workflow",
+        "steps": [
+          "AI 파이프라인·엔드포인트·스키마를 설계 문서로 먼저 확정",
+          "DB 마이그레이션 적용 및 백엔드 라우트/모듈 구현",
+          "프론트엔드 화면 연동",
+          "실제 데이터로 브라우저 라이브 검증 후 태스크 완료 및 커밋"
+        ]
+      },
+      {
+        "name": "AI 환각 방어 Workflow",
+        "steps": [
+          "인용문 원문 대조·가설 id 검증·마커/citation 일대일 대응을 공용 모듈로 분리",
+          "Vitest 단위 테스트로 경계 케이스 검증",
+          "분류·검증결과·리파인 파이프라인에 저장 이전 필터로 적용"
+        ]
+      },
+      {
+        "name": "분석 진행 상태 처리 Workflow",
+        "steps": [
+          "BE에 타임아웃/재시도 래퍼 적용으로 장시간 호출 안정화",
+          "FE 진행바로 분석 진행 상태 피드백(사고과정 노출 없이 심플 진행바)",
+          "전체 빌드 및 동작 검증"
+        ]
+      }
+    ]
+  }
+}

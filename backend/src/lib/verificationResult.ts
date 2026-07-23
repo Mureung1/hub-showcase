@@ -1,6 +1,7 @@
 import { Type } from '@google/genai';
 import { generateStructuredJson } from './geminiClient';
 import { supabase } from './supabaseClient';
+import { filterVerifiedCitations } from './responseValidation';
 
 // README/AI_Pipeline_Design.md의 2단계(검증결과 생성) 설계를 그대로 옮긴 구현체.
 // 이 결과는 AI의 초안 제안일 뿐이며 최종 판단(유지/수정/폐기)은 항상 사용자가 한다.
@@ -139,18 +140,9 @@ async function callStage2(params: {
   });
 }
 
-// 환각 방어: summary의 [n] 마커 집합과 citations.marker가 정확히 일대일 대응하지 않거나,
-// citations가 입력에 없는 evidence_tag_id를 참조하면 해당 citation을 제거하고
-// summary에서 대응 마커를 링크 취급하지 않도록 정리한다.
+// 환각 방어(Task 16): summary의 [n] 마커 집합과 citations.marker가 정확히 일대일 대응하지 않거나,
+// citations가 입력에 없는 evidence_tag_id를 참조하면 해당 citation을 제거한다.
+// 대응되지 않는 마커는 FE에서 링크가 아닌 일반 텍스트로 렌더된다(HypothesisDetailPage.tsx).
 function verifyCitations(output: Stage2Output, evidence: EvidenceRef[]): Stage2Output {
-  const validEvidenceIds = new Set(evidence.map((e) => e.evidence_tag_id));
-  const markersInSummary = new Set(
-    Array.from(output.summary.matchAll(/\[(\d+)\]/g)).map((m) => Number(m[1])),
-  );
-
-  const verifiedCitations = output.citations.filter(
-    (c) => validEvidenceIds.has(c.evidence_tag_id) && markersInSummary.has(c.marker),
-  );
-
-  return { ...output, citations: verifiedCitations };
+  return { ...output, citations: filterVerifiedCitations(output.citations, output.summary, evidence) };
 }
