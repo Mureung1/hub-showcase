@@ -313,6 +313,11 @@ test('strong ETag resumes an interrupted prefix with one exact 206', async () =>
             fixture.admission.descriptor.archive.assetName,
           archiveBytes: archiveBytes.byteLength,
           archiveSha256: sha256(archiveBytes),
+          descriptorSha256: sha256(
+            Buffer.from(
+              JSON.stringify(fixture.admission.descriptor),
+            ),
+          ),
           launcherPackageName: 'ay-ple',
           launcherVersion: '0.1.0-preview.1',
           manifestSha256:
