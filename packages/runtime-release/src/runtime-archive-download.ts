@@ -64,6 +64,13 @@ export type RuntimeArchiveDownloadTestOptions = {
   readonly beforeArchiveHash?: () => void | Promise<void>
   readonly beforeArchiveLink?: () => void | Promise<void>
   readonly beforeArchivePathReadback?: () => void | Promise<void>
+  readonly beforeTransientRetry?: (input: {
+    readonly retryAfter: readonly string[]
+  }) => void | Promise<void>
+  readonly onReceivedBytes?: (input: {
+    readonly receivedBytes: number
+    readonly totalBytes: number
+  }) => void | Promise<void>
 }
 
 type RuntimeArchivePartialJournal = {
@@ -125,9 +132,12 @@ class RuntimeArchiveRedirect extends Error {
 }
 
 class RuntimeArchiveTransientHttpFailure extends Error {
-  constructor() {
+  readonly retryAfter: readonly string[]
+
+  constructor(retryAfter: readonly string[]) {
     super('The Runtime archive HTTP response is transient.')
     this.name = 'RuntimeArchiveTransientHttpFailure'
+    this.retryAfter = [...retryAfter]
   }
 }
 
@@ -187,7 +197,9 @@ export async function downloadVerifiedRuntimeArchive(
           async (response) => {
             assertNotCancelled(input.signal)
             if (isTransientHttpStatus(response.statusCode)) {
-              throw new RuntimeArchiveTransientHttpFailure()
+              throw new RuntimeArchiveTransientHttpFailure(
+                response.headers['retry-after'] ?? [],
+              )
             }
             if (
               response.statusCode === 401 ||
@@ -330,6 +342,12 @@ export async function downloadVerifiedRuntimeArchive(
         if (automaticTransient) {
           if (!transientRetryUsed) {
             transientRetryUsed = true
+            await input.testOptions?.beforeTransientRetry?.({
+              retryAfter:
+                error instanceof RuntimeArchiveTransientHttpFailure
+                  ? error.retryAfter
+                  : [],
+            })
             requestUrl = initialUrl
             redirectHops = 0
             redirectUrls = new Set([initialUrl])
@@ -401,6 +419,10 @@ async function retainResponse(
         partial.writtenBytes,
       )
       partial.writtenBytes += chunk.byteLength
+      await input.testOptions?.onReceivedBytes?.({
+        receivedBytes: partial.writtenBytes,
+        totalBytes: input.admission.descriptor.archive.bytes,
+      })
     }
   } catch (error) {
     await syncPartialAndJournal(input, partial)
