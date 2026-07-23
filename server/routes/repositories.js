@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { repositories, createId } from '../state/store.js';
-import { buildFixedContext } from '../services/stubData.js';
+import { buildContext } from '../services/contextBuilder.js';
 import { ok, fail } from '../services/respond.js';
 import { isAllowedGithubUrl } from '../utils/validateRepositoryUrl.js';
 import { parseGithubUrl } from '../utils/parseGithubUrl.js';
@@ -13,8 +13,8 @@ import { MAX_FILE_COUNT, CANDIDATE_COUNT } from '../config.js';
  * 05_CODE_SCANNER_SCORER.md 4장 Pipeline 중 "파일 목록 수집(Git Trees API)",
  * "확장자/경로 기반 제외 분류", "후보 파일 선정(임시: 앞쪽 N개)"을 실제로 수행한다.
  *
- * 진짜 가중치 스코어링(6장)과 정규식 기반 청킹(7장), README/tech_stack 파싱은
- * 아직 다음 단계다 — context(project_overview/tech_stack)는 계속 stubData.js를 쓴다.
+ * 가중치 스코어링(6장)·하이브리드 청킹(7장)·README project_overview 파싱(8장)은
+ * 구현 완료. tech_stack(의존성 사전 매핑)만 아직 stubData.js 고정값을 쓴다.
  */
 
 const router = Router();
@@ -76,8 +76,8 @@ router.post('/repositories', async (req, res) => {
     contextFilePaths: classified.contextFilePaths,
     lastScannedAt: new Date().toISOString(),
     candidates,
-    // README/tech_stack 파싱은 다음 단계 (아직 stubData.js 고정값)
-    context: buildFixedContext(),
+    // project_overview는 실제 README 파싱(contextBuilder.js), tech_stack은 아직 stubData.js 고정값
+    context: await buildContext(parsedRepo.owner, parsedRepo.repo, classified.contextFilePaths),
   });
 
   // 실제 스캔은 비동기 Job이지만(07_API_SPEC.md), Trees API 1회 호출로 충분히 빨라 즉시 완료로 처리한다.
