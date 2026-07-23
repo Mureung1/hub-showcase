@@ -163,6 +163,11 @@ isProject: false
 
 **Week 3 (#28~#32) 전체 완료 (2026-07-23)**
 
+> **후속 작업 (2026-07-23)**: 실제 실행해보니 `index.ts`가 5건만 가져오도록 하드코딩돼 있어
+> 지원 중인 공고를 다 반영하지 못하는 걸 발견. 전체 백필(backfill) + 일일 배치 크기 조정 계획을
+> [`docs/week3/full-coverage-plan.md`](week3/full-coverage-plan.md)에 정리하고
+> [이슈 #40](https://github.com/syd348/hub/issues/40)으로 등록함 (아직 미구현).
+
 ## 리스크 / 결정 필요
 
 | 항목 | 내용 | 제안 방침 |
