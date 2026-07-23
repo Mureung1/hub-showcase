@@ -12,8 +12,7 @@
  * 감수한다(기획서가 명시한 휴리스틱 한계).
  */
 
-const SHORT_FILE_MAX_LINES = 200;
-const MAX_CHUNKS_PER_FILE = 2;
+import { CHUNK_SHORT_FILE_MAX_LINES as SHORT_FILE_MAX_LINES, CHUNK_MAX_PER_FILE as MAX_CHUNKS_PER_FILE } from '../config.js';
 
 const FUNCTION_START_REGEX = /^\s*(export\s+)?(default\s+)?(async\s+)?function\s*\*?\s*[\w$]*\s*\(/;
 const ARROW_ASSIGN_REGEX = /^\s*(export\s+)?(const|let|var)\s+[\w$]+\s*=\s*(async\s*)?\([^)]*\)\s*=>\s*\{/;

@@ -7,12 +7,13 @@
  * 파일은 원문을 이미 받았으므로 실제 줄 수로 다시 계산해 표시 정확도를 높인다.
  */
 
-const BYTES_PER_LINE = 30;
-const SMALL_FILE_MAX_LINES = 15;
-const LARGE_FILE_MIN_LINES = 300;
-
-const NAME_PATTERNS = ['service', 'controller', 'handler', 'usecase', 'core', 'engine'];
-const NAME_PATTERN_BONUS = 0.3;
+import {
+  BYTES_PER_LINE,
+  SMALL_FILE_MAX_LINES,
+  LARGE_FILE_MIN_LINES,
+  NAME_PATTERNS,
+  NAME_PATTERN_BONUS,
+} from '../config.js';
 
 function scoreByLineCount(lineCount) {
   if (lineCount < SMALL_FILE_MAX_LINES) return 0.2;

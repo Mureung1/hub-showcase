@@ -7,6 +7,7 @@ import { parseGithubUrl } from '../utils/parseGithubUrl.js';
 import { fetchRepoMeta, fetchTree } from '../services/githubClient.js';
 import { classifyTree } from '../services/fileClassifier.js';
 import { selectCandidates } from '../services/candidateSelector.js';
+import { MAX_FILE_COUNT, CANDIDATE_COUNT } from '../config.js';
 
 /**
  * 05_CODE_SCANNER_SCORER.md 4장 Pipeline 중 "파일 목록 수집(Git Trees API)",
@@ -15,9 +16,6 @@ import { selectCandidates } from '../services/candidateSelector.js';
  * 진짜 가중치 스코어링(6장)과 정규식 기반 청킹(7장), README/tech_stack 파싱은
  * 아직 다음 단계다 — context(project_overview/tech_stack)는 계속 stubData.js를 쓴다.
  */
-
-const MAX_FILE_COUNT = 5000;
-const CANDIDATE_COUNT = 3;
 
 const router = Router();
 

@@ -1,6 +1,7 @@
 import { fetchBlobContent } from './githubClient.js';
 import { estimateSizeScore, computeSizeScore, namePatternBonus, buildScoreReason } from './scorer.js';
 import { extractChunks } from './chunker.js';
+import { CANDIDATE_COUNT } from '../config.js';
 
 /**
  * 05_CODE_SCANNER_SCORER.md 6~7장 스코어링/청킹.
@@ -23,7 +24,7 @@ function rankCandidates(candidateFilePaths) {
   });
 }
 
-export async function selectCandidates(owner, repo, candidateFilePaths, n = 3) {
+export async function selectCandidates(owner, repo, candidateFilePaths, n = CANDIDATE_COUNT) {
   const ranked = rankCandidates(candidateFilePaths);
 
   const selected = [];
