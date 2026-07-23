@@ -78,7 +78,6 @@ body {
 .btn-outline {
   display: block;
   width: 100%;
-  background: var(--color-primary);
   padding: 14px;
   border-radius: var(--radius-md);
   font-size: var(--font-size-body);
@@ -88,11 +87,13 @@ body {
 }
 
 .btn-primary {
+  background: var(--color-primary);
   color: var(--color-on-primary);
   border: none;
 }
 
 .btn-outline {
+  background: var(--color-on-primary);
   color: var(--color-primary);
   border: 1.5px solid var(--color-primary);
 }
