@@ -27,8 +27,13 @@ API 클라이언트 역할을 담당한다. 레이어별 상세 책임과 의존
 엔드포인트와 기본 툴체인(ESLint, Prettier, Jest, `class-validator` 기반 전역 `ValidationPipe`,
 `@nestjs/config` 기반 환경 변수 로딩, Vite 개발 서버용 CORS 설정)만 갖춘 상태다.
 
-TODO: API 서버가 담당할 도메인 모듈 구조(AI 분석, 최근 분석 기록, 시황 뉴스, 학습 콘텐츠), 데이터베이스·ORM
-선택은 아직 정의되지 않았다.
+데이터베이스는 Supabase(Postgres)를 사용한다. `src/config/env.schema.ts`의 Zod 스키마로 필수 환경 변수
+(`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`)를 부팅 시점에 검증하고,
+`src/supabase/`의 전역 `SupabaseModule`이 `@supabase/supabase-js` 클라이언트(`service_role` 키 기반, RLS 우회)를
+`SupabaseService`로 주입한다. 도메인 모듈에서는 `SupabaseService`를 주입받아 `client.from(...)`으로 조회한다.
+
+TODO: API 서버가 담당할 도메인 모듈 구조(AI 분석, 최근 분석 기록, 시황 뉴스, 학습 콘텐츠)와 사용자별 인증
+흐름(Supabase Auth 연동 여부, RLS 정책, anon key 기반 클라이언트 분리 여부)은 아직 정의되지 않았다.
 
 ## 4. 외부 금융 데이터 API 연동
 
