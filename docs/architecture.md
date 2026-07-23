@@ -186,7 +186,8 @@ UI 원칙:
 
 현재 위치:
 
-- 화면: `src/features/mistake-notes/MistakeNotesPage.tsx`
+- 화면: `src/features/mistake-notes/MistakeNotesPage.tsx`, `src/features/mistake-notes/AddMistakeNotePage.tsx`
+- 컴포넌트: `src/features/mistake-notes/components/MistakeNoteDetailModal.tsx`
 - route helper: `src/features/mistake-notes/mistakeNoteRoutes.ts`
 - 상태: `src/features/mistake-notes/model/useMistakeNoteStore.ts`
 
