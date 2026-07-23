@@ -18,13 +18,16 @@ const SCORE_FIELDS = [
 // 학점 반영 비율은 0~100(%) 범위이고, 값이 없으면 기본값 40 으로 채운다.
 const GRADE_WEIGHT_DEFAULT = 40;
 
+// 중요도(과목 학점 수)는 양의 실수(예: 3, 5, 7.5)이고, 값이 없으면 기본값 3 으로 채운다.
+const CREDITS_DEFAULT = 3;
+
 // 저장 전에 입력값을 검사한다. 잘못된 값이면 이유 문자열을, 문제없으면 null 을 돌려준다.
 function validateSubjectInput(body) {
   if (!body || typeof body !== "object") {
     return "요청 본문이 필요합니다.";
   }
 
-  const { name, examDate, gradeWeight } = body;
+  const { name, examDate, gradeWeight, credits } = body;
 
   if (typeof name !== "string" || name.trim() === "") {
     return "과목명(name)이 필요합니다.";
@@ -50,6 +53,12 @@ function validateSubjectInput(body) {
     }
   }
 
+  if (credits !== undefined) {
+    if (typeof credits !== "number" || !Number.isFinite(credits) || credits <= 0 || credits > 30) {
+      return "중요도(credits)는 0보다 큰 학점 수여야 합니다.";
+    }
+  }
+
   return null;
 }
 
@@ -58,6 +67,7 @@ function normalize(body) {
     name: body.name.trim(),
     examDate: body.examDate,
     gradeWeight: body.gradeWeight === undefined ? GRADE_WEIGHT_DEFAULT : body.gradeWeight,
+    credits: body.credits === undefined ? CREDITS_DEFAULT : body.credits,
   };
 
   for (const field of SCORE_FIELDS) {

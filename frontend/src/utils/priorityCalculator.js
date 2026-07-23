@@ -60,6 +60,15 @@ function ascendingScore(value) {
   return ((value - 1) / 4) * 100;
 }
 
+// 중요도(과목 학점 수) 배수. 3학점을 기준(1배)으로, 학점이 높을수록 최종 점수를 키운다.
+// 예: 6학점 -> 2배, 7.5학점 -> 2.5배. 같은 기본 점수라도 학점이 높은 과목이 더 높게 나온다.
+export const REFERENCE_CREDITS = 3;
+
+export function creditMultiplier(credits) {
+  const c = typeof credits === "number" && credits > 0 ? credits : REFERENCE_CREDITS;
+  return c / REFERENCE_CREDITS;
+}
+
 // 1~5 범위를 벗어난 값(0="모르겠다", null, 미설정)은 중립값으로 본다.
 function toScale(value) {
   return value >= 1 && value <= 5 ? value : NEUTRAL;

@@ -7,6 +7,7 @@ const INITIAL_FORM = {
   examDate: "",
   understanding: 3,
   difficulty: 3,
+  credits: 3,
   gradeWeight: 40,
   grading: 3,
   studyAmount: 3,
@@ -91,11 +92,18 @@ function SubjectInputPage({
       return;
     }
 
+    const credits = Number(form.credits);
+    if (form.credits === "" || !Number.isFinite(credits) || credits <= 0) {
+      setErrorMessage("중요도(학점)는 0보다 큰 숫자로 입력해 주세요.");
+      return;
+    }
+
     const payload = {
       name,
       examDate: form.examDate,
       understanding: form.understanding,
       difficulty: form.difficulty,
+      credits,
       gradeWeight,
       grading: form.grading,
       studyAmount: form.studyAmount,
@@ -117,6 +125,7 @@ function SubjectInputPage({
       examDate: subject.examDate,
       understanding: subject.understanding,
       difficulty: subject.difficulty,
+      credits: subject.credits ?? 3,
       gradeWeight: subject.gradeWeight ?? 40,
       grading: subject.grading ?? 3,
       studyAmount: subject.studyAmount ?? 3,
@@ -199,6 +208,25 @@ function SubjectInputPage({
           />
 
           <div className="form-group">
+            <label className="form-label" htmlFor="credits">
+              중요도 (학점)
+            </label>
+            <input
+              id="credits"
+              className="form-input"
+              type="number"
+              min="0.5"
+              step="0.5"
+              inputMode="decimal"
+              value={form.credits}
+              onChange={(event) => updateField("credits", event.target.value)}
+            />
+            <p className="form-hint">
+              이 과목의 학점 수예요. 높을수록 최종 점수가 더 높게 반영돼요. 예: 3학점
+            </p>
+          </div>
+
+          <div className="form-group">
             <label className="form-label" htmlFor="gradeWeight">
               학점 반영 비율 (%)
             </label>
@@ -278,8 +306,8 @@ function SubjectInputPage({
                   <span className="entry-meta">
                     {formatDday(getDaysUntil(subject.examDate))} · 이해도{" "}
                     {formatScale(subject.understanding)} · 난이도{" "}
-                    {formatScale(subject.difficulty)} · 학점{" "}
-                    {subject.gradeWeight ?? 40}%
+                    {formatScale(subject.difficulty)} · {subject.credits ?? 3}학점
+                    · 학점반영 {subject.gradeWeight ?? 40}%
                   </span>
                 </div>
                 <div className="entry-actions">

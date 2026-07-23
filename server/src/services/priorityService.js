@@ -25,6 +25,14 @@ function toScale(value) {
   return value >= 1 && value <= 5 ? value : NEUTRAL;
 }
 
+// 중요도(과목 학점 수) 배수. 3학점을 기준(1배)으로 한다. (클라이언트와 값을 맞춘다.)
+const REFERENCE_CREDITS = 3;
+
+function creditMultiplier(credits) {
+  const c = typeof credits === "number" && credits > 0 ? credits : REFERENCE_CREDITS;
+  return c / REFERENCE_CREDITS;
+}
+
 export function getDaysUntil(examDate, today = new Date()) {
   if (!examDate) {
     return null;
@@ -87,9 +95,8 @@ export function calculatePriorityScore(
 export function scoreSubjects(subjects, weightKey) {
   const weights = WEIGHT_PRESETS[weightKey] || WEIGHT_PRESETS[DEFAULT_WEIGHT_KEY];
 
-  return subjects.map((subject) => ({
-    ...subject,
-    priorityScore: calculatePriorityScore(
+  return subjects.map((subject) => {
+    const base = calculatePriorityScore(
       {
         understanding: subject.understanding,
         difficulty: subject.difficulty,
@@ -100,6 +107,12 @@ export function scoreSubjects(subjects, weightKey) {
         availableTime: subject.availableTime,
       },
       weights
-    ),
-  }));
+    );
+
+    return {
+      ...subject,
+      // 기본 점수에 중요도(학점) 배수를 곱해 최종 점수를 낸다.
+      priorityScore: Math.round(base * creditMultiplier(subject.credits)),
+    };
+  });
 }
