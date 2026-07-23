@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore.js';
 import { requestCurrentLocation } from '../utils/geolocation.js';
+import { haversineDistanceKm } from '../utils/geo.js';
 import NaverMapCanvas from '../components/NaverMapCanvas.jsx';
 import SelectionCard from '../components/SelectionCard.jsx';
 import Mascot from '../components/Mascot.jsx';
@@ -15,6 +16,8 @@ export default function MapScreen() {
   const removeFromSelection = useAppStore((s) => s.removeFromSelection);
   const wishlist = useAppStore((s) => s.wishlist);
   const toggleWishlist = useAppStore((s) => s.toggleWishlist);
+  const visited = useAppStore((s) => s.visited);
+  const toggleVisited = useAppStore((s) => s.toggleVisited);
   const searchQuery = useAppStore((s) => s.searchQuery);
   const userLocation = useAppStore((s) => s.userLocation);
   const userLocationLabel = useAppStore((s) => s.userLocationLabel);
@@ -73,6 +76,13 @@ export default function MapScreen() {
             {locating ? '찾는 중…' : '현재 위치 사용'}
           </button>
         </div>
+
+        <Link to="/recommend" className="recommend-cta">
+          <span className="recommend-cta-circle">
+            <img src="/recomm.png" alt="" />
+          </span>
+          <span className="recommend-cta-label">자동 추천 받기</span>
+        </Link>
       </div>
 
       <div className="detail-panel">
@@ -97,8 +107,11 @@ export default function MapScreen() {
                   key={b.id}
                   bakery={b}
                   liked={wishlist.has(b.id)}
+                  visited={visited.has(b.id)}
+                  distanceKm={haversineDistanceKm(userLocation, b)}
                   onRemove={() => removeFromSelection(b.id)}
                   onToggleWishlist={() => toggleWishlist(b.id)}
+                  onToggleVisited={() => toggleVisited(b.id)}
                 />
               ))}
             </div>

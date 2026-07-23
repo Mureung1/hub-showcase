@@ -1,19 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore.js';
 import { fetchTopRoutes } from '../api/routes.js';
-import { estimateMinutes, RANK_COLORS } from '../utils/routeCalc.js';
+import { estimateMinutes, RANK_COLORS, MODES } from '../utils/routeCalc.js';
 import { normalizeToViewBox } from '../utils/geo.js';
 import RankCard from '../components/RankCard.jsx';
 import Modal from '../components/Modal.jsx';
 import Mascot from '../components/Mascot.jsx';
 import { ClockIcon, ShareIcon, CloseIcon } from '../components/icons.jsx';
-
-const MODES = [
-  ['walk', '도보'],
-  ['car', '자동차'],
-  ['bus', '버스'],
-];
 
 export default function RouteScreen() {
   const bakeries = useAppStore((s) => s.bakeries);
@@ -25,6 +19,7 @@ export default function RouteScreen() {
   const showToast = useAppStore((s) => s.showToast);
   const userLocation = useAppStore((s) => s.userLocation);
   const userLocationLabel = useAppStore((s) => s.userLocationLabel);
+  const consumePendingRecommendation = useAppStore((s) => s.consumePendingRecommendation);
 
   const [showModeTabs, setShowModeTabs] = useState(false);
   const [mode, setMode] = useState('walk');
@@ -32,6 +27,19 @@ export default function RouteScreen() {
   const [courseName, setCourseName] = useState('');
   const [routesStatus, setRoutesStatus] = useState('idle'); // idle | loading | ready | error
   const [serverRoutes, setServerRoutes] = useState([]);
+  // 자동 추천받기에서 넘어온 경우, 서버가 이미 계산까지 끝낸 결과가 있으므로 아래 fetch 이펙트를
+  // 한 번은 건너뛴다(그렇지 않으면 같은 계산을 /api/routes로 한 번 더 요청하게 된다).
+  const skipNextFetchRef = useRef(false);
+
+  useEffect(() => {
+    const pending = consumePendingRecommendation();
+    if (!pending) return;
+    setServerRoutes(pending.routes);
+    setMode(pending.mode);
+    setRoutesStatus('ready');
+    skipNextFetchRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const chosen = useMemo(
     () => [...selectedIds].map((id) => bakeries.find((b) => b.id === id)),
@@ -41,6 +49,10 @@ export default function RouteScreen() {
   // 선택/출발지가 바뀔 때마다 서버에 동선 계산을 요청한다 — 완전탐색/휴리스틱 로직은
   // server/src/services/routeService.js에서 처리(CLAUDE.md: 프론트는 위치 데이터만 전달).
   useEffect(() => {
+    if (skipNextFetchRef.current) {
+      skipNextFetchRef.current = false;
+      return;
+    }
     if (chosen.length < 2) return;
     let cancelled = false;
     setRoutesStatus('loading');
@@ -165,6 +177,8 @@ export default function RouteScreen() {
                   y2={b.y}
                   stroke={RANK_COLORS[i % RANK_COLORS.length]}
                   strokeWidth="0.8"
+                  pathLength="1"
+                  style={{ animationDelay: `${i * 0.35}s` }}
                 />
               );
             })}
@@ -172,7 +186,11 @@ export default function RouteScreen() {
           {positioned.map((p, i) => {
             const isOrigin = i === 0;
             return (
-              <div className="pin" key={p.id} style={{ left: `${p.x}%`, top: `${p.y}%` }}>
+              <div
+                className="pin"
+                key={p.id}
+                style={{ left: `${p.x}%`, top: `${p.y}%`, animationDelay: `${i * 0.35}s` }}
+              >
                 <span
                   className="dot"
                   style={{ background: isOrigin ? 'var(--ink)' : RANK_COLORS[(i - 1) % RANK_COLORS.length] }}

@@ -12,12 +12,13 @@ function stampBadge(visitedCount) {
   return '아직 스탬프가 없어요. 첫 방문을 기록해보세요!';
 }
 
-// TODO(3주차): GET /api/users/me 연동, 취향/가본곳/가고싶은곳을 서버 응답으로 교체.
 export default function MyPageScreen() {
   const navigate = useNavigate();
   const bakeries = useAppStore((s) => s.bakeries);
   const user = useAppStore((s) => s.user);
+  const authStatus = useAppStore((s) => s.authStatus);
   const wishlist = useAppStore((s) => s.wishlist);
+  const visited = useAppStore((s) => s.visited);
   const savedCourses = useAppStore((s) => s.savedCourses);
   const setSelectedIds = useAppStore((s) => s.setSelectedIds);
   const setActiveRankIdx = useAppStore((s) => s.setActiveRankIdx);
@@ -25,6 +26,19 @@ export default function MyPageScreen() {
   const userLocation = useAppStore((s) => s.userLocation);
   const logout = useAppStore((s) => s.logout);
   const showToast = useAppStore((s) => s.showToast);
+
+  // 새로고침 직후엔 토큰으로 로그인 상태를 복원하는 중이라(useRestoreSession), 확정되기 전에
+  // "로그인하세요" 화면을 잠깐 보여줬다 사라지는 깜빡임을 막는다.
+  if (authStatus !== 'ready') {
+    return (
+      <section className="screen-mypage">
+        <div className="mypage-empty">
+          <Mascot />
+          <p>불러오는 중이에요...</p>
+        </div>
+      </section>
+    );
+  }
 
   if (!user) {
     return (
@@ -40,14 +54,8 @@ export default function MyPageScreen() {
     );
   }
 
-  const visitedCount = user.visited.length;
-  const stamps = Array.from({ length: STAMP_TOTAL }, (_, i) => i < visitedCount);
-  const wishlistNames = [
-    ...new Set([
-      ...user.wishlist,
-      ...[...wishlist].map((id) => bakeries.find((b) => b.id === id)?.name).filter(Boolean),
-    ]),
-  ];
+  const visitedNames = [...visited].map((id) => bakeries.find((b) => b.id === id)?.name).filter(Boolean);
+  const wishlistNames = [...wishlist].map((id) => bakeries.find((b) => b.id === id)?.name).filter(Boolean);
 
   const loadSavedCourse = async (course) => {
     setSelectedIds(course.order);
@@ -55,7 +63,9 @@ export default function MyPageScreen() {
     try {
       const routes = await fetchTopRoutes({ origin: userLocation, bakeries: chosen });
       // 출발점 고정이라 순서가 그대로 보존돼야 매치되는 코스다 — 저장 당시와 같은 순서만 찾는다.
-      const idx = routes.findIndex((r) => r.order.length === course.order.length && r.order.every((id, i) => id === course.order[i]));
+      const idx = routes.findIndex(
+        (r) => r.order.length === course.order.length && r.order.every((id, i) => id === course.order[i])
+      );
       setActiveRankIdx(idx >= 0 ? idx : 0);
       navigate('/route');
     } catch {
@@ -65,6 +75,11 @@ export default function MyPageScreen() {
 
   return (
     <section className="screen-mypage">
+      <div className="mypage-header">
+        <h1>마이페이지</h1>
+        <p>내 정보와 빵 취향, 기록을 한눈에 확인해요.</p>
+      </div>
+
       <div className="profile-card">
         <div className="profile-card-head">
           <h3>{user.id}님</h3>
@@ -91,8 +106,8 @@ export default function MyPageScreen() {
       <div className="profile-card">
         <h3>가본 곳</h3>
         <div className="tag-row">
-          {user.visited.length ? (
-            user.visited.map((t) => (
+          {visitedNames.length ? (
+            visitedNames.map((t) => (
               <span className="chip" key={t}>
                 {t}
               </span>
@@ -121,13 +136,13 @@ export default function MyPageScreen() {
       <div className="profile-card stamp-card">
         <h3>스탬프 투어</h3>
         <div className="stamp-grid">
-          {stamps.map((on, i) => (
+          {Array.from({ length: STAMP_TOTAL }, (_, i) => i < visited.size).map((on, i) => (
             <span className={`stamp${on ? ' on' : ''}`} key={i}>
               <Mascot alt="" />
             </span>
           ))}
         </div>
-        <p className="stamp-badge">{stampBadge(visitedCount)}</p>
+        <p className="stamp-badge">{stampBadge(visited.size)}</p>
       </div>
 
       <div className="profile-card">

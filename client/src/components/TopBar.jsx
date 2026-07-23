@@ -1,11 +1,10 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore.js';
-import { SearchIcon, MapIcon, ListIcon, ChatIcon, UserIcon, SunIcon, MoonIcon } from './icons.jsx';
+import { SearchIcon, MapIcon, ListIcon, UserIcon, SunIcon, MoonIcon } from './icons.jsx';
 
 const NAV_ITEMS = [
   { to: '/', label: '지도', Icon: MapIcon, end: true },
   { to: '/list', label: '리스트', Icon: ListIcon },
-  { to: '/chat', label: '챗봇', Icon: ChatIcon },
   { to: '/mypage', label: '마이페이지', Icon: UserIcon },
 ];
 

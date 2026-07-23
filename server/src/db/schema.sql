@@ -24,6 +24,10 @@ CREATE TABLE IF NOT EXISTS bakeries (
   busy_hours TEXT
 );
 
+-- 자동 추천받기 "커피와 같이 먹고 싶은지" 질문용. 데이터가 없는 곳은 NULL(=모름)로 두고,
+-- 필터링 시 NULL/false는 동일하게 취급한다(server/src/services/recommendService.js).
+ALTER TABLE bakeries ADD COLUMN IF NOT EXISTS has_coffee BOOLEAN;
+
 -- 회원가입 시 고르는 빵 취향 (다대다)
 CREATE TABLE IF NOT EXISTS user_tastes (
   user_id INTEGER NOT NULL REFERENCES users(id),

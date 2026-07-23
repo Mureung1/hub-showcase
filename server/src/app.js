@@ -5,6 +5,8 @@ import healthRoutes from './routes/health.js';
 import authRoutes from './routes/auth.js';
 import bakeryRoutes from './routes/bakeries.js';
 import routeRoutes from './routes/routes.js';
+import userRoutes from './routes/users.js';
+import recommendRoutes from './routes/recommend.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -15,6 +17,8 @@ app.use('/api', healthRoutes);
 app.use('/api', authRoutes);
 app.use('/api', bakeryRoutes);
 app.use('/api', routeRoutes);
+app.use('/api', userRoutes);
+app.use('/api', recommendRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
