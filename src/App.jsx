@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { QRCodeSVG } from 'qrcode.react'
 import { supabase } from './services'
 import './App.css'
 
@@ -46,6 +47,49 @@ const tabs = [
   },
   { id: 'mypage', label: '마이페이지', symbol: 'M', path: '/customer/mypage' },
 ]
+
+function buildQrValue(memberNumber) {
+  return `cafe-stamp:${memberNumber}`
+}
+
+function parseMemberLookupInput(input) {
+  const trimmedInput = input.trim()
+
+  if (!trimmedInput) {
+    return {
+      memberNumber: '',
+      error: '회원번호 또는 QR 값을 입력해주세요.',
+    }
+  }
+
+  if (trimmedInput.startsWith('cafe-stamp:')) {
+    const memberNumber = trimmedInput.replace('cafe-stamp:', '').trim()
+
+    if (!memberNumber) {
+      return {
+        memberNumber: '',
+        error: 'QR 안에 회원번호가 없습니다.',
+      }
+    }
+
+    return {
+      memberNumber,
+      error: '',
+    }
+  }
+
+  if (trimmedInput.includes(':')) {
+    return {
+      memberNumber: '',
+      error: '지원하지 않는 QR 형식입니다.',
+    }
+  }
+
+  return {
+    memberNumber: trimmedInput,
+    error: '',
+  }
+}
 
 function App() {
   const [session, setSession] = useState(null)
@@ -420,13 +464,13 @@ function CustomerHome({ profile, onLoadCustomer }) {
         </div>
         <div
           className="qr-code"
-          aria-label={`${customerData.member_number} 적립용 QR 예시`}
+          aria-label={`${customerData.member_number} 적립용 QR `}
         >
-          <span />
-          <span />
-          <span />
-          <span />
-          <strong>QR</strong>
+          <QRCodeSVG
+           value={buildQrValue(customerData.member_number)}
+           size={164}
+           level="M"
+           includeMargin={false}/>
         </div>
       </div>
 
@@ -556,10 +600,88 @@ function OwnerDashboard({ profile }) {
   const [ownerStatus, setOwnerStatus] = useState('loading')
   const [ownerError, setOwnerError] = useState('')
   const [ownerCafe, setOwnerCafe] = useState(null)
+  const [lookupInput, setLookupInput] = useState('')
+  const [lookupError, setLookupError] = useState('')
+  const [parsedMemberNumber, setParsedMemberNumber] = useState('')
+  const [lookupStatus, setLookupStatus] = useState('idle')
+  const [lookupResult, setLookupResult] = useState(null)
+  const lookupInputRef = useRef(null)
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     navigate('/login')
+  }
+
+  const handleLookupSubmit = async (event) => {
+    event.preventDefault()
+
+    const result = parseMemberLookupInput(lookupInput)
+
+    setLookupError(result.error)
+    setParsedMemberNumber(result.memberNumber)
+    setLookupResult(null)
+
+    if (result.error) {
+      setLookupStatus('idle')
+      lookupInputRef.current?.focus()
+      return
+    }
+
+    setLookupInput(result.memberNumber)
+    setLookupStatus('loading')
+
+    const { data: customer, error: customerError } = await supabase
+      .from('customers')
+      .select('id, name, member_number')
+      .eq('member_number', result.memberNumber)
+      .maybeSingle()
+
+    if (customerError) {
+      setLookupStatus('error')
+      setLookupError('손님 정보를 조회하지 못했습니다.')
+      lookupInputRef.current?.focus()
+      return
+    }
+
+    if (!customer) {
+      setLookupStatus('error')
+      setLookupError('해당 회원번호의 손님을 찾을 수 없습니다.')
+      lookupInputRef.current?.focus()
+      return
+    }
+
+    const { data: stampCard, error: stampCardError } = await supabase
+      .from('stamp_cards')
+      .select('id, stamp_count')
+      .eq('customer_id', customer.id)
+      .eq('cafe_id', profile.cafe_id)
+      .maybeSingle()
+
+    if (stampCardError) {
+      setLookupStatus('error')
+      setLookupError('스탬프 정보를 조회하지 못했습니다.')
+      lookupInputRef.current?.focus()
+      return
+    }
+
+    if (!stampCard) {
+      setLookupStatus('error')
+      setLookupError('이 카페의 스탬프 카드가 아직 없습니다.')
+      lookupInputRef.current?.focus()
+      return
+    }
+
+    setLookupResult({
+      customerName: customer.name,
+      memberNumber: customer.member_number,
+      cafeName: ownerCafe.name,
+      currentStamps: stampCard.stamp_count,
+      goalStamps: ownerCafe.stamp_goal,
+      reward: ownerCafe.reward_title,
+    })
+    setLookupStatus('success')
+    setLookupError('')
+    lookupInputRef.current?.focus()
   }
 
   useEffect(() => {
@@ -591,6 +713,12 @@ function OwnerDashboard({ profile }) {
 
     loadOwnerCafe()
   }, [profile?.cafe_id])
+
+  useEffect(() => {
+    if (ownerStatus === 'idle') {
+      lookupInputRef.current?.focus()
+    }
+  }, [ownerStatus])
 
   return (
     <main className="app-shell owner-screen">
@@ -625,9 +753,62 @@ function OwnerDashboard({ profile }) {
               </div>
             </dl>
 
-            <button className="primary-button" type="button">
-              손님 QR 스캔하기
-            </button>
+            <form className="lookup-form" onSubmit={handleLookupSubmit}>
+              <label htmlFor="member-lookup">회원번호 또는 QR 값</label>
+              <div className="lookup-row">
+                <input
+                  id="member-lookup"
+                  ref={lookupInputRef}
+                  type="text"
+                  value={lookupInput}
+                  onChange={(event) => setLookupInput(event.target.value)}
+                  placeholder="cafe-stamp:C-1001 또는 C-1001"
+                  autoComplete="off"
+                />
+                <button
+                  className="primary-button"
+                  type="submit"
+                  disabled={lookupStatus === 'loading'}
+                >
+                  {lookupStatus === 'loading' ? '조회 중...' : '조회'}
+                </button>
+              </div>
+
+              {lookupError && <p className="form-error">{lookupError}</p>}
+
+              {parsedMemberNumber && !lookupError && (
+                <div className="lookup-result">
+                  <span>조회한 회원번호</span>
+                  <strong>{parsedMemberNumber}</strong>
+                </div>
+              )}
+            </form>
+
+            {lookupResult && (
+              <article className="lookup-card">
+                <div>
+                  <p className="eyebrow">조회 결과</p>
+                  <h3>{lookupResult.customerName}</h3>
+                  <p>회원번호 {lookupResult.memberNumber}</p>
+                </div>
+                <dl className="rule-list">
+                  <div>
+                    <dt>담당 카페</dt>
+                    <dd>{lookupResult.cafeName}</dd>
+                  </div>
+                  <div>
+                    <dt>현재 스탬프</dt>
+                    <dd>
+                      {lookupResult.currentStamps} / {lookupResult.goalStamps}개
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>보상 내용</dt>
+                    <dd>{lookupResult.reward}</dd>
+                  </div>
+                </dl>
+              </article>
+            )}
           </>
         )}
       </section>

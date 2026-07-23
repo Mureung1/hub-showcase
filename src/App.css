@@ -181,57 +181,13 @@ button {
 }
 
 .qr-code {
-  position: relative;
   display: grid;
   place-items: center;
   width: 190px;
   aspect-ratio: 1;
   margin: 0 auto;
-  border: 12px solid #fff;
   border-radius: 8px;
-  background:
-    linear-gradient(90deg, #201915 16px, transparent 16px) 0 0 / 38px 38px,
-    linear-gradient(#201915 16px, transparent 16px) 0 0 / 38px 38px,
-    #fff;
-}
-
-.qr-code span {
-  position: absolute;
-  width: 42px;
-  aspect-ratio: 1;
-  border: 9px solid #201915;
-  background: #fff;
-}
-
-.qr-code span:nth-child(1) {
-  top: 14px;
-  left: 14px;
-}
-
-.qr-code span:nth-child(2) {
-  top: 14px;
-  right: 14px;
-}
-
-.qr-code span:nth-child(3) {
-  bottom: 14px;
-  left: 14px;
-}
-
-.qr-code span:nth-child(4) {
-  right: 30px;
-  bottom: 36px;
-  width: 22px;
-  border-width: 7px;
-}
-
-.qr-code strong {
-  position: relative;
-  padding: 8px 10px;
-  border-radius: 6px;
-  background: #fff;
-  color: #201915;
-  font-size: 15px;
+  background:#fff;
 }
 
 .section-title {
@@ -385,6 +341,11 @@ button {
   font-weight: 750;
 }
 
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.64;
+}
+
 .bottom-nav {
   position: fixed;
   right: 0;
@@ -471,6 +432,85 @@ button {
   color: #201915;
   font-weight: 750;
   text-align: right;
+}
+
+.lookup-form {
+  display: grid;
+  gap: 10px;
+}
+
+.lookup-form label {
+  color: #5d5148;
+  font-weight: 700;
+}
+
+.lookup-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.lookup-row input {
+  min-width: 0;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid #d9cec2;
+  border-radius: 8px;
+  background: #fffdf8;
+  color: #201915;
+}
+
+.lookup-row .primary-button {
+  width: auto;
+  min-width: 96px;
+  padding: 0 18px;
+}
+
+.lookup-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 6px;
+  background: #eef7f2;
+  color: #2f7a5f;
+}
+
+.lookup-result span {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.lookup-result strong {
+  color: #201915;
+}
+
+.lookup-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #d5e9dd;
+  border-radius: 8px;
+  background: #fbfffc;
+}
+
+.lookup-card h3,
+.lookup-card p {
+  margin: 0;
+}
+
+.lookup-card h3 {
+  color: #201915;
+  font-size: 22px;
+}
+
+.lookup-card p:not(.eyebrow) {
+  margin-top: 4px;
+  color: #70675f;
+  font-size: 14px;
 }
 
 @media (min-width: 720px) {
