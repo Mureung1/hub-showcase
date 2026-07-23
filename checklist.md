@@ -29,11 +29,12 @@
 - [x] playwright로 Home.jsx 빈 카드 노출 + FridgePage confirm 취소/확인 두 경로 모두 브라우저에서 확인
 
 ## 백로그 (이번 주 범위 아님)
-- [ ] `끼니캐릭터.png`(`src/assets/`, git 미추적)는 임시 목업 일러스트 — 홈 화면 빈 추천 카드(`Home.jsx`)에 자리만 잡아둔 것이고 나중에 최종본으로 교체 필요
+- [ ] `끼니캐릭터.png`(`src/assets/`, git 미추적)는 임시 목업 일러스트 — 홈 화면 빈 추천 카드(`Home.jsx`)에 자리만 잡아둔 것이고 나중에 최종본으로 교체 필요. 최종본은 캐릭터에 요리사 모자 씌운 버전으로 제작
+- [ ] 홈 화면 로딩 중 표시(`Home.jsx` `inline-loading` 패턴)의 마스코트를 실제로 "레시피를 찾는 듯한" 포즈의 커스텀 일러스트/애니메이션으로 교체 — 지금은 기존 정적 이미지(`마스코트-끼니 - 여백 줄임.png`) + 카피 문구("기니가 냉장고 재료로 만들 요리를 찾는 중...")만으로 표현 중. 캐릭터 최종본 확정 후 위 `끼니캐릭터.png` 교체 작업과 함께 진행
 - [ ] 앱 전체 카피/마이크로카피를 기니 1인칭 말투로 통일하는 아이디어 — 이번에 홈 빈 상태 카드와 FridgePage confirm 문구에 기니 톤을 부분 적용해봤는데, 에러 메시지·빈 목록 문구 등 다른 화면도 전부 통일하면 좋을 것 같음. 범위가 커서 이번 주 범위 밖, 나중에 별도 작업으로 검토
 - [ ] "재료 조금만 사면 돼요" 카드 — 부족 1개인 레시피가 눈에 더 잘 띄도록 개선
-  - `groupRecipesByMissingIngredients`(`src/data/selectors.js:56`)의 `shopping` 배열을 가격순 대신 부족 개수 오름차순(그 안에서 가격순)으로 정렬
-  - `MenuCard.jsx`의 부족 개수 뱃지 — `missingCount === 1`일 때 포인트 컬러로 강조, 문구도 더 눈에 띄게 (예: "1개만 더 있으면 완성!")
+  - [x] `groupRecipesByMissingIngredients`(`src/data/selectors.js:72`)의 `shopping` 배열을 가격순 대신 부족 개수 오름차순(그 안에서 가격순)으로 정렬 — TDD(red→green→refactor)로 구현, `getClosestRecipes`와 정렬 비교 로직(`byMissingCountThenCost`) 공유하도록 리팩토링. 테스트: `src/data/selectors.groupRecipesByMissingIngredients.test.js`
+  - [ ] `MenuCard.jsx`의 부족 개수 뱃지 — `missingCount === 1`일 때 포인트 컬러로 강조, 문구도 더 눈에 띄게 (예: "1개만 더 있으면 완성!")
   - 계기: 레시피 추천이 0건일 때 "빈 화면"으로 보이는 문제에 대해 제미나이한테 물어봤고, 그중 "부족 1개 카드 가시성 강화" 아이디어가 적은 공수로 바로 적용할 만해서 기록해둠
   - 참고: "0건일 때 대체 후보 보여주기"는 아래 항목으로 먼저 구현됨 — 이 항목은 그와 별개로, "조금만 사면 돼요" 섹션 안에서 1개 부족 카드를 더 눈에 띄게 하는 것
 - [x] "0건일 때 그나마 가까운 후보 보여주기" — `groupRecipesByMissingIngredients`가 부족 3개 이상인 레시피를 `others`로 따로 반환하고, `ready`/`shopping`이 둘 다 0건일 때만 `getClosestRecipes`로 부족 개수가 가장 적은 상위 3개를 "이 재료도 있으면 만들 수 있어요" 섹션으로 보여줌 (`Home.jsx`)
