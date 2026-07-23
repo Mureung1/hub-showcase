@@ -57,3 +57,37 @@ export async function getSubscription(id) {
 
   return data
 }
+
+export async function previewSubscription(id) {
+  const res = await fetch(`/api/subscriptions/${id}/preview`)
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    const error = new Error(data.error || '초대 링크를 확인하지 못했습니다.')
+    error.status = res.status
+    throw error
+  }
+
+  return data
+}
+
+export async function joinSubscription(id) {
+  const token = getToken()
+  const res = await fetch(`/api/subscriptions/${id}/join`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    const error = new Error(data.error || '파티 가입에 실패했습니다.')
+    error.status = res.status
+    throw error
+  }
+
+  return data
+}

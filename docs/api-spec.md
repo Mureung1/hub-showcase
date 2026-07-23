@@ -64,7 +64,7 @@
 ## 1. 인증 (Auth) [확정]
 
 - 회원가입/로그인은 구글 로그인만 지원. 최초 로그인 시 자동으로 계정 생성.
-- 초대 링크(`joinUrl`)로 들어온 미로그인 사용자는 구글 로그인을 거치는 동안 `state` 파라미터로 초대된 구독 정보를 함께 전달, 가입/로그인과 동시에 해당 파티의 파티원으로 자동 등록. 이미 로그인된 사용자가 초대 링크를 클릭한 경우 FE가 보유 토큰으로 `POST /api/subscriptions/:id/join` 호출.
+- 초대 링크(`joinUrl`)로 들어온 미로그인 사용자는 구글 로그인을 거치는 동안 `state` 파라미터로 초대된 구독 정보를 함께 전달, 로그인 완료 후 `/join/:id`로 복귀. 이미 로그인된 사용자가 초대 링크를 클릭한 경우와 동일하게, FE가 보유 토큰으로 `POST /api/subscriptions/:id/join`을 호출해 가입을 처리(무효한 초대 링크면 로그인 여부와 무관하게 동일한 안내 문구 표시).
 
 | Method | Path | 설명 | 인증 |
 | --- | --- | --- | --- |
@@ -85,8 +85,8 @@
 
 - 구글에서 받은 `code`로 프로필(이메일, 구글 계정 고유 ID, 이름)을 가져와 기존 사용자인지 확인하고, 없으면 새로 생성(=최초 로그인이 곧 회원가입).
 - JWT 발급.
-- `state`가 유효한 `subscriptionId`이고, 아직 해당 구독의 파티원이 아닌 경우 파티원으로 등록 후 진행.
-- `${FRONTEND_URL}/oauth/callback#token=<jwt>&joinedSubId=<id|null>` 형태로 302 리디렉션. FE는 URL 프래그먼트에서 토큰을 읽어 저장하고, `joinedSubId`가 있으면 해당 구독 화면으로 이동.
+- `state`가 있으면 `/join/:state`를, 없으면 `/`를 복귀 경로로 계산(가입 처리는 하지 않음 — `state`의 유효성 검증은 FE가 복귀 경로에서 `POST /api/subscriptions/:id/join`을 호출할 때 이뤄짐).
+- `${FRONTEND_URL}/oauth/callback#token=<jwt>&redirect=<path>` 형태로 302 리디렉션. FE는 URL 프래그먼트에서 토큰을 읽어 저장하고, `redirect` 경로로 이동.
 
 **Error `400`**: 유효하지 않은 `code`
 
@@ -109,6 +109,7 @@
 | POST | `/api/subscriptions` | 구독 등록 | ✓ |
 | GET | `/api/subscriptions` | 구독 목록 조회 | ✓ |
 | GET | `/api/subscriptions/:id` | 구독 상세 조회 | ✓ |
+| GET | `/api/subscriptions/:id/preview` | 초대 링크 미리보기(가입 전 유효성 확인) | ✕ |
 | PATCH | `/api/subscriptions/:id` | 구독 수정 | ✓ |
 | DELETE | `/api/subscriptions/:id` | 구독 삭제 | ✓ |
 | GET | `/api/subscriptions/dashboard` | 월별 실지출 조회 | ✓ |
@@ -197,6 +198,19 @@
 
 **Error `404`**: 존재하지 않는 구독
 
+### 초대 링크 미리보기: `GET /api/subscriptions/:id/preview`
+
+- 인증 불필요. 초대 링크(`/join/:id`)로 들어온 미로그인 사용자가 로그인 절차를 거치기 전에 링크 유효성을 확인하기 위한 용도.
+- `subAmount`, `bankAccount` 등 민감 정보는 응답에 포함하지 않는다.
+
+**Response `200`**
+
+```json
+{ "id": "sub_1", "serviceName": "넷플릭스" }
+```
+
+**Error `404`**: 존재하지 않는 구독
+
 ### 구독 수정: `PATCH /api/subscriptions/:id`
 
 - 파티장 전용.
@@ -261,7 +275,7 @@
 ## 3. 파티원 (Party Member) [초안]
 
 - 가입 링크(`joinUrl`)는 별도 토큰 없이 `subscriptionId`를 그대로 사용 — 구독당 1개, 가입 여부와 무관하게 항상 동일. 파티장이 카카오톡 공유하기로 그룹원에게 전달.
-- 이미 로그인된 사용자가 초대 링크를 클릭한 경우 FE가 보유 토큰으로 POST /api/subscriptions/:id/join 호출. 미로그인 사용자는 구글 로그인을 거치는 동안 가입/로그인과 동시에 해당 파티의 파티원으로 자동 등록.
+- 이미 로그인된 사용자가 초대 링크를 클릭한 경우 FE가 보유 토큰으로 POST /api/subscriptions/:id/join 호출. 미로그인 사용자는 로그인 버튼을 보여주기 전에 먼저 `GET /api/subscriptions/:id/preview`로 링크 유효성을 확인하고, 유효한 경우에만 로그인을 유도한다(무효하면 로그인 절차 없이 바로 안내). 로그인 완료 후에는 구글 로그인 동안 `state`로 전달한 구독 id를 이용해 `/join/:id`로 복귀해 동일하게 POST /api/subscriptions/:id/join을 호출.
 - 모든 파티원은 로그인 회원.
 - `memberCount`는 구독 등록/수정 시 파티장이 입력하는 고정 정산 인원수이며, 실제 가입 완료 인원과 별개 — 초대는 보냈지만 아직 가입하지 않은 인원이 있으면 아래 파티원 목록 수가 `memberCount`보다 적을 수 있음. 파티원 가입/삭제로 자동으로 바뀌지 않으며, 정산 인원수를 바꾸려면 파티장이 `PATCH /subscriptions/:id`로 직접 조정.
 
