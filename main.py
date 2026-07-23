@@ -70,6 +70,9 @@ class DocumentRequest(BaseModel):
     legal_basis: str = ""
     demands: str = ""
     deadline: str = ""
+    # 🚀 [추가] 브리핑 문서에 들어갈 판례 리스트와 AI 전략
+    related_laws: list = []
+    strategy_guide: str = ""
 
 class CaseLog(BaseModel):
     query: str

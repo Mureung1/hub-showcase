@@ -1,3 +1,4 @@
+// App.js 전체 코드 덮어쓰기
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
@@ -10,7 +11,9 @@ function App() {
   const [relatedLaws, setRelatedLaws] = useState([]);
   const [docResult, setDocResult] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedDocType, setSelectedDocType] = useState("content_proof");
+  
+  // 🚀 [수정] 기본 선택값을 '브리핑 페이퍼'로 변경
+  const [selectedDocType, setSelectedDocType] = useState("briefing");
 
   const [selectedLaw, setSelectedLaw] = useState(null);
   const [typingTimeout, setTypingTimeout] = useState(null);
@@ -63,7 +66,6 @@ function App() {
             return {
               ...prev,
               title: facts.case_type || prev.title,
-              // [추가된 부분] 백엔드에서 분석한 상대방(person) 이름이 있으면 피고 이름 칸에 자동 입력!
               receiver_name: facts.person || prev.receiver_name,
               facts: aiFacts.trim() !== "" ? aiFacts.trim() : prev.facts
             };
@@ -88,7 +90,6 @@ function App() {
     setRelatedLaws([]);
 
     try {
-      // 🚀 [핵심 수정] query와 함께 사용자가 확인/수정한 사건유형(manualForm.title)을 같이 보냅니다!
       const payload = {
         query: query,
         case_type: manualForm.title || "" 
@@ -109,8 +110,16 @@ function App() {
     if (!extractedData) return;
     setIsLoading(true);
     setDocResult("문서를 생성 중입니다...");
+    
+    // 🚀 [핵심 수정] 폼 데이터 + 판례 리스트 + 챗봇 피드백 텍스트를 한 번에 넘김! (토큰 0 소모)
     try {
-      const payload = { ...extractedData, doc_type: selectedDocType };
+      const payload = { 
+        ...extractedData, 
+        doc_type: selectedDocType,
+        related_laws: relatedLaws, 
+        strategy_guide: chatLog.filter(m => m.sender === 'ai').map(m => m.text).join('\n\n')
+      };
+      
       const response = await axios.post("http://127.0.0.1:8000/api/generate-document", payload);
       const generatedDoc = response.data.document_content;
       setDocResult(generatedDoc);
@@ -150,15 +159,13 @@ function App() {
 
   const submitManualForm = () => setExtractedData(manualForm);
 
-  // [핵심 업데이트] SNU Navy (신뢰) + Naver Green (행동 유도) 테마
   const colors = {
-    snuNavy: '#0A2254',      // 서울대 상징 네이비 (헤더, 텍스트)
+    snuNavy: '#0A2254', 
     snuNavyLight: '#153A80', 
-    naverGreen: '#03C75A',   // 네이버 상징 그린 (버튼, 프로그레스 바)
-    naverHover: '#02b351',   
-    accentBg: '#E8F9EE',     // 네이버 그린의 아주 연한 배경색
+    naverGreen: '#03C75A', 
+    accentBg: '#E8F9EE', 
     border: '#E2E8F0', 
-    textMain: '#1E293B',     // 가독성을 위한 진한 차콜
+    textMain: '#1E293B', 
     textMuted: '#64748b',
     bgLight: '#F8FAFC', 
     white: '#ffffff'
@@ -175,7 +182,6 @@ function App() {
   return (
     <div style={{ padding: '40px 20px', fontFamily: "'Pretendard', 'Noto Sans KR', sans-serif", maxWidth: '1200px', margin: '0 auto', color: colors.textMain }}>
       
-      {/* 자세히 보기 모달 */}
       {selectedLaw && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setSelectedLaw(null)}>
           <div style={{ backgroundColor: colors.white, padding: '30px', borderRadius: '12px', maxWidth: '600px', width: '90%', maxHeight: '80vh', overflowY: 'auto', position: 'relative', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }} onClick={e => e.stopPropagation()}>
@@ -212,17 +218,15 @@ function App() {
                   placeholder="예: 2026년 3월 5일에 김철수에게 500만원을 빌려줬는데 안 갚아요..." 
                   style={{ width: '100%', height: '120px', padding: '16px', border: `1px solid ${colors.border}`, borderRadius: '8px', fontSize: '15px', outline: 'none', resize: 'vertical' }} 
                 />
-                {/* [Naver Green 적용] 가장 중요한 행동 유도 버튼 */}
                 <button onClick={handleAsk} disabled={isLoading} style={{ width: '100%', padding: '16px', backgroundColor: colors.naverGreen, color: colors.white, border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px', transition: 'background-color 0.2s' }}>
                   {isLoading ? '전략 분석 중...' : '법률 전략 요청하기 (판례 검색)'}
                 </button>
               </div>
 
-              {/* 실시간 폼 패널 */}
               <div style={{ marginTop: '30px', padding: '25px', backgroundColor: colors.bgLight, borderRadius: '12px', border: `1px solid ${colors.border}` }}>
                 <h3 style={{ color: colors.snuNavyLight, marginTop: 0, marginBottom: '15px', fontSize: '1.1rem', display: 'flex', alignItems: 'center' }}>
                   <span style={{ marginRight: '8px' }}>🤖</span> 실시간 육하원칙 정리 
-                  <span style={{ fontSize: '12px', fontWeight: 'normal', color: colors.naverGreen, marginLeft: 'auto' }}>*잘못 인식된 경우 직접 수정 가능합니다.</span>
+                  <span style={{ fontSize: '12px', fontWeight: 'normal', color: colors.naverGreen, marginLeft: 'auto' }}>*(시간 순서대로 적어주시면 변호사 상담 시 더욱 유리합니다)*</span>
                 </h3>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -236,11 +240,10 @@ function App() {
                 </div>
                 
                 {isAgentReplied && (
-                   <button onClick={submitManualForm} style={{ width: '100%', padding: '14px', marginTop: '20px', backgroundColor: colors.snuNavy, color: colors.white, border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px' }}>이 내용으로 변호사 브리핑 / 소장 생성</button>
+                   <button onClick={submitManualForm} style={{ width: '100%', padding: '14px', marginTop: '20px', backgroundColor: colors.snuNavy, color: colors.white, border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px' }}>이 내용으로 문서 생성 탭 활성화</button>
                 )}
               </div>
 
-              {/* 챗 로그 렌더링 */}
               {chatLog.length > 0 && (
                 <div style={{ marginTop: '30px', padding: '20px', backgroundColor: colors.white, border: `1px solid ${colors.border}`, borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
                   <h3 style={{ color: colors.snuNavyLight, marginTop: 0, marginBottom: '15px', fontSize: '1.1rem' }}>에이전트 전략 피드백</h3>
@@ -256,11 +259,35 @@ function App() {
 
             {extractedData && (
               <div style={{ backgroundColor: colors.white, border: `1px solid ${colors.border}`, padding: '30px', borderRadius: '12px', marginBottom: '40px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-                <h2 style={{ color: colors.snuNavyLight, marginTop: 0, fontSize: '1.25rem', marginBottom: '20px' }}>2. 문서 자동 발급</h2>
-                <div style={{ marginBottom: '25px', display: 'flex', gap: '20px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '15px' }}><input type="radio" value="content_proof" checked={selectedDocType === "content_proof"} onChange={(e) => setSelectedDocType(e.target.value)} style={{ marginRight: '8px', accentColor: colors.naverGreen }} /> 변호사 상담용 브리핑 / 내용증명서</label>
-                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '15px' }}><input type="radio" value="complaint" checked={selectedDocType === "complaint"} onChange={(e) => setSelectedDocType(e.target.value)} style={{ marginRight: '8px', accentColor: colors.naverGreen }} /> 민사소장</label>
+                <h2 style={{ color: colors.snuNavyLight, marginTop: 0, fontSize: '1.25rem', marginBottom: '20px' }}>2. 3단계 맞춤형 문서 발급</h2>
+                
+                {/* 🚀 [핵심 수정] 라디오 버튼 3단계 분리 */}
+                <div style={{ marginBottom: '25px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '15px', backgroundColor: selectedDocType === "briefing" ? colors.bgLight : 'transparent', padding: '10px', borderRadius: '8px', transition: 'background 0.2s' }}>
+                    <input type="radio" value="briefing" checked={selectedDocType === "briefing"} onChange={(e) => setSelectedDocType(e.target.value)} style={{ marginRight: '10px', accentColor: colors.naverGreen }} /> 
+                    <div>
+                      <strong style={{ display: 'block', color: colors.snuNavy }}>💼 변호사 상담용 브리핑 페이퍼</strong>
+                      <span style={{ fontSize: '13px', color: colors.textMuted }}>AI 분석 전략과 판례가 포함되어 상담 시간을 획기적으로 줄여줍니다.</span>
+                    </div>
+                  </label>
+                  
+                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '15px', backgroundColor: selectedDocType === "content_proof" ? colors.bgLight : 'transparent', padding: '10px', borderRadius: '8px', transition: 'background 0.2s' }}>
+                    <input type="radio" value="content_proof" checked={selectedDocType === "content_proof"} onChange={(e) => setSelectedDocType(e.target.value)} style={{ marginRight: '10px', accentColor: colors.naverGreen }} /> 
+                    <div>
+                      <strong style={{ display: 'block', color: colors.snuNavy }}>✉️ 내용증명서 (상대방 압박용)</strong>
+                      <span style={{ fontSize: '13px', color: colors.textMuted }}>강력한 요구사항과 법적 조치 경고가 포함된 공식 서면입니다.</span>
+                    </div>
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '15px', backgroundColor: selectedDocType === "complaint" ? colors.bgLight : 'transparent', padding: '10px', borderRadius: '8px', transition: 'background 0.2s' }}>
+                    <input type="radio" value="complaint" checked={selectedDocType === "complaint"} onChange={(e) => setSelectedDocType(e.target.value)} style={{ marginRight: '10px', accentColor: colors.naverGreen }} /> 
+                    <div>
+                      <strong style={{ display: 'block', color: colors.snuNavy }}>🏛️ 민사 소장 (법원 제출용)</strong>
+                      <span style={{ fontSize: '13px', color: colors.textMuted }}>청구 취지와 엄격한 법적 근거가 포함된 재판용 서식입니다.</span>
+                    </div>
+                  </label>
                 </div>
+
                 <button onClick={handleGenerateDoc} disabled={isLoading} style={{ width: '100%', padding: '16px', backgroundColor: colors.naverGreen, color: colors.white, border: 'none', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold', transition: 'background-color 0.2s' }}>📄 AI 문서 자동 생성</button>
               </div>
             )}
@@ -313,7 +340,6 @@ function App() {
                     >
                       <h4 style={{ margin: '0 0 10px 0', color: colors.snuNavyLight, fontSize: '15px', lineHeight: '1.4' }}>{law.title}</h4>
                       
-                      {/* [Naver Green 적용] 유사도 % 진행바 UI */}
                       {law.similarity !== undefined && (
                         <div style={{ margin: '10px 0 15px 0', fontSize: '12px', color: colors.textMuted }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
@@ -348,7 +374,12 @@ function App() {
               cases.map((c) => (
                 <div key={c.id} style={{ border: `1px solid ${colors.border}`, borderRadius: '12px', padding: '25px', backgroundColor: colors.white, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${colors.bgLight}`, paddingBottom: '15px', marginBottom: '15px' }}>
-                    <h3 style={{ margin: 0, color: colors.snuNavyLight, fontSize: '1.1rem' }}><span style={{ color: colors.naverGreen, marginRight: '8px' }}>[{c.doc_type === 'complaint' ? '소장' : '내용증명'}]</span> {c.extracted_data.title || "제목 없음"}</h3>
+                    <h3 style={{ margin: 0, color: colors.snuNavyLight, fontSize: '1.1rem' }}>
+                      <span style={{ color: colors.naverGreen, marginRight: '8px' }}>
+                        [{c.doc_type === 'complaint' ? '소장' : c.doc_type === 'briefing' ? '브리핑' : '내용증명'}]
+                      </span> 
+                      {c.extracted_data.title || "제목 없음"}
+                    </h3>
                     <span style={{ color: colors.textMuted, fontSize: '13px' }}>{c.timestamp}</span>
                   </div>
                   <div style={{ fontSize: '14px', color: colors.textMain, marginBottom: '20px', lineHeight: '1.6', backgroundColor: colors.bgLight, padding: '15px', borderRadius: '8px' }}>
