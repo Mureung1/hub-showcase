@@ -105,6 +105,12 @@ class TurnKind(str, Enum):
     PRODUCT = "product"
 
 
+class LoginSettlementOutcome(str, Enum):
+    SETTLED = "settled"
+    REJECTED = "rejected"
+    FAILED = "failed"
+
+
 class EffectiveModelResolutionError(RuntimeError):
     pass
 
@@ -140,6 +146,10 @@ class BrowserLoginAttempt:
     start_settled: asyncio.Event = field(default_factory=asyncio.Event, repr=False)
     completion_task: asyncio.Task[None] | None = field(default=None, repr=False)
     expiry_task: asyncio.Task[None] | None = field(default=None, repr=False)
+    settlement_task: asyncio.Task[LoginSettlementOutcome] | None = field(
+        default=None,
+        repr=False,
+    )
     settlement_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
 
 
@@ -942,9 +952,7 @@ class BridgeWorker:
         self._result(
             command.bridge_request_id,
             command.command,
-            status=(
-                "already_settled" if attempt.status == "completed" else "cancelled"
-            ),
+            status="cancelled" if attempt.status == "cancelled" else "already_settled",
             attemptId=attempt.attempt_id,
         )
 
@@ -959,70 +967,136 @@ class BridgeWorker:
         async with attempt.settlement_lock:
             if self._login_attempt is not attempt or attempt.status != "pending":
                 return True
-            attempt.settlement_target = terminal_status
-            handle = attempt.handle
-            if handle is None:
+            settlement_task = attempt.settlement_task
+            owns_settlement = settlement_task is None
+            if settlement_task is None:
+                attempt.settlement_target = terminal_status
+                settlement_task = asyncio.create_task(
+                    self._run_login_settlement(
+                        attempt,
+                        terminal_status=terminal_status,
+                    )
+                )
+                attempt.settlement_task = settlement_task
+
+        try:
+            outcome = await asyncio.wait_for(
+                asyncio.shield(settlement_task),
+                timeout=self._account_operation_timeout * 4,
+            )
+        except asyncio.TimeoutError:
+            if not self._closing:
+                self.trigger_fatal("sdk_operation_timeout")
+            return False
+        except asyncio.CancelledError:
+            current_task = asyncio.current_task()
+            if (
+                settlement_task.cancelled()
+                and (current_task is None or current_task.cancelling() == 0)
+                and not self._closing
+            ):
                 self.trigger_fatal("sdk_operation_failed")
-                return False
+            raise
+        except Exception:
+            if not self._closing:
+                self.trigger_fatal("sdk_operation_failed")
+            return False
+
+        if outcome is LoginSettlementOutcome.SETTLED:
+            return True
+        if outcome is LoginSettlementOutcome.REJECTED:
+            if failure_request_id is not None:
+                self._operation_error(failure_request_id, failure_code)
+            elif owns_settlement and not self._closing:
+                self.trigger_fatal("sdk_operation_failed")
+            return False
+        return False
+
+    async def _run_login_settlement(
+        self,
+        attempt: BrowserLoginAttempt,
+        *,
+        terminal_status: str,
+    ) -> LoginSettlementOutcome:
+        outcome = LoginSettlementOutcome.FAILED
+        try:
+            async with attempt.settlement_lock:
+                if self._login_attempt is not attempt or attempt.status != "pending":
+                    return LoginSettlementOutcome.SETTLED
+                handle = attempt.handle
+            if handle is None:
+                if not self._closing:
+                    self.trigger_fatal("sdk_operation_failed")
+                return outcome
             try:
                 await asyncio.wait_for(
                     handle.cancel(),
                     timeout=self._account_operation_timeout,
                 )
-            except Exception as exc:
-                if not self._closing:
-                    if isinstance(exc, (asyncio.TimeoutError, TransportClosedError)):
-                        self.trigger_fatal(
-                            "sdk_transport_failed"
-                            if isinstance(exc, TransportClosedError)
-                            else "sdk_operation_timeout"
-                        )
-                    elif failure_request_id is not None:
-                        attempt.settlement_target = None
-                        self._operation_error(failure_request_id, failure_code)
-                    else:
-                        self.trigger_fatal("sdk_operation_failed")
-                return False
-
-        completion_task = attempt.completion_task
-        if (
-            completion_task is not None
-            and completion_task is not asyncio.current_task()
-            and not completion_task.done()
-        ):
-            try:
-                await asyncio.wait_for(
-                    asyncio.shield(completion_task),
-                    timeout=self._account_operation_timeout,
-                )
+            except JsonRpcError:
+                outcome = LoginSettlementOutcome.REJECTED
+                return outcome
             except asyncio.TimeoutError:
                 if not self._closing:
                     self.trigger_fatal("sdk_operation_timeout")
-                return False
+                return outcome
+            except TransportClosedError:
+                if not self._closing:
+                    self.trigger_fatal("sdk_transport_failed")
+                return outcome
+            except Exception:
+                if not self._closing:
+                    self.trigger_fatal("sdk_operation_failed")
+                return outcome
 
-        try:
-            account_state = await self._fresh_account_state()
-        except Exception as exc:
-            if not self._closing:
-                self.trigger_fatal(
-                    "sdk_transport_failed"
-                    if isinstance(exc, TransportClosedError)
-                    else "sdk_operation_failed"
-                )
-            return False
+            completion_task = attempt.completion_task
+            if (
+                completion_task is not None
+                and completion_task is not asyncio.current_task()
+                and not completion_task.done()
+            ):
+                try:
+                    await asyncio.wait_for(
+                        asyncio.shield(completion_task),
+                        timeout=self._account_operation_timeout,
+                    )
+                except asyncio.TimeoutError:
+                    if not self._closing:
+                        self.trigger_fatal("sdk_operation_timeout")
+                    return outcome
 
-        async with attempt.settlement_lock:
-            if self._login_attempt is not attempt:
-                return True
-            if account_state == "chatgpt":
-                attempt.status = "completed"
-                attempt.error_code = None
-            else:
-                attempt.status = terminal_status
-                attempt.error_code = None
-            attempt.settlement_target = None
-            self._cancel_login_task(attempt.expiry_task)
-        return True
+            try:
+                account_state = await self._fresh_account_state()
+            except asyncio.TimeoutError:
+                if not self._closing:
+                    self.trigger_fatal("sdk_operation_timeout")
+                return outcome
+            except TransportClosedError:
+                if not self._closing:
+                    self.trigger_fatal("sdk_transport_failed")
+                return outcome
+            except Exception:
+                if not self._closing:
+                    self.trigger_fatal("sdk_operation_failed")
+                return outcome
+
+            async with attempt.settlement_lock:
+                if self._login_attempt is not attempt:
+                    return LoginSettlementOutcome.SETTLED
+                if account_state == "chatgpt":
+                    attempt.status = "completed"
+                    attempt.error_code = None
+                else:
+                    attempt.status = terminal_status
+                    attempt.error_code = None
+                self._cancel_login_task(attempt.expiry_task)
+            outcome = LoginSettlementOutcome.SETTLED
+            return outcome
+        finally:
+            async with attempt.settlement_lock:
+                if attempt.settlement_task is asyncio.current_task():
+                    attempt.settlement_task = None
+                    attempt.settlement_target = None
 
     async def _release_browser_login_attempt(
         self,
@@ -1128,7 +1202,7 @@ class BridgeWorker:
             status="signed_out",
         )
 
-    def _cancel_login_task(self, task: asyncio.Task[None] | None) -> None:
+    def _cancel_login_task(self, task: asyncio.Task[Any] | None) -> None:
         if task is not None and task is not asyncio.current_task() and not task.done():
             task.cancel()
 
@@ -1662,14 +1736,16 @@ class BridgeWorker:
         self._fail_browser_login_start(attempt)
         self._cancel_login_task(attempt.expiry_task)
         completion_task = attempt.completion_task
+        settlement_task = attempt.settlement_task
         self._cancel_login_task(completion_task)
+        self._cancel_login_task(settlement_task)
         tasks = [
             task
-            for task in (attempt.expiry_task, completion_task)
+            for task in (attempt.expiry_task, completion_task, settlement_task)
             if task is not None and task is not asyncio.current_task()
         ]
         if tasks:
-            await asyncio.gather(*tasks, return_exceptions=True)
+            await asyncio.gather(*dict.fromkeys(tasks), return_exceptions=True)
 
     async def _stop_user_input_collector(self) -> None:
         collector = self._user_input_collector

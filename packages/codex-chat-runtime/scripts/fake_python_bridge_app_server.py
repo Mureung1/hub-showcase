@@ -276,6 +276,60 @@ class FakeAppServer:
                 daemon=True,
             ).start()
 
+    def _emit_login_cancel_response(
+        self,
+        request_id: object,
+        login_id: str,
+        mode: str,
+    ) -> None:
+        root = self._journal_path.parent
+        if (root / "defer-login-cancel-completion").is_file():
+            _write({"id": request_id, "result": {"status": "canceled"}})
+            release = root / "release-login-cancel-completion"
+            while not release.is_file():
+                time.sleep(0.005)
+            if mode == "cancel-race-success":
+                self._complete_login(login_id, success=True, error=None)
+            else:
+                self._complete_login(
+                    login_id,
+                    success=False,
+                    error="raw-provider-secret",
+                )
+            return
+        if (root / "defer-login-cancel").is_file():
+            release = root / "release-login-cancel"
+            while not release.is_file():
+                time.sleep(0.005)
+        outcome_path = root / "login-cancel-outcome"
+        outcome = (
+            outcome_path.read_text(encoding="utf-8").strip()
+            if outcome_path.is_file()
+            else "success"
+        )
+        if outcome == "failure":
+            _write(
+                {
+                    "id": request_id,
+                    "error": {
+                        "code": -32602,
+                        "message": "raw-login-cancel-provider-secret",
+                    },
+                }
+            )
+            return
+        if outcome == "forced-eof":
+            os._exit(42)
+        if mode == "cancel-race-success":
+            self._complete_login(login_id, success=True, error=None)
+        else:
+            self._complete_login(
+                login_id,
+                success=False,
+                error="raw-provider-secret",
+            )
+        _write({"id": request_id, "result": {"status": "canceled"}})
+
     def _inject_response(self, request: dict[str, Any]) -> bool:
         injection_path = self._journal_path.parent / "injected-response.json"
         if not injection_path.is_file():
@@ -713,15 +767,20 @@ class FakeAppServer:
                 if mode_path.is_file()
                 else "cancelled"
             )
-            if mode == "cancel-race-success":
-                self._complete_login(login_id, success=True, error=None)
+            if (self._journal_path.parent / "defer-login-cancel").is_file() or (
+                self._journal_path.parent / "defer-login-cancel-completion"
+            ).is_file():
+                threading.Thread(
+                    target=self._emit_login_cancel_response,
+                    args=(message["id"], login_id, mode),
+                    daemon=True,
+                ).start()
             else:
-                self._complete_login(
+                self._emit_login_cancel_response(
+                    message["id"],
                     login_id,
-                    success=False,
-                    error="raw-provider-secret",
+                    mode,
                 )
-            _write({"id": message["id"], "result": {"status": "canceled"}})
             return
         if method == "thread/start":
             if (self._journal_path.parent / "hold-thread-start").is_file():
