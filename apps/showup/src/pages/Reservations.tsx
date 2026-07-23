@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuthState } from '@/hooks/useAuth'
-import { listReservations, transitionReservationStatus } from '@/services/reservations'
+import { listReservations } from '@/services/reservations'
+import { transitionReservationStatusAndRefresh } from '@/services/riskRefresh'
 import { getCustomer } from '@/services/customers'
 import type { Reservation } from '@/types/schema'
 import { toast } from 'sonner'
@@ -64,11 +65,11 @@ const Reservations = () => {
     loadReservations()
   }, [user])
 
-  const handleStatusChange = async (resId: string, nextStatus: Reservation['status']) => {
+  const handleStatusChange = async (resId: string, customerId: string, nextStatus: Reservation['status']) => {
     if (!user) return
 
     try {
-      await transitionReservationStatus(user.uid, resId, nextStatus)
+      await transitionReservationStatusAndRefresh(user.uid, customerId, resId, nextStatus)
       toast.success(`상태가 변경되었습니다: ${nextStatus}`)
       
       // 목록 새로고침
@@ -230,19 +231,19 @@ const Reservations = () => {
                 {res.status === 'pending' || res.status === 'confirmed' ? (
                   <div className="flex gap-2 mt-3">
                     <button
-                      onClick={() => handleStatusChange(res.id, 'visited')}
+                      onClick={() => handleStatusChange(res.id, res.customerId, 'visited')}
                       className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
                     >
                       방문 ✅
                     </button>
                     <button
-                      onClick={() => handleStatusChange(res.id, 'noShow')}
+                      onClick={() => handleStatusChange(res.id, res.customerId, 'noShow')}
                       className="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
                     >
                       노쇼 ❌
                     </button>
                     <button
-                      onClick={() => handleStatusChange(res.id, 'cancelled')}
+                      onClick={() => handleStatusChange(res.id, res.customerId, 'cancelled')}
                       className="flex-1 bg-gray-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors"
                     >
                       취소

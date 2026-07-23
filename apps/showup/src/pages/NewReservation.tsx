@@ -87,7 +87,7 @@ const NewReservation = () => {
         memo: data.memo,
       })
       toast.success('예약이 생성되었습니다')
-      navigate('/reservations')
+      navigate('/app/reservations')
     } catch (error) {
       toast.error('예약 생성 실패: ' + (error as Error).message)
     } finally {
@@ -157,7 +157,7 @@ const NewReservation = () => {
         </div>
 
         <div className="flex gap-2 pt-4">
-          <Button type="button" variant="secondary" onClick={() => navigate('/reservations')}>
+          <Button type="button" variant="secondary" onClick={() => navigate('/app/reservations')}>
             취소
           </Button>
           <Button type="submit" variant="primary" disabled={isLoading}>

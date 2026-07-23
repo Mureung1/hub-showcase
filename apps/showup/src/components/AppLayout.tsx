@@ -4,14 +4,14 @@ const AppLayout = () => {
   const location = useLocation()
 
   const navItems = [
-    { path: '/dashboard', label: '대시보드', icon: '🏠' },
-    { path: '/customers', label: '고객', icon: '👥' },
-    { path: '/reservations', label: '예약', icon: '📅' },
-    { path: '/more', label: '더보기', icon: '⋯' },
+    { path: '/app/dashboard', label: '대시보드', icon: '🏠' },
+    { path: '/app/customers', label: '고객', icon: '👥' },
+    { path: '/app/reservations', label: '예약', icon: '📅' },
+    { path: '/app/more', label: '더보기', icon: '⋯' },
   ]
 
   const isActive = (path: string) => {
-    if (path === '/more') return false
+    if (path === '/app/more') return false
     return location.pathname.startsWith(path)
   }
 
@@ -59,7 +59,7 @@ const AppLayout = () => {
         </nav>
         <div className="p-4 border-t border-gray-200">
           <Link
-            to="/logout"
+            to="/login"
             className="flex items-center gap-3 px-3 py-3 text-gray-700 hover:bg-gray-50 rounded-lg"
           >
             <span className="text-xl">🚪</span>

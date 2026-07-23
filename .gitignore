@@ -45,3 +45,12 @@ apps/showup/security/**/*.mjs
 .superpowers/
 *.zip
 ~$*
+
+# Firebase hosting cache
+.firebase/
+
+# CodeGraph
+.codegraph
+
+# Cloud Functions build output
+apps/showup/functions/lib/

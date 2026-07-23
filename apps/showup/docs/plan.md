@@ -244,7 +244,7 @@ Cloud Function 트리거 (확정):
 → 해당 customer의 riskStats 재계산 (§4 가중치 로직)
 ```
 
-> **Cloud Functions 방식 확정**: riskStats 재계산은 Cloud Functions 트리거로 서버에서만 실행. `src/utils/risk.ts` 순수 함수를 Cloud Functions에 통합하며, 클라이언트에서 riskStats를 직접 갱신하지 않는다. 계산 로직은 **한 곳(risk.ts)에만** 존재.
+> **riskStats 갱신 방식 (Spark 요금제 대안)**: Cloud Functions는 Blaze 요금제 필요. Spark 요금제에서는 클라이언트 `riskRefresh.ts`로 갱신. `firestore.rules`에서 `riskStats` 쓰기를 허용하되 `ownerUid` 검증은 유지. Blaze 업그레이드 시 Cloud Functions 트리거로 이관 가능 — `functions/` 디렉토리와 `risk.ts` 순수 함수는 유지. 계산 로직은 **한 곳(risk.ts)에만** 존재.
 
 ### 보안 규칙 (가게 격리 — 서버 강제)
 ```

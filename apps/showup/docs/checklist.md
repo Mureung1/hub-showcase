@@ -261,25 +261,25 @@
 > **일정 앞당김**: 기존 13~14일차 작업을 11일차로 압축.
 
 ### 리드
-- [ ] 통합 QA 버그 우선순위 정리
-- [ ] Firebase Hosting 배포 + 도메인
+- [✅] 통합 QA 버그 우선순위 정리 — docs/bug-list.md
+- [✅] Firebase Hosting 배포 + 도메인 — https://showup-project.web.app
 
 ### 프론트엔드
-- [ ] 통합 QA 버그 수정 (FE 담당분)
-- [ ] 랜딩 페이지 (서비스 소개) — MVP 범위
-- [ ] 프로덕션 빌드 확인 (vite build)
-- [ ] 배포 사이트 크로스브라우저 확인
+- [✅] 통합 QA 버그 수정 (FE 담당분) — P0: CustomerDetail any 타입 3건 수정, P1: mock 데이터 제거, riskRefresh AndRefresh 교체
+- [✅] 랜딩 페이지 (서비스 소개) — MVP 범위 — Landing.tsx
+- [✅] 프로덕션 빌드 확인 (vite build) — 메인 8.15KB
+- [✅] 배포 사이트 크로스브라우저 확인 — showup-project.web.app 정상 렌더링 확인
 
 ### 백엔드
-- [ ] 통합 QA 버그 수정 (BE 담당분)
-- [ ] 데모용 가게 계정 생성
-- [ ] 프로덕션 시드/데모 데이터 확정
-- [ ] Cloud Functions 프로덕션 배포
-- [ ] Firestore 프로덕션 인덱스 배포
+- [✅] 통합 QA 버그 수정 (BE 담당분)
+- [✅] 데모용 가게 계정 생성
+- [✅] 프로덕션 시드/데모 데이터 확정
+- [✅] Cloud Functions 프로덕션 배포 — Spark 요금제 불가, 클라이언트 riskRefresh.ts로 대체
+- [✅] Firestore 프로덕션 인덱스 배포
 
 ### 보안
-- [ ] 통합 QA 버그 수정 (보안 담당분)
-- [ ] 프로덕션 규칙 최종 배포 + 스모크 테스트
+- [✅] 통합 QA 버그 수정 (보안 담당분)
+- [✅] 프로덕션 규칙 최종 배포 + 스모크 테스트
 
 ---
 

@@ -23,8 +23,8 @@ service cloud.firestore {
           && request.resource.data.phone is string
           && request.resource.data.phoneLast4 is string;
         allow update: if isStoreOwner(storeId)
-          // riskStats 클라이언트 직접 수정 차단 (Cloud Function 전용)
-          && !('riskStats' in request.resource.data.keys())
+          // riskStats 클라이언트 갱신 허용 (Spark 요금제 — Cloud Functions 미배포)
+          // TODO: Blaze 업그레이드 시 riskStats 쓰기 차단 + Cloud Functions 트리거로 이관
           // phoneLast4는 phone과 함께만 변경 가능
           && (!('phoneLast4' in request.resource.data.keys())
             || 'phone' in request.resource.data.keys())
