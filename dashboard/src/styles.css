@@ -430,6 +430,24 @@ button {
   margin: 0;
 }
 
+.ai-process p {
+  margin: 0;
+}
+
+.workflow + .workflow {
+  margin-top: 16px;
+}
+
+.workflow strong {
+  color: #182536;
+  font-size: 13px;
+}
+
+.workflow ol {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
 .detail-section ul {
   margin: 0;
   padding-left: 18px;

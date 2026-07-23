@@ -22,6 +22,7 @@ export type Project = {
   title: string;
   summary: string;
   category: string;
+  developmentWithAI?: string;
   featureTags: string[];
   techStack: string[];
   githubUser: string;
@@ -36,9 +37,8 @@ export type Project = {
   sourceBranch?: string | null;
   agent?: {
     summary?: string;
-    agents?: string[];
-    skills?: string[];
-    workflows?: string[];
+    agentTools?: Array<{ type: 'agent' | 'skill'; name: string; purpose: string }>;
+    workflows?: Array<{ name: string; steps: string[] }>;
   };
   isDummy?: boolean;
 };
@@ -82,9 +82,9 @@ export default function App({ projects }: AppProps) {
       ...(project.features ?? []),
       ...(project.techHighlights ?? []),
       project.agent?.summary,
-      ...(project.agent?.agents ?? []),
-      ...(project.agent?.skills ?? []),
-      ...(project.agent?.workflows ?? []),
+      ...(project.agent?.agentTools ?? []).flatMap((tool) => [tool.name, tool.purpose]),
+      ...(project.agent?.workflows ?? []).flatMap((workflow) => [workflow.name, ...workflow.steps]),
+      project.developmentWithAI,
     ].filter(Boolean).join(' ').toLocaleLowerCase();
     return searchableText.includes(normalizedQuery);
   });
@@ -252,33 +252,47 @@ export default function App({ projects }: AppProps) {
 
               {selectedProject.agent && (
                 selectedProject.agent.summary
-                || (selectedProject.agent.agents?.length ?? 0) > 0
-                || (selectedProject.agent.skills?.length ?? 0) > 0
+                || (selectedProject.agent.agentTools?.length ?? 0) > 0
                 || (selectedProject.agent.workflows?.length ?? 0) > 0
               ) && (
                 <section className="detail-section agent-section">
                   <h3>Agent 활용</h3>
                   {selectedProject.agent.summary && <p>{selectedProject.agent.summary}</p>}
-                  <div className="agent-groups">
-                    {selectedProject.agent.agents && selectedProject.agent.agents.length > 0 && (
-                      <div className="agent-group">
-                        <h4>Agents</h4>
-                        <ul>{selectedProject.agent.agents.map((agent) => <li key={agent}>{agent}</li>)}</ul>
-                      </div>
-                    )}
-                    {selectedProject.agent.skills && selectedProject.agent.skills.length > 0 && (
-                      <div className="agent-group">
-                        <h4>Skills</h4>
-                        <ul>{selectedProject.agent.skills.map((skill) => <li key={skill}>{skill}</li>)}</ul>
-                      </div>
-                    )}
-                    {selectedProject.agent.workflows && selectedProject.agent.workflows.length > 0 && (
+                  {selectedProject.agent.agentTools && selectedProject.agent.agentTools.length > 0 && (
+                    <div className="agent-groups">
+                      {(['agent', 'skill'] as const).map((type) => {
+                        const tools = selectedProject.agent?.agentTools?.filter((tool) => tool.type === type) ?? [];
+                        if (tools.length === 0) return null;
+                        return (
+                          <div className="agent-group" key={type}>
+                            <h4>{type === 'agent' ? 'Agents' : 'Skills'}</h4>
+                            <ul>
+                              {tools.map((tool) => <li key={tool.name}><strong>{tool.name}</strong> — {tool.purpose}</li>)}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {selectedProject.developmentWithAI && (
+                    <div className="agent-group ai-process">
+                      <h4>AI와 함께 개발한 과정</h4>
+                      <p>{selectedProject.developmentWithAI}</p>
+                    </div>
+                  )}
+                  {selectedProject.agent.workflows && selectedProject.agent.workflows.length > 0 && (
+                    <div className="agent-groups">
                       <div className="agent-group">
                         <h4>Workflows</h4>
-                        <ul>{selectedProject.agent.workflows.map((workflow) => <li key={workflow}>{workflow}</li>)}</ul>
+                        {selectedProject.agent.workflows.map((workflow) => (
+                          <div className="workflow" key={workflow.name}>
+                            <strong>{workflow.name}</strong>
+                            <ol>{workflow.steps.map((step) => <li key={step}>{step}</li>)}</ol>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </section>
               )}
 

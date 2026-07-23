@@ -1,20 +1,8 @@
 # showcase 작성 안내
 
-`showcase.json`의 `category`에는 아래 값 중 하나를 적습니다.
-
-| category | 선택 기준 |
-| --- | --- |
-| `소상공인 운영` | 가게 운영, 매출, 재고, 주문 문제를 해결하는 프로젝트 |
-| `지역 상권과 홍보` | 지역 가게, 상권, 방문객 홍보를 다루는 프로젝트 |
-| `대학 생활` | 수강, 동아리, 학교생활 문제를 해결하는 프로젝트 |
-| `학습과 진로` | 공부, 취업, 진로 준비를 돕는 프로젝트 |
-| `생활 편의` | 일상에서 겪는 불편을 해결하는 프로젝트 |
-| `공공·지역 문제` | 공공 서비스와 지역 문제를 다루는 프로젝트 |
-| `그 외` | 위 분류에 맞지 않는 프로젝트 |
-
-카테고리는 프로젝트의 주요 문제를 기준으로 하나만 선택합니다.
-
-작성할 때는 같은 폴더의 `showcase.example.json`을 복사해서 사용합니다.
+1. `showcase.example.json`을 복사해 `showcase.json`을 만듭니다.
+2. 프로젝트 내용과 AI 협업 내용을 작성합니다.
+3. 이미지는 아래 구조로 넣습니다.
 
 ```text
 showcase/
@@ -23,3 +11,16 @@ showcase/
 └── screenshots/
     └── home.webp
 ```
+
+이미지 경로는 `showcase.json` 기준으로 적습니다.
+
+```json
+{
+  "thumbnail": "thumbnail.webp",
+  "screenshots": ["screenshots/home.webp"]
+}
+```
+
+`category`는 작성하지 않습니다. 대시보드가 프로젝트 내용을 보고 분류합니다.
+
+`agentTools`에는 Agent와 Skill을 함께 적고, `workflows`에는 개발 순서를 적습니다.
