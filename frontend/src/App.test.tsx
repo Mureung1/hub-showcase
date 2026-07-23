@@ -386,7 +386,7 @@ describe('Today article intro flow', () => {
     expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
     expect(api.createMissionRecord).toHaveBeenCalledTimes(1)
 
-    await userEvent.click(screen.getByRole('button', { name: /오늘의 글/ }))
+    await userEvent.click(screen.getByRole('button', { name: '오늘의 깸' }))
 
     expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
     expect(screen.queryByText('글 소개')).not.toBeInTheDocument()
@@ -513,7 +513,7 @@ describe('Today and MyGgaem tab navigation', () => {
       vi.mocked(api.getMissionRecordsCalendar).mockClear()
       vi.mocked(api.getMissionRecords).mockClear()
 
-      await userEvent.click(screen.getByRole('button', { name: '다음 달' }))
+      await userEvent.click(screen.getByRole('button', { name: /^다음 달/ }))
 
       await vi.waitFor(() => {
         expect(api.getMissionRecordsCalendar).toHaveBeenCalledExactlyOnceWith('2026-08')
@@ -528,7 +528,7 @@ describe('Today and MyGgaem tab navigation', () => {
       vi.mocked(api.getMissionRecordsCalendar).mockClear()
       vi.mocked(api.getMissionRecords).mockClear()
 
-      await userEvent.click(screen.getByRole('button', { name: '이전 달' }))
+      await userEvent.click(screen.getByRole('button', { name: /^이전 달/ }))
 
       await vi.waitFor(() => {
         expect(api.getMissionRecords).toHaveBeenCalledExactlyOnceWith('2026-02-28')
@@ -542,7 +542,7 @@ describe('Today and MyGgaem tab navigation', () => {
       await screen.findByRole('heading', { name: '나의 깸' })
       vi.mocked(api.getMissionRecords).mockClear()
 
-      await userEvent.click(screen.getByRole('button', { name: '이전 달' }))
+      await userEvent.click(screen.getByRole('button', { name: /^이전 달/ }))
 
       await vi.waitFor(() => {
         expect(api.getMissionRecords).toHaveBeenCalledExactlyOnceWith('2024-02-29')
@@ -556,7 +556,7 @@ describe('Today and MyGgaem tab navigation', () => {
       vi.mocked(api.getMissionRecordsCalendar).mockClear()
       vi.mocked(api.getMissionRecords).mockClear()
 
-      await userEvent.click(screen.getByRole('button', { name: '이전 달' }))
+      await userEvent.click(screen.getByRole('button', { name: /^이전 달/ }))
 
       await vi.waitFor(() => {
         expect(api.getMissionRecordsCalendar).toHaveBeenCalledExactlyOnceWith('2025-12')
@@ -666,12 +666,12 @@ describe('Today and MyGgaem tab navigation', () => {
       expect(screen.getByRole('article')).toHaveTextContent('새 날짜의 기록')
     })
 
-    it('returns to Today from the 오늘의 글 tab without refetching getTodayArticles', async () => {
+    it('returns to Today from the 오늘의 깸 tab without refetching getTodayArticles', async () => {
       await openMyGgaem()
       await screen.findByRole('heading', { name: '나의 깸' })
       expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
 
-      await userEvent.click(screen.getByRole('button', { name: /오늘의 글/ }))
+      await userEvent.click(screen.getByRole('button', { name: '오늘의 깸' }))
 
       expect(await screen.findByRole('heading', { name: '오늘의 깸' })).toBeInTheDocument()
       expect(api.getTodayArticles).toHaveBeenCalledTimes(1)
