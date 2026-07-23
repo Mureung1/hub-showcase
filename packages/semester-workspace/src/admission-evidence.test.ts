@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { createHash } from 'node:crypto'
+import { createHash, createHmac } from 'node:crypto'
 import {
   mkdir,
   mkdtemp,
@@ -22,7 +22,7 @@ import type {
 } from './contract.js'
 import { decodeSemesterWorkspaceV3Bytes } from './v3-codec.js'
 
-test('the preplanned root marker binds every pending workspace receipt input without post-mkdir identity', async () => {
+test('the preplanned root marker privately binds authority to a digest-free opaque plan token', async () => {
   const fixture = await createFixture('receipt-bindings')
   const admission = createSemesterWorkspaceAdmissionForTesting({
     fault(point) {
@@ -48,11 +48,41 @@ test('the preplanned root marker binds every pending workspace receipt input wit
     )
     const aggregate = decodeSemesterWorkspaceV3Bytes(aggregateBytes)
 
-    assert.equal(marker.setupId, inspection.plan.planId)
+    assert.match(
+      inspection.plan.planId,
+      /^workspace_plan_[0-9a-f]{32}$/,
+    )
+    assert.equal(
+      inspection.plan.planId.includes(
+        inspection.plan.authorityDigest,
+      ),
+      false,
+    )
+    assert.equal(
+      markerBytes.includes(Buffer.from(inspection.plan.planId, 'utf8')),
+      false,
+    )
+    assert.equal('setupId' in marker, false)
+    assert.equal('setupPlanId' in marker, false)
     assert.equal(marker.authorityDigest, inspection.plan.authorityDigest)
     assert.equal(
       marker.authorityDigest,
       sha256(Buffer.from(JSON.stringify(marker.authority), 'utf8')),
+    )
+    assert.equal(
+      marker.setupPlanBinding,
+      hmacSha256(
+        inspection.plan.planId,
+        Buffer.from(
+          JSON.stringify({
+            kind: marker.kind,
+            formatVersion: marker.formatVersion,
+            authorityDigest: marker.authorityDigest,
+            authority: marker.authority,
+          }),
+          'utf8',
+        ),
+      ),
     )
     assert.equal(
       marker.authority.aggregateSha256,
@@ -73,9 +103,8 @@ test('the preplanned root marker binds every pending workspace receipt input wit
 
     assert.deepEqual(
       {
-        setupId: marker.setupId,
         setupPlanId: inspection.plan.planId,
-        plan: {
+        privateAuthority: {
           canonicalBytesSha256: marker.authorityDigest,
           semester: aggregate.manifest.semester,
           target: {
@@ -98,9 +127,8 @@ test('the preplanned root marker binds every pending workspace receipt input wit
         },
       },
       {
-        setupId: inspection.plan.planId,
         setupPlanId: inspection.plan.planId,
-        plan: {
+        privateAuthority: {
           canonicalBytesSha256: inspection.plan.authorityDigest,
           semester: fixture.intent.semester,
           target: {
@@ -215,8 +243,8 @@ test('cross-instance resume rejects workspace identity or aggregate changes that
 
 type EvidenceMarker = {
   readonly kind: 'ay-ple.workspace-admission-evidence'
-  readonly formatVersion: 2
-  readonly setupId: string
+  readonly formatVersion: 3
+  readonly setupPlanBinding: string
   readonly authorityDigest: string
   authority: {
     readonly setupNonce: string
@@ -305,4 +333,8 @@ async function createFixture(leafName: string): Promise<{
 
 function sha256(bytes: Uint8Array): string {
   return createHash('sha256').update(bytes).digest('hex')
+}
+
+function hmacSha256(key: string, bytes: Uint8Array): string {
+  return createHmac('sha256', key).update(bytes).digest('hex')
 }

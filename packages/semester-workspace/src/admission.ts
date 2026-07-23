@@ -1,6 +1,6 @@
 /// <reference types="node" />
 
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash, createHmac, randomUUID } from 'node:crypto'
 import { constants as fsConstants } from 'node:fs'
 import {
   access,
@@ -111,13 +111,14 @@ type AdmissionAuthority = {
 
 type AdmissionEvidence = {
   readonly kind: typeof evidenceKind
-  readonly formatVersion: 2
-  readonly setupId: string
+  readonly formatVersion: 3
+  readonly setupPlanBinding: string
   readonly authorityDigest: string
   readonly authority: AdmissionAuthority
 }
 
 type DecodedAdmissionEvidence = {
+  readonly setupPlanId: string
   readonly evidence: AdmissionEvidence
   readonly markerBytes: Buffer
   readonly markerSha256: string
@@ -331,7 +332,10 @@ async function inspectOwnedResume(
     return { outcome: 'unavailable', readOnly: false }
   }
 
-  const planned = await readAdmissionEvidence(intent.canonicalRoot)
+  const planned = await readAdmissionEvidence(
+    intent.canonicalRoot,
+    intent.setupId,
+  )
   if (!planned) {
     if (
       classification.status === 'legacy_v2' ||
@@ -348,7 +352,7 @@ async function inspectOwnedResume(
     return { outcome: 'collision', readOnly: false }
   }
   if (
-    planned.evidence.setupId !== intent.setupId ||
+    planned.setupPlanId !== intent.setupId ||
     planned.evidence.authority.canonicalRoot !== intent.canonicalRoot ||
     (await inspectCanonicalParent(
       planned.evidence.authority.parent,
@@ -754,6 +758,7 @@ async function classifyRoot(
 
 async function readAdmissionEvidence(
   canonicalRoot: string,
+  setupPlanId: string,
 ): Promise<DecodedAdmissionEvidence | null> {
   const markerPath = path.join(
     productRootPath(canonicalRoot),
@@ -765,6 +770,7 @@ async function readAdmissionEvidence(
   try {
     return decodeAdmissionEvidenceBytes(
       await readRegularFile(markerPath, admissionMarkerMaxBytes),
+      setupPlanId,
     )
   } catch {
     return null
@@ -780,6 +786,7 @@ function planCreateAdmission(input: {
   readonly plan: AuthorityBoundWorkspacePlan
   readonly planned: DecodedAdmissionEvidence
 } {
+  const setupPlanId = `workspace_plan_${randomHex()}`
   const setupNonce = randomHex()
   const aggregate = createInitialSemesterWorkspaceV3({
     workspaceId: `workspace_${randomHex()}`,
@@ -811,24 +818,28 @@ function planCreateAdmission(input: {
     ownedScaffoldPlanSha256: sha256Canonical(ownedScaffoldPlan),
   } as const satisfies AdmissionAuthority
   const authorityDigest = sha256Canonical(authority)
-  const setupId =
-    `workspace_plan_${setupNonce}_${authorityDigest}`
+  const setupPlanBinding = admissionSetupPlanBinding({
+    setupPlanId,
+    authorityDigest,
+    authority,
+  })
   const evidence = {
     kind: evidenceKind,
-    formatVersion: 2,
-    setupId,
+    formatVersion: 3,
+    setupPlanBinding,
     authorityDigest,
     authority,
   } as const satisfies AdmissionEvidence
   const markerBytes = encodeAdmissionEvidence(evidence)
   return {
     plan: {
-      planId: setupId,
+      planId: setupPlanId,
       operation: 'create',
       canonicalRoot: input.canonicalRoot,
       authorityDigest,
     },
     planned: {
+      setupPlanId,
       evidence,
       markerBytes,
       markerSha256: sha256(markerBytes),
@@ -840,6 +851,7 @@ function planCreateAdmission(input: {
 
 function decodeAdmissionEvidenceBytes(
   markerBytes: Buffer,
+  setupPlanId: string,
 ): DecodedAdmissionEvidence {
   if (markerBytes.byteLength > admissionMarkerMaxBytes) {
     throw new TypeError('Invalid workspace admission evidence.')
@@ -853,22 +865,26 @@ function decodeAdmissionEvidenceBytes(
       'authorityDigest',
       'formatVersion',
       'kind',
-      'setupId',
+      'setupPlanBinding',
     ]) ||
     value.kind !== evidenceKind ||
-    value.formatVersion !== 2 ||
-    !isOpaqueIdentity(value.setupId) ||
+    value.formatVersion !== 3 ||
+    !isOpaqueIdentity(setupPlanId) ||
+    !isSha256(value.setupPlanBinding) ||
     !isSha256(value.authorityDigest)
   ) {
     throw new TypeError('Invalid workspace admission evidence.')
   }
   const authority = decodeAdmissionAuthority(value.authority)
   const authorityDigest = sha256Canonical(authority)
-  const setupId =
-    `workspace_plan_${authority.setupNonce}_${authorityDigest}`
+  const setupPlanBinding = admissionSetupPlanBinding({
+    setupPlanId,
+    authorityDigest,
+    authority,
+  })
   if (
     value.authorityDigest !== authorityDigest ||
-    value.setupId !== setupId
+    value.setupPlanBinding !== setupPlanBinding
   ) {
     throw new TypeError('Invalid workspace admission evidence.')
   }
@@ -893,8 +909,8 @@ function decodeAdmissionEvidenceBytes(
   }
   const evidence = {
     kind: evidenceKind,
-    formatVersion: 2,
-    setupId,
+    formatVersion: 3,
+    setupPlanBinding,
     authorityDigest,
     authority,
   } as const satisfies AdmissionEvidence
@@ -903,6 +919,7 @@ function decodeAdmissionEvidenceBytes(
     throw new TypeError('Invalid workspace admission evidence.')
   }
   return {
+    setupPlanId,
     evidence,
     markerBytes: canonicalMarkerBytes,
     markerSha256: sha256(canonicalMarkerBytes),
@@ -1033,7 +1050,10 @@ async function assertStoredAdmissionMarker(
     throw new ApplyFailure('conflict')
   }
   try {
-    const decoded = decodeAdmissionEvidenceBytes(markerBytes)
+    const decoded = decodeAdmissionEvidenceBytes(
+      markerBytes,
+      planned.setupPlanId,
+    )
     if (
       decoded.markerSha256 !== planned.markerSha256 ||
       decoded.evidence.authorityDigest !==
@@ -1157,13 +1177,16 @@ function assertPlannedCreateContext(
 ): void {
   let decoded: DecodedAdmissionEvidence
   try {
-    decoded = decodeAdmissionEvidenceBytes(context.planned.markerBytes)
+    decoded = decodeAdmissionEvidenceBytes(
+      context.planned.markerBytes,
+      context.plan.planId,
+    )
   } catch {
     throw new ApplyFailure('authority_changed')
   }
   if (
     context.plan.operation !== 'create' ||
-    context.plan.planId !== decoded.evidence.setupId ||
+    context.plan.planId !== decoded.setupPlanId ||
     context.plan.canonicalRoot !==
       decoded.evidence.authority.canonicalRoot ||
     context.plan.authorityDigest !==
@@ -1550,6 +1573,26 @@ function sha256(bytes: Uint8Array): string {
 
 function sha256Canonical(value: unknown): string {
   return sha256(Buffer.from(canonicalJson(value), 'utf8'))
+}
+
+function admissionSetupPlanBinding(input: {
+  readonly setupPlanId: string
+  readonly authorityDigest: string
+  readonly authority: AdmissionAuthority
+}): string {
+  return createHmac('sha256', input.setupPlanId)
+    .update(
+      Buffer.from(
+        canonicalJson({
+          kind: evidenceKind,
+          formatVersion: 3,
+          authorityDigest: input.authorityDigest,
+          authority: input.authority,
+        }),
+        'utf8',
+      ),
+    )
+    .digest('hex')
 }
 
 function canonicalJson(value: unknown): string {

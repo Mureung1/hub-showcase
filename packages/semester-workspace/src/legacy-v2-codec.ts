@@ -543,10 +543,8 @@ function hasCurrentV2Invariants(
       if (
         !run ||
         run.actionId !== store.executionGuard.operationId ||
-        !hasSameSourceBaseline(
-          run.sourceBaseline,
-          store.executionGuard.selectedMaterials,
-        ) ||
+        JSON.stringify(run.sourceBaseline) !==
+          JSON.stringify(store.executionGuard.selectedMaterials) ||
         JSON.stringify(run.nativeCorrelation) !==
           JSON.stringify(store.executionGuard.nativeCorrelation) ||
         (unfinished.length === 1 && unfinished[0]?.id !== run.id)
@@ -593,12 +591,30 @@ function hasCurrentV2Invariants(
       values?.title !== assignment.title ||
       values?.dueAt !== assignment.dueAt ||
       values?.submissionMethod !== assignment.submissionMethod ||
-      JSON.stringify(patch?.evidence) !== JSON.stringify(assignment.evidence)
+      JSON.stringify(normalizeEvidenceForComparison(patch?.evidence)) !==
+        JSON.stringify(
+          normalizeEvidenceForComparison(assignment.evidence),
+        )
     ) {
       return false
     }
   }
   return true
+}
+
+function normalizeEvidenceForComparison(
+  value: unknown,
+): readonly Record<string, unknown>[] | undefined {
+  if (!Array.isArray(value)) return undefined
+  return value.map((candidate) => {
+    if (!isRecord(candidate)) return {}
+    return {
+      field: candidate.field,
+      rawMaterialId: candidate.rawMaterialId,
+      digest: candidate.digest,
+      quote: candidate.quote,
+    }
+  })
 }
 
 function isAssignmentUpsert(value: unknown): boolean {
