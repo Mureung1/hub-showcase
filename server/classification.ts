@@ -1,6 +1,6 @@
 export type Classification = {
   categoryMain: string;
-  categorySub: string;
+  categorySub: string | null;
 };
 
 const domainRules: Array<{
