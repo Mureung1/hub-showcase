@@ -6,6 +6,7 @@ const keywordsRouter = require('./routes/keywords');
 const profileRouter = require('./routes/profile');
 const articlesRouter = require('./routes/articles');
 const bookmarksRouter = require('./routes/bookmarks');
+const insightsRouter = require('./routes/insights');
 
 const app = express();
 app.use(cors()); // 모든 도메인 허용
@@ -15,6 +16,7 @@ app.use('/api/keywords', keywordsRouter);
 app.use('/api/profile', profileRouter);
 app.use('/api/articles', articlesRouter);
 app.use('/api/bookmarks', bookmarksRouter);
+app.use('/api/insights', insightsRouter);
 
 app.get('/api/health', async (req, res) => {
   const { count, error } = await supabase

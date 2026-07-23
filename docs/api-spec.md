@@ -45,7 +45,7 @@
 
 | Method/Path | 설명 | 인증 | Request | Response |
 |---|---|---|---|---|
-| `GET /api/insights/clusters` | 내 최신 클러스터 목록 (최신 batch_date 기준) | ✅ | - | `[{ id, title, description, articleCount }]` |
+| `GET /api/insights/clusters` | 내 최신 클러스터 목록 (최신 batch_date 기준) | ✅ | - | `[{ id, title, description, articleCount, articles: [{ id, title }] }]` (articles는 대표 기사 최신 2개) |
 | `GET /api/insights/clusters/:id` | 클러스터 상세 (기사 목록 포함) | ✅ | - | `{ id, title, description, articles: [...] }` |
 
 ## 리포트 (`routes/reports.js`)

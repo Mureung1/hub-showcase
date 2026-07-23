@@ -8,6 +8,7 @@ import Signup from './pages/Signup';
 import Onboarding from './pages/Onboarding';
 import Home from './pages/Home';
 import Article from './pages/Article';
+import Insight from './pages/Insight';
 import ComingSoon from './pages/ComingSoon';
 import AppLayout from './layouts/AppLayout';
 
@@ -54,7 +55,7 @@ function App() {
               />
               <Route
                 path="/insight"
-                element={<OnboardingGate><ComingSoon title="인사이트" description="7/23 구현 예정 — 아직 준비 중이에요." /></OnboardingGate>}
+                element={<OnboardingGate><Insight /></OnboardingGate>}
               />
               <Route
                 path="/mypage"
