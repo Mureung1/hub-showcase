@@ -5,7 +5,7 @@
 
 import json
 
-from app import prompt_loader
+from app import prompt_loader, tools
 
 
 def build_candidates(papers: list[dict]) -> list[dict]:
@@ -27,3 +27,9 @@ def _build_judge_prompt(topic: str, papers: list[dict]) -> str:
         topic=topic,
         papers_json=json.dumps(candidates, ensure_ascii=False),
     )
+
+
+def _call_judge(topic: str, papers: list[dict]) -> dict:
+    """판단(judge) LLM 호출. 실패해도 예외 없이 fallback을 반환한다."""
+    prompt = _build_judge_prompt(topic, papers)
+    return tools.ask_llm_json(prompt, fallback={"picked": [], "excluded": []})
