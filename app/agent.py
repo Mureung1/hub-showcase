@@ -87,6 +87,21 @@ def _select_tool(paper: dict) -> dict:
     return tools.ask_llm_json(prompt, fallback={"need_fulltext": False, "reason": ""})
 
 
+def _read_source(paper: dict, need_fulltext: bool) -> tuple[str, bool]:
+    """실제로 요약에 쓸 텍스트와 본문 사용 여부를 정한다.
+
+    PDF 다운로드/추출이 실패하면(fetch_fulltext가 None 반환) 예외 대신
+    초록으로 자동 대체한다 — used_fulltext도 False로 되돌린다.
+    """
+    if not need_fulltext:
+        return paper["abstract"], False
+
+    fulltext = tools.fetch_fulltext(paper["pdf_url"])
+    if fulltext:
+        return fulltext, True
+    return paper["abstract"], False
+
+
 if __name__ == "__main__":
     import argparse
 
