@@ -25,9 +25,10 @@ export const ListIcon = (props) => (
   </svg>
 );
 
-export const ChatIcon = (props) => (
+export const SparkleIcon = (props) => (
   <svg {...base} {...props}>
-    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+    <path d="M12 3l1.8 4.8L18.6 9.6 13.8 11.4 12 16.2 10.2 11.4 5.4 9.6 10.2 7.8z" />
+    <path d="M19 15l.8 2.1L22 18l-2.2.9L19 21l-.8-2.1L16 18l2.2-.9z" />
   </svg>
 );
 
