@@ -16,6 +16,7 @@ export interface SubsidyRow {
   apply_where: string
   where_url: string | null
   contact: string
+  region: string[]
   created_at?: string
 }
 
@@ -36,6 +37,7 @@ export function rowToSubsidy(row: SubsidyRow): Subsidy {
     where: row.apply_where,
     whereUrl: row.where_url ?? undefined,
     contact: row.contact,
+    region: row.region,
   }
 }
 
@@ -56,6 +58,7 @@ export function subsidyToRow(subsidy: Subsidy): Omit<SubsidyRow, 'created_at'> {
     apply_where: subsidy.where,
     where_url: subsidy.whereUrl ?? null,
     contact: subsidy.contact,
+    region: subsidy.region,
   }
 }
 

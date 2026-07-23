@@ -28,6 +28,11 @@ export interface Subsidy {
   where: string
   whereUrl?: string
   contact: string
+  /**
+   * 시/도 배열 (이슈 #43). 전국 대상 공고는 REGIONS 전체가 담기고, 지역 정보가 없으면
+   * 빈 배열이다 — `region.includes(profile.region)`로 전국/광역권/단일 지역을 동일하게 매칭한다.
+   */
+  region: string[]
 }
 
 export interface SubsidyListResponse {

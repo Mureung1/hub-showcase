@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BizinfoAnnouncement } from './bizinfo-client.js'
-import { inferMethod, mapAnnouncementToSubsidy, parseDeadline } from './mapper.js'
+import { extractAmount, extractRegions, inferMethod, mapAnnouncementToSubsidy, parseDeadline } from './mapper.js'
 
 const NOW = new Date(2026, 6, 22) // 2026-07-22, 로컬 타임존 기준 (월은 0-indexed)
 
@@ -61,6 +61,88 @@ describe('inferMethod', () => {
   })
 })
 
+describe('extractAmount', () => {
+  it('"최대 N만원 지원" 형태에서 금액을 추출한다', () => {
+    expect(extractAmount('<p>업소당 1개의 노후 간판 교체 설치비 최대 200만원 지원</p>')).toBe('최대 200만원')
+  })
+
+  it('"최대 N만원 이내 지원" 형태에서 금액을 추출한다', () => {
+    expect(extractAmount('업체당 검사비용 최대 200만원 이내 지원')).toBe('최대 200만원')
+  })
+
+  it('"최대" 접두어 없이 "N만원) 지원"처럼 지원 문맥이 뒤따르면 추출한다', () => {
+    expect(extractAmount('사업화(기업 당 700만원) 지원')).toBe('최대 700만원')
+  })
+
+  it('천만원 단위도 추출한다', () => {
+    expect(extractAmount('소상공인 경영안정자금 최대 3천만원 지원')).toBe('최대 3천만원')
+  })
+
+  it('실제 API 응답(2026-07-23 확인)의 "연매출 1억 4백만원 미만" 자격 기준을 지원금액으로 오인하지 않는다', () => {
+    expect(extractAmount('어린이제품 : 연매출 1억 4백만원 미만 대상(연매출 기준: ...)')).toBeNull()
+  })
+
+  it('"자세한 지원내용 공고문 참조"처럼 금액 언급이 없으면 null을 반환한다', () => {
+    expect(extractAmount('<p>강원특별자치도 첨단바이오 산업 육성... 자세한 지원내용 공고문 참조</p>')).toBeNull()
+  })
+
+  it('금액이 여러 번 등장하면 첫 유효 매칭을 사용한다', () => {
+    expect(
+      extractAmount('업체당 최대 200만원 지원, 초과분은 자기부담 최대 50만원'),
+    ).toBe('최대 200만원')
+  })
+
+  it('백만원 단위 금액을 추출한다 (실제 API 응답 다수 확인, 2026-07-23)', () => {
+    expect(extractAmount('기업당 최대 70백만원 지원')).toBe('최대 70백만원')
+  })
+
+  it('억원 단위 금액을 추출한다', () => {
+    expect(extractAmount('보증한도 최대 40억원(보증비율 100%)')).toBe('최대 40억원')
+  })
+
+  it('소수점 금액(백만/억 단위)을 그대로 추출한다', () => {
+    expect(extractAmount('과제당 지원금 최대 3.8억원')).toBe('최대 3.8억원')
+    expect(extractAmount('기업 맞춤형 지원 - 기업당 6.45백만원 지원')).toBe('최대 6.45백만원')
+  })
+
+  it('억원 단위 자격 기준(매출액 등)은 지원금액으로 오인하지 않는다', () => {
+    expect(extractAmount('2025년 기준 매출액 50억원 이상인 기업')).toBeNull()
+    expect(extractAmount('기업가치 50억원 이하, 매출액 20억원 이하, 창업 7년 이내')).toBeNull()
+  })
+})
+
+describe('extractRegions', () => {
+  it('지역 태그가 1개면 그 지역만 반환한다', () => {
+    expect(extractRegions('경영,서울,개별간판,2026,간판개선,동작구')).toEqual(['서울'])
+  })
+
+  it('16개 지역이 전부 태그된 전국형 공고는 전체 배열을 반환한다', () => {
+    const nationwide =
+      '기술,서울,부산,대구,인천,전남광주,대전,울산,세종,경기,강원,충북,충남,전북,경북,경남,제주,2026'
+    expect(extractRegions(nationwide)).toHaveLength(16)
+  })
+
+  it('광역권 통합 공고(2~14개)는 매칭된 지역 전부를 배열로 반환한다', () => {
+    expect(extractRegions('경영,대전,세종,글로벌진출,2026')).toEqual(['대전', '세종'])
+  })
+
+  it('전남광주 통합 지역 태그를 인식한다 (2026-07-01 전남광주통합특별시 출범 반영)', () => {
+    expect(extractRegions('수출,전남광주,2026,미래차')).toEqual(['전남광주'])
+  })
+
+  it('hashtags가 없으면 빈 배열을 반환한다', () => {
+    expect(extractRegions(undefined)).toEqual([])
+  })
+
+  it('지역 태그가 하나도 없으면 빈 배열을 반환한다', () => {
+    expect(extractRegions('기술,클라우드,전시회,2026')).toEqual([])
+  })
+
+  it('중복 지역 태그는 한 번만 반환한다', () => {
+    expect(extractRegions('서울,서울특별시할인,서울,2026')).toEqual(['서울'])
+  })
+})
+
 describe('mapAnnouncementToSubsidy', () => {
   it('실제 API 응답 형태를 Subsidy 타입으로 정확히 매핑한다', () => {
     const result = mapAnnouncementToSubsidy(baseAnnouncement, NOW)
@@ -80,7 +162,13 @@ describe('mapAnnouncementToSubsidy', () => {
       where: '울주군청',
       whereUrl: 'https://www.bizinfo.go.kr/sii/siia/selectSIIA200Detail.do?pblancId=PBLN_000000000124563',
       contact: '울주군청 경제교통과 052-229-8353',
+      region: [],
     })
+  })
+
+  it('hashtags가 있으면 region이 채워진다', () => {
+    const result = mapAnnouncementToSubsidy({ ...baseAnnouncement, hashtags: '경영,울산,울주군,2026' }, NOW)
+    expect(result.region).toEqual(['울산'])
   })
 
   it('trgetNm이 없으면 qualifications는 안내 문구로 대체된다', () => {

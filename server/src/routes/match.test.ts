@@ -33,6 +33,7 @@ const sample: Subsidy = {
   how: '온라인 접수',
   where: '서울시 자영업지원센터',
   contact: '02-1234-5678',
+  region: ['서울'],
 }
 
 const validProfile = {
