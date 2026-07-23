@@ -3,6 +3,7 @@ export {
   PROJECT_ICON,
   INVITATION_STATUS,
   MEMBER_KIND,
+  RESOURCE_UPLOAD,
   RESOURCE_TYPE,
   TASK_STATUS,
   calculateProgress,

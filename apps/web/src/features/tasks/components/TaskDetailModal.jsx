@@ -33,7 +33,9 @@ export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChan
   const member = members.find((candidate) => candidate.id === task.assigneeId)
   const project = state.projects.find((candidate) => candidate.id === task.projectId)
   const availableMembers = members.filter((candidate) => (
-    candidate.projectId ? candidate.projectId === task.projectId : project?.memberIds?.includes(candidate.id)
+    !candidate.isAi
+    && (candidate.kind === 'user' || Boolean(candidate.authUserId))
+    && (candidate.projectId ? candidate.projectId === task.projectId : project?.memberIds?.includes(candidate.id))
   ))
 
   function beginEdit() {
@@ -131,7 +133,7 @@ export function TaskDetailModal({ task, members, onClose, onDelete, onStatusChan
           {requestError ? <p className={forms.error} role="alert">{requestError}</p> : null}
           <label className={forms.field}><span className={forms.label}>할 일 제목 <em>*</em></span><input className={`${forms.input} ${errors.title ? forms.errorInput : ''}`} value={values.title} onChange={(event) => change('title', event.target.value)} aria-invalid={Boolean(errors.title)} aria-describedby={errors.title ? 'edit-task-title-error' : undefined} />{errors.title ? <span id="edit-task-title-error" className={forms.error}>{errors.title}</span> : null}</label>
           <div className={forms.fieldRow}>
-            <label className={forms.field}><span className={forms.label}>담당자 <em>*</em></span><select className={`${forms.select} ${errors.assigneeId ? forms.errorInput : ''}`} value={values.assigneeId} onChange={(event) => change('assigneeId', event.target.value)} aria-invalid={Boolean(errors.assigneeId)}>{availableMembers.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name}</option>)}</select>{errors.assigneeId ? <span className={forms.error}>{errors.assigneeId}</span> : null}</label>
+            <label className={forms.field}><span className={forms.label}>담당 팀원 <em>*</em></span><select className={`${forms.select} ${errors.assigneeId ? forms.errorInput : ''}`} value={values.assigneeId} onChange={(event) => change('assigneeId', event.target.value)} aria-invalid={Boolean(errors.assigneeId)}>{availableMembers.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.name}</option>)}</select>{errors.assigneeId ? <span className={forms.error}>{errors.assigneeId}</span> : null}</label>
             <label className={forms.field}><span className={forms.label}>마감일 <em>*</em></span><input type="date" className={`${forms.input} ${errors.dueDate ? forms.errorInput : ''}`} value={values.dueDate} onChange={(event) => change('dueDate', event.target.value)} aria-invalid={Boolean(errors.dueDate)} />{errors.dueDate ? <span className={forms.error}>{errors.dueDate}</span> : null}</label>
           </div>
           <div className={forms.field}>

@@ -96,7 +96,7 @@ TeamFlow는 React 화면이 Express API에 요청을 보내고, Express가 로�
 현재 로그인 사용자가 Supabase에 저장할 수 있는 데이터는 다음과 같습니다.
 
 - 프로젝트 생성과 기간 변경
-- 담당자 추가
+- 협업자 초대와 프로젝트 역할 수정
 - 할 일 생성, 상태 변경, 삭제
 
 공유 노트, 자료실, AI 팀원 화면은 존재하지만 아직 로그인 사용자 데이터가 Supabase에 저장되지는 않습니다. 코드의 `capabilities` 값이 화면에서 사용할 수 있는 기능 범위를 나타냅니다.
@@ -111,7 +111,7 @@ TeamFlow는 React 화면이 Express API에 요청을 보내고, Express가 로�
 
 ## 8. 1분 발표 예시
 
-> TeamFlow는 React, Express, Supabase의 3계층 구조입니다. React는 사용자 화면과 상태를 담당하고, 로그인은 브라우저에서 Supabase Auth와 직접 연결합니다. 로그인 후 프로젝트나 할 일을 변경하면 React가 JWT를 담아 Express API를 호출합니다. Express는 JWT와 입력값을 검증한 뒤 Repository를 통해 Supabase PostgreSQL에 접근합니다. 이때 RLS가 사용자 ID를 기준으로 다른 사용자의 데이터 접근을 막습니다. DB 처리 결과는 JSON으로 돌아오고 React state가 변경되면서 화면이 갱신됩니다. 게스트는 별도의 공개 데모 데이터만 읽을 수 있고 수정은 차단됩니다. 현재 프로젝트·담당자·할 일은 실제 DB에 저장되며, 노트·자료·AI 기능의 영속화는 이후 범위입니다.
+> TeamFlow는 React, Express, Supabase의 3계층 구조입니다. React는 사용자 화면과 상태를 담당하고, 로그인은 브라우저에서 Supabase Auth와 직접 연결합니다. 로그인 후 프로젝트나 할 일을 변경하면 React가 JWT를 담아 Express API를 호출합니다. Express는 JWT와 입력값을 검증한 뒤 Repository를 통해 Supabase PostgreSQL에 접근합니다. 이때 RLS가 사용자 ID를 기준으로 다른 사용자의 데이터 접근을 막습니다. DB 처리 결과는 JSON으로 돌아오고 React state가 변경되면서 화면이 갱신됩니다. 게스트는 별도의 공개 데모 데이터만 읽을 수 있고 수정은 차단됩니다. 현재 프로젝트·협업 팀원·할 일은 실제 DB에 저장되며, 할 일은 프로젝트에 참여한 협업 팀원에게만 배정할 수 있습니다.
 
 ## 9. 주요 코드 위치
 

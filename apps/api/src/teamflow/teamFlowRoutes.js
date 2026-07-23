@@ -1,6 +1,6 @@
 import { Router } from 'express'
 
-import { RESOURCE_TYPE, isProjectIcon, isProjectStatus, isResourceType, isTaskStatus } from '@teamflow/shared'
+import { RESOURCE_TYPE, RESOURCE_UPLOAD, isProjectIcon, isProjectStatus, isResourceType, isTaskStatus } from '@teamflow/shared'
 
 import { createAuthenticationMiddleware } from '../lib/auth.js'
 import {
@@ -11,6 +11,7 @@ import {
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const MIME_TYPE_PATTERN = /^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/i
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function hasOwn(value, key) {
@@ -26,6 +27,10 @@ function calendarDate(value, optional = false) {
 
 function cleanString(value) {
   return typeof value === 'string' ? value.trim() : ''
+}
+
+function cleanFileName(value) {
+  return cleanString(value).replace(/[\p{Cc}\\/]/gu, '_')
 }
 
 function validHttpUrl(value) {
@@ -80,23 +85,6 @@ function validateProject(body, { partial = false } = {}) {
   return Object.keys(fields).length ? { fields } : { value }
 }
 
-function validateMember(body) {
-  const value = {
-    name: cleanString(body?.name),
-    initial: cleanString(body?.initial),
-    role: cleanString(body?.role),
-    description: cleanString(body?.description),
-    color: cleanString(body?.color) || '#3a6898',
-  }
-  const fields = {}
-  if (!value.name || value.name.length > 80) fields.name = '이름은 1자 이상 80자 이하여야 합니다.'
-  if (!value.initial || Array.from(value.initial).length > 4) fields.initial = '이니셜은 1자 이상 4자 이하여야 합니다.'
-  if (!value.role || value.role.length > 120) fields.role = '역할은 1자 이상 120자 이하여야 합니다.'
-  if (value.description.length > 500) fields.description = '소개는 500자 이하여야 합니다.'
-  if (!/^#[0-9a-f]{6}$/i.test(value.color)) fields.color = '색상 값을 확인해 주세요.'
-  return Object.keys(fields).length ? { fields } : { value }
-}
-
 function validateMemberPatch(body) {
   const value = {
     role: cleanString(body?.role),
@@ -107,14 +95,6 @@ function validateMemberPatch(body) {
   if (!value.role || value.role.length > 120) fields.role = '역할은 1자 이상 120자 이하여야 합니다.'
   if (value.description.length > 500) fields.description = '소개는 500자 이하여야 합니다.'
   if (!/^#[0-9a-f]{6}$/i.test(value.color)) fields.color = '색상 값을 확인해 주세요.'
-  if (hasOwn(body, 'name')) {
-    value.name = cleanString(body.name)
-    if (!value.name || value.name.length > 80) fields.name = '이름은 1자 이상 80자 이하여야 합니다.'
-  }
-  if (hasOwn(body, 'initial')) {
-    value.initial = cleanString(body.initial)
-    if (!value.initial || Array.from(value.initial).length > 4) fields.initial = '이니셜은 1자 이상 4자 이하여야 합니다.'
-  }
   return Object.keys(fields).length ? { fields } : { value }
 }
 
@@ -215,6 +195,33 @@ function validateResource(body, { partial = false } = {}) {
     if (value.url) fields.url = '폴더에는 외부 주소를 저장할 수 없습니다.'
   }
   if (value.type === RESOURCE_TYPE.LINK && !value.url) fields.url = '링크 자료에는 외부 주소가 필요합니다.'
+
+  return Object.keys(fields).length ? { fields } : { value }
+}
+
+function validateResourceUpload(body) {
+  const value = {
+    name: cleanString(body?.name),
+    description: cleanString(body?.description),
+    parentId: body?.parentId || null,
+    originalName: cleanFileName(body?.originalName),
+    mimeType: (cleanString(body?.mimeType) || 'application/octet-stream').toLocaleLowerCase('en-US'),
+    sizeBytes: body?.sizeBytes,
+  }
+  const fields = {}
+
+  if (!value.name || value.name.length > 200) fields.name = '자료 이름은 1자 이상 200자 이하여야 합니다.'
+  if (value.description.length > 2000) fields.description = '설명은 2000자 이하여야 합니다.'
+  if (value.parentId !== null && !UUID_PATTERN.test(value.parentId)) fields.parentId = '폴더 ID를 확인해 주세요.'
+  if (!value.originalName || value.originalName.length > 200) fields.file = '올바른 파일을 선택해 주세요.'
+  if (!MIME_TYPE_PATTERN.test(value.mimeType)) fields.file = '파일 형식을 확인해 주세요.'
+  if (!Number.isSafeInteger(value.sizeBytes) || value.sizeBytes <= 0 || value.sizeBytes > RESOURCE_UPLOAD.MAX_BYTES) {
+    fields.file = `파일 크기는 1바이트 이상 ${Math.floor(RESOURCE_UPLOAD.MAX_BYTES / 1024 / 1024)}MB 이하여야 합니다.`
+  }
+
+  value.type = /^image\/(?!svg\+xml$)/i.test(value.mimeType)
+    ? RESOURCE_TYPE.IMAGE
+    : RESOURCE_TYPE.DOCUMENT
 
   return Object.keys(fields).length ? { fields } : { value }
 }
@@ -343,15 +350,6 @@ export function createTeamFlowRouter({ authVerifier, repositoryFactory, demoRepo
     })(request, response)
   })
 
-  router.post('/projects/:projectId/members', async (request, response) => {
-    if (!validId(response, 'projectId', request.params.projectId)) return
-    const validation = validateMember(request.body)
-    if (validation.fields) return validationError(response, validation.fields)
-    return asyncRoute(async () => {
-      response.status(201).json({ member: await request.teamFlow.repository.createMember(request.params.projectId, validation.value) })
-    })(request, response)
-  })
-
   router.patch('/members/:memberId', async (request, response) => {
     if (!validId(response, 'memberId', request.params.memberId)) return
     const validation = validateMemberPatch(request.body)
@@ -415,6 +413,29 @@ export function createTeamFlowRouter({ authVerifier, repositoryFactory, demoRepo
     if (!validId(response, 'noteId', request.params.noteId)) return
     return asyncRoute(async () => {
       response.status(200).json({ noteId: await request.teamFlow.repository.deleteNote(request.params.noteId) })
+    })(request, response)
+  })
+
+  router.post('/projects/:projectId/resource-uploads', async (request, response) => {
+    if (!validId(response, 'projectId', request.params.projectId)) return
+    const validation = validateResourceUpload(request.body)
+    if (validation.fields) return validationError(response, validation.fields)
+    return asyncRoute(async () => {
+      response.status(201).json(await request.teamFlow.repository.createResourceUpload(request.params.projectId, validation.value))
+    })(request, response)
+  })
+
+  router.post('/resources/:resourceId/complete-upload', async (request, response) => {
+    if (!validId(response, 'resourceId', request.params.resourceId)) return
+    return asyncRoute(async () => {
+      response.status(200).json({ resource: await request.teamFlow.repository.completeResourceUpload(request.params.resourceId) })
+    })(request, response)
+  })
+
+  router.post('/resources/:resourceId/download-url', async (request, response) => {
+    if (!validId(response, 'resourceId', request.params.resourceId)) return
+    return asyncRoute(async () => {
+      response.status(200).json(await request.teamFlow.repository.createResourceDownloadUrl(request.params.resourceId))
     })(request, response)
   })
 

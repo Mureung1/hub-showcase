@@ -5,9 +5,14 @@
 .noteList h1 { margin: 0; font-size: 14px; font-weight: 650; }
 .noteList button { border: 0; background: transparent; }
 .noteList > header > div button { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 8px; color: var(--color-text-secondary); }
-.noteList label { position: relative; display: flex; align-items: center; }
-.noteList label svg { position: absolute; left: 10px; color: var(--color-text-secondary); }
-.noteList label input { width: 100%; height: 32px; padding: 0 10px 0 31px; border: 1px solid var(--color-border); border-radius: 8px; outline: 0; background: var(--color-surface-sunken); font-size: 12px; }
+.listControls { display: grid; grid-template-columns: minmax(0, 1fr) 98px; gap: 6px; }
+.noteSearch { position: relative; display: flex; min-width: 0; align-items: center; }
+.noteSearch svg { position: absolute; left: 10px; color: var(--color-text-secondary); }
+.noteSearch input { width: 100%; height: 32px; min-width: 0; padding: 0 10px 0 31px; border: 1px solid var(--color-border); border-radius: 8px; outline: 0; background: var(--color-surface-sunken); font-size: 12px; }
+.noteSort { display: flex; min-width: 0; }
+.noteSort select { width: 100%; height: 32px; min-width: 0; padding: 0 27px 0 9px; border: 1px solid var(--color-border); border-radius: 8px; outline: 0; background-color: var(--color-surface-sunken); background-position: right 7px center; color: var(--color-text-secondary); font-size: 11px; }
+.noteSearch input:focus,
+.noteSort select:focus { border-color: #7c91c8; box-shadow: 0 0 0 3px rgb(56 96 201 / 10%); }
 .noteItems { flex: 1; overflow: auto; padding: 0 8px 12px; }
 .noteItems > button { display: grid; width: 100%; gap: 5px; padding: 10px 12px; border-radius: 12px; text-align: left; }
 .noteItems > button:hover { background: #f5f5f4; }

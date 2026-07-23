@@ -129,7 +129,7 @@ https://lmmeuoeuiouyowpthxwg.supabase.co/auth/v1/callback
 
 1. Vercel 사이트에서 게스트 데모를 엽니다.
 2. Google로 로그인합니다.
-3. 프로젝트·담당자·할 일을 생성합니다.
+3. 프로젝트를 만들고 협업자를 초대한 뒤 할 일을 생성합니다.
 4. 페이지를 새로고침해 데이터가 유지되는지 확인합니다.
 5. 프로젝트 초대를 보내고 다른 Google 계정에서 수락합니다.
 6. Render의 `/health`와 브라우저 개발자 도구의 Network/Console 오류를 확인합니다.

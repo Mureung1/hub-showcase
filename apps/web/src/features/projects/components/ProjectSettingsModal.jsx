@@ -93,7 +93,7 @@ export function ProjectSettingsModal({ project, onClose, onDeleted }) {
         <form id="delete-project-form" className={forms.form} onSubmit={removeProject} aria-busy={submitting}>
           <div className={styles.dangerNotice}>
             <strong>삭제한 프로젝트는 복구할 수 없습니다.</strong>
-            <p>할 일, 노트, 자료, 담당자와 초대 정보가 함께 삭제됩니다.</p>
+            <p>할 일, 노트, 자료, 팀원과 초대 정보가 함께 삭제됩니다.</p>
           </div>
           {submitError ? <p className={forms.error} role="alert">{submitError}</p> : null}
           <label className={forms.field}>

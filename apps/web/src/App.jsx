@@ -60,9 +60,10 @@ function TeamFlowBoundary({ authenticatedRepository, guestRepository }) {
     }
     return authenticatedRepository ?? createApiTeamFlowRepository({
       getAccessToken: auth.getAccessToken,
+      uploadToSignedUrl: auth.uploadToSignedUrl,
       apiBaseUrl: TEAMFLOW_API_BASE_URL,
     })
-  }, [auth.status, auth.getAccessToken, authenticatedRepository, guestRepository])
+  }, [auth.status, auth.getAccessToken, auth.uploadToSignedUrl, authenticatedRepository, guestRepository])
 
   return <TeamFlowProvider key={`${auth.status}:${auth.user?.id ?? 'guest'}`} repository={repository}><Outlet /></TeamFlowProvider>
 }

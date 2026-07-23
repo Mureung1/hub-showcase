@@ -1,7 +1,17 @@
 export function formatShortDate(date) {
-  if (!date) return '미정'
-  const [, month = '', day = ''] = date.split('-')
-  return month && day ? `${month}.${day}` : '미정'
+  if (typeof date !== 'string') return '미정'
+  const match = date.trim().match(/^(\d{4})-(\d{2})-(\d{2})(?:$|[T\s])/)
+  if (!match) return '미정'
+
+  const [, yearText, monthText, dayText] = match
+  const year = Number(yearText)
+  const month = Number(monthText)
+  const day = Number(dayText)
+  const daysInMonth = month >= 1 && month <= 12
+    ? new Date(Date.UTC(year, month, 0)).getUTCDate()
+    : 0
+
+  return day >= 1 && day <= daysInMonth ? `${monthText}.${dayText}` : '미정'
 }
 
 export function formatPeriod(startDate, endDate) {

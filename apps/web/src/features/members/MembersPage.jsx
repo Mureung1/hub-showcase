@@ -1,6 +1,5 @@
 import MailPlus from 'lucide-react/dist/esm/icons/mail-plus.mjs'
 import Pencil from 'lucide-react/dist/esm/icons/pencil.mjs'
-import Plus from 'lucide-react/dist/esm/icons/plus.mjs'
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2.mjs'
 import X from 'lucide-react/dist/esm/icons/x.mjs'
 import { useEffect, useMemo, useState } from 'react'
@@ -11,7 +10,6 @@ import { StatusBadge } from '../../components/ui/StatusBadge.jsx'
 import { useTeamFlow } from '../../state/useTeamFlow.js'
 import { selectProject } from '../../state/selectors.js'
 import workspace from '../../styles/workspace.module.css'
-import { AddMemberModal } from './AddMemberModal.jsx'
 import { EditMemberModal } from './EditMemberModal.jsx'
 import { InviteCollaboratorModal } from './InviteCollaboratorModal.jsx'
 import { MemberRemovalModal } from './MemberRemovalModal.jsx'
@@ -21,7 +19,6 @@ export function MembersPage() {
   const { projectId } = useParams()
   const { state, capabilities, actions, readOnly } = useTeamFlow()
   const { reloadOnEntry } = actions
-  const [showAdd, setShowAdd] = useState(false)
   const [showInvite, setShowInvite] = useState(false)
   const [editingMemberId, setEditingMemberId] = useState(null)
   const [removingMemberId, setRemovingMemberId] = useState(null)
@@ -30,8 +27,7 @@ export function MembersPage() {
   const project = projectId ? selectProject(state, projectId) : null
   const members = project ? state.members.filter((member) => project.memberIds.includes(member.id)) : state.members
   const projectTasks = project ? state.tasks.filter((task) => task.projectId === project.id) : state.tasks
-  const collaborators = members.filter(isLinkedUser)
-  const assignees = members.filter((member) => !isLinkedUser(member))
+  const collaborators = members.filter(isCollaborator)
   const pendingInvitations = project ? (state.invitations ?? []).filter((invitation) => (
     invitation.projectId === project.id && invitation.status === 'pending' && invitation.direction !== 'received'
   )) : []
@@ -75,7 +71,7 @@ export function MembersPage() {
       <div className={`${workspace.container} ${workspace.containerNarrow}`}>
         <header className={workspace.pageHeader}>
           <div><p>{project.name} · 팀원</p><h1 id="members-title">팀원 관리</h1></div>
-          {canManage ? <div className={styles.headerActions}><button className={workspace.secondaryButton} type="button" aria-label="팀원 추가" onClick={() => setShowAdd(true)}><Plus size={15} />담당자 추가</button><button className={workspace.primaryButton} type="button" onClick={() => setShowInvite(true)}><MailPlus size={15} />협업자 초대</button></div> : null}
+          {canManage ? <div className={styles.headerActions}><button className={workspace.primaryButton} type="button" onClick={() => setShowInvite(true)}><MailPlus size={15} />협업자 초대</button></div> : null}
         </header>
 
         <section className={styles.memberSection} aria-labelledby="collaborators-title">
@@ -91,14 +87,8 @@ export function MembersPage() {
           ) : null}
         </section>
 
-        <section className={styles.memberSection} aria-labelledby="assignees-title">
-          <header className={styles.sectionTitle}><div><h2 id="assignees-title">담당자</h2><p>로그인 계정 없이 할 일을 배정하기 위한 프로젝트 내 담당자입니다.</p></div><span>{assignees.length}명</span></header>
-          <div className={styles.grid}>{assignees.map((member) => <MemberCard key={member.id} member={member} tasks={projectTasks.filter((task) => task.assigneeId === member.id)} canManage={canManage && !member.isAi} onEdit={() => setEditingMemberId(member.id)} onRemove={() => setRemovingMemberId(member.id)} />)}</div>
-          {assignees.length === 0 ? <p className={styles.sectionEmpty}>추가한 수동 담당자가 없습니다.</p> : null}
-        </section>
       </div>
 
-      {showAdd && canManage ? <AddMemberModal projectId={project.id} onClose={() => setShowAdd(false)} /> : null}
       {showInvite && canManage ? <InviteCollaboratorModal projectId={project.id} onClose={() => setShowInvite(false)} /> : null}
       {editingMember && canManage ? <EditMemberModal member={editingMember} onClose={() => setEditingMemberId(null)} /> : null}
       {removingMember && canManage ? <MemberRemovalModal member={removingMember} taskCount={projectTasks.filter((task) => task.assigneeId === removingMember.id).length} isCurrentUser={removingMember.id === currentMemberId} onClose={() => setRemovingMemberId(null)} /> : null}
@@ -106,17 +96,16 @@ export function MembersPage() {
   )
 }
 
-function isLinkedUser(member) {
-  return member.kind === 'user' || Boolean(member.authUserId)
+function isCollaborator(member) {
+  return !member.isAi && (member.kind === 'user' || Boolean(member.authUserId))
 }
 
 function MemberCard({ member, tasks, projects = [], current = false, canManage = false, onEdit, onRemove }) {
-  const linkedUser = isLinkedUser(member)
   return (
     <article className={`${styles.memberCard} ${member.isAi ? styles.aiCard : ''}`}>
       <div className={styles.memberHeader}>
         <Avatar member={member} size="large" />
-        <div className={styles.memberIdentity}><div className={styles.nameLine}><h3>{member.name}</h3>{current ? <span>나</span> : member.isAi ? <span>AI</span> : null}</div><p>{member.role}</p>{linkedUser && member.email ? <small>{member.email}</small> : null}</div>
+        <div className={styles.memberIdentity}><div className={styles.nameLine}><h3>{member.name}</h3>{current ? <span>나</span> : null}</div><p>{member.role}</p>{member.email ? <small>{member.email}</small> : null}</div>
         {canManage ? <div className={styles.cardActions}><button type="button" onClick={onEdit} aria-label={`${member.name} 정보 수정`} title="정보 수정"><Pencil size={13} /></button><button type="button" className={styles.removeButton} onClick={onRemove} aria-label={current ? '프로젝트 나가기' : `${member.name} 제거`} title={current ? '프로젝트 나가기' : '제거'}><Trash2 size={13} /></button></div> : null}
       </div>
       <p className={styles.description}>{member.description || '소개가 없습니다.'}</p>

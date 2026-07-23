@@ -13,12 +13,7 @@ export const testTeamFlowRepository = {
   load() {
     return Promise.resolve(clone({
       projects: initialProjects,
-      members: initialMembers.map((member) => ({
-        ...member,
-        kind: member.id === CURRENT_USER_ID ? 'user' : 'manual',
-        authUserId: member.id === CURRENT_USER_ID ? 'auth-user-1' : null,
-        email: member.id === CURRENT_USER_ID ? 'user@example.com' : '',
-      })),
+      members: initialMembers,
       tasks: initialTasks,
       notes: initialNotes,
       resources: initialResources,
@@ -63,10 +58,6 @@ export const testTeamFlowRepository = {
     return Promise.resolve({ taskId })
   },
 
-  createMember(projectId, input) {
-    return Promise.resolve({ projectId, member: { id: nextId('member'), projectId, kind: 'manual', authUserId: null, email: '', isAi: false, ...input } })
-  },
-
   updateMember(memberId, patch) {
     return Promise.resolve({ memberId, patch })
   },
@@ -103,12 +94,30 @@ export const testTeamFlowRepository = {
     return Promise.resolve({ id: nextId('resource'), projectId, ...input })
   },
 
+  uploadResource(projectId, { file, ...input }) {
+    return Promise.resolve({
+      id: nextId('resource'),
+      projectId,
+      type: file?.type?.startsWith('image/') ? 'image' : 'document',
+      originalName: file?.name ?? '',
+      mimeType: file?.type || 'application/octet-stream',
+      sizeBytes: file?.size ?? 0,
+      storagePath: `${projectId}/test-file`,
+      uploadStatus: 'ready',
+      ...input,
+    })
+  },
+
   updateResource(resourceId, patch) {
     return Promise.resolve({ resourceId, patch })
   },
 
   deleteResource(resourceId) {
     return Promise.resolve({ resourceId })
+  },
+
+  getResourceDownloadUrl() {
+    return Promise.resolve({ url: 'https://example.com/download', expiresIn: 60 })
   },
 
   updateAiSettings(projectId, patch) {

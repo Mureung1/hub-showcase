@@ -32,6 +32,26 @@ const toolbar = [
 ]
 
 const SAVE_DELAY_MS = 800
+const NOTE_SORT = Object.freeze({
+  UPDATED: 'updated',
+  CREATED: 'created',
+  TITLE: 'title',
+})
+
+function sortNotes(notes, sortMode) {
+  return notes.map((note, index) => ({ note, index })).sort((left, right) => {
+    let comparison
+    if (sortMode === NOTE_SORT.TITLE) {
+      comparison = String(left.note.title ?? '').localeCompare(String(right.note.title ?? ''), 'ko-KR')
+    } else {
+      const field = sortMode === NOTE_SORT.CREATED ? 'createdAt' : 'updatedAt'
+      const leftValue = String(left.note[field] ?? left.note.updatedAt ?? '')
+      const rightValue = String(right.note[field] ?? right.note.updatedAt ?? '')
+      comparison = rightValue.localeCompare(leftValue)
+    }
+    return comparison || left.index - right.index
+  }).map(({ note }) => note)
+}
 
 function toDraft(note) {
   return note ? { noteId: note.id, title: note.title ?? '', content: note.content ?? '' } : null
@@ -48,13 +68,17 @@ export function NotesPage() {
   const canEdit = capabilities.notes
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const projectNotes = useMemo(() => state.notes.filter((note) => note.projectId === project.id), [state.notes, project.id])
+  const [sortMode, setSortMode] = useState(NOTE_SORT.UPDATED)
+  const projectNotes = useMemo(() => sortNotes(
+    state.notes.filter((note) => note.projectId === project.id),
+    sortMode,
+  ), [state.notes, project.id, sortMode])
   const requestedNoteId = searchParams.get('note')
   const initialNote = projectNotes.find((note) => note.id === requestedNoteId) ?? projectNotes[0] ?? null
   const [activeId, setActiveId] = useState(initialNote?.id ?? null)
   const [draft, setDraft] = useState(() => toDraft(initialNote))
   const [query, setQuery] = useState('')
-  const [preview, setPreview] = useState(false)
+  const [preview, setPreview] = useState(Boolean(initialNote))
   const [showTemplates, setShowTemplates] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const [saveStatus, setSaveStatus] = useState('idle')
@@ -171,7 +195,7 @@ export function NotesPage() {
     setActiveId(noteId)
     setLoadedNote(note)
     setSearchParams({ note: noteId }, { replace: true })
-    setPreview(false)
+    setPreview(true)
   }
 
   useEffect(() => {
@@ -179,6 +203,7 @@ export function NotesPage() {
     const fallback = projectNotes.find((note) => note.id === requestedNoteId) ?? projectNotes[0] ?? null
     setActiveId(fallback?.id ?? null)
     setLoadedNote(fallback)
+    setPreview(Boolean(fallback))
   }, [activeId, projectNotes, requestedNoteId])
 
   useEffect(() => {
@@ -237,6 +262,7 @@ export function NotesPage() {
       setActiveId(note.id)
       setLoadedNote(note)
       setSearchParams({ note: note.id }, { replace: true })
+      // A freshly-created note should be ready for typing immediately.
       setPreview(false)
       setShowTemplates(false)
     } catch (error) {
@@ -258,7 +284,7 @@ export function NotesPage() {
       setLoadedNote(fallback)
       setSearchParams(fallback ? { note: fallback.id } : {}, { replace: true })
       setShowDelete(false)
-      setPreview(false)
+      setPreview(Boolean(fallback))
     } catch (error) {
       setDeleteError(error instanceof Error ? error.message : '노트를 삭제하지 못했습니다.')
     } finally {
@@ -286,10 +312,20 @@ export function NotesPage() {
 
   return (
     <section className={styles.notesPage} aria-label="공유 노트">
-      <aside className={styles.noteList}>
+      <aside className={styles.noteList} aria-label="노트 목록">
         <header>
           <div><h1>공유 노트</h1>{canEdit ? <button type="button" onClick={() => { setCreateError(''); setShowTemplates(true) }} aria-label="새 노트 만들기"><Plus size={16} /></button> : null}</div>
-          <label><Search size={13} /><span className="visually-hidden">노트 검색</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="노트 검색" /></label>
+          <div className={styles.listControls}>
+            <label className={styles.noteSearch}><Search size={13} /><span className="visually-hidden">노트 검색</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="노트 검색" /></label>
+            <label className={styles.noteSort}>
+              <span className="visually-hidden">노트 정렬</span>
+              <select value={sortMode} onChange={(event) => setSortMode(event.target.value)} aria-label="노트 정렬">
+                <option value={NOTE_SORT.UPDATED}>최근 수정순</option>
+                <option value={NOTE_SORT.CREATED}>최근 생성순</option>
+                <option value={NOTE_SORT.TITLE}>제목순</option>
+              </select>
+            </label>
+          </div>
         </header>
         <div className={styles.noteItems}>
           {filtered.map((note) => {

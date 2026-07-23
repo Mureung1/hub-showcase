@@ -1,10 +1,12 @@
 import { TASK_STATUS } from '@teamflow/shared'
 import ArrowDown from 'lucide-react/dist/esm/icons/arrow-down.mjs'
 import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up.mjs'
+import Check from 'lucide-react/dist/esm/icons/check.mjs'
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down.mjs'
 import Search from 'lucide-react/dist/esm/icons/search.mjs'
 import Plus from 'lucide-react/dist/esm/icons/plus.mjs'
 import X from 'lucide-react/dist/esm/icons/x.mjs'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 
 import { Avatar } from '../../components/ui/Avatar.jsx'
@@ -86,8 +88,8 @@ export function ProjectTasksPage() {
         </div>
 
         {view === 'list' ? (
-          <section className={workspace.card}>
-            <table className={workspace.table}><thead><tr><SortHeader label="할 일 제목" sortKey="title" sort={sort} onSort={changeSort} /><SortHeader label="담당자" sortKey="assignee" sort={sort} onSort={changeSort} /><SortHeader label="마감일" sortKey="dueDate" sort={sort} onSort={changeSort} /><SortHeader label="진행 상태" sortKey="status" sort={sort} onSort={changeSort} /></tr></thead><tbody>{sorted.map((task) => { const member = memberById.get(task.assigneeId); return <tr className={`${workspace.clickableRow} ${task.isNew ? styles.newTask : ''}`} key={task.id} role="button" tabIndex="0" aria-label={`${task.title} 상세 보기`} onClick={() => openTaskDetail(task)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openTaskDetail(task) } }}><td><div className={styles.titleWithNew}><p className={workspace.cellTitle}>{task.title}</p>{task.isNew ? <span>NEW</span> : null}</div>{task.description ? <p className={workspace.cellDescription}>{task.description}</p> : null}</td><td>{member ? <span className={workspace.memberLine}><Avatar member={member} />{member.name}</span> : '미지정'}</td><td className={workspace.mono}>{formatShortDate(task.dueDate)}</td><td><select disabled={!capabilities.tasks} className={styles.statusSelect} aria-label={`${task.title} 진행 상태`} value={task.status} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()} onChange={(event) => actions.updateTask(task.id, { status: event.target.value })}>{TASK_STATUS_ORDER.map((status) => <option key={status} value={status}>{TASK_STATUS_LABEL[status]}</option>)}</select></td></tr> })}{sorted.length === 0 ? <tr><td colSpan="4"><p className={workspace.empty}>검색 결과가 없습니다.</p></td></tr> : null}</tbody></table>
+          <section className={`${workspace.card} ${styles.taskTableCard}`}>
+            <table className={workspace.table}><thead><tr><SortHeader label="할 일 제목" sortKey="title" sort={sort} onSort={changeSort} /><SortHeader label="담당자" sortKey="assignee" sort={sort} onSort={changeSort} /><SortHeader label="마감일" sortKey="dueDate" sort={sort} onSort={changeSort} /><SortHeader label="진행 상태" sortKey="status" sort={sort} onSort={changeSort} /></tr></thead><tbody>{sorted.map((task) => { const member = memberById.get(task.assigneeId); return <tr className={`${workspace.clickableRow} ${task.isNew ? styles.newTask : ''}`} key={task.id} role="button" tabIndex="0" aria-label={`${task.title} 상세 보기`} onClick={() => openTaskDetail(task)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openTaskDetail(task) } }}><td><div className={styles.titleWithNew}><p className={workspace.cellTitle}>{task.title}</p>{task.isNew ? <span>NEW</span> : null}</div>{task.description ? <p className={workspace.cellDescription}>{task.description}</p> : null}</td><td>{member ? <span className={workspace.memberLine}><Avatar member={member} />{member.name}</span> : '미지정'}</td><td className={workspace.mono}>{formatShortDate(task.dueDate)}</td><td><TaskStatusMenu task={task} disabled={!capabilities.tasks} onChange={(status) => actions.updateTask(task.id, { status })} /></td></tr> })}{sorted.length === 0 ? <tr><td colSpan="4"><p className={workspace.empty}>검색 결과가 없습니다.</p></td></tr> : null}</tbody></table>
           </section>
         ) : (
           <div className={styles.board}>{TASK_STATUS_ORDER.map((status) => { const group = filtered.filter((task) => task.status === status); const [color, background] = statColors[status]; return <section className={styles.boardColumn} key={status}><header style={{ '--column-color': color, '--column-background': background }}><span><i />{TASK_STATUS_LABEL[status]}</span><strong>{group.length}</strong></header><div>{group.map((task) => { const member = memberById.get(task.assigneeId); return <button className={task.isNew ? styles.newBoardTask : ''} type="button" key={task.id} onClick={() => openTaskDetail(task)}><strong>{task.title}</strong>{task.description ? <p>{task.description}</p> : null}<span>{member ? <Avatar member={member} /> : <i />}<em className={workspace.mono}>{formatShortDate(task.dueDate)}</em></span></button> })}{group.length === 0 ? <p className={styles.noTasks}>할 일 없음</p> : null}</div></section> })}</div>
@@ -109,5 +111,104 @@ function SortHeader({ label, sortKey, sort, onSort }) {
         <span className="visually-hidden">{active ? `${direction === 'asc' ? '오름차순' : '내림차순'} 정렬됨` : '정렬'}</span>
       </button>
     </th>
+  )
+}
+
+function TaskStatusMenu({ task, disabled, onChange }) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef(null)
+  const triggerRef = useRef(null)
+  const optionRefs = useRef([])
+
+  useEffect(() => {
+    if (!open) return undefined
+
+    const currentIndex = Math.max(0, TASK_STATUS_ORDER.indexOf(task.status))
+    optionRefs.current[currentIndex]?.focus()
+
+    function closeOnOutsidePointer(event) {
+      if (!rootRef.current?.contains(event.target)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOnOutsidePointer)
+    return () => document.removeEventListener('pointerdown', closeOnOutsidePointer)
+  }, [open, task.status])
+
+  function closeAndRestoreFocus() {
+    setOpen(false)
+    requestAnimationFrame(() => triggerRef.current?.focus())
+  }
+
+  function choose(status) {
+    closeAndRestoreFocus()
+    if (status !== task.status) void onChange(status)
+  }
+
+  function moveOptionFocus(event) {
+    const currentIndex = optionRefs.current.indexOf(document.activeElement)
+    let nextIndex = currentIndex
+    if (event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % TASK_STATUS_ORDER.length
+    else if (event.key === 'ArrowUp') nextIndex = (currentIndex - 1 + TASK_STATUS_ORDER.length) % TASK_STATUS_ORDER.length
+    else if (event.key === 'Home') nextIndex = 0
+    else if (event.key === 'End') nextIndex = TASK_STATUS_ORDER.length - 1
+    else if (event.key === 'Escape') {
+      event.preventDefault()
+      closeAndRestoreFocus()
+      return
+    } else if (event.key === 'Tab') {
+      setOpen(false)
+      return
+    } else {
+      return
+    }
+    event.preventDefault()
+    optionRefs.current[nextIndex]?.focus()
+  }
+
+  return (
+    <div className={styles.statusMenu} ref={rootRef} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={styles.statusTrigger}
+        data-status={task.status}
+        disabled={disabled}
+        aria-label={`${task.title} 진행 상태`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault()
+            setOpen(true)
+          } else if (event.key === 'Escape' && open) {
+            event.preventDefault()
+            setOpen(false)
+          }
+        }}
+      >
+        <i aria-hidden="true" />
+        <span>{TASK_STATUS_LABEL[task.status]}</span>
+        <ChevronDown size={13} aria-hidden="true" />
+      </button>
+      {open ? (
+        <div className={styles.statusOptions} role="listbox" aria-label={`${task.title} 진행 상태 선택`} onKeyDown={moveOptionFocus}>
+          {TASK_STATUS_ORDER.map((status, index) => (
+            <button
+              key={status}
+              ref={(element) => { optionRefs.current[index] = element }}
+              type="button"
+              role="option"
+              aria-selected={task.status === status}
+              data-status={status}
+              onClick={() => choose(status)}
+            >
+              <i aria-hidden="true" />
+              <span>{TASK_STATUS_LABEL[status]}</span>
+              {task.status === status ? <Check size={13} aria-hidden="true" /> : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   )
 }

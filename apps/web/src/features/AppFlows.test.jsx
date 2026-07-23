@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { RESOURCE_TYPE, RESOURCE_UPLOAD } from '@teamflow/shared'
 import { describe, expect, test, vi } from 'vitest'
 
 import { MarkdownPreview } from './notes/MarkdownPreview.jsx'
@@ -157,6 +158,9 @@ describe('connected prototype flows', () => {
     await user.click(screen.getByRole('button', { name: /새 할 일/ }))
     const titleInput = screen.getByLabelText(/할 일 제목/)
     expect(titleInput).toHaveFocus()
+    const assigneeSelect = screen.getByLabelText(/담당 팀원/)
+    expect(within(assigneeSelect).getByRole('option', { name: '김민지' })).toBeInTheDocument()
+    expect(within(assigneeSelect).queryByRole('option', { name: '자료조사 AI' })).not.toBeInTheDocument()
     await user.type(titleInput, '연결 테스트 업무')
     fireEvent.change(screen.getByLabelText(/마감일/), { target: { value: '2026-07-30' } })
     await user.click(screen.getByRole('button', { name: '할 일 추가' }))
@@ -193,11 +197,18 @@ describe('connected prototype flows', () => {
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40')
   })
 
+  test('shows collaborators without the removed manual assignee controls', async () => {
+    renderApp('/projects/1/members')
+    expect(await screen.findByRole('heading', { name: '팀원 관리' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '담당자 추가' })).not.toBeInTheDocument()
+    expect(screen.queryByText('로그인 계정 없이 할 일을 배정하기 위한 프로젝트 내 담당자입니다.')).not.toBeInTheDocument()
+  })
+
   test('creates a note from a template, edits it, and previews unsafe markup as text', async () => {
     const user = userEvent.setup()
     renderApp('/projects/1/notes?note=note-3')
     expect(await screen.findByRole('heading', { name: '공유 노트' })).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('제목 없음')).toHaveValue('디자인 시스템 컬러 & 타이포그래피 규칙')
+    expect(screen.getByRole('heading', { name: '디자인 시스템 컬러 & 타이포그래피 규칙' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '새 노트 만들기' }))
     const dialog = screen.getByRole('dialog', { name: '템플릿 선택' })
     await user.click(within(dialog).getByRole('button', { name: '빈 문서' }))
@@ -223,6 +234,7 @@ describe('connected prototype flows', () => {
       },
     }
     renderApp('/projects/1/notes?note=note-3', repository)
+    await user.click(await screen.findByRole('button', { name: '편집으로 돌아가기' }))
     const title = await screen.findByPlaceholderText('제목 없음')
 
     fireEvent.change(title, { target: { value: '800ms 자동 저장 확인' } })
@@ -251,17 +263,48 @@ describe('connected prototype flows', () => {
     const { router } = renderApp('/projects/1/tasks', repository)
     expect(await screen.findByRole('heading', { name: '할 일 관리' })).toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: '공유 노트' }))
+    await user.click(await screen.findByRole('button', { name: '편집으로 돌아가기' }))
     const title = await screen.findByPlaceholderText('제목 없음')
     fireEvent.change(title, { target: { value: '뒤로 가기 저장 확인' } })
 
     const navigation = router.navigate(-1)
     expect(await screen.findByRole('status')).toHaveTextContent('저장 중')
     expect(screen.getByRole('heading', { name: '공유 노트' })).toBeInTheDocument()
-    expect(updates.at(-1)).toMatchObject({ noteId: 'note-1', patch: { title: '뒤로 가기 저장 확인' } })
+    expect(updates.at(-1)).toMatchObject({ noteId: 'note-3', patch: { title: '뒤로 가기 저장 확인' } })
 
     completeSave()
     await navigation
     expect(await screen.findByRole('heading', { name: '할 일 관리' })).toBeInTheDocument()
+  })
+
+  test('opens existing notes in view mode and sorts the list by update, creation, or title', async () => {
+    const user = userEvent.setup()
+    const payload = await testTeamFlowRepository.load()
+    const repository = {
+      ...testTeamFlowRepository,
+      load: async () => ({
+        ...payload,
+        notes: payload.notes.map((note) => {
+          if (note.id === 'note-1') return { ...note, title: 'C note', createdAt: '2026-07-30T00:00:00.000Z' }
+          if (note.id === 'note-2') return { ...note, title: 'A note', createdAt: '2026-07-10T00:00:00.000Z' }
+          if (note.id === 'note-3') return { ...note, title: 'B note', createdAt: '2026-07-20T00:00:00.000Z' }
+          return note
+        }),
+      }),
+    }
+
+    renderApp('/projects/1/notes', repository)
+    const noteList = await screen.findByRole('complementary', { name: '노트 목록' })
+    const firstNoteButton = () => within(noteList).getAllByRole('button').find((button) => button.querySelector('strong'))
+
+    expect(firstNoteButton()).toHaveTextContent('B note')
+    expect(screen.getByRole('button', { name: '편집으로 돌아가기' })).toBeInTheDocument()
+
+    await user.selectOptions(within(noteList).getByRole('combobox', { name: '노트 정렬' }), 'created')
+    expect(firstNoteButton()).toHaveTextContent('C note')
+
+    await user.selectOptions(within(noteList).getByRole('combobox', { name: '노트 정렬' }), 'title')
+    expect(firstNoteButton()).toHaveTextContent('A note')
   })
 
   test('labels notes whose author has left the project', async () => {
@@ -304,7 +347,8 @@ describe('connected prototype flows', () => {
     expect(await screen.findByRole('heading', { name: '할 일 관리' })).toBeInTheDocument()
 
     for (const label of ['할 일 제목', '담당자', '마감일', '진행 상태']) {
-      const header = screen.getByRole('button', { name: new RegExp(label) })
+      const columnHeader = screen.getByRole('columnheader', { name: new RegExp(`^${label}`) })
+      const header = within(columnHeader).getByRole('button')
       await user.click(header)
       expect(header.closest('th')).toHaveAttribute('aria-sort', 'ascending')
       await user.click(header)
@@ -316,16 +360,17 @@ describe('connected prototype flows', () => {
     const table = screen.getByRole('table')
     expect(within(table).getAllByRole('button', { name: /상세 보기/ })[0]).toHaveAccessibleName('초기 회의 일정 조율 상세 보기')
 
-    const statusSelect = screen.getByRole('combobox', { name: '기획서 최종 정리 진행 상태' })
-    await user.selectOptions(statusSelect, 'in_progress')
-    expect(statusSelect).toHaveValue('in_progress')
+    const statusMenu = screen.getByRole('button', { name: '기획서 최종 정리 진행 상태' })
+    await user.click(statusMenu)
+    await user.click(screen.getByRole('option', { name: '진행 중' }))
+    expect(statusMenu).toHaveTextContent('진행 중')
 
     await user.click(screen.getByRole('button', { name: '기획서 최종 정리 상세 보기' }))
     const dialog = screen.getByRole('dialog', { name: '할 일 상세' })
     await user.click(within(dialog).getByRole('button', { name: '검토 중' }))
     expect(within(dialog).getByRole('button', { name: '검토 중' })).toHaveAttribute('aria-pressed', 'true')
     await user.keyboard('{Escape}')
-    expect(statusSelect).toHaveValue('in_review')
+    expect(statusMenu).toHaveTextContent('검토 중')
 
     await user.click(screen.getByRole('button', { name: '보드' }))
     const boardTask = screen.getByRole('button', { name: /기획서 최종 정리/ })
@@ -334,25 +379,13 @@ describe('connected prototype flows', () => {
     expect(await screen.findByRole('progressbar')).toHaveAttribute('aria-valuenow', '30')
   })
 
-  test('adds a project member and reflects it on the project screen', async () => {
-    const user = userEvent.setup()
-    renderApp('/projects/1/members')
-    expect(await screen.findByRole('heading', { name: '팀원 관리' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: '팀원 추가' }))
-    const dialog = screen.getByRole('dialog', { name: '팀원 추가' })
-    await user.type(screen.getByLabelText(/이름/), '박코덱스')
-    await user.type(screen.getByLabelText(/역할/), '프론트엔드 개발')
-    await user.click(within(dialog).getByRole('button', { name: '팀원 추가' }))
-    expect(await screen.findByRole('heading', { name: '박코덱스' })).toBeInTheDocument()
-  })
-
   test('navigates folders and creates a file in a selected Drive-like location', async () => {
     const user = userEvent.setup()
     renderApp('/projects/1/resources')
     expect(await screen.findByRole('heading', { name: '자료실' })).toBeInTheDocument()
 
     expect(screen.queryByText('PRD_요구사항정의서.md')).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /회의 자료 및 녹음본/ }))
+    await user.click(screen.getByRole('button', { name: '회의 자료 및 녹음본 폴더 열기' }))
     expect(screen.getByRole('heading', { name: /자료실.*회의 자료 및 녹음본/ })).toBeInTheDocument()
     expect(screen.getByText('PRD_요구사항정의서.md')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '자료실' }))
@@ -361,24 +394,76 @@ describe('connected prototype flows', () => {
     const folderDialog = screen.getByRole('dialog', { name: '새 폴더' })
     await user.type(within(folderDialog).getByLabelText(/폴더 이름/), '테스트 폴더')
     await user.click(within(folderDialog).getByRole('button', { name: '폴더 만들기' }))
-    expect(await screen.findByRole('button', { name: /테스트 폴더/ })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: '테스트 폴더 폴더 열기' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '자료 추가' }))
     const dialog = screen.getByRole('dialog', { name: '자료 추가' })
-    await user.type(screen.getByLabelText(/자료 이름/), '테스트 명세서.md')
-    await user.type(screen.getByLabelText(/설명/), '자료실 연결 확인')
-    await user.selectOptions(screen.getByLabelText(/위치/), screen.getByRole('option', { name: '테스트 폴더' }))
-    await user.click(within(dialog).getByRole('button', { name: '자료 추가' }))
+    const selectedFile = new File(['test spec'], '테스트 명세서.md', { type: 'text/markdown' })
+    await user.upload(within(dialog).getByLabelText(/업로드할 파일/), selectedFile)
+    expect(within(dialog).getByText('테스트 명세서.md', { selector: 'strong' })).toBeInTheDocument()
+    expect(within(dialog).getByText(/9 B.*최대 6MB/)).toBeInTheDocument()
+    await user.type(within(dialog).getByLabelText(/설명/), '자료실 연결 확인')
+    await user.selectOptions(within(dialog).getByLabelText(/위치/), within(dialog).getByRole('option', { name: '테스트 폴더' }))
+    await user.click(within(dialog).getByRole('button', { name: '파일 업로드' }))
 
     expect(screen.queryByText('테스트 명세서.md')).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /테스트 폴더/ }))
+    await user.click(screen.getByRole('button', { name: '테스트 폴더 폴더 열기' }))
     const search = screen.getByRole('searchbox', { name: '자료 검색' })
     await user.type(search, '테스트 명세서')
     const row = await screen.findByText('테스트 명세서.md')
     await user.click(row)
-    expect(screen.getByRole('dialog', { name: '자료 상세' })).toBeInTheDocument()
+    const detailDialog = screen.getByRole('dialog', { name: '자료 상세' })
+    expect(within(detailDialog).getByText('테스트 명세서.md', { selector: 'dd' })).toBeInTheDocument()
+    expect(within(detailDialog).getByText('9 B')).toBeInTheDocument()
+
+    const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    await user.click(within(detailDialog).getByRole('button', { name: '파일 다운로드' }))
+    await waitFor(() => expect(anchorClick).toHaveBeenCalledTimes(1))
+    anchorClick.mockRestore()
+
     await user.click(screen.getByRole('button', { name: '확인' }))
     await user.click(screen.getByRole('button', { name: /오래된 자료부터 정렬/ }))
+  })
+
+  test('blocks files larger than 6MB before starting an upload', async () => {
+    const user = userEvent.setup()
+    const uploadResource = vi.fn(testTeamFlowRepository.uploadResource)
+    renderApp('/projects/1/resources', { ...testTeamFlowRepository, uploadResource })
+    expect(await screen.findByRole('heading', { name: '자료실' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '자료 추가' }))
+    const dialog = screen.getByRole('dialog', { name: '자료 추가' })
+    const oversizedFile = new File(
+      [new Uint8Array(RESOURCE_UPLOAD.MAX_BYTES + 1)],
+      '용량초과.bin',
+      { type: 'application/octet-stream' },
+    )
+    await user.upload(within(dialog).getByLabelText(/업로드할 파일/), oversizedFile)
+
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('파일은 1바이트 이상 6MB 이하여야 합니다.')
+    expect(within(dialog).getByRole('button', { name: '파일 업로드' })).toBeDisabled()
+    expect(uploadResource).not.toHaveBeenCalled()
+  })
+
+  test('keeps external links as an explicit non-upload resource option', async () => {
+    const user = userEvent.setup()
+    const createResource = vi.fn(testTeamFlowRepository.createResource)
+    renderApp('/projects/1/resources', { ...testTeamFlowRepository, createResource })
+    expect(await screen.findByRole('heading', { name: '자료실' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '자료 추가' }))
+    const dialog = screen.getByRole('dialog', { name: '자료 추가' })
+    await user.click(within(dialog).getByRole('radio', { name: '외부 링크' }))
+    await user.type(within(dialog).getByLabelText(/자료 이름/), '외부 문서')
+    await user.type(within(dialog).getByLabelText(/외부 URL/), 'https://example.com/docs')
+    await user.click(within(dialog).getByRole('button', { name: '링크 추가' }))
+
+    await waitFor(() => expect(createResource).toHaveBeenCalledWith('1', expect.objectContaining({
+      name: '외부 문서',
+      type: RESOURCE_TYPE.LINK,
+      url: 'https://example.com/docs',
+    })))
+    expect(await screen.findByText('외부 문서')).toBeInTheDocument()
   })
 
   test('saves AI settings and turns a briefing into an AI-owned task', async () => {
