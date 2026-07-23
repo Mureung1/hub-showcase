@@ -8,6 +8,7 @@ import {
   readFile,
   readdir,
   realpath,
+  rename,
   rm,
   symlink,
   unlink,
@@ -28,7 +29,9 @@ import {
   captureCanonicalWorkspaceBundleSource,
   captureWorkspaceBundleSourceAt,
   materializeWorkspaceBundle,
+  materializeWorkspaceBundleWithTestOptions,
   recoverMissingWorkspaceBundle,
+  recoverMissingWorkspaceBundleWithTestOptions,
   verifyWorkspaceBundle,
 } from './workspace-bundle.js'
 
@@ -267,6 +270,199 @@ test('missing declared file is recovered only through explicit absent-only recov
   }
 })
 
+test('retained directory capability contains checked-to-create ancestor replacement races', async (t) => {
+  for (const race of [
+    {
+      name: '.agents replacement before nested directory create',
+      operationPath: '.agents/skills',
+      displacedPath: '.agents',
+      createdLeaf: 'skills',
+      conflictPath: '.agents',
+    },
+    {
+      name: '.agents/skills replacement before declared root create',
+      operationPath: '.agents/skills/ay-ple-first-assignment',
+      displacedPath: '.agents/skills',
+      createdLeaf: 'ay-ple-first-assignment',
+      conflictPath: '.agents/skills',
+    },
+  ] as const) {
+    await t.test(race.name, async () => {
+      const fixture = await createFixture()
+      try {
+        const source = await captureCanonicalWorkspaceBundleSource()
+        const outside = path.join(fixture.root, 'outside')
+        const displaced = path.join(fixture.root, 'displaced')
+        await mkdir(outside)
+        const outsideBefore = await directoryEvidence(outside)
+        let raced = false
+
+        const result =
+          await materializeWorkspaceBundleWithTestOptions(
+            {
+              workspace: fixture.workspace,
+              source,
+            },
+            {
+              afterParentCapabilityCheck: async (operation) => {
+                if (
+                  !raced &&
+                  operation.kind === 'create_directory' &&
+                  operation.relativePath === race.operationPath
+                ) {
+                  raced = true
+                  const target = path.join(
+                    fixture.workspace.canonicalRoot,
+                    race.displacedPath,
+                  )
+                  await rename(target, displaced)
+                  await symlink(outside, target, 'dir')
+                }
+              },
+            },
+          )
+
+        assert.equal(raced, true)
+        assert.deepEqual(result, {
+          status: 'manual_recovery_required',
+          conflicts: [
+            {
+              relativePath: race.conflictPath,
+              reason: 'symlink',
+            },
+          ],
+          written: [
+            'AGENTS.md',
+            '.agents/skills/ay-ple-first-assignment/SKILL.md',
+          ],
+        })
+        assert.deepEqual(
+          await directoryEvidence(outside),
+          outsideBefore,
+        )
+        assert.deepEqual(await readdir(displaced), [race.createdLeaf])
+        const displacedSkill = path.join(
+          displaced,
+          race.displacedPath === '.agents'
+            ? 'skills/ay-ple-first-assignment/SKILL.md'
+            : 'ay-ple-first-assignment/SKILL.md',
+        )
+        const recoveredBytes = await readFile(displacedSkill)
+        assert.deepEqual(
+          recoveredBytes,
+          fileBytes(source, declaredSkillPath),
+        )
+
+        const retry = await recoverMissingWorkspaceBundle({
+          workspace: fixture.workspace,
+          source,
+        })
+        assert.equal(retry.status, 'manual_recovery_required')
+        assert.deepEqual(
+          await directoryEvidence(outside),
+          outsideBefore,
+        )
+        assert.deepEqual(await readdir(displaced), [race.createdLeaf])
+        assert.deepEqual(await readFile(displacedSkill), recoveredBytes)
+      } finally {
+        await fixture.cleanup()
+      }
+    })
+  }
+
+  await t.test(
+    'missing Skill recovery keeps writes in the displaced owned ancestor',
+    async () => {
+      const fixture = await createFixture()
+      try {
+        const source = await captureCanonicalWorkspaceBundleSource()
+        assert.equal(
+          (
+            await materializeWorkspaceBundle({
+              workspace: fixture.workspace,
+              source,
+            })
+          ).status,
+          'verified',
+        )
+        const skillPath = path.join(
+          fixture.workspace.canonicalRoot,
+          declaredSkillPath,
+        )
+        await unlink(skillPath)
+        const outside = path.join(fixture.root, 'outside')
+        const displaced = path.join(fixture.root, 'displaced-agents')
+        await mkdir(outside)
+        const outsideBefore = await directoryEvidence(outside)
+        let raced = false
+
+        const result =
+          await recoverMissingWorkspaceBundleWithTestOptions(
+            {
+              workspace: fixture.workspace,
+              source,
+            },
+            {
+              afterParentCapabilityCheck: async (operation) => {
+                if (
+                  !raced &&
+                  operation.kind === 'create_file' &&
+                  operation.relativePath === declaredSkillPath
+                ) {
+                  raced = true
+                  const agentsPath = path.join(
+                    fixture.workspace.canonicalRoot,
+                    '.agents',
+                  )
+                  await rename(agentsPath, displaced)
+                  await symlink(outside, agentsPath, 'dir')
+                }
+              },
+            },
+          )
+
+        assert.equal(raced, true)
+        assert.deepEqual(result, {
+          status: 'manual_recovery_required',
+          conflicts: [
+            {
+              relativePath: '.agents',
+              reason: 'symlink',
+            },
+          ],
+          written: [declaredSkillPath],
+        })
+        assert.deepEqual(
+          await directoryEvidence(outside),
+          outsideBefore,
+        )
+        const displacedSkill = path.join(
+          displaced,
+          'skills/ay-ple-first-assignment/SKILL.md',
+        )
+        const recoveredBytes = await readFile(displacedSkill)
+        assert.deepEqual(
+          recoveredBytes,
+          fileBytes(source, declaredSkillPath),
+        )
+
+        const retry = await recoverMissingWorkspaceBundle({
+          workspace: fixture.workspace,
+          source,
+        })
+        assert.equal(retry.status, 'manual_recovery_required')
+        assert.deepEqual(
+          await directoryEvidence(outside),
+          outsideBefore,
+        )
+        assert.deepEqual(await readFile(displacedSkill), recoveredBytes)
+      } finally {
+        await fixture.cleanup()
+      }
+    },
+  )
+})
+
 for (const drift of ['modified', 'extra', 'symlink', 'mode'] as const) {
   test(`${drift} workspace drift is preserved as manual recovery`, async () => {
     const fixture = await createFixture()
@@ -496,4 +692,18 @@ async function readEntryBytes(target: string): Promise<Buffer> {
     return Buffer.from(`symlink:${await readFile(target, 'utf8')}`)
   }
   return readFile(target)
+}
+
+async function directoryEvidence(directory: string) {
+  const stats = await lstat(directory, { bigint: true })
+  return {
+    entries: await readdir(directory),
+    device: String(stats.dev),
+    inode: String(stats.ino),
+    mode: String(stats.mode),
+    linkCount: String(stats.nlink),
+    size: String(stats.size),
+    modifiedAt: String(stats.mtimeNs),
+    changedAt: String(stats.ctimeNs),
+  }
 }
