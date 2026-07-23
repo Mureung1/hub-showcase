@@ -5,7 +5,8 @@ import { loadEssentialHours, saveEssentialHours } from "./lib/storage";
 import AnalysisReport from "./components/AnalysisReport";
 import RetrospectiveReport from "./components/RetrospectiveReport";
 import { ConsentNotice } from "./components/ConsentNotice";
-import { OptionCard, Progress, ScoreBar } from "./components/ui";
+import { OptionCard, ScoreBar } from "./components/ui";
+import { StepShell } from "./components/StepShell";
 import { StepIntro } from "./components/steps/StepIntro";
 import { StepMbtiSource } from "./components/steps/StepMbtiSource";
 import { StepMbtiChat } from "./components/steps/StepMbtiChat";
@@ -78,6 +79,16 @@ export default function ProjectIntro() {
   const [mbtiChatOpen, setMbtiChatOpen] = useState(false);
   // 보충 대화(③): 유형 확정(공식·추정) 후 study 설문 전에 여는 옵셔널 AI 대화 화면.
   const [supplementOpen, setSupplementOpen] = useState(false);
+  // 결과·실천 카드를 2장으로 나눠 본다(한 장에 몰리는 부담 완화). 각 step 진입 시 1페이지로 초기화.
+  const [resultPage, setResultPage] = useState(1);
+  const [routinePage, setRoutinePage] = useState(1);
+  useEffect(() => {
+    if (step !== 4 && step !== 6) return;
+    // step(결과/실천 카드) 진입 시 서브페이지를 1장으로 초기화. effect 내 setState 의도적.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setResultPage(1);
+    setRoutinePage(1);
+  }, [step]);
   // 개인 회고 리포트(항목 3): 결과·루틴 화면에서 여는 로컬 전용 표면.
   const [showRetro, setShowRetro] = useState(false);
 
@@ -173,16 +184,12 @@ export default function ProjectIntro() {
           onClearData={handleStoredDataClear}
           onShowAnalysis={() => setShowAnalysis(true)}
         />
-      ) : (
-      <div className="shell">
-        <div className="topbar">
-          <div className="brand">MBTI 기반 공부법 및 스트레스 관리 웹앱</div>
-          <div className="pill">Vite + React · 규칙 기반 추천 · localStorage</div>
-        </div>
-
-        {showAnalysis ? (
+      ) : showAnalysis ? (
+        <div className="shell">
           <AnalysisReport onClose={() => setShowAnalysis(false)} />
-        ) : showRetro ? (
+        </div>
+      ) : showRetro ? (
+        <div className="shell">
           <RetrospectiveReport
             onClose={() => setShowRetro(false)}
             result={result}
@@ -191,9 +198,9 @@ export default function ProjectIntro() {
             mbtiEstimated={mbtiEstimated}
             estimatedMeta={estimatedMeta}
           />
-        ) : (
-        <>
-        <Progress step={step} />
+        </div>
+      ) : (
+        <StepShell step={step} onHome={() => setStep(0)} onShowAnalysis={() => setShowAnalysis(true)}>
 
         {flowNotice && (
           <div className="notice" role="status" style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
@@ -300,7 +307,9 @@ export default function ProjectIntro() {
 
         {step === 4 && hasCompleteResult && (
           <section className="panel">
-            <p className="eyebrow">Result</p>
+            {resultPage === 1 && (
+            <>
+            <p className="eyebrow-script">Result</p>
             <h2>나의 공부 성향 요약</h2>
             <p>{result.summary}</p>
 
@@ -335,7 +344,7 @@ export default function ProjectIntro() {
               ))}
             </div>
 
-            <div className="two-col">
+            <div className="result-stack">
               <div className="result-card">
                 <h3>MBTI 입력 출처</h3>
                 <p>
@@ -416,15 +425,39 @@ export default function ProjectIntro() {
               )}
             </div>
 
+            <div className="result-pager">
+              <span className="result-pager-info">1 / 2 · 성향·유형 요약</span>
+              <button className="primary" onClick={() => setResultPage(2)} type="button">다음: 추천·근거 보기 →</button>
+            </div>
+            </>
+            )}
+
+            {resultPage === 2 && (
+            <>
+            <div className="result-pager result-pager-top">
+              <button className="secondary" onClick={() => setResultPage(1)} type="button">← 성향 요약</button>
+              <span className="result-pager-info">2 / 2 · 추천·근거·실행</span>
+            </div>
+
             <div className="result-layout">
-              <div className="result-card">
-                <h3>핵심 행동지표</h3>
-                <div className="score-list">
-                  {topScores.map(([key, value]) => (
-                    <ScoreBar key={key} label={SCORE_LABELS[key]} value={value} />
-                  ))}
+              <div className="result-col">
+                <div className="result-card">
+                  <h3>핵심 행동지표</h3>
+                  <div className="score-list">
+                    {topScores.map(([key, value]) => (
+                      <ScoreBar key={key} label={SCORE_LABELS[key]} value={value} />
+                    ))}
+                  </div>
+                  <p className="hint">점수는 사용자를 평가하거나 남과 비교하는 값이 아니라, 오늘 어떤 방식을 먼저 시도해볼지 추천 방향을 정하는 신호입니다.</p>
                 </div>
-                <p className="hint">점수는 사용자를 평가하거나 남과 비교하는 값이 아니라, 오늘 어떤 방식을 먼저 시도해볼지 추천 방향을 정하는 신호입니다.</p>
+                <div className="result-card">
+                  <h3>피해야 할 공부 방식</h3>
+                  <ul>{result.avoidList.map((item) => <li key={item}>{item}</li>)}</ul>
+                </div>
+                <div className="result-card">
+                  <h3>스트레스 신호</h3>
+                  <ul>{result.stressSignals.map((item) => <li key={item}>{item}</li>)}</ul>
+                </div>
               </div>
               <div className="result-card">
                 <h3>추천 공부법 TOP 3</h3>
@@ -516,17 +549,6 @@ export default function ProjectIntro() {
               )}
             </div>
 
-            <div className="two-col">
-              <div className="result-card">
-                <h3>피해야 할 공부 방식</h3>
-                <ul>{result.avoidList.map((item) => <li key={item}>{item}</li>)}</ul>
-              </div>
-              <div className="result-card">
-                <h3>스트레스 신호</h3>
-                <ul>{result.stressSignals.map((item) => <li key={item}>{item}</li>)}</ul>
-              </div>
-            </div>
-
             <div className="feedback-card">
               <p className="eyebrow">Recommendation feedback · {ALGORITHM_VERSION}</p>
               <h3>이 추천이 현재 상황에 얼마나 맞나요?</h3>
@@ -600,6 +622,8 @@ export default function ProjectIntro() {
                 오늘 계획 입력하기
               </button>
             </div>
+            </>
+            )}
           </section>
         )}
 
@@ -622,7 +646,9 @@ export default function ProjectIntro() {
 
         {step === 6 && hasCompleteResult && (
           <section className="panel">
-            <p className="eyebrow">Routine</p>
+            {routinePage === 1 && (
+            <>
+            <p className="eyebrow-script">Routine</p>
             <h2>{result.routine.title}</h2>
             <p>{result.routine.estimatedMinutes}분 안에 끝나는 작은 루틴으로 먼저 시도해볼 수 있습니다.</p>
 
@@ -717,6 +743,20 @@ export default function ProjectIntro() {
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            <div className="result-pager">
+              <span className="result-pager-info">1 / 2 · 오늘의 계획·스케줄</span>
+              <button className="primary" onClick={() => setRoutinePage(2)} type="button">다음: 루틴 실행·기록 →</button>
+            </div>
+            </>
+            )}
+
+            {routinePage === 2 && (
+            <>
+            <div className="result-pager result-pager-top">
+              <button className="secondary" onClick={() => setRoutinePage(1)} type="button">← 계획·스케줄</button>
+              <span className="result-pager-info">2 / 2 · 루틴 실행·기록</span>
             </div>
 
             <div className="routine">
@@ -854,14 +894,14 @@ export default function ProjectIntro() {
                 처음부터 다시하기
               </button>
             </div>
+            </>
+            )}
           </section>
-        )}
-        </>
         )}
         <p className="hint" style={{ marginTop: 18 }}>
           이 프로젝트는 공식 MBTI 평가를 제공·복제하지 않으며 The Myers-Briggs Company 또는 Myers &amp; Briggs Foundation과 제휴하지 않습니다. MBTI와 Myers-Briggs Type Indicator는 해당 권리자의 상표 또는 등록상표입니다.
         </p>
-      </div>
+        </StepShell>
       )}
     </main>
   );

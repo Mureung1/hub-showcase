@@ -107,8 +107,24 @@ function buildAvoidList(scores) {
   if (scores.stimulationNeed >= 65) {
     avoid.push("한 유형의 문제만 오래 반복하기보다 방식이나 과목을 짧게 바꿔보세요.");
   }
+  if (scores.memoryStrategy <= 45) {
+    avoid.push("요약을 여러 번 눈으로 읽기만 하기보다, 책을 덮고 스스로 떠올려 확인하는 인출을 섞으세요.");
+  }
+  if (scores.planningStability <= 45) {
+    avoid.push("완벽한 계획을 다 세운 뒤 시작하려 미루기보다, 가장 작은 1개를 먼저 시작하세요.");
+  }
 
-  return avoid.slice(0, 3);
+  // 조건이 적게 걸려도 실행 가능한 예시가 최소 2개는 남도록 근거 기반 기본 예시로 보충한다.
+  const fallbacks = [
+    "밑줄·형광펜으로 표시만 하고 끝내기보다, 배운 내용을 스스로 설명해 보세요.",
+    "한 번에 몰아서 벼락치기하기보다, 짧게 여러 날로 나눠 복습하세요.",
+  ];
+  for (const item of fallbacks) {
+    if (avoid.length >= 4) break;
+    if (!avoid.includes(item)) avoid.push(item);
+  }
+
+  return avoid.slice(0, 4);
 }
 
 function buildStressSignals(scores) {
@@ -123,11 +139,22 @@ function buildStressSignals(scores) {
   if (scores.failureRecovery <= 45) {
     signals.push("틀린 뒤 바로 다시 시작하기보다 아주 작은 행동으로 재시작하는 편이 좋을 수 있습니다.");
   }
+  if (scores.planningStability <= 45) {
+    signals.push("계획이 자주 틀어지면 '무엇부터 할지' 정하는 것 자체가 부담이 될 수 있습니다.");
+  }
+  if (scores.stimulationNeed >= 65) {
+    signals.push("같은 방식을 오래 반복하면 쉽게 지루해져 집중이 흐트러질 수 있습니다.");
+  }
+
+  // 피로 신호가 두드러지지 않는 응답에서도 미리 점검할 예시가 최소 2개는 남도록 보충한다.
   if (signals.length === 0) {
     signals.push("현재 응답에서는 큰 피로 신호보다 루틴 유지 신호가 더 두드러집니다.");
   }
+  if (signals.length < 2) {
+    signals.push("다만 시험이 가까워지거나 수면이 부족하면 집중 지속 시간이 짧아질 수 있으니 미리 점검하세요.");
+  }
 
-  return signals;
+  return signals.slice(0, 4);
 }
 
 function buildRoutine(scores, recommendations) {
