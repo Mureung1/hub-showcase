@@ -226,6 +226,55 @@ for (const failure of [
   })
 }
 
+test('malformed private config and Skill results fail closed', async () => {
+  const fixture = await createFixture()
+  try {
+    const malformedConfig = createWorkspaceNativeProjectBoundary({
+      workspace: fixture.workspace,
+      controlledHome: fixture.controlledHome,
+      controlledCodexHome: fixture.controlledCodexHome,
+      nativeContext: {
+        async readEffectiveConfig() {
+          return {
+            projectRootMarkers: null,
+            globalInstructionsFile: null,
+          } as never
+        },
+        async listEffectiveSkills() {
+          return []
+        },
+      },
+    })
+    const malformedSkills = createWorkspaceNativeProjectBoundary({
+      workspace: fixture.workspace,
+      controlledHome: fixture.controlledHome,
+      controlledCodexHome: fixture.controlledCodexHome,
+      nativeContext: {
+        async readEffectiveConfig() {
+          return {
+            projectRootMarkers: [],
+            globalInstructionsFile: null,
+          }
+        },
+        async listEffectiveSkills() {
+          return null as never
+        },
+      },
+    })
+
+    assert.deepEqual(await malformedConfig.verify(), {
+      status: 'blocked',
+      reason: 'config_conflict',
+    })
+    assert.deepEqual(await malformedSkills.verify(), {
+      status: 'blocked',
+      reason: 'skill_conflict',
+    })
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 for (const controlledConflict of [
   'home/AGENTS.md',
   'home/.agents/skills/canary/SKILL.md',

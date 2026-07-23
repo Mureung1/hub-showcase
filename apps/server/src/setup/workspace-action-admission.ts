@@ -74,7 +74,12 @@ export function createWorkspaceActionAdmission(input: {
       if (staticContext.status !== 'verified') {
         return blocked('context_not_verified')
       }
-      const nativeContext = await input.nativeBoundary.verify()
+      let nativeContext
+      try {
+        nativeContext = await input.nativeBoundary.verify()
+      } catch {
+        return blocked('context_not_verified')
+      }
       if (nativeContext.status !== 'verified') {
         return blocked('context_not_verified')
       }
@@ -108,7 +113,12 @@ async function readReadiness(
   workspace: AdmittedSemesterWorkspace,
 ): Promise<WorkspaceActionReadiness> {
   try {
-    return await port.read(workspace)
+    const readiness = await port.read(workspace)
+    return readiness === 'ready' ||
+      readiness === 'workspace_not_ready' ||
+      readiness === 'setup_transition_active'
+      ? readiness
+      : 'workspace_not_ready'
   } catch {
     return 'workspace_not_ready'
   }

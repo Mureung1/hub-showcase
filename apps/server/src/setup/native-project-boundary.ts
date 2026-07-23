@@ -120,17 +120,21 @@ export function createWorkspaceNativeProjectBoundary(input: {
       const controller = new AbortController()
       let config: WorkspaceNativeEffectiveConfig
       try {
-        config = await input.nativeContext.readEffectiveConfig({
-          signal: controller.signal,
-        })
+        config = cloneEffectiveConfig(
+          await input.nativeContext.readEffectiveConfig({
+            signal: controller.signal,
+          }),
+        )
       } catch {
         return { status: 'blocked', reason: 'config_conflict' }
       }
       let skills: readonly WorkspaceNativeEffectiveSkill[]
       try {
-        skills = await input.nativeContext.listEffectiveSkills({
-          signal: controller.signal,
-        })
+        skills = cloneEffectiveSkills(
+          await input.nativeContext.listEffectiveSkills({
+            signal: controller.signal,
+          }),
+        )
       } catch {
         return { status: 'blocked', reason: 'skill_conflict' }
       }
@@ -314,6 +318,63 @@ function cloneNativeSnapshot(input: {
     globalInstructionsFile: input.config.globalInstructionsFile,
     skills,
   })
+}
+
+function cloneEffectiveConfig(
+  value: unknown,
+): WorkspaceNativeEffectiveConfig {
+  if (typeof value !== 'object' || value === null) {
+    throw new Error('invalid native config')
+  }
+  const config = value as Record<string, unknown>
+  if (
+    !Array.isArray(config.projectRootMarkers) ||
+    (config.globalInstructionsFile !== null &&
+      typeof config.globalInstructionsFile !== 'string')
+  ) {
+    throw new Error('invalid native config')
+  }
+  const projectRootMarkers: string[] = []
+  for (const marker of config.projectRootMarkers) {
+    if (typeof marker !== 'string') {
+      throw new Error('invalid native config')
+    }
+    projectRootMarkers.push(marker)
+  }
+  return Object.freeze({
+    projectRootMarkers: Object.freeze(projectRootMarkers),
+    globalInstructionsFile: config.globalInstructionsFile,
+  })
+}
+
+function cloneEffectiveSkills(
+  value: unknown,
+): readonly WorkspaceNativeEffectiveSkill[] {
+  if (!Array.isArray(value)) {
+    throw new Error('invalid native Skill roster')
+  }
+  const skills: WorkspaceNativeEffectiveSkill[] = []
+  for (const candidate of value) {
+    if (typeof candidate !== 'object' || candidate === null) {
+      throw new Error('invalid native Skill roster')
+    }
+    const skill = candidate as Record<string, unknown>
+    if (
+      typeof skill.name !== 'string' ||
+      typeof skill.enabled !== 'boolean' ||
+      typeof skill.sourceRoot !== 'string'
+    ) {
+      throw new Error('invalid native Skill roster')
+    }
+    skills.push(
+      Object.freeze({
+        name: skill.name,
+        enabled: skill.enabled,
+        sourceRoot: skill.sourceRoot,
+      }),
+    )
+  }
+  return Object.freeze(skills)
 }
 
 function deepFreezeLaunch(

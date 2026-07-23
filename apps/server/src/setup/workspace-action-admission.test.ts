@@ -147,6 +147,36 @@ test('action-time native context revalidation blocks a stale effective roster', 
   }
 })
 
+test('native verification failure returns a closed context result', async () => {
+  const fixture = await createFixture()
+  try {
+    const nativeBoundary = createNativeBoundary(fixture)
+    const gate = createWorkspaceActionAdmission({
+      source: fixture.source,
+      readiness: fixture.readiness,
+      nativeBoundary: {
+        ...nativeBoundary,
+        async verify() {
+          throw new Error('injected native boundary failure')
+        },
+      },
+    })
+
+    assert.deepEqual(
+      await gate.admit({
+        workspace: fixture.workspace,
+        action: 'academic',
+      }),
+      {
+        status: 'blocked',
+        reason: 'context_not_verified',
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('bundle drift during native verification is caught by final readback', async () => {
   const fixture = await createFixture()
   try {
@@ -206,6 +236,28 @@ for (const readiness of [
     }
   })
 }
+
+test('unknown readiness vocabulary fails closed before native work', async () => {
+  const fixture = await createFixture()
+  try {
+    fixture.readinessState = 'unknown' as never
+    const gate = createGate(fixture)
+
+    assert.deepEqual(
+      await gate.admit({
+        workspace: fixture.workspace,
+        action: 'academic',
+      }),
+      {
+        status: 'blocked',
+        reason: 'workspace_not_ready',
+      },
+    )
+    assert.deepEqual(fixture.nativeJournal, [])
+  } finally {
+    await fixture.cleanup()
+  }
+})
 
 test('a Ready transition during verification blocks the final admission', async () => {
   const fixture = await createFixture()
@@ -267,14 +319,20 @@ function createGate(
   return createWorkspaceActionAdmission({
     source: fixture.source,
     readiness: fixture.readiness,
-    nativeBoundary: createWorkspaceNativeProjectBoundary({
-      workspace: fixture.workspace,
-      controlledHome: fixture.controlledHome,
-      controlledCodexHome: fixture.controlledCodexHome,
-      nativeContext: createWorkspaceNativeContextPort({
-        workspaceRoot: fixture.workspace.canonicalRoot,
-        queryPort: fixture.queryPort,
-      }),
+    nativeBoundary: createNativeBoundary(fixture),
+  })
+}
+
+function createNativeBoundary(
+  fixture: Awaited<ReturnType<typeof createFixture>>,
+) {
+  return createWorkspaceNativeProjectBoundary({
+    workspace: fixture.workspace,
+    controlledHome: fixture.controlledHome,
+    controlledCodexHome: fixture.controlledCodexHome,
+    nativeContext: createWorkspaceNativeContextPort({
+      workspaceRoot: fixture.workspace.canonicalRoot,
+      queryPort: fixture.queryPort,
     }),
   })
 }
