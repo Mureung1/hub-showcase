@@ -12,9 +12,9 @@
       "default": "./dist/index.js"
     },
     "./testing": {
-      "development": "./src/testing/public-preview-contract-fixtures.ts",
-      "types": "./src/testing/public-preview-contract-fixtures.ts",
-      "default": "./dist/testing/public-preview-contract-fixtures.js"
+      "development": "./src/testing/index.ts",
+      "types": "./src/testing/index.ts",
+      "default": "./dist/testing/index.js"
     }
   },
   "scripts": {

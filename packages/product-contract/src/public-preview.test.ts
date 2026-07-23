@@ -13,11 +13,11 @@ import {
   PUBLIC_PREVIEW_RESPONSE_FIXTURES,
   PUBLIC_PREVIEW_SCENARIO_FIXTURES,
   PUBLIC_PREVIEW_SETUP_FIXTURES,
-} from './public-preview-fixtures.js'
+} from './testing/index.js'
 
 test('public preview fixtures cover every frozen Account and Setup state', () => {
   assert.deepEqual(
-    PUBLIC_PREVIEW_ACCOUNT_FIXTURES.map(({ state }) => state),
+    Object.values(PUBLIC_PREVIEW_ACCOUNT_FIXTURES).map(({ state }) => state),
     [
       'checking',
       'login_required',
@@ -30,7 +30,7 @@ test('public preview fixtures cover every frozen Account and Setup state', () =>
     ],
   )
   assert.deepEqual(
-    PUBLIC_PREVIEW_SETUP_FIXTURES.map(({ state }) => state),
+    Object.values(PUBLIC_PREVIEW_SETUP_FIXTURES).map(({ state }) => state),
     [
       'account_required',
       'account_required',
@@ -82,8 +82,8 @@ test('producer fixtures and Browser consumer decoders preserve exact JSON values
 
 test('bootstrap decoder fails closed for missing, extra, unknown, and private fields', () => {
   const valid = {
-    account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES[5],
-    setup: PUBLIC_PREVIEW_SETUP_FIXTURES[12],
+    account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES.connected,
+    setup: PUBLIC_PREVIEW_SETUP_FIXTURES.ready,
   }
 
   assert.deepEqual(decodePublicPreviewBootstrap(valid), valid)
@@ -114,8 +114,8 @@ test('bootstrap decoder fails closed for missing, extra, unknown, and private fi
 })
 
 test('login and recovery projections preserve the managed-auth and ownership boundaries', () => {
-  const pending = PUBLIC_PREVIEW_ACCOUNT_FIXTURES[3]
-  const bundleConflict = PUBLIC_PREVIEW_SETUP_FIXTURES[10]
+  const pending = PUBLIC_PREVIEW_ACCOUNT_FIXTURES.loginPending
+  const bundleConflict = PUBLIC_PREVIEW_SETUP_FIXTURES.bundleConflictRecovery
 
   assert.deepEqual(
     decodePublicPreviewBootstrap({
@@ -174,6 +174,44 @@ test('mutation commands bind exact transient authority and reject private correl
         command: 'account.login.cancel',
         attemptId: 'account_attempt_primary',
         loginId: 'native-login',
+      }),
+    ProductContractError,
+  )
+})
+
+test('managed login URL rejects embedded credentials and non-default ports', () => {
+  const pending = PUBLIC_PREVIEW_ACCOUNT_FIXTURES.loginPending
+  const setup = PUBLIC_PREVIEW_SETUP_FIXTURES.firstConnection
+
+  for (const authUrl of [
+    'https://token:secret@auth.openai.com/codex',
+    'https://auth.openai.com:8443/codex',
+  ]) {
+    assert.throws(
+      () =>
+        decodePublicPreviewBootstrap({
+          account: { ...pending, authUrl },
+          setup,
+        }),
+      ProductContractError,
+    )
+  }
+})
+
+test('workspace reauth requires the exact transient resume binding', () => {
+  const account = PUBLIC_PREVIEW_ACCOUNT_FIXTURES.loginRequired
+  const reauth = PUBLIC_PREVIEW_SETUP_FIXTURES.workspaceReauth
+
+  assert.deepEqual(
+    decodePublicPreviewBootstrap({ account, setup: reauth }),
+    { account, setup: reauth },
+  )
+  const { recoveryId: _recoveryId, ...missingBinding } = reauth
+  assert.throws(
+    () =>
+      decodePublicPreviewBootstrap({
+        account,
+        setup: missingBinding,
       }),
     ProductContractError,
   )

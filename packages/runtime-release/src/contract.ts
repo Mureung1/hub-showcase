@@ -107,10 +107,18 @@ export function decodeRuntimeReleaseDescriptor(
   const runtime = decodeRuntime(value.runtime)
   const archive = decodeArchive(value.archive)
   const manifest = decodeManifest(value.manifest)
+  const expectedApplicationTag = `v${launcher.version}`
+  const expectedRuntimeTag = `runtime-v${runtime.releaseId}`
+  const expectedAssetName =
+    `ay-ple-runtime-${runtime.releaseId}-${runtime.target}.tar.gz`
+  const expectedArchiveUrl =
+    `${distribution.repository}/releases/download/` +
+    `${expectedRuntimeTag}/${expectedAssetName}`
   if (
-    !archive.url.startsWith(`${distribution.repository}/releases/download/`) ||
-    !archive.url.includes(`/${distribution.runtimeAssetReleaseTag}/`) ||
-    !archive.url.endsWith(`/${archive.assetName}`)
+    distribution.applicationReleaseTag !== expectedApplicationTag ||
+    distribution.runtimeAssetReleaseTag !== expectedRuntimeTag ||
+    archive.assetName !== expectedAssetName ||
+    archive.url !== expectedArchiveUrl
   ) {
     throw invalidDescriptor()
   }

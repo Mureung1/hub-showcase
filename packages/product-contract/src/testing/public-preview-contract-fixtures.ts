@@ -1,11 +1,13 @@
 import {
   PUBLIC_PREVIEW_ACCOUNT_FIXTURES,
-  PUBLIC_PREVIEW_RESPONSE_FIXTURES,
+  PUBLIC_PREVIEW_SCENARIO_FIXTURES,
   PUBLIC_PREVIEW_SETUP_FIXTURES,
-} from '../public-preview-fixtures.js'
+} from './public-preview-fixtures.js'
 
-const connected = PUBLIC_PREVIEW_ACCOUNT_FIXTURES[5]
-const ready = PUBLIC_PREVIEW_SETUP_FIXTURES[12]
+const connected = PUBLIC_PREVIEW_ACCOUNT_FIXTURES.connected
+const pending = PUBLIC_PREVIEW_ACCOUNT_FIXTURES.loginPending
+const ready = PUBLIC_PREVIEW_SETUP_FIXTURES.ready
+const firstConnection = PUBLIC_PREVIEW_SETUP_FIXTURES.firstConnection
 
 export const PUBLIC_PREVIEW_INVALID_RESPONSE_FIXTURES = [
   {
@@ -15,7 +17,9 @@ export const PUBLIC_PREVIEW_INVALID_RESPONSE_FIXTURES = [
   {
     name: 'extra response field',
     value: {
-      ...PUBLIC_PREVIEW_RESPONSE_FIXTURES[4],
+      ...PUBLIC_PREVIEW_SCENARIO_FIXTURES.find(
+        ({ name }) => name === 'authenticated',
+      )!.response,
       internal: true,
     },
   },
@@ -46,6 +50,18 @@ export const PUBLIC_PREVIEW_INVALID_RESPONSE_FIXTURES = [
     value: responseWithAccountField('loginId', 'native-login'),
   },
   {
+    name: 'credential-bearing login URL',
+    value: responseWithPendingAuthUrl(
+      'https://token:secret@auth.openai.com/codex',
+    ),
+  },
+  {
+    name: 'non-default login URL port',
+    value: responseWithPendingAuthUrl(
+      'https://auth.openai.com:8443/codex',
+    ),
+  },
+  {
     name: 'Runtime process identity',
     value: responseWithSetupField('runtimePid', 1234),
   },
@@ -58,6 +74,16 @@ export const PUBLIC_PREVIEW_INVALID_RESPONSE_FIXTURES = [
     value: responseWithSetupField('receiptPhase', 'prepared'),
   },
 ] as const
+
+function responseWithPendingAuthUrl(authUrl: string): unknown {
+  return {
+    status: 'ok',
+    projection: {
+      account: { ...pending, authUrl },
+      setup: firstConnection,
+    },
+  }
+}
 
 function responseWithAccountField(key: string, value: unknown): unknown {
   return {

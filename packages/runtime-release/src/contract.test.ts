@@ -14,7 +14,7 @@ const descriptor = {
   },
   distribution: {
     repository: 'https://github.com/ay-ple/ay-ple',
-    applicationReleaseTag: 'application-v0.1.0-preview.1',
+    applicationReleaseTag: 'v0.1.0-preview.1',
     runtimeAssetReleaseTag: 'runtime-v0.1.0',
   },
   runtime: {
@@ -41,6 +41,29 @@ test('Runtime release descriptor exact-decodes its immutable identity', () => {
   assert.deepEqual(decodeRuntimeReleaseDescriptor(descriptor), descriptor)
   assert.throws(
     () => decodeRuntimeReleaseDescriptor({ ...descriptor, forceRepair: true }),
+    RuntimeReleaseContractError,
+  )
+  assert.throws(
+    () =>
+      decodeRuntimeReleaseDescriptor({
+        ...descriptor,
+        distribution: {
+          ...descriptor.distribution,
+          applicationReleaseTag: 'preview-current',
+        },
+      }),
+    RuntimeReleaseContractError,
+  )
+  assert.throws(
+    () =>
+      decodeRuntimeReleaseDescriptor({
+        ...descriptor,
+        archive: {
+          ...descriptor.archive,
+          assetName: 'runtime.tar.gz',
+          url: 'https://github.com/ay-ple/ay-ple/releases/download/runtime-v0.1.0/runtime.tar.gz',
+        },
+      }),
     RuntimeReleaseContractError,
   )
   assert.throws(

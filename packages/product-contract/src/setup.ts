@@ -46,9 +46,16 @@ export type PublicPreviewNextJourney = {
 export type PublicPreviewSetupProjection =
   | {
       readonly state: 'account_required'
-      readonly reason: 'first_connection' | 'workspace_reauth'
+      readonly reason: 'first_connection'
       readonly displayMessage: string
       readonly allowedCommands: readonly []
+    }
+  | {
+      readonly state: 'account_required'
+      readonly reason: 'workspace_reauth'
+      readonly recoveryId: string
+      readonly displayMessage: string
+      readonly allowedCommands: readonly ['setup.resume']
     }
   | {
       readonly state: 'input_required'
@@ -143,26 +150,7 @@ export function decodePublicPreviewSetupProjection(
   }
   switch (value.state) {
     case 'account_required':
-      if (
-        !isExactObject(value, [
-          'allowedCommands',
-          'displayMessage',
-          'reason',
-          'state',
-        ]) ||
-        (value.reason !== 'first_connection' &&
-          value.reason !== 'workspace_reauth') ||
-        !isNonEmptyString(value.displayMessage) ||
-        !hasExactPublicPreviewCommands(value.allowedCommands, [])
-      ) {
-        throw invalidContract()
-      }
-      return {
-        state: 'account_required',
-        reason: value.reason,
-        displayMessage: value.displayMessage,
-        allowedCommands: [],
-      }
+      return decodeAccountRequired(value)
     case 'input_required':
       if (
         !isExactObject(value, [
@@ -370,6 +358,51 @@ function decodeRecoveryProjection(
     displayMessage: value.displayMessage,
     allowedCommands: ['setup.recover.manual_guidance'],
   }
+}
+
+function decodeAccountRequired(
+  value: Record<string, unknown>,
+): PublicPreviewSetupProjection {
+  if (
+    value.reason === 'first_connection' &&
+    isExactObject(value, [
+      'allowedCommands',
+      'displayMessage',
+      'reason',
+      'state',
+    ]) &&
+    isNonEmptyString(value.displayMessage) &&
+    hasExactPublicPreviewCommands(value.allowedCommands, [])
+  ) {
+    return {
+      state: 'account_required',
+      reason: 'first_connection',
+      displayMessage: value.displayMessage,
+      allowedCommands: [],
+    }
+  }
+  if (
+    value.reason === 'workspace_reauth' &&
+    isExactObject(value, [
+      'allowedCommands',
+      'displayMessage',
+      'reason',
+      'recoveryId',
+      'state',
+    ]) &&
+    isNonEmptyString(value.recoveryId) &&
+    isNonEmptyString(value.displayMessage) &&
+    hasExactPublicPreviewCommands(value.allowedCommands, ['setup.resume'])
+  ) {
+    return {
+      state: 'account_required',
+      reason: 'workspace_reauth',
+      recoveryId: value.recoveryId,
+      displayMessage: value.displayMessage,
+      allowedCommands: ['setup.resume'],
+    }
+  }
+  throw invalidContract()
 }
 
 function decodeTransitionBlocked(

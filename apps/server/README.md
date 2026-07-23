@@ -4,6 +4,8 @@ Explicit current workspace directory와 official SDK 기반 Codex Runtime을 하
 
 `/api/product/*`의 public JSON request·response와 NDJSON frame은 dependency-free [`@ay-ple/product-contract`](../../packages/product-contract/README.md)가 소유한다. Server는 shared decoder로 mutation body를 admission하고 domain object를 public projection으로 변환한다. Express route, status·Origin guard, neutral NDJSON line writer, workspace store와 private Runtime/MCP binding은 Server에 남는다.
 
+`src/account-runtime/contract.ts`는 Spine S1의 private `AccountRuntimeTransitionLease`와 coordinator Interface만 고정한다. Account 전환 중 app-wide admission을 닫고 Runtime을 교체하는 동작과 setup route composition은 아직 구현하지 않는다.
+
 현재 구현의 `SemesterWorkspaceController`는 chooser·development materializer가 넘긴 directory를 current v2 store로 열고 internal `ready`를 판정한다. App-owned scaffold, `WorkspaceManifest`, first-run setup, durable workspace registry와 `Semester Ready`는 아직 구현되지 않았다. 따라서 이 README의 current `ready workspace`는 [domain glossary](../../CONTEXT.md)의 `Semester Ready`와 같지 않으며, adopted target은 [ADR 0014](../../docs/adr/0014-create-app-owned-normalized-semester-workspaces.md)가 소유한다.
 
 ## Canonical 시작과 root 소유권

@@ -36,6 +36,9 @@ export function isAllowedPublicPreviewAuthUrl(
     const url = new URL(value)
     return (
       url.protocol === 'https:' &&
+      url.username === '' &&
+      url.password === '' &&
+      url.port === '' &&
       (url.hostname === 'auth.openai.com' || url.hostname === 'chatgpt.com')
     )
   } catch {

@@ -3,11 +3,11 @@ import test from 'node:test'
 
 import {
   ProductContractError,
-  PUBLIC_PREVIEW_SCENARIO_FIXTURES,
   decodePublicPreviewResponse,
 } from '@ay-ple/product-contract'
 import {
   PUBLIC_PREVIEW_INVALID_RESPONSE_FIXTURES,
+  PUBLIC_PREVIEW_SCENARIO_FIXTURES,
 } from '@ay-ple/product-contract/testing'
 
 test('Browser consumer preserves the shared public preview fixture roster', () => {

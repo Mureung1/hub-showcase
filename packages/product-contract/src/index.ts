@@ -118,11 +118,3 @@ export type {
   PublicPreviewCommandName,
   PublicPreviewSetupCommand,
 } from './public-preview-values.js'
-
-export {
-  PUBLIC_PREVIEW_ACCOUNT_FIXTURES,
-  PUBLIC_PREVIEW_COMMAND_FIXTURES,
-  PUBLIC_PREVIEW_RESPONSE_FIXTURES,
-  PUBLIC_PREVIEW_SCENARIO_FIXTURES,
-  PUBLIC_PREVIEW_SETUP_FIXTURES,
-} from './public-preview-fixtures.js'
