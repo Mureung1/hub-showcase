@@ -139,3 +139,12 @@ Admitted v3 workspace에 package-owned `AGENTS.md`와 declared built-in Skill tr
 | Repository gates | `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check 9412b5a7f...HEAD`가 green이다. |
 | Root test observation | `npm test` 두 run은 B1b scope 밖 existing `source rebaseline remains blocked until bounded artifact cleanup succeeds` timing case 하나가 `execution_cleanup_required`로 끝났다. 같은 exact file 28/28과 complete Server 149/149는 각각 바로 green이었고 SemesterWorkspace·Runtime-release를 포함한 선행 root suites도 green이었다. 해당 sibling source/test는 수정하지 않았다. |
 | Scope audit | Frozen `packages/semester-workspace/src/contract.ts`, canonical bundle, shared manifest·lockfile, Runtime/Server sibling source와 native/action guard를 untouched로 유지했다. Ticket State는 `claimed`, Acceptance Criteria는 unchecked이며 coordinator independent Standards·Spec review를 기다린다. |
+
+## Native Context Integration Correction
+
+| Evidence | Result |
+| --- | --- |
+| Exact handoff | `d6c4b26af` |
+| Combined review finding | Required Integration Handoff의 R1c+C obligation이 미완료다. `NodeCodexChatRuntime`은 frozen `CodexNativeContextPort`를 구현하지 않고 Server가 temporary raw `config/read`·`skills/list` query adapter와 literal을 계속 소유한다. |
+| Required correction | Workspace Runtime이 exact role root로 native config/Skill을 query해 strict high-level projection만 반환한다. Server boundary는 Runtime port를 직접 consume하고 temporary query types/factory/raw literals를 제거한다. Auth-only와 wrong-root 요청은 native write 0건으로 닫고 Runtime actual-child가 exact arguments와 projection을 검증한다. |
+| Corrective branch | `codex/public-preview-c-native-context-bind` |

@@ -106,3 +106,14 @@ Node Runtime이 frozen `CodexAccountLifecycle`을 구현하고 생성 시 `auth-
 | Repository gates | Sequential `npm test`, root `npm run typecheck`, root `npm run build`, Chat Shell lint와 `git diff --check` green. |
 | Independent review | Exact reviewed tip에서 P0–P3 finding 0건. Review 중 발견한 account-close unhandled rejection, auth URL canonicalization, root-negative coverage와 delayed fake mid-flight abort parity를 수정하고 재검증했다. |
 | Scope guard | Frozen `account-contract.ts`, browser `contract.ts`, shared manifest·lockfile, Server/Browser implementation과 sibling lane은 변경하지 않았다. |
+
+## Combined Review Correction Handoff
+
+| Evidence | Result |
+| --- | --- |
+| Exact handoff | `d6c4b26af` — R1b·R1c, B1b containment, D1b와 C serialization을 합친 combined candidate이며 integration에는 아직 반영하지 않았다. |
+| Standards finding | Workspace Runtime이 `role.workspaceRoot`와 다른 absolute `StartThreadInput.workspace`를 native cwd로 전달할 수 있다. Exact admitted root equality와 deterministic fake parity를 native write 전에 강제해야 한다. |
+| Spec finding | Runtime이 frozen `CodexNativeContextPort`를 구현하지 않아 actual workspace Runtime의 `config/read`·`skills/list`가 Server-local temporary adapter 밖으로 연결되지 않았다. Runtime이 high-level projection과 raw mapping을 소유하고 auth-only에서는 native request 0건으로 거절해야 한다. |
+| Documentation finding | Runtime README, implementation map과 ADR 0017의 current implementation 문구를 실제 R1 상태와 남은 product integration 경계에 맞춰 갱신해야 한다. |
+| Corrective branch | `codex/public-preview-c-native-context-bind` |
+| Corrective worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/c-native-context-bind` |
