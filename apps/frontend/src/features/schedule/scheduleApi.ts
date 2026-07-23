@@ -11,3 +11,9 @@ export async function getSchedules(accessToken: string, storeId: string, fromDat
     accessToken
   });
 }
+
+export async function getDailySchedules(accessToken: string, storeId: string, workDate: string) {
+  return apiRequest<SchedulesResponse>(`/stores/${storeId}/schedules/${workDate}`, {
+    accessToken
+  });
+}

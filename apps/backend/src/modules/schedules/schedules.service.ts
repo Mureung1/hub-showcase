@@ -25,3 +25,11 @@ export async function listStoreSchedules(storeId: string, fromDate: string, toDa
     schedules: schedules.map(toScheduleResponse)
   };
 }
+
+export async function listStoreSchedulesByDate(storeId: string, workDate: string) {
+  const schedules = await findSchedulesByStoreAndDateRange(storeId, workDate, workDate);
+
+  return {
+    schedules: schedules.map(toScheduleResponse)
+  };
+}
