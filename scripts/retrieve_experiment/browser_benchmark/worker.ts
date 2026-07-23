@@ -19,10 +19,10 @@ type ProgressValue = Readonly<{
 
 let extractorPromise: Promise<FeatureExtractionPipeline> | undefined;
 
-// 브라우저의 Cache Storage에 고정 모델과 ONNX WASM 자산을 보관한다.
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 env.useWasmCache = true;
+env.fetch ??= fetch.bind(self);
 
 self.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
   void handleRequest(event.data);
@@ -47,11 +47,8 @@ async function handleRequest(request: WorkerRequest): Promise<void> {
       type: 'embedding',
       vector: Array.from(output.data, Number),
     });
-  } catch (error) {
-    self.postMessage({
-      message: error instanceof Error ? error.message : String(error),
-      type: 'error',
-    });
+  } catch {
+    self.postMessage({ type: 'error' });
   }
 }
 
@@ -69,7 +66,7 @@ async function getExtractor(): Promise<FeatureExtractionPipeline> {
           typeof value.total === 'number'
         ) {
           self.postMessage({
-            file: value.file,
+            file: sanitizeProgressFile(value.file),
             loaded: typeof value.loaded === 'number' ? value.loaded : null,
             total: value.total,
             type: 'progress',
@@ -79,4 +76,12 @@ async function getExtractor(): Promise<FeatureExtractionPipeline> {
       revision: BROWSER_BENCHMARK_CONFIG.revision,
     }
   ) as Promise<FeatureExtractionPipeline>);
+}
+
+function sanitizeProgressFile(file: string): string {
+  try {
+    return new URL(file).pathname.split('/').at(-1) ?? 'unknown';
+  } catch {
+    return file.split('/').at(-1) ?? 'unknown';
+  }
 }

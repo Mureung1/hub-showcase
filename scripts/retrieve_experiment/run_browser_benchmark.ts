@@ -7,6 +7,7 @@ import { promisify } from 'node:util';
 import { createServer } from 'vite';
 
 import { BROWSER_BENCHMARK_CONFIG } from './browser_benchmark/contract';
+import { verifyFixedModelCacheEntries } from './browser_benchmark/cache_evidence';
 import { renderBrowserBenchmarkReport } from './browser_benchmark/report';
 
 const execFileAsync = promisify(execFile);
@@ -52,7 +53,7 @@ type CdpVersion = Readonly<{
 type DeviceResult =
   | Readonly<{
       browserVersion: string;
-      cancellation: Readonly<{ workerTerminated: true }>;
+      cancellation: Record<string, unknown>;
       cache: Record<string, unknown>;
       cold: Record<string, unknown>;
       device: 'desktop' | 'android';
@@ -111,13 +112,35 @@ class CdpConnection {
     });
   }
 
-  static async connect(url: string): Promise<CdpConnection> {
+  static async connect(
+    url: string,
+    timeoutMs = 10_000
+  ): Promise<CdpConnection> {
     const socket = new WebSocket(url);
     await new Promise<void>((resolvePromise, reject) => {
-      socket.addEventListener('open', () => resolvePromise(), { once: true });
+      const timeoutId = setTimeout(
+        () =>
+          reject(
+            new Error(
+              `CDP WebSocket 연결이 ${timeoutMs}ms 안에 끝나지 않았습니다.`
+            )
+          ),
+        timeoutMs
+      );
+      socket.addEventListener(
+        'open',
+        () => {
+          clearTimeout(timeoutId);
+          resolvePromise();
+        },
+        { once: true }
+      );
       socket.addEventListener(
         'error',
-        () => reject(new Error('CDP 연결에 실패했습니다.')),
+        () => {
+          clearTimeout(timeoutId);
+          reject(new Error('CDP WebSocket 연결에 실패했습니다.'));
+        },
         {
           once: true,
         }
@@ -167,6 +190,14 @@ class CdpConnection {
   diagnostics(): readonly CdpEvent[] {
     return [...this.events];
   }
+
+  eventCursor(): number {
+    return this.events.length;
+  }
+
+  eventsSince(cursor: number): readonly CdpEvent[] {
+    return this.events.slice(cursor);
+  }
 }
 
 async function main(): Promise<void> {
@@ -179,15 +210,15 @@ async function main(): Promise<void> {
 
   try {
     const desktop = await runDesktopBenchmark();
-    await writeResult({
-      android: {
-        device: 'android',
-        reason: 'Desktop 측정 완료 뒤 실행 예정',
-        status: 'not measured',
-      },
-      desktop,
-    });
     if (process.env.BROWSER_BENCHMARK_DESKTOP_ONLY === '1') {
+      await writeResult({
+        android: {
+          device: 'android',
+          reason: '환경 변수로 Android 측정을 생략했습니다.',
+          status: 'not measured',
+        },
+        desktop,
+      });
       return;
     }
     const android = await runAndroidBenchmark();
@@ -223,7 +254,7 @@ async function writeResult(platforms: {
     `${JSON.stringify(result, null, 2)}\n`,
     'utf8'
   );
-  await fs.writeFile(REPORT_PATH, `${renderReport(result)}\n`, 'utf8');
+  await fs.writeFile(REPORT_PATH, renderBrowserBenchmarkReport(result), 'utf8');
 }
 
 async function runDesktopBenchmark(): Promise<DeviceResult> {
@@ -273,29 +304,12 @@ async function runDesktopBenchmark(): Promise<DeviceResult> {
 async function runAndroidBenchmark(): Promise<DeviceResult> {
   let browser: CdpConnection | undefined;
   let page: CdpConnection | undefined;
+  let reverseCreated = false;
+  let forwardCreated = false;
   try {
     await fs.access(ADB_PATH);
-    await adb([
-      '-s',
-      ANDROID_SERIAL,
-      'reverse',
-      `tcp:${BENCHMARK_PORT}`,
-      `tcp:${BENCHMARK_PORT}`,
-    ]);
-    await adb([
-      '-s',
-      ANDROID_SERIAL,
-      'forward',
-      '--remove',
-      `tcp:${ANDROID_DEBUG_PORT}`,
-    ]).catch(() => undefined);
-    await adb([
-      '-s',
-      ANDROID_SERIAL,
-      'forward',
-      `tcp:${ANDROID_DEBUG_PORT}`,
-      'localabstract:chrome_devtools_remote',
-    ]);
+    reverseCreated = await createReverseIfAbsent();
+    forwardCreated = await createForwardIfAbsent();
     await adb([
       '-s',
       ANDROID_SERIAL,
@@ -318,6 +332,24 @@ async function runAndroidBenchmark(): Promise<DeviceResult> {
   } finally {
     page?.close();
     browser?.close();
+    if (forwardCreated) {
+      await adb([
+        '-s',
+        ANDROID_SERIAL,
+        'forward',
+        '--remove',
+        `tcp:${ANDROID_DEBUG_PORT}`,
+      ]).catch(() => undefined);
+    }
+    if (reverseCreated) {
+      await adb([
+        '-s',
+        ANDROID_SERIAL,
+        'reverse',
+        '--remove',
+        `tcp:${BENCHMARK_PORT}`,
+      ]).catch(() => undefined);
+    }
   }
 }
 
@@ -336,15 +368,10 @@ async function measurePage(
       'window.browserBenchmark?.getWorkerDiagnostics?.() ?? null',
       5000
     ).catch(() => null);
-    const networkEvents = page
-      .diagnostics()
-      .filter(({ method }) => method === 'Network.loadingFailed')
-      .map(({ params }) => params ?? {});
     throw new Error(
       JSON.stringify({
-        error: error instanceof Error ? error.message : '알 수 없는 측정 오류',
-        networkEvents,
-        workerDiagnostics,
+        error: '페이지 측정 단계가 시간 초과되었거나 실행에 실패했습니다.',
+        workerDiagnostics: summarizeWorkerDiagnostics(workerDiagnostics),
       }),
       { cause: error }
     );
@@ -390,15 +417,40 @@ async function measurePageStages(
     page,
     'window.browserBenchmark.measure()'
   );
-  await page.call('Network.setCacheDisabled', { cacheDisabled: false });
-  const cancellation = await evaluate<Readonly<{ workerTerminated: true }>>(
+  const cacheStorageEvidence = await evaluate<Record<string, unknown>>(
     page,
-    'window.browserBenchmark.startAndCancelWorker()'
+    'window.browserBenchmark.inspectTransformersCache()'
   );
+  await page.call('Network.setCacheDisabled', { cacheDisabled: false });
+  const cacheNetworkCursor = page.eventCursor();
   const cache = await evaluate<Record<string, unknown>>(
     page,
     'window.browserBenchmark.measure()'
   );
+  const cacheRemoteModelRequestCount = countRemoteModelRequests(
+    page.eventsSince(cacheNetworkCursor)
+  );
+  const cacheEntries = Array.isArray(cacheStorageEvidence.entries)
+    ? cacheStorageEvidence.entries.filter(isCacheEntry)
+    : [];
+  const cacheEntryVerification = verifyFixedModelCacheEntries(cacheEntries);
+  if (!cacheEntryVerification.cacheHitVerified) {
+    throw new Error(
+      '고정 revision 모델 Cache Storage 항목이 준비되지 않았습니다.'
+    );
+  }
+  const cancellation = await evaluate<Record<string, unknown>>(
+    page,
+    'window.browserBenchmark.startAndCancelWorker()'
+  );
+  const cacheEvidence = {
+    ...cacheEntryVerification,
+    cacheRunRemoteModelRequestCount: cacheRemoteModelRequestCount,
+    cacheStorage: cacheStorageEvidence,
+    cacheHitVerified:
+      cacheEntryVerification.cacheHitVerified &&
+      cacheRemoteModelRequestCount === 0,
+  };
 
   await evaluate(page, 'window.browserBenchmark.resetVisibilityEvents()');
   const background = await browser.call('Target.createTarget', {
@@ -420,8 +472,18 @@ async function measurePageStages(
 
   return {
     browserVersion: String(version.product ?? version.revision ?? '관측 불가'),
-    cache,
-    cancellation,
+    cache: { ...cache, cacheEvidence },
+    cancellation: {
+      ...cancellation,
+      cacheReady: cacheEntryVerification.cacheHitVerified,
+      recoveryCacheBenchmark: {
+        firstQueryMs: cache.firstQueryMs,
+        loadMs: cache.loadMs,
+        warmQueryCount: Array.isArray(cache.warmQueryMs)
+          ? cache.warmQueryMs.length
+          : null,
+      },
+    },
     cold,
     device,
     runtime: {
@@ -471,8 +533,12 @@ async function waitForEndpoints(
   while (Date.now() - startedAt < 30_000) {
     try {
       const [versionResponse, pagesResponse] = await Promise.all([
-        fetch(`http://127.0.0.1:${port}/json/version`),
-        fetch(`http://127.0.0.1:${port}/json/list`),
+        fetch(`http://127.0.0.1:${port}/json/version`, {
+          signal: AbortSignal.timeout(5000),
+        }),
+        fetch(`http://127.0.0.1:${port}/json/list`, {
+          signal: AbortSignal.timeout(5000),
+        }),
       ]);
       if (versionResponse.ok && pagesResponse.ok) {
         const version = (await versionResponse.json()) as CdpVersion;
@@ -494,7 +560,112 @@ async function waitForEndpoints(
 }
 
 async function adb(args: readonly string[]): Promise<void> {
-  await execFileAsync(ADB_PATH, [...args], { windowsHide: true });
+  await adbOutput(args);
+}
+
+async function adbOutput(args: readonly string[]): Promise<string> {
+  const { stdout } = await execFileAsync(ADB_PATH, [...args], {
+    timeout: 15_000,
+    windowsHide: true,
+  }).catch((error) => {
+    throw new Error(`ADB ${args.join(' ')} 실행 실패`, { cause: error });
+  });
+  return stdout;
+}
+
+async function createReverseIfAbsent(): Promise<boolean> {
+  const local = `tcp:${BENCHMARK_PORT}`;
+  const mappings = await adbOutput(['-s', ANDROID_SERIAL, 'reverse', '--list']);
+  const existing = mappings
+    .split(/\r?\n/u)
+    .find((line) => line.split(/\s+/u).at(-2) === local);
+  if (existing !== undefined) {
+    if (existing.split(/\s+/u).at(-1) === local) {
+      return false;
+    }
+    throw new Error(`기존 ADB reverse 매핑이 ${local} 포트를 사용합니다.`);
+  }
+  await adb(['-s', ANDROID_SERIAL, 'reverse', local, local]);
+  return true;
+}
+
+async function createForwardIfAbsent(): Promise<boolean> {
+  const local = `tcp:${ANDROID_DEBUG_PORT}`;
+  const remote = 'localabstract:chrome_devtools_remote';
+  const mappings = await adbOutput(['-s', ANDROID_SERIAL, 'forward', '--list']);
+  const existing = mappings
+    .split(/\r?\n/u)
+    .find((line) => line.split(/\s+/u).at(-2) === local);
+  if (existing !== undefined) {
+    if (existing.split(/\s+/u).at(-1) === remote) {
+      return false;
+    }
+    throw new Error(`기존 ADB forward 매핑이 ${local} 포트를 사용합니다.`);
+  }
+  await adb(['-s', ANDROID_SERIAL, 'forward', local, remote]);
+  return true;
+}
+
+function isCacheEntry(
+  value: unknown
+): value is { basename: string; hasFixedRevision: boolean } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { basename?: unknown }).basename === 'string' &&
+    typeof (value as { hasFixedRevision?: unknown }).hasFixedRevision ===
+      'boolean'
+  );
+}
+
+function summarizeWorkerDiagnostics(
+  value: Record<string, unknown> | null
+): Readonly<Record<string, unknown>> | null {
+  if (value === null) {
+    return null;
+  }
+  return {
+    lastProgressFile:
+      typeof value.lastProgressFile === 'string'
+        ? value.lastProgressFile
+        : null,
+    progressEventCount:
+      typeof value.progressEventCount === 'number'
+        ? value.progressEventCount
+        : null,
+    stage: typeof value.stage === 'string' ? value.stage : 'unknown',
+  };
+}
+
+function countRemoteModelRequests(events: readonly CdpEvent[]): number {
+  return events.filter(({ method, params }) => {
+    if (method !== 'Network.requestWillBeSent') {
+      return false;
+    }
+    const request = params?.request as Readonly<{ url?: unknown }> | undefined;
+    return isFixedModelRequest(request?.url);
+  }).length;
+}
+
+function isFixedModelRequest(value: unknown): boolean {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  try {
+    const url = new URL(value);
+    const filename = url.pathname.split('/').at(-1);
+    return (
+      url.hostname.endsWith('huggingface.co') &&
+      url.pathname.includes(BROWSER_BENCHMARK_CONFIG.modelId) &&
+      url.pathname.includes(BROWSER_BENCHMARK_CONFIG.revision) &&
+      (filename === 'config.json' ||
+        filename === 'tokenizer.json' ||
+        filename === 'tokenizer_config.json' ||
+        filename === 'model_quantized.onnx')
+    );
+  } catch {
+    return false;
+  }
 }
 
 function notMeasured(
@@ -549,46 +720,6 @@ function delay(milliseconds: number): Promise<void> {
   return new Promise((resolvePromise) =>
     setTimeout(resolvePromise, milliseconds)
   );
-}
-
-function renderReport(
-  result: Readonly<{
-    platforms: { android: DeviceResult; desktop: DeviceResult };
-  }>
-): string {
-  const base = renderBrowserBenchmarkReport({
-    android: toReportDevice(result.platforms.android),
-    desktop: toReportDevice(result.platforms.desktop),
-  });
-  return [
-    base,
-    '## 방법과 한계',
-    '',
-    '- Worker 생성부터 `pipeline` ready까지에는 Worker 모듈, ONNX WASM, 모델·tokenizer fetch 및 초기화가 포함됩니다.',
-    '- 자산 크기는 Transformers.js `progress_callback`의 파일별 최대 `total`만 사용했습니다. 관측되지 않은 분류는 `null`이며 Node 파일 크기로 대체하지 않았습니다.',
-    '- cold 전 Cache Storage를 삭제했고 HTTP cache를 CDP로 비활성화·초기화했습니다. cache load는 cold 성공 뒤 새 Worker에서 측정했습니다.',
-    '- warm p50/p95는 고정 합성 query 20회의 nearest-rank입니다. 모든 query 출력은 384차원·유한값을 검증했습니다.',
-    '- 메모리 peak는 지원 API의 단계 경계 최대 추정치일 뿐 연속 peak가 아닙니다.',
-    '- WebGPU 지원 여부와 실제 실행 backend는 별도로 기록하며 실제 backend는 고정 WASM입니다.',
-    '',
-    '## 상세 관측값',
-    '',
-    '기계 판독용 전체 값은 `browser_benchmark_result.json`에도 같은 UTF-8 JSON으로 보존합니다.',
-    '',
-    '```json',
-    JSON.stringify(result.platforms, null, 2),
-    '```',
-  ].join('\n');
-}
-
-function toReportDevice(device: DeviceResult) {
-  if (device.status === 'not measured') {
-    return { reason: device.reason, status: 'not measured' as const };
-  }
-  return {
-    coldLoadMs: Number(device.cold.loadMs),
-    status: 'measured' as const,
-  };
 }
 
 await main();

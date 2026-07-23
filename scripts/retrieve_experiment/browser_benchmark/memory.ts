@@ -69,7 +69,8 @@ async function measureUserAgentMemory(
     }),
     () => ({
       bytes: null,
-      limitation: 'UA 특정 메모리 측정이 실패해 peak를 추정하지 않았습니다.',
+      limitation:
+        'UA 특정 메모리 측정 API가 거부되어 peak를 추정하지 않았습니다.',
       source: 'unavailable' as const,
     })
   );

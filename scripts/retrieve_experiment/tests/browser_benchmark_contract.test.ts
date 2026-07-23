@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -7,6 +9,7 @@ import {
 } from '../browser_benchmark/contract';
 import { renderBrowserBenchmarkReport } from '../browser_benchmark/report';
 import { measureMemoryAtBoundary } from '../browser_benchmark/memory';
+import { verifyFixedModelCacheEntries } from '../browser_benchmark/cache_evidence';
 
 describe('브라우저 벤치마크 계약', () => {
   it('nearest-rank 방식으로 p50과 p95를 계산한다', () => {
@@ -50,12 +53,16 @@ describe('브라우저 벤치마크 계약', () => {
 
   it('관측하지 못한 값은 이유와 함께 보고서에 남긴다', () => {
     const report = renderBrowserBenchmarkReport({
-      android: { status: 'not measured', reason: 'CDP 연결 실패' },
-      desktop: { status: 'measured', coldLoadMs: 123.4 },
+      generatedAt: '2026-07-23T00:00:00.000Z',
+      measurementContract: { coldLoadMs: 123.4 },
+      platforms: {
+        android: { status: 'not measured', reason: 'CDP 연결 실패' },
+        desktop: { status: 'measured' },
+      },
     });
 
     expect(report).toContain('CDP 연결 실패');
-    expect(report).toContain('123.4 ms');
+    expect(report).toContain('123.4');
   });
 
   it('UA 메모리 측정이 제한 시간을 넘기면 거짓 peak 대신 미측정을 기록한다', async () => {
@@ -82,5 +89,57 @@ describe('브라우저 벤치마크 계약', () => {
       bytes: 1234,
       source: 'measureUserAgentSpecificMemory',
     });
+  });
+
+  it('UA 메모리 거부 사유에서 URL을 제외하고 오류 유형과 안전한 메시지를 남긴다', async () => {
+    const measurement = await measureMemoryAtBoundary({
+      measureUserAgentSpecificMemory: async () => {
+        throw new Error('https://private.example.invalid/memory 접근 실패');
+      },
+      timeoutMs: 100,
+    });
+
+    expect(measurement.limitation).toContain('API');
+    expect(measurement.limitation).not.toContain('private.example');
+  });
+
+  it('고정 revision의 필수 모델 cache entry를 모두 확인해야 cache hit를 증명한다', () => {
+    expect(
+      verifyFixedModelCacheEntries([
+        { basename: 'config.json', hasFixedRevision: true },
+        { basename: 'tokenizer.json', hasFixedRevision: true },
+        { basename: 'tokenizer_config.json', hasFixedRevision: true },
+        { basename: 'model_quantized.onnx', hasFixedRevision: true },
+      ])
+    ).toMatchObject({ cacheHitVerified: true, missingRequiredBasenames: [] });
+
+    expect(
+      verifyFixedModelCacheEntries([
+        { basename: 'config.json', hasFixedRevision: true },
+      ])
+    ).toMatchObject({
+      cacheHitVerified: false,
+      missingRequiredBasenames: expect.arrayContaining([
+        'model_quantized.onnx',
+      ]),
+    });
+  });
+
+  it('커밋한 보고서는 결과 JSON에서 단일 renderer로 재생성한 문자열과 일치한다', async () => {
+    const [resultText, reportText] = await Promise.all([
+      readFile(
+        'scripts/retrieve_experiment/results/browser_benchmark_result.json',
+        'utf8'
+      ),
+      readFile(
+        'scripts/retrieve_experiment/results/browser_benchmark_report.md',
+        'utf8'
+      ),
+    ]);
+    const result = JSON.parse(resultText) as Parameters<
+      typeof renderBrowserBenchmarkReport
+    >[0];
+
+    expect(renderBrowserBenchmarkReport(result)).toBe(reportText);
   });
 });

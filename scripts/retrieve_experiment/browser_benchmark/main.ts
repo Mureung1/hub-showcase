@@ -3,6 +3,10 @@ import {
   calculateNearestRankPercentile,
   validateEmbeddingVector,
 } from './contract';
+import {
+  REQUIRED_MODEL_CACHE_BASENAMES,
+  type SanitizedCacheEntry,
+} from './cache_evidence';
 import { measureMemoryAtBoundary, type MemoryMeasurement } from './memory';
 
 const SYNTHETIC_QUERY =
@@ -19,7 +23,7 @@ type AssetBytes = Readonly<{
 type WorkerMessage =
   | Readonly<{ type: 'ready' }>
   | Readonly<{ id: number; type: 'embedding'; vector: number[] }>
-  | Readonly<{ type: 'error'; message: string }>
+  | Readonly<{ type: 'error' }>
   | Readonly<{
       type: 'progress';
       file: string;
@@ -28,12 +32,9 @@ type WorkerMessage =
     }>;
 
 type WorkerDiagnostics = Readonly<{
-  errors: readonly string[];
-  progress: readonly Readonly<{
-    file: string;
-    loaded: number | null;
-    total: number;
-  }>[];
+  lastProgressFile: string | null;
+  progressEventCount: number;
+  stage: string;
 }>;
 
 type WorkerSession = Readonly<{
@@ -66,17 +67,22 @@ declare global {
       clearTransformersCaches: () => Promise<readonly string[]>;
       getRuntime: () => Readonly<Record<string, unknown>>;
       getWorkerDiagnostics: () => WorkerDiagnostics;
+      inspectTransformersCache: () => Promise<CacheStorageEvidence>;
       measure: () => Promise<BenchmarkStage>;
       queryAfterVisibility: () => Promise<readonly number[]>;
       resetVisibilityEvents: () => void;
-      startAndCancelWorker: () => Readonly<{ workerTerminated: true }>;
+      startAndCancelWorker: () => Promise<CancellationObservation>;
       visibilityEvents: () => readonly string[];
     }>;
   }
 }
 
 const visibilityEvents: string[] = [];
-let lastWorkerDiagnostics: WorkerDiagnostics = { errors: [], progress: [] };
+let lastWorkerDiagnostics: WorkerDiagnostics = {
+  lastProgressFile: null,
+  progressEventCount: 0,
+  stage: 'idle',
+};
 document.addEventListener('visibilitychange', () => {
   visibilityEvents.push(document.visibilityState);
 });
@@ -104,6 +110,7 @@ window.browserBenchmark = {
   getWorkerDiagnostics() {
     return lastWorkerDiagnostics;
   },
+  inspectTransformersCache,
   measure,
   async queryAfterVisibility() {
     const session = createWorkerSession();
@@ -117,24 +124,83 @@ window.browserBenchmark = {
   resetVisibilityEvents() {
     visibilityEvents.length = 0;
   },
-  startAndCancelWorker() {
+  async startAndCancelWorker() {
     const worker = new Worker(new URL('./worker.ts', import.meta.url), {
       type: 'module',
     });
-    worker.postMessage({ type: 'initialize' });
-    worker.terminate();
-    return { workerTerminated: true };
+    return await new Promise<CancellationObservation>((resolve, reject) => {
+      const timeoutId = window.setTimeout(() => {
+        worker.terminate();
+        reject(
+          new Error(
+            '취소 Worker의 첫 진행 신호를 기다리다 시간 초과되었습니다.'
+          )
+        );
+      }, 60_000);
+      const settle = (callback: () => void) => {
+        window.clearTimeout(timeoutId);
+        callback();
+      };
+      worker.addEventListener(
+        'message',
+        (event: MessageEvent<WorkerMessage>) => {
+          const message = event.data;
+          if (message.type === 'progress') {
+            worker.terminate();
+            settle(() =>
+              resolve({
+                firstProgressFile: message.file,
+                signal: 'first-progress-callback',
+                terminatedAfterFirstProgress: true,
+              })
+            );
+            return;
+          }
+          if (message.type === 'error') {
+            settle(() =>
+              reject(new Error('취소 Worker 초기화에 실패했습니다.'))
+            );
+          }
+        }
+      );
+      worker.addEventListener('error', () =>
+        settle(() => reject(new Error('취소 Worker 실행에 실패했습니다.')))
+      );
+      worker.postMessage({ type: 'initialize' });
+    });
   },
   visibilityEvents() {
     return [...visibilityEvents];
   },
 };
 
+type CancellationObservation = Readonly<{
+  firstProgressFile: string;
+  signal: 'first-progress-callback';
+  terminatedAfterFirstProgress: true;
+}>;
+
+type CacheEntryObservation = Readonly<
+  SanitizedCacheEntry & {
+    sizeBytes: number | null;
+  }
+>;
+
+type CacheStorageEvidence = Readonly<{
+  cacheNames: readonly string[];
+  entries: readonly CacheEntryObservation[];
+  wasm: Readonly<{
+    attemptedMethods: readonly string[];
+    limitation: string | null;
+    sizeBytes: number | null;
+  }>;
+}>;
+
 async function measure(): Promise<BenchmarkStage> {
   const cacheBefore = await estimateCacheBytes();
   const baseline = await measureMemory();
-  const session = createWorkerSession();
   const loadStartedAt = performance.now();
+  const session = createWorkerSession();
 
   try {
     await within(session.ready, 180_000, 'pipeline ready');
@@ -193,13 +259,13 @@ function createWorkerSession(): WorkerSession {
     type: 'module',
   });
   const fileTotals = new Map<string, number>();
-  const progress: Array<{
-    file: string;
-    loaded: number | null;
-    total: number;
-  }> = [];
-  const errors: string[] = [];
-  lastWorkerDiagnostics = { errors, progress };
+  let progressEventCount = 0;
+  let lastProgressFile: string | null = null;
+  let stage = 'initializing';
+  const updateDiagnostics = () => {
+    lastWorkerDiagnostics = { lastProgressFile, progressEventCount, stage };
+  };
+  updateDiagnostics();
   let nextQueryId = 0;
   const pendingQueries = new Map<
     number,
@@ -220,20 +286,21 @@ function createWorkerSession(): WorkerSession {
     if (message.type === 'progress') {
       const previous = fileTotals.get(message.file) ?? 0;
       fileTotals.set(message.file, Math.max(previous, message.total));
-      progress.push({
-        file: message.file,
-        loaded: message.loaded,
-        total: message.total,
-      });
+      progressEventCount += 1;
+      lastProgressFile = message.file;
+      updateDiagnostics();
       return;
     }
     if (message.type === 'ready') {
+      stage = 'ready';
+      updateDiagnostics();
       readyResolve();
       return;
     }
     if (message.type === 'error') {
-      const error = new Error(message.message);
-      errors.push(message.message);
+      stage = 'worker-error';
+      updateDiagnostics();
+      const error = new Error('Worker 실행에 실패했습니다.');
       readyReject(error);
       pendingQueries.forEach(({ reject }) => reject(error));
       pendingQueries.clear();
@@ -245,9 +312,10 @@ function createWorkerSession(): WorkerSession {
       pending.resolve(message.vector);
     }
   });
-  worker.addEventListener('error', (event) => {
-    const error = new Error(event.message);
-    errors.push(event.message);
+  worker.addEventListener('error', () => {
+    stage = 'worker-error';
+    updateDiagnostics();
+    const error = new Error('Worker 실행에 실패했습니다.');
     readyReject(error);
     pendingQueries.forEach(({ reject }) => reject(error));
     pendingQueries.clear();
@@ -259,6 +327,8 @@ function createWorkerSession(): WorkerSession {
     dispose: () => worker.terminate(),
     query: (text) =>
       new Promise<readonly number[]>((resolve, reject) => {
+        stage = 'querying';
+        updateDiagnostics();
         const id = nextQueryId;
         nextQueryId += 1;
         pendingQueries.set(id, { reject, resolve });
@@ -275,6 +345,64 @@ async function estimateCacheBytes(): Promise<number | null> {
 
   const estimate = await navigator.storage.estimate();
   return typeof estimate.usage === 'number' ? estimate.usage : null;
+}
+
+async function inspectTransformersCache(): Promise<CacheStorageEvidence> {
+  const cacheNames = await caches.keys();
+  const entries: CacheEntryObservation[] = [];
+  const wasmEntries: CacheEntryObservation[] = [];
+
+  for (const cacheName of cacheNames) {
+    const cache = await caches.open(cacheName);
+    for (const request of await cache.keys()) {
+      const parsed = new URL(request.url);
+      const basename = parsed.pathname.split('/').at(-1);
+      if (basename === undefined) {
+        continue;
+      }
+      const isRequired = REQUIRED_MODEL_CACHE_BASENAMES.includes(
+        basename as (typeof REQUIRED_MODEL_CACHE_BASENAMES)[number]
+      );
+      const isWasm = basename.endsWith('.wasm');
+      if (!isRequired && !isWasm) {
+        continue;
+      }
+      const response = await cache.match(request);
+      const contentLength = response?.headers.get('content-length');
+      const observation = {
+        basename,
+        hasFixedRevision: parsed.pathname.includes(
+          BROWSER_BENCHMARK_CONFIG.revision
+        ),
+        sizeBytes:
+          contentLength === null || contentLength === undefined
+            ? null
+            : Number(contentLength),
+      };
+      if (isWasm) {
+        wasmEntries.push(observation);
+      } else {
+        entries.push(observation);
+      }
+    }
+  }
+
+  return {
+    cacheNames,
+    entries,
+    wasm: {
+      attemptedMethods: ['Cache Storage response content-length'],
+      limitation:
+        wasmEntries.length === 0
+          ? 'Transformers Cache Storage에서 ONNX WASM entry를 찾지 못했습니다.'
+          : wasmEntries.some(({ sizeBytes }) => sizeBytes === null)
+            ? 'ONNX WASM Cache Storage entry는 찾았지만 content-length를 관측하지 못했습니다.'
+            : null,
+      sizeBytes:
+        wasmEntries.find(({ sizeBytes }) => sizeBytes !== null)?.sizeBytes ??
+        null,
+    },
+  };
 }
 
 async function measureMemory(): Promise<MemoryMeasurement> {
