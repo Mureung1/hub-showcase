@@ -1147,28 +1147,33 @@ void main() {
   });
 
   group('InMemoryUserRepository', () {
-    test('ensureUser는 신규 사용자를 기본값으로 만든다', () async {
+    test('ensureUser는 신규 사용자를 기본값으로 만들고 created=true를 알린다', () async {
       final repo = InMemoryUserRepository();
       addTearDown(repo.dispose);
 
-      final user = await repo.ensureUser('uid-1');
+      final result = await repo.ensureUser('uid-1');
 
+      // created=true는 signup 계측의 근거다.
+      expect(result.created, isTrue);
+      final user = result.user;
       expect(user.level, 1);
       expect(user.xp, 0);
       expect(user.coin, 0);
       expect(user.createdAt, isNotNull);
     });
 
-    test('ensureUser를 두 번 불러도 기존 문서를 덮어쓰지 않는다 (멱등)', () async {
+    test('ensureUser를 두 번 불러도 기존 문서를 덮어쓰지 않고 created=false다 (멱등)', () async {
       final repo = InMemoryUserRepository();
       addTearDown(repo.dispose);
 
       final first = await repo.ensureUser('uid-1');
-      repo.put(first.copyWith(coin: 999));
+      repo.put(first.user.copyWith(coin: 999));
 
       final second = await repo.ensureUser('uid-1');
 
-      expect(second.coin, 999);
+      // 이미 있던 문서라 만들지 않았다 → created=false, 기존 값 보존.
+      expect(second.created, isFalse);
+      expect(second.user.coin, 999);
     });
 
     test('문서가 없어도 watchUser는 기본값을 흘린다', () async {

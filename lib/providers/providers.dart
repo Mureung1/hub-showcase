@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/constants/reward_rules.dart';
+import '../models/analytics_event.dart';
 import '../models/app_user.dart';
 import '../models/goal.dart';
 import '../models/quest.dart';
 import '../models/quest_group.dart';
+import '../repositories/analytics_repository.dart';
 import '../repositories/auth_repository.dart';
 import '../repositories/goal_repository.dart';
 import '../repositories/quest_decomposer.dart';
@@ -43,6 +47,30 @@ final questDecomposerProvider = Provider<QuestDecomposer>(
   (ref) => throw UnimplementedError('questDecomposerProvider를 override 해야 한다'),
 );
 
+/// 성공 지표 이벤트 로그 저장소. 나머지 저장소와 같은 "기본값은 던진다" 패턴.
+///
+/// **계측은 부가 기능**이라 로그 호출부는 이 provider 읽기 실패까지 삼킨다
+/// (`core/analytics/analytics_logger.dart`). 그래서 화면 테스트가 이 provider를
+/// 주입하지 않아도 로그만 조용히 유실될 뿐 동작은 그대로다.
+final analyticsRepositoryProvider = Provider<AnalyticsRepository>(
+  (ref) =>
+      throw UnimplementedError('analyticsRepositoryProvider를 override 해야 한다'),
+);
+
+/// session/attendance provider 안에서 계측을 흘려보내는 내부 헬퍼.
+///
+/// 화면·notifier는 `analytics_logger.dart`의 `logEvent` 확장을 쓰지만, 이 파일은
+/// 그 확장이 다시 import하는 대상이라(순환을 피하려고) 여기서는 같은 정책을 담은
+/// 작은 헬퍼를 직접 둔다. **어떤 실패도 삼킨다** — 계측이 세션·출석을 막으면 안 된다.
+void _logEvent(Ref ref, String uid, AnalyticsEvent event) {
+  try {
+    final future = ref.read(analyticsRepositoryProvider).log(uid, event);
+    unawaited(future.catchError((Object _) {}));
+  } catch (_) {
+    // provider override 누락(테스트)·로그 저장 실패 등 무엇이든 무시한다.
+  }
+}
+
 /// 현재 로그인된 사용자 ID.
 final currentUidProvider = StreamProvider<String?>((ref) {
   return ref.watch(authRepositoryProvider).watchUid();
@@ -56,7 +84,13 @@ final sessionProvider = FutureProvider<String>((ref) async {
   final users = ref.watch(userRepositoryProvider);
 
   final uid = auth.currentUid ?? await auth.signInAnonymously();
-  await users.ensureUser(uid);
+  final result = await users.ensureUser(uid);
+
+  // 문서가 이번에 처음 만들어졌을 때만 signup 1회. 트랜잭션 밖에서, 성공한 뒤 남긴다
+  // (계측 실패가 세션을 막지 않도록 _logEvent가 삼킨다).
+  if (result.created) {
+    _logEvent(ref, uid, AnalyticsEvent.signup(at: ref.read(clockProvider)()));
+  }
   return uid;
 });
 
@@ -88,7 +122,19 @@ final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 /// 저장소가 멱등이라(날짜 키가 같으면 쓰지 않는다) 보너스가 두 번 나가지 않는다.
 final attendanceProvider = FutureProvider<AttendanceResult>((ref) async {
   final uid = await ref.watch(sessionProvider.future);
-  return ref.watch(userRepositoryProvider).recordAttendance(uid);
+  final result = await ref.watch(userRepositoryProvider).recordAttendance(uid);
+
+  // 오늘 첫 접속일 때만 appOpen 1회. recordAttendance의 `isNewDay` 신호를 그대로
+  // 재사용하므로(새 판정 로직을 만들지 않는다), 같은 날 재접속·앱 재실행은
+  // isNewDay=false라 중복 로그가 생기지 않는다.
+  if (result.isNewDay) {
+    _logEvent(
+      ref,
+      uid,
+      AnalyticsEvent.appOpen(at: ref.read(clockProvider)(), dateKey: result.dateKey),
+    );
+  }
+  return result;
 });
 
 /// 퀘스트 목록.

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/analytics/analytics_logger.dart';
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../core/theme/app_radius.dart';
@@ -10,6 +11,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/quest_actions_menu.dart';
 import '../../core/widgets/quest_card.dart';
 import '../../core/widgets/state_views.dart';
+import '../../models/analytics_event.dart';
 import '../../models/quest.dart';
 import '../../models/quest_group.dart';
 import '../../models/quest_status.dart';
@@ -118,6 +120,15 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
           memo: memoResult?.memo,
           photoBase64: memoResult?.photoBase64,
         );
+        // 실제 지급이 일어난 순간에만 계측한다 — 재완료(reward == null)는 로그하지
+        // 않아 「도전 시작률」의 분자가 부풀려지지 않는다(rewardedAt 가드와 정합).
+        // 트랜잭션 밖·성공 경로다.
+        if (reward != null) {
+          ref.logEvent(
+            uid,
+            AnalyticsEvent.questCompleted(at: DateTime.now(), questId: quest.id),
+          );
+        }
       } else {
         // 완료 해제: 상태만 되돌린다. 지급 이력(rewardedAt)은 해제해도 남으므로,
         // 다시 완료해도 보상은 재지급되지 않는다.
@@ -187,6 +198,14 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
     try {
       final uid = await ref.read(sessionProvider.future);
       await ref.read(questRepositoryProvider).setStatus(uid, quest.id, status);
+      // 멈춤 표시만 계측한다(「재분해 복귀율」의 분모). 다시 진행(todo 복귀)은
+      // 지표 대상이 아니다. 상태 변경 성공 뒤 · 부가로 남긴다.
+      if (status == QuestStatus.stuck) {
+        ref.logEvent(
+          uid,
+          AnalyticsEvent.questStuck(at: DateTime.now(), questId: quest.id),
+        );
+      }
     } on AppFailure catch (failure) {
       if (!mounted) return;
       ScaffoldMessenger.of(
