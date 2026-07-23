@@ -108,7 +108,7 @@ export default function Guide() {
       <section className="guide-section guide-example">
         <div className="section-heading">
           <div>
-            <h2>작성할 내용 예시</h2>
+            <h2>showcase.json 예시</h2>
             <p>아래에서 편집하고, 복사해서 사용하세요.</p>
           </div>
           <div className="guide-example-actions">
