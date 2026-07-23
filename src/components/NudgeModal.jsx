@@ -1,6 +1,11 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { LEVEL_META } from "../lib/levelMeta";
-import { isLockedToStart, buildNudgeMessage } from "../lib/nudgeMessages";
+import {
+  isLockedToStart,
+  buildNudgeMessage,
+  buildLv2NudgeMessage,
+} from "../lib/nudgeMessages";
+import { requestLv2Microtask } from "../lib/microtaskApi";
 import ReasonCheckpoint from "./ReasonCheckpoint";
 import NudgeMessage from "./NudgeMessage";
 import FreeTextPrompt from "./FreeTextPrompt";
@@ -27,20 +32,46 @@ function NudgeModal({
   // Lv4(마감 임박)에서는 "지금 시작하기"만 남기고 닫기·체크포인트 등 다른 선택지를 잠근다.
   const lockedToStart = isLockedToStart(task.level);
 
-  // Lv2 microTask 고정: getMicrotask()가 내부적으로 랜덤 선택을 하므로, 다른 task의
-  // tick으로 인한 부모 리렌더 등으로 이 컴포넌트가 다시 렌더돼도 매번 새 문구가
-  // 나오지 않도록 이 모달 인스턴스(=같은 task.id) 안에서 한 번만 계산해 고정한다.
-  // NudgeModal은 HomePage에서 key={modalTask.id}로 렌더되므로, task.id가 바뀌면
-  // 인스턴스 자체가 새로 생겨 이 ref도 자연스럽게 초기화된다.
-  const lv2MessageRef = useRef(null);
-  if (task.level === 2 && lv2MessageRef.current === null) {
-    lv2MessageRef.current = buildNudgeMessage(2, task, completedTasks);
+  // Gemini가 실패하거나 늦어도 즉시 돌아갈 수 있도록 기존 룰베이스 결과를 모달
+  // 인스턴스당 한 번만 만들어 고정한다. 최종 선택 책임도 이 컴포넌트에만 둔다.
+  const lv2FallbackRef = useRef(null);
+  if (task.level === 2 && lv2FallbackRef.current === null) {
+    lv2FallbackRef.current = buildNudgeMessage(2, task, completedTasks);
   }
-  const frozenLv2Message = task.level === 2 ? lv2MessageRef.current : null;
+  const [frozenLv2Message, setFrozenLv2Message] = useState(null);
+  const isGeneratingLv2 =
+    task.level === 2 && frozenLv2Message === null;
+
+  useEffect(() => {
+    if (task.level !== 2) return undefined;
+
+    let active = true;
+    requestLv2Microtask({
+      title: task.title,
+      type: task.type,
+      reason: task.reason,
+      customReason:
+        task.reason === "custom" ? task.customReasonText : null,
+      level: 2,
+    })
+      .then((microTask) => {
+        if (!active) return;
+        setFrozenLv2Message(buildLv2NudgeMessage(task, microTask));
+      })
+      .catch(() => {
+        if (!active) return;
+        setFrozenLv2Message(lv2FallbackRef.current);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [task]);
 
   // "지금 시작하기" → 고정된 Lv2 microTask를 포함한 focusSession을 그대로 Focus까지 전달한다.
   function handleStart() {
-    if (task.level === 2 && frozenLv2Message) {
+    if (task.level === 2) {
+      if (!frozenLv2Message) return;
       onStart({
         taskId: task.id,
         title: task.title,
@@ -98,6 +129,8 @@ function NudgeModal({
           onStart={handleStart}
           completedTasks={completedTasks}
           overrideMessage={frozenLv2Message}
+          isGenerating={isGeneratingLv2}
+          startDisabled={isGeneratingLv2}
         />
 
         {task.level === 4 && (

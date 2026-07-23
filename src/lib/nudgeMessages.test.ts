@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { addDays } from "date-fns";
 import {
   buildNudgeMessage,
+  buildLv2NudgeMessage,
   isLockedToStart,
   LV1_MESSAGES,
 } from "./nudgeMessages.js";
@@ -44,6 +45,21 @@ describe("buildNudgeMessage", () => {
     });
     expect(MICROTASK_TEMPLATES["개인공부"].overwhelm).toContain(result.microtask);
     expect(result.body).toContain(result.microtask);
+  });
+
+  it("외부에서 확정한 Lv2 microTask를 기존 문장 구조에 그대로 넣는다", () => {
+    const microTask = "문서 파일을 열고 제목을 입력하기";
+    const result = buildLv2NudgeMessage(
+      {
+        title: "리포트",
+        type: "개인공부",
+        reason: "overwhelm",
+        skipCount: 0,
+      },
+      microTask,
+    );
+    expect(result.microtask).toBe(microTask);
+    expect(result.body).toContain(microTask);
   });
 
   it("레벨 2에서 type/reason이 미등록 조합이어도 커스텀 폴백 마이크로태스크로 떨어진다 (경계)", () => {

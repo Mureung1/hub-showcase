@@ -2,6 +2,7 @@ import express from "express";
 import tasksRouter from "./routes/tasks.js";
 import pushSubscriptionsRouter from "./routes/pushSubscriptions.js";
 import historyRouter from "./routes/history.js";
+import microtasksRouter from "./routes/microtasks.js";
 
 const app = express();
 
@@ -16,5 +17,6 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/tasks", tasksRouter);
 app.use("/api/push-subscriptions", pushSubscriptionsRouter);
 app.use("/api/history", historyRouter);
+app.use("/api/microtasks", microtasksRouter);
 
 export default app;

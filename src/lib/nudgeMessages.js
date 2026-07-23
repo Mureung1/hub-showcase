@@ -28,6 +28,21 @@ const LV2_LEAD_INS = [
   "이유를 보니, 이렇게 작게 시작해보는 게 딱 맞을 것 같아요.",
 ];
 
+// Lv2 본문 조립을 순수 함수로 분리한다. microtask를 생략하면 기존 룰베이스를 그대로
+// 사용하고, Gemini 결과를 넘기면 동일한 문장 구조 안에 그 결과만 넣는다.
+/**
+ * @param {{ title?: string, type: string, reason: string, skipCount: number }} task
+ * @param {string | null} microtask
+ */
+export function buildLv2NudgeMessage(task, microtask = null) {
+  const finalMicrotask =
+    microtask ?? getMicrotask({ type: task.type, reason: task.reason });
+  return {
+    body: `${LV2_LEAD_INS[task.skipCount % LV2_LEAD_INS.length]} ${finalMicrotask}`,
+    microtask: finalMicrotask,
+  };
+}
+
 // task.deadline(UTC ISO)과 현재 시각으로 D-day 라벨을 만든다. RegisterPage가
 // addDays(new Date(), N)로 "오늘+N일"을 저장하므로, 그 역방향으로 달력일 차이를
 // 계산한다(시:분이 아니라 달력일 기준이라 하루 중 언제 계산해도 안정적).
@@ -52,13 +67,7 @@ export const NUDGE_MESSAGE_BUILDERS = {
     body: LV1_MESSAGES[skipCount % LV1_MESSAGES.length],
     microtask: null,
   }),
-  2: ({ type, reason, skipCount }) => {
-    const microtask = getMicrotask({ type, reason });
-    return {
-      body: `${LV2_LEAD_INS[skipCount % LV2_LEAD_INS.length]} ${microtask}`,
-      microtask,
-    };
-  },
+  2: (task) => buildLv2NudgeMessage(task),
   // Lv3: 기억 기반 개입(#25 getMemoryNudge). 세션 내 완료 이력 중 같은 회피 이유로
   // 성공한 사례가 있으면 그때(그 유형·이유)의 마이크로태스크를 그대로 재제안하고,
   // 없으면 회피 패턴 근거(skipCount) 문구 + getMicrotask 폴백으로 떨어진다.
