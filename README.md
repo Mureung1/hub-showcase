@@ -19,7 +19,7 @@
 
 ## AY-PLE는 무엇인가
 
-AY-PLE(에이플)는 학생이 한 학기 작업공간에서 공지, 강의계획서, 수업 자료를 고르면 AY가 필요한 정보를 찾고, 원본 근거가 연결된 변경안을 제시하는 local-first 학업 Agent 앱입니다. 학생이 확인한 내용만 학기 상태에 반영합니다.
+AY-PLE(에이플)는 학생이 한 학기 작업공간에서 공지, 강의계획서, 수업 자료를 고르면 AY가 필요한 정보를 찾고, 원본 근거가 연결된 변경안을 제시하는 local-first 학업 Agent 앱입니다. 학생이 확인한 내용만 학기 상태에 반영합니다. Local-first는 offline을 뜻하지 않으며 Codex 실행의 provider 전송 경계는 [Public repository clean snapshot ADR](docs/adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md)에 기록합니다.
 
 현재 코드베이스는 official Python SDK 기반 `@ay-ple/codex-chat-runtime`을 하나의 supervised Runtime graph로 유지하고, Express Server의 `/api/product/*`와 desktop Chat Shell을 유일한 public 제품 경로로 사용합니다. 학생은 두 TXT 자료를 선택해 First Assignment action을 실행하고, 근거가 연결된 제안을 수락·수정 요청·거절한 뒤 confirmed 학기 상태를 Server restart 후에도 다시 열 수 있습니다. Deterministic Browser, exact local-provider와 isolated live-provider 경로가 같은 product seam과 bounded shutdown을 검증했으며, conversation catalog·generic transcript persistence·packaged Desktop은 [개발 백로그](docs/product/ay-ple-development-backlog.md)의 후속 경계입니다.
 
@@ -37,7 +37,21 @@ npm install
 npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
 ```
 
-Canonical command는 explicit `appDataRoot`와 선택한 development `SemesterWorkspace`를 검증하고, `packageRoot`의 verified Runtime artifact와 app-managed runtime directory를 계산해 Express Server와 Vite Chat Shell을 함께 시작합니다. Fresh clone에서는 먼저 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 materialize해야 합니다. 시작·workspace·Runtime 제약은 [Server README](apps/server/README.md), 화면 동작과 후속 경계는 [Chat Shell README](apps/chat-shell/README.md)를 따릅니다.
+Canonical development command는 explicit `appDataRoot`와 current materialized/override directory를 검증하고, `packageRoot`의 verified Runtime artifact와 app-managed runtime directory를 계산해 Express Server와 Vite Chat Shell을 함께 시작합니다. 이 current path는 app-owned scaffold나 `WorkspaceManifest` admission을 아직 구현하지 않습니다. Fresh clone에서는 먼저 [runtime package README](packages/codex-chat-runtime/README.md)에 따라 ignored production bundle을 materialize해야 합니다. 현재 시작·workspace·Runtime 제약은 [Server README](apps/server/README.md), 채택한 workspace target은 [ADR 0014](docs/adr/0014-create-app-owned-normalized-semester-workspaces.md), 화면 동작과 후속 경계는 [Chat Shell README](apps/chat-shell/README.md)를 따릅니다.
+
+반복해서 실제 제품을 만질 때는 repository 밖의 고정 profile root를 지정하는 dogfood 명령을 사용합니다. 이 helper는 별도 실행 topology를 만들지 않고 [ADR 0013](docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)의 canonical development composition에 위임합니다.
+
+```bash
+npm run dogfood -- --root /absolute/path/to/ay-ple-dogfood
+```
+
+첫 실행은 profile 아래에 isolated `app-data`와 sample 기반 current development workspace를 한 번만 만들고, Codex 인증이 없으면 해당 profile 전용 `login --device-auth` 명령을 안내한 뒤 종료합니다. 로그인 후 같은 명령을 다시 실행하면 이후 Server·Chat Shell 시작에서도 fixture의 사용자 자료와 `.ay-ple` 상태를 그대로 보존합니다. 이 helper는 public first-run scaffold나 채택한 in-app Browser OAuth UX가 아니며 기존 내용을 reset하거나 sample로 다시 덮어쓰지 않습니다.
+
+이미 수동으로 만든 동일 layout의 profile은 최초 한 번만 명시적으로 채택합니다. 소유권 marker가 생긴 뒤에는 이 flag를 빼고 평소 명령을 사용합니다.
+
+```bash
+npm run dogfood -- --root /absolute/path/to/existing-profile --adopt-existing
+```
 
 ## 캠프 데모
 
@@ -76,6 +90,10 @@ npm run demo
 | ADR | [0011. Official Codex Python SDK를 Chat Shell baseline으로 재사용](docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) | Official SDK direct reuse와 supervised Node bridge 결정 |
 | ADR | [0012. Codex Chat-only runtime graph 채택](docs/adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md) | Maintained Runtime 단일화와 legacy executable·alias 제거. Chat-only public surface 결과는 ADR 0013이 대체 |
 | ADR | [0013. Product-only public surface와 durable v2 baseline](docs/adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md) | Canonical product cutover와 workspace-local current v2의 장기 compatibility 정책 |
+| ADR | [0014. App-owned normalized SemesterWorkspace](docs/adr/0014-create-app-owned-normalized-semester-workspaces.md) | `WorkspaceManifest` authority, scaffold·admission과 `ImportSource` 경계 결정 |
+| ADR | [0015. Reviewed clean snapshot public repository](docs/adr/0015-bootstrap-public-repository-from-reviewed-clean-snapshot.md) | Public source lineage·canonical cutover, Apache-2.0 first-party license와 trust·export authority |
+| ADR | [0016. Exact npx application과 verified Runtime release](docs/adr/0016-distribute-public-preview-with-an-exact-npx-launcher-and-verified-runtime-release.md) | 첫 public preview의 application↔Runtime binding·delivery·cache와 rollback 경계 |
+| ADR | [0017. Codex-managed Browser OAuth product account lifecycle](docs/adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md) | Managed ChatGPT login, app-scoped credential authority와 pre-workspace Runtime 전환 |
 
 ### 기술 참고 문서
 
@@ -126,6 +144,7 @@ npm run demo
 
 ```bash
 npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
+npm run dogfood -- --root /absolute/path/to/ay-ple-dogfood
 npm run demo
 npm test
 npm run test:e2e
@@ -144,4 +163,4 @@ npm run test:local-provider -w @ay-ple/codex-chat-runtime
 npm run test:first-assignment-product-actual -w @ay-ple/server
 ```
 
-아직 DB, 제품 인증, 상태관리 선택지는 고정하지 않습니다. 제품 경로는 Codex Chat의 native conversation contract를 사용하고 [`ModelingRecipe → ModelingInvocation → ModelingRun`](docs/architecture/codex-native-product-composition.md)으로 재사용 정의, 일회성 요청과 실행 receipt를 구분합니다. AY-PLE는 `RawMaterial`, `EvidenceRef`, `StatePatch`, `UserConfirmation`, `SemesterModel` 같은 학업 상태와 Review 경험을 소유합니다. 현재 구현 gap은 [Codex Chat 구현 지도](docs/architecture/codex-chat-implementation-map.md)를 따릅니다.
+아직 DB, AY-PLE 자체 cloud account와 범용 상태관리 선택지는 고정하지 않습니다. 첫 public preview의 Codex 연결은 [ADR 0017](docs/adr/0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md)의 managed ChatGPT Browser OAuth를 채택했지만 아직 구현되지 않았습니다. 제품 경로는 Codex Chat의 native conversation contract를 사용하고 [`ModelingRecipe → ModelingInvocation → ModelingRun`](docs/architecture/codex-native-product-composition.md)으로 재사용 정의, 일회성 요청과 실행 receipt를 구분합니다. AY-PLE는 `RawMaterial`, `EvidenceRef`, `StatePatch`, `UserConfirmation`, `SemesterModel` 같은 학업 상태와 Review 경험을 소유합니다. 현재 구현 gap은 [Codex Chat 구현 지도](docs/architecture/codex-chat-implementation-map.md)를 따릅니다.

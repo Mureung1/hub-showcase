@@ -2,7 +2,7 @@
 
 작성일: 2026-07-08
 
-최종 업데이트: 2026-07-19
+최종 업데이트: 2026-07-22
 
 분류: 활성
 
@@ -12,19 +12,31 @@
 
 ## 목적
 
-이 문서는 AY-PLE MVP의 첫 사용자 시나리오와 검토 화면 구조를 정리한다. 핵심 방향은 **원본 자료와 변경 제안을 함께 보고, 학생이 확인한 내용만 학기 정보에 반영하는 작업공간**이다.
+이 문서는 `Semester Ready` 이후 첫 학업 action의 사용자 시나리오와 검토 화면 구조를 정리한다. 핵심 방향은 **원본 자료와 변경 제안을 함께 보고, 학생이 확인한 내용만 학기 정보에 반영하는 작업공간**이다.
 
 이 시나리오는 학생용 화면을 검증한다. Runtime과 native Codex mapping을 다시 정의하지 않으며, 화면의 action과 자료 선택은 ModelingInvocation의 제품 입력으로 사용되고 결과는 `StatePatch`로 검토된다.
+
+첫 public preview의 release-blocking journey는 새 `SemesterWorkspace`를 scaffold해 `Semester Ready`에 도달하고 같은 public 명령으로 다시 여는 데서 끝난다. 이 문서의 자료 반입·Course·Assignment Review는 그 이후 제품 경험이며 첫 preview에서 현재 제공한다고 주장하지 않는다.
 
 학생이 이해해야 할 한 문장은 다음과 같다.
 
 > AY가 학생이 선택한 원본 자료에서 과제 정보를 찾고, 학생이 근거를 확인하면 그 내용이 학기 정보에 반영된다.
 
+## 시작 전 조건
+
+| 조건 | 의미 |
+| --- | --- |
+| `Semester Ready` | AY-PLE이 생성한 `SemesterWorkspace`의 `WorkspaceManifest`·기본 설정·validation이 완료됐다. Course나 자료가 이미 있다는 뜻은 아니다. |
+| 검토된 자료 반입 | 외부 폴더나 자료 묶음을 `ImportSource`로 검토한 뒤 이 action에서 사용할 자료가 workspace 안의 `RawMaterial`로 반입됐다. |
+| Course 맥락 | `WorkspaceManifest`가 이 scenario의 Course identity와 자료 관계를 소유한다. 폴더명은 identity의 기준이 아니다. |
+
+ImportSource 분석·mapping·migration 자체는 이 Review scenario가 아니라 별도의 post-Ready import journey가 소유한다.
+
 ## 대표 시나리오
 
 | 항목 | 내용 |
 | --- | --- |
-| 학기 작업공간 | 학생이 선택한 N학년 N학기 폴더 |
+| 학기 작업공간 | AY-PLE이 생성·검증한 활성 `SemesterWorkspace` |
 | 과목 | 문제해결글쓰기 |
 | 자료 | TXT로 저장한 LMS 공지와 강의계획서 발췌문 |
 | action | 선택한 자료에서 과제 정보 정리 |
@@ -86,7 +98,7 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 작업공간을 따른다. 
 | 영역 | 역할 | 핵심 문구 |
 | --- | --- | --- |
 | 상단 상태 | 화면의 사용자-facing 상태를 보여준다. 내부 실행 상태는 그대로 노출하지 않는다. | `AY-PLE`, `검토 대기`, `반영됨` |
-| 자료 목록 | 학기 폴더의 자료를 과목 맥락에서 보고 이번 action에 사용할 파일을 고른다. | `문제해결글쓰기`, `lms-outline-notice.txt`, `2개 선택됨` |
+| 자료 목록 | 활성 workspace에 반입된 `RawMaterial`을 Course 맥락에서 보고 이번 action에 사용할 파일을 고른다. | `문제해결글쓰기`, `lms-outline-notice.txt`, `2개 선택됨` |
 | 선택 자료 탭 | 선택한 원본 자료를 미리보기로 전환한다. | `lms-outline-notice.txt`, `problem-solving-syllabus.txt` |
 | 원본 미리보기 | 선택 자료 원문 또는 추출본을 확인한다. | `편집하기`, `프리뷰 보기` |
 | 하단 근거 패널 | AY가 제안한 값과 원본 위치를 preview와 분리해 보여준다. | `마감`, `제출 방식`, `line 3`, `TXT 원문` |
@@ -101,7 +113,7 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 작업공간을 따른다. 
 | action에 약속된 처리법과 결과 구조 | 재사용 작업 계약 | `ModelingRecipe` |
 | 실행 상태 | 한 실행 시도 추적 | 내부 `ModelingRun` receipt |
 
-자료를 체크하거나 drag-and-drop으로 추가했다는 이유만으로 진행 중 작업에 자동 전달하지 않는다. 새 action의 입력으로 사용하거나, 사용자가 현재 작업에 명시적으로 정정을 보낼 때만 전달 여부를 판단한다. Native mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md)을 따른다.
+자료를 체크했다는 이유만으로 진행 중 작업에 자동 전달하지 않는다. 외부 파일이나 폴더의 drag-and-drop은 `ImportSource`를 제시하는 별도 반입 여정이며, 검토 없이 현재 workspace의 `RawMaterial`이나 action 입력이 되지 않는다. 이미 반입된 자료를 새 action의 입력으로 사용하거나 사용자가 현재 작업에 명시적으로 정정을 보낼 때만 전달 여부를 판단한다. Native mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md)을 따른다.
 
 ## Canonical과 Derived
 
@@ -157,7 +169,7 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 작업공간을 따른다. 
 | 긴 전체 대화 기록 | 현재 검토 항목에 묶인 side panel이면 화면 가설을 검증할 수 있다. |
 | 고정 thread/session 관리 UI | 학기·과목·실행과 `Thread`를 고정 대응하지 않는다. |
 | WorkspaceHistory UI | history와 rollback은 후속 capability다. |
-| LMS login/import flow | 자료 intake 자동화보다 첫 Review vertical을 우선한다. |
+| LMS login과 `ImportSource` 반입 flow | 이 문서는 반입이 끝난 뒤의 Review를 다루며 intake·migration은 별도 post-Ready journey가 소유한다. |
 | 외부 calendar sync | MVP 제외 범위다. |
 | 자동 제출 또는 과제 정답 생성 | 제품 방향과 Academic Integrity에 맞지 않는다. |
 
@@ -174,7 +186,7 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 작업공간을 따른다. 
 
 ## 검증 산출물
 
-Browser-native prototype은 검토 중심 학업 작업공간의 화면 구조와 자료 선택부터 반영까지의 전환을 확인하기 위한 산출물이다. 제품 구현의 컴포넌트 구조나 최종 화면 범위로 간주하지 않는다.
+Browser-native prototype은 검토 중심 학업 작업공간의 화면 구조와 자료 선택부터 반영까지의 전환을 확인한 역사적 산출물이다. 현재 First Assignment vertical은 실제 파일·Codex 실행·Review·durable confirmed state까지 구현했지만, prototype을 제품 구현의 컴포넌트 구조나 최종 화면 범위로 간주하지 않는다. 현재 구현 사실은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다.
 
 | 상태 | 실행 링크 | 캡처 asset |
 | --- | --- | --- |

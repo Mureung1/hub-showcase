@@ -8,13 +8,13 @@
 
 ## 목적
 
-이 문서는 AY-PLE의 제품 기능을 official SDK 기반 Codex App Server 경로에 어떻게 얇게 연결하는지 설명한다. 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 조합 결정은 [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), public cutover와 store compatibility는 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)을 따른다. AY-PLE는 별도 Agent workflow engine을 만들지 않고 native Codex 입력과 제어를 조합하며, 앱은 학기 상태와 검토 권한을 소유한다.
+이 문서는 AY-PLE의 제품 기능을 official SDK 기반 Codex App Server 경로에 어떻게 얇게 연결하는지 설명한다. 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 조합 결정은 [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), workspace admission은 [ADR 0014](../adr/0014-create-app-owned-normalized-semester-workspaces.md), public cutover와 store compatibility는 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)을 따른다. AY-PLE는 별도 Agent workflow engine을 만들지 않고 native Codex 입력과 제어를 조합하며, 앱은 학기 상태와 검토 권한을 소유한다.
 
 ## 경계
 
 | AY-PLE 의미 | Codex realization | 경계 |
 | --- | --- | --- |
-| 활성 SemesterWorkspace | 새 thread의 `thread/start.cwd`; 재사용 thread는 기존 `cwd`가 같은지 검증 | `turn/start.cwd`는 해당 turn 이후에도 유지된다. MVP는 workspace가 다르면 새 thread를 시작하며, cross-workspace override는 명시적인 후속 UX 없이는 사용하지 않는다. |
+| 활성 SemesterWorkspace | App-owned admission과 `WorkspaceManifest` validation 뒤 새 thread의 `thread/start.cwd`; 재사용 thread는 기존 `cwd`가 같은지 검증 | `ImportSource`는 workspace나 `cwd`가 아니다. `turn/start.cwd`는 해당 turn 이후에도 유지된다. Workspace가 다르면 새 thread를 시작하며, cross-workspace override는 명시적인 후속 UX 없이는 사용하지 않는다. |
 | SourceSelection | run-scoped `appDataRoot`에 snapshot한 자료의 Markdown link/path를 ModelingRecipe arguments와 함께 한 bounded `TextInput.text`에 렌더링 | 명시적인 작업 입력이지 filesystem permission boundary가 아니다. Original `RawMaterial` path를 native input이나 write target으로 직접 넘기지 않는다. |
 | ModelingRecipe의 Skill | `skill` UserInput variant의 `name`, `path` | native Skill protocol을 사용하며 AY-PLE 전용 plugin 체계를 만들지 않는다. |
 | ModelingRecipe의 prompt template과 ModelingInvocation arguments | 위 SourceSelection reference와 함께 전달하는 bounded `TextInput.text` | Skill에 별도 structured arguments 채널이 없으므로 검증한 값을 text에 렌더링한다. First Assignment vertical은 exact `SkillInput` 하나와 이 `TextInput` 하나를 사용한다. |
@@ -32,6 +32,8 @@
 raw `threadId`, `turnId`, `itemId`, `requestId`와 protocol message는 Codex 통합 내부에 둔다. 제품에는 기능을 복구하거나 결과를 연결하는 데 필요한 correlation과 검증된 의미만 전달한다.
 
 Native `MentionInput`과 `outputSchema`가 존재한다는 사실은 first vertical의 채택 mapping이 아니다. First Assignment는 selected source snapshot의 Markdown link/path를 `TextInput`으로 전달하고, 실제 필요가 확인되기 전에는 별도 resource mention이나 final structured-result channel을 추가하지 않는다.
+
+Workspace schema, `WorkspaceManifest` validation, scaffold와 migration은 이 composition의 Interface가 아니다. 이 mapping은 app-owned admission이 끝난 active workspace를 입력으로 받는다. Current chooser/current-v2 vertical이 선택한 directory를 internal `ready`로 부르는 구현 사실은 adopted admission을 충족했다는 뜻이 아니며, 후속 `ImportSource` 분석·반입 방식도 별도 제품 흐름이 정한다.
 
 ## ModelingRecipe, ModelingInvocation과 ModelingRun
 
@@ -89,4 +91,4 @@ Pinned official source와 official Python SDK는 `TextInput`, `SkillInput`, `Men
 
 현재 지원 결과는 durable Run을 갖는 First Assignment와 Run-free Chat, registered source/revision guard, proposal-only MCP, app-owned 세 갈래 Review transaction, answer 전 continuity loss의 settled recovery·explicit retry, apply 뒤 continuation-loss·no-reapply, source drift 시 native interrupt·explicit rebaseline, store conflict의 exact-byte no-overwrite·explicit reactivation과 학업 상태를 바꾸지 않는 ephemeral 일반 clarification이다. Browser에는 safe bootstrap과 curated activity·clarification, evidence-linked Review·replacement·operation/workspace recovery 결과만 projection하며 native identity, Server-private proposal key, credential, absolute path와 raw MCP payload를 노출하지 않는다. Package와 Server의 세부 동작은 [runtime README](../../packages/codex-chat-runtime/README.md)와 [Server README](../../apps/server/README.md)가 소유한다.
 
-현재 exact local-provider product actual은 수정 요청→fresh replacement proposal→두 번째 Review 수락과 same-Turn terminal을, isolated live-provider trace는 complete Assignment action→첫 Review 수락→confirmed outcome과 clean shutdown을 증명한다. Canonical Browser·Server caller와 root startup은 `/api/product/*`를 사용하며 active ready `SemesterWorkspace`를 exact native `cwd`로 전달한다. Tracer-only HTTP·Browser surface는 compatibility alias 없이 제거됐고, workspace-local current v2 store는 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)의 첫 durable compatibility baseline이다. 횡단 topology와 확인된 gap은 [Codex Chat 구현 지도](codex-chat-implementation-map.md), 작업 순서와 완료 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다. Raw capability의 저수준 근거는 [context delivery 조사](../spikes/codex-app-server-context-delivery/research.md)에 둔다.
+현재 exact local-provider product actual은 수정 요청→fresh replacement proposal→두 번째 Review 수락과 same-Turn terminal을, isolated live-provider trace는 complete Assignment action→첫 Review 수락→confirmed outcome과 clean shutdown을 증명한다. Canonical Browser·Server caller와 root startup은 `/api/product/*`를 사용하며 current internal-ready directory를 exact native `cwd`로 전달한다. 이 current evidence는 app-owned workspace admission을 증명하지 않는다. Tracer-only HTTP·Browser surface는 compatibility alias 없이 제거됐고, workspace-local current v2 store는 [ADR 0013](../adr/0013-adopt-product-only-public-surface-and-v2-store-compatibility-baseline.md)의 첫 durable compatibility baseline이다. 횡단 topology와 확인된 gap은 [Codex Chat 구현 지도](codex-chat-implementation-map.md), 작업 순서와 완료 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다. Raw capability의 저수준 근거는 [context delivery 조사](../spikes/codex-app-server-context-delivery/research.md)에 둔다.

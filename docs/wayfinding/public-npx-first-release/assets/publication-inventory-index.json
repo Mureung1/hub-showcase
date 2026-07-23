@@ -1,0 +1,688 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-07-22",
+  "scope": "Point-in-time inventory와 provenance gap index이며 재배포 또는 publication 허가가 아니다.",
+  "auditedSourceRevision": "022bd4e71f2f2f515864f4a77fafb96e35a3a00b",
+  "classificationDefinitions": {
+    "candidate_include": "제품 release에 필요할 수 있는 확인된 항목이다. 포함 허가를 뜻하지 않으며 owner ticket의 검토가 남아 있다.",
+    "human_review": "출처, 소유권, 필요성 또는 notice evidence를 사람이 확인해야 한다.",
+    "default_exclude_candidate": "첫 public product surface에 필요하지 않거나 camp·planning·private 맥락을 담아 clean snapshot에서 기본 제외를 검토한다.",
+    "regenerate_before_publish": "공개한다면 private·불명확한 원본 대신 public fixture와 기록된 생성 provenance로 다시 만들어야 한다.",
+    "missing_blocker": "지정된 owner ticket이 evidence 또는 contract를 닫기 전에는 publication을 fail closed해야 한다."
+  },
+  "canonicalRosters": {
+    "trackedSource": {
+      "authority": "git tree at auditedSourceRevision",
+      "command": "git ls-tree -r 022bd4e71f2f2f515864f4a77fafb96e35a3a00b",
+      "entryCount": 493,
+      "gitlinkCount": 1
+    },
+    "npmLock": {
+      "path": "package-lock.json",
+      "lockfileVersion": 3,
+      "sha256": "0dcc6babc901be36251e9825a59568b1a9ec304c02a626210ba69886dd5d5086"
+    },
+    "openaiSdkUnpatched": {
+      "path": "packages/codex-chat-runtime/manifests/unpatched.json",
+      "bytes": 20546,
+      "sha256": "ad3deefc4d2ea29dc289e226059d84155d1d8e2e43d4399da610a569737fec17",
+      "fileCount": 88
+    },
+    "openaiSdkPatched": {
+      "path": "packages/codex-chat-runtime/manifests/patched-source.json",
+      "bytes": 31979,
+      "sha256": "db9f0644155f9ab8f396b5263e3539a778e5ca7a49e3b8e49b14be7c32a71f98",
+      "fileCount": 88,
+      "patchCount": 8,
+      "patchStackSha256": "ffc43da6e5e7a146016404db54968d37d849b778e5e9b04db680cac4124fc1c9",
+      "sourceTreeSha256": "c0f19b682d4cf182448ebd1e47eaecb9fac3c478c3c7899fd2e10b913b30aa06"
+    },
+    "productionRuntime": {
+      "path": "packages/codex-chat-runtime/manifests/production-runtime-darwin-arm64.json",
+      "bytes": 11239,
+      "sha256": "a12fa91bc247b377273f242526bb8eb8d843c2ec9a1d613b70434a479b6804b7"
+    }
+  },
+  "trackedSourceGroups": [
+    {
+      "id": "runtime-vendored-openai-sdk",
+      "pathRule": "packages/codex-chat-runtime/python/openai-codex/**",
+      "entryCount": 88,
+      "classification": "human_review",
+      "reason": "OpenAI source snapshot이며 exact upstream와 patch evidence는 있지만 재배포 판정은 Ticket 003a가 소유한다."
+    },
+    {
+      "id": "runtime-upstream-ledger",
+      "pathRule": "packages/codex-chat-runtime/upstream/**",
+      "entryCount": 12,
+      "classification": "candidate_include",
+      "reason": "OpenAI LICENSE·NOTICE와 여덟 patch의 provenance ledger다."
+    },
+    {
+      "id": "runtime-manifests",
+      "pathRule": "packages/codex-chat-runtime/manifests/**",
+      "entryCount": 3,
+      "classification": "candidate_include",
+      "reason": "source derivation과 macOS arm64 Runtime의 canonical roster다."
+    },
+    {
+      "id": "runtime-first-party-other",
+      "pathRule": "packages/codex-chat-runtime/** excluding vendored snapshot, upstream ledger and manifests",
+      "entryCount": 53,
+      "classification": "candidate_include",
+      "reason": "AY-PLE Runtime adapter·bridge·verifier·tests이며 first-party root license 결정이 필요하다."
+    },
+    {
+      "id": "product-contract",
+      "pathRule": "packages/product-contract/**",
+      "entryCount": 11,
+      "classification": "candidate_include",
+      "reason": "Browser-safe product contract다."
+    },
+    {
+      "id": "product-apps",
+      "pathRule": "apps/**",
+      "entryCount": 66,
+      "classification": "candidate_include",
+      "reason": "Chat Shell 27개와 Server 39개의 tracked entry다."
+    },
+    {
+      "id": "root-scripts",
+      "pathRule": "scripts/**",
+      "entryCount": 9,
+      "classification": "human_review",
+      "reason": "개발·dogfood tooling과 public production tooling 후보를 Ticket 005·006에서 구분해야 한다."
+    },
+    {
+      "id": "brand-assets",
+      "pathRule": "assets/brand/**",
+      "entryCount": 3,
+      "classification": "human_review",
+      "reason": "파일 identity는 고정됐지만 creator·input·rights provenance가 저장되어 있지 않다."
+    },
+    {
+      "id": "camp-artifacts",
+      "pathRule": "artifacts/**",
+      "entryCount": 43,
+      "classification": "default_exclude_candidate",
+      "reason": "camp demo·presentation evidence이며 public product runtime에 필요하지 않다."
+    },
+    {
+      "id": "planning-documents",
+      "pathRule": "docs/**",
+      "entryCount": 149,
+      "classification": "default_exclude_candidate",
+      "reason": "내부 planning·ticket·Wayfinder·archive가 섞여 있어 Ticket 005의 reviewed allowlist가 필요하다."
+    },
+    {
+      "id": "agent-tooling",
+      "pathRule": ".agents/**, skills-lock.json and AGENTS.md",
+      "entryCount": 46,
+      "classification": "default_exclude_candidate",
+      "reason": "camp repository operation과 외부 skill snapshot metadata이며 제품 실행에 필요하지 않다."
+    },
+    {
+      "id": "github-camp-automation",
+      "pathRule": ".github/**",
+      "entryCount": 2,
+      "classification": "default_exclude_candidate",
+      "reason": "camp submission template와 broad auto-merge workflow이므로 public repository용으로 그대로 복사하지 않는다."
+    },
+    {
+      "id": "reference-submodule",
+      "pathRule": "references/**",
+      "entryCount": 2,
+      "classification": "default_exclude_candidate",
+      "reason": "OpenAI Codex gitlink와 설명 파일이며 tracked Runtime snapshot과 중복된다."
+    },
+    {
+      "id": "root-other",
+      "pathRule": "remaining root files",
+      "entryCount": 6,
+      "classification": "human_review",
+      "reason": "workspace metadata와 repository guidance를 clean snapshot 목적에 맞게 선별해야 한다."
+    }
+  ],
+  "upstreamSource": {
+    "repository": "https://github.com/openai/codex.git",
+    "commit": "8c68d4c87dc54d38861f5114e920c3de2efa5876",
+    "tag": "rust-v0.144.4",
+    "gitlinkPath": "references/openai-codex",
+    "licenseEvidence": [
+      {
+        "path": "packages/codex-chat-runtime/upstream/LICENSE",
+        "sha256": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc"
+      },
+      {
+        "path": "packages/codex-chat-runtime/upstream/NOTICE",
+        "sha256": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915"
+      }
+    ],
+    "redistributionDecision": "deferred_to_ticket_003a"
+  },
+  "npm": {
+    "publicLauncher": {
+      "status": "absent",
+      "evidence": "다섯 workspace manifest가 모두 private이며 어느 manifest에도 bin이 없다."
+    },
+    "manifestDefaults": {
+      "version": "0.0.0",
+      "private": true,
+      "missingFieldsInAll": [
+        "license",
+        "description",
+        "repository",
+        "homepage",
+        "bugs",
+        "author",
+        "keywords",
+        "engines",
+        "packageManager",
+        "publishConfig",
+        "files",
+        "bin"
+      ]
+    },
+    "manifests": [
+      {
+        "path": "package.json",
+        "name": "hub",
+        "version": "0.0.0",
+        "private": true,
+        "hasExports": false,
+        "hasBin": false
+      },
+      {
+        "path": "apps/chat-shell/package.json",
+        "name": "@ay-ple/chat-shell",
+        "version": "0.0.0",
+        "private": true,
+        "hasExports": false,
+        "hasBin": false
+      },
+      {
+        "path": "apps/server/package.json",
+        "name": "@ay-ple/server",
+        "version": "0.0.0",
+        "private": true,
+        "hasExports": false,
+        "hasBin": false
+      },
+      {
+        "path": "packages/codex-chat-runtime/package.json",
+        "name": "@ay-ple/codex-chat-runtime",
+        "version": "0.0.0",
+        "private": true,
+        "hasExports": true,
+        "hasBin": false
+      },
+      {
+        "path": "packages/product-contract/package.json",
+        "name": "@ay-ple/product-contract",
+        "version": "0.0.0",
+        "private": true,
+        "hasExports": true,
+        "hasBin": false
+      }
+    ],
+    "lockSummary": {
+      "packageRecords": 148,
+      "workspaceManifestRecords": 5,
+      "workspaceLinkRecords": 4,
+      "externalPackageRecords": 139,
+      "uniqueExternalPackageNames": 133,
+      "uniqueExternalCoordinates": 138,
+      "directExternalPackageNames": 16,
+      "directExternalRecords": 17,
+      "transitiveExternalRecords": 122,
+      "productionExternalRecords": 72,
+      "devOnlyExternalRecords": 67,
+      "externalRecordsWithLicenseString": 139,
+      "externalRecordsWithResolved": 0,
+      "externalRecordsWithIntegrity": 0,
+      "licenseMetadataCounts": {
+        "MIT": 118,
+        "ISC": 10,
+        "Apache-2.0": 5,
+        "BSD-3-Clause": 2,
+        "MPL-2.0": 2,
+        "BSD-2-Clause": 1,
+        "0BSD": 1
+      },
+      "darwinSpecificOptionalOrDevRecords": 6,
+      "npmLsAll": {
+        "exitCode": 0,
+        "problems": []
+      }
+    },
+    "directExternalCoordinates": [
+      "dotenv@17.4.2",
+      "express@5.2.1",
+      "lucide-react@1.24.0",
+      "react@19.2.7",
+      "react-dom@19.2.7",
+      "@types/express@5.0.6",
+      "@types/node@24.13.2",
+      "@types/node@26.1.1",
+      "@types/react@19.2.17",
+      "@types/react-dom@19.2.3",
+      "@vitejs/plugin-react@6.0.3",
+      "concurrently@9.2.3",
+      "oxlint@1.72.0",
+      "playwright@1.61.1",
+      "tsx@4.23.0",
+      "typescript@6.0.3",
+      "vite@8.1.3"
+    ]
+  },
+  "runtime": {
+    "target": "darwin-arm64",
+    "verification": {
+      "productionRuntimeCommand": "npm run verify:production-runtime -w @ay-ple/codex-chat-runtime",
+      "productionRuntimeResult": "passed",
+      "provenanceCommand": "npm run test:provenance -w @ay-ple/codex-chat-runtime",
+      "provenanceResult": "17 tests passed",
+      "cleanMaterializations": 2
+    },
+    "canonicalBundle": {
+      "path": "bundle",
+      "fileCount": 2539,
+      "symlinkCount": 9,
+      "regularFileBytes": 366692788,
+      "rosterSha256": "4b72a60735d6b6d1489bab9fa937889f296ba2268c3fc0c433ba84ca10b36b7a",
+      "nodeProductionFactoryInput": "manifest.json and bundle/"
+    },
+    "materializedRootObservation": {
+      "classification": "human_review",
+      "reason": "Repository verify gate는 build-wheels, bundle, downloads, manifest.json, wheels의 exact top-level을 요구한다. Public archive scope와 그 archive 전용 verifier는 아직 결정되지 않았다.",
+      "fileCount": 2549,
+      "symlinkCount": 9,
+      "regularFileBytes": 504603161,
+      "sections": {
+        "bundle": {
+          "fileCount": 2539,
+          "regularFileBytes": 366692788
+        },
+        "wheels": {
+          "fileCount": 7,
+          "regularFileBytes": 119053908
+        },
+        "downloads": {
+          "fileCount": 1,
+          "regularFileBytes": 17463291
+        },
+        "build-wheels": {
+          "fileCount": 1,
+          "regularFileBytes": 1381935
+        },
+        "manifest.json": {
+          "fileCount": 1,
+          "regularFileBytes": 11239
+        }
+      }
+    },
+    "standalonePython": {
+      "distribution": "CPython",
+      "version": "3.10.18",
+      "build": "20250818",
+      "artifactSha256": "f38f5fcbe39e657742e21a12c890f9f12d20d2c0eefaa2e6cd4a975f3f7f9dcd",
+      "licenseObservation": "CPython LICENSE.txt와 bundled pip·setuptools license tree는 보존되지만 nested component는 canonical component inventory에 열거되지 않는다.",
+      "classification": "human_review"
+    },
+    "buildBackend": {
+      "distribution": "uv-build",
+      "version": "0.11.19",
+      "sha256": "7033cf1398d05293dca9d2265730ae35ffd49631fea844c75742f0f332c4f45b",
+      "licenseObservation": "Build-only wheel에서 Apache와 MIT license file을 관찰했다.",
+      "releaseRole": "build_only"
+    },
+    "wheels": [
+      {
+        "distribution": "annotated-types",
+        "version": "0.7.0",
+        "sha256": "1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53",
+        "licenseObservation": "License와 License-Expression field는 없고 MIT classifier와 License-File: LICENSE는 있다.",
+        "classification": "human_review"
+      },
+      {
+        "distribution": "openai-codex",
+        "version": "0.0.0.dev0",
+        "sha256": "9259319c79132ffa16e1ba46d3e20a88be3b5851501f8ab7812bfb42ce6427aa",
+        "licenseObservation": "Apache-2.0 expression이 있고 tracked OpenAI LICENSE·NOTICE를 별도로 복사한다.",
+        "classification": "human_review"
+      },
+      {
+        "distribution": "openai-codex-cli-bin",
+        "version": "0.144.4",
+        "sha256": "05db505a9c7f020f58b70837a94e00d32a50086986c267bcc44ea97b573d4a05",
+        "licenseObservation": "Apache-2.0 metadata가 있지만 wheel에는 dedicated LICENSE·NOTICE file이 없다.",
+        "classification": "human_review"
+      },
+      {
+        "distribution": "pydantic",
+        "version": "2.13.4",
+        "sha256": "45a282cde31d808236fd7ea9d919b128653c8b38b393d1c4ab335c62924d9aba",
+        "licenseObservation": "MIT metadata와 license file이 있다.",
+        "classification": "human_review"
+      },
+      {
+        "distribution": "pydantic-core",
+        "version": "2.46.4",
+        "sha256": "da4b951fe36dc7c3a1ccb4e3cd1747c3542b8c9ceede8fc86cae054e764485f5",
+        "licenseObservation": "MIT metadata와 license file이 있다.",
+        "classification": "human_review"
+      },
+      {
+        "distribution": "typing-extensions",
+        "version": "4.15.0",
+        "sha256": "f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548",
+        "licenseObservation": "PSF-2.0 metadata와 license file이 있다.",
+        "classification": "human_review"
+      },
+      {
+        "distribution": "typing-inspection",
+        "version": "0.4.2",
+        "sha256": "4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7",
+        "licenseObservation": "MIT metadata와 license file이 있다.",
+        "classification": "human_review"
+      }
+    ],
+    "embeddedExecutables": [
+      {
+        "name": "codex",
+        "path": "bundle/site-packages/codex_cli_bin/bin/codex",
+        "observedVersion": "codex-cli 0.144.4",
+        "bytes": 260406464,
+        "sha256": "3302acbda5f53de1a71ebdb0c0f2aae0d47f9324aa9fb6b4e78a47014fd51c7d",
+        "componentEvidence": "Native wheel과 complete bundle digest만 있다.",
+        "classification": "human_review"
+      },
+      {
+        "name": "codex-code-mode-host",
+        "path": "bundle/site-packages/codex_cli_bin/bin/codex-code-mode-host",
+        "observedVersion": null,
+        "bytes": 46374288,
+        "sha256": "d0ace4fdb7f9d3872cb158c1493bdb3b2bfe4cb3c0d4c5dfaa3e0e2762574b21",
+        "componentEvidence": "Canonical production manifest가 개별 component로 inventory하지 않는다.",
+        "classification": "missing_blocker"
+      },
+      {
+        "name": "rg",
+        "path": "bundle/site-packages/codex_cli_bin/codex-path/rg",
+        "observedVersion": "ripgrep 15.1.0 rev af60c2de9d",
+        "bytes": 4048816,
+        "sha256": "4fdf1d8365af224bc70e3c1490d8461d859c37cc70e739a11e987af0215f3e94",
+        "componentEvidence": "Upstream submodule에 source URL·digest가 있지만 release manifest에는 개별 license·notice evidence가 없다.",
+        "classification": "missing_blocker"
+      },
+      {
+        "name": "zsh",
+        "path": "bundle/site-packages/codex_cli_bin/codex-resources/zsh/bin/zsh",
+        "observedVersion": "zsh 5.9.0.3-test",
+        "bytes": 737520,
+        "sha256": "b69893d9da08786211bac0862212e26a8a31af24eb77da21692671c58d388b8d",
+        "componentEvidence": "Upstream submodule에 source URL·digest와 patched-source commit이 있지만 release manifest에는 개별 license·notice evidence가 없다.",
+        "classification": "missing_blocker"
+      }
+    ],
+    "licenseFilesObservedInBundle": [
+      "OpenAI LICENSE·NOTICE",
+      "CPython LICENSE.txt와 Python dependency license tree",
+      "Production dependency wheel license file 5개"
+    ],
+    "licenseFilesNotObservedAsDedicatedComponentEvidence": [
+      "openai-codex-cli-bin wheel의 LICENSE·NOTICE",
+      "codex-code-mode-host의 license·notice",
+      "rg의 license·notice",
+      "zsh의 license·notice"
+    ]
+  },
+  "media": [
+    {
+      "path": "artifacts/camp-demo/assets/guided-demo-confirmed.png",
+      "bytes": 341102,
+      "sha256": "443293d603bcb3811887bcd3c7e5280fab6c620aa6ce105f99a51134a406ced3",
+      "dimensions": "1440x900",
+      "classification": "default_exclude_candidate"
+    },
+    {
+      "path": "artifacts/camp-demo/assets/guided-demo-evidence.png",
+      "bytes": 342073,
+      "sha256": "e93059fd10a62b2cd3d1ca4cd9c6f83dc4c1afa57b8794523df8eebfe336a593",
+      "dimensions": "1440x900",
+      "classification": "default_exclude_candidate"
+    },
+    {
+      "path": "artifacts/camp-demo/assets/presentation-title.png",
+      "bytes": 215022,
+      "sha256": "81224cd7c2e6c5c106802b8652470714b98c5a41c7556d64c56b3a27548c3aec",
+      "dimensions": "1440x900",
+      "classification": "default_exclude_candidate"
+    },
+    {
+      "path": "artifacts/camp-demo/assets/runtime-inspector-completed.jpg",
+      "bytes": 75053,
+      "sha256": "495efc73d7da8b2880fadf2ab6d6f6fe325e42681b751b4b0204127a382bd7d1",
+      "dimensions": "1265x712",
+      "classification": "default_exclude_candidate"
+    },
+    {
+      "path": "artifacts/camp-demo/assets/semester-materials-folder.png",
+      "bytes": 151715,
+      "sha256": "2baeb5363a7d52f059b7c295d6f09267afce6eaf900f3cb6e01087edc8ae5ed9",
+      "dimensions": "466x1528",
+      "classification": "regenerate_before_publish",
+      "reason": "실제 학기 폴더 구조를 담은 private-context screenshot이다."
+    },
+    {
+      "path": "assets/brand/ay-ple-logo.png",
+      "bytes": 330814,
+      "sha256": "832a641b29ed11114e1b7233662a948fd8011488bdfa7621ed226b64e256481f",
+      "dimensions": "1095x448",
+      "classification": "human_review"
+    },
+    {
+      "path": "assets/brand/ay-ple-mark.png",
+      "bytes": 142677,
+      "sha256": "c9b3a93435780779b59266a01da759d626c126b596e38b197fe2211571c8f839",
+      "dimensions": "512x512",
+      "classification": "human_review"
+    },
+    {
+      "path": "assets/brand/ay-profile.png",
+      "bytes": 753633,
+      "sha256": "21db21e3396218013bf94fa4b8626a38ab243525b895a8ba603d72953645e6de",
+      "dimensions": "923x996",
+      "classification": "human_review"
+    },
+    {
+      "path": "docs/assets/pr/2026-07-09-runtime-inspector.png",
+      "bytes": 162517,
+      "sha256": "f781a4a4abe08cc0ef1d17c6fcfda482eb93fe0be2ae783473fac02a00470cc6",
+      "dimensions": "1440x1050",
+      "classification": "default_exclude_candidate"
+    },
+    {
+      "path": "docs/product/assets/ay-ple-prototype-accepted.png",
+      "bytes": 169987,
+      "sha256": "8077efd7319838aaee3a7f69b39cb380dd99f1f6bbfe909c34389b3999e0e9b6",
+      "dimensions": "1920x1080",
+      "classification": "default_exclude_candidate"
+    },
+    {
+      "path": "docs/product/assets/ay-ple-prototype-review.png",
+      "bytes": 159873,
+      "sha256": "fc44d782ede308b0ca9188e2efb219cf326ed9c6408fa07f1796ecd77f19f75c",
+      "dimensions": "1920x1080",
+      "classification": "default_exclude_candidate"
+    }
+  ],
+  "repositorySafetyObservations": {
+    "rootFirstPartyFilesAbsent": [
+      "LICENSE",
+      "NOTICE",
+      "THIRD_PARTY_NOTICES",
+      "SECURITY.md",
+      "CONTRIBUTING.md",
+      "CODE_OF_CONDUCT.md",
+      ".npmignore"
+    ],
+    "ignoredSensitiveState": [
+      {
+        "path": "packages/codex-chat-runtime/.artifacts/prototype-first-vertical-auth/auth.json",
+        "contentsRead": false,
+        "ignoreAuthority": "packages/codex-chat-runtime/.gitignore"
+      }
+    ],
+    "ignoredLargeRuntimeState": {
+      "path": "packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64",
+      "approximateBytes": 487000000
+    },
+    "ignoredArtifactRootApproximateBytes": 1300000000,
+    "historyShape": {
+      "reachableCommitCount": 642,
+      "mergeCommitCount": 26,
+      "authorDisplayNameEmailPairs": 3,
+      "distinctEmailIdentities": 2
+    },
+    "secretShapeHeuristic": {
+      "scope": "tracked snapshot and added/removed text diff lines in history reachable from auditedSourceRevision; reference gitlink contents excluded",
+      "historyCommand": "git log 022bd4e71f2f2f515864f4a77fafb96e35a3a00b --format= --patch --no-ext-diff -- . ':(exclude)references/openai-codex'",
+      "patterns": {
+        "privateKeyHeader": "-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----",
+        "openAIKeyShape": "sk-[A-Za-z0-9_-]{20,}",
+        "githubTokenShape": "gh[pousr]_[A-Za-z0-9]{20,}",
+        "awsAccessKeyShape": "AKIA[0-9A-Z]{16}",
+        "slackTokenShape": "xox[baprs]-[A-Za-z0-9-]{10,}"
+      },
+      "currentTrackedPathMatches": 0,
+      "reachableHistoryDiffLineMatches": {
+        "privateKeyHeader": 0,
+        "openAIKeyShape": 0,
+        "githubTokenShape": 0,
+        "awsAccessKeyShape": 0,
+        "slackTokenShape": 0
+      },
+      "limitations": "재현 가능한 regex heuristic일 뿐 dedicated secret scanner가 아니다. History, unreachable object, binary file 또는 credential validity를 승인하지 않는다."
+    },
+    "dedicatedSecretScannerAvailable": false,
+    "trackedPrivacyPatternObservation": {
+      "absoluteUserPath": {
+        "regex": "/Users/[A-Za-z0-9._-]+/",
+        "pathCount": 3,
+        "paths": [
+          "apps/server/src/assignment-mcp-host.test.ts",
+          "docs/tickets/2026-07-17-codex-chat-only-cutover/004-delete-legacy-residue-and-handoff.md",
+          "docs/wayfinding/public-npx-first-release/map.md"
+        ]
+      },
+      "campOrPrivateContext": {
+        "regex": "swh3467|N180_하성욱|하성욱|2nd-1st-semester|Desktop/code",
+        "pathCount": 9,
+        "paths": [
+          ".agents/skills/ask-matt/SKILL.md",
+          ".agents/skills/camp-pr/SKILL.md",
+          ".agents/skills/prototype/SKILL.md",
+          "AGENTS.md",
+          "artifacts/pro-bridge/codex-chat-foundation-direction-review-2026-07-18/question-1.md",
+          "docs/agents/issue-tracker.md",
+          "docs/tickets/2026-07-17-codex-chat-only-cutover/004-delete-legacy-residue-and-handoff.md",
+          "docs/wayfinding/public-npx-first-release/assets/parallel-delivery-collision-audit.md",
+          "docs/wayfinding/public-npx-first-release/map.md"
+        ]
+      },
+      "emailShape": {
+        "regex": "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}",
+        "pathCount": 4,
+        "paths": [
+          "packages/codex-chat-runtime/python/openai-codex/sdk/python/tests/test_app_server_login.py",
+          "packages/codex-chat-runtime/scripts/test_exact_sdk.py",
+          "packages/codex-chat-runtime/upstream/patches/0002-bounded-notification-routing.patch",
+          "packages/codex-chat-runtime/upstream/patches/0005-strict-response-classification.patch"
+        ]
+      },
+      "method": "git grep -IlE <regex> 022bd4e71f2f2f515864f4a77fafb96e35a3a00b -- .",
+      "note": "Path matches require contextual review; some are test fixtures, vendored source or planning records."
+    }
+  },
+  "gaps": [
+    {
+      "id": "PUB-INV-001",
+      "summary": "AY-PLE first-party root license와 copyright owner가 없다.",
+      "classification": "missing_blocker",
+      "ownerTickets": ["005"]
+    },
+    {
+      "id": "PUB-INV-002",
+      "summary": "Public npm package, bin entrypoint, package identity와 pack allowlist가 없다.",
+      "classification": "missing_blocker",
+      "ownerTickets": ["006", "015"]
+    },
+    {
+      "id": "PUB-INV-003",
+      "summary": "Third-party 재배포 의무와 archive·root notice 배치가 결정되지 않았다.",
+      "classification": "missing_blocker",
+      "ownerTickets": ["003a"]
+    },
+    {
+      "id": "PUB-INV-004",
+      "summary": "Exact Runtime release archive 경계와 public release descriptor가 결정되지 않았다.",
+      "classification": "missing_blocker",
+      "ownerTickets": ["007"]
+    },
+    {
+      "id": "PUB-INV-005",
+      "summary": "codex-code-mode-host, rg, zsh의 개별 canonical source·version·license·notice evidence가 release manifest에 없다.",
+      "classification": "missing_blocker",
+      "ownerTickets": ["003a", "007"]
+    },
+    {
+      "id": "PUB-INV-006",
+      "summary": "현재 canonical evidence는 8 patches인데 upstream/UPSTREAM.md는 아직 5 patches와 폐기된 patched SDK wheel digest를 설명한다.",
+      "classification": "missing_blocker",
+      "ownerTickets": ["003a", "007"]
+    },
+    {
+      "id": "PUB-INV-007",
+      "summary": "package-lock.json은 version·license string을 기록하지만 external resolved URL·integrity digest가 없다.",
+      "classification": "human_review",
+      "ownerTickets": ["006", "015"]
+    },
+    {
+      "id": "PUB-INV-008",
+      "summary": "npm pack-content evidence, SBOM, dedicated current-tree·history secret scan과 publication gate가 없다.",
+      "classification": "missing_blocker",
+      "ownerTickets": ["015"]
+    },
+    {
+      "id": "PUB-INV-009",
+      "summary": "현재 hub source에 private·camp context가 있고 dedicated current-tree·history secret scan이 없으며 public lineage·scan policy가 미정이다.",
+      "classification": "missing_blocker",
+      "ownerTickets": ["005", "015"]
+    },
+    {
+      "id": "PUB-INV-010",
+      "summary": "Brand asset의 creator, source input, generation method와 rights provenance 기록이 없다.",
+      "classification": "human_review",
+      "ownerTickets": ["005"]
+    },
+    {
+      "id": "PUB-INV-011",
+      "summary": "Camp automation, agent tooling, planning evidence와 reference gitlink에 reviewed public clean-snapshot allowlist가 필요하다.",
+      "classification": "missing_blocker",
+      "ownerTickets": ["005"]
+    },
+    {
+      "id": "PUB-INV-012",
+      "summary": "Ignored auth와 1.3GB artifact state는 gitignore에만 의존하지 말고 explicit packaging allowlist로 제외해야 한다.",
+      "classification": "missing_blocker",
+      "ownerTickets": ["006", "007", "015"]
+    },
+    {
+      "id": "PUB-INV-013",
+      "summary": "Standalone CPython의 nested pip·setuptools·vendored license closure는 보존되지만 release component로 열거되지 않는다.",
+      "classification": "human_review",
+      "ownerTickets": ["003a"]
+    }
+  ]
+}

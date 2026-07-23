@@ -6,6 +6,8 @@
 
 대체한 결정: 기존 `HeadlessCodexClientHost` 제품 seam과 community TypeScript fork 기반 자체 runtime 계획
 
+관련 제품 인증 결정: [ADR 0017 — 제품 account lifecycle에 Codex-managed Browser OAuth를 사용한다](0017-use-codex-managed-browser-oauth-for-product-account-lifecycle.md). 이 ADR은 official SDK·process mechanics를 계속 소유하고, managed account authority와 product lifecycle은 ADR 0017이 소유한다.
+
 ## 맥락
 
 AY-PLE의 첫 장기 실행 Codex client를 설계하는 동안 App Server protocol에서 TypeScript client semantics를 새로 만들고, 이후 community TypeScript client 전체를 fork해 발전시키는 경로를 시도했다. 그러나 exact official source에는 process lifecycle, initialize/initialized, sole reader, response routing, notification queue, native thread·turn API, streaming, interrupt와 close를 이미 구현한 Python SDK가 있다.
