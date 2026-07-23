@@ -616,6 +616,10 @@ test('extracts one canonical archive into an exact verified staging tree', async
       regularFileBytes: 149,
       symlinkCount: 1,
     })
+    assert.equal(
+      verified.kind,
+      'runtime_staging_verification_snapshot',
+    )
     assert.equal(verified.stagingRoot, fixture.staging.path)
     assert.equal(
       verified.runtimeRoot,
@@ -1383,6 +1387,50 @@ test('failure after recipient writes preserves all staging residue', async () =>
         failureCode: 'runtime_recovery_required',
         noticeBytes: 'AY-PLE notice\n',
         userBytes: 'user bytes\n',
+      },
+    )
+  })
+})
+
+test('final verification rejects same-name replacement after file open', async () => {
+  await withFixture(async (fixture) => {
+    const runtimeRoot = path.join(fixture.staging.path, 'runtime')
+    const notice = path.join(runtimeRoot, 'NOTICE')
+    const openedNotice = path.join(fixture.root, 'opened-NOTICE')
+    let failureCode: string | undefined
+    let returnedKind: string | undefined
+    let replaced = false
+
+    try {
+      const result = await extractFixture(fixture, {
+        beforeFinalFileVerification: async (entry) => {
+          if (!replaced && entry.path === 'NOTICE') {
+            replaced = true
+            await rename(notice, openedNotice)
+            await writeFile(notice, 'user bytes!!!\n', { mode: 0o644 })
+          }
+        },
+      })
+      returnedKind = result.kind
+    } catch (error) {
+      assert.equal(error instanceof RuntimeReleaseAuthorityError, true)
+      failureCode = (error as RuntimeReleaseAuthorityError).failure.code
+    }
+
+    assert.deepEqual(
+      {
+        failureCode,
+        openedBytes: await readFile(openedNotice, 'utf8'),
+        replaced,
+        replacementBytes: await readFile(notice, 'utf8'),
+        returnedKind,
+      },
+      {
+        failureCode: 'runtime_recovery_required',
+        openedBytes: 'AY-PLE notice\n',
+        replaced: true,
+        replacementBytes: 'user bytes!!!\n',
+        returnedKind: undefined,
       },
     )
   })

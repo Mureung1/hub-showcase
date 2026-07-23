@@ -108,8 +108,8 @@ type ArchivePassMode =
       readonly testOptions: RuntimeArchiveExtractionTestOptions
     }
 
-export type RuntimeVerifiedStaging = {
-  readonly kind: 'runtime_verified_staging'
+export type RuntimeStagingVerificationSnapshot = {
+  readonly kind: 'runtime_staging_verification_snapshot'
   readonly release: RuntimeReleaseAdmission['identity']
   readonly stagingRoot: string
   readonly runtimeRoot: string
@@ -166,14 +166,17 @@ export type RuntimeArchiveExtractionTestOptions = {
 }
 
 /**
- * Turns one descriptor-bound archive into a verified, unpublished staging
- * tree. The archive is fully scanned before the first recipient entry is
- * created, and the returned tree is independently re-read from disk.
+ * Turns one descriptor-bound archive into a point-in-time verification
+ * snapshot of an unpublished staging tree. The archive is fully scanned
+ * before the first recipient entry is created, and the returned tree is
+ * independently re-read from disk. A later publisher must establish its
+ * own lease and fresh readback rather than treating this snapshot as
+ * durable path authority.
  */
 export async function extractVerifiedRuntimeArchive(
   input: RuntimeArchiveExtractionInput,
   testOptions: RuntimeArchiveExtractionTestOptions = {},
-): Promise<RuntimeVerifiedStaging> {
+): Promise<RuntimeStagingVerificationSnapshot> {
   assertInputBindings(input)
   const canonicalManifestBytes = Buffer.from(
     input.canonicalManifestBytes,
@@ -283,7 +286,7 @@ export async function extractVerifiedRuntimeArchive(
       stagingIdentity,
     })
     return {
-      kind: 'runtime_verified_staging',
+      kind: 'runtime_staging_verification_snapshot',
       release: input.admission.identity,
       stagingRoot: input.staging.path,
       runtimeRoot,
@@ -1939,32 +1942,100 @@ async function verifyMaterializedFile(
         parent.hashVerifiedFile(opened.handle, expected.bytes),
     )
     handleOpen = false
-    assertVerifiedCapabilityEntry(
-      verified.stats,
+    assertVerifiedMaterializedFileRead({
       absolute,
-      'file',
-      input.expectedOwnerUid,
-      input.stagingIdentity.device,
-      fileMode(expected),
-      identity,
+      expected,
+      expectedDevice: input.stagingIdentity.device,
+      expectedIdentity: identity,
+      expectedOwnerUid: input.expectedOwnerUid,
+      canonicalManifestBytes: input.canonicalManifestBytes,
+      verified,
+    })
+
+    const rebound = await observeCapability(
+      'runtime_archive_extracted_file_reopen_failed',
+      () => parent.openVerifiedFile(leaf),
     )
-    if (
-      verified.bytes !== expected.bytes ||
-      verified.sha256 !== expected.sha256 ||
-      (expected.path === 'manifest.json' &&
-        (verified.bytes !== input.canonicalManifestBytes.byteLength ||
-          verified.sha256 !==
-            sha256(input.canonicalManifestBytes)))
-    ) {
-      throw runtimeAuthorityError('runtime_integrity_failed', {
-        kind: 'runtime_archive_extracted_file_mismatch',
-        path: expected.path,
+    let reboundHandleOpen = true
+    try {
+      assertVerifiedCapabilityEntry(
+        rebound.stats,
+        absolute,
+        'file',
+        input.expectedOwnerUid,
+        input.stagingIdentity.device,
+        fileMode(expected),
+        identity,
+      )
+      if (rebound.stats.size !== String(expected.bytes)) {
+        throw runtimeAuthorityError('runtime_integrity_failed', {
+          kind: 'runtime_archive_extracted_file_size_mismatch',
+          path: expected.path,
+        })
+      }
+      const reboundVerified = await observeCapability(
+        'runtime_archive_extracted_file_reread_failed',
+        () =>
+          parent.hashVerifiedFile(rebound.handle, expected.bytes),
+      )
+      reboundHandleOpen = false
+      assertVerifiedMaterializedFileRead({
+        absolute,
+        expected,
+        expectedDevice: input.stagingIdentity.device,
+        expectedIdentity: identity,
+        expectedOwnerUid: input.expectedOwnerUid,
+        canonicalManifestBytes: input.canonicalManifestBytes,
+        verified: reboundVerified,
       })
+    } finally {
+      if (reboundHandleOpen) {
+        await parent.closeHandle(rebound.handle).catch(() => undefined)
+      }
     }
   } finally {
     if (handleOpen) {
       await parent.closeHandle(opened.handle).catch(() => undefined)
     }
+  }
+}
+
+function assertVerifiedMaterializedFileRead(input: {
+  readonly absolute: string
+  readonly canonicalManifestBytes: Uint8Array
+  readonly expected:
+    | RuntimeManifestFileEntry
+    | ArchiveManifestEntry
+  readonly expectedDevice: string
+  readonly expectedIdentity: RuntimeFileSystemIdentity
+  readonly expectedOwnerUid: number
+  readonly verified: {
+    readonly bytes: number
+    readonly sha256: string
+    readonly stats: RuntimeCapabilityStats
+  }
+}): void {
+  assertVerifiedCapabilityEntry(
+    input.verified.stats,
+    input.absolute,
+    'file',
+    input.expectedOwnerUid,
+    input.expectedDevice,
+    fileMode(input.expected),
+    input.expectedIdentity,
+  )
+  if (
+    input.verified.bytes !== input.expected.bytes ||
+    input.verified.sha256 !== input.expected.sha256 ||
+    (input.expected.path === 'manifest.json' &&
+      (input.verified.bytes !== input.canonicalManifestBytes.byteLength ||
+        input.verified.sha256 !==
+          sha256(input.canonicalManifestBytes)))
+  ) {
+    throw runtimeAuthorityError('runtime_integrity_failed', {
+      kind: 'runtime_archive_extracted_file_mismatch',
+      path: input.expected.path,
+    })
   }
 }
 
