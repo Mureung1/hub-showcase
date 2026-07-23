@@ -180,7 +180,7 @@ function RecipeInputForm({ isPrepared, onCancel, onPrepare }) {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="min-h-11 rounded-lg border border-[#061c16] bg-[#15332a] bg-[url(/design-assets/cookbook/leather-texture-tile.png)] bg-center bg-[length:220px] px-5 text-sm font-semibold text-[#f3e1b4]"
+            className="min-h-11 rounded-lg border border-[#061c16] bg-[#15332a] bg-[url(/design-assets/cookbook/leather-texture-tile.png)] bg-center bg-size-[220px] px-5 text-sm font-semibold text-[#f3e1b4]"
           >
             {isSubmitting ? "정리하는 중..." : "레시피 정리하기"}
           </button>
