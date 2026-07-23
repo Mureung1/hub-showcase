@@ -6,6 +6,11 @@ import {
 import { verifyProductionBundle } from './production-bundle.js'
 
 export type {
+  CodexEffectiveConfig,
+  CodexEffectiveSkill,
+  CodexNativeContextPort,
+} from './account-contract.js'
+export type {
   CodexChatEvent,
   CodexAccountReadiness,
   CodexChatRuntime,

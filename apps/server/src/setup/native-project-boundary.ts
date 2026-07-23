@@ -1,6 +1,11 @@
 import { lstat, realpath } from 'node:fs/promises'
 import path from 'node:path'
 
+import type {
+  CodexEffectiveConfig,
+  CodexEffectiveSkill,
+  CodexNativeContextPort,
+} from '@ay-ple/codex-chat-runtime'
 import {
   createWorkspaceContextGuard,
   verifyWorkspaceStaticContext,
@@ -9,39 +14,19 @@ import {
   type WorkspaceNativeContextSnapshot,
 } from '@ay-ple/semester-workspace'
 
-export type WorkspaceNativeEffectiveConfig = {
-  readonly projectRootMarkers: readonly string[]
-  readonly globalInstructionsFile: string | null
-}
-
-export type WorkspaceNativeEffectiveSkill = {
-  readonly name: string
-  readonly enabled: boolean
-  readonly sourceRoot: string
-}
-
-export interface WorkspaceNativeContextPort {
-  readEffectiveConfig(input: {
-    readonly signal: AbortSignal
-  }): Promise<WorkspaceNativeEffectiveConfig>
-  listEffectiveSkills(input: {
-    readonly signal: AbortSignal
-  }): Promise<readonly WorkspaceNativeEffectiveSkill[]>
-}
-
 export interface WorkspaceNativeContextQueryPort {
   readConfig(input: {
     readonly method: 'config/read'
     readonly cwd: string
     readonly includeLayers: true
     readonly signal: AbortSignal
-  }): Promise<WorkspaceNativeEffectiveConfig>
+  }): Promise<CodexEffectiveConfig>
   listSkills(input: {
     readonly method: 'skills/list'
     readonly cwds: readonly [string]
     readonly forceReload: true
     readonly signal: AbortSignal
-  }): Promise<readonly WorkspaceNativeEffectiveSkill[]>
+  }): Promise<readonly CodexEffectiveSkill[]>
 }
 
 export type WorkspaceNativeLaunch = {
@@ -66,7 +51,7 @@ export interface WorkspaceNativeProjectBoundary {
 export function createWorkspaceNativeContextPort(input: {
   readonly workspaceRoot: string
   readonly queryPort: WorkspaceNativeContextQueryPort
-}): WorkspaceNativeContextPort {
+}): CodexNativeContextPort {
   const workspaceRoot = input.workspaceRoot
   return {
     readEffectiveConfig({ signal }) {
@@ -92,7 +77,7 @@ export function createWorkspaceNativeProjectBoundary(input: {
   readonly workspace: AdmittedSemesterWorkspace
   readonly controlledHome: string
   readonly controlledCodexHome: string
-  readonly nativeContext: WorkspaceNativeContextPort
+  readonly nativeContext: CodexNativeContextPort
 }): WorkspaceNativeProjectBoundary {
   const workspace = cloneWorkspace(input.workspace)
   const launch = deepFreezeLaunch({
@@ -118,7 +103,7 @@ export function createWorkspaceNativeProjectBoundary(input: {
       if (staticContext.status === 'blocked') return staticContext
 
       const controller = new AbortController()
-      let config: WorkspaceNativeEffectiveConfig
+      let config: CodexEffectiveConfig
       try {
         config = cloneEffectiveConfig(
           await input.nativeContext.readEffectiveConfig({
@@ -128,7 +113,7 @@ export function createWorkspaceNativeProjectBoundary(input: {
       } catch {
         return { status: 'blocked', reason: 'config_conflict' }
       }
-      let skills: readonly WorkspaceNativeEffectiveSkill[]
+      let skills: readonly CodexEffectiveSkill[]
       try {
         skills = cloneEffectiveSkills(
           await input.nativeContext.listEffectiveSkills({
@@ -298,8 +283,8 @@ function cloneWorkspace(
 }
 
 function cloneNativeSnapshot(input: {
-  readonly config: WorkspaceNativeEffectiveConfig
-  readonly skills: readonly WorkspaceNativeEffectiveSkill[]
+  readonly config: CodexEffectiveConfig
+  readonly skills: readonly CodexEffectiveSkill[]
 }): WorkspaceNativeContextSnapshot {
   const projectRootMarkers = Object.freeze([
     ...input.config.projectRootMarkers,
@@ -322,7 +307,7 @@ function cloneNativeSnapshot(input: {
 
 function cloneEffectiveConfig(
   value: unknown,
-): WorkspaceNativeEffectiveConfig {
+): CodexEffectiveConfig {
   if (typeof value !== 'object' || value === null) {
     throw new Error('invalid native config')
   }
@@ -349,11 +334,11 @@ function cloneEffectiveConfig(
 
 function cloneEffectiveSkills(
   value: unknown,
-): readonly WorkspaceNativeEffectiveSkill[] {
+): readonly CodexEffectiveSkill[] {
   if (!Array.isArray(value)) {
     throw new Error('invalid native Skill roster')
   }
-  const skills: WorkspaceNativeEffectiveSkill[] = []
+  const skills: CodexEffectiveSkill[] = []
   for (const candidate of value) {
     if (typeof candidate !== 'object' || candidate === null) {
       throw new Error('invalid native Skill roster')
