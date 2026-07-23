@@ -103,7 +103,7 @@ export default function Guide() {
         <div className="section-heading">
           <div>
             <h2>JSON 형식 확인하기</h2>
-            <p>내용의 좋고 나쁨이 아니라 작성 형식만 확인합니다.</p>
+            <p>형식이 맞는지 검사해보세요.</p>
           </div>
           <button type="button" onClick={() => { setJsonText(''); setResult(null); }}>지우기</button>
         </div>

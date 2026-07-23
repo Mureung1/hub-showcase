@@ -155,9 +155,11 @@
 .example-editor {
   display: block;
   width: 100%;
-  min-height: 420px;
+  height: 1660px;
+  min-height: 0;
   margin-top: 18px;
   padding: 16px;
+  overflow-y: hidden;
   resize: vertical;
   border: 1px solid #cbd4d0;
   border-radius: 9px;
