@@ -1,0 +1,5017 @@
+{
+  "schemaVersion": 1,
+  "manifest": {
+    "schemaVersion": 1,
+    "dataset": {
+      "corpusVersion": "exploratory-corpus-v1",
+      "querySetVersion": "exploratory-queries-v1",
+      "corpusHash": "91eb31bf622438b4a8319c7dd389761edaf006928c7ccca8c0da03f74c958c41",
+      "querySetHash": "3384643d0d6eef83330720be5c76dcc2a7f29378b6f7afc4207ee956a2bbd183"
+    },
+    "provider": {
+      "kind": "external",
+      "name": "gemini-developer-api:free-tier:rest-v1beta:768",
+      "modelId": "gemini-embedding-2",
+      "modelRevision": "stable-alias-observed-2026-07-23",
+      "embeddingDimension": 768,
+      "documentTaskType": "retrieval-document-prompt",
+      "queryTaskType": "retrieval-query-prompt"
+    },
+    "cache": {
+      "namespace": "retrieve-exploration",
+      "version": "v1"
+    },
+    "ranking": {
+      "resultLimit": 6,
+      "semanticCandidateDepth": 72,
+      "rrfPrimaryK": 60,
+      "rrfSensitivityK": 10
+    },
+    "randomSeed": 20260723,
+    "queryCounts": {
+      "lexical": {
+        "calibration": 10,
+        "check": 5
+      },
+      "semantic": {
+        "calibration": 10,
+        "check": 5
+      },
+      "negative": {
+        "calibration": 10,
+        "check": 5
+      }
+    },
+    "externalApproval": {
+      "approved": true,
+      "approvalReference": "codex-user-message-2026-07-23-free-tier-product-improvement-consent",
+      "projectionHash": "8308faf17802dcba4d599c8ac138c9bea156b1ef82640a99b4c9b0ec836785b2",
+      "maxDocuments": 72,
+      "maxQueries": 45
+    }
+  },
+  "manifestHash": "49c9186fde6b33fb0087e8ec565613254b205b095ffec58f3942033f4ebf555f",
+  "threshold": {
+    "strategy": "negative-calibration-percentiles",
+    "selectedThreshold": 0.5881082583068272,
+    "candidates": [
+      {
+        "threshold": 0.5626934340165778,
+        "positiveMeanNdcgAt6": 0.949759093534783,
+        "positiveRecallAt5": 1,
+        "negativeMeanReturnedCount": 1.7
+      },
+      {
+        "threshold": 0.5849175005240611,
+        "positiveMeanNdcgAt6": 0.949759093534783,
+        "positiveRecallAt5": 1,
+        "negativeMeanReturnedCount": 0.1
+      },
+      {
+        "threshold": 0.5881082583068272,
+        "positiveMeanNdcgAt6": 0.949759093534783,
+        "positiveRecallAt5": 1,
+        "negativeMeanReturnedCount": 0
+      }
+    ]
+  },
+  "queries": [
+    {
+      "queryId": "lexical-calibration-01",
+      "text": "React 폼 검증",
+      "slice": "lexical",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "dev-01": 2,
+        "dev-02": 1,
+        "dev-03": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "dev-01",
+              "score": 31.5
+            },
+            {
+              "insightId": "dev-03",
+              "score": 12
+            },
+            {
+              "insightId": "media-11",
+              "score": 9
+            },
+            {
+              "insightId": "project-04",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.878961873034099,
+            "returnedResultCount": 4
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "dev-01",
+              "score": 0.7988359477824097
+            },
+            {
+              "insightId": "dev-02",
+              "score": 0.6601923399202491
+            },
+            {
+              "insightId": "dev-03",
+              "score": 0.6404520368710043
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 3
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "dev-01",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "dev-03",
+              "score": 0.03200204813108039
+            },
+            {
+              "insightId": "dev-02",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "media-11",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "project-04",
+              "score": 0.015625
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 5
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "dev-01",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "dev-03",
+              "score": 0.16025641025641024
+            },
+            {
+              "insightId": "dev-02",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "media-11",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "project-04",
+              "score": 0.07142857142857142
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 5
+          }
+        }
+      }
+    },
+    {
+      "queryId": "lexical-calibration-02",
+      "text": "캐시 무효화",
+      "slice": "lexical",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "dev-05": 2
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "dev-05",
+              "score": 18
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 1
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "dev-05",
+              "score": 0.7374922152994806
+            },
+            {
+              "insightId": "dev-06",
+              "score": 0.6379445490177462
+            },
+            {
+              "insightId": "account-04",
+              "score": 0.6351960971058701
+            },
+            {
+              "insightId": "dev-01",
+              "score": 0.6220208480244025
+            },
+            {
+              "insightId": "account-12",
+              "score": 0.6216279277155572
+            },
+            {
+              "insightId": "dev-10",
+              "score": 0.6215908547278871
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "dev-05",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "dev-06",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "account-04",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "dev-01",
+              "score": 0.015625
+            },
+            {
+              "insightId": "account-12",
+              "score": 0.015384615384615385
+            },
+            {
+              "insightId": "dev-10",
+              "score": 0.015151515151515152
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "dev-05",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "dev-06",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "account-04",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "dev-01",
+              "score": 0.07142857142857142
+            },
+            {
+              "insightId": "account-12",
+              "score": 0.06666666666666667
+            },
+            {
+              "insightId": "dev-10",
+              "score": 0.0625
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "lexical-calibration-03",
+      "text": "출처 인용 체크리스트",
+      "slice": "lexical",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "study-04": 2,
+        "media-05": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "study-04",
+              "score": 27
+            },
+            {
+              "insightId": "media-05",
+              "score": 9
+            },
+            {
+              "insightId": "media-04",
+              "score": 9
+            },
+            {
+              "insightId": "media-11",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 4
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "study-04",
+              "score": 0.8238449946601861
+            },
+            {
+              "insightId": "media-11",
+              "score": 0.6889925733704387
+            },
+            {
+              "insightId": "media-05",
+              "score": 0.6617447139811342
+            },
+            {
+              "insightId": "media-07",
+              "score": 0.6490302272328847
+            },
+            {
+              "insightId": "media-04",
+              "score": 0.6397059168373317
+            },
+            {
+              "insightId": "project-02",
+              "score": 0.6323812718317191
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9639404333166532,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "study-04",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "media-05",
+              "score": 0.03200204813108039
+            },
+            {
+              "insightId": "media-11",
+              "score": 0.031754032258064516
+            },
+            {
+              "insightId": "media-04",
+              "score": 0.03125763125763126
+            },
+            {
+              "insightId": "media-07",
+              "score": 0.015625
+            },
+            {
+              "insightId": "project-02",
+              "score": 0.015151515151515152
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "study-04",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "media-05",
+              "score": 0.16025641025641024
+            },
+            {
+              "insightId": "media-11",
+              "score": 0.15476190476190477
+            },
+            {
+              "insightId": "media-04",
+              "score": 0.14358974358974358
+            },
+            {
+              "insightId": "media-07",
+              "score": 0.07142857142857142
+            },
+            {
+              "insightId": "project-02",
+              "score": 0.0625
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "lexical-calibration-04",
+      "text": "공모전 문제 정의",
+      "slice": "lexical",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "project-01": 2,
+        "project-02": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "project-01",
+              "score": 27
+            },
+            {
+              "insightId": "project-08",
+              "score": 12
+            },
+            {
+              "insightId": "study-11",
+              "score": 8
+            },
+            {
+              "insightId": "study-06",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.8262346571285599,
+            "returnedResultCount": 4
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "project-01",
+              "score": 0.7674326203261437
+            },
+            {
+              "insightId": "project-02",
+              "score": 0.63609447495829
+            },
+            {
+              "insightId": "project-08",
+              "score": 0.6336502512731331
+            },
+            {
+              "insightId": "study-06",
+              "score": 0.6302144867094764
+            },
+            {
+              "insightId": "study-11",
+              "score": 0.6277287263778242
+            },
+            {
+              "insightId": "project-11",
+              "score": 0.6201659646094271
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "project-01",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "project-08",
+              "score": 0.03200204813108039
+            },
+            {
+              "insightId": "study-11",
+              "score": 0.03125763125763126
+            },
+            {
+              "insightId": "study-06",
+              "score": 0.03125
+            },
+            {
+              "insightId": "project-02",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "project-11",
+              "score": 0.015151515151515152
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9327783893101107,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "project-01",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "project-08",
+              "score": 0.16025641025641024
+            },
+            {
+              "insightId": "study-11",
+              "score": 0.14358974358974358
+            },
+            {
+              "insightId": "study-06",
+              "score": 0.14285714285714285
+            },
+            {
+              "insightId": "project-02",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "project-11",
+              "score": 0.0625
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9327783893101107,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "lexical-calibration-05",
+      "text": "제주 비 오는 날",
+      "slice": "lexical",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "travel-01": 2
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "travel-01",
+              "score": 36
+            },
+            {
+              "insightId": "project-11",
+              "score": 14
+            },
+            {
+              "insightId": "account-01",
+              "score": 8
+            },
+            {
+              "insightId": "dev-04",
+              "score": 8
+            },
+            {
+              "insightId": "travel-08",
+              "score": 7
+            },
+            {
+              "insightId": "account-06",
+              "score": 6
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "travel-01",
+              "score": 0.7684198953886229
+            },
+            {
+              "insightId": "travel-11",
+              "score": 0.6163576221170775
+            },
+            {
+              "insightId": "travel-07",
+              "score": 0.6010937526927284
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 3
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "travel-01",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "travel-11",
+              "score": 0.031054405392392875
+            },
+            {
+              "insightId": "project-11",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "travel-07",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "dev-04",
+              "score": 0.015625
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "travel-01",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "travel-11",
+              "score": 0.14215686274509803
+            },
+            {
+              "insightId": "project-11",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "travel-07",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "dev-04",
+              "score": 0.07142857142857142
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "lexical-calibration-06",
+      "text": "기내 반입 보조배터리",
+      "slice": "lexical",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "travel-02": 2
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "travel-02",
+              "score": 26
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 1
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "travel-02",
+              "score": 0.7459111779794974
+            },
+            {
+              "insightId": "travel-03",
+              "score": 0.6200131694996576
+            },
+            {
+              "insightId": "travel-08",
+              "score": 0.6025541980707005
+            },
+            {
+              "insightId": "travel-04",
+              "score": 0.5962460570346906
+            },
+            {
+              "insightId": "travel-06",
+              "score": 0.5914883989859068
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 5
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "travel-02",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "travel-03",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "travel-08",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "travel-04",
+              "score": 0.015625
+            },
+            {
+              "insightId": "travel-06",
+              "score": 0.015384615384615385
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 5
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "travel-02",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "travel-03",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "travel-08",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "travel-04",
+              "score": 0.07142857142857142
+            },
+            {
+              "insightId": "travel-06",
+              "score": 0.06666666666666667
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 5
+          }
+        }
+      }
+    },
+    {
+      "queryId": "lexical-calibration-07",
+      "text": "팟캐스트 타임스탬프",
+      "slice": "lexical",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "media-04": 2,
+        "media-08": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "media-04",
+              "score": 18
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.8262346571285599,
+            "returnedResultCount": 1
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "media-04",
+              "score": 0.7933116372038131
+            },
+            {
+              "insightId": "media-02",
+              "score": 0.6366399627022316
+            },
+            {
+              "insightId": "media-12",
+              "score": 0.6326455258220104
+            },
+            {
+              "insightId": "study-07",
+              "score": 0.6318490689041008
+            },
+            {
+              "insightId": "travel-09",
+              "score": 0.6293048215372532
+            },
+            {
+              "insightId": "travel-03",
+              "score": 0.6246040926345616
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.8262346571285599,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "media-04",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "media-02",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "media-12",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "study-07",
+              "score": 0.015625
+            },
+            {
+              "insightId": "travel-09",
+              "score": 0.015384615384615385
+            },
+            {
+              "insightId": "travel-03",
+              "score": 0.015151515151515152
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.8262346571285599,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "media-04",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "media-02",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "media-12",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "study-07",
+              "score": 0.07142857142857142
+            },
+            {
+              "insightId": "travel-09",
+              "score": 0.06666666666666667
+            },
+            {
+              "insightId": "travel-03",
+              "score": 0.0625
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.8262346571285599,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "lexical-calibration-08",
+      "text": "브라우저 북마크 내보내기",
+      "slice": "lexical",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "account-03": 2
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "account-03",
+              "score": 27
+            },
+            {
+              "insightId": "dev-07",
+              "score": 12
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 2
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "account-03",
+              "score": 0.7953610359287222
+            },
+            {
+              "insightId": "account-05",
+              "score": 0.6486667450658876
+            },
+            {
+              "insightId": "account-08",
+              "score": 0.6321773165398568
+            },
+            {
+              "insightId": "account-06",
+              "score": 0.6293838457337614
+            },
+            {
+              "insightId": "media-06",
+              "score": 0.6236391135302414
+            },
+            {
+              "insightId": "media-09",
+              "score": 0.612143140301138
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "account-03",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "dev-07",
+              "score": 0.0304147465437788
+            },
+            {
+              "insightId": "account-05",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "account-08",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "account-06",
+              "score": 0.015625
+            },
+            {
+              "insightId": "media-06",
+              "score": 0.015384615384615385
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "account-03",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "dev-07",
+              "score": 0.13333333333333333
+            },
+            {
+              "insightId": "account-05",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "account-08",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "account-06",
+              "score": 0.07142857142857142
+            },
+            {
+              "insightId": "media-06",
+              "score": 0.06666666666666667
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "lexical-calibration-09",
+      "text": "복구 코드 2단계 인증",
+      "slice": "lexical",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "account-02": 2,
+        "account-01": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "account-02",
+              "score": 42
+            },
+            {
+              "insightId": "account-01",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 2
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "account-02",
+              "score": 0.8070546695500472
+            },
+            {
+              "insightId": "dev-07",
+              "score": 0.6292211774691203
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.6154531379375279
+            },
+            {
+              "insightId": "account-06",
+              "score": 0.6118232146728526
+            },
+            {
+              "insightId": "account-07",
+              "score": 0.607995315212181
+            },
+            {
+              "insightId": "account-05",
+              "score": 0.6034791811128053
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9639404333166532,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "account-02",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.03200204813108039
+            },
+            {
+              "insightId": "dev-07",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "account-06",
+              "score": 0.015625
+            },
+            {
+              "insightId": "account-07",
+              "score": 0.015384615384615385
+            },
+            {
+              "insightId": "account-05",
+              "score": 0.015151515151515152
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "account-02",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.16025641025641024
+            },
+            {
+              "insightId": "dev-07",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "account-06",
+              "score": 0.07142857142857142
+            },
+            {
+              "insightId": "account-07",
+              "score": 0.06666666666666667
+            },
+            {
+              "insightId": "account-05",
+              "score": 0.0625
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "lexical-calibration-10",
+      "text": "비밀번호 관리자 이전",
+      "slice": "lexical",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "account-06": 2,
+        "account-01": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "account-06",
+              "score": 27
+            },
+            {
+              "insightId": "account-05",
+              "score": 12
+            },
+            {
+              "insightId": "account-01",
+              "score": 12
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9639404333166532,
+            "returnedResultCount": 3
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "account-06",
+              "score": 0.7827407736781806
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.6813364052978352
+            },
+            {
+              "insightId": "account-03",
+              "score": 0.6705777751626452
+            },
+            {
+              "insightId": "account-05",
+              "score": 0.6298862625832646
+            },
+            {
+              "insightId": "account-11",
+              "score": 0.6267474405414734
+            },
+            {
+              "insightId": "account-02",
+              "score": 0.6259472602125576
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "account-06",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.03200204813108039
+            },
+            {
+              "insightId": "account-05",
+              "score": 0.031754032258064516
+            },
+            {
+              "insightId": "account-03",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "account-11",
+              "score": 0.015384615384615385
+            },
+            {
+              "insightId": "account-02",
+              "score": 0.015151515151515152
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "account-06",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.16025641025641024
+            },
+            {
+              "insightId": "account-05",
+              "score": 0.15476190476190477
+            },
+            {
+              "insightId": "account-03",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "account-11",
+              "score": 0.06666666666666667
+            },
+            {
+              "insightId": "account-02",
+              "score": 0.0625
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "lexical-check-01",
+      "text": "Supabase RLS",
+      "slice": "lexical",
+      "phase": "check",
+      "relevanceByInsightId": {
+        "dev-08": 2
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "dev-08",
+              "score": 22.5
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 1
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "dev-08",
+              "score": 0.8255154647753289
+            },
+            {
+              "insightId": "project-04",
+              "score": 0.6052823658844546
+            },
+            {
+              "insightId": "dev-02",
+              "score": 0.6036480806158405
+            },
+            {
+              "insightId": "project-05",
+              "score": 0.603559947526597
+            },
+            {
+              "insightId": "account-07",
+              "score": 0.5955285903722605
+            },
+            {
+              "insightId": "dev-07",
+              "score": 0.5918628701887741
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "dev-08",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "project-04",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "dev-02",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "project-05",
+              "score": 0.015625
+            },
+            {
+              "insightId": "account-07",
+              "score": 0.015384615384615385
+            },
+            {
+              "insightId": "dev-07",
+              "score": 0.015151515151515152
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "dev-08",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "project-04",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "dev-02",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "project-05",
+              "score": 0.07142857142857142
+            },
+            {
+              "insightId": "account-07",
+              "score": 0.06666666666666667
+            },
+            {
+              "insightId": "dev-07",
+              "score": 0.0625
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "lexical-check-02",
+      "text": "오답 노트",
+      "slice": "lexical",
+      "phase": "check",
+      "relevanceByInsightId": {
+        "study-11": 2
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "study-11",
+              "score": 18
+            },
+            {
+              "insightId": "media-11",
+              "score": 9
+            },
+            {
+              "insightId": "study-12",
+              "score": 9
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 3
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "study-11",
+              "score": 0.7678499475423378
+            },
+            {
+              "insightId": "media-11",
+              "score": 0.6734776802635861
+            },
+            {
+              "insightId": "study-06",
+              "score": 0.6667704481680296
+            },
+            {
+              "insightId": "study-05",
+              "score": 0.6653405275985238
+            },
+            {
+              "insightId": "study-02",
+              "score": 0.6624340569593328
+            },
+            {
+              "insightId": "study-01",
+              "score": 0.6618038124711354
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "study-11",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "media-11",
+              "score": 0.03225806451612903
+            },
+            {
+              "insightId": "study-12",
+              "score": 0.030158730158730156
+            },
+            {
+              "insightId": "study-06",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "study-05",
+              "score": 0.015625
+            },
+            {
+              "insightId": "study-02",
+              "score": 0.015384615384615385
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "study-11",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "media-11",
+              "score": 0.16666666666666666
+            },
+            {
+              "insightId": "study-12",
+              "score": 0.12692307692307692
+            },
+            {
+              "insightId": "study-06",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "study-05",
+              "score": 0.07142857142857142
+            },
+            {
+              "insightId": "study-02",
+              "score": 0.06666666666666667
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "lexical-check-03",
+      "text": "사용자 테스트 관찰",
+      "slice": "lexical",
+      "phase": "check",
+      "relevanceByInsightId": {
+        "project-09": 2
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "project-09",
+              "score": 24
+            },
+            {
+              "insightId": "project-01",
+              "score": 12
+            },
+            {
+              "insightId": "dev-10",
+              "score": 9
+            },
+            {
+              "insightId": "dev-08",
+              "score": 8
+            },
+            {
+              "insightId": "dev-03",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 5
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "project-09",
+              "score": 0.7961801028322494
+            },
+            {
+              "insightId": "project-03",
+              "score": 0.6730944367560752
+            },
+            {
+              "insightId": "media-07",
+              "score": 0.66037432875497
+            },
+            {
+              "insightId": "project-12",
+              "score": 0.654984414364555
+            },
+            {
+              "insightId": "project-01",
+              "score": 0.6501398767188352
+            },
+            {
+              "insightId": "project-07",
+              "score": 0.6375819051832524
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "project-09",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "project-01",
+              "score": 0.0315136476426799
+            },
+            {
+              "insightId": "dev-10",
+              "score": 0.030158730158730156
+            },
+            {
+              "insightId": "dev-03",
+              "score": 0.029273504273504274
+            },
+            {
+              "insightId": "project-03",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "media-07",
+              "score": 0.015873015873015872
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "project-09",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "project-01",
+              "score": 0.15
+            },
+            {
+              "insightId": "dev-10",
+              "score": 0.12692307692307692
+            },
+            {
+              "insightId": "dev-03",
+              "score": 0.11212121212121212
+            },
+            {
+              "insightId": "project-03",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "media-07",
+              "score": 0.07692307692307693
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "lexical-check-04",
+      "text": "여행 경비 정산",
+      "slice": "lexical",
+      "phase": "check",
+      "relevanceByInsightId": {
+        "travel-10": 2
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "travel-10",
+              "score": 33
+            },
+            {
+              "insightId": "travel-08",
+              "score": 15
+            },
+            {
+              "insightId": "travel-12",
+              "score": 6
+            },
+            {
+              "insightId": "travel-11",
+              "score": 6
+            },
+            {
+              "insightId": "travel-09",
+              "score": 6
+            },
+            {
+              "insightId": "travel-07",
+              "score": 6
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "travel-10",
+              "score": 0.7661317239652883
+            },
+            {
+              "insightId": "travel-05",
+              "score": 0.6450868567169147
+            },
+            {
+              "insightId": "travel-03",
+              "score": 0.6409311578822788
+            },
+            {
+              "insightId": "travel-08",
+              "score": 0.6367826475775623
+            },
+            {
+              "insightId": "travel-02",
+              "score": 0.624030534164534
+            },
+            {
+              "insightId": "travel-12",
+              "score": 0.6192411571833673
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "travel-10",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "travel-08",
+              "score": 0.031754032258064516
+            },
+            {
+              "insightId": "travel-12",
+              "score": 0.031024531024531024
+            },
+            {
+              "insightId": "travel-05",
+              "score": 0.030834914611005692
+            },
+            {
+              "insightId": "travel-11",
+              "score": 0.030330882352941176
+            },
+            {
+              "insightId": "travel-03",
+              "score": 0.030158730158730156
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "travel-10",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "travel-08",
+              "score": 0.15476190476190477
+            },
+            {
+              "insightId": "travel-12",
+              "score": 0.13942307692307693
+            },
+            {
+              "insightId": "travel-05",
+              "score": 0.1388888888888889
+            },
+            {
+              "insightId": "travel-11",
+              "score": 0.12698412698412698
+            },
+            {
+              "insightId": "travel-03",
+              "score": 0.12692307692307692
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "lexical-check-05",
+      "text": "의심스러운 로그인",
+      "slice": "lexical",
+      "phase": "check",
+      "relevanceByInsightId": {
+        "account-07": 2
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "account-07",
+              "score": 18
+            },
+            {
+              "insightId": "dev-07",
+              "score": 12
+            },
+            {
+              "insightId": "dev-01",
+              "score": 12
+            },
+            {
+              "insightId": "account-01",
+              "score": 9
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 4
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "account-07",
+              "score": 0.7874332275371545
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.6693173038512837
+            },
+            {
+              "insightId": "account-08",
+              "score": 0.6546605106832564
+            },
+            {
+              "insightId": "account-06",
+              "score": 0.6469344443719195
+            },
+            {
+              "insightId": "account-02",
+              "score": 0.6465327572513079
+            },
+            {
+              "insightId": "account-11",
+              "score": 0.6448580449915794
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "account-07",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.031754032258064516
+            },
+            {
+              "insightId": "dev-07",
+              "score": 0.031054405392392875
+            },
+            {
+              "insightId": "dev-01",
+              "score": 0.03057889822595705
+            },
+            {
+              "insightId": "account-08",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "account-06",
+              "score": 0.015625
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "account-07",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.15476190476190477
+            },
+            {
+              "insightId": "dev-07",
+              "score": 0.14215686274509803
+            },
+            {
+              "insightId": "dev-01",
+              "score": 0.13247863247863248
+            },
+            {
+              "insightId": "account-08",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "account-06",
+              "score": 0.07142857142857142
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "semantic-calibration-01",
+      "text": "통신이 끊긴 동안 작성하던 것을 연결 뒤 자동으로 보내기",
+      "slice": "semantic",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "dev-06": 2,
+        "account-04": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "account-08",
+              "score": 12
+            },
+            {
+              "insightId": "travel-06",
+              "score": 12
+            },
+            {
+              "insightId": "study-12",
+              "score": 12
+            },
+            {
+              "insightId": "study-07",
+              "score": 12
+            },
+            {
+              "insightId": "study-02",
+              "score": 12
+            },
+            {
+              "insightId": "dev-05",
+              "score": 12
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 6
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "dev-06",
+              "score": 0.7474320947685308
+            },
+            {
+              "insightId": "account-02",
+              "score": 0.6306788160531209
+            },
+            {
+              "insightId": "travel-06",
+              "score": 0.6218735954011378
+            },
+            {
+              "insightId": "media-09",
+              "score": 0.61131626464367
+            },
+            {
+              "insightId": "account-04",
+              "score": 0.6082817297576188
+            },
+            {
+              "insightId": "dev-05",
+              "score": 0.6033203907475444
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9327783893101107,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "travel-06",
+              "score": 0.03200204813108039
+            },
+            {
+              "insightId": "account-08",
+              "score": 0.03131881575727918
+            },
+            {
+              "insightId": "dev-05",
+              "score": 0.030303030303030304
+            },
+            {
+              "insightId": "account-03",
+              "score": 0.029418126757516764
+            },
+            {
+              "insightId": "dev-06",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "account-02",
+              "score": 0.016129032258064516
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.2,
+            "ndcgAt6": 0.3196311965446524,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "travel-06",
+              "score": 0.16025641025641024
+            },
+            {
+              "insightId": "account-08",
+              "score": 0.1497326203208556
+            },
+            {
+              "insightId": "dev-05",
+              "score": 0.125
+            },
+            {
+              "insightId": "account-03",
+              "score": 0.11145510835913312
+            },
+            {
+              "insightId": "dev-06",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "account-02",
+              "score": 0.08333333333333333
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.2,
+            "ndcgAt6": 0.3196311965446524,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "semantic-calibration-02",
+      "text": "암호를 치지 않고 얼굴이나 지문으로 서비스 들어가기",
+      "slice": "semantic",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "account-01": 2,
+        "account-06": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "media-07",
+              "score": 12
+            },
+            {
+              "insightId": "project-03",
+              "score": 12
+            },
+            {
+              "insightId": "study-02",
+              "score": 12
+            },
+            {
+              "insightId": "study-01",
+              "score": 12
+            },
+            {
+              "insightId": "project-11",
+              "score": 9
+            },
+            {
+              "insightId": "account-09",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 6
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "account-01",
+              "score": 0.7307544235366669
+            },
+            {
+              "insightId": "account-02",
+              "score": 0.6295267331220779
+            },
+            {
+              "insightId": "account-09",
+              "score": 0.6237444751380276
+            },
+            {
+              "insightId": "account-11",
+              "score": 0.6194297320866115
+            },
+            {
+              "insightId": "account-08",
+              "score": 0.6180702972326507
+            },
+            {
+              "insightId": "dev-01",
+              "score": 0.6165829350285186
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.8262346571285599,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "account-09",
+              "score": 0.031024531024531024
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "media-07",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "account-02",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "project-03",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "study-02",
+              "score": 0.015873015873015872
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.5,
+            "ndcgAt6": 0.52129602861432,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "account-09",
+              "score": 0.13942307692307693
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "media-07",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "account-02",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "project-03",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "study-02",
+              "score": 0.07692307692307693
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.5,
+            "ndcgAt6": 0.52129602861432,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "semantic-calibration-03",
+      "text": "두 번째 확인 수단을 못 쓰는 때를 위한 일회용 열쇠",
+      "slice": "semantic",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "account-02": 2,
+        "account-07": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "media-05",
+              "score": 9
+            },
+            {
+              "insightId": "account-07",
+              "score": 8
+            },
+            {
+              "insightId": "media-11",
+              "score": 8
+            },
+            {
+              "insightId": "travel-12",
+              "score": 8
+            },
+            {
+              "insightId": "travel-04",
+              "score": 8
+            },
+            {
+              "insightId": "travel-02",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.5,
+            "ndcgAt6": 0.17376534287144002,
+            "returnedResultCount": 6
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "account-02",
+              "score": 0.7275366891584705
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.6704563183645277
+            },
+            {
+              "insightId": "account-06",
+              "score": 0.6500355209306836
+            },
+            {
+              "insightId": "account-07",
+              "score": 0.6488249478519581
+            },
+            {
+              "insightId": "dev-07",
+              "score": 0.6271938374749596
+            },
+            {
+              "insightId": "account-05",
+              "score": 0.620885634994004
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.944847956559586,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "account-07",
+              "score": 0.031754032258064516
+            },
+            {
+              "insightId": "travel-04",
+              "score": 0.02946912242686891
+            },
+            {
+              "insightId": "travel-02",
+              "score": 0.027972027972027972
+            },
+            {
+              "insightId": "account-02",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "media-05",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.016129032258064516
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.631251450669265,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "account-07",
+              "score": 0.15476190476190477
+            },
+            {
+              "insightId": "travel-04",
+              "score": 0.11428571428571428
+            },
+            {
+              "insightId": "travel-02",
+              "score": 0.09821428571428571
+            },
+            {
+              "insightId": "account-02",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "media-05",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.08333333333333333
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.631251450669265,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "semantic-calibration-04",
+      "text": "시간이 부족한데 제품에서 제일 위험한 가정 하나만 확인하기",
+      "slice": "semantic",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "project-04": 2,
+        "project-06": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "project-04",
+              "score": 12
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.8262346571285599,
+            "returnedResultCount": 1
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "project-04",
+              "score": 0.7318570420902563
+            },
+            {
+              "insightId": "project-12",
+              "score": 0.6509159858444248
+            },
+            {
+              "insightId": "project-01",
+              "score": 0.6415514600537356
+            },
+            {
+              "insightId": "study-03",
+              "score": 0.6411322144625817
+            },
+            {
+              "insightId": "project-03",
+              "score": 0.6319942972398086
+            },
+            {
+              "insightId": "project-06",
+              "score": 0.6251580594156679
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9243382314975351,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "project-04",
+              "score": 0.03278688524590164
+            },
+            {
+              "insightId": "project-12",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "project-01",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "study-03",
+              "score": 0.015625
+            },
+            {
+              "insightId": "project-03",
+              "score": 0.015384615384615385
+            },
+            {
+              "insightId": "project-06",
+              "score": 0.015151515151515152
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9243382314975351,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "project-04",
+              "score": 0.18181818181818182
+            },
+            {
+              "insightId": "project-12",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "project-01",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "study-03",
+              "score": 0.07142857142857142
+            },
+            {
+              "insightId": "project-03",
+              "score": 0.06666666666666667
+            },
+            {
+              "insightId": "project-06",
+              "score": 0.0625
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9243382314975351,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "semantic-calibration-05",
+      "text": "상대의 경험을 왜곡하지 않고 듣는 면담 방법",
+      "slice": "semantic",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "project-03": 2,
+        "project-09": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "media-07",
+              "score": 12
+            },
+            {
+              "insightId": "project-03",
+              "score": 12
+            },
+            {
+              "insightId": "study-02",
+              "score": 12
+            },
+            {
+              "insightId": "study-01",
+              "score": 12
+            },
+            {
+              "insightId": "study-09",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.5,
+            "ndcgAt6": 0.52129602861432,
+            "returnedResultCount": 5
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "project-03",
+              "score": 0.6902863681694729
+            },
+            {
+              "insightId": "media-11",
+              "score": 0.6145011941477071
+            },
+            {
+              "insightId": "media-02",
+              "score": 0.6029054316814003
+            },
+            {
+              "insightId": "study-07",
+              "score": 0.6020566145362453
+            },
+            {
+              "insightId": "media-04",
+              "score": 0.5962815215590341
+            },
+            {
+              "insightId": "project-09",
+              "score": 0.5962736072318136
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9243382314975351,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "project-03",
+              "score": 0.03252247488101534
+            },
+            {
+              "insightId": "study-09",
+              "score": 0.030309988518943745
+            },
+            {
+              "insightId": "media-07",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "media-11",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "media-02",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "study-02",
+              "score": 0.015873015873015872
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.8262346571285599,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "project-03",
+              "score": 0.17424242424242425
+            },
+            {
+              "insightId": "study-09",
+              "score": 0.12549019607843137
+            },
+            {
+              "insightId": "media-07",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "media-11",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "media-02",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "study-02",
+              "score": 0.07692307692307693
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.8262346571285599,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "semantic-calibration-06",
+      "text": "학술 자료를 전부 정독하기 전에 채택 여부 가늠하기",
+      "slice": "semantic",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "study-03": 2,
+        "study-04": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "account-12",
+              "score": 12
+            },
+            {
+              "insightId": "account-03",
+              "score": 12
+            },
+            {
+              "insightId": "media-05",
+              "score": 12
+            },
+            {
+              "insightId": "travel-11",
+              "score": 12
+            },
+            {
+              "insightId": "travel-02",
+              "score": 12
+            },
+            {
+              "insightId": "project-09",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 6
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "study-03",
+              "score": 0.7331645335659118
+            },
+            {
+              "insightId": "study-04",
+              "score": 0.6559720178261936
+            },
+            {
+              "insightId": "media-09",
+              "score": 0.6373826996960429
+            },
+            {
+              "insightId": "media-02",
+              "score": 0.6366625142437644
+            },
+            {
+              "insightId": "media-11",
+              "score": 0.6305118970209767
+            },
+            {
+              "insightId": "media-05",
+              "score": 0.6238355778911676
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "media-05",
+              "score": 0.031024531024531024
+            },
+            {
+              "insightId": "travel-11",
+              "score": 0.027820121951219513
+            },
+            {
+              "insightId": "travel-02",
+              "score": 0.027730294396961064
+            },
+            {
+              "insightId": "account-12",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "study-03",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "account-03",
+              "score": 0.016129032258064516
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.2,
+            "ndcgAt6": 0.3196311965446524,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "media-05",
+              "score": 0.13942307692307693
+            },
+            {
+              "insightId": "travel-11",
+              "score": 0.10267857142857142
+            },
+            {
+              "insightId": "travel-02",
+              "score": 0.0989247311827957
+            },
+            {
+              "insightId": "account-12",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "study-03",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "account-03",
+              "score": 0.08333333333333333
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.2,
+            "ndcgAt6": 0.3196311965446524,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "semantic-calibration-07",
+      "text": "정답을 가린 채 머릿속에서 배운 것을 꺼내는 연습",
+      "slice": "semantic",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "study-02": 2,
+        "study-01": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "project-07",
+              "score": 8
+            },
+            {
+              "insightId": "study-07",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 2
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "study-02",
+              "score": 0.7648210271736016
+            },
+            {
+              "insightId": "study-09",
+              "score": 0.6859342213521487
+            },
+            {
+              "insightId": "study-01",
+              "score": 0.6766843873693468
+            },
+            {
+              "insightId": "study-11",
+              "score": 0.6633863040550103
+            },
+            {
+              "insightId": "study-08",
+              "score": 0.6619645600332703
+            },
+            {
+              "insightId": "study-12",
+              "score": 0.6586719900480773
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9639404333166532,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "study-07",
+              "score": 0.030834914611005692
+            },
+            {
+              "insightId": "project-07",
+              "score": 0.03047794966520434
+            },
+            {
+              "insightId": "study-02",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "study-09",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "study-01",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "study-11",
+              "score": 0.015625
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.3333333333333333,
+            "ndcgAt6": 0.5196610607458307,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "study-07",
+              "score": 0.1388888888888889
+            },
+            {
+              "insightId": "project-07",
+              "score": 0.13852813852813853
+            },
+            {
+              "insightId": "study-02",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "study-09",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "study-01",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "study-11",
+              "score": 0.07142857142857142
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.3333333333333333,
+            "ndcgAt6": 0.5196610607458307,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "semantic-calibration-08",
+      "text": "연결편 사이에 국경 수속까지 포함한 최소 여유",
+      "slice": "semantic",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "travel-03": 2,
+        "travel-02": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "travel-08",
+              "score": 12
+            },
+            {
+              "insightId": "travel-03",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.5,
+            "ndcgAt6": 0.52129602861432,
+            "returnedResultCount": 2
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "travel-03",
+              "score": 0.7257123244235798
+            },
+            {
+              "insightId": "travel-06",
+              "score": 0.6410872911020071
+            },
+            {
+              "insightId": "travel-02",
+              "score": 0.6239662742586725
+            },
+            {
+              "insightId": "travel-05",
+              "score": 0.6005856337549252
+            },
+            {
+              "insightId": "travel-08",
+              "score": 0.6004966995327415
+            },
+            {
+              "insightId": "travel-04",
+              "score": 0.5888002813130607
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9639404333166532,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "travel-03",
+              "score": 0.03252247488101534
+            },
+            {
+              "insightId": "travel-08",
+              "score": 0.03177805800756621
+            },
+            {
+              "insightId": "travel-06",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "travel-02",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "travel-05",
+              "score": 0.015625
+            },
+            {
+              "insightId": "travel-04",
+              "score": 0.015151515151515152
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.944847956559586,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "travel-03",
+              "score": 0.17424242424242425
+            },
+            {
+              "insightId": "travel-08",
+              "score": 0.1575757575757576
+            },
+            {
+              "insightId": "travel-06",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "travel-02",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "travel-05",
+              "score": 0.07142857142857142
+            },
+            {
+              "insightId": "travel-04",
+              "score": 0.0625
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.944847956559586,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "semantic-calibration-09",
+      "text": "우천 시 걷는 구간을 줄인 제주도 하루 일정",
+      "slice": "semantic",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "travel-01": 2,
+        "travel-07": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "project-06",
+              "score": 12
+            },
+            {
+              "insightId": "travel-04",
+              "score": 9
+            },
+            {
+              "insightId": "media-10",
+              "score": 8
+            },
+            {
+              "insightId": "media-03",
+              "score": 8
+            },
+            {
+              "insightId": "travel-07",
+              "score": 8
+            },
+            {
+              "insightId": "travel-05",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.2,
+            "ndcgAt6": 0.10654373218155079,
+            "returnedResultCount": 6
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "travel-01",
+              "score": 0.763235016195949
+            },
+            {
+              "insightId": "travel-11",
+              "score": 0.6301950698578008
+            },
+            {
+              "insightId": "travel-07",
+              "score": 0.6178716615069761
+            },
+            {
+              "insightId": "travel-09",
+              "score": 0.6010360093590696
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9639404333166532,
+            "returnedResultCount": 4
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "travel-07",
+              "score": 0.03125763125763126
+            },
+            {
+              "insightId": "travel-09",
+              "score": 0.029709507042253523
+            },
+            {
+              "insightId": "travel-01",
+              "score": 0.02938045560996381
+            },
+            {
+              "insightId": "project-06",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "travel-04",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "travel-11",
+              "score": 0.016129032258064516
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.6885288809404666,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "travel-07",
+              "score": 0.14358974358974358
+            },
+            {
+              "insightId": "travel-01",
+              "score": 0.12794612794612795
+            },
+            {
+              "insightId": "travel-09",
+              "score": 0.11904761904761904
+            },
+            {
+              "insightId": "project-06",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "travel-04",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "travel-11",
+              "score": 0.08333333333333333
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.7967075809905066,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "semantic-calibration-10",
+      "text": "말 한마디 단서로 재생 지점을 찾아가기",
+      "slice": "semantic",
+      "phase": "calibration",
+      "relevanceByInsightId": {
+        "media-08": 2,
+        "media-04": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "project-09",
+              "score": 12
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 1
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "media-04",
+              "score": 0.70245858367105
+            },
+            {
+              "insightId": "media-08",
+              "score": 0.6963193531816275
+            },
+            {
+              "insightId": "media-10",
+              "score": 0.6426588628920693
+            },
+            {
+              "insightId": "media-02",
+              "score": 0.6275783326561158
+            },
+            {
+              "insightId": "media-07",
+              "score": 0.6232409192659433
+            },
+            {
+              "insightId": "project-07",
+              "score": 0.6188930939441696
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.7967075809905066,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "project-09",
+              "score": 0.02844163539403516
+            },
+            {
+              "insightId": "media-04",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "media-08",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "media-10",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "media-02",
+              "score": 0.015625
+            },
+            {
+              "insightId": "media-07",
+              "score": 0.015384615384615385
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.5,
+            "ndcgAt6": 0.58688267143572,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "project-09",
+              "score": 0.12121212121212122
+            },
+            {
+              "insightId": "media-04",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "media-08",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "media-10",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "media-02",
+              "score": 0.07142857142857142
+            },
+            {
+              "insightId": "media-07",
+              "score": 0.06666666666666667
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.5,
+            "ndcgAt6": 0.58688267143572,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "semantic-check-01",
+      "text": "각자 다른 화폐로 낸 돈을 공평하게 나누는 방법",
+      "slice": "semantic",
+      "phase": "check",
+      "relevanceByInsightId": {
+        "travel-10": 2
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "media-05",
+              "score": 12
+            },
+            {
+              "insightId": "travel-10",
+              "score": 12
+            },
+            {
+              "insightId": "study-09",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.5,
+            "ndcgAt6": 0.6309297535714574,
+            "returnedResultCount": 3
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "travel-10",
+              "score": 0.7367239074741117
+            },
+            {
+              "insightId": "study-11",
+              "score": 0.588163263095866
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 2
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "travel-10",
+              "score": 0.03252247488101534
+            },
+            {
+              "insightId": "media-05",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "study-11",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "study-09",
+              "score": 0.015873015873015872
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 4
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "travel-10",
+              "score": 0.17424242424242425
+            },
+            {
+              "insightId": "media-05",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "study-11",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "study-09",
+              "score": 0.07692307692307693
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 4
+          }
+        }
+      }
+    },
+    {
+      "queryId": "semantic-check-02",
+      "text": "한산한 골목을 자연광 좋은 시간에 촬영하기",
+      "slice": "semantic",
+      "phase": "check",
+      "relevanceByInsightId": {
+        "travel-09": 2,
+        "media-03": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "media-06",
+              "score": 12
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 1
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "travel-09",
+              "score": 0.7214007755913161
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.8262346571285599,
+            "returnedResultCount": 1
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "media-06",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "travel-09",
+              "score": 0.01639344262295082
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.5,
+            "ndcgAt6": 0.52129602861432,
+            "returnedResultCount": 2
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "media-06",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "travel-09",
+              "score": 0.09090909090909091
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.5,
+            "ndcgAt6": 0.52129602861432,
+            "returnedResultCount": 2
+          }
+        }
+      }
+    },
+    {
+      "queryId": "semantic-check-03",
+      "text": "새 장비로 바꾸기 전 저장한 웹 주소들을 옮길 파일 만들기",
+      "slice": "semantic",
+      "phase": "check",
+      "relevanceByInsightId": {
+        "account-03": 2,
+        "account-10": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "account-06",
+              "score": 35
+            },
+            {
+              "insightId": "account-03",
+              "score": 16
+            },
+            {
+              "insightId": "travel-12",
+              "score": 12
+            },
+            {
+              "insightId": "project-04",
+              "score": 12
+            },
+            {
+              "insightId": "study-04",
+              "score": 12
+            },
+            {
+              "insightId": "account-01",
+              "score": 10
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.5,
+            "ndcgAt6": 0.52129602861432,
+            "returnedResultCount": 6
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "account-03",
+              "score": 0.783556841970377
+            },
+            {
+              "insightId": "account-06",
+              "score": 0.6857460135063548
+            },
+            {
+              "insightId": "media-09",
+              "score": 0.6440508205565342
+            },
+            {
+              "insightId": "dev-06",
+              "score": 0.6419057477500696
+            },
+            {
+              "insightId": "account-08",
+              "score": 0.6398522865604542
+            },
+            {
+              "insightId": "account-10",
+              "score": 0.6355380767738708
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9243382314975351,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "account-03",
+              "score": 0.03252247488101534
+            },
+            {
+              "insightId": "account-06",
+              "score": 0.03252247488101534
+            },
+            {
+              "insightId": "media-06",
+              "score": 0.029850746268656716
+            },
+            {
+              "insightId": "account-10",
+              "score": 0.02964426877470356
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.02904040404040404
+            },
+            {
+              "insightId": "travel-02",
+              "score": 0.02758751902587519
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.944847956559586,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "account-03",
+              "score": 0.17424242424242425
+            },
+            {
+              "insightId": "account-06",
+              "score": 0.17424242424242425
+            },
+            {
+              "insightId": "media-06",
+              "score": 0.11764705882352941
+            },
+            {
+              "insightId": "account-10",
+              "score": 0.11513157894736842
+            },
+            {
+              "insightId": "account-01",
+              "score": 0.10795454545454546
+            },
+            {
+              "insightId": "travel-02",
+              "score": 0.08893280632411067
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.944847956559586,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "semantic-check-04",
+      "text": "모임 뒤 책임질 사람과 마감 시점을 적어 두기",
+      "slice": "semantic",
+      "phase": "check",
+      "relevanceByInsightId": {
+        "project-10": 2,
+        "project-05": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "account-08",
+              "score": 12
+            },
+            {
+              "insightId": "project-04",
+              "score": 12
+            },
+            {
+              "insightId": "study-12",
+              "score": 12
+            },
+            {
+              "insightId": "study-02",
+              "score": 12
+            },
+            {
+              "insightId": "dev-05",
+              "score": 12
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 5
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "project-10",
+              "score": 0.7126990882728074
+            },
+            {
+              "insightId": "project-05",
+              "score": 0.7009975920492145
+            },
+            {
+              "insightId": "project-06",
+              "score": 0.6665525694784051
+            },
+            {
+              "insightId": "project-04",
+              "score": 0.6410418316561187
+            },
+            {
+              "insightId": "media-04",
+              "score": 0.6394232011423628
+            },
+            {
+              "insightId": "project-02",
+              "score": 0.6356579175008519
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 1,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "project-04",
+              "score": 0.031754032258064516
+            },
+            {
+              "insightId": "study-12",
+              "score": 0.03036576949620428
+            },
+            {
+              "insightId": "account-08",
+              "score": 0.029906956136464335
+            },
+            {
+              "insightId": "study-02",
+              "score": 0.02542892156862745
+            },
+            {
+              "insightId": "project-10",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "project-05",
+              "score": 0.016129032258064516
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.2,
+            "ndcgAt6": 0.41773477091362754,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "project-04",
+              "score": 0.15476190476190477
+            },
+            {
+              "insightId": "account-08",
+              "score": 0.13257575757575757
+            },
+            {
+              "insightId": "study-12",
+              "score": 0.12955465587044535
+            },
+            {
+              "insightId": "project-10",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "study-02",
+              "score": 0.09065934065934066
+            },
+            {
+              "insightId": "project-05",
+              "score": 0.08333333333333333
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.25,
+            "ndcgAt6": 0.4539434726620534,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "semantic-check-05",
+      "text": "읽은 내용을 근거와 반대 의견으로 짧게 압축하기",
+      "slice": "semantic",
+      "phase": "check",
+      "relevanceByInsightId": {
+        "media-01": 2,
+        "study-12": 1
+      },
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "account-04",
+              "score": 12
+            },
+            {
+              "insightId": "media-01",
+              "score": 12
+            },
+            {
+              "insightId": "travel-01",
+              "score": 12
+            },
+            {
+              "insightId": "study-02",
+              "score": 12
+            },
+            {
+              "insightId": "dev-06",
+              "score": 12
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 0.5,
+            "ndcgAt6": 0.52129602861432,
+            "returnedResultCount": 5
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "media-01",
+              "score": 0.7558916360818237
+            },
+            {
+              "insightId": "study-03",
+              "score": 0.6369080314138205
+            },
+            {
+              "insightId": "study-12",
+              "score": 0.6246622612015377
+            },
+            {
+              "insightId": "media-09",
+              "score": 0.6238875610974933
+            },
+            {
+              "insightId": "media-05",
+              "score": 0.6204167556217761
+            },
+            {
+              "insightId": "media-06",
+              "score": 0.618643760445874
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9639404333166532,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "media-01",
+              "score": 0.03252247488101534
+            },
+            {
+              "insightId": "study-02",
+              "score": 0.029910714285714284
+            },
+            {
+              "insightId": "account-04",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "study-03",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "study-12",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "travel-01",
+              "score": 0.015873015873015872
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9327783893101107,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "media-01",
+              "score": 0.17424242424242425
+            },
+            {
+              "insightId": "study-02",
+              "score": 0.12142857142857143
+            },
+            {
+              "insightId": "account-04",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "study-03",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "study-12",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "travel-01",
+              "score": 0.07692307692307693
+            }
+          ],
+          "metrics": {
+            "recallAt5": 1,
+            "mrrAt6": 1,
+            "ndcgAt6": 0.9327783893101107,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "negative-calibration-01",
+      "text": "고양이 예방접종 일정",
+      "slice": "negative",
+      "phase": "calibration",
+      "relevanceByInsightId": {},
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "project-06",
+              "score": 12
+            },
+            {
+              "insightId": "travel-07",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 2
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "project-06",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "travel-07",
+              "score": 0.016129032258064516
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 2
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "project-06",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "travel-07",
+              "score": 0.08333333333333333
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 2
+          }
+        }
+      }
+    },
+    {
+      "queryId": "negative-calibration-02",
+      "text": "주식 양도소득세 신고",
+      "slice": "negative",
+      "phase": "calibration",
+      "relevanceByInsightId": {},
+      "candidates": {
+        "lexical-current": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        }
+      }
+    },
+    {
+      "queryId": "negative-calibration-03",
+      "text": "집에서 천연 발효빵 굽기",
+      "slice": "negative",
+      "phase": "calibration",
+      "relevanceByInsightId": {},
+      "candidates": {
+        "lexical-current": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        }
+      }
+    },
+    {
+      "queryId": "negative-calibration-04",
+      "text": "자동차 엔진오일 교체 주기",
+      "slice": "negative",
+      "phase": "calibration",
+      "relevanceByInsightId": {},
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "account-03",
+              "score": 12
+            },
+            {
+              "insightId": "study-01",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 2
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "account-03",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "study-01",
+              "score": 0.016129032258064516
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 2
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "account-03",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "study-01",
+              "score": 0.08333333333333333
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 2
+          }
+        }
+      }
+    },
+    {
+      "queryId": "negative-calibration-05",
+      "text": "이력서 연봉 협상 문구",
+      "slice": "negative",
+      "phase": "calibration",
+      "relevanceByInsightId": {},
+      "candidates": {
+        "lexical-current": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        }
+      }
+    },
+    {
+      "queryId": "negative-calibration-06",
+      "text": "아기 이유식 알레르기 순서",
+      "slice": "negative",
+      "phase": "calibration",
+      "relevanceByInsightId": {},
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "travel-06",
+              "score": 9
+            },
+            {
+              "insightId": "project-08",
+              "score": 9
+            },
+            {
+              "insightId": "study-03",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 3
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "travel-06",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "project-08",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "study-03",
+              "score": 0.015873015873015872
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 3
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "travel-06",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "project-08",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "study-03",
+              "score": 0.07692307692307693
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 3
+          }
+        }
+      }
+    },
+    {
+      "queryId": "negative-calibration-07",
+      "text": "실내 화분 진딧물 제거",
+      "slice": "negative",
+      "phase": "calibration",
+      "relevanceByInsightId": {},
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "travel-01",
+              "score": 12
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 1
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "travel-01",
+              "score": 0.01639344262295082
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 1
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "travel-01",
+              "score": 0.09090909090909091
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 1
+          }
+        }
+      }
+    },
+    {
+      "queryId": "negative-calibration-08",
+      "text": "웨딩 촬영 드레스 예약",
+      "slice": "negative",
+      "phase": "calibration",
+      "relevanceByInsightId": {},
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "media-03",
+              "score": 9
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 1
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "media-03",
+              "score": 0.01639344262295082
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 1
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "media-03",
+              "score": 0.09090909090909091
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 1
+          }
+        }
+      }
+    },
+    {
+      "queryId": "negative-calibration-09",
+      "text": "중고 자전거 체인 수리",
+      "slice": "negative",
+      "phase": "calibration",
+      "relevanceByInsightId": {},
+      "candidates": {
+        "lexical-current": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        }
+      }
+    },
+    {
+      "queryId": "negative-calibration-10",
+      "text": "전세 계약 등기부 확인",
+      "slice": "negative",
+      "phase": "calibration",
+      "relevanceByInsightId": {},
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "media-05",
+              "score": 9
+            },
+            {
+              "insightId": "account-07",
+              "score": 8
+            },
+            {
+              "insightId": "media-11",
+              "score": 8
+            },
+            {
+              "insightId": "travel-12",
+              "score": 8
+            },
+            {
+              "insightId": "travel-04",
+              "score": 8
+            },
+            {
+              "insightId": "travel-02",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 6
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "media-05",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "account-07",
+              "score": 0.016129032258064516
+            },
+            {
+              "insightId": "media-11",
+              "score": 0.015873015873015872
+            },
+            {
+              "insightId": "travel-12",
+              "score": 0.015625
+            },
+            {
+              "insightId": "travel-04",
+              "score": 0.015384615384615385
+            },
+            {
+              "insightId": "travel-02",
+              "score": 0.015151515151515152
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 6
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "media-05",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "account-07",
+              "score": 0.08333333333333333
+            },
+            {
+              "insightId": "media-11",
+              "score": 0.07692307692307693
+            },
+            {
+              "insightId": "travel-12",
+              "score": 0.07142857142857142
+            },
+            {
+              "insightId": "travel-04",
+              "score": 0.06666666666666667
+            },
+            {
+              "insightId": "travel-02",
+              "score": 0.0625
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 6
+          }
+        }
+      }
+    },
+    {
+      "queryId": "negative-check-01",
+      "text": "강아지 사료 급여량",
+      "slice": "negative",
+      "phase": "check",
+      "relevanceByInsightId": {},
+      "candidates": {
+        "lexical-current": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        }
+      }
+    },
+    {
+      "queryId": "negative-check-02",
+      "text": "부가가치세 세금계산서",
+      "slice": "negative",
+      "phase": "check",
+      "relevanceByInsightId": {},
+      "candidates": {
+        "lexical-current": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "account-12",
+              "score": 0.5975406443568269
+            },
+            {
+              "insightId": "travel-10",
+              "score": 0.5933360945122376
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 2
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "account-12",
+              "score": 0.01639344262295082
+            },
+            {
+              "insightId": "travel-10",
+              "score": 0.016129032258064516
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 2
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "account-12",
+              "score": 0.09090909090909091
+            },
+            {
+              "insightId": "travel-10",
+              "score": 0.08333333333333333
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 2
+          }
+        }
+      }
+    },
+    {
+      "queryId": "negative-check-03",
+      "text": "김치 냉장고 냄새 청소",
+      "slice": "negative",
+      "phase": "check",
+      "relevanceByInsightId": {},
+      "candidates": {
+        "lexical-current": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        }
+      }
+    },
+    {
+      "queryId": "negative-check-04",
+      "text": "마라톤 무릎 통증 훈련",
+      "slice": "negative",
+      "phase": "check",
+      "relevanceByInsightId": {},
+      "candidates": {
+        "lexical-current": {
+          "ranking": [
+            {
+              "insightId": "travel-08",
+              "score": 8
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 1
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "travel-08",
+              "score": 0.01639344262295082
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 1
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "travel-08",
+              "score": 0.09090909090909091
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 1
+          }
+        }
+      }
+    },
+    {
+      "queryId": "negative-check-05",
+      "text": "부모님 건강검진 예약",
+      "slice": "negative",
+      "phase": "check",
+      "relevanceByInsightId": {},
+      "candidates": {
+        "lexical-current": {
+          "ranking": [],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 0
+          }
+        },
+        "semantic-gemini-embedding-2": {
+          "ranking": [
+            {
+              "insightId": "travel-08",
+              "score": 0.5961131013229277
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 1
+          }
+        },
+        "hybrid-gemini-embedding-2-k60": {
+          "ranking": [
+            {
+              "insightId": "travel-08",
+              "score": 0.01639344262295082
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 1
+          }
+        },
+        "hybrid-gemini-embedding-2-k10": {
+          "ranking": [
+            {
+              "insightId": "travel-08",
+              "score": 0.09090909090909091
+            }
+          ],
+          "metrics": {
+            "recallAt5": 0,
+            "mrrAt6": 0,
+            "ndcgAt6": 0,
+            "returnedResultCount": 1
+          }
+        }
+      }
+    }
+  ]
+}
