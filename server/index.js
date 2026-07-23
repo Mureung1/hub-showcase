@@ -2,8 +2,8 @@ import { app } from "./app.js";
 import { env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
 
-const server = app.listen(env.PORT, () => {
-  logger.info({ port: env.PORT }, "API server started");
+const server = app.listen(env.PORT, "0.0.0.0", () => {
+  logger.info({ host: "0.0.0.0", port: env.PORT }, "API server started");
 });
 
 function shutdown(signal) {

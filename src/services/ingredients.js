@@ -1,4 +1,6 @@
-const INGREDIENTS_API_URL = "/api/ingredients";
+import { createApiUrl } from "../config/api";
+
+const INGREDIENTS_API_URL = createApiUrl("/api/ingredients");
 
 async function parseResponse(response, fallbackMessage) {
   const result = await response.json().catch(() => null);
