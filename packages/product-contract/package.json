@@ -10,6 +10,11 @@
       "development": "./src/index.ts",
       "types": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./testing": {
+      "development": "./src/testing/public-preview-contract-fixtures.ts",
+      "types": "./src/testing/public-preview-contract-fixtures.ts",
+      "default": "./dist/testing/public-preview-contract-fixtures.js"
     }
   },
   "scripts": {

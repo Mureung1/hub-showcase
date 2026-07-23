@@ -1,0 +1,180 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+
+import {
+  ProductContractError,
+  decodePublicPreviewBootstrap,
+  decodePublicPreviewCommand,
+  decodePublicPreviewResponse,
+} from './index.js'
+import {
+  PUBLIC_PREVIEW_ACCOUNT_FIXTURES,
+  PUBLIC_PREVIEW_COMMAND_FIXTURES,
+  PUBLIC_PREVIEW_RESPONSE_FIXTURES,
+  PUBLIC_PREVIEW_SCENARIO_FIXTURES,
+  PUBLIC_PREVIEW_SETUP_FIXTURES,
+} from './public-preview-fixtures.js'
+
+test('public preview fixtures cover every frozen Account and Setup state', () => {
+  assert.deepEqual(
+    PUBLIC_PREVIEW_ACCOUNT_FIXTURES.map(({ state }) => state),
+    [
+      'checking',
+      'login_required',
+      'login_starting',
+      'login_pending',
+      'verifying',
+      'connected',
+      'unsupported_account',
+      'unavailable',
+    ],
+  )
+  assert.deepEqual(
+    PUBLIC_PREVIEW_SETUP_FIXTURES.map(({ state }) => state),
+    [
+      'account_required',
+      'account_required',
+      'input_required',
+      'confirmation_required',
+      'working',
+      'transition_blocked',
+      'transition_blocked',
+      'release_blocked',
+      'recovery_required',
+      'recovery_required',
+      'recovery_required',
+      'recovery_required',
+      'ready',
+    ],
+  )
+  assert.deepEqual(
+    PUBLIC_PREVIEW_SCENARIO_FIXTURES.map(({ name }) => name),
+    [
+      'signed_out',
+      'login_offered',
+      'login_pending',
+      'auth_cancelled',
+      'authenticated',
+      'confirmation_required',
+      'working',
+      'operation_blocked_during_transition',
+      'recovery_required',
+      'ready',
+      'setup_conflict',
+    ],
+  )
+})
+
+test('producer fixtures and Browser consumer decoders preserve exact JSON values', () => {
+  for (const fixture of PUBLIC_PREVIEW_RESPONSE_FIXTURES) {
+    assert.deepEqual(
+      decodePublicPreviewResponse(JSON.parse(JSON.stringify(fixture))),
+      fixture,
+    )
+  }
+  for (const fixture of PUBLIC_PREVIEW_COMMAND_FIXTURES) {
+    assert.deepEqual(
+      decodePublicPreviewCommand(JSON.parse(JSON.stringify(fixture))),
+      fixture,
+    )
+  }
+})
+
+test('bootstrap decoder fails closed for missing, extra, unknown, and private fields', () => {
+  const valid = {
+    account: PUBLIC_PREVIEW_ACCOUNT_FIXTURES[5],
+    setup: PUBLIC_PREVIEW_SETUP_FIXTURES[12],
+  }
+
+  assert.deepEqual(decodePublicPreviewBootstrap(valid), valid)
+  assert.throws(
+    () => decodePublicPreviewBootstrap({ account: valid.account }),
+    ProductContractError,
+  )
+  assert.throws(
+    () => decodePublicPreviewBootstrap({ ...valid, extra: true }),
+    ProductContractError,
+  )
+  assert.throws(
+    () =>
+      decodePublicPreviewBootstrap({
+        ...valid,
+        account: { state: 'mystery', allowedCommands: [] },
+      }),
+    ProductContractError,
+  )
+  assert.throws(
+    () =>
+      decodePublicPreviewBootstrap({
+        ...valid,
+        setup: { ...valid.setup, absolutePath: '/private/workspace' },
+      }),
+    ProductContractError,
+  )
+})
+
+test('login and recovery projections preserve the managed-auth and ownership boundaries', () => {
+  const pending = PUBLIC_PREVIEW_ACCOUNT_FIXTURES[3]
+  const bundleConflict = PUBLIC_PREVIEW_SETUP_FIXTURES[10]
+
+  assert.deepEqual(
+    decodePublicPreviewBootstrap({
+      account: pending,
+      setup: bundleConflict,
+    }),
+    {
+      account: pending,
+      setup: bundleConflict,
+    },
+  )
+  assert.throws(
+    () =>
+      decodePublicPreviewBootstrap({
+        account: {
+          ...pending,
+          userCode: 'DEVICE-CODE',
+        },
+        setup: bundleConflict,
+      }),
+    ProductContractError,
+  )
+  assert.throws(
+    () =>
+      decodePublicPreviewBootstrap({
+        account: pending,
+        setup: {
+          ...bundleConflict,
+          allowedCommands: [
+            'setup.recover.resume',
+            'setup.recover.discard',
+          ],
+        },
+      }),
+    ProductContractError,
+  )
+})
+
+test('mutation commands bind exact transient authority and reject private correlation', () => {
+  assert.throws(
+    () => decodePublicPreviewCommand({ command: 'setup.resume' }),
+    ProductContractError,
+  )
+  assert.throws(
+    () =>
+      decodePublicPreviewCommand({
+        command: 'setup.resume',
+        recoveryId: 'setup_transition_primary',
+        receiptPhase: 'prepared',
+      }),
+    ProductContractError,
+  )
+  assert.throws(
+    () =>
+      decodePublicPreviewCommand({
+        command: 'account.login.cancel',
+        attemptId: 'account_attempt_primary',
+        loginId: 'native-login',
+      }),
+    ProductContractError,
+  )
+})

@@ -82,3 +82,47 @@ export type {
   ProductStatePatch,
 } from './operation-frame.js'
 export type { ProductOperationRecovery } from './recovery.js'
+
+export {
+  decodePublicPreviewBootstrap,
+  decodePublicPreviewCommand,
+  decodePublicPreviewError,
+  decodePublicPreviewResponse,
+} from './public-preview.js'
+export type {
+  PublicPreviewBootstrap,
+  PublicPreviewCommand,
+  PublicPreviewError,
+  PublicPreviewErrorCode,
+  PublicPreviewResponse,
+} from './public-preview.js'
+
+export { decodePublicPreviewAccountProjection } from './account.js'
+export type { PublicPreviewAccountProjection } from './account.js'
+
+export {
+  decodePublicPreviewSetupProjection,
+} from './setup.js'
+export type {
+  PublicPreviewNextJourney,
+  PublicPreviewParentSelection,
+  PublicPreviewReadyCheck,
+  PublicPreviewSemesterInput,
+  PublicPreviewSetupProjection,
+  PublicPreviewTermOption,
+  PublicPreviewYearLevelOption,
+} from './setup.js'
+
+export type {
+  PublicPreviewAccountCommand,
+  PublicPreviewCommandName,
+  PublicPreviewSetupCommand,
+} from './public-preview-values.js'
+
+export {
+  PUBLIC_PREVIEW_ACCOUNT_FIXTURES,
+  PUBLIC_PREVIEW_COMMAND_FIXTURES,
+  PUBLIC_PREVIEW_RESPONSE_FIXTURES,
+  PUBLIC_PREVIEW_SCENARIO_FIXTURES,
+  PUBLIC_PREVIEW_SETUP_FIXTURES,
+} from './public-preview-fixtures.js'

@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -72,7 +72,7 @@ Runtime, account transition, SemesterWorkspace, Server, Browser와 public host l
 | owner | `C` — Contract/integrator |
 | branch | `codex/public-preview-integration` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/integration` |
-| handoffSha | Claim 시 coordinator가 001의 fixed reviewed SHA를 integration branch에 반영하고 predecessor 및 integration root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `c182c2eeb754cbc4315f26f16a735257957e4b6e` — Ticket 001 fixed reviewed SHA가 반영된 clean integration HEAD. Coordinator가 `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`를 green으로 확인했다. |
 | writablePaths | `packages/product-contract/**`; `packages/codex-chat-runtime/src/account-contract.ts`; `packages/runtime-release/src/contract.ts`; `packages/semester-workspace/src/contract.ts`; `apps/server/src/account-runtime/contract.ts`; `apps/ay-ple/src/host-contract.ts`; contract fixture/test 전용 파일; `docs/tickets/2026-07-23-public-npx-first-release/002-spine-s1-frozen-contracts-fixtures.md` |
 | consumedContracts | Parent Spec의 Browser-safe projection, private Module Interface, descriptor identity, error vocabulary와 S0 package graph |
 | predecessorEvidence | 001 fixed reviewed SHA, lockfile digest, safe TAR dependency record, green scaffold receipt |
