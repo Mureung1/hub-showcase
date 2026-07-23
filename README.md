@@ -4,6 +4,63 @@
 
 이번 주 작업 현황은 [GitHub Issues](https://github.com/dohyeon-k/hub/issues)에서 확인할 수 있다(우선순위는 `P0`/`P1`/`P2` 라벨로 표시). 진행 상황은 Project 보드에서도 칸반 형태로 볼 수 있다: [2주차 - 공고 추천 슬라이스](https://github.com/users/dohyeon-k/projects/1), [3주차 - 자소서 초안 생성 슬라이스](https://github.com/users/dohyeon-k/projects/2).
 
+## 기술 스택
+
+| 영역 | 스택 |
+|---|---|
+| Frontend | Vite 8 + React 19 (순수 CSS, 별도 UI/상태관리 라이브러리 없음) |
+| Backend | Node.js + Express |
+| DB | Supabase (`profiles`, `drafts` 테이블) |
+| AI | Anthropic Claude API (`claude-haiku-4-5`) |
+| 공고 데이터 | `backend/data/postings.json` 목업 10건 (실제 크롤링 연동 예정, 이슈 [#23](https://github.com/dohyeon-k/hub/issues/23)) |
+| 테스트 | vitest (backend 서비스 로직 + frontend 컴포넌트), Playwright(E2E, 임시 스크립트) |
+| 인증 | 단일 계정 HTTP Basic Auth (`requireAuth` 미들웨어) |
+
+## 화면
+
+|정보입력 → 추천목록|자소서 초안 (저장됨)|
+|---|---|
+|![추천 목록 화면](docs/screenshots/recommend-list.png)|![자소서 초안 저장 화면](docs/screenshots/draft-saved.png)|
+
+## 실행 방법
+
+로컬에서 프론트엔드와 백엔드를 각각 띄워야 한다(별도 패키지, 모노레포 툴 없음).
+
+### 준비물
+- Node.js 20 이상
+- Supabase 프로젝트 (`profiles`, `drafts` 테이블 — [docs/data-model.md](docs/data-model.md)의 SQL로 생성)
+- Anthropic API 키 (선택 — 없으면 추천 이유/자소서 초안이 템플릿 문구로 폴백됨)
+- 로그인 게이트용 아이디/비밀번호 (직접 정하면 됨)
+
+### 1. 백엔드
+
+```bash
+cd backend
+npm install
+cp .env.example .env
+# .env를 열어 SUPABASE_URL, SUPABASE_SERVICE_KEY, ANTHROPIC_API_KEY, APP_LOGIN_ID, APP_LOGIN_PASSWORD 채우기
+npm run dev
+```
+
+`http://localhost:4000`에서 대기한다.
+
+### 2. 프론트엔드 (새 터미널)
+
+```bash
+npm install
+cp .env.example .env   # 기본값(http://localhost:4000)이면 그대로 둬도 됨
+npm run dev
+```
+
+`http://localhost:5173` 접속 → 로그인 화면(방금 정한 아이디/비밀번호) → 정보입력부터 시작.
+
+### 테스트 실행
+
+```bash
+npm test              # 루트: React 컴포넌트 단위 테스트
+cd backend && npm test  # 백엔드: 서비스 로직 단위 테스트
+```
+
 ## 아키텍처
 
 화면(로그인+4개) → Express 라우트 → 서비스 로직 → 데이터(Supabase/목업 JSON)로 이어지는 전체 구조. 로그인 흐름, 추천 흐름(정보입력→추천), 자소서 흐름(공고상세→초안) 세 개의 수직 슬라이스가 있다:
@@ -158,22 +215,3 @@ sequenceDiagram
 
 - `profile` 자체는 Supabase에 저장은 되지만, 프론트는 그걸 DB에서 다시 조회하지 않고 자소서 초안 요청 시 그대로 재전송한다(T10에서 단순함을 우선해 결정) — 이 구조 자체는 그대로 남아있다. 다만 새로고침하면 다 날아가던 문제는 별개로 해결했다: `step`/`profile`/`profileId`/`jobs`/`selectedJob`/`isDraftSaved`/`authHeader`를 `sessionStorage`에 저장해뒀다가 마운트 시 복원한다(라우터 라이브러리 없이, URL 변경 없이). 라우터 도입(URL 딥링크, 브라우저 뒤로가기 등)은 여전히 범위 밖 — `CLAUDE.md`에 "라우터 라이브러리는 쓰지 않는다"고 결정돼 있고, 지금 문제(새로고침 복원)엔 필요하지 않다고 판단했다.
 - 자소서 초안 "저장"은 원래 세션 로컬(T12)이었으나, 3주차가 예정보다 훨씬 빨리 끝나 생긴 여유로 Supabase `drafts` 테이블에 실제로 영속화하도록 확장했다(`docs/data-model.md` 참고).
-
----
-
-# React + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
