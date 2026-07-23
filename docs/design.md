@@ -34,7 +34,7 @@
 | `color-border` | `#dcf0e4` | 리스트 구분선, GNB 언더라인 등 여린 테두리 | `.sub-list`, `.gnb` |
 | `color-border-input` | `#cce3d3` | 인풋 필드, 프레임처럼 또렷해야 하는 테두리 | `.form-input`, `.browser-frame` |
 | `color-accent-toss` | `#0064ff` | 외부 결제 연동(토스) 버튼 전용 | `.btn-toss` |
-| `color-accent-kakao` | `#fee500` | 외부 결제 연동(카카오) 버튼 전용 | `.btn-kakao`, `.btn-kakaopay` |
+| `color-accent-kakao` | `#fee500` | 카카오 연동(결제/공유) 버튼 전용 | `.btn-kakao`, `.btn-kakaopay`, `.kakao-share-btn` |
 
 ### 서비스 구분 색상 (고정 팔레트 + 결정론적 배정)
 

@@ -23,6 +23,23 @@ const SubscriptionDetail = () => {
     }
   }
 
+  const handleKakaoShare = (joinUrl, serviceName) => {
+    if (!window.Kakao?.isInitialized()) return
+
+    // 템플릿 링크가 `http://localhost:5173/${path}` 형태(도메인 뒤 슬래시가 이미 고정)라
+    // path 변수에는 선행 슬래시 없이 넘겨야 함 (join/12)
+    const path = new URL(joinUrl).pathname.replace(/^\//, '')
+
+    window.Kakao.Share.sendCustom({
+      templateId: Number(import.meta.env.VITE_KAKAO_SHARE_TEMPLATE_ID),
+      // 카카오 디벨로퍼스 콘솔 메시지 템플릿에 정의한 변수명과 일치해야 함
+      templateArgs: {
+        serviceName,
+        path,
+      },
+    })
+  }
+
   useEffect(() => {
     getSubscription(id)
       .then((data) => {
@@ -106,6 +123,13 @@ const SubscriptionDetail = () => {
             <div className="link-action-row">
               <button type="button" className="copy-link-btn" onClick={() => handleCopyLink(joinUrl)}>
                 {copied ? '복사됨' : '링크 복사'}
+              </button>
+              <button
+                type="button"
+                className="kakao-share-btn"
+                onClick={() => handleKakaoShare(joinUrl, serviceName)}
+              >
+                카카오톡 공유
               </button>
             </div>
 
