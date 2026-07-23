@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "title": "전자 생물 AI 매니저",
+  "summary": "목표 관리를 XP 데스크톱 게임처럼 재구성해, 전자 생물 매니저와 함께 오늘의 퀘스트를 수행하고 성장하는 서비스입니다.",
+  "githubUser": "YIFNEN(김동민)",
+  "demoUrl": "https://github.com/YIFNEN/hub",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/home.webp"
+  ],
+  "problem": "할 일 목록은 실패가 쌓일수록 부담이 커지고, 사용자의 실패 이유와 회복 과정을 다음 행동으로 자연스럽게 이어주기 어렵습니다.",
+  "targetUsers": [
+    "공부, 운동, 습관 형성 목표를 작게 쪼개 실행하고 싶은 사용자",
+    "실패 후 다시 시작할 수 있는 회복형 목표 관리 경험이 필요한 사용자",
+    "게임처럼 보상과 캐릭터 성장으로 동기를 얻고 싶은 사용자"
+  ],
+  "features": [
+    "프로필과 목표를 바탕으로 오늘의 퀘스트를 만들고 QuestRunner.exe 흐름으로 실행합니다.",
+    "완료, 실패, 복구 이벤트를 Hono API와 Supabase quest_logs에 저장하고 기록 노트에서 다시 조회합니다.",
+    "실패 이유를 기록한 뒤 더 작은 복구 퀘스트로 이어가며, Lumi 매니저의 상태와 대사가 최근 흐름을 반영합니다.",
+    "Canvas sprite animation, blink focus scene, Pixel TV projection mode, sprite review tool로 전자 생물 매니저의 게임성을 강화합니다.",
+    "TDD로 성장, 보상, 상호작용 오브젝트, 매니저 행동 state machine 같은 확장 규칙을 먼저 고정했습니다."
+  ],
+  "featureTags": [
+    "퀘스트 관리",
+    "회복형 목표 관리",
+    "전자 생물 매니저",
+    "Supabase 수직 슬라이스",
+    "Agent Workflow"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Vite",
+    "Hono",
+    "Supabase",
+    "Vitest",
+    "Mermaid"
+  ],
+  "techHighlights": [
+    "React state와 컴포넌트 분리로 XP 데스크톱형 창, 퀘스트 실행, 기록 노트 흐름을 구현했습니다.",
+    "Vite middleware가 /api 요청을 Hono app으로 넘기고, Hono route가 contract parser로 검증한 뒤 Supabase에 저장합니다.",
+    "Quest Event를 중심으로 manager context, reward hints, 기록 노트 렌더링이 같은 데이터 흐름을 공유합니다.",
+    "LLM을 바로 UI에 연결하지 않고 ManagerBehaviorIntent와 behavior adapter 경계로 제한해 안전한 애니메이션 상태로 변환합니다.",
+    "analyze-request, create-plan, tdd_workflow, verifier, wiki-query 계열 Agent와 Skill을 사용해 요구사항 분석, 구현, 검증, 문서화를 분리했습니다."
+  ],
+  "developmentWithAI": "저는 서비스 컨셉, 핵심 사용자 흐름, 확장 우선순위, 수동 검증 결과를 결정했습니다. AI Agent는 현재 저장소를 조사하고 계획을 만들고, 승인된 범위에서 코드와 문서를 수정했습니다. 구현 후에는 타입 검사, 빌드, 하네스, sprite verifier, 수동 Network 확인을 분리해 검증했습니다.",
+  "agent": {
+    "summary": "기획, 구현, TDD, 검증, Wiki/문서 정리를 Agent와 Skill로 나누어 진행했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "tdd_workflow",
+        "purpose": "작은 spec을 RED, GREEN, REFACTOR 순서로 구현하고 검증 역할에 넘깁니다."
+      },
+      {
+        "type": "agent",
+        "name": "verifier",
+        "purpose": "구현자가 스스로 완료 판단하지 않도록 diff, 테스트, 하네스, 수동 시나리오를 독립적으로 확인합니다."
+      },
+      {
+        "type": "skill",
+        "name": "analyze-request",
+        "purpose": "요구사항을 목표, 범위, 제약, 수용 조건으로 정리합니다."
+      },
+      {
+        "type": "skill",
+        "name": "tdd-test-writing",
+        "purpose": "반복적인 테스트 작성 절차를 spec, RED, GREEN, refactor로 정리합니다."
+      },
+      {
+        "type": "skill",
+        "name": "wiki-query",
+        "purpose": "Wiki에서 근거가 있는 내용만 찾아 설명하고 stale 정보를 구분합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "요구사항을 analyze-request로 정리",
+          "create-plan으로 수정 파일과 검증 방법 분리",
+          "테스트 가능한 규칙은 tdd_workflow로 RED/GREEN 구현",
+          "implementer가 승인된 범위만 수정",
+          "verifier가 typecheck, build, harness, 수동 시나리오를 확인"
+        ]
+      },
+      {
+        "name": "수직 슬라이스 검증 Workflow",
+        "steps": [
+          "React UI에서 완료/실패/복구 이벤트 발생",
+          "Network에서 POST /api/quest-events 확인",
+          "GET /api/quest-events와 GET /api/manager-context 확인",
+          "Supabase quest_logs 저장 여부 확인",
+          "기록 노트와 Lumi 상태 갱신 확인"
+        ]
+      },
+      {
+        "name": "문서와 Wiki 최신화 Workflow",
+        "steps": [
+          "status.md와 tasks.md에 완료/남은 작업 반영",
+          "architecture-data-flow.md에 실제 코드 흐름을 Mermaid로 정리",
+          "db-schema.md에 Supabase 정규화 후보 기록",
+          "wiki-query로 stale synthesis 확인",
+          "verify-harness로 문서 구조 검증"
+        ]
+      }
+    ]
+  }
+}

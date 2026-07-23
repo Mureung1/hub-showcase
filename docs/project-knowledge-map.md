@@ -43,6 +43,7 @@ docs/project-knowledge-map.md
 │  ├─ planning-agent.md
 │  ├─ verification-agent.md
 │  ├─ document-management-agent.md
+│  ├─ tdd-workflow-agent.md
 │  ├─ project-learning-agent skill
 │  └─ agent-usage-guide.md
 ├─ 실행 규칙 줄기
@@ -118,6 +119,7 @@ product-plan.md
 | `agent-design.md` | 목표 해석, 퀘스트 생성, 리밸런싱, 피드백 Agent의 역할 정의 |
 | `planning-agent.md` | 요구사항을 Task와 일정으로 쪼개는 문서형 Agent |
 | `verification-agent.md` | 구현 결과를 시나리오와 데이터 흐름으로 점검하는 문서형 Agent |
+| `tdd-workflow-agent.md` | 작은 spec을 RED/GREEN/REFACTOR로 구현하는 TDD workflow Agent |
 | `project-learning-agent skill` | 구현 중 생긴 학습 키워드, 참고 코드, ChatGPT 질문 예시를 짧게 정리 |
 | `future-expansion-plan.md` | 개인 LLM, 음성 입력, 웹캠, 소셜 탐색 등 MVP 이후 확장 |
 
@@ -131,6 +133,8 @@ design-system.md + mvp-functional-spec.md + user-flow-wireframes.md + asset-prom
 | 항목 | 역할 |
 |---|---|
 | `AGENTS.md` | 저장소 안에서 Codex가 따라야 할 작업 규칙 |
+| `.codex/agents/tdd_workflow.toml` | TDD 전용 서브에이전트 역할 설정 |
+| `.agents/skills/tdd-test-writing/SKILL.md` | 반복적인 테스트 작성 절차를 spec, RED, GREEN, refactor로 수행하는 workflow skill |
 | `xp-desktop-pet-ui skill` | Codex 개인 환경에 있는 XP 전자펫 UI 전용 실행 규칙 |
 | `docs/codex-skills/xp-desktop-pet-ui/` | 다른 환경에서도 skill을 재사용할 수 있도록 보관한 repo 문서화 버전 |
 

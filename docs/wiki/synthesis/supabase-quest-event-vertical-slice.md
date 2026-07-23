@@ -2,7 +2,7 @@
 title: Supabase Quest Event Vertical Slice
 type: synthesis
 status: active
-updated: 2026-07-21
+updated: 2026-07-23
 source_paths:
   - src/App.tsx
   - src/layers/storage/questLogApi.ts
@@ -59,7 +59,7 @@ The 2026-07-21 local smoke test verified:
 - `GET /api/quest-events?limit=5` returned `200 OK`.
 - `GET /api/manager-context` returned `200 OK`.
 
-The UI still needs a final manual pass before moving the GitHub Project card from `In review` to `Done`.
+The browser UI manual pass was later confirmed: complete, fail, and recovery flows produced the expected Network `POST` and `GET` requests, and the journal rendered the stored records.
 
 ## Supabase Permission Note
 
@@ -81,6 +81,5 @@ Keep the service role key server-side only. Do not put it in React code, screens
 
 ## Remaining Gaps
 
-- Browser UI verification should confirm quest complete/fail/recovery clicks produce the expected Network requests.
 - Auth and user-specific RLS policies are not implemented yet.
-- The current API uses one `quest_logs` event table; future tables should be added only when the event table becomes too broad for a real feature.
+- The current API uses one `quest_logs` event table; future tables should be added when repeated features need queryable profile, persona, stats, reward, appearance, memory, theme, public shard, or device preference data.

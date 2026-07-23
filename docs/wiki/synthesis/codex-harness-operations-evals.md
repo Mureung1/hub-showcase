@@ -2,7 +2,7 @@
 title: Codex Harness Operations and Evals
 type: synthesis
 status: active
-updated: 2026-07-14
+updated: 2026-07-23
 source_paths:
   - AGENTS.md
   - .codex/config.toml
@@ -30,6 +30,7 @@ request
 -> researcher investigation
 -> create-plan
 -> user approval
+-> tdd_workflow for testable rules
 -> implementer execution
 -> verifier validation
 -> fix and re-verify
@@ -45,6 +46,7 @@ request
 | Researcher | Investigate code, docs, configuration, and evidence in read-only mode. | Edit files or make final implementation decisions. |
 | Planner | Produce file-level plans, acceptance criteria, verification commands, and rollback notes. | Treat a plan as implementation approval. |
 | Implementer | Modify only approved files with the smallest useful change. | Self-approve completion or broaden scope. |
+| TDD workflow | Convert small behavior specs into RED, GREEN, and refactor checkpoints. | Mix UI wiring, DB migration, package install, or commits into a narrow test-first step. |
 | Verifier | Independently check diffs, tests, build evidence, harness rules, and acceptance criteria. | Lower standards to match an implementation. |
 | Wiki curator | Update approved Wiki pages with traceable `source_paths`, index entries, and log entries. | Edit raw source material or application code. |
 
@@ -108,6 +110,7 @@ wiki-lint를 실행하여 깨진 링크, 누락된 source, index 누락, 중복 
 - Re-ingesting generated output as raw source.
 - Adding Wiki facts without source paths.
 - Automatic push, merge, or deployment.
+- Claiming TDD without a failing RED test.
 
 ## Representative Evals
 

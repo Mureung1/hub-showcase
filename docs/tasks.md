@@ -64,8 +64,8 @@
 | T-303 | P0 | Done | 복구 완료 이벤트 API 저장 연동 | 복구 퀘스트 완료 이벤트가 구분되어 저장된다 | verification-agent.md |
 | T-304 | P0 | Done | 기록 노트 서버 조회 연결 | 기록 노트가 `GET /api/quest-events` 응답을 렌더링한다 | mvp-functional-spec.md |
 | T-305 | P0 | Done | API 실패 UI 연결 | 저장/조회 실패 시 재시도 또는 안내 상태가 보인다 | verification-agent.md |
-| T-306 | P0 | Review | 수직 슬라이스 서버 mock 검증 | 화면 요청 -> Hono 서버 처리 -> memory store 저장 -> 화면 갱신이 확인된다 | verification-agent.md |
-| T-307 | P0 | Review | Supabase 실제 DB 검증 | `/api/health`가 `storageMode: "supabase"`인 상태에서 HTTP smoke test로 Hono -> Supabase 저장/조회가 확인됐고, 브라우저 UI 수동 확인만 남았다 | verification-agent.md |
+| T-306 | P0 | Done | 수직 슬라이스 서버 mock 검증 | 화면 요청 -> Hono 서버 처리 -> memory store 저장 -> 화면 갱신이 확인됐다 | verification-agent.md |
+| T-307 | P0 | Done | Supabase 실제 DB 검증 | `/api/health`가 `storageMode: "supabase"`인 상태에서 HTTP smoke test와 브라우저 UI 수동 확인으로 Hono -> Supabase 저장/조회, Network `POST`/`GET`, 기록 노트 표시가 확인됐다 | verification-agent.md |
 
 ## 3~4주차 P1: UI 품질과 기술부채
 
@@ -81,7 +81,7 @@
 
 | ID | 우선순위 | 상태 | Task | 완료 기준 | 연결 문서 |
 |---|---|---|---|---|---|
-| T-701 | P1 | Review | 확장 기능 asset/data manifest 설계 | sprite, icon, theme, reward, sound, projection, interaction object manifest가 코드와 문서에 정의됐고, UI/에셋 추가 시 확장 검증이 남았다 | dynamic-asset-requirements.md |
+| T-701 | P1 | Done | 확장 기능 asset/data manifest 설계 | sprite, icon, theme, reward, sound, projection, interaction object manifest가 코드와 문서에 정의됐고, runtime/candidate/review naming 기준이 정리됐다 | dynamic-asset-requirements.md |
 | T-702 | P1 | Review | 캐릭터 애니메이션 적용 | 루미 상태별 Canvas sprite animation과 hover/reaction 상태가 적용됐고, 브라우저 시각 확인이 남았다 | design-system.md |
 | T-703 | P1 | Backlog | 외적 성장 보상 구현 | 레벨 또는 보상 해금에 따라 루미 accessory/growth variant가 바뀐다 | future-expansion-plan.md |
 | T-704 | P1 | Backlog | 데스크톱 배경 테마 구현 | 해금된 wallpaper theme를 선택하고 XP desktop에 적용할 수 있다 | future-expansion-plan.md |
@@ -94,6 +94,7 @@
 | T-711 | P1 | In Progress | 전자 매니저 Persona와 제한 선택지 설계 | `balanced/adventurous/shy` behaviorStyle이 Pet Behavior State Machine weight에 반영되고, 직접/간접 선택 UI 연결이 남았다 | future-expansion-plan.md |
 | T-712 | P1 | In Progress | 퀘스트 능력치 growth 설계 | 퀘스트 타입/결과별 stat delta 도메인 규칙이 TDD로 추가됐고, Quest Event metadata 저장/표시 연결이 남았다 | db-schema.md |
 | T-713 | P1 | Backlog | cyber-purr 사운드 탐색 및 적용 후보 정리 | 전자/사이버틱한 기본 고롱고롱 사운드 후보와 mute/fallback 기준이 정리된다 | dynamic-asset-requirements.md |
+| T-718 | P1 | Backlog | Supabase 확장 테이블 정규화 계획 | `quest_logs.metadata`에서 반복 조회가 필요한 profile, persona, stats, reward, appearance, memory, theme, device preference 데이터를 별도 테이블 후보로 승격하는 계획이 있다 | db-schema.md |
 | T-714 | P2 | In Progress | 사다리 interaction prototype | 사다리 resize/progress와 접근/등반 behavior state가 TDD로 추가됐고, UI object layer 연결이 남았다 | dynamic-asset-requirements.md |
 | T-715 | P2 | In Progress | 평지 interaction prototype | 평지 resize/jump 가능 거리와 jump behavior state가 TDD로 추가됐고, UI object layer 연결이 남았다 | dynamic-asset-requirements.md |
 | T-716 | P2 | In Progress | 창탈출 interaction prototype | window escape edge와 desktop-overlay layer 전환 규칙이 TDD로 추가됐고, 화면 overlay 연결이 남았다 | future-expansion-plan.md |
@@ -116,6 +117,8 @@
 | T-502 | P2 | Backlog | 발표용 스크린샷 정리 | 핵심 화면 3~5장이 준비된다 | status.md |
 | T-503 | P2 | Backlog | PR 본문 최신화 | 계획, 백로그, Agent 문서 변경이 반영된다 | status.md |
 | T-504 | P2 | Review | 학습 문서 보강 | React 상태, API, Supabase, XP CSS 학습 키워드가 `project-learning-agent` 기준으로 정리된다 | learning/README.md |
+| T-505 | P2 | Done | showcase 제출 파일 작성 | 최상위 `showcase/showcase.json`, `thumbnail.webp`, `screenshots/home.webp`가 PR에 포함된다 | status.md |
+| T-506 | P2 | Done | TDD workflow Agent와 Skill 작성 | 반복 TDD 절차가 `.codex/agents/tdd_workflow.toml`, `.agents/skills/tdd-test-writing/SKILL.md`, 문서화 copy로 정리된다 | tdd-workflow-agent.md |
 
 ## 여유 시 P3: MVP 이후 확장 후보
 
@@ -133,9 +136,7 @@
 - `[P0] Agent 사용 가이드 작성`
 - `[P0] 정적 HTML 화면을 React 컴포넌트 단위로 분해`
 - `[P0] React 컴포넌트 파일 단위 분리 마무리`
-- `[P0] Supabase 실제 DB 검증`
 - `[P0] GitHub Issue 등록`
-- `[P1] 확장 기능 asset/data manifest 설계`
 - `[P1] 캐릭터 애니메이션과 theme 보상 적용`
 - `[P1] 개인화 AI 매니저 adapter 구현`
 - `[P2] 현실 픽셀화 TV prototype`
@@ -144,17 +145,16 @@
 - `[P2] 웹캠 손 제스처 탐색 prototype`
 - `[P1] API 로딩/빈 상태 polish`
 - `[P1] 정적 HTML 대비 남은 UI 차이 점검`
+- `[P2] showcase 제출 파일 작성`
+- `[P2] TDD workflow Agent와 Skill 작성`
 
 ## 추천 진행 순서
 
-1. `T-307` Supabase 수직 슬라이스 UI 검증: 브라우저에서 완료/실패/복구 클릭, Network `POST`/`GET` 확인, 기록 노트 확인 후 Project 상태를 `Done`으로 이동한다.
-2. `T-701` 확장 기능 asset/data manifest 설계: 캐릭터 animation, icon hover, theme, reward, sound, projection mode, interaction object가 manifest와 문서에서 같은 naming 규칙을 쓰는지 정리한다.
-3. `T-702`, `T-710`, `T-713` 캐릭터 생동감: Lumi Canvas animation, 서비스 진입/종료 blink focus, cyber-purr 사운드 후보를 묶어 "살아 있는 매니저" 느낌을 만든다.
-4. `T-724` Projection Mode: Pixel TV 우클릭 속성, 변환/원복, projection-connected icon, `?projection=pepper` 검은 배경 Lumi glow 화면을 확인한다. 4면/멀티뷰는 보류하고 v1.5에서 front/back 자동 회전을 검토한다.
-5. `T-703`, `T-717`, `T-712` 성장/보상 구조: Stage 1~4 해금, 원하는 외형으로 회귀, Quest Event metadata 기반 능력치 증가를 연결한다.
-6. `T-709`, `T-711` Persona/LLM 매니저: ManagerContext 기반 adapter, Persona 경계, 직접 선택/간접 선택, rule fallback을 분리한다.
-7. `T-714`, `T-715`, `T-716` 상호작용 오브젝트: 물리엔진보다 object rect, anchor point, state machine으로 사다리/평지/창탈출 prototype을 시작한다.
-8. `T-708`, `T-721`, `T-722`, `T-723` 월드/실험 기능: 하루 흐름 Web theme, 현실 픽셀화 TV, 공개 퀘스트 탐색, 웹캠 손 제스처 탐색을 별도 prototype으로 검증한다.
+1. `T-702`, `T-709`, `T-711`, `T-713` 캐릭터 생동감/Persona 연결: Lumi Canvas animation, behavior adapter, Persona style, cyber-purr 사운드 후보를 묶어 "살아 있는 매니저" 느낌을 만든다.
+2. `T-703`, `T-717`, `T-712`, `T-718` 성장/보상 구조와 DB 정규화: Stage 1~4 해금, 원하는 외형으로 회귀, Quest Event metadata 기반 능력치 증가를 UI와 기록에 연결하고 반복 조회 데이터의 Supabase 테이블 승격 기준을 확정한다.
+3. `T-714`, `T-715`, `T-716` 상호작용 오브젝트: 물리엔진보다 object rect, anchor point, state machine으로 사다리/평지/창탈출 prototype을 시작한다.
+4. `T-708`, `T-721`, `T-722`, `T-723` 월드/실험 기능: 하루 흐름 Web theme, 현실 픽셀화 TV, 공개 퀘스트 탐색, 웹캠 손 제스처 탐색을 별도 prototype으로 검증한다.
+5. `T-724` Projection Mode 후속 검수: 기본 변환/원복 flow는 연결됐으므로 projection 화면 품질과 front/back 자동 회전 v1.5 필요 여부를 판단한다.
 
 ## Roadmap 연결
 
