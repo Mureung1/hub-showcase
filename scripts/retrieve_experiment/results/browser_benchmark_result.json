@@ -1,0 +1,403 @@
+{
+  "generatedAt": "2026-07-23T09:22:57.776Z",
+  "measurementContract": {
+    "backend": "wasm",
+    "cacheLoad": "cold 성공 뒤 새 Worker를 만들고 Transformers Cache Storage 적중 상태에서 Worker 생성부터 pipeline ready까지 측정했습니다.",
+    "coldLoad": "같은 origin의 Cache Storage를 삭제하고 HTTP cache를 CDP로 비활성화·초기화한 뒤 Worker 생성부터 pipeline ready까지 측정했습니다.",
+    "dimensions": 384,
+    "memory": "peak는 단계 경계의 최대 추정치이며 연속 peak가 아닙니다. 지원 API가 없으면 null과 한계를 기록합니다.",
+    "model": "Xenova/multilingual-e5-small",
+    "revision": "761b726dd34fb83930e26aab4e9ac3899aa1fa78",
+    "warmPercentile": "정렬 후 ceil(p*n)-1 nearest-rank"
+  },
+  "platforms": {
+    "android": {
+      "browserVersion": "Chrome/148.0.7778.215",
+      "cache": {
+        "originStorageUsageDeltaBytes": -159017472,
+        "firstQueryMs": 216.20999999996275,
+        "loadMs": 5984.910000000149,
+        "memory": {
+          "afterFirst": {
+            "bytes": 1088856,
+            "limitation": "단계 경계에서 측정한 UA 특정 메모리이며 연속 peak가 아닙니다.",
+            "source": "measureUserAgentSpecificMemory"
+          },
+          "afterLoad": {
+            "bytes": null,
+            "limitation": "UA 특정 메모리 측정이 10000ms 안에 끝나지 않아 peak를 추정하지 않았습니다.",
+            "source": "timed-out"
+          },
+          "afterWarm": {
+            "bytes": null,
+            "limitation": "UA 특정 메모리 측정이 10000ms 안에 끝나지 않아 peak를 추정하지 않았습니다.",
+            "source": "timed-out"
+          },
+          "baseline": {
+            "bytes": null,
+            "limitation": "UA 특정 메모리 측정이 10000ms 안에 끝나지 않아 peak를 추정하지 않았습니다.",
+            "source": "timed-out"
+          },
+          "peakStageBoundaryEstimateBytes": 1088856
+        },
+        "workerAssets": {
+          "model": 118308185,
+          "other": 658,
+          "tokenizer": 17083173,
+          "wasm": null
+        },
+        "warmQueryMs": [
+          40.12999999988824,
+          47.825000000186265,
+          78.29999999981374,
+          60.95999999996275,
+          58.68500000052154,
+          74.42999999970198,
+          59.25,
+          64.50499999988824,
+          75.99500000011176,
+          46.70999999996275,
+          65.46999999973923,
+          30.78000000026077,
+          43.24000000022352,
+          64.03499999921769,
+          97.4199999999255,
+          36.34999999962747,
+          54.375,
+          27.59499999973923,
+          30.550000000745058,
+          26.665000000037253
+        ],
+        "warmQueryP50Ms": 54.375,
+        "warmQueryP95Ms": 78.29999999981374,
+        "cacheEvidence": {
+          "cacheHitVerified": true,
+          "missingRequiredBasenames": [],
+          "cacheRunRemoteModelRequestCount": 0,
+          "cacheStorage": {
+            "cacheNames": [
+              "transformers-cache"
+            ],
+            "entries": [
+              {
+                "basename": "config.json",
+                "hasFixedRevision": false,
+                "sizeBytes": 658
+              },
+              {
+                "basename": "tokenizer_config.json",
+                "hasFixedRevision": true,
+                "sizeBytes": 443
+              },
+              {
+                "basename": "config.json",
+                "hasFixedRevision": true,
+                "sizeBytes": 658
+              },
+              {
+                "basename": "tokenizer.json",
+                "hasFixedRevision": true,
+                "sizeBytes": 17082730
+              },
+              {
+                "basename": "model_quantized.onnx",
+                "hasFixedRevision": true,
+                "sizeBytes": 118308185
+              }
+            ],
+            "wasm": {
+              "attemptedMethods": [
+                "Cache Storage response content-length"
+              ],
+              "limitation": null,
+              "sizeBytes": 4732131
+            }
+          }
+        }
+      },
+      "cancellation": {
+        "firstProgressFile": "config.json",
+        "signal": "first-progress-callback",
+        "terminatedAfterFirstProgress": true,
+        "cacheReady": true,
+        "recoveryCacheBenchmark": {
+          "firstQueryMs": 216.20999999996275,
+          "loadMs": 5984.910000000149,
+          "warmQueryCount": 20
+        }
+      },
+      "cold": {
+        "originStorageUsageDeltaBytes": 159017472,
+        "firstQueryMs": 262.8300000000745,
+        "loadMs": 79932.85499999952,
+        "memory": {
+          "afterFirst": {
+            "bytes": null,
+            "limitation": "UA 특정 메모리 측정이 10000ms 안에 끝나지 않아 peak를 추정하지 않았습니다.",
+            "source": "timed-out"
+          },
+          "afterLoad": {
+            "bytes": null,
+            "limitation": "UA 특정 메모리 측정이 10000ms 안에 끝나지 않아 peak를 추정하지 않았습니다.",
+            "source": "timed-out"
+          },
+          "afterWarm": {
+            "bytes": null,
+            "limitation": "UA 특정 메모리 측정이 10000ms 안에 끝나지 않아 peak를 추정하지 않았습니다.",
+            "source": "timed-out"
+          },
+          "baseline": {
+            "bytes": null,
+            "limitation": "UA 특정 메모리 측정이 10000ms 안에 끝나지 않아 peak를 추정하지 않았습니다.",
+            "source": "timed-out"
+          },
+          "peakStageBoundaryEstimateBytes": null
+        },
+        "workerAssets": {
+          "model": 118308185,
+          "other": 658,
+          "tokenizer": 17083173,
+          "wasm": null
+        },
+        "warmQueryMs": [
+          34.644999999552965,
+          54.22500000055879,
+          94.91500000003725,
+          45.989999999292195,
+          54.419999999925494,
+          66.51999999955297,
+          45.510000000707805,
+          44.625,
+          66.83999999985099,
+          42.31500000040978,
+          31.080000000074506,
+          62.80999999959022,
+          66.45000000018626,
+          44.389999999664724,
+          46.38499999977648,
+          42.014999999664724,
+          40.17999999970198,
+          47.90499999932945,
+          22.770000000484288,
+          22.375
+        ],
+        "warmQueryP50Ms": 45.510000000707805,
+        "warmQueryP95Ms": 66.83999999985099
+      },
+      "device": "android",
+      "runtime": {
+        "backend": "wasm",
+        "crossOriginIsolated": true,
+        "deviceMemory": 2,
+        "hardwareConcurrency": 4,
+        "navigatorGpuSupported": true,
+        "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+        "launchFlags": []
+      },
+      "status": "measured",
+      "tabRecovery": {
+        "queryVectorDimensions": 384,
+        "visibilityEvents": [
+          "hidden",
+          "visible"
+        ],
+        "visibilityTransitionObserved": true
+      }
+    },
+    "desktop": {
+      "browserVersion": "Chrome/150.0.7871.181",
+      "cache": {
+        "originStorageUsageDeltaBytes": 0,
+        "firstQueryMs": 52.90999999642372,
+        "loadMs": 2294.8649999946356,
+        "memory": {
+          "afterFirst": {
+            "bytes": 1118233,
+            "limitation": "단계 경계에서 측정한 UA 특정 메모리이며 연속 peak가 아닙니다.",
+            "source": "measureUserAgentSpecificMemory"
+          },
+          "afterLoad": {
+            "bytes": null,
+            "limitation": "UA 특정 메모리 측정이 10000ms 안에 끝나지 않아 peak를 추정하지 않았습니다.",
+            "source": "timed-out"
+          },
+          "afterWarm": {
+            "bytes": null,
+            "limitation": "UA 특정 메모리 측정이 10000ms 안에 끝나지 않아 peak를 추정하지 않았습니다.",
+            "source": "timed-out"
+          },
+          "baseline": {
+            "bytes": null,
+            "limitation": "UA 특정 메모리 측정이 10000ms 안에 끝나지 않아 peak를 추정하지 않았습니다.",
+            "source": "timed-out"
+          },
+          "peakStageBoundaryEstimateBytes": 1118233
+        },
+        "workerAssets": {
+          "model": 118308185,
+          "other": 658,
+          "tokenizer": 17083173,
+          "wasm": null
+        },
+        "warmQueryMs": [
+          12.560000002384186,
+          9.684999987483025,
+          12.04500000178814,
+          23.490000009536743,
+          15.504999995231628,
+          13.79500000178814,
+          10.694999992847443,
+          11.275000005960464,
+          15.924999997019768,
+          11.719999998807907,
+          10.109999999403954,
+          8.900000005960464,
+          10.325000002980232,
+          9.57999999821186,
+          9.584999993443489,
+          10.415000006556511,
+          9.614999994635582,
+          9.730000004172325,
+          11.284999996423721,
+          12.659999996423721
+        ],
+        "warmQueryP50Ms": 10.694999992847443,
+        "warmQueryP95Ms": 15.924999997019768,
+        "cacheEvidence": {
+          "cacheHitVerified": true,
+          "missingRequiredBasenames": [],
+          "cacheRunRemoteModelRequestCount": 0,
+          "cacheStorage": {
+            "cacheNames": [
+              "transformers-cache"
+            ],
+            "entries": [
+              {
+                "basename": "config.json",
+                "hasFixedRevision": false,
+                "sizeBytes": 658
+              },
+              {
+                "basename": "tokenizer_config.json",
+                "hasFixedRevision": true,
+                "sizeBytes": 443
+              },
+              {
+                "basename": "config.json",
+                "hasFixedRevision": true,
+                "sizeBytes": 658
+              },
+              {
+                "basename": "model_quantized.onnx",
+                "hasFixedRevision": true,
+                "sizeBytes": 118308185
+              },
+              {
+                "basename": "tokenizer.json",
+                "hasFixedRevision": true,
+                "sizeBytes": 17082730
+              }
+            ],
+            "wasm": {
+              "attemptedMethods": [
+                "Cache Storage response content-length"
+              ],
+              "limitation": null,
+              "sizeBytes": 4732131
+            }
+          }
+        }
+      },
+      "cancellation": {
+        "firstProgressFile": "config.json",
+        "signal": "first-progress-callback",
+        "terminatedAfterFirstProgress": true,
+        "cacheReady": true,
+        "recoveryCacheBenchmark": {
+          "firstQueryMs": 52.90999999642372,
+          "loadMs": 2294.8649999946356,
+          "warmQueryCount": 20
+        }
+      },
+      "cold": {
+        "originStorageUsageDeltaBytes": 159017472,
+        "firstQueryMs": 55.45000000298023,
+        "loadMs": 34108.635000005364,
+        "memory": {
+          "afterFirst": {
+            "bytes": null,
+            "limitation": "UA 특정 메모리 측정이 10000ms 안에 끝나지 않아 peak를 추정하지 않았습니다.",
+            "source": "timed-out"
+          },
+          "afterLoad": {
+            "bytes": null,
+            "limitation": "UA 특정 메모리 측정이 10000ms 안에 끝나지 않아 peak를 추정하지 않았습니다.",
+            "source": "timed-out"
+          },
+          "afterWarm": {
+            "bytes": null,
+            "limitation": "UA 특정 메모리 측정이 10000ms 안에 끝나지 않아 peak를 추정하지 않았습니다.",
+            "source": "timed-out"
+          },
+          "baseline": {
+            "bytes": 1094649,
+            "limitation": "단계 경계에서 측정한 UA 특정 메모리이며 연속 peak가 아닙니다.",
+            "source": "measureUserAgentSpecificMemory"
+          },
+          "peakStageBoundaryEstimateBytes": 1094649
+        },
+        "workerAssets": {
+          "model": 118308185,
+          "other": 658,
+          "tokenizer": 17083173,
+          "wasm": null
+        },
+        "warmQueryMs": [
+          12.349999994039536,
+          10.875,
+          12.50500001013279,
+          19.875,
+          15,
+          13.035000011324883,
+          11.92000000178814,
+          13.189999997615814,
+          13.739999994635582,
+          15.760000005364418,
+          15.430000007152557,
+          15.089999988675117,
+          12.205000013113022,
+          13.109999999403954,
+          10.969999998807907,
+          13.004999995231628,
+          12.270000010728836,
+          14.894999995827675,
+          15.70499999821186,
+          16.230000004172325
+        ],
+        "warmQueryP50Ms": 13.109999999403954,
+        "warmQueryP95Ms": 16.230000004172325
+      },
+      "device": "desktop",
+      "runtime": {
+        "backend": "wasm",
+        "crossOriginIsolated": true,
+        "deviceMemory": 32,
+        "hardwareConcurrency": 8,
+        "navigatorGpuSupported": true,
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
+        "launchFlags": [
+          "--enable-blink-features=ForceEagerMeasureMemory"
+        ]
+      },
+      "status": "measured",
+      "tabRecovery": {
+        "queryVectorDimensions": 384,
+        "visibilityEvents": [
+          "hidden",
+          "visible"
+        ],
+        "visibilityTransitionObserved": true
+      }
+    }
+  }
+}
