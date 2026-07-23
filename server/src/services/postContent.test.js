@@ -18,24 +18,30 @@ describe("buildNoticePost", () => {
   });
 
   it("type이 없으면 MISSING_FIELDS 에러를 던진다", () => {
+    // Arrange
     const answers = { content: "내용만 있음" };
 
+    // Act & Assert
     expect(() => buildNoticePost(answers)).toThrowError(
       expect.objectContaining({ status: 400, code: "MISSING_FIELDS" })
     );
   });
 
   it("content가 없으면 MISSING_FIELDS 에러를 던진다", () => {
+    // Arrange
     const answers = { type: "day-off" };
 
+    // Act & Assert
     expect(() => buildNoticePost(answers)).toThrowError(
       expect.objectContaining({ status: 400, code: "MISSING_FIELDS" })
     );
   });
 
   it("지원하지 않는 type이면 INVALID_NOTICE_TYPE 에러를 던진다", () => {
+    // Arrange
     const answers = { type: "unknown-type", content: "내용" };
 
+    // Act & Assert
     expect(() => buildNoticePost(answers)).toThrowError(
       expect.objectContaining({ status: 400, code: "INVALID_NOTICE_TYPE" })
     );
@@ -60,8 +66,10 @@ describe("buildPromotionPost", () => {
   });
 
   it("purpose가 new-menu인데 menu-name이 없으면 MISSING_FIELDS 에러를 던진다", () => {
+    // Arrange
     const answers = { purpose: "new-menu", "launch-date": "2026-08-01" };
 
+    // Act & Assert
     expect(() => buildPromotionPost(answers)).toThrowError(
       expect.objectContaining({ status: 400, code: "MISSING_FIELDS" })
     );
@@ -93,6 +101,7 @@ describe("buildPromotionPost", () => {
   });
 
   it("purpose가 event인데 event-period에 start/end가 없으면 MISSING_FIELDS 에러를 던진다", () => {
+    // Arrange
     const answers = {
       purpose: "event",
       "event-name": "여름 시즌 빙수 20% 할인",
@@ -101,6 +110,7 @@ describe("buildPromotionPost", () => {
       "event-period": { start: "2026-07-20" },
     };
 
+    // Act & Assert
     expect(() => buildPromotionPost(answers)).toThrowError(
       expect.objectContaining({ status: 400, code: "MISSING_FIELDS" })
     );
@@ -123,16 +133,20 @@ describe("buildPromotionPost", () => {
   });
 
   it("purpose가 general인데 general-detail이 없으면 MISSING_FIELDS 에러를 던진다", () => {
+    // Arrange
     const answers = { purpose: "general", "general-topic": "atmosphere" };
 
+    // Act & Assert
     expect(() => buildPromotionPost(answers)).toThrowError(
       expect.objectContaining({ status: 400, code: "MISSING_FIELDS" })
     );
   });
 
   it("지원하지 않는 purpose면 INVALID_PURPOSE 에러를 던진다", () => {
+    // Arrange
     const answers = { purpose: "unknown-purpose" };
 
+    // Act & Assert
     expect(() => buildPromotionPost(answers)).toThrowError(
       expect.objectContaining({ status: 400, code: "INVALID_PURPOSE" })
     );

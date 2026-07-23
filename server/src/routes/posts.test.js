@@ -32,20 +32,27 @@ describe("POST /api/posts/notice", () => {
   });
 
   it("생성한 Post는 실제로 Supabase에 저장되어 다시 조회된다", async () => {
+    // Arrange
     const payload = { type: "hours-change", content: "영업시간이 변경됩니다." };
 
+    // Act
     const created = await request(app).post("/api/posts/notice").send(payload);
     createdIds.push(created.body.id);
-
     const fetched = await request(app).get(`/api/posts/${created.body.id}`);
 
+    // Assert
     expect(fetched.status).toBe(200);
     expect(fetched.body.title).toBe("영업시간 변경 안내");
   });
 
   it("content가 없으면 400과 MISSING_FIELDS 에러를 반환한다", async () => {
-    const res = await request(app).post("/api/posts/notice").send({ type: "day-off" });
+    // Arrange
+    const payload = { type: "day-off" };
 
+    // Act
+    const res = await request(app).post("/api/posts/notice").send(payload);
+
+    // Assert
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("MISSING_FIELDS");
   });
@@ -53,8 +60,10 @@ describe("POST /api/posts/notice", () => {
 
 describe("GET /api/posts/:id", () => {
   it("존재하지 않는 id를 조회하면 404와 POST_NOT_FOUND 에러를 반환한다", async () => {
+    // Arrange & Act
     const res = await request(app).get("/api/posts/not-a-real-id");
 
+    // Assert
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe("POST_NOT_FOUND");
   });
