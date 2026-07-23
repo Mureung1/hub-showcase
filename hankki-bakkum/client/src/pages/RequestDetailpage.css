@@ -302,3 +302,57 @@
 .celebrate .btn-primary {
     width: 100%;
 }
+
+/* 상호 평점 */
+.star-pick {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.star {
+    border: none;
+    background: none;
+    font-size: 2rem;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    color: var(--bg-section);
+}
+
+.star--on {
+    color: #F2B705;
+}
+
+.rate-input {
+    width: 100%;
+    min-height: 72px;
+    border: none;
+    border-radius: var(--r-inner);
+    background: var(--bg-section);
+    padding: 14px 16px;
+    font-size: 0.92rem;
+    font-family: inherit;
+    line-height: 1.7;
+    color: var(--ink);
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.rated {
+    text-align: center;
+}
+
+.rated-stars {
+    font-size: 1.6rem;
+    color: #F2B705;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+.rated-comment {
+    margin: 0 0 8px;
+    font-size: 0.92rem;
+    color: var(--body);
+    line-height: 1.7;
+}

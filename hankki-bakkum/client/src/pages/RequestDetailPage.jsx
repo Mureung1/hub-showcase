@@ -25,6 +25,9 @@ export default function RequestDetailPage() {
   const [helper, setHelper] = useState(null);
   const [myConfirmed, setMyConfirmed] = useState(false); // 내가 이미 확인했는지
   const [confirmCount, setConfirmCount] = useState(0);    // 총 확인 수
+  const [myRating, setMyRating] = useState(null);         // 내가 남긴 평점 (있으면 재작성 불가)
+  const [stars, setStars] = useState(5);                  // 별점 선택값
+  const [comment, setComment] = useState("");             // 한줄후기
   const [resultFile, setResultFile] = useState(null);     // 제출할 결과물 파일
   const [resultPreview, setResultPreview] = useState(""); // 미리보기용 임시 주소
   const [loading, setLoading] = useState(true);
@@ -66,6 +69,14 @@ export default function RequestDetailPage() {
       .eq("request_id", id);
     setConfirmCount(confs?.length ?? 0);
     setMyConfirmed(!!confs?.some((c) => c.user_id === user?.id));
+
+    // 내가 이미 평점을 남겼는지 (한 거래에 한 번만)
+    const { data: rates } = await supabase
+      .from("ratings")
+      .select("*")
+      .eq("request_id", id)
+      .eq("rater_id", user?.id ?? "");
+    setMyRating(rates?.[0] ?? null);
 
     setLoading(false);
   }
@@ -160,6 +171,28 @@ export default function RequestDetailPage() {
     }
   }
 
+  // ── 상호 평점 — 완료된 거래에 한해 상대방에게 별점+한줄후기 ──
+  async function handleRate() {
+    if (!user) return;
+    // 내가 사장님이면 상대는 헬퍼, 내가 헬퍼면 상대는 사장님
+    const rateeId =
+      user.id === request.owner_id ? request.helper_id : request.owner_id;
+    if (!rateeId) return setError("평가할 상대를 찾지 못했어요.");
+
+    setBusy(true);
+    setError("");
+    const { error: rErr } = await supabase.from("ratings").insert({
+      request_id: id,
+      rater_id: user.id,
+      ratee_id: rateeId,
+      stars,
+      comment: comment.trim() || null,
+    });
+    setBusy(false);
+    if (rErr) return setError("평점 저장에 실패했어요: " + rErr.message);
+    loadRequest();
+  }
+
   if (loading) return <div className="detail-page detail-page--empty">불러오는 중이에요…</div>;
   if (!request) return <div className="detail-page detail-page--empty">{error}</div>;
 
@@ -249,6 +282,45 @@ export default function RequestDetailPage() {
           </div>
         </div>
       </section>
+
+      {/* 상호 평점 — 완료된 거래에서만 (기획서 ⑤ 화면) */}
+      {request.status === STATUS.DONE && (isOwner || isMatchedHelper) && (
+        <section className="card">
+          <h2 className="card-title">⭐ 상대방은 어땠나요?</h2>
+          {myRating ? (
+            <div className="rated">
+              <div className="rated-stars">{"★".repeat(myRating.stars)}{"☆".repeat(5 - myRating.stars)}</div>
+              {myRating.comment && <p className="rated-comment">"{myRating.comment}"</p>}
+              <p className="detail-meta">평가를 남겼어요. 고마워요!</p>
+            </div>
+          ) : (
+            <>
+              <div className="star-pick">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    className={`star ${n <= stars ? "star--on" : ""}`}
+                    onClick={() => setStars(n)}
+                    aria-label={`별 ${n}개`}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+              <textarea
+                className="rate-input"
+                placeholder={isOwner ? "예: 꼼꼼하고 빨라요" : "예: 설명이 자세해서 편했어요"}
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+              />
+              <button className="btn-primary" onClick={handleRate} disabled={busy}
+                style={{ width: "100%", marginTop: 12 }}>
+                {busy ? "남기는 중이에요…" : "평가 남기기"}
+              </button>
+            </>
+          )}
+        </section>
+      )}
 
       {request.status !== STATUS.RECRUITING && helper && (
         <section className="card">
