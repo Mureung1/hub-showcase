@@ -19,6 +19,15 @@ function nowHhMm(): string {
   return `${hh}:${mm}`;
 }
 
+/**
+ * 오늘로부터 days일 뒤 날짜를 한국 기준 "YYYY-MM-DD"로. 기본 예시 시험의 날짜에 쓴다(#29).
+ * 'sv-SE' 로케일이 "YYYY-MM-DD" 형태를 준다.
+ */
+function kstDatePlusDays(days: number): string {
+  const target = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(target);
+}
+
 // docs/디자인.md 9번: DB 참고 데이터(caffeine_reference)에서 내려받아야 할 목록. 지금은 자리표시용.
 const DRINK_PRESETS = [
   { label: '아이스 아메리카노 (톨)', mg: 150, icon: '☕' },
@@ -34,10 +43,10 @@ export function InputPage() {
   /** 시험 추가·수정 시트에서 막힌 이유 */
   const [examSheetError, setExamSheetError] = useState<string | null>(null);
 
+  // #29 — 빈 날짜 상태가 기본값으로 존재하지 않도록 예시 시험 하나만 두고, 날짜는 계산
+  // 가능한 값(오늘+2일 — 백엔드가 '내일 이후'만 받음)으로 채워 시드한다.
   const [exams, setExams] = useState<Exam[]>([
-    { subject: '세포생물학', date: '', time: '', studyHours: 3 },
-    { subject: '유전학', date: '', time: '', studyHours: 5 },
-    { subject: '생화학', date: '', time: '', studyHours: 6 },
+    { subject: '세포생물학', date: kstDatePlusDays(2), time: '09:00', studyHours: 3 },
   ]);
   const [bedtime, setBedtime] = useState('00:00');
   const [wakeTime, setWakeTime] = useState('07:00');
