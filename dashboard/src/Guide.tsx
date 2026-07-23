@@ -46,6 +46,16 @@ export default function Guide() {
     window.setTimeout(() => setCopyState(''), 1800);
   };
 
+  const downloadEmptyShowcase = () => {
+    const blob = new Blob(['{}\n'], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'showcase.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <main className="guide-page">
       <header className="guide-header">
@@ -76,11 +86,14 @@ export default function Guide() {
         <div className="section-heading">
           <div>
             <h2>작성할 내용 예시</h2>
-            <p>샘플을 열어 내용을 바꾸고 `showcase/showcase.json`으로 저장합니다.</p>
+            <p>아래에서 편집하고, 복사해서 사용하세요.</p>
           </div>
-          <button type="button" onClick={() => setSampleOpen((open) => !open)}>
-            {sampleOpen ? '샘플 닫기' : '샘플 열어보기'}
-          </button>
+          <div className="guide-example-actions">
+            <button type="button" onClick={() => setSampleOpen((open) => !open)}>
+              {sampleOpen ? '샘플 닫기' : '샘플 열어보기'}
+            </button>
+            <button type="button" onClick={downloadEmptyShowcase}>빈 showcase.json 다운로드</button>
+          </div>
         </div>
         {sampleOpen && (
           <>

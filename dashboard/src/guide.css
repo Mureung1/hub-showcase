@@ -152,6 +152,13 @@
   font-weight: 700;
 }
 
+.guide-example-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .example-editor {
   display: block;
   width: 100%;
