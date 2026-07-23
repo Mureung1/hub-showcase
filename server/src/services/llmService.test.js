@@ -14,7 +14,6 @@ describe("findVerbatimMatch", () => {
     })
 
     it("candidateText가 곧은따옴표이고 원문이 스마트따옴표면 원문 형태로 복구해 반환한다", () => {
-      const paragraphs = [`The CEO said, "we expect growth," during the call.`]
       const smartQuotePragraphs = [`The CEO said, “we expect growth,” during the call.`]
       const result = findVerbatimMatch(smartQuotePragraphs, `"we expect growth,"`)
       expect(result).toBe("“we expect growth,”")

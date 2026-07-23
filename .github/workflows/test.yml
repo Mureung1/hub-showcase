@@ -1,0 +1,43 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install root deps (lint/format)
+        run: npm ci
+
+      - name: Install client deps
+        run: npm ci
+        working-directory: client
+
+      - name: Install server deps
+        run: npm ci
+        working-directory: server
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Client tests
+        run: npm test
+        working-directory: client
+        env:
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_ANON_KEY: test-anon-key
+
+      - name: Server tests
+        run: npm test
+        working-directory: server
+        env:
+          MOCK_LLM: "true"
