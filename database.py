@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 
 DB_URL = os.getenv("DB_URL", "sqlite:///./mystery_shopper.db")
 
-engine = create_engine(DB_URL, connect_args={"check_same_thread": False} if "sqlite" in DB_URL else {}, echo=False)
+engine = create_engine(DB_URL, connect_args={"check_same_thread": False} if DB_URL.startswith("sqlite") else {}, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -38,7 +38,7 @@ class Review(Base):
     id = Column(BigInteger, primary_key=True, index=True)
     competitor_id = Column(BigInteger, ForeignKey("competitors.id", ondelete="CASCADE"), nullable=False)
     content = Column(Text, nullable=False)
-    sentiment = Column(Enum("긍정", "부정"), nullable=True)
+    sentiment = Column(Enum("긍정", "부정", name="sentiment_enum"), nullable=True)
     keywords = Column(JSON, nullable=True)
     summary = Column(String(255), nullable=True)
     analyzed_at = Column(DateTime, nullable=True)
