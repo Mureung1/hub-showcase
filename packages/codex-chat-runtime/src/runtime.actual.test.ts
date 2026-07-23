@@ -154,7 +154,7 @@ test('starts an immutable auth-only Runtime with exact application identity and 
     ])
     assert.deepEqual(harness.runtime.role, {
       role: 'auth-only',
-      bootstrapCwd: join(root, 'bootstrap'),
+      bootstrapCwd: await realpath(join(root, 'bootstrap')),
     })
     assert.equal(Object.isFrozen(harness.runtime.role), true)
 
@@ -2472,6 +2472,7 @@ async function startHarness(
 ): Promise<SpawnedCodexChatRuntime> {
   const workspace = await mkdtemp(join(tmpdir(), `ay-ple-node-bridge-${label}-`))
   roots.push(workspace)
+  await writeFile(join(workspace, 'account-state'), 'chatgpt')
   const environment = await createEnvironmentRoots(workspace)
   const journalPath = join(workspace, 'journal.json')
   const nativeChildPidPath = join(workspace, 'native-child.pid')

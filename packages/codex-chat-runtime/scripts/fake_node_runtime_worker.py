@@ -23,6 +23,9 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--process-journal", required=True)
     parser.add_argument("--launch-arg", action="append", default=[])
     parser.add_argument("--codex-bin")
+    parser.add_argument("--client-name", required=True)
+    parser.add_argument("--client-title", required=True)
+    parser.add_argument("--client-version", required=True)
     return parser
 
 
