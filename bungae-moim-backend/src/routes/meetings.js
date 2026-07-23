@@ -2,7 +2,7 @@ const express = require('express');
 const requireAuth = require('../middleware/auth');
 const { validateCreateMeeting, validateRespondStatus } = require('../utils/validators');
 const ApiError = require('../utils/apiError');
-const { createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation, listParticipants, respondToApplicant, cancelMeeting } = require('../services/meetingService');
+const { createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation, listParticipants, respondToApplicant, cancelMeeting, updateMeeting } = require('../services/meetingService');
 
 const router = express.Router();
 
@@ -121,6 +121,17 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
     const meetingId = parseIdParam(req.params.id);
     const result = await cancelMeeting(meetingId, req.session.userId);
     res.json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/meetings/:id — 모임 수정(E4, 모임장만)
+router.patch('/:id', requireAuth, async (req, res, next) => {
+  try {
+    const id = parseIdParam(req.params.id);
+    const meeting = await updateMeeting(id, req.session.userId, req.body);
+    res.json({ data: meeting });
   } catch (err) {
     next(err);
   }
