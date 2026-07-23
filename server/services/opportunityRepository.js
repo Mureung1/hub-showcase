@@ -137,6 +137,14 @@ export function createOpportunityRepository(options = {}) {
 
       return fromDatabaseRow(data);
     },
+
+    async deleteAnalysis(storageId) {
+      ensureConfigured();
+      const { error } = await client.from(tableName).delete().eq("id", storageId);
+      if (error) {
+        throw createRepositoryError("저장 공고 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.", "storage_delete_failed");
+      }
+    },
   };
 }
 

@@ -135,6 +135,10 @@ function normalizeStoredLink(link) {
 
   return {
     id: normalizeText(link.id) || url,
+    ...(Number.isInteger(link.index) && link.index >= 0 ? { index: link.index } : {}),
+    ...(/^\d{4}-\d{2}-\d{2}$/.test(normalizeText(link.publishedAt))
+      ? { publishedAt: normalizeText(link.publishedAt) }
+      : {}),
     title: normalizeText(link.title) || url,
     url,
     ...(normalizeText(link.hostname) ? { hostname: normalizeText(link.hostname) } : {}),

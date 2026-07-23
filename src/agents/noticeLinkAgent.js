@@ -452,6 +452,46 @@ function getPreferredLinkTitle(anchor) {
   }
 }
 
+export function parseNoticePublishedAt(value) {
+  const text = normalizeWhitespace(value);
+  const match = text.match(
+    /(20\d{2})\s*(?:[./-]|년)\s*(\d{1,2})\s*(?:[./-]|월)\s*(\d{1,2})(?:\s*일)?/,
+  );
+
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return [
+    String(year).padStart(4, "0"),
+    String(month).padStart(2, "0"),
+    String(day).padStart(2, "0"),
+  ].join("-");
+}
+
+function getNoticePublishedAt(anchor) {
+  try {
+    const container = anchor.closest(
+      "tr, li, article, .board-item, .notice-item, .post-item, [class*='list-item'], [class*='list_row']",
+    ) || anchor.parentElement;
+
+    return parseNoticePublishedAt(container?.textContent || "");
+  } catch {
+    return null;
+  }
+}
+
 function getDocumentFromHtml(html) {
   if (typeof DOMParser === "undefined") {
     throw new Error("현재 실행 환경에서 HTML 파서를 사용할 수 없습니다.");
@@ -693,6 +733,7 @@ export function extractPostLinksFromHtml(html, options = {}) {
     const link = {
       id: url,
       index,
+      publishedAt: getNoticePublishedAt(anchor),
       title: extractedTitle || (selectorKind === "requested" ? parsedUrl.pathname : ""),
       url,
       hostname: parsedUrl.hostname,

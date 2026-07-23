@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { existsSync, readdirSync } from "node:fs";
+import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
@@ -31,8 +31,13 @@ const requirementGroups = [
   },
   {
     id: "RQ-03",
-    title: "프로필 localStorage 저장과 민감 정보 제외",
-    tests: ["tests/profileSchema.test.js", "tests/profileStore.test.js"],
+    title: "프로필 검증, 안전한 저장, 사용자별 DB 분리",
+    tests: [
+      "tests/profileSchema.test.js",
+      "tests/profileStore.test.js",
+      "tests/profileRequestSchema.test.js",
+      "tests/profileRepository.test.js",
+    ],
   },
   {
     id: "RQ-04",
@@ -46,11 +51,19 @@ const requirementGroups = [
   },
   {
     id: "RQ-06",
-    title: "공지 링크 추출, 중복 제거, 순차 분석",
+    title: "공지 링크 추출, 중복 제거, 순차 분석, 결과 유지",
     tests: [
       "tests/noticeLinkDeduplication.test.js",
+      "tests/noticeOrdering.test.js",
       "tests/analyzeNoticeLinks.test.js",
+      "tests/scanResultStore.test.js",
     ],
+  },
+  {
+    id: "RQ-06B",
+    title: "브라우저 공지 목록 게시일 추출",
+    runner: "vitest",
+    tests: ["tests/vitest/noticeLinkPublishedAt.test.js"],
   },
   {
     id: "RQ-07",
@@ -64,8 +77,11 @@ const requirementGroups = [
   },
   {
     id: "RQ-09",
-    title: "Supabase 단일 테이블 저장 및 조회",
-    tests: ["tests/opportunityRepository.test.js"],
+    title: "Supabase와 로컬 SQLite 공고 저장 및 조회",
+    tests: [
+      "tests/opportunityRepository.test.js",
+      "tests/localOpportunityRepository.test.js",
+    ],
   },
   {
     id: "RQ-10",
@@ -75,6 +91,49 @@ const requirementGroups = [
       "tests/knuNoticesSource.test.js",
       "tests/noticeDiscoveryService.test.js",
     ],
+  },
+  {
+    id: "RQ-11",
+    title: "Supabase 인증과 서버 사용자 식별",
+    tests: [
+      "tests/authErrorMessages.test.js",
+      "tests/authIdentity.test.js",
+      "tests/authMiddleware.test.js",
+      "tests/authSessionStorage.test.js",
+    ],
+  },
+  {
+    id: "RQ-11B",
+    title: "로그인 전 서비스 접근 차단",
+    runner: "vitest",
+    tests: ["tests/vitest/authGate.test.js"],
+  },
+  {
+    id: "RQ-12",
+    title: "사용자별 저장 출처와 저장 공고 관리",
+    tests: [
+      "tests/customSourceStore.test.js",
+      "tests/noticeSourceRepository.test.js",
+      "tests/savedOpportunityRepository.test.js",
+    ],
+  },
+  {
+    id: "RQ-13",
+    title: "개인 설정 기반 필터와 사이트 추천",
+    tests: [
+      "tests/filterAnalysesBySettings.test.js",
+      "tests/geminiExplainSiteRecommendations.test.js",
+      "tests/recommendSites.test.js",
+      "tests/savedSourceRecommendationFilter.test.js",
+      "tests/userSettingsRepository.test.js",
+      "tests/userSettingsSchemas.test.js",
+    ],
+  },
+  {
+    id: "RQ-14",
+    title: "마감 태스크 생성과 날짜 경계 처리",
+    runner: "vitest",
+    tests: ["tests/vitest/createTasks.test.js"],
   },
 ];
 
@@ -112,6 +171,57 @@ function validateTestFiles(testFiles) {
   return testFiles.filter((testFile) => !existsSync(resolve(projectRoot, testFile)));
 }
 
+function listTestFiles(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = resolve(directory, entry.name);
+    if (entry.isDirectory()) return listTestFiles(entryPath);
+    if (!entry.isFile() || !entry.name.endsWith(".test.js")) return [];
+    return [relative(projectRoot, entryPath).replaceAll("\\", "/")];
+  });
+}
+
+function validateRequirementCoverage() {
+  const assignedTests = requirementGroups.flatMap((requirement) => requirement.tests);
+  const assignedSet = new Set(assignedTests);
+  const discoveredTests = listTestFiles(resolve(projectRoot, "tests"));
+  const unassignedTests = discoveredTests.filter((testFile) => !assignedSet.has(testFile));
+  const duplicateTests = [...new Set(
+    assignedTests.filter((testFile, index) => assignedTests.indexOf(testFile) !== index),
+  )];
+
+  const details = [
+    unassignedTests.length ? `Unassigned test files: ${unassignedTests.join(", ")}` : null,
+    duplicateTests.length ? `Tests assigned more than once: ${duplicateTests.join(", ")}` : null,
+  ].filter(Boolean);
+
+  return {
+    id: "RQ-00",
+    title: "모든 자동 테스트의 요구사항 매핑",
+    ok: details.length === 0,
+    durationMs: 0,
+    details: details.join("\n") || null,
+  };
+}
+
+function runRequirement(requirement) {
+  if (requirement.runner === "vitest") {
+    const vitestEntry = resolve(projectRoot, "node_modules/vitest/vitest.mjs");
+    if (!existsSync(vitestEntry)) {
+      return {
+        ok: false,
+        durationMs: 0,
+        output: "",
+        error: "Vitest is not installed. Run npm install first.",
+        status: null,
+        signal: null,
+      };
+    }
+    return runCommand(process.execPath, [vitestEntry, "run", ...requirement.tests]);
+  }
+
+  return runCommand(process.execPath, ["--test", ...requirement.tests]);
+}
+
 function printResult(result) {
   const status = result.ok ? "PASS" : "FAIL";
   console.log(`[${status}] ${result.id} ${result.title} (${(result.durationMs / 1000).toFixed(1)}s)`);
@@ -129,6 +239,10 @@ if (argumentsSet.has("--help") || unknownArguments.length) {
     console.log("Real Gemini/OpenAI API calls are not made during this check.");
   }
 
+  const coverageResult = validateRequirementCoverage();
+  results.push(coverageResult);
+  if (!jsonOutput) printResult(coverageResult);
+
   for (const requirement of requirementGroups) {
     const missingFiles = validateTestFiles(requirement.tests);
     if (missingFiles.length) {
@@ -143,7 +257,7 @@ if (argumentsSet.has("--help") || unknownArguments.length) {
       continue;
     }
 
-    const commandResult = runCommand(process.execPath, ["--test", ...requirement.tests]);
+    const commandResult = runRequirement(requirement);
     const result = {
       ...requirement,
       ok: commandResult.ok,
@@ -160,7 +274,7 @@ if (argumentsSet.has("--help") || unknownArguments.length) {
       : { command: "npm", arguments: ["run", "build"] };
     const commandResult = runCommand(buildCommand.command, buildCommand.arguments);
     const result = {
-      id: "RQ-11",
+      id: "RQ-15",
       title: "프론트엔드 프로덕션 빌드",
       ok: commandResult.ok,
       durationMs: commandResult.durationMs,

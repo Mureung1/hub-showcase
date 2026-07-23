@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import test from "node:test";
 import {
   LAST_SCAN_RESULT_STORAGE_KEY,
@@ -21,6 +21,8 @@ function createMemoryStorage() {
 
 const notice = {
   id: "notice-1",
+  index: 0,
+  publishedAt: "2026-07-20",
   sourceId: "source-1",
   sourceName: "테스트 출처",
   sourceUrl: "https://example.com/notices",
@@ -68,6 +70,8 @@ test("last scan result persists links but excludes source HTML", () => {
   assert.equal(persisted.allLinks.length, 1);
   assert.equal("html" in persisted.sourceResults[0].source, false);
   assert.equal(restored.latestLinks[0].url, notice.url);
+  assert.equal(restored.latestLinks[0].publishedAt, "2026-07-20");
+  assert.equal(restored.latestLinks[0].index, 0);
   assert.equal(restored.sourceResults[0].source.name, "테스트 출처");
   assert.equal(restored.isBatch, true);
 });

@@ -41,6 +41,8 @@ import { userSettingsRequestSchema } from "./schemas/userSettingsSchemas.js";
 import { createUserSettingsRepository } from "./services/userSettingsRepository.js";
 import { noticeSourceIdSchema, noticeSourceRequestSchema } from "./schemas/noticeSourceSchemas.js";
 import { createNoticeSourceRepository } from "./services/noticeSourceRepository.js";
+import { createSavedOpportunityRepository } from "./services/savedOpportunityRepository.js";
+import { savedOpportunitiesQuerySchema as userSavedOpportunitiesQuerySchema, savedOpportunityIdSchema } from "./schemas/savedOpportunitySchemas.js";
 
 dotenv.config();
 
@@ -70,6 +72,9 @@ const userSettingsRepository = createUserSettingsRepository({
   createUserClient: (accessToken) => authService.createUserClient(accessToken),
 });
 const noticeSourceRepository = createNoticeSourceRepository({
+  createUserClient: (accessToken) => authService.createUserClient(accessToken),
+});
+const savedOpportunityRepository = createSavedOpportunityRepository({
   createUserClient: (accessToken) => authService.createUserClient(accessToken),
 });
 
@@ -451,6 +456,78 @@ app.post("/api/analyze", analyzeRateLimit, async (request, response) => {
   }
 });
 
+app.get("/api/saved-opportunities", requireAuth, async (request, response) => {
+  const validation = userSavedOpportunitiesQuerySchema.safeParse(request.query);
+  if (!validation.success) {
+    sendJson(response, 400, { error: "invalid_request", message: formatZodError(validation.error) });
+    return;
+  }
+
+  try {
+    const items = await savedOpportunityRepository.listOpportunities({
+      accessToken: request.accessToken,
+      limit: validation.data.limit,
+      userId: request.user.id,
+    });
+    sendJson(response, 200, { items });
+  } catch (error) {
+    sendJson(response, ["saved_opportunity_storage_unavailable", "saved_opportunity_schema_missing"].includes(error?.code) ? 503 : 500, {
+      error: "saved_opportunity_read_failed",
+      message: ["saved_opportunity_storage_unavailable", "saved_opportunity_schema_missing", "saved_opportunity_access_denied"].includes(error?.code)
+        ? error.message
+        : "저장한 공고를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+  }
+});
+
+app.post("/api/saved-opportunities", requireAuth, async (request, response) => {
+  const validation = saveOpportunityRequestSchema.safeParse(request.body);
+  if (!validation.success) {
+    sendJson(response, 400, { error: "invalid_request", message: formatZodError(validation.error) });
+    return;
+  }
+
+  try {
+    const item = await savedOpportunityRepository.saveOpportunity({
+      accessToken: request.accessToken,
+      analysis: validation.data.analysis,
+      userId: request.user.id,
+    });
+    sendJson(response, 201, { item });
+  } catch (error) {
+    sendJson(response, ["saved_opportunity_storage_unavailable", "saved_opportunity_schema_missing"].includes(error?.code) ? 503 : 500, {
+      error: "saved_opportunity_write_failed",
+      message: ["saved_opportunity_storage_unavailable", "saved_opportunity_schema_missing", "saved_opportunity_access_denied"].includes(error?.code)
+        ? error.message
+        : "공고 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+  }
+});
+
+app.delete("/api/saved-opportunities/:opportunityId", requireAuth, async (request, response) => {
+  const validation = savedOpportunityIdSchema.safeParse(request.params.opportunityId);
+  if (!validation.success) {
+    sendJson(response, 400, { error: "invalid_request", message: formatZodError(validation.error) });
+    return;
+  }
+
+  try {
+    await savedOpportunityRepository.deleteOpportunity({
+      accessToken: request.accessToken,
+      opportunityId: validation.data,
+      userId: request.user.id,
+    });
+    response.status(204).end();
+  } catch (error) {
+    sendJson(response, ["saved_opportunity_storage_unavailable", "saved_opportunity_schema_missing"].includes(error?.code) ? 503 : 500, {
+      error: "saved_opportunity_delete_failed",
+      message: ["saved_opportunity_storage_unavailable", "saved_opportunity_schema_missing", "saved_opportunity_access_denied"].includes(error?.code)
+        ? error.message
+        : "저장 공고 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+  }
+});
+
 app.get("/api/opportunities", async (request, response) => {
   const validation = savedOpportunitiesQuerySchema.safeParse(request.query);
 
@@ -484,6 +561,21 @@ app.post("/api/opportunities", async (request, response) => {
   try {
     const item = await opportunityStorage.saveAnalysis(validation.data.analysis);
     sendJson(response, 201, { item });
+  } catch (error) {
+    sendOpportunityStorageError(response, error);
+  }
+});
+
+app.delete("/api/opportunities/:storageId", async (request, response) => {
+  const storageId = String(request.params.storageId || "").trim();
+  if (!storageId) {
+    sendJson(response, 400, { error: "invalid_request", message: "삭제할 저장 공고 ID가 필요합니다." });
+    return;
+  }
+
+  try {
+    await opportunityStorage.deleteAnalysis(storageId);
+    response.status(204).end();
   } catch (error) {
     sendOpportunityStorageError(response, error);
   }

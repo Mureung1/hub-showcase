@@ -1,5 +1,6 @@
 import dns from "node:dns/promises";
 import { isIP } from "node:net";
+import { load } from "cheerio";
 
 const FETCH_TIMEOUT_MS = 15000;
 const MAX_REDIRECTS = 5;
@@ -349,8 +350,51 @@ function extractTitle(html) {
   ).trim();
 }
 
+const PRIMARY_CONTENT_SELECTORS = Object.freeze([
+  "#viewcontent",
+  ".board_cont",
+  ".board-view",
+  ".view-content",
+  ".view_content",
+  ".post-content",
+  ".entry-content",
+  "article",
+  "main",
+  "[role='main']",
+]);
+
+function extractPrimaryContentText(html) {
+  try {
+    const $ = load(html);
+
+    for (const selector of PRIMARY_CONTENT_SELECTORS) {
+      const element = $(selector).first();
+      if (!element.length) continue;
+
+      const contentText = stripHtmlToText(element.html() || "");
+      if (contentText.length < MIN_EXTRACTED_TEXT_LENGTH) continue;
+
+      const boardHeading = element.closest(".board_view, .board-view").find("h1, h2, h3").first().text().trim();
+      const nearbyHeading = element.prevAll("h1, h2, h3").first().text().trim();
+      const heading = boardHeading || nearbyHeading;
+
+      return [heading, contentText].filter(Boolean).join("\n\n").trim();
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
 export function extractOpportunityTextFromHtml(html) {
   const sourceHtml = String(html ?? "");
+  const primaryContentText = extractPrimaryContentText(sourceHtml);
+
+  if (primaryContentText) {
+    return primaryContentText.slice(0, MAX_EXTRACTED_TEXT_LENGTH);
+  }
+
   const title = extractTitle(sourceHtml);
   const bodyText = stripHtmlToText(sourceHtml);
   const combinedText = [title, bodyText].filter(Boolean).join("\n\n").trim();

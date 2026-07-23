@@ -1,42 +1,49 @@
 # Supabase 저장 공고 연동
 
-UniRadar는 분석 결과를 `opportunity_analyses` 한 테이블에 저장한다. 전체 표준 분석 결과는 `analysis_result` JSONB 컬럼에 보관하고, 목록 화면에 필요한 공고명, 카테고리, 마감일, 주최 기관, 원문 URL은 별도 컬럼으로 함께 저장한다.
+UniRadar의 로그인 사용자 저장 공고는 `saved_opportunities` 테이블에 저장한다. Express가 사용자 access token을 검증하고, Supabase RLS가 자신의 행만 조회·저장·삭제하도록 제한한다.
 
-## 1. 테이블 만들기
+## 1. 테이블과 RLS 만들기
 
-Supabase 대시보드의 SQL Editor에서 [`supabase/opportunity_analyses.sql`](./supabase/opportunity_analyses.sql)을 실행한다.
+Supabase SQL Editor에서 [supabase/20260720_auth_profiles.sql](./supabase/20260720_auth_profiles.sql)을 실행한다. 이 migration에는 `profiles`, `user_settings`, `saved_opportunities`, `tasks`와 사용자별 RLS 정책이 포함되어 있다.
 
-이 테이블은 RLS를 활성화하고, 브라우저의 anon key에는 정책을 부여하지 않는다. 저장과 조회는 Express 서버의 service role key로만 수행한다.
+기존 로컬 데모용 `opportunity_analyses` 테이블은 로그인하지 않는 서버 저장 모드와의 호환을 위해 유지한다.
 
-## 2. 로컬 환경변수 설정
+## 2. 환경변수 설정
 
-로컬 `.env`에 아래 값을 추가한다. 실제 키는 절대 Git에 커밋하지 않는다.
+로컬 `.env`에 아래 공개 인증 설정을 입력한다. 실제 키는 Git에 커밋하지 않는다.
 
 ```env
 SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=server_only_service_role_key
-SUPABASE_OPPORTUNITIES_TABLE=opportunity_analyses
-ALLOW_SUPABASE_PERSISTENCE=true
+SUPABASE_ANON_KEY=your_publishable_anon_key
 ```
 
-`ALLOW_SUPABASE_PERSISTENCE`는 명시적인 활성화 장치다. 키가 있어도 이 값이 `true`가 아니면 저장 API는 동작하지 않는다.
+브라우저에는 `VITE_SUPABASE_URL`과 `VITE_SUPABASE_ANON_KEY` 공개 값만 사용한다. `SUPABASE_SERVICE_ROLE_KEY`는 사용자별 저장 공고 API에 필요하지 않으며 프론트엔드에 넣으면 안 된다.
 
-## 3. 실행 및 확인
+## 3. 데이터 흐름
 
-개발 서버를 다시 시작한 뒤 다음을 확인한다.
+```text
+React 저장 버튼
+→ POST /api/saved-opportunities + Bearer access token
+→ Express 사용자 검증
+→ saved_opportunities RLS 저장
+→ GET /api/saved-opportunities
+→ 4. 저장한 공고 화면
+```
+
+같은 사용자의 동일한 원문 URL은 중복 행을 만들지 않고 기존 저장 공고를 갱신한다. 원문 URL이 없으면 동일 제목을 기준으로 갱신한다.
+
+## 4. 실행 및 확인
 
 ```bash
 npm run dev
 ```
 
-- `GET /api/health`의 `supabaseConfigured`가 `true`
-- 분석 결과의 `서버 저장` 버튼이 활성화됨
-- `서버 저장 공고` 카드에서 저장한 분석 결과를 다시 열 수 있음
+1. 로그인한다.
+2. 공고를 분석하고 `서버 저장`을 누른다.
+3. 사이드바에서 `4. 저장한 공고`를 연다.
+4. 목록, 필터, 정렬, 상세 보기, 삭제를 확인한다.
+5. 다른 계정으로 로그인했을 때 이전 계정 공고가 보이지 않는지 확인한다.
 
-## 보안 제한
+## 로컬 데모 fallback
 
-현재 앱에는 로그인 기능이 없다. 따라서 service role key를 사용하는 저장 API는 로컬 개발 또는 접근이 엄격히 제한된 환경에서만 사용한다. 공개 배포 전에 Supabase Auth와 사용자별 RLS 정책을 추가해야 한다.
-
-## 계정 프로필 인증
-
-로그인과 사용자별 프로필은 별도 migration인 [supabase/20260720_auth_profiles.sql](./supabase/20260720_auth_profiles.sql)로 설정합니다. 이 경로는 service role key를 사용하지 않으며, 브라우저 공개 anon key와 RLS 정책으로 자신의 `profiles` 행만 읽고 쓸 수 있게 합니다. 자세한 환경변수와 테스트는 [AUTH_AND_USER_DATA.md](./AUTH_AND_USER_DATA.md)를 참고하세요.
+Supabase 인증을 설정하지 않은 경우 기존 `/api/opportunities` API와 로컬 SQLite DB를 사용한다. DB 파일은 `data/uniradar-demo.sqlite`이며 Git에서 제외된다.

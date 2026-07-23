@@ -125,3 +125,55 @@ test("팀 참가 필수인데 팀 참여가 불가능하면 지원 불가로 판
   assert.equal(match.status, "not_eligible");
   assert.ok(match.disqualifyingReasons.some((item) => item.includes("팀 참가")));
 });
+
+test("기업만 모집하는 공고는 학생 프로필에 무조건 0점으로 판정한다", () => {
+  const sourceText = `2026년도 대학-기업 협업 프로젝트 참여기업 2차모집 공고
+지원대상: 대구 지역 내 모빌리티 및 ABB 관련 기업, 또는 해당 분야로 업종 전환을 추진하는 기업`;
+  const match = matchOpportunity({
+    profile,
+    opportunity: createOpportunity({
+      title: "2026년도 대학-기업 협업 프로젝트 참여기업 2차모집 공고",
+      category: "support",
+      target: "대구 지역 내 모빌리티 및 ABB 관련 기업",
+      eligibility: [condition("other", "대구 지역 내 관련 기업")],
+    }),
+    sourceText,
+  });
+
+  assert.equal(match.status, "not_eligible");
+  assert.equal(match.score, 0);
+  assert.ok(match.disqualifyingReasons.some((item) => item.includes("기업")));
+  assert.deepEqual(match.matchedReasons, []);
+});
+
+test("기업이 언급되어도 실제 모집 대상이 대학생이면 기업 전용으로 오판하지 않는다", () => {
+  const match = matchOpportunity({
+    profile,
+    opportunity: createOpportunity({
+      title: "기업 연계 대학생 인턴십 참가자 모집",
+      target: "전국 대학교 재학생",
+      eligibility: [condition("school", "전국 대학교 재학생")],
+    }),
+    sourceText: "기업 실무 프로젝트에 참여할 전국 대학교 재학생을 모집합니다.",
+  });
+
+  assert.equal(match.status, "eligible");
+  assert.notEqual(match.score, 0);
+  assert.equal(match.disqualifyingReasons.length, 0);
+});
+test("AI가 target을 놓쳐도 원문 지원대상으로 기업 전용을 판정한다", () => {
+  const match = matchOpportunity({
+    profile,
+    opportunity: createOpportunity({
+      title: "지역 신산업 사업화 지원 공고",
+      category: "support",
+      target: null,
+      eligibility: [],
+    }),
+    sourceText: "지원대상: 대구 지역 내 ABB 관련 기업 또는 업종 전환을 추진하는 기업",
+  });
+
+  assert.equal(match.status, "not_eligible");
+  assert.equal(match.score, 0);
+  assert.match(match.disqualifyingReasons[0], /지원대상.*기업/);
+});
