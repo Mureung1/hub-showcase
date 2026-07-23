@@ -497,7 +497,36 @@ async function cancelMeeting(meetingId, hostId) {
   return { status: 'cancelled' };
 }
 
+// GET /api/users/me/hosted-meetings — 내가 등록한 모임(G1). 취소·종료 모임도 포함한다.
+// applicantCount는 활성 신청자 전부(pending+approved+confirmed), pendingCount는 승인 대기.
+// 둘 다 취소·거절은 제외한다. COUNT(*)::int라 값은 숫자로 온다.
+async function listHostedMeetings(hostId) {
+  const { rows } = await pool.query(
+    `SELECT m.id, m.title, m.type, m.start_at, m.end_at, m.status,
+       (SELECT COUNT(*)::int FROM meeting_participants mp
+          WHERE mp.meeting_id = m.id AND mp.status IN ('pending','approved','confirmed')) AS applicant_count,
+       (SELECT COUNT(*)::int FROM meeting_participants mp
+          WHERE mp.meeting_id = m.id AND mp.status = 'pending') AS pending_count
+       FROM meetings m
+      WHERE m.host_id = $1
+      ORDER BY m.created_at DESC, m.id DESC`,
+    [hostId]
+  );
+  return {
+    items: rows.map((row) => ({
+      id: Number(row.id),
+      title: row.title,
+      type: row.type,
+      startAt: row.start_at,
+      endAt: row.end_at,
+      status: row.status,
+      applicantCount: row.applicant_count,
+      pendingCount: row.pending_count,
+    })),
+  };
+}
+
 module.exports = {
   createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation,
-  listParticipants, respondToApplicant, cancelMeeting, normalizeMeeting, PAGE_SIZE,
+  listParticipants, respondToApplicant, cancelMeeting, listHostedMeetings, normalizeMeeting, PAGE_SIZE,
 };
