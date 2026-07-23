@@ -38,7 +38,7 @@ async function getDefaultDataSourceId(notion, databaseId) {
   return dataSourceId;
 }
 
-export async function queryDatabase(databaseId, filter) {
+export async function queryDatabase(databaseId, { filter, sorts } = {}) {
   if (!databaseId) {
     throw new NotionConfigError(
       "Notion 데이터베이스 ID가 설정되지 않았어요. .env.local을 확인해주세요."
@@ -49,6 +49,7 @@ export async function queryDatabase(databaseId, filter) {
   const response = await notion.dataSources.query({
     data_source_id: dataSourceId,
     ...(filter ? { filter } : {}),
+    ...(sorts ? { sorts } : {}),
   });
   return response.results;
 }
@@ -69,4 +70,9 @@ export async function createPage(databaseId, properties) {
 export async function archivePage(pageId) {
   const notion = getNotionClient();
   return notion.pages.update({ page_id: pageId, archived: true });
+}
+
+export async function updatePage(pageId, properties) {
+  const notion = getNotionClient();
+  return notion.pages.update({ page_id: pageId, properties });
 }

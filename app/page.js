@@ -15,6 +15,7 @@ export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSplitting, setIsSplitting] = useState(false);
   const [splitError, setSplitError] = useState(null);
+  const [completeError, setCompleteError] = useState(null);
 
   const task = microsteps[currentIndex]?.title ?? "";
 
@@ -31,7 +32,10 @@ export default function Home() {
 
       if (!response.ok) throw new Error("할 일을 쪼개는 데 실패했어요, 다시 시도해줘");
 
-      const { microsteps: steps } = await response.json();
+      // 방금 응답을 그대로 쓰지 않고, Notion에 실제로 저장된 목록을 다시 읽어온다
+      // (완료 처리에 필요한 Notion 페이지 id가 이 목록에만 있음).
+      const stepsResponse = await fetch("/api/steps");
+      const { steps } = await stepsResponse.json();
       setMicrosteps(steps);
       setCurrentIndex(0);
       setStep("preview");
@@ -39,6 +43,31 @@ export default function Home() {
       setSplitError(err.message);
     } finally {
       setIsSplitting(false);
+    }
+  }
+
+  async function handleStepFinish() {
+    const current = microsteps[currentIndex];
+    setCompleteError(null);
+
+    try {
+      const response = await fetch("/api/steps/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: current.id }),
+      });
+      if (!response.ok) throw new Error("완료 처리에 실패했어요, 다시 시도해줘");
+    } catch (err) {
+      setCompleteError(err.message);
+      return; // Notion에 Done 기록이 안 됐으니 다음 스텝으로 넘어가지 않는다.
+    }
+
+    const nextIndex = currentIndex + 1;
+    if (nextIndex < microsteps.length) {
+      setCurrentIndex(nextIndex);
+      setStep("preview");
+    } else {
+      setStep("complete");
     }
   }
 
@@ -73,7 +102,31 @@ export default function Home() {
   }
 
   if (step === "timer") {
-    return <FocusTimer durationMinutes={25} onFinish={() => setStep("complete")} />;
+    if (completeError) {
+      return (
+        <main
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "100vh",
+            gap: "16px",
+            textAlign: "center",
+            padding: "24px",
+          }}
+        >
+          <p>{completeError}</p>
+          <button onClick={handleStepFinish}>다시 시도</button>
+        </main>
+      );
+    }
+    return (
+      <FocusTimer
+        durationMinutes={microsteps[currentIndex]?.estimatedMinutes ?? 25}
+        onFinish={handleStepFinish}
+      />
+    );
   }
 
   if (step === "complete") {
