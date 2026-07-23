@@ -17,7 +17,11 @@ function pct(n, d) {
 function skillStats(list) {
   const map = new Map()
   for (const p of list) {
+    const seenSlugs = new Set()
     for (const s of p.skills) {
+      if (seenSlugs.has(s.slug)) continue
+      seenSlugs.add(s.slug)
+
       if (!map.has(s.slug)) {
         map.set(s.slug, { name: s.name, slug: s.slug, count: 0, required: 0, byCluster: {}, postings: [] })
       }
