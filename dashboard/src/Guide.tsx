@@ -47,7 +47,7 @@ export default function Guide() {
   };
 
   const downloadEmptyShowcase = () => {
-    const blob = new Blob(['{}\n'], { type: 'application/json' });
+    const blob = new Blob([], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
