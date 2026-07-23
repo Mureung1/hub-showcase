@@ -92,6 +92,7 @@ Persistent Python bridge가 한 개의 managed ChatGPT login attempt를 즉시 �
 | start-reservation race fix | `aa7ce6463` |
 | single-flight settlement fix | `bc09e6c48` |
 | expiry-rejection settlement fix | `90189f1b0` |
+| terminal waiter cleanup fix | `f224c8b8a` |
 | bridge frame roster | `read_account`; `start_browser_login`; `read_browser_login_attempt`; `cancel_browser_login`; `release_browser_login_attempt`; `logout` |
 | account result | `account.state = signed_out \| chatgpt \| unsupported` |
 | attempt result | start는 allowlisted HTTPS `authUrl`과 product `attemptId`의 `pending`; status는 non-consuming `pending \| completed \| cancelled \| expired \| failed`; failed만 safe `{ code: login_start_failed \| login_failed, retryable: true }`를 포함 |
@@ -108,12 +109,14 @@ Independent review에서 native `login_chatgpt()` 응답 전에는 `_login_attem
 
 Final review에서는 explicit cancel settlement에 expiry가 join한 뒤 well-formed cancel rejection이 오면 expiry waiter가 조용히 끝나 deadline을 넘긴 `pending` slot이 남는 Medium race가 재현됐다. Attempt가 expiry 참여를 shared task에 기록하고, 이 deadline rejection에서는 같은 owner가 native cancel을 반복하지 않은 채 bounded fresh account read를 수행한다. Fresh ChatGPT account는 `completed`로 이기며, 그렇지 않거나 read가 실패하면 attempt를 `failed`로 terminalize하고 Runtime-fatal로 native child까지 reap한다. 따라서 pre-deadline rejection만 기존 `pending`→retry를 유지하고, deadline·release join·normal close 교차는 native cancel 정확히 1회 뒤 permanent pending 없이 fail-closed 한다.
 
+Follow-on review에서는 deadline rejection의 fresh account가 ChatGPT일 때 terminal `completed`는 맞지만 기존 completion waiter가 남아, 늦은 matching completion이 두 번째 native `account/read`를 만드는 Medium cleanup race가 재현됐다. Fix는 helper fresh read 전에 completion task를 lock 밖에서 cancel·drain하고, 같은 task reference일 때만 lock 안에서 unregister한다. 이미 waiter가 terminalize했다면 그 terminal을 재사용한다. Controlled late completion 뒤 account read count는 1로 유지되고, fresh attempt와 normal close까지 waiter·child 없이 끝난다.
+
 ### Candidate verification
 
 | Command | Result |
 | --- | --- |
 | `npm run test:bridge-unit -w @ay-ple/codex-chat-runtime` | green, 8 tests |
-| `npm run test:bridge -w @ay-ple/codex-chat-runtime` | green, 37 tests; 기존 31-test lifecycle matrix에 duplicate cancel, cancel↔release/logout/expiry single-flight, shared rejection→fresh retry, joined timeout/EOF/normal close와 deadline rejection→fresh-read/fail-close를 추가했고 native cancel은 shared settlement당 정확히 1회. Deadline rejection과 normal-close subcase는 별도로 5회 반복 green |
+| `npm run test:bridge -w @ay-ple/codex-chat-runtime` | green, 38 tests; 기존 31-test lifecycle matrix에 duplicate cancel, cancel↔release/logout/expiry single-flight, shared rejection→fresh retry, joined timeout/EOF/normal close, deadline rejection→fresh-read/fail-close와 ChatGPT terminal late-completion cleanup을 추가했고 native cancel은 shared settlement당 정확히 1회. Deadline rejection·normal-close와 late-completion subcase는 각각 별도로 5회 반복 green |
 | `npm run check:bridge -w @ay-ple/codex-chat-runtime` | green, Ruff check와 format 13 files |
 | `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime` | green; 9 ordered patches deterministic verify, router actual-child matrix, official suite 166 passed/38 skipped, provenance 17 tests |
 | `npm run test:production-runtime -w @ay-ple/codex-chat-runtime` | green, 23 tests |
