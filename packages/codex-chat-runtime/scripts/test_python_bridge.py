@@ -191,6 +191,98 @@ class ProtocolUnitTests(unittest.TestCase):
                 with self.assertRaises(ProtocolViolation):
                     decode_command_line(line)
 
+    def test_decodes_exact_account_lifecycle_commands_without_native_identity(
+        self,
+    ) -> None:
+        commands = (
+            (
+                {
+                    "bridgeRequestId": "read",
+                    "command": "read_account",
+                },
+                None,
+            ),
+            (
+                {
+                    "bridgeRequestId": "start",
+                    "command": "start_browser_login",
+                    "attemptId": "attempt-1",
+                },
+                "attempt-1",
+            ),
+            (
+                {
+                    "bridgeRequestId": "status",
+                    "command": "read_browser_login_attempt",
+                    "attemptId": "attempt-1",
+                },
+                "attempt-1",
+            ),
+            (
+                {
+                    "bridgeRequestId": "cancel",
+                    "command": "cancel_browser_login",
+                    "attemptId": "attempt-1",
+                },
+                "attempt-1",
+            ),
+            (
+                {
+                    "bridgeRequestId": "release",
+                    "command": "release_browser_login_attempt",
+                    "attemptId": "attempt-1",
+                },
+                "attempt-1",
+            ),
+            (
+                {
+                    "bridgeRequestId": "logout",
+                    "command": "logout",
+                },
+                None,
+            ),
+        )
+        for value, attempt_id in commands:
+            with self.subTest(command=value["command"]):
+                command = decode_command_line(
+                    json.dumps(value, separators=(",", ":")).encode() + b"\n"
+                )
+                self.assertEqual(
+                    getattr(command, "attempt_id", None),
+                    attempt_id,
+                )
+
+        invalid = (
+            {
+                "bridgeRequestId": "start",
+                "command": "start_browser_login",
+                "attemptId": "",
+            },
+            {
+                "bridgeRequestId": "start",
+                "command": "start_browser_login",
+                "attemptId": "attempt-1",
+                "loginId": "native-login-secret",
+            },
+            {
+                "bridgeRequestId": "status",
+                "command": "read_browser_login_attempt",
+                "attemptId": "attempt-1",
+                "rawNotification": {},
+            },
+            {
+                "bridgeRequestId": "logout",
+                "command": "logout",
+                "credentialPath": "/private/auth.json",
+            },
+        )
+        for value in invalid:
+            with self.subTest(value=value):
+                with self.assertRaises(ProtocolViolation):
+                    decode_command_line(
+                        json.dumps(value, separators=(",", ":")).encode() + b"\n"
+                    )
+
     def test_decodes_legacy_and_isolated_thread_start_without_exposing_token(
         self,
     ) -> None:

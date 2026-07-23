@@ -33,6 +33,42 @@ class ReadAccountCommand:
 
 
 @dataclass(frozen=True, slots=True)
+class StartBrowserLoginCommand:
+    bridge_request_id: str
+    attempt_id: str
+    command: Literal["start_browser_login"] = "start_browser_login"
+
+
+@dataclass(frozen=True, slots=True)
+class ReadBrowserLoginAttemptCommand:
+    bridge_request_id: str
+    attempt_id: str
+    command: Literal["read_browser_login_attempt"] = "read_browser_login_attempt"
+
+
+@dataclass(frozen=True, slots=True)
+class CancelBrowserLoginCommand:
+    bridge_request_id: str
+    attempt_id: str
+    command: Literal["cancel_browser_login"] = "cancel_browser_login"
+
+
+@dataclass(frozen=True, slots=True)
+class ReleaseBrowserLoginAttemptCommand:
+    bridge_request_id: str
+    attempt_id: str
+    command: Literal["release_browser_login_attempt"] = (
+        "release_browser_login_attempt"
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class LogoutCommand:
+    bridge_request_id: str
+    command: Literal["logout"] = "logout"
+
+
+@dataclass(frozen=True, slots=True)
 class PrivateMcpServer:
     url: str
     token: str = field(repr=False)
@@ -102,6 +138,11 @@ class CloseCommand:
 
 BridgeCommand: TypeAlias = (
     ReadAccountCommand
+    | StartBrowserLoginCommand
+    | ReadBrowserLoginAttemptCommand
+    | CancelBrowserLoginCommand
+    | ReleaseBrowserLoginAttemptCommand
+    | LogoutCommand
     | StartThreadCommand
     | StartTurnCommand
     | StartProductTurnCommand
@@ -272,6 +313,27 @@ def decode_command_line(line: bytes) -> BridgeCommand:
     if command == "read_account":
         _require_exact_fields(value, {"bridgeRequestId", "command"})
         return ReadAccountCommand(request_id)
+    if command in {
+        "start_browser_login",
+        "read_browser_login_attempt",
+        "cancel_browser_login",
+        "release_browser_login_attempt",
+    }:
+        _require_exact_fields(
+            value,
+            {"bridgeRequestId", "command", "attemptId"},
+        )
+        attempt_id = _require_bounded_string(value.get("attemptId"), max_bytes=256)
+        if command == "start_browser_login":
+            return StartBrowserLoginCommand(request_id, attempt_id)
+        if command == "read_browser_login_attempt":
+            return ReadBrowserLoginAttemptCommand(request_id, attempt_id)
+        if command == "cancel_browser_login":
+            return CancelBrowserLoginCommand(request_id, attempt_id)
+        return ReleaseBrowserLoginAttemptCommand(request_id, attempt_id)
+    if command == "logout":
+        _require_exact_fields(value, {"bridgeRequestId", "command"})
+        return LogoutCommand(request_id)
     if command == "start_thread":
         legacy_fields = {"bridgeRequestId", "command"}
         isolated_fields = legacy_fields | {"workspace", "mcp"}
