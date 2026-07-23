@@ -328,6 +328,12 @@ export default function MeetingDetailPage() {
           )}
 
           {!isEnded && !confirmingCancel && (
+            <PillButton to={`/meetings/${id}/edit`} variant="ghost" size="sm">
+              모임 수정하기
+            </PillButton>
+          )}
+
+          {!isEnded && !confirmingCancel && (
             <PillButton variant="ghost" size="sm" onClick={() => setConfirmingCancel(true)}>
               모임 취소하기
             </PillButton>
