@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import {
+  link,
   lstat,
   mkdir,
   mkdtemp,
@@ -9,6 +10,7 @@ import {
   realpath,
   rename,
   rm,
+  unlink,
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -214,10 +216,17 @@ test('fresh 200 retains the verified archive and a valid strong partial', async 
     const archiveStats = await lstat(result.archivePath)
     assert.equal(archiveStats.isFile(), true)
     assert.equal(archiveStats.mode & 0o7777, 0o600)
+    assert.equal(archiveStats.nlink, 2)
     assert.deepEqual(
       await readFile(fixture.layout.partial.archivePath),
       archiveBytes,
     )
+    const partialStats = await lstat(
+      fixture.layout.partial.archivePath,
+    )
+    assert.equal(partialStats.nlink, 2)
+    assert.equal(partialStats.dev, archiveStats.dev)
+    assert.equal(partialStats.ino, archiveStats.ino)
     const retainedJournal = JSON.parse(
       await readFile(fixture.layout.partial.journalPath, 'utf8'),
     ) as {
@@ -248,6 +257,17 @@ test('fresh 200 retains the verified archive and a valid strong partial', async 
     )
     assert.equal(transport.closedResponses, 1)
     transport.assertExhausted()
+
+    const offlineTransport = new ScriptedArchiveTransport([])
+    const retained = await downloadVerifiedRuntimeArchive({
+      admission: fixture.admission,
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      signal: new AbortController().signal,
+      transport: offlineTransport,
+    })
+    assert.deepEqual(await readFile(retained.archivePath), archiveBytes)
+    assert.equal(offlineTransport.requests.length, 0)
   } finally {
     await fixture.cleanup()
   }
@@ -503,12 +523,38 @@ test('weak or absent ETag never authorizes append after interruption', async (t)
         })
 
         assert.deepEqual(await readFile(result.archivePath), archiveBytes)
+        const archiveStats = await lstat(result.archivePath)
+        const partialStats = await lstat(
+          fixture.layout.partial.archivePath,
+        )
+        assert.equal(archiveStats.nlink, 2)
+        assert.equal(partialStats.nlink, 2)
+        assert.equal(partialStats.dev, archiveStats.dev)
+        assert.equal(partialStats.ino, archiveStats.ino)
+        assert.deepEqual(
+          await readFile(fixture.layout.partial.archivePath),
+          archiveBytes,
+        )
+        await assert.rejects(
+          readFile(fixture.layout.partial.journalPath),
+          { code: 'ENOENT' },
+        )
         assert.deepEqual(
           transport.requests.map(({ range }) => range),
           [undefined, undefined],
         )
         assert.equal(transport.closedResponses, 2)
         transport.assertExhausted()
+
+        const offlineTransport = new ScriptedArchiveTransport([])
+        await downloadVerifiedRuntimeArchive({
+          admission: fixture.admission,
+          layout: fixture.layout,
+          mutationAuthority: fixture.mutationAuthority,
+          signal: new AbortController().signal,
+          transport: offlineTransport,
+        })
+        assert.equal(offlineTransport.requests.length, 0)
       } finally {
         await fixture.cleanup()
       }
@@ -592,6 +638,66 @@ test('range-ignored weak replacement interruption resets a prior strong checkpoi
         undefined,
       ],
     )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('a missing final turns a full weak alias into a fresh nlink-one restart', async () => {
+  const archiveBytes = Buffer.from('weak alias restart archive')
+  const fixture = await createDownloadFixture(archiveBytes)
+  const transport = new ScriptedArchiveTransport([
+    {
+      statusCode: 200,
+      headers: {
+        'content-length': [String(archiveBytes.byteLength)],
+      },
+      chunks: [archiveBytes],
+    },
+    {
+      statusCode: 200,
+      headers: {
+        'content-length': [String(archiveBytes.byteLength)],
+      },
+      chunks: [archiveBytes],
+    },
+  ])
+
+  try {
+    await downloadVerifiedRuntimeArchive({
+      admission: fixture.admission,
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      signal: new AbortController().signal,
+      transport,
+    })
+    await unlink(fixture.layout.archive.path)
+    const unlinkedPartial = await lstat(
+      fixture.layout.partial.archivePath,
+    )
+    assert.equal(unlinkedPartial.nlink, 1)
+    assert.equal(unlinkedPartial.size, archiveBytes.byteLength)
+
+    const result = await downloadVerifiedRuntimeArchive({
+      admission: fixture.admission,
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      signal: new AbortController().signal,
+      transport,
+    })
+    assert.deepEqual(await readFile(result.archivePath), archiveBytes)
+    assert.deepEqual(
+      transport.requests.map(({ range }) => range),
+      [undefined, undefined],
+    )
+    const finalStats = await lstat(result.archivePath)
+    const partialStats = await lstat(
+      fixture.layout.partial.archivePath,
+    )
+    assert.equal(finalStats.nlink, 2)
+    assert.equal(partialStats.nlink, 2)
+    assert.equal(finalStats.ino, partialStats.ino)
+    transport.assertExhausted()
   } finally {
     await fixture.cleanup()
   }
@@ -1934,6 +2040,82 @@ test('an invalid retained archive fails closed before network', async () => {
   }
 })
 
+test('a retained archive with an unknown hardlink alias fails before network', async () => {
+  const archiveBytes = Buffer.from('foreign retained archive alias')
+  const fixture = await createDownloadFixture(archiveBytes)
+  const foreignAlias = path.join(
+    fixture.layout.namespaces.archives,
+    'foreign-alias',
+  )
+  const transport = new ScriptedArchiveTransport([])
+
+  try {
+    await writeFile(fixture.layout.archive.path, archiveBytes, {
+      mode: 0o600,
+    })
+    await link(fixture.layout.archive.path, foreignAlias)
+    await assertRuntimeFailure(
+      downloadVerifiedRuntimeArchive({
+        admission: fixture.admission,
+        layout: fixture.layout,
+        mutationAuthority: fixture.mutationAuthority,
+        signal: new AbortController().signal,
+        transport,
+      }),
+      'runtime_recovery_required',
+    )
+    assert.equal(transport.requests.length, 0)
+    assert.deepEqual(await readFile(foreignAlias), archiveBytes)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('a valid archive pair with a third hardlink alias fails before network', async () => {
+  const archiveBytes = Buffer.from('third archive alias')
+  const fixture = await createDownloadFixture(archiveBytes)
+  const foreignAlias = path.join(
+    fixture.layout.namespaces.archives,
+    'third-alias',
+  )
+  const transport = new ScriptedArchiveTransport([
+    {
+      statusCode: 200,
+      headers: {
+        'content-length': [String(archiveBytes.byteLength)],
+        etag: ['"runtime-v1"'],
+      },
+      chunks: [archiveBytes],
+    },
+  ])
+
+  try {
+    await downloadVerifiedRuntimeArchive({
+      admission: fixture.admission,
+      layout: fixture.layout,
+      mutationAuthority: fixture.mutationAuthority,
+      signal: new AbortController().signal,
+      transport,
+    })
+    await link(fixture.layout.archive.path, foreignAlias)
+    const retainedTransport = new ScriptedArchiveTransport([])
+    await assertRuntimeFailure(
+      downloadVerifiedRuntimeArchive({
+        admission: fixture.admission,
+        layout: fixture.layout,
+        mutationAuthority: fixture.mutationAuthority,
+        signal: new AbortController().signal,
+        transport: retainedTransport,
+      }),
+      'runtime_recovery_required',
+    )
+    assert.equal(retainedTransport.requests.length, 0)
+    assert.equal((await lstat(foreignAlias)).nlink, 3)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('a competing final archive is never clobbered', async () => {
   const archiveBytes = Buffer.from('verified candidate archive')
   const competingBytes = Buffer.from('competing archive residue')
@@ -2035,7 +2217,7 @@ test('final-name replacement during readback cannot change the returned archive'
   }
 })
 
-test('partial ancestor substitution cannot redirect a journal write', async () => {
+test('partial root substitution cannot redirect a journal or publish a canonical archive', async () => {
   const archiveBytes = Buffer.from('anchored partial archive')
   const fixture = await createDownloadFixture(archiveBytes)
   const preservedRoot = `${fixture.layout.partial.root}.preserved`
@@ -2075,12 +2257,66 @@ test('partial ancestor substitution cannot redirect a journal write', async () =
       await readFile(fixture.layout.partial.journalPath),
       canary,
     )
-    assert.deepEqual(
-      await readFile(fixture.layout.archive.path),
-      archiveBytes,
+    await assert.rejects(
+      readFile(fixture.layout.archive.path),
+      { code: 'ENOENT' },
     )
     assert.deepEqual(
       await readFile(path.join(preservedRoot, 'archive.part')),
+      archiveBytes,
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('partial source substitution before link leaves the canonical archive absent', async () => {
+  const archiveBytes = Buffer.from('bound partial source archive')
+  const fixture = await createDownloadFixture(archiveBytes)
+  const preservedPartial =
+    `${fixture.layout.partial.archivePath}.preserved`
+  const transport = new ScriptedArchiveTransport([
+    {
+      statusCode: 200,
+      headers: {
+        'content-length': [String(archiveBytes.byteLength)],
+        etag: ['"runtime-v1"'],
+      },
+      chunks: [archiveBytes],
+    },
+  ])
+
+  try {
+    await assertRuntimeFailure(
+      downloadVerifiedRuntimeArchive({
+        admission: fixture.admission,
+        layout: fixture.layout,
+        mutationAuthority: fixture.mutationAuthority,
+        signal: new AbortController().signal,
+        testOptions: {
+          beforeArchiveLink: async () => {
+            await rename(
+              fixture.layout.partial.archivePath,
+              preservedPartial,
+            )
+            await writeFile(
+              fixture.layout.partial.archivePath,
+              archiveBytes,
+              { flag: 'wx', mode: 0o600 },
+            )
+          },
+        },
+        transport,
+      }),
+      'runtime_recovery_required',
+    )
+    await assert.rejects(
+      readFile(fixture.layout.archive.path),
+      { code: 'ENOENT' },
+    )
+    assert.deepEqual(await readFile(preservedPartial), archiveBytes)
+    assert.deepEqual(
+      await readFile(fixture.layout.partial.archivePath),
       archiveBytes,
     )
   } finally {

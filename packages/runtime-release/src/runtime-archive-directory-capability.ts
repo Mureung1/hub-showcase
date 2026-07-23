@@ -5,6 +5,7 @@ import { fork } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import { constants } from 'node:fs'
 import {
+  link,
   lstat,
   mkdir,
   open,
@@ -14,6 +15,7 @@ import {
 } from 'node:fs/promises'
 import type { BigIntStats } from 'node:fs'
 import type { FileHandle } from 'node:fs/promises'
+import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import type { RuntimeFileSystemIdentity } from './runtime-cache-authority.js'
@@ -60,6 +62,14 @@ type WorkerOperation =
       readonly kind: 'open_file'
       readonly leaf: string
       readonly mode: number
+    }
+  | {
+      readonly kind: 'link_verified_file_from'
+      readonly destinationLeaf: string
+      readonly expectedBytes: number
+      readonly expectedMode: number
+      readonly expectedSourceIdentity: RuntimeFileSystemIdentity
+      readonly sourceAbsolutePath: string
     }
   | {
       readonly kind: 'write_file'
@@ -279,6 +289,28 @@ export class RuntimeDirectoryCapability {
       readonly handle: number
       readonly stats: RuntimeCapabilityStats
     }>
+  }
+
+  linkVerifiedFileFrom(
+    input: {
+      readonly destinationLeaf: string
+      readonly expectedBytes: number
+      readonly expectedMode: number
+      readonly expectedSourceIdentity: RuntimeFileSystemIdentity
+      readonly sourceAbsolutePath: string
+    },
+    onChecked: () => Promise<void>,
+  ): Promise<RuntimeCapabilityStats> {
+    // The worker's retained cwd binds the destination namespace. The
+    // source remains pathname-addressed because Node has no linkat-by-fd
+    // API, so both sides are revalidated around the atomic no-clobber link.
+    return this.#request(
+      {
+        kind: 'link_verified_file_from',
+        ...input,
+      },
+      onChecked,
+    ) as Promise<RuntimeCapabilityStats>
   }
 
   writeFile(handle: number, chunk: Buffer): Promise<number> {
@@ -748,6 +780,76 @@ async function executeWorkerOperation(input: {
       await handle.close().catch(() => undefined)
     }
   }
+  if (operation.kind === 'link_verified_file_from') {
+    assertLeaf(operation.destinationLeaf)
+    if (!path.isAbsolute(operation.sourceAbsolutePath)) {
+      throw new Error('Runtime capability source path is invalid')
+    }
+    await assertWorkerDirectory(input.configuration)
+    const source = await open(
+      operation.sourceAbsolutePath,
+      constants.O_RDONLY | constants.O_NOFOLLOW,
+    )
+    try {
+      assertVerifiedLinkFile(
+        await source.stat({ bigint: true }),
+        operation,
+        1,
+      )
+      assertVerifiedLinkFile(
+        await lstat(operation.sourceAbsolutePath, {
+          bigint: true,
+        }),
+        operation,
+        1,
+      )
+      const proceed = await waitForDecision(
+        input.id,
+        input.decisions,
+      )
+      if (!proceed) throw new Error('Capability operation cancelled')
+      await assertWorkerDirectory(input.configuration)
+      assertVerifiedLinkFile(
+        await source.stat({ bigint: true }),
+        operation,
+        1,
+      )
+      assertVerifiedLinkFile(
+        await lstat(operation.sourceAbsolutePath, {
+          bigint: true,
+        }),
+        operation,
+        1,
+      )
+      await link(
+        operation.sourceAbsolutePath,
+        operation.destinationLeaf,
+      )
+      const destination = await open(
+        operation.destinationLeaf,
+        constants.O_RDONLY | constants.O_NOFOLLOW,
+      )
+      try {
+        const [sourceStats, sourcePathStats, destinationStats] =
+          await Promise.all([
+            source.stat({ bigint: true }),
+            lstat(operation.sourceAbsolutePath, {
+              bigint: true,
+            }),
+            destination.stat({ bigint: true }),
+          ])
+        assertVerifiedLinkFile(sourceStats, operation, 2)
+        assertVerifiedLinkFile(sourcePathStats, operation, 2)
+        assertVerifiedLinkFile(destinationStats, operation, 2)
+        await assertWorkerDirectory(input.configuration)
+        return statsEvidence(destinationStats)
+      } finally {
+        await destination.close().catch(() => undefined)
+      }
+    } finally {
+      await source.close().catch(() => undefined)
+    }
+  }
 
   assertLeaf(operation.leaf)
   await assertWorkerDirectory(input.configuration)
@@ -804,6 +906,29 @@ async function executeWorkerOperation(input: {
   }
   await assertWorkerDirectory(input.configuration)
   return value
+}
+
+function assertVerifiedLinkFile(
+  stats: BigIntStats,
+  operation: Extract<
+    WorkerOperation,
+    { readonly kind: 'link_verified_file_from' }
+  >,
+  expectedLinks: number,
+): void {
+  const evidence = statsEvidence(stats)
+  if (
+    evidence.type !== 'file' ||
+    evidence.mode !== operation.expectedMode ||
+    evidence.nlink !== expectedLinks ||
+    evidence.size !== String(operation.expectedBytes) ||
+    !sameIdentity(
+      evidence.identity,
+      operation.expectedSourceIdentity,
+    )
+  ) {
+    throw new Error('Runtime verified link source changed')
+  }
 }
 
 function waitForDecision(

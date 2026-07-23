@@ -6,6 +6,7 @@ import type { BigIntStats } from 'node:fs'
 import {
   lstat,
   open,
+  readdir,
 } from 'node:fs/promises'
 import type { FileHandle } from 'node:fs/promises'
 import path from 'node:path'
@@ -61,6 +62,7 @@ export type RuntimeArchiveDownloadInput = {
 export type RuntimeArchiveDownloadTestOptions = {
   readonly afterArchivePublishStarted?: () => void | Promise<void>
   readonly beforeArchiveHash?: () => void | Promise<void>
+  readonly beforeArchiveLink?: () => void | Promise<void>
   readonly beforeArchivePathReadback?: () => void | Promise<void>
 }
 
@@ -482,8 +484,7 @@ async function finalizeCompletedPartial(
     archiveAuthority,
     partial,
   )
-  await preserveValidPartialResidue(partial)
-  await assertPartialResidueReadback(input, partial)
+  await assertPartialResidueReadback(input, partial, 2)
   return verified
 }
 
@@ -517,25 +518,10 @@ async function resetRejectedPartial(
   }
 }
 
-async function preserveValidPartialResidue(
-  partial: RuntimeArchivePartialWriter,
-): Promise<void> {
-  if (partial.strongEtag !== undefined) return
-  try {
-    await partial.handle.truncate(0)
-    await partial.handle.sync()
-  } catch (error) {
-    throw runtimeAuthorityError('runtime_recovery_required', {
-      kind: 'runtime_archive_partial_residue_ambiguous',
-      cause: error,
-    })
-  }
-  partial.writtenBytes = 0
-}
-
 async function assertPartialResidueReadback(
   input: RuntimeArchiveDownloadInput,
   partial: RuntimeArchivePartialWriter,
+  expectedLinks: 1 | 2,
 ): Promise<void> {
   let rootStats
   let archiveStats
@@ -560,7 +546,7 @@ async function assertPartialResidueReadback(
     Number(rootStats.uid) !==
       partial.rootAuthority.identity.ownerUid ||
     !archiveStats.isFile() ||
-    archiveStats.nlink !== 1n ||
+    archiveStats.nlink !== BigInt(expectedLinks) ||
     Number(archiveStats.mode & 0o7777n) !== 0o600 ||
     String(archiveStats.dev) !== partial.identity.device ||
     String(archiveStats.ino) !== partial.identity.inode ||
@@ -615,18 +601,22 @@ async function verifyRetainedArchiveIfPresent(
     })
   }
   if (observed === undefined) return undefined
+  const expectedLinks = decodeArchiveLinkCount(observed.nlink)
   assertArchiveCapabilityEntry(
     observed,
     input,
     mutationAuthority,
     observed.identity,
     'runtime_archive_retained_identity_invalid',
+    input.admission.descriptor.archive.bytes,
+    expectedLinks,
   )
   return readBackVerifiedArchive(
     input,
     mutationAuthority,
     archiveAuthority,
     observed.identity,
+    expectedLinks,
   )
 }
 
@@ -636,64 +626,78 @@ async function publishVerifiedArchive(
   archiveAuthority: RuntimeDirectoryMutationAuthority,
   partial: RuntimeArchivePartialWriter,
 ): Promise<RuntimeArchiveVerificationSnapshot> {
+  // Node/macOS has no exposed atomic no-clobber clone/rename primitive.
+  // The first-preview representation therefore publishes the already
+  // verified partial with one atomic hardlink and retains the exact pair.
+  // D1d must quarantine final + partial root together and must never
+  // mutate the partial while this verified final link remains present.
   const leaf = path.basename(input.layout.archive.path)
-  let archiveHandle: number | undefined
-  let archiveIdentity: RuntimeFileSystemIdentity | undefined
   let mutationStarted = false
   try {
+    try {
+      await partial.rootAuthority.directoryHandle.sync()
+    } catch (error) {
+      throw runtimeAuthorityError('runtime_storage_unavailable', {
+        kind: 'runtime_archive_partial_directory_sync_failed',
+        cause: error,
+      })
+    }
     mutationStarted = true
-    const opened = await archiveAuthority.capability.openFile(
-      leaf,
-      0o600,
-      () =>
-        assertArchiveMutationAuthority(
-          input,
-          archiveAuthority,
-        ),
-    )
-    archiveHandle = opened.handle
-    await input.testOptions?.afterArchivePublishStarted?.()
-    archiveIdentity = opened.stats.identity
+    const linked =
+      await archiveAuthority.capability.linkVerifiedFileFrom(
+        {
+          destinationLeaf: leaf,
+          expectedBytes:
+            input.admission.descriptor.archive.bytes,
+          expectedMode: 0o600,
+          expectedSourceIdentity: partial.identity,
+          sourceAbsolutePath:
+            input.layout.partial.archivePath,
+        },
+        async () => {
+          await input.testOptions?.beforeArchiveLink?.()
+          await assertArchiveMutationAuthority(
+            input,
+            archiveAuthority,
+          )
+          await assertPartialRootMutationAuthority(
+            mutationAuthority,
+            partial.rootAuthority,
+          )
+          const reopened = await openAnchoredPartialFile({
+            absolutePath: input.layout.partial.archivePath,
+            evidenceKind:
+              'runtime_archive_publish_source_identity_invalid',
+            expectedBytes:
+              input.admission.descriptor.archive.bytes,
+            expectedIdentity: partial.identity,
+            leaf: 'archive.part',
+            mutationAuthority,
+            rootAuthority: partial.rootAuthority,
+          })
+          await reopened.handle.close().catch(() => undefined)
+          await input.testOptions?.afterArchivePublishStarted?.()
+        },
+      )
     assertArchiveCapabilityEntry(
-      opened.stats,
+      linked,
       input,
       mutationAuthority,
-      archiveIdentity,
+      partial.identity,
       'runtime_archive_new_identity_invalid',
-      0,
-    )
-    await copyPartialToArchiveCapability(
-      partial.handle,
-      archiveAuthority.capability,
-      archiveHandle,
       input.admission.descriptor.archive.bytes,
-    )
-    await archiveAuthority.capability.syncFile(archiveHandle)
-    const finished = await archiveAuthority.capability.finishFile(
-      archiveHandle,
-    )
-    archiveHandle = undefined
-    assertArchiveCapabilityEntry(
-      finished,
-      input,
-      mutationAuthority,
-      archiveIdentity,
-      'runtime_archive_new_identity_invalid',
+      2,
     )
     await archiveAuthority.directoryHandle.sync()
     return await readBackVerifiedArchive(
       input,
       mutationAuthority,
       archiveAuthority,
-      archiveIdentity,
+      partial.identity,
+      2,
       false,
     )
   } catch (error) {
-    if (archiveHandle !== undefined) {
-      await archiveAuthority.capability
-        .closeHandle(archiveHandle)
-        .catch(() => undefined)
-    }
     if (
       mutationStarted ||
       (isNodeError(error) && error.code === 'EEXIST')
@@ -934,76 +938,12 @@ function assertPartialRootCapability(
   }
 }
 
-async function copyPartialToArchiveCapability(
-  partial: FileHandle,
-  capability: RuntimeDirectoryCapability,
-  archiveHandle: number,
-  expectedBytes: number,
-): Promise<void> {
-  const buffer = Buffer.allocUnsafe(1024 * 1024)
-  let position = 0
-  while (position < expectedBytes) {
-    let result
-    try {
-      result = await partial.read(
-        buffer,
-        0,
-        Math.min(buffer.byteLength, expectedBytes - position),
-        position,
-      )
-    } catch (error) {
-      throw runtimeAuthorityError('runtime_storage_unavailable', {
-        kind: 'runtime_archive_publish_source_read_failed',
-        cause: error,
-      })
-    }
-    if (result.bytesRead <= 0) {
-      throw runtimeAuthorityError('runtime_recovery_required', {
-        kind: 'runtime_archive_publish_source_changed',
-      })
-    }
-    await writeCapabilityFully(
-      capability,
-      archiveHandle,
-      Buffer.from(buffer.subarray(0, result.bytesRead)),
-    )
-    position += result.bytesRead
-  }
-}
-
-async function writeCapabilityFully(
-  capability: RuntimeDirectoryCapability,
-  handle: number,
-  chunk: Buffer,
-): Promise<void> {
-  let offset = 0
-  while (offset < chunk.byteLength) {
-    let bytesWritten: number
-    try {
-      bytesWritten = await capability.writeFile(
-        handle,
-        chunk.subarray(offset),
-      )
-    } catch (error) {
-      throw runtimeAuthorityError('runtime_storage_unavailable', {
-        kind: 'runtime_archive_publish_write_failed',
-        cause: error,
-      })
-    }
-    if (bytesWritten <= 0) {
-      throw runtimeAuthorityError('runtime_storage_unavailable', {
-        kind: 'runtime_archive_publish_short_write',
-      })
-    }
-    offset += bytesWritten
-  }
-}
-
 async function readBackVerifiedArchive(
   input: RuntimeArchiveDownloadInput,
   mutationAuthority: RuntimeCacheMutationAuthority,
   archiveAuthority: RuntimeDirectoryMutationAuthority,
   expectedIdentity: RuntimeFileSystemIdentity,
+  expectedLinks: 1 | 2,
   observeCancellation = true,
 ): Promise<RuntimeArchiveVerificationSnapshot> {
   let handle: number | undefined
@@ -1020,6 +960,8 @@ async function readBackVerifiedArchive(
       mutationAuthority,
       expectedIdentity,
       'runtime_archive_retained_identity_invalid',
+      input.admission.descriptor.archive.bytes,
+      expectedLinks,
     )
     const verified =
       await archiveAuthority.capability.hashVerifiedFile(
@@ -1034,6 +976,8 @@ async function readBackVerifiedArchive(
       mutationAuthority,
       expectedIdentity,
       'runtime_archive_retained_identity_invalid',
+      input.admission.descriptor.archive.bytes,
+      expectedLinks,
     )
     if (
       verified.bytes !==
@@ -1045,14 +989,29 @@ async function readBackVerifiedArchive(
         kind: 'runtime_archive_retained_digest_mismatch',
       })
     }
+    if (expectedLinks === 2) {
+      await assertExactArchivePartialPair(
+        input,
+        mutationAuthority,
+        expectedIdentity,
+      )
+    }
     await input.testOptions?.beforeArchivePathReadback?.()
     await verifyArchivePathReadback(
       input,
       mutationAuthority,
       archiveAuthority,
       expectedIdentity,
+      expectedLinks,
       observeCancellation,
     )
+    if (expectedLinks === 2) {
+      await assertExactArchivePartialPair(
+        input,
+        mutationAuthority,
+        expectedIdentity,
+      )
+    }
     return {
       kind: 'runtime_archive_verification_snapshot',
       release: input.admission.identity,
@@ -1080,6 +1039,7 @@ async function verifyArchivePathReadback(
   mutationAuthority: RuntimeCacheMutationAuthority,
   archiveAuthority: RuntimeDirectoryMutationAuthority,
   expectedIdentity: RuntimeFileSystemIdentity,
+  expectedLinks: 1 | 2,
   observeCancellation: boolean,
 ): Promise<void> {
   let archive: FileHandle | undefined
@@ -1096,6 +1056,7 @@ async function verifyArchivePathReadback(
       archiveAuthority,
       expectedIdentity,
       input.admission.descriptor.archive.bytes,
+      expectedLinks,
     )
     const digest = await hashRuntimeArchiveFile(
       archive,
@@ -1116,6 +1077,7 @@ async function verifyArchivePathReadback(
       archiveAuthority,
       expectedIdentity,
       input.admission.descriptor.archive.bytes,
+      expectedLinks,
     )
     await assertArchiveMutationAuthority(input, archiveAuthority)
   } catch (error) {
@@ -1140,11 +1102,12 @@ function assertArchivePathStats(
   archiveAuthority: RuntimeDirectoryMutationAuthority,
   expectedIdentity: RuntimeFileSystemIdentity,
   expectedBytes: number,
+  expectedLinks: 1 | 2,
 ): void {
   if (
     !stats.isFile() ||
     stats.isSymbolicLink() ||
-    stats.nlink !== 1n ||
+    stats.nlink !== BigInt(expectedLinks) ||
     Number(stats.mode & 0o7777n) !== 0o600 ||
     Number(stats.uid) !==
       mutationAuthority.snapshot.expectedOwnerUid ||
@@ -1167,11 +1130,12 @@ function assertArchiveCapabilityEntry(
   expectedIdentity: RuntimeFileSystemIdentity,
   evidenceKind: string,
   expectedBytes = input.admission.descriptor.archive.bytes,
+  expectedLinks: 1 | 2 = 1,
 ): void {
   if (
     stats.type !== 'file' ||
     stats.mode !== 0o600 ||
-    stats.nlink !== 1 ||
+    stats.nlink !== expectedLinks ||
     stats.size !== String(expectedBytes) ||
     stats.identity.ownerUid !==
       mutationAuthority.snapshot.expectedOwnerUid ||
@@ -1181,6 +1145,178 @@ function assertArchiveCapabilityEntry(
   ) {
     throw runtimeAuthorityError('runtime_recovery_required', {
       kind: evidenceKind,
+    })
+  }
+}
+
+function decodeArchiveLinkCount(value: number): 1 | 2 {
+  if (value === 1 || value === 2) return value
+  throw runtimeAuthorityError('runtime_recovery_required', {
+    kind: 'runtime_archive_retained_link_count_invalid',
+  })
+}
+
+async function assertExactArchivePartialPair(
+  input: RuntimeArchiveDownloadInput,
+  mutationAuthority: RuntimeCacheMutationAuthority,
+  expectedIdentity: RuntimeFileSystemIdentity,
+): Promise<void> {
+  let root: FileHandle | undefined
+  let partial: FileHandle | undefined
+  let journal: FileHandle | undefined
+  try {
+    root = await open(
+      input.layout.partial.root,
+      constants.O_RDONLY |
+        constants.O_DIRECTORY |
+        constants.O_NOFOLLOW,
+    )
+    const rootBefore = await root.stat({ bigint: true })
+    assertArchivePartialPairRoot(
+      rootBefore,
+      mutationAuthority,
+      expectedIdentity.device,
+    )
+    const entries = (
+      await readdir(input.layout.partial.root)
+    ).sort()
+    if (
+      (entries.length !== 1 && entries.length !== 2) ||
+      entries[0] !== 'archive.part' ||
+      (entries.length === 2 && entries[1] !== 'journal.json')
+    ) {
+      throw runtimeAuthorityError('runtime_recovery_required', {
+        kind: 'runtime_archive_partial_pair_roster_invalid',
+      })
+    }
+    partial = await open(
+      input.layout.partial.archivePath,
+      constants.O_RDONLY | constants.O_NOFOLLOW,
+    )
+    assertArchivePartialPairFile(
+      await partial.stat({ bigint: true }),
+      mutationAuthority,
+      expectedIdentity,
+      input.admission.descriptor.archive.bytes,
+    )
+    assertArchivePartialPairFile(
+      await lstat(input.layout.partial.archivePath, {
+        bigint: true,
+      }),
+      mutationAuthority,
+      expectedIdentity,
+      input.admission.descriptor.archive.bytes,
+    )
+    if (entries.length === 2) {
+      journal = await open(
+        input.layout.partial.journalPath,
+        constants.O_RDONLY | constants.O_NOFOLLOW,
+      )
+      const journalStats = await journal.stat({ bigint: true })
+      const journalEvidence = await readPartialJournal(
+        input,
+        mutationAuthority,
+        journal,
+        {
+          device: String(journalStats.dev),
+          inode: String(journalStats.ino),
+          ownerUid: Number(journalStats.uid),
+        },
+      )
+      if (
+        // A zero journal is the durable reset left when a strong response
+        // was replaced by a weak/absent validator before this full alias
+        // was hash-verified. It authorizes no append.
+        journalEvidence.journal.writtenBytes !== 0 &&
+        journalEvidence.journal.writtenBytes !==
+          input.admission.descriptor.archive.bytes
+      ) {
+        throw runtimeAuthorityError('runtime_recovery_required', {
+          kind:
+            'runtime_archive_partial_pair_journal_invalid',
+        })
+      }
+    }
+    const rootAfter = await lstat(input.layout.partial.root, {
+      bigint: true,
+    })
+    assertArchivePartialPairRoot(
+      rootAfter,
+      mutationAuthority,
+      expectedIdentity.device,
+    )
+    if (
+      String(rootAfter.dev) !== String(rootBefore.dev) ||
+      String(rootAfter.ino) !== String(rootBefore.ino) ||
+      Number(rootAfter.uid) !== Number(rootBefore.uid)
+    ) {
+      throw runtimeAuthorityError('runtime_recovery_required', {
+        kind: 'runtime_archive_partial_pair_root_changed',
+      })
+    }
+    assertArchivePartialPairFile(
+      await lstat(input.layout.partial.archivePath, {
+        bigint: true,
+      }),
+      mutationAuthority,
+      expectedIdentity,
+      input.admission.descriptor.archive.bytes,
+    )
+  } catch (error) {
+    if (error instanceof RuntimeReleaseAuthorityError) throw error
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_archive_partial_pair_readback_failed',
+      cause: error,
+    })
+  } finally {
+    await journal?.close().catch(() => undefined)
+    await partial?.close().catch(() => undefined)
+    await root?.close().catch(() => undefined)
+  }
+}
+
+function assertArchivePartialPairRoot(
+  stats: BigIntStats,
+  mutationAuthority: RuntimeCacheMutationAuthority,
+  expectedDevice: string,
+): void {
+  if (
+    !stats.isDirectory() ||
+    stats.isSymbolicLink() ||
+    Number(stats.mode & 0o7777n) !== 0o700 ||
+    Number(stats.uid) !==
+      mutationAuthority.snapshot.expectedOwnerUid ||
+    String(stats.dev) !== expectedDevice ||
+    String(stats.dev) !==
+      mutationAuthority.snapshot.namespaceIdentities.partials
+        ?.device
+  ) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_archive_partial_pair_root_invalid',
+    })
+  }
+}
+
+function assertArchivePartialPairFile(
+  stats: BigIntStats,
+  mutationAuthority: RuntimeCacheMutationAuthority,
+  expectedIdentity: RuntimeFileSystemIdentity,
+  expectedBytes: number,
+): void {
+  if (
+    !stats.isFile() ||
+    stats.isSymbolicLink() ||
+    stats.nlink !== 2n ||
+    Number(stats.mode & 0o7777n) !== 0o600 ||
+    Number(stats.uid) !==
+      mutationAuthority.snapshot.expectedOwnerUid ||
+    String(stats.dev) !== expectedIdentity.device ||
+    String(stats.ino) !== expectedIdentity.inode ||
+    Number(stats.uid) !== expectedIdentity.ownerUid ||
+    stats.size !== BigInt(expectedBytes)
+  ) {
+    throw runtimeAuthorityError('runtime_recovery_required', {
+      kind: 'runtime_archive_partial_pair_identity_invalid',
     })
   }
 }
