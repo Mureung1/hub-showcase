@@ -11,17 +11,55 @@ const categoryGroups = [
 
 type CategoryGroupId = typeof categoryGroups[number]['id'];
 
-function categoryGroupFor(category: string): CategoryGroupId {
-  if (category === '소상공인 운영' || category === '지역 상권과 홍보') return 'small-business';
-  if (category === '대학 생활' || category === '학습과 진로') return 'university';
+const categoryLabels: Record<Exclude<CategoryGroupId, 'all'>, string> = {
+  'small-business': '소상공인',
+  university: '대학생',
+  'daily-life': '지역·생활',
+};
+
+function categoryGroupFor(project: Project): Exclude<CategoryGroupId, 'all'> {
+  const category = project.category ?? '';
+  if (category === '소상공인 운영' || category === '지역 상권과 홍보' || category === '소상공인') {
+    return 'small-business';
+  }
+  if (category === '대학 생활' || category === '학습과 진로' || category === '대학생') return 'university';
+
+  const text = [
+    project.title,
+    project.summary,
+    project.problem,
+    ...(project.targetUsers ?? []),
+    ...(project.features ?? []),
+    ...(project.featureTags ?? []),
+  ].join(' ').toLocaleLowerCase();
+
+  const smallBusinessKeywords = [
+    '소상공인', '자영업', '매장', '가게', '상점', '점포', '사장', '매출', '재고',
+    '주문', '상권', '지원금', '쿠폰', '예약 관리', '배달',
+  ];
+  if (smallBusinessKeywords.some((keyword) => text.includes(keyword))) return 'small-business';
+
+  const universityKeywords = [
+    '대학생', '대학 생활', '캠퍼스', '수강', '학업', '과제', '시험', '진로', '취업',
+    '동아리', '자취', '기숙사', '학생',
+  ];
+  if (universityKeywords.some((keyword) => text.includes(keyword))) return 'university';
+
   return 'daily-life';
+}
+
+function categoryLabelFor(project: Project) {
+  if (project.isDummy && project.category) return project.category;
+  if (project.category === '소상공인 운영' || project.category === '지역 상권과 홍보') return '소상공인';
+  if (project.category === '대학 생활' || project.category === '학습과 진로') return '대학생';
+  return categoryLabels[categoryGroupFor(project)];
 }
 
 export type Project = {
   id: string;
   title: string;
   summary: string;
-  category: string;
+  category?: string;
   developmentWithAI?: string;
   featureTags: string[];
   techStack: string[];
@@ -66,7 +104,7 @@ export default function App({ projects }: AppProps) {
   const cardTechStack = (project: Project) => project.techStack.slice(0, 4);
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const filteredProjects = projects.filter((project) => {
-    const matchesCategory = activeCategory === 'all' || categoryGroupFor(project.category) === activeCategory;
+    const matchesCategory = activeCategory === 'all' || categoryGroupFor(project) === activeCategory;
     if (!matchesCategory) return false;
 
     if (!normalizedQuery) return true;
@@ -104,7 +142,7 @@ export default function App({ projects }: AppProps) {
           {categoryGroups.map((category) => {
             const count = category.id === 'all'
               ? projects.length
-              : projects.filter((project) => categoryGroupFor(project.category) === category.id).length;
+              : projects.filter((project) => categoryGroupFor(project) === category.id).length;
             return (
               <button
                 className={`category-tab ${activeCategory === category.id ? 'active' : ''}`}
@@ -159,7 +197,7 @@ export default function App({ projects }: AppProps) {
               />
               <div className="card-content">
                 <div className="card-meta">
-                  <span className="project-category">{project.category}</span>
+                  <span className="project-category">{categoryLabelFor(project)}</span>
                   {project.isDummy && <span className="dummy-badge">더미</span>}
                 </div>
                 <h2>{project.title}</h2>
@@ -216,7 +254,7 @@ export default function App({ projects }: AppProps) {
             />
             <div className="detail-content">
               <div className="card-meta">
-                <span className="project-category">{selectedProject.category}</span>
+                <span className="project-category">{categoryLabelFor(selectedProject)}</span>
                 {selectedProject.isDummy && <span className="dummy-badge">더미</span>}
               </div>
               <h2>{selectedProject.title}</h2>

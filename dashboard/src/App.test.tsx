@@ -22,7 +22,27 @@ describe('프로젝트 목록', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'GitHub Pages 수집 시험' })).toBeInTheDocument();
-    expect(screen.getByText('대학 생활')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^대학생/ })).toBeInTheDocument();
+  });
+
+  it('카테고리 없이 소상공인 프로젝트를 내용으로 분류한다', () => {
+    render(
+      <App
+        projects={[{
+          id: 'support-curator',
+          title: '소상공인 정부 지원금 큐레이터',
+          summary: '소상공인에게 맞는 지원금을 찾습니다.',
+          featureTags: ['지원금 찾기'],
+          techStack: ['React'],
+          githubUser: 'student',
+          thumbnailUrl: '/thumbnail.webp',
+        }]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /^소상공인 \d+$/ }));
+
+    expect(screen.getByRole('heading', { name: '소상공인 정부 지원금 큐레이터' })).toBeInTheDocument();
   });
 
   it('썸네일 높이를 카드 너비에 맞춰 계산한다', () => {
