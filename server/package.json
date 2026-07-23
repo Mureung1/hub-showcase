@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "check:nvidia": "node scripts/check-nvidia.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
@@ -16,5 +16,8 @@
     "@supabase/supabase-js": "^2.110.7",
     "dotenv": "^17.4.2",
     "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
   }
 }
