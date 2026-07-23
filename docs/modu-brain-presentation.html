@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modu Brain — 프로젝트 발표 자료</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary: #ff6f61;
+      --color-primary-hover: #fa5246;
+      --color-primary-light: #ffaca3;
+      --color-primary-subtle: #fff0ee;
+      --bg-page: #fffdfb; /* Warm Peach */
+      --bg-surface: #ffffff;
+      --bg-dark: #1a1726; /* Dark Indigo */
+      --bg-dark-alt: #262238;
+      --text-primary: #1a1726;
+      --text-secondary: #5c5670;
+      --text-muted: #948fa4;
+      --text-on-primary: #ffffff;
+      --text-on-dark: #ffffff;
+      --text-on-dark-muted: #a8a3bb;
+      --border-subtle: rgba(26, 23, 38, 0.05);
+      --border-default: rgba(26, 23, 38, 0.08);
+      --border-dark: rgba(255, 255, 255, 0.08);
+      --color-info: #4facfe;
+      --color-success: #00f2fe;
+      --color-success-bg: #e0fbfd;
+      --font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Pretendard', sans-serif;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      --radius-full: 9999px;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 24px;
+      --space-6: 36px;
+      --space-7: 48px;
+      --space-8: 64px;
+      --transition-fast: 150ms ease;
+      --transition-base: 350ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-page);
+      color: var(--text-primary);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Deck Layout */
+    .deck {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      padding: var(--space-6) var(--space-7);
+      max-width: 1100px;
+      margin: 0 auto;
+      animation: slideUp var(--transition-base);
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Header & Progress */
+    .deck-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-4) var(--space-7);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .logo {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .logo span {
+      background: var(--color-primary);
+      color: white;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+    }
+
+    .slide-counter {
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.03);
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+    }
+
+    /* Typography */
+    .label {
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-primary);
+      margin-bottom: var(--space-2);
+    }
+
+    h1 {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: var(--space-3);
+    }
+
+    h2 {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      margin-bottom: var(--space-4);
+    }
+
+    .sub {
+      font-size: 18px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: var(--space-5);
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.015);
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(26, 23, 38, 0.04);
+    }
+
+    .card-dark {
+      background: var(--bg-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      color: var(--text-on-dark);
+      box-shadow: 0 20px 48px rgba(26, 23, 38, 0.15);
+    }
+
+    .grid { display: grid; gap: var(--space-4); }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+    .card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: var(--space-2);
+    }
+
+    .card p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-4) var(--space-7);
+      border-top: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+    }
+
+    .btn {
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-full);
+      background: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--text-primary);
+      transition: background-color var(--transition-fast), border-color var(--transition-fast);
+    }
+
+    .btn:hover {
+      background: rgba(0, 0, 0, 0.02);
+      border-color: var(--text-primary);
+    }
+
+    .progress-bar-container {
+      flex: 1;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--color-primary);
+      width: 0%;
+      transition: width var(--transition-base);
+    }
+
+    .keyboard-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Badges */
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      display: inline-block;
+      margin-bottom: var(--space-2);
+    }
+
+    .badge-success { background: var(--color-success-bg); color: #008f9c; border: 1px solid rgba(0, 242, 254, 0.2); }
+    .badge-primary { background: var(--color-primary-subtle); color: var(--color-primary); border: 1px solid var(--color-primary-light); }
+  </style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <header class="deck-header">
+    <div class="logo">🧠 Modu Brain <span>N031</span></div>
+    <div class="slide-counter" id="counter">1 / 6</div>
+  </header>
+
+  <!-- Presentation Deck -->
+  <main class="deck">
+
+    <!-- Slide 1: Cover -->
+    <div class="slide active">
+      <div class="card-dark" style="background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-dark-alt) 100%);">
+        <span class="label" style="color: var(--color-primary-light);">INTRODUCING MODU BRAIN</span>
+        <h1 style="font-size: 50px; line-height: 1.15; margin-bottom: 20px; word-break: keep-all;">
+          회의 기록 맥락 정렬 및 의사결정 추적 도구
+        </h1>
+        <p class="sub" style="color: var(--text-on-dark-muted); font-size: 20px; max-width: 850px; margin-bottom: var(--space-6); word-break: keep-all;">
+          카카오톡, Teams, Notion에 흩어진 기록에서 '사람별 관점 차이', '열린 질문', '결정 근거'를 찾아 팀의 일치된 행동을 이끌어냅니다.
+        </p>
+        <div style="display: flex; gap: var(--space-5); align-items: center; border-top: 1px solid var(--border-dark); padding-top: var(--space-4);">
+          <div>
+            <p style="font-size: 12px; color: var(--text-on-dark-muted);">발표자</p>
+            <p style="font-size: 16px; font-weight: 600;">N031 김서준</p>
+          </div>
+          <div style="width: 1px; height: 30px; background: var(--border-dark);"></div>
+          <div>
+            <p style="font-size: 12px; color: var(--text-on-dark-muted);">일시</p>
+            <p style="font-size: 16px; font-weight: 600;">2026년 7월 15일</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 2: The Problem -->
+    <div class="slide">
+      <span class="label">The Challenge</span>
+      <h2>팀 회의 시 맥락이 불일치하는 이유</h2>
+      <p class="sub">흩어진 대화록과 명확하지 않은 목표로 인해 회의 후 '뭘 해야 할지 모르는' 혼선</p>
+      
+      <div class="grid grid-2">
+        <div class="card">
+          <span class="badge badge-primary">Leak</span>
+          <h3 style="margin-top: 8px;">1. 흩어진 대화 속 맥락 누수</h3>
+          <p>카톡방 의견 충돌, 노션의 긴 줄글 회의록, 개인 메모에 산재된 기록들 속에서 서로의 진짜 의도와 최종 근거를 모으기 어렵습니다.</p>
+        </div>
+        <div class="card">
+          <span class="badge badge-primary">Confusion</span>
+          <h3 style="margin-top: 8px;">2. 회의 종료 후 액션 플랜의 부재</h3>
+          <p>치열하게 논의했음에도 최종 결정사항과 미결된 질문들이 한 곳에 정리되지 않아, 다음 미팅 때 똑같은 질문과 공백을 다시 마주합니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3: Solution & Workflow -->
+    <div class="slide">
+      <span class="label">How it Works</span>
+      <h2>회의록 한 장으로 팀 맥락 정렬하기</h2>
+      <p class="sub">Modu Brain이 흩어진 회의 텍스트에서 명확한 결론과 행동 지침을 구조화하는 흐름</p>
+      
+      <div class="grid grid-3">
+        <div class="card">
+          <h3 style="color: var(--color-primary);">1. 기록 축적 및 통합</h3>
+          <p>카카오톡 텍스트 추출물, 팀즈 회의록, 단순 복사한 텍스트 등을 계정 연동이나 복잡한 셋업 없이 안전하게 붙여넣어 정리합니다.</p>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--color-primary);">2. 맥락 분석 & 구조화</h3>
+          <p>팀원별 서로 다른 의견의 충돌 지점(관점), 추가 논의가 필요한 의문(열린 질문), 합의에 이른 근거(결정 배경)를 명확히 분류합니다.</p>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--color-primary);">3. 다음 단계 가시화</h3>
+          <p>회의 이후 '오늘 손코딩/수행할 메모'와 같이 무엇을 해야 할지 즉각적인 행동 지침(Action Item)으로 시각화합니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 4: Key Capabilities -->
+    <div class="slide">
+      <span class="label">Key Capabilities</span>
+      <h2>모두의 브레인 주요 기능</h2>
+      <p class="sub">팀원들 간의 시각차를 좁히고 명확한 진행 상황을 추적하는 기능셋</p>
+      
+      <div class="grid grid-3">
+        <div class="card">
+          <h3>사람별 관점 비교 (Perspectives)</h3>
+          <p>회의 참여자 간에 의견이 갈리는 쟁점(예: 근거 공개 여부 vs 시연 속도 우선)을 대조 표 형식으로 비교 제공합니다.</p>
+        </div>
+        <div class="card">
+          <h3>열린 질문 (Open Questions)</h3>
+          <p>합의되지 않고 미결된 의문 사항을 목록화하여 다음 회의 시 집중 논의하고 결론을 도출하도록 강제합니다.</p>
+        </div>
+        <div class="card">
+          <h3>결정 근거 (Decision Log)</h3>
+          <p>최종 의사결정이 내려진 배경(ADR)을 기록하고, 연동 데이터베이스 설계를 바로 확인하여 혼선을 방지합니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5: Demo Flow (화면·서버·DB 연결 흐름) -->
+    <div class="slide">
+      <span class="label">Demo Flow</span>
+      <h2>화면 · 서버 · DB 연결 흐름 한 바퀴</h2>
+      <p class="sub">사용자 입력부터 데이터 저장까지 전체 파이프라인 시연 요약</p>
+      
+      <div class="grid grid-3">
+        <div class="card">
+          <h3 style="color: var(--color-primary);">🖥️ 화면 (Frontend)</h3>
+          <p>React 컴포넌트가 사용자 입력(메모 작성, 퀴즈 선택, 탭 전환)을 <code>state</code>로 관리하고 <code>fetch</code>로 서버에 요청합니다.</p>
+          <p style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">ReactBasicsLessonPage → LessonCard, NoteItem, SchemaTable</p>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--color-primary);">⚙️ 서버 (API)</h3>
+          <p>Vite SSR + Cloudflare Worker 환경에서 API 라우트가 인증 세션을 검증하고 분석 요청을 처리합니다.</p>
+          <p style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">server/apiV1.mjs → authSession → analysisApi</p>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--color-primary);">🗄️ DB (Supabase)</h3>
+          <p>PostgreSQL 기반 Supabase에 <code>lessons</code>, <code>user_notes</code>, <code>quiz_responses</code> 테이블로 데이터가 영구 저장되며 RLS로 접근 제어됩니다.</p>
+          <p style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">Row Level Security: auth.uid() = user_id</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 6: Development Status -->
+    <div class="slide">
+      <span class="label">Development Status</span>
+      <h2>1-2주차 개발 현황 및 중점 사항</h2>
+      <p class="sub">커리큘럼에 기반한 기획, 프로토타입 작성 및 핵심 기능 개발 완료</p>
+      
+      <div class="grid grid-2">
+        <div class="card">
+          <span class="badge badge-success">1주차</span>
+          <h3 style="margin-top: 8px;">기획, 프로토타입, Agent 기능 이해</h3>
+          <p>회의록의 맥락 불일치 문제를 해결하기 위한 기획을 구체화하고 Landing Page 프로토타입을 구축했습니다. 코딩 에이전트의 작동 원리와 협업 방식을 정교하게 학습하고 적응했습니다.</p>
+        </div>
+        <div class="card">
+          <span class="badge badge-success">2주차</span>
+          <h3 style="margin-top: 8px;">개발계획, Agent 활용, 주요 기능 개발</h3>
+          <p>상세 개발 계획에 따라 화면 컴포넌트 분리(LessonCard, NoteItem, SchemaTable)를 적용했습니다. 에이전트를 적극 활용하여 자가 진단 퀴즈 및 데이터 모델 설계 명세를 연동했습니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 6: Roadmap -->
+    <div class="slide">
+      <span class="label">Future Plans</span>
+      <h2>앞으로의 개발 계획 및 커리큘럼</h2>
+      <p class="sub">에이전트 고급 활용을 통한 서비스 완성 로드맵 (배포 계획: 준비 중)</p>
+      
+      <div class="grid grid-3">
+        <div class="card">
+          <h3 style="color: var(--color-primary);">3주차</h3>
+          <p><strong>Agent 고급 활용, 지속가능한 코드</strong>: Supabase Magic Link 인증, 세션 관리 및 보안 경계 검증을 설계하고 지속 유지보수 가능한 클린 코드를 작성합니다.</p>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--color-primary);">4주차</h3>
+          <p><strong>서비스 완성, Agent 개발 흐름 완성</strong>: 팀 회의 맥락 정렬 서비스를 완성하고 개발 에이전트 간의 유기적 협업 흐름을 완전히 정착시킵니다.</p>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--color-primary);">배포 계획</h3>
+          <p><strong>준비 중 (Under Preparation)</strong>: 실제 운영 서버 배포 일정 및 클라우드 아키텍처 셋업 계획은 현재 내부 준비 단계에 있습니다.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Controls bar -->
+  <footer class="controls">
+    <button class="btn" id="prevBtn" aria-label="이전 슬라이드">←</button>
+    <button class="btn" id="nextBtn" aria-label="다음 슬라이드">→</button>
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <span class="keyboard-hint">단축키: ← / → 방향키 또는 Page Up / Down</span>
+  </footer>
+
+  <!-- Navigation script -->
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const counter = document.getElementById('counter');
+    const progressBar = document.getElementById('progressBar');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    function updateSlide() {
+      slides.forEach((slide, idx) => {
+        slide.classList.toggle('active', idx === currentSlide);
+      });
+      counter.innerText = `${currentSlide + 1} / ${slides.length}`;
+      
+      const percentage = ((currentSlide + 1) / slides.length) * 100;
+      progressBar.style.width = `${percentage}%`;
+
+      prevBtn.style.opacity = currentSlide === 0 ? '0.3' : '1';
+      prevBtn.style.pointerEvents = currentSlide === 0 ? 'none' : 'auto';
+      nextBtn.style.opacity = currentSlide === slides.length - 1 ? '0.3' : '1';
+      nextBtn.style.pointerEvents = currentSlide === slides.length - 1 ? 'none' : 'auto';
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    // Button click events
+    prevBtn.addEventListener('click', prevSlide);
+    nextBtn.addEventListener('click', nextSlide);
+
+    // Keyboard events
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      }
+    });
+
+    // Initialize progress bar
+    updateSlide();
+  </script>
+</body>
+</html>

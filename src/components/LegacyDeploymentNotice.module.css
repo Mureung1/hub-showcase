@@ -1,0 +1,27 @@
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 9px 16px;
+  border-bottom: 1px solid #d9d9de;
+  background: #f5f5f7;
+  color: #36363a;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.notice a {
+  color: #0055b8;
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 560px) {
+  .notice {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+}

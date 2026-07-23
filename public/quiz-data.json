@@ -1,0 +1,24 @@
+[
+  {
+    "id": 1,
+    "question": "React에서 컴포넌트의 상태(State)와 속성(Props)의 가장 큰 차이점은 무엇일까요?",
+    "options": [
+      "State는 컴포넌트 내부에서 변경 가능하지만, Props는 외부에서 전달받아 읽기 전용으로 사용됩니다.",
+      "Props는 내부에서 변경 가능하며, State는 상위 컴포넌트에서 전달받습니다.",
+      "둘 다 완전히 동일한 개념이며 이름만 다릅니다."
+    ],
+    "correctIndex": 0,
+    "explanation": "State는 컴포넌트 자체적으로 관리하고 업데이트하는 동적 데이터이고, Props는 부모 컴포넌트로부터 자식 컴포넌트로 전달되는 불변의 속성값입니다."
+  },
+  {
+    "id": 2,
+    "question": "React에서 비동기 fetch 요청을 보낼 때 컴포넌트 언마운트 시 요청을 취소하여 레이스 컨디션을 방지하는 도구는 무엇일까요?",
+    "options": [
+      "AbortController",
+      "useState",
+      "useEffect dependency"
+    ],
+    "correctIndex": 0,
+    "explanation": "AbortController를 사용하면 useEffect cleanup 함수를 통해 컴포넌트가 언마운트되거나 재호출될 때 진행 중인 네트워크 요청을 취소할 수 있습니다."
+  }
+]
