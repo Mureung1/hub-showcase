@@ -1,4 +1,4 @@
 interface:
-  display_name: "답냥이 개발 AI 오케스트레이션"
-  short_description: "PM·디자인·프론트·백엔드 AI 팀 작업 조율"
-  default_prompt: "Use $orchestrate-dabnyangi-task to coordinate this 답냥이 development task across only the necessary specialist roles."
+  display_name: "답냥이 task-first 오케스트레이션"
+  short_description: "독립 작업만 선택적으로 위임하는 개발 오케스트레이션"
+  default_prompt: "Use $orchestrate-dabnyangi-task to run this 답냥이 task with the smallest safe set of independent agents."
