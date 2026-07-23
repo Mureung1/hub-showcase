@@ -331,8 +331,18 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
 
 - [ ] Analysis 전체 카테고리 실데이터 연동 (3주차 미완료 시)
 - [ ] Dashboard AI Insight 고도화 (필요 시)
-- [ ] 전체 통합 테스트 및 버그 수정
+- [x] 전체 통합 테스트 및 버그 수정 — 2026-07-23 진행. Upload/Dashboard/Analysis/Financial 전 페이지 브라우저 실행 확인(콘솔 에러·흰 화면 없음, API 200), backend/frontend `tsc`/`build` 매 변경마다 통과 확인
 - [ ] 반응형 UI 점검
+
+### 2026-07-23(목) 세션 — Upload 자동화 완결성 + 패턴 다월화 + 첫 단위 테스트
+
+- [x] **Upload 완결성 체크**: sales/waste 8개 파일(4카테고리×2종) 중 부족하면 ETL을 실행하지 않고 어떤 파일이 더 필요한지 안내(`202` + `missingFiles`), 다 채워지면 자동 ETL 실행. 이전엔 격자 미완결 시 500 트레이스백만 노출됐음. `backend/src/services/uploadAutomationService.ts`의 `findMissingFiles()`로 구현, 실제 업로드로 8개 채우는 과정 끝까지 검증(마지막 파일에서 Dashboard 자동 반영 확인)
+- [x] **Upload 처리 상태 API**: 업로드 시작 시 `처리중` 레코드 먼저 insert 후 ETL 결과에 따라 `정상`/`대기중`/`오류`로 갱신 (`uploadService.ts`의 `updateUploadStatus()` 신규)
+- [x] **Upload "데이터 검증 결과" 카드 실데이터 연동** — 아래 P2 백로그 항목 완료 처리 참고
+- [x] **패턴 파서(pattern_parser.py) 월 하드코딩 제거**: `06`월 고정 대신 `data/raw/{weekday,hourly}_sales`에 실제 존재하는 월·주차를 스캔(월~일 기준 분할 시 달마다 4~5주차까지 생길 수 있어 `MAX_WEEKS_PER_MONTH=5`로 유동 처리). CSV에 `month` 컬럼 추가, `patternService.ts`에 `reloadData()` 추가 + 카테고리별 최신월 자동 선택으로 프론트 계약은 그대로 유지. 기존 6월 데이터로 회귀 없음 확인
+  - 실제 7월 데이터로 다월 동작 검증은 보류 — 2026-07-25(토) 사용자가 실제 `weekday_sales_07_w1~w3_*`/`hourly_sales_07_w1~w3_*` 데이터를 가져올 예정
+- [x] **frontend 단위 테스트 인프라 첫 구축**: `vite.config.ts`(`defineConfig`를 `vitest/config`에서 가져오도록 수정), `setupTests.ts`(`@testing-library/jest-dom/vitest`로 수정) 등 vitest 실행 안 되던 버그 발견·수정. `frontend/src/utils/analysisSummary.ts` 전체 함수(`monthlyTrendSummary`/`weekdaySummary`/`timeSummary`/`trendSummary`/`seriesToSvg`)에 대해 정상 케이스·경계값·0으로 나누기 등 엣지케이스 포함 27개 테스트 작성, 전부 통과
+- [x] **발주(orders) 데이터 조사**: `orders_MMDD.xlsx`(날짜별 1파일, 상품명 단위) 구조 확인 + 06월 판매 데이터와 상품명 매칭률 일회성 조사 — 전체 85.9%(도시락 90.9%/김밥 89.5%/주먹밥 90.9%/햄버거샌드위치 79.6%)로 3주차 waste↔inventory 사례(13~42%)와 달리 상품 단위 매칭이 실제로 잘 작동함을 확인. 상세 결론 및 다음 단계는 아래 P2 백로그 "발주 데이터 활용" 항목 참고
 
 ## 발표 준비
 
@@ -358,11 +368,17 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
   - Upload 페이지에 상품 카테고리·월 선택 UI 추가 (기존엔 없었음)
   - `master_dataset_builder.py`는 매번 원본부터 전체 재계산하는 stateless 구조로 확인됨 — 증분 갱신 불확실성 해소
   - `financialService.ts`의 `data.length !== 24` 하드코딩은 건드리지 않음 (카테고리·월 그리드가 고정이라 재실행해도 24행 유지)
-  - 남은 범위: orders/inventory(파서 없음), hourly/weekday(주차 선택 필요) — 다음 스프린트로 이월. `patternService.ts`도 아직 reload 미지원
+  - 남은 범위: orders/inventory 파서 없음(2026-07-23 발주 파서 조사 시작, 아래 "발주 데이터 활용" 항목 참고), hourly/weekday는 Upload UI 자동화 연결 아직 미착수(주차 선택 UI 필요). `patternService.ts`의 reload 미지원은 2026-07-23 `reloadData()` 추가로 해결
 
-- [ ] 폐기 요일/시간대 패턴 실데이터 연동 — 원본 데이터 자체가 없어 보류 (판매 패턴만 2026-07-22에 연동 완료, 위 Milestone 3 참고). 향후 waste 원본에 요일/시간대 정보가 추가되면 착수
-  - 참고: `data/master/weekday_sales.csv`/`hourly_sales.csv`는 현재 6월 4주 평균 스냅샷뿐 — 이후 월이 추가되면 `data/scripts/pattern_parser.py`의 "4주 평균" 하드코딩(WEEKS 상수) 재검토 필요
+- [ ] 폐기 요일/시간대 패턴 실데이터 연동 — 판매 패턴은 2026-07-22 연동 완료(위 Milestone 3 참고). 폐기(waste)의 요일/시간대 원본 자체는 여전히 없어 보류
+  - **2026-07-23 부수 개선**: `pattern_parser.py`의 "06월 4주 평균" 하드코딩은 제거함 — `data/raw/{weekday,hourly}_sales`에 실제 존재하는 월·주차를 스캔해 처리하도록 일반화(월~일 기준 분할 시 5주차까지 유동 허용). 이 항목 자체(폐기 패턴 연동)는 여전히 미완료, 파서 구조만 다월 지원 가능하게 준비된 상태
 
+- [ ] 발주 데이터 활용 — 발주·판매 괴리(발주량 대비 실판매) + 폐기율 교차 규칙 추가 (2026-07-23 논의)
+  - `orders_MMDD.xlsx`(날짜별 1파일, 상품명 단위)와 06월 `sales.csv` 상품명 매칭률을 일회성 스크립트로 조사한 결과 **전체 85.9%**(도시락 90.9%/김밥 89.5%/주먹밥 90.9%/햄버거샌드위치 79.6%)로, 3주차 waste↔inventory 매칭 실패 사례(13~42%)와 달리 상품 단위 매칭이 실제로 잘 작동함을 확인
+  - 매칭 안 된 상품은 대부분 6월엔 없던 신상품으로 보여 진짜 매칭 실패가 아닐 가능성 높음
+  - 결론: 카테고리 단위로 우회할 필요 없이 **상품 단위로 발주 파서를 새로 만들어도 될 것 같음** (orders는 날짜별 1파일·상품명 컬럼 구조라 sales/waste 파서 패턴 그대로 재사용은 불가, 신규 작성 필요)
+  - 재고(inventory)는 MVP 범위 밖("실시간 재고 조회" 제외)이라 계속 보류
+  - 다음 단계(미착수): (1) orders 파서 신규 작성 (2) 발주량 대비 실판매/폐기율 교차 Rule Engine 규칙 설계 (3) Upload 자동화 파이프라인 편입 여부 결정
 - [ ] Fuzzy Matching: sales/orders 상품명 유사 매칭
 - [ ] Product Master 자동 보정: 수동 매핑 테이블 구축
 - [ ] Rule Engine V2: 더 복잡한 규칙 추가
@@ -370,7 +386,7 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) �
 - [ ] Dashboard AI Insight: 자연어 분석 고도화
 - [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동) — 배포 시점에 "접속 비밀번호" 수준 경량 보호부터 우선 검토하기로 결정 (2026-07-22)
 - [ ] 프론트엔드 번들 코드 스플리팅 — `npm run build` 시 메인 청크 667KB 경고(2026-07-22 validation-agent 지적). 지금 당장 문제는 아니지만 페이지별 `React.lazy()` 분리 고려
-- [ ] Upload 페이지 "데이터 검증 결과" 카드 실데이터 연동 (2026-07-22 발견) — 지금은 `UploadPage.tsx`의 `validationResults` 배열이 완전 mock(항상 동일한 4줄, 카테고리명도 실제 업로드 종류와 불일치). 실제로 연결하려면 (1) `sales_parser.py`/`waste_parser.py`가 "N개 상품 정상 인식/매칭 실패" 같은 통계를 구조화해 반환하도록 수정 (2) `etlService.ts`의 `EtlResult`에 통계 포함 (3) `uploadAutomationService` → `uploadController` → 프론트까지 전달 (4) 발주/재고는 파서가 없어 카드 자체를 뺄지 결정 필요. Upload→ETL 자동화(성공/실패 여부)보다 한 단계 더 들어간 상세 통계라 별도 작업으로 분리
+- [x] Upload 페이지 "데이터 검증 결과" 카드 실데이터 연동 (2026-07-22 발견, 2026-07-23 완료) — `sales_parser.py`/`waste_parser.py`가 파일별 파싱 통계(`STATS_JSON:` 라인)를 stdout에 출력 → `etlService.ts`가 파싱해 `EtlStepResult.stats`에 포함 → `uploadAutomationService`/`uploadController`가 방금 업로드한 파일의 통계만 골라 `parseStats`로 응답 → `UploadPage.tsx`가 판매/폐기는 실제 통계(예: `sales_10_도시락.xlsx: 26개 상품 정상 인식`), 발주/재고는 "자동 검증 미지원 (파서 없음)"으로 정직하게 표시. 단, 이 통계는 서버에 영속화하지 않고 브라우저 세션(페이지 새로고침 전까지)에만 유지됨. 실제 업로드로 대기중/완료 양쪽 케이스 검증 완료
 
 ## MVP 범위 밖 (항상 제외, CLAUDE.md 준수)
 
