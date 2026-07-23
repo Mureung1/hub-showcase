@@ -2,9 +2,11 @@
 
 ## Purpose
 
-선택된 프로젝트의 전담 시나리오 라이터가 게임의 서사 정체성을 해석하고,
+선택된 프로젝트의 전담 `scenario_writer`가 게임의 서사 정체성을 해석하고,
 확정 시나리오를 그대로 옮기는 데 그치지 않고 더 나은 플레이 경험을 위한
-구조 개선까지 반영한 챕터별 인게임 스크립트 승인 초안을 작성한다.
+구조 개선까지 반영한 챕터별 인게임 스크립트 초안을 작성한다. 독립
+`scenario_reviewer`가 원본과 구현 계약을 직접 대조한 뒤 메인 Codex가 검수된
+결과만 승인 초안으로 저장한다.
 
 ## When To Use
 
@@ -14,8 +16,9 @@
   갱신할 때
 
 이 workflow는 `docs/workflows/document_change.md`에서 검색과 분기를 마친 뒤
-사용한다. `scenario_writer` custom agent가 기본 집필 역할이며 메인 Codex가
-결과와 승인 범위를 검토한다.
+사용한다. `scenario_writer` custom agent가 집필하고 `scenario_reviewer`가
+독립 검수하며, 메인 Codex가 위임 범위·필수 수정 해소·승인 범위를 확인하고
+Approval Queue 저장을 담당한다.
 
 인게임 스크립트 요청은 요청 범위 안에서 창작과 서사 재구성안을 제안할 권한을
 포함한다. 이는 초안 작성 권한이며 확정 문서 반영 권한은 아니다.
@@ -39,6 +42,8 @@
 - `docs/dev-log/`는 현재 자료로 사용하지 않는다.
 - 확정 자료끼리 충돌하면 임의로 합치지 않고 영향받는 부분을 `TBD`로 두며
   충돌과 필요한 질문을 남긴다.
+- `scenario_writer`와 `scenario_reviewer`는 이 순서에 따라 각각 원본을 직접
+  읽는다. 검수자는 Writer's Brief나 작가의 Sources 요약만으로 통과시키지 않는다.
 
 ## Writer Identity
 
@@ -81,10 +86,19 @@
 12. 상위 시나리오 변경이 있으면 상위 시나리오 update, 스크립트 create/update와
     모든 링크 갱신을 하나의 `restructure` 승인 항목에 넣는다. 신규 스크립트와
     색인 링크를 함께 만드는 경우도 `restructure`로 처리한다.
-13. 기준 Git 커밋, 대상별 비교 범위와 현재 SHA-256, 의존 승인 항목을 기록하고
-    프로젝트 Approval Queue에 `pending`으로 저장한다.
-14. 메인 Codex가 Writer's Brief, NR·CW 공개, `TBD`, 충돌, 의존성과 승인 범위를
-    검토한 뒤 사용자에게 전달한다.
+13. `scenario_writer`는 파일을 수정하지 않고 초안과
+    `ready_for_independent_review` handoff를 메인 Codex에 반환한다.
+14. 메인 Codex는 초안과 범위를 `scenario_reviewer`에 전달한다. 검수자는 원본을
+    직접 확인하고 `pass | revision_required | blocked` 판정과 `SRV-*` 결과를
+    반환한다.
+15. `blocking` 또는 `required_revision`이 있으면 메인 Codex가 원래 작업을
+    `scenario_writer`에 되돌려 수정하고 재검수한다. 선택적 작가 판단은 자동
+    반영하지 않으며, 채택하면 필요한 `NR-*`·`CW-*` 공개를 추가한다.
+16. 검수 통과 후 메인 Codex가 Writer's Brief, NR·CW 공개, `TBD`, 충돌,
+    의존성과 승인 범위를 최종 확인한다.
+17. 저장 요청이 있으면 메인 Codex가 기준 Git 커밋, 대상별 비교 범위와 현재
+    SHA-256, 검수 요약과 의존 승인 항목을 기록해 프로젝트 Approval Queue에
+    `pending`으로 저장한 뒤 사용자에게 전달한다.
 
 ## Narrative Revision Rules
 
@@ -122,6 +136,8 @@
 
 - 인게임 스크립트는 `scenario` 역할의 상세 문서다.
 - 승인 전에는 `design/narrative/scripts/`와 상위 시나리오를 수정하지 않는다.
+- `scenario_writer`와 `scenario_reviewer`는 Approval Queue를 포함한 프로젝트
+  파일을 수정하지 않는다. 검수된 결과의 `pending` 저장은 메인 Codex만 한다.
 - Approval Queue 초안 작성은 승인 없이 가능하지만 Decision Log와 Version
   History는 변경하지 않는다.
 - `restructure`는 상위 시나리오, 스크립트와 링크를 일부만 적용하지 않는다.
@@ -135,6 +151,7 @@
 - 검색한 근거 파일
 - 플레이어 노출 대본과 씬 명세
 - NR 구조 변경 목록, CW 창작 각주와 `TBD` 목록
+- `scenario_reviewer`의 판정, 해소된 필수 수정과 남은 선택적 권고
 - 상위 시나리오와 링크의 동기화 대상
 - 별도 고위험 의존 승인 항목과 충돌
 - `pending` 승인 항목과 미래 canonical 경로

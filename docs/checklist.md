@@ -18,7 +18,8 @@
 - [x] 스킬 문서 폴더를 만든다.
 - [x] 템플릿 문서 폴더를 만든다.
 - [x] 작업 공간 폴더를 만든다.
-- [x] 프로젝트 범위 custom agent 폴더와 `scenario_writer` 정의를 만든다.
+- [x] 프로젝트 범위 custom agent 폴더와 `scenario_writer`,
+  `scenario_designer`, `scenario_reviewer`, `design_creative_planner` 정의를 만든다.
 
 ## 2. 핵심 워크플로우
 
@@ -55,8 +56,8 @@
 - [x] 문서 보완 질문 스킬을 만든다.
 - [x] 일반 기획 공백을 허가 기반 복수 창작안으로 보완하는 스킬을 만든다.
 - [x] 한국어 게임 기획 문체 스킬을 만든다.
-- [x] 메인 에이전트가 일반 시나리오의 구조를 검토하고 개선 권고를 Draft와
-  분리하는 스킬을 만든다.
+- [x] `scenario_designer`가 일반 시나리오의 구조를 작성·검토하고 개선 권고를
+  Draft와 분리하며 `scenario_reviewer`가 독립 검수하는 스킬을 만든다.
 - [x] 플레이어 주도권, 씬 데이터와 창작 각주를 검토하는 시나리오 저작 스킬을 만든다.
 
 ## 5. 운영 규칙
@@ -227,6 +228,8 @@
 
 - 검증 입력: 확정 시나리오의 한 챕터를 전담 작가 관점에서 진단하고 원본보다
   나은 서사 구조가 있으면 최적안으로 작성해 달라는 요청.
+- [x] `scenario_writer` 작성 → `scenario_reviewer` 독립 검수 → 메인 Codex의
+  `pending` 저장으로 이어지는 read-only handoff 구조가 정의되어 있다.
 - [ ] Writer's Brief가 대상 프로젝트의 Brief, 게임 개요, 세계관, 상위
   시나리오와 기존 승인 대본을 근거로 게임 고유의 정체성을 정리한다.
 - [ ] 에이전트가 원본 충실본과 개선본을 중복 작성하지 않고 하나의 최적안을
@@ -239,15 +242,22 @@
   관련 대본은 선행 적용과 재확인 전까지 `TBD`로 유지된다.
 - [ ] 명시적 승인 전 `design/narrative/`가 변경되지 않고, 적용 전 모든 대상과
   의존 항목을 재확인한다.
-- 확인 파일: `.codex/agents/scenario_writer.toml`, 전용 workflow·skill·template,
-  Approval Queue, 상위 시나리오, 인게임 스크립트와 링크 문서.
+- [ ] `scenario_reviewer`가 작가 요약에 의존하지 않고 원본을 직접 읽으며,
+  `blocking`·`required_revision` 결과가 해소될 때까지 작가 수정과 재검수를
+  반복한다.
+- 확인 파일: `.codex/agents/scenario_writer.toml`,
+  `.codex/agents/scenario_reviewer.toml`, 전용 workflow·skill·template, Approval
+  Queue, 상위 시나리오, 인게임 스크립트와 링크 문서.
 
-### 6.13 메인 에이전트 일반 시나리오 개선 권고
+### 6.13 일반 시나리오 작성·독립 검수
 
 - 검증 입력: 시나리오 자료를 일반 `scenario` 기획서로 작성하거나 기존
   시나리오를 수정하면서 더 나은 분기가 있는지 함께 검토하는 요청.
-- [ ] 메인 Codex가 Project Brief, 게임 개요, 대상 시나리오와 관련 확정 문서를
-  읽고 인과, 동기, 긴장, 공개 시점, 선택, 분기·합류와 Outcome을 검토한다.
+- [x] `scenario_designer` 작성 → `scenario_reviewer` 독립 검수 → 메인 Codex의
+  `pending` 저장으로 이어지는 read-only handoff 구조가 정의되어 있다.
+- [ ] `scenario_designer`와 `scenario_reviewer`가 각각 Project Brief, 게임 개요,
+  대상 시나리오와 관련 확정 문서를 읽고 인과, 동기, 긴장, 공개 시점, 선택,
+  분기·합류와 Outcome을 검토한다.
 - [ ] 요청과 자료에 충실한 Draft가 보존되고 더 나은 구조는
   `Scenario Improvement Review`에 이유, 기대 경험과 영향 범위를 갖춘 별도
   권고로 기록된다.
@@ -258,13 +268,20 @@
   갱신한 `pending` 승인안을 다시 제시하며 선택 자체를 승인으로 간주하지 않는다.
 - [ ] 세계관 정사·시스템 규칙 변경은 해당 canonical owner의 별도 또는 다중
   문서 변경으로 분류되고 명시적 승인 전 `design/narrative/`가 변경되지 않는다.
-- 확인 파일: `docs/skills/scenario_review.md`, 일반 문서 작성·변경 workflow,
-  변경안·승인 항목 template, Approval Queue와 대상 시나리오 문서.
+- [ ] 독립 검수의 `blocking`·`required_revision` 결과가 해소되지 않으면
+  `pending` 승인 항목으로 저장되지 않는다.
+- 확인 파일: `.codex/agents/scenario_designer.toml`,
+  `.codex/agents/scenario_reviewer.toml`, `docs/skills/scenario_review.md`, 일반 문서
+  작성·변경 workflow, 변경안·승인 항목 template, Approval Queue와 대상
+  시나리오 문서.
 
 ### 6.14 일반 기획 문서 창작 보완
 
 - 검증 입력: 신규 시스템 기획서 초안의 규칙, 예외, 밸런스 수치와 실제
   플랫폼·에셋 ID가 비어 있는 상태에서 누락을 검토하고 창작 보완을 요청한다.
+- [x] `design_creative_planner`의 `classify → generate_options →
+  incorporate_selection` Phase와 메인 Codex의 사용자 허가 통제 구조가 정의되어
+  있다.
 - [ ] 최초 Draft에서 모든 누락에 `GAP-*`가 부여되고 `creative_fillable`,
   `user_fact`, `dependency`로 분류되며 창작 허가 전에는 대안이 생성되지 않는다.
 - [ ] 사용자가 일부 GAP만 허가하면 저·중위험에는 2개, 고위험에는 3개 대안과
@@ -283,8 +300,9 @@
   History에 적용된 CP ID와 남은 `provisional` 검증 조건이 기록된다.
 - [ ] 일반 시나리오 구조와 인게임 스크립트는 각각 Scenario Improvement,
   `CW-*`·`NR-*`를 사용하고 같은 내용에 `CP-*`가 중복되지 않는다.
-- 확인 파일: `docs/skills/design_creative_completion.md`, 문서 작성·변경 및
-  승인 workflow, 승인·결정·버전 template, Approval Queue와 대상 기획 문서.
+- 확인 파일: `.codex/agents/design_creative_planner.toml`,
+  `docs/skills/design_creative_completion.md`, 문서 작성·변경 및 승인 workflow,
+  승인·결정·버전 template, Approval Queue와 대상 기획 문서.
 
 ### 6.15 프로젝트 랜딩 README와 확정 문서 지도
 
@@ -302,3 +320,66 @@
 - [ ] 프로젝트 README가 상세 설정을 복제하거나 canonical owner로 참조되지 않는다.
 - 확인 파일: `docs/templates/project_readme.md`, 프로젝트 생성·문서 구조·승인
   workflow, 프로젝트 루트 README, `design/README.md`와 game overview.
+
+### 6.16 모호한 승인 표현의 안전 처리
+
+- 검증 입력: `pending` 승인 항목을 특정하면서 `좋아 보이네`, `괜찮네` 또는
+  `마음에 들어`처럼 승인·적용 행동을 명시하지 않은 표현.
+- [ ] 해당 표현을 승인으로 간주하지 않고 승인 항목, 확정 문서, Decision
+  Log와 Version History를 변경하지 않는다.
+- [ ] 사용자에게 표현이 명시적 승인이 아니어서 아무 변경도 적용하지
+  않았으며 현재 승인 상태를 유지했다고 안내한다.
+- [ ] 적용을 원하면 `APPR-...을 승인하고 적용해줘`처럼 대상 항목과 행동을
+  명시해야 한다고 안내한다.
+- 확인 파일: `AGENTS.md`, `docs/workflows/approval_queue.md`, 대상 프로젝트의
+  Approval Queue, 확정 문서, Decision Log와 Version History.
+
+### 6.17 전문 에이전트 인계와 호환 호출
+
+- 검증 입력: 이전 대화에서 프로젝트, 사용자 제공 사실, 제외 범위와 창작
+  금지사항이 결정된 뒤 `design_creative_planner`의 `classify` Phase를 호출하는
+  요청.
+- [x] 모든 전문 에이전트 호출 전에 작성할 Specialist Task Packet의 필수
+  필드와 반환 대조 절차가 정의되어 있다.
+- [x] named custom `agent_type`과 `fork_turns: "none"`을 사용하고
+  full-history fork를 함께 사용하지 않는 호출 방식이 정의되어 있다.
+- [ ] Task Packet에 프로젝트, Phase, 범위, 근거, 사용자 사실·선택,
+  권한 경계, 금지사항과 기대 출력이 모두 전달된다.
+- [ ] 부모 대화 전체, 무관한 발화와 저장소 전체 파일 목록을 전달하거나
+  불필요하게 탐색하지 않는다.
+- [ ] 필수 인계 정보가 빠진 호출은 전문 에이전트가
+  `blocked_missing_handoff`로 중단하고 Draft, 대안 또는 검수 판정을 만들지
+  않는다.
+- [ ] 완성된 Packet을 `agent_type: design_creative_planner`,
+  `fork_turns: "none"`으로 호출하면 인자 충돌 없이 지정 Phase만 수행한다.
+- [ ] 메인 Codex가 결과를 Packet과 대조해 범위 초과, 사용자 정보 누락이나
+  권한 추정이 있는 결과를 제시·저장·적용하지 않는다.
+- [ ] 호출 인자 실패가 발생하면 같은 인자를 반복하거나 일반 agent로 조용히
+  대체하지 않고, 교정된 인자로 한 번만 재시도하며 반복 실패를 사용자에게
+  알린다.
+- 확인 파일: `AGENTS.md`,
+  `docs/workflows/specialist_agent_handoff.md`,
+  `docs/templates/specialist_task_packet.md`, `.codex/agents/`,
+  변경안·승인 항목 template과 전문 에이전트가 참여한 Approval Queue 항목.
+
+### 6.18 테스트 픽스처 출처와 격리
+
+- 검증 입력: 실제 사용자나 프로젝트에서 나온 것이 아닌 합성 설정 문장으로
+  전문 에이전트의 분류·작성·검수 동작을 확인하는 요청.
+- [x] 합성 입력의 첫 등장, Task Packet, handoff와 결과 보고에
+  `[TEST FIXTURE: SYNTHETIC]`과 `synthetic_test_fixture`를 유지하는 규칙이
+  정의되어 있다.
+- [x] 기본 동작 테스트용 `tests/fixtures/behavior/sample-game/`과 Behavior
+  Test Manifest가 실제 프로젝트 레지스트리 밖에 존재한다.
+- [x] 합성 데이터를 `user_fact` 또는 확정 사실로 분류하면 자동 검증이
+  실패하고 모든 전문 에이전트가 `blocked_test_provenance`로 중단한다.
+- [x] 테스트 실행 작업 경로가 `/tmp` 아래인지, 원본 변경과 실제 프로젝트
+  채택이 없는지, 네 가지 필수 결과 보고 필드가 있는지 자동 검사한다.
+- [ ] 실제 프로젝트 복사본이 필요한 스모크 테스트는 이유와 비교 기준을
+  기록하고 테스트 전후 원본이 동일함을 확인한다.
+- [ ] 사용자 보고에서 합성 입력을 “사용자가 제공한 설정”이라고 부르지 않고
+  “테스트 픽스처 가정”이라고 명시한다.
+- 확인 파일: `AGENTS.md`, `docs/workflows/behavior_testing.md`,
+  `docs/templates/behavior_test_manifest.md`,
+  `docs/templates/specialist_task_packet.md`, `.codex/agents/`,
+  `scripts/workspace_validation.py`, `tests/`.

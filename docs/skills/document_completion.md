@@ -2,8 +2,11 @@
 
 ## Purpose
 
-기획서 초안에서 승인이나 구현 전에 필요한 누락 정보를 찾고, 사용자 확인이
-필요한 사실과 창작으로 보완할 수 있는 설계 공백을 구분한다.
+기획서 초안의 승인이나 구현 전에 필요한 누락 정보를 찾고, 사용자 확인이
+필요한 사실과 창작으로 보완할 수 있는 설계 공백을 구분한다. 일반 기획 역할은
+`design_creative_planner`의 `classify` Phase가, 일반 시나리오는
+`scenario_designer`가, 인게임 스크립트는 `scenario_writer`가 담당한다. 메인
+Codex는 분류 결과를 검토하고 사용자에게 전체 GAP 목록을 제시한다.
 
 ## Common Required Fields
 
@@ -44,10 +47,18 @@
 
 ## Creative Completion Routing
 
-- 누락 분류와 `TBD` 표시는 항상 수행한다.
-- `creative_fillable`이 있으면 항목을 한 번에 보여주고 창작으로 채울지 묻는다.
+- 메인 Codex는 신규·수정·재구성 비시나리오 Draft와 다중 역할 Draft의
+  비시나리오 부분을 `design_creative_planner`의 `classify` Phase에 위임한다.
+  일반 시나리오와 인게임 스크립트는 각 전담 작성 에이전트가 누락 분류와
+  `TBD` 표시를 수행한다.
+- 메인 Codex가 분류의 canonical owner, GAP 유형과 위험도를 검토한 뒤
+  비시나리오 `creative_fillable` 항목을 한 번에 보여주고 창작으로 채울지
+  묻는다.
 - 명시적 허가 전에는 대안을 만들거나 Draft에 창작 내용을 넣지 않는다.
-- 사용자가 허가하면 `docs/skills/design_creative_completion.md`를 따른다.
+- 사용자가 비시나리오 GAP의 창작을 허가하면 정확한 GAP ID를
+  `design_creative_planner`의
+  `generate_options` Phase에 전달하고
+  `docs/skills/design_creative_completion.md`를 따른다.
 - 일반 시나리오 구조와 인게임 스크립트는 각각 기존 Scenario Improvement,
   `CW-*`·`NR-*` 규칙을 우선한다.
 

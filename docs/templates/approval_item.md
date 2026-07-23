@@ -51,6 +51,27 @@
 - 작성 당시 원본 요약: 신규 문서라면 `없음`
 - 원자적 적용: restructure이면 `예`. 일부 대상만 적용하지 않는다.
 
+## Subagent Review
+
+서브에이전트를 사용하지 않은 변경이면 생략한다. 작성·창작 에이전트의 자체
+검수와 독립 검수를 구분한다. `blocking` 또는 `required_revision`이 남은
+시나리오 산출물은 `pending`으로 저장하지 않는다.
+
+- 작성·창작 에이전트: `scenario_designer | scenario_writer |
+  design_creative_planner`
+- 작업 Phase·범위:
+- Specialist Task Packet 검증: `complete | blocked_missing_handoff`
+- 전달한 사용자 사실·선택·금지사항:
+- 전달한 권한:
+- 명시적으로 부여하지 않은 권한:
+- 독립 검수 에이전트: `scenario_reviewer | 해당 없음`
+- 검수 판정: `pass | revision_required | blocked | main_review_passed`
+- 검수한 원본:
+- 최초 필수 결과와 조치:
+- 해소 확인:
+- 남은 선택적 권고:
+- 메인 Codex 승인 경계 확인:
+
 ## Creative Completion Review
 
 신규·수정·재구성 Draft에 누락이 없으면 생략한다. GAP 유형은
@@ -60,6 +81,17 @@
 | GAP ID | 대상 문서·필드 | 유형 | 위험도 | 현재 처리 | 필요한 조치 |
 |---|---|---|---|---|---|
 | GAP-<document_slug>-001 |  |  | low \| medium \| high | `TBD` | 창작 허가 \| 사용자 답변 \| 선행 항목 |
+
+### Creative Design Brief
+
+`design_creative_planner`를 사용하지 않았으면 생략한다.
+
+- 대상 역할과 문서 책임:
+- 프로젝트 약속·설계 목표:
+- 확정 제약과 근거:
+- 사용자 허가 GAP:
+- 위험·검증 관점:
+- 영향받는 후속 canonical owner:
 
 ## Creative Proposal Log
 

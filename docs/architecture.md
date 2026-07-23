@@ -22,9 +22,31 @@ Codex가 에이전트 실행부 역할을 하고, 이 저장소의 Markdown 파�
 ### `.codex/agents/`
 
 프로젝트에서 반복 사용하는 전문 custom agent를 정의한다.
-`scenario_writer.toml`은 선택된 프로젝트의 자료에서 전담 작가 정체성을
-구성하고, 더 나은 서사 구조를 반영한 플레이어 노출 대본과 구현용 씬 명세를
-작성하되 결과를 Approval Queue 초안으로만 저장한다.
+
+- `scenario_designer.toml`: 일반 시나리오의 원안 기반 Draft와 분리 개선안을
+  작성한다.
+- `scenario_writer.toml`: 프로젝트별 전담 작가 정체성을 구성하고 인게임
+  대본·씬 명세와 `CW-*`·`NR-*`를 작성한다.
+- `scenario_reviewer.toml`: 두 시나리오 산출물의 원본 충실도, 서사 품질,
+  플레이 가능성과 창작 공개를 독립 검수한다.
+- `design_creative_planner.toml`: 일반 기획 GAP을 분류하고 사용자가 허가한
+  GAP에만 복수 대안과 추천안을 만든다.
+
+모든 custom agent는 read-only handoff를 메인 Codex에 반환한다. 메인 Codex가
+프로젝트·범위와 사용자 허가를 확정하고, 필수 검수 결과가 해소된 뒤에만
+Approval Queue에 `pending` 항목을 저장한다.
+
+메인 Codex는 모든 custom agent 호출 전에
+`docs/workflows/specialist_agent_handoff.md`의 Specialist Task Packet을
+완성한다. 호출은 전문 `agent_type`과 `fork_turns: "none"`을 사용하며,
+부모 대화 전체 대신 작업에 필요한 사용자 사실, 선택, 금지사항, 권한 경계와
+근거 파일만 명시적으로 전달한다.
+
+에이전트 동작 테스트는 `docs/workflows/behavior_testing.md`의 출처 게이트를
+먼저 통과한다. 합성 입력은 등록 프로젝트 밖의 전용 픽스처를 `/tmp`에 복사해
+실행하고, Task Packet과 결과 보고까지 `synthetic_test_fixture` 출처를
+보존한다. 출처 누락이나 사용자 사실 오분류는 `blocked_test_provenance`로
+중단한다.
 
 ### `docs/workflows/`
 
@@ -37,13 +59,15 @@ Codex가 에이전트 실행부 역할을 하고, 이 저장소의 Markdown 파�
 ### `docs/skills/`
 
 반복적으로 쓰는 판단 기준과 품질 규칙을 정의한다. 예: 충돌 검토, 문서 보완
-질문, 한국어 기획 문체와 일반 시나리오 구조 검토. 메인 Codex는 시나리오
-자료를 검토하거나 `scenario` 문서를 작성·변경할 때 `scenario_review`로 원안
-기반 Draft와 개선 권고를 분리한다.
+질문, 한국어 기획 문체와 일반 시나리오 구조 검토. `scenario_designer`가
+`scenario_review`로 원안 기반 Draft와 개선 권고를 분리하고,
+`scenario_reviewer`가 같은 원본을 직접 읽어 검수한다.
 
-`design_creative_completion`은 신규·수정·재구성 기획 Draft의 GAP을 분류하고,
-사용자가 명시적으로 허가한 설계 공백에 복수 대안과 추천안을 만든다. 선택된
-기획 창작은 `CP-*`로 공개하며 선택 후에도 `pending` 승인을 거친다.
+`design_creative_planner`는 `document_completion`과
+`design_creative_completion`에 따라 신규·수정·재구성 비시나리오 기획 Draft의
+GAP을 분류하고, 사용자가 명시적으로 허가한 설계 공백에만 복수 대안과
+추천안을 만든다. 선택된 기획 창작은 `CP-*`로 공개하며 선택 후에도 `pending`
+승인을 거친다.
 
 ### `docs/templates/`
 
@@ -80,7 +104,50 @@ Codex가 에이전트 실행부 역할을 하고, 이 저장소의 Markdown 파�
 
 과거 개발 기록 보관용이다. 현재 아키텍처, 행동 규칙, workflow 정책의 근거로 사용하지 않는다.
 
-## 3. Project Boundary
+## 3. Subagent Orchestration
+
+```text
+모든 전문 호출
+  Main → Specialist Task Packet 검증
+       → provenance gate
+       → agent_type + fork_turns: "none"
+       → specialist entry check
+       → read-only handoff
+       → Main return check
+
+일반 시나리오
+  Main → scenario_designer → scenario_reviewer → Main → pending
+
+시나리오·스크립트 검토 전용
+  Main → scenario_reviewer → Main → review report
+
+인게임 스크립트
+  Main → scenario_writer → scenario_reviewer → Main → pending
+
+일반 기획 창작
+  Main → design_creative_planner(classify)
+       → 사용자 허가
+       → design_creative_planner(generate_options)
+       → 사용자 선택·원본 재확인
+       → design_creative_planner(incorporate_selection)
+       → Main → pending
+```
+
+`scenario_reviewer`의 `blocking` 또는 `required_revision`이 남으면 원 작성
+에이전트로 되돌려 재검수한다. `design_creative_planner`에는 메인 Codex가
+확인한 정확한 GAP ID만 전달하며, 서브에이전트가 창작 허가를 추정하지 않는다.
+Approval Queue 저장, 승인 판단, 원본 재확인과 적용은 메인 Codex에만 있다.
+
+Task Packet에 프로젝트, Phase·작업 종류, 범위, 필수 근거, 사용자 사실·선택,
+권한 경계, 금지사항 또는 기대 출력이 빠졌으면 전문 agent는
+`blocked_missing_handoff`를 반환하고 작업을 시작하지 않는다. 메인 Codex는
+이 상태가 해소되기 전에는 결과를 제시하거나 저장하지 않는다.
+
+Task Packet 준비와 전문 실행은 같은 Minimal Source Rule을 사용한다. 문서
+지도에서 정확한 canonical 경로를 확인한 뒤에는 전체 design 트리나 사용자가
+지정하지 않은 승인·아이디어·결정·버전 기록을 예방적으로 탐색하지 않는다.
+
+## 4. Project Boundary
 
 - 모든 프로젝트 작업은 `docs/workflows/project_workspace.md`에 따라 대상 프로젝트를 먼저 결정한다.
 - 새 프로젝트는 기존 프로젝트 폴더를 재사용하지 않고 완전한 독립 구조로 생성한다.
@@ -88,7 +155,7 @@ Codex가 에이전트 실행부 역할을 하고, 이 저장소의 Markdown 파�
 - 여러 프로젝트가 존재하고 요청 대상이 불명확하면 변경 전에 사용자에게 확인한다.
 - 공용 workflow, skill과 template만 `docs/`에서 공유한다.
 
-## 4. Approval Boundary
+## 5. Approval Boundary
 
 Codex는 다음 작업을 승인 없이 수행할 수 있다.
 
@@ -114,7 +181,7 @@ Codex는 다음 작업을 사용자 승인 없이 수행하지 않는다.
 canonical 경로 참조를 확인한 뒤 대응하는 `approvals/assets/` 파일을 삭제해야
 `applied`로 전환할 수 있다.
 
-## 5. Source Reconfirmation
+## 6. Source Reconfirmation
 
 승인된 변경안을 적용하기 전에는 대상 문서를 다시 읽는다.
 
@@ -133,7 +200,7 @@ canonical 경로 참조를 확인한 뒤 대응하는 `approvals/assets/` 파일
 - `needs_reconfirmation` 항목은 `pending`, `approved`, `change_requested`,
   `on_hold`, `rejected` 중 하나로 전환한 뒤 후속 절차를 따른다.
 
-## 6. Document Change Routing
+## 7. Document Change Routing
 
 문서 관련 요청은 신규 생성, 기존 문서 수정이나 삭제로 바로 확정하지 않는다.
 Codex는 먼저 관련 문서를 검색하고 다음 중 하나로 분기한다.
@@ -158,34 +225,42 @@ document role과 원본 소유 문서를 정한다. `game_overview`는 상세 �
 README, `design/README.md`와 game overview의 영향받는 링크·설명을 같은 승인
 범위에 포함한다. 프로젝트 README는 탐색용 파생 색인이며 상세 사실을 소유하지 않는다.
 
-신규·수정·재구성 Draft는 `document_completion`으로 누락을
-`creative_fillable`, `user_fact`, `dependency` GAP으로 분류한다. 에이전트는
-창작 가능한 GAP을 먼저 보여주고, 사용자의 명시적 허가 후에만 저·중위험 2개,
-고위험 3개 대안을 만든다. 선택된 안만 `CP-*` 각주와 Creative Proposal Log를
-갖춘 Draft에 넣는다. 실제 프로젝트 사실은 창작하지 않고, 밸런스 수치는
-검증 조건이 있는 `provisional` 가설로 둔다. 창작안 선택은 승인이 아니며
-원본 재확인과 갱신된 `pending` 검토를 거친다.
+신규·수정·재구성 비시나리오 Draft는 `design_creative_planner`의 `classify`
+Phase에서 누락을 `creative_fillable`, `user_fact`, `dependency` GAP으로
+분류한다. 메인 Codex가 창작 가능한 GAP을 먼저 보여주고, 사용자의 명시적 허가
+후 정확한 GAP ID만 `generate_options` Phase에 전달한다. 선택된 안만
+`incorporate_selection` Phase에서 `CP-*` 각주와 Creative Proposal Log를 갖춘
+Draft에 넣는다. 실제 프로젝트 사실은 창작하지 않고, 밸런스 수치는 검증
+조건이 있는 `provisional` 가설로 둔다. 창작안 선택은 승인이 아니며 원본
+재확인과 갱신된 `pending` 검토를 거친다.
 
-일반 시나리오 작성·변경은 `docs/skills/scenario_review.md`를 적용한다. 메인
-Codex는 요청 원안에 따른 Draft를 만들고, 더 나은 사건 순서·공개 시점·분기·
-Outcome이 있으면 `Scenario Improvement Review`에 이유와 영향을 분리해
-기록한다. 사용자가 권고를 선택한 뒤에도 원본을 재확인해 갱신된 Draft를
-`pending`으로 다시 검토받기 전에는 승인 대상이나 canonical 내용이 아니다.
+일반 시나리오 작성·변경은 `scenario_designer`가
+`docs/skills/scenario_review.md`를 적용한다. 요청 원안에 따른 Draft와 더 나은
+사건 순서·공개 시점·분기·Outcome의 이유·영향을 분리하고,
+`scenario_reviewer`가 독립 검수한다. 사용자가 권고를 선택한 뒤에도 원본
+재확인, 작성자 갱신과 재검수를 거쳐 `pending`으로 다시 검토받기 전에는 승인
+대상이나 canonical 내용이 아니다.
 
-인게임 스크립트는 `scenario` 역할의 상세 문서이며
-`docs/workflows/write_ingame_script.md`를 따른다. 구체 창작은 `CW-*`, 원본
-구조 변경은 `NR-*`로 공개한다. 상위 시나리오 변경은 스크립트·링크와 하나의
-`restructure` 항목으로 관리하고 승인 전에는 `design/narrative/`에 저장하지
-않는다. 세계관 정사·시스템 규칙 변경 의존성은 별도 고위험 항목으로 분리한다.
+인게임 스크립트는 `scenario_writer`가 작성하고 `scenario_reviewer`가 독립
+검수하며 `docs/workflows/write_ingame_script.md`를 따른다. 구체 창작은 `CW-*`,
+원본 구조 변경은 `NR-*`로 공개한다. 상위 시나리오 변경은 스크립트·링크와
+하나의 `restructure` 항목으로 관리하고 승인 전에는 `design/narrative/`에
+저장하지 않는다. 세계관 정사·시스템 규칙 변경 의존성은 별도 고위험 항목으로
+분리한다.
 
-## 7. Operating Model
+## 8. Operating Model
 
-이 저장소는 테스트 가능한 Python 패키지를 제공하지 않는다. 품질 관리는 문서 구조와 운영 규칙으로 한다.
+이 저장소는 런타임 제품이 아니지만 Python 표준 라이브러리 기반의 결정적
+검증 코드를 제공한다. 자동 테스트는 문서 구조, 승인 참조, 링크와 테스트
+출처·격리 불변 조건을 검사하고, 창작 품질과 실제 에이전트 동작은 체크리스트와
+격리된 스모크 테스트로 확인한다.
 
 기본 검증 기준:
 
 - 요청 유형에 맞는 workflow를 따랐는가
 - 산출물이 template 형식을 따르는가
+- 합성 동작 테스트가 전용 픽스처 또는 `/tmp` 임시 복사본에서 실행되고
+  출처 표시와 원본 불변을 유지했는가
 - 승인 전 확정 문서가 수정되지 않았는가
 - 승인 후 Decision Log와 Version History가 함께 갱신되었는가
 - 임시 아이디어가 승인 제안으로 전환되어도 명시적 승인 전 확정 문서를

@@ -25,12 +25,14 @@
    수정 또는 승인 제안 전환으로 분기한다.
 7. 확정 반영이 명확하지 않으면 아이디어나 승인 큐 초안으로만 처리한다.
 8. 필요한 workflow 문서를 읽고 해당 절차를 따른다.
-9. 기획 Draft의 정보가 부족하면 `docs/skills/document_completion.md`로 GAP을
-   분류한다. 창작 가능한 공백은 사용자에게 허가 여부를 묻고, 사실 정보는
+9. 비시나리오 기획 Draft의 정보가 부족하면 `design_creative_planner`의
+   `classify` Phase에 위임해 `docs/skills/document_completion.md`로 GAP을
+   분류한다. 메인 Codex가 창작 가능한 공백의 허가 여부를 묻고, 사실 정보는
    질문 또는 `TBD`로 남긴다.
-10. 사용자가 창작 보완을 명시적으로 허가하면
-    `docs/skills/design_creative_completion.md`를 적용하되, 대안 선택을 승인으로
-    간주하지 않는다.
+10. 사용자가 비시나리오 창작 보완을 명시적으로 허가하면
+    정확한 GAP ID를 `design_creative_planner`의 `generate_options` Phase에
+    전달해 `docs/skills/design_creative_completion.md`를 적용하되, 대안 선택을
+    승인으로 간주하지 않는다.
 
 ## Output
 

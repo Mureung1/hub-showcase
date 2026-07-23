@@ -36,6 +36,20 @@
 - 설정 유실 가능성:
 - 대체 문서:
 
+## Subagent Review
+
+서브에이전트를 사용하지 않았으면 생략한다.
+
+- 작성·창작 에이전트와 작업 Phase:
+- Specialist Task Packet 검증: `complete | blocked_missing_handoff`
+- 전달한 사용자 사실·선택·금지사항:
+- 전달한 권한·비권한:
+- 독립 검수 에이전트:
+- 판정: `pass | revision_required | blocked | main_review_passed`
+- 필수 결과·해소 상태:
+- 남은 선택적 권고:
+- 메인 Codex 승인 경계 확인:
+
 ## Missing Information
 
 - TBD:
@@ -47,6 +61,14 @@
 | GAP ID | 대상 문서·필드 | 유형 | 위험도 | 필요한 조치 |
 |---|---|---|---|---|
 |  |  | creative_fillable \| user_fact \| dependency | low \| medium \| high |  |
+
+### Creative Design Brief
+
+- 대상 역할·설계 목표:
+- 확정 제약·근거:
+- 사용자 허가 GAP:
+- 위험·검증 관점:
+- 후속 canonical owner:
 
 ## Creative Proposal Log
 

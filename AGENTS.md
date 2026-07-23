@@ -25,10 +25,17 @@ changes, but actual project changes must go through approval-oriented flows.
 - Document ownership and standard paths: `docs/workflows/document_structure.md`
 - Reusable task skills: `docs/skills/`
 - Design creative completion: `docs/skills/design_creative_completion.md`
-- Main-agent scenario review: `docs/skills/scenario_review.md`
+- Scenario authoring and review: `docs/skills/scenario_review.md`
+- Specialist agent handoff: `docs/workflows/specialist_agent_handoff.md`
+- Specialist task packet template: `docs/templates/specialist_task_packet.md`
+- Behavior test isolation: `docs/workflows/behavior_testing.md`
+- Behavior test manifest: `docs/templates/behavior_test_manifest.md`
 - Output templates: `docs/templates/`
 - Project landing page template: `docs/templates/project_readme.md`
 - Scenario writer agent: `.codex/agents/scenario_writer.toml`
+- General scenario designer agent: `.codex/agents/scenario_designer.toml`
+- Independent scenario reviewer agent: `.codex/agents/scenario_reviewer.toml`
+- Design creative planner agent: `.codex/agents/design_creative_planner.toml`
 - In-game script workflow: `docs/workflows/write_ingame_script.md`
 
 ## Archive Notes
@@ -65,6 +72,11 @@ changes, but actual project changes must go through approval-oriented flows.
   that the user explicitly approved the corresponding approval item.
 - If approval is not explicit, produce or update an approval queue draft instead
   of editing confirmed design documents.
+- If an approval expression is ambiguous, such as "괜찮네" or "좋아 보이네",
+  do not approve or apply the item. Explicitly tell the user that nothing was
+  applied because the expression was not an explicit approval, keep the current
+  approval state unchanged, and show the exact kind of confirmation needed,
+  such as "`APPR-...`을 승인하고 적용해줘."
 - Treat `approvals/assets/` as temporary review storage and `design/assets/` as
   the canonical location for approved assets.
 - When applying an approved asset, verify that the file in `design/assets/`
@@ -81,13 +93,64 @@ changes, but actual project changes must go through approval-oriented flows.
 - When an approved design document is created, deleted, moved, changes role, or
   changes its one-line responsibility, update the project README, design index,
   and affected game-overview links in the same approval scope.
-- For new, updated, or restructured design Drafts, classify missing information
-  with `docs/skills/document_completion.md`. Always show the resulting GAP list,
-  but do not generate creative alternatives until the user explicitly authorizes
-  all or selected `creative_fillable` GAPs.
-- Apply `docs/skills/design_creative_completion.md` to authorized design gaps.
-  Provide two alternatives for low/medium risk and three for high risk, recommend
-  one, and keep `user_fact` or unresolved `dependency` gaps as `TBD`.
+- Before any agent behavior or smoke test, complete
+  `docs/templates/behavior_test_manifest.md` and follow
+  `docs/workflows/behavior_testing.md`. Mark synthetic data
+  `[TEST FIXTURE: SYNTHETIC]` at its first appearance and preserve the
+  `synthetic_test_fixture` origin through every Task Packet, specialist handoff,
+  and result report. Never describe it as a user-provided fact, confirmed fact,
+  canon, or an actual project proposal.
+- Run behavior tests against the dedicated
+  `tests/fixtures/behavior/sample-game/` fixture by default. Only when real
+  project structure is necessary, copy the exact project to a new `/tmp`
+  directory, record the reason and a before/after baseline, forbid writes to the
+  original, and verify that the original is unchanged. Never persist test
+  conversations, outputs, temporary approvals, or fixture facts into project
+  state.
+- Every behavior test report must state `데이터 출처`, `실행 환경`, `원본 변경`,
+  and `실제 프로젝트 사실로 채택`. The adoption value for synthetic test data is
+  always `아님`.
+- Before every call to `scenario_designer`, `scenario_writer`,
+  `scenario_reviewer`, or `design_creative_planner`, follow
+  `docs/workflows/specialist_agent_handoff.md` and complete
+  `docs/templates/specialist_task_packet.md`. Reconcile the current request and
+  every material prior user fact, selection, prohibition, scope change, approval
+  ID, and authorization boundary into the packet. Record each fact or input as
+  `current_user_input`, `prior_user_input`, `confirmed_document`,
+  `proposal_input`, or `synthetic_test_fixture`. Do not call a specialist while
+  a required packet field or provenance is missing or contradictory.
+- Spawn a named custom specialist with its exact `agent_type`,
+  `fork_turns: "none"`, and the complete Specialist Task Packet as the task
+  message. Never combine a custom `agent_type` with an omitted or `"all"`
+  full-history fork, never silently substitute a general agent, and never retry
+  the same incompatible arguments. Do not add model or reasoning overrides
+  unless explicitly required.
+- Specialist agents must validate the packet before substantive work and return
+  `blocked_missing_handoff` without drafting, option generation, or review when
+  required context is absent. The main agent must compare every handoff against
+  the packet and must not present, persist, approve, or apply a result that
+  exceeds the transmitted scope or leaves a handoff failure unresolved.
+- If synthetic test data lacks its label or origin, or is classified as a user
+  or confirmed fact, the main agent and specialist must return
+  `blocked_test_provenance` without drafting, option generation, or review. Do
+  not silently repair provenance by guessing the data's source.
+- Task Packet preparation and specialist execution must both obey the Minimal
+  Source Rule in `docs/workflows/specialist_agent_handoff.md`. Resolve exact
+  paths before reading; do not enumerate the whole design tree, and do not open
+  Approval Queue, temporary ideas, Decision Log, or Version History unless the
+  current request identifies them as inputs or the active workflow specifically
+  requires their history.
+- For new, updated, or restructured non-scenario design Drafts, and non-scenario
+  gaps in multi-role Drafts, delegate missing-information classification to
+  `design_creative_planner` under `docs/skills/document_completion.md`. General
+  scenario gaps remain with `scenario_designer`; in-game script gaps remain with
+  `scenario_writer`. The main agent must review and show the complete GAP list,
+  but must not authorize creative alternatives until the user explicitly
+  authorizes all or selected `creative_fillable` GAPs.
+- Delegate authorized design gaps to `design_creative_planner` under
+  `docs/skills/design_creative_completion.md`. Require two alternatives for
+  low/medium risk and three for high risk, a source-grounded recommendation, and
+  `TBD` for `user_fact` or unresolved `dependency` gaps.
 - Mark every selected, unsupported design decision with a `CP-*` footnote and
   preserve its alternatives, rationale, impacts, selection and validation needs
   in the approval item's Creative Proposal Log. Keep proposed or declined options
@@ -100,10 +163,14 @@ changes, but actual project changes must go through approval-oriented flows.
   canonical owner or core scope changes, create a linked or atomic `restructure`
   approval item.
 - When receiving scenario material for review or drafting or changing a
-  `scenario` document, the main agent must read the relevant project sources and
-  apply `docs/skills/scenario_review.md`. Preserve a source-faithful Draft and, when a
-  stronger event order, reveal, branch, Outcome, or motivation exists, present it
-  separately in `Scenario Improvement Review` with its reason and impacts.
+  `scenario` document, the main agent must resolve the project, canonical owner,
+  sources and scope. Delegate review-only requests directly to
+  `scenario_reviewer`; delegate general scenario authoring or changes to
+  `scenario_designer` under `docs/skills/scenario_review.md`, then send its result
+  to `scenario_reviewer` before presenting or saving it. Preserve a source-faithful
+  Draft and, when a stronger event order, reveal, branch, Outcome, or motivation
+  exists, present it separately in `Scenario Improvement Review` with its reason
+  and impacts.
 - Do not merge a scenario improvement recommendation into the Draft or treat it as
   canon before the user selects it. After selection, reconfirm the sources, revise
   the Draft or create a linked replacement item as required, and return it to
@@ -112,8 +179,9 @@ changes, but actual project changes must go through approval-oriented flows.
   may create clearly disclosed proposals; use `TBD` when a required value cannot
   safely be proposed.
 - When the user requests an in-game script from scenario material, delegate the
-  project-adapted authoring task to the custom agent `scenario_writer` and review
-  its result before presenting or saving it.
+  project-adapted authoring task to the custom agent `scenario_writer`, then send
+  the result to `scenario_reviewer` for independent review before the main agent
+  presents or saves it.
 - An in-game script request authorizes `scenario_writer` to draft creative
   writing and a stronger narrative structure within the requested scope. This is
   proposal authority, not approval or application authority.
@@ -129,6 +197,11 @@ changes, but actual project changes must go through approval-oriented flows.
   link updates in one atomic `restructure` approval item. World-canon or
   system-rule changes require a separate linked high-risk proposal; keep dependent
   script fields `TBD` until that proposal is applied and the script is reconfirmed.
+- Authoring and creative subagents must return read-only handoffs. They do not
+  write Approval Queue items or modify `design/`, `approvals/`, `decisions/`, or
+  `versions/`. After required review findings are resolved, the main agent alone
+  assembles and persists a `pending` approval item and retains all approval,
+  reconfirmation, and application decisions.
 - Do not duplicate creative provenance systems. General scenario structure uses
   Scenario Improvement Review, in-game scripts use `CW-*` and `NR-*`, and other
   authorized design completion uses `CP-*`.

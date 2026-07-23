@@ -2,9 +2,25 @@
 
 ## Purpose
 
-게임 개요, 세계관, 시스템, 콘텐츠, UI와 기술 기획 초안의 누락 정보를
-분류하고, 사용자가 명시적으로 허용한 설계 공백에만 복수 창작 대안을 만든다.
-선택된 창작 내용은 `CP-*`로 공개하고 승인 전에는 확정 사실로 취급하지 않는다.
+프로젝트 적응형 `design_creative_planner`가 게임 개요, 세계관, 시스템, 콘텐츠,
+UI와 기술 기획 초안의 누락 정보를 분류하고, 사용자가 명시적으로 허용한 설계
+공백에만 복수 창작 대안을 만든다. 선택된 창작 내용은 `CP-*`로 공개하고 승인
+전에는 확정 사실로 취급하지 않는다. 메인 Codex는 허가 경계, 원본 재확인과
+Approval Queue 저장을 통제한다.
+
+## Agent Responsibilities
+
+- 메인 Codex: 프로젝트·문서 역할·작업 Phase를 확정해 위임하고, 전체 GAP을
+  사용자에게 보여주며 창작 허가를 직접 확인한다. 서브에이전트가 스스로 허가
+  범위를 넓히게 하지 않는다.
+- `design_creative_planner`: 대상 역할에 맞는 Creative Design Brief를 만들고
+  `classify | generate_options | incorporate_selection` Phase 중 지정된 작업만
+  수행한다.
+- `classify` Phase에는 대안을 만들지 않는다. `generate_options` Phase는 메인
+  Codex가 전달한 사용자 허가와 정확한 GAP ID가 있을 때만 실행한다.
+- `incorporate_selection` Phase는 사용자가 선택한 CP 대안만 Draft에 각주로
+  반영하며, 원본 재확인과 독립적인 메인 검토를 거쳐 다시 `pending`으로 둔다.
+- 서브에이전트는 Approval Queue나 확정·결정·버전 문서를 직접 수정하지 않는다.
 
 ## When To Use
 
@@ -59,13 +75,15 @@
 
 ## Creative Completion Offer
 
-1. 신규·수정·재구성 Draft마다 누락 분류를 수행한다.
-2. `Creative Completion Review`에 GAP ID, 문서·필드, 유형, 위험도, 필요한
-   조치를 표로 제시한다.
-3. `creative_fillable` 항목을 한 번에 보여주고 어떤 GAP을 창작으로 채울지
-   명시적으로 선택해 달라고 요청한다.
+1. 메인 Codex는 신규·수정·재구성 비시나리오 Draft를 `design_creative_planner`의
+   `classify` Phase에 전달한다.
+2. 서브에이전트는 `Creative Completion Review`에 GAP ID, 문서·필드, 유형,
+   위험도, 필요한 조치를 표로 제시하고 Creative Design Brief를 반환한다.
+3. 메인 Codex가 전체 `creative_fillable` 항목을 한 번에 보여주고 어떤 GAP을
+   창작으로 채울지 명시적으로 선택해 달라고 요청한다.
 4. 사용자가 처음부터 대상 GAP 또는 범위를 지정해 창작 보완을 요청했다면
-   별도 허가 질문을 반복하지 않는다.
+   별도 허가 질문을 반복하지 않되, 메인 Codex가 허가 범위를 명시해
+   `generate_options` Phase로 전달한다.
 5. “채워줘”, GAP ID 선택 또는 동등하게 명확한 문구가 없으면 대안을 만들지
    않고 `TBD`를 유지한다.
 
@@ -118,7 +136,8 @@ Markdown 각주를 직접 붙인다. 각주에는 AI 기획 창작임을 밝히�
 
 ## Selection And Approval
 
-1. 사용자가 대안을 선택하면 관련 원본과 영향을 다시 확인한다.
+1. 사용자가 대안을 선택하면 메인 Codex가 관련 원본과 영향을 다시 확인하고
+   정확한 선택 결과를 `incorporate_selection` Phase로 전달한다.
 2. 대상, 목적과 핵심 범위가 같으면 기존 승인 항목을 개정하고 선택 이력을
    Decision History에 추가한 뒤 `pending`으로 둔다.
 3. 핵심 범위나 canonical owner가 달라지면 기존 항목을 보존하고 연결된 새
@@ -134,9 +153,11 @@ Markdown 각주를 직접 붙인다. 각주에는 AI 기획 창작임을 밝히�
 
 ## Output
 
+- Creative Design Brief와 실행 Phase
 - Creative Completion Review
 - 사용자 허가가 필요한 GAP 목록과 사실 확인 질문
 - 허가된 GAP의 Creative Proposal Log
 - 추천안과 선택 대기 상태
 - 선택 후 CP 각주가 연결된 갱신 Draft
 - 충돌, 의존성, 검증 계획과 승인 상태
+- 메인 Codex의 허가 범위·출처·CP 표식 검토 결과
