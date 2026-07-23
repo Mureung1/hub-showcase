@@ -1,38 +1,27 @@
 import {
   addMonths,
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
   format,
   isSameMonth,
-  isToday,
-  startOfMonth,
-  startOfWeek
 } from "date-fns";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMe } from "../features/auth";
-import { Schedule, useSchedules } from "../features/schedule";
+import {
+  getCalendarDateRange,
+  getDayLabel,
+  getDayTone,
+  getHoursLabel,
+  getMonthlyScheduleSummary,
+  getScheduleDuration,
+  groupSchedulesByDate,
+  parseMonthParam,
+  Schedule,
+  sortMonthlySchedules,
+  useSchedules
+} from "../features/schedule";
 import { getScheduleDatePath, ROUTES } from "../shared/routes";
 import { getSelectedStoreId } from "../shared/utils";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
-
-function parseMonthParam(monthParam: string | null) {
-  if (!monthParam || !/^\d{4}-\d{2}$/.test(monthParam)) {
-    return startOfMonth(new Date());
-  }
-
-  const [yearText, monthText] = monthParam.split("-");
-  const year = Number(yearText);
-  const monthIndex = Number(monthText) - 1;
-  const date = new Date(year, monthIndex, 1);
-
-  if (date.getFullYear() !== year || date.getMonth() !== monthIndex) {
-    return startOfMonth(new Date());
-  }
-
-  return startOfMonth(date);
-}
 
 function getMonthPath(date: Date) {
   return `${ROUTES.schedule}?month=${format(date, "yyyy-MM")}`;
@@ -42,109 +31,26 @@ function getTimeLabel(time: string) {
   return time.slice(0, 5);
 }
 
-function getScheduleDuration(schedule: Schedule) {
-  const [startHour, startMinute] = schedule.startTime.split(":").map(Number);
-  const [endHour, endMinute] = schedule.endTime.split(":").map(Number);
-
-  if (
-    startHour === undefined ||
-    startMinute === undefined ||
-    endHour === undefined ||
-    endMinute === undefined ||
-    Number.isNaN(startHour) ||
-    Number.isNaN(startMinute) ||
-    Number.isNaN(endHour) ||
-    Number.isNaN(endMinute)
-  ) {
-    return 0;
-  }
-
-  return Math.max(0, (endHour * 60 + endMinute - (startHour * 60 + startMinute)) / 60);
-}
-
-function getHoursLabel(hours: number) {
-  if (hours === 0) {
-    return "0시간";
-  }
-
-  return `${Number.isInteger(hours) ? hours : hours.toFixed(1)}시간`;
-}
-
-function getDayLabel(daySchedules: Schedule[], currentUserId: string | undefined) {
-  if (daySchedules.length === 0) {
-    return null;
-  }
-
-  if (currentUserId && daySchedules.some((schedule) => schedule.workerId === currentUserId)) {
-    return "내 근무";
-  }
-
-  const workerCount = new Set(daySchedules.map((schedule) => schedule.workerId)).size;
-
-  return `${workerCount}명 근무`;
-}
-
-function getDayTone(daySchedules: Schedule[], currentUserId: string | undefined, inCurrentMonth: boolean, date: Date) {
-  const tones = ["day"];
-
-  if (!inCurrentMonth) {
-    tones.push("muted");
-  }
-
-  if (daySchedules.length > 0) {
-    tones.push(currentUserId && daySchedules.some((schedule) => schedule.workerId === currentUserId) ? "shift" : "store");
-  }
-
-  if (isToday(date)) {
-    tones.push("today");
-  }
-
-  return tones.join(" ");
-}
-
-function sortSchedules(schedules: Schedule[]) {
-  return [...schedules].sort((first, second) => {
-    const dateCompare = first.workDate.localeCompare(second.workDate);
-
-    if (dateCompare !== 0) {
-      return dateCompare;
-    }
-
-    return first.startTime.localeCompare(second.startTime);
-  });
-}
-
 export function SchedulePage() {
   const [searchParams] = useSearchParams();
   const { data: me } = useMe();
   const selectedStoreId = getSelectedStoreId();
   const selectedStore = me?.stores.find((store) => store.id === selectedStoreId);
   const currentMonth = parseMonthParam(searchParams.get("month"));
-  const calendarStart = startOfWeek(startOfMonth(currentMonth));
-  const calendarEnd = endOfWeek(endOfMonth(currentMonth));
-  const fromDate = format(calendarStart, "yyyy-MM-dd");
-  const toDate = format(calendarEnd, "yyyy-MM-dd");
+  const { calendarDays, calendarEnd, calendarStart, fromDate, toDate } = getCalendarDateRange(currentMonth);
   const { data, error, isLoading } = useSchedules(selectedStoreId, fromDate, toDate);
   const schedules = data?.schedules ?? [];
   const currentUserId = me?.profile.id;
-  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-  const schedulesByDate = schedules.reduce<Map<string, Schedule[]>>((map, schedule) => {
-    const daySchedules = map.get(schedule.workDate) ?? [];
-
-    daySchedules.push(schedule);
-    map.set(schedule.workDate, daySchedules);
-
-    return map;
-  }, new Map<string, Schedule[]>());
-  const currentMonthSchedules = schedules.filter((schedule) => schedule.workDate.startsWith(format(currentMonth, "yyyy-MM")));
-  const myMonthSchedules = currentUserId
-    ? currentMonthSchedules.filter((schedule) => schedule.workerId === currentUserId)
-    : [];
-  const myMonthHours = myMonthSchedules.reduce((total, schedule) => total + getScheduleDuration(schedule), 0);
-  const activeWorkDays = new Set(currentMonthSchedules.map((schedule) => schedule.workDate)).size;
+  const schedulesByDate = groupSchedulesByDate(schedules);
+  const { activeWorkDays, currentMonthSchedules, myMonthHours, myMonthSchedules } = getMonthlyScheduleSummary(
+    schedules,
+    currentMonth,
+    currentUserId
+  );
   const todayKey = format(new Date(), "yyyy-MM-dd");
-  const upcomingSchedules = sortSchedules(currentMonthSchedules.filter((schedule) => schedule.workDate >= todayKey));
-  const sideSchedules = upcomingSchedules.length > 0 ? upcomingSchedules.slice(0, 4) : sortSchedules(currentMonthSchedules).slice(0, 4);
+  const upcomingSchedules = sortMonthlySchedules(currentMonthSchedules.filter((schedule) => schedule.workDate >= todayKey));
+  const sideSchedules =
+    upcomingSchedules.length > 0 ? upcomingSchedules.slice(0, 4) : sortMonthlySchedules(currentMonthSchedules).slice(0, 4);
 
   return (
     <main className="dashboard">
