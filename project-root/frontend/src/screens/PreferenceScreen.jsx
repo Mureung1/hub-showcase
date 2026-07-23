@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import "./PreferenceScreen.css";
 import PrimaryButton from "../components/PrimaryButton";
 import { fetchLectures } from "../api/lectures";
+import { parseFreeTextConditions } from "../api/preferences";
 import { CURRENT_YEAR, CURRENT_SEMESTER } from "../config/semester";
 
 const DAYS = ["월", "화", "수", "목", "금"];
@@ -27,6 +28,7 @@ export default function PreferenceScreen({ onNavigate, onSubmit }) {
   const [teamPreferred, setTeamPreferred] = useState(false);
   const [completedIds, setCompletedIds] = useState([]);
   const [freeText, setFreeText] = useState("");
+  const [aiParseStatus, setAiParseStatus] = useState("idle"); // idle | loading | error
   const [majorSubjects, setMajorSubjects] = useState([]);
   const [majorSubjectsError, setMajorSubjectsError] = useState(false);
   const uniqueMajorSubjects = useMemo(() => dedupeByName(majorSubjects), [majorSubjects]);
@@ -53,6 +55,29 @@ export default function PreferenceScreen({ onNavigate, onSubmit }) {
 
   function toggleCompleted(id) {
     setCompletedIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
+  }
+
+  // 자유 텍스트를 AI로 해석해 같은 모양의 카테고리 폼 값으로 반영한다.
+  // 텍스트에 언급 안 된 항목(null/빈 배열)은 기존 값을 건드리지 않는다.
+  async function handleAiParse() {
+    setAiParseStatus("loading");
+    try {
+      const result = await parseFreeTextConditions(freeText);
+      if (result.freeDays?.length > 0) setFreeDays(result.freeDays);
+      if (result.avoidMorning !== null && result.avoidMorning !== undefined) {
+        setAvoidMorning(result.avoidMorning);
+      }
+      if (result.targetCredit != null && CREDIT_OPTIONS.includes(result.targetCredit)) {
+        setTargetCredit(result.targetCredit);
+      }
+      if (result.teamPreferred !== null && result.teamPreferred !== undefined) {
+        setTeamPreferred(result.teamPreferred);
+      }
+      setAiParseStatus("idle");
+    } catch (err) {
+      console.error("자유 텍스트 조건 분석 실패:", err);
+      setAiParseStatus("error");
+    }
   }
 
   function handleSubmit(e) {
@@ -204,6 +229,17 @@ export default function PreferenceScreen({ onNavigate, onSubmit }) {
             onChange={(e) => setFreeText(e.target.value)}
             rows={3}
           />
+          <button
+            type="button"
+            className="ghost-btn"
+            onClick={handleAiParse}
+            disabled={!freeText.trim() || aiParseStatus === "loading"}
+          >
+            {aiParseStatus === "loading" ? "분석 중..." : "AI로 조건 분석하기"}
+          </button>
+          {aiParseStatus === "error" && (
+            <p className="field__hint">조건을 분석하지 못했어요. 잠시 후 다시 시도해주세요.</p>
+          )}
         </div>
       </div>
 
