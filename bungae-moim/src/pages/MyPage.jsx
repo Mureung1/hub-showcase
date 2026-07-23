@@ -115,6 +115,7 @@ export default function MyPage() {
                   <StatusPill tone={status.tone}>{status.label}</StatusPill>
                 </div>
                 <h3 className="meeting-card-title">{m.title}</h3>
+                <span className="eyebrow">신청자 {m.applicantCount}명</span>
                 {m.pendingCount > 0 && <StatusPill tone="warning">승인 대기 {m.pendingCount}건</StatusPill>}
               </Link>
             )
