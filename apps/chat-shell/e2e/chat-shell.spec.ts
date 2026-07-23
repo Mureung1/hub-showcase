@@ -401,6 +401,172 @@ test('rejects a proposal without changing the confirmed model across reload', as
   expect(afterReload).toEqual(beforeReload)
 })
 
+test.describe('current workbench fail-closed oracle', () => {
+  test.use({ scenario: 'fail-closed-oracle' })
+
+  test('keeps invalid proposals and duplicate or late Review decisions from confirming state', async ({
+    chatHarness,
+    chatPage: page,
+  }) => {
+    await selectCanonicalMaterials(page)
+    await page
+      .getByRole('button', { name: /선택한 자료 정리하기/u })
+      .click()
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await expect(operationPhase(page)).toHaveAttribute(
+        'data-product-operation-phase',
+        'interrupted',
+      )
+      await expect(page.getByRole('region', { name: '검토 대기' })).toHaveCount(0)
+      await expect
+        .poll(async () =>
+          confirmedMutationSnapshot(await readProductBootstrap(page)),
+        )
+        .toEqual({
+          confirmedRevision: 0,
+          assignments: [],
+          statePatches: [],
+          userConfirmations: [],
+        })
+
+      if (attempt < 2) {
+        await page
+          .getByRole('button', { name: '이 자료로 다시 시도' })
+          .last()
+          .click()
+      }
+    }
+
+    expect(chatHarness.failClosedProposalCases()).toEqual([
+      'unselected-evidence',
+      'quote-mismatch',
+      'stale-base',
+    ])
+    expect(
+      chatHarness
+        .calls()
+        .filter((call) => call.operation === 'startProductTurn'),
+    ).toHaveLength(3)
+    expect(
+      chatHarness
+        .calls()
+        .filter((call) => call.operation === 'answerUserInput'),
+    ).toHaveLength(0)
+
+    chatHarness.pauseReviewContinuation()
+    await page
+      .getByRole('button', { name: '이 자료로 다시 시도' })
+      .last()
+      .click()
+
+    const review = page.getByRole('region', { name: '검토 대기' })
+    await expect(review).toBeVisible()
+    const rejectRequestPromise = page.waitForRequest((request) =>
+      new URL(request.url()).pathname.startsWith('/api/product/reviews/'),
+    )
+    const rejectResponsePromise = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.startsWith('/api/product/reviews/'),
+    )
+    await review.getByRole('button', { name: '거절' }).click()
+    const [rejectRequest, rejectResponse] = await Promise.all([
+      rejectRequestPromise,
+      rejectResponsePromise,
+    ])
+    expect(rejectResponse.status()).toBe(200)
+    const reviewPathname = new URL(rejectRequest.url()).pathname
+    const reviewPayload = rejectRequest.postDataJSON() as Record<string, unknown>
+    expect(await rejectResponse.json()).toMatchObject({
+      decision: 'rejected',
+      outcome: 'not_applied',
+      confirmedRevision: 0,
+      replayed: false,
+    })
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'running',
+    )
+
+    await expect
+      .poll(async () =>
+        confirmedMutationSnapshot(await readProductBootstrap(page)),
+      )
+      .toEqual({
+        confirmedRevision: 0,
+        assignments: [],
+        statePatches: [
+          expect.objectContaining({
+            status: 'rejected',
+            applyOutcome: { type: 'not_applied', revision: 0 },
+          }),
+        ],
+        userConfirmations: [
+          expect.objectContaining({
+            decision: 'rejected',
+            outcome: 'not_applied',
+          }),
+        ],
+      })
+    const rejectedMutation = confirmedMutationSnapshot(
+      await readProductBootstrap(page),
+    )
+
+    const duplicate = await postProductReview(
+      page,
+      reviewPathname,
+      reviewPayload,
+    )
+    expect(duplicate).toMatchObject({
+      status: 200,
+      body: {
+        decision: 'rejected',
+        outcome: 'not_applied',
+        confirmedRevision: 0,
+        replayed: true,
+      },
+    })
+    expect(
+      confirmedMutationSnapshot(await readProductBootstrap(page)),
+    ).toEqual(rejectedMutation)
+    expect(
+      chatHarness
+        .calls()
+        .filter((call) => call.operation === 'answerUserInput'),
+    ).toHaveLength(1)
+
+    chatHarness.releaseReviewContinuation()
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'completed',
+    )
+
+    const late = await postProductReview(page, reviewPathname, reviewPayload)
+    expect(late).toMatchObject({
+      status: 409,
+      body: { code: 'review_invalid' },
+    })
+    expect(
+      confirmedMutationSnapshot(await readProductBootstrap(page)),
+    ).toEqual(rejectedMutation)
+    expect(
+      chatHarness
+        .calls()
+        .filter((call) => call.operation === 'answerUserInput'),
+    ).toHaveLength(1)
+    expect(
+      chatHarness
+        .calls()
+        .filter((call) => call.operation === 'startProductTurn'),
+    ).toHaveLength(4)
+    expect(chatHarness.failClosedProposalCases()).toEqual([
+      'unselected-evidence',
+      'quote-mismatch',
+      'stale-base',
+      'valid',
+    ])
+  })
+})
+
 test.describe('post-Review same-Turn ordinary clarification', () => {
   test.use({ scenario: 'post-review-clarification' })
 
@@ -1545,6 +1711,39 @@ async function readProductHistory(page: Page): Promise<ProductSettledHistory> {
     }
     return bootstrap.history
   })
+}
+
+function confirmedMutationSnapshot(bootstrap: ProductBootstrap) {
+  if (bootstrap.workspace?.state !== 'ready') {
+    throw new Error('The product workspace must be ready.')
+  }
+  return {
+    confirmedRevision: bootstrap.workspace.confirmedRevision,
+    assignments: bootstrap.history.assignments,
+    statePatches: bootstrap.history.statePatches,
+    userConfirmations: bootstrap.history.userConfirmations,
+  }
+}
+
+async function postProductReview(
+  page: Page,
+  pathname: string,
+  payload: Record<string, unknown>,
+): Promise<{ readonly status: number; readonly body: unknown }> {
+  return page.evaluate(
+    async ({ pathname: reviewPathname, payload: reviewPayload }) => {
+      const response = await fetch(reviewPathname, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(reviewPayload),
+      })
+      return {
+        status: response.status,
+        body: (await response.json()) as unknown,
+      }
+    },
+    { pathname, payload },
+  )
 }
 
 async function assertReadableWorkspaceWithClosedProduct(page: Page): Promise<void> {

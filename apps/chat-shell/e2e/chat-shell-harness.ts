@@ -34,6 +34,7 @@ import {
 
 import {
   createServerApplication,
+  listenToServerApplication,
   type ServerApplication,
 } from '../../server/src/server.js'
 import { codexChatIdentity } from '../../server/src/testing/codex-chat-test-support.js'
@@ -52,6 +53,7 @@ export type ChatScenario =
   | 'invalid-store'
   | 'acknowledged-interrupt-response-loss'
   | 'disconnect-drain-timeout'
+  | 'fail-closed-oracle'
   | 'reload-before-interrupt-settlement'
   | 'post-review-clarification'
 
@@ -70,6 +72,12 @@ export type ProductRuntimeCall =
   | { readonly operation: 'cancelUserInput'; readonly input: CancelUserInput }
   | { readonly operation: 'interrupt'; readonly input: InterruptTurnInput }
 
+export type FailClosedProposalCase =
+  | 'unselected-evidence'
+  | 'quote-mismatch'
+  | 'stale-base'
+  | 'valid'
+
 type ChatShellFixtures = {
   scenario: ChatScenario
   chatHarness: ChatShellHarness
@@ -85,6 +93,7 @@ export type ChatShellHarness = {
     readonly workspaceRoot: string
   }
   readonly calls: () => readonly ProductRuntimeCall[]
+  readonly failClosedProposalCases: () => readonly FailClosedProposalCase[]
   readonly requests: () => readonly string[]
   readWorkspaceBytes(relativePath: string): Promise<Buffer>
   disconnectAssignmentStream(): Promise<void>
@@ -313,15 +322,20 @@ export async function startChatShellHarness(
         await nextApplication.semesterWorkspace?.createCourse('문제해결글쓰기')
       }
       runtime = nextRuntime
-      application = nextApplication
       return nextApplication
     }
 
-    application = await createAndActivateApplication()
-
-    const apiAddress = await application.listen(0, '127.0.0.1')
-    const apiPort = apiAddress.port
-    const apiUrl = `http://127.0.0.1:${apiAddress.port}`
+    const initialApplication = await createAndActivateApplication()
+    const initialListener = await listenToServerApplication(
+      initialApplication,
+      {
+        host: '127.0.0.1',
+        port: 0,
+      },
+    )
+    application = initialListener.application
+    const apiPort = initialListener.port
+    const apiUrl = `http://127.0.0.1:${apiPort}`
     viteServer = await createViteServer({
       appType: 'spa',
       configFile: false,
@@ -381,6 +395,10 @@ export async function startChatShellHarness(
         workspaceRoot: semesterWorkspace.workspaceRoot,
       },
       calls: () => runtimeGenerations.flatMap((generation) => generation.calls),
+      failClosedProposalCases: () =>
+        runtimeGenerations.flatMap(
+          (generation) => generation.failClosedProposalCases,
+        ),
       requests: () => [...requests],
       async readWorkspaceBytes(relativePath) {
         const candidate = path.resolve(
@@ -445,8 +463,12 @@ export async function startChatShellHarness(
           throw new Error('E2E Server application is unavailable')
         }
         await previousApplication.close()
-        application = await createAndActivateApplication()
-        await application.listen(apiPort, '127.0.0.1')
+        const nextApplication = await createAndActivateApplication()
+        const nextListener = await listenToServerApplication(nextApplication, {
+          host: '127.0.0.1',
+          port: apiPort,
+        })
+        application = nextListener.application
       },
       async stopServer() {
         const previousApplication = application
@@ -519,6 +541,7 @@ type PendingInteractionSettlement =
 class ProductE2eRuntime implements CodexProductCapableRuntime {
   readonly terminal = new Promise<CodexChatRuntimeError>(() => undefined)
   private readonly callLog: ProductRuntimeCall[] = []
+  private readonly failClosedProposalCaseLog: FailClosedProposalCase[] = []
   private readonly threadInputs: StartThreadInput[] = []
   private readonly pendingInteractions = new Map<string, PendingInteraction>()
   private readonly interruptedTurns = new Set<string>()
@@ -541,6 +564,10 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
 
   get calls(): readonly ProductRuntimeCall[] {
     return this.callLog.map((call) => structuredClone(call))
+  }
+
+  get failClosedProposalCases(): readonly FailClosedProposalCase[] {
+    return [...this.failClosedProposalCaseLog]
   }
 
   async readAccountReadiness(): Promise<CodexAccountReadiness> {
@@ -679,6 +706,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     const wasInterrupted = this.wasInterrupted.bind(this)
     const acknowledgedInterruptResponseLoss =
       this.scenario === 'acknowledged-interrupt-response-loss'
+    const failClosedOracle = this.scenario === 'fail-closed-oracle'
     const postReviewClarification =
       this.scenario === 'post-review-clarification'
     const interruptObserved = this.interruptObserved.promise
@@ -721,7 +749,6 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
         }
         const proposalFailed = await callProposalTool(input.text)
         if (proposalFailed) {
-          await interruptObserved
           yield {
             type: 'mcp_call.failed',
             threadId: input.threadId,
@@ -730,10 +757,13 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
             tool: 'propose_state_patch',
             displayMessage: 'The product proposal tool failed.',
           }
-          yield {
-            type: 'turn.interrupt_acknowledged',
-            threadId: input.threadId,
-            turnId,
+          if (!failClosedOracle) {
+            await interruptObserved
+            yield {
+              type: 'turn.interrupt_acknowledged',
+              threadId: input.threadId,
+              turnId,
+            }
           }
           yield {
             type: 'turn.completed',
@@ -1039,6 +1069,16 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
         await writeFile(storePath, `${JSON.stringify(store, null, 2)}\n`)
       }
     }
+    const proposal = proposalFromAssignmentInput(text, overrides)
+    if (this.scenario === 'fail-closed-oracle' && !overrides) {
+      this.failClosedProposalCaseLog.push(
+        await applyFailClosedProposalCase(
+          proposal,
+          this.turnOrdinal,
+          this.workspaceRoot,
+        ),
+      )
+    }
     const response = await fetch(threadInput.mcp.url, {
       method: 'POST',
       headers: {
@@ -1051,7 +1091,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
         method: 'tools/call',
         params: {
           name: 'propose_state_patch',
-          arguments: proposalFromAssignmentInput(text, overrides),
+          arguments: proposal,
         },
       }),
     })
@@ -1062,7 +1102,8 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     if (body.result?.isError === true) {
       assert.ok(
         this.scenario === 'source-conflict' ||
-          this.scenario === 'store-conflict',
+          this.scenario === 'store-conflict' ||
+          (this.scenario === 'fail-closed-oracle' && this.turnOrdinal <= 3),
       )
       return true
     }
@@ -1222,6 +1263,60 @@ function proposalFromAssignmentInput(
       },
     ],
   }
+}
+
+async function applyFailClosedProposalCase(
+  proposal: Record<string, unknown>,
+  turnOrdinal: number,
+  workspaceRoot: string,
+): Promise<FailClosedProposalCase> {
+  if (turnOrdinal > 3) return 'valid'
+  const evidence = proposal.evidence
+  assert.ok(Array.isArray(evidence))
+  const titleEvidence = evidence[0]
+  assert.ok(
+    typeof titleEvidence === 'object' &&
+      titleEvidence !== null &&
+      !Array.isArray(titleEvidence),
+  )
+
+  if (turnOrdinal === 1) {
+    const store = JSON.parse(
+      await readFile(
+        path.join(workspaceRoot, '.ay-ple', 'workspace-state.json'),
+        'utf8',
+      ),
+    ) as {
+      readonly materials?: readonly {
+        readonly digest?: unknown
+        readonly id?: unknown
+        readonly relativePath?: unknown
+      }[]
+    }
+    const control = store.materials?.find(
+      ({ relativePath }) => relativePath === 'unselected-control.txt',
+    )
+    assert.ok(control)
+    assert.ok(typeof control.id === 'string')
+    assert.ok(typeof control.digest === 'string')
+    Object.assign(titleEvidence, {
+      rawMaterialId: control.id,
+      digest: control.digest,
+    })
+    return 'unselected-evidence'
+  }
+
+  if (turnOrdinal === 2) {
+    Object.assign(titleEvidence, {
+      quote: '선택한 원문에 존재하지 않는 제목 근거',
+    })
+    return 'quote-mismatch'
+  }
+
+  const baseRevision = proposal.baseRevision
+  assert.ok(typeof baseRevision === 'number')
+  proposal.baseRevision = baseRevision + 1
+  return 'stale-base'
 }
 
 function requireMatch(value: string, pattern: RegExp): string {
