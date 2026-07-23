@@ -160,6 +160,21 @@ export type RuntimeMaterializedTreeVerificationSnapshot = {
  */
 export type RuntimeArchiveExtractionTestOptions = {
   readonly afterPrescan?: () => Promise<void>
+  readonly afterDirectoryCapabilityClose?: (input: {
+    readonly path: string
+    readonly workerProcessId: number | undefined
+  }) => void
+  readonly afterDirectoryCapabilityOpen?: (input: {
+    readonly path: string
+    readonly workerProcessId: number | undefined
+  }) => Promise<void>
+  readonly afterDirectoryCapabilitySpawn?: (input: {
+    readonly path: string
+    readonly workerProcessId: number | undefined
+  }) => void
+  readonly afterFinalFileHashChunk?: (input: {
+    readonly path: string
+  }) => Promise<void>
   readonly beforeArchiveEntryChunk?: (input: {
     readonly chunkBytes: number
     readonly pass: 'prescan' | 'materialize'
@@ -246,6 +261,7 @@ export async function extractVerifiedRuntimeArchive(
       identity: stagingIdentity,
       mode: 0o700,
       evidenceKind: 'runtime_staging_capability_unavailable',
+      signal: input.signal,
     })
     retainedCapabilities.push(stagingCapability)
     assertExtractionNotCancelled(input.signal)
@@ -369,9 +385,13 @@ export async function extractVerifiedRuntimeArchive(
     await Promise.all(
       [...retainedCapabilities]
         .reverse()
-        .map((capability) =>
-          capability.close().catch(() => undefined),
-        ),
+        .map(async (capability) => {
+          await capability.close().catch(() => undefined)
+          testOptions.afterDirectoryCapabilityClose?.({
+            path: capability.absolutePath,
+            workerProcessId: capability.workerProcessId,
+          })
+        }),
     )
   }
 }
@@ -426,6 +446,7 @@ export async function verifyMaterializedRuntimeTree(
       identity: parentIdentity,
       mode: 0o700,
       evidenceKind: 'runtime_generation_parent_open_failed',
+      signal: input.signal,
     })
     retainedCapabilities.push(parentCapability)
     assertExtractionNotCancelled(input.signal)
@@ -434,6 +455,7 @@ export async function verifyMaterializedRuntimeTree(
       identity: runtimeIdentity,
       mode: 0o700,
       evidenceKind: 'runtime_generation_runtime_open_failed',
+      signal: input.signal,
     })
     retainedCapabilities.push(runtimeCapability)
     assertExtractionNotCancelled(input.signal)
@@ -458,6 +480,7 @@ export async function verifyMaterializedRuntimeTree(
         identity,
         mode: 0o755,
         evidenceKind: 'runtime_generation_directory_open_failed',
+        signal: input.signal,
       })
       retainedCapabilities.push(capability)
       capabilities.set(directory.path, capability)
@@ -1533,9 +1556,22 @@ async function createOwnedDirectory(
     identity,
     mode: input.mode,
     evidenceKind: 'runtime_archive_new_directory_open_failed',
+    signal: input.signal,
+    testOptions: {
+      afterWorkerSpawn: ({ workerProcessId }) => {
+        input.testOptions.afterDirectoryCapabilitySpawn?.({
+          path: input.relativePath,
+          workerProcessId,
+        })
+      },
+    },
+  })
+  input.retainedCapabilities.push(capability)
+  await input.testOptions.afterDirectoryCapabilityOpen?.({
+    path: input.relativePath,
+    workerProcessId: capability.workerProcessId,
   })
   assertExtractionNotCancelled(input.signal)
-  input.retainedCapabilities.push(capability)
   return capability
 }
 
@@ -1544,10 +1580,17 @@ async function openDirectoryCapability(input: {
   readonly identity: RuntimeFileSystemIdentity
   readonly mode: 0o700 | 0o755
   readonly evidenceKind: string
+  readonly signal?: AbortSignal
+  readonly testOptions?: {
+    readonly afterWorkerSpawn?: (input: {
+      readonly workerProcessId: number | undefined
+    }) => void
+  }
 }): Promise<RuntimeDirectoryCapability> {
   try {
     return await RuntimeDirectoryCapability.open(input)
   } catch (error) {
+    assertExtractionNotCancelled(input.signal)
     throw runtimeAuthorityError('runtime_recovery_required', {
       kind: input.evidenceKind,
       cause: error,
@@ -1701,10 +1744,12 @@ function matchesCapabilityEntry(input: {
 async function observeCapability<T>(
   evidenceKind: string,
   operation: () => Promise<T>,
+  signal?: AbortSignal,
 ): Promise<T> {
   try {
     return await operation()
   } catch (error) {
+    assertExtractionNotCancelled(signal)
     if (error instanceof RuntimeReleaseAuthorityError) throw error
     throw runtimeAuthorityError('runtime_storage_unavailable', {
       kind: evidenceKind,
@@ -2257,7 +2302,17 @@ async function verifyMaterializedFile(
     const verified = await observeCapability(
       'runtime_archive_extracted_file_read_failed',
       () =>
-        parent.hashVerifiedFile(opened.handle, expected.bytes),
+        parent.hashVerifiedFile(opened.handle, expected.bytes, {
+          onChunk:
+            input.testOptions.afterFinalFileHashChunk === undefined
+              ? undefined
+              : () =>
+                  input.testOptions.afterFinalFileHashChunk!({
+                    path: expected.path,
+                  }),
+          signal: input.signal,
+        }),
+      input.signal,
     )
     assertExtractionNotCancelled(input.signal)
     handleOpen = false
@@ -2295,7 +2350,17 @@ async function verifyMaterializedFile(
       const reboundVerified = await observeCapability(
         'runtime_archive_extracted_file_reread_failed',
         () =>
-          parent.hashVerifiedFile(rebound.handle, expected.bytes),
+          parent.hashVerifiedFile(rebound.handle, expected.bytes, {
+            onChunk:
+              input.testOptions.afterFinalFileHashChunk === undefined
+                ? undefined
+                : () =>
+                    input.testOptions.afterFinalFileHashChunk!({
+                      path: expected.path,
+                    }),
+            signal: input.signal,
+          }),
+        input.signal,
       )
       assertExtractionNotCancelled(input.signal)
       reboundHandleOpen = false

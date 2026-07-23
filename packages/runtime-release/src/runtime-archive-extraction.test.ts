@@ -65,6 +65,7 @@ type RuntimeArchiveFixture = {
 }
 
 type RuntimeArchiveFixtureOptions = {
+  readonly noticeBytes?: Buffer
   readonly transformArchive?: (archiveBytes: Buffer) => Buffer
   readonly transformTar?: (tarBytes: Buffer) => Buffer
 }
@@ -90,9 +91,15 @@ function compareUnicodeCodePoints(left: string, right: string): number {
   return leftPoints.length - rightPoints.length
 }
 
-function fixtureEntries(): FixtureEntry[] {
+function fixtureEntries(
+  options: RuntimeArchiveFixtureOptions = {},
+): FixtureEntry[] {
   const files = [
-    ['NOTICE', 'AY-PLE notice\n', '100644'],
+    [
+      'NOTICE',
+      options.noticeBytes ?? Buffer.from('AY-PLE notice\n'),
+      '100644',
+    ],
     [
       'THIRD_PARTY_NOTICES.md',
       '# Third-party notices\n',
@@ -296,7 +303,7 @@ async function canonicalArchive(
 async function createRuntimeArchiveFixture(
   options: RuntimeArchiveFixtureOptions = {},
 ): Promise<RuntimeArchiveFixture> {
-  const entries = fixtureEntries()
+  const entries = fixtureEntries(options)
   const manifest = canonicalManifest(entries)
   const canonicalManifestBytes = Buffer.from(
     `${JSON.stringify(manifest, null, 2)}\n`,
@@ -569,6 +576,41 @@ async function assertArchiveError(
   })
   assert.ok(observed)
   return observed
+}
+
+async function within<T>(
+  action: Promise<T>,
+  milliseconds: number,
+): Promise<T> {
+  let timer: NodeJS.Timeout | undefined
+  try {
+    return await Promise.race([
+      action,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error('Timed out waiting for bounded test action'))
+        }, milliseconds)
+      }),
+    ])
+  } finally {
+    if (timer !== undefined) clearTimeout(timer)
+  }
+}
+
+function processExists(processId: number): boolean {
+  try {
+    process.kill(processId, 0)
+    return true
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      'code' in error &&
+      error.code === 'ESRCH'
+    ) {
+      return false
+    }
+    throw error
+  }
 }
 
 function extractFixture(
@@ -849,6 +891,110 @@ test('cancellation checkpoints stop directory, symlink, and final file work', as
       assert.deepEqual(verificationPaths, ['NOTICE'])
     })
   })
+})
+
+test('cancellation during directory capability handshake reaps the spawned worker', async () => {
+  await withFixture(async (fixture) => {
+    const cancellation = new AbortController()
+    let workerProcessId: number | undefined
+
+    const error = await within(
+      assertArchiveError(
+        () =>
+          extractFixture(
+            fixture,
+            {
+              afterDirectoryCapabilitySpawn: (entry) => {
+                if (entry.path !== '') return
+                workerProcessId = entry.workerProcessId
+                cancellation.abort()
+              },
+            },
+            cancellation.signal,
+          ),
+        'runtime_cancelled',
+      ),
+      2_000,
+    )
+
+    assert.equal(error.failure.retryable, true)
+    assert.notEqual(workerProcessId, undefined)
+    assert.equal(processExists(workerProcessId!), false)
+    assert.deepEqual(await readdir(fixture.staging.path), ['runtime'])
+  })
+})
+
+test('cancellation after directory capability open retains and closes the worker', async () => {
+  await withFixture(async (fixture) => {
+    const cancellation = new AbortController()
+    let workerProcessId: number | undefined
+    const closedWorkers = new Set<number>()
+
+    const error = await within(
+      assertArchiveError(
+        () =>
+          extractFixture(
+            fixture,
+            {
+              afterDirectoryCapabilityClose: (entry) => {
+                if (entry.workerProcessId !== undefined) {
+                  closedWorkers.add(entry.workerProcessId)
+                }
+              },
+              afterDirectoryCapabilityOpen: async (entry) => {
+                if (entry.path !== '') return
+                workerProcessId = entry.workerProcessId
+                cancellation.abort()
+              },
+            },
+            cancellation.signal,
+          ),
+        'runtime_cancelled',
+      ),
+      2_000,
+    )
+
+    assert.equal(error.failure.retryable, true)
+    assert.notEqual(workerProcessId, undefined)
+    assert.equal(closedWorkers.has(workerProcessId!), true)
+    assert.equal(processExists(workerProcessId!), false)
+    assert.deepEqual(await readdir(fixture.staging.path), ['runtime'])
+  })
+})
+
+test('cancellation interrupts an in-flight final file hash in the worker', async () => {
+  await withFixture(
+    async (fixture) => {
+      const cancellation = new AbortController()
+      let hashChunks = 0
+
+      const error = await within(
+        assertArchiveError(
+          () =>
+            extractFixture(
+              fixture,
+              {
+                afterFinalFileHashChunk: async (entry) => {
+                  if (entry.path !== 'NOTICE') return
+                  hashChunks += 1
+                  cancellation.abort()
+                },
+              },
+              cancellation.signal,
+            ),
+          'runtime_cancelled',
+        ),
+        2_000,
+      )
+
+      assert.equal(error.failure.retryable, true)
+      assert.equal(hashChunks, 1)
+      assert.deepEqual(await readdir(fixture.staging.path), ['runtime'])
+    },
+    {
+      noticeBytes: Buffer.alloc(256 * 1024, 0x61),
+    },
+  )
 })
 
 test('rejects an embedded NUL in a TAR path before recipient write', async () => {

@@ -122,6 +122,7 @@ type WorkerOperation =
       readonly kind: 'hash_verified_file'
       readonly handle: number
       readonly byteLimit: number
+      readonly observeChunks: boolean
     }
   | {
       readonly kind: 'shutdown'
@@ -139,7 +140,12 @@ type ParentDecision = {
   readonly proceed: boolean
 }
 
-type ParentMessage = ParentRequest | ParentDecision
+type ParentCancel = {
+  readonly kind: 'cancel'
+  readonly id: number
+}
+
+type ParentMessage = ParentRequest | ParentDecision | ParentCancel
 
 type WorkerMessage =
   | { readonly kind: 'ready' }
@@ -173,8 +179,10 @@ type SerializedWorkerError = {
 type PendingRequest = {
   readonly id: number
   readonly onChecked?: () => Promise<void>
+  readonly onAbort?: () => void
   readonly resolve: (value: unknown) => void
   readonly reject: (error: unknown) => void
+  readonly signal?: AbortSignal
   hookError?: unknown
   timer: NodeJS.Timeout
 }
@@ -216,11 +224,24 @@ export class RuntimeDirectoryCapability {
     })
   }
 
+  get workerProcessId(): number | undefined {
+    return this.#child.pid
+  }
+
   static async open(input: {
     readonly absolutePath: string
     readonly identity: RuntimeFileSystemIdentity
     readonly mode: number
+    readonly signal?: AbortSignal
+    readonly testOptions?: {
+      readonly afterWorkerSpawn?: (input: {
+        readonly workerProcessId: number | undefined
+      }) => void
+    }
   }): Promise<RuntimeDirectoryCapability> {
+    if (input.signal?.aborted === true) {
+      throw workerCancellationError()
+    }
     const configuration: WorkerConfiguration = {
       identity: input.identity,
       mode: input.mode,
@@ -244,8 +265,17 @@ export class RuntimeDirectoryCapability {
       input.mode,
       child,
     )
-    await capability.#waitUntilReady()
-    return capability
+    try {
+      const ready = capability.#waitUntilReady(input.signal)
+      input.testOptions?.afterWorkerSpawn?.({
+        workerProcessId: child.pid,
+      })
+      await ready
+      return capability
+    } catch (error) {
+      await capability.#terminateAfterOpenFailure()
+      throw error
+    }
   }
 
   createDirectory(
@@ -411,16 +441,25 @@ export class RuntimeDirectoryCapability {
   hashVerifiedFile(
     handle: number,
     byteLimit: number,
+    options: {
+      readonly onChunk?: () => Promise<void>
+      readonly signal?: AbortSignal
+    } = {},
   ): Promise<{
     readonly bytes: number
     readonly sha256: string
     readonly stats: RuntimeCapabilityStats
   }> {
-    return this.#request({
-      kind: 'hash_verified_file',
-      handle,
-      byteLimit,
-    }) as Promise<{
+    return this.#request(
+      {
+        kind: 'hash_verified_file',
+        handle,
+        byteLimit,
+        observeChunks: options.onChunk !== undefined,
+      },
+      options.onChunk,
+      options.signal,
+    ) as Promise<{
       readonly bytes: number
       readonly sha256: string
       readonly stats: RuntimeCapabilityStats
@@ -453,43 +492,99 @@ export class RuntimeDirectoryCapability {
     this.#closed = true
   }
 
-  #waitUntilReady(): Promise<void> {
+  async #terminateAfterOpenFailure(): Promise<void> {
+    if (this.#child.exitCode !== null) {
+      this.#closed = true
+      return
+    }
+    this.#child.kill('SIGKILL')
+    await new Promise<void>((resolve) => {
+      if (this.#child.exitCode !== null) {
+        resolve()
+        return
+      }
+      const timer = setTimeout(resolve, CLOSE_TIMEOUT_MS)
+      timer.unref()
+      this.#child.once('exit', () => {
+        clearTimeout(timer)
+        resolve()
+      })
+    })
+    if (this.#child.connected) this.#child.disconnect()
+    this.#closed = true
+  }
+
+  #waitUntilReady(signal?: AbortSignal): Promise<void> {
     return new Promise((resolve, reject) => {
+      let settled = false
+      const cleanup = (): void => {
+        clearTimeout(timer)
+        this.#child.off('message', onMessage)
+        this.#child.off('exit', onExit)
+        this.#child.off('error', onError)
+        signal?.removeEventListener('abort', onAbort)
+      }
+      const settle = (
+        outcome:
+          | { readonly kind: 'resolve' }
+          | { readonly kind: 'reject'; readonly error: unknown },
+      ): void => {
+        if (settled) return
+        settled = true
+        cleanup()
+        if (outcome.kind === 'resolve') resolve()
+        else reject(outcome.error)
+      }
       const timer = setTimeout(() => {
-        reject(new Error('Runtime directory capability handshake timed out'))
+        settle({
+          kind: 'reject',
+          error: new Error(
+            'Runtime directory capability handshake timed out',
+          ),
+        })
         this.#child.kill()
       }, REQUEST_TIMEOUT_MS)
       timer.unref()
       const onMessage = (message: WorkerMessage): void => {
         if (message.kind === 'ready') {
-          clearTimeout(timer)
-          this.#child.off('message', onMessage)
-          resolve()
+          settle({ kind: 'resolve' })
         } else if (message.kind === 'fatal') {
-          clearTimeout(timer)
-          this.#child.off('message', onMessage)
-          reject(deserializeWorkerError(message.error))
+          settle({
+            kind: 'reject',
+            error: deserializeWorkerError(message.error),
+          })
         }
       }
-      this.#child.on('message', onMessage)
-      this.#child.once('exit', (code, signal) => {
-        clearTimeout(timer)
-        reject(
-          new Error(
-            `Runtime directory capability handshake exited (${String(code)}, ${String(signal)})`,
+      const onExit = (code: number | null, exitSignal: NodeJS.Signals | null): void => {
+        settle({
+          kind: 'reject',
+          error: new Error(
+            `Runtime directory capability handshake exited (${String(code)}, ${String(exitSignal)})`,
           ),
-        )
-      })
-      this.#child.once('error', (error) => {
-        clearTimeout(timer)
-        reject(error)
-      })
+        })
+      }
+      const onError = (error: Error): void => {
+        settle({ kind: 'reject', error })
+      }
+      const onAbort = (): void => {
+        settle({
+          kind: 'reject',
+          error: workerCancellationError(),
+        })
+        this.#child.kill('SIGKILL')
+      }
+      this.#child.on('message', onMessage)
+      this.#child.once('exit', onExit)
+      this.#child.once('error', onError)
+      signal?.addEventListener('abort', onAbort, { once: true })
+      if (signal?.aborted === true) onAbort()
     })
   }
 
   #request(
     operation: WorkerOperation,
     onChecked?: () => Promise<void>,
+    signal?: AbortSignal,
   ): Promise<unknown> {
     if (this.#closed || !this.#child.connected) {
       return Promise.reject(
@@ -504,6 +599,20 @@ export class RuntimeDirectoryCapability {
     const id = this.#nextRequestId
     this.#nextRequestId += 1
     return new Promise((resolve, reject) => {
+      const onAbort =
+        signal === undefined
+          ? undefined
+          : () => {
+              if (
+                this.#pending?.id === id &&
+                this.#child.connected
+              ) {
+                this.#child.send({
+                  kind: 'cancel',
+                  id,
+                } satisfies ParentCancel)
+              }
+            }
       const timer = setTimeout(() => {
         this.#rejectPending(
           new Error('Runtime directory capability operation timed out'),
@@ -514,15 +623,21 @@ export class RuntimeDirectoryCapability {
       this.#pending = {
         id,
         onChecked,
+        onAbort,
         resolve,
         reject,
+        signal,
         timer,
+      }
+      if (onAbort !== undefined) {
+        signal?.addEventListener('abort', onAbort, { once: true })
       }
       this.#child.send({
         kind: 'request',
         id,
         operation,
       } satisfies ParentRequest)
+      if (signal?.aborted === true) onAbort?.()
     })
   }
 
@@ -540,12 +655,14 @@ export class RuntimeDirectoryCapability {
     if (message.kind === 'checked') {
       try {
         await pending.onChecked?.()
+        if (this.#pending !== pending) return
         this.#child.send({
           kind: 'decision',
           id: message.id,
-          proceed: true,
+          proceed: pending.signal?.aborted !== true,
         } satisfies ParentDecision)
       } catch (error) {
+        if (this.#pending !== pending) return
         pending.hookError = error
         this.#child.send({
           kind: 'decision',
@@ -556,6 +673,9 @@ export class RuntimeDirectoryCapability {
       return
     }
     clearTimeout(pending.timer)
+    if (pending.onAbort !== undefined) {
+      pending.signal?.removeEventListener('abort', pending.onAbort)
+    }
     this.#pending = undefined
     if (pending.hookError !== undefined) {
       pending.reject(pending.hookError)
@@ -571,6 +691,9 @@ export class RuntimeDirectoryCapability {
     clearTimeout(this.#pending.timer)
     const pending = this.#pending
     this.#pending = undefined
+    if (pending.onAbort !== undefined) {
+      pending.signal?.removeEventListener('abort', pending.onAbort)
+    }
     pending.reject(error)
   }
 }
@@ -599,6 +722,8 @@ async function runWorker(
     number,
     (proceed: boolean) => void
   >()
+  const activeRequestIds = new Set<number>()
+  const cancelledRequests = new Set<number>()
   let operationQueue = Promise.resolve()
 
   process.on('message', (message: ParentMessage) => {
@@ -606,9 +731,18 @@ async function runWorker(
       decisions.get(message.id)?.(message.proceed)
       return
     }
+    if (message.kind === 'cancel') {
+      if (activeRequestIds.has(message.id)) {
+        cancelledRequests.add(message.id)
+        decisions.get(message.id)?.(false)
+      }
+      return
+    }
+    activeRequestIds.add(message.id)
     operationQueue = operationQueue.then(async () => {
       try {
         const value = await executeWorkerOperation({
+          cancelledRequests,
           configuration,
           decisions,
           handles,
@@ -636,6 +770,9 @@ async function runWorker(
           ok: false,
           error: serializeWorkerError(error),
         } satisfies WorkerMessage)
+      } finally {
+        cancelledRequests.delete(message.id)
+        activeRequestIds.delete(message.id)
       }
     })
   })
@@ -643,6 +780,7 @@ async function runWorker(
 }
 
 async function executeWorkerOperation(input: {
+  readonly cancelledRequests: ReadonlySet<number>
   readonly configuration: WorkerConfiguration
   readonly decisions: Map<number, (proceed: boolean) => void>
   readonly handles: Map<number, FileHandle>
@@ -755,6 +893,10 @@ async function executeWorkerOperation(input: {
       const buffer = Buffer.allocUnsafe(64 * 1024)
       let bytes = 0
       while (true) {
+        assertWorkerRequestNotCancelled(
+          input.id,
+          input.cancelledRequests,
+        )
         const remaining = operation.byteLimit - bytes
         if (remaining < 0) {
           throw new Error('Runtime verified file exceeded byte limit')
@@ -765,13 +907,30 @@ async function executeWorkerOperation(input: {
           Math.min(buffer.byteLength, remaining + 1),
           bytes,
         )
+        assertWorkerRequestNotCancelled(
+          input.id,
+          input.cancelledRequests,
+        )
         if (result.bytesRead === 0) break
         bytes += result.bytesRead
         if (bytes > operation.byteLimit) {
           throw new Error('Runtime verified file exceeded byte limit')
         }
         hash.update(buffer.subarray(0, result.bytesRead))
+        if (operation.observeChunks) {
+          const proceed = await waitForDecision(
+            input.id,
+            input.decisions,
+          )
+          if (!proceed) {
+            throw workerCancellationError()
+          }
+        }
       }
+      assertWorkerRequestNotCancelled(
+        input.id,
+        input.cancelledRequests,
+      )
       return {
         bytes,
         sha256: hash.digest('hex'),
@@ -908,6 +1067,24 @@ async function executeWorkerOperation(input: {
   }
   await assertWorkerDirectory(input.configuration)
   return value
+}
+
+function assertWorkerRequestNotCancelled(
+  id: number,
+  cancelledRequests: ReadonlySet<number>,
+): void {
+  if (cancelledRequests.has(id)) {
+    throw workerCancellationError()
+  }
+}
+
+function workerCancellationError(): Error {
+  const error = new Error(
+    'Runtime directory capability operation cancelled',
+  )
+  error.name = 'AbortError'
+  ;(error as NodeJS.ErrnoException).code = 'ABORT_ERR'
+  return error
 }
 
 function assertVerifiedLinkFile(
