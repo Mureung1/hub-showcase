@@ -18,8 +18,8 @@ router.get('/weekday', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'category is required' });
     }
 
-    const data = patternService.getWeekdayPattern(category);
-    res.json({ category, data });
+    const { month, data } = patternService.getWeekdayPattern(category);
+    res.json({ category, month, data });
   } catch (error) {
     console.error('Error in /patterns/weekday:', error);
     res.status(500).json({ error: String(error) });
@@ -35,8 +35,8 @@ router.get('/hourly', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'category is required' });
     }
 
-    const data = patternService.getHourlyPattern(category);
-    res.json({ category, data });
+    const { month, data } = patternService.getHourlyPattern(category);
+    res.json({ category, month, data });
   } catch (error) {
     console.error('Error in /patterns/hourly:', error);
     res.status(500).json({ error: String(error) });

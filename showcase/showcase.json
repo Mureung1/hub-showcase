@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "title": "SmartFF",
+  "summary": "GS25 편의점 점주의 발주 의사결정을 돕는 AI 데이터 분석 대시보드입니다.",
+  "githubUser": "YunTaeYong(윤태용)",
+  "demoUrl": "",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/dashboard-1.webp",
+    "screenshots/financial-1.webp",
+    "screenshots/analysis-1.webp"
+  ],
+  "problem": "편의점 점주는 판매·폐기·재무 데이터를 여러 개의 엑셀 파일로 따로 확인해야 해서, 어떤 상품의 발주를 늘리고 줄여야 할지 판단하기 어렵습니다.",
+  "targetUsers": [
+    "GS25 등 편의점을 운영하는 점주",
+    "매장 발주·재고를 관리하는 직원"
+  ],
+  "features": [
+    "오늘의 매출 추세, 평균 마진율, 폐기율을 한눈에 보여주는 대시보드",
+    "판매량·폐기율 변화를 기준으로 발주 확대/축소를 추천하는 AI 제안(Rule Engine)",
+    "카테고리별 손익 구조(매출-원가-폐기손실-순이익)를 계산하는 재무 분석",
+    "요일별/시간대별 판매 패턴과 카테고리별 추세를 보여주는 분석 리포트",
+    "엑셀 업로드만으로 전체 데이터가 자동으로 갱신되는 ETL 파이프라인"
+  ],
+  "featureTags": [
+    "재무 분석",
+    "발주 추천",
+    "판매 패턴 분석"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Vite",
+    "Tailwind CSS",
+    "Express",
+    "Python",
+    "Pandas",
+    "Supabase"
+  ],
+  "techHighlights": [
+    "업로드된 엑셀을 Python ETL(pandas)로 파싱해 카테고리x월 단위로 집계하고, Node 백엔드가 이를 실행해 캐시를 자동 갱신합니다.",
+    "판매량 증가·폐기율 감소 같은 조건을 규칙으로 정의한 Rule Engine이 카테고리별 발주 확대/축소를 추천합니다.",
+    "vitest로 분석 요약 로직에 단위 테스트를 작성해 회귀를 방지합니다."
+  ],
+  "developmentWithAI": "저는 문제 정의, 우선순위, 배포 범위 같은 의사결정을 맡았습니다. Claude Code(AI)는 코드베이스를 직접 탐색해 실제 동작을 확인하고, 계획을 세워 구현·테스트·문서화까지 수행했습니다. 저는 매 단계마다 방향을 조정하고, 실제 브라우저에서 업로드→분석→대시보드 반영까지 결과를 확인하며 다음 작업을 정했습니다.",
+  "agent": {
+    "summary": "프로젝트 전용 Planning/Validation Agent와 Claude Code의 탐색·브라우저 자동화 기능을 함께 사용해 기획부터 구현, 검증까지 진행했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "Planning Agent",
+        "purpose": "기능 요청을 작업 단위로 분해하고 우선순위·Acceptance Criteria·리스크를 정리합니다 (구현 코드는 작성하지 않음, .claude/agents/planning-agent.md)."
+      },
+      {
+        "type": "agent",
+        "name": "Validation Agent",
+        "purpose": "구현이 끝난 기능을 요구사항·Acceptance Criteria·디자인 시스템 기준으로 검증하고 Critical/Major/Minor/Info로 분류한 리포트를 제공합니다 (코드는 수정하지 않음, .claude/agents/validation-agent.md)."
+      },
+      {
+        "type": "agent",
+        "name": "Explore Agent",
+        "purpose": "코드베이스에서 관련 파일과 기존 구현 패턴을 탐색합니다."
+      },
+      {
+        "type": "skill",
+        "name": "claude-in-chrome",
+        "purpose": "실제 브라우저에서 업로드→ETL→대시보드 반영까지 end-to-end로 검증합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "Planning Agent로 요구사항을 작업 단위·Acceptance Criteria로 분해",
+          "Explore Agent/Plan 모드로 코드 탐색 및 구현 계획 수립",
+          "우선순위·범위를 사용자와 확인",
+          "코드 구현",
+          "tsc/build로 회귀 확인",
+          "claude-in-chrome으로 실제 업로드·화면 반영 검증",
+          "Validation Agent로 Acceptance Criteria·스코프·디자인 일관성 최종 검증",
+          "main 브랜치에 직접 커밋"
+        ]
+      },
+      {
+        "name": "문서화 Workflow",
+        "steps": [
+          "작업 완료 후 docs/tasks.md 백로그 최신화",
+          "완료·보류 항목을 날짜와 함께 기록",
+          "한글 요약 커밋 메시지 작성"
+        ]
+      }
+    ]
+  }
+}

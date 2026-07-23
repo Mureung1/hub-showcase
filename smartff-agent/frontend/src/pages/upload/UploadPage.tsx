@@ -22,6 +22,7 @@ type UIState = {
   selectedFileName: string | null;
   isUploading: boolean;
   error: string | null;
+  info?: string | null;
   isDragging?: boolean;
   productCategory?: string;
   month?: number;
@@ -104,16 +105,24 @@ const categoryColors: Record<string, { bg: string; icon: string; iconBg: string 
   weekday: { bg: colors.bgCard, icon: '●', iconBg: colors.textTertiary },
 };
 
-const validationResults = [
-  { name: '판매 데이터', status: '정상', count: '523개 상품 정상 인식' },
-  { name: '발주 데이터', status: '정상', count: '113개 매칭 실패' },
-  { name: '폐기', status: '정상', count: '85개 상품 정상 인식' },
-  { name: '재고', status: '경고', count: '신규 5개 제품 신규' },
-];
+type ParseStat = {
+  filename: string;
+  total_rows: number;
+  valid_rows: number;
+  skipped_rows: number;
+};
+
+// 발주/재고는 파서가 없어 실제 검증 통계를 낼 수 없음 — 있는 그대로 안내
+const UNSUPPORTED_VALIDATION_NAMES = ['발주 데이터', '재고'];
 
 export default function UploadPage() {
   const [uploads, setUploads] = useState<UploadRecord[]>([]);
   const [uiState, setUiState] = useState<Record<string, UIState>>({});
+  // 이번 세션에서 업로드가 완료된 sales/waste의 최근 파싱 통계 (새로고침하면 사라짐 — 서버에 영속화하지 않음)
+  const [parseStats, setParseStats] = useState<Record<'sales' | 'waste', ParseStat | null>>({
+    sales: null,
+    waste: null,
+  });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -228,6 +237,7 @@ export default function UploadPage() {
           ...prev[id],
           isUploading: true,
           error: null,
+          info: null,
         },
       }));
 
@@ -256,7 +266,33 @@ export default function UploadPage() {
         });
       }
 
-      const json = (await response.json()) as { success: boolean; data?: UploadRecord; error?: string };
+      const json = (await response.json()) as {
+        success: boolean;
+        data?: UploadRecord;
+        error?: string;
+        missingFiles?: string[];
+        parseStats?: ParseStat;
+      };
+
+      if (response.status === 202) {
+        if (json.data) {
+          setUploads((prev) => [json.data!, ...prev]);
+        }
+        if (json.parseStats && (uploadType.category === 'sales' || uploadType.category === 'waste')) {
+          setParseStats((prev) => ({ ...prev, [uploadType.category]: json.parseStats! }));
+        }
+        fileObjectsRef.current[id] = null;
+        setUiState((prev) => ({
+          ...prev,
+          [id]: {
+            selectedFileName: null,
+            isUploading: false,
+            error: null,
+            info: `${month}월 데이터 대기 중입니다. 아직 필요한 파일: ${(json.missingFiles || []).join(', ')}`,
+          },
+        }));
+        return;
+      }
 
       if (!json.success) {
         throw new Error(json.error || 'Upload failed');
@@ -264,6 +300,10 @@ export default function UploadPage() {
 
       if (json.data) {
         setUploads((prev) => [json.data!, ...prev]);
+      }
+
+      if (json.parseStats && (uploadType.category === 'sales' || uploadType.category === 'waste')) {
+        setParseStats((prev) => ({ ...prev, [uploadType.category]: json.parseStats! }));
       }
 
       fileObjectsRef.current[id] = null;
@@ -639,6 +679,12 @@ export default function UploadPage() {
                 </p>
               )}
 
+              {state.info && (
+                <p style={{ fontSize: '11px', color: colors.primary, margin: '0 0 8px 0' }}>
+                  ⏳ {state.info}
+                </p>
+              )}
+
               {(() => {
                 const latest = getLatestForCategory(type.category);
                 if (latest) {
@@ -663,33 +709,49 @@ export default function UploadPage() {
       <div style={{ marginBottom: '32px' }}>
         <h2 style={{ fontSize: '14px', fontWeight: '600', color: colors.textPrimary, margin: '0 0 16px 0' }}>데이터 검증 결과</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
-          {validationResults.map((result, idx) => (
-            <div
-              key={idx}
-              style={{
-                background: colors.bgCard,
-                border: `1px solid ${colors.borderColor}`,
-                borderRadius: '12px',
-                padding: '20px',
-                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                {result.status === '정상' && (
-                  <span style={{ color: colors.success, fontWeight: '600' }}>✓</span>
-                )}
-                {result.status === '경고' && (
-                  <span style={{ color: colors.warning, fontWeight: '600' }}>⚠</span>
-                )}
-                <span style={{ fontSize: '13px', fontWeight: '600', color: colors.textPrimary }}>
-                  {result.name}
-                </span>
+          {(
+            [
+              { name: '판매 데이터', kind: 'sales' as const },
+              { name: '발주 데이터', kind: null },
+              { name: '폐기', kind: 'waste' as const },
+              { name: '재고', kind: null },
+            ] as { name: string; kind: 'sales' | 'waste' | null }[]
+          ).map((row) => {
+            const stat = row.kind ? parseStats[row.kind] : null;
+            const isUnsupported = UNSUPPORTED_VALIDATION_NAMES.includes(row.name);
+            const hasSkipped = stat ? stat.skipped_rows > 0 : false;
+
+            return (
+              <div
+                key={row.name}
+                style={{
+                  background: colors.bgCard,
+                  border: `1px solid ${colors.borderColor}`,
+                  borderRadius: '12px',
+                  padding: '20px',
+                  boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  {!isUnsupported && stat && (
+                    <span style={{ color: hasSkipped ? colors.warning : colors.success, fontWeight: '600' }}>
+                      {hasSkipped ? '⚠' : '✓'}
+                    </span>
+                  )}
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: colors.textPrimary }}>
+                    {row.name}
+                  </span>
+                </div>
+                <p style={{ fontSize: '12px', color: colors.textSecondary, margin: '0' }}>
+                  {isUnsupported
+                    ? '자동 검증 미지원 (파서 없음)'
+                    : stat
+                      ? `${stat.filename}: ${stat.valid_rows}개 상품 정상 인식${stat.skipped_rows > 0 ? `, ${stat.skipped_rows}개 실패` : ''}`
+                      : '이번 세션에 업로드된 데이터가 없습니다.'}
+                </p>
               </div>
-              <p style={{ fontSize: '12px', color: colors.textSecondary, margin: '0' }}>
-                {result.count}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

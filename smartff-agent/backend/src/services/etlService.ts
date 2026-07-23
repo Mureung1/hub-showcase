@@ -6,11 +6,19 @@
 import { execFile } from 'child_process';
 import path from 'path';
 
+export interface FileParseStat {
+  filename: string;
+  total_rows: number;
+  valid_rows: number;
+  skipped_rows: number;
+}
+
 export interface EtlStepResult {
   script: string;
   ok: boolean;
   durationMs: number;
   error?: string;
+  stats?: FileParseStat[];
 }
 
 export interface EtlResult {
@@ -27,11 +35,28 @@ const SALES_WASTE_SCRIPTS = [
   'data/scripts/master_dataset_builder.py',
 ];
 
+// sales_parser.py/waste_parser.py가 stdout 마지막 줄에 "STATS_JSON:[...]" 형태로 남기는
+// 파일별 파싱 통계를 골라낸다. 다른 파서(master_dataset_builder.py 등)는 이 줄이 없어 undefined.
+function parseStatsFromStdout(stdout: string): FileParseStat[] | undefined {
+  const line = stdout
+    .split('\n')
+    .reverse()
+    .find((l) => l.startsWith('STATS_JSON:'));
+
+  if (!line) return undefined;
+
+  try {
+    return JSON.parse(line.slice('STATS_JSON:'.length));
+  } catch {
+    return undefined;
+  }
+}
+
 function runScript(scriptRelPath: string): Promise<EtlStepResult> {
   const start = Date.now();
 
   return new Promise((resolve) => {
-    execFile('python3', [scriptRelPath], { cwd: REPO_ROOT }, (error, _stdout, stderr) => {
+    execFile('python3', [scriptRelPath], { cwd: REPO_ROOT }, (error, stdout, stderr) => {
       const durationMs = Date.now() - start;
 
       if (error) {
@@ -44,9 +69,16 @@ function runScript(scriptRelPath: string): Promise<EtlStepResult> {
         return;
       }
 
-      resolve({ script: scriptRelPath, ok: true, durationMs });
+      resolve({ script: scriptRelPath, ok: true, durationMs, stats: parseStatsFromStdout(stdout) });
     });
   });
+}
+
+// 파일 하나만 업로드된 상태에서도(월 세트가 아직 안 채워졌어도) 그 파일의 파싱 통계를
+// 바로 보여주기 위해 개별 파서 스크립트만 실행한다. 전체 ETL(runSalesWasteEtl)과 별개.
+export async function runSingleParser(category: 'sales' | 'waste'): Promise<EtlStepResult> {
+  const script = category === 'sales' ? 'data/scripts/sales_parser.py' : 'data/scripts/waste_parser.py';
+  return runScript(script);
 }
 
 export async function runSalesWasteEtl(): Promise<EtlResult> {
