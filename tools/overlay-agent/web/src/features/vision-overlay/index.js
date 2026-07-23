@@ -1,2 +1,2 @@
 export { analyzePhotoLayout, LayoutAnalysisError } from "./analyzePhotoLayout";
-export { createGuide, selectFrames, withAdjustments } from "../../lib/guide";
+export { createGuide, selectFrames } from "../../lib/guide";

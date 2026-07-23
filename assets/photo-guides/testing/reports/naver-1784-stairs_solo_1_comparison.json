@@ -1,0 +1,44 @@
+{
+  "status": "ok",
+  "score": 33.58,
+  "classification": "different",
+  "calibration": "conservative-v1",
+  "components": {
+    "position": {
+      "score": 0.0,
+      "weight": 0.45,
+      "available": true
+    },
+    "size": {
+      "score": 94.03,
+      "weight": 0.25,
+      "available": true
+    },
+    "pose": {
+      "score": null,
+      "weight": 0.3,
+      "available": false
+    }
+  },
+  "people": [
+    {
+      "label": "Subject",
+      "positionDistance": 0.256942,
+      "positionScore": 0.0,
+      "sizeDistance": 0.014921,
+      "sizeScore": 94.03,
+      "sharedPoseKeypoints": [
+        "left_shoulder",
+        "nose",
+        "right_shoulder"
+      ],
+      "poseScore": null
+    }
+  ],
+  "warnings": [
+    "Person 1: fewer than four shared pose keypoints."
+  ],
+  "frameId": "naver-1784-stairs/solo/1",
+  "referencePhotoId": "naver-1784-stairs/solo/1/photo",
+  "comparisonPhotoId": "naver-1784-stairs/solo/1/comparison/photo"
+}

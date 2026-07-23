@@ -1,0 +1,75 @@
+{
+  "status": "ok",
+  "score": 80.27,
+  "classification": "high_similarity",
+  "calibration": "conservative-v1",
+  "components": {
+    "position": {
+      "score": 79.06,
+      "weight": 0.45,
+      "available": true
+    },
+    "size": {
+      "score": 78.51,
+      "weight": 0.25,
+      "available": true
+    },
+    "pose": {
+      "score": 83.55,
+      "weight": 0.3,
+      "available": true
+    }
+  },
+  "people": [
+    {
+      "label": "Left person",
+      "positionDistance": 0.04502,
+      "positionScore": 77.49,
+      "sizeDistance": 0.059548,
+      "sizeScore": 76.18,
+      "sharedPoseKeypoints": [
+        "left_ankle",
+        "left_elbow",
+        "left_hip",
+        "left_knee",
+        "left_shoulder",
+        "left_wrist",
+        "nose",
+        "right_ankle",
+        "right_elbow",
+        "right_hip",
+        "right_knee",
+        "right_shoulder",
+        "right_wrist"
+      ],
+      "poseScore": 78.8
+    },
+    {
+      "label": "Right person",
+      "positionDistance": 0.038722,
+      "positionScore": 80.64,
+      "sizeDistance": 0.047893,
+      "sizeScore": 80.84,
+      "sharedPoseKeypoints": [
+        "left_ankle",
+        "left_elbow",
+        "left_hip",
+        "left_knee",
+        "left_shoulder",
+        "left_wrist",
+        "nose",
+        "right_ankle",
+        "right_elbow",
+        "right_hip",
+        "right_knee",
+        "right_shoulder",
+        "right_wrist"
+      ],
+      "poseScore": 88.3
+    }
+  ],
+  "warnings": [],
+  "frameId": "daegu-sparkland-wheel/couple/2",
+  "referencePhotoId": "daegu-sparkland-wheel/couple/2/photo",
+  "comparisonPhotoId": "daegu-sparkland-wheel/couple/2/comparison/photo"
+}

@@ -1,0 +1,75 @@
+{
+  "status": "ok",
+  "score": 58.2,
+  "classification": "different",
+  "calibration": "conservative-v1",
+  "components": {
+    "position": {
+      "score": 62.59,
+      "weight": 0.45,
+      "available": true
+    },
+    "size": {
+      "score": 66.34,
+      "weight": 0.25,
+      "available": true
+    },
+    "pose": {
+      "score": 44.84,
+      "weight": 0.3,
+      "available": true
+    }
+  },
+  "people": [
+    {
+      "label": "Left person",
+      "positionDistance": 0.100564,
+      "positionScore": 49.72,
+      "sizeDistance": 0.063765,
+      "sizeScore": 74.49,
+      "sharedPoseKeypoints": [
+        "left_ankle",
+        "left_elbow",
+        "left_hip",
+        "left_knee",
+        "left_shoulder",
+        "left_wrist",
+        "nose",
+        "right_ankle",
+        "right_elbow",
+        "right_hip",
+        "right_knee",
+        "right_shoulder",
+        "right_wrist"
+      ],
+      "poseScore": 22.71
+    },
+    {
+      "label": "Right person",
+      "positionDistance": 0.049085,
+      "positionScore": 75.46,
+      "sizeDistance": 0.104543,
+      "sizeScore": 58.18,
+      "sharedPoseKeypoints": [
+        "left_ankle",
+        "left_elbow",
+        "left_hip",
+        "left_knee",
+        "left_shoulder",
+        "left_wrist",
+        "nose",
+        "right_ankle",
+        "right_elbow",
+        "right_hip",
+        "right_knee",
+        "right_shoulder",
+        "right_wrist"
+      ],
+      "poseScore": 66.97
+    }
+  ],
+  "warnings": [],
+  "frameId": "daegu-modern-history-museum/couple/2",
+  "referencePhotoId": "daegu-modern-history-museum/couple/2/photo",
+  "comparisonPhotoId": "daegu-modern-history-museum/couple/2/comparison/photo"
+}

@@ -1,0 +1,44 @@
+{
+  "status": "ok",
+  "score": 59.38,
+  "classification": "different",
+  "calibration": "conservative-v1",
+  "components": {
+    "position": {
+      "score": 59.55,
+      "weight": 0.45,
+      "available": true
+    },
+    "size": {
+      "score": 35.52,
+      "weight": 0.25,
+      "available": true
+    },
+    "pose": {
+      "score": 79.01,
+      "weight": 0.3,
+      "available": true
+    }
+  },
+  "people": [
+    {
+      "label": "Subject",
+      "positionDistance": 0.080907,
+      "positionScore": 59.55,
+      "sizeDistance": 0.161197,
+      "sizeScore": 35.52,
+      "sharedPoseKeypoints": [
+        "left_elbow",
+        "left_shoulder",
+        "left_wrist",
+        "nose",
+        "right_shoulder"
+      ],
+      "poseScore": 79.01
+    }
+  ],
+  "warnings": [],
+  "frameId": "daegu-modern-history-museum/solo/1",
+  "referencePhotoId": "daegu-modern-history-museum/solo/1/photo",
+  "comparisonPhotoId": "daegu-modern-history-museum/solo/1/comparison/photo"
+}

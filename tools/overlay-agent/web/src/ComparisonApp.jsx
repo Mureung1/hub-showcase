@@ -17,13 +17,13 @@ function ScoreCard({ label, score, limited }) {
 
 export default function ComparisonApp() {
   const [referenceFile, setReferenceFile] = useState(null);
-  const [guideFile, setGuideFile] = useState(null);
+  const [layoutFile, setLayoutFile] = useState(null);
   const [capturedFile, setCapturedFile] = useState(null);
   const [referencePreview, setReferencePreview] = useState("");
   const [capturedPreview, setCapturedPreview] = useState("");
-  const [guideSummary, setGuideSummary] = useState("");
+  const [layoutSummary, setLayoutSummary] = useState("");
   const [result, setResult] = useState(null);
-  const [message, setMessage] = useState("예시 사진, guide.json, 촬영 사진을 선택하세요.");
+  const [message, setMessage] = useState("예시 사진, layout JSON, 촬영 사진을 선택하세요.");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => () => {
@@ -52,23 +52,23 @@ export default function ComparisonApp() {
     setResult(null);
   }
 
-  async function selectGuide(file) {
+  async function selectLayout(file) {
     if (!file) return;
     try {
-      const guide = JSON.parse(await file.text());
-      if (!Array.isArray(guide.personFrames) || ![1, 2].includes(guide.personFrames.length)) {
-        throw new Error("인물 프레임이 1개 또는 2개인 guide.json이 필요합니다.");
+      const layout = JSON.parse(await file.text());
+      if (!Array.isArray(layout.personFrames) || ![1, 2].includes(layout.personFrames.length)) {
+        throw new Error("인물 프레임이 1개 또는 2개인 layout JSON이 필요합니다.");
       }
-      const lineCount = Array.isArray(guide.backgroundLines) ? guide.backgroundLines.length : 0;
-      if (lineCount > 5) throw new Error("배경선은 최대 5개인 guide.json만 사용할 수 있습니다.");
-      setGuideFile(file);
-      setGuideSummary(`인물 ${guide.personFrames.length}명 · 배경선 ${lineCount}개`);
+      const lineCount = Array.isArray(layout.backgroundLines) ? layout.backgroundLines.length : 0;
+      if (lineCount > 5) throw new Error("배경선은 최대 5개인 layout JSON만 사용할 수 있습니다.");
+      setLayoutFile(file);
+      setLayoutSummary(`인물 ${layout.personFrames.length}명 · 배경선 ${lineCount}개`);
       setMessage("비교할 파일을 준비했습니다.");
       setResult(null);
     } catch (error) {
-      setGuideFile(null);
-      setGuideSummary("");
-      setMessage(`guide.json을 읽지 못했습니다. ${error.message}`);
+      setLayoutFile(null);
+      setLayoutSummary("");
+      setMessage(`layout JSON을 읽지 못했습니다. ${error.message}`);
     }
   }
 
@@ -77,7 +77,7 @@ export default function ComparisonApp() {
       setLoading(true);
       setResult(null);
       setMessage("인물 배치와 배경 기준선을 비교하고 있습니다.");
-      const nextResult = await compareComposition({ referenceFile, guideFile, capturedFile });
+      const nextResult = await compareComposition({ referenceFile, layoutFile, capturedFile });
       setResult(nextResult);
       setMessage(nextResult.status === "ok" ? "구도 비교를 완료했습니다." : "인물 배치는 비교했지만 배경 분석이 제한되었습니다.");
     } catch (error) {
@@ -87,13 +87,13 @@ export default function ComparisonApp() {
     }
   }
 
-  const ready = Boolean(referenceFile && guideFile && capturedFile);
+  const ready = Boolean(referenceFile && layoutFile && capturedFile);
   return <main className="app-shell comparison-shell">
     <header className="topbar"><div className="brand"><div className="brand-mark">P</div><div><p className="eyebrow">Photo Navigation · Composition Compare</p><h1>촬영 구도 비교</h1></div></div><a className="top-link" href={pageUrl()}>레이아웃 등록으로</a></header>
-    <section className="comparison-intro"><div><p className="eyebrow">Reference + Guide + Capture</p><h2>예시 구도와 방금 찍은 사진을 비교합니다.</h2><p>인물 배치와 관리자가 등록한 배경선을 따로 확인합니다. 배경 구조를 찾지 못하면 점수를 만들지 않고 분석 제한으로 안내합니다.</p></div></section>
+    <section className="comparison-intro"><div><p className="eyebrow">Reference + Layout + Capture</p><h2>예시 구도와 방금 찍은 사진을 비교합니다.</h2><p>인물 배치와 관리자가 등록한 배경선을 따로 확인합니다. 배경 구조를 찾지 못하면 점수를 만들지 않고 분석 제한으로 안내합니다.</p></div></section>
     <section className="comparison-inputs" aria-label="구도 비교 파일 입력">
       <FilePicker label="1. 예시 사진" accept="image/jpeg,image/png,image/webp" file={referenceFile} onChange={(file) => selectImage(file, setReferenceFile, setReferencePreview, "예시 사진")} hint="가이드가 만들어진 원본" />
-      <FilePicker label="2. guide.json" accept="application/json,.json" file={guideFile} onChange={selectGuide} hint={guideSummary || "인물 프레임과 배경선"} />
+      <FilePicker label="2. layout JSON" accept="application/json,.json" file={layoutFile} onChange={selectLayout} hint={layoutSummary || "인물 프레임과 배경선"} />
       <FilePicker label="3. 촬영 사진" accept="image/jpeg,image/png,image/webp" file={capturedFile} onChange={(file) => selectImage(file, setCapturedFile, setCapturedPreview, "촬영 사진")} hint="방금 촬영한 결과" />
     </section>
     <button className="action-button comparison-action" type="button" disabled={!ready || loading} onClick={runComparison}>{loading ? "구도 비교 중..." : "구도 비교 실행"}</button>

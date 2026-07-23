@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createGuide, createPersonFrame, selectFrames, withAdjustments } from "./guide.js";
+import { createGuide, createPersonFrame, selectFrames } from "./guide.js";
 
 const person = [
   { x: 0.4, y: 0.2, visibility: 1 },
@@ -21,16 +21,10 @@ test("selects one or two frames by mode", () => {
   assert.equal(selectFrames([person, person.map((point) => ({ ...point, x: point.x - 0.3 }))], "couple").length, 2);
 });
 
-test("applies slider adjustments without leaving normalized bounds", () => {
-  const guide = {
-    personFrames: [createPersonFrame(person, 0)],
-    personOutlines: [{ label: "Subject", contours: [[[0.4, 0.2], [0.55, 0.2], [0.5, 0.72]]] }],
-    horizonY: 0.62,
-  };
-  const adjusted = withAdjustments(guide, { frameScale: 130, horizonPercent: 78 });
-  assert.equal(adjusted.horizonY, 0.78);
-  assert.ok(adjusted.personFrames[0].x + adjusted.personFrames[0].width <= 1);
-  assert.ok(adjusted.personOutlines[0].contours.flat().every(([x, y]) => x >= 0 && x <= 1 && y >= 0 && y <= 1));
+test("creates a layout without an automatic horizontal guide", () => {
+  const guide = createGuide({ personFrames: [createPersonFrame(person, 0)] });
+  assert.deepEqual(Object.keys(guide).sort(), ["analysisMeta", "backgroundLines", "personFrames", "personOutlines", "personPoses", "poseSegments", "version"]);
+  assert.deepEqual(guide.backgroundLines, []);
 });
 
 test("stores pose keypoints and scales them with the person frame", () => {
@@ -46,8 +40,7 @@ test("stores pose keypoints and scales them with the person frame", () => {
       missingKeypoints: ["left_wrist"],
     }],
   });
-  const adjusted = withAdjustments(guide, { frameScale: 120, horizonPercent: 62 });
   assert.equal(guide.poseSegments.length > 0, true);
-  assert.deepEqual(adjusted.personPoses[0].missingKeypoints, ["left_wrist"]);
-  assert.ok(Object.values(adjusted.personPoses[0].keypoints).every(([x, y]) => x >= 0 && x <= 1 && y >= 0 && y <= 1));
+  assert.deepEqual(guide.personPoses[0].missingKeypoints, ["left_wrist"]);
+  assert.ok(Object.values(guide.personPoses[0].keypoints).every(([x, y]) => x >= 0 && x <= 1 && y >= 0 && y <= 1));
 });

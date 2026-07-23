@@ -64,17 +64,13 @@ export async function analyzePhotoLayout({ file, image, mode, onProgress = () =>
     : await analyzeWithServer({ file, mode, onProgress });
 
   await nextPaint();
-  onProgress(3, "배경의 수평선과 대표 윤곽을 찾고 있습니다.");
-  const scene = { horizonY: 0.62, backgroundLines: [] };
+  onProgress(3, "촬영 가이드와 다운로드 파일을 만들고 있습니다.");
   const warning = "";
 
-  await nextPaint();
-  onProgress(4, "촬영 가이드와 다운로드 파일을 만들고 있습니다.");
   const guide = createGuide({
     personFrames: result.personFrames,
     personOutlines: result.personOutlines,
     personPoses: result.personPoses,
-    ...scene,
     analysisMeta: {
       engine: result.engine,
       models: result.models ?? {},

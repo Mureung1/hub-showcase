@@ -71,65 +71,16 @@ export function createGuide({
   personFrames,
   personOutlines = [],
   personPoses = [],
-  horizonY = 0.62,
   backgroundLines = [],
   analysisMeta = {},
 }) {
   return {
     version: 3,
     backgroundLines,
-    horizonY: clamp(horizonY),
     personFrames,
     personOutlines,
     personPoses,
     poseSegments: POSE_SEGMENTS,
     analysisMeta,
-  };
-}
-
-export function scaleOutlines(outlines, frames, scalePercent) {
-  const ratio = scalePercent / 100;
-  return outlines.map((outline, index) => {
-    const frame = frames[index];
-    if (!frame) return outline;
-    const centerX = frame.x + frame.width / 2;
-    const centerY = frame.y + frame.height / 2;
-    return {
-      ...outline,
-      contours: outline.contours.map((contour) => contour.map(([x, y]) => [
-        clamp(centerX + (x - centerX) * ratio),
-        clamp(centerY + (y - centerY) * ratio),
-      ])),
-    };
-  });
-}
-
-export function scalePoses(poses, frames, scalePercent) {
-  const ratio = scalePercent / 100;
-  return poses.map((pose, index) => {
-    const frame = frames[index];
-    if (!frame) return pose;
-    const centerX = frame.x + frame.width / 2;
-    const centerY = frame.y + frame.height / 2;
-    return {
-      ...pose,
-      keypoints: Object.fromEntries(Object.entries(pose.keypoints).map(([name, [x, y]]) => [
-        name,
-        [
-          clamp(centerX + (x - centerX) * ratio),
-          clamp(centerY + (y - centerY) * ratio),
-        ],
-      ])),
-    };
-  });
-}
-
-export function withAdjustments(guide, { frameScale, horizonPercent }) {
-  return {
-    ...guide,
-    horizonY: clamp(horizonPercent / 100),
-    personFrames: scaleFrames(guide.personFrames, frameScale),
-    personOutlines: scaleOutlines(guide.personOutlines ?? [], guide.personFrames, frameScale),
-    personPoses: scalePoses(guide.personPoses ?? [], guide.personFrames, frameScale),
   };
 }

@@ -12,6 +12,11 @@ MIN_GOOD_MATCHES = 12
 MIN_INLIERS = 10
 MIN_INLIER_RATIO = 0.35
 RANSAC_REPROJECTION_THRESHOLD = 4.0
+PERSON_POSITION_LIMIT = 0.18
+PERSON_SCALE_LIMIT = math.log(1.30)
+LINE_POSITION_LIMIT = 0.12
+LINE_ANGLE_LIMIT = 14.0
+LINE_ROI_BAND_RATIO = 0.10
 
 
 def _clamp_score(value: float) -> float:
@@ -35,8 +40,8 @@ def compare_person_layouts(reference_frames: list[dict[str, Any]], captured_fram
         reference_height = max(float(reference["height"]), 0.001)
         captured_height = max(float(captured["height"]), 0.001)
         scale_error = abs(math.log(captured_height / reference_height))
-        position_score = max(0.0, 1 - position_error / 0.25)
-        scale_score = max(0.0, 1 - scale_error / math.log(1.5))
+        position_score = max(0.0, 1 - position_error / PERSON_POSITION_LIMIT)
+        scale_score = max(0.0, 1 - scale_error / PERSON_SCALE_LIMIT)
         score = _clamp_score((position_score * 0.7 + scale_score * 0.3) * 100)
         scores.append(score)
         people.append({
@@ -58,6 +63,16 @@ def _background_mask(layout: dict[str, Any], width: int, height: int) -> np.ndar
             points = np.asarray([[[round(point[0] * width), round(point[1] * height)]] for point in contour], dtype=np.int32)
             cv2.fillPoly(mask, [points], 0)
     return mask
+
+
+def _line_roi_mask(layout: dict[str, Any], lines: list[dict[str, Any]], width: int, height: int) -> np.ndarray:
+    roi = np.zeros((height, width), dtype=np.uint8)
+    thickness = max(8, round(min(width, height) * LINE_ROI_BAND_RATIO))
+    for line in lines:
+        start = (round(line["start"][0] * width), round(line["start"][1] * height))
+        end = (round(line["end"][0] * width), round(line["end"][1] * height))
+        cv2.line(roi, start, end, 255, thickness, lineType=cv2.LINE_AA)
+    return cv2.bitwise_and(roi, _background_mask(layout, width, height))
 
 
 def _angle_degrees(start: list[float], end: list[float]) -> float:
@@ -90,9 +105,11 @@ def score_background_lines(lines: list[dict[str, Any]], homography: np.ndarray, 
         reference_angle = _angle_degrees(line["start"], line["end"])
         captured_angle = _angle_degrees(transformed_start, transformed_end)
         angle_error = _angle_difference(reference_angle, captured_angle)
-        score = _clamp_score(100 * (1 - min(1, position_error / 0.18 * 0.8 + angle_error / 20 * 0.2)))
+        score = _clamp_score(100 * (1 - min(1, position_error / LINE_POSITION_LIMIT * 0.8 + angle_error / LINE_ANGLE_LIMIT * 0.2)))
         scored_lines.append({
             "id": line.get("id"),
+            "reference": {"start": line["start"], "end": line["end"]},
+            "projected": {"start": [round(value, 6) for value in transformed_start], "end": [round(value, 6) for value in transformed_end]},
             "positionError": round(position_error, 4),
             "angleError": round(angle_error, 1),
             "score": score,
@@ -110,31 +127,32 @@ def compare_background_layout(reference_path: Path, captured_path: Path, referen
         return {"status": "limited", "score": None, "lines": [], "quality": {"reason": "image_read_failed"}}
 
     orb = cv2.ORB_create(nfeatures=2500, fastThreshold=7)
-    reference_mask = _background_mask(reference_layout, reference.shape[1], reference.shape[0])
-    captured_mask = _background_mask(captured_layout, captured.shape[1], captured.shape[0])
+    reference_mask = _line_roi_mask(reference_layout, lines, reference.shape[1], reference.shape[0])
+    captured_mask = _line_roi_mask(captured_layout, lines, captured.shape[1], captured.shape[0])
     reference_keypoints, reference_descriptors = orb.detectAndCompute(reference, reference_mask)
     captured_keypoints, captured_descriptors = orb.detectAndCompute(captured, captured_mask)
     if reference_descriptors is None or captured_descriptors is None:
-        return {"status": "limited", "score": None, "lines": [], "quality": {"reason": "not_enough_features"}}
+        return {"status": "limited", "score": None, "lines": [], "quality": {"reason": "not_enough_features", "roiBandRatio": LINE_ROI_BAND_RATIO}}
 
     matcher = cv2.BFMatcher(cv2.NORM_HAMMING)
     pairs = matcher.knnMatch(reference_descriptors, captured_descriptors, k=2)
     matches = [first for pair in pairs if len(pair) == 2 for first, second in [pair] if first.distance < second.distance * 0.75]
     if len(matches) < MIN_GOOD_MATCHES:
-        return {"status": "limited", "score": None, "lines": [], "quality": {"reason": "not_enough_matches", "goodMatches": len(matches)}}
+        return {"status": "limited", "score": None, "lines": [], "quality": {"reason": "not_enough_matches", "goodMatches": len(matches), "roiBandRatio": LINE_ROI_BAND_RATIO}}
 
     source_points = np.float32([reference_keypoints[match.queryIdx].pt for match in matches]).reshape(-1, 1, 2)
     target_points = np.float32([captured_keypoints[match.trainIdx].pt for match in matches]).reshape(-1, 1, 2)
     homography, inlier_mask = cv2.findHomography(source_points, target_points, cv2.RANSAC, RANSAC_REPROJECTION_THRESHOLD)
     if homography is None or inlier_mask is None:
-        return {"status": "limited", "score": None, "lines": [], "quality": {"reason": "homography_failed", "goodMatches": len(matches)}}
+        return {"status": "limited", "score": None, "lines": [], "quality": {"reason": "homography_failed", "goodMatches": len(matches), "roiBandRatio": LINE_ROI_BAND_RATIO}}
     inliers = int(inlier_mask.ravel().sum())
     inlier_ratio = inliers / len(matches)
     if inliers < MIN_INLIERS or inlier_ratio < MIN_INLIER_RATIO:
-        return {"status": "limited", "score": None, "lines": [], "quality": {"reason": "low_match_quality", "goodMatches": len(matches), "inliers": inliers, "inlierRatio": round(inlier_ratio, 3)}}
+        return {"status": "limited", "score": None, "lines": [], "quality": {"reason": "low_match_quality", "goodMatches": len(matches), "inliers": inliers, "inlierRatio": round(inlier_ratio, 3), "roiBandRatio": LINE_ROI_BAND_RATIO}}
 
     scored = score_background_lines(lines, homography, (reference.shape[1], reference.shape[0]), (captured.shape[1], captured.shape[0]))
-    scored["quality"] = {"goodMatches": len(matches), "inliers": inliers, "inlierRatio": round(inlier_ratio, 3)}
+    scored["quality"] = {"goodMatches": len(matches), "inliers": inliers, "inlierRatio": round(inlier_ratio, 3), "roiBandRatio": LINE_ROI_BAND_RATIO}
+    scored["visualization"] = {"projectedLines": [{"id": line["id"], "start": line["projected"]["start"], "end": line["projected"]["end"], "score": line["score"]} for line in scored["lines"]]}
     return scored
 
 
@@ -157,9 +175,9 @@ def create_feedback(person: dict[str, Any], background: dict[str, Any]) -> list[
     return feedback or ["예시 구도에 가깝습니다."]
 
 
-def compare_composition(reference_path: Path, captured_path: Path, guide: dict[str, Any], reference_layout: dict[str, Any], captured_layout: dict[str, Any]) -> dict[str, Any]:
-    person = compare_person_layouts(guide["personFrames"], captured_layout["personFrames"])
-    background = compare_background_layout(reference_path, captured_path, reference_layout, captured_layout, guide.get("backgroundLines", []))
+def compare_composition(reference_path: Path, captured_path: Path, layout: dict[str, Any], captured_layout: dict[str, Any]) -> dict[str, Any]:
+    person = compare_person_layouts(layout["personFrames"], captured_layout["personFrames"])
+    background = compare_background_layout(reference_path, captured_path, layout, captured_layout, layout.get("backgroundLines", []))
     composition_score = None
     if person.get("status") == "ok" and background.get("status") == "ok":
         composition_score = _clamp_score(person["score"] * 0.6 + background["score"] * 0.4)

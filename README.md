@@ -18,12 +18,12 @@
 
 ## Overlay Agent
 
-`tools/overlay-agent` creates a transparent camera guide PNG from a reference photo and normalized coordinate JSON.
+`tools/overlay-agent` creates a transparent camera guide PNG from a reference photo and normalized layout JSON.
 
 ```bash
 cd tools/overlay-agent
 npm install
-npm run generate -- --image <reference-image> --guide ./guides/example-guide.json --output <overlay-output>
+npm run generate -- --image <reference-image> --layout ./guides/example-layout.json --output <overlay-output>
 ```
 
-Place reference photos in `assets/photo-guides/reference/` and review generated PNG files before uploading them to Storage.
+Photo assets use `{placeId}_{mode}_{poseId}_photo`, `_layout.json`, and `_overlay.png` names under `assets/photo-guides/`. `manifest.json` maps their stable IDs to future DB records.

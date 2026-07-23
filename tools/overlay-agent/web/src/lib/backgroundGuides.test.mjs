@@ -4,7 +4,8 @@ import { MAX_BACKGROUND_LINES, createBackgroundLine, removeMostRecentLine } from
 
 test("creates a normalized background line from two canvas points", () => {
   const line = createBackgroundLine([], { x: 0.2, y: 0.3 }, { x: 0.8, y: 0.5 });
-  assert.deepEqual(line, { id: "line-1", start: [0.2, 0.3], end: [0.8, 0.5] });
+  assert.match(line.id, /^line_[0-9a-f-]{36}$/);
+  assert.deepEqual({ start: line.start, end: line.end }, { start: [0.2, 0.3], end: [0.8, 0.5] });
 });
 
 test("rejects a too-short line and a sixth background line", () => {
@@ -14,6 +15,6 @@ test("rejects a too-short line and a sixth background line", () => {
 });
 
 test("removes only the most recently registered line", () => {
-  const lines = [{ id: "line-1" }, { id: "line-2" }];
-  assert.deepEqual(removeMostRecentLine(lines), [{ id: "line-1" }]);
+  const lines = [{ id: "line_first" }, { id: "line_second" }];
+  assert.deepEqual(removeMostRecentLine(lines), [{ id: "line_first" }]);
 });

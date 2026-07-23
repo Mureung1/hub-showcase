@@ -1,13 +1,13 @@
 export class CompositionComparisonError extends Error {}
 
-export async function compareComposition({ referenceFile, guideFile, capturedFile }) {
-  if (!referenceFile || !guideFile || !capturedFile) {
-    throw new CompositionComparisonError("예시 사진, guide.json, 촬영 사진을 모두 선택하세요.");
+export async function compareComposition({ referenceFile, layoutFile, capturedFile }) {
+  if (!referenceFile || !layoutFile || !capturedFile) {
+    throw new CompositionComparisonError("예시 사진, layout JSON, 촬영 사진을 모두 선택하세요.");
   }
 
   const body = new FormData();
   body.append("reference_file", referenceFile);
-  body.append("guide_file", guideFile);
+  body.append("layout_file", layoutFile);
   body.append("captured_file", capturedFile);
 
   let response;

@@ -16,7 +16,7 @@ It is for preparing reference-frame data, not real-time user coaching. A person 
 
 ## Composition comparison module
 
-`src/composition_compare.py` is a reusable, model-independent comparison module. The FastAPI `POST /api/compare` route accepts a reference image, an approved `guide.json`, and a captured image.
+`src/composition_compare.py` is a reusable, model-independent comparison module. The FastAPI `POST /api/compare` route accepts an approved reference layout JSON and a captured image; the reference photo is not analyzed again.
 
 - Person layout: count, normalized center position, and height
 - Background layout: ORB feature matching outside person masks, RANSAC homography, and manually registered line endpoint and angle differences
@@ -82,6 +82,6 @@ Pose lines are an overall composition guide only. The tool does not analyse faci
 
 ## Integration boundary
 
-This tool is intentionally independent from the product React app. The local Studio calls the FastAPI endpoint and downloads approved `guide.json` and Overlay PNG files. A future registration module will upload those approved files to Supabase Storage and save their URLs and metadata in the database.
+This tool is intentionally independent from the product React app. The local Studio calls the FastAPI endpoint and downloads approved layout JSON and Overlay PNG files. A future registration module will upload those approved files to Supabase Storage and save their URLs and metadata in the database.
 
 The first run needs internet access for model download. Input photos are processed locally and are not sent to an external Vision API.

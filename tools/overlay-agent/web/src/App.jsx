@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { analyzePhotoLayout, LayoutAnalysisError, withAdjustments } from "./features/vision-overlay";
+import { analyzePhotoLayout, LayoutAnalysisError } from "./features/vision-overlay";
 import { MAX_BACKGROUND_LINES, createBackgroundLine, removeMostRecentLine } from "./lib/backgroundGuides";
 
 const emptyMessage = "사진을 선택한 뒤 AI 레이아웃 생성을 시작하세요.";
@@ -35,15 +35,6 @@ function drawOverlay(context, guide, width, height, opacity) {
     context.lineTo(line.end[0] * width, line.end[1] * height);
     context.stroke();
   });
-  const horizonY = guide.horizonY * height;
-  context.strokeStyle = "#ffffff";
-  context.lineWidth = Math.max(1, strokeWidth - 1);
-  context.setLineDash([strokeWidth * 4, strokeWidth * 3]);
-  context.beginPath();
-  context.moveTo(0, horizonY);
-  context.lineTo(width, horizonY);
-  context.stroke();
-  context.setLineDash([]);
   context.restore();
 
   if (guide.personOutlines?.length) {
@@ -129,10 +120,10 @@ function GuideCanvas({ image, guide, opacity, previewCanvasRef, overlayCanvasRef
 }
 
 function AnalysisProgress({ phase, progressStep, message }) {
-  const steps = ["서버 연결", "YOLO·SAM2", "수평 가이드", "가이드 생성"];
+  const steps = ["서버 연결", "YOLO·SAM2", "가이드 생성"];
   return (
     <section className={`analysis-progress ${phase === "error" ? "error" : ""}`} aria-live="polite">
-      <div className="analysis-progress-head"><strong>{phase === "ready" ? "분석 완료" : phase === "loading" ? "분석 진행 중" : phase === "error" ? "분석 안내" : "가이드 구성"}</strong><span>{phase === "loading" ? `${progressStep}/4` : phase === "ready" ? "4/4" : ""}</span></div>
+      <div className="analysis-progress-head"><strong>{phase === "ready" ? "분석 완료" : phase === "loading" ? "분석 진행 중" : phase === "error" ? "분석 안내" : "가이드 구성"}</strong><span>{phase === "loading" ? `${progressStep}/3` : phase === "ready" ? "3/3" : ""}</span></div>
       <ol className="analysis-steps">
         {steps.map((step, index) => <li className={index + 1 < progressStep || phase === "ready" ? "done" : index + 1 === progressStep && phase === "loading" ? "active" : ""} key={step}>{step}</li>)}
       </ol>
@@ -156,7 +147,6 @@ function App() {
   const [lineRegistration, setLineRegistration] = useState(false);
   const [draftStart, setDraftStart] = useState(null);
   const [hoverPoint, setHoverPoint] = useState(null);
-  const [horizon, setHorizon] = useState(62);
   const [opacity, setOpacity] = useState(88);
   const [phase, setPhase] = useState("idle");
   const [message, setMessage] = useState(emptyMessage);
@@ -164,8 +154,8 @@ function App() {
 
   const guide = useMemo(() => {
     if (!baseGuide) return null;
-    return withAdjustments({ ...baseGuide, backgroundLines }, { frameScale: 100, horizonPercent: horizon });
-  }, [baseGuide, backgroundLines, horizon]);
+    return { ...baseGuide, backgroundLines };
+  }, [baseGuide, backgroundLines]);
 
   useEffect(() => () => {
     if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
@@ -204,6 +194,10 @@ function App() {
     if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
     const objectUrl = URL.createObjectURL(file);
     objectUrlRef.current = objectUrl;
+    setBackgroundLines([]);
+    setLineRegistration(false);
+    setDraftStart(null);
+    setHoverPoint(null);
     const uploadedImage = new Image();
     uploadedImage.onload = () => {
       setImage(uploadedImage);
@@ -241,11 +235,10 @@ function App() {
         },
       });
       setBaseGuide(nextGuide);
-      setHorizon(Math.round(nextGuide.horizonY * 100));
       setPhase("ready");
-      setProgressStep(4);
+      setProgressStep(3);
       const seconds = timings?.total ? ` (${(timings.total / 1000).toFixed(1)}초)` : "";
-      setMessage(`${engine} 분석 완료${seconds}: ${mode === "solo" ? "인물 1명" : "인물 2명"}의 ${engine === "YOLO + SAM2" ? "정밀 윤곽과 " : "프레임과 "}배경 가이드를 생성했습니다.${warning ? ` ${warning}` : ""}`);
+      setMessage(`${engine} 분석 완료${seconds}: ${mode === "solo" ? "인물 1명" : "인물 2명"}의 ${engine === "YOLO + SAM2" ? "정밀 윤곽" : "프레임"}을 생성했습니다.${warning ? ` ${warning}` : ""}`);
     } catch (error) {
       setBaseGuide(null);
       setPhase("error");
@@ -313,11 +306,11 @@ function App() {
     link.click();
   }
 
-  function downloadGuide() {
+  function downloadLayout() {
     if (!guide) return;
     const payload = { ...guide, renderOptions: { opacity } };
     const link = document.createElement("a");
-    link.download = `${fileName}-guide.json`;
+    link.download = `${fileName}_layout.json`;
     link.href = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(link.href), 0);
@@ -336,7 +329,7 @@ function App() {
             <h1>사진 레이아웃 Agent</h1>
           </div>
         </div>
-        <div className="header-actions"><p className="status"><strong>{browserAnalysisMode ? "브라우저 Vision" : "로컬 YOLO + SAM2"}</strong> · 사진은 외부 Vision API로 전송되지 않습니다.</p><a className="top-link" href={`${import.meta.env.BASE_URL}compare/`}>촬영 구도 비교</a></div>
+        <div className="header-actions"><p className="status"><strong>{browserAnalysisMode ? "브라우저 Vision" : "로컬 YOLO + SAM2"}</strong> · 사진은 외부 Vision API로 전송되지 않습니다.</p><a className="top-link" href={`${import.meta.env.BASE_URL}background-editor/`}>배경선 편집</a><a className="top-link" href={`${import.meta.env.BASE_URL}compare/`}>촬영 구도 비교</a></div>
       </header>
 
       <section className="workspace" aria-label="사진 레이아웃 작업 공간">
@@ -356,13 +349,12 @@ function App() {
               <button className={`segment ${mode === "solo" ? "active" : ""}`} onClick={() => chooseMode("solo")} type="button">1인</button>
               <button className={`segment ${mode === "couple" ? "active" : ""}`} onClick={() => chooseMode("couple")} type="button">커플</button>
             </div>
-            <RangeControl title="수평 가이드" displayValue={`${horizon}%`} min="35" max="78" inputValue={horizon} onChange={setHorizon} disabled={!baseGuide} />
             <RangeControl title="Overlay 투명도" displayValue={`${opacity}%`} min="0" max="100" inputValue={opacity} onChange={setOpacity} disabled={!baseGuide} />
             <div className="workflow"><div><b>1</b>사진 선택</div><i>→</i><div><b>2</b>AI 분석</div><i>→</i><div><b>3</b>Overlay</div></div>
             <button className="action-button" onClick={analyze} type="button" disabled={phase === "loading"}>{phase === "loading" ? "AI 분석 중..." : baseGuide ? "AI 레이아웃 재분석" : "AI 레이아웃 생성"}</button>
             <div className="line-registration-controls"><div className="control-label">배경선 등록<span>{backgroundLines.length} / {MAX_BACKGROUND_LINES}</span></div><div className="line-registration-actions"><button className="line-button" type="button" disabled={!baseGuide || backgroundLines.length >= MAX_BACKGROUND_LINES} onClick={startLineRegistration}>{lineRegistration ? "선 등록 중" : "선 등록"}</button><button className="undo-button" type="button" disabled={!draftStart && !backgroundLines.length} onClick={undoBackgroundLine}>되돌리기</button></div><p>건물 지붕·무대 외곽처럼 고정된 구조를 최대 5개까지 등록하세요.</p></div>
             <button className="download-button" onClick={downloadOverlay} type="button" disabled={!canDownload}>Overlay PNG 다운로드</button>
-            <button className="json-button" onClick={downloadGuide} type="button" disabled={!canDownload}>guide.json 다운로드</button>
+            <button className="json-button" onClick={downloadLayout} type="button" disabled={!canDownload}>layout JSON 다운로드</button>
             <AnalysisProgress phase={phase} progressStep={progressStep} message={message} />
           </div>
         </aside>
@@ -370,7 +362,7 @@ function App() {
         <article className="panel after">
           <div className="panel-head"><h2 className="panel-title">After · AI 레이아웃 가이드</h2><span className="panel-kicker">{guide ? `${mode === "solo" ? "1인" : "커플"} · ${image.naturalWidth} × ${image.naturalHeight}` : "생성 전"}</span></div>
           <div className="image-stage">
-            {image && guide ? <GuideCanvas image={image} guide={guide} opacity={opacity} previewCanvasRef={previewCanvasRef} overlayCanvasRef={overlayCanvasRef} lineRegistration={lineRegistration} draftStart={draftStart} hoverPoint={hoverPoint} onCanvasPoint={registerCanvasPoint} onHoverPoint={setHoverPoint} /> : <EmptyStage title="촬영 가이드를 준비합니다" text="사진을 선택한 뒤 AI 레이아웃을 생성하면 인물 윤곽과 수평 가이드가 표시됩니다." icon="✦" />}
+            {image && guide ? <GuideCanvas image={image} guide={guide} opacity={opacity} previewCanvasRef={previewCanvasRef} overlayCanvasRef={overlayCanvasRef} lineRegistration={lineRegistration} draftStart={draftStart} hoverPoint={hoverPoint} onCanvasPoint={registerCanvasPoint} onHoverPoint={setHoverPoint} /> : <EmptyStage title="촬영 가이드를 준비합니다" text="사진을 선택한 뒤 AI 레이아웃을 생성하면 인물 윤곽이 표시됩니다." icon="✦" />}
           </div>
           <div className="result-note"><strong>PNG 결과물</strong>은 원본 사진 위에 보이는 안내선만 포함하는 투명 이미지입니다.</div>
         </article>

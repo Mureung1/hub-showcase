@@ -1,0 +1,75 @@
+{
+  "status": "ok",
+  "score": 52.89,
+  "classification": "different",
+  "calibration": "conservative-v1",
+  "components": {
+    "position": {
+      "score": 76.81,
+      "weight": 0.45,
+      "available": true
+    },
+    "size": {
+      "score": 29.8,
+      "weight": 0.25,
+      "available": true
+    },
+    "pose": {
+      "score": 36.24,
+      "weight": 0.3,
+      "available": true
+    }
+  },
+  "people": [
+    {
+      "label": "Left person",
+      "positionDistance": 0.045409,
+      "positionScore": 77.3,
+      "sizeDistance": 0.136577,
+      "sizeScore": 45.37,
+      "sharedPoseKeypoints": [
+        "left_ankle",
+        "left_elbow",
+        "left_hip",
+        "left_knee",
+        "left_shoulder",
+        "left_wrist",
+        "nose",
+        "right_ankle",
+        "right_elbow",
+        "right_hip",
+        "right_knee",
+        "right_shoulder",
+        "right_wrist"
+      ],
+      "poseScore": 24.6
+    },
+    {
+      "label": "Right person",
+      "positionDistance": 0.047363,
+      "positionScore": 76.32,
+      "sizeDistance": 0.21441,
+      "sizeScore": 14.24,
+      "sharedPoseKeypoints": [
+        "left_ankle",
+        "left_elbow",
+        "left_hip",
+        "left_knee",
+        "left_shoulder",
+        "left_wrist",
+        "nose",
+        "right_ankle",
+        "right_elbow",
+        "right_hip",
+        "right_knee",
+        "right_shoulder",
+        "right_wrist"
+      ],
+      "poseScore": 47.87
+    }
+  ],
+  "warnings": [],
+  "frameId": "naver-1784-stairs/couple/2",
+  "referencePhotoId": "naver-1784-stairs/couple/2/photo",
+  "comparisonPhotoId": "naver-1784-stairs/couple/2/comparison/photo"
+}

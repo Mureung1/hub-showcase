@@ -1,6 +1,5 @@
 {
-  "buildingOutline": [[0.12, 0.31], [0.45, 0.18], [0.82, 0.34]],
-  "horizonY": 0.62,
+  "version": 4,
   "backgroundLines": [
     {
       "id": "line-1",
@@ -12,5 +11,7 @@
     { "x": 0.25, "y": 0.46, "width": 0.2, "height": 0.42, "label": "Left person" },
     { "x": 0.55, "y": 0.46, "width": 0.2, "height": 0.42, "label": "Right person" }
   ],
-  "buildingLabel": "Background outline"
+  "personOutlines": [],
+  "personPoses": [],
+  "analysisMeta": {}
 }
