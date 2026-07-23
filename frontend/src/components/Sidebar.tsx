@@ -1,5 +1,6 @@
-import type { SVGProps } from 'react'
-import { NavLink } from 'react-router-dom'
+import { useEffect, useRef, useState, type SVGProps } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { getAuthSession, logout } from '../api/auth'
 import './Sidebar.css'
 
 type IconProps = SVGProps<SVGSVGElement>
@@ -64,10 +65,46 @@ const MENU_ITEMS: MenuItem[] = [
 ]
 
 function Sidebar({
-  user = { name: '세원', initial: '세' },
+  user,
   className = '',
 }: SidebarProps) {
-  const initial = user.initial ?? user.name.trim().charAt(0)
+  const navigate = useNavigate()
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false)
+  const profileAreaRef = useRef<HTMLDivElement>(null)
+  const logoutButtonRef = useRef<HTMLButtonElement>(null)
+  const sessionUser = getAuthSession()?.user
+  const displayName =
+    user?.name.trim() ||
+    sessionUser?.name?.trim() ||
+    sessionUser?.email.split('@')[0] ||
+    '사용자'
+  const initial = user?.initial?.trim() || displayName.charAt(0)
+
+  useEffect(() => {
+    if (!isLogoutOpen) return
+
+    logoutButtonRef.current?.focus()
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!profileAreaRef.current?.contains(event.target as Node)) {
+        setIsLogoutOpen(false)
+      }
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsLogoutOpen(false)
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isLogoutOpen])
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <aside className={`tastefit-sidebar ${className}`.trim()}>
@@ -92,13 +129,45 @@ function Sidebar({
         ))}
       </nav>
 
-      <NavLink className="tastefit-sidebar__profile" to="/profile" aria-label={`${user.name} 프로필`}>
-        <span className="tastefit-sidebar__avatar" aria-hidden="true">{initial}</span>
-        <span className="tastefit-sidebar__profile-copy">
-          <strong>{user.name}</strong>
-          <small>내 프로필</small>
-        </span>
-      </NavLink>
+      <div className="tastefit-sidebar__profile-area" ref={profileAreaRef}>
+        {isLogoutOpen && (
+          <div
+            className="tastefit-sidebar__logout-popover"
+            role="dialog"
+            aria-label="로그아웃 확인"
+          >
+            <strong>로그아웃 하시겠습니까?</strong>
+            <p>다시 이용하려면 로그인이 필요합니다.</p>
+            <div className="tastefit-sidebar__logout-actions">
+              <button type="button" onClick={() => setIsLogoutOpen(false)}>
+                취소
+              </button>
+              <button
+                className="tastefit-sidebar__logout-confirm"
+                ref={logoutButtonRef}
+                type="button"
+                onClick={handleLogout}
+              >
+                로그아웃
+              </button>
+            </div>
+          </div>
+        )}
+
+        <button
+          className="tastefit-sidebar__profile"
+          type="button"
+          aria-label={`${displayName} 프로필 메뉴`}
+          aria-expanded={isLogoutOpen}
+          onClick={() => setIsLogoutOpen((current) => !current)}
+        >
+          <span className="tastefit-sidebar__avatar" aria-hidden="true">{initial}</span>
+          <span className="tastefit-sidebar__profile-copy">
+            <strong>{displayName}</strong>
+            <small>내 프로필</small>
+          </span>
+        </button>
+      </div>
     </aside>
   )
 }

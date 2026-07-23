@@ -83,6 +83,8 @@ export const localReviewRepository: ReviewRepository = {
       ...input,
       authorId: '',
       authorName: '사용자',
+      likeCount: 0,
+      likedByMe: false,
       likedCategories: [],
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),

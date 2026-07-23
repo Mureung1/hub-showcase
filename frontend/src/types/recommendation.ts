@@ -24,12 +24,12 @@ export const RECOMMENDATION_SITUATION_INFO: Record<
   },
   valueMeal: {
     emoji: '💰',
-    title: '가성비 좋은 식사',
+    title: '가성비 좋은 장소',
     description: '가성비와 맛을 중심으로 찾아요.',
   },
   quickMeal: {
     emoji: '⚡',
-    title: '기다림 적은 빠른 식사',
+    title: '기다림이 적은 장소',
     description: '평균 웨이팅이 짧은 곳을 찾아요.',
   },
 }

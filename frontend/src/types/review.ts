@@ -37,6 +37,9 @@ export type Review = {
   kakaoPlaceId: string
   authorId: string
   authorName: string
+  isMine?: boolean
+  likeCount: number
+  likedByMe: boolean
   rating: number
   tasteRating: number | null
   valueRating: number | null

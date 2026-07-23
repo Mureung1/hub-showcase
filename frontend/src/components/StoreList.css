@@ -11,6 +11,9 @@
 .store-card { display: grid; width: 100%; gap: 10px; padding: 17px; border: 1px solid #e4dfd5; border-radius: 16px; background: #fff; color: #28251f; box-sizing: border-box; }
 .store-card:hover { border-color: #d4c46d; background: #fffdf7; }
 .store-card--selected { border-color: #e3c329; background: #fff8d8; box-shadow: 0 0 0 2px rgba(255, 216, 77, .22); }
+.store-card--recommended { position: relative; border-color: #e3c329; border-left-width: 4px; background: linear-gradient(135deg, #fffbed, #fff); box-shadow: 0 8px 20px rgba(154, 124, 0, .12); }
+.store-card--recommended.store-card--selected { background: #fff8d8; box-shadow: 0 0 0 2px rgba(255, 216, 77, .24), 0 8px 20px rgba(154, 124, 0, .12); }
+.store-card__recommendation-badge { justify-self: start; padding: 5px 9px; border-radius: 999px; color: #765f00; background: #fff1a8; font-size: 10px; font-weight: 800; line-height: 1; }
 .store-card__select { display: grid; width: 100%; gap: 7px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .store-card__detail { justify-self: end; min-height: 34px; padding: 0 13px; border: 1px solid #d8d1c4; border-radius: 9px; background: #fffcf5; color: #4c463e; font-size: 12px; font-weight: 750; cursor: pointer; }
 .store-card__detail:hover { border-color: #d6b62d; background: #fff8d8; }

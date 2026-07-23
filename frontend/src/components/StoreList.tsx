@@ -4,6 +4,7 @@ import './StoreList.css'
 
 type StoreListProps = {
   stores: Store[]
+  recommendedStoreId: string | null
   selectedStoreId: string | null
   isLoading: boolean
   hasMore: boolean
@@ -29,6 +30,7 @@ function formatDistance(distance: number) {
 
 function StoreList({
   stores,
+  recommendedStoreId,
   selectedStoreId,
   isLoading,
   hasMore,
@@ -90,6 +92,7 @@ function StoreList({
       <div className="store-list__items">
         {stores.map((store) => {
           const isSelected = store.id === selectedStoreId
+          const isRecommended = store.id === recommendedStoreId
 
           return (
             <article
@@ -97,9 +100,21 @@ function StoreList({
                 if (element) cardRefs.current.set(store.id, element)
                 else cardRefs.current.delete(store.id)
               }}
-              className={`store-card${isSelected ? ' store-card--selected' : ''}`}
+              className={[
+                'store-card',
+                isSelected && 'store-card--selected',
+                isRecommended && 'store-card--recommended',
+              ]
+                .filter(Boolean)
+                .join(' ')}
               key={store.id}
             >
+              {isRecommended && (
+                <span className="store-card__recommendation-badge">
+                  상황 추천 1위
+                </span>
+              )}
+
               <button
                 className="store-card__select"
                 type="button"

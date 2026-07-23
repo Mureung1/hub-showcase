@@ -8,6 +8,28 @@
   color: #28251f;
 }
 
+.review-card--featured {
+  border-color: #d9bd3b;
+  border-left-width: 4px;
+  background: #fffdf5;
+  box-shadow: 0 8px 20px rgba(154, 124, 0, .1);
+}
+
+.review-card--separate-after {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.review-card--separate-after::after {
+  position: absolute;
+  right: 0;
+  bottom: -13px;
+  left: 0;
+  height: 1px;
+  background: #ded8ce;
+  content: '';
+}
+
 .review-card__header,
 .review-card__header > div {
   display: flex;
@@ -27,6 +49,15 @@
   color: #a38400;
   font-size: 13px;
   font-weight: 750;
+}
+
+.review-card__mine {
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: #765f00;
+  background: #fff1a8;
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .review-card__match {
@@ -68,6 +99,36 @@
 .review-card__date {
   color: #aaa398;
   font-size: 11px;
+}
+
+.review-card__like {
+  justify-self: end;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #e2d9cf;
+  border-radius: 999px;
+  color: #746b62;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.review-card__like:hover:not(:disabled),
+.review-card__like--active {
+  border-color: #c47f65;
+  color: #a85f49;
+  background: #fff4ef;
+}
+
+.review-card__like:focus-visible {
+  outline: 3px solid rgba(196, 127, 101, .25);
+  outline-offset: 2px;
+}
+
+.review-card__like:disabled {
+  cursor: not-allowed;
+  opacity: .48;
 }
 
 @media (max-width: 560px) {

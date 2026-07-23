@@ -71,6 +71,9 @@ function MainPage() {
         a.distance - b.distance
       )
     })
+  const recommendedStoreId = selectedSituation
+    ? storesWithReviews[0]?.id ?? null
+    : null
 
   useEffect(() => {
     if (!storeIdsKey) return
@@ -304,6 +307,7 @@ function MainPage() {
           >
             <StoreList
               stores={storesWithReviews}
+              recommendedStoreId={recommendedStoreId}
               selectedStoreId={selectedStoreId}
               isLoading={isSearching}
               hasMore={hasMoreResults}
