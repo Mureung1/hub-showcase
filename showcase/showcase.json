@@ -1,0 +1,22 @@
+{
+    "schemaVersion": 1,
+    "title": "소상공인 정부 지원금 큐레이터",
+    "summary": "정부 지원금 정보가 여러 기관 사이트에 흩어져 있어, 소상공인이 자신에게 맞는 지원금을 한눈에 파악하기 어려운 문제를 해결하는 서비스입니다.",
+    "githubUser": "syd348(신서연)",
+    "demoUrl": "https://hub.syd348.com",
+    "thumbnail": "thumbnail.webp",
+    "screenshots": [],
+    "problem": "정부24, 소상공인시장진흥공단, 지자체 등 여러 기관 사이트에 정보가 흩어져 있어, 내 조건에 맞는 지원금을 검색·비교하기가 어렵습니다.",
+    "targetUsers": ["소상공인"],
+    "features": ["지원금 매칭 서비스", "지원금 찾기", "지원금 매칭"],
+    "featureTags": ["지원금 매칭", "지원금 찾기", "지원금 매칭 서비스"],
+    "techStack": ["React", "TypeScript", "Tailwind CSS", "Supabase"],
+    "techHighlights": [],
+    "developmentWithAI": "저는 문제와 핵심 기능을 정했습니다. AI는 요구사항을 작업으로 나누고 코드 초안을 만들었습니다. 저는 결과를 실행하고 테스트하면서 수정했습니다.",
+    "agent": {
+      "summary": "Cursor, Claude를 사용하여 개발했습니다.",
+      "agentTools": [],
+      "workflows": []
+    }
+  }
+  
