@@ -34,6 +34,19 @@ export const MAJOR_DATA = {
           },
         },
       },
+      "인공지능컴퓨팅전공": {
+        totalCredits: 140,
+        majorCredits: 72,
+        hasTracks: false,
+      },
+      "플랫폼소프트웨어전공": {
+        totalCredits: 140,
+        majorCredits: 78,
+        requirements: [
+          { label: "현장실습", value: 3, unit: "학점" },
+        ],
+        hasTracks: false,
+      },
     },
   },
 };
