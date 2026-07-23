@@ -97,7 +97,7 @@ resultsRouter.get('/:id/participants', async (req, res) => {
   res.status(200).json(response)
 })
 
-// study: 
+// study: 관리자- 마감요청.
 resultsRouter.put('/:id/participants/:participantId/close', async (req, res) => {
   const db = requireSupabase(res)
   if (!db) return

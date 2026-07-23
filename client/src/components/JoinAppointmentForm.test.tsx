@@ -70,23 +70,28 @@ describe('JoinAppointmentForm', () => {
     expect(onSuccess).toHaveBeenCalledWith({ participantId: 'p1', role: 'participant' }, 'abc-123')
   })
 
-  it('appointmentId에 이미 세션이 저장되어 있으면 API 호출 없이 바로 onSuccess를 호출한다', async () => {
+  it('appointmentId에 이미 세션이 저장되어 있어도 참여 API로 다시 인증한다', async () => {
     const onSuccess = vi.fn()
     setSession('abc-123', { participantId: 'p9', role: 'participant' })
+    postMock.mockResolvedValueOnce({ data: { participantId: 'p1', role: 'participant' } })
     render(<JoinAppointmentForm appointmentId="abc-123" onSuccess={onSuccess} />)
 
     fillNameAndPassword('철수', '1234')
     submit()
 
     await waitFor(() => {
-      expect(onSuccess).toHaveBeenCalledWith({ participantId: 'p9', role: 'participant' }, 'abc-123')
+      expect(postMock).toHaveBeenCalledWith('/api/appointments/abc-123/participants', {
+        name: '철수',
+        password: '1234',
+      })
     })
-    expect(postMock).not.toHaveBeenCalled()
+    expect(onSuccess).toHaveBeenCalledWith({ participantId: 'p1', role: 'participant' }, 'abc-123')
   })
 
-  it('링크로 파싱된 id에 이미 세션이 저장되어 있으면 API 호출 없이 바로 onSuccess를 호출한다', async () => {
+  it('링크로 파싱된 id에 이미 세션이 저장되어 있어도 참여 API로 다시 인증한다', async () => {
     const onSuccess = vi.fn()
     setSession('xyz-789', { participantId: 'p10', role: 'admin' })
+    postMock.mockResolvedValueOnce({ data: { participantId: 'p2', role: 'participant' } })
     render(<JoinAppointmentForm onSuccess={onSuccess} />)
 
     fireEvent.change(screen.getByLabelText('참여 링크'), {
@@ -96,9 +101,12 @@ describe('JoinAppointmentForm', () => {
     submit()
 
     await waitFor(() => {
-      expect(onSuccess).toHaveBeenCalledWith({ participantId: 'p10', role: 'admin' }, 'xyz-789')
+      expect(postMock).toHaveBeenCalledWith('/api/appointments/xyz-789/participants', {
+        name: '영희',
+        password: '5678',
+      })
     })
-    expect(postMock).not.toHaveBeenCalled()
+    expect(onSuccess).toHaveBeenCalledWith({ participantId: 'p2', role: 'participant' }, 'xyz-789')
   })
 
   it('appointmentId가 없으면 붙여넣은 링크를 파싱해서 그 id로 API를 호출한다', async () => {
