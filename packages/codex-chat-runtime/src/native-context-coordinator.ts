@@ -272,7 +272,10 @@ function cloneProbeOptions(
 ): Omit<RunNativeContextProbeOptions, 'signal'> {
   return Object.freeze({
     ...options,
-    bundle: Object.freeze({ ...options.bundle }),
+    // The verifier freezes this object and retains its launch authority by
+    // identity. Preserve that opaque capability so every sidecar can perform
+    // a fresh complete-tree re-attestation.
+    bundle: options.bundle,
     environment: Object.freeze({ ...options.environment }),
     application: Object.freeze({ ...options.application }),
     budgets: options.budgets

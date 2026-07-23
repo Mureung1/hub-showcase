@@ -40,6 +40,23 @@ const SECOND_SNAPSHOT: NativeContextProbeSnapshot = {
   ],
 }
 
+test('preserves the verifier-issued bundle capability across coordination', async () => {
+  const options = probeOptions()
+  const coordinator = new NativeContextGenerationCoordinator({
+    ...options,
+    runProbe: async (probeInput) => {
+      assert.equal(probeInput.bundle, options.bundle)
+      return FIRST_SNAPSHOT
+    },
+  })
+  const signal = neverAbortedSignal()
+
+  await Promise.all([
+    coordinator.readEffectiveConfig({ signal }),
+    coordinator.listEffectiveSkills({ signal }),
+  ])
+})
+
 test('sequential config and Skill reads share one fully-settled generation', async () => {
   let calls = 0
   const coordinator = createCoordinator(async () => {
