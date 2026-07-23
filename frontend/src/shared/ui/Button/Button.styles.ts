@@ -16,9 +16,9 @@ export const StyledButton = styled.button<{ variant: ButtonVariant }>`
   cursor: pointer;
   transition: background-color ${({ theme }) => theme.motion.duration.fast} ${({ theme }) => theme.motion.easing.standard};
 
-  ${({ theme, variant }) =>
-    variant === 'brand'
-      ? `
+  ${({ theme, variant }) => {
+    if (variant === 'brand') {
+      return `
         background: ${theme.colors.fill.brand};
         color: ${theme.colors.text.inverse};
 
@@ -30,9 +30,13 @@ export const StyledButton = styled.button<{ variant: ButtonVariant }>`
           background: ${theme.colors.fill.brandPressed};
         }
       `
-      : `
-        background: ${theme.colors.fill.neutral};
-        color: ${theme.colors.text.primary};
+    }
+
+    if (variant === 'outline') {
+      return `
+        background: ${theme.colors.background.elevated};
+        color: ${theme.colors.text.tertiary};
+        border: 1px solid ${theme.colors.border.default};
 
         &:hover:not(:disabled) {
           background: ${theme.colors.fill.neutralHover};
@@ -41,7 +45,22 @@ export const StyledButton = styled.button<{ variant: ButtonVariant }>`
         &:active:not(:disabled) {
           background: ${theme.colors.fill.neutralPressed};
         }
-      `}
+      `
+    }
+
+    return `
+      background: ${theme.colors.fill.neutral};
+      color: ${theme.colors.text.primary};
+
+      &:hover:not(:disabled) {
+        background: ${theme.colors.fill.neutralHover};
+      }
+
+      &:active:not(:disabled) {
+        background: ${theme.colors.fill.neutralPressed};
+      }
+    `
+  }}
 
   &:disabled {
     background: ${({ theme }) => theme.colors.fill.disabled};
