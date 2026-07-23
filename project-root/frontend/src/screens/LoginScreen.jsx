@@ -2,14 +2,30 @@
 import { useState } from "react";
 import "./LoginScreen.css";
 import PrimaryButton from "../components/PrimaryButton";
+import { supabase } from "../api/supabaseClient";
 
-export default function LoginScreen({ onLogin }) {
+export default function LoginScreen({ onLogin, onNavigateToSignup }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    onLogin?.({ email });
+    setError("");
+    setSubmitting(true);
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    setSubmitting(false);
+
+    if (authError) {
+      setError(
+        authError.message.toLowerCase().includes("confirm")
+          ? "이메일 인증이 아직 완료되지 않았어요. 가입 시 받은 메일의 링크를 먼저 확인해주세요."
+          : "이메일 또는 비밀번호가 올바르지 않아요."
+      );
+      return;
+    }
+    onLogin?.(data.user);
   }
 
   return (
@@ -28,6 +44,7 @@ export default function LoginScreen({ onLogin }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="school@campus.ac.kr"
+            required
           />
         </div>
         <div className="field">
@@ -38,11 +55,20 @@ export default function LoginScreen({ onLogin }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
+            required
           />
         </div>
       </div>
 
-      <PrimaryButton type="submit">로그인</PrimaryButton>
+      {error && <p className="login-screen__error">{error}</p>}
+
+      <PrimaryButton type="submit" disabled={submitting}>
+        {submitting ? "로그인 중..." : "로그인"}
+      </PrimaryButton>
+
+      <button type="button" className="login-screen__link" onClick={() => onNavigateToSignup?.()}>
+        계정이 없으신가요? 회원가입
+      </button>
     </form>
   );
 }

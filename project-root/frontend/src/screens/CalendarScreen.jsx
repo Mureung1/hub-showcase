@@ -1,8 +1,11 @@
 // screens/CalendarScreen.jsx
+import { useEffect, useState } from "react";
 import "./CalendarScreen.css";
 import PrimaryButton from "../components/PrimaryButton";
 import Badge from "../components/Badge";
 import TimeTableGrid from "../components/TimeTableGrid";
+import { fetchCurrentTimetable, shareTimetable } from "../api/timetables";
+import { CURRENT_YEAR, CURRENT_SEMESTER } from "../config/semester";
 
 const CATEGORY_ORDER = ["전공필수", "전공선택", "교양"];
 
@@ -21,7 +24,36 @@ function formatTimes(times) {
   return times.map((t) => `${t.day} ${t.start}-${t.end}`).join(", ");
 }
 
-export default function CalendarScreen({ confirmedSchedule, onNavigate }) {
+const SHARE_BUTTON_LABEL = {
+  idle: "이 시간표 공유하기",
+  sharing: "공유하는 중...",
+  shared: "공유 완료",
+  error: "이 시간표 공유하기",
+};
+
+export default function CalendarScreen({ onNavigate }) {
+  const [status, setStatus] = useState("loading"); // loading | empty | done | error
+  const [timetable, setTimetable] = useState(null);
+  const [shareState, setShareState] = useState("idle"); // idle | sharing | shared | error
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatus("loading");
+    fetchCurrentTimetable({ year: CURRENT_YEAR, semester: CURRENT_SEMESTER })
+      .then((data) => {
+        if (cancelled) return;
+        setTimetable(data);
+        setStatus(data ? "done" : "empty");
+      })
+      .catch((err) => {
+        console.error("확정 시간표 조회 실패:", err);
+        if (!cancelled) setStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const topbar = (
     <div className="topbar">
       <span className="topbar__spacer" aria-hidden="true" />
@@ -30,7 +62,25 @@ export default function CalendarScreen({ confirmedSchedule, onNavigate }) {
     </div>
   );
 
-  if (!confirmedSchedule) {
+  if (status === "loading") {
+    return (
+      <div className="calendar-screen">
+        {topbar}
+        <p className="calendar-screen__status">불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <div className="calendar-screen">
+        {topbar}
+        <p className="calendar-screen__status">시간표를 불러오지 못했어요. 잠시 후 다시 시도해주세요.</p>
+      </div>
+    );
+  }
+
+  if (status === "empty") {
     return (
       <div className="calendar-screen">
         {topbar}
@@ -47,16 +97,27 @@ export default function CalendarScreen({ confirmedSchedule, onNavigate }) {
     );
   }
 
-  const lectures = confirmedSchedule.lectures;
+  const { label, lectures } = timetable;
   const totalCredit = lectures.reduce((sum, l) => sum + l.credit, 0);
   const categorySummary = summarizeByCategory(lectures);
+
+  async function handleShare() {
+    setShareState("sharing");
+    try {
+      await shareTimetable({ year: CURRENT_YEAR, semester: CURRENT_SEMESTER });
+      setShareState("shared");
+    } catch (err) {
+      console.error("시간표 공유 실패:", err);
+      setShareState("error");
+    }
+  }
 
   return (
     <div className="calendar-screen">
       {topbar}
 
       <div className="schedule-summary">
-        <p className="schedule-summary__title">{confirmedSchedule.selectedLabel}</p>
+        <p className="schedule-summary__title">{label}</p>
         <div className="schedule-summary__badges">
           <Badge variant="success">총 {totalCredit}학점</Badge>
           {categorySummary.map(({ category, count }) => (
@@ -88,6 +149,17 @@ export default function CalendarScreen({ confirmedSchedule, onNavigate }) {
           </div>
         ))}
       </div>
+
+      <PrimaryButton
+        type="button"
+        onClick={handleShare}
+        disabled={shareState === "sharing" || shareState === "shared"}
+      >
+        {SHARE_BUTTON_LABEL[shareState]}
+      </PrimaryButton>
+      {shareState === "error" && (
+        <p className="calendar-screen__status">시간표 공유에 실패했어요. 잠시 후 다시 시도해주세요.</p>
+      )}
     </div>
   );
 }

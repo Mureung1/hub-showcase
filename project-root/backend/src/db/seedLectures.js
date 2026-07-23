@@ -3,6 +3,8 @@
 // 실행: node src/db/seedLectures.js
 const supabase = require('./db');
 const { requiredCoursesByDepartment } = require('../data/requiredCourses');
+const { courseTiersByDepartment } = require('../data/courseTiers');
+const { parseTimes } = require('../utils/parseTimes');
 
 const API_URL =
   'https://knuin.knu.ac.kr/public/web/stddm/lsspr/syllabus/lectPlnInqr/selectListLectPlnInqr';
@@ -81,19 +83,6 @@ function toSemester(estblYear, estblSmstrSctnm) {
   return `${estblYear}-${term}`;
 }
 
-// "화 09:00 ~ 10:30,목 10:30 ~ 12:00" → [{day:"화", start:"09:00", end:"10:30"}, ...]
-function parseTimes(lssnsRealTimeInfo) {
-  if (!lssnsRealTimeInfo) return [];
-  return lssnsRealTimeInfo.split(',').map((chunk) => {
-    const trimmed = chunk.trim();
-    const spaceIdx = trimmed.indexOf(' ');
-    const day = trimmed.slice(0, spaceIdx);
-    const range = trimmed.slice(spaceIdx + 1);
-    const [start, end] = range.split('~').map((s) => s.trim());
-    return { day, start, end };
-  });
-}
-
 // 같은 전공필수 과목이 분반(crse_no의 -001/-002...)별로 여러 행 존재하는 경우,
 // 전부 required=true로 두면 한 과목을 여러 번 들은 것처럼 학점이 중복 합산된다.
 // 분반 중 하나만 대표로 required=true로 남기고 나머지는 required=false(일반 선택)로 둔다.
@@ -107,6 +96,12 @@ function isRequired(department, name) {
   if (requiredClaimed.has(key)) return false;
   requiredClaimed.add(key);
   return true;
+}
+
+// courseTiers.js에 수기로 채워둔 값을 그대로 반영. 같은 과목이라도 교수마다 평가가 다르므로
+// 과목명 + 교수명 조합으로 찾는다. 아직 평가 안 했거나 목록에 없는 조합은 null.
+function getTier(department, name, professor) {
+  return courseTiersByDepartment[department]?.[name]?.[professor] ?? null;
 }
 
 async function upsertLecture(row) {
@@ -123,6 +118,8 @@ async function upsertLecture(row) {
     category: row.sbjetSctnm,
     department,
     required: isRequired(department, row.sbjetNm),
+    grade: row.estblGrade, // "1"~"4" 또는 학년 무관("*")
+    tier: getTier(department, row.sbjetNm, row.totalPrfssNm),
   };
 
   const { data: lecture, error } = await supabase

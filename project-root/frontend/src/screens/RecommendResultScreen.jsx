@@ -4,12 +4,15 @@ import "./RecommendResultScreen.css";
 import TimeTableCard from "../components/TimeTableCard";
 import TimeTableGrid from "../components/TimeTableGrid";
 import { fetchLectures } from "../api/lectures";
+import { saveTimetable } from "../api/timetables";
 import { recommendTimetable } from "../algo/recommendTimetable";
 import { CURRENT_YEAR, CURRENT_SEMESTER } from "../config/semester";
 
 export default function RecommendResultScreen({ preferences, onNavigate, onSelect }) {
   const [results, setResults] = useState([]);
   const [status, setStatus] = useState("loading"); // loading | done | error
+  const [savingId, setSavingId] = useState(null);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -39,11 +42,23 @@ export default function RecommendResultScreen({ preferences, onNavigate, onSelec
     };
   }, [preferences]);
 
-  function handleSelect(result) {
-    onSelect?.({
-      lectures: result.lectures,
-      selectedLabel: result.label,
-    });
+  async function handleSelect(result) {
+    setSaveError("");
+    setSavingId(result.id);
+    try {
+      await saveTimetable({
+        year: CURRENT_YEAR,
+        semester: CURRENT_SEMESTER,
+        label: result.label,
+        lectureIds: result.lectures.map((l) => l.id),
+      });
+      onSelect?.();
+    } catch (err) {
+      console.error("시간표 저장 실패:", err);
+      setSaveError("시간표 저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setSavingId(null);
+    }
   }
 
   return (
@@ -86,6 +101,8 @@ export default function RecommendResultScreen({ preferences, onNavigate, onSelec
             선택하면 내 시간표로 확정돼요.
           </p>
 
+          {saveError && <p className="recommend-result-screen__desc">{saveError}</p>}
+
           <div className="recommend-result-screen__list">
             {results.map((result) => (
               <TimeTableCard
@@ -99,8 +116,9 @@ export default function RecommendResultScreen({ preferences, onNavigate, onSelec
                   type="button"
                   className="ghost-btn"
                   onClick={() => handleSelect(result)}
+                  disabled={savingId !== null}
                 >
-                  이 시간표 선택하기
+                  {savingId === result.id ? "저장 중..." : "이 시간표 선택하기"}
                 </button>
               </TimeTableCard>
             ))}

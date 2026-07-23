@@ -15,6 +15,7 @@ backend/data/*.db-shm
 Thumbs.db
 .vscode/
 CLAUDE.md
+.claude/
 
 # 로그
 *.log
