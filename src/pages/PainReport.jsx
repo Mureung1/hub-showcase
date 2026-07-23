@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { postJson } from '@/lib/api'
+import BodyMap from '@/components/BodyMap'
 
 // 신체부위 8개 — value는 33개 운동의 involvedJoints 값과 정확히 일치해야 한다.
 // "고관절"은 임상 용어라 화면 라벨에만 괄호로 "엉덩이/골반"을 병기한다.
@@ -192,7 +193,7 @@ function PainReportPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-bg px-6 py-12">
-      <div className="w-full max-w-[640px]">
+      <div className="w-full max-w-[840px]">
         <h1 className="mb-2 text-[24px] font-extrabold text-text">
           어디가 아프신가요?
         </h1>
@@ -201,20 +202,28 @@ function PainReportPage() {
           보여드려요.
         </p>
 
-        <div className="mb-8 flex flex-wrap gap-2">
-          {BODY_PARTS.map((bp) => (
-            <button
-              key={bp.value}
-              onClick={() => handleSelectBodyPart(bp.value)}
-              className={
-                selectedBodyPart === bp.value
-                  ? 'rounded-pill bg-accent px-4 py-2 text-[13px] font-bold text-on-accent'
-                  : 'rounded-pill border border-border px-4 py-2 text-[13px] text-text hover:border-outline-hover'
-              }
-            >
-              {bp.label}
-            </button>
-          ))}
+        <div className="mb-8 grid grid-cols-[300px_1fr] items-start gap-6">
+          <BodyMap selected={selectedBodyPart} onSelect={handleSelectBodyPart} />
+          <div className="flex flex-col gap-2">
+            <div className="mb-1 text-[13px] text-text-secondary">
+              부위 목록에서 선택해도 돼요
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {BODY_PARTS.map((bp) => (
+                <button
+                  key={bp.value}
+                  onClick={() => handleSelectBodyPart(bp.value)}
+                  className={
+                    selectedBodyPart === bp.value
+                      ? 'rounded-pill bg-accent px-4 py-2 text-[13px] font-bold text-on-accent'
+                      : 'rounded-pill border border-border px-4 py-2 text-[13px] text-text hover:border-outline-hover'
+                  }
+                >
+                  {bp.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {loading && <p className="text-text-secondary">확인 중...</p>}
