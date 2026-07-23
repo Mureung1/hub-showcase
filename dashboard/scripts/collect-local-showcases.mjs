@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateShowcase } from './validate-showcase.mjs';
@@ -166,23 +166,41 @@ export async function collectLocalShowcases({ branches, outputDir, readBranchFil
 
 export function readGitBranchFile(repoDir, branch, filePath) {
   safeBranchName(branch);
-  try {
-    return execFileSync('git', ['-C', repoDir, 'show', `${branch}:${filePath}`], {
-      encoding: 'buffer',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
-  } catch {
-    return null;
+  for (const ref of [branch, `origin/${branch}`]) {
+    try {
+      return execFileSync('git', ['-C', repoDir, 'show', `${ref}:${filePath}`], {
+        encoding: 'buffer',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      });
+    } catch {
+      // 다음 참조 형식으로 다시 시도합니다.
+    }
   }
+  return null;
 }
 
 const isDirectRun = process.argv[1] === fileURLToPath(import.meta.url);
 if (isDirectRun) {
-  const branches = process.argv.slice(2);
-  const selectedBranches = branches.length > 0 ? branches : ['dashboard-showcase-test'];
   const dashboardDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const repoDir = path.resolve(dashboardDir, '..');
   const outputDir = path.join(dashboardDir, 'public');
+  const args = process.argv.slice(2);
+  const useActiveConfig = args.includes('--active');
+  const branches = args.filter((arg) => arg !== '--active');
+  let selectedBranches = branches;
+
+  if (useActiveConfig) {
+    const configPath = path.join(dashboardDir, 'config', 'active-showcases.json');
+    const config = JSON.parse(await readFile(configPath, 'utf8'));
+    if (!Array.isArray(config.branches) || config.branches.length === 0) {
+      throw new Error('active-showcases.json에 branches 목록이 필요합니다.');
+    }
+    selectedBranches = config.branches;
+  }
+
+  if (selectedBranches.length === 0) {
+    selectedBranches = ['dashboard-showcase-test'];
+  }
 
   const result = await collectLocalShowcases({
     branches: selectedBranches,

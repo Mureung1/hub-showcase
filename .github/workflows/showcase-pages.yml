@@ -29,8 +29,8 @@ jobs:
           ref: dashboard-page
           fetch-depth: 0
 
-      - name: 시험 showcase 브랜치 받기
-        run: git fetch origin dashboard-showcase-test:refs/heads/dashboard-showcase-test
+      - name: 전시 대상 브랜치 받기
+        run: git fetch origin '+refs/heads/*:refs/remotes/origin/*'
 
       - name: Node.js 설정
         uses: actions/setup-node@v7
@@ -44,7 +44,7 @@ jobs:
         working-directory: dashboard
 
       - name: showcase 자료 만들기
-        run: npm run collect:local
+        run: npm run collect:active
         working-directory: dashboard
 
       - name: 시험 실행

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "collect:local": "node scripts/collect-local-showcases.mjs dashboard-showcase-test",
+    "collect:active": "node scripts/collect-local-showcases.mjs --active",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "test": "vitest run && node --test scripts/*.test.mjs"
