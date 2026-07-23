@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -70,10 +70,10 @@ Public host와 후속 feature router가 개발 entrypoint나 TCP listener를 재
 | owner | `C` — Contract/integrator |
 | branch | `codex/public-preview-integration` |
 | worktree | `/Users/swh/Desktop/code/ai-agent-challenge/hub-public-preview-worktrees/integration` |
-| handoffSha | Claim 시 coordinator가 002의 fixed reviewed SHA를 integration branch에 반영하고 predecessor 및 integration root gates를 green으로 확인한 뒤 exact integration HEAD를 기록한다. Placeholder·가짜 SHA를 쓰지 않는다. |
+| handoffSha | `27d399d56e58331e3f37215b8deabfcbc14971bd` — 002의 fixed reviewed SHA `7332c8bc77705160e31e0ce8e53e0dec6eb2dd90`와 closeout이 반영된 clean integration HEAD. Claim 직전 root test·typecheck·build·Chat Shell lint·docs link·diff gate를 모두 green으로 재실행했다. |
 | writablePaths | `apps/server/src/server.ts`; 새 Server application/listener/environment/signal composition 파일과 해당 tests; `apps/server/src/testing/**`; `scripts/test-product-entrypoint.mts`; `apps/chat-shell/e2e/chat-shell.spec.ts`; `apps/chat-shell/e2e/chat-shell-harness.ts`; 필요한 current-workbench fixture; `docs/tickets/2026-07-23-public-npx-first-release/003-spine-s2-server-composition-stabilization.md` |
 | consumedContracts | S1 frozen contracts/fixtures, current Server route·Origin·shutdown contract, parent First Assignment fail-closed behavior oracle |
-| predecessorEvidence | 002 fixed reviewed SHA, frozen fixture roster, producer-consumer conformance와 private-field leak-scan receipt |
+| predecessorEvidence | 002 fixed reviewed SHA `7332c8bc77705160e31e0ce8e53e0dec6eb2dd90`; valid fixture `d7dc6e71b1ef3429f009420a5f644565616f5cda2d847fa185fb292c6714d5d1`; invalid fixture `3f50b1290330e0f3be00c11438a4491c1c797da9d877faa1384bc54b1498f7f9`; Server 115/115·Browser 40/40 producer-consumer conformance와 root green receipt |
 | requiredChecks | Focused Server composition/shutdown tests; consolidated Browser negative trace; `npm run test:product-entrypoint`; `npm test`; `npm run typecheck`; `npm run build`; `npm run lint -w @ay-ple/chat-shell`; `npm run check:docs-links`; `git diff --check` |
 | reviewOwner | Independent Server architecture reviewer와 current First Assignment Browser regression reviewer |
 | handoffArtifact | Fixed reviewed `spineTipSha`, green composition/shutdown receipt와 immutable Browser fail-closed oracle evidence |
